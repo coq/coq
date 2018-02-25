@@ -32,7 +32,7 @@ let id_of_name = function
   | _ -> raise Not_found
 
 let locate  ref =
-    let (loc,qid) = qualid_of_reference ref in
+    let {CAst.v=qid} = qualid_of_reference ref in
     Nametab.locate qid
 
 let locate_ind ref =
@@ -100,13 +100,8 @@ let list_union_eq eq_fun l1 l2 =
 let list_add_set_eq eq_fun x l =
   if List.exists (eq_fun x) l then l else x::l
 
-
-
-
 let const_of_id id =
-  let _,princ_ref =
-    qualid_of_reference (Libnames.Ident (Loc.tag id))
-  in
+  let princ_ref = qualid_of_ident id in
   try Constrintern.locate_reference princ_ref
   with Not_found ->
     CErrors.user_err ~hdr:"IndFun.const_of_id"

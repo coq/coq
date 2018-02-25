@@ -92,15 +92,15 @@ let intern_int_or_var = intern_or_var (fun (n : int) -> n)
 let intern_string_or_var = intern_or_var (fun (s : string) -> s)
 
 let intern_global_reference ist = function
-  | Ident (loc,id) when find_var id ist ->
+  | {CAst.loc;v=Ident id} when find_var id ist ->
     ArgVar (make ?loc id)
   | r ->
-      let loc,_ as lqid = qualid_of_reference r in
-      try ArgArg (loc,locate_global_with_alias lqid)
-      with Not_found -> error_global_not_found (snd lqid)
+    let {CAst.loc} as lqid = qualid_of_reference r in
+    try ArgArg (loc,locate_global_with_alias lqid)
+    with Not_found -> error_global_not_found lqid
 
 let intern_ltac_variable ist = function
-  | Ident (loc,id) ->
+  | {loc;v=Ident id} ->
       if find_var id ist then
 	(* A local variable of any type *)
         ArgVar (make ?loc id)
@@ -109,19 +109,19 @@ let intern_ltac_variable ist = function
       raise Not_found
 
 let intern_constr_reference strict ist = function
-  | Ident (_,id) as r when not strict && find_hyp id ist ->
+  | {v=Ident id} as r when not strict && find_hyp id ist ->
       (DAst.make @@ GVar id), Some (make @@ CRef (r,None))
-  | Ident (_,id) as r when find_var id ist ->
+  | {v=Ident id} as r when find_var id ist ->
       (DAst.make @@ GVar id), if strict then None else Some (make @@ CRef (r,None))
   | r ->
-      let loc,_ as lqid = qualid_of_reference r in
+      let {loc} as lqid = qualid_of_reference r in
       DAst.make @@ GRef (locate_global_with_alias lqid,None), 
         if strict then None else Some (make @@ CRef (r,None))
 
 (* Internalize an isolated reference in position of tactic *)
 
 let intern_isolated_global_tactic_reference r =
-  let (loc,qid) = qualid_of_reference r in
+  let {loc;v=qid} = qualid_of_reference r in
   TacCall (Loc.tag ?loc (ArgArg (loc,Tacenv.locate_tactic qid),[]))
 
 let intern_isolated_tactic_reference strict ist r =
@@ -135,12 +135,12 @@ let intern_isolated_tactic_reference strict ist r =
   try ConstrMayEval (ConstrTerm (intern_constr_reference strict ist r))
   with Not_found ->
   (* Reference not found *)
-  error_global_not_found (snd (qualid_of_reference r))
+  error_global_not_found (qualid_of_reference r)
 
 (* Internalize an applied tactic reference *)
 
 let intern_applied_global_tactic_reference r =
-  let (loc,qid) = qualid_of_reference r in
+  let {loc;v=qid} = qualid_of_reference r in
   ArgArg (loc,Tacenv.locate_tactic qid)
 
 let intern_applied_tactic_reference ist r =
@@ -151,7 +151,7 @@ let intern_applied_tactic_reference ist r =
   try intern_applied_global_tactic_reference r
   with Not_found ->
   (* Reference not found *)
-  error_global_not_found (snd (qualid_of_reference r))
+  error_global_not_found (qualid_of_reference r)
 
 (* Intern a reference parsed in a non-tactic entry *)
 
@@ -167,12 +167,12 @@ let intern_non_tactic_reference strict ist r =
   with Not_found ->
   (* By convention, use IntroIdentifier for unbound ident, when not in a def *)
   match r with
-  | Ident (loc,id) when not strict ->
+  | {loc;v=Ident id} when not strict ->
     let ipat = in_gen (glbwit wit_intro_pattern) (make ?loc @@ IntroNaming (IntroIdentifier id)) in
     TacGeneric ipat
   | _ ->
   (* Reference not found *)
-  error_global_not_found (snd (qualid_of_reference r))
+  error_global_not_found (qualid_of_reference r)
 
 let intern_message_token ist = function
   | (MsgString _ | MsgInt _ as x) -> x
@@ -268,7 +268,7 @@ let intern_destruction_arg ist = function
   | clear,ElimOnIdent {loc;v=id} ->
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
-        let c, p = intern_constr ist (make @@ CRef (Ident (Loc.tag id), None)) in
+        let c, p = intern_constr ist (make @@ CRef (make @@ Ident id, None)) in
 	match DAst.get c with
         | GVar id -> clear,ElimOnIdent (make ?loc:c.loc id)
 	| _ -> clear,ElimOnConstr ((c, p), NoBindings)
@@ -276,7 +276,7 @@ let intern_destruction_arg ist = function
         clear,ElimOnIdent (make ?loc id)
 
 let short_name = function
-  | AN (Ident (loc,id)) when not !strict_check -> Some (make ?loc id)
+  | {v=AN {loc;v=Ident id}} when not !strict_check -> Some (make ?loc id)
   | _ -> None
 
 let intern_evaluable_global_reference ist r =
@@ -284,20 +284,20 @@ let intern_evaluable_global_reference ist r =
   try evaluable_of_global_reference ist.genv (locate_global_with_alias ~head:true lqid)
   with Not_found ->
   match r with
-  | Ident (loc,id) when not !strict_check -> EvalVarRef id
-  | _ -> error_global_not_found (snd lqid)
+  | {loc;v=Ident id} when not !strict_check -> EvalVarRef id
+  | _ -> error_global_not_found lqid
 
 let intern_evaluable_reference_or_by_notation ist = function
-  | AN r -> intern_evaluable_global_reference ist r
-  | ByNotation {loc;v=(ntn,sc)} ->
+  | {v=AN r} -> intern_evaluable_global_reference ist r
+  | {v=ByNotation (ntn,sc);loc} ->
       evaluable_of_global_reference ist.genv
       (Notation.interp_notation_as_global_reference ?loc
         (function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc)
 
 (* Globalize a reduction expression *)
 let intern_evaluable ist = function
-  | AN (Ident (loc,id)) when find_var id ist -> ArgVar (make ?loc id)
-  | AN (Ident (loc,id)) when not !strict_check && find_hyp id ist ->
+  | {loc;v=AN {v=Ident id}} when find_var id ist -> ArgVar (make ?loc id)
+  | {loc;v=AN {v=Ident id}} when not !strict_check && find_hyp id ist ->
       ArgArg (EvalVarRef id, Some (make ?loc id))
   | r ->
       let e = intern_evaluable_reference_or_by_notation ist r in
@@ -353,10 +353,9 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
          ref or a pattern seems interesting, with "head" reduction
          in case of an evaluable ref, and "strong" reduction in the
          subterm matched when a pattern *)
-      let loc = loc_of_smart_reference r in
       let r = match r with
-      | AN r -> r
-      | _ -> Qualid (loc,qualid_of_path (path_of_global (smart_global r))) in
+      | {v=AN r} -> r
+      | {loc} -> make ?loc @@ Qualid (qualid_of_path (path_of_global (smart_global r))) in
       let sign = {
         Constrintern.ltac_vars = ist.ltacvars;
         ltac_bound = Id.Set.empty;
@@ -376,7 +375,7 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
   | Inl r -> interp_ref r
   | Inr { v = CAppExpl((None,r,None),[]) } ->
       (* We interpret similarly @ref and ref *)
-      interp_ref (AN r)
+      interp_ref (make @@ AN r)
   | Inr c ->
       Inr (snd (intern_typed_pattern ist ~as_type:false ~ltacvars:ist.ltacvars c)))
 
@@ -385,13 +384,13 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
 let dump_glob_red_expr = function
   | Unfold occs -> List.iter (fun (_, r) ->
     try
-      Dumpglob.add_glob ?loc:(loc_of_or_by_notation Libnames.loc_of_reference r)
+      Dumpglob.add_glob ?loc:r.loc
 	(Smartlocate.smart_global r)
     with e when CErrors.noncritical e -> ()) occs
   | Cbv grf | Lazy grf ->
     List.iter (fun r ->
       try
-        Dumpglob.add_glob ?loc:(loc_of_or_by_notation Libnames.loc_of_reference r)
+        Dumpglob.add_glob ?loc:r.loc
 	  (Smartlocate.smart_global r)
       with e when CErrors.noncritical e -> ()) grf.rConst
   | _ -> ()

@@ -450,11 +450,10 @@ let register_ltac local tacl =
         let () = if is_shadowed then warn_unusable_identifier id in
         NewTac id, body
     | Tacexpr.TacticRedefinition (ident, body) ->
-        let loc = loc_of_reference ident in
         let kn =
-          try Tacenv.locate_tactic (snd (qualid_of_reference ident))
+          try Tacenv.locate_tactic (qualid_of_reference ident).CAst.v
           with Not_found ->
-            CErrors.user_err ?loc 
+            CErrors.user_err ?loc:ident.CAst.loc
                        (str "There is no Ltac named " ++ pr_reference ident ++ str ".")
         in
         UpdateTac kn, body

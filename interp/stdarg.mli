@@ -22,9 +22,6 @@ open Misctypes
 open Tactypes
 open Genarg
 
-(** FIXME: nothing to do there. *)
-val loc_of_or_by_notation : ('a -> Loc.t option) -> 'a or_by_notation -> Loc.t option
-
 val wit_unit : unit uniform_genarg_type
 
 val wit_bool : bool uniform_genarg_type

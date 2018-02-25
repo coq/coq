@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Loc
 open Names
 open Libnames
 open Globnames
@@ -19,7 +18,7 @@ open Misctypes
    if not bound in the global env; raise a [UserError] if bound to a
    syntactic def that does not denote a reference *)
 
-val locate_global_with_alias : ?head:bool -> qualid located -> global_reference
+val locate_global_with_alias : ?head:bool -> qualid CAst.t -> global_reference
 
 (** Extract a global_reference from a reference that can be an "alias" *)
 val global_of_extended_global : extended_global_reference -> global_reference
@@ -38,6 +37,3 @@ val smart_global : ?head:bool -> reference or_by_notation -> global_reference
 
 (** The same for inductive types *)
 val smart_global_inductive : reference or_by_notation -> inductive
-
-(** Return the loc of a smart reference *)
-val loc_of_smart_reference : reference or_by_notation -> Loc.t option

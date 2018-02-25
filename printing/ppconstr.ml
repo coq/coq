@@ -213,9 +213,9 @@ let tag_var = tag Tag.variable
   let pr_universe_instance l =
     pr_opt_no_spc (pr_univ_annot (prlist_with_sep spc pr_glob_sort_instance)) l
 
-  let pr_reference = function
-  | Qualid (_, qid) -> pr_qualid qid
-  | Ident (_, id) -> tag_var (pr_id id)
+  let pr_reference = CAst.with_val (function
+  | Qualid qid -> pr_qualid qid
+  | Ident id -> tag_var (pr_id id))
 
   let pr_cref ref us =
     pr_reference ref ++ pr_universe_instance us
@@ -565,8 +565,8 @@ let tag_var = tag Tag.variable
           return (p ++ prlist (pr spc (lapp,L)) l2, lapp)
         else
           return (p, lproj)
-      | CAppExpl ((None,Ident (_,var),us),[t])
-      | CApp ((_, {CAst.v = CRef(Ident(_,var),us)}),[t,None])
+      | CAppExpl ((None,{v=Ident var},us),[t])
+      | CApp ((_, {v = CRef({v=Ident var},us)}),[t,None])
           when Id.equal var Notation_ops.ldots_var ->
         return (
           hov 0 (str ".." ++ pr spc (latom,E) t ++ spc () ++ str ".."),

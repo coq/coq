@@ -113,9 +113,11 @@ type 'a or_var =
 
 type 'a and_short_name = 'a * lident option
 
-type 'a or_by_notation =
+type 'a or_by_notation_r =
   | AN of 'a
-  | ByNotation of (string * string option) CAst.t
+  | ByNotation of (string * string option)
+
+type 'a or_by_notation = 'a or_by_notation_r CAst.t
 
 (* NB: the last string in [ByNotation] is actually a [Notation.delimiters],
    but this formulation avoids a useless dependency. *)

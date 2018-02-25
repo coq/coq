@@ -94,8 +94,8 @@ let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
     else l
   in
   let rec aux bdvars l c = match CAst.(c.v) with
-    | CRef (Ident (loc,id),_) -> found loc id bdvars l
-    | CNotation ("{ _ : _ | _ }", ({ CAst.v = CRef (Ident (_, id),_) } :: _, [], [], [])) when not (Id.Set.mem id bdvars) ->
+    | CRef ({CAst.v=Ident id},_) -> found c.CAst.loc id bdvars l
+    | CNotation ("{ _ : _ | _ }", ({ CAst.v = CRef ({CAst.v=Ident id},_) } :: _, [], [], [])) when not (Id.Set.mem id bdvars) ->
         Constrexpr_ops.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux (Id.Set.add id bdvars) l c
     | _ -> Constrexpr_ops.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux bdvars l c
   in aux bound l c
@@ -194,7 +194,7 @@ let combine_params avoid fn applied needed =
 let combine_params_freevar =
   fun avoid (_, decl) ->
     let id' = next_name_away_from (RelDecl.get_name decl) avoid in
-      (CAst.make @@ CRef (Ident (Loc.tag id'),None), Id.Set.add id' avoid)
+      (CAst.make @@ CRef (CAst.make @@ Ident id',None), Id.Set.add id' avoid)
 
 let destClassApp cl =
   let open CAst in
@@ -202,7 +202,7 @@ let destClassApp cl =
   match cl.v with
     | CApp ((None, { v = CRef (ref, inst) }), l) -> CAst.make ?loc (ref, List.map fst l, inst)
     | CAppExpl ((None, ref, inst), l) -> CAst.make ?loc (ref, l, inst)
-    | CRef (ref, inst) -> CAst.make ?loc:(loc_of_reference ref) (ref, [], inst)
+    | CRef (ref, inst) -> CAst.make ?loc:cl.loc (ref, [], inst)
     | _ -> raise Not_found
 
 let destClassAppExpl cl =
@@ -210,15 +210,15 @@ let destClassAppExpl cl =
   let loc = cl.loc in
   match cl.v with
     | CApp ((None, { v = CRef (ref, inst) } ), l) -> CAst.make ?loc (ref, l, inst)
-    | CRef (ref, inst) -> CAst.make ?loc:(loc_of_reference ref) (ref, [], inst)
+    | CRef (ref, inst) -> CAst.make ?loc:cl.loc (ref, [], inst)
     | _ -> raise Not_found
 
 let implicit_application env ?(allow_partial=true) f ty =
   let is_class =
     try
       let ({CAst.v=(r, _, _)} as clapp) = destClassAppExpl ty in
-      let (loc, qid) = qualid_of_reference r in
-      let gr = Nametab.locate qid in
+      let qid = qualid_of_reference r in
+      let gr = Nametab.locate qid.CAst.v in
 	if Typeclasses.is_class gr then Some (clapp, gr) else None
     with Not_found -> None
   in

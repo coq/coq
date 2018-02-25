@@ -312,7 +312,7 @@ let interp_entry forpat e = match e with
 
 let cases_pattern_expr_of_name { CAst.loc; v = na } = CAst.make ?loc @@ match na with
   | Anonymous -> CPatAtom None
-  | Name id   -> CPatAtom (Some (Ident (Loc.tag ?loc id)))
+  | Name id   -> CPatAtom (Some (CAst.make ?loc @@ Ident id))
 
 type 'r env = {
   constrs : 'r list;

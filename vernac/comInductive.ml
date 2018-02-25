@@ -46,8 +46,8 @@ let rec complete_conclusion a cs = CAst.map_with_loc (fun ?loc -> function
         user_err ?loc
          (strbrk"Cannot infer the non constant arguments of the conclusion of "
           ++ Id.print cs ++ str ".");
-      let args = List.map (fun id -> CAst.make ?loc @@ CRef(Ident(loc,id),None)) params in
-      CAppExpl ((None,Ident(loc,name),None),List.rev args)
+      let args = List.map (fun id -> CAst.(make ?loc @@ CRef(make ?loc @@ Ident id,None))) params in
+      CAppExpl ((None,CAst.make ?loc @@ Ident name,None),List.rev args)
   | c -> c
   )
 

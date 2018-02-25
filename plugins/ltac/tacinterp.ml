@@ -360,7 +360,7 @@ let interp_reference ist env sigma = function
     with Not_found ->
       try
         VarRef (get_id (Environ.lookup_named id env))
-      with Not_found -> error_global_not_found ?loc (qualid_of_ident id)
+      with Not_found -> error_global_not_found (make ?loc @@ qualid_of_ident id)
 
 let try_interp_evaluable env (loc, id) =
   let v = Environ.lookup_named id env in
@@ -376,14 +376,14 @@ let interp_evaluable ist env sigma = function
       with Not_found ->
         match r with
         | EvalConstRef _ -> r
-        | _ -> error_global_not_found ?loc (qualid_of_ident id)
+        | _ -> error_global_not_found (make ?loc @@ qualid_of_ident id)
     end
   | ArgArg (r,None) -> r
   | ArgVar {loc;v=id} ->
     try try_interp_ltac_var (coerce_to_evaluable_ref env sigma) ist (Some (env,sigma)) (make ?loc id)
     with Not_found ->
       try try_interp_evaluable env (loc, id)
-      with Not_found -> error_global_not_found ?loc (qualid_of_ident id)
+      with Not_found -> error_global_not_found (make ?loc @@ qualid_of_ident id)
 
 (* Interprets an hypothesis name *)
 let interp_occurrences ist occs =
@@ -642,7 +642,7 @@ let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, a) =
         Inr (pattern_of_constr env sigma (EConstr.to_constr sigma c)) in
     (try try_interp_ltac_var coerce_eval_ref_or_constr ist (Some (env,sigma)) (make ?loc id)
      with Not_found ->
-       error_global_not_found ?loc (qualid_of_ident id))
+       error_global_not_found (make ?loc @@ qualid_of_ident id))
   | Inl (ArgArg _ as b) -> Inl (interp_evaluable ist env sigma b)
   | Inr c -> Inr (interp_typed_pattern ist env sigma c) in
   interp_occurrences ist occs, p
@@ -926,7 +926,7 @@ let interp_destruction_arg ist gl arg =
 	if Tactics.is_quantified_hypothesis id gl then
           keep,ElimOnIdent (make ?loc id)
 	else
-          let c = (DAst.make ?loc @@ GVar id,Some (make @@ CRef (Ident (loc,id),None))) in
+          let c = (DAst.make ?loc @@ GVar id,Some (make @@ CRef (make ?loc @@ Ident id,None))) in
           let f env sigma =
             let (sigma,c) = interp_open_constr ist env sigma c in
             (sigma, (c,NoBindings))

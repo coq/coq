@@ -853,7 +853,7 @@ open Util
 (** Constructors for constr_expr *)
 let mkCProp loc = CAst.make ?loc @@ CSort GProp
 let mkCType loc = CAst.make ?loc @@ CSort (GType [])
-let mkCVar ?loc id = CAst.make ?loc @@ CRef (Ident (Loc.tag ?loc id), None)
+let mkCVar ?loc id = CAst.make ?loc @@ CRef (CAst.make ?loc @@ Ident id, None)
 let rec mkCHoles ?loc n =
   if n <= 0 then [] else (CAst.make ?loc @@ CHole (None, IntroAnonymous, None)) :: mkCHoles ?loc (n - 1)
 let mkCHole loc = CAst.make ?loc @@ CHole (None, IntroAnonymous, None)

@@ -597,8 +597,8 @@ let warns () =
 let rec locate_ref = function
   | [] -> [],[]
   | r::l ->
-      let q = snd (qualid_of_reference r) in
-      let mpo = try Some (Nametab.locate_module q) with Not_found -> None
+      let q = qualid_of_reference r in
+      let mpo = try Some (Nametab.locate_module q.CAst.v) with Not_found -> None
       and ro =
         try Some (Smartlocate.global_with_alias r)
         with Nametab.GlobalizationError _ | UserError _ -> None
@@ -608,7 +608,7 @@ let rec locate_ref = function
 	| None, Some r -> let refs,mps = locate_ref l in r::refs,mps
 	| Some mp, None -> let refs,mps = locate_ref l in refs,mp::mps
 	| Some mp, Some r ->
-           warning_ambiguous_name (q,mp,r);
+           warning_ambiguous_name (q.CAst.v,mp,r);
            let refs,mps = locate_ref l in refs,mp::mps
 
 (*s Recursive extraction in the Coq toplevel. The vernacular command is
@@ -646,7 +646,7 @@ let separate_extraction lr =
     is \verb!Extraction! [qualid]. *)
 
 let simple_extraction r =
-  Vernacentries.dump_global (Misctypes.AN r);
+  Vernacentries.dump_global CAst.(make (Misctypes.AN r));
   match locate_ref [r] with
   | ([], [mp]) as p -> full_extr None p
   | [r],[] ->

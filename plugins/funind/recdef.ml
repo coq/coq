@@ -1325,7 +1325,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
     CErrors.user_err Pp.(str "\"abstract\" cannot handle existentials");
   let hook _ _ =
     let opacity =
-      let na_ref = Libnames.Ident (Loc.tag na) in
+      let na_ref = CAst.make @@ Libnames.Ident na in
       let na_global = Smartlocate.global_with_alias na_ref in
       match na_global with
 	  ConstRef c -> is_opaque_constant c
@@ -1579,7 +1579,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let hook _ _ = 
     let term_ref = Nametab.locate (qualid_of_ident term_id) in
     let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in
-    let _ = Extraction_plugin.Table.extraction_inline true [Ident (Loc.tag term_id)] in
+    let _ = Extraction_plugin.Table.extraction_inline true [CAst.make @@ Ident term_id] in
     (*     message "start second proof"; *)
     let stop = 
       try com_eqn (List.length res_vars) equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type);

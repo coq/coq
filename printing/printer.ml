@@ -235,9 +235,9 @@ let qualid_of_global env r =
 let safe_gen f env sigma c =
   let orig_extern_ref = Constrextern.get_extern_reference () in
   let extern_ref ?loc vars r =
-    try orig_extern_ref ?loc vars r
+    try orig_extern_ref vars r
     with e when CErrors.noncritical e ->
-      Libnames.Qualid (Loc.tag ?loc @@ qualid_of_global env r)
+      CAst.make ?loc @@ Libnames.Qualid (qualid_of_global env r)
   in
   Constrextern.set_extern_reference extern_ref;
   try

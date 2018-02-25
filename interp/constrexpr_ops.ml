@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open CAst
 open Names
 open Nameops
 open Libnames
@@ -278,7 +279,7 @@ let rec cases_pattern_fold_names f a pt = match CAst.(pt.v) with
     List.fold_left (cases_pattern_fold_names f)
       (List.fold_left (cases_pattern_fold_names f) a (patl@List.flatten patll)) patl'
   | CPatDelimiters (_,pat) -> cases_pattern_fold_names f a pat
-  | CPatAtom (Some (Ident (_,id))) when not (is_constructor id) -> f id a
+  | CPatAtom (Some {v=Ident id}) when not (is_constructor id) -> f id a
   | CPatPrim _ | CPatAtom _ -> a
   | CPatCast ({CAst.loc},_) ->
     CErrors.user_err ?loc ~hdr:"cases_pattern_fold_names"
@@ -361,7 +362,7 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
 
 let free_vars_of_constr_expr c =
   let rec aux bdvars l = function
-    | { CAst.v = CRef (Ident (_,id),_) } -> if Id.List.mem id bdvars then l else Id.Set.add id l
+    | { CAst.v = CRef ({v=Ident id},_) } -> if Id.List.mem id bdvars then l else Id.Set.add id l
     | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
   in aux [] Id.Set.empty c
 
@@ -439,8 +440,8 @@ let map_constr_expr_with_binders g f e = CAst.map (function
 
 (* Used in constrintern *)
 let rec replace_vars_constr_expr l = function
-  | { CAst.loc; v = CRef (Ident (loc_id,id),us) } as x ->
-    (try CAst.make ?loc @@ CRef (Ident (loc_id,Id.Map.find id l),us) with Not_found -> x)
+  | { CAst.loc; v = CRef ({v=Ident id},us) } as x ->
+    (try CAst.make ?loc @@ CRef (make ?loc @@ Ident (Id.Map.find id l),us) with Not_found -> x)
   | c -> map_constr_expr_with_binders Id.Map.remove
            replace_vars_constr_expr l c
 
@@ -511,7 +512,7 @@ let split_at_annot bl na =
 
 (** Pseudo-constructors *)
 
-let mkIdentC id   = CAst.make @@ CRef (Ident (Loc.tag id),None)
+let mkIdentC id   = CAst.make @@ CRef (make @@ Ident id,None)
 let mkRefC r      = CAst.make @@ CRef (r,None)
 let mkCastC (a,k) = CAst.make @@ CCast (a,k)
 let mkLambdaC (idl,bk,a,b) = CAst.make @@ CLambdaN ([CLocalAssum (idl,bk,a)],b)
@@ -530,21 +531,21 @@ let mkCProdN ?loc bll c =
 let mkCLambdaN ?loc bll c =
   CAst.make ?loc @@ CLambdaN (bll,c)
 
-let coerce_reference_to_id = function
-  | Ident (_,id) -> id
-  | Qualid (loc,_) ->
+let coerce_reference_to_id = CAst.with_loc_val (fun ?loc -> function
+  | Ident id -> id
+  | Qualid _ ->
     CErrors.user_err ?loc ~hdr:"coerce_reference_to_id"
-      (str "This expression should be a simple identifier.")
+      (str "This expression should be a simple identifier."))
 
 let coerce_to_id = function
-  | { CAst.v = CRef (Ident (loc,id),None) } -> CAst.make ?loc id
+  | { CAst.loc; v = CRef ({v=Ident id},None) } -> CAst.make ?loc id
   | { CAst.loc; _ } -> CErrors.user_err ?loc
                          ~hdr:"coerce_to_id"
                          (str "This expression should be a simple identifier.")
 
 let coerce_to_name = function
-  | { CAst.v = CRef (Ident (loc,id),None) } -> CAst.make ?loc @@ Name id
-  | { CAst.loc; CAst.v = CHole (None,Misctypes.IntroAnonymous,None) } -> CAst.make ?loc Anonymous
+  | { CAst.loc; v = CRef ({v=Ident id},None) } -> CAst.make ?loc @@ Name id
+  | { CAst.loc; v = CHole (None,Misctypes.IntroAnonymous,None) } -> CAst.make ?loc Anonymous
   | { CAst.loc; _ } -> CErrors.user_err ?loc ~hdr:"coerce_to_name"
                          (str "This expression should be a name.")
 
@@ -570,7 +571,7 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
      CPatAtom (Some r)
   | CHole (None,Misctypes.IntroAnonymous,None) ->
      CPatAtom None
-  | CLetIn ({CAst.loc;v=Name id},b,None,{ CAst.v = CRef (Ident (_,id'),None) }) when Id.equal id id' ->
+  | CLetIn ({CAst.loc;v=Name id},b,None,{ CAst.v = CRef ({v=Ident id'},None) }) when Id.equal id id' ->
       CPatAlias (coerce_to_cases_pattern_expr b, CAst.(make ?loc @@ Name id))
   | CApp ((None,p),args) when List.for_all (fun (_,e) -> e=None) args ->
      (mkAppPattern (coerce_to_cases_pattern_expr p) (List.map (fun (a,_) -> coerce_to_cases_pattern_expr a) args)).CAst.v

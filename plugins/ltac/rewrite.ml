@@ -1773,12 +1773,11 @@ let rec strategy_of_ast = function
 
 (* By default the strategy for "rewrite_db" is top-down *)
 
-let mkappc s l = CAst.make @@ CAppExpl ((None,(Libnames.Ident (Loc.tag @@ Id.of_string s)),None),l)
+let mkappc s l = CAst.make @@ CAppExpl ((None,CAst.make @@ Libnames.Ident (Id.of_string s),None),l)
 
 let declare_an_instance n s args =
   (((CAst.make @@ Name n),None), Explicit,
-  CAst.make @@ CAppExpl ((None, Qualid (Loc.tag @@  qualid_of_string s),None),
-	   args))
+   CAst.make @@ CAppExpl ((None, CAst.make @@ Qualid (qualid_of_string s),None), args))
 
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
@@ -1792,17 +1791,17 @@ let anew_instance global binders instance fields =
 let declare_instance_refl global binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
   in anew_instance global binders instance
-       [(Ident (Loc.tag @@ Id.of_string "reflexivity"),lemma)]
+       [(CAst.make @@ Ident (Id.of_string "reflexivity"),lemma)]
 
 let declare_instance_sym global binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Symmetric") "Coq.Classes.RelationClasses.Symmetric"
   in anew_instance global binders instance
-       [(Ident (Loc.tag @@ Id.of_string "symmetry"),lemma)]
+       [(CAst.make @@ Ident (Id.of_string "symmetry"),lemma)]
 
 let declare_instance_trans global binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Transitive") "Coq.Classes.RelationClasses.Transitive"
   in anew_instance global binders instance
-       [(Ident (Loc.tag @@ Id.of_string "transitivity"),lemma)]
+       [(CAst.make @@ Ident (Id.of_string "transitivity"),lemma)]
 
 let declare_relation ?locality ?(binders=[]) a aeq n refl symm trans =
   init_setoid ();
@@ -1826,16 +1825,16 @@ let declare_relation ?locality ?(binders=[]) a aeq n refl symm trans =
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PreOrder"
 	in ignore(
 	    anew_instance global binders instance
-	      [(Ident (Loc.tag @@ Id.of_string "PreOrder_Reflexive"), lemma1);
-	       (Ident (Loc.tag @@ Id.of_string "PreOrder_Transitive"),lemma3)])
+              [(CAst.make @@ Ident (Id.of_string "PreOrder_Reflexive"), lemma1);
+               (CAst.make @@ Ident (Id.of_string "PreOrder_Transitive"),lemma3)])
     | (None, Some lemma2, Some lemma3) ->
 	let _lemma_sym = declare_instance_sym global binders a aeq n lemma2 in
 	let _lemma_trans = declare_instance_trans global binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PER"
 	in ignore(
 	    anew_instance global binders instance
-	      [(Ident (Loc.tag @@ Id.of_string "PER_Symmetric"), lemma2);
-	       (Ident (Loc.tag @@ Id.of_string "PER_Transitive"),lemma3)])
+              [(CAst.make @@ Ident (Id.of_string "PER_Symmetric"), lemma2);
+               (CAst.make @@ Ident (Id.of_string "PER_Transitive"),lemma3)])
      | (Some lemma1, Some lemma2, Some lemma3) ->
 	let _lemma_refl = declare_instance_refl global binders a aeq n lemma1 in
 	let _lemma_sym = declare_instance_sym global binders a aeq n lemma2 in
@@ -1843,9 +1842,9 @@ let declare_relation ?locality ?(binders=[]) a aeq n refl symm trans =
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
 	in ignore(
 	  anew_instance global binders instance
-	    [(Ident (Loc.tag @@ Id.of_string "Equivalence_Reflexive"), lemma1);
-	     (Ident (Loc.tag @@ Id.of_string "Equivalence_Symmetric"), lemma2);
-	     (Ident (Loc.tag @@ Id.of_string "Equivalence_Transitive"), lemma3)])
+            [(CAst.make @@ Ident (Id.of_string "Equivalence_Reflexive"), lemma1);
+             (CAst.make @@ Ident (Id.of_string "Equivalence_Symmetric"), lemma2);
+             (CAst.make @@ Ident (Id.of_string "Equivalence_Transitive"), lemma3)])
 
 let cHole = CAst.make @@ CHole (None, Misctypes.IntroAnonymous, None)
 
@@ -1951,16 +1950,16 @@ let add_setoid global binders a aeq t n =
   let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
   in ignore(
     anew_instance global binders instance
-      [(Ident (Loc.tag @@ Id.of_string "Equivalence_Reflexive"), mkappc "Seq_refl" [a;aeq;t]);
-       (Ident (Loc.tag @@ Id.of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
-       (Ident (Loc.tag @@ Id.of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])])
+      [(CAst.make @@ Ident (Id.of_string "Equivalence_Reflexive"), mkappc "Seq_refl" [a;aeq;t]);
+       (CAst.make @@ Ident (Id.of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
+       (CAst.make @@ Ident (Id.of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])])
 
 
 let make_tactic name =
   let open Tacexpr in
   let tacpath = Libnames.qualid_of_string name in
-  let tacname = Qualid (Loc.tag tacpath) in
-  TacArg (Loc.tag @@ TacCall (Loc.tag (tacname, [])))
+  let tacname = CAst.make @@ Qualid tacpath in
+  TacArg (Loc.tag @@ (TacCall (Loc.tag (tacname, []))))
 
 let warn_add_morphism_deprecated =
   CWarnings.create ~name:"add-morphism" ~category:"deprecated" (fun () ->
@@ -2010,7 +2009,7 @@ let add_morphism glob binders m s n =
   let instance =
     (((CAst.make @@ Name instance_id),None), Explicit,
     CAst.make @@ CAppExpl (
-	     (None, Qualid (Loc.tag @@ Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper"),None),
+             (None, CAst.make @@ Qualid (Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper"),None),
 	     [cHole; s; m]))
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in

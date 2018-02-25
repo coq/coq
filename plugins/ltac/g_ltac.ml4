@@ -38,11 +38,11 @@ let genarg_of_ipattern pat = in_gen (rawwit Stdarg.wit_intro_pattern) pat
 let genarg_of_uconstr c = in_gen (rawwit Stdarg.wit_uconstr) c
 let in_tac tac = in_gen (rawwit Tacarg.wit_ltac) tac
 
-let reference_to_id = function
-  | Libnames.Ident (loc, id) -> CAst.make ?loc id
-  | Libnames.Qualid (loc,_) ->
+let reference_to_id = CAst.map_with_loc (fun ?loc -> function
+  | Libnames.Ident id -> id
+  | Libnames.Qualid _ ->
     CErrors.user_err ?loc
-      (str "This expression should be a simple identifier.")
+      (str "This expression should be a simple identifier."))
 
 let tactic_mode = Gram.entry_create "vernac:tactic_command"
 
@@ -473,7 +473,7 @@ END
 
 VERNAC COMMAND EXTEND VernacPrintLtac CLASSIFIED AS QUERY
 | [ "Print" "Ltac" reference(r) ] ->
-  [ Feedback.msg_notice (Tacintern.print_ltac (snd (Libnames.qualid_of_reference r))) ]
+  [ Feedback.msg_notice (Tacintern.print_ltac (Libnames.qualid_of_reference r).CAst.v) ]
 END
 
 VERNAC COMMAND EXTEND VernacLocateLtac CLASSIFIED AS QUERY
@@ -508,8 +508,8 @@ VERNAC COMMAND FUNCTIONAL EXTEND VernacDeclareTacticDefinition
 | [ "Ltac" ne_ltac_tacdef_body_list_sep(l, "with") ] => [
     VtSideff (List.map (function
       | TacticDefinition ({CAst.v=r},_) -> r
-      | TacticRedefinition (Ident (_,r),_) -> r
-      | TacticRedefinition (Qualid (_,q),_) -> snd(repr_qualid q)) l), VtLater
+      | TacticRedefinition ({CAst.v=Ident r},_) -> r
+      | TacticRedefinition ({CAst.v=Qualid q},_) -> snd(repr_qualid q)) l), VtLater
   ] -> [ fun ~atts ~st -> let open Vernacinterp in
            Tacentries.register_ltac (Locality.make_module_locality atts.locality) l;
            st

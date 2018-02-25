@@ -1448,7 +1448,7 @@ let add_notation_extra_printing_rule df k v =
 
 (* Infix notations *)
 
-let inject_var x = CAst.make @@ CRef (Ident (Loc.tag @@ Id.of_string x),None)
+let inject_var x = CAst.make @@ CRef (CAst.make @@ Ident (Id.of_string x),None)
 
 let add_infix local env ({CAst.loc;v=inf},modifiers) pr sc =
   check_infix_modifiers modifiers;

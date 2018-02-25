@@ -49,7 +49,7 @@ module Tactic = Pltac
 
 open Pcoq
 
-let sigref = mkRefC (Qualid (Loc.tag @@ Libnames.qualid_of_string "Coq.Init.Specif.sig"))
+let sigref = mkRefC (CAst.make @@ Qualid (Libnames.qualid_of_string "Coq.Init.Specif.sig"))
 
 type 'a withtac_argtype = (Tacexpr.raw_tactic_expr option, 'a) Genarg.abstract_argument_type
 

@@ -1165,7 +1165,7 @@ ARGUMENT EXTEND ssrbvar TYPED AS constr PRINTED BY pr_ssrbvar
 END
 
 let bvar_lname = let open CAst in function
-  | { v = CRef (Ident (loc, id), _) } -> CAst.make ?loc @@ Name id
+  | { v = CRef ({loc;v=Ident id}, _) } -> CAst.make ?loc @@ Name id
   | { loc = loc } -> CAst.make ?loc Anonymous
 
 let pr_ssrbinder prc _ _ (_, c) = prc c
@@ -1257,7 +1257,7 @@ END
 let pr_ssrfixfwd _ _ _ (id, fwd) = str " fix " ++ pr_id id ++ pr_fwd fwd
 
 let bvar_locid = function
-  | { CAst.v = CRef (Ident (loc, id), _) } -> CAst.make ?loc id
+  | { CAst.v = CRef ({CAst.loc=loc;v=Ident id}, _) } -> CAst.make ?loc id
   | _ -> CErrors.user_err (Pp.str "Missing identifier after \"(co)fix\"")
 
 

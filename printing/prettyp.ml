@@ -15,6 +15,7 @@
 open Pp
 open CErrors
 open Util
+open CAst
 open Names
 open Nameops
 open Termops
@@ -343,7 +344,7 @@ let register_locatable name f =
 exception ObjFound of logical_name
 
 let locate_any_name ref =
-  let (loc,qid) = qualid_of_reference ref in
+  let {v=qid} = qualid_of_reference ref in
   try Term (Nametab.locate qid)
   with Not_found ->
   try Syntactic (Nametab.locate_syndef qid)
@@ -452,7 +453,7 @@ type locatable_kind =
 | LocAny
 
 let print_located_qualid name flags ref =
-  let (loc,qid) = qualid_of_reference ref in
+  let {v=qid} = qualid_of_reference ref in
   let located = match flags with
   | LocTerm -> locate_term qid
   | LocModule -> locate_modtype qid @ locate_module qid
@@ -784,11 +785,11 @@ let print_full_pure_context env sigma =
 
 (* This is designed to print the contents of an opened section *)
 let read_sec_context r =
-  let loc,qid = qualid_of_reference r in
+  let qid = qualid_of_reference r in
   let dir =
-    try Nametab.locate_section qid
+    try Nametab.locate_section qid.v
     with Not_found ->
-      user_err ?loc ~hdr:"read_sec_context" (str "Unknown section.") in
+      user_err ?loc:qid.loc ~hdr:"read_sec_context" (str "Unknown section.") in
   let rec get_cxt in_cxt = function
     | (_,Lib.OpenedSection ({obj_dir;_},_) as hd)::rest ->
         if DirPath.equal dir obj_dir then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
@@ -838,12 +839,12 @@ let print_any_name env sigma na udecl =
 
 let print_name env sigma na udecl =
   match na with
-  | ByNotation {CAst.loc;v=(ntn,sc)} ->
+  | {loc; v=ByNotation (ntn,sc)} ->
       print_any_name env sigma
         (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
                ntn sc))
         udecl
-  | AN ref ->
+  | {loc; v=AN ref} ->
       print_any_name env sigma (locate_any_name ref) udecl
 
 let print_opaque_name env sigma qid =
@@ -891,12 +892,12 @@ let print_about_any ?loc env sigma k udecl =
 
 let print_about env sigma na udecl =
   match na with
-  | ByNotation {CAst.loc;v=(ntn,sc)} ->
+  | {loc;v=ByNotation (ntn,sc)} ->
       print_about_any ?loc env sigma
         (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
                ntn sc)) udecl
-  | AN ref ->
-      print_about_any ?loc:(loc_of_reference ref) env sigma (locate_any_name ref) udecl
+  | {loc;v=AN ref} ->
+      print_about_any ?loc env sigma (locate_any_name ref) udecl
 
 (* for debug *)
 let inspect env sigma depth =

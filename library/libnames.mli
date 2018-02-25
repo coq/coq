@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Util
-open Loc
 open Names
 
 (** {6 Dirpaths } *)
@@ -137,15 +136,15 @@ val eq_global_dir_reference :
     global name (referred either by a qualified name or by a single
     name) or a variable *)
 
-type reference =
-  | Qualid of qualid located
-  | Ident of Id.t located
+type reference_r =
+  | Qualid of qualid
+  | Ident of Id.t
+type reference = reference_r CAst.t
 
 val eq_reference : reference -> reference -> bool
-val qualid_of_reference : reference -> qualid located
+val qualid_of_reference : reference -> qualid CAst.t
 val string_of_reference : reference -> string
 val pr_reference : reference -> Pp.t
-val loc_of_reference : reference -> Loc.t option
 val join_reference : reference -> reference -> reference
 
 (** some preset paths *)

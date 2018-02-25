@@ -489,10 +489,9 @@ let do_combined_scheme name schemes =
   let open CAst in
   let csts =
     List.map (fun {CAst.loc;v} ->
-        let refe = Ident (Loc.tag ?loc v) in
-        let qualid = qualid_of_reference refe in
-        try Nametab.locate_constant (snd qualid)
-        with Not_found -> user_err Pp.(pr_qualid (snd qualid) ++ str " is not declared."))
+        let qualid = qualid_of_ident v in
+        try Nametab.locate_constant qualid
+        with Not_found -> user_err ?loc Pp.(pr_qualid qualid ++ str " is not declared."))
       schemes
   in
   let sigma,body,typ = build_combined_scheme (Global.env ()) csts in

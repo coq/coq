@@ -21,7 +21,7 @@ open Nametab
 module UPairs = OrderedType.UnorderedPair(Univ.Level)
 module UPairSet = Set.Make (UPairs)
 
-let reference_of_level l =
+let reference_of_level l = CAst.make @@
   match Level.name l with
   | Some (d, n as na)  ->
      let qid =
@@ -29,8 +29,8 @@ let reference_of_level l =
        with Not_found ->
          let name = Id.of_string_soft (string_of_int n) in
          Libnames.make_qualid d name
-     in Libnames.Qualid (Loc.tag @@ qid)
-  | None -> Libnames.Ident (Loc.tag @@ Id.of_string_soft (Level.to_string l))
+     in Libnames.Qualid qid
+  | None -> Libnames.Ident Id.(of_string_soft (Level.to_string l))
 
 let pr_with_global_universes l = Libnames.pr_reference (reference_of_level l)
 

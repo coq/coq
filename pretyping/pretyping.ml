@@ -180,20 +180,20 @@ let _ =
 (** Miscellaneous interpretation functions *)
 
 let interp_known_universe_level evd r =
-  let loc, qid = Libnames.qualid_of_reference r in
+  let qid = Libnames.qualid_of_reference r in
   try
-    match r with
-    | Libnames.Ident (loc, id) -> Evd.universe_of_name evd id
+    match r.CAst.v with
+    | Libnames.Ident id -> Evd.universe_of_name evd id
     | Libnames.Qualid _ -> raise Not_found
   with Not_found ->
-    let univ, k = Nametab.locate_universe qid in
+    let univ, k = Nametab.locate_universe qid.CAst.v in
     Univ.Level.make univ k
 
 let interp_universe_level_name ~anon_rigidity evd r =
   try evd, interp_known_universe_level evd r
   with Not_found ->
     match r with (* Qualified generated name *)
-    | Libnames.Qualid (loc, qid) ->
+    | {CAst.loc; v=Libnames.Qualid qid} ->
        let dp, i = Libnames.repr_qualid qid in
        let num =
          try int_of_string (Id.to_string i)
@@ -206,7 +206,7 @@ let interp_universe_level_name ~anon_rigidity evd r =
          try Evd.add_global_univ evd level
          with UGraph.AlreadyDeclared -> evd
        in evd, level
-    | Libnames.Ident (loc, id) -> (* Undeclared *)
+    | {CAst.loc; v=Libnames.Ident id} -> (* Undeclared *)
         if not (is_strict_universe_declarations ()) then
           new_univ_level_variable ?loc ~name:id univ_rigid evd
         else user_err ?loc ~hdr:"interp_universe_level_name"
