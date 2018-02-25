@@ -139,7 +139,7 @@ let argument_less = function
   | Hyp _, Conclusion -> true
   | Conclusion, _ -> false
 
-let update pos rig (na,st) =
+let update pos rig st =
   let e =
   if rig then
     match st with
@@ -163,7 +163,7 @@ let update pos rig (na,st) =
       | Some (DepFlex fpos as x) ->
           if argument_less (pos,fpos) then DepFlex pos else x
       | Some Manual -> assert false
-  in na, Some e
+  in Some e
 
 (* modified is_rigid_reference with a truncated env *)
 let is_flexible_reference env sigma bound depth f =
@@ -214,6 +214,8 @@ let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc 
   let () = if not (Vars.noccur_between sigma 1 bound m) then frec true (env,1) m in
   acc
 
+(* compute the list of implicit arguments *)
+
 let rec is_rigid_head sigma t = match kind sigma t with
   | Rel _ | Evar _ -> false
   | Ind _ | Const _ | Var _ | Sort _ -> true
@@ -226,7 +228,14 @@ let rec is_rigid_head sigma t = match kind sigma t with
   | Lambda _ | LetIn _ | Construct _ | CoFix _ | Fix _
   | Prod _ | Meta _ | Cast _ -> assert false
 
-(* calcule la liste des arguments implicites *)
+let is_rigid env sigma t =
+  let open Context.Rel.Declaration in
+  let t = whd_all env sigma t in
+  match kind sigma t with
+  | Prod (na,a,b) ->
+     let (_,t) = splay_prod (push_rel (LocalAssum (na,a)) env) sigma b in
+     is_rigid_head sigma t
+  | _ -> true
 
 let find_displayed_name_in all avoid na (env, b) =
   let envnames_b = (env, b) in
@@ -234,43 +243,54 @@ let find_displayed_name_in all avoid na (env, b) =
   if all then compute_and_force_displayed_name_in Evd.empty flag avoid na b
   else compute_displayed_name_in Evd.empty flag avoid na b
 
-let compute_implicits_gen strict strongly_strict revpat contextual all env sigma (t : EConstr.t) =
-  let rigid = ref true in
+let compute_implicits_names_gen all env sigma t =
   let open Context.Rel.Declaration in
-  let rec aux env avoid n names (t : EConstr.t) =
+  let rec aux env avoid names t =
     let t = whd_all env sigma t in
     match kind sigma t with
-      | Prod (na,a,b) ->
-	  let na',avoid' = find_displayed_name_in all avoid na (names,b) in
-          add_free_rels_until strict strongly_strict revpat n env sigma a (Hyp (n+1))
-            (aux (push_rel (LocalAssum (na',a)) env) avoid' (n+1) (na'::names) b)
-      | _ ->
-          rigid := is_rigid_head sigma t;
-	  let names = List.rev names in
-	  let v = Array.map (fun na -> na,None) (Array.of_list names) in
-	  if contextual then
-            add_free_rels_until strict strongly_strict revpat n env sigma t Conclusion v
-	  else v
+    | Prod (na,a,b) ->
+       let na',avoid' = find_displayed_name_in all avoid na (names,b) in
+       aux (push_rel (LocalAssum (na,a)) env) avoid' (na'::names) b
+    | _ -> List.rev names
+  in aux env Id.Set.empty [] t
+
+let compute_implicits_names = compute_implicits_names_gen true
+
+let compute_implicits_explanation_gen strict strongly_strict revpat contextual env sigma t =
+  let open Context.Rel.Declaration in
+  let rec aux env n t =
+    let t = whd_all env sigma t in
+    match kind sigma t with
+    | Prod (na,a,b) ->
+       add_free_rels_until strict strongly_strict revpat n env sigma a (Hyp (n+1))
+         (aux (push_rel (LocalAssum (na,a)) env) (n+1) b)
+    | _ ->
+       let v = Array.make n None in
+       if contextual then
+         add_free_rels_until strict strongly_strict revpat n env sigma t Conclusion v
+       else v
   in
   match kind sigma (whd_all env sigma t) with
-    | Prod (na,a,b) ->
-	let na',avoid = find_displayed_name_in all Id.Set.empty na ([],b) in
-	let v = aux (push_rel (LocalAssum (na',a)) env) avoid 1 [na'] b in
-	!rigid, Array.to_list v
-    | _ -> true, []
+  | Prod (na,a,b) ->
+     let v = aux (push_rel (LocalAssum (na,a)) env) 1 b in
+     Array.to_list v
+  | _ -> []
+
+let compute_implicits_explanation_flags env sigma f t =
+  compute_implicits_explanation_gen
+    (f.strict || f.strongly_strict) f.strongly_strict
+    f.reversible_pattern f.contextual env sigma t
 
 let compute_implicits_flags env sigma f all t =
-  compute_implicits_gen
-    (f.strict || f.strongly_strict) f.strongly_strict
-    f.reversible_pattern f.contextual all env sigma t
+  List.combine
+    (compute_implicits_names_gen all env sigma t)
+    (compute_implicits_explanation_flags env sigma f t)
 
 let compute_auto_implicits env sigma flags enriching t =
-  if enriching then compute_implicits_flags env sigma flags true t
-  else compute_implicits_gen false false false true true env sigma t
-
-let compute_implicits_names env sigma t =
-  let _, impls = compute_implicits_gen false false false false true env sigma t in
-  List.map fst impls
+  List.combine
+    (compute_implicits_names env sigma t)
+    (if enriching then compute_implicits_explanation_flags env sigma flags t
+     else compute_implicits_explanation_gen false false false true env sigma t)
 
 (* Extra information about implicit arguments *)
 
@@ -329,13 +349,16 @@ let rec prepare_implicits f = function
       Some (id,imp,(set_maximality imps' f.maximal,true)) :: imps'
   | _::imps -> None :: prepare_implicits f imps
 
-let set_implicit id imp insmax =
-  (id,(match imp with None -> Manual | Some imp -> imp),insmax)
-
-let rec assoc_by_pos k = function
-    (ExplByPos (k', x), b) :: tl when Int.equal k k' -> (x,b), tl
-  | hd :: tl -> let (x, tl) = assoc_by_pos k tl in x, hd :: tl
-  | [] -> raise Not_found
+(*
+If found, returns Some (x,(b,fi,fo)) and l with the entry removed,
+otherwise returns None and l unchanged.
+ *)
+let assoc_by_pos k l =
+  let rec aux = function
+      (ExplByPos (k', x), b) :: tl when Int.equal k k' -> Some (x,b), tl
+    | hd :: tl -> let (x, tl) = aux tl in x, hd :: tl
+    | [] -> raise Not_found
+  in try aux l with Not_found -> None, l
 
 let check_correct_manual_implicits autoimps l =
   List.iter (function
@@ -352,70 +375,65 @@ let check_correct_manual_implicits autoimps l =
 	    (str "Cannot set implicit argument number " ++ int i ++
 	      str ": it has no name.")) l
 
-let set_manual_implicits env flags enriching autoimps l =
-  let try_forced k l =
-    try
-      let (id, (b, fi, fo)), l' = assoc_by_pos k l in
-	if fo then
-	  let id = match id with Some id -> id | None -> Id.of_string ("arg_" ^ string_of_int k) in
-	    l', Some (id,Manual,(b,fi))
-	else l, None
-    with Not_found -> l, None
-  in
+(* Take a list l of explicitations, and map them to positions. *)
+let flatten_explicitations l autoimps =
+  let rec aux k l = function
+    | (Name id,_)::imps ->
+       let value, l' =
+         try
+           let eq = explicitation_eq in
+           let flags = List.assoc_f eq (ExplByName id) l in
+           Some (Some id, flags), List.remove_assoc_f eq (ExplByName id) l
+         with Not_found -> assoc_by_pos k l
+       in value :: aux (k+1) l' imps
+    | (Anonymous,_)::imps ->
+       let value, l' = assoc_by_pos k l
+       in value :: aux (k+1) l' imps
+    | [] when List.is_empty l -> []
+    | [] ->
+       check_correct_manual_implicits autoimps l;
+       []
+  in aux 1 l autoimps
+
+let set_manual_implicits flags enriching autoimps l =
   if not (List.distinct l) then
     user_err Pp.(str "Some parameters are referred more than once.");
   (* Compare with automatic implicits to recover printing data and names *)
-  let rec merge k l = function
-  | (Name id,imp)::imps ->
-      let l',imp,m =
-	try
-          let eq = explicitation_eq in
-	  let (b, fi, fo) = List.assoc_f eq (ExplByName id) l in
-	  List.remove_assoc_f eq (ExplByName id) l, (Some Manual), (Some (b, fi))
-	with Not_found ->
-	try
-	  let (id, (b, fi, fo)), l' = assoc_by_pos k l in
-	    l', (Some Manual), (Some (b,fi))
-	with Not_found ->
-          let m = match enriching, imp with
-          | true, Some _ -> Some (flags.maximal, true)
-          | _ -> None
-          in
-          l, imp, m
-      in
-      let imps' = merge (k+1) l' imps in
-      let m = Option.map (fun (b,f) -> 
-	(* match imp with Some Manual -> (b,f) *)
-	(* | _ ->  *)set_maximality imps' b, f) m in
-      Option.map (set_implicit id imp) m :: imps'
-  | (Anonymous,imp)::imps ->
-      let l', forced = try_forced k l in
-	forced :: merge (k+1) l' imps
-  | [] when begin match l with [] -> true | _ -> false end -> []
-  | [] ->
-      check_correct_manual_implicits autoimps l;
-      []
-  in
-  merge 1 l autoimps
+  let rec merge k autoimps explimps = match autoimps, explimps with
+    | autoimp::autoimps, explimp::explimps ->
+       let imps' = merge (k+1) autoimps explimps in
+       begin match autoimp, explimp with
+       | (Name id,_), Some (_, (b, fi, _)) ->
+          Some (id, Manual, (set_maximality imps' b, fi))
+       | (Name id,Some exp), None when enriching ->
+          Some (id, exp, (set_maximality imps' flags.maximal, true))
+       | (Name _,_), None -> None
+       | (Anonymous,_), Some (Some id, (b, fi, true)) ->
+          Some (id,Manual,(b,fi))
+       | (Anonymous,_), Some (None, (b, fi, true)) ->
+          let id = Id.of_string ("arg_" ^ string_of_int k) in
+          Some (id,Manual,(b,fi))
+       | (Anonymous,_), Some (_, (_, _, false)) -> None
+       | (Anonymous,_), None -> None
+       end :: imps'
+    | [], [] -> []
+    (* flatten_explicitations returns a list of the same length as autoimps *)
+    | _ -> assert false
+  in merge 1 autoimps (flatten_explicitations l autoimps)
 
-let compute_semi_auto_implicits env sigma f manual t =
-  match manual with
-  | [] ->
-      if not f.auto then [DefaultImpArgs, []]
-      else let _,l = compute_implicits_flags env sigma f false t in
-	     [DefaultImpArgs, prepare_implicits f l]
-  | _ ->
-      let _,autoimpls = compute_auto_implicits env sigma f f.auto t in
-      [DefaultImpArgs, set_manual_implicits env f f.auto autoimpls manual]
+let compute_semi_auto_implicits env sigma f t =
+  if not f.auto then [DefaultImpArgs, []]
+  else let l = compute_implicits_flags env sigma f false t in
+       [DefaultImpArgs, prepare_implicits f l]
 
 (*s Constants. *)
 
-let compute_constant_implicits flags manual cst =
+let compute_constant_implicits flags cst =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let cb = Environ.lookup_constant cst env in
   let ty = of_constr cb.const_type in
-  let impls = compute_semi_auto_implicits env sigma flags manual ty in
+  let impls = compute_semi_auto_implicits env sigma flags ty in
   impls
 
 (*s Inductives and constructors. Their implicit arguments are stored
@@ -423,7 +441,7 @@ let compute_constant_implicits flags manual cst =
    $i$ are the implicit arguments of the inductive and $v$ the array of
    implicit arguments of the constructors. *)
 
-let compute_mib_implicits flags manual kn =
+let compute_mib_implicits flags kn =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let mib = Environ.lookup_mind kn env in
@@ -439,34 +457,34 @@ let compute_mib_implicits flags manual kn =
   let imps_one_inductive i mip =
     let ind = (kn,i) in
     let ar, _ = Global.type_of_global_in_context env (IndRef ind) in
-    ((IndRef ind,compute_semi_auto_implicits env sigma flags manual (of_constr ar)),
+    ((IndRef ind,compute_semi_auto_implicits env sigma flags (of_constr ar)),
      Array.mapi (fun j c ->
-       (ConstructRef (ind,j+1),compute_semi_auto_implicits env_ar sigma flags manual c))
+       (ConstructRef (ind,j+1),compute_semi_auto_implicits env_ar sigma flags c))
        (Array.map of_constr mip.mind_nf_lc))
   in
   Array.mapi imps_one_inductive mib.mind_packets
 
-let compute_all_mib_implicits flags manual kn =
-  let imps = compute_mib_implicits flags manual kn in
+let compute_all_mib_implicits flags kn =
+  let imps = compute_mib_implicits flags kn in
   List.flatten
     (Array.map_to_list (fun (ind,cstrs) -> ind::Array.to_list cstrs) imps)
 
 (*s Variables. *)
 
-let compute_var_implicits flags manual id =
+let compute_var_implicits flags id =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  compute_semi_auto_implicits env sigma flags manual (NamedDecl.get_type (lookup_named id env))
+  compute_semi_auto_implicits env sigma flags (NamedDecl.get_type (lookup_named id env))
 
 (* Implicits of a global reference. *)
 
-let compute_global_implicits flags manual = function
-  | VarRef id -> compute_var_implicits flags manual id
-  | ConstRef kn -> compute_constant_implicits flags manual kn
+let compute_global_implicits flags = function
+  | VarRef id -> compute_var_implicits flags id
+  | ConstRef kn -> compute_constant_implicits flags kn
   | IndRef (kn,i) ->
-      let ((_,imps),_) = (compute_mib_implicits flags manual kn).(i) in imps
+      let ((_,imps),_) = (compute_mib_implicits flags kn).(i) in imps
   | ConstructRef ((kn,i),j) ->
-      let (_,cimps) = (compute_mib_implicits flags manual kn).(i) in snd cimps.(j-1)
+      let (_,cimps) = (compute_mib_implicits flags kn).(i) in snd cimps.(j-1)
 
 (* Merge a manual explicitation with an implicit_status list *)
 
@@ -573,34 +591,34 @@ let rebuild_implicits (req,l) =
   | ImplLocal -> assert false
   | ImplConstant (con,flags) ->
       let oldimpls = snd (List.hd l) in
-      let newimpls = compute_constant_implicits flags [] con in
+      let newimpls = compute_constant_implicits flags con in
       req, [ConstRef con, List.map2 merge_impls oldimpls newimpls]
   | ImplMutualInductive (kn,flags) ->
-      let newimpls = compute_all_mib_implicits flags [] kn in
+      let newimpls = compute_all_mib_implicits flags kn in
       let rec aux olds news =
-	match olds, news with
-	| (_, oldimpls) :: old, (gr, newimpls) :: tl ->
-	    (gr, List.map2 merge_impls oldimpls newimpls) :: aux old tl
-	| [], [] -> []
-	| _, _ -> assert false
+       match olds, news with
+       | (_, oldimpls) :: old, (gr, newimpls) :: tl ->
+          (gr, List.map2 merge_impls oldimpls newimpls) :: aux old tl
+       | [], [] -> []
+       | _, _ -> assert false
       in req, aux l newimpls
 
   | ImplInteractive (ref,flags,o) ->
       (if isVarRef ref && is_in_section ref then ImplLocal else req),
       match o with
       | ImplAuto ->
-	  let oldimpls = snd (List.hd l) in
-	  let newimpls = compute_global_implicits flags [] ref in
-	    [ref,List.map2 merge_impls oldimpls newimpls]
+         let oldimpls = snd (List.hd l) in
+         let newimpls = compute_global_implicits flags ref in
+         [ref,List.map2 merge_impls oldimpls newimpls]
       | ImplManual userimplsize ->
-	  let oldimpls = snd (List.hd l) in
-	  if flags.auto then
-	    let newimpls = List.hd (compute_global_implicits flags [] ref) in
-	    let p = List.length (snd newimpls) - userimplsize in
-	    let newimpls = on_snd (List.firstn p) newimpls in
-	    [ref,List.map (fun o -> merge_impls o newimpls) oldimpls]
-	  else
-	    [ref,oldimpls]
+         let oldimpls = snd (List.hd l) in
+         if flags.auto then
+           let newimpls = List.hd (compute_global_implicits flags ref) in
+           let p = List.length (snd newimpls) - userimplsize in
+           let newimpls = on_snd (List.firstn p) newimpls in
+           [ref,List.map (fun o -> merge_impls o newimpls) oldimpls]
+         else
+           [ref,oldimpls]
 
 let classify_implicits (req,_ as obj) = match req with
 | ImplLocal -> Dispose
@@ -622,7 +640,7 @@ let inImplicits : implicits_obj -> obj =
 let is_local local ref = local || isVarRef ref && is_in_section ref
 
 let declare_implicits_gen req flags ref =
-  let imps = compute_global_implicits flags [] ref in
+  let imps = compute_global_implicits flags ref in
   add_anonymous_leaf (inImplicits (req,[ref,imps]))
 
 let declare_implicits local ref =
@@ -643,7 +661,7 @@ let declare_mib_implicits kn =
   let flags = !implicit_args in
   let imps = Array.map_to_list
     (fun (ind,cstrs) -> ind::(Array.to_list cstrs))
-    (compute_mib_implicits flags [] kn) in
+    (compute_mib_implicits flags kn) in
     add_anonymous_leaf
       (inImplicits (ImplMutualInductive (kn,flags),List.flatten imps))
 
@@ -653,8 +671,8 @@ type manual_explicitation = Constrexpr.explicitation * (bool * bool * bool)
 type manual_implicits = manual_explicitation list
 
 let compute_implicits_with_manual env sigma typ enriching l =
-  let _,autoimpls = compute_auto_implicits env sigma !implicit_args enriching typ in
-  set_manual_implicits env !implicit_args enriching autoimpls l
+  let autoimpls = compute_auto_implicits env sigma !implicit_args enriching typ in
+  set_manual_implicits !implicit_args enriching autoimpls l
 
 let check_inclusion l =
   (* Check strict inclusion *)
@@ -679,26 +697,26 @@ let declare_manual_implicits local ref ?enriching l =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let t, _ = Global.type_of_global_in_context env ref in
+  let t = of_constr t in
   let enriching = Option.default flags.auto enriching in
-  let isrigid,autoimpls = compute_auto_implicits env sigma flags enriching (of_constr t) in
+  let autoimpls = compute_auto_implicits env sigma flags enriching t in
   let l' = match l with
     | [] -> assert false
     | [l] ->
-	[DefaultImpArgs, set_manual_implicits env flags enriching autoimpls l]
+       [DefaultImpArgs, set_manual_implicits flags enriching autoimpls l]
     | _ ->
-	check_rigidity isrigid;
-	let l = List.map (fun imps -> (imps,List.length imps)) l in
-	let l = List.sort (fun (_,n1) (_,n2) -> n2 - n1) l in
-	check_inclusion l;
-	let nargs = List.length autoimpls in
-	List.map (fun (imps,n) ->
-	  (LessArgsThan (nargs-n),
-	   set_manual_implicits env flags enriching autoimpls imps)) l in
+       check_rigidity (is_rigid env sigma t);
+       let l = List.map (fun imps -> (imps,List.length imps)) l in
+       let l = List.sort (fun (_,n1) (_,n2) -> n2 - n1) l in
+       check_inclusion l;
+       let nargs = List.length autoimpls in
+       List.map (fun (imps,n) ->
+           (LessArgsThan (nargs-n),
+            set_manual_implicits flags enriching autoimpls imps)) l in
   let req =
     if is_local local ref then ImplLocal
     else ImplInteractive(ref,flags,ImplManual (List.length autoimpls))
-  in
-    add_anonymous_leaf (inImplicits (req,[ref,l']))
+  in add_anonymous_leaf (inImplicits (req,[ref,l']))
 
 let maybe_declare_manual_implicits local ref ?enriching l =
   match l with
