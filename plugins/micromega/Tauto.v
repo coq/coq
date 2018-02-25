@@ -211,7 +211,7 @@ Set Implicit Arguments.
       (* BC *)
       simpl.
       case_eq (deduce t t) ; auto.
-      intros until 0.
+      intros *.
       case_eq (unsat t0) ; auto.
       unfold eval_clause.
       rewrite make_conj_cons. 
@@ -263,7 +263,7 @@ Set Implicit Arguments.
   Proof.
     induction cl.
     simpl. tauto.
-    intros until 0.
+    intros *.
     simpl.
     assert (HH := add_term_correct env a cl').
     case_eq (add_term a cl').

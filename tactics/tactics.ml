@@ -1102,7 +1102,13 @@ let msg_quantified_hypothesis = function
       pr_nth n ++
       str " non dependent hypothesis"
 
+let warn_deprecated_intros_until_0 =
+  CWarnings.create ~name:"deprecated-intros-until-0" ~category:"tactics"
+    (fun () ->
+       strbrk"\"intros until 0\" is deprecated, use \"intros *\"; instead of \"induction 0\" and \"destruct 0\" use explicitly a name.\"")
+
 let depth_of_quantified_hypothesis red h gl =
+  if h = AnonHyp 0 then warn_deprecated_intros_until_0 ();
   match lookup_hypothesis_as_renamed_gen red h gl with
     | Some depth -> depth
     | None ->
