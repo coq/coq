@@ -3066,7 +3066,7 @@ Section Forall2.
   Theorem Forall2_app : forall l1 l2 l1' l2',
     Forall2 l1 l1' -> Forall2 l2 l2' -> Forall2 (l1 ++ l2) (l1' ++ l2').
   Proof.
-    intros l1 l2 l1' l2' H H0. induction l1 in l1', H, H0 |- *; inversion H; subst; simpl; auto.
+    intros. induction l1 gen:l1'; inversion H; subst; simpl; auto.
   Qed.
 End Forall2.
 

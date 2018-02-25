@@ -131,13 +131,13 @@ Section Wf_Lexicographic_Exponentiation.
       + split.
         apply d_one.
         apply d_nil.
-    - induction y0 using rev_ind in x0, H0 |- *.
+    - induction y0 using rev_ind gen:x0.
       + rewrite <- app_nil_end in H0.
         rewrite <- H0.
         split.
         apply d_conc; auto with sets.
         apply d_nil.
-      + induction y0 using rev_ind in x1, x0, H0 |- *.
+      + induction y0 using rev_ind gen:x1 gen:x0.
         * simpl.
           split.
           apply app_inj_tail in H0 as (<-, _). assumption.

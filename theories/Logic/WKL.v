@@ -49,7 +49,7 @@ intros. split.
   + exists (false :: l'). split. apply eq_S, Hl'. intros [|] H.
     * assumption.
     * simpl. rewrite <- app_assoc. apply HPl', le_S_n, H.
-- intros (l'& <- &HPl'). induction l' as [|[|]] in l, HPl' |- *.
+- intros (l'& <- &HPl'). induction l' as [|[|]] gen:l.
   + constructor. apply (HPl' 0). apply le_0_n.
   + eapply next_left.
     * apply (HPl' 0), le_0_n.
@@ -98,7 +98,7 @@ Require Import Compare_dec Le Lt.
 Lemma is_path_from_restrict : forall P n n' l, n <= n' ->
   is_path_from P n' l -> is_path_from P n l.
 Proof.
-intros * Hle H; induction H in n, Hle, H |- * ; intros.
+intros * Hle H; induction H gen:n; intros.
 - apply le_n_0_eq in Hle as <-. apply here. assumption.
 - destruct n.
   + apply here. assumption.
@@ -112,7 +112,7 @@ Lemma inductively_barred_at_monotone : forall P l n n', n' <= n ->
   inductively_barred_at P n' l -> inductively_barred_at P n l.
 Proof.
 intros * Hle Hbar.
-induction Hbar in n, l, Hle, Hbar |- *.
+induction Hbar gen:n gen:l.
 - apply now_at; auto.
 - destruct n; [apply le_Sn_0 in Hle; contradiction|].
   apply le_S_n in Hle.

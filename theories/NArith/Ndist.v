@@ -119,7 +119,7 @@ Proof.
   simple induction d''; trivial.
   unfold ni_min. intro. 
   enough (min (min n n0) n1 = min n (min n0 n1)) by (rewrite H; reflexivity).
-  induction n in n0, n1 |- *; trivial.
+  induction n gen:n0 gen:n1; trivial.
   destruct n0; trivial. destruct n1; trivial.
   intros. simpl. auto.
 Qed.

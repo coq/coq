@@ -209,7 +209,7 @@ Qed.
 Theorem Sorted_iter_merge : forall stack l,
   SortedStack stack -> Sorted (iter_merge stack l).
 Proof.
-  intros stack l H; induction l in stack, H |- *; simpl.
+  intros stack l H; induction l gen:stack; simpl.
     auto using Sorted_merge_stack.
     assert (Sorted [a]) by constructor.
     auto using Sorted_merge_list_to_stack.

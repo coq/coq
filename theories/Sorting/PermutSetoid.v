@@ -515,7 +515,7 @@ Lemma permutation_Permutation : forall l l',
 Proof.
   split; intro H.
   (* -> *)
-  induction l in l', H |- *.
+  induction l gen:l'.
     exists []; apply permut_sym, permut_nil in H as ->; auto using Forall2.
     pose proof H as H'.
     apply permut_cons_InA, InA_split in H
