@@ -382,9 +382,9 @@ let all_true _ = true
 let rec interp_search_about args accu = match args with
 | [] -> accu
 | (flag, arg) :: rem ->
-  fun gr env typ ->
-    let ans = Search.search_about_filter arg gr env typ in
-    (if flag then ans else not ans) && interp_search_about rem accu gr env typ
+  fun gr env sigma typ ->
+    let ans = Search.search_about_filter arg gr env sigma typ in
+    (if flag then ans else not ans) && interp_search_about rem accu gr env sigma typ
 
 let interp_search_arg arg =
   let arg = List.map (fun (x,arg) -> x, match arg with
@@ -405,7 +405,7 @@ let interp_search_arg arg =
   let is_string =
     function (_, Search.GlobSearchString _) -> true | _ -> false in
   let a2, a3 = List.partition is_string a1 in
-  interp_search_about (a2 @ a3) (fun gr env typ -> hpat typ)
+  interp_search_about (a2 @ a3) (fun gr env sigma typ -> hpat typ)
 
 (* Module path postfilter *)
 
@@ -433,24 +433,24 @@ let interp_modloc mr =
     CErrors.user_err ?loc (str "No Module " ++ pr_qualid qid) in
   let mr_out, mr_in = List.partition fst mr in
   let interp_bmod b = function
-  | [] -> fun _ _ _ -> true
+  | [] -> fun _ _ _ _ -> true
   | rmods -> Search.module_filter (List.map interp_mod rmods, b) in
   let is_in = interp_bmod false mr_in and is_out = interp_bmod true mr_out in
-  fun gr env typ -> is_in gr env typ && is_out gr env typ
+  fun gr env sigma typ -> is_in gr env sigma typ && is_out gr env sigma typ
 
 (* The unified, extended vernacular "Search" command *)
 
-let ssrdisplaysearch gr env t =
-  let pr_res = pr_global gr ++ spc () ++ str " " ++ pr_lconstr_env env Evd.empty t in
+let ssrdisplaysearch gr env sigma t =
+  let pr_res = pr_global gr ++ spc () ++ str " " ++ pr_lconstr_env env sigma t in
   Feedback.msg_info (hov 2 pr_res ++ fnl ())
 
 VERNAC COMMAND EXTEND SsrSearchPattern CLASSIFIED AS QUERY
 | [ "Search" ssr_search_arg(a) ssr_modlocs(mr) ] ->
   [ let hpat = interp_search_arg a in
     let in_mod = interp_modloc mr in
-    let post_filter gr env typ = in_mod gr env typ && hpat gr env typ in
-    let display gr env typ =
-      if post_filter gr env typ then ssrdisplaysearch gr env typ
+    let post_filter gr env sigma typ = in_mod gr env sigma typ && hpat gr env sigma typ in
+    let display gr env sigma typ =
+      if post_filter gr env sigma typ then ssrdisplaysearch gr env sigma typ
     in
     Search.generic_search None display ]
 END
