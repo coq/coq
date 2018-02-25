@@ -141,7 +141,6 @@ and nf_vtype env sigma v =  nf_val env sigma v crazy_type
 
 and nf_whd env sigma whd typ =
   match whd with
-  | Vsort s -> mkSort s
   | Vprod p ->
       let dom = nf_vtype env sigma (dom p) in
       let name = Name (Id.of_string "x") in
@@ -182,7 +181,8 @@ and nf_whd env sigma whd typ =
        let pind = (ind, u) in (mkIndU pind, type_of_ind env pind)
      in
      nf_univ_args ~nb_univs mk env sigma stk
-  | Vatom_stk(Atype u, stk) -> assert false
+  | Vatom_stk(Asort s, stk) ->
+    assert (List.is_empty stk); mkSort s
   | Vuniv_level lvl ->
     assert false
 

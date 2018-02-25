@@ -121,7 +121,7 @@ type vswitch = {
 type atom =
   | Aid of Vars.id_key
   | Aind of inductive
-  | Atype of Univ.Universe.t
+  | Asort of Sorts.t
 
 (* Zippers *)
 
@@ -136,7 +136,6 @@ type stack = zipper list
 type to_update = values
 
 type whd =
-  | Vsort of Sorts.t
   | Vprod of vprod
   | Vfun of vfun
   | Vfix of vfix * arguments option
@@ -167,7 +166,6 @@ let uni_lvl_val (v : values) : Univ.Level.t =
       let pr =
         let open Pp in
         match whd with
-        | Vsort _ -> str "Vsort"
         | Vprod _ -> str "Vprod"
         | Vfun _ -> str "Vfun"
         | Vfix _ -> str "Vfix"
@@ -189,12 +187,17 @@ let rec whd_accu a stk =
   match Obj.tag at with
   | i when Int.equal i type_atom_tag ->
      begin match stk with
+     | [] -> Vatom_stk(Obj.magic at, stk)
      | [Zapp args] ->
         let args = Array.init (nargs args) (arg args) in
-        let u = Obj.obj (Obj.field at 0) in
-        let inst = Instance.of_array (Array.map uni_lvl_val args) in
-        let u = Univ.subst_instance_universe inst u in
-        Vsort (Type u)
+        let s = Obj.obj (Obj.field at 0) in
+        begin match s with
+        | Type u ->
+          let inst = Instance.of_array (Array.map uni_lvl_val args) in
+          let u = Univ.subst_instance_universe inst u in
+          Vatom_stk (Asort (Type u), [])
+        | _ -> assert false
+        end
      | _ -> assert false
      end
   | i when i <= max_atom_tag ->
@@ -243,11 +246,8 @@ let whd_val : values -> whd =
     else
       let tag = Obj.tag o in
       if tag = accu_tag then
-        (
-        if Int.equal (Obj.size o) 1 then Obj.obj o (* sort *)
-        else
-          if is_accumulate (fun_code o) then whd_accu o []
-          else Vprod(Obj.obj o))
+        if is_accumulate (fun_code o) then whd_accu o []
+        else Vprod(Obj.obj o)
       else
         if tag = Obj.closure_tag || tag = Obj.infix_tag then
           (match kind_of_closure o with
@@ -273,7 +273,7 @@ let obj_of_atom : atom -> Obj.t =
 (* obj_of_str_const : structured_constant -> Obj.t *)
 let rec obj_of_str_const str =
   match str with
-  | Const_sorts s -> Obj.repr (Vsort s)
+  | Const_sort s -> obj_of_atom (Asort s)
   | Const_ind ind -> obj_of_atom (Aind ind)
   | Const_proj p -> Obj.repr p
   | Const_b0 tag -> Obj.repr tag
@@ -285,7 +285,6 @@ let rec obj_of_str_const str =
       done;
       res
   | Const_univ_level l -> Obj.repr (Vuniv_level l)
-  | Const_type u -> obj_of_atom (Atype u)
 
 let val_of_obj o = ((Obj.obj o) : values)
 
@@ -502,10 +501,9 @@ let rec pr_atom a =
                             | RelKey i -> str "#" ++ int i
                             | _ -> str "...") ++ str ")"
   | Aind (mi,i) -> str "Aind(" ++ MutInd.print mi ++ str "#" ++ int i ++ str ")"
-  | Atype _ -> str "Atype(")
+  | Asort _ -> str "Asort(")
 and pr_whd w =
   Pp.(match w with
-  | Vsort _ -> str "Vsort"
   | Vprod _ -> str "Vprod"
   | Vfun _ -> str "Vfun"
   | Vfix _ -> str "Vfix"
