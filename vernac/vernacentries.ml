@@ -948,12 +948,20 @@ let vernac_chdir = function
 (********************)
 (* State management *)
 
+let warn_deprecated_state_vernaculars =
+  CWarnings.create ~name:"deprecated-state-vernaculars" ~category:"deprecated"
+         (fun () ->
+          strbrk "The \"Write State\" and \"Restore State\" commands are deprecated. " ++
+          strbrk "In some cases, Coq will not operate fully correctly when they are used.")
+
 let vernac_write_state file =
+  warn_deprecated_state_vernaculars ();
   Proof_global.discard_all ();
   let file = CUnix.make_suffix file ".coq" in
   States.extern_state file
 
 let vernac_restore_state file =
+  warn_deprecated_state_vernaculars ();
   Proof_global.discard_all ();
   let file = Loadpath.locate_file (CUnix.make_suffix file ".coq") in
   States.intern_state file
