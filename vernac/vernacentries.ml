@@ -2244,32 +2244,32 @@ let with_fail st b f =
       | _ -> assert false
   end
 
+let attributes_of_flags f atts =
+  List.fold_left
+    (fun (polymorphism, atts) f ->
+       match f with
+       | VernacProgram when not atts.program ->
+         (polymorphism, { atts with program = true })
+       | VernacProgram ->
+         user_err Pp.(str "Program mode specified twice")
+       | VernacPolymorphic b when polymorphism = None ->
+         (Some b, atts)
+       | VernacPolymorphic _ ->
+         user_err Pp.(str "Polymorphism specified twice")
+       | VernacLocal b when Option.is_empty atts.locality ->
+         (polymorphism, { atts with locality = Some b })
+       | VernacLocal _ ->
+         user_err Pp.(str "Locality specified twice")
+    )
+    (None, atts)
+    f
+
 let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
   let orig_univ_poly = Flags.is_universe_polymorphism () in
   let orig_program_mode = Flags.is_program_mode () in
-  let flags f atts =
-    List.fold_left
-      (fun (polymorphism, atts) f ->
-         match f with
-         | VernacProgram when not atts.program ->
-           (polymorphism, { atts with program = true })
-         | VernacProgram ->
-           user_err Pp.(str "Program mode specified twice")
-         | VernacPolymorphic b when polymorphism = None ->
-           (Some b, atts)
-         | VernacPolymorphic _ ->
-           user_err Pp.(str "Polymorphism specified twice")
-         | VernacLocal b when Option.is_empty atts.locality ->
-           (polymorphism, { atts with locality = Some b })
-         | VernacLocal _ ->
-           user_err Pp.(str "Locality specified twice")
-      )
-      (None, atts)
-      f
-  in
   let rec control = function
   | VernacExpr (f, v) ->
-    let (polymorphism, atts) = flags f { loc; locality = None; polymorphic = false; program = orig_program_mode; } in
+    let (polymorphism, atts) = attributes_of_flags f { loc; locality = None; polymorphic = false; program = orig_program_mode; } in
     aux ~polymorphism ~atts v
   | VernacFail v -> with_fail st true (fun () -> control v)
   | VernacTimeout (n,v) ->

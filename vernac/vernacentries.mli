@@ -38,3 +38,7 @@ val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr
   Evd.evar_map * Redexpr.red_expr) Hook.t
 
 val universe_polymorphism_option_name : string list
+
+(** Elaborate a [atts] record out of a list of flags.
+    Also returns whether polymorphism is explicitly (un)set. *)
+val attributes_of_flags : Vernacexpr.vernac_flag list -> Vernacinterp.atts -> bool option * Vernacinterp.atts
