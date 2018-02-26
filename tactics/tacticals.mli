@@ -196,8 +196,10 @@ module New : sig
   (** [tclTHENFIRST tac1 tac2 gls] applies the tactic [tac1] to [gls]
       and [tac2] to the first resulting subgoal *)
   val tclTHENFIRST : unit tactic -> unit tactic -> unit tactic
+  val tclBINDFIRST : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
   val tclTHENLASTn : unit tactic -> unit tactic array -> unit tactic
   val tclTHENLAST  : unit tactic -> unit tactic -> unit tactic
+  val tclBINDLAST  : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
   (* [tclTHENS t l = t <*> tclDISPATCH l] *)
   val tclTHENS : unit tactic -> unit tactic list -> unit tactic
   (* [tclTHENLIST [t1;…;tn]] is [t1<*>…<*>tn] *)
