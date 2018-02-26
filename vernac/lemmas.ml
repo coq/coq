@@ -42,6 +42,9 @@ let call_hook fix_exn hook l c =
     let e = CErrors.push e in
     iraise (fix_exn e)
 
+let sequence_declaration_hooks h1 h2 =
+  fun m c -> h1 m c; h2 m c
+
 (* Support for mutually proved theorems *)
 
 let retrieve_first_recthm uctx = function

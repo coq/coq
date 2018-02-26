@@ -458,6 +458,7 @@ type nonrec vernac_flag =
   | VernacProgram
   | VernacPolymorphic of bool
   | VernacLocal of bool
+  | VernacCoercion
 
 type vernac_control =
   | VernacExpr of vernac_flag list * vernac_expr

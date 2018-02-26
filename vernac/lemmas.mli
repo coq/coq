@@ -18,6 +18,9 @@ val mk_hook :
 val call_hook :
   Future.fix_exn -> 'a declaration_hook -> Decl_kinds.locality -> GlobRef.t -> 'a
 
+(* Creates a hook that runs both hooks in sequence *)
+val sequence_declaration_hooks : unit declaration_hook -> unit declaration_hook -> unit declaration_hook
+
 (** A hook start_proof calls on the type of the definition being started *)
 val set_start_hook : (EConstr.types -> unit) -> unit
 

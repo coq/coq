@@ -621,7 +621,7 @@ GEXTEND Gram
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
-        [], VernacDefinition ((NoDischarge,Coercion),((CAst.make (Name s)),None),d)
+        [VernacCoercion], VernacDefinition ((NoDischarge,Coercion),((CAst.make (Name s)),None),d)
       | IDENT "Identity"; IDENT "Coercion"; f = identref; ":";
          s = class_rawexpr; ">->"; t = class_rawexpr ->
         [], VernacIdentityCoercion (f, s, t)

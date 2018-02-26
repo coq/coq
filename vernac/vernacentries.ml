@@ -464,15 +464,23 @@ let start_proof_and_print k l hook =
 let no_hook = Lemmas.mk_hook (fun _ _ -> ())
 
 let vernac_definition_hook p = function
-| Coercion -> Class.add_coercion_hook p
 | CanonicalStructure ->
     Lemmas.mk_hook (fun _ -> Recordops.declare_canonical_structure)
 | SubClass -> Class.add_subclass_hook p
 | _ -> no_hook
 
+let hook_of_attributes ~atts =
+  if atts.coercion
+  then Class.add_coercion_hook atts.polymorphic
+  else no_hook
+
 let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
   let local = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook atts.polymorphic kind in
+  let hook =
+    Lemmas.sequence_declaration_hooks
+    (vernac_definition_hook atts.polymorphic kind)
+    (hook_of_attributes ~atts)
+  in
   let () =
     match id with
     | Anonymous -> ()
@@ -2260,6 +2268,10 @@ let attributes_of_flags f atts =
          (polymorphism, { atts with locality = Some b })
        | VernacLocal _ ->
          user_err Pp.(str "Locality specified twice")
+       | VernacCoercion when not atts.coercion ->
+         (polymorphism, { atts with coercion = true })
+       | VernacCoercion ->
+         user_err Pp.(str "Coercion mode specified twice")
     )
     (None, atts)
     f
@@ -2269,7 +2281,7 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
   let orig_program_mode = Flags.is_program_mode () in
   let rec control = function
   | VernacExpr (f, v) ->
-    let (polymorphism, atts) = attributes_of_flags f { loc; locality = None; polymorphic = false; program = orig_program_mode; } in
+    let (polymorphism, atts) = attributes_of_flags f { loc; locality = None; polymorphic = false; program = orig_program_mode; coercion = false; } in
     aux ~polymorphism ~atts v
   | VernacFail v -> with_fail st true (fun () -> control v)
   | VernacTimeout (n,v) ->

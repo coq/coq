@@ -1198,6 +1198,7 @@ let pr_vernac_flag =
   | VernacPolymorphic false -> keyword "Monomorphic"
   | VernacProgram -> keyword "Program"
   | VernacLocal local -> pr_locality local
+  | VernacCoercion -> str ""
 
   let rec pr_vernac_control v =
     let return = tag_vernac v in

@@ -19,6 +19,7 @@ type atts = {
   locality : bool option;
   polymorphic : bool;
   program : bool;
+  coercion : bool;
 }
 
 type 'a vernac_command = 'a -> atts:atts -> st:Vernacstate.t -> Vernacstate.t
