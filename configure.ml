@@ -315,7 +315,7 @@ let devel state = { state with
   annot = true;
   warn_error = true;
 }
-let devel_doc = "-local -annot -bin-annot -warn-error"
+let devel_doc = "-local -annot -bin-annot -warn-error yes"
 
 let get = function
   | "devel" -> devel
@@ -428,8 +428,8 @@ let args_options = Arg.align [
     " Force OCaml version";
   "-force-findlib-version", arg_set (fun p force_findlib_version -> { p with force_findlib_version }),
     " Force findlib version";
-  "-warn-error", arg_set (fun p warn_error -> { p with warn_error }),
-    " Make OCaml warnings into errors";
+  "-warn-error", arg_bool (fun p warn_error -> { p with warn_error }),
+    "(yes|no) Make OCaml warnings into errors (default no)";
   "-camldir", Arg.String (fun _ -> ()),
     "<dir> Specifies path to 'ocaml' for running configure script";
   "-profile", arg_profile,
