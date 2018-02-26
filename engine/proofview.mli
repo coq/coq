@@ -326,6 +326,9 @@ val unifiable : Evd.evar_map -> Evar.t -> Evar.t list -> bool
     considered). *)
 val shelve_unifiable : unit tactic
 
+(** Idem but also returns the list of shelved variables *)
+val shelve_unifiable_informative : Evar.t list tactic
+
 (** [guard_no_unifiable] returns the list of unifiable goals if some
     goals are unifiable (see {!shelve_unifiable}) in the current focus. *)
 val guard_no_unifiable : Names.Name.t list option tactic
