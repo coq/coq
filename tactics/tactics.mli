@@ -275,31 +275,44 @@ type elim_scheme = {
 
 val compute_elim_sig : evar_map -> types -> elim_scheme
 
+type dependent_scheme_style =
+  (* Tell if use a dependent scheme or not *)
+  | GivenDependency of Indrec.dep_flag
+  (* No dependent elimination if inductive in Prop (legacy behavior) *)
+  | DependentIfNotInProp
+  (* Default behavior, depending on dynamic configuration *)
+  | DefaultDependency
+
 val general_elim_clause : evars_flag -> unify_flags -> Id.t option ->
   (EConstr.t * EConstr.types) -> EConstr.t -> unit Proofview.tactic
 
-val default_elim  : evars_flag -> clear_flag -> constr with_bindings ->
-  unit Proofview.tactic
-val simplest_elim : constr -> unit Proofview.tactic
+val default_elim  : ?dep:dependent_scheme_style ->
+  evars_flag -> clear_flag -> constr with_bindings -> unit Proofview.tactic
+val simplest_elim : ?dep:dependent_scheme_style -> constr -> unit Proofview.tactic
 val elim :
   evars_flag -> clear_flag -> constr with_bindings -> constr with_bindings option -> unit Proofview.tactic
 
-val induction : evars_flag -> clear_flag -> constr -> or_and_intro_pattern option ->
+val induction : ?dep:dependent_scheme_style ->
+  evars_flag -> clear_flag -> constr -> or_and_intro_pattern option ->
   constr with_bindings option -> unit Proofview.tactic
 
 (** {6 Case analysis tactics. } *)
 
-val general_case_analysis : evars_flag -> clear_flag -> constr with_bindings ->  unit Proofview.tactic
-val simplest_case         : constr -> unit Proofview.tactic
+val general_case_analysis : ?dep:dependent_scheme_style ->
+  evars_flag -> clear_flag -> constr with_bindings ->  unit Proofview.tactic
 
-val destruct : evars_flag -> clear_flag -> constr -> or_and_intro_pattern option ->
+val simplest_case         : ?dep:dependent_scheme_style ->
+  constr -> unit Proofview.tactic
+
+val destruct : ?dep:dependent_scheme_style ->
+  evars_flag -> clear_flag -> constr -> or_and_intro_pattern option ->
   constr with_bindings option -> unit Proofview.tactic
 
 (** {6 Generic case analysis / induction tactics. } *)
 
 (** Implements user-level "destruct" and "induction" *)
 
-val induction_destruct : rec_flag -> evars_flag ->
+val induction_destruct : ?dep:dependent_scheme_style -> rec_flag -> evars_flag ->
   (delayed_open_constr_with_bindings destruction_arg
    * (intro_pattern_naming option * or_and_intro_pattern option)
    * clause option) list *
@@ -308,7 +321,7 @@ val induction_destruct : rec_flag -> evars_flag ->
 (** {6 Eliminations giving the type instead of the proof. } *)
 
 val case_type         : types -> unit Proofview.tactic
-val elim_type         : types -> unit Proofview.tactic
+val elim_type         : ?dep:dependent_scheme_style -> types -> unit Proofview.tactic
 
 (** {6 Constructor tactics. } *)
 

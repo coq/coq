@@ -63,18 +63,18 @@ let float64_eqb () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqli
 let sumbool () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.sumbool.type")
 let andb = fun _ -> UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.bool.andb")
 
-let induct_on  c = Tactics.induction false None c None None
-let destruct_on c = Tactics.destruct false None c None None
+let induct_on  c = Tactics.induction ~dep:DefaultDependency false None c None None
+let destruct_on c = Tactics.destruct ~dep:DefaultDependency false None c None None
 
 let destruct_on_using c id =
   let open Tactypes in
-  Tactics.destruct false None c
+  Tactics.destruct ~dep:DefaultDependency false None c
     (Some (CAst.make @@ IntroOrPattern [[CAst.make @@ IntroNaming IntroAnonymous];
                [CAst.make @@ IntroNaming (IntroIdentifier id)]]))
     None
 
 let destruct_on_as c l =
-  Tactics.destruct false None c (Some (CAst.make l)) None
+  Tactics.destruct ~dep:DefaultDependency false None c (Some (CAst.make l)) None
 
 let inj_flags = Some {
     Equality.keep_proof_equalities = true; (* necessary *)
