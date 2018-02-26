@@ -37,9 +37,10 @@ val build_case_analysis_scheme : env -> Evd.evar_map -> pinductive ->
 val build_case_analysis_scheme_default : env -> evar_map -> pinductive ->
       Sorts.family -> evar_map * Constr.t * Constr.types
 
-(** Builds a recursive induction scheme (Peano-induction style) in the same
-   sort family as the inductive family; it is dependent if not in Prop
-   or a recursive record with primitive projections.  *)
+(** Builds a recursive induction scheme (Peano-induction style) in the
+   given sort family with the expected dependency; fails if asking for
+   a dependent scheme when the type is a recursive record with
+   primitive projections.  *)
 
 val build_induction_scheme : env -> evar_map -> pinductive ->
       dep_flag -> Sorts.family -> evar_map * constr
