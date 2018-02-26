@@ -30,3 +30,9 @@ Proof.
 intros; contradiction.
 Qed.
 
+(* A border case which failed to be proved because dependent
+   elimination was used, and used only on the conclusion *)
+
+Lemma L7 : forall a: Empty_set, forall b : a = a, b = eq_refl a.
+contradiction.
+Qed.

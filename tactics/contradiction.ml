@@ -59,6 +59,8 @@ let filter_hyp f tac =
     seek hyps
   end
 
+let non_dependent_elim = simplest_elim ~dep:(GivenDependency false)
+
 let contradiction_context =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.project gl in
@@ -72,7 +74,7 @@ let contradiction_context =
           let typ = nf_evar sigma (NamedDecl.get_type d) in
           let typ = whd_all env sigma typ in
           if is_empty_type env sigma typ then
-            simplest_elim (mkVar id)
+            non_dependent_elim (mkVar id)
           else match EConstr.kind sigma typ with
           | Prod (na,t,u) when is_empty_type env sigma u ->
              let is_unit_or_eq = match_with_unit_or_eq_type env sigma t in
@@ -85,7 +87,7 @@ let contradiction_context =
                    let params = Util.List.firstn nparams args in
                    let p = applist ((mkConstructUi (indu,1)), params) in
                    (* Checking on the fly that it type-checks *)
-                   simplest_elim (mkApp (mkVar id,[|p|]))
+                   non_dependent_elim (mkApp (mkVar id,[|p|]))
                | None ->
                  let info = Exninfo.reify () in
                  Tacticals.tclZEROMSG ~info (Pp.str"Not a negated unit type."))
@@ -93,7 +95,7 @@ let contradiction_context =
                  (Proofview.Goal.enter begin fun gl ->
                    let is_conv_leq = Tacmach.pf_apply is_conv_leq gl in
                    filter_hyp (fun typ -> is_conv_leq typ t)
-                     (fun id' -> simplest_elim (mkApp (mkVar id,[|mkVar id'|])))
+                     (fun id' -> non_dependent_elim (mkApp (mkVar id,[|mkVar id'|])))
                  end)
                  begin function (e, info) -> match e with
                    | Not_found -> seek_neg rest
@@ -126,7 +128,7 @@ let contradiction_term (c,lbind as cl) =
         begin
           if lbind = Tactypes.NoBindings then
             filter_hyp (fun c -> is_negation_of env sigma typ c)
-              (fun id -> simplest_elim (mkApp (mkVar id,[|c|])))
+              (fun id -> non_dependent_elim (mkApp (mkVar id,[|c|])))
           else
             let info = Exninfo.reify () in
             Proofview.tclZERO ~info Not_found
