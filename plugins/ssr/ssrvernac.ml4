@@ -176,7 +176,7 @@ GEXTEND Gram
   GLOBAL: gallina_ext;
   gallina_ext:
    [ [ IDENT "Import"; IDENT "Prenex"; IDENT "Implicits" ->
-      Vernacexpr.VernacUnsetOption (false, ["Printing"; "Implicit"; "Defensive"])
+      [], Vernacexpr.VernacUnsetOption (false, ["Printing"; "Implicit"; "Defensive"])
    ] ]
   ;
 END
@@ -565,13 +565,13 @@ GEXTEND Gram
   gallina_ext:
       (* Canonical structure *)
      [[ IDENT "Canonical"; qid = Constr.global ->
-          Vernacexpr.VernacCanonical (CAst.make @@ AN qid)
+          [], Vernacexpr.VernacCanonical (CAst.make @@ AN qid)
       | IDENT "Canonical"; ntn = Prim.by_notation ->
-          Vernacexpr.VernacCanonical (CAst.make @@ ByNotation ntn)
+          [], Vernacexpr.VernacCanonical (CAst.make @@ ByNotation ntn)
       | IDENT "Canonical"; qid = Constr.global;
           d = G_vernac.def_body ->
           let s = coerce_reference_to_id qid in
-    Vernacexpr.VernacDefinition
+        [], Vernacexpr.VernacDefinition
       ((Decl_kinds.NoDischarge,Decl_kinds.CanonicalStructure),
           ((CAst.make (Name s)),None), d)
   ]];

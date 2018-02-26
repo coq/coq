@@ -17,7 +17,7 @@ val uvernac : gram_universe
 module Vernac_ :
   sig
     val gallina : vernac_expr Gram.entry
-    val gallina_ext : vernac_expr Gram.entry
+    val gallina_ext : (vernac_flag list * vernac_expr) Gram.entry
     val command : vernac_expr Gram.entry
     val syntax : vernac_expr Gram.entry
     val vernac_control : vernac_control Gram.entry
