@@ -93,7 +93,12 @@ val no_goals : evar_filter
 val no_goals_or_obligations : evar_filter
 
 (** Resolvability.
-    Only undefined evars can be marked or checked for resolvability. *)
+    Only undefined evars can be marked or checked for resolvability.
+    They represent type-class search roots.
+
+    A resolvable evar is an evar the type-class engine may try to solve
+    An unresolvable evar is an evar the type-class engine will NOT try to solve
+*)
 
 val set_resolvable : Evd.Store.t -> bool -> Evd.Store.t
 val is_resolvable : evar_info -> bool
