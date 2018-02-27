@@ -449,7 +449,7 @@ tactics/tactics.dot: | tactics/tactics.mllib.d ltac/ltac.mllib.d
 $(OCAMLDOCDIR)/%.pdf: $(OCAMLDOCDIR)/%.tex
 	$(SHOW)'PDFLATEX $*.tex'
 	$(HIDE)(cd $(OCAMLDOCDIR) ; pdflatex -interaction=batchmode $*.tex && pdflatex -interaction=batchmode $*.tex)
-	$(HIDE)(cd doc/tools/; show_latex_messages -no-overfull ../../$(OCAMLDOCDIR)/$*.log)
+	$(HIDE)(cd doc/tools/; ./show_latex_messages -no-overfull ../../$(OCAMLDOCDIR)/$*.log)
 
 ###########################################################################
 # local web server
