@@ -1041,6 +1041,8 @@ module Unsafe = struct
 
   let advance = Evarutil.advance
 
+  let undefined = undefined
+
   let mark_as_unresolvable p gl =
     { p with solution = mark_in_evm ~goal:false p.solution gl }
 

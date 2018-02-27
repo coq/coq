@@ -469,6 +469,12 @@ module Unsafe : sig
       solved. *)
   val advance : Evd.evar_map -> Evar.t -> Evar.t option
 
+  (** [undefined sigma l] applies [advance] to the goals of [l], then
+      returns the subset of resulting goals which have not yet been
+      defined *)
+  val undefined : Evd.evar_map -> Proofview_monad.goal_with_state list ->
+    Proofview_monad.goal_with_state list
+
   val typeclass_resolvable : unit Evd.Store.field
 
 end
