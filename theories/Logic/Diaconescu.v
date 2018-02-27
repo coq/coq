@@ -40,6 +40,7 @@
    [[Carlström04]] Jesper Carlström, EM + Ext_ + AC_int is equivalent
    to AC_ext, Mathematical Logic Quaterly, vol 50(3), pp 236-240, 2004.
 *)
+Require ClassicalFacts ChoiceFacts.
 
 (**********************************************************************)
 (** * Pred. Ext. + Rel. Axiom of Choice -> Excluded-Middle       *)
@@ -54,7 +55,7 @@ Definition PredicateExtensionality :=
 (** From predicate extensionality we get propositional extensionality
    hence proof-irrelevance *)
 
-Require Import ClassicalFacts.
+Import ClassicalFacts.
 
 Variable pred_extensionality : PredicateExtensionality.
 
@@ -76,7 +77,7 @@ Qed.
 (** From proof-irrelevance and relational choice, we get guarded
    relational choice *)
 
-Require Import ChoiceFacts.
+Import ChoiceFacts.
 
 Variable rel_choice : RelationalChoice.
 
@@ -89,7 +90,7 @@ Qed.
 (** The form of choice we need: there is a functional relation which chooses
     an element in any non empty subset of bool *)
 
-Require Import Bool.
+Import Bool.
 
 Lemma AC_bool_subset_to_bool :
   exists R : (bool -> Prop) -> bool -> Prop,
@@ -160,6 +161,8 @@ End PredExt_RelChoice_imp_EM.
     form of extensionality provided by proof-irrelevance *)
 
 Section ProofIrrel_RelChoice_imp_EqEM.
+
+Import ChoiceFacts.
 
 Variable rel_choice : RelationalChoice.
 
