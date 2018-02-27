@@ -1320,6 +1320,16 @@ function make_coq_installer {
   fi
 }
 
+###################### ADDONS #####################
+
+
+
+function make_addons {
+  for addon in $COQ_ADDONS; do
+    make_addon_$addon
+  done
+}
+
 ###################### TOP LEVEL BUILD #####################
 
 make_sed
@@ -1330,6 +1340,8 @@ make_ocaml_libs
 list_files ocaml
 
 make_coq
+
+make_addons
 
 if [ "$INSTALLMAKE" == "Y" ] ; then
   make_mingw_make

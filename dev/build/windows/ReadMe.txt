@@ -61,6 +61,7 @@ The Script MakeCoq_MinGW does:
 - either installs MinGW GTK via Cygwin or compiles it fom sources
 - download, compile and install OCaml, CamlP5, Menhir, lablgtk
 - download, compile and install Coq
+- download, compile and install selected addons
 - create a Windows installer (NSIS based)
 
 The parameters are described below. Mostly paths and the HTTP proxy need to be
@@ -335,6 +336,10 @@ Possible values: 1..N.
                  Should not be more than 1.5x the number of cores.
                  Should not be more than available RAM/2GB (e.g. 4 for 8GB)
 
+===== -addon =====
+
+Enable build and installation of selected Coq package (can be repeated for
+selecting more packages)
 
 ==================== TODO ====================
 
