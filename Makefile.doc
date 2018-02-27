@@ -400,7 +400,7 @@ source-doc: mli-doc $(OCAMLDOCDIR)/coq.pdf
 
 $(OCAMLDOCDIR)/coq.tex: $(DOCMLIS:.mli=.cmi)
 	$(SHOW)'OCAMLDOC -latex -o $@'
-	$(HIDE)$(OCAMLFIND) ocamldoc -latex -rectypes -I $(MYCAMLP4LIB) $(MLINCLUDES)\
+	$(HIDE)$(OCAMLFIND) ocamldoc -latex -rectypes -I $(MYCAMLP5LIB) $(MLINCLUDES)\
 	$(DOCMLIS) -noheader -t "Coq mlis documentation" \
 	-intro $(OCAMLDOCDIR)/docintro -o $@.tmp
 	$(SHOW)'OCAMLDOC utf8 fix'
@@ -410,13 +410,13 @@ $(OCAMLDOCDIR)/coq.tex: $(DOCMLIS:.mli=.cmi)
 
 mli-doc: $(DOCMLIS:.mli=.cmi)
 	$(SHOW)'OCAMLDOC -html'
-	$(HIDE)$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads -I $(MYCAMLP4LIB) $(MLINCLUDES) \
+	$(HIDE)$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads -I $(MYCAMLP5LIB) $(MLINCLUDES) \
 	$(DOCMLIS) -d $(OCAMLDOCDIR)/html -colorize-code \
 	-t "Coq mlis documentation" -intro $(OCAMLDOCDIR)/docintro \
 	-css-style style.css
 
 ml-dot: $(MLFILES)
-	$(OCAMLFIND) ocamldoc -dot -dot-reduce -rectypes -I +threads -I $(CAMLLIB) -I $(MYCAMLP4LIB) $(MLINCLUDES) \
+	$(OCAMLFIND) ocamldoc -dot -dot-reduce -rectypes -I +threads -I $(CAMLLIB) -I $(MYCAMLP5LIB) $(MLINCLUDES) \
 	$(filter $(addsuffix /%.ml,$(CORESRCDIRS)),$(MLFILES)) -o $(OCAMLDOCDIR)/coq.dot
 
 %_dep.png: %.dot
