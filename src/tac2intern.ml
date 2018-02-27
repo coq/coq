@@ -505,7 +505,7 @@ let check_redundant_clause = function
 let get_variable0 mem var = match var with
 | RelId (loc, qid) ->
   let (dp, id) = repr_qualid qid in
-  if DirPath.is_empty dp && mem id then ArgVar (loc, id)
+  if DirPath.is_empty dp && mem id then ArgVar CAst.(make ?loc id)
   else
     let kn =
       try Tac2env.locate_ltac qid
@@ -652,7 +652,7 @@ let rec intern_rec env (loc, e) = match e with
 | CTacAtm atm -> intern_atm env atm
 | CTacRef qid ->
   begin match get_variable env qid with
-  | ArgVar (_, id) ->
+  | ArgVar {CAst.v=id} ->
     let sch = Id.Map.find id env.env_var in
     (GTacVar id, fresh_mix_type_scheme env sch)
   | ArgArg (TacConstant kn) ->
