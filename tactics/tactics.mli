@@ -280,8 +280,6 @@ val simplest_elim : constr -> unit Proofview.tactic
 val elim :
   evars_flag -> clear_flag -> constr with_bindings -> constr with_bindings option -> unit Proofview.tactic
 
-val simple_induct : quantified_hypothesis -> unit Proofview.tactic
-
 val induction : evars_flag -> clear_flag -> constr -> or_and_intro_pattern option ->
   constr with_bindings option -> unit Proofview.tactic
 
@@ -290,7 +288,6 @@ val induction : evars_flag -> clear_flag -> constr -> or_and_intro_pattern optio
 val general_case_analysis : evars_flag -> clear_flag -> constr with_bindings ->  unit Proofview.tactic
 val simplest_case         : constr -> unit Proofview.tactic
 
-val simple_destruct       : quantified_hypothesis -> unit Proofview.tactic
 val destruct : evars_flag -> clear_flag -> constr -> or_and_intro_pattern option ->
   constr with_bindings option -> unit Proofview.tactic
 

@@ -239,12 +239,20 @@ END
 
 (** Simple induction / destruct *)
 
+let simple_induct h =
+  Tacticals.New.tclTHEN (Tactics.intros_until h)
+    (Tacticals.New.onLastHyp Tactics.simplest_elim)
+
 TACTIC EXTEND simple_induction
-  [ "simple" "induction" quantified_hypothesis(h) ] -> [ Tactics.simple_induct h ]
+  [ "simple" "induction" quantified_hypothesis(h) ] -> [ simple_induct h ]
 END
 
+let simple_destruct h =
+  Tacticals.New.tclTHEN (Tactics.intros_until h)
+    (Tacticals.New.onLastHyp Tactics.simplest_case)
+
 TACTIC EXTEND simple_destruct
-  [ "simple" "destruct" quantified_hypothesis(h) ] -> [ Tactics.simple_destruct h ]
+  [ "simple" "destruct" quantified_hypothesis(h) ] -> [ simple_destruct h ]
 END
 
 (** Double induction *)
