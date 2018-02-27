@@ -54,7 +54,8 @@ let make_dir_table dir =
   let filter_dotfiles s f = if f.[0] = '.' then s else StrSet.add f s in
   Array.fold_left filter_dotfiles StrSet.empty (Sys.readdir dir)
 
-let trust_file_cache = ref true
+(** Don't trust in interactive mode (the default) *)
+let trust_file_cache = ref false
 
 let exists_in_dir_respecting_case dir bf =
   let cache_dir dir =
