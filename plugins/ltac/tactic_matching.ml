@@ -46,7 +46,7 @@ let adjust : Constr_matching.bound_ident_map * Ltac_pretype.patvar_map ->
 (** Adds a binding to a {!Id.Map.t} if the identifier is [Some id] *)
 let id_map_try_add id x m =
   match id with
-  | Some id -> Id.Map.add id x m
+  | Some id -> Id.Map.add id (Lazy.force x) m
   | None -> m
 
 (** Adds a binding to a {!Id.Map.t} if the name is [Name id] *)
