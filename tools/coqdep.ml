@@ -464,7 +464,7 @@ let split_period = Str.split (Str.regexp (Str.quote "."))
 let treat_coqproject f =
   let open CoqProject_file in
   let project = read_project_file f in
-  List.iter (treat_file None) project.v_files
+  List.iter (fun f -> treat_file None f.thing) project.v_files
 
 let rec parse = function
   | "-c" :: ll -> option_c := true; parse ll
