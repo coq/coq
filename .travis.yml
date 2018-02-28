@@ -40,10 +40,10 @@ env:
   # system is == 4.02.3
   - COMPILER="system"
   - COMPILER_BE="4.06.0"
-  - CAMLP5_VER="6.14"
-  - CAMLP5_VER_BE="7.03"
-  - FINDLIB_VER="1.4.1"
-  - FINDLIB_VER_BE="1.7.3"
+  - CAMLP5_VER=".6.14"
+  - CAMLP5_VER_BE=".7.03"
+  - FINDLIB_VER=".1.4.1"
+  - FINDLIB_VER_BE=".1.7.3"
   - LABLGTK="lablgtk.2.18.3 lablgtk-extras.1.6"
   - LABLGTK_BE="lablgtk.2.18.6 lablgtk-extras.1.6"
   - NATIVE_COMP="yes"
@@ -221,7 +221,7 @@ matrix:
       env:
       - TEST_TARGET="test-suite"
       - COMPILER="4.02.3"
-      - CAMLP5_VER="6.17"
+      - CAMLP5_VER=".6.17"
       - NATIVE_COMP="no"
       - COQ_DEST="-local"
       before_install:
@@ -234,7 +234,7 @@ matrix:
       env:
       - TEST_TARGET=""
       - COMPILER="4.02.3"
-      - CAMLP5_VER="6.17"
+      - CAMLP5_VER=".6.17"
       - NATIVE_COMP="no"
       - COQ_DEST="-prefix ${PWD}/_install"
       - EXTRA_CONF="-coqide opt -warn-error"
@@ -264,7 +264,7 @@ install:
 - opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
 - eval $(opam config env)
 - opam config list
-- opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind.${FINDLIB_VER} ${EXTRA_OPAM}
+- opam install -j ${NJOBS} -y camlp5${CAMLP5_VER} ocamlfind${FINDLIB_VER} ${EXTRA_OPAM}
 - opam list
 
 script:
