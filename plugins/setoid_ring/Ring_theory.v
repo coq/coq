@@ -263,7 +263,7 @@ Section ALMOST_RING.
  Variable SRth : semi_ring_theory 0 1 radd rmul req.
 
  (** Every semi ring can be seen as an almost ring, by taking :
-        -x = x and x - y = x + y *)
+        [-x = x] and [x - y = x + y] *)
  Definition SRopp (x:R) := x. Notation "- x" := (SRopp x).
 
  Definition SRsub x y := x + -y. Infix "-" := SRsub.
