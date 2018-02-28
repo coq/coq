@@ -1118,18 +1118,15 @@ open Decl_kinds
           hov 1 (keyword "Strategy" ++ spc() ++
                    hv 0 (prlist_with_sep sep pr_line l))
         )
-      | VernacUnsetOption (na) ->
+      | VernacUnsetOption (export, na) ->
+        let export = if export then keyword "Export" ++ spc () else mt () in
         return (
-          hov 1 (keyword "Unset" ++ spc() ++ pr_printoption na None)
+          hov 1 (export ++ keyword "Unset" ++ spc() ++ pr_printoption na None)
         )
-      | VernacSetOption (na,v) ->
+      | VernacSetOption (export, na,v) ->
+        let export = if export then keyword "Export" ++ spc () else mt () in
         return (
-          hov 2 (keyword "Set" ++ spc() ++ pr_set_option na v)
-        )
-      | VernacSetAppendOption (na,v) ->
-        return (
-          hov 2 (keyword "Set" ++ spc() ++ pr_printoption na None ++
-                   spc() ++ keyword "Append" ++ spc() ++ qs v)
+          hov 2 (export ++ keyword "Set" ++ spc() ++ pr_set_option na v)
         )
       | VernacAddOption (na,l) ->
         return (

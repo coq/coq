@@ -822,7 +822,14 @@ GEXTEND Gram
 END
 
 GEXTEND Gram
-  GLOBAL: command query_command class_rawexpr;
+  GLOBAL: command query_command class_rawexpr gallina_ext;
+
+  gallina_ext:
+    [ [ IDENT "Export"; "Set"; table = option_table; v = option_value ->
+        VernacSetOption (true, table, v)
+      | IDENT "Export"; IDENT "Unset"; table = option_table ->
+          VernacUnsetOption (true, table)
+    ] ];
 
   command:
     [ [ IDENT "Comments"; l = LIST0 comment -> VernacComments l
@@ -887,24 +894,9 @@ GEXTEND Gram
 
       (* For acting on parameter tables *)
       | "Set"; table = option_table; v = option_value ->
-        begin match v with
-        | StringValue s ->
-          (* We make a special case for warnings because appending is their
-          natural semantics *)
-          if CString.List.equal table ["Warnings"] then
-            VernacSetAppendOption (table, s)
-          else
-            let (last, prefix) = List.sep_last table in
-            if String.equal last "Append" && not (List.is_empty prefix) then
-              VernacSetAppendOption (prefix, s)
-            else
-              VernacSetOption (table, v)
-        | _ -> VernacSetOption (table, v)
-        end
-      | "Set"; table = option_table ->
-  	  VernacSetOption (table,BoolValue true)
+          VernacSetOption (false, table, v)
       | IDENT "Unset"; table = option_table ->
-  	  VernacUnsetOption table
+          VernacUnsetOption (false, table)
 
       | IDENT "Print"; IDENT "Table"; table = option_table ->
 	  VernacPrintOption table
@@ -1010,7 +1002,8 @@ GEXTEND Gram
       | IDENT "Module"; qid = global -> LocateModule qid ] ]
   ;
   option_value:
-    [ [ n  = integer   -> IntValue (Some n)
+    [ [ -> BoolValue true
+      | n  = integer   -> IntValue (Some n)
       | s  = STRING    -> StringValue s ] ]
   ;
   option_ref_value:
@@ -1081,10 +1074,10 @@ GEXTEND Gram
 
 (* Tactic Debugger *)
       |	IDENT "Debug"; IDENT "On" ->
-          VernacSetOption (["Ltac";"Debug"], BoolValue true)
+          VernacSetOption (false, ["Ltac";"Debug"], BoolValue true)
 
       |	IDENT "Debug"; IDENT "Off" ->
-          VernacSetOption (["Ltac";"Debug"], BoolValue false)
+          VernacSetOption (false, ["Ltac";"Debug"], BoolValue false)
 
 (* registration of a custom reduction *)
 

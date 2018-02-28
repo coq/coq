@@ -61,7 +61,7 @@ let classify_vernac e =
     (* Univ poly compatibility: we run it now, so that we can just
      * look at Flags in stm.ml.  Would be nicer to have the stm
      * look at the entire dag to detect this option. *)
-    | ( VernacSetOption (l,_) | VernacUnsetOption l)
+    | ( VernacSetOption (_, l,_) | VernacUnsetOption (_, l))
       when CList.equal String.equal l Vernacentries.universe_polymorphism_option_name ->
        VtSideff [], VtNow
     (* Qed *)
@@ -87,8 +87,8 @@ let classify_vernac e =
                       proof_block_detection = Some "curly" },
         VtLater
     (* Options changing parser *)
-    | VernacUnsetOption (["Default";"Proof";"Using"])
-    | VernacSetOption (["Default";"Proof";"Using"],_) -> VtSideff [], VtNow
+    | VernacUnsetOption (_, ["Default";"Proof";"Using"])
+    | VernacSetOption (_, ["Default";"Proof";"Using"],_) -> VtSideff [], VtNow
     (* StartProof *)
     | VernacDefinition ((Decl_kinds.DoDischarge,_),({v=i},_),ProveBody _) ->
       VtStartProof(default_proof_mode (),Doesn'tGuaranteeOpacity, idents_of_name i), VtLater
@@ -149,7 +149,7 @@ let classify_vernac e =
     | VernacReserve _
     | VernacGeneralizable _
     | VernacSetOpacity _ | VernacSetStrategy _
-    | VernacUnsetOption _ | VernacSetOption _ | VernacSetAppendOption _
+    | VernacUnsetOption _ | VernacSetOption _
     | VernacAddOption _ | VernacRemoveOption _
     | VernacMemOption _ | VernacPrintOption _
     | VernacGlobalCheck _

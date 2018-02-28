@@ -196,7 +196,7 @@ type 'a option_sig = {
   optread  : unit -> 'a;
   optwrite : 'a -> unit }
 
-type option_locality = OptLocal | OptDefault | OptGlobal
+type option_locality = OptDefault | OptLocal | OptExport | OptGlobal
 
 type option_mod = OptSet | OptAppend
 
@@ -242,16 +242,30 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
         match m with
         | OptSet -> write v
         | OptAppend -> write (append (read ()) v) in
-      let load_options i o = cache_options o in
+      let load_options i (_, (l, _, _) as o) = match l with
+      | OptGlobal -> cache_options o
+      | OptExport -> ()
+      | OptLocal | OptDefault ->
+        (** Ruled out by classify_function *)
+        assert false
+      in
+      let open_options i  (_, (l, _, _) as o) = match l with
+      | OptExport -> if Int.equal i 1 then cache_options o
+      | OptGlobal -> ()
+      | OptLocal | OptDefault ->
+        (** Ruled out by classify_function *)
+        assert false
+      in
       let subst_options (subst,obj) = obj in
       let discharge_options (_,(l,_,_ as o)) =
-        match l with OptLocal -> None | (OptGlobal | OptDefault) -> Some o in
+        match l with OptLocal -> None | (OptExport | OptGlobal | OptDefault) -> Some o in
       let classify_options (l,_,_ as o) =
-        match l with OptGlobal -> Substitute o | (OptLocal | OptDefault) -> Dispose in
+        match l with (OptExport | OptGlobal) -> Substitute o | (OptLocal | OptDefault) -> Dispose in
       let options : option_locality * option_mod * _ -> obj =
         declare_object
           { (default_object (nickname key)) with
             load_function = load_options;
+            open_function = open_options;
             cache_function = cache_options;
             subst_function = subst_options;
             discharge_function = discharge_options;

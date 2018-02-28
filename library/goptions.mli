@@ -50,7 +50,7 @@ open Mod_subst
 
 type option_name = string list
 
-type option_locality = OptLocal | OptDefault | OptGlobal
+type option_locality = OptDefault | OptLocal | OptExport | OptGlobal
 
 (** {6 Tables. } *)
 
