@@ -1322,7 +1322,13 @@ function make_coq_installer {
 
 ###################### ADDONS #####################
 
-
+function make_addon_bignums {
+  if build_prep https://github.com/coq/bignums/archive/ master zip 1 bignums-8.8.0; then
+    logn make make all
+    logn make-install make install
+    build_post
+  fi
+}
 
 function make_addons {
   for addon in $COQ_ADDONS; do
