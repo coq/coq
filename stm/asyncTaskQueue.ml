@@ -123,7 +123,7 @@ module Make(T : Task) () = struct
                 ["-worker-id"; name;
                  "-async-proofs-worker-priority";
                    CoqworkmgrApi.(string_of_priority !async_proofs_worker_priority)]
-        | ("-ideslave"|"-emacs"|"-emacs-U"|"-batch")::tl -> set_slave_opt tl
+        | ("-emacs"|"-emacs-U"|"-batch")::tl -> set_slave_opt tl
         | ("-async-proofs" |"-vio2vo"
           |"-load-vernac-source" |"-l" |"-load-vernac-source-verbose" |"-lv"
           |"-compile" |"-compile-verbose"

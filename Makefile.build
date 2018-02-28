@@ -504,7 +504,7 @@ $(COQWORKMGR): $(call bestobj, clib/clib.cma lib/lib.cma stm/spawned.cmo stm/coq
 	$(HIDE)$(call bestocaml, $(SYSMOD))
 
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
-# a connection to coqtop -ideslave
+# a connection to coqidetop
 
 FAKEIDECMO:=clib/clib.cma lib/lib.cma ide/document.cmo	\
  ide/serialize.cmo ide/xml_lexer.cmo ide/xml_parser.cmo	\

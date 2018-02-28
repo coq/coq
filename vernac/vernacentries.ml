@@ -2243,7 +2243,7 @@ let with_fail st b f =
       | HasNotFailed ->
           user_err ~hdr:"Fail" (str "The command has not failed!")
       | HasFailed msg ->
-          if not !Flags.quiet || !Flags.test_mode || !Flags.ide_slave then Feedback.msg_info
+          if not !Flags.quiet || !Flags.test_mode then Feedback.msg_info
             (str "The command has indeed failed with message:" ++ fnl () ++ msg)
       | _ -> assert false
   end

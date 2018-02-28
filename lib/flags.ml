@@ -57,8 +57,6 @@ let in_toplevel = ref false
 
 let profile = false
 
-let ide_slave = ref false
-
 let raw_print = ref false
 
 let we_are_parsing = ref false

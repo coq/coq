@@ -36,7 +36,7 @@ COQIDEINAPP:=$(COQIDEAPP)/Contents/MacOS/coqide
 
 # Note : for just building bin/coqide, we could only consider
 # config, lib, ide and ide/utils. But the coqidetop plugin (the
-# one that will be loaded by coqtop -ideslave) refers to some
+# one that will be loaded by coqidetop) refers to some
 # core modules of coq, for instance printing/*.
 
 IDESRCDIRS:= $(CORESRCDIRS) ide ide/utils

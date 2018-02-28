@@ -152,7 +152,7 @@ let print_status = function
 let check_connection args =
   let lines = ref [] in
   let argstr = String.concat " " (List.map Filename.quote args) in
-  let cmd = Filename.quote (coqtop_path ()) ^ " -batch -ideslave " ^ argstr in
+  let cmd = Filename.quote (coqtop_path ()) ^ " -batch " ^ argstr in
   let cmd = requote cmd in
   try
     let oc,ic,ec = Unix.open_process_full cmd (Unix.environment ()) in
@@ -377,7 +377,7 @@ let spawn_handle args respawner feedback_processor =
     else
       "on"
   in
-  let args = Array.of_list ("--xml_format=Ppcmds" :: "-async-proofs" :: async_default :: "-ideslave" :: args) in
+  let args = Array.of_list ("--xml_format=Ppcmds" :: "-async-proofs" :: async_default :: args) in
   let env =
     match !ideslave_coqtop_flags with
     | None -> None

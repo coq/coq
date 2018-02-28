@@ -18,9 +18,8 @@ open Printer
 module NamedDecl = Context.Named.Declaration
 module CompactedDecl = Context.Compacted.Declaration
 
-(** Ide_slave : an implementation of [Interface], i.e. mainly an interp
-    function and a rewind function. This specialized loop is triggered
-    when the -ideslave option is passed to Coqtop. *)
+(** Idetop : an implementation of [Interface], i.e. mainly an interp
+    function and a rewind function. *)
 
 
 (** Signal handling: we postpone ^C during input and output phases,
@@ -429,7 +428,7 @@ let eval_call c =
   Xmlprotocol.abstract_eval_call handler c
 
 (** Message dispatching.
-    Since coqtop -ideslave starts 1 thread per slave, and each
+    Since [coqidetop] starts 1 thread per slave, and each
     thread forwards feedback messages from the slave to the GUI on the same
     xml channel, we need mutual exclusion.  The mutex should be per-channel, but
     here we only use 1 channel. *)

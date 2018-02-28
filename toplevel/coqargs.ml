@@ -529,7 +529,6 @@ let parse_args arglist : coq_cmdopts * string list =
     |"-stm-debug" -> Stm.stm_debug := true; oval
     |"-emacs" -> set_emacs oval
     |"-filteropts" -> { oval with filter_opts = true }
-    |"-ideslave" -> Flags.ide_slave := true; oval
     |"-impredicative-set" ->
       { oval with impredicative_set = Declarations.ImpredicativeSet }
     |"-indices-matter" -> Indtypes.enforce_indices_matter (); oval
