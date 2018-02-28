@@ -781,24 +781,23 @@ let map_constr_with_full_binders sigma g f l cstr =
 
 let fold_constr_with_full_binders sigma g f n acc c =
   let open RelDecl in
-  let inj c = EConstr.Unsafe.to_constr c in
   match EConstr.kind sigma c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
-  | Prod (na,t,c) -> f (g (LocalAssum (na, inj t)) n) (f n acc t) c
-  | Lambda (na,t,c) -> f (g (LocalAssum (na, inj t)) n) (f n acc t) c
-  | LetIn (na,b,t,c) -> f (g (LocalDef (na, inj b, inj t)) n) (f n (f n acc b) t) c
+  | Prod (na,t,c) -> f (g (LocalAssum (na, t)) n) (f n acc t) c
+  | Lambda (na,t,c) -> f (g (LocalAssum (na, t)) n) (f n acc t) c
+  | LetIn (na,b,t,c) -> f (g (LocalDef (na, b, t)) n) (f n (f n acc b) t) c
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
   | Proj (p,c) -> f n acc c
   | Evar (_,l) -> Array.fold_left (f n) acc l
   | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
   | Fix (_,(lna,tl,bl)) ->
-      let n' = CArray.fold_left2 (fun c n t -> g (LocalAssum (n, inj t)) c) n lna tl in
+      let n' = CArray.fold_left2 (fun c n t -> g (LocalAssum (n, t)) c) n lna tl in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
   | CoFix (_,(lna,tl,bl)) ->
-      let n' = CArray.fold_left2 (fun c n t -> g (LocalAssum (n, inj t)) c) n lna tl in
+      let n' = CArray.fold_left2 (fun c n t -> g (LocalAssum (n, t)) c) n lna tl in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
 
