@@ -232,9 +232,8 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let c = fill_holes pfterm in
   (* warning: side-effect on ownSign *)
   let invProof = it_mkNamedLambda_or_LetIn c !ownSign in
-  let invProof = EConstr.Unsafe.to_constr invProof in
-  let p = Evarutil.nf_evars_universes sigma invProof in
-    p, sigma
+  let p = EConstr.to_constr sigma invProof in
+  p, sigma
 
 let add_inversion_lemma ~poly name env sigma t sort dep inv_op =
   let invProof, sigma = inversion_scheme env sigma t sort dep inv_op in

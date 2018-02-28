@@ -27,7 +27,6 @@ open Impargs
 open Reductionops
 open Indtypes
 open Pretyping
-open Evarutil
 open Indschemes
 open Context.Rel.Declaration
 open Entries
@@ -158,7 +157,7 @@ let sign_level env evd sign =
       | LocalDef _ -> lev, push_rel d env
       | LocalAssum _ ->
         let s = destSort (Reduction.whd_all env
-                            (EConstr.Unsafe.to_constr (nf_evar evd (Retyping.get_type_of env evd (EConstr.of_constr (RelDecl.get_type d))))))
+                            (EConstr.to_constr evd (Retyping.get_type_of env evd (EConstr.of_constr (RelDecl.get_type d)))))
         in
         let u = univ_of_sort s in
           (Univ.sup u lev, push_rel d env))

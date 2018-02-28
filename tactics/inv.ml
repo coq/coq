@@ -293,7 +293,7 @@ let error_too_many_names pats =
     str "Unexpected " ++
     str (String.plural (List.length pats) "introduction pattern") ++
     str ": " ++ pr_enum (Miscprint.pr_intro_pattern
-                           (fun c -> Printer.pr_constr_env env sigma (EConstr.Unsafe.to_constr (snd (c env (Evd.from_env env)))))) pats ++
+                           (fun c -> Printer.pr_econstr_env env sigma (snd (c env (Evd.from_env env))))) pats ++
     str ".")
 
 let get_names (allow_conj,issimple) ({CAst.loc;v=pat} as x) = match pat with

@@ -228,7 +228,7 @@ let decompose_applied_relation metas env sigma c ctype left2right =
       if metas then eqclause
       else clenv_pose_metas_as_evars eqclause (Evd.undefined_metas eqclause.evd)
     in
-    let (equiv, args) = decompose_app (EConstr.Unsafe.to_constr (Clenv.clenv_type eqclause)) in
+    let (equiv, args) = EConstr.decompose_app sigma (Clenv.clenv_type eqclause) in
     let rec split_last_two = function
       | [c1;c2] -> [],(c1, c2)
       | x::y::z ->
@@ -236,17 +236,19 @@ let decompose_applied_relation metas env sigma c ctype left2right =
       | _ -> raise Not_found
     in
       try
-	let others,(c1,c2) = split_last_two args in
-	let ty1, ty2 =
-	  Typing.unsafe_type_of env eqclause.evd (EConstr.of_constr c1), Typing.unsafe_type_of env eqclause.evd (EConstr.of_constr c2)
-	in
-	let ty = EConstr.Unsafe.to_constr ty in
-	let ty1 = EConstr.Unsafe.to_constr ty1 in
+        let others,(c1,c2) = split_last_two args in
+        let ty1, ty2 = Typing.unsafe_type_of env eqclause.evd c1, Typing.unsafe_type_of env eqclause.evd c2 in
+        (* XXX: It looks like mk_clenv_from_env should be fixed instead? *)
+        let open EConstr in
+        let hyp_ty = Unsafe.to_constr ty in
+        let hyp_car = Unsafe.to_constr ty1 in
+        let hyp_prf = Unsafe.to_constr @@ Clenv.clenv_value eqclause in
+        let hyp_rel = Unsafe.to_constr @@ mkApp (equiv, Array.of_list others) in
+        let hyp_left = Unsafe.to_constr @@ c1 in
+        let hyp_right = Unsafe.to_constr @@ c2 in
 (* 	  if not (evd_convertible env eqclause.evd ty1 ty2) then None *)
 (* 	  else *)
-	    Some { hyp_cl=eqclause; hyp_prf=EConstr.Unsafe.to_constr (Clenv.clenv_value eqclause); hyp_ty = ty;
-		   hyp_car=ty1; hyp_rel=mkApp (equiv, Array.of_list others);
-		   hyp_l2r=left2right; hyp_left=c1; hyp_right=c2; }
+        Some { hyp_cl=eqclause; hyp_prf; hyp_ty; hyp_car; hyp_rel; hyp_l2r=left2right; hyp_left; hyp_right; }
       with Not_found -> None
   in
     match find_rel ctype with
