@@ -27,6 +27,8 @@ type project = {
   
   extra_targets : extra_target list;
   subdirs : string list;
+
+  cmdline_vfiles : string list;
 }
 and extra_target = {
   target : string;
@@ -61,6 +63,7 @@ let mk_project project_file makefile install_kind use_ocamlopt = {
   q_includes = [];
   extra_args = [];
   defs = [];
+  cmdline_vfiles = [];
 }
 
 (********************* utils ********************************************)
@@ -184,7 +187,13 @@ let process_cmd_line orig_dir proj args =
       let proj =
         if exists_dir f then { proj with subdirs = proj.subdirs @ [f] }
         else match CUnix.get_extension f with
-        | ".v" -> { proj with v_files = proj.v_files @ [f] }
+          | ".v" ->
+            let { cmdline_vfiles } = proj in
+            let cmdline_vfiles = if !parsing_project_file
+              then cmdline_vfiles
+              else cmdline_vfiles @ [f]
+            in
+            { proj with v_files = proj.v_files @ [f]; cmdline_vfiles }
         | ".ml" -> { proj with ml_files = proj.ml_files @ [f] }
         | ".ml4" -> { proj with ml4_files = proj.ml4_files @ [f] }
         | ".mli" -> { proj with mli_files = proj.mli_files @ [f] }

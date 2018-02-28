@@ -217,7 +217,7 @@ let generate_conf_coq_config oc args =
 ;;
 
 let generate_conf_files oc
-  { v_files; mli_files; ml4_files; ml_files; mllib_files; mlpack_files }
+  { v_files; mli_files; ml4_files; ml_files; mllib_files; mlpack_files; cmdline_vfiles }
 =
   let module S = String in
   let open List in
@@ -228,6 +228,7 @@ let generate_conf_files oc
   fprintf oc "COQMF_ML4FILES = %s\n"    (S.concat " " (map quote ml4_files));
   fprintf oc "COQMF_MLPACKFILES = %s\n" (S.concat " " (map quote mlpack_files));
   fprintf oc "COQMF_MLLIBFILES = %s\n"  (S.concat " " (map quote mllib_files));
+  fprintf oc "COQMF_CMDLINE_VFILES = %s\n" (S.concat " " (map quote cmdline_vfiles));
 ;;
 
 let rec all_start_with prefix = function

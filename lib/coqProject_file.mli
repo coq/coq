@@ -31,6 +31,7 @@ type project = {
   extra_targets : extra_target list;
   subdirs : string list;
 
+  cmdline_vfiles : string list; (** The subset of [v_files] not from the [project_file].*)
 }
 and extra_target = {
   target : string;

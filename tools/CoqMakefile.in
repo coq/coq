@@ -23,6 +23,7 @@ MLFILES           := $(COQMF_MLFILES)
 ML4FILES          := $(COQMF_ML4FILES)
 MLPACKFILES       := $(COQMF_MLPACKFILES)
 MLLIBFILES        := $(COQMF_MLLIBFILES)
+CMDLINE_VFILES    := $(COQMF_CMDLINE_VFILES)
 INSTALLCOQDOCROOT := $(COQMF_INSTALLCOQDOCROOT)
 OTHERFLAGS        := $(COQMF_OTHERFLAGS)
 COQ_SRC_SUBDIRS   := $(COQMF_COQ_SRC_SUBDIRS)
@@ -724,9 +725,19 @@ $(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack
 	$(SHOW)'COQDEP $<'
 	$(HIDE)$(COQDEP) $(OCAMLLIBS) -c "$<" $(redir_if_ok)
 
+# If this makefile is created using a _CoqProject we have coqdep get
+# the list of files from it. This avoids argument length limits for
+# pathological projects. Note that extra files might be on the command
+# line.
+ifeq (,@PROJECT_FILE@)
+COQDEP_VFILES:=$(CMDLINE_VFILES)
+else
+COQDEP_VFILES:=-f @PROJECT_FILE@ $(CMDLINE_VFILES)
+endif
+
 $(VDFILE).d: $(VFILES)
 	$(SHOW)'COQDEP VFILES'
-	$(HIDE)$(COQDEP) $(COQLIBS) -dyndep var -c $(VFILES) $(redir_if_ok)
+	$(HIDE)$(COQDEP) $(COQLIBS) -dyndep var -c $(COQDEP_VFILES) $(redir_if_ok)
 
 # Misc ########################################################################
 

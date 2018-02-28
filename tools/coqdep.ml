@@ -444,6 +444,7 @@ let usage () =
   eprintf "  -boot : For coq developers, prints dependencies over coq library files (omitted by default).\n";
   eprintf "  -sort : output the given file name ordered by dependencies\n";
   eprintf "  -noglob | -no-glob : \n";
+  eprintf "  -f file : use filenames found in the _CoqProject file FILE .v files only, options and other files are ignored)";
   eprintf "  -I dir -as logname : add (non recursively) dir to coq load path under logical name logname\n";
   eprintf "  -I dir : add (non recursively) dir to ocaml path\n";
   eprintf "  -R dir -as logname : add and import dir recursively to coq load path under logical name logname\n"; (* deprecate? *)
@@ -460,6 +461,11 @@ let usage () =
 
 let split_period = Str.split (Str.regexp (Str.quote "."))
 
+let treat_coqproject f =
+  let open CoqProject_file in
+  let project = read_project_file f in
+  List.iter (treat_file None) project.v_files
+
 let rec parse = function
   | "-c" :: ll -> option_c := true; parse ll
   | "-D" :: ll -> option_D := true; parse ll
@@ -467,6 +473,7 @@ let rec parse = function
   | "-boot" :: ll -> option_boot := true; parse ll
   | "-sort" :: ll -> option_sort := true; parse ll
   | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse ll
+  | "-f" :: f :: ll -> treat_coqproject f; parse ll
   | "-I" :: r :: ll -> add_caml_dir r; parse ll
   | "-I" :: [] -> usage ()
   | "-R" :: r :: ln :: ll -> add_rec_dir_import add_known r (split_period ln); parse ll
