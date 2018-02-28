@@ -431,9 +431,9 @@ Proof.
 Qed.
 
 Theorem Rpower_lt :
-  forall x y z:R, 1 < x -> 0 <= y -> y < z -> x ^R y < x ^R z.
+  forall x y z:R, 1 < x -> y < z -> x ^R y < x ^R z.
 Proof.
-  intros x y z H H0 H1.
+  intros x y z H H1.
   unfold Rpower.
   apply exp_increasing.
   apply Rmult_lt_compat_r.
@@ -488,11 +488,13 @@ Proof.
 Qed.
 
 Theorem Rle_Rpower :
-  forall e n m:R, 1 < e -> 0 <= n -> n <= m -> e ^R n <= e ^R m.
+  forall e n m:R, 1 <= e -> n <= m -> e ^R n <= e ^R m.
 Proof.
-  intros e n m H H0 H1; case H1.
-  intros H2; left; apply Rpower_lt; assumption.
-  intros H2; rewrite H2; right; reflexivity.
+  intros e n m [H | H]; intros H1.
+  case H1.
+    intros H2; left; apply Rpower_lt; assumption.
+    intros H2; rewrite H2; right; reflexivity.
+  now rewrite <- H; unfold Rpower; rewrite ln_1, !Rmult_0_r; apply Rle_refl.
 Qed.
 
 Theorem ln_lt_2 : / 2 < ln 2.
@@ -707,13 +709,18 @@ intros x y z x0 y0; unfold Rpower.
 rewrite <- exp_plus, ln_mult, Rmult_plus_distr_l; auto.
 Qed.
 
-Lemma Rle_Rpower_l a b c: 0 <= c -> 0 < a <= b -> Rpower a c <= Rpower b c. 
+Lemma Rlt_Rpower_l a b c: 0 < c -> 0 < a < b -> a ^R c < b ^R c.
+Proof.
+intros c0 [a0 ab]; apply exp_increasing.
+now apply Rmult_lt_compat_l; auto; apply ln_increasing; fourier.
+Qed.
+
+Lemma Rle_Rpower_l a b c: 0 <= c -> 0 < a <= b -> a ^R c <= b ^R c.
 Proof.
 intros [c0 | c0];
  [ | intros; rewrite <- c0, !Rpower_O; [apply Rle_refl | |] ].
   intros [a0 [ab|ab]].
-   left; apply exp_increasing.
-   now apply Rmult_lt_compat_l; auto; apply ln_increasing; fourier.
+  now apply Rlt_le, Rlt_Rpower_l;[ | split]; fourier.
   rewrite ab; apply Rle_refl.
  apply Rlt_le_trans with a; tauto.
 tauto.
