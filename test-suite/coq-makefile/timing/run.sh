@@ -38,9 +38,29 @@ make print-pretty-timed-diff TIMING_SORT_BY=diff || exit $?
 INFINITY="∞"
 INFINITY_REPLACEMENT="+.%" # assume that if the before time is zero, we expected the time to increase
 
+TO_SED_IN_BOTH=(
+    -e s"/${INFINITY}/${INFINITY_REPLACEMENT}/g" # Whether or not something shows up as ∞ depends on whether a time registers as 0.s or as 0.001s, so we can't rely on this being consistent
+    -e s":|\s*N/A\s*$:| ${INFINITY_REPLACEMENT}:g" # Whether or not something shows up as N/A depends on whether a time registers as 0.s or as 0.001s, so we can't rely on this being consistent
+    -e s'/ *$//g' # the number of trailing spaces depends on how many digits percentages end up being; since this varies across runs, we remove trailing spaces
+    -e s'/[0-9]*\.[0-9]*//g' # the precise timing numbers vary, so we strip them out
+    -e s'/^-*$/------/g' # When none of the numbers get over 100 (or 1000, in per-file), the width of the table is different, so we normalize the number of dashes for table separators
+)
+
+TO_SED_IN_PER_FILE=(
+    -e s'/[0-9]//g' # unclear whether this is actually needed above and beyond s'/[0-9]*\.[0-9]*//g'; it's been here from the start
+    -e s'/  */ /g' # unclear whether this is actually needed for per-file timing; it's been here from the start
+    -e s'/\(Total.*\)-\(.*\)-/\1+\2+/g' # Overall time in the per-file timing diff should be around 0; if it comes out negative, we remove the sign
+)
+
+TO_SED_IN_PER_LINE=(
+    -e s'/0//g' # unclear whether this is actually needed above and beyond s'/[0-9]*\.[0-9]*//g'; it's been here from the start
+    -e s'/  */ /g' # Sometimes 0 will show up as 0m00.s, sometimes it'll end up being more like 0m00.001s; we must strip out the spaces that result from left-aligning numbers of different widths based on how many digits Coq's [-time] gives
+    -e s'/+/-/g' # some code lines don't really change, but this can show up as either -0m00.01s or +0m00.01s, so we need to normalize the signs
+    )
+
 for ext in "" .desired; do
     for file in time-of-build-before.log time-of-build-after.log time-of-build-both.log; do
-        cat ${file}${ext} | grep -v 'warning: undefined variable' | sed s"/${INFINITY}/${INFINITY_REPLACEMENT}/g" | sed s'/[0-9]//g' | sed s'/ *$//g' | sed s":|\s*N/A\s*$:| ${INFINITY_REPLACEMENT}:g" | sed s'/^-*$/------/g' | sed s'/  */ /g' | sed s'/\(Total.*\)-\(.*\)-/\1+\2+/g' > ${file}${ext}.processed
+        cat ${file}${ext} | grep -v 'warning: undefined variable' | sed "${TO_SED_IN_BOTH[@]}" "${TO_SED_IN_PER_FILE[@]}" > ${file}${ext}.processed
     done
 done
 for file in time-of-build-before.log time-of-build-after.log time-of-build-both.log; do
@@ -74,7 +94,7 @@ echo
 
 for ext in "" .desired; do
     for file in A.v.timing.diff; do
-        cat ${file}${ext} | sed s"/${INFINITY}/${INFINITY_REPLACEMENT}/g" | sed s":|\s*N/A\s*$:| ${INFINITY_REPLACEMENT}:g" | sed s'/[0-9]*\.[0-9]*//g' | sed s'/0//g' | sed s'/  */ /g' | sed s'/ *$//g' | sed s'/+/-/g' | sort > ${file}${ext}.processed
+        cat ${file}${ext} | sed "${TO_SED_IN_BOTH[@]}" "${TO_SED_IN_PER_LINE[@]}" | sort > ${file}${ext}.processed
     done
 done
 for file in A.v.timing.diff; do
