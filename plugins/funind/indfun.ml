@@ -93,7 +93,7 @@ let functional_induction with_clean c princl pat =
       in
       let encoded_pat_as_patlist =
         List.make (List.length args + List.length c_list - 1) None @ [pat] in
-      List.map2 (fun c pat -> ((None,Tacexpr.ElimOnConstr (fun env sigma -> (sigma,(c,NoBindings)) )),(None,pat),None))
+      List.map2 (fun c pat -> ((None,Ltac_plugin.Tacexpr.ElimOnConstr (fun env sigma -> (sigma,(c,NoBindings)) )),(None,pat),None))
         (args@c_list) encoded_pat_as_patlist
     in
     let princ' = Some (princ,bindings) in

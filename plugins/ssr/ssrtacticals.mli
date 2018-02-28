@@ -10,21 +10,23 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+open Ltac_plugin
+open Ssrmatching_plugin
 
 val tclSEQAT :
-  Ltac_plugin.Tacinterp.interp_sign ->
-  Ltac_plugin.Tacinterp.Value.t ->
+  Tacinterp.interp_sign ->
+  Tacinterp.Value.t ->
   Ssrast.ssrdir ->
   int Misctypes.or_var *
-    (('a * Ltac_plugin.Tacinterp.Value.t option list) *
-       Ltac_plugin.Tacinterp.Value.t option) ->
+    (('a * Tacinterp.Value.t option list) *
+       Tacinterp.Value.t option) ->
   Tacmach.tactic
 
 val tclCLAUSES :
   unit Proofview.tactic ->
   (Ssrast.ssrhyps *
      ((Ssrast.ssrhyp_or_id * string) *
-        Ssrmatching_plugin.Ssrmatching.cpattern option)
+        Ssrmatching.cpattern option)
        option)
     list * Ssrast.ssrclseq ->
   unit Proofview.tactic
@@ -34,12 +36,12 @@ val hinttac :
            bool -> bool * Tacinterp.Value.t option list -> Ssrast.v82tac
 
 val ssrdotac :
-  Ltac_plugin.Tacinterp.interp_sign ->
+  Tacinterp.interp_sign ->
   ((int Misctypes.or_var * Ssrast.ssrmmod) *
-     (bool * Ltac_plugin.Tacinterp.Value.t option list)) *
+     (bool * Tacinterp.Value.t option list)) *
     ((Ssrast.ssrhyps *
         ((Ssrast.ssrhyp_or_id * string) *
-           Ssrmatching_plugin.Ssrmatching.cpattern option)
+           Ssrmatching.cpattern option)
           option)
        list * Ssrast.ssrclseq) ->
   Goal.goal Evd.sigma -> Goal.goal list Evd.sigma

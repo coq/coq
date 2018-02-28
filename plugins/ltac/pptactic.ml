@@ -14,11 +14,9 @@ open Namegen
 open CErrors
 open Util
 open Constrexpr
-open Tacexpr
 open Genarg
 open Geninterp
 open Stdarg
-open Tacarg
 open Libnames
 open Notation_term
 open Misctypes
@@ -28,6 +26,9 @@ open Genredexpr
 open Pputils
 open Ppconstr
 open Printer
+
+open Tacexpr
+open Tacarg
 
 module Tag =
 struct

@@ -10,6 +10,8 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+open Ltac_plugin
+
 val ssrtacarg : Tacexpr.raw_tactic_expr Pcoq.Gram.entry
 val wit_ssrtacarg : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Geninterp.Val.t) Genarg.genarg_type
 val pr_ssrtacarg : 'a -> 'b -> (Notation_term.tolerability -> 'c) -> 'c
