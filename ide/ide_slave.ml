@@ -340,7 +340,7 @@ let set_options options =
   | IntValue i -> Goptions.set_int_option_value name i
   | StringValue s -> Goptions.set_string_option_value name s
   | StringOptValue (Some s) -> Goptions.set_string_option_value name s
-  | StringOptValue None -> Goptions.unset_option_value_gen None name
+  | StringOptValue None -> Goptions.unset_option_value_gen name
   in
   List.iter iter options
 

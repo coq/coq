@@ -50,6 +50,8 @@ open Mod_subst
 
 type option_name = string list
 
+type option_locality = OptLocal | OptDefault | OptGlobal
+
 (** {6 Tables. } *)
 
 (** The functor [MakeStringTable] declares a table containing objects
@@ -150,13 +152,12 @@ val get_ref_table :
       mem : reference -> unit;
       print : unit >
 
-(** The first argument is a locality flag.
-    [Some true] = "Local", [Some false]="Global". *)
-val set_int_option_value_gen    : bool option -> option_name -> int option -> unit
-val set_bool_option_value_gen   : bool option -> option_name -> bool   -> unit
-val set_string_option_value_gen : bool option -> option_name -> string -> unit
-val set_string_option_append_value_gen : bool option -> option_name -> string -> unit
-val unset_option_value_gen : bool option -> option_name -> unit
+(** The first argument is a locality flag. *)
+val set_int_option_value_gen    : ?locality:option_locality -> option_name -> int option -> unit
+val set_bool_option_value_gen   : ?locality:option_locality -> option_name -> bool   -> unit
+val set_string_option_value_gen : ?locality:option_locality -> option_name -> string -> unit
+val set_string_option_append_value_gen : ?locality:option_locality -> option_name -> string -> unit
+val unset_option_value_gen : ?locality:option_locality -> option_name -> unit
 
 val set_int_option_value    : option_name -> int option -> unit
 val set_bool_option_value   : option_name -> bool   -> unit

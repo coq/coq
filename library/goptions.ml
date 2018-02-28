@@ -229,11 +229,6 @@ let warn_deprecated_option =
          (fun key -> str "Option" ++ spc () ++ str (nickname key) ++
                        strbrk " is deprecated")
 
-let get_locality = function
-  | Some true -> OptLocal
-  | Some false -> OptGlobal
-  | None -> OptDefault
-
 let declare_option cast uncast append ?(preprocess = fun x -> x)
   { optdepr=depr; optname=name; optkey=key; optread=read; optwrite=write } =
   check_key key;
@@ -250,9 +245,9 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
       let load_options i o = cache_options o in
       let subst_options (subst,obj) = obj in
       let discharge_options (_,(l,_,_ as o)) =
-        match l with OptLocal -> None | _ -> Some o in
+        match l with OptLocal -> None | (OptGlobal | OptDefault) -> Some o in
       let classify_options (l,_,_ as o) =
-        match l with OptGlobal -> Substitute o | _ -> Dispose in
+        match l with OptGlobal -> Substitute o | (OptLocal | OptDefault) -> Dispose in
       let options : option_locality * option_mod * _ -> obj =
         declare_object
           { (default_object (nickname key)) with
@@ -302,12 +297,12 @@ let warn_unknown_option =
                    (fun key -> strbrk "There is no option " ++
                                  str (nickname key) ++ str ".")
 
-let set_option_value locality check_and_cast key v =
+let set_option_value ?(locality = OptDefault) check_and_cast key v =
   let opt = try Some (get_option key) with Not_found -> None in
   match opt with
   | None -> warn_unknown_option key
   | Some (name, depr, (read,write,append)) ->
-    write (get_locality locality) (check_and_cast v (read ()))
+    write locality (check_and_cast v (read ()))
 
 let bad_type_error () = user_err Pp.(str "Bad type of value for this option.")
 
@@ -334,25 +329,25 @@ let check_unset_value v = function
    warning. This allows a script to refer to an option that doesn't
    exist anymore *)
 
-let set_int_option_value_gen locality =
-  set_option_value locality check_int_value
-let set_bool_option_value_gen locality key v =
-  set_option_value locality check_bool_value key v
-let set_string_option_value_gen locality =
-  set_option_value locality check_string_value
-let unset_option_value_gen locality key =
-  set_option_value locality check_unset_value key ()
+let set_int_option_value_gen ?locality =
+  set_option_value ?locality check_int_value
+let set_bool_option_value_gen ?locality key v =
+  set_option_value ?locality check_bool_value key v
+let set_string_option_value_gen ?locality =
+  set_option_value ?locality check_string_value
+let unset_option_value_gen ?locality key =
+  set_option_value ?locality check_unset_value key ()
 
-let set_string_option_append_value_gen locality key v =
+let set_string_option_append_value_gen ?(locality = OptDefault) key v =
   let opt = try Some (get_option key) with Not_found -> None in
   match opt with
   | None -> warn_unknown_option key
   | Some (name, depr, (read,write,append)) ->
-    append (get_locality locality) (check_string_value v (read ()))
+    append locality (check_string_value v (read ()))
 
-let set_int_option_value = set_int_option_value_gen None
-let set_bool_option_value = set_bool_option_value_gen None
-let set_string_option_value = set_string_option_value_gen None
+let set_int_option_value opt v = set_int_option_value_gen opt v
+let set_bool_option_value opt v = set_bool_option_value_gen opt v
+let set_string_option_value opt v = set_string_option_value_gen opt v
 
 (* Printing options/tables *)
 

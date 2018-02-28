@@ -1539,18 +1539,27 @@ let vernac_set_opacity ~atts (v,l) =
   let l = List.map glob_ref l in
   Redexpr.set_strategy local [v,l]
 
-let vernac_set_option ~atts key = function
-  | StringValue s -> set_string_option_value_gen atts.locality key s
-  | StringOptValue (Some s) -> set_string_option_value_gen atts.locality key s
-  | StringOptValue None -> unset_option_value_gen atts.locality key
-  | IntValue n -> set_int_option_value_gen atts.locality key n
-  | BoolValue b -> set_bool_option_value_gen atts.locality key b
+let get_option_locality = function
+| Some true -> OptLocal
+| Some false -> OptGlobal
+| None -> OptDefault
+
+let vernac_set_option ~atts key opt =
+  let locality = get_option_locality atts.locality in
+  match opt with
+  | StringValue s -> set_string_option_value_gen ~locality key s
+  | StringOptValue (Some s) -> set_string_option_value_gen ~locality key s
+  | StringOptValue None -> unset_option_value_gen ~locality key
+  | IntValue n -> set_int_option_value_gen ~locality key n
+  | BoolValue b -> set_bool_option_value_gen ~locality key b
 
 let vernac_set_append_option ~atts key s =
-  set_string_option_append_value_gen atts.locality key s
+  let locality = get_option_locality atts.locality in
+  set_string_option_append_value_gen ~locality key s
 
 let vernac_unset_option ~atts key =
-  unset_option_value_gen atts.locality key
+  let locality = get_option_locality atts.locality in
+  unset_option_value_gen ~locality key
 
 let vernac_add_option key lv =
   let f = function
