@@ -186,10 +186,10 @@ let build_beq_scheme mode kn =
     *)
     let compute_A_equality rel_list nlist eqA ndx t =
       let lifti = ndx in
-      let sigma = Evd.empty (** FIXME *) in
       let rec aux c =
-	let (c,a) = Reductionops.whd_betaiota_stack Evd.empty c in
-	match EConstr.kind sigma c with
+        let (c,a) = Reductionops.whd_betaiota_stack Evd.empty EConstr.(of_constr c) in
+        let (c,a) = EConstr.Unsafe.(to_constr c, List.map to_constr a) in
+        match Constr.kind c with
         | Rel x -> mkRel (x-nlist+ndx), Safe_typing.empty_private_constants
         | Var x ->
           let eid = Id.of_string ("eq_"^(Id.to_string x)) in
@@ -198,7 +198,7 @@ let build_beq_scheme mode kn =
             with Not_found -> raise (ParameterWithoutEquality (VarRef x))
           in
           mkVar eid, Safe_typing.empty_private_constants
-        | Cast (x,_,_) -> aux (EConstr.applist (x,a))
+        | Cast (x,_,_) -> aux (Term.applist (x,a))
         | App _ -> assert false
         | Ind ((kn',i as ind'),u) (*FIXME: universes *) -> 
             if MutInd.equal kn kn' then mkRel(eqA-nlist-i+nb_ind-1), Safe_typing.empty_private_constants
@@ -213,8 +213,8 @@ let build_beq_scheme mode kn =
                   List.fold_left Safe_typing.concat_private eff (List.rev effs)
                   in
                 let args =
-                  Array.append 
-                    (Array.of_list (List.map (fun x -> lift lifti (EConstr.Unsafe.to_constr x)) a)) eqa in
+                  Array.append
+                    (Array.of_list (List.map (fun x -> lift lifti x) a)) eqa in
                 if Int.equal (Array.length args) 0 then eq, eff
                 else mkApp (eq, args), eff
               with Not_found -> raise(EqNotFound (ind', fst ind))
@@ -224,10 +224,9 @@ let build_beq_scheme mode kn =
         | Lambda _-> raise (EqUnknown "abstraction")
         | LetIn _ -> raise (EqUnknown "let-in")
         | Const (kn, u) ->
-            let u = EConstr.EInstance.kind sigma u in
 	    (match Environ.constant_opt_value_in env (kn, u) with
 	      | None -> raise (ParameterWithoutEquality (ConstRef kn))
-	      | Some c -> aux (EConstr.applist (EConstr.of_constr c,a)))
+              | Some c -> aux (Term.applist (c,a)))
         | Proj _ -> raise (EqUnknown "projection")
         | Construct _ -> raise (EqUnknown "constructor")
         | Case _ -> raise (EqUnknown "match")
@@ -271,7 +270,7 @@ let build_beq_scheme mode kn =
                                           nparrec
                                           (nparrec+3+2*nb_cstr_args)
                                           (nb_cstr_args+ndx+1)
-                                          (EConstr.of_constr cc)
+                                          cc
                           in
                           eff := Safe_typing.concat_private eff' !eff;
                           Array.set eqs ndx
