@@ -918,7 +918,6 @@ let dest_prod_assum env =
     | LetIn (x,b,t,c) ->
         let d = LocalDef (x,b,t) in
 	prodec_rec (push_rel d env) (Context.Rel.add d l) c
-    | Cast (c,_,_)    -> prodec_rec env l c
     | _               ->
       let rty' = whd_all env rty in
 	if Constr.equal rty' rty then l, rty
@@ -936,7 +935,6 @@ let dest_lam_assum env =
     | LetIn (x,b,t,c) ->
         let d = LocalDef (x,b,t) in
 	lamec_rec (push_rel d env) (Context.Rel.add d l) c
-    | Cast (c,_,_)    -> lamec_rec env l c
     | _               -> l,rty
   in
   lamec_rec env Context.Rel.empty

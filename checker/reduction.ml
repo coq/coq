@@ -582,7 +582,6 @@ let dest_prod_assum env =
     | LetIn (x,b,t,c) ->
         let d = LocalDef (x,b,t) in
 	prodec_rec (push_rel d env) (d::l) c
-    | Cast (c,_,_)    -> prodec_rec env l c
     | _               ->
       let rty' = whd_all env rty in
 	if Term.eq_constr rty' rty then l, rty
@@ -600,7 +599,6 @@ let dest_lam_assum env =
     | LetIn (x,b,t,c) ->
         let d = LocalDef (x,b,t) in
 	lamec_rec (push_rel d env) (d::l) c
-    | Cast (c,_,_)    -> lamec_rec env l c
     | _               -> l,rty
   in
   lamec_rec env empty_rel_context
