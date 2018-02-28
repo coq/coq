@@ -35,3 +35,6 @@ val do_vernac : time:bool -> state:Vernac.State.t -> Vernac.State.t
 
 (** Main entry point of Coq: read and execute vernac commands. *)
 val loop : time:bool -> state:Vernac.State.t -> Vernac.State.t
+
+(** Last document seen after `Drop` *)
+val drop_last_doc : Vernac.State.t option ref

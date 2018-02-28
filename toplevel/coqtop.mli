@@ -15,9 +15,6 @@ val init_toplevel : string list -> Vernac.State.t option * Coqargs.coq_cmdopts
 
 val start : unit -> unit
 
-(* Last document seen after `Drop` *)
-val drop_last_doc : Vernac.State.t option ref
-
 (* For other toploops *)
 val toploop_init : (Coqargs.coq_cmdopts -> string list -> string list) ref
 val toploop_run : (Coqargs.coq_cmdopts -> state:Vernac.State.t -> unit) ref

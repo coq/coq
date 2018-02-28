@@ -34,7 +34,6 @@ let warning s = Flags.(with_option warn Feedback.msg_warning (strbrk s))
    will not be generally be initialized, thus stateid, etc... may be
    bogus. For now we just print to the console too *)
 let coqtop_init_feed = Coqloop.coqloop_feed
-let drop_last_doc = ref None
 
 (* Default toplevel loop *)
 let console_toploop_run opts ~state =
@@ -44,9 +43,8 @@ let console_toploop_run opts ~state =
     Flags.if_verbose warning "Dumpglob cannot be used in interactive mode.";
     Dumpglob.noglob ()
   end;
-  let state = Coqloop.loop ~time:opts.time ~state in
+  let _ = Coqloop.loop ~time:opts.time ~state in
   (* Initialise and launch the Ocaml toplevel *)
-  drop_last_doc := Some state;
   Coqinit.init_ocaml_path();
   Mltop.ocaml_toploop();
   (* We let the feeder in place for users of Drop *)

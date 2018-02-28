@@ -339,6 +339,8 @@ let loop_flush_all () =
   Format.pp_print_flush !Topfmt.std_ft ();
   Format.pp_print_flush !Topfmt.err_ft ()
 
+let drop_last_doc = ref None
+
 let rec loop ~time ~state =
   let open Vernac.State in
   Sys.catch_break true;
@@ -353,7 +355,14 @@ let rec loop ~time ~state =
        not possible due exceptions. *)
     in vernac_loop ~state
   with
-    | CErrors.Drop -> state
+    | CErrors.Drop ->
+      (* Due to using exceptions as a form of control, state here goes
+         out of sync as [do_vernac] will never return. We must thus do
+         this hack until we make `Drop` a toplevel-only command. See
+         bug #6872. *)
+      let state = { state with sid = Stm.get_current_state ~doc:state.doc } in
+      drop_last_doc := Some state;
+      state
     | CErrors.Quit -> exit 0
     | any ->
       top_stderr (str "Anomaly: main loop exited with exception: " ++
