@@ -566,7 +566,8 @@ let force_eqs c =
   Constraints.fold
     (fun c acc ->
        let c' = match c with
-         | ULub (l, r) -> UEq (Univ.Universe.make l,Univ.Universe.make r)
+         (* Should we be forcing weak constraints? *)
+         | ULub (l, r) | UWeak (l, r) -> UEq (Univ.Universe.make l,Univ.Universe.make r)
          | ULe _ | UEq _ -> c
        in
         Constraints.add c' acc)

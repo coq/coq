@@ -302,7 +302,9 @@ let pr_evar_universe_context ctx =
      str"ALGEBRAIC UNIVERSES:"++brk(0,1)++
      h 0 (Univ.LSet.pr prl (UState.algebraics ctx)) ++ fnl() ++
      str"UNDEFINED UNIVERSES:"++brk(0,1)++
-       h 0 (Universes.pr_universe_opt_subst (UState.subst ctx)) ++ fnl())
+     h 0 (Universes.pr_universe_opt_subst (UState.subst ctx)) ++ fnl() ++
+     str "WEAK CONSTRAINTS:"++brk(0,1)++
+     h 0 (UState.pr_weak prl ctx) ++ fnl ())
 
 let print_env_short env =
   let print_constr = print_kconstr in

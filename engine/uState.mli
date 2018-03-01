@@ -72,6 +72,8 @@ val ind_univ_entry : poly:bool -> t -> Entries.inductive_universes
 
 (** {5 Constraints handling} *)
 
+val drop_weak_constraints : bool ref
+
 val add_constraints : t -> Univ.Constraint.t -> t
 (**
   @raise UniversesDiffer when universes differ
@@ -164,3 +166,5 @@ val update_sigma_env : t -> Environ.env -> t
 
 val pr_uctx_level : t -> Univ.Level.t -> Pp.t
 val reference_of_level : t -> Univ.Level.t -> Libnames.reference
+
+val pr_weak : (Univ.Level.t -> Pp.t) -> t -> Pp.t

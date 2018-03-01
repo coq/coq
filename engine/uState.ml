@@ -20,6 +20,8 @@ type uinfo = {
   uloc : Loc.t option;
 }
 
+module UPairSet = Universes.UPairSet
+
 (* 2nd part used to check consistency on the fly. *)
 type t =
  { uctx_names : Universes.universe_binders * uinfo Univ.LMap.t;
@@ -32,6 +34,7 @@ type t =
         algebraic universes as they appear in inferred types only. *)
    uctx_universes : UGraph.t; (** The current graph extended with the local constraints *)
    uctx_initial_universes : UGraph.t; (** The graph at the creation of the evar_map *)
+   uctx_weak_constraints : UPairSet.t
  }
   
 let empty =
@@ -41,7 +44,8 @@ let empty =
     uctx_univ_variables = Univ.LMap.empty;
     uctx_univ_algebraic = Univ.LSet.empty;
     uctx_universes = UGraph.initial_universes;
-    uctx_initial_universes = UGraph.initial_universes; }
+    uctx_initial_universes = UGraph.initial_universes;
+    uctx_weak_constraints = UPairSet.empty; }
 
 let make u =
     { empty with 
@@ -69,6 +73,7 @@ let union ctx ctx' =
     let newus = Univ.LSet.diff (Univ.ContextSet.levels ctx'.uctx_local)
                                (Univ.ContextSet.levels ctx.uctx_local) in
     let newus = Univ.LSet.diff newus (Univ.LMap.domain ctx.uctx_univ_variables) in
+    let weak = UPairSet.union ctx.uctx_weak_constraints ctx'.uctx_weak_constraints in
     let declarenew g =
       Univ.LSet.fold (fun u g -> UGraph.add_universe u false g) newus g
     in
@@ -82,10 +87,11 @@ let union ctx ctx' =
           Univ.LSet.union ctx.uctx_univ_algebraic ctx'.uctx_univ_algebraic;
         uctx_initial_universes = declarenew ctx.uctx_initial_universes;
         uctx_universes = 
-          if local == ctx.uctx_local then ctx.uctx_universes
-          else
-            let cstrsr = Univ.ContextSet.constraints ctx'.uctx_local in
-            UGraph.merge_constraints cstrsr (declarenew ctx.uctx_universes) }
+          (if local == ctx.uctx_local then ctx.uctx_universes
+           else
+             let cstrsr = Univ.ContextSet.constraints ctx'.uctx_local in
+             UGraph.merge_constraints cstrsr (declarenew ctx.uctx_universes));
+        uctx_weak_constraints = weak}
 
 let context_set ctx = ctx.uctx_local
 
@@ -142,14 +148,18 @@ let instantiate_variable l b v =
 
 exception UniversesDiffer
 
+let drop_weak_constraints = ref false
+
 let process_universe_constraints ctx cstrs =
   let open Univ in
   let open Universes in
   let univs = ctx.uctx_universes in
   let vars = ref ctx.uctx_univ_variables in
+  let weak = ref ctx.uctx_weak_constraints in
   let normalize = normalize_univ_variable_opt_subst vars in
   let nf_constraint = function
     | ULub (u, v) -> ULub (level_subst_of normalize u, level_subst_of normalize v)
+    | UWeak (u, v) -> UWeak (level_subst_of normalize u, level_subst_of normalize v)
     | UEq (u, v) -> UEq (subst_univs_universe normalize u, subst_univs_universe normalize v)
     | ULe (u, v) -> ULe (subst_univs_universe normalize u, subst_univs_universe normalize v)
   in
@@ -226,12 +236,14 @@ let process_universe_constraints ctx cstrs =
               end
           | ULub (l, r) ->
               equalize_variables true (Universe.make l) l (Universe.make r) r local
+          | UWeak (l, r) ->
+            if not !drop_weak_constraints then weak := UPairSet.add (l,r) !weak; local
           | UEq (l, r) -> equalize_universes l r local
   in
   let local = 
     Constraints.fold unify_universes cstrs Univ.Constraint.empty
   in
-    !vars, local
+    !vars, !weak, local
 
 let add_constraints ctx cstrs =
   let univs, local = ctx.uctx_local in
@@ -245,20 +257,24 @@ let add_constraints ctx cstrs =
     in Universes.Constraints.add cstr' acc)
     cstrs Universes.Constraints.empty
   in
-  let vars, local' = process_universe_constraints ctx cstrs' in
-    { ctx with uctx_local = (univs, Univ.Constraint.union local local');
-      uctx_univ_variables = vars;
-      uctx_universes = UGraph.merge_constraints local' ctx.uctx_universes }
+  let vars, weak, local' = process_universe_constraints ctx cstrs' in
+  { ctx with
+    uctx_local = (univs, Univ.Constraint.union local local');
+    uctx_univ_variables = vars;
+    uctx_universes = UGraph.merge_constraints local' ctx.uctx_universes;
+    uctx_weak_constraints = weak; }
 
 (* let addconstrkey = CProfile.declare_profile "add_constraints_context";; *)
 (* let add_constraints_context = CProfile.profile2 addconstrkey add_constraints_context;; *)
 
 let add_universe_constraints ctx cstrs =
   let univs, local = ctx.uctx_local in
-  let vars, local' = process_universe_constraints ctx cstrs in
-    { ctx with uctx_local = (univs, Univ.Constraint.union local local');
-      uctx_univ_variables = vars;
-      uctx_universes = UGraph.merge_constraints local' ctx.uctx_universes }
+  let vars, weak, local' = process_universe_constraints ctx cstrs in
+  { ctx with
+    uctx_local = (univs, Univ.Constraint.union local local');
+    uctx_univ_variables = vars;
+    uctx_universes = UGraph.merge_constraints local' ctx.uctx_universes;
+    uctx_weak_constraints = weak; }
 
 let constrain_variables diff ctx =
   let univs, local = ctx.uctx_local in
@@ -567,16 +583,18 @@ let fix_undefined_variables uctx =
 
 let refresh_undefined_univ_variables uctx =
   let subst, ctx' = Universes.fresh_universe_context_set_instance uctx.uctx_local in
-  let alg = Univ.LSet.fold (fun u acc -> Univ.LSet.add (Univ.subst_univs_level_level subst u) acc) 
+  let subst_fn u = Univ.subst_univs_level_level subst u in
+  let alg = Univ.LSet.fold (fun u acc -> Univ.LSet.add (subst_fn u) acc)
     uctx.uctx_univ_algebraic Univ.LSet.empty 
   in
   let vars = 
     Univ.LMap.fold
       (fun u v acc ->
-        Univ.LMap.add (Univ.subst_univs_level_level subst u) 
+        Univ.LMap.add (subst_fn u)
           (Option.map (Univ.subst_univs_level_universe subst) v) acc)
       uctx.uctx_univ_variables Univ.LMap.empty
   in
+  let weak = UPairSet.fold (fun (u,v) acc -> UPairSet.add (subst_fn u, subst_fn v) acc) uctx.uctx_weak_constraints UPairSet.empty in
   let declare g = Univ.LSet.fold (fun u g -> UGraph.add_universe u false g)
                                    (Univ.ContextSet.levels ctx') g in
   let initial = declare uctx.uctx_initial_universes in
@@ -586,18 +604,20 @@ let refresh_undefined_univ_variables uctx =
                uctx_seff_univs = uctx.uctx_seff_univs;
                uctx_univ_variables = vars; uctx_univ_algebraic = alg;
                uctx_universes = univs;
-               uctx_initial_universes = initial } in
+               uctx_initial_universes = initial;
+               uctx_weak_constraints = weak; } in
     uctx', subst
 
 let minimize uctx =
-  let ((vars',algs'), us') = 
-    Universes.normalize_context_set uctx.uctx_local uctx.uctx_univ_variables
-				    uctx.uctx_univ_algebraic
+  let open Universes in
+  let ((vars',algs'), us') =
+    normalize_context_set uctx.uctx_universes uctx.uctx_local uctx.uctx_univ_variables
+      uctx.uctx_univ_algebraic uctx.uctx_weak_constraints
   in
   if Univ.ContextSet.equal us' uctx.uctx_local then uctx
   else
     let us', universes =
-      Universes.refresh_constraints uctx.uctx_initial_universes us'
+      refresh_constraints uctx.uctx_initial_universes us'
     in
       { uctx_names = uctx.uctx_names;
         uctx_local = us';
@@ -605,7 +625,8 @@ let minimize uctx =
         uctx_univ_variables = vars'; 
         uctx_univ_algebraic = algs';
         uctx_universes = universes;
-        uctx_initial_universes = uctx.uctx_initial_universes }
+        uctx_initial_universes = uctx.uctx_initial_universes;
+        uctx_weak_constraints = UPairSet.empty; (* weak constraints are consumed *) }
 
 let universe_of_name uctx s = 
   UNameMap.find s (fst uctx.uctx_names)
@@ -617,6 +638,10 @@ let update_sigma_env uctx env =
                          uctx_universes = univs }
   in
   merge true univ_rigid eunivs eunivs.uctx_local
+
+let pr_weak prl {uctx_weak_constraints=weak} =
+  let open Pp in
+  prlist_with_sep fnl (fun (u,v) -> prl u ++ str " ~ " ++ prl v) (UPairSet.elements weak)
 
 (** Deprecated *)
 let normalize = minimize

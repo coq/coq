@@ -5,6 +5,7 @@ CEphemeron
 Hashset
 Hashcons
 
+OrderedType
 CSet
 CMap
 CList

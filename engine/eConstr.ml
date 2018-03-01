@@ -570,8 +570,6 @@ let compare_constr sigma cmp c1 c2 =
   let cmp nargs c1 c2 = cmp (of_constr c1) (of_constr c2) in
   compare_gen kind (fun _ _ -> Univ.Instance.equal) Sorts.equal cmp 0 (unsafe_to_constr c1) (unsafe_to_constr c2)
 
-let cumul_weak_constraints = ref true
-
 let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
   let open Universes in
   if not nargs_ok then enforce_eq_instances_univs false u u' cstrs
@@ -580,7 +578,7 @@ let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
       (fun cstrs v u u' ->
          let open Univ.Variance in
          match v with
-         | Irrelevant -> if !cumul_weak_constraints then Constraints.add (ULub (u,u')) cstrs else cstrs
+         | Irrelevant -> Constraints.add (UWeak (u,u')) cstrs
          | Covariant ->
            let u = Univ.Universe.make u in
            let u' = Univ.Universe.make u' in

@@ -32,11 +32,12 @@ exception Elimconst
 let _ = Goptions.declare_bool_option {
   Goptions.optdepr = false;
   Goptions.optname =
-    "debug optiosn";
+    "Generate weak constraints between Irrelevant universes";
   Goptions.optkey = ["Cumulativity";"Weak";"Constraints"];
-  Goptions.optread = (fun () -> !cumul_weak_constraints);
-  Goptions.optwrite = (fun a -> cumul_weak_constraints:=a);
+  Goptions.optread = (fun () -> not !UState.drop_weak_constraints);
+  Goptions.optwrite = (fun a -> UState.drop_weak_constraints:=not a);
 }
+
 
 (** Support for reduction effects *)
 
@@ -713,7 +714,7 @@ let magicaly_constant_of_fixbody env sigma reference bd = function
         | Some csts ->
           let subst = Constraints.fold (fun cst acc ->
               let l, r = match cst with
-                | ULub (u, v) -> u, v
+                | ULub (u, v) | UWeak (u, v) -> u, v
                 | UEq (u, v) | ULe (u, v) ->
                   let get u = Option.get (Universe.level u) in
                   get u, get v
