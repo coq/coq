@@ -700,18 +700,25 @@ let reducible_mind_case sigma c = match EConstr.kind sigma c with
 let magicaly_constant_of_fixbody env sigma reference bd = function
   | Name.Anonymous -> bd
   | Name.Name id ->
+    let open Universes in
     try
       let (cst_mod,cst_sect,_) = Constant.repr3 reference in
       let cst = Constant.make3 cst_mod cst_sect (Label.of_id id) in
-      let (cst, u), ctx = Universes.fresh_constant_instance env cst in
+      let (cst, u), ctx = fresh_constant_instance env cst in
       match constant_opt_value_in env (cst,u) with
       | None -> bd
       | Some t ->
         let csts = EConstr.eq_constr_universes env sigma (EConstr.of_constr t) bd in
         begin match csts with
         | Some csts ->
-          let subst = Universes.Constraints.fold (fun (l,d,r) acc ->
-            Univ.LMap.add (Option.get (Universe.level l)) (Option.get (Universe.level r)) acc)
+          let subst = Constraints.fold (fun cst acc ->
+              let l, r = match cst with
+                | ULub (u, v) -> u, v
+                | UEq (u, v) | ULe (u, v) ->
+                  let get u = Option.get (Universe.level u) in
+                  get u, get v
+              in
+            Univ.LMap.add l r acc)
             csts Univ.LMap.empty
           in
           let inst = Instance.subst_fn (fun u -> Univ.LMap.find u subst) u in

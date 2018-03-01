@@ -71,11 +71,15 @@ val new_sort_in_family : Sorts.family -> Sorts.t
     not be necessary if unfolding is performed.
 *)
 
-type universe_constraint_type = ULe | UEq | ULub
+type universe_constraint =
+  | ULe of Universe.t * Universe.t
+  | UEq of Universe.t * Universe.t
+  | ULub of Level.t * Level.t
 
-type universe_constraint = Universe.t * universe_constraint_type * Universe.t
 module Constraints : sig
   include Set.S with type elt = universe_constraint
+
+  val is_trivial : universe_constraint -> bool
 
   val pr : t -> Pp.t
 end

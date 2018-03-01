@@ -561,12 +561,16 @@ let is_rigid_head sigma flags t =
     | Lambda (_, _, _) | LetIn (_, _, _, _) | App (_, _) | Case (_, _, _, _)
     | Proj (_, _) -> false (* Why aren't Prod, Sort rigid heads ? *)
 
-let force_eqs c = 
-  Universes.Constraints.fold
-    (fun ((l,d,r) as c) acc -> 
-      let c' = if d == Universes.ULub then (l,Universes.UEq,r) else c in
-	Universes.Constraints.add c' acc) 
-    c Universes.Constraints.empty
+let force_eqs c =
+  let open Universes in
+  Constraints.fold
+    (fun c acc ->
+       let c' = match c with
+         | ULub (l, r) -> UEq (Univ.Universe.make l,Univ.Universe.make r)
+         | ULe _ | UEq _ -> c
+       in
+        Constraints.add c' acc)
+    c Constraints.empty
 
 let constr_cmp pb env sigma flags t u =
   let cstrs =
@@ -579,7 +583,7 @@ let constr_cmp pb env sigma flags t u =
       with Univ.UniverseInconsistency _ -> sigma, false
       | Evd.UniversesDiffer -> 
 	if is_rigid_head sigma flags t then 
-	  try Evd.add_universe_constraints sigma (force_eqs cstrs), true
+          try Evd.add_universe_constraints sigma (force_eqs cstrs), true
 	  with Univ.UniverseInconsistency _ -> sigma, false
 	else sigma, false
       end

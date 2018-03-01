@@ -144,9 +144,15 @@ exception UniversesDiffer
 
 let process_universe_constraints ctx cstrs =
   let open Univ in
+  let open Universes in
   let univs = ctx.uctx_universes in
   let vars = ref ctx.uctx_univ_variables in
-  let normalize = Universes.normalize_universe_opt_subst vars in
+  let normalize = normalize_univ_variable_opt_subst vars in
+  let nf_constraint = function
+    | ULub (u, v) -> ULub (level_subst_of normalize u, level_subst_of normalize v)
+    | UEq (u, v) -> UEq (subst_univs_universe normalize u, subst_univs_universe normalize v)
+    | ULe (u, v) -> ULe (subst_univs_universe normalize u, subst_univs_universe normalize v)
+  in
   let is_local l = Univ.LMap.mem l !vars in
   let varinfo x =
     match Univ.Universe.level x with
@@ -185,12 +191,12 @@ let process_universe_constraints ctx cstrs =
     if UGraph.check_eq univs l r then local
     else raise (Univ.UniverseInconsistency (Univ.Eq, l, r, None))
   in
-  let unify_universes (l, d, r) local =
-    let l = normalize l and r = normalize r in
-      if Univ.Universe.equal l r then local
+  let unify_universes cst local =
+    let cst = nf_constraint cst in
+      if Constraints.is_trivial cst then local
       else 
-          match d with
-          | Universes.ULe ->
+          match cst with
+          | ULe (l, r) ->
             if UGraph.check_leq univs l r then
               (** Keep Prop/Set <= var around if var might be instantiated by prop or set
                   later. *)
@@ -218,16 +224,12 @@ let process_universe_constraints ctx cstrs =
                 else
                   Univ.enforce_leq l r local
               end
-          | Universes.ULub ->
-            begin match Universe.level l, Universe.level r with
-            | Some l', Some r' ->
-              equalize_variables true l l' r r' local
-            | _, _ -> assert false
-            end
-          | Universes.UEq -> equalize_universes l r local
+          | ULub (l, r) ->
+              equalize_variables true (Universe.make l) l (Universe.make r) r local
+          | UEq (l, r) -> equalize_universes l r local
   in
   let local = 
-    Universes.Constraints.fold unify_universes cstrs Univ.Constraint.empty
+    Constraints.fold unify_universes cstrs Univ.Constraint.empty
   in
     !vars, local
 
@@ -235,9 +237,11 @@ let add_constraints ctx cstrs =
   let univs, local = ctx.uctx_local in
   let cstrs' = Univ.Constraint.fold (fun (l,d,r) acc -> 
     let l = Univ.Universe.make l and r = Univ.Universe.make r in
-    let cstr' = 
-      if d == Univ.Lt then (Univ.Universe.super l, Universes.ULe, r)
-      else (l, (if d == Univ.Le then Universes.ULe else Universes.UEq), r)
+    let cstr' = match d with
+      | Univ.Lt ->
+        Universes.ULe (Univ.Universe.super l, r)
+      | Univ.Le -> Universes.ULe (l, r)
+      | Univ.Eq -> Universes.UEq (l, r)
     in Universes.Constraints.add cstr' acc)
     cstrs Universes.Constraints.empty
   in

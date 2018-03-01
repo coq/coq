@@ -815,8 +815,7 @@ let subterm_source evk (loc,k) =
 
 let try_soft evd u u' =
   let open Universes in
-  let make = Univ.Universe.make in
-  try Evd.add_universe_constraints evd (Constraints.singleton (make u,ULub,make u'))
+  try Evd.add_universe_constraints evd (Constraints.singleton (ULub (u, u')))
   with UState.UniversesDiffer | Univ.UniverseInconsistency _ -> evd
 
 (* Add equality constraints for covariant/invariant positions. For

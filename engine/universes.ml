@@ -114,53 +114,56 @@ let universe_binders_with_opt_names ref levels = function
 let set_minimization = ref true
 let is_set_minimization () = !set_minimization
 			    
-type universe_constraint_type = ULe | UEq | ULub
-
-type universe_constraint = Universe.t * universe_constraint_type * Universe.t
+type universe_constraint =
+  | ULe of Universe.t * Universe.t
+  | UEq of Universe.t * Universe.t
+  | ULub of Level.t * Level.t
 
 module Constraints = struct
   module S = Set.Make(
   struct 
     type t = universe_constraint
 
-    let compare_type c c' =
-      match c, c' with
-      | ULe, ULe -> 0
-      | ULe, _ -> -1
-      | _, ULe -> 1
-      | UEq, UEq -> 0
-      | UEq, _ -> -1
-      | ULub, ULub -> 0
-      | ULub, _ -> 1
-      
-    let compare (u,c,v) (u',c',v') =
-      let i = compare_type c c' in
-	if Int.equal i 0 then
-	  let i' = Universe.compare u u' in
-	    if Int.equal i' 0 then Universe.compare v v'
-	    else 
-	      if c != ULe && Universe.compare u v' = 0 && Universe.compare v u' = 0 then 0
-	      else i'
-	else i
+    let compare x y =
+      match x, y with
+      | ULe (u, v), ULe (u', v') ->
+        let i = Universe.compare u u' in
+        if Int.equal i 0 then Universe.compare v v'
+        else i
+      | UEq (u, v), UEq (u', v') ->
+        let i = Universe.compare u u' in
+        if Int.equal i 0 then Universe.compare v v'
+        else if Universe.equal u v' && Universe.equal v u' then 0
+        else i
+      | ULub (u, v), ULub (u', v') ->
+        let i = Level.compare u u' in
+        if Int.equal i 0 then Level.compare v v'
+        else if Level.equal u v' && Level.equal v u' then 0
+        else i
+      | ULe _, _ -> -1
+      | _, ULe _ -> 1
+      | UEq _, _ -> -1
+      | _, UEq _ -> 1
   end)
   
   include S
-  
-  let add (l,d,r as cst) s = 
-    if Universe.equal l r then s
+
+  let is_trivial = function
+    | ULe (u, v) | UEq (u, v) -> Universe.equal u v
+    | ULub (u, v) -> Level.equal u v
+
+  let add cst s =
+    if is_trivial cst then s
     else add cst s
 
-  let tr_dir = function
-    | ULe -> Le
-    | UEq -> Eq
-    | ULub -> Eq
-
-  let op_str = function ULe -> " <= " | UEq -> " = " | ULub -> " /\\ "
+  let pr_one = function
+    | ULe (u, v) -> Universe.pr u ++ str " <= " ++ Universe.pr v
+    | UEq (u, v) -> Universe.pr u ++ str " = " ++ Universe.pr v
+    | ULub (u, v) -> Level.pr u ++ str " /\\ " ++ Level.pr v
 
   let pr c =
-    fold (fun (u1,op,u2) pp_std ->
-	pp_std ++ Universe.pr u1 ++ str (op_str op) ++
-	Universe.pr u2 ++ fnl ()) c (str "")
+    fold (fun cst pp_std ->
+        pp_std ++ pr_one cst ++ fnl ()) c (str "")
 
   let equal x y = 
     x == y || equal x y
@@ -174,13 +177,13 @@ type 'a universe_constrained = 'a * universe_constraints
 type 'a universe_constraint_function = 'a -> 'a -> universe_constraints -> universe_constraints
 
 let enforce_eq_instances_univs strict x y c = 
-  let d = if strict then ULub else UEq in
+  let mk u v = if strict then ULub (u, v) else UEq (Universe.make u, Universe.make v) in
   let ax = Instance.to_array x and ay = Instance.to_array y in
     if Array.length ax != Array.length ay then
       CErrors.anomaly (Pp.str "Invalid argument: enforce_eq_instances_univs called with" ++
 	       Pp.str " instances of different lengths.");
     CArray.fold_right2
-      (fun x y -> Constraints.add (Universe.make x, d, Universe.make y))
+      (fun x y -> Constraints.add (mk x y))
       ax ay c
 
 let enforce_univ_constraint (u,d,v) =
@@ -207,30 +210,59 @@ let subst_univs_constraints subst csts =
     (fun c cstrs -> subst_univs_constraint subst c cstrs)
     csts Constraint.empty
 
-let subst_univs_universe_constraint fn (u,d,v) =
-  let u' = subst_univs_universe fn u and v' = subst_univs_universe fn v in
+let level_subst_of f =
+  fun l ->
+    try let u = f l in
+          match Universe.level u with
+          | None -> l
+          | Some l -> l
+    with Not_found -> l
+
+let subst_univs_universe_constraint fn = function
+  | ULe (u, v) ->
+    let u' = subst_univs_universe fn u and v' = subst_univs_universe fn v in
     if Universe.equal u' v' then None
-    else Some (u',d,v')
+    else Some (ULe (u',v'))
+  | UEq (u, v) ->
+    let u' = subst_univs_universe fn u and v' = subst_univs_universe fn v in
+    if Universe.equal u' v' then None
+    else Some (ULe (u',v'))
+  | ULub (u, v) ->
+    let u' = level_subst_of fn u and v' = level_subst_of fn v in
+    if Level.equal u' v' then None
+    else Some (ULub (u',v'))
 
 let subst_univs_universe_constraints subst csts =
   Constraints.fold 
     (fun c -> Option.fold_right Constraints.add (subst_univs_universe_constraint subst c))
     csts Constraints.empty 
 
-
-let to_constraints g s = 
-  let tr (x,d,y) acc =
-    let add l d l' acc = Constraint.add (l,Constraints.tr_dir d,l') acc in
-      match Universe.level x, d, Universe.level y with
-      | Some l, (ULe | UEq | ULub), Some l' -> add l d l' acc
-      | _, ULe, Some l' -> enforce_leq x y acc
-      | _, ULub, _ -> acc
-      | _, d, _ -> 
-	let f = if d == ULe then UGraph.check_leq else UGraph.check_eq in
-	  if f g x y then acc else 
-	    raise (Invalid_argument 
-		   "to_constraints: non-trivial algebraic constraint between universes")
-  in Constraints.fold tr s Constraint.empty
+let to_constraints g s =
+  let invalid () =
+    raise (Invalid_argument "to_constraints: non-trivial algebraic constraint between universes")
+  in
+  let tr cst acc =
+    match cst with
+    | ULub (l, l') -> Constraint.add (l, Eq, l') acc
+    | ULe (l, l') ->
+      begin match Universe.level l, Universe.level l' with
+        | Some l, Some l' -> Constraint.add (l, Le, l') acc
+        | None, Some _ -> enforce_leq l l' acc
+        | _, None ->
+          if UGraph.check_leq g l l'
+          then acc
+          else invalid ()
+      end
+    | UEq (l, l') ->
+      begin match Universe.level l, Universe.level l' with
+        | Some l, Some l' -> Constraint.add (l, Eq, l') acc
+        | None, _ | _, None ->
+          if UGraph.check_eq g l l'
+          then acc
+          else invalid ()
+      end
+  in
+  Constraints.fold tr s Constraint.empty
 
 (** Variant of [eq_constr_univs_infer] taking kind-of-term functions,
     to expose subterms of [m] and [n], arguments. *)
@@ -247,7 +279,7 @@ let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
     if Sorts.equal s1 s2 then true
     else
       let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-      match fold (Constraints.singleton (u1, UEq, u2)) !cstrs with
+      match fold (Constraints.singleton (UEq (u1, u2))) !cstrs with
       | None -> false
       | Some accu -> cstrs := accu; true
   in
@@ -511,14 +543,6 @@ let choose_canonical ctx flexible algs s =
 	    else
 	      let canon = LSet.choose algs in
 		canon, (global, rigid, LSet.remove canon flexible)
-
-let level_subst_of f =
-  fun l ->
-    try let u = f l in
-          match Universe.level u with
-          | None -> l
-          | Some l -> l
-    with Not_found -> l
 
 let subst_univs_fn_constr f c =
   let changed = ref false in

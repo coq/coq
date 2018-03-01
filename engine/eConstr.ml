@@ -579,15 +579,18 @@ let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
     CArray.fold_left3
       (fun cstrs v u u' ->
          let open Univ.Variance in
-         let u = Univ.Universe.make u in
-         let u' = Univ.Universe.make u' in
          match v with
-         | Irrelevant -> if !cumul_weak_constraints then Constraints.add (u,ULub,u') cstrs else cstrs
+         | Irrelevant -> if !cumul_weak_constraints then Constraints.add (ULub (u,u')) cstrs else cstrs
          | Covariant ->
+           let u = Univ.Universe.make u in
+           let u' = Univ.Universe.make u' in
            (match cv_pb with
-            | Reduction.CONV -> Constraints.add (u,UEq,u') cstrs
-            | Reduction.CUMUL -> Constraints.add (u,ULe,u') cstrs)
-         | Invariant -> Constraints.add (u,UEq,u') cstrs)
+            | Reduction.CONV -> Constraints.add (UEq (u,u')) cstrs
+            | Reduction.CUMUL -> Constraints.add (ULe (u,u')) cstrs)
+         | Invariant ->
+           let u = Univ.Universe.make u in
+           let u' = Univ.Universe.make u' in
+           Constraints.add (UEq (u,u')) cstrs)
       cstrs variances (Univ.Instance.to_array u) (Univ.Instance.to_array u')
 
 let cmp_inductives cv_pb (mind,ind as spec) nargs u1 u2 cstrs =
@@ -648,7 +651,7 @@ let test_constr_universes env sigma leq m n =
       let s2 = ESorts.kind sigma (ESorts.make s2) in
       if Sorts.equal s1 s2 then true
       else (cstrs := Constraints.add 
-	      (Sorts.univ_of_sort s1,UEq,Sorts.univ_of_sort s2) !cstrs; 
+              (UEq (Sorts.univ_of_sort s1,Sorts.univ_of_sort s2)) !cstrs;
 	    true)
     in
     let leq_sorts s1 s2 = 
@@ -657,7 +660,7 @@ let test_constr_universes env sigma leq m n =
       if Sorts.equal s1 s2 then true
       else 
 	(cstrs := Constraints.add 
-	   (Sorts.univ_of_sort s1,ULe,Sorts.univ_of_sort s2) !cstrs; 
+           (ULe (Sorts.univ_of_sort s1,Sorts.univ_of_sort s2)) !cstrs;
 	 true)
     in
     let rec eq_constr' nargs m n = compare_gen kind eq_universes eq_sorts eq_constr' nargs m n in
@@ -703,7 +706,7 @@ let eq_constr_universes_proj env sigma m n =
       if Sorts.equal s1 s2 then true
       else
 	(cstrs := Constraints.add 
-	   (Sorts.univ_of_sort s1, UEq, Sorts.univ_of_sort s2) !cstrs;
+           (UEq (Sorts.univ_of_sort s1, Sorts.univ_of_sort s2)) !cstrs;
 	 true)
     in
     let rec eq_constr' nargs m n =
