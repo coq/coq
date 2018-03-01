@@ -203,7 +203,11 @@ let generate_conf_includes oc { ml_includes; r_includes; q_includes } =
     (S.concat " " (map (fun ({ path },l) -> dash2 "R" path l) r_includes));
   fprintf oc "COQMF_COQLIBS_NOML = %s %s\n"
     (S.concat " " (map (fun ({ path },l) -> dash2 "Q" path l) q_includes))
-    (S.concat " " (map (fun ({ path },l) -> dash2 "R" path l) r_includes))
+    (S.concat " " (map (fun ({ path },l) -> dash2 "R" path l) r_includes));
+  fprintf oc "COQMF_CMDLINE_COQLIBS = %s %s %s\n"
+    (S.concat " " (map_cmdline (fun { path } -> dash1 "I" path) ml_includes))
+    (S.concat " " (map_cmdline (fun ({ path },l) -> dash2 "Q" path l) q_includes))
+    (S.concat " " (map_cmdline (fun ({ path },l) -> dash2 "R" path l) r_includes));
 ;;
 
 let windrive s =
@@ -308,17 +312,14 @@ let ensure_root_dir
 ;;
 
 let warn_install_at_root_directory 
-  { q_includes; r_includes;
-    v_files; ml_files; mli_files; ml4_files;
-    mllib_files; mlpack_files }
+  ({ q_includes; r_includes; } as project)
 =
   let open CList in
   let inc_top_p =
     map_filter
       (fun {thing=({ path } ,ldir)} -> if ldir = "" then Some path else None)
       (r_includes @ q_includes) in
-  let files =
-    v_files @ mli_files @ ml4_files @ ml_files @ mllib_files @ mlpack_files in
+  let files = all_files project in
   let bad = filter (fun f -> mem (Filename.dirname f.thing) inc_top_p) files in
   if bad <> [] then begin
     eprintf "Warning: No file should be installed at the root of Coq's library.\n";

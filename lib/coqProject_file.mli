@@ -53,8 +53,14 @@ val read_project_file : string -> project
 val coqtop_args_from_project : project -> string list
 val find_project_file : from:string -> projfile_name:string -> string option
 
+val all_files : project -> string sourced list
+
 val map_sourced_list : ('a -> 'b) -> 'a sourced list -> 'b list
 
+(** Only uses the elements with source=CmdLine *)
+val map_cmdline : ('a -> 'b) -> 'a sourced list -> 'b list
+
+(** Only uses the elements with source=CmdLine *)
 val filter_cmdline : 'a sourced list -> 'a list
 
 val forget_source : 'a sourced -> 'a

@@ -444,7 +444,7 @@ let usage () =
   eprintf "  -boot : For coq developers, prints dependencies over coq library files (omitted by default).\n";
   eprintf "  -sort : output the given file name ordered by dependencies\n";
   eprintf "  -noglob | -no-glob : \n";
-  eprintf "  -f file : use filenames found in the _CoqProject file FILE .v files only, options and other files are ignored)";
+  eprintf "  -f file : read -I, -Q, -R and filenames from _CoqProject-formatted FILE.";
   eprintf "  -I dir -as logname : add (non recursively) dir to coq load path under logical name logname\n";
   eprintf "  -I dir : add (non recursively) dir to ocaml path\n";
   eprintf "  -R dir -as logname : add and import dir recursively to coq load path under logical name logname\n"; (* deprecate? *)
@@ -461,10 +461,18 @@ let usage () =
 
 let split_period = Str.split (Str.regexp (Str.quote "."))
 
+let add_q_include path l = add_rec_dir_no_import add_known path (split_period l)
+
+let add_r_include path l = add_rec_dir_import add_known path (split_period l)
+
 let treat_coqproject f =
   let open CoqProject_file in
+  let iter_sourced f = List.iter (fun {thing} -> f thing) in
   let project = read_project_file f in
-  List.iter (fun f -> treat_file None f.thing) project.v_files
+  iter_sourced (fun { path } -> add_caml_dir path) project.ml_includes;
+  iter_sourced (fun ({ path }, l) -> add_q_include path l) project.q_includes;
+  iter_sourced (fun ({ path }, l) -> add_r_include path l) project.r_includes;
+  iter_sourced (fun f -> treat_file None f) (all_files project)
 
 let rec parse = function
   | "-c" :: ll -> option_c := true; parse ll
@@ -476,8 +484,8 @@ let rec parse = function
   | "-f" :: f :: ll -> treat_coqproject f; parse ll
   | "-I" :: r :: ll -> add_caml_dir r; parse ll
   | "-I" :: [] -> usage ()
-  | "-R" :: r :: ln :: ll -> add_rec_dir_import add_known r (split_period ln); parse ll
-  | "-Q" :: r :: ln :: ll -> add_rec_dir_no_import add_known r (split_period ln); parse ll
+  | "-R" :: r :: ln :: ll -> add_r_include r ln; parse ll
+  | "-Q" :: r :: ln :: ll -> add_q_include r ln; parse ll
   | "-R" :: ([] | [_]) -> usage ()
   | "-dumpgraph" :: f :: ll -> option_dump := Some (false, f); parse ll
   | "-dumpgraphbox" :: f :: ll -> option_dump := Some (true, f); parse ll

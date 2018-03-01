@@ -220,8 +220,16 @@ let rec find_project_file ~from ~projfile_name =
     else find_project_file ~from:newdir ~projfile_name
 ;;
 
+let all_files { v_files; ml_files; mli_files; ml4_files;
+                mllib_files; mlpack_files } =
+  v_files @ mli_files @ ml4_files @ ml_files @ mllib_files @ mlpack_files
+
 let map_sourced_list f l = List.map (fun x -> f x.thing) l
 ;;
+
+let map_cmdline f l = CList.map_filter (function
+    | {thing=x; source=CmdLine} -> Some (f x)
+    | {source=ProjectFile} -> None) l
 
 let coqtop_args_from_project
   { ml_includes; r_includes; q_includes; extra_args }

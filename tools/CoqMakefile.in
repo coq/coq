@@ -31,6 +31,7 @@ OCAMLLIBS         := $(COQMF_OCAMLLIBS)
 SRC_SUBDIRS       := $(COQMF_SRC_SUBDIRS)
 COQLIBS           := $(COQMF_COQLIBS)
 COQLIBS_NOML      := $(COQMF_COQLIBS_NOML)
+CMDLINE_COQLIBS   := $(COQMF_CMDLINE_COQLIBS)
 LOCAL             := $(COQMF_LOCAL)
 COQLIB            := $(COQMF_COQLIB)
 DOCDIR            := $(COQMF_DOCDIR)
@@ -726,18 +727,13 @@ $(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack
 	$(HIDE)$(COQDEP) $(OCAMLLIBS) -c "$<" $(redir_if_ok)
 
 # If this makefile is created using a _CoqProject we have coqdep get
-# the list of files from it. This avoids argument length limits for
-# pathological projects. Note that extra files might be on the command
-# line.
-ifeq (,@PROJECT_FILE@)
-COQDEP_VFILES:=$(CMDLINE_VFILES)
-else
-COQDEP_VFILES:=-f @PROJECT_FILE@ $(CMDLINE_VFILES)
-endif
+# options from it. This avoids argument length limits for pathological
+# projects. Note that extra options might be on the command line.
+VDFILE_FLAGS:=$(if @PROJECT_FILE@,-f @PROJECT_FILE@,) $(CMDLINE_COQLIBS) $(CMDLINE_VFILES)
 
 $(VDFILE).d: $(VFILES)
 	$(SHOW)'COQDEP VFILES'
-	$(HIDE)$(COQDEP) $(COQLIBS) -dyndep var -c $(COQDEP_VFILES) $(redir_if_ok)
+	$(HIDE)$(COQDEP) -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
 
 # Misc ########################################################################
 
