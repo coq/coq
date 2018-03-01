@@ -223,6 +223,12 @@ function get_expand_source_tar {
       cp "$SOURCE_LOCAL_CACHE_CFMT/$name.$3" $TARBALLS
     else
       wget $1/$2.$3
+      if file -i $2.$3 | grep text/html; then
+        echo Download failed: $1/$2.$3
+        echo The file wget downloaded is an html file:
+        cat $2.$3
+        exit 1
+      fi
       if [ ! "$2.$3" == "$name.$3" ] ; then
         mv $2.$3 $name.$3
       fi
