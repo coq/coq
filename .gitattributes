@@ -2,10 +2,18 @@
 .gitignore export-ignore
 .mailmap export-ignore
 
-*.out -whitespace
+# Because our commit hook automatically does [apply whitespace=fix] we
+# disable whitespace checking for all files except those where we want
+# it. Otherwise rogue global configuration and forgotten local
+# configuration can break commits.
+* -whitespace
 
+# tabs are allowed in Makefiles.
+Makefile* whitespace=trailing-space
+tools/CoqMakefile.in whitespace=trailing-space
+
+# in general we don't want tabs.
 *.asciidoc whitespace=trailing-space,tab-in-indent
-*.bat whitespace=cr-at-eol,trailing-space,tab-in-indent
 *.bib whitespace=trailing-space,tab-in-indent
 *.c whitespace=trailing-space,tab-in-indent
 *.css whitespace=trailing-space,tab-in-indent
@@ -36,3 +44,6 @@
 *.v whitespace=trailing-space,tab-in-indent
 *.xml whitespace=trailing-space,tab-in-indent
 *.yml whitespace=trailing-space,tab-in-indent
+
+# CR is desired for these Windows files.
+*.bat whitespace=cr-at-eol,trailing-space,tab-in-indent
