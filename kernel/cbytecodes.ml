@@ -15,78 +15,7 @@
 (* This file defines the type of bytecode instructions *)
 
 open Names
-open Constr
-
-type tag = int
-
-let accu_tag = 0
-
-let type_atom_tag = 2
-let max_atom_tag = 2
-let proj_tag = 3
-let fix_app_tag = 4
-let switch_tag = 5
-let cofix_tag = 6
-let cofix_evaluated_tag = 7
-
-(* It would be great if OCaml exported this value,
-   So fixme if this happens in a new version of OCaml *)
-let last_variant_tag = 245 
-
-type structured_constant =
-  | Const_sort of Sorts.t
-  | Const_ind of inductive
-  | Const_b0 of tag
-  | Const_bn of tag * structured_constant array
-  | Const_univ_level of Univ.Level.t
-
-type reloc_table = (tag * int) array
-
-type annot_switch =
-   {ci : case_info; rtbl : reloc_table; tailcall : bool; max_stack_size : int}
-
-let rec eq_structured_constant c1 c2 = match c1, c2 with
-| Const_sort s1, Const_sort s2 -> Sorts.equal s1 s2
-| Const_sort _, _ -> false
-| Const_ind i1, Const_ind i2 -> eq_ind i1 i2
-| Const_ind _, _ -> false
-| Const_b0 t1, Const_b0 t2 -> Int.equal t1 t2
-| Const_b0 _, _ -> false
-| Const_bn (t1, a1), Const_bn (t2, a2) ->
-  Int.equal t1 t2 && CArray.equal eq_structured_constant a1 a2
-| Const_bn _, _ -> false
-| Const_univ_level l1 , Const_univ_level l2 -> Univ.Level.equal l1 l2
-| Const_univ_level _ , _ -> false
-
-let rec hash_structured_constant c =
-  let open Hashset.Combine in
-  match c with
-  | Const_sort s -> combinesmall 1 (Sorts.hash s)
-  | Const_ind i -> combinesmall 2 (ind_hash i)
-  | Const_b0 t -> combinesmall 3 (Int.hash t)
-  | Const_bn (t, a) ->
-    let fold h c = combine h (hash_structured_constant c) in
-    let h = Array.fold_left fold 0 a in
-    combinesmall 4 (combine (Int.hash t) h)
-  | Const_univ_level l -> combinesmall 5 (Univ.Level.hash l)
-
-let eq_annot_switch asw1 asw2 =
-  let eq_ci ci1 ci2 =
-    eq_ind ci1.ci_ind ci2.ci_ind &&
-    Int.equal ci1.ci_npar ci2.ci_npar &&
-    CArray.equal Int.equal ci1.ci_cstr_ndecls ci2.ci_cstr_ndecls
-  in
-  let eq_rlc (i1, j1) (i2, j2) = Int.equal i1 i2 && Int.equal j1 j2 in
-  eq_ci asw1.ci asw2.ci &&
-  CArray.equal eq_rlc asw1.rtbl asw2.rtbl &&
-  (asw1.tailcall : bool) == asw2.tailcall
-
-let hash_annot_switch asw =
-  let open Hashset.Combine in
-  let h1 = Constr.case_info_hash asw.ci in
-  let h2 = Array.fold_left (fun h (t, i) -> combine3 h t i) 0 asw.rtbl in
-  let h3 = if asw.tailcall then 1 else 0 in
-  combine3 h1 h2 h3
+open Vmvalues
 
 module Label =
   struct
@@ -231,21 +160,6 @@ type comp_env = {
 (* --- Pretty print *)
 open Pp
 open Util
-
-let pp_sort s =
-  let open Sorts in
-  match s with
-  | Prop -> str "Prop"
-  | Set -> str "Set"
-  | Type u -> str "Type@{" ++ Univ.pr_uni u ++ str "}"
-
-let rec pp_struct_const = function
-  | Const_sort s -> pp_sort s
-  | Const_ind (mind, i) -> MutInd.print mind ++ str"#" ++ int i
-  | Const_b0 i -> int i
-  | Const_bn (i,t) ->
-     int i ++ surround (prvect_with_sep pr_comma pp_struct_const t)
-  | Const_univ_level l -> Univ.Level.pr l
 
 let pp_lbl lbl = str "L" ++ int lbl
 

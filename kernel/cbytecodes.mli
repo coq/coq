@@ -11,41 +11,7 @@
 (* $Id$ *)
 
 open Names
-open Constr
-
-type tag = int
-
-val accu_tag : tag
-
-val type_atom_tag : tag
-val max_atom_tag : tag
-val proj_tag : tag
-val fix_app_tag : tag
-val switch_tag : tag
-val cofix_tag : tag
-val cofix_evaluated_tag : tag
-
-val last_variant_tag : tag
-
-type structured_constant =
-  | Const_sort of Sorts.t
-  | Const_ind of inductive
-  | Const_b0 of tag
-  | Const_bn of tag * structured_constant array
-  | Const_univ_level of Univ.Level.t
-
-val pp_struct_const : structured_constant -> Pp.t
-
-type reloc_table = (tag * int) array
-
-type annot_switch =
-   {ci : case_info; rtbl : reloc_table; tailcall : bool; max_stack_size : int}
-
-val eq_structured_constant : structured_constant -> structured_constant -> bool
-val hash_structured_constant : structured_constant -> int
-
-val eq_annot_switch : annot_switch -> annot_switch -> bool
-val hash_annot_switch : annot_switch -> int
+open Vmvalues
 
 module Label :
   sig

@@ -9,6 +9,7 @@
 (************************************************************************)
 open Names
 open Constr
+open Vmvalues
 open Cbytecodes
 
 (** This file defines the lambda code for the bytecode compiler. It has been

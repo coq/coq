@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Cbytecodes
 open Vmvalues
 
 external set_drawinstr : unit -> unit = "coq_set_drawinstr"

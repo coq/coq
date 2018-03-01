@@ -161,9 +161,9 @@ and nf_whd env sigma whd typ =
   | Vconstr_block b ->
       let tag = btag b in
       let (tag,ofs) =
-        if tag = Cbytecodes.last_variant_tag then
+        if tag = last_variant_tag then
 	  match whd_val (bfield b 0) with
-	  | Vconstr_const tag -> (tag+Cbytecodes.last_variant_tag, 1)
+          | Vconstr_const tag -> (tag+last_variant_tag, 1)
 	  | _ -> assert false
         else (tag, 0) in
       let capp,ctyp = construct_of_constr_block env tag typ in
@@ -278,7 +278,7 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       in
       let branchs = Array.mapi mkbranch bsw in
       let tcase = build_case_type p realargs c in
-      let ci = sw.sw_annot.Cbytecodes.ci in
+      let ci = sw.sw_annot.Vmvalues.ci in
       nf_stk env sigma (mkCase(ci, p, c, branchs)) tcase stk
   | Zproj p :: stk ->
      assert (from = 0) ;

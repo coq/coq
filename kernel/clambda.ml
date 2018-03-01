@@ -4,6 +4,7 @@ open Esubst
 open Term
 open Constr
 open Declarations
+open Vmvalues
 open Cbytecodes
 open Cinstr
 open Environ
@@ -444,7 +445,7 @@ let get_value lc =
   | Lval v -> v
   | _ -> raise Not_found
 
-let mkConst_b0 n = Lval (Cbytecodes.Const_b0 n)
+let mkConst_b0 n = Lval (Const_b0 n)
 
 let make_args start _end =
   Array.init (start - _end + 1) (fun i -> Lrel (Anonymous, start - i))
@@ -467,11 +468,11 @@ let makeblock tag nparams arity args =
   else
   if Array.for_all is_value args then
     if tag < last_variant_tag then
-      Lval(Cbytecodes.Const_bn(tag, Array.map get_value args))
+      Lval(Const_bn(tag, Array.map get_value args))
     else
       let args = Array.map get_value args in
-      let args = Array.append [|Cbytecodes.Const_b0 (tag - last_variant_tag) |] args in
-      Lval(Cbytecodes.Const_bn(last_variant_tag, args))
+      let args = Array.append [|Const_b0 (tag - last_variant_tag) |] args in
+      Lval(Const_bn(last_variant_tag, args))
   else Lmakeblock(tag, args)
 
 

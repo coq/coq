@@ -164,7 +164,7 @@ type one_inductive_body = {
 
     mind_nb_args : int; (** number of no constant constructor *)
 
-    mind_reloc_tbl :  Cbytecodes.reloc_table;
+    mind_reloc_tbl :  Vmvalues.reloc_table;
   }
 
 type abstract_inductive_universes =
