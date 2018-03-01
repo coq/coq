@@ -153,7 +153,7 @@ let add_compat_require opts v =
 
 let set_batch_mode opts =
   Flags.quiet := true;
-  System.trust_file_cache := false;
+  System.trust_file_cache := true;
   { opts with batch_mode = true }
 
 let add_compile opts verbose s =
