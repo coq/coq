@@ -14,6 +14,7 @@
 
 open Util
 open Names
+open Vmvalues
 open Cbytecodes
 open Cemitcodes
 open Cinstr
