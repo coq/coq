@@ -86,6 +86,8 @@ Universes
   more information.
 - Fix #5726: Notations that start with `Type` now support universe instances
   with `@{u}`.
+- `with Definition` now understands universe declarations
+  (like `@{u| Set < u}`).
 
 Checker
 
