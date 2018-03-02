@@ -2672,6 +2672,7 @@ let get_ast id =
   match VCS.visit id with
   | { step = `Cmd { cast = { loc; expr } } }
   | { step = `Fork (({ loc; expr }, _, _, _), _) } 
+  | { step = `Sideff ((ReplayCommand {loc; expr}) , _) }
   | { step = `Qed ({ qast = { loc; expr } }, _) } ->
          Some (Loc.tag ?loc expr)
   | _ -> None
