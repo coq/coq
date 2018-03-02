@@ -1286,7 +1286,8 @@ function make_coq_installer {
 
   # Prepare the file lists for the installer. We created to file list dumps of the target folder during the build:
   # ocaml: ocaml + menhir + camlp5 + findlib
-  # ocal_coq: as above + coq
+  # ocaml_coq: as above + coq
+  # ocaml_coq_addons: as above + lib/user-contrib/*
   
   # Create coq file list as ocaml_coq / ocaml
   diff_files coq ocaml_coq ocaml
@@ -1300,11 +1301,17 @@ function make_coq_installer {
   # Coq objects objects required for plugin development = coq objects except those for pre installed plugins
   diff_files coq_plugindev coq_objects coq_objects_plugins
   
+  # Addons (TODO: including objects that could go to the plugindev thing, but
+  # then one would have to make that package depend on this one, so not
+  # implemented yet)
+  diff_files coq_addons ocaml_coq_addons ocaml_coq
+
   # Coq files, except objects needed only for plugin development
   diff_files coq_base coq coq_plugindev
   
   # Convert section files to NSIS format
   files_to_nsis coq_base
+  files_to_nsis coq_addons
   files_to_nsis coq_plugindev
   files_to_nsis ocaml
   
@@ -1320,7 +1327,7 @@ function make_coq_installer {
     cp ../patches/ReplaceInFile.nsh dev/nsis
     VERSION=`grep '^VERSION=' config/Makefile | cut -d = -f 2 | tr -d '\r'`
     cd dev/nsis
-    logn nsis-installer "$NSIS" -DVERSION=$VERSION -DARCH=$ARCH -DCOQ_SRC_PATH="$PREFIXCOQ" -DCOQ_ICON=..\\..\\ide\\coq.ico coq_new.nsi
+    logn nsis-installer "$NSIS" -DVERSION=$VERSION -DARCH=$ARCH -DCOQ_SRC_PATH="$PREFIXCOQ" -DCOQ_ICON=..\\..\\ide\\coq.ico -DCOQ_ADDONS="$COQ_ADDONS" coq_new.nsi
     
     build_post
   fi
@@ -1353,13 +1360,18 @@ list_files ocaml
 
 make_coq
 
-make_addons
-
 if [ "$INSTALLMAKE" == "Y" ] ; then
-  make_mingw_make
+  # I've to comment this out becase, with addons, if this make is in the
+  # PATH it hides the real one (the one that works, while this one does not)
+  #make_mingw_make
+  :
 fi
 
 list_files ocaml_coq
+
+make_addons
+
+list_files ocaml_coq_addons
 
 if [ "$MAKEINSTALLER" == "Y" ] ; then
   make_coq_installer
