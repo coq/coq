@@ -294,12 +294,11 @@ let reference_of_level evd l = UState.reference_of_level (Evd.evar_universe_cont
 
 let pr_evar_universe_context ctx =
   let open UState in
-  let open Evd in
   let prl = pr_uctx_level ctx in
   if UState.is_empty ctx then mt ()
   else
     (str"UNIVERSES:"++brk(0,1)++ 
-       h 0 (Univ.pr_universe_context_set prl (evar_universe_context_set ctx)) ++ fnl () ++
+       h 0 (Univ.pr_universe_context_set prl (UState.context_set ctx)) ++ fnl () ++
      str"ALGEBRAIC UNIVERSES:"++brk(0,1)++
      h 0 (Univ.LSet.pr prl (UState.algebraics ctx)) ++ fnl() ++
      str"UNDEFINED UNIVERSES:"++brk(0,1)++

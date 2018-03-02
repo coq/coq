@@ -26,6 +26,8 @@ val empty : t
 
 val make : UGraph.t -> t
 
+val make_with_initial_binders : UGraph.t -> Misctypes.lident list -> t
+
 val is_empty : t -> bool
 
 val union : t -> t -> t

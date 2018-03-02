@@ -341,7 +341,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
   let subst_evar k =
     Proof.in_proof proof (fun m -> Evd.existential_opt_value m k) in
   let nf = Universes.nf_evars_and_universes_opt_subst subst_evar
-    (Evd.evar_universe_context_subst universes) in
+    (UState.subst universes) in
   let make_body =
     if poly || now then
       let make_body t (c, eff) =

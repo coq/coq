@@ -476,6 +476,13 @@ let new_univ_variable ?loc rigid name
                 uctx_initial_universes = initial}
   in uctx', u
 
+let make_with_initial_binders e us =
+  let uctx = make e in
+  List.fold_left
+    (fun uctx { CAst.loc; v = id } ->
+       fst (new_univ_variable ?loc univ_rigid (Some id) uctx))
+    uctx us
+
 let add_global_univ uctx u =
   let initial =
     UGraph.add_universe u true uctx.uctx_initial_universes

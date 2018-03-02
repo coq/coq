@@ -1193,7 +1193,7 @@ let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
     else let gl, ccl =  pf_mkprod gl c cl in false, pat, ccl, c, clr,ucst,gl
   else if to_ind && occ = None then
     let nv, p, _, ucst' = pf_abs_evars gl (fst pat, c) in
-    let ucst = Evd.union_evar_universe_context ucst ucst' in
+    let ucst = UState.union ucst ucst' in
     if nv = 0 then anomaly "occur_existential but no evars" else
     let gl, pty = pfe_type_of gl p in
     false, pat, EConstr.mkProd (constr_name (project gl) c, pty, Tacmach.pf_concl gl), p, clr,ucst,gl

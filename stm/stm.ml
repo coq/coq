@@ -2482,7 +2482,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                   match keep with
                   | VtDrop -> None
                   | VtKeepAsAxiom ->
-                      let ctx = Evd.empty_evar_universe_context in
+                      let ctx = UState.empty in
                       let fp = Future.from_val ([],ctx) in
                       qed.fproof <- Some (fp, ref false); None
                   | VtKeep ->
