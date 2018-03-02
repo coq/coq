@@ -524,16 +524,12 @@ let new_global_univ () =
 
 (** Simplification *)
 
-module LevelUnionFind = Unionfind.Make (Univ.LSet) (Univ.LMap)
-
 let add_list_map u t map =
   try
     let l = LMap.find u map in
     LMap.set u (t :: l) map
   with Not_found ->
     LMap.add u [t] map
-
-module UF = LevelUnionFind
 
 (** Precondition: flexible <= ctx *)
 let choose_canonical ctx flexible algs s =
@@ -920,7 +916,6 @@ let minimize_univ_variables ctx us algs left right cstrs =
 
 let normalize_context_set g ctx us algs weak =
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
-  let uf = UF.create () in
   (** Keep the Prop/Set <= i constraints separate for minimization *)
   let smallles, csts =
     Constraint.partition (fun (l,d,r) -> d == Le && Level.is_small l) csts
@@ -929,7 +924,7 @@ let normalize_context_set g ctx us algs weak =
     then Constraint.filter (fun (l,d,r) -> LSet.mem r ctx) smallles
     else Constraint.empty
   in
-  let csts =
+  let csts, partition =
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
     let g = LSet.fold (fun v g -> UGraph.add_universe v false g)
@@ -947,18 +942,14 @@ let normalize_context_set g ctx us algs weak =
     let g = UGraph.merge_constraints csts g in
       UGraph.constraints_of_universes g
   in
+  (* We ignore the trivial Prop/Set <= i constraints. *)
   let noneqs =
-    Constraint.fold (fun (l,d,r as cstr) noneqs ->
-      if d == Eq then (UF.union l r uf; noneqs)
-      else (* We ignore the trivial Prop/Set <= i constraints. *)
-        if d == Le && Level.is_small l then noneqs
-        else if Level.is_prop l && d == Lt && Level.is_set r
-	then noneqs
-	else Constraint.add cstr noneqs)
-      csts Constraint.empty
+    Constraint.filter
+      (fun (l,d,r) -> not ((d == Le && Level.is_small l) ||
+                           (Level.is_prop l && d == Lt && Level.is_set r)))
+      csts
   in
   let noneqs = Constraint.union noneqs smallles in
-  let partition = UF.partition uf in
   let flex x = LMap.mem x us in
   let ctx, us, eqs = List.fold_left (fun (ctx, us, cstrs) s ->
     let canon, (global, rigid, flexible) = choose_canonical ctx flex algs s in

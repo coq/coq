@@ -59,7 +59,10 @@ val empty_universes : t
 
 val sort_universes : t -> t
 
-val constraints_of_universes : t -> Constraint.t
+(** [constraints_of_universes g] returns [csts] and [partition] where
+   [csts] are the non-Eq constraints and [partition] is the partition
+   of the universes into equivalence classes. *)
+val constraints_of_universes : t -> Constraint.t * LSet.t list
 
 val check_subtype : AUContext.t check_function
 (** [check_subtype univ ctx1 ctx2] checks whether [ctx2] is an instance of
