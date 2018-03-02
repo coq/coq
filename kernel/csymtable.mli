@@ -18,3 +18,5 @@ val val_of_constr : env -> constr -> Vmvalues.values
 
 val set_opaque_const      : Constant.t -> unit
 val set_transparent_const : Constant.t -> unit
+
+val get_global_data : unit -> Vmvalues.vm_global

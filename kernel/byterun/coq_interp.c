@@ -163,8 +163,11 @@ extern void caml_process_pending_signals(void);
 /* The interpreter itself */
 
 value coq_interprete
-(code_t coq_pc, value coq_accu, value coq_env, long coq_extra_args)
+(code_t coq_pc, value coq_accu, value coq_global_data, value coq_env, long coq_extra_args)
 {
+  /* coq_accu is not allocated on the OCaml heap */
+  CAMLparam1(coq_global_data);
+
   /*Declaration des variables */
 #ifdef PC_REG
   register code_t pc PC_REG;
@@ -196,7 +199,7 @@ value coq_interprete
     coq_instr_table = (char **) coq_jumptable;
     coq_instr_base = coq_Jumptbl_base;
 #endif
-    return Val_unit;
+    CAMLreturn(Val_unit);
   }
 #if defined(THREADED_CODE) && defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
   coq_jumptbl_base = coq_Jumptbl_base;
@@ -1460,7 +1463,7 @@ value coq_interprete
       Instruct(STOP){
 	print_instr("STOP");
 	coq_sp = sp;
-	return accu;
+        CAMLreturn(accu);
       }
       
   
@@ -1512,12 +1515,12 @@ value coq_push_vstack(value stk, value max_stack_size) {
   return Val_unit;
 }
 
-value  coq_interprete_ml(value tcode, value a, value e, value ea) {
+value  coq_interprete_ml(value tcode, value a, value g, value e, value ea) {
   print_instr("coq_interprete");
-  return coq_interprete((code_t)tcode, a, e, Long_val(ea));
+  return coq_interprete((code_t)tcode, a, g, e, Long_val(ea));
   print_instr("end coq_interprete");
 }
 
-value coq_eval_tcode (value tcode, value e) {
-  return coq_interprete_ml(tcode, Val_unit, e, 0);
+value coq_eval_tcode (value tcode, value g, value e) {
+  return coq_interprete_ml(tcode, Val_unit, g, e, 0);
 }
