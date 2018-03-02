@@ -14,6 +14,7 @@ open Constr
 (** Values *)
 
 type values
+type structured_values
 type vm_env
 type vm_global
 type vprod
@@ -43,8 +44,8 @@ type structured_constant =
   | Const_sort of Sorts.t
   | Const_ind of inductive
   | Const_b0 of tag
-  | Const_bn of tag * structured_constant array
   | Const_univ_level of Univ.Level.t
+  | Const_val of structured_values
 
 val pp_struct_const : structured_constant -> Pp.t
 
@@ -144,6 +145,8 @@ val val_of_constant : Constant.t -> values
 val val_of_evar : Evar.t -> values
 val val_of_proj : Projection.Repr.t -> values -> values
 val val_of_atom : atom -> values
+val val_of_int : int -> structured_values
+val val_of_block : tag -> structured_values array -> structured_values
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
 external val_of_proj_name : Projection.Repr.t -> values = "%identity"

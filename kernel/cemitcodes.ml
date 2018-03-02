@@ -358,10 +358,9 @@ let rec emit env insns remaining = match insns with
 type to_patch = emitcodes * patches * fv
 
 (* Substitution *)
-let rec subst_strcst s sc =
+let subst_strcst s sc =
   match sc with
-  | Const_sort _ | Const_b0 _ | Const_univ_level _ -> sc
-  | Const_bn(tag,args) -> Const_bn(tag,Array.map (subst_strcst s) args)
+  | Const_sort _ | Const_b0 _ | Const_univ_level _ | Const_val _ -> sc
   | Const_ind ind -> let kn,i = ind in Const_ind (subst_mind s kn, i)
 
 let subst_reloc s ri =

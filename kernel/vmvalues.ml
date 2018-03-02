@@ -27,6 +27,7 @@ let _ = init_vm ()
 
 (* Values of the abstract machine *)
 type values
+type structured_values = values
 let val_of_obj v = ((Obj.obj v):values)
 let crazy_val = (val_of_obj (Obj.repr 0))
 
@@ -46,42 +47,64 @@ let cofix_evaluated_tag = 7
    So fixme if this happens in a new version of OCaml *)
 let last_variant_tag = 245
 
+(** Structured constants are constants whose construction is done once. Their
+occurrences share the same value modulo kernel name substitutions (for functor
+application). Structured values have the additional property that no
+substitution will need to be performed, so their runtime value can directly be
+shared without reallocating a more structured representation. *)
 type structured_constant =
   | Const_sort of Sorts.t
   | Const_ind of inductive
   | Const_b0 of tag
-  | Const_bn of tag * structured_constant array
   | Const_univ_level of Univ.Level.t
+  | Const_val of structured_values
 
 type reloc_table = (tag * int) array
 
 type annot_switch =
    {ci : case_info; rtbl : reloc_table; tailcall : bool; max_stack_size : int}
 
-let rec eq_structured_constant c1 c2 = match c1, c2 with
+let rec eq_structured_values v1 v2 =
+  v1 == v2 ||
+  let o1 = Obj.repr v1 in
+  let o2 = Obj.repr v2 in
+  if Obj.is_int o1 && Obj.is_int o2 then o1 == o2
+  else if Int.equal (Obj.tag o1) (Obj.tag o2) &&
+          Int.equal (Obj.size o1) (Obj.size o2)
+  then
+    let i = ref 0 in
+    while (!i < Obj.size o1 && eq_structured_values
+             (Obj.magic (Obj.field o1 !i) : structured_values)
+             (Obj.magic (Obj.field o2 !i) : structured_values)) do
+      incr i
+    done;
+    !i >= Obj.size o1
+  else false
+
+let hash_structured_values (v : structured_values) =
+  (* We may want a better hash function here *)
+  Hashtbl.hash v
+
+let eq_structured_constant c1 c2 = match c1, c2 with
 | Const_sort s1, Const_sort s2 -> Sorts.equal s1 s2
 | Const_sort _, _ -> false
 | Const_ind i1, Const_ind i2 -> eq_ind i1 i2
 | Const_ind _, _ -> false
 | Const_b0 t1, Const_b0 t2 -> Int.equal t1 t2
 | Const_b0 _, _ -> false
-| Const_bn (t1, a1), Const_bn (t2, a2) ->
-  Int.equal t1 t2 && CArray.equal eq_structured_constant a1 a2
-| Const_bn _, _ -> false
 | Const_univ_level l1 , Const_univ_level l2 -> Univ.Level.equal l1 l2
 | Const_univ_level _ , _ -> false
+| Const_val v1, Const_val v2 -> eq_structured_values v1 v2
+| Const_val v1, _ -> false
 
-let rec hash_structured_constant c =
+let hash_structured_constant c =
   let open Hashset.Combine in
   match c with
   | Const_sort s -> combinesmall 1 (Sorts.hash s)
   | Const_ind i -> combinesmall 2 (ind_hash i)
   | Const_b0 t -> combinesmall 3 (Int.hash t)
-  | Const_bn (t, a) ->
-    let fold h c = combine h (hash_structured_constant c) in
-    let h = Array.fold_left fold 0 a in
-    combinesmall 4 (combine (Int.hash t) h)
-  | Const_univ_level l -> combinesmall 5 (Univ.Level.hash l)
+  | Const_univ_level l -> combinesmall 4 (Univ.Level.hash l)
+  | Const_val v -> combinesmall 5 (hash_structured_values v)
 
 let eq_annot_switch asw1 asw2 =
   let eq_ci ci1 ci2 =
@@ -108,13 +131,12 @@ let pp_sort s =
   | Set -> Pp.str "Set"
   | Type u -> Pp.(str "Type@{" ++ Univ.pr_uni u ++ str "}")
 
-let rec pp_struct_const = function
+let pp_struct_const = function
   | Const_sort s -> pp_sort s
   | Const_ind (mind, i) -> Pp.(MutInd.print mind ++ str"#" ++ int i)
   | Const_b0 i -> Pp.int i
-  | Const_bn (i,t) ->
-     Pp.(int i ++ surround (prvect_with_sep pr_comma pp_struct_const t))
   | Const_univ_level l -> Univ.Level.pr l
+  | Const_val _ -> Pp.str "(value)"
 
 (* Abstract data *)
 type vprod
@@ -379,25 +401,29 @@ let obj_of_atom : atom -> Obj.t =
     res
 
 (* obj_of_str_const : structured_constant -> Obj.t *)
-let rec obj_of_str_const str =
+let obj_of_str_const str =
   match str with
   | Const_sort s -> obj_of_atom (Asort s)
   | Const_ind ind -> obj_of_atom (Aind ind)
   | Const_b0 tag -> Obj.repr tag
-  | Const_bn(tag, args) ->
-      let len = Array.length args in
-      let res = Obj.new_block tag len in
-      for i = 0 to len - 1 do
-        Obj.set_field res i (obj_of_str_const args.(i))
-      done;
-      res
   | Const_univ_level l -> Obj.repr (Vuniv_level l)
+  | Const_val v -> Obj.repr v
+
+let val_of_block tag (args : structured_values array) =
+  let nargs = Array.length args in
+  let r = Obj.new_block tag nargs in
+  for i = 0 to nargs - 1 do
+    Obj.set_field r i (Obj.repr args.(i))
+  done;
+  (Obj.magic r : structured_values)
 
 let val_of_obj o = ((Obj.obj o) : values)
 
 let val_of_str_const str = val_of_obj (obj_of_str_const str)
 
 let val_of_atom a = val_of_obj (obj_of_atom a)
+
+let val_of_int i = (Obj.magic i : values)
 
 let atom_of_proj kn v =
   let r = Obj.new_block proj_tag 2 in
