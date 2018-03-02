@@ -108,6 +108,12 @@ Standard Library
   facts about them, and conversions between decimal numbers and nat,
   positive, N, Z, and string.
 
+- Some deprecated aliases are now emitting warnings when used.
+
+Compatibility support
+
+- Support for compatibility with versions before 8.6 was dropped.
+
 Changes from 8.7.1 to 8.7.2
 ===========================
 
