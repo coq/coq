@@ -224,7 +224,7 @@ let interp_recursive ~program_mode ~cofix fixl notations =
 
   (* Instantiate evars and check all are resolved *)
   let sigma = solve_unif_constraints_with_heuristics env_rec sigma in
-  let sigma, _ = nf_evars_and_universes sigma in
+  let sigma = Evd.minimize_universes sigma in
   (* XXX: We still have evars here in Program *)
   let fixdefs = List.map (fun c -> Option.map EConstr.(to_constr ~abort_on_undefined_evars:false sigma) c) fixdefs in
   let fixtypes = List.map EConstr.(to_constr sigma) fixtypes in

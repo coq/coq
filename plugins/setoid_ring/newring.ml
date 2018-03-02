@@ -186,8 +186,8 @@ let dummy_goal env sigma =
     Goal.V82.mk_goal sigma (named_context_val env) EConstr.mkProp Evd.Store.empty in
   {Evd.it = gl; Evd.sigma = sigma}
 
-let constr_of v = match Value.to_constr v with
-  | Some c -> EConstr.Unsafe.to_constr c
+let constr_of evd v = match Value.to_constr v with
+  | Some c -> EConstr.to_constr evd c
   | None -> failwith "Ring.exec_tactic: anomaly"
 
 let tactic_res = ref [||]
@@ -221,8 +221,8 @@ let exec_tactic env evd n f args =
   (** Evaluate the whole result *)
   let gl = dummy_goal env evd in
   let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter]))) gl in
-  let evd, nf = Evarutil.nf_evars_and_universes (Refiner.project gls) in
-  let nf c = nf (constr_of c) in
+  let evd = Evd.minimize_universes (Refiner.project gls) in
+  let nf c = constr_of evd c in
   Array.map nf !tactic_res, Evd.universe_context_set evd
 
 let stdlib_modules =

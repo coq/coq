@@ -178,11 +178,14 @@ val nf_evar_map_undefined : evar_map -> evar_map
 val nf_evars_universes : evar_map -> Constr.constr -> Constr.constr
 
 val nf_evars_and_universes : evar_map -> evar_map * (Constr.constr -> Constr.constr)
+[@@ocaml.deprecated "Use Evd.minimize_universes and nf_evars_universes"]
 val e_nf_evars_and_universes : evar_map ref -> (Constr.constr -> Constr.constr) * Universes.universe_opt_subst
+[@@ocaml.deprecated "Use Evd.minimize_universes and nf_evars_universes"]
 
 (** Normalize the evar map w.r.t. universes, after simplification of constraints.
     Return the substitution function for constrs as well. *)
 val nf_evar_map_universes : evar_map -> evar_map * (Constr.constr -> Constr.constr)
+[@@ocaml.deprecated "Use Evd.minimize_universes and nf_evar_map and nf_evars_universes"]
 
 (** Replacing all evars, possibly raising [Uninstantiated_evar] *)
 exception Uninstantiated_evar of Evar.t

@@ -168,7 +168,7 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
           EConstr.mkSort (Sorts.sort_of_univ univ)
         else sigma, typ
   in
-  let sigma, _ = Evarutil.nf_evars_and_universes sigma in
+  let sigma = Evd.minimize_universes sigma in
   let newfs = List.map (EConstr.to_rel_decl sigma) newfs in
   let newps = List.map (EConstr.to_rel_decl sigma) newps in
   let typ = EConstr.to_constr sigma typ in
