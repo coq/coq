@@ -1361,10 +1361,7 @@ list_files ocaml
 make_coq
 
 if [ "$INSTALLMAKE" == "Y" ] ; then
-  # I've to comment this out becase, with addons, if this make is in the
-  # PATH it hides the real one (the one that works, while this one does not)
-  #make_mingw_make
-  :
+  make_mingw_make
 fi
 
 list_files ocaml_coq
