@@ -172,6 +172,7 @@ type mode =
   ; compat : bool
   ; evars : bool
   ; max_cost : int option
+  ; compat_depth : bool
   }
 
 let eauto_compat =
@@ -188,6 +189,7 @@ let eauto_compat =
   ; compat = true
   ; evars = true
   ; max_cost = None
+  ; compat_depth = true
   }
 
 let normal =
@@ -204,6 +206,7 @@ let normal =
   ; compat = false
   ; evars = true
   ; max_cost = None
+  ; compat_depth = false
   }
 
 let only_classes = { normal with only_classes = true }
@@ -736,7 +739,7 @@ module Search = struct
       tac1 + tac2 .... The choice of OR or ORELSE is determined
       depending on the dependencies of the goal and the unique/Prop
       status *)
-  let hints_tac_gl hints info kont gl : unit Proofview.tactic =
+  let hints_tac_gl hints info kont depth gl : int Proofview.tactic =
     let open Proofview in
     let open Proofview.Notations in
     let env = Goal.env gl in
@@ -785,7 +788,7 @@ module Search = struct
           Feedback.msg_debug (header ++ str " failed with: " ++ msg)
         else ()
       in
-      let tac_of gls i j = Goal.enter begin fun gl' ->
+      let tac_of gls i j depth = Goal.enter_one begin fun gl' ->
         let sigma' = Goal.sigma gl' in
         let _concl = Goal.concl gl' in
         if !typeclasses_debug > 0 then
@@ -808,7 +811,7 @@ module Search = struct
             search_dep = dep';
             search_hints = hints';
             search_cut = derivs }
-        in kont info' end
+        in kont depth info' end
       in
       let rec result (shelf, ()) i k =
         foundone := true;
@@ -823,11 +826,18 @@ module Search = struct
                 (Option.cata (fun k -> str " in addition to the first " ++ int k)
                              (mt()) k)));
         let res =
-          if j = 0 then tclUNIT ()
-          else tclDISPATCH
-                 (List.init j (fun j' -> (tac_of gls i (Option.default 0 k + j'))))
+          if j = 0 then tclUNIT depth
+          else
+            tclFOLD
+              (fun (j', d) ->
+                tac_of gls i
+                  (Option.default 0 k + j')
+                  (if info.mode.compat_depth then d else succ depth)
+                >>= fun d -> tclUNIT (succ j', d)
+              ) (0, succ depth)
+            >>= fun (_, d) -> tclUNIT d
         in
-        let finish nestedshelf sigma =
+        let finish nestedshelf depth sigma =
           let filter ev =
             try
               let evi = Evd.find_undefined sigma ev in
@@ -859,14 +869,14 @@ module Search = struct
 		 str" while shelving " ++
 		 prlist_with_sep spc (pr_ev sigma) shelved);
             shelve_goals shelved <*>
-              (if List.is_empty goals then tclUNIT ()
+              (if List.is_empty goals then tclUNIT depth
                else
 	         let sigma' = mark_unresolvables sigma goals in
                  with_shelf (Unsafe.tclEVARS sigma' <*> Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state goals)) >>=
                       fun s -> result s i (Some (Option.default 0 k + j)))
           end
-        in with_shelf res >>= fun (sh, ()) ->
-           tclEVARMAP >>= finish sh
+        in with_shelf res >>= fun (sh, depth) ->
+           tclEVARMAP >>= finish sh depth
       in
       if path_matches derivs [] then aux e tl
       else
@@ -898,9 +908,9 @@ module Search = struct
     if backtrack then aux (NoApplicableEx,Exninfo.null) poss
     else tclONCE (aux (NoApplicableEx,Exninfo.null) poss)
 
-  let hints_tac hints info kont : unit Proofview.tactic =
-    Proofview.Goal.enter
-      (fun gl -> hints_tac_gl hints info kont gl)
+  let hints_tac hints info kont depth : int Proofview.tactic =
+    Proofview.Goal.enter_one
+      (fun gl -> hints_tac_gl hints info kont depth gl)
 
   let intro_tac info kont gl =
     let open Proofview in
@@ -920,7 +930,7 @@ module Search = struct
 
   let intro info kont =
     Proofview.tclBIND Tactics.intro
-     (fun _ -> Proofview.Goal.enter (fun gl -> intro_tac info kont gl))
+     (fun _ -> Proofview.Goal.enter_one (fun gl -> intro_tac info kont gl))
 
   let rec search_tac hints limit depth =
     let kont depth info =
@@ -934,7 +944,7 @@ module Search = struct
     fun info ->
     if Int.equal depth (succ limit) then Proofview.tclZERO ReachedLimitEx
     else
-      Proofview.tclOR (hints_tac hints info (kont (succ depth)))
+      Proofview.tclOR (hints_tac hints info kont depth)
                       (fun e ->
                         let depth =
                           if info.mode.count_intros then succ depth else depth
@@ -951,7 +961,7 @@ module Search = struct
     else
       let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
       let info = make_autogoal ?st ~mode dep (cut_of_hints hints) i gl in
-      search_tac hints depth 1 info
+      tclIGNORE (search_tac hints depth 1 info)
 
   let search_tac ?(st=full_transparent_state) ~mode dep hints depth =
     let open Proofview in

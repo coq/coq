@@ -517,6 +517,22 @@ let fold_left2_goal i s l =
   Comb.set CList.(undefined evd (flatten (rev subgoals))) >>
   return r
 
+let tclFOLD f init =
+  let open Proof in
+  Pv.get >>= fun initial ->
+  Proof.List.fold_left begin fun ((r, subgoals) as cur) goal ->
+    Solution.get >>= fun step ->
+    match cleared_alias step goal with
+    | None -> return cur
+    | Some goal ->
+       Comb.set [goal] >>
+         f r >>= fun r ->
+       Proof.map (fun comb -> (r, comb :: subgoals)) Comb.get
+    end (init, []) initial.comb >>= fun (r, subgoals) ->
+  Solution.get >>= fun evd ->
+  Comb.set CList.(undefined evd (flatten (rev subgoals))) >>
+    return r
+
 (** Dispatch tacticals are used to apply a different tactic to each
     goal under focus. They come in two flavours: [tclDISPATCH] takes a
     list of [unit tactic]-s and build a [unit tactic]. [tclDISPATCHL]

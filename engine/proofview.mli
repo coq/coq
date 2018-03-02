@@ -289,6 +289,7 @@ val tclTRYFOCUS : int -> int -> unit tactic -> unit tactic
 exception SizeMismatch of int*int
 val tclDISPATCH : unit tactic list -> unit tactic
 val tclDISPATCHL : 'a tactic list -> 'a list tactic
+val tclFOLD : ('a -> 'a tactic) -> 'a -> 'a tactic
 
 (** [tclEXTEND b r e] is a variant of {!tclDISPATCH}, where the [r]
     tactic is "repeated" enough time such that every goal has a tactic
