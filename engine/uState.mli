@@ -133,7 +133,10 @@ val fix_undefined_variables : t -> t
 
 val refresh_undefined_univ_variables : t -> t * Univ.universe_level_subst
 
+(** Universe minimization *)
+val minimize : t -> t
 val normalize : t -> t
+[@@ocaml.deprecated "Alias of UState.minimize"]
 
 type universe_decl =
   (Misctypes.lident list, Univ.Constraint.t) Misctypes.gen_universe_decl

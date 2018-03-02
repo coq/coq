@@ -85,7 +85,7 @@ let interp_definition pl bl poly red_option c ctypopt =
       evd, c, imps1@Impargs.lift_implicits (Context.Rel.nhyps ctx) impsty, Some ty
   in
   (* universe minimization *)
-  let evd = Evd.nf_constraints evd in
+  let evd = Evd.minimize_universes evd in
   (* Substitute evars and universes, and add parameters.
      Note: in program mode some evars may remain. *)
   let ctx = List.map (EConstr.to_rel_decl evd) ctx in

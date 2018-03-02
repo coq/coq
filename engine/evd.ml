@@ -900,9 +900,9 @@ let nf_univ_variables evd =
   let evd' = {evd with universes = uctx'} in
     evd', subst
 
-let nf_constraints evd =
+let minimize_universes evd =
   let subst, uctx' = UState.normalize_variables evd.universes in
-  let uctx' = UState.normalize uctx' in
+  let uctx' = UState.minimize uctx' in
     {evd with universes = uctx'}
 
 let universe_of_name evd s = UState.universe_of_name evd.universes s
@@ -1167,4 +1167,5 @@ let make_evar_universe_context e l =
   | Some l -> UState.make_with_initial_binders g l
 let normalize_evar_universe_context_variables = UState.normalize_variables
 let abstract_undefined_variables = UState.abstract_undefined_variables
-let normalize_evar_universe_context = UState.normalize
+let normalize_evar_universe_context = UState.minimize
+let nf_constraints = minimize_universes

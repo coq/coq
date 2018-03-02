@@ -122,7 +122,7 @@ let compute_name internal id =
 let define internal id c p univs =
   let fd = declare_constant ~internal in
   let id = compute_name internal id in
-  let ctx = UState.normalize univs in
+  let ctx = UState.minimize univs in
   let c = Universes.subst_opt_univs_constr (UState.subst ctx) c in
   let univs =
     if p then Polymorphic_const_entry (UState.context ctx)

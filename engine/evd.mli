@@ -533,7 +533,7 @@ val normalize_evar_universe_context_variables : UState.t ->
 [@@ocaml.deprecated "Alias of UState.normalize_variables"]
 
 val normalize_evar_universe_context : UState.t -> UState.t
-[@@ocaml.deprecated "Alias of UState.normalize"]
+[@@ocaml.deprecated "Alias of UState.minimize"]
 
 val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Level.t
 val new_univ_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Universe.t
@@ -598,7 +598,10 @@ val fix_undefined_variables : evar_map -> evar_map
 
 val refresh_undefined_universes : evar_map -> evar_map * Univ.universe_level_subst
 
+(** Universe minimization *)
+val minimize_universes : evar_map -> evar_map
 val nf_constraints : evar_map -> evar_map
+[@@ocaml.deprecated "Alias of Evd.minimize_universes"]
 
 val update_sigma_env : evar_map -> env -> evar_map
 

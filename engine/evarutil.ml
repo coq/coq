@@ -89,15 +89,15 @@ let nf_evars_universes evm =
     (Evd.universe_subst evm)
     
 let nf_evars_and_universes evm =
-  let evm = Evd.nf_constraints evm in
+  let evm = Evd.minimize_universes evm in
     evm, nf_evars_universes evm
 
 let e_nf_evars_and_universes evdref =
-  evdref := Evd.nf_constraints !evdref;
+  evdref := Evd.minimize_universes !evdref;
   nf_evars_universes !evdref, Evd.universe_subst !evdref
 
 let nf_evar_map_universes evm =
-  let evm = Evd.nf_constraints evm in
+  let evm = Evd.minimize_universes evm in
   let subst = Evd.universe_subst evm in
     if Univ.LMap.is_empty subst then evm, nf_evar0 evm
     else
