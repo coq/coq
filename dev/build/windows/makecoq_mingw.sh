@@ -1275,7 +1275,6 @@ function get_cygwin_mingw_sources {
 
 function make_coq_installer {
   make_coq
-  make_mingw_make
   get_cygwin_mingw_sources
 
   # Prepare the file lists for the installer. We created to file list dumps of the target folder during the build:

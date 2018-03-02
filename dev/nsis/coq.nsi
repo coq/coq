@@ -87,11 +87,7 @@ Section "Coq" Sec1
 
   SetOutPath "$INSTDIR\bin"
   File ${COQ_SRC_PATH}\bin\*.exe
-  ; make.exe and its dll
-  File ${COQ_SRC_PATH}\bin\make.exe
-  File ${COQ_SRC_PATH}\bin\libiconv2.dll
-  File ${COQ_SRC_PATH}\bin\libintl3.dll
-
+	
   SetOutPath "$INSTDIR\lib\theories"
   File /r ${COQ_SRC_PATH}\theories\*.vo
   File /r ${COQ_SRC_PATH}\theories\*.v
