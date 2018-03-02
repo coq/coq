@@ -34,10 +34,11 @@ and lambda =
   | Lfix          of (int array * int) * fix_decl
   | Lcofix        of int * fix_decl (* must be in eta-expanded form *)
   | Lmakeblock    of int * lambda array
-  | Lval          of structured_constant
+  | Lval          of structured_values
   | Lsort         of Sorts.t
   | Lind          of pinductive
   | Lproj         of Projection.Repr.t * lambda
+  | Lint          of int
   | Luint         of uint
 
 (* Cofixpoints have to be in eta-expanded form for their call-by-need evaluation

@@ -116,6 +116,8 @@ let rec pp_lam lam =
     hov 1
       (str "(proj " ++ Projection.Repr.print p ++ str "(" ++ pp_lam arg
        ++ str ")")
+  | Lint i ->
+    Pp.(str "(int:" ++ int i ++ str ")")
   | Luint _ ->
     str "(uint)"
 
@@ -151,7 +153,7 @@ let shift subst = subs_shft (1, subst)
 
 let rec map_lam_with_binders g f n lam =
   match lam with
-  | Lrel _ | Lvar _  | Lconst _ | Lval _ | Lsort _ | Lind _ -> lam
+  | Lrel _ | Lvar _  | Lconst _ | Lval _ | Lsort _ | Lind _ | Lint _ -> lam
   | Levar (evk, args) ->
     let args' = Array.Smart.map (f n) args in
     if args == args' then lam else Levar (evk, args')
@@ -350,7 +352,7 @@ let rec occurrence k kind lam =
     if n = k then
       if kind then false else raise Not_found
     else kind
-  | Lvar _  | Lconst _  | Lval _ | Lsort _ | Lind _ -> kind
+  | Lvar _  | Lconst _  | Lval _ | Lsort _ | Lind _ | Lint _ -> kind
   | Levar (_, args) ->
     occurrence_args k kind args
   | Lprod(dom, codom) ->
@@ -437,15 +439,14 @@ let check_compilable ib =
 
 let is_value lc =
   match lc with
-  | Lval _ -> true
+  | Lval _ | Lint _ -> true
   | _ -> false
 
 let get_value lc =
   match lc with
   | Lval v -> v
+  | Lint i -> val_of_int i
   | _ -> raise Not_found
-
-let mkConst_b0 n = Lval (Const_b0 n)
 
 let make_args start _end =
   Array.init (start - _end + 1) (fun i -> Lrel (Anonymous, start - i))
@@ -453,7 +454,7 @@ let make_args start _end =
 (* Translation of constructors *)
 let expand_constructor tag nparams arity =
   let ids = Array.make (nparams + arity) Anonymous in
-  if arity = 0 then mkLlam ids (mkConst_b0 tag)
+  if arity = 0 then mkLlam ids (Lint tag)
   else
     let args = make_args arity 1 in
     Llam(ids, Lmakeblock (tag, args))
@@ -464,15 +465,15 @@ let makeblock tag nparams arity args =
     mkLapp (expand_constructor tag nparams arity) args
   else
     (* The constructor is fully applied *)
-  if arity = 0 then mkConst_b0 tag
+  if arity = 0 then Lint tag
   else
   if Array.for_all is_value args then
     if tag < last_variant_tag then
-      Lval(Const_bn(tag, Array.map get_value args))
+      Lval(val_of_block tag (Array.map get_value args))
     else
       let args = Array.map get_value args in
-      let args = Array.append [|Const_b0 (tag - last_variant_tag) |] args in
-      Lval(Const_bn(last_variant_tag, args))
+      let args = Array.append [| val_of_int (tag - last_variant_tag) |] args in
+      Lval(val_of_block last_variant_tag args)
   else Lmakeblock(tag, args)
 
 
@@ -837,8 +838,8 @@ let dynamic_int31_compilation fc args =
 
 (* We are relying here on the tags of digits constructors *)
 let digits_from_uint i =
-  let d0 = mkConst_b0 0 in
-  let d1 = mkConst_b0 1 in
+  let d0 = Lint 0 in
+  let d1 = Lint 1 in
   let digits = Array.make 31 d0 in
   for k = 0 to 30 do
     if Int.equal ((Uint31.to_int i lsr k) land 1) 1 then
