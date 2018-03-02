@@ -923,52 +923,36 @@ let normalize_context_set g ctx us algs weak =
   let uf = UF.create () in
   (** Keep the Prop/Set <= i constraints separate for minimization *)
   let smallles, csts =
-    Constraint.fold (fun (l,d,r as cstr) (smallles, noneqs) ->
-        if d == Le then
-	  if Univ.Level.is_small l then
-	    if is_set_minimization () && LSet.mem r ctx then
-	      (Constraint.add cstr smallles, noneqs)
-	    else (smallles, noneqs)
-	  else if Level.is_small r then
-	    if Level.is_prop r then
-	      raise (Univ.UniverseInconsistency
-		       (Le,Universe.make l,Universe.make r,None))
-	    else (smallles, Constraint.add (l,Eq,r) noneqs)
-	  else (smallles, Constraint.add cstr noneqs)
-	else (smallles, Constraint.add cstr noneqs))
-    csts (Constraint.empty, Constraint.empty)
+    Constraint.partition (fun (l,d,r) -> d == Le && Level.is_small l) csts
+  in
+  let smallles = if is_set_minimization ()
+    then Constraint.filter (fun (l,d,r) -> LSet.mem r ctx) smallles
+    else Constraint.empty
   in
   let csts =
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
-    let g = Univ.LSet.fold (fun v g -> UGraph.add_universe v false g)
+    let g = LSet.fold (fun v g -> UGraph.add_universe v false g)
 			   ctx UGraph.initial_universes
     in
-    let g =
-      Univ.Constraint.fold
-	(fun (l, d, r) g ->
-	 let g =
-	   if not (Level.is_small l || LSet.mem l ctx) then
-	     try UGraph.add_universe l false g
-	     with UGraph.AlreadyDeclared -> g
-	   else g
-	 in
-	 let g =
-	   if not (Level.is_small r || LSet.mem r ctx) then
-	     try UGraph.add_universe r false g
-	     with UGraph.AlreadyDeclared -> g
-	   else g
-	 in g) csts g
+    let add_soft u g =
+      if not (Level.is_small u || LSet.mem u ctx)
+      then try UGraph.add_universe u false g with UGraph.AlreadyDeclared -> g
+      else g
     in
-    let g = Univ.Constraint.fold UGraph.enforce_constraint csts g in
+    let g = Constraint.fold
+        (fun (l, d, r) g -> add_soft r (add_soft l g))
+        csts g
+    in
+    let g = UGraph.merge_constraints csts g in
       UGraph.constraints_of_universes g
   in
   let noneqs =
     Constraint.fold (fun (l,d,r as cstr) noneqs ->
       if d == Eq then (UF.union l r uf; noneqs)
       else (* We ignore the trivial Prop/Set <= i constraints. *)
-	if d == Le && Univ.Level.is_small l then noneqs
-	else if Univ.Level.is_prop l && d == Lt && Univ.Level.is_set r
+        if d == Le && Level.is_small l then noneqs
+        else if Level.is_prop l && d == Lt && Level.is_set r
 	then noneqs
 	else Constraint.add cstr noneqs)
       csts Constraint.empty
@@ -980,12 +964,12 @@ let normalize_context_set g ctx us algs weak =
     let canon, (global, rigid, flexible) = choose_canonical ctx flex algs s in
     (* Add equalities for globals which can't be merged anymore. *)
     let cstrs = LSet.fold (fun g cst -> 
-      Constraint.add (canon, Univ.Eq, g) cst) global
+      Constraint.add (canon, Eq, g) cst) global
       cstrs 
     in
     (* Also add equalities for rigid variables *)
     let cstrs = LSet.fold (fun g cst -> 
-      Constraint.add (canon, Univ.Eq, g) cst) rigid
+      Constraint.add (canon, Eq, g) cst) rigid
       cstrs
     in
     let canonu = Some (Universe.make canon) in
