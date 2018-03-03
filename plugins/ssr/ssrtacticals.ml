@@ -59,7 +59,7 @@ let tclSEQAT ist atac1 dir (ivar, ((_, atacs2), atac3)) =
   | L2R, pad, tacs2 -> Tacticals.tclTHENSFIRSTn tac1 (Array.of_list (pad @ tacs2)) tac3
   | R2L, pad, tacs2 -> Tacticals.tclTHENSLASTn tac1 tac3 (Array.of_list (tacs2 @ pad))
 
-(** The "in" pseudo-tactical {{{ **********************************************)
+(** The "in" pseudo-tactical *)(* {{{ **********************************************)
 
 let hidden_goal_tag = "the_hidden_goal"
 

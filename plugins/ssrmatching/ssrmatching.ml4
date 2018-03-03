@@ -70,7 +70,7 @@ let _ =
       Goptions.optwrite = debug }
 let pp s = !pp_ref s
 
-(** Utils {{{ *****************************************************************)
+(** Utils *)(* {{{ *****************************************************************)
 let env_size env = List.length (Environ.named_context env)
 let safeDestApp c =
   match kind c with App (f, a) -> f, a | _ -> c, [| |]
@@ -179,7 +179,7 @@ let nf_evar sigma c =
 
 (* }}} *)
 
-(** Profiling {{{ *************************************************************)
+(** Profiling *)(* {{{ *************************************************************)
 type profiler = { 
   profile : 'a 'b. ('a -> 'b) -> 'a -> 'b;
   reset : unit -> unit;

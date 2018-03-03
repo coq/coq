@@ -460,7 +460,7 @@ let red_product_skip_id env sigma c = match EConstr.kind sigma c with
 
 let ssrevaltac ist gtac = Tacinterp.tactic_of_value ist gtac
 
-(** Open term to lambda-term coercion  {{{ ************************************)
+(** Open term to lambda-term coercion  *)(* {{{ ************************************)
 
 (* This operation takes a goal gl and an open term (sigma, t), and   *)
 (* returns a term t' where all the new evars in sigma are abstracted *)
@@ -1000,7 +1000,7 @@ let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc gl =
   try applyn ~with_evars ~with_shelve:true ?beta n (EConstr.of_constr oc) gl
   with e when CErrors.noncritical e -> raise dependent_apply_error
 
-(** Profiling {{{ *************************************************************)
+(** Profiling *)(* {{{ *************************************************************)
 type profiler = { 
   profile : 'a 'b. ('a -> 'b) -> 'a -> 'b;
   reset : unit -> unit;
@@ -1128,7 +1128,7 @@ let interp_clr sigma = function
 
 (** Basic tacticals *)
 
-(** Multipliers {{{ ***********************************************************)
+(** Multipliers *)(* {{{ ***********************************************************)
 
 (* tactical *)
 
@@ -1168,7 +1168,7 @@ let tclMULT = function
 let old_cleartac clr = check_hyps_uniq [] clr; Proofview.V82.of_tactic (Tactics.clear (hyps_ids clr))
 let cleartac clr = check_hyps_uniq [] clr; Tactics.clear (hyps_ids clr)
 
-(** }}} *)
+(* }}} *)
 
 (** Generalize tactic *)
 
