@@ -344,19 +344,6 @@ let _ =
       optread  = get_hide_obligations;
       optwrite = set_hide_obligations; }
 
-let shrink_obligations = ref true
-
-let set_shrink_obligations = (:=) shrink_obligations
-let get_shrink_obligations () = !shrink_obligations
-
-let _ =
-  declare_bool_option
-    { optdepr  = true; (* remove in 8.8 *)
-      optname  = "Shrinking of Program obligations";
-      optkey   = ["Shrink";"Obligations"];
-      optread  = get_shrink_obligations;
-      optwrite = set_shrink_obligations; }
-
 let evar_of_obligation o = make_evar (Global.named_context_val ()) o.obl_type
 
 let get_obligation_body expand obl =
@@ -632,7 +619,7 @@ let declare_obligation prg obl body ty uctx =
       let opaque = not force && opaque in
       let poly = pi2 prg.prg_kind in
       let ctx, body, ty, args =
-	if get_shrink_obligations () && not poly then
+        if not poly then
 	  shrink_body body ty else [], body, ty, [||]
       in
       let body = ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
