@@ -705,6 +705,7 @@ let pr_universe_body = function
 
 let pr_universe_opt_subst = Univ.LMap.pr pr_universe_body
 
+(* Eq < Le < Lt *)
 let compare_constraint_type d d' =
   match d, d' with
   | Eq, Eq -> 0
