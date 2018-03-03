@@ -789,6 +789,27 @@ let _pr_constraints_map (cmap:constraints_map) =
 let remove_alg l (ctx, us, algs, insts, cstrs) =
   (ctx, us, LSet.remove l algs, insts, cstrs)
 
+let not_lower lower (d,l) =
+  (* We're checking if (d,l) is already implied by the lower
+     constraints on some level u. If it represents l < u (d is Lt
+     or d is Le and i > 0, the i < 0 case is impossible due to
+     invariants of Univ), and the lower constraints only have l <=
+     u then it is not implied. *)
+  Univ.Universe.exists
+    (fun (l,i) ->
+       let d =
+         if i == 0 then d
+         else match d with
+           | Le -> Lt
+           | d -> d
+       in
+       try let d' = LMap.find l lower in
+         (* If d is stronger than the already implied lower
+          * constraints we must keep it. *)
+         compare_constraint_type d d' > 0
+       with Not_found ->
+         (** No constraint existing on l *) true) l
+
 exception UpperBoundedAlg
 
 let minimize_univ_variables ctx us algs left right cstrs =
@@ -820,28 +841,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
               lower_add l d newlow, lower_union lower lower')
 	  (acc, [], LMap.empty, LMap.empty) l
         in
-        let not_lower (d,l) =
-        (* We're checking if (d,l) is already implied by the lower
-	  constraints on some level u. If it represents l < u (d is Lt
-	  or d is Le and i > 0, the i < 0 case is impossible due to
-	  invariants of Univ), and the lower constraints only have l <=
-	  u then it is not implied. *)
-          Univ.Universe.exists
-          (fun (l,i) ->
-             let d =
-               if i == 0 then d
-               else match d with
-                    | Le -> Lt
-                    | d -> d
-             in
-             try let d' = LMap.find l lower in
-                 (* If d is stronger than the already implied lower
-                  * constraints we must keep it. *)
-                 compare_constraint_type d d' > 0
-             with Not_found ->
-               (** No constraint existing on l *) true) l
-        in
-        let left = List.uniquize (List.filter not_lower left) in
+        let left = List.uniquize (List.filter (not_lower lower) left) in
         (acc, left, LMap.union newlow lower)
     in
     let instantiate_lbound lbound =
