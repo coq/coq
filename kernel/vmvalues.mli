@@ -72,6 +72,9 @@ type atom =
   | Aind of inductive
   | Asort of Sorts.t
 
+val get_atom_rel : unit -> atom array
+(** Global table of rels *)
+
 (** Zippers *)
 
 type zipper =

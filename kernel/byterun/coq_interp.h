@@ -17,9 +17,10 @@ value coq_push_arguments(value args);
 
 value coq_push_vstack(value stk);
 
-value coq_interprete_ml(value tcode, value a, value g, value e, value ea);
+value coq_interprete_ml(value tcode, value a, value t, value g, value e, value ea);
+value coq_interprete_byte(value* argv, int argn);
 
 value coq_interprete
-    (code_t coq_pc, value coq_accu, value coq_global_data, value coq_env, long coq_extra_args);
+    (code_t coq_pc, value coq_accu, value coq_atom_tbl, value coq_global_data, value coq_env, long coq_extra_args);
 
-value coq_eval_tcode (value tcode, value g, value e);
+value coq_eval_tcode (value tcode, value t, value g, value e);

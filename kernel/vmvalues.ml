@@ -410,13 +410,20 @@ let check_fix f1 f2 =
     else false
   else false
 
-external atom_rel : unit -> atom array = "get_coq_atom_tbl"
-external realloc_atom_rel : int -> unit = "realloc_coq_atom_tbl"
+let atom_rel : atom array ref =
+  let init i = Aid (RelKey i) in
+  ref (Array.init 40 init)
+
+let get_atom_rel () = !atom_rel
+
+let realloc_atom_rel n =
+  let n = min (n + 0x100) Sys.max_array_length in
+  let init i = Aid (RelKey i) in
+  let ans = Array.init n init in
+  atom_rel := ans
 
 let relaccu_tbl =
-  let atom_rel = atom_rel() in
-  let len = Array.length atom_rel in
-  for i = 0 to len - 1 do atom_rel.(i) <- Aid (RelKey i) done;
+  let len = Array.length !atom_rel in
   ref (Array.init len mkAccuCode)
 
 let relaccu_code i =
@@ -425,9 +432,7 @@ let relaccu_code i =
   else
     begin
       realloc_atom_rel i;
-      let atom_rel = atom_rel () in
-      let nl = Array.length atom_rel in
-      for j = len to nl - 1 do atom_rel.(j) <- Aid(RelKey j) done;
+      let nl = Array.length !atom_rel in
       relaccu_tbl :=
         Array.init nl
           (fun j -> if j < len then !relaccu_tbl.(j) else mkAccuCode j);

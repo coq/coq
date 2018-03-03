@@ -26,7 +26,7 @@ open Cbytegen
 module NamedDecl = Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
 
-external eval_tcode : tcode -> vm_global -> values array -> values = "coq_eval_tcode"
+external eval_tcode : tcode -> atom array -> vm_global -> values array -> values = "coq_eval_tcode"
 
 type global_data = { mutable glob_len : int; mutable glob_val : values array }
 
@@ -173,7 +173,7 @@ and eval_to_patch env (buff,pl,fv) =
   in
   let tc = patch buff pl slots in
   let vm_env = Array.map (slot_for_fv env) fv in
-  eval_tcode tc (vm_global global_data.glob_val) vm_env
+  eval_tcode tc (get_atom_rel ()) (vm_global global_data.glob_val) vm_env
 
 and val_of_constr env c =
   match compile ~fail_on_error:true env c with

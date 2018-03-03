@@ -42,11 +42,11 @@ external push_vstack : vstack -> int -> unit = "coq_push_vstack"
 
 
 (* interpreteur *)
-external coq_interprete : tcode -> values -> vm_global -> vm_env -> int -> values =
-  "coq_interprete_ml"
+external coq_interprete : tcode -> values -> atom array -> vm_global -> vm_env -> int -> values =
+  "coq_interprete_byte" "coq_interprete_ml"
 
 let interprete code v env k =
-  coq_interprete code v (Csymtable.get_global_data ()) env k
+  coq_interprete code v (get_atom_rel ()) (Csymtable.get_global_data ()) env k
 
 (* Functions over arguments *)
 
