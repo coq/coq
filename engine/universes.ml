@@ -738,10 +738,12 @@ let lower_add l c m =
 let lower_of_list l =
   List.fold_left (fun acc (d,l) -> LMap.add l d acc) LMap.empty l
 
+type lbound = { enforce : bool; alg : bool; lbound: Universe.t; lower : lowermap }
+
 exception Found of Level.t * lowermap
 let find_inst insts v =
-  try LMap.iter (fun k (enf,alg,v',lower) ->
-    if not alg && enf && Universe.equal v' v then raise (Found (k, lower)))
+  try LMap.iter (fun k {enforce;alg;lbound=v';lower} ->
+    if not alg && enforce && Universe.equal v' v then raise (Found (k, lower)))
 	insts; raise Not_found
   with Found (f,l) -> (f,l)
 
@@ -761,18 +763,18 @@ let compute_lbound left =
 	   sup (Universe.super l) lbound
 	 else None))
       None left
-  
-let instantiate_with_lbound u lbound lower alg enforce (ctx, us, algs, insts, cstrs) =
+
+let instantiate_with_lbound u lbound lower ~alg ~enforce (ctx, us, algs, insts, cstrs) =
   if enforce then
     let inst = Universe.make u in
     let cstrs' = enforce_leq lbound inst cstrs in
       (ctx, us, LSet.remove u algs, 
-       LMap.add u (enforce,alg,lbound,lower) insts, cstrs'),
-      (enforce, alg, inst, lower)
+       LMap.add u {enforce;alg;lbound;lower} insts, cstrs'),
+      {enforce; alg; lbound=inst; lower}
   else (* Actually instantiate *)
     (Univ.LSet.remove u ctx, Univ.LMap.add u (Some lbound) us, algs,
-     LMap.add u (enforce,alg,lbound,lower) insts, cstrs),
-    (enforce, alg, lbound, lower)
+     LMap.add u {enforce;alg;lbound;lower} insts, cstrs),
+    {enforce; alg; lbound; lower}
 
 type constraints_map = (Univ.constraint_type * Univ.LMap.key) list Univ.LMap.t
 
@@ -798,7 +800,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	let lbounds' = 
 	  match compute_lbound (List.map (fun (d,l) -> d, Universe.make l) lower) with
 	  | None -> lbounds
-	  | Some lbound -> LMap.add r (true, false, lbound, lower_of_list lower)
+          | Some lbound -> LMap.add r {enforce=true; alg=false; lbound; lower=lower_of_list lower}
                                    lbounds
 	in (Univ.LMap.remove r left, lbounds'))
       left (left, Univ.LMap.empty)
@@ -810,7 +812,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	let acc, left, newlow, lower =
           List.fold_left
 	  (fun (acc, left', newlow, lower') (d, l) ->
-	   let acc', (enf,alg,l',lower) = aux acc l in
+           let acc', {enforce=enf;alg;lbound=l';lower} = aux acc l in
 	   let l' =
 	     if enf then Universe.make l
 	     else l'
@@ -849,7 +851,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	  (* u is algebraic: we instantiate it with its lower bound, if any,
               or enforce the constraints if it is bounded from the top. *)
           let lower = remove_lower lbound lower in
-	  instantiate_with_lbound u lbound lower true false acc
+          instantiate_with_lbound u lbound lower ~alg:true ~enforce:false acc
 	else (* u is non algebraic *)
 	  match Universe.level lbound with
 	  | Some l -> (* The lowerbound is directly a level *) 
@@ -861,18 +863,18 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	       (* Should check that u does not 
   	          have upper constraints that are not already in right *)
 	       let acc' = remove_alg l acc in
-		 instantiate_with_lbound u lbound lower false false acc'
-	     else acc, (true, false, lbound, lower)
+                 instantiate_with_lbound u lbound lower ~alg:false ~enforce:false acc'
+             else acc, {enforce=true; alg=false; lbound; lower}
 	  | None ->
 	     try
 	       (* Another universe represents the same lower bound,
                   we can share them with no harm. *)
 	       let can, lower = find_inst insts lbound in
                let lower = LMap.remove can lower in
-	       instantiate_with_lbound u (Universe.make can) lower false false acc
+               instantiate_with_lbound u (Universe.make can) lower ~alg:false ~enforce:false acc
 	  with Not_found -> 
 	    (* We set u as the canonical universe representing lbound *)
-	    instantiate_with_lbound u lbound lower false true acc
+            instantiate_with_lbound u lbound lower ~alg:false ~enforce:true acc
     in
     let acc' acc = 
       match LMap.find u right with
@@ -881,7 +883,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	let dangling = List.filter (fun (d, r) -> not (LMap.mem r us)) cstrs in
 	  if List.is_empty dangling then acc
 	  else
-	    let ((ctx', us, algs, insts, cstrs), (enf,_,inst,lower as b)) = acc in
+            let ((ctx', us, algs, insts, cstrs), ({lbound=inst;lower} as b)) = acc in
 	    let cstrs' = List.fold_left (fun cstrs (d, r) -> 
 	      if d == Univ.Le then
 		enforce_leq inst (Universe.make r) cstrs
@@ -893,15 +895,15 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	    in
 	      (ctx', us, algs, insts, cstrs'), b
     in
-      if not (LSet.mem u ctx) then acc' (acc, (true, false, Universe.make u, lower))
+      if not (LSet.mem u ctx) then acc' (acc, {enforce=true; alg=false; lbound=Universe.make u; lower})
       else
 	let lbound = compute_lbound left in
 	  match lbound with
 	  | None -> (* Nothing to do *)
-	    acc' (acc, (true, false, Universe.make u, lower))
+            acc' (acc, {enforce=true;alg=false;lbound=Universe.make u; lower})
 	  | Some lbound ->
 	     try acc' (instantiate_lbound lbound) 
-	     with Failure _ -> acc' (acc, (true, false, Universe.make u, lower))
+             with Failure _ -> acc' (acc, {enforce=true; alg=false; lbound=Universe.make u; lower})
   and aux (ctx', us, algs, seen, cstrs as acc) u =
     try acc, LMap.find u seen 
     with Not_found -> instance acc u
