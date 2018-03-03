@@ -433,7 +433,12 @@ OCAMLDOC_MLLIBD = $(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -
 	$(OCAMLDOC_MLLIBD)
 
 ml-doc:
-	$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads $(MLINCLUDES) $(COQIDEFLAGS) -d $(OCAMLDOCDIR) $(DOCMLS)
+	$(SHOW)'OCAMLDOC -html'
+	$(HIDE)mkdir -p $(OCAMLDOCDIR)/html/implementation
+	$(HIDE)$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads $(MLINCLUDES) $(COQIDEFLAGS) \
+	$(DOCMLS) -d $(OCAMLDOCDIR)/html/implementation -colorize-code \
+	-t "Coq mls documentation" \
+	-css-style ../style.css
 
 parsing/parsing.dot : | parsing/parsing.mllib.d
 	$(OCAMLDOC_MLLIBD)
