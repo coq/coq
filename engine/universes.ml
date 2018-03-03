@@ -842,9 +842,6 @@ let minimize_univ_variables ctx us algs left right cstrs =
         let left = List.uniquize (List.filter not_lower left) in
         (acc, left, LMap.union newlow lower)
       with Not_found -> acc, [], LMap.empty
-    and right =
-      try Some (LMap.find u right)
-      with Not_found -> None
     in
     let instantiate_lbound lbound =
       let alg = LSet.mem u algs in
@@ -878,9 +875,9 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	    instantiate_with_lbound u lbound lower false true acc
     in
     let acc' acc = 
-      match right with
-      | None -> acc
-      | Some cstrs -> 
+      match LMap.find u right with
+      | exception Not_found -> acc
+      | cstrs ->
 	let dangling = List.filter (fun (d, r) -> not (LMap.mem r us)) cstrs in
 	  if List.is_empty dangling then acc
 	  else
