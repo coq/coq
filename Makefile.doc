@@ -387,10 +387,9 @@ install-doc-index-urls:
 
 OCAMLDOCDIR=dev/ocamldoc
 
-DOCMLIS=$(wildcard ./lib/*.mli ./intf/*.mli ./kernel/*.mli ./library/*.mli \
-	./engine/*.mli ./pretyping/*.mli ./interp/*.mli printing/*.mli \
-	./parsing/*.mli ./proofs/*.mli \
-	./tactics/*.mli ./stm/*.mli ./toplevel/*.mli ./ltac/*.mli)
+DOCMLS=$(foreach lib,$(CORECMA:.cma=_MLLIB_DEPENDENCIES),$(addsuffix .ml, $($(lib))))
+
+DOCMLIS=$(wildcard $(addsuffix /*.mli, $(CORESRCDIRS)))
 
 # Defining options to generate dependencies graphs
 DOT=dot
@@ -434,7 +433,7 @@ OCAMLDOC_MLLIBD = $(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -
 	$(OCAMLDOC_MLLIBD)
 
 ml-doc:
-	$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads $(MLINCLUDES) $(COQIDEFLAGS) -d $(OCAMLDOCDIR) $(MLSTATICFILES)
+	$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads $(MLINCLUDES) $(COQIDEFLAGS) -d $(OCAMLDOCDIR) $(DOCMLS)
 
 parsing/parsing.dot : | parsing/parsing.mllib.d
 	$(OCAMLDOC_MLLIBD)
