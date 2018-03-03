@@ -43,7 +43,7 @@ val check_constraint  : t -> univ_constraint -> bool
 val check_constraints : Constraint.t -> t -> bool
 
 (** Adds a universe to the graph, ensuring it is >= or > Set.
-   @raises AlreadyDeclared if the level is already declared in the graph. *)
+   @raise AlreadyDeclared if the level is already declared in the graph. *)
 
 exception AlreadyDeclared
 

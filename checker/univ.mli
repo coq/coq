@@ -84,7 +84,7 @@ val check_eq : universe check_function
 val initial_universes : universes
 
 (** Adds a universe to the graph, ensuring it is >= or > Set.
-   @raises AlreadyDeclared if the level is already declared in the graph. *)
+   @raise AlreadyDeclared if the level is already declared in the graph. *)
 
 exception AlreadyDeclared
 
