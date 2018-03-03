@@ -13,7 +13,6 @@ open CErrors
 open Util
 open Names
 open Nameops
-open Term
 open Constr
 open Termops
 open Environ
@@ -1346,46 +1345,6 @@ let index_of_ind_arg sigma t =
       | None -> error "Could not find inductive argument of elimination scheme."
   in aux None 0 t
 
-let enforce_prop_bound_names rename tac =
-  let open Context.Rel.Declaration in
-  match rename with
-  | Some (isrec,nn) when Namegen.use_h_based_elimination_names () ->
-      (* Rename dependent arguments in Prop with name "H" *)
-      (* so as to avoid having hypothesis such as "t:True", "n:~A" when calling *)
-      (* elim or induction with schemes built by Indrec.build_induction_scheme *)
-      let rec aux env sigma i t =
-        if i = 0 then t else match EConstr.kind sigma t with
-        | Prod (Name _ as na,t,t') ->
-            let very_standard = true in
-            let na =
-              if Retyping.get_sort_family_of env sigma t = InProp then
-                (* "very_standard" says that we should have "H" names only, but
-                   this would break compatibility even more... *)
-                let s = match Namegen.head_name sigma t with
-                  | Some id when not very_standard -> Id.to_string id
-                  | _ -> "" in
-                Name (add_suffix Namegen.default_prop_ident s)
-              else
-                na in
-            mkProd (na,t,aux (push_rel (LocalAssum (na,t)) env) sigma (i-1) t')
-        | Prod (Anonymous,t,t') ->
-            mkProd (Anonymous,t,aux (push_rel (LocalAssum (Anonymous,t)) env) sigma (i-1) t')
-        | LetIn (na,c,t,t') ->
-            mkLetIn (na,c,t,aux (push_rel (LocalDef (na,c,t)) env) sigma (i-1) t')
-        | _ -> assert false in
-      let rename_branch i =
-        Proofview.Goal.enter begin fun gl ->
-          let env = Proofview.Goal.env gl in
-          let sigma = Tacmach.New.project gl in
-          let t = Proofview.Goal.concl gl in
-          change_concl (aux env sigma i t)
-        end in
-      (if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
-        tac
-        (Array.map rename_branch nn)
-  | _ ->
-      tac
-
 let rec contract_letin_in_lam_header sigma c =
   match EConstr.kind sigma c with
   | Lambda (x,t,c)  -> mkLambda (x,t,contract_letin_in_lam_header sigma c)
@@ -1406,7 +1365,7 @@ let elimination_clause_scheme with_evars ?(with_classes=true) ?(flags=elim_flags
              (str "The type of elimination clause is not well-formed."))
   in
   let elimclause' = clenv_fchain ~flags indmv elimclause indclause in
-  enforce_prop_bound_names rename (Clenvtac.res_pf elimclause' ~with_evars ~with_classes ~flags)
+  Clenvtac.res_pf elimclause' ~with_evars ~with_classes ~flags
   end
 
 (*
@@ -4247,7 +4206,7 @@ let induction_tac with_evars params indvars elim =
   let elimclause' = recolle_clenv i params indvars elimclause gl in
   (* one last resolution (useless?) *)
   let resolved = clenv_unique_resolver ~flags:(elim_flags ()) elimclause' gl in
-  enforce_prop_bound_names rename (Clenvtac.clenv_refine with_evars resolved)
+  Clenvtac.clenv_refine with_evars resolved
   end
 
 (* Apply induction "in place" taking into account dependent

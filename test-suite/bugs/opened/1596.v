@@ -2,7 +2,6 @@ Require Import Relations.
 Require Import FSets.
 Require Import Arith.
 Require Import Omega.
-Unset Standard Proposition Elimination Names.
 
 Set Keyed Unification.
 

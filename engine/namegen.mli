@@ -113,8 +113,3 @@ val rename_bound_vars_as_displayed :
 val compute_displayed_name_in_gen :
   (evar_map -> int -> 'a -> bool) ->
   evar_map -> Id.Set.t -> Name.t -> 'a -> Name.t * Id.Set.t
-
-(**********************************************************************)
-(* Naming strategy for arguments in Prop when eliminating inductive types *)
-
-val use_h_based_elimination_names : unit -> bool
