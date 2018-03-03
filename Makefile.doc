@@ -385,18 +385,12 @@ install-doc-index-urls:
 # Documentation of the source code (using ocamldoc)
 ###########################################################################
 
-# To skip building docs for plugins and build docs for core only, set this
-# variable to 1 (or any non-empty value):
-NOPLUGINDOCS ?=
-
 OCAMLDOCDIR=dev/ocamldoc
 
-DOCMLLIBS=$(if $(NOPLUGINDOCS), \
-		  $(CORECMA:.cma=_MLLIB_DEPENDENCIES), \
-		  $(CORECMA:.cma=_MLLIB_DEPENDENCIES) $(PLUGINSCMO:.cmo=_MLPACK_DEPENDENCIES))
+DOCMLLIBS= $(CORECMA:.cma=_MLLIB_DEPENDENCIES) $(PLUGINSCMO:.cmo=_MLPACK_DEPENDENCIES)
 DOCMLS=$(foreach lib,$(DOCMLLIBS),$(addsuffix .ml, $($(lib))))
 
-DOCMLIS=$(wildcard $(addsuffix /*.mli, $(if $(NOPLUGINDOCS),$(CORESRCDIRS),$(SRCDIRS))))
+DOCMLIS=$(wildcard $(addsuffix /*.mli, $(SRCDIRS)))
 
 # Defining options to generate dependencies graphs
 DOT=dot
