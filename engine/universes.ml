@@ -876,7 +876,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
                 instantiate_with_lbound u lbound lower ~alg:false ~enforce:true acc
             end
     in
-    let acc' acc = 
+    let enforce_uppers acc =
       match LMap.find u right with
       | exception Not_found -> acc
       | cstrs ->
@@ -895,16 +895,17 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	    in
               (ctx, us, algs, insts, cstrs), b
     in
-      if not (LSet.mem u ctx) then acc' (acc, {enforce=true; alg=false; lbound=Universe.make u; lower})
-      else
-	let lbound = compute_lbound left in
-	  match lbound with
-	  | None -> (* Nothing to do *)
-            acc' (acc, {enforce=true;alg=false;lbound=Universe.make u; lower})
-	  | Some lbound ->
-	     try acc' (instantiate_lbound lbound) 
-             with UpperBoundedAlg ->
-               acc' (acc, {enforce=true; alg=false; lbound=Universe.make u; lower})
+    if not (LSet.mem u ctx)
+    then enforce_uppers (acc, {enforce=true; alg=false; lbound=Universe.make u; lower})
+    else
+      let lbound = compute_lbound left in
+      match lbound with
+      | None -> (* Nothing to do *)
+        enforce_uppers (acc, {enforce=true;alg=false;lbound=Universe.make u; lower})
+      | Some lbound ->
+        try enforce_uppers (instantiate_lbound lbound)
+        with UpperBoundedAlg ->
+          enforce_uppers (acc, {enforce=true; alg=false; lbound=Universe.make u; lower})
   and aux (ctx, us, algs, seen, cstrs as acc) u =
     try acc, LMap.find u seen 
     with Not_found -> instance acc u
