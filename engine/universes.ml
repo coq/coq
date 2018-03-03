@@ -789,6 +789,8 @@ let _pr_constraints_map (cmap:constraints_map) =
 let remove_alg l (ctx, us, algs, insts, cstrs) =
   (ctx, us, LSet.remove l algs, insts, cstrs)
 
+exception UpperBoundedAlg
+
 let minimize_univ_variables ctx us algs left right cstrs =
   let left, lbounds = 
     Univ.LMap.fold (fun r lower (left, lbounds as acc)  ->
@@ -887,7 +889,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	      else
 		try let lev = Option.get (Universe.level inst) in
 		      Constraint.add (lev, d, r) cstrs
-		with Option.IsNone -> failwith "")
+                with Option.IsNone -> raise UpperBoundedAlg)
 	      cstrs dangling
 	    in
 	      (ctx', us, algs, insts, cstrs'), b
@@ -900,7 +902,8 @@ let minimize_univ_variables ctx us algs left right cstrs =
             acc' (acc, {enforce=true;alg=false;lbound=Universe.make u; lower})
 	  | Some lbound ->
 	     try acc' (instantiate_lbound lbound) 
-             with Failure _ -> acc' (acc, {enforce=true; alg=false; lbound=Universe.make u; lower})
+             with UpperBoundedAlg ->
+               acc' (acc, {enforce=true; alg=false; lbound=Universe.make u; lower})
   and aux (ctx', us, algs, seen, cstrs as acc) u =
     try acc, LMap.find u seen 
     with Not_found -> instance acc u
