@@ -865,15 +865,16 @@ let minimize_univ_variables ctx us algs left right cstrs =
                  instantiate_with_lbound u lbound lower ~alg:false ~enforce:false acc'
              else acc, {enforce=true; alg=false; lbound; lower}
 	  | None ->
-	     try
-	       (* Another universe represents the same lower bound,
-                  we can share them with no harm. *)
-	       let can, lower = find_inst insts lbound in
-               let lower = LMap.remove can lower in
-               instantiate_with_lbound u (Universe.make can) lower ~alg:false ~enforce:false acc
-	  with Not_found -> 
-	    (* We set u as the canonical universe representing lbound *)
-            instantiate_with_lbound u lbound lower ~alg:false ~enforce:true acc
+            begin match find_inst insts lbound with
+              | can, lower ->
+                (* Another universe represents the same lower bound,
+                   we can share them with no harm. *)
+                let lower = LMap.remove can lower in
+                instantiate_with_lbound u (Universe.make can) lower ~alg:false ~enforce:false acc
+              | exception Not_found ->
+                (* We set u as the canonical universe representing lbound *)
+                instantiate_with_lbound u lbound lower ~alg:false ~enforce:true acc
+            end
     in
     let acc' acc = 
       match LMap.find u right with
