@@ -422,17 +422,6 @@ let class_params = function
 let add_class cl =
   add_new_class cl { cl_param = class_params cl }
 
-let automatically_import_coercions = ref false
-
-open Goptions
-let _ =
-  declare_bool_option
-    { optdepr  = true; (* remove in 8.8 *)
-      optname  = "automatic import of coercions";
-      optkey   = ["Automatic";"Coercions";"Import"];
-      optread  = (fun () -> !automatically_import_coercions);
-      optwrite = (:=) automatically_import_coercions }
-
 let cache_coercion env sigma (_, c) =
   let () = add_class c.coercion_source in
   let () = add_class c.coercion_target in
@@ -452,12 +441,10 @@ let cache_coercion env sigma (_, c) =
   let () = add_new_coercion c.coercion_type xf in
   add_coercion_in_graph env sigma (xf,is,it)
 
-let load_coercion _ o =
-  if !automatically_import_coercions then
-    cache_coercion (Global.env ()) Evd.empty o
+let load_coercion _ o = ()
 
 let open_coercion i o =
-  if Int.equal i 1 && not !automatically_import_coercions then
+  if Int.equal i 1 then
     cache_coercion (Global.env ()) Evd.empty o
 
 let subst_coercion (subst, c) =
