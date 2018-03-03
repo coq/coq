@@ -511,10 +511,10 @@ let coq_eqdec ~sum ~rev =
     mkPattern (mkGAppRef sum args)
   )
 
-(** { ?X2 = ?X3 :> ?X1 } + { ~ ?X2 = ?X3 :> ?X1 } *)
+(** [{ ?X2 = ?X3 :> ?X1 } + { ~ ?X2 = ?X3 :> ?X1 }] *)
 let coq_eqdec_inf_pattern = coq_eqdec ~sum:coq_sumbool_ref ~rev:false
 
-(** { ~ ?X2 = ?X3 :> ?X1 } + { ?X2 = ?X3 :> ?X1 } *)
+(** [{ ~ ?X2 = ?X3 :> ?X1 } + { ?X2 = ?X3 :> ?X1 }] *)
 let coq_eqdec_inf_rev_pattern = coq_eqdec ~sum:coq_sumbool_ref ~rev:true
 
 (** %coq_or_ref (?X2 = ?X3 :> ?X1) (~ ?X2 = ?X3 :> ?X1) *)

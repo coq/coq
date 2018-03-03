@@ -127,7 +127,7 @@ let focus_context (left,right) =
 
 (** This (internal) function extracts a sublist between two indices,
     and returns this sublist together with its context: if it returns
-    [(a,(b,c))] then [a] is the sublist and (rev b)@a@c is the
+    [(a,(b,c))] then [a] is the sublist and [(rev b) @ a @ c] is the
     original list.  The focused list has lenght [j-i-1] and contains
     the goals from number [i] to number [j] (both included) the first
     goal of the list being numbered [1].  [focus_sublist i j l] raises
@@ -572,8 +572,8 @@ let tclDISPATCHL tacs = tclDISPATCHGEN CList.rev tacs
 
 
 (** [extend_to_list startxs rx endxs l] builds a list
-    [startxs@[rx,...,rx]@endxs] of the same length as [l]. Raises
-    [SizeMismatch] if [startxs@endxs] is already longer than [l]. *)
+    [startxs @ [rx,...,rx] @ endxs] of the same length as [l]. Raises
+    [SizeMismatch] if [startxs @ endxs] is already longer than [l]. *)
 let extend_to_list startxs rx endxs l =
   (* spiwack: I use [l] essentially as a natural number *)
   let rec duplicate acc = function
