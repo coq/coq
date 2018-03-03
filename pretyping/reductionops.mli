@@ -31,11 +31,6 @@ module ReductionBehaviour : sig
   val print : Globnames.global_reference -> Pp.t
 end
 
-(** Option telling if reduction should use the refolding machinery of cbn
-   (off by default) *)
-val get_refolding_in_reduction : unit -> bool
-val set_refolding_in_reduction : bool -> unit
-
 (** {6 Support for reduction effects } *)
 
 type effect_name = string

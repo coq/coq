@@ -29,19 +29,6 @@ exception Elimconst
     their parameters in its stack.
 *)
 
-let refolding_in_reduction = ref false
-let _ = Goptions.declare_bool_option {
-  Goptions.optdepr = true; (* remove in 8.8 *)
-  Goptions.optname =
-    "Perform refolding of fixpoints/constants like cbn during reductions";
-  Goptions.optkey = ["Refolding";"Reduction"];
-  Goptions.optread = (fun () -> !refolding_in_reduction);
-  Goptions.optwrite = (fun a -> refolding_in_reduction:=a);
-}
-
-let get_refolding_in_reduction () = !refolding_in_reduction
-let set_refolding_in_reduction = (:=) refolding_in_reduction
-
 (** Support for reduction effects *)
 
 open Mod_subst
@@ -1135,7 +1122,7 @@ let local_whd_state_gen flags sigma =
   whrec
 
 let raw_whd_state_gen flags env =
-  let f sigma s = fst (whd_state_gen ~refold:(get_refolding_in_reduction ())
+  let f sigma s = fst (whd_state_gen ~refold:false
                          ~tactic_mode:false
                          flags env sigma s) in
   f
@@ -1561,7 +1548,7 @@ let is_sort env sigma t =
    of case/fix (heuristic used by evar_conv) *)
 
 let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
-  let refold = get_refolding_in_reduction () in
+  let refold = false in
   let tactic_mode = false in
   let rec whrec csts s =
     let (t, stack as s),csts' = whd_state_gen ~csts ~refold ~tactic_mode CClosure.betaiota env sigma s in

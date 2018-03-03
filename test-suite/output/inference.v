@@ -13,12 +13,6 @@ Definition P (e:option L) :=
 
 Print P.
 
-(* Check that plus is folded even if reduction is involved *)
-Set Warnings Append "-deprecated-option".
-Set Refolding Reduction.
-Check (fun m n p (H : S m <= (S n) + p) => le_S_n _ _ H).
-
-
 (* Check that the heuristic to solve constraints is not artificially
    dependent on the presence of a let-in, and in particular that the
    second [_] below is not inferred to be n, as if obtained by
