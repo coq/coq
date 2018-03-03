@@ -804,8 +804,9 @@ let minimize_univ_variables ctx us algs left right cstrs =
   in
   let rec instance (ctx', us, algs, insts, cstrs as acc) u =
     let acc, left, lower =
-      try
-        let l = LMap.find u left in
+      match LMap.find u left with
+      | exception Not_found -> acc, [], LMap.empty
+      | l ->
 	let acc, left, newlow, lower =
           List.fold_left
 	  (fun (acc, left', newlow, lower') (d, l) ->
@@ -840,7 +841,6 @@ let minimize_univ_variables ctx us algs left right cstrs =
         in
         let left = List.uniquize (List.filter not_lower left) in
         (acc, left, LMap.union newlow lower)
-      with Not_found -> acc, [], LMap.empty
     in
     let instantiate_lbound lbound =
       let alg = LSet.mem u algs in
