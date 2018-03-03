@@ -321,7 +321,7 @@ exception UniversesDiffer
 val add_universe_constraints : evar_map -> Universes.Constraints.t -> evar_map
 (** Add the given universe unification constraints to the evar map.
     @raise UniversesDiffer in case a first-order unification fails.
-    @raise UniverseInconsistency
+    @raise UniverseInconsistency .
 *)
 
 (** {5 Extra data}
