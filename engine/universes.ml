@@ -788,10 +788,6 @@ let _pr_constraints_map (cmap:constraints_map) =
 let remove_alg l (ctx, us, algs, insts, cstrs) =
   (ctx, us, LSet.remove l algs, insts, cstrs)
 
-let remove_lower u lower =
-  let levels = Universe.levels u in
-  LSet.fold (fun l acc -> LMap.remove l acc) levels lower
-    
 let minimize_univ_variables ctx us algs left right cstrs =
   let left, lbounds = 
     Univ.LMap.fold (fun r lower (left, lbounds as acc)  ->
@@ -850,7 +846,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	if alg then
 	  (* u is algebraic: we instantiate it with its lower bound, if any,
               or enforce the constraints if it is bounded from the top. *)
-          let lower = remove_lower lbound lower in
+          let lower = LSet.fold LMap.remove (Universe.levels lbound) lower in
           instantiate_with_lbound u lbound lower ~alg:true ~enforce:false acc
 	else (* u is non algebraic *)
 	  match Universe.level lbound with
