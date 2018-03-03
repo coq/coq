@@ -51,7 +51,7 @@ type cases_pattern_expr_r =
   | CPatAlias of cases_pattern_expr * lname
   | CPatCstr  of reference
     * cases_pattern_expr list option * cases_pattern_expr list
-  (** [CPatCstr (_, c, Some l1, l2)] represents (@c l1) l2 *)
+  (** [CPatCstr (_, c, Some l1, l2)] represents [(@ c l1) l2] *)
   | CPatAtom of reference option
   | CPatOr   of cases_pattern_expr list
   | CPatNotation of notation * cases_pattern_notation_substitution
