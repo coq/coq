@@ -121,7 +121,7 @@ and recursion_order_expr =
   | CWfRec of constr_expr
   | CMeasureRec of constr_expr * constr_expr option (** measure, relation *)
 
-(** Anonymous defs allowed ?? *)
+(* Anonymous defs allowed ?? *)
 and local_binder_expr =
   | CLocalAssum   of lname list * binder_kind * constr_expr
   | CLocalDef     of lname * constr_expr * constr_expr option
