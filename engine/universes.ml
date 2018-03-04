@@ -811,6 +811,11 @@ let not_lower lower (d,l) =
          (** No constraint existing on l *) true) l
 
 exception UpperBoundedAlg
+(** [enforce_uppers upper lbound cstrs] interprets [upper] as upper
+   constraints to [lbound], adding them to [cstrs].
+
+    @raise UpperBoundedAlg if any [upper] constraints are strict and
+   [lbound] algebraic. *)
 let enforce_uppers upper lbound cstrs =
   List.fold_left (fun cstrs (d, r) ->
       if d == Univ.Le then
