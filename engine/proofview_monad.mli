@@ -67,12 +67,21 @@ module Info : sig
 
 end
 
+module StateStore : Store.S
+type goal = Evar.t
+type goal_with_state
+val drop_state : goal_with_state -> goal
+val get_state : goal_with_state -> StateStore.t
+val goal_with_state : goal -> StateStore.t -> goal_with_state
+val with_empty_state : goal -> goal_with_state
+val map_goal_with_state : (goal -> goal) -> goal_with_state -> goal_with_state
+
 (** Type of proof views: current [evar_map] together with the list of
     focused goals. *)
 type proofview = {
   solution : Evd.evar_map;
-  comb : Evar.t list;
-  shelf : Evar.t list;
+  comb : goal_with_state list;
+  shelf : goal list;
 }
 
 (** {6 Instantiation of the logic monad} *)
@@ -81,7 +90,7 @@ module P : sig
   type s = proofview * Environ.env
 
   (** Status (safe/unsafe) * given up *)
-  type w = bool * Evar.t list
+  type w = bool * goal list
 
   val wunit : w
   val wprod : w -> w -> w
@@ -118,7 +127,7 @@ module Pv : State with type t := proofview
 module Solution : State with type t := Evd.evar_map
 
 (** Lens to the list of focused goals. *)
-module Comb : State with type t = Evar.t list
+module Comb : State with type t = goal_with_state list
 
 (** Lens to the global environment. *)
 module Env : State with type t := Environ.env
@@ -128,11 +137,11 @@ module Status : Writer with type t := bool
 
 (** Lens to the list of goals which have been shelved during the
     execution of the tactic. *)
-module Shelf : State with type t = Evar.t list
+module Shelf : State with type t = goal list
 
 (** Lens to the list of goals which were given up during the execution
     of the tactic. *)
-module Giveup : Writer with type t = Evar.t list
+module Giveup : Writer with type t = goal list
 
 (** Lens and utilies pertaining to the info trace *)
 module InfoL : sig

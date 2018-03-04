@@ -1568,7 +1568,8 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
         let (undef, prf, newt) = res in
         let fold ev _ accu = if Evd.mem sigma ev then accu else ev :: accu in
         let gls = List.rev (Evd.fold_undefined fold undef []) in
-	match clause, prf with
+        let gls = List.map Proofview.with_empty_state gls in
+          match clause, prf with
 	| Some id, Some p ->
             let tac = tclTHENLIST [
               Refine.refine ~typecheck:true (fun h -> (h,p));

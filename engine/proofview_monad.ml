@@ -149,13 +149,25 @@ module Info = struct
     CList.map_append (collapse_tree n) f
 end
 
+module StateStore = Store.Make(struct end)
+
+(* let (set_state, get_state) = StateDyn.Easy.make_dyn "goal_state" *)
+
+type goal = Evar.t
+type goal_with_state = Evar.t * StateStore.t
+
+let drop_state = fst
+let get_state = snd
+let goal_with_state g s = (g, s)
+let with_empty_state g = (g, StateStore.empty)
+let map_goal_with_state f (g, s) = (f g, s)
 
 (** Type of proof views: current [evar_map] together with the list of
     focused goals. *)
 type proofview = {
   solution : Evd.evar_map;
-  comb : Evar.t list;
-  shelf : Evar.t list;
+  comb : goal_with_state list;
+  shelf : goal list;
 }
 
 (** {6 Instantiation of the logic monad} *)
@@ -169,7 +181,7 @@ module P = struct
   type e = bool
 
   (** Status (safe/unsafe) * shelved goals * given up *)
-  type w = bool * Evar.t list
+  type w = bool * goal list
 
   let wunit = true , []
   let wprod (b1, g1) (b2, g2) = b1 && b2 , g1@g2
@@ -209,9 +221,9 @@ module Solution : State with type t := Evd.evar_map = struct
   let modify f = Pv.modify (fun pv -> { pv with solution = f pv.solution })
 end
 
-module Comb : State with type t = Evar.t list = struct
+module Comb : State with type t = goal_with_state list = struct
     (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
-  type t = Evar.t list
+  type t = goal_with_state list
   let get = Logical.map (fun {comb} -> comb) Pv.get
   let set c = Pv.modify (fun pv -> { pv with comb = c })
   let modify f = Pv.modify (fun pv -> { pv with comb = f pv.comb })
@@ -227,17 +239,17 @@ module Status : Writer with type t := bool = struct
   let put s = Logical.put (s, [])
 end
 
-module Shelf : State with type t = Evar.t list = struct
+module Shelf : State with type t = goal list = struct
     (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
-  type t = Evar.t list
+  type t = goal list
   let get = Logical.map (fun {shelf} -> shelf) Pv.get
   let set c = Pv.modify (fun pv -> { pv with shelf = c })
   let modify f = Pv.modify (fun pv -> { pv with shelf = f pv.shelf })
 end
 
-module Giveup : Writer with type t = Evar.t list = struct
+module Giveup : Writer with type t = goal list = struct
     (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
-  type t = Evar.t list
+  type t = goal list
   let put gs = Logical.put (true, gs)
 end
 
