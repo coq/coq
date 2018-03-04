@@ -408,8 +408,14 @@ module New = struct
     Proofview.tclIFCATCH t1
       (fun () -> tclDISPATCH (Array.to_list a))
       (fun _ -> t3)
+  let tclIFTHENFIRSTELSE t1 t2 t3 =
+    Proofview.tclIFCATCH t1
+      (fun () -> tclEXTEND [t2] (tclUNIT ()) [])
+      (fun _ -> t3)
   let tclIFTHENTRYELSEMUST t1 t2 =
     tclIFTHENELSE t1 (tclTRY t2) t2
+  let tclIFTHENFIRSTTRYELSEMUST t1 t2 =
+    tclIFTHENFIRSTELSE t1 (tclTRY t2) t2
 
   (* Try the first tactic that does not fail in a list of tactics *)
   let rec tclFIRST = function

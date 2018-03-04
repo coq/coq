@@ -2904,7 +2904,7 @@ This happens if \term$_1$ does not occur in the goal.
       rewrite H in H2 at - 2}. In particular a failure will happen if any of
     these three simpler tactics fails.
   \item \texttt{rewrite H in * |- } will do \texttt{rewrite H in
-      H$_i$} for all hypothesis \texttt{H$_i$ <> H}. A success will happen
+      H$_i$} for all hypotheses \texttt{H$_i$} different from \texttt{H}. A success will happen
     as soon as at least one of these simpler tactics succeeds.
   \item \texttt{rewrite H in *} is a combination of \texttt{rewrite H}
     and \texttt{rewrite H in * |-} that succeeds if at

@@ -210,6 +210,7 @@ module New : sig
   val tclIFTHENELSE : unit tactic -> unit tactic -> unit tactic -> unit tactic
   val tclIFTHENSVELSE : unit tactic -> unit tactic array -> unit tactic -> unit tactic
   val tclIFTHENTRYELSEMUST : unit tactic -> unit tactic -> unit tactic
+  val tclIFTHENFIRSTTRYELSEMUST : unit tactic -> unit tactic -> unit tactic
 
   val tclDO : int -> unit tactic -> unit tactic
   val tclREPEAT : unit tactic -> unit tactic
