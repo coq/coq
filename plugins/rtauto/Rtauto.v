@@ -255,122 +255,115 @@ Theorem interp_proof:
 forall p hyps F gl,
 check_proof hyps gl p = true -> interp_ctx hyps F [[gl]].
 
-induction p;intros hyps F gl.
+induction p; intros hyps F gl.
 
-(* cas Axiom *)
-Focus 1.
-simpl;case_eq (get p hyps);clean.
-intros f nth_f e;rewrite <- (form_eq_refl e).
-apply project with p;trivial.
+- (* Axiom *)
+  simpl;case_eq (get p hyps);clean.
+  intros f nth_f e;rewrite <- (form_eq_refl e).
+  apply project with p;trivial.
 
-(* Cas Arrow_Intro *)
-Focus 1.
-destruct gl;clean.
-simpl;intros.
-change (interp_ctx (hyps\gl1)  (F_push gl1 hyps F) [[gl2]]).
-apply IHp;try constructor;trivial.
+- (* Arrow_Intro *)
+  destruct gl; clean.
+  simpl; intros.
+  change (interp_ctx (hyps\gl1)  (F_push gl1 hyps F) [[gl2]]).
+  apply IHp; try constructor; trivial.
 
-(* Cas Arrow_Elim *)
-Focus 1.
-simpl check_proof;case_eq (get p hyps);clean.
-intros f ef;case_eq (get p0 hyps);clean.
-intros f0 ef0;destruct f0;clean.
-case_eq (form_eq f f0_1);clean.
-simpl;intros e check_p1.
-generalize  (project  F ef) (project  F ef0)
-(IHp (hyps \ f0_2) (F_push f0_2 hyps F) gl check_p1);
-clear check_p1 IHp p p0 p1 ef ef0.
-simpl.
-apply compose3.
-rewrite (form_eq_refl e).
-auto.
+- (* Arrow_Elim *)
+  simpl check_proof; case_eq (get p hyps); clean.
+  intros f ef; case_eq (get p0 hyps); clean.
+  intros f0 ef0; destruct f0; clean.
+  case_eq (form_eq f f0_1); clean.
+  simpl; intros e check_p1.
+  generalize  (project  F ef) (project  F ef0)
+              (IHp (hyps \ f0_2) (F_push f0_2 hyps F) gl check_p1);
+    clear check_p1 IHp p p0 p1 ef ef0.
+  simpl.
+  apply compose3.
+  rewrite (form_eq_refl e).
+  auto.
 
-(* cas Arrow_Destruct *)
-Focus 1.
-simpl;case_eq (get p1 hyps);clean.
-intros f ef;destruct f;clean.
-destruct f1;clean.
-case_eq (check_proof (hyps \ f1_2 =>> f2 \ f1_1) f1_2 p2);clean.
-intros check_p1 check_p2.
-generalize (project F ef)
-(IHp1 (hyps \ f1_2 =>> f2 \ f1_1)
-(F_push f1_1 (hyps \ f1_2 =>> f2)
- (F_push (f1_2 =>> f2) hyps F)) f1_2 check_p1)
-(IHp2 (hyps \ f2) (F_push f2 hyps F) gl check_p2).
-simpl;apply compose3;auto.
+- (* Arrow_Destruct *)
+  simpl; case_eq (get p1 hyps); clean.
+  intros f ef; destruct f; clean.
+  destruct f1; clean.
+  case_eq (check_proof (hyps \ f1_2 =>> f2 \ f1_1) f1_2 p2); clean.
+  intros check_p1 check_p2.
+  generalize (project F ef)
+             (IHp1 (hyps \ f1_2 =>> f2 \ f1_1)
+                   (F_push f1_1 (hyps \ f1_2 =>> f2)
+                           (F_push (f1_2 =>> f2) hyps F)) f1_2 check_p1)
+             (IHp2 (hyps \ f2) (F_push f2 hyps F) gl check_p2).
+  simpl; apply compose3; auto.
 
-(* Cas False_Elim *)
-Focus 1.
-simpl;case_eq (get p hyps);clean.
-intros f ef;destruct f;clean.
-intros _; generalize (project F ef).
-apply compose1;apply False_ind.
+- (* False_Elim *)
+  simpl; case_eq (get p hyps); clean.
+  intros f ef; destruct f; clean.
+  intros _; generalize (project F ef).
+  apply compose1; apply False_ind.
 
-(* Cas And_Intro *)
-Focus 1.
-simpl;destruct gl;clean.
-case_eq (check_proof hyps gl1 p1);clean.
-intros Hp1 Hp2;generalize (IHp1 hyps F gl1 Hp1) (IHp2 hyps F gl2 Hp2).
-apply compose2 ;simpl;auto.
+- (* And_Intro *)
+  simpl; destruct gl; clean.
+  case_eq (check_proof hyps gl1 p1); clean.
+  intros Hp1 Hp2;generalize (IHp1 hyps F gl1 Hp1) (IHp2 hyps F gl2 Hp2).
+  apply compose2 ; simpl; auto.
 
-(* cas And_Elim *)
-Focus 1.
-simpl;case_eq (get p hyps);clean.
-intros f ef;destruct f;clean.
-intro check_p;generalize  (project F ef)
-(IHp (hyps \ f1 \ f2) (F_push f2 (hyps \ f1) (F_push f1 hyps F)) gl check_p).
-simpl;apply compose2;intros [h1 h2];auto.
+- (* And_Elim *)
+  simpl; case_eq (get p hyps); clean.
+  intros f ef; destruct f; clean.
+  intro check_p;
+    generalize  (project F ef)
+                (IHp (hyps \ f1 \ f2) (F_push f2 (hyps \ f1) (F_push f1 hyps F)) gl check_p).
+  simpl; apply compose2; intros [h1 h2]; auto.
 
-(* cas And_Destruct *)
-Focus 1.
-simpl;case_eq (get p hyps);clean.
-intros f ef;destruct f;clean.
-destruct f1;clean.
-intro H;generalize  (project F ef)
-(IHp (hyps \ f1_1 =>> f1_2 =>> f2)
-(F_push (f1_1 =>> f1_2 =>> f2) hyps F) gl H);clear H;simpl.
-apply compose2;auto.
+- (* And_Destruct*)
+  simpl; case_eq (get p hyps); clean.
+  intros f ef; destruct f; clean.
+  destruct f1; clean.
+  intro H;
+    generalize (project F ef)
+               (IHp (hyps \ f1_1 =>> f1_2 =>> f2)
+                    (F_push (f1_1 =>> f1_2 =>> f2) hyps F) gl H);
+    clear H; simpl.
+  apply compose2; auto.
 
-(* cas Or_Intro_left *)
-Focus 1.
-destruct gl;clean.
-intro Hp;generalize (IHp hyps F gl1 Hp).
-apply compose1;simpl;auto.
+- (* Or_Intro_left *)
+  destruct gl; clean.
+  intro Hp; generalize (IHp hyps F gl1 Hp).
+  apply compose1; simpl; auto.
 
-(* cas Or_Intro_right *)
-Focus 1.
-destruct gl;clean.
-intro Hp;generalize (IHp hyps F gl2 Hp).
-apply compose1;simpl;auto.
+- (* Or_Intro_right *)
+  destruct gl; clean.
+  intro Hp; generalize (IHp hyps F gl2 Hp).
+  apply compose1; simpl; auto.
 
-(* cas Or_elim *)
-Focus 1.
-simpl;case_eq (get p1 hyps);clean.
-intros f ef;destruct f;clean.
-case_eq (check_proof (hyps \ f1) gl p2);clean.
-intros check_p1 check_p2;generalize (project F ef)
-(IHp1 (hyps \ f1) (F_push f1 hyps F) gl check_p1)
-(IHp2 (hyps \ f2) (F_push f2 hyps F) gl check_p2);
-simpl;apply compose3;simpl;intro h;destruct h;auto.
+- (* Or_elim *)
+  simpl; case_eq (get p1 hyps); clean.
+  intros f ef; destruct f; clean.
+  case_eq (check_proof (hyps \ f1) gl p2); clean.
+  intros check_p1 check_p2;
+    generalize (project F ef)
+               (IHp1 (hyps \ f1) (F_push f1 hyps F) gl check_p1)
+               (IHp2 (hyps \ f2) (F_push f2 hyps F) gl check_p2);
+    simpl; apply compose3; simpl; intro h; destruct h; auto.
 
-(* cas Or_Destruct *)
-Focus 1.
-simpl;case_eq (get p hyps);clean.
-intros f ef;destruct f;clean.
-destruct f1;clean.
-intro check_p0;generalize (project F ef)
-(IHp (hyps \ f1_1 =>> f2 \ f1_2 =>> f2)
-(F_push (f1_2 =>> f2) (hyps \ f1_1 =>> f2)
- (F_push (f1_1 =>> f2) hyps F)) gl check_p0);simpl.
-apply compose2;auto.
+- (* Or_Destruct *)
+  simpl; case_eq (get p hyps); clean.
+  intros f ef; destruct f; clean.
+  destruct f1; clean.
+  intro check_p0;
+    generalize (project F ef)
+               (IHp (hyps \ f1_1 =>> f2 \ f1_2 =>> f2)
+                    (F_push (f1_2 =>> f2) (hyps \ f1_1 =>> f2)
+                            (F_push (f1_1 =>> f2) hyps F)) gl check_p0);
+    simpl.
+  apply compose2; auto.
 
-(* cas Cut *)
-Focus 1.
-simpl;case_eq (check_proof hyps f p1);clean.
-intros check_p1 check_p2;
-generalize (IHp1 hyps F f check_p1)
-(IHp2 (hyps\f) (F_push f hyps F) gl check_p2);
-simpl; apply compose2;auto.
+- (* Cut *)
+  simpl; case_eq (check_proof hyps f p1); clean.
+  intros check_p1 check_p2;
+    generalize (IHp1 hyps F f check_p1)
+               (IHp2 (hyps\f) (F_push f hyps F) gl check_p2);
+    simpl; apply compose2; auto.
 Qed.
 
 Theorem Reflect: forall gl prf, if check_proof empty gl prf then [[gl]] else True.

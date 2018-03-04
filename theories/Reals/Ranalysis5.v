@@ -27,46 +27,34 @@ Lemma f_incr_implies_g_incr_interv : forall f g:R->R, forall lb ub,
        (forall x , f lb <= x -> x <= f ub -> lb <= g x <= ub) ->
        (forall x y, f lb <= x -> x < y -> y <= f ub -> g x < g y).
 Proof.
-intros f g lb ub lb_lt_ub f_incr f_eq_g g_ok x y lb_le_x x_lt_y y_le_ub.
- assert (x_encad : f lb <= x <= f ub).
-  split ; [assumption | apply Rle_trans with (r2:=y) ; [apply Rlt_le|] ; assumption].
- assert (y_encad : f lb <= y <= f ub).
-  split ; [apply Rle_trans with (r2:=x) ; [|apply Rlt_le] ; assumption | assumption].
-  assert (Temp1 : lb <= lb) by intuition ; assert (Temp2 : ub <= ub) by intuition.
- assert (gx_encad := g_ok _ (proj1 x_encad) (proj2 x_encad)).
- assert (gy_encad := g_ok _ (proj1 y_encad) (proj2 y_encad)).
- clear Temp1 Temp2.
- case (Rlt_dec (g x) (g y)).
-  intuition.
+  intros f g lb ub lb_lt_ub f_incr f_eq_g g_ok x y lb_le_x x_lt_y y_le_ub.
+  assert (x_encad : f lb <= x <= f ub) by lra.
+  assert (y_encad : f lb <= y <= f ub) by lra.
+  assert (gx_encad := g_ok _ (proj1 x_encad) (proj2 x_encad)).
+  assert (gy_encad := g_ok _ (proj1 y_encad) (proj2 y_encad)).
+  case (Rlt_dec (g x) (g y)); [ easy |].
   intros Hfalse.
-   assert (Temp := Rnot_lt_le _ _ Hfalse).
-   assert (Hcontradiction : y <= x).
-   replace y with (id y) by intuition ; replace x with (id x) by intuition ;
-   rewrite <- f_eq_g. rewrite <- f_eq_g.
-   assert (f_incr2 : forall x y, lb <= x -> x <= y -> y < ub -> f x <= f y).
+  assert (Temp := Rnot_lt_le _ _ Hfalse).
+  enough (y <= x) by lra.
+  replace y with (id y) by easy.
+  replace x with (id x) by easy.
+  rewrite <- f_eq_g by easy.
+  rewrite <- f_eq_g by easy.
+  assert (f_incr2 : forall x y, lb <= x -> x <= y -> y < ub -> f x <= f y). {
     intros m n lb_le_m m_le_n n_lt_ub.
     case (m_le_n).
-     intros ; apply Rlt_le ; apply f_incr ; [| | apply Rlt_le] ; assumption.
-     intros Hyp ; rewrite Hyp ; apply Req_le ; reflexivity.
-   apply f_incr2.
-   intuition. intuition.
-   Focus 3. intuition.
-   Focus 2. intuition.
-   Focus 2. intuition. Focus 2. intuition.
-   assert (Temp2 : g x <> ub).
-   intro Hf.
-    assert (Htemp : (comp f g) x = f ub).
-     unfold comp ; rewrite Hf ; reflexivity.
-     rewrite f_eq_g in Htemp ; unfold id in Htemp.
-    assert (Htemp2 : x < f ub).
-     apply Rlt_le_trans with (r2:=y) ; intuition.
-    clear -Htemp Htemp2. fourier.
-    intuition. intuition.
-   clear -Temp2 gx_encad.
-   case (proj2 gx_encad).
-    intuition.
-    intro Hfalse ; apply False_ind ; apply Temp2 ; assumption.
-   apply False_ind. clear - Hcontradiction x_lt_y. fourier.
+    - intros; apply Rlt_le, f_incr, Rlt_le; assumption.
+    - intros Hyp; rewrite Hyp; apply Req_le; reflexivity.
+  }
+  apply f_incr2; intuition.
+  enough (g x <> ub) by lra.
+  intro Hf.
+  assert (Htemp : (comp f g) x = f ub). {
+    unfold comp; rewrite Hf; reflexivity.
+  }
+  rewrite f_eq_g in Htemp by easy.
+  unfold id in Htemp.
+  fourier.
 Qed.
 
 Lemma derivable_pt_id_interv : forall (lb ub x:R),
