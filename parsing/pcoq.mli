@@ -78,7 +78,9 @@ module type S =
   val entry_create : string -> 'a entry
   val entry_parse : 'a entry -> coq_parsable -> 'a
   val entry_print : Format.formatter -> 'a entry -> unit
-  val with_parsable : coq_parsable -> ('a -> 'b) -> 'a -> 'b
+
+  (* Get comment parsing information from the Lexer *)
+  val comment_state : coq_parsable -> ((int * int) * string) list
 
   (* Apparently not used *)
   val srules' : production_rule list -> symbol

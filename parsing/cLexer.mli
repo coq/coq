@@ -55,7 +55,4 @@ val get_lexer_state : unit -> lexer_state
 val release_lexer_state : unit -> lexer_state
 [@@ocaml.deprecated "Use get_lexer_state"]
 val drop_lexer_state : unit -> unit
-
-(* Retrieve the comments lexed at a given location of the stream
-   currently being processeed *)
-val extract_comments : int -> string list
+val get_comment_state : lexer_state -> ((int * int) * string) list

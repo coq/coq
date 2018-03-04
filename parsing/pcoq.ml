@@ -88,7 +88,9 @@ module type S =
   val entry_create : string -> 'a entry
   val entry_parse : 'a entry -> coq_parsable -> 'a
   val entry_print : Format.formatter -> 'a entry -> unit
-  val with_parsable : coq_parsable -> ('a -> 'b) -> 'a -> 'b
+
+  val comment_state : coq_parsable -> ((int * int) * string) list
+
   val srules' : production_rule list -> symbol
   val parse_tokens_after_filter : 'a entry -> Tok.t Stream.t -> 'a
 
@@ -105,6 +107,7 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
       string option * Gramext.g_assoc option * production_rule list
   type extend_statment =
       Gramext.position option * single_extend_statment list
+
   type coq_parsable = parsable * CLexer.lexer_state ref
 
   let parsable ?(file=Loc.ToplevelInput) c =
@@ -129,15 +132,8 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
       let loc = match loc' with None -> to_coqloc loc | Some loc -> loc in
       Loc.raise ~loc e
 
-  let with_parsable (p,state) f x =
-    CLexer.set_lexer_state !state;
-    try
-      let a = f x in
-      state := CLexer.get_lexer_state ();
-      a
-    with e ->
-      CLexer.drop_lexer_state ();
-      raise e
+  let comment_state (p,state) =
+    CLexer.get_comment_state !state
 
   let entry_print ft x = Entry.print ft x
 
