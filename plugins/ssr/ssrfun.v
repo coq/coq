@@ -637,6 +637,9 @@ End Injections.
 
 Lemma Some_inj {T} : injective (@Some T). Proof. by move=> x y []. Qed.
 
+(* Force implicits to use as a view. *)
+Prenex Implicits Some_inj.
+
 (* cancellation lemmas for dependent type casts.                             *)
 Lemma esymK T x y : cancel (@esym T x y) (@esym T y x).
 Proof. by case: y /. Qed.
