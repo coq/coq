@@ -1,8 +1,4 @@
-Unset Automatic Introduction.
-
 Check (forall A:Type, (exists x:A, forall (y:A), x <> y) -> 2 = 3).
-
-
 
 Inductive nat : Set :=
  | O : nat
@@ -327,7 +323,7 @@ match v in (Vector.t _ n0) return (Vector.t A (pred n0)) with
 end.
 
 Definition Vtail' (A:Type)(n:nat)(v:Vector.t A n) : Vector.t A (pred n).
- intros A n v; case v.
+ case v.
  simpl.
  exact (Vector.nil A).
  simpl.
@@ -921,7 +917,7 @@ Defined.
 Print minus_decrease.
 
 
-Definition div_aux (x y:nat)(H: Acc lt x):nat.
+Definition div_aux : forall (x y:nat)(H: Acc lt x):nat.
  fix div_aux 3.
  intros.
   refine (if eq_nat_dec x 0
@@ -1226,6 +1222,3 @@ Proof.
  constructor.
  trivial.
 Qed.
-
-
-

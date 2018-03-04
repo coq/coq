@@ -340,7 +340,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
                     ]
                   in
 		  ignore (Pfedit.by init_refine)
-		else if Flags.is_auto_intros () then
+                else
 		  ignore (Pfedit.by (Tacticals.New.tclDO len Tactics.intro));
 		(match tac with Some tac -> ignore (Pfedit.by tac) | None -> ())) ();
 	       id)

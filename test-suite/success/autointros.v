@@ -1,5 +1,3 @@
-Set Automatic Introduction.
-
 Inductive even : nat -> Prop :=
 | even_0 : even 0
 | even_odd : forall n, odd n -> even (S n)
