@@ -3,7 +3,7 @@ Set Implicit Arguments.
 
 Require Import Logic.
 Module NonPrim.
-Local Set Record Elimination Schemes.
+Local Set Nonrecursive Elimination Schemes.
 Record prodwithlet (A B : Type) : Type :=
   pair' { fst : A; fst' := fst; snd : B }.
 
@@ -21,7 +21,7 @@ End NonPrim.
 
 Global Set Universe Polymorphism.
 Global Set Asymmetric Patterns.
-Local Set Record Elimination Schemes.
+Local Set Nonrecursive Elimination Schemes.
 Local Set Primitive Projections.
 
 Record prod (A B : Type) : Type :=

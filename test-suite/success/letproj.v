@@ -1,5 +1,5 @@
 Set Primitive Projections.
-Set Record Elimination Schemes.
+Set Nonrecursive Elimination Schemes.
 Record Foo (A : Type) := { bar : A -> A; baz : A }.
 
 Definition test (A : Type) (f : Foo A) := 

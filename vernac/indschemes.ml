@@ -59,13 +59,6 @@ let _ =
       optkey   = ["Nonrecursive";"Elimination";"Schemes"];
       optread  = (fun () -> !bifinite_elim_flag) ;
       optwrite = (fun b -> bifinite_elim_flag := b) }
-let _ =
-  declare_bool_option
-    { optdepr  = true; (* compatibility 2014-09-03*)
-      optname  = "automatic declaration of induction schemes for non-recursive types";
-      optkey   = ["Record";"Elimination";"Schemes"];
-      optread  = (fun () -> !bifinite_elim_flag) ;
-      optwrite = (fun b -> bifinite_elim_flag := b) }
 
 let case_flag = ref false
 let _ =
