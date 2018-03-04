@@ -26,13 +26,12 @@ val cofix_evaluated_tag : tag
 val last_variant_tag : tag
 
 type structured_constant =
-  | Const_sorts of Sorts.t
+  | Const_sort of Sorts.t
   | Const_ind of inductive
   | Const_proj of Constant.t
   | Const_b0 of tag
   | Const_bn of tag * structured_constant array
   | Const_univ_level of Univ.Level.t
-  | Const_type of Univ.Universe.t
 
 val pp_struct_const : structured_constant -> Pp.t
 

@@ -32,13 +32,12 @@ let cofix_evaluated_tag = 7
 let last_variant_tag = 245 
 
 type structured_constant =
-  | Const_sorts of Sorts.t
+  | Const_sort of Sorts.t
   | Const_ind of inductive
   | Const_proj of Constant.t
   | Const_b0 of tag
   | Const_bn of tag * structured_constant array
   | Const_univ_level of Univ.Level.t
-  | Const_type of Univ.Universe.t
 
 type reloc_table = (tag * int) array
 
@@ -46,8 +45,8 @@ type annot_switch =
    {ci : case_info; rtbl : reloc_table; tailcall : bool; max_stack_size : int}
 
 let rec eq_structured_constant c1 c2 = match c1, c2 with
-| Const_sorts s1, Const_sorts s2 -> Sorts.equal s1 s2
-| Const_sorts _, _ -> false
+| Const_sort s1, Const_sort s2 -> Sorts.equal s1 s2
+| Const_sort _, _ -> false
 | Const_ind i1, Const_ind i2 -> eq_ind i1 i2
 | Const_ind _, _ -> false
 | Const_proj p1, Const_proj p2 -> Constant.equal p1 p2
@@ -59,13 +58,11 @@ let rec eq_structured_constant c1 c2 = match c1, c2 with
 | Const_bn _, _ -> false
 | Const_univ_level l1 , Const_univ_level l2 -> Univ.Level.equal l1 l2
 | Const_univ_level _ , _ -> false
-| Const_type u1 , Const_type u2 -> Univ.Universe.equal u1 u2
-| Const_type _ , _ -> false
 
 let rec hash_structured_constant c =
   let open Hashset.Combine in
   match c with
-  | Const_sorts s -> combinesmall 1 (Sorts.hash s)
+  | Const_sort s -> combinesmall 1 (Sorts.hash s)
   | Const_ind i -> combinesmall 2 (ind_hash i)
   | Const_proj p -> combinesmall 3 (Constant.hash p)
   | Const_b0 t -> combinesmall 4 (Int.hash t)
@@ -74,7 +71,6 @@ let rec hash_structured_constant c =
     let h = Array.fold_left fold 0 a in
     combinesmall 5 (combine (Int.hash t) h)
   | Const_univ_level l -> combinesmall 6 (Univ.Level.hash l)
-  | Const_type u -> combinesmall 7 (Univ.Universe.hash u)
 
 let eq_annot_switch asw1 asw2 =
   let eq_ci ci1 ci2 =
@@ -236,20 +232,19 @@ open Util
 
 let pp_sort s =
   let open Sorts in
-  match family s with
-  | InSet -> str "Set"
-  | InProp -> str "Prop"
-  | InType -> str "Type"
+  match s with
+  | Prop Null -> str "Prop"
+  | Prop Pos -> str "Set"
+  | Type u -> str "Type@{" ++ Univ.pr_uni u ++ str "}"
 
 let rec pp_struct_const = function
-  | Const_sorts s -> pp_sort s
+  | Const_sort s -> pp_sort s
   | Const_ind (mind, i) -> MutInd.print mind ++ str"#" ++ int i
   | Const_proj p -> Constant.print p
   | Const_b0 i -> int i
   | Const_bn (i,t) ->
      int i ++ surround (prvect_with_sep pr_comma pp_struct_const t)
   | Const_univ_level l -> Univ.Level.pr l
-  | Const_type u -> str "Type@{" ++ Univ.pr_uni u ++ str "}"
 
 let pp_lbl lbl = str "L" ++ int lbl
 

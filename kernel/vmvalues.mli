@@ -57,7 +57,7 @@ val cofix_upd_code : to_update -> tcode
 type atom =
   | Aid of Vars.id_key
   | Aind of inductive
-  | Atype of Univ.Universe.t
+  | Asort of Sorts.t
 
 (** Zippers *)
 
@@ -70,7 +70,6 @@ type zipper =
 type stack = zipper list
 
 type whd =
-  | Vsort of Sorts.t
   | Vprod of vprod
   | Vfun of vfun
   | Vfix of vfix * arguments option

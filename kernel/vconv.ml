@@ -44,7 +44,6 @@ let rec conv_val env pb k v1 v2 cu =
 and conv_whd env pb k whd1 whd2 cu =
 (*  Pp.(msg_debug (str "conv_whd(" ++ pr_whd whd1 ++ str ", " ++ pr_whd whd2 ++ str ")")) ; *)
   match whd1, whd2 with
-  | Vsort s1, Vsort s2 -> sort_cmp_universes env pb s1 s2 cu
   | Vuniv_level _ , _
   | _ , Vuniv_level _ ->
     (** Both of these are invalid since universes are handled via
@@ -81,7 +80,7 @@ and conv_whd env pb k whd1 whd2 cu =
      (* on the fly eta expansion *)
       conv_val env CONV (k+1) (apply_whd k whd1) (apply_whd k whd2) cu
 
-  | Vsort _, _ | Vprod _, _ | Vfix _, _ | Vcofix _, _  | Vconstr_const _, _
+  | Vprod _, _ | Vfix _, _ | Vcofix _, _  | Vconstr_const _, _
   | Vconstr_block _, _ | Vatom_stk _, _ -> raise NotConvertible
 
 
@@ -119,8 +118,9 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
     if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
 	conv_stack env k stk1 stk2 cu
       else raise NotConvertible
-  | Atype _ , _ | _, Atype _ -> assert false
-  | Aind _, _ | Aid _, _ -> raise NotConvertible
+  | Asort s1, Asort s2 ->
+    sort_cmp_universes env pb s1 s2 cu
+  | Asort _ , _ | Aind _, _ | Aid _, _ -> raise NotConvertible
 
 and conv_stack env k stk1 stk2 cu =
   match stk1, stk2 with

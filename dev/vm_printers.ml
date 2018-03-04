@@ -61,7 +61,7 @@ and ppstack s =
 and ppatom a =
   match a with
   | Aid idk -> print_idkey idk
-  | Atype u -> print_string "Type(...)"
+  | Asort u -> print_string "Sort(...)"
   | Aind(sp,i) ->  print_string "Ind(";
       print_string (MutInd.to_string sp);
       print_string ","; print_int i;
@@ -69,7 +69,6 @@ and ppatom a =
 
 and ppwhd whd =
   match whd with
-  | Vsort s -> ppsort s
   | Vprod _ -> print_string "product"
   | Vfun _ -> print_string "function"
   | Vfix _ -> print_vfix()
