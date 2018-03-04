@@ -88,12 +88,11 @@ let pr_compat_warning (kn, def, v) =
     | [], NRef r -> spc () ++ str "is" ++ spc () ++ pr_global_env Id.Set.empty r
     | _ -> strbrk " is a compatibility notation"
   in
-  let since = strbrk " since Coq > " ++ str (Flags.pr_version v) ++ str "." in
-  pr_syndef kn ++ pp_def ++ since
+  pr_syndef kn ++ pp_def
 
 let warn_compatibility_notation =
   CWarnings.(create ~name:"compatibility-notation"
-                    ~category:"deprecated" ~default:Disabled pr_compat_warning)
+                    ~category:"deprecated" ~default:Enabled pr_compat_warning)
 
 let verbose_compat kn def = function
   | Some v when Flags.version_strictly_greater v ->

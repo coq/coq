@@ -123,7 +123,7 @@ Proof.
   apply eq_dep_intro.
 Qed.
 
-Notation eq_sigS_eq_dep := eq_sigT_eq_dep (compat "8.2"). (* Compatibility *)
+Notation eq_sigS_eq_dep := eq_sigT_eq_dep (compat "8.6"). (* Compatibility *)
 
 Lemma eq_dep_eq_sigT :
   forall (U:Type) (P:U -> Type) (p q:U) (x:P p) (y:P q),

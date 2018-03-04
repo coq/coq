@@ -19,7 +19,7 @@ Proof.
   - left; exists n; auto.
 Defined.
 
-Notation eq_nat_dec := Nat.eq_dec (compat "8.4").
+Notation eq_nat_dec := Nat.eq_dec (only parsing).
 
 Hint Resolve O_or_S eq_nat_dec: arith.
 

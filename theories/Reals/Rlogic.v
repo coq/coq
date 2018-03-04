@@ -63,7 +63,7 @@ destruct (Rle_lt_dec l 0) as [Hl|Hl].
   now apply Rinv_0_lt_compat.
   now apply Hnp.
 left.
-set (N := Zabs_nat (up (/l) - 2)).
+set (N := Z.abs_nat (up (/l) - 2)).
 assert (H1l: (1 <= /l)%R).
   rewrite <- Rinv_1.
   apply Rinv_le_contravar with (1 := Hl).
@@ -75,7 +75,7 @@ assert (HN: (INR N + 1 = IZR (up (/ l)) - 1)%R).
   rewrite inj_Zabs_nat.
   replace (IZR (up (/ l)) - 1)%R with (IZR (up (/ l) - 2) + 1)%R.
   apply (f_equal (fun v => IZR v + 1)%R).
-  apply Zabs_eq.
+  apply Z.abs_eq.
   apply Zle_minus_le_0.
   apply (Zlt_le_succ 1).
   apply lt_IZR.

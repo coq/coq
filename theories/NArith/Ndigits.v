@@ -14,17 +14,17 @@ Local Open Scope N_scope.
 
 (** Compatibility names for some bitwise operations *)
 
-Notation Pxor := Pos.lxor (compat "8.3").
-Notation Nxor := N.lxor (compat "8.3").
-Notation Pbit := Pos.testbit_nat (compat "8.3").
-Notation Nbit := N.testbit_nat (compat "8.3").
+Notation Pxor := Pos.lxor (only parsing).
+Notation Nxor := N.lxor (only parsing).
+Notation Pbit := Pos.testbit_nat (only parsing).
+Notation Nbit := N.testbit_nat (only parsing).
 
-Notation Nxor_eq := N.lxor_eq (compat "8.3").
-Notation Nxor_comm := N.lxor_comm (compat "8.3").
-Notation Nxor_assoc := N.lxor_assoc (compat "8.3").
-Notation Nxor_neutral_left := N.lxor_0_l (compat "8.3").
-Notation Nxor_neutral_right := N.lxor_0_r (compat "8.3").
-Notation Nxor_nilpotent := N.lxor_nilpotent (compat "8.3").
+Notation Nxor_eq := N.lxor_eq (only parsing).
+Notation Nxor_comm := N.lxor_comm (only parsing).
+Notation Nxor_assoc := N.lxor_assoc (only parsing).
+Notation Nxor_neutral_left := N.lxor_0_l (only parsing).
+Notation Nxor_neutral_right := N.lxor_0_r (only parsing).
+Notation Nxor_nilpotent := N.lxor_nilpotent (only parsing).
 
 (** Equivalence of bit-testing functions,
     either with index in [N] or in [nat]. *)
@@ -249,7 +249,7 @@ Local Close Scope N_scope.
 (** Checking whether a number is odd, i.e.
    if its lower bit is set. *)
 
-Notation Nbit0 := N.odd (compat "8.3").
+Notation Nbit0 := N.odd (only parsing).
 
 Definition Nodd (n:N) := N.odd n = true.
 Definition Neven (n:N) := N.odd n = false.
@@ -498,7 +498,7 @@ Qed.
 
 (** Number of digits in a number *)
 
-Notation Nsize := N.size_nat (compat "8.3").
+Notation Nsize := N.size_nat (only parsing).
 
 (** conversions between N and bit vectors. *)
 

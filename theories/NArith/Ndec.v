@@ -20,11 +20,11 @@ Local Open Scope N_scope.
 (** Obsolete results about boolean comparisons over [N],
     kept for compatibility with IntMap and SMC. *)
 
-Notation Peqb := Pos.eqb (compat "8.3").
-Notation Neqb := N.eqb (compat "8.3").
-Notation Peqb_correct := Pos.eqb_refl (compat "8.3").
-Notation Neqb_correct := N.eqb_refl (compat "8.3").
-Notation Neqb_comm := N.eqb_sym (compat "8.3").
+Notation Peqb := Pos.eqb (compat "8.6").
+Notation Neqb := N.eqb (compat "8.6").
+Notation Peqb_correct := Pos.eqb_refl (only parsing).
+Notation Neqb_correct := N.eqb_refl (only parsing).
+Notation Neqb_comm := N.eqb_sym (only parsing).
 
 Lemma Peqb_complete p p' : Pos.eqb p p' = true -> p = p'.
 Proof. now apply Pos.eqb_eq. Qed.
@@ -274,7 +274,7 @@ Qed.
 
 (* Old results about [N.min] *)
 
-Notation Nmin_choice := N.min_dec (compat "8.3").
+Notation Nmin_choice := N.min_dec (only parsing).
 
 Lemma Nmin_le_1 a b : Nleb (N.min a b) a = true.
 Proof. rewrite Nleb_Nle. apply N.le_min_l. Qed.

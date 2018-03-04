@@ -44,8 +44,6 @@ let absurd c = absurd c
 
 (* Contradiction *)
 
-let use_negated_unit_or_eq_type () = Flags.version_strictly_greater Flags.V8_5
-
 (** [f] does not assume its argument to be [nf_evar]-ed. *)
 let filter_hyp f tac =
   let rec seek = function
@@ -71,9 +69,7 @@ let contradiction_context =
 	    simplest_elim (mkVar id)
 	  else match EConstr.kind sigma typ with
 	  | Prod (na,t,u) when is_empty_type sigma u ->
-             let is_unit_or_eq =
-               if use_negated_unit_or_eq_type () then match_with_unit_or_eq_type sigma t
-               else None in
+             let is_unit_or_eq = match_with_unit_or_eq_type sigma t in
 	     Tacticals.New.tclORELSE
                (match is_unit_or_eq with
                | Some _ ->

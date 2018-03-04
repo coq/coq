@@ -443,14 +443,14 @@ Section Tag.
 
 Variables (I : Type) (i : I) (T_ U_ : I -> Type).
 
-Definition tag := projS1.
-Definition tagged : forall w, T_(tag w) := @projS2 I [eta T_].
-Definition Tagged x := @existS I [eta T_] i x.
+Definition tag := projT1.
+Definition tagged : forall w, T_(tag w) := @projT2 I [eta T_].
+Definition Tagged x := @existT I [eta T_] i x.
 
 Definition tag2 (w : @sigT2 I T_ U_) := let: existT2 _ _ i _ _ := w in i.
 Definition tagged2 w : T_(tag2 w) := let: existT2 _ _ _ x _ := w in x.
 Definition tagged2' w : U_(tag2 w) := let: existT2 _ _ _ _ y := w in y.
-Definition Tagged2 x y := @existS2 I [eta T_] [eta U_] i x y.
+Definition Tagged2 x y := @existT2 I [eta T_] [eta U_] i x y.
 
 End Tag.
 

@@ -11,8 +11,8 @@
 Require Export QArith_base.
 Require Import Znumtheory.
 
-Notation Z2P := Z.to_pos (compat "8.3").
-Notation Z2P_correct := Z2Pos.id (compat "8.3").
+Notation Z2P := Z.to_pos (only parsing).
+Notation Z2P_correct := Z2Pos.id (only parsing).
 
 (** Simplification of fractions using [Z.gcd].
   This version can compute within Coq. *)

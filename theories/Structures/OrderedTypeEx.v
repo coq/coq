@@ -55,7 +55,7 @@ Module Nat_as_OT <: UsualOrderedType.
 
   Definition compare x y : Compare lt eq x y.
   Proof.
-    case_eq (nat_compare x y); intro.
+    case_eq (Nat.compare x y); intro.
     - apply EQ. now apply nat_compare_eq.
     - apply LT. now apply nat_compare_Lt_lt.
     - apply GT. now apply nat_compare_Gt_gt.

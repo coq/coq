@@ -18,16 +18,16 @@ Local Open Scope Z_scope.
 (** The definition of the division is now in [BinIntDef], the initial
     specifications and properties are in [BinInt]. *)
 
-Notation Zdiv_eucl_POS := Z.pos_div_eucl (compat "8.3").
-Notation Zdiv_eucl := Z.div_eucl (compat "8.3").
-Notation Zdiv := Z.div (compat "8.3").
-Notation Zmod := Z.modulo (compat "8.3").
+Notation Zdiv_eucl_POS := Z.pos_div_eucl (only parsing).
+Notation Zdiv_eucl := Z.div_eucl (compat "8.6").
+Notation Zdiv := Z.div (compat "8.6").
+Notation Zmod := Z.modulo (only parsing).
 
-Notation Zdiv_eucl_eq := Z.div_eucl_eq (compat "8.3").
-Notation Z_div_mod_eq_full := Z.div_mod (compat "8.3").
-Notation Zmod_POS_bound := Z.pos_div_eucl_bound (compat "8.3").
-Notation Zmod_pos_bound := Z.mod_pos_bound (compat "8.3").
-Notation Zmod_neg_bound := Z.mod_neg_bound (compat "8.3").
+Notation Zdiv_eucl_eq := Z.div_eucl_eq (compat "8.6").
+Notation Z_div_mod_eq_full := Z.div_mod (only parsing).
+Notation Zmod_POS_bound := Z.pos_div_eucl_bound (only parsing).
+Notation Zmod_pos_bound := Z.mod_pos_bound (only parsing).
+Notation Zmod_neg_bound := Z.mod_neg_bound (only parsing).
 
 (** * Main division theorems *)
 

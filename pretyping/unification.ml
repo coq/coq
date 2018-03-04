@@ -193,7 +193,7 @@ let pose_all_metas_as_evars env evd t =
         let ty = EConstr.of_constr ty in
         let ty = if Evd.Metaset.is_empty mvs then ty else aux ty in
         let ty =
-          if Flags.version_strictly_greater Flags.V8_6 || Flags.version_less_or_equal Flags.VOld
+          if Flags.version_strictly_greater Flags.V8_6
           then nf_betaiota env evd ty (* How it was in Coq <= 8.4 (but done in logic.ml at this time) *)
           else ty (* some beta-iota-normalization "regression" in 8.5 and 8.6 *) in
         let src = Evd.evar_source_of_meta mv !evdref in
@@ -1304,12 +1304,7 @@ let solve_simple_evar_eqn ts env evd ev rhs =
   match solve_simple_eqn (Evarconv.evar_conv_x ts) env evd (None,ev,rhs) with
   | UnifFailure (evd,reason) ->
       error_cannot_unify env evd ~reason (mkEvar ev,rhs);
-  | Success evd ->
-     if Flags.version_less_or_equal Flags.V8_5 then
-       (* We used to force solving unrelated problems at arbitrary times *)
-       Evarconv.solve_unif_constraints_with_heuristics env evd
-     else (* solve_simple_eqn calls reconsider_unif_constraints itself *)
-       evd
+  | Success evd -> evd
 
 (* [w_merge env sigma b metas evars] merges common instances in metas
    or in evars, possibly generating new unification problems; if [b]

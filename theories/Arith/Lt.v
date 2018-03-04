@@ -23,7 +23,7 @@ Local Open Scope nat_scope.
 
 (** * Irreflexivity *)
 
-Notation lt_irrefl := Nat.lt_irrefl (compat "8.4"). (* ~ x < x *)
+Notation lt_irrefl := Nat.lt_irrefl (only parsing). (* ~ x < x *)
 
 Hint Resolve lt_irrefl: arith.
 
@@ -62,12 +62,12 @@ Hint Immediate le_not_lt lt_not_le: arith.
 
 (** * Asymmetry *)
 
-Notation lt_asym := Nat.lt_asymm (compat "8.4"). (* n<m -> ~m<n *)
+Notation lt_asym := Nat.lt_asymm (only parsing). (* n<m -> ~m<n *)
 
 (** * Order and 0 *)
 
-Notation lt_0_Sn := Nat.lt_0_succ (compat "8.4"). (* 0 < S n *)
-Notation lt_n_0 := Nat.nlt_0_r (compat "8.4"). (* ~ n < 0 *)
+Notation lt_0_Sn := Nat.lt_0_succ (only parsing). (* 0 < S n *)
+Notation lt_n_0 := Nat.nlt_0_r (only parsing). (* ~ n < 0 *)
 
 Theorem neq_0_lt n : 0 <> n -> 0 < n.
 Proof.
@@ -84,8 +84,8 @@ Hint Immediate neq_0_lt lt_0_neq: arith.
 
 (** * Order and successor *)
 
-Notation lt_n_Sn := Nat.lt_succ_diag_r (compat "8.4"). (* n < S n *)
-Notation lt_S := Nat.lt_lt_succ_r (compat "8.4"). (* n < m -> n < S m *)
+Notation lt_n_Sn := Nat.lt_succ_diag_r (only parsing). (* n < S n *)
+Notation lt_S := Nat.lt_lt_succ_r (only parsing). (* n < m -> n < S m *)
 
 Theorem lt_n_S n m : n < m -> S n < S m.
 Proof.
@@ -127,28 +127,28 @@ Hint Resolve lt_pred_n_n: arith.
 
 (** * Transitivity properties *)
 
-Notation lt_trans := Nat.lt_trans (compat "8.4").
-Notation lt_le_trans := Nat.lt_le_trans (compat "8.4").
-Notation le_lt_trans := Nat.le_lt_trans (compat "8.4").
+Notation lt_trans := Nat.lt_trans (only parsing).
+Notation lt_le_trans := Nat.lt_le_trans (only parsing).
+Notation le_lt_trans := Nat.le_lt_trans (only parsing).
 
 Hint Resolve lt_trans lt_le_trans le_lt_trans: arith.
 
 (** * Large = strict or equal *)
 
-Notation le_lt_or_eq_iff := Nat.lt_eq_cases (compat "8.4").
+Notation le_lt_or_eq_iff := Nat.lt_eq_cases (only parsing).
 
 Theorem le_lt_or_eq n m : n <= m -> n < m \/ n = m.
 Proof.
  apply Nat.lt_eq_cases.
 Qed.
 
-Notation lt_le_weak := Nat.lt_le_incl (compat "8.4").
+Notation lt_le_weak := Nat.lt_le_incl (only parsing).
 
 Hint Immediate lt_le_weak: arith.
 
 (** * Dichotomy *)
 
-Notation le_or_lt := Nat.le_gt_cases (compat "8.4"). (* n <= m \/ m < n *)
+Notation le_or_lt := Nat.le_gt_cases (only parsing). (* n <= m \/ m < n *)
 
 Theorem nat_total_order n m : n <> m -> n < m \/ m < n.
 Proof.

@@ -27,12 +27,12 @@ Local Open Scope nat_scope.
 
 (** * Neutrality of 0, commutativity, associativity *)
 
-Notation plus_0_l := Nat.add_0_l (compat "8.4").
-Notation plus_0_r := Nat.add_0_r (compat "8.4").
-Notation plus_comm := Nat.add_comm (compat "8.4").
-Notation plus_assoc := Nat.add_assoc (compat "8.4").
+Notation plus_0_l := Nat.add_0_l (only parsing).
+Notation plus_0_r := Nat.add_0_r (only parsing).
+Notation plus_comm := Nat.add_comm (only parsing).
+Notation plus_assoc := Nat.add_assoc (only parsing).
 
-Notation plus_permute := Nat.add_shuffle3 (compat "8.4").
+Notation plus_permute := Nat.add_shuffle3 (only parsing).
 
 Definition plus_Snm_nSm : forall n m, S n + m = n + S m :=
  Peano.plus_n_Sm.
@@ -138,7 +138,7 @@ Defined.
 
 (** * Derived properties *)
 
-Notation plus_permute_2_in_4 := Nat.add_shuffle1 (compat "8.4").
+Notation plus_permute_2_in_4 := Nat.add_shuffle1 (only parsing).
 
 (** * Tail-recursive plus *)
 

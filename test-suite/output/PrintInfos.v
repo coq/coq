@@ -26,6 +26,7 @@ About bar.
 Print bar.
 
 About Peano. (* Module *)
+Set Warnings "-deprecated".
 About existS2. (* Notation *)
 
 Arguments eq_refl {A} {x}, {A} x.

@@ -26,17 +26,17 @@ Local Open Scope nat_scope.
 
 (** * [le] is an order on [nat] *)
 
-Notation le_refl := Nat.le_refl (compat "8.4").
-Notation le_trans := Nat.le_trans (compat "8.4").
-Notation le_antisym := Nat.le_antisymm (compat "8.4").
+Notation le_refl := Nat.le_refl (only parsing).
+Notation le_trans := Nat.le_trans (only parsing).
+Notation le_antisym := Nat.le_antisymm (only parsing).
 
 Hint Resolve le_trans: arith.
 Hint Immediate le_antisym: arith.
 
 (** * Properties of [le] w.r.t 0 *)
 
-Notation le_0_n := Nat.le_0_l (compat "8.4").  (* 0 <= n *)
-Notation le_Sn_0 := Nat.nle_succ_0 (compat "8.4").  (* ~ S n <= 0 *)
+Notation le_0_n := Nat.le_0_l (only parsing).  (* 0 <= n *)
+Notation le_Sn_0 := Nat.nle_succ_0 (only parsing).  (* ~ S n <= 0 *)
 
 Lemma le_n_0_eq n : n <= 0 -> 0 = n.
 Proof.
@@ -53,8 +53,8 @@ Proof Peano.le_n_S.
 Theorem le_S_n : forall n m, S n <= S m -> n <= m.
 Proof Peano.le_S_n.
 
-Notation le_n_Sn := Nat.le_succ_diag_r (compat "8.4"). (* n <= S n *)
-Notation le_Sn_n := Nat.nle_succ_diag_l (compat "8.4"). (* ~ S n <= n *)
+Notation le_n_Sn := Nat.le_succ_diag_r (only parsing). (* n <= S n *)
+Notation le_Sn_n := Nat.nle_succ_diag_l (only parsing). (* ~ S n <= n *)
 
 Theorem le_Sn_le : forall n m, S n <= m -> n <= m.
 Proof Nat.lt_le_incl.
@@ -65,8 +65,8 @@ Hint Immediate le_n_0_eq le_Sn_le le_S_n : arith.
 
 (** * Properties of [le] w.r.t predecessor *)
 
-Notation le_pred_n := Nat.le_pred_l (compat "8.4"). (* pred n <= n *)
-Notation le_pred := Nat.pred_le_mono (compat "8.4"). (* n<=m -> pred n <= pred m *)
+Notation le_pred_n := Nat.le_pred_l (only parsing). (* pred n <= n *)
+Notation le_pred := Nat.pred_le_mono (only parsing). (* n<=m -> pred n <= pred m *)
 
 Hint Resolve le_pred_n: arith.
 

@@ -84,7 +84,7 @@ let _ =
 let injection_in_context = ref false
 
 let use_injection_in_context = function
-  | None -> !injection_in_context && Flags.version_strictly_greater Flags.V8_5
+  | None -> !injection_in_context
   | Some flags -> flags.injection_in_context
 
 let _ =

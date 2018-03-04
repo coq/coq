@@ -549,14 +549,14 @@ Qed.
 
 (* Aliases *)
 
-Notation sym_eq := eq_sym (compat "8.3").
-Notation trans_eq := eq_trans (compat "8.3").
-Notation sym_not_eq := not_eq_sym (compat "8.3").
+Notation sym_eq := eq_sym (only parsing).
+Notation trans_eq := eq_trans (only parsing).
+Notation sym_not_eq := not_eq_sym (only parsing).
 
-Notation refl_equal := eq_refl (compat "8.3").
-Notation sym_equal := eq_sym (compat "8.3").
-Notation trans_equal := eq_trans (compat "8.3").
-Notation sym_not_equal := not_eq_sym (compat "8.3").
+Notation refl_equal := eq_refl (only parsing).
+Notation sym_equal := eq_sym (only parsing).
+Notation trans_equal := eq_trans (only parsing).
+Notation sym_not_equal := not_eq_sym (only parsing).
 
 Hint Immediate eq_sym not_eq_sym: core.
 

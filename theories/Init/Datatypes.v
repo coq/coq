@@ -359,14 +359,14 @@ Definition idProp : IDProp := fun A x => x.
 
 (* Compatibility *)
 
-Notation prodT := prod (compat "8.2").
-Notation pairT := pair (compat "8.2").
-Notation prodT_rect := prod_rect (compat "8.2").
-Notation prodT_rec := prod_rec (compat "8.2").
-Notation prodT_ind := prod_ind (compat "8.2").
-Notation fstT := fst (compat "8.2").
-Notation sndT := snd (compat "8.2").
-Notation prodT_uncurry := prod_uncurry (compat "8.2").
-Notation prodT_curry := prod_curry (compat "8.2").
+Notation prodT := prod (only parsing).
+Notation pairT := pair (only parsing).
+Notation prodT_rect := prod_rect (only parsing).
+Notation prodT_rec := prod_rec (only parsing).
+Notation prodT_ind := prod_ind (only parsing).
+Notation fstT := fst (only parsing).
+Notation sndT := snd (only parsing).
+Notation prodT_uncurry := prod_uncurry (only parsing).
+Notation prodT_curry := prod_curry (only parsing).
 
 (* end hide *)
