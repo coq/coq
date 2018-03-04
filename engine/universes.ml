@@ -811,6 +811,15 @@ let not_lower lower (d,l) =
          (** No constraint existing on l *) true) l
 
 exception UpperBoundedAlg
+let enforce_uppers upper lbound cstrs =
+  List.fold_left (fun cstrs (d, r) ->
+      if d == Univ.Le then
+        enforce_leq lbound (Universe.make r) cstrs
+      else
+        try let lev = Option.get (Universe.level lbound) in
+          Constraint.add (lev, d, r) cstrs
+        with Option.IsNone -> raise UpperBoundedAlg)
+    cstrs upper
 
 let minimize_univ_variables ctx us algs left right cstrs =
   let left, lbounds = 
@@ -876,24 +885,13 @@ let minimize_univ_variables ctx us algs left right cstrs =
                 instantiate_with_lbound u lbound lower ~alg:false ~enforce:true acc
             end
     in
-    let enforce_uppers acc =
+    let enforce_uppers ((ctx,us,algs,insts,cstrs), b as acc) =
       match LMap.find u right with
       | exception Not_found -> acc
-      | cstrs ->
-	let dangling = List.filter (fun (d, r) -> not (LMap.mem r us)) cstrs in
-	  if List.is_empty dangling then acc
-	  else
-            let ((ctx, us, algs, insts, cstrs), ({lbound=inst;lower} as b)) = acc in
-            let cstrs = List.fold_left (fun cstrs (d, r) ->
-	      if d == Univ.Le then
-		enforce_leq inst (Universe.make r) cstrs
-	      else
-		try let lev = Option.get (Universe.level inst) in
-		      Constraint.add (lev, d, r) cstrs
-                with Option.IsNone -> raise UpperBoundedAlg)
-	      cstrs dangling
-	    in
-              (ctx, us, algs, insts, cstrs), b
+      | upper ->
+        let upper = List.filter (fun (d, r) -> not (LMap.mem r us)) upper in
+        let cstrs = enforce_uppers upper b.lbound cstrs in
+        (ctx, us, algs, insts, cstrs), b
     in
     if not (LSet.mem u ctx)
     then enforce_uppers (acc, {enforce=true; alg=false; lbound=Universe.make u; lower})
