@@ -115,7 +115,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
 	conv_stack env k stk1 stk2 cu
     else raise NotConvertible
   | Aid ik1, Aid ik2 ->
-    if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
+    if Vmvalues.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
 	conv_stack env k stk1 stk2 cu
       else raise NotConvertible
   | Asort s1, Asort s2 ->

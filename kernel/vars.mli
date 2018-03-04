@@ -137,6 +137,3 @@ val subst_univs_level_context : Univ.universe_level_subst -> Context.Rel.t -> Co
 (** Instance substitution for polymorphism. *)
 val subst_instance_constr : Instance.t -> constr -> constr
 val subst_instance_context : Instance.t -> Context.Rel.t -> Context.Rel.t
-
-type id_key = Constant.t tableKey
-val eq_id_key : id_key -> id_key -> bool

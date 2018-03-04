@@ -20,6 +20,7 @@ type uint =
 and lambda =
   | Lrel          of Name.t * int
   | Lvar          of Id.t
+  | Levar         of Evar.t * lambda array
   | Lprod         of lambda * lambda
   | Llam          of Name.t array * lambda
   | Llet          of Name.t * lambda * lambda
