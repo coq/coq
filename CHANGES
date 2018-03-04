@@ -145,6 +145,23 @@ Compatibility support
 
 - Support for compatibility with versions before 8.6 was dropped.
 
+Options
+
+- The following deprecated options have been removed:
+
+  + `Refolding Reduction`
+  + `Standard Proposition Elimination`
+  + `Discriminate Introduction`
+  + `Shrink Abstract`
+  + `Tactic Pattern Unification`
+  + `Intuition Iff Unfolding`
+  + `Injection L2R Pattern Order`
+  + `Record Elimination Schemes`
+  + `Match Strict`
+  + `Typeclasses Legacy Resolution`
+  + `Typeclasses Module Eta`
+  + `Typeclass Resolution After Apply`
+
 Changes from 8.7.1 to 8.7.2
 ===========================
 
