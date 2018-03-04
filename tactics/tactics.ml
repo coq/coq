@@ -4662,30 +4662,6 @@ let destruct ev clr c l e =
   induction_gen clr false ev e
     ((Evd.empty,(c,NoBindings)),(None,l)) None
 
-(* The registered tactic, which calls the default elimination
- * if no elimination constant is provided. *)
-
-(* Induction tactics *)
-
-(* This was Induction before 6.3 (induction only in quantified premisses) *)
-let simple_induct_id s = Tacticals.New.tclTHEN (intros_until_id s) (Tacticals.New.onLastHyp simplest_elim)
-let simple_induct_nodep n = Tacticals.New.tclTHEN (intros_until_n n) (Tacticals.New.onLastHyp simplest_elim)
-
-let simple_induct = function
-  | NamedHyp id -> simple_induct_id id
-  | AnonHyp n -> simple_induct_nodep n
-
-(* Destruction tactics *)
-
-let simple_destruct_id s    =
-  (Tacticals.New.tclTHEN (intros_until_id s) (Tacticals.New.onLastHyp simplest_case))
-let simple_destruct_nodep n =
-  (Tacticals.New.tclTHEN (intros_until_n n)    (Tacticals.New.onLastHyp simplest_case))
-
-let simple_destruct = function
-  | NamedHyp id -> simple_destruct_id id
-  | AnonHyp n -> simple_destruct_nodep n
-
 (*
  *  Eliminations giving the type instead of the proof.
  * These tactics use the default elimination constant and
