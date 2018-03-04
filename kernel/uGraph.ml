@@ -833,7 +833,7 @@ let sort_universes g =
 (** Subtyping of polymorphic contexts *)
 
 let check_subtype univs ctxT ctx =
-  if AUContext.size ctx == AUContext.size ctx then
+  if AUContext.size ctxT == AUContext.size ctx then
     let (inst, cst) = UContext.dest (AUContext.repr ctx) in
     let cstT = UContext.constraints (AUContext.repr ctxT) in
     let push accu v = add_universe v false accu in
