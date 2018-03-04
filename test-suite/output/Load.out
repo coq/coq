@@ -1,0 +1,6 @@
+f = 2
+     : nat
+u = I
+     : True
+The command has indeed failed with message:
+Files processed by Load cannot leave open proofs.

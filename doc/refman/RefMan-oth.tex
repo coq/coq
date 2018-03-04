@@ -513,6 +513,9 @@ This command loads the file named {\ident}{\tt .v}, searching
 successively in each of the directories specified in the {\em
   loadpath}. (see Section~\ref{loadpath})
 
+Files loaded this way cannot leave proofs open, and neither the {\tt
+  Load} command can be use inside a proof.
+
 \begin{Variants}
 \item {\tt Load {\str}.}\label{Load-str}\\
   Loads the file denoted by the string {\str}, where {\str} is any
@@ -530,6 +533,8 @@ successively in each of the directories specified in the {\em
 
 \begin{ErrMsgs}
 \item \errindex{Can't find file {\ident} on loadpath}
+\item \errindex{Load is not supported inside proofs}
+\item \errindex{Files processed by Load cannot leave open proofs}
 \end{ErrMsgs}
 
 \section[Compiled files]{Compiled files\label{compiled}\index{Compiled files}}
