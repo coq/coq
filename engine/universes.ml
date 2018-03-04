@@ -816,9 +816,9 @@ let enforce_uppers upper lbound cstrs =
       if d == Univ.Le then
         enforce_leq lbound (Universe.make r) cstrs
       else
-        try let lev = Option.get (Universe.level lbound) in
-          Constraint.add (lev, d, r) cstrs
-        with Option.IsNone -> raise UpperBoundedAlg)
+        match Universe.level lbound with
+        | Some lev -> Constraint.add (lev, d, r) cstrs
+        | None -> raise UpperBoundedAlg)
     cstrs upper
 
 let minimize_univ_variables ctx us algs left right cstrs =
