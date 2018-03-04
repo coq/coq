@@ -10,7 +10,6 @@ open Pp
 open CErrors
 open Util
 open Vars
-open Environ
 open Declare
 open Names
 open Globnames
@@ -87,7 +86,6 @@ match local with
 let interp_assumption sigma env impls bl c =
   let c = mkCProdN ?loc:(local_binders_loc bl) bl c in
   let sigma, (ty, impls) = interp_type_evars_impls env sigma ~impls c in
-  let ty = EConstr.Unsafe.to_constr ty in
   sigma, (ty, impls)
 
 (* When monomorphic the universe constraints are declared with the first declaration only. *)
@@ -151,9 +149,9 @@ let do_assumptions kind nl l =
   let (sigma,_,_),l = List.fold_left_map (fun (sigma,env,ienv) (is_coe,(idl,c)) ->
     let sigma,(t,imps) = interp_assumption sigma env ienv [] c in
     let env =
-      push_named_context (List.map (fun {CAst.v=id} -> LocalAssum (id,t)) idl) env in
+      EConstr.push_named_context (List.map (fun {CAst.v=id} -> LocalAssum (id,t)) idl) env in
     let ienv = List.fold_right (fun {CAst.v=id} ienv ->
-      let impls = compute_internalization_data env Variable t imps in
+      let impls = compute_internalization_data env sigma Variable t imps in
       Id.Map.add id impls ienv) idl ienv in
       ((sigma,env,ienv),((is_coe,idl),t,imps)))
     (sigma,env,empty_internalization_env) l
@@ -161,7 +159,7 @@ let do_assumptions kind nl l =
   let sigma = solve_remaining_evars all_and_fail_flags env sigma Evd.empty in
   (* The universe constraints come from the whole telescope. *)
   let sigma = Evd.nf_constraints sigma in
-  let nf_evar c = EConstr.to_constr sigma (EConstr.of_constr c) in
+  let nf_evar c = EConstr.to_constr sigma c in
   let uvars, l = List.fold_left_map (fun uvars (coe,t,imps) ->
       let t = nf_evar t in
       let uvars = Univ.LSet.union uvars (Univops.universes_of_constr env t) in

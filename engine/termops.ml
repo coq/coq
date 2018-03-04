@@ -797,9 +797,9 @@ let fold_constr_with_binders sigma g f n acc c =
    each binder traversal; it is not recursive and the order with which
    subterms are processed is not specified *)
 
-let iter_constr_with_full_binders g f l c =
+let iter_constr_with_full_binders sigma g f l c =
   let open RelDecl in
-  match kind c with
+  match EConstr.kind sigma c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> ()
   | Cast (c,_, t) -> f l c; f l t

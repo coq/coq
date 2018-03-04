@@ -210,6 +210,7 @@ let (value_f: Constr.t list -> global_reference -> Constr.t) =
 	    DAst.make @@ GVar v_id)])
     in
     let body = fst (understand env (Evd.from_env env) glob_body)(*FIXME*) in
+    let body = EConstr.Unsafe.to_constr body in
     it_mkLambda_or_LetIn body context
 
 let (declare_f : Id.t -> logical_kind -> Constr.t list -> global_reference -> global_reference) =
@@ -1400,7 +1401,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
 	 	     (fun c ->
 	 		Proofview.V82.of_tactic (Tacticals.New.tclTHENLIST 
 	 		  [intros;
-	 		   Simple.apply (EConstr.of_constr (fst (interp_constr (Global.env()) Evd.empty c))) (*FIXME*);
+                           Simple.apply (fst (interp_constr (Global.env()) Evd.empty c)) (*FIXME*);
 	 		   Tacticals.New.tclCOMPLETE Auto.default_auto
 	 		  ])
 	 	     )
@@ -1599,7 +1600,9 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       and functional_ref = destConst (constr_of_global functional_ref)
       and eq_ref = destConst (constr_of_global eq_ref) in
       generate_induction_principle f_ref tcc_lemma_constr
-        functional_ref eq_ref rec_arg_num (EConstr.of_constr rec_arg_type) (nb_prod evd (EConstr.of_constr res)) (EConstr.of_constr relation);
+        functional_ref eq_ref rec_arg_num
+        (EConstr.of_constr rec_arg_type)
+        (nb_prod evd (EConstr.of_constr res)) relation;
       Flags.if_verbose
         msgnl (h 1 (Ppconstr.pr_id function_name ++
 			 spc () ++ str"is defined" )++ fnl () ++
@@ -1614,7 +1617,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       tcc_lemma_constr
       is_mes functional_ref
       (EConstr.of_constr rec_arg_type)
-      (EConstr.of_constr relation) rec_arg_num
+      relation rec_arg_num
       term_id
       using_lemmas
       (List.length res_vars)

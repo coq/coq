@@ -12,7 +12,6 @@
    into elementary ones, insertion of coercions and resolution of
    implicit arguments. *)
 
-open Constr
 open Environ
 open Evd
 open EConstr
@@ -26,7 +25,7 @@ val interp_known_glob_level : ?loc:Loc.t -> Evd.evar_map ->
 (** An auxiliary function for searching for fixpoint guard indexes *)
 
 val search_guard :
-  ?loc:Loc.t -> env -> int list list -> rec_declaration -> int array
+  ?loc:Loc.t -> env -> int list list -> Constr.rec_declaration -> int array
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 
@@ -85,9 +84,8 @@ val understand_ltac : inference_flags ->
     heuristics (but no external tactic solver hook), as well as to
     ensure that conversion problems are all solved and that no
     unresolved evar remains, expanding evars. *)
-
 val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
-  env -> evar_map -> glob_constr -> Constr.constr Evd.in_evar_universe_context
+  env -> evar_map -> glob_constr -> constr Evd.in_evar_universe_context
 
 (** Trying to solve remaining evars and remaining conversion problems
     possibly using type classes, heuristics, external tactic solver

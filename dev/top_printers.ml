@@ -313,6 +313,8 @@ let constr_display csr =
   in
   pp (str (term_display csr) ++fnl ())
 
+let econstr_display c = constr_display EConstr.Unsafe.(to_constr c) ;;
+
 open Format;;
 
 let print_pure_constr csr =
@@ -452,6 +454,8 @@ let print_pure_constr csr =
 	print_string (Printexc.to_string e);print_flush ();
 	raise e
 
+let print_pure_econstr c = print_pure_constr EConstr.Unsafe.(to_constr c) ;;
+
 let pploc x = let (l,r) = Loc.unloc x in
   print_string"(";print_int l;print_string",";print_int r;print_string")"
 
@@ -505,7 +509,7 @@ let _ =
       (function
          [c] when genarg_tag c = unquote (topwit wit_constr) && true ->
            let c = out_gen (rawwit wit_constr) c in
-           (fun ~atts ~st -> in_current_context constr_display c; st)
+           (fun ~atts ~st -> in_current_context econstr_display c; st)
        | _ -> failwith "Vernac extension: cannot occur")
   with
     e -> pp (CErrors.print e)
@@ -521,7 +525,7 @@ let _ =
       (function
          [c] when genarg_tag c = unquote (topwit wit_constr) && true ->
            let c = out_gen (rawwit wit_constr) c in
-           (fun ~atts ~st -> in_current_context print_pure_constr c; st)
+           (fun ~atts ~st -> in_current_context print_pure_econstr c; st)
        | _ -> failwith "Vernac extension: cannot occur")
   with
     e -> pp (CErrors.print e)

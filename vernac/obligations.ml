@@ -816,13 +816,13 @@ let solve_by_tac name evi t poly ctx =
   let id = name in
   let concl = EConstr.of_constr evi.evar_concl in
   (* spiwack: the status is dropped. *)
-  let (entry,_,ctx') = Pfedit.build_constant_by_tactic 
+  let (entry,_,ctx') = Pfedit.build_constant_by_tactic
     id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps concl (Tacticals.New.tclCOMPLETE t) in
   let env = Global.env () in
   let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
   let body, () = Future.force entry.const_entry_body in
   let ctx' = Evd.merge_context_set ~sideff:true Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
-  Inductiveops.control_only_guard (Global.env ()) (fst body);
+  Inductiveops.control_only_guard env ctx' (EConstr.of_constr (fst body));
   (fst body), entry.const_entry_type, Evd.evar_universe_context ctx'
 
 let obligation_terminator name num guard hook auto pf =
@@ -838,7 +838,7 @@ let obligation_terminator name num guard hook auto pf =
     let (body, cstr), () = Future.force entry.Entries.const_entry_body in
     let sigma = Evd.from_ctx uctx in
     let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
-    Inductiveops.control_only_guard (Global.env ()) body;
+    Inductiveops.control_only_guard (Global.env ()) sigma (EConstr.of_constr body);
     (** Declare the obligation ourselves and drop the hook *)
     let prg = get_info (ProgMap.find name !from_prg) in
     (** Ensure universes are substituted properly in body and type *)

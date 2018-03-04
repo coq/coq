@@ -668,8 +668,8 @@ type scope_class = cl_typ
 let scope_class_compare : scope_class -> scope_class -> int =
   cl_typ_ord
 
-let compute_scope_class t =
-  let (cl,_,_) = find_class_type Evd.empty (EConstr.of_constr t) in
+let compute_scope_class sigma t =
+  let (cl,_,_) = find_class_type sigma t in
   cl
 
 module ScopeClassOrd =
@@ -698,22 +698,22 @@ let find_scope_class_opt = function
 (**********************************************************************)
 (* Special scopes associated to arguments of a global reference *)
 
-let rec compute_arguments_classes t =
-  match Constr.kind (EConstr.Unsafe.to_constr (Reductionops.whd_betaiotazeta Evd.empty (EConstr.of_constr t))) with
+let rec compute_arguments_classes sigma t =
+  match EConstr.kind sigma (Reductionops.whd_betaiotazeta sigma t) with
     | Prod (_,t,u) ->
-	let cl = try Some (compute_scope_class t) with Not_found -> None in
-	cl :: compute_arguments_classes u
+        let cl = try Some (compute_scope_class sigma t) with Not_found -> None in
+        cl :: compute_arguments_classes sigma u
     | _ -> []
 
-let compute_arguments_scope_full t =
-  let cls = compute_arguments_classes t in
+let compute_arguments_scope_full sigma t =
+  let cls = compute_arguments_classes sigma t in
   let scs = List.map find_scope_class_opt cls in
   scs, cls
 
-let compute_arguments_scope t = fst (compute_arguments_scope_full t)
+let compute_arguments_scope sigma t = fst (compute_arguments_scope_full sigma t)
 
-let compute_type_scope t =
-  find_scope_class_opt (try Some (compute_scope_class t) with Not_found -> None)
+let compute_type_scope sigma t =
+  find_scope_class_opt (try Some (compute_scope_class sigma t) with Not_found -> None)
 
 let current_type_scope_name () =
    find_scope_class_opt (Some CL_SORT)
@@ -779,20 +779,24 @@ let discharge_arguments_scope (_,(req,r,n,l,_)) =
 let classify_arguments_scope (req,_,_,_,_ as obj) =
   if req == ArgsScopeNoDischarge then Dispose else Substitute obj
 
-let rebuild_arguments_scope (req,r,n,l,_) =
+let rebuild_arguments_scope sigma (req,r,n,l,_) =
   match req with
     | ArgsScopeNoDischarge -> assert false
     | ArgsScopeAuto ->
-        let scs,cls = compute_arguments_scope_full (fst(Global.type_of_global_in_context (Global.env ()) r)(*FIXME?*)) in
-	(req,r,List.length scs,scs,cls)
+      let env = Global.env () in (*FIXME?*)
+      let typ = EConstr.of_constr @@ fst (Global.type_of_global_in_context env r) in
+      let scs,cls = compute_arguments_scope_full sigma typ in
+      (req,r,List.length scs,scs,cls)
     | ArgsScopeManual ->
-	(* Add to the manually given scopes the one found automatically
-           for the extra parameters of the section. Discard the classes
-           of the manually given scopes to avoid further re-computations. *)
-        let l',cls = compute_arguments_scope_full (fst (Global.type_of_global_in_context (Global.env ()) r)) in
-	let l1 = List.firstn n l' in
-        let cls1 = List.firstn n cls in
-	(req,r,0,l1@l,cls1)
+      (* Add to the manually given scopes the one found automatically
+         for the extra parameters of the section. Discard the classes
+         of the manually given scopes to avoid further re-computations. *)
+      let env = Global.env () in (*FIXME?*)
+      let typ = EConstr.of_constr @@ fst (Global.type_of_global_in_context env r) in
+      let l',cls = compute_arguments_scope_full sigma typ in
+      let l1 = List.firstn n l' in
+      let cls1 = List.firstn n cls in
+      (req,r,0,l1@l,cls1)
 
 type arguments_scope_obj =
     arguments_scope_discharge_request * global_reference *
@@ -807,7 +811,8 @@ let inArgumentsScope : arguments_scope_obj -> obj =
       subst_function = subst_arguments_scope;
       classify_function = classify_arguments_scope;
       discharge_function = discharge_arguments_scope;
-      rebuild_function = rebuild_arguments_scope }
+      (* XXX: Should we pass the sigma here or not, see @herbelin's comment in 6511 *)
+      rebuild_function = rebuild_arguments_scope Evd.empty }
 
 let is_local local ref = local || isVarRef ref && Lib.is_in_section ref
 
@@ -819,7 +824,7 @@ let declare_arguments_scope local r scl =
   (* We empty the list of argument classes to disable further scope
      re-computations and keep these manually given scopes. *)
   declare_arguments_scope_gen req r 0 (scl,[])
-                              
+
 let find_arguments_scope r =
   try
     let (scl,cls,stamp) = Refmap.find r !arguments_scope in
@@ -832,11 +837,11 @@ let find_arguments_scope r =
       scl'
   with Not_found -> []
 
-let declare_ref_arguments_scope ref =
-  let t, _ = Global.type_of_global_in_context (Global.env ()) ref in
-  let (scs,cls as o) = compute_arguments_scope_full t in
+let declare_ref_arguments_scope sigma ref =
+  let env = Global.env () in (* FIXME? *)
+  let typ = EConstr.of_constr @@ fst @@ Global.type_of_global_in_context env ref in
+  let (scs,cls as o) = compute_arguments_scope_full sigma typ in
   declare_arguments_scope_gen ArgsScopeAuto ref (List.length scs) o
-
 
 (********************************)
 (* Encoding notations as string *)

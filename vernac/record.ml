@@ -70,7 +70,7 @@ let interp_fields_evars env sigma impls_env nots l =
       let impls =
 	match i with
 	| Anonymous -> impls
-        | Name id -> Id.Map.add id (compute_internalization_data env Constrintern.Method (EConstr.to_constr sigma t') impl) impls
+        | Name id -> Id.Map.add id (compute_internalization_data env sigma Constrintern.Method t' impl) impls
       in
       let d = match b' with
 	      | None -> LocalAssum (i,t')
@@ -145,7 +145,7 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
   let assums = List.filter is_local_assum newps in
   let params = List.map (RelDecl.get_name %> Name.get_id) assums in
   let ty = Inductive (params,(finite != Declarations.BiFinite)) in
-  let impls_env = compute_internalization_env env0 ~impls:impls_env ty [id] [EConstr.to_constr sigma arity] [imps] in
+  let impls_env = compute_internalization_env env0 sigma ~impls:impls_env ty [id] [arity] [imps] in
   let env2,sigma,impls,newfs,data =
     interp_fields_evars env_ar sigma impls_env nots (binders_of_decls fs)
   in

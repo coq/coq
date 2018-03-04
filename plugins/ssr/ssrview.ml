@@ -55,7 +55,8 @@ let in_viewhint =
        Libobject.classify_function = classify_viewhint }
 
 let glob_view_hints lvh =
-  List.map (Constrintern.intern_constr (Global.env ())) lvh
+  let env = Global.env () in
+  List.map (Constrintern.intern_constr env Evd.(from_env env)) lvh
 
 let add_view_hints lvh i = Lib.add_anonymous_leaf (in_viewhint (i, lvh))
 

@@ -643,8 +643,9 @@ let type_of_projection_knowing_arg env sigma p c ty =
 (* A function which checks that a term well typed verifies both
    syntactic conditions *)
 
-let control_only_guard env c =
-  let check_fix_cofix e c = match kind c with
+let control_only_guard env sigma c =
+  let check_fix_cofix e c =
+    match kind (EConstr.to_constr sigma c) with
     | CoFix (_,(_,_,_) as cofix) ->
       Inductive.check_cofix e cofix
     | Fix (_,(_,_,_) as fix) ->
@@ -653,6 +654,6 @@ let control_only_guard env c =
   in
   let rec iter env c =
     check_fix_cofix env c;
-    iter_constr_with_full_binders push_rel iter env c
+    iter_constr_with_full_binders sigma EConstr.push_rel iter env c
   in
   iter env c

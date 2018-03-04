@@ -61,13 +61,16 @@ let transl_with_decl env = function
   | CWith_Module ((_,fqid),qid) ->
       WithMod (fqid,lookup_module qid), Univ.ContextSet.empty
   | CWith_Definition ((_,fqid),c) ->
-    let c, ectx = interp_constr env (Evd.from_env env) c in
+    let sigma = Evd.from_env env in
+    let c, ectx = interp_constr env sigma c in
     if Flags.is_universe_polymorphism () then
       let ctx = UState.context ectx in
       let inst, ctx = Univ.abstract_universes ctx in
-      let c = Vars.subst_univs_level_constr (Univ.make_instance_subst inst) c in
+      let c = EConstr.Vars.subst_univs_level_constr (Univ.make_instance_subst inst) c in
+      let c = EConstr.to_constr sigma c in
       WithDef (fqid,(c, Some ctx)), Univ.ContextSet.empty
     else
+      let c = EConstr.to_constr sigma c in
       WithDef (fqid,(c, None)), UState.context_set ectx
 
 let loc_of_module l = l.CAst.loc

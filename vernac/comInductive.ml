@@ -11,7 +11,6 @@ open CErrors
 open Sorts
 open Util
 open Constr
-open Termops
 open Environ
 open Declare
 open Names
@@ -51,7 +50,7 @@ let rec complete_conclusion a cs = CAst.map_with_loc (fun ?loc -> function
   )
 
 let push_types env idl tl =
-  List.fold_left2 (fun env id t -> Environ.push_rel (LocalAssum (Name id,t)) env)
+  List.fold_left2 (fun env id t -> EConstr.push_rel (LocalAssum (Name id,t)) env)
     env idl tl
 
 type structured_one_inductive_expr = {
@@ -90,7 +89,7 @@ let check_all_names_different indl =
   | _ -> raise (InductiveError (SameNamesOverlap l))
 
 let mk_mltype_data sigma env assums arity indname =
-  let is_ml_type = is_sort env sigma (EConstr.of_constr arity) in
+  let is_ml_type = is_sort env sigma arity in
   (is_ml_type,indname,assums)
 
 let prepare_param = function
@@ -130,14 +129,13 @@ let is_impredicative env u =
   u = Prop Null || (is_impredicative_set env && u = Prop Pos)
 
 let interp_ind_arity env sigma ind =
-  let c = intern_gen IsType env ind.ind_arity in
+  let c = intern_gen IsType env sigma ind.ind_arity in
   let impls = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
   let sigma,t = understand_tcc env sigma ~expected_type:IsType c in
   let pseudo_poly = check_anonymous_type c in
   let () = if not (Reductionops.is_arity env sigma t) then
     user_err ?loc:(constr_loc ind.ind_arity) (str "Not an arity")
   in
-  let t = EConstr.Unsafe.to_constr t in
   sigma, (t, pseudo_poly, impls)
 
 let interp_cstrs env sigma impls mldata arity ind =
@@ -272,7 +270,6 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   let sigma, (impls, ((env_params, ctx_params), userimpls)) =
     interp_context_evars env0 sigma paramsl
   in
-  let ctx_params = List.map (fun d -> map_rel_decl EConstr.Unsafe.to_constr d) ctx_params in
   let indnames = List.map (fun ind -> ind.ind_name) indl in
 
   (* Names of parameters as arguments of the inductive type (defs removed) *)
@@ -282,16 +279,16 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   (* Interpret the arities *)
   let sigma, arities = List.fold_left_map (fun sigma -> interp_ind_arity env_params sigma) sigma indl in
 
-  let fullarities = List.map (fun (c, _, _) -> Term.it_mkProd_or_LetIn c ctx_params) arities in
+  let fullarities = List.map (fun (c, _, _) -> EConstr.it_mkProd_or_LetIn c ctx_params) arities in
   let env_ar = push_types env0 indnames fullarities in
-  let env_ar_params = push_rel_context ctx_params env_ar in
+  let env_ar_params = EConstr.push_rel_context ctx_params env_ar in
 
   (* Compute interpretation metadatas *)
   let indimpls = List.map (fun (_, _, impls) -> userimpls @
     lift_implicits (Context.Rel.nhyps ctx_params) impls) arities in
   let arities = List.map pi1 arities and aritypoly = List.map pi2 arities in
-  let impls = compute_internalization_env env0 ~impls (Inductive (params,true)) indnames fullarities indimpls in
-  let ntn_impls = compute_internalization_env env0 (Inductive (params,true)) indnames fullarities indimpls in
+  let impls = compute_internalization_env env0 sigma ~impls (Inductive (params,true)) indnames fullarities indimpls in
+  let ntn_impls = compute_internalization_env env0 sigma (Inductive (params,true)) indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data sigma env_params params) arities indnames in
 
   let sigma, constructors =
@@ -306,15 +303,14 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   let sigma = solve_remaining_evars all_and_fail_flags env_params sigma Evd.empty in
   (* Compute renewed arities *)
   let sigma, nf = nf_evars_and_universes sigma in
-  let arities = List.map nf arities in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf cl,impsl)) constructors in
+  let arities = List.map EConstr.(to_constr sigma) arities in
   let sigma = List.fold_left2 (fun sigma ty poly -> make_conclusion_flexible sigma ty poly) sigma arities aritypoly in
   let sigma, arities = inductive_levels env_ar_params sigma poly arities constructors in
   let sigma, nf' = nf_evars_and_universes sigma in
-  let nf x = nf' (nf x) in
   let arities = List.map nf' arities in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf' cl,impsl)) constructors in
-  let ctx_params = Context.Rel.map nf ctx_params in
+  let ctx_params = List.map Termops.(map_rel_decl (EConstr.to_constr sigma)) ctx_params in
   let uctx = Evd.check_univ_decl ~poly sigma decl in
   List.iter (fun c -> check_evars env_params Evd.empty sigma (EConstr.of_constr c)) arities;
   Context.Rel.iter (fun c -> check_evars env0 Evd.empty sigma (EConstr.of_constr c)) ctx_params;

@@ -7,21 +7,20 @@
 (************************************************************************)
 
 open CErrors
+open Pp
 open Util
 open Names
-open Globnames
 open Constr
-open Reduction
+open Globnames
 open Declarations
-open Environ
-open Libobject
-open Lib
-open Pp
-open Constrexpr
-open Termops
-open Namegen
 open Decl_kinds
-open Context.Named.Declaration
+open Lib
+open Libobject
+open EConstr
+open Termops
+open Reductionops
+open Constrexpr
+open Namegen
 
 module NamedDecl = Context.Named.Declaration
 
@@ -165,8 +164,8 @@ let update pos rig (na,st) =
   in na, Some e
 
 (* modified is_rigid_reference with a truncated env *)
-let is_flexible_reference env bound depth f =
-  match kind f with
+let is_flexible_reference env sigma bound depth f =
+  match kind sigma f with
     | Rel n when n >= bound+depth -> (* inductive type *) false
     | Rel n when n >= depth -> (* previous argument *) true
     | Rel n -> (* since local definitions have been expanded *) false
@@ -174,102 +173,101 @@ let is_flexible_reference env bound depth f =
         let cb = Environ.lookup_constant kn env in
 	(match cb.const_body with Def _ -> true | _ -> false)
     | Var id ->
-        env |> Environ.lookup_named id |> is_local_def
+        env |> Environ.lookup_named id |> NamedDecl.is_local_def
     | Ind _ | Construct _ -> false
     |  _ -> true
 
 let push_lift d (e,n) = (push_rel d e,n+1)
 
-let is_reversible_pattern bound depth f l =
-  isRel f && let n = destRel f in (n < bound+depth) && (n >= depth) &&
-  Array.for_all (fun c -> isRel c && destRel c < depth) l &&
+let is_reversible_pattern sigma bound depth f l =
+  isRel sigma f && let n = destRel sigma f in (n < bound+depth) && (n >= depth) &&
+  Array.for_all (fun c -> isRel sigma c && destRel sigma c < depth) l &&
   Array.distinct l
 
 (* Precondition: rels in env are for inductive types only *)
-let add_free_rels_until strict strongly_strict revpat bound env m pos acc =
+let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc =
   let rec frec rig (env,depth as ed) c =
-    let hd = if strict then whd_all env c else c in
+    let hd = if strict then whd_all env sigma c else c in
     let c = if strongly_strict then hd else c in
-    match kind hd with
+    match kind sigma hd with
     | Rel n when (n < bound+depth) && (n >= depth) ->
 	let i = bound + depth - n - 1 in
         acc.(i) <- update pos rig acc.(i)
-    | App (f,l) when revpat && is_reversible_pattern bound depth f l ->
-	let i = bound + depth - destRel f - 1 in
+    | App (f,l) when revpat && is_reversible_pattern sigma bound depth f l ->
+        let i = bound + depth - EConstr.destRel sigma f - 1 in
 	acc.(i) <- update pos rig acc.(i)
-    | App (f,_) when rig && is_flexible_reference env bound depth f ->
+    | App (f,_) when rig && is_flexible_reference env sigma bound depth f ->
 	if strict then () else
-          iter_constr_with_full_binders push_lift (frec false) ed c
+          iter_constr_with_full_binders sigma push_lift (frec false) ed c
     | Proj (p,c) when rig ->
       if strict then () else
-        iter_constr_with_full_binders push_lift (frec false) ed c	  
+        iter_constr_with_full_binders sigma push_lift (frec false) ed c
     | Case _ when rig ->
 	if strict then () else
-          iter_constr_with_full_binders push_lift (frec false) ed c
+          iter_constr_with_full_binders sigma push_lift (frec false) ed c
     | Evar _ -> ()
     | _ ->
-        iter_constr_with_full_binders push_lift (frec rig) ed c
+        iter_constr_with_full_binders sigma push_lift (frec rig) ed c
   in
-  let () = if not (Vars.noccur_between 1 bound m) then frec true (env,1) m in
+  let () = if not (Vars.noccur_between sigma 1 bound m) then frec true (env,1) m in
   acc
 
-let rec is_rigid_head t = match kind t with
+let rec is_rigid_head sigma t = match kind sigma t with
   | Rel _ | Evar _ -> false
   | Ind _ | Const _ | Var _ | Sort _ -> true
-  | Case (_,_,f,_) -> is_rigid_head f
+  | Case (_,_,f,_) -> is_rigid_head sigma f
   | Proj (p,c) -> true
   | App (f,args) ->
-      (match kind f with
-	| Fix ((fi,i),_) -> is_rigid_head (args.(fi.(i)))
-	| _ -> is_rigid_head f)
+      (match kind sigma f with
+        | Fix ((fi,i),_) -> is_rigid_head sigma (args.(fi.(i)))
+        | _ -> is_rigid_head sigma f)
   | Lambda _ | LetIn _ | Construct _ | CoFix _ | Fix _
   | Prod _ | Meta _ | Cast _ -> assert false
 
 (* calcule la liste des arguments implicites *)
 
 let find_displayed_name_in all avoid na (env, b) =
-  let b = EConstr.of_constr b in
   let envnames_b = (env, b) in
   let flag = RenamingElsewhereFor envnames_b in
   if all then compute_and_force_displayed_name_in Evd.empty flag avoid na b
   else compute_displayed_name_in Evd.empty flag avoid na b
 
-let compute_implicits_gen strict strongly_strict revpat contextual all env t =
+let compute_implicits_gen strict strongly_strict revpat contextual all env sigma (t : EConstr.t) =
   let rigid = ref true in
   let open Context.Rel.Declaration in
-  let rec aux env avoid n names t =
-    let t = whd_all env t in
-    match kind t with
+  let rec aux env avoid n names (t : EConstr.t) =
+    let t = whd_all env sigma t in
+    match kind sigma t with
       | Prod (na,a,b) ->
 	  let na',avoid' = find_displayed_name_in all avoid na (names,b) in
-	  add_free_rels_until strict strongly_strict revpat n env a (Hyp (n+1))
+          add_free_rels_until strict strongly_strict revpat n env sigma a (Hyp (n+1))
             (aux (push_rel (LocalAssum (na',a)) env) avoid' (n+1) (na'::names) b)
       | _ ->
-	  rigid := is_rigid_head t;
+          rigid := is_rigid_head sigma t;
 	  let names = List.rev names in
 	  let v = Array.map (fun na -> na,None) (Array.of_list names) in
 	  if contextual then
-	    add_free_rels_until strict strongly_strict revpat n env t Conclusion v
+            add_free_rels_until strict strongly_strict revpat n env sigma t Conclusion v
 	  else v
   in
-  match kind (whd_all env t) with
+  match kind sigma (whd_all env sigma t) with
     | Prod (na,a,b) ->
 	let na',avoid = find_displayed_name_in all Id.Set.empty na ([],b) in
 	let v = aux (push_rel (LocalAssum (na',a)) env) avoid 1 [na'] b in
 	!rigid, Array.to_list v
     | _ -> true, []
 
-let compute_implicits_flags env f all t =
+let compute_implicits_flags env sigma f all t =
   compute_implicits_gen
     (f.strict || f.strongly_strict) f.strongly_strict
-    f.reversible_pattern f.contextual all env t
+    f.reversible_pattern f.contextual all env sigma t
 
-let compute_auto_implicits env flags enriching t =
-  if enriching then compute_implicits_flags env flags true t
-  else compute_implicits_gen false false false true true env t
+let compute_auto_implicits env sigma flags enriching t =
+  if enriching then compute_implicits_flags env sigma flags true t
+  else compute_implicits_gen false false false true true env sigma t
 
-let compute_implicits_names env t =
-  let _, impls = compute_implicits_gen false false false false true env t in
+let compute_implicits_names env sigma t =
+  let _, impls = compute_implicits_gen false false false false true env sigma t in
   List.map fst impls
 
 (* Extra information about implicit arguments *)
@@ -398,24 +396,25 @@ let set_manual_implicits env flags enriching autoimps l =
   in
   merge 1 l autoimps
 
-let compute_semi_auto_implicits env f manual t =
+let compute_semi_auto_implicits env sigma f manual t =
   match manual with
   | [] ->
       if not f.auto then [DefaultImpArgs, []]
-      else let _,l = compute_implicits_flags env f false t in
+      else let _,l = compute_implicits_flags env sigma f false t in
 	     [DefaultImpArgs, prepare_implicits f l]
   | _ ->
-      let _,autoimpls = compute_auto_implicits env f f.auto t in
+      let _,autoimpls = compute_auto_implicits env sigma f f.auto t in
       [DefaultImpArgs, set_manual_implicits env f f.auto autoimpls manual]
 
 (*s Constants. *)
 
 let compute_constant_implicits flags manual cst =
   let env = Global.env () in
+  let sigma = Evd.from_env env in
   let cb = Environ.lookup_constant cst env in
-  let ty = cb.const_type in
-  let impls = compute_semi_auto_implicits env flags manual ty in
-    impls
+  let ty = of_constr cb.const_type in
+  let impls = compute_semi_auto_implicits env sigma flags manual ty in
+  impls
 
 (*s Inductives and constructors. Their implicit arguments are stored
    in an array, indexed by the inductive number, of pairs $(i,v)$ where
@@ -424,7 +423,8 @@ let compute_constant_implicits flags manual cst =
 
 let compute_mib_implicits flags manual kn =
   let env = Global.env () in
-  let mib = lookup_mind kn env in
+  let sigma = Evd.from_env env in
+  let mib = Environ.lookup_mind kn env in
   let ar =
     Array.to_list
       (Array.mapi  (* No need to lift, arities contain no de Bruijn *)
@@ -433,14 +433,14 @@ let compute_mib_implicits flags manual kn =
 	  let ty, _ = Global.type_of_global_in_context env (IndRef (kn,i)) in
 	  Context.Rel.Declaration.LocalAssum (Name mip.mind_typename, ty))
         mib.mind_packets) in
-  let env_ar = push_rel_context ar env in
+  let env_ar = Environ.push_rel_context ar env in
   let imps_one_inductive i mip =
     let ind = (kn,i) in
     let ar, _ = Global.type_of_global_in_context env (IndRef ind) in
-    ((IndRef ind,compute_semi_auto_implicits env flags manual ar),
+    ((IndRef ind,compute_semi_auto_implicits env sigma flags manual (of_constr ar)),
      Array.mapi (fun j c ->
-       (ConstructRef (ind,j+1),compute_semi_auto_implicits env_ar flags manual c))
-       mip.mind_nf_lc)
+       (ConstructRef (ind,j+1),compute_semi_auto_implicits env_ar sigma flags manual c))
+       (Array.map of_constr mip.mind_nf_lc))
   in
   Array.mapi imps_one_inductive mib.mind_packets
 
@@ -453,7 +453,8 @@ let compute_all_mib_implicits flags manual kn =
 
 let compute_var_implicits flags manual id =
   let env = Global.env () in
-  compute_semi_auto_implicits env flags manual (NamedDecl.get_type (lookup_named id env))
+  let sigma = Evd.from_env env in
+  compute_semi_auto_implicits env sigma flags manual (NamedDecl.get_type (lookup_named id env))
 
 (* Implicits of a global reference. *)
 
@@ -524,7 +525,7 @@ let impls_of_context ctx =
   | Implicit -> Some (NamedDecl.get_id decl, Manual, (true, true))
   | _ -> None
   in
-  List.rev_map map (List.filter (fst %> is_local_assum) ctx)
+  List.rev_map map (List.filter (fst %> NamedDecl.is_local_assum) ctx)
 
 let adjust_side_condition p = function
   | LessArgsThan n -> LessArgsThan (n+p)
@@ -649,8 +650,8 @@ type manual_explicitation = Constrexpr.explicitation * (bool * bool * bool)
 
 type manual_implicits = manual_explicitation list
 
-let compute_implicits_with_manual env typ enriching l =
-  let _,autoimpls = compute_auto_implicits env !implicit_args enriching typ in
+let compute_implicits_with_manual env sigma typ enriching l =
+  let _,autoimpls = compute_auto_implicits env sigma !implicit_args enriching typ in
   set_manual_implicits env !implicit_args enriching autoimpls l
 
 let check_inclusion l =
@@ -674,9 +675,10 @@ let projection_implicits env p impls =
 let declare_manual_implicits local ref ?enriching l =
   let flags = !implicit_args in
   let env = Global.env () in
-  let t, _ = Global.type_of_global_in_context (Global.env ()) ref in
+  let sigma = Evd.from_env env in
+  let t, _ = Global.type_of_global_in_context env ref in
   let enriching = Option.default flags.auto enriching in
-  let isrigid,autoimpls = compute_auto_implicits env flags enriching t in
+  let isrigid,autoimpls = compute_auto_implicits env sigma flags enriching (of_constr t) in
   let l' = match l with
     | [] -> assert false
     | [l] ->

@@ -1897,7 +1897,6 @@ let declare_projection n instance_id r =
 
 let build_morphism_signature env sigma m =
   let m,ctx = Constrintern.interp_constr env sigma m in
-  let m = EConstr.of_constr m in
   let sigma = Evd.from_ctx ctx in
   let t = Typing.unsafe_type_of env sigma m in
   let cstrs =

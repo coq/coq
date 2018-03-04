@@ -1270,7 +1270,7 @@ let prepare_hint check (poly,local) env init (sigma,c) =
 
 let interp_hints poly =
   fun h ->
-  let env = (Global.env()) in
+  let env = Global.env () in
   let sigma = Evd.from_env env in
   let f poly c =
     let evd,c = Constrintern.interp_open_constr env sigma c in
@@ -1279,9 +1279,7 @@ let interp_hints poly =
     let gr = global_with_alias r in
     Dumpglob.add_glob ?loc:(loc_of_reference r) gr;
     gr in
-  let fr r = 
-    evaluable_of_global_reference (Global.env()) (fref r)
-  in
+  let fr r = evaluable_of_global_reference env (fref r) in
   let fi c =
     match c with
     | HintsReference c ->
@@ -1289,7 +1287,7 @@ let interp_hints poly =
 	(PathHints [gr], poly, IsGlobRef gr)
     | HintsConstr c -> (PathAny, poly, f poly c)
   in
-  let fp = Constrintern.intern_constr_pattern (Global.env()) in
+  let fp = Constrintern.intern_constr_pattern env sigma in
   let fres (info, b, r) =
     let path, poly, gr = fi r in
     let info = { info with hint_pattern = Option.map fp info.hint_pattern } in

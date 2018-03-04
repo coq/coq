@@ -203,7 +203,7 @@ let glob_constr ist genv = function
     let vars = Id.Map.fold (fun x _ accu -> Id.Set.add x accu) ist.Tacinterp.lfun Id.Set.empty in
     let ltacvars = {
       Constrintern.empty_ltac_sign with Constrintern.ltac_vars = vars } in
-    Constrintern.intern_gen Pretyping.WithoutTypeConstraint ~ltacvars genv ce
+    Constrintern.intern_gen Pretyping.WithoutTypeConstraint ~ltacvars genv Evd.(from_env genv) ce
   | rc, None -> rc
 
 let pf_intern_term ist gl (_, c) = glob_constr ist (pf_env gl) c

@@ -253,6 +253,7 @@ let add_rewrite_hint ~poly bases ort t lcsr =
   let sigma = Evd.from_env env in
   let f ce =
     let c, ctx = Constrintern.interp_constr env sigma ce in
+    let c = EConstr.to_constr sigma c in
     let ctx =
       let ctx = UState.context_set ctx in
         if poly then ctx
@@ -554,6 +555,7 @@ let add_transitivity_lemma left lem =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let lem',ctx (*FIXME*) = Constrintern.interp_constr env sigma lem in
+  let lem' = EConstr.to_constr sigma lem' in
   add_anonymous_leaf (inTransitivity (left,lem'))
 
 (* Vernacular syntax *)
@@ -611,8 +613,10 @@ END
 
 VERNAC COMMAND EXTEND RetroknowledgeRegister CLASSIFIED AS SIDEFF
  | [ "Register" constr(c) "as" retroknowledge_field(f) "by" constr(b)] ->
-           [ let tc,ctx = Constrintern.interp_constr (Global.env ()) Evd.empty c in
-             let tb,ctx(*FIXME*) = Constrintern.interp_constr (Global.env ()) Evd.empty b in
+           [ let tc,_ctx = Constrintern.interp_constr (Global.env ()) Evd.empty c in
+             let tb,_ctx(*FIXME*) = Constrintern.interp_constr (Global.env ()) Evd.empty b in
+             let tc = EConstr.to_constr Evd.empty tc in
+             let tb = EConstr.to_constr Evd.empty tb in
              Global.register f tc tb ]
 END
 
@@ -705,7 +709,6 @@ let hResolve id c occ t =
           resolve_hole (subst_hole_with_term loc_begin c_raw t_hole)
   in
   let t_constr,ctx = resolve_hole (subst_var_with_hole occ id t_raw) in
-  let t_constr = EConstr.of_constr t_constr in
   let sigma = Evd.merge_universe_context sigma ctx in
   let t_constr_type = Retyping.get_type_of env sigma t_constr in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)

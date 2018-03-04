@@ -184,14 +184,14 @@ let compute_explicitable_implicit imps = function
       (* Unable to know in advance what the implicit arguments will be *)
       []
 
-let compute_internalization_data env ty typ impl =
-  let impl = compute_implicits_with_manual env typ (is_implicit_args()) impl in
+let compute_internalization_data env sigma ty typ impl =
+  let impl = compute_implicits_with_manual env sigma typ (is_implicit_args()) impl in
   let expls_impl = compute_explicitable_implicit impl ty in
-  (ty, expls_impl, impl, compute_arguments_scope typ)
+  (ty, expls_impl, impl, compute_arguments_scope sigma typ)
 
-let compute_internalization_env env ?(impls=empty_internalization_env) ty =
+let compute_internalization_env env sigma ?(impls=empty_internalization_env) ty =
   List.fold_left3
-    (fun map id typ impl -> Id.Map.add id (compute_internalization_data env ty typ impl) map)
+    (fun map id typ impl -> Id.Map.add id (compute_internalization_data env sigma ty typ impl) map)
     impls
 
 (**********************************************************************)
@@ -2207,9 +2207,9 @@ let extract_ids env =
     (Termops.ids_of_rel_context (Environ.rel_context env))
     Id.Set.empty
 
-let scope_of_type_kind = function
+let scope_of_type_kind sigma = function
   | IsType -> Notation.current_type_scope_name ()
-  | OfType typ -> compute_type_scope (EConstr.Unsafe.to_constr typ)
+  | OfType typ -> compute_type_scope sigma typ
   | WithoutTypeConstraint -> None
 
 let empty_ltac_sign = {
@@ -2218,19 +2218,17 @@ let empty_ltac_sign = {
   ltac_extra = Genintern.Store.empty;
 }
 
-let intern_gen kind env
+let intern_gen kind env sigma
                ?(impls=empty_internalization_env) ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
                c =
-  let tmp_scope = scope_of_type_kind kind in
+  let tmp_scope = scope_of_type_kind sigma kind in
   internalize env {ids = extract_ids env; unb = false;
 		         tmp_scope = tmp_scope; scopes = [];
 			 impls = impls}
     pattern_mode (ltacvars, Id.Map.empty) c
 
-let intern_constr env c = intern_gen WithoutTypeConstraint env c
-
-let intern_type env c = intern_gen IsType env c
-
+let intern_constr env sigma c = intern_gen WithoutTypeConstraint env sigma c
+let intern_type env sigma c = intern_gen IsType env sigma c
 let intern_pattern globalenv patt =
   try
     intern_cases_pattern globalenv Id.Map.empty (None,[]) empty_alias patt
@@ -2245,7 +2243,7 @@ let intern_pattern globalenv patt =
 (* All evars resolved *)
 
 let interp_gen kind env sigma ?(impls=empty_internalization_env) c =
-  let c = intern_gen kind ~impls env c in
+  let c = intern_gen kind ~impls env sigma c in
   understand ~expected_type:kind env sigma c
 
 let interp_constr env sigma ?(impls=empty_internalization_env) c =
@@ -2260,13 +2258,13 @@ let interp_casted_constr env sigma ?(impls=empty_internalization_env) c typ =
 (* Not all evars expected to be resolved *)
 
 let interp_open_constr env sigma c =
-  understand_tcc env sigma (intern_constr env c)
+  understand_tcc env sigma (intern_constr env sigma c)
 
 (* Not all evars expected to be resolved and computation of implicit args *)
 
 let interp_constr_evars_gen_impls env sigma
     ?(impls=empty_internalization_env) expected_type c =
-  let c = intern_gen expected_type ~impls env c in
+  let c = intern_gen expected_type ~impls env sigma c in
   let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:(expected_type == IsType) c in
   let sigma, c = understand_tcc env sigma ~expected_type c in
   sigma, (c, imps)
@@ -2283,7 +2281,7 @@ let interp_type_evars_impls env sigma ?(impls=empty_internalization_env) c =
 (* Not all evars expected to be resolved, with side-effect on evars *)
 
 let interp_constr_evars_gen env sigma ?(impls=empty_internalization_env) expected_type c =
-  let c = intern_gen expected_type ~impls env c in
+  let c = intern_gen expected_type ~impls env sigma c in
   understand_tcc env sigma ~expected_type c
 
 let interp_constr_evars env evdref ?(impls=empty_internalization_env) c =
@@ -2297,9 +2295,9 @@ let interp_type_evars env sigma ?(impls=empty_internalization_env) c =
 
 (* Miscellaneous *)
 
-let intern_constr_pattern env ?(as_type=false) ?(ltacvars=empty_ltac_sign) c =
+let intern_constr_pattern env sigma ?(as_type=false) ?(ltacvars=empty_ltac_sign) c =
   let c = intern_gen (if as_type then IsType else WithoutTypeConstraint)
-            ~pattern_mode:true ~ltacvars env c in
+            ~pattern_mode:true ~ltacvars env sigma c in
   pattern_of_glob_constr c
 
 let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
@@ -2323,16 +2321,14 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
 (* Interpret binders and contexts  *)
 
 let interp_binder env sigma na t =
-  let t = intern_gen IsType env t in
+  let t = intern_gen IsType env sigma t in
   let t' = locate_if_hole ?loc:(loc_of_glob_constr t) na t in
   understand ~expected_type:IsType env sigma t'
 
-let interp_binder_evars env evdref na t =
-  let t = intern_gen IsType env t in
+let interp_binder_evars env sigma na t =
+  let t = intern_gen IsType env sigma t in
   let t' = locate_if_hole ?loc:(loc_of_glob_constr t) na t in
-  let evd, c = understand_tcc env !evdref ~expected_type:IsType t' in
-  evdref := evd;
-  c
+  understand_tcc env sigma ~expected_type:IsType t'
 
 let my_intern_constr env lvar acc c =
   internalize env acc false lvar c

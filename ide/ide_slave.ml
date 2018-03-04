@@ -281,7 +281,7 @@ let pattern_of_string ?env s =
     | Some e -> e
   in
   let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
-  let (_, pat) = Constrintern.intern_constr_pattern env constr in
+  let (_, pat) = Constrintern.intern_constr_pattern env Evd.empty constr in
   pat
 
 let dirpath_of_string_list s =

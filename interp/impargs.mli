@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Constr
+open EConstr
 open Globnames
 open Environ
 
@@ -90,10 +90,10 @@ type manual_explicitation = Constrexpr.explicitation *
 
 type manual_implicits = manual_explicitation list
 
-val compute_implicits_with_manual : env -> types -> bool ->
+val compute_implicits_with_manual : env -> Evd.evar_map -> types -> bool ->
   manual_implicits -> implicit_status list
 
-val compute_implicits_names : env -> types -> Name.t list
+val compute_implicits_names : env -> Evd.evar_map -> types -> Name.t list
 
 (** {6 Computation of implicits (done using the global environment). } *)
 

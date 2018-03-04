@@ -135,7 +135,7 @@ let set_declare_scheme f = declare_scheme := f
 let update_tables c =
   declare_constant_implicits c;
   Heads.declare_head (EvalConstRef c);
-  Notation.declare_ref_arguments_scope (ConstRef c)
+  Notation.declare_ref_arguments_scope Evd.empty (ConstRef c)
 
 let register_side_effect (c, role) =
   let o = inConstant {
@@ -275,7 +275,7 @@ let inVariable : variable_obj -> obj =
 let declare_variable id obj =
   let oname = add_leaf id (inVariable (Inr (id,obj))) in
   declare_var_implicits id;
-  Notation.declare_ref_arguments_scope (VarRef id);
+  Notation.declare_ref_arguments_scope Evd.empty (VarRef id);
   Heads.declare_head (EvalVarRef id);
   oname
 
@@ -283,9 +283,9 @@ let declare_variable id obj =
 
 let declare_inductive_argument_scopes kn mie =
   List.iteri (fun i {mind_entry_consnames=lc} ->
-    Notation.declare_ref_arguments_scope (IndRef (kn,i));
+    Notation.declare_ref_arguments_scope Evd.empty (IndRef (kn,i));
     for j=1 to List.length lc do
-      Notation.declare_ref_arguments_scope (ConstructRef ((kn,i),j));
+      Notation.declare_ref_arguments_scope Evd.empty (ConstructRef ((kn,i),j));
     done) mie.mind_entry_inds
 
 let inductive_names sp kn mie =

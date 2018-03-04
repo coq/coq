@@ -148,7 +148,7 @@ let ic c =
 let ic_unsafe c = (*FIXME remove *)
   let env = Global.env() in
   let sigma = Evd.from_env env in
-    EConstr.of_constr (fst (Constrintern.interp_constr env sigma c))
+  fst (Constrintern.interp_constr env sigma c)
 
 let decl_constant na univs c =
   let open Constr in

@@ -199,7 +199,7 @@ let intern_constr_gen pattern_mode isarity {ltacvars=lfun; genv=env; extra} c =
     ltac_extra = extra;
   } in
   let c' =
-    warn (Constrintern.intern_gen scope ~pattern_mode ~ltacvars env) c
+    warn (Constrintern.intern_gen scope ~pattern_mode ~ltacvars env Evd.(from_env env)) c
   in
   (c',if !strict_check then None else Some c)
 
@@ -316,7 +316,7 @@ let intern_constr_pattern ist ~as_type ~ltacvars pc =
     ltac_extra = ist.extra;
   } in
   let metas,pat = Constrintern.intern_constr_pattern
-    ist.genv ~as_type ~ltacvars pc
+    ist.genv Evd.(from_env ist.genv) ~as_type ~ltacvars pc
   in
   let (glob,_ as c) = intern_constr_gen true false ist pc in
   let bound_names = Glob_ops.bound_glob_vars glob in
@@ -335,7 +335,7 @@ let intern_typed_pattern ist ~as_type ~ltacvars p =
           ltac_bound = Id.Set.empty;
           ltac_extra = ist.extra;
         } in
-      Constrintern.intern_constr_pattern ist.genv ~as_type ~ltacvars p
+      Constrintern.intern_constr_pattern ist.genv Evd.(from_env ist.genv) ~as_type ~ltacvars p
     else
       [], dummy_pat in
   let (glob,_ as c) = intern_constr_gen true false ist p in

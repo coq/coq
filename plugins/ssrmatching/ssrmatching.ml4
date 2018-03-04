@@ -73,11 +73,11 @@ let env_size env = List.length (Environ.named_context env)
 let safeDestApp c =
   match kind c with App (f, a) -> f, a | _ -> c, [| |]
 (* Toplevel constr must be globalized twice ! *)
-let glob_constr ist genv = function
+let glob_constr ist genv sigma = function
   | _, Some ce ->
     let vars = Id.Map.fold (fun x _ accu -> Id.Set.add x accu) ist.lfun Id.Set.empty in
     let ltacvars = { Constrintern.empty_ltac_sign with Constrintern.ltac_vars = vars } in
-    Constrintern.intern_gen WithoutTypeConstraint ~ltacvars:ltacvars genv ce
+    Constrintern.intern_gen WithoutTypeConstraint ~ltacvars:ltacvars genv sigma ce
   | rc, None -> rc
 
 (* Term printing utilities functions for deciding bracketing.  *)
@@ -1009,7 +1009,7 @@ let interp_wit wit ist gl x =
   sigma, Value.cast (topwit wit) arg
 let interp_open_constr ist gl gc =
   interp_wit wit_open_constr ist gl gc
-let pf_intern_term ist gl (_, c) = glob_constr ist (pf_env gl) c
+let pf_intern_term ist gl (_, c) = glob_constr ist (pf_env gl) gl.sigma c
 let interp_term ist gl (_, c) = on_snd EConstr.Unsafe.to_constr (interp_open_constr ist gl c)
 let pr_ssrterm _ _ _ = pr_term
 let input_ssrtermkind strm = match stream_nth 0 strm with
