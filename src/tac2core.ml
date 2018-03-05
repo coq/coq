@@ -516,7 +516,7 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
       Proofview.Unsafe.tclEVARS sigma >>= fun () ->
       Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state evk] >>= fun () ->
       thaw c >>= fun _ ->
-      Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state (Proofview.Goal.goal (Proofview.Goal.assume gl))] >>= fun () ->
+      Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state (Proofview.Goal.goal gl)] >>= fun () ->
       let args = List.map (fun d -> EConstr.mkVar (get_id d)) (EConstr.named_context env) in
       let args = Array.of_list (EConstr.mkRel 1 :: args) in
       let ans = EConstr.mkEvar (evk, args) in
@@ -744,7 +744,6 @@ end
 let () = define1 "refine" closure begin fun c ->
   let c = thaw c >>= fun c -> Proofview.tclUNIT ((), Value.to_constr c) in
   Proofview.Goal.enter begin fun gl ->
-    let gl = Proofview.Goal.assume gl in
     Refine.generic_refine ~typecheck:true c gl
   end >>= fun () -> return v_unit
 end
@@ -1023,10 +1022,10 @@ let () =
 let add_scope s f =
   Tac2entries.register_scope (Id.of_string s) f
 
-let rec pr_scope = function
-| SexprStr (_, s) -> qstring s
-| SexprInt (_, n) -> Pp.int n
-| SexprRec (_, (_, na), args) ->
+let rec pr_scope = let open CAst in function
+| SexprStr {v=s} -> qstring s
+| SexprInt {v=n} -> Pp.int n
+| SexprRec (_, {v=na}, args) ->
   let na = match na with
   | None -> str "_"
   | Some id -> Id.print id
@@ -1037,27 +1036,29 @@ let scope_fail s args =
   let args = str "(" ++ prlist_with_sep (fun () -> str ", ") pr_scope args ++ str ")" in
   CErrors.user_err (str "Invalid arguments " ++ args ++ str " in scope " ++ str s)
 
-let q_unit = Loc.tag @@ CTacCst (AbsKn (Tuple 0))
+let q_unit = CAst.make @@ CTacCst (AbsKn (Tuple 0))
 
 let add_generic_scope s entry arg =
   let parse = function
   | [] ->
     let scope = Extend.Aentry entry in
-    let act x = Loc.tag @@ CTacExt (arg, x) in
+    let act x = CAst.make @@ CTacExt (arg, x) in
     Tac2entries.ScopeRule (scope, act)
   | arg -> scope_fail s arg
   in
   add_scope s parse
 
+open CAst
+
 let () = add_scope "keyword" begin function
-| [SexprStr (loc, s)] ->
+| [SexprStr {loc;v=s}] ->
   let scope = Extend.Atoken (Tok.KEYWORD s) in
   Tac2entries.ScopeRule (scope, (fun _ -> q_unit))
 | arg -> scope_fail "keyword" arg
 end
 
 let () = add_scope "terminal" begin function
-| [SexprStr (loc, s)] ->
+| [SexprStr {loc;v=s}] ->
   let scope = Extend.Atoken (CLexer.terminal s) in
   Tac2entries.ScopeRule (scope, (fun _ -> q_unit))
 | arg -> scope_fail "terminal" arg
@@ -1069,7 +1070,7 @@ let () = add_scope "list0" begin function
   let scope = Extend.Alist0 scope in
   let act l = Tac2quote.of_list act l in
   Tac2entries.ScopeRule (scope, act)
-| [tok; SexprStr (_, str)] ->
+| [tok; SexprStr {v=str}] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
   let sep = Extend.Atoken (CLexer.terminal str) in
   let scope = Extend.Alist0sep (scope, sep) in
@@ -1084,7 +1085,7 @@ let () = add_scope "list1" begin function
   let scope = Extend.Alist1 scope in
   let act l = Tac2quote.of_list act l in
   Tac2entries.ScopeRule (scope, act)
-| [tok; SexprStr (_, str)] ->
+| [tok; SexprStr {v=str}] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
   let sep = Extend.Atoken (CLexer.terminal str) in
   let scope = Extend.Alist1sep (scope, sep) in
@@ -1099,9 +1100,9 @@ let () = add_scope "opt" begin function
   let scope = Extend.Aopt scope in
   let act opt = match opt with
   | None ->
-    Loc.tag @@ CTacCst (AbsKn (Other Core.c_none))
+    CAst.make @@ CTacCst (AbsKn (Other Core.c_none))
   | Some x ->
-    Loc.tag @@ CTacApp (Loc.tag @@ CTacCst (AbsKn (Other Core.c_some)), [act x])
+    CAst.make @@ CTacApp (CAst.make @@ CTacCst (AbsKn (Other Core.c_some)), [act x])
   in
   Tac2entries.ScopeRule (scope, act)
 | arg -> scope_fail "opt" arg
@@ -1129,7 +1130,7 @@ let () = add_scope "tactic" begin function
   let scope = Extend.Aentryl (tac2expr, 5) in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
-| [SexprInt (loc, n)] as arg ->
+| [SexprInt {loc;v=n}] as arg ->
   let () = if n < 0 || n > 6 then scope_fail "tactic" arg in
   let scope = Extend.Aentryl (tac2expr, n) in
   let act tac = tac in

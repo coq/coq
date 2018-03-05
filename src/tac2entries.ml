@@ -8,6 +8,7 @@
 
 open Pp
 open Util
+open CAst
 open CErrors
 open Names
 open Libnames
@@ -277,62 +278,61 @@ let fresh_var avoid x =
   in
   Namegen.next_ident_away_from (Id.of_string x) bad
 
-let extract_pattern_type (loc, p as pat) = match p with
+let extract_pattern_type ({loc;v=p} as pat) = match p with
 | CPatCnv (pat, ty) -> pat, Some ty
 | CPatVar _ | CPatRef _ -> pat, None
 
 (** Mangle recursive tactics *)
 let inline_rec_tactic tactics =
-  let avoid = List.fold_left (fun accu ((_, id), _) -> Id.Set.add id accu) Id.Set.empty tactics in
-  let map (id, e) = match snd e with
+  let avoid = List.fold_left (fun accu ({v=id}, _) -> Id.Set.add id accu) Id.Set.empty tactics in
+  let map (id, e) = match e.v with
   | CTacFun (pat, _) -> (id, List.map extract_pattern_type pat, e)
   | _ ->
-    let loc, _ = id in
-    user_err ?loc (str "Recursive tactic definitions must be functions")
+    user_err ?loc:id.loc (str "Recursive tactic definitions must be functions")
   in
   let tactics = List.map map tactics in
   let map (id, pat, e) =
     let fold_var (avoid, ans) (pat, _) =
       let id = fresh_var avoid "x" in
-      let loc = loc_of_patexpr pat in
-      (Id.Set.add id avoid, Loc.tag ?loc id :: ans)
+      let loc = pat.loc in
+      (Id.Set.add id avoid, CAst.make ?loc id :: ans)
     in
     (** Fresh variables to abstract over the function patterns *)
     let _, vars = List.fold_left fold_var (avoid, []) pat in
-    let map_body ((loc, id), _, e) = (Loc.tag ?loc @@ CPatVar (Name id)), e in
+    let map_body ({loc;v=id}, _, e) = CAst.(make ?loc @@ CPatVar (Name id)), e in
     let bnd = List.map map_body tactics in
-    let pat_of_id (loc, id) = (Loc.tag ?loc @@ CPatVar (Name id)) in
-    let var_of_id (loc, id) =
-      let qid = (loc, qualid_of_ident id) in
-      Loc.tag ?loc @@ CTacRef (RelId qid)
+    let pat_of_id {loc;v=id} = CAst.make ?loc @@ CPatVar (Name id) in
+    let var_of_id {loc;v=id} =
+      let qid = CAst.make ?loc @@ qualid_of_ident id in
+      CAst.make ?loc @@ CTacRef (RelId qid)
     in
-    let loc0 = loc_of_tacexpr e in
+    let loc0 = e.loc in
     let vpat = List.map pat_of_id vars in
     let varg = List.map var_of_id vars in
-    let e = Loc.tag ?loc:loc0 @@ CTacLet (true, bnd, Loc.tag ?loc:loc0 @@ CTacApp (var_of_id id, varg)) in
-    (id, Loc.tag ?loc:loc0 @@ CTacFun (vpat, e))
+    let e = CAst.make ?loc:loc0 @@ CTacLet (true, bnd, CAst.make ?loc:loc0 @@ CTacApp (var_of_id id, varg)) in
+    (id, CAst.make ?loc:loc0 @@ CTacFun (vpat, e))
   in
   List.map map tactics
 
-let check_lowercase (loc, id) =
+let check_lowercase {loc;v=id} =
   if Tac2env.is_constructor (Libnames.qualid_of_ident id) then
     user_err ?loc (str "The identifier " ++ Id.print id ++ str " must be lowercase")
 
 let register_ltac ?(local = false) ?(mut = false) isrec tactics =
-  let map ((loc, na), e) =
+  let map ({loc;v=na}, e) =
     let id = match na with
     | Anonymous ->
       user_err ?loc (str "Tactic definition must have a name")
     | Name id -> id
     in
-    let () = check_lowercase (loc, id) in
-    ((loc, id), e)
+    let () = check_lowercase CAst.(make ?loc id) in
+    (CAst.(make ?loc id), e)
   in
   let tactics = List.map map tactics in
   let tactics =
     if isrec then inline_rec_tactic tactics else tactics
   in
-  let map ((loc, id), e) =
+  let map ({loc;v=id}, e) =
     let (e, t) = intern ~strict:true e in
     let () =
       if not (is_value e) then
@@ -360,23 +360,23 @@ let register_ltac ?(local = false) ?(mut = false) isrec tactics =
   in
   List.iter iter defs
 
-let qualid_to_ident (loc, qid) =
+let qualid_to_ident {loc;v=qid} =
   let (dp, id) = Libnames.repr_qualid qid in
-  if DirPath.is_empty dp then (loc, id)
+  if DirPath.is_empty dp then CAst.make ?loc id
   else user_err ?loc (str "Identifier expected")
 
 let register_typedef ?(local = false) isrec types =
-  let same_name ((_, id1), _) ((_, id2), _) = Id.equal id1 id2 in
+  let same_name ({v=id1}, _) ({v=id2}, _) = Id.equal id1 id2 in
   let () = match List.duplicates same_name types with
   | [] -> ()
-  | ((loc, id), _) :: _ ->
+  | ({loc;v=id}, _) :: _ ->
     user_err ?loc (str "Multiple definition of the type name " ++ Id.print id)
   in
-  let check ((loc, id), (params, def)) =
-    let same_name (_, id1) (_, id2) = Id.equal id1 id2 in
+  let check ({loc;v=id}, (params, def)) =
+    let same_name {v=id1} {v=id2} = Id.equal id1 id2 in
     let () = match List.duplicates same_name params with
     | [] -> ()
-    | (loc, id) :: _ ->
+    | {loc;v=id} :: _ ->
       user_err ?loc (str "The type parameter " ++ Id.print id ++
         str " occurs several times")
     in
@@ -409,13 +409,13 @@ let register_typedef ?(local = false) isrec types =
   let () = List.iter check types in
   let self =
     if isrec then
-      let fold accu ((_, id), (params, _)) =
+      let fold accu ({v=id}, (params, _)) =
         Id.Map.add id (Lib.make_kn id, List.length params) accu
       in
       List.fold_left fold Id.Map.empty types
     else Id.Map.empty
   in
-  let map ((_, id), def) =
+  let map ({v=id}, def) =
     let typdef = {
       typdef_local = local;
       typdef_expr = intern_typedef self def;
@@ -426,7 +426,7 @@ let register_typedef ?(local = false) isrec types =
   let iter (id, def) = ignore (Lib.add_leaf id (inTypDef def)) in
   List.iter iter types
 
-let register_primitive ?(local = false) (loc, id) t ml =
+let register_primitive ?(local = false) {loc;v=id} t ml =
   let t = intern_open_type t in
   let rec count_arrow = function
   | GTypArrow (_, t) -> 1 + count_arrow t
@@ -453,7 +453,7 @@ let register_primitive ?(local = false) (loc, id) t ml =
   } in
   ignore (Lib.add_leaf id (inTacDef def))
 
-let register_open ?(local = false) (loc, qid) (params, def) =
+let register_open ?(local = false) {loc;v=qid} (params, def) =
   let kn =
     try Tac2env.locate_type qid
     with Not_found ->
@@ -496,14 +496,13 @@ let register_open ?(local = false) (loc, qid) (params, def) =
 
 let register_type ?local isrec types = match types with
 | [qid, true, def] ->
-  let (loc, _) = qid in
+  let {loc} = qid in
   let () = if isrec then user_err ?loc (str "Extensions cannot be recursive") in
   register_open ?local qid def
 | _ ->
   let map (qid, redef, def) =
-    let (loc, _) = qid in
     let () = if redef then
-      user_err ?loc (str "Types can only be extended one by one")
+      user_err ?loc:qid.loc (str "Types can only be extended one by one")
     in
     (qualid_to_ident qid, def)
   in
@@ -530,26 +529,26 @@ module ParseToken =
 struct
 
 let loc_of_token = function
-| SexprStr (loc, _) -> loc
-| SexprInt (loc, _) -> loc
+| SexprStr {loc} -> loc
+| SexprInt {loc} -> loc
 | SexprRec (loc, _, _) -> Some loc
 
 let parse_scope = function
-| SexprRec (_, (loc, Some id), toks) ->
+| SexprRec (_, {loc;v=Some id}, toks) ->
   if Id.Map.mem id !scope_table then
     Id.Map.find id !scope_table toks
   else
     CErrors.user_err ?loc (str "Unknown scope" ++ spc () ++ Names.Id.print id)
-| SexprStr (_, str) ->
-  let v_unit = Loc.tag @@ CTacCst (AbsKn (Tuple 0)) in
+| SexprStr {v=str} ->
+  let v_unit = CAst.make @@ CTacCst (AbsKn (Tuple 0)) in
   ScopeRule (Extend.Atoken (Tok.IDENT str), (fun _ -> v_unit))
 | tok ->
   let loc = loc_of_token tok in
   CErrors.user_err ?loc (str "Invalid parsing token")
 
 let parse_token = function
-| SexprStr (_, s) -> TacTerm s
-| SexprRec (_, (_, na), [tok]) ->
+| SexprStr {v=s} -> TacTerm s
+| SexprRec (_, {v=na}, [tok]) ->
   let na = match na with None -> Anonymous | Some id -> Name id in
   let scope = parse_scope tok in
   TacNonTerm (na, scope)
@@ -591,11 +590,10 @@ let perform_notation syn st =
   let KRule (rule, act) = get_rule tok in
   let mk loc args =
     let map (na, e) =
-      let loc = loc_of_tacexpr e in
-      ((Loc.tag ?loc @@ CPatVar na), e)
+      ((CAst.make ?loc:e.loc @@ CPatVar na), e)
     in
     let bnd = List.map map args in
-    Loc.tag ~loc @@ CTacLet (false, bnd, syn.synext_exp)
+    CAst.make ~loc @@ CTacLet (false, bnd, syn.synext_exp)
   in
   let rule = Extend.Rule (rule, act mk) in
   let lev = match syn.synext_lev with
@@ -659,9 +657,9 @@ let inTac2Abbreviation : abbreviation -> obj =
      classify_function = classify_abbreviation}
 
 let register_notation ?(local = false) tkn lev body = match tkn, lev with
-| [SexprRec (_, (loc, Some id), [])], None ->
+| [SexprRec (_, {loc;v=Some id}, [])], None ->
   (** Tactic abbreviation *)
-  let () = check_lowercase (loc, id) in
+  let () = check_lowercase CAst.(make ?loc id) in
   let body = Tac2intern.globalize Id.Set.empty body in
   let abbr = { abbr_body = body } in
   ignore (Lib.add_leaf id (inTac2Abbreviation abbr))
@@ -780,7 +778,7 @@ let register_struct ?local str = match str with
 | StrTyp (isrec, t) -> register_type ?local isrec t
 | StrPrm (id, t, ml) -> register_primitive ?local id t ml
 | StrSyn (tok, lev, e) -> register_notation ?local tok lev e
-| StrMut (qid, e) -> register_redefinition ?local qid e
+| StrMut (qid, e) -> register_redefinition ?local CAst.(qid.loc, qid.v) e
 | StrRun e -> perform_eval e
 
 (** Toplevel exception *)
@@ -876,7 +874,7 @@ let solve default tac =
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let call ~default e =
-  let loc = loc_of_tacexpr e in
+  let loc = e.loc in
   let (e, t) = intern ~strict:false e in
   let () = check_unit ?loc t in
   let tac = Tac2interp.interp Tac2interp.empty_environment e in

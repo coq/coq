@@ -93,17 +93,17 @@ let tac2mode = Gram.entry_create "vernac:ltac2_command"
 
 let ltac1_expr = Pltac.tactic_expr
 
-let inj_wit wit loc x = Loc.tag ~loc @@ CTacExt (wit, x)
+let inj_wit wit loc x = CAst.make ~loc @@ CTacExt (wit, x)
 let inj_open_constr loc c = inj_wit Tac2quote.wit_open_constr loc c
 let inj_pattern loc c = inj_wit Tac2quote.wit_pattern loc c
 let inj_reference loc c = inj_wit Tac2quote.wit_reference loc c
 let inj_ltac1 loc e = inj_wit Tac2quote.wit_ltac1 loc e
 
 let pattern_of_qualid ?loc id =
-  if Tac2env.is_constructor (snd id) then Loc.tag ?loc @@ CPatRef (RelId id, [])
+  if Tac2env.is_constructor id.CAst.v then CAst.make ?loc @@ CPatRef (RelId id, [])
   else
-    let (dp, id) = Libnames.repr_qualid (snd id) in
-    if DirPath.is_empty dp then Loc.tag ?loc @@ CPatVar (Name id)
+    let (dp, id) = Libnames.repr_qualid id.CAst.v in
+    if DirPath.is_empty dp then CAst.make ?loc @@ CPatVar (Name id)
     else
       CErrors.user_err ?loc (Pp.str "Syntax error")
 
@@ -113,73 +113,73 @@ GEXTEND Gram
   tac2pat:
     [ "1" LEFTA
       [ id = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" ->
-        if Tac2env.is_constructor (snd id) then
-          Loc.tag ~loc:!@loc @@ CPatRef (RelId id, pl)
+        if Tac2env.is_constructor (id.CAst.v) then
+          CAst.make ~loc:!@loc @@ CPatRef (RelId id, pl)
         else
           CErrors.user_err ~loc:!@loc (Pp.str "Syntax error")
       | id = Prim.qualid -> pattern_of_qualid ~loc:!@loc id
-      | "["; "]" -> Loc.tag ~loc:!@loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_nil), [])
+      | "["; "]" -> CAst.make ~loc:!@loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_nil), [])
       | p1 = tac2pat; "::"; p2 = tac2pat ->
-        Loc.tag ~loc:!@loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_cons), [p1; p2])
+        CAst.make ~loc:!@loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_cons), [p1; p2])
       ]
     | "0"
-      [ "_" -> Loc.tag ~loc:!@loc @@ CPatVar Anonymous
-      | "()" -> Loc.tag ~loc:!@loc @@ CPatRef (AbsKn (Tuple 0), [])
+      [ "_" -> CAst.make ~loc:!@loc @@ CPatVar Anonymous
+      | "()" -> CAst.make ~loc:!@loc @@ CPatRef (AbsKn (Tuple 0), [])
       | id = Prim.qualid -> pattern_of_qualid ~loc:!@loc id
       | "("; p = atomic_tac2pat; ")" -> p
     ] ]
   ;
   atomic_tac2pat:
     [ [ ->
-        Loc.tag ~loc:!@loc @@ CPatRef (AbsKn (Tuple 0), [])
+        CAst.make ~loc:!@loc @@ CPatRef (AbsKn (Tuple 0), [])
       | p = tac2pat; ":"; t = tac2type ->
-        Loc.tag ~loc:!@loc @@ CPatCnv (p, t)
+        CAst.make ~loc:!@loc @@ CPatCnv (p, t)
       | p = tac2pat; ","; pl = LIST0 tac2pat SEP "," ->
         let pl = p :: pl in
-        Loc.tag ~loc:!@loc @@ CPatRef (AbsKn (Tuple (List.length pl)), pl)
+        CAst.make ~loc:!@loc @@ CPatRef (AbsKn (Tuple (List.length pl)), pl)
       | p = tac2pat -> p
     ] ]
   ;
   tac2expr:
     [ "6" RIGHTA
-        [ e1 = SELF; ";"; e2 = SELF -> Loc.tag ~loc:!@loc @@ CTacSeq (e1, e2) ]
+        [ e1 = SELF; ";"; e2 = SELF -> CAst.make ~loc:!@loc @@ CTacSeq (e1, e2) ]
     | "5"
       [ "fun"; it = LIST1 input_fun ; "=>"; body = tac2expr LEVEL "6" ->
-        Loc.tag ~loc:!@loc @@ CTacFun (it, body)
+        CAst.make ~loc:!@loc @@ CTacFun (it, body)
       | "let"; isrec = rec_flag;
           lc = LIST1 let_clause SEP "with"; "in";
           e = tac2expr LEVEL "6" ->
-        Loc.tag ~loc:!@loc @@ CTacLet (isrec, lc, e)
+        CAst.make ~loc:!@loc @@ CTacLet (isrec, lc, e)
       | "match"; e = tac2expr LEVEL "5"; "with"; bl = branches; "end" ->
-        Loc.tag ~loc:!@loc @@ CTacCse (e, bl)
+        CAst.make ~loc:!@loc @@ CTacCse (e, bl)
       ]
     | "4" LEFTA [ ]
     | "::" RIGHTA
       [ e1 = tac2expr; "::"; e2 = tac2expr ->
-        Loc.tag ~loc:!@loc @@ CTacApp (Loc.tag ~loc:!@loc @@ CTacCst (AbsKn (Other Tac2core.Core.c_cons)), [e1; e2])
+        CAst.make ~loc:!@loc @@ CTacApp (CAst.make ~loc:!@loc @@ CTacCst (AbsKn (Other Tac2core.Core.c_cons)), [e1; e2])
       ]
     | [ e0 = SELF; ","; el = LIST1 NEXT SEP "," ->
         let el = e0 :: el in
-        Loc.tag ~loc:!@loc @@ CTacApp (Loc.tag ~loc:!@loc @@ CTacCst (AbsKn (Tuple (List.length el))), el) ]
+        CAst.make ~loc:!@loc @@ CTacApp (CAst.make ~loc:!@loc @@ CTacCst (AbsKn (Tuple (List.length el))), el) ]
     | "1" LEFTA
       [ e = tac2expr; el = LIST1 tac2expr LEVEL "0" ->
-        Loc.tag ~loc:!@loc @@ CTacApp (e, el)
+        CAst.make ~loc:!@loc @@ CTacApp (e, el)
       | e = SELF; ".("; qid = Prim.qualid; ")" ->
-        Loc.tag ~loc:!@loc @@ CTacPrj (e, RelId qid)
+        CAst.make ~loc:!@loc @@ CTacPrj (e, RelId qid)
       | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = tac2expr LEVEL "5" ->
-        Loc.tag ~loc:!@loc @@ CTacSet (e, RelId qid, r) ]
+        CAst.make ~loc:!@loc @@ CTacSet (e, RelId qid, r) ]
     | "0"
       [ "("; a = SELF; ")" -> a
       | "("; a = SELF; ":"; t = tac2type; ")" ->
-        Loc.tag ~loc:!@loc @@ CTacCnv (a, t)
+        CAst.make ~loc:!@loc @@ CTacCnv (a, t)
       | "()" ->
-        Loc.tag ~loc:!@loc @@ CTacCst (AbsKn (Tuple 0))
+        CAst.make ~loc:!@loc @@ CTacCst (AbsKn (Tuple 0))
       | "("; ")" ->
-        Loc.tag ~loc:!@loc @@ CTacCst (AbsKn (Tuple 0))
+        CAst.make ~loc:!@loc @@ CTacCst (AbsKn (Tuple 0))
       | "["; a = LIST0 tac2expr LEVEL "5" SEP ";"; "]" ->
         Tac2quote.of_list ~loc:!@loc (fun x -> x) a
       | "{"; a = tac2rec_fieldexprs; "}" ->
-        Loc.tag ~loc:!@loc @@ CTacRec a
+        CAst.make ~loc:!@loc @@ CTacRec a
       | a = tactic_atom -> a ]
     ]
   ;
@@ -204,14 +204,14 @@ GEXTEND Gram
     [ [ "'"; id = Prim.ident -> id ] ]
   ;
   tactic_atom:
-    [ [ n = Prim.integer -> Loc.tag ~loc:!@loc @@ CTacAtm (AtmInt n)
-      | s = Prim.string -> Loc.tag ~loc:!@loc @@ CTacAtm (AtmStr s)
+    [ [ n = Prim.integer -> CAst.make ~loc:!@loc @@ CTacAtm (AtmInt n)
+      | s = Prim.string -> CAst.make ~loc:!@loc @@ CTacAtm (AtmStr s)
       | id = Prim.qualid ->
-        if Tac2env.is_constructor (snd id) then
-          Loc.tag ~loc:!@loc @@ CTacCst (RelId id)
+        if Tac2env.is_constructor id.CAst.v then
+          CAst.make ~loc:!@loc @@ CTacCst (RelId id)
         else
-          Loc.tag ~loc:!@loc @@ CTacRef (RelId id)
-      | "@"; id = Prim.ident -> Tac2quote.of_ident (Loc.tag ~loc:!@loc id)
+          CAst.make ~loc:!@loc @@ CTacRef (RelId id)
+      | "@"; id = Prim.ident -> Tac2quote.of_ident (CAst.make ~loc:!@loc id)
       | "&"; id = lident -> Tac2quote.of_hyp ~loc:!@loc id
       | "'"; c = Constr.constr -> inj_open_constr !@loc c
       | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> Tac2quote.of_constr c
@@ -227,7 +227,7 @@ GEXTEND Gram
         let (pat, fn) = binder in
         let te = match fn with
         | None -> te
-        | Some args -> Loc.tag ~loc:!@loc @@ CTacFun (args, te)
+        | Some args -> CAst.make ~loc:!@loc @@ CTacFun (args, te)
         in
         (pat, te)
     ] ]
@@ -235,42 +235,42 @@ GEXTEND Gram
   let_binder:
     [ [ pats = LIST1 input_fun ->
         match pats with
-        | [(_, CPatVar _) as pat] -> (pat, None)
-        | ((_, CPatVar (Name id)) as pat) :: args -> (pat, Some args)
+        | [{CAst.v=CPatVar _} as pat] -> (pat, None)
+        | ({CAst.v=CPatVar (Name id)} as pat) :: args -> (pat, Some args)
         | [pat] -> (pat, None)
         | _ -> CErrors.user_err ~loc:!@loc (str "Invalid pattern")
     ] ]
   ;
   tac2type:
     [ "5" RIGHTA
-      [ t1 = tac2type; "->"; t2 = tac2type -> Loc.tag ~loc:!@loc @@ CTypArrow (t1, t2) ]
+      [ t1 = tac2type; "->"; t2 = tac2type -> CAst.make ~loc:!@loc @@ CTypArrow (t1, t2) ]
     | "2"
       [ t = tac2type; "*"; tl = LIST1 tac2type LEVEL "1" SEP "*" ->
         let tl = t :: tl in
-        Loc.tag ~loc:!@loc @@ CTypRef (AbsKn (Tuple (List.length tl)), tl) ]
+        CAst.make ~loc:!@loc @@ CTypRef (AbsKn (Tuple (List.length tl)), tl) ]
     | "1" LEFTA
-      [ t = SELF; qid = Prim.qualid -> Loc.tag ~loc:!@loc @@ CTypRef (RelId qid, [t]) ]
+      [ t = SELF; qid = Prim.qualid -> CAst.make ~loc:!@loc @@ CTypRef (RelId qid, [t]) ]
     | "0"
       [ "("; t = tac2type LEVEL "5"; ")"  -> t
-      | id = typ_param -> Loc.tag ~loc:!@loc @@ CTypVar (Name id)
-      | "_" -> Loc.tag ~loc:!@loc @@ CTypVar Anonymous
-      | qid = Prim.qualid -> Loc.tag ~loc:!@loc @@ CTypRef (RelId qid, [])
+      | id = typ_param -> CAst.make ~loc:!@loc @@ CTypVar (Name id)
+      | "_" -> CAst.make ~loc:!@loc @@ CTypVar Anonymous
+      | qid = Prim.qualid -> CAst.make ~loc:!@loc @@ CTypRef (RelId qid, [])
       | "("; p = LIST1 tac2type LEVEL "5" SEP ","; ")"; qid = Prim.qualid ->
-        Loc.tag ~loc:!@loc @@ CTypRef (RelId qid, p) ]
+        CAst.make ~loc:!@loc @@ CTypRef (RelId qid, p) ]
     ];
   locident:
-    [ [ id = Prim.ident -> Loc.tag ~loc:!@loc id ] ]
+    [ [ id = Prim.ident -> CAst.make ~loc:!@loc id ] ]
   ;
   binder:
-    [ [ "_" -> Loc.tag ~loc:!@loc Anonymous
-      | l = Prim.ident -> Loc.tag ~loc:!@loc (Name l) ] ]
+    [ [ "_" -> CAst.make ~loc:!@loc Anonymous
+      | l = Prim.ident -> CAst.make ~loc:!@loc (Name l) ] ]
   ;
   input_fun:
     [ [ b = tac2pat LEVEL "0" -> b ] ]
   ;
   tac2def_body:
     [ [ name = binder; it = LIST0 input_fun; ":="; e = tac2expr ->
-        let e = if List.is_empty it then e else Loc.tag ~loc:!@loc @@ CTacFun (it, e) in
+        let e = if List.is_empty it then e else CAst.make ~loc:!@loc @@ CTacFun (it, e) in
         (name, e)
     ] ]
   ;
@@ -319,8 +319,8 @@ GEXTEND Gram
   ;
   tac2typ_prm:
     [ [ -> []
-      | id = typ_param -> [Loc.tag ~loc:!@loc id]
-      | "("; ids = LIST1 [ id = typ_param -> Loc.tag ~loc:!@loc id ] SEP "," ;")" -> ids
+      | id = typ_param -> [CAst.make ~loc:!@loc id]
+      | "("; ids = LIST1 [ id = typ_param -> CAst.make ~loc:!@loc id ] SEP "," ;")" -> ids
     ] ]
   ;
   tac2typ_def:
@@ -345,13 +345,13 @@ GEXTEND Gram
     ] ]
   ;
   syn_node:
-    [ [ "_" -> Loc.tag ~loc:!@loc None
-      | id = Prim.ident -> Loc.tag ~loc:!@loc (Some id)
+    [ [ "_" -> CAst.make ~loc:!@loc None
+      | id = Prim.ident -> CAst.make ~loc:!@loc (Some id)
     ] ]
   ;
   sexpr:
-    [ [ s = Prim.string -> SexprStr (Loc.tag ~loc:!@loc s)
-      | n = Prim.integer -> SexprInt (Loc.tag ~loc:!@loc n)
+    [ [ s = Prim.string -> SexprStr (CAst.make ~loc:!@loc s)
+      | n = Prim.integer -> SexprInt (CAst.make ~loc:!@loc n)
       | id = syn_node -> SexprRec (!@loc, id, [])
       | id = syn_node; "("; tok = LIST1 sexpr SEP "," ; ")" ->
         SexprRec (!@loc, id, tok)
@@ -369,11 +369,11 @@ GEXTEND Gram
     ] ]
   ;
   lident:
-    [ [ id = Prim.ident -> Loc.tag ~loc:!@loc id ] ]
+    [ [ id = Prim.ident -> CAst.make ~loc:!@loc id ] ]
   ;
   globref:
     [ [ "&"; id = Prim.ident -> Libnames.Ident (Loc.tag ~loc:!@loc id)
-      | qid = Prim.qualid -> Libnames.Qualid qid
+      | qid = Prim.qualid -> Libnames.Qualid (Loc.tag ~loc:!@loc qid.CAst.v)
     ] ]
   ;
 END
@@ -390,38 +390,38 @@ GEXTEND Gram
           q_destruction_arg q_reference q_with_bindings q_constr_matching
           q_goal_matching q_hintdb q_move_location q_pose q_assert;
   anti:
-    [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
+    [ [ "$"; id = Prim.ident -> QAnti (CAst.make ~loc:!@loc id) ] ]
   ;
   ident_or_anti:
     [ [ id = lident -> QExpr id
-      | "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id)
+      | "$"; id = Prim.ident -> QAnti (CAst.make ~loc:!@loc id)
     ] ]
   ;
   lident:
-    [ [ id = Prim.ident -> Loc.tag ~loc:!@loc id ] ]
+    [ [ id = Prim.ident -> CAst.make ~loc:!@loc id ] ]
   ;
   lnatural:
-    [ [ n = Prim.natural -> Loc.tag ~loc:!@loc n ] ]
+    [ [ n = Prim.natural -> CAst.make ~loc:!@loc n ] ]
   ;
   q_ident:
     [ [ id = ident_or_anti -> id ] ]
   ;
   qhyp:
     [ [ x = anti -> x
-      | n = lnatural -> QExpr (Loc.tag ~loc:!@loc @@ QAnonHyp n)
-      | id = lident -> QExpr (Loc.tag ~loc:!@loc @@ QNamedHyp id)
+      | n = lnatural -> QExpr (CAst.make ~loc:!@loc @@ QAnonHyp n)
+      | id = lident -> QExpr (CAst.make ~loc:!@loc @@ QNamedHyp id)
     ] ]
   ;
   simple_binding:
     [ [ "("; h = qhyp; ":="; c = Constr.lconstr; ")" ->
-        Loc.tag ~loc:!@loc (h, c)
+        CAst.make ~loc:!@loc (h, c)
     ] ]
   ;
   bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->
-        Loc.tag ~loc:!@loc @@ QExplicitBindings bl
+        CAst.make ~loc:!@loc @@ QExplicitBindings bl
       | bl = LIST1 Constr.constr ->
-        Loc.tag ~loc:!@loc @@ QImplicitBindings bl
+        CAst.make ~loc:!@loc @@ QImplicitBindings bl
     ] ]
   ;
   q_bindings:
@@ -431,53 +431,53 @@ GEXTEND Gram
     [ [ bl = with_bindings -> bl ] ]
   ;
   intropatterns:
-    [ [ l = LIST0 nonsimple_intropattern -> Loc.tag ~loc:!@loc l ]]
+    [ [ l = LIST0 nonsimple_intropattern -> CAst.make ~loc:!@loc l ]]
   ;
 (*   ne_intropatterns: *)
 (*     [ [ l = LIST1 nonsimple_intropattern -> l ]] *)
 (*   ; *)
   or_and_intropattern:
-    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> Loc.tag ~loc:!@loc @@ QIntroOrPattern tc
-      | "()" -> Loc.tag ~loc:!@loc @@ QIntroAndPattern (Loc.tag ~loc:!@loc [])
-      | "("; si = simple_intropattern; ")" -> Loc.tag ~loc:!@loc @@ QIntroAndPattern (Loc.tag ~loc:!@loc [si])
+    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> CAst.make ~loc:!@loc @@ QIntroOrPattern tc
+      | "()" -> CAst.make ~loc:!@loc @@ QIntroAndPattern (CAst.make ~loc:!@loc [])
+      | "("; si = simple_intropattern; ")" -> CAst.make ~loc:!@loc @@ QIntroAndPattern (CAst.make ~loc:!@loc [si])
       | "("; si = simple_intropattern; ",";
              tc = LIST1 simple_intropattern SEP "," ; ")" ->
-             Loc.tag ~loc:!@loc @@ QIntroAndPattern (Loc.tag ~loc:!@loc (si::tc))
+             CAst.make ~loc:!@loc @@ QIntroAndPattern (CAst.make ~loc:!@loc (si::tc))
       | "("; si = simple_intropattern; "&";
 	     tc = LIST1 simple_intropattern SEP "&" ; ")" ->
 	  (* (A & B & C) is translated into (A,(B,C)) *)
 	  let rec pairify = function
-	    | ([]|[_]|[_;_]) as l -> Loc.tag ~loc:!@loc l
+	    | ([]|[_]|[_;_]) as l -> CAst.make ~loc:!@loc l
 	    | t::q ->
               let q =
-                Loc.tag ~loc:!@loc @@
-                  QIntroAction (Loc.tag ~loc:!@loc @@
-                    QIntroOrAndPattern (Loc.tag ~loc:!@loc @@
+                CAst.make ~loc:!@loc @@
+                  QIntroAction (CAst.make ~loc:!@loc @@
+                    QIntroOrAndPattern (CAst.make ~loc:!@loc @@
                       QIntroAndPattern (pairify q)))
               in
-              Loc.tag ~loc:!@loc [t; q]
-	  in Loc.tag ~loc:!@loc @@ QIntroAndPattern (pairify (si::tc)) ] ]
+              CAst.make ~loc:!@loc [t; q]
+	  in CAst.make ~loc:!@loc @@ QIntroAndPattern (pairify (si::tc)) ] ]
   ;
   equality_intropattern:
-    [ [ "->" -> Loc.tag ~loc:!@loc @@ QIntroRewrite true
-      | "<-" -> Loc.tag ~loc:!@loc @@ QIntroRewrite false
-      | "[="; tc = intropatterns; "]" -> Loc.tag ~loc:!@loc @@ QIntroInjection tc ] ]
+    [ [ "->" -> CAst.make ~loc:!@loc @@ QIntroRewrite true
+      | "<-" -> CAst.make ~loc:!@loc @@ QIntroRewrite false
+      | "[="; tc = intropatterns; "]" -> CAst.make ~loc:!@loc @@ QIntroInjection tc ] ]
   ;
   naming_intropattern:
     [ [ LEFTQMARK; id = lident ->
-        Loc.tag ~loc:!@loc @@ QIntroFresh (QExpr id)
+        CAst.make ~loc:!@loc @@ QIntroFresh (QExpr id)
       | "?$"; id = lident ->
-        Loc.tag ~loc:!@loc @@ QIntroFresh (QAnti id)
+        CAst.make ~loc:!@loc @@ QIntroFresh (QAnti id)
       | "?" ->
-        Loc.tag ~loc:!@loc @@ QIntroAnonymous
+        CAst.make ~loc:!@loc @@ QIntroAnonymous
       | id = ident_or_anti ->
-        Loc.tag ~loc:!@loc @@ QIntroIdentifier id
+        CAst.make ~loc:!@loc @@ QIntroIdentifier id
     ] ]
   ;
   nonsimple_intropattern:
     [ [ l = simple_intropattern -> l
-      | "*"  -> Loc.tag ~loc:!@loc @@ QIntroForthcoming true
-      | "**" -> Loc.tag ~loc:!@loc @@ QIntroForthcoming false ]]
+      | "*"  -> CAst.make ~loc:!@loc @@ QIntroForthcoming true
+      | "**" -> CAst.make ~loc:!@loc @@ QIntroForthcoming false ]]
   ;
   simple_intropattern:
     [ [ pat = simple_intropattern_closed ->
@@ -488,13 +488,13 @@ GEXTEND Gram
   ;
   simple_intropattern_closed:
     [ [ pat = or_and_intropattern ->
-        Loc.tag ~loc:!@loc @@ QIntroAction (Loc.tag ~loc:!@loc @@ QIntroOrAndPattern pat)
+        CAst.make ~loc:!@loc @@ QIntroAction (CAst.make ~loc:!@loc @@ QIntroOrAndPattern pat)
       | pat = equality_intropattern ->
-        Loc.tag ~loc:!@loc @@ QIntroAction pat
+        CAst.make ~loc:!@loc @@ QIntroAction pat
       | "_" ->
-        Loc.tag ~loc:!@loc @@ QIntroAction (Loc.tag ~loc:!@loc @@ QIntroWildcard)
+        CAst.make ~loc:!@loc @@ QIntroAction (CAst.make ~loc:!@loc @@ QIntroWildcard)
       | pat = naming_intropattern ->
-        Loc.tag ~loc:!@loc @@ QIntroNaming pat
+        CAst.make ~loc:!@loc @@ QIntroNaming pat
     ] ]
   ;
   q_intropatterns:
@@ -505,7 +505,7 @@ GEXTEND Gram
   ;
   nat_or_anti:
     [ [ n = lnatural -> QExpr n
-      | "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id)
+      | "$"; id = Prim.ident -> QAnti (CAst.make ~loc:!@loc id)
     ] ]
   ;
   eqn_ipat:
@@ -514,15 +514,15 @@ GEXTEND Gram
     ] ]
   ;
   with_bindings:
-    [ [ "with"; bl = bindings -> bl | -> Loc.tag ~loc:!@loc @@ QNoBindings ] ]
+    [ [ "with"; bl = bindings -> bl | -> CAst.make ~loc:!@loc @@ QNoBindings ] ]
   ;
   constr_with_bindings:
-    [ [ c = Constr.constr; l = with_bindings -> Loc.tag ~loc:!@loc @@ (c, l) ] ]
+    [ [ c = Constr.constr; l = with_bindings -> CAst.make ~loc:!@loc @@ (c, l) ] ]
   ;
   destruction_arg:
-    [ [ n = lnatural -> Loc.tag ~loc:!@loc @@ QElimOnAnonHyp n
-      | id = lident -> Loc.tag ~loc:!@loc @@ QElimOnIdent id
-      | c = constr_with_bindings -> Loc.tag ~loc:!@loc @@ QElimOnConstr c
+    [ [ n = lnatural -> CAst.make ~loc:!@loc @@ QElimOnAnonHyp n
+      | id = lident -> CAst.make ~loc:!@loc @@ QElimOnIdent id
+      | c = constr_with_bindings -> CAst.make ~loc:!@loc @@ QElimOnConstr c
     ] ]
   ;
   q_destruction_arg:
@@ -534,13 +534,13 @@ GEXTEND Gram
     ] ]
   ;
   occs_nums:
-    [ [ nl = LIST1 nat_or_anti -> Loc.tag ~loc:!@loc @@ QOnlyOccurrences nl
+    [ [ nl = LIST1 nat_or_anti -> CAst.make ~loc:!@loc @@ QOnlyOccurrences nl
       | "-"; n = nat_or_anti; nl = LIST0 nat_or_anti ->
-        Loc.tag ~loc:!@loc @@ QAllOccurrencesBut (n::nl)
+        CAst.make ~loc:!@loc @@ QAllOccurrencesBut (n::nl)
     ] ]
   ;
   occs:
-    [ [ "at"; occs = occs_nums -> occs | -> Loc.tag ~loc:!@loc QAllOccurrences ] ]
+    [ [ "at"; occs = occs_nums -> occs | -> CAst.make ~loc:!@loc QAllOccurrences ] ]
   ;
   hypident:
     [ [ id = ident_or_anti ->
@@ -562,13 +562,13 @@ GEXTEND Gram
       | hl = LIST0 hypident_occ SEP ","; "|-"; occs = concl_occ ->
         { q_onhyps = Some hl; q_concl_occs = occs }
       | hl = LIST0 hypident_occ SEP "," ->
-        { q_onhyps = Some hl; q_concl_occs = Loc.tag ~loc:!@loc QNoOccurrences }
+        { q_onhyps = Some hl; q_concl_occs = CAst.make ~loc:!@loc QNoOccurrences }
     ] ]
   ;
   clause:
-    [ [ "in"; cl = in_clause -> Loc.tag ~loc:!@loc @@ cl
+    [ [ "in"; cl = in_clause -> CAst.make ~loc:!@loc @@ cl
       | "at"; occs = occs_nums ->
-        Loc.tag ~loc:!@loc @@ { q_onhyps = Some []; q_concl_occs = occs }
+        CAst.make ~loc:!@loc @@ { q_onhyps = Some []; q_concl_occs = occs }
     ] ]
   ;
   q_clause:
@@ -576,13 +576,13 @@ GEXTEND Gram
   ;
   concl_occ:
     [ [ "*"; occs = occs -> occs
-      | -> Loc.tag ~loc:!@loc QNoOccurrences
+      | -> CAst.make ~loc:!@loc QNoOccurrences
     ] ]
   ;
   induction_clause:
     [ [ c = destruction_arg; pat = as_or_and_ipat; eq = eqn_ipat;
         cl = OPT clause ->
-        Loc.tag ~loc:!@loc @@ {
+        CAst.make ~loc:!@loc @@ {
           indcl_arg = c;
           indcl_eqn = eq;
           indcl_as = pat;
@@ -595,38 +595,38 @@ GEXTEND Gram
   ;
   conversion:
     [ [ c = Constr.constr ->
-        Loc.tag ~loc:!@loc @@ QConvert c
+        CAst.make ~loc:!@loc @@ QConvert c
       | c1 = Constr.constr; "with"; c2 = Constr.constr ->
-        Loc.tag ~loc:!@loc @@ QConvertWith (c1, c2)
+        CAst.make ~loc:!@loc @@ QConvertWith (c1, c2)
     ] ]
   ;
   q_conversion:
     [ [ c = conversion -> c ] ]
   ;
   orient:
-    [ [ "->" -> Loc.tag ~loc:!@loc (Some true)
-      | "<-" -> Loc.tag ~loc:!@loc (Some false)
-      | -> Loc.tag ~loc:!@loc None
+    [ [ "->" -> CAst.make ~loc:!@loc (Some true)
+      | "<-" -> CAst.make ~loc:!@loc (Some false)
+      | -> CAst.make ~loc:!@loc None
     ]]
   ;
   rewriter:
     [ [ "!"; c = constr_with_bindings ->
-        (Loc.tag ~loc:!@loc @@ QRepeatPlus,c)
+        (CAst.make ~loc:!@loc @@ QRepeatPlus,c)
       | ["?"| LEFTQMARK]; c = constr_with_bindings ->
-        (Loc.tag ~loc:!@loc @@ QRepeatStar,c)
+        (CAst.make ~loc:!@loc @@ QRepeatStar,c)
       | n = lnatural; "!"; c = constr_with_bindings ->
-        (Loc.tag ~loc:!@loc @@ QPrecisely n,c)
+        (CAst.make ~loc:!@loc @@ QPrecisely n,c)
       |	n = lnatural; ["?" | LEFTQMARK]; c = constr_with_bindings ->
-        (Loc.tag ~loc:!@loc @@ QUpTo n,c)
+        (CAst.make ~loc:!@loc @@ QUpTo n,c)
       | n = lnatural; c = constr_with_bindings ->
-        (Loc.tag ~loc:!@loc @@ QPrecisely n,c)
+        (CAst.make ~loc:!@loc @@ QPrecisely n,c)
       | c = constr_with_bindings ->
-        (Loc.tag ~loc:!@loc @@ QPrecisely (Loc.tag 1), c)
+        (CAst.make ~loc:!@loc @@ QPrecisely (CAst.make 1), c)
       ] ]
   ;
   oriented_rewriter:
     [ [ b = orient; (m, c) = rewriter ->
-      Loc.tag ~loc:!@loc @@ {
+      CAst.make ~loc:!@loc @@ {
         rew_orient = b;
         rew_repeat = m;
         rew_equatn = c;
@@ -651,52 +651,52 @@ GEXTEND Gram
     ] ]
   ;
   q_dispatch:
-    [ [ d = tactic_then_gen -> Loc.tag ~loc:!@loc d ] ]
+    [ [ d = tactic_then_gen -> CAst.make ~loc:!@loc d ] ]
   ;
   q_occurrences:
     [ [ occs = occs -> occs ] ]
   ;
   red_flag:
-    [ [ IDENT "beta" -> Loc.tag ~loc:!@loc @@ QBeta
-      | IDENT "iota" -> Loc.tag ~loc:!@loc @@ QIota
-      | IDENT "match" -> Loc.tag ~loc:!@loc @@ QMatch
-      | IDENT "fix" -> Loc.tag ~loc:!@loc @@ QFix
-      | IDENT "cofix" -> Loc.tag ~loc:!@loc @@ QCofix
-      | IDENT "zeta" -> Loc.tag ~loc:!@loc @@ QZeta
+    [ [ IDENT "beta" -> CAst.make ~loc:!@loc @@ QBeta
+      | IDENT "iota" -> CAst.make ~loc:!@loc @@ QIota
+      | IDENT "match" -> CAst.make ~loc:!@loc @@ QMatch
+      | IDENT "fix" -> CAst.make ~loc:!@loc @@ QFix
+      | IDENT "cofix" -> CAst.make ~loc:!@loc @@ QCofix
+      | IDENT "zeta" -> CAst.make ~loc:!@loc @@ QZeta
       | IDENT "delta"; d = delta_flag -> d
     ] ]
   ;
   refglobal:
     [ [ "&"; id = Prim.ident -> QExpr (Libnames.Ident (Loc.tag ~loc:!@loc id))
-      | qid = Prim.qualid -> QExpr (Libnames.Qualid qid)
-      | "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id)
+      | qid = Prim.qualid -> QExpr (Libnames.Qualid Loc.(tag ~loc:!@loc qid.CAst.v))
+      | "$"; id = Prim.ident -> QAnti (CAst.make ~loc:!@loc id)
     ] ]
   ;
   q_reference:
     [ [ r = refglobal -> r ] ]
   ;
   refglobals:
-    [ [ gl = LIST1 refglobal -> Loc.tag ~loc:!@loc gl ] ]
+    [ [ gl = LIST1 refglobal -> CAst.make ~loc:!@loc gl ] ]
   ;
   delta_flag:
-    [ [ "-"; "["; idl = refglobals; "]" -> Loc.tag ~loc:!@loc @@ QDeltaBut idl
-      | "["; idl = refglobals; "]" -> Loc.tag ~loc:!@loc @@ QConst idl
-      | -> Loc.tag ~loc:!@loc @@ QDeltaBut (Loc.tag ~loc:!@loc [])
+    [ [ "-"; "["; idl = refglobals; "]" -> CAst.make ~loc:!@loc @@ QDeltaBut idl
+      | "["; idl = refglobals; "]" -> CAst.make ~loc:!@loc @@ QConst idl
+      | -> CAst.make ~loc:!@loc @@ QDeltaBut (CAst.make ~loc:!@loc [])
     ] ]
   ;
   strategy_flag:
-    [ [ s = LIST1 red_flag -> Loc.tag ~loc:!@loc s
+    [ [ s = LIST1 red_flag -> CAst.make ~loc:!@loc s
       | d = delta_flag ->
-        Loc.tag ~loc:!@loc
-          [Loc.tag ~loc:!@loc QBeta; Loc.tag ~loc:!@loc QIota; Loc.tag ~loc:!@loc QZeta; d]
+        CAst.make ~loc:!@loc
+          [CAst.make ~loc:!@loc QBeta; CAst.make ~loc:!@loc QIota; CAst.make ~loc:!@loc QZeta; d]
     ] ]
   ;
   q_strategy_flag:
     [ [ flag = strategy_flag -> flag ] ]
   ;
   hintdb:
-    [ [ "*" -> Loc.tag ~loc:!@loc @@ QHintAll
-      | l = LIST1 ident_or_anti -> Loc.tag ~loc:!@loc @@ QHintDbs l
+    [ [ "*" -> CAst.make ~loc:!@loc @@ QHintAll
+      | l = LIST1 ident_or_anti -> CAst.make ~loc:!@loc @@ QHintDbs l
     ] ]
   ;
   q_hintdb:
@@ -704,17 +704,17 @@ GEXTEND Gram
   ;
   match_pattern:
     [ [ IDENT "context";  id = OPT Prim.ident;
-          "["; pat = Constr.lconstr_pattern; "]" -> Loc.tag ~loc:!@loc @@ QConstrMatchContext (id, pat)
-      | pat = Constr.lconstr_pattern -> Loc.tag ~loc:!@loc @@ QConstrMatchPattern pat ] ]
+          "["; pat = Constr.lconstr_pattern; "]" -> CAst.make ~loc:!@loc @@ QConstrMatchContext (id, pat)
+      | pat = Constr.lconstr_pattern -> CAst.make ~loc:!@loc @@ QConstrMatchPattern pat ] ]
   ;
   match_rule:
     [ [ mp = match_pattern; "=>"; tac = tac2expr ->
-        Loc.tag ~loc:!@loc @@ (mp, tac)
+        CAst.make ~loc:!@loc @@ (mp, tac)
     ] ]
   ;
   match_list:
-    [ [ mrl = LIST1 match_rule SEP "|" -> Loc.tag ~loc:!@loc @@ mrl
-      | "|"; mrl = LIST1 match_rule SEP "|" -> Loc.tag ~loc:!@loc @@ mrl ] ]
+    [ [ mrl = LIST1 match_rule SEP "|" -> CAst.make ~loc:!@loc @@ mrl
+      | "|"; mrl = LIST1 match_rule SEP "|" -> CAst.make ~loc:!@loc @@ mrl ] ]
   ;
   q_constr_matching:
     [ [ m = match_list -> m ] ]
@@ -724,7 +724,7 @@ GEXTEND Gram
   ;
   gmatch_pattern:
     [ [ "["; hl = LIST0 gmatch_hyp_pattern SEP ","; "|-"; p = match_pattern; "]" ->
-        Loc.tag ~loc:!@loc @@ {
+        CAst.make ~loc:!@loc @@ {
           q_goal_match_concl = p;
           q_goal_match_hyps = hl;
         }
@@ -732,21 +732,21 @@ GEXTEND Gram
   ;
   gmatch_rule:
     [ [ mp = gmatch_pattern; "=>"; tac = tac2expr ->
-        Loc.tag ~loc:!@loc @@ (mp, tac)
+        CAst.make ~loc:!@loc @@ (mp, tac)
     ] ]
   ;
   gmatch_list:
-    [ [ mrl = LIST1 gmatch_rule SEP "|" -> Loc.tag ~loc:!@loc @@ mrl
-      | "|"; mrl = LIST1 gmatch_rule SEP "|" -> Loc.tag ~loc:!@loc @@ mrl ] ]
+    [ [ mrl = LIST1 gmatch_rule SEP "|" -> CAst.make ~loc:!@loc @@ mrl
+      | "|"; mrl = LIST1 gmatch_rule SEP "|" -> CAst.make ~loc:!@loc @@ mrl ] ]
   ;
   q_goal_matching:
     [ [ m = gmatch_list -> m ] ]
   ;
   move_location:
-    [ [ "at"; IDENT "top" -> Loc.tag ~loc:!@loc @@ QMoveFirst
-      | "at"; IDENT "bottom" -> Loc.tag ~loc:!@loc @@ QMoveLast
-      | IDENT "after"; id = ident_or_anti -> Loc.tag ~loc:!@loc @@ QMoveAfter id
-      | IDENT "before"; id = ident_or_anti -> Loc.tag ~loc:!@loc @@ QMoveBefore id
+    [ [ "at"; IDENT "top" -> CAst.make ~loc:!@loc @@ QMoveFirst
+      | "at"; IDENT "bottom" -> CAst.make ~loc:!@loc @@ QMoveLast
+      | IDENT "after"; id = ident_or_anti -> CAst.make ~loc:!@loc @@ QMoveAfter id
+      | IDENT "before"; id = ident_or_anti -> CAst.make ~loc:!@loc @@ QMoveBefore id
     ] ]
   ;
   q_move_location:
@@ -759,8 +759,8 @@ GEXTEND Gram
   ;
   pose:
     [ [ test_lpar_id_coloneq; "("; id = ident_or_anti; ":="; c = Constr.lconstr; ")" ->
-        Loc.tag ~loc:!@loc (Some id, c)
-      | c = Constr.constr; na = as_name -> Loc.tag ~loc:!@loc (na, c)
+        CAst.make ~loc:!@loc (Some id, c)
+      | c = Constr.constr; na = as_name -> CAst.make ~loc:!@loc (na, c)
     ] ]
   ;
   q_pose:
@@ -778,13 +778,13 @@ GEXTEND Gram
   ;
   assertion:
     [ [ test_lpar_id_coloneq; "("; id = ident_or_anti; ":="; c = Constr.lconstr; ")" ->
-        Loc.tag ~loc:!@loc (QAssertValue (id, c))
+        CAst.make ~loc:!@loc (QAssertValue (id, c))
       | test_lpar_id_colon; "("; id = ident_or_anti; ":"; c = Constr.lconstr; ")"; tac = by_tactic ->
         let loc = !@loc in
-        let ipat = Loc.tag ~loc @@ QIntroNaming (Loc.tag ~loc @@ QIntroIdentifier id) in
-        Loc.tag ~loc (QAssertType (Some ipat, c, tac))
+        let ipat = CAst.make ~loc @@ QIntroNaming (CAst.make ~loc @@ QIntroIdentifier id) in
+        CAst.make ~loc (QAssertType (Some ipat, c, tac))
       | c = Constr.constr; ipat = as_ipat; tac = by_tactic ->
-        Loc.tag ~loc:!@loc (QAssertType (ipat, c, tac))
+        CAst.make ~loc:!@loc (QAssertType (ipat, c, tac))
     ] ]
   ;
   q_assert:
@@ -801,7 +801,7 @@ GEXTEND Gram
         let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
         CAst.make ~loc:!@loc (CHole (None, IntroAnonymous, Some arg))
       | test_ampersand_ident; "&"; id = Prim.ident ->
-        let tac = Tac2quote.of_exact_hyp ~loc:!@loc (Loc.tag ~loc:!@loc id) in
+        let tac = Tac2quote.of_exact_hyp ~loc:!@loc (CAst.make ~loc:!@loc id) in
         let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
         CAst.make ~loc:!@loc (CHole (None, IntroAnonymous, Some arg))
       | test_dollar_ident; "$"; id = Prim.ident ->

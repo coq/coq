@@ -27,7 +27,7 @@ type tacref =
 | TacAlias of ltac_alias
 
 type 'a or_relid =
-| RelId of qualid located
+| RelId of qualid CAst.t
 | AbsKn of 'a
 
 (** {5 Misc} *)
@@ -48,7 +48,7 @@ type raw_typexpr_r =
 | CTypArrow of raw_typexpr * raw_typexpr
 | CTypRef of type_constant or_tuple or_relid * raw_typexpr list
 
-and raw_typexpr = raw_typexpr_r located
+and raw_typexpr = raw_typexpr_r CAst.t
 
 type raw_typedef =
 | CTydDef of raw_typexpr option
@@ -78,7 +78,7 @@ type glb_typedef =
 
 type type_scheme = int * int glb_typexpr
 
-type raw_quant_typedef = Id.t located list * raw_typedef
+type raw_quant_typedef = Misctypes.lident list * raw_typedef
 type glb_quant_typedef = int * glb_typedef
 
 (** {5 Term syntax} *)
@@ -93,7 +93,7 @@ type raw_patexpr_r =
 | CPatRef of ltac_constructor or_tuple or_relid * raw_patexpr list
 | CPatCnv of raw_patexpr * raw_typexpr
 
-and raw_patexpr = raw_patexpr_r located
+and raw_patexpr = raw_patexpr_r CAst.t
 
 type raw_tacexpr_r =
 | CTacAtm of atom
@@ -110,7 +110,7 @@ type raw_tacexpr_r =
 | CTacSet of raw_tacexpr * ltac_projection or_relid * raw_tacexpr
 | CTacExt : ('a, _) Tac2dyn.Arg.tag * 'a -> raw_tacexpr_r
 
-and raw_tacexpr = raw_tacexpr_r located
+and raw_tacexpr = raw_tacexpr_r CAst.t
 
 and raw_taccase = raw_patexpr * raw_tacexpr
 
@@ -152,22 +152,22 @@ type exp_level =
 | E0
 
 type sexpr =
-| SexprStr of string located
-| SexprInt of int located
-| SexprRec of Loc.t * Id.t option located * sexpr list
+| SexprStr of string CAst.t
+| SexprInt of int CAst.t
+| SexprRec of Loc.t * Id.t option CAst.t * sexpr list
 
 (** {5 Toplevel statements} *)
 
 type strexpr =
-| StrVal of mutable_flag * rec_flag * (Name.t located * raw_tacexpr) list
+| StrVal of mutable_flag * rec_flag * (Misctypes.lname * raw_tacexpr) list
   (** Term definition *)
-| StrTyp of rec_flag * (qualid located * redef_flag * raw_quant_typedef) list
+| StrTyp of rec_flag * (qualid CAst.t * redef_flag * raw_quant_typedef) list
   (** Type definition *)
-| StrPrm of Id.t located * raw_typexpr * ml_tactic_name
+| StrPrm of Misctypes.lident * raw_typexpr * ml_tactic_name
   (** External definition *)
 | StrSyn of sexpr list * int option * raw_tacexpr
   (** Syntactic extensions *)
-| StrMut of qualid located * raw_tacexpr
+| StrMut of qualid CAst.t * raw_tacexpr
   (** Redefinition of mutable globals *)
 | StrRun of raw_tacexpr
   (** Toplevel evaluation of an expression *)

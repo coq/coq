@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Loc
 open Names
 open Tac2dyn
 open Tac2qexpr
@@ -23,15 +22,15 @@ val thunk : raw_tacexpr -> raw_tacexpr
 
 val of_anti : ('a -> raw_tacexpr) -> 'a or_anti -> raw_tacexpr
 
-val of_int : int located -> raw_tacexpr
+val of_int : int CAst.t -> raw_tacexpr
 
-val of_pair : ('a -> raw_tacexpr) -> ('b -> raw_tacexpr) -> ('a * 'b) located -> raw_tacexpr
+val of_pair : ('a -> raw_tacexpr) -> ('b -> raw_tacexpr) -> ('a * 'b) CAst.t -> raw_tacexpr
 
 val of_tuple : ?loc:Loc.t -> raw_tacexpr list -> raw_tacexpr
 
-val of_variable : Id.t located -> raw_tacexpr
+val of_variable : Id.t CAst.t -> raw_tacexpr
 
-val of_ident : Id.t located -> raw_tacexpr
+val of_ident : Id.t CAst.t -> raw_tacexpr
 
 val of_constr : Constrexpr.constr_expr -> raw_tacexpr
 
@@ -43,7 +42,7 @@ val of_bindings : bindings -> raw_tacexpr
 
 val of_intro_pattern : intro_pattern -> raw_tacexpr
 
-val of_intro_patterns : intro_pattern list located -> raw_tacexpr
+val of_intro_patterns : intro_pattern list CAst.t -> raw_tacexpr
 
 val of_clause : clause -> raw_tacexpr
 
@@ -63,13 +62,13 @@ val of_move_location : move_location -> raw_tacexpr
 
 val of_reference : Libnames.reference or_anti -> raw_tacexpr
 
-val of_hyp : ?loc:Loc.t -> Id.t located -> raw_tacexpr
+val of_hyp : ?loc:Loc.t -> Id.t CAst.t -> raw_tacexpr
 (** id ↦ 'Control.hyp @id' *)
 
-val of_exact_hyp : ?loc:Loc.t -> Id.t located -> raw_tacexpr
+val of_exact_hyp : ?loc:Loc.t -> Id.t CAst.t -> raw_tacexpr
 (** id ↦ 'Control.refine (fun () => Control.hyp @id') *)
 
-val of_exact_var : ?loc:Loc.t -> Id.t located -> raw_tacexpr
+val of_exact_var : ?loc:Loc.t -> Id.t CAst.t -> raw_tacexpr
 (** id ↦ 'Control.refine (fun () => Control.hyp @id') *)
 
 val of_dispatch : dispatch -> raw_tacexpr
