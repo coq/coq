@@ -111,9 +111,15 @@ END
 let make_depth n = snd (Eauto.make_dimension n None)
 
 TACTIC EXTEND eauto
-| [ "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
+| [ "eauto" int_or_var_opt(depth) int_or_var_opt(p) auto_using(lems)
     hintbases(db) ] ->
-    [ Eauto.gen_eauto (Eauto.make_dimension n p) (eval_uconstrs ist lems) db ]
+    [
+      if Option.has_some p then
+        (* TODO: Should print a deprecation warning *)
+        Eauto.gen_eauto (Eauto.make_dimension depth p) (eval_uconstrs ist lems) db
+      else
+        Class_tactics.eauto ~depth ~strategy:Class_tactics.Dfs (eval_uconstrs ist lems) db
+    ]
 END
 
 TACTIC EXTEND new_eauto
