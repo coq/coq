@@ -372,8 +372,8 @@ GEXTEND Gram
     [ [ id = Prim.ident -> CAst.make ~loc:!@loc id ] ]
   ;
   globref:
-    [ [ "&"; id = Prim.ident -> Libnames.Ident (Loc.tag ~loc:!@loc id)
-      | qid = Prim.qualid -> Libnames.Qualid (Loc.tag ~loc:!@loc qid.CAst.v)
+    [ [ "&"; id = Prim.ident -> CAst.make ~loc:!@loc (Libnames.Ident id)
+      | qid = Prim.qualid -> CAst.map (fun qid -> Libnames.Qualid qid) qid
     ] ]
   ;
 END
@@ -667,8 +667,8 @@ GEXTEND Gram
     ] ]
   ;
   refglobal:
-    [ [ "&"; id = Prim.ident -> QExpr (Libnames.Ident (Loc.tag ~loc:!@loc id))
-      | qid = Prim.qualid -> QExpr (Libnames.Qualid Loc.(tag ~loc:!@loc qid.CAst.v))
+    [ [ "&"; id = Prim.ident -> QExpr (CAst.make ~loc:!@loc @@ Libnames.Ident id)
+      | qid = Prim.qualid -> QExpr (CAst.make ~loc:!@loc @@ Libnames.Qualid qid.CAst.v)
       | "$"; id = Prim.ident -> QAnti (CAst.make ~loc:!@loc id)
     ] ]
   ;

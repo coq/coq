@@ -344,8 +344,7 @@ let make_red_flag l =
 
 let of_reference r =
   let of_ref ref =
-    let loc = Libnames.loc_of_reference ref in
-    inj_wit ?loc wit_reference ref
+    inj_wit ?loc:ref.loc wit_reference ref
   in
   of_anti of_ref r
 

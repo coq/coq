@@ -831,7 +831,7 @@ end
 (** Printing *)
 
 let print_ltac ref =
-  let (loc, qid) = qualid_of_reference ref in
+  let {loc;v=qid} = qualid_of_reference ref in
   if Tac2env.is_constructor qid then
     let kn =
       try Tac2env.locate_constructor qid

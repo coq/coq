@@ -910,13 +910,13 @@ let () =
 
 let () =
   let intern self ist qid = match qid with
-  | Libnames.Ident (_, id) ->
+  | {CAst.v=Libnames.Ident id} ->
     GlbVal (Globnames.VarRef id), gtypref t_reference
-  | Libnames.Qualid (loc, qid) ->
+  | {CAst.loc;v=Libnames.Qualid qid} ->
     let gr =
       try Nametab.locate qid
       with Not_found ->
-        Nametab.error_global_not_found ?loc qid
+        Nametab.error_global_not_found (CAst.make ?loc qid)
     in
     GlbVal gr, gtypref t_reference
   in
