@@ -6,16 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
+open Ssrast
+open Proofview
 
+val apply_top_tac : unit tactic
 
-val apply_top_tac : Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
-
-val inner_ssrapplytac :
-  Ssrast.ssrterm list ->
-  ((Ssrast.ssrhyps option * Ssrmatching_plugin.Ssrmatching.occ) *
-     (Ssrast.ssrtermkind * Tacexpr.glob_constr_and_expr))
-    list list ->
-  Ssrast.ssrhyps ->
-  Ssrast.ist ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+val inner_ssrapplytac : ssrterm list -> ssragens -> ist -> unit tactic

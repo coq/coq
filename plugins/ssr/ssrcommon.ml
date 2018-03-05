@@ -170,6 +170,11 @@ let array_list_of_tl v =
 
 (* end patch *)
 
+let option_assert_get o msg =
+  match o with
+  | None -> CErrors.anomaly msg
+  | Some x -> x
+
 
 (** Constructors for rawconstr *)
 open Glob_term
@@ -220,8 +225,9 @@ let splay_open_constr gl (sigma, c) =
   let env = pf_env gl in let t = Retyping.get_type_of env sigma c in
   Reductionops.splay_prod env sigma t
 
-let isAppInd gl c =
-  try ignore (pf_reduce_to_atomic_ind gl c); true with _ -> false
+let isAppInd env sigma c =
+  try ignore(Tacred.reduce_to_atomic_ind env sigma c); true
+  with CErrors.UserError _ -> false
 
 (** Generic argument-based globbing/typing utilities *)
 
@@ -276,29 +282,45 @@ let interp_hyps ist gl ghyps =
   let hyps = List.map snd (List.map (interp_hyp ist gl) ghyps) in
   check_hyps_uniq [] hyps; Tacmach.project gl, hyps
 
+(* Old terms *)
 let mk_term k c = k, (mkRHole, Some c)
 let mk_lterm c = mk_term xNoFlag c
 
-let interp_view_nbimps ist gl rc =
-  try
-    let sigma, t = interp_open_constr ist gl (rc, None) in
-    let si = sig_it gl in
-    let gl = re_sig si sigma in
-    let pl, c = splay_open_constr gl t in
-    if isAppInd gl c then List.length pl else (-(List.length pl))
-  with _ -> 0
+(* New terms *)
+
+let mk_ast_closure_term a t = {
+  annotation = a;
+  body = t;
+  interp_env = None;
+  glob_env = None;
+}
+
+let glob_ast_closure_term (ist : Genintern.glob_sign) t =
+  { t with glob_env = Some ist }
+let subst_ast_closure_term (_s : Mod_subst.substitution) t =
+  (* _s makes sense only for glob constr *)
+  t
+let interp_ast_closure_term (ist : Geninterp.interp_sign) (gl : 'goal Evd.sigma) t =
+  (* gl is only useful if we want to interp *now*, later we have
+   * a potentially different gl.sigma *)
+  Tacmach.project gl, { t with interp_env = Some ist }
+
+let ssrterm_of_ast_closure_term { body; annotation } =
+  let c = match annotation with
+    | `Parens -> xInParens
+    | `At -> xWithAt
+    | _ -> xNoFlag in
+  mk_term c body
+
+let ssrdgens_of_parsed_dgens = function
+  | [], clr -> { dgens = []; gens = []; clr }
+  | [gens], clr -> { dgens = []; gens; clr }
+  | [dgens;gens], clr -> { dgens; gens; clr }
+  | _ -> assert false
+
 
 let nbargs_open_constr gl oc =
   let pl, _ = splay_open_constr gl oc in List.length pl
-
-let interp_nbargs ist gl rc =
-  try
-    let rc6 = mkRApp rc (mkRHoles 6) in
-    let sigma, t = interp_open_constr ist gl (rc6, None) in
-    let si = sig_it gl in
-    let gl = re_sig si sigma in
-    6 + nbargs_open_constr gl t
-  with _ -> 5
 
 let pf_nbargs gl c = nbargs_open_constr gl (project gl, c)
 
@@ -378,7 +400,7 @@ let max_suffix m (t, j0 as tj0) id  =
     dt < ds && skip_digits s i = n in
   loop m
 
-let mk_anon_id t gl =
+let mk_anon_id t gl_ids =
   let m, si0, id0 =
     let s = ref (Printf.sprintf  "_%s_" t) in
     if is_internal_name !s then s := "_" ^ !s;
@@ -387,7 +409,6 @@ let mk_anon_id t gl =
       let d = !s.[i] in if not (is_digit d) then i + 1, j else
       loop (i - 1) (if d = '0' then j else i) in
     let m, j = loop (n - 1) n in m, (!s, j), Id.of_string !s in
-  let gl_ids = pf_ids_of_hyps gl in
   if not (List.mem id0 gl_ids) then id0 else
   let s, i = List.fold_left (max_suffix m) si0 gl_ids in
   let open Bytes in
@@ -435,8 +456,8 @@ let red_product_skip_id env sigma c = match EConstr.kind sigma c with
   | App(hd,args) when Array.length args = 1 && is_id_constr sigma hd -> args.(0)
   | _ -> try Tacred.red_product env sigma c with _ -> c
 
-let ssrevaltac ist gtac =
-  Proofview.V82.of_tactic (Tacinterp.tactic_of_value ist gtac)
+let ssrevaltac ist gtac = Tacinterp.tactic_of_value ist gtac
+
 (** Open term to lambda-term coercion  {{{ ************************************)
 
 (* This operation takes a goal gl and an open term (sigma, t), and   *)
@@ -480,7 +501,7 @@ let nf_evar sigma t =
   EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma (EConstr.of_constr t))
 
 let pf_abs_evars2 gl rigid (sigma, c0) =
-  let c0 = EConstr.Unsafe.to_constr c0 in
+  let c0 = EConstr.to_constr sigma c0 in
   let sigma0, ucst = project gl, Evd.evar_universe_context sigma in
   let nenv = env_size (pf_env gl) in
   let abs_evar n k =
@@ -776,7 +797,7 @@ let rec is_name_in_ipats name = function
       List.exists (function SsrHyp(_,id) -> id = name) clr 
       || is_name_in_ipats name tl
   | IPatId id :: tl -> id = name || is_name_in_ipats name tl
-  | IPatCase l :: tl -> List.exists (is_name_in_ipats name) l || is_name_in_ipats name tl
+  | (IPatCase l | IPatDispatch l) :: tl -> List.exists (is_name_in_ipats name) l || is_name_in_ipats name tl
   | _ :: tl -> is_name_in_ipats name tl
   | [] -> false
 
@@ -1082,13 +1103,9 @@ let introid ?(orig=ref Anonymous) name = tclTHEN (fun gl ->
 let anontac decl gl =
   let id =  match RelDecl.get_name decl with
   | Name id ->
-    if is_discharged_id id then id else mk_anon_id (Id.to_string id) gl
-  | _ -> mk_anon_id ssr_anon_hyp gl in
+    if is_discharged_id id then id else mk_anon_id (Id.to_string id) (Tacmach.pf_ids_of_hyps gl)
+  | _ -> mk_anon_id ssr_anon_hyp (Tacmach.pf_ids_of_hyps gl) in
   introid id gl
-
-let intro_all gl =
-  let dc, _ = EConstr.decompose_prod_assum (project gl) (Tacmach.pf_concl gl) in
-  tclTHENLIST (List.map anontac (List.rev dc)) gl
 
 let rec intro_anon gl =
   try anontac (List.hd (fst (EConstr.decompose_prod_n_assum (project gl) 1 (Tacmach.pf_concl gl)))) gl
@@ -1146,15 +1163,16 @@ let tclMULT = function
   | n, Must when n > 1 -> tclDO n
   | _       -> tclID
 
-let cleartac clr = check_hyps_uniq [] clr; Proofview.V82.of_tactic (Tactics.clear (hyps_ids clr))
+let old_cleartac clr = check_hyps_uniq [] clr; Proofview.V82.of_tactic (Tactics.clear (hyps_ids clr))
+let cleartac clr = check_hyps_uniq [] clr; Tactics.clear (hyps_ids clr)
 
 (** }}} *)
 
 (** Generalize tactic *)
 
 (* XXX the k of the redex should percolate out *)
-let pf_interp_gen_aux ist gl to_ind ((oclr, occ), t) =
-  let pat = interp_cpattern ist gl t None in (* UGLY API *)
+let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
+  let pat = interp_cpattern gl t None in (* UGLY API *)
   let cl, env, sigma = Tacmach.pf_concl gl, pf_env gl, project gl in
   let (c, ucst), cl = 
     try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr cl) pat occ 1
@@ -1195,22 +1213,22 @@ let genclrtac cl cs clr =
       (fun type_err gl ->
          tclTHEN
            (tclTHEN (Proofview.V82.of_tactic (Tactics.elim_type (EConstr.of_constr
-             (Universes.constr_of_global @@ Coqlib.build_coq_False ())))) (cleartac clr))
+             (Universes.constr_of_global @@ Coqlib.build_coq_False ())))) (old_cleartac clr))
            (fun gl -> raise type_err)
            gl))
-    (cleartac clr)
+    (old_cleartac clr)
 
-let gentac ist gen gl =
+let gentac gen gl =
 (*   ppdebug(lazy(str"sigma@gentac=" ++ pr_evar_map None (project gl))); *)
-  let conv, _, cl, c, clr, ucst,gl = pf_interp_gen_aux ist gl false gen in
+  let conv, _, cl, c, clr, ucst,gl = pf_interp_gen_aux gl false gen in
   ppdebug(lazy(str"c@gentac=" ++ pr_econstr_env (pf_env gl) (project gl) c));
   let gl = pf_merge_uc ucst gl in
   if conv
-  then tclTHEN (Proofview.V82.of_tactic (convert_concl cl)) (cleartac clr) gl
+  then tclTHEN (Proofview.V82.of_tactic (convert_concl cl)) (old_cleartac clr) gl
   else genclrtac cl [c] clr gl
 
-let genstac (gens, clr) ist =
-  tclTHENLIST (cleartac clr :: List.rev_map (gentac ist) gens)
+let genstac (gens, clr) =
+  tclTHENLIST (old_cleartac clr :: List.rev_map gentac gens)
 
 let gen_tmp_ids
   ?(ist=Geninterp.({ lfun = Id.Map.empty; extra = Tacinterp.TacStore.empty })) gl
@@ -1220,13 +1238,13 @@ let gen_tmp_ids
     (tclTHENLIST
       (List.map (fun (id,orig_ref) ->
         tclTHEN 
-        (gentac ist ((None,Some(false,[])),cpattern_of_id id))
+        (gentac ((None,Some(false,[])),cpattern_of_id id))
         (rename_hd_prod orig_ref))
       ctx.tmp_ids) gl)
 ;;
 
-let pf_interp_gen ist gl to_ind gen =
-  let _, _, a, b, c, ucst,gl = pf_interp_gen_aux ist gl to_ind gen in
+let pf_interp_gen gl to_ind gen =
+  let _, _, a, b, c, ucst,gl = pf_interp_gen_aux gl to_ind gen in
   a, b ,c, pf_merge_uc ucst gl
 
 (* TASSI: This version of unprotects inlines the unfold tactic definition, 
@@ -1247,7 +1265,11 @@ let unprotecttac gl =
            CClosure.RedFlags.fCOFIX]), DEFAULTcast) hyploc))
     allHypsAndConcl gl
 
-let abs_wgen keep_let ist f gen (gl,args,c) =
+let is_protect hd env sigma =
+  let _, protectC = mkSsrConst "protect_term" env sigma in
+  EConstr.eq_constr_nounivs sigma hd protectC
+
+let abs_wgen keep_let f gen (gl,args,c) =
   let sigma, env = project gl, pf_env gl in
   let evar_closed t p =
     if occur_existential sigma t then
@@ -1267,7 +1289,7 @@ let abs_wgen keep_let ist f gen (gl,args,c) =
      gl, EConstr.mkVar x :: args, EConstr.mkProd (Name (f x),Tacmach.pf_get_hyp_typ gl x, EConstr.Vars.subst_var x c)
   | _, Some ((x, "@"), Some p) -> 
      let x = hoi_id x in
-     let cp = interp_cpattern ist gl p None in
+     let cp = interp_cpattern gl p None in
      let (t, ucst), c =
        try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr c) cp None 1
        with NoMatch -> redex_of_pattern env cp, (EConstr.Unsafe.to_constr c) in
@@ -1279,7 +1301,7 @@ let abs_wgen keep_let ist f gen (gl,args,c) =
      pf_merge_uc ucst gl, args, EConstr.mkLetIn(Name (f x), ut, ty, c)
   | _, Some ((x, _), Some p) ->
      let x = hoi_id x in
-     let cp = interp_cpattern ist gl p None in
+     let cp = interp_cpattern gl p None in
      let (t, ucst), c =
        try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr c) cp None 1
        with NoMatch -> redex_of_pattern env cp, (EConstr.Unsafe.to_constr c) in
@@ -1293,8 +1315,252 @@ let abs_wgen keep_let ist f gen (gl,args,c) =
 let clr_of_wgen gen clrs = match gen with
   | clr, Some ((x, _), None) ->
      let x = hoi_id x in
-     cleartac clr :: cleartac [SsrHyp(Loc.tag x)] :: clrs
-  | clr, _ -> cleartac clr :: clrs
+     old_cleartac clr :: old_cleartac [SsrHyp(Loc.tag x)] :: clrs
+  | clr, _ -> old_cleartac clr :: clrs
+
+
+let reduct_in_concl t = Tactics.reduct_in_concl (t, DEFAULTcast)
+let unfold cl =
+  let module R = Reductionops in let module F = CClosure.RedFlags in
+  reduct_in_concl (R.clos_norm_flags (F.mkflags
+    (List.map (fun c -> F.fCONST (fst (destConst (EConstr.Unsafe.to_constr c)))) cl @
+       [F.fBETA; F.fMATCH; F.fFIX; F.fCOFIX])))
+
+open Proofview
+open Notations
+
+let tacSIGMA = Goal.enter_one begin fun g ->
+  let k = Goal.goal g in
+  let sigma = Goal.sigma g in
+  tclUNIT (Tacmach.re_sig k sigma)
+end
+
+let tclINTERP_AST_CLOSURE_TERM_AS_CONSTR c =
+  tclINDEPENDENTL begin tacSIGMA >>= fun gl ->
+  let old_ssrterm = mkRHole, Some c.Ssrast.body in
+  let ist =
+    option_assert_get c.Ssrast.interp_env
+      Pp.(str "tclINTERP_AST_CLOSURE_TERM_AS_CONSTR: term with no ist") in
+  let sigma, t =
+    interp_wit Stdarg.wit_constr ist gl old_ssrterm in
+  Unsafe.tclEVARS sigma <*>
+  tclUNIT t
+end
+
+let tacREDUCE_TO_QUANTIFIED_IND ty =
+  tacSIGMA >>= fun gl ->
+  tclUNIT (Tacmach.pf_reduce_to_quantified_ind gl ty)
+
+let tacTYPEOF c = Goal.enter_one ~__LOC__ (fun g ->
+  let sigma, env = Goal.sigma g, Goal.env g in
+  let sigma, ty = Typing.type_of env sigma c in
+  Unsafe.tclEVARS sigma <*> tclUNIT ty)
+
+(** This tactic creates a partial proof realizing the introduction rule, but
+    does not check anything. *)
+let unsafe_intro env store decl b =
+  let open Context.Named.Declaration in
+  Refine.refine ~typecheck:false begin fun sigma ->
+    let ctx = Environ.named_context_val env in
+    let nctx = EConstr.push_named_context_val decl ctx in
+    let inst = List.map (get_id %> EConstr.mkVar) (Environ.named_context env) in
+    let ninst = EConstr.mkRel 1 :: inst in
+    let nb = EConstr.Vars.subst1 (EConstr.mkVar (get_id decl)) b in
+    let sigma, ev =
+      Evarutil.new_evar_instance nctx sigma nb ~principal:true ~store ninst in
+    sigma, EConstr.mkNamedLambda_or_LetIn decl ev
+  end
+
+let set_decl_id id = let open Context in function
+  | Rel.Declaration.LocalAssum(name,ty) -> Named.Declaration.LocalAssum(id,ty)
+  | Rel.Declaration.LocalDef(name,ty,t) -> Named.Declaration.LocalDef(id,ty,t)
+
+let rec decompose_assum env sigma orig_goal =
+  let open Context in
+  match EConstr.kind sigma orig_goal with
+  | Prod(name,ty,t) ->
+      Rel.Declaration.LocalAssum(name,ty), t, true
+  | LetIn(name,ty,t1,t2) -> Rel.Declaration.LocalDef(name, ty, t1), t2, true
+  | _ ->
+      let goal = Reductionops.whd_allnolet env sigma orig_goal in
+      match EConstr.kind sigma goal with
+      | Prod(name,ty,t) -> Rel.Declaration.LocalAssum(name,ty), t, false
+      | LetIn(name,ty,t1,t2) -> Rel.Declaration.LocalDef(name,ty,t1), t2, false
+      | App(hd,args) when EConstr.isLetIn sigma hd -> (* hack *)
+          let _,v,_,b = EConstr.destLetIn sigma hd in
+          let ctx, t, _ =
+            decompose_assum env sigma
+              (EConstr.mkApp (EConstr.Vars.subst1 v b, args)) in
+          ctx, t, false
+      | _ -> CErrors.user_err
+          Pp.(str "No assumption in " ++ Printer.pr_econstr_env env sigma goal)
+
+let tclFULL_BETAIOTA = Goal.enter begin fun gl ->
+  let r, _ = Redexpr.reduction_of_red_expr (Goal.env gl)
+    Genredexpr.(Lazy {
+      rBeta=true; rMatch=true; rFix=true; rCofix=true;
+      rZeta=false; rDelta=false; rConst=[]}) in
+  Tactics.e_reduct_in_concl ~check:false (r,Constr.DEFAULTcast)
+end
+
+(** [intro id k] introduces the first premise (product or let-in) of the goal
+    under the name [id], reducing the head of the goal (using beta, iota, delta
+    but not zeta) if necessary. If [id] is None, a name is generated, that will
+    not be user accessible. If the goal does not start with a product or a
+let-in even after reduction, it fails. In case of success, the original name
+and final id are passed to the continuation [k] which gets evaluated. *)
+let tclINTRO ~id ~conclusion:k = Goal.enter begin fun gl ->
+  let open Context in
+  let env, sigma, extra, g = Goal.(env gl, sigma gl, extra gl, concl gl) in
+  let decl, t, no_red = decompose_assum env sigma g in
+  let original_name = Rel.Declaration.get_name decl in
+  let already_used = Tacmach.New.pf_ids_of_hyps gl in
+  let id = match id, original_name with
+    | Some id, _ -> id
+    | _, Name id ->
+       if is_discharged_id id then id
+       else mk_anon_id (Id.to_string id) already_used
+    | _, _ ->
+       let ids = Tacmach.New.pf_ids_of_hyps gl in
+       mk_anon_id ssr_anon_hyp ids
+  in
+  if List.mem id already_used then
+    errorstrm Pp.(Id.print id ++ str" already used");
+  unsafe_intro env extra (set_decl_id id decl) t <*>
+  (if no_red then tclUNIT () else tclFULL_BETAIOTA) <*>
+  k ~orig_name:original_name ~new_name:id
+end
+
+let return ~orig_name:_ ~new_name:_ = tclUNIT ()
+
+let tclINTRO_ID id = tclINTRO ~id:(Some id) ~conclusion:return
+let tclINTRO_ANON = tclINTRO ~id:None ~conclusion:return
+
+let tclRENAME_HD_PROD name = Goal.enter begin fun gl ->
+  let convert_concl_no_check t =
+    Tactics.convert_concl_no_check t Term.DEFAULTcast in
+  let concl = Goal.concl gl in
+  let sigma = Goal.sigma gl in
+  match EConstr.kind sigma concl with
+  | Prod(_,src,tgt) ->
+      convert_concl_no_check EConstr.(mkProd (name,src,tgt))
+  | _ -> CErrors.anomaly (Pp.str "rename_hd_prod: no head product")
+end
+
+let tcl0G tac =
+  numgoals >>= fun ng -> if ng = 0 then tclUNIT () else tac
+
+let rec tclFIRSTa = function
+  | [] -> Tacticals.New.tclZEROMSG Pp.(str"No applicable tactic.")
+  | tac :: rest -> tclORELSE tac (fun _ -> tclFIRSTa rest)
+
+let rec tclFIRSTi tac n =
+  if n < 0 then Tacticals.New.tclZEROMSG Pp.(str "tclFIRSTi")
+  else tclORELSE (tclFIRSTi tac (n-1)) (fun _ -> tac n)
+
+let tacCONSTR_NAME ?name c =
+  match name with
+  | Some n -> tclUNIT n
+  | None ->
+      Goal.enter_one ~__LOC__ (fun g ->
+        let sigma = Goal.sigma g in
+        tclUNIT (constr_name sigma c))
+
+let tacMKPROD c ?name cl =
+  tacTYPEOF c >>= fun t ->
+  tacCONSTR_NAME ?name c >>= fun name ->
+  Goal.enter_one ~__LOC__ begin fun g ->
+    let sigma, env = Goal.sigma g, Goal.env g in
+    if name <> Names.Name.Anonymous || EConstr.Vars.noccurn sigma  1 cl
+    then tclUNIT (EConstr.mkProd (name, t, cl))
+    else
+      let name = Names.Id.of_string (Namegen.hdchar env sigma t) in
+      tclUNIT (EConstr.mkProd (Names.Name.Name name, t, cl))
+end
+
+let tacINTERP_CPATTERN cp =
+  tacSIGMA >>= begin fun gl ->
+  tclUNIT (Ssrmatching.interp_cpattern gl cp None)
+end
+
+let tacUNIFY a b =
+  tacSIGMA >>= begin fun gl ->
+  let gl = Ssrmatching.pf_unify_HO gl a b in
+  Unsafe.tclEVARS (Tacmach.project gl)
+end
+
+let tclOPTION o d =
+  match o with
+  | None -> d >>= tclUNIT
+  | Some x -> tclUNIT x
+
+let tacIS_INJECTION_CASE ?ty t = begin
+  tclOPTION ty (tacTYPEOF t) >>= fun ty ->
+  tacREDUCE_TO_QUANTIFIED_IND ty >>= fun ((mind,_),_) ->
+  tclUNIT (Globnames.eq_gr (Globnames.IndRef mind) (Coqlib.build_coq_eq ()))
+end
+
+let tclWITHTOP tac = Goal.enter begin fun gl ->
+  let top =
+    mk_anon_id "top_assumption" (Tacmach.New.pf_ids_of_hyps gl) in
+  tclINTRO_ID top <*>
+  tac (EConstr.mkVar top) <*>
+  Tactics.clear [top]
+end
+
+let tacMK_SSR_CONST name = Goal.enter_one ~__LOC__ begin fun g ->
+  let sigma, env = Goal.(sigma g, env g) in
+  let sigma, c = mkSsrConst name env sigma in
+  Unsafe.tclEVARS sigma <*>
+  tclUNIT c
+end
+
+module type StateType = sig
+  type state
+  val init : state
+end
+
+module MakeState(S : StateType) = struct
+
+let state_field : S.state Proofview_monad.StateStore.field =
+  Proofview_monad.StateStore.field ()
+
+(* FIXME: should not inject fresh_state, but initialize it at the beginning *)
+let lift_upd_state upd s =
+  let open Proofview_monad.StateStore in
+  let old_state = Option.default S.init (get s state_field) in
+  upd old_state >>= fun new_state ->
+  tclUNIT (set s state_field new_state)
+
+let tacUPDATE upd = Goal.enter begin fun gl ->
+  let s0 = Goal.state gl in
+  Goal.enter_one ~__LOC__ (fun _ -> lift_upd_state upd s0) >>= fun s ->
+  Unsafe.tclGETGOALS >>= fun gls ->
+  let gls = List.map (fun gs ->
+    let g = Proofview_monad.drop_state gs in
+    Proofview_monad.goal_with_state g s) gls in
+  Unsafe.tclSETGOALS gls
+end
+
+let tclGET k = Goal.enter begin fun gl ->
+  let open Proofview_monad.StateStore in
+  k (Option.default S.init (get (Goal.state gl) state_field))
+end
+
+let tclSET new_s =
+  let open Proofview_monad.StateStore in
+  Unsafe.tclGETGOALS >>= fun gls ->
+  let gls = List.map (fun gs ->
+    let g = Proofview_monad.drop_state gs in
+    let s = Proofview_monad.get_state gs in
+    Proofview_monad.goal_with_state g (set s state_field new_s)) gls in
+  Unsafe.tclSETGOALS gls
+
+let get g =
+  Option.default S.init
+    (Proofview_monad.StateStore.get (Goal.state g) state_field)
+
+end
 
 
 (* vim: set filetype=ocaml foldmethod=marker: *)

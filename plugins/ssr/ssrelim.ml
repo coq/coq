@@ -97,20 +97,18 @@ let subgoals_tys sigma (relctx, concl) =
  *    generalize the equality in case eqid is not None
  * 4. build the tactic handle intructions and clears as required in ipats and
  *    by eqid *)
-let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intro_tac gl =
+let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac gl =
   (* some sanity checks *)
   let oc, orig_clr, occ, c_gen, gl = match what with
   | `EConstr(_,_,t) when EConstr.isEvar (project gl) t ->
     anomaly "elim called on a constr evar"
-  | `EGen _ when ist = None ->
-    anomaly "no ist and non simple elimination"
   | `EGen (_, g) when elim = None && is_wildcard g ->
        errorstrm Pp.(str"Indeterminate pattern and no eliminator")
   | `EGen ((Some clr,occ), g) when is_wildcard g ->
        None, clr, occ, None, gl
   | `EGen ((None, occ), g) when is_wildcard g -> None,[],occ,None,gl
   | `EGen ((_, occ), p as gen) ->
-       let _, c, clr,gl = pf_interp_gen (Option.get ist) gl true gen in
+       let _, c, clr,gl = pf_interp_gen gl true gen in
        Some c, clr, occ, Some p,gl
   | `EConstr (clr, occ, c) -> Some c, clr, occ, None,gl in
   let orig_gl, concl, env = gl, pf_concl gl, pf_env gl in
@@ -160,7 +158,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
         else
           let c = Option.get oc in let gl, c_ty = pfe_type_of gl c in
           let pc = match c_gen with
-            | Some p -> interp_cpattern (Option.get ist) orig_gl p None 
+            | Some p -> interp_cpattern orig_gl p None
             | _ -> mkTpat gl c in
           Some(c, c_ty, pc), gl in
       cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl
@@ -194,7 +192,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
         pf_saturate ~beta:is_case gl elim ~ty:elimty n_elim_args in
       let pred = List.assoc pred_id elim_args in
       let pc = match n_c_args, c_gen with
-        | 0, Some p -> interp_cpattern (Option.get ist) orig_gl p None 
+        | 0, Some p -> interp_cpattern orig_gl p None
         | _ -> mkTpat gl c in
       let cty = Some (c, c_ty, pc) in
       let elimty = Reductionops.whd_all env (project gl) elimty in
@@ -252,8 +250,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
     let rec loop patterns clr i = function
       | [],[] -> patterns, clr, gl
       | ((oclr, occ), t):: deps, inf_t :: inf_deps ->
-          let ist = match ist with Some x -> x | None -> assert false in
-          let p = interp_cpattern ist orig_gl t None in
+          let p = interp_cpattern orig_gl t None in
           let clr_t =
             interp_clr (project gl) (oclr,(tag_of_cpattern t,EConstr.of_constr (fst (redex_of_pattern env p)))) in
           (* if we are the index for the equation we do not clear *)
@@ -374,12 +371,14 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
   (* the elim tactic, with the eliminator and the predicated we computed *)
   let elim = project gl, elim in 
   let elim_tac gl =
-    Tacticals.tclTHENLIST [refine_with ~with_evars:false elim; cleartac clr] gl in
-  Tacticals.tclTHENLIST [gen_eq_tac; elim_intro_tac ?ist what eqid elim_tac is_rec clr] orig_gl
+    Tacticals.tclTHENLIST [refine_with ~with_evars:false elim; old_cleartac clr] gl in
+  Tacticals.tclTHENLIST [gen_eq_tac; elim_intro_tac what eqid elim_tac is_rec clr] orig_gl
 
 let no_intro ?ist what eqid elim_tac is_rec clr = elim_tac
 
-let elimtac x = ssrelim ~is_case:false [] (`EConstr ([],None,x)) None no_intro
+let elimtac x =
+  Proofview.V82.tactic ~nf_evars:false
+    (ssrelim ~is_case:false [] (`EConstr ([],None,x)) None no_intro)
 let casetac x = ssrelim ~is_case:true [] (`EConstr ([],None,x)) None no_intro
 
 let pf_nb_prod gl = nb_prod (project gl) (pf_concl gl)
@@ -436,6 +435,9 @@ let perform_injection c gl =
   let injtac = Tacticals.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in 
   Tacticals.tclTHENLAST (Proofview.V82.of_tactic (Tactics.apply (EConstr.compose_lam dc cl1))) injtac gl
 
-let ssrscasetac force_inj c gl =
-  if force_inj || is_injection_case c gl then perform_injection c gl
-  else casetac c gl
+let ssrscase_or_inj_tac c = Proofview.V82.tactic ~nf_evars:false (fun gl ->
+  if is_injection_case c gl then perform_injection c gl
+  else casetac c gl)
+
+let ssrscasetac c =
+  Proofview.V82.tactic ~nf_evars:false (fun gl -> casetac c gl)

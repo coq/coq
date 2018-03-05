@@ -6,77 +6,43 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
+(* This file implements:
+   - the [=>] tactical
+   - the [:] pseudo-tactical for move, case, elim and abstract
 
-open Ssrmatching_plugin
+   Putting these two features in the same file lets one hide much of the
+   interaction between [tac E:] and [=>] ([E] has to be processed by [=>],
+   not by [:]
+*)
+
 open Ssrast
-open Ssrcommon
 
-type block_names = (int * EConstr.types array) option
+(* The => tactical *)
+val tclIPAT : ssripats -> unit Proofview.tactic
 
-(* For case/elim with eq generation: args are elim_tac introeq_tac ipats
- * elim E : "=> ipats" where E give rise to introeq_tac *)
-val tclEQINTROS :
-           ?ind:block_names ref ->
-           ?ist:ist ->
-           v82tac ->
-           v82tac -> ssripats -> v82tac
-(* special case with no eq and tactic taking ist *)
-val tclINTROS :
-           ist ->
-           (ist -> v82tac) ->
-           ssripats -> v82tac
+(* As above but with the SSR exception: first case is dispatch *)
+val tclIPATssr : ssripats -> unit Proofview.tactic
 
-(* move=> ipats *)
-val introstac : ?ist:ist -> ssripats -> v82tac
+(* Wrappers to deal with : and eqn generation/naming:
+     [tac E: gens => ipats]
+   where [E] is injected into [ipats] (at the right place) and [gens] are
+   generalized before calling [tac] *)
+val ssrmovetac : ssrmovearg -> unit Proofview.tactic
+val ssrsmovetac : unit Proofview.tactic
+val ssrelimtac : ssrmovearg -> unit Proofview.tactic
+val ssrselimtoptac : unit Proofview.tactic
+val ssrcasetac : ssrmovearg -> unit Proofview.tactic
+val ssrscasetoptac : unit Proofview.tactic
 
-val elim_intro_tac :
-  Ssrast.ssripats ->
-  ?ist:Tacinterp.interp_sign ->
-  [> `EConstr of 'a * 'b * EConstr.t ] ->
-  Ssrast.ssripat option ->
-  Tacmach.tactic ->
-  bool ->
-  Ssrast.ssrhyp list ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+(* The implementation of abstract: is half here, for the [[: var ]]
+ * ipat, and in ssrfwd for the integration with [have] *)
+val ssrabstract : ssrdgens -> unit Proofview.tactic
 
-(* "move=> top; tac top; clear top" respecting the speed *)
-val with_top : (EConstr.t -> v82tac) -> tac_ctx tac_a
-
-val ssrmovetac :
-  Ltac_plugin.Tacinterp.interp_sign ->
-  Ssrast.ssrterm list *
-    (Ssrast.ssripat option *
-       (((Ssrast.ssrdocc * Ssrmatching.cpattern) list
-        list * Ssrast.ssrclear) *
-          Ssrast.ssripats)) ->
-  Tacmach.tactic
-
-val movehnftac : Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
-
-val with_dgens :
-  (Ssrast.ssrdocc * Ssrmatching.cpattern) list
-   list * Ssrast.ssrclear ->
-  ((Ssrast.ssrdocc * Ssrmatching.cpattern) list ->
-   Ssrast.ssrdocc * Ssrmatching.cpattern ->
-   Ltac_plugin.Tacinterp.interp_sign -> Tacmach.tactic) ->
-  Ltac_plugin.Tacinterp.interp_sign -> Tacmach.tactic
-
-val ssrcasetac :
-  Ltac_plugin.Tacinterp.interp_sign ->
-  Ssrast.ssrterm list *
-    (Ssrast.ssripat option *
-       (((Ssrast.ssrdocc * Ssrmatching.cpattern) list list * Ssrast.ssrclear) *
-          Ssrast.ssripats)) ->
-  Tacmach.tactic
-
-val ssrapplytac :
-  Tacinterp.interp_sign ->
-  Ssrast.ssrterm list *
-    ('a *
-       ((((Ssrast.ssrhyps option * Ssrmatching_plugin.Ssrmatching.occ) *
-            (Ssrast.ssrtermkind * Tacexpr.glob_constr_and_expr))
-           list list * Ssrast.ssrhyps) *
-          Ssrast.ssripats)) ->
-  Tacmach.tactic
-
+(* Handling of [[:var]], needed in ssrfwd. Since ssrfwd is still outside the
+ * tactic monad we export code with the V82 interface *)
+module Internal : sig
+val examine_abstract :
+  EConstr.t -> Goal.goal Evd.sigma -> EConstr.types * EConstr.t array
+val pf_find_abstract_proof :
+  bool -> Goal.goal Evd.sigma -> Constr.constr -> Evar.t
+end

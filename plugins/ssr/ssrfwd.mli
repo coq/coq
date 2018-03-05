@@ -14,24 +14,18 @@ open Ltac_plugin
 
 open Ssrast
 
-val ssrsettac : ist ->  Id.t -> ((ssrfwdfmt * (Ssrmatching_plugin.Ssrmatching.cpattern * ssrterm option)) * ssrdocc) -> v82tac
+val ssrsettac :  Id.t -> ((ssrfwdfmt * (Ssrmatching_plugin.Ssrmatching.cpattern * ast_closure_term option)) * ssrdocc) -> v82tac
 
-val ssrposetac : ist -> (Id.t * (ssrfwdfmt * ssrterm)) -> v82tac
+val ssrposetac : Id.t * (ssrfwdfmt * ast_closure_term) -> v82tac
 
-val havetac :
-           Ssrast.ist ->
+val havetac : ist ->
            bool *
            ((((Ssrast.ssrclear * Ssrast.ssripat list) * Ssrast.ssripats) *
              Ssrast.ssripats) *
-            (((Ssrast.ssrfwdkind * 'a) *
-              ('b * (Glob_term.glob_constr * Constrexpr.constr_expr option))) *
+            (((Ssrast.ssrfwdkind * 'a) * ast_closure_term) *
              (bool * Tacinterp.Value.t option list))) ->
            bool ->
            bool -> v82tac
-val ssrabstract :
-           Tacinterp.interp_sign ->
-           (Ssrast.ssrdocc * Ssrmatching_plugin.Ssrmatching.cpattern) list
-           list * Ssrast.ssrclear -> v82tac
 
 val basecuttac :
            string ->
@@ -46,8 +40,7 @@ val wlogtac :
        option)
     list *
     ('c *
-       (Ssrast.ssrtermkind *
-          (Glob_term.glob_constr * Constrexpr.constr_expr option))) ->
+       ast_closure_term) ->
   Ltac_plugin.Tacinterp.Value.t Ssrast.ssrhint ->
   bool ->
   [< `Gen of Names.Id.t option option | `NoGen > `NoGen ] ->
@@ -58,8 +51,7 @@ val sufftac :
   (((Ssrast.ssrhyps * Ssrast.ssripats) * Ssrast.ssripat list) *
      Ssrast.ssripat list) *
     (('a *
-        (Ssrast.ssrtermkind *
-           (Glob_term.glob_constr * Constrexpr.constr_expr option))) *
+        ast_closure_term) *
        (bool * Tacinterp.Value.t option list)) ->
   Tacmach.tactic
 

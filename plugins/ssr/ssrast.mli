@@ -43,12 +43,24 @@ type ssrclear = ssrhyps
 (* Discharge occ switch (combined occurrence / clear switch) *)
 type ssrdocc = ssrclear option * ssrocc
 
-(* FIXME, make algebraic *)
-type ssrtermkind = char
-
+(* OLD ssr terms *)
+type ssrtermkind = char (* FIXME, make algebraic *)
 type ssrterm = ssrtermkind * Tacexpr.glob_constr_and_expr
 
-type ssrview = ssrterm list
+(* NEW ssr term *)
+
+(* These terms are raw but closed with the intenalization/interpretation
+ * context.  It is up to the tactic receiving it to decide if such contexts
+ * are useful or not, and eventually manipulate the term before turning it
+ * into a constr *)
+type ast_closure_term = {
+  body : Constrexpr.constr_expr;
+  glob_env : Genintern.glob_sign option; (* for Tacintern.intern_constr *)
+  interp_env :  Geninterp.interp_sign option; (* for Tacinterp.interp_open_constr_with_bindings *)
+  annotation : [ `None | `Parens | `DoubleParens | `At ];
+}
+
+type ssrview = ast_closure_term list
 
 (* TODO
 type id_mod = Hat | HatTilde | Sharp
@@ -59,7 +71,6 @@ type anon_iter =
   | One
   | Drop
   | All
-
 (* TODO
   | Dependent (* fast mode *)
   | UntilMark
@@ -71,15 +82,15 @@ type ssripat =
   | IPatId of (*TODO id_mod option * *) Id.t
   | IPatAnon of anon_iter (* inaccessible name *)
 (* TODO  | IPatClearMark *)
-(* TODO | IPatDispatch of ssripatss (* /[..|..] *) *)
+  | IPatDispatch of ssripatss (* /[..|..] *)
   | IPatCase of (* ipats_mod option * *) ssripatss (* this is not equivalent to /case /[..|..] if there are already multiple goals *)
   | IPatInj of ssripatss
   | IPatRewrite of (*occurrence option * rewrite_pattern **) ssrocc * ssrdir
-  | IPatView of ssrterm list (* /view *)
+  | IPatView of ssrview (* /view *)
   | IPatClear of ssrclear (* {H1 H2} *)
   | IPatSimpl of ssrsimpl
-  | IPatNewHidden of Id.t list
-(* | IPatVarsForAbstract of Id.t list *)
+  | IPatAbstractVars of Id.t list
+  | IPatTac of unit Proofview.tactic
 
 and ssripats = ssripat list
 and ssripatss = ssripats list
@@ -127,12 +138,12 @@ type 'tac ssrhint = bool * 'tac option list
 type 'tac fwdbinders =
         bool * (ssrhpats * ((ssrfwdfmt * ssrterm) * 'tac ssrhint))
 
-type clause = 
+type clause =
   (ssrclear * ((ssrhyp_or_id * string) *
               Ssrmatching_plugin.Ssrmatching.cpattern option) option)
 type clauses = clause list * ssrclseq
 
-type wgen = 
+type wgen =
            (ssrclear *
             ((ssrhyp_or_id * string) *
              Ssrmatching_plugin.Ssrmatching.cpattern option)
@@ -141,9 +152,20 @@ type wgen =
 type 'a ssrdoarg = ((ssrindex * ssrmmod) * 'a ssrhint) * clauses
 type 'a ssrseqarg = ssrindex * ('a ssrhint * 'a option)
 
+
+open Ssrmatching_plugin
+open Ssrmatching
+type ssrdgens = { dgens : (ssrdocc * cpattern) list;
+                  gens  : (ssrdocc * cpattern) list;
+                  clr  : ssrclear }
+type ssrcasearg = ssripat option * (ssrdgens * ssripats)
+type ssrmovearg = ssrview * ssrcasearg
+type ssragens = ((ssrhyps option * occ) * ssrterm) list list * ssrclear
+type ssrapplyarg = ssrterm list * (ssragens * ssripats)
+
 (* OOP : these are general shortcuts *)
 type gist = Tacintern.glob_sign
 type ist = Tacinterp.interp_sign
-type goal = Goal.goal 
+type goal = Goal.goal
 type 'a sigma = 'a Evd.sigma
 type v82tac = Tacmach.tactic

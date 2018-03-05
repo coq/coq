@@ -6,121 +6,325 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
-
 open Util
 open Names
-open Term
+
 open Ltac_plugin
-open Tacinterp
-open Glob_term
-open Tacmach
-open Tacticals
+
+open Proofview
+open Notations
 
 open Ssrcommon
+open Ssrast
 
-(* The table and its display command *)
+module AdaptorDb = struct
 
-(* FIXME this looks hackish *)
+  type kind = Forward | Backward | Equivalence
 
-let viewtab : glob_constr list array = Array.make 3 []
+  module AdaptorKind = struct
+    type t = kind
+    let compare = Pervasives.compare
+  end
+  module AdaptorMap = Map.Make(AdaptorKind)
 
-let _ =
-  let init () = Array.fill viewtab 0 3 [] in
-  let freeze _ = Array.copy viewtab in
-  let unfreeze vt = Array.blit vt 0 viewtab 0 3 in
-  Summary.declare_summary "ssrview"
-    { Summary.freeze_function   = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function     = init }
+  let term_view_adaptor_db =
+    Summary.ref ~name:"view_adaptor_db" AdaptorMap.empty
 
-(* Populating the table *)
+  let get k =
+    try AdaptorMap.find k !term_view_adaptor_db
+    with Not_found -> []
 
-let cache_viewhint (_, (i, lvh)) =
-  let mem_raw h = List.exists (Glob_ops.glob_constr_eq h) in
-  let add_hint h hdb = if mem_raw h hdb then hdb else h :: hdb in
-  viewtab.(i) <- List.fold_right add_hint lvh viewtab.(i)
+  let cache_adaptor (_, (k, t)) =
+    let lk = get k in
+    if not (List.exists (Glob_ops.glob_constr_eq t) lk) then
+      term_view_adaptor_db := AdaptorMap.add k (t :: lk) !term_view_adaptor_db
 
-let subst_viewhint ( subst, (i, lvh as ilvh)) =
-  let lvh' = List.smartmap (Detyping.subst_glob_constr subst) lvh in
-  if lvh' == lvh then ilvh else i, lvh'
-      
-let classify_viewhint x = Libobject.Substitute x
+  let subst_adaptor ( subst, (k, t as a)) =
+    let t' = Detyping.subst_glob_constr subst t in
+    if t' == t then a else k, t'
 
-let in_viewhint =
-  Libobject.declare_object {(Libobject.default_object "VIEW_HINTS") with
-       Libobject.open_function = (fun i o -> if i = 1 then cache_viewhint o);
-       Libobject.cache_function = cache_viewhint;
-       Libobject.subst_function = subst_viewhint;
-       Libobject.classify_function = classify_viewhint }
+  let classify_adaptor x = Libobject.Substitute x
 
-let glob_view_hints lvh =
-  let env = Global.env () in
-  List.map (Constrintern.intern_constr env Evd.(from_env env)) lvh
+  let in_db =
+    Libobject.declare_object {
+       (Libobject.default_object "VIEW_ADAPTOR_DB")
+    with
+       Libobject.open_function = (fun i o -> if i = 1 then cache_adaptor o);
+       Libobject.cache_function = cache_adaptor;
+       Libobject.subst_function = subst_adaptor;
+       Libobject.classify_function = classify_adaptor }
 
-let add_view_hints lvh i = Lib.add_anonymous_leaf (in_viewhint (i, lvh))
+  let declare kind terms =
+    List.iter (fun term -> Lib.add_anonymous_leaf (in_db (kind,term)))
+      (List.rev terms)
 
-let interp_view ist si env sigma gv rv rid =
-  match DAst.get rv with
-  | GApp (h, rargs) when (match DAst.get h with GHole _ -> true | _ -> false) ->
-    let loc = rv.CAst.loc in
-    let rv = DAst.make ?loc @@ GApp (rid, rargs) in
-    snd (interp_open_constr ist (re_sig si sigma) (rv, None))
+end
+
+(* Forward View application code *****************************************)
+
+module State : sig
+
+  (* View storage API *)
+  val vsINIT    : EConstr.t -> unit tactic
+  val vsPUSH    : (EConstr.t -> EConstr.t tactic) -> unit tactic
+  val vsCONSUME : (Id.t option -> EConstr.t -> unit tactic) -> unit tactic
+  val vsASSERT_EMPTY : unit tactic
+
+end = struct (* {{{ *)
+
+type vstate = {
+  subject_name : Id.t option;   (* top *)
+    (* None if views are being applied to a term *)
+  view : EConstr.t;  (* v2 (v1 top) *)
+}
+
+include Ssrcommon.MakeState(struct
+  type state = vstate option
+  let init = None
+end)
+
+let vsINIT view = tclSET (Some { subject_name = None; view })
+
+let vsPUSH k =
+  tacUPDATE (fun s -> match s with
+  | Some { subject_name; view } ->
+      k view >>= fun view ->
+      tclUNIT (Some { subject_name; view })
+  | None ->
+      Goal.enter_one ~__LOC__ begin fun gl ->
+        let concl = Goal.concl gl in
+        let id = (* We keep the orig name for checks in "in" tcl *)
+          match EConstr.kind_of_type (Goal.sigma gl) concl with
+          | Term.ProdType(Name.Name id, _, _)
+            when Ssrcommon.is_discharged_id id -> id
+          | _ -> mk_anon_id "view_subject" (Tacmach.New.pf_ids_of_hyps gl) in
+        let view = EConstr.mkVar id in
+        Ssrcommon.tclINTRO_ID id <*>
+        k view >>= fun view ->
+        tclUNIT (Some { subject_name = Some id; view })
+      end)
+
+let vsCONSUME k =
+  tclGET (fun s -> match s with
+  | Some { subject_name; view } ->
+        tclSET None <*>
+        k subject_name view
+  | None -> anomaly "vsCONSUME: empty storage")
+
+let vsASSERT_EMPTY =
+  tclGET (function
+  | Some _ -> anomaly ("vsASSERT_EMPTY: not empty")
+  | _ -> tclUNIT ())
+
+end (* }}} *)
+
+let intern_constr_expr { Genintern.genv; ltacvars = vars } sigma ce =
+  let ltacvars = {
+    Constrintern.empty_ltac_sign with Constrintern.ltac_vars = vars } in
+  Constrintern.intern_gen Pretyping.WithoutTypeConstraint ~ltacvars genv sigma ce
+
+(* Disambiguation of /t
+    - t is ltac:(tactic args)
+    - t is a term
+   To allow for t being a notation, like "Notation foo x := ltac:(foo x)", we
+   need to internalize t.
+*)
+let is_tac_in_term { body; glob_env; interp_env } =
+  Goal.(enter_one ~__LOC__ begin fun goal ->
+    let genv = env goal in
+    let sigma = sigma goal in
+    let ist = Ssrcommon.option_assert_get glob_env (Pp.str"not a term") in
+    (* We use the env of the goal, not the global one *)
+    let ist = { ist with Genintern.genv } in
+    (* We unravel notations *)
+    let g = intern_constr_expr ist sigma body in
+    match DAst.get g with
+    | Glob_term.GHole (_,_, Some x)
+      when Genarg.has_type x (Genarg.glbwit Tacarg.wit_tactic)
+        -> tclUNIT (`Tac (Genarg.out_gen (Genarg.glbwit Tacarg.wit_tactic) x))
+    | _ -> tclUNIT (`Term (interp_env, g))
+end)
+
+(* To inject a constr into a glob_constr we use an Ltac variable *)
+let tclINJ_CONSTR_IST ist p =
+  let fresh_id = Ssrcommon.mk_internal_id "ssr_inj_constr_in_glob" in
+  let ist = {
+    ist with Geninterp.lfun =
+      Id.Map.add fresh_id (Taccoerce.Value.of_constr p) ist.Geninterp.lfun} in
+  tclUNIT (ist,Glob_term.GVar fresh_id)
+
+let mkGHole =
+  DAst.make
+    (Glob_term.GHole(Evar_kinds.InternalHole, Misctypes.IntroAnonymous, None))
+let rec mkGHoles n = if n > 0 then mkGHole :: mkGHoles (n - 1) else []
+let mkGApp f args =
+  if args = [] then f
+  else DAst.make (Glob_term.GApp (f, args))
+
+(* From glob_constr to open_constr === (env,sigma,constr) *)
+let interp_glob ist glob = Goal.enter_one ~__LOC__ begin fun goal ->
+  let env = Goal.env goal in
+  let sigma = Goal.sigma goal in
+  Ssrprinters.ppdebug (lazy
+    Pp.(str"interp-in: " ++ Printer.pr_glob_constr_env env glob));
+  try
+    let sigma,term = Tacinterp.interp_open_constr ist env sigma (glob,None) in
+    Ssrprinters.ppdebug (lazy
+      Pp.(str"interp-out: " ++ Printer.pr_econstr_env env sigma term));
+    tclUNIT (env,sigma,term)
+  with e ->
+    Ssrprinters.ppdebug (lazy
+    Pp.(str"interp-err: " ++ Printer.pr_glob_constr_env env glob));
+     tclZERO e
+end
+
+(* Commits the term to the monad *)
+(* I think we should make the API safe by storing here the original evar map,
+ * so that one cannot commit it wrongly.
+ * We could also commit the term automatically, but this makes the code less
+ * modular, see the 2 functions below that would need to "uncommit" *)
+let tclKeepOpenConstr (_env, sigma, t) = Unsafe.tclEVARS sigma <*> tclUNIT t
+
+(* The ssr heuristic : *)
+(* Estimate a bound on the number of arguments of a raw constr. *)
+(* This is not perfect, because the unifier may fail to         *)
+(* typecheck the partial application, so we use a minimum of 5. *)
+(* Also, we don't handle delayed or iterated coercions to       *)
+(* FUNCLASS, which is probably just as well since these can     *)
+(* lead to infinite arities.                                    *)
+let guess_max_implicits ist glob =
+  Proofview.tclORELSE
+    (interp_glob ist (mkGApp glob (mkGHoles 6)) >>= fun (env,sigma,term) ->
+     let term_ty = Retyping.get_type_of env sigma term in
+     let ctx, _ = Reductionops.splay_prod env sigma term_ty in
+     tclUNIT (List.length ctx + 6))
+  (fun _ -> tclUNIT 5)
+
+let pad_to_inductive ist glob = Goal.enter_one ~__LOC__ begin fun goal ->
+  interp_glob ist glob >>= fun (env, sigma, term) ->
+  let term_ty = Retyping.get_type_of env sigma term in
+  let ctx, i = Reductionops.splay_prod env sigma term_ty in
+  let rel_ctx =
+    List.map (fun (a,b) -> Context.Rel.Declaration.LocalAssum(a,b)) ctx in
+  if Ssrcommon.isAppInd (EConstr.push_rel_context rel_ctx env) sigma i
+  then tclUNIT (mkGApp glob (mkGHoles (List.length ctx)))
+  else Tacticals.New.tclZEROMSG Pp.(str"not an inductive")
+end
+
+(* There are two ways of "applying" a view to term:            *)
+(*  1- using a view hint if the view is an instance of some    *)
+(*     (reflection) inductive predicate.                       *)
+(*  2- applying the view if it coerces to a function, adding   *)
+(*     implicit arguments.                                     *)
+(* They require guessing the view hints and the number of      *)
+(* implicits, respectively, which we do by brute force.        *)
+(* Builds v p *)
+let interp_view ist v p =
+  let is_specialize hd =
+    match DAst.get hd with Glob_term.GHole _ -> true | _ -> false in
+  (* We cast the pile of views p into a term p_id *)
+  tclINJ_CONSTR_IST ist p >>= fun (ist, p_id) ->
+  let p_id = DAst.make p_id in
+  match DAst.get v with
+  | Glob_term.GApp (hd, rargs) when is_specialize hd ->
+     Ssrprinters.ppdebug (lazy Pp.(str "specialize"));
+     interp_glob ist (mkGApp p_id rargs) >>= tclKeepOpenConstr
   | _ ->
-  let interp rc rargs =
-    interp_open_constr ist (re_sig si sigma) (mkRApp rc rargs, None) in
-  let rec simple_view rargs n =
-    if n < 0 then view_error "use" gv else
-    try interp rv rargs with _ -> simple_view (mkRHole :: rargs) (n - 1) in
-  let view_nbimps = interp_view_nbimps ist (re_sig si sigma) rv in
-  let view_args = [mkRApp rv (mkRHoles view_nbimps); rid] in
-  let rec view_with = function
-  | [] -> simple_view [rid] (interp_nbargs ist (re_sig si sigma) rv)
-  | hint :: hints -> try interp hint view_args with _ -> view_with hints in
-  snd (view_with (if view_nbimps < 0 then [] else viewtab.(0)))
+     Ssrprinters.ppdebug (lazy Pp.(str "view"));
+     (* We find out how to build (v p) eventually using an adaptor *)
+     let adaptors = AdaptorDb.(get Forward) in
+     Proofview.tclORELSE
+       (pad_to_inductive ist v >>= fun vpad ->
+        Ssrcommon.tclFIRSTa (List.map
+          (fun a -> interp_glob ist (mkGApp a [vpad; p_id])) adaptors))
+       (fun _ ->
+        guess_max_implicits ist v >>= fun n ->
+        Ssrcommon.tclFIRSTi (fun n ->
+           interp_glob ist (mkGApp v (mkGHoles n @ [p_id]))) n)
+     >>= tclKeepOpenConstr
 
+(* we store in the state (v top), then (v1 (v2 top))... *)
+let pile_up_view (ist, v) =
+  let ist = Ssrcommon.option_assert_get ist (Pp.str"not a term") in
+  State.vsPUSH (fun p -> interp_view ist v p)
 
-let with_view ist ~next si env (gl0 : (Goal.goal * tac_ctx) Evd.sigma) c name cl prune (conclude : EConstr.t -> EConstr.t -> tac_ctx tac_a) clr =
-  let c2r ist x = { ist with lfun =
-    Id.Map.add top_id (Value.of_constr x) ist.lfun } in
-  let terminate (sigma, c') =
-    let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
-    let c' = Reductionops.nf_evar sigma c' in
-    let n, c', _, ucst = without_ctx pf_abs_evars gl0 (sigma, c') in
-    let c' = if not prune then c' else without_ctx pf_abs_cterm gl0 n c' in
-    let gl0 = pf_merge_uc ucst gl0 in
-    let gl0, ap =
-      let gl0, ctx = pull_ctx gl0 in
-      let gl0, ap = pf_abs_prod name gl0 c' (Termops.prod_applist sigma cl [c]) in
-      push_ctx ctx gl0, ap in
-    let gl0 = pf_merge_uc_of sigma gl0 in
-    ap, c', gl0 in
-  let rec loop (sigma, c') = function
-  | [] ->
-      let ap, c', gl = terminate (sigma, c') in
-      ap, c', conclude ap c' gl
-  | f :: view ->
-      let ist, rid =
-        match EConstr.kind sigma c' with
-        | Var id -> ist,mkRVar id
-        | _ -> c2r ist c',mkRltacVar top_id in
-      let v = intern_term ist env f in
-      loop (interp_view ist si env sigma f v rid) view
-  in loop
+let finalize_view s0 ?(simple_types=true) p =
+Goal.enter_one ~__LOC__ begin fun g ->
+  let env = Goal.env g in
+  let sigma = Goal.sigma g in
+  let evars_of_p = Evd.evars_of_term (EConstr.to_constr sigma p) in
+  let filter x _ = Evar.Set.mem x evars_of_p in
+  let sigma = Typeclasses.resolve_typeclasses ~fail:false ~filter env sigma in
+  let p = Reductionops.nf_evar sigma p in
+  let get_body = function Evd.Evar_defined x -> x | _ -> assert false in
+  let evars_of_econstr sigma t =
+    Evd.evars_of_term (EConstr.to_constr sigma (EConstr.of_constr t)) in
+  let rigid_of s =
+    List.fold_left (fun l k ->
+      if Evd.is_defined sigma k then
+        let bo = get_body Evd.(evar_body (find sigma k)) in
+          k :: l @ Evar.Set.elements (evars_of_econstr sigma bo)
+      else l
+    ) [] s in
+  let und0 = (* Unassigned evars in the initial goal *)
+    let sigma0 = Tacmach.project s0 in
+    let g0info = Evd.find sigma0 (Tacmach.sig_it s0) in
+    let g0 = Evd.evars_of_filtered_evar_info g0info in
+    List.filter (fun k -> Evar.Set.mem k g0)
+      (List.map fst (Evar.Map.bindings (Evd.undefined_map sigma0))) in
+  let rigid = rigid_of und0 in
+  let n, p, to_prune, _ucst = pf_abs_evars2 s0 rigid (sigma, p) in
+  let p = if simple_types then pf_abs_cterm s0 n p else p in
+  Ssrprinters.ppdebug (lazy Pp.(str"view@finalized: " ++
+    Printer.pr_econstr_env env sigma p));
+  let sigma = List.fold_left Evd.remove sigma to_prune in
+  Unsafe.tclEVARS sigma <*>
+  tclUNIT p
+end
 
-let pfa_with_view ist ?(next=ref []) (prune, view) cl c conclude clr gl =
-  let env, sigma, si =
-    without_ctx pf_env gl, Refiner.project gl, without_ctx sig_it gl in
-  with_view
-    ist ~next si env gl c (constr_name sigma c) cl prune conclude clr (sigma, c) view 
+let pose_proof subject_name p =
+  Tactics.generalize [p] <*>
+  Option.cata
+    (fun id -> Ssrcommon.tclRENAME_HD_PROD (Name.Name id)) (tclUNIT())
+    subject_name
+  <*>
+  Tactics.New.reduce_after_refine
 
-let pf_with_view_linear ist gl v cl c =
-  let x,y,gl =
-    pfa_with_view ist v cl c (fun _ _ -> tac_ctx tclIDTAC) []
-      (push_ctx (new_ctx ()) gl) in
-  let gl, _ = pull_ctxs gl in
-  assert(List.length (sig_it gl) = 1);
-  x,y,re_sig (List.hd (sig_it gl)) (Refiner.project gl)
+let rec apply_all_views ending vs s0 =
+  match vs with
+  | [] -> ending s0
+  | v :: vs ->
+      Ssrprinters.ppdebug (lazy Pp.(str"piling..."));
+      is_tac_in_term v >>= function
+      | `Tac tac ->
+           Ssrprinters.ppdebug (lazy Pp.(str"..a tactic"));
+           ending s0 <*> Tacinterp.eval_tactic tac <*>
+           Ssrcommon.tacSIGMA >>= apply_all_views ending vs
+      | `Term v ->
+           Ssrprinters.ppdebug (lazy Pp.(str"..a term"));
+           pile_up_view v <*> apply_all_views ending vs s0
 
+(* Entry points *********************************************************)
+
+let tclIPAT_VIEWS ~views:vs ~conclusion:tac =
+  let end_view_application s0 =
+    State.vsCONSUME (fun name t ->
+      finalize_view s0 t >>= pose_proof name <*>
+      tac ~to_clear:(Option.cata (fun x -> [x]) [] name)) in
+  tclINDEPENDENT begin
+    State.vsASSERT_EMPTY <*>
+    Ssrcommon.tacSIGMA >>= apply_all_views end_view_application vs <*>
+    State.vsASSERT_EMPTY
+  end
+
+let tclWITH_FWD_VIEWS ~simple_types ~subject ~views:vs ~conclusion:tac =
+  let ending_tac s0 =
+    State.vsCONSUME (fun _ t -> finalize_view s0 ~simple_types t >>= tac) in
+  tclINDEPENDENT begin
+    State.vsASSERT_EMPTY <*>
+    State.vsINIT subject <*>
+    Ssrcommon.tacSIGMA >>= apply_all_views ending_tac vs <*>
+    State.vsASSERT_EMPTY
+  end
 
 (* vim: set filetype=ocaml foldmethod=marker: *)

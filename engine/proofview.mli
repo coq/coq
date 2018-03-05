@@ -513,6 +513,7 @@ module Goal : sig
 
   (** Compatibility: avoid if possible *)
   val goal : t -> Evar.t
+  val print : t -> Goal.goal Evd.sigma
 
 end
 
@@ -549,7 +550,10 @@ val tclLIFT : 'a NonLogical.t -> 'a tactic
 (*** Compatibility layer with <= 8.2 tactics ***)
 module V82 : sig
   type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
-  val tactic : tac -> unit tactic
+
+  (* [nf_evars=true] applies the evar (assignment) map to the goals
+   * (conclusion and context) before calling the tactic *)
+  val tactic : ?nf_evars:bool -> tac -> unit tactic
 
   (* normalises the evars in the goals, and stores the result in
      solution. *)

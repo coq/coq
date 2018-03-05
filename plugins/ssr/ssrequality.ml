@@ -617,20 +617,20 @@ let ipat_rewrite occ dir c gl = rwrxtac occ None dir (project gl, c) gl
 
 let rwargtac ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) gl =
   let fail = ref false in
-  let interp_rpattern ist gl gc =
-    try interp_rpattern ist gl gc
+  let interp_rpattern gl gc =
+    try interp_rpattern gl gc
     with _ when snd mult = May -> fail := true; project gl, T mkProp in
   let interp gc gl =
     try interp_term ist gl gc
     with _ when snd mult = May -> fail := true; (project gl, EConstr.mkProp) in
   let rwtac gl = 
-    let rx = Option.map (interp_rpattern ist gl) grx in
+    let rx = Option.map (interp_rpattern gl) grx in
     let t = interp gt gl in
     (match kind with
     | RWred sim -> simplintac occ rx sim
     | RWdef -> if dir = R2L then foldtac occ rx t else unfoldintac occ rx t gt
     | RWeq -> rwrxtac occ rx dir t) gl in
-  let ctac = cleartac (interp_clr (project gl) (oclr, (fst gt, snd (interp gt gl)))) in
+  let ctac = old_cleartac (interp_clr (project gl) (oclr, (fst gt, snd (interp gt gl)))) in
   if !fail then ctac gl else tclTHEN (tclMULT mult rwtac) ctac gl
 
 (** Rewrite argument sequence *)

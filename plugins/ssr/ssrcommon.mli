@@ -18,6 +18,8 @@ open Ssrast
 open Ltac_plugin
 open Genarg
 
+open Ssrmatching_plugin
+
 val allocc : ssrocc
 
 (******************************** hyps ************************************)
@@ -47,6 +49,8 @@ val anomaly : string -> 'a
 val array_app_tl : 'a array -> 'a list -> 'a list
 val array_list_of_tl : 'a array -> 'a list
 val array_fold_right_from : int -> ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
+
+val option_assert_get : 'a option -> Pp.t -> 'a
 
 (**************************** lifted tactics ******************************)
 
@@ -150,17 +154,22 @@ val splay_open_constr :
            Goal.goal Evd.sigma ->
            evar_map * EConstr.t ->
            (Names.Name.t * EConstr.t) list * EConstr.t
-val isAppInd : Goal.goal Evd.sigma -> EConstr.types -> bool
-val interp_view_nbimps :
-           Tacinterp.interp_sign ->
-           Goal.goal Evd.sigma -> Glob_term.glob_constr -> int
-val interp_nbargs :
-           Tacinterp.interp_sign ->
-           Goal.goal Evd.sigma -> Glob_term.glob_constr -> int
+val isAppInd : Environ.env -> Evd.evar_map -> EConstr.types -> bool
 
+val mk_term : ssrtermkind -> constr_expr -> ssrterm
+val mk_lterm : constr_expr -> ssrterm
 
-val mk_term : ssrtermkind -> 'b -> ssrtermkind * (Glob_term.glob_constr * 'b option)
-val mk_lterm : 'a -> ssrtermkind * (Glob_term.glob_constr * 'a option)
+val mk_ast_closure_term :
+  [ `None | `Parens | `DoubleParens | `At ] ->
+  Constrexpr.constr_expr -> ast_closure_term
+val interp_ast_closure_term : Geninterp.interp_sign -> Proof_type.goal
+Evd.sigma -> ast_closure_term -> Evd.evar_map * ast_closure_term
+val subst_ast_closure_term : Mod_subst.substitution -> ast_closure_term -> ast_closure_term
+val glob_ast_closure_term : Genintern.glob_sign -> ast_closure_term -> ast_closure_term
+val ssrterm_of_ast_closure_term : ast_closure_term -> ssrterm
+
+val ssrdgens_of_parsed_dgens :
+  (ssrdocc * Ssrmatching.cpattern) list list * ssrclear -> ssrdgens
 
 val is_internal_name : string -> bool
 val add_internal_name : (string -> bool) -> unit
@@ -199,11 +208,6 @@ val pf_abs_prod :
            Goal.goal Evd.sigma ->
            EConstr.t ->
            EConstr.t -> Goal.goal Evd.sigma * EConstr.types
-val pf_mkprod :
-           Goal.goal Evd.sigma ->
-           EConstr.t ->
-           ?name:Name.t ->
-           EConstr.t -> Goal.goal Evd.sigma * EConstr.types
 
 val mkSsrRRef : string -> Glob_term.glob_constr * 'a option
 val mkSsrRef : string -> Globnames.global_reference
@@ -229,17 +233,19 @@ val has_discharged_tag : string -> bool
 val ssrqid : string -> Libnames.qualid 
 val new_tmp_id :
   tac_ctx -> (Names.Id.t * Name.t ref) * tac_ctx
-val mk_anon_id : string -> Goal.goal Evd.sigma -> Id.t
+val mk_anon_id : string -> Id.t list -> Id.t
 val pf_abs_evars_pirrel :
            Goal.goal Evd.sigma ->
            evar_map * Constr.constr -> int * Constr.constr
+val nbargs_open_constr : Goal.goal Evd.sigma -> Evd.evar_map * EConstr.t -> int
 val pf_nbargs : Goal.goal Evd.sigma -> EConstr.t -> int
 val gen_tmp_ids : 
            ?ist:Geninterp.interp_sign ->
            (Goal.goal * tac_ctx) Evd.sigma ->
            (Goal.goal * tac_ctx) list Evd.sigma
 
-val ssrevaltac : Tacinterp.interp_sign -> Tacinterp.Value.t -> Proofview.V82.tac
+val ssrevaltac :
+  Tacinterp.interp_sign -> Tacinterp.Value.t -> unit Proofview.tactic
 
 val convert_concl_no_check : EConstr.t -> unit Proofview.tactic
 val convert_concl : EConstr.t -> unit Proofview.tactic
@@ -334,33 +340,29 @@ val rewritetac : ssrdir -> EConstr.t -> tactic
 
 type name_hint = (int * EConstr.types array) option ref
 
-val gentac : 
-  (Geninterp.interp_sign ->
-   (Ssrast.ssrdocc) *
-     Ssrmatching_plugin.Ssrmatching.cpattern -> Tacmach.tactic)
+val gentac :
+   Ssrast.ssrdocc * Ssrmatching.cpattern -> v82tac
 
 val genstac :
-  ((Ssrast.ssrhyp list option * Ssrmatching_plugin.Ssrmatching.occ) *
-     Ssrmatching_plugin.Ssrmatching.cpattern)
+  ((Ssrast.ssrhyp list option * Ssrmatching.occ) *
+     Ssrmatching.cpattern)
     list * Ssrast.ssrhyp list ->
-  Tacinterp.interp_sign -> Tacmach.tactic
+  Tacmach.tactic
 
 val pf_interp_gen :
-  Tacinterp.interp_sign ->
   Goal.goal Evd.sigma ->
   bool ->
-  (Ssrast.ssrhyp list option * Ssrmatching_plugin.Ssrmatching.occ) *
-    Ssrmatching_plugin.Ssrmatching.cpattern ->
+  (Ssrast.ssrhyp list option * Ssrmatching.occ) *
+    Ssrmatching.cpattern ->
   EConstr.t * EConstr.t * Ssrast.ssrhyp list *
     Goal.goal Evd.sigma
 
 val pf_interp_gen_aux :
-  Tacinterp.interp_sign ->
   Goal.goal Evd.sigma ->
   bool ->
-  (Ssrast.ssrhyp list option * Ssrmatching_plugin.Ssrmatching.occ) *
-    Ssrmatching_plugin.Ssrmatching.cpattern ->
-  bool * Ssrmatching_plugin.Ssrmatching.pattern * EConstr.t *
+  (Ssrast.ssrhyp list option * Ssrmatching.occ) *
+    Ssrmatching.cpattern ->
+  bool * Ssrmatching.pattern * EConstr.t *
     EConstr.t * Ssrast.ssrhyp list * UState.t *
       Goal.goal Evd.sigma
 
@@ -378,7 +380,6 @@ val mk_profiler : string -> profiler
 
 val introid : ?orig:Name.t ref -> Id.t -> v82tac
 val intro_anon : v82tac
-val intro_all : v82tac
 
 val interp_clr :
   evar_map -> ssrhyps option * (ssrtermkind * EConstr.t) -> ssrhyps
@@ -386,19 +387,20 @@ val interp_clr :
 val genclrtac :
   EConstr.constr ->
   EConstr.constr list -> Ssrast.ssrhyp list -> Tacmach.tactic
-val cleartac : ssrhyps -> v82tac
+val old_cleartac : ssrhyps -> v82tac
+val cleartac : ssrhyps -> unit Proofview.tactic
 
 val tclMULT : int * ssrmmod -> Tacmach.tactic -> Tacmach.tactic
 
 val unprotecttac : Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+val is_protect : EConstr.t -> Environ.env -> Evd.evar_map -> bool
 
 val abs_wgen :
   bool ->
-  Tacinterp.interp_sign ->
   (Id.t -> Id.t) ->
   'a *
     ((Ssrast.ssrhyp_or_id * string) *
-       Ssrmatching_plugin.Ssrmatching.cpattern option)
+       Ssrmatching.cpattern option)
       option ->
   Goal.goal Evd.sigma * EConstr.t list * EConstr.t ->
   Goal.goal Evd.sigma * EConstr.t list * EConstr.t
@@ -408,3 +410,69 @@ val clr_of_wgen :
   Proofview.V82.tac list -> Proofview.V82.tac list
 
 
+val unfold : EConstr.t list -> unit Proofview.tactic
+
+(* New code ****************************************************************)
+
+(* To call old code *)
+val tacSIGMA : Goal.goal Evd.sigma Proofview.tactic
+
+val tclINTERP_AST_CLOSURE_TERM_AS_CONSTR :
+  ast_closure_term -> EConstr.t list Proofview.tactic
+
+val tacREDUCE_TO_QUANTIFIED_IND :
+  EConstr.types ->
+    ((Names.inductive * EConstr.EInstance.t) * EConstr.types) Proofview.tactic
+
+val tacTYPEOF : EConstr.t -> EConstr.types Proofview.tactic
+
+val tclINTRO_ID : Id.t -> unit Proofview.tactic
+val tclINTRO_ANON : unit Proofview.tactic
+
+(* Lower level API, calls conclusion with the name taken from the prod *)
+val tclINTRO :
+  id:Id.t option ->
+  conclusion:(orig_name:Name.t -> new_name:Id.t -> unit Proofview.tactic) ->
+  unit Proofview.tactic
+
+val tclRENAME_HD_PROD : Name.t -> unit Proofview.tactic
+
+(* calls the tactic only if there are more than 0 goals *)
+val tcl0G : unit Proofview.tactic -> unit Proofview.tactic
+
+(* like tclFIRST but with 'a tactic *)
+val tclFIRSTa : 'a Proofview.tactic list -> 'a Proofview.tactic
+val tclFIRSTi : (int -> 'a Proofview.tactic) -> int -> 'a Proofview.tactic
+
+val tacCONSTR_NAME : ?name:Name.t -> EConstr.t -> Name.t Proofview.tactic
+
+(* [tacMKPROD t name ctx] (where ctx is a term possibly containing an unbound
+ * Rel 1) builds [forall name : ty_t, ctx] *)
+val tacMKPROD :
+  EConstr.t -> ?name:Name.t -> EConstr.types -> EConstr.types Proofview.tactic
+
+val tacINTERP_CPATTERN : Ssrmatching.cpattern -> Ssrmatching.pattern Proofview.tactic
+val tacUNIFY : EConstr.t -> EConstr.t -> unit Proofview.tactic
+
+(* if [(t : eq _ _ _)] then we can inject it *)
+val tacIS_INJECTION_CASE : ?ty:EConstr.types -> EConstr.t -> bool Proofview.tactic
+
+(** 1 shot, hands-on the top of the stack, eg for [=> ->] *)
+val tclWITHTOP : (EConstr.t -> unit Proofview.tactic) -> unit Proofview.tactic
+
+val tacMK_SSR_CONST : string -> EConstr.t Proofview.tactic
+
+module type StateType = sig
+  type state
+  val init : state
+end
+
+module MakeState(S : StateType) : sig
+
+  val tclGET : (S.state -> unit Proofview.tactic) -> unit Proofview.tactic
+  val tclSET : S.state -> unit Proofview.tactic
+  val tacUPDATE : (S.state -> S.state Proofview.tactic) -> unit Proofview.tactic
+
+  val get : Proofview.Goal.t -> S.state
+
+end

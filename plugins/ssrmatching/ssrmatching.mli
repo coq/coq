@@ -61,7 +61,7 @@ val redex_of_pattern :
 (** [interp_rpattern ise gl rpat] "internalizes" and "interprets" [rpat]
     in the current [Ltac] interpretation signature [ise] and tactic input [gl]*)
 val interp_rpattern :
-  Tacinterp.interp_sign -> goal sigma ->
+  goal sigma ->
   rpattern ->
     pattern
 
@@ -69,8 +69,8 @@ val interp_rpattern :
     in the current [Ltac] interpretation signature [ise] and tactic input [gl].
     [ty] is an optional type for the redex of [cpat] *)
 val interp_cpattern :
-  Tacinterp.interp_sign -> goal sigma ->
-  cpattern -> glob_constr_and_expr option ->
+  goal sigma ->
+  cpattern -> (glob_constr_and_expr * Geninterp.interp_sign) option ->
     pattern
 
 (** The set of occurrences to be matched. The boolean is set to true
@@ -196,7 +196,7 @@ val mk_tpattern_matcher :
 val pf_fill_occ_term : goal sigma -> occ -> evar_map * EConstr.t -> EConstr.t * EConstr.t
 
 (* It may be handy to inject a simple term into the first form of cpattern *)
-val cpattern_of_term : char * glob_constr_and_expr -> cpattern
+val cpattern_of_term : char * glob_constr_and_expr -> Geninterp.interp_sign -> cpattern
 
 (** Helpers to make stateful closures. Example: a [find_P] function may be 
     called many times, but the pattern instantiation phase is performed only the
