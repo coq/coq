@@ -1,5 +1,3 @@
-Set Shrink Abstract.
-
 Definition foo : forall (n m : nat), bool.
 Proof.
 pose (p := 0).
