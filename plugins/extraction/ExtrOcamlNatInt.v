@@ -59,7 +59,7 @@ Extract Inlined Constant EqNat.eq_nat_decide => "(=)".
 
 Extract Inlined Constant Peano_dec.eq_nat_dec => "(=)".
 
-Extract Constant Compare_dec.nat_compare =>
+Extract Constant Nat.compare =>
  "fun n m -> if n=m then Eq else if n<m then Lt else Gt".
 Extract Inlined Constant Compare_dec.leb => "(<=)".
 Extract Inlined Constant Compare_dec.le_lt_dec => "(<=)".
