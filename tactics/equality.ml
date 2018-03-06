@@ -69,19 +69,9 @@ let _ =
       optread  = (fun () -> !discriminate_introduction);
       optwrite = (:=) discriminate_introduction }
 
-let injection_pattern_l2r_order = ref true
-
 let use_injection_pattern_l2r_order = function
-  | None -> !injection_pattern_l2r_order
+  | None -> true
   | Some flags -> flags.injection_pattern_l2r_order
-
-let _ =
-  declare_bool_option
-    { optdepr  = true; (* remove in 8.8 *)
-      optname  = "injection left-to-right pattern order and clear by default when with introduction pattern";
-      optkey   = ["Injection";"L2R";"Pattern";"Order"];
-      optread  = (fun () -> !injection_pattern_l2r_order) ;
-      optwrite = (fun b -> injection_pattern_l2r_order := b) }
 
 let injection_in_context = ref false
 
