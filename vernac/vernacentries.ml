@@ -805,7 +805,14 @@ let vernac_end_segment ({v=id} as lid) =
 
 (* Libraries *)
 
+let warn_require_in_section =
+  let name = "require-in-section" in
+  let category = "deprecated" in
+  CWarnings.create ~name ~category
+    (fun () -> strbrk "Use of “Require” inside a section is deprecated.")
+
 let vernac_require from import qidl =
+  if Lib.sections_are_opened () then warn_require_in_section ();
   let qidl = List.map qualid_of_reference qidl in
   let root = match from with
   | None -> None
