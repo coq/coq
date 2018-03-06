@@ -124,7 +124,7 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
          match t with
          | { CAst.v = CSort (Misctypes.GType []) } -> true | _ -> false in
        let sigma, s = interp_type_evars env sigma ~impls:empty_internalization_env t in
-       let sred = Reductionops.whd_all env sigma s in
+       let sred = Reductionops.whd_allnolet env sigma s in
          (match EConstr.kind sigma sred with
 	 | Sort s' ->
             let s' = EConstr.ESorts.kind sigma s' in

@@ -200,3 +200,9 @@ Module NonRecLetIn.
     (fun n b c => f_equal (Rec n) eq_refl) 0 (Rec 0 (Base 1)).
 
 End NonRecLetIn.
+
+(* Test treatment of let-in in the definition of Records *)
+(* Should fail with "Sort expected" *)
+
+Fail Inductive foo (T : Type) : let T := Type in T :=
+  { r : forall x : T, x = x }.
