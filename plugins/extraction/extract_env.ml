@@ -135,22 +135,25 @@ let check_arity env cb =
   let t = cb.const_type in
   if Reduction.is_arity env t then raise Impossible
 
-let check_fix env cb i =
+let get_body lbody =
+  EConstr.of_constr (Mod_subst.force_constr lbody)
+
+let check_fix env sg cb i =
   match cb.const_body with
     | Def lbody ->
-	(match Constr.kind (Mod_subst.force_constr lbody) with
-	  | Fix ((_,j),recd) when Int.equal i j -> check_arity env cb; (true,recd)
+        (match EConstr.kind sg (get_body lbody) with
+          | Fix ((_,j),recd) when Int.equal i j -> check_arity env cb; (true,recd)
 	  | CoFix (j,recd) when Int.equal i j -> check_arity env cb; (false,recd)
 	  | _ -> raise Impossible)
     | Undef _ | OpaqueDef _ -> raise Impossible
 
-let prec_declaration_equal (na1, ca1, ta1) (na2, ca2, ta2) =
+let prec_declaration_equal sg (na1, ca1, ta1) (na2, ca2, ta2) =
   Array.equal Name.equal na1 na2 &&
-  Array.equal Constr.equal ca1 ca2 &&
-  Array.equal Constr.equal ta1 ta2
+  Array.equal (EConstr.eq_constr sg) ca1 ca2 &&
+  Array.equal (EConstr.eq_constr sg) ta1 ta2
 
-let factor_fix env l cb msb =
-  let _,recd as check = check_fix env cb 0 in
+let factor_fix env sg l cb msb =
+  let _,recd as check = check_fix env sg cb 0 in
   let n = Array.length (let fi,_,_ = recd in fi) in
   if Int.equal n 1 then [|l|], recd, msb
   else begin
@@ -161,9 +164,9 @@ let factor_fix env l cb msb =
       (fun j ->
 	 function
 	   | (l,SFBconst cb') ->
-	       let check' = check_fix env cb' (j+1) in
-	       if not ((fst check : bool) == (fst check') &&
-		   prec_declaration_equal (snd check) (snd check'))
+              let check' = check_fix env sg cb' (j+1) in
+              if not ((fst check : bool) == (fst check') &&
+                        prec_declaration_equal sg (snd check) (snd check'))
 	       then raise Impossible;
 	       labels.(j+1) <- l;
 	   | _ -> raise Impossible) msb';
@@ -246,7 +249,9 @@ and extract_mexpr_spec env mp1 (me_struct_o,me_alg) = match me_alg with
       let me_struct,delta = flatten_modtype env mp1 me' me_struct_o in
       let env' = env_for_mtb_with_def env mp1 me_struct delta idl in
       let mt = extract_mexpr_spec env mp1 (None,me') in
-      (match extract_with_type env' c with (* cb may contain some kn *)
+      let sg = Evd.from_env env in
+      (match extract_with_type env' sg (EConstr.of_constr c) with
+       (* cb may contain some kn *)
 	 | None -> mt
 	 | Some (vl,typ) ->
             type_iter_references Visit.add_ref typ;
@@ -297,12 +302,13 @@ let rec extract_structure env mp reso ~all = function
   | [] -> []
   | (l,SFBconst cb) :: struc ->
       (try
-	 let vl,recd,struc = factor_fix env l cb struc in
+         let sg = Evd.from_env env in
+         let vl,recd,struc = factor_fix env sg l cb struc in
 	 let vc = Array.map (make_cst reso mp) vl in
 	 let ms = extract_structure env mp reso ~all struc in
 	 let b = Array.exists Visit.needed_cst vc in
 	 if all || b then
-	   let d = extract_fixpoint env vc recd in
+           let d = extract_fixpoint env sg vc recd in
 	   if (not b) && (logical_decl d) then ms
 	   else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
 	 else ms
@@ -699,10 +705,9 @@ let flatten_structure struc =
   and flatten_elems l = List.flatten (List.map flatten_elem l)
   in flatten_elems (List.flatten (List.map snd struc))
 
-let structure_for_compute c =
+let structure_for_compute env sg c =
   init false false ~compute:true;
-  let env = Global.env () in
-  let ast, mlt = Extraction.extract_constr env c in
+  let ast, mlt = Extraction.extract_constr env sg c in
   let ast = Mlutil.normalize ast in
   let refs = ref Refset.empty in
   let add_ref r = refs := Refset.add r !refs in

@@ -34,4 +34,5 @@ val print_one_decl :
 (* Used by Extraction Compute *)
 
 val structure_for_compute :
-  Constr.t -> (Miniml.ml_decl list) * Miniml.ml_ast * Miniml.ml_type
+  Environ.env -> Evd.evar_map -> EConstr.t ->
+    Miniml.ml_decl list * Miniml.ml_ast * Miniml.ml_type
