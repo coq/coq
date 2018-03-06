@@ -29,11 +29,11 @@ val tclIPATssr : ssripats -> unit Proofview.tactic
      [tac E: gens => ipats]
    where [E] is injected into [ipats] (at the right place) and [gens] are
    generalized before calling [tac] *)
-val ssrmovetac : ssrmovearg -> unit Proofview.tactic
+val ssrmovetac : ssrdgens ssrmovearg -> unit Proofview.tactic
 val ssrsmovetac : unit Proofview.tactic
-val ssrelimtac : ssrmovearg -> unit Proofview.tactic
+val ssrelimtac : ssrdgens ssrmovearg -> unit Proofview.tactic
 val ssrselimtoptac : unit Proofview.tactic
-val ssrcasetac : ssrmovearg -> unit Proofview.tactic
+val ssrcasetac : ssrdgens ssrmovearg -> unit Proofview.tactic
 val ssrscasetoptac : unit Proofview.tactic
 
 (* The implementation of abstract: is half here, for the [[: var ]]

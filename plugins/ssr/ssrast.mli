@@ -138,7 +138,7 @@ type ssrclseq = InGoal | InHyps
 type 'tac ssrhint = bool * 'tac option list
 
 type 'tac fwdbinders =
-        bool * (ssrhpats * ((ssrfwdfmt * ssrterm) * 'tac ssrhint))
+        bool * (ssrhpats * ((ssrfwdfmt * ast_closure_term) * 'tac ssrhint))
 
 type clause =
   (ssrclear * ((ssrhyp_or_id * string) *
@@ -157,13 +157,15 @@ type 'a ssrseqarg = ssrindex * ('a ssrhint * 'a option)
 
 open Ssrmatching_plugin
 open Ssrmatching
+
+type 'a ssrcasearg = ssripat option * ('a * ssripats)
+type 'a ssrmovearg = ssrview * 'a ssrcasearg
+
 type ssrdgens = { dgens : (ssrdocc * cpattern) list;
                   gens  : (ssrdocc * cpattern) list;
                   clr  : ssrclear }
-type ssrcasearg = ssripat option * (ssrdgens * ssripats)
-type ssrmovearg = ssrview * ssrcasearg
-type ssragens = ((ssrhyps option * occ) * ssrterm) list list * ssrclear
-type ssrapplyarg = ssrterm list * (ssragens * ssripats)
+type 'a ssragens = (ssrdocc * 'a) list list * ssrclear
+type ssrapplyarg = ssrterm list * (ssrterm ssragens * ssripats)
 
 (* OOP : these are general shortcuts *)
 type gist = Tacintern.glob_sign
