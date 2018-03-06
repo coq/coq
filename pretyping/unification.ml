@@ -250,20 +250,6 @@ let unify_r2l x = x
 let sort_eqns = unify_r2l
 *)
 
-let global_pattern_unification_flag = ref true
-
-open Goptions
-
-(* Compatibility option introduced and activated in Coq 8.4 *)
-
-let _ =
-  declare_bool_option
-    { optdepr  = true; (* remove in 8.8 *)
-      optname  = "pattern-unification for existential variables in tactics";
-      optkey   = ["Tactic";"Pattern";"Unification"];
-      optread  = (fun () -> !global_pattern_unification_flag);
-      optwrite = (:=) global_pattern_unification_flag }
-
 type core_unify_flags = {
   modulo_conv_on_closed_terms : Names.transparent_state option;
     (* What this flag controls was activated with all constants transparent, *)
@@ -287,12 +273,10 @@ type core_unify_flags = {
 
   use_pattern_unification : bool;
     (* This solves pattern "?n x1 ... xn = t" when the xi are distinct rels *)
-    (* This says if pattern unification is tried; can be overwritten with *)
-    (* option "Set Tactic Pattern Unification" *)
+    (* This says if pattern unification is tried *)
 
   use_meta_bound_pattern_unification : bool;
-    (* This is implied by use_pattern_unification (though deactivated *)
-    (* by unsetting Tactic Pattern Unification); has no particular *)
+    (* This is implied by use_pattern_unification; has no particular *)
     (* reasons to be set differently than use_pattern_unification *)
     (* except for compatibility of "auto". *)
     (* This was on for all tactics, including auto, since Sep 2006 for 8.1 *)
@@ -473,10 +457,10 @@ let set_flags_for_type flags = { flags with
 }
 
 let use_evars_pattern_unification flags =
-  !global_pattern_unification_flag && flags.use_pattern_unification
+  flags.use_pattern_unification
 
 let use_metas_pattern_unification sigma flags nb l =
-  !global_pattern_unification_flag && flags.use_pattern_unification
+  flags.use_pattern_unification
   || flags.use_meta_bound_pattern_unification &&
      Array.for_all (fun c -> isRel sigma c && destRel sigma c <= nb) l
 
