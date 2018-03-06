@@ -29,7 +29,7 @@ val extract_fixpoint :
 
 val extract_inductive : env -> MutInd.t -> ml_ind
 
-(** For extraction compute *)
+(** For Extraction Compute and Show Extraction *)
 
 val extract_constr : env -> evar_map -> EConstr.t -> ml_ast * ml_type
 

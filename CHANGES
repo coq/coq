@@ -70,6 +70,8 @@ Vernacular Commands
   was removed. Use Local as a prefix instead.
 - For the Extraction Language command, "OCaml" is spelled correctly.
   The older "Ocaml" is still accepted, but deprecated.
+- An experimental command "Show Extraction" allows to extract the content
+  of the current ongoing proof (grant wish #4129).
 
 Universes
 

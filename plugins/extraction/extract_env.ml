@@ -576,8 +576,8 @@ let print_structure_to_file (fn,si,mo) dry struc =
 let reset () =
   Visit.reset (); reset_tables (); reset_renaming_tables Everything
 
-let init ?(compute=false) modular library =
-  check_inside_section (); check_inside_module ();
+let init ?(compute=false) ?(inner=false) modular library =
+  if not inner then (check_inside_section (); check_inside_module ());
   set_keywords (descr ()).keywords;
   set_modular modular;
   set_library library;
@@ -747,3 +747,20 @@ let extract_and_compile l =
   let base = Filename.chop_suffix f ".ml" in
   let () = remove (base^".cmo"); remove (base^".cmi") in
   Feedback.msg_notice (str "Extracted code successfully compiled")
+
+(* Show the extraction of the current ongoing proof *)
+
+let show_extraction () =
+  init ~inner:true false false;
+  let prf = Proof_global.give_me_the_proof () in
+  let sigma, env = Pfedit.get_current_context () in
+  let trms = Proof.partial_proof prf in
+  let extr_term t =
+    let ast, ty = extract_constr env sigma t in
+    let mp = Lib.current_mp () in
+    let l = Label.of_id (Proof_global.get_current_proof_name ()) in
+    let fake_ref = ConstRef (Constant.make2 mp l) in
+    let decl = Dterm (fake_ref, ast, ty) in
+    print_one_decl [] mp decl
+  in
+  Feedback.msg_notice (Pp.prlist_with_sep Pp.fnl extr_term trms)

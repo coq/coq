@@ -330,7 +330,21 @@ let rec extract_type env sg db j c args =
        else
          extract_type env sg db j (EConstr.mkProj (Projection.unfold p, t)) args
     | Case _ | Fix _ | CoFix _ -> Tunknown
-    | Var _ | Meta _ | Evar _ | Cast _ | LetIn _ | Construct _ -> assert false
+    | Evar _ | Meta _ -> Taxiom (* only possible during Show Extraction *)
+    | Var v ->
+       (* For Show Extraction *)
+       let open Context.Named.Declaration in
+       (match EConstr.lookup_named v env with
+        | LocalDef (_,body,_) ->
+           extract_type env sg db j (EConstr.applist (body,args)) []
+        | LocalAssum (_,ty) ->
+           let r = VarRef v in
+           (match flag_of_type env sg ty with
+            | (Logic,_) -> assert false (* Cf. logical cases above *)
+            | (Info, TypeScheme) ->
+              extract_type_app env sg db (r, type_sign env sg ty) args
+            | (Info, Default) -> Tunknown))
+    | Cast _ | LetIn _ | Construct _ -> assert false
 
 (*s Auxiliary function dealing with type application.
   Precondition: [r] is a type scheme represented by the signature [s],
@@ -656,7 +670,18 @@ let rec extract_term env sg mle mlt c args =
     | CoFix (i,recd) ->
         extract_app env sg mle mlt (extract_fix env sg mle i recd) args
     | Cast (c,_,_) -> extract_term env sg mle mlt c args
-    | Ind _ | Prod _ | Sort _ | Meta _ | Evar _ | Var _ -> assert false
+    | Evar _ | Meta _ -> MLaxiom
+    | Var v ->
+       (* Only during Show Extraction *)
+       let open Context.Named.Declaration in
+       let ty = match EConstr.lookup_named v env with
+         | LocalAssum (_,ty) -> ty
+         | LocalDef (_,_,ty) -> ty
+       in
+       let vty = extract_type env sg [] 0 ty [] in
+       let extract_var mlt = put_magic (mlt,vty) (MLglob (VarRef v)) in
+       extract_app env sg mle mlt extract_var args
+    | Ind _ | Prod _ | Sort _ -> assert false
 
 (*s [extract_maybe_term] is [extract_term] for usual terms, else [MLdummy] *)
 

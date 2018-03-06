@@ -158,3 +158,9 @@ VERNAC COMMAND EXTEND ExtractionInductive CLASSIFIED AS SIDEFF
     mlname(id) "[" mlname_list(idl) "]" string_opt(o) ]
   -> [ extract_inductive x id idl o ]
 END
+(* Show the extraction of the current proof *)
+
+VERNAC COMMAND EXTEND ShowExtraction CLASSIFIED AS QUERY
+| [ "Show" "Extraction" ]
+  -> [ show_extraction () ]
+END
