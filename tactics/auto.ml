@@ -42,9 +42,9 @@ let compute_secvars gl =
 
 open Unification
 
-let auto_core_unif_flags_of st1 st2 useeager = {
+let auto_core_unif_flags_of st1 st2 = {
   modulo_conv_on_closed_terms = Some st1;
-  use_metas_eagerly_in_conv_on_closed_terms = useeager;
+  use_metas_eagerly_in_conv_on_closed_terms = false;
   use_evars_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = st2;
   modulo_delta_types = full_transparent_state;
@@ -57,8 +57,8 @@ let auto_core_unif_flags_of st1 st2 useeager = {
   modulo_eta = true;
 }
 
-let auto_unif_flags_of st1 st2 useeager =
-  let flags = auto_core_unif_flags_of st1 st2 useeager in {
+let auto_unif_flags_of st1 st2 =
+  let flags = auto_core_unif_flags_of st1 st2 in {
   core_unify_flags = flags;
   merge_unify_flags = flags;
   subterm_unify_flags = { flags with modulo_delta = empty_transparent_state };
@@ -67,7 +67,7 @@ let auto_unif_flags_of st1 st2 useeager =
 }
 
 let auto_unif_flags =
-  auto_unif_flags_of full_transparent_state empty_transparent_state false
+  auto_unif_flags_of full_transparent_state empty_transparent_state
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 
@@ -291,10 +291,10 @@ let tclTRY_dbg d tac =
   de Hint impérative a été remplacée par plusieurs bases fonctionnelles *)
 
 let flags_of_state st =
-  auto_unif_flags_of st st false
+  auto_unif_flags_of st st
 
 let auto_flags_of_state st =
-  auto_unif_flags_of full_transparent_state st false
+  auto_unif_flags_of full_transparent_state st
 
 let hintmap_of sigma secvars hdc concl =
   match hdc with
