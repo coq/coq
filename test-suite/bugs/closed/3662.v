@@ -1,6 +1,6 @@
 Set Primitive Projections.
 Set Implicit Arguments.
-Set Record Elimination Schemes.
+Set Nonrecursive Elimination Schemes.
 Record prod A B := pair { fst : A ; snd : B }.
 Definition f : Set -> Type := fun x => x.
 

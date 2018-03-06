@@ -1,5 +1,5 @@
 Set Primitive Projections.
-Set Record Elimination Schemes.
+Set Nonrecursive Elimination Schemes.
 Module Prim.
 
 Record F := { a : nat; b : a = a }.

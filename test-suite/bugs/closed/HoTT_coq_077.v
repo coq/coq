@@ -3,7 +3,7 @@ Set Implicit Arguments.
 Require Import Logic.
 
 Set Asymmetric Patterns.
-Set Record Elimination Schemes.
+Set Nonrecursive Elimination Schemes.
 Set Primitive Projections.
 
 Record prod (A B : Type) : Type :=

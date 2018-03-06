@@ -4,7 +4,7 @@ Require Import Logic.
 
 Global Set Universe Polymorphism.
 Global Set Asymmetric Patterns.
-Local Set Record Elimination Schemes.
+Local Set Nonrecursive Elimination Schemes.
 Local Set Primitive Projections.
 
 Record prod (A B : Type) : Type :=
