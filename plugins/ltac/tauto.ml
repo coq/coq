@@ -65,11 +65,6 @@ let assoc_flags ist : tauto_flags =
 (* Whether inner not are unfolded *)
 let negation_unfolding = ref true
 
-(* Whether inner iff are unfolded *)
-let iff_unfolding = ref false
-
-let unfold_iff () = !iff_unfolding
-
 open Goptions
 let _ =
   declare_bool_option
@@ -78,14 +73,6 @@ let _ =
       optkey   = ["Intuition";"Negation";"Unfolding"];
       optread  = (fun () -> !negation_unfolding);
       optwrite = (:=) negation_unfolding }
-
-let _ =
-  declare_bool_option
-    { optdepr  = true; (* remove in 8.8 *)
-      optname  = "unfolding of iff in intuition";
-      optkey   = ["Intuition";"Iff";"Unfolding"];
-      optread  = (fun () -> !iff_unfolding);
-      optwrite = (:=) iff_unfolding }
 
 (** Base tactics *)
 
@@ -202,16 +189,13 @@ let make_unfold name =
   let const = Constant.make2 (ModPath.MPfile dir) (Label.make name) in
   (Locus.AllOccurrences, ArgArg (EvalConstRef const, None))
 
-let u_iff = make_unfold "iff"
 let u_not = make_unfold "not"
 
 let reduction_not_iff _ ist =
   let make_reduce c = TacAtom (Loc.tag @@ TacReduce (Genredexpr.Unfold c, Locusops.allHypsAndConcl)) in
-  let tac = match !negation_unfolding, unfold_iff () with
-    | true, true -> make_reduce [u_not; u_iff]
-    | true, false -> make_reduce [u_not]
-    | false, true -> make_reduce [u_iff]
-    | false, false -> TacId []
+  let tac = match !negation_unfolding with
+    | true -> make_reduce [u_not]
+    | false -> TacId []
   in
   eval_tactic_ist ist tac
 
