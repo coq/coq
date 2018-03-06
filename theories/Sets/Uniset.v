@@ -13,7 +13,7 @@
 (* G. Huet 1-9-95 *)
 (* Updated Papageno 12/98 *)
 
-Require Import Bool.
+Require Import Bool Permut.
 
 Set Implicit Arguments.
 
@@ -139,8 +139,6 @@ Hint Resolve seq_right.
 
 (** Here we should make uniset an abstract datatype, by hiding [Charac],
     [union], [charac]; all further properties are proved abstractly *)
-
-Require Import Permut.
 
 Lemma union_rotate :
  forall x y z:uniset, seq (union x (union y z)) (union z (union x y)).

@@ -30,6 +30,7 @@ Require Export Ncring_initial.
 Require Export Ncring_tac.
 Require Export Integral_domain.
 Require Import DiscrR.
+Require Import ZArith.
 
 Declare ML Module "nsatz_plugin".
 
@@ -56,9 +57,8 @@ simpl. simpl; cring.
 Qed.
 
 (* adpatation du code de Benjamin aux setoides *)
-Require Import ZArith.
-Require Export Ring_polynom.
-Require Export InitialRing.
+Export Ring_polynom.
+Export InitialRing.
 
 Definition PolZ := Pol Z.
 Definition PEZ := PExpr Z.

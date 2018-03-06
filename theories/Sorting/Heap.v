@@ -136,7 +136,7 @@ Section defs.
       (munion (list_contents _ eqA_dec l1) (list_contents _ eqA_dec l2)) ->
       (forall a, HdRel leA a l1 -> HdRel leA a l2 -> HdRel leA a l) ->
       merge_lem l1 l2.
-  Require Import Morphisms.
+  Import Morphisms.
   
   Instance: Equivalence (@meq A).
   Proof. constructor; auto with datatypes. red. apply meq_trans. Defined.

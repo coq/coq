@@ -11,6 +11,7 @@
 (* G. Huet 1-9-95 *)
 
 Require Import Permut Setoid.
+Require Plus. (* comm. and ass. of plus *)
 
 Set Implicit Arguments.
 
@@ -68,9 +69,6 @@ Section multiset_defs.
   Proof.
     unfold meq; unfold munion; simpl; auto.
   Qed.
-
-
-  Require Plus. (* comm. and ass. of plus *)
 
   Lemma munion_comm : forall x y:multiset, meq (munion x y) (munion y x).
   Proof.
