@@ -22,8 +22,10 @@ let distributed_exec = ["coqtop";"coqc";"coqchk";"coqdoc";"coqworkmgr";
 let verbose = ref false (* for debugging this script *)
 
 (** * Utility functions *)
-
-let die msg = eprintf "%s\nConfiguration script failed!\n" msg; exit 1
+let cfprintf oc = kfprintf (fun oc -> fprintf oc "\n%!") oc
+let cprintf s = cfprintf stdout s
+let ceprintf s = cfprintf stderr s
+let die msg = ceprintf "%s\nConfiguration script failed!" msg; exit 1
 
 let s2i = int_of_string
 let i2s = string_of_int
@@ -107,7 +109,7 @@ let run ?(fatal=true) ?(err=StdErr) prog args =
       let cmd = String.concat " " (prog::args) in
       let exn = match e with Failure s -> s | _ -> Printexc.to_string e in
       let msg = sprintf "Error while running '%s' (%s)" cmd exn in
-      if fatal then die msg else (printf "W: %s\n" msg; "", [])
+      if fatal then die msg else (cprintf "W: %s" msg; "", [])
 
 let tryrun prog args = run ~fatal:false ~err:DevNull prog args
 
@@ -203,7 +205,7 @@ let win_aware_quote_executable str =
     sprintf "%S" str
   else
     let _ = if contains_suspicious_characters str then
-      printf "*Warning* The string %S contains suspicious characters; ocamlfind might fail\n" str in
+      cprintf "*Warning* The string %S contains suspicious characters; ocamlfind might fail" str in
     Str.global_replace (Str.regexp "\\\\") "/" str
 
 (** * Date *)
@@ -343,7 +345,7 @@ let args_options = Arg.align [
     " Do not add debugging information in the Coq executables";
   "-profile", Arg.Set Prefs.profile,
     " Add profiling information in the Coq executables";
-  "-annotate", Arg.Unit (fun () -> printf "*Warning* -annotate is deprecated. Please use -annot or -bin-annot instead.\n"),
+  "-annotate", Arg.Unit (fun () -> cprintf "*Warning* -annotate is deprecated. Please use -annot or -bin-annot instead."),
     " Deprecated. Please use -annot or -bin-annot instead";
   "-annot", Arg.Set Prefs.annot,
     " Dumps ml text annotation files while compiling Coq (e.g. for Tuareg)";
@@ -412,8 +414,8 @@ let arch_progs =
    ("/usr/ucb/arch", []) ]
 
 let query_arch () =
-  printf "I can not automatically find the name of your architecture.\n";
-  printf "Give me a name, please [win32 for Win95, Win98 or WinNT]: %!";
+  cprintf "I can not automatically find the name of your architecture.";
+  cprintf "Give me a name, please [win32 for Win95, Win98 or WinNT]: %!";
   read_line ()
 
 let rec try_archs = function
@@ -455,7 +457,7 @@ let vcs =
 let _ =
   let f = ".git/hooks/pre-commit" in
   if vcs = "git" && dir_exists ".git/hooks" && not (Sys.file_exists f) then begin
-    printf "Creating pre-commit hook in %s\n" f;
+    cprintf "Creating pre-commit hook in %s" f;
     let o = open_out f in
     let pr s = fprintf o s in
     pr "#!/bin/sh\n";
@@ -521,11 +523,11 @@ let caml_version_nums =
 
 let check_caml_version () =
   if caml_version_nums >= [4;2;1] then
-    printf "You have OCaml %s. Good!\n" caml_version
+    cprintf "You have OCaml %s. Good!" caml_version
   else
-    let () = printf "Your version of OCaml is %s.\n" caml_version in
+    let () = cprintf "Your version of OCaml is %s." caml_version in
     if !Prefs.force_caml_version then
-      printf "*Warning* Your version of OCaml is outdated.\n"
+      cprintf "*Warning* Your version of OCaml is outdated."
     else
       die "You need OCaml 4.02.1 or later."
 
@@ -543,11 +545,11 @@ let findlib_version_nums =
 
 let check_findlib_version () =
   if findlib_version_nums >= [1;4;1] then
-    printf "You have OCamlfind %s. Good!\n" findlib_version
+    cprintf "You have OCamlfind %s. Good!" findlib_version
   else
-    let () = printf "Your version of OCamlfind is %s.\n" findlib_version in
+    let () = cprintf "Your version of OCamlfind is %s." findlib_version in
     if !Prefs.force_findlib_version then
-      printf "*Warning* Your version of OCamlfind is outdated.\n"
+      cprintf "*Warning* Your version of OCamlfind is outdated."
     else
       die "You need OCamlfind 1.4.1 or later."
 
@@ -636,7 +638,7 @@ let check_camlp5_version camlp5o =
   let version = List.nth (string_split ' ' version_line) 2 in
   match numeric_prefix_list version with
   | major::minor::_ when s2i major > 6 || (s2i major, s2i minor) >= (6,6) ->
-    printf "You have Camlp5 %s. Good!\n" version; version
+    cprintf "You have Camlp5 %s. Good!" version; version
   | _ -> die "Error: unsupported Camlp5 (version < 6.06 or unrecognized).\n"
 
 let config_camlp5 () =
@@ -659,19 +661,19 @@ let camlp5libdir = shorten_camllib fullcamlp5libdir
 (** * Native compiler *)
 
 let msg_byteonly () =
-  printf "Only the bytecode version of Coq will be available.\n"
+  cprintf "Only the bytecode version of Coq will be available."
 
 let msg_no_ocamlopt () =
-  printf "Cannot find the OCaml native-code compiler.\n"; msg_byteonly ()
+  cprintf "Cannot find the OCaml native-code compiler."; msg_byteonly ()
 
 let msg_no_camlp5_cmxa () =
-  printf "Cannot find the native-code library of camlp5.\n"; msg_byteonly ()
+  cprintf "Cannot find the native-code library of camlp5."; msg_byteonly ()
 
 let msg_no_dynlink_cmxa () =
-  printf "Cannot find native-code dynlink library.\n"; msg_byteonly ();
-  printf "For building a native-code Coq, you may try to first\n";
-  printf "compile and install a dummy dynlink.cmxa (see dev/dynlink.ml)\n";
-  printf "and then run ./configure -natdynlink no\n"
+  cprintf "Cannot find native-code dynlink library."; msg_byteonly ();
+  cprintf "For building a native-code Coq, you may try to first";
+  cprintf "compile and install a dummy dynlink.cmxa (see dev/dynlink.ml)";
+  cprintf "and then run ./configure -natdynlink no"
 
 let check_native () =
   let () = if !Prefs.byteonly then raise Not_found in
@@ -684,9 +686,9 @@ let check_native () =
   else
     let () =
       if version <> caml_version then
-	printf
-	  "Warning: Native and bytecode compilers do not have the same version!\n"
-    in printf "You have native-code compilation. Good!\n"
+        cprintf
+          "Warning: Native and bytecode compilers do not have the same version!"
+    in cprintf "You have native-code compilation. Good!"
 
 let best_compiler =
   try check_native (); "opt" with Not_found -> "byte"
@@ -723,7 +725,7 @@ let check_for_numlib () =
     match numlib with
     | ""  ->
        die "Num library not installed, required for OCaml 4.06 or later"
-    | _   -> printf "You have the Num library installed. Good!\n"
+    | _   -> cprintf "You have the Num library installed. Good!"
 
 let numlib =
   check_for_numlib ()
@@ -740,7 +742,7 @@ let get_source = function
 (** Is some location a suitable LablGtk2 installation ? *)
 
 let check_lablgtkdir ?(fatal=false) src dir =
-  let yell msg = if fatal then die msg else (printf "%s\n" msg; false) in
+  let yell msg = if fatal then die msg else (cprintf "%s" msg; false) in
   let msg = get_source src in
   if not (dir_exists dir) then
     yell (sprintf "No such directory '%s' (%s)." dir msg)
@@ -776,7 +778,7 @@ let get_lablgtkdir () =
 
 let check_lablgtk_version src dir = match src with
 | Manual | Stdlib ->
-  printf "Warning: could not check the version of lablgtk2.\nMake sure your version is at least 2.18.3.\n";
+  cprintf "Warning: could not check the version of lablgtk2.\nMake sure your version is at least 2.18.3.";
   (true, "an unknown version")
 | OCamlFind ->
   let v, _ = tryrun camlexec.find ["query"; "-format"; "%v"; "lablgtk2"] in
@@ -787,7 +789,7 @@ let check_lablgtk_version src dir = match src with
     else if vi < [2; 18; 3] then
       begin
         (* Version 2.18.3 is known to report incorrectly as 2.18.0, and Launchpad packages report as version 2.16.0 due to a misconfigured META file; see https://bugs.launchpad.net/ubuntu/+source/lablgtk2/+bug/1577236 *)
-        printf "Warning: Your installed lablgtk reports as %s.\n It is possible that the installed version is actually more recent\n but reports an incorrect version. If the installed version is\n actually more recent than 2.18.3, that's fine; if it is not,\n CoqIDE will compile but may be very unstable.\n" v;
+        cprintf "Warning: Your installed lablgtk reports as %s.\n It is possible that the installed version is actually more recent\n but reports an incorrect version. If the installed version is\n actually more recent than 2.18.3, that's fine; if it is not,\n CoqIDE will compile but may be very unstable." v;
         (true, "an unknown version")
       end
     else
@@ -804,7 +806,7 @@ let set_ide ide msg = match ide, !Prefs.coqide with
   | No, Some (Byte|Opt)
   | Byte, Some Opt -> die (msg^":\n=> cannot build requested CoqIde")
   | _ ->
-    printf "%s:\n=> %s CoqIde will be built.\n" msg (pr_ide ide);
+    cprintf "%s:\n=> %s CoqIde will be built." msg (pr_ide ide);
     raise (Ide ide)
 
 let lablgtkdir = ref ""
@@ -886,7 +888,7 @@ let strip =
 
 let check_doc () =
   let err s =
-    printf "%s was not found; documentation will not be available\n" s;
+    ceprintf "%s was not found; documentation will not be available" s;
     raise Not_found
   in
   try
