@@ -4,6 +4,8 @@ S clib
 B clib
 S config
 B config
+S version
+B version
 S lib
 B lib
 S kernel
@@ -36,8 +38,6 @@ S toplevel
 B toplevel
 S plugins/ltac
 B plugins/ltac
-S API
-B API
 S ide
 B ide
 

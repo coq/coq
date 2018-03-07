@@ -9,7 +9,6 @@
 (************************************************************************)
 
 (** Initialization. *)
-
 val set_debug : unit -> unit
 
 val load_rcfile : rcfile:(string option) -> time:bool -> state:Vernac.State.t -> Vernac.State.t

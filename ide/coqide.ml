@@ -733,13 +733,7 @@ let initial_about () =
   let initial_string =
     "Welcome to CoqIDE, an Integrated Development Environment for Coq"
   in
-  let coq_version = Coq.short_version () in
-  let version_info =
-    if Glib.Utf8.validate coq_version then
-      "\nYou are running " ^ coq_version
-    else ""
-  in
-  let msg = initial_string ^ version_info ^ log_file_message () in
+  let msg = initial_string ^ log_file_message () in
   on_current_term (fun term -> term.messages#add_string msg)
 
 let coq_icon () =
@@ -775,7 +769,7 @@ let about _ =
   dialog#set_name "CoqIDE";
   dialog#set_comments "The Coq Integrated Development Environment";
   dialog#set_website Coq_config.wwwcoq;
-  dialog#set_version Coq_config.version;
+  dialog#set_version Coqversion.version.Coqversion.describe;
   dialog#set_copyright copyright;
   dialog#set_authors authors;
   dialog#show ()

@@ -269,6 +269,8 @@ install:
 - opam config list
 - opam install -j ${NJOBS} -y camlp5${CAMLP5_VER} ocamlfind${FINDLIB_VER} ${EXTRA_OPAM}
 - opam list
+# We need the full history for version numbers based on `git describe`
+- git fetch --unshallow --tags
 
 script:
 
@@ -280,6 +282,8 @@ script:
 - echo 'Building Coq...' && echo -en 'travis_fold:start:coq.build\\r'
 - make -j ${NJOBS} ${MAIN_TARGET}
 - echo -en 'travis_fold:end:coq.build\\r'
+
+- echo 'Coq built successfully, version info:' && bin/coqtop -v
 
 - echo 'Running tests...' && echo -en 'travis_fold:start:coq.test\\r'
 - if [ -n "${TEST_TARGET}" ]; then ${TW} make -j ${NJOBS} ${TEST_TARGET}; fi

@@ -344,11 +344,11 @@ let set_options options =
   in
   List.iter iter options
 
-let about () = {
-  Interface.coqtop_version = Coq_config.version;
+let about () = let open Coqversion in {
+  Interface.coqtop_version = version.describe;
   Interface.protocol_version = Xmlprotocol.protocol_version;
   Interface.release_date = Coq_config.date;
-  Interface.compile_date = Coq_config.compile_date;
+  Interface.compile_date = compile_date;
 }
 
 let handle_exn (e, info) =
@@ -373,6 +373,8 @@ let init =
    else begin
      let init_sid = Stm.get_current_state ~doc:(get_doc ()) in
      initialized := true;
+     let open Coqversion in
+     Feedback.msg_info Pp.(str "You are running Coq " ++ str version.describe ++ str " (" ++ str version.branch ++ str ")");
      match file with
      | None -> init_sid
      | Some file ->

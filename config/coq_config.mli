@@ -44,11 +44,9 @@ val arch : string       (* architecture *)
 val arch_is_win32 : bool
 val vmbyteflags : string list (* -custom/-dllib -lcoqrun *)
 
-val version : string    (* version number of Coq *)
 val caml_version : string    (* OCaml version used to compile Coq *)
 val caml_version_nums : int list    (* OCaml version used to compile Coq by components *)
 val date : string       (* release date *)
-val compile_date : string (* compile date *)
 val vo_magic_number : int
 val state_magic_number : int
 

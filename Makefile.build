@@ -64,7 +64,7 @@ AFTER ?=
 
 # build the different subsystems:
 
-world: coq coqide documentation revision
+world: coq coqide documentation
 
 coq: coqlib coqbinaries tools
 
@@ -478,7 +478,7 @@ $(GALLINA): $(call bestobj, tools/gallina_lexer.cmo tools/gallina.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,)
 
-COQMAKEFILECMO:=clib/clib.cma lib/lib.cma tools/coq_makefile.cmo
+COQMAKEFILECMO:=version/coqversion.cmo clib/clib.cma lib/lib.cma tools/coq_makefile.cmo
 
 $(COQMAKEFILE): $(call bestobj,$(COQMAKEFILECMO))
 	$(SHOW)'OCAMLBEST -o $@'
@@ -492,7 +492,7 @@ $(COQWC): $(call bestobj, tools/coqwc.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -package str)
 
-COQDOCCMO:=clib/clib.cma lib/lib.cma $(addprefix tools/coqdoc/, \
+COQDOCCMO:=version/coqversion.cmo clib/clib.cma lib/lib.cma $(addprefix tools/coqdoc/, \
   cdglobals.cmo alpha.cmo index.cmo tokens.cmo output.cmo cpretty.cmo main.cmo )
 
 $(COQDOC): $(call bestobj, $(COQDOCCMO))
@@ -576,6 +576,10 @@ test-suite: world byte $(ALLSTDLIB).v
 kernel/kernel.cma: kernel/kernel.mllib
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(VMBYTEFLAGS) -a -o $@ $(filter-out %.mllib, $^)
+
+# Do we need to explicitly list this dependency?
+# version/coqversion.cmo: version/coqversion.cmi
+# version/coqversion.cmx: version/coqversion.cmi
 
 %.cma: %.mllib
 	$(SHOW)'OCAMLC -a -o $@'

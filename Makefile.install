@@ -134,8 +134,6 @@ endif
 # it with libraries
 	-$(MKDIR) $(FULLCOQLIB)/plugins/micromega
 	$(INSTALLBIN) $(CSDPCERT) $(FULLCOQLIB)/plugins/micromega
-	rm -f $(FULLCOQLIB)/revision
-	-$(INSTALLLIB) revision $(FULLCOQLIB)
 
 install-coq-info: install-coq-manpages install-emacs install-latex
 

@@ -21,8 +21,7 @@ CHICKENBYTE:=bin/coqchk.byte$(EXE)
 CHICKEN:=bin/coqchk$(EXE)
 
 # The sources
-
-CHKLIBS:= -I config -I clib -I lib -I checker
+CHKLIBS:= -I version -I config -I clib -I lib -I checker
 
 ## NB: currently, both $(OPTFLAGS) and $(BYTEFLAGS) contain -thread
 
@@ -35,7 +34,7 @@ CHECKERDEPS := $(addsuffix .d, $(CHECKMLDFILE) $(CHECKMLLIBFILE))
 -include $(CHECKERDEPS)
 
 ifeq ($(BEST),opt)
-$(CHICKEN): checker/check.cmxa checker/main.mli checker/main.ml
+$(CHICKEN): version/coqversion.cmx checker/check.cmxa checker/main.mli checker/main.ml
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) -linkpkg $(SYSMOD) $(CHKLIBS) $(OPTFLAGS) $(LINKMETADATA) -o $@ $^
 	$(STRIP) $@
@@ -45,7 +44,7 @@ $(CHICKEN): $(CHICKENBYTE)
 	cp $< $@
 endif
 
-$(CHICKENBYTE): checker/check.cma checker/main.mli checker/main.ml
+$(CHICKENBYTE): version/coqversion.cmo checker/check.cma checker/main.mli checker/main.ml
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) -linkpkg $(SYSMOD) $(CHKLIBS) $(BYTEFLAGS) $(CUSTOM) -o $@ $^
 

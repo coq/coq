@@ -13,21 +13,9 @@ open Coqargs
 
 let () = at_exit flush_all
 
-let ( / ) = Filename.concat
-
-let get_version_date () =
-  try
-    let ch = open_in (Envars.coqlib () / "revision") in
-    let ver = input_line ch in
-    let rev = input_line ch in
-    let () = close_in ch in
-    (ver,rev)
-  with e when CErrors.noncritical e ->
-    (Coq_config.version,Coq_config.date)
-
 let print_header () =
-  let (ver,rev) = get_version_date () in
-  Feedback.msg_notice (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
+  let open Coqversion in
+  Feedback.msg_notice (str "Welcome to Coq " ++ str version.describe ++ str " (" ++ str version.branch ++ str ")");
   flush_all ()
 
 let warning s = Flags.(with_option warn Feedback.msg_warning (strbrk s))

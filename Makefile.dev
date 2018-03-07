@@ -26,55 +26,13 @@ dev/camlp5.dbg:
 	echo "load_printer gramlib.cma" > $@
 
 ############
-# revision
+# version  #
 ############
 
-# display the revision number when compiling a checked out source tree
-
-revision:
-	$(SHOW)'CHECK revision'
-	$(HIDE)rm -f revision.new
-ifeq ($(CHECKEDOUT),svn)
-	$(HIDE)set -e; \
-        if test -x "`which svn`"; then \
-	  export LC_ALL=C;\
-	  svn info . | sed -ne '/URL/s/.*\/\([^\/]\{1,\}\)/\1/p' > revision.new; \
-	  svn info . | sed -ne '/Revision/s/Revision: \([0-9]\{1,\}\)/\1/p'>> revision.new; \
-	fi
-endif
-ifeq ($(CHECKEDOUT),gnuarch)
-	$(HIDE)set -e; \
-        if test -x "`which tla`"; then \
-	  LANG=C; export LANG; \
-	  tla tree-version  >  revision.new ; \
-	  tla tree-revision | sed -ne 's|.*--||p' >> revision.new ; \
-	fi
-endif
-ifeq ($(CHECKEDOUT),git)
-	$(HIDE)set -e; \
-	if test -x "`which git`"; then \
-	  LANG=C; export LANG; \
-	  GIT_BRANCH=$$(git branch -a | sed -ne '/^\* /s/^\* \(.*\)/\1/p'); \
-	  GIT_HOST=$$(hostname); \
-	  GIT_PATH=$$(pwd); \
-	  (echo "$${GIT_HOST}:$${GIT_PATH},$${GIT_BRANCH}") > revision.new; \
-	  (echo "$$(git log -1 --pretty='format:%H')") >> revision.new; \
-	fi
-endif
-	$(HIDE)set -e; \
-	if test -e revision.new; then \
-          if test -e revision; then \
-	    if test "`cat revision`" = "`cat revision.new`" ; then \
-	       rm -f revision.new; \
-            else \
-               mv -f revision.new revision; \
-            fi; \
-          else \
-            mv -f revision.new revision; \
-          fi \
-	fi
-
-.PHONY: revision
+# build a file with information about the last time the git tree changed.
+version/coqversion.ml: $(wildcard .git/index .git/HEAD) dev/gen_version.sh
+	$(SHOW)'GEN coqversion'
+	$(HIDE)$(shell dev/gen_version.sh > version/coqversion.ml)
 
 ###################
 # Partial builds
