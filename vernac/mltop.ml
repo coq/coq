@@ -345,13 +345,6 @@ let load_ml_object mname ?path fname=
 
 let dir_ml_load m = ignore(dir_ml_load m)
 let add_known_module m = add_known_module m None
-let load_ml_object_raw fname = dir_ml_load (file_of_name fname)
-let load_ml_objects_raw_rex rex =
-  List.iter (fun (_,fp) ->
-    let name = file_of_name (Filename.basename fp) in
-    try dir_ml_load name
-    with e -> prerr_endline (Printexc.to_string e))
-    (System.where_in_path_rex !coq_mlpath_copy rex)
 
 (* Summary of declared ML Modules *)
 
@@ -395,8 +388,6 @@ let trigger_ml_object verb cache reinit ?path name =
     add_loaded_module name (Some path);
     if cache then perform_cache_obj name
   end
-
-let load_ml_object n m = ignore(load_ml_object n m)
 
 let unfreeze_ml_modules x =
   reset_loaded_modules ();

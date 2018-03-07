@@ -36,6 +36,18 @@ Tactic language
   called by OCaml-defined tactics.
 - Option "Ltac Debug" now applies also to terms built using Ltac functions.
 
+Coq binaries and process model
+
+- Before 8.9, Coq distributed a single `coqtop` binary and a set of
+  dynamically loadable plugins that used to take over the main loop
+  for tasks such as IDE language server or parallel proof checking.
+
+  These plugins have been turned into full-fledged binaries so each
+  different process has associated a particular binary now, in
+  particular `coqidetop` is the CoqIDE language server, and
+  `coq{proof,tactic,query}worker` are in charge of task-specific and
+  parallel proof checking.
+
 Changes from 8.8.0 to 8.8.1
 ===========================
 

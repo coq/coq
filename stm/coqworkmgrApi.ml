@@ -11,6 +11,10 @@
 let debug = false
 
 type priority = Low | High
+
+(* Default priority *)
+let async_proofs_worker_priority = ref Low
+
 let string_of_priority = function Low -> "low" | High -> "high"
 let priority_of_string = function
   | "low" -> Low

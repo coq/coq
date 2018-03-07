@@ -32,6 +32,8 @@ S vernac
 B vernac
 S toplevel
 B toplevel
+S topbin
+B topbin
 S plugins/ltac
 B plugins/ltac
 S API

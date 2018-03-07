@@ -8,18 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Default priority *)
-open CoqworkmgrApi
-let async_proofs_worker_priority = ref Low
+module W = AsyncTaskQueue.MakeWorker(Stm.QueryTask) ()
 
-let rec parse = function
-  | "--xml_format=Ppcmds" :: rest -> parse rest
-  | x :: rest -> x :: parse rest
-  | [] -> []
-
-let loop init coq_args extra_args =
-  let args = parse extra_args in
-  Flags.quiet := true;
-  init ();
-  CoqworkmgrApi.init !async_proofs_worker_priority;
-  coq_args, args
+let () = WorkerLoop.start ~init:W.init_stdout ~loop:W.main_loop

@@ -8,16 +8,21 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** The Coq main module. The following function [start] will parse the
-   command line, print the banner, initialize the load path, load the input
-   state, load the files given on the command line, load the resource file,
-   produce the output state if any, and finally will launch [Coqloop.loop]. *)
+(** Definition of custom toplevels.
+    [init] is used to do custom command line argument parsing.
+    [run] launches a custom toplevel.
+*)
+type custom_toplevel = {
+  init : opts:Coqargs.coq_cmdopts -> string list -> Coqargs.coq_cmdopts * string list;
+  run  : opts:Coqargs.coq_cmdopts -> state:Vernac.State.t -> unit;
+}
 
-val init_toplevel : string list -> Vernac.State.t option * Coqargs.coq_cmdopts
+val coqtop_toplevel : custom_toplevel
 
-val start : unit -> unit
+(** The Coq main module. [start custom] will parse the command line,
+   print the banner, initialize the load path, load the input state,
+   load the files given on the command line, load the resource file,
+   produce the output state if any, and finally will launch
+   [custom.run]. *)
 
-(* For other toploops *)
-val toploop_init :
-  (Coqargs.coq_cmdopts -> string list -> Coqargs.coq_cmdopts * string list) ref
-val toploop_run : (Coqargs.coq_cmdopts -> state:Vernac.State.t -> unit) ref
+val start_coq : custom_toplevel -> unit

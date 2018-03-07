@@ -50,8 +50,6 @@ val is_in_path : CUnix.load_path -> string -> bool
 val is_in_system_path : string -> bool
 val where_in_path :
   ?warn:bool -> CUnix.load_path -> string -> CUnix.physical_path * string
-val where_in_path_rex :
-  CUnix.load_path -> Str.regexp -> (CUnix.physical_path * string) list
 
 val find_file_in_path :
   ?warn:bool -> CUnix.load_path -> string -> CUnix.physical_path * string
@@ -107,3 +105,21 @@ val time_difference : time -> time -> float (** in seconds *)
 val fmt_time_difference : time -> time -> Pp.t
 
 val with_time : batch:bool -> ('a -> 'b) -> 'a -> 'b
+
+(** [get_toplevel_path program] builds a complete path to the
+   executable denoted by [program]. This involves:
+
+   - locating the directory: we don't rely on PATH as to make calls to
+   /foo/bin/coqtop chose the right /foo/bin/coqproofworker
+
+   - adding the proper suffixes: .opt/.byte depending on the current
+   mode, + .exe if in windows.
+
+ Note that this function doesn't check that the executable actually
+ exists. This is left back to caller, as well as the choice of
+ fallback strategy. We could add a fallback strategy here but it is
+ better not to as in most cases if this function fails to construct
+ the right name you want you execution to fail rather than fall into
+ choosing some random binary from the system-wide installation of
+ Coq. *)
+val get_toplevel_path : string -> string

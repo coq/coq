@@ -14,8 +14,11 @@
 # Executables
 ###########################################################################
 
-COQTOPBYTE:=bin/coqtop.byte$(EXE)
+TOPBIN:=$(addsuffix .opt$(EXE), $(addprefix bin/, coqtop coqproofworker coqtacticworker coqqueryworker))
+TOPBYTE:=$(TOPBIN:.opt$(EXE)=.byte$(EXE))
+
 COQTOPEXE:=bin/coqtop$(EXE)
+COQTOPBYTE:=bin/coqtop.byte$(EXE)
 
 COQDEP:=bin/coqdep$(EXE)
 COQMAKEFILE:=bin/coq_makefile$(EXE)
@@ -106,8 +109,6 @@ CORECMA:=clib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
         engine/engine.cma pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma vernac/vernac.cma \
         stm/stm.cma toplevel/toplevel.cma
-
-TOPLOOPCMA:=stm/proofworkertop.cma stm/tacworkertop.cma stm/queryworkertop.cma
 
 GRAMMARCMA:=grammar/grammar.cma
 

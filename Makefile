@@ -214,7 +214,7 @@ cruftclean: ml4clean
 
 indepclean:
 	rm -f $(GENFILES)
-	rm -f $(COQTOPBYTE) $(CHICKENBYTE)
+	rm -f $(COQTOPBYTE) $(CHICKENBYTE) $(TOPBYTE)
 	find . \( -name '*~' -o -name '*.cm[ioat]' -o -name '*.cmti' \) -delete
 	rm -f */*.pp[iox] plugins/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)
@@ -245,7 +245,7 @@ archclean: clean-ide optclean voclean
 	rm -f $(ALLSTDLIB).*
 
 optclean:
-	rm -f $(COQTOPEXE) $(CHICKEN)
+	rm -f $(COQTOPEXE) $(CHICKEN) $(TOPBIN)
 	rm -f $(TOOLS) $(PRIVATEBINARIES) $(CSDPCERT)
 	find . -name '*.cmx' -o -name '*.cmx[as]' -o -name '*.[soa]' -o -name '*.so' | xargs rm -f
 

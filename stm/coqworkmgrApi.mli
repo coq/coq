@@ -14,6 +14,9 @@ type priority = Low | High
 val string_of_priority : priority -> string
 val priority_of_string : string -> priority
 
+(* Default priority *)
+val async_proofs_worker_priority : priority ref
+
 (* Connects to a work manager if any. If no worker manager, then
    -async-proofs-j and -async-proofs-tac-j are used *)
 val init : priority -> unit

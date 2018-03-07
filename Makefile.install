@@ -70,17 +70,11 @@ endif
 
 install-binaries: install-tools
 	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQC) $(COQTOPEXE) $(CHICKEN) $(FULLBINDIR)
-	$(MKDIR) $(FULLCOQLIB)/toploop
-ifeq ($(BEST),opt)
-	$(INSTALLBIN) $(TOPLOOPCMA:.cma=.cmxs) $(FULLCOQLIB)/toploop/
-endif
+	$(INSTALLBIN) $(COQC) $(CHICKEN) $(COQTOPEXE) $(TOPBIN) $(FULLBINDIR)
 
 install-byte: install-coqide-byte
 	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQTOPBYTE) $(FULLBINDIR)
-	$(MKDIR) $(FULLCOQLIB)/toploop
-	$(INSTALLBIN) $(TOPLOOPCMA) $(FULLCOQLIB)/toploop/
+	$(INSTALLBIN) $(TOPBYTE) $(FULLBINDIR)
 	$(INSTALLSH) $(FULLCOQLIB) $(LINKCMO) $(PLUGINS)
 ifndef CUSTOM
 	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)

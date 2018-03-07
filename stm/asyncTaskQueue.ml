@@ -120,12 +120,11 @@ module Make(T : Task) () = struct
     let proc, ic, oc =
       let rec set_slave_opt = function
         | [] -> !async_proofs_flags_for_workers @
-                ["-toploop"; !T.name^"top";
-                 "-worker-id"; name;
+                ["-worker-id"; name;
                  "-async-proofs-worker-priority";
-                   CoqworkmgrApi.(string_of_priority !WorkerLoop.async_proofs_worker_priority)]
+                   CoqworkmgrApi.(string_of_priority !async_proofs_worker_priority)]
         | ("-ideslave"|"-emacs"|"-emacs-U"|"-batch")::tl -> set_slave_opt tl
-        | ("-async-proofs" |"-toploop" |"-vio2vo"
+        | ("-async-proofs" |"-vio2vo"
           |"-load-vernac-source" |"-l" |"-load-vernac-source-verbose" |"-lv"
           |"-compile" |"-compile-verbose"
           |"-async-proofs-worker-priority" |"-worker-id") :: _ :: tl ->
@@ -134,7 +133,8 @@ module Make(T : Task) () = struct
       let args =
         Array.of_list (set_slave_opt (List.tl (Array.to_list Sys.argv))) in
       let env = Array.append (T.extra_env ()) (Unix.environment ()) in
-    Worker.spawn ~env Sys.argv.(0) args in
+    let worker_name = System.get_toplevel_path ("coq" ^ !T.name) in
+    Worker.spawn ~env worker_name args in
     name, proc, CThread.prepare_in_channel_for_thread_friendly_io ic, oc
 
   let manager cpanel (id, proc, ic, oc) =

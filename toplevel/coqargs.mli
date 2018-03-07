@@ -27,7 +27,6 @@ type coq_cmdopts = {
   compilation_mode : compilation_mode;
 
   toplevel_name : Names.DirPath.t;
-  toploop : string option;
 
   compile_list: (string * bool) list;  (* bool is verbosity  *)
   compilation_output_name : string option;
@@ -55,6 +54,8 @@ type coq_cmdopts = {
   print_where : bool;
   print_config: bool;
   output_context : bool;
+
+  print_emacs : bool;
 
   inputstate  : string option;
   outputstate : string option;

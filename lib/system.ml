@@ -116,18 +116,6 @@ let where_in_path ?(warn=true) path filename =
     let f = Filename.concat lpe filename in
     if file_exists_respecting_case lpe filename then [lpe,f] else []))
 
-let where_in_path_rex path rex =
-  search path (fun lpe ->
-    try
-      let files = Sys.readdir lpe in
-      CList.map_filter (fun name ->
-        try
-          ignore(Str.search_forward rex name 0);
-          Some (lpe,Filename.concat lpe name)
-        with Not_found -> None)
-      (Array.to_list files)
-    with Sys_error _ -> [])
-
 let find_file_in_path ?(warn=true) paths filename =
   if not (Filename.is_implicit filename) then
     (* the name is considered to be a physical name and we use the file
@@ -312,3 +300,9 @@ let with_time ~batch f x =
     let msg2 = if batch then "" else " (failure)" in
     Feedback.msg_info (str msg ++ fmt_time_difference tstart tend ++ str msg2);
     raise e
+
+let get_toplevel_path top =
+  let dir = Filename.dirname Sys.argv.(0) in
+  let exe = if Sys.(os_type = "Win32" || os_type = "Cygwin") then ".exe" else "" in
+  let eff = if Dynlink.is_native then ".opt" else ".byte" in
+  dir ^ Filename.dir_sep ^ top ^ eff ^ exe

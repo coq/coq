@@ -289,16 +289,10 @@ let coqtop_path () =
     | Some s -> s
     | None ->
       match cmd_coqtop#get with
-	| Some s -> s
-	| None ->
-	  try
-            let old_prog = Sys.executable_name in
-            let pos = String.length old_prog - 6 in
-            let i = Str.search_backward (Str.regexp_string "coqide") old_prog pos
-            in
-            let new_prog = Bytes.of_string old_prog in
-            Bytes.blit_string "coqtop" 0 new_prog i 6;
-            let new_prog = Bytes.to_string new_prog in
+      | Some s -> s
+      | None ->
+        try
+          let new_prog = System.get_toplevel_path "coqidetop" in
             if Sys.file_exists new_prog then new_prog
 	    else
 	      let in_macos_bundle =
@@ -306,8 +300,8 @@ let coqtop_path () =
 		  (Filename.dirname new_prog)
 		  (Filename.concat "../Resources/bin" (Filename.basename new_prog))
 	      in if Sys.file_exists in_macos_bundle then in_macos_bundle
-		 else "coqtop"
-	  with Not_found -> "coqtop"
+                 else "coqidetop"
+        with Not_found -> "coqidetop"
   in file
 
 (* In win32, when a command-line is to be executed via cmd.exe

@@ -8,5 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* This empty file avoids a race condition that occurs when compiling a .ml file
-   that does not have a corresponding .mli file *)
+(* Register a STM worker *)
+val start :
+  init:(unit -> unit) ->
+  loop:(unit -> unit) -> unit

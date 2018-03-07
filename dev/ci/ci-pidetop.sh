@@ -8,6 +8,17 @@ pidetop_CI_DIR="${CI_BUILD_DIR}/pidetop"
 
 git_checkout "${pidetop_CI_BRANCH}" "${pidetop_CI_GITURL}" "${pidetop_CI_DIR}"
 
-( cd "${pidetop_CI_DIR}" && coq_makefile -f Make -o Makefile.top && make -f Makefile.top "-j${NJOBS}" && make install-toploop -f Makefile.top )
+# Travis / Gitlab have different filesystem layout due to use of
+# `-local`. We need to improve this divergence but if we use Dune this
+# "local" oddity goes away automatically so not bothering...
+if [ -d "$COQBIN/../lib/coq" ]; then
+   COQOCAMLLIB="$COQBIN/../lib/"
+   COQLIB="$COQBIN/../lib/coq/"
+else
+   COQOCAMLLIB="$COQBIN/../"
+   COQLIB="$COQBIN/../"
+fi
 
-echo -en '4\nexit' | coqtop -main-channel stdfds -toploop pidetop
+( cd "${pidetop_CI_DIR}" && OCAMLPATH="$COQOCAMLLIB" jbuilder build @install )
+
+echo -en '4\nexit' | "$pidetop_CI_DIR/_build/install/default/bin/pidetop" -coqlib "$COQLIB" -main-channel stdfds

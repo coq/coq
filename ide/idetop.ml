@@ -457,7 +457,7 @@ let msg_format = ref (fun () ->
 
 (* The loop ignores the command line arguments as the current model delegates
    its handing to the toplevel container. *)
-let loop _args ~state =
+let loop ~opts:_ ~state =
   let open Vernac.State in
   set_doc state.doc;
   init_signal_handler ();
@@ -506,13 +506,16 @@ let rec parse = function
   | x :: rest -> x :: parse rest
   | [] -> []
 
-let () = Coqtop.toploop_init := (fun coq_args extra_args ->
-        let args = parse extra_args in
-        CoqworkmgrApi.(init High);
-        coq_args, args)
-
-let () = Coqtop.toploop_run := loop
-
 let () = Usage.add_to_usage "coqidetop"
 "  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\
 \n  --help-XML-protocol    print documentation of the Coq XML protocol\n"
+
+let islave_init ~opts extra_args =
+  let args = parse extra_args in
+  CoqworkmgrApi.(init High);
+  opts, args
+
+let () =
+  let open Coqtop in
+  let custom = { init = islave_init; run = loop; } in
+  start_coq custom

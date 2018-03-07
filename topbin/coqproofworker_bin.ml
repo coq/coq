@@ -10,7 +10,5 @@
 
 module W = AsyncTaskQueue.MakeWorker(Stm.ProofTask) ()
 
-let () = Coqtop.toploop_init := WorkerLoop.loop W.init_stdout
-
-let () = Coqtop.toploop_run := (fun _ ~state:_ -> W.main_loop ())
-
+let () =
+  WorkerLoop.start ~init:W.init_stdout ~loop:W.main_loop

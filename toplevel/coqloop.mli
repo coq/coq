@@ -10,9 +10,6 @@
 
 (** The Coq toplevel loop. *)
 
-(** -emacs option: printing includes emacs tags. *)
-val print_emacs : bool ref
-
 (** A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)
 
@@ -32,8 +29,9 @@ val set_prompt : (unit -> string) -> unit
 (** Toplevel feedback printer. *)
 val coqloop_feed : Topfmt.execution_phase -> Feedback.feedback -> unit
 
-(** Main entry point of Coq: read and execute vernac commands. *)
-val loop : state:Vernac.State.t -> Vernac.State.t
-
 (** Last document seen after `Drop` *)
 val drop_last_doc : Vernac.State.t option ref
+val drop_args : Coqargs.coq_cmdopts option ref
+
+(** Main entry point of Coq: read and execute vernac commands. *)
+val loop : opts:Coqargs.coq_cmdopts -> state:Vernac.State.t -> unit
