@@ -341,6 +341,22 @@ let loop_flush_all () =
   Format.pp_print_flush !Topfmt.std_ft ();
   Format.pp_print_flush !Topfmt.err_ft ()
 
+let pr_open_cur_subgoals () =
+  try
+    let proof = Proof_global.give_me_the_proof () in
+    Printer.pr_open_subgoals ~proof
+  with Proof_global.NoCurrentProof -> Pp.str ""
+
+(* Goal equality heuristic. *)
+let pequal cmp1 cmp2 (a1,a2) (b1,b2) = cmp1 a1 b1 && cmp2 a2 b2
+let evleq e1 e2 = CList.equal Evar.equal e1 e2
+let cproof p1 p2 =
+  let (a1,a2,a3,a4,_),(b1,b2,b3,b4,_) = Proof.proof p1, Proof.proof p2 in
+  evleq a1 b1 &&
+  CList.equal (pequal evleq evleq) a2 b2 &&
+  CList.equal Evar.equal a3 b3 &&
+  CList.equal Evar.equal a4 b4
+
 let drop_last_doc = ref None
 
 let rec loop ~time ~state =
@@ -351,6 +367,10 @@ let rec loop ~time ~state =
     (* Be careful to keep this loop tail-recursive *)
     let rec vernac_loop ~state =
       let nstate = do_vernac ~time ~state in
+      let proof_changed = not (Option.equal cproof nstate.proof state.proof) in
+      let print_goals = not !Flags.quiet &&
+                        proof_changed && Proof_global.there_are_pending_proofs () in
+      if print_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
       loop_flush_all ();
       vernac_loop ~state:nstate
     (* We recover the current stateid, threading from the caller is
