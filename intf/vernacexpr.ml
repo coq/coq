@@ -160,11 +160,6 @@ type option_ref_value =
 
 (** Identifier and optional list of bound universes and constraints. *)
 
-type universe_decl_expr = (lident list, glob_constraint list) gen_universe_decl
-
-type ident_decl = lident * universe_decl_expr option
-type name_decl = lname * universe_decl_expr option
-
 type sort_expr = Sorts.family
 
 type definition_expr =
@@ -536,3 +531,14 @@ type vernac_when =
   | VtNow
   | VtLater
 type vernac_classification = vernac_type * vernac_when
+
+
+(** Deprecated stuff *)
+type universe_decl_expr = Constrexpr.universe_decl_expr
+[@@ocaml.deprecated "alias of Constrexpr.universe_decl_expr"]
+
+type ident_decl = Constrexpr.ident_decl
+[@@ocaml.deprecated "alias of Constrexpr.ident_decl"]
+
+type name_decl = Constrexpr.name_decl
+[@@ocaml.deprecated "alias of Constrexpr.name_decl"]

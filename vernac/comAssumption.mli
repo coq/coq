@@ -19,7 +19,7 @@ open Decl_kinds
 (** {6 Parameters/Assumptions} *)
 
 val do_assumptions : locality * polymorphic * assumption_object_kind ->
-  Vernacexpr.inline -> (Vernacexpr.ident_decl list * constr_expr) with_coercion list -> bool
+  Vernacexpr.inline -> (ident_decl list * constr_expr) with_coercion list -> bool
 
 (************************************************************************)
 (** Internal API  *)

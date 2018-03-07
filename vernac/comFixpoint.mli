@@ -32,7 +32,7 @@ val do_cofixpoint :
 
 type structured_fixpoint_expr = {
   fix_name : Id.t;
-  fix_univs : Vernacexpr.universe_decl_expr option;
+  fix_univs : Constrexpr.universe_decl_expr option;
   fix_annot : Misctypes.lident option;
   fix_binders : local_binder_expr list;
   fix_body : constr_expr option;

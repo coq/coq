@@ -47,7 +47,7 @@ val declare_mutual_inductive_with_eliminations :
 
 type structured_one_inductive_expr = {
   ind_name : Id.t;
-  ind_univs : Vernacexpr.universe_decl_expr option;
+  ind_univs : universe_decl_expr option;
   ind_arity : constr_expr;
   ind_lc : (Id.t * constr_expr) list
 }
