@@ -74,7 +74,7 @@ val interp_cpattern :
     pattern
 
 (** The set of occurrences to be matched. The boolean is set to true
- *  to signal the complement of this set (i.e. {-1 3}) *)
+ *  to signal the complement of this set (i.e. \{-1 3\}) *)
 type occ = (bool * int list) option
 
 (** [subst e p t i]. [i] is the number of binders

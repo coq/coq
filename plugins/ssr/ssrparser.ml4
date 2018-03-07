@@ -952,7 +952,7 @@ let pr_ssrhint _ _ = pr_hint
 ARGUMENT EXTEND ssrhint TYPED AS ssrhintarg PRINTED BY pr_ssrhint
 | [ ]                       -> [ nohint ]
 END
-(** The "in" pseudo-tactical {{{ **********************************************)
+(** The "in" pseudo-tactical *)(* {{{ **********************************************)
 
 (* We can't make "in" into a general tactical because this would create a  *)
 (* crippling conflict with the ltac let .. in construct. Hence, we add     *)
@@ -1438,7 +1438,7 @@ let tactic_expr = Pltac.tactic_expr
 let old_tac = V82.tactic
 
 
-(** Name generation {{{ *******************************************************)
+(** Name generation *)(* {{{ *******************************************************)
 
 (* Since Coq now does repeated internal checks of its external lexical *)
 (* rules, we now need to carve ssreflect reserved identifiers out of   *)
@@ -1490,7 +1490,7 @@ let _ = add_internal_name (is_tagged perm_tag)
 
 (* We must not anonymize context names discharged by the "in" tactical. *)
 
-(** Tactical extensions. {{{ **************************************************)
+(** Tactical extensions. *)(* {{{ **************************************************)
 
 (* The TACTIC EXTEND facility can't be used for defining new user   *)
 (* tacticals, because:                                              *)

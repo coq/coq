@@ -1077,7 +1077,7 @@ type 'a raw_cases_pattern_expr_r =
   | RCPatAlias of 'a raw_cases_pattern_expr * Misctypes.lname
   | RCPatCstr  of Globnames.global_reference
     * 'a raw_cases_pattern_expr list * 'a raw_cases_pattern_expr list
-  (** [RCPatCstr (loc, c, l1, l2)] represents ((@c l1) l2) *)
+  (** [RCPatCstr (loc, c, l1, l2)] represents [((@ c l1) l2)] *)
   | RCPatAtom  of (Misctypes.lident * (Notation_term.tmp_scope_name option * Notation_term.scope_name list)) option
   | RCPatOr    of 'a raw_cases_pattern_expr list
 and 'a raw_cases_pattern_expr = ('a raw_cases_pattern_expr_r, 'a) DAst.t

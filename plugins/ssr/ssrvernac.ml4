@@ -49,7 +49,7 @@ let frozen_lexer = CLexer.get_keyword_state () ;;
 
 (* global syntactic changes and vernacular commands *)
 
-(** Alternative notations for "match" and anonymous arguments. {{{ ************)
+(** Alternative notations for "match" and anonymous arguments. *)(* {{{ ************)
 
 (* Syntax:                                                        *)
 (*  if <term> is <pattern> then ... else ...                      *)
@@ -127,7 +127,7 @@ GEXTEND Gram
 END
 (* }}} *)
 
-(** Vernacular commands: Prenex Implicits and Search {{{ **********************)
+(** Vernacular commands: Prenex Implicits and Search *)(* {{{ **********************)
 
 (* This should really be implemented as an extension to the implicit   *)
 (* arguments feature, but unfortuately that API is sealed. The current *)
@@ -461,7 +461,7 @@ END
 
 (* }}} *)
 
-(** View hint database and View application. {{{ ******************************)
+(** View hint database and View application. *)(* {{{ ******************************)
 
 (* There are three databases of lemmas used to mediate the application  *)
 (* of reflection lemmas: one for forward chaining, one for backward     *)

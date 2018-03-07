@@ -44,7 +44,7 @@ let hash f = function
 exception IsNone
 
 (** [get x] returns [y] where [x] is [Some y].
-    @raise [IsNone] if [x] equals [None]. *)
+    @raise IsNone if [x] equals [None]. *)
 let get = function
   | Some y -> y
   | _ -> raise IsNone

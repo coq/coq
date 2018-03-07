@@ -56,7 +56,7 @@ type cases_pattern_expr_r =
   | CPatAlias of cases_pattern_expr * lname
   | CPatCstr  of reference
     * cases_pattern_expr list option * cases_pattern_expr list
-  (** [CPatCstr (_, c, Some l1, l2)] represents (@c l1) l2 *)
+  (** [CPatCstr (_, c, Some l1, l2)] represents [(@ c l1) l2] *)
   | CPatAtom of reference option
   | CPatOr   of cases_pattern_expr list
   | CPatNotation of notation * cases_pattern_notation_substitution
@@ -126,7 +126,7 @@ and recursion_order_expr =
   | CWfRec of constr_expr
   | CMeasureRec of constr_expr * constr_expr option (** measure, relation *)
 
-(** Anonymous defs allowed ?? *)
+(* Anonymous defs allowed ?? *)
 and local_binder_expr =
   | CLocalAssum   of lname list * binder_kind * constr_expr
   | CLocalDef     of lname * constr_expr * constr_expr option

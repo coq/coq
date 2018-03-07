@@ -201,7 +201,7 @@ val lookup_modtype : ModPath.t -> env -> module_type_body
 (** {5 Universe constraints } *)
 
 (** Add universe constraints to the environment.
-    @raises UniverseInconsistency
+    @raise UniverseInconsistency .
 *)
 val add_constraints : Univ.Constraint.t -> env -> env
 

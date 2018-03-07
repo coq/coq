@@ -798,7 +798,7 @@ let drop_parameters depth n argstk =
     s.
     @assumes [t] is an irreducible term, and not a constructor. [ind] is the inductive
     of the constructor term [c]
-    @raises Not_found if the inductive is not a primitive record, or if the
+    @raise Not_found if the inductive is not a primitive record, or if the
     constructor is partially applied.
  *)
 let eta_expand_ind_stack env ind m s (f, s') =
