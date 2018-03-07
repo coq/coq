@@ -112,6 +112,8 @@ Standard Library
   Coq.Numbers.DecimalString providing a type of decimal numbers, some
   facts about them, and conversions between decimal numbers and nat,
   positive, N, Z, and string.
+- Added [Coq.Strings.String.concat] to concatenate a list of strings
+  inserting a separator between each item
 
 - Some deprecated aliases are now emitting warnings when used.
 
