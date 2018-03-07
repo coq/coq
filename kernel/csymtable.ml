@@ -47,7 +47,7 @@ let global_data = {
 let get_global_data () = Vmvalues.vm_global global_data.glob_val
 
 let realloc_global_data n =
-  let n = min (n + 0x100) Sys.max_array_length in
+  let n = min (2 * n + 0x100) Sys.max_array_length in
   let ans = Array.make n crazy_val in
   let src = global_data.glob_val in
   let () = Array.blit src 0 ans 0 (Array.length src) in

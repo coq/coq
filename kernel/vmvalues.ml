@@ -417,7 +417,7 @@ let atom_rel : atom array ref =
 let get_atom_rel () = !atom_rel
 
 let realloc_atom_rel n =
-  let n = min (n + 0x100) Sys.max_array_length in
+  let n = min (2 * n + 0x100) Sys.max_array_length in
   let init i = Aid (RelKey i) in
   let ans = Array.init n init in
   atom_rel := ans
