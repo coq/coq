@@ -344,13 +344,13 @@ let init_color color_mode =
     match colors with
     | None ->
       (** Default colors *)
+      Topfmt.default_styles ();
       Topfmt.init_terminal_output ~color:true
     | Some "" ->
       (** No color output *)
       Topfmt.init_terminal_output ~color:false
     | Some s ->
       (** Overwrite all colors *)
-      Topfmt.clear_styles ();
       Topfmt.parse_color_config s;
       Topfmt.init_terminal_output ~color:true
   end

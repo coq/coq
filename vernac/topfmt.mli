@@ -43,7 +43,7 @@ val std_logger   : ?pre_hdr:Pp.t -> Feedback.level -> Pp.t -> unit
 val emacs_logger : ?pre_hdr:Pp.t -> Feedback.level -> Pp.t -> unit
 
 (** Color output *)
-val clear_styles : unit -> unit
+val default_styles : unit -> unit
 val parse_color_config : string -> unit
 val dump_tags : unit -> (string * Terminal.style) list
 

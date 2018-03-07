@@ -187,8 +187,8 @@ let init_tag_map styles =
   let set accu (name, st) = CString.Map.add name st accu in
   tag_map := List.fold_left set !tag_map styles
 
-let clear_styles () =
-  tag_map := CString.Map.empty
+let default_styles () =
+  init_tag_map (default_tag_map ())
 
 let parse_color_config file =
   let styles = Terminal.parse file in
@@ -257,7 +257,6 @@ let make_printing_functions () =
   print_prefix, print_suffix
 
 let init_terminal_output ~color =
-  init_tag_map (default_tag_map ());
   let push_tag, pop_tag, clear_tag = make_style_stack () in
   let print_prefix, print_suffix = make_printing_functions () in
   let tag_handler ft = {
