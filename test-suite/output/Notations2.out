@@ -51,7 +51,7 @@ end
 match n with
 | nil => 2
 | 0 :: _ => 2
-| 1 :: nil => 0
+| list1 => 0
 | 1 :: _ :: _ => 2
 | plus2 _ :: _ => 2
 end

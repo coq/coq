@@ -110,13 +110,13 @@ let deactivate_notation nr =
      (* shouldn't we check wether it is well defined? *)
      inactive_notations_table := IRuleSet.add nr !inactive_notations_table
   | NotationRule (scopt, ntn) ->
-     match availability_of_notation (scopt, ntn) (scopt, []) with
-     | None -> user_err ~hdr:"Notation"
+     if not (exists_notation_interpretation_in_scope scopt ntn) then
+       user_err ~hdr:"Notation"
                         (pr_notation ntn ++ spc () ++ str "does not exist"
                          ++ (match scopt with
                              | None -> spc () ++ str "in the empty scope."
                              | Some _ -> show_scope scopt ++ str "."))
-     | Some _ ->
+     else
         if IRuleSet.mem nr !inactive_notations_table then
           Feedback.msg_warning
             (str "Notation" ++ spc () ++ pr_notation ntn ++ spc ()
@@ -443,16 +443,12 @@ let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
 and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
     (custom, (tmp_scope, scopes) as allscopes) vars =
   function
-    | NotationRule (sc,ntn) ->
+    | NotationRule (sc,ntn),key ->
       begin
         match availability_of_entry_coercion custom (fst ntn) with
         | None -> raise No_match
         | Some coercion ->
-        match availability_of_notation (sc,ntn) (tmp_scope,scopes) with
-	  (* Uninterpretation is not allowed in current context *)
-	  | None -> raise No_match
-	  (* Uninterpretation is allowed in current context *)
-	  | Some (scopt,key) ->
+            let scopt = match key with Some _ -> sc | _ -> None in
 	    let scopes' = Option.List.cons scopt scopes in
 	    let l =
               List.map (fun (c,(subentry,(scopt,scl))) ->
@@ -474,7 +470,8 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
               (insert_pat_delimiters ?loc
                  (make_pat_notation ?loc ntn (l,ll) l2') key)
       end
-    | SynDefRule kn ->
+    | SynDefRule kn,key ->
+      assert (key = None);
       match availability_of_entry_coercion custom InConstrEntrySomeLevel with
       | None -> raise No_match
       | Some coercion ->
@@ -494,7 +491,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
       insert_pat_coercion ?loc coercion (mkPat ?loc qid (List.rev_append l1 l2'))
 and extern_notation_pattern allscopes vars t = function
   | [] -> raise No_match
-  | (keyrule,pat,n as _rule)::rules ->
+  | (keyrule,pat,n as _rule,key)::rules ->
     try
       if is_inactive_rule keyrule then raise No_match;
       let loc = t.loc in
@@ -502,7 +499,7 @@ and extern_notation_pattern allscopes vars t = function
         | PatCstr (cstr,args,na) ->
           let t = if na = Anonymous then t else DAst.make ?loc (PatCstr (cstr,args,Anonymous)) in
 	  let p = apply_notation_to_pattern ?loc (ConstructRef cstr)
-	    (match_notation_constr_cases_pattern t pat) allscopes vars keyrule in
+            (match_notation_constr_cases_pattern t pat) allscopes vars (keyrule,key) in
 	  insert_pat_alias ?loc p na
 	| PatVar Anonymous -> CAst.make ?loc @@ CPatAtom None
         | PatVar (Name id) -> CAst.make ?loc @@ CPatAtom (Some (qualid_of_ident ?loc id))
@@ -511,11 +508,11 @@ and extern_notation_pattern allscopes vars t = function
 
 let rec extern_notation_ind_pattern allscopes vars ind args = function
   | [] -> raise No_match
-  | (keyrule,pat,n as _rule)::rules ->
+  | (keyrule,pat,n as _rule,key)::rules ->
     try
       if is_inactive_rule keyrule then raise No_match;
       apply_notation_to_pattern (IndRef ind)
-	(match_notation_constr_ind_pattern ind args pat) allscopes vars keyrule
+        (match_notation_constr_ind_pattern ind args pat) allscopes vars (keyrule,key)
     with
 	No_match -> extern_notation_ind_pattern allscopes vars ind args rules
 
@@ -1058,7 +1055,7 @@ and extern_eqn inctx scopes vars {CAst.loc;v=(ids,pll,c)} =
 
 and extern_notation (custom,scopes as allscopes) vars t = function
   | [] -> raise No_match
-  | (keyrule,pat,n as _rule)::rules ->
+  | (keyrule,pat,n as _rule,key)::rules ->
       let loc = Glob_ops.loc_of_glob_constr t in
       try
         if is_inactive_rule keyrule then raise No_match;
@@ -1106,11 +1103,7 @@ and extern_notation (custom,scopes as allscopes) vars t = function
              (match availability_of_entry_coercion custom (fst ntn) with
              | None -> raise No_match
              | Some coercion ->
-               match availability_of_notation (sc,ntn) scopes with
-                  (* Uninterpretation is not allowed in current context *)
-              | None -> raise No_match
-                  (* Uninterpretation is allowed in current context *)
-	      | Some (scopt,key) ->
+                  let scopt = match key with Some _ -> sc | None -> None in
                   let scopes' = Option.List.cons scopt (snd scopes) in
 	          let l =
                     List.map (fun (c,(subentry,(scopt,scl))) ->

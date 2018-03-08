@@ -64,7 +64,7 @@ The command has indeed failed with message:
 Cannot find where the recursive pattern starts.
 The command has indeed failed with message:
 Both ends of the recursive pattern are the same.
-(nat * nat + nat)%type
+SUM (nat * nat) nat
      : Set
 FST (0; 1)
      : Z
