@@ -89,18 +89,6 @@ let _ =
       optread  = (fun () -> !universal_lemma_under_conjunctions) ;
       optwrite = (fun b -> universal_lemma_under_conjunctions := b) }
 
-(* Shrinking of abstract proofs. *)
-
-let shrink_abstract = ref true
-
-let _ =
-  declare_bool_option
-    { optdepr  = true; (* remove in 8.8 *)
-      optname  = "shrinking of abstracted proofs";
-      optkey   = ["Shrink"; "Abstract"];
-      optread  = (fun () -> !shrink_abstract) ;
-      optwrite = (fun b -> shrink_abstract := b) }
-
 (* The following boolean governs what "intros []" do on examples such
    as "forall x:nat*nat, x=x"; if true, it behaves as "intros [? ?]";
    if false, it behaves as "intro H; case H; clear H" for fresh H.
@@ -4986,10 +4974,7 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
     let (_, info) = CErrors.push src in
     iraise (e, info)
   in
-  let const, args =
-    if !shrink_abstract then shrink_entry sign const
-    else (const, List.rev (Context.Named.to_instance Constr.mkVar sign))
-  in
+  let const, args = shrink_entry sign const in
   let args = List.map EConstr.of_constr args in
   let cd = Entries.DefinitionEntry { const with Entries.const_entry_opaque = opaque } in
   let decl = (cd, if opaque then IsProof Lemma else IsDefinition Definition) in
