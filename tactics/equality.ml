@@ -56,18 +56,7 @@ type inj_flags = {
     injection_pattern_l2r_order : bool;
   }
 
-let discriminate_introduction = ref true
-
-let discr_do_intro () = !discriminate_introduction
-
 open Goptions
-let _ =
-  declare_bool_option
-    { optdepr  = true; (* remove in 8.8 *)
-      optname  = "automatic introduction of hypotheses by discriminate";
-      optkey   = ["Discriminate";"Introduction"];
-      optread  = (fun () -> !discriminate_introduction);
-      optwrite = (:=) discriminate_introduction }
 
 let use_injection_pattern_l2r_order = function
   | None -> true
@@ -1080,13 +1069,10 @@ let discrClause with_evars = onClause (discrSimpleClause with_evars)
 let discrEverywhere with_evars =
   tclTHEN (Proofview.tclUNIT ())
     (* Delay the interpretation of side-effect *)
-    (if discr_do_intro () then
-      (tclTHEN
-	(tclREPEAT introf)
-	(tryAllHyps
+    (tclTHEN
+       (tclREPEAT introf)
+       (tryAllHyps
           (fun id -> tclCOMPLETE (discr with_evars (mkVar id,NoBindings)))))
-     else (* <= 8.2 compat *)
-       tryAllHypsAndConcl (discrSimpleClause with_evars))
 
 let discr_tac with_evars = function
   | None -> discrEverywhere with_evars
