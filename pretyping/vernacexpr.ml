@@ -22,6 +22,7 @@ type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
    make sense to apply a tactic to it. Hence it the types may look very
    similar, they do not seem to mean the same thing. *)
 type goal_selector =
+  | SelectAlreadyFocused
   | SelectNth of int
   | SelectList of (int * int) list
   | SelectId of Id.t

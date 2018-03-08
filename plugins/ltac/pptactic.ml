@@ -515,6 +515,7 @@ let string_of_genarg_arg (ArgumentType arg) =
     else int i ++ str "-" ++ int j
 
 let pr_goal_selector toplevel = function
+  | SelectAlreadyFocused -> str "!:"
   | SelectNth i -> int i ++ str ":"
   | SelectList l -> prlist_with_sep (fun () -> str ", ") pr_range_selector l ++ str ":"
   | SelectId id -> str "[" ++ Id.print id ++ str "]:"

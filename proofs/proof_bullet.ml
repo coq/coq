@@ -212,6 +212,7 @@ let pr_range_selector (i, j) =
   else Pp.(int i ++ str "-" ++ int j)
 
 let pr_goal_selector = function
+  | Vernacexpr.SelectAlreadyFocused -> Pp.str "!"
   | Vernacexpr.SelectAll -> Pp.str "all"
   | Vernacexpr.SelectNth i -> Pp.int i
   | Vernacexpr.SelectList l ->
@@ -221,9 +222,10 @@ let pr_goal_selector = function
   | Vernacexpr.SelectId id -> Names.Id.print id
 
 let parse_goal_selector = function
+  | "!" -> Vernacexpr.SelectAlreadyFocused
   | "all" -> Vernacexpr.SelectAll
   | i ->
-      let err_msg = "The default selector must be \"all\" or a natural number." in
+      let err_msg = "The default selector must be \"all\" or \"!\" or a natural number." in
       begin try
               let i = int_of_string i in
               if i < 0 then CErrors.user_err Pp.(str err_msg);

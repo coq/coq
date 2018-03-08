@@ -272,6 +272,12 @@ focused goals with:
       In this variant, :n:`@expr` is applied to all focused goals. ``all:`` can only
       be used at the toplevel of a tactic expression.
 
+   .. tacv:: !: @expr
+
+      In this variant, if exactly one goal is focused :n:`expr` is
+      applied to it. Otherwise the tactical fails. ``!:`` can only be
+      used at the toplevel of a tactic expression.
+
    .. tacv:: par: @expr
 
       In this variant, :n:`@expr` is applied to all focused goals in parallel.

@@ -36,6 +36,7 @@ type letin_flag = bool     (* true = use local def    false = use Leibniz *)
 type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use default *)
 
 type goal_selector = Vernacexpr.goal_selector =
+  | SelectAlreadyFocused
   | SelectNth of int
   | SelectList of (int * int) list
   | SelectId of Id.t

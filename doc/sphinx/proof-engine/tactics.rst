@@ -53,13 +53,20 @@ specified, the default selector is used.
 
 .. opt:: Default Goal Selector @toplevel_selector
 
-   This option controls the default selector – used when no selector is
-   specified when applying a tactic – is set to the chosen value. The initial
-   value is 1, hence the tactics are, by default, applied to the first goal.
-   Using value ``all`` will make is so that tactics are, by default, applied to
-   every goal simultaneously. Then, to apply a tactic tac to the first goal
-   only, you can write ``1:tac``. Although more selectors are available, only
-   ``all`` or a single natural number are valid default goal selectors.
+   This option controls the default selector, used when no selector is
+   specified when applying a tactic. The initial value is 1, hence the
+   tactics are, by default, applied to the first goal.
+
+   Using value ``all`` will make it so that tactics are, by default,
+   applied to every goal simultaneously. Then, to apply a tactic tac
+   to the first goal only, you can write ``1:tac``.
+
+   Using value ``!`` enforces that all tactics are used either on a
+   single focused goal or with a local selector (’’strict focusing
+   mode’’).
+
+   Although more selectors are available, only ``all``, ``!`` or a
+   single natural number are valid default goal selectors.
 
 .. _bindingslist:
 

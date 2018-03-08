@@ -1,6 +1,12 @@
 Changes from 8.8.2 to 8.9+beta1
 ===============================
 
+Tactics
+
+- Added toplevel goal selector ! which expects a single focused goal.
+  Use with Set Default Goal Selector to force focusing before tactics
+  are called.
+
 Tools
 
 - Coq_makefile lets one override or extend the following variables from

@@ -53,3 +53,17 @@ Goal True -> exists (x : Prop), x.
 Proof.
   intro H; eexists ?[x]; only [x]: exact True. 1: assumption.
 Qed.
+
+(* Strict focusing! *)
+Set Default Goal Selector "!".
+
+Goal True -> True /\ True /\ True.
+Proof.
+  intro.
+  split;only 2:split.
+  Fail exact I.
+  Fail !:exact I.
+  1:exact I.
+  - !:exact H.
+  - exact I.
+Qed.
