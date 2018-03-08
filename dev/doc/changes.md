@@ -74,6 +74,12 @@ Declaration of printers for arguments used only in vernac command
   happen. An alternative is to register the corresponding argument as
   a value, using "Geninterp.register_val0 wit None".
 
+Notations:
+
+- Notation.availability_of_notation is not anymore needed: if a
+  delimiter is needed, it is provided by Notation.uninterp_notation
+  which fails in case the notation is not available.
+
 ### STM API
 
 The STM API has seen a general overhaul. The main change is the

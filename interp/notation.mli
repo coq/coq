@@ -127,18 +127,27 @@ val declare_uninterpretation : interp_rule -> interpretation -> unit
 val interp_notation : ?loc:Loc.t -> notation -> subscopes ->
       interpretation * (notation_location * scope_name option)
 
-type notation_rule = interp_rule * interpretation * int option
+type notation_rule_core =
+    interp_rule (* kind of notation *)
+  * interpretation (* pattern associated to the notation *)
+  * int option (* number of expected arguments *)
+
+type notation_rule =
+    notation_rule_core
+  * delimiters option (* delimiter to possibly add *)
 
 (** Return the possible notations for a given term *)
 val uninterp_notations : Notation_term.subscopes -> 'a glob_constr_g -> notation_rule list
 val uninterp_cases_pattern_notations : Notation_term.subscopes -> 'a cases_pattern_g -> notation_rule list
 val uninterp_ind_pattern_notations : Notation_term.subscopes -> inductive -> notation_rule list
 
+(*
 (** Test if a notation is available in the scopes 
    context [scopes]; if available, the result is not None; the first 
    argument is itself not None if a delimiters is needed *)
 val availability_of_notation : scope_name option * notation -> subscopes ->
   (scope_name option * delimiters option) option
+ *)
 
 (** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 
@@ -153,6 +162,9 @@ val interp_notation_as_global_reference : ?loc:Loc.t -> (global_reference -> boo
 (** Checks for already existing notations *)
 val exists_notation_in_scope : scope_name option -> notation ->
       bool -> interpretation -> bool
+
+(** Checks for already existing notations *)
+val exists_notation_interpretation_in_scope : scope_name option -> notation -> bool
 
 (** Declares and looks for scopes associated to arguments of a global ref *)
 val declare_arguments_scope :
