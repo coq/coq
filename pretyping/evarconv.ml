@@ -532,12 +532,13 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
                 begin
                   (** Both constructors should be liftable to the same supertype
                       at which we compare them, but we don't have access to that type in
-                      untyped unification. We hence enforce that one is lower than the other.
-                      Note the criterion is more relaxed in conversion. *)
+                      untyped unification. We hence try to enforce that one is lower
+                      than the other, also unifying more universes in the process.
+                      If this fails we just leave the universes as is, as in conversion. *)
                   try Success (check_leq_inductives evd cumi u u')
                   with Univ.UniverseInconsistency _ ->
                     try Success (check_leq_inductives evd cumi u' u)
-                    with Univ.UniverseInconsistency e -> UnifFailure (evd, UnifUnivInconsistency e)
+                    with Univ.UniverseInconsistency e -> Success evd
                 end
             end
         in
