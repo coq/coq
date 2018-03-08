@@ -1271,6 +1271,7 @@ let solve_evar_evar_l2r force f g env evd aliases pbty ev1 (evk2,_ as ev2) =
 let opp_problem = function None -> None | Some b -> Some (not b)
 
 (** Support for program obligations: during merges of evars, the obligation flag is kept *)
+
 let obligation = Evd.Store.field Evd.Store.default_merge_field
 
 let obligation_store = Evd.Store.set Evd.Store.empty obligation ()

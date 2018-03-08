@@ -90,3 +90,4 @@ val get_type_of_refresh :
 (** Support for program obligations *)
 
 val obligation_store : Evd.Store.t
+val is_obligation : Evd.Store.t -> bool
