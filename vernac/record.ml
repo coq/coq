@@ -594,13 +594,12 @@ let definition_structure (kind,cum,poly,finite,(is_coe,({CAst.loc;v=idstruc},pl)
   let pl, univs, arity, template, implpars, params, implfs, fields =
     States.with_state_protection (fun () ->
       typecheck_params_and_fields finite (kind = Class true) idstruc poly pl s ps notations fs) () in
-  let gr = match kind with
+  match kind with
   | Class def ->
-     let priorities = List.map (fun id -> {hint_priority = id; hint_pattern = None}) priorities in
-     let gr = declare_class finite def cum pl univs (loc,idstruc) idbuild
-          implpars params arity template implfs fields is_coe coers priorities in
-	gr
-    | _ ->
+    let priorities = List.map (fun id -> {hint_priority = id; hint_pattern = None}) priorities in
+    declare_class finite def cum pl univs (loc,idstruc) idbuild
+      implpars params arity template implfs fields is_coe coers priorities
+  | _ ->
       let implfs = List.map
 	  (fun impls -> implpars @ Impargs.lift_implicits
 	           (succ (List.length params)) impls) implfs 
@@ -618,7 +617,4 @@ let definition_structure (kind,cum,poly,finite,(is_coe,({CAst.loc;v=idstruc},pl)
       let ind = declare_structure finite pl univs idstruc
 	  idbuild implpars params arity template implfs 
           fields is_coe (List.map (fun coe -> not (Option.is_empty coe)) coers) in
-	IndRef ind
-  in
-  Declare.declare_univ_binders gr pl;
-  gr
+      IndRef ind
