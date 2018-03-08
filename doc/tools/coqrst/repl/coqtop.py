@@ -42,7 +42,7 @@ class CoqTop:
         :param args:       Additional arugments to coqtop.
         """
         self.coqtop_bin = coqtop_bin or os.path.join(os.getenv('COQBIN'),"coqtop")
-        self.args = (args or []) + ["-color", "on"] * color
+        self.args = (args or []) + ["-boot", "-color", "on"] * color
         self.coqtop = None
 
     def __enter__(self):
