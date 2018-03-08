@@ -10,11 +10,11 @@ image:
 environment:
   CYGMIRROR: http://ftp.inf.tu-dresden.de/software/windows/cygwin32
   matrix:
-  - USEOPAM: true
-    ARCH: 64
   - USEOPAM: false
     ARCH: 32
   - USEOPAM: false
+    ARCH: 64
+  - USEOPAM: true
     ARCH: 64
 
 build_script:

@@ -223,6 +223,12 @@ function get_expand_source_tar {
       cp "$SOURCE_LOCAL_CACHE_CFMT/$name.$3" $TARBALLS
     else
       wget $1/$2.$3
+      if file -i $2.$3 | grep text/html; then
+        echo Download failed: $1/$2.$3
+        echo The file wget downloaded is an html file:
+        cat $2.$3
+        exit 1
+      fi
       if [ ! "$2.$3" == "$name.$3" ] ; then
         mv $2.$3 $name.$3
       fi
@@ -1280,7 +1286,8 @@ function make_coq_installer {
 
   # Prepare the file lists for the installer. We created to file list dumps of the target folder during the build:
   # ocaml: ocaml + menhir + camlp5 + findlib
-  # ocal_coq: as above + coq
+  # ocaml_coq: as above + coq
+  # ocaml_coq_addons: as above + lib/user-contrib/*
   
   # Create coq file list as ocaml_coq / ocaml
   diff_files coq ocaml_coq ocaml
@@ -1294,11 +1301,17 @@ function make_coq_installer {
   # Coq objects objects required for plugin development = coq objects except those for pre installed plugins
   diff_files coq_plugindev coq_objects coq_objects_plugins
   
+  # Addons (TODO: including objects that could go to the plugindev thing, but
+  # then one would have to make that package depend on this one, so not
+  # implemented yet)
+  diff_files coq_addons ocaml_coq_addons ocaml_coq
+
   # Coq files, except objects needed only for plugin development
   diff_files coq_base coq coq_plugindev
   
   # Convert section files to NSIS format
   files_to_nsis coq_base
+  files_to_nsis coq_addons
   files_to_nsis coq_plugindev
   files_to_nsis ocaml
   
@@ -1314,10 +1327,28 @@ function make_coq_installer {
     cp ../patches/ReplaceInFile.nsh dev/nsis
     VERSION=`grep '^VERSION=' config/Makefile | cut -d = -f 2 | tr -d '\r'`
     cd dev/nsis
-    logn nsis-installer "$NSIS" -DVERSION=$VERSION -DARCH=$ARCH -DCOQ_SRC_PATH="$PREFIXCOQ" -DCOQ_ICON=..\\..\\ide\\coq.ico coq_new.nsi
+    logn nsis-installer "$NSIS" -DVERSION=$VERSION -DARCH=$ARCH -DCOQ_SRC_PATH="$PREFIXCOQ" -DCOQ_ICON=..\\..\\ide\\coq.ico -DCOQ_ADDONS="$COQ_ADDONS" coq_new.nsi
     
     build_post
   fi
+}
+
+###################### ADDONS #####################
+
+function make_addon_bignums {
+  if build_prep https://github.com/coq/bignums/archive/ master zip 1 bignums-8.8.0; then
+    # To make command lines shorter :-(
+    echo 'COQ_SRC_SUBDIRS:=$(filter-out plugins/%,$(COQ_SRC_SUBDIRS)) plugins/syntax' >> Makefile.coq.local
+    logn make make all
+    logn make-install make install
+    build_post
+  fi
+}
+
+function make_addons {
+  for addon in $COQ_ADDONS; do
+    make_addon_$addon
+  done
 }
 
 ###################### TOP LEVEL BUILD #####################
@@ -1336,6 +1367,10 @@ if [ "$INSTALLMAKE" == "Y" ] ; then
 fi
 
 list_files ocaml_coq
+
+make_addons
+
+list_files ocaml_coq_addons
 
 if [ "$MAKEINSTALLER" == "Y" ] ; then
   make_coq_installer
