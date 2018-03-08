@@ -280,13 +280,15 @@ type interp_rule =
 
 type key =
   | RefKey of global_reference
+  | LambdaKey
+  | ProdKey
   | Oth
 
 let key_compare k1 k2 = match k1, k2 with
 | RefKey gr1, RefKey gr2 -> RefOrdered.compare gr1 gr2
-| RefKey _, Oth -> -1
-| Oth, RefKey _ -> 1
-| Oth, Oth -> 0
+| RefKey _, _ -> -1
+| _, RefKey _ -> 1
+| k1, k2 -> Pervasives.compare k1 k2
 
 module KeyOrd = struct type t = key let compare = key_compare end
 module KeyMap = Map.Make(KeyOrd)
@@ -313,15 +315,19 @@ let glob_prim_constr_key c = match DAst.get c with
     | GRef (ref, _) -> RefKey (canonical_gr ref)
     | _ -> Oth
     end
+  | GLambda _ -> LambdaKey
+  | GProd _ -> ProdKey
   | _ -> Oth
 
 let glob_constr_keys c = match DAst.get c with
+  | GRef (ref,_) -> [RefKey (canonical_gr ref)]
   | GApp (c, _) ->
     begin match DAst.get c with
     | GRef (ref, _) -> [RefKey (canonical_gr ref); Oth]
     | _ -> [Oth]
     end
-  | GRef (ref,_) -> [RefKey (canonical_gr ref)]
+  | GLambda _ -> [LambdaKey]
+  | GProd _ -> [ProdKey]
   | _ -> [Oth]
 
 let cases_pattern_key c = match DAst.get c with
@@ -335,6 +341,8 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
       RefKey (canonical_gr ref), Some (List.length args)
   | NRef ref -> RefKey(canonical_gr ref), None
   | NApp (_,args) -> Oth, Some (List.length args)
+  | NLambda _ | NBinderList (_,_,NLambda _,_,_) | NList (_,_,NLambda _,_,_) -> LambdaKey, None
+  | NProd _ | NBinderList (_,_,NProd _,_,_) | NList (_,_,NProd _,_,_) -> ProdKey, None
   | _ -> Oth, None
 
 (**********************************************************************)
