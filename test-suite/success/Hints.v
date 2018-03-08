@@ -172,3 +172,14 @@ Hint Cut [_* (a_is_b | b_is_c | c_is_d | d_is_e)
   Timeout 1 Fail apply _. (* 0.06s *)
 Abort.
 End HintCut.
+
+
+(* Check that auto-like tactics do not prefer "eq_refl" over more complex solutions, *)
+(* e.g. those tactics when considering a goal with existential varibles *)
+(* like "m = ?n" won't pick "plus_n_O" hint over "eq_refl" hint. *)
+(* See this Coq club post for more detail: *)
+(* https://sympa.inria.fr/sympa/arc/coq-club/2017-12/msg00103.html *)
+
+Goal forall (m : nat), exists n, m = n /\ m = n.
+  intros m; eexists; split; [trivial | reflexivity].
+Qed.
