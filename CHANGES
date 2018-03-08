@@ -63,6 +63,7 @@ Focusing
 - Focusing bracket `{` now supports single-numbered goal selector,
   e.g. `2: {` will focus on the second sub-goal. As usual, unfocus
   with `}` once the sub-goal is fully solved.
+  The `Focus` and `Unfocus` commands are now deprecated.
 
 Vernacular Commands
 

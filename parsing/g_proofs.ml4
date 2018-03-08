@@ -21,6 +21,24 @@ let thm_token = G_vernac.thm_token
 
 let hint = Gram.entry_create "hint"
 
+let warn_deprecated_focus =
+  CWarnings.create ~name:"deprecated-focus" ~category:"deprecated"
+         (fun () ->
+           Pp.strbrk
+             "The Focus command is deprecated; use bullets or focusing brackets instead"
+         )
+
+let warn_deprecated_focus_n n =
+  CWarnings.create ~name:"deprecated-focus" ~category:"deprecated"
+         (fun () ->
+           Pp.(str "The Focus command is deprecated;" ++ spc ()
+               ++ str "use '" ++ int n ++ str ": {' instead")
+         )
+
+let warn_deprecated_unfocus =
+  CWarnings.create ~name:"deprecated-unfocus" ~category:"deprecated"
+         (fun () -> Pp.strbrk "The Unfocus command is deprecated")
+
 (* Proof commands *)
 GEXTEND Gram
   GLOBAL: hint command;
@@ -51,9 +69,15 @@ GEXTEND Gram
       | IDENT "Undo" -> VernacUndo 1
       | IDENT "Undo"; n = natural -> VernacUndo n
       | IDENT "Undo"; IDENT "To"; n = natural -> VernacUndoTo n
-      | IDENT "Focus" -> VernacFocus None
-      | IDENT "Focus"; n = natural -> VernacFocus (Some n)
-      | IDENT "Unfocus" -> VernacUnfocus
+      | IDENT "Focus" ->
+         warn_deprecated_focus ~loc:!@loc ();
+         VernacFocus None
+      | IDENT "Focus"; n = natural ->
+         warn_deprecated_focus_n n ~loc:!@loc ();
+         VernacFocus (Some n)
+      | IDENT "Unfocus" ->
+         warn_deprecated_unfocus ~loc:!@loc ();
+         VernacUnfocus
       | IDENT "Unfocused" -> VernacUnfocused
       | IDENT "Show" -> VernacShow (ShowGoal OpenSubgoals)
       | IDENT "Show"; n = natural -> VernacShow (ShowGoal (NthGoal n))
