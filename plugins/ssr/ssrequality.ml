@@ -372,8 +372,6 @@ let is_construct_ref sigma c r =
   EConstr.isConstruct sigma c && eq_gr (ConstructRef (fst(EConstr.destConstruct sigma c))) r
 let is_ind_ref sigma c r = EConstr.isInd sigma c && eq_gr (IndRef (fst(EConstr.destInd sigma c))) r
 
-let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:false x xs)
-
 let rwcltac cl rdx dir sr gl =
   let n, r_n,_, ucst = pf_abs_evars gl sr in
   let r_n' = pf_abs_cterm gl n r_n in

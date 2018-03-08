@@ -414,6 +414,8 @@ val clr_of_wgen :
 
 val unfold : EConstr.t list -> unit Proofview.tactic
 
+val apply_type : EConstr.types -> EConstr.t list -> Proofview.V82.tac
+
 (* New code ****************************************************************)
 
 (* To call old code *)

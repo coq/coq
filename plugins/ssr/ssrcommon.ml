@@ -768,7 +768,7 @@ let discharge_hyp (id', (id, mode)) gl =
   let cl' = Vars.subst_var id (pf_concl gl) in
   match pf_get_hyp gl id, mode with
   | NamedDecl.LocalAssum (_, t), _ | NamedDecl.LocalDef (_, _, t), "(" ->
-     Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:false (EConstr.of_constr (mkProd (Name id', t, cl')))
+     Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:true (EConstr.of_constr (mkProd (Name id', t, cl')))
        [EConstr.of_constr (mkVar id)]) gl
   | NamedDecl.LocalDef (_, v, t), _ ->
      Proofview.V82.of_tactic
@@ -1199,7 +1199,7 @@ let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
     false, pat, EConstr.mkProd (constr_name (project gl) c, pty, Tacmach.pf_concl gl), p, clr,ucst,gl
   else CErrors.user_err ?loc:(loc_of_cpattern t) (str "generalized term didn't match")
 
-let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:false x xs)
+let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:true x xs)
 
 let genclrtac cl cs clr =
   let tclmyORELSE tac1 tac2 gl =
