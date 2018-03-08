@@ -66,8 +66,8 @@ let show_proof () =
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
   let pfts = Proof_global.give_me_the_proof () in
-  let gls,_,_,_,sigma = Proof.proof pfts in
-  pr_evars_int sigma 1 (Evd.undefined_map sigma)
+  let gls,_,shelf,givenup,sigma = Proof.proof pfts in
+  pr_evars_int sigma ~shelf ~givenup 1 (Evd.undefined_map sigma)
 
 let show_universes () =
   let pfts = Proof_global.give_me_the_proof () in

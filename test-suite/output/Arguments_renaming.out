@@ -11,7 +11,7 @@ notation scopes add ': clear scopes' [arguments-assert,vernacular]
 eq_refl
      : ?y = ?y
 where
-?y : [ |- nat] 
+?y : [ |- nat]
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
 For eq_refl: Arguments are renamed to B, y

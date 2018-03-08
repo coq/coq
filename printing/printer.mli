@@ -183,8 +183,7 @@ val pr_goal                : goal sigma -> Pp.t
    focused goals unless the conrresponding option
    [enable_unfocused_goal_printing] is set. [seeds] is for printing
    dependent evars (mainly for emacs proof tree mode). *)
-val pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> Evar.t list -> Goal.goal list -> int list
-                             -> goal list -> goal list -> Pp.t
+val pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> seeds:goal list -> shelf:goal list -> stack:int list -> unfocused:goal list -> goals:goal list -> Pp.t
 
 val pr_subgoal             : int -> evar_map -> goal list -> Pp.t
 val pr_concl               : int -> evar_map -> goal -> Pp.t
@@ -192,7 +191,7 @@ val pr_concl               : int -> evar_map -> goal -> Pp.t
 val pr_open_subgoals       : proof:Proof.t -> Pp.t
 val pr_nth_open_subgoal    : proof:Proof.t -> int -> Pp.t
 val pr_evar                : evar_map -> (Evar.t * evar_info) -> Pp.t
-val pr_evars_int           : evar_map -> int -> evar_info Evar.Map.t -> Pp.t
+val pr_evars_int           : evar_map -> shelf:goal list -> givenup:goal list -> int -> evar_info Evar.Map.t -> Pp.t
 val pr_evars               : evar_map -> evar_info Evar.Map.t -> Pp.t
 val pr_ne_evar_set         : Pp.t -> Pp.t -> evar_map ->
   Evar.Set.t -> Pp.t
@@ -225,7 +224,8 @@ val pr_assumptionset : env -> evar_map -> types ContextObjectMap.t -> Pp.t
 val pr_goal_by_id : proof:Proof.t -> Id.t -> Pp.t
 
 type printer_pr = {
- pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> Evar.t list -> Goal.goal list -> int list -> goal list -> goal list -> Pp.t;
+ pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> seeds:goal list -> shelf:goal list -> stack:int list -> unfocused:goal list -> goals:goal list -> Pp.t;
+
  pr_subgoal             : int -> evar_map -> goal list -> Pp.t;
  pr_goal                : goal sigma -> Pp.t;
 }

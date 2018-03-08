@@ -539,7 +539,7 @@ let pr_evgl_sign sigma evi =
   let ids = List.rev_map NamedDecl.get_id l in
   let warn =
     if List.is_empty ids then mt () else
-      (str "(" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")
+      (str " (" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")
   in
   let pc = pr_lconstr_env env sigma evi.evar_concl in
   let candidates =
@@ -551,7 +551,7 @@ let pr_evgl_sign sigma evi =
        mt ()
   in
   hov 0 (str"[" ++ ps ++ spc () ++ str"|- "  ++ pc ++ str"]" ++
-           candidates ++ spc () ++ warn)
+           candidates ++ warn)
 
 (* Print an existential variable *)
 
@@ -560,15 +560,25 @@ let pr_evar sigma (evk, evi) =
   hov 0 (pr_existential_key sigma evk ++ str " : " ++ pegl)
 
 (* Print an enumerated list of existential variables *)
-let rec pr_evars_int_hd head sigma i = function
+let rec pr_evars_int_hd pr sigma i = function
   | [] -> mt ()
   | (evk,evi)::rest ->
-      (hov 0 (head i ++ pr_evar sigma (evk,evi))) ++
-      (match rest with [] -> mt () | _ -> fnl () ++ pr_evars_int_hd head sigma (i+1) rest)
+      (hov 0 (pr i evk evi)) ++
+      (match rest with [] -> mt () | _ -> fnl () ++ pr_evars_int_hd pr sigma (i+1) rest)
 
-let pr_evars_int sigma i evs = pr_evars_int_hd (fun i -> str "Existential " ++ int i ++ str " =" ++ spc ()) sigma i (Evar.Map.bindings evs)
+let pr_evars_int sigma ~shelf ~givenup i evs =
+  let pr_status i =
+    if List.mem i shelf then str " (shelved)"
+    else if List.mem i givenup then str " (given up)"
+    else mt () in
+  pr_evars_int_hd
+    (fun i evk evi ->
+      str "Existential " ++ int i ++ str " =" ++
+      spc () ++ pr_evar sigma (evk,evi) ++ pr_status evk)
+    sigma i (Evar.Map.bindings evs)
 
-let pr_evars sigma evs = pr_evars_int_hd (fun i -> mt ()) sigma 1 (Evar.Map.bindings evs)
+let pr_evars sigma evs =
+  pr_evars_int_hd (fun i evk evi -> pr_evar sigma (evk,evi)) sigma 1 (Evar.Map.bindings evs)
 
 (* Display a list of evars given by their name, with a prefix *)
 let pr_ne_evar_set hd tl sigma l =
@@ -686,7 +696,7 @@ let print_dependent_evars gl sigma seeds =
 (* spiwack: [pr_first] is true when the first goal must be singled out
    and printed in its entirety. *)
 let default_pr_subgoals ?(pr_first=true)
-                        close_cmd sigma seeds shelf stack unfocused goals =
+                        close_cmd sigma ~seeds ~shelf ~stack ~unfocused ~goals =
   (** Printing functions for the extra informations. *)
   let rec print_stack a = function
     | [] -> Pp.int a
@@ -748,7 +758,7 @@ let default_pr_subgoals ?(pr_first=true)
 	if Evar.Map.is_empty exl then
 	  (str"No more subgoals." ++ print_dependent_evars None sigma seeds)
 	else
-	  let pei = pr_evars_int sigma 1 exl in
+          let pei = pr_evars_int sigma ~shelf ~givenup:[] 1 exl in
 	  v 0 ((str "No more subgoals,"
                 ++ str " but there are non-instantiated existential variables:"
 	        ++ cut () ++ (hov 0 pei)
@@ -775,7 +785,7 @@ let default_pr_subgoals ?(pr_first=true)
 
 
 type printer_pr = {
- pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> Evar.t list -> Goal.goal list -> int list -> goal list -> goal list -> Pp.t;
+ pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> seeds:goal list -> shelf:goal list -> stack:int list -> unfocused:goal list -> goals:goal list -> Pp.t;
  pr_subgoal             : int -> evar_map -> goal list -> Pp.t;
  pr_goal                : goal sigma -> Pp.t;
 }
@@ -809,16 +819,16 @@ let pr_open_subgoals ~proof =
   begin match goals with
   | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
           begin match bgoals,shelf,given_up with
-	  | [] , [] , [] -> pr_subgoals None sigma seeds shelf stack [] goals
+          | [] , [] , [] -> pr_subgoals None sigma ~seeds ~shelf ~stack ~unfocused:[] ~goals
           | [] , [] , _ ->
 	     Feedback.msg_info (str "No more subgoals, but there are some goals you gave up:");
 	     fnl ()
-            ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] [] given_up
+            ++ pr_subgoals ~pr_first:false None bsigma ~seeds ~shelf:[] ~stack:[] ~unfocused:[] ~goals:given_up
             ++ fnl () ++ str "You need to go back and solve them."
           | [] , _ , _ ->
 	    Feedback.msg_info (str "All the remaining goals are on the shelf.");
 	    fnl ()
-            ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] [] shelf
+            ++ pr_subgoals ~pr_first:false None bsigma ~seeds ~shelf:[] ~stack:[] ~unfocused:[] ~goals:shelf
 	  | _ , _, _ ->
             let end_cmd =
               str "This subproof is complete, but there are some unfocused goals." ++
@@ -826,13 +836,13 @@ let pr_open_subgoals ~proof =
                if Pp.ismt s then s else fnl () ++ s) ++
               fnl ()
             in
-	    pr_subgoals ~pr_first:false (Some end_cmd) bsigma seeds shelf [] [] bgoals
+            pr_subgoals ~pr_first:false (Some end_cmd) bsigma ~seeds ~shelf ~stack:[] ~unfocused:[] ~goals:bgoals
 	  end
   | _ -> 
      let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
      let bgoals_focused, bgoals_unfocused = List.partition (fun x -> List.mem x goals) bgoals in
      let unfocused_if_needed = if should_unfoc() then bgoals_unfocused else [] in
-     pr_subgoals ~pr_first:true None bsigma seeds shelf [] unfocused_if_needed bgoals_focused
+     pr_subgoals ~pr_first:true None bsigma ~seeds ~shelf ~stack:[] ~unfocused:unfocused_if_needed ~goals:bgoals_focused
   end
 
 let pr_nth_open_subgoal ~proof n =

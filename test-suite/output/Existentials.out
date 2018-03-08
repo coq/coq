@@ -1,4 +1,4 @@
-Existential 1 = ?Goal : [p : nat  q := S p : nat  n : nat  m : nat |- ?y = m] 
+Existential 1 = ?Goal : [p : nat  q := S p : nat  n : nat  m : nat |- ?y = m]
 Existential 2 =
-?y : [p : nat  q := S p : nat  n : nat  m : nat |- nat] (p, q cannot be used)
-Existential 3 = ?Goal0 : [q : nat  n : nat  m : nat |- n = ?y] 
+?y : [p : nat  q := S p : nat  n : nat  m : nat |- nat] (p, q cannot be used) (shelved)
+Existential 3 = ?Goal0 : [q : nat  n : nat  m : nat |- n = ?y]
