@@ -116,13 +116,6 @@ val compute_displayed_name_in_gen :
   (evar_map -> int -> 'a -> bool) ->
   evar_map -> Id.Set.t -> Name.t -> 'a -> Name.t * Id.Set.t
 
-(**********************************************************************)
-(* Naming strategy for arguments in Prop when eliminating inductive types *)
-
-val use_h_based_elimination_names : unit -> bool
-
-(**********************************************************************)
-
 val set_mangle_names_mode : Id.t -> unit
 (** Turn on mangled names mode and with the given prefix.
     @raise UserError if the argument is invalid as an identifier. *)

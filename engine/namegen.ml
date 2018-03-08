@@ -460,23 +460,3 @@ let rename_bound_vars_as_displayed sigma avoid env c =
     | _ -> c
   in
   rename avoid env c
-
-(**********************************************************************)
-(* "H"-based naming strategy introduced June 2014 for hypotheses in
-   Prop produced by case/elim/destruct/induction, in place of the
-   strategy that was using the first letter of the type, leading to
-   inelegant "n:~A", "e:t=u", etc. when eliminating sumbool or similar
-   types *)
-
-let h_based_elimination_names = ref false
-
-let use_h_based_elimination_names () = !h_based_elimination_names
-
-open Goptions
-
-let _ = declare_bool_option
-	  { optdepr  = true; (* remove in 8.8 *)
-	    optname  = "use of \"H\"-based proposition names in elimination tactics";
-	    optkey   = ["Standard";"Proposition";"Elimination";"Names"];
-	    optread  = (fun () -> !h_based_elimination_names);
-	    optwrite = (:=) h_based_elimination_names }
