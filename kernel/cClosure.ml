@@ -598,23 +598,18 @@ let rec to_constr constr_fun lfts v =
     | FInd op -> mkIndU op
     | FConstruct op -> mkConstructU op
     | FCaseT (ci,p,c,ve,env) ->
-	mkCase (ci, constr_fun lfts (mk_clos env p),
-                constr_fun lfts c,
-		Array.map (fun b -> constr_fun lfts (mk_clos env b)) ve)
+        let fve = to_constr_array constr_fun lfts env 0 ve in
+        mkCase (ci, constr_fun lfts (mk_clos env p), constr_fun lfts c, fve)
     | FFix ((op,(lna,tys,bds)),e) ->
         let n = Array.length bds in
-        let ftys = CArray.Fun1.map mk_clos e tys in
-        let fbds = CArray.Fun1.map mk_clos (subs_liftn n e) bds in
-	let lfts' = el_liftn n lfts in
-	mkFix (op, (lna, CArray.Fun1.map constr_fun lfts ftys,
-		         CArray.Fun1.map constr_fun lfts' fbds))
+        let ftys = to_constr_array constr_fun lfts e 0 tys in
+        let fbds = to_constr_array constr_fun lfts e n bds in
+        mkFix (op, (lna, ftys, fbds))
     | FCoFix ((op,(lna,tys,bds)),e) ->
         let n = Array.length bds in
-        let ftys = CArray.Fun1.map mk_clos e tys in
-        let fbds = CArray.Fun1.map mk_clos (subs_liftn n e) bds in
-	let lfts' = el_liftn (Array.length bds) lfts in
-	mkCoFix (op, (lna, CArray.Fun1.map constr_fun lfts ftys,
-		           CArray.Fun1.map constr_fun lfts' fbds))
+        let ftys = to_constr_array constr_fun lfts e 0 tys in
+        let fbds = to_constr_array constr_fun lfts e n bds in
+        mkCoFix (op, (lna, ftys, fbds))
     | FApp (f,ve) ->
 	mkApp (constr_fun lfts f,
 	       CArray.Fun1.map constr_fun lfts ve)
@@ -641,6 +636,18 @@ let rec to_constr constr_fun lfts v =
         let unfv = update v fr.norm fr.term in
         to_constr constr_fun lfts unfv
     | FLOCKED -> assert false (*mkVar(Id.of_string"_LOCK_")*)
+
+and to_constr_array constr_fun lfts env n (v : constr array) =
+  let len = Array.length v in
+  let ans = Array.make len mkProp in
+  let env = subs_liftn n env in
+  let lfts = el_liftn n lfts in
+  for i = 0 to len - 1 do
+    let c = Array.unsafe_get v i in
+    let c = constr_fun lfts (mk_clos env c) in
+    Array.unsafe_set ans i c
+  done;
+  ans
 
 (* This function defines the correspondance between constr and
    fconstr. When we find a closure whose substitution is the identity,
@@ -1022,31 +1029,53 @@ and norm_head info m =
       | FProd(na,dom,rng) ->
           mkProd(na, kl info dom, kl info rng)
       | FCoFix((n,(na,tys,bds)),e) ->
-          let ftys = CArray.Fun1.map mk_clos e tys in
-          let fbds =
-            CArray.Fun1.map mk_clos (subs_liftn (Array.length na) e) bds in
-          mkCoFix(n,(na, CArray.Fun1.map kl info ftys, CArray.Fun1.map kl info fbds))
+          let ftys = norm_head_array info e 0 tys in
+          let fbds = norm_head_array info e (Array.length na) bds in
+          mkCoFix(n,(na, ftys, fbds))
       | FFix((n,(na,tys,bds)),e) ->
-          let ftys = CArray.Fun1.map mk_clos e tys in
-          let fbds =
-            CArray.Fun1.map mk_clos (subs_liftn (Array.length na) e) bds in
-          mkFix(n,(na, CArray.Fun1.map kl info ftys, CArray.Fun1.map kl info fbds))
+          let ftys = norm_head_array info e 0 tys in
+          let fbds = norm_head_array info e (Array.length na) bds in
+          mkFix(n,(na, ftys, fbds))
       | FEvar((i,args),env) ->
-          mkEvar(i, Array.map (fun a -> kl info (mk_clos env a)) args)
+          let fargs = norm_head_array info env 0 args in
+          mkEvar(i, fargs)
       | FProj (p,c) ->
           mkProj (p, kl info c)
       | FLOCKED | FRel _ | FAtom _ | FCast _ | FFlex _ | FInd _ | FConstruct _
         | FApp _ | FCaseT _ | FLIFT _ | FCLOS _ -> term_of_fconstr m
 
+and norm_head_array info env n (v : constr array) =
+  let len = Array.length v in
+  let ans = Array.make len mkProp in
+  let env = subs_liftn n env in
+  for i = 0 to len - 1 do
+    let c = Array.unsafe_get v i in
+    let c = kl info (mk_clos env c) in
+    Array.unsafe_set ans i c
+  done;
+  ans
+
 (* Initialization and then normalization *)
 
 (* weak reduction *)
 let whd_val info v =
-  with_stats (lazy (term_of_fconstr (kh info v [])))
+  if !stats then begin
+    reset();
+    let r = term_of_fconstr (kh info v []) in
+    stop();
+    r
+  end else
+    term_of_fconstr (kh info v [])
 
 (* strong reduction *)
 let norm_val info v =
-  with_stats (lazy (kl info v))
+  if !stats then begin
+    reset();
+    let r = kl info v in
+    stop();
+    r
+  end else
+    kl info v
 
 let inject c = mk_clos (subs_id 0) c
 
