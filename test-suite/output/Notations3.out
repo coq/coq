@@ -128,37 +128,25 @@ return (1, 2, 3, 4)
      : nat
 *(1.2)
      : nat
-[{0; 0}]
-     : list (list nat)
-[{1; 2; 3};
- {4; 5; 6};
- {7; 8; 9}]
-     : list (list nat)
-amatch = mmatch 0 (with 0 => 1| 1 => 2 end)
-     : unit
-alist = [0; 1; 2]
-     : list nat
-! '{{x, y}}, x + y = 0
+! '{{x, y}}, x.y = 0
      : Prop
 exists x : nat,
   nat ->
   exists y : nat,
-    nat ->
-    exists '{{u, t}}, forall z1 : nat, z1 = 0 /\ x + y = 0 /\ u + t = 0
+    nat -> exists '{{u, t}}, forall z1 : nat, z1 = 0 /\ x.y = 0 /\ u.t = 0
      : Prop
 exists x : nat,
   nat ->
   exists y : nat,
-    nat ->
-    exists '{{z, t}}, forall z2 : nat, z2 = 0 /\ x + y = 0 /\ z + t = 0
+    nat -> exists '{{z, t}}, forall z2 : nat, z2 = 0 /\ x.y = 0 /\ z.t = 0
      : Prop
-exists_true '{{x, y}} (u := 0) '{{z, t}}, x + y = 0 /\ z + t = 0
+exists_true '{{x, y}} (u := 0) '{{z, t}}, x.y = 0 /\ z.t = 0
      : Prop
 exists_true (A : Type) (R : A -> A -> Prop) (_ : Reflexive R),
 (forall x : A, R x x)
      : Prop
 exists_true (x : nat) (A : Type) (R : A -> A -> Prop) 
-(_ : Reflexive R) (y : nat), x + y = 0 -> forall z : A, R z z
+(_ : Reflexive R) (y : nat), x.y = 0 -> forall z : A, R z z
      : Prop
 {{{{True, nat -> True}}, nat -> True}}
      : Prop * Prop * Prop
@@ -194,22 +182,22 @@ pair
             (prod nat (prod nat nat))) (prod (prod nat nat) nat)
 fun x : nat => if x is n .+ 1 then n else 1
      : nat -> nat
-{'{{x, y}} : nat * nat | x + y = 0}
+{'{{x, y}} : nat * nat | x.y = 0}
      : Set
 exists2' {{x, y}}, x = 0 & y = 0
      : Prop
 myexists2 x : nat * nat,
   let '{{y, z}} := x in y > z & let '{{y, z}} := x in z > y
      : Prop
-fun '({{x, y}} as z) => x + y = 0 /\ z = z
+fun '({{x, y}} as z) => x.y = 0 /\ z = z
      : nat * nat -> Prop
-myexists ({{x, y}} as z), x + y = 0 /\ z = z
+myexists ({{x, y}} as z), x.y = 0 /\ z = z
      : Prop
-exists '({{x, y}} as z), x + y = 0 /\ z = z
+exists '({{x, y}} as z), x.y = 0 /\ z = z
      : Prop
-∀ '({{x, y}} as z), x + y = 0 /\ z = z
+∀ '({{x, y}} as z), x.y = 0 /\ z = z
      : Prop
-fun '({{{{x, y}}, true}} | {{{{x, y}}, false}}) => x + y
+fun '({{{{x, y}}, true}} | {{{{x, y}}, false}}) => x.y
      : nat * nat * bool -> nat
 myexists ({{{{x, y}}, true}} | {{{{x, y}}, false}}), x > y
      : Prop
@@ -221,17 +209,17 @@ fun p : nat => if p is S n then n else 0
      : nat -> nat
 fun p : comparison => if p is Lt then 1 else 0
      : comparison -> nat
-fun S : nat => [S | S + S]
+fun S : nat => [S | S.S]
      : nat -> nat * (nat -> nat)
-fun N : nat => [N | N + 0]
+fun N : nat => [N | N.0]
      : nat -> nat * (nat -> nat)
-fun S : nat => [[S | S + S]]
+fun S : nat => [[S | S.S]]
      : nat -> nat * (nat -> nat)
 {I : nat | I = I}
      : Set
 {'I : True | I = I}
      : Prop
-{'{{x, y}} : nat * nat | x + y = 0}
+{'{{x, y}} : nat * nat | x.y = 0}
      : Set
 exists2 '{{y, z}} : nat * nat, y > z & z > y
      : Prop
