@@ -26,15 +26,16 @@ Gtk_parsing
 Wg_Segment
 Wg_ProofView
 Wg_MessageView
+Wg_RoutedMessageViews
 Wg_Detachable
 Wg_Find
 Wg_Completion
 Wg_ScriptView
 Coq_commands
-Wg_Command
 FileOps
 Document
 CoqOps
+Wg_Command
 Session
 Coqide_ui
 NanoPG

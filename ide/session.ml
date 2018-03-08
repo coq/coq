@@ -33,7 +33,7 @@ type session = {
   buffer : GText.buffer;
   script : Wg_ScriptView.script_view;
   proof : Wg_ProofView.proof_view;
-  messages : Wg_MessageView.message_view;
+  messages : Wg_RoutedMessageViews.message_views_router;
   segment : Wg_Segment.segment;
   fileops : FileOps.ops;
   coqops : CoqOps.ops;
@@ -366,7 +366,7 @@ let create_proof () =
 let create_messages () =
   let messages = Wg_MessageView.message_view () in
   let _ = messages#misc#set_can_focus true in
-  messages
+  Wg_RoutedMessageViews.message_views ~route_0:messages
 
 let dummy_control : control =
   object
@@ -390,7 +390,7 @@ let create file coqtop_args =
   let _ = fops#update_stats in
   let cops =
     new CoqOps.coqops script proof messages segment coqtop (fun () -> fops#filename) in
-  let command = new Wg_Command.command_window basename coqtop cops in
+  let command = new Wg_Command.command_window basename coqtop cops messages in
   let errpage = create_errpage script in
   let jobpage = create_jobpage coqtop cops in
   let _ = set_buffer_handlers (buffer :> GText.buffer) script cops coqtop in
@@ -511,12 +511,12 @@ let build_layout (sn:session) =
   sn.command#pack_in (session_paned#pack2 ~shrink:false ~resize:false);
   script_scroll#add sn.script#coerce;
   proof_scroll#add sn.proof#coerce;
-  let detach, _ = add_msg_page 0 sn.tab_label#text "Messages" sn.messages#coerce in
+  let detach, _ = add_msg_page 0 sn.tab_label#text "Messages" sn.messages#default_route#coerce in
   let _, label = add_msg_page 1 sn.tab_label#text "Errors" sn.errpage#coerce in
   let _, _ = add_msg_page 2 sn.tab_label#text "Jobs" sn.jobpage#coerce in
   (** When a message is received, focus on the message pane *)
   let _ =
-    sn.messages#connect#pushed ~callback:(fun _ _ ->
+    sn.messages#default_route#connect#pushed ~callback:(fun _ _ ->
       let num = message_frame#page_num detach#coerce in
       if 0 <= num then message_frame#goto_page num
     )

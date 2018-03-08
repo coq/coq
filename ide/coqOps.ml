@@ -141,7 +141,8 @@ object
   method process_next_phrase : unit task
   method process_until_end_or_error : unit task
   method handle_reset_initial : unit task
-  method raw_coq_query : string -> unit task
+  method raw_coq_query :
+    route_id:int -> next:(query_rty value -> unit task) -> string -> unit task
   method show_goals : unit task
   method backtrack_last_phrase : unit task
   method initialize : unit task
@@ -163,17 +164,6 @@ let flags_to_color f =
   else if List.mem `UNSAFE f then `NAME "orange"
   else if List.mem `INCOMPLETE f then `NAME "gray"
   else `NAME Preferences.processed_color#get
-
-(* Move to utils? *)
-let rec validate (s : Pp.t) = match Pp.repr s with
-  | Pp.Ppcmd_empty
-  | Pp.Ppcmd_print_break _
-  | Pp.Ppcmd_force_newline  -> true
-  | Pp.Ppcmd_glue l    -> List.for_all validate l
-  | Pp.Ppcmd_string s  -> Glib.Utf8.validate s
-  | Pp.Ppcmd_box (_,s)
-  | Pp.Ppcmd_tag (_,s) -> validate s
-  | Pp.Ppcmd_comment s -> List.for_all Glib.Utf8.validate s
 
 module Doc = Document
 
@@ -229,7 +219,7 @@ end
 class coqops
   (_script:Wg_ScriptView.script_view)
   (_pv:Wg_ProofView.proof_view)
-  (_mv:Wg_MessageView.message_view)
+  (_mv:Wg_RoutedMessageViews.message_views_router)
   (_sg:Wg_Segment.segment)
   (_ct:Coq.coqtop)
   get_filename =
@@ -364,23 +354,12 @@ object(self)
   method show_goals = self#show_goals_aux ()
 
   (* This method is intended to perform stateless commands *)
-  method raw_coq_query phrase =
+  method raw_coq_query ~route_id ~next phrase : unit Coq.task =
     let sid = try Document.tip document
               with Document.Empty -> Stateid.initial
     in
     let action = log "raw_coq_query starting now" in
-    let display_error s =
-      if not (validate s) then
-        flash_info "This error is so nasty that I can't even display it."
-      else messages#add s;
-    in
-    let query =
-      let route_id = 0 in
-      Coq.query (route_id,(phrase,sid)) in
-    let next = function
-    | Fail (_, _, err) -> display_error err; Coq.return ()
-    | Good msg -> Coq.return ()
-    in
+    let query = Coq.query (route_id,(phrase,sid)) in
     Coq.bind (Coq.seq action query) next
 
   method private mark_as_needed sentence =
@@ -472,22 +451,22 @@ object(self)
           self#mark_as_needed sentence;
           self#attach_tooltip ?loc sentence rmsg;
           self#position_tag_at_sentence ?loc Tags.Script.error sentence
-      | Message(Warning, loc, msg), Some (id,sentence) ->
-          log_pp ?id Pp.(str "WarningMsg " ++ msg);
-          let rmsg = Pp.string_of_ppcmds msg     in
+      | Message(Warning, loc, message), Some (id,sentence) ->
+          log_pp ?id Pp.(str "WarningMsg " ++ message);
+          let rmsg = Pp.string_of_ppcmds message in
           add_flag sentence (`WARNING (loc, rmsg));
           self#attach_tooltip ?loc sentence rmsg;
           self#position_tag_at_sentence ?loc Tags.Script.warning sentence;
-          messages#push Warning msg
-      | Message(lvl, loc, msg), Some (id,sentence) ->
-          log_pp ?id Pp.(str "Msg " ++ msg);
-          messages#push lvl msg
+          (messages#route msg.route)#push Warning message
+      | Message(lvl, loc, message), Some (id,sentence) ->
+          log_pp ?id Pp.(str "Msg " ++ message);
+          (messages#route msg.route)#push lvl message
       (* We do nothing here as for BZ#5583 *)
       | Message(Error, loc, msg), None ->
           log_pp Pp.(str "Error Msg without a sentence" ++ msg)
-      | Message(lvl, loc, msg), None ->
-          log_pp Pp.(str "Msg without a sentence " ++ msg);
-          messages#push lvl msg
+      | Message(lvl, loc, message), None ->
+          log_pp Pp.(str "Msg without a sentence " ++ message);
+          (messages#route msg.route)#push lvl message
       | InProgress n, _ ->
           if n < 0 then processed <- processed + abs n
           else to_process <- to_process + n
@@ -538,8 +517,8 @@ object(self)
     if Stateid.equal id tip || Stateid.equal id Stateid.dummy then begin
       self#position_tag_at_iter ?loc start stop Tags.Script.error phrase;
       buffer#place_cursor ~where:stop;
-      messages#clear;
-      messages#push Feedback.Error msg;
+      messages#default_route#clear;
+      messages#default_route#push Feedback.Error msg;
       self#show_goals
     end else
       self#show_goals_aux ~move_insert:true ()
@@ -597,12 +576,12 @@ object(self)
 
   (** Compute the phrases until [until] returns [true]. *)
   method private process_until ?move_insert until verbose =
-    let logger lvl msg = if verbose then messages#push lvl msg in
+    let logger lvl msg = if verbose then messages#default_route#push lvl msg in
     let fill_queue = Coq.lift (fun () ->
       let queue = Queue.create () in
       (* Lock everything and fill the waiting queue *)
       push_info "Coq is computing";
-      messages#clear;
+      messages#default_route#clear;
       script#set_editable false;
       self#fill_command_queue until queue;
       (* Now unlock and process asynchronously. Since [until]
@@ -664,8 +643,9 @@ object(self)
   method join_document =
    let next = function
      | Good _ ->
-         messages#clear;
-         messages#push Feedback.Info (Pp.str "All proof terms checked by the kernel");
+         messages#default_route#clear;
+         messages#default_route#push
+           Feedback.Info (Pp.str "All proof terms checked by the kernel");
          Coq.return ()
      | Fail x -> self#handle_failure x in
    Coq.bind (Coq.status true) next
@@ -767,7 +747,7 @@ object(self)
           conclusion ()
       | Fail (safe_id, loc, msg) ->
 (*           if loc <> None then messages#push Feedback.Error (Richpp.richpp_of_string "Fixme LOC"); *)
-          messages#push Feedback.Error msg;
+          messages#default_route#push Feedback.Error msg;
           if Stateid.equal safe_id Stateid.dummy then self#show_goals
           else undo safe_id
                  (Doc.focused document && Doc.is_in_focus document safe_id))
@@ -784,7 +764,7 @@ object(self)
   method private handle_failure_aux
     ?(move_insert=false) (safe_id, (loc : (int * int) option), msg)
   =
-    messages#push Feedback.Error msg;
+    messages#default_route#push Feedback.Error msg;
     ignore(self#process_feedback ());
     if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())
     else
@@ -796,7 +776,7 @@ object(self)
   method handle_failure f = self#handle_failure_aux f
 
   method backtrack_last_phrase =
-    messages#clear;
+    messages#default_route#clear;
     try 
       let tgt = Doc.before_tip document in
       self#backtrack_to_id tgt
@@ -804,7 +784,7 @@ object(self)
 
   method go_to_insert =
     Coq.bind (Coq.return ()) (fun () ->
-    messages#clear;
+    messages#default_route#clear;
     let point = self#get_insert in
     if point#compare self#get_start_of_input >= 0
     then self#process_until_iter point
@@ -812,7 +792,7 @@ object(self)
 
   method go_to_mark m =
     Coq.bind (Coq.return ()) (fun () ->
-    messages#clear;
+    messages#default_route#clear;
     let point = buffer#get_iter_at_mark m in
     if point#compare self#get_start_of_input >= 0
     then Coq.seq (self#process_until_iter point)
@@ -837,14 +817,11 @@ object(self)
           ~stop:(`MARK (buffer#create_mark stop))
           [] in
       Doc.push document sentence;
-      messages#clear;
+      messages#default_route#clear;
       self#show_goals
     in
     let display_error (loc, s) =
-      if not (validate s) then
-        flash_info "This error is so nasty that I can't even display it."
-      else messages#add s
-    in
+      messages#default_route#add (Ideutils.validate s) in
     let try_phrase phrase stop more =
       let action = log "Sending to coq now" in
       let route_id = 0 in
@@ -852,7 +829,7 @@ object(self)
       let next = function
       | Fail (_, l, str) -> (* FIXME: check *)
         display_error (l, str);
-        messages#add (Pp.str ("Unsuccessfully tried: "^phrase));
+        messages#default_route#add (Pp.str ("Unsuccessfully tried: "^phrase));
         more
       | Good () -> stop Tags.Script.processed
       in
@@ -882,7 +859,7 @@ object(self)
       buffer#move_mark ~where:buffer#end_iter (`NAME "stop_of_input");
       Sentence.tag_all buffer;
       (* clear the views *)
-      messages#clear;
+      messages#default_route#clear;
       proof#clear ();
       clear_info ();
       processed <- 0;

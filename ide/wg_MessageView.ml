@@ -36,8 +36,8 @@ class type message_view =
     method refresh : bool -> unit
     method push : Ideutils.logger
       (** same as [add], but with an explicit level instead of [Notice] *)
-    method buffer : GText.buffer
-      (** for more advanced text edition *)
+    method has_selection : bool
+    method get_selected_text : string
   end
 
 let message_view () : message_view =
@@ -45,7 +45,6 @@ let message_view () : message_view =
     ~highlight_matching_brackets:true
     ~tag_table:Tags.Message.table ()
   in
-  let text_buffer = new GText.buffer buffer#as_buffer in
   let mark = buffer#create_mark ~left_gravity:false buffer#start_iter in
   let box = GPack.vbox () in
   let scroll = GBin.scrolled_window
@@ -120,7 +119,12 @@ let message_view () : message_view =
 
     method set msg = self#clear; self#add msg
 
-    method buffer = text_buffer
+    method has_selection = buffer#has_selection
+    method get_selected_text =
+      if buffer#has_selection then
+        let start, stop = buffer#selection_bounds in
+        buffer#get_text ~slice:true ~start ~stop ()
+      else ""
 
   end
   in
