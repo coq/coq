@@ -199,3 +199,24 @@ split.
 reflexivity.
 Qed.
 *)
+
+(* Primitive projection match compilation *)
+Require Import List.
+Set Primitive Projections.
+
+Record prod (A B : Type) := pair { fst : A ; snd : B }.
+Arguments pair {_ _} _ _.
+
+Fixpoint split_at {A} (l : list A) (n : nat) : prod (list A) (list A) :=
+  match n with
+  | 0 => pair nil l
+  | S n =>
+    match l with
+    | nil => pair nil nil
+    | x :: l => let 'pair l1 l2 := split_at l n in pair (x :: l1) l2
+    end
+  end.
+
+Time Eval vm_compute in split_at (repeat 0 20) 10. (* Takes 0s *)
+Time Eval vm_compute in split_at (repeat 0 40) 20. (* Takes 0.001s *)
+Timeout 1 Time Eval vm_compute in split_at (repeat 0 60) 30. (* Used to take 60s, now takes 0.001s *)
