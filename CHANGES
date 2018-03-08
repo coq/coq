@@ -77,6 +77,7 @@ Vernacular Commands
 - Using “Require” inside a section is deprecated.
 - An experimental command "Show Extraction" allows to extract the content
   of the current ongoing proof (grant wish #4129).
+- Coercion now accepts the type of its argument to be "Prop" or "Type".
 
 Universes
 
