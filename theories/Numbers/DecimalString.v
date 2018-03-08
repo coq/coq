@@ -94,7 +94,7 @@ Definition int_of_string s :=
  match s with
  | EmptyString => Some (Pos Nil)
  | String a s' =>
-   if ascii_dec a "-" then option_map Neg (uint_of_string s')
+   if Ascii.eqb a "-" then option_map Neg (uint_of_string s')
    else option_map Pos (uint_of_string s)
  end.
 
@@ -131,8 +131,8 @@ Proof.
  - unfold int_of_string.
    destruct (string_of_uint d) eqn:Hd.
    + now destruct d.
-   + destruct ascii_dec; subst.
-     * now destruct d.
+   + case Ascii.eqb_spec.
+     * intros ->. now destruct d.
      * rewrite <- Hd, usu; auto.
  - rewrite usu; auto.
 Qed.
@@ -141,8 +141,8 @@ Lemma sis s d :
  int_of_string s = Some d -> string_of_int d = s.
 Proof.
  destruct s; [intros [= <-]| ]; simpl; trivial.
- destruct ascii_dec; subst; simpl.
- - destruct (uint_of_string s) eqn:Hs; simpl; intros [= <-].
+ case Ascii.eqb_spec.
+ - intros ->. destruct (uint_of_string s) eqn:Hs; simpl; intros [= <-].
    simpl; f_equal. now apply sus.
  - destruct d; [ | now destruct uint_of_char].
    simpl string_of_int.
@@ -178,7 +178,7 @@ Definition int_of_string s :=
  match s with
  | EmptyString => None
  | String a s' =>
-   if ascii_dec a "-" then option_map Neg (uint_of_string s')
+   if Ascii.eqb a "-" then option_map Neg (uint_of_string s')
    else option_map Pos (uint_of_string s)
  end.
 
@@ -228,8 +228,8 @@ Proof.
    unfold int_of_string.
    destruct (string_of_uint d) eqn:Hd.
    + now destruct d.
-   + destruct ascii_dec; subst.
-     * now destruct d.
+   + case Ascii.eqb_spec.
+     * intros ->. now destruct d.
      * rewrite <- Hd, usu; auto. now intros ->.
  - intros _ H.
    rewrite usu; auto. now intros ->.
@@ -253,8 +253,8 @@ Lemma sis s d :
  int_of_string s = Some d -> string_of_int d = s.
 Proof.
  destruct s; [intros [=]| ]; simpl.
- destruct ascii_dec; subst; simpl.
- - destruct (uint_of_string s) eqn:Hs; simpl; intros [= <-].
+ case Ascii.eqb_spec.
+ - intros ->. destruct (uint_of_string s) eqn:Hs; simpl; intros [= <-].
    simpl; f_equal. now apply sus.
  - destruct d; [ | now destruct uint_of_char].
    simpl string_of_int.
