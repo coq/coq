@@ -41,15 +41,15 @@ Building coqtop:
   cd ~/git/coq
   git checkout trunk
   make distclean
-  ./configure -annotate -local
+  ./configure -profile devel
   make clean
   make -j4 coqide printers
 
-The "-annotate" option is essential when one wants to use Merlin.
+The "-profile devel" enables all options recommended for developers (like
+warnings, support for Merlin, etc).  Moreover Coq is configured so that
+it can be run without installing it (i.e. from the current directory).
 
-The "-local" option is useful if one wants to run the coqtop and coqide binaries without running make install
-
-Then check if
+Once the compilation is over check if
 - bin/coqtop
 - bin/coqide
 behave as expected.

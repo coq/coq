@@ -190,7 +190,7 @@ matrix:
     # Ocaml warnings with two compilers
     - env:
       - MAIN_TARGET="coqocaml"
-      - EXTRA_CONF="-byte-only -coqide byte -warn-error"
+      - EXTRA_CONF="-byte-only -coqide byte -warn-error yes"
       - EXTRA_OPAM="hevea ${LABLGTK}"
       # dummy target
       - BUILD_TARGET="clean"
@@ -209,7 +209,7 @@ matrix:
       - COMPILER="${COMPILER_BE}"
       - FINDLIB_VER="${FINDLIB_VER_BE}"
       - CAMLP5_VER="${CAMLP5_VER_BE}"
-      - EXTRA_CONF="-byte-only -coqide byte -warn-error"
+      - EXTRA_CONF="-byte-only -coqide byte -warn-error yes"
       - EXTRA_OPAM="num hevea ${LABLGTK_BE}"
       # dummy target
       - BUILD_TARGET="clean"
@@ -239,7 +239,7 @@ matrix:
       - CAMLP5_VER=".6.17"
       - NATIVE_COMP="no"
       - COQ_DEST="-prefix ${PWD}/_install"
-      - EXTRA_CONF="-coqide opt -warn-error"
+      - EXTRA_CONF="-coqide opt -warn-error yes"
       - EXTRA_OPAM="${LABLGTK}"
       before_install:
       - brew update
