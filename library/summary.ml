@@ -89,6 +89,16 @@ let unfreeze_single name state =
       Pp.(seq [str "Error unfreezing summary "; str name; fnl (); CErrors.iprint e]);
     iraise e
 
+let warn_summary_out_of_scope =
+  let name = "summary-out-of-scope" in
+  let category = "dev" in
+  let default = CWarnings.Disabled in
+  CWarnings.create ~name ~category ~default (fun name ->
+    Pp.str (Printf.sprintf
+      "A Coq plugin was loaded inside a local scope (such as a Section). It is recommended to load plugins at the start of the file. Summary entry: %s"
+      name)
+    )
+
 let unfreeze_summaries ?(partial=false) { summaries; ml_module } =
   (* The unfreezing of [ml_modules_summary] has to be anticipated since it
    * may modify the content of [summaries] by loading new ML modules *)
@@ -101,7 +111,7 @@ let unfreeze_summaries ?(partial=false) { summaries; ml_module } =
     try decl.unfreeze_function String.Map.(find name summaries)
     with Not_found ->
       if not partial then begin
-        Feedback.msg_warning Pp.(str "Summary was captured out of module scope for entry " ++ str name);
+        warn_summary_out_of_scope name;
         decl.init_function ()
       end;
   in

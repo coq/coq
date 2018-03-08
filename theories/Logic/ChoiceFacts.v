@@ -28,6 +28,8 @@ intentional type theory, Journal of Symbolic Logic 70(2):488-514, 2005.
 [[Werner97]] Benjamin Werner, Sets in Types, Types in Sets, TACS, 1997.
 *)
 
+Require Import RelationClasses Logic.
+
 Set Implicit Arguments.
 Local Unset Intuition Negation Unfolding.
 
@@ -124,8 +126,6 @@ Definition DependentFunctionalRelReification_on (A:Type) (B:A -> Type) :=
    [[Werner97]] (by reference to the extensional set-theoretic
    formulation of choice); Note also a typo in its intended
    formulation in [[Werner97]]. *)
-
-Require Import RelationClasses Logic.
 
 Definition RepresentativeFunctionalChoice_on :=
   forall R:A->A->Prop,

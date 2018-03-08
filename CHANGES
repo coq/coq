@@ -73,6 +73,7 @@ Vernacular Commands
   was removed. Use Local as a prefix instead.
 - For the Extraction Language command, "OCaml" is spelled correctly.
   The older "Ocaml" is still accepted, but deprecated.
+- Using “Require” inside a section is deprecated.
 
 Universes
 

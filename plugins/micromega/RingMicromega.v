@@ -21,6 +21,7 @@ Require Import List.
 Require Import Bool.
 Require Import OrderedRing.
 Require Import Refl.
+Require Coq.micromega.Tauto.
 
 Set Implicit Arguments.
 
@@ -796,7 +797,7 @@ Definition xnormalise (t:Formula C) : list (NFormula)  :=
       | OpLe => (psub lhs rhs ,Strict) :: nil
     end.
 
-Require Import Coq.micromega.Tauto.
+Import Coq.micromega.Tauto.
 
 Definition cnf_normalise (t:Formula C) : cnf (NFormula) :=
   List.map  (fun x => x::nil) (xnormalise t).

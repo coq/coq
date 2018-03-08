@@ -11,7 +11,7 @@
 
 Require Export List.
 Require Export Bintree.
-Require Import Bool.
+Require Import Bool BinPos.
 
 Declare ML Module "rtauto_plugin".
 
@@ -97,8 +97,6 @@ match F with
   F_empty => G
 | F_push H hyps0 F0 =>  interp_ctx hyps0 F0  ([[H]] -> G)
 end.
-
-Require Export BinPos.
 
 Ltac wipe := intros;simpl;constructor.
 
