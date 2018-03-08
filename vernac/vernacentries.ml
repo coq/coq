@@ -72,7 +72,7 @@ let show_top_evars () =
 let show_universes () =
   let pfts = Proof_global.give_me_the_proof () in
   let gls,_,_,_,sigma = Proof.proof pfts in
-  let ctx = Evd.universe_context_set (Evd.nf_constraints sigma) in
+  let ctx = Evd.universe_context_set (Evd.minimize_universes sigma) in
   Termops.pr_evar_universe_context (Evd.evar_universe_context sigma) ++ fnl () ++
   str "Normalized constraints: " ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx
 

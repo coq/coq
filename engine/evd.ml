@@ -253,21 +253,8 @@ let instantiate_evar_array info c args =
   | [] -> c
   | _ -> replace_vars inst c
 
-type evar_universe_context = UState.t
 
-type 'a in_evar_universe_context = 'a * evar_universe_context
-
-let empty_evar_universe_context = UState.empty
-let union_evar_universe_context = UState.union
-let evar_universe_context_set = UState.context_set
-let evar_universe_context_constraints = UState.constraints
-let evar_context_universe_context = UState.context
-let evar_universe_context_of = UState.of_context_set
-let evar_universe_context_subst = UState.subst
-let add_constraints_context = UState.add_constraints
-let add_universe_constraints_context = UState.add_universe_constraints
-let constrain_variables = UState.constrain_variables 
-let evar_universe_context_of_binders = UState.of_binders
+type 'a in_evar_universe_context = 'a * UState.t
 
 (*******************************************************************)
 (* Metamaps *)
@@ -427,7 +414,7 @@ type evar_map = {
   undf_evars : evar_info EvMap.t;
   evar_names : EvNames.t;
   (** Universes *)
-  universes  : evar_universe_context;
+  universes  : UState.t;
   (** Conversion problems *)
   conv_pbs   : evar_constraint list;
   last_mods  : Evar.Set.t;
@@ -558,10 +545,10 @@ let existential_type d (n, args) =
   instantiate_evar_array info info.evar_concl args
 
 let add_constraints d c =
-  { d with universes = add_constraints_context d.universes c }
+  { d with universes = UState.add_constraints d.universes c }
 
 let add_universe_constraints d c = 
-  { d with universes = add_universe_constraints_context d.universes c }
+  { d with universes = UState.add_universe_constraints d.universes c }
 
 (*** /Lifting... ***)
 
@@ -586,7 +573,7 @@ let create_evar_defs sigma = { sigma with
 let empty = {
   defn_evars = EvMap.empty;
   undf_evars = EvMap.empty;
-  universes  = empty_evar_universe_context;
+  universes  = UState.empty;
   conv_pbs   = [];
   last_mods  = Evar.Set.empty;
   metas      = Metamap.empty;
@@ -609,14 +596,14 @@ let evars_reset_evd ?(with_conv_pbs=false) ?(with_univs=true) evd d =
   let last_mods = if with_conv_pbs then evd.last_mods else d.last_mods in
   let universes = 
     if not with_univs then evd.universes
-    else union_evar_universe_context evd.universes d.universes
+    else UState.union evd.universes d.universes
   in
   { evd with
     metas = d.metas;
     last_mods; conv_pbs; universes }
 
 let merge_universe_context evd uctx' =
-  { evd with universes = union_evar_universe_context evd.universes uctx' }
+  { evd with universes = UState.union evd.universes uctx' }
 
 let set_universe_context evd uctx' =
   { evd with universes = uctx' }
@@ -798,16 +785,6 @@ let make_flexible_variable evd ~algebraic u =
   { evd with universes =
       UState.make_flexible_variable evd.universes ~algebraic u }
 
-let make_evar_universe_context e l =
-  let uctx = UState.make (Environ.universes e) in
-  match l with
-  | None -> uctx
-  | Some us ->
-      List.fold_left
-        (fun uctx { CAst.loc; v = id } ->
-        fst (UState.new_univ_variable ?loc univ_rigid (Some id) uctx))
-        uctx us
-
 (****************************************)
 (* Operations on constants              *)
 (****************************************)
@@ -910,10 +887,6 @@ let check_eq evd s s' =
 let check_leq evd s s' =
   UGraph.check_leq (UState.ugraph evd.universes) s s'
 
-let normalize_evar_universe_context_variables = UState.normalize_variables
-
-let abstract_undefined_variables = UState.abstract_undefined_variables
-
 let fix_undefined_variables evd =
   { evd with universes = UState.fix_undefined_variables evd.universes }
 
@@ -922,16 +895,14 @@ let refresh_undefined_universes evd =
   let evd' = cmap (subst_univs_level_constr subst) {evd with universes = uctx'} in
     evd', subst
 
-let normalize_evar_universe_context = UState.normalize
-
-let nf_univ_variables evd = 
-  let subst, uctx' = normalize_evar_universe_context_variables evd.universes in
+let nf_univ_variables evd =
+  let subst, uctx' = UState.normalize_variables evd.universes in
   let evd' = {evd with universes = uctx'} in
     evd', subst
 
-let nf_constraints evd =
-  let subst, uctx' = normalize_evar_universe_context_variables evd.universes in
-  let uctx' = normalize_evar_universe_context uctx' in
+let minimize_universes evd =
+  let subst, uctx' = UState.normalize_variables evd.universes in
+  let uctx' = UState.minimize uctx' in
     {evd with universes = uctx'}
 
 let universe_of_name evd s = UState.universe_of_name evd.universes s
@@ -1076,7 +1047,7 @@ let clear_metas evd = {evd with metas = Metamap.empty}
 let meta_merge ?(with_univs = true) evd1 evd2 =
   let metas = Metamap.fold Metamap.add evd1.metas evd2.metas in
   let universes =
-    if with_univs then union_evar_universe_context evd2.universes evd1.universes
+    if with_univs then UState.union evd2.universes evd1.universes
     else evd2.universes
   in
   {evd2 with universes; metas; }
@@ -1176,3 +1147,25 @@ module Monad =
 (* Failure explanation *)
 
 type unsolvability_explanation = SeveralInstancesFound of int
+
+(** Deprecated *)
+type evar_universe_context = UState.t
+let empty_evar_universe_context = UState.empty
+let union_evar_universe_context = UState.union
+let evar_universe_context_set = UState.context_set
+let evar_universe_context_constraints = UState.constraints
+let evar_context_universe_context = UState.context
+let evar_universe_context_of = UState.of_context_set
+let evar_universe_context_subst = UState.subst
+let add_constraints_context = UState.add_constraints
+let constrain_variables = UState.constrain_variables
+let evar_universe_context_of_binders = UState.of_binders
+let make_evar_universe_context e l =
+  let g = Environ.universes e in
+  match l with
+  | None -> UState.make g
+  | Some l -> UState.make_with_initial_binders g l
+let normalize_evar_universe_context_variables = UState.normalize_variables
+let abstract_undefined_variables = UState.abstract_undefined_variables
+let normalize_evar_universe_context = UState.minimize
+let nf_constraints = minimize_universes

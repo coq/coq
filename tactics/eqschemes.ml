@@ -214,7 +214,7 @@ let build_sym_scheme env ind =
 	   rel_vect (2*nrealargs+2) nrealargs])),
      mkRel 1 (* varH *),
        [|cstr (nrealargs+1)|]))))
-  in c, Evd.evar_universe_context_of ctx
+  in c, UState.of_context_set ctx
 
 let sym_scheme_kind =
   declare_individual_scheme_object "_sym_internal"
@@ -285,7 +285,7 @@ let build_sym_involutive_scheme env ind =
 	       mkRel 1|])),
 	       mkRel 1 (* varH *),
 	       [|mkApp(eqrefl,[|applied_ind_C;cstr (nrealargs+1)|])|]))))
-  in (c, Evd.evar_universe_context_of ctx), eff
+  in (c, UState.of_context_set ctx), eff
 
 let sym_involutive_scheme_kind =
   declare_individual_scheme_object "_sym_involutive"
@@ -439,7 +439,7 @@ let build_l2r_rew_scheme dep env ind kind =
        [|main_body|])
    else
      main_body))))))
-  in (c, Evd.evar_universe_context_of ctx),
+  in (c, UState.of_context_set ctx),
       Safe_typing.concat_private eff' eff
 
 (**********************************************************************)
@@ -528,7 +528,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
 	  (if dep then realsign_ind_P 1 applied_ind_P' else realsign_P 2) s)
       (mkNamedLambda varHC applied_PC'
 	(mkVar varHC))|])))))
-  in c, Evd.evar_universe_context_of ctx
+  in c, UState.of_context_set ctx
 
 (**********************************************************************)
 (* Build the right-to-left rewriting lemma for hypotheses associated  *)
@@ -601,7 +601,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
 	   lift (nrealargs+3) applied_PC,
 	   mkRel 1)|]),
     [|mkVar varHC|]))))))
-  in c, Evd.evar_universe_context_of ctx
+  in c, UState.of_context_set ctx
 
 (**********************************************************************)
 (* This function "repairs" the non-dependent r2l forward rewriting    *)
@@ -808,7 +808,7 @@ let build_congr env (eq,refl,ctx) ind =
        [|mkApp (refl,
           [|mkVar varB;
 	    mkApp (mkVar varf, [|lift (mip.mind_nrealargs+3) b|])|])|]))))))
-  in c, Evd.evar_universe_context_of ctx
+  in c, UState.of_context_set ctx
 
 let congr_scheme_kind = declare_individual_scheme_object "_congr"
   (fun _ ind ->

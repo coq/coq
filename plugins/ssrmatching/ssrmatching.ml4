@@ -361,7 +361,7 @@ let unif_end env sigma0 ise0 pt ok =
   if ise2 == ise1 then (s, uc, t)
   else
     let s, uc', t = nf_open_term sigma0 ise2 t in
-    s, Evd.union_evar_universe_context uc uc', t
+    s, UState.union uc uc', t
 
 let unify_HO env sigma0 t1 t2 =
   let sigma = unif_HO env sigma0 t1 t2 in
@@ -1268,7 +1268,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
     let sigma,pat= mk_tpattern ?hack env sigma0 (sigma,p) ok L2R (fs sigma t) in
     sigma, [pat] in
   match pattern with
-  | None -> do_subst env0 concl0 concl0 1, Evd.empty_evar_universe_context
+  | None -> do_subst env0 concl0 concl0 1, UState.empty
   | Some (sigma, (T rp | In_T rp)) -> 
     let rp = fs sigma rp in
     let ise = create_evar_defs sigma in

@@ -218,7 +218,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   end in
   let avoid = ref Id.Set.empty in
   let _,_,_,_,sigma = Proof.proof pf in
-  let sigma = Evd.nf_constraints sigma in
+  let sigma = Evd.minimize_universes sigma in
   let rec fill_holes c =
     match EConstr.kind sigma c with
     | Evar (e,args) ->

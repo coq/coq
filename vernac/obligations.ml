@@ -472,7 +472,7 @@ let subst_body expand prg =
 let declare_definition prg =
   let body, typ = subst_body true prg in
   let nf = Universes.nf_evars_and_universes_opt_subst (fun x -> None)
-    (Evd.evar_universe_context_subst prg.prg_ctx) in
+    (UState.subst prg.prg_ctx) in
   let opaque = prg.prg_opaque in
   let fix_exn = Hook.get get_fix_exn () in
   let typ = nf typ in

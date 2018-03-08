@@ -341,7 +341,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
   let subst_evar k =
     Proof.in_proof proof (fun m -> Evd.existential_opt_value m k) in
   let nf = Universes.nf_evars_and_universes_opt_subst subst_evar
-    (Evd.evar_universe_context_subst universes) in
+    (UState.subst universes) in
   let make_body =
     if poly || now then
       let make_body t (c, eff) =
@@ -436,7 +436,7 @@ let return_proof ?(allow_partial=false) () =
     | Proof.HasUnresolvedEvar->
         error(strbrk"Attempt to save a proof with existential variables still non-instantiated") in
   let eff = Evd.eval_side_effects evd in
-  let evd = Evd.nf_constraints evd in
+  let evd = Evd.minimize_universes evd in
   (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
       side-effects... This may explain why one need to uniquize side-effects
       thereafter... *)

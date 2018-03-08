@@ -216,7 +216,7 @@ let same_proj sigma t1 t2 =
 let all_ok _ _ = true
 
 let fake_pmatcher_end () =
-  mkProp, L2R, (Evd.empty, Evd.empty_evar_universe_context, mkProp)
+  mkProp, L2R, (Evd.empty, UState.empty, mkProp)
 
 let unfoldintac occ rdx t (kt,_) gl = 
   let fs sigma x = Reductionops.nf_evar sigma x in

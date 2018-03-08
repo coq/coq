@@ -1922,7 +1922,7 @@ let build_morphism_signature env sigma m =
   in
   let morph = e_app_poly env evd PropGlobal.proper_type [| t; sig_; m |] in
   let evd = solve_constraints env !evd in
-  let evd = Evd.nf_constraints evd in
+  let evd = Evd.minimize_universes evd in
   let m = Evarutil.nf_evars_universes evd (EConstr.Unsafe.to_constr morph) in
   Pretyping.check_evars env Evd.empty evd (EConstr.of_constr m);
   Evd.evar_universe_context evd, m

@@ -476,6 +476,13 @@ let new_univ_variable ?loc rigid name
                 uctx_initial_universes = initial}
   in uctx', u
 
+let make_with_initial_binders e us =
+  let uctx = make e in
+  List.fold_left
+    (fun uctx { CAst.loc; v = id } ->
+       fst (new_univ_variable ?loc univ_rigid (Some id) uctx))
+    uctx us
+
 let add_global_univ uctx u =
   let initial =
     UGraph.add_universe u true uctx.uctx_initial_universes
@@ -578,7 +585,7 @@ let refresh_undefined_univ_variables uctx =
                uctx_initial_universes = initial } in
     uctx', subst
 
-let normalize uctx = 
+let minimize uctx =
   let ((vars',algs'), us') = 
     Universes.normalize_context_set uctx.uctx_local uctx.uctx_univ_variables
 				    uctx.uctx_univ_algebraic
@@ -606,3 +613,6 @@ let update_sigma_env uctx env =
                          uctx_universes = univs }
   in
   merge true univ_rigid eunivs eunivs.uctx_local
+
+(** Deprecated *)
+let normalize = minimize

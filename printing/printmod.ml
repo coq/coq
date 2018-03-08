@@ -141,7 +141,7 @@ let print_mutual_inductive env mind mib udecl =
     else []
   in
   let bl = Universes.universe_binders_with_opt_names (IndRef (mind, 0)) univs udecl in
-  let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
+  let sigma = Evd.from_ctx (UState.of_binders bl) in
   hov 0 (Printer.pr_polymorphic (Declareops.inductive_is_polymorphic mib) ++
          Printer.pr_cumulative
            (Declareops.inductive_is_polymorphic mib) 
@@ -185,7 +185,7 @@ let print_record env mind mib udecl =
   let envpar = push_rel_context params env in
   let bl = Universes.universe_binders_with_opt_names (IndRef (mind,0))
       (Array.to_list (Univ.Instance.to_array u)) udecl in
-  let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
+  let sigma = Evd.from_ctx (UState.of_binders bl) in
   let keyword =
     let open Declarations in
     match mib.mind_finite with

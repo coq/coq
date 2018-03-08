@@ -122,8 +122,8 @@ let compute_name internal id =
 let define internal id c p univs =
   let fd = declare_constant ~internal in
   let id = compute_name internal id in
-  let ctx = Evd.normalize_evar_universe_context univs in
-  let c = Universes.subst_opt_univs_constr (Evd.evar_universe_context_subst ctx) c in
+  let ctx = UState.minimize univs in
+  let c = Universes.subst_opt_univs_constr (UState.subst ctx) c in
   let univs =
     if p then Polymorphic_const_entry (UState.context ctx)
     else Monomorphic_const_entry (UState.context_set ctx)

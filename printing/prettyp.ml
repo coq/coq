@@ -94,7 +94,7 @@ let print_ref reduce ref udecl =
   let env = Global.env () in
   let bl = Universes.universe_binders_with_opt_names ref
       (Array.to_list (Univ.Instance.to_array inst)) udecl in
-  let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
+  let sigma = Evd.from_ctx (UState.of_binders bl) in
   let inst =
     if Global.is_polymorphic ref then Printer.pr_universe_instance sigma univs
     else mt ()
@@ -593,7 +593,7 @@ let print_constant with_values sep sp udecl =
         Array.to_list (Instance.to_array inst)
   in
   let ctx =
-    Evd.evar_universe_context_of_binders
+    UState.of_binders
       (Universes.universe_binders_with_opt_names (ConstRef sp) ulist udecl)
   in
   let env = Global.env () and sigma = Evd.from_ctx ctx in
