@@ -8,7 +8,6 @@
 
 open Pp
 open Util
-open Constr
 open Const_omega
 module OmegaSolver = Omega_plugin.Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
@@ -67,14 +66,14 @@ type comparaison = Eq | Leq | Geq | Gt | Lt | Neq
    (it could contains some [Term.Var] but no [Term.Rel]). So no need to
    lift when breaking or creating arrows. *)
 type oproposition =
-    Pequa of constr * oequation (* constr = copy of the Coq formula *)
+    Pequa of EConstr.t * oequation (* constr = copy of the Coq formula *)
   | Ptrue
   | Pfalse
   | Pnot of oproposition
   | Por of int * oproposition * oproposition
   | Pand of int * oproposition * oproposition
   | Pimp of int * oproposition * oproposition
-  | Pprop of constr
+  | Pprop of EConstr.t
 
 (* The equations *)
 and oequation = {
@@ -101,9 +100,9 @@ and oequation = {
 
 type environment = {
   (* La liste des termes non reifies constituant l'environnement global *)
-  mutable terms : constr list;
+  mutable terms : EConstr.t list;
   (* La meme chose pour les propositions *)
-  mutable props : constr list;
+  mutable props : EConstr.t list;
   (* Traduction des indices utilisés ici en les indices finaux utilisés par
    * la tactique Omega après dénombrement des variables utiles *)
   real_indices : int IntHtbl.t;
@@ -185,7 +184,7 @@ let print_env_reification env =
     | t :: l ->
       let sigma, env = Pfedit.get_current_context () in
       let s = Printf.sprintf "(%c%02d)" c i in
-      spc () ++ str s ++ str " := " ++ Printer.pr_lconstr_env env sigma t ++ fnl () ++
+      spc () ++ str s ++ str " := " ++ Printer.pr_econstr_env env sigma t ++ fnl () ++
       loop c (succ i) l
   in
   let prop_info = str "ENVIRONMENT OF PROPOSITIONS :" ++ fnl () ++ loop 'P' 0 env.props in
@@ -218,8 +217,8 @@ let display_omega_var i = Printf.sprintf "OV%d" i
    l'environnement initial contenant tout. Il faudra le réduire après
    calcul des variables utiles. *)
 
-let add_reified_atom t env =
-  try List.index0 Constr.equal t env.terms
+let add_reified_atom sigma t env =
+  try List.index0 (EConstr.eq_constr sigma) t env.terms
   with Not_found ->
     let i = List.length env.terms in
     env.terms <- env.terms @ [t]; i
@@ -236,8 +235,8 @@ let set_reified_atom v t env =
 
 (* \subsection{Gestion de l'environnement de proposition pour Omega} *)
 (* ajout d'une proposition *)
-let add_prop env t =
-  try List.index0 Constr.equal t env.props
+let add_prop sigma env t =
+  try List.index0 (EConstr.eq_constr sigma) t env.props
   with Not_found ->
     let i = List.length env.props in  env.props <- env.props @ [t]; i
 
@@ -290,7 +289,7 @@ let oformula_of_omega af =
   in
   loop af.body
 
-let app f v = mkApp(Lazy.force f,v)
+let app f v = EConstr.mkApp(Lazy.force f,v)
 
 (* \subsection{Oformula vers COQ reel} *)
 
@@ -347,18 +346,19 @@ let reified_conn = function
   | Pimp _ -> app coq_p_imp
   | _ -> assert false
 
-let rec reified_of_oprop env t = match t with
+let rec reified_of_oprop sigma env t = match t with
   | Pequa (_,{ e_comp=cmp; e_left=t1; e_right=t2 }) ->
      reified_cmp cmp [| reified_of_formula env t1; reified_of_formula env t2 |]
   | Ptrue -> Lazy.force coq_p_true
   | Pfalse -> Lazy.force coq_p_false
-  | Pnot t -> app coq_p_not [| reified_of_oprop env t |]
+  | Pnot t -> app coq_p_not [| reified_of_oprop sigma env t |]
   | Por (_,t1,t2) | Pand (_,t1,t2) | Pimp (_,t1,t2) ->
-     reified_conn t [| reified_of_oprop env t1; reified_of_oprop env t2 |]
-  | Pprop t -> app coq_p_prop [| mk_nat (add_prop env t) |]
+     reified_conn t
+      [| reified_of_oprop sigma env t1; reified_of_oprop sigma env t2 |]
+  | Pprop t -> app coq_p_prop [| mk_nat (add_prop sigma env t) |]
 
-let reified_of_proposition env f =
-  try reified_of_oprop env f
+let reified_of_proposition sigma env f =
+  try reified_of_oprop sigma env f
   with reraise -> pprint stderr f; raise reraise
 
 let reified_of_eq env (l,r) =
@@ -475,28 +475,28 @@ let mkPor i x y = Por (i,x,y)
 let mkPand i x y = Pand (i,x,y)
 let mkPimp i x y = Pimp (i,x,y)
 
-let rec oformula_of_constr env t =
-  match Z.parse_term t with
-    | Tplus (t1,t2) -> binop env (fun x y -> Oplus(x,y)) t1 t2
-    | Tminus (t1,t2) -> binop env (fun x y -> Ominus(x,y)) t1 t2
+let rec oformula_of_constr sigma env t =
+  match Z.parse_term sigma t with
+    | Tplus (t1,t2) -> binop sigma env (fun x y -> Oplus(x,y)) t1 t2
+    | Tminus (t1,t2) -> binop sigma env (fun x y -> Ominus(x,y)) t1 t2
     | Tmult (t1,t2) ->
-       (match Z.get_scalar t1 with
-        | Some n -> Omult (Oint n,oformula_of_constr env t2)
+       (match Z.get_scalar sigma t1 with
+        | Some n -> Omult (Oint n,oformula_of_constr sigma env t2)
         | None ->
-           match Z.get_scalar t2 with
-           | Some n -> Omult (oformula_of_constr env t1, Oint n)
-           | None -> Oatom (add_reified_atom t env))
-    | Topp t -> Oopp(oformula_of_constr env t)
-    | Tsucc t -> Oplus(oformula_of_constr env t, Oint one)
+           match Z.get_scalar sigma t2 with
+           | Some n -> Omult (oformula_of_constr sigma env t1, Oint n)
+           | None -> Oatom (add_reified_atom sigma t env))
+    | Topp t -> Oopp(oformula_of_constr sigma env t)
+    | Tsucc t -> Oplus(oformula_of_constr sigma env t, Oint one)
     | Tnum n -> Oint n
-    | Tother -> Oatom (add_reified_atom t env)
+    | Tother -> Oatom (add_reified_atom sigma t env)
 
-and binop env c t1 t2 =
-  let t1' = oformula_of_constr env t1 in
-  let t2' = oformula_of_constr env t2 in
+and binop sigma env c t1 t2 =
+  let t1' = oformula_of_constr sigma env t1 in
+  let t2' = oformula_of_constr sigma env t2 in
   c t1' t2'
 
-and binprop env (neg2,depends,origin,path)
+and binprop sigma env (neg2,depends,origin,path)
              add_to_depends neg1 gl c t1 t2 =
   let i = new_connector_id env in
   let depends1 = if add_to_depends then Left i::depends else depends in
@@ -504,41 +504,41 @@ and binprop env (neg2,depends,origin,path)
   if add_to_depends then
     IntHtbl.add env.constructors i {o_hyp = origin; o_path = List.rev path};
   let t1' =
-    oproposition_of_constr env (neg1,depends1,origin,O_left::path) gl t1 in
+    oproposition_of_constr sigma env (neg1,depends1,origin,O_left::path) gl t1 in
   let t2' =
-    oproposition_of_constr env (neg2,depends2,origin,O_right::path) gl t2 in
+    oproposition_of_constr sigma env (neg2,depends2,origin,O_right::path) gl t2 in
   (* On numérote le connecteur dans l'environnement. *)
   c i t1' t2'
 
-and mk_equation env ctxt c connector t1 t2 =
-  let t1' = oformula_of_constr env t1 in
-  let t2' = oformula_of_constr env t2 in
+and mk_equation sigma env ctxt c connector t1 t2 =
+  let t1' = oformula_of_constr sigma env t1 in
+  let t2' = oformula_of_constr sigma env t2 in
   (* On ajoute l'equation dans l'environnement. *)
   let omega = normalize_equation env ctxt connector t1' t2' in
   add_equation env omega;
   Pequa (c,omega)
 
-and oproposition_of_constr env ((negated,depends,origin,path) as ctxt) gl c =
+and oproposition_of_constr sigma env ((negated,depends,origin,path) as ctxt) gl c =
   match Z.parse_rel gl c with
-    | Req (t1,t2) -> mk_equation env ctxt c Eq t1 t2
-    | Rne (t1,t2) -> mk_equation env ctxt c Neq t1 t2
-    | Rle (t1,t2) -> mk_equation env ctxt c Leq t1 t2
-    | Rlt (t1,t2) -> mk_equation env ctxt c Lt t1 t2
-    | Rge (t1,t2) -> mk_equation env ctxt c Geq t1 t2
-    | Rgt (t1,t2) -> mk_equation env ctxt c Gt t1 t2
+    | Req (t1,t2) -> mk_equation sigma env ctxt c Eq t1 t2
+    | Rne (t1,t2) -> mk_equation sigma env ctxt c Neq t1 t2
+    | Rle (t1,t2) -> mk_equation sigma env ctxt c Leq t1 t2
+    | Rlt (t1,t2) -> mk_equation sigma env ctxt c Lt t1 t2
+    | Rge (t1,t2) -> mk_equation sigma env ctxt c Geq t1 t2
+    | Rgt (t1,t2) -> mk_equation sigma env ctxt c Gt t1 t2
     | Rtrue -> Ptrue
     | Rfalse -> Pfalse
     | Rnot t ->
        let ctxt' = (not negated, depends, origin,(O_mono::path)) in
-       Pnot (oproposition_of_constr env ctxt' gl t)
-    | Ror (t1,t2) -> binprop env ctxt (not negated) negated gl mkPor t1 t2
-    | Rand (t1,t2) -> binprop env ctxt negated negated gl mkPand t1 t2
+       Pnot (oproposition_of_constr sigma env ctxt' gl t)
+    | Ror (t1,t2) -> binprop sigma env ctxt (not negated) negated gl mkPor t1 t2
+    | Rand (t1,t2) -> binprop sigma env ctxt negated negated gl mkPand t1 t2
     | Rimp (t1,t2) ->
-       binprop env ctxt (not negated) (not negated) gl mkPimp t1 t2
+       binprop sigma env ctxt (not negated) (not negated) gl mkPimp t1 t2
     | Riff (t1,t2) ->
        (* No lifting here, since Omega only works on closed propositions. *)
-       binprop env ctxt negated negated gl mkPand
-         (Term.mkArrow t1 t2) (Term.mkArrow t2 t1)
+       binprop sigma env ctxt negated negated gl mkPand
+         (EConstr.mkArrow t1 t2) (EConstr.mkArrow t2 t1)
     | _ -> Pprop c
 
 (* Destructuration des hypothèses et de la conclusion *)
@@ -553,27 +553,25 @@ let display_gl env t_concl t_lhyps =
 
 type defined = Defined | Assumed
 
-let reify_hyp env gl i =
+let reify_hyp sigma env gl i =
   let open Context.Named.Declaration in
   let ctxt = (false,[],i,[]) in
   match Tacmach.New.pf_get_hyp i gl with
-  | LocalDef (_,d,t) when Z.is_int_typ gl (EConstr.Unsafe.to_constr t) ->
-     let d = EConstr.Unsafe.to_constr d in
+  | LocalDef (_,d,t) when Z.is_int_typ gl t ->
      let dummy = Lazy.force coq_True in
-     let p = mk_equation env ctxt dummy Eq (mkVar i) d in
+     let p = mk_equation sigma env ctxt dummy Eq (EConstr.mkVar i) d in
      i,Defined,p
   | LocalDef (_,_,t) | LocalAssum (_,t) ->
-     let t = EConstr.Unsafe.to_constr t in
-     let p = oproposition_of_constr env ctxt gl t in
+     let p = oproposition_of_constr sigma env ctxt gl t in
      i,Assumed,p
 
 let reify_gl env gl =
+  let sigma = Proofview.Goal.sigma gl in
   let concl = Tacmach.New.pf_concl gl in
-  let concl = EConstr.Unsafe.to_constr concl in
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
   let ctxt_concl = (true,[],id_concl,[O_mono]) in
-  let t_concl = oproposition_of_constr env ctxt_concl gl concl in
-  let t_lhyps = List.map (reify_hyp env gl) hyps in
+  let t_concl = oproposition_of_constr sigma env ctxt_concl gl concl in
+  let t_lhyps = List.map (reify_hyp sigma env gl) hyps in
   let () = if !debug then display_gl env t_concl t_lhyps in
   t_concl, t_lhyps
 
@@ -684,8 +682,7 @@ let rec stated_in_tree = function
   | Tree(_,t1,t2) -> StateSet.union (stated_in_tree t1) (stated_in_tree t2)
   | Leaf s -> stated_in_trace s.s_trace
 
-let mk_refl t =
-  EConstr.of_constr (app coq_refl_equal [|Lazy.force Z.typ; t|])
+let mk_refl t = app coq_refl_equal [|Lazy.force Z.typ; t|]
 
 let digest_stated_equations env tree =
   let do_equation st (vars,gens,eqns,ids) =
@@ -775,7 +772,7 @@ let maximize_prop equas c =
         | t1', t2' -> Pand(i,t1',t2'))
     | Pimp(i,t1,t2) ->
        (match loop t1, loop t2 with
-        | Pprop p1, Pprop p2 -> Pprop (Term.mkArrow p1 p2) (* no lift (closed) *)
+        | Pprop p1, Pprop p2 -> Pprop (EConstr.mkArrow p1 p2) (* no lift (closed) *)
         | t1', t2' -> Pimp(i,t1',t2'))
     | Ptrue -> Pprop (app coq_True [||])
     | Pfalse -> Pprop (app coq_False [||])
@@ -852,12 +849,15 @@ let hyp_idx env_hyp i =
    a O_SUM followed by a O_BAD_CONSTANT *)
 
 let sum_bad inv i1 i2 =
+  let open EConstr in
   mkApp (Lazy.force coq_s_sum,
          [| Z.mk Bigint.one; i1;
             Z.mk (if inv then negone else Bigint.one); i2;
             mkApp (Lazy.force coq_s_bad_constant, [| mk_nat 0 |])|])
 
-let rec reify_trace env env_hyp = function
+let rec reify_trace env env_hyp =
+  let open EConstr in
+  function
   | CONSTANT_NOT_NUL(e,_) :: []
   | CONSTANT_NEG(e,_) :: []
   | CONSTANT_NUL e :: [] ->
@@ -958,7 +958,7 @@ l'extraction d'un ensemble minimal de solutions permettant la
 résolution globale du système et enfin construit la trace qui permet
 de faire rejouer cette solution par la tactique réflexive. *)
 
-let resolution unsafe env (reified_concl,reified_hyps) systems_list =
+let resolution unsafe sigma env (reified_concl,reified_hyps) systems_list =
   if !debug then Printf.printf "\n====================================\n";
   let all_solutions = List.mapi (solve_system env) systems_list in
   let solution_tree = solve_with_constraints all_solutions [] in
@@ -1006,15 +1006,15 @@ let resolution unsafe env (reified_concl,reified_hyps) systems_list =
   (** The environment [env] (and especially [env.real_indices]) is now
       ready for the coming reifications: *)
   let l_reified_stated = List.map (reified_of_eq env) to_reify_stated in
-  let reified_concl = reified_of_proposition env reified_concl in
+  let reified_concl = reified_of_proposition sigma env reified_concl in
   let l_reified_terms =
     List.map
       (fun id ->
         match Id.Map.find id reified_hyps with
         | Defined,p ->
-           reified_of_proposition env p, mk_refl (mkVar id)
+           reified_of_proposition sigma env p, mk_refl (EConstr.mkVar id)
         | Assumed,p ->
-           reified_of_proposition env (maximize_prop useful_equa_ids p),
+           reified_of_proposition sigma env (maximize_prop useful_equa_ids p),
            EConstr.mkVar id
         | exception Not_found -> assert false)
       useful_hypnames
@@ -1036,17 +1036,16 @@ let resolution unsafe env (reified_concl,reified_hyps) systems_list =
   let decompose_tactic = decompose_tree env context solution_tree in
 
   Tactics.generalize (l_generalize_arg @ l_reified_hypnames) >>
-  Tactics.convert_concl_no_check (EConstr.of_constr reified) Term.DEFAULTcast >>
-  Tactics.apply (EConstr.of_constr (app coq_do_omega [|decompose_tactic|])) >>
+  Tactics.convert_concl_no_check reified Term.DEFAULTcast >>
+  Tactics.apply (app coq_do_omega [|decompose_tactic|]) >>
   show_goal >>
   (if unsafe then
      (* Trust the produced term. Faster, but might fail later at Qed.
         Also handy when debugging, e.g. via a Show Proof after romega. *)
-     Tactics.convert_concl_no_check
-       (EConstr.of_constr (Lazy.force coq_True)) Term.VMcast
+     Tactics.convert_concl_no_check (Lazy.force coq_True) Term.VMcast
    else
      Tactics.normalise_vm_in_concl) >>
-  Tactics.apply (EConstr.of_constr (Lazy.force coq_I))
+  Tactics.apply (Lazy.force coq_I)
 
 let total_reflexive_omega_tactic unsafe =
   Proofview.Goal.nf_enter begin fun gl ->
@@ -1064,7 +1063,8 @@ let total_reflexive_omega_tactic unsafe =
     List.fold_left (fun s (id,d,p) -> Id.Map.add id (d,p) s) Id.Map.empty hyps
   in
   if !debug then display_systems systems_list;
-  resolution unsafe env (concl,hyps) systems_list
+  let sigma = Proofview.Goal.sigma gl in
+  resolution unsafe sigma env (concl,hyps) systems_list
   with NO_CONTRADICTION -> CErrors.user_err Pp.(str "ROmega can't solve this system")
   end
 
