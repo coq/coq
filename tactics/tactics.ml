@@ -388,12 +388,11 @@ let find_name mayrepl decl naming gl = match naming with
       new_fresh_id idl (default_id env sigma decl) gl
   | NamingBasedOn (id,idl) ->  new_fresh_id idl id gl
   | NamingMustBe (loc,id) ->
-      (* When name is given, we allow to hide a global name *)
-      let ids_of_hyps = Tacmach.New.pf_ids_set_of_hyps gl in
-      let id' = next_ident_away id ids_of_hyps in
-      if not mayrepl && not (Id.equal id' id) then
-        user_err ?loc  (Id.print id ++ str" is already used.");
-      id
+     (* When name is given, we allow to hide a global name *)
+     let ids_of_hyps = Tacmach.New.pf_ids_set_of_hyps gl in
+     if not mayrepl && Id.Set.mem id ids_of_hyps then
+       user_err ?loc  (Id.print id ++ str" is already used.");
+     id
 
 (**************************************************************)
 (*   Computing position of hypotheses for replacing           *)
