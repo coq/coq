@@ -38,14 +38,13 @@ module Refset' = Refset_env
 let occur_kn_in_ref kn = function
   | IndRef (kn',_)
   | ConstructRef ((kn',_),_) -> MutInd.equal kn kn'
-  | ConstRef _ -> false
-  | VarRef _ -> assert false
+  | ConstRef _ | VarRef _ -> false
 
 let repr_of_r = function
   | ConstRef kn -> Constant.repr3 kn
   | IndRef (kn,_)
   | ConstructRef ((kn,_),_) -> MutInd.repr3 kn
-  | VarRef _ -> assert false
+  | VarRef v -> KerName.repr (Lib.make_kn v)
 
 let modpath_of_r r =
   let mp,_,_ = repr_of_r r in mp
@@ -279,7 +278,7 @@ let safe_basename_of_global r =
     | ConstructRef ((kn,i),j) ->
       (try (unsafe_lookup_ind kn).ind_packets.(i).ip_consnames.(j-1)
        with Not_found -> last_chance r)
-    | VarRef _ -> assert false
+    | VarRef v -> v
 
 let string_of_global r =
  try string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty r)
