@@ -33,7 +33,7 @@ classes:
 
 \begin{itemize}
 \item {\tt Sortclass}, the class of sorts; 
-  its objects are the terms whose type is a sort.
+  its objects are the terms whose type is a sort (e.g., \ssrC{Prop} or \ssrC{Type}).
 \item {\tt Funclass}, the class of functions; 
   its objects are all the terms with a functional 
   type, i.e. of form $forall~ x:A, B$.
@@ -73,8 +73,8 @@ conditions holds:
 
 We then write $f:C \mbox{\texttt{>->}} D$. The restriction on the type
 of coercions is called {\em the uniform inheritance condition}.
-Remark that the abstract classes {\tt Funclass} and {\tt Sortclass}
-cannot be source classes.
+Remark: the abstract class {\tt Sortclass} can be used as source class,
+but the abstract class {\tt Funclass} cannot.
 
 To coerce an object $t:C~t_1..t_n$ of $C$ towards $D$, we have to
 apply the coercion $f$ to it; the obtained term $f~t_1..t_n~t$ is
@@ -160,7 +160,6 @@ Declares the construction denoted by {\qualid} as a coercion between
 \item {\qualid} \errindex{not declared}
 \item {\qualid} \errindex{is already a coercion}
 \item \errindex{Funclass cannot be a source class}
-\item \errindex{Sortclass cannot be a source class}
 \item {\qualid} \errindex{is not a function}
 \item \errindex{Cannot find the source class of {\qualid}}
 \item \errindex{Cannot recognize {\class$_1$} as a source class of {\qualid}}

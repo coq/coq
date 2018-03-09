@@ -225,7 +225,7 @@ let build_id_coercion idf_opt source poly =
   ConstRef kn
 
 let check_source = function
-| Some (CL_FUN|CL_SORT as s) -> raise (CoercionError (ForbiddenSourceClass s))
+| Some (CL_FUN as s) -> raise (CoercionError (ForbiddenSourceClass s))
 | _ -> ()
 
 (*
