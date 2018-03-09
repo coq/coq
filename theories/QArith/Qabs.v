@@ -28,8 +28,8 @@ intros [xn xd] [yn yd] H.
 simpl.
 unfold Qeq in *.
 simpl in *.
-change (' yd)%Z with (Z.abs (' yd)).
-change (' xd)%Z with (Z.abs (' xd)).
+change (Zpos yd)%Z with (Z.abs (Zpos yd)).
+change (Zpos xd)%Z with (Z.abs (Zpos xd)).
 repeat rewrite <- Z.abs_mul.
 congruence.
 Qed.
@@ -88,8 +88,8 @@ unfold Qplus.
 unfold Qle.
 simpl.
 apply Z.mul_le_mono_nonneg_r;auto with *.
-change (' yd)%Z with (Z.abs (' yd)).
-change (' xd)%Z with (Z.abs (' xd)).
+change (Zpos yd)%Z with (Z.abs (Zpos yd)).
+change (Zpos xd)%Z with (Z.abs (Zpos xd)).
 repeat rewrite <- Z.abs_mul.
 apply Z.abs_triangle.
 Qed.

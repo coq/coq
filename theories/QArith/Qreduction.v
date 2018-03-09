@@ -21,14 +21,14 @@ Notation Z2P_correct := Z2Pos.id (only parsing).
 
 Definition Qred (q:Q) :=
   let (q1,q2) := q in
-  let (r1,r2) := snd (Z.ggcd q1 ('q2))
+  let (r1,r2) := snd (Z.ggcd q1 (Zpos q2))
   in r1#(Z.to_pos r2).
 
 Lemma Qred_correct : forall q, (Qred q) == q.
 Proof.
   unfold Qred, Qeq; intros (n,d); simpl.
-  generalize (Z.ggcd_gcd n ('d)) (Z.gcd_nonneg n ('d))
-    (Z.ggcd_correct_divisors n ('d)).
+  generalize (Z.ggcd_gcd n (Zpos d)) (Z.gcd_nonneg n (Zpos d))
+    (Z.ggcd_correct_divisors n (Zpos d)).
   destruct (Z.ggcd n (Zpos d)) as (g,(nn,dd)); simpl.
   Open Scope Z_scope.
   intros Hg LE (Hn,Hd). rewrite Hd, Hn.
@@ -45,13 +45,13 @@ Proof.
   unfold Qred, Qeq in *; simpl in *.
   Open Scope Z_scope.
   intros H.
-  generalize (Z.ggcd_gcd a ('b)) (Zgcd_is_gcd a ('b))
-    (Z.gcd_nonneg a ('b)) (Z.ggcd_correct_divisors a ('b)).
+  generalize (Z.ggcd_gcd a (Zpos b)) (Zgcd_is_gcd a (Zpos b))
+    (Z.gcd_nonneg a (Zpos b)) (Z.ggcd_correct_divisors a (Zpos b)).
   destruct (Z.ggcd a (Zpos b)) as (g,(aa,bb)).
   simpl. intros <- Hg1 Hg2 (Hg3,Hg4).
   assert (Hg0 : g <> 0) by (intro; now subst g).
-  generalize (Z.ggcd_gcd c ('d)) (Zgcd_is_gcd c ('d))
-    (Z.gcd_nonneg c ('d)) (Z.ggcd_correct_divisors c ('d)).
+  generalize (Z.ggcd_gcd c (Zpos d)) (Zgcd_is_gcd c (Zpos d))
+    (Z.gcd_nonneg c (Zpos d)) (Z.ggcd_correct_divisors c (Zpos d)).
   destruct (Z.ggcd c (Zpos d)) as (g',(cc,dd)).
   simpl. intros <- Hg'1 Hg'2 (Hg'3,Hg'4).
   assert (Hg'0 : g' <> 0) by (intro; now subst g').

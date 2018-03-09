@@ -227,9 +227,7 @@ Infix "/" := Qdiv : Q_scope.
 
 (** A light notation for [Zpos] *)
 
-Notation " ' x " := (Zpos x) (at level 20, no associativity) : Z_scope.
-
-Lemma Qmake_Qdiv a b : a#b==inject_Z a/inject_Z ('b).
+Lemma Qmake_Qdiv a b : a#b==inject_Z a/inject_Z (Zpos b).
 Proof.
 unfold Qeq. simpl. ring.
 Qed.
@@ -242,9 +240,9 @@ Proof.
   Open Scope Z_scope.
   intros (p1, p2) (q1, q2) H (r1, r2) (s1, s2) H0; simpl in *.
   simpl_mult; ring_simplify.
-  replace (p1 * 'r2 * 'q2) with (p1 * 'q2 * 'r2) by ring.
+  replace (p1 * Zpos r2 * Zpos q2) with (p1 * Zpos q2 * Zpos r2) by ring.
   rewrite H.
-  replace (r1 * 'p2 * 'q2 * 's2) with (r1 * 's2 * 'p2 * 'q2) by ring.
+  replace (r1 * Zpos p2 * Zpos q2 * Zpos s2) with (r1 * Zpos s2 * Zpos p2 * Zpos q2) by ring.
   rewrite H0.
   ring.
   Close Scope Z_scope.
@@ -255,7 +253,7 @@ Proof.
   unfold Qeq, Qopp; simpl.
   Open Scope Z_scope.
   intros x y H; simpl.
-  replace (- Qnum x * ' Qden y) with (- (Qnum x * ' Qden y)) by ring.
+  replace (- Qnum x * Zpos (Qden y)) with (- (Qnum x * Zpos (Qden y))) by ring.
   rewrite H;  ring.
   Close Scope Z_scope.
 Qed.
@@ -272,9 +270,9 @@ Proof.
   Open Scope Z_scope.
   intros (p1, p2) (q1, q2) H (r1, r2) (s1, s2) H0; simpl in *.
   intros; simpl_mult; ring_simplify.
-  replace (q1 * s1 * 'p2) with (q1 * 'p2 * s1) by ring.
+  replace (q1 * s1 * Zpos p2) with (q1 * Zpos p2 * s1) by ring.
   rewrite <- H.
-  replace (p1 * r1 * 'q2 * 's2) with (r1 * 's2 * p1 * 'q2) by ring.
+  replace (p1 * r1 * Zpos q2 * Zpos s2) with (r1 * Zpos s2 * p1 * Zpos q2) by ring.
   rewrite H0.
   ring.
   Close Scope Z_scope.
@@ -305,13 +303,13 @@ Proof.
   unfold Qeq, Qcompare.
   Open Scope Z_scope.
   intros (p1,p2) (q1,q2) H (r1,r2) (s1,s2) H'; simpl in *.
-  rewrite <- (Zcompare_mult_compat (q2*s2) (p1*'r2)).
-  rewrite <- (Zcompare_mult_compat (p2*r2) (q1*'s2)).
-  change ('(q2*s2)) with ('q2 * 's2).
-  change ('(p2*r2)) with ('p2 * 'r2).
-  replace ('q2 * 's2 * (p1*'r2)) with ((p1*'q2)*'r2*'s2) by ring.
+  rewrite <- (Zcompare_mult_compat (q2*s2) (p1*Zpos r2)).
+  rewrite <- (Zcompare_mult_compat (p2*r2) (q1*Zpos s2)).
+  change (Zpos (q2*s2)) with (Zpos q2 * Zpos s2).
+  change (Zpos (p2*r2)) with (Zpos p2 * Zpos r2).
+  replace (Zpos q2 * Zpos s2 * (p1*Zpos r2)) with ((p1*Zpos q2)*Zpos r2*Zpos s2) by ring.
   rewrite H.
-  replace ('q2 * 's2 * (r1*'p2)) with ((r1*'s2)*'q2*'p2) by ring.
+  replace (Zpos q2 * Zpos s2 * (r1*Zpos p2)) with ((r1*Zpos s2)*Zpos q2*Zpos p2) by ring.
   rewrite H'.
   f_equal; ring.
   Close Scope Z_scope.
@@ -572,8 +570,8 @@ Lemma Qle_trans : forall x y z, x<=y -> y<=z -> x<=z.
 Proof.
   unfold Qle; intros (x1, x2) (y1, y2) (z1, z2); simpl; intros.
   Open Scope Z_scope.
-  apply Z.mul_le_mono_pos_r with ('y2); [easy|].
-  apply Z.le_trans with (y1 * 'x2 * 'z2).
+  apply Z.mul_le_mono_pos_r with (Zpos y2); [easy|].
+  apply Z.le_trans with (y1 * Zpos x2 * Zpos z2).
   - rewrite Z.mul_shuffle0. now apply Z.mul_le_mono_pos_r.
   - rewrite Z.mul_shuffle0, (Z.mul_shuffle0 z1).
     now apply Z.mul_le_mono_pos_r.
@@ -620,8 +618,8 @@ Lemma Qle_lt_trans : forall x y z, x<=y -> y<z -> x<z.
 Proof.
   unfold Qle, Qlt; intros (x1, x2) (y1, y2) (z1, z2); simpl; intros.
   Open Scope Z_scope.
-  apply Z.mul_lt_mono_pos_r with ('y2); [easy|].
-  apply Z.le_lt_trans with (y1 * 'x2 * 'z2).
+  apply Z.mul_lt_mono_pos_r with (Zpos y2); [easy|].
+  apply Z.le_lt_trans with (y1 * Zpos x2 * Zpos z2).
   - rewrite Z.mul_shuffle0. now apply Z.mul_le_mono_pos_r.
   - rewrite Z.mul_shuffle0, (Z.mul_shuffle0 z1).
     now apply Z.mul_lt_mono_pos_r.
@@ -632,8 +630,8 @@ Lemma Qlt_le_trans : forall x y z, x<y -> y<=z -> x<z.
 Proof.
   unfold Qle, Qlt; intros (x1, x2) (y1, y2) (z1, z2); simpl; intros.
   Open Scope Z_scope.
-  apply Z.mul_lt_mono_pos_r with ('y2); [easy|].
-  apply Z.lt_le_trans with (y1 * 'x2 * 'z2).
+  apply Z.mul_lt_mono_pos_r with (Zpos y2); [easy|].
+  apply Z.lt_le_trans with (y1 * Zpos x2 * Zpos z2).
   - rewrite Z.mul_shuffle0. now apply Z.mul_lt_mono_pos_r.
   - rewrite Z.mul_shuffle0, (Z.mul_shuffle0 z1).
     now apply Z.mul_le_mono_pos_r.
@@ -723,9 +721,9 @@ Proof.
   match goal with |- ?a <= ?b => ring_simplify a b end.
   rewrite Z.add_comm.
   apply Z.add_le_mono.
-  match goal with |- ?a <= ?b => ring_simplify z1 t1 ('z2) ('t2) a b end.
+  match goal with |- ?a <= ?b => ring_simplify z1 t1 (Zpos z2) (Zpos t2) a b end.
   auto with zarith.
-  match goal with |- ?a <= ?b => ring_simplify x1 y1 ('x2) ('y2) a b end.
+  match goal with |- ?a <= ?b => ring_simplify x1 y1 (Zpos x2) (Zpos y2) a b end.
   auto with zarith.
   Close Scope Z_scope.
 Qed.
@@ -740,9 +738,9 @@ Proof.
   match goal with |- ?a < ?b => ring_simplify a b end.
   rewrite Z.add_comm.
   apply Z.add_le_lt_mono.
-  match goal with |- ?a <= ?b => ring_simplify z1 t1 ('z2) ('t2) a b end.
+  match goal with |- ?a <= ?b => ring_simplify z1 t1 (Zpos z2) (Zpos t2) a b end.
   auto with zarith.
-  match goal with |- ?a < ?b => ring_simplify x1 y1 ('x2) ('y2) a b end.
+  match goal with |- ?a < ?b => ring_simplify x1 y1 (Zpos x2) (Zpos y2) a b end.
   do 2 (apply Z.mul_lt_mono_pos_r;try easy).
   Close Scope Z_scope.
 Qed.

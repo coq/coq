@@ -30,7 +30,7 @@ Lemma Qred_identity :
 Proof.
   intros (a,b) H; simpl in *.
   rewrite <- Z.ggcd_gcd in H.
-  generalize (Z.ggcd_correct_divisors a ('b)).
+  generalize (Z.ggcd_correct_divisors a (Zpos b)).
   destruct Z.ggcd as (g,(aa,bb)); simpl in *; subst.
   rewrite !Z.mul_1_l. now intros (<-,<-).
 Qed.
@@ -39,7 +39,7 @@ Lemma Qred_identity2 :
   forall q:Q, Qred q = q -> Z.gcd (Qnum q) (QDen q) = 1%Z.
 Proof.
   intros (a,b) H; simpl in *.
-  generalize (Z.gcd_nonneg a ('b)) (Z.ggcd_correct_divisors a ('b)).
+  generalize (Z.gcd_nonneg a (Zpos b)) (Z.ggcd_correct_divisors a (Zpos b)).
   rewrite <- Z.ggcd_gcd.
   destruct Z.ggcd as (g,(aa,bb)); simpl in *.
   injection H as <- <-. intros H (_,H').

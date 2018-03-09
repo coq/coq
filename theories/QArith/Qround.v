@@ -80,11 +80,11 @@ unfold Qlt.
 simpl.
 replace (n*1)%Z with n by ring.
 ring_simplify.
-replace (n / ' d * ' d + ' d)%Z with
-  (('d * (n / 'd) + n mod 'd) + 'd - n mod 'd)%Z by ring.
+replace (n / Zpos d * Zpos d + Zpos d)%Z with
+  ((Zpos d * (n / Zpos d) + n mod Zpos  d) + Zpos  d - n mod Zpos d)%Z by ring.
 rewrite <- Z_div_mod_eq; auto with*.
 rewrite <- Z.lt_add_lt_sub_r.
-destruct (Z_mod_lt n ('d)); auto with *.
+destruct (Z_mod_lt n (Zpos d)); auto with *.
 Qed.
 
 Hint Resolve Qlt_floor : qarith.
@@ -107,9 +107,9 @@ Proof.
 intros [xn xd] [yn yd] Hxy.
 unfold Qle in *.
 simpl in *.
-rewrite <- (Zdiv_mult_cancel_r xn ('xd) ('yd)); auto with *.
-rewrite <- (Zdiv_mult_cancel_r yn ('yd) ('xd)); auto with *.
-rewrite (Z.mul_comm ('yd) ('xd)).
+rewrite <- (Zdiv_mult_cancel_r xn (Zpos xd) (Zpos yd)); auto with *.
+rewrite <- (Zdiv_mult_cancel_r yn (Zpos yd) (Zpos xd)); auto with *.
+rewrite (Z.mul_comm (Zpos yd) (Zpos xd)).
 apply Z_div_le; auto with *.
 Qed.
 

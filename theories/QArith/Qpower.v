@@ -90,7 +90,7 @@ rewrite Qinv_power.
 reflexivity.
 Qed.
 
-Lemma Qinv_power_n : forall n p, (1#p)^n == /(inject_Z ('p))^n.
+Lemma Qinv_power_n : forall n p, (1#p)^n == /(inject_Z (Zpos p))^n.
 Proof.
 intros n p.
 rewrite Qmake_Qdiv.
@@ -190,7 +190,7 @@ unfold Z.succ.
 rewrite Zpower_exp; auto with *; try discriminate.
 rewrite Qpower_plus' by discriminate.
 rewrite <- IHn by discriminate.
-replace (a^'n*a^1)%Z with (a^'n*a)%Z by ring.
+replace (a^Zpos n*a^1)%Z with (a^Zpos n*a)%Z by ring.
 ring_simplify.
 reflexivity.
 Qed.

@@ -167,8 +167,8 @@ unfold Qinv, Q2R, Qeq; intros (x1, x2). case x1; unfold Qnum, Qden.
 simpl; intros; elim H; trivial.
 intros; field; auto. 
 intros;
-  change (IZR (Zneg x2)) with (- IZR (' x2))%R;
-  change (IZR (Zneg p)) with (- IZR (' p))%R;
+  change (IZR (Zneg x2)) with (- IZR (Zpos x2))%R;
+  change (IZR (Zneg p)) with (- IZR (Zpos p))%R;
   simpl; field; (*auto 8 with real.*)
   repeat split; auto; auto with real.
 Qed.
