@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Ltac_plugin
+open Stdarg
 
 DECLARE PLUGIN "nsatz_plugin"
 

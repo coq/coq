@@ -174,19 +174,22 @@ sig
   val default : ('raw, 'glb, 'top) genarg_type -> ('raw, 'glb, 'top) obj option
 end
 
+let get_arg_tag = function
+| ExtraArg s -> s
+| _ -> assert false
+
 module Register (M : GenObj) =
 struct
   module GenMap = ArgMap(struct type ('r, 'g, 't) t = ('r, 'g, 't) M.obj end)
   let arg0_map = ref GenMap.empty
 
-  let register0 arg f = match arg with
-  | ExtraArg s ->
+  let register0 arg f =
+    let s = get_arg_tag arg in
     if GenMap.mem s !arg0_map then
       let msg = str M.name ++ str " function already registered: " ++ str (ArgT.repr s) ++ str "." in
       CErrors.anomaly msg
     else
       arg0_map := GenMap.add s (GenMap.Pack f) !arg0_map
-  | _ -> assert false
 
   let get_obj0 name =
     try
@@ -199,8 +202,6 @@ struct
 
   (** For now, the following function is quite dummy and should only be applied
       to an extra argument type, otherwise, it will badly fail. *)
-  let obj t = match t with
-  | ExtraArg s -> get_obj0 s
-  | _ -> assert false
+  let obj t = get_obj0 @@ get_arg_tag t
 
 end

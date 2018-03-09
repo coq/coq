@@ -159,6 +159,9 @@ val unquote : ('a, 'co) abstract_argument_type -> argument_type
 
   This is boilerplate code used here and there in the code of Coq. *)
 
+val get_arg_tag : ('a, 'b, 'c) genarg_type -> ('a, 'b, 'c) ArgT.tag
+(** Works only on base objects (ExtraArg), otherwise fails badly. *)
+
 module type GenObj =
 sig
   type ('raw, 'glb, 'top) obj

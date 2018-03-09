@@ -12,7 +12,6 @@
 
 open Q_util
 open Argextend
-open Tacextend
 
 type rule = {
   r_head : string option;
@@ -26,6 +25,21 @@ type rule = {
   r_depr : unit option;
   (** Whether this entry is deprecated *)
 }
+
+(** Quotation difference for match clauses *)
+
+let default_patt loc =
+  (<:patt< _ >>, ploc_vala None, <:expr< failwith "Extension: cannot occur" >>)
+
+let make_fun loc cl =
+  let l = cl @ [default_patt loc] in
+  MLast.ExFun (loc, ploc_vala l)  (* correspond to <:expr< fun [ $list:l$ ] >> *)
+
+let rec make_patt = function
+  | [] -> <:patt< [] >>
+  | ExtNonTerminal (_, Some p) :: l ->
+      <:patt< [ $lid:p$ :: $make_patt l$ ] >>
+  | _::l -> make_patt l
 
 let rec make_let e = function
   | [] -> e

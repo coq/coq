@@ -67,3 +67,15 @@ val print_ltacs : unit -> unit
 
 val print_located_tactic : Libnames.reference -> unit
 (** Display the absolute name of a tactic. *)
+
+type _ ty_sig =
+| TyNil : (Geninterp.interp_sign -> unit Proofview.tactic) ty_sig
+| TyIdent : string * 'r ty_sig -> 'r ty_sig
+| TyArg :
+  (('a, 'b, 'c) Extend.ty_user_symbol * Names.Id.t) Loc.located * 'r ty_sig -> ('c -> 'r) ty_sig
+| TyAnonArg :
+  ('a, 'b, 'c) Extend.ty_user_symbol Loc.located * 'r ty_sig -> 'r ty_sig
+
+type ty_ml = TyML : 'r ty_sig * 'r -> ty_ml
+
+val tactic_extend : string -> string -> level:Int.t -> ty_ml list -> unit

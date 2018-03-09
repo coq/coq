@@ -15,6 +15,7 @@
 (************************************************************************)
 
 open Eqdecide
+open Stdarg
 
 DECLARE PLUGIN "ltac_plugin"
 

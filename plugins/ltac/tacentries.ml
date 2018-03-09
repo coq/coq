@@ -554,3 +554,138 @@ let () =
     AnyEntry Pltac.tactic_arg;
   ] in
   register_grammars_by_name "tactic" entries
+
+type _ ty_sig =
+| TyNil : (Geninterp.interp_sign -> unit Proofview.tactic) ty_sig
+| TyIdent : string * 'r ty_sig -> 'r ty_sig
+| TyArg :
+  (('a, 'b, 'c) Extend.ty_user_symbol * Id.t) Loc.located * 'r ty_sig -> ('c -> 'r) ty_sig
+| TyAnonArg :
+  ('a, 'b, 'c) Extend.ty_user_symbol Loc.located * 'r ty_sig -> 'r ty_sig
+
+type ty_ml = TyML : 'r ty_sig * 'r -> ty_ml
+
+let rec untype_user_symbol : type a b c. (a,b,c) ty_user_symbol -> Genarg.ArgT.any user_symbol = fun tu ->
+  match tu with
+  | TUlist1 l -> Ulist1(untype_user_symbol l)
+  | TUlist1sep(l,s) -> Ulist1sep(untype_user_symbol l, s)
+  | TUlist0 l -> Ulist0(untype_user_symbol l)
+  | TUlist0sep(l,s) -> Ulist0sep(untype_user_symbol l, s)
+  | TUopt(o) -> Uopt(untype_user_symbol o)
+  | TUentry a -> Uentry (Genarg.ArgT.Any a)
+  | TUentryl (a,i) -> Uentryl (Genarg.ArgT.Any a,i)
+
+let rec clause_of_sign : type a. a ty_sig -> Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list =
+  fun sign -> match sign with
+  | TyNil -> []
+  | TyIdent (s, sig') -> TacTerm s :: clause_of_sign sig'
+  | TyArg ((loc,(a,id)),sig') ->
+    TacNonTerm (loc,(untype_user_symbol a,Some id)) :: clause_of_sign sig'
+  | TyAnonArg ((loc,a),sig') ->
+    TacNonTerm (loc,(untype_user_symbol a,None)) :: clause_of_sign sig'
+
+let clause_of_ty_ml = function
+  | TyML (t,_) -> clause_of_sign t
+
+let rec prj : type a b c. (a,b,c) Extend.ty_user_symbol -> (a,b,c) genarg_type = function
+  | TUentry a -> ExtraArg a
+  | TUentryl (a,l) -> ExtraArg a
+  | TUopt(o) -> OptArg (prj o)
+  | TUlist1 l -> ListArg (prj l)
+  | TUlist1sep (l,_) -> ListArg (prj l)
+  | TUlist0 l -> ListArg (prj l)
+  | TUlist0sep (l,_) -> ListArg (prj l)
+
+let rec eval_sign : type a. a ty_sig -> a -> Geninterp.Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic =
+  fun sign tac ->
+    match sign with
+    | TyNil ->
+      begin fun vals ist -> match vals with
+      | [] -> tac ist
+      | _ :: _ -> assert false
+      end
+    | TyIdent (s, sig') -> eval_sign sig' tac
+    | TyArg ((_loc,(a,id)), sig') ->
+      let f = eval_sign sig' in
+      begin fun tac vals ist -> match vals with
+      | [] -> assert false
+      | v :: vals ->
+        let v' = Taccoerce.Value.cast (topwit (prj a)) v in
+        f (tac v') vals ist
+      end tac
+    | TyAnonArg ((_loc,a), sig') -> eval_sign sig' tac
+
+let eval : ty_ml -> Geninterp.Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic = function
+  | TyML (t,tac) -> eval_sign t tac
+
+let is_constr_entry = function
+| TUentry a -> Option.has_some @@ genarg_type_eq (ExtraArg a) Stdarg.wit_constr
+| _ -> false
+
+let rec only_constr : type a. a ty_sig -> bool = function
+| TyNil -> true
+| TyIdent(_,_) -> false
+| TyArg((_,(u,_)),s) -> if is_constr_entry u then only_constr s else false
+| TyAnonArg((_,u),s) -> if is_constr_entry u then only_constr s else false
+
+let rec mk_sign_vars : type a. a ty_sig -> Name.t list = function
+| TyNil -> []
+| TyIdent (_,s) -> mk_sign_vars s
+| TyArg((_,(_,name)),s) -> Name name :: mk_sign_vars s
+| TyAnonArg((_,_),s) -> Anonymous :: mk_sign_vars s
+
+let dummy_id = Id.of_string "_"
+
+let lift_constr_tac_to_ml_tac vars tac =
+  let tac _ ist = Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Tacmach.New.project gl in
+    let map = function
+    | Anonymous -> None
+    | Name id ->
+      let c = Id.Map.find id ist.Geninterp.lfun in
+      try Some (Taccoerce.Value.of_constr @@ Taccoerce.coerce_to_closed_constr env c)
+      with Taccoerce.CannotCoerceTo ty ->
+        Taccoerce.error_ltac_variable dummy_id (Some (env,sigma)) c ty
+    in
+    let args = List.map_filter map vars in
+    tac args ist
+  end in
+  tac
+
+let tactic_extend plugin_name tacname ~level sign =
+  let open Tacexpr in
+  let ml_tactic_name =
+    { mltac_tactic = tacname;
+      mltac_plugin = plugin_name }
+  in
+  match sign with
+  | [TyML (TyIdent (name, s),tac) as ml_tac] when only_constr s ->
+  (** The extension is only made of a name followed by constr entries: we do not
+      add any grammar nor printing rule and add it as a true Ltac definition. *)
+    (*
+    let patt = make_patt rem in
+    let vars = List.map make_var rem in
+    let vars = mlexpr_of_list (mlexpr_of_name mlexpr_of_ident) vars in
+       *)
+    let vars = mk_sign_vars s in
+    let ml = { Tacexpr.mltac_name = ml_tactic_name; Tacexpr.mltac_index = 0 } in
+    let tac = match s with
+    | TyNil -> eval ml_tac
+    (** Special handling of tactics without arguments: such tactics do not do
+        a Proofview.Goal.nf_enter to compute their arguments. It matters for some
+        whole-prof tactics like [shelve_unifiable]. *)
+    | _ -> lift_constr_tac_to_ml_tac vars (eval ml_tac)
+    in
+  (** Arguments are not passed directly to the ML tactic in the TacML node,
+      the ML tactic retrieves its arguments in the [ist] environment instead.
+      This is the rôle of the [lift_constr_tac_to_ml_tac] function. *)
+    let body = Tacexpr.TacFun (vars, Tacexpr.TacML (Loc.tag (ml, [])))in
+    let id = Names.Id.of_string name in
+    let obj () = Tacenv.register_ltac true false id body in
+    let () = Tacenv.register_ml_tactic ml_tactic_name [|tac|] in
+    Mltop.declare_cache_obj obj plugin_name
+  | _ ->
+  let obj () = add_ml_tactic_notation ml_tactic_name ~level (List.map clause_of_ty_ml sign) in
+  Tacenv.register_ml_tactic ml_tactic_name @@ Array.of_list (List.map eval sign);
+  Mltop.declare_cache_obj obj plugin_name

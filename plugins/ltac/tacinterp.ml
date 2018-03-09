@@ -79,9 +79,6 @@ let out_gen wit v =
 
 let val_tag wit = val_tag (topwit wit)
 
-let base_val_typ wit =
-  match val_tag wit with Val.Base t -> t | _ -> anomaly (str "Not a base val.")
-
 let pr_argument_type arg =
   let Val.Dyn (tag, _) = arg in
   Val.pr tag
@@ -93,11 +90,6 @@ let safe_msgnl s =
 
 type value = Val.t
 
-(** Abstract application, to print ltac functions *)
-type appl =
-  | UnnamedAppl (** For generic applications: nothing is printed *)
-  | GlbAppl of (Names.KerName.t * Val.t list) list
-       (** For calls to global constants, some may alias other. *)
 let push_appl appl args =
   match appl with
   | UnnamedAppl -> UnnamedAppl
@@ -120,19 +112,6 @@ let combine_appl appl1 appl2 =
   match appl1,appl2 with
   | UnnamedAppl,a | a,UnnamedAppl -> a
   | GlbAppl l1 , GlbAppl l2 -> GlbAppl (l2@l1)
-
-(* Values for interpretation *)
-type tacvalue =
-  | VFun of appl*ltac_trace * value Id.Map.t *
-      Name.t list * glob_tactic_expr
-  | VRec of value Id.Map.t ref * glob_tactic_expr
-
-let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
-  let wit = Genarg.create_arg "tacvalue" in
-  let () = register_val0 wit None in
-  let () = Genprint.register_val_print0 (base_val_typ wit)
-             (fun _ -> Genprint.TopPrinterBasic (fun () -> str "<tactic closure>")) in
-  wit
 
 let of_tacvalue v = in_gen (topwit wit_tacvalue) v
 let to_tacvalue v = out_gen (topwit wit_tacvalue) v
@@ -169,39 +148,6 @@ module Value = struct
     let closure = VFun (UnnamedAppl,extract_trace ist, ist.lfun, [], tac) in
     of_tacvalue closure
 
-  let cast_error wit v =
-    let pr_v = Pptactic.pr_value Pptactic.ltop v in
-    let Val.Dyn (tag, _) = v in
-    let tag = Val.pr tag in
-    user_err  (str "Type error: value " ++ pr_v ++ str " is a " ++ tag
-      ++ str " while type " ++ Val.pr wit ++ str " was expected.")
-
-  let unbox wit v ans = match ans with
-  | None -> cast_error wit v
-  | Some x -> x
-
-  let rec prj : type a. a Val.tag -> Val.t -> a = fun tag v -> match tag with
-  | Val.List tag -> List.map (fun v -> prj tag v) (unbox Val.typ_list v (to_list v))
-  | Val.Opt tag -> Option.map (fun v -> prj tag v) (unbox Val.typ_opt v (to_option v))
-  | Val.Pair (tag1, tag2) ->
-    let (x, y) = unbox Val.typ_pair v (to_pair v) in
-    (prj tag1 x, prj tag2 y)
-  | Val.Base t ->
-    let Val.Dyn (t', x) = v in
-    match Val.eq t t' with
-    | None -> cast_error t v
-    | Some Refl -> x
-
-  let rec tag_of_arg : type a b c. (a, b, c) genarg_type -> c Val.tag = fun wit -> match wit with
-  | ExtraArg _ -> val_tag wit
-  | ListArg t -> Val.List (tag_of_arg t)
-  | OptArg t -> Val.Opt (tag_of_arg t)
-  | PairArg (t1, t2) -> Val.Pair (tag_of_arg t1, tag_of_arg t2)
-
-  let val_cast arg v = prj (tag_of_arg arg) v
-
-  let cast (Topwit wit) v = val_cast wit v
-
 end
 
 let print_top_val env v = Pptactic.pr_value Pptactic.ltop v
@@ -232,21 +178,6 @@ let catch_error_tac call_trace tac =
 let curr_debug ist = match TacStore.get ist.extra f_debug with
 | None -> DebugOff
 | Some level -> level
-
-(** TODO: unify printing of generic Ltac values in case of coercion failure. *)
-
-(* Displays a value *)
-let pr_value env v =
-  let pr_with_env pr =
-    match env with
-    | Some (env,sigma) -> pr env sigma
-    | None -> str "a value of type" ++ spc () ++ pr_argument_type v in
-  let open Genprint in
-  match generic_val_print v with
-  | TopPrinterBasic pr -> pr ()
-  | TopPrinterNeedsContext pr -> pr_with_env pr
-  | TopPrinterNeedsContextAndLevel { default_already_surrounded; printer } ->
-     pr_with_env (fun env sigma -> printer env sigma default_already_surrounded)
 
 let pr_closure env ist body =
   let pp_body = Pptactic.pr_glob_tactic env body in
@@ -360,15 +291,11 @@ let debugging_exception_step ist signal_anomaly e pp =
   debugging_step ist (fun () ->
     pp() ++ spc() ++ str "raised the exception" ++ fnl() ++ explain_exc e)
 
-let error_ltac_variable ?loc id env v s =
-   user_err ?loc  (str "Ltac variable " ++ Id.print id ++
-   strbrk " is bound to" ++ spc () ++ pr_value env v ++ spc () ++
-   strbrk "which cannot be coerced to " ++ str s ++ str".")
-
 (* Raise Not_found if not in interpretation sign *)
 let try_interp_ltac_var coerce ist env {loc;v=id} =
   let v = Id.Map.find id ist.lfun in
-  try coerce v with CannotCoerceTo s -> error_ltac_variable ?loc id env v s
+  try coerce v with CannotCoerceTo s ->
+    Taccoerce.error_ltac_variable ?loc id env v s
 
 let interp_ltac_var coerce ist env locid =
   try try_interp_ltac_var coerce ist env locid
@@ -2089,27 +2016,6 @@ let _ =
     (EConstr.of_constr c, sigma)
   in
   Pretyping.register_constr_interp0 wit_tactic eval
-
-(** Used in tactic extension **)
-
-let dummy_id = Id.of_string "_"
-
-let lift_constr_tac_to_ml_tac vars tac =
-  let tac _ ist = Proofview.Goal.enter begin fun gl ->
-    let env = Proofview.Goal.env gl in
-    let sigma = project gl in
-    let map = function
-    | Anonymous -> None
-    | Name id ->
-      let c = Id.Map.find id ist.lfun in
-      try Some (coerce_to_closed_constr env c)
-      with CannotCoerceTo ty ->
-        error_ltac_variable dummy_id (Some (env,sigma)) c ty
-    in
-    let args = List.map_filter map vars in
-    tac args ist
-  end in
-  tac
 
 let vernac_debug b =
   set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
