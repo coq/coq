@@ -1376,7 +1376,7 @@ Abbreviations
 Numeral notations
 -----------------
 
-Starting with version 8.9, the following command allows to customize
+Starting with version 8.9, the following command allows the user to customize
 the way numeral literals are parsed and printed:
 
 .. cmd:: Numeral Notation @ty @pa @pr : @scope.
