@@ -46,7 +46,6 @@ stdenv.mkDerivation rec {
   ] else []) ++ (if buildDoc then [
 
     # Sphinx doc dependencies
-    ocamlPackages.lablgtk
     pkgconfig (python3.withPackages
       (ps: [ ps.sphinx ps.sphinx_rtd_theme ps.pexpect ps.beautifulsoup4
              ps.antlr4-python3-runtime ps.sphinxcontrib-bibtex ]))
