@@ -59,19 +59,21 @@ let e_judge_of_applied_inductive_knowing_parameters env evdref funj ind argjv =
           let ar = inductive_type_knowing_parameters env !evdref ind argjv in
           hnf_prod_appvect env !evdref (EConstr.of_constr ar) (Array.map j_val argjv) }
   | hj::restjl ->
-      match EConstr.kind !evdref (whd_all env !evdref typ) with
-      | Prod (_,c1,c2) ->
-         if Evarconv.e_cumul env evdref hj.uj_type c1 then
-           apply_rec (n+1) (subst1 hj.uj_val c2) restjl
-         else
-           error_cant_apply_bad_type env !evdref (n, c1, hj.uj_type) funj argjv
-      | Evar ev ->
-          let (evd',t) = Evardefine.define_evar_as_product !evdref ev in
-          evdref := evd';
-          let (_,_,c2) = destProd evd' t in
-          apply_rec (n+1) (subst1 hj.uj_val c2) restjl
-      | _ ->
-          error_cant_apply_not_functional env !evdref funj argjv
+       let (c1,c2) =
+         match EConstr.kind !evdref (whd_all env !evdref typ) with
+         | Prod (_,c1,c2) -> (c1,c2)
+         | Evar ev ->
+             let (evd',t) = Evardefine.define_evar_as_product !evdref ev in
+             evdref := evd';
+             let (_,c1,c2) = destProd evd' t in
+             (c1,c2)
+         | _ ->
+             error_cant_apply_not_functional env !evdref funj argjv
+       in
+       if Evarconv.e_cumul env evdref hj.uj_type c1 then
+         apply_rec (n+1) (subst1 hj.uj_val c2) restjl
+       else
+         error_cant_apply_bad_type env !evdref (n, c1, hj.uj_type) funj argjv
   in
   apply_rec 1 funj.uj_type (Array.to_list argjv)
 
@@ -81,19 +83,21 @@ let e_judge_of_apply env evdref funj argjv =
       { uj_val  = mkApp (j_val funj, Array.map j_val argjv);
         uj_type = typ }
   | hj::restjl ->
-      match EConstr.kind !evdref (whd_all env !evdref typ) with
-      | Prod (_,c1,c2) ->
-	 if Evarconv.e_cumul env evdref hj.uj_type c1 then
-	   apply_rec (n+1) (subst1 hj.uj_val c2) restjl
-	 else
-	   error_cant_apply_bad_type env !evdref (n, c1, hj.uj_type) funj argjv
-      | Evar ev ->
-	  let (evd',t) = Evardefine.define_evar_as_product !evdref ev in
-          evdref := evd';
-          let (_,_,c2) = destProd evd' t in
-	  apply_rec (n+1) (subst1 hj.uj_val c2) restjl
-      | _ ->
-	  error_cant_apply_not_functional env !evdref funj argjv
+       let (c1,c2) =
+         match EConstr.kind !evdref (whd_all env !evdref typ) with
+         | Prod (_,c1,c2) -> (c1,c2)
+         | Evar ev ->
+             let (evd',t) = Evardefine.define_evar_as_product !evdref ev in
+             evdref := evd';
+             let (_,c1,c2) = destProd evd' t in
+             (c1,c2)
+         | _ ->
+            error_cant_apply_not_functional env !evdref funj argjv
+       in
+       if Evarconv.e_cumul env evdref hj.uj_type c1 then
+         apply_rec (n+1) (subst1 hj.uj_val c2) restjl
+       else
+         error_cant_apply_bad_type env !evdref (n, c1, hj.uj_type) funj argjv
   in
   apply_rec 1 funj.uj_type (Array.to_list argjv)
 
