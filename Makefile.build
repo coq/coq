@@ -386,21 +386,16 @@ coqbinaries: $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
 
 coqbyte: $(COQTOPBYTE) $(CHICKENBYTE)
 
-COQTOP_OPT_MLTOP=toplevel/coqtop_opt_bin.cmx
-COQTOP_BYTE_MLTOP=toplevel/coqtop_byte_bin.cmo
-
-$(COQTOP_BYTE_MLTOP): toplevel/coqtop_byte_bin.ml
-	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -package compiler-libs.toplevel -c $<
+COQTOP_OPT=toplevel/coqtop_opt_bin.ml
+COQTOP_BYTE=toplevel/coqtop_byte_bin.ml
 
 ifeq ($(BEST),opt)
-$(COQTOPEXE): $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs) $(COQTOP_OPT_MLTOP)
+$(COQTOPEXE): $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs) $(COQTOP_OPT)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(OCAMLOPT) -linkall -linkpkg -I toplevel \
+	$(HIDE)$(OCAMLOPT) -linkall -linkpkg -I vernac -I toplevel \
 	                   -I kernel/byterun/ -cclib -lcoqrun \
-                           $(SYSMOD) -package camlp5.gramlib \
-	                   $(LINKCMX) $(OPTFLAGS) $(LINKMETADATA) \
-	                   $(COQTOP_OPT_MLTOP) toplevel/coqtop_bin.ml -o $@
+			   $(SYSMOD) -package camlp5.gramlib \
+			   $(LINKCMX) $(OPTFLAGS) $(LINKMETADATA) $(COQTOP_OPT) -o $@
 	$(STRIP) $@
 	$(CODESIGN) $@
 else
@@ -409,13 +404,12 @@ $(COQTOPEXE): $(COQTOPBYTE)
 endif
 
 # VMBYTEFLAGS will either contain -custom of the right -dllpath for the VM
-$(COQTOPBYTE): $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA) $(COQTOP_BYTE_MLTOP)
+$(COQTOPBYTE): $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA) $(COQTOP_BYTE)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(OCAMLC) -linkall -linkpkg -I toplevel \
+	$(HIDE)$(OCAMLC) -linkall -linkpkg -I lib -I vernac -I toplevel \
 	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
-                         $(SYSMOD) -package camlp5.gramlib,compiler-libs.toplevel \
-	                 $(LINKCMO) $(BYTEFLAGS) \
-	                 $(COQTOP_BYTE_MLTOP) toplevel/coqtop_bin.ml -o $@
+			 $(SYSMOD) -package camlp5.gramlib,compiler-libs.toplevel \
+			 $(LINKCMO) $(BYTEFLAGS) $(COQTOP_BYTE) -o $@
 
 # For coqc
 COQCCMO:=clib/clib.cma lib/lib.cma toplevel/usage.cmo tools/coqc.cmo
