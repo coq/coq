@@ -13,12 +13,12 @@ Notation "0" := (trunc_S minus_one) : trunc_scope.
 Class IsTrunc (n : trunc_index) (A : Type) : Type := Trunc_is_trunc : IsTrunc_internal n A.
 Notation IsHProp := (IsTrunc minus_one).
 Notation IsHSet := (IsTrunc 0).
-Set Refolding Reduction.
 Goal forall (A : Type) (a b : A) (H' : IsHSet A), { x : Type & IsHProp x }.
 Proof.
 intros.
 eexists.
 (* exact (H' a b). *)
 (* Undo. *)
-apply (H' a b).
+Fail apply (H' a b).
+exact (H' a b).
 Qed.
