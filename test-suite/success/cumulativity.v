@@ -128,3 +128,12 @@ Definition foo2@{i} : bar@{i} := let x := mkfoo in x. (* must reduce *)
 (* Rigid universes however should not be unified unnecessarily. *)
 Definition foo3@{i j|} : foo@{i} := let x := mkfoo@{j} in x.
 Definition foo4@{i j|} : bar@{i} := let x := mkfoo@{j} in x.
+
+(* Constructors for an inductive with indices *)
+Module WithIndex.
+  Inductive foo@{i} : (Prop -> Prop) -> Prop := mkfoo: foo (fun x => x).
+
+  Monomorphic Universes i j.
+  Monomorphic Constraint i < j.
+  Definition bar : eq mkfoo@{i} mkfoo@{j} := eq_refl _.
+End WithIndex.

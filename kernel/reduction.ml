@@ -251,11 +251,8 @@ let convert_inductives cv_pb ind nargs u1 u2 (s, check) =
     cv_pb ind nargs u1 u2 s, check
 
 let constructor_cumulativity_arguments (mind, ind, ctor) =
-  let nparamsctxt =
-    mind.Declarations.mind_nparams +
-    mind.Declarations.mind_packets.(ind).Declarations.mind_nrealargs
-    (* Context.Rel.length mind.Declarations.mind_params_ctxt *) in
-  nparamsctxt + mind.Declarations.mind_packets.(ind).Declarations.mind_consnrealargs.(ctor - 1)
+  mind.Declarations.mind_nparams +
+  mind.Declarations.mind_packets.(ind).Declarations.mind_consnrealargs.(ctor - 1)
 
 let convert_constructors_gen cmp_instances cmp_cumul (mind, ind, cns) nargs u1 u2 s =
   match mind.Declarations.mind_universes with
