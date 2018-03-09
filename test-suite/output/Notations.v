@@ -30,7 +30,7 @@ Check (decomp (true,true) as t, u in (t,u)).
 
 Section A.
 
-Notation "! A" := (forall _:nat, A) (at level 60) : type_scope.
+Notation "! A" := (forall _:nat, A) (at level 60).
 
 Check ! (0=0).
 Check forall n, n=0.
@@ -194,9 +194,9 @@ Open Scope nat_scope.
 
 Coercion is_true := fun b => b=true.
 Coercion of_nat n := match n with 0 => true | _ => false end.
-Notation "'I' x" := (of_nat (S x) || true)%bool (at level 10) : bool_scope.
+Notation "'I' x" := (of_nat (S x) || true)%bool (at level 10).
 
-Check (false && I 3)%bool /\ (I 6)%bool.
+Check (false && I 3)%bool /\ I 6.
 
 (**********************************************************************)
 (* Check notations with several recursive patterns                    *)
