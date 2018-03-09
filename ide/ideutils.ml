@@ -473,3 +473,15 @@ let browse_keyword prerr text =
     let u = Lazy.force url_for_keyword text in
     browse prerr (doc_url() ^ u)
   with Not_found -> prerr ("No documentation found for \""^text^"\".\n")
+
+let rec is_valid (s : Pp.t) = match Pp.repr s with
+  | Pp.Ppcmd_empty
+  | Pp.Ppcmd_print_break _
+  | Pp.Ppcmd_force_newline  -> true
+  | Pp.Ppcmd_glue l    -> List.for_all is_valid l
+  | Pp.Ppcmd_string s  -> Glib.Utf8.validate s
+  | Pp.Ppcmd_box (_,s)
+  | Pp.Ppcmd_tag (_,s) -> is_valid s
+  | Pp.Ppcmd_comment s -> List.for_all Glib.Utf8.validate s
+let validate s =
+  if is_valid s then s else Pp.str "This error massage can't be printed."

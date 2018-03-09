@@ -332,10 +332,10 @@ let export kind sn =
         local_cd f ^ cmd_coqdoc#get ^ " --" ^ kind ^ " -o " ^
         (Filename.quote output) ^ " " ^ (Filename.quote basef) ^ " 2>&1"
       in
-      sn.messages#set (Pp.str ("Running: "^cmd));
+      sn.messages#default_route#set (Pp.str ("Running: "^cmd));
       let finally st = flash_info (cmd ^ pr_exit_status st)
       in
-      run_command (fun msg -> sn.messages#add_string msg) finally cmd
+      run_command (fun msg -> sn.messages#default_route#add_string msg) finally cmd
 
 let export kind = cb_on_current_term (export kind)
 
@@ -447,9 +447,9 @@ let compile sn =
 	^ " " ^ (Filename.quote f) ^ " 2>&1"
       in
       let buf = Buffer.create 1024 in
-      sn.messages#set (Pp.str ("Running: "^cmd));
+      sn.messages#default_route#set (Pp.str ("Running: "^cmd));
       let display s =
-        sn.messages#add_string s;
+        sn.messages#default_route#add_string s;
         Buffer.add_string buf s
       in
       let finally st =
@@ -457,8 +457,8 @@ let compile sn =
           flash_info (f ^ " successfully compiled")
         else begin
           flash_info (f ^ " failed to compile");
-          sn.messages#set (Pp.str "Compilation output:\n");
-          sn.messages#add (Pp.str (Buffer.contents buf));
+          sn.messages#default_route#set (Pp.str "Compilation output:\n");
+          sn.messages#default_route#add (Pp.str (Buffer.contents buf));
         end
       in
       run_command display finally cmd
@@ -480,13 +480,13 @@ let make sn =
     |Some f ->
       File.saveall ();
       let cmd = local_cd f ^ cmd_make#get ^ " 2>&1" in
-      sn.messages#set (Pp.str "Compilation output:\n");
+      sn.messages#default_route#set (Pp.str "Compilation output:\n");
       Buffer.reset last_make_buf;
       last_make := "";
       last_make_index := 0;
       last_make_dir := Filename.dirname f;
       let display s =
-        sn.messages#add_string s;
+        sn.messages#default_route#add_string s;
         Buffer.add_string last_make_buf s
       in
       let finally st = flash_info (cmd_make#get ^ pr_exit_status st)
@@ -524,11 +524,11 @@ let next_error sn =
     let stopi = b#get_iter_at_byte ~line:(line-1) stop in
     b#apply_tag Tags.Script.error ~start:starti ~stop:stopi;
     b#place_cursor ~where:starti;
-    sn.messages#set (Pp.str error_msg);
+    sn.messages#default_route#set (Pp.str error_msg);
     sn.script#misc#grab_focus ()
   with Not_found ->
     last_make_index := 0;
-    sn.messages#set (Pp.str "No more errors.\n")
+    sn.messages#default_route#set (Pp.str "No more errors.\n")
 
 let next_error = cb_on_current_term next_error
 
@@ -609,16 +609,14 @@ let get_current_word term =
   (** Then look at the current selected word *)
   let buf1 = term.script#buffer in
   let buf2 = term.proof#buffer in
-  let buf3 = term.messages#buffer in
   if buf1#has_selection then
     let (start, stop) = buf1#selection_bounds in
     buf1#get_text ~slice:true ~start ~stop ()
   else if buf2#has_selection then
     let (start, stop) = buf2#selection_bounds in
     buf2#get_text ~slice:true ~start ~stop ()
-  else if buf3#has_selection then
-    let (start, stop) = buf3#selection_bounds in
-    buf3#get_text ~slice:true ~start ~stop ()
+  else if term.messages#has_selection then
+    term.messages#get_selected_text
   (** Otherwise try to find the word around the cursor *)
   else
     let it = term.script#buffer#get_iter_at_mark `INSERT in
@@ -668,36 +666,18 @@ let match_callback = cb_on_current_term match_callback
 
 module Query = struct
 
-let searchabout sn =
-  let word = get_current_word sn in
-  let buf = sn.messages#buffer in
-  let insert result =
-    let qualid = result.Interface.coq_object_qualid in
-    let name = String.concat "." qualid in
-    let tpe = result.Interface.coq_object_object in
-    buf#insert ~tags:[Tags.Message.item] name;
-    buf#insert "\n";
-    buf#insert tpe;
-    buf#insert "\n";
-  in
-  let display_results r =
-    sn.messages#clear;
-    List.iter insert (match r with Interface.Good l -> l | _ -> []);
-    Coq.return ()
-  in
-  let launch_query =
-    let search = Coq.search [Interface.SubType_Pattern word, true] in
-    Coq.bind search display_results
-  in
-  Coq.try_grab sn.coqtop launch_query ignore
-
-let searchabout () = on_current_term searchabout
-
 let doquery query sn =
-  sn.messages#clear;
-  Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query) ignore
+  sn.messages#default_route#clear;
+  Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query ~route_id:0
+    ~next:(function
+        | Interface.Fail (_, _, err) ->
+            let err = Ideutils.validate err in
+            sn.messages#default_route#add err;
+            Coq.return ()
+        | Interface.Good () -> Coq.return ()))
+  ignore
 
-let otherquery command sn =
+let queryif command sn =
   Option.iter (fun query -> doquery (query ^ ".") sn)
     begin try
       let i = CString.string_index_from command 0 "..." in
@@ -706,12 +686,7 @@ let otherquery command sn =
       else Some (CString.sub command 0 i ^ " " ^ word)
     with Not_found -> Some command end
 
-let otherquery command = cb_on_current_term (otherquery command)
-
-let query command _ =
-  if command = "Search" || command = "SearchAbout"
-  then searchabout ()
-  else otherquery command ()
+let query command _ = cb_on_current_term (queryif command) ()
 
 end
 
@@ -740,7 +715,7 @@ let initial_about () =
     else ""
   in
   let msg = initial_string ^ version_info ^ log_file_message () in
-  on_current_term (fun term -> term.messages#add_string msg)
+  on_current_term (fun term -> term.messages#default_route#add_string msg)
 
 let coq_icon () =
   (* May raise Nof_found *)
@@ -804,8 +779,8 @@ let coqtop_arguments sn =
       | args ->
         let args = String.concat " " args in
         let msg = Printf.sprintf "Invalid arguments: %s" args in
-        let () = sn.messages#clear in
-        sn.messages#push Feedback.Error (Pp.str msg)
+        let () = sn.messages#default_route#clear in
+        sn.messages#default_route#push Feedback.Error (Pp.str msg)
     else dialog#destroy ()
   in
   let _ = entry#connect#activate ~callback:ok_cb in
@@ -1177,17 +1152,17 @@ let build_ui () =
     item "Help" ~label:"_Help";
     item "Browse Coq Manual" ~label:"Browse Coq _Manual"
       ~callback:(fun _ ->
-        browse notebook#current_term.messages#add_string (doc_url ()));
+        browse notebook#current_term.messages#default_route#add_string (doc_url ()));
     item "Browse Coq Library" ~label:"Browse Coq _Library"
       ~callback:(fun _ ->
-        browse notebook#current_term.messages#add_string library_url#get);
+        browse notebook#current_term.messages#default_route#add_string library_url#get);
     item "Help for keyword" ~label:"Help for _keyword" ~stock:`HELP
       ~callback:(fun _ -> on_current_term (fun sn ->
-        browse_keyword sn.messages#add_string (get_current_word sn)));
+        browse_keyword sn.messages#default_route#add_string (get_current_word sn)));
     item "Help for μPG mode" ~label:"Help for μPG mode"
       ~callback:(fun _ -> on_current_term (fun sn ->
-         sn.messages#clear;
-         sn.messages#add_string (NanoPG.get_documentation ())));
+         sn.messages#default_route#clear;
+         sn.messages#default_route#add_string (NanoPG.get_documentation ())));
     item "About Coq" ~label:"_About" ~stock:`ABOUT
       ~callback:MiscMenu.about
   ];

@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Coq
+open Interface
 
 class type ops =
 object
@@ -18,7 +19,8 @@ object
   method process_next_phrase : unit task
   method process_until_end_or_error : unit task
   method handle_reset_initial : unit task
-  method raw_coq_query : string -> unit task
+  method raw_coq_query :
+    route_id:int -> next:(query_rty value -> unit task) -> string -> unit task
   method show_goals : unit task
   method backtrack_last_phrase : unit task
   method initialize : unit task
@@ -30,7 +32,7 @@ object
   method get_slaves_status : int * int * string CString.Map.t
 
 
-  method handle_failure : Interface.handle_exn_rty -> unit task
+  method handle_failure : handle_exn_rty -> unit task
   
   method destroy : unit -> unit
 end
@@ -38,7 +40,7 @@ end
 class coqops :
   Wg_ScriptView.script_view ->
   Wg_ProofView.proof_view ->
-  Wg_MessageView.message_view ->
+  Wg_RoutedMessageViews.message_views_router ->
   Wg_Segment.segment ->
   coqtop ->
   (unit -> string option) ->

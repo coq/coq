@@ -10,7 +10,7 @@
 
 open Preferences
 
-class command_window name coqtop coqops =
+class command_window name coqtop coqops router =
   let frame = Wg_Detachable.detachable
     ~title:(Printf.sprintf "Query pane (%s)" name) () in
   let _ = frame#hide in
@@ -22,6 +22,10 @@ class command_window name coqtop coqops =
   let _ = frame#connect#detached ~callback:(fun _ ->
     notebook#misc#set_size_request ~width:600 ~height:500 ();
     notebook#misc#grab_focus ()) in
+
+  let route_id =
+    let r = ref 0 in
+    fun () -> incr r; !r in
 
 object(self)
   val frame = frame
@@ -54,11 +58,13 @@ object(self)
   method private new_query_aux ?command ?term ?(grab_now=true) () =
     let frame = GBin.frame ~shadow_type:`NONE () in
     ignore(notebook#insert_page ~pos:(notebook#page_num new_page) frame#coerce);
+    let route_id = route_id () in
     let new_tab_lbl text =
       let hbox = GPack.hbox ~homogeneous:false () in
       ignore(GMisc.label ~width:100 ~ellipsize:`END ~text ~packing:hbox#pack());
       let b = GButton.button ~packing:hbox#pack () in
       ignore(b#connect#clicked ~callback:(fun () ->
+        router#delete_route route_id;
         views <-
           List.filter (fun (f,_,_) -> f#get_oid <> frame#coerce#get_oid) views;
         notebook#remove_page (notebook#page_num frame#coerce)));
@@ -90,7 +96,9 @@ object(self)
 	~vpolicy:`AUTOMATIC
 	~hpolicy:`AUTOMATIC
 	~packing:(vbox#pack ~fill:true ~expand:true) () in
-    let result = GText.view ~packing:r_bin#add () in
+    let result = Wg_MessageView.message_view () in
+    router#register_route route_id result;
+    r_bin#add (result :> GObj.widget);
     views <- (frame#coerce, result, combo#entry) :: views;
     let cb clr = result#misc#modify_base [`NORMAL, `NAME clr] in
     let _ = background_color#connect#changed ~callback:cb in
@@ -98,7 +106,6 @@ object(self)
     let cb ft = result#misc#modify_font (Pango.Font.from_string ft) in
     stick text_font result cb;
     result#misc#set_can_focus true; (* false causes problems for selection *)
-    result#set_editable false;
     let callback () =
       let com = combo#entry#text in
       let arg = entry#text in
@@ -108,22 +115,19 @@ object(self)
         else com ^ " " ^ arg ^" . "
       in
       let process =
-        (* We need to adapt this to route_id and redirect to the result buffer below *)
-        coqops#raw_coq_query phrase
-        (*
-	Coq.bind (Coq.query (phrase,sid)) (function
-          | Interface.Fail (_,l,str) ->
-            let width = Ideutils.textview_width result in
-            Ideutils.insert_xml result#buffer (Richpp.richpp_of_pp width str);
+        let next = function
+        | Interface.Fail (_, _, err) ->
+            let err = Ideutils.validate err in
+            result#set err;
             notebook#set_page ~tab_label:(new_tab_lbl "Error") frame#coerce;
-	    Coq.return ()
-          | Interface.Good res ->
-            result#buffer#insert res;
+            Coq.return ()
+        | Interface.Good () ->
             notebook#set_page ~tab_label:(new_tab_lbl arg) frame#coerce;
-	    Coq.return ())
-         *)
+            Coq.return ()
+        in
+        coqops#raw_coq_query ~route_id ~next phrase
       in
-      result#buffer#set_text ("Result for command " ^ phrase ^ ":\n");
+      result#set (Pp.str ("Result for command " ^ phrase ^ ":\n"));
       Coq.try_grab coqtop process ignore
     in
     ignore (combo#entry#connect#activate ~callback);

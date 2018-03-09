@@ -98,3 +98,7 @@ val io_read_all : Glib.Io.channel -> string
 
 val run_command :
   (string -> unit) -> (Unix.process_status -> unit) -> string -> unit
+
+(* Checks if an error message is printable, it not replaces it with
+ * a printable error *)
+val validate : Pp.t -> Pp.t
