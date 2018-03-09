@@ -160,11 +160,3 @@ let print_mod_uid = ref false
 
 let profile_ltac = ref false
 let profile_ltac_cutoff = ref 2.0
-
-let dump_bytecode = ref false
-let set_dump_bytecode = (:=) dump_bytecode
-let get_dump_bytecode () = !dump_bytecode
-
-let dump_lambda = ref false
-let set_dump_lambda = (:=) dump_lambda
-let get_dump_lambda () = !dump_lambda

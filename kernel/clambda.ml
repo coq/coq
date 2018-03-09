@@ -807,7 +807,7 @@ and lambda_of_args env start args =
 
 
 (*********************************)
-
+let dump_lambda = ref false
 
 let optimize_lambda lam =
   let lam = simplify subst_id lam in
@@ -819,7 +819,7 @@ let lambda_of_constr ~optimize genv c =
   Renv.push_rels env (Array.of_list ids);
   let lam = lambda_of_constr env c in
   let lam = if optimize then optimize_lambda lam else lam in
-  if !Flags.dump_lambda then
+  if !dump_lambda then
     Feedback.msg_debug (pp_lam lam);
   lam
 
