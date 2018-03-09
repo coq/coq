@@ -134,7 +134,7 @@ let mkSTACK = function
   | STACK(0,v0,stk0), stk -> STACK(0,v0,stack_concat stk0 stk)
   | v,stk -> STACK(0,v,stk)
 
-type cbv_infos = { infos : cbv_value infos; sigma : Evd.evar_map }
+type cbv_infos = { tab : cbv_value infos_tab; infos : cbv_value infos; sigma : Evd.evar_map }
 
 (* Change: zeta reduction cannot be avoided in CBV *)
 
@@ -318,7 +318,7 @@ let rec norm_head info env t stack =
 
 and norm_head_ref k info env stack normt =
   if red_set_ref (info_flags info.infos) normt then
-    match ref_value_cache info.infos normt with
+    match ref_value_cache info.infos info.tab normt with
       | Some body ->
          if !debug_cbv then Feedback.msg_debug Pp.(str "Unfolding " ++ pr_key normt);
          strip_appl (shift_value k body) stack
@@ -455,8 +455,8 @@ let cbv_norm infos constr =
 (* constant bodies are normalized at the first expansion *)
 let create_cbv_infos flgs env sigma =
   let infos = create
-    (fun old_info c -> cbv_stack_term { infos = old_info; sigma } TOP (subs_id 0) c)
+    (fun old_info tab c -> cbv_stack_term { tab; infos = old_info; sigma } TOP (subs_id 0) c)
     flgs
     env
     (Reductionops.safe_evar_value sigma) in
-  { infos; sigma }
+  { tab = CClosure.create_tab (); infos; sigma }

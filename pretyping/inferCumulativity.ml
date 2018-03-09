@@ -83,10 +83,12 @@ let infer_table_key infos variances c =
     infer_generic_instance_eq variances u
   | VarKey _ | RelKey _ -> variances
 
+let whd_stack (infos, tab) hd stk = CClosure.whd_stack infos tab hd stk
+
 let rec infer_fterm cv_pb infos variances hd stk =
   Control.check_for_interrupt ();
-  let open CClosure in
   let hd,stk = whd_stack infos hd stk in
+  let open CClosure in
   match fterm_of hd with
   | FAtom a ->
     begin match kind a with
@@ -116,7 +118,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
       if Instance.is_empty u then variances
       else
         let nargs = stack_args_size stk in
-        infer_inductive_instance cv_pb (info_env infos) variances ind nargs u
+        infer_inductive_instance cv_pb (info_env (fst infos)) variances ind nargs u
     in
     infer_stack infos variances stk
   | FConstruct (ctor,u) ->
@@ -124,7 +126,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
       if Instance.is_empty u then variances
       else
         let nargs = stack_args_size stk in
-        infer_constructor_instance_eq (info_env infos) variances ctor nargs u
+        infer_constructor_instance_eq (info_env (fst infos)) variances ctor nargs u
     in
     infer_stack infos variances stk
   | FFix ((_,(_,tys,cl)),e) | FCoFix ((_,(_,tys,cl)),e) ->
@@ -161,7 +163,7 @@ and infer_vect infos variances v =
 
 let infer_term cv_pb env variances c =
   let open CClosure in
-  let infos = create_clos_infos all env in
+  let infos = (create_clos_infos all env, create_tab ()) in
   infer_fterm cv_pb infos variances (CClosure.inject c) []
 
 let infer_arity_constructor is_arity env variances arcn =
