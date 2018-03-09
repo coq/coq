@@ -282,11 +282,13 @@ val drop_side_effects : evar_map -> evar_map
 
 (** {5 Future goals} *)
 
-val declare_future_goal : Evar.t -> evar_map -> evar_map
+type goal_kind = ToShelve | ToGiveUp
+
+val declare_future_goal : ?tag:goal_kind -> Evar.t -> evar_map -> evar_map
 (** Adds an existential variable to the list of future goals. For
     internal uses only. *)
 
-val declare_principal_goal : Evar.t -> evar_map -> evar_map
+val declare_principal_goal : ?tag:goal_kind -> Evar.t -> evar_map -> evar_map
 (** Adds an existential variable to the list of future goals and make
     it principal. Only one existential variable can be made principal, an
     error is raised otherwise. For internal uses only. *)
@@ -299,15 +301,40 @@ val principal_future_goal : evar_map -> Evar.t option
 (** Retrieves the name of the principal existential variable if there
     is one. Used by the [refine] primitive of the tactic engine. *)
 
+type future_goals
+
+val save_future_goals : evar_map -> future_goals
+(** Retrieves the list of future goals including the principal future
+    goal. Used by the [refine] primitive of the tactic engine. *)
+
 val reset_future_goals : evar_map -> evar_map
 (** Clears the list of future goals (as well as the principal future
     goal). Used by the [refine] primitive of the tactic engine. *)
 
-val restore_future_goals : evar_map -> Evar.t list -> Evar.t option -> evar_map
+val restore_future_goals : evar_map -> future_goals -> evar_map
 (** Sets the future goals (including the principal future goal) to a
     previous value. Intended to be used after a local list of future
     goals has been consumed. Used by the [refine] primitive of the
     tactic engine. *)
+
+val fold_future_goals : (evar_map -> Evar.t -> evar_map) -> evar_map -> future_goals -> evar_map
+(** Fold future goals *)
+
+val map_filter_future_goals : (Evar.t -> Evar.t option) -> future_goals -> future_goals
+(** Applies a function on the future goals *)
+
+val filter_future_goals : (Evar.t -> bool) -> future_goals -> future_goals
+(** Applies a filter on the future goals *)
+
+val dispatch_future_goals : future_goals -> Evar.t list * Evar.t list * Evar.t list * Evar.t option
+(** Returns the future_goals dispatched into regular, shelved, given_up
+   goals; last argument is the goal tagged as principal if any *)
+
+val extract_given_up_future_goals : future_goals -> Evar.t list * Evar.t list
+(** An ad hoc variant for Proof.proof; not for general use *)
+
+val shelve_on_future_goals : Evar.t list -> future_goals -> future_goals
+(** Push goals on the shelve of future goals *)
 
 (** {5 Sort variables}
 

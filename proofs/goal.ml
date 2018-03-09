@@ -62,8 +62,7 @@ module V82 = struct
        goals are restored to their initial value after the evar is
        created. *)
     let concl = EConstr.Unsafe.to_constr concl in
-    let prev_future_goals = Evd.future_goals evars in
-    let prev_principal_goal = Evd.principal_future_goal evars in
+    let prev_future_goals = Evd.save_future_goals evars in
     let evi = { Evd.evar_hyps = hyps;
 		Evd.evar_concl = concl;
 		Evd.evar_filter = Evd.Filter.identity;
@@ -74,7 +73,7 @@ module V82 = struct
     in
     let evi = Typeclasses.mark_unresolvable evi in
     let (evars, evk) = Evarutil.new_pure_evar_full evars evi in
-    let evars = Evd.restore_future_goals evars prev_future_goals prev_principal_goal in
+    let evars = Evd.restore_future_goals evars prev_future_goals in
     let ctxt = Environ.named_context_of_val hyps in
     let inst = Array.map_of_list (NamedDecl.get_id %> EConstr.mkVar) ctxt in
     let ev = EConstr.mkEvar (evk,inst) in

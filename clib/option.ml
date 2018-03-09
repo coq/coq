@@ -52,6 +52,9 @@ let get = function
 (** [make x] returns [Some x]. *)
 let make x = Some x
 
+(** [bind x f] is [f y] if [x] is [Some y] and [None] otherwise *)
+let bind x f = match x with Some y -> f y | None -> None
+
 (** [init b x] returns [Some x] if [b] is [true] and [None] otherwise. *)
 let init b x =
   if b then

@@ -768,10 +768,11 @@ let with_shelf tac =
   tac >>= fun ans ->
   Pv.get >>= fun npv ->
   let { shelf = gls; solution = sigma } = npv in
+  (* The pending future goals are necessarily coming from V82.tactic *)
+  (* and thus considered as to shelve, as in Proof.run_tactic *)
   let gls' = Evd.future_goals sigma in
-  let fgoals = Evd.future_goals solution in
-  let pgoal = Evd.principal_future_goal solution in
-  let sigma = Evd.restore_future_goals sigma fgoals pgoal in
+  let fgoals = Evd.save_future_goals solution in
+  let sigma = Evd.restore_future_goals sigma fgoals in
   (* Ensure we mark and return only unsolved goals *)
   let gls' = undefined_evars sigma (CList.rev_append gls' gls) in
   let sigma = CList.fold_left (mark_in_evm ~goal:false) sigma gls' in
@@ -1010,6 +1011,15 @@ module Unsafe = struct
   let tclGETGOALS = Comb.get
 
   let tclSETGOALS = Comb.set
+
+  let tclGETSHELF = Shelf.get
+
+  let tclSETSHELF = Shelf.set
+
+  let tclPUTSHELF to_shelve =
+    tclBIND tclGETSHELF (fun shelf -> tclSETSHELF (to_shelve@shelf))
+
+  let tclPUTGIVENUP = Giveup.put
 
   let tclEVARSADVANCE evd =
     Pv.modify (fun ps -> { ps with solution = evd; comb = undefined evd ps.comb })

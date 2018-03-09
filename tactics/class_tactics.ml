@@ -966,14 +966,15 @@ module Search = struct
            top_sort evm' goals
          else List.map (fun (ev, _) -> ev) (Evar.Map.bindings goals)
        in
-       let fgoals = Evd.future_goals evm in
-       let pgoal = Evd.principal_future_goal evm in
+       let fgoals = Evd.save_future_goals evm in
        let _, pv = Proofview.init evm' [] in
        let pv = Proofview.unshelve goals pv in
        try
          let (), pv', (unsafe, shelved, gaveup), _ =
            Proofview.apply env tac pv
          in
+         if not (List.is_empty gaveup) then
+           CErrors.anomaly (Pp.str "run_on_evars not assumed to apply tactics generating given up goals.");
          if Proofview.finished pv' then
            let evm' = Proofview.return pv' in
            assert(Evd.fold_undefined (fun ev _ acc ->
@@ -983,7 +984,8 @@ module Search = struct
                           (str "leaking evar " ++ int (Evar.repr ev) ++
                              spc () ++ pr_ev evm' ev);
                       acc && okev) evm' true);
-           let evm' = Evd.restore_future_goals evm' (shelved @ fgoals) pgoal in
+           let fgoals = Evd.shelve_on_future_goals shelved fgoals in
+           let evm' = Evd.restore_future_goals evm' fgoals in
            let evm' = evars_reset_evd ~with_conv_pbs:true ~with_univs:false evm' evm in
            Some evm'
          else raise Not_found

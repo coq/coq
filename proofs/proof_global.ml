@@ -169,6 +169,7 @@ let with_current_proof f =
       let p = { p with proof = newpr } in
       pstates := p :: rest;
       ret
+
 let simple_with_current_proof f = with_current_proof (fun t p -> f t p , ())
 
 let compact_the_proof () = simple_with_current_proof (fun _ -> Proof.compact)
