@@ -500,6 +500,13 @@ val constructor_user_hash : constructor -> int
 val constructor_syntactic_ord : constructor -> constructor -> int
 val constructor_syntactic_hash : constructor -> int
 
+(** {6 Global reference is a kernel side type for all references together } *)
+type global_reference =
+  | VarRef of variable           (** A reference to the section-context. *)
+  | ConstRef of Constant.t       (** A reference to the environment. *)
+  | IndRef of inductive          (** A reference to an inductive type. *)
+  | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
+
 (** Better to have it here that in Closure, since required in grammar.cma *)
 type evaluable_global_reference =
   | EvalVarRef of Id.t

@@ -312,6 +312,9 @@ type universe_instance = Instance.t
 
 val enforce_eq_instances : Instance.t constraint_function
 
+val enforce_eq_variance_instances : Variance.t array -> Instance.t constraint_function
+val enforce_leq_variance_instances : Variance.t array -> Instance.t constraint_function
+
 type 'a puniverses = 'a * Instance.t
 val out_punivs : 'a puniverses -> 'a
 val in_punivs : 'a -> 'a puniverses

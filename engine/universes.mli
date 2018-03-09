@@ -14,6 +14,9 @@ open Constr
 open Environ
 open Univ
 
+(** Unordered pairs of universe levels (ie (u,v) = (v,u)) *)
+module UPairSet : CSet.S with type elt = (Level.t * Level.t)
+
 val set_minimization : bool ref
 val is_set_minimization : unit -> bool
 
@@ -69,13 +72,20 @@ val new_sort_in_family : Sorts.family -> Sorts.t
     When doing conversion of universes, not only do we have =/<= constraints but
     also Lub constraints which correspond to unification of two levels which might
     not be necessary if unfolding is performed.
+
+    UWeak constraints come from irrelevant universes in cumulative polymorphism.
 *)
 
-type universe_constraint_type = ULe | UEq | ULub
+type universe_constraint =
+  | ULe of Universe.t * Universe.t
+  | UEq of Universe.t * Universe.t
+  | ULub of Level.t * Level.t
+  | UWeak of Level.t * Level.t
 
-type universe_constraint = Universe.t * universe_constraint_type * Universe.t
 module Constraints : sig
   include Set.S with type elt = universe_constraint
+
+  val is_trivial : universe_constraint -> bool
 
   val pr : t -> Pp.t
 end
@@ -92,7 +102,9 @@ val subst_univs_universe_constraints : universe_subst_fn ->
 
 val enforce_eq_instances_univs : bool -> Instance.t universe_constraint_function
 
-val to_constraints : UGraph.t -> Constraints.t -> Constraint.t
+(** With [force_weak] UWeak constraints are turned into equalities,
+   otherwise they're forgotten. *)
+val to_constraints : force_weak:bool -> UGraph.t -> Constraints.t -> Constraint.t
 
 (** [eq_constr_univs_infer_With kind1 kind2 univs m n] is a variant of
     {!eq_constr_univs_infer} taking kind-of-term functions, to expose
@@ -101,10 +113,6 @@ val eq_constr_univs_infer_with :
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   UGraph.t -> 'a constraint_accumulator -> constr -> constr -> 'a -> 'a option
-
-(** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
-    application grouping and the universe constraints in [c]. *)
-val eq_constr_universes_proj : env -> constr -> constr -> bool universe_constrained
 
 (** Build a fresh instance for a given context, its associated substitution and 
     the instantiated constraints. *)
@@ -167,9 +175,10 @@ val make_opt_subst : universe_opt_subst -> universe_subst_fn
 
 val subst_opt_univs_constr : universe_opt_subst -> constr -> constr
 
-val normalize_context_set : ContextSet.t -> 
+val normalize_context_set : UGraph.t -> ContextSet.t ->
   universe_opt_subst (* The defined and undefined variables *) ->
-  LSet.t (* univ variables that can be substituted by algebraics *) -> 
+  LSet.t (* univ variables that can be substituted by algebraics *) ->
+  UPairSet.t (* weak equality constraints *) ->
   (universe_opt_subst * LSet.t) in_universe_context_set
 
 val normalize_univ_variables : universe_opt_subst -> 

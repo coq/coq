@@ -29,6 +29,16 @@ exception Elimconst
     their parameters in its stack.
 *)
 
+let _ = Goptions.declare_bool_option {
+  Goptions.optdepr = false;
+  Goptions.optname =
+    "Generate weak constraints between Irrelevant universes";
+  Goptions.optkey = ["Cumulativity";"Weak";"Constraints"];
+  Goptions.optread = (fun () -> not !UState.drop_weak_constraints);
+  Goptions.optwrite = (fun a -> UState.drop_weak_constraints:=not a);
+}
+
+
 (** Support for reduction effects *)
 
 open Mod_subst
@@ -691,18 +701,25 @@ let reducible_mind_case sigma c = match EConstr.kind sigma c with
 let magicaly_constant_of_fixbody env sigma reference bd = function
   | Name.Anonymous -> bd
   | Name.Name id ->
+    let open Universes in
     try
       let (cst_mod,cst_sect,_) = Constant.repr3 reference in
       let cst = Constant.make3 cst_mod cst_sect (Label.of_id id) in
-      let (cst, u), ctx = Universes.fresh_constant_instance env cst in
+      let (cst, u), ctx = fresh_constant_instance env cst in
       match constant_opt_value_in env (cst,u) with
       | None -> bd
       | Some t ->
-        let csts = EConstr.eq_constr_universes sigma (EConstr.of_constr t) bd in
+        let csts = EConstr.eq_constr_universes env sigma (EConstr.of_constr t) bd in
         begin match csts with
         | Some csts ->
-          let subst = Universes.Constraints.fold (fun (l,d,r) acc ->
-            Univ.LMap.add (Option.get (Universe.level l)) (Option.get (Universe.level r)) acc)
+          let subst = Constraints.fold (fun cst acc ->
+              let l, r = match cst with
+                | ULub (u, v) | UWeak (u, v) -> u, v
+                | UEq (u, v) | ULe (u, v) ->
+                  let get u = Option.get (Universe.level u) in
+                  get u, get v
+              in
+            Univ.LMap.add l r acc)
             csts Univ.LMap.empty
           in
           let inst = Instance.subst_fn (fun u -> Univ.LMap.find u subst) u in
@@ -1315,10 +1332,10 @@ let sigma_compare_instances ~flex i0 i1 sigma =
      | Univ.UniverseInconsistency _ ->
 	raise Reduction.NotConvertible
 
-let sigma_check_inductive_instances csts sigma =
-  try Evd.add_constraints sigma csts
-  with Evd.UniversesDiffer
-     | Univ.UniverseInconsistency _ ->
+let sigma_check_inductive_instances cv_pb variance u1 u2 sigma =
+  match Evarutil.compare_cumulative_instances cv_pb variance u1 u2 sigma with
+  | Inl sigma -> sigma
+  | Inr _ ->
     raise Reduction.NotConvertible
 
 let sigma_univ_state = 
@@ -1334,9 +1351,9 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     let b, sigma = 
       let ans =
 	if pb == Reduction.CUMUL then 
-	  EConstr.leq_constr_universes sigma x y
+          EConstr.leq_constr_universes env sigma x y
 	else
-	  EConstr.eq_constr_universes sigma x y
+          EConstr.eq_constr_universes env sigma x y
       in
       let ans = match ans with
       | None -> None

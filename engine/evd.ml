@@ -857,14 +857,9 @@ let set_eq_sort env d s1 s2 =
   | Some (u1, u2) ->
     if not (type_in_type env) then
       add_universe_constraints d
-        (Universes.Constraints.singleton (u1,Universes.UEq,u2))
+        (Universes.Constraints.singleton (Universes.UEq (u1,u2)))
     else
       d
-
-let has_lub evd u1 u2 =
-  if Univ.Universe.equal u1 u2 then evd
-  else add_universe_constraints evd
-    (Universes.Constraints.singleton (u1,Universes.ULub,u2))
 
 let set_eq_level d u1 u2 =
   add_constraints d (Univ.enforce_eq_level u1 u2 Univ.Constraint.empty)
@@ -883,7 +878,7 @@ let set_leq_sort env evd s1 s2 =
   | None -> evd
   | Some (u1, u2) ->
      if not (type_in_type env) then
-       add_universe_constraints evd (Universes.Constraints.singleton (u1,Universes.ULe,u2))
+       add_universe_constraints evd (Universes.Constraints.singleton (Universes.ULe (u1,u2)))
      else evd
 	    
 let check_eq evd s s' =

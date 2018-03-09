@@ -232,6 +232,20 @@ Section down.
   Defined.
 \end{coq_example}
 
+\subsection{\tt Cumulativity Weak Constraints}
+\optindex{Cumulativity Weak Constraints}
+
+This option, on by default, causes ``weak'' constraints to be produced
+when comparing universes in an irrelevant position. Processing weak
+constraints is delayed until minimization time. A weak constraint
+between {\tt u} and {\tt v} when neither is smaller than the other and
+one is flexible causes them to be unified. Otherwise the constraint is
+silently discarded.
+
+This heuristic is experimental and may change in future versions.
+Disabling weak constraints is more predictable but may produce
+arbitrary numbers of universes.
+
 \asection{Global and local universes}
 
 Each universe is declared in a global or local environment before it can

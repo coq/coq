@@ -10,40 +10,16 @@ Set Printing Universes.
 
 Inductive List (A: Type) := nil | cons : A -> List A -> List A.
 
-Section ListLift.
-  Universe i j.
-
-  Constraint i < j.
-
-  Definition LiftL {A} : List@{i} A -> List@{j} A := fun x => x.
-
-End ListLift.
+Definition LiftL@{k i j|k <= i, k <= j} {A:Type@{k}} : List@{i} A -> List@{j} A := fun x => x.
 
 Lemma LiftL_Lem A (l : List A) : l = LiftL l.
 Proof. reflexivity. Qed.
 
-Section ListLower.
-  Universe i j.
-
-  Constraint i < j.
-
-  Definition LowerL {A : Type@{i}} : List@{j} A -> List@{i} A := fun x => x.
-
-End ListLower.
-
-Lemma LowerL_Lem@{i j} (A : Type@{j}) (l : List@{i} A) : l = LowerL l.
-Proof. reflexivity. Qed.
-
 Inductive Tp := tp : Type -> Tp.
 
-Section TpLift.
-  Universe i j.
+Definition LiftTp@{i j|i <= j} : Tp@{i} -> Tp@{j} := fun x => x.
 
-  Constraint i < j.
-
-  Definition LiftTp : Tp@{i} -> Tp@{j} := fun x => x.
-
-End TpLift.
+Fail Definition LowerTp@{i j|j < i} : Tp@{i} -> Tp@{j} := fun x => x.
 
 Record Tp' := { tp' : Tp }.
 
@@ -51,21 +27,11 @@ Definition CTp := Tp.
 (* here we have to reduce a constant to infer the correct subtyping. *)
 Record Tp'' := { tp'' : CTp }.
 
-Definition LiftTp'@{i j|i < j} : Tp'@{i} -> Tp'@{j} := fun x => x.
-Definition LiftTp''@{i j|i < j} : Tp''@{i} -> Tp''@{j} := fun x => x.
+Definition LiftTp'@{i j|i <= j} : Tp'@{i} -> Tp'@{j} := fun x => x.
+Definition LiftTp''@{i j|i <= j} : Tp''@{i} -> Tp''@{j} := fun x => x.
 
 Lemma LiftC_Lem (t : Tp) : LiftTp t = t.
 Proof. reflexivity. Qed.
-
-Section TpLower.
-  Universe i j.
-
-  Constraint i < j.
-
-  Fail Definition LowerTp : Tp@{j} -> Tp@{i} := fun x => x.
-
-End TpLower.
-
 
 Section subtyping_test.
   Universe i j.
@@ -82,14 +48,8 @@ Record B (X : A) : Type := { b : X; }.
 NonCumulative Inductive NCList (A: Type)
   := ncnil | nccons : A -> NCList A -> NCList A.
 
-Section NCListLift.
-  Universe i j.
-
-  Constraint i < j.
-
-  Fail Definition LiftNCL {A} : NCList@{i} A -> NCList@{j} A := fun x => x.
-
-End NCListLift.
+Fail Definition LiftNCL@{k i j|k <= i, k <= j} {A:Type@{k}}
+  : NCList@{i} A -> NCList@{j} A := fun x => x.
 
 Inductive eq@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := eq_refl : eq x x.
 
@@ -114,7 +74,7 @@ Fail Definition arrow_lift@{i i' j j' | i' < i, j < j'}
   : Arrow@{i j} -> Arrow@{i' j'}
   := fun x => x.
 
-Definition arrow_lift@{i i' j j' | i' = i, j < j'}
+Definition arrow_lift@{i i' j j' | i' = i, j <= j'}
   : Arrow@{i j} -> Arrow@{i' j'}
   := fun x => x.
 
@@ -155,3 +115,16 @@ Definition checkcumul :=
 (* They can only be compared at the highest type *)
 Fail Definition checkcumul' :=
   eq_refl _ : @eq twotys@{i k l} (twoconstr@{i j k} Tyi Tyi) (twoconstr@{j i k} Tyi Tyi).
+
+(* An inductive type with an irrelevant universe *)
+Inductive foo@{i} : Type@{i} := mkfoo { }.
+
+Definition bar := foo.
+
+(* The universe on mkfoo is flexible and should be unified with i. *)
+Definition foo1@{i} : foo@{i} := let x := mkfoo in x. (* fast path for conversion *)
+Definition foo2@{i} : bar@{i} := let x := mkfoo in x. (* must reduce *)
+
+(* Rigid universes however should not be unified unnecessarily. *)
+Definition foo3@{i j|} : foo@{i} := let x := mkfoo@{j} in x.
+Definition foo4@{i j|} : bar@{i} := let x := mkfoo@{j} in x.

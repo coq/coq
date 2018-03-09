@@ -203,6 +203,20 @@ val kind_of_term_upto : evar_map -> Constr.constr ->
     assumed to be an extention of those in [sigma1]. *)
 val eq_constr_univs_test : evar_map -> evar_map -> Constr.constr -> Constr.constr -> bool
 
+(** [compare_cumulative_instances cv_pb variance u1 u2 sigma] Returns
+   [Inl sigma'] where [sigma'] is [sigma] augmented with universe
+   constraints such that [u1 cv_pb? u2] according to [variance].
+   Additionally flexible universes in irrelevant positions are unified
+   if possible. Returns [Inr p] when the former is impossible. *)
+val compare_cumulative_instances : Reduction.conv_pb -> Univ.Variance.t array ->
+  Univ.Instance.t -> Univ.Instance.t -> evar_map ->
+  (evar_map, Univ.univ_inconsistency) Util.union
+
+(** We should only compare constructors at convertible types, so this
+   is only an opportunity to unify universes. *)
+val compare_constructor_instances : evar_map ->
+  Univ.Instance.t -> Univ.Instance.t -> evar_map
+
 (** {6 Removing hyps in evars'context}
 raise OccurHypInSimpleClause if the removal breaks dependencies *)
 
