@@ -17,10 +17,10 @@ open Check
 
 let () = at_exit flush_all
 
-let chk_pp = Pp.pp_with Format.std_formatter
+let pp_arrayi pp fmt a = Array.iteri (fun i x -> pp fmt (i,x)) a
 
 let fatal_error info anomaly =
-  flush_all (); Format.eprintf "@[Fatal Error: @[%a@]@]%!@\n" Pp.pp_with info; flush_all ();
+  flush_all (); Format.eprintf "@[Fatal Error: @[%a@]@]@\n%!" Pp.pp_with info; flush_all ();
   exit (if anomaly then 129 else 1)
 
 let coq_root = Id.of_string "Coq"
@@ -269,26 +269,26 @@ let explain_exn = function
       | Generalization _ -> str"Generalization"
       | ActualType _ -> str"ActualType"
       | CantApplyBadType ((n,a,b),(hd,hdty),args) ->
-          Format.printf "====== ill-typed term ====@\n";
-          Format.printf "@[<hov 2>application head=@ ";
-          Print.print_pure_constr hd;
-          Format.printf "@]@\n@[<hov 2>head type=@ ";
-          Print.print_pure_constr hdty;
-          Format.printf "@]@\narguments:@\n@[<hv>";
-          Array.iteri (fun i (t,ty) ->
-            Format.printf "@[<hov 2>arg %d=@ " (i+1);
-            Print.print_pure_constr t;
-            Format.printf "@ type=@ ";
-            Print.print_pure_constr ty) args;
-          Format.printf "@]@\n====== type error ====@\n";
-          Print.print_pure_constr b;
-          Format.printf "@\nis not convertible with@\n";
-          Print.print_pure_constr a;
-          Format.printf "@\n====== universes ====@\n";
-          chk_pp
-            (Univ.pr_universes
-            (ctx.Environ.env_stratification.Environ.env_universes));
-          str "\nCantApplyBadType at argument " ++ int n
+        (* This mix of printf / pp was here before... *)
+        let fmt = Format.std_formatter in
+        let open Format in
+        let open Print in
+        fprintf fmt "====== ill-typed term ====@\n";
+        fprintf fmt "@[<hov 2>application head=@ %a@]@\n" print_pure_constr hd;
+        fprintf fmt "@[<hov 2>head type=@ %a@]@\n" print_pure_constr hdty;
+        let pp_arg fmt (i,(t,ty)) = fprintf fmt "@[<hv>@[<1>arg %d=@ @[%a@]@]@,@[<1>type=@ @[%a@]@]@]@\n@," (i+1)
+            print_pure_constr t print_pure_constr ty
+        in
+        fprintf fmt "arguments:@\n@[<hv>%a@]@\n" (pp_arrayi pp_arg) args;
+        fprintf fmt "====== type error ====@\n";
+        fprintf fmt "%a@\n" print_pure_constr b;
+        fprintf fmt "is not convertible with@\n";
+        fprintf fmt "%a@\n" print_pure_constr a;
+        fprintf fmt "====== universes ====@\n";
+        fprintf fmt "%a@\n%!" Pp.pp_with
+          (Univ.pr_universes
+             (ctx.Environ.env_stratification.Environ.env_universes));
+        str "CantApplyBadType at argument " ++ int n
       | CantApplyNonFunctional _ -> str"CantApplyNonFunctional"
       | IllFormedRecBody _ -> str"IllFormedRecBody"
       | IllTypedRecBody _ -> str"IllTypedRecBody"
