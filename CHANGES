@@ -81,6 +81,9 @@ Vernacular Commands
 - An experimental command "Show Extraction" allows to extract the content
   of the current ongoing proof (grant wish #4129).
 - Coercion now accepts the type of its argument to be "Prop" or "Type".
+- The "Export" modifier can now be used when setting and unsetting options, and
+  will result in performing the same change when the module corresponding the
+  command is imported.
 
 Universes
 

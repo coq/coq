@@ -57,8 +57,8 @@ let coqide_known_option table = List.mem table [
   ["Printing";"Unfocused"]]
 
 let is_known_option cmd = match Vernacprop.under_control cmd with
-  | VernacSetOption (o,BoolValue true)
-  | VernacUnsetOption o -> coqide_known_option o
+  | VernacSetOption (_, o, BoolValue true)
+  | VernacUnsetOption (_, o) -> coqide_known_option o
   | _ -> false
 
 (** Check whether a command is forbidden in the IDE *)
@@ -340,7 +340,7 @@ let set_options options =
   | IntValue i -> Goptions.set_int_option_value name i
   | StringValue s -> Goptions.set_string_option_value name s
   | StringOptValue (Some s) -> Goptions.set_string_option_value name s
-  | StringOptValue None -> Goptions.unset_option_value_gen None name
+  | StringOptValue None -> Goptions.unset_option_value_gen name
   in
   List.iter iter options
 

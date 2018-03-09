@@ -178,7 +178,7 @@ GEXTEND Gram
   GLOBAL: gallina_ext;
   gallina_ext:
    [ [ IDENT "Import"; IDENT "Prenex"; IDENT "Implicits" ->
-      Vernacexpr.VernacUnsetOption (["Printing"; "Implicit"; "Defensive"])
+      Vernacexpr.VernacUnsetOption (false, ["Printing"; "Implicit"; "Defensive"])
    ] ]
   ;
 END

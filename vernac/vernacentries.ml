@@ -1539,18 +1539,45 @@ let vernac_set_opacity ~atts (v,l) =
   let l = List.map glob_ref l in
   Redexpr.set_strategy local [v,l]
 
-let vernac_set_option ~atts key = function
-  | StringValue s -> set_string_option_value_gen atts.locality key s
-  | StringOptValue (Some s) -> set_string_option_value_gen atts.locality key s
-  | StringOptValue None -> unset_option_value_gen atts.locality key
-  | IntValue n -> set_int_option_value_gen atts.locality key n
-  | BoolValue b -> set_bool_option_value_gen atts.locality key b
+let get_option_locality export local =
+  if export then
+    if Option.is_empty local then OptExport
+    else user_err Pp.(str "Locality modifiers forbidden with Export")
+  else match local with
+  | Some true -> OptLocal
+  | Some false -> OptGlobal
+  | None -> OptDefault
 
-let vernac_set_append_option ~atts key s =
-  set_string_option_append_value_gen atts.locality key s
+let vernac_set_option0 ~atts export key opt =
+  let locality = get_option_locality export atts.locality in
+  match opt with
+  | StringValue s -> set_string_option_value_gen ~locality key s
+  | StringOptValue (Some s) -> set_string_option_value_gen ~locality key s
+  | StringOptValue None -> unset_option_value_gen ~locality key
+  | IntValue n -> set_int_option_value_gen ~locality key n
+  | BoolValue b -> set_bool_option_value_gen ~locality key b
 
-let vernac_unset_option ~atts key =
-  unset_option_value_gen atts.locality key
+let vernac_set_append_option ~atts export key s =
+  let locality = get_option_locality export atts.locality in
+  set_string_option_append_value_gen ~locality key s
+
+let vernac_set_option ~atts export table v = match v with
+| StringValue s ->
+  (* We make a special case for warnings because appending is their
+  natural semantics *)
+  if CString.List.equal table ["Warnings"] then
+    vernac_set_append_option ~atts export table s
+  else
+    let (last, prefix) = List.sep_last table in
+    if String.equal last "Append" && not (List.is_empty prefix) then
+      vernac_set_append_option ~atts export prefix s
+    else
+      vernac_set_option0 ~atts export table v
+| _ -> vernac_set_option0 ~atts export table v
+
+let vernac_unset_option ~atts export key =
+  let locality = get_option_locality export atts.locality in
+  unset_option_value_gen ~locality key
 
 let vernac_add_option key lv =
   let f = function
@@ -2083,9 +2110,8 @@ let interp ?proof ~atts ~st c =
   | VernacGeneralizable gen -> vernac_generalizable ~atts gen
   | VernacSetOpacity qidl -> vernac_set_opacity ~atts qidl
   | VernacSetStrategy l -> vernac_set_strategy ~atts l
-  | VernacSetOption (key,v) -> vernac_set_option ~atts key v
-  | VernacSetAppendOption (key,v) -> vernac_set_append_option ~atts key v
-  | VernacUnsetOption key -> vernac_unset_option ~atts key
+  | VernacSetOption (export, key,v) -> vernac_set_option ~atts export key v
+  | VernacUnsetOption (export, key) -> vernac_unset_option ~atts export key
   | VernacRemoveOption (key,v) -> vernac_remove_option key v
   | VernacAddOption (key,v) -> vernac_add_option key v
   | VernacMemOption (key,v) -> vernac_mem_option key v
@@ -2148,7 +2174,7 @@ let check_vernac_supports_locality c l =
     | VernacArgumentsScope _ | VernacDeclareImplicits _ | VernacArguments _
     | VernacGeneralizable _
     | VernacSetOpacity _ | VernacSetStrategy _
-    | VernacSetOption _ | VernacSetAppendOption _ | VernacUnsetOption _
+    | VernacSetOption _ | VernacUnsetOption _
     | VernacDeclareReduction _
     | VernacExtend _ 
     | VernacInductive _) -> ()

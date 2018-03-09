@@ -425,9 +425,8 @@ type nonrec vernac_expr =
   | VernacSetOpacity of (Conv_oracle.level * reference or_by_notation list)
   | VernacSetStrategy of
       (Conv_oracle.level * reference or_by_notation list) list
-  | VernacUnsetOption of Goptions.option_name
-  | VernacSetOption of Goptions.option_name * option_value
-  | VernacSetAppendOption of Goptions.option_name * string
+  | VernacUnsetOption of export_flag * Goptions.option_name
+  | VernacSetOption of export_flag * Goptions.option_name * option_value
   | VernacAddOption of Goptions.option_name * option_ref_value list
   | VernacRemoveOption of Goptions.option_name * option_ref_value list
   | VernacMemOption of Goptions.option_name * option_ref_value list

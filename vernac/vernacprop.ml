@@ -52,7 +52,7 @@ let is_reset = function
   | _ -> false
 
 let is_debug cmd = match under_control cmd with
-  | VernacSetOption (["Ltac";"Debug"], _) -> true
+  | VernacSetOption (_, ["Ltac";"Debug"], _) -> true
   | _ -> false
 
 let is_undo cmd = match under_control cmd with
