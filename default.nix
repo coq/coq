@@ -21,8 +21,15 @@
 # Once the build is finished, you will find, in the current directory,
 # a symlink to where Coq was installed.
 
-{ pkgs ? (import <nixpkgs> {}), ocamlPackages ? pkgs.ocamlPackages,
-  buildIde ? true, buildDoc ? true, doCheck ? true }:
+{ pkgs ?
+    (import (fetchTarball
+      "https://github.com/NixOS/nixpkgs/archive/4345a2cef228a91c1d6d4bf626a0f933eb8cc4f9.tar.gz")
+    {})
+, ocamlPackages ? pkgs.ocamlPackages
+, buildIde ? true
+, buildDoc ? true
+, doCheck ? true
+}:
 
 with pkgs;
 
@@ -46,7 +53,6 @@ stdenv.mkDerivation rec {
   ] else []) ++ (if buildDoc then [
 
     # Sphinx doc dependencies
-    ocamlPackages.lablgtk
     pkgconfig (python3.withPackages
       (ps: [ ps.sphinx ps.sphinx_rtd_theme ps.pexpect ps.beautifulsoup4
              ps.antlr4-python3-runtime ps.sphinxcontrib-bibtex ]))
