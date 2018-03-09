@@ -46,6 +46,14 @@ else
 COQTEXOPTS:=-boot -n 72 -sl -small
 endif
 
+# Sphinx-related variables
+SPHINXOPTS= -j4
+SPHINXBUILD= sphinx-build
+SPHINXBUILDDIR= doc/sphinx/_build
+
+# Internal variables.
+ALLSPHINXOPTS= -d $(SPHINXBUILDDIR)/doctrees $(SPHINXOPTS)
+
 DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
 
 REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
@@ -78,12 +86,18 @@ REFMANPNGFILES:=$(REFMANEPSFILES:.eps=.png)
 ### General rules
 ######################################################################
 
-.PHONY: doc doc-html doc-pdf doc-ps refman refman-quick tutorial
+.PHONY: doc sphinxdoc-html doc-pdf doc-ps refman refman-quick tutorial
 .PHONY: stdlib full-stdlib rectutorial refman-html-dir
 
 INDEXURLS:=doc/refman/html/index_urls.txt
 
-doc: refman tutorial rectutorial stdlib $(INDEXURLS)
+doc: sphinx refman tutorial rectutorial stdlib $(INDEXURLS)
+
+sphinx: coq
+	$(SHOW)'SPHINXBUILD doc/sphinx'
+	$(HIDE)COQBIN="$(PWD)/bin" $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/html
+	@echo
+	@echo "Build finished. The HTML pages are in $(SPHINXBUILDDIR)/html."
 
 doc-html:\
   doc/tutorial/Tutorial.v.html doc/refman/html/index.html \
@@ -347,9 +361,11 @@ doc/RecTutorial/RecTutorial.html: doc/RecTutorial/RecTutorial.tex
 # Install all documentation files
 ######################################################################
 
-.PHONY: install-doc install-doc-meta install-doc-html install-doc-printable install-doc-index-urls
+.PHONY: install-doc install-doc-meta install-doc-html install-doc-printable \
+	install-doc-index-urls install-doc-sphinx
 
-install-doc: install-doc-meta install-doc-html install-doc-printable install-doc-index-urls
+install-doc: install-doc-meta install-doc-html install-doc-printable \
+	install-doc-index-urls install-doc-sphinx
 
 install-doc-meta:
 	$(MKDIR) $(FULLDOCDIR)
@@ -380,6 +396,12 @@ install-doc-index-urls:
 	$(MKDIR) $(FULLDATADIR)
 	$(INSTALLLIB) $(INDEXURLS) $(FULLDATADIR)
 
+install-doc-sphinx:
+	$(MKDIR) $(FULLDOCDIR)/sphinx
+	(for f in `cd doc/sphinx/_build; find . -type f`; do \
+		$(MKDIR) $$(dirname $(FULLDOCDIR)/sphinx/$$f);\
+		$(INSTALLLIB) doc/sphinx/_build/$$f $(FULLDOCDIR)/sphinx/$$f;\
+	done)
 
 ###########################################################################
 # Documentation of the source code (using ocamldoc)

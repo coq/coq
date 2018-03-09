@@ -1,0 +1,68 @@
+/************************************************************************/
+/*         *   The Coq Proof Assistant / The Coq Development Team       */
+/*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       */
+/* <O___,, *       (see CREDITS file for the list of authors)           */
+/*   \VV/  **************************************************************/
+/*    //   *    This file is distributed under the terms of the         */
+/*         *     GNU Lesser General Public License Version 2.1          */
+/*         *     (see LICENSE file for the text of the license)         */
+/************************************************************************/
+/* Taken from CoqDoc's default stylesheet */
+
+.coqdoc-constructor {
+    color: rgb(60%,0%,0%);
+}
+
+.coqdoc-var {
+    color: rgb(40%,0%,40%);
+}
+
+.coqdoc-variable {
+    color: rgb(40%,0%,40%);
+}
+
+.coqdoc-definition {
+    color: rgb(0%,40%,0%);
+}
+
+.coqdoc-abbreviation {
+    color: rgb(0%,40%,0%);
+}
+
+.coqdoc-lemma {
+    color: rgb(0%,40%,0%);
+}
+
+.coqdoc-instance {
+    color: rgb(0%,40%,0%);
+}
+
+.coqdoc-projection {
+    color: rgb(0%,40%,0%);
+}
+
+.coqdoc-method {
+    color: rgb(0%,40%,0%);
+}
+
+.coqdoc-inductive {
+    color: rgb(0%,0%,80%);
+}
+
+.coqdoc-record {
+    color: rgb(0%,0%,80%);
+}
+
+.coqdoc-class {
+    color: rgb(0%,0%,80%);
+}
+
+.coqdoc-keyword {
+    color : #cf1d1d;
+}
+
+/* Custom additions */
+
+.coqdoc-tactic {
+    font-weight: bold;
+}

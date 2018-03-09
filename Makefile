@@ -241,6 +241,7 @@ docclean:
 	rm -f doc/common/version.tex
 	rm -f doc/refman/styles.hva doc/refman/cover.html doc/refman/Reference-Manual.html
 	rm -f doc/coq.tex
+	rm -rf doc/sphinx/_build
 
 archclean: clean-ide optclean voclean
 	rm -rf _build

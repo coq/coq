@@ -1,0 +1,238 @@
+How to migrate the Coq Reference Manual to Sphinx
+=================================================
+
+# Install Python3 packages (requires Python 3, python3-pip, python3-setuptools)
+
+  * pip3 install bs4 sphinx sphinx_rtd_theme pexpect antlr4-python3-runtime sphinxcontrib-bibtex
+
+# You may want to do this under a virtualenv, particularly if you end up with issues finding sphinxcontrib.bibtex. http://docs.python-guide.org/en/latest/dev/virtualenvs/
+
+  * pip3 install virtualenv
+  * virtualenv coqsphinxing # you may want to use -p to specify the python version
+  * source coqsphinxing/bin/activate # activate the virtual environment
+
+# After activating the virtual environment you can run the above pip3 command to install sphinx. You will have to activate the virtual environment before building the docs in your session.
+
+# Add this Elisp code to .emacs, if you're using emacs (recommended):
+
+ (defun sphinx/quote-coq-refman-region (left right &optional beg end count)
+   (unless beg
+     (if (region-active-p)
+         (setq beg (region-beginning) end (region-end))
+       (setq beg (point) end nil)))
+   (unless count
+     (setq count 1))
+   (save-excursion
+     (goto-char (or end beg))
+     (dotimes (_ count) (insert right)))
+   (save-excursion
+     (goto-char beg)
+     (dotimes (_ count) (insert left)))
+   (if (and end (characterp left)) ;; Second test handles the ::`` case
+       (goto-char (+ (* 2 count) end))
+     (goto-char (+ count beg))))
+
+ (defun sphinx/coqtop (beg end)
+   (interactive (list (region-beginning) (region-end)))
+   (replace-regexp "^Coq < " "      " nil beg end)
+   (indent-rigidly beg end -3)
+   (goto-char beg)
+   (insert ".. coqtop:: all\n\n"))
+
+ (defun sphinx/rst-coq-action ()
+   (interactive)
+   (pcase (read-char "Command?")
+     (?g (sphinx/quote-coq-refman-region ":g:`" "`"))
+     (?n (sphinx/quote-coq-refman-region ":n:`" "`"))
+     (?t (sphinx/quote-coq-refman-region ":token:`" "`"))
+     (?m (sphinx/quote-coq-refman-region ":math:`" "`"))
+     (?: (sphinx/quote-coq-refman-region "::`" "`"))
+     (?` (sphinx/quote-coq-refman-region "``" "``"))
+     (?c (sphinx/coqtop (region-beginning) (region-end)))))
+
+ (global-set-key (kbd "<f12>") #'sphinx/rst-coq-action)
+
+ With this code installed, you can hit "F12" followed by an appropriate key to do quick markup of text
+ (this will make more sense once you've started editing the text).
+
+# Fork the Coq repo, if needed:
+
+ https://github.com/coq/coq
+
+# Clone the repo to your work machine
+
+# Add Maxime Dénès's repo as a remote:
+
+ git remote add sphinx https://github.com/maximedenes/coq.git
+
+  (or choose a name other than "sphinx")
+
+ Verify with:
+
+ git remote -v
+
+# Fetch from the remote
+
+ git fetch sphinx
+
+# Checkout the sphinx-doc branch
+
+   git checkout sphinx-doc
+
+  You should pull from the repo from time to time to keep your local copy up-to-date:
+
+   git pull sphinx sphinx-doc
+
+  You may want to create a new branch to do your work in.
+
+# Choose a Reference Manual chapter to work on at
+
+    https://docs.google.com/document/d/1Yo7dV4OI0AY9Di-lsEQ3UTmn5ygGLlhxjym7cTCMCWU
+
+# For each chapter, raw ReStructuredText (the Sphinx format), created by the "html2rest" utility,
+   is available in the directory porting/raw-rst/
+
+  Elsewhere, depending on the chapter, there should be an almost-empty template file already created,
+   which is in the location where the final version should go
+
+# Manually edit the .rst file, place it in the correct location
+
+  There are small examples in sphinx/porting/, a larger example in language/gallina-extensions.rst
+
+  (N.B.: the migration is a work-in-progress, your suggestions are welcome)
+
+  Find the chapter you're working on from the online manual at https://coq.inria.fr/distrib/current/refman/.
+  At the top of the file, after the chapter heading, add:
+
+    :Source: https://coq.inria.fr/distrib/current/refman/the-chapter-file.html
+    :Converted by: Your Name
+
+  N.B.: These source and converted-by annotations should help for the migration phase. Later on,
+  those annotations will be removed, and contributors will be mentioned in the Coq credits.
+
+  Remove chapter numbers
+
+  Replace section, subsection numbers with reference labels:
+
+    .. _some-reference-label:
+
+  Place the label before the section or subsection, followed by a blank line.
+
+  Note the leading underscore. Use :ref:`some_reference-label` to refer to such a label; note the leading underscore is omitted.
+  Many cross-references may be to other chapters. If the required label exists, use it. Otherwise, use a dummy reference of the form
+  `TODO-n.n.n-mnemonic` we can fixup later. Example:
+
+    :ref:`TODO-1.3.2-definitions`
+
+  We can grep for those TODOs, and the existing subsection number makes it easy to find in the exisyting manual.
+
+  For the particular case of references to chapters, we can use a
+convention for the cross-reference name, so no TODO is needed.
+
+    :ref:`thegallinaspecificationlanguage`
+
+That is, the chapter label is the chapter title, all in lower-case,
+with no spaces or punctuation. For chapters with subtitles marked with
+a ":", like those for Omega and Nsatz, use just the chapter part
+preceding the ":". These labels should already be in the
+placeholder .rst files for each chapter.
+
+
+  You can also label other items, like grammars, with the same syntax. To refer to such labels, not involving a
+  section or subsection, use the syntax
+
+    :ref:`Some link text <label-name>`
+
+  Yes, the angle-brackets are needed here!
+
+  For bibliographic references (those in biblio.bib), use :cite:`thecitation`.
+
+  Grammars will get mangled by the translation. Look for "productionlist" in the examples, also see
+  http://www.sphinx-doc.org/en/stable/markup/para.html.
+
+  For Coq examples that appear, look at the "coqtop" syntax in porting/tricky-bits.rst. The Sphinx
+  script will run coqtop on those examples, and can show the output (or not).
+
+  The file replaces.rst contains replacement definitions for some items that are clumsy to write out otherwise.
+  Use
+
+    .. include:: replaces.rst
+
+  to gain access to those definitions in your file (you might need a path prefix). Some especially-important
+  replacements are |Cic|, |Coq|, |CoqIDE|, and |Gallina|, which display those names in small-caps. Please use them,
+  so that they're rendered consistently.
+
+  Similarly, there are some LaTeX macros in preamble.rst that can be useful.
+
+  Conventions:
+
+    - Keywords and other literal text is double-backquoted (e.g. ``Module``, ``Section``, ``(``, ``,``).
+
+    - Metavariables are single-backquotes (e.g. `term`, `ident`)
+
+    - Use the cmd directive for Vernacular commands, like:
+
+      .. cmd:: Set Printing All.
+
+      Within this directive, prefix metavariables (ident, term) with @:
+
+      .. cmd:: Add Printing Let @ident.
+
+      There's also the "cmdv" directive for variants of a command.
+
+    - Use the "exn" and "warn" directives for errors and warnings:
+
+      .. exn:: Something's not right.
+      .. warn:: You shouldn't do that.
+
+    - Use the "example" directive for examples
+
+    - Use the "g" role for inline Gallina, like :g:`fun x => x`
+
+    - Use code blocks for blocks of Gallina. You can use a double-colon at the end of a line::
+
+        your code here
+
+      which prints a single colon, or put the double-colon on a newline.
+
+::
+
+        your other code here
+
+# Making changes to the text
+
+  The goal of the migration is simply to change the storage format from LaTeX to ReStructuredText. The goal is not
+  to make any organizational or other substantive changes to the text. If you do notice nits (misspellings, wrong
+  verb tense, and so on), please do change them. For example, the programming language that Coq is written in is these days
+  called "OCaml", and there are mentions of the older name "Objective Caml" in the reference manual that should be changed.
+
+# Build, view the manual
+
+  In the root directory of your local repo, run "make sphinx". You can view the result in a browser by loading the HTML file
+  associated with your chapter, which will be contained in the directory doc/sphinx/_build/html/ beneath the repo root directory.
+  Make any changes you need until there are no build warnings and the output is perfect. :-)
+
+# Creating pull requests
+
+  When your changes are done, commit them, push to your fork:
+
+   git commit -m "useful commit message" file
+   git push origin sphinx-doc
+
+  (or push to another branch, if you've created one). Then go to your GitHub
+  fork and create a pull request against Maxime's sphinx-doc
+  branch. If your commit is recent, you should see a link on your
+  fork's code page to do that. Otherwise, you may need to go to your
+  branch on GitHub to do that.
+
+# Issues/Questions/Suggestions
+
+  As the migration proceeds, if you have technical issues, have a more general question, or want to suggest something, please contact:
+
+    Paul Steckler <steck@stecksoft.com>
+    Maxime Dénès <maxime.denes@inria.fr>
+
+# Issues
+
+  Should the stuff in replaces.rst go in preamble.rst?
+  In LaTeX, some of the grammars add productions to existing nonterminals, like term ++= ... . How to indicate that?
