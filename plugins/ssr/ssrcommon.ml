@@ -1524,8 +1524,9 @@ end
 
 module MakeState(S : StateType) = struct
 
+(** State is kept during merges of evars *)
 let state_field : S.state Proofview_monad.StateStore.field =
-  Proofview_monad.StateStore.field ()
+  Proofview_monad.StateStore.field Proofview_monad.StateStore.default_merge_field
 
 (* FIXME: should not inject fresh_state, but initialize it at the beginning *)
 let lift_upd_state upd s =
