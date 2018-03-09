@@ -134,3 +134,24 @@ Definition withparams_co@{i i' j|i < i', i' < j} : withparams@{i j} -> withparam
 
 Fail Definition withparams_not_irr@{i i' j|i' < i, i' < j} : withparams@{i j} -> withparams@{i' j}
   := fun x => x.
+
+(** Cumulative constructors *)
+
+
+Record twotys@{u v w} : Type@{w} :=
+  twoconstr { fstty : Type@{u}; sndty : Type@{v} }.
+
+Monomorphic Universes i j k l.
+
+Monomorphic Constraint i < j.
+Monomorphic Constraint j < k.
+Monomorphic Constraint k < l.
+
+Parameter Tyi : Type@{i}.
+
+Definition checkcumul :=
+  eq_refl _ : @eq twotys@{k k l} (twoconstr@{i j k} Tyi Tyi) (twoconstr@{j i k} Tyi Tyi).
+
+(* They can only be compared at the highest type *)
+Fail Definition checkcumul' :=
+  eq_refl _ : @eq twotys@{i k l} (twoconstr@{i j k} Tyi Tyi) (twoconstr@{j i k} Tyi Tyi).

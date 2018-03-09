@@ -201,7 +201,9 @@ let convert_constructors
     if not (num_cnstr_args = sv1 && num_cnstr_args = sv2) then
       convert_universes univs u1 u2
     else
-      convert_inductive_instances CONV cumi u1 u2 univs
+      (** By invariant, both constructors have a common supertype,
+          so they are convertible _at that type_. *)
+      ()
 
 (* Convertibility of sorts *)
 

@@ -530,8 +530,15 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
                 UnifFailure (evd, NotSameHead)
               else
                 begin
-                  let evd' = check_leq_inductives evd cumi u u' in
-                  Success (check_leq_inductives evd' cumi u' u)
+                  (** Both constructors should be liftable to the same supertype
+                      at which we compare them, but we don't have access to that type in
+                      untyped unification. We hence try to enforce that one is lower
+                      than the other, also unifying more universes in the process.
+                      If this fails we just leave the universes as is, as in conversion. *)
+                  try Success (check_leq_inductives evd cumi u u')
+                  with Univ.UniverseInconsistency _ ->
+                    try Success (check_leq_inductives evd cumi u' u)
+                    with Univ.UniverseInconsistency e -> Success evd
                 end
             end
         in
