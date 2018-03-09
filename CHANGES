@@ -109,6 +109,12 @@ CoqIDE
 - Find and Replace All report the number of occurrences found; Find indicates
   when it wraps.
 
+coqdep
+
+- Learned to read -I, -Q, -R and filenames from _CoqProject files.
+  This is used by coq_makefile when generating dependencies for .v
+  files (but not other files).
+
 Documentation
 
 - The Coq FAQ, formerly located at https://coq.inria.fr/faq, has been

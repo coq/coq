@@ -10,29 +10,32 @@
 
 exception Parsing_error of string
 
+type arg_source = CmdLine | ProjectFile
+
+type 'a sourced = { thing : 'a; source : arg_source }
+
 type project = {
   project_file  : string option;
   makefile : string option;
   install_kind  : install option;
   use_ocamlopt : bool;
 
-  v_files : string list;
-  mli_files : string list;
-  ml4_files : string list;
-  ml_files : string list;
-  mllib_files : string list;
-  mlpack_files : string list;
+  v_files : string sourced list;
+  mli_files : string sourced list;
+  ml4_files : string sourced list;
+  ml_files : string sourced list;
+  mllib_files : string sourced list;
+  mlpack_files : string sourced list;
 
-  ml_includes : path list;
-  r_includes  : (path * logic_path) list;
-  q_includes  : (path * logic_path) list;
-  extra_args : string list;
-  defs : (string * string) list;
+  ml_includes : path sourced list;
+  r_includes  : (path * logic_path) sourced list;
+  q_includes  : (path * logic_path) sourced list;
+  extra_args : string sourced list;
+  defs : (string * string) sourced list;
 
   (* deprecated in favor of a Makefile.local using :: rules *)
-  extra_targets : extra_target list;
-  subdirs : string list;
-
+  extra_targets : extra_target sourced list;
+  subdirs : string sourced list;
 }
 and extra_target = {
   target : string;
@@ -52,3 +55,14 @@ val read_project_file : string -> project
 val coqtop_args_from_project : project -> string list
 val find_project_file : from:string -> projfile_name:string -> string option
 
+val all_files : project -> string sourced list
+
+val map_sourced_list : ('a -> 'b) -> 'a sourced list -> 'b list
+
+(** Only uses the elements with source=CmdLine *)
+val map_cmdline : ('a -> 'b) -> 'a sourced list -> 'b list
+
+(** Only uses the elements with source=CmdLine *)
+val filter_cmdline : 'a sourced list -> 'a list
+
+val forget_source : 'a sourced -> 'a

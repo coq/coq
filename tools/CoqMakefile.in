@@ -23,6 +23,7 @@ MLFILES           := $(COQMF_MLFILES)
 ML4FILES          := $(COQMF_ML4FILES)
 MLPACKFILES       := $(COQMF_MLPACKFILES)
 MLLIBFILES        := $(COQMF_MLLIBFILES)
+CMDLINE_VFILES    := $(COQMF_CMDLINE_VFILES)
 INSTALLCOQDOCROOT := $(COQMF_INSTALLCOQDOCROOT)
 OTHERFLAGS        := $(COQMF_OTHERFLAGS)
 COQ_SRC_SUBDIRS   := $(COQMF_COQ_SRC_SUBDIRS)
@@ -30,6 +31,7 @@ OCAMLLIBS         := $(COQMF_OCAMLLIBS)
 SRC_SUBDIRS       := $(COQMF_SRC_SUBDIRS)
 COQLIBS           := $(COQMF_COQLIBS)
 COQLIBS_NOML      := $(COQMF_COQLIBS_NOML)
+CMDLINE_COQLIBS   := $(COQMF_CMDLINE_COQLIBS)
 LOCAL             := $(COQMF_LOCAL)
 COQLIB            := $(COQMF_COQLIB)
 DOCDIR            := $(COQMF_DOCDIR)
@@ -724,9 +726,14 @@ $(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack
 	$(SHOW)'COQDEP $<'
 	$(HIDE)$(COQDEP) $(OCAMLLIBS) -c "$<" $(redir_if_ok)
 
+# If this makefile is created using a _CoqProject we have coqdep get
+# options from it. This avoids argument length limits for pathological
+# projects. Note that extra options might be on the command line.
+VDFILE_FLAGS:=$(if @PROJECT_FILE@,-f @PROJECT_FILE@,) $(CMDLINE_COQLIBS) $(CMDLINE_VFILES)
+
 $(VDFILE).d: $(VFILES)
 	$(SHOW)'COQDEP VFILES'
-	$(HIDE)$(COQDEP) $(COQLIBS) -dyndep var -c $(VFILES) $(redir_if_ok)
+	$(HIDE)$(COQDEP) -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
 
 # Misc ########################################################################
 

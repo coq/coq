@@ -8,27 +8,32 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+type arg_source = CmdLine | ProjectFile
+
+type 'a sourced = { thing : 'a; source : arg_source }
+
 type project = {
   project_file  : string option;
   makefile : string option;
   install_kind  : install option;
   use_ocamlopt : bool;
 
-  v_files : string list;
-  mli_files : string list;
-  ml4_files : string list;
-  ml_files : string list;
-  mllib_files : string list;
-  mlpack_files : string list;
+  v_files : string sourced list;
+  mli_files : string sourced list;
+  ml4_files : string sourced list;
+  ml_files : string sourced list;
+  mllib_files : string sourced list;
+  mlpack_files : string sourced list;
 
-  ml_includes : path list;
-  r_includes  : (path * logic_path) list;
-  q_includes  : (path * logic_path) list;
-  extra_args : string list;
-  defs : (string * string) list;
-  
-  extra_targets : extra_target list;
-  subdirs : string list;
+  ml_includes : path sourced list;
+  r_includes  : (path * logic_path) sourced list;
+  q_includes  : (path * logic_path) sourced list;
+  extra_args : string sourced list;
+  defs : (string * string) sourced list;
+
+  (* deprecated in favor of a Makefile.local using :: rules *)
+  extra_targets : extra_target sourced list;
+  subdirs : string sourced list;
 }
 and extra_target = {
   target : string;
@@ -114,6 +119,7 @@ let exists_dir dir =
 
 let process_cmd_line orig_dir proj args =
   let parsing_project_file = ref (proj.project_file <> None) in
+  let sourced x = { thing = x; source = if !parsing_project_file then ProjectFile else CmdLine } in
   let orig_dir = (* avoids turning foo.v in ./foo.v *)
     if orig_dir = "." then "" else orig_dir in
   let error s = Format.eprintf "@[%a]@@\n%!" Pp.pp_with Pp.(str (s^".")); exit 1 in
@@ -143,17 +149,17 @@ let process_cmd_line orig_dir proj args =
     aux { proj with install_kind = Some install } r
   | "-extra" :: target :: dependencies :: command :: r ->
     let tgt = { target; dependencies; phony = false; command } in
-    aux { proj with extra_targets = proj.extra_targets @ [tgt] } r
+    aux { proj with extra_targets = proj.extra_targets @ [sourced tgt] } r
   | "-extra-phony" :: target :: dependencies :: command :: r ->
     let tgt = { target; dependencies; phony = true; command } in
-    aux { proj with extra_targets = proj.extra_targets @ [tgt] } r
+    aux { proj with extra_targets = proj.extra_targets @ [sourced tgt] } r
 
   | "-Q" :: d :: lp :: r ->
-    aux { proj with q_includes = proj.q_includes @ [mk_path d,lp] } r
+    aux { proj with q_includes = proj.q_includes @ [sourced (mk_path d,lp)] } r
   | "-I" :: d :: r ->
-    aux { proj with ml_includes = proj.ml_includes @ [mk_path d] } r
+    aux { proj with ml_includes = proj.ml_includes @ [sourced (mk_path d)] } r
   | "-R" :: d :: lp :: r ->
-    aux { proj with r_includes = proj.r_includes @ [mk_path d,lp] } r
+    aux { proj with r_includes = proj.r_includes @ [sourced (mk_path d,lp)] } r
 
   | "-f" :: file :: r ->
     if !parsing_project_file then
@@ -178,20 +184,21 @@ let process_cmd_line orig_dir proj args =
       error "Option -o given more than once";
     aux { proj with makefile = Some file } r  
   | v :: "=" :: def :: r ->
-    aux { proj with defs = proj.defs @ [v,def] } r
+    aux { proj with defs = proj.defs @ [sourced (v,def)] } r
   | "-arg" :: a :: r ->
-    aux { proj with extra_args = proj.extra_args @ [a] } r
+    aux { proj with extra_args = proj.extra_args @ [sourced a] } r
   | f :: r ->
       let f = CUnix.correct_path f orig_dir in
       let proj =
-        if exists_dir f then { proj with subdirs = proj.subdirs @ [f] }
+        if exists_dir f then { proj with subdirs = proj.subdirs @ [sourced f] }
         else match CUnix.get_extension f with
-        | ".v" -> { proj with v_files = proj.v_files @ [f] }
-        | ".ml" -> { proj with ml_files = proj.ml_files @ [f] }
-        | ".ml4" -> { proj with ml4_files = proj.ml4_files @ [f] }
-        | ".mli" -> { proj with mli_files = proj.mli_files @ [f] }
-        | ".mllib" -> { proj with mllib_files = proj.mllib_files @ [f] }
-        | ".mlpack" -> { proj with mlpack_files = proj.mlpack_files @ [f] }
+          | ".v" ->
+            { proj with v_files = proj.v_files @ [sourced f] }
+        | ".ml" -> { proj with ml_files = proj.ml_files @ [sourced f] }
+        | ".ml4" -> { proj with ml4_files = proj.ml4_files @ [sourced f] }
+        | ".mli" -> { proj with mli_files = proj.mli_files @ [sourced f] }
+        | ".mllib" -> { proj with mllib_files = proj.mllib_files @ [sourced f] }
+        | ".mlpack" -> { proj with mlpack_files = proj.mlpack_files @ [sourced f] }
         | _ -> raise (Parsing_error ("Unknown option "^f)) in
       aux proj r
  in
@@ -215,16 +222,34 @@ let rec find_project_file ~from ~projfile_name =
     else find_project_file ~from:newdir ~projfile_name
 ;;
 
+let all_files { v_files; ml_files; mli_files; ml4_files;
+                mllib_files; mlpack_files } =
+  v_files @ mli_files @ ml4_files @ ml_files @ mllib_files @ mlpack_files
+
+let map_sourced_list f l = List.map (fun x -> f x.thing) l
+;;
+
+let map_cmdline f l = CList.map_filter (function
+    | {thing=x; source=CmdLine} -> Some (f x)
+    | {source=ProjectFile} -> None) l
+
 let coqtop_args_from_project
   { ml_includes; r_includes; q_includes; extra_args }
 =
-  let map = List.map in
+  let map = map_sourced_list  in
   let args =
     map (fun { canonical_path = i } -> ["-I"; i]) ml_includes @
     map (fun ({ canonical_path = i }, l) -> ["-Q"; i; l]) q_includes @
     map (fun ({ canonical_path = p }, l) -> ["-R"; p; l]) r_includes @
-    [extra_args] in
+    [map (fun x -> x) extra_args] in
   List.flatten args
 ;;
+
+let filter_cmdline l = CList.map_filter
+    (function {thing; source=CmdLine} -> Some thing | {source=ProjectFile} -> None)
+    l
+;;
+
+let forget_source {thing} = thing
 
 (* vim:set ft=ocaml: *)
