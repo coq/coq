@@ -919,7 +919,7 @@ let load_ltac2_init _ (_, ()) =
   Hook.get f_register_constr_quotations ()
 
 let open_ltac2_init _ (_, ()) =
-  Goptions.set_string_option_value_gen None ["Default"; "Proof"; "Mode"] "Ltac2"
+  Goptions.set_string_option_value_gen ["Default"; "Proof"; "Mode"] "Ltac2"
 
 (** Dummy object that register global rules when Require is called *)
 let inTac2Init : unit -> obj =
