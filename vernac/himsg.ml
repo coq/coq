@@ -425,7 +425,7 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
       str "Not enough abstractions in the definition"
   | RecursionNotOnInductiveType c ->
       str "Recursive definition on" ++ spc () ++ pr_lconstr_env env sigma c ++
-      spc () ++ str "which should be an inductive type"
+      spc () ++ str "which should be a recursive inductive type"
   | RecursionOnIllegalTerm(j,(arg_env, arg),le,lt) ->
       let arg_env = make_all_name_different arg_env sigma in
       let called =
