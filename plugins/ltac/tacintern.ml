@@ -811,6 +811,9 @@ let () =
   Genintern.register_intern0 wit_destruction_arg (lift intern_destruction_arg);
   ()
 
+let () =
+  Hook.set Genintern.intern_open_constr_hook (fun ist c -> (ist,intern_constr ist c))
+
 (** Substitution for notations containing tactic-in-terms *)
 
 let notation_subst bindings tac =

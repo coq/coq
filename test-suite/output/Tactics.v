@@ -21,3 +21,12 @@ Proof.
 intros H.
 Fail intros [H%myid ?].
 Fail destruct 1 as [H%myid ?].
+
+(* Test custom entries in Ltac *)
+Notation "[ x ]" := x (x custom myconstr at level 6).
+Notation "< x >" := x (in custom myconstr, at level 3, x custom anotherconstr at level 10).
+Notation "# x" := (Some x) (in custom anotherconstr, at level 8, x constr at level 9).
+Tactic Notation "f" myconstr(c) := idtac c.
+Goal True.
+f <#True>.
+Abort.

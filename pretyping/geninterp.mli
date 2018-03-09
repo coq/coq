@@ -72,3 +72,6 @@ val interp : ('raw, 'glb, 'top) genarg_type -> ('glb, Val.t) interp_fun
 
 val register_interp0 :
   ('raw, 'glb, 'top) genarg_type -> ('glb, Val.t) interp_fun -> unit
+
+val interp_open_constr_hook : ((Constrexpr.constr_expr, Tactypes.glob_constr_and_expr, EConstr.constr) genarg_type -> (Tactypes.glob_constr_and_expr, Val.t) interp_fun) Hook.t
+val interp_open_constr_forward : ((Constrexpr.constr_expr, Tactypes.glob_constr_and_expr, EConstr.constr) genarg_type -> (Tactypes.glob_constr_and_expr, Val.t) interp_fun) Hook.value

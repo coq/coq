@@ -307,3 +307,6 @@ let () =
   Genintern.register_subst0 wit_constr_with_bindings subst_glob_with_bindings;
   Genintern.register_subst0 wit_destruction_arg subst_destruction_arg;
   ()
+
+let () =
+  Hook.set Genintern.subst_open_constr_hook subst_glob_constr

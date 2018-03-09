@@ -19,9 +19,9 @@ val asymmetric_patterns : bool ref
 val split_at_annot : local_binder_expr list -> Misctypes.lident option -> local_binder_expr list * local_binder_expr list
 [@@ocaml.deprecated "use Constrexpr_ops.split_at_annot"]
 
-val ntn_loc : ?loc:Loc.t -> constr_notation_substitution -> string -> (int * int) list
+val ntn_loc : ?loc:Loc.t -> constr_notation_substitution -> notation -> (int * int) list
 [@@ocaml.deprecated "use Constrexpr_ops.ntn_loc"]
-val patntn_loc : ?loc:Loc.t -> cases_pattern_notation_substitution -> string -> (int * int) list
+val patntn_loc : ?loc:Loc.t -> cases_pattern_notation_substitution -> notation -> (int * int) list
 [@@ocaml.deprecated "use Constrexpr_ops.patntn_loc"]
 
 (** For cases pattern parsing errors *)

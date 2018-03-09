@@ -829,6 +829,27 @@ Notation "'apply_id' f a1 .. an" := (.. (f a1) .. an)
   (at level 10, f ident, a1, an at level 9).
 \end{coq_example*}
 
+\subsection{Custom entries}
+
+New grammar entries can be defined using the {\tt custom}
+modifier. For instance, we may want to define an ad hoc parser for
+arithmetical operations and proceed as follows:
+
+\begin{coq_example}
+Record ring_ops (dom:Type) := {
+  zero : dom;
+  one : dom;
+  plus : dom -> dom -> dom;
+  mult : dom -> dom -> dom
+}.
+Notation "[ expr ]" := expr (expr custom group at level 1).
+Notation "1" := one (in custom group at level 0).
+Notation "x y" := (mult x y) (in custom group at level 0).
+Notation "x + y" := (plus x y) (in custom group at level 1).
+Notation "( x )" := x (in custom group at level 0).
+Notation "{ x }" := x (in custom group at level 0, x constr).
+\end{coq_example}
+
 \subsection{Summary}
 
 \paragraph{Syntax of notations}

@@ -107,6 +107,9 @@ val cata : ('a -> 'b) -> 'b -> 'a option -> 'b
 (** [default a x] is [y] if [x] is [Some y] and [a] otherwise. *)
 val default : 'a -> 'a option -> 'a
 
+(** [lazy_default a x] is [y] if [x] is [Some y] and [a] otherwise. *)
+val lazy_default : 'a Lazy.t -> 'a option -> 'a
+
 (** [lift] is the same as {!map}. *)
 val lift : ('a -> 'b) -> 'a option -> 'b option
 

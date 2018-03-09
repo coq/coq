@@ -1152,6 +1152,7 @@ GEXTEND Gram
   ;
   syntax_modifier:
     [ [ "at"; IDENT "level"; n = natural -> SetLevel n
+      | "in"; IDENT "custom"; x = IDENT -> SetCustomEntry x
       | IDENT "left"; IDENT "associativity" -> SetAssoc LeftA
       | IDENT "right"; IDENT "associativity" -> SetAssoc RightA
       | IDENT "no"; IDENT "associativity" -> SetAssoc NonA
@@ -1165,10 +1166,11 @@ GEXTEND Gram
           | { CAst.v = k }, Some s -> SetFormat(k,s)
           | s, None -> SetFormat ("text",s) end
       | x = IDENT; ","; l = LIST1 [id = IDENT -> id ] SEP ","; "at";
-        lev = level -> SetItemLevel (x::l,lev)
-      | x = IDENT; "at"; lev = level -> SetItemLevel ([x],lev)
-      | x = IDENT; "at"; lev = level; b = constr_as_binder_kind -> SetItemLevelAsBinder ([x],b,Some lev)
-      | x = IDENT; b = constr_as_binder_kind -> SetItemLevelAsBinder ([x],b,None)
+        lev = level -> SetItemLevel (x::l,None,Some lev)
+      | x = IDENT; "at"; lev = level -> SetItemLevel ([x],None,Some lev)
+      | x = IDENT; "at"; lev = level; b = constr_as_binder_kind ->
+        SetItemLevel ([x],Some b,Some lev)
+      | x = IDENT; b = constr_as_binder_kind -> SetItemLevel ([x],Some b,None)
       | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ)
     ] ]
   ;
@@ -1176,12 +1178,15 @@ GEXTEND Gram
     [ [ IDENT "ident" -> ETName | IDENT "global" -> ETReference
       | IDENT "bigint" -> ETBigint
       | IDENT "binder" -> ETBinder true
-      | IDENT "constr"; n = OPT at_level; b = constr_as_binder_kind -> ETConstrAsBinder (b,n)
+      | IDENT "constr" -> ETConstr (InConstrEntry,None,None)
+      | IDENT "constr"; n = OPT at_level; b = OPT constr_as_binder_kind -> ETConstr (InConstrEntry,b,n)
       | IDENT "pattern" -> ETPattern (false,None)
       | IDENT "pattern"; "at"; IDENT "level"; n = natural -> ETPattern (false,Some n)
       | IDENT "strict"; IDENT "pattern" -> ETPattern (true,None)
       | IDENT "strict"; IDENT "pattern"; "at"; IDENT "level"; n = natural -> ETPattern (true,Some n)
       | IDENT "closed"; IDENT "binder" -> ETBinder false
+      | IDENT "custom"; x = IDENT; n = OPT at_level; b = OPT constr_as_binder_kind ->
+           ETConstr (InCustomEntry x,b,n)
     ] ]
   ;
   at_level:
