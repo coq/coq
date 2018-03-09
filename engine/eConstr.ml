@@ -613,8 +613,11 @@ let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
     enforce_eq_instances_univs false u1 u2 cstrs
   | Declarations.Cumulative_ind cumi ->
     let num_cnstr_args = Reduction.constructor_cumulativity_arguments spec in
-    let variances = Univ.ACumulativityInfo.variance cumi in
-    compare_cumulative_instances Reduction.CONV (Int.equal num_cnstr_args nargs) variances u1 u2 cstrs
+    if not (Int.equal num_cnstr_args nargs)
+    then enforce_eq_instances_univs false u1 u2 cstrs
+    else
+      Array.fold_left2 (fun cstrs u1 u2 -> Universes.(Constraints.add (UWeak (u1,u2)) cstrs))
+        cstrs (Univ.Instance.to_array u1) (Univ.Instance.to_array u2)
 
 let eq_universes env sigma cstrs cv_pb ref nargs l l' =
   if Univ.Instance.is_empty l then (assert (Univ.Instance.is_empty l'); true)
