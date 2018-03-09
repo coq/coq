@@ -27,7 +27,7 @@ open Misctypes
     that starts with the right constructor, but might be partially
     applied.
 
-    At least [c] is known to be evar-free, since it comes for
+    At least [c] is known to be evar-free, since it comes from
     our own ad-hoc [constr_of_glob] or from conversions such
     as [coqint_of_rawnum].
 *)
@@ -65,7 +65,7 @@ let warning_abstract_num ty f =
 
 (** Comparing two raw numbers (base 10, big-endian, non-negative).
     A bit nasty, but not critical : only used to decide when a
-    nat number is considered as large. *)
+    number is considered as large (see warnings above). *)
 
 exception Comp of int
 
