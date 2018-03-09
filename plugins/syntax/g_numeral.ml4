@@ -51,17 +51,21 @@ let eval_constr_app c1 c2 = eval_constr (mkApp (c1,[| c2 |]))
 
 exception NotANumber
 
-let warning_big_num ty =
-  strbrk "Stack overflow or segmentation fault happens when " ++
-  strbrk "working with large numbers in " ++ pr_reference ty ++
-  strbrk " (threshold may vary depending" ++
-  strbrk " on your system limits and on the command executed)."
+let warn_large_num =
+  CWarnings.create ~name:"large-number" ~category:"numbers"
+    (fun ty ->
+      strbrk "Stack overflow or segmentation fault happens when " ++
+      strbrk "working with large numbers in " ++ pr_reference ty ++
+      strbrk " (threshold may vary depending" ++
+      strbrk " on your system limits and on the command executed).")
 
-let warning_abstract_num ty f =
-  let (sigma, env) = Pfedit.get_current_context () in
-  strbrk "To avoid stack overflow, large numbers in " ++
-  pr_reference ty ++ strbrk " are interpreted as applications of " ++
-  Printer.pr_constr_env env sigma f ++ strbrk "."
+let warn_abstract_large_num =
+  CWarnings.create ~name:"abstract-large-number" ~category:"numbers"
+    (fun (ty,f) ->
+      let (sigma, env) = Pfedit.get_current_context () in
+      strbrk "To avoid stack overflow, large numbers in " ++
+      pr_reference ty ++ strbrk " are interpreted as applications of " ++
+      Printer.pr_constr_env env sigma f ++ strbrk ".")
 
 (** Comparing two raw numbers (base 10, big-endian, non-negative).
     A bit nasty, but not critical : only used to decide when a
@@ -279,7 +283,7 @@ type numeral_notation_obj =
 let interp o ?loc n =
   begin match o.warning with
   | Warning threshold when snd n && rawnum_compare (fst n) threshold >= 0 ->
-     Feedback.msg_warning (warning_big_num o.num_ty)
+     warn_large_num o.num_ty
   | _ -> ()
   end;
   let c = match fst o.to_kind with
@@ -290,7 +294,7 @@ let interp o ?loc n =
   in
   match o.warning, snd o.to_kind with
   | Abstract threshold, Direct when rawnum_compare (fst n) threshold >= 0 ->
-     Feedback.msg_warning (warning_abstract_num o.num_ty o.to_ty);
+     warn_abstract_large_num (o.num_ty,o.to_ty);
      glob_of_constr ?loc (mkApp (o.to_ty,[|c|]))
   | _ ->
      let res = eval_constr_app o.to_ty c in
