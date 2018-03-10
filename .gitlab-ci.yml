@@ -59,6 +59,10 @@ before_script:
     - echo 'end:coq.install'
 
     - set +e
+  variables: &build-template-vars
+    NJOBS: 4
+  tags:
+    - fast-runner
 
 .warnings-template: &warnings-template
   # keep warnings in test stage so we can test things even when warnings occur
@@ -131,8 +135,11 @@ before_script:
     - build:edge+flambda
   variables:
     <<: *ci-template-vars
+    NJOBS: 4
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
+  tags:
+    - fast-runner
 
 .windows-template: &windows-template
   stage: test
@@ -155,24 +162,28 @@ before_script:
 build:base:
   <<: *build-template
   variables:
+    <<: *build-template-vars
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt -with-doc yes"
 
 # no coqide for 32bit: libgtk installation problems
 build:base+32bit:
   <<: *build-template
   variables:
+    <<: *build-template-vars
     OPAM_VARIANT: "+32bit"
     COQ_EXTRA_CONF: "-native-compiler yes"
 
 build:edge:
   <<: *build-template
   variables:
+    <<: *build-template-vars
     OPAM_SWITCH: edge
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
 
 build:edge+flambda:
   <<: *build-template
   variables:
+    <<: *build-template-vars
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
     COQ_EXTRA_CONF: "-native-compiler no -coqide opt -flambda-opts "
