@@ -19,7 +19,8 @@ Table of contents
 
 .. toctree::
    :caption: Reference
-   :titlesonly:
+
+   zebibliography
 
 .. toctree::
    :caption: Indexes
