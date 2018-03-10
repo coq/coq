@@ -3,10 +3,12 @@
 
 open Goal
 open Genarg
-open Tacexpr
 open Environ
 open Evd
 open Constr
+
+open Ltac_plugin
+open Tacexpr
 
 (** ******** Small Scale Reflection pattern matching facilities ************* *)
 

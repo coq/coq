@@ -14,7 +14,7 @@ val functional_induction :
   bool ->
   EConstr.constr ->
   (EConstr.constr * EConstr.constr bindings) option ->
-  Tacexpr.or_and_intro_pattern option ->
+  Ltac_plugin.Tacexpr.or_and_intro_pattern option ->
   Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 
