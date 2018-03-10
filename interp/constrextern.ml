@@ -215,7 +215,7 @@ let is_record indsp =
 let encode_record r =
   let indsp = global_inductive r in
   if not (is_record indsp) then
-    user_err ?loc:(loc_of_reference r) ~hdr:"encode_record"
+    user_err ?loc:r.CAst.loc ~hdr:"encode_record"
       (str "This type is not a structure type.");
   indsp
 
@@ -271,14 +271,14 @@ let extern_evar n l = CEvar (n,l)
     may be inaccurate *)
 
 let default_extern_reference ?loc vars r =
-  Qualid (Loc.tag ?loc @@ shortest_qualid_of_global vars r)
+  make @@ Qualid (shortest_qualid_of_global vars r)
 
 let my_extern_reference = ref default_extern_reference
 
 let set_extern_reference f = my_extern_reference := f
 let get_extern_reference () = !my_extern_reference
 
-let extern_reference ?loc vars l = !my_extern_reference ?loc vars l
+let extern_reference ?loc vars l = !my_extern_reference vars l
 
 (**********************************************************************)
 (* mapping patterns to cases_pattern_expr                                *)
@@ -389,7 +389,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
         (uninterp_cases_pattern_notations pat)
     with No_match ->
       lift (fun ?loc -> function
-	| PatVar (Name id) -> CPatAtom (Some (Ident (loc,id)))
+        | PatVar (Name id) -> CPatAtom (Some (make ?loc @@ Ident id))
 	| PatVar (Anonymous) -> CPatAtom None
 	| PatCstr(cstrsp,args,na) ->
 	  let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
@@ -407,7 +407,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 		          (* we don't want to have 'x := _' in our patterns *)
                           acc
 		       | Some c, _ ->
-		          ((extern_reference ?loc Id.Set.empty (ConstRef c), pat) :: acc)
+                          ((extern_reference ?loc Id.Set.empty (ConstRef c), pat) :: acc)
                        | _ -> raise No_match in
                      ip q tail acc
 	          | _ -> assert false
@@ -415,7 +415,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 	      CPatRecord(List.rev (ip projs args []))
 	    with
 		Not_found | No_match | Exit ->
-                  let c = extern_reference ?loc Id.Set.empty (ConstructRef cstrsp) in
+                  let c = extern_reference Id.Set.empty (ConstructRef cstrsp) in
                   if !asymmetric_patterns then
 		    if pattern_printable_in_both_syntax cstrsp
 		    then CPatCstr (c, None, args)
@@ -458,7 +458,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
 	      (make_pat_notation ?loc ntn (l,ll) l2') key
       end
     | SynDefRule kn ->
-      let qid = Qualid (Loc.tag ?loc @@ shortest_qualid_of_syndef vars kn) in
+      let qid = make ?loc @@ Qualid (shortest_qualid_of_syndef vars kn) in
       let l1 =
 	List.rev_map (fun (c,(scopt,scl)) ->
           extern_cases_pattern_in_scope (scopt,scl@scopes) vars c)
@@ -484,7 +484,7 @@ and extern_notation_pattern (tmp_scope,scopes as allscopes) vars t = function
 	    (match_notation_constr_cases_pattern t pat) allscopes vars keyrule in
 	  insert_pat_alias ?loc p na
 	| PatVar Anonymous -> CAst.make ?loc @@ CPatAtom None
-	| PatVar (Name id) -> CAst.make ?loc @@ CPatAtom (Some (Ident (loc,id)))
+        | PatVar (Name id) -> CAst.make ?loc @@ CPatAtom (Some (make ?loc @@ Ident id))
     with
 	No_match -> extern_notation_pattern allscopes vars t rules
 
@@ -745,9 +745,9 @@ let rec extern inctx scopes vars r =
   with No_match -> lift (fun ?loc -> function
   | GRef (ref,us) ->
       extern_global (select_stronger_impargs (implicits_of_global ref))
-        (extern_reference ?loc vars ref) (extern_universes us)
+        (extern_reference vars ref) (extern_universes us)
 
-  | GVar id -> CRef (Ident (loc,id),None)
+  | GVar id -> CRef (make ?loc @@ Ident id,None)
 
   | GEvar (n,[]) when !print_meta_as_hole -> CHole (None, Misctypes.IntroAnonymous, None)
 
@@ -763,7 +763,6 @@ let rec extern inctx scopes vars r =
   | GApp (f,args) ->
       (match DAst.get f with
 	 | GRef (ref,us) ->
-            let rloc = f.CAst.loc in
 	     let subscopes = find_arguments_scope ref in
 	     let args = fill_arg_scopes args subscopes (snd scopes) in
 	     begin
@@ -802,7 +801,7 @@ let rec extern inctx scopes vars r =
 				     (* we give up since the constructor is not complete *)
 				 | (arg, scopes) :: tail ->
                                      let head = extern true scopes vars arg in
-				     ip q locs' tail ((extern_reference ?loc Id.Set.empty (ConstRef c), head) :: acc)
+                                     ip q locs' tail ((extern_reference ?loc Id.Set.empty (ConstRef c), head) :: acc)
 		   in
 		 CRecord (List.rev (ip projs locals args []))
 	       with
@@ -810,7 +809,7 @@ let rec extern inctx scopes vars r =
                     let args = extern_args (extern true) vars args in
 		     extern_app inctx
 		       (select_stronger_impargs (implicits_of_global ref))
-		       (Some ref,extern_reference ?loc:rloc vars ref) (extern_universes us) args
+                       (Some ref,extern_reference ?loc vars ref) (extern_universes us) args
 	     end
 
 	 | _       ->
@@ -1090,7 +1089,7 @@ and extern_notation (tmp_scope,scopes as allscopes) vars t = function
 		List.map (fun (c,(scopt,scl)) ->
 		  extern true (scopt,scl@scopes) vars c, None)
 		  terms in
-              let a = CRef (Qualid (loc, shortest_qualid_of_syndef vars kn),None) in
+              let a = CRef (make ?loc @@ Qualid (shortest_qualid_of_syndef vars kn),None) in
 	      CAst.make ?loc @@ if List.is_empty l then a else CApp ((None, CAst.make a),l) in
  	if List.is_empty args then e
 	else

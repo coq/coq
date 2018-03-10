@@ -61,7 +61,7 @@ open Globnames
 exception GlobalizationError of qualid
 
 (** Raises a globalization error *)
-val error_global_not_found : ?loc:Loc.t -> qualid -> 'a
+val error_global_not_found : qualid CAst.t -> 'a
 
 (** {6 Register visibility of things } *)
 

@@ -210,7 +210,7 @@ module Prim :
     val qualid : qualid CAst.t Gram.entry
     val fullyqualid : Id.t list CAst.t Gram.entry
     val reference : reference Gram.entry
-    val by_notation : (string * string option) CAst.t Gram.entry
+    val by_notation : (string * string option) Gram.entry
     val smart_global : reference or_by_notation Gram.entry
     val dirpath : DirPath.t Gram.entry
     val ne_string : string Gram.entry

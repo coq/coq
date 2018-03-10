@@ -1279,7 +1279,7 @@ let interp_hints poly =
       prepare_hint true (poly,false) (Global.env()) Evd.empty (evd,c) in
   let fref r =
     let gr = global_with_alias r in
-    Dumpglob.add_glob ?loc:(loc_of_reference r) gr;
+    Dumpglob.add_glob ?loc:r.CAst.loc gr;
     gr in
   let fr r = evaluable_of_global_reference env (fref r) in
   let fi c =
@@ -1306,7 +1306,7 @@ let interp_hints poly =
       let constr_hints_of_ind qid =
         let ind = global_inductive_with_alias qid in
 	let mib,_ = Global.lookup_inductive ind in
-	Dumpglob.dump_reference ?loc:(fst (qualid_of_reference qid)) "<>" (string_of_reference qid) "ind";
+        Dumpglob.dump_reference ?loc:qid.CAst.loc "<>" (string_of_reference qid) "ind";
           List.init (nconstructors ind) 
 	    (fun i -> let c = (ind,i+1) in
 		      let gr = ConstructRef c in

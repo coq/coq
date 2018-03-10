@@ -72,7 +72,7 @@ let existing_instance glob g info =
   let _, r = Term.decompose_prod_assum instance in
     match class_of_constr Evd.empty (EConstr.of_constr r) with
       | Some (_, ((tc,u), _)) -> add_instance (new_instance tc info glob c)
-      | None -> user_err ?loc:(loc_of_reference g)
+      | None -> user_err ?loc:g.CAst.loc
                          ~hdr:"declare_instance"
                          (Pp.str "Constant does not build instances of a declared type class.")
 
@@ -227,10 +227,9 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
             let sigma, c = interp_casted_constr_evars env' sigma term cty in
             Some (Inr (c, subst)), sigma
 	| Some (Inl props) ->
-	    let get_id =
-	      function
-                | Ident (loc, id') -> CAst.(make ?loc @@ id')
-                | Qualid (loc,id') -> CAst.(make ?loc @@ snd (repr_qualid id'))
+            let get_id = CAst.map (function
+                | Ident id' -> id'
+                | Qualid id' -> snd (repr_qualid id'))
 	    in
 	    let props, rest =
 	      List.fold_left

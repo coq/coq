@@ -18,8 +18,8 @@ open Globnames
 
 exception GlobalizationError of qualid
 
-let error_global_not_found ?loc q =
-  Loc.raise ?loc (GlobalizationError q)
+let error_global_not_found {CAst.loc;v} =
+  Loc.raise ?loc (GlobalizationError v)
 
 (* The visibility can be registered either
    - for all suffixes not shorter then a given int - when the object
@@ -459,16 +459,16 @@ let global_of_path sp =
 
 let extended_global_of_path sp = ExtRefTab.find sp !the_ccitab
 
-let global r =
-  let (loc,qid) = qualid_of_reference r in
-  try match locate_extended qid with
+let global ({CAst.loc;v=r} as lr)=
+  let {CAst.loc; v} as qid = qualid_of_reference lr in
+  try match locate_extended v with
     | TrueGlobal ref -> ref
     | SynDef _ ->
         user_err ?loc ~hdr:"global"
           (str "Unexpected reference to a notation: " ++
-           pr_qualid qid)
+           pr_qualid v)
   with Not_found ->
-    error_global_not_found ?loc qid
+    error_global_not_found qid
 
 (* Exists functions ********************************************************)
 
@@ -539,13 +539,12 @@ let pr_global_env env ref =
   with Not_found as e ->
     if !Flags.debug then Feedback.msg_debug (Pp.str "pr_global_env not found"); raise e
 
-let global_inductive r =
-  match global r with
+let global_inductive ({CAst.loc; v=r} as lr) =
+  match global lr with
   | IndRef ind -> ind
   | ref ->
-      user_err ?loc:(loc_of_reference r) ~hdr:"global_inductive"
-        (pr_reference r ++ spc () ++ str "is not an inductive type")
-
+      user_err ?loc ~hdr:"global_inductive"
+        (pr_reference lr ++ spc () ++ str "is not an inductive type")
 
 (********************************************************************)
 

@@ -181,9 +181,9 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_and_short_name pr (c,_) = pr c
 
-  let pr_or_by_notation f = function
+  let pr_or_by_notation f = CAst.with_val (function
     | AN v -> f v
-    | ByNotation {CAst.v=(s,sc)} -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
+    | ByNotation (s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc)
 
   let pr_located pr (loc,x) = pr x
 

@@ -106,7 +106,7 @@ type comment =
   | CommentString of string
   | CommentInt of int
 
-type reference_or_constr = 
+type reference_or_constr =
   | HintsReference of reference
   | HintsConstr of constr_expr
 

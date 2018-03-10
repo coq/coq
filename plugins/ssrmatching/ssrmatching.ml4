@@ -131,8 +131,8 @@ let add_genarg tag pr =
 (** Constructors for cast type *)
 let dC t = CastConv t
 (** Constructors for constr_expr *)
-let isCVar   = function { CAst.v = CRef (Ident _, _) } -> true | _ -> false
-let destCVar = function { CAst.v = CRef (Ident (_, id), _) } -> id | _ ->
+let isCVar   = function { CAst.v = CRef ({CAst.v=Ident _},_) } -> true | _ -> false
+let destCVar = function { CAst.v = CRef ({CAst.v=Ident id},_) } -> id | _ ->
   CErrors.anomaly (str"not a CRef.")
 let isGLambda c = match DAst.get c with GLambda (Name _, _, _, _) -> true | _ -> false
 let destGLambda c = match DAst.get c with GLambda (Name id, _, _, c) -> (id, c)
@@ -1012,8 +1012,8 @@ type pattern = Evd.evar_map * (constr, constr) ssrpattern
 let id_of_cpattern (_, (c1, c2), _) =
   let open CAst in
   match DAst.get c1, c2 with
-  | _, Some { v = CRef (Ident (_, x), _) } -> Some x
-  | _, Some { v = CAppExpl ((_, Ident (_, x), _), []) } -> Some x
+  | _, Some { v = CRef ({CAst.v=Ident x}, _) } -> Some x
+  | _, Some { v = CAppExpl ((_, {CAst.v=Ident x}, _), []) } -> Some x
   | GRef (VarRef x, _), None -> Some x
   | _ -> None
 let id_of_Cterm t = match id_of_cpattern t with

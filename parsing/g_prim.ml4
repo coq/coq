@@ -77,16 +77,16 @@ GEXTEND Gram
   ;
   reference:
     [ [ id = ident; (l,id') = fields ->
-        Qualid (Loc.tag ~loc:!@loc @@ local_make_qualid (l@[id]) id')
-      | id = ident -> Ident (Loc.tag ~loc:!@loc id)
+        CAst.make ~loc:!@loc @@ Qualid (local_make_qualid (l@[id]) id')
+      | id = ident -> CAst.make ~loc:!@loc @@ Ident id
       ] ]
   ;
   by_notation:
-    [ [ s = ne_string; sc = OPT ["%"; key = IDENT -> key ] -> CAst.make ~loc:!@loc (s, sc) ] ]
+    [ [ s = ne_string; sc = OPT ["%"; key = IDENT -> key ] -> (s, sc) ] ]
   ;
   smart_global:
-    [ [ c = reference -> Misctypes.AN c
-      | ntn = by_notation -> Misctypes.ByNotation ntn ] ]
+    [ [ c = reference -> CAst.make ~loc:!@loc @@ Misctypes.AN c
+      | ntn = by_notation -> CAst.make ~loc:!@loc @@ Misctypes.ByNotation ntn ] ]
   ;
   qualid:
     [ [ qid = basequalid -> CAst.make ~loc:!@loc qid ] ]

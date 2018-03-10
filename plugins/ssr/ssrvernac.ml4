@@ -432,7 +432,7 @@ END
 
 let interp_modloc mr =
   let interp_mod (_, mr) =
-    let (loc, qid) = qualid_of_reference mr in
+    let {CAst.loc=loc; v=qid} = qualid_of_reference mr in
     try Nametab.full_name_module qid with Not_found ->
     CErrors.user_err ?loc (str "No Module " ++ pr_qualid qid) in
   let mr_out, mr_in = List.partition fst mr in
@@ -565,9 +565,9 @@ GEXTEND Gram
   gallina_ext:
       (* Canonical structure *)
      [[ IDENT "Canonical"; qid = Constr.global ->
-	  Vernacexpr.VernacCanonical (AN qid)
+          Vernacexpr.VernacCanonical (CAst.make @@ AN qid)
       | IDENT "Canonical"; ntn = Prim.by_notation ->
-	  Vernacexpr.VernacCanonical (ByNotation ntn)
+          Vernacexpr.VernacCanonical (CAst.make @@ ByNotation ntn)
       | IDENT "Canonical"; qid = Constr.global;
           d = G_vernac.def_body ->
           let s = coerce_reference_to_id qid in

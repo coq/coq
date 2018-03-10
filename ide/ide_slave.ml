@@ -289,7 +289,7 @@ let pattern_of_string ?env s =
 let dirpath_of_string_list s =
   let path = String.concat "." s in
   let m = Pcoq.parse_string Pcoq.Constr.global path in
-  let (_, qid) = Libnames.qualid_of_reference m in
+  let {CAst.v=qid} = Libnames.qualid_of_reference m in
   let id =
     try Nametab.full_name_module qid
     with Not_found ->

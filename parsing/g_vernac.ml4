@@ -624,9 +624,9 @@ GEXTEND Gram
             VernacSetStrategy l
       (* Canonical structure *)
       | IDENT "Canonical"; IDENT "Structure"; qid = global ->
-	  VernacCanonical (AN qid)
+          VernacCanonical CAst.(make ~loc:!@loc @@ AN qid)
       | IDENT "Canonical"; IDENT "Structure"; ntn = by_notation ->
-	  VernacCanonical (ByNotation ntn)
+          VernacCanonical CAst.(make ~loc:!@loc @@ ByNotation ntn)
       | IDENT "Canonical"; IDENT "Structure"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
           VernacDefinition ((NoDischarge,CanonicalStructure),((CAst.make (Name s)),None),d)
@@ -640,10 +640,10 @@ GEXTEND Gram
            VernacIdentityCoercion (f, s, t)
       | IDENT "Coercion"; qid = global; ":"; s = class_rawexpr; ">->";
          t = class_rawexpr ->
-          VernacCoercion (AN qid, s, t)
+          VernacCoercion (CAst.make ~loc:!@loc @@ AN qid, s, t)
       | IDENT "Coercion"; ntn = by_notation; ":"; s = class_rawexpr; ">->";
          t = class_rawexpr ->
-          VernacCoercion (ByNotation ntn, s, t)
+          VernacCoercion (CAst.make ~loc:!@loc @@ ByNotation ntn, s, t)
 
       | IDENT "Context"; c = binders ->
 	  VernacContext c

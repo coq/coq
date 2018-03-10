@@ -2571,8 +2571,8 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
 
   let load_objs libs =
     let rq_file (dir, from, exp) =
-      let mp = Libnames.(Qualid (Loc.tag @@ qualid_of_string dir)) in
-      let mfrom = Option.map (fun fr -> Libnames.(Qualid (Loc.tag @@ qualid_of_string fr))) from in
+      let mp = CAst.make @@ Libnames.(Qualid (qualid_of_string dir)) in
+      let mfrom = Option.map (fun fr -> CAst.make @@ Libnames.(Qualid (qualid_of_string fr))) from in
       Flags.silently (Vernacentries.vernac_require mfrom exp) [mp] in
     List.(iter rq_file (rev libs))
   in

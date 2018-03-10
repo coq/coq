@@ -577,7 +577,7 @@ let require_library_from_dirpath modrefl export =
 
 (* the function called by Vernacentries.vernac_import *)
 
-let safe_locate_module (loc,qid) =
+let safe_locate_module {CAst.loc;v=qid} =
   try Nametab.locate_module qid
   with Not_found ->
     user_err ?loc ~hdr:"import_library"
@@ -595,7 +595,7 @@ let import_module export modl =
     | [] -> ()
     | modl -> add_anonymous_leaf (in_import_library (List.rev modl, export)) in
   let rec aux acc = function
-    | (loc, dir as m) :: l ->
+    | ({CAst.loc; v=dir} as m) :: l ->
         let m,acc =
           try Nametab.locate_module dir, acc
           with Not_found-> flush acc; safe_locate_module m, [] in

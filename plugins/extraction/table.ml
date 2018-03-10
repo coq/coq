@@ -899,7 +899,7 @@ let extract_constant_inline inline r ids s =
 let extract_inductive r s l optstr =
   check_inside_section ();
   let g = Smartlocate.global_with_alias r in
-  Dumpglob.add_glob ?loc:(loc_of_reference r) g;
+  Dumpglob.add_glob ?loc:r.CAst.loc g;
   match g with
     | IndRef ((kn,i) as ip) ->
 	let mib = Global.lookup_mind kn in

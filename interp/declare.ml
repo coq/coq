@@ -592,15 +592,10 @@ let input_constraints : constraint_decl -> Libobject.obj =
       discharge_function = discharge_constraints;
       classify_function = (fun a -> Keep a) }
 
-let loc_of_glob_level = function
-  | Misctypes.GType (Misctypes.UNamed n) -> Libnames.loc_of_reference n
-  | _ -> None
-
 let do_constraint poly l =
   let u_of_id x =
     let level = Pretyping.interp_known_glob_level (Evd.from_env (Global.env ())) x in
-    let loc = loc_of_glob_level x in
-    loc, Universes.is_polymorphic level, level
+    Universes.is_polymorphic level, level
   in
   let in_section = Lib.sections_are_opened () in
   let () =
@@ -608,18 +603,17 @@ let do_constraint poly l =
       user_err ~hdr:"Constraint"
                     (str"Cannot declare polymorphic constraints outside sections")
   in
-  let check_poly ?loc p loc' p' =
+  let check_poly p p' =
     if poly then ()
     else if p || p' then
-      let loc = if p then loc else loc' in
-      user_err ?loc ~hdr:"Constraint"
+      user_err ~hdr:"Constraint"
                     (str "Cannot declare a global constraint on " ++
                     str "a polymorphic universe, use "
                     ++ str "Polymorphic Constraint instead")
   in
   let constraints = List.fold_left (fun acc (l, d, r) ->
-     let ploc, p, lu = u_of_id l and rloc, p', ru = u_of_id r in
-     check_poly ?loc:ploc p rloc p';
+     let p, lu = u_of_id l and p', ru = u_of_id r in
+     check_poly p p';
      Univ.Constraint.add (lu, d, ru) acc)
     Univ.Constraint.empty l
   in

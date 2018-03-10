@@ -44,7 +44,7 @@ let mkSubset sigma name typ prop =
 
 let sigT = Lazy.from_fun build_sigma_type
 
-let make_qref s = Qualid (Loc.tag @@ qualid_of_string s)
+let make_qref s = CAst.make @@ Qualid (qualid_of_string s)
 let lt_ref = make_qref "Init.Peano.lt"
 
 let rec telescope sigma l =

@@ -185,28 +185,28 @@ let print_modules () =
 
 
 let print_module r =
-  let (loc,qid) = qualid_of_reference r in
+  let qid = qualid_of_reference r in
   try
-    let globdir = Nametab.locate_dir qid in
+    let globdir = Nametab.locate_dir qid.v in
       match globdir with
           DirModule { obj_dir; obj_mp; _ } ->
           Printmod.print_module (Printmod.printable_body obj_dir) obj_mp
 	| _ -> raise Not_found
   with
-    Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid)
+    Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid.v)
 
 let print_modtype r =
-  let (loc,qid) = qualid_of_reference r in
+  let qid = qualid_of_reference r in
   try
-    let kn = Nametab.locate_modtype qid in
+    let kn = Nametab.locate_modtype qid.v in
     Printmod.print_modtype kn
   with Not_found ->
     (* Is there a module of this name ? If yes we display its type *)
     try
-      let mp = Nametab.locate_module qid in
+      let mp = Nametab.locate_module qid.v in
       Printmod.print_module false mp
     with Not_found ->
-      user_err (str"Unknown Module Type or Module " ++ pr_qualid qid)
+      user_err (str"Unknown Module Type or Module " ++ pr_qualid qid.v)
 
 let print_namespace ns =
   let ns = List.rev (Names.DirPath.repr ns) in
@@ -390,7 +390,7 @@ let err_notfound_library ?loc ?from qid =
      (strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix)
 
 let print_located_library r =
-  let (loc,qid) = qualid_of_reference r in
+  let {loc;v=qid} = qualid_of_reference r in
   try msg_found_library (Library.locate_qualified_library ~warn:false qid)
   with
     | Library.LibUnmappedDir -> err_unmapped_library ?loc qid
@@ -398,13 +398,13 @@ let print_located_library r =
 
 let smart_global r =
   let gr = Smartlocate.smart_global r in
-    Dumpglob.add_glob ?loc:(Stdarg.loc_of_or_by_notation loc_of_reference r) gr;
-    gr
+  Dumpglob.add_glob ?loc:r.loc gr;
+  gr
 
 let dump_global r =
   try
     let gr = Smartlocate.smart_global r in
-    Dumpglob.add_glob ?loc:(Stdarg.loc_of_or_by_notation loc_of_reference r) gr
+    Dumpglob.add_glob ?loc:r.loc gr
   with e when CErrors.noncritical e -> ()
 (**********)
 (* Syntax *)
@@ -640,7 +640,7 @@ let vernac_scheme l =
 let vernac_combined_scheme lid l =
   if Dumpglob.dump () then
     (Dumpglob.dump_definition lid false "def";
-     List.iter (fun {loc;v=id} -> dump_global (Misctypes.AN (Ident (Loc.tag ?loc id)))) l);
+     List.iter (fun {loc;v=id} -> dump_global (make ?loc @@ Misctypes.AN (make ?loc @@ Ident id))) l);
  Indschemes.do_combined_scheme lid l
 
 let vernac_universe ~atts l =
@@ -679,7 +679,7 @@ let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
   in
   Dumpglob.dump_moddef ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is declared");
-  Option.iter (fun export -> vernac_import export [Ident (Loc.tag id)]) export
+  Option.iter (fun export -> vernac_import export [make @@ Ident id]) export
 
 let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
@@ -704,7 +704,7 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
        List.iter
          (fun (export,id) ->
            Option.iter
-             (fun export -> vernac_import export [Ident (Loc.tag id)]) export
+             (fun export -> vernac_import export [make @@ Ident id]) export
          ) argsexport
     | _::_ ->
        let binders_ast = List.map
@@ -719,14 +719,14 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
 	 (str "Module " ++ Id.print id ++ str " is defined");
-       Option.iter (fun export -> vernac_import export [Ident (Loc.tag id)])
+       Option.iter (fun export -> vernac_import export [make @@ Ident id])
          export
 
 let vernac_end_module export {loc;v=id} =
   let mp = Declaremods.end_module () in
   Dumpglob.dump_modref ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is defined");
-  Option.iter (fun export -> vernac_import export [Ident (Loc.tag ?loc id)]) export
+  Option.iter (fun export -> vernac_import export [make ?loc @@ Ident id]) export
 
 let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
   if Lib.sections_are_opened () then
@@ -751,7 +751,7 @@ let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
        List.iter
          (fun (export,id) ->
            Option.iter
-             (fun export -> vernac_import export [Ident (Loc.tag id)]) export
+             (fun export -> vernac_import export [make ?loc @@ Ident id]) export
          ) argsexport
 
     | _ :: _ ->
@@ -817,11 +817,11 @@ let vernac_require from import qidl =
   let root = match from with
   | None -> None
   | Some from ->
-    let (_, qid) = Libnames.qualid_of_reference from in
-    let (hd, tl) = Libnames.repr_qualid qid in
+    let qid = Libnames.qualid_of_reference from in
+    let (hd, tl) = Libnames.repr_qualid qid.v in
     Some (Libnames.add_dirpath_suffix hd tl)
   in
-  let locate (loc, qid) =
+  let locate {loc;v=qid} =
     try
       let warn = not !Flags.quiet in
       let (_, dir, f) = Library.locate_qualified_library ?root ~warn qid in
@@ -832,7 +832,7 @@ let vernac_require from import qidl =
   in
   let modrefl = List.map locate qidl in
   if Dumpglob.dump () then
-    List.iter2 (fun (loc, _) dp -> Dumpglob.dump_libref ?loc dp "lib") qidl (List.map fst modrefl);
+    List.iter2 (fun {CAst.loc} dp -> Dumpglob.dump_libref ?loc dp "lib") qidl (List.map fst modrefl);
   Library.require_library_from_dirpath modrefl import
 
 (* Coercions and canonical structures *)
@@ -1688,10 +1688,10 @@ let print_about_hyp_globs ?loc ref_or_by_not udecl glopt =
     (* FIXME error on non None udecl if we find the hyp. *)
     let glnumopt = query_command_selector ?loc glopt in
     let gl,id =
-      match glnumopt,ref_or_by_not with
-      | None,AN (Ident (_loc,id)) -> (* goal number not given, catch any failure *)
+      match glnumopt, ref_or_by_not.v with
+      | None,AN {v=Ident id} -> (* goal number not given, catch any failure *)
 	 (try get_nth_goal 1,id with _ -> raise NoHyp)
-      | Some n,AN (Ident (_loc,id)) ->  (* goal number given, catch if wong *)
+      | Some n,AN {v=Ident id} ->  (* goal number given, catch if wong *)
 	 (try get_nth_goal n,id
 	  with
 	    Failure _ -> user_err ?loc ~hdr:"print_about_hyp_globs"
@@ -1774,7 +1774,7 @@ let vernac_print ~atts env sigma =
   | PrintStrategy r -> print_strategy r
 
 let global_module r =
-  let (loc,qid) = qualid_of_reference r in
+  let {loc;v=qid} = qualid_of_reference r in
   try Nametab.full_name_module qid
   with Not_found ->
     user_err ?loc ~hdr:"global_module"
@@ -1858,10 +1858,10 @@ let vernac_search ~atts s gopt r =
        Search.prioritize_search) pr_search
 
 let vernac_locate = function
-  | LocateAny (AN qid)  -> print_located_qualid qid
-  | LocateTerm (AN qid) -> print_located_term qid
-  | LocateAny (ByNotation { CAst.v=(ntn, sc)}) (** TODO : handle Ltac notations *)
-  | LocateTerm (ByNotation { CAst.v=(ntn, sc)}) ->
+  | LocateAny {v=AN qid}  -> print_located_qualid qid
+  | LocateTerm {v=AN qid} -> print_located_term qid
+  | LocateAny {v=ByNotation (ntn, sc)} (** TODO : handle Ltac notations *)
+  | LocateTerm {v=ByNotation (ntn, sc)} ->
     let _, env = Pfedit.get_current_context () in
     Notation.locate_notation
       (Constrextern.without_symbols (pr_lglob_constr_env env)) ntn sc

@@ -296,7 +296,7 @@ let constrain_variables diff ctx =
 let reference_of_level uctx =
   let map, map_rev = uctx.uctx_names in 
     fun l ->
-      try Libnames.Ident (Loc.tag @@ Option.get (Univ.LMap.find l map_rev).uname)
+      try CAst.make @@ Libnames.Ident (Option.get (Univ.LMap.find l map_rev).uname)
       with Not_found | Option.IsNone ->
         Universes.reference_of_level l
 
