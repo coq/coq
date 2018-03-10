@@ -23,7 +23,12 @@ Table of contents
 
 .. toctree::
    :caption: Indexes
-   :titlesonly:
+	     
+   genindex
+   coq-cmdindex
+   coq-tacindex	      
+   coq-optindex	      
+   coq-exnindex	      
    
 .. No entries yet
   * :index:`thmindex`
