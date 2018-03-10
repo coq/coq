@@ -1,0 +1,11 @@
+ADD revert { Load "output/load/Load_noproof.v". }
+ADD { Load "output/load/Load_proof.v". }
+ADD { Fail Load "output/load/Load_openproof.v". }
+WAIT
+QUERY { Check f. }
+QUERY { Check u. }
+EDIT_AT revert
+QUERY { Check f. }
+QUERY { Fail Check u. }
+JOIN
+
