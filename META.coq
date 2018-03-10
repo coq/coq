@@ -1,15 +1,7 @@
-# TODO: Move to META.in once coq_makefile2 is merged.
-# We need to reuse:
-# - The variable substitution mechanism.
-# - Sourcing of "coq_install_path" and "coq_version" variables.
-#
-# With this rules, we would have:
-#  version = ${coq_version}
-# and
-#  linkopts(byte)   = "-dllpath ${coq_install_path}/kernel/byterun/ -dllib -lcoqrun"
+# TODO: Generate automatically with Dune
 
 description = "The Coq Proof Assistant Plugin API"
-version = "8.7"
+version = "8.8"
 
 directory = ""
 requires = "camlp5"
@@ -17,7 +9,7 @@ requires = "camlp5"
 package "config" (
 
   description = "Coq Configuration Variables"
-  version     = "8.7"
+  version     = "8.8"
 
   directory   = "config"
 
@@ -25,7 +17,7 @@ package "config" (
 
 package "clib" (
   description = "Base General Coq Library"
-  version     = "8.7"
+  version     = "8.8"
 
   directory   = "clib"
   requires    = "str, unix, threads"
@@ -37,7 +29,7 @@ package "clib" (
 package "lib" (
 
   description = "Base Coq-Specific Library"
-  version     = "8.7"
+  version     = "8.8"
 
   directory   = "lib"
 
@@ -51,7 +43,7 @@ package "lib" (
 package "vm" (
 
   description = "Coq VM"
-  version     = "8.7"
+  version     = "8.8"
 
   directory        = "kernel/byterun"
 
@@ -73,7 +65,7 @@ package "vm" (
 package "kernel" (
 
   description = "Coq's Kernel"
-  version     = "8.7"
+  version     = "8.8"
 
   directory   = "kernel"
 
@@ -87,7 +79,7 @@ package "kernel" (
 package "library" (
 
   description = "Coq Libraries (vo) support"
-  version     = "8.7"
+  version     = "8.8"
 
   requires    = "coq.kernel"
 
@@ -101,7 +93,7 @@ package "library" (
 package "intf" (
 
   description = "Coq Public Data Types"
-  version     = "8.7"
+  version     = "8.8"
 
   requires    = "coq.library"
 
@@ -114,7 +106,7 @@ package "intf" (
 package "engine" (
 
   description = "Coq Tactic Engine"
-  version     = "8.7"
+  version     = "8.8"
 
   requires    = "coq.library"
   directory   = "engine"
@@ -127,7 +119,7 @@ package "engine" (
 package "pretyping" (
 
   description = "Coq Pretyper"
-  version     = "8.7"
+  version     = "8.8"
 
   requires    = "coq.engine"
   directory   = "pretyping"
@@ -140,7 +132,7 @@ package "pretyping" (
 package "interp" (
 
   description = "Coq Term Interpretation"
-  version     = "8.7"
+  version     = "8.8"
 
   requires    = "coq.pretyping"
   directory   = "interp"
@@ -153,7 +145,7 @@ package "interp" (
 package "grammar" (
 
   description = "Coq Base Grammar"
-  version     = "8.7"
+  version     = "8.8"
 
   requires    = "coq.interp"
   directory   = "grammar"
@@ -165,7 +157,7 @@ package "grammar" (
 package "proofs" (
 
   description = "Coq Proof Engine"
-  version     = "8.7"
+  version     = "8.8"
 
   requires    = "coq.interp"
   directory   = "proofs"
@@ -178,7 +170,7 @@ package "proofs" (
 package "parsing" (
 
   description = "Coq Parsing Engine"
-  version     = "8.7"
+  version     = "8.8"
 
   requires    = "camlp5.gramlib, coq.proofs"
   directory   = "parsing"
@@ -191,7 +183,7 @@ package "parsing" (
 package "printing" (
 
   description = "Coq Printing Engine"
-  version     = "8.7"
+  version     = "8.8"
 
   requires    = "coq.parsing"
   directory   = "printing"
@@ -204,7 +196,7 @@ package "printing" (
 package "tactics" (
 
   description = "Coq Basic Tactics"
-  version     = "8.7"
+  version     = "8.8"
 
   requires    = "coq.printing"
   directory   = "tactics"
@@ -217,7 +209,7 @@ package "tactics" (
 package "vernac" (
 
   description = "Coq Vernacular Interpreter"
-  version     = "8.7"
+  version     = "8.8"
 
   requires    = "coq.tactics"
   directory   = "vernac"
@@ -230,7 +222,7 @@ package "vernac" (
 package "stm" (
 
   description = "Coq State Transactional Machine"
-  version     = "8.7"
+  version     = "8.8"
 
   requires    = "coq.vernac"
   directory   = "stm"
@@ -243,7 +235,7 @@ package "stm" (
 package "toplevel" (
 
   description = "Coq Toplevel"
-  version     = "8.7"
+  version     = "8.8"
 
   requires    = "coq.stm"
   directory   = "toplevel"
@@ -256,7 +248,7 @@ package "toplevel" (
 package "idetop" (
 
   description = "Coq IDE Libraries"
-  version     = "8.7"
+  version     = "8.8"
 
   requires    = "coq.toplevel"
   directory   = "ide"
@@ -270,7 +262,7 @@ package "idetop" (
 package "ide" (
 
   description = "Coq IDE Libraries"
-  version     = "8.7"
+  version     = "8.8"
 
 # XXX Add GTK
   requires    = "coq.toplevel"
@@ -284,14 +276,14 @@ package "ide" (
 package "plugins" (
 
   description = "Coq built-in plugins"
-  version     = "8.7"
+  version     = "8.8"
 
   directory   = "plugins"
 
   package "ltac" (
 
     description = "Coq LTAC Plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.stm"
     directory   = "ltac"
@@ -304,7 +296,7 @@ package "plugins" (
   package "tauto" (
 
     description = "Coq tauto plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.ltac"
     directory   = "ltac"
@@ -316,7 +308,7 @@ package "plugins" (
   package "omega" (
 
     description = "Coq omega plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.ltac"
     directory   = "omega"
@@ -328,7 +320,7 @@ package "plugins" (
   package "romega" (
 
     description = "Coq romega plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.omega"
     directory   = "romega"
@@ -340,7 +332,7 @@ package "plugins" (
   package "micromega" (
 
     description = "Coq micromega plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "num,coq.plugins.ltac"
     directory   = "micromega"
@@ -352,7 +344,7 @@ package "plugins" (
   package "quote" (
 
     description = "Coq quote plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.ltac"
     directory   = "quote"
@@ -364,7 +356,7 @@ package "plugins" (
   package "newring" (
 
     description = "Coq newring plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.quote"
     directory   = "setoid_ring"
@@ -376,7 +368,7 @@ package "plugins" (
   package "fourier" (
 
     description = "Coq fourier plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.ltac"
     directory   = "fourier"
@@ -388,7 +380,7 @@ package "plugins" (
   package "extraction" (
 
     description = "Coq extraction plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.ltac"
     directory   = "extraction"
@@ -400,7 +392,7 @@ package "plugins" (
   package "cc" (
 
     description = "Coq cc plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.ltac"
     directory   = "cc"
@@ -412,7 +404,7 @@ package "plugins" (
   package "ground" (
 
     description = "Coq ground plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.ltac"
     directory   = "firstorder"
@@ -424,7 +416,7 @@ package "plugins" (
   package "rtauto" (
 
     description = "Coq rtauto plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.ltac"
     directory   = "rtauto"
@@ -436,7 +428,7 @@ package "plugins" (
   package "btauto" (
 
     description = "Coq btauto plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.ltac"
     directory   = "btauto"
@@ -448,7 +440,7 @@ package "plugins" (
   package "recdef" (
 
     description = "Coq recdef plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.extraction"
     directory   = "funind"
@@ -460,7 +452,7 @@ package "plugins" (
   package "nsatz" (
 
     description = "Coq nsatz plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "num,coq.plugins.ltac"
     directory   = "nsatz"
@@ -472,7 +464,7 @@ package "plugins" (
   package "natsyntax" (
 
     description = "Coq natsyntax plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = ""
     directory   = "syntax"
@@ -484,7 +476,7 @@ package "plugins" (
   package "zsyntax" (
 
     description = "Coq zsyntax plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = ""
     directory   = "syntax"
@@ -496,7 +488,7 @@ package "plugins" (
   package "rsyntax" (
 
     description = "Coq rsyntax plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = ""
     directory   = "syntax"
@@ -508,7 +500,7 @@ package "plugins" (
   package "int31syntax" (
 
     description = "Coq int31syntax plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = ""
     directory   = "syntax"
@@ -520,7 +512,7 @@ package "plugins" (
   package "asciisyntax" (
 
     description = "Coq asciisyntax plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = ""
     directory   = "syntax"
@@ -532,7 +524,7 @@ package "plugins" (
   package "stringsyntax" (
 
     description = "Coq stringsyntax plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.asciisyntax"
     directory   = "syntax"
@@ -544,7 +536,7 @@ package "plugins" (
   package "derive" (
 
     description = "Coq derive plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = ""
     directory   = "derive"
@@ -556,7 +548,7 @@ package "plugins" (
   package "ssrmatching" (
 
     description = "Coq ssrmatching plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.ltac"
     directory   = "ssrmatching"
@@ -568,7 +560,7 @@ package "plugins" (
   package "ssreflect" (
 
     description = "Coq ssreflect plugin"
-    version     = "8.7"
+    version     = "8.8"
 
     requires    = "coq.plugins.ssrmatching"
     directory   = "ssr"
