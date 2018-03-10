@@ -37,16 +37,16 @@ let delayed_of_thunk r tac env sigma =
 let mk_bindings = function
 | ImplicitBindings l -> Misctypes.ImplicitBindings l
 | ExplicitBindings l ->
-  let l = List.map Loc.tag l in
+  let l = List.map CAst.make l in
   Misctypes.ExplicitBindings l
 | NoBindings -> Misctypes.NoBindings
 
 let mk_with_bindings (x, b) = (x, mk_bindings b)
 
 let rec mk_intro_pattern = function
-| IntroForthcoming b -> Loc.tag @@ Misctypes.IntroForthcoming b
-| IntroNaming ipat -> Loc.tag @@ Misctypes.IntroNaming (mk_intro_pattern_naming ipat)
-| IntroAction ipat -> Loc.tag @@ Misctypes.IntroAction (mk_intro_pattern_action ipat)
+| IntroForthcoming b -> CAst.make @@ Misctypes.IntroForthcoming b
+| IntroNaming ipat -> CAst.make @@ Misctypes.IntroNaming (mk_intro_pattern_naming ipat)
+| IntroAction ipat -> CAst.make @@ Misctypes.IntroAction (mk_intro_pattern_action ipat)
 
 and mk_intro_pattern_naming = function
 | IntroIdentifier id -> Misctypes.IntroIdentifier id
@@ -58,7 +58,7 @@ and mk_intro_pattern_action = function
 | IntroOrAndPattern ipat -> Misctypes.IntroOrAndPattern (mk_or_and_intro_pattern ipat)
 | IntroInjection ipats -> Misctypes.IntroInjection (List.map mk_intro_pattern ipats)
 | IntroApplyOn (c, ipat) ->
-  let c = Loc.tag @@ delayed_of_thunk Tac2ffi.constr c in
+  let c = CAst.make @@ delayed_of_thunk Tac2ffi.constr c in
   Misctypes.IntroApplyOn (c, mk_intro_pattern ipat)
 | IntroRewrite b -> Misctypes.IntroRewrite b
 
@@ -94,7 +94,7 @@ let intros_patterns ev ipat =
 let apply adv ev cb cl =
   let map c =
     let c = thaw constr_with_bindings c >>= fun p -> return (mk_with_bindings p) in
-    None, Loc.tag (delayed_of_tactic c)
+    None, CAst.make (delayed_of_tactic c)
   in
   let cb = List.map map cb in
   match cl with
@@ -111,8 +111,8 @@ let mk_destruction_arg = function
 | ElimOnAnonHyp n -> Misctypes.ElimOnAnonHyp n
 
 let mk_induction_clause (arg, eqn, as_, occ) =
-  let eqn = Option.map (fun ipat -> Loc.tag @@ mk_intro_pattern_naming ipat) eqn in
-  let as_ = Option.map (fun ipat -> Loc.tag @@ mk_or_and_intro_pattern ipat) as_ in
+  let eqn = Option.map (fun ipat -> CAst.make @@ mk_intro_pattern_naming ipat) eqn in
+  let as_ = Option.map (fun ipat -> CAst.make @@ mk_or_and_intro_pattern ipat) as_ in
   let occ = Option.map mk_clause occ in
   ((None, mk_destruction_arg arg), (eqn, as_), occ)
 
@@ -188,7 +188,7 @@ let forward fst tac ipat c =
 
 let assert_ = function
 | AssertValue (id, c) ->
-  let ipat = Loc.tag @@ Misctypes.IntroNaming (Misctypes.IntroIdentifier id) in
+  let ipat = CAst.make @@ Misctypes.IntroNaming (Misctypes.IntroIdentifier id) in
   Tactics.forward true None (Some ipat) c
 | AssertType (ipat, c, tac) ->
   let ipat = Option.map mk_intro_pattern ipat in
@@ -196,7 +196,7 @@ let assert_ = function
   Tactics.forward true (Some tac) ipat c
 
 let letin_pat_tac ev ipat na c cl =
-  let ipat = Option.map (fun (b, ipat) -> (b, Loc.tag @@ mk_intro_pattern_naming ipat)) ipat in
+  let ipat = Option.map (fun (b, ipat) -> (b, CAst.make @@ mk_intro_pattern_naming ipat)) ipat in
   let cl = mk_clause cl in
   Tactics.letin_pat_tac ev ipat na c cl
 
@@ -420,7 +420,7 @@ let inversion knd arg pat ids =
   begin match pat with
   | None -> Proofview.tclUNIT None
   | Some (IntroAction (IntroOrAndPattern p)) ->
-    Proofview.tclUNIT (Some (Loc.tag @@ mk_or_and_intro_pattern p))
+    Proofview.tclUNIT (Some (CAst.make @@ mk_or_and_intro_pattern p))
   | Some _ ->
     Tacticals.New.tclZEROMSG (str "Inversion only accept disjunctive patterns")
   end >>= fun pat ->
@@ -433,7 +433,7 @@ let inversion knd arg pat ids =
       Inv.inv_clause knd pat ids (NamedHyp id)
     | Some (_, Misctypes.ElimOnConstr c) ->
       let open Misctypes in
-      let anon = Loc.tag @@ IntroNaming IntroAnonymous in
+      let anon = CAst.make @@ IntroNaming IntroAnonymous in
       Tactics.specialize c (Some anon) >>= fun () ->
       Tacticals.New.onLastHypId (fun id -> Inv.inv_clause knd pat ids (NamedHyp id))
     end

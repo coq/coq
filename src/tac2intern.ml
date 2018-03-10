@@ -8,6 +8,7 @@
 
 open Pp
 open Util
+open CAst
 open CErrors
 open Names
 open Libnames
@@ -172,7 +173,7 @@ let drop_ltac2_env store =
 
 let fresh_id env = UF.fresh env.env_cst
 
-let get_alias (loc, id) env =
+let get_alias {loc;v=id} env =
   try Id.Map.find id env.env_als.contents
   with Not_found ->
     if env.env_opn then
@@ -184,10 +185,6 @@ let get_alias (loc, id) env =
 let push_name id t env = match id with
 | Anonymous -> env
 | Name id -> { env with env_var = Id.Map.add id t env.env_var }
-
-let loc_of_tacexpr (loc, _) : Loc.t option = loc
-
-let loc_of_patexpr (loc, _) : Loc.t option = loc
 
 let error_nargs_mismatch ?loc kn nargs nfound =
   let cstr = Tac2env.shortest_qualid_of_constructor kn in
@@ -206,12 +203,12 @@ let rec subst_type subst (t : 'a glb_typexpr) = match t with
 | GTypRef (qid, args) ->
   GTypRef (qid, List.map (fun t -> subst_type subst t) args)
 
-let rec intern_type env ((loc, t) : raw_typexpr) : UF.elt glb_typexpr = match t with
-| CTypVar (Name id) -> GTypVar (get_alias (Loc.tag ?loc id) env)
+let rec intern_type env ({loc;v=t} : raw_typexpr) : UF.elt glb_typexpr = match t with
+| CTypVar (Name id) -> GTypVar (get_alias (CAst.make ?loc id) env)
 | CTypVar Anonymous -> GTypVar (fresh_id env)
 | CTypRef (rel, args) ->
   let (kn, nparams) = match rel with
-  | RelId (loc, qid) ->
+  | RelId {loc;v=qid} ->
     let (dp, id) = repr_qualid qid in
     if DirPath.is_empty dp && Id.Map.mem id env.env_rec then
       let (kn, n) = Id.Map.find id env.env_rec in
@@ -233,9 +230,9 @@ let rec intern_type env ((loc, t) : raw_typexpr) : UF.elt glb_typexpr = match t 
   let nargs = List.length args in
   let () =
     if not (Int.equal nparams nargs) then
-      let loc, qid = match rel with
+      let {loc;v=qid} = match rel with
       | RelId lid -> lid
-      | AbsKn (Other kn) -> loc, shortest_qualid_of_type kn
+      | AbsKn (Other kn) -> CAst.make ?loc @@ shortest_qualid_of_type kn
       | AbsKn (Tuple _) -> assert false
       in
       user_err ?loc (strbrk "The type constructor " ++ pr_qualid qid ++
@@ -500,10 +497,10 @@ let check_unit ?loc t =
 
 let check_redundant_clause = function
 | [] -> ()
-| (p, _) :: _ -> warn_redundant_clause ?loc:(loc_of_patexpr p) ()
+| (p, _) :: _ -> warn_redundant_clause ?loc:p.loc ()
 
 let get_variable0 mem var = match var with
-| RelId (loc, qid) ->
+| RelId {loc;v=qid} ->
   let (dp, id) = repr_qualid qid in
   if DirPath.is_empty dp && mem id then ArgVar CAst.(make ?loc id)
   else
@@ -520,7 +517,7 @@ let get_variable env var =
   get_variable0 mem var
 
 let get_constructor env var = match var with
-| RelId (loc, qid) ->
+| RelId {loc;v=qid} ->
   let c = try Some (Tac2env.locate_constructor qid) with Not_found -> None in
   begin match c with
   | Some knc -> Other knc
@@ -530,7 +527,7 @@ let get_constructor env var = match var with
 | AbsKn knc -> knc
 
 let get_projection var = match var with
-| RelId (loc, qid) ->
+| RelId {loc;v=qid} ->
   let kn = try Tac2env.locate_projection qid with Not_found ->
     user_err ?loc (pr_qualid qid ++ str " is not a projection")
   in
@@ -556,7 +553,7 @@ type glb_patexpr =
 | GPatVar of Name.t
 | GPatRef of ltac_constructor or_tuple * glb_patexpr list
 
-let rec intern_patexpr env (loc, pat) = match pat with
+let rec intern_patexpr env {loc;v=pat} = match pat with
 | CPatVar na -> GPatVar na
 | CPatRef (qid, pl) ->
   let kn = get_constructor env qid in
@@ -601,7 +598,7 @@ let add_name accu = function
 | Name id -> Id.Set.add id accu
 | Anonymous -> accu
 
-let rec ids_of_pattern accu (_, pat) = match pat with
+let rec ids_of_pattern accu {v=pat} = match pat with
 | CPatVar Anonymous -> accu
 | CPatVar (Name id) -> Id.Set.add id accu
 | CPatRef (_, pl) ->
@@ -609,24 +606,23 @@ let rec ids_of_pattern accu (_, pat) = match pat with
 | CPatCnv (pat, _) -> ids_of_pattern accu pat
 
 let loc_of_relid = function
-| RelId (loc, _) -> loc
+| RelId {loc} -> loc
 | AbsKn _ -> None
 
-let extract_pattern_type (loc, p as pat) = match p with
+let extract_pattern_type ({loc;v=p} as pat) = match p with
 | CPatCnv (pat, ty) -> pat, Some ty
 | CPatVar _ | CPatRef _ -> pat, None
 
 (** Expand pattern: [p => t] becomes [x => match x with p => t end] *)
 let expand_pattern avoid bnd =
   let fold (avoid, bnd) (pat, t) =
-    let na, expand = match snd pat with
+    let na, expand = match pat.v with
     | CPatVar na ->
       (** Don't expand variable patterns *)
       na, None
     | _ ->
-      let loc = loc_of_patexpr pat in
       let id = fresh_var avoid in
-      let qid = RelId (Loc.tag ?loc (qualid_of_ident id)) in
+      let qid = RelId (CAst.make ?loc:pat.loc (qualid_of_ident id)) in
       Name id, Some qid
     in
     let avoid = ids_of_pattern avoid pat in
@@ -638,7 +634,7 @@ let expand_pattern avoid bnd =
   | None -> e
   | Some qid ->
     let loc = loc_of_relid qid in
-    Loc.tag ?loc @@ CTacCse (Loc.tag ?loc @@ CTacRef qid, [pat, e])
+    CAst.make ?loc @@ CTacCse (CAst.make ?loc @@ CTacRef qid, [pat, e])
   in
   let expand e = List.fold_left fold e bnd in
   let nas = List.rev_map (fun (na, _, _) -> na) bnd in
@@ -648,7 +644,7 @@ let is_alias env qid = match get_variable env qid with
 | ArgArg (TacAlias _) -> true
 | ArgVar _ | (ArgArg (TacConstant _)) -> false
 
-let rec intern_rec env (loc, e) = match e with
+let rec intern_rec env {loc;v=e} = match e with
 | CTacAtm atm -> intern_atm env atm
 | CTacRef qid ->
   begin match get_variable env qid with
@@ -685,10 +681,10 @@ let rec intern_rec env (loc, e) = match e with
   let (e, t) = intern_rec env (exp e) in
   let t = List.fold_right (fun t accu -> GTypArrow (t, accu)) tl t in
   (GTacFun (nas, e), t)
-| CTacApp ((loc, CTacCst qid), args) ->
+| CTacApp ({loc;v=CTacCst qid}, args) ->
   let kn = get_constructor env qid in
   intern_constructor env loc kn args
-| CTacApp ((_, CTacRef qid), args) when is_alias env qid ->
+| CTacApp ({v=CTacRef qid}, args) when is_alias env qid ->
   let kn = match get_variable env qid with
   | ArgArg (TacAlias kn) -> kn
   | ArgVar _ | (ArgArg (TacConstant _)) -> assert false
@@ -696,18 +692,18 @@ let rec intern_rec env (loc, e) = match e with
   let e = Tac2env.interp_alias kn in
   let map arg =
     (** Thunk alias arguments *)
-    let loc = loc_of_tacexpr arg in
-    let t_unit = Loc.tag ?loc @@ CTypRef (AbsKn (Tuple 0), []) in
-    let var = Loc.tag ?loc @@ CPatCnv (Loc.tag ?loc @@ CPatVar Anonymous, t_unit) in
-    Loc.tag ?loc @@ CTacFun ([var], arg)
+    let loc = arg.loc in
+    let t_unit = CAst.make ?loc @@ CTypRef (AbsKn (Tuple 0), []) in
+    let var = CAst.make ?loc @@ CPatCnv (CAst.make ?loc @@ CPatVar Anonymous, t_unit) in
+    CAst.make ?loc @@ CTacFun ([var], arg)
   in
   let args = List.map map args in
-  intern_rec env (Loc.tag ?loc @@ CTacApp (e, args))
+  intern_rec env (CAst.make ?loc @@ CTacApp (e, args))
 | CTacApp (f, args) ->
-  let loc = loc_of_tacexpr f in
+  let loc = f.loc in
   let (f, ft) = intern_rec env f in
   let fold arg (args, t) =
-    let loc = loc_of_tacexpr arg in
+    let loc = arg.loc in
     let (arg, argt) = intern_rec env arg in
     (arg :: args, (loc, argt) :: t)
   in
@@ -726,8 +722,7 @@ let rec intern_rec env (loc, e) = match e with
     if Id.Set.is_empty common then Id.Set.union ids accu
     else
       let id = Id.Set.choose common in
-      let loc = loc_of_patexpr pat in
-      user_err ?loc (str "Variable " ++ Id.print id ++ str " is bound several \
+      user_err ?loc:pat.loc (str "Variable " ++ Id.print id ++ str " is bound several \
         times in this matching")
   in
   let ids = List.fold_left fold Id.Set.empty el in
@@ -739,7 +734,7 @@ let rec intern_rec env (loc, e) = match e with
   let () = unify ?loc env t tc in
   (e, tc)
 | CTacSeq (e1, e2) ->
-  let loc1 = loc_of_tacexpr e1 in
+  let loc1 = e1.loc in
   let (e1, t1) = intern_rec env e1 in
   let (e2, t2) = intern_rec env e2 in
   let () = check_elt_unit loc1 env t1 in
@@ -750,7 +745,7 @@ let rec intern_rec env (loc, e) = match e with
   intern_record env loc fs
 | CTacPrj (e, proj) ->
   let pinfo = get_projection proj in
-  let loc = loc_of_tacexpr e in
+  let loc = e.loc in
   let (e, t) = intern_rec env e in
   let subst = Array.init pinfo.pdata_prms (fun _ -> fresh_id env) in
   let params = Array.map_to_list (fun i -> GTypVar i) subst in
@@ -764,7 +759,7 @@ let rec intern_rec env (loc, e) = match e with
   let () =
     if not pinfo.pdata_mutb then
       let loc = match proj with
-      | RelId (loc, _) -> loc
+      | RelId {CAst.loc} -> loc
       | AbsKn _ -> None
       in
       user_err ?loc (str "Field is not mutable")
@@ -806,10 +801,9 @@ let rec intern_rec env (loc, e) = match e with
   (e, tpe)
 
 and intern_rec_with_constraint env e exp =
-  let loc = loc_of_tacexpr e in
-  let (e, t) = intern_rec env e in
-  let () = unify ?loc env t exp in
-  e
+  let (er, t) = intern_rec env e in
+  let () = unify ?loc:e.loc env t exp in
+  er
 
 and intern_let env loc ids el e =
   let avoid = Id.Set.union ids (Id.Map.domain env.env_var) in
@@ -837,11 +831,10 @@ and intern_let env loc ids el e =
 
 and intern_let_rec env loc ids el e =
   let map env (pat, t, e) =
-    let (loc, pat) = pat in
-    let na = match pat with
+    let na = match pat.v with
     | CPatVar na -> na
     | CPatRef _ | CPatCnv _ ->
-      user_err ?loc (str "This kind of pattern is forbidden in let-rec bindings")
+      user_err ?loc:pat.loc (str "This kind of pattern is forbidden in let-rec bindings")
     in
     let id = fresh_id env in
     let env = push_name na (monomorphic (GTypVar id)) env in
@@ -849,7 +842,7 @@ and intern_let_rec env loc ids el e =
   in
   let (env, el) = List.fold_map map env el in
   let fold (loc, na, tc, e, id) (el, tl) =
-    let loc_e = loc_of_tacexpr e in
+    let loc_e = e.loc in
     let (e, t) = intern_rec env e in
     let () =
       if not (is_rec_rhs e) then
@@ -891,7 +884,7 @@ and intern_case env loc e pl =
     (GTacCse (e', Other kn, [||], [||]), GTypVar r)
   | PKind_variant kn ->
     let subst, tc = fresh_reftype env kn in
-    let () = unify ?loc:(loc_of_tacexpr e) env t tc in
+    let () = unify ?loc:e.loc env t tc in
     let (nconst, nnonconst, arities) = match kn with
     | Tuple 0 -> 1, 0, [0]
     | Tuple n -> 0, 1, [n]
@@ -907,9 +900,9 @@ and intern_case env loc e pl =
     let rec intern_branch = function
     | [] -> ()
     | (pat, br) :: rem ->
-      let tbr = match snd pat with
+      let tbr = match pat.v with
       | CPatVar (Name _) ->
-        let loc = loc_of_patexpr pat in
+        let loc = pat.loc in
         todo ?loc ()
       | CPatVar Anonymous ->
         let () = check_redundant_clause rem in
@@ -932,7 +925,7 @@ and intern_case env loc e pl =
         let _ = List.fold_left fill (0, 0) arities in
         brT
       | CPatRef (qid, args) ->
-        let loc = loc_of_patexpr pat in
+        let loc = pat.loc in
         let knc = get_constructor env qid in
         let kn', index, arity = match knc with
         | Tuple n -> Tuple n, 0, List.init n (fun i -> GTypVar i)
@@ -946,8 +939,8 @@ and intern_case env loc e pl =
             invalid_pattern ?loc kn kn'
         in
         let get_id pat = match pat with
-        | _, CPatVar na -> na
-        | loc, _ -> todo ?loc ()
+        | {v=CPatVar na} -> na
+        | {loc} -> todo ?loc ()
         in
         let ids = List.map get_id args in
         let nids = List.length ids in
@@ -978,7 +971,7 @@ and intern_case env loc e pl =
       | CPatCnv _ ->
         user_err ?loc (str "Pattern not handled yet")
       in
-      let () = unify ?loc:(loc_of_tacexpr br) env tbr ret in
+      let () = unify ?loc:br.loc env tbr ret in
       intern_branch rem
     in
     let () = intern_branch pl in
@@ -995,7 +988,7 @@ and intern_case env loc e pl =
     (ce, ret)
   | PKind_open kn ->
     let subst, tc = fresh_reftype env (Other kn) in
-    let () = unify ?loc:(loc_of_tacexpr e) env t tc in
+    let () = unify ?loc:e.loc env t tc in
     let ret = GTypVar (fresh_id env) in
     let rec intern_branch map = function
     | [] ->
@@ -1014,7 +1007,7 @@ and intern_case env loc e pl =
         | GPatRef _ ->
           user_err ?loc (str "TODO: Unhandled match case") (** FIXME *)
         in
-        let loc = loc_of_patexpr pat in
+        let loc = pat.loc in
         let knc = match knc with
         | Other knc -> knc
         | Tuple n -> invalid_pattern ?loc (Other kn) (Tuple n)
@@ -1080,7 +1073,7 @@ and intern_constructor env loc kn args = match kn with
 and intern_record env loc fs =
   let map (proj, e) =
     let loc = match proj with
-    | RelId (loc, _) -> loc
+    | RelId {CAst.loc} -> loc
     | AbsKn _ -> None
     in
     let proj = get_projection proj in
@@ -1213,24 +1206,24 @@ let check_subtype t1 t2 =
 (** Globalization *)
 
 let get_projection0 var = match var with
-| RelId (loc, qid) ->
+| RelId {CAst.loc;v=qid} ->
   let kn = try Tac2env.locate_projection qid with Not_found ->
     user_err ?loc (pr_qualid qid ++ str " is not a projection")
   in
   kn
 | AbsKn kn -> kn
 
-let rec globalize ids (loc, er as e) = match er with
+let rec globalize ids ({loc;v=er} as e) = match er with
 | CTacAtm _ -> e
 | CTacRef ref ->
   let mem id = Id.Set.mem id ids in
   begin match get_variable0 mem ref with
   | ArgVar _ -> e
-  | ArgArg kn -> Loc.tag ?loc @@ CTacRef (AbsKn kn)
+  | ArgArg kn -> CAst.make ?loc @@ CTacRef (AbsKn kn)
   end
 | CTacCst qid ->
   let knc = get_constructor () qid in
-  Loc.tag ?loc @@ CTacCst (AbsKn knc)
+  CAst.make ?loc @@ CTacCst (AbsKn knc)
 | CTacFun (bnd, e) ->
   let fold (pats, accu) pat =
     let accu = ids_of_pattern accu pat in
@@ -1240,11 +1233,11 @@ let rec globalize ids (loc, er as e) = match er with
   let bnd, ids = List.fold_left fold ([], ids) bnd in
   let bnd = List.rev bnd in
   let e = globalize ids e in
-  Loc.tag ?loc @@ CTacFun (bnd, e)
+  CAst.make ?loc @@ CTacFun (bnd, e)
 | CTacApp (e, el) ->
   let e = globalize ids e in
   let el = List.map (fun e -> globalize ids e) el in
-  Loc.tag ?loc @@ CTacApp (e, el)
+  CAst.make ?loc @@ CTacApp (e, el)
 | CTacLet (isrec, bnd, e) ->
   let fold accu (pat, _) = ids_of_pattern accu pat in
   let ext = List.fold_left fold Id.Set.empty bnd in
@@ -1256,34 +1249,34 @@ let rec globalize ids (loc, er as e) = match er with
     (qid, globalize ids e)
   in
   let bnd = List.map map bnd in
-  Loc.tag ?loc @@ CTacLet (isrec, bnd, e)
+  CAst.make ?loc @@ CTacLet (isrec, bnd, e)
 | CTacCnv (e, t) ->
   let e = globalize ids e in
-  Loc.tag ?loc @@ CTacCnv (e, t)
+  CAst.make ?loc @@ CTacCnv (e, t)
 | CTacSeq (e1, e2) ->
   let e1 = globalize ids e1 in
   let e2 = globalize ids e2 in
-  Loc.tag ?loc @@ CTacSeq (e1, e2)
+  CAst.make ?loc @@ CTacSeq (e1, e2)
 | CTacCse (e, bl) ->
   let e = globalize ids e in
   let bl = List.map (fun b -> globalize_case ids b) bl in
-  Loc.tag ?loc @@ CTacCse (e, bl)
+  CAst.make ?loc @@ CTacCse (e, bl)
 | CTacRec r ->
   let map (p, e) =
     let p = get_projection0 p in
     let e = globalize ids e in
     (AbsKn p, e)
   in
-  Loc.tag ?loc @@ CTacRec (List.map map r)
+  CAst.make ?loc @@ CTacRec (List.map map r)
 | CTacPrj (e, p) ->
   let e = globalize ids e in
   let p = get_projection0 p in
-  Loc.tag ?loc @@ CTacPrj (e, AbsKn p)
+  CAst.make ?loc @@ CTacPrj (e, AbsKn p)
 | CTacSet (e, p, e') ->
   let e = globalize ids e in
   let p = get_projection0 p in
   let e' = globalize ids e' in
-  Loc.tag ?loc @@ CTacSet (e, AbsKn p, e')
+  CAst.make ?loc @@ CTacSet (e, AbsKn p, e')
 | CTacExt (tag, arg) ->
   let arg = str (Tac2dyn.Arg.repr tag) in
   CErrors.user_err ?loc (str "Cannot globalize generic arguments of type" ++ spc () ++ arg)
@@ -1291,16 +1284,16 @@ let rec globalize ids (loc, er as e) = match er with
 and globalize_case ids (p, e) =
   (globalize_pattern ids p, globalize ids e)
 
-and globalize_pattern ids (loc, pr as p) = match pr with
+and globalize_pattern ids ({loc;v=pr} as p) = match pr with
 | CPatVar _ -> p
 | CPatRef (cst, pl) ->
   let knc = get_constructor () cst in
   let cst = AbsKn knc in
   let pl = List.map (fun p -> globalize_pattern ids p) pl in
-  Loc.tag ?loc @@ CPatRef (cst, pl)
+  CAst.make ?loc @@ CPatRef (cst, pl)
 | CPatCnv (pat, ty) ->
   let pat = globalize_pattern ids pat in
-  Loc.tag ?loc @@ CPatCnv (pat, ty)
+  CAst.make ?loc @@ CPatCnv (pat, ty)
 
 (** Kernel substitution *)
 
@@ -1407,16 +1400,16 @@ let subst_or_relid subst ref = match ref with
   let kn' = subst_or_tuple subst_kn subst kn in
   if kn' == kn then ref else AbsKn kn'
 
-let rec subst_rawtype subst (loc, tr as t) = match tr with
+let rec subst_rawtype subst ({loc;v=tr} as t) = match tr with
 | CTypVar _ -> t
 | CTypArrow (t1, t2) ->
   let t1' = subst_rawtype subst t1 in
   let t2' = subst_rawtype subst t2 in
-  if t1' == t1 && t2' == t2 then t else Loc.tag ?loc @@ CTypArrow (t1', t2')
+  if t1' == t1 && t2' == t2 then t else CAst.make ?loc @@ CTypArrow (t1', t2')
 | CTypRef (ref, tl) ->
   let ref' = subst_or_relid subst ref in
   let tl' = List.smartmap (fun t -> subst_rawtype subst t) tl in
-  if ref' == ref && tl' == tl then t else Loc.tag ?loc @@ CTypRef (ref', tl')
+  if ref' == ref && tl' == tl then t else CAst.make ?loc @@ CTypRef (ref', tl')
 
 let subst_tacref subst ref = match ref with
 | RelId _ -> ref
@@ -1433,35 +1426,35 @@ let subst_projection subst prj = match prj with
   let kn' = subst_kn subst kn in
   if kn' == kn then prj else AbsKn kn'
 
-let rec subst_rawpattern subst (loc, pr as p) = match pr with
+let rec subst_rawpattern subst ({loc;v=pr} as p) = match pr with
 | CPatVar _ -> p
 | CPatRef (c, pl) ->
   let pl' = List.smartmap (fun p -> subst_rawpattern subst p) pl in
   let c' = subst_or_relid subst c in
-  if pl' == pl && c' == c then p else Loc.tag ?loc @@ CPatRef (c', pl')
+  if pl' == pl && c' == c then p else CAst.make ?loc @@ CPatRef (c', pl')
 | CPatCnv (pat, ty) ->
   let pat' = subst_rawpattern subst pat in
   let ty' = subst_rawtype subst ty in
-  if pat' == pat && ty' == ty then p else Loc.tag ?loc @@ CPatCnv (pat', ty')
+  if pat' == pat && ty' == ty then p else CAst.make ?loc @@ CPatCnv (pat', ty')
 
 (** Used for notations *)
-let rec subst_rawexpr subst (loc, tr as t) = match tr with
+let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
 | CTacAtm _ -> t
 | CTacRef ref ->
   let ref' = subst_tacref subst ref in
-  if ref' == ref then t else Loc.tag ?loc @@ CTacRef ref'
+  if ref' == ref then t else CAst.make ?loc @@ CTacRef ref'
 | CTacCst ref ->
   let ref' = subst_or_relid subst ref in
-  if ref' == ref then t else Loc.tag ?loc @@ CTacCst ref'
+  if ref' == ref then t else CAst.make ?loc @@ CTacCst ref'
 | CTacFun (bnd, e) ->
   let map pat = subst_rawpattern subst pat in
   let bnd' = List.smartmap map bnd in
   let e' = subst_rawexpr subst e in
-  if bnd' == bnd && e' == e then t else Loc.tag ?loc @@ CTacFun (bnd', e')
+  if bnd' == bnd && e' == e then t else CAst.make ?loc @@ CTacFun (bnd', e')
 | CTacApp (e, el) ->
   let e' = subst_rawexpr subst e in
   let el' = List.smartmap (fun e -> subst_rawexpr subst e) el in
-  if e' == e && el' == el then t else Loc.tag ?loc @@ CTacApp (e', el')
+  if e' == e && el' == el then t else CAst.make ?loc @@ CTacApp (e', el')
 | CTacLet (isrec, bnd, e) ->
   let map (na, e as p) =
     let na' = subst_rawpattern subst na in
@@ -1470,15 +1463,15 @@ let rec subst_rawexpr subst (loc, tr as t) = match tr with
   in
   let bnd' = List.smartmap map bnd in
   let e' = subst_rawexpr subst e in
-  if bnd' == bnd && e' == e then t else Loc.tag ?loc @@ CTacLet (isrec, bnd', e')
+  if bnd' == bnd && e' == e then t else CAst.make ?loc @@ CTacLet (isrec, bnd', e')
 | CTacCnv (e, c) ->
   let e' = subst_rawexpr subst e in
   let c' = subst_rawtype subst c in
-  if c' == c && e' == e then t else Loc.tag ?loc @@ CTacCnv (e', c')
+  if c' == c && e' == e then t else CAst.make ?loc @@ CTacCnv (e', c')
 | CTacSeq (e1, e2) ->
   let e1' = subst_rawexpr subst e1 in
   let e2' = subst_rawexpr subst e2 in
-  if e1' == e1 && e2' == e2 then t else Loc.tag ?loc @@ CTacSeq (e1', e2')
+  if e1' == e1 && e2' == e2 then t else CAst.make ?loc @@ CTacSeq (e1', e2')
 | CTacCse (e, bl) ->
   let map (p, e as x) =
     let p' = subst_rawpattern subst p in
@@ -1487,7 +1480,7 @@ let rec subst_rawexpr subst (loc, tr as t) = match tr with
   in
   let e' = subst_rawexpr subst e in
   let bl' = List.smartmap map bl in
-  if e' == e && bl' == bl then t else Loc.tag ?loc @@ CTacCse (e', bl')
+  if e' == e && bl' == bl then t else CAst.make ?loc @@ CTacCse (e', bl')
 | CTacRec el ->
   let map (prj, e as p) =
     let prj' = subst_projection subst prj in
@@ -1495,16 +1488,16 @@ let rec subst_rawexpr subst (loc, tr as t) = match tr with
     if prj' == prj && e' == e then p else (prj', e')
   in
   let el' = List.smartmap map el in
-  if el' == el then t else Loc.tag ?loc @@ CTacRec el'
+  if el' == el then t else CAst.make ?loc @@ CTacRec el'
 | CTacPrj (e, prj) ->
     let prj' = subst_projection subst prj in
     let e' = subst_rawexpr subst e in
-    if prj' == prj && e' == e then t else Loc.tag ?loc @@ CTacPrj (e', prj')
+    if prj' == prj && e' == e then t else CAst.make ?loc @@ CTacPrj (e', prj')
 | CTacSet (e, prj, r) ->
     let prj' = subst_projection subst prj in
     let e' = subst_rawexpr subst e in
     let r' = subst_rawexpr subst r in
-    if prj' == prj && e' == e && r' == r then t else Loc.tag ?loc @@ CTacSet (e', prj', r')
+    if prj' == prj && e' == e && r' == r then t else CAst.make ?loc @@ CTacSet (e', prj', r')
 | CTacExt _ -> assert false (** Should not be generated by globalization *)
 
 (** Registering *)
@@ -1520,7 +1513,7 @@ let () =
       else { env with env_str = false }
     | Some env -> env
     in
-    let loc = loc_of_tacexpr tac in
+    let loc = tac.loc in
     let (tac, t) = intern_rec env tac in
     let () = check_elt_unit loc env t in
     (ist, tac)

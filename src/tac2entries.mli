@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Loc
 open Names
 open Libnames
 open Tac2expr
@@ -14,13 +13,13 @@ open Tac2expr
 (** {5 Toplevel definitions} *)
 
 val register_ltac : ?local:bool -> ?mut:bool -> rec_flag ->
-  (Name.t located * raw_tacexpr) list -> unit
+  (Misctypes.lname * raw_tacexpr) list -> unit
 
 val register_type : ?local:bool -> rec_flag ->
-  (qualid located * redef_flag * raw_quant_typedef) list -> unit
+  (qualid CAst.t * redef_flag * raw_quant_typedef) list -> unit
 
 val register_primitive : ?local:bool ->
-  Id.t located -> raw_typexpr -> ml_tactic_name -> unit
+  Misctypes.lident -> raw_typexpr -> ml_tactic_name -> unit
 
 val register_struct : ?local:bool -> strexpr -> unit
 
@@ -63,11 +62,11 @@ val tac2expr : raw_tacexpr Pcoq.Gram.entry
 
 open Tac2qexpr
 
-val q_ident : Id.t located or_anti Pcoq.Gram.entry
+val q_ident : Id.t CAst.t or_anti Pcoq.Gram.entry
 val q_bindings : bindings Pcoq.Gram.entry
 val q_with_bindings : bindings Pcoq.Gram.entry
 val q_intropattern : intro_pattern Pcoq.Gram.entry
-val q_intropatterns : intro_pattern list located Pcoq.Gram.entry
+val q_intropatterns : intro_pattern list CAst.t Pcoq.Gram.entry
 val q_destruction_arg : destruction_arg Pcoq.Gram.entry
 val q_induction_clause : induction_clause Pcoq.Gram.entry
 val q_conversion : conversion Pcoq.Gram.entry
