@@ -1084,7 +1084,7 @@ let stm_vernac_interp ?proof ?route id st { verbose; loc; expr } : Vernacstate.t
       | VernacShow ShowScript -> ShowScript.show_script (); st (** XX we are ignoring control here *)
       | _ ->
         stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
-        try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st (Loc.tag ?loc expr)
+        try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st (CAst.make ?loc expr)
         with e ->
           let e = CErrors.push e in
           Exninfo.iraise Hooks.(call_process_error_once e)
@@ -2992,7 +2992,7 @@ let parse_sentence ~doc sid pa =
       try
         match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
         | None            -> raise End_of_input
-        | Some (loc, cmd) -> Loc.tag ~loc cmd
+        | Some (loc, cmd) -> CAst.make ~loc cmd
       with e when CErrors.noncritical e ->
         let (e, info) = CErrors.push e in
         Exninfo.iraise (e, info))
@@ -3033,7 +3033,7 @@ let compute_indentation ?loc sid = Option.cata (fun loc ->
     eff_indent, len
   ) (0, 0) loc
 
-let add ~doc ~ontop ?newtip verb (loc, ast) =
+let add ~doc ~ontop ?newtip verb { CAst.loc; v=ast } =
   let cur_tip = VCS.cur_tip () in
   if not (Stateid.equal ontop cur_tip) then
     user_err ?loc ~hdr:"Stm.add"
@@ -3063,7 +3063,7 @@ let query ~doc ~at ~route s =
     else Reach.known_state ~cache:`Yes at;
     try
       while true do
-        let loc, ast            = parse_sentence ~doc at s in
+        let { CAst.loc; v=ast } = parse_sentence ~doc at s in
         let indentation, strlen = compute_indentation ?loc at in
         CWarnings.set_current_loc loc;
         let clas = Vernac_classifier.classify_vernac ast in

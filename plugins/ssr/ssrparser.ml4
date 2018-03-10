@@ -541,7 +541,7 @@ END
 (* ipats *)
 
 
-let remove_loc = snd
+let remove_loc x = x.CAst.v
 
 let ipat_of_intro_pattern p = Misctypes.(
   let rec ipat_of_intro_pattern = function
@@ -608,14 +608,15 @@ let interp_intro_pattern = interp_wit wit_intro_pattern
 
 let interp_introid ist gl id = Misctypes.(
  try IntroNaming (IntroIdentifier (hyp_id (snd (interp_hyp ist gl (SsrHyp (Loc.tag id))))))
- with _ -> snd(snd (interp_intro_pattern ist gl (Loc.tag @@ IntroNaming (IntroIdentifier id))))
+ with _ -> (snd (interp_intro_pattern ist gl (CAst.make @@ IntroNaming (IntroIdentifier id)))).CAst.v
 )
 
 let get_intro_id = function
   | IntroNaming (IntroIdentifier id) -> id
   | _ -> assert false
 
-let rec add_intro_pattern_hyps (loc, ipat) hyps = Misctypes.(
+let rec add_intro_pattern_hyps ipat hyps = Misctypes.(
+  let {CAst.loc=loc;v=ipat} = ipat in
   match ipat with
   | IntroNaming (IntroIdentifier id) ->
     if not_section_id id then SsrHyp (loc, id) :: hyps else
@@ -646,7 +647,7 @@ let interp_ipat ist gl =
   | IPatClear clr ->
     let add_hyps (SsrHyp (loc, id) as hyp) hyps =
       if not (ltacvar id) then hyp :: hyps else
-      add_intro_pattern_hyps (loc, (interp_introid ist gl id)) hyps in
+      add_intro_pattern_hyps CAst.(make ?loc (interp_introid ist gl id)) hyps in
     let clr' = List.fold_right add_hyps clr [] in
     check_hyps_uniq [] clr'; IPatClear clr'
   | IPatCase(iorpat) ->

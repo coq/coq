@@ -850,7 +850,7 @@ let rec extern inctx scopes vars r =
                    | Name _, _ -> Some (CAst.make na) in
                  (sub_extern false scopes vars tm,
                   na',
-                  Option.map (fun (loc,(ind,nal)) ->
+                  Option.map (fun {CAst.loc;v=(ind,nal)} ->
                               let args = List.map (fun x -> DAst.make @@ PatVar x) nal in
                               let fullargs = add_cpatt_for_params ind args in
                               extern_ind_pattern_in_scope scopes vars ind fullargs
@@ -929,7 +929,7 @@ and factorize_prod scopes vars na bk aty c =
   | Name id, GCases (LetPatternStyle, None, [(e,(Anonymous,None))],(_::_ as eqns))
          when is_gvar id e && List.length (store (factorize_eqns eqns)) = 1 ->
     (match get () with
-     | [(_,(ids,disj_of_patl,b))] ->
+     | [{CAst.v=(ids,disj_of_patl,b)}] ->
       let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
       let disjpat = if occur_glob_constr id b then List.map (set_pat_alias id) disjpat else disjpat in
       let b = extern_typ scopes vars b in
@@ -957,7 +957,7 @@ and factorize_lambda inctx scopes vars na bk aty c =
   | Name id, GCases (LetPatternStyle, None, [(e,(Anonymous,None))],(_::_ as eqns))
          when is_gvar id e && List.length (store (factorize_eqns eqns)) = 1 ->
     (match get () with
-     | [(_,(ids,disj_of_patl,b))] ->
+     | [{CAst.v=(ids,disj_of_patl,b)}] ->
       let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
       let disjpat = if occur_glob_constr id b then List.map (set_pat_alias id) disjpat else disjpat in
       let b = sub_extern inctx scopes vars b in
@@ -1010,7 +1010,7 @@ and extern_local_binder scopes vars = function
       let (assums,ids,l) = extern_local_binder scopes vars l in
       (assums,ids, CLocalPattern(CAst.make @@ (p,ty)) :: l)
 
-and extern_eqn inctx scopes vars (loc,(ids,pll,c)) =
+and extern_eqn inctx scopes vars {CAst.loc;v=(ids,pll,c)} =
   let pll = List.map (List.map (extern_cases_pattern_in_scope scopes vars)) pll in
   make ?loc (pll,extern inctx scopes vars c)
 
@@ -1155,7 +1155,7 @@ let extern_closed_glob ?lax goal_concl_style env sigma t =
 
 let any_any_branch =
   (* | _ => _ *)
-  Loc.tag ([],[DAst.make @@ PatVar Anonymous], DAst.make @@ GHole (Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None))
+  CAst.make ([],[DAst.make @@ PatVar Anonymous], DAst.make @@ GHole (Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None))
 
 let compute_displayed_name_in_pattern sigma avoid na c =
   let open Namegen in

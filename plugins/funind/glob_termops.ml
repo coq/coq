@@ -111,11 +111,11 @@ let change_vars =
 		Miscops.map_cast_type (change_vars mapping) c)
       | GProj(p,c) -> GProj(p, change_vars mapping c)
       ) rt
-  and change_vars_br mapping ((loc,(idl,patl,res)) as br) =
+  and change_vars_br mapping ({CAst.loc;v=(idl,patl,res)} as br) =
     let new_mapping = List.fold_right Id.Map.remove idl mapping in
     if Id.Map.is_empty new_mapping
     then br
-    else (loc,(idl,patl,change_vars new_mapping res))
+    else CAst.make ?loc (idl,patl,change_vars new_mapping res)
   in
   change_vars
 
@@ -298,13 +298,13 @@ let rec alpha_rt excluded rt =
   in
   new_rt
 
-and alpha_br excluded (loc,(ids,patl,res)) =
+and alpha_br excluded {CAst.loc;v=(ids,patl,res)} =
   let new_patl,new_excluded,mapping = alpha_patl excluded patl in
   let new_ids = List.fold_right raw_get_pattern_id new_patl [] in
   let new_excluded = new_ids@excluded in
   let renamed_res = change_vars mapping res in
   let new_res = alpha_rt new_excluded renamed_res in
-  (loc,(new_ids,new_patl,new_res))
+  CAst.make ?loc (new_ids,new_patl,new_res)
 
 (*
    [is_free_in id rt] checks if [id] is a free variable in [rt]
@@ -348,7 +348,7 @@ let is_free_in id =
     | GCast (b,CastCoerce) -> is_free_in b
     | GProj (_,c) -> is_free_in c
     ) x
-  and is_free_in_br (_,(ids,_,rt)) =
+  and is_free_in_br {CAst.v=(ids,_,rt)} =
     (not (Id.List.mem id ids)) && is_free_in rt
   in
   is_free_in
@@ -443,10 +443,10 @@ let replace_var_by_term x_id term =
       | GProj(p,c) ->
         GProj(p,replace_var_by_pattern c)
     ) x
-  and replace_var_by_pattern_br ((loc,(idl,patl,res)) as br) =
+  and replace_var_by_pattern_br ({CAst.loc;v=(idl,patl,res)} as br) =
     if List.exists (fun id -> Id.compare id x_id == 0) idl
     then br
-    else (loc,(idl,patl,replace_var_by_pattern res))
+    else CAst.make ?loc (idl,patl,replace_var_by_pattern res)
   in
   replace_var_by_pattern
 
@@ -547,8 +547,8 @@ let expand_as =
 		List.map (expand_as_br map) brl)
       | GProj(p,c) -> GProj(p, expand_as map c)
     )
-  and expand_as_br map (loc,(idl,cpl,rt)) =
-    (loc,(idl,cpl, expand_as (List.fold_left add_as map cpl) rt))
+  and expand_as_br map {CAst.loc; v=(idl,cpl,rt)} =
+    CAst.make ?loc (idl,cpl, expand_as (List.fold_left add_as map cpl) rt)
   in
   expand_as Id.Map.empty
 

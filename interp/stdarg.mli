@@ -39,7 +39,7 @@ val wit_pre_ident : string uniform_genarg_type
 
 val wit_int_or_var : (int or_var, int or_var, int) genarg_type
 
-val wit_intro_pattern : (constr_expr intro_pattern_expr located, glob_constr_and_expr intro_pattern_expr located, intro_pattern) genarg_type
+val wit_intro_pattern : (constr_expr intro_pattern_expr CAst.t, glob_constr_and_expr intro_pattern_expr CAst.t, intro_pattern) genarg_type
 
 val wit_ident : Id.t uniform_genarg_type
 
@@ -88,7 +88,7 @@ val wit_reference : (reference, global_reference located or_var, global_referenc
 val wit_global : (reference, global_reference located or_var, global_reference) genarg_type
 val wit_clause :  (lident Locus.clause_expr, lident Locus.clause_expr, Names.Id.t Locus.clause_expr) genarg_type
 val wit_quantified_hypothesis : quantified_hypothesis uniform_genarg_type
-val wit_intropattern : (constr_expr intro_pattern_expr located, glob_constr_and_expr intro_pattern_expr located, intro_pattern) genarg_type
+val wit_intropattern : (constr_expr intro_pattern_expr CAst.t, glob_constr_and_expr intro_pattern_expr CAst.t, intro_pattern) genarg_type
 val wit_redexpr :
   ((constr_expr,reference or_by_notation,constr_expr) red_expr_gen,
   (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,

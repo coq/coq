@@ -1015,8 +1015,8 @@ let explain_not_a_class env c =
   let c = EConstr.to_constr Evd.empty c in
   pr_constr_env env Evd.empty c ++ str" is not a declared type class."
 
-let explain_unbound_method env cid id =
-  str "Unbound method name " ++ Id.print (snd id) ++ spc () ++
+let explain_unbound_method env cid { CAst.v = id } =
+  str "Unbound method name " ++ Id.print (id) ++ spc () ++
   str"of class" ++ spc () ++ pr_global cid ++ str "."
 
 let pr_constr_exprs exprs =

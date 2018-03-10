@@ -23,7 +23,7 @@ end
     expected to handle and print errors in form of exceptions, however
     care is taken so the state machine is left in a consistent
     state. *)
-val process_expr : time:bool -> state:State.t -> Vernacexpr.vernac_control Loc.located -> State.t
+val process_expr : time:bool -> state:State.t -> Vernacexpr.vernac_control CAst.t -> State.t
 
 (** [load_vernac echo sid file] Loads [file] on top of [sid], will
     echo the commands if [echo] is set. Callers are expected to handle

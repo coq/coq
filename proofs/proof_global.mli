@@ -22,7 +22,7 @@ val check_no_pending_proof : unit -> unit
 val get_current_proof_name : unit -> Names.Id.t
 val get_all_proof_names : unit -> Names.Id.t list
 
-val discard : Names.Id.t Loc.located -> unit
+val discard : Misctypes.lident -> unit
 val discard_current : unit -> unit
 val discard_all : unit -> unit
 
@@ -124,7 +124,7 @@ val set_endline_tactic : Genarg.glob_generic_argument -> unit
  * (w.r.t. type dependencies and let-ins covered by it) + a list of
  * ids to be cleared *)
 val set_used_variables :
-  Names.Id.t list -> Context.Named.t * Names.Id.t Loc.located list
+  Names.Id.t list -> Context.Named.t * Misctypes.lident list
 val get_used_variables : unit -> Context.Named.t option
 
 (** Get the universe declaration associated to the current proof. *)

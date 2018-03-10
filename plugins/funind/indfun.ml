@@ -215,7 +215,7 @@ let is_rec names =
 	List.exists (fun (e,_) -> lookup names e) el ||
 	  List.exists (lookup_br names) brl
     | GProj(_,c) -> lookup names c
-  and lookup_br names (_,(idl,_,rt)) =
+  and lookup_br names {CAst.v=(idl,_,rt)} =
     let new_names = List.fold_right Id.Set.remove idl names in
     lookup new_names rt
   in

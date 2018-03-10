@@ -86,12 +86,12 @@ let destruct_on c = destruct false None c None None
 
 let destruct_on_using c id =
   destruct false None c
-    (Some (Loc.tag @@ IntroOrPattern [[Loc.tag @@ IntroNaming IntroAnonymous];
-               [Loc.tag @@ IntroNaming (IntroIdentifier id)]]))
+    (Some (CAst.make @@ IntroOrPattern [[CAst.make @@ IntroNaming IntroAnonymous];
+               [CAst.make @@ IntroNaming (IntroIdentifier id)]]))
     None
 
 let destruct_on_as c l =
-  destruct false None c (Some (Loc.tag l)) None
+  destruct false None c (Some (CAst.make l)) None
 
 let inj_flags = Some {
     Equality.keep_proof_equalities = true; (* necessary *)
@@ -620,8 +620,8 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                          Proofview.Goal.enter begin fun gl ->
                            let fresht = fresh_id (Id.of_string "Z") gl in
                             destruct_on_as (EConstr.mkVar freshz)
-                                  (IntroOrPattern [[Loc.tag @@ IntroNaming (IntroIdentifier fresht);
-                                    Loc.tag @@ IntroNaming (IntroIdentifier freshz)]])
+                                  (IntroOrPattern [[CAst.make @@ IntroNaming (IntroIdentifier fresht);
+                                    CAst.make @@ IntroNaming (IntroIdentifier freshz)]])
                          end
                         ]);
 (*

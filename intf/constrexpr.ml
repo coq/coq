@@ -143,8 +143,8 @@ type constr_pattern_expr = constr_expr
 (** Concrete syntax for modules and module types *)
 
 type with_declaration_ast =
-  | CWith_Module of Id.t list Loc.located * qualid Loc.located
-  | CWith_Definition of Id.t list Loc.located * universe_decl_expr option * constr_expr
+  | CWith_Module of Id.t list CAst.t * qualid CAst.t
+  | CWith_Definition of Id.t list CAst.t * universe_decl_expr option * constr_expr
 
 type module_ast_r =
   | CMident of qualid

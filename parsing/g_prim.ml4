@@ -62,8 +62,8 @@ GEXTEND Gram
       ] ]
   ;
   fullyqualid:
-    [ [ id = ident; (l,id')=fields -> Loc.tag ~loc:!@loc @@ id::List.rev (id'::l)
-      | id = ident -> Loc.tag ~loc:!@loc [id]
+    [ [ id = ident; (l,id')=fields -> CAst.make ~loc:!@loc @@ id::List.rev (id'::l)
+      | id = ident -> CAst.make ~loc:!@loc [id]
       ] ]
   ;
   basequalid:
@@ -82,14 +82,14 @@ GEXTEND Gram
       ] ]
   ;
   by_notation:
-    [ [ s = ne_string; sc = OPT ["%"; key = IDENT -> key ] -> Loc.tag ~loc:!@loc (s, sc) ] ]
+    [ [ s = ne_string; sc = OPT ["%"; key = IDENT -> key ] -> CAst.make ~loc:!@loc (s, sc) ] ]
   ;
   smart_global:
     [ [ c = reference -> Misctypes.AN c
       | ntn = by_notation -> Misctypes.ByNotation ntn ] ]
   ;
   qualid:
-    [ [ qid = basequalid -> Loc.tag ~loc:!@loc qid ] ]
+    [ [ qid = basequalid -> CAst.make ~loc:!@loc qid ] ]
   ;
   ne_string:
     [ [ s = STRING ->

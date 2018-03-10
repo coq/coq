@@ -14,7 +14,7 @@ open Misctypes
 
 (** Printing of [intro_pattern] *)
 
-let rec pr_intro_pattern prc (_,pat) = match pat with
+let rec pr_intro_pattern prc {CAst.v=pat} = match pat with
   | IntroForthcoming true -> str "*"
   | IntroForthcoming false -> str "**"
   | IntroNaming p -> pr_intro_pattern_naming p
@@ -31,7 +31,7 @@ and pr_intro_pattern_action prc = function
   | IntroInjection pl ->
       str "[=" ++ hv 0 (prlist_with_sep spc (pr_intro_pattern prc) pl) ++
       str "]"
-  | IntroApplyOn ((_,c),pat) -> pr_intro_pattern prc pat ++ str "%" ++ prc c
+  | IntroApplyOn ({CAst.v=c},pat) -> pr_intro_pattern prc pat ++ str "%" ++ prc c
   | IntroRewrite true -> str "->"
   | IntroRewrite false -> str "<-"
 
@@ -52,9 +52,9 @@ let pr_move_location pr_id = function
   | MoveLast -> str " at bottom"
 
 (** Printing of bindings *)
-let pr_binding prc = function
-  | loc, (NamedHyp id, c) -> hov 1 (Names.Id.print id ++ str " := " ++ cut () ++ prc c)
-  | loc, (AnonHyp n, c) -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
+let pr_binding prc = let open CAst in function
+  | {loc;v=(NamedHyp id, c)} -> hov 1 (Names.Id.print id ++ str " := " ++ cut () ++ prc c)
+  | {loc;v=(AnonHyp n, c)} -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
 
 let pr_bindings prc prlc = function
   | ImplicitBindings l ->

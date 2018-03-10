@@ -175,7 +175,7 @@ let mkCLambdaN_simple bl c = match bl with
     let loc = Loc.merge_opt (List.hd (pi1 h)).CAst.loc (Constrexpr_ops.constr_loc c) in
     mkCLambdaN_simple_loc ?loc bl c
 
-let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
+let loc_of_ne_list l = Loc.merge_opt (List.hd l).CAst.loc (List.last l).CAst.loc
 
 let map_int_or_var f = function
   | ArgArg x -> ArgArg (f x)
@@ -297,7 +297,7 @@ GEXTEND Gram
 	  (* (A & B & C) is translated into (A,(B,C)) *)
 	  let rec pairify = function
 	    | ([]|[_]|[_;_]) as l -> l
-	    | t::q -> [t; Loc.tag ?loc:(loc_of_ne_list q) (IntroAction (IntroOrAndPattern (IntroAndPattern (pairify q))))]
+            | t::q -> [t; CAst.make ?loc:(loc_of_ne_list q) (IntroAction (IntroOrAndPattern (IntroAndPattern (pairify q))))]
 	  in IntroAndPattern (pairify (si::tc)) ] ]
   ;
   equality_intropattern:
@@ -312,28 +312,28 @@ GEXTEND Gram
   ;
   nonsimple_intropattern:
     [ [ l = simple_intropattern -> l
-      | "*"  -> Loc.tag ~loc:!@loc @@ IntroForthcoming true
-      | "**" -> Loc.tag ~loc:!@loc @@ IntroForthcoming false ]]
+      | "*"  -> CAst.make ~loc:!@loc @@ IntroForthcoming true
+      | "**" -> CAst.make ~loc:!@loc @@ IntroForthcoming false ]]
   ;
   simple_intropattern:
     [ [ pat = simple_intropattern_closed;
         l = LIST0 ["%"; c = operconstr LEVEL "0" -> c] ->
-          let loc0,pat = pat in
+          let {CAst.loc=loc0;v=pat} = pat in
           let f c pat =
             let loc1 = Constrexpr_ops.constr_loc c in
             let loc = Loc.merge_opt loc0 loc1 in
-            IntroAction (IntroApplyOn ((loc1,c),(loc,pat))) in
-          Loc.tag ~loc:!@loc @@ List.fold_right f l pat ] ]
+            IntroAction (IntroApplyOn (CAst.(make ?loc:loc1 c),CAst.(make ?loc pat))) in
+          CAst.make ~loc:!@loc @@ List.fold_right f l pat ] ]
   ;
   simple_intropattern_closed:
-    [ [ pat = or_and_intropattern   -> Loc.tag ~loc:!@loc @@ IntroAction (IntroOrAndPattern pat)
-      | pat = equality_intropattern -> Loc.tag ~loc:!@loc @@ IntroAction pat
-      | "_" -> Loc.tag ~loc:!@loc @@ IntroAction IntroWildcard 
-      | pat = naming_intropattern -> Loc.tag ~loc:!@loc @@ IntroNaming pat ] ]
+    [ [ pat = or_and_intropattern   -> CAst.make ~loc:!@loc @@ IntroAction (IntroOrAndPattern pat)
+      | pat = equality_intropattern -> CAst.make ~loc:!@loc @@ IntroAction pat
+      | "_" -> CAst.make ~loc:!@loc @@ IntroAction IntroWildcard
+      | pat = naming_intropattern -> CAst.make ~loc:!@loc @@ IntroNaming pat ] ]
   ;
   simple_binding:
-    [ [ "("; id = ident; ":="; c = lconstr; ")" -> Loc.tag ~loc:!@loc (NamedHyp id, c)
-      | "("; n = natural; ":="; c = lconstr; ")" -> Loc.tag ~loc:!@loc (AnonHyp n, c) ] ]
+    [ [ "("; id = ident; ":="; c = lconstr; ")" -> CAst.make ~loc:!@loc (NamedHyp id, c)
+      | "("; n = natural; ":="; c = lconstr; ")" -> CAst.make ~loc:!@loc (AnonHyp n, c) ] ]
   ;
   bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->
@@ -470,7 +470,7 @@ GEXTEND Gram
       | -> None ] ]
   ;
   or_and_intropattern_loc:
-    [ [ ipat = or_and_intropattern -> ArgArg (Loc.tag ~loc:!@loc ipat)
+    [ [ ipat = or_and_intropattern -> ArgArg (CAst.make ~loc:!@loc ipat)
       | locid = identref -> ArgVar locid ] ]
   ;
   as_or_and_ipat:
@@ -478,13 +478,13 @@ GEXTEND Gram
       | -> None ] ]
   ;
   eqn_ipat:
-    [ [ IDENT "eqn"; ":"; pat = naming_intropattern -> Some (Loc.tag ~loc:!@loc pat)
+    [ [ IDENT "eqn"; ":"; pat = naming_intropattern -> Some (CAst.make ~loc:!@loc pat)
       | IDENT "_eqn"; ":"; pat = naming_intropattern ->
          let loc = !@loc in
-	 warn_deprecated_eqn_syntax ~loc "H"; Some (Loc.tag ~loc pat)
+         warn_deprecated_eqn_syntax ~loc "H"; Some (CAst.make ~loc pat)
       | IDENT "_eqn" ->
          let loc = !@loc in
-	 warn_deprecated_eqn_syntax ~loc "?"; Some (Loc.tag ~loc IntroAnonymous)
+         warn_deprecated_eqn_syntax ~loc "?"; Some (CAst.make ~loc IntroAnonymous)
       | -> None ] ]
   ;
   as_name:
@@ -525,7 +525,7 @@ GEXTEND Gram
         IDENT "intros"; pl = ne_intropatterns ->
           TacAtom (Loc.tag ~loc:!@loc @@ TacIntroPattern (false,pl))
       | IDENT "intros" ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacIntroPattern (false,[Loc.tag ~loc:!@loc @@IntroForthcoming false]))
+          TacAtom (Loc.tag ~loc:!@loc @@ TacIntroPattern (false,[CAst.make ~loc:!@loc @@IntroForthcoming false]))
       | IDENT "eintros"; pl = ne_intropatterns ->
           TacAtom (Loc.tag ~loc:!@loc @@ TacIntroPattern (true,pl))
 
@@ -577,31 +577,31 @@ GEXTEND Gram
       | IDENT "assert"; test_lpar_id_coloneq; "("; lid = identref; ":=";
 	  c = lconstr; ")" ->
           let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (false,true,None,Some (Loc.tag ?loc @@ IntroNaming (IntroIdentifier id)),c))
+          TacAtom (Loc.tag ?loc @@ TacAssert (false,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c))
       | IDENT "eassert"; test_lpar_id_coloneq; "("; lid = identref; ":=";
 	  c = lconstr; ")" ->
           let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (true,true,None,Some (Loc.tag ?loc @@ IntroNaming (IntroIdentifier id)),c))
+          TacAtom (Loc.tag ?loc @@ TacAssert (true,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c))
 
       (* Alternative syntax for "assert c as id by tac" *)
       | IDENT "assert"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
           let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (false,true,Some tac,Some (Loc.tag ?loc @@ IntroNaming (IntroIdentifier id)),c))
+          TacAtom (Loc.tag ?loc @@ TacAssert (false,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c))
       | IDENT "eassert"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
           let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (true,true,Some tac,Some (Loc.tag ?loc @@ IntroNaming (IntroIdentifier id)),c))
+          TacAtom (Loc.tag ?loc @@ TacAssert (true,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c))
 
       (* Alternative syntax for "enough c as id by tac" *)
       | IDENT "enough"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
           let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (false,false,Some tac,Some (Loc.tag ?loc @@ IntroNaming (IntroIdentifier id)),c))
+          TacAtom (Loc.tag ?loc @@ TacAssert (false,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c))
       | IDENT "eenough"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
           let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (true,false,Some tac,Some (Loc.tag ?loc @@ IntroNaming (IntroIdentifier id)),c))
+          TacAtom (Loc.tag ?loc @@ TacAssert (true,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c))
 
       | IDENT "assert"; c = constr; ipat = as_ipat; tac = by_tactic ->
 	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,Some tac,ipat,c))

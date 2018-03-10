@@ -69,7 +69,7 @@ open Decl_kinds
 
   let pr_fqid fqid = str (string_of_fqid fqid)
 
-  let pr_lfqid (loc,fqid) =
+  let pr_lfqid {CAst.loc;v=fqid} =
     match loc with
     | None     -> pr_fqid fqid
     | Some loc -> let (b,_) = Loc.unloc loc in
@@ -238,7 +238,7 @@ open Decl_kinds
       keyword "Definition" ++ spc() ++ pr_lfqid id ++ pr_universe_decl udecl ++ str" := " ++ p
     | CWith_Module (id,qid) ->
       keyword "Module" ++ spc() ++ pr_lfqid id ++ str" := " ++
-        pr_located pr_qualid qid
+        pr_ast pr_qualid qid
 
   let rec pr_module_ast leading_space pr_c = function
     | { loc ; v = CMident qid } ->

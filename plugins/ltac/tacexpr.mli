@@ -56,9 +56,9 @@ type inversion_kind = Misctypes.inversion_kind =
 
 type ('c,'d,'id) inversion_strength =
   | NonDepInversion of
-      inversion_kind * 'id list * 'd or_and_intro_pattern_expr located or_var option
+      inversion_kind * 'id list * 'd or_and_intro_pattern_expr CAst.t or_var option
   | DepInversion of
-      inversion_kind * 'c option * 'd or_and_intro_pattern_expr located or_var option
+      inversion_kind * 'c option * 'd or_and_intro_pattern_expr CAst.t or_var option
   | InversionUsing of 'c * 'id list
 
 type ('a,'b) location = HypLocation of 'a | ConclLocation of 'b
@@ -70,8 +70,8 @@ type 'id message_token =
 
 type ('dconstr,'id) induction_clause =
     'dconstr with_bindings destruction_arg *
-    (intro_pattern_naming_expr located option (* eqn:... *)
-    * 'dconstr or_and_intro_pattern_expr located or_var option) (* as ... *)
+    (intro_pattern_naming_expr CAst.t option (* eqn:... *)
+    * 'dconstr or_and_intro_pattern_expr CAst.t or_var option) (* as ... *)
     * 'id clause_expr option (* in ... *)
 
 type ('constr,'dconstr,'id) induction_clause_list =
@@ -126,28 +126,28 @@ type delayed_open_constr_with_bindings = EConstr.constr with_bindings delayed_op
 
 type delayed_open_constr = EConstr.constr delayed_open
 
-type intro_pattern = delayed_open_constr intro_pattern_expr located
-type intro_patterns = delayed_open_constr intro_pattern_expr located list
-type or_and_intro_pattern = delayed_open_constr or_and_intro_pattern_expr located
-type intro_pattern_naming = intro_pattern_naming_expr located
+type intro_pattern = delayed_open_constr intro_pattern_expr CAst.t
+type intro_patterns = delayed_open_constr intro_pattern_expr CAst.t list
+type or_and_intro_pattern = delayed_open_constr or_and_intro_pattern_expr CAst.t
+type intro_pattern_naming = intro_pattern_naming_expr CAst.t
 
 (** Generic expressions for atomic tactics *)
 
 type 'a gen_atomic_tactic_expr =
   (* Basic tactics *)
-  | TacIntroPattern of evars_flag * 'dtrm intro_pattern_expr located list
+  | TacIntroPattern of evars_flag * 'dtrm intro_pattern_expr CAst.t list
   | TacApply of advanced_flag * evars_flag * 'trm with_bindings_arg list *
-      ('nam * 'dtrm intro_pattern_expr located option) option
+      ('nam * 'dtrm intro_pattern_expr CAst.t option) option
   | TacElim of evars_flag * 'trm with_bindings_arg * 'trm with_bindings option
   | TacCase of evars_flag * 'trm with_bindings_arg
   | TacMutualFix of Id.t * int * (Id.t * int * 'trm) list
   | TacMutualCofix of Id.t * (Id.t * 'trm) list
   | TacAssert of
       evars_flag * bool * 'tacexpr option option *
-      'dtrm intro_pattern_expr located option * 'trm
+      'dtrm intro_pattern_expr CAst.t option * 'trm
   | TacGeneralize of ('trm with_occurrences * Name.t) list
   | TacLetTac of evars_flag * Name.t * 'trm * 'nam clause_expr * letin_flag *
-      intro_pattern_naming_expr located option
+      intro_pattern_naming_expr CAst.t option
 
   (* Derived basic tactics *)
   | TacInductionDestruct of

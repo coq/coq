@@ -63,7 +63,7 @@ let is_known_option cmd = match Vernacprop.under_control cmd with
 
 (** Check whether a command is forbidden in the IDE *)
 
-let ide_cmd_checks ~id (loc,ast) =
+let ide_cmd_checks ~id {CAst.loc;v=ast} =
   let user_error s = CErrors.user_err ?loc ~hdr:"IDE" (str s) in
   let warn msg = Feedback.(feedback ~id (Message (Warning, loc, strbrk msg))) in
   if is_debug ast then
@@ -120,7 +120,7 @@ let query (route, (s,id)) =
 
 let annotate phrase =
   let doc = get_doc () in
-  let (loc, ast) =
+  let {CAst.loc;v=ast} =
     let pa = Pcoq.Gram.parsable (Stream.of_string phrase) in
     Stm.parse_sentence ~doc (Stm.get_current_state ~doc) pa
   in

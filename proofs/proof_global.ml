@@ -207,7 +207,7 @@ let check_no_pending_proof () =
 let discard_gen id =
   pstates := List.filter (fun { pid = id' } -> not (Id.equal id id')) !pstates
 
-let discard (loc,id) =
+let discard {CAst.loc;v=id} =
   let n = List.length !pstates in
   discard_gen id;
   if Int.equal (List.length !pstates) n then
@@ -297,13 +297,13 @@ let set_used_variables l =
     match entry with
     | LocalAssum (x,_) ->
        if Id.Set.mem x all_safe then orig
-       else (ctx, all_safe, (Loc.tag x)::to_clear) 
+       else (ctx, all_safe, (CAst.make x)::to_clear)
     | LocalDef (x,bo, ty) as decl ->
        if Id.Set.mem x all_safe then orig else
        let vars = Id.Set.union (vars_of env bo) (vars_of env ty) in
        if Id.Set.subset vars all_safe
        then (decl :: ctx, Id.Set.add x all_safe, to_clear)
-       else (ctx, all_safe, (Loc.tag x) :: to_clear) in
+       else (ctx, all_safe, (CAst.make x) :: to_clear) in
   let ctx, _, to_clear =
     Environ.fold_named_context aux env ~init:(ctx,ctx_set,[]) in
   let to_clear = if !proof_using_auto_clear then to_clear else [] in

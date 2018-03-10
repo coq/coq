@@ -554,7 +554,7 @@ GEXTEND Gram
       ] ]
   ;
   module_expr_atom:
-    [ [ qid = qualid -> CAst.make ~loc:!@loc @@ CMident (snd qid) | "("; me = module_expr; ")" -> me ] ]
+    [ [ qid = qualid -> CAst.make ~loc:!@loc @@ CMident (qid.CAst.v) | "("; me = module_expr; ")" -> me ] ]
   ;
   with_declaration:
     [ [ "Definition"; fqid = fullyqualid; udecl = OPT univ_decl; ":="; c = Constr.lconstr ->
@@ -564,7 +564,7 @@ GEXTEND Gram
       ] ]
   ;
   module_type:
-    [ [ qid = qualid -> CAst.make ~loc:!@loc @@ CMident (snd qid)
+    [ [ qid = qualid -> CAst.make ~loc:!@loc @@ CMident (qid.CAst.v)
       | "("; mt = module_type; ")" -> mt
       | mty = module_type; me = module_expr_atom ->
           CAst.make ~loc:!@loc @@ CMapply (mty,me)

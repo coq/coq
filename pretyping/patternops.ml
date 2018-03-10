@@ -416,17 +416,17 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
       | _ -> None
       in
       let get_ind = function
-	| (_,(_,[p],_))::_ -> get_ind p
+        | {CAst.v=(_,[p],_)}::_ -> get_ind p
 	| _ -> None
       in
       let ind_tags,ind = match indnames with
-	| Some (_,(ind,nal)) -> Some (List.length nal), Some ind
+        | Some {CAst.v=(ind,nal)} -> Some (List.length nal), Some ind
 	| None -> None, get_ind brs
       in
       let ext,brs = pats_of_glob_branches loc metas vars ind brs
       in
       let pred = match p,indnames with
-	| Some p, Some (_,(_,nal)) ->
+        | Some p, Some {CAst.v=(_,nal)} ->
           let nvars = na :: List.rev nal @ vars in
           rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas nvars p))
         | None, _ -> PMeta None
@@ -462,7 +462,7 @@ and pats_of_glob_branches loc metas vars ind brs =
   in
   let rec get_pat indexes = function
     | [] -> false, []
-    | (loc',(_,[p], br)) :: brs ->
+    | {CAst.loc=loc';v=(_,[p], br)} :: brs ->
       begin match DAst.get p, DAst.get br, brs with
       | PatVar Anonymous, GHole _, [] ->
         true, [] (* ends with _ => _ *)
@@ -484,7 +484,7 @@ and pats_of_glob_branches loc metas vars ind brs =
       | _ ->
         err ?loc:loc' (Pp.str "Non supported pattern.")
       end
-    | (loc,(_,_,_)) :: _ -> err ?loc (Pp.str "Non supported pattern.")
+    | {CAst.loc;v=(_,_,_)} :: _ -> err ?loc (Pp.str "Non supported pattern.")
   in
   get_pat Int.Set.empty brs
 

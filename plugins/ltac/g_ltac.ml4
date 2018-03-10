@@ -198,7 +198,8 @@ GEXTEND Gram
      verbose most of the time. *)
   fresh_id:
     [ [ s = STRING -> ArgArg s (*| id = ident -> ArgVar (!@loc,id)*)
-        | qid = qualid -> let (_pth,id) = Libnames.repr_qualid (snd qid) in ArgVar (CAst.make ~loc:!@loc id) ] ]
+        | qid = qualid -> let (_pth,id) = Libnames.repr_qualid qid.CAst.v in
+                          ArgVar (CAst.make ~loc:!@loc id) ] ]
   ;
   constr_eval:
     [ [ IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->

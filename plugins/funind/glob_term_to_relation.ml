@@ -287,7 +287,7 @@ let make_discr_match_el  =
 *)
 let make_discr_match_brl i =
   List.map_i
-    (fun j (_,(idl,patl,_)) -> Loc.tag @@
+    (fun j {CAst.v=(idl,patl,_)} -> CAst.make @@
        if Int.equal j i
        then (idl,patl, mkGRef (Lazy.force coq_True_ref))
        else (idl,patl, mkGRef (Lazy.force coq_False_ref))
@@ -659,7 +659,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	assert (Int.equal (Array.length case_pats) 2);
 	let brl =
 	  List.map_i
-	    (fun i x -> Loc.tag ([],[case_pats.(i)],x))
+            (fun i x -> CAst.make ([],[case_pats.(i)],x))
 	    0
 	    [lhs;rhs]
 	in
@@ -689,7 +689,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	  in
 	  let case_pats = build_constructors_of_type (fst ind) nal_as_glob_constr in
 	  assert (Int.equal (Array.length case_pats) 1);
-	  let br = Loc.tag ([],[case_pats.(0)],e) in
+          let br = CAst.make ([],[case_pats.(0)],e) in
 	  let match_expr = mkGCases(None,[b,(Anonymous,None)],[br]) in
 	  build_entry_lc env funnames avoid match_expr
 
@@ -756,7 +756,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
     | [] -> (* computed_branches  *) {result = [];to_avoid = avoid}
     | br::brl' ->
 	(* alpha conversion to prevent name clashes *)
-	let _,(idl,patl,return) = alpha_br avoid br in
+        let {CAst.v=(idl,patl,return)} = alpha_br avoid br in
 	let new_avoid  = idl@avoid in 	(* for now we can no more use idl as an identifier *)
 	(* building a list of precondition stating that we are not in this branch
 	   (will be used in the following recursive calls)

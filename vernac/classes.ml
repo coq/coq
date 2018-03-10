@@ -229,8 +229,8 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 	| Some (Inl props) ->
 	    let get_id =
 	      function
-		| Ident id' -> id'
-		| Qualid (loc,id') -> (Loc.tag ?loc @@ snd (repr_qualid id'))
+                | Ident (loc, id') -> CAst.(make ?loc @@ id')
+                | Qualid (loc,id') -> CAst.(make ?loc @@ snd (repr_qualid id'))
 	    in
 	    let props, rest =
 	      List.fold_left
@@ -238,7 +238,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 		  if is_local_assum decl then
 		    try
 		      let is_id (id', _) = match RelDecl.get_name decl, get_id id' with
-			| Name id, (_, id') -> Id.equal id id'
+                        | Name id, {CAst.v=id'} -> Id.equal id id'
 			| Anonymous, _ -> false
                       in
 		       let (loc_mid, c) =
@@ -247,7 +247,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 		       let rest' = 
 			 List.filter (fun v -> not (is_id v)) rest 
 		       in
-		       let (loc, mid) = get_id loc_mid in
+                       let {CAst.loc;v=mid} = get_id loc_mid in
 			 List.iter (fun (n, _, x) -> 
 				      if Name.equal n (Name mid) then
 					Option.iter (fun x -> Dumpglob.add_glob ?loc (ConstRef x)) x)

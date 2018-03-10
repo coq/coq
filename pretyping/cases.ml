@@ -347,7 +347,7 @@ let unify_tomatch_with_patterns evdref env loc typ pats realnames =
 
 let find_tomatch_tycon evdref env loc = function
   (* Try if some 'in I ...' is present and can be used as a constraint *)
-  | Some (_,(ind,realnal)) ->
+  | Some {CAst.v=(ind,realnal)} ->
       mk_tycon (inductive_template evdref env loc ind),Some (List.rev realnal)
   | None ->
       empty_tycon,None
@@ -1565,7 +1565,7 @@ substituer après par les initiaux *)
  * and linearizing the _ patterns.
  * Syntactic correctness has already been done in constrintern *)
 let matx_of_eqns env eqns =
-  let build_eqn (loc,(ids,initial_lpat,initial_rhs)) =
+  let build_eqn {CAst.loc;v=(ids,initial_lpat,initial_rhs)} =
     let avoid = ids_of_named_context_val (named_context_val env) in
     let avoid = List.fold_left (fun accu id -> Id.Set.add id accu) avoid ids in
     let rhs =
@@ -1883,8 +1883,8 @@ let extract_arity_signature ?(dolift=true) env0 lvar tomatchl tmsign =
 	    | None -> let sign = match bo with
 		       | None -> [LocalAssum (na, lift n typ)]
 		       | Some b -> [LocalDef (na, lift n b, lift n typ)] in sign,sign
-	    | Some (loc,_) ->
- 	    user_err ?loc 
+            | Some {CAst.loc} ->
+            user_err ?loc
                 (str"Unexpected type annotation for a term of non inductive type."))
       | IsInd (term,IndType(indf,realargs),_) ->
           let indf' = if dolift then lift_inductive_family n indf else indf in
@@ -1894,7 +1894,7 @@ let extract_arity_signature ?(dolift=true) env0 lvar tomatchl tmsign =
 	  let arsign = List.map (fun d -> map_rel_decl EConstr.of_constr d) arsign in
 	  let realnal, realnal' =
 	    match t with
-	      | Some (loc,(ind',realnal)) ->
+              | Some {CAst.loc;v=(ind',realnal)} ->
 		  if not (eq_ind ind ind') then
 		    user_err ?loc  (str "Wrong inductive type.");
 		  if not (Int.equal nrealargs_ctxt (List.length realnal)) then
