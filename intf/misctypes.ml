@@ -142,19 +142,6 @@ type multi =
   | RepeatStar
   | RepeatPlus
 
-type 'a core_destruction_arg =
-  | ElimOnConstr of 'a
-  | ElimOnIdent of lident
-  | ElimOnAnonHyp of int
-
-type 'a destruction_arg =
-  clear_flag * 'a core_destruction_arg
-
-type inversion_kind =
-  | SimpleInversion
-  | FullInversion
-  | FullInversionClear
-
 type ('a, 'b) gen_universe_decl = {
   univdecl_instance : 'a; (* Declared universes *)
   univdecl_extensible_instance : bool; (* Can new universes be added *)

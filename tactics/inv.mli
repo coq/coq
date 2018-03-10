@@ -15,6 +15,11 @@ open Tactypes
 
 type inversion_status = Dep of constr option | NoDep
 
+type inversion_kind =
+  | SimpleInversion
+  | FullInversion
+  | FullInversionClear
+
 val inv_clause :
   inversion_kind -> or_and_intro_pattern option -> Id.t list ->
     quantified_hypothesis -> unit Proofview.tactic

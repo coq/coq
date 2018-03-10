@@ -1159,6 +1159,13 @@ let tactic_infer_flags with_evar = {
   Pretyping.fail_evar = not with_evar;
   Pretyping.expand_evars = true }
 
+type 'a core_destruction_arg =
+  | ElimOnConstr of 'a
+  | ElimOnIdent of lident
+  | ElimOnAnonHyp of int
+
+type 'a destruction_arg =
+  clear_flag * 'a core_destruction_arg
 
 let onOpenInductionArg env sigma tac = function
   | clear_flag,ElimOnConstr f ->

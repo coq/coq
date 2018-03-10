@@ -40,25 +40,29 @@ type goal_selector = Vernacexpr.goal_selector =
   | SelectList of (int * int) list
   | SelectId of Id.t
   | SelectAll
+[@@ocaml.deprecated "Use Vernacexpr.goal_selector"]
 
-type 'a core_destruction_arg = 'a Misctypes.core_destruction_arg =
+type 'a core_destruction_arg = 'a Tactics.core_destruction_arg =
   | ElimOnConstr of 'a
   | ElimOnIdent of lident
   | ElimOnAnonHyp of int
+[@@ocaml.deprecated "Use Tactics.core_destruction_arg"]
 
 type 'a destruction_arg =
-  clear_flag * 'a core_destruction_arg
+  clear_flag * 'a Tactics.core_destruction_arg
+[@@ocaml.deprecated "Use Tactics.destruction_arg"]
 
-type inversion_kind = Misctypes.inversion_kind =
+type inversion_kind = Inv.inversion_kind =
   | SimpleInversion
   | FullInversion
   | FullInversionClear
+[@@ocaml.deprecated "Use Tactics.inversion_kind"]
 
 type ('c,'d,'id) inversion_strength =
   | NonDepInversion of
-      inversion_kind * 'id list * 'd or_and_intro_pattern_expr CAst.t or_var option
+      Inv.inversion_kind * 'id list * 'd or_and_intro_pattern_expr CAst.t or_var option
   | DepInversion of
-      inversion_kind * 'c option * 'd or_and_intro_pattern_expr CAst.t or_var option
+      Inv.inversion_kind * 'c option * 'd or_and_intro_pattern_expr CAst.t or_var option
   | InversionUsing of 'c * 'id list
 
 type ('a,'b) location = HypLocation of 'a | ConclLocation of 'b
@@ -69,7 +73,7 @@ type 'id message_token =
   | MsgIdent of 'id
 
 type ('dconstr,'id) induction_clause =
-    'dconstr with_bindings destruction_arg *
+    'dconstr with_bindings Tactics.destruction_arg *
     (intro_pattern_naming_expr CAst.t option (* eqn:... *)
     * 'dconstr or_and_intro_pattern_expr CAst.t or_var option) (* as ... *)
     * 'id clause_expr option (* in ... *)
@@ -265,7 +269,7 @@ and 'a gen_tactic_expr =
       ('p,'a gen_tactic_expr) match_rule list
   | TacFun of 'a gen_tactic_fun_ast
   | TacArg of 'a gen_tactic_arg located
-  | TacSelect of goal_selector * 'a gen_tactic_expr
+  | TacSelect of Vernacexpr.goal_selector * 'a gen_tactic_expr
   (* For ML extensions *)
   | TacML of (ml_tactic_entry * 'a gen_tactic_arg list) Loc.located
   (* For syntax extensions *)

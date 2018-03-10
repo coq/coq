@@ -95,6 +95,14 @@ val try_intros_until :
 (** Apply a tactic on a quantified hypothesis, an hypothesis in context
    or a term with bindings *)
 
+type 'a core_destruction_arg =
+  | ElimOnConstr of 'a
+  | ElimOnIdent of lident
+  | ElimOnAnonHyp of int
+
+type 'a destruction_arg =
+  clear_flag * 'a core_destruction_arg
+
 val onInductionArg :
   (clear_flag -> constr with_bindings -> unit Proofview.tactic) ->
     constr with_bindings destruction_arg -> unit Proofview.tactic
