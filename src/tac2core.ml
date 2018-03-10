@@ -997,7 +997,7 @@ let () =
 
 let () =
   let e = Tac2entries.Pltac.tac2expr in
-  let inject (loc, v) = Tacexpr.TacGeneric (in_gen (rawwit wit_ltac2) v) in
+  let inject (loc, v) = Ltac_plugin.Tacexpr.TacGeneric (in_gen (rawwit wit_ltac2) v) in
   Ltac_plugin.Tacentries.create_ltac_quotation "ltac2" inject (e, None)
 
 let () =
