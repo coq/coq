@@ -56,7 +56,6 @@ let global_of_constr_nofail c =
   with Not_found -> VarRef (Id.of_string "dummy")
 
 let rec mk_clos_but f_map subs t =
-  let open Term in
   match f_map (global_of_constr_nofail t) with
     | Some map -> tag_arg (mk_clos_but f_map subs) map subs (-1) t
     | None ->

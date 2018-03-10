@@ -10,7 +10,7 @@
 
 open Util
 open Names
-open Term
+open Constr
 open Termops
 open Evd
 open EConstr

@@ -15,219 +15,15 @@ open Names
 open Vars
 open Constr
 
-(**********************************************************************)
-(**         Redeclaration of types from module Constr                 *)
-(**********************************************************************)
-
+(* Deprecated *)
 type contents = Sorts.contents = Pos | Null
 
-type sorts = Sorts.t =
-  | Prop of contents       (** Prop and Set *)
-  | Type of Univ.Universe.t  (** Type *)
-
 type sorts_family = Sorts.family = InProp | InSet | InType
+[@@ocaml.deprecated "Alias for Sorts.family"]
 
-type constr = Constr.t
-(** Alias types, for compatibility. *)
-
-type types = Constr.t
-(** Same as [constr], for documentation purposes. *)
-
-type existential_key = Evar.t
-type existential = Constr.existential
-
-type metavariable = Constr.metavariable
-
-type case_style = Constr.case_style =
-  LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle
-
-type case_printing = Constr.case_printing =
-  { ind_tags : bool list; cstr_tags : bool list array; style : case_style }
-
-type case_info = Constr.case_info =
-  { ci_ind        : inductive;
-    ci_npar       : int;
-    ci_cstr_ndecls : int array;
-    ci_cstr_nargs : int array;
-    ci_pp_info    : case_printing
-  }
-
-type cast_kind = Constr.cast_kind =
-  VMcast | NATIVEcast | DEFAULTcast | REVERTcast
-
-(********************************************************************)
-(*       Constructions as implemented                               *)
-(********************************************************************)
-
-type rec_declaration = Constr.rec_declaration
-type fixpoint = Constr.fixpoint
-type cofixpoint = Constr.cofixpoint
-type 'constr pexistential = 'constr Constr.pexistential
-type ('constr, 'types) prec_declaration =
-  ('constr, 'types) Constr.prec_declaration
-type ('constr, 'types) pfixpoint = ('constr, 'types) Constr.pfixpoint
-type ('constr, 'types) pcofixpoint = ('constr, 'types) Constr.pcofixpoint
-type 'a puniverses = 'a Univ.puniverses
-
-(** Simply type aliases *)
-type pconstant = Constant.t puniverses
-type pinductive = inductive puniverses
-type pconstructor = constructor puniverses
-
-type ('constr, 'types, 'sort, 'univs) kind_of_term =
-  ('constr, 'types, 'sort, 'univs) Constr.kind_of_term =
-  | Rel       of int
-  | Var       of Id.t
-  | Meta      of metavariable
-  | Evar      of 'constr pexistential
-  | Sort      of 'sort
-  | Cast      of 'constr * cast_kind * 'types
-  | Prod      of Name.t * 'types * 'types
-  | Lambda    of Name.t * 'types * 'constr
-  | LetIn     of Name.t * 'constr * 'types * 'constr
-  | App       of 'constr * 'constr array
-  | Const     of (Constant.t * 'univs)
-  | Ind       of (inductive * 'univs)
-  | Construct of (constructor * 'univs)
-  | Case      of case_info * 'constr * 'constr * 'constr array
-  | Fix       of ('constr, 'types) pfixpoint
-  | CoFix     of ('constr, 'types) pcofixpoint
-  | Proj      of projection * 'constr
-
-type values = Vmvalues.values
-
-(**********************************************************************)
-(**         Redeclaration of functions from module Constr             *)
-(**********************************************************************)
-
-let set_sort  = Sorts.set
-let prop_sort = Sorts.prop
-let type1_sort  = Sorts.type1
-let sorts_ord = Sorts.compare
-let is_prop_sort = Sorts.is_prop
-let family_of_sort = Sorts.family
-let univ_of_sort = Sorts.univ_of_sort
-let sort_of_univ = Sorts.sort_of_univ
-
-(** {6 Term constructors. } *)
-
-let mkRel = Constr.mkRel
-let mkVar = Constr.mkVar
-let mkMeta = Constr.mkMeta
-let mkEvar = Constr.mkEvar
-let mkSort = Constr.mkSort
-let mkProp = Constr.mkProp
-let mkSet  = Constr.mkSet 
-let mkType = Constr.mkType
-let mkCast = Constr.mkCast
-let mkProd = Constr.mkProd
-let mkLambda = Constr.mkLambda
-let mkLetIn = Constr.mkLetIn
-let mkApp = Constr.mkApp
-let mkConst = Constr.mkConst
-let mkProj = Constr.mkProj
-let mkInd = Constr.mkInd
-let mkConstruct = Constr.mkConstruct
-let mkConstU = Constr.mkConstU
-let mkIndU = Constr.mkIndU
-let mkConstructU = Constr.mkConstructU
-let mkConstructUi = Constr.mkConstructUi
-let mkCase = Constr.mkCase
-let mkFix = Constr.mkFix
-let mkCoFix = Constr.mkCoFix
-
-(**********************************************************************)
-(**         Aliases of functions from module Constr                   *)
-(**********************************************************************)
-
-let eq_constr = Constr.equal
-let eq_constr_univs = Constr.eq_constr_univs
-let leq_constr_univs = Constr.leq_constr_univs
-let eq_constr_nounivs = Constr.eq_constr_nounivs
-
-let kind_of_term = Constr.kind
-let compare = Constr.compare
-let constr_ord = compare
-let fold_constr = Constr.fold
-let map_puniverses = Constr.map_puniverses
-let map_constr = Constr.map
-let map_constr_with_binders = Constr.map_with_binders
-let iter_constr = Constr.iter
-let iter_constr_with_binders = Constr.iter_with_binders
-let compare_constr = Constr.compare_head
-let hash_constr = Constr.hash
-let hcons_sorts = Sorts.hcons
-let hcons_constr = Constr.hcons
-let hcons_types = Constr.hcons
-
-(**********************************************************************)
-(**         HERE BEGINS THE INTERESTING STUFF                         *)
-(**********************************************************************)
-
-(**********************************************************************)
-(*          Non primitive term destructors                            *)
-(**********************************************************************)
-
-exception DestKO = DestKO
-(* Destructs a de Bruijn index *)
-let destRel = destRel
-let destMeta = destRel
-let isMeta = isMeta
-let destVar = destVar
-let isSort = isSort
-let destSort = destSort
-let isprop = isprop
-let is_Prop = is_Prop
-let is_Set = is_Set
-let is_Type = is_Type
-let is_small = is_small
-let iskind = iskind
-let isEvar = isEvar
-let isEvar_or_Meta = isEvar_or_Meta
-let destCast = destCast
-let isCast = isCast
-let isRel = isRel
-let isRelN = isRelN
-let isVar = isVar
-let isVarId = isVarId
-let isInd = isInd
-let destProd = destProd
-let isProd = isProd
-let destLambda = destLambda
-let isLambda = isLambda
-let destLetIn = destLetIn
-let isLetIn = isLetIn
-let destApp = destApp
-let destApplication = destApp
-let isApp = isApp
-let destConst = destConst
-let isConst = isConst
-let destEvar = destEvar
-let destInd = destInd
-let destConstruct = destConstruct
-let isConstruct = isConstruct
-let destCase = destCase
-let isCase = isCase
-let isProj = isProj
-let destProj = destProj
-let destFix = destFix
-let isFix = isFix
-let destCoFix = destCoFix
-let isCoFix = isCoFix
-
-(******************************************************************)
-(* Flattening and unflattening of embedded applications and casts *)
-(******************************************************************)
-
-let decompose_app c =
-  match kind_of_term c with
-    | App (f,cl) -> (f, Array.to_list cl)
-    | _ -> (c,[])
-
-let decompose_appvect c =
-  match kind_of_term c with
-    | App (f,cl) -> (f, cl)
-    | _ -> (c,[||])
+type sorts = Sorts.t =
+  | Prop of Sorts.contents   (** Prop and Set *)
+  | Type of Univ.Universe.t  (** Type *)
 
 (****************************************************************************)
 (*              Functions for dealing with constr terms                     *)
@@ -321,7 +117,7 @@ let rec to_lambda n prod =
   if Int.equal n 0 then
     prod
   else
-    match kind_of_term prod with
+    match kind prod with
       | Prod (na,ty,bd) -> mkLambda (na,ty,to_lambda (n-1) bd)
       | Cast (c,_,_) -> to_lambda n c
       | _   -> user_err ~hdr:"to_lambda" (mt ())
@@ -330,7 +126,7 @@ let rec to_prod n lam =
   if Int.equal n 0 then
     lam
   else
-    match kind_of_term lam with
+    match kind lam with
       | Lambda (na,ty,bd) -> mkProd (na,ty,to_prod (n-1) bd)
       | Cast (c,_,_) -> to_prod n c
       | _   -> user_err ~hdr:"to_prod" (mt ())
@@ -342,7 +138,7 @@ let it_mkLambda_or_LetIn = List.fold_left (fun c d -> mkLambda_or_LetIn d c)
 
 let lambda_applist c l =
   let rec app subst c l =
-    match kind_of_term c, l with
+    match kind c, l with
     | Lambda(_,_,c), arg::l -> app (arg::subst) c l
     | _, [] -> substl subst c
     | _ -> anomaly (Pp.str "Not enough lambda's.") in
@@ -355,7 +151,7 @@ let lambda_applist_assum n c l =
     if Int.equal n 0 then
       if l == [] then substl subst t
       else anomaly (Pp.str "Too many arguments.")
-    else match kind_of_term t, l with
+    else match kind t, l with
     | Lambda(_,_,c), arg::l -> app (n-1) (arg::subst) c l
     | LetIn(_,b,_,c), _ -> app (n-1) (substl subst b::subst) c l
     | _, [] -> anomaly (Pp.str "Not enough arguments.")
@@ -367,7 +163,7 @@ let lambda_appvect_assum n c v = lambda_applist_assum n c (Array.to_list v)
 (* prod_applist T [ a1 ; ... ; an ] -> (T a1 ... an) *)
 let prod_applist c l =
   let rec app subst c l =
-    match kind_of_term c, l with
+    match kind c, l with
     | Prod(_,_,c), arg::l -> app (arg::subst) c l
     | _, [] -> substl subst c
     | _ -> anomaly (Pp.str "Not enough prod's.") in
@@ -381,7 +177,7 @@ let prod_applist_assum n c l =
     if Int.equal n 0 then
       if l == [] then substl subst t
       else anomaly (Pp.str "Too many arguments.")
-    else match kind_of_term t, l with
+    else match kind t, l with
     | Prod(_,_,c), arg::l -> app (n-1) (arg::subst) c l
     | LetIn(_,b,_,c), _ -> app (n-1) (substl subst b::subst) c l
     | _, [] -> anomaly (Pp.str "Not enough arguments.")
@@ -397,7 +193,7 @@ let prod_appvect_assum n c v = prod_applist_assum n c (Array.to_list v)
 (* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
 let decompose_prod =
-  let rec prodec_rec l c = match kind_of_term c with
+  let rec prodec_rec l c = match kind c with
     | Prod (x,t,c) -> prodec_rec ((x,t)::l) c
     | Cast (c,_,_)   -> prodec_rec l c
     | _              -> l,c
@@ -407,7 +203,7 @@ let decompose_prod =
 (* Transforms a lambda term [x1:T1]..[xn:Tn]T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a lambda *)
 let decompose_lam =
-  let rec lamdec_rec l c = match kind_of_term c with
+  let rec lamdec_rec l c = match kind c with
     | Lambda (x,t,c) -> lamdec_rec ((x,t)::l) c
     | Cast (c,_,_)     -> lamdec_rec l c
     | _                -> l,c
@@ -420,7 +216,7 @@ let decompose_prod_n n =
   if n < 0 then user_err (str "decompose_prod_n: integer parameter must be positive");
   let rec prodec_rec l n c =
     if Int.equal n 0 then l,c
-    else match kind_of_term c with
+    else match kind c with
       | Prod (x,t,c) -> prodec_rec ((x,t)::l) (n-1) c
       | Cast (c,_,_)   -> prodec_rec l n c
       | _ -> user_err (str "decompose_prod_n: not enough products")
@@ -433,7 +229,7 @@ let decompose_lam_n n =
   if n < 0 then user_err (str "decompose_lam_n: integer parameter must be positive");
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
-    else match kind_of_term c with
+    else match kind c with
       | Lambda (x,t,c) -> lamdec_rec ((x,t)::l) (n-1) c
       | Cast (c,_,_)     -> lamdec_rec l n c
       | _ -> user_err (str "decompose_lam_n: not enough abstractions")
@@ -445,7 +241,7 @@ let decompose_lam_n n =
 let decompose_prod_assum =
   let open Context.Rel.Declaration in
   let rec prodec_rec l c =
-    match kind_of_term c with
+    match kind c with
     | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (LocalAssum (x,t)) l) c
     | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (LocalDef (x,b,t)) l) c
     | Cast (c,_,_)      -> prodec_rec l c
@@ -458,7 +254,7 @@ let decompose_prod_assum =
 let decompose_lam_assum =
   let rec lamdec_rec l c =
     let open Context.Rel.Declaration in
-    match kind_of_term c with
+    match kind c with
     | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) c
     | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) c
     | Cast (c,_,_)      -> lamdec_rec l c
@@ -477,7 +273,7 @@ let decompose_prod_n_assum n =
     if Int.equal n 0 then l,c
     else
       let open Context.Rel.Declaration in
-      match kind_of_term c with
+      match kind c with
       | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
       | Cast (c,_,_)      -> prodec_rec l n c
@@ -498,7 +294,7 @@ let decompose_lam_n_assum n =
     if Int.equal n 0 then l,c
     else
       let open Context.Rel.Declaration in
-      match kind_of_term c with
+      match kind c with
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) n c
       | Cast (c,_,_)      -> lamdec_rec l n c
@@ -514,7 +310,7 @@ let decompose_lam_n_decls n =
     if Int.equal n 0 then l,c
     else
       let open Context.Rel.Declaration in
-      match kind_of_term c with
+      match kind c with
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
       | Cast (c,_,_)      -> lamdec_rec l n c
@@ -541,12 +337,12 @@ let strip_lam_n n t = snd (decompose_lam_n n t)
    Such a term can canonically be seen as the pair of a context of types
    and of a sort *)
 
-type arity = Context.Rel.t * sorts
+type arity = Context.Rel.t * Sorts.t
 
 let destArity =
   let open Context.Rel.Declaration in
   let rec prodec_rec l c =
-    match kind_of_term c with
+    match kind c with
     | Prod (x,t,c)    -> prodec_rec (LocalAssum (x,t) :: l) c
     | LetIn (x,b,t,c) -> prodec_rec (LocalDef (x,b,t) :: l) c
     | Cast (c,_,_)      -> prodec_rec l c
@@ -558,7 +354,7 @@ let destArity =
 let mkArity (sign,s) = it_mkProd_or_LetIn (mkSort s) sign
 
 let rec isArity c =
-  match kind_of_term c with
+  match kind c with
   | Prod (_,_,c)    -> isArity c
   | LetIn (_,b,_,c) -> isArity (subst1 b c)
   | Cast (c,_,_)      -> isArity c
@@ -569,13 +365,13 @@ let rec isArity c =
 
 (* Experimental, used in Presburger contrib *)
 type ('constr, 'types) kind_of_type =
-  | SortType   of sorts
+  | SortType   of Sorts.t
   | CastType   of 'types * 'types
   | ProdType   of Name.t * 'types * 'types
   | LetInType  of Name.t * 'constr * 'types * 'types
   | AtomicType of 'constr * 'constr array
 
-let kind_of_type t = match kind_of_term t with
+let kind_of_type t = match kind t with
   | Sort s -> SortType s
   | Cast (c,_,t) -> CastType (c, t)
   | Prod (na,t,c) -> ProdType (na, t, c)

@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Term
+open Constr
 open EConstr
 open Hipattern
 open Tactics

@@ -1,4 +1,5 @@
 open Pp
+open Constr
 open Glob_term
 open CErrors
 open Util
@@ -16,7 +17,7 @@ let mkGApp(rt,rtl)      = DAst.make @@ GApp(rt,rtl)
 let mkGLambda(n,t,b)    = DAst.make @@ GLambda(n,Explicit,t,b)
 let mkGProd(n,t,b)      = DAst.make @@ GProd(n,Explicit,t,b)
 let mkGLetIn(n,b,t,c)   = DAst.make @@ GLetIn(n,b,t,c)
-let mkGCases(rto,l,brl) = DAst.make @@ GCases(Term.RegularStyle,rto,l,brl)
+let mkGCases(rto,l,brl) = DAst.make @@ GCases(RegularStyle,rto,l,brl)
 let mkGHole ()          = DAst.make @@ GHole(Evar_kinds.BinderType Anonymous,Misctypes.IntroAnonymous,None)
 
 (*

@@ -12,7 +12,7 @@ open Pp
 open Util
 open CErrors
 open Names
-open Term
+open Constr
 open Evd
 open EConstr
 open Vars

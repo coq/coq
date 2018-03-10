@@ -74,14 +74,3 @@ type logical_kind =
   | IsAssumption of assumption_object_kind
   | IsDefinition of definition_object_kind
   | IsProof of theorem_kind
-
-(** Recursive power of type declarations *)
-
-type recursivity_kind = Declarations.recursivity_kind =
-  | Finite (** = inductive *)
-      [@ocaml.deprecated "Please use [Declarations.Finite"]
-  | CoFinite (** = coinductive *)
-      [@ocaml.deprecated "Please use [Declarations.CoFinite"]
-  | BiFinite (** = non-recursive, like in "Record" definitions *)
-      [@ocaml.deprecated "Please use [Declarations.BiFinite"]
-[@@ocaml.deprecated "Please use [Declarations.recursivity_kind"]

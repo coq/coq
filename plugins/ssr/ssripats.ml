@@ -12,6 +12,7 @@ open Ssrmatching_plugin
 
 open Util
 open Names
+open Constr
 
 open Proofview
 open Proofview.Notations
@@ -90,11 +91,11 @@ open State
 (** Warning: unlike [nb_deps_assums], it does not perform reduction *)
 let rec nb_assums cur env sigma t =
   match EConstr.kind sigma t with
-  | Term.Prod(name,ty,body) ->
+  | Prod(name,ty,body) ->
      nb_assums (cur+1) env sigma body
-  | Term.LetIn(name,ty,t1,t2) ->
+  | LetIn(name,ty,t1,t2) ->
     nb_assums (cur+1) env sigma t2
-  | Term.Cast(t,_,_) ->
+  | Cast(t,_,_) ->
      nb_assums cur env sigma t
   | _ -> cur
 let nb_assums = nb_assums 0
@@ -547,7 +548,7 @@ let rec eqmoveipats eqpat = function
 let ssrsmovetac = Goal.enter begin fun g ->
   let sigma, concl = Goal.(sigma g, concl g) in
   match EConstr.kind sigma concl with
-  | Term.Prod _ | Term.LetIn _ -> tclUNIT ()
+  | Prod _ | LetIn _ -> tclUNIT ()
   | _ -> Tactics.hnf_in_concl
 end
 
@@ -585,8 +586,8 @@ let rec is_Evar_or_CastedMeta sigma x =
 
 let occur_existential_or_casted_meta sigma c =
   let rec occrec c = match EConstr.kind sigma c with
-    | Term.Evar _ -> raise Not_found
-    | Term.Cast (m,_,_) when EConstr.isMeta sigma m -> raise Not_found
+    | Evar _ -> raise Not_found
+    | Cast (m,_,_) when EConstr.isMeta sigma m -> raise Not_found
     | _ -> EConstr.iter sigma occrec c
   in
   try occrec c; false
@@ -616,7 +617,7 @@ let tacFIND_ABSTRACT_PROOF check_lock abstract_n =
     let sigma, env = Goal.(sigma g, env g) in
     let l = Evd.fold_undefined (fun e ei l ->
       match EConstr.kind sigma (EConstr.of_constr ei.Evd.evar_concl) with
-      | Term.App(hd, [|ty; n; lock|])
+      | App(hd, [|ty; n; lock|])
         when (not check_lock ||
                    (occur_existential_or_casted_meta sigma ty &&
                     is_Evar_or_CastedMeta sigma lock)) &&
@@ -645,8 +646,8 @@ let ssrabstract dgens =
       let sigma, env, concl = Goal.(sigma g, env g, concl g) in
       let t = args_id.(0) in
       match EConstr.kind sigma t with
-      | (Term.Evar _ | Term.Meta _) -> Ssrcommon.tacUNIFY concl t <*> tclUNIT id
-      | Term.Cast(m,_,_)
+      | (Evar _ | Meta _) -> Ssrcommon.tacUNIFY concl t <*> tclUNIT id
+      | Cast(m,_,_)
         when EConstr.isEvar sigma m || EConstr.isMeta sigma m ->
           Ssrcommon.tacUNIFY concl t <*> tclUNIT id
       | _ ->

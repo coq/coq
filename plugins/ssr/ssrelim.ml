@@ -14,6 +14,7 @@ open Util
 open Names
 open Printer
 open Term
+open Constr
 open Termops
 open Globnames
 open Misctypes

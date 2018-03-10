@@ -15,6 +15,7 @@ open Pp
 open CAst
 open Names
 open Nameops
+open Constr
 open Libnames
 open Pputils
 open Ppextend

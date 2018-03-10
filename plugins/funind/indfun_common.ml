@@ -109,7 +109,7 @@ let const_of_id id =
 
 let def_of_const t =
    match Constr.kind t with
-    Term.Const sp ->
+    Const sp ->
       (try (match Environ.constant_opt_value_in (Global.env()) sp with
              | Some c -> c
 	     | _ -> assert false)

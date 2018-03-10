@@ -18,8 +18,8 @@
 open CErrors
 open Util
 open Names
+open Constr
 open Nameops
-open Term
 open EConstr
 open Tacticals.New
 open Tacmach.New

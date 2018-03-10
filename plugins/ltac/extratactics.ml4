@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Pp
+open Constr
 open Genarg
 open Stdarg
 open Tacarg
@@ -286,7 +287,6 @@ END
 (**********************************************************************)
 (* Hint Resolve                                                       *)
 
-open Term
 open EConstr
 open Vars
 open Coqlib
