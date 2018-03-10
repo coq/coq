@@ -12,7 +12,7 @@ from .TacticNotationsParser import TacticNotationsParser
 
 from antlr4 import CommonTokenStream, InputStream
 
-SUBSTITUTIONS = [("@bindings_list", "{+ (@id := @val) }"),
+SUBSTITUTIONS = [#("@bindings_list", "{+ (@id := @val) }"),
                  ("@qualid_or_string", "@id|@string")]
 
 def substitute(notation):

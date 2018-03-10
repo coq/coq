@@ -47,6 +47,9 @@ class TacticNotationsToRegexpVisitor(TacticNotationsVisitor):
     def visitHole(self, ctx:TacticNotationsParser.HoleContext):
         self.buffer.write("([^();. \n]+)") # FIXME could allow more things
 
+    def visitMeta(self, ctx:TacticNotationsParser.MetaContext):
+        self.buffer.write(re.escape(ctx.METACHAR().getText()[1:]))
+
     def visitWhitespace(self, ctx:TacticNotationsParser.WhitespaceContext):
         self.buffer.write(r"\s+")
 

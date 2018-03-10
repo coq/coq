@@ -39,6 +39,11 @@ class TacticNotationsVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by TacticNotationsParser#meta.
+    def visitMeta(self, ctx:TacticNotationsParser.MetaContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by TacticNotationsParser#atomic.
     def visitAtomic(self, ctx:TacticNotationsParser.AtomicContext):
         return self.visitChildren(ctx)

@@ -28,8 +28,10 @@ from docutils.parsers.rst.directives.admonitions import BaseAdmonition
 from sphinx import addnodes
 from sphinx.roles import XRefRole
 from sphinx.util.nodes import set_source_info, set_role_source_info, make_refnode
+from sphinx.util.logging import getLogger
 from sphinx.directives import ObjectDescription
 from sphinx.domains import Domain, ObjType, Index
+from sphinx.domains.std import token_xrefs
 from sphinx.ext.mathbase import MathDirective, displaymath
 
 from . import coqdoc
@@ -155,6 +157,9 @@ class CoqObject(ObjectDescription):
         """Create a target and an index entry for name"""
         if name:
             target = self._add_target(signode, name)
+            # remove trailing . , found in commands, but not ... (ellipsis)
+            if name[-1] == "." and not name[-3:] == "..." :
+                name = name[0:-1]
             self._add_index_entry(name, target)
             return target
 
@@ -173,19 +178,19 @@ class NotationObject(CoqObject):
 class TacticObject(PlainObject):
     """An object to represent Coq tactics"""
     subdomain = "tac"
-    index_suffix = "(tactic)"
+    index_suffix = "(tac)"
     annotation = None
 
 class GallinaObject(PlainObject):
     """An object to represent Coq theorems"""
     subdomain = "thm"
-    index_suffix = "(theorem)"
+    index_suffix = "(thm)"
     annotation = "Theorem"
 
 class VernacObject(NotationObject):
     """An object to represent Coq commands"""
     subdomain = "cmd"
-    index_suffix = "(command)"
+    index_suffix = "(cmd)"
     annotation = "Command"
 
     def _name_from_signature(self, signature):
@@ -193,33 +198,72 @@ class VernacObject(NotationObject):
 
 class VernacVariantObject(VernacObject):
     """An object to represent variants of Coq commands"""
-    index_suffix = "(command variant)"
+    index_suffix = "(cmdv)"
     annotation = "Variant"
 
 class TacticNotationObject(NotationObject):
     """An object to represent Coq tactic notations"""
     subdomain = "tacn"
-    index_suffix = "(tactic notation)"
+    index_suffix = "(tacn)"
     annotation = None
 
 class TacticNotationVariantObject(TacticNotationObject):
     """An object to represent variants of Coq tactic notations"""
-    index_suffix = "(tactic variant)"
+    index_suffix = "(tacnv)"
     annotation = "Variant"
 
 class OptionObject(NotationObject):
-    """An object to represent variants of Coq options"""
+    """An object to represent Coq options"""
     subdomain = "opt"
-    index_suffix = "(option)"
+    index_suffix = "(opt)"
     annotation = "Option"
 
     def _name_from_signature(self, signature):
         return stringify_with_ellipses(signature)
 
+class ProductionObject(NotationObject):
+    """An object to represent grammar productions"""
+    subdomain = "prodn"
+    index_suffix = None
+    annotation = None
+
+    # override to create link targets for production left-hand sides
+    def run(self):
+        env = self.state.document.settings.env
+        objects = env.domaindata['std']['objects']
+
+        class ProdnError(Exception):
+            """Exception for ill-formed prodn"""
+            pass
+
+        [idx, node] = super().run()
+        try:
+            # find LHS of production
+            inline_lhs = node[0][0][0][0]  # may be fragile !!!
+            lhs_str = str(inline_lhs)
+            if lhs_str[0:7] != "<inline":
+                raise ProdnError("Expected atom on LHS")
+            lhs = inline_lhs[0]
+            # register link target
+            subnode = addnodes.production()
+            subnode['tokenname'] = lhs
+            idname = 'grammar-token-%s' % subnode['tokenname']
+            if idname not in self.state.document.ids:
+                subnode['ids'].append(idname)
+            self.state.document.note_implicit_target(subnode, subnode)
+            objects['token', subnode['tokenname']] = env.docname, idname
+            subnode.extend(token_xrefs(lhs))
+            # patch in link target
+            inline_lhs['ids'].append(idname)
+        except ProdnError as err:
+            getLogger(__name__).warning("Could not create link target for prodn: " + str(err) +
+                                        "\nSphinx represents the prodn as: " + str(node) + "\n")
+        return [idx, node]
+
 class ExceptionObject(NotationObject):
     """An object to represent Coq errors."""
     subdomain = "exn"
-    index_suffix = "(error)"
+    index_suffix = "(err)"
     annotation = "Error"
     # Uses “exn” since “err” already is a CSS class added by “writer_aux”.
 
@@ -371,6 +415,7 @@ class InferenceDirective(Directive):
     required_arguments = 1
     optional_arguments = 0
     has_content = True
+    final_argument_whitespace = True
 
     def make_math_node(self, latex):
         node = displaymath()
@@ -601,11 +646,13 @@ class CoqOptionIndex(CoqSubdomainsIndex):
 class CoqGallinaIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "thmindex", "Gallina Index", "theorems", ["thm"]
 
-class CoqExceptionIndex(CoqSubdomainsIndex):
-    name, localname, shortname, subdomains = "exnindex", "Error Index", "errors", ["exn"]
+# we specify an index to make productions fit into the framework of notations
+# but not likely to include a link to this index
+class CoqProductionIndex(CoqSubdomainsIndex):
+    name, localname, shortname, subdomains = "prodnindex", "Production Index", "productions", ["prodn"]
 
-class CoqWarningIndex(CoqSubdomainsIndex):
-    name, localname, shortname, subdomains = "warnindex", "Warning Index", "warnings", ["warn"]
+class CoqExceptionIndex(CoqSubdomainsIndex):
+    name, localname, shortname, subdomains = "exnindex", "Errors and Warnings Index", "errors", ["exn", "warn"]
 
 class IndexXRefRole(XRefRole):
     """A link to one of our domain-specific indices."""
@@ -664,8 +711,9 @@ class CoqDomain(Domain):
         'tacv': ObjType('tacv', 'tacn'),
         'opt': ObjType('opt', 'opt'),
         'thm': ObjType('thm', 'thm'),
+        'prodn': ObjType('prodn', 'prodn'),
         'exn': ObjType('exn', 'exn'),
-        'warn': ObjType('warn', 'warn'),
+        'warn': ObjType('warn', 'exn'),
         'index': ObjType('index', 'index', searchprio=-1)
     }
 
@@ -680,6 +728,7 @@ class CoqDomain(Domain):
         'tacv': TacticNotationVariantObject,
         'opt': OptionObject,
         'thm': GallinaObject,
+        'prodn' : ProductionObject,
         'exn': ExceptionObject,
         'warn': WarningObject,
     }
@@ -691,6 +740,7 @@ class CoqDomain(Domain):
         'tacn': XRefRole(),
         'opt': XRefRole(),
         'thm': XRefRole(),
+        'prodn' : XRefRole(),
         'exn': XRefRole(),
         'warn': XRefRole(),
         # This one is special
@@ -704,7 +754,7 @@ class CoqDomain(Domain):
         'l': LtacRole, #FIXME unused?
     }
 
-    indices = [CoqVernacIndex, CoqTacticIndex, CoqOptionIndex, CoqGallinaIndex, CoqExceptionIndex, CoqWarningIndex]
+    indices = [CoqVernacIndex, CoqTacticIndex, CoqOptionIndex, CoqGallinaIndex, CoqProductionIndex, CoqExceptionIndex]
 
     data_version = 1
     initial_data = {
@@ -716,6 +766,7 @@ class CoqDomain(Domain):
             'tacn': {},
             'opt': {},
             'thm': {},
+            'prodn' : {},
             'exn': {},
             'warn': {},
         }
@@ -807,6 +858,7 @@ def setup(app):
     app.connect('doctree-resolved', simplify_source_code_blocks_for_latex)
 
     # Add extra styles
+    app.add_stylesheet("fonts.css")
     app.add_stylesheet("ansi.css")
     app.add_stylesheet("coqdoc.css")
     app.add_javascript("notations.js")
