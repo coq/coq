@@ -520,14 +520,3 @@ type vernac_when =
   | VtNow
   | VtLater
 type vernac_classification = vernac_type * vernac_when
-
-
-(** Deprecated stuff *)
-type universe_decl_expr = Constrexpr.universe_decl_expr
-[@@ocaml.deprecated "alias of Constrexpr.universe_decl_expr"]
-
-type ident_decl = Constrexpr.ident_decl
-[@@ocaml.deprecated "alias of Constrexpr.ident_decl"]
-
-type name_decl = Constrexpr.name_decl
-[@@ocaml.deprecated "alias of Constrexpr.name_decl"]

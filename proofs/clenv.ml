@@ -13,8 +13,8 @@ open CErrors
 open Util
 open Names
 open Nameops
-open Term
 open Termops
+open Constr
 open Namegen
 open Environ
 open Evd

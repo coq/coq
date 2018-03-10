@@ -18,6 +18,7 @@ open CErrors
 open Util
 open Names
 open Term
+open Constr
 open Termops
 open EConstr
 open Tacmach

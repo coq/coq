@@ -1910,8 +1910,8 @@ let cast_no_check cast c =
     exact_no_check (mkCast (c, cast, concl))
   end
 
-let vm_cast_no_check c = cast_no_check Term.VMcast c
-let native_cast_no_check c = cast_no_check Term.NATIVEcast c
+let vm_cast_no_check c = cast_no_check VMcast c
+let native_cast_no_check c = cast_no_check NATIVEcast c
 
 let exact_proof c =
   let open Tacmach.New in

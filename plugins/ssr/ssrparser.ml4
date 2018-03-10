@@ -10,6 +10,7 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+let _vmcast = Constr.VMcast
 open Names
 open Pp
 open Pcoq
@@ -17,7 +18,6 @@ open Ltac_plugin
 open Genarg
 open Stdarg
 open Tacarg
-open Term
 open Libnames
 open Tactics
 open Tacmach
@@ -1938,7 +1938,7 @@ END
 
 let vmexacttac pf =
   Goal.nf_enter begin fun gl ->
-  exact_no_check (EConstr.mkCast (pf, VMcast, Tacmach.New.pf_concl gl))
+  exact_no_check (EConstr.mkCast (pf, _vmcast, Tacmach.New.pf_concl gl))
   end
 
 TACTIC EXTEND ssrexact

@@ -290,7 +290,7 @@ struct
     | Const (c,u)    -> Term (DRef (ConstRef c))
     | Ind (i,u)      -> Term (DRef (IndRef i))
     | Construct (c,u)-> Term (DRef (ConstructRef c))
-    | Term.Meta _    -> assert false
+    | Meta _         -> assert false
     | Evar (i,_)     ->
       let meta =
         try Evar.Map.find i !metas

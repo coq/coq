@@ -12,9 +12,9 @@ open Pp
 open CErrors
 open Util
 open Names
-open Term
 open Termops
 open Environ
+open Constr
 open EConstr
 open Vars
 open Namegen

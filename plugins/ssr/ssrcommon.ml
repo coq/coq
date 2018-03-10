@@ -423,12 +423,12 @@ let mk_anon_id t gl_ids =
     (set s i (Char.chr (Char.code (get s i) + 1)); s) in
   Id.of_bytes (loop (n - 1))
 
-let convert_concl_no_check t = Tactics.convert_concl_no_check t Term.DEFAULTcast
-let convert_concl t = Tactics.convert_concl t Term.DEFAULTcast
+let convert_concl_no_check t = Tactics.convert_concl_no_check t DEFAULTcast
+let convert_concl t = Tactics.convert_concl t DEFAULTcast
 
 let rename_hd_prod orig_name_ref gl =
   match EConstr.kind (project gl) (pf_concl gl) with
-  | Term.Prod(_,src,tgt) ->
+  | Prod(_,src,tgt) ->
       Proofview.V82.of_tactic (convert_concl_no_check (EConstr.mkProd (!orig_name_ref,src,tgt))) gl
   | _ -> CErrors.anomaly (str "gentac creates no product")
 
@@ -1446,7 +1446,7 @@ let tclINTRO_ANON = tclINTRO ~id:None ~conclusion:return
 
 let tclRENAME_HD_PROD name = Goal.enter begin fun gl ->
   let convert_concl_no_check t =
-    Tactics.convert_concl_no_check t Term.DEFAULTcast in
+    Tactics.convert_concl_no_check t DEFAULTcast in
   let concl = Goal.concl gl in
   let sigma = Goal.sigma gl in
   match EConstr.kind sigma concl with

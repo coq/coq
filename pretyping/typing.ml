@@ -14,6 +14,7 @@ open Pp
 open CErrors
 open Util
 open Term
+open Constr
 open Environ
 open EConstr
 open Vars

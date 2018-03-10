@@ -11,6 +11,7 @@
 open Util
 open CAst
 open Names
+open Constr
 open Nameops
 open Globnames
 open Misctypes

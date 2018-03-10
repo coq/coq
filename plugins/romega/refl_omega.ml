@@ -8,6 +8,7 @@
 
 open Pp
 open Util
+open Constr
 open Const_omega
 module OmegaSolver = Omega_plugin.Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
@@ -1036,13 +1037,13 @@ let resolution unsafe sigma env (reified_concl,reified_hyps) systems_list =
   let decompose_tactic = decompose_tree env context solution_tree in
 
   Tactics.generalize (l_generalize_arg @ l_reified_hypnames) >>
-  Tactics.convert_concl_no_check reified Term.DEFAULTcast >>
+  Tactics.convert_concl_no_check reified DEFAULTcast >>
   Tactics.apply (app coq_do_omega [|decompose_tactic|]) >>
   show_goal >>
   (if unsafe then
      (* Trust the produced term. Faster, but might fail later at Qed.
         Also handy when debugging, e.g. via a Show Proof after romega. *)
-     Tactics.convert_concl_no_check (Lazy.force coq_True) Term.VMcast
+     Tactics.convert_concl_no_check (Lazy.force coq_True) VMcast
    else
      Tactics.normalise_vm_in_concl) >>
   Tactics.apply (Lazy.force coq_I)
