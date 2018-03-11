@@ -104,7 +104,7 @@ type constr =
   | Case      of case_info * constr * constr * constr array
   | Fix       of constr pfixpoint
   | CoFix     of constr pcofixpoint
-  | Proj      of projection * constr
+  | Proj      of Projection.t * constr
 
 type existential = constr pexistential
 type rec_declaration = constr prec_declaration

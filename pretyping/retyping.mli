@@ -50,6 +50,6 @@ val type_of_global_reference_knowing_conclusion :
 
 val sorts_of_context : env -> evar_map -> rel_context -> Sorts.t list
 
-val expand_projection : env -> evar_map -> Names.projection -> constr -> constr list -> constr
+val expand_projection : env -> evar_map -> Names.Projection.t -> constr -> constr list -> constr
 
 val print_retype_error : retype_error -> Pp.t

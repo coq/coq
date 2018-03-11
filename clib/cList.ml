@@ -102,7 +102,9 @@ sig
   val fold_left3_map : ('a -> 'b -> 'c -> 'd -> 'a * 'e) -> 'a -> 'b list -> 'c list -> 'd list -> 'a * 'e list
   val fold_left4_map : ('a -> 'b -> 'c -> 'd -> 'e -> 'a * 'r) -> 'a -> 'b list -> 'c list -> 'd list -> 'e list -> 'a * 'r list
   val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+  [@@ocaml.deprecated "Same as [fold_left_map]"]
   val fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
+  [@@ocaml.deprecated "Same as [fold_right_map]"]
   val map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
   val assoc_f : 'a eq -> 'a -> ('a * 'b) list -> 'b
   val remove_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> ('a * 'b) list

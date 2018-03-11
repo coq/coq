@@ -60,9 +60,12 @@ sig
   val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
   val fold_right2_map : ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
   val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
+  [@@ocaml.deprecated "Same as [fold_left_map]"]
   val fold_map' : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
+  [@@ocaml.deprecated "Same as [fold_right_map]"]
   val fold_map2' :
     ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
+  [@@ocaml.deprecated "Same as [fold_right2_map]"]
   val distinct : 'a array -> bool
   val rev_of_list : 'a list -> 'a array
   val rev_to_list : 'a array -> 'a list
