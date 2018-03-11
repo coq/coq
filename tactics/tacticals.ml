@@ -480,7 +480,7 @@ module New = struct
       match Evd.evar_body evi with
       | Evd.Evar_empty -> Some (evk,evi)
       | Evd.Evar_defined c -> match Constr.kind c with
-        | Term.Evar (evk,l) -> is_undefined_up_to_restriction sigma evk
+        | Evar (evk,l) -> is_undefined_up_to_restriction sigma evk
         | _ -> 
           (* We make the assumption that there is no way to refine an
             evar remaining after typing from the initial term given to

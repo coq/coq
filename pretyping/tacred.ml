@@ -12,7 +12,7 @@ open Pp
 open CErrors
 open Util
 open Names
-open Term
+open Constr
 open Libnames
 open Globnames
 open Termops

@@ -73,16 +73,6 @@ type glob_sort = sort_info glob_sort_gen
 
 type existential_key = Evar.t
 
-(** Case style, shared with Term *)
-
-type case_style = Constr.case_style =
-  | LetStyle
-  | IfStyle
-  | LetPatternStyle
-  | MatchStyle
-  | RegularStyle (** infer printing form from number of constructor *)
-[@@ocaml.deprecated "Alias for Constr.case_style"]
-
 (** Casts *)
 
 type 'a cast_type =

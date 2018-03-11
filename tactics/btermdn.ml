@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open Util
-open Term
+open Constr
 open EConstr
 open Names
 open Pattern

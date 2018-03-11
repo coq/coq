@@ -19,10 +19,10 @@
 (************************************************************************)
 
 open Pp
-open Mutils
-open Goptions
 open Names
 open Constr
+open Goptions
+open Mutils
 
 (**
   * Debug flag 
@@ -601,10 +601,10 @@ struct
 
   let get_left_construct sigma term =
    match EConstr.kind sigma term with
-    | Term.Construct((_,i),_) -> (i,[| |])
-    | Term.App(l,rst) ->
+    | Construct((_,i),_) -> (i,[| |])
+    | App(l,rst) ->
        (match EConstr.kind sigma l with
-        | Term.Construct((_,i),_) -> (i,rst)
+        | Construct((_,i),_) -> (i,rst)
         |   _     -> raise ParseError
        )
     | _ ->   raise ParseError
@@ -688,7 +688,7 @@ struct
 
   let parse_q sigma term =
      match EConstr.kind sigma term with
-       | Term.App(c, args) -> if EConstr.eq_constr sigma c (Lazy.force coq_Qmake) then
+       | App(c, args) -> if EConstr.eq_constr sigma c (Lazy.force coq_Qmake) then
              {Mc.qnum = parse_z sigma args.(0) ; Mc.qden = parse_positive sigma args.(1) }
        else raise ParseError
    |  _ -> raise ParseError
@@ -904,8 +904,8 @@ struct
   let parse_zop gl (op,args) =
     let sigma = gl.sigma in
     match EConstr.kind sigma op with
-    | Term.Const (x,_) -> (assoc_const sigma op zop_table, args.(0) , args.(1))
-    | Term.Ind((n,0),_) ->
+    | Const (x,_) -> (assoc_const sigma op zop_table, args.(0) , args.(1))
+    | Ind((n,0),_) ->
         if EConstr.eq_constr sigma op (Lazy.force coq_Eq) && is_convertible gl args.(0) (Lazy.force coq_Z)
         then (Mc.OpEq, args.(1), args.(2))
         else raise ParseError
@@ -914,8 +914,8 @@ struct
   let parse_rop gl (op,args) =
     let sigma = gl.sigma in
     match EConstr.kind sigma op with
-     | Term.Const (x,_) -> (assoc_const sigma op rop_table, args.(0) , args.(1))
-     | Term.Ind((n,0),_) ->
+     | Const (x,_) -> (assoc_const sigma op rop_table, args.(0) , args.(1))
+     | Ind((n,0),_) ->
         if EConstr.eq_constr sigma op (Lazy.force coq_Eq) && is_convertible gl args.(0) (Lazy.force coq_R)
         then (Mc.OpEq, args.(1), args.(2))
         else raise ParseError
@@ -926,7 +926,7 @@ struct
 
   let is_constant sigma t = (* This is an approx *)
    match EConstr.kind sigma t with
-    | Term.Construct(i,_) -> true
+    | Construct(i,_) -> true
     |   _ -> false
 
   type 'a op =
@@ -1011,10 +1011,10 @@ struct
        try (Mc.PEc (parse_constant term) , env)
        with ParseError -> 
 	 match EConstr.kind sigma term with
-	   | Term.App(t,args) ->
+	   | App(t,args) ->
                (
 		 match EConstr.kind sigma t with
-		   | Term.Const c ->
+		   | Const c ->
 		       ( match assoc_ops sigma t ops_spec  with
 			   | Binop f -> combine env f (args.(0),args.(1))
                    | Opp     -> let (expr,env) = parse_expr env args.(0) in
@@ -1077,13 +1077,13 @@ struct
 
   let rec rconstant sigma term =
    match EConstr.kind sigma term with
-    | Term.Const x ->
+    | Const x ->
         if EConstr.eq_constr sigma term (Lazy.force coq_R0)
         then Mc.C0
         else if EConstr.eq_constr sigma term (Lazy.force coq_R1)
         then Mc.C1
         else raise ParseError
-    | Term.App(op,args) -> 
+    | App(op,args) -> 
 	begin
 	  try
             (* the evaluation order is important in the following *)
@@ -1153,7 +1153,7 @@ struct
     if debug
     then Feedback.msg_debug (Pp.str "parse_arith: " ++ Printer.pr_leconstr_env gl.env sigma cstr ++ fnl ());
     match EConstr.kind sigma cstr with
-    | Term.App(op,args) ->
+    | App(op,args) ->
        let (op,lhs,rhs) = parse_op gl (op,args) in
        let (e1,env) = parse_expr sigma env lhs in
        let (e2,env) = parse_expr sigma env rhs in
@@ -1208,7 +1208,7 @@ struct
      
     let rec xparse_formula env tg term =
       match EConstr.kind sigma term with
-      | Term.App(l,rst) ->
+      | App(l,rst) ->
         (match rst with
         | [|a;b|] when EConstr.eq_constr sigma l (Lazy.force coq_and) ->
           let f,env,tg = xparse_formula env tg a in
@@ -1225,7 +1225,7 @@ struct
           let g,env,tg = xparse_formula env tg b in
           mkformula_binary mkIff term f g,env,tg
         | _ -> parse_atom env tg term)
-      | Term.Prod(typ,a,b) when EConstr.Vars.noccurn sigma 1 b ->
+      | Prod(typ,a,b) when EConstr.Vars.noccurn sigma 1 b ->
         let f,env,tg = xparse_formula env tg a in
         let g,env,tg = xparse_formula env tg b in
         mkformula_binary mkI term f g,env,tg

@@ -10,9 +10,9 @@
 
 (** Keys for unification and indexing *)
 
-open Globnames
-open Term
+open Constr
 open Libobject
+open Globnames
 
 type key =
   | KGlob of global_reference

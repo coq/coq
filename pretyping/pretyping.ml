@@ -28,6 +28,7 @@ open CErrors
 open Util
 open Names
 open Evd
+open Constr
 open Term
 open Termops
 open Environ

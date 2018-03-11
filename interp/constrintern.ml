@@ -14,6 +14,7 @@ open Util
 open CAst
 open Names
 open Nameops
+open Constr
 open Namegen
 open Libnames
 open Globnames
@@ -525,7 +526,7 @@ let rec expand_binders ?loc mk bl c =
         let tm = DAst.make ?loc (GVar id) in
         (* Distribute the disjunctive patterns over the shared right-hand side *)
         let eqnl = List.map (fun pat -> CAst.make ?loc (ids,[pat],c)) disjpat in
-        let c = DAst.make ?loc @@ GCases (Misctypes.LetPatternStyle, None, [tm,(Anonymous,None)], eqnl) in
+        let c = DAst.make ?loc @@ GCases (LetPatternStyle, None, [tm,(Anonymous,None)], eqnl) in
         expand_binders ?loc mk bl (mk ?loc (Name id,Explicit,ty) c)
 
 (**********************************************************************)
@@ -1965,7 +1966,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                if List.for_all (irrefutable globalenv) thepats then [] else
                   [CAst.make @@ ([],List.make (List.length thepats) (DAst.make @@ PatVar Anonymous), (* "|_,..,_" *)
                    DAst.make @@ GHole(Evar_kinds.ImpossibleCase,Misctypes.IntroAnonymous,None))]   (* "=> _" *) in
-             Some (DAst.make @@ GCases(Term.RegularStyle,sub_rtn,sub_tms,main_sub_eqn::catch_all_sub_eqn))
+             Some (DAst.make @@ GCases(RegularStyle,sub_rtn,sub_tms,main_sub_eqn::catch_all_sub_eqn))
 	in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
 	DAst.make ?loc @@

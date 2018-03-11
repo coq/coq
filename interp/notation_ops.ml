@@ -13,6 +13,7 @@ open CErrors
 open Util
 open Names
 open Nameops
+open Constr
 open Globnames
 open Decl_kinds
 open Misctypes
