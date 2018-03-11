@@ -230,9 +230,6 @@ html_use_smartypants = False # FIXME wrap code in <code> tags, otherwise quotesg
 # implements a search results scorer. If empty, the default will be used.
 #html_search_scorer = 'scorer.js'
 
-# Output file base name for HTML help builder.
-htmlhelp_basename = 'Coq85doc'
-
 # -- Options for LaTeX output ---------------------------------------------
 
 ###########################
