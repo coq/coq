@@ -261,10 +261,10 @@ latex_additional_files = ["_static/coqnotations.sty"]
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-    (master_doc, 'Coq85.tex', 'Coq 8.5 Documentation',
-     'The Coq Development Team (edited by C. Pit-Claudel)', 'manual'),
-]
+# latex_documents = [
+#    (master_doc, 'CoqRefMan.tex', 'Coq Documentation',
+#     'The Coq Development Team', 'manual'),
+#]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
@@ -291,10 +291,10 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'coq85', 'Coq 8.5 Documentation',
-     [author], 1)
-]
+#man_pages = [
+#    (master_doc, 'coq', 'Coq Documentation',
+#     [author], 1)
+#]
 
 # If true, show URL addresses after external links.
 #man_show_urls = False
@@ -305,11 +305,11 @@ man_pages = [
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [
-    (master_doc, 'Coq85', 'Coq 8.5 Documentation',
-     author, 'Coq85', 'One line description of project.',
-     'Miscellaneous'),
-]
+#texinfo_documents = [
+#    (master_doc, 'Coq', 'Coq Documentation',
+#     author, 'Coq', 'One line description of project.',
+#     'Miscellaneous'),
+#]
 
 # Documents to append as an appendix to all manuals.
 #texinfo_appendices = []
@@ -327,10 +327,10 @@ texinfo_documents = [
 # -- Options for Epub output ----------------------------------------------
 
 # Bibliographic Dublin Core info.
-epub_title = project
-epub_author = author
-epub_publisher = author
-epub_copyright = copyright
+#epub_title = project
+#epub_author = author
+#epub_publisher = author
+#epub_copyright = copyright
 
 # The basename for the epub file. It defaults to the project name.
 #epub_basename = project
