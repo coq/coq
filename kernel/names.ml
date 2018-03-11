@@ -760,55 +760,8 @@ let eq_ind_chk (kn1,i1) (kn2,i2) = Int.equal i1 i2 && eq_mind_chk kn1 kn2
 (*******************************************************************)
 (** Compatibility layers *)
 
-(** Backward compatibility for [Id] *)
-
-type identifier = Id.t
-
-let id_eq = Id.equal
-let id_ord = Id.compare
-let string_of_id = Id.to_string
-let id_of_string = Id.of_string
-
-module Idset = Id.Set
-module Idmap = Id.Map
-module Idpred = Id.Pred
-
-(** Compatibility layer for [Name] *)
-
-let name_eq = Name.equal
-
-(** Compatibility layer for [DirPath] *)
-
-type dir_path = DirPath.t
-let dir_path_ord = DirPath.compare
-let dir_path_eq = DirPath.equal
-let make_dirpath = DirPath.make
-let repr_dirpath = DirPath.repr
-let empty_dirpath = DirPath.empty
-let is_empty_dirpath = DirPath.is_empty
-let string_of_dirpath = DirPath.to_string
-let initial_dir = DirPath.initial
-
-(** Compatibility layer for [MBId] *)
-
 type mod_bound_id = MBId.t
-let mod_bound_id_ord = MBId.compare
-let mod_bound_id_eq = MBId.equal
-let make_mbid = MBId.make
-let repr_mbid = MBId.repr
-let debug_string_of_mbid = MBId.debug_to_string
-let string_of_mbid = MBId.to_string
-let id_of_mbid = MBId.to_id
-
-(** Compatibility layer for [Label] *)
-
-type label = Id.t
-let mk_label = Label.make
-let string_of_label = Label.to_string
-let pr_label = Label.print
-let id_of_label = Label.to_id
-let label_of_id = Label.of_id
-let eq_label = Label.equal
+let eq_constant_key = Constant.UserOrd.equal
 
 (** Compatibility layer for [ModPath] *)
 
@@ -816,32 +769,13 @@ type module_path = ModPath.t =
   | MPfile of DirPath.t
   | MPbound of MBId.t
   | MPdot of module_path * Label.t
-let check_bound_mp = ModPath.is_bound
-let string_of_mp = ModPath.to_string
-let mp_ord = ModPath.compare
-let mp_eq = ModPath.equal
-let initial_path = ModPath.initial
-
-(** Compatibility layer for [KerName] *)
-
-type kernel_name = KerName.t
-let make_kn = KerName.make
-let repr_kn = KerName.repr
-let modpath = KerName.modpath
-let label = KerName.label
-let string_of_kn = KerName.to_string
-let pr_kn = KerName.print
-let kn_ord = KerName.compare
 
 (** Compatibility layer for [Constant] *)
 
-type constant = Constant.t
+module Projection =
+struct
+  type t = Constant.t * bool
 
-
-module Projection = 
-struct 
-  type t = constant * bool
-    
   let make c b = (c, b)
 
   let constant = fst
@@ -918,40 +852,3 @@ let eq_egr e1 e2 = match e1, e2 with
     EvalConstRef con1, EvalConstRef con2 -> Constant.equal con1 con2
   | EvalVarRef id1, EvalVarRef id2 -> Id.equal id1 id2
   | _, _ -> false
-
-let constant_of_kn = Constant.make1
-let constant_of_kn_equiv = Constant.make
-let make_con = Constant.make3
-let repr_con = Constant.repr3
-let canonical_con = Constant.canonical
-let user_con = Constant.user
-let con_label = Constant.label
-let con_modpath = Constant.modpath
-let eq_constant = Constant.equal
-let eq_constant_key = Constant.UserOrd.equal
-let con_ord = Constant.CanOrd.compare
-let con_user_ord = Constant.UserOrd.compare
-let string_of_con = Constant.to_string
-let pr_con = Constant.print
-let debug_string_of_con = Constant.debug_to_string
-let debug_pr_con = Constant.debug_print
-let con_with_label = Constant.change_label
-
-(** Compatibility layer for [MutInd] *)
-
-type mutual_inductive = MutInd.t
-let mind_of_kn = MutInd.make1
-let mind_of_kn_equiv = MutInd.make
-let make_mind = MutInd.make3
-let canonical_mind = MutInd.canonical
-let user_mind = MutInd.user
-let repr_mind = MutInd.repr3
-let mind_label = MutInd.label
-let mind_modpath = MutInd.modpath
-let eq_mind = MutInd.equal
-let mind_ord = MutInd.CanOrd.compare
-let mind_user_ord = MutInd.UserOrd.compare
-let string_of_mind = MutInd.to_string
-let pr_mind = MutInd.print
-let debug_string_of_mind = MutInd.debug_to_string
-let debug_pr_mind = MutInd.debug_print
