@@ -181,8 +181,6 @@ open Decl_kinds
       | BoolValue b -> mt()
     in pr_printoption a None ++ pr_opt_value b
 
-  let pr_topcmd _ = str"(* <Warning> : No printer for toplevel commands *)"
-
   let pr_opt_hintbases l = match l with
     | [] -> mt()
     | _ as z -> str":" ++ spc() ++ prlist_with_sep sep str z
@@ -1187,10 +1185,6 @@ open Decl_kinds
             (keyword "Comments" ++ spc()
              ++ prlist_with_sep sep (pr_comment pr_constr) l)
         )
-
-      (* Toplevel control *)
-      | VernacToplevelControl exn ->
-        return (pr_topcmd exn)
 
       (* For extension *)
       | VernacExtend (s,c) ->

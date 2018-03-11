@@ -53,8 +53,6 @@ val invalid_arg : ?loc:Loc.t -> string -> 'a
 val todo : string -> unit
 
 exception Timeout
-exception Drop
-exception Quit
 
 (** [register_handler h] registers [h] as a handler.
     When an expression is printed with [print e], it

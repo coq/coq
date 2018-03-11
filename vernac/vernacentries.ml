@@ -2010,9 +2010,6 @@ let interp ?proof ~atts ~st c =
   | VernacUndoTo _    -> CErrors.user_err  (str "UndoTo cannot be used through the Load command")
   | VernacBacktrack _ -> CErrors.user_err  (str "Backtrack cannot be used through the Load command")
 
-  (* Toplevel control *)
-  | VernacToplevelControl e -> raise e
-
   (* Resetting *)
   | VernacResetName _  -> anomaly (str "VernacResetName not handled by Stm.")
   | VernacResetInitial -> anomaly (str "VernacResetInitial not handled by Stm.")

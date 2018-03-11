@@ -359,8 +359,6 @@ let handle_exn (e, info) =
     | _        -> None in
   let mk_msg () = CErrors.print ~info e in
   match e with
-  | CErrors.Drop -> dummy, None, Pp.str "Drop is not allowed by coqide!"
-  | CErrors.Quit -> dummy, None, Pp.str "Quit is not allowed by coqide!"
   | e ->
       match Stateid.get info with
       | Some (valid, _) -> valid, loc_of info, mk_msg ()

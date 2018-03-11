@@ -15,6 +15,7 @@ module State : sig
     doc : Stm.doc;
     sid : Stateid.t;
     proof : Proof.t option;
+    time : bool;
   }
 
 end
@@ -23,10 +24,10 @@ end
     expected to handle and print errors in form of exceptions, however
     care is taken so the state machine is left in a consistent
     state. *)
-val process_expr : time:bool -> state:State.t -> Vernacexpr.vernac_control CAst.t -> State.t
+val process_expr : state:State.t -> Vernacexpr.vernac_control CAst.t -> State.t
 
 (** [load_vernac echo sid file] Loads [file] on top of [sid], will
     echo the commands if [echo] is set. Callers are expected to handle
     and print errors in form of exceptions. *)
-val load_vernac : time:bool -> echo:bool -> check:bool -> interactive:bool ->
+val load_vernac : echo:bool -> check:bool -> interactive:bool ->
   state:State.t -> string -> State.t

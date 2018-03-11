@@ -28,10 +28,6 @@ let checknav_deep {CAst.loc;v=ast} =
   if is_deep_navigation_vernac ast then
     CErrors.user_err ?loc (str "Navigation commands forbidden in nested commands.")
 
-let disable_drop = function
-  | Drop -> CErrors.user_err Pp.(str "Drop is forbidden.")
-  | e -> e
-
 (* Echo from a buffer based on position.
    XXX: Should move to utility file. *)
 let vernac_echo ?loc in_chan = let open Loc in
@@ -80,17 +76,21 @@ module State = struct
     doc : Stm.doc;
     sid : Stateid.t;
     proof : Proof.t option;
+    time : bool;
   }
 
 end
 
-let interp_vernac ~time ~check ~interactive ~state ({CAst.loc;_} as com) =
+let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
   let open State in
     try
       (* The -time option is only supported from console-based clients
          due to the way it prints. *)
-      if time then print_cmd_header com;
-      let com = if time then CAst.make ?loc @@ VernacTime(time,com) else com in
+      let com = if state.time
+        then begin
+          print_cmd_header com;
+          CAst.make ?loc @@ VernacTime(state.time,com)
+        end else com in
       let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid (not !Flags.quiet) com in
 
       (* Main STM interaction *)
@@ -102,7 +102,7 @@ let interp_vernac ~time ~check ~interactive ~state ({CAst.loc;_} as com) =
       (* Stm.observe nsid; *)
       let ndoc = if check then Stm.finish ~doc else doc in
       let new_proof = Proof_global.give_me_the_proof_opt () in
-      { doc = ndoc; sid = nsid; proof = new_proof }
+      { state with doc = ndoc; sid = nsid; proof = new_proof; }
     with reraise ->
       (* XXX: In non-interactive mode edit_at seems to do very weird
          things, so we better avoid it while we investigate *)
@@ -115,7 +115,7 @@ let interp_vernac ~time ~check ~interactive ~state ({CAst.loc;_} as com) =
       end in iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
-let load_vernac_core ~time ~echo ~check ~interactive ~state file =
+let load_vernac_core ~echo ~check ~interactive ~state file =
   (* Keep in sync *)
   let in_chan = open_utf8_file_in file in
   let in_echo = if echo then Some (open_utf8_file_in file) else None in
@@ -154,7 +154,7 @@ let load_vernac_core ~time ~echo ~check ~interactive ~state file =
       Option.iter (vernac_echo ?loc) in_echo;
 
       checknav_simple ast;
-      let state = Flags.silently (interp_vernac ~time ~check ~interactive ~state:!rstate) ast in
+      let state = Flags.silently (interp_vernac ~check ~interactive ~state:!rstate) ast in
       rids := state.sid :: !rids;
       rstate := state;
     done;
@@ -165,11 +165,11 @@ let load_vernac_core ~time ~echo ~check ~interactive ~state file =
     input_cleanup ();
     match e with
     | Stm.End_of_input -> !rstate, !rids, Pcoq.Gram.comment_state in_pa
-    | reraise -> iraise (disable_drop e, info)
+    | reraise -> iraise (e, info)
 
-let process_expr ~time ~state loc_ast =
+let process_expr ~state loc_ast =
   checknav_deep loc_ast;
-  interp_vernac ~time ~interactive:true ~check:true ~state loc_ast
+  interp_vernac ~interactive:true ~check:true ~state loc_ast
 
 (******************************************************************************)
 (* Beautify-specific code                                                     *)
@@ -220,8 +220,8 @@ let beautify_pass ~doc ~comments ~ids ~filename =
 
 (* Main driver for file loading. For now, we only do one beautify
    pass. *)
-let load_vernac ~time ~echo ~check ~interactive ~state filename =
-  let ostate, ids, comments = load_vernac_core ~time ~echo ~check ~interactive ~state filename in
+let load_vernac ~echo ~check ~interactive ~state filename =
+  let ostate, ids, comments = load_vernac_core ~echo ~check ~interactive ~state filename in
   (* Pass for beautify *)
   if !Flags.beautify then beautify_pass ~doc:ostate.State.doc ~comments ~ids:List.(rev ids) ~filename;
   (* End pass *)

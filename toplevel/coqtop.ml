@@ -45,7 +45,7 @@ let console_toploop_run opts ~state =
     Flags.if_verbose warning "Dumpglob cannot be used in interactive mode.";
     Dumpglob.noglob ()
   end;
-  let _ = Coqloop.loop ~time:opts.time ~state in
+  let _ = Coqloop.loop ~state in
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();
   Mltop.ocaml_toploop();
@@ -95,7 +95,7 @@ let load_vernacular opts ~state =
     (fun state (f_in, echo) ->
       let s = Loadpath.locate_file f_in in
       (* Should make the beautify logic clearer *)
-      let load_vernac f = Vernac.load_vernac ~time:opts.time ~echo ~interactive:false ~check:true ~state f in
+      let load_vernac f = Vernac.load_vernac ~echo ~interactive:false ~check:true ~state f in
       if !Flags.beautify
       then Flags.with_option Flags.beautify_file load_vernac f_in
       else load_vernac s
@@ -103,7 +103,7 @@ let load_vernacular opts ~state =
 
 let load_init_vernaculars opts ~state =
   let state = if opts.load_rcfile then
-      Coqinit.load_rcfile ~rcfile:opts.rcfile ~time:opts.time ~state
+      Coqinit.load_rcfile ~rcfile:opts.rcfile ~state
     else begin
       Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
       state
@@ -223,7 +223,7 @@ let compile opts ~echo ~f_in ~f_out =
             iload_path; require_libs; stm_options;
           }) in
 
-      let state = { doc; sid; proof = None } in
+      let state = { doc; sid; proof = None; time = opts.time } in
       let state = load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
       Aux_file.(start_aux_file
@@ -232,7 +232,7 @@ let compile opts ~echo ~f_in ~f_out =
       Dumpglob.start_dump_glob ~vfile:long_f_dot_v ~vofile:long_f_dot_vo;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
       let wall_clock1 = Unix.gettimeofday () in
-      let state = Vernac.load_vernac ~time:opts.time ~echo ~check:true ~interactive:false ~state long_f_dot_v in
+      let state = Vernac.load_vernac ~echo ~check:true ~interactive:false ~state long_f_dot_v in
       let _doc = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();
@@ -270,10 +270,10 @@ let compile opts ~echo ~f_in ~f_out =
             iload_path; require_libs; stm_options;
           }) in
 
-      let state = { doc; sid; proof = None } in
+      let state = { doc; sid; proof = None; time = opts.time } in
       let state = load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
-      let state = Vernac.load_vernac ~time:opts.time ~echo ~check:false ~interactive:false ~state long_f_dot_v in
+      let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_v in
       let doc = Stm.finish ~doc:state.doc in
       check_pending_proofs ();
       let _doc = Stm.snapshot_vio ~doc ldir long_f_dot_vio in
@@ -476,7 +476,7 @@ let init_toplevel arglist =
                    { doc_type = Interactive opts.toplevel_name;
                      iload_path; require_libs; stm_options;
                    }) in
-          let state = { doc; sid; proof = None } in
+          let state = { doc; sid; proof = None; time = opts.time } in
           Some (load_init_vernaculars opts ~state), opts
         with any -> flush_all(); fatal_error_exn any
       (* Non interactive: we perform a sequence of compilation steps *)

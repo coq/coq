@@ -79,7 +79,6 @@ let call opn converted_args ~atts ~st =
     phase := "Executing command";
     hunk ~atts ~st
   with
-    | Drop -> raise Drop
     | reraise ->
         let reraise = CErrors.push reraise in
         if !Flags.debug then
