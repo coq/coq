@@ -34,3 +34,7 @@ Test Printing Synth.
 Unset Printing Wildcard.
 Set Printing Wildcard.
 Test Printing Wildcard.
+
+Unset Printing Universe Explanations.
+Set Printing Universe Explanations.
+Test Printing Universe Explanations.

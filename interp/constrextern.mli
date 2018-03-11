@@ -46,16 +46,6 @@ val extern_sort : Evd.evar_map -> Sorts.t -> glob_sort
 val extern_rel_context : constr option -> env -> Evd.evar_map ->
   rel_context -> local_binder_expr list
 
-(** Printing options *)
-val print_implicits : bool ref
-val print_implicits_defensive : bool ref
-val print_arguments : bool ref
-val print_evar_arguments : bool ref
-val print_coercions : bool ref
-val print_universes : bool ref
-val print_no_symbol : bool ref
-val print_projections : bool ref
-
 (** Customization of the global_reference printer *)
 val set_extern_reference :
   (?loc:Loc.t -> Id.Set.t -> global_reference -> reference) -> unit

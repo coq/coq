@@ -578,7 +578,7 @@ let map_option f = function
 open Constrexpr
 
 let rec rebuild_bl aux bl typ =
-	match bl,typ with
+       match bl,typ with
 	  | [], _ -> List.rev aux,typ
 	  | (CLocalAssum(nal,bk,_))::bl',typ ->
 	     rebuild_nal aux bk bl' nal  typ

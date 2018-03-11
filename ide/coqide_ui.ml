@@ -77,15 +77,28 @@ let init () =
 \n    <menuitem action='Show Toolbar' />\
 \n    <menuitem action='Query Pane' />\
 \n    <separator/>\
-\n    <menuitem action='Display implicit arguments' />\
-\n    <menuitem action='Display coercions' />\
-\n    <menuitem action='Display raw matching expressions' />\
-\n    <menuitem action='Display notations' />\
-\n    <menuitem action='Display all basic low-level contents' />\
-\n    <menuitem action='Display existential variable instances' />\
-\n    <menuitem action='Display universe levels' />\
 \n    <menuitem action='Display all low-level contents' />\
+\n    <menuitem action='Display no low-level contents' />\
+\n    <menuitem action='Display default low-level contents' />\
+\n    <separator/>\
+\n    <menuitem action='Display coercions' />\
+\n    <menuitem action='Display compact contexts' />\
+\n    <menuitem action='Display existential variable instances' />\
+\n    <menuitem action='Display factorizable match patterns' />\
+\n    <menuitem action='Display implicit arguments' />\
+\n    <menuitem action='Display let binder types' />\
+\n    <menuitem action='Display match default clauses' />\
+\n    <menuitem action='Display nonstrict implicit arguments' />\
+\n    <menuitem action='Display notations' />\
+\n    <menuitem action='Display primitive projection compatibility' />\
+\n    <menuitem action='Display primitive projection parameters' />\
+\n    <menuitem action='Display projections' />\
+\n    <menuitem action='Display raw matching expressions' />\
+\n    <menuitem action='Display records' />\
+\n    <menuitem action='Do not display synthesizable return types' />\
 \n    <menuitem action='Display unfocused goals' />\
+\n    <menuitem action='Display universe levels' />\
+\n    <menuitem action='Display wildcards in patterns' />\
 \n  </menu>\
 \n  <menu action='Navigation'>\
 \n    <menuitem action='Forward' />\

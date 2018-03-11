@@ -22,20 +22,6 @@ type _ delay =
 | Now : 'a delay
 | Later : [ `thunk ] delay
 
-(** Should we keep details of universes during detyping ? *)
-val print_universes : bool ref
-
-(** If true, prints full local context of evars *)
-val print_evar_arguments : bool ref
-
-(** If true, contract branches with same r.h.s. and same matching
-    variables in a disjunctive pattern *)
-val print_factorize_match_patterns : bool ref
-
-(** If true and the last non unique clause of a "match" is a
-    variable-free disjunctive pattern, turn it into a catch-call case *)
-val print_allow_match_default_clause : bool ref
-
 val subst_cases_pattern : substitution -> cases_pattern -> cases_pattern
 
 val subst_glob_constr : substitution -> glob_constr -> glob_constr
@@ -64,9 +50,6 @@ val lookup_index_as_renamed : env -> evar_map -> constr -> int -> int option
 
 (* XXX: This is a hack and should go away *)
 val set_detype_anonymous : (?loc:Loc.t -> int -> Id.t) -> unit
-
-val force_wildcard : unit -> bool
-val synthetize_type : unit -> bool
 
 (** Utilities to transform kernel cases to simple pattern-matching problem *)
 

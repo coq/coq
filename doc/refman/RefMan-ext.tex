@@ -134,12 +134,17 @@ Definition half' :=
      Rat_irred_cond := one_two_irred |}.
 \end{coq_example}
 
-This syntax can be disabled globally for printing by
+This syntax can be disabled globally for printing records by
 \begin{quote}
 {\tt Unset Printing Records.}
 \optindex{Printing Records}
 \end{quote}
-For a given type, one can override this using either
+The same option also affects how record types are printed. When the
+option is set, record types are printed using syntax like that used to
+define them. If the option is not set, record types are printed using
+a syntax closer to their internal representation in {\Coq}.
+
+For a given type, one can override the {\tt Printing Records} option using either
 \begin{quote}
 {\tt Add Printing Record {\ident}.}
 \end{quote}
@@ -1745,6 +1750,20 @@ Conversely, to force the display of non strict arguments, use command
 
 \SeeAlso {\tt Set Printing All} in Section~\ref{SetPrintingAll}.
 
+\subsection{Printing the types of let-in binders}
+\optindex{Printing Let Binder Types}
+
+By default, when printing {\tt let-in} expressions, the types
+of binders are elided. The command
+\begin{quote}
+{\tt Set Printing Let Binder Types}.
+\end{quote}
+allows printing such types. Running
+\begin{quote}
+{\tt Unset Printing Let Binder Types}.
+\end{quote}
+enables the default behavior.
+
 \subsection{Interaction with subtyping}
 
 When an implicit argument can be inferred from the type of more than
@@ -1985,7 +2004,9 @@ More details and examples, and a description of the commands related
 to coercions are provided in Chapter~\ref{Coercions-full}.
 
 \section[Printing constructions in full]{Printing constructions in full\label{SetPrintingAll}
-\optindex{Printing All}}
+\optindex{Printing All}
+\optindex{Printing Sugared}
+\optindex{Printing Defaults}}
 
 Coercions, implicit arguments, the type of pattern-matching, but also
 notations (see Chapter~\ref{Addoc-syntax}) can obfuscate the behavior
@@ -1996,18 +2017,48 @@ subterms are sensitive to the implicit arguments). The command
 \end{quote}
 deactivates all high-level printing features such as coercions,
 implicit arguments, returned type of pattern-matching, notations and
-various syntactic sugar for pattern-matching or record projections.
-Otherwise said, {\tt Set Printing All} includes the effects
-of the commands {\tt Set Printing Implicit}, {\tt Set Printing
-Coercions}, {\tt Set Printing Synth}, {\tt Unset Printing Projections}
-and {\tt Unset Printing Notations}.  To reactivate the high-level
-printing features, use the command
+various syntactic sugar for pattern-matching or record projections, by
+affecting the relevant printing options. More precisely, the command has the
+same effect as running:
+\begin{itemize}
+\item {\tt Set Printing Coercions.}
+\item {\tt Set Printing Compact Contexts.}
+\item {\tt Set Printing Existential Instances.}
+\item {\tt Set Printing Implicit.}
+\item {\tt Set Printing Implicit Defensive.}
+\item {\tt Set Printing Let Binder Types.}
+\item {\tt Set Printing Primitive Projection Compatibility.}
+\item {\tt Set Printing Primitive Projection Parameters.}
+\item {\tt Set Printing Universes.}
+\item {\tt Unset Printing Allow Default Clause.}
+\item {\tt Unset Printing Factorizable Match Patterns.}
+\item {\tt Unset Printing Matching.}
+\item {\tt Unset Printing Notations.}
+\item {\tt Unset Printing Projections.}
+\item {\tt Unset Printing Records.}
+\item {\tt Unset Printing Synth.}
+\item {\tt Unset Printing Wildcard.}
+\end{itemize}
+The command
 \begin{quote}
 {\tt Unset Printing All.}
 \end{quote}
+restores the printing options in effect at the time of the most recent {\tt Set Printing All}.
+Once such options have been restored, running the command again has no effect.
+
+The command
+\begin{quote}
+{\tt Set Printing Sugared.}
+\end{quote}
+exactly reverses the effect of {\tt Set Printing All}, enabling all high-level
+printing features. To restore the default printing options, use the command:
+\begin{quote}
+{\tt Set Printing Defaults.}
+\end{quote}
 
 \section[Printing universes]{Printing universes\label{PrintingUniverses}
-\optindex{Printing Universes}}
+\optindex{Printing Universes}
+\optindex{Printing Universe Explanations}}
 
 The following command:
 \begin{quote}
@@ -2023,6 +2074,15 @@ of the occurrences of {\Type}, use
 \begin{quote}
 {\tt Unset Printing Universes.}
 \end{quote}
+
+If your script contains a universe inconsistency, {\Coq} will print
+an error message. By default, the message provides details of the
+inconsistency. Use the command
+\begin{quote}
+{\tt Unset Printing Universe Explanations.}
+\end{quote}
+to elide those details; the corresponding {\tt Set} command re-enables
+their printing.
 
 \comindex{Print Universes}
 \comindex{Print Sorted Universes}

@@ -894,9 +894,20 @@ GEXTEND Gram
 
       (* For acting on parameter tables *)
       | "Set"; table = option_table; v = option_value ->
-          VernacSetOption (false, table, v)
+         VernacSetOption (false,table,v)
+
+      | "Set"; table = option_table ->
+        begin match table with
+        | ["Printing";"All"]      -> VernacSetPrintingAll
+        | ["Printing";"Sugared"]  -> VernacSetPrintingSugared
+        | ["Printing";"Defaults"] -> VernacSetPrintingDefaults
+        | _                       -> VernacSetOption (false,table,BoolValue true)
+        end
       | IDENT "Unset"; table = option_table ->
-          VernacUnsetOption (false, table)
+        begin match table with
+        | ["Printing";"All"] -> VernacUnsetPrintingAll
+        | _                  -> VernacUnsetOption (false,table)
+        end
 
       | IDENT "Print"; IDENT "Table"; table = option_table ->
 	  VernacPrintOption table

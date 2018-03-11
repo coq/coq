@@ -534,42 +534,101 @@ struct
 
   (* Boolean options *)
 
-  let implicit = ["Printing"; "Implicit"]
-  let coercions = ["Printing"; "Coercions"]
-  let raw_matching = ["Printing"; "Matching"]
-  let notations = ["Printing"; "Notations"]
-  let all_basic = ["Printing"; "All"]
-  let existential = ["Printing"; "Existential"; "Instances"]
-  let universes = ["Printing"; "Universes"]
-  let unfocused = ["Printing"; "Unfocused"]
+  let default_clause = ["Printing";"Allow";"Match";"Default";"Clause"]
+  let coercions = ["Printing";"Coercions"]
+  let compact_contexts = ["Printing";"Compact";"Contexts"]
+  let existential = ["Printing";"Existential";"Instances"]
+  let factorizable = ["Printing";"Factorizable";"Match";"Patterns"]
+  let implicit = ["Printing";"Implicit"]
+  let implicit_defensive = ["Printing";"Implicit";"Defensive"]
+  let let_binder_types =  ["Printing";"Let";"Binder";"Types"]
+  let notations = ["Printing";"Notations"]
+  let proj_compat = ["Printing";"Primitive";"Projection";"Compatibility"]
+  let proj_parms =  ["Printing";"Primitive";"Projection";"Parameters"]
+  let projections =  ["Printing";"Projections"]
+  let raw_matching = ["Printing";"Matching"]
+  let records =  ["Printing";"Records"]
+  let synth =  ["Printing";"Synth"]
+  let universes = ["Printing";"Universes"]
+  let wildcard = ["Printing";"Wildcard"]
+  let unfocused = ["Printing";"Unfocused"]
 
-  type bool_descr = { opts : t list; init : bool; label : string }
+  type all_defaults = { all : bool; defaults : bool }
 
-  let bool_items = [
-    { opts = [implicit]; init = false; label = "Display _implicit arguments" };
-    { opts = [coercions]; init = false; label = "Display _coercions" };
-    { opts = [raw_matching]; init = true;
-      label = "Display raw _matching expressions" };
-    { opts = [notations]; init = true; label = "Display _notations" };
-    { opts = [all_basic]; init = false;
-      label = "Display _all basic low-level contents" };
-    { opts = [existential]; init = false;
-      label = "Display _existential variable instances" };
-    { opts = [universes]; init = false; label = "Display _universe levels" };
-    { opts = [all_basic;existential;universes]; init = false;
-      label = "Display all _low-level contents" };
-    { opts = [unfocused]; init = false; label = "Display _unfocused goals" }
-  ]
+  type bool_descr_spec = { opts0 : t; init0 : all_defaults; label0 : string }
+
+  (* the order of the following array must match that of the corresponding View menu items in coqide_ui.ml
+     the init0 field is a pair of booleans, according to the "All" and "Default" printing options;
+     the "Sugared" options are just the negation of the "All" options, don't need to specify that
+   *)
+  let items_specs = [
+      { opts0 = coercions; init0 = { all = true; defaults = false }; label0 = "Display _coercions" };
+      { opts0 = compact_contexts; init0 = { all = true; defaults = false }; label0 = "Display compact conte_xts" };
+      { opts0 = existential; init0 = { all = true; defaults = false }; label0 = "Display _existential variable instances" };
+      { opts0 = factorizable; init0 = { all = false; defaults = true }; label0 = "Display _factorizable match patterns" };
+      { opts0 = implicit; init0 = { all = true; defaults = false }; label0 = "Display _implicit arguments" };
+      { opts0 = let_binder_types; init0 = { all = true; defaults = false }; label0 = "Display let binder t_ypes" };
+      { opts0 = default_clause; init0 = { all = false; defaults = true }; label0 = "Display match _default clauses" };
+      { opts0 = implicit_defensive; init0 = { all = true; defaults = true }; label0 = "Display non_strict implicit arguments" };
+      { opts0 = notations; init0 = { all = false; defaults = true }; label0 = "Display _notations" };
+      { opts0 = proj_compat; init0 = { all = true; defaults = false }; label0 = "Display primiti_ve projection compatibility" };
+      { opts0 = proj_parms; init0 = { all = true; defaults = false }; label0 = "Display primitive pro_jection parameters" };
+      { opts0 = projections; init0 = { all = false; defaults = false }; label0 = "Display _projections" };
+      { opts0 = raw_matching; init0 = { all = false; defaults = true }; label0 = "Display raw _matching expressions" };
+      { opts0 = records; init0 = { all = false; defaults = true }; label0 = "Display _records" };
+      { opts0 = synth; init0 = { all = false; defaults = true }; label0 = "Do not display synthesi_zable return types" };
+      { opts0 = unfocused; init0 = { all = false; defaults = false }; label0 = "Display unfocused _goals" };
+      { opts0 = universes; init0 = { all = true; defaults = false }; label0 = "Display _universe levels" };
+      { opts0 = wildcard; init0 = { all = false; defaults = true }; label0 = "Display _wildcards in patterns" };
+    ]
+
+  type bool_descr = { opts : t; init : bool; label : string }
+
+  let default_bool_items = List.map
+                             (fun { opts0; init0; label0 } ->
+                               { opts = opts0; init = init0.defaults; label = label0 })
+                             items_specs
+
+  (* map from labels to option names *)
+  let label_options_tbl = Hashtbl.create 29
+  let _ = List.iter
+            (fun spec -> Hashtbl.add label_options_tbl spec.label0 spec.opts0)
+            items_specs
+
+  (* sets of options to set "on" for Printing Defaults/All/Sugared *)
+  let default_opts = Hashtbl.create 13
+  let _ = List.iter
+            (fun spec ->
+              if spec.init0.defaults then Hashtbl.add default_opts spec.opts0 ())
+            items_specs
+
+  let all_opts = Hashtbl.create 13
+  let _ = List.iter
+            (fun spec ->
+              if spec.init0.all then Hashtbl.add all_opts spec.opts0 ())
+            items_specs
+
+  let sugared_opts = Hashtbl.create 13
+  let _ = List.iter
+            (fun spec ->
+              if not spec.init0.all then Hashtbl.add sugared_opts spec.opts0 ())
+            items_specs
 
   (** The current status of the boolean options *)
 
   let current_state = Hashtbl.create 11
 
   let set opt v = Hashtbl.replace current_state opt v
+  let get opt =
+    try
+      Hashtbl.find current_state opt
+    with Not_found ->
+      CErrors.anomaly
+        (Pp.str ("Could not find current state for option: " ^ (String.concat " " opt)))
 
   let reset () =
-    let init_descr d = List.iter (fun o -> set o d.init) d.opts in
-    List.iter init_descr bool_items
+    let init_descr d = set d.opts d.init  in
+    List.iter init_descr default_bool_items
 
   let _ = reset ()
 

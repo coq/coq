@@ -1342,56 +1342,72 @@ let _ =
     { optdepr  = false;
       optname  = "coercion printing";
       optkey   = ["Printing";"Coercions"];
-      optread  = (fun () -> !Constrextern.print_coercions);
-      optwrite = (fun b ->  Constrextern.print_coercions := b) }
+      optread  = Printoptions.printing_coercions;
+      optwrite = Printoptions.set_printing_coercions;
+    }
 
 let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "printing of existential variable instances";
       optkey   = ["Printing";"Existential";"Instances"];
-      optread  = (fun () -> !Detyping.print_evar_arguments);
-      optwrite = (:=) Detyping.print_evar_arguments }
+      optread  = Printoptions.printing_existential_instances;
+      optwrite = Printoptions.set_printing_existential_instances;
+    }
 
 let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "implicit arguments printing";
       optkey   = ["Printing";"Implicit"];
-      optread  = (fun () -> !Constrextern.print_implicits);
-      optwrite = (fun b ->  Constrextern.print_implicits := b) }
+      optread  = Printoptions.printing_implicit;
+      optwrite = Printoptions.set_printing_implicit;
+    }
 
 let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "implicit arguments defensive printing";
       optkey   = ["Printing";"Implicit";"Defensive"];
-      optread  = (fun () -> !Constrextern.print_implicits_defensive);
-      optwrite = (fun b ->  Constrextern.print_implicits_defensive := b) }
+      optread  = Printoptions.printing_implicit_defensive;
+      optwrite = Printoptions.set_printing_implicit_defensive;
+    }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "printing types of let-in binders";
+      optkey   = ["Printing";"Let";"Binder";"Types"];
+      optread  = Printoptions.printing_let_binder_types;
+      optwrite = Printoptions.set_printing_let_binder_types;
+    }
 
 let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "projection printing using dot notation";
       optkey   = ["Printing";"Projections"];
-      optread  = (fun () -> !Constrextern.print_projections);
-      optwrite = (fun b ->  Constrextern.print_projections := b) }
+      optread  = Printoptions.printing_projections;
+      optwrite = Printoptions.set_printing_projections;
+    }
 
 let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "notations printing";
       optkey   = ["Printing";"Notations"];
-      optread  = (fun () -> not !Constrextern.print_no_symbol);
-      optwrite = (fun b ->  Constrextern.print_no_symbol := not b) }
+      optread  = Printoptions.printing_notations;
+      optwrite = Printoptions.set_printing_notations;
+    }
 
 let _ =
   declare_bool_option
     { optdepr  = false;
-      optname  = "raw printing";
-      optkey   = ["Printing";"All"];
-      optread  = (fun () -> !Flags.raw_print);
-      optwrite = (fun b -> Flags.raw_print := b) }
+      optname  = "universe explanation printing";
+      optkey   = ["Printing";"Universe";"Explanations"];
+      optread  = Flags.get_univ_print_explanations;
+      optwrite = Flags.set_univ_print_explanations;
+    }
 
 let _ =
   declare_bool_option
@@ -1442,8 +1458,9 @@ let _ =
     { optdepr  = false;
       optname  = "display compact goal contexts";
       optkey   = ["Printing";"Compact";"Contexts"];
-      optread  = (fun () -> Printer.get_compact_context());
-      optwrite = (fun b -> Printer.set_compact_context b) }
+      optread  = Printoptions.printing_compact_contexts;
+      optwrite = Printoptions.set_printing_compact_contexts;
+    }
 
 let _ =
   declare_int_option
@@ -1466,9 +1483,10 @@ let _ =
     { optdepr  = false;
       optname  = "printing of universes";
       optkey   = ["Printing";"Universes"];
-      optread  = (fun () -> !Constrextern.print_universes);
-      optwrite = (fun b -> Constrextern.print_universes:=b) }
-     
+      optread  = Printoptions.printing_universes;
+      optwrite = Printoptions.set_printing_universes;
+    }
+
 let _ =
   declare_bool_option
     { optdepr  = false;
@@ -2091,6 +2109,15 @@ let interp ?proof ~atts ~st c =
   | VernacDeclareMLModule l -> vernac_declare_ml_module ~atts l
   | VernacChdir s -> vernac_chdir s
 
+  (* Printing categories *)
+  | VernacSetPrintingAll ->
+     Printoptions.set_printing_all ~local:(Locality.make_locality atts.locality)
+  | VernacSetPrintingSugared ->
+     Printoptions.set_printing_sugared ~local:(Locality.make_locality atts.locality)
+  | VernacSetPrintingDefaults ->
+     Printoptions.set_printing_defaults ~local:(Locality.make_locality atts.locality)
+  | VernacUnsetPrintingAll -> Printoptions.unset_printing_all ()
+
   (* State management *)
   | VernacWriteState s -> vernac_write_state s
   | VernacRestoreState s -> vernac_restore_state s
@@ -2177,7 +2204,8 @@ let check_vernac_supports_locality c l =
     | VernacSetOption _ | VernacUnsetOption _
     | VernacDeclareReduction _
     | VernacExtend _ 
-    | VernacInductive _) -> ()
+    | VernacInductive _
+    | VernacSetPrintingAll | VernacSetPrintingSugared | VernacSetPrintingDefaults ) -> ()
   | Some _, _ -> user_err Pp.(str "This command does not support Locality")
 
 (* Vernaculars that take a polymorphism flag *)

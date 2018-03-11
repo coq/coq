@@ -35,12 +35,6 @@ type _ delay =
 | Now : 'a delay
 | Later : [ `thunk ] delay
 
-(** Should we keep details of universes during detyping ? *)
-let print_universes = Flags.univ_print
-
-(** If true, prints local context of evars, whatever print_arguments *)
-let print_evar_arguments = ref false
-
 let add_name na b t (nenv, env) =
   let open Context.Rel.Declaration in
   add_name na nenv, push_rel (match b with
@@ -132,59 +126,47 @@ module PrintingCasesLet =
 module PrintingIf  = Goptions.MakeRefTable(PrintingCasesIf)
 module PrintingLet = Goptions.MakeRefTable(PrintingCasesLet)
 
-(* Flags.for printing or not wildcard and synthetisable types *)
-
 open Goptions
-
-let wildcard_value = ref true
-let force_wildcard () = !wildcard_value
 
 let _ = declare_bool_option
 	  { optdepr  = false;
 	    optname  = "forced wildcard";
 	    optkey   = ["Printing";"Wildcard"];
-	    optread  = force_wildcard;
-	    optwrite = (:=) wildcard_value }
-
-let synth_type_value = ref true
-let synthetize_type () = !synth_type_value
+            optread  = Printoptions.printing_wildcard;
+            optwrite = Printoptions.set_printing_wildcard;
+          }
 
 let _ = declare_bool_option
 	  { optdepr  = false;
 	    optname  = "pattern matching return type synthesizability";
 	    optkey   = ["Printing";"Synth"];
-	    optread  = synthetize_type;
-	    optwrite = (:=) synth_type_value }
-
-let reverse_matching_value = ref true
-let reverse_matching () = !reverse_matching_value
+            optread  = Printoptions.printing_synth;
+            optwrite = Printoptions.set_printing_synth;
+          }
 
 let _ = declare_bool_option
 	  { optdepr  = false;
 	    optname  = "pattern-matching reversibility";
 	    optkey   = ["Printing";"Matching"];
-	    optread  = reverse_matching;
-	    optwrite = (:=) reverse_matching_value }
-
-let print_primproj_params_value = ref false
-let print_primproj_params () = !print_primproj_params_value
+            optread  = Printoptions.printing_matching;
+            optwrite  = Printoptions.set_printing_matching;
+          }
 
 let _ = declare_bool_option
 	  { optdepr  = false;
 	    optname  = "printing of primitive projection parameters";
 	    optkey   = ["Printing";"Primitive";"Projection";"Parameters"];
-	    optread  = print_primproj_params;
-	    optwrite = (:=) print_primproj_params_value }
-
-let print_primproj_compatibility_value = ref false
-let print_primproj_compatibility () = !print_primproj_compatibility_value
+            optread  = Printoptions.printing_primitive_projection_parameters;
+            optwrite = Printoptions.set_printing_primitive_projection_parameters;
+          }
 
 let _ = declare_bool_option
 	  { optdepr  = false;
 	    optname  = "backwards-compatible printing of primitive projections";
 	    optkey   = ["Printing";"Primitive";"Projection";"Compatibility"];
-	    optread  = print_primproj_compatibility;
-	    optwrite = (:=) print_primproj_compatibility_value }
+            optread  = Printoptions.printing_primitive_projection_compatibility;
+            optwrite = Printoptions.set_printing_primitive_projection_compatibility;
+          }
 
 	  
 (* Auxiliary function for MutCase printing *)
@@ -256,31 +238,27 @@ let lookup_index_as_renamed env sigma t n =
 (**********************************************************************)
 (* Factorization of match patterns *)
 
-let print_factorize_match_patterns = ref true
-
 let _ =
-  let open Goptions in
   declare_bool_option
     { optdepr  = false;
       optname  = "factorization of \"match\" patterns in printing";
       optkey   = ["Printing";"Factorizable";"Match";"Patterns"];
-      optread  = (fun () -> !print_factorize_match_patterns);
-      optwrite = (fun b -> print_factorize_match_patterns := b) }
-
-let print_allow_match_default_clause = ref true
+      optread  = Printoptions.printing_factorizable_match_patterns;
+      optwrite = Printoptions.set_printing_factorizable_match_patterns;
+    }
 
 let _ =
-  let open Goptions in
   declare_bool_option
     { optdepr  = false;
       optname  = "possible use of \"match\" default pattern in printing";
       optkey   = ["Printing";"Allow";"Match";"Default";"Clause"];
-      optread  = (fun () -> !print_allow_match_default_clause);
-      optwrite = (fun b -> print_allow_match_default_clause := b) }
+      optread  = Printoptions.printing_allow_match_default_clause;
+      optwrite = Printoptions.set_printing_allow_match_default_clause;
+    }
 
 let rec join_eqns (ids,rhs as x) patll = function
   | ({CAst.loc; v=(ids',patl',rhs')} as eqn')::rest ->
-     if not !Flags.raw_print && !print_factorize_match_patterns &&
+     if Printoptions.printing_factorizable_match_patterns () &&
         List.eq_set Id.equal ids ids' && glob_constr_eq rhs rhs'
      then
        join_eqns x (patl'::patll) rest
@@ -326,7 +304,7 @@ let factorize_eqns eqns =
   let eqns = aux [] (List.rev eqns) in
   let mk_anon patl = List.map (fun _ -> DAst.make @@ PatVar Anonymous) patl in
   let open CAst in
-  if not !Flags.raw_print && !print_allow_match_default_clause && eqns <> [] then
+  if Printoptions.printing_allow_match_default_clause () && eqns <> [] then
     match select_default_clause eqns with
     (* At least two clauses and the last one is disjunctive with no variables *)
     | Some {loc=gloc;v=([],patl::_::_,rhs)}, (_::_ as eqns) ->
@@ -345,7 +323,7 @@ let factorize_eqns eqns =
 
 let update_name sigma na ((_,(e,_)),c) =
   match na with
-  | Name _ when force_wildcard () && noccurn sigma (List.index Name.equal na e) c ->
+  | Name _ when Printoptions.printing_wildcard () && noccurn sigma (List.index Name.equal na e) c ->
       Anonymous
   | _ ->
       na
@@ -450,10 +428,9 @@ let it_destRLambda_or_LetIn_names l c =
 
 let detype_case computable detype detype_eqns testdep avoid data p c bl =
   let (indsp,st,constagsl,k) = data in
-  let synth_type = synthetize_type () in
   let tomatch = detype c in
   let alias, aliastyp, pred=
-    if (not !Flags.raw_print) && synth_type && computable && not (Int.equal (Array.length bl) 0)
+    if Printoptions.printing_synth () && computable && not (Int.equal (Array.length bl) 0)
     then
       Anonymous, None, None
     else
@@ -470,9 +447,16 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
   let constructs = Array.init (Array.length bl) (fun i -> (indsp,i+1)) in
   let tag =
     try
-      if !Flags.raw_print then
-        RegularStyle
-      else if st == LetPatternStyle then
+      (* TODO: Use to have:
+
+         if !Flags.raw_print then
+           RegularStyle
+         else ...
+
+         Which Printing option(s) was raw_print meant to
+         represent here? Do we need a new one?
+      *)
+      if st == LetPatternStyle then
 	st
       else if PrintingLet.active indsp then
 	LetStyle
@@ -509,8 +493,8 @@ let detype_sort sigma = function
   | Prop Null -> GProp
   | Prop Pos -> GSet
   | Type u ->
-    GType
-      (if !print_universes
+     GType
+      (if Printoptions.printing_universes ()
        then detype_universe sigma u
        else [])
 
@@ -559,17 +543,23 @@ and detype_r d flags avoid env sigma t =
 	(try let _ = Global.lookup_named id in GRef (VarRef id, None)
 	 with Not_found -> GVar id)
     | Sort s -> GSort (detype_sort sigma (ESorts.kind sigma s))
-    | Cast (c1,REVERTcast,c2) when not !Flags.raw_print ->
+    (* TODO: when Set Printing All used raw_print ref, the following
+             case used:
+              when not !raw_print
+             as a guard. Is there a different guard, that can be used?
+             Is a new option needed?
+    *)
+    | Cast (c1,REVERTcast,c2) ->
         DAst.get (detype d flags avoid env sigma c1)
     | Cast (c1,k,c2) ->
-        let d1 = detype d flags avoid env sigma c1 in
-	let d2 = detype d flags avoid env sigma c2 in
-    let cast = match k with
-    | VMcast -> CastVM d2
-    | NATIVEcast -> CastNative d2
-    | _ -> CastConv d2
-    in
-	GCast(d1,cast)
+       let d1 = detype d flags avoid env sigma c1 in
+       let d2 = detype d flags avoid env sigma c2 in
+       let cast = match k with
+         | VMcast -> CastVM d2
+         | NATIVEcast -> CastNative d2
+         | _ -> CastConv d2
+       in
+       GCast(d1,cast)
     | Prod (na,ty,c) -> detype_binder d flags BProd avoid env sigma na None ty c
     | Lambda (na,ty,c) -> detype_binder d flags BLambda avoid env sigma na None ty c
     | LetIn (na,b,ty,c) -> detype_binder d flags BLetIn avoid env sigma na (Some b) ty c
@@ -594,7 +584,7 @@ and detype_r d flags avoid env sigma t =
 	  GApp (DAst.make @@ GRef (ConstRef (Projection.constant p), None), 
 		[detype d flags avoid env sigma c])
       else 
-	if print_primproj_compatibility () && Projection.unfolded p then
+        if Printoptions.printing_primitive_projection_compatibility () && Projection.unfolded p then
 	  (** Print the compatibility match version *)
 	  let c' = 
 	    try 
@@ -611,7 +601,7 @@ and detype_r d flags avoid env sigma t =
 	      anomaly (str"Cannot detype an unfolded primitive projection.")
 	  in DAst.get (detype d flags avoid env sigma c')
 	else
-	  if print_primproj_params () then
+          if Printoptions.printing_primitive_projection_parameters () then
 	    try
 	      let c = Retyping.expand_projection (snd env) sigma p c [] in
               DAst.get (detype d flags avoid env sigma c)
@@ -635,7 +625,8 @@ and detype_r d flags avoid env sigma t =
           in
           let l = Evd.evar_instance_array bound_to_itself_or_letin (Evd.find sigma evk) cl in
           let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) -> match EConstr.kind sigma c with Rel n -> (fvs,Int.Set.add n rels) | Var id -> (Id.Set.add id fvs,rels) | _ -> (fvs,rels)) (Id.Set.empty,Int.Set.empty) l in
-          let l = Evd.evar_instance_array (fun d c -> not !print_evar_arguments && (bound_to_itself_or_letin d c && not (isRel sigma c && Int.Set.mem (destRel sigma c) rels || isVar sigma c && (Id.Set.mem (destVar sigma c) fvs)))) (Evd.find sigma evk) cl in
+          let print_evar_arguments = Printoptions.printing_existential_instances () in
+          let l = Evd.evar_instance_array (fun d c -> not print_evar_arguments && (bound_to_itself_or_letin d c && not (isRel sigma c && Int.Set.mem (destRel sigma c) rels || isVar sigma c && (Id.Set.mem (destVar sigma c) fvs)))) (Evd.find sigma evk) cl in
           id,l
         with Not_found ->
           Id.of_string ("X" ^ string_of_int (Evar.repr evk)),
@@ -728,7 +719,7 @@ and share_names d flags n l avoid env sigma c t =
 
 and detype_eqns d flags avoid env sigma ci computable constructs consnargsl bl =
   try
-    if !Flags.raw_print || not (reverse_matching ()) then raise Exit;
+    if not (Printoptions.printing_matching ()) then raise Exit;
     let mat = build_tree Anonymous (snd flags) (avoid,env) sigma ci bl in
     List.map (fun (ids,pat,((avoid,env),c)) ->
         CAst.make (Id.Set.elements ids,[pat],detype d flags avoid env sigma c))
@@ -739,7 +730,7 @@ and detype_eqns d flags avoid env sigma ci computable constructs consnargsl bl =
 
 and detype_eqn d (lax,isgoal as flags) avoid env sigma constr construct_nargs branch =
   let make_pat x avoid env b body ty ids =
-    if force_wildcard () && noccurn sigma 1 b then
+    if Printoptions.printing_wildcard () && noccurn sigma 1 b then
       DAst.make @@ PatVar Anonymous,avoid,(add_name Anonymous body ty env),ids
     else
       let flag = if isgoal then RenamingForGoal else RenamingForCasesPattern (fst env,b) in
@@ -792,7 +783,7 @@ and detype_binder d (lax,isgoal as flags) bk avoid env sigma na body ty c =
       let c = detype d (lax,false) avoid env sigma (Option.get body) in
       (* Heuristic: we display the type if in Prop *)
       let s = try Retyping.get_sort_family_of (snd env) sigma ty with _ when !Flags.in_debugger || !Flags.in_toplevel -> InType (* Can fail because of sigma missing in debugger *) in
-      let t = if s != InProp  && not !Flags.raw_print then None else Some (detype d (lax,false) avoid env sigma ty) in
+      let t = if s != InProp && not (Printoptions.printing_let_binder_types ()) then None else Some (detype d (lax,false) avoid env sigma ty) in
       GLetIn (na', c, t, r)
 
 let detype_rel_context d ?(lax=false) where avoid env sigma sign =

@@ -259,14 +259,14 @@ let safe_pr_constr t =
   safe_pr_constr_env env sigma t
 
 let pr_universe_ctx_set sigma c =
-  if !Detyping.print_universes && not (Univ.ContextSet.is_empty c) then
+  if Printoptions.printing_universes () && not (Univ.ContextSet.is_empty c) then
     fnl()++pr_in_comment (fun c -> v 0
       (Univ.pr_universe_context_set (Termops.pr_evd_level sigma) c)) c
   else
     mt()
 
 let pr_universe_ctx sigma ?variance c =
-  if !Detyping.print_universes && not (Univ.UContext.is_empty c) then
+  if Printoptions.printing_universes () && not (Univ.UContext.is_empty c) then
     fnl()++pr_in_comment (fun c -> v 0 
       (Univ.pr_universe_context (Termops.pr_evd_level sigma) ?variance c)) c
   else
@@ -277,7 +277,7 @@ let pr_constant_universes sigma = function
   | Entries.Polymorphic_const_entry ctx -> pr_universe_ctx sigma ctx
 
 let pr_cumulativity_info sigma cumi =
-  if !Detyping.print_universes 
+  if Printoptions.printing_universes ()
   && not (Univ.UContext.is_empty (Univ.CumulativityInfo.univ_context cumi)) then
     fnl()++pr_in_comment (fun uii -> v 0 
       (Univ.pr_cumulativity_info (Termops.pr_evd_level sigma) uii)) cumi
@@ -291,8 +291,8 @@ let pr_global_env = pr_global_env
 let pr_global = pr_global_env Id.Set.empty
 
 let pr_puniverses f env (c,u) =
-  f env c ++ 
-  (if !Constrextern.print_universes then
+  f env c ++
+  (if Printoptions.printing_universes () then
     str"(*" ++ Univ.Instance.pr Universes.pr_with_global_universes u ++ str"*)"
    else mt ())
 
@@ -321,10 +321,6 @@ let pr_pattern t = pr_pattern_env (Global.env()) empty_names_context t*)
 
 
 (* Flag for compact display of goals *)
-
-let get_compact_context,set_compact_context =
-  let compact_context = ref false in
-  (fun () -> !compact_context),(fun b  -> compact_context := b)
 
 let pr_compacted_decl env sigma decl =
   let ids, pbody, typ = match decl with
@@ -410,7 +406,7 @@ let pr_ne_context_of header env sigma =
 (* Heuristic for horizontalizing hypothesis that the user probably
    considers as "variables": An hypothesis H:T where T:S and S<>Prop. *)
 let should_compact env sigma typ =
-  get_compact_context() &&
+  Printoptions.printing_compact_contexts () &&
     let type_of_typ = Retyping.get_type_of env sigma (EConstr.of_constr typ) in
     not (is_Prop (EConstr.to_constr sigma type_of_typ))
 
