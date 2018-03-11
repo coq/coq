@@ -92,7 +92,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
-  | Proj      of projection * 'constr
+  | Proj      of Projection.t * 'constr
 
 type values = Vmvalues.values
 

@@ -547,6 +547,8 @@ val eq_constant_key : Constant.t -> Constant.t -> bool
 (** equalities on constant and inductive names (for the checker) *)
 
 val eq_con_chk : Constant.t -> Constant.t -> bool
+[@@ocaml.deprecated "Same as [Constant.UserOrd.equal]."]
+
 val eq_ind_chk : inductive -> inductive -> bool
 
 (** {6 Deprecated functions. For backward compatibility.} *)
@@ -633,27 +635,27 @@ val eq_label : Label.t -> Label.t -> bool
 (** {5 Unique bound module names} *)
 
 type mod_bound_id = MBId.t
-(** Alias type. *)
+[@@ocaml.deprecated "Same as [MBId.t]."]
 
-val mod_bound_id_ord : mod_bound_id -> mod_bound_id -> int
+val mod_bound_id_ord : MBId.t -> MBId.t -> int
 [@@ocaml.deprecated "Same as [MBId.compare]."]
 
-val mod_bound_id_eq : mod_bound_id -> mod_bound_id -> bool
+val mod_bound_id_eq : MBId.t -> MBId.t -> bool
 [@@ocaml.deprecated "Same as [MBId.equal]."]
 
-val make_mbid : DirPath.t -> Id.t -> mod_bound_id
+val make_mbid : DirPath.t -> Id.t -> MBId.t
 [@@ocaml.deprecated "Same as [MBId.make]."]
 
-val repr_mbid : mod_bound_id -> int * Id.t * DirPath.t
+val repr_mbid : MBId.t -> int * Id.t * DirPath.t
 [@@ocaml.deprecated "Same as [MBId.repr]."]
 
-val id_of_mbid : mod_bound_id -> Id.t
+val id_of_mbid : MBId.t -> Id.t
 [@@ocaml.deprecated "Same as [MBId.to_id]."]
 
-val string_of_mbid : mod_bound_id -> string
+val string_of_mbid : MBId.t -> string
 [@@ocaml.deprecated "Same as [MBId.to_string]."]
 
-val debug_string_of_mbid : mod_bound_id -> string
+val debug_string_of_mbid : MBId.t -> string
 [@@ocaml.deprecated "Same as [MBId.debug_to_string]."]
 
 (** {5 Names} *)
@@ -745,6 +747,7 @@ module Projection : sig
 end
 
 type projection = Projection.t
+[@@ocaml.deprecated "Alias for [Projection.t]"]
 
 val constant_of_kn_equiv : KerName.t -> KerName.t -> Constant.t
 [@@ocaml.deprecated "Same as [Constant.make]"]

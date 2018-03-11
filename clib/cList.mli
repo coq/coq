@@ -228,11 +228,10 @@ sig
   (** Same with four lists, folding on the left *)
 
   val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
-  (* [@@ocaml.deprecated "Same as [fold_left_map]"] *)
-  (** @deprecated Same as [fold_left_map] *)
+  [@@ocaml.deprecated "Same as [fold_left_map]"]
 
   val fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
-  (** @deprecated Same as [fold_right_map] *)
+  [@@ocaml.deprecated "Same as [fold_right_map]"]
 
   val map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
   val assoc_f : 'a eq -> 'a -> ('a * 'b) list -> 'b
