@@ -158,11 +158,6 @@ dt > .property {
   color: #FFFFFF;
 }
 
-/* FIXME: Specific to the RTD theme */
-a:visited {
-    color: #2980B9;
-}
-
 /* Pygments for Coq is confused by ‘…’ */
 code span.error {
     background: inherit !important;
