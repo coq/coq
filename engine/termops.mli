@@ -113,8 +113,6 @@ val count_occurrences : Evd.evar_map -> constr -> constr -> int
 val collect_metas : Evd.evar_map -> constr -> int list
 val collect_vars : Evd.evar_map -> constr -> Id.Set.t (** for visible vars only *)
 val vars_of_global_reference : env -> GlobRef.t -> Id.Set.t
-val occur_term : Evd.evar_map -> constr -> constr -> bool (** Synonymous of dependent *)
-[@@ocaml.deprecated "alias of Termops.dependent"]
 
 (* Substitution of metavariables *)
 type meta_value_map = (metavariable * Constr.constr) list

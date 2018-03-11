@@ -663,6 +663,3 @@ let update_sigma_env uctx env =
 let pr_weak prl {uctx_weak_constraints=weak} =
   let open Pp in
   prlist_with_sep fnl (fun (u,v) -> prl u ++ str " ~ " ++ prl v) (UPairSet.elements weak)
-
-(** Deprecated *)
-let normalize = minimize

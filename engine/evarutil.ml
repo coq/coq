@@ -875,6 +875,3 @@ let eq_constr_univs_test sigma1 sigma2 t u =
       (universes sigma2) fold t u sigma2
   in
   match ans with None -> false | Some _ -> true
-
-type type_constraint = EConstr.types option
-type val_constraint = EConstr.constr option

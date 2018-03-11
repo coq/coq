@@ -87,8 +87,6 @@ let printable_constr_of_global = function
   | ConstructRef sp -> mkConstruct sp
   | IndRef sp -> mkInd sp
 
-let reference_of_constr = global_of_constr
-
 let global_eq_gen eq_cst eq_ind eq_cons x y =
   x == y ||
   match x, y with

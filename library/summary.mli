@@ -91,25 +91,5 @@ val modify_summary : frozen -> 'a Dyn.tag -> 'a -> frozen
 val project_from_summary : frozen -> 'a Dyn.tag -> 'a
 val remove_from_summary : frozen -> 'a Dyn.tag -> frozen
 
-(** The type [frozen_bits] is a snapshot of some of the registered
-    tables. It is DEPRECATED in favor of the typed projection
-    version. *)
-
-type frozen_bits
-[@@ocaml.deprecated "Please use the typed version of summary projection"]
-
-[@@@ocaml.warning "-3"]
-val freeze_summary : marshallable:marshallable -> ?complement:bool -> string list -> frozen_bits
-[@@ocaml.deprecated "Please use the typed version of summary projection"]
-val unfreeze_summary : frozen_bits -> unit
-[@@ocaml.deprecated "Please use the typed version of summary projection"]
-val surgery_summary : frozen -> frozen_bits -> frozen
-[@@ocaml.deprecated "Please use the typed version of summary projection"]
-val project_summary : frozen -> ?complement:bool -> string list -> frozen_bits
-[@@ocaml.deprecated "Please use the typed version of summary projection"]
-val pointer_equal : frozen_bits -> frozen_bits -> bool
-[@@ocaml.deprecated "Please use the typed version of summary projection"]
-[@@@ocaml.warning "+3"]
-
 (** {6 Debug} *)
 val dump : unit -> (int * string) list

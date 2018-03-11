@@ -14,12 +14,6 @@ open Names
 (** {6 Dirpaths } *)
 val dirpath_of_string : string -> DirPath.t
 
-val pr_dirpath : DirPath.t -> Pp.t
-[@@ocaml.deprecated "Alias for DirPath.print"]
-
-val string_of_dirpath : DirPath.t -> string
-[@@ocaml.deprecated "Alias for DirPath.to_string"]
-
 (** Pop the suffix of a [DirPath.t]. Raises a [Failure] for an empty path *)
 val pop_dirpath : DirPath.t -> DirPath.t
 
@@ -155,10 +149,3 @@ val coq_string : string (** "Coq" *)
 (** This is the default root prefix for developments which doesn't
    mention a root *)
 val default_root_prefix : DirPath.t
-
-(** Deprecated synonyms *)
-val make_short_qualid : Id.t -> qualid (** = qualid_of_ident *)
-[@@ocaml.deprecated "Alias for qualid_of_ident"]
-
-val qualid_of_sp : full_path -> qualid (** = qualid_of_path *)
-[@@ocaml.deprecated "Alias for qualid_of_sp"]

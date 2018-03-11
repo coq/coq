@@ -49,10 +49,6 @@ val printable_constr_of_global : GlobRef.t -> constr
    raise [Not_found] if not a global reference *)
 val global_of_constr : constr -> GlobRef.t
 
-(** Obsolete synonyms for constr_of_global and global_of_constr *)
-val reference_of_constr : constr -> GlobRef.t
-[@@ocaml.deprecated "Alias of Globnames.global_of_constr"]
-
 module RefOrdered : sig
   type t = GlobRef.t
   val compare : t -> t -> int

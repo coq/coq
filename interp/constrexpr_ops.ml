@@ -600,8 +600,3 @@ let _ = Goptions.declare_bool_option {
   Goptions.optread = (fun () -> !asymmetric_patterns);
   Goptions.optwrite = (fun a -> asymmetric_patterns:=a);
 }
-
-(************************************************************************)
-(* Deprecated *)
-let abstract_constr_expr c bl = mkCLambdaN ?loc:(local_binders_loc bl) bl c
-let prod_constr_expr c bl =  mkCProdN ?loc:(local_binders_loc bl) bl c

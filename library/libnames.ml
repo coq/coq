@@ -15,8 +15,6 @@ open Names
 
 (**********************************************)
 
-let pr_dirpath sl = DirPath.print sl
-
 (*s Operations on dirpaths *)
 
 let split_dirpath d = match DirPath.repr d with
@@ -79,8 +77,6 @@ let dirpath_of_string s =
   | _ -> parse_dir s
   in
   DirPath.make path
-
-let string_of_dirpath = Names.DirPath.to_string
 
 module Dirset = Set.Make(DirPath)
 module Dirmap = Map.Make(DirPath)
@@ -240,8 +236,3 @@ let default_library = Names.DirPath.initial (* = ["Top"] *)
 let coq_string = "Coq"
 let coq_root = Id.of_string coq_string
 let default_root_prefix = DirPath.empty
-
-(* Deprecated synonyms *)
-
-let make_short_qualid = qualid_of_ident
-let qualid_of_sp = qualid_of_path
