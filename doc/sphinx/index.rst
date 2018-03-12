@@ -7,6 +7,7 @@ Introduction
 ===========================================
 
 .. include:: introduction.rst
+.. include:: credits.rst
 
 ------------------
 Table of contents
