@@ -146,6 +146,14 @@ html_theme = 'sphinx_rtd_theme'
 # documentation.
 #html_theme_options = {}
 
+html_context = {
+    'display_github': True,
+    'github_user': 'coq',
+    'github_repo': 'coq',
+    'github_version': 'master',
+    'conf_py_path': '/doc/sphinx/'
+}
+
 # Add any paths that contain custom themes here, relative to this directory.
 import sphinx_rtd_theme
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
