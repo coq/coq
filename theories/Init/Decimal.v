@@ -42,10 +42,10 @@ Notation zero := (D0 Nil).
 
 Inductive int := Pos (d:uint) | Neg (d:uint).
 
-Delimit Scope uint_scope with uint.
-Bind Scope uint_scope with uint.
-Delimit Scope int_scope with int.
-Bind Scope int_scope with int.
+Delimit Scope dec_uint_scope with uint.
+Bind Scope dec_uint_scope with uint.
+Delimit Scope dec_int_scope with int.
+Bind Scope dec_int_scope with int.
 
 (** This representation favors simplicity over canonicity.
     For normalizing numbers, we need to remove head zero digits,
