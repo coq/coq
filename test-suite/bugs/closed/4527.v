@@ -23,7 +23,9 @@ Module Export Datatypes.
 
 Set Implicit Arguments.
 Notation nat := Coq.Init.Datatypes.nat.
+Notation O := Coq.Init.Datatypes.O.
 Notation S := Coq.Init.Datatypes.S.
+Notation two := (S (S O)).
 
 Record prod (A B : Type) := pair { fst : A ; snd : B }.
 
@@ -159,7 +161,7 @@ End Adjointify.
            (n : nat) {A : Type@{i}} {B : Type@{j}}
            (f : A -> B) (C : B -> Type@{k}) : Type@{l}
     := match n with
-         | 0 => Unit@{l}
+         | O => Unit@{l}
          | S n => (forall (g : forall a, C (f a)),
                      ExtensionAlong@{i j k l l} f C g) *
                   forall (h k : forall b, C b),
@@ -220,12 +222,12 @@ Section ORecursion.
   Definition O_indpaths {P Q : Type} {Q_inO : In O Q}
              (g h : O P -> Q) (p : g o to O P == h o to O P)
   : g == h
-  := (fst (snd (extendable_to_O O 2) g h) p).1.
+  := (fst (snd (extendable_to_O O two) g h) p).1.
 
   Definition O_indpaths_beta {P Q : Type} {Q_inO : In O Q}
              (g h : O P -> Q) (p : g o (to O P) == h o (to O P)) (x : P)
   : O_indpaths g h p (to O P x) = p x
-  := (fst (snd (extendable_to_O O 2) g h) p).2 x.
+  := (fst (snd (extendable_to_O O two) g h) p).2 x.
 
 End ORecursion.
 

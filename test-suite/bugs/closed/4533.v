@@ -17,7 +17,10 @@ Notation "A -> B" := (forall (_ : A), B) : type_scope.
 Module Export Datatypes.
   Set Implicit Arguments.
   Notation nat := Coq.Init.Datatypes.nat.
+  Notation O := Coq.Init.Datatypes.O.
   Notation S := Coq.Init.Datatypes.S.
+  Notation one := (S O).
+  Notation two := (S one).
   Record prod (A B : Type) := pair { fst : A ; snd : B }.
   Notation "x * y" := (prod x y) : type_scope.
   Delimit Scope nat_scope with nat.
@@ -109,7 +112,7 @@ Fixpoint ExtendableAlong@{i j k l}
          (n : nat) {A : Type@{i}} {B : Type@{j}}
          (f : A -> B) (C : B -> Type@{k}) : Type@{l}
   := match n with
-     | 0 => Unit@{l}
+     | O => Unit@{l}
      | S n => (forall (g : forall a, C (f a)),
                   ExtensionAlong@{i j k l l} f C g) *
               forall (h k : forall b, C b),
@@ -160,17 +163,17 @@ Module ReflectiveSubuniverses_Theory (Os : ReflectiveSubuniverses).
     Definition O_rec {P Q : Type} {Q_inO : In O Q}
                (f : P -> Q)
       : O P -> Q
-      := (fst (extendable_to_O O 1%nat) f).1.
+      := (fst (extendable_to_O O one) f).1.
 
     Definition O_rec_beta {P Q : Type} {Q_inO : In O Q}
                (f : P -> Q) (x : P)
       : O_rec f (to O P x) = f x
-      := (fst (extendable_to_O O 1%nat) f).2 x.
+      := (fst (extendable_to_O O one) f).2 x.
 
     Definition O_indpaths {P Q : Type} {Q_inO : In O Q}
                (g h : O P -> Q) (p : g o to O P == h o to O P)
       : g == h
-      := (fst (snd (extendable_to_O O 2) g h) p).1.
+      := (fst (snd (extendable_to_O O two) g h) p).1.
 
   End ORecursion.
 
