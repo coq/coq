@@ -1,3 +1,13 @@
+.. _introduction:
+
+.. include:: preamble.rst
+.. include:: replaces.rst
+
+Introduction
+===========================================
+
+.. include:: introduction.rst
+
 ------------------
 Table of contents
 ------------------
