@@ -875,7 +875,7 @@ Due to conflicts, a few syntactic rules have changed.
   `try`, `repeat`, `do`, `once`, `progress`, `time`, `abstract`.
 - `idtac` is no more. Either use `()` if you expect nothing to happen,
   `(fun () => ())` if you want a thunk (see next section), or use printing
-  primitives from the `Message` module if you wand to display something.
+  primitives from the `Message` module if you want to display something.
 
 ## Tactic delay
 
