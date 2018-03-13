@@ -58,7 +58,7 @@ DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
 
 REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
   RefMan-gal.v.tex \
-  RefMan-mod.v.tex RefMan-tac.v.tex \
+  RefMan-tac.v.tex \
   RefMan-cic.v.tex RefMan-lib.v.tex \
   RefMan-tacex.v.tex RefMan-syn.v.tex \
   RefMan-oth.v.tex RefMan-ltac.v.tex \
