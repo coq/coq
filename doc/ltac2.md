@@ -127,7 +127,7 @@ TYPEDEF :=
 | TYPE
 | "[" CONSTRUCTORDEF₀ "|" ... "|" CONSTRUCTORDEFₙ "]"
 | "{" FIELDDEF₀ ";" ... ";" FIELDDEFₙ "}"
-| "[" "..." "]"
+| "[" ".." "]"
 
 CONSTRUCTORDEF :=
 | IDENT ( "(" TYPE₀ "," ... "," TYPE₀ ")" )
