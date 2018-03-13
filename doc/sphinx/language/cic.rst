@@ -1,1159 +1,1152 @@
-\chapter[Calculus of Inductive Constructions]{Calculus of Inductive Constructions
-\label{Cic}
-\index{Cic@\textsc{CIC}}
-\index{Calculus of Inductive Constructions}}
-%HEVEA\cutname{cic.html}
+.. include:: ../preamble.rst
+.. include:: ../replaces.rst
 
-The underlying formal language of {\Coq} is a {\em Calculus of
-Inductive Constructions} (\CIC) whose inference rules are presented in
-this chapter. The history of this formalism as well as pointers to related work
-are provided in a separate chapter; see {\em Credits}.
+.. _calculusofinductiveconstructions:
 
-\section[The terms]{The terms\label{Terms}}
 
-The expressions of the {\CIC} are {\em terms} and all terms have a {\em type}.
-There are types for functions (or
-programs), there are atomic types (especially datatypes)... but also
-types for proofs and types for the types themselves.
-Especially, any object handled in the formalism must belong to a
-type.  For instance, universal quantification is relative to a type and
-takes the form {\it ``for all x
-of type T, P''}. The expression {\it ``x of type T''} is
-written {\it ``x:T''}. Informally, {\it ``x:T''} can be thought as
-{\it ``x belongs to T''}.
+Calculus of Inductive Constructions
+====================================
 
-The types of types are {\em sorts}. Types and sorts are themselves
-terms so that terms, types and sorts are all components of a common
-syntactic language of terms which is described in
-Section~\ref{cic:terms} but, first, we describe sorts.
+The underlying formal language of |Coq| is a *Calculus of Inductive
+Constructions* (|Cic|) whose inference rules are presented in this
+chapter. The history of this formalism as well as pointers to related
+work are provided in a separate chapter; see *Credits*.
 
-\subsection[Sorts]{Sorts\label{Sorts}
-\index{Sorts}}
-All sorts have a type and there is an infinite well-founded
-typing hierarchy of sorts whose base sorts are {\Prop} and {\Set}.
 
-The sort {\Prop} intends to be the type of logical propositions. If
-$M$ is a logical proposition then it denotes the class of terms
-representing proofs of $M$. An object $m$ belonging to $M$ witnesses
-the fact that $M$ is provable. An object of type {\Prop} is called a
-proposition.
+.. _The-terms:
 
-The sort {\Set} intends to be the type of small sets. This includes data
+The terms
+-------------
+
+The expressions of the |Cic| are *terms* and all terms have a *type*.
+There are types for functions (or programs), there are atomic types
+(especially datatypes)... but also types for proofs and types for the
+types themselves. Especially, any object handled in the formalism must
+belong to a type. For instance, universal quantification is relative
+to a type and takes the form "*for all x of type T, P* ". The expression
+“x of type T” is written :g:`x:T`. Informally, :g:`x:T` can be thought as
+“x belongs to T”.
+
+The types of types are *sorts*. Types and sorts are themselves terms
+so that terms, types and sorts are all components of a common
+syntactic language of terms which is described in Section :ref:`terms` but,
+first, we describe sorts.
+
+
+.. _Sorts:
+
+Sorts
+~~~~~~~~~~~
+
+All sorts have a type and there is an infinite well-founded typing
+hierarchy of sorts whose base sorts are :math:`\Prop` and :math:`\Set`.
+
+The sort :math:`\Prop` intends to be the type of logical propositions. If :math:`M` is a
+logical proposition then it denotes the class of terms representing
+proofs of :math:`M`. An object :math:`m` belonging to :math:`M` witnesses the fact that :math:`M` is
+provable. An object of type :math:`\Prop` is called a proposition.
+
+The sort :math:`\Set` intends to be the type of small sets. This includes data
 types such as booleans and naturals, but also products, subsets, and
 function types over these data types.
 
-{\Prop} and {\Set} themselves can be manipulated as ordinary
-terms. Consequently they also have a type. Because assuming simply
-that {\Set} has type {\Set} leads to an inconsistent theory~\cite{Coq86}, the
-language of {\CIC} has infinitely many sorts. There are, in addition
-to {\Set} and {\Prop} a hierarchy of universes {\Type$(i)$} for any
-integer $i$.
+:math:`\Prop` and :math:`\Set` themselves can be manipulated as ordinary terms.
+Consequently they also have a type. Because assuming simply that :math:`\Set`
+has type :math:`\Set` leads to an inconsistent theory :cite:`Coq86`, the language of
+|Cic| has infinitely many sorts. There are, in addition to :math:`\Set` and :math:`\Prop`
+a hierarchy of universes :math:`\Type(i)` for any integer :math:`i`.
 
-Like {\Set}, all of the sorts {\Type$(i)$} contain small sets such as
+Like :math:`\Set`, all of the sorts :math:`\Type(i)` contain small sets such as
 booleans, natural numbers, as well as products, subsets and function
-types over small sets. But, unlike {\Set}, they also contain large
-sets, namely the sorts {\Set} and {\Type$(j)$} for $j<i$, and all
-products, subsets and function types over these sorts.
+types over small sets. But, unlike :math:`\Set`, they also contain large sets,
+namely the sorts :math:`\Set` and :math:`\Type(j)` for :math:`j<i`, and all products, subsets
+and function types over these sorts.
 
-Formally, we call {\Sort} the set of sorts which is defined by:
-\index{Type@{\Type}}%
-\index{Prop@{\Prop}}%
-\index{Set@{\Set}}%
-\[\Sort \equiv \{\Prop,\Set,\Type(i)\;|\; i \in \NN\} \]
-Their properties, such as:
-{\Prop:\Type$(1)$}, {\Set:\Type$(1)$}, and {\Type$(i)$:\Type$(i+1)$},
-are defined in Section~\ref{subtyping-rules}.
+Formally, we call :math:`\Sort` the set of sorts which is defined by:
 
-The user does not have to mention explicitly the index $i$ when referring to
-the universe \Type$(i)$. One only writes \Type. The
-system itself generates for each instance of \Type\ a new
-index for the universe and checks that the constraints between these
-indexes can be solved. From the user point of view we consequently
-have {\Type}:{\Type}.
-We shall make precise in the typing rules the constraints between the
-indexes. 
+.. math::
+   
+   \Sort \equiv \{\Prop,\Set,\Type(i)\;|\; i~∈ ℕ\}
 
-\paragraph{Implementation issues}
-In practice, the {\Type} hierarchy is implemented using
-{\em algebraic universes}\index{algebraic universe}.
-An algebraic universe $u$ is either a variable (a qualified
+Their properties, such as: :math:`\Prop:\Type(1)`, :math:`\Set:\Type(1)`, and
+:math:`\Type(i):\Type(i+1)`, are defined in Section :ref:`subtyping-rules`.
+
+The user does not have to mention explicitly the index :math:`i` when
+referring to the universe :math:`\Type(i)`. One only writes :math:`\Type`. The system
+itself generates for each instance of :math:`\Type` a new index for the
+universe and checks that the constraints between these indexes can be
+solved. From the user point of view we consequently have :math:`\Type:\Type`. We
+shall make precise in the typing rules the constraints between the
+indices.
+
+
+.. _Implementation-issues:
+
+**Implementation issues** In practice, the Type hierarchy is
+implemented using *algebraic
+universes*. An algebraic universe :math:`u` is either a variable (a qualified
 identifier with a number) or a successor of an algebraic universe (an
-expression $u+1$), or an upper bound of algebraic universes (an
-expression $max(u_1,...,u_n)$), or the base universe (the expression
-$0$) which corresponds, in the arity of template polymorphic inductive
-types (see Section \ref{Template-polymorphism}),
-to the predicative sort {\Set}. A graph of constraints between
-the universe variables is maintained globally. To ensure the existence
-of a mapping of the universes to the positive integers, the graph of
-constraints must remain acyclic.  Typing expressions that violate the
-acyclicity of the graph of constraints results in a \errindex{Universe
-inconsistency} error (see also Section~\ref{PrintingUniverses}).
+expression :math:`u+1`), or an upper bound of algebraic universes (an
+expression :math:`\max(u 1 ,...,u n )`), or the base universe (the expression
+:math:`0`) which corresponds, in the arity of template polymorphic inductive
+types (see Section
+:ref:`well-formed-inductive-definitions`),
+to the predicative sort :math:`\Set`. A graph of
+constraints between the universe variables is maintained globally. To
+ensure the existence of a mapping of the universes to the positive
+integers, the graph of constraints must remain acyclic. Typing
+expressions that violate the acyclicity of the graph of constraints
+results in a Universe inconsistency error (see also Section
+:ref:`TODO-2.10`).
 
-%% HH: This looks to me more like source of confusion than helpful
 
-%% \subsection{Constants}
+.. _Terms:
 
-%% Constants refers to
-%% objects in the global environment. These constants may denote previously
-%% defined objects, but also objects related to inductive definitions
-%% (either the type itself or one of its constructors or destructors).
+Terms
+~~~~~
 
-%% \medskip\noindent {\bf Remark. } In other presentations of \CIC, 
-%% the inductive objects are not seen as
-%% external declarations but as first-class terms. Usually the
-%% definitions are also completely ignored.  This is a nice theoretical
-%% point of view but not so practical. An inductive definition is
-%% specified by a possibly huge set of declarations, clearly we want to
-%% share this specification among the various inductive objects and not
-%% to duplicate it. So the specification should exist somewhere and the
-%% various objects should refer to it.  We choose one more level of
-%% indirection where the objects are just represented as constants and
-%% the environment gives the information on the kind of object the
-%% constant refers to.
 
-%% \medskip
-%% Our inductive objects will be manipulated as constants declared in the
-%% environment. This roughly corresponds to the way they are actually
-%% implemented in the \Coq\ system. It is simple to map this presentation
-%% in a theory where inductive objects are represented by terms.
 
-\subsection{Terms}
-\label{cic:terms}
+Terms are built from sorts, variables, constants, abstractions,
+applications, local definitions, and products. From a syntactic point
+of view, types cannot be distinguished from terms, except that they
+cannot start by an abstraction or a constructor. More precisely the
+language of the *Calculus of Inductive Constructions* is built from
+the following rules.
 
-Terms are built from sorts, variables, constants,
-%constructors, inductive types,
-abstractions, applications, local definitions,
-%case analysis, fixpoints, cofixpoints
-and products.
-From a syntactic point of view, types cannot be distinguished from terms,
-except that they cannot start by an abstraction or a constructor.
-More precisely the language of the {\em Calculus of Inductive
-  Constructions} is built from the following rules.
-%
-\begin{enumerate}
-\item the sorts {\Set}, {\Prop}, ${\Type(i)}$ are terms.
-\item variables, hereafter ranged over by letters $x$, $y$, etc., are terms
-\item constants, hereafter ranged over by letters $c$, $d$, etc.,  are terms.
-%\item constructors, hereafter ranged over by letter $C$, are terms.
-%\item inductive types, hereafter ranged over by letter $I$, are terms.
-\item\index{products} if $x$ is a variable and $T$, $U$ are terms then $\forall~x:T,U$
-  ($\kw{forall}~x:T,~U$ in \Coq{} concrete syntax) is a term. If $x$
-  occurs in $U$, $\forall~x:T,U$ reads as {\it ``for all x of type T,
-    U''}. As $U$ depends on $x$, one says that $\forall~x:T,U$ is a
-  {\em dependent product}. If $x$ does not occur in $U$ then
-  $\forall~x:T,U$ reads as {\it ``if T then U''}. A {\em non dependent
-  product} can be written: $T \ra U$.
-\item if $x$ is a variable and $T$, $u$ are terms then $\lb x:T \mto u$
-  ($\kw{fun}~x:T~ {\tt =>}~ u$ in \Coq{} concrete syntax) is a term. This is a
-  notation for the $\lambda$-abstraction of
-  $\lambda$-calculus\index{lambda-calculus@$\lambda$-calculus}
-  \cite{Bar81}. The term $\lb x:T \mto u$ is a function which maps
-  elements of $T$ to the expression $u$.
-\item if $t$ and $u$ are terms then $(t\ u)$ is a term  
- ($t~u$ in \Coq{} concrete syntax).  The term $(t\ 
-  u)$ reads as {\it ``t applied to u''}.
-\item if $x$ is a variable, and $t$, $T$ and $u$ are terms then
-  $\kw{let}~x:=t:T~\kw{in}~u$ is a
-  term which denotes the term $u$ where the variable $x$ is locally
-  bound to $t$ of type $T$. This stands for the common ``let-in''
-  construction of functional programs such as ML or Scheme.
-%\item case ...
-%\item fixpoint ...
-%\item cofixpoint ...
-\end{enumerate}
 
-\paragraph{Free variables.}
-The notion of free variables is defined as usual.  In the expressions
-$\lb x:T\mto U$ and $\forall x:T, U$ the occurrences of $x$ in $U$
-are bound.
+#. the sorts :math:`\Set`, :math:`\Prop`, :math:`\Type(i)` are terms.
+#. variables, hereafter ranged over by letters :math:`x`, :math:`y`, etc., are terms
+#. constants, hereafter ranged over by letters :math:`c`, :math:`d`, etc., are terms.
+#. if :math:`x` is a variable and :math:`T`, :math:`U` are terms then
+   :math:`∀ x:T,U` (:g:`forall x:T, U`   in |Coq| concrete syntax) is a term.
+   If :math:`x` occurs in :math:`U`, :math:`∀ x:T,U` reads as
+   “for all :math:`x` of type :math:`T`, :math:`U`”.
+   As :math:`U` depends on :math:`x`, one says that :math:`∀ x:T,U` is
+   a *dependent product*. If :math:`x` does not occur in :math:`U` then
+   :math:`∀ x:T,U` reads as
+   “if :math:`T` then :math:`U`”. A *non dependent product* can be
+   written: :math:`T \rightarrow U`.
+#. if :math:`x` is a variable and :math:`T`, :math:`u` are terms then
+   :math:`λ x:T . u` (:g:`fun x:T => u`
+   in |Coq| concrete syntax) is a term. This is a notation for the
+   λ-abstraction of λ-calculus :cite:`Bar81`. The term :math:`λ x:T . u` is a function
+   which maps elements of :math:`T` to the expression :math:`u`.
+#. if :math:`t` and :math:`u` are terms then :math:`(t~u)` is a term
+   (:g:`t u` in |Coq| concrete
+   syntax). The term :math:`(t~u)` reads as “t applied to u”.
+#. if :g:`x` is a variable, and :math:`t`, :math:`T` and :math:`u` are
+   terms then :g:`let x:=t:T in u` is
+   a term which denotes the term :math:`u` where the variable :math:`x` is locally bound
+   to :math:`t` of type :math:`T`. This stands for the common “let-in” construction of
+   functional programs such as ML or Scheme.
 
-\paragraph[Substitution.]{Substitution.\index{Substitution}}
-The notion of substituting a term $t$ to free occurrences of a
-variable $x$ in a term $u$ is defined as usual. The resulting term
-is written $\subst{u}{x}{t}$.
 
-\paragraph[The logical vs programming readings.]{The logical vs programming readings.}
 
-The constructions of the {\CIC} can be used to express both logical
-and programming notions, accordingly to the Curry-Howard
-correspondence between proofs and programs, and between propositions
-and types~\cite{Cur58,How80,Bru72}.
+.. _Free-variables:
 
-For instance, let us assume that \nat\ is the type of natural numbers
-with zero element written $0$ and that ${\tt True}$ is the always true
-proposition.  Then $\ra$ is used both to denote $\nat\ra\nat$ which is
-the type of functions from \nat\ to \nat, to denote ${\tt True}\ra{\tt
-  True}$ which is an implicative proposition, to denote $\nat \ra
-\Prop$ which is the type of unary predicates over the natural numbers,
-etc.
+**Free variables.**
+The notion of free variables is defined as usual. In the expressions
+:g:`λx:T. U` and :g:`∀ x:T, U` the occurrences of :math:`x` in :math:`U` are bound.
 
-Let us assume that ${\tt mult}$ is a function of type $\nat\ra\nat\ra
-\nat$ and ${\tt eqnat}$ a predicate of type $\nat\ra\nat\ra \Prop$.
-The $\lambda$-abstraction can serve to build ``ordinary'' functions as
-in $\lambda x:\nat.({\tt mult}~x~x)$ (i.e. $\kw{fun}~x:\nat ~{\tt =>}~
-{\tt mult} ~x~x$ in {\Coq} notation) but may build also predicates
-over the natural numbers. For instance $\lambda x:\nat.({\tt eqnat}~
-x~0)$ (i.e. $\kw{fun}~x:\nat ~{\tt =>}~ {\tt eqnat}~ x~0$ in {\Coq}
-notation) will represent the predicate of one variable $x$ which
-asserts the equality of $x$ with $0$. This predicate has type $\nat
-\ra \Prop$ and it can be applied to any expression of type ${\nat}$,
-say $t$, to give an object $P~t$ of type \Prop, namely a proposition.
 
-Furthermore $\kw{forall}~x:\nat,\,P\;x$ will represent the type of
-functions which associate to each natural number $n$ an object of type
-$(P~n)$ and consequently represent the type of proofs of the formula
-``$\forall x.\,P(x)$''.
+.. _Substitution:
 
-\section[Typing rules]{Typing rules\label{Typed-terms}}
+**Substitution.**
+The notion of substituting a term :math:`t` to free occurrences of a variable
+:math:`x` in a term :math:`u` is defined as usual. The resulting term is written
+:math:`\subst{u}{x}{t}`.
 
-As objects of type theory, terms are subjected to {\em type
-discipline}. The well typing of a term depends on
-a global environment and a local context.
 
-\paragraph{Local context.\index{Local context}}
-A {\em local context} is an ordered list of
-{\em local declarations\index{declaration!local}} of names which we call {\em variables\index{variable}}.
-The declaration of some variable $x$ is
-either a {\em local assumption\index{assumption!local}}, written $x:T$ ($T$ is a type) or a {\em local definition\index{definition!local}},
-written $x:=t:T$.  We use brackets to write local contexts. A
-typical example is $[x:T;y:=u:U;z:V]$.  Notice that the variables
-declared in a local context must be distinct. If $\Gamma$ declares some $x$,
-we write $x \in \Gamma$. By writing $(x:T) \in \Gamma$ we mean that
-either $x:T$ is an assumption in $\Gamma$ or that there exists some $t$ such
-that $x:=t:T$ is a definition in $\Gamma$. If $\Gamma$ defines some
-$x:=t:T$, we also write $(x:=t:T) \in \Gamma$.
-For the rest of the chapter, the $\Gamma::(y:T)$ denotes the local context
-$\Gamma$ enriched with the local assumption $y:T$.
-Similarly, $\Gamma::(y:=t:T)$ denotes the local context
-$\Gamma$ enriched with the local definition $(y:=t:T)$.
-The notation $[]$ denotes the empty local context.
-By $\Gamma_1; \Gamma_2$ we mean concatenation of the local context $\Gamma_1$
-and the local context $\Gamma_2$.
+.. _The-logical-vs-programming-readings:
 
-% Does not seem to be used further...
-% Si dans l'explication WF(E)[Gamma] concernant les constantes
-% definies ds un contexte
+**The logical vs programming readings.**
+The constructions of the |Cic| can be used to express both logical and
+programming notions, accordingly to the Curry-Howard correspondence
+between proofs and programs, and between propositions and types
+:cite:`Cur58,How80,Bru72`.
 
-%We define the inclusion of two local contexts $\Gamma$ and $\Delta$ (written
-%as $\Gamma \subset \Delta$) as the property, for all variable $x$,
-%type $T$ and term $t$, if $(x:T) \in \Gamma$ then $(x:T) \in \Delta$
-%and if $(x:=t:T) \in \Gamma$ then $(x:=t:T) \in \Delta$.
-%We write
-% $|\Delta|$ for the length of the context $\Delta$, that is for the number
-% of declarations (assumptions or definitions) in $\Delta$.
+For instance, let us assume that :math:`\nat` is the type of natural numbers
+with zero element written :math:`0` and that :g:`True` is the always true
+proposition. Then :math:`→` is used both to denote :math:`\nat→\nat` which is the type
+of functions from :math:`\nat` to :math:`\nat`, to denote True→True which is an
+implicative proposition, to denote :math:`\nat →\Prop` which is the type of
+unary predicates over the natural numbers, etc.
 
-\paragraph[Global environment.]{Global environment.\index{Global environment}}
-%Because we are manipulating global declarations (global constants and global
-%assumptions), we also need to consider a global environment $E$.
+Let us assume that ``mult`` is a function of type :math:`\nat→\nat→\nat` and ``eqnat`` a
+predicate of type \nat→\nat→ \Prop. The λ-abstraction can serve to build
+“ordinary” functions as in :math:`λ x:\nat.(\kw{mult}~x~x)` (i.e.
+:g:`fun x:nat => mult x x`
+in |Coq| notation) but may build also predicates over the natural
+numbers. For instance :math:`λ x:\nat.(\kw{eqnat}~x~0)`
+(i.e. :g:`fun x:nat => eqnat x 0`
+in |Coq| notation) will represent the predicate of one variable :math:`x` which
+asserts the equality of :math:`x` with :math:`0`. This predicate has type
+:math:`\nat → \Prop`
+and it can be applied to any expression of type :math:`\nat`, say :math:`t`, to give an
+object :math:`P~t` of type :math:`\Prop`, namely a proposition.
 
-A {\em global environment} is an ordered list of {\em global declarations\index{declaration!global}}.
-Global declarations are either {\em global assumptions\index{assumption!global}} or {\em global
-definitions\index{definition!global}}, but also declarations of inductive objects. Inductive objects themselves declare both inductive or coinductive types and constructors
-(see Section~\ref{Cic-inductive-definitions}).
+Furthermore :g:`forall x:nat, P x` will represent the type of functions
+which associate to each natural number :math:`n` an object of type :math:`(P~n)` and
+consequently represent the type of proofs of the formula “:math:`∀ x. P(x`)”.
 
-A {\em global assumption} will be represented in the global environment as
-$(c:T)$ which assumes the name $c$ to be of some type $T$.
-A {\em global definition} will
-be represented in the global environment as $c:=t:T$ which defines
-the name $c$ to have value $t$ and type $T$.
-We shall call such names {\em constants}.
-For the rest of the chapter, the $E;c:T$ denotes the global environment
-$E$ enriched with the global assumption $c:T$.
-Similarly, $E;c:=t:T$ denotes the global environment
-$E$ enriched with the global definition $(c:=t:T)$.
+
+.. _Typing-rules:
+
+Typing rules
+----------------
+
+As objects of type theory, terms are subjected to *type discipline*.
+The well typing of a term depends on a global environment and a local
+context.
+
+
+.. _Local-context:
+
+**Local context.**
+A *local context* is an ordered list of *local declarations* of names
+which we call *variables*. The declaration of some variable :math:`x` is
+either a *local assumption*, written :math:`x:T` (:math:`T` is a type) or a *local
+definition*, written :math:`x:=t:T`. We use brackets to write local contexts.
+A typical example is :math:`[x:T;y:=u:U;z:V]`. Notice that the variables
+declared in a local context must be distinct. If :math:`Γ` is a local context
+that declares some :math:`x`, we
+write :math:`x ∈ Γ`. By writing :math:`(x:T) ∈ Γ` we mean that either :math:`x:T` is an
+assumption in :math:`Γ` or that there exists some :math:`t` such that :math:`x:=t:T` is a
+definition in :math:`Γ`. If :math:`Γ` defines some :math:`x:=t:T`, we also write :math:`(x:=t:T) ∈ Γ`.
+For the rest of the chapter, :math:`Γ::(y:T)` denotes the local context :math:`Γ`
+enriched with the local assumption :math:`y:T`. Similarly, :math:`Γ::(y:=t:T)` denotes
+the local context :math:`Γ` enriched with the local definition :math:`(y:=t:T)`. The
+notation :math:`[]` denotes the empty local context. By :math:`Γ_1 ; Γ_2` we mean
+concatenation of the local context :math:`Γ_1` and the local context :math:`Γ_2` .
+
+
+.. _Global-environment:
+
+**Global environment.**
+A *global environment* is an ordered list of *global declarations*.
+Global declarations are either *global assumptions* or *global
+definitions*, but also declarations of inductive objects. Inductive
+objects themselves declare both inductive or coinductive types and
+constructors (see Section :ref:`inductive-definitions`).
+
+A *global assumption* will be represented in the global environment as
+:math:`(c:T)` which assumes the name :math:`c` to be of some type :math:`T`. A *global
+definition* will be represented in the global environment as :math:`c:=t:T`
+which defines the name :math:`c` to have value :math:`t` and type :math:`T`. We shall call
+such names *constants*. For the rest of the chapter, the :math:`E;c:T` denotes
+the global environment :math:`E` enriched with the global assumption :math:`c:T`.
+Similarly, :math:`E;c:=t:T` denotes the global environment :math:`E` enriched with the
+global definition :math:`(c:=t:T)`.
 
 The rules for inductive definitions (see Section
-\ref{Cic-inductive-definitions}) have to be considered as assumption
-rules to which the following definitions apply: if the name $c$ is
-declared in $E$, we write $c \in E$ and if $c:T$ or $c:=t:T$ is
-declared in $E$, we write $(c : T) \in E$.
+:ref:`inductive-definitions`) have to be considered as assumption
+rules to which the following definitions apply: if the name :math:`c`
+is declared in :math:`E`, we write :math:`c ∈ E` and if :math:`c:T` or
+:math:`c:=t:T` is declared in :math:`E`, we write :math:`(c : T) ∈ E`.
 
-\paragraph[Typing rules.]{Typing rules.\label{Typing-rules}\index{Typing rules}}
-In the following, we define simultaneously two
-judgments.  The first one \WTEG{t}{T} means the term $t$ is well-typed
-and has type $T$ in the global environment $E$ and local context $\Gamma$.  The
-second judgment \WFE{\Gamma} means that the global environment $E$ is
-well-formed and the local context $\Gamma$ is a valid local context in this
-global environment.
-% HH: This looks to me complicated. I think it would be better to talk
-% about ``discharge'' as a transformation of global environments,
-% rather than as keeping a local context next to global constants.
-%
-%%  It also means a third property which makes sure that any
-%%constant in $E$ was defined in an environment which is included in
-%%$\Gamma$
-%%\footnote{This requirement could be relaxed if we instead introduced
-%%  an explicit mechanism for instantiating constants. At the external
-%%  level, the Coq engine works accordingly to this view that all the
-%%  definitions in the environment were built in a local sub-context of the
-%%  current local context.}.
 
-A term $t$ is well typed in a global environment $E$ iff there exists a
-local context $\Gamma$ and a term $T$ such that the judgment \WTEG{t}{T} can
-be derived from the following rules.
-\begin{description}
-\item[W-Empty] \inference{\WF{[]}{}}
-\item[W-Local-Assum]  % Ce n'est pas vrai : x peut apparaitre plusieurs fois dans Gamma
-\inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~x \not\in \Gamma % \cup E
-      }{\WFE{\Gamma::(x:T)}}}
-\item[W-Local-Def]
-\inference{\frac{\WTEG{t}{T}~~~~x \not\in \Gamma % \cup E
-     }{\WFE{\Gamma::(x:=t:T)}}}
-\item[W-Global-Assum] \inference{\frac{\WTE{}{T}{s}~~~~s \in \Sort~~~~c \notin E}
-                      {\WF{E;c:T}{}}}
-\item[W-Global-Def] \inference{\frac{\WTE{}{t}{T}~~~c \notin E}
-                      {\WF{E;c:=t:T}{}}}
-\item[Ax-Prop] \index{Typing rules!Ax-Prop}
-\inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(1)}}}
-\item[Ax-Set] \index{Typing rules!Ax-Set}
-\inference{\frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(1)}}}
-\item[Ax-Type] \index{Typing rules!Ax-Type}
-\inference{\frac{\WFE{\Gamma}}{\WTEG{\Type(i)}{\Type(i+1)}}}
-\item[Var]\index{Typing rules!Var}
- \inference{\frac{ \WFE{\Gamma}~~~~~(x:T) \in \Gamma~~\mbox{or}~~(x:=t:T) \in \Gamma~\mbox{for some $t$}}{\WTEG{x}{T}}}
-\item[Const]  \index{Typing rules!Const}
-\inference{\frac{\WFE{\Gamma}~~~~(c:T) \in E~~\mbox{or}~~(c:=t:T) \in E~\mbox{for some $t$} }{\WTEG{c}{T}}}
-\item[Prod-Prop]  \index{Typing rules!Prod-Prop}
-\inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~
-    \WTE{\Gamma::(x:T)}{U}{\Prop}}
-      { \WTEG{\forall~x:T,U}{\Prop}}} 
-\item[Prod-Set]  \index{Typing rules!Prod-Set}
-\inference{\frac{\WTEG{T}{s}~~~~s \in\{\Prop, \Set\}~~~~~~
-    \WTE{\Gamma::(x:T)}{U}{\Set}}
-      { \WTEG{\forall~x:T,U}{\Set}}} 
-\item[Prod-Type]  \index{Typing rules!Prod-Type}
-\inference{\frac{\WTEG{T}{\Type(i)}~~~~
-    \WTE{\Gamma::(x:T)}{U}{\Type(i)}}
-    {\WTEG{\forall~x:T,U}{\Type(i)}}}
-\item[Lam]\index{Typing rules!Lam} 
-\inference{\frac{\WTEG{\forall~x:T,U}{s}~~~~ \WTE{\Gamma::(x:T)}{t}{U}}
-        {\WTEG{\lb x:T\mto t}{\forall x:T, U}}}
-\item[App]\index{Typing rules!App}
- \inference{\frac{\WTEG{t}{\forall~x:U,T}~~~~\WTEG{u}{U}}
-                 {\WTEG{(t\ u)}{\subst{T}{x}{u}}}}
-\item[Let]\index{Typing rules!Let} 
-\inference{\frac{\WTEG{t}{T}~~~~ \WTE{\Gamma::(x:=t:T)}{u}{U}}
-        {\WTEG{\letin{x}{t:T}{u}}{\subst{U}{x}{t}}}}
-\end{description}
+.. _Typing-rules2:
 
-\Rem Prod$_1$ and Prod$_2$ typing-rules make sense if we consider the semantic
-difference between {\Prop} and {\Set}:
-\begin{itemize}
-  \item All values of a type that has a sort {\Set} are extractable.
-  \item No values of a type that has a sort {\Prop} are extractable.
-\end{itemize}
+**Typing rules.**
+In the following, we define simultaneously two judgments. The first
+one :math:`\WTEG{t}{T}` means the term :math:`t` is well-typed and has type :math:`T` in the
+global environment :math:`E` and local context :math:`Γ`. The second judgment :math:`\WFE{Γ}`
+means that the global environment :math:`E` is well-formed and the local
+context :math:`Γ` is a valid local context in this global environment.
 
-\Rem We may have $\kw{let}~x:=t:T~\kw{in}~u$
-well-typed without having $((\lb x:T\mto u)~t)$ well-typed (where
-$T$ is a type of $t$). This is because the value $t$ associated to $x$
-may be used in a conversion rule (see Section~\ref{conv-rules}).
+A term :math:`t` is well typed in a global environment :math:`E` iff
+there exists a local context :math:`\Gamma` and a term :math:`T` such
+that the judgment :math:`\WTEG{t}{T}` can be derived from the
+following rules.
 
-\section[Conversion rules]{Conversion rules\index{Conversion rules}
-\label{conv-rules}}
+.. inference:: W-Empty
 
-In \CIC, there is an internal reduction mechanism. In particular, it
-can decide if two programs are {\em intentionally} equal (one
-says {\em convertible}). Convertibility is described in this section.
+   ---------
+   \WF{[]}{}
 
-\paragraph[$\beta$-reduction.]{$\beta$-reduction.\label{beta}\index{beta-reduction@$\beta$-reduction}}
+.. inference:: W-Local-Assum
 
+   \WTEG{T}{s}
+   s \in \Sort
+   x \not\in \Gamma % \cup E
+   -------------------------
+   \WFE{\Gamma::(x:T)}
+
+.. inference:: W-Local-Def
+
+   \WTEG{t}{T}
+   x \not\in \Gamma % \cup E
+   -------------------------
+   \WFE{\Gamma::(x:=t:T)}
+
+.. inference:: W-Global-Assum
+
+   \WTE{}{T}{s}
+   s \in \Sort
+   c \notin E
+   ------------
+   \WF{E;c:T}{}
+
+.. inference:: W-Global-Def
+
+   \WTE{}{t}{T}
+   c \notin E
+   ---------------
+   \WF{E;c:=t:T}{}
+
+.. inference:: Ax-Prop
+
+   \WFE{\Gamma}
+   ----------------------
+   \WTEG{\Prop}{\Type(1)}
+
+.. inference:: Ax-Set
+
+   \WFE{\Gamma}
+   ---------------------
+   \WTEG{\Set}{\Type(1)}
+
+.. inference:: Ax-Type
+
+   \WFE{\Gamma}
+   ---------------------------
+   \WTEG{\Type(i)}{\Type(i+1)}
+
+.. inference:: Var
+
+   \WFE{\Gamma}
+   (x:T) \in \Gamma~~\mbox{or}~~(x:=t:T) \in \Gamma~\mbox{for some $t$}
+   --------------------------------------------------------------------
+   \WTEG{x}{T}
+
+.. inference:: Const
+
+   \WFE{\Gamma}
+   (c:T) \in E~~\mbox{or}~~(c:=t:T) \in E~\mbox{for some $t$}
+   ----------------------------------------------------------
+   \WTEG{c}{T}
+
+.. inference:: Prod-Prop
+
+   \WTEG{T}{s}
+   s \in {\Sort}
+   \WTE{\Gamma::(x:T)}{U}{\Prop}
+   -----------------------------
+   \WTEG{\forall~x:T,U}{\Prop}
+
+.. inference:: Prod-Set
+
+   \WTEG{T}{s}
+   s \in \{\Prop, \Set\}
+   \WTE{\Gamma::(x:T)}{U}{\Set}
+   ----------------------------
+   \WTEG{\forall~x:T,U}{\Set}
+
+.. inference:: Prod-Type
+
+   \WTEG{T}{\Type(i)}
+   \WTE{\Gamma::(x:T)}{U}{\Type(i)}
+   --------------------------------
+   \WTEG{\forall~x:T,U}{\Type(i)}
+
+.. inference:: Lam
+
+   \WTEG{\forall~x:T,U}{s}
+   \WTE{\Gamma::(x:T)}{t}{U}
+   ------------------------------------
+   \WTEG{\lb x:T\mto t}{\forall x:T, U}
+
+.. inference:: App
+
+   \WTEG{t}{\forall~x:U,T}
+   \WTEG{u}{U}
+   ------------------------------
+   \WTEG{(t\ u)}{\subst{T}{x}{u}}
+
+.. inference:: Let
+
+   \WTEG{t}{T}
+   \WTE{\Gamma::(x:=t:T)}{u}{U}
+   -----------------------------------------
+   \WTEG{\letin{x}{t:T}{u}}{\subst{U}{x}{t}}
+
+
+
+**Remark**: **Prod-Prop** and **Prod-Set** typing-rules make sense if we consider the
+semantic difference between :math:`\Prop` and :math:`\Set`:
+
+
++ All values of a type that has a sort :math:`\Set` are extractable.
++ No values of a type that has a sort :math:`\Prop` are extractable.
+
+
+
+**Remark**: We may have :math:`\letin{x}{t:T}{u}` well-typed without having
+:math:`((λ x:T.u) t)` well-typed (where :math:`T` is a type of
+:math:`t`). This is because the value :math:`t` associated to
+:math:`x` may be used in a conversion rule (see Section :ref:`Conversion-rules`).
+
+
+.. _Conversion-rules:
+
+Conversion rules
+--------------------
+
+In |Cic|, there is an internal reduction mechanism. In particular, it
+can decide if two programs are *intentionally* equal (one says
+*convertible*). Convertibility is described in this section.
+
+
+.. _β-reduction:
+
+**β-reduction.**
 We want to be able to identify some terms as we can identify the
 application of a function to a given argument with its result. For
-instance the identity function over a given type $T$ can be written
-$\lb x:T\mto x$. In any global environment $E$ and local context $\Gamma$, we want to identify any object $a$ (of type $T$) with the
-application $((\lb x:T\mto x)~a)$. We define for this a {\em reduction} (or a
-{\em conversion}) rule we call $\beta$:
-\[ \WTEGRED{((\lb x:T\mto
-  t)~u)}{\triangleright_{\beta}}{\subst{t}{x}{u}} \] 
-We say that $\subst{t}{x}{u}$ is the {\em $\beta$-contraction} of
-$((\lb x:T\mto t)~u)$ and, conversely, that $((\lb x:T\mto t)~u)$
-is the {\em $\beta$-expansion} of $\subst{t}{x}{u}$.
+instance the identity function over a given type T can be written
+:math:`λx:T. x`. In any global environment :math:`E` and local context
+:math:`Γ`, we want to identify any object :math:`a` (of type
+:math:`T`) with the application :math:`((λ x:T. x) a)`.  We define for
+this a *reduction* (or a *conversion*) rule we call :math:`β`:
 
-According to $\beta$-reduction, terms of the {\em Calculus of
-  Inductive Constructions} enjoy some fundamental properties such as
-confluence, strong normalization, subject reduction. These results are
+.. math::
+   
+	E[Γ] ⊢ ((λx:T. t) u)~\triangleright_β~\subst{t}{x}{u}
+
+We say that :math:`\subst{t}{x}{u}` is the *β-contraction* of
+:math:`((λx:T. t) u)` and, conversely, that :math:`((λ x:T. t) u)` is the
+*β-expansion* of :math:`\subst{t}{x}{u}`.
+
+According to β-reduction, terms of the *Calculus of Inductive
+Constructions* enjoy some fundamental properties such as confluence,
+strong normalization, subject reduction. These results are
 theoretically of great importance but we will not detail them here and
-refer the interested reader to \cite{Coq85}.
+refer the interested reader to :cite:`Coq85`.
 
-\paragraph[$\iota$-reduction.]{$\iota$-reduction.\label{iota}\index{iota-reduction@$\iota$-reduction}}
+
+.. _ι-reduction:
+
+**ι-reduction.**
 A specific conversion rule is associated to the inductive objects in
-the global environment.  We shall give later on (see Section~\ref{iotared}) the
-precise rules but it just says that a destructor applied to an object
-built from a constructor behaves as expected.  This reduction is
-called $\iota$-reduction and is more precisely studied in
-\cite{Moh93,Wer94}.
+the global environment. We shall give later on (see Section
+:ref:`Well-formed-inductive-definitions`) the precise rules but it
+just says that a destructor applied to an object built from a
+constructor behaves as expected. This reduction is called ι-reduction
+and is more precisely studied in :cite:`Moh93,Wer94`.
 
 
-\paragraph[$\delta$-reduction.]{$\delta$-reduction.\label{delta}\index{delta-reduction@$\delta$-reduction}}
+.. _δ-reduction:
 
-We may have variables defined in local contexts or constants defined in the global
-environment. It is legal to identify such a reference with its value,
-that is to expand (or unfold) it into its value. This
-reduction is called $\delta$-reduction and shows as follows.
+**δ-reduction.**
+We may have variables defined in local contexts or constants defined
+in the global environment. It is legal to identify such a reference
+with its value, that is to expand (or unfold) it into its value. This
+reduction is called δ-reduction and shows as follows.
 
-$$\WTEGRED{x}{\triangleright_{\delta}}{t}~~~~~\mbox{if $(x:=t:T) \in \Gamma$}~~~~~~~~~\WTEGRED{c}{\triangleright_{\delta}}{t}~~~~~\mbox{if $(c:=t:T) \in E$}$$
+.. inference:: Delta-Local
+   
+   \WFE{\Gamma}
+   (x:=t:T) ∈ Γ
+   --------------
+   E[Γ] ⊢ x~\triangleright_Δ~t
+
+.. inference:: Delta-Global
+   
+   \WFE{\Gamma}
+   (c:=t:T) ∈ E
+   --------------
+   E[Γ] ⊢ c~\triangleright_δ~t
 
 
-\paragraph[$\zeta$-reduction.]{$\zeta$-reduction.\label{zeta}\index{zeta-reduction@$\zeta$-reduction}}
+.. _ζ-reduction:
 
-{\Coq} allows also to remove local definitions occurring in terms by
+**ζ-reduction.**
+|Coq| allows also to remove local definitions occurring in terms by
 replacing the defined variable by its value. The declaration being
-destroyed, this reduction differs from $\delta$-reduction. It is
-called $\zeta$-reduction and shows as follows.
+destroyed, this reduction differs from δ-reduction. It is called
+ζ-reduction and shows as follows.
 
-$$\WTEGRED{\kw{let}~x:=u~\kw{in}~t}{\triangleright_{\zeta}}{\subst{t}{x}{u}}$$
+.. inference:: Zeta
+   
+   \WFE{\Gamma}
+   \WTEG{u}{U}
+   \WTE{\Gamma::(x:=u:U)}{t}{T}
+   --------------
+   E[Γ] ⊢ \letin{x}{u}{t}~\triangleright_ζ~\subst{t}{x}{u}
 
-\paragraph{$\eta$-expansion.%
-\label{eta}%
-\index{eta-expansion@$\eta$-expansion}%
-%\index{eta-reduction@$\eta$-reduction}
-}%
-Another important concept is $\eta$-expansion. It is legal to identify any
-term $t$ of functional type $\forall x:T, U$ with its so-called
-$\eta$-expansion $\lb x:T\mto (t\ x)$ for $x$ an arbitrary variable
-name fresh in $t$.
 
-\Rem We deliberately do not define $\eta$-reduction:
-\begin{latexonly}%
-  $$\lb x:T\mto (t\ x)\not\triangleright_\eta\hskip.3em t$$
-\end{latexonly}%
-\begin{htmlonly}
-  $$\lb x:T\mto (t\ x)~\not\triangleright_\eta~t$$
-\end{htmlonly}
-This is because, in general, the type of $t$ need not to be convertible to the type of $\lb x:T\mto (t\ x)$.
-E.g., if we take $f$ such that:
-\begin{latexonly}%
-  $$f\hskip.5em:\hskip.5em\forall x:Type(2),Type(1)$$
-\end{latexonly}%
-\begin{htmlonly}
-  $$f~:~\forall x:Type(2),Type(1)$$
-\end{htmlonly}
+.. _η-expansion:
+
+**η-expansion.**
+Another important concept is η-expansion. It is legal to identify any
+term :math:`t` of functional type :math:`∀ x:T, U` with its so-called η-expansion
+
+.. math::
+   λx:T. (t~x)
+
+for :math:`x` an arbitrary variable name fresh in :math:`t`.
+
+
+**Remark**: We deliberately do not define η-reduction:
+
+.. math::
+   λ x:T. (t~x) \not\triangleright_η t
+
+This is because, in general, the type of :math:`t` need not to be convertible
+to the type of :math:`λ x:T. (t~x)`. E.g., if we take :math:`f` such that:
+
+.. math::
+   f : ∀ x:\Type(2),\Type(1)
+   
 then
-\begin{latexonly}%
-  $$\lb x:Type(1),(f\, x)\hskip.5em:\hskip.5em\forall x:Type(1),Type(1)$$
-\end{latexonly}%
-\begin{htmlonly}
-  $$\lb x:Type(1),(f\, x)~:~\forall x:Type(1),Type(1)$$
-\end{htmlonly}
+
+.. math::
+   λ x:\Type(1),(f~x) : ∀ x:\Type(1),\Type(1)
+   
 We could not allow
-\begin{latexonly}%
-  $$\lb x:Type(1),(f\,x)\hskip.4em\not\triangleright_\eta\hskip.6em f$$
-\end{latexonly}%
-\begin{htmlonly}
-  $$\lb x:Type(1),(f\,x)~\not\triangleright_\eta~f$$
-\end{htmlonly}
-because the type of the reduced term $\forall x:Type(2),Type(1)$
-would not be convertible to the type of the original term $\forall x:Type(1),Type(1)$.
 
-\paragraph[Convertibility.]{Convertibility.\label{convertibility}
-\index{beta-reduction@$\beta$-reduction}\index{iota-reduction@$\iota$-reduction}\index{delta-reduction@$\delta$-reduction}\index{zeta-reduction@$\zeta$-reduction}}
+.. math::
+   λ x:Type(1),(f x) \triangleright_η f
+   
+because the type of the reduced term :math:`∀ x:\Type(2),\Type(1)` would not be
+convertible to the type of the original term :math:`∀ x:\Type(1),\Type(1).`
 
-Let us write $\WTEGRED{t}{\triangleright}{u}$ for the contextual closure of the relation $t$ reduces to $u$ in the global environment $E$ and local context $\Gamma$ with one of the previous reduction $\beta$, $\iota$, $\delta$ or $\zeta$.
 
-We say that two terms $t_1$ and $t_2$ are {\em
-  $\beta\iota\delta\zeta\eta$-convertible}, or simply {\em
-  convertible}, or {\em equivalent}, in the global environment $E$ and
-local context $\Gamma$ iff there exist terms $u_1$ and $u_2$ such that
-$\WTEGRED{t_1}{\triangleright \ldots \triangleright}{u_1}$ and
-$\WTEGRED{t_2}{\triangleright \ldots \triangleright}{u_2}$ and either
-$u_1$ and $u_2$ are identical, or they are convertible up to
-$\eta$-expansion, i.e. $u_1$ is $\lb x:T\mto u'_1$ and $u_2\,x$ is
-recursively convertible to $u'_1$, or, symmetrically, $u_2$ is $\lb
-x:T\mto u'_2$ and $u_1\,x$ is recursively convertible to $u'_2$.  We
-then write $\WTEGCONV{t_1}{t_2}$.
+.. _Convertibility:
 
-Apart from this we consider two instances of polymorphic and cumulative (see Chapter~\ref{Universes-full}) inductive types (see below)
-convertible $\WTEGCONV{t\ w_1 \dots w_m}{t\ w_1' \dots w_m'}$ if we have subtypings (see below) in both directions, i.e.,
-$\WTEGLECONV{t\ w_1 \dots w_m}{t\ w_1' \dots w_m'}$ and $\WTEGLECONV{t\ w_1' \dots w_m'}{t\ w_1 \dots w_m}$.
-Furthermore, we consider $\WTEGCONV{c\ v_1 \dots v_m}{c'\ v_1' \dots v_m'}$ convertible if $\WTEGCONV{v_i}{v_i'}$
-and we have that $c$ and $c'$ are the same constructors of different instances the same inductive types (differing only in universe levels)
-such that $\WTEG{c\ v_1 \dots v_m}{t\ w_1 \dots w_m}$ and $\WTEG{c'\ v_1' \dots v_m'}{t'\ w_1' \dots w_m'}$ and we have $\WTEGCONV{t\ w_1 \dots w_m}{t\ w_1' \dots w_m'}$.
+**Convertibility.**
+Let us write :math:`E[Γ] ⊢ t \triangleright u` for the contextual closure of the
+relation :math:`t` reduces to :math:`u` in the global environment
+:math:`E` and local context :math:`Γ` with one of the previous
+reductions β, ι, δ or ζ.
 
-The convertibility relation allows introducing a new typing rule
-which says that two convertible well-formed types have the same
-inhabitants.
+We say that two terms :math:`t_1` and :math:`t_2` are
+*βιδζη-convertible*, or simply *convertible*, or *equivalent*, in the
+global environment :math:`E` and local context :math:`Γ` iff there
+exist terms :math:`u_1` and :math:`u_2` such that :math:`E[Γ] ⊢ t_1 \triangleright
+… \triangleright u_1` and :math:`E[Γ] ⊢ t_2 \triangleright … \triangleright u_2` and either :math:`u_1` and
+:math:`u_2` are identical, or they are convertible up to η-expansion,
+i.e. :math:`u_1` is :math:`λ x:T. u_1'` and :math:`u_2 x` is
+recursively convertible to :math:`u_1'` , or, symmetrically,
+:math:`u_2` is :math:`λx:T. u_2'` 
+and :math:`u_1 x` is recursively convertible to u_2′ . We then write
+:math:`E[Γ] ⊢ t_1 =_{βδιζη} t_2` .
 
-\section[Subtyping rules]{Subtyping rules\index{Subtyping rules}
-\label{subtyping-rules}}
+Apart from this we consider two instances of polymorphic and
+cumulative (see Chapter :ref:`polymorphicuniverses`) inductive types
+(see below) convertible
+
+.. math::
+   E[Γ] ⊢ t~w_1 … w_m =_{βδιζη} t~w_1' … w_m'
+
+if we have subtypings (see below) in both directions, i.e.,
+
+.. math::
+   E[Γ] ⊢ t~w_1 … w_m ≤_{βδιζη} t~w_1' … w_m'
+
+and
+
+.. math::
+   E[Γ] ⊢ t~w_1' … w_m' ≤_{βδιζη} t~w_1 … w_m.
+
+Furthermore, we consider
+
+.. math::
+   E[Γ] ⊢ c~v_1 … v_m =_{βδιζη} c'~v_1' … v_m'
+
+convertible if
+
+.. math::
+   E[Γ] ⊢ v_i =_{βδιζη} v_i'
+
+and we have that :math:`c` and :math:`c'`
+are the same constructors of different instances of the same inductive
+types (differing only in universe levels) such that
+
+.. math::
+   E[Γ] ⊢ c~v_1 … v_m : t~w_1 … w_m
+
+and
+
+.. math::
+   E[Γ] ⊢ c'~v_1' … v_m' : t'~ w_1' … w_m '
+
+and we have
+
+.. math::
+   E[Γ] ⊢ t~w_1 … w_m =_{βδιζη} t~w_1' … w_m'.
+
+The convertibility relation allows introducing a new typing rule which
+says that two convertible well-formed types have the same inhabitants.
+
+
+.. _subtyping-rules:
+
+Subtyping rules
+-------------------
 
 At the moment, we did not take into account one rule between universes
-which says that any term in a universe of index $i$ is also a term in
-the universe of index $i+1$ (this is the {\em cumulativity} rule of
-{\CIC}). This property extends the equivalence relation of
-convertibility into a {\em subtyping} relation inductively defined by:
-\begin{enumerate}
-\item if $\WTEGCONV{t}{u}$ then $\WTEGLECONV{t}{u}$,
-\item if $i \leq j$ then $\WTEGLECONV{\Type(i)}{\Type(j)}$,
-\item for any $i$, $\WTEGLECONV{\Set}{\Type(i)}$,
-\item $\WTEGLECONV{\Prop}{\Set}$, hence, by transitivity,
-  $\WTEGLECONV{\Prop}{\Type(i)}$, for any $i$
-\item if $\WTEGCONV{T}{U}$ and $\WTELECONV{\Gamma::(x:T)}{T'}{U'}$ then $\WTEGLECONV{\forall~x:T, T'}{\forall~x:U, U'}$.
-\item if $\Ind{}{p}{\Gamma_I}{\Gamma_C}$ is a universe polymorphic and cumulative (see Chapter~\ref{Universes-full})
-  inductive type (see below) and $(t : \forall\Gamma_P,\forall\Gamma_{\mathit{Arr}(t)}, \Sort)\in\Gamma_I$
-  and $(t' : \forall\Gamma_P',\forall\Gamma_{\mathit{Arr}(t)}', \Sort')\in\Gamma_I$
-  are two different instances of \emph{the same} inductive type (differing only in universe levels) with constructors
-  \[[c_1: \forall\Gamma_P,\forall T_{1,1} \dots T_{1,n_1},t\ v_{1,1} \dots v_{1,m}; \dots; c_k: \forall\Gamma_P,\forall T_{k, 1} \dots T_{k,n_k},t\ v_{n,1}\dots v_{n,m}]\]
-  and
-  \[[c_1: \forall\Gamma_P',\forall T_{1,1}' \dots T_{1,n_1}',t'\ v_{1,1}' \dots v_{1,m}'; \dots; c_k: \forall\Gamma_P',\forall T_{k, 1}' \dots T_{k,n_k}',t\ v_{n,1}'\dots v_{n,m}']\]
-  respectively then $\WTEGLECONV{t\ w_1 \dots w_m}{t\ w_1' \dots w_m'}$ (notice that $t$ and $t'$ are both fully applied, i.e., they have a sort as a type)
-  if $\WTEGCONV{w_i}{w_i'}$ for $1 \le i \le m$ and we have
-  \[ \WTEGLECONV{T_{i,j}}{T_{i,j}'} \text{ and } \WTEGLECONV{A_i}{A_i'}\]
-  where $\Gamma_{\mathit{Arr}(t)} = [a_1 : A_1; a_1 : A_l]$ and $\Gamma_{\mathit{Arr}(t)} = [a_1 : A_1'; a_1 : A_l']$.
-\end{enumerate}
+which says that any term in a universe of index i is also a term in
+the universe of index i+1 (this is the *cumulativity* rule of|Cic|).
+This property extends the equivalence relation of convertibility into
+a *subtyping* relation inductively defined by:
+
+
+#. if :math:`E[Γ] ⊢ t =_{βδιζη} u` then :math:`E[Γ] ⊢ t ≤_{βδιζη} u`,
+#. if :math:`i ≤ j` then :math:`E[Γ] ⊢ \Type(i) ≤_{βδιζη} \Type(j)`,
+#. for any :math:`i`, :math:`E[Γ] ⊢ \Set ≤_{βδιζη} \Type(i)`,
+#. :math:`E[Γ] ⊢ \Prop ≤_{βδιζη} \Set`, hence, by transitivity,
+   :math:`E[Γ] ⊢ \Prop ≤_{βδιζη} \Type(i)`, for any :math:`i`
+#. if :math:`E[Γ] ⊢ T =_{βδιζη} U` and
+   :math:`E[Γ::(x:T)] ⊢ T' ≤_{βδιζη} U'` then
+   :math:`E[Γ] ⊢ ∀x:T, T′ ≤_{βδιζη} ∀ x:U, U′`.
+#. if :math:`\ind{p}{Γ_I}{Γ_C}` is a universe polymorphic and cumulative
+   (see Chapter :ref:`polymorphicuniverses`) inductive type (see below)
+   and
+   :math:`(t : ∀Γ_P ,∀Γ_{\mathit{Arr}(t)}, \Sort)∈Γ_I`
+   and
+   :math:`(t' : ∀Γ_P' ,∀Γ_{\mathit{Arr}(t)}', \Sort')∈Γ_I`
+   are two different instances of *the same* inductive type (differing only in
+   universe levels) with constructors
+
+   .. math::
+      [c_1 : ∀Γ_P ,∀ T_{1,1} … T_{1,n_1} , t~v_{1,1} … v_{1,m} ;…;
+      c_k : ∀Γ_P ,∀ T_{k,1} … T_{k,n_k} ,t~v_{n,1} … v_{n,m} ]
+
+   and
+
+   .. math::
+      [c_1 : ∀Γ_P' ,∀ T_{1,1}' … T_{1,n_1}' , t'~v_{1,1}' … v_{1,m}' ;…;
+      c_k : ∀Γ_P' ,∀ T_{k,1}' … T_{k,n_k}' ,t'~v_{n,1}' … v_{n,m}' ]
+   
+   respectively then
+
+   .. math::
+      E[Γ] ⊢ t~w_1 … w_m ≤_{βδιζη} t~w_1' … w_m'
+
+   (notice that :math:`t` and :math:`t'` are both
+   fully applied, i.e., they have a sort as a type) if
+
+   .. math::
+      E[Γ] ⊢ w_i =_{βδιζη} w_i'
+
+   for :math:`1 ≤ i ≤ m` and we have
+
+
+   .. math::
+      E[Γ] ⊢ T_{i,j} ≤_{βδιζη} T_{i,j}'
+
+   and
+
+   .. math::
+      E[Γ] ⊢ A_i ≤_{βδιζη} A_i'
+
+   where :math:`Γ_{\mathit{Arr}(t)} = [a_1 : A_1 ;  … ; a_l : A_l ]` and
+   :math:`Γ_{\mathit{Arr}(t)}' = [a_1 : A_1';  … ; a_l : A_l']`.
+
 
 The conversion rule up to subtyping is now exactly:
 
-\begin{description}\label{Conv}
-\item[Conv]\index{Typing rules!Conv}
- \inference{
-      \frac{\WTEG{U}{s}~~~~\WTEG{t}{T}~~~~\WTEGLECONV{T}{U}}{\WTEG{t}{U}}}
-  \end{description}
+.. inference:: Conv
+   
+   E[Γ] ⊢ U : s
+   E[Γ] ⊢ t : T
+   E[Γ] ⊢ T ≤_{βδιζη} U
+   --------------
+   E[Γ] ⊢ t : U
 
 
-\paragraph[Normal form.]{Normal form.\index{Normal form}\label{Normal-form}\label{Head-normal-form}\index{Head normal form}}
-A term which cannot be any more reduced is said to be in {\em normal
-  form}. There are several ways (or strategies) to apply the reduction
-rules. Among them, we have to mention the {\em head reduction} which
-will play an important role (see Chapter~\ref{Tactics}). Any term can
-be written as $\lb x_1:T_1\mto \ldots \lb x_k:T_k \mto
-(t_0\ t_1\ldots t_n)$ where
-$t_0$ is not an application. We say then that $t_0$ is the {\em head
-  of $t$}. If we assume that $t_0$ is $\lb x:T\mto u_0$ then one step of
-$\beta$-head reduction of $t$ is:
-\[\lb x_1:T_1\mto \ldots \lb x_k:T_k\mto (\lb x:T\mto u_0\ t_1\ldots t_n)
-~\triangleright ~ \lb (x_1:T_1)\ldots(x_k:T_k)\mto
-(\subst{u_0}{x}{t_1}\ t_2 \ldots t_n)\]
+.. _Normal-form:
+
+**Normal form**. A term which cannot be any more reduced is said to be in *normal
+form*. There are several ways (or strategies) to apply the reduction
+rules. Among them, we have to mention the *head reduction* which will
+play an important role (see Chapter :ref:`tactics`). Any term :math:`t` can be written as
+:math:`λ x_1 :T_1 . … λ x_k :T_k . (t_0~t_1 … t_n )` where :math:`t_0` is not an
+application. We say then that :math:`t~0` is the *head of* :math:`t`. If we assume
+that :math:`t_0` is :math:`λ x:T. u_0` then one step of β-head reduction of :math:`t` is:
+
+.. math::
+   λ x_1 :T_1 . … λ x_k :T_k . (λ x:T. u_0~t_1 … t_n ) \triangleright
+   λ (x_1 :T_1 )…(x_k :T_k ). (\subst{u_0}{x}{t_1}~t_2 … t_n )
+   
 Iterating the process of head reduction until the head of the reduced
-term is no more an abstraction leads to the {\em $\beta$-head normal
-  form} of $t$:
-\[ t \triangleright \ldots \triangleright
-\lb x_1:T_1\mto \ldots\lb x_k:T_k\mto (v\ u_1
-\ldots u_m)\]
-where $v$ is not an abstraction (nor an application).  Note that the
-head normal form must not be confused with the normal form since some
-$u_i$ can be reducible.
-%
-Similar notions of head-normal forms involving $\delta$, $\iota$ and $\zeta$
-reductions or any combination of those can also be defined.
+term is no more an abstraction leads to the *β-head normal form* of :math:`t`:
 
-\section[Inductive definitions]{Inductive Definitions\label{Cic-inductive-definitions}}
+.. math::
+   t \triangleright … \triangleright λ x_1 :T_1 . …λ x_k :T_k . (v~u_1 … u_m )
+   
+where :math:`v` is not an abstraction (nor an application). Note that the head
+normal form must not be confused with the normal form since some :math:`u_i`
+can be reducible. Similar notions of head-normal forms involving δ, ι
+and ζ reductions or any combination of those can also be defined.
 
-% Here we assume that the reader knows what is an inductive definition.
 
-Formally, we can represent any {\em inductive definition\index{definition!inductive}} as \Ind{}{p}{\Gamma_I}{\Gamma_C} where:
-\begin{itemize}
-  \item $\Gamma_I$ determines the names and types of inductive types;
-  \item $\Gamma_C$ determines the names and types of constructors of these inductive types;
-  \item $p$ determines the number of parameters of these inductive types.
-\end{itemize}
-These inductive definitions, together with global assumptions and global definitions, then form the global environment.
-%
-Additionally, for any $p$ there always exists $\Gamma_P=[a_1:A_1;\dots;a_p:A_p]$
-such that each $T$ in $(t:T)\in\Gamma_I\cup\Gamma_C$ can be written as:
-$\forall\Gamma_P, T^\prime$ where $\Gamma_P$ is called the {\em context of parameters\index{context of parameters}}.
-Furthermore, we must have that each $T$ in $(t:T)\in\Gamma_I$ can be written as:
-$\forall\Gamma_P,\forall\Gamma_{\mathit{Arr}(t)}, \Sort$ where $\Gamma_{\mathit{Arr}(t)}$ is called the
-{\em Arity} of the inductive type\index{arity of inductive type} $t$ and
-$\Sort$ is called the sort of the inductive type $t$.
+.. _inductive-definitions:
 
-\paragraph{Examples}
+Inductive Definitions
+-------------------------
 
-    \newcommand\ind[3]{$\mathsf{Ind}~[#1]\left(\hskip-.4em
-    \begin{array}{r@{\mathrm{~:=~}}l}
-      #2 & #3 \\
-    \end{array}
-    \hskip-.4em
-    \right)$}
-    \def\colon{@{\hskip.5em:\hskip.5em}}
+Formally, we can represent any *inductive definition* as
+:math:`\ind{p}{Γ_I}{Γ_C}` where:
 
-The declaration for parameterized lists is:
-\begin{latexonly}
-    \vskip.5em
++ :math:`Γ_I` determines the names and types of inductive types;
++ :math:`Γ_C` determines the names and types of constructors of these
+  inductive types;
++ :math:`p` determines the number of parameters of these inductive types.
 
-    \ind{1}{[\List:\Set\ra\Set]}{\left[\begin{array}{r@{:}l}
-                                      \Nil & \forall A:\Set,\List~A \\
-                                      \cons & \forall A:\Set, A \ra \List~A \ra \List~A
-                                   \end{array}
-                             \right]}
-    \vskip.5em
-\end{latexonly}
-\begin{rawhtml}<pre><table style="border-spacing:0">
-  <tr style="vertical-align:middle">
-    <td style="width:10pt;text-align:center;font-family:sans-serif;font-style:italic">Ind</td>
-    <td style="width:20pt;text-align:center">[1]</td>
-    <td style="width:5pt;text-align:center">⎛<br>⎝</td>
-    <td style="width:120pt;text-align:center">[ <span style="font-family:monospace">list : Set → Set</span> ]</td>
-    <td style="width:20pt;text-align:center;font-family:monospace">:=</td>
-    <td style="width:10pt;text-align:center">⎡<br>⎣</td>
-    <td>
-      <table style="border-spacing:0">
-        <tr>
-          <td style="width:20pt;text-align:right;font-family:monospace">nil</td>
-          <td style="width:20pt;text-align:center;font-family:monospace">:=</td>
-          <td style="text-align:left;font-family:monospace">∀A : Set, list A</td>
-        </tr>
-        <tr>
-          <td style="width:20pt;text-align:right;font-family:monospace">cons</td>
-          <td style="width:20pt;text-align:center;font-family:monospace">:=</td>
-          <td style="text-align:left;font-family:monospace">∀A : Set, A → list A → list A</td>
-        </tr>
-      </table>
-    </td>
-    <td style="width:10pt;text-align:center">⎤<br>⎦</td>
-    <td style="width:5pt;text-align:center">⎞<br>⎠</td>
-  </tr>
-</table></pre>
-\end{rawhtml}
-\noindent which corresponds to the result of the \Coq\ declaration:
-\begin{coq_example*}
-Inductive list (A:Set) : Set :=
-  | nil : list A
-  | cons : A -> list A -> list A.
-\end{coq_example*}
 
-\noindent The declaration for a mutual inductive definition of {\tree} and {\forest} is:
-\begin{latexonly}
-    \vskip.5em
-\ind{~}{\left[\begin{array}{r@{:}l}\tree&\Set\\\forest&\Set\end{array}\right]}
-    {\left[\begin{array}{r@{:}l}
-             \node & \forest \ra \tree\\
-             \emptyf & \forest\\
-             \consf & \tree \ra \forest \ra \forest\\
+These inductive definitions, together with global assumptions and
+global definitions, then form the global environment. Additionally,
+for any :math:`p` there always exists :math:`Γ_P =[a_1 :A_1 ;…;a_p :A_p ]` such that
+each :math:`T` in :math:`(t:T)∈Γ_I \cup Γ_C` can be written as: :math:`∀Γ_P , T'` where :math:`Γ_P` is
+called the *context of parameters*. Furthermore, we must have that
+each :math:`T` in :math:`(t:T)∈Γ_I` can be written as: :math:`∀Γ_P,∀Γ_{\mathit{Arr}(t)}, S` where
+:math:`Γ_{\mathit{Arr}(t)}` is called the *Arity* of the inductive type t and :math:`S` is called
+the sort of the inductive type t (not to be confused with :math:`\Sort` which is the set of sorts).
+
+
+** Examples** The declaration for parameterized lists is:
+
+.. math::
+   \ind{1}{[\List:\Set→\Set]}{\left[\begin{array}{rcl}
+   \Nil & : & \forall A:\Set,\List~A \\
+   \cons & : & \forall A:\Set, A→ \List~A→ \List~A
+   \end{array}
+   \right]}
+
+which corresponds to the result of the |Coq| declaration:
+
+.. example::
+  .. coqtop:: in
+   
+     Inductive list (A:Set) : Set :=
+     | nil : list A
+     | cons : A -> list A -> list A.
+
+The declaration for a mutual inductive definition of tree and forest
+is:
+
+.. math::
+   \ind{~}{\left[\begin{array}{rcl}\tree&:&\Set\\\forest&:&\Set\end{array}\right]}
+    {\left[\begin{array}{rcl}
+             \node &:& \forest → \tree\\
+             \emptyf &:& \forest\\
+             \consf &:& \tree → \forest → \forest\\
                        \end{array}\right]}
-    \vskip.5em
-\end{latexonly}
-\begin{rawhtml}<pre><table style="border-spacing:0">
-  <tr style="vertical-align:middle">
-    <td style="width:10pt;text-align:center;font-family:sans-serif;font-style:italic">Ind</td>
-    <td style="width:20pt;text-align:center">[1]</td>
-    <td style="width:5pt;text-align:center">⎛<br>⎜<br>⎝</td>
-    <td style="width:10pt;text-align:center">⎡<br>⎣</td>
-    <td>
-      <table style="border-spacing:0">
-        <tr>
-          <td style="width:20pt;text-align:right;font-family:monospace">tree</td>
-          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
-          <td style="text-align:left;font-family:monospace">Set</td>
-        </tr>
-        <tr>
-          <td style="width:20pt;text-align:right;font-family:monospace">forest</td>
-          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
-          <td style="text-align:left;font-family:monospace">Set</td>
-        </tr>
-      </table>
-    </td>
-    <td style="width:10pt;text-align:center">⎤<br>⎦</td>
-    <td style="width:20pt;text-align:center;font-family:monospace">:=</td>
-    <td style="width:10pt;text-align:center">⎡<br>⎢<br>⎣</td>
-    <td>
-      <table style="border-spacing:0">
-        <tr>
-          <td style="width:20pt;text-align:right;font-family:monospace">node</td>
-          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
-          <td style="text-align:left;font-family:monospace">forest → tree</td>
-        </tr>
-        <tr>
-          <td style="width:20pt;text-align:right;font-family:monospace">emptyf</td>
-          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
-          <td style="text-align:left;font-family:monospace">forest</td>
-        </tr>
-        <tr>
-          <td style="width:20pt;text-align:right;font-family:monospace">consf</td>
-          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
-          <td style="text-align:left;font-family:monospace">tree → forest → forest</td>
-        </tr>
-      </table>
-    </td>
-    <td style="width:10pt;text-align:center">⎤<br>⎥<br>⎦</td>
-    <td style="width:5pt;text-align:center">⎞<br>⎟<br>⎠</td>
-  </tr>
-</table></pre>
-\end{rawhtml}
-\noindent which corresponds to the result of the \Coq\
-declaration:
-\begin{coq_example*}
-Inductive tree : Set :=
-    node : forest -> tree
-with forest : Set :=
-  | emptyf : forest
-  | consf : tree -> forest -> forest.
-\end{coq_example*}
 
-\noindent The declaration for a mutual inductive definition of {\even} and {\odd} is:
-\begin{latexonly}
-	\newcommand\GammaI{\left[\begin{array}{r@{:}l}
-			    \even & \nat\ra\Prop \\
-			    \odd & \nat\ra\Prop
-                      \end{array}
-                \right]}
-		\newcommand\GammaC{\left[\begin{array}{r@{:}l}
-			    \evenO & \even~\nO \\
-			    \evenS & \forall n : \nat, \odd~n \ra \even~(\nS~n)\\
-			    \oddS & \forall n : \nat, \even~n \ra \odd~(\nS~n)
-                      \end{array}
-                \right]}
-    \vskip.5em
-    \ind{1}{\GammaI}{\GammaC}
-    \vskip.5em
-\end{latexonly}
-\begin{rawhtml}<pre><table style="border-spacing:0">
-  <tr style="vertical-align:middle">
-    <td style="width:10pt;text-align:center;font-family:sans-serif;font-style:italic">Ind</td>
-    <td style="width:20pt;text-align:center">[1]</td>
-    <td style="width:5pt;text-align:center">⎛<br>⎜<br>⎝</td>
-    <td style="width:10pt;text-align:center">⎡<br>⎣</td>
-    <td>
-      <table style="border-spacing:0">
-        <tr>
-          <td style="width:20pt;text-align:right;font-family:monospace">even</td>
-          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
-          <td style="text-align:left;font-family:monospace">nat → Prop</td>
-        </tr>
-        <tr>
-          <td style="width:20pt;text-align:right;font-family:monospace">odd</td>
-          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
-          <td style="text-align:left;font-family:monospace">nat → Prop</td>
-        </tr>
-      </table>
-    </td>
-    <td style="width:10pt;text-align:center">⎤<br>⎦</td>
-    <td style="width:20pt;text-align:center;font-family:monospace">:=</td>
-    <td style="width:10pt;text-align:center">⎡<br>⎢<br>⎣</td>
-    <td>
-      <table style="border-spacing:0">
-        <tr>
-          <td style="width:20pt;text-align:right;font-family:monospace">even_O</td>
-          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
-          <td style="text-align:left;font-family:monospace">even O</td>
-        </tr>
-        <tr>
-          <td style="width:20pt;text-align:right;font-family:monospace">even_S</td>
-          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
-          <td style="text-align:left;font-family:monospace">∀n : nat, odd n → even (S n)</td>
-        </tr>
-        <tr>
-          <td style="width:20pt;text-align:right;font-family:monospace">odd_S</td>
-          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
-          <td style="text-align:left;font-family:monospace">∀n : nat, even n → odd (S n)</td>
-        </tr>
-      </table>
-    </td>
-    <td style="width:10pt;text-align:center">⎤<br>⎥<br>⎦</td>
-    <td style="width:5pt;text-align:center">⎞<br>⎟<br>⎠</td>
-  </tr>
-</table></pre>
-\end{rawhtml}
-\noindent which corresponds to the result of the \Coq\
-declaration:
-\begin{coq_example*}
-Inductive even : nat -> Prop :=
-  | even_O : even 0
-  | even_S : forall n, odd n -> even (S n)
-with odd : nat -> Prop :=
-  | odd_S : forall n, even n -> odd (S n).
-\end{coq_example*}
+which corresponds to the result of the |Coq| declaration:
 
-\subsection{Types of inductive objects}
-We have to give the type of constants in a global environment $E$ which
+.. example::
+  .. coqtop:: in
+
+     Inductive tree : Set :=
+     | node : forest -> tree
+     with forest : Set :=
+     | emptyf : forest
+     | consf : tree -> forest -> forest.
+
+The declaration for a mutual inductive definition of even and odd is:
+
+.. math::
+   \ind{1}{\left[\begin{array}{rcl}\even&:&\nat → \Prop \\
+                                   \odd&:&\nat → \Prop \end{array}\right]}
+    {\left[\begin{array}{rcl}
+             \evenO &:& \even~0\\
+	     \evenS &:& \forall n, \odd~n -> \even~(\kw{S}~n)\\
+	     \oddS &:& \forall n, \even~n -> \odd~(\kw{S}~n)
+                       \end{array}\right]}
+
+which corresponds to the result of the |Coq| declaration:
+
+.. example::
+  .. coqtop:: in
+
+     Inductive even : nat -> prop :=
+     | even_O : even 0
+     | even_S : forall n, odd n -> even (S n)
+     with odd : nat -> prop :=
+     | odd_S : forall n, even n -> odd (S n).
+
+
+
+.. _Types-of-inductive-objects:
+
+Types of inductive objects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We have to give the type of constants in a global environment E which
 contains an inductive declaration.
 
-\begin{description}
-\item[Ind]  \index{Typing rules!Ind}
-  \inference{\frac{\WFE{\Gamma}~~~~~~~~\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E~~~~~~~~(a:A)\in\Gamma_I}{\WTEG{a}{A}}}
-\item[Constr]  \index{Typing rules!Constr}
-  \inference{\frac{\WFE{\Gamma}~~~~~~~~\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E~~~~~~~~(c:C)\in\Gamma_C}{\WTEG{c}{C}}}
-\end{description}
+.. inference:: Ind
+	       
+   \WFE{Γ}
+   \ind{p}{Γ_I}{Γ_C} ∈ E
+   (a:A)∈Γ_I
+   ---------------------
+   E[Γ] ⊢ a : A
 
-\begin{latexonly}%
-\paragraph{Example.}
-Provided that our environment $E$ contains inductive definitions we showed before,
+.. inference:: Constr
+	       
+   \WFE{Γ}
+   \ind{p}{Γ_I}{Γ_C} ∈ E
+   (c:C)∈Γ_C
+   ---------------------
+   E[Γ] ⊢ c : C
+
+**Example.**
+Provided that our environment :math:`E` contains inductive definitions we showed before,
 these two inference rules above enable us to conclude that:
-\vskip.5em
-\newcommand\prefix{E[\Gamma]\vdash\hskip.25em}
-$\begin{array}{@{}l}
-   \prefix\even : \nat\ra\Prop\\
-   \prefix\odd : \nat\ra\Prop\\
-   \prefix\evenO : \even~\nO\\
-   \prefix\evenS : \forall~n:\nat, \odd~n \ra \even~(\nS~n)\\
-   \prefix\oddS : \forall~n:\nat, \even~n \ra \odd~(\nS~n)
- \end{array}$
-\end{latexonly}%
 
-%\paragraph{Parameters.}
-%%The parameters introduce a distortion between the inside specification
-%%of the inductive declaration where parameters are supposed to be
-%%instantiated (this representation is appropriate for checking the
-%%correctness or deriving the destructor principle) and the outside
-%%typing rules where the inductive objects are seen as objects
-%%abstracted with respect to the parameters.
+.. math::
+   \begin{array}{l}
+      E[Γ] ⊢ \even : \nat→\Prop\\
+      E[Γ] ⊢ \odd : \nat→\Prop\\
+      E[Γ] ⊢ \even\_O : \even~O\\
+      E[Γ] ⊢ \even\_S : \forall~n:\nat, \odd~n → \even~(S~n)\\
+      E[Γ] ⊢ \odd\_S : \forall~n:\nat, \even~n → \odd~(S~n)
+   \end{array}
 
-%In the definition of \List\ or \haslength\, $A$ is a parameter because
-%what is effectively inductively defined is $\ListA$ or $\haslengthA$ for
-%a given $A$ which is constant in the type of constructors.  But when
-%we define $(\haslengthA~l~n)$, $l$ and $n$ are not parameters because the
-%constructors manipulate different instances of this family.
 
-\subsection{Well-formed inductive definitions}
+
+
+.. _Well-formed-inductive-definitions:
+
+Well-formed inductive definitions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 We cannot accept any inductive declaration because some of them lead
-to inconsistent systems.
-We restrict ourselves to definitions which
+to inconsistent systems. We restrict ourselves to definitions which
 satisfy a syntactic criterion of positivity. Before giving the formal
 rules, we need a few definitions:
 
-\paragraph[Definition]{Definition\index{Arity}\label{Arity}}
-A type $T$ is an {\em arity of sort $s$} if it converts
-to the sort $s$ or to a product $\forall~x:T,U$ with $U$ an arity
-of sort $s$.
 
-\paragraph[Examples]{Examples}
-$A\ra \Set$ is an arity of sort $\Set$.
-$\forall~A:\Prop,A\ra \Prop$ is an arity of sort \Prop.
+**Type is an Arity of Sort S.**
+A type :math:`T` is an *arity of sort s* if it converts to the sort s or to a
+product :math:`∀ x:T,U` with :math:`U` an arity of sort s.
 
-\paragraph[Definition]{Definition}
-A type $T$ is an {\em arity} if there is a $s\in\Sort$
-such that $T$ is an arity of sort $s$.
+.. example::
 
-\paragraph[Examples]{Examples}
-$A\ra \Set$ and $\forall~A:\Prop,A\ra \Prop$ are arities.
+   :math:`A→\Set` is an arity of sort :math:`\Set`. :math:`∀ A:\Prop,A→ \Prop` is an arity of sort
+   :math:`\Prop`.
 
-\paragraph[Definition]{Definition\index{type of constructor}}
-We say that $T$ is a {\em type of constructor of $I$\index{type of constructor}}
-in one of the following two cases:
-\begin{itemize}
-  \item $T$ is $(I~t_1\ldots ~t_n)$
-  \item $T$ is $\forall x:U,T^\prime$ where $T^\prime$ is also a type of constructor of $I$
-\end{itemize}
 
-\paragraph[Examples]{Examples}
-$\nat$ and $\nat\ra\nat$ are types of constructors of $\nat$.\\
-$\forall A:\Type,\List~A$ and $\forall A:\Type,A\ra\List~A\ra\List~A$ are constructors of $\List$.
+**Type is an Arity.**
+A type :math:`T` is an *arity* if there is a :math:`s∈ \Sort` such that :math:`T` is an arity of
+sort s.
 
-\paragraph[Definition]{Definition\index{Positivity}\label{Positivity}}
-The type of constructor $T$ will be said to {\em satisfy the positivity
-condition} for a constant $X$ in the following cases:
 
-\begin{itemize}
-\item $T=(X~t_1\ldots ~t_n)$ and $X$ does not occur free in
-any $t_i$
-\item $T=\forall~x:U,V$ and $X$ occurs only strictly positively in $U$ and
-the type $V$ satisfies the positivity condition for $X$
-\end{itemize}
-%
-The constant $X$ {\em occurs strictly positively} in $T$ in the
-following cases:
-%
-\begin{itemize}
-\item $X$ does not occur in $T$
-\item $T$ converts to $(X~t_1 \ldots ~t_n)$ and $X$ does not occur in
-  any of $t_i$
-\item $T$ converts to $\forall~x:U,V$ and $X$ does not occur in
-  type $U$ but occurs strictly positively in type $V$
-\item $T$ converts to $(I~a_1 \ldots ~a_m ~ t_1 \ldots ~t_p)$ where
-  $I$ is the name of an inductive declaration of the form
-  $\Ind{\Gamma}{m}{I:A}{c_1:\forall p_1:P_1,\ldots \forall
-    p_m:P_m,C_1;\ldots;c_n:\forall p_1:P_1,\ldots \forall
-    p_m:P_m,C_n}$ 
-  (in particular, it is not mutually defined and it has $m$
-  parameters) and $X$ does not occur in any of the $t_i$, and the
-  (instantiated) types of constructor $C_i\{p_j/a_j\}_{j=1\ldots m}$
-  of $I$ satisfy 
-  the nested positivity condition for $X$
-%\item more generally, when $T$ is not a type, $X$ occurs strictly
-%positively in $T[x:U]u$ if $X$ does not occur in $U$ but occurs
-%strictly positively in $u$
-\end{itemize}
-%
-The type of constructor $T$ of $I$ {\em satisfies the nested
-positivity condition} for a constant $X$ in the following
+.. example::
+
+   :math:`A→ Set` and :math:`∀ A:\Prop,A→ \Prop` are arities.
+
+
+**Type of Constructor of I.**
+We say that T is a *type of constructor of I* in one of the following
+two cases:
+
+
++ :math:`T` is :math:`(I~t_1 … t_n )`
++ :math:`T` is :math:`∀ x:U,T'` where :math:`T'` is also a type of constructor of :math:`I`
+
+
+
+.. example::
+
+   :math:`\nat` and :math:`\nat→\nat` are types of constructor of :math:`\nat`.
+   :math:`∀ A:Type,\List~A` and :math:`∀ A:Type,A→\List~A→\List~A` are types of constructor of :math:`\List`.
+
+**Positivity Condition.**
+The type of constructor :math:`T` will be said to *satisfy the positivity
+condition* for a constant :math:`X` in the following cases:
+
+
++ :math:`T=(X~t_1 … t_n )` and :math:`X` does not occur free in any :math:`t_i`
++ :math:`T=∀ x:U,V` and :math:`X` occurs only strictly positively in :math:`U` and the type :math:`V`
+  satisfies the positivity condition for :math:`X`.
+
+  
+**Occurs Strictly Positively.**
+The constant :math:`X` *occurs strictly positively* in :math:`T` in the following
 cases:
 
-\begin{itemize}
-\item $T=(I~b_1\ldots b_m~u_1\ldots ~u_{p})$, $I$ is an inductive
-  definition with $m$ parameters and $X$ does not occur in
-any $u_i$
-\item $T=\forall~x:U,V$ and $X$ occurs only strictly positively in $U$ and
-the type $V$ satisfies the nested positivity condition for $X$
-\end{itemize}
 
-\newcommand\vv{\textSFxi}    % │
-\newcommand\hh{\textSFx}     %   ─
-\newcommand\vh{\textSFviii}  % ├
-\newcommand\hv{\textSFii}    %   └
-\newlength\framecharacterwidth
-\settowidth\framecharacterwidth{\hh}
-\newcommand\ws{\hbox{}\hskip\the\framecharacterwidth}
-\newcommand\ruleref[1]{\hskip.25em\dots\hskip.2em{\em (bullet #1)}}
-\newcommand{\NatTree}{\mbox{\textsf{nattree}}}
-\newcommand{\NatTreeA}{\mbox{\textsf{nattree}}~\ensuremath{A}}
-\newcommand{\cnode}{\mbox{\textsf{node}}}
-\newcommand{\cleaf}{\mbox{\textsf{leaf}}}
++ :math:`X` does not occur in :math:`T`
++ :math:`T` converts to :math:`(X~t_1 … t_n )` and :math:`X` does not occur in any of :math:`t_i`
++ :math:`T` converts to :math:`∀ x:U,V` and :math:`X` does not occur in type :math:`U` but occurs
+  strictly positively in type :math:`V`
++ :math:`T` converts to :math:`(I~a_1 … a_m~t_1 … t_p )` where :math:`I` is the name of an
+  inductive declaration of the form
+  
+  .. math::
+     \ind{m}{I:A}{c_1 :∀ p_1 :P_1 ,… ∀p_m :P_m ,C_1 ;…;c_n :∀ p_1 :P_1 ,… ∀p_m :P_m ,C_n}
+     
+  (in particular, it is
+  not mutually defined and it has :math:`m` parameters) and :math:`X` does not occur in
+  any of the :math:`t_i`, and the (instantiated) types of constructor
+  :math:`\subst{C_i}{p_j}{a_j}_{j=1… m}` of :math:`I` satisfy the nested positivity condition for :math:`X`
 
-\noindent For instance, if one considers the following variant of a tree type branching over the natural numbers
+**Nested Positivity Condition.**
+The type of constructor :math:`T` of :math:`I` *satisfies the nested positivity
+condition* for a constant :math:`X` in the following cases:
 
-\begin{verbatim}
-Inductive nattree (A:Type) : Type :=
- | leaf : nattree A
- | node : A -> (nat -> nattree A) -> nattree A
-\end{verbatim}
 
-\begin{latexonly}
-\noindent Then every instantiated constructor of $\NatTreeA$ satisfies the nested positivity condition for $\NatTree$\\
-\noindent
-\ws\ws\vv\\
-\ws\ws\vh\hh\ws concerning type $\NatTreeA$ of constructor $\cleaf$:\\
-\ws\ws\vv\ws\ws\ws\ws Type $\NatTreeA$ of constructor $\cleaf$ satisfies the positivity condition for $\NatTree$\\
-\ws\ws\vv\ws\ws\ws\ws because $\NatTree$ does not appear in any (real) arguments of the type of that constructor\\
-\ws\ws\vv\ws\ws\ws\ws (primarily because $\NatTree$ does not have any (real) arguments)\ruleref1\\
-\ws\ws\vv\\
-\ws\ws\hv\hh\ws concerning type $\forall~A\ra(\NN\ra\NatTreeA)\ra\NatTreeA$ of constructor $\cnode$:\\
-    \ws\ws\ws\ws\ws\ws\ws Type $\forall~A:\Type,A\ra(\NN\ra\NatTreeA)\ra\NatTreeA$ of constructor $\cnode$\\
-\ws\ws\ws\ws\ws\ws\ws satisfies the positivity condition for $\NatTree$ because:\\
-\ws\ws\ws\ws\ws\ws\ws\vv\\
-\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\NatTree$ occurs only strictly positively in $\Type$\ruleref1\\
-\ws\ws\ws\ws\ws\ws\ws\vv\\
-\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\NatTree$ occurs only strictly positively in $A$\ruleref1\\
-\ws\ws\ws\ws\ws\ws\ws\vv\\
-    \ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\NatTree$ occurs only strictly positively in $\NN\ra\NatTreeA$\ruleref{3+2}\\
-\ws\ws\ws\ws\ws\ws\ws\vv\\
-\ws\ws\ws\ws\ws\ws\ws\hv\hh\ws $\NatTree$ satisfies the positivity condition for $\NatTreeA$\ruleref1
-\end{latexonly}
-\begin{rawhtml}
-<pre>
-<span style="font-family:serif">Then every instantiated constructor of <span style="font-family:monospace">nattree A</span> satisfies the nested positivity condition for <span style="font-family:monospace">nattree</span></span>
-  │
-  ├─ <span style="font-family:serif">concerning type <span style="font-family:monospace">nattree A</span> of constructor <span style="font-family:monospace">nil</span>:</span>
-  │    <span style="font-family:serif">Type <span style="font-family:monospace">nattree A</span> of constructor <span style="font-family:monospace">nil</span> satisfies the positivity condition for <span style="font-family:monospace">nattree</span></span>
-  │    <span style="font-family:serif">because <span style="font-family:monospace">nattree</span> does not appear in any (real) arguments of the type of that constructor</span>
-  │    <span style="font-family:serif">(primarily because nattree does not have any (real) arguments) ... <span style="font-style:italic">(bullet 1)</span></span>
-  │
-  ╰─ <span style="font-family:serif">concerning type <span style="font-family:monospace">∀ A → (nat → nattree A) → nattree A</span> of constructor <span style="font-family:monospace">cons</span>:</span>
-       <span style="font-family:serif">Type <span style="font-family:monospace">∀ A : Type, A → (nat → nattree A) → nattree A</span> of constructor <span style="font-family:monospace">cons</span></span>
-       <span style="font-family:serif">satisfies the positivity condition for <span style="font-family:monospace">nattree</span> because:</span>
-       │
-       ├─ <span style="font-family:serif"><span style="font-family:monospace">nattree</span> occurs only strictly positively in <span style="font-family:monospace">Type</span> ... <span style="font-style:italic">(bullet 1)</span></span>
-       │
-       ├─ <span style="font-family:serif"><span style="font-family:monospace">nattree</span> occurs only strictly positively in <span style="font-family:monospace">A</span> ... <span style="font-style:italic">(bullet 1)</span></span>
-       │
-       ├─ <span style="font-family:serif"><span style="font-family:monospace">nattree</span> occurs only strictly positively in <span style="font-family:monospace">nat → nattree A</span> ... <span style="font-style:italic">(bullet 3+2)</span></span>
-       │
-       ╰─ <span style="font-family:serif"><span style="font-family:monospace">nattree</span> satisfies the positivity condition for <span style="font-family:monospace">nattree A</span> ... <span style="font-style:italic">(bullet 1)</span></span>
-</pre>
-\end{rawhtml}
++ :math:`T=(I~b_1 … b_m~u_1 … u_p)`, :math:`I` is an inductive definition with :math:`m`
+  parameters and :math:`X` does not occur in any :math:`u_i`
++ :math:`T=∀ x:U,V` and :math:`X` occurs only strictly positively in :math:`U` and the type :math:`V`
+  satisfies the nested positivity condition for :math:`X`
 
-\paragraph{Correctness rules.}
+
+For instance, if one considers the type
+
+.. example::
+  .. coqtop:: all
+
+     Module TreeExample.
+     Inductive tree (A:Type) : Type :=
+     | leaf : tree A
+     | node : A -> (nat -> tree A) -> tree A.
+     End TreeExample.
+     
+::
+
+    [TODO Note: This commentary does not seem to correspond to the
+     preceding example.  Instead it is referring to the first example
+     in Inductive Definitions section.  It seems we should either
+     delete the preceding example and refer the the example above of
+     type `list A`, or else we should rewrite the commentary below.]
+     
+    Then every instantiated constructor of list A satisfies the nested positivity
+    condition for list
+      │
+      ├─ concerning type list A of constructor nil:
+      │    Type list A of constructor nil satisfies the positivity condition for list
+      │    because list does not appear in any (real) arguments of the type of that
+      |    constructor (primarily because list does not have any (real)
+      |    arguments) ... (bullet 1)
+      │
+      ╰─ concerning type ∀ A → list A → list A of constructor cons:
+           Type ∀ A : Type, A → list A → list A of constructor cons
+           satisfies the positivity condition for list because:
+           │
+           ├─ list occurs only strictly positively in Type ... (bullet 3)
+           │
+           ├─ list occurs only strictly positively in A ... (bullet 3)
+           │
+           ├─ list occurs only strictly positively in list A ... (bullet 4)
+           │
+           ╰─ list satisfies the positivity condition for list A ... (bullet 1)
+
+
+
+
+.. _Correctness-rules:
+
+**Correctness rules.**
 We shall now describe the rules allowing the introduction of a new
 inductive definition.
 
-\begin{description}
-\item[W-Ind] Let $E$ be a global environment and
-  $\Gamma_P,\Gamma_I,\Gamma_C$ are contexts such that
-  $\Gamma_I$ is $[I_1:\forall \Gamma_P,A_1;\ldots;I_k:\forall
-  \Gamma_P,A_k]$ and $\Gamma_C$ is 
-  $[c_1:\forall \Gamma_P,C_1;\ldots;c_n:\forall \Gamma_P,C_n]$. 
-\inference{
-  \frac{
-  (\WTE{\Gamma_P}{A_j}{s'_j})_{j=1\ldots  k}
-  ~~~~~~~~ (\WTE{\Gamma_I;\Gamma_P}{C_i}{s_{q_i}})_{i=1\ldots  n}
-}
-  {\WF{E;\Ind{}{p}{\Gamma_I}{\Gamma_C}}{\Gamma}}}
+Let :math:`E` be a global environment and :math:`Γ_P`, :math:`Γ_I`, :math:`Γ_C` be contexts
+such that :math:`Γ_I` is :math:`[I_1 :∀ Γ_P ,A_1 ;…;I_k :∀ Γ_P ,A_k]`, and
+:math:`Γ_C` is :math:`[c_1:∀ Γ_P ,C_1 ;…;c_n :∀ Γ_P ,C_n ]`. Then
+
+.. inference:: W-Ind
+
+   \WFE{Γ_P}
+   (E[Γ_P ] ⊢ A_j : s_j' )_{j=1… k}
+   (E[Γ_I ;Γ_P ] ⊢ C_i : s_{q_i} )_{i=1… n}
+   ------------------------------------------
+   \WF{E;\ind{p}{Γ_I}{Γ_C}}{Γ}
+   
+
 provided that the following side conditions hold:
-\begin{itemize}
-\item $k>0$ and all of $I_j$ and $c_i$ are distinct names for $j=1\ldots  k$ and $i=1\ldots  n$,
-\item $p$ is the number of parameters of \NInd{}{\Gamma_I}{\Gamma_C}
-  and $\Gamma_P$ is the context of parameters, 
-\item for $j=1\ldots  k$ we have that $A_j$ is an arity of sort $s_j$ and $I_j
-  \notin E$,
-\item for $i=1\ldots  n$ we have that $C_i$ is a type of constructor of
-  $I_{q_i}$ which satisfies the positivity condition for $I_1 \ldots  I_k$
-  and $c_i \notin \Gamma \cup E$.
-\end{itemize}
-\end{description}
+
+    + :math:`k>0` and all of :math:`I_j` and :math:`c_i` are distinct names for :math:`j=1… k` and :math:`i=1… n`,
+    + :math:`p` is the number of parameters of :math:`\ind{p}{Γ_I}{Γ_C}` and :math:`Γ_P` is the
+      context of parameters,
+    + for :math:`j=1… k` we have that :math:`A_j` is an arity of sort :math:`s_j` and :math:`I_j ∉ E`,
+    + for :math:`i=1… n` we have that :math:`C_i` is a type of constructor of :math:`I_{q_i}` which
+      satisfies the positivity condition for :math:`I_1 … I_k` and :math:`c_i ∉ Γ ∪ E`.
+
 One can remark that there is a constraint between the sort of the
 arity of the inductive type and the sort of the type of its
-constructors which will always be satisfied for the impredicative sort
-{\Prop} but may fail to define inductive definition 
-on sort \Set{} and generate constraints between universes for
-inductive definitions in the {\Type} hierarchy.
+constructors which will always be satisfied for the impredicative
+sortProp but may fail to define inductive definition on sort Set and
+generate constraints between universes for inductive definitions in
+the Type hierarchy.
 
-\paragraph{Examples.}
-It is well known that existential quantifier can be encoded as an
-inductive definition.
-The following declaration introduces the second-order existential
-quantifier $\exists X.P(X)$.
-\begin{coq_example*}
-Inductive exProp (P:Prop->Prop) : Prop :=
-  exP_intro : forall X:Prop, P X -> exProp P.
-\end{coq_example*}
-The same definition on \Set{} is not allowed and fails:
-% (********** The following is not correct and should produce **********)
-% (*** Error: Large non-propositional inductive types must be in Type***)
-\begin{coq_example}
-Fail Inductive exSet (P:Set->Prop) : Set :=
-  exS_intro : forall X:Set, P X -> exSet P.
-\end{coq_example}
+
+**Examples**.  It is well known that the existential quantifier can be encoded as an
+inductive definition. The following declaration introduces the second-
+order existential quantifier :math:`∃ X.P(X)`.
+
+.. example::
+   .. coqtop:: in
+	       
+      Inductive exProp (P:Prop->Prop) : Prop :=
+      | exP_intro : forall X:Prop, P X -> exProp P.
+
+The same definition on Set is not allowed and fails:
+
+.. example::
+   .. coqtop:: all
+
+      Fail Inductive exSet (P:Set->Prop) : Set :=
+      exS_intro : forall X:Set, P X -> exSet P.
+
 It is possible to declare the same inductive definition in the
-universe \Type. 
-The \texttt{exType} inductive definition has type  $(\Type_i \ra\Prop)\ra
-\Type_j$ with the constraint that the parameter \texttt{X} of \texttt{exT\_intro} has type $\Type_k$ with $k<j$ and $k\leq i$.
-\begin{coq_example*}
-Inductive exType (P:Type->Prop) : Type :=
-  exT_intro : forall X:Type, P X -> exType P.
-\end{coq_example*}
-%We shall assume for the following definitions that, if necessary, we
-%annotated the type of constructors such that we know if the argument
-%is recursive or not.  We shall write the type $(x:_R T)C$ if it is 
-%a recursive argument and $(x:_P T)C$ if the argument is not recursive.
+universe Type. The exType inductive definition has type
+:math:`(\Type(i)→\Prop)→\Type(j)` with the constraint that the parameter :math:`X` of :math:`\kw{exT_intro}`
+has type :math:`\Type(k)` with :math:`k<j` and :math:`k≤ i`.
 
-\paragraph[Template polymorphism.]{Template polymorphism.\index{Template polymorphism}}
-\label{Template-polymorphism}
+.. example::
+   .. coqtop:: all
 
-Inductive types declared in {\Type} are
-polymorphic over their arguments in {\Type}.
-If $A$ is an arity of some sort and $s$ is a sort, we write $A_{/s}$ for the arity
-obtained from $A$ by replacing its sort with $s$. Especially, if $A$
-is well-typed in some global environment and local context, then $A_{/s}$ is typable
-by typability of all products in the Calculus of Inductive Constructions.
-The following typing rule is added to the theory.
+      Inductive exType (P:Type->Prop) : Type :=
+      exT_intro : forall X:Type, P X -> exType P.
 
-\begin{description}
-\item[Ind-Family] Let $\Ind{}{p}{\Gamma_I}{\Gamma_C}$ be an
-  inductive definition. Let $\Gamma_P = [p_1:P_1;\ldots;p_{p}:P_{p}]$
-  be its context of parameters, $\Gamma_I = [I_1:\forall
-    \Gamma_P,A_1;\ldots;I_k:\forall \Gamma_P,A_k]$ its context of
-  definitions and $\Gamma_C = [c_1:\forall
-    \Gamma_P,C_1;\ldots;c_n:\forall \Gamma_P,C_n]$ its context of
-  constructors, with $c_i$ a constructor of $I_{q_i}$.
 
-  Let $m \leq p$ be the length of the longest prefix of parameters
-  such that the $m$ first arguments of all occurrences of all $I_j$ in
-  all $C_k$ (even the occurrences in the hypotheses of $C_k$) are
-  exactly applied to $p_1~\ldots~p_m$ ($m$ is the number of {\em
-    recursively uniform parameters} and the $p-m$ remaining parameters
-  are the {\em recursively non-uniform parameters}). Let $q_1$,
-  \ldots, $q_r$, with $0\leq r\leq m$, be a (possibly) partial
-  instantiation of the recursively uniform parameters of
-  $\Gamma_P$. We have:
 
-\inference{\frac
-{\left\{\begin{array}{l}
-\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E\\
-(E[] \vdash q_l : P'_l)_{l=1\ldots r}\\
-(\WTELECONV{}{P'_l}{\subst{P_l}{p_u}{q_u}_{u=1\ldots l-1}})_{l=1\ldots r}\\
-1 \leq j \leq k
-\end{array}
-\right.}
-{E[] \vdash I_j\,q_1\,\ldots\,q_r:\forall [p_{r+1}:P_{r+1};\ldots;p_{p}:P_{p}], (A_j)_{/s_j}}
-}
+.. _Template-polymorphism:
+
+**Template polymorphism.**
+Inductive types declared in Type are polymorphic over their arguments
+in Type. If :math:`A` is an arity of some sort and s is a sort, we write :math:`A_{/s}`
+for the arity obtained from :math:`A` by replacing its sort with s.
+Especially, if :math:`A` is well-typed in some global environment and local
+context, then :math:`A_{/s}` is typable by typability of all products in the
+Calculus of Inductive Constructions. The following typing rule is
+added to the theory.
+
+Let :math:`\ind{p}{Γ_I}{Γ_C}` be an inductive definition. Let
+:math:`Γ_P = [p_1 :P_1 ;…;p_p :P_p ]` be its context of parameters,
+:math:`Γ_I = [I_1:∀ Γ_P ,A_1 ;…;I_k :∀ Γ_P ,A_k ]` its context of definitions and
+:math:`Γ_C = [c_1 :∀ Γ_P ,C_1 ;…;c_n :∀ Γ_P ,C_n]` its context of constructors,
+with :math:`c_i` a constructor of :math:`I_{q_i}`. Let :math:`m ≤ p` be the length of the
+longest prefix of parameters such that the :math:`m` first arguments of all
+occurrences of all :math:`I_j` in all :math:`C_k` (even the occurrences in the
+hypotheses of :math:`C_k`) are exactly applied to :math:`p_1 … p_m` (:math:`m` is the number
+of *recursively uniform parameters* and the :math:`p−m` remaining parameters
+are the *recursively non-uniform parameters*). Let :math:`q_1 , …, q_r` , with
+:math:`0≤ r≤ m`, be a (possibly) partial instantiation of the recursively
+uniform parameters of :math:`Γ_P` . We have:
+
+.. inference:: Ind-Family
+
+   \left\{\begin{array}{l}
+   \ind{p}{Γ_I}{Γ_C} \in E\\
+   (E[]  ⊢ q_l : P'_l)_{l=1\ldots r}\\
+   (E[]  ⊢ P'_l ≤_{βδιζη} \subst{P_l}{p_u}{q_u}_{u=1\ldots l-1})_{l=1\ldots r}\\
+   1 \leq j \leq k
+   \end{array}
+   \right.
+   -----------------------------
+   E[] ⊢ I_j~q_1 … q_r :∀ [p_{r+1} :P_{r+1} ;…;p_p :P_p], (A_j)_{/s_j}
 
 provided that the following side conditions hold:
 
-\begin{itemize}
-\item $\Gamma_{P'}$ is the context obtained from $\Gamma_P$ by
-replacing each $P_l$ that is an arity with $P'_l$ for $1\leq l \leq r$ (notice that
-$P_l$ arity implies $P'_l$ arity since $\WTELECONV{}{P'_l}{ \subst{P_l}{p_u}{q_u}_{u=1\ldots l-1}}$);
-\item there are sorts $s_i$, for $1 \leq i \leq k$ such that, for
- $\Gamma_{I'} = [I_1:\forall
-    \Gamma_{P'},(A_1)_{/s_1};\ldots;I_k:\forall \Gamma_{P'},(A_k)_{/s_k}]$
-we have $(\WTE{\Gamma_{I'};\Gamma_{P'}}{C_i}{s_{q_i}})_{i=1\ldots  n}$;
-\item the sorts $s_i$ are such that all eliminations, to {\Prop}, {\Set} and
-  $\Type(j)$, are allowed (see Section~\ref{allowedeleminationofsorts}).
-\end{itemize}
-\end{description}
-%
-Notice that if $I_j\,q_1\,\ldots\,q_r$ is typable using the rules {\bf
-Ind-Const} and {\bf App}, then it is typable using the rule {\bf
-Ind-Family}. Conversely, the extended theory is not stronger than the
-theory without {\bf Ind-Family}. We get an equiconsistency result by
-mapping each $\Ind{}{p}{\Gamma_I}{\Gamma_C}$ occurring into a
-given derivation into as many different inductive types and constructors
-as the number of different (partial) replacements of sorts, needed for
-this derivation, in the parameters that are arities (this is possible
-because $\Ind{}{p}{\Gamma_I}{\Gamma_C}$ well-formed implies
-that $\Ind{}{p}{\Gamma_{I'}}{\Gamma_{C'}}$ is well-formed and
-has the same allowed eliminations, where
-$\Gamma_{I'}$ is defined as above and $\Gamma_{C'} = [c_1:\forall
-\Gamma_{P'},C_1;\ldots;c_n:\forall \Gamma_{P'},C_n]$). That is,
-the changes in the types of each partial instance
-$q_1\,\ldots\,q_r$ can be characterized by the ordered sets of arity
-sorts among the types of parameters, and to each signature is
-associated a new inductive definition with fresh names. Conversion is
-preserved as any (partial) instance $I_j\,q_1\,\ldots\,q_r$ or
-$C_i\,q_1\,\ldots\,q_r$ is mapped to the names chosen in the specific
-instance of $\Ind{}{p}{\Gamma_I}{\Gamma_C}$.
+    + :math:`Γ_{P′}` is the context obtained from :math:`Γ_P` by replacing each :math:`P_l` that is
+      an arity with :math:`P_l'` for :math:`1≤ l ≤ r` (notice that :math:`P_l` arity implies :math:`P_l'`
+      arity since :math:`(E[] ⊢ P_l' ≤_{βδιζη} \subst{P_l}{p_u}{q_u}_{u=1\ldots l-1} )`;
+    + there are sorts :math:`s_i` , for :math:`1 ≤ i ≤ k` such that, for
+      :math:`Γ_{I'} = [I_1 :∀ Γ_{P'} ,(A_1)_{/s_1} ;…;I_k :∀ Γ_{P'} ,(A_k)_{/s_k}]`
+      we have :math:`(E[Γ_{I′} ;Γ_{P′}] ⊢ C_i : s_{q_i})_{i=1… n}` ;
+    + the sorts :math:`s_i` are such that all eliminations, to
+      :math:`\Prop`, :math:`\Set` and :math:`\Type(j)`, are allowed
+      (see Section Destructors_).
 
-\newcommand{\Single}{\mbox{\textsf{Set}}}
 
-In practice, the rule {\bf Ind-Family} is used by {\Coq} only when all the
-inductive types of the inductive definition are declared with an arity whose 
-sort is in the $\Type$
-hierarchy. Then, the polymorphism is over the parameters whose
-type is an arity of sort in the {\Type} hierarchy. 
-The sort $s_j$ are
-chosen canonically so that each $s_j$ is minimal with respect to the
-hierarchy ${\Prop}\subset{\Set_p}\subset\Type$ where $\Set_p$ is
-predicative {\Set}.
-%and ${\Prop_u}$ is the sort of small singleton
-%inductive types (i.e. of inductive types with one single constructor
-%and that contains either proofs or inhabitants of singleton types
-%only). 
-More precisely, an empty or small singleton inductive definition
+
+Notice that if :math:`I_j~q_1 … q_r` is typable using the rules **Ind-Const** and
+**App**, then it is typable using the rule **Ind-Family**. Conversely, the
+extended theory is not stronger than the theory without **Ind-Family**. We
+get an equiconsistency result by mapping each :math:`\ind{p}{Γ_I}{Γ_C}`
+occurring into a given derivation into as many different inductive
+types and constructors as the number of different (partial)
+replacements of sorts, needed for this derivation, in the parameters
+that are arities (this is possible because :math:`\ind{p}{Γ_I}{Γ_C}` well-formed
+implies that :math:`\ind{p}{Γ_{I'}}{Γ_{C'}}` is well-formed and has the
+same allowed eliminations, where :math:`Γ_{I′}` is defined as above and
+:math:`Γ_{C′} = [c_1 :∀ Γ_{P′} ,C_1 ;…;c_n :∀ Γ_{P′} ,C_n ]`). That is, the changes in the
+types of each partial instance :math:`q_1 … q_r` can be characterized by the
+ordered sets of arity sorts among the types of parameters, and to each
+signature is associated a new inductive definition with fresh names.
+Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
+:math:`C_i~q_1 … q_r` is mapped to the names chosen in the specific instance of
+:math:`\ind{p}{Γ_I}{Γ_C}`.
+
+In practice, the rule **Ind-Family** is used by |Coq| only when all the
+inductive types of the inductive definition are declared with an arity
+whose sort is in the Type hierarchy. Then, the polymorphism is over
+the parameters whose type is an arity of sort in the Type hierarchy.
+The sorts :math:`s_j` are chosen canonically so that each :math:`s_j` is minimal with
+respect to the hierarchy :math:`\Prop ⊂ \Set_p ⊂ \Type` where :math:`\Set_p` is predicative
+:math:`\Set`. More precisely, an empty or small singleton inductive definition
 (i.e. an inductive definition of which all inductive types are
-singleton -- see paragraph~\ref{singleton}) is set in
-{\Prop}, a small non-singleton inductive type is set in {\Set} (even
-in case {\Set} is impredicative -- see Section~\ref{impredicativity}),
-and otherwise in the {\Type} hierarchy.
+singleton – see paragraph Destructors_) is set in :math:`\Prop`, a small non-singleton
+inductive type is set in :math:`\Set` (even in case :math:`\Set` is impredicative – see
+Section The-Calculus-of-Inductive-Construction-with-impredicative-Set_),
+and otherwise in the Type hierarchy.
 
 Note that the side-condition about allowed elimination sorts in the
-rule~{\bf Ind-Family} is just to avoid to recompute the allowed
-elimination sorts at each instance of a pattern-matching (see
-section~\ref{elimdep}).  
-As an example, let us consider the following definition:
-\begin{coq_example*}
-Inductive option (A:Type) : Type := 
-| None : option A 
-| Some : A -> option A.
-\end{coq_example*}
-%
-As the definition is set in the {\Type} hierarchy, it is used
+rule **Ind-Family** is just to avoid to recompute the allowed elimination
+sorts at each instance of a pattern-matching (see section Destructors_). As
+an example, let us consider the following definition:
+
+.. example::
+   .. coqtop:: in
+
+      Inductive option (A:Type) : Type :=
+      | None : option A
+      | Some : A -> option A.
+
+As the definition is set in the Type hierarchy, it is used
 polymorphically over its parameters whose types are arities of a sort
-in the {\Type} hierarchy. Here, the parameter $A$ has this property,
-hence, if \texttt{option} is applied to a type in {\Set}, the result is
-in {\Set}. Note that if \texttt{option} is applied to a type in {\Prop},
-then, the result is not set in \texttt{Prop} but in \texttt{Set}
-still. This is because \texttt{option} is not a singleton type (see
-section~\ref{singleton}) and it would lose the elimination to {\Set} and
-{\Type} if set in {\Prop}.
+in the Type hierarchy. Here, the parameter :math:`A` has this property, hence,
+if :g:`option` is applied to a type in :math:`\Set`, the result is in :math:`\Set`. Note that
+if :g:`option` is applied to a type in :math:`\Prop`, then, the result is not set in
+:math:`\Prop` but in :math:`\Set` still. This is because :g:`option` is not a singleton type
+(see section Destructors_) and it would lose the elimination to :math:`\Set` and :math:`\Type`
+if set in :math:`\Prop`.
 
-\begin{coq_example}
-Check (fun A:Set => option A).
-Check (fun A:Prop => option A).
-\end{coq_example}
-%
+.. example::
+   .. coqtop:: all
+
+      Check (fun A:Set => option A).
+      Check (fun A:Prop => option A).
+
 Here is another example.
-%
-\begin{coq_example*}
-Inductive prod (A B:Type) : Type := pair : A -> B -> prod A B.
-\end{coq_example*}
-%
-As \texttt{prod} is a singleton type, it will be in {\Prop} if applied
-twice to propositions, in {\Set} if applied twice to at least one type
-in {\Set} and none in {\Type}, and in {\Type} otherwise. In all cases,
-the three kind of eliminations schemes are allowed.
 
-\begin{coq_example}
-Check (fun A:Set => prod A).
-Check (fun A:Prop => prod A A).
-Check (fun (A:Prop) (B:Set) => prod A B).
-Check (fun (A:Type) (B:Prop) => prod A B).
-\end{coq_example}
+.. example::
+   .. coqtop:: in
 
-\Rem Template polymorphism used to be called ``sort-polymorphism of
-inductive types'' before universe polymorphism (see
-Chapter~\ref{Universes-full}) was introduced.
+      Inductive prod (A B:Type) : Type := pair : A -> B -> prod A B.
 
-\subsection{Destructors}
+As :g:`prod` is a singleton type, it will be in :math:`\Prop` if applied twice to
+propositions, in :math:`\Set` if applied twice to at least one type in :math:`\Set` and
+none in :math:`\Type`, and in :math:`\Type` otherwise. In all cases, the three kind of
+eliminations schemes are allowed.
+
+.. example::
+   .. coqtop:: all
+
+      Check (fun A:Set => prod A).
+      Check (fun A:Prop => prod A A).
+      Check (fun (A:Prop) (B:Set) => prod A B).
+      Check (fun (A:Type) (B:Prop) => prod A B).
+
+Remark: Template polymorphism used to be called “sort-polymorphism of
+inductive types” before universe polymorphism (see Chapter :ref:`polymorphicuniverses`) was
+introduced.
+
+
+.. _Destructors:
+
+Destructors
+~~~~~~~~~~~~~~~~~
+
 The specification of inductive definitions with arities and
-constructors is quite natural.  But we still have to say how to use an
+constructors is quite natural. But we still have to say how to use an
 object in an inductive type.
 
 This problem is rather delicate. There are actually several different
@@ -1171,711 +1164,682 @@ a strongly normalizing reduction, we cannot accept any sort of
 recursion (even terminating). So the basic idea is to restrict
 ourselves to primitive recursive functions and functionals.
 
-For instance, assuming a parameter $A:\Set$ exists in the local context, we
-want to build a function \length\ of type $\ListA\ra \nat$ which
-computes the length of the list, so such that $(\length~(\Nil~A)) = \nO$
-and $(\length~(\cons~A~a~l)) = (\nS~(\length~l))$.  We want these
-equalities to be recognized implicitly and taken into account in the
-conversion rule.
+For instance, assuming a parameter :g:`A:Set` exists in the local context,
+we want to build a function length of type :g:`list A -> nat` which computes
+the length of the list, so such that :g:`(length (nil A)) = O` and :g:`(length
+(cons A a l)) = (S (length l))`. We want these equalities to be
+recognized implicitly and taken into account in the conversion rule.
 
 From the logical point of view, we have built a type family by giving
-a set of constructors.  We want to capture the fact that we do not
-have any other way to build an object in this type. So when trying to
-prove a property about an object $m$ in an inductive definition it is
-enough to enumerate all the cases where $m$ starts with a different
+a set of constructors. We want to capture the fact that we do not have
+any other way to build an object in this type. So when trying to prove
+a property about an object :math:`m` in an inductive definition it is enough
+to enumerate all the cases where :math:`m` starts with a different
 constructor.
 
 In case the inductive definition is effectively a recursive one, we
 want to capture the extra property that we have built the smallest
-fixed point of this recursive equation.  This says that we are only
+fixed point of this recursive equation. This says that we are only
 manipulating finite objects. This analysis provides induction
-principles.  
-For instance, in order to prove $\forall l:\ListA,(\haslengthA~l~(\length~l))$
-it is enough to prove:
-%
-\begin{itemize}
-  \item $(\haslengthA~(\Nil~A)~(\length~(\Nil~A)))$
-  \item $\forall a:A, \forall l:\ListA, (\haslengthA~l~(\length~l)) \ra\\
-        \ra (\haslengthA~(\cons~A~a~l)~(\length~(\cons~A~a~l)))$
-\end{itemize}
-%
-which given the conversion equalities satisfied by \length\ is the
-same as proving:
-%
-\begin{itemize}
-  \item $(\haslengthA~(\Nil~A)~\nO)$
-  \item $\forall a:A, \forall l:\ListA, (\haslengthA~l~(\length~l)) \ra\\
-        \ra (\haslengthA~(\cons~A~a~l)~(\nS~(\length~l)))$
-\end{itemize}
-%
+principles. For instance, in order to prove :g:`∀ l:list A,(has_length A l
+(length l))` it is enough to prove:
+
+
++ :g:`(has_length A (nil A) (length (nil A)))`
++ :g:`∀ a:A, ∀ l:list A, (has_length A l (length l)) →`
+  :g:`(has_length A (cons A a l) (length (cons A a l)))`
+
+
+which given the conversion equalities satisfied by length is the same
+as proving:
+
+
++ :g:`(has_length A (nil A) O)`
++ :g:`∀ a:A, ∀ l:list A, (has_length A l (length l)) →`
+  :g:`(has_length A (cons A a l) (S (length l)))`
+
+
 One conceptually simple way to do that, following the basic scheme
-proposed by Martin-L\"of in his Intuitionistic Type Theory, is to
+proposed by Martin-Löf in his Intuitionistic Type Theory, is to
 introduce for each inductive definition an elimination operator. At
 the logical level it is a proof of the usual induction principle and
 at the computational level it implements a generic operator for doing
 primitive recursion over the structure.
 
 But this operator is rather tedious to implement and use. We choose in
-this version of {\Coq} to factorize the operator for primitive recursion
-into two more primitive operations as was first suggested by Th. Coquand
-in~\cite{Coq92}.  One is the definition by pattern-matching. The second one is a definition by guarded fixpoints. 
+this version of |Coq| to factorize the operator for primitive recursion
+into two more primitive operations as was first suggested by Th.
+Coquand in :cite:`Coq92`. One is the definition by pattern-matching. The
+second one is a definition by guarded fixpoints.
 
-\subsubsection[The {\tt match\ldots with \ldots end} construction.]{The {\tt match\ldots with \ldots end} construction.\label{Caseexpr}
-\index{match@{\tt match\ldots with\ldots end}}}
 
-The basic idea of this operator is that we have an object
-$m$ in an inductive type $I$ and we want to prove a property
-which possibly depends on $m$. For this, it is enough to prove the
-property for $m = (c_i~u_1\ldots  u_{p_i})$ for each constructor of $I$.
-The \Coq{} term for this proof will be written:
-\[\kw{match}~m~\kw{with}~ (c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
-  (c_n~x_{n1}~...~x_{np_n}) \Ra f_n~ \kw{end}\]
-In this expression, if
-$m$ eventually happens to evaluate to $(c_i~u_1\ldots u_{p_i})$ then
-the expression will behave as specified in its $i$-th branch and
-it will reduce to $f_i$ where the $x_{i1}$\ldots $x_{ip_i}$ are replaced
-by the $u_1\ldots u_{p_i}$ according to the $\iota$-reduction.
+.. _The-match…with-end-construction:
 
-Actually, for type-checking a \kw{match\ldots with\ldots end}
-expression we also need to know the predicate $P$ to be proved by case
-analysis. In the general case where $I$ is an inductively defined
-$n$-ary relation, $P$ is a predicate over $n+1$ arguments: the $n$ first ones
-correspond to the arguments of $I$ (parameters excluded), and the last
-one corresponds to object $m$. \Coq{} can sometimes infer this
-predicate but sometimes not. The concrete syntax for describing this
-predicate uses the \kw{as\ldots in\ldots return} construction. For
-instance, let us assume that $I$ is an unary predicate with one
-parameter and one argument. The predicate is made explicit using the syntax:
-\[\kw{match}~m~\kw{as}~ x~ \kw{in}~ I~\verb!_!~a~ \kw{return}~ P
- ~\kw{with}~ (c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
-  (c_n~x_{n1}~...~x_{np_n}) \Ra f_n \kw{end}\]
-The \kw{as} part can be omitted if either the result type does not
-depend on $m$ (non-dependent elimination) or $m$ is a variable (in
-this case, $m$ can occur in $P$ where it is considered a bound variable).
-The \kw{in} part can be
-omitted if the result type does not depend on the arguments of
-$I$. Note that the arguments of $I$ corresponding to parameters
-\emph{must} be \verb!_!, because the result type is not generalized to
-all possible values of the parameters.
-The other arguments of $I$
-(sometimes called indices in the literature)
-% NOTE: e.g. http://www.qatar.cmu.edu/~sacchini/papers/types08.pdf
-have to be variables
-($a$ above) and these variables can occur in $P$.
-The expression after \kw{in}
-must be seen as an \emph{inductive type pattern}. Notice that
-expansion of implicit arguments and notations apply to this pattern.
-%
-For the purpose of presenting the inference rules, we use a more
-compact notation:
-\[ \Case{(\lb a x \mto P)}{m}{ \lb x_{11}~...~x_{1p_1} \mto f_1 ~|~\ldots~|~
-  \lb x_{n1}...x_{np_n} \mto f_n}\]
+**The match…with …end construction**
+The basic idea of this operator is that we have an object :math:`m` in an
+inductive type :math:`I` and we want to prove a property which possibly
+depends on :math:`m`. For this, it is enough to prove the property for
+:math:`m = (c_i~u_1 … u_{p_i} )` for each constructor of :math:`I`.
+The |Coq| term for this proof
+will be written:
 
-%% CP 06/06 Obsolete avec la nouvelle syntaxe et incompatible avec la
-%% presentation theorique qui suit
-% \paragraph{Non-dependent elimination.}
-%
-% When defining a function of codomain $C$ by case analysis over an
-% object in an inductive type $I$, we build an object of type $I
-% \ra C$. The minimality principle on an inductively defined logical
-% predicate $I$ of type $A \ra \Prop$ is often used to prove a property
-% $\forall x:A,(I~x)\ra (C~x)$.  These are particular cases of the dependent
-% principle that we stated before with a predicate which does not depend
-% explicitly on the object in the inductive definition.
+.. math::
+   \Match~m~\with~(c_1~x_{11} ... x_{1p_1} ) ⇒ f_1 | … | (c_n~x_{n1} ... x_{np_n} ) ⇒ f_n \endkw
 
-% For instance, a function testing whether a list is empty 
-% can be
-% defined as:
-% \[\kw{fun} l:\ListA \Ra \kw{match}~l~\kw{with}~ \Nil \Ra \true~
-% |~(\cons~a~m) \Ra \false \kw{end}\]
-% represented by
-% \[\lb l:\ListA \mto\Case{\bool}{l}{\true~ |~ \lb a~m,~\false}\]
-%\noindent {\bf Remark. } 
+In this expression, if :math:`m` eventually happens to evaluate to
+:math:`(c_i~u_1 … u_{p_i})` then the expression will behave as specified in its :math:`i`-th branch
+and it will reduce to :math:`f_i` where the :math:`x_{i1} …x_{ip_i}` are replaced by the
+:math:`u_1 … u_{p_i}` according to the ι-reduction.
 
-% In the system \Coq\ the expression above, can be
-% written without mentioning
-% the dummy abstraction:
-% \Case{\bool}{l}{\Nil~ \mbox{\tt =>}~\true~ |~ (\cons~a~m)~
-%  \mbox{\tt =>}~ \false}
+Actually, for type-checking a :math:`\Match…\with…\endkw` expression we also need
+to know the predicate P to be proved by case analysis. In the general
+case where :math:`I` is an inductively defined :math:`n`-ary relation, :math:`P` is a predicate
+over :math:`n+1` arguments: the :math:`n` first ones correspond to the arguments of :math:`I`
+(parameters excluded), and the last one corresponds to object :math:`m`. |Coq|
+can sometimes infer this predicate but sometimes not. The concrete
+syntax for describing this predicate uses the :math:`\as…\In…\return`
+construction. For instance, let us assume that :math:`I` is an unary predicate
+with one parameter and one argument. The predicate is made explicit
+using the syntax:
 
-\paragraph[Allowed elimination sorts.]{Allowed elimination sorts.\index{Elimination sorts}}
-\label{allowedeleminationofsorts}
+.. math::
+   \Match~m~\as~x~\In~I~\_~a~\return~P~\with~
+   (c_1~x_{11} ... x_{1p_1} ) ⇒ f_1 | …
+   | (c_n~x_{n1} ... x_{np_n} ) ⇒ f_n~\endkw
+   
+The :math:`\as` part can be omitted if either the result type does not depend
+on :math:`m` (non-dependent elimination) or :math:`m` is a variable (in this case, :math:`m`
+can occur in :math:`P` where it is considered a bound variable). The :math:`\In` part
+can be omitted if the result type does not depend on the arguments
+of :math:`I`. Note that the arguments of :math:`I` corresponding to parameters *must*
+be :math:`\_`, because the result type is not generalized to all possible
+values of the parameters. The other arguments of :math:`I` (sometimes called
+indices in the literature) have to be variables (:math:`a` above) and these
+variables can occur in :math:`P`. The expression after :math:`\In` must be seen as an
+*inductive type pattern*. Notice that expansion of implicit arguments
+and notations apply to this pattern. For the purpose of presenting the
+inference rules, we use a more compact notation:
 
-An important question for building the typing rule for \kw{match} is
-what can be the type of $\lb a x \mto P$ with respect to the type of $m$. If
-$m:I$ and
-$I:A$ and
-$\lb a x \mto P : B$
-then by \compat{I:A}{B} we mean that one can use $\lb a x \mto P$ with $m$ in the above
-match-construct.
+.. math::
+   \case(m,(λ a x . P), λ x_{11} ... x_{1p_1} . f_1~| … |~λ x_{n1} ...x_{np_n} . f_n )
 
-\paragraph{Notations.}
-The \compat{I:A}{B} is defined as the smallest relation satisfying the
-following rules:
-We write \compat{I}{B} for \compat{I:A}{B} where $A$ is the type of
-$I$.
 
-The case of inductive definitions in sorts \Set\ or \Type{} is simple.
-There is no restriction on the sort of the predicate to be
-eliminated. 
-%
-\begin{description}
-\item[Prod] \inference{\frac{\compat{(I~x):A'}{B'}}
-                      {\compat{I:\forall x:A, A'}{\forall x:A, B'}}}
-\item[{\Set} \& \Type] \inference{\frac{
-    s_1 \in \{\Set,\Type(j)\}~~~~~~~~s_2 \in \Sort}{\compat{I:s_1}{I\ra s_2}}}
-\end{description}
-%
-The case of Inductive definitions of sort \Prop{} is a bit more
+.. _Allowed-elimination-sorts:
+
+**Allowed elimination sorts.** An important question for building the typing rule for match is what
+can be the type of :math:`λ a x . P` with respect to the type of :math:`m`. If :math:`m:I`
+and :math:`I:A` and :math:`λ a x . P : B` then by :math:`[I:A|B]` we mean that one can use
+:math:`λ a x . P` with :math:`m` in the above match-construct.
+
+
+.. _Notations:
+
+**Notations.** The :math:`[I:A|B]` is defined as the smallest relation satisfying the
+following rules: We write :math:`[I|B]` for :math:`[I:A|B]` where :math:`A` is the type of :math:`I`.
+
+The case of inductive definitions in sorts :math:`\Set` or :math:`\Type` is simple.
+There is no restriction on the sort of the predicate to be eliminated.
+
+.. inference:: Prod
+
+   [(I~x):A′|B′]
+   -----------------------
+   [I:∀ x:A, A′|∀ x:A, B′]
+
+   
+.. inference:: Set & Type
+
+   s_1 ∈ \{\Set,\Type(j)\}
+   s_2 ∈ \Sort
+   ----------------
+   [I:s_1 |I→ s_2 ]
+
+
+The case of Inductive definitions of sort :math:`\Prop` is a bit more
 complicated, because of our interpretation of this sort. The only
-harmless allowed elimination, is the one when predicate $P$ is also of
-sort \Prop.
-\begin{description}
-\item[\Prop] \inference{\compat{I:\Prop}{I\ra\Prop}}
-\end{description}
-\Prop{} is the type of logical propositions, the proofs of properties
-$P$ in \Prop{} could not be used for computation and are consequently
-ignored by the extraction mechanism.
-Assume $A$ and $B$ are two propositions, and the logical disjunction
-$A\vee B$ is defined inductively by:
-\begin{coq_example*}
-Inductive or (A B:Prop) : Prop :=
-  or_introl : A -> or A B | or_intror : B -> or A B.
-\end{coq_example*}
+harmless allowed elimination, is the one when predicate :math:`P` is also of
+sort :math:`\Prop`.
+
+.. inference:: Prop
+	       
+   ~
+   ---------------
+   [I:Prop|I→Prop]
+
+
+:math:`\Prop` is the type of logical propositions, the proofs of properties :math:`P` in
+:math:`\Prop` could not be used for computation and are consequently ignored by
+the extraction mechanism. Assume :math:`A` and :math:`B` are two propositions, and the
+logical disjunction :math:`A ∨ B` is defined inductively by:
+
+.. example::
+   .. coqtop:: in
+
+      Inductive or (A B:Prop) : Prop :=
+      or_introl : A -> or A B | or_intror : B -> or A B.
+
+
 The following definition which computes a boolean value by case over
-the proof of \texttt{or A B} is not accepted:
-% (***************************************************************)
-% (*** This example should fail with ``Incorrect elimination'' ***)
-\begin{coq_example}
-Fail Definition choice (A B: Prop) (x:or A B) :=
-  match x with or_introl _ _ a => true | or_intror _ _ b => false end.
-\end{coq_example}
+the proof of :g:`or A B` is not accepted:
+
+.. example::
+   .. coqtop:: all
+
+      Fail Definition choice (A B: Prop) (x:or A B) :=
+      match x with or_introl _ _ a => true | or_intror _ _ b => false end.
+   
 From the computational point of view, the structure of the proof of
-\texttt{(or A B)} in this term is needed for computing the boolean
-value.
+:g:`(or A B)` in this term is needed for computing the boolean value.
 
-In general, if $I$ has type \Prop\ then $P$ cannot have type $I\ra
-\Set$, because it will mean to build an informative proof of type
-$(P~m)$ doing a case analysis over a non-computational object that
-will disappear in the extracted program.  But the other way is safe
-with respect to our interpretation we can have $I$ a computational
-object and $P$ a non-computational one, it just corresponds to proving
-a logical property of a computational object.
+In general, if :math:`I` has type :math:`\Prop` then :math:`P` cannot have type :math:`I→Set,` because
+it will mean to build an informative proof of type :math:`(P~m)` doing a case
+analysis over a non-computational object that will disappear in the
+extracted program. But the other way is safe with respect to our
+interpretation we can have :math:`I` a computational object and :math:`P` a
+non-computational one, it just corresponds to proving a logical property
+of a computational object.
 
-% Also if $I$ is in one of the sorts \{\Prop, \Set\}, one cannot in
-% general allow an elimination over a bigger sort such as \Type.  But
-% this operation is safe whenever $I$ is a {\em small inductive} type,
-% which means that all the types of constructors of
-% $I$ are small with the following definition:\\
-% $(I~t_1\ldots t_s)$ is a {\em small type of constructor} and
-% $\forall~x:T,C$ is a small type of constructor if $C$ is and if $T$
-% has type \Prop\ or \Set.  \index{Small inductive type}
+In the same spirit, elimination on :math:`P` of type :math:`I→Type` cannot be allowed
+because it trivially implies the elimination on :math:`P` of type :math:`I→ Set` by
+cumulativity. It also implies that there are two proofs of the same
+property which are provably different, contradicting the proof-
+irrelevance property which is sometimes a useful axiom:
 
-% We call this particular elimination which gives the possibility to
-% compute a type by induction on the structure of a term, a {\em strong
-%   elimination}\index{Strong elimination}.
+.. example::
+   .. coqtop:: all
 
-In the same spirit, elimination on $P$ of type $I\ra
-\Type$ cannot be allowed because it trivially implies the elimination
-on $P$ of type $I\ra \Set$ by cumulativity. It also implies that there
-are two proofs of the same property which are provably different,
-contradicting the proof-irrelevance property which is sometimes a
-useful axiom:
-\begin{coq_example}
-Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
-\end{coq_example}
-\begin{coq_eval}
-Reset proof_irrelevance.
-\end{coq_eval}
-The elimination of an inductive definition of type \Prop\ on a
-predicate $P$ of type $I\ra \Type$ leads to a paradox when applied to 
-impredicative inductive definition like the second-order existential
-quantifier \texttt{exProp} defined above, because it give access to
-the two projections on this type.
+      Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
 
-%\paragraph{Warning: strong elimination}
-%\index{Elimination!Strong elimination}
-%In previous versions of Coq, for a small inductive definition, only the
-%non-informative strong elimination on \Type\ was allowed, because
-%strong elimination on \Typeset\ was not compatible with the current
-%extraction procedure. In this version, strong elimination on \Typeset\
-%is accepted but a dummy element is extracted from it and may generate
-%problems if extracted terms are explicitly used such as in the 
-%{\tt Program} tactic or when extracting ML programs.
+The elimination of an inductive definition of type :math:`\Prop` on a predicate
+:math:`P` of type :math:`I→ Type` leads to a paradox when applied to impredicative
+inductive definition like the second-order existential quantifier
+:g:`exProp` defined above, because it give access to the two projections on
+this type.
 
-\paragraph[Empty and singleton elimination]{Empty and singleton elimination\label{singleton}
-\index{Elimination!Singleton elimination}
-\index{Elimination!Empty elimination}}
 
-There are special inductive definitions in \Prop\ for which more
-eliminations are allowed. 
-\begin{description}
-\item[\Prop-extended] 
-\inference{
-   \frac{I \mbox{~is an empty or singleton
-       definition}~~~s \in \Sort}{\compat{I:\Prop}{I\ra s}}
-}
-\end{description}
-%
-% A {\em singleton definition} has always an informative content,
-% even if it is a proposition.
-%
-A {\em singleton
-definition} has only one constructor and all the arguments of this
-constructor have type \Prop. In that case, there is a canonical
-way to interpret the informative extraction on an object in that type,
-such that the elimination on any sort $s$ is legal.  Typical examples are
-the conjunction of non-informative propositions and the equality. 
-If there is an hypothesis $h:a=b$ in the local context, it can be used for
-rewriting not only in logical propositions but also in any type.
-% In that case, the term \verb!eq_rec! which was defined as an axiom, is
-% now a term of the calculus.
-\begin{coq_eval}
-Require Extraction.
-\end{coq_eval}
-\begin{coq_example}
-Print eq_rec.
-Extraction eq_rec.
-\end{coq_example}
+.. _Empty-and-singleton-elimination:
+
+**Empty and singleton elimination.** There are special inductive definitions in
+:math:`\Prop` for which more eliminations are allowed.
+
+.. inference:: Prop-extended
+	       
+   I~\kw{is an empty or singleton definition}
+   s ∈ \Sort
+   -------------------------------------
+   [I:Prop|I→ s]
+
+A *singleton definition* has only one constructor and all the
+arguments of this constructor have type Prop. In that case, there is a
+canonical way to interpret the informative extraction on an object in
+that type, such that the elimination on any sort :math:`s` is legal. Typical
+examples are the conjunction of non-informative propositions and the
+equality. If there is an hypothesis :math:`h:a=b` in the local context, it can
+be used for rewriting not only in logical propositions but also in any
+type.
+
+.. example::
+   .. coqtop:: all
+
+      Print eq_rec.
+      Require Extraction.
+      Extraction eq_rec.
+
 An empty definition has no constructors, in that case also,
 elimination on any sort is allowed.
 
-\paragraph{Type of branches.}
-Let $c$ be a term of type $C$, we assume $C$ is a type of constructor
-for an inductive type $I$. Let $P$ be a term that represents the
-property to be proved.
-We assume $r$ is the number of parameters and $p$ is the number of arguments.
 
-We define a new type \CI{c:C}{P} which represents the type of the
-branch corresponding to the $c:C$ constructor.
-\[
-\begin{array}{ll}
-\CI{c:(I~p_1\ldots p_r\ t_1 \ldots t_p)}{P} &\equiv (P~t_1\ldots ~t_p~c) \\[2mm]
-\CI{c:\forall~x:T,C}{P} &\equiv \forall~x:T,\CI{(c~x):C}{P} 
-\end{array}
-\]
-We write \CI{c}{P} for \CI{c:C}{P} with $C$ the type of $c$.
+.. _Type-of-branches:
 
-\paragraph{Example.}
-The following term in concrete syntax:
-\begin{verbatim}
-match t as l return P' with
-| nil _ => t1
-| cons _ hd tl => t2
-end
-\end{verbatim}
-can be represented in abstract syntax as $$\Case{P}{t}{f_1\,|\,f_2}$$
+**Type of branches.**
+Let :math:`c` be a term of type :math:`C`, we assume :math:`C` is a type of constructor for an
+inductive type :math:`I`. Let :math:`P` be a term that represents the property to be
+proved. We assume :math:`r` is the number of parameters and :math:`p` is the number of
+arguments.
+
+We define a new type :math:`\{c:C\}^P` which represents the type of the branch
+corresponding to the :math:`c:C` constructor.
+
+.. math::
+   \begin{array}{ll}
+   \{c:(I~p_1\ldots p_r\ t_1 \ldots t_p)\}^P &\equiv (P~t_1\ldots ~t_p~c) \\
+   \{c:\forall~x:T,C\}^P &\equiv \forall~x:T,\{(c~x):C\}^P 
+   \end{array}
+
+We write :math:`\{c\}^P` for :math:`\{c:C\}^P` with :math:`C` the type of :math:`c`.
+
+
+**Example.**
+The following term in concrete syntax::
+
+    match t as l return P' with
+    | nil _ => t1
+    | cons _ hd tl => t2
+    end
+
+
+can be represented in abstract syntax as
+
+.. math::
+   \case(t,P,f 1 | f 2 )
+
 where
-\begin{eqnarray*}
-  P & = & \lambda~l~.~P^\prime\\
-  f_1 & = & t_1\\
-  f_2 & = & \lambda~(hd:\nat)~.~\lambda~(tl:\List~\nat)~.~t_2
-\end{eqnarray*}
+
+.. math::
+   \begin{eqnarray*}
+     P & = & \lambda~l~.~P^\prime\\
+     f_1 & = & t_1\\
+     f_2 & = & \lambda~(hd:\nat)~.~\lambda~(tl:\List~\nat)~.~t_2
+   \end{eqnarray*}
+
 According to the definition:
-\begin{latexonly}\vskip.5em\noindent\end{latexonly}%
-\begin{htmlonly}
 
-\end{htmlonly}
-$ \CI{(\Nil~\nat)}{P} \equiv \CI{(\Nil~\nat) : (\List~\nat)}{P} \equiv (P~(\Nil~\nat))$
-\begin{latexonly}\vskip.5em\noindent\end{latexonly}%
-\begin{htmlonly}
+.. math::
+   \{(\kw{nil}~\nat)\}^P ≡ \{(\kw{nil}~\nat) : (\List~\nat)\}^P ≡ (P~(\kw{nil}~\nat))
 
-\end{htmlonly}
-$ \CI{(\cons~\nat)}{P}
-  \equiv\CI{(\cons~\nat) : (\nat\ra\List~\nat\ra\List~\nat)}{P} \equiv\\
-  \equiv\forall n:\nat, \CI{(\cons~\nat~n) : \List~\nat\ra\List~\nat)}{P} \equiv\\
-  \equiv\forall n:\nat, \forall l:\List~\nat, \CI{(\cons~\nat~n~l) : \List~\nat)}{P} \equiv\\
-\equiv\forall n:\nat, \forall l:\List~\nat,(P~(\cons~\nat~n~l))$.
-\begin{latexonly}\vskip.5em\noindent\end{latexonly}%
-\begin{htmlonly}
+.. math::
+   
+   \begin{array}{rl}
+   \{(\kw{cons}~\nat)\}^P & ≡\{(\kw{cons}~\nat) : (\nat→\List~\nat→\List~\nat)\}^P \\
+   & ≡∀ n:\nat, \{(\kw{cons}~\nat~n) : \List~\nat→\List~\nat)\}^P \\
+   & ≡∀ n:\nat, ∀ l:\List~\nat, \{(\kw{cons}~\nat~n~l) : \List~\nat)\}^P \\
+   & ≡∀ n:\nat, ∀ l:\List~\nat,(P~(\kw{cons}~\nat~n~l)).
+   \end{array}
 
-\end{htmlonly}
-Given some $P$, then \CI{(\Nil~\nat)}{P} represents the expected type of $f_1$, and
-\CI{(\cons~\nat)}{P} represents the expected type of $f_2$.
+Given some :math:`P` then :math:`\{(\kw{nil}~\nat)\}^P` represents the expected type of :math:`f_1` ,
+and :math:`\{(\kw{cons}~\nat)\}^P` represents the expected type of :math:`f_2`.
 
-\paragraph{Typing rule.}
 
+.. _Typing-rule:
+
+**Typing rule.**
 Our very general destructor for inductive definition enjoys the
 following typing rule
-% , where we write 
-% \[
-% \Case{P}{c}{[x_{11}:T_{11}]\ldots[x_{1p_1}:T_{1p_1}]g_1\ldots
-%   [x_{n1}:T_{n1}]\ldots[x_{np_n}:T_{np_n}]g_n}
-% \]
-% for 
-% \[
-% \Case{P}{c}{(c_1~x_{11}~...~x_{1p_1}) \Ra g_1 ~|~\ldots~|~
-% (c_n~x_{n1}...x_{np_n}) \Ra g_n }
-% \]
 
-\begin{description}
-\item[match] \label{elimdep} \index{Typing rules!match}
-\inference{
-\frac{\WTEG{c}{(I~q_1\ldots  q_r~t_1\ldots  t_s)}~~
-  \WTEG{P}{B}~~\compat{(I~q_1\ldots  q_r)}{B}
- ~~
-(\WTEG{f_i}{\CI{(c_{p_i}~q_1\ldots  q_r)}{P}})_{i=1\ldots  l}}
-{\WTEG{\Case{P}{c}{f_1|\ldots  |f_l}}{(P\ t_1\ldots  t_s\ c)}}}%\\[3mm]
+.. inference:: match
 
-provided $I$ is an inductive type in a definition
-\Ind{}{r}{\Gamma_I}{\Gamma_C} with 
-$\Gamma_C = [c_1:C_1;\ldots;c_n:C_n]$ and $c_{p_1}\ldots  c_{p_l}$ are the
-only constructors of $I$.
-\end{description}
+   \begin{array}{l}
+   E[Γ] ⊢ c : (I~q_1 … q_r~t_1 … t_s ) \\
+   E[Γ] ⊢ P : B \\
+   [(I~q_1 … q_r)|B] \\
+   (E[Γ] ⊢ f_i : \{(c_{p_i}~q_1 … q_r)\}^P)_{i=1… l}
+   \end{array}
+   ------------------------------------------------
+   E[Γ] ⊢ \case(c,P,f_1  |… |f_l ) : (P~t_1 … t_s~c)
 
-\paragraph{Example.}
+provided :math:`I` is an inductive type in a
+definition :math:`\ind{r}{Γ_I}{Γ_C}` with :math:`Γ_C = [c_1 :C_1 ;…;c_n :C_n ]` and
+:math:`c_{p_1} … c_{p_l}` are the only constructors of :math:`I`.
 
+
+
+**Example.**
 Below is a typing rule for the term shown in the previous example:
-\inference{
-  \frac{%
-    \WTEG{t}{(\List~\nat)}~~~~%
-    \WTEG{P}{B}~~~~%
-    \compat{(\List~\nat)}{B}~~~~%
-    \WTEG{f_1}{\CI{(\Nil~\nat)}{P}}~~~~%
-    \WTEG{f_2}{\CI{(\cons~\nat)}{P}}%
-  }
-{\WTEG{\Case{P}{t}{f_1|f_2}}{(P~t)}}}
 
-\paragraph[Definition of $\iota$-reduction.]{Definition of $\iota$-reduction.\label{iotared}
-\index{iota-reduction@$\iota$-reduction}}
-We still have to define the $\iota$-reduction in the general case.
+.. inference:: list example
 
-A $\iota$-redex is a term of the following form:
-\[\Case{P}{(c_{p_i}~q_1\ldots  q_r~a_1\ldots  a_m)}{f_1|\ldots |
-    f_l}\]
-with $c_{p_i}$ the $i$-th constructor of the inductive type $I$ with $r$
+   \begin{array}{l}
+   E[Γ] ⊢ t : (\List ~\nat) \\
+   E[Γ] ⊢ P : B \\
+   [(\List ~\nat)|B] \\
+   E[Γ] ⊢ f_1 : {(\kw{nil} ~\nat)}^P \\
+   E[Γ] ⊢ f_2 : {(\kw{cons} ~\nat)}^P
+   \end{array}
+   ------------------------------------------------
+   E[Γ] ⊢ \case(t,P,f_1 |f_2 ) : (P~t)
+
+
+.. _Definition-of-ι-reduction:
+
+**Definition of ι-reduction.**
+We still have to define the ι-reduction in the general case.
+
+An ι-redex is a term of the following form:
+
+.. math::
+   \case((c_{p_i}~q_1 … q_r~a_1 … a_m ),P,f_1 |… |f_l )
+   
+with :math:`c_{p_i}` the :math:`i`-th constructor of the inductive type :math:`I` with :math:`r`
 parameters.
 
-The $\iota$-contraction of this term is $(f_i~a_1\ldots a_m)$ leading
-to the general reduction rule:
-\[ \Case{P}{(c_{p_i}~q_1\ldots  q_r~a_1\ldots  a_m)}{f_1|\ldots |
-    f_n} \triangleright_{\iota} (f_i~a_1\ldots a_m) \]
+The ι-contraction of this term is :math:`(f_i~a_1 … a_m )` leading to the
+general reduction rule:
 
-\subsection[Fixpoint definitions]{Fixpoint definitions\label{Fix-term} \index{Fix@{\tt Fix}}}
-The second operator for elimination is fixpoint definition. 
-This fixpoint may involve several mutually recursive definitions.
-The basic concrete syntax for a recursive set of mutually recursive 
-declarations is (with $\Gamma_i$ contexts): 
-\[\kw{fix}~f_1 (\Gamma_1) :A_1:=t_1~\kw{with} \ldots \kw{with}~ f_n
-(\Gamma_n) :A_n:=t_n\]
+.. math::
+   \case((c_{p_i}~q_1 … q_r~a_1 … a_m ),P,f_1 |… |f_n ) \triangleright_ι (f_i~a_1 … a_m )
+
+
+.. _Fixpoint-definitions:
+
+Fixpoint definitions
+~~~~~~~~~~~~~~~~~~~~
+
+The second operator for elimination is fixpoint definition. This
+fixpoint may involve several mutually recursive definitions. The basic
+concrete syntax for a recursive set of mutually recursive declarations
+is (with :math:`Γ_i` contexts):
+
+.. math::
+   \fix~f_1 (Γ_1 ) :A_1 :=t_1 \with … \with~f_n (Γ_n ) :A_n :=t_n
+
+
 The terms are obtained by projections from this set of declarations
-and are written 
-\[\kw{fix}~f_1 (\Gamma_1) :A_1:=t_1~\kw{with} \ldots \kw{with}~ f_n
-(\Gamma_n) :A_n:=t_n~\kw{for}~f_i\]
-In the inference rules, we represent such a
-term by 
-\[\Fix{f_i}{f_1:A_1':=t_1' \ldots f_n:A_n':=t_n'}\]
-with $t_i'$ (resp. $A_i'$) representing the term $t_i$ abstracted
-(resp. generalized) with
-respect to the bindings in the context $\Gamma_i$, namely
-$t_i'=\lb \Gamma_i \mto t_i$ and $A_i'=\forall \Gamma_i, A_i$.
+and are written
 
-\subsubsection{Typing rule}
+.. math::
+   \fix~f_1 (Γ_1 ) :A_1 :=t_1 \with … \with~f_n (Γ_n ) :A_n :=t_n \for~f_i
+
+In the inference rules, we represent such a term by
+
+.. math::
+   \Fix~f_i\{f_1 :A_1':=t_1' … f_n :A_n':=t_n'\}
+
+with :math:`t_i'` (resp. :math:`A_i'`) representing the term :math:`t_i` abstracted (resp.
+generalized) with respect to the bindings in the context Γ_i , namely
+:math:`t_i'=λ Γ_i . t_i` and :math:`A_i'=∀ Γ_i , A_i`.
+
+
+Typing rule
++++++++++++
+
 The typing rule is the expected one for a fixpoint.
 
-\begin{description}
-\item[Fix] \index{Typing rules!Fix}
-\inference{\frac{(\WTEG{A_i}{s_i})_{i=1\ldots n}~~~~
-            (\WTE{\Gamma,f_1:A_1,\ldots,f_n:A_n}{t_i}{A_i})_{i=1\ldots n}}
-         {\WTEG{\Fix{f_i}{f_1:A_1:=t_1 \ldots f_n:A_n:=t_n}}{A_i}}}
-\end{description}
-%
-Any fixpoint definition cannot be accepted because non-normalizing terms
-allow proofs of absurdity.
-%
-The basic scheme of recursion that should be allowed is the one needed for 
-defining primitive
-recursive functionals. In that case the fixpoint enjoys a special
-syntactic restriction, namely one of the arguments belongs to an
-inductive type, the function starts with a case analysis and recursive
-calls are done on variables coming from patterns and representing subterms.
-%
-For instance in the case of natural numbers, a proof of the induction
-principle of type 
-\[\forall P:\nat\ra\Prop, (P~\nO)\ra(\forall n:\nat, (P~n)\ra(P~(\nS~n)))\ra
-\forall n:\nat, (P~n)\]
+.. inference:: Fix
+	       
+   (E[Γ] ⊢ A_i : s_i )_{i=1… n}
+   (E[Γ,f_1 :A_1 ,…,f_n :A_n ] ⊢ t_i : A_i )_{i=1… n}
+   -------------------------------------------------------
+   E[Γ] ⊢ \Fix~f_i\{f_1 :A_1 :=t_1 … f_n :A_n :=t_n \} : A_i
+
+
+Any fixpoint definition cannot be accepted because non-normalizing
+terms allow proofs of absurdity. The basic scheme of recursion that
+should be allowed is the one needed for defining primitive recursive
+functionals. In that case the fixpoint enjoys a special syntactic
+restriction, namely one of the arguments belongs to an inductive type,
+the function starts with a case analysis and recursive calls are done
+on variables coming from patterns and representing subterms. For
+instance in the case of natural numbers, a proof of the induction
+principle of type
+
+.. math::
+   ∀ P:\nat→\Prop, (P~O)→(∀ n:\nat, (P~n)→(P~(\kw{S}~n)))→ ∀ n:\nat, (P~n)
+
 can be represented by the term:
-\[\begin{array}{l}
-\lb P:\nat\ra\Prop\mto\lb f:(P~\nO)\mto \lb g:(\forall n:\nat,
-(P~n)\ra(P~(\nS~n))) \mto\\
-\Fix{h}{h:\forall n:\nat, (P~n):=\lb n:\nat\mto \Case{P}{n}{f~|~\lb
-    p:\nat\mto (g~p~(h~p))}}
-\end{array}
-\]
-%
+
+.. math::
+   \begin{array}{l}
+   λ P:\nat→\Prop. λ f:(P~O). λ g:(∀ n:\nat, (P~n)→(P~(S~n))).\\
+   \Fix~h\{h:∀ n:\nat, (P~n):=λ n:\nat. \case(n,P,f | λp:\nat. (g~p~(h~p)))\}
+   \end{array}
+
 Before accepting a fixpoint definition as being correctly typed, we
-check that the definition is ``guarded''. A precise analysis of this
-notion can be found in~\cite{Gim94}.
-%
-The first stage is to precise on which argument the fixpoint will be
-decreasing. The type of this argument should be an inductive
-definition.
-%
-For doing this, the syntax of fixpoints is extended and becomes 
- \[\Fix{f_i}{f_1/k_1:A_1:=t_1 \ldots f_n/k_n:A_n:=t_n}\]
-where $k_i$ are positive integers.
-Each $k_i$ represents the index of pararameter of $f_i$, on which $f_i$ is decreasing.
-Each $A_i$ should be a type (reducible to a term) starting with at least
-$k_i$ products $\forall y_1:B_1,\ldots \forall y_{k_i}:B_{k_i}, A'_i$ 
-and $B_{k_i}$ an is unductive type.
+check that the definition is “guarded”. A precise analysis of this
+notion can be found in :cite:`Gim94`. The first stage is to precise on which
+argument the fixpoint will be decreasing. The type of this argument
+should be an inductive definition. For doing this, the syntax of
+fixpoints is extended and becomes
 
-Now in the definition $t_i$, if $f_j$ occurs then it should be applied
-to at least $k_j$ arguments and the $k_j$-th argument should be
-syntactically recognized as structurally smaller than $y_{k_i}$
+.. math::
+   \Fix~f_i\{f_1/k_1 :A_1':=t_1' … f_n/k_n :A_n':=t_n'\}
 
 
-The definition of being structurally smaller is a bit technical.
-One needs first to  define the notion of 
-{\em recursive arguments of a constructor}\index{Recursive arguments}.
-For an inductive definition \Ind{}{r}{\Gamma_I}{\Gamma_C},
-if the type of a constructor $c$ has the form
-$\forall p_1:P_1,\ldots \forall p_r:P_r, 
-\forall x_1:T_1, \ldots \forall x_r:T_r, (I_j~p_1\ldots 
-p_r~t_1\ldots  t_s)$, then the recursive arguments will correspond to $T_i$ in
-which one of the $I_l$ occurs.
+where :math:`k_i` are positive integers. Each :math:`k_i` represents the index of
+parameter of :math:`f_i` , on which :math:`f_i` is decreasing. Each :math:`A_i` should be a
+type (reducible to a term) starting with at least :math:`k_i` products
+:math:`∀ y_1 :B_1 ,… ∀ y_{k_i} :B_{k_i} , A_i'` and :math:`B_{k_i}` an inductive type.
 
-The main rules for being structurally smaller are the following:\\
-Given a variable $y$ of type an inductive
-definition in a declaration 
-\Ind{}{r}{\Gamma_I}{\Gamma_C}
-where $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
-  $[c_1:C_1;\ldots;c_n:C_n]$.
-The terms structurally smaller than $y$ are:
-\begin{itemize}
-\item $(t~u)$ and $\lb x:u \mto t$ when $t$ is structurally smaller than $y$.
-\item \Case{P}{c}{f_1\ldots f_n} when each $f_i$ is structurally
-  smaller than $y$. \\
-  If $c$ is $y$ or is structurally smaller than $y$, its type is an inductive
-  definition $I_p$ part of the inductive
-  declaration corresponding to $y$. 
-  Each $f_i$ corresponds to a type of constructor $C_q \equiv
-  \forall p_1:P_1,\ldots,\forall p_r:P_r, \forall y_1:B_1, \ldots \forall y_k:B_k, (I~a_1\ldots a_k)$ 
-  and can consequently be
-  written $\lb y_1:B'_1\mto \ldots \lb y_k:B'_k\mto g_i$.
-  ($B'_i$ is obtained from $B_i$ by substituting parameters variables)
-  the variables $y_j$ occurring
-  in $g_i$ corresponding to recursive arguments $B_i$ (the ones in
-  which one of the $I_l$ occurs) are structurally smaller than $y$.
-\end{itemize}
-The following definitions are correct, we enter them using the
-{\tt Fixpoint} command as described in Section~\ref{Fixpoint} and show
-the internal representation.
-\begin{coq_example}
-Fixpoint plus (n m:nat) {struct n} : nat :=
-  match n with
-  | O => m
-  | S p => S (plus p m)
-  end.
-Print plus.
-Fixpoint lgth (A:Set) (l:list A) {struct l} : nat :=
-  match l with
-  | nil _ => O
-  | cons _ a l' => S (lgth A l')
-  end.
-Print lgth.
-Fixpoint sizet (t:tree) : nat := let (f) := t in S (sizef f)
- with sizef (f:forest) : nat :=
-  match f with
-  | emptyf => O
-  | consf t f => plus (sizet t) (sizef f)
-  end.
-Print sizet.
-\end{coq_example}
+Now in the definition :math:`t_i`, if :math:`f_j` occurs then it should be applied to
+at least :math:`k_j` arguments and the :math:`k_j`-th argument should be
+syntactically recognized as structurally smaller than :math:`y_{k_i}`.
+
+The definition of being structurally smaller is a bit technical. One
+needs first to define the notion of *recursive arguments of a
+constructor*. For an inductive definition :math:`\ind{r}{Γ_I}{Γ_C}`, if the
+type of a constructor :math:`c` has the form
+:math:`∀ p_1 :P_1 ,… ∀ p_r :P_r, ∀ x_1:T_1, … ∀ x_r :T_r, (I_j~p_1 … p_r~t_1 … t_s )`,
+then the recursive
+arguments will correspond to :math:`T_i` in which one of the :math:`I_l` occurs.
+
+The main rules for being structurally smaller are the following.
+Given a variable :math:`y` of type an inductive definition in a declaration
+:math:`\ind{r}{Γ_I}{Γ_C}` where :math:`Γ_I` is :math:`[I_1 :A_1 ;…;I_k :A_k]`, and :math:`Γ_C` is
+:math:`[c_1 :C_1 ;…;c_n :C_n ]`, the terms structurally smaller than :math:`y` are:
 
 
-\subsubsection[Reduction rule]{Reduction rule\index{iota-reduction@$\iota$-reduction}}
-Let $F$ be the set of declarations: $f_1/k_1:A_1:=t_1 \ldots
-f_n/k_n:A_n:=t_n$.
++ :math:`(t~u)` and :math:`λ x:u . t` when :math:`t` is structurally smaller than :math:`y`.
++ :math:`\case(c,P,f_1 … f_n)` when each :math:`f_i` is structurally smaller than :math:`y`.
+  If :math:`c` is :math:`y` or is structurally smaller than :math:`y`, its type is an inductive
+  definition :math:`I_p` part of the inductive declaration corresponding to :math:`y`.
+  Each :math:`f_i` corresponds to a type of constructor
+  :math:`C_q ≡ ∀ p_1 :P_1 ,…,∀ p_r :P_r , ∀ y_1 :B_1 , … ∀ y_k :B_k , (I~a_1 … a_k )`
+  and can consequently be written :math:`λ y_1 :B_1' . … λ y_k :B_k'. g_i`. (:math:`B_i'` is
+  obtained from :math:`B_i` by substituting parameters variables) the variables
+  :math:`y_j` occurring in :math:`g_i` corresponding to recursive arguments :math:`B_i` (the
+  ones in which one of the :math:`I_l` occurs) are structurally smaller than y.
+
+
+The following definitions are correct, we enter them using the ``Fixpoint``
+command as described in Section :ref:`TODO-1.3.4` and show the internal
+representation.
+
+.. example::
+   .. coqtop:: all
+
+      Fixpoint plus (n m:nat) {struct n} : nat :=
+      match n with
+      | O => m
+      | S p => S (plus p m)
+      end.
+
+      Print plus.
+      Fixpoint lgth (A:Set) (l:list A) {struct l} : nat :=
+      match l with
+      | nil _ => O
+      | cons _ a l' => S (lgth A l')
+      end.
+      Print lgth.
+      Fixpoint sizet (t:tree) : nat := let (f) := t in S (sizef f)
+      with sizef (f:forest) : nat :=
+      match f with
+      | emptyf => O
+      | consf t f => plus (sizet t) (sizef f)
+      end.
+      Print sizet.
+
+.. _Reduction-rule:
+
+Reduction rule
+++++++++++++++
+
+Let :math:`F` be the set of declarations:
+:math:`f_1 /k_1 :A_1 :=t_1 …f_n /k_n :A_n:=t_n`.
 The reduction for fixpoints is:
-\[ (\Fix{f_i}{F}~a_1\ldots
-a_{k_i}) \triangleright_{\iota} \substs{t_i}{f_k}{\Fix{f_k}{F}}{k=1\ldots n}
-~a_1\ldots a_{k_i}\]
-when $a_{k_i}$ starts with a constructor.
-This last restriction is needed in order to keep strong normalization
-and corresponds to the reduction for primitive recursive operators.
-%
-The following reductions are now possible:
-\def\plus{\mathsf{plus}}
-\def\tri{\triangleright_\iota}
-\begin{eqnarray*}
-  \plus~(\nS~(\nS~\nO))~(\nS~\nO) & \tri & \nS~(\plus~(\nS~\nO)~(\nS~\nO))\\
+
+.. math::
+   (\Fix~f_i \{F\} a_1 …a_{k_i}) \triangleright_ι \subst{t_i}{f_k}{\Fix~f_k \{F\}}_{k=1… n} ~a_1 … a_{k_i}
+   
+when :math:`a_{k_i}` starts with a constructor. This last restriction is needed
+in order to keep strong normalization and corresponds to the reduction
+for primitive recursive operators. The following reductions are now
+possible:
+
+.. math::
+   \def\plus{\mathsf{plus}}
+   \def\tri{\triangleright_\iota}
+   \begin{eqnarray*}
+   \plus~(\nS~(\nS~\nO))~(\nS~\nO) & \tri & \nS~(\plus~(\nS~\nO)~(\nS~\nO))\\
                                   & \tri & \nS~(\nS~(\plus~\nO~(\nS~\nO)))\\
                                   & \tri & \nS~(\nS~(\nS~\nO))\\
-\end{eqnarray*}
+   \end{eqnarray*}
 
-% La disparition de Program devrait rendre la construction Match obsolete
-% \subsubsection{The {\tt Match \ldots with \ldots end} expression}
-% \label{Matchexpr}
-% %\paragraph{A unary {\tt Match\ldots with \ldots end}.}
-% \index{Match...with...end@{\tt Match \ldots with \ldots end}}
-% The {\tt Match} operator which was a primitive notion in older
-% presentations of the Calculus of Inductive Constructions is now just a
-% macro definition which generates the good combination of {\tt Case}
-% and {\tt Fix} operators in order to generate an operator for primitive
-% recursive definitions. It always considers an inductive definition as 
-% a single inductive definition.
+.. _Mutual-induction:
 
-% The following examples illustrates this feature.
-% \begin{coq_example}
-% Definition nat_pr : (C:Set)C->(nat->C->C)->nat->C 
-%   :=[C,x,g,n]Match n with x g end.
-% Print nat_pr.
-% \end{coq_example}
-% \begin{coq_example}
-% Definition forest_pr 
-%   : (C:Set)C->(tree->forest->C->C)->forest->C
-%   := [C,x,g,n]Match n with x g end.
-% \end{coq_example}
+**Mutual induction**
 
-% Cet exemple faisait error (HH le 12/12/96), j'ai change pour une
-% version plus simple
-%\begin{coq_example}
-%Definition forest_pr 
-%  : (P:forest->Set)(P emptyf)->((t:tree)(f:forest)(P f)->(P (consf t f)))
-%    ->(f:forest)(P f)
-%  := [C,x,g,n]Match n with x g end.
-%\end{coq_example}
+The principles of mutual induction can be automatically generated
+using the Scheme command described in Section :ref:`TODO-13.1`.
 
-\subsubsection{Mutual induction}
 
-The principles of mutual induction can be automatically generated 
-using the {\tt Scheme} command described in Section~\ref{Scheme}.
+.. _Admissible-rules-for-global-environments:
 
-\section{Admissible rules for global environments}
+Admissible rules for global environments
+--------------------------------------------
 
 From the original rules of the type system, one can show the
 admissibility of rules which change the local context of definition of
 objects in the global environment. We show here the admissible rules
-that are used used in the discharge mechanism at the end of a section.
+that are used in the discharge mechanism at the end of a section.
 
-% This is obsolete: Abstraction over defined constants actually uses a
-% let-in since there are let-ins in Coq
 
-%% \paragraph{Mechanism of substitution.}
+.. _Abstraction:
 
-%% One rule which can be proved valid, is to replace a term $c$ by its
-%% value in the global environment. As we defined the substitution of a term for
-%% a variable in a term, one can define the substitution of a term for a
-%% constant. One easily extends this substitution to local contexts and global
-%% environments.
-
-%% \paragraph{Substitution Property:}
-%% \inference{\frac{\WF{E;c:=t:T; E'}{\Gamma}}
-%%            {\WF{E; \subst{E'}{c}{t}}{\subst{\Gamma}{c}{t}}}}
-
-\paragraph{Abstraction.}
-
+**Abstraction.**
 One can modify a global declaration by generalizing it over a
-previously assumed constant $c$. For doing that, we need to modify the
+previously assumed constant :math:`c`. For doing that, we need to modify the
 reference to the global declaration in the subsequent global
 environment and local context by explicitly applying this constant to
-the constant $c'$.
+the constant :math:`c'`.
 
-Below, if $\Gamma$ is a context of the form
-$[y_1:A_1;\ldots;y_n:A_n]$, we write $\forall
-x:U,\subst{\Gamma}{c}{x}$ to mean
-$[y_1:\forall~x:U,\subst{A_1}{c}{x};\ldots;y_n:\forall~x:U,\subst{A_n}{c}{x}]$
-and
-$\subst{E}{|\Gamma|}{|\Gamma|c}$.
-to mean the parallel substitution
-$\subst{\subst{E}{y_1}{(y_1~c)}\ldots}{y_n}{(y_n~c)}$.
+Below, if :math:`Γ` is a context of the form :math:`[y_1 :A_1 ;…;y_n :A_n]`, we write
+:math:`∀x:U,\subst{Γ}{c}{x}` to mean
+:math:`[y_1 :∀ x:U,\subst{A_1}{c}{x};…;y_n :∀ x:U,\subst{A_n}{c}{x}]`
+and :math:`\subst{E}{|Γ|}{|Γ|c}` to mean the parallel substitution
+:math:`E\{y_1 /(y_1~c)\}…\{y_n/(y_n~c)\}`.
 
-\paragraph{First abstracting property:}
- \inference{\frac{\WF{E;c:U;E';c':=t:T;E''}{\Gamma}}
-                 {\WF{E;c:U;E';c':=\lb x:U\mto \subst{t}{c}{x}:\forall~x:U,\subst{T}{c}{x};
-                      \subst{E''}{c'}{(c'~c)}}{\subst{\Gamma}{c}{(c~c')}}}}
 
- \inference{\frac{\WF{E;c:U;E';c':T;E''}{\Gamma}}
-                 {\WF{E;c:U;E';c':\forall~x:U,\subst{T}{c}{x};
-                      \subst{E''}{c'}{(c'~c)}}{\subst{\Gamma}{c}{(c~c')}}}}
+.. _First-abstracting-property:
 
- \inference{\frac{\WF{E;c:U;E';\Ind{}{p}{\Gamma_I}{\Gamma_C};E''}{\Gamma}}
-                 {\WFTWOLINES{E;c:U;E';\Ind{}{p+1}{\forall x:U,\subst{\Gamma_I}{c}{x}}{\forall x:U,\subst{\Gamma_C}{c}{x}};\subst{E''}{|\Gamma_I,\Gamma_C|}{|\Gamma_I,\Gamma_C|~c}}{\subst{\Gamma}{|\Gamma_I,\Gamma_C|}{|\Gamma_I,\Gamma_C|~c}}}}
-%
+**First abstracting property:**
+
+.. math::
+   \frac{\WF{E;c:U;E′;c′:=t:T;E″}{Γ}}
+        {\WF{E;c:U;E′;c′:=λ x:U. \subst{t}{c}{x}:∀x:U,\subst{T}{c}{x};\subst{E″}{c′}{(c′~c)}}
+	{\subst{Γ}{c}{(c~c′)}}}
+
+   
+.. math::
+   \frac{\WF{E;c:U;E′;c′:T;E″}{Γ}}
+        {\WF{E;c:U;E′;c′:∀ x:U,\subst{T}{c}{x};\subst{E″}{c′}{(c′~c)}}{Γ{c/(c~c′)}}}
+	
+.. math::
+   \frac{\WF{E;c:U;E′;\ind{p}{Γ_I}{Γ_C};E″}{Γ}}
+        {\WFTWOLINES{E;c:U;E′;\ind{p+1}{∀ x:U,\subst{Γ_I}{c}{x}}{∀ x:U,\subst{Γ_C}{c}{x}};
+	  \subst{E″}{|Γ_I ,Γ_C |}{|Γ_I ,Γ_C | c}}
+	 {\subst{Γ}{|Γ_I ,Γ_C|}{|Γ_I ,Γ_C | c}}}
+
 One can similarly modify a global declaration by generalizing it over
-a previously defined constant~$c'$.  Below, if $\Gamma$ is a context
-of the form $[y_1:A_1;\ldots;y_n:A_n]$, we write $
-\subst{\Gamma}{c}{u}$ to mean
-$[y_1:\subst{A_1}{c}{u};\ldots;y_n:\subst{A_n}{c}{u}]$.
+a previously defined constant :math:`c′`. Below, if :math:`Γ` is a context of the form
+:math:`[y_1 :A_1 ;…;y_n :A_n]`, we write :math:`\subst{Γ}{c}{u}` to mean
+:math:`[y_1 :\subst{A_1} {c}{u};…;y_n:\subst{A_n} {c}{u}]`.
 
-\paragraph{Second abstracting property:}
- \inference{\frac{\WF{E;c:=u:U;E';c':=t:T;E''}{\Gamma}}
-           {\WF{E;c:=u:U;E';c':=(\letin{x}{u:U}{\subst{t}{c}{x}}):\subst{T}{c}{u};E''}{\Gamma}}}
 
- \inference{\frac{\WF{E;c:=u:U;E';c':T;E''}{\Gamma}}
-           {\WF{E;c:=u:U;E';c':\subst{T}{c}{u};E''}{\Gamma}}}
+.. _Second-abstracting-property:
 
- \inference{\frac{\WF{E;c:=u:U;E';\Ind{}{p}{\Gamma_I}{\Gamma_C};E''}{\Gamma}}
-                 {\WF{E;c:=u:U;E';\Ind{}{p}{\subst{\Gamma_I}{c}{u}}{\subst{\Gamma_C}{c}{u}};E''}{\Gamma}}}
+**Second abstracting property:**
 
-\paragraph{Pruning the local context.}
+.. math::
+   \frac{\WF{E;c:=u:U;E′;c′:=t:T;E″}{Γ}}
+        {\WF{E;c:=u:U;E′;c′:=(\letin{x}{u:U}{\subst{t}{c}{x}}):\subst{T}{c}{u};E″}{Γ}}
+
+.. math::
+   \frac{\WF{E;c:=u:U;E′;c′:T;E″}{Γ}}
+        {\WF{E;c:=u:U;E′;c′:\subst{T}{c}{u};E″}{Γ}}
+
+.. math::
+   \frac{\WF{E;c:=u:U;E′;\ind{p}{Γ_I}{Γ_C};E″}{Γ}}
+        {\WF{E;c:=u:U;E′;\ind{p}{\subst{Γ_I}{c}{u}}{\subst{Γ_C}{c}{u}};E″}{Γ}}
+
+.. _Pruning-the-local-context:
+
+**Pruning the local context.**
 If one abstracts or substitutes constants with the above rules then it
 may happen that some declared or defined constant does not occur any
-more in the subsequent global environment and in the local context. One can
-consequently derive the following property.
+more in the subsequent global environment and in the local context.
+One can consequently derive the following property.
 
-\paragraph{First pruning property:}
-\inference{\frac{\WF{E;c:U;E'}{\Gamma} \qquad c \mbox{ does not occur in $E'$ and $\Gamma$}}
-                {\WF{E;E'}{\Gamma}}}
- 
-\paragraph{Second pruning property:}
-\inference{\frac{\WF{E;c:=u:U;E'}{\Gamma} \qquad c \mbox{ does not occur in $E'$ and $\Gamma$}}
-                {\WF{E;E'}{\Gamma}}}
- 
-\section{Co-inductive types}
+
+.. _First-pruning-property:
+
+.. inference:: First pruning property:
+	       
+   \WF{E;c:U;E′}{Γ}
+   c~\kw{does not occur in}~E′~\kw{and}~Γ
+   --------------------------------------
+   \WF{E;E′}{Γ}
+
+
+.. _Second-pruning-property:
+
+.. inference:: Second pruning property:
+
+   \WF{E;c:=u:U;E′}{Γ}
+   c~\kw{does not occur in}~E′~\kw{and}~Γ
+   --------------------------------------
+   \WF{E;E′}{Γ}
+
+
+.. _Co-inductive-types:
+
+Co-inductive types
+----------------------
+
 The implementation contains also co-inductive definitions, which are
-types inhabited by infinite objects. 
-More information on co-inductive definitions can be found
-in~\cite{Gimenez95b,Gim98,GimCas05}.
-%They are described in Chapter~\ref{Co-inductives}.
+types inhabited by infinite objects. More information on co-inductive
+definitions can be found in :cite:`Gimenez95b,Gim98,GimCas05`.
 
-\section[The Calculus of Inductive Construction with
-  impredicative \Set]{The Calculus of Inductive Construction with
-  impredicative \Set\label{impredicativity}}
 
-\Coq{} can be used as a type-checker for the
-Calculus of Inductive Constructions with an impredicative sort \Set{}
-by using the compiler option \texttt{-impredicative-set}.
-%
-For example, using the ordinary \texttt{coqtop} command, the following
-is rejected.
-% (** This example should fail *******************************
-%     Error: The term forall X:Set, X -> X has type Type
-%     while it is expected to have type Set ***)
-\begin{coq_example}
-Fail Definition id: Set := forall X:Set,X->X.
-\end{coq_example}
-while it will type-check, if one uses instead the \texttt{coqtop
-  -impredicative-set} command.
+.. _The-Calculus-of-Inductive-Construction-with-impredicative-Set:
+
+The Calculus of Inductive Construction with impredicative Set
+-----------------------------------------------------------------
+
+|Coq| can be used as a type-checker for the Calculus of Inductive
+Constructions with an impredicative sort :math:`\Set` by using the compiler
+option ``-impredicative-set``. For example, using the ordinary `coqtop`
+command, the following is rejected,
+
+.. example::
+   .. coqtop:: all
+
+      Fail Definition id: Set := forall X:Set,X->X.
+
+while it will type-check, if one uses instead the `coqtop`
+``-impredicative-set`` option..
 
 The major change in the theory concerns the rule for product formation
-in the sort \Set, which is extended to a domain in any sort:
-\begin{description}
-\item [Prod]  \index{Typing rules!Prod (impredicative Set)}
-\inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~~~
-    \WTE{\Gamma::(x:T)}{U}{\Set}}
-      { \WTEG{\forall~x:T,U}{\Set}}} 
-\end{description}
+in the sort Set, which is extended to a domain in any sort:
+
+.. inference:: ProdImp
+
+   E[Γ] ⊢ T : s
+   s ∈ {\Sort}
+   E[Γ::(x:T)] ⊢ U : Set
+   ---------------------
+   E[Γ] ⊢ ∀ x:T,U : Set
+
 This extension has consequences on the inductive definitions which are
-allowed. 
-In the impredicative system, one can build so-called {\em large inductive
-  definitions} like the example of second-order existential
-quantifier (\texttt{exSet}).
+allowed. In the impredicative system, one can build so-called *large
+inductive definitions* like the example of second-order existential
+quantifier (exSet).
 
 There should be restrictions on the eliminations which can be
 performed on such definitions. The eliminations rules in the
-impredicative system for sort \Set{} become:
-\begin{description}
-\item[\Set] \inference{\frac{s \in
-      \{\Prop, \Set\}}{\compat{I:\Set}{I\ra s}}
-~~~~\frac{I \mbox{~is a small inductive definition}~~~~s \in
-      \{\Type(i)\}}
-         {\compat{I:\Set}{I\ra s}}}
-\end{description}
+impredicative system for sort Set become:
 
-%%% Local Variables: 
-%%% mode: latex
-%%% TeX-master: "Reference-Manual"
-%%% End: 
+
+
+.. inference:: Set1
+
+   s ∈ \{Prop, Set\}
+   -----------------
+   [I:Set|I→ s]
+
+.. inference:: Set2
+
+   I~\kw{is a small inductive definition}
+   s ∈ \{\Type(i)\}
+   ----------------
+   [I:Set|I→ s]
 
 
