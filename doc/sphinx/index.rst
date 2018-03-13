@@ -23,6 +23,8 @@ Table of contents
 .. toctree::
    :caption: The proof engine
 
+   proof-engine/tactics
+
 .. toctree::
    :caption: User extensions
 
