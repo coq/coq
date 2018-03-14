@@ -304,6 +304,8 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
 
 type required_module = full_path * string list
 
+type rawnum = Constrexpr.raw_natural_number * Constrexpr.sign
+
 type 'a prim_token_interpreter =
     ?loc:Loc.t -> 'a -> glob_constr
 
@@ -313,17 +315,19 @@ type 'a prim_token_uninterpreter =
     glob_constr list * (any_glob_constr -> 'a option) * cases_pattern_status
 
 type internal_prim_token_interpreter =
-    ?loc:Loc.t -> prim_token -> required_module * (unit -> glob_constr)
+  | ForNumeral of rawnum prim_token_interpreter
+  | ForString of string prim_token_interpreter
 
 let prim_token_interpreter_tab =
-  (Hashtbl.create 7 : (scope_name, internal_prim_token_interpreter) Hashtbl.t)
+  (Hashtbl.create 7 :
+     (scope_name, required_module * internal_prim_token_interpreter) Hashtbl.t)
 
-let add_prim_token_interpreter sc interp =
-  Hashtbl.replace prim_token_interpreter_tab sc interp
+let add_prim_token_interpreter sc (dir,interp) =
+  Hashtbl.replace prim_token_interpreter_tab sc (dir,interp)
 
-let declare_prim_token_interpreter sc interp (patl,uninterp,b) =
+let declare_prim_token_interpreter sc (dir,interp) (patl,uninterp,b) =
   declare_scope sc;
-  add_prim_token_interpreter sc interp;
+  add_prim_token_interpreter sc (dir,interp);
   List.iter (fun pat ->
       prim_token_key_table := KeyMap.add
         (glob_prim_constr_key pat) (sc,uninterp,b) !prim_token_key_table)
@@ -340,29 +344,21 @@ let mkString = function
 | None -> None
 | Some s -> if Unicode.is_utf8 s then Some (String s) else None
 
-let delay dir int ?loc x = (dir, (fun () -> int ?loc x))
-
-type rawnum = Constrexpr.raw_natural_number * Constrexpr.sign
-
 let declare_rawnumeral_interpreter sc dir interp (patl,uninterp,inpat) =
   declare_prim_token_interpreter sc
-    (fun ?loc -> function Numeral (n,s) -> delay dir interp ?loc (n,s)
-                            | _ -> raise Not_found)
+    (dir, ForNumeral interp)
     (patl, (fun r -> match uninterp r with
                      | None -> None
                      | Some (n,s) -> Some (Numeral (n,s))), inpat)
 
 let declare_numeral_interpreter sc dir interp (patl,uninterp,inpat) =
-  let interp' ?loc (n,s) = interp ?loc (ofNumeral n s) in
   declare_prim_token_interpreter sc
-    (fun ?loc -> function Numeral (n,s) -> delay dir interp' ?loc (n,s)
-                            | _ -> raise Not_found)
+    (dir, ForNumeral (fun ?loc (n,s) -> interp ?loc (ofNumeral n s)))
     (patl, (fun r -> Option.map mkNumeral (uninterp r)), inpat)
 
 let declare_string_interpreter sc dir interp (patl,uninterp,inpat) =
   declare_prim_token_interpreter sc
-    (fun ?loc -> function String s -> delay dir interp ?loc s
-                        | _ -> raise Not_found)
+    (dir, ForString interp)
     (patl, (fun r -> mkString (uninterp r)), inpat)
 
 let check_required_module ?loc sc (sp,d) =
@@ -472,9 +468,14 @@ let find_prim_token check_allowed ?loc p sc =
     pat, df
   with Not_found ->
   (* Try for a primitive numerical notation *)
-  let (spdir,interp) = Hashtbl.find prim_token_interpreter_tab sc ?loc p in
+  let (spdir,interp) = Hashtbl.find prim_token_interpreter_tab sc in
   check_required_module ?loc sc spdir;
-  let pat = interp () in
+  let pat =
+    match p, interp with
+    | Numeral (n,s), ForNumeral interp -> interp ?loc (n,s)
+    | String s, ForString interp -> interp ?loc s
+    | _ -> raise Not_found
+  in
   check_allowed pat;
   pat, ((dirpath (fst spdir),DirPath.empty),"")
 
@@ -680,8 +681,12 @@ let uninterp_prim_token_cases_pattern c =
 
 let availability_of_prim_token n printer_scope local_scopes =
   let f scope =
-    try ignore ((Hashtbl.find prim_token_interpreter_tab scope) n); true
-    with Not_found -> false in
+    match n, Hashtbl.find prim_token_interpreter_tab scope with
+    | exception Not_found -> false
+    | Numeral _, (_,ForNumeral _) -> true
+    | String _, (_,ForString _) -> true
+    | _ -> false
+  in
   let scopes = make_current_scopes local_scopes in
   Option.map snd (find_without_delimiters f (Some printer_scope,None) scopes)
 
