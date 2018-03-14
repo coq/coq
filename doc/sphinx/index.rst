@@ -35,6 +35,8 @@ Table of contents
 .. toctree::
    :caption: Practical tools
 
+   practical-tools/coq-commands
+
 .. toctree::
    :caption: Addendum
 

@@ -1,327 +1,204 @@
-\chapter[The \Coq~commands]{The \Coq~commands\label{Addoc-coqc}
-\ttindex{coqtop}
-\ttindex{coqc}
-\ttindex{coqchk}}
-%HEVEA\cutname{commands.html}
+.. include:: ../replaces.rst
 
-There are three \Coq~commands: 
-\begin{itemize}
-\item {\tt coqtop}: the \Coq\ toplevel (interactive mode);
-\item {\tt coqc}: the \Coq\ compiler (batch compilation);
-\item {\tt coqchk}: the \Coq\ checker (validation of compiled libraries).
-\end{itemize}
+.. _thecoqcommands:
+
+The |Coq| commands
+====================
+
+There are three |Coq| commands:
+
++ ``coqtop``: the |Coq| toplevel (interactive mode);
++ ``coqc``: the |Coq| compiler (batch compilation);
++ ``coqchk``: the |Coq| checker (validation of compiled libraries).
+
+
 The options are (basically) the same for the first two commands, and
-roughly described below. You can also look at the \verb!man! pages of
-\verb!coqtop! and \verb!coqc! for more details.
+roughly described below. You can also look at the ``man`` pages of
+``coqtop`` and ``coqc`` for more details.
+
+Interactive use (coqtop)
+------------------------
+
+In the interactive mode, also known as the |Coq| toplevel, the user can
+develop his theories and proofs step by step. The |Coq| toplevel is run
+by the command ``coqtop``.
+
+They are two different binary images of |Coq|: the byte-code one and the
+native-code one (if OCaml provides a native-code compiler for
+your platform, which is supposed in the following). By default,
+``coqtop`` executes the native-code version; run ``coqtop.byte`` to get
+the byte-code version.
+
+The byte-code toplevel is based on an OCaml toplevel (to
+allow dynamic linking of tactics). You can switch to the OCaml toplevel
+with the command ``Drop.``, and come back to the |Coq|
+toplevel with the command ``Coqloop.loop();;``.
+
+Batch compilation (coqc)
+------------------------
+
+The ``coqc`` command takes a name *file* as argument. Then it looks for a
+vernacular file named *file*.v, and tries to compile it into a
+*file*.vo file (See :ref:`TODO-6.5`). Warning: The name *file* should be a
+regular |Coq| identifier, as defined in Section :ref:'TODO-1.1'. It should contain
+only letters, digits or underscores (_). For instance, ``/bar/foo/toto.v`` is valid, but
+``/bar/foo/to-to.v`` is invalid.
 
 
-\section{Interactive use ({\tt coqtop})}
+Customization at launch time
+---------------------------------
 
-In the interactive mode, also known as the \Coq~toplevel, the user can
-develop his theories and proofs step by step.  The \Coq~toplevel is
-run by the command {\tt coqtop}. 
+By resource file
+~~~~~~~~~~~~~~~~~~~~~~~
 
-\index{byte-code}
-\index{native code}
-\label{binary-images}
-They are two different binary images of \Coq: the byte-code one and
-the native-code one (if {\ocaml} provides a native-code compiler
-for your platform, which is supposed in the following). By default,
-\verb!coqtop! executes the native-code version; run \verb!coqtop.byte! to
-get the byte-code version.
+When |Coq| is launched, with either ``coqtop`` or ``coqc``, the resource file
+``$XDG_CONFIG_HOME/coq/coqrc.xxx`` is loaded, where ``$XDG_CONFIG_HOME``
+is the configuration directory of the user (by default its home
+directory ``/.config`` and ``xxx`` is the version number (e.g. 8.8). If
+this file is not found, then the file ``$XDG_CONFIG_HOME/coqrc`` is
+searched. You can also specify an arbitrary name for the resource file
+(see option ``-init-file`` below).
 
-The byte-code toplevel is based on an {\ocaml}
-toplevel (to allow the dynamic link of tactics).  You can switch to
-the {\ocaml} toplevel with the command \verb!Drop.!, and come back to the
-\Coq~toplevel with the command \verb!Coqloop.loop();;!.
-
-\section{Batch compilation ({\tt coqc})}
-The {\tt coqc} command takes a name {\em file} as argument.  Then it
-looks for a vernacular file named {\em file}{\tt .v}, and tries to
-compile it into a {\em file}{\tt .vo} file (See ~\ref{compiled}).
-
-\Warning The name {\em file} should be a regular {\Coq} identifier, as
-defined in Section~\ref{lexical}. It should contain only letters, digits
-or underscores (\_). For instance, \verb+/bar/foo/toto.v+ is valid, but
-\verb+/bar/foo/to-to.v+ is invalid.
-
-\section[Customization]{Customization at launch time}
-
-\subsection{By resource file\index{Resource file}}
-
-When \Coq\ is launched, with either {\tt coqtop} or {\tt coqc}, the
-resource file \verb:$XDG_CONFIG_HOME/coq/coqrc.xxx: is loaded, where
-\verb:$XDG_CONFIG_HOME: is the configuration directory of the user (by
-default its home directory \verb!/.config! and \verb:xxx: is the version
-number (e.g. 8.3).  If this file is not found, then the file
-\verb:$XDG_CONFIG_HOME/coqrc: is searched. You can also specify an
-arbitrary name for the resource file (see option \verb:-init-file:
-below).
+This file may contain, for instance, ``Add LoadPath`` commands to add
+directories to the load path of |Coq|. It is possible to skip the
+loading of the resource file with the option ``-q``.
 
 
-This file may contain, for instance, \verb:Add LoadPath: commands to add
-directories to the load path of \Coq.
-It is possible to skip the loading of the resource file with the
-option \verb:-q:.
+By environment variables
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-\subsection{By environment variables\label{EnvVariables}
-\index{Environment variables}\label{envars}}
+Load path can be specified to the |Coq| system by setting up ``$COQPATH``
+environment variable. It is a list of directories separated by
+``:`` (``;`` on Windows). |Coq| will also honor ``$XDG_DATA_HOME`` and
+``$XDG_DATA_DIRS`` (see Section :ref:`TODO-2.6.3`).
 
-Load path can be specified to the \Coq\ system by setting up
-\verb:$COQPATH: environment variable. It is a list of directories
-separated by \verb|:| (\verb|;| on windows). {\Coq} will also honor
-\verb:$XDG_DATA_HOME: and \verb:$XDG_DATA_DIRS: (see Section
-\ref{loadpath}).
+Some |Coq| commands call other |Coq| commands. In this case, they look for
+the commands in directory specified by ``$COQBIN``. If this variable is
+not set, they look for the commands in the executable path.
 
-Some {\Coq} commands call other {\Coq} commands. In this case, they
-look for the commands in directory specified by \verb:$COQBIN:. If
-this variable is not set, they look for the commands in the executable
-path.
+The ``$COQ_COLORS`` environment variable can be used to specify the set
+of colors used by ``coqtop`` to highlight its output. It uses the same
+syntax as the ``$LS_COLORS`` variable from GNU’s ls, that is, a colon-separated
+list of assignments of the form ``name=``:n:``{*; attr}`` where
+``name`` is the name of the corresponding highlight tag and each ``attrᵢ`` is an
+ANSI escape code. The list of highlight tags can be retrieved with the
+``-list-tags`` command-line option of ``coqtop``.
 
-The \verb:$COQ_COLORS: environment variable can be used to specify the set of
-colors used by {\tt coqtop} to highlight its output. It uses the same syntax as
-the \verb:$LS_COLORS: variable from GNU's {\tt ls}, that is, a colon-separated
-list of assignments of the form \verb:name=attr1;...;attrn: where {\tt name} is
-the name of the corresponding highlight tag and {\tt attri} is an ANSI escape
-code. The list of highlight tags can be retrieved with the {\tt -list-tags}
-command-line option of {\tt coqtop}.
+By command line options
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-\subsection{By command line options\index{Options of the command line}
-\label{coqoptions}}
+The following command-line options are recognized by the commands ``coqc``
+and ``coqtop``, unless stated otherwise:
 
-The following command-line options are recognized by the commands {\tt
-  coqc} and {\tt coqtop}, unless stated otherwise:
-
-\begin{description}
-\item[{\tt -I} {\em directory}, {\tt -include} {\em directory}]\ %
-
-  Add physical path {\em directory} to the {\ocaml} loadpath.
-
-  \SeeAlso Section~\ref{Libraries} and the command {\tt Declare ML Module} Section \ref{compiled}.
-
-\item[{\tt -Q} {\em directory} {\dirpath}]\ %
-
-  Add physical path \emph{directory} to the list of directories where
-  {\Coq} looks for a file and bind it to the the logical directory
-  \emph{dirpath}. The subdirectory structure of \emph{directory} is
-  recursively available from {\Coq} using absolute names (extending
-  the {\dirpath} prefix) (see Section~\ref{LongNames}).
-
-  Note that only those subdirectories and files which obey the lexical
-  conventions of what is an {\ident} (see Section~\ref{lexical})
-  are taken into account. Conversely, the underlying file systems or
-  operating systems may be more restrictive than {\Coq}. While Linux's
-  ext4 file system supports any {\Coq} recursive layout
-  (within the limit of 255 bytes per file name), the default on NTFS
-  (Windows) or HFS+ (MacOS X) file systems is on the contrary to
+:-I *directory*, -include *directory*: Add physical path *directory*
+  to the OCaml loadpath. See also: :ref:`TODO-2.6.1` and the
+  command Declare ML Module Section :ref:`TODO-6.5`.
+:-Q *directory* dirpath: Add physical path *directory* to the list of
+  directories where |Coq| looks for a file and bind it to the the logical
+  directory *dirpath*. The subdirectory structure of *directory* is
+  recursively available from |Coq| using absolute names (extending the
+  dirpath prefix) (see Section :ref:`TODO-2.6.2`).Note that only those
+  subdirectories and files which obey the lexical conventions of what is
+  an ident (see Section :ref:`TODO-1.1`) are taken into account. Conversely, the
+  underlying file systems or operating systems may be more restrictive
+  than |Coq|. While Linux’s ext4 file system supports any |Coq| recursive
+  layout (within the limit of 255 bytes per file name), the default on
+  NTFS (Windows) or HFS+ (MacOS X) file systems is on the contrary to
   disallow two files differing only in the case in the same directory.
-
-  \SeeAlso Section~\ref{Libraries}.
-
-\item[{\tt -R} {\em directory} {\dirpath}]\ %
-
-  Do as \texttt{-Q} \emph{directory} {\dirpath} but make the
-  subdirectory structure of \emph{directory} recursively visible so
-  that the recursive contents of physical \emph{directory} is available
-  from {\Coq} using short or partially qualified names.
-
-  \SeeAlso Section~\ref{Libraries}.
-
-\item[{\tt -top} {\dirpath}]\ %
-
-  Set the toplevel module name to {\dirpath} instead of {\tt Top}. Not
-  valid for {\tt coqc} as the toplevel module name is inferred from the
+  See also: Section :ref:`TODO-2.6.1`.
+:-R *directory* dirpath: Do as -Q *directory* dirpath but make the
+  subdirectory structure of *directory* recursively visible so that the
+  recursive contents of physical *directory* is available from |Coq| using
+  short or partially qualified names. See also: Section :ref:`TODO-2.6.1`.
+:-top dirpath: Set the toplevel module name to dirpath instead of Top.
+  Not valid for `coqc` as the toplevel module name is inferred from the
   name of the output file.
-
-\item[{\tt -exclude-dir} {\em directory}]\ %
-
-  Exclude any subdirectory named {\em directory} while
-  processing options such as {\tt -R} and {\tt -Q}. By default, only the
-  conventional version control management directories named {\tt CVS} and
-  {\tt \_darcs} are excluded.
-
-\item[{\tt -nois}]\ %
-
-  Start from an empty state instead of loading the {\tt Init.Prelude}
+:-exclude-dir *directory*: Exclude any subdirectory named *directory*
+  while processing options such as -R and -Q. By default, only the
+  conventional version control management directories named CVS
+  and_darcs are excluded.
+:-nois: Start from an empty state instead of loading the Init.Prelude
   module.
-
-\item[{\tt -init-file} {\em file}]\ %
-
-  Load {\em file} as the resource file instead of loading the default
-  resource file from the standard configuration directories.
-
-\item[{\tt -q}]\ %
-
-  Do not to load the default resource file.
-
-\item[{\tt -load-ml-source} {\em file}]\ %
-
-  Load the {\ocaml} source file {\em file}.
-
-\item[{\tt -load-ml-object} {\em file}]\ %
-
-  Load the {\ocaml} object file {\em file}.
-
-\item[{\tt -l} {\em file}, {\tt -load-vernac-source} {\em file}]\ %
-
-  Load and execute the {\Coq} script from {\em file.v}.
-
-\item[{\tt -lv} {\em file}, {\tt -load-vernac-source-verbose} {\em
-    file}]\ %
-
-  Load and execute the {\Coq} script from {\em file.v}.
-  Output its content on the standard input as it is executed.
-
-\item[{\tt -load-vernac-object} {\dirpath}]\ %
-
-  Load \Coq~compiled library {\dirpath}. This is equivalent to running
-  {\tt Require} {\dirpath}.
-
-\item[{\tt -require} {\dirpath}]\ %
-
-  Load \Coq~compiled library {\dirpath} and import it. This is equivalent
-  to running {\tt Require Import} {\dirpath}.
-
-\item[{\tt -batch}]\ %
-
-  Exit just after argument parsing. Available for {\tt coqtop} only.
-
-\item[{\tt -compile} {\em file.v}]\ %
-
-  Compile file {\em file.v} into {\em file.vo}. This options imply {\tt
-    -batch} (exit just after argument parsing). It is available only
-  for {\tt coqtop}, as this behavior is the purpose of {\tt coqc}.
-
-\item[{\tt -compile-verbose} {\em file.v}]\ %
-
-  Same as {\tt -compile} but also output the content of {\em file.v} as
-  it is compiled.
-
-\item[{\tt -verbose}]\ %
-
-  Output the content of the input file as it is compiled. This option is
-  available for {\tt coqc} only; it is the counterpart of {\tt
-    -compile-verbose}.
-
-  \item[{\tt -w} (all|none|w$_1$,\ldots,w$_n$)]\ %
-
-  Configure the display of warnings. This option expects {\tt all}, {\tt none}
-  or a comma-separated list of warning names or categories (see
-  Section~\ref{SetWarnings}).
-
-%Mostly unused in the code
-%\item[{\tt -debug}]\ %
-%
-%  Switch on the debug flag.
-
-\item[{\tt -color} (on|off|auto)]\ %
-
-  Enable or not the coloring of output of {\tt coqtop}. Default is auto,
-  meaning that {\tt coqtop} dynamically decides, depending on whether the
-  output channel supports ANSI escape sequences.
-
-\item[{\tt -beautify}]\ %
-
-  Pretty-print each command to {\em file.beautified} when compiling {\em
-    file.v}, in order to get old-fashioned syntax/definitions/notations.
-
-\item[{\tt -emacs}, {\tt -ide-slave}]\ %
-
-  Start a special toplevel to communicate with a specific IDE.
-
-\item[{\tt -impredicative-set}]\ %
-
-  Change the logical theory of {\Coq} by declaring the sort {\tt Set}
-  impredicative. Warning: this is known to be inconsistent with
-  some standard axioms of classical mathematics such as the functional
-  axiom of choice or the principle of description.
-
-\item[{\tt -type-in-type}]\ %
-
-  Collapse the universe hierarchy of {\Coq}. Warning: this makes the
-  logic inconsistent.
-
-\item[{\tt -mangle-names} {\em ident}]\ %
-
-  Experimental: Do not depend on this option.
-
-  Replace Coq's auto-generated name scheme with names of the form
-  {\tt ident0}, {\tt ident1}, \ldots etc.
-  The command {\tt Set Mangle Names}\optindex{Mangle Names} turns
-  the behavior on in a document, and {\tt Set Mangle Names Prefix "ident"}
-  \optindex{Mangle Names Prefix} changes the used prefix.
-
-  This feature is intended to be used as a linter for developments that want
-  to be robust to changes in the auto-generated name scheme. The options are
-  provided to facilitate tracking down problems.
-
-\item[{\tt -compat} {\em version}]\ %
-
-  Attempt to maintain some backward-compatibility with a previous version.
-
-\item[{\tt -dump-glob} {\em file}]\ %
-
-  Dump references for global names in file {\em file} (to be used
-  by {\tt coqdoc}, see~\ref{coqdoc}). By default, if {\em file.v} is being
-  compiled, {\em file.glob} is used.
-
-\item[{\tt -no-glob}]\ %
-
-  Disable the dumping of references for global names.
-
-%\item[{\tt -no-hash-consing}]\ %
-
-\item[{\tt -image} {\em file}]\ %
-
-  Set the binary image to be used by {\tt coqc} to be {\em file}
+:-init-file *file*: Load *file* as the resource file instead of
+  loading the default resource file from the standard configuration
+  directories.
+:-q: Do not to load the default resource file.
+:-load-ml-source *file*: Load the OCaml source file *file*.
+:-load-ml-object *file*: Load the OCaml object file *file*.
+:-l *file*, -load-vernac-source *file*: Load and execute the |Coq|
+  script from *file.v*.
+:-lv *file*, -load-vernac-source-verbose *file*: Load and execute the
+  |Coq| script from *file.v*. Output its content on the standard input as
+  it is executed.
+:-load-vernac-object dirpath: Load |Coq| compiled library dirpath. This
+  is equivalent to runningRequire dirpath.
+:-require dirpath: Load |Coq| compiled library dirpath and import it.
+  This is equivalent to running Require Import dirpath.
+:-batch: Exit just after argument parsing. Available for `coqtop` only.
+:-compile *file.v*: Compile file *file.v* into *file.vo*. This options
+  imply -batch (exit just after argument parsing). It is available only
+  for `coqtop`, as this behavior is the purpose of `coqc`.
+:-compile-verbose *file.v*: Same as -compile but also output the
+  content of *file.v* as it is compiled.
+:-verbose: Output the content of the input file as it is compiled.
+  This option is available for `coqc` only; it is the counterpart of
+  -compile-verbose.
+:-w (all|none|w₁,…,wₙ): Configure the display of warnings. This
+  option expects all, none or a comma-separated list of warning names or
+  categories (see Section :ref:`TODO-6.9.3`).
+:-color (on|off|auto): Enable or not the coloring of output of `coqtop`.
+  Default is auto, meaning that `coqtop` dynamically decides, depending on
+  whether the output channel supports ANSI escape sequences.
+:-beautify: Pretty-print each command to *file.beautified* when
+  compiling *file.v*, in order to get old-fashioned
+  syntax/definitions/notations.
+:-emacs, -ide-slave: Start a special toplevel to communicate with a
+  specific IDE.
+:-impredicative-set: Change the logical theory of |Coq| by declaring the
+   sort Set impredicative. Warning: This is known to be inconsistent with some
+   standard axioms of classical mathematics such as the functional
+   axiom of choice or the principle of description.
+:-type-in-type: Collapse the universe hierarchy of |Coq|. Warning: This makes the logic
+   inconsistent.
+:-mangle-names *ident*: Experimental: Do not depend on this option. Replace
+  Coq's auto-generated name scheme with names of the form *ident0*, *ident1*,
+  etc. The command ``Set Mangle Names`` turns the behavior on in a document,
+  and ``Set Mangle Names Prefix "ident"`` changes the used prefix. This feature
+  s intended to be used as a linter for developments that want to be robust to
+  changes in the auto-generated name scheme. The options are provided to
+  facilitate tracking down problems.
+:-compat *version*: Attempt to maintain some backward-compatibility
+  with a previous version.
+:-dump-glob *file*: Dump references for global names in file *file*
+  (to be used by coqdoc, see :ref:`TODO-15.4`). By default, if *file.v* is being
+  compiled, *file.glob* is used.
+:-no-glob: Disable the dumping of references for global names.
+:-image *file*: Set the binary image to be used by `coqc` to be *file*
   instead of the standard one. Not of general use.
-
-\item[{\tt -bindir} {\em directory}]\ %
-
-  Set the directory containing {\Coq} binaries to be used by {\tt coqc}.
-  It is equivalent to doing \texttt{export COQBIN=}{\em directory} before
-  launching {\tt coqc}.
-
-\item[{\tt -where}]\ %
-
-  Print the location of \Coq's standard library and exit.
-
-\item[{\tt -config}]\ %
-
-  Print the locations of \Coq's binaries, dependencies, and libraries, then exit.
-
-\item[{\tt -filteropts}]\ %
-
-  Print the list of command line arguments that {\tt coqtop} has
+:-bindir *directory*: Set the directory containing |Coq| binaries to be
+  used by `coqc`. It is equivalent to doing export COQBIN= *directory*
+  before launching `coqc`.
+:-where: Print the location of |Coq|’s standard library and exit.
+:-config: Print the locations of |Coq|’s binaries, dependencies, and
+  libraries, then exit.
+:-filteropts: Print the list of command line arguments that `coqtop` has
   recognized as options and exit.
+:-v: Print |Coq|’s version and exit.
+:-list-tags: Print the highlight tags known by |Coq| as well as their
+  currently associated color and exit.
+:-h, --help: Print a short usage and exit.
 
-\item[{\tt -v}]\ %
+Compiled libraries checker (coqchk)
+----------------------------------------
 
-  Print \Coq's version and exit.
-
-\item[{\tt -list-tags}]\ %
-
-  Print the highlight tags known by {\Coq} as well as their currently associated
-  color and exit.
-
-\item[{\tt -h}, {\tt --help}]\ %
-
-  Print a short usage and exit.
-
-\end{description}
-
-
-\section{Compiled libraries checker ({\tt coqchk})}
-
-The {\tt coqchk} command takes a list of library paths as argument, described
-either by their logical name or by their physical filename, which must end in
-{\tt .vo}. The corresponding compiled libraries (.vo files) are searched in the
-path, recursively processing the libraries they depend on. The content
-of all these libraries is then type-checked. The effect of {\tt
-  coqchk} is only to return with normal exit code in case of success,
-and with positive exit code if an error has been found. Error messages
-are not deemed to help the user understand what is wrong. In the
-current version, it does not modify the compiled libraries to mark
+The ``coqchk`` command takes a list of library paths as argument, described either
+by their logical name or by their physical filename, hich must end in ``.vo``. The
+corresponding compiled libraries (``.vo`` files) are searched in the path,
+recursively processing the libraries they depend on. The content of all these
+libraries is then type-checked. The effect of ``coqchk`` is only to return with
+normal exit code in case of success, and with positive exit code if an error has
+been found. Error messages are not deemed to help the user understand what is
+wrong. In the current version, it does not modify the compiled libraries to mark
 them as successfully checked.
 
 Note that non-logical information is not checked. By logical
@@ -332,71 +209,48 @@ names), implicit arguments, etc.
 
 This tool can be used for several purposes. One is to check that a
 compiled library provided by a third-party has not been forged and
-that loading it cannot introduce inconsistencies.\footnote{Ill-formed
-  non-logical information might for instance bind {\tt
-    Coq.Init.Logic.True} to short name {\tt False}, so apparently {\tt
-    False} is inhabited, but using fully qualified names, {\tt
-    Coq.Init.Logic.False} will always refer to the absurd proposition,
-  what we guarantee is that there is no proof of this latter
-  constant.}
-Another point is to get an even higher level of security. Since {\tt
-  coqtop} can be extended with custom tactics, possibly ill-typed
-code, it cannot be guaranteed that the produced compiled libraries are
-correct. {\tt coqchk} is a standalone verifier, and thus it cannot be
-tainted by such malicious code.
+that loading it cannot introduce inconsistencies [#]_. Another point is
+to get an even higher level of security. Since ``coqtop`` can be extended
+with custom tactics, possibly ill-typed code, it cannot be guaranteed
+that the produced compiled libraries are correct. ``coqchk`` is a
+standalone verifier, and thus it cannot be tainted by such malicious
+code.
 
-Command-line options {\tt -Q}, {\tt -R}, {\tt -where} and
-{\tt -impredicative-set} are supported by {\tt coqchk} and have the
-same meaning as for {\tt coqtop}. As there is no notion of relative paths in
-object files {\tt -Q} and {\tt -R} have exactly the same meaning.
+Command-line options ``-Q``, ``-R``, ``-where`` and ``-impredicative-set`` are supported
+by ``coqchk`` and have the same meaning as for ``coqtop``. As there is no notion of
+relative paths in object files ``-Q`` and ``-R`` have exactly the same meaning.
 
-Extra options are:
-\begin{description}
-\item[{\tt -norec} {\em module}]\ %
-
-  Check {\em module} but do not check its dependencies.
-
-\item[{\tt -admit} {\em module}]\ %
-
-  Do not check {\em module} and any of its dependencies, unless
-  explicitly required.
-
-\item[{\tt -o}]\ %
-
-  At exit, print a summary about the context. List the names of all
+:-norec *module*: Check *module* but do not check its dependencies.
+:-admit *module*: Do not check *module* and any of its dependencies,
+  unless explicitly required.
+:-o: At exit, print a summary about the context. List the names of all
   assumptions and variables (constants without body).
+:-silent: Do not write progress information in standard output.
 
-\item[{\tt -silent}]\ %
-
-  Do not write progress information in standard output.
-\end{description}
-
-Environment variable \verb:$COQLIB: can be set to override the
-location of the standard library.
+Environment variable ``$COQLIB`` can be set to override the location of
+the standard library.
 
 The algorithm for deciding which modules are checked or admitted is
-the following: assuming that {\tt coqchk} is called with argument $M$,
-option {\tt -norec} $N$, and {\tt -admit} $A$. Let us write
-$\overline{S}$ the set of reflexive transitive dependencies of set
-$S$. Then:
-\begin{itemize}
-\item Modules $C=\overline{M}\backslash\overline{A}\cup M\cup N$ are
-  loaded and type-checked before being added to the context.
-\item And $\overline{M}\cup\overline{N}\backslash C$ is the set of
-  modules that are loaded and added to the context without
-  type-checking. Basic integrity checks (checksums) are nonetheless
-  performed.
-\end{itemize}
+the following: assuming that ``coqchk`` is called with argument ``M``, option
+``-norec N``, and ``-admit A``. Let us write :math:`\overline{S}` for the
+set of reflexive transitive dependencies of set :math:`S`. Then:
 
-As a rule of thumb, the {\tt -admit} can be used to tell that some
-libraries have already been checked. So {\tt coqchk A B} can be split
-in {\tt coqchk A \&\& coqchk B -admit A} without type-checking any
-definition twice. Of course, the latter is slightly slower since it
-makes more disk access. It is also less secure since an attacker might
-have replaced the compiled library $A$ after it has been read by the
-first command, but before it has been read by the second command.
++ Modules :math:`C = \overline{M} \backslash \overline{A} \cup M \cup N` are loaded and type-checked before being added
+  to the context.
++ And :math:`M \cup N \backslash C` is the set of modules that are loaded and added to the
+  context without type-checking. Basic integrity checks (checksums) are
+  nonetheless performed.
 
-%%% Local Variables: 
-%%% mode: latex
-%%% TeX-master: "Reference-Manual"
-%%% End: 
+As a rule of thumb, the -admit can be used to tell that some libraries
+have already been checked. So ``coqchk A B`` can be split in ``coqchk A`` &&
+``coqchk B -admit A`` without type-checking any definition twice. Of
+course, the latter is slightly slower since it makes more disk access.
+It is also less secure since an attacker might have replaced the
+compiled library ``A`` after it has been read by the first command, but
+before it has been read by the second command.
+
+.. [#] Ill-formed non-logical information might for instance bind
+  Coq.Init.Logic.True to short name False, so apparently False is
+  inhabited, but using fully qualified names, Coq.Init.Logic.False will
+  always refer to the absurd proposition, what we guarantee is that
+  there is no proof of this latter constant.
