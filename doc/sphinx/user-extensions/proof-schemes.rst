@@ -1,444 +1,374 @@
-\chapter{Proof schemes}
-%HEVEA\cutname{schemes.html}
+.. _proofschemes:
 
-\section{Generation of induction principles with {\tt Scheme}}
-\label{Scheme}
-\index{Schemes}
-\comindex{Scheme}
+Proof schemes
+===============
 
-The {\tt Scheme} command is a high-level tool for generating
-automatically (possibly mutual) induction principles for given types
-and sorts.  Its syntax follows the schema:
-\begin{quote}
-{\tt Scheme {\ident$_1$} := Induction for \ident'$_1$ Sort {\sort$_1$} \\
-  with\\
-  \mbox{}\hspace{0.1cm} \dots\\
-        with {\ident$_m$} := Induction for {\ident'$_m$} Sort
-        {\sort$_m$}}
-\end{quote}
-where \ident'$_1$ \dots\ \ident'$_m$ are different inductive type
-identifiers belonging to the same package of mutual inductive
-definitions. This command generates {\ident$_1$}\dots{} {\ident$_m$}
-to be mutually recursive definitions. Each term {\ident$_i$} proves a
-general principle of mutual induction for objects in type {\term$_i$}.
+Generation of induction principles with ``Scheme``
+--------------------------------------------------------
 
-\begin{Variants}
-\item {\tt Scheme {\ident$_1$} := Minimality for \ident'$_1$ Sort {\sort$_1$} \\
-    with\\
-    \mbox{}\hspace{0.1cm} \dots\ \\
-    with {\ident$_m$} := Minimality for {\ident'$_m$} Sort
-    {\sort$_m$}}
+The ``Scheme`` command is a high-level tool for generating automatically
+(possibly mutual) induction principles for given types and sorts. Its
+syntax follows the schema:
+
+.. cmd:: Scheme ident := Induction for ident' Sort sort {* with ident := Induction for ident' Sort sort}
+
+where each `ident'ᵢ` is a different inductive type identifier 
+belonging to the same package of mutual inductive definitions. This
+command generates the `identᵢ`s to be mutually recursive
+definitions. Each term `identᵢ` proves a general principle of mutual
+induction for objects in type `identᵢ`.
+
+.. cmdv:: Scheme ident := Minimality for ident' Sort sort {* with ident := Minimality for ident' Sort sort}
 
   Same as before but defines a non-dependent elimination principle more
   natural in case of inductively defined relations.
 
-\item {\tt Scheme Equality for \ident$_1$\comindex{Scheme Equality}}
+.. cmdv:: Scheme Equality for ident
 
-  Tries to generate a Boolean equality and a proof of the
-  decidability of the usual equality. If \ident$_i$ involves
-  some other inductive types, their equality has to be defined first.
+   Tries to generate a Boolean equality and a proof of the decidability of the usual equality. If `ident`
+   involves some other inductive types, their equality has to be defined first.
 
-\item {\tt Scheme Induction for \ident$_1$ Sort {\sort$_1$} \\
-  with\\
-  \mbox{}\hspace{0.1cm} \dots\\
-        with Induction for {\ident$_m$} Sort
-        {\sort$_m$}}
+.. cmdv:: Scheme Induction for ident Sort sort {* with Induction for ident Sort sort}
 
-  If you do not provide the name of the schemes, they will be automatically
-  computed from the sorts involved (works also with Minimality).
+   If you do not provide the name of the schemes, they will be automatically computed from the
+   sorts involved (works also with Minimality).
 
-\end{Variants}
-\label{Scheme-examples}
+.. example::
 
-\firstexample
-\example{Induction scheme for \texttt{tree} and \texttt{forest}}
+   Induction scheme for tree and forest.
 
-The definition of principle of mutual induction for {\tt tree} and
-{\tt forest} over the sort {\tt Set} is defined by the command:
+   The definition of principle of mutual induction for tree and forest
+   over the sort Set is defined by the command:
 
-\begin{coq_eval}
-Reset Initial.
-Variables A B : Set.
-\end{coq_eval}
+    .. coqtop:: none
 
-\begin{coq_example*}
-Inductive tree : Set :=
-    node : A -> forest -> tree
-with forest : Set :=
-  | leaf : B -> forest
-  | cons : tree -> forest -> forest.
+     Axiom A : Set.	       
+     Axiom B : Set.	       
+   
+    .. coqtop:: all
 
-Scheme tree_forest_rec := Induction for tree Sort Set
-  with forest_tree_rec := Induction for forest Sort Set.
-\end{coq_example*}
+     Inductive tree : Set := node : A -> forest -> tree
+     with forest : Set :=
+         leaf : B -> forest
+       | cons : tree -> forest -> forest.
 
-You may now look at the type of {\tt tree\_forest\_rec}:
+     Scheme tree_forest_rec := Induction for tree Sort Set
+       with forest_tree_rec := Induction for forest Sort Set.
 
-\begin{coq_example}
-Check tree_forest_rec.
-\end{coq_example}
+  You may now look at the type of tree_forest_rec:
 
-This principle involves two different predicates for {\tt trees} and
-{\tt forests}; it also has three premises each one corresponding to a
-constructor of one of the inductive definitions.
+  .. coqtop:: all
 
-The principle {\tt forest\_tree\_rec} shares exactly the same
-premises, only the conclusion now refers to the property of forests.
+    Check tree_forest_rec.
 
-\begin{coq_example}
-Check forest_tree_rec.
-\end{coq_example}
+  This principle involves two different predicates for trees andforests;
+  it also has three premises each one corresponding to a constructor of
+  one of the inductive definitions.
 
-\example{Predicates {\tt odd} and {\tt even} on naturals}
+  The principle `forest_tree_rec` shares exactly the same premises, only
+  the conclusion now refers to the property of forests.
 
-Let {\tt odd} and {\tt even} be inductively defined as:
+.. example::
 
-% Reset Initial.
-\begin{coq_eval}
-Open Scope nat_scope.
-\end{coq_eval}
+  Predicates odd and even on naturals.
 
-\begin{coq_example*}
-Inductive odd : nat -> Prop :=
-    oddS : forall n:nat, even n -> odd (S n)
-with even : nat -> Prop :=
-  | evenO : even 0
-  | evenS : forall n:nat, odd n -> even (S n).
-\end{coq_example*}
+  Let odd and even be inductively defined as:
 
-The following command generates a powerful elimination
-principle:
+   .. coqtop:: all
 
-\begin{coq_example}
-Scheme odd_even := Minimality for   odd Sort Prop
-  with even_odd := Minimality for even Sort Prop.
-\end{coq_example}
+      Inductive odd : nat -> Prop := oddS : forall n:nat, even n -> odd (S n)
+      with even : nat -> Prop := 
+        | evenO : even 0
+        | evenS : forall n:nat, odd n -> even (S n).
 
-The type of {\tt odd\_even} for instance will be:
+  The following command generates a powerful elimination principle:
 
-\begin{coq_example}
-Check odd_even.
-\end{coq_example}
+   .. coqtop:: all
 
-The type of {\tt even\_odd} shares the same premises but the
-conclusion is {\tt (n:nat)(even n)->(Q n)}.
+    Scheme odd_even := Minimality for odd Sort Prop
+    with even_odd := Minimality for even Sort Prop.
 
-\subsection{Automatic declaration of schemes
-\optindex{Boolean Equality Schemes}
-\optindex{Elimination Schemes}
-\optindex{Nonrecursive Elimination Schemes}
-\optindex{Case Analysis Schemes}
-\optindex{Decidable Equality Schemes}
-\optindex{Rewriting Schemes}
-\label{set-nonrecursive-elimination-schemes}
-}
+  The type of odd_even for instance will be:
 
-It is possible to deactivate the automatic declaration of the induction
- principles when defining a new inductive type  with the
- {\tt Unset Elimination Schemes} command. It may be
-reactivated at any time with {\tt Set Elimination Schemes}.
+  .. coqtop:: all
 
-The types declared with the keywords {\tt Variant} (see~\ref{Variant})
-and {\tt Record} (see~\ref{Record}) do not have an automatic
-declaration of the induction principles. It can be activated with the
-command {\tt Set Nonrecursive Elimination Schemes}. It can be
-deactivated again with {\tt Unset Nonrecursive Elimination Schemes}.
+    Check odd_even.
 
-In addition, the {\tt Case Analysis Schemes} flag governs the generation of
+  The type of `even_odd` shares the same premises but the conclusion is
+  `(n:nat)(even n)->(P0 n)`.
+
+
+Automatic declaration of schemes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is possible to deactivate the automatic declaration of the
+induction principles when defining a new inductive type with the
+``Unset Elimination Schemes`` command. It may be reactivated at any time with
+``Set Elimination Schemes``.
+
+The types declared with the keywords ``Variant`` (see :ref:`TODO-1.3.3`) and ``Record``
+(see :ref:`Record Types <record-types>`) do not have an automatic declaration of the induction
+principles. It can be activated with the command
+``Set Nonrecursive Elimination Schemes``. It can be deactivated again with
+``Unset Nonrecursive Elimination Schemes``.
+
+In addition, the ``Case Analysis Schemes`` flag governs the generation of
 case analysis lemmas for inductive types, i.e. corresponding to the
 pattern-matching term alone and without fixpoint.
-\\
+You can also activate the automatic declaration of those Boolean
+equalities (see the second variant of ``Scheme``) with respectively the
+commands ``Set Boolean Equality Schemes`` and ``Set Decidable Equality
+Schemes``. However you have to be careful with this option since Coq may
+now reject well-defined inductive types because it cannot compute a
+Boolean equality for them.
 
-You can also activate the automatic declaration of those Boolean equalities
-(see the second variant of {\tt Scheme})
-with respectively the commands {\tt Set Boolean Equality Schemes} and
-{\tt Set Decidable Equality Schemes}.
-However you have to be careful with this option since
-\Coq~ may now reject well-defined inductive types because it cannot compute
-a Boolean equality for them.
+.. opt:: Rewriting Schemes
 
-The {\tt Rewriting Schemes} flag governs generation of equality
-related schemes such as congruence.
+   This flag governs generation of equality-related schemes such as congruence.
 
-\subsection{\tt Combined Scheme}
-\label{CombinedScheme}
-\comindex{Combined Scheme}
+Combined Scheme
+~~~~~~~~~~~~~~~~~~~~~~
 
-The {\tt Combined Scheme} command is a tool for combining
-induction principles generated by the {\tt Scheme} command.
-Its syntax follows the schema :
-\begin{quote}
-{\tt Combined Scheme {\ident$_0$} from {\ident$_1$}, .., {\ident$_n$}}
-\end{quote}
-where
-\ident$_1$ \ldots \ident$_n$ are different inductive principles that must belong to
-the same package of mutual inductive principle definitions. This command
-generates {\ident$_0$} to be the conjunction of the principles: it is
-built from the common premises of the principles and concluded by the
-conjunction of their conclusions.
+The ``Combined Scheme`` command is a tool for combining induction
+principles generated by the ``Scheme command``. Its syntax follows the
+schema :
 
-\Example
-We can define the induction principles for trees and forests using:
-\begin{coq_example}
-Scheme tree_forest_ind := Induction for tree Sort Prop
-  with forest_tree_ind := Induction for forest Sort Prop.
-\end{coq_example}
+.. cmd:: Combined Scheme ident from {+, ident}
 
-Then we can build the combined induction principle which gives the
-conjunction of the conclusions of each individual principle:
-\begin{coq_example}
-Combined Scheme tree_forest_mutind from tree_forest_ind, forest_tree_ind.
-\end{coq_example}
+where each identᵢ after the ``from`` is a different inductive principle that must
+belong to the same package of mutual inductive principle definitions.
+This command generates the leftmost `ident` to be the conjunction of the
+principles: it is built from the common premises of the principles and
+concluded by the conjunction of their conclusions.
 
-The type of {\tt tree\_forest\_mutrec} will be:
-\begin{coq_example}
-Check tree_forest_mutind.
-\end{coq_example}
+.. example:: 
 
-\section{Generation of induction principles with {\tt Functional Scheme}}
-\label{FunScheme}
-\comindex{Functional Scheme}
+  We can define the induction principles for trees and forests using:
 
-The {\tt Functional Scheme} command is a high-level experimental
-tool for generating automatically induction principles
-corresponding to (possibly mutually recursive) functions.
-First, it must be made available via {\tt Require Import FunInd}.
- Its
-syntax then follows the schema:
-\begin{quote}
-{\tt Functional Scheme {\ident$_1$} := Induction for \ident'$_1$ Sort {\sort$_1$} \\
-  with\\
-  \mbox{}\hspace{0.1cm} \dots\ \\
-        with {\ident$_m$} := Induction for {\ident'$_m$} Sort
-        {\sort$_m$}}
-\end{quote}
-where \ident'$_1$ \dots\ \ident'$_m$ are different mutually defined function
-names (they must be in the same order as when they were defined).
-This command generates the induction principles
-\ident$_1$\dots\ident$_m$, following the recursive structure and case
-analyses of the functions \ident'$_1$ \dots\ \ident'$_m$.
+  .. coqtop:: all
 
-\Rem
-There is a difference between obtaining an induction scheme by using
-\texttt{Functional Scheme} on a function defined by \texttt{Function}
-or not. Indeed \texttt{Function} generally produces smaller
-principles, closer to the definition written by the user.
+    Scheme tree_forest_ind := Induction for tree Sort Prop
+    with forest_tree_ind := Induction for forest Sort Prop.
 
-\firstexample
-\example{Induction scheme for \texttt{div2}}
-\label{FunScheme-examples}
+  Then we can build the combined induction principle which gives the
+  conjunction of the conclusions of each individual principle:
 
-We define the function \texttt{div2} as follows:
+  .. coqtop:: all
 
-\begin{coq_eval}
-Reset Initial.
-Require Import FunInd.
-\end{coq_eval}
+    Combined Scheme tree_forest_mutind from tree_forest_ind,forest_tree_ind.
 
-\begin{coq_example*}
-Require Import Arith.
-Fixpoint div2 (n:nat) : nat :=
-  match n with
-  | O => 0
-  | S O => 0
-  | S (S n') => S (div2 n')
-  end.
-\end{coq_example*}
+  The type of tree_forest_mutrec will be:
 
-The definition of a principle of induction corresponding to the
-recursive structure of \texttt{div2} is defined by the command:
+  .. coqtop:: all
 
-\begin{coq_example}
-Functional Scheme div2_ind := Induction for div2 Sort Prop.
-\end{coq_example}
+    Check tree_forest_mutind.
 
-You may now look at the type of {\tt div2\_ind}:
+Generation of induction principles with ``Functional`` ``Scheme``
+-----------------------------------------------------------------
 
-\begin{coq_example}
-Check div2_ind.
-\end{coq_example}
+The ``Functional Scheme`` command is a high-level experimental tool for
+generating automatically induction principles corresponding to
+(possibly mutually recursive) functions. First, it must be made
+available via ``Require Import FunInd``. Its syntax then follows the
+schema:
 
-We can now prove the following lemma using this principle:
+.. cmd:: Functional Scheme ident := Induction for ident' Sort sort {* with ident := Induction for ident' Sort sort}
 
-\begin{coq_example*}
-Lemma div2_le' : forall n:nat, div2 n <= n.
-intro n.
- pattern n , (div2 n).
-\end{coq_example*}
+where each `ident'ᵢ` is a different mutually defined function
+name (the names must be in the same order as when they were defined). This
+command generates the induction principle for each `identᵢ`, following
+the recursive structure and case analyses of the corresponding function 
+identᵢ’.
 
-\begin{coq_example}
-apply div2_ind; intros.
-\end{coq_example}
+Remark: There is a difference between obtaining an induction scheme by
+using ``Functional Scheme`` on a function defined by ``Function`` or not.
+Indeed, ``Function`` generally produces smaller principles, closer to the
+definition written by the user.
 
-\begin{coq_example*}
-auto with arith.
-auto with arith.
-simpl; auto with arith.
-Qed.
-\end{coq_example*}
+.. example:: 
 
-We can use directly the \texttt{functional induction}
-(\ref{FunInduction}) tactic instead of the pattern/apply trick:
-\tacindex{functional induction}
+  Induction scheme for div2.
 
-\begin{coq_example*}
-Reset div2_le'.
-Lemma div2_le : forall n:nat, div2 n <= n.
-intro n.
-\end{coq_example*}
+  We define the function div2 as follows:
 
-\begin{coq_example}
-functional induction (div2 n).
-\end{coq_example}
+  .. coqtop:: all
 
-\begin{coq_example*}
-auto with arith.
-auto with arith.
-auto with arith.
-Qed.
-\end{coq_example*}
+   Require Import FunInd.
+   Require Import Arith.
 
-\Rem There is a difference between obtaining an induction scheme for a
-function by using \texttt{Function} (see Section~\ref{Function}) and by
-using \texttt{Functional Scheme} after a normal definition using
-\texttt{Fixpoint} or \texttt{Definition}. See \ref{Function} for
-details.
+   Fixpoint div2 (n:nat) : nat :=
+   match n with
+   | O => 0
+   | S O => 0
+   | S (S n') => S (div2 n')
+   end.
 
+  The definition of a principle of induction corresponding to the
+  recursive structure of `div2` is defined by the command:
 
-\example{Induction scheme for \texttt{tree\_size}}
+  .. coqtop:: all
 
-\begin{coq_eval}
-Reset Initial.
-\end{coq_eval}
+    Functional Scheme div2_ind := Induction for div2 Sort Prop.
 
-We define trees by the following mutual inductive type:
+  You may now look at the type of div2_ind:
 
-\begin{coq_example*}
-Variable A : Set.
-Inductive tree : Set :=
-    node : A -> forest -> tree
-with forest : Set :=
-  | empty : forest
-  | cons : tree -> forest -> forest.
-\end{coq_example*}
+  .. coqtop:: all
 
-We define the function \texttt{tree\_size} that computes the size
-of a tree or a forest. Note that we use \texttt{Function} which
-generally produces better principles.
+    Check div2_ind.
 
-\begin{coq_example*}
-Require Import FunInd.
-Function tree_size (t:tree) : nat :=
-  match t with
-  | node A f => S (forest_size f)
-  end
- with forest_size (f:forest) : nat :=
-  match f with
-  | empty => 0
-  | cons t f' => (tree_size t + forest_size f')
-  end.
-\end{coq_example*}
+  We can now prove the following lemma using this principle:
 
-\Rem \texttt{Function} generates itself non mutual induction
-principles {\tt tree\_size\_ind} and {\tt forest\_size\_ind}:
+  .. coqtop:: all
 
-\begin{coq_example}
-Check tree_size_ind.
-\end{coq_example}
+    Lemma div2_le' : forall n:nat, div2 n <= n.
+    intro n.
+    pattern n, (div2 n).
+    apply div2_ind; intros.
+    auto with arith.
+    auto with arith.
+    simpl; auto with arith.
+    Qed.
 
-The definition of mutual induction principles following the recursive
-structure of \texttt{tree\_size} and \texttt{forest\_size} is defined
-by the command:
+  We can use directly the functional induction (:ref:`TODO-8.5.5`) tactic instead
+  of the pattern/apply trick:
 
-\begin{coq_example*}
-Functional Scheme tree_size_ind2 := Induction for tree_size Sort Prop
-with forest_size_ind2 := Induction for forest_size Sort Prop.
-\end{coq_example*}
+  .. coqtop:: all
 
-You may now look at the type of {\tt tree\_size\_ind2}:
+    Reset div2_le'.
 
-\begin{coq_example}
-Check tree_size_ind2.
-\end{coq_example}
+    Lemma div2_le : forall n:nat, div2 n <= n.
+    intro n.
+    functional induction (div2 n).
+    auto with arith.
+    auto with arith.
+    auto with arith.
+    Qed.
 
-\section{Generation of inversion principles with \tt Derive Inversion}
-\label{Derive-Inversion}
-\comindex{Derive Inversion}
+  Remark: There is a difference between obtaining an induction scheme
+  for a function by using ``Function`` (see :ref:`advanced-recursive-functions`) and by using
+  ``Functional Scheme`` after a normal definition using ``Fixpoint`` or
+  ``Definition``. See :ref:`advanced-recursive-functions` for details.
 
-The syntax of {\tt Derive Inversion} follows the schema:
-\begin{quote}
-{\tt Derive Inversion {\ident} with forall
-  $(\vec{x} : \vec{T})$, $I~\vec{t}$ Sort \sort}
-\end{quote}
+.. example::
 
-This command generates an inversion principle for the
-\texttt{inversion \dots\ using} tactic.
-\tacindex{inversion \dots\ using}
-Let $I$ be an inductive predicate and $\vec{x}$ the variables
-occurring in $\vec{t}$. This command generates and stocks the
-inversion lemma for the sort \sort~ corresponding to the instance
-$\forall (\vec{x}:\vec{T}), I~\vec{t}$ with the name {\ident} in the {\bf
-global} environment. When applied, it is equivalent to having inverted
-the instance with the tactic {\tt inversion}.
+  Induction scheme for tree_size.
 
-\begin{Variants}
-\item \texttt{Derive Inversion\_clear {\ident} with forall
-  $(\vec{x}:\vec{T})$, $I~\vec{t}$ Sort \sort}\\
-  \comindex{Derive Inversion\_clear}
-  When applied, it is equivalent to having
-  inverted the instance with the tactic \texttt{inversion}
-  replaced by the tactic \texttt{inversion\_clear}.
-\item \texttt{Derive Dependent Inversion {\ident} with forall
-  $(\vec{x}:\vec{T})$, $I~\vec{t}$ Sort \sort}\\
-  \comindex{Derive Dependent Inversion}
-  When applied, it is equivalent to having
-  inverted the instance with the tactic \texttt{dependent inversion}.
-\item \texttt{Derive Dependent Inversion\_clear {\ident} with forall
-  $(\vec{x}:\vec{T})$, $I~\vec{t}$ Sort \sort}\\
-  \comindex{Derive Dependent Inversion\_clear}
-  When applied, it is equivalent to having
-  inverted the instance with the tactic \texttt{dependent inversion\_clear}.
-\end{Variants}
+  We define trees by the following mutual inductive type:
 
-\Example
+  .. original LaTeX had "Variable" instead of "Axiom", which generates an ugly warning
+   
+  .. coqtop:: reset all
 
-Let us consider the relation \texttt{Le} over natural numbers and the
-following variable:
+     Axiom A : Set.
+     
+     Inductive tree : Set :=
+     node : A -> forest -> tree
+     with forest : Set :=
+     | empty : forest
+     | cons : tree -> forest -> forest.
 
-\begin{coq_eval}
-Reset Initial.
-\end{coq_eval}
+  We define the function tree_size that computes the size of a tree or a
+  forest. Note that we use ``Function`` which generally produces better
+  principles.
 
-\begin{coq_example*}
-Inductive Le : nat -> nat -> Set :=
-  | LeO : forall n:nat, Le 0 n
-  | LeS : forall n m:nat, Le n m -> Le (S n) (S m).
-Variable P : nat -> nat -> Prop.
-\end{coq_example*}
+  .. coqtop:: all
 
-To generate the inversion lemma for the instance
-\texttt{(Le (S n) m)} and the sort \texttt{Prop}, we do:
+    Require Import FunInd.
 
-\begin{coq_example*}
-Derive Inversion_clear leminv with (forall n m:nat, Le (S n) m) Sort Prop.
-\end{coq_example*}
+    Function tree_size (t:tree) : nat :=
+    match t with
+    | node A f => S (forest_size f)
+    end
+    with forest_size (f:forest) : nat :=
+    match f with
+    | empty => 0
+    | cons t f' => (tree_size t + forest_size f')
+    end.
 
-\begin{coq_example}
-Check leminv.
-\end{coq_example}
+  Remark: Function generates itself non mutual induction principles
+  tree_size_ind and forest_size_ind:
 
-Then we can use the proven inversion lemma:
+  .. coqtop:: all
 
-\begin{coq_eval}
-Lemma ex : forall n m:nat, Le (S n) m -> P n m.
-intros.
-\end{coq_eval}
+    Check tree_size_ind.
 
-\begin{coq_example}
-Show.
-\end{coq_example}
+  The definition of mutual induction principles following the recursive
+  structure of `tree_size` and `forest_size` is defined by the command:
 
-\begin{coq_example}
-inversion H using leminv.
-\end{coq_example}
+  .. coqtop:: all
 
+    Functional Scheme tree_size_ind2 := Induction for tree_size Sort Prop
+    with forest_size_ind2 := Induction for forest_size Sort Prop.
+
+  You may now look at the type of `tree_size_ind2`:
+
+  .. coqtop:: all
+
+    Check tree_size_ind2.
+     
+Generation of inversion principles with ``Derive`` ``Inversion``
+-----------------------------------------------------------------
+
+The syntax of ``Derive`` ``Inversion`` follows the schema:
+
+.. cmd:: Derive Inversion ident with forall (x : T), I t Sort sort
+
+This command generates an inversion principle for the `inversion … using` 
+tactic. Let `I` be an inductive predicate and `x` the variables occurring
+in t. This command generates and stocks the inversion lemma for the
+sort `sort` corresponding to the instance `∀ (x:T), I t` with the name
+`ident` in the global environment. When applied, it is equivalent to
+having inverted the instance with the tactic `inversion`.
+
+.. cmdv:: Derive Inversion_clear ident with forall (x:T), I t Sort sort
+
+   When applied, it is equivalent to having inverted the instance with the
+   tactic inversion replaced by the tactic `inversion_clear`.
+
+.. cmdv:: Derive Dependent Inversion ident with forall (x:T), I t Sort sort
+
+   When applied, it is equivalent to having inverted the instance with
+   the tactic `dependent inversion`.
+
+.. cmdv:: Derive Dependent Inversion_clear ident with forall(x:T), I t Sort sort
+
+   When applied, it is equivalent to having inverted the instance
+   with the tactic `dependent inversion_clear`.
+
+.. example::
+
+  Let us consider the relation `Le` over natural numbers and the following
+  variable:
+
+  .. original LaTeX had "Variable" instead of "Axiom", which generates an ugly warning
+  
+  .. coqtop:: all
+
+    Inductive Le : nat -> nat -> Set :=
+    | LeO : forall n:nat, Le 0 n
+    | LeS : forall n m:nat, Le n m -> Le (S n) (S m).
+
+    Axiom P : nat -> nat -> Prop.
+
+  To generate the inversion lemma for the instance `(Le (S n) m)` and the
+  sort `Prop`, we do:
+
+  .. coqtop:: all
+
+    Derive Inversion_clear leminv with (forall n m:nat, Le (S n) m) Sort Prop.
+    Check leminv.
+
+  Then we can use the proven inversion lemma:
+
+  .. the original LaTeX did not have any Coq code to setup the goal
+
+  .. coqtop:: none
+
+    Goal forall (n m : nat) (H : Le (S n) m), P n m.			  
+    intros.
+  
+  .. coqtop:: all
+
+    Show.
+
+    inversion H using leminv.

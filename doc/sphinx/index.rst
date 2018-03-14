@@ -30,6 +30,7 @@ Table of contents
    :caption: User extensions
 
    user-extensions/syntax-extensions
+   user-extensions/proof-schemes
 
 .. toctree::
    :caption: Practical tools
