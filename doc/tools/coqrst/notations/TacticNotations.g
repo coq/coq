@@ -15,16 +15,18 @@ grammar TacticNotations;
 
 top: blocks EOF;
 blocks: block ((whitespace)? block)*;
-block: atomic | hole | repeat | curlies;
+block: atomic | meta | hole | repeat | curlies;
 repeat: LGROUP (ATOM)? WHITESPACE blocks (WHITESPACE)? RBRACE;
 curlies: LBRACE (whitespace)? blocks (whitespace)? RBRACE;
 whitespace: WHITESPACE;
+meta: METACHAR;
 atomic: ATOM;
 hole: ID;
 
 LGROUP: '{' [+*?];
 LBRACE: '{';
 RBRACE: '}';
-ATOM: ~[@{} ]+;
+METACHAR: '%' [|()];
+ATOM: '@' | ~[@{} ]+;
 ID: '@' [a-zA-Z0-9_]+;
 WHITESPACE: ' '+;

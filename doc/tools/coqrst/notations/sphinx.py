@@ -20,6 +20,8 @@ from .TacticNotationsVisitor import TacticNotationsVisitor
 from docutils import nodes
 from sphinx import addnodes
 
+import sys
+
 class TacticNotationsToSphinxVisitor(TacticNotationsVisitor):
     def defaultResult(self):
         return []
@@ -61,6 +63,12 @@ class TacticNotationsToSphinxVisitor(TacticNotationsVisitor):
         token_name = hole[1:]
         node = nodes.inline(hole, token_name, classes=["hole"])
         return [addnodes.pending_xref(token_name, node, reftype='token', refdomain='std', reftarget=token_name)]
+
+    def visitMeta(self, ctx:TacticNotationsParser.MetaContext):
+        meta = ctx.METACHAR().getText()
+        metachar = meta[1:] # remove escape char
+        token_name = metachar
+        return [nodes.inline(metachar, token_name, classes=["meta"])]
 
     def visitWhitespace(self, ctx:TacticNotationsParser.WhitespaceContext):
         return [nodes.Text(" ")]

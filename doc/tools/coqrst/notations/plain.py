@@ -41,6 +41,9 @@ class TacticNotationsToDotsVisitor(TacticNotationsVisitor):
     def visitHole(self, ctx:TacticNotationsParser.HoleContext):
         self.buffer.write("‘{}’".format(ctx.ID().getText()[1:]))
 
+    def visitMeta(self, ctx:TacticNotationsParser.MetaContext):
+        self.buffer.write(ctx.METACHAR().getText()[1:])
+
     def visitWhitespace(self, ctx:TacticNotationsParser.WhitespaceContext):
         self.buffer.write(" ")
 
