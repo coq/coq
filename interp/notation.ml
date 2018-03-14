@@ -319,12 +319,7 @@ let prim_token_interpreter_tab =
   (Hashtbl.create 7 : (scope_name, internal_prim_token_interpreter) Hashtbl.t)
 
 let add_prim_token_interpreter sc interp =
-  try
-    let cont = Hashtbl.find prim_token_interpreter_tab sc in
-    Hashtbl.replace prim_token_interpreter_tab sc (interp cont)
-  with Not_found ->
-    let cont = (fun ?loc _p -> raise Not_found) in
-    Hashtbl.add prim_token_interpreter_tab sc (interp cont)
+  Hashtbl.replace prim_token_interpreter_tab sc interp
 
 let declare_prim_token_interpreter sc interp (patl,uninterp,b) =
   declare_scope sc;
@@ -351,8 +346,8 @@ type rawnum = Constrexpr.raw_natural_number * Constrexpr.sign
 
 let declare_rawnumeral_interpreter sc dir interp (patl,uninterp,inpat) =
   declare_prim_token_interpreter sc
-    (fun cont ?loc -> function Numeral (n,s) -> delay dir interp ?loc (n,s)
-                            | p -> cont ?loc p)
+    (fun ?loc -> function Numeral (n,s) -> delay dir interp ?loc (n,s)
+                            | _ -> raise Not_found)
     (patl, (fun r -> match uninterp r with
                      | None -> None
                      | Some (n,s) -> Some (Numeral (n,s))), inpat)
@@ -360,13 +355,14 @@ let declare_rawnumeral_interpreter sc dir interp (patl,uninterp,inpat) =
 let declare_numeral_interpreter sc dir interp (patl,uninterp,inpat) =
   let interp' ?loc (n,s) = interp ?loc (ofNumeral n s) in
   declare_prim_token_interpreter sc
-    (fun cont ?loc -> function Numeral (n,s) -> delay dir interp' ?loc (n,s)
-                            | p -> cont ?loc p)
+    (fun ?loc -> function Numeral (n,s) -> delay dir interp' ?loc (n,s)
+                            | _ -> raise Not_found)
     (patl, (fun r -> Option.map mkNumeral (uninterp r)), inpat)
 
 let declare_string_interpreter sc dir interp (patl,uninterp,inpat) =
   declare_prim_token_interpreter sc
-    (fun cont ?loc -> function String s -> delay dir interp ?loc s | p -> cont ?loc p)
+    (fun ?loc -> function String s -> delay dir interp ?loc s
+                        | _ -> raise Not_found)
     (patl, (fun r -> mkString (uninterp r)), inpat)
 
 let check_required_module ?loc sc (sp,d) =
