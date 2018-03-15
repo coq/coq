@@ -17,6 +17,7 @@ Table of contents
    :caption: The language
 
    language/gallina-extensions
+   language/cic
 
 .. toctree::
    :caption: The proof engine
