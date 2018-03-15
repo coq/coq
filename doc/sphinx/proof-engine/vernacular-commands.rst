@@ -1,1224 +1,1414 @@
-\chapter[Vernacular commands]{Vernacular commands\label{Vernacular-commands}
-\label{Other-commands}}
-%HEVEA\cutname{vernacular.html}
+.. include:: ../preamble.rst
+.. include:: ../replaces.rst
 
-\section{Displaying}
+.. _vernacularcommands:
 
-\subsection[\tt Print {\qualid}.]{\tt Print {\qualid}.\comindex{Print}}
+Vernacular commands
+=============================
+
+.. _displaying:
+
+Displaying
+--------------
+
+
+.. _Print:
+
+.. cmd:: Print @qualid.
+
 This command displays on the screen information about the declared or
-defined object referred by {\qualid}.
+defined object referred by :n:`@qualid`.
 
-\begin{ErrMsgs}
-\item {\qualid} \errindex{not a defined object}
-\item \errindex{Universe instance should have length} $n$.
-\item \errindex{This object does not support universe names.}
-\end{ErrMsgs}
 
-\begin{Variants}
-\item {\tt Print Term {\qualid}.}
-\comindex{Print Term}\\
-This is a synonym to {\tt Print {\qualid}} when {\qualid} denotes a
-global constant.
+Error messages:
 
-\item {\tt About {\qualid}.}
-\label{About}
-\comindex{About}\\
-This displays various information about the object denoted by {\qualid}:
-its kind (module, constant, assumption, inductive,
-constructor, abbreviation, \ldots), long name, type, implicit
-arguments and argument scopes. It does not print the body of
-definitions or proofs.
 
-\item {\tt Print {\qualid}@\{names\}.}\\
-This locally renames the polymorphic universes of {\qualid}.
+.. exn:: @qualid not a defined object
+
+.. exn:: Universe instance should have length :n:`num`.
+
+.. exn:: This object does not support universe names.
+
+
+Variants:
+
+
+.. cmdv:: Print Term @qualid.
+
+This is a synonym to ``Print`` :n:`@qualid` when :n:`@qualid`
+denotes a global constant.
+
+.. cmdv:: About @qualid.
+
+This displays various information about the object
+denoted by :n:`@qualid`: its kind (module, constant, assumption, inductive,
+constructor, abbreviation, …), long name, type, implicit arguments and
+argument scopes. It does not print the body of definitions or proofs.
+
+.. cmdv:: Print @qualid\@@name
+
+This locally renames the polymorphic universes of :n:`@qualid`.
 An underscore means the raw universe is printed.
-This form can be used with {\tt Print Term} and {\tt About}.
+This form can be used with ``Print Term`` and ``About``.
 
-%\item {\tt Print Proof {\qualid}.}\comindex{Print Proof}\\
-%In case \qualid\ denotes an opaque theorem defined in a section,
-%it is stored on a special unprintable form and displayed as
-%{\tt <recipe>}. {\tt Print Proof} forces the printable form of \qualid\
-%to be computed and displays it.
-\end{Variants}
+.. cmd:: Print All.
 
-\subsection[\tt Print All.]{\tt Print All.\comindex{Print All}}
 This command displays information about the current state of the
 environment, including sections and modules.
 
-\begin{Variants}
-\item {\tt Inspect \num.}\comindex{Inspect}\\
-This command displays the {\num} last objects of the current
-environment, including sections and modules.
-\item {\tt Print Section {\ident}.}\comindex{Print Section}\\
-should correspond to a currently open section, this command
-displays the objects defined since the beginning of this section.
-% Discontinued
-%% \item {\tt Print.}\comindex{Print}\\
-%% This command displays the axioms and variables declarations in the
-%% environment as well as the constants defined since the last variable
-%% was introduced.
-\end{Variants}
 
-\section{Flags, Options and Tables}
+Variants:
 
-{\Coq} configurability is based on flags (e.g. {\tt Set Printing All} in
-Section~\ref{SetPrintingAll}), options (e.g. {\tt Set Printing Width
-  {\integer}} in Section~\ref{SetPrintingWidth}), or tables (e.g. {\tt
-  Add Printing Record {\ident}}, in Section~\ref{AddPrintingLet}). The
-names of flags, options and tables are made of non-empty sequences of
-identifiers (conventionally with capital initial letter). The general
-commands handling flags, options and tables are given below.
 
-\subsection[\tt Set {\rm\sl flag}.]{\tt Set {\rm\sl flag}.\comindex{Set}}
-This command switches {\rm\sl flag} on. The original state of
-{\rm\sl flag} is restored when the current module ends.
+.. cmdv:: Inspect @num.
 
-\begin{Variants}
-\item {\tt Local Set {\rm\sl flag}.}\\
-This command switches {\rm\sl flag} on. The original state of
-{\rm\sl flag} is restored when the current \emph{section} ends.
-\item {\tt Global Set {\rm\sl flag}.}\\
-This command switches {\rm\sl flag} on. The original state of
-{\rm\sl flag} is \emph{not} restored at the end of the module. Additionally,
-if set in a file, {\rm\sl flag} is switched on when the file is
-{\tt Require}-d.
-\end{Variants}
+This command displays the :n:`@num` last objects of the
+current environment, including sections and modules.
 
-\subsection[\tt Unset {\rm\sl flag}.]{\tt Unset {\rm\sl flag}.\comindex{Unset}}
-This command switches {\rm\sl flag} off. The original state of {\rm\sl flag}
-is restored when the current module ends.
+.. cmdv:: Print Section @ident.
 
-\begin{Variants}
-\item {\tt Local Unset {\rm\sl flag}.\comindex{Local Unset}}\\
-This command switches {\rm\sl flag} off. The original state of {\rm\sl flag}
-is restored when the current \emph{section} ends.
-\item {\tt Global Unset {\rm\sl flag}.\comindex{Global Unset}}\\
-This command switches {\rm\sl flag} off.  The original state of
-{\rm\sl flag} is \emph{not} restored at the end of the module. Additionally,
-if set in a file, {\rm\sl flag} is switched off when the file is
-{\tt Require}-d.
-\end{Variants}
+The name :n:`@ident` should correspond to a currently open section,
+this command displays the objects defined since the beginning of this
+section.
 
-\subsection[\tt Test {\rm\sl flag}.]{\tt Test {\rm\sl flag}.\comindex{Test}}
-This command prints whether {\rm\sl flag} is on or off.
 
-\subsection[\tt Set {\rm\sl option} {\rm\sl value}.]{\tt Set {\rm\sl option} {\rm\sl value}.\comindex{Set}}
-This command sets {\rm\sl option} to {\rm\sl value}. The original value of
-{\rm\sl option} is restored when the current module ends.
+.. _flags-options-tables:
 
-\begin{Variants}
-\item {\tt Local Set {\rm\sl option} {\rm\sl value}.\comindex{Local Set}}
-This command sets {\rm\sl option} to {\rm\sl value}. The original value of
-{\rm\sl option} is restored at the end of the module.
-\item {\tt Global Set {\rm\sl option} {\rm\sl value}.\comindex{Global Set}}
-This command sets {\rm\sl option} to {\rm\sl value}. The original value of
-{\rm\sl option} is \emph{not} restored at the end of the module. Additionally,
-if set in a file, {\rm\sl option} is set to {\rm\sl value} when the file is
-{\tt Require}-d.
-\end{Variants}
+Flags, Options and Tables
+-----------------------------
 
-\subsection[\tt Unset {\rm\sl option}.]{\tt Unset {\rm\sl option}.\comindex{Unset}}
-This command resets {\rm\sl option} to its default value.
+|Coq| configurability is based on flags (e.g. Set Printing All in
+Section :ref:`TODO-2.9-printing-full`), options (e.g. ``Set Printing Widthinteger`` in Section
+:ref:`TODO-6.9.6-set-printing-width`), or tables (e.g. ``Add Printing Record ident``, in Section
+:ref:`TODO-2.2.4-add-printing-record`). The names of flags, options and tables are made of non-empty sequences of identifiers
+(conventionally with capital initial
+letter). The general commands handling flags, options and tables are
+given below.
 
-\begin{Variants}
-\item {\tt Local Unset {\rm\sl option}.\comindex{Local Unset}}\\
-This command resets {\rm\sl option} to its default value. The original state of {\rm\sl option}
-is restored when the current \emph{section} ends.
-\item {\tt Global Unset {\rm\sl option}.\comindex{Global Unset}}\\
-This command resets {\rm\sl option} to its default value.  The original state of
-{\rm\sl option} is \emph{not} restored at the end of the module. Additionally,
-if unset in a file, {\rm\sl option} is reset to its default value when the file is
-{\tt Require}-d.
-\end{Variants}
+.. TODO : flag is not a syntax entry
 
-\subsection[\tt Test {\rm\sl option}.]{\tt Test {\rm\sl option}.\comindex{Test}}
-This command prints the current value of {\rm\sl option}.
+.. cmd:: Set @flag.
 
-\subsection{Tables}
-The general commands for tables are {\tt Add {\rm\sf table} {\rm\sl
-    value}}, {\tt Remove {\rm\sf table} {\rm\sl value}}, {\tt Test
-    {\rm\sf table}}, {\tt Test {\rm\sf table} for {\rm\sl value}} and
-  {\tt Print Table {\rm\sf table}}.
+This command switches :n:`@flag` on. The original state of :n:`@flag` is restored
+when the current module ends.
 
-\subsection[\tt Print Options.]{\tt Print Options.\comindex{Print Options}}
+
+Variants:
+
+
+.. cmdv:: Local Set @flag.
+
+This command switches :n:`@flag` on. The original state
+of :n:`@flag` is restored when the current *section* ends.
+
+.. cmdv:: Global Set @flag.
+
+This command switches :n:`@flag` on. The original state
+of :n:`@flag` is *not* restored at the end of the module. Additionally, if
+set in a file, :n:`@flag` is switched on when the file is `Require`-d.
+
+
+
+.. cmd:: Unset @flag.
+
+This command switches :n:`@flag` off. The original state of :n:`@flag` is restored
+when the current module ends.
+
+
+Variants:
+
+.. cmdv:: Local Unset @flag.
+
+This command switches :n:`@flag` off. The original
+state of :n:`@flag` is restored when the current *section* ends.
+
+.. cmdv:: Global Unset @flag.
+
+This command switches :n:`@flag` off. The original
+state of :n:`@flag` is *not* restored at the end of the module. Additionally,
+if set in a file, :n:`@flag` is switched off when the file is `Require`-d.
+
+
+
+.. cmd:: Test @flag.
+
+This command prints whether :n:`@flag` is on or off.
+
+
+.. cmd:: Set @option @value.
+
+This command sets :n:`@option` to :n:`@value`. The original value of ` option` is
+restored when the current module ends.
+
+
+Variants:
+
+.. TODO : option and value are not syntax entries
+
+.. cmdv:: Local Set @option @value.
+
+This command sets :n:`@option` to :n:`@value`. The
+original value of :n:`@option` is restored at the end of the module.
+
+.. cmdv:: Global Set @option @value.
+
+This command sets :n:`@option` to :n:`@value`. The
+original value of :n:`@option` is *not* restored at the end of the module.
+Additionally, if set in a file, :n:`@option` is set to value when the file
+is `Require`-d.
+
+
+
+.. cmd::  Unset @option.
+
+This command resets option to its default value.
+
+
+Variants:
+
+
+.. cmdv:: Local Unset @option.
+
+This command resets :n:`@option` to its default
+value. The original state of :n:`@option` is restored when the current
+*section* ends.
+
+.. cmdv:: Global Unset @option.
+
+This command resets :n:`@option` to its default
+value. The original state of :n:`@option` is *not* restored at the end of the
+module. Additionally, if unset in a file, :n:`@option` is reset to its
+default value when the file is `Require`-d.
+
+
+
+.. cmd:: Test @option.
+
+This command prints the current value of :n:`@option`.
+
+
+.. TODO : table is not a syntax entry
+
+.. cmd:: Add @table @value.
+.. cmd:: Remove @table @value.
+.. cmd:: Test @table @value.
+.. cmd:: Test @table for @value.
+.. cmd:: Print Table @table.
+
+These are  general commands for tables.
+
+.. cmd:: Print Options.
+
 This command lists all available flags, options and tables.
 
-\begin{Variants}
-\item {\tt Print Tables}.\comindex{Print Tables}\\
-This is a synonymous of {\tt Print Options.}
-\end{Variants}
 
-\section{Requests to the environment}
-
-\subsection[\tt Check {\term}.]{\tt Check {\term}.\label{Check}
-\comindex{Check}}
-This command displays the type of {\term}. When called in proof mode,
-the term is checked in the local context of the current subgoal.
-
-\begin{Variants}
-\item {\tt selector: Check {\term}}.\\
-specifies on which subgoal to perform typing (see
-  Section~\ref{tactic-syntax}).
-\end{Variants}
+Variants:
 
 
-\subsection[\tt Eval {\rm\sl convtactic} in {\term}.]{\tt Eval {\rm\sl convtactic} in {\term}.\comindex{Eval}}
+.. cmdv:: Print Tables.
 
-This command performs the specified reduction on {\term}, and displays
+This is a synonymous of ``Print Options``.
+
+
+.. _requests-to-the-environment:
+
+Requests to the environment
+-------------------------------
+
+.. cmd:: Check @term.
+
+This command displays the type of :n:`@term`. When called in proof mode, the
+term is checked in the local context of the current subgoal.
+
+
+Variants:
+
+.. TODO : selector is not a syntax entry
+
+.. cmdv:: @selector: Check @term.
+
+specifies on which subgoal to perform typing
+(see Section :ref:`TODO-8.1-invocation-of-tactics`).
+
+.. TODO : convtactic is not a syntax entry
+
+.. cmd:: Eval @convtactic in @term.
+
+This command performs the specified reduction on :n:`@term`, and displays
 the resulting term with its type. The term to be reduced may depend on
 hypothesis introduced in the first subgoal (if a proof is in
 progress).
 
-\SeeAlso Section~\ref{Conversion-tactics}.
 
-\subsection[\tt Compute {\term}.]{\tt Compute {\term}.\comindex{Compute}}
+See also: Section :ref:`TODO-8.7-performing-computations`.
 
-This command performs a call-by-value evaluation of {\term} by using
-the bytecode-based virtual machine. It is a shortcut for
-{\tt Eval vm\_compute in {\term}}.
 
-\SeeAlso Section~\ref{Conversion-tactics}.
+.. cmd:: Compute @term.
 
-\subsection[\tt Extraction \term.]{\tt Extraction \term.\label{ExtractionTerm}
-\comindex{Extraction}}
-This command displays the extracted term from
-{\term}. The extraction is processed according to the distinction
-between {\Set} and {\Prop}; that is to say, between logical and
-computational content (see Section~\ref{Sorts}). The extracted term is
-displayed in {\ocaml} syntax, where global identifiers are still
-displayed as in \Coq\ terms.
+This command performs a call-by-value evaluation of term by using the
+bytecode-based virtual machine. It is a shortcut for ``Eval vm_compute in``
+:n:`@term`.
 
-\begin{Variants}
-\item \texttt{Recursive Extraction} {\qualid$_1$} \ldots{} {\qualid$_n$}{\tt .}\\
-  Recursively extracts all the material needed for the extraction of
-  global {\qualid$_1$}, \ldots, {\qualid$_n$}.
-\end{Variants}
 
-\SeeAlso Chapter~\ref{Extraction}.
+See also: Section :ref:`TODO-8.7-performing-computations`.
 
-\subsection[\tt Print Assumptions {\qualid}.]{\tt Print Assumptions {\qualid}.\comindex{Print Assumptions}}
-\label{PrintAssumptions}
+
+.. cmd::Extraction @term.
+
+This command displays the extracted term from :n:`@term`. The extraction is
+processed according to the distinction between ``Set`` and ``Prop``; that is
+to say, between logical and computational content (see Section
+:ref:`TODO-4.1.1-sorts`). The extracted term is displayed in OCaml
+syntax,
+where global identifiers are still displayed as in |Coq| terms.
+
+
+Variants:
+
+
+.. cmdv:: Recursive Extraction {+ @qualid }.
+
+Recursively extracts all
+the material needed for the extraction of the qualified identifiers.
+
+
+See also: Chapter ref:`TODO-23-chapter-extraction`.
+
+
+.. cmd:: Print Assumptions @qualid.
 
 This commands display all the assumptions (axioms, parameters and
-variables) a theorem or definition depends on.  Especially, it informs
+variables) a theorem or definition depends on. Especially, it informs
 on the assumptions with respect to which the validity of a theorem
 relies.
 
-\begin{Variants}
-\item \texttt{\tt Print Opaque Dependencies {\qualid}.
-  \comindex{Print Opaque Dependencies}}\\
-  Displays the set of opaque constants {\qualid} relies on in addition
-  to the assumptions.
-\item \texttt{\tt Print Transparent Dependencies {\qualid}.
-  \comindex{Print Transparent Dependencies}}\\
-  Displays the set of transparent constants {\qualid} relies on in addition
-  to the assumptions.
-\item \texttt{\tt Print All Dependencies {\qualid}.
-  \comindex{Print All Dependencies}}\\
-  Displays all assumptions and constants {\qualid} relies on.
-\end{Variants}
 
-\subsection[\tt Search {\qualid}.]{\tt Search {\qualid}.\comindex{Search}}
+Variants:
+
+
+.. cmdv:: Print Opaque Dependencies @qualid.
+
+Displays the set of opaque constants :n:`@qualid` relies on in addition to
+the assumptions.
+
+.. cmdv:: Print Transparent Dependencies @qualid.
+
+Displays the set of
+transparent constants :n:`@qualid` relies on in addition to the assumptions.
+
+.. cmdv:: Print All Dependencies @qualid.
+
+Displays all assumptions and constants :n:`@qualid` relies on.
+
+
+
+.. cmd:: Search @qualid.
+
 This command displays the name and type of all objects (hypothesis of
 the current goal, theorems, axioms, etc) of the current context whose
-statement contains \qualid. This command is useful to remind the user
+statement contains :n:`@qualid`. This command is useful to remind the user
 of the name of library lemmas.
 
-\begin{ErrMsgs}
-\item \errindex{The reference \qualid\ was not found in the current
-environment}\\
-    There is no constant in the environment named \qualid.
-\end{ErrMsgs}
 
-\newcommand{\termpatternorstr}{{\termpattern}\textrm{\textsl{-}}{\str}}
+Error messages:
 
-\begin{Variants}
-\item {\tt Search {\str}.}
 
-If {\str} is a valid identifier, this command displays the name and type
-of all objects (theorems, axioms, etc) of the current context whose
-name contains {\str}. If {\str} is a notation's string denoting some
-reference {\qualid} (referred to by its main symbol as in \verb="+"=
-or by its notation's string as in \verb="_ + _"= or \verb="_ 'U' _"=, see
-Section~\ref{Notation}), the command works like {\tt Search
-{\qualid}}.
+.. exn:: The reference @qualid was not found in the current environment
 
-\item {\tt Search {\str}\%{\delimkey}.}
+There is no constant in the environment named qualid.
 
-The string {\str} must be a notation or the main symbol of a notation
-which is then interpreted in the scope bound to the delimiting key
-{\delimkey} (see Section~\ref{scopechange}).
+Variants:
 
-\item {\tt Search {\termpattern}.}
+.. cmdv:: Search @string.
 
-This searches for all statements or types of definition that contains
-a subterm that matches the pattern {\termpattern} (holes of the
-pattern are either denoted by ``{\texttt \_}'' or
-by ``{\texttt ?{\ident}}'' when non linear patterns are expected).
+If :n:`@string` is a valid identifier, this command
+displays the name and type of all objects (theorems, axioms, etc) of
+the current context whose name contains string. If string is a
+notation’s string denoting some reference :n:`@qualid` (referred to by its
+main symbol as in `"+"` or by its notation’s string as in `"_ + _"` or
+`"_ 'U' _"`, see Section :ref:`TODO-12.1-notations`), the command works like ``Search`` :n:`@qualid`.
 
-\item {\tt Search \nelist{\zeroone{-}{\termpatternorstr}}{}.}\\
+.. cmdv:: Search @string%@key.
 
-\noindent where {\termpatternorstr} is a
-{\termpattern} or a {\str}, or a {\str} followed by a scope
-delimiting key {\tt \%{\delimkey}}.
+The string string must be a notation or the main
+symbol of a notation which is then interpreted in the scope bound to
+the delimiting key :n:`@key` (see Section :ref:`TODO-12.2.2-local-interpretation-rules-for-notations`).
 
-This generalization of {\tt Search} searches for all objects
-whose statement or type contains a subterm matching {\termpattern} (or
-{\qualid} if {\str} is the notation for a reference {\qualid}) and
-whose name contains all {\str} of the request that correspond to valid
-identifiers. If a {\termpattern} or a {\str} is prefixed by ``-'', the
-search excludes the objects that mention that {\termpattern} or that
-{\str}.
+.. cmdv:: Search @term_pattern.
 
-\item
-  {\tt Search} \nelist{{\termpatternorstr}}{}
-    {\tt inside} {\module$_1$} \ldots{} {\module$_n$}{\tt .}
+This searches for all statements or types of
+definition that contains a subterm that matches the pattern
+`term_pattern` (holes of the pattern are either denoted by `_` or by
+`?ident` when non linear patterns are expected).
 
-This restricts the search to constructions defined in modules
-{\module$_1$} \ldots{} {\module$_n$}.
+.. cmdv:: Search { + [-]@term_pattern_string }.
 
-\item
-  {\tt Search \nelist{{\termpatternorstr}}{}
-     outside {\module$_1$}...{\module$_n$}.}
+where
+:n:`@term_pattern_string` is a term_pattern, a string, or a string followed
+by a scope delimiting key `%key`.  This generalization of ``Search`` searches
+for all objects whose statement or type contains a subterm matching
+:n:`@term_pattern` (or :n:`@qualid` if :n:`@string` is the notation for a reference
+qualid) and whose name contains all string of the request that
+correspond to valid identifiers. If a term_pattern or a string is
+prefixed by `-`, the search excludes the objects that mention that
+term_pattern or that string.
 
-This restricts the search to constructions not defined in modules
-{\module$_1$} \ldots{} {\module$_n$}.
+.. cmdv:: Search @term_pattern_string … @term_pattern_string inside {+ @qualid } .
 
-\item {\tt selector: Search \nelist{\zeroone{-}{\termpatternorstr}}{}.}
+This restricts the search to constructions defined in the modules named by the given :n:`qualid` sequence.
 
-  This specifies the goal on which to search hypothesis (see
-  Section~\ref{tactic-syntax}). By default the 1st goal is searched.
-  This variant can be combined with other variants presented here.
-\end{Variants}
+.. cmdv:: Search @term_pattern_string … @term_pattern_string outside {+ @qualid }.
 
-\examples
+This restricts the search to constructions not defined in the modules named by the given :n:`qualid` sequence.
 
-\begin{coq_example*}
-Require Import ZArith.
-\end{coq_example*}
-\begin{coq_example}
-Search Z.mul Z.add "distr".
-Search "+"%Z "*"%Z "distr" -positive -Prop.
-Search (?x * _ + ?x * _)%Z outside OmegaLemmas.
-\end{coq_example}
+.. cmdv:: @selector: Search [-]@term_pattern_string … [-]@term_pattern_string.
 
-\Warning \comindex{SearchAbout} Up to {\Coq} version 8.4, {\tt Search}
-had the behavior of current {\tt SearchHead} and the behavior of
-current {\tt Search} was obtained with command {\tt SearchAbout}. For
-compatibility, the deprecated name {\tt SearchAbout} can still be used
-as a synonym of {\tt Search}. For compatibility, the list of objects to
-search when using {\tt SearchAbout} may also be enclosed by optional
-{\tt [ ]} delimiters.
+This specifies the goal on which to search hypothesis (see
+Section :ref:`TODO-8.1-invocation-of-tactics`).
+By default the 1st goal is searched. This variant can
+be combined with other variants presented here.
 
-\subsection[\tt SearchHead {\term}.]{\tt SearchHead {\term}.\comindex{SearchHead}}
+
+.. coqtop:: in
+
+   Require Import ZArith.
+
+.. coqtop:: all
+
+   Search Z.mul Z.add "distr".
+
+   Search "+"%Z "*"%Z "distr" -positive -Prop.
+
+   Search (?x * _ + ?x * _)%Z outside OmegaLemmas.
+
+.. note:: Up to |Coq| version 8.4, ``Search`` had the behavior of current
+``SearchHead`` and the behavior of current Search was obtained with
+command ``SearchAbout``. For compatibility, the deprecated name
+SearchAbout can still be used as a synonym of Search. For
+compatibility, the list of objects to search when using ``SearchAbout``
+may also be enclosed by optional[ ] delimiters.
+
+
+.. cmd:: SearchHead @term.
+
 This command displays the name and type of all hypothesis of the
 current goal (if any) and theorems of the current context whose
-statement's conclusion has the form {\tt ({\term} t1 ..
-  tn)}.  This command is useful to remind the user of the name of
-library lemmas.
+statement’s conclusion has the form `(term t1 .. tn)`. This command is
+useful to remind the user of the name of library lemmas.
 
-\begin{coq_eval}
-Reset Initial.
-\end{coq_eval}
 
-\begin{coq_example}
-SearchHead le.
-SearchHead (@eq bool).
-\end{coq_example}
 
-\begin{Variants}
-\item
-{\tt SearchHead} {\term} {\tt inside} {\module$_1$} \ldots{} {\module$_n$}{\tt .}
+.. coqtop:: reset all
 
-This restricts the search to constructions defined in modules
-{\module$_1$} \ldots{} {\module$_n$}.
+   SearchHead le.
 
-\item {\tt SearchHead} {\term} {\tt outside} {\module$_1$} \ldots{} {\module$_n$}{\tt .}
+   SearchHead (@eq bool).
 
-This restricts the search to constructions not defined in modules
-{\module$_1$} \ldots{} {\module$_n$}.
 
-\begin{ErrMsgs}
-\item \errindex{Module/section \module{} not found}
-No module \module{} has been required (see Section~\ref{Require}).
-\end{ErrMsgs}
+Variants:
 
-\item {\tt selector: SearchHead {\term}.}
+.. cmdv:: SearchHead @term inside {+ @qualid }.
 
-  This specifies the goal on which to search hypothesis (see
-  Section~\ref{tactic-syntax}). By default the 1st goal is searched.
-  This variant can be combined with other variants presented here.
+This restricts the search to constructions defined in the modules named by the given :n:`qualid` sequence.
 
-\end{Variants}
+.. cmdv:: SearchHead term outside {+ @qualid }.
 
-\Warning Up to {\Coq} version 8.4, {\tt SearchHead} was named {\tt Search}.
+This restricts the search to constructions not defined in the modules named by the given :n:`qualid` sequence.
 
-\subsection[\tt SearchPattern {\termpattern}.]{\tt SearchPattern {\term}.\comindex{SearchPattern}}
+Error messages:
+
+.. exn:: Module/section @qualid not found
+
+No module :n:`@qualid` has been required
+(see Section :ref:`TODO-6.5.1-require`).
+
+.. cmdv:: @selector: SearchHead @term.
+
+This specifies the goal on which to
+search hypothesis (see Section :ref:`TODO-8.1-invocation-of-tactics`).
+By default the 1st goal is
+searched. This variant can be combined with other variants presented
+here.
+
+.. note:: Up to |Coq| version 8.4, ``SearchHead`` was named ``Search``.
+
+
+.. cmd:: SearchPattern @term.
 
 This command displays the name and type of all hypothesis of the
-current goal (if any) and theorems of the current context whose statement's
-conclusion or last hypothesis and conclusion matches the expression
-{\term} where holes in the latter are denoted by ``{\texttt \_}''. It
-is a variant of {\tt Search
-  {\termpattern}} that does not look for subterms but searches for
-statements whose conclusion has exactly the expected form, or whose
-statement finishes by the given series of hypothesis/conclusion.
+current goal (if any) and theorems of the current context whose
+statement’s conclusion or last hypothesis and conclusion matches the
+expressionterm where holes in the latter are denoted by `_`.
+It is a
+variant of Search @term_pattern that does not look for subterms but
+searches for statements whose conclusion has exactly the expected
+form, or whose statement finishes by the given series of
+hypothesis/conclusion.
 
-\begin{coq_example*}
-Require Import Arith.
-\end{coq_example*}
-\begin{coq_example}
-SearchPattern (_ + _ = _ + _).
-SearchPattern (nat -> bool).
-SearchPattern (forall l : list _, _ l l).
-\end{coq_example}
+.. coqtop:: in
+
+   Require Import Arith.
+
+.. coqtop:: all
+
+    SearchPattern (_ + _ = _ + _).
+
+    SearchPattern (nat -> bool).
+
+    SearchPattern (forall l : list _, _ l l).
 
 Patterns need not be linear: you can express that the same expression
-must occur in two places by using pattern variables `{\texttt
-?{\ident}}''.
+must occur in two places by using pattern variables `?ident`.
 
-\begin{coq_example}
-SearchPattern (?X1 + _ = _ + ?X1).
-\end{coq_example}
 
-\begin{Variants}
-\item {\tt SearchPattern {\term} inside
-{\module$_1$} \ldots{} {\module$_n$}.}
+.. coqtop:: all
 
-This restricts the search to constructions defined in modules
-{\module$_1$} \ldots{} {\module$_n$}.
+   SearchPattern (?X1 + _ = _ + ?X1).
 
-\item {\tt SearchPattern {\term} outside {\module$_1$} \ldots{} {\module$_n$}.}
+Variants:
 
-This restricts the search to constructions not defined in modules
-{\module$_1$} \ldots{} {\module$_n$}.
 
-\item {\tt selector: SearchPattern {\term}.}
+.. cmdv:: SearchPattern @term inside {+ @qualid } .
 
-  This specifies the goal on which to search hypothesis (see
-  Section~\ref{tactic-syntax}). By default the 1st goal is searched.
-  This variant can be combined with other variants presented here.
+This restricts the search to constructions defined in the modules named by the given :n:`qualid` sequence.
 
-\end{Variants}
+.. cmdv:: SearchPattern @term outside {+ @qualid }.
 
-\subsection[\tt SearchRewrite {\term}.]{\tt SearchRewrite {\term}.\comindex{SearchRewrite}}
+This restricts the search to constructions not defined in the modules named by the given :n:`qualid` sequence.
+
+.. cmdv:: @selector: SearchPattern @term.
+
+This specifies the goal on which to
+search hypothesis (see Section :ref:`TODO-8.1-invocation-of-tactics`). By default the 1st goal is
+searched. This variant can be combined with other variants presented
+here.
+
+
+
+.. cmdv:: SearchRewrite @term.
 
 This command displays the name and type of all hypothesis of the
 current goal (if any) and theorems of the current context whose
-statement's conclusion is an equality of which one side matches the
-expression {\term}. Holes in {\term} are denoted by ``{\texttt \_}''.
+statement’s conclusion is an equality of which one side matches the
+expression term. Holes in term are denoted by “_”.
 
-\begin{coq_example}
-Require Import Arith.
-SearchRewrite (_ + _ + _).
-\end{coq_example}
+.. coqtop:: in
 
-\begin{Variants}
-\item {\tt SearchRewrite {\term} inside
-{\module$_1$} \ldots{} {\module$_n$}.}
+    Require Import Arith.
 
-This restricts the search to constructions defined in modules
-{\module$_1$} \ldots{} {\module$_n$}.
+.. coqtop:: all
 
-\item {\tt SearchRewrite {\term} outside {\module$_1$} \ldots{} {\module$_n$}.}
+    SearchRewrite (_ + _ + _).
 
-This restricts the search to constructions not defined in modules
-{\module$_1$} \ldots{} {\module$_n$}.
-
-\item {\tt selector: SearchRewrite {\term}.}
-
-  This specifies the goal on which to search hypothesis (see
-  Section~\ref{tactic-syntax}). By default the 1st goal is searched.
-  This variant can be combined with other variants presented here.
-
-\end{Variants}
-
-\subsubsection{Nota Bene:}
-For the {\tt Search}, {\tt SearchHead}, {\tt SearchPattern} and
-{\tt SearchRewrite} queries, it is possible to globally filter
-the search results via the command
-{\tt Add Search Blacklist "substring1"}.
-A lemma whose fully-qualified name contains any of the declared substrings
-will be removed from the search results.
-The default blacklisted substrings are {\tt
-  "\_subproof" "Private\_"}. The command {\tt Remove Search Blacklist
-  ...} allows expunging this blacklist.
-
-% \begin{tabbing}
-% \ \ \ \ \=11.\ \=\kill
-% \>1.\>$A=B\mx{ if }A\stackrel{\bt{}\io{}}{\lra{}}B$\\
-% \>2.\>$\sa{}x:A.B=\sa{}y:A.B[x\la{}y]\mx{ if }y\not\in{}FV(\sa{}x:A.B)$\\
-% \>3.\>$\Pi{}x:A.B=\Pi{}y:A.B[x\la{}y]\mx{ if }y\not\in{}FV(\Pi{}x:A.B)$\\
-% \>4.\>$\sa{}x:A.B=\sa{}x:B.A\mx{ if }x\not\in{}FV(A,B)$\\
-% \>5.\>$\sa{}x:(\sa{}y:A.B).C=\sa{}x:A.\sa{}y:B[y\la{}x].C[x\la{}(x,y)]$\\
-% \>6.\>$\Pi{}x:(\sa{}y:A.B).C=\Pi{}x:A.\Pi{}y:B[y\la{}x].C[x\la{}(x,y)]$\\
-% \>7.\>$\Pi{}x:A.\sa{}y:B.C=\sa{}y:(\Pi{}x:A.B).(\Pi{}x:A.C[y\la{}(y\sm{}x)]$\\
-% \>8.\>$\sa{}x:A.unit=A$\\
-% \>9.\>$\sa{}x:unit.A=A[x\la{}tt]$\\
-% \>10.\>$\Pi{}x:A.unit=unit$\\
-% \>11.\>$\Pi{}x:unit.A=A[x\la{}tt]$
-% \end{tabbing}
-
-% For more informations about the exact working of this command, see
-% \cite{Del97}.
-
-\subsection[\tt Locate {\qualid}.]{\tt Locate {\qualid}.\comindex{Locate}
-\label{Locate}}
-This command displays the full name of objects whose name is a prefix of the
-qualified identifier {\qualid}, and consequently the \Coq\ module in which they
-are defined. It searches for objects from the different qualified name spaces of
-{\Coq}: terms, modules, Ltac, etc.
-
-\begin{coq_eval}
-(*************** The last line should produce **************************)
-(*********** Error: I.Dont.Exist not a defined object ******************)
-\end{coq_eval}
-\begin{coq_eval}
-Set Printing Depth 50.
-\end{coq_eval}
-\begin{coq_example}
-Locate nat.
-Locate Datatypes.O.
-Locate Init.Datatypes.O.
-Locate Coq.Init.Datatypes.O.
-Locate I.Dont.Exist.
-\end{coq_example}
-
-\begin{Variants}
-\item {\tt Locate Term {\qualid}.}\comindex{Locate Term}\\
-  As {\tt Locate} but restricted to terms.
-
-\item {\tt Locate Module {\qualid}.}
-  As {\tt Locate} but restricted to modules.
-
-\item {\tt Locate Ltac {\qualid}.}\comindex{Locate Ltac}\\
-  As {\tt Locate} but restricted to tactics.
-\end{Variants}
+Variants:
 
 
-\SeeAlso Section \ref{LocateSymbol}
+.. cmdv:: SearchRewrite term inside {+ @qualid }.
 
-\section{Loading files}
+This restricts the search to constructions defined in the modules named by the given :n:`qualid` sequence.
 
-\Coq\ offers the possibility of loading different
-parts of a whole development stored in separate files. Their contents
-will be loaded as if they were entered from the keyboard. This means
-that the loaded files are ASCII files containing sequences of commands
-for \Coq's toplevel. This kind of file is called a {\em script} for
-\Coq\index{Script file}. The standard (and default) extension of
-\Coq's script files is {\tt .v}.
+.. cmdv:: SearchRewrite @term outside {+ @qualid }.
 
-\subsection[\tt Load {\ident}.]{\tt Load {\ident}.\comindex{Load}\label{Load}}
-This command loads the file named {\ident}{\tt .v}, searching
-successively in each of the directories specified in the {\em
-  loadpath}. (see Section~\ref{loadpath})
+This restricts the search to constructions not defined in the modules named by the given :n:`qualid` sequence.
 
-Files loaded this way cannot leave proofs open, and neither the {\tt
-  Load} command can be use inside a proof.
+.. cmdv:: @selector: SearchRewrite @term.
 
-\begin{Variants}
-\item {\tt Load {\str}.}\label{Load-str}\\
-  Loads the file denoted by the string {\str}, where {\str} is any
-  complete filename. Then the \verb.~. and {\tt ..}
-  abbreviations are allowed as well as shell variables. If no
-  extension is specified, \Coq\ will use the default extension {\tt
-    .v}
-\item {\tt Load Verbose {\ident}.},
-  {\tt Load Verbose {\str}}\\
-  \comindex{Load Verbose}
-  Display, while loading, the answers of \Coq\ to each command
-  (including tactics) contained in the loaded file
-  \SeeAlso Section~\ref{Begin-Silent}
-\end{Variants}
+This specifies the goal on which to
+search hypothesis (see Section :ref:`TODO-8.1-invocation-of-tactics`). By default the 1st goal is
+searched. This variant can be combined with other variants presented
+here.
 
-\begin{ErrMsgs}
-\item \errindex{Can't find file {\ident} on loadpath}
-\item \errindex{Load is not supported inside proofs}
-\item \errindex{Files processed by Load cannot leave open proofs}
-\end{ErrMsgs}
+.. note::
 
-\section[Compiled files]{Compiled files\label{compiled}\index{Compiled files}}
+   For the ``Search``, ``SearchHead``, ``SearchPattern`` and ``SearchRewrite``
+   queries, it
+   is possible to globally filter the search results via the command
+   ``Add Search Blacklist`` :n:`@substring`. A lemma whose fully-qualified name
+   contains any of the declared substrings will be removed from the
+   search results. The default blacklisted substrings are ``_subproof``
+   ``Private_``. The command ``Remove Search Blacklist ...`` allows expunging
+   this blacklist.
+
+
+.. cmd:: Locate @qualid.
+
+This command displays the full name of objects whose name is a prefix
+of the qualified identifier :n:`@qualid`, and consequently the |Coq| module in
+which they are defined. It searches for objects from the different
+qualified name spaces of |Coq|: terms, modules, Ltac, etc.
+
+.. coqtop:: none
+
+    Set Printing Depth 50.
+
+.. coqtop:: all
+
+    Locate nat.
+
+    Locate Datatypes.O.
+
+    Locate Init.Datatypes.O.
+
+    Locate Coq.Init.Datatypes.O.
+
+    Locate I.Dont.Exist.
+
+Variants:
+
+
+.. cmdv:: Locate Term @qualid.
+
+As Locate but restricted to terms.
+
+.. cmdv:: Locate Module @qualid.
+
+As Locate but restricted to modules.
+
+.. cmdv:: Locate Ltac @qualid.
+
+As Locate but restricted to tactics.
+
+
+See also: Section :ref:`TODO-12.1.10-LocateSymbol`
+
+
+.. _loading-files:
+
+Loading files
+-----------------
+
+|Coq| offers the possibility of loading different parts of a whole
+development stored in separate files. Their contents will be loaded as
+if they were entered from the keyboard. This means that the loaded
+files are ASCII files containing sequences of commands for |Coq|’s
+toplevel. This kind of file is called a *script* for |Coq|. The standard
+(and default) extension of |Coq|’s script files is .v.
+
+
+.. cmd:: Load @ident.
+
+This command loads the file named :n:`ident`.v, searching successively in
+each of the directories specified in the *loadpath*. (see Section
+:ref:`TODO-2.6.3-libraries-and-filesystem`)
+
+Files loaded this way cannot leave proofs open, and the ``Load``
+command cannot be used inside a proof either.
+
+Variants:
+
+
+.. cmdv:: Load @string.
+
+Loads the file denoted by the string :n:`@string`, where
+string is any complete filename. Then the `~` and .. abbreviations are
+allowed as well as shell variables. If no extension is specified, |Coq|
+will use the default extension ``.v``.
+
+.. cmdv:: Load Verbose @ident.
+
+.. cmdv:: Load Verbose @string.
+
+Display, while loading,
+the answers of |Coq| to each command (including tactics) contained in
+the loaded file See also: Section :ref:`TODO-6.9.1-silent`.
+
+Error messages:
+
+.. exn:: Can’t find file @ident on loadpath
+
+.. exn:: Load is not supported inside proofs
+
+.. exn:: Files processed by Load cannot leave open proofs
+
+.. _compiled-files:
+
+Compiled files
+------------------
 
 This section describes the commands used to load compiled files (see
-Chapter~\ref{Addoc-coqc} for documentation on how to compile a file).
-A compiled file is a particular case of module called {\em library file}.
+Chapter :ref:`TODO-14-coq-commands` for documentation on how to compile a file). A compiled
+file is a particular case of module called *library file*.
 
-%%%%%%%%%%%%
-% Import and Export described in RefMan-mod.tex
-% the minor difference (to avoid multiple Exporting of libraries) in
-% the treatment of normal modules and libraries by Export omitted
 
-\subsection[\tt Require {\qualid}.]{\tt Require {\qualid}.\label{Require}
-\comindex{Require}}
+.. cmd:: Require @qualid.
 
-This command looks in the loadpath for a file containing
-module {\qualid} and adds the corresponding module to the environment
-of {\Coq}. As library files have dependencies in other library files,
-the command {\tt Require {\qualid}} recursively requires all library
-files the module {\qualid} depends on and adds the corresponding modules to the
-environment of {\Coq} too. {\Coq} assumes that the compiled files have
-been produced by a valid {\Coq} compiler and their contents are then not
+This command looks in the loadpath for a file containing module :n:`@qualid`
+and adds the corresponding module to the environment of |Coq|. As
+library files have dependencies in other library files, the command
+``Require`` :n:`@qualid` recursively requires all library files the module
+qualid depends on and adds the corresponding modules to the
+environment of |Coq| too. |Coq| assumes that the compiled files have been
+produced by a valid |Coq| compiler and their contents are then not
 replayed nor rechecked.
 
-To locate the file in the file system, {\qualid} is decomposed under
-the form {\dirpath}{\tt .}{\textsl{ident}} and the file {\ident}{\tt
-.vo} is searched in the physical directory of the file system that is
-mapped in {\Coq} loadpath to the logical path {\dirpath} (see
-Section~\ref{loadpath}). The mapping between physical directories and
-logical names at the time of requiring the file must be consistent
-with the mapping used to compile the file. If several files match, one of them
-is picked in an unspecified fashion.
+To locate the file in the file system, :n:`@qualid` is decomposed under the
+form `dirpath.ident` and the file `ident.vo` is searched in the physical
+directory of the file system that is mapped in |Coq| loadpath to the
+logical path dirpath (see Section :ref:`TODO-2.6.3-libraries-and-filesystem`). The mapping between
+physical directories and logical names at the time of requiring the
+file must be consistent with the mapping used to compile the file. If
+several files match, one of them is picked in an unspecified fashion.
 
-\begin{Variants}
-\item {\tt Require Import {\qualid}.} \comindex{Require Import}
 
-  This loads and declares the module {\qualid} and its dependencies
-  then imports the contents of {\qualid} as described in
-  Section~\ref{Import}.
+Variants:
 
-  It does not import the modules on which {\qualid} depends unless
-  these modules were itself required in module {\qualid} using {\tt
-  Require Export}, as described below, or recursively required through
-  a sequence of {\tt Require Export}.
+.. cmdv:: Require Import @qualid.
 
-  If the module required has already been loaded, {\tt Require Import
-  {\qualid}} simply imports it, as {\tt Import {\qualid}} would.
+This loads and declares the module :n:`@qualid`
+and its dependencies then imports the contents of :n:`@qualid` as described
+in Section :ref:`TODO-2.5.8-import`.It does not import the modules on which
+qualid depends unless these modules were themselves required in module
+:n:`@qualid`
+using ``Require Export``, as described below, or recursively required
+through a sequence of ``Require Export``.  If the module required has
+already been loaded, ``Require Import`` :n:`@qualid` simply imports it, as ``Import``
+:n:`@qualid` would.
 
-\item {\tt Require Export {\qualid}.}
-  \comindex{Require Export}
+.. cmdv:: Require Export @qualid.
 
-  This command acts as {\tt Require Import} {\qualid}, but if a
-  further module, say {\it A}, contains a command {\tt Require
-  Export} {\it B}, then the command {\tt Require Import} {\it A}
-  also imports the module {\it B}.
+This command acts as ``Require Import`` :n:`@qualid`,
+but if a further module, say `A`, contains a command ``Require Export`` `B`,
+then the command ``Require Import`` `A` also imports the module `B.`
 
-\item {\tt Require \zeroone{Import {\sl |} Export}} {\qualid}$_1$ {\ldots} {\qualid}$_n${\tt .}
+.. cmdv:: Require [Import | Export] {+ @qualid }.
 
-  This loads the modules {\qualid}$_1$, \ldots, {\qualid}$_n$ and
-  their recursive dependencies. If {\tt Import} or {\tt Export} is
-  given, it also imports {\qualid}$_1$, \ldots, {\qualid}$_n$ and all
-  the recursive dependencies that were marked or transitively marked
-  as {\tt Export}.
+This loads the
+modules named by the :n:`qualid` sequence and their recursive
+dependencies. If
+``Import`` or ``Export`` is given, it also imports these modules and
+all the recursive dependencies that were marked or transitively marked
+as ``Export``.
 
-\item {\tt From {\dirpath} Require {\qualid}.}
-  \comindex{From Require}
+.. cmdv:: From @dirpath Require @qualid.
 
-  This command acts as {\tt Require}, but picks any library whose absolute name
-  is of the form {\tt{\dirpath}.{\dirpath'}.{\qualid}} for some {\dirpath'}.
-  This is useful to ensure that the {\qualid} library comes from a given
-  package by making explicit its absolute root.
+This command acts as ``Require``, but picks
+any library whose absolute name is of the form dirpath.dirpath’.qualid
+for some `dirpath’`. This is useful to ensure that the :n:`@qualid` library
+comes from a given package by making explicit its absolute root.
 
-\end{Variants}
 
-\begin{ErrMsgs}
 
-\item \errindex{Cannot load {\qualid}: no physical path bound to {\dirpath}}
+Error messages:
 
-\item \errindex{Cannot find library foo in loadpath}
+.. exn:: Cannot load qualid: no physical path bound to dirpath
 
-  The command did not find the file {\tt foo.vo}. Either {\tt
-    foo.v} exists but is not compiled or {\tt foo.vo} is in a directory
-  which is not in your {\tt LoadPath} (see Section~\ref{loadpath}).
+.. exn:: Cannot find library foo in loadpath
 
-\item \errindex{Compiled library {\ident}.vo makes inconsistent assumptions over library {\qualid}}
+The command did not find the
+file foo.vo. Either foo.v exists but is not compiled or foo.vo is in a
+directory which is not in your LoadPath (see Section :ref:`TODO-2.6.3-libraries-and-filesystem`).
 
-  The command tried to load library file {\ident}.vo that depends on
-  some specific version of library {\qualid} which is not the one
-  already loaded in the current {\Coq} session. Probably {\ident}.v
-  was not properly recompiled with the last version of the file
-  containing module {\qualid}.
+.. exn:: Compiled library ident.vo makes inconsistent assumptions over library qualid
 
-\item \errindex{Bad magic number}
+The command tried to load library file `ident.vo` that
+depends on some specific version of library :n:`@qualid` which is not the
+one already loaded in the current |Coq| session. Probably `ident.v` was
+not properly recompiled with the last version of the file containing
+module :n:`@qualid`.
 
-  \index{Bad-magic-number@{\tt Bad Magic Number}}
-  The file {\tt{\ident}.vo} was found but either it is not a \Coq\
-  compiled module, or it was compiled with an older and incompatible
-  version of {\Coq}.
+.. exn:: Bad magic number
 
-\item \errindex{The file {\ident}.vo contains library {\dirpath} and not
-  library {\dirpath'}}
+The file `ident.vo` was found but either it is not a
+|Coq| compiled module, or it was compiled with an incompatible
+version of |Coq|.
 
-  The library file {\dirpath'} is indirectly required by the {\tt
-  Require} command but it is bound in the current loadpath to the file
-  {\ident}.vo which was bound to a different library name {\dirpath}
-  at the time it was compiled.
+.. exn:: The file `ident.vo` contains library dirpath and not library dirpath’
 
-\item \errindex{Require is not allowed inside a module or a module type}
+The library file `dirpath’` is indirectly required by the
+``Require`` command but it is bound in the current loadpath to the
+file `ident.vo` which was bound to a different library name `dirpath` at
+the time it was compiled.
 
-  This command is not allowed inside a module or a module type being defined.
-  It is meant to describe a dependency between compilation units. Note however
-  that the commands {\tt Import} and {\tt Export} alone can be used inside
-  modules (see Section~\ref{Import}).
 
-\end{ErrMsgs}
+.. exn:: Require is not allowed inside a module or a module type
 
-\SeeAlso Chapter~\ref{Addoc-coqc}
+This command
+is not allowed inside a module or a module type being defined. It is
+meant to describe a dependency between compilation units. Note however
+that the commands Import and Export alone can be used inside modules
+(see Section :ref:`TODO-2.5.8-import`).
 
-\subsection[\tt Print Libraries.]{\tt Print Libraries.\comindex{Print Libraries}}
 
-This command displays the list of library files loaded in the current
-{\Coq} session. For each of these libraries, it also tells if it is
-imported.
 
-\subsection[\tt Declare ML Module {\str$_1$} .. {\str$_n$}.]{\tt Declare ML Module {\str$_1$} .. {\str$_n$}.\comindex{Declare ML Module}}
-This commands loads the {\ocaml} compiled files {\str$_1$} {\ldots}
-{\str$_n$} (dynamic link). It is mainly used to load tactics
-dynamically.
-% (see Chapter~\ref{WritingTactics}).
- The files are
-searched into the current {\ocaml} loadpath (see the command {\tt
-Add ML Path} in the Section~\ref{loadpath}).  Loading of {\ocaml}
-files is only possible under the bytecode version of {\tt coqtop}
-(i.e. {\tt coqtop.byte}, see chapter
-\ref{Addoc-coqc}), or when {\Coq} has been compiled with a version of
-{\ocaml} that supports native {\tt Dynlink} ($\ge$ 3.11).
+See also: Chapter :ref:`TODO-14-coq-commands`
 
-\begin{Variants}
-\item {\tt Local Declare ML Module {\str$_1$} .. {\str$_n$}.}\\
-  This variant is not exported to the modules that import the module
-  where they occur, even if outside a section.
-\end{Variants}
 
-\begin{ErrMsgs}
-\item \errindex{File not found on loadpath : \str}
-\item \errindex{Loading of ML object file forbidden in a native {\Coq}}
-\end{ErrMsgs}
+.. cmd:: Print Libraries.
 
-\subsection[\tt Print ML Modules.]{\tt Print ML Modules.\comindex{Print ML Modules}}
-This print the name of all \ocaml{} modules loaded with \texttt{Declare
-  ML Module}. To know from where these module were loaded, the user
-should use the command \texttt{Locate File} (see Section~\ref{Locate File})
+This command displays the list of library files loaded in the
+current |Coq| session. For each of these libraries, it also tells if it
+is imported.
 
-\section[Loadpath]{Loadpath}
 
-Loadpaths are preferably managed using {\Coq} command line options
-(see Section~\ref{loadpath}) but there remain vernacular commands to
-manage them for practical purposes. Such commands are only meant to be issued in
+.. cmd:: Declare ML Module {+ @string } .
+
+This commands loads the OCaml compiled files
+with names given by the :n:`@string` sequence
+(dynamic link). It is mainly used to load tactics dynamically. The
+files are searched into the current OCaml loadpath (see the
+command ``Add ML Path`` in Section :ref:`TODO-2.6.3-libraries-and-filesystem`). Loading of OCaml files is only possible under the bytecode version of ``coqtop`` (i.e.
+``coqtop`` called with option ``-byte``, see chapter :ref:`TODO-14-coq-commands`), or when |Coq| has been compiled with a
+version of OCaml that supports native Dynlink (≥ 3.11).
+
+
+Variants:
+
+
+.. cmdv:: Local Declare ML Module {+ @string }.
+
+This variant is not
+exported to the modules that import the module where they occur, even
+if outside a section.
+
+
+
+Error messages:
+
+.. exn:: File not found on loadpath : @string
+
+.. exn:: Loading of ML object file forbidden in a native |Coq|
+
+
+
+.. cmd:: Print ML Modules.
+
+This prints the name of all OCaml modules loaded with ``Declare
+ML Module``. To know from where these module were loaded, the user
+should use the command Locate File (see Section :ref:`TODO-6.6.10-locate-file`)
+
+
+.. _loadpath:
+
+Loadpath
+------------
+
+Loadpaths are preferably managed using |Coq| command line options (see
+Section `2.6.3-libraries-and-filesystem`) but there remain vernacular commands to manage them
+for practical purposes. Such commands are only meant to be issued in
 the toplevel, and using them in source files is discouraged.
 
-\subsection[\tt Pwd.]{\tt Pwd.\comindex{Pwd}\label{Pwd}}
+
+.. cmd:: Pwd.
+
 This command displays the current working directory.
 
-\subsection[\tt Cd {\str}.]{\tt Cd {\str}.\comindex{Cd}}
-This command changes the current directory according to {\str}
-which can be any valid path.
 
-\begin{Variants}
-\item {\tt Cd.}\\
-  Is equivalent to {\tt Pwd.}
-\end{Variants}
+.. cmd:: Cd @string.
 
-\subsection[\tt Add LoadPath {\str} as {\dirpath}.]{\tt Add LoadPath {\str} as {\dirpath}.\comindex{Add LoadPath}\label{AddLoadPath}}
+This command changes the current directory according to :n:`@string` which
+can be any valid path.
 
-This command is equivalent to the command line option {\tt -Q {\str}
-  {\dirpath}}. It adds the physical directory {\str} to the current {\Coq}
-loadpath and maps it to the logical directory {\dirpath}.
 
-\begin{Variants}
-\item {\tt Add LoadPath {\str}.}\\
-Performs as {\tt Add LoadPath {\str} as {\dirpath}} but for the empty directory path.
-\end{Variants}
+Variants:
 
-\subsection[\tt Add Rec LoadPath {\str} as {\dirpath}.]{\tt Add Rec LoadPath {\str} as {\dirpath}.\comindex{Add Rec LoadPath}\label{AddRecLoadPath}}
-This command is equivalent to the command line option {\tt -R {\str}
-  {\dirpath}}. It adds the physical directory {\str} and all its
-subdirectories to the current {\Coq} loadpath.
 
-\begin{Variants}
-\item {\tt Add Rec LoadPath {\str}.}\\
-Works as {\tt Add Rec LoadPath {\str} as {\dirpath}} but for the empty logical directory path.
-\end{Variants}
+.. cmdv:: Cd.
 
-\subsection[\tt Remove LoadPath {\str}.]{\tt Remove LoadPath {\str}.\comindex{Remove LoadPath}}
-This command removes the path {\str} from the current \Coq\ loadpath.
+Is equivalent to Pwd.
 
-\subsection[\tt Print LoadPath.]{\tt Print LoadPath.\comindex{Print LoadPath}}
-This command displays the current \Coq\ loadpath.
 
-\begin{Variants}
-\item {\tt Print LoadPath {\dirpath}.}\\
-Works as {\tt Print LoadPath} but displays only the paths that extend the {\dirpath} prefix.
-\end{Variants}
 
-\subsection[\tt Add ML Path {\str}.]{\tt Add ML Path {\str}.\comindex{Add ML Path}}
-This command adds the path {\str} to the current {\ocaml} loadpath (see
-the command {\tt Declare ML Module} in the Section~\ref{compiled}).
+.. cmd:: Add LoadPath @string as @dirpath.
 
-\subsection[\tt Add Rec ML Path {\str}.]{\tt Add Rec ML Path {\str}.\comindex{Add Rec ML Path}}
-This command adds the directory {\str} and all its subdirectories
-to the current {\ocaml} loadpath (see
-the command {\tt Declare ML Module} in the Section~\ref{compiled}).
+This command is equivalent to the command line option
+``-Q`` :n:`@string` :n:`@dirpath`. It adds the physical directory string to the current
+|Coq| loadpath and maps it to the logical directory dirpath.
 
-\subsection[\tt Print ML Path {\str}.]{\tt Print ML Path {\str}.\comindex{Print ML Path}}
-This command displays the current {\ocaml} loadpath.
-This command makes sense only under the bytecode version of {\tt
-coqtop}, i.e. {\tt coqtop.byte} (see the
-command {\tt Declare ML Module} in the section
-\ref{compiled}).
+Variants:
 
-\subsection[\tt Locate File {\str}.]{\tt Locate File {\str}.\comindex{Locate
-  File}\label{Locate File}}
-This command displays the location of file {\str} in the current loadpath.
-Typically, {\str} is a \texttt{.cmo} or \texttt{.vo} or \texttt{.v} file.
 
-\subsection[\tt Locate Library {\dirpath}.]{\tt Locate Library {\dirpath}.\comindex{Locate Library}\label{Locate Library}}
-This command gives the status of the \Coq\ module {\dirpath}. It tells if the
-module is loaded and if not searches in the load path for a module
-of logical name {\dirpath}.
+.. cmdv:: Add LoadPath @string.
 
-\section{Backtracking}
+Performs as Add LoadPath :n:`@string` as :n:`@dirpath` but
+for the empty directory path.
+
+
+
+.. cmd:: Add Rec LoadPath @string as @dirpath.
+
+This command is equivalent to the command line option
+``-R`` :n:`@string` :n:`@dirpath`. It adds the physical directory string and all its
+subdirectories to the current |Coq| loadpath.
+
+Variants:
+
+
+.. cmdv:: Add Rec LoadPath @string.
+
+Works as ``Add Rec LoadPath`` :n:`@string` as :n:`@dirpath` but for the empty
+logical directory path.
+
+
+
+.. cmd:: Remove LoadPath @string.
+
+This command removes the path :n:`@string` from the current |Coq| loadpath.
+
+
+.. cmd:: Print LoadPath.
+
+This command displays the current |Coq| loadpath.
+
+
+Variants:
+
+
+.. cmdv:: Print LoadPath @dirpath.
+
+Works as ``Print LoadPath`` but displays only
+the paths that extend the :n:`@dirpath` prefix.
+
+
+.. cmd:: Add ML Path @string.
+
+This command adds the path :n:`@string` to the current OCaml
+loadpath (see the command `Declare ML Module`` in Section :ref:`TODO-6.5-compiled-files`).
+
+
+.. cmd:: Add Rec ML Path @string.
+
+This command adds the directory :n:`@string` and all its subdirectories to
+the current OCaml loadpath (see the command ``Declare ML Module``
+in Section :ref:`TODO-6.5-compiled-files`).
+
+
+.. cmd:: Print ML Path @string.
+
+This command displays the current OCaml loadpath. This
+command makes sense only under the bytecode version of ``coqtop``, i.e.
+using option ``-byte``
+(see the command Declare ML Module in Section :ref:`TODO-6.5-compiled-files`).
+
+
+.. cmd:: Locate File @string.
+
+This command displays the location of file string in the current
+loadpath. Typically, string is a .cmo or .vo or .v file.
+
+
+.. cmd:: Locate Library @dirpath.
+
+This command gives the status of the |Coq| module dirpath. It tells if
+the module is loaded and if not searches in the load path for a module
+of logical name :n:`@dirpath`.
+
+
+.. _backtracking:
+
+Backtracking
+----------------
 
 The backtracking commands described in this section can only be used
 interactively, they cannot be part of a vernacular file loaded via
-{\tt Load} or compiled by {\tt coqc}.
+``Load`` or compiled by ``coqc``.
 
-\subsection[\tt Reset \ident.]{\tt Reset \ident.\comindex{Reset}}
-This command removes all the objects in the environment since \ident\
-was introduced, including \ident. \ident\ may be the name of a defined
-or declared object as well as the name of a section. One cannot reset
+
+.. cmd:: Reset @ident.
+
+This command removes all the objects in the environment since :n:`@ident`
+was introduced, including :n:`@ident`. :n:`@ident` may be the name of a defined or
+declared object as well as the name of a section. One cannot reset
 over the name of a module or of an object inside a module.
 
-\begin{ErrMsgs}
-\item \ident: \errindex{no such entry}
-\end{ErrMsgs}
 
-\begin{Variants}
- \item {\tt Reset Initial.}\comindex{Reset Initial}\\
-   Goes back to the initial state, just after the start of the
-   interactive session.
-\end{Variants}
+Error messages:
 
-\subsection[\tt Back.]{\tt Back.\comindex{Back}}
+.. exn:: @ident: no such entry
 
-This commands undoes all the effects of the last vernacular
-command. Commands read from a vernacular file via a {\tt Load} are
-considered as a single command. Proof management commands
-are also handled by this command (see Chapter~\ref{Proof-handling}).
-For that, {\tt Back} may have to undo more than one command in order
-to reach a state where the proof management information is available.
-For instance, when the last command is a {\tt Qed}, the management
-information about the closed proof has been discarded. In this case,
-{\tt Back} will then undo all the proof steps up to the statement of
-this proof.
+Variants:
 
-\begin{Variants}
-\item {\tt Back $n$} \\
-  Undoes $n$ vernacular commands. As for {\tt Back}, some extra
-  commands may be undone in order to reach an adequate state.
-  For instance {\tt Back n} will not re-enter a closed proof,
-  but rather go just before that proof.
-\end{Variants}
+.. cmd:: Reset Initial.
 
-\begin{ErrMsgs}
-\item \errindex{Invalid backtrack} \\
-  The user wants to undo more commands than available in the history.
-\end{ErrMsgs}
+Goes back to the initial state, just after the start
+of the interactive session.
 
-\subsection[\tt BackTo $\num$.]{\tt BackTo $\num$.\comindex{BackTo}}
-\label{sec:statenums}
 
-This command brings back the system to the state labeled $\num$,
-forgetting the effect of all commands executed after this state.
-The state label is an integer which grows after each successful command.
-It is displayed in the prompt when in \texttt{-emacs} mode.
-Just as {\tt Back} (see above), the {\tt BackTo} command now handles
-proof states. For that, it may have to undo some
-extra commands and end on a state $\num' \leq \num$ if necessary.
 
-\begin{Variants}
-\item {\tt Backtrack $\num_1$ $\num_2$ $\num_3$}.\comindex{Backtrack}\\
-  {\tt Backtrack} is a \emph{deprecated} form of {\tt BackTo} which
-  allows explicitly manipulating the proof environment. The three
-  numbers $\num_1$, $\num_2$ and $\num_3$ represent the following:
-\begin{itemize}
-\item $\num_3$: Number of \texttt{Abort} to perform, i.e. the number
-  of currently opened nested proofs that must be canceled (see
-  Chapter~\ref{Proof-handling}).
-\item $\num_2$: \emph{Proof state number} to unbury once aborts have
-  been done. {\Coq} will compute the number of \texttt{Undo} to perform
-  (see Chapter~\ref{Proof-handling}).
-\item $\num_1$: State label to reach, as for {\tt BackTo}.
-\end{itemize}
-\end{Variants}
+.. cmd:: Back.
 
-\begin{ErrMsgs}
-\item \errindex{Invalid backtrack} \\
-  The destination state label is unknown.
-\end{ErrMsgs}
+This commands undoes all the effects of the last vernacular command.
+Commands read from a vernacular file via a ``Load`` are considered as a
+single command. Proof management commands are also handled by this
+command (see Chapter :ref:`TODO-7-proof-handling`). For that, Back may have to undo more than
+one command in order to reach a state where the proof management
+information is available. For instance, when the last command is a
+``Qed``, the management information about the closed proof has been
+discarded. In this case, ``Back`` will then undo all the proof steps up to
+the statement of this proof.
 
-\section{Quitting and debugging}
 
-\subsection[\tt Quit.]{\tt Quit.\comindex{Quit}}
-This command permits to quit \Coq.
+Variants:
 
-\subsection[\tt Drop.]{\tt Drop.\comindex{Drop}\label{Drop}}
 
-This is used mostly as a debug facility by \Coq's implementors
-and does not concern the casual user.
-This command permits to leave {\Coq} temporarily and enter the
-{\ocaml} toplevel. The {\ocaml} command:
+.. cmdv:: Back @num.
 
-\begin{flushleft}
-\begin{verbatim}
-#use "include";;
-\end{verbatim}
-\end{flushleft}
+Undoes :n:`@num` vernacular commands. As for Back, some extra
+commands may be undone in order to reach an adequate state. For
+instance Back :n:`@num` will not re-enter a closed proof, but rather go just
+before that proof.
 
-\noindent add the right loadpaths and loads some toplevel printers for
-all abstract types of \Coq - section\_path, identifiers, terms, judgments,
-\dots. You can also use the file \texttt{base\_include} instead,
-that loads only the pretty-printers for section\_paths and
-identifiers.
-% See Section~\ref{test-and-debug} more information on the
-% usage of the toplevel.
-You can return back to \Coq{} with the command:
 
-\begin{flushleft}
-\begin{verbatim}
-go();;
-\end{verbatim}
-\end{flushleft}
 
-\begin{Warnings}
-\item It only works with the bytecode version of {\Coq} (i.e. {\tt coqtop} called with option {\tt -byte}, see the contents of Section~\ref{binary-images}).
-\item You must have compiled {\Coq} from the source package and set the
-  environment variable \texttt{COQTOP} to the root of your copy of the sources (see Section~\ref{EnvVariables}).
-\end{Warnings}
+Error messages:
 
-\subsection[\tt Time \textrm{\textsl{command}}.]{\tt Time \textrm{\textsl{command}}.\comindex{Time}
-\label{time}}
-This command executes the vernacular command \textrm{\textsl{command}}
-and display the time needed to execute it.
 
-\subsection[\tt Redirect "\textrm{\textsl{file}}" \textrm{\textsl{command}}.]{\tt Redirect "\textrm{\textsl{file}}" \textrm{\textsl{command}}.\comindex{Redirect}
-\label{redirect}}
-This command executes the vernacular command \textrm{\textsl{command}}, redirecting its output to ``\textrm{\textsl{file}}.out''.
+.. exn:: Invalid backtrack
 
-\subsection[\tt Timeout \textrm{\textsl{int}} \textrm{\textsl{command}}.]{\tt Timeout \textrm{\textsl{int}} \textrm{\textsl{command}}.\comindex{Timeout}
-\label{timeout}}
+The user wants to undo more commands than available in the history.
 
-This command executes the vernacular command \textrm{\textsl{command}}. If
-the command has not terminated after the time specified by the integer
-(time expressed in seconds), then it is interrupted and an error message
-is displayed.
+.. cmd:: BackTo @num.
 
-\subsection[\tt Set Default Timeout \textrm{\textsl{int}}.]{\tt Set
-  Default Timeout \textrm{\textsl{int}}.\optindex{Default Timeout}}
+This command brings back the system to the state labeled :n:`@num`,
+forgetting the effect of all commands executed after this state. The
+state label is an integer which grows after each successful command.
+It is displayed in the prompt when in -emacs mode. Just as ``Back`` (see
+above), the ``BackTo`` command now handles proof states. For that, it may
+have to undo some extra commands and end on a state `num′ ≤ num` if
+necessary.
+
+
+Variants:
+
+
+.. cmdv:: Backtrack @num @num @num.
+
+`Backtrack` is a *deprecated* form of
+`BackTo` which allows explicitly manipulating the proof environment. The
+three numbers represent the following:
+
+    + *first number* : State label to reach, as for BackTo.
+    + *second number* : *Proof state number* to unbury once aborts have been done.
+      |Coq| will compute the number of Undo to perform (see Chapter :ref:`TODO-7-proof-handling`).
+    + *third number* : Number of Abort to perform, i.e. the number of currently
+      opened nested proofs that must be canceled (see Chapter :ref:`TODO-7-proof-handling`).
+
+
+
+
+Error messages:
+
+
+.. exn:: Invalid backtrack
+
+
+The destination state label is unknown.
+
+
+.. _quitting-and-debugging:
+
+Quitting and debugging
+--------------------------
+
+
+.. cmd:: Quit.
+
+This command permits to quit |Coq|.
+
+
+.. cmd:: Drop.
+
+This is used mostly as a debug facility by |Coq|’s implementors and does
+not concern the casual user. This command permits to leave |Coq|
+temporarily and enter the OCaml toplevel. The OCaml
+command:
+
+
+::
+
+    #use "include";;
+
+
+adds the right loadpaths and loads some toplevel printers for all
+abstract types of |Coq|- section_path, identifiers, terms, judgments, ….
+You can also use the file base_include instead, that loads only the
+pretty-printers for section_paths and identifiers. You can return back
+to |Coq| with the command:
+
+
+::
+
+    go();;
+
+
+
+Warnings:
+
+
+#. It only works with the bytecode version of |Coq| (i.e. `coqtop.byte`,
+   see Section `TODO-14.1-interactive-use`).
+#. You must have compiled |Coq| from the source package and set the
+   environment variable COQTOP to the root of your copy of the sources
+   (see Section `14.3.2-customization-by-envionment-variables`).
+
+
+
+.. TODO : command is not a syntax entry
+
+.. cmd:: Time @command.
+
+This command executes the vernacular command :n:`@command` and displays the
+time needed to execute it.
+
+
+.. cmd:: Redirect @string @command.
+
+This command executes the vernacular command :n:`@command`, redirecting its
+output to ":n:`@string`.out".
+
+
+.. cmd:: Timeout @num @command.
+
+This command executes the vernacular command :n:`@command`. If the command
+has not terminated after the time specified by the :n:`@num` (time
+expressed in seconds), then it is interrupted and an error message is
+displayed.
+
+
+.. cmd:: Set Default Timeout @num.
 
 After using this command, all subsequent commands behave as if they
-were passed to a {\tt Timeout} command. Commands already starting by
-a {\tt Timeout} are unaffected.
+were passed to a Timeout command. Commands already starting by a
+`Timeout` are unaffected.
 
-\subsection[\tt Unset Default Timeout.]{\tt Unset Default Timeout.\optindex{Default Timeout}}
+
+.. cmd:: Unset Default Timeout.
 
 This command turns off the use of a default timeout.
 
-\subsection[\tt Test Default Timeout.]{\tt Test Default Timeout.\optindex{Default Timeout}}
+.. cmd:: Test Default Timeout.
 
-This command displays whether some default timeout has be set or not.
+This command displays whether some default timeout has been set or not.
 
-\subsection[\tt Fail \textrm{\textsl{command-or-tactic}}.]{\tt Fail \textrm{\textsl{command-or-tactic}}.\comindex{Fail}\label{Fail}}
+.. cmd:: Fail @command.
 
-For debugging {\Coq} scripts, sometimes it is desirable to know
-whether a command or a tactic fails. If the given command or tactic
-fails, the {\tt Fail} statement succeeds, without changing the proof
-state, and in interactive mode, {\Coq} prints a message confirming the failure.
-If the command or tactic succeeds, the statement is an error, and
-{\Coq} prints a message indicating that the failure did not occur.
+For debugging scripts, sometimes it is desirable to know
+whether a command or a tactic fails. If the given :n:`@command`
+fails, the ``Fail`` statement succeeds, without changing the proof
+state, and in interactive mode, the system
+prints a message confirming the failure.
+If the given :n:`@command` succeeds, the statement is an error, and
+it prints a message indicating that the failure did not occur.
 
-\section{Controlling display}
+Error messages:
 
-\subsection[\tt Set Silent.]{\tt Set Silent.\optindex{Silent}
-\label{Begin-Silent}
-\index{Silent mode}}
+.. exn:: The command has not failed!
+
+.. _controlling-display:
+
+Controlling display
+-----------------------
+
+
+.. cmd:: Set Silent.
+
 This command turns off the normal displaying.
 
-\subsection[\tt Unset Silent.]{\tt Unset Silent.\optindex{Silent}}
+
+.. cmd:: Unset Silent.
+
 This command turns the normal display on.
 
-\subsection[\tt Set Warnings ``(\nterm{w}$_1$,\ldots,%
-  \nterm{w}$_n$)''.]{{\tt Set Warnings ``(\nterm{w}$_1$,\ldots,%
-  \nterm{w}$_n$)''}.\optindex{Warnings}}
-\label{SetWarnings}
-This command configures the display of warnings. It is experimental, and
-expects, between quotes, a comma-separated list of warning names or
-categories. Adding~\texttt{-} in front of a warning or category disables it,
-adding~\texttt{+} makes it an error. It is possible to use the special
-categories \texttt{all} and \texttt{default}, the latter containing the warnings
-enabled by default. The flags are interpreted from left to right, so in case of
-an overlap, the flags on the right have higher priority, meaning that
-\texttt{A,-A} is equivalent to \texttt{-A}.
+TODO : check that spaces are handled well
 
-\subsection[\tt Set Search Output Name Only.]{\tt Set Search Output Name Only.\optindex{Search Output Name Only}
-\label{Search-Output-Name-Only}
-\index{Search Output Name Only mode}}
-This command restricts the output of search commands to identifier names; turning it on causes invocations of {\tt Search}, {\tt SearchHead}, {\tt SearchPattern}, {\tt SearchRewrite} etc. to omit types from their output, printing only identifiers.
+.. cmd:: Set Warnings ‘‘(@ident {* , @ident } )’’.
 
-\subsection[\tt Unset Search Output Name Only.]{\tt Unset Search Output Name Only.\optindex{Search Output Name Only}}
+This command configures the display of warnings. It is experimental,
+and expects, between quotes, a comma-separated list of warning names
+or categories. Adding - in front of a warning or category disables it,
+adding + makes it an error. It is possible to use the special
+categories all and default, the latter containing the warnings enabled
+by default. The flags are interpreted from left to right, so in case
+of an overlap, the flags on the right have higher priority, meaning
+that `A,-A` is equivalent to `-A`.
+
+
+.. cmd:: Set Search Output Name Only.
+
+This command restricts the output of search commands to identifier
+names; turning it on causes invocations of ``Search``, ``SearchHead``,
+``SearchPattern``, ``SearchRewrite`` etc. to omit types from their output,
+printing only identifiers.
+
+
+.. cmd:: Unset Search Output Name Only.
+
 This command turns type display in search results back on.
 
-\subsection[\tt Set Printing Width {\integer}.]{\tt Set Printing Width {\integer}.\optindex{Printing Width}}
-\label{SetPrintingWidth}
+
+.. cmd:: Set Printing Width @integer.
+
 This command sets which left-aligned part of the width of the screen
 is used for display.
 
-\subsection[\tt Unset Printing Width.]{\tt Unset Printing Width.\optindex{Printing Width}}
+
+.. cmd:: Unset Printing Width.
+
 This command resets the width of the screen used for display to its
 default value (which is 78 at the time of writing this documentation).
 
-\subsection[\tt Test Printing Width.]{\tt Test Printing Width.\optindex{Printing Width}}
+
+.. cmd:: Test Printing Width.
+
 This command displays the current screen width used for display.
 
-\subsection[\tt Set Printing Depth {\integer}.]{\tt Set Printing Depth {\integer}.\optindex{Printing Depth}}
-This command sets the nesting depth of the formatter used for
-pretty-printing. Beyond this depth, display of subterms is replaced by
-dots.
 
-\subsection[\tt Unset Printing Depth.]{\tt Unset Printing Depth.\optindex{Printing Depth}}
+.. cmd:: Set Printing Depth @integer.
+
+This command sets the nesting depth of the formatter used for pretty-
+printing. Beyond this depth, display of subterms is replaced by dots.
+
+
+.. cmd:: Unset Printing Depth.
+
 This command resets the nesting depth of the formatter used for
-pretty-printing to its default value (at the
-time of writing this documentation, the default value is 50).
+pretty-printing to its default value (at the time of writing this
+documentation, the default value is 50).
 
-\subsection[\tt Test Printing Depth.]{\tt Test Printing Depth.\optindex{Printing Depth}}
+
+.. cmd:: Test Printing Depth.
+
 This command displays the current nesting depth used for display.
 
-\subsection[\tt Unset Printing Compact Contexts.]{\tt Unset Printing Compact Contexts.\optindex{Printing Compact Contexts}}
+
+.. cmd:: Unset Printing Compact Contexts.
+
 This command resets the displaying of goals contexts to non compact
 mode (default at the time of writing this documentation). Non compact
 means that consecutive variables of different types are printed on
 different lines.
 
-\subsection[\tt Set Printing Compact Contexts.]{\tt Set Printing Compact Contexts.\optindex{Printing Compact Contexts}}
+
+.. cmd:: Set Printing Compact Contexts.
+
 This command sets the displaying of goals contexts to compact mode.
 The printer tries to reduce the vertical size of goals contexts by
 putting several variables (even if of different types) on the same
-line provided it does not exceed the printing width (See {\tt Set
-  Printing Width} above).
+line provided it does not exceed the printing width (See Set Printing
+Width above).
 
-\subsection[\tt Test Printing Compact Contexts.]{\tt Test Printing Compact Contexts.\optindex{Printing Compact Contexts}}
+
+.. cmd:: Test Printing Compact Contexts.
+
 This command displays the current state of compaction of goal.
 
 
-\subsection[\tt Unset Printing Unfocused.]{\tt Unset Printing Unfocused.\optindex{Printing Unfocused}}
+.. cmd:: Unset Printing Unfocused.
+
 This command resets the displaying of goals to focused goals only
 (default). Unfocused goals are created by focusing other goals with
-bullets(see~\ref{bullets}) or curly braces (see~\ref{curlybacket}).
+bullets (see :ref:`TODO-7.2.7-bullets`) or curly braces (see `7.2.6-curly-braces`).
 
-\subsection[\tt Set Printing Unfocused.]{\tt Set Printing Unfocused.\optindex{Printing Unfocused}}
+
+.. cmd:: Set Printing Unfocused.
+
 This command enables the displaying of unfocused goals. The goals are
 displayed after the focused ones and are distinguished by a separator.
 
-\subsection[\tt Test Printing Unfocused.]{\tt Test Printing Unfocused.\optindex{Printing Unfocused}}
+
+.. cmd:: Test Printing Unfocused.
+
 This command displays the current state of unfocused goals display.
 
-\subsection[\tt Set Printing Dependent Evars Line.]{\tt Set Printing Dependent Evars Line.\optindex{Printing Dependent Evars Line}}
-This command enables the printing of the ``{\tt (dependent evars: \ldots)}''
-line when {\tt -emacs} is passed.
 
-\subsection[\tt Unset Printing Dependent Evars Line.]{\tt Unset Printing Dependent Evars Line.\optindex{Printing Dependent Evars Line}}
-This command disables the printing of the ``{\tt (dependent evars: \ldots)}''
-line when {\tt -emacs} is passed.
+.. cmd:: Set Printing Dependent Evars Line.
 
-%\subsection{\tt Abstraction ...}
-%Not yet documented.
+This command enables the printing of the “(dependent evars: …)” line
+when -emacs is passed.
 
-\section{Controlling the reduction strategies and the conversion algorithm}
-\label{Controlling_reduction_strategy}
 
-{\Coq} provides reduction strategies that the tactics can invoke and
-two different algorithms to check the convertibility of types.
-The first conversion algorithm lazily
-compares applicative terms while the other is a brute-force but efficient
-algorithm that first normalizes the terms before comparing them.  The
-second algorithm is based on a bytecode representation of terms
-similar to the bytecode representation used in the ZINC virtual
-machine~\cite{Leroy90}. It is especially useful for intensive
-computation of algebraic values, such as numbers, and for reflection-based
-tactics. The commands to fine-tune the reduction strategies and the
-lazy conversion algorithm are described first.
+.. cmd:: Unset Printing Dependent Evars Line.
 
-\subsection[{\tt Opaque} \qualid$_1$ {\ldots} \qualid$_n${\tt .}]{{\tt Opaque} \qualid$_1$ {\ldots} \qualid$_n${\tt .}\comindex{Opaque}\label{Opaque}}
-This command has an effect on unfoldable constants, i.e.
-on constants defined by {\tt Definition} or {\tt Let} (with an explicit
-body), or by a command assimilated to a definition such as {\tt
-Fixpoint}, {\tt Program Definition}, etc, or by a proof ended by {\tt
-Defined}. The command tells not to unfold
-the constants {\qualid$_1$} {\ldots} {\qualid$_n$} in tactics using
-$\delta$-conversion (unfolding a constant is replacing it by its
-definition).
+This command disables the printing of the “(dependent evars: …)” line
+when -emacs is passed.
 
-{\tt Opaque} has also an effect on the conversion algorithm of {\Coq},
-telling it to delay the unfolding of a constant as much as possible when
-{\Coq} has to check the conversion (see Section~\ref{conv-rules})
-of two distinct applied constants.
 
-The scope of {\tt Opaque} is limited to the current section, or
-current file, unless the variant {\tt Global Opaque \qualid$_1$ {\ldots}
-\qualid$_n$} is used.
+Controlling the reduction strategies and the conversion algorithm
+----------------------------------------------------------------------
 
-\SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
-\ref{Theorem}
 
-\begin{ErrMsgs}
-\item \errindex{The reference \qualid\ was not found in the current
-environment}\\
-    There is no constant referred by {\qualid} in the environment.
-    Nevertheless, if you asked \texttt{Opaque foo bar}
-    and if \texttt{bar} does not exist, \texttt{foo} is set opaque.
-\end{ErrMsgs}
+|Coq| provides reduction strategies that the tactics can invoke and two
+different algorithms to check the convertibility of types. The first
+conversion algorithm lazily compares applicative terms while the other
+is a brute-force but efficient algorithm that first normalizes the
+terms before comparing them. The second algorithm is based on a
+bytecode representation of terms similar to the bytecode
+representation used in the ZINC virtual machine [`98`]. It is
+especially useful for intensive computation of algebraic values, such
+as numbers, and for reflection-based tactics. The commands to fine-
+tune the reduction strategies and the lazy conversion algorithm are
+described first.
 
-\subsection[{\tt Transparent} \qualid$_1$ {\ldots} \qualid$_n${\tt .}]{{\tt Transparent} \qualid$_1$ {\ldots} \qualid$_n${\tt .}\comindex{Transparent}\label{Transparent}}
-This command is the converse of {\tt Opaque} and it applies on
-unfoldable constants to restore their unfoldability after an {\tt
-Opaque} command.
+.. cmd:: Opaque {+ @qualid }.
 
-Note in particular that constants defined by a proof ended by {\tt
-Qed} are not unfoldable and {\tt Transparent} has no effect on
-them. This is to keep with the usual mathematical practice of {\em
-proof irrelevance}: what matters in a mathematical development is the
-sequence of lemma statements, not their actual proofs. This
-distinguishes lemmas from the usual defined constants, whose actual
-values are of course relevant in general.
+This command has an effect on unfoldable constants, i.e. on constants
+defined by ``Definition`` or ``Let`` (with an explicit body), or by a command
+assimilated to a definition such as ``Fixpoint``, ``Program Definition``, etc,
+or by a proof ended by ``Defined``. The command tells not to unfold the
+constants in the :n:`@qualid` sequence in tactics using δ-conversion (unfolding
+a constant is replacing it by its definition).
 
-The scope of {\tt Transparent} is limited to the current section, or
-current file, unless the variant {\tt Global Transparent} \qualid$_1$
-{\ldots} \qualid$_n$ is used.
+``Opaque`` has also an effect on the conversion algorithm of |Coq|, telling
+it to delay the unfolding of a constant as much as possible when |Coq|
+has to check the conversion (see Section :ref:`TODO-4.3-conversion-rules`) of two distinct
+applied constants.
 
-\begin{ErrMsgs}
-% \item \errindex{Can not set transparent.}\\
-%     It is a constant from a required module or a parameter.
-\item \errindex{The reference \qualid\ was not found in the current
-environment}\\
-    There is no constant referred by {\qualid} in the environment.
-\end{ErrMsgs}
+The scope of ``Opaque`` is limited to the current section, or current
+file, unless the variant ``Global Opaque`` is used.
 
-\SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
-\ref{Theorem}
 
-\subsection{{\tt Strategy} {\it level} {\tt [} \qualid$_1$ {\ldots} \qualid$_n$
-  {\tt ].}\comindex{Strategy}\comindex{Local Strategy}\label{Strategy}}
-This command generalizes the behavior of {\tt Opaque} and {\tt
-  Transparent} commands. It is used to fine-tune the strategy for
-unfolding constants, both at the tactic level and at the kernel
-level. This command associates a level to \qualid$_1$ {\ldots}
-\qualid$_n$. Whenever two expressions with two distinct head
-constants are compared (for instance, this comparison can be triggered
-by a type cast), the one with lower level is expanded first. In case
-of a tie, the second one (appearing in the cast type) is expanded.
+See also: sections :ref:`TODO-8.7-performing-computations`, :ref:`TODO-8.16-automatizing`, :ref:`TODO-7.1-switching-on-off-proof-editing-mode`
+
+
+Error messages:
+
+
+.. exn:: The reference @qualid was not found in the current environment
+
+There is no constant referred by :n:`@qualid` in the environment.
+Nevertheless, if you asked ``Opaque`` `foo` `bar` and if `bar` does not exist, `foo` is set opaque.
+
+.. cmd:: Transparent {+ @qualid }.
+
+This command is the converse of `Opaque`` and it applies on unfoldable
+constants to restore their unfoldability after an Opaque command.
+
+Note in particular that constants defined by a proof ended by Qed are
+not unfoldable and Transparent has no effect on them. This is to keep
+with the usual mathematical practice of *proof irrelevance*: what
+matters in a mathematical development is the sequence of lemma
+statements, not their actual proofs. This distinguishes lemmas from
+the usual defined constants, whose actual values are of course
+relevant in general.
+
+The scope of Transparent is limited to the current section, or current
+file, unless the variant ``Global Transparent`` is
+used.
+
+
+Error messages:
+
+
+.. exn:: The reference @qualid was not found in the current environment
+
+There is no constant referred by :n:`@qualid` in the environment.
+
+
+
+See also: sections :ref:`TODO-8.7-performing-computations`, :ref:`TODO-8.16-automatizing`, :ref:`TODO-7.1-switching-on-off-proof-editing-mode`
+
+
+.. cmd:: Strategy @level [ {+ @qualid } ].
+
+This command generalizes the behavior of Opaque and Transparent
+commands. It is used to fine-tune the strategy for unfolding
+constants, both at the tactic level and at the kernel level. This
+command associates a level to the qualified names in the :n:`@qualid`
+sequence. Whenever two
+expressions with two distinct head constants are compared (for
+instance, this comparison can be triggered by a type cast), the one
+with lower level is expanded first. In case of a tie, the second one
+(appearing in the cast type) is expanded.
 
 Levels can be one of the following (higher to lower):
-\begin{description}
-\item[opaque]: level of opaque constants. They cannot be expanded by
-  tactics (behaves like $+\infty$, see next item).
-\item[\num]: levels indexed by an integer. Level $0$ corresponds
-  to the default behavior, which corresponds to transparent
-  constants. This level can also be referred to as {\bf transparent}.
-  Negative levels correspond to constants to be expanded before normal
-  transparent constants, while positive levels correspond to constants
-  to be expanded after normal transparent constants.
-\item[expand]: level of constants that should be expanded first
-  (behaves like $-\infty$)
-\end{description}
+
+    + ``opaque`` : level of opaque constants. They cannot be expanded by
+      tactics (behaves like +∞, see next item).
+    + :n:`@num` : levels indexed by an integer. Level 0 corresponds to the
+      default behavior, which corresponds to transparent constants. This
+      level can also be referred to as transparent. Negative levels
+      correspond to constants to be expanded before normal transparent
+      constants, while positive levels correspond to constants to be
+      expanded after normal transparent constants.
+    + ``expand`` : level of constants that should be expanded first (behaves
+      like −∞)
+
 
 These directives survive section and module closure, unless the
-command is prefixed by {\tt Local}. In the latter case, the behavior
-regarding sections and modules is the same as for the {\tt
-  Transparent} and {\tt Opaque} commands.
-
-\subsection{{\tt Print Strategy} \qualid{\tt .}\comindex{Print Strategy}\label{PrintStrategy}}
-
-This command prints the strategy currently associated to \qualid{}. It fails if
-\qualid{} is not an unfoldable reference, that is, neither a variable nor a
-constant.
-
-\begin{ErrMsgs}
-\item The reference is not unfoldable.
-\end{ErrMsgs}
-
-\begin{Variants}
-\item {\tt Print Strategies}\comindex{Print Strategies}\\
-  Print all the currently non-transparent strategies.
-\end{Variants}
-
-\subsection{\tt Declare Reduction \ident\ := {\rm\sl convtactic}.}
-
-This command allows giving a short name to a reduction expression,
-for instance {\tt lazy beta delta [foo bar]}. This short name can
-then be used in {\tt Eval \ident\ in ...} or {\tt eval} directives.
-This command accepts the {\tt Local} modifier, for discarding
-this reduction name at the end of the file or module. For the moment
-the name cannot be qualified. In particular declaring the same name
-in several modules or in several functor applications will be refused
-if these declarations are not local. The name \ident\ cannot be used
-directly as an Ltac tactic, but nothing prevent the user to also
-perform a {\tt Ltac \ident\ := {\rm\sl convtactic}}.
-
-\SeeAlso sections \ref{Conversion-tactics}
-
-\section{Controlling the locality of commands}
-
-\subsection{{\tt Local}, {\tt Global}
-\comindex{Local}
-\comindex{Global}
-}
-
-Some commands support a {\tt Local} or {\tt Global} prefix modifier to
-control the scope of their effect. There are four kinds of commands:
-
-\begin{itemize}
-\item Commands whose default is to extend their effect both outside the
-  section and the module or library file they occur in.
-
-  For these commands, the {\tt Local} modifier limits the effect of
-  the command to the current section or module it occurs in.
-
-  As an example, the {\tt Coercion} (see Section~\ref{Coercions})
-  and {\tt Strategy} (see Section~\ref{Strategy})
-  commands belong to this category.
-
-\item Commands whose default behavior is to stop their effect at the
-  end of the section they occur in but to extent their effect outside
-  the module or library file they occur in.
-
-  For these commands, the {\tt Local} modifier limits the effect of
-  the command to the current module if the command does not occur in a
-  section and the {\tt Global} modifier extends the effect outside the
-  current sections and current module if the command occurs in a
-  section.
-
-  As an example, the {\tt Implicit Arguments} (see
-  Section~\ref{Implicit Arguments}), {\tt Ltac} (see
-  Chapter~\ref{TacticLanguage}) or {\tt Notation} (see
-  Section~\ref{Notation}) commands belong to this category.
-
-  Notice that a subclass of these commands do not support extension of
-  their scope outside sections at all and the {\tt Global} is not
-  applicable to them.
-
-\item Commands whose default behavior is to stop their effect at the
-  end of the section or module they occur in.
-
-  For these commands, the {\tt Global} modifier extends their effect
-  outside the sections and modules they occurs in.
-
-  The {\tt Transparent} and {\tt Opaque} (see
-  Section~\ref{Controlling_reduction_strategy}) commands belong to
-  this category.
-
-\item Commands whose default behavior is to extend their effect
-  outside sections but not outside modules when they occur in a
-  section and to extend their effect outside the module or library
-  file they occur in when no section contains them.
-
-  For these commands, the {\tt Local} modifier limits the effect to
-  the current section or module while the {\tt Global} modifier extends
-  the effect outside the module even when the command occurs in a section.
-
-  The {\tt Set} and {\tt Unset} commands belong to this category.
-\end{itemize}
+command is prefixed by Local. In the latter case, the behavior
+regarding sections and modules is the same as for the ``Transparent`` and
+``Opaque`` commands.
 
 
-%%% Local Variables:
-%%% mode: latex
-%%% TeX-master: "Reference-Manual"
-%%% End:
+.. cmd:: Print Strategy @qualid.
+
+This command prints the strategy currently associated to :n:`@qualid`. It
+fails if :n:`@qualid` is not an unfoldable reference, that is, neither a
+variable nor a constant.
+
+
+Error messages:
+
+
+.. exn:: The reference is not unfoldable.
+
+
+
+Variants:
+
+
+.. cmdv:: Print Strategies.
+
+Print all the currently non-transparent strategies.
+
+
+
+.. cmd:: Declare Reduction @ident := @convtactic.
+
+This command allows giving a short name to a reduction expression, for
+instance lazy beta delta [foo bar]. This short name can then be used
+in ``Eval`` :n:`@ident` ``in`` ... or ``eval`` directives. This command
+accepts the
+Local modifier, for discarding this reduction name at the end of the
+file or module. For the moment the name cannot be qualified. In
+particular declaring the same name in several modules or in several
+functor applications will be refused if these declarations are not
+local. The name :n:`@ident` cannot be used directly as an Ltac tactic, but
+nothing prevents the user to also perform a
+``Ltac`` `ident` ``:=`` `convtactic`.
+
+
+See also: sections :ref:`TODO-8.7-performing-computations`
+
+
+.. _controlling-locality-of-commands:
+
+Controlling the locality of commands
+-----------------------------------------
+
+
+.. cmd:: Local @command.
+.. cmd:: Global @command.
+
+Some commands support a Local or Global prefix modifier to control the
+scope of their effect. There are four kinds of commands:
+
+
++ Commands whose default is to extend their effect both outside the
+  section and the module or library file they occur in.  For these
+  commands, the Local modifier limits the effect of the command to the
+  current section or module it occurs in.  As an example, the ``Coercion``
+  (see Section :ref:`TODO-2.8-coercions`) and ``Strategy`` (see Section :ref:`TODO-6.10.3-strategy`) commands belong
+  to this category.
++ Commands whose default behavior is to stop their effect at the end
+  of the section they occur in but to extent their effect outside the
+  module or library file they occur in.  For these commands, the Local
+  modifier limits the effect of the command to the current module if the
+  command does not occur in a section and the Global modifier extends
+  the effect outside the current sections and current module if the
+  command occurs in a section.  As an example, the ``Implicit Arguments`` (see
+  Section :ref:`TODO-2.7-implicit-arguments`), Ltac (see Chapter :ref:`TODO-9-tactic-language`) or ``Notation`` (see Section
+  :ref:`TODO-12.1-notations`) commands belong to this category.  Notice that a subclass of
+  these commands do not support extension of their scope outside
+  sections at all and the Global is not applicable to them.
++ Commands whose default behavior is to stop their effect at the end
+  of the section or module they occur in.  For these commands, the Global
+  modifier extends their effect outside the sections and modules they
+  occurs in.  The ``Transparent`` and ``Opaque`` (see Section :ref:`TODO-6.10-opaque`) commands  belong to this category.
++ Commands whose default behavior is to extend their effect outside
+  sections but not outside modules when they occur in a section and to
+  extend their effect outside the module or library file they occur in
+  when no section contains them.For these commands, the Local modifier
+  limits the effect to the current section or module while the Global
+  modifier extends the effect outside the module even when the command
+  occurs in a section.  The ``Set`` and ``Unset`` commands belong to this
+  category.
