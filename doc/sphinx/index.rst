@@ -24,6 +24,7 @@ Table of contents
    :caption: The proof engine
 
    proof-engine/tactics
+   proof-engine/detailed-tactic-examples
 
 .. toctree::
    :caption: User extensions
