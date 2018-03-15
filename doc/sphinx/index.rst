@@ -17,6 +17,7 @@ Table of contents
    :caption: The language
 
    language/gallina-extensions
+   language/coq-library
    language/cic
    language/module-system
 
