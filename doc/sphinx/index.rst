@@ -29,6 +29,8 @@ Table of contents
 .. toctree::
    :caption: User extensions
 
+   user-extensions/syntax-extensions
+
 .. toctree::
    :caption: Practical tools
 
