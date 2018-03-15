@@ -1,5 +1,11 @@
-Changes beyond 8.7
-==================
+Changes from 8.7.2 to 8.8+beta1
+===============================
+
+Kernel
+
+- Support for template polymorphism for definitions was removed. May trigger
+  more "universe inconsistency" errors in rare occasions.
+- Fixpoints are no longer allowed on non-recursive inductive types.
 
 Notations
 
@@ -56,6 +62,8 @@ Tactics
 - Added tactics "assert_succeeds tac" and "assert_fails tac" to ensure
   properties of the executation of a tactic without keeping the effect
   of the execution.
+- `vm_compute` now supports existential variables.
+- Calls to `shelve` and `give_up` within calls to tactic `refine` now working.
 
 Focusing
 
@@ -80,6 +88,9 @@ Vernacular Commands
 - The "Export" modifier can now be used when setting and unsetting options, and
   will result in performing the same change when the module corresponding the
   command is imported.
+- The `Axiom` command does not automatically declare axioms as instances when
+  their type is a class. Previous behavior can be restored using `Set
+  Typeclasses Axioms Are Instances`.
 
 Universes
 
@@ -106,6 +117,7 @@ Tools
   name scheme. This is intended to function as a linter for developments that
   want to be robust to changes in auto-generated names. This feature is experimental,
   and may change or dissapear without warning.
+- GeoProof support was removed.
 
 Checker
 
@@ -127,6 +139,9 @@ Documentation
 - The Coq FAQ, formerly located at https://coq.inria.fr/faq, has been
   moved to the GitHub wiki section of this repository; the main entry
   page is https://github.com/coq/coq/wiki/The-Coq-FAQ.
+- Documentation: a large community effort resulted in the migration
+  of the reference manual to the Sphinx documentation tool. The result
+  is partially integrated in this version.
 
 Standard Library
 
@@ -138,6 +153,7 @@ Standard Library
   positive, N, Z, and string.
 - Added [Coq.Strings.String.concat] to concatenate a list of strings
   inserting a separator between each item
+- Notation `'` for Zpos in QArith was removed.
 
 - Some deprecated aliases are now emitting warnings when used.
 
