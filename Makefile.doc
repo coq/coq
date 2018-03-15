@@ -62,8 +62,7 @@ REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
   Universes.v.tex)
 
 REFMANTEXFILES:=$(addprefix doc/refman/, \
-  headers.sty Reference-Manual.tex \
-  RefMan-uti.tex) \
+  headers.sty Reference-Manual.tex) \
   $(REFMANCOQTEXFILES) \
 
 REFMANEPSFILES:=doc/refman/coqide.eps doc/refman/coqide-queries.eps
