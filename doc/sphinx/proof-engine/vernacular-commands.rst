@@ -16,13 +16,13 @@ defined object referred by {\qualid}.
 
 \begin{Variants}
 \item {\tt Print Term {\qualid}.}
-\comindex{Print Term}\\ 
+\comindex{Print Term}\\
 This is a synonym to {\tt Print {\qualid}} when {\qualid} denotes a
-global constant. 
+global constant.
 
 \item {\tt About {\qualid}.}
 \label{About}
-\comindex{About}\\ 
+\comindex{About}\\
 This displays various information about the object denoted by {\qualid}:
 its kind (module, constant, assumption, inductive,
 constructor, abbreviation, \ldots), long name, type, implicit
@@ -36,7 +36,7 @@ This form can be used with {\tt Print Term} and {\tt About}.
 
 %\item {\tt Print Proof {\qualid}.}\comindex{Print Proof}\\
 %In case \qualid\ denotes an opaque theorem defined in a section,
-%it is stored on a special unprintable form and displayed as 
+%it is stored on a special unprintable form and displayed as
 %{\tt <recipe>}. {\tt Print Proof} forces the printable form of \qualid\
 %to be computed and displays it.
 \end{Variants}
@@ -152,7 +152,7 @@ This is a synonymous of {\tt Print Options.}
 
 \subsection[\tt Check {\term}.]{\tt Check {\term}.\label{Check}
 \comindex{Check}}
-This command displays the type of {\term}. When called in proof mode, 
+This command displays the type of {\term}. When called in proof mode,
 the term is checked in the local context of the current subgoal.
 
 \begin{Variants}
@@ -180,7 +180,7 @@ the bytecode-based virtual machine. It is a shortcut for
 \SeeAlso Section~\ref{Conversion-tactics}.
 
 \subsection[\tt Extraction \term.]{\tt Extraction \term.\label{ExtractionTerm}
-\comindex{Extraction}} 
+\comindex{Extraction}}
 This command displays the extracted term from
 {\term}. The extraction is processed according to the distinction
 between {\Set} and {\Prop}; that is to say, between logical and
@@ -190,7 +190,7 @@ displayed as in \Coq\ terms.
 
 \begin{Variants}
 \item \texttt{Recursive Extraction} {\qualid$_1$} \ldots{} {\qualid$_n$}{\tt .}\\
-  Recursively extracts all the material needed for the extraction of 
+  Recursively extracts all the material needed for the extraction of
   global {\qualid$_1$}, \ldots, {\qualid$_n$}.
 \end{Variants}
 
@@ -440,7 +440,7 @@ the search results via the command
 {\tt Add Search Blacklist "substring1"}.
 A lemma whose fully-qualified name contains any of the declared substrings
 will be removed from the search results.
-The default blacklisted substrings are {\tt 
+The default blacklisted substrings are {\tt
   "\_subproof" "Private\_"}. The command {\tt Remove Search Blacklist
   ...} allows expunging this blacklist.
 
@@ -523,7 +523,7 @@ Files loaded this way cannot leave proofs open, and neither the {\tt
   abbreviations are allowed as well as shell variables. If no
   extension is specified, \Coq\ will use the default extension {\tt
     .v}
-\item {\tt Load Verbose {\ident}.}, 
+\item {\tt Load Verbose {\ident}.},
   {\tt Load Verbose {\str}}\\
   \comindex{Load Verbose}
   Display, while loading, the answers of \Coq\ to each command
@@ -669,7 +669,7 @@ dynamically.
 searched into the current {\ocaml} loadpath (see the command {\tt
 Add ML Path} in the Section~\ref{loadpath}).  Loading of {\ocaml}
 files is only possible under the bytecode version of {\tt coqtop}
-(i.e. {\tt coqtop.byte}, see chapter 
+(i.e. {\tt coqtop.byte}, see chapter
 \ref{Addoc-coqc}), or when {\Coq} has been compiled with a version of
 {\ocaml} that supports native {\tt Dynlink} ($\ge$ 3.11).
 
@@ -700,7 +700,7 @@ the toplevel, and using them in source files is discouraged.
 This command displays the current working directory.
 
 \subsection[\tt Cd {\str}.]{\tt Cd {\str}.\comindex{Cd}}
-This command changes the current directory according to {\str} 
+This command changes the current directory according to {\str}
 which can be any valid path.
 
 \begin{Variants}
@@ -745,7 +745,7 @@ This command adds the path {\str} to the current {\ocaml} loadpath (see
 the command {\tt Declare ML Module} in the Section~\ref{compiled}).
 
 \subsection[\tt Add Rec ML Path {\str}.]{\tt Add Rec ML Path {\str}.\comindex{Add Rec ML Path}}
-This command adds the directory {\str} and all its subdirectories 
+This command adds the directory {\str} and all its subdirectories
 to the current {\ocaml} loadpath (see
 the command {\tt Declare ML Module} in the Section~\ref{compiled}).
 
@@ -773,7 +773,7 @@ interactively, they cannot be part of a vernacular file loaded via
 {\tt Load} or compiled by {\tt coqc}.
 
 \subsection[\tt Reset \ident.]{\tt Reset \ident.\comindex{Reset}}
-This command removes all the objects in the environment since \ident\ 
+This command removes all the objects in the environment since \ident\
 was introduced, including \ident. \ident\ may be the name of a defined
 or declared object as well as the name of a section. One cannot reset
 over the name of a module or of an object inside a module.
@@ -871,7 +871,7 @@ that loads only the pretty-printers for section\_paths and
 identifiers.
 % See Section~\ref{test-and-debug} more information on the
 % usage of the toplevel.
-You can return back to \Coq{} with the command: 
+You can return back to \Coq{} with the command:
 
 \begin{flushleft}
 \begin{verbatim}
@@ -960,7 +960,7 @@ This command turns type display in search results back on.
 \subsection[\tt Set Printing Width {\integer}.]{\tt Set Printing Width {\integer}.\optindex{Printing Width}}
 \label{SetPrintingWidth}
 This command sets which left-aligned part of the width of the screen
-is used for display. 
+is used for display.
 
 \subsection[\tt Unset Printing Width.]{\tt Unset Printing Width.\optindex{Printing Width}}
 This command resets the width of the screen used for display to its
@@ -972,7 +972,7 @@ This command displays the current screen width used for display.
 \subsection[\tt Set Printing Depth {\integer}.]{\tt Set Printing Depth {\integer}.\optindex{Printing Depth}}
 This command sets the nesting depth of the formatter used for
 pretty-printing. Beyond this depth, display of subterms is replaced by
-dots. 
+dots.
 
 \subsection[\tt Unset Printing Depth.]{\tt Unset Printing Depth.\optindex{Printing Depth}}
 This command resets the nesting depth of the formatter used for
@@ -1038,7 +1038,7 @@ tactics. The commands to fine-tune the reduction strategies and the
 lazy conversion algorithm are described first.
 
 \subsection[{\tt Opaque} \qualid$_1$ {\ldots} \qualid$_n${\tt .}]{{\tt Opaque} \qualid$_1$ {\ldots} \qualid$_n${\tt .}\comindex{Opaque}\label{Opaque}}
-This command has an effect on unfoldable constants, i.e. 
+This command has an effect on unfoldable constants, i.e.
 on constants defined by {\tt Definition} or {\tt Let} (with an explicit
 body), or by a command assimilated to a definition such as {\tt
 Fixpoint}, {\tt Program Definition}, etc, or by a proof ended by {\tt
@@ -1218,7 +1218,7 @@ control the scope of their effect. There are four kinds of commands:
 \end{itemize}
 
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:
