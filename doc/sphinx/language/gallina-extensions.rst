@@ -1,0 +1,2356 @@
+.. include:: ../replaces.rst
+
+.. _extensionsofgallina:
+
+Extensions of |Gallina|
+=======================
+
+|Gallina| is the kernel language of |Coq|. We describe here extensions of
+|Gallina|’s syntax.
+
+.. _record-types:
+
+Record types
+----------------
+
+The ``Record`` construction is a macro allowing the definition of
+records as is done in many programming languages. Its syntax is
+described in the grammar below. In fact, the ``Record`` macro is more general
+than the usual record types, since it allows also for “manifest”
+expressions. In this sense, the ``Record`` construction allows defining
+“signatures”.
+
+.. _record_grammar:
+
+  .. productionlist:: `sentence`
+     record         : `record_keyword` ident [binders] [: sort] := [ident] { [`field` ; … ; `field`] }.
+     record_keyword : Record | Inductive | CoInductive
+     field          : name [binders] : type [ where notation ]
+                    : | name [binders] [: term] := term
+
+In the expression:
+
+.. cmd:: Record @ident {* @param } {? : @sort} := {? @ident} { {*; @ident {* @binder } : @term } }.
+
+the first identifier `ident` is the name of the defined record and `sort` is its
+type. The optional identifier following ``:=`` is the name of its constructor. If it is omitted,
+the default name ``Build_``\ `ident`, where `ident` is the record name, is used. If `sort` is
+omitted, the default sort is `\Type`. The identifiers inside the brackets are the names of
+fields. For a given field `ident`, its type is :g:`forall binder …, term`.
+Remark that the type of a particular identifier may depend on a previously-given identifier. Thus the
+order of the fields is important. Finally, each `param` is a parameter of the record.
+
+More generally, a record may have explicitly defined (a.k.a. manifest)
+fields. For instance, we might have::
+
+  Record ident param : sort := { ident₁ : type₁ ; ident₂ := term₂ ; ident₃ : type₃ }.
+
+in which case the correctness of |type_3| may rely on the instance |term_2| of |ident_2| and |term_2| in turn
+may depend on |ident_1|.
+
+.. example::
+
+  .. coqtop:: reset all
+
+     Record Rat : Set := mkRat
+     {sign : bool;
+     top : nat;
+     bottom : nat;
+     Rat_bottom_cond : 0 <> bottom;
+     Rat_irred_cond :
+     forall x y z:nat, (x * y) = top /\ (x * z) = bottom -> x = 1}.
+
+Remark here that the fields ``Rat_bottom_cond`` depends on the field ``bottom`` and ``Rat_irred_cond``
+depends on both ``top`` and ``bottom``.
+
+Let us now see the work done by the ``Record`` macro. First the macro
+generates a variant type definition with just one constructor:
+
+.. cmd:: Variant @ident {* @params} : @sort := @ident {* (@ident : @term_1)}.
+
+To build an object of type `ident`, one should provide the constructor
+|ident_0| with the appropriate number of terms filling the fields of the record.
+
+.. example:: Let us define the rational :math:`1/2`:
+
+    .. coqtop:: in
+
+       Theorem one_two_irred : forall x y z:nat, x * y = 1 /\ x * z = 2 -> x = 1.
+       Admitted.
+
+       Definition half := mkRat true 1 2 (O_S 1) one_two_irred.
+       Check half.
+
+.. _record-named-fields-grammar:
+
+  .. productionlist::
+    term : {| [`field_def` ; … ; `field_def`] |}
+    field_def : name [binders] := `term`
+
+Alternatively, the following syntax allows creating objects by using named fields, as
+shown in this grammar. The fields do not have to be in any particular order, nor do they have
+to be all present if the missing ones can be inferred or prompted for
+(see :ref:`programs`).
+
+.. coqtop:: all
+
+  Definition half' :=
+    {| sign := true;
+       Rat_bottom_cond := O_S 1;
+       Rat_irred_cond := one_two_irred |}.
+
+This syntax can be disabled globally for printing by
+
+.. cmd:: Unset Printing Records.
+
+For a given type, one can override this using either
+
+.. cmd:: Add Printing Record @ident.
+
+to get record syntax or
+
+.. cmd:: Add Printing Constructor @ident.
+
+to get constructor syntax.
+
+This syntax can also be used for pattern matching.
+
+.. coqtop:: all
+
+   Eval compute in (
+     match half with
+     | {| sign := true; top := n |} => n
+     | _ => 0
+     end).
+
+The macro generates also, when it is possible, the projection
+functions for destructuring an object of type `\ident`.  These
+projection functions are given the names of the corresponding
+fields. If a field is named `_` then no projection is built
+for it. In our example:
+
+.. coqtop:: all
+
+  Eval compute in top half.
+  Eval compute in bottom half.
+  Eval compute in Rat_bottom_cond half.
+
+An alternative syntax for projections based on a dot notation is
+available:
+
+.. coqtop:: all
+
+   Eval compute in half.(top).
+
+It can be activated for printing with
+
+.. cmd:: Set Printing Projections.
+
+.. example::
+
+    .. coqtop:: all
+
+       Set Printing Projections.
+       Check top half.
+
+.. _record_projections_grammar:
+
+  .. productionlist:: terms
+     term : term `.` ( qualid )
+          : | term `.` ( qualid arg … arg )
+          : | term `.` ( @`qualid` `term` … `term` )
+
+  Syntax of Record projections
+
+The corresponding grammar rules are given in the preceding grammar. When `qualid`
+denotes a projection, the syntax `term.(qualid)` is equivalent to `qualid term`,
+the syntax `term.(qualid` |arg_1| |arg_n| `)` to `qualid` |arg_1| `…` |arg_n| `term`,
+and the syntax `term.(@qualid` |term_1| |term_n| `)` to `@qualid` |term_1| `…` |term_n| `term`.
+In each case, `term` is the object projected and the
+other arguments are the parameters of the inductive type.
+
+.. note::. Records defined with the ``Record`` keyword are not allowed to be
+   recursive (references to the record's name in the type of its field
+   raises an  error). To define recursive records, one can use the ``Inductive``
+   and ``CoInductive`` keywords, resulting in an inductive or co-inductive record.
+   A *caveat*, however, is that records cannot appear in mutually inductive
+   (or co-inductive) definitions.
+
+.. note:: Induction schemes are automatically generated for inductive records.
+   Automatic generation of induction schemes for non-recursive records
+   defined with the ``Record`` keyword can be activated with the
+   ``Nonrecursive Elimination Schemes`` option (see :ref:`TODO-13.1.1-nonrecursive-elimination-schemes`).
+
+.. note::``Structure`` is a synonym of the keyword ``Record``.
+
+.. warn:: @ident cannot be defined.
+
+  It can happen that the definition of a projection is impossible.
+  This message is followed by an explanation of this impossibility.
+  There may be three reasons:
+
+  #. The name `ident` already exists in the environment (see Section :ref:`TODO-1.3.1-axioms`).
+  #. The body of `ident` uses an incorrect elimination for
+     `ident` (see Sections :ref:`TODO-1.3.4-fixpoint` and :ref:`TODO-4.5.3-case-expr`).
+  #. The type of the projections `ident` depends on previous
+     projections which themselves could not be defined.
+
+.. exn:: Records declared with the keyword Record or Structure cannot be recursive.
+
+    The record name `ident` appears in the type of its fields, but uses
+    the keyword ``Record``. Use  the keyword ``Inductive`` or ``CoInductive`` instead.
+
+.. exn:: Cannot handle mutually (co)inductive records.
+
+    Records  cannot  be  defined  as  part  of  mutually  inductive  (or
+    co-inductive) definitions,  whether with records only  or mixed with
+    standard definitions.
+
+During the definition of the one-constructor inductive definition, all
+the errors of inductive definitions, as described in Section
+:ref:`TODO-1.3.3-inductive-definitions`, may also occur.
+
+**See also** Coercions and records in Section :ref:`TODO-18.9-coercions-and-records` of the chapter devoted to coercions.
+
+.. _primitive_projections:
+
+Primitive Projections
+~~~~~~~~~~~~~~~~~~~~~
+
+The option ``Set Primitive Projections`` turns on the use of primitive
+projections when defining subsequent records (even through the ``Inductive``
+and ``CoInductive`` commands). Primitive projections
+extended the Calculus of Inductive Constructions with a new binary
+term constructor `r.(p)` representing a primitive projection `p` applied
+to a record object `r` (i.e., primitive projections are always applied).
+Even if the record type has parameters, these do not appear at
+applications of the projection, considerably reducing the sizes of
+terms when manipulating parameterized records and typechecking time.
+On the user level, primitive projections can be used as a replacement
+for the usual defined ones, although there are a few notable differences.
+
+The internally omitted parameters can be reconstructed at printing time
+even though they are absent in the actual AST manipulated by the kernel. This
+can be obtained by setting the ``Printing Primitive Projection Parameters``
+flag. Another compatibility printing can be activated thanks to the
+``Printing Primitive Projection Compatibility`` option which governs the
+printing of pattern-matching over primitive records.
+
+Primitive Record Types
+++++++++++++++++++++++
+
+When the ``Set Primitive Projections`` option is on, definitions of
+record types change meaning. When a type is declared with primitive
+projections, its :g:`match` construct is disabled (see :ref:`primitive_projections` though).
+To eliminate the (co-)inductive type, one must use its defined primitive projections.
+
+For compatibility, the parameters still appear to the user when
+printing terms even though they are absent in the actual AST
+manipulated by the kernel. This can be changed by unsetting the
+``Printing Primitive Projection Parameters`` flag. Further compatibility
+printing can be deactivated thanks to the ``Printing Primitive Projection
+Compatibility`` option which governs the printing of pattern-matching
+over primitive records.
+
+There are currently two ways to introduce primitive records types:
+
+#. Through the ``Record`` command, in which case the type has to be
+   non-recursive. The defined type enjoys eta-conversion definitionally,
+   that is the generalized form of surjective pairing for records:
+   `r` ``= Build_``\ `R` ``(``\ `r`\ ``.(``\ |p_1|\ ``) …`` `r`\ ``.(``\ |p_n|\ ``))``.
+   Eta-conversion allows to define dependent elimination for these types as well.
+#. Through the ``Inductive`` and ``CoInductive`` commands, when
+   the body of the definition is a record declaration of the form
+   ``Build_``\ `R` ``{`` |p_1| ``:`` |t_1|\ ``; … ;`` |p_n| ``:`` |t_n| ``}``.
+   In this case the types can be recursive and eta-conversion is disallowed. These kind of record types
+   differ from their traditional versions in the sense that dependent
+   elimination is not available for them and only non-dependent case analysis
+   can be defined.
+
+Reduction
++++++++++
+
+The basic reduction rule of a primitive projection is
+|p_i| ``(Build_``\ `R` |t_1| … |t_n|\ ``)`` :math:`{\rightarrow_{\iota}}` |t_i|.
+However, to take the :math:`{\delta}` flag into
+account, projections can be in two states: folded or unfolded. An
+unfolded primitive projection application obeys the rule above, while
+the folded version delta-reduces to the unfolded version. This allows to
+precisely mimic the usual unfolding rules of constants. Projections
+obey the usual ``simpl`` flags of the ``Arguments`` command in particular.
+There is currently no way to input unfolded primitive projections at the
+user-level, and one must use the ``Printing Primitive Projection Compatibility``
+to display unfolded primitive projections as matches and distinguish them from folded ones.
+
+
+Compatibility Projections and :g:`match`
+++++++++++++++++++++++++++++++++++++++++
+
+To ease compatibility with ordinary record types, each primitive
+projection is also defined as a ordinary constant taking parameters and
+an object of the record type as arguments, and whose body is an
+application of the unfolded primitive projection of the same name. These
+constants are used when elaborating partial applications of the
+projection. One can distinguish them from applications of the primitive
+projection if the ``Printing Primitive Projection Parameters`` option
+is off: For a primitive projection application, parameters are printed
+as underscores while for the compatibility projections they are printed
+as usual.
+
+Additionally, user-written :g:`match` constructs on primitive records
+are desugared into substitution of the projections, they cannot be
+printed back as :g:`match` constructs.
+
+Variants and extensions of :g:`match`
+-------------------------------------
+
+.. _extended pattern-matching:
+
+Multiple and nested pattern-matching
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The basic version of :g:`match` allows pattern-matching on simple
+patterns. As an extension, multiple nested patterns or disjunction of
+patterns are allowed, as in ML-like languages.
+
+The extension just acts as a macro that is expanded during parsing
+into a sequence of match on simple patterns. Especially, a
+construction defined using the extended match is generally printed
+under its expanded form (see ``Set Printing Matching`` in :ref:`controlling-match-pp`).
+
+See also: :ref:`extended pattern-matching`.
+
+
+Pattern-matching on boolean values: the if expression
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For inductive types with exactly two constructors and for pattern-matching
+expressions that do not depend on the arguments of the constructors, it is possible
+to use a ``if … then … else`` notation. For instance, the definition
+
+.. coqtop:: all
+
+   Definition not (b:bool) :=
+   match b with
+   | true => false
+   | false => true
+   end.
+
+can be alternatively written
+
+.. coqtop:: reset all
+
+   Definition not (b:bool) := if b then false else true.
+
+More generally, for an inductive type with constructors |C_1| and |C_2|,
+we have the following equivalence
+
+::
+
+  if term [dep_ret_type] then term₁ else term₂ ≡
+  match term [dep_ret_type] with
+  | C₁ _ … _ => term₁
+  | C₂ _ … _ => term₂
+  end
+
+.. example::
+
+  .. coqtop:: all
+
+     Check (fun x (H:{x=0}+{x<>0}) =>
+     match H with
+     | left _ => true
+     | right _ => false
+     end).
+
+Notice that the printing uses the :g:`if` syntax because `sumbool` is
+declared as such (see :ref:`controlling-match-pp`).
+
+
+Irrefutable patterns: the destructuring let variants
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pattern-matching on terms inhabiting inductive type having only one
+constructor can be alternatively written using :g:`let … in …`
+constructions. There are two variants of them.
+
+
+First destructuring let syntax
+++++++++++++++++++++++++++++++
+
+The expression :g:`let (`\ |ident_1|:g:`, … ,` |ident_n|\ :g:`) :=` |term_0|\ :g:`in` |term_1| performs
+case analysis on |term_0| which must be in an inductive type with one
+constructor having itself :math:`n` arguments. Variables |ident_1| … |ident_n| are
+bound to the :math:`n` arguments of the constructor in expression |term_1|. For
+instance, the definition
+
+.. coqtop:: reset all
+
+   Definition fst (A B:Set) (H:A * B) := match H with
+   | pair x y => x
+   end.
+
+can be alternatively written
+
+.. coqtop:: reset all
+
+   Definition fst (A B:Set) (p:A * B) := let (x, _) := p in x.
+
+Notice that reduction is different from regular :g:`let … in …`
+construction since it happens only if |term_0| is in constructor form.
+Otherwise, the reduction is blocked.
+
+The pretty-printing of a definition by matching on a irrefutable
+pattern can either be done using :g:`match` or the :g:`let` construction
+(see Section :ref:`controlling-match-pp`).
+
+If term inhabits an inductive type with one constructor `C`, we have an
+equivalence between
+
+::
+
+   let (ident₁, …, identₙ) [dep_ret_type] := term in term'
+
+and
+
+::
+
+   match term [dep_ret_type] with
+   C ident₁ … identₙ => term'
+   end
+
+
+Second destructuring let syntax
++++++++++++++++++++++++++++++++
+
+Another destructuring let syntax is available for inductive types with
+one constructor by giving an arbitrary pattern instead of just a tuple
+for all the arguments. For example, the preceding example can be
+written:
+
+.. coqtop:: reset all
+
+   Definition fst (A B:Set) (p:A*B) := let 'pair x _ := p in x.
+
+This is useful to match deeper inside tuples and also to use notations
+for the pattern, as the syntax :g:`let ’p := t in b` allows arbitrary
+patterns to do the deconstruction. For example:
+
+.. coqtop:: all
+
+   Definition deep_tuple (A:Set) (x:(A*A)*(A*A)) : A*A*A*A :=
+   let '((a,b), (c, d)) := x in (a,b,c,d).
+
+   Notation " x 'With' p " := (exist _ x p) (at level 20).
+
+   Definition proj1_sig' (A:Set) (P:A->Prop) (t:{ x:A | P x }) : A :=
+   let 'x With p := t in x.
+
+When printing definitions which are written using this construct it
+takes precedence over let printing directives for the datatype under
+consideration (see Section :ref:`controlling-match-pp`).
+
+
+.. _controlling-match-pp:
+
+Controlling pretty-printing of match expressions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following commands give some control over the pretty-printing
+of :g:`match` expressions.
+
+Printing nested patterns
++++++++++++++++++++++++++
+
+The Calculus of Inductive Constructions knows pattern-matching only
+over simple patterns. It is however convenient to re-factorize nested
+pattern-matching into a single pattern-matching over a nested
+pattern. |Coq|’s printer tries to do such limited re-factorization.
+
+.. cmd:: Set Printing Matching.
+
+This tells |Coq| to try to use nested patterns. This is the default
+behavior.
+
+.. cmd:: Unset Printing Matching.
+
+This tells |Coq| to print only simple pattern-matching problems in the
+same way as the |Coq| kernel handles them.
+
+.. cmd:: Test Printing Matching.
+
+This tells if the printing matching mode is on or off. The default is
+on.
+
+Factorization of clauses with same right-hand side
+++++++++++++++++++++++++++++++++++++++++++++++++++
+
+When several patterns share the same right-hand side, it is additionally
+possible to share the clauses using disjunctive patterns. Assuming that the
+printing matching mode is on, whether |Coq|'s printer shall try to do this kind
+of factorization is governed by the following commands:
+
+.. cmd:: Set Printing Factorizable Match Patterns.
+
+This tells |Coq|'s printer to try to use disjunctive patterns. This is the
+default behavior.
+
+.. cmd:: Unset Printing Factorizable Match Patterns.
+
+This tells |Coq|'s printer not to try to use disjunctive patterns.
+
+.. cmd:: Test Printing Factorizable Match Patterns.
+
+This tells if the factorization of clauses with same right-hand side is on or
+off.
+
+Use of a default clause
++++++++++++++++++++++++
+
+When several patterns share the same right-hand side which do not depend on the
+arguments of the patterns, yet an extra factorization is possible: the
+disjunction of patterns can be replaced with a `_` default clause. Assuming that
+the printing matching mode and the factorization mode are on, whether |Coq|'s
+printer shall try to use a default clause is governed by the following commands:
+
+.. cmd:: Set Printing Allow Default Clause.
+
+This tells |Coq|'s printer to use a default clause when relevant. This is the
+default behavior.
+
+.. cmd:: Unset Printing Allow Default Clause.
+
+This tells |Coq|'s printer not to use a default clause.
+         
+.. cmd:: Test Printing Allow Default Clause.
+
+This tells if the use of a default clause is allowed.
+
+Printing of wildcard patterns
+++++++++++++++++++++++++++++++
+
+Some variables in a pattern may not occur in the right-hand side of
+the pattern-matching clause. There are options to control the display
+of these variables.
+
+.. cmd:: Set Printing Wildcard.
+
+The variables having no occurrences in the right-hand side of the
+pattern-matching clause are just printed using the wildcard symbol
+“_”.
+
+.. cmd:: Unset Printing Wildcard.
+
+The variables, even useless, are printed using their usual name. But
+some non-dependent variables have no name. These ones are still
+printed using a “_”.
+
+.. cmd:: Test Printing Wildcard.
+
+This tells if the wildcard printing mode is on or off. The default is
+to print wildcard for useless variables.
+
+
+Printing of the elimination predicate
++++++++++++++++++++++++++++++++++++++
+
+In most of the cases, the type of the result of a matched term is
+mechanically synthesizable. Especially, if the result type does not
+depend of the matched term.
+
+.. cmd:: Set Printing Synth.
+
+The result type is not printed when |Coq| knows that it can re-
+synthesize it.
+
+.. cmd:: Unset Printing Synth.
+
+This forces the result type to be always printed.
+
+.. cmd:: Test Printing Synth.
+
+This tells if the non-printing of synthesizable types is on or off.
+The default is to not print synthesizable types.
+
+
+Printing matching on irrefutable patterns
+++++++++++++++++++++++++++++++++++++++++++
+
+If an inductive type has just one constructor, pattern-matching can be
+written using the first destructuring let syntax.
+
+.. cmd:: Add Printing Let @ident.
+
+   This adds `ident` to the list of inductive types for which pattern-matching
+   is written using a let expression.
+
+.. cmd:: Remove Printing Let @ident.
+
+   This removes ident from this list. Note that removing an inductive
+   type from this list has an impact only for pattern-matching written
+   using :g:`match`. Pattern-matching explicitly written using a destructuring
+   :g:`let` are not impacted.
+
+.. cmd:: Test Printing Let for @ident.
+
+   This tells if `ident` belongs to the list.
+
+.. cmd:: Print Table Printing Let.
+
+   This prints the list of inductive types for which pattern-matching is
+   written using a let expression.
+
+   The list of inductive types for which pattern-matching is written
+   using a :g:`let` expression is managed synchronously. This means that it is
+   sensitive to the command ``Reset``.
+
+
+Printing matching on booleans
++++++++++++++++++++++++++++++
+
+If an inductive type is isomorphic to the boolean type, pattern-matching
+can be written using ``if`` … ``then`` … ``else`` …:
+
+.. cmd:: Add Printing If @ident.
+
+   This adds ident to the list of inductive types for which pattern-matching is
+   written using an if expression.
+
+.. cmd:: Remove Printing If @ident.
+
+   This removes ident from this list.
+
+.. cmd:: Test Printing If for @ident.
+
+   This tells if ident belongs to the list.
+
+.. cmd:: Print Table Printing If.
+
+   This prints the list of inductive types for which pattern-matching is
+   written using an if expression.
+
+The list of inductive types for which pattern-matching is written
+using an ``if`` expression is managed synchronously. This means that it is
+sensitive to the command ``Reset``.
+
+This example emphasizes what the printing options offer.
+
+.. example::
+
+     .. coqtop:: all
+
+       Definition snd (A B:Set) (H:A * B) := match H with
+       | pair x y => y
+       end.
+
+       Test Printing Let for prod.
+
+       Print snd.
+
+       Remove Printing Let prod.
+
+       Unset Printing Synth.
+
+       Unset Printing Wildcard.
+
+       Print snd.
+
+.. _advanced-recursive-functions:
+       
+Advanced recursive functions
+----------------------------
+
+The following experimental command is available when the ``FunInd`` library has been loaded via ``Require Import FunInd``:
+
+.. cmd:: Function @ident {* @binder} { @decrease_annot } : @type := @term.
+
+This command can be seen as a generalization of ``Fixpoint``. It is actually a wrapper
+for several ways of defining a function *and other useful related
+objects*, namely: an induction principle that reflects the recursive
+structure of the function (see Section :ref:`TODO-8.5.5-functional-induction`) and its fixpoint equality.
+The meaning of this declaration is to define a function ident,
+similarly to ``Fixpoint`. Like in ``Fixpoint``, the decreasing argument must
+be given (unless the function is not recursive), but it might not
+necessarily be *structurally* decreasing. The point of the {} annotation
+is to name the decreasing argument *and* to describe which kind of
+decreasing criteria must be used to ensure termination of recursive
+calls.
+
+The ``Function`` construction also enjoys the ``with`` extension to define
+mutually recursive definitions. However, this feature does not work
+for non structurally recursive functions.
+
+See the documentation of functional induction (:ref:`TODO-8.5.5-functional-induction`)
+and ``Functional Scheme`` (:ref:`TODO-13.2-functional-scheme`) for how to use
+the induction principle to easily reason about the function.
+
+Remark: To obtain the right principle, it is better to put rigid
+parameters of the function as first arguments. For example it is
+better to define plus like this:
+
+.. coqtop:: reset none
+
+   Require Import FunInd.
+
+.. coqtop:: all
+
+   Function plus (m n : nat) {struct n} : nat :=
+   match n with
+   | 0 => m
+   | S p => S (plus m p)
+   end.
+
+than like this:
+
+.. coqtop:: reset all
+
+   Function plus (n m : nat) {struct n} : nat :=
+   match n with
+   | 0 => m
+   | S p => S (plus p m)
+   end.
+
+
+*Limitations*
+
+|term_0| must be built as a *pure pattern-matching tree* (:g:`match … with`)
+with applications only *at the end* of each branch.
+
+Function does not support partial application of the function being
+defined. Thus, the following example cannot be accepted due to the
+presence of partial application of `wrong` in the body of
+`wrong` :
+
+.. coqtop:: all
+
+   Fail Function wrong (C:nat) : nat :=
+   List.hd 0 (List.map wrong (C::nil)).
+
+For now, dependent cases are not treated for non structurally
+terminating functions.
+
+.. exn:: The recursive argument must be specified
+.. exn:: No argument name @ident
+.. exn:: Cannot use mutual definition with well-founded recursion or measure
+
+.. warn:: Cannot define graph for @ident
+
+    The generation of the graph relation (`R_ident`) used to compute the induction scheme of ident
+    raised a typing error. Only `ident` is defined; the induction scheme
+    will not be generated. This error happens generally when:
+
+    - the definition uses pattern matching on dependent types,
+      which ``Function`` cannot deal with yet.
+    - the definition is not a *pattern-matching tree* as explained above.
+
+.. warn:: Cannot define principle(s) for @ident
+
+     The generation of the graph relation (`R_ident`) succeeded but the induction principle
+     could not be built. Only `ident` is defined. Please report.
+
+.. warn:: Cannot build functional inversion principle
+
+     `functional inversion` will not be available for the function.
+
+See also: :ref:`TODO-13.2-generating-ind-principles` and ref:`TODO-8.5.5-functional-induction`
+
+Depending on the ``{…}`` annotation, different definition mechanisms are
+used by ``Function``. A more precise description is given below.
+
+.. cmdv:: Function @ident {* @binder } : @type := @term
+
+   Defines the not recursive function `ident` as if declared with `Definition`. Moreover
+   the following are defined:
+
+    + `ident_rect`, `ident_rec` and `ident_ind`, which reflect the pattern
+      matching structure of `term` (see the documentation of :ref:`TODO-1.3.3-Inductive`);
+    + The inductive `R_ident` corresponding to the graph of `ident` (silently);
+    + `ident_complete` and `ident_correct` which are inversion information
+      linking the function and its graph.
+
+.. cmdv:: Function @ident {* @binder } { struct @ident } : @type := @term
+
+   Defines the structural recursive function `ident` as if declared with ``Fixpoint``. Moreover the following are defined:
+
+    + The same objects as above;
+    + The fixpoint equation of `ident`: `ident_equation`.
+
+.. cmdv:: Function @ident {* @binder } { measure @term @ident } : @type := @term
+.. cmdv:: Function @ident {* @binder } { wf @term @ident } : @type := @term
+
+   Defines a recursive function by well-founded recursion. The module ``Recdef``
+   of the standard library must be loaded for this feature. The ``{}``
+   annotation is mandatory and must be one of the following:
+
+    + ``{measure`` `term` `ident` ``}`` with `ident` being the decreasing argument
+      and `term` being a function from type of `ident` to ``nat`` for which
+      value on the decreasing argument decreases (for the ``lt`` order on ``nat``)
+      at each recursive call of `term`. Parameters of the function are
+      bound in `term`\ ;
+    + ``{wf`` `term` `ident` ``}`` with `ident` being the decreasing argument and
+      `term` an ordering relation on the type of `ident` (i.e. of type
+      `T`\ :math:`_{\sf ident}` → `T`\ :math:`_{\sf ident}` → ``Prop``) for which the decreasing argument
+      decreases at each recursive call of `term`. The order must be well-founded.
+      Parameters of the function are bound in `term`.
+
+   Depending on the annotation, the user is left with some proof
+   obligations that will be used to define the function. These proofs
+   are: proofs that each recursive call is actually decreasing with
+   respect to the given criteria, and (if the criteria is `wf`) a proof
+   that the ordering relation is well-founded. Once proof obligations are
+   discharged, the following objects are defined:
+
+     + The same objects as with the struct;
+     + The lemma `ident`\ :math:`_{\sf tcc}` which collects all proof obligations in one
+       property;
+     + The lemmas `ident`\ :math:`_{\sf terminate}` and `ident`\ :math:`_{\sf F}` which is needed to be inlined
+       during extraction of ident.
+
+   The way this recursive function is defined is the subject of several
+   papers by Yves Bertot and Antonia Balaa on the one hand, and Gilles
+   Barthe, Julien Forest, David Pichardie, and Vlad Rusu on the other
+   hand. Remark: Proof obligations are presented as several subgoals
+   belonging to a Lemma `ident`\ :math:`_{\sf tcc}`.
+
+
+Section mechanism
+-----------------
+
+The sectioning mechanism can be used to to organize a proof in
+structured sections. Then local declarations become available (see
+Section :ref:`TODO-1.3.2-Definitions`).
+
+
+.. cmd:: Section @ident.
+
+   This command is used to open a section named `ident`.
+
+
+.. cmd:: End @ident.
+
+    This command closes the section named `ident`. After closing of the
+    section, the local declarations (variables and local definitions) get
+    *discharged*, meaning that they stop being visible and that all global
+    objects defined in the section are generalized with respect to the
+    variables and local definitions they each depended on in the section.
+
+    .. example::
+
+        .. coqtop:: all
+
+           Section s1.
+
+           Variables x y : nat.
+
+           Let y' := y.
+
+           Definition x' := S x.
+
+           Definition x'' := x' + y'.
+
+           Print x'.
+
+           End s1.
+
+           Print x'.
+
+          Print x''.
+
+    Notice the difference between the value of `x’` and `x’’` inside section
+    `s1` and outside.
+
+    .. exn:: This is not the last opened section
+
+**Remarks:**
+
+#. Most commands, like ``Hint``, ``Notation``, option management, … which
+   appear inside a section are canceled when the section is closed.
+
+
+Module system
+-------------
+
+The module system provides a way of packaging related elements
+together, as well as a means of massive abstraction.
+
+  .. productionlist:: modules
+    module_type       : qualid
+                      : | `module_type` with Definition qualid := term
+                      : | `module_type` with Module qualid := qualid
+                      : | qualid qualid … qualid
+                      : | !qualid qualid … qualid
+    module_binding    : ( [Import|Export] ident … ident : module_type )
+    module_bindings   : `module_binding` … `module_binding`
+    module_expression : qualid … qualid
+                      : | !qualid … qualid
+
+  Syntax of modules
+
+In the syntax of module application, the ! prefix indicates that any
+`Inline` directive in the type of the functor arguments will be ignored
+(see :ref:`named_module_type` below).
+
+
+.. cmd:: Module @ident.
+
+   This command is used to start an interactive module named `ident`.
+
+.. cmdv:: Module @ident {* @module_binding}.
+
+   Starts an interactive functor with
+   parameters given by module_bindings.
+
+.. cmdv:: Module @ident : @module_type.
+
+   Starts an interactive module specifying its module type.
+
+.. cmdv:: Module @ident {* @module_binding} : @module_type.
+
+   Starts an interactive functor with parameters given by the list of `module binding`, and output module
+   type `module_type`.
+
+.. cmdv:: Module @ident <: {+<: @module_type }.
+
+   Starts an interactive module satisfying each `module_type`.
+
+ .. cmdv:: Module @ident {* @module_binding} <: {+<; @module_type }.
+
+   Starts an interactive functor with parameters given by the list of `module_binding`. The output module type
+   is verified against each `module_type`.
+
+.. cmdv:: Module [ Import | Export ].
+
+   Behaves like ``Module``, but automatically imports or exports the module.
+
+Reserved commands inside an interactive module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. cmd:: Include @module.
+
+   Includes the content of module in the current
+   interactive module. Here module can be a module expression or a module
+   type expression. If module is a high-order module or module type
+   expression then the system tries to instantiate module by the current
+   interactive module.
+
+.. cmd:: Include {+<+ @module}.
+
+   is a shortcut for the commands ``Include`` `module` for each `module`.
+
+.. cmd:: End @ident.
+
+   This command closes the interactive module `ident`. If the module type
+   was given the content of the module is matched against it and an error
+   is signaled if the matching fails. If the module is basic (is not a
+   functor) its components (constants, inductive types, submodules etc.)
+   are now available through the dot notation.
+
+    .. exn:: No such label @ident
+
+    .. exn:: Signature components for label @ident do not match
+
+    .. exn:: This is not the last opened module
+
+.. cmd:: Module @ident := @module_expression.
+
+    This command defines the module identifier `ident` to be equal
+    to `module_expression`.
+
+    .. cmdv:: Module @ident {* @module_binding} := @module_expression.
+
+       Defines a functor with parameters given by the list of `module_binding` and body `module_expression`.
+
+    .. cmdv:: Module @ident {* @module_binding} : @module_type := @module_expression.
+
+       Defines a functor with parameters given by the list of `module_binding` (possibly none), and output module type `module_type`,
+       with body `module_expression`.
+
+    .. cmdv:: Module @ident {* @module_binding} <: {+<: @module_type} := @module_expression.
+
+       Defines a functor with parameters given by module_bindings (possibly none) with body `module_expression`.
+       The body is checked against each |module_type_i|.
+
+    .. cmdv:: Module @ident {* @module_binding} := {+<+ @module_expression}.
+
+       is equivalent to an interactive module where each `module_expression` is included.
+
+.. _named_module_type:
+
+.. cmd:: Module Type @ident.
+
+This command is used to start an interactive module type `ident`.
+
+    .. cmdv:: Module Type @ident {* @module_binding}.
+
+       Starts an interactive functor type with parameters given by `module_bindings`.
+
+
+Reserved commands inside an interactive module type:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. cmd:: Include @module.
+
+   Same as ``Include`` inside a module.
+
+.. cmd:: Include {+<+ @module}.
+
+   is a shortcut for the command ``Include`` `module` for each `module`.
+
+.. cmd:: @assumption_keyword Inline @assums.
+
+   The instance of this assumption will be automatically expanded at functor application, except when
+   this functor application is prefixed by a ``!`` annotation.
+
+.. cmd:: End @ident.
+
+   This command closes the interactive module type `ident`.
+
+   .. exn:: This is not the last opened module type
+
+.. cmd:: Module Type @ident := @module_type.
+
+   Defines a module type `ident` equal to `module_type`.
+
+    .. cmdv:: Module Type @ident {* @module_binding} := @module_type.
+
+       Defines a functor type `ident` specifying functors taking arguments `module_bindings` and
+       returning `module_type`.
+
+    .. cmdv:: Module Type @ident {* @module_binding} := {+<+ @module_type }.
+
+       is equivalent to an interactive module type were each `module_type` is included.
+
+.. cmd:: Declare Module @ident : @module_type.
+
+   Declares a module `ident` of type `module_type`.
+
+    .. cmdv:: Declare Module @ident {* @module_binding} : @module_type.
+
+       Declares a functor with parameters given by the list of `module_binding` and output module type
+       `module_type`.
+
+.. example::
+
+    Let us define a simple module.
+
+    .. coqtop:: all
+
+       Module M.
+
+       Definition T := nat.
+
+       Definition x := 0.
+
+       Definition y : bool.
+
+       exact true.
+
+       Defined.
+
+       End M.
+
+Inside a module one can define constants, prove theorems and do any
+other things that can be done in the toplevel. Components of a closed
+module can be accessed using the dot notation:
+
+.. coqtop:: all
+
+   Print M.x.
+
+A simple module type:
+
+.. coqtop:: all
+
+   Module Type SIG.
+
+   Parameter T : Set.
+
+   Parameter x : T.
+
+   End SIG.
+
+Now we can create a new module from M, giving it a less precise
+specification: the y component is dropped as well as the body of x.
+
+.. coqtop:: all
+
+   Module N : SIG with Definition T := nat := M.
+
+   Print N.T.
+
+   Print N.x.
+
+   Fail Print N.y.
+
+.. reset to remove N (undo in last coqtop block doesn't seem to do that), invisibly redefine M, SIG
+.. coqtop:: none reset
+
+   Module M.
+
+   Definition T := nat.
+
+   Definition x := 0.
+
+   Definition y : bool.
+
+   exact true.
+
+   Defined.
+
+   End M.
+
+   Module Type SIG.
+
+   Parameter T : Set.
+
+   Parameter x : T.
+
+   End SIG.
+
+The definition of ``N`` using the module type expression ``SIG`` with
+``Definition T := nat`` is equivalent to the following one:
+
+.. coqtop:: all
+
+   Module Type SIG'.
+
+   Definition T : Set := nat.
+
+   Parameter x : T.
+
+   End SIG'.
+
+   Module N : SIG' := M.
+
+If we just want to be sure that the our implementation satisfies a
+given module type without restricting the interface, we can use a
+transparent constraint
+
+.. coqtop:: all
+
+   Module P <: SIG := M.
+
+   Print P.y.
+
+Now let us create a functor, i.e. a parametric module
+
+.. coqtop:: all
+
+   Module Two (X Y: SIG).
+
+   Definition T := (X.T * Y.T)%type.
+
+   Definition x := (X.x, Y.x).
+
+   End Two.
+
+and apply it to our modules and do some computations:
+
+.. coqtop:: all
+
+   Module Q := Two M N.
+
+   Eval compute in (fst Q.x + snd Q.x).
+
+In the end, let us define a module type with two sub-modules, sharing
+some of the fields and give one of its possible implementations:
+
+.. coqtop:: all
+
+   Module Type SIG2.
+
+   Declare Module M1 : SIG.
+
+   Module M2 <: SIG.
+
+   Definition T := M1.T.
+
+   Parameter x : T.
+
+   End M2.
+
+   End SIG2.
+
+   Module Mod <: SIG2.
+
+   Module M1.
+
+   Definition T := nat.
+
+   Definition x := 1.
+
+   End M1.
+
+   Module M2 := M.
+
+   End Mod.
+
+Notice that ``M`` is a correct body for the component ``M2`` since its ``T``
+component is equal ``nat`` and hence ``M1.T`` as specified.
+
+**Remarks:**
+
+#. Modules and module types can be nested components of each other.
+#. One can have sections inside a module or a module type, but not a
+   module or a module type inside a section.
+#. Commands like ``Hint`` or ``Notation`` can also appear inside modules and
+   module types. Note that in case of a module definition like:
+
+::
+
+  Module N : SIG := M.
+
+or::
+
+  Module N : SIG. … End N.
+
+hints and the like valid for ``N`` are not those defined in ``M`` (or the module body) but the ones defined
+in ``SIG``.
+
+
+.. _import_qualid:
+
+.. cmd:: Import @qualid.
+
+    If `qualid` denotes a valid basic module (i.e. its module type is a
+    signature), makes its components available by their short names.
+
+.. example::
+
+    .. coqtop:: reset all
+
+       Module Mod.
+
+       Definition T:=nat.
+
+       Check T.
+
+       End Mod.
+
+       Check Mod.T.
+
+       Fail Check T.
+
+       Import Mod.
+
+       Check T.
+
+Some features defined in modules are activated only when a module is
+imported. This is for instance the case of notations (see :ref:`TODO-12.1-Notations`).
+
+Declarations made with the Local flag are never imported by theImport
+command. Such declarations are only accessible through their fully
+qualified name.
+
+.. example::
+
+    .. coqtop:: all
+
+       Module A.
+
+       Module B.
+
+       Local Definition T := nat.
+
+       End B.
+
+       End A.
+
+       Import A.
+
+       Fail Check B.T.
+
+    .. cmdv:: Export @qualid
+
+       When the module containing the command Export qualid
+       is imported, qualid is imported as well.
+
+    .. exn:: @qualid is not a module
+
+    .. warn:: Trying to mask the absolute name @qualid!
+
+.. cmd:: Print Module @ident.
+
+    Prints the module type and (optionally) the body of the module `ident`.
+
+.. cmd:: Print Module Type @ident.
+
+    Prints the module type corresponding to `ident`.
+
+.. opt:: Short Module Printing
+
+    This option (off by default) disables the printing of the types of fields,
+    leaving only their names, for the commands ``Print Module`` and ``Print Module Type``.
+
+.. cmd:: Locate Module @qualid.
+
+    Prints the full name of the module `qualid`.
+
+Libraries and qualified names
+---------------------------------
+
+Names of libraries
+~~~~~~~~~~~~~~~~~~
+
+The theories developed in |Coq| are stored in *library files* which are
+hierarchically classified into *libraries* and *sublibraries*. To
+express this hierarchy, library names are represented by qualified
+identifiers qualid, i.e. as list of identifiers separated by dots (see
+:ref:`TODO-1.2.3-identifiers`). For instance, the library file ``Mult`` of the standard
+|Coq| library ``Arith`` is named ``Coq.Arith.Mult``. The identifier that starts
+the name of a library is called a *library root*. All library files of
+the standard library of |Coq| have the reserved root |Coq| but library
+file names based on other roots can be obtained by using |Coq| commands
+(coqc, coqtop, coqdep, …) options ``-Q`` or ``-R`` (see :ref:`TODO-14.3.3-command-line-options`).
+Also, when an interactive |Coq| session starts, a library of root ``Top`` is
+started, unless option ``-top`` or ``-notop`` is set (see :ref:`TODO-14.3.3-command-line-options`).
+
+
+Qualified names
+~~~~~~~~~~~~~~~
+
+Library files are modules which possibly contain submodules which
+eventually contain constructions (axioms, parameters, definitions,
+lemmas, theorems, remarks or facts). The *absolute name*, or *full
+name*, of a construction in some library file is a qualified
+identifier starting with the logical name of the library file,
+followed by the sequence of submodules names encapsulating the
+construction and ended by the proper name of the construction.
+Typically, the absolute name ``Coq.Init.Logic.eq`` denotes Leibniz’
+equality defined in the module Logic in the sublibrary ``Init`` of the
+standard library of |Coq|.
+
+The proper name that ends the name of a construction is the short name
+(or sometimes base name) of the construction (for instance, the short
+name of ``Coq.Init.Logic.eq`` is ``eq``). Any partial suffix of the absolute
+name is a *partially qualified name* (e.g. ``Logic.eq`` is a partially
+qualified name for ``Coq.Init.Logic.eq``). Especially, the short name of a
+construction is its shortest partially qualified name.
+
+|Coq| does not accept two constructions (definition, theorem, …) with
+the same absolute name but different constructions can have the same
+short name (or even same partially qualified names as soon as the full
+names are different).
+
+Notice that the notion of absolute, partially qualified and short
+names also applies to library file names.
+
+**Visibility**
+
+|Coq| maintains a table called the name table which maps partially qualified
+names of constructions to absolute names. This table is updated by the
+commands ``Require`` (see :ref:`TODO-6.5.1-Require`), Import and Export (see :ref:`import_qualid`) and
+also each time a new declaration is added to the context. An absolute
+name is called visible from a given short or partially qualified name
+when this latter name is enough to denote it. This means that the
+short or partially qualified name is mapped to the absolute name in
+|Coq| name table. Definitions flagged as Local are only accessible with
+their fully qualified name (see :ref:`TODO-1.3.2-definitions`).
+
+It may happen that a visible name is hidden by the short name or a
+qualified name of another construction. In this case, the name that
+has been hidden must be referred to using one more level of
+qualification. To ensure that a construction always remains
+accessible, absolute names can never be hidden.
+
+.. example::
+
+    .. coqtop:: all
+
+       Check 0.
+
+       Definition nat := bool.
+
+       Check 0.
+
+       Check Datatypes.nat.
+
+       Locate nat.
+
+See also: Command Locate in :ref:`TODO-6.3.10-locate-qualid` and Locate Library in
+:ref:`TODO-6.6.11-locate-library`.
+
+
+Libraries and filesystem
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Please note that the questions described here have been subject to
+redesign in |Coq| v8.5. Former versions of |Coq| use the same terminology
+to describe slightly different things.
+
+Compiled files (``.vo`` and ``.vio``) store sub-libraries. In order to refer
+to them inside |Coq|, a translation from file-system names to |Coq| names
+is needed. In this translation, names in the file system are called
+*physical* paths while |Coq| names are contrastingly called *logical*
+names.
+
+A logical prefix Lib can be associated to a physical pathpath using
+the command line option ``-Q`` `path` ``Lib``. All subfolders of path are
+recursively associated to the logical path ``Lib`` extended with the
+corresponding suffix coming from the physical path. For instance, the
+folder ``path/fOO/Bar`` maps to ``Lib.fOO.Bar``. Subdirectories corresponding
+to invalid |Coq| identifiers are skipped, and, by convention,
+subdirectories named ``CVS`` or ``_darcs`` are skipped too.
+
+Thanks to this mechanism, .vo files are made available through the
+logical name of the folder they are in, extended with their own
+basename. For example, the name associated to the file
+``path/fOO/Bar/File.vo`` is ``Lib.fOO.Bar.File``. The same caveat applies for
+invalid identifiers. When compiling a source file, the ``.vo`` file stores
+its logical name, so that an error is issued if it is loaded with the
+wrong loadpath afterwards.
+
+Some folders have a special status and are automatically put in the
+path. |Coq| commands associate automatically a logical path to files in
+the repository trees rooted at the directory from where the command is
+launched, coqlib/user-contrib/, the directories listed in the
+`$COQPATH`, `${XDG_DATA_HOME}/coq/` and `${XDG_DATA_DIRS}/coq/`
+environment variables (see`http://standards.freedesktop.org/basedir-
+spec/basedir-spec-latest.html`_) with the same physical-to-logical
+translation and with an empty logical prefix.
+
+The command line option ``-R`` is a variant of ``-Q`` which has the strictly
+same behavior regarding loadpaths, but which also makes the
+corresponding ``.vo`` files available through their short names in a way
+not unlike the ``Import`` command (see :ref:`import_qualid`). For instance, ``-R`` `path` ``Lib``
+associates to the ``filepath/fOO/Bar/File.vo`` the logical name
+``Lib.fOO.Bar.File``, but allows this file to be accessed through the
+short names ``fOO.Bar.File,Bar.File`` and ``File``. If several files with
+identical base name are present in different subdirectories of a
+recursive loadpath, which of these files is found first may be system-
+dependent and explicit qualification is recommended. The ``From`` argument
+of the ``Require`` command can be used to bypass the implicit shortening
+by providing an absolute root to the required file (see :ref:`TODO-6.5.1-require-qualid`).
+
+There also exists another independent loadpath mechanism attached to
+OCaml object files (``.cmo`` or ``.cmxs``) rather than |Coq| object
+files as described above. The OCaml loadpath is managed using
+the option ``-I`` `path` (in the OCaml world, there is neither a
+notion of logical name prefix nor a way to access files in
+subdirectories of path). See the command ``Declare`` ``ML`` ``Module`` in
+:ref:`TODO-6.5-compiled-files` to understand the need of the OCaml loadpath.
+
+See :ref:`TODO-14.3.3-command-line-options` for a more general view over the |Coq| command
+line options.
+
+
+Implicit arguments
+------------------
+
+An implicit argument of a function is an argument which can be
+inferred from contextual knowledge. There are different kinds of
+implicit arguments that can be considered implicit in different ways.
+There are also various commands to control the setting or the
+inference of implicit arguments.
+
+
+The different kinds of implicit arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Implicit arguments inferable from the knowledge of other arguments of a function
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+The first kind of implicit arguments covers the arguments that are
+inferable from the knowledge of the type of other arguments of the
+function, or of the type of the surrounding context of the
+application. Especially, such implicit arguments correspond to
+parameters dependent in the type of the function. Typical implicit
+arguments are the type arguments in polymorphic functions. There are
+several kinds of such implicit arguments.
+
+**Strict Implicit Arguments**
+
+An implicit argument can be either strict or non strict. An implicit
+argument is said to be *strict* if, whatever the other arguments of the
+function are, it is still inferable from the type of some other
+argument. Technically, an implicit argument is strict if it
+corresponds to a parameter which is not applied to a variable which
+itself is another parameter of the function (since this parameter may
+erase its arguments), not in the body of a match, and not itself
+applied or matched against patterns (since the original form of the
+argument can be lost by reduction).
+
+For instance, the first argument of
+::
+
+  cons: forall A:Set, A -> list A -> list A
+
+in module ``List.v`` is strict because :g:`list` is an inductive type and :g:`A`
+will always be inferable from the type :g:`list A` of the third argument of
+:g:`cons`. On the contrary, the second argument of a term of type
+::
+
+  forall P:nat->Prop, forall n:nat, P n -> ex nat P
+
+is implicit but not strict, since it can only be inferred from the
+type :g:`P n` of the third argument and if :g:`P` is, e.g., :g:`fun _ => True`, it
+reduces to an expression where ``n`` does not occur any longer. The first
+argument :g:`P` is implicit but not strict either because it can only be
+inferred from :g:`P n` and :g:`P` is not canonically inferable from an arbitrary
+:g:`n` and the normal form of :g:`P n`. Consider, e.g., that :g:`n` is :math:`0` and the third
+argument has type :g:`True`, then any :g:`P` of the form
+::
+
+  fun n => match n with 0 => True | _ => anything end
+
+would be a solution of the inference problem.
+
+**Contextual Implicit Arguments**
+
+An implicit argument can be *contextual* or not. An implicit argument
+is said *contextual* if it can be inferred only from the knowledge of
+the type of the context of the current expression. For instance, the
+only argument of::
+
+  nil : forall A:Set, list A`
+
+is contextual. Similarly, both arguments of a term of type::
+
+  forall P:nat->Prop, forall n:nat, P n \/ n = 0
+
+are contextual (moreover, :g:`n` is strict and :g:`P` is not).
+
+**Reversible-Pattern Implicit Arguments**
+
+There is another class of implicit arguments that can be reinferred
+unambiguously if all the types of the remaining arguments are known.
+This is the class of implicit arguments occurring in the type of
+another argument in position of reversible pattern, which means it is
+at the head of an application but applied only to uninstantiated
+distinct variables. Such an implicit argument is called *reversible-
+pattern implicit argument*. A typical example is the argument :g:`P` of
+nat_rec in
+::
+
+  nat_rec : forall P : nat -> Set, P 0 ->
+    (forall n : nat, P n -> P (S n)) -> forall x : nat, P x
+
+(:g:`P` is reinferable by abstracting over :g:`n` in the type :g:`P n`).
+
+See :ref:`controlling-rev-pattern-implicit-args` for the automatic declaration of reversible-pattern
+implicit arguments.
+
+Implicit arguments inferable by resolution
+++++++++++++++++++++++++++++++++++++++++++
+
+This corresponds to a class of non-dependent implicit arguments that
+are solved based on the structure of their type only.
+
+
+Maximal or non maximal insertion of implicit arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In case a function is partially applied, and the next argument to be
+applied is an implicit argument, two disciplines are applicable. In
+the first case, the function is considered to have no arguments
+furtherly: one says that the implicit argument is not maximally
+inserted. In the second case, the function is considered to be
+implicitly applied to the implicit arguments it is waiting for: one
+says that the implicit argument is maximally inserted.
+
+Each implicit argument can be declared to have to be inserted
+maximally or non maximally. This can be governed argument per argument
+by the command ``Implicit Arguments`` (see Section :ref:`declare-implicit-args`) or globally by the
+command ``Set Maximal Implicit Insertion`` (see Section :ref:`controlling-insertion-implicit-args`).
+See also :ref:`displaying-implicit-args`.
+
+
+Casual use of implicit arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In a given expression, if it is clear that some argument of a function
+can be inferred from the type of the other arguments, the user can
+force the given argument to be guessed by replacing it by “_”. If
+possible, the correct argument will be automatically generated.
+
+.. exn:: Cannot infer a term for this placeholder.
+
+   |Coq| was not able to deduce an instantiation of a “_”.
+
+.. _declare-implicit-args:
+
+Declaration of implicit arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In case one wants that some arguments of a given object (constant,
+inductive types, constructors, assumptions, local or not) are always
+inferred by |Coq|, one may declare once and for all which are the
+expected implicit arguments of this object. There are two ways to do
+this, *a priori* and *a posteriori*.
+
+
+Implicit Argument Binders
++++++++++++++++++++++++++
+
+In the first setting, one wants to explicitly give the implicit
+arguments of a declared object as part of its definition. To do this,
+one has to surround the bindings of implicit arguments by curly
+braces:
+
+.. coqtop:: all
+
+   Definition id {A : Type} (x : A) : A := x.
+
+This automatically declares the argument A of id as a maximally
+inserted implicit argument. One can then do as-if the argument was
+absent in every situation but still be able to specify it if needed:
+
+.. coqtop:: all
+
+   Definition compose {A B C} (g : B -> C) (f : A -> B) := fun x => g (f x).
+
+   Goal forall A, compose id id = id (A:=A).
+
+
+The syntax is supported in all top-level definitions:
+``Definition``, ``Fixpoint``, ``Lemma`` and so on. For (co-)inductive datatype
+declarations, the semantics are the following: an inductive parameter
+declared as an implicit argument need not be repeated in the inductive
+definition but will become implicit for the constructors of the
+inductive only, not the inductive type itself. For example:
+
+.. coqtop:: all
+
+   Inductive list {A : Type} : Type :=
+   | nil : list
+   | cons : A -> list -> list.
+
+   Print list.
+
+One can always specify the parameter if it is not uniform using the
+usual implicit arguments disambiguation syntax.
+
+
+Declaring Implicit Arguments
+++++++++++++++++++++++++++++
+
+To set implicit arguments *a posteriori*, one can use the command:
+
+.. cmd:: Arguments @qualid {* @possibly_bracketed_ident }.
+
+where the list of `possibly_bracketed_ident` is a prefix of the list of
+arguments of `qualid` where the ones to be declared implicit are
+surrounded by square brackets and the ones to be declared as maximally
+inserted implicits are surrounded by curly braces.
+
+After the above declaration is issued, implicit arguments can just
+(and have to) be skipped in any expression involving an application
+of `qualid`.
+
+Implicit arguments can be cleared with the following syntax:
+
+.. cmd:: Arguments @qualid : clear implicits.
+
+.. cmdv:: Global Arguments @qualid {* @possibly_bracketed_ident }
+
+   Says to recompute the implicit arguments of
+   `qualid` after ending of the current section if any, enforcing the
+   implicit arguments known from inside the section to be the ones
+   declared by the command.
+
+.. cmdv:: Local Arguments @qualid {* @possibly_bracketed_ident }.
+
+   When in a module, tell not to activate the
+   implicit arguments ofqualid declared by this command to contexts that
+   require the module.
+
+.. cmdv:: {? Global | Local } Arguments @qualid {*, {+ @possibly_bracketed_ident } }.
+
+   For names of constants, inductive types,
+   constructors, lemmas which can only be applied to a fixed number of
+   arguments (this excludes for instance constants whose type is
+   polymorphic), multiple implicit arguments declarations can be given.
+   Depending on the number of arguments qualid is applied to in practice,
+   the longest applicable list of implicit arguments is used to select
+   which implicit arguments are inserted. For printing, the omitted
+   arguments are the ones of the longest list of implicit arguments of
+   the sequence.
+
+.. example::
+
+    .. coqtop:: reset all
+
+       Inductive list (A:Type) : Type :=
+       | nil : list A
+       | cons : A -> list A -> list A.
+
+       Check (cons nat 3 (nil nat)).
+
+       Arguments cons [A] _ _.
+
+       Arguments nil [A].
+
+       Check (cons 3 nil).
+
+       Fixpoint map (A B:Type) (f:A->B) (l:list A) : list B := match l with nil => nil | cons a t => cons (f a) (map A B f t) end.
+
+       Fixpoint length (A:Type) (l:list A) : nat := match l with nil => 0 | cons _ m => S (length A m) end.
+
+       Arguments map [A B] f l.
+
+       Arguments length {A} l. (* A has to be maximally inserted *)
+
+       Check (fun l:list (list nat) => map length l).
+
+       Arguments map [A B] f l, [A] B f l, A B f l.
+
+       Check (fun l => map length l = map (list nat) nat length l).
+
+Remark: To know which are the implicit arguments of an object, use the
+command ``Print Implicit`` (see :ref:`displaying-implicit-args`).
+
+
+Automatic declaration of implicit arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+|Coq| can also automatically detect what are the implicit arguments of a
+defined object. The command is just
+
+.. cmd:: Arguments @qualid : default implicits.
+
+The auto-detection is governed by options telling if strict,
+contextual, or reversible-pattern implicit arguments must be
+considered or not (see :ref:`controlling-strict-implicit-args`, :ref:`controlling-strict-implicit-args`,
+:ref:`controlling-rev-pattern-implicit-args`, and also :ref:`controlling-insertion-implicit-args`).
+
+.. cmdv:: Global Arguments @qualid : default implicits
+
+    Tell to recompute the
+    implicit arguments of qualid after ending of the current section if
+    any.
+
+.. cmdv:: Local Arguments @qualid : default implicits
+
+       When in a module, tell not to activate the implicit arguments of `qualid` computed by this
+       declaration to contexts that requires the module.
+
+.. example::
+
+   .. coqtop:: reset all
+
+       Inductive list (A:Set) : Set :=
+       | nil : list A
+       | cons : A -> list A -> list A.
+
+       Arguments cons : default implicits.
+
+       Print Implicit cons.
+
+       Arguments nil : default implicits.
+
+       Print Implicit nil.
+
+       Set Contextual Implicit.
+
+       Arguments nil : default implicits.
+
+       Print Implicit nil.
+
+The computation of implicit arguments takes account of the unfolding
+of constants. For instance, the variable ``p`` below has type
+``(Transitivity R)`` which is reducible to
+``forall x,y:U, R x y -> forall z:U, R y z -> R x z``. As the variables ``x``, ``y`` and ``z``
+appear strictly in the body of the type, they are implicit.
+
+.. coqtop:: reset none
+
+   Set Warnings "-local-declaration".
+
+.. coqtop:: all
+
+   Variable X : Type.
+
+   Definition Relation := X -> X -> Prop.
+
+   Definition Transitivity (R:Relation) := forall x y:X, R x y -> forall z:X, R y z -> R x z.
+
+   Variables (R : Relation) (p : Transitivity R).
+
+   Arguments p : default implicits.
+
+   Print p.
+
+   Print Implicit p.
+
+   Variables (a b c : X) (r1 : R a b) (r2 : R b c).
+
+   Check (p r1 r2).
+
+
+Mode for automatic declaration of implicit arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In case one wants to systematically declare implicit the arguments
+detectable as such, one may switch to the automatic declaration of
+implicit arguments mode by using the command:
+
+.. cmd:: Set Implicit Arguments.
+
+Conversely, one may unset the mode by using ``Unset Implicit Arguments``.
+The mode is off by default. Auto-detection of implicit arguments is
+governed by options controlling whether strict and contextual implicit
+arguments have to be considered or not.
+
+.. _controlling-strict-implicit-args:
+
+Controlling strict implicit arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When the mode for automatic declaration of implicit arguments is on,
+the default is to automatically set implicit only the strict implicit
+arguments plus, for historical reasons, a small subset of the non-strict
+implicit arguments. To relax this constraint and to set
+implicit all non strict implicit arguments by default, use the command:
+
+.. cmd:: Unset Strict Implicit.
+
+Conversely, use the command ``Set Strict Implicit`` to restore the
+original mode that declares implicit only the strict implicit
+arguments plus a small subset of the non strict implicit arguments.
+
+In the other way round, to capture exactly the strict implicit
+arguments and no more than the strict implicit arguments, use the
+command
+
+.. cmd:: Set Strongly Strict Implicit.
+
+Conversely, use the command ``Unset Strongly Strict Implicit`` to let the
+option “Strict Implicit” decide what to do.
+
+Remark: In versions of |Coq| prior to version 8.0, the default was to
+declare the strict implicit arguments as implicit.
+
+.. _controlling-contextual-implicit-args:
+
+Controlling contextual implicit arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, |Coq| does not automatically set implicit the contextual
+implicit arguments. To tell |Coq| to infer also contextual implicit
+argument, use command
+
+.. cmd:: Set Contextual Implicit.
+
+Conversely, use command ``Unset Contextual Implicit`` to unset the
+contextual implicit mode.
+
+.. _controlling-rev-pattern-implicit-args:
+
+Controlling reversible-pattern implicit arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, |Coq| does not automatically set implicit the reversible-pattern
+implicit arguments. To tell |Coq| to infer also reversible-
+pattern implicit argument, use command
+
+.. cmd:: Set Reversible Pattern Implicit.
+
+Conversely, use command ``Unset Reversible Pattern Implicit`` to unset the
+reversible-pattern implicit mode.
+
+.. _controlling-insertion-implicit-args:
+
+Controlling the insertion of implicit arguments not followed by explicit arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Implicit arguments can be declared to be automatically inserted when a
+function is partially applied and the next argument of the function is
+an implicit one. In case the implicit arguments are automatically
+declared (with the command ``Set Implicit Arguments``), the command
+
+.. cmd:: Set Maximal Implicit Insertion.
+
+is used to tell to declare the implicit arguments with a maximal
+insertion status. By default, automatically declared implicit
+arguments are not declared to be insertable maximally. To restore the
+default mode for maximal insertion, use the command
+
+.. cmd:: Unset Maximal Implicit Insertion.
+
+Explicit applications
+~~~~~~~~~~~~~~~~~~~~~
+
+In presence of non-strict or contextual argument, or in presence of
+partial applications, the synthesis of implicit arguments may fail, so
+one may have to give explicitly certain implicit arguments of an
+application. The syntax for this is ``(`` `ident` ``:=`` `term` ``)`` where `ident` is the
+name of the implicit argument and term is its corresponding explicit
+term. Alternatively, one can locally deactivate the hiding of implicit
+arguments of a function by using the notation `@qualid` |term_1| … |term_n|.
+This syntax extension is given in the following grammar:
+
+.. _explicit_app_grammar:
+
+  .. productionlist:: explicit_apps
+       term     : @ qualid term … `term`
+                : | @ qualid
+                : | qualid `argument` … `argument`
+       argument : `term`
+                : | (ident := `term`)
+
+  Syntax for explicitly giving implicit arguments
+
+.. example:: (continued)
+
+    .. coqtop:: all
+
+       Check (p r1 (z:=c)).
+
+       Check (p (x:=a) (y:=b) r1 (z:=c) r2).
+
+
+Renaming implicit arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Implicit arguments names can be redefined using the following syntax:
+
+.. cmd:: Arguments @qualid {* @name} : @rename.
+
+With the assert flag, ``Arguments`` can be used to assert that a given
+object has the expected number of arguments and that these arguments
+are named as expected.
+
+.. example:: (continued)
+
+.. coqtop:: all
+
+   Arguments p [s t] _ [u] _: rename.
+
+   Check (p r1 (u:=c)).
+
+   Check (p (s:=a) (t:=b) r1 (u:=c) r2).
+
+   Fail Arguments p [s t] _ [w] _ : assert.
+
+.. _displaying-implicit-args:
+
+Displaying what the implicit arguments are
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To display the implicit arguments associated to an object, and to know
+if each of them is to be used maximally or not, use the command
+
+.. cmd:: Print Implicit @qualid.
+
+Explicit displaying of implicit arguments for pretty-printing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default the basic pretty-printing rules hide the inferable implicit
+arguments of an application. To force printing all implicit arguments,
+use command
+
+.. cmd:: Set Printing Implicit.
+
+Conversely, to restore the hiding of implicit arguments, use command
+
+.. cmd:: Unset Printing Implicit.
+
+By default the basic pretty-printing rules display the implicit
+arguments that are not detected as strict implicit arguments. This
+“defensive” mode can quickly make the display cumbersome so this can
+be deactivated by using the command
+
+.. cmd:: Unset Printing Implicit Defensive.
+
+Conversely, to force the display of non strict arguments, use command
+
+.. cmd:: Set Printing Implicit Defensive.
+
+See also: ``Set Printing All`` in :ref:`printing_constructions_full`.
+
+Interaction with subtyping
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When an implicit argument can be inferred from the type of more than
+one of the other arguments, then only the type of the first of these
+arguments is taken into account, and not an upper type of all of them.
+As a consequence, the inference of the implicit argument of “=” fails
+in
+
+.. coqtop:: all
+
+   Fail Check nat = Prop.
+
+but succeeds in
+
+.. coqtop:: all
+
+   Check Prop = nat.
+
+
+Deactivation of implicit arguments for parsing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use of implicit arguments can be deactivated by issuing the command:
+
+.. cmd:: Set Parsing Explicit.
+
+In this case, all arguments of constants, inductive types,
+constructors, etc, including the arguments declared as implicit, have
+to be given as if none arguments were implicit. By symmetry, this also
+affects printing. To restore parsing and normal printing of implicit
+arguments, use:
+
+.. cmd:: Unset Parsing Explicit.
+
+Canonical structures
+~~~~~~~~~~~~~~~~~~~~
+
+A canonical structure is an instance of a record/structure type that
+can be used to solve unification problems involving a projection
+applied to an unknown structure instance (an implicit argument) and a
+value. The complete documentation of canonical structures can be found
+in :ref:`canonicalstructures`; here only a simple example is given.
+
+Assume that `qualid` denotes an object ``(Build_struc`` |c_1| … |c_n| ``)`` in the
+structure *struct* of which the fields are |x_1|, …, |x_n|. Assume that
+`qualid` is declared as a canonical structure using the command
+
+.. cmd:: Canonical Structure @qualid.
+
+Then, each time an equation of the form ``(``\ |x_i| ``_)`` |eq_beta_delta_iota_zeta| |c_i| has to be
+solved during the type-checking process, `qualid` is used as a solution.
+Otherwise said, `qualid` is canonically used to extend the field |c_i|
+into a complete structure built on |c_i|.
+
+Canonical structures are particularly useful when mixed with coercions
+and strict implicit arguments. Here is an example.
+
+.. coqtop:: all
+
+   Require Import Relations.
+
+   Require Import EqNat.
+
+   Set Implicit Arguments.
+
+   Unset Strict Implicit.
+
+   Structure Setoid : Type := {Carrier :> Set; Equal : relation Carrier;
+                               Prf_equiv : equivalence Carrier Equal}.
+
+   Definition is_law (A B:Setoid) (f:A -> B) := forall x y:A, Equal x y -> Equal (f x) (f y).
+
+   Axiom eq_nat_equiv : equivalence nat eq_nat.
+
+   Definition nat_setoid : Setoid := Build_Setoid eq_nat_equiv.
+
+   Canonical Structure nat_setoid.
+
+Thanks to ``nat_setoid`` declared as canonical, the implicit arguments ``A``
+and ``B`` can be synthesized in the next statement.
+
+.. coqtop:: all
+
+   Lemma is_law_S : is_law S.
+
+Remark: If a same field occurs in several canonical structure, then
+only the structure declared first as canonical is considered.
+
+.. cmdv:: Canonical Structure @ident := @term : @type.
+
+.. cmdv:: Canonical Structure @ident := @term.
+
+.. cmdv:: Canonical Structure @ident : @type := @term.
+
+These are equivalent to a regular definition of `ident` followed by the declaration
+``Canonical Structure`` `ident`.
+
+See also: more examples in user contribution category (Rocq/ALGEBRA).
+
+
+Print Canonical Projections.
+++++++++++++++++++++++++++++
+
+This displays the list of global names that are components of some
+canonical structure. For each of them, the canonical structure of
+which it is a projection is indicated. For instance, the above example
+gives the following output:
+
+.. coqtop:: all
+
+   Print Canonical Projections.
+
+
+Implicit types of variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is possible to bind variable names to a given type (e.g. in a
+development using arithmetic, it may be convenient to bind the names `n`
+or `m` to the type ``nat`` of natural numbers). The command for that is
+
+.. cmd:: Implicit Types {+ @ident } : @type.
+
+The effect of the command is to automatically set the type of bound
+variables starting with `ident` (either `ident` itself or `ident` followed by
+one or more single quotes, underscore or digits) to be `type` (unless
+the bound variable is already declared with an explicit type in which
+case, this latter type is considered).
+
+.. example::
+
+    .. coqtop:: all
+
+       Require Import List.
+
+       Implicit Types m n : nat.
+
+       Lemma cons_inj_nat : forall m n l, n :: l = m :: l -> n = m.
+
+       intros m n.
+
+       Lemma cons_inj_bool : forall (m n:bool) l, n :: l = m :: l -> n = m.
+
+.. cmdv:: Implicit Type @ident : @type.
+
+  This is useful for declaring the implicit type of a single variable.
+
+.. cmdv:: Implicit Types {+ ( {+ @ident } : @term ) }
+
+  Adds blocks of implicit types with different specifications.
+
+Implicit generalization
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: `{ }
+.. index:: `( )
+
+Implicit generalization is an automatic elaboration of a statement
+with free variables into a closed statement where these variables are
+quantified explicitly. Implicit generalization is done inside binders
+starting with a \` and terms delimited by \`{ } and \`( ), always
+introducing maximally inserted implicit arguments for the generalized
+variables. Inside implicit generalization delimiters, free variables
+in the current context are automatically quantified using a product or
+a lambda abstraction to generate a closed term. In the following
+statement for example, the variables n and m are automatically
+generalized and become explicit arguments of the lemma as we are using
+\`( ):
+
+.. coqtop:: all
+
+   Generalizable All Variables.
+
+   Lemma nat_comm : `(n = n + 0).
+
+One can control the set of generalizable identifiers with
+the ``Generalizable`` vernacular command to avoid unexpected
+generalizations when mistyping identifiers. There are several commands
+that specify which variables should be generalizable.
+
+.. cmd:: Generalizable All Variables.
+
+   All variables are candidate for
+   generalization if they appear free in the context under a
+   generalization delimiter. This may result in confusing errors in case
+   of typos. In such cases, the context will probably contain some
+   unexpected generalized variable.
+
+.. cmd:: Generalizable No Variables.
+
+   Disable implicit generalization  entirely. This is the default behavior.
+
+.. cmd:: Generalizable (Variable | Variables) {+ @ident }.
+
+   Allow generalization of the given identifiers only. Calling this command multiple times
+   adds to the allowed identifiers.
+
+.. cmd:: Global Generalizable.
+
+   Allows exporting the choice of generalizable variables.
+
+One can also use implicit generalization for binders, in which case
+the generalized variables are added as binders and set maximally
+implicit.
+
+.. coqtop:: all
+
+   Definition id `(x : A) : A := x.
+
+   Print id.
+
+The generalizing binders \`{ } and \`( ) work similarly to their
+explicit counterparts, only binding the generalized variables
+implicitly, as maximally-inserted arguments. In these binders, the
+binding name for the bound object is optional, whereas the type is
+mandatory, dually to regular binders.
+
+
+Coercions
+---------
+
+Coercions can be used to implicitly inject terms from one *class* in
+which they reside into another one. A *class* is either a sort
+(denoted by the keyword ``Sortclass``), a product type (denoted by the
+keyword ``Funclass``), or a type constructor (denoted by its name), e.g.
+an inductive type or any constant with a type of the form
+``forall (`` |x_1| : |A_1| ) … ``(``\ |x_n| : |A_n|\ ``)``, `s` where `s` is a sort.
+
+Then the user is able to apply an object that is not a function, but
+can be coerced to a function, and more generally to consider that a
+term of type ``A`` is of type ``B`` provided that there is a declared coercion
+between ``A`` and ``B``. The main command is
+
+.. cmd:: Coercion @qualid : @class >-> @class.
+
+which declares the construction denoted by qualid as a coercion
+between the two given classes.
+
+More details and examples, and a description of the commands related
+to coercions are provided in :ref:`implicitcoercions`.
+
+.. _printing_constructions_full:
+
+Printing constructions in full
+------------------------------
+
+Coercions, implicit arguments, the type of pattern-matching, but also
+notations (see :ref:`syntaxextensionsandinterpretationscopes`) can obfuscate the behavior of some
+tactics (typically the tactics applying to occurrences of subterms are
+sensitive to the implicit arguments). The command
+
+.. cmd:: Set Printing All.
+
+deactivates all high-level printing features such as coercions,
+implicit arguments, returned type of pattern-matching, notations and
+various syntactic sugar for pattern-matching or record projections.
+Otherwise said, ``Set Printing All`` includes the effects of the commands
+``Set Printing Implicit``, ``Set Printing Coercions``, ``Set Printing Synth``,
+``Unset Printing Projections``, and ``Unset Printing Notations``. To reactivate
+the high-level printing features, use the command
+
+.. cmd:: Unset Printing All.
+
+Printing universes
+------------------
+
+The following command:
+
+.. cmd:: Set Printing Universes.
+
+activates the display of the actual level of each occurrence of ``Type``.
+See :ref:`TODO-4.1.1-sorts` for details. This wizard option, in combination
+with ``Set Printing All`` (see :ref:`printing_constructions_full`) can help to diagnose failures
+to unify terms apparently identical but internally different in the
+Calculus of Inductive Constructions. To reactivate the display of the
+actual level of the occurrences of Type, use
+
+.. cmd:: Unset Printing Universes.
+
+The constraints on the internal level of the occurrences of Type
+(see :ref:`TODO-4.1.1-sorts`) can be printed using the command
+
+.. cmd:: Print {? Sorted} Universes.
+
+If the optional ``Sorted`` option is given, each universe will be made
+equivalent to a numbered label reflecting its level (with a linear
+ordering) in the universe hierarchy.
+
+This command also accepts an optional output filename:
+
+.. cmd:: Print {? Sorted} Universes @string.
+
+If `string` ends in ``.dot`` or ``.gv``, the constraints are printed in the DOT
+language, and can be processed by Graphviz tools. The format is
+unspecified if `string` doesn’t end in ``.dot`` or ``.gv``.
+
+
+Existential variables
+---------------------
+
+|Coq| terms can include existential variables which represents unknown
+subterms to eventually be replaced by actual subterms.
+
+Existential variables are generated in place of unsolvable implicit
+arguments or “_” placeholders when using commands such as ``Check`` (see
+Section :ref:`TODO-6.3.1-check`) or when using tactics such as ``refine`` (see Section
+:ref:`TODO-8.2.3-refine`), as well as in place of unsolvable instances when using
+tactics such that ``eapply`` (see Section :ref:`TODO-8.2.4-apply`). An existential
+variable is defined in a context, which is the context of variables of
+the placeholder which generated the existential variable, and a type,
+which is the expected type of the placeholder.
+
+As a consequence of typing constraints, existential variables can be
+duplicated in such a way that they possibly appear in different
+contexts than their defining context. Thus, any occurrence of a given
+existential variable comes with an instance of its original context.
+In the simple case, when an existential variable denotes the
+placeholder which generated it, or is used in the same context as the
+one in which it was generated, the context is not displayed and the
+existential variable is represented by “?” followed by an identifier.
+
+.. coqtop:: all
+
+   Parameter identity : forall (X:Set), X -> X.
+
+   Check identity _ _.
+
+   Check identity _ (fun x => _).
+
+In the general case, when an existential variable ``?``\ `ident` appears
+outside of its context of definition, its instance, written under the
+form
+
+| ``{`` :n:`{*; @ident:=@term}` ``}``
+
+is appending to its name, indicating how the variables of its defining context are instantiated.
+The variables of the context of the existential variables which are
+instantiated by themselves are not written, unless the flag ``Printing Existential Instances``
+is on (see Section :ref:`explicit-display-existentials`), and this is why an
+existential variable used in the same context as its context of definition is written with no instance.
+
+.. coqtop:: all
+
+   Check (fun x y => _) 0 1.
+
+   Set Printing Existential Instances.
+
+   Check (fun x y => _) 0 1.
+
+Existential variables can be named by the user upon creation using
+the syntax ``?``\ `ident`. This is useful when the existential
+variable needs to be explicitly handled later in the script (e.g.
+with a named-goal selector, see :ref:`TODO-9.2-goal-selectors`).
+
+.. _explicit-display-existentials:
+
+Explicit displaying of existential instances for pretty-printing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The command:
+
+.. cmd:: Set Printing Existential Instances.
+
+activates the full display of how the context of an existential
+variable is instantiated at each of the occurrences of the existential
+variable.
+
+To deactivate the full display of the instances of existential
+variables, use
+
+.. cmd:: Unset Printing Existential Instances.
+
+Solving existential variables using tactics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Instead of letting the unification engine try to solve an existential
+variable by itself, one can also provide an explicit hole together
+with a tactic to solve it. Using the syntax ``ltac:(``\ `tacexpr`\ ``)``, the user
+can put a tactic anywhere a term is expected. The order of resolution
+is not specified and is implementation-dependent. The inner tactic may
+use any variable defined in its scope, including repeated alternations
+between variables introduced by term binding as well as those
+introduced by tactic binding. The expression `tacexpr` can be any tactic
+expression as described in :ref:`thetacticlanguage`.
+
+.. coqtop:: all
+
+   Definition foo (x : nat) : nat := ltac:(exact x).
+
+This construction is useful when one wants to define complicated terms
+using highly automated tactics without resorting to writing the proof-term
+by means of the interactive proof engine.
+
+This mechanism is comparable to the ``Declare Implicit Tactic`` command
+defined at :ref:`TODO-8.9.7-implicit-automation`, except that the used
+tactic is local to each hole instead of being declared globally.
