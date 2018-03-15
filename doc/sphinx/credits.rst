@@ -1297,3 +1297,113 @@ system, is now upcoming and will rely on Inria’s newly created Foundation.
 | Paris, August 2017,
 | Matthieu Sozeau and the |Coq| development team
 |
+
+Credits: version 8.8
+====================
+
+
+|Coq| version 8.8 contains the result of refinements and stabilization of
+features and deprecations, cleanups of the internals of the system along
+with a few new features. The main user visible changes are:
+
+- Kernel: fix a subject reduction failure due to allowing fixpoints
+  on non-recursive values, which allows to recover full parametricity
+  for CIC, by Matthieu Sozeau. Handling of evars in the VM (the kernel
+  still does not accept evars) by Maxime Dénès.
+
+- Gallina: always use the projection printing style for primitive
+  projections by Maxime Dénès.
+
+- Notations: many improvements on recursive notations and
+  integration with pattern binding by Hugo Herbelin.
+
+- Proof language: tacticals for profiling, timing and checking success
+  or failure of tactics by Jason Gross. The focusing bracket ``{``
+  supports single-numbered goal selectors, e.g. ``2:{``, by Théo
+  Zimmermann.
+
+- Vernacular: deprecation of commands and more uniform handling of the
+  ``Local`` flag, by Vincent Laporte and Maxime Dénès, part of a larger
+  attribute system overhaul. Experimental ``Show Extraction`` command by
+  Pierre Letouzey. Coercion now accepts ``Prop`` or ``Type`` as a source
+  by Arthur Charguéraud. ``Export`` modifier for options allowing to
+  export the option to modules that ``Import`` and not only ``Require``
+  a module, by Pierre-Marie Pédrot.
+
+- Universes: many user-level and API level enhancements: qualified
+  naming and printing, variance annotations for cumulative inductive
+  types, more general constraints and enhancements of the minimization
+  heuristics, interaction with modules by Gaëtan Gilbert, Pierre-Marie
+  Pédrot and Matthieu Sozeau.
+
+- Library: Decimal Numbers library by Pierre Letouzey and various small
+  improvements.
+
+- Documentation: a large community effort resulted in the migration
+  of the reference manual to the Sphinx documentation tool. The result
+  is this manual.
+
+- Tools: experimental ``-mangle-names`` option to coqtop/coqc for
+  linting proof scripts, by Jasper Hugunin.
+
+On the implementation side, the ``dev/doc/changes.md`` file
+documents the numerous changes to the implementation and improvements of
+interfaces. The file provides guidelines on porting a plugin to the new
+version.
+
+Version 8.8 also comes with a bunch of smaller-scale changes and
+improvements regarding the different components of the system.
+Most important ones are documented in the ``CHANGES`` file.
+
+The efficiency of the whole system has seen improvements thanks to
+contributions from Gaëtan Gilbert, Pierre-Marie Pédrot, Maxime Dénès and
+Matthieu Sozeau and performance issue tracking by Jason Gross and Paul
+Steckler.
+
+The official wiki and the bugtracker of |Coq| migrated to the GitHub
+platform, thanks to the work of Pierre Letouzey and Théo
+Zimmermann. Gaëtan Gilbert, Emilio Jesús Gallego Arias worked on
+maintaining and improving the continuous integration system.
+
+The OPAM repository for |Coq| packages has been maintained by Guillaume
+Melquiond, Matthieu Sozeau, Enrico Tassi with contributions from many
+users. A list of packages is available at https://coq.inria.fr/opam/www.
+
+Packaging tools and software development kits were prepared by Michael
+Soegtrop with the help of Maxime Dénès and Enrico Tassi for Windows, and
+Maxime Dénès for macOS. Packages are regularly built on the
+Travis and GitLab continuous integration server.
+
+The 40 contributors for this version are Yves Bertot, Joachim
+Breitner, Tej Chajed, Arthur Charguéraud, Jacques-Pascal Deplaix, Maxime
+Dénès, Jim Fehrle, Yannick Forster, Gaëtan Gilbert, Jason Gross, Samuel
+Gruetter, Thomas Hebb, Hugo Herbelin, Jasper Hugunin, Emilio Jesus
+Gallego Arias, Ralf Jung, Johannes Kloos, Matej Košík, Robbert Krebbers,
+Tony Beta Lambda, Vincent Laporte, Pierre Letouzey, Farzon Lotfi,
+Cyprien Mangin, Guillaume Melquiond, Raphaël Monat, Carl Patenaude
+Poulin, Pierre-Marie Pédrot, Matthew Ryan, Matt Quinn, Sigurd Schneider,
+Bernhard Schommer, Matthieu Sozeau, Arnaud Spiwack, Paul Steckler,
+Enrico Tassi, Anton Trunov, Martin Vassor, Vadim Zaliva and Théo
+Zimmermann.
+
+Version 8.8 is the third release of |Coq| developed on a time-based
+development cycle. Its development spanned 6 months from the release of
+|Coq| 8.7 and was based on a public roadmap. The development process
+was coordinated by Matthieu Sozeau. Maxime Dénès was in charge of the
+release process.
+
+Many power users helped to improve the design of the new features via
+the bug tracker, the pull request system, the |Coq| development mailing
+list or the coq-club@inria.fr mailing list. Special thanks to the users who
+contributed patches and intensive brain-storming and code reviews,
+starting with Jason Gross, Ralf Jung, Robbert Krebbers and Amin Timany.
+It would however be impossible to mention exhaustively the names
+of everybody who to some extent influenced the development.
+
+The |Coq| consortium, an organization directed towards users and
+supporters of the system, is now running and employs Maxime Dénès.
+The contacts of the Coq Consortium are Yves Bertot and Maxime Dénès.
+
+| Paris, March 2018,
+| Matthieu Sozeau and the |Coq| development team
+|
