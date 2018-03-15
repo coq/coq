@@ -1334,9 +1334,8 @@ function make_coq_installer {
 }
 
 ###################### ADDONS #####################
-
 function make_addon_bignums {
-  if build_prep https://github.com/coq/bignums/archive/ master zip 1 bignums-8.8.0; then
+  if build_prep https://github.com/coq/bignums/archive/ V8.8+beta1 zip 1; then
     # To make command lines shorter :-(
     echo 'COQ_SRC_SUBDIRS:=$(filter-out plugins/%,$(COQ_SRC_SUBDIRS)) plugins/syntax' >> Makefile.coq.local
     logn make make all
