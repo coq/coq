@@ -59,7 +59,7 @@ class CoqTop:
 
     def next_prompt(self):
         "Wait for the next coqtop prompt, and return the output preceeding it."
-        self.coqtop.expect(CoqTop.COQTOP_PROMPT, timeout = 1)
+        self.coqtop.expect(CoqTop.COQTOP_PROMPT, timeout = 10)
         return self.coqtop.before
 
     def sendone(self, sentence):
