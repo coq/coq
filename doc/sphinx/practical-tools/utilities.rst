@@ -64,9 +64,9 @@ coq_makefile -f _CoqProject -o CoqMakefile
 
 Such command generates the following files:
 \begin{description}
-	\item[{\tt CoqMakefile}] is a generic makefile for GNU Make that provides targets to build the project (both {\tt .v} and {\tt .ml*} files), to install it system-wide in the {\tt coq-contrib} directory (i.e. where \Coq\ is installed) as well as to invoke {\tt coqdoc} to generate html documentation.
+        \item[{\tt CoqMakefile}] is a generic makefile for GNU Make that provides targets to build the project (both {\tt .v} and {\tt .ml*} files), to install it system-wide in the {\tt coq-contrib} directory (i.e. where \Coq\ is installed) as well as to invoke {\tt coqdoc} to generate html documentation.
 
-	\item[{\tt CoqMakefile.conf}] contains make variables assignments that reflect the contents of the {\tt \_CoqProject} file as well as the path relevant to \Coq{}.
+        \item[{\tt CoqMakefile.conf}] contains make variables assignments that reflect the contents of the {\tt \_CoqProject} file as well as the path relevant to \Coq{}.
 \end{description}
 
 An optional file {\bf {\tt CoqMakefile.local}} can be provided by the user in order to extend {\tt CoqMakefile}.  In particular one can declare custom actions to be performed before or after the build process. Similarly one can customize the install target or even provide new targets.  Extension points are documented in paragraph \ref{coqmakefile:local}.
@@ -96,15 +96,15 @@ The optional file {\tt CoqMakefile.local} is included by the generated file
 
 \begin{description}
   \item[Variable assignment] to the variables listed in the {\tt Parameters}
-	  section of the generated makefile.  Here we describe only few of them.
+          section of the generated makefile.  Here we describe only few of them.
   \begin{description}
   \item[CAMLPKGS] can be used to specify third party findlib packages, and is
-	  passed to the OCaml compiler on building or linking of modules.
+          passed to the OCaml compiler on building or linking of modules.
           Eg: {\tt -package yojson}.
   \item[CAMLFLAGS] can be used to specify additional flags to the OCaml
-	  compiler, like {\tt -bin-annot} or {\tt -w...}.
-  \item[COQC, COQDEP, COQDOC] can be set in order to use alternative 
-	  binaries (e.g. wrappers)
+          compiler, like {\tt -bin-annot} or {\tt -w...}.
+  \item[COQC, COQDEP, COQDOC] can be set in order to use alternative
+          binaries (e.g. wrappers)
   \item[COQ\_SRC\_SUBDIRS] can be extended by including other paths in which {\tt *.cm*} files are searched. For example {\tt COQ\_SRC\_SUBDIRS+=user-contrib/Unicoq} lets you build a plugin containing OCaml code that depends on the OCaml code of {\tt Unicoq}.
   \end{description}
 \item[Rule extension]
@@ -117,20 +117,20 @@ install-extra::
 \end{verbatim}
   \begin{description}
   \item[pre-all::] run before the {\tt all} target.  One can use this
-	  to configure the project, or initialize sub modules or check
-	  dependencies are met.
+          to configure the project, or initialize sub modules or check
+          dependencies are met.
   \item[post-all::] run after the {\tt all} target.  One can use this
-	  to run a test suite, or compile extracted code.
+          to run a test suite, or compile extracted code.
   \item[install-extra::] run after {\tt install}.  One can use this
-	  to install extra files.
+          to install extra files.
   \item[install-doc::]  One can use this to install extra doc.
-  \item[uninstall::] 
+  \item[uninstall::]
   \item[uninstall-doc::]
   \item[clean::]
   \item[cleanall::]
   \item[archclean::]
   \item[merlin-hook::] One can append lines to the generated {\tt .merlin}
-	  file extending this target.
+          file extending this target.
   \end{description}
 \end{description}
 
@@ -316,10 +316,10 @@ KNOWNFILES   := Makefile _CoqProject
 .DEFAULT_GOAL := invoke-coqmakefile
 
 CoqMakefile: Makefile _CoqProject
-	$(COQBIN)coq_makefile -f _CoqProject -o CoqMakefile
+        $(COQBIN)coq_makefile -f _CoqProject -o CoqMakefile
 
 invoke-coqmakefile: CoqMakefile
-	$(MAKE) --no-print-directory -f CoqMakefile $(filter-out $(KNOWNTARGETS),$(MAKECMDGOALS))
+        $(MAKE) --no-print-directory -f CoqMakefile $(filter-out $(KNOWNTARGETS),$(MAKECMDGOALS))
 
 .PHONY: invoke-coqmakefile $(KNOWNFILES)
 
@@ -329,7 +329,7 @@ invoke-coqmakefile: CoqMakefile
 
 # This should be the last rule, to handle any targets not declared above
 %: invoke-coqmakefile
-	@true
+        @true
 \end{verbatim}
 
 \paragraph{Building a subset of the targets with -j} %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -344,11 +344,11 @@ the make utility, in particular it may build a shared prerequisite twice.
 
 \begin{itemize}
 \item Support for ``sub-directory'' is deprecated.  To perform actions before
-	or after the build (like invoking make on a subdirectory) one can
-	hook in {\tt pre-all} and {\tt post-all} extension points
+        or after the build (like invoking make on a subdirectory) one can
+        hook in {\tt pre-all} and {\tt post-all} extension points
 \item \texttt{-extra-phony} and \texttt{-extra} are deprecated.  To provide
-	additional target ({\tt .PHONY} or not) please use
-	{\tt CoqMakefile.local}
+        additional target ({\tt .PHONY} or not) please use
+        {\tt CoqMakefile.local}
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
