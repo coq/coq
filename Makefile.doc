@@ -68,7 +68,7 @@ REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
 
 REFMANTEXFILES:=$(addprefix doc/refman/, \
   headers.sty Reference-Manual.tex \
-  RefMan-uti.tex RefMan-ide.tex \
+  RefMan-uti.tex \
   AsyncProofs.tex RefMan-ssr.tex) \
   $(REFMANCOQTEXFILES) \
 
