@@ -1638,13 +1638,11 @@ let tclORELSEOPT t k =
       Proofview.tclZERO ~info e
     | Some tac -> tac)
 
-let general_apply with_delta with_destruct with_evars clear_flag
-    {CAst.loc;v=(c,lbind : EConstr.constr with_bindings)} =
+let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
+    clear_flag {CAst.loc;v=(c,lbind : EConstr.constr with_bindings)} =
   Proofview.Goal.enter begin fun gl ->
   let concl = Proofview.Goal.concl gl in
   let sigma = Tacmach.New.project gl in
-  let flags =
-    if with_delta then default_unify_flags () else default_no_delta_unify_flags () in
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
@@ -1653,7 +1651,12 @@ let general_apply with_delta with_destruct with_evars clear_flag
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
-
+    let ts =
+      if respect_opaque then Conv_oracle.get_transp_state (oracle env)
+      else full_transparent_state
+    in
+    let flags =
+      if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
     let thm_ty0 = nf_betaiota env sigma (Retyping.get_type_of env sigma c) in
     let try_apply thm_ty nprod =
       try
@@ -1719,14 +1722,14 @@ let rec apply_with_bindings_gen b e = function
         (general_apply b b e k cb)
         (apply_with_bindings_gen b e cbl)
 
-let apply_with_delayed_bindings_gen b e l = 
+let apply_with_delayed_bindings_gen b e l =
   let one k {CAst.loc;v=f} =
     Proofview.Goal.enter begin fun gl ->
       let sigma = Tacmach.New.project gl in
       let env = Proofview.Goal.env gl in
       let (sigma, cb) = f env sigma in
 	Tacticals.New.tclWITHHOLES e
-          (general_apply b b e k CAst.(make ?loc cb)) sigma
+          (general_apply ~respect_opaque:(not b) b b e k CAst.(make ?loc cb)) sigma
     end
   in
   let rec aux = function
@@ -1801,14 +1804,12 @@ let apply_in_once_main flags innerclause env sigma (loc,d,lbind) =
   in
   aux (make_clenv_binding env sigma (d,thm) lbind)
 
-let apply_in_once sidecond_first with_delta with_destruct with_evars naming
-    id (clear_flag,{ CAst.loc; v= d,lbind}) tac =
+let apply_in_once ?(respect_opaque = false) sidecond_first with_delta
+    with_destruct with_evars naming id (clear_flag,{ CAst.loc; v= d,lbind}) tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
-  let flags =
-    if with_delta then default_unify_flags () else default_no_delta_unify_flags () in
   let t' = Tacmach.New.pf_get_hyp_typ id gl in
   let innerclause = mk_clenv_from_env env sigma (Some 0) (mkVar id,t') in
   let targetid = find_name true (LocalAssum (Anonymous,t')) naming gl in
@@ -1816,6 +1817,12 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
+    let ts =
+      if respect_opaque then Conv_oracle.get_transp_state (oracle env)
+      else full_transparent_state
+    in
+    let flags =
+      if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
     try
       let clause = apply_in_once_main flags innerclause env sigma (loc,c,lbind) in
       clenv_refine_in ~sidecond_first with_evars targetid id sigma clause
@@ -1835,14 +1842,14 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
   aux [] with_destruct d
   end
 
-let apply_in_delayed_once sidecond_first with_delta with_destruct with_evars naming
-    id (clear_flag,{CAst.loc;v=f}) tac =
+let apply_in_delayed_once ?(respect_opaque = false) sidecond_first with_delta
+    with_destruct with_evars naming id (clear_flag,{CAst.loc;v=f}) tac =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let (sigma, c) = f env sigma in
     Tacticals.New.tclWITHHOLES with_evars 
-      (apply_in_once sidecond_first with_delta with_destruct with_evars
+      (apply_in_once ~respect_opaque sidecond_first with_delta with_destruct with_evars
          naming id (clear_flag,CAst.(make ?loc c)) tac)
       sigma
   end
@@ -2529,11 +2536,11 @@ let assert_as first hd ipat t =
 
 (* apply in as *)
 
-let general_apply_in sidecond_first with_delta with_destruct with_evars
-    id lemmas ipat =
+let general_apply_in ?(respect_opaque=false) sidecond_first with_delta
+    with_destruct with_evars id lemmas ipat =
   let tac (naming,lemma) tac id =
-    apply_in_delayed_once sidecond_first with_delta with_destruct with_evars
-      naming id lemma tac in
+    apply_in_delayed_once ~respect_opaque sidecond_first with_delta
+      with_destruct with_evars naming id lemma tac in
   Proofview.Goal.enter begin fun gl ->
   let destopt =
     if with_evars then MoveLast (* evars would depend on the whole context *)
@@ -2564,7 +2571,7 @@ let apply_in simple with_evars id lemmas ipat =
   general_apply_in false simple simple with_evars id lemmas ipat
 
 let apply_delayed_in simple with_evars id lemmas ipat =
-  general_apply_in false simple simple with_evars id lemmas ipat
+  general_apply_in ~respect_opaque:true false simple simple with_evars id lemmas ipat
 
 (*****************************)
 (* Tactics abstracting terms *)

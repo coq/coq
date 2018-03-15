@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Names
 open Constr
 open EConstr
 open Environ
@@ -40,7 +41,7 @@ val default_core_unify_flags : unit -> core_unify_flags
 val default_no_delta_core_unify_flags : unit -> core_unify_flags
 
 val default_unify_flags : unit -> unify_flags
-val default_no_delta_unify_flags : unit -> unify_flags
+val default_no_delta_unify_flags : transparent_state -> unify_flags
 
 val elim_flags : unit -> unify_flags
 val elim_no_delta_flags : unit -> unify_flags

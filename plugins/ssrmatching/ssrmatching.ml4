@@ -312,20 +312,22 @@ let unif_HO_args env ise0 pa i ca =
 (* for HO evars, though hopefully Miller patterns can pick up some of     *)
 (* those cases, and HO matching will mop up the rest.                     *)
 let flags_FO env =
+  let oracle = Environ.oracle env in
+  let ts = Conv_oracle.get_transp_state oracle in
   let flags =
-    { (Unification.default_no_delta_unify_flags ()).Unification.core_unify_flags
+    { (Unification.default_no_delta_unify_flags ts).Unification.core_unify_flags
       with
         Unification.modulo_conv_on_closed_terms = None;
         Unification.modulo_eta = true;
         Unification.modulo_betaiota = true;
-        Unification.modulo_delta_types = Conv_oracle.get_transp_state (Environ.oracle env)}
+        Unification.modulo_delta_types = ts }
   in
   { Unification.core_unify_flags = flags;
     Unification.merge_unify_flags = flags;
     Unification.subterm_unify_flags = flags;
     Unification.allow_K_in_toplevel_higher_order_unification = false;
     Unification.resolve_evars =
-      (Unification.default_no_delta_unify_flags ()).Unification.resolve_evars
+      (Unification.default_no_delta_unify_flags ts).Unification.resolve_evars
   }
 let unif_FO env ise p c =
   Unification.w_unify env ise Reduction.CONV ~flags:(flags_FO env)

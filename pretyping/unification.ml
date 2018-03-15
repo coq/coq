@@ -398,8 +398,13 @@ let default_no_delta_core_unify_flags () = { (default_core_unify_flags ()) with
   modulo_betaiota = false;
 }
 
-let default_no_delta_unify_flags () =
-  let flags = default_no_delta_core_unify_flags () in {
+let default_no_delta_unify_flags ts =
+  let flags = default_no_delta_core_unify_flags () in
+  let flags = { flags with
+                modulo_conv_on_closed_terms = Some ts;
+                modulo_delta_types = ts
+              } in
+  {
   core_unify_flags = flags;
   merge_unify_flags = flags;
   subterm_unify_flags = flags;
