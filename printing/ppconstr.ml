@@ -676,9 +676,6 @@ let tag_var = tag Tag.variable
         return (pr_prim_token p, prec_of_prim_token p)
       | CDelimiters (sc,a) ->
         return (pr_delimiters sc (pr mt (ldelim,E) a), ldelim)
-      | CProj (p,c) ->
-        let p = pr_proj (pr mt) pr_app c (CAst.make (CRef (p,None))) [] in
-        return (p, lproj)
     in
     let loc = constr_loc a in
     pr_with_comments ?loc

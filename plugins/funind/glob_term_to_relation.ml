@@ -591,7 +591,6 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 		*)
 		build_entry_lc env funnames avoid (mkGApp(b,args))
 	    | GRec _ -> user_err Pp.(str "Not handled GRec")
-            | GProj _ -> user_err Pp.(str "Funind does not support primitive projections")
 	    | GProd _ -> user_err Pp.(str "Cannot apply a type")
 	end (* end of the application treatement *)
 
@@ -697,7 +696,6 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
     | GRec _ -> user_err Pp.(str "Not handled GRec")
     | GCast(b,_) ->
 	build_entry_lc env funnames  avoid b
-    | GProj(_,_) -> user_err Pp.(str "Funind does not support primitive projections")
 and build_entry_lc_from_case env funname make_discr
     (el:tomatch_tuples)
     (brl:Glob_term.cases_clauses) avoid :
@@ -1247,7 +1245,7 @@ let rec compute_cst_params relnames params gt = DAst.with_val (function
 		 discrimination ones *)
   | GSort _ -> params
   | GHole _ -> params
-  | GIf _ | GRec _ | GCast _ | GProj _ ->
+  | GIf _ | GRec _ | GCast _ ->
       raise (UserError(Some "compute_cst_params", str "Not handled case"))
   ) gt
 and compute_cst_params_from_app acc (params,rtl) =

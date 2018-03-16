@@ -55,4 +55,3 @@ val judge_of_abstraction : Environ.env -> Name.t ->
   unsafe_type_judgment -> unsafe_judgment -> unsafe_judgment
 val judge_of_product : Environ.env -> Name.t ->
   unsafe_type_judgment -> unsafe_type_judgment -> unsafe_judgment
-val judge_of_projection : env -> evar_map -> projection -> unsafe_judgment -> unsafe_judgment
