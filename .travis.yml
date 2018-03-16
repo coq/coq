@@ -250,8 +250,10 @@ matrix:
       - EXTRA_OPAM="${LABLGTK}"
       before_install:
       - brew update
+      - brew unlink python
       - brew install opam gnu-time gtk+ expat gtksourceview gdk-pixbuf
-      - brew upgrade python
+      - brew unlink python@2
+      - brew install python3
       - pip3 install macpack
       before_deploy:
         - dev/build/osx/make-macos-dmg.sh
