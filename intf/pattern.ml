@@ -28,7 +28,7 @@ type constr_pattern =
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
   | PSoApp of patvar * constr_pattern list
-  | PProj of Projection.t * constr_pattern
+  | PProj of projection * constr_pattern
   | PLambda of Name.t * constr_pattern * constr_pattern
   | PProd of Name.t * constr_pattern * constr_pattern
   | PLetIn of Name.t * constr_pattern * constr_pattern option * constr_pattern

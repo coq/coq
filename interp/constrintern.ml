@@ -2041,13 +2041,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CCast (c1, c2) ->
 	DAst.make ?loc @@
         GCast (intern env c1, Miscops.map_cast_type (intern_type env) c2)
-    | CProj (pr, c) ->
-      match intern_reference pr with
-      | ConstRef p ->
-        DAst.make ?loc @@ GProj (Projection.make p false, intern env c)
-      | _ ->
-        raise (InternalizationError (loc,IllegalMetavariable)) (* FIXME *)
-    )
+  )
   and intern_type env = intern (set_type_scope env)
 
   and intern_local_binder env bind : intern_env * Glob_term.extended_glob_local_binder list =
