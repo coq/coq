@@ -1309,13 +1309,10 @@ with a few new features. The main user visible changes are:
 - Kernel: fix a subject reduction failure due to allowing fixpoints
   on non-recursive values, which allows to recover full parametricity
   for CIC, by Matthieu Sozeau. Handling of evars in the VM (the kernel
-  still does not accept evars) by Maxime Dénès.
+  still does not accept evars) by Pierre-Marie Pédrot.
 
-- Gallina: always use the projection printing style for primitive
-  projections by Maxime Dénès.
-
-- Notations: many improvements on recursive notations and
-  integration with pattern binding by Hugo Herbelin.
+- Notations: many improvements on recursive notations and support for
+  destructuring patterns in the syntax of notations by Hugo Herbelin.
 
 - Proof language: tacticals for profiling, timing and checking success
   or failure of tactics by Jason Gross. The focusing bracket ``{``
@@ -1369,11 +1366,6 @@ The OPAM repository for |Coq| packages has been maintained by Guillaume
 Melquiond, Matthieu Sozeau, Enrico Tassi with contributions from many
 users. A list of packages is available at https://coq.inria.fr/opam/www.
 
-Packaging tools and software development kits were prepared by Michael
-Soegtrop with the help of Maxime Dénès and Enrico Tassi for Windows, and
-Maxime Dénès for macOS. Packages are regularly built on the
-Travis and GitLab continuous integration server.
-
 The 40 contributors for this version are Yves Bertot, Joachim
 Breitner, Tej Chajed, Arthur Charguéraud, Jacques-Pascal Deplaix, Maxime
 Dénès, Jim Fehrle, Yannick Forster, Gaëtan Gilbert, Jason Gross, Samuel
@@ -1404,6 +1396,6 @@ The |Coq| consortium, an organization directed towards users and
 supporters of the system, is now running and employs Maxime Dénès.
 The contacts of the Coq Consortium are Yves Bertot and Maxime Dénès.
 
-| Paris, March 2018,
-| Matthieu Sozeau and the |Coq| development team
+| Santiago de Chile, March 2018,
+| Matthieu Sozeau for the |Coq| development team
 |
