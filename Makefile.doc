@@ -68,7 +68,7 @@ REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
 REFMANTEXFILES:=$(addprefix doc/refman/, \
   headers.sty Reference-Manual.tex \
   RefMan-uti.tex \
-  AsyncProofs.tex RefMan-ssr.tex) \
+  AsyncProofs.tex) \
   $(REFMANCOQTEXFILES) \
 
 REFMANEPSFILES:=doc/refman/coqide.eps doc/refman/coqide-queries.eps
