@@ -59,7 +59,7 @@ class CoqTop:
 
     def next_prompt(self):
         "Wait for the next coqtop prompt, and return the output preceeding it."
-        self.coqtop.expect(CoqTop.COQTOP_PROMPT, timeout = 1)
+        self.coqtop.expect(CoqTop.COQTOP_PROMPT, timeout = 10)
         return self.coqtop.before
 
     def sendone(self, sentence):
@@ -70,9 +70,12 @@ class CoqTop:
         """
         # Suppress newlines, but not spaces: they are significant in notations
         sentence = re.sub(r"[\r\n]+", " ", sentence).strip()
-        # print("Sending {}".format(sentence))
         self.coqtop.sendline(sentence)
-        output = self.next_prompt()
+        try:
+            output = self.next_prompt()
+        except:
+            print("Error while sending the following sentence to coqtop: {}".format(sentence))
+            raise
         # print("Got {}".format(repr(output)))
         return output
 
