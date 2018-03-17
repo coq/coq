@@ -838,6 +838,26 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	     with ex when precatchable_exception ex ->
 	       reduce curenvnb pb opt substn cM cN)
 
+        | Fix ((ln1,i1),(lna1,tl1,bl1)), Fix ((ln2,i2),(_,tl2,bl2)) when
+               Int.equal i1 i2 && Array.equal Int.equal ln1 ln2 ->
+            (try
+             let opt' = {opt with at_top = true; with_types = false} in
+             let curenvnb' = Array.fold_right2 (fun na t -> push (na,t)) lna1 tl1 curenvnb in
+               Array.fold_left2 (unirec_rec curenvnb' CONV opt')
+               (Array.fold_left2 (unirec_rec curenvnb CONV opt') substn tl1 tl2) bl1 bl2
+             with ex when precatchable_exception ex ->
+               reduce curenvnb pb opt substn cM cN)
+
+        | CoFix (i1,(lna1,tl1,bl1)), CoFix (i2,(_,tl2,bl2)) when
+               Int.equal i1 i2 ->
+            (try
+             let opt' = {opt with at_top = true; with_types = false} in
+             let curenvnb' = Array.fold_right2 (fun na t -> push (na,t)) lna1 tl1 curenvnb in
+               Array.fold_left2 (unirec_rec curenvnb' CONV opt')
+               (Array.fold_left2 (unirec_rec curenvnb CONV opt') substn tl1 tl2) bl1 bl2
+             with ex when precatchable_exception ex ->
+               reduce curenvnb pb opt substn cM cN)
+
 	| App (f1,l1), _ when 
 	    (isMeta sigma f1 && use_metas_pattern_unification sigma flags nb l1
             || use_evars_pattern_unification flags && isAllowedEvar sigma flags f1) ->
