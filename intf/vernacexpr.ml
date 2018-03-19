@@ -297,13 +297,9 @@ type inline =
 type module_ast_inl = module_ast * inline
 type module_binder = bool option * lident list * module_ast_inl
 
-(** Cumulativity can be set globally, locally or unset locally and it
-   can not enabled at all. *)
-type cumulative_inductive_parsing_flag =
-  | GlobalCumulativity
-  | GlobalNonCumulativity
-  | LocalCumulativity
-  | LocalNonCumulativity
+(** [Some b] if locally enabled/disabled according to [b], [None] if
+    we should use the global flag. *)
+type cumulative_inductive_parsing_flag = bool option
 
 (** {6 The type of vernacular expressions} *)
 

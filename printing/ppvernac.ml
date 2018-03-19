@@ -788,8 +788,9 @@ open Decl_kinds
           if p then
             let cm =
               match cum with
-              | GlobalCumulativity | LocalCumulativity -> "Cumulative"
-              | GlobalNonCumulativity | LocalNonCumulativity -> "NonCumulative"
+              | Some true -> "Cumulative"
+              | Some false -> "NonCumulative"
+              | None -> ""
             in
             cm ^ " " ^ kind
           else kind

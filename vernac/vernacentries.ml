@@ -534,17 +534,14 @@ let vernac_assumption ~atts discharge kind l nl =
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let should_treat_as_cumulative cum poly =
-  if poly then
-    match cum with
-    | GlobalCumulativity | LocalCumulativity -> true
-    | GlobalNonCumulativity | LocalNonCumulativity -> false
-  else
-    match cum with
-    | GlobalCumulativity | GlobalNonCumulativity -> false
-    | LocalCumulativity -> 
-      user_err Pp.(str "The Cumulative prefix can only be used in a polymorphic context.")
-    | LocalNonCumulativity ->
-      user_err Pp.(str "The NonCumulative prefix can only be used in a polymorphic context.")
+  match cum with
+  | Some true ->
+    if poly then true
+    else user_err Pp.(str "The Cumulative prefix can only be used in a polymorphic context.")
+  | Some false ->
+    if poly then false
+    else user_err Pp.(str "The NonCumulative prefix can only be used in a polymorphic context.")
+  | None -> poly && Flags.is_polymorphic_inductive_cumulativity ()
 
 let vernac_record cum k poly finite struc binders sort nameopt cfs =
   let is_cumulative = should_treat_as_cumulative cum poly in
