@@ -168,10 +168,15 @@ DYNOBJ:=.cmxs
 DYNLIB:=.cmxs
 endif
 
+# these variables are meant to be overriden if you want to add *extra* flags
+COQEXTRAFLAGS?=
+COQCHKEXTRAFLAGS?=
+COQDOCEXTRAFLAGS?=
+
 # these flags do NOT contain the libraries, to make them easier to overwrite
-COQFLAGS?=-q $(OPT) $(OTHERFLAGS)
-COQCHKFLAGS?=-silent -o
-COQDOCFLAGS?=-interpolate -utf8
+COQFLAGS?=-q $(OPT) $(OTHERFLAGS) $(COQEXTRAFLAGS)
+COQCHKFLAGS?=-silent -o $(COQCHKEXTRAFLAGS)
+COQDOCFLAGS?=-interpolate -utf8 $(COQDOCEXTRAFLAGS)
 
 COQDOCLIBS?=$(COQLIBS_NOML)
 
