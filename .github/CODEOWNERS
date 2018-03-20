@@ -45,10 +45,15 @@
 
 /plugins/btauto/  @ppedrot @herbelin
 
-/plugins/cc/            @herbelin # I don't know Pierre Corbineau's GitHub nickname
+# I don't know Pierre Corbineau's GitHub nickname
+/plugins/cc/            @herbelin
+
 /plugins/derive/        @aspiwack @ppedrot
 /plugins/extraction/    @letouzey @maximedenes
-/plugins/firstorder/    @herbelin # I don't know Pierre Corbineau's GitHub nickname
+
+ # I don't know Pierre Corbineau's GitHub nickname
+/plugins/firstorder/    @herbelin
+
 /plugins/fourier/       @herbelin @gares
 /plugins/funind/        @forestjulien @Matafou
 /plugins/ltac/          @ppedrot
@@ -64,7 +69,8 @@
 
 /plugins/quote/ @herbelin
 
-/plugins/rtauto/ @herbelin # Should be Pierre Corbineau too
+# Should be Pierre Corbineau too
+/plugins/rtauto/ @herbelin
 
 /pretyping/       @mattam82 @gares
 /printing/        @herbelin @mattam82
