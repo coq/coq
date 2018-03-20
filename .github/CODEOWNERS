@@ -1,0 +1,118 @@
+# This file describes the maintainers for the main components. See
+# `dev/doc/MERGING.md`.
+
+# component-path  principal-maintainer secondary-maintainer
+
+# GitHub metadata, including this file
+/.github/         @maximedenes @Zimmi48
+
+# CI infrastructure
+/dev/ci/*.sh      @ejgallego @SkySkimmer
+/.travis.yml      @ejgallego @SkySkimmer
+/.gitlab-ci.yml   @SkySkimmer @ejgallego
+/.appveyor.yml    @maximedenes @SkySkimmer
+
+/default.nix     @Zimmi48 @vbgl
+
+# Documentation
+/README.md        @Zimmi48 @maximedenes
+/INSTALL*         @Zimmi48 @maximedenes
+/CONTRIBUTING.md  @Zimmi48 @maximedenes
+/dev/doc/         @Zimmi48 @maximedenes
+/doc/             @silene @maximedenes
+/man/             @silene @maximedenes
+
+/checker/         @barras @maximedenes
+
+/clib/            @ppedrot @ejgallego
+
+
+/engine/          @ppedrot @aspiwack
+
+/grammar/         @ppedrot @maximedenes
+
+/ide/             @ppedrot @gares
+
+/interp/          @herbelin @ejgallego
+
+/intf/            @letouzey @ppedrot
+/kernel/          @maximedenes @barras
+/kernel/byterun/  @maximedenes @silene
+/lib/             @ejgallego @ppedrot
+/library/         @silene @gares
+
+/parsing/         @herbelin @mattam82
+
+/plugins/btauto/  @ppedrot @herbelin
+
+/plugins/cc/            @herbelin # I don't know Pierre Corbineau's GitHub nickname
+/plugins/derive/        @aspiwack @ppedrot
+/plugins/extraction/    @letouzey @maximedenes
+/plugins/firstorder/    @herbelin # I don't know Pierre Corbineau's GitHub nickname
+/plugins/fourier/       @herbelin @gares
+/plugins/funind/        @forestjulien @Matafou
+/plugins/ltac/          @ppedrot
+/plugins/micromega/     @fajb @bgregoir
+/plugins/nsatz/         @thery @ppedrot
+/plugins/omega/         @letouzey
+/plugins/romega/        @letouzey
+/plugins/setoid_ring/   @amahboubi @bgregoir
+/plugins/ssrmatching/   @gares @maximedenes
+/plugins/ssr/           @gares @maximedenes
+/plugins/syntax/        @ppedrot @maximedenes
+
+
+/plugins/quote/ @herbelin
+
+/plugins/rtauto/ @herbelin # Should be Pierre Corbineau too
+
+/pretyping/       @mattam82 @gares
+/printing/        @herbelin @mattam82
+
+/proofs/          @ppedrot @Zimmi48
+
+/stm/             @gares @ejgallego
+
+/tactics/         @ppedrot @mattam82
+
+/theories/Arith/          @letouzey @herbelin
+/theories/Bool/           @letouzey @herbelin
+/theories/Classes/        @mattam82 @herbelin
+/theories/FSets/          @letouzey @herbelin
+/theories/Init/           @letouzey @ppedrot
+/theories/Lists/          @letouzey @ppedrot
+/theories/Logic/          @herbelin @ppedrot
+/theories/MSets/          @letouzey @herbelin
+/theories/NArith/         @letouzey @herbelin
+/theories/Numbers/        @letouzey @herbelin
+/theories/PArith/         @letouzey @herbelin
+/theories/Program/        @mattam82 @herbelin
+/theories/QArith/         @letouzey @herbelin
+/theories/Reals/          @silene @ppedrot
+/theories/Relations/      @mattam82 @ppedrot
+/theories/Setoids/        @mattam82 @ppedrot
+/theories/Sets/           @letouzey @herbelin
+/theories/Sorting/        @letouzey @herbelin
+/theories/Strings/        @letouzey @herbelin
+/theories/Structures/     @letouzey @herbelin
+/theories/Unicode/        @letouzey @herbelin
+/theories/Wellfounded/    @letouzey @mattam82
+/theories/ZArith/         @letouzey @herbelin
+
+/theories/Compat/         @JasonGross @Zimmi48
+
+/theories/Vectors/        @herbelin
+
+/tools/coqdoc/          @silene @mattam82
+/tools/coq_makefile*    @gares @silene
+/tools/CoqMakefile*     @gares @silene
+/tools/coqdep*          @ppedrot @maximedenes
+/tools/coq_tex*         @silene @gares
+/tools/coqwc*           @silene @gares
+
+/toplevel/        @ejgallego @gares
+/vernac/          @mattam82 @maximedenes
+
+/Makefile*        @letouzey @ejgallego
+/configure*       @letouzey @ejgallego
+/META.coq         @letouzey @ejgallego
