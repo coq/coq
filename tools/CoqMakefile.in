@@ -148,7 +148,11 @@ TIME_OF_PRETTY_BUILD_EXTRA_FILES ?= - # also output to the command line
 
 # Flags #######################################################################
 #
-# We define a bunch of variables combining the parameters
+# We define a bunch of variables combining the parameters.
+# To add additional flags to coq, coqchk or coqdoc, set the
+# {COQ,COQCHK,COQDOC}EXTRAFLAGS variable to whatever you want to add.
+# To overwrite the default choice and set your own flags entirely, set the
+# {COQ,COQCHK,COQDOC}FLAGS variable.
 
 SHOW := $(if $(VERBOSE),@true "",@echo "")
 HIDE := $(if $(VERBOSE),,@)
