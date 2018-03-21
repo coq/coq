@@ -17,7 +17,7 @@
 /.gitlab-ci.yml   @SkySkimmer
 # Secondary maintainer @ejgallego
 
-/.appveyor.yml    @maximedenes
+/appveyor.yml    @maximedenes
 # Secondary maintainer @SkySkimmer
 
 /default.nix     @Zimmi48
