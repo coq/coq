@@ -1,124 +1,295 @@
 # This file describes the maintainers for the main components. See
 # `dev/doc/MERGING.md`.
 
-# component-path  principal-maintainer secondary-maintainer
+########## GitHub metadata, including this file ##########
 
-# GitHub metadata, including this file
-/.github/         @maximedenes @Zimmi48
+/.github/         @maximedenes
+# Secondary maintainer @Zimmi48
 
-# CI infrastructure
-/dev/ci/*.sh      @ejgallego @SkySkimmer
-/.travis.yml      @ejgallego @SkySkimmer
-/.gitlab-ci.yml   @SkySkimmer @ejgallego
-/.appveyor.yml    @maximedenes @SkySkimmer
+########## CI infrastructure ##########
 
-/default.nix     @Zimmi48 @vbgl
+/dev/ci/*.sh      @ejgallego
+# Secondary maintainer @SkySkimmer
 
-# Documentation
-/README.md        @Zimmi48 @maximedenes
-/INSTALL*         @Zimmi48 @maximedenes
-/CONTRIBUTING.md  @Zimmi48 @maximedenes
-/dev/doc/         @Zimmi48 @maximedenes
-/doc/             @silene @maximedenes
-/man/             @silene @maximedenes
+/.travis.yml      @ejgallego
+# Secondary maintainer @SkySkimmer
 
-/checker/         @barras @maximedenes
+/.gitlab-ci.yml   @SkySkimmer
+# Secondary maintainer @ejgallego
 
-/clib/            @ppedrot @ejgallego
+/.appveyor.yml    @maximedenes
+# Secondary maintainer @SkySkimmer
 
+/default.nix     @Zimmi48
+# Secondary maintainer @vbgl
 
-/engine/          @ppedrot @aspiwack
+########## Documentation ##########
 
-/grammar/         @ppedrot @maximedenes
+/README.md        @Zimmi48
+# Secondary maintainer @maximedenes
 
-/ide/             @ppedrot @gares
+/INSTALL*         @Zimmi48
+# Secondary maintainer @maximedenes
 
-/interp/          @herbelin @ejgallego
+/CONTRIBUTING.md  @Zimmi48
+# Secondary maintainer @maximedenes
 
-/intf/            @letouzey @ppedrot
-/kernel/          @maximedenes @barras
-/kernel/byterun/  @maximedenes @silene
-/lib/             @ejgallego @ppedrot
-/library/         @silene @gares
+/dev/doc/         @Zimmi48
+# Secondary maintainer @maximedenes
 
-/parsing/         @herbelin @mattam82
+/doc/             @silene
+# Secondary maintainer @maximedenes
 
-/plugins/btauto/  @ppedrot @herbelin
+/man/             @silene
+# Secondary maintainer @maximedenes
+
+########## Coqchk ##########
+
+/checker/         @barras
+# Secondary maintainer @maximedenes
+
+########## Coq lib ##########
+
+/clib/            @ppedrot
+# Secondary maintainer @ejgallego
+
+/lib/             @ejgallego
+# Secondary maintainer @ppedrot
+
+########## Proof engine ##########
+
+/engine/          @ppedrot
+# Secondary maintainer @aspiwack
+
+########## Grammar macros ##########
+
+/grammar/         @ppedrot
+# Secondary maintainer @maximedenes
+
+########## CoqIDE ##########
+
+/ide/             @ppedrot
+# Secondary maintainer @gares
+
+########## Interpretation ##########
+
+/interp/          @herbelin
+# Secondary maintainer @ejgallego
+
+########## Interfaces ##########
+
+/intf/            @letouzey
+# Secondary maintainer @ppedrot
+
+########## Kernel ##########
+
+/kernel/          @maximedenes
+# Secondary maintainer @barras
+
+/kernel/byterun/  @maximedenes
+# Secondary maintainer @silene
+
+########## Library ##########
+
+/library/         @silene
+# Secondary maintainer @gares
+
+########## Parser ##########
+
+/parsing/         @herbelin
+# Secondary maintainer @mattam82
+
+########## Plugins ##########
+
+/plugins/btauto/  @ppedrot
+# Secondary maintainer @herbelin
 
 # I don't know Pierre Corbineau's GitHub nickname
 /plugins/cc/            @herbelin
 
-/plugins/derive/        @aspiwack @ppedrot
-/plugins/extraction/    @letouzey @maximedenes
+/plugins/derive/        @aspiwack
+# Secondary maintainer @ppedrot
 
- # I don't know Pierre Corbineau's GitHub nickname
+/plugins/extraction/    @letouzey
+# Secondary maintainer @maximedenes
+
+# I don't know Pierre Corbineau's GitHub nickname
 /plugins/firstorder/    @herbelin
 
-/plugins/fourier/       @herbelin @gares
-/plugins/funind/        @forestjulien @Matafou
-/plugins/ltac/          @ppedrot
-/plugins/micromega/     @fajb @bgregoir
-/plugins/nsatz/         @thery @ppedrot
-/plugins/omega/         @letouzey
-/plugins/romega/        @letouzey
-/plugins/setoid_ring/   @amahboubi @bgregoir
-/plugins/ssrmatching/   @gares @maximedenes
-/plugins/ssr/           @gares @maximedenes
-/plugins/syntax/        @ppedrot @maximedenes
+/plugins/fourier/       @herbelin
+# Secondary maintainer @gares
 
+/plugins/funind/        @forestjulien
+# Secondary maintainer @Matafou
+
+/plugins/ltac/          @ppedrot
+# Secondary maintainer @herbelin
+
+/plugins/micromega/     @fajb
+# Secondary maintainer @bgregoir
+
+/plugins/nsatz/         @thery
+# Secondary maintainer @ppedrot
+
+/plugins/omega/         @letouzey
+
+/plugins/romega/        @letouzey
+
+/plugins/setoid_ring/   @amahboubi
+# Secondary maintainer @bgregoir
+
+/plugins/ssrmatching/   @gares
+# Secondary maintainer @maximedenes
+
+/plugins/ssr/           @gares
+# Secondary maintainer @maximedenes
+
+/plugins/syntax/        @ppedrot
+# Secondary maintainer @maximedenes
 
 /plugins/quote/ @herbelin
 
 # Should be Pierre Corbineau too
 /plugins/rtauto/ @herbelin
 
-/pretyping/       @mattam82 @gares
-/printing/        @herbelin @mattam82
+########## Pretyper ##########
 
-/proofs/          @ppedrot @Zimmi48
+/pretyping/       @mattam82
+# Secondary maintainer @gares
 
-/stm/             @gares @ejgallego
+########## Pretty printer ##########
 
-/tactics/         @ppedrot @mattam82
+/printing/        @herbelin
+# Secondary maintainer @mattam82
 
-/theories/Arith/          @letouzey @herbelin
-/theories/Bool/           @letouzey @herbelin
-/theories/Classes/        @mattam82 @herbelin
-/theories/FSets/          @letouzey @herbelin
-/theories/Init/           @letouzey @ppedrot
-/theories/Lists/          @letouzey @ppedrot
-/theories/Logic/          @herbelin @ppedrot
-/theories/MSets/          @letouzey @herbelin
-/theories/NArith/         @letouzey @herbelin
-/theories/Numbers/        @letouzey @herbelin
-/theories/PArith/         @letouzey @herbelin
-/theories/Program/        @mattam82 @herbelin
-/theories/QArith/         @letouzey @herbelin
-/theories/Reals/          @silene @ppedrot
-/theories/Relations/      @mattam82 @ppedrot
-/theories/Setoids/        @mattam82 @ppedrot
-/theories/Sets/           @letouzey @herbelin
-/theories/Sorting/        @letouzey @herbelin
-/theories/Strings/        @letouzey @herbelin
-/theories/Structures/     @letouzey @herbelin
-/theories/Unicode/        @letouzey @herbelin
-/theories/Wellfounded/    @letouzey @mattam82
-/theories/ZArith/         @letouzey @herbelin
+########## Proof infrastructure ##########
 
-/theories/Compat/         @JasonGross @Zimmi48
+/proofs/          @ppedrot
+# Secondary maintainer @Zimmi48
+
+########## STM ##########
+
+/stm/             @gares
+# Secondary maintainer @ejgallego
+
+########## Tactics ##########
+
+/tactics/         @ppedrot
+# Secondary maintainer @mattam82
+
+########## Standard library ##########
+
+/theories/Arith/          @letouzey
+# Secondary maintainer @herbelin
+
+/theories/Bool/           @letouzey
+# Secondary maintainer @herbelin
+
+/theories/Classes/        @mattam82
+# Secondary maintainer @herbelin
+
+/theories/FSets/          @letouzey
+# Secondary maintainer @herbelin
+
+/theories/Init/           @letouzey
+# Secondary maintainer @ppedrot
+
+/theories/Lists/          @letouzey
+# Secondary maintainer @ppedrot
+
+/theories/Logic/          @herbelin
+# Secondary maintainer @ppedrot
+
+/theories/MSets/          @letouzey
+# Secondary maintainer @herbelin
+
+/theories/NArith/         @letouzey
+# Secondary maintainer @herbelin
+
+/theories/Numbers/        @letouzey
+# Secondary maintainer @herbelin
+
+/theories/PArith/         @letouzey
+# Secondary maintainer @herbelin
+
+/theories/Program/        @mattam82
+# Secondary maintainer @herbelin
+
+/theories/QArith/         @letouzey
+# Secondary maintainer @herbelin
+
+/theories/Reals/          @silene
+# Secondary maintainer @ppedrot
+
+/theories/Relations/      @mattam82
+# Secondary maintainer @ppedrot
+
+/theories/Setoids/        @mattam82
+# Secondary maintainer @ppedrot
+
+/theories/Sets/           @letouzey
+# Secondary maintainer @herbelin
+
+/theories/Sorting/        @letouzey
+# Secondary maintainer @herbelin
+
+/theories/Strings/        @letouzey
+# Secondary maintainer @herbelin
+
+/theories/Structures/     @letouzey
+# Secondary maintainer @herbelin
+
+/theories/Unicode/        @letouzey
+# Secondary maintainer @herbelin
+
+/theories/Wellfounded/    @letouzey
+# Secondary maintainer @mattam82
+
+/theories/ZArith/         @letouzey
+# Secondary maintainer @herbelin
+
+/theories/Compat/         @JasonGross
+# Secondary maintainer @Zimmi48
 
 /theories/Vectors/        @herbelin
 
-/tools/coqdoc/          @silene @mattam82
-/tools/coq_makefile*    @gares @silene
-/tools/CoqMakefile*     @gares @silene
-/tools/coqdep*          @ppedrot @maximedenes
-/tools/coq_tex*         @silene @gares
-/tools/coqwc*           @silene @gares
+########## Tools ##########
 
-/toplevel/        @ejgallego @gares
-/vernac/          @mattam82 @maximedenes
+/tools/coqdoc/          @silene
+# Secondary maintainer @mattam82
 
-/Makefile*        @letouzey @ejgallego
-/configure*       @letouzey @ejgallego
-/META.coq         @letouzey @ejgallego
+/tools/coq_makefile*    @gares
+# Secondary maintainer @silene
+
+/tools/CoqMakefile*     @gares
+# Secondary maintainer @silene
+
+/tools/coqdep*          @ppedrot
+# Secondary maintainer @maximedenes
+
+/tools/coq_tex*         @silene
+# Secondary maintainer @gares
+
+/tools/coqwc*           @silene
+# Secondary maintainer @gares
+
+########## Toplevel ##########
+
+/toplevel/        @ejgallego
+# Secondary maintainer @gares
+
+########## Vernacular ##########
+
+/vernac/          @mattam82
+# Secondary maintainer @maximedenes
+
+########## Build system ##########
+
+/Makefile*        @letouzey
+# Secondary maintainer @maximdenes
+
+/configure*       @letouzey
+# Secondary maintainer @ejgallego
+
+/META.coq         @letouzey
+# Secondary maintainer @ejgallego
