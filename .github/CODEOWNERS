@@ -291,5 +291,5 @@
 /configure*       @letouzey
 # Secondary maintainer @ejgallego
 
-/META.coq         @letouzey
-# Secondary maintainer @ejgallego
+/META.coq         @ejgallego
+# Secondary maintainer @letouzey
