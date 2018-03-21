@@ -9,19 +9,23 @@ The [CODEOWNERS](/.github/CODEOWNERS) file describes, for each part of the
 system, two owners. One is the principal maintainer of the component, the other
 is the secondary maintainer.
 
-When a pull request is submitted, GitHub will automatically ask these two
-maintainers for a review. If the pull request touches several parts, all the
-corresponding maintainers will be asked for a review.
+When a pull request is submitted, GitHub will automatically ask the principal
+maintainer for a review. If the pull request touches several parts, all the
+corresponding principal maintainers will be asked for a review.
 
 Maintainers are never assigned as reviewer on their own PRs.
 
+If a principal maintainer submits a PR that changes the component they own, they
+must assign the secondary maintainer as reviewer. They should also do it if they
+know they are not available to do the review.
+
 ## Reviewing
 
-When principal maintainers receive a review request, they are expected to:
+When maintainers receive a review request, they are expected to:
 
 * Put their name in the assignee field, if they are in charge of the component
-  that is the main target of the patch (or if they are the only principal
-  maintainer asked to review the PR).
+  that is the main target of the patch (or if they are the only maintainer asked
+  to review the PR).
 * Review the PR, approve it or request changes.
 * If they are the assignee, check if all reviewers approved the PR. If not,
   regularly ping the author (if changes should be implemented) or the reviewers
