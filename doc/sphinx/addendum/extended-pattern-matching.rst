@@ -1,843 +1,611 @@
-\achapter{Extended pattern-matching}
-%HEVEA\cutname{cases.html}
-%BEGIN LATEX
-\defaultheaders
-%END LATEX
-\aauthor{Cristina Cornes and Hugo Herbelin}
+.. include:: ../replaces.rst
 
-\label{Mult-match-full}
-\ttindex{Cases}
-\index{ML-like patterns}
+.. _extendedpatternmatching:
 
-This section describes the full form of pattern-matching in {\Coq} terms.
+Extended pattern-matching
+=========================
 
-\asection{Patterns}\label{implementation} The full syntax of {\tt
-match} is presented in Figures~\ref{term-syntax}
-and~\ref{term-syntax-aux}.  Identifiers in patterns are either
-constructor names or variables. Any identifier that is not the
-constructor of an inductive or co-inductive type is considered to be a
-variable. A variable name cannot occur more than once in a given
-pattern. It is recommended to start variable names by a lowercase
-letter.
+:Authors: Cristina Cornes and Hugo Herbelin
 
-If a pattern has the form $(c~\vec{x})$ where $c$ is a constructor
-symbol and $\vec{x}$ is a linear vector of (distinct) variables, it is
-called {\em simple}: it is the kind of pattern recognized by the basic
-version of {\tt match}. On the opposite, if it is a variable $x$ or
-has the form $(c~\vec{p})$ with $p$ not only made of variables, the
-pattern is called {\em nested}.
+.. TODO links to figures
+
+This section describes the full form of pattern-matching in |Coq| terms.
+
+.. |rhs| replace:: right hand side
+
+Patterns
+--------
+
+The full syntax of match is presented in Figures 1.1 and 1.2.
+Identifiers in patterns are either constructor names or variables. Any
+identifier that is not the constructor of an inductive or co-inductive
+type is considered to be a variable. A variable name cannot occur more
+than once in a given pattern. It is recommended to start variable
+names by a lowercase letter.
+
+If a pattern has the form ``(c x)`` where ``c`` is a constructor symbol and x
+is a linear vector of (distinct) variables, it is called *simple*: it
+is the kind of pattern recognized by the basic version of match. On
+the opposite, if it is a variable ``x`` or has the form ``(c p)`` with ``p`` not
+only made of variables, the pattern is called *nested*.
 
 A variable pattern matches any value, and the identifier is bound to
-that value. The pattern ``\texttt{\_}'' (called ``don't care'' or
-``wildcard'' symbol) also matches any value, but does not bind
-anything. It may occur an arbitrary number of times in a
-pattern. Alias patterns written \texttt{(}{\sl pattern} \texttt{as}
-{\sl identifier}\texttt{)} are also accepted. This pattern matches the
-same values as {\sl pattern} does and {\sl identifier} is bound to the
-matched value.
-A pattern of the form {\pattern}{\tt |}{\pattern} is called
-disjunctive. A list of patterns separated with commas is also
-considered as a pattern and is called {\em multiple pattern}. However
-multiple patterns can only occur at the root of pattern-matching
-equations. Disjunctions of {\em multiple pattern} are allowed though.
+that value. The pattern “``_``” (called “don't care” or “wildcard” symbol)
+also matches any value, but does not bind anything. It may occur an
+arbitrary number of times in a pattern. Alias patterns written
+:n:`(@pattern as @identifier)` are also accepted. This pattern matches the
+same values as ``pattern`` does and ``identifier`` is bound to the matched
+value. A pattern of the form :n:`pattern | pattern` is called disjunctive. A
+list of patterns separated with commas is also considered as a pattern
+and is called *multiple pattern*. However multiple patterns can only
+occur at the root of pattern-matching equations. Disjunctions of
+*multiple pattern* are allowed though.
 
-Since extended {\tt match} expressions are compiled into the primitive
-ones, the expressiveness of the theory remains the same. Once the
-stage of parsing has finished only simple patterns remain.  Re-nesting
-of pattern is performed at printing time. An easy way to see the
-result of the expansion is to toggle off the nesting performed at
-printing (use here {\tt Set Printing Matching}), then by printing the term
-with \texttt{Print} if the term is a constant, or using the command
-\texttt{Check}.
+Since extended ``match`` expressions are compiled into the primitive ones,
+the expressiveness of the theory remains the same. Once the stage of
+parsing has finished only simple patterns remain. Re-nesting of
+pattern is performed at printing time. An easy way to see the result
+of the expansion is to toggle off the nesting performed at printing
+(use here :opt:`Set Printing Matching`), then by printing the term with :cmd:`Print`
+if the term is a constant, or using the command :cmd:`Check`.
 
-The extended \texttt{match} still accepts an optional {\em elimination
-predicate} given after the keyword \texttt{return}.  Given a pattern
-matching expression, if all the right-hand-sides of \texttt{=>} ({\em
-rhs} in short) have the same type, then this type can be sometimes
-synthesized, and so we can omit the \texttt{return} part. Otherwise
-the predicate after \texttt{return} has to be provided, like for the basic
-\texttt{match}.
+The extended ``match`` still accepts an optional *elimination predicate*
+given after the keyword ``return``. Given a pattern matching expression,
+if all the right-hand-sides of ``=>`` have the same
+type, then this type can be sometimes synthesized, and so we can omit
+the return part. Otherwise the predicate after return has to be
+provided, like for the basicmatch.
 
 Let us illustrate through examples the different aspects of extended
 pattern matching. Consider for example the function that computes the
 maximum of two natural numbers. We can write it in primitive syntax
 by:
 
-\begin{coq_example}
-Fixpoint max (n m:nat) {struct m} : nat :=
-  match n with
-  | O => m
-  | S n' => match m with
-            | O => S n'
-            | S m' => S (max n' m')
-            end
-  end.
-\end{coq_example}
+.. coqtop:: in undo
 
-\paragraph{Multiple patterns}
+   Fixpoint max (n m:nat) {struct m} : nat :=
+     match n with
+     | O => m
+     | S n' => match m with
+               | O => S n'
+               | S m' => S (max n' m')
+               end
+     end.
 
-Using multiple patterns in the definition of {\tt max} lets us write:
+Multiple patterns
+-----------------
 
-\begin{coq_eval}
-Reset max.
-\end{coq_eval}
-\begin{coq_example}
-Fixpoint max (n m:nat) {struct m} : nat :=
-  match n, m with
-  | O, _ => m
-  | S n', O => S n'
-  | S n', S m' => S (max n' m')
-  end.
-\end{coq_example}
+Using multiple patterns in the definition of max lets us write:
+
+.. coqtop:: in undo
+
+   Fixpoint max (n m:nat) {struct m} : nat :=
+       match n, m with
+       | O, _ => m
+       | S n', O => S n'
+       | S n', S m' => S (max n' m')
+       end.
 
 which will be compiled into the previous form.
 
 The pattern-matching compilation strategy examines patterns from left
-to right. A \texttt{match} expression is generated {\bf only} when
-there is at least one constructor in the column of patterns. E.g. the
-following example does not build a \texttt{match} expression.
+to right. A match expression is generated **only** when there is at least
+one constructor in the column of patterns. E.g. the following example
+does not build a match expression.
 
-\begin{coq_example}
-Check (fun x:nat => match x return nat with
-                    | y => y
-                    end).
-\end{coq_example}
+.. coqtop:: all
 
-\paragraph{Aliasing subpatterns}
+   Check (fun x:nat => match x return nat with
+                       | y => y
+                       end).
 
-We can also use ``\texttt{as} {\ident}'' to associate a name to a
-sub-pattern:
 
-\begin{coq_eval}
-Reset max.
-\end{coq_eval}
-\begin{coq_example}
-Fixpoint max (n m:nat) {struct n} : nat :=
-  match n, m with
-  | O, _ => m
-  | S n' as p, O => p
-  | S n', S m' => S (max n' m')
-  end.
-\end{coq_example}
+Aliasing subpatterns
+--------------------
 
-\paragraph{Nested patterns}
+We can also use :n:`as @ident` to associate a name to a sub-pattern:
+
+.. coqtop:: in undo
+
+   Fixpoint max (n m:nat) {struct n} : nat :=
+     match n, m with
+     | O, _ => m
+     | S n' as p, O => p
+     | S n', S m' => S (max n' m')
+     end.
+
+Nested patterns
+---------------
 
 Here is now an example of nested patterns:
 
-\begin{coq_example}
-Fixpoint even (n:nat) : bool :=
-  match n with
-  | O => true
-  | S O => false
-  | S (S n') => even n'
-  end.
-\end{coq_example}
+.. coqtop:: in
+
+   Fixpoint even (n:nat) : bool :=
+     match n with
+     | O => true
+     | S O => false
+     | S (S n') => even n'
+     end.
 
 This is compiled into:
 
-\begin{coq_example}
-Unset Printing Matching.
-Print even.
-\end{coq_example}
-\begin{coq_eval}
-Set Printing Matching.
-\end{coq_eval}
+.. coqtop:: all undo
 
-In the previous examples patterns do not conflict with, but
-sometimes it is comfortable to write patterns that admit a non
-trivial superposition. Consider
-the boolean function \texttt{lef} that given two natural numbers
-yields \texttt{true} if the first one is less or equal than the second
-one and \texttt{false} otherwise. We can write it as follows:
+   Unset Printing Matching.
+   Print even.
 
-\begin{coq_example}
-Fixpoint lef (n m:nat) {struct m} : bool :=
-  match n, m with
-  | O, x => true
-  | x, O => false
-  | S n, S m => lef n m
-  end.
-\end{coq_example}
+In the previous examples patterns do not conflict with, but sometimes
+it is comfortable to write patterns that admit a non trivial
+superposition. Consider the boolean function :g:`lef` that given two
+natural numbers yields :g:`true` if the first one is less or equal than the
+second one and :g:`false` otherwise. We can write it as follows:
+
+.. coqtop:: in undo
+
+   Fixpoint lef (n m:nat) {struct m} : bool :=
+     match n, m with
+     | O, x => true
+     | x, O => false
+     | S n, S m => lef n m
+     end.
 
 Note that the first and the second multiple pattern superpose because
-the couple of values \texttt{O O} matches both. Thus, what is the result
-of the function on those values?  To eliminate ambiguity we use the
-{\em textual priority rule}: we consider patterns ordered from top to
-bottom, then a value is matched by the pattern at the $ith$ row if and
-only if it is not matched by some pattern of a previous row. Thus in the
-example,
-\texttt{O O} is matched by the first pattern, and so \texttt{(lef O O)}
-yields \texttt{true}.
+the couple of values ``O O`` matches both. Thus, what is the result of the
+function on those values? To eliminate ambiguity we use the *textual
+priority rule*: we consider patterns ordered from top to bottom, then
+a value is matched by the pattern at the ith row if and only if it is
+not matched by some pattern of a previous row. Thus in the example,O O
+is matched by the first pattern, and so :g:`(lef O O)` yields true.
 
-Another way to write  this function is:
+Another way to write this function is:
 
-\begin{coq_eval}
-Reset lef.
-\end{coq_eval}
-\begin{coq_example}
-Fixpoint lef (n m:nat) {struct m} : bool :=
-  match n, m with
-  | O, x => true
-  | S n, S m => lef n m
-  | _, _ => false
-  end.
-\end{coq_example}
+.. coqtop:: in
 
-Here the last pattern superposes with the first two. Because
-of the priority rule, the last pattern
-will be used only for values that do not match neither the  first nor
-the second one.
+   Fixpoint lef (n m:nat) {struct m} : bool :=
+     match n, m with
+     | O, x => true
+     | S n, S m => lef n m
+     | _, _ => false
+     end.
 
-Terms with useless patterns are not accepted by the
-system. Here is an example:
-% Test failure: "This clause is redundant."
-\begin{coq_eval}
-Set Printing Depth 50.
-\end{coq_eval}
-\begin{coq_example}
-Fail Check (fun x:nat =>
-         match x with
-         | O => true
-         | S _ => false
-         | x => true
-         end).
-\end{coq_example}
+Here the last pattern superposes with the first two. Because of the
+priority rule, the last pattern will be used only for values that do
+not match neither the first nor the second one.
 
-\paragraph{Disjunctive patterns}
+Terms with useless patterns are not accepted by the system. Here is an
+example:
+
+.. coqtop:: all
+
+   Fail Check (fun x:nat =>
+                 match x with
+                 | O => true
+                 | S _ => false
+                 | x => true
+                 end).
+
+
+Disjunctive patterns
+--------------------
 
 Multiple patterns that share the same right-hand-side can be
-factorized using the notation \nelist{\multpattern}{\tt |}. For instance,
-{\tt max} can be rewritten as follows:
+factorized using the notation :n:`{+| @mult_pattern}`. For
+instance, :g:`max` can be rewritten as follows:
 
-\begin{coq_eval}
-Reset max.
-\end{coq_eval}
-\begin{coq_example}
-Fixpoint max (n m:nat) {struct m} : nat :=
-  match n, m with
-  | S n', S m' => S (max n' m')
-  | 0, p | p, 0 => p
-  end.
-\end{coq_example}
+.. coqtop:: in undo
 
-Similarly, factorization of (non necessary multiple) patterns
-that share the same variables is possible by using the notation
-\nelist{\pattern}{\tt |}. Here is an example:
+   Fixpoint max (n m:nat) {struct m} : nat :=
+     match n, m with
+     | S n', S m' => S (max n' m')
+     | 0, p | p, 0 => p
+     end.
 
-\begin{coq_example}
-Definition filter_2_4 (n:nat) : nat :=
-  match n with
-  | 2 as m | 4 as m => m
-  | _ => 0
-  end.
-\end{coq_example}
+Similarly, factorization of (non necessary multiple) patterns that
+share the same variables is possible by using the notation :n:`{+| @pattern}`.
+Here is an example:
+
+.. coqtop:: in
+
+   Definition filter_2_4 (n:nat) : nat :=
+     match n with
+     | 2 as m | 4 as m => m
+     | _ => 0
+     end.
+
 
 Here is another example using disjunctive subpatterns.
 
-\begin{coq_example}
-Definition filter_some_square_corners (p:nat*nat) : nat*nat :=
-  match p with
-  | ((2 as m | 4 as m), (3 as n | 5 as n)) => (m,n)
-  | _ => (0,0)
-  end.
-\end{coq_example}
+.. coqtop:: in
 
-\asection{About patterns of parametric types}
-\paragraph{Parameters in patterns}
-When matching objects of a parametric type, parameters do not bind in patterns.
-They must be substituted by ``\_''.
-Consider for example the type of polymorphic lists:
+   Definition filter_some_square_corners (p:nat*nat) : nat*nat :=
+     match p with
+     | ((2 as m | 4 as m), (3 as n | 5 as n)) => (m,n)
+     | _ => (0,0)
+     end.
 
-\begin{coq_example}
-Inductive List (A:Set) : Set :=
-  | nil : List A
-  | cons : A -> List A -> List A.
-\end{coq_example}
+About patterns of parametric types
+----------------------------------
 
-We can check the function {\em tail}:
+Parameters in patterns
+~~~~~~~~~~~~~~~~~~~~~~
 
-\begin{coq_example}
-Check
-  (fun l:List nat =>
-     match l with
-     | nil _ => nil nat
-     | cons _ _ l' => l'
-     end).
-\end{coq_example}
+When matching objects of a parametric type, parameters do not bind in
+patterns. They must be substituted by “``_``”. Consider for example the
+type of polymorphic lists:
 
+.. coqtop:: in
+
+   Inductive List (A:Set) : Set :=
+   | nil : List A
+   | cons : A -> List A -> List A.
+
+We can check the function *tail*:
+
+.. coqtop:: all
+
+   Check
+     (fun l:List nat =>
+        match l with
+        | nil _ => nil nat
+        | cons _ _ l' => l'
+        end).
 
 When we use parameters in patterns there is an error message:
-% Test failure: "The parameters do not bind in patterns."
-\begin{coq_eval}
-Set Printing Depth 50.
-\end{coq_eval}
-\begin{coq_example}
-Fail Check
-  (fun l:List nat =>
-     match l with
-     | nil A => nil nat
-     | cons A _ l' => l'
-     end).
-\end{coq_example}
 
-The option {\tt Set Asymmetric Patterns} \optindex{Asymmetric Patterns}
-(off by default) removes parameters from constructors in patterns:
-\begin{coq_example}
-  Set Asymmetric Patterns.
-  Check (fun l:List nat =>
-    match l with
-    | nil => nil
-    | cons _ l' => l'
-    end)
-  Unset Asymmetric Patterns.
-\end{coq_example}
+.. coqtop:: all
 
-\paragraph{Implicit arguments in patterns}
-By default, implicit arguments are omitted in patterns. So we write:
+   Fail Check
+     (fun l:List nat =>
+        match l with
+        | nil A => nil nat
+        | cons A _ l' => l'
+        end).
 
-\begin{coq_example}
-Arguments nil [A].
-Arguments cons [A] _ _.
-Check
-  (fun l:List nat =>
+.. opt:: Asymmetric Patterns
+
+This option (off by default) removes parameters from constructors in patterns:
+
+.. coqtop:: all
+
+   Set Asymmetric Patterns.
+   Check (fun l:List nat =>
      match l with
      | nil => nil
      | cons _ l' => l'
-     end).
-\end{coq_example}
+     end)
+   Unset Asymmetric Patterns.
 
-But the possibility to use all the arguments is given by ``{\tt @}'' implicit
-explicitations (as for terms~\ref{Implicits-explicitation}).
+Implicit arguments in patterns
+------------------------------
 
-\begin{coq_example}
-Check
-  (fun l:List nat =>
+By default, implicit arguments are omitted in patterns. So we write:
+
+.. coqtop:: all
+
+   Arguments nil [A].
+   Arguments cons [A] _ _.
+   Check
+     (fun l:List nat =>
+        match l with
+        | nil => nil
+        | cons _ l' => l'
+        end).
+
+But the possibility to use all the arguments is given by “``@``” implicit
+explicitations (as for terms 2.7.11).
+
+.. coqtop:: all
+
+   Check
+     (fun l:List nat =>
+        match l with
+        | @nil _ => @nil nat
+        | @cons _ _ l' => l'
+        end).
+
+
+Matching objects of dependent types
+-----------------------------------
+
+The previous examples illustrate pattern matching on objects of non-
+dependent types, but we can also use the expansion strategy to
+destructure objects of dependent type. Consider the type :g:`listn` of
+lists of a certain length:
+
+.. coqtop:: in reset
+
+   Inductive listn : nat -> Set :=
+   | niln : listn 0
+   | consn : forall n:nat, nat -> listn n -> listn (S n).
+
+
+Understanding dependencies in patterns
+--------------------------------------
+
+We can define the function length over :g:`listn` by:
+
+.. coqtop:: in
+
+   Definition length (n:nat) (l:listn n) := n.
+
+Just for illustrating pattern matching, we can define it by case
+analysis:
+
+.. coqtop:: in
+
+   Definition length (n:nat) (l:listn n) :=
      match l with
-     | @nil _ => @nil nat
-     | @cons _ _ l' => l'
-     end).
-\end{coq_example}
+     | niln => 0
+     | consn n _ _ => S n
+     end.
 
-\asection{Matching objects of dependent types}
-The previous examples illustrate pattern matching on objects of
-non-dependent types, but we can also
-use the expansion strategy to destructure objects of dependent type.
-Consider the type \texttt{listn} of lists of a certain length:
-\label{listn}
-
-\begin{coq_example}
-Inductive listn : nat -> Set :=
-  | niln : listn 0
-  | consn : forall n:nat, nat -> listn n -> listn (S n).
-\end{coq_example}
-
-\asubsection{Understanding dependencies in patterns}
-We can define the function \texttt{length} over \texttt{listn} by:
-
-\begin{coq_example}
-Definition length (n:nat) (l:listn n) := n.
-\end{coq_example}
-
-Just for illustrating pattern matching,
-we can define it by case analysis:
-
-\begin{coq_eval}
-Reset length.
-\end{coq_eval}
-\begin{coq_example}
-Definition length (n:nat) (l:listn n) :=
-  match l with
-  | niln => 0
-  | consn n _ _ => S n
-  end.
-\end{coq_example}
-
-We can understand the meaning of this definition using the
-same notions of usual pattern matching.
-
-%
-% Constraining of dependencies is not longer valid in V7
-%
-\iffalse
-Now suppose we split the second pattern  of \texttt{length} into two
-cases so to give an
-alternative definition using nested patterns:
-\begin{coq_example}
-Definition length1 (n:nat) (l:listn n) :=
-  match l with
-  | niln => 0
-  | consn n _ niln => S n
-  | consn n _ (consn _ _ _) => S n
-  end.
-\end{coq_example}
-
-It is obvious that \texttt{length1} is  another version of
-\texttt{length}. We can also give the following definition:
-\begin{coq_example}
-Definition length2 (n:nat) (l:listn n) :=
-  match l with
-  | niln => 0
-  | consn n _ niln => 1
-  | consn n _ (consn m _ _) => S (S m)
-  end.
-\end{coq_example}
-
-If we forget that \texttt{listn} is a dependent type and we read these
-definitions using the usual semantics of pattern matching,  we can conclude
-that \texttt{length1}
-and \texttt{length2} are different functions.
-In fact, they are equivalent
-because the pattern \texttt{niln} implies that \texttt{n} can only match
-the value $0$ and analogously the pattern \texttt{consn} determines that \texttt{n} can
-only match  values of the form  $(S~v)$ where $v$ is the value matched by
-\texttt{m}.
-
-The converse is also true. If
-we destructure the  length  value with the pattern \texttt{O} then the list
-value should be $niln$.
-Thus, the following term \texttt{length3} corresponds to the function
-\texttt{length} but this time defined by case analysis on the dependencies instead of on the list:
-
-\begin{coq_example}
-Definition length3 (n:nat) (l:listn n) :=
-  match l with
-  | niln => 0
-  | consn O _ _ => 1
-  | consn (S n) _ _ => S (S n)
-  end.
-\end{coq_example}
-
-When we have nested patterns of dependent types, the semantics of
-pattern matching becomes a little more difficult because
-the set of values that are matched by a sub-pattern may be conditioned by the
-values matched by another sub-pattern. Dependent nested patterns are
-somehow constrained patterns.
-In the examples, the expansion of
-\texttt{length1} and \texttt{length2} yields exactly the same term
- but the
-expansion of \texttt{length3} is completely different. \texttt{length1} and
-\texttt{length2} are expanded into two nested case analysis on
-\texttt{listn} while \texttt{length3} is expanded into a case analysis on
-\texttt{listn} containing a case analysis on natural numbers inside.
+We can understand the meaning of this definition using the same
+notions of usual pattern matching.
 
 
-In practice the user can think about the patterns as independent and
-it is the expansion algorithm that cares to relate them. \\
-\fi
-%
-%
-%
+When the elimination predicate must be provided
+-----------------------------------------------
 
-\asubsection{When the elimination predicate must be provided}
-\paragraph{Dependent pattern matching}
-The examples  given so far do not need an explicit elimination predicate
- because all the rhs have the same type and the
-strategy succeeds to synthesize it.
-Unfortunately when dealing with dependent patterns it often happens
-that we need to write cases where the type of the rhs are
-different  instances of the elimination  predicate.
-The function  \texttt{concat} for \texttt{listn}
-is an example where the branches have different type
-and we need to provide the elimination predicate:
+Dependent pattern matching
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-\begin{coq_example}
-Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
- listn (n + m) :=
-  match l in listn n return listn (n + m) with
-  | niln => l'
-  | consn n' a y => consn (n' + m) a (concat n' y m l')
-  end.
-\end{coq_example}
-The elimination predicate is {\tt fun (n:nat) (l:listn n) => listn~(n+m)}.
-In general if $m$ has type {\tt (}$I$ $q_1$ {\ldots} $q_r$ $t_1$ {\ldots} $t_s${\tt )} where
-$q_1$, {\ldots}, $q_r$ are parameters, the elimination predicate should be of
-the form~:
-{\tt fun} $y_1$ {\ldots} $y_s$ $x${\tt :}($I$~$q_1$ {\ldots} $q_r$ $y_1$ {\ldots}
-  $y_s${\tt ) =>} $Q$.
+The examples given so far do not need an explicit elimination
+predicate because all the |rhs| have the same type and the strategy
+succeeds to synthesize it. Unfortunately when dealing with dependent
+patterns it often happens that we need to write cases where the type
+of the |rhs| are different instances of the elimination predicate. The
+function concat for listn is an example where the branches have
+different type and we need to provide the elimination predicate:
 
-In the concrete syntax, it should be written~:
-\[ \kw{match}~m~\kw{as}~x~\kw{in}~(I~\_~\mbox{\ldots}~\_~y_1~\mbox{\ldots}~y_s)~\kw{return}~Q~\kw{with}~\mbox{\ldots}~\kw{end}\]
+.. coqtop:: in
 
-The variables which appear in the \kw{in} and \kw{as} clause are new
-and bounded in the property $Q$ in the \kw{return} clause. The
-parameters of the inductive definitions should not be mentioned and
-are replaced by \kw{\_}.
+   Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
+    listn (n + m) :=
+     match l in listn n return listn (n + m) with
+     | niln => l'
+     | consn n' a y => consn (n' + m) a (concat n' y m l')
+     end.
 
-\paragraph{Multiple dependent pattern matching}
-Recall that a list of patterns is also a pattern. So, when we destructure several
-terms at the same time and the branches have different types we need to provide the
-elimination predicate for this multiple pattern. It is done using the same
-scheme, each term may be associated to an \kw{as} and \kw{in} clause in order to
-introduce a dependent product.
+The elimination predicate is :g:`fun (n:nat) (l:listn n) => listn (n+m)`.
+In general if :g:`m` has type :g:`(I q1 … qr t1 … ts)` where :g:`q1, …, qr`
+are parameters, the elimination predicate should be of the form :g:`fun y1 … ys x : (I q1 … qr y1 … ys ) => Q`.
 
-For example, an equivalent definition for \texttt{concat} (even though the
+In the concrete syntax, it should be written :
+``match m as x in (I _ … _ y1 … ys) return Q with … end``
+The variables which appear in the ``in`` and ``as`` clause are new and bounded
+in the property :g:`Q` in the return clause. The parameters of the
+inductive definitions should not be mentioned and are replaced by ``_``.
+
+Multiple dependent pattern matching
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Recall that a list of patterns is also a pattern. So, when we
+destructure several terms at the same time and the branches have
+different types we need to provide the elimination predicate for this
+multiple pattern. It is done using the same scheme, each term may be
+associated to an as and in clause in order to introduce a dependent
+product.
+
+For example, an equivalent definition for :g:`concat` (even though the
 matching on the second term is trivial) would have been:
 
-\begin{coq_eval}
-Reset concat.
-\end{coq_eval}
-\begin{coq_example}
-Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
- listn (n + m) :=
-  match l in listn n, l' return listn (n + m) with
-  | niln, x => x
-  | consn n' a y, x => consn (n' + m) a (concat n' y m x)
-  end.
-\end{coq_example}
+.. coqtop:: in
 
-Even without real matching over the second term, this construction can be used to
-keep types linked.  If {\tt a} and {\tt b} are two {\tt listn} of the same length,
-by writing
-\begin{coq_eval}
-  Unset Printing Matching.
-\end{coq_eval}
-\begin{coq_example}
-Check (fun n (a b: listn n) => match a,b with
- |niln,b0 => tt
- |consn n' a y, bS => tt
-end).
-\end{coq_example}
-\begin{coq_eval}
-  Set Printing Matching.
-\end{coq_eval}
+   Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
+    listn (n + m) :=
+     match l in listn n, l' return listn (n + m) with
+     | niln, x => x
+     | consn n' a y, x => consn (n' + m) a (concat n' y m x)
+     end.
 
-I have a copy of {\tt b} in type {\tt listn 0} resp {\tt listn (S n')}.
+Even without real matching over the second term, this construction can
+be used to keep types linked. If :g:`a` and :g:`b` are two :g:`listn` of the same
+length, by writing
 
-% Notice that this time, the predicate \texttt{[n,\_:nat](listn (plus n
-%   m))}  is binary because we
-% destructure both \texttt{l} and \texttt{l'} whose types have arity one.
-% In general, if we destructure the terms $e_1\ldots e_n$
-% the predicate will be of arity $m$ where $m$ is the sum of the
-% number of dependencies of the type of $e_1, e_2,\ldots e_n$
-% (the $\lambda$-abstractions
-% should correspond from left to right to each dependent argument of the
-% type of $e_1\ldots e_n$).
-% When the arity of the predicate (i.e. number of abstractions) is not
-% correct Coq raises an error message. For example:
+.. coqtop:: in
 
-% % Test failure
-% \begin{coq_eval}
-% Reset concat.
-% Set Printing Depth 50.
-% (********** The following is not correct and should produce ***********)
-% (** Error: the term l' has type listn m while it is expected to have **)
-% (** type listn (?31 + ?32)                                           **)
-% \end{coq_eval}
-% \begin{coq_example}
-% Fixpoint concat
-%  (n:nat) (l:listn n) (m:nat)
-%  (l':listn m) {struct l} : listn (n + m) :=
-%   match l, l' with
-%   | niln, x => x
-%   | consn n' a y, x => consn (n' + m) a (concat n' y m x)
-%   end.
-% \end{coq_example}
+   Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
+    listn (n + m) :=
+     match l in listn n, l' return listn (n + m) with
+     | niln, x => x
+     | consn n' a y, x => consn (n' + m) a (concat n' y m x)
+     end.
 
-\paragraph{Patterns in {\tt in}}
-\label{match-in-patterns}
+I have a copy of :g:`b` in type :g:`listn 0` resp :g:`listn (S n')`.
 
-If the type of the matched term is more precise than an inductive applied to
-variables, arguments of the inductive in the {\tt in} branch can be more
-complicated patterns than a variable.
+
+Patterns in ``in``
+~~~~~~~~~~~~~~~~~~
+
+If the type of the matched term is more precise than an inductive
+applied to variables, arguments of the inductive in the ``in`` branch can
+be more complicated patterns than a variable.
 
 Moreover, constructors whose type do not follow the same pattern will
 become impossible branches. In an impossible branch, you can answer
-anything but {\tt False\_rect unit} has the advantage to be subterm of
-anything. % ???
+anything but False_rect unit has the advantage to be subterm of
+anything.
 
-To be concrete: the {\tt tail} function can be written:
-\begin{coq_example}
-Definition tail n (v: listn (S n)) :=
-  match v in listn (S m) return listn m with
-  | niln => False_rect unit
-  | consn n' a y => y
-  end.
-\end{coq_example}
-and {\tt tail n v} will be subterm of {\tt v}.
+To be concrete: the tail function can be written:
 
-\asection{Using pattern matching to write proofs}
+.. coqtop:: in
+
+   Definition tail n (v: listn (S n)) :=
+     match v in listn (S m) return listn m with
+     | niln => False_rect unit
+     | consn n' a y => y
+     end.
+
+and :g:`tail n v` will be subterm of :g:`v`.
+
+Using pattern matching to write proofs
+--------------------------------------
+
 In all the previous examples the elimination predicate does not depend
-on the object(s) matched. But it may depend and the typical case
-is when we write a proof by induction or a function that yields an
-object of dependent type. An example of proof using \texttt{match} in
-given in Section~\ref{refine-example}.
+on the object(s) matched. But it may depend and the typical case is
+when we write a proof by induction or a function that yields an object
+of dependent type. An example of proof using match in given in Section
+8.2.3.
 
-For example, we can write
-the function \texttt{buildlist} that given a natural number
-$n$ builds a list of length $n$ containing zeros as follows:
+For example, we can write the function :g:`buildlist` that given a natural
+number :g:`n` builds a list of length :g:`n` containing zeros as follows:
 
-\begin{coq_example}
-Fixpoint buildlist (n:nat) : listn n :=
-  match n return listn n with
-  | O => niln
-  | S n => consn n 0 (buildlist n)
-  end.
-\end{coq_example}
+.. coqtop:: in
 
-We can also use multiple patterns.
-Consider the following definition of the predicate less-equal
-\texttt{Le}:
+   Fixpoint buildlist (n:nat) : listn n :=
+     match n return listn n with
+     | O => niln
+     | S n => consn n 0 (buildlist n)
+     end.
 
-\begin{coq_example}
-Inductive LE : nat -> nat -> Prop :=
-  | LEO : forall n:nat, LE 0 n
-  | LES : forall n m:nat, LE n m -> LE (S n) (S m).
-\end{coq_example}
+We can also use multiple patterns. Consider the following definition
+of the predicate less-equal :g:`Le`:
 
-We can use multiple patterns to write  the proof of the lemma
- \texttt{forall (n m:nat), (LE n m)}\verb=\/=\texttt{(LE m n)}:
+.. coqtop:: in
 
-\begin{coq_example}
-Fixpoint dec (n m:nat) {struct n} : LE n m \/ LE m n :=
-  match n, m return LE n m \/ LE m n with
-  | O, x => or_introl (LE x 0) (LEO x)
-  | x, O => or_intror (LE x 0) (LEO x)
-  | S n as n', S m as m' =>
-      match dec n m with
-      | or_introl h => or_introl (LE m' n') (LES n m h)
-      | or_intror h => or_intror (LE n' m') (LES m n h)
-      end
-  end.
-\end{coq_example}
-In the example of \texttt{dec},
-the first \texttt{match} is dependent while
-the second is not.
+   Inductive LE : nat -> nat -> Prop :=
+     | LEO : forall n:nat, LE 0 n
+     | LES : forall n m:nat, LE n m -> LE (S n) (S m).
 
-% In general, consider the terms $e_1\ldots e_n$,
-% where  the type of $e_i$ is an instance of a family type
-% $\lb (\vec{d_i}:\vec{D_i}) \mto T_i$  ($1\leq i
-% \leq n$). Then, in expression \texttt{match}  $e_1,\ldots,
-% e_n$ \texttt{of} \ldots \texttt{end}, the
-% elimination predicate ${\cal P}$ should be of the form:
-% $[\vec{d_1}:\vec{D_1}][x_1:T_1]\ldots [\vec{d_n}:\vec{D_n}][x_n:T_n]Q.$
+We can use multiple patterns to write the proof of the lemma
+:g:`forall (n m:nat), (LE n m) \/ (LE m n)`:
 
-The user can also use \texttt{match} in combination with the tactic
-\texttt{refine} (see Section~\ref{refine}) to build incomplete proofs
-beginning with a \texttt{match} construction.
+.. coqtop:: in
 
-\asection{Pattern-matching on inductive objects involving local
-definitions}
+   Fixpoint dec (n m:nat) {struct n} : LE n m \/ LE m n :=
+     match n, m return LE n m \/ LE m n with
+     | O, x => or_introl (LE x 0) (LEO x)
+     | x, O => or_intror (LE x 0) (LEO x)
+     | S n as n', S m as m' =>
+         match dec n m with
+         | or_introl h => or_introl (LE m' n') (LES n m h)
+         | or_intror h => or_intror (LE n' m') (LES m n h)
+         end
+     end.
 
-If local definitions occur in the type of a constructor, then there are two ways
-to match on this constructor. Either the local definitions are skipped and
-matching is done only on the true arguments of the constructors, or the bindings
-for local definitions can also be caught in the matching.
+In the example of :g:`dec`, the first match is dependent while the second
+is not.
 
-Example.
+The user can also use match in combination with the tactic :tacn:`refine` (see
+Section 8.2.3) to build incomplete proofs beginning with a match
+construction.
 
-\begin{coq_eval}
-Reset Initial.
-Require Import Arith.
-\end{coq_eval}
 
-\begin{coq_example*}
-Inductive list : nat -> Set :=
-  | nil : list 0
-  | cons : forall n:nat, let m := (2 * n) in list m -> list (S (S m)).
-\end{coq_example*}
+Pattern-matching on inductive objects involving local definitions
+-----------------------------------------------------------------
 
-In the next example, the local definition is not caught.
+If local definitions occur in the type of a constructor, then there
+are two ways to match on this constructor. Either the local
+definitions are skipped and matching is done only on the true
+arguments of the constructors, or the bindings for local definitions
+can also be caught in the matching.
 
-\begin{coq_example}
-Fixpoint length n (l:list n) {struct l} : nat :=
-  match l with
-  | nil => 0
-  | cons n l0 => S (length (2 * n) l0)
-  end.
-\end{coq_example}
+.. example::
 
-But in this example, it is.
+   .. coqtop:: in
 
-\begin{coq_example}
-Fixpoint length' n (l:list n) {struct l} : nat :=
-  match l with
-  | nil => 0
-  | @cons _ m l0 => S (length' m l0)
-  end.
-\end{coq_example}
+      Inductive list : nat -> Set :=
+      | nil : list 0
+      | cons : forall n:nat, let m := (2 * n) in list m -> list (S (S m)).
 
-\Rem for a given matching clause, either none of the local definitions or all of
-them can be caught.
+   In the next example, the local definition is not caught.
 
-\Rem you can only catch {\tt let} bindings in mode where you bind all variables and so you
-have to use @ syntax.
+   .. coqtop:: in
 
-\Rem this feature is incoherent with the fact that parameters cannot be caught and
-consequently is somehow hidden. For example, there is no mention of it in error messages.
+      Fixpoint length n (l:list n) {struct l} : nat :=
+        match l with
+        | nil => 0
+        | cons n l0 => S (length (2 * n) l0)
+        end.
 
-\asection{Pattern-matching and coercions}
+   But in this example, it is.
+
+   .. coqtop:: in
+
+      Fixpoint length' n (l:list n) {struct l} : nat :=
+        match l with
+        | nil => 0
+        | @cons _ m l0 => S (length' m l0)
+        end.
+
+.. note:: For a given matching clause, either none of the local
+          definitions or all of them can be caught.
+
+.. note:: You can only catch let bindings in mode where you bind all
+          variables and so you have to use ``@`` syntax.
+
+.. note:: this feature is incoherent with the fact that parameters
+          cannot be caught and consequently is somehow hidden. For example,
+          there is no mention of it in error messages.
+
+Pattern-matching and coercions
+------------------------------
 
 If a mismatch occurs between the expected type of a pattern and its
 actual type, a coercion made from constructors is sought. If such a
 coercion can be found, it is automatically inserted around the
 pattern.
 
-Example:
+.. example::
 
-\begin{coq_example}
-Inductive I : Set :=
-  | C1 : nat -> I
-  | C2 : I -> I.
-Coercion C1 : nat >-> I.
-Check (fun x => match x with
-                | C2 O => 0
-                | _ => 0
-                end).
-\end{coq_example}
+   .. coqtop:: in
+
+      Inductive I : Set :=
+        | C1 : nat -> I
+        | C2 : I -> I.
+
+      Coercion C1 : nat >-> I.
+
+   .. coqtop:: all
+
+      Check (fun x => match x with
+                      | C2 O => 0
+                      | _ => 0
+                      end).
 
 
-\asection{When does the expansion strategy fail ?}\label{limitations}
-The strategy works very like in ML languages when treating
-patterns of non-dependent type.
-But there are new cases of failure that are due to the presence of
-dependencies.
+When does the expansion strategy fail?
+--------------------------------------
+
+The strategy works very like in ML languages when treating patterns of
+non-dependent type. But there are new cases of failure that are due to
+the presence of dependencies.
 
 The error messages of the current implementation may be sometimes
-confusing.  When the tactic fails because patterns are somehow
+confusing. When the tactic fails because patterns are somehow
 incorrect then error messages refer to the initial expression. But the
 strategy may succeed to build an expression whose sub-expressions are
 well typed when the whole expression is not. In this situation the
-message makes reference to the expanded expression.  We encourage
+message makes reference to the expanded expression. We encourage
 users, when they have patterns with the same outer constructor in
 different equations, to name the variable patterns in the same
-positions with the same name.
-E.g. to write {\small\texttt{(cons n O x) => e1}}
-and {\small\texttt{(cons n \_ x) => e2}} instead of
-{\small\texttt{(cons n O x) => e1}} and
-{\small\texttt{(cons n' \_ x') => e2}}.
-This helps to maintain certain name correspondence between the
+positions with the same name. E.g. to write ``(cons n O x) => e1`` and
+``(cons n _ x) => e2`` instead of ``(cons n O x) => e1`` and
+``(cons n' _ x') => e2``. This helps to maintain certain name correspondence between the
 generated expression and the original.
 
-Here is a summary of the error messages corresponding to each situation:
+Here is a summary of the error messages corresponding to each
+situation:
 
-\begin{ErrMsgs}
-\item \sverb{The constructor } {\sl
-    ident} \sverb{ expects } {\sl num} \sverb{ arguments}
+.. exn:: The constructor @ident expects @num arguments
 
- \sverb{The variable } {\sl ident} \sverb{ is bound several times
-    in pattern } {\sl term}
+   The variable ident is bound several times in pattern termFound a constructor
+   of inductive type term while a constructor of term is expectedPatterns are
+   incorrect (because constructors are not applied to the correct number of the
+   arguments, because they are not linear or they are wrongly typed).
 
- \sverb{Found a constructor of inductive type } {\term}
- \sverb{ while a constructor of } {\term} \sverb{ is expected}
+.. exn:: Non exhaustive pattern-matching
 
- Patterns are incorrect (because constructors are not applied to
-  the correct number of the arguments, because they are not linear or
-  they are wrongly typed).
+   The pattern matching is not exhaustive.
 
-\item \errindex{Non exhaustive pattern-matching}
+.. exn:: The elimination predicate term should be of arity @num (for non \
+         dependent case) or @num (for dependent case)
 
-The pattern matching is not exhaustive.
+   The elimination predicate provided to match has not the expected arity.
 
-\item \sverb{The elimination predicate } {\sl term} \sverb{ should be
-    of arity } {\sl num} \sverb{ (for non dependent case) or } {\sl
-    num} \sverb{ (for dependent case)}
+.. exn:: Unable to infer a match predicate
+         Either there is a type incompatibility or the problem involves dependencies
 
-The elimination predicate provided to \texttt{match} has not the
-  expected arity.
-
-
-%\item the whole expression is wrongly typed
-
-% CADUC ?
-% , or the synthesis of
-%   implicit arguments fails (for example to find the elimination
-%   predicate or to resolve implicit arguments in the rhs).
-
-%   There are {\em nested patterns of dependent type}, the elimination
-%   predicate corresponds to non-dependent case and has the form
-%   $[x_1:T_1]...[x_n:T_n]T$ and {\bf some} $x_i$ occurs {\bf free} in
-%   $T$.  Then, the strategy may fail to find out a correct elimination
-%   predicate during some step of compilation.  In this situation we
-%   recommend the user to rewrite the nested dependent patterns into
-%   several \texttt{match} with {\em simple patterns}.
-
-\item {\tt Unable to infer a match predicate\\
-    Either there is a type incompatibility or the problem involves\\
-    dependencies}
-
-  There is a type mismatch between the different branches.
-  The user should provide an elimination predicate.
-
-% Obsolete ?
-% \item because of nested patterns, it may happen that even though all
-%   the rhs have the same type, the strategy needs dependent elimination
-%   and so an elimination predicate must be provided. The system warns
-%   about this situation, trying to compile anyway with the
-%   non-dependent strategy. The risen message is:
-
-% \begin{itemize}
-% \item {\tt Warning: This pattern matching may need dependent
-%     elimination to be compiled.  I will try, but if fails try again
-%     giving dependent elimination predicate.}
-% \end{itemize}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % LA PROPAGATION DES CONTRAINTES ARRIERE N'EST PAS FAITE DANS LA V7
-% TODO
-% \item there are {\em nested patterns of dependent type} and the
-%   strategy builds a term that is well typed but recursive calls in fix
-%   point are reported as illegal:
-% \begin{itemize}
-% \item {\tt Error: Recursive call applied to an illegal term ...}
-% \end{itemize}
-
-% This is because the strategy generates a term that is correct w.r.t.
-% the initial term but which does not pass the guard condition.  In
-% this situation we recommend the user to transform the nested dependent
-% patterns into {\em several \texttt{match} of simple patterns}.  Let us
-% explain this with an example.  Consider the following definition of a
-% function that yields the last element of a list and \texttt{O} if it is
-% empty:
-
-% \begin{coq_example}
-%   Fixpoint last [n:nat; l:(listn n)] : nat :=
-%    match l of
-%      (consn _ a niln) => a
-%    | (consn m _ x) => (last m x) | niln => O
-%    end.
-% \end{coq_example}
-
-% It fails because of the priority between patterns, we know that this
-% definition is equivalent to the following more explicit one (which
-% fails too):
-
-% \begin{coq_example*}
-%   Fixpoint last [n:nat; l:(listn n)] : nat :=
-%    match l of
-%      (consn _ a niln) => a
-%    | (consn n _ (consn m b x)) => (last n (consn m b x))
-%    | niln => O
-%    end.
-% \end{coq_example*}
-
-% Note that the recursive call {\tt (last n (consn m b x))} is not
-% guarded. When treating with patterns of dependent types the strategy
-% interprets the first definition of \texttt{last} as the second
-% one\footnote{In languages of the ML family the first definition would
-%   be translated into a term where the variable \texttt{x} is shared in
-%   the expression.  When patterns are of non-dependent types, Coq
-%   compiles as in ML languages using sharing. When patterns are of
-%   dependent types the compilation reconstructs the term as in the
-%   second definition of \texttt{last} so to ensure the result of
-%   expansion is well typed.}.  Thus it generates a term where the
-% recursive call is rejected by the guard condition.
-
-% You can get rid of this problem by writing the definition with
-% \emph{simple patterns}:
-
-% \begin{coq_example}
-%   Fixpoint last [n:nat; l:(listn n)] : nat :=
-%   <[_:nat]nat>match l of
-%     (consn m a x) => Cases x of niln => a | _ => (last m x) end
-%   | niln => O
-%   end.
-% \end{coq_example}
-
-\end{ErrMsgs}
-
-
-%%% Local Variables:
-%%% mode: latex
-%%% TeX-master: "Reference-Manual"
-%%% End:
+   There is a type mismatch between the different branches. The user should
+   provide an elimination predicate.
