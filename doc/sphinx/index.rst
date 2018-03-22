@@ -43,6 +43,8 @@ Table of contents
 .. toctree::
    :caption: Addendum
 
+   addendum/micromega
+
 .. toctree::
    :caption: Reference
 
