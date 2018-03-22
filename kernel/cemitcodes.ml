@@ -20,7 +20,7 @@ open Mod_subst
 
 type emitcodes = String.t
 
-external tcode_of_code : Bytes.t -> int -> Vmvalues.tcode = "coq_tcode_of_code"
+external tcode_of_code : Bytes.t -> Vmvalues.tcode = "coq_tcode_of_code"
 
 (* Relocation information *)
 type reloc_info =
@@ -82,7 +82,7 @@ let patch buff pl f =
   (** Order seems important here? *)
   let reloc = CArray.map (fun (r, pos) -> (f r, pos)) pl.reloc_infos in
   let buff = patch_int buff reloc in
-  tcode_of_code buff (Bytes.length buff)
+  tcode_of_code buff
 
 (* Buffering of bytecode *)
 

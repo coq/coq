@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <stdint.h>
+#include <caml/memory.h>
 #include "coq_gc.h"
 #include "coq_instruct.h"
 #include "coq_fix_code.h"
@@ -629,7 +630,7 @@ value coq_interprete
 	print_instr("CLOSUREREC");
 	if (nvars > 0) *--sp = accu;
 	/* construction du vecteur de type */
-	Alloc_small(accu, nfuncs, 0);
+        Alloc_small(accu, nfuncs, Abstract_tag);
 	for(i = 0; i < nfuncs; i++) {
 	  Field(accu,i) = (value)(pc+pc[i]);
 	}
@@ -665,7 +666,7 @@ value coq_interprete
 	print_instr("CLOSURECOFIX");
 	if (nvars > 0) *--sp = accu;
 	/* construction du vecteur de type */
-	Alloc_small(accu, nfunc, 0);
+        Alloc_small(accu, nfunc, Abstract_tag);
 	for(i = 0; i < nfunc; i++) {
 	  Field(accu,i) = (value)(pc+pc[i]);
 	}
@@ -1071,12 +1072,22 @@ value coq_interprete
 	      }
 	    }
 	    *--sp = accu;
-	    /* We create the switch zipper */
-	    Alloc_small(accu, 5, Default_tag);
-	    Field(accu, 0) =  (value)typlbl; Field(accu, 1) = (value)swlbl; 
-	    Field(accu, 2) = sp[1]; Field(accu, 3) = sp[0]; 
-	    Field(accu, 4) = coq_env;
-	    sp++;sp[0] = accu;
+            /* Create bytecode wrappers */
+            Alloc_small(accu, 1, Abstract_tag);
+            Code_val(accu) = typlbl;
+            *--sp = accu;
+            Alloc_small(accu, 1, Abstract_tag);
+            Code_val(accu) = swlbl;
+            *--sp = accu;
+            /* We create the switch zipper */
+            Alloc_small(accu, 5, Default_tag);
+            Field(accu, 0) = sp[1];
+            Field(accu, 1) = sp[0];
+            Field(accu, 2) = sp[3];
+            Field(accu, 3) = sp[2];
+            Field(accu, 4) = coq_env;
+            sp += 3;
+            sp[0] = accu;
 	    /* We create the atom */
 	    Alloc_small(accu, 2, ATOM_SWITCH_TAG);
 	    Field(accu, 0) = sp[1]; Field(accu, 1) = sp[0];
@@ -1476,7 +1487,8 @@ value coq_interprete
 #endif
 }
 
-value coq_push_ra(value tcode) { 
+value coq_push_ra(value code) {
+  code_t tcode = Code_val(code);
   print_instr("push_ra");
   coq_sp -= 3;
   coq_sp[0] = (value) tcode;
@@ -1516,8 +1528,10 @@ value coq_push_vstack(value stk, value max_stack_size) {
 }
 
 value  coq_interprete_ml(value tcode, value a, value t, value g, value e, value ea) {
+  // Registering the other arguments w.r.t. the OCaml GC is done by coq_interprete
+  CAMLparam1(tcode);
   print_instr("coq_interprete");
-  return coq_interprete((code_t)tcode, a, t, g, e, Long_val(ea));
+  CAMLreturn (coq_interprete(Code_val(tcode), a, t, g, e, Long_val(ea)));
   print_instr("end coq_interprete");
 }
 

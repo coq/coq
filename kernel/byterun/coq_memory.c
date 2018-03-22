@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <string.h> 
+#include <caml/alloc.h>
 #include "coq_gc.h"
 #include "coq_instruct.h"
 #include "coq_fix_code.h"
@@ -46,7 +47,11 @@ value coq_static_alloc(value size) /* ML */
 
 value accumulate_code(value unit) /* ML */
 {
-  return (value) accumulate;
+  CAMLparam1(unit);
+  CAMLlocal1(res);
+  res = caml_alloc_small(1, Abstract_tag);
+  Code_val(res) = accumulate;
+  CAMLreturn(res);
 }
 
 static void (*coq_prev_scan_roots_hook) (scanning_action);

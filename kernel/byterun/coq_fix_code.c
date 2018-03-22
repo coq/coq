@@ -18,6 +18,7 @@
 #include <caml/misc.h>
 #include <caml/mlvalues.h>
 #include <caml/fail.h>
+#include <caml/alloc.h>
 #include <caml/memory.h>
 #include "coq_instruct.h"
 #include "coq_fix_code.h"
@@ -78,38 +79,41 @@ void * coq_stat_alloc (asize_t sz)
 }
 
 value coq_makeaccu (value i) {
-  code_t q;
-  code_t res = coq_stat_alloc(2 * sizeof(opcode_t));
-  q = res;
+  CAMLparam1(i);
+  CAMLlocal1(res);
+  code_t q = coq_stat_alloc(2 * sizeof(opcode_t));
+  res = caml_alloc_small(1, Abstract_tag);
+  Code_val(res) = q;
   *q++ = VALINSTR(MAKEACCU);
   *q = (opcode_t)Int_val(i);
-  return (value)res;
+  CAMLreturn(res);
 }
 
 value coq_pushpop (value i) {
-  code_t res;
-  int n;
-  n = Int_val(i);
+  CAMLparam1(i);
+  CAMLlocal1(res);
+  code_t q;
+  res = caml_alloc_small(1, Abstract_tag);
+  int n = Int_val(i);
   if (n == 0) {
-    res = coq_stat_alloc(sizeof(opcode_t));
-    *res = VALINSTR(STOP);
-    return (value)res;
+    q = coq_stat_alloc(sizeof(opcode_t));
+    Code_val(res) = q;
+    *q = VALINSTR(STOP);
+    CAMLreturn(res);
   }
   else {
-    code_t q;
-    res = coq_stat_alloc(3 * sizeof(opcode_t));
-    q = res;
+    q = coq_stat_alloc(3 * sizeof(opcode_t));
+    Code_val(res) = q;
     *q++ = VALINSTR(POP);
     *q++ = (opcode_t)n;
     *q = VALINSTR(STOP);
-    return (value)res;
+    CAMLreturn(res);
   }
 }
 
 value coq_is_accumulate_code(value code){
-  code_t q;
+  code_t q = Code_val(code);
   int res;
-  q = (code_t)code;
   res = Is_instruction(q,ACCUMULATE);
   return Val_bool(res);
 }
@@ -132,11 +136,14 @@ value coq_is_accumulate_code(value code){
 #define COPY32(dst,src) (*dst=*src)
 #endif /* ARCH_BIG_ENDIAN */
 
-value coq_tcode_of_code (value code, value size) {
-  code_t p, q, res; 
-  asize_t len = (asize_t) Long_val(size);
-  res = coq_stat_alloc(len);
-  q = res;
+value coq_tcode_of_code (value code) {
+  CAMLparam1 (code);
+  CAMLlocal1 (res);
+  code_t p, q;
+  asize_t len = (asize_t) caml_string_length(code);
+  res = caml_alloc_small(1, Abstract_tag);
+  q = coq_stat_alloc(len);
+  Code_val(res) = q;
   len /= sizeof(opcode_t);
   for (p = (code_t)code; p < (code_t)code + len; /*nothing*/) {  
     opcode_t instr;
@@ -166,5 +173,5 @@ value coq_tcode_of_code (value code, value size) {
       for(i=0; i<ar; i++) { COPY32(q,p); p++; q++; };
     }
   }
-  return (value)res;
+  CAMLreturn(res);
 }
