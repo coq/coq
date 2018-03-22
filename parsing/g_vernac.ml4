@@ -161,7 +161,7 @@ GEXTEND Gram
       | IDENT "Let"; id = identref; b = def_body ->
           VernacDefinition ((DoDischarge, Let), (lname_of_lident id, None), b)
       (* Gallina inductive declarations *)
-      | cum = cumulativity_token; priv = private_token; f = finite_token;
+      | cum = OPT cumulativity_token; priv = private_token; f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
 	  let (k,f) = f in
           let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
@@ -247,7 +247,8 @@ GEXTEND Gram
       | IDENT "Class" -> (Class true,BiFinite) ] ]
   ;
   cumulativity_token:
-    [ [ IDENT "Cumulative" -> Some true | IDENT "NonCumulative" -> Some false | -> None ] ]
+    [ [ IDENT "Cumulative" -> VernacCumulative
+      | IDENT "NonCumulative" -> VernacNonCumulative ] ]
   ;
   private_token:
     [ [ IDENT "Private" -> true | -> false ] ]

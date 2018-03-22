@@ -535,10 +535,10 @@ let vernac_assumption ~atts discharge kind l nl =
 
 let should_treat_as_cumulative cum poly =
   match cum with
-  | Some true ->
+  | Some VernacCumulative ->
     if poly then true
     else user_err Pp.(str "The Cumulative prefix can only be used in a polymorphic context.")
-  | Some false ->
+  | Some VernacNonCumulative ->
     if poly then false
     else user_err Pp.(str "The NonCumulative prefix can only be used in a polymorphic context.")
   | None -> poly && Flags.is_polymorphic_inductive_cumulativity ()
@@ -562,7 +562,6 @@ let vernac_record cum k poly finite struc binders sort nameopt cfs =
     indicates whether the type is inductive, co-inductive or
     neither. *)
 let vernac_inductive ~atts cum lo finite indl =
-  let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
   if Dumpglob.dump () then
     List.iter (fun (((coe,(lid,_)), _, _, _, cstrs), _) ->
       match cstrs with
@@ -599,6 +598,7 @@ let vernac_inductive ~atts cum lo finite indl =
       | _ -> user_err Pp.(str "Cannot handle mutually (co)inductive records.")
     in
     let indl = List.map unpack indl in
+    let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
     ComInductive.do_mutual_inductive indl is_cumulative atts.polymorphic lo finite
 
 let vernac_fixpoint ~atts discharge l =

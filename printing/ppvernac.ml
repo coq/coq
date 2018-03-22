@@ -788,8 +788,8 @@ open Decl_kinds
           if p then
             let cm =
               match cum with
-              | Some true -> "Cumulative"
-              | Some false -> "NonCumulative"
+              | Some VernacCumulative -> "Cumulative"
+              | Some VernacNonCumulative -> "NonCumulative"
               | None -> ""
             in
             cm ^ " " ^ kind
