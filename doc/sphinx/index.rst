@@ -43,6 +43,7 @@ Table of contents
 .. toctree::
    :caption: Addendum
 
+   addendum/extended-pattern-matching
    addendum/canonical-structures
 
 .. toctree::
