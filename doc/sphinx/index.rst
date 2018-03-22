@@ -51,6 +51,7 @@ Table of contents
    addendum/micromega
    addendum/extraction
    addendum/program
+   addendum/nsatz
 
 .. toctree::
    :caption: Reference
