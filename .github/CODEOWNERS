@@ -293,3 +293,24 @@
 
 /META.coq         @ejgallego
 # Secondary maintainer @letouzey
+
+
+########## Developer tools ##########
+
+/dev/tools/backport-pr.sh     @Zimmi48
+# Secondary maintainer @maximedenes
+
+/dev/tools/change-header      @herbelin
+
+/dev/tools/check-eof-newline.sh @SkySkimmer
+
+/dev/tools/coqdev.el @SkySkimmer
+
+/dev/tools/github-check-prs.py @SkySkimmer
+
+/dev/tools/merge-pr.sh @maximedenes
+# Secondary maintainer @gares
+
+/dev/tools/pre-commit @SkySkimmer
+
+/dev/tools/sudo-apt-get-update @JasonGross
