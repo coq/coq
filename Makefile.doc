@@ -60,7 +60,7 @@ REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
   RefMan-gal.v.tex \
   RefMan-oth.v.tex RefMan-ltac.v.tex \
   RefMan-pro.v.tex \
-  Polynom.v.tex Nsatz.v.tex \
+  Polynom.v.tex \
   Setoid.v.tex Universes.v.tex \
   Misc.v.tex)
 
