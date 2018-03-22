@@ -43,6 +43,9 @@ Table of contents
 .. toctree::
    :caption: Addendum
 
+   addendum/extended-pattern-matching
+   addendum/canonical-structures
+   addendum/omega
    addendum/micromega
 
 .. toctree::
