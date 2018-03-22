@@ -49,6 +49,7 @@ Table of contents
    addendum/type-classes
    addendum/omega
    addendum/micromega
+   addendum/extraction
 
 .. toctree::
    :caption: Reference
