@@ -1,249 +1,184 @@
-\achapter{Omega: a solver of quantifier-free problems in
-Presburger Arithmetic}
-%HEVEA\cutname{omega.html}
-\aauthor{Pierre Crégut}
-\label{OmegaChapter}
+.. _omega:
 
-\asection{Description of {\tt omega}}
-\tacindex{omega}
-\label{description}
+Omega: a solver for quantifier-free problems in Presburger Arithmetic
+=====================================================================
 
-{\tt omega} solves a goal in Presburger arithmetic, i.e. a universally
+:Author: Pierre Crégut
+
+Description of ``omega``
+------------------------
+
+This tactic does not need any parameter:
+
+.. tacn:: omega
+
+``omega`` solves a goal in Presburger arithmetic, i.e. a universally
 quantified formula made of equations and inequations. Equations may
-be specified either on the type \verb=nat= of natural numbers or on
-the type \verb=Z= of binary-encoded integer numbers. Formulas on
-\verb=nat= are automatically injected into \verb=Z=.  The procedure
+be specified either on the type ``nat`` of natural numbers or on
+the type ``Z`` of binary-encoded integer numbers. Formulas on
+``nat`` are automatically injected into ``Z``.  The procedure
 may use any hypothesis of the current proof session to solve the goal.
 
-Multiplication is handled by {\tt omega} but only goals where at
+Multiplication is handled by ``omega`` but only goals where at
 least one of the two multiplicands of products is a constant are
-solvable. This is the restriction meant by ``Presburger arithmetic''.
+solvable. This is the restriction meant by "Presburger arithmetic".
 
 If the tactic cannot solve the goal, it fails with an error message.
 In any case, the computation eventually stops.
 
-\asubsection{Arithmetical goals recognized by {\tt omega}}
+Arithmetical goals recognized by ``omega``
+------------------------------------------
 
-{\tt omega} applied only to quantifier-free formulas built from the
-connectors
+``omega`` applied only to quantifier-free formulas built from the
+connectors::
 
-\begin{quote}
-\verb=/\, \/, ~, ->=
-\end{quote}
+   /\  \/  ~  ->
 
-on atomic formulas. Atomic formulas are built from the predicates 
+on atomic formulas. Atomic formulas are built from the predicates::
 
-\begin{quote}
-\verb!=, le, lt, gt, ge!
-\end{quote}
+   =  <  <=  >  >=
 
- on \verb=nat= or from the predicates
+on ``nat`` or ``Z``. In expressions of type ``nat``, ``omega`` recognizes::
 
-\begin{quote}
-\verb!=, <, <=, >, >=!
-\end{quote}
+   +  -  *  S  O  pred
 
- on \verb=Z=. In expressions of type \verb=nat=, {\tt omega} recognizes 
+and in expressions of type ``Z``, ``omega`` recognizes numeral constants and::
 
-\begin{quote}
-\verb!plus, minus, mult, pred, S, O!
-\end{quote}
+   +  -  *  Z.succ Z.pred
 
-and in expressions of type \verb=Z=, {\tt omega} recognizes 
-
-\begin{quote}
-\verb!+, -, *, Z.succ!, and constants.
-\end{quote}
-
-All expressions of type \verb=nat= or \verb=Z= not built on these
+All expressions of type ``nat`` or ``Z`` not built on these
 operators are considered abstractly as if they
-were arbitrary variables of type \verb=nat= or \verb=Z=.
+were arbitrary variables of type ``nat`` or ``Z``.
 
-\asubsection{Messages from {\tt omega}}
-\label{errors}
+Messages from ``omega``
+-----------------------
 
-When {\tt omega} does not solve the goal, one of the following errors
+When ``omega`` does not solve the goal, one of the following errors
 is generated:
 
-\begin{ErrMsgs}
-
-\item \errindex{omega can't solve this system}
+.. exn:: omega can't solve this system
 
   This may happen if your goal is not quantifier-free (if it is
-  universally quantified, try {\tt intros} first; if it contains
-  existentials quantifiers too, {\tt omega} is not strong enough to solve your
+  universally quantified, try ``intros`` first; if it contains
+  existentials quantifiers too, ``omega`` is not strong enough to solve your
   goal). This may happen also if your goal contains arithmetical
-  operators unknown from {\tt omega}. Finally, your goal may be really
+  operators unknown from ``omega``. Finally, your goal may be really
   wrong!
 
-\item \errindex{omega: Not a quantifier-free goal}
-  
-  If your goal is universally quantified, you should first apply {\tt
-    intro} as many time as needed.
+.. exn:: omega: Not a quantifier-free goal
 
-\item \errindex{omega: Unrecognized predicate or connective: {\sl ident}}
+  If your goal is universally quantified, you should first apply
+  ``intro`` as many time as needed.
 
-\item \errindex{omega: Unrecognized atomic proposition: {\sl prop}}
-  
-\item \errindex{omega: Can't solve a goal with proposition variables}
+.. exn:: omega: Unrecognized predicate or connective: @ident
 
-\item \errindex{omega: Unrecognized proposition}
+.. exn:: omega: Unrecognized atomic proposition: ...
 
-\item \errindex{omega: Can't solve a goal with non-linear products}
+.. exn:: omega: Can't solve a goal with proposition variables
 
-\item \errindex{omega: Can't solve a goal with equality on {\sl type}}
+.. exn:: omega: Unrecognized proposition
 
-\end{ErrMsgs}
+.. exn:: omega: Can't solve a goal with non-linear products
 
-%% This code is currently unplugged
-%% 
-% \asubsection{Control over the output}
-% There are some flags that can be set to get more information on the procedure
+.. exn:: omega: Can't solve a goal with equality on type ...
 
-% \begin{itemize}
-% \item \verb=Time= to get the time used by the procedure
-% \item \verb=System= to visualize the normalized systems.
-% \item \verb=Action= to visualize the actions performed by the OMEGA
-%      procedure (see \ref{technical}).
-% \end{itemize}
 
-% \comindex{Set omega Time}
-% \comindex{UnSet omega Time}
-% \comindex{Switch omega Time}
-% \comindex{Set omega System}
-% \comindex{UnSet omega System}
-% \comindex{Switch omega System}
-% \comindex{Set omega Action}
-% \comindex{UnSet omega Action}
-% \comindex{Switch omega Action}
+Using ``omega``
+---------------
 
-% Use {\tt Set omega {\rm\sl flag}} to set the flag
-% {\rm\sl flag}. Use {\tt Unset omega {\rm\sl flag}} to unset it and
-% {\tt Switch omega {\rm\sl flag}} to toggle it.
-
-\section{Using {\tt omega}}
-
-The {\tt omega} tactic does not belong to the core system. It should be
+The ``omega`` tactic does not belong to the core system. It should be
 loaded by
-\begin{coq_example*}
-Require Import Omega.
-Open Scope Z_scope.
-\end{coq_example*}
 
-\example{}
+.. coqtop:: in
 
-\begin{coq_example}
-Goal forall m n:Z, 1 + 2 * m <> 2 * n.
-intros; omega.
-\end{coq_example}
-\begin{coq_eval}
-Abort.
-\end{coq_eval}
+   Require Import Omega.
 
-\example{}
+.. example::
 
-\begin{coq_example}
-Goal forall z:Z, z > 0 -> 2 * z + 1 > z.
-intro; omega.
-\end{coq_example}
+  .. coqtop:: all
 
-% Other examples can be found in \verb+$COQLIB/theories/DEMOS/OMEGA+.
+     Require Import Omega.
 
-\section{Options}
+     Open Scope Z_scope.
 
-\begin{quote}
-  \optindex{Stable Omega}
-  {\tt Unset Stable Omega}
-\end{quote}
-This deprecated option (on by default) is for compatibility with Coq
-pre 8.5. It resets internal name counters to make executions of
-{\tt omega} independent.
+     Goal forall m n:Z, 1 + 2 * m <> 2 * n.
+     intros; omega.
+     Abort.
 
-\begin{quote}
-  \optindex{Omega UseLocalDefs}
-  {\tt Unset Omega UseLocalDefs}
-\end{quote}
-This option (on by default) allows {\tt omega} to use the bodies of
-local variables.
+     Goal forall z:Z, z > 0 -> 2 * z + 1 > z.
+     intro; omega.
+     Abort.
 
-\begin{quote}
-  \optindex{Omega System}
-  {\tt Set Omega System}
-  \optindex{Omega Action}
-  {\tt Set Omega Action}
-\end{quote}
-These two options (off by default) activate the printing of debug
-information.
 
-\asection{Technical data}
-\label{technical}
+Options
+-------
 
-\asubsection{Overview of the tactic}
-\begin{itemize}
+.. opt:: Stable Omega
 
-\item The goal is negated twice and the first negation is introduced as an
-     hypothesis.
-\item Hypothesis are decomposed in simple equations or inequations. Multiple
-     goals may result from this phase.
-\item Equations and inequations over \verb=nat= are translated over
-     \verb=Z=, multiple goals may result from the translation of
-     substraction.
-\item Equations and inequations are normalized.
-\item Goals are solved by the {\it OMEGA} decision procedure.
-\item The script of the solution is replayed.
+This deprecated option (on by default) is for compatibility with Coq pre 8.5. It
+resets internal name counters to make executions of ``omega`` independent.
 
-\end{itemize}
+.. opt:: Omega UseLocalDefs
 
-\asubsection{Overview of the {\it OMEGA} decision procedure}
+This option (on by default) allows ``omega`` to use the bodies of local
+variables.
 
-The {\it OMEGA} decision procedure involved in the {\tt omega} tactic uses
-a small subset of the decision procedure presented in
+.. opt:: Omega System
 
-\begin{quote}
-  "The Omega Test: a fast and practical integer programming
-algorithm for dependence analysis", William Pugh, Communication of the
-ACM , 1992, p 102-114.
-\end{quote}
+This option (off by default) activate the printing of debug information
 
+.. opt:: Omega Action
+
+This option (off by default) activate the printing of debug information
+
+Technical data
+--------------
+
+Overview of the tactic
+~~~~~~~~~~~~~~~~~~~~~~
+
+ * The goal is negated twice and the first negation is introduced as an hypothesis.
+ * Hypothesis are decomposed in simple equations or inequations. Multiple
+   goals may result from this phase.
+ * Equations and inequations over ``nat`` are translated over
+   ``Z``, multiple goals may result from the translation of substraction.
+ * Equations and inequations are normalized.
+ * Goals are solved by the OMEGA decision procedure.
+ * The script of the solution is replayed.
+
+Overview of the OMEGA decision procedure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The OMEGA decision procedure involved in the ``omega`` tactic uses
+a small subset of the decision procedure presented in :cite:`TheOmegaPaper`
 Here is an overview, look at the original paper for more information.
 
-\begin{itemize}
-
-\item Equations and inequations are normalized by division by the GCD of their
-     coefficients.
-\item Equations are eliminated, using the Banerjee test to get a coefficient 
-     equal to one.
-\item Note that each inequation defines a half space in the space of real value
-     of the variables.
-   \item Inequations are solved by projecting on the hyperspace
-     defined by cancelling one of the variable.  They are partitioned
-     according to the sign of the coefficient of the eliminated
-     variable. Pairs of inequations from different classes define a
-     new edge in the projection.
-   \item Redundant inequations are eliminated or merged in new
-     equations that can be eliminated by the Banerjee test.
-\item The last two steps are iterated until a contradiction is reached
-     (success) or there is no more variable to eliminate (failure).
-
-\end{itemize}
+ * Equations and inequations are normalized by division by the GCD of their
+   coefficients.
+ * Equations are eliminated, using the Banerjee test to get a coefficient
+   equal to one.
+ * Note that each inequation defines a half space in the space of real value
+   of the variables.
+ * Inequations are solved by projecting on the hyperspace
+   defined by cancelling one of the variable.  They are partitioned
+   according to the sign of the coefficient of the eliminated
+   variable. Pairs of inequations from different classes define a
+   new edge in the projection.
+ * Redundant inequations are eliminated or merged in new
+   equations that can be eliminated by the Banerjee test.
+ * The last two steps are iterated until a contradiction is reached
+   (success) or there is no more variable to eliminate (failure).
 
 It may happen that there is a real solution and no integer one. The last
-steps of the Omega procedure (dark shadow) are not implemented, so the 
+steps of the Omega procedure (dark shadow) are not implemented, so the
 decision procedure is only partial.
 
-\asection{Bugs}
+Bugs
+----
 
-\begin{itemize}
-\item The simplification procedure is very dumb and this results in
-  many redundant cases to explore.
+ * The simplification procedure is very dumb and this results in
+   many redundant cases to explore.
 
-\item Much too slow.
+ * Much too slow.
 
-\item Certainly other bugs! You can report them to \url{https://coq.inria.fr/bugs/}.
-
-\end{itemize}
-
-%%% Local Variables: 
-%%% mode: latex
-%%% TeX-master: "Reference-Manual"
-%%% End: 
+ * Certainly other bugs! You can report them to https://coq.inria.fr/bugs/.
