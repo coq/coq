@@ -43,6 +43,8 @@ Table of contents
 .. toctree::
    :caption: Addendum
 
+   addendum/canonical-structures
+
 .. toctree::
    :caption: Reference
 
