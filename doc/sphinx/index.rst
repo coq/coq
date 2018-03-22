@@ -50,6 +50,7 @@ Table of contents
    addendum/omega
    addendum/micromega
    addendum/extraction
+   addendum/program
 
 .. toctree::
    :caption: Reference
