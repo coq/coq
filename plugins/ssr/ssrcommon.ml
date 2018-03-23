@@ -228,8 +228,9 @@ let splay_open_constr gl (sigma, c) =
   Reductionops.splay_prod env sigma t
 
 let isAppInd env sigma c =
-  try ignore(Tacred.reduce_to_atomic_ind env sigma c); true
-  with CErrors.UserError _ -> false
+  let c = Reductionops.clos_whd_flags CClosure.all env sigma c in
+  let c, _ = decompose_app_vect sigma c in
+  EConstr.isInd sigma c
 
 (** Generic argument-based globbing/typing utilities *)
 
