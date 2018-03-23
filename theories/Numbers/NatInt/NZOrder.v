@@ -626,7 +626,7 @@ auto with typeclass_instances.
 intros n H; constructor; intros y [H1 H2].
 apply nle_gt in H2. elim H2. now apply le_trans with z.
 intros n H1 H2; constructor; intros m [H3 H4]. now apply H2.
-Qed.
+Defined.
 
 Theorem gt_wf : well_founded Rgt.
 Proof.
@@ -637,7 +637,7 @@ intros n H; constructor; intros y [H1 H2].
 apply nle_gt in H2. elim H2. now apply le_lt_trans with n.
 intros n H1 H2; constructor; intros m [H3 H4].
 apply H2. assumption. now apply le_succ_l.
-Qed.
+Defined.
 
 End WF.
 
