@@ -124,7 +124,7 @@ Tools
 - Coq can now be run with the option -mangle-names to change the auto-generated
   name scheme. This is intended to function as a linter for developments that
   want to be robust to changes in auto-generated names. This feature is experimental,
-  and may change or dissapear without warning.
+  and may change or disappear without warning.
 - GeoProof support was removed.
 
 Checker
