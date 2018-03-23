@@ -73,6 +73,13 @@ stdenv.mkDerivation rec {
     ocamlPackages.merlin
     ocamlPackages.ocpIndent
     ocamlPackages.ocp-index
+
+    # Dependencies of the merging script
+    jq
+    curl
+    git
+    gnupg
+
   ] else []);
 
   src =
