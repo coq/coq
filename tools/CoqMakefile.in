@@ -148,7 +148,11 @@ TIME_OF_PRETTY_BUILD_EXTRA_FILES ?= - # also output to the command line
 
 # Flags #######################################################################
 #
-# We define a bunch of variables combining the parameters
+# We define a bunch of variables combining the parameters.
+# To add additional flags to coq, coqchk or coqdoc, set the
+# {COQ,COQCHK,COQDOC}EXTRAFLAGS variable to whatever you want to add.
+# To overwrite the default choice and set your own flags entirely, set the
+# {COQ,COQCHK,COQDOC}FLAGS variable.
 
 SHOW := $(if $(VERBOSE),@true "",@echo "")
 HIDE := $(if $(VERBOSE),,@)
@@ -168,9 +172,16 @@ DYNOBJ:=.cmxs
 DYNLIB:=.cmxs
 endif
 
-COQFLAGS?=-q $(OPT) $(COQLIBS) $(OTHERFLAGS)
-COQCHKFLAGS?=-silent -o $(COQLIBS)
-COQDOCFLAGS?=-interpolate -utf8
+# these variables are meant to be overriden if you want to add *extra* flags
+COQEXTRAFLAGS?=
+COQCHKEXTRAFLAGS?=
+COQDOCEXTRAFLAGS?=
+
+# these flags do NOT contain the libraries, to make them easier to overwrite
+COQFLAGS?=-q $(OPT) $(OTHERFLAGS) $(COQEXTRAFLAGS)
+COQCHKFLAGS?=-silent -o $(COQCHKEXTRAFLAGS)
+COQDOCFLAGS?=-interpolate -utf8 $(COQDOCEXTRAFLAGS)
+
 COQDOCLIBS?=$(COQLIBS_NOML)
 
 # The version of Coq being run and the version of coq_makefile that
@@ -384,7 +395,7 @@ quick: $(VOFILES:.vo=.vio)
 .PHONY: quick
 
 vio2vo:
-	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) \
+	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) \
 		-schedule-vio2vo $(J) $(VOFILES:%.vo=%.vio)
 .PHONY: vio2vo
 
@@ -396,17 +407,17 @@ quick2vo:
 	done); \
 	echo "VIO2VO: $$VIOFILES"; \
 	if [ -n "$$VIOFILES" ]; then \
-	  $(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) -schedule-vio2vo $(J) $$VIOFILES; \
+	  $(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) -schedule-vio2vo $(J) $$VIOFILES; \
 	fi
 .PHONY: quick2vo
 
 checkproofs:
-	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) \
+	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) \
 		-schedule-vio-checking $(J) $(VOFILES:%.vo=%.vio)
 .PHONY: checkproofs
 
 validate: $(VOFILES)
-	$(TIMER) $(COQCHK) $(COQCHKFLAGS) $^
+	$(TIMER) $(COQCHK) $(COQCHKFLAGS) $(COQLIBS) $^
 .PHONY: validate
 
 only: $(TGTS)
@@ -654,15 +665,15 @@ endif
 
 $(VOFILES): %.vo: %.v
 	$(SHOW)COQC $<
-	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $< $(TIMING_EXTRA)
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
 
 # FIXME ?merge with .vo / .vio ?
 $(GLOBFILES): %.glob: %.v
-	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $<
+	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
 
 $(VFILES:.v=.vio): %.vio: %.v
 	$(SHOW)COQC -quick $<
-	$(HIDE)$(TIMER) $(COQC) -quick $(COQDEBUG) $(COQFLAGS) $<
+	$(HIDE)$(TIMER) $(COQC) -quick $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
 
 $(addsuffix .timing.diff,$(VFILES)): %.timing.diff : %.before-timing %.after-timing
 	$(SHOW)PYTHON TIMING-DIFF $<
@@ -670,7 +681,7 @@ $(addsuffix .timing.diff,$(VFILES)): %.timing.diff : %.before-timing %.after-tim
 
 $(BEAUTYFILES): %.v.beautified: %.v
 	$(SHOW)'BEAUTIFY $<'
-	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) -beautify $<
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) -beautify $<
 
 $(GFILES): %.g: %.v
 	$(SHOW)'GALLINA $<'
@@ -764,6 +775,7 @@ printenv::
 	@echo 'OCAMLFIND = $(OCAMLFIND)'
 	@echo 'PP = $(PP)'
 	@echo 'COQFLAGS = $(COQFLAGS)'
+	@echo 'COQLIB = $(COQLIBS)'
 	@echo 'COQLIBINSTALL = $(COQLIBINSTALL)'
 	@echo 'COQDOCINSTALL = $(COQDOCINSTALL)'
 .PHONY:	printenv
