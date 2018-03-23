@@ -1,3 +1,11 @@
+Changes from 8.8.2 to 8.9+beta1
+===============================
+
+Tools
+
+- Coq_makefile lets one override or extend the following variables from
+  the command line: COQFLAGS, COQCHKFLAGS, COQDOCFLAGS.
+
 Changes from 8.7.2 to 8.8+beta1
 ===============================
 
