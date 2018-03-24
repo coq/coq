@@ -9,15 +9,15 @@
 (************************************************************************)
 
 open Ccalgo
-open Constr
+open EConstr
 
 type rule=
-    Ax of constr
-  | SymAx of constr
+    Ax of (Evd.evar_map*constr)
+  | SymAx of (Evd.evar_map*constr)
   | Refl of term
   | Trans of proof*proof
   | Congr of proof*proof
-  | Inject of proof*pconstructor*int*int
+  | Inject of proof*(Names.constructor*EInstance.t)*int*int
 and proof =
     private {p_lhs:term;p_rhs:term;p_rule:rule}
 
@@ -37,7 +37,7 @@ val pax : (Ccalgo.term * Ccalgo.term) Ccalgo.Constrhash.t ->
 val psymax :  (Ccalgo.term * Ccalgo.term) Ccalgo.Constrhash.t ->
            Ccalgo.Constrhash.key -> proof
 
-val pinject :  proof -> pconstructor -> int -> int -> proof
+val pinject :  proof -> (Names.constructor * EInstance.t) -> int -> int -> proof
 
 (** Proof building functions *)
 

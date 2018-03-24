@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open Util
-open Constr
+open EConstr
 open Names
 
 type pa_constructor =
@@ -26,18 +26,18 @@ module PafMap : CSig.MapS with type key = pa_fun
 module PacMap : CSig.MapS with type key = pa_constructor
 
 type cinfo =
-    {ci_constr: pconstructor; (* inductive type *)
+    {ci_constr: Names.constructor * EInstance.t; (* inductive type *)
      ci_arity: int;     (* # args *)
      ci_nhyps: int}     (* # projectable args *)
 
 type term =
-    Symb of constr
+    Symb of Evd.evar_map * constr
   | Product of Sorts.t * Sorts.t
   | Eps of Id.t
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
 
-module Constrhash : Hashtbl.S with type key = constr
+module Constrhash : Hashtbl.S with type key = Evd.evar_map * constr
 module Termhash : Hashtbl.S with type key = term
 
 
@@ -47,7 +47,7 @@ type ccpattern =
 
 type rule=
     Congruence
-  | Axiom of constr * bool
+  | Axiom of (Evd.evar_map * constr) * bool
   | Injection of int * pa_constructor * int * pa_constructor * int
 
 type from=
@@ -134,7 +134,7 @@ val empty : int -> Goal.goal Evd.sigma -> state
 
 val add_term : state -> term -> int
 
-val add_equality : state -> constr -> term -> term -> unit
+val add_equality : state -> (Evd.evar_map * constr) -> term -> term -> unit
 
 val add_disequality : state -> from -> term -> term -> unit
 

@@ -17,6 +17,7 @@ open Pp
 open Names
 open Sorts
 open Constr
+open EConstr
 open Vars
 open Goptions
 open Tacmach
@@ -125,7 +126,7 @@ module PacMap=Map.Make(PacOrd)
 module PafMap=Map.Make(PafOrd)
 
 type cinfo=
-    {ci_constr: pconstructor; (* inductive type *)
+    {ci_constr: constructor * EInstance.t; (* inductive type *)
      ci_arity: int;     (* # args *)
      ci_nhyps: int}     (* # projectable args *)
 
@@ -136,7 +137,7 @@ let family_eq f1 f2 = match f1, f2 with
   | _ -> false
 
 type term=
-    Symb of constr
+    Symb of Evd.evar_map * EConstr.constr
   | Product of Sorts.t * Sorts.t
   | Eps of Id.t
   | Appli of term*term
@@ -144,7 +145,7 @@ type term=
 
 let rec term_equal t1 t2 =
   match t1, t2 with
-    | Symb c1, Symb c2 -> eq_constr_nounivs c1 c2
+    | Symb (sigma1,c1), Symb (sigma2,c2) -> assert (sigma1 == sigma2); EConstr.eq_constr_nounivs sigma1 c1 c2
     | Product (s1, t1), Product (s2, t2) -> family_eq s1 s2 && family_eq t1 t2
     | Eps i1, Eps i2 -> Id.equal i1 i2
     | Appli (t1, u1), Appli (t2, u2) -> term_equal t1 t2 && term_equal u1 u2
@@ -156,7 +157,7 @@ let rec term_equal t1 t2 =
 open Hashset.Combine
 
 let rec hash_term = function
-  | Symb c -> combine 1 (Constr.hash c)
+  | Symb (sigma,c) -> combine 1 (Constr.hash (EConstr.to_constr sigma c))
   | Product (s1, s2) -> combine3 2 (Sorts.hash s1) (Sorts.hash s2)
   | Eps i -> combine 3 (Id.hash i)
   | Appli (t1, t2) -> combine3 4 (hash_term t1) (hash_term t2)
@@ -168,7 +169,7 @@ type ccpattern =
 
 type rule=
     Congruence
-  | Axiom of constr * bool
+  | Axiom of (Evd.evar_map * constr) * bool
   | Injection of int * pa_constructor * int * pa_constructor * int
 
 type from=
@@ -232,9 +233,9 @@ type node =
      term:term}
 
 module Constrhash = Hashtbl.Make
-  (struct type t = constr
-	  let equal = eq_constr_nounivs
-	  let hash = Constr.hash
+  (struct type t = Evd.evar_map * EConstr.constr
+          let equal (sigma,c) (_sigma,c') = EConstr.eq_constr_nounivs sigma c c'
+          let hash (sigma,c) = Constr.hash (EConstr.to_constr sigma c)
    end)
 module Typehash = Constrhash
 
@@ -280,7 +281,7 @@ let dummy_node =
     cpath=min_int;
     constructors=PacMap.empty;
     vertex=Leaf;
-    term=Symb (mkRel min_int)
+    term=Symb (Evd.empty,EConstr.mkRel min_int)
   }
 
 let empty_forest() =
@@ -427,7 +428,7 @@ let cc_product s1 s2 =
 	   mkLambda(_B_,mkSort(s2),_body_))
 
 let rec constr_of_term = function
-    Symb s-> s
+    Symb (sigma,s) -> s
   | Product(s1,s2) -> cc_product s1 s2
   | Eps id -> mkVar id
   | Constructor cinfo -> mkConstructU cinfo.ci_constr
@@ -435,12 +436,11 @@ let rec constr_of_term = function
       make_app [(constr_of_term s2)] s1
 and make_app l=function
     Appli (s1,s2)->make_app ((constr_of_term s2)::l) s1
-  | other -> Term.applist (constr_of_term other,l)
+  | other -> applist (constr_of_term other,l)
 
 let rec canonize_name sigma c =
-  let c = EConstr.Unsafe.to_constr c in
-  let func c = canonize_name sigma (EConstr.of_constr c) in
-    match Constr.kind c with
+  let func c = canonize_name sigma c in
+    match EConstr.kind sigma c with
       | Const (kn,u) ->
 	  let canon_const = Constant.make1 (Constant.canonical kn) in 
 	    (mkConstU (canon_const,u))
@@ -483,10 +483,10 @@ let rec inst_pattern subst = function
 	   args t
 
 let pr_idx_term uf i = str "[" ++ int i ++ str ":=" ++
-  Termops.print_constr (EConstr.of_constr (constr_of_term (term uf i))) ++ str "]"
+  Termops.print_constr (constr_of_term (term uf i)) ++ str "]"
 
 let pr_term t = str "[" ++
-  Termops.print_constr (EConstr.of_constr (constr_of_term t)) ++ str "]"
+  Termops.print_constr (constr_of_term t) ++ str "]"
 
 let rec add_term state t=
   let uf=state.uf in
@@ -494,7 +494,7 @@ let rec add_term state t=
 	Not_found ->
 	  let b=next uf in
           let trm = constr_of_term t in
-          let typ = Typing.unsafe_type_of state.env state.sigma (EConstr.of_constr trm) in
+          let typ = Typing.unsafe_type_of state.env state.sigma trm in
           let typ = canonize_name state.sigma typ in
 	  let new_node=
 	    match t with
@@ -542,9 +542,9 @@ let rec add_term state t=
 	  in
 	    uf.map.(b)<-new_node;
 	    Termhash.add uf.syms t b;
-	    Typehash.replace state.by_type typ
+            Typehash.replace state.by_type (state.sigma,typ)
 	      (Int.Set.add b
-		 (try Typehash.find state.by_type typ with
+                 (try Typehash.find state.by_type (state.sigma,typ) with
 		      Not_found -> Int.Set.empty));
 	    b
 
@@ -601,15 +601,15 @@ let add_inst state (inst,int_subst) =
 	      begin
 		debug (fun () ->
 		   (str "Adding new equality, depth="++ int state.rew_depth) ++ fnl () ++
-	          (str "  [" ++ Termops.print_constr (EConstr.of_constr prf) ++ str " : " ++
+                  (str "  [" ++ Termops.print_constr prf ++ str " : " ++
 			   pr_term s ++ str " == " ++ pr_term t ++ str "]"));
-		add_equality state prf s t
+                add_equality state (state.sigma,prf) s t
 	      end
 	    else
 	      begin
 		debug (fun () ->
 		   (str "Adding new disequality, depth="++ int state.rew_depth) ++ fnl () ++
-	          (str "  [" ++ Termops.print_constr (EConstr.of_constr prf) ++ str " : " ++
+                  (str "  [" ++ Termops.print_constr prf ++ str " : " ++
 			   pr_term s ++ str " <> " ++ pr_term t ++ str "]"));
 		add_disequality state (Hyp prf) s t
 	      end
@@ -643,9 +643,9 @@ let union state i1 i2 eq=
   let r1= get_representative state.uf i1
   and r2= get_representative state.uf i2 in
     link state.uf i1 i2 eq;
-    Constrhash.replace state.by_type r1.class_type
+    Constrhash.replace state.by_type (state.sigma,r1.class_type)
       (Int.Set.remove i1
-	 (try Constrhash.find state.by_type r1.class_type with
+         (try Constrhash.find state.by_type (state.sigma,r1.class_type) with
 	      Not_found -> Int.Set.empty));
     let f= Int.Set.union r1.fathers r2.fathers in
       r2.weight<-Int.Set.cardinal f;
@@ -813,16 +813,15 @@ let complete_one_class state i=
       Partial pac ->
 	let rec app t typ n =
 	  if n<=0 then t else
-	    let _,etyp,rest= destProd typ in
-            let id = new_state_var (EConstr.of_constr etyp) state in
+            let _,etyp,rest= destProd state.sigma typ in
+            let id = new_state_var etyp state in
 		app (Appli(t,Eps id)) (substl [mkVar id] rest) (n-1) in
         let _c = Typing.unsafe_type_of state.env state.sigma
-	  (EConstr.of_constr (constr_of_term (term state.uf pac.cnode))) in
-        let _c = EConstr.Unsafe.to_constr _c in
+          (constr_of_term (term state.uf pac.cnode)) in
 	let _args =
 	  List.map (fun i -> constr_of_term (term state.uf  i))
 	    pac.args in
-        let typ = Term.prod_applist _c (List.rev _args) in
+        let typ = Termops.prod_applist state.sigma _c (List.rev _args) in
 	let ct = app (term state.uf i) typ pac.arity in
 	  state.uf.epsilons <- pac :: state.uf.epsilons;
 	  ignore (add_term state ct)
@@ -921,7 +920,7 @@ let init_pb_stack state =
 	| Trivial typ ->
 	    begin
 	      try
-		Typehash.find state.by_type typ
+                Typehash.find state.by_type (state.sigma,typ)
 	      with Not_found -> Int.Set.empty
 	    end in
 	Int.Set.iter (fun i ->
@@ -944,7 +943,7 @@ let init_pb_stack state =
 	| Trivial typ ->
 	    begin
 	      try
-		Typehash.find state.by_type typ
+                Typehash.find state.by_type (state.sigma,typ)
 	      with Not_found -> Int.Set.empty
 	    end in
 	Int.Set.iter (fun i ->
