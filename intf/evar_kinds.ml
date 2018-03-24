@@ -21,6 +21,8 @@ type obligation_definition_status = Define of bool | Expand
 
 type matching_var_kind = FirstOrderPatVar of patvar | SecondOrderPatVar of patvar
 
+type subevar_kind = Domain | Codomain | Body
+
 type t =
   | ImplicitArg of global_reference * (int * Id.t option)
      * bool (** Force inference *)
@@ -34,4 +36,4 @@ type t =
   | ImpossibleCase
   | MatchingVar of matching_var_kind
   | VarInstance of Id.t
-  | SubEvar of Evar.t
+  | SubEvar of subevar_kind option * Evar.t

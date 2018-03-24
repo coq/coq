@@ -25,3 +25,9 @@ eexists ?[x].
 destruct H1 as [x1 H1].
 Fail instantiate (x:=projT1 x1).
 Abort.
+
+(* Test some messages for non solvable evars *)
+
+Fail Goal forall a f, f a = 0.
+Fail Goal forall f x, id f x = 0.
+Fail Goal forall f P,  P (f 0).
