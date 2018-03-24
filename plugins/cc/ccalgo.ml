@@ -427,7 +427,7 @@ let cc_product s1 s2 =
 	   mkLambda(_B_,mkSort(s2),_body_))
 
 let rec constr_of_term = function
-    Symb s-> applist_projection s []
+    Symb s-> s
   | Product(s1,s2) -> cc_product s1 s2
   | Eps id -> mkVar id
   | Constructor cinfo -> mkConstructU cinfo.ci_constr
@@ -435,25 +435,7 @@ let rec constr_of_term = function
       make_app [(constr_of_term s2)] s1
 and make_app l=function
     Appli (s1,s2)->make_app ((constr_of_term s2)::l) s1
-  | other -> 
-    applist_proj other l
-and applist_proj c l =
-  match c with
-  | Symb s -> applist_projection s l
-  | _ -> Term.applistc (constr_of_term c) l
-and applist_projection c l =
-  match Constr.kind c with
-  | Const c when Environ.is_projection (fst c) (Global.env()) ->
-    let p = Projection.make (fst c) false in
-    (match l with 
-    | [] -> (* Expand the projection *)
-      let ty = Typeops.type_of_constant_in (Global.env ()) c in (* FIXME constraints *)
-      let pb = Environ.lookup_projection p (Global.env()) in
-      let ctx,_ = Term.decompose_prod_n_assum (pb.Declarations.proj_npars + 1) ty in
-      Term.it_mkLambda_or_LetIn (mkProj(p,mkRel 1)) ctx
-    | hd :: tl ->
-      Term.applistc (mkProj (p, hd)) tl)
-  | _ -> Term.applistc c l
+  | other -> Term.applist (constr_of_term other,l)
 
 let rec canonize_name sigma c =
   let c = EConstr.Unsafe.to_constr c in
