@@ -64,6 +64,14 @@
 .. |t_i| replace:: `t`\ :math:`_{i}`
 .. |t_m| replace:: `t`\ :math:`_{m}`
 .. |t_n| replace:: `t`\ :math:`_{n}`
+.. |f_1| replace:: `f`\ :math:`_{1}`
+.. |f_i| replace:: `f`\ :math:`_{i}`
+.. |f_m| replace:: `f`\ :math:`_{m}`
+.. |f_n| replace:: `f`\ :math:`_{n}`
+.. |u_1| replace:: `u`\ :math:`_{1}`
+.. |u_i| replace:: `u`\ :math:`_{i}`
+.. |u_m| replace:: `u`\ :math:`_{m}`
+.. |u_n| replace:: `u`\ :math:`_{n}`
 .. |term_0| replace:: `term`\ :math:`_{0}`
 .. |term_1| replace:: `term`\ :math:`_{1}`
 .. |term_2| replace:: `term`\ :math:`_{2}`

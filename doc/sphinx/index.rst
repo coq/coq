@@ -45,6 +45,7 @@ Table of contents
 
    addendum/extended-pattern-matching
    addendum/canonical-structures
+   addendum/type-classes
    addendum/omega
    addendum/micromega
 

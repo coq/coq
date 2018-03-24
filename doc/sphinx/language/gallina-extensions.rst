@@ -2109,6 +2109,8 @@ case, this latter type is considered).
 
   Adds blocks of implicit types with different specifications.
 
+.. _implicit-generalization:
+
 Implicit generalization
 ~~~~~~~~~~~~~~~~~~~~~~~
 
