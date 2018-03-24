@@ -151,3 +151,17 @@ Section JLeivant.
     congruence.
   Qed.
 End JLeivant.
+
+(* An example with primitive projections *)
+
+Module PrimitiveProjections.
+Set Primitive Projections.
+Record t (A:Type) := { f : A }.
+Goal forall g (a:t nat), @f nat = g -> f a = 0 -> g a = 0.
+congruence.
+Undo.
+intros.
+unfold f in H0. (* internally turn the projection to unfolded form *)
+congruence.
+Qed.
+End PrimitiveProjections.
