@@ -9,7 +9,7 @@
 (************************************************************************)
 
 (* This file implements the basic congruence-closure algorithm by *)
-(* Downey,Sethi and Tarjan. *)
+(* Downey, Sethi and Tarjan. *)
 (* Plus some e-matching and constructor handling by P. Corbineau *)
 
 open CErrors
