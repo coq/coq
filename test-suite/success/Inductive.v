@@ -204,5 +204,5 @@ End NonRecLetIn.
 (* Test treatment of let-in in the definition of Records *)
 (* Should fail with "Sort expected" *)
 
-Fail Inductive foo (T : Type) : let T := Type in T :=
+Inductive foo (T : Type) : let T := Type in T :=
   { r : forall x : T, x = x }.

@@ -123,20 +123,24 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
        let poly =
          match t with
          | { CAst.v = CSort (Misctypes.GType []) } -> true | _ -> false in
-       let sigma, s = interp_type_evars env sigma ~impls:empty_internalization_env t in
-       let sred = Reductionops.whd_allnolet env sigma s in
-         (match EConstr.kind sigma sred with
+       let sigma, typ = interp_type_evars env sigma ~impls:empty_internalization_env t in
+       let rec aux env typ =
+         let redtyp = Reductionops.whd_allnolet env sigma typ in
+         match EConstr.kind sigma redtyp with
+         | LetIn (na,b,t,c) -> aux (EConstr.push_rel (RelDecl.LocalDef (na,b,t)) env) c
 	 | Sort s' ->
             let s' = EConstr.ESorts.kind sigma s' in
 	    (if poly then
                match Evd.is_sort_variable sigma s' with
                | Some l ->
                  let sigma = Evd.make_flexible_variable sigma ~algebraic:true l in
-                 sigma, s, s', true
+                 sigma, s', true
                | None ->
-                 sigma, s, s', false
-             else sigma, s, s', false)
-	 | _ -> user_err ?loc:(constr_loc t) (str"Sort expected."))
+                 sigma, s', false
+             else sigma, s', false)
+         | _ -> user_err ?loc:(constr_loc t) (str"Sort expected.") in
+       let sigma, s, template = aux env typ in
+       sigma, typ, s, template
     | None -> 
       let uvarkind = Evd.univ_flexible_alg in
       let sigma, s = Evd.new_sort_variable uvarkind sigma in
@@ -285,6 +289,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
   let r = mkIndU (indsp,u) in
   let rp = applist (r, Context.Rel.to_extended_list mkRel 0 paramdecls) in
   let paramargs = Context.Rel.to_extended_list mkRel 1 paramdecls in (*def in [[params;x:rp]]*)
+  let arity_ctxt,_ = Inductiveops.get_arity env (Inductiveops.make_ind_family (indu,paramargs)) in
   let x = Name binder_name in
   let fields = instantiate_possibly_recursive_type indu paramdecls fields in
   let lifted_fields = Termops.lift_rel_context 1 fields in
@@ -323,10 +328,13 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
 		let body = match decl with
 		  | LocalDef (_,ci,_) -> subst_projection fid subst ci
 		  | LocalAssum _ ->
+                    let pctxlength = Context.Rel.length arity_ctxt + 1 in
+                    let pctx = LocalAssum (x,lift pctxlength rp)::arity_ctxt in
 	            (* [ccl] is defined in context [params;x:rp] *)
-		    (* [ccl'] is defined in context [params;x:rp;x:rp] *)
-		    let ccl' = liftn 1 2 ccl in
-		    let p = mkLambda (x, lift 1 rp, ccl') in
+                    (* [ccl'] is defined in context [params;x:rp;arityctx;x:rp] *)
+                    (* with [arityctx] made only of let's (which do not occur) *)
+                    let ccl' = liftn pctxlength 2 ccl in
+                    let p = it_mkLambda_or_LetIn ccl' pctx in
 		    let branch = it_mkLambda_or_LetIn (mkRel nfi) lifted_fields in
 		    let ci = Inductiveops.make_case_info env indsp LetStyle in
 		      mkCase (ci, p, mkRel 1, [|branch|]) 
