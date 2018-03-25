@@ -1635,7 +1635,7 @@ analysis on inductive or co-inductive objects (see :ref:`TODO-4.5`).
 .. tacv:: elim @term using @term
 .. tacv:: elim @term using @term with @bindings_list
 
-   Allows the user to give explicitly an elimination predicate :n:`@term` that
+   Allows the user to give explicitly an induction principle :n:`@term` that
    is not the standard one for the underlying inductive type of :n:`@term`. The
    :n:`@bindings_list` clause allows instantiating premises of the type of
    :n:`@term`.
