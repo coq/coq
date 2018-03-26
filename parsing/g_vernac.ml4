@@ -845,10 +845,6 @@ GEXTEND Gram
       | IDENT "Cd" -> VernacChdir None
       | IDENT "Cd"; dir = ne_string -> VernacChdir (Some dir)
 
-      (* Toplevel control *)
-      | IDENT "Drop" -> VernacToplevelControl Drop
-      | IDENT "Quit" -> VernacToplevelControl Quit
-
       | IDENT "Load"; verbosely = [ IDENT "Verbose" -> true | -> false ];
 	s = [ s = ne_string -> s | s = IDENT -> s ] ->
 	  VernacLoad (verbosely, s)

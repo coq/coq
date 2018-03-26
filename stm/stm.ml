@@ -2734,7 +2734,6 @@ let merge_proof_branch ~valid ?id qast keep brname =
 (* When tty is true, this code also does some of the job of the user interface:
    jump back to a state that is valid *)
 let handle_failure (e, info) vcs =
-  if e = CErrors.Drop then Exninfo.iraise (e, info) else
   match Stateid.get info with
   | None ->
       VCS.restore vcs;
@@ -2886,11 +2885,6 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
           rc
 
       (* Side effect on all branches *)
-      | VtUnknown, _ when Vernacprop.under_control expr = VernacToplevelControl Drop ->
-        let st = Vernacstate.freeze_interp_state `No in
-        ignore(stm_vernac_interp (VCS.get_branch_pos head) st x);
-        `Ok
-
       | VtSideff l, w ->
           let in_proof = not (VCS.Branch.equal head VCS.Branch.master) in
           let id = VCS.new_node ~id:newtip () in

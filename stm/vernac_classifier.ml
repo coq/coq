@@ -185,7 +185,6 @@ let classify_vernac e =
     | VernacResetName _ | VernacResetInitial
     | VernacBacktrack _ | VernacBackTo _ | VernacRestart -> VtMeta, VtNow
     (* What are these? *)
-    | VernacToplevelControl _
     | VernacRestoreState _
     | VernacWriteState _ -> VtSideff [], VtNow
     (* Plugins should classify their commands *)

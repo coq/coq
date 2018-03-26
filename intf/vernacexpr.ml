@@ -457,8 +457,6 @@ type nonrec vernac_expr =
   | VernacCheckGuard
   | VernacProof of Genarg.raw_generic_argument option * section_subset_expr option
   | VernacProofMode of string
-  (* Toplevel control *)
-  | VernacToplevelControl of exn
 
   (* For extension *)
   | VernacExtend of extend_name * Genarg.raw_generic_argument list
