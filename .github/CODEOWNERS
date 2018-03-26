@@ -294,6 +294,9 @@
 /META.coq         @ejgallego
 # Secondary maintainer @letouzey
 
+/dev/build/windows @MSoegtropIMC
+# Secondary maintainer @maximedenes
+
 
 ########## Developer tools ##########
 
