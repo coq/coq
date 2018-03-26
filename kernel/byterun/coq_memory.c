@@ -99,8 +99,12 @@ value init_coq_vm(value unit) /* ML */
     /* Initialing the interpreter */
     init_coq_interpreter();
     
-    /* Some predefined pointer code */
-    accumulate = (code_t) coq_stat_alloc(sizeof(opcode_t));
+    /* Some predefined pointer code.
+     * It is typically contained in accumlator blocks whose tag is 0 and thus
+     * scanned by the GC, so make it look like an OCaml block. */
+    value accu_block = (value) coq_stat_alloc(2 * sizeof(value));
+    Hd_hp (accu_block) = Make_header (1, Abstract_tag, Caml_black);        \
+    accumulate = (code_t) Val_hp(accu_block);
     *accumulate = VALINSTR(ACCUMULATE);
 
   /* Initialize GC */
