@@ -104,3 +104,14 @@ There are two cases to consider:
   merge the PR and then notify upstream they can merge the patch. This is a
   less preferable scenario because it is probably going to create
   spurious CI failures for unrelated PRs.
+
+### Merge script dependencies
+
+The merge script passes option `-S` to `git merge` to ensure merge commits
+are signed. Consequently, it depends on the GnuPG command utility being
+installed and a GPG key being available. Here is a short tutorial to
+creating your own GPG key:
+<https://ekaia.org/blog/2009/05/10/creating-new-gpgkey/>
+
+The script depends on a few other utilities. If you are a Nix user, the
+simplest way of getting them is to run `nix-shell` first.
