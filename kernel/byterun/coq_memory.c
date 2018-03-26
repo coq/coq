@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h> 
 #include <caml/alloc.h>
+#include <caml/address_class.h>
 #include "coq_gc.h"
 #include "coq_instruct.h"
 #include "coq_fix_code.h"
@@ -61,6 +62,10 @@ static void coq_scan_roots(scanning_action action)
   register value * i;
   /* Scan the stack */
   for (i = coq_sp; i < coq_stack_high; i++) {
+#ifdef NO_NAKED_POINTERS
+    /* The VM stack may contain C-allocated bytecode */
+    if (Is_block(*i) && !Is_in_heap_or_young(*i)) continue;
+#endif
     (*action) (*i, i);
   };
   /* Hook */
