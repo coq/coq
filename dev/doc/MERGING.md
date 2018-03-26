@@ -1,6 +1,7 @@
 # Merging changes in Coq
 
-This document describes how patches (submitted as Pull Requests) should be
+This document describes how patches (submitted as pull requests
+on the `master` branch) should be
 merged into the main repository (https://github.com/coq/coq).
 
 ## Code owners
@@ -65,14 +66,41 @@ In some rare cases (e.g. the conflicts are in the CHANGES file), it is ok to fix
 the conflicts in the merge commit (following the same steps as below), and push
 to `master` directly. Don't use the GitHub interface to fix these conflicts.
 
-The command to be used is:
+To merge the PR proceed in the following way
 ```
+$ git checkout master
+$ git pull
 $ dev/tools/merge-pr XXXX
+$ git push upstream
 ```
-where `XXXX` is the number of the PR to be merged. This operation should be followed by a push.
+where `XXXX` is the number of the PR to be merged and `upstream` is the name
+of your remote pointing to `git@github.com:coq/coq.git`.
+Note that you are only supposed to merge PRs into `master`. PRs should rarely
+target the stable branch, but when it is the case they are the responsibility
+of the release manager.
+
+This script conducts various checks before proceeding to merge. Don't bypass them
+without a good reason to, and in that case, write a comment in the PR thread to
+explain the reason.
 
 Maintainers MUST NOT merge their own patches.
 
 DON'T USE the GitHub interface for merging, since it will prevent the automated
 backport script from operating properly, generates bad commit messages, and a
 messy history when there are conflicts.
+
+### What to do if the PR has overlays
+
+If the PR breaks compatibility of some developments in CI, then the author must
+have prepared overlays for these developments (see [`dev/ci/README.md`](/dev/ci/README.md))
+and the PR must absolutely update the `CHANGES` file.
+
+There are two cases to consider:
+
+- If the patch is backward compatible (best scenario), then you should get
+  upstream maintainers to integrate it before merging the PR.
+- If the patch is not backward compatible (which is often the case when
+  patching plugins after an update to the Coq API), then you can proceed to
+  merge the PR and then notify upstream they can merge the patch. This is a
+  less preferable scenario because it is probably going to create
+  spurious CI failures for unrelated PRs.
