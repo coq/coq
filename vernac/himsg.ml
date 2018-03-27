@@ -559,15 +559,21 @@ let rec explain_evar_kind env sigma evk ty = function
   | Evar_kinds.VarInstance id ->
       strbrk "an instance of type " ++ ty ++
       str " for the variable " ++ Id.print id
-  | Evar_kinds.SubEvar evk' ->
+  | Evar_kinds.SubEvar (where,evk') ->
       let evi = Evd.find sigma evk' in
       let pc = match evi.evar_body with
       | Evar_defined c -> pr_leconstr_env env sigma (EConstr.of_constr c)
       | Evar_empty -> assert false in
       let ty' = EConstr.of_constr evi.evar_concl in
+      (match where with
+      | Some Evar_kinds.Body -> str "the body of "
+      | Some Evar_kinds.Domain -> str "the domain of "
+      | Some Evar_kinds.Codomain -> str "the codomain of "
+      | None ->
       pr_existential_key sigma evk ++ str " of type " ++ ty ++
       str " in the partial instance " ++ pc ++
-      str " found for " ++ explain_evar_kind env sigma evk'
+      str " found for ") ++
+      explain_evar_kind env sigma evk'
       (pr_leconstr_env env sigma ty') (snd evi.evar_source)
 
 let explain_typeclass_resolution env sigma evi k =

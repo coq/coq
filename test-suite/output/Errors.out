@@ -8,3 +8,11 @@ Unable to unify "nat" with "True".
 The command has indeed failed with message:
 Ltac call to "instantiate ( (ident) := (lglob) )" failed.
 Instance is not well-typed in the environment of ?x.
+The command has indeed failed with message:
+Cannot infer the domain of the type of f.
+The command has indeed failed with message:
+Cannot infer the domain of the implicit parameter A of id whose type is
+"Type".
+The command has indeed failed with message:
+Cannot infer the codomain of the type of f in environment:
+x : nat

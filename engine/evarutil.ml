@@ -807,11 +807,11 @@ let judge_of_new_Type evd =
   let (evd', s) = new_univ_variable univ_rigid evd in
   (evd', { uj_val = mkSort (Type s); uj_type = mkSort (Type (Univ.super s)) })
 
-let subterm_source evk (loc,k) =
+let subterm_source evk ?where (loc,k) =
   let evk = match k with
-    | Evar_kinds.SubEvar (evk) -> evk
+    | Evar_kinds.SubEvar (None,evk) when where = None -> evk
     | _ -> evk in
-  (loc,Evar_kinds.SubEvar evk)
+  (loc,Evar_kinds.SubEvar (where,evk))
 
 (* Add equality constraints for covariant/invariant positions. For
    irrelevant positions, unify universes when flexible. *)

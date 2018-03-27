@@ -1662,7 +1662,7 @@ let rec list_assoc_in_triple x = function
 let abstract_tycon ?loc env evdref subst tycon extenv t =
   let t = nf_betaiota env !evdref t in (* it helps in some cases to remove K-redex*)
   let src = match EConstr.kind !evdref t with
-    | Evar (evk,_) -> (Loc.tag ?loc @@ Evar_kinds.SubEvar evk)
+    | Evar (evk,_) -> (Loc.tag ?loc @@ Evar_kinds.SubEvar (None,evk))
     | _ -> (Loc.tag ?loc @@ Evar_kinds.CasesType true) in
   let subst0,t0 = adjust_to_extended_env_and_remove_deps env extenv !evdref subst t in
   (* We traverse the type T of the original problem Xi looking for subterms

@@ -19,6 +19,7 @@ open Vars
 open Namegen
 open Evd
 open Evarutil
+open Evar_kinds
 open Pretype_errors
 
 module RelDecl = Context.Rel.Declaration
@@ -78,12 +79,14 @@ let define_pure_evar_as_product evd evk =
   let id = next_ident_away idx (Environ.ids_of_named_context_val evi.evar_hyps) in
   let concl = Reductionops.whd_all evenv evd (EConstr.of_constr evi.evar_concl) in
   let s = destSort evd concl in
+  let evksrc = evar_source evk evd in
+  let src = subterm_source evk ~where:Domain evksrc in
   let evd1,(dom,u1) =
-    new_type_evar evenv evd univ_flexible_alg ~filter:(evar_filter evi)
+    new_type_evar evenv evd univ_flexible_alg ~src ~filter:(evar_filter evi)
   in
   let evd2,rng =
     let newenv = push_named (LocalAssum (id, dom)) evenv in
-    let src = evar_source evk evd1 in
+    let src = subterm_source evk ~where:Codomain evksrc in
     let filter = Filter.extend 1 (evar_filter evi) in
       if Sorts.is_prop (ESorts.kind evd1 s) then
        (* Impredicative product, conclusion must fall in [Prop]. *)
@@ -135,7 +138,7 @@ let define_pure_evar_as_lambda env evd evk =
     next_name_away_with_default_using_types "x" na avoid (Reductionops.whd_evar evd dom) in
   let newenv = push_named (LocalAssum (id, dom)) evenv in
   let filter = Filter.extend 1 (evar_filter evi) in
-  let src = evar_source evk evd1 in
+  let src = subterm_source evk ~where:Body (evar_source evk evd1) in
   let evd2,body = new_evar newenv evd1 ~src (subst1 (mkVar id) rng) ~filter in
   let lam = mkLambda (Name id, dom, subst_var id body) in
   Evd.define evk (EConstr.Unsafe.to_constr lam) evd2, lam

@@ -206,8 +206,12 @@ let pr_evar_source = function
   | Evar_kinds.ImpossibleCase -> str "type of impossible pattern-matching clause"
   | Evar_kinds.MatchingVar _ -> str "matching variable"
   | Evar_kinds.VarInstance id -> str "instance of " ++ Id.print id
-  | Evar_kinds.SubEvar evk ->
-    str "subterm of " ++ Evar.print evk
+  | Evar_kinds.SubEvar (where,evk) ->
+     (match where with
+     | None -> str "subterm of "
+     | Some Evar_kinds.Body -> str "body of "
+     | Some Evar_kinds.Domain -> str "domain of "
+     | Some Evar_kinds.Codomain -> str "codomain of ") ++ Evar.print evk
 
 let pr_evar_info evi =
   let open Evd in
