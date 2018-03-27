@@ -203,17 +203,7 @@ let dump_tags () = CString.Map.bindings !tag_map
 let make_style_stack () =
   (** Default tag is to reset everything *)
   let empty = Terminal.make () in
-  let default_tag = Terminal.({
-      fg_color = Some `DEFAULT;
-      bg_color = Some `DEFAULT;
-      bold = Some false;
-      italic = Some false;
-      underline = Some false;
-      negative = Some false;
-      prefix = None;
-      suffix = None;
-    })
-  in
+  let default_tag = Terminal.reset_style in
   let style_stack = ref [] in
   let peek () = match !style_stack with
   | []      -> default_tag  (** Anomalous case, but for robustness *)
@@ -224,18 +214,22 @@ let make_style_stack () =
       try CString.Map.find tag !tag_map
       with | Not_found -> empty
     in
-    (** Use the merging of the latest tag and the one being currently pushed.
-    This may be useful if for instance the latest tag changes the background and
-    the current one the foreground, so that the two effects are additioned. *)
+    (** Merge the current settings and the style being pushed.  This allows
+    restoring the previous settings correctly in a pop when both set the same
+    attribute.  Example: current settings have red FG, the pushed style has
+    green FG.  When popping the style, we should set red FG, not default FG. *)
     let style = Terminal.merge (peek ()) style in
+    let diff = Terminal.diff (peek ()) style in
     style_stack := style :: !style_stack;
-    Terminal.eval style
+    Terminal.eval diff
   in
   let pop _ = match !style_stack with
   | []       -> (** Something went wrong, we fallback *)
                 Terminal.eval default_tag
-  | _ :: rem -> style_stack := rem;
-                Terminal.eval (peek ())
+  | cur :: rem -> style_stack := rem;
+                if cur = (peek ()) then "" else
+                  if List.length rem = 0 then Terminal.reset else
+                    Terminal.eval (Terminal.diff cur (peek ()))
   in
   let clear () = style_stack := [] in
   push, pop, clear

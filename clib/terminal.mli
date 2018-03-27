@@ -51,6 +51,9 @@ val make : ?fg_color:color -> ?bg_color:color ->
 val merge : style -> style -> style
 (** [merge s1 s2] returns [s1] with all defined values of [s2] overwritten. *)
 
+val diff : style -> style -> style
+(** [diff s1 s2] returns the differences between [s1] and [s2]. *)
+
 val repr : style -> int list
 (** Generate the ANSI code representing the given style. *)
 
@@ -59,6 +62,9 @@ val eval : style -> string
 
 val reset : string
 (** This escape sequence resets all attributes. *)
+
+val reset_style : style
+(** The default style *)
 
 val has_style : Unix.file_descr -> bool
 (** Whether an output file descriptor handles styles. Very heuristic, only
