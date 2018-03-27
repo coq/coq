@@ -265,7 +265,7 @@ type 'a infos_cache = {
   i_repr : 'a infos -> 'a infos_tab -> constr -> 'a;
   i_env : env;
   i_sigma : existential -> constr option;
-  i_rels : (Context.Rel.Declaration.t * lazy_val) Range.t;
+  i_rels : (Constr.rel_declaration * lazy_val) Range.t;
 }
 
 and 'a infos = {

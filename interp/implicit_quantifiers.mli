@@ -38,14 +38,14 @@ val make_fresh : Id.Set.t -> Environ.env -> Id.t -> Id.t
 val implicits_of_glob_constr : ?with_products:bool -> Glob_term.glob_constr -> Impargs.manual_implicits
 
 val combine_params_freevar :
-  Id.Set.t -> GlobRef.t option * Context.Rel.Declaration.t ->
+  Id.Set.t -> GlobRef.t option * Constr.rel_declaration ->
   Constrexpr.constr_expr * Id.Set.t
 
 val implicit_application : Id.Set.t -> ?allow_partial:bool ->
-  (Id.Set.t -> GlobRef.t option * Context.Rel.Declaration.t ->
+  (Id.Set.t -> GlobRef.t option * Constr.rel_declaration ->
     Constrexpr.constr_expr * Id.Set.t) ->
   constr_expr -> constr_expr * Id.Set.t
 
 (* Should be likely located elsewhere *)
-exception MismatchedContextInstance of Environ.env * Typeclasses_errors.contexts * constr_expr list * Context.Rel.t (* found, expected *)
-val mismatched_ctx_inst_err : Environ.env -> Typeclasses_errors.contexts -> constr_expr list -> Context.Rel.t -> 'a
+exception MismatchedContextInstance of Environ.env * Typeclasses_errors.contexts * constr_expr list * Constr.rel_context (* found, expected *)
+val mismatched_ctx_inst_err : Environ.env -> Typeclasses_errors.contexts -> constr_expr list -> Constr.rel_context -> 'a

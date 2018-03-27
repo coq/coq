@@ -35,8 +35,6 @@ sig
     | LocalAssum of Name.t * 'types            (** name, type *)
     | LocalDef of Name.t * 'constr * 'types   (** name, value, type *)
 
-    type t = (Constr.constr, Constr.types) pt
-
     (** Return the name bound by a given declaration. *)
     val get_name : ('c, 't) pt -> Name.t
 
@@ -93,7 +91,6 @@ sig
       Inner-most declarations are at the beginning of the list.
       Outer-most declarations are at the end of the list. *)
   type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
-  type t = Declaration.t list
 
   (** empty rel-context *)
   val empty : ('c, 't) pt
@@ -152,8 +149,6 @@ sig
     type ('constr, 'types) pt =
       | LocalAssum of Id.t * 'types             (** identifier, type *)
       | LocalDef of Id.t * 'constr * 'types    (** identifier, value, type *)
-
-    type t = (Constr.constr, Constr.types) pt
 
     (** Return the identifier bound by a given declaration. *)
     val get_id : ('c, 't) pt -> Id.t
@@ -220,7 +215,6 @@ sig
       Inner-most declarations are at the beginning of the list.
       Outer-most declarations are at the end of the list. *)
   type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
-  type t = Declaration.t list
 
   (** empty named-context *)
   val empty : ('c, 't) pt
@@ -270,15 +264,12 @@ sig
       | LocalAssum of Id.t list * 'types
       | LocalDef of Id.t list * 'constr * 'types
 
-    type t = (Constr.constr, Constr.types) pt
-
     val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
     val of_named_decl : ('c, 't) Named.Declaration.pt -> ('c, 't) pt
     val to_named_context : ('c, 't) pt -> ('c, 't) Named.pt
   end
 
   type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
-  type t = Declaration.t list
 
   val fold : (('c, 't) Declaration.pt -> 'a -> 'a) -> ('c, 't) pt -> init:'a -> 'a
 end

@@ -157,7 +157,7 @@ type result = {
   cook_type : types;
   cook_universes : constant_universes;
   cook_inline : inline;
-  cook_context : Context.Named.t option;
+  cook_context : Constr.named_context option;
 }
 
 let on_body ml hy f = function

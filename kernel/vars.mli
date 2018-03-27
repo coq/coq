@@ -70,10 +70,10 @@ type substl = constr list
    as if usable in [applist] while the substitution is
    represented the other way round, i.e. ending with either [u₁] or
    [c₁], as if usable for [substl]. *)
-val subst_of_rel_context_instance : Context.Rel.t -> constr list -> substl
+val subst_of_rel_context_instance : Constr.rel_context -> constr list -> substl
 
 (** For compatibility: returns the substitution reversed *)
-val adjust_subst_to_rel_context : Context.Rel.t -> constr list -> constr list
+val adjust_subst_to_rel_context : Constr.rel_context -> constr list -> constr list
 
 (** Take an index in an instance of a context and returns its index wrt to
     the full context (e.g. 2 in [x:A;y:=b;z:C] is 3, i.e. a reference to z) *)
@@ -97,13 +97,13 @@ val subst1 : constr -> constr -> constr
     accordingly indexes in [a₁],...,[an] and [c]. In terms of typing, if
     Γ ⊢ a{_n}..a₁ : Δ and Γ, Δ, Γ', Ω ⊢ with |Γ'|=[k], then
     Γ, Γ', [substnl_decl [a₁;...;an]] k Ω ⊢. *)
-val substnl_decl : substl -> int -> Context.Rel.Declaration.t -> Context.Rel.Declaration.t
+val substnl_decl : substl -> int -> Constr.rel_declaration -> Constr.rel_declaration
 
 (** [substl_decl σ Ω] is a short-hand for [substnl_decl σ 0 Ω] *)
-val substl_decl : substl -> Context.Rel.Declaration.t -> Context.Rel.Declaration.t
+val substl_decl : substl -> Constr.rel_declaration -> Constr.rel_declaration
 
 (** [subst1_decl a Ω] is a short-hand for [substnl_decl [a] 0 Ω] *)
-val subst1_decl : constr -> Context.Rel.Declaration.t -> Context.Rel.Declaration.t
+val subst1_decl : constr -> Constr.rel_declaration -> Constr.rel_declaration
 
 (** [replace_vars k [(id₁,c₁);...;(idn,cn)] t] substitutes [Var idj] by
     [cj] in [t]. *)
@@ -134,8 +134,8 @@ open Univ
 (** Level substitutions for polymorphism. *)
 
 val subst_univs_level_constr : universe_level_subst -> constr -> constr
-val subst_univs_level_context : Univ.universe_level_subst -> Context.Rel.t -> Context.Rel.t
+val subst_univs_level_context : Univ.universe_level_subst -> Constr.rel_context -> Constr.rel_context
 
 (** Instance substitution for polymorphism. *)
 val subst_instance_constr : Instance.t -> constr -> constr
-val subst_instance_context : Instance.t -> Context.Rel.t -> Context.Rel.t
+val subst_instance_context : Instance.t -> Constr.rel_context -> Constr.rel_context

@@ -321,7 +321,7 @@ sig
   val to_named_decl : (t, types) Context.Named.Declaration.pt -> (Constr.t, Constr.types) Context.Named.Declaration.pt
   (** Physical identity. Does not care for defined evars. *)
 
-  val to_named_context : (t, types) Context.Named.pt -> Context.Named.t
+  val to_named_context : (t, types) Context.Named.pt -> Constr.named_context
 
   val to_sorts : ESorts.t -> Sorts.t
   (** Physical identity. Does not care for normalization. *)

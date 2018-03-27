@@ -75,7 +75,7 @@ type 'a in_constant_universes_entry = 'a * constant_universes_entry
 type 'a definition_entry = {
   const_entry_body   : 'a const_entry_body;
   (* List of section variables *)
-  const_entry_secctx : Context.Named.t option;
+  const_entry_secctx : Constr.named_context option;
   (* State id on which the completion of type checking is reported *)
   const_entry_feedback : Stateid.t option;
   const_entry_type        : types option;
@@ -85,7 +85,7 @@ type 'a definition_entry = {
 
 type section_def_entry = {
   secdef_body : constr;
-  secdef_secctx : Context.Named.t option;
+  secdef_secctx : Constr.named_context option;
   secdef_feedback : Stateid.t option;
   secdef_type : types option;
 }
@@ -93,7 +93,7 @@ type section_def_entry = {
 type inline = int option (* inlining level, None for no inlining *)
 
 type parameter_entry = 
-    Context.Named.t option * types in_constant_universes_entry * inline
+    Constr.named_context option * types in_constant_universes_entry * inline
 
 type 'a constant_entry =
   | DefinitionEntry of 'a definition_entry

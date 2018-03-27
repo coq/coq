@@ -16,9 +16,9 @@ open Libnames
 
 (** Errors *)
 
-val mismatched_params : env -> constr_expr list -> Context.Rel.t -> 'a
+val mismatched_params : env -> constr_expr list -> Constr.rel_context -> 'a
 
-val mismatched_props : env -> constr_expr list -> Context.Rel.t -> 'a
+val mismatched_props : env -> constr_expr list -> Constr.rel_context -> 'a
 
 (** Instance declaration *)
 

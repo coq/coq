@@ -43,14 +43,14 @@ val it_mkProd : types -> (Name.t * types) list -> types
 val it_mkLambda : constr -> (Name.t * types) list -> constr
 val it_mkProd_or_LetIn : types -> rel_context -> types
 val it_mkProd_wo_LetIn : types -> rel_context -> types
-val it_mkLambda_or_LetIn : Constr.constr -> Context.Rel.t -> Constr.constr
+val it_mkLambda_or_LetIn : Constr.constr -> Constr.rel_context -> Constr.constr
 val it_mkNamedProd_or_LetIn : types -> named_context -> types
-val it_mkNamedProd_wo_LetIn : Constr.types -> Context.Named.t -> Constr.types
+val it_mkNamedProd_wo_LetIn : Constr.types -> Constr.named_context -> Constr.types
 val it_mkNamedLambda_or_LetIn : constr -> named_context -> constr
 
 (* Ad hoc version reinserting letin, assuming the body is defined in
    the context where the letins are expanded *)
-val it_mkLambda_or_LetIn_from_no_LetIn : Constr.constr -> Context.Rel.t -> Constr.constr
+val it_mkLambda_or_LetIn_from_no_LetIn : Constr.constr -> Constr.rel_context -> Constr.constr
 
 (** {6 Generic iterators on constr} *)
 
@@ -225,7 +225,7 @@ val names_of_rel_context : env -> names_context
 (* [context_chop n Γ] returns (Γ₁,Γ₂) such that [Γ]=[Γ₂Γ₁], [Γ₁] has
    [n] hypotheses, excluding local definitions, and [Γ₁], if not empty,
    starts with an hypothesis (i.e. [Γ₁] has the form empty or [x:A;Γ₁'] *)
-val context_chop : int -> Context.Rel.t -> Context.Rel.t * Context.Rel.t
+val context_chop : int -> Constr.rel_context -> Constr.rel_context * Constr.rel_context
 
 (* [env_rel_context_chop n env] extracts out the [n] top declarations
    of the rel_context part of [env], counting both local definitions and
@@ -239,19 +239,19 @@ val add_vname : Id.Set.t -> Name.t -> Id.Set.t
 (** other signature iterators *)
 val process_rel_context : (rel_declaration -> env -> env) -> env -> env
 val assums_of_rel_context : ('c, 't) Context.Rel.pt -> (Name.t * 't) list
-val lift_rel_context : int -> Context.Rel.t -> Context.Rel.t
-val substl_rel_context : Constr.constr list -> Context.Rel.t -> Context.Rel.t
-val smash_rel_context : Context.Rel.t -> Context.Rel.t (** expand lets in context *)
+val lift_rel_context : int -> Constr.rel_context -> Constr.rel_context
+val substl_rel_context : Constr.constr list -> Constr.rel_context -> Constr.rel_context
+val smash_rel_context : Constr.rel_context -> Constr.rel_context (** expand lets in context *)
 
 val map_rel_context_in_env :
-  (env -> Constr.constr -> Constr.constr) -> env -> Context.Rel.t -> Context.Rel.t
+  (env -> Constr.constr -> Constr.constr) -> env -> Constr.rel_context -> Constr.rel_context
 val map_rel_context_with_binders :
   (int -> 'c -> 'c) -> ('c, 'c) Context.Rel.pt -> ('c, 'c) Context.Rel.pt
 val fold_named_context_both_sides :
-  ('a -> Context.Named.Declaration.t -> Context.Named.Declaration.t list -> 'a) ->
-    Context.Named.t -> init:'a -> 'a
+  ('a -> Constr.named_declaration -> Constr.named_declaration list -> 'a) ->
+    Constr.named_context -> init:'a -> 'a
 val mem_named_context_val : Id.t -> named_context_val -> bool
-val compact_named_context : Context.Named.t -> Context.Compacted.t
+val compact_named_context : Constr.named_context -> Constr.compacted_context
 
 val map_rel_decl : ('a -> 'b) -> ('a, 'a) Context.Rel.Declaration.pt -> ('b, 'b) Context.Rel.Declaration.pt
 val map_named_decl : ('a -> 'b) -> ('a, 'a) Context.Named.Declaration.pt -> ('b, 'b) Context.Named.Declaration.pt
@@ -313,6 +313,6 @@ val set_print_constr : (env -> Evd.evar_map -> constr -> Pp.t) -> unit
 val print_constr     : constr -> Pp.t
 val print_constr_env : env -> Evd.evar_map -> constr -> Pp.t
 val print_named_context : env -> Pp.t
-val pr_rel_decl : env -> Context.Rel.Declaration.t -> Pp.t
+val pr_rel_decl : env -> Constr.rel_declaration -> Pp.t
 val print_rel_context : env -> Pp.t
 val print_env : env -> Pp.t

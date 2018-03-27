@@ -36,7 +36,7 @@ val lookup_mind_specif : env -> inductive -> mind_specif
 (** {6 Functions to build standard types related to inductive } *)
 val ind_subst : MutInd.t -> mutual_inductive_body -> Instance.t -> constr list
 
-val inductive_paramdecls : mutual_inductive_body puniverses -> Context.Rel.t
+val inductive_paramdecls : mutual_inductive_body puniverses -> Constr.rel_context
 
 val instantiate_inductive_constraints :
   mutual_inductive_body -> Instance.t -> Constraint.t
@@ -87,7 +87,7 @@ val build_branches_type :
     constr list -> constr -> types array
 
 (** Return the arity of an inductive type *)
-val mind_arity : one_inductive_body -> Context.Rel.t * Sorts.family
+val mind_arity : one_inductive_body -> Constr.rel_context * Sorts.family
 
 val inductive_sort_family : one_inductive_body -> Sorts.family
 
@@ -115,8 +115,8 @@ exception SingletonInductiveBecomesProp of Id.t
 
 val max_inductive_sort : Sorts.t array -> Universe.t
 
-val instantiate_universes : env -> Context.Rel.t ->
-  template_arity -> constr Lazy.t array -> Context.Rel.t * Sorts.t
+val instantiate_universes : env -> Constr.rel_context ->
+  template_arity -> constr Lazy.t array -> Constr.rel_context * Sorts.t
 
 (** {6 Debug} *)
 

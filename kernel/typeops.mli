@@ -28,7 +28,7 @@ val infer_v    : env -> constr array -> unsafe_judgment array
 val infer_type : env -> types        -> unsafe_type_judgment
 
 val infer_local_decls :
-  env -> (Id.t * local_entry) list -> (env * Context.Rel.t)
+  env -> (Id.t * local_entry) list -> (env * Constr.rel_context)
 
 (** {6 Basic operations of the typing machine. } *)
 
@@ -102,4 +102,4 @@ val judge_of_case : env -> case_info
 val type_of_constant_in : env -> pconstant -> types
 
 (** Check that hyps are included in env and fails with error otherwise *)
-val check_hyps_inclusion : env -> ('a -> constr) -> 'a -> Context.Named.t -> unit
+val check_hyps_inclusion : env -> ('a -> constr) -> 'a -> Constr.named_context -> unit

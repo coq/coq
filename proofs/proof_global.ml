@@ -93,7 +93,7 @@ type pstate = {
   pid : Id.t;  (* the name of the theorem whose proof is being constructed *)
   terminator : proof_terminator CEphemeron.key;
   endline_tactic : Genarg.glob_generic_argument option;
-  section_vars : Context.Named.t option;
+  section_vars : Constr.named_context option;
   proof : Proof.t;
   strength : Decl_kinds.goal_kind;
   mode : proof_mode CEphemeron.key;

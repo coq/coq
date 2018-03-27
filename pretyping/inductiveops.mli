@@ -93,12 +93,12 @@ val inductive_nparamdecls : inductive -> int
 val inductive_nparamdecls_env : env -> inductive -> int
 
 (** @return params context *)
-val inductive_paramdecls : pinductive -> Context.Rel.t
-val inductive_paramdecls_env : env -> pinductive -> Context.Rel.t
+val inductive_paramdecls : pinductive -> Constr.rel_context
+val inductive_paramdecls_env : env -> pinductive -> Constr.rel_context
 
 (** @return full arity context, hence with letin *)
-val inductive_alldecls : pinductive -> Context.Rel.t
-val inductive_alldecls_env : env -> pinductive -> Context.Rel.t
+val inductive_alldecls : pinductive -> Constr.rel_context
+val inductive_alldecls_env : env -> pinductive -> Constr.rel_context
 
 (** {7 Extract information from a constructor name} *)
 
@@ -141,7 +141,7 @@ type constructor_summary = {
   cs_cstr : pconstructor;    (* internal name of the constructor plus universes *)
   cs_params : constr list;   (* parameters of the constructor in current ctx *)
   cs_nargs : int;            (* length of arguments signature (letin included) *)
-  cs_args : Context.Rel.t;   (* signature of the arguments (letin included) *)
+  cs_args : Constr.rel_context;   (* signature of the arguments (letin included) *)
   cs_concl_realargs : constr array; (* actual realargs in the concl of cstr *)
 }
 val lift_constructor : int -> constructor_summary -> constructor_summary
@@ -154,7 +154,7 @@ val get_projections  : env -> inductive_family -> Constant.t array option
 (** [get_arity] returns the arity of the inductive family instantiated
     with the parameters; if recursively non-uniform parameters are not
     part of the inductive family, they appears in the arity *)
-val get_arity        : env -> inductive_family -> Context.Rel.t * Sorts.family
+val get_arity        : env -> inductive_family -> Constr.rel_context * Sorts.family
 
 val build_dependent_constructor : constructor_summary -> constr
 val build_dependent_inductive   : env -> inductive_family -> constr
