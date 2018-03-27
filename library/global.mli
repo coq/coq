@@ -30,6 +30,7 @@ val named_context : unit -> Constr.named_context
 (** Changing the (im)predicativity of the system *)
 val set_engagement : Declarations.engagement -> unit
 val set_typing_flags : Declarations.typing_flags -> unit
+val typing_flags : unit -> Declarations.typing_flags
 
 (** Variables, Local definitions, constants, inductive types *)
 
@@ -154,6 +155,8 @@ val register_inline : Constant.t -> unit
 (** {6 Oracle } *)
 
 val set_strategy : Constant.t Names.tableKey -> Conv_oracle.level -> unit
+
+val set_reduction_sharing : bool -> unit
 
 (* Modifies the global state, registering new universes *)
 

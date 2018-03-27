@@ -455,7 +455,8 @@ let cbv_norm infos constr =
 (* constant bodies are normalized at the first expansion *)
 let create_cbv_infos flgs env sigma =
   let infos = create
-    (fun old_info tab c -> cbv_stack_term { tab; infos = old_info; sigma } TOP (subs_id 0) c)
+    ~share:true (** Not used by cbv *)
+    ~repr:(fun old_info tab c -> cbv_stack_term { tab; infos = old_info; sigma } TOP (subs_id 0) c)
     flgs
     env
     (Reductionops.safe_evar_value sigma) in

@@ -90,6 +90,7 @@ let push_context b c = globalize0 (Safe_typing.push_context b c)
 
 let set_engagement c = globalize0 (Safe_typing.set_engagement c)
 let set_typing_flags c = globalize0 (Safe_typing.set_typing_flags c)
+let typing_flags () = Environ.typing_flags (env ())
 let export_private_constants ~in_section cd = globalize (Safe_typing.export_private_constants ~in_section cd)
 let add_constant dir id d = globalize (Safe_typing.add_constant dir (i2l id) d)
 let add_mind dir id mie = globalize (Safe_typing.add_mind dir (i2l id) mie)
@@ -278,3 +279,9 @@ let register_inline c = globalize0 (Safe_typing.register_inline c)
 let set_strategy k l =
   GlobalSafeEnv.set_safe_env (Safe_typing.set_strategy (safe_env ()) k l)
 
+let set_reduction_sharing b =
+  let env = safe_env () in
+  let flags = Environ.typing_flags (Safe_typing.env_of_safe_env env) in
+  let flags = { flags with Declarations.share_reduction = b } in
+  let env = Safe_typing.set_typing_flags flags env in
+  GlobalSafeEnv.set_safe_env env
