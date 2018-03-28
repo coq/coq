@@ -2884,18 +2884,22 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
           Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc);
           rc
 
-      (* Side effect on all branches *)
+      (* Side effect in a (still open) proof is replayed on all branches*)
       | VtSideff l, w ->
-          let in_proof = not (VCS.Branch.equal head VCS.Branch.master) in
           let id = VCS.new_node ~id:newtip () in
-          VCS.checkout VCS.Branch.master;
-          VCS.commit id (mkTransCmd x l in_proof `MainQueue);
-          (* We can't replay a Definition since universes may be differently
-           * inferred.  This holds in Coq >= 8.5 *)
-          let action = match Vernacprop.under_control x.expr with
-	    | VernacDefinition(_, _, DefineBody _) -> CherryPickEnv
-	    | _ -> ReplayCommand x in
-	  VCS.propagate_sideff ~action;
+          begin match (VCS.get_branch head).VCS.kind with
+          | `Edit _ -> VCS.commit id (mkTransCmd x l true `MainQueue);
+          | `Master -> VCS.commit id (mkTransCmd x l false `MainQueue);
+          | `Proof _ ->
+              VCS.checkout VCS.Branch.master;
+              VCS.commit id (mkTransCmd x l true `MainQueue);
+              (* We can't replay a Definition since universes may be differently
+               * inferred.  This holds in Coq >= 8.5 *)
+              let action = match Vernacprop.under_control x.expr with
+                | VernacDefinition(_, _, DefineBody _) -> CherryPickEnv
+                | _ -> ReplayCommand x in
+              VCS.propagate_sideff ~action;
+          end;
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
 
@@ -2924,9 +2928,14 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
               VCS.branch bname (`Proof (proof_mode, VCS.proof_nesting () + 1));
               Proof_global.activate_proof_mode proof_mode [@ocaml.warning "-3"];
             end else begin
-              VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
-              (* We hope it can be replayed, but we can't really know *)
-              VCS.propagate_sideff ~action:(ReplayCommand x);
+              begin match (VCS.get_branch head).VCS.kind with
+              | `Edit _ -> VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
+              | `Master -> VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
+              | `Proof _ ->
+                  VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
+                  (* We hope it can be replayed, but we can't really know *)
+                  VCS.propagate_sideff ~action:(ReplayCommand x);
+              end;
               VCS.checkout_shallowest_proof_branch ();
             end in
           State.define ~safe_id:head_id ~cache:`Yes step id;
