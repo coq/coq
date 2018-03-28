@@ -158,9 +158,9 @@ let convert_concl ?(check=true) ty k =
       let sigma =
         if check then begin
           ignore (Typing.unsafe_type_of env sigma ty);
-          let sigma,b = Reductionops.infer_conv env sigma ty conclty in
-          if not b then error "Not convertible.";
-          sigma
+          match Reductionops.infer_conv env sigma ty conclty with
+          | None -> error "Not convertible."
+          | Some sigma -> sigma
         end else sigma in
       let (sigma, x) = Evarutil.new_evar env sigma ~principal:true ~store ty in
       let ans = if k == DEFAULTcast then x else mkCast(x,k,conclty) in
@@ -186,11 +186,10 @@ let convert_hyp_no_check = convert_hyp ~check:false
 
 let convert_gen pb x y =
   Proofview.Goal.enter begin fun gl ->
-    try
-      let sigma, b = Tacmach.New.pf_apply (Reductionops.infer_conv ~pb) gl x y in
-      if b then Proofview.Unsafe.tclEVARS sigma
-      else Tacticals.New.tclFAIL 0 (str "Not convertible")
-    with (* Reduction.NotConvertible *) _ ->
+    match Tacmach.New.pf_apply (Reductionops.infer_conv ~pb) gl x y with
+    | Some sigma -> Proofview.Unsafe.tclEVARS sigma
+    | None -> Tacticals.New.tclFAIL 0 (str "Not convertible")
+    | exception _ ->
       (** FIXME: Sometimes an anomaly is raised from conversion *)
       Tacticals.New.tclFAIL 0 (str "Not convertible")
 end
@@ -796,15 +795,15 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
     let t2 = Retyping.get_type_of env sigma origc in
     let sigma, t2 = Evarsolve.refresh_universes
 		      ~onlyalg:true (Some false) env sigma t2 in
-    let sigma, b = infer_conv ~pb:Reduction.CUMUL env sigma t1 t2 in
-    if not b then
+    match infer_conv ~pb:Reduction.CUMUL env sigma t1 t2 with
+    | None ->
       if
         isSort sigma (whd_all env sigma t1) &&
         isSort sigma (whd_all env sigma t2)
       then (mayneedglobalcheck := true; sigma)
       else
         user_err ~hdr:"convert-check-hyp" (str "Types are incompatible.")
-    else sigma
+    | Some sigma -> sigma
   end
   else
     if not (isSort sigma (whd_all env sigma t1)) then
@@ -815,9 +814,9 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
 let change_and_check cv_pb mayneedglobalcheck deep t env sigma c =
   let (sigma, t') = t sigma in
   let sigma = check_types env sigma mayneedglobalcheck deep t' c in
-  let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
-  if not b then user_err ~hdr:"convert-check-hyp" (str "Not convertible.");
-  (sigma, t')
+  match infer_conv ~pb:cv_pb env sigma t' c with
+  | None -> user_err ~hdr:"convert-check-hyp" (str "Not convertible.");
+  | Some sigma -> (sigma, t')
 
 (* Use cumulativity only if changing the conclusion not a subterm *)
 let change_on_subterm cv_pb deep t where env sigma c =
@@ -1934,16 +1933,19 @@ let assumption =
     let t = NamedDecl.get_type decl in
     let concl = Proofview.Goal.concl gl in
     let sigma = Tacmach.New.project gl in
-    let (sigma, is_same_type) =
-      if only_eq then (sigma, EConstr.eq_constr sigma t concl)
+    let ans =
+      if only_eq then
+        if EConstr.eq_constr sigma t concl then Some sigma
+        else None
       else
         let env = Proofview.Goal.env gl in
         infer_conv env sigma t concl
     in
-    if is_same_type then
+    match ans with
+    | Some sigma ->
       (Proofview.Unsafe.tclEVARS sigma) <*>
 	exact_no_check (mkVar (NamedDecl.get_id decl))
-    else arec gl only_eq rest
+    | None -> arec gl only_eq rest
   in
   let assumption_tac gl =
     let hyps = Proofview.Goal.hyps gl in

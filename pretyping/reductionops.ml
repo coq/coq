@@ -1348,11 +1348,10 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     ?(ts=full_transparent_state) env sigma x y =
   (** FIXME *)
   try
-    let b, sigma = 
-      let ans =
-	if pb == Reduction.CUMUL then 
+      let ans = match pb with
+      | Reduction.CUMUL ->
           EConstr.leq_constr_universes env sigma x y
-	else
+      | Reduction.CONV ->
           EConstr.eq_constr_universes env sigma x y
       in
       let ans = match ans with
@@ -1362,20 +1361,17 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
         with Univ.UniverseInconsistency _ | Evd.UniversesDiffer -> None
       in
       match ans with
-      | None -> false, sigma
-      | Some sigma -> true, sigma
-    in
-      if b then sigma, true
-      else
+      | Some sigma -> ans
+      | None ->
         let x = EConstr.Unsafe.to_constr x in
         let y = EConstr.Unsafe.to_constr y in
 	let sigma' = 
 	  conv_fun pb ~l2r:false sigma ts
 	    env (sigma, sigma_univ_state) x y in
-	  sigma', true
+        Some sigma'
   with
-  | Reduction.NotConvertible -> sigma, false
-  | Univ.UniverseInconsistency _ when catch_incon -> sigma, false
+  | Reduction.NotConvertible -> None
+  | Univ.UniverseInconsistency _ when catch_incon -> None
   | e when is_anomaly e -> report_anomaly e
 
 let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->

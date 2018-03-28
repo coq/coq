@@ -1082,9 +1082,9 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
  	    let cj = pretype empty_tycon env evdref lvar c in
 	    let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tval in
 	      if not (occur_existential !evdref cty || occur_existential !evdref tval) then
-		let (evd,b) = Reductionops.vm_infer_conv env.ExtraEnv.env !evdref cty tval in
-		if b then (evdref := evd; cj, tval)
-		else
+                match Reductionops.vm_infer_conv env.ExtraEnv.env !evdref cty tval with
+                | Some evd -> (evdref := evd; cj, tval)
+                | None ->
 		  error_actual_type ?loc env.ExtraEnv.env !evdref cj tval 
                       (ConversionFailed (env.ExtraEnv.env,cty,tval))
 	      else user_err ?loc  (str "Cannot check cast with vm: " ++
@@ -1093,9 +1093,9 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
  	    let cj = pretype empty_tycon env evdref lvar c in
 	    let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tval in
             begin
-	      let (evd,b) = Nativenorm.native_infer_conv env.ExtraEnv.env !evdref cty tval in
-	      if b then (evdref := evd; cj, tval)
-	      else
+              match Nativenorm.native_infer_conv env.ExtraEnv.env !evdref cty tval with
+              | Some evd -> (evdref := evd; cj, tval)
+              | None ->
                 error_actual_type ?loc env.ExtraEnv.env !evdref cj tval
                   (ConversionFailed (env.ExtraEnv.env,cty,tval))
             end
