@@ -62,6 +62,11 @@ let merge_opt l1 l2 = match l1, l2 with
   | None, Some l  -> Some l
   | Some l1, Some l2 -> Some (merge l1 l2)
 
+let finer l1 l2 = match l1, l2 with
+  | None, _    -> false
+  | Some l , None -> true
+  | Some l1, Some l2 -> l1.fname = l2.fname && merge l1 l2 = l2
+
 let unloc loc = (loc.bp, loc.ep)
 
 let shift_loc kb kp loc = { loc with bp = loc.bp + kb ; ep = loc.ep + kp }
