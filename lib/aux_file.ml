@@ -55,7 +55,7 @@ let record_in_aux_at ?loc key v =
       match loc with
       | Some loc -> let i, j = Loc.unloc loc in
                     Printf.fprintf oc "%d %d %s %S\n" i j key v
-      | None     -> Printf.fprintf oc "--- %s %S\n" key v
+      | None     -> Printf.fprintf oc "0 0 %s %S\n" key v
     ) !oc
 
 let current_loc : Loc.t option ref = ref None

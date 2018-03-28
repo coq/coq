@@ -6,6 +6,15 @@ Tools
 - Coq_makefile lets one override or extend the following variables from
   the command line: COQFLAGS, COQCHKFLAGS, COQDOCFLAGS.
 
+Changes from 8.8+beta1 to 8.8.0
+===============================
+
+Tools
+
+- Asynchronous proof delegation policy was fixed. Since Coq 8.7, it was
+  ignoring previous runs, hence the -async-proofs-delegation-threshold did
+  not have the expected behavior.
+
 Changes from 8.7.2 to 8.8+beta1
 ===============================
 
