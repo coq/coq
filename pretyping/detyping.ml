@@ -537,6 +537,29 @@ let rec share_names detype n l avoid env sigma c t =
         let t = detype avoid env sigma t in
         (List.rev l,c,t)
 
+let rec share_pattern_names detype n l avoid env sigma c t =
+  let open Pattern in
+  if n = 0 then
+    let c = detype avoid env sigma c in
+    let t = detype avoid env sigma t in
+    (List.rev l,c,t)
+  else match c, t with
+    | PLambda (na,t,c), PProd (na',t',c') ->
+        let na = match (na,na') with
+            Name _, _ -> na
+          | _, Name _ -> na'
+          | _ -> na in
+        let t' = detype avoid env sigma t in
+        let id = next_name_away na avoid in
+        let avoid = Id.Set.add id avoid in
+        let env = Name id :: env in
+        share_pattern_names detype (n-1) ((Name id,Explicit,None,t')::l) avoid env sigma c c'
+    | _ ->
+        if n>0 then Feedback.msg_debug (strbrk "Detyping.detype: cannot factorize fix enough");
+        let c = detype avoid env sigma c in
+        let t = detype avoid env sigma t in
+        (List.rev l,c,t)
+
 let detype_fix detype avoid env sigma (vn,_ as nvn) (names,tys,bodies) =
   let def_avoid, def_env, lfi =
     Array.fold_left2

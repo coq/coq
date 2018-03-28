@@ -56,6 +56,13 @@ val detype_sort : evar_map -> Sorts.t -> glob_sort
 val detype_rel_context : 'a delay -> ?lax:bool -> constr option -> Id.Set.t -> (names_context * env) -> 
   evar_map -> rel_context -> 'a glob_decl_g list
 
+val share_pattern_names :
+  (Id.Set.t -> names_context -> 'c -> Pattern.constr_pattern -> 'a) -> int ->
+  (Name.t * Decl_kinds.binding_kind * 'b option * 'a) list ->
+  Id.Set.t -> names_context -> 'c -> Pattern.constr_pattern ->
+  Pattern.constr_pattern ->
+  (Name.t * Decl_kinds.binding_kind * 'b option * 'a) list * 'a * 'a
+
 val detype_closed_glob : ?lax:bool -> bool -> Id.Set.t -> env -> evar_map -> closed_glob_constr -> glob_constr
 
 (** look for the index of a named var or a nondep var as it is renamed *)
