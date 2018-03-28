@@ -15,7 +15,6 @@ open Globnames
 open Nameops
 open Term
 open Constr
-open Vars
 open Glob_term
 open Pp
 open Mod_subst
@@ -57,10 +56,10 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
   constr_pattern_eq p1 p2 &&
   constr_pattern_eq r1 r2 &&
   List.equal pattern_eq l1 l2
-| PFix f1, PFix f2 ->
-  fixpoint_eq f1 f2
-| PCoFix f1, PCoFix f2 ->
-  cofixpoint_eq f1 f2
+| PFix ((ln1,i1),f1), PFix ((ln2,i2),f2) ->
+  Array.equal Int.equal ln1 ln2 && Int.equal i1 i2 && rec_declaration_eq f1 f2
+| PCoFix (i1,f1), PCoFix (i2,f2) ->
+  Int.equal i1 i2 && rec_declaration_eq f1 f2
 | PProj (p1, t1), PProj (p2, t2) ->
    Projection.equal p1 p2 && constr_pattern_eq t1 t2
 | (PRef _ | PVar _ | PEvar _ | PRel _ | PApp _ | PSoApp _
@@ -71,19 +70,10 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
 and pattern_eq (i1, j1, p1) (i2, j2, p2) =
   Int.equal i1 i2 && List.equal (==) j1 j2 && constr_pattern_eq p1 p2
 
-and fixpoint_eq ((arg1, i1), r1) ((arg2, i2), r2) =
-  Int.equal i1 i2 &&
-  Array.equal Int.equal arg1 arg2 &&
-  rec_declaration_eq r1 r2
-
-and cofixpoint_eq (i1, r1) (i2, r2) =
-  Int.equal i1 i2 &&
-  rec_declaration_eq r1 r2
-
 and rec_declaration_eq (n1, c1, r1) (n2, c2, r2) =
   Array.equal Name.equal n1 n2 &&
-  Array.equal Constr.equal c1 c2 &&
-  Array.equal Constr.equal r1 r2
+  Array.equal constr_pattern_eq c1 c2 &&
+  Array.equal constr_pattern_eq r1 r2
 
 let rec occur_meta_pattern = function
   | PApp (f,args) ->
@@ -123,8 +113,10 @@ let rec occurn_pattern n = function
   | PMeta _ | PSoApp _ -> true
   | PEvar (_,args) -> Array.exists (occurn_pattern n) args
   | PVar _ | PRef _ | PSort _ -> false
-  | PFix fix -> not (noccurn n (mkFix fix))
-  | PCoFix cofix -> not (noccurn n (mkCoFix cofix))
+  | PFix (_,(_,tl,bl)) ->
+     Array.exists (occurn_pattern n) tl || Array.exists (occurn_pattern (n+Array.length tl)) bl
+  | PCoFix (_,(_,tl,bl)) ->
+     Array.exists (occurn_pattern n) tl || Array.exists (occurn_pattern (n+Array.length tl)) bl
 
 let noccurn_pattern n c = not (occurn_pattern n c)
 
@@ -209,8 +201,16 @@ let pattern_of_constr env sigma t =
 	in
 	PCase (cip, pattern_of_constr env p, pattern_of_constr env a,
 	       Array.to_list (Array.mapi branch_of_constr br))
-    | Fix f -> PFix f
-    | CoFix f -> PCoFix f in
+    | Fix (lni,(lna,tl,bl)) ->
+       let push env na2 c2 = push_rel (LocalAssum (na2,c2)) env in
+       let env' = Array.fold_left2 push env lna tl in
+       PFix (lni,(lna,Array.map (pattern_of_constr env) tl,
+                  Array.map (pattern_of_constr env') bl))
+    | CoFix (ln,(lna,tl,bl)) ->
+       let push env na2 c2 = push_rel (LocalAssum (na2,c2)) env in
+       let env' = Array.fold_left2 push env lna tl in
+       PCoFix (ln,(lna,Array.map (pattern_of_constr env) tl,
+                  Array.map (pattern_of_constr env') bl)) in
   pattern_of_constr env t
 
 (* To process patterns, we need a translation without typing at all. *)
@@ -225,10 +225,14 @@ let map_pattern_with_binders g f l = function
   | PCase (ci,po,p,pl) ->
     PCase (ci,f l po,f l p, List.map (fun (i,n,c) -> (i,n,f l c)) pl)
   | PProj (p,pc) -> PProj (p, f l pc)
+  | PFix (lni,(lna,tl,bl)) ->
+     let l' = Array.fold_left (fun l na -> g na l) l lna in
+     PFix (lni,(lna,Array.map (f l) tl,Array.map (f l') bl))
+  | PCoFix (ln,(lna,tl,bl)) ->
+     let l' = Array.fold_left (fun l na -> g na l) l lna in
+     PCoFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
   (* Non recursive *)
-  | (PVar _ | PEvar _ | PRel _ | PRef _  | PSort _  | PMeta _
-  (* Bound to terms *)
-  | PFix _ | PCoFix _ as x) -> x
+  | (PVar _ | PEvar _ | PRel _ | PRef _  | PSort _  | PMeta _ as x) -> x
 
 let error_instantiate_pattern id l =
   let is = match l with
@@ -262,15 +266,12 @@ let instantiate_pattern env sigma lvar c =
 	  error_instantiate_pattern id (List.subtract Id.equal ctx vars)
        with Not_found (* Map.find failed *) ->
 	 x)
-  | (PFix _ | PCoFix _) -> user_err Pp.(str "Non instantiable pattern.")
   | c ->
       map_pattern_with_binders (fun id vars -> id::vars) aux vars c in
   aux [] c
 
 let rec liftn_pattern k n = function
   | PRel i as x -> if i >= n then PRel (i+k) else x
-  | PFix x -> PFix (destFix (liftn k n (mkFix x)))
-  | PCoFix x -> PCoFix (destCoFix (liftn k n (mkCoFix x)))
   | c -> map_pattern_with_binders (fun _ -> succ) (liftn_pattern k) n c
 
 let lift_pattern k = liftn_pattern k 1
@@ -337,16 +338,16 @@ let rec subst_pattern subst pat =
       if cip' == cip && typ' == typ && c' == c && branches' == branches
       then pat
       else PCase(cip', typ', c', branches')
-  | PFix fixpoint ->
-      let cstr = mkFix fixpoint in
-      let fixpoint' = destFix (subst_mps subst cstr) in
-	if fixpoint' == fixpoint then pat else
-	  PFix fixpoint'
-  | PCoFix cofixpoint ->
-      let cstr = mkCoFix cofixpoint in
-      let cofixpoint' = destCoFix (subst_mps subst cstr) in
-	if cofixpoint' == cofixpoint then pat else
-	  PCoFix cofixpoint'
+  | PFix (lni,(lna,tl,bl)) ->
+      let tl' = Array.smartmap (subst_pattern subst) tl in
+      let bl' = Array.smartmap (subst_pattern subst) bl in
+      if bl' == bl && tl' == tl then pat
+      else PFix (lni,(lna,tl',bl'))
+  | PCoFix (ln,(lna,tl,bl)) ->
+      let tl' = Array.smartmap (subst_pattern subst) tl in
+      let bl' = Array.smartmap (subst_pattern subst) bl in
+      if bl' == bl && tl' == tl then pat
+      else PCoFix (ln,(lna,tl',bl'))
 
 let mkPLambdaUntyped na b = PLambda(na,PMeta None,b)
 let rev_it_mkPLambdaUntyped = List.fold_right mkPLambdaUntyped

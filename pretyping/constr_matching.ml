@@ -183,9 +183,36 @@ let push_binder na1 na2 t ctx =
      Namegen.next_ident_away Namegen.default_non_dependent_ident avoid in
   (na1, id2, t) :: ctx
 
-let to_fix (idx, (nas, cs, ts)) =
-  let inj = EConstr.of_constr in
-  (idx, (nas, Array.map inj cs, Array.map inj ts))
+(* This is an optimization of the main pattern-matching which shares
+   the longest common prefix of the body and type of a fixpoint. The
+   only practical effect at the time of writing is in binding variable
+   names: these variable names must be bound only once since the user
+   view at a fix displays only a (maximal) shared common prefix *)
+
+let rec match_under_common_fix_binders sorec sigma binding_vars ctx ctx' env env' subst t1 t2 b1 b2 =
+  match t1, EConstr.kind sigma t2, b1, EConstr.kind sigma b2 with
+  | PProd(na1,c1,t1'), Prod(na2,c2,t2'), PLambda (_,c1',b1'), Lambda (na2',c2',b2') ->
+     let ctx = push_binder na1 na2 c2 ctx in
+     let ctx' = push_binder na1 na2' c2' ctx' in
+     let env = EConstr.push_rel (LocalAssum (na2,c2)) env in
+     let subst = sorec ctx env subst c1 c2 in
+     let subst = sorec ctx env subst c1' c2' in
+     let subst = add_binders na1 na2 binding_vars subst in
+     match_under_common_fix_binders sorec sigma binding_vars
+       ctx ctx' env env' subst t1' t2' b1' b2'
+  | PLetIn(na1,c1,u1,t1), LetIn(na2,c2,u2,t2), PLetIn(_,c1',u1',b1), LetIn(na2',c2',u2',b2) ->
+     let ctx = push_binder na1 na2 u2 ctx in
+     let ctx' = push_binder na1 na2' u2' ctx' in
+     let env = EConstr.push_rel (LocalDef (na2,c2,t2)) env in
+     let subst = sorec ctx env subst c1 c2 in
+     let subst = sorec ctx env subst c1' c2' in
+     let subst = Option.fold_left (fun subst u1 -> sorec ctx env subst u1 u2) subst u1 in
+     let subst = Option.fold_left (fun subst u1' -> sorec ctx env subst u1' u2') subst u1' in
+     let subst = add_binders na1 na2 binding_vars subst in
+     match_under_common_fix_binders sorec sigma binding_vars
+       ctx ctx' env env' subst t1 t2 b1 b2
+  | _ ->
+     sorec ctx' env' (sorec ctx env subst t1 t2) b1 b2
 
 let merge_binding sigma allow_bound_rels ctx n cT subst =
   let c = match ctx with
@@ -364,8 +391,20 @@ let matches_core env sigma allow_bound_rels
 	  let chk_head = sorec ctx env (sorec ctx env subst a1 a2) p1 p2 in
 	  List.fold_left chk_branch chk_head br1
 
-      |	PFix c1, Fix _ when eq_constr sigma (mkFix (to_fix c1)) cT -> subst
-      |	PCoFix c1, CoFix _ when eq_constr sigma (mkCoFix (to_fix c1)) cT -> subst
+      |	PFix ((ln1,i1),(lna1,tl1,bl1)), Fix ((ln2,i2),(lna2,tl2,bl2))
+           when Array.equal Int.equal ln1 ln2 && i1 = i2 ->
+          let ctx' = Array.fold_left3 (fun ctx na1 na2 t2 -> push_binder na1 na2 t2 ctx) ctx lna1 lna2 tl2 in
+          let env' = Array.fold_left2 (fun env na2 c2 -> EConstr.push_rel (LocalAssum (na2,c2)) env) env lna2 tl2 in
+          let subst = Array.fold_left4 (match_under_common_fix_binders sorec sigma binding_vars ctx ctx' env env') subst tl1 tl2 bl1 bl2 in
+          Array.fold_left2 (fun subst na1 na2 -> add_binders na1 na2 binding_vars subst) subst lna1 lna2
+
+      |	PCoFix (i1,(lna1,tl1,bl1)), CoFix (i2,(lna2,tl2,bl2))
+           when i1 = i2 ->
+          let ctx' = Array.fold_left3 (fun ctx na1 na2 t2 -> push_binder na1 na2 t2 ctx) ctx lna1 lna2 tl2 in
+          let env' = Array.fold_left2 (fun env na2 c2 -> EConstr.push_rel (LocalAssum (na2,c2)) env) env lna2 tl2 in
+          let subst = Array.fold_left4 (match_under_common_fix_binders sorec sigma binding_vars ctx ctx' env env') subst tl1 tl2 bl1 bl2 in
+          Array.fold_left2 (fun subst na1 na2 -> add_binders na1 na2 binding_vars subst) subst lna1 lna2
+
       | PEvar (c1,args1), Evar (c2,args2) when Evar.equal c1 c2 ->
          Array.fold_left2 (sorec ctx env) subst args1 args2
       | (PRef _ | PVar _ | PRel _ | PApp _ | PProj _ | PLambda _
