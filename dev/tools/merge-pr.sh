@@ -79,7 +79,7 @@ if [ -z "$REMOTE" ]; then
   error "please run: git branch --set-upstream-to=THE_REMOTE/$CURRENT_LOCAL_BRANCH"
   exit 1
 fi
-REMOTE_URL=$(git remote get-url "$REMOTE" --push)
+REMOTE_URL=$(git remote get-url "$REMOTE" --all)
 if [ "$REMOTE_URL" != "$OFFICIAL_REMOTE_URL" ] && \
    [ "$REMOTE_URL" != "$OFFICIAL_REMOTE_URL.git" ]; then
   error "remote ${BLUE}$REMOTE${RESET} does not point to the official Coq repo"
