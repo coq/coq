@@ -349,8 +349,24 @@ let rec subst_pattern subst pat =
       if bl' == bl && tl' == tl then pat
       else PCoFix (ln,(lna,tl',bl'))
 
+let mkPLetIn na b t c = PLetIn(na,b,t,c)
+let mkPProd na t u = PProd(na,t,u)
+let mkPLambda na t b = PLambda(na,t,b)
 let mkPLambdaUntyped na b = PLambda(na,PMeta None,b)
 let rev_it_mkPLambdaUntyped = List.fold_right mkPLambdaUntyped
+
+let mkPProd_or_LetIn (na,_,bo,t) c =
+  match bo with
+  | None -> mkPProd na t c
+  | Some b -> mkPLetIn na b (Some t) c
+
+let mkPLambda_or_LetIn (na,_,bo,t) c =
+  match bo with
+  | None -> mkPLambda na t c
+  | Some b -> mkPLetIn na b (Some t) c
+
+let it_mkPProd_or_LetIn = List.fold_left (fun c d -> mkPProd_or_LetIn d c)
+let it_mkPLambda_or_LetIn = List.fold_left (fun c d -> mkPLambda_or_LetIn d c)
 
 let err ?loc pp = user_err ?loc ~hdr:"pattern_of_glob_constr" pp
 
@@ -451,8 +467,39 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
   | GProj(p,c) ->
     PProj(p, pat_of_raw metas vars c)
 
-  | GPatVar _ | GIf _ | GLetTuple _ | GCases _ | GEvar _ | GRec _ ->
+  | GRec (GFix (ln,n), ids, decls, tl, cl) ->
+    if Array.exists (function (Some n, GStructRec) -> false | _ -> true) ln then
+      err ?loc (Pp.str "\"struct\" annotation is expected.")
+    else
+      let ln = Array.map (fst %> Option.get) ln in
+      let ctxtl = Array.map2 (pat_of_glob_in_context metas vars) decls tl in
+      let tl = Array.map (fun (ctx,tl) -> it_mkPProd_or_LetIn tl ctx) ctxtl in
+      let vars = Array.fold_left (fun vars na -> Name na::vars) vars ids in
+      let ctxtl = Array.map2 (pat_of_glob_in_context metas vars) decls cl in
+      let cl = Array.map (fun (ctx,cl) -> it_mkPLambda_or_LetIn cl ctx) ctxtl in
+      let names = Array.map (fun id -> Name id) ids in
+      PFix ((ln,n), (names, tl, cl))
+
+  | GRec (GCoFix n, ids, decls, tl, cl) ->
+      let ctxtl = Array.map2 (pat_of_glob_in_context metas vars) decls tl in
+      let tl = Array.map (fun (ctx,tl) -> it_mkPProd_or_LetIn tl ctx) ctxtl in
+      let vars = Array.fold_left (fun vars na -> Name na::vars) vars ids in
+      let ctxtl = Array.map2 (pat_of_glob_in_context metas vars) decls cl in
+      let cl = Array.map (fun (ctx,cl) -> it_mkPLambda_or_LetIn cl ctx) ctxtl in
+      let names = Array.map (fun id -> Name id) ids in
+      PCoFix (n, (names, tl, cl))
+
+  | GPatVar _ | GIf _ | GLetTuple _ | GCases _ | GEvar _ ->
       err ?loc (Pp.str "Non supported pattern."))
+
+and pat_of_glob_in_context metas vars decls c =
+  let rec aux acc vars = function
+    | (na,bk,b,t) :: decls ->
+       let decl = (na,bk,Option.map (pat_of_raw metas vars) b,pat_of_raw metas vars t) in
+       aux (decl::acc) (na::vars) decls
+    | [] ->
+       acc, pat_of_raw metas vars c
+  in aux [] vars decls
 
 and pats_of_glob_branches loc metas vars ind brs =
   let get_arg p = match DAst.get p with

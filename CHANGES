@@ -6,6 +6,10 @@ Tools
 - Coq_makefile lets one override or extend the following variables from
   the command line: COQFLAGS, COQCHKFLAGS, COQDOCFLAGS.
 
+Tactic language
+
+- Support for fix/cofix added in Ltac "match" and "lazymatch".
+
 Changes from 8.7.2 to 8.8+beta1
 ===============================
 
