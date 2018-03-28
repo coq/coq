@@ -348,8 +348,8 @@ let rec subst_pattern subst pat =
 	if cofixpoint' == cofixpoint then pat else
 	  PCoFix cofixpoint'
 
-let mkPLambda na b = PLambda(na,PMeta None,b)
-let rev_it_mkPLambda = List.fold_right mkPLambda
+let mkPLambdaUntyped na b = PLambda(na,PMeta None,b)
+let rev_it_mkPLambdaUntyped = List.fold_right mkPLambdaUntyped
 
 let err ?loc pp = user_err ?loc ~hdr:"pattern_of_glob_constr" pp
 
@@ -428,7 +428,7 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
       let pred = match p,indnames with
         | Some p, Some {CAst.v=(_,nal)} ->
           let nvars = na :: List.rev nal @ vars in
-          rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas nvars p))
+          rev_it_mkPLambdaUntyped nal (mkPLambdaUntyped na (pat_of_raw metas nvars p))
         | None, _ -> PMeta None
 	| Some p, None ->
           match DAst.get p with
@@ -477,7 +477,7 @@ and pats_of_glob_branches loc metas vars ind brs =
             (str "No unique branch for " ++ int j ++ str"-th constructor.");
         let lna = List.map get_arg lv in
         let vars' = List.rev lna @ vars in
-        let pat = rev_it_mkPLambda lna (pat_of_raw metas vars' br) in
+        let pat = rev_it_mkPLambdaUntyped lna (pat_of_raw metas vars' br) in
         let ext,pats = get_pat (Int.Set.add (j-1) indexes) brs in
         let tags = List.map (fun _ -> false) lv (* approximation, w/o let-in *) in
         ext, ((j-1, tags, pat) :: pats)
