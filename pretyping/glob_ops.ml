@@ -136,7 +136,7 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
   | GIf (m1, (pat1, p1), c1, t1), GIf (m2, (pat2, p2), c2, t2) ->
     f m1 m2 && Name.equal pat1 pat2 &&
     Option.equal f p1 p2 && f c1 c2 && f t1 t2
-  | GRec (kn1, id1, decl1, c1, t1), GRec (kn2, id2, decl2, c2, t2) ->
+  | GRec (kn1, id1, decl1, t1, c1), GRec (kn2, id2, decl2, t2, c2) ->
     fix_kind_eq f kn1 kn2 && Array.equal Id.equal id1 id2 &&
     Array.equal (fun l1 l2 -> List.equal (glob_decl_eq f) l1 l2) decl1 decl2 &&
     Array.equal f c1 c2 && Array.equal f t1 t2
