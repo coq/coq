@@ -254,7 +254,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
       Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
         fixdefs) in
     let evd = Evd.from_ctx ctx in
-    Lemmas.start_proof_with_initialization (Global,poly,DefinitionBody Fixpoint)
+    Lemmas.start_proof_with_initialization (local,poly,DefinitionBody Fixpoint)
       evd pl (Some(false,indexes,init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
   else begin
     (* We shortcut the proof process *)
