@@ -565,9 +565,8 @@ let declare_mutual_definition l =
     List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;
     Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
     let gr = List.hd kns in
-    let kn = match gr with GlobRef.ConstRef kn -> kn | _ -> assert false in
     Lemmas.call_hook fix_exn first.prg_hook local gr first.prg_ctx;
-    List.iter progmap_remove l; kn
+    List.iter progmap_remove l; gr
 
 let decompose_lam_prod c ty =
   let open Context.Rel.Declaration in
@@ -774,8 +773,8 @@ let update_obls prg obls rem =
 	  let progs = List.map (fun x -> get_info (ProgMap.find x !from_prg)) prg'.prg_deps in
 	    if List.for_all (fun x -> obligations_solved x) progs then
 	      let kn = declare_mutual_definition progs in
-                Defined (GlobRef.ConstRef kn)
-	    else Dependent)
+                Defined kn
+            else Dependent)
 
 let is_defined obls x = not (Option.is_empty obls.(x).obl_body)
 
