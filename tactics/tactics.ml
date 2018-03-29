@@ -4981,15 +4981,15 @@ let anon_id = Id.of_string "anonymous"
 let name_op_to_name name_op object_kind suffix =
   let open Proof_global in
   let default_gk = (Global, false, object_kind) in
+  let name, gk = match Proof_global.V82.get_current_initial_conclusions () with
+  | (id, (_, gk)) -> Some id, gk
+  | exception NoCurrentProof -> None, default_gk
+  in
   match name_op with
-    | Some s ->
-      (try let _, gk, _ = Pfedit.current_proof_statement () in s, gk
-       with NoCurrentProof -> s, default_gk)
-    | None   ->
-      let name, gk =
-	try let name, gk, _ = Pfedit.current_proof_statement () in name, gk
-	with NoCurrentProof -> anon_id, default_gk in
-      add_suffix name suffix, gk
+  | Some s -> s, gk
+  | None ->
+    let name = Option.default anon_id name in
+    add_suffix name suffix, gk
 
 let tclABSTRACT ?(opaque=true) name_op tac =
   let s, gk = if opaque
