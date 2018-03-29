@@ -479,7 +479,8 @@ and extern_notation_pattern (tmp_scope,scopes as allscopes) vars t = function
       if is_inactive_rule keyrule then raise No_match;
       let loc = t.loc in
       match DAst.get t with
-	| PatCstr (cstr,_,na) ->
+        | PatCstr (cstr,args,na) ->
+          let t = if na = Anonymous then t else DAst.make ?loc (PatCstr (cstr,args,Anonymous)) in
 	  let p = apply_notation_to_pattern ?loc (ConstructRef cstr)
 	    (match_notation_constr_cases_pattern t pat) allscopes vars keyrule in
 	  insert_pat_alias ?loc p na
