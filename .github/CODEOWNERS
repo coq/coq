@@ -37,6 +37,10 @@
 /dev/doc/         @Zimmi48
 # Secondary maintainer @maximedenes
 
+/dev/doc/changes.md    @ghost
+# Trick to avoid getting review requests
+# each time someone modifies the dev changelog
+
 /doc/             @maximedenes
 # Secondary maintainer @silene
 
