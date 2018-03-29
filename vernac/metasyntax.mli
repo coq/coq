@@ -27,8 +27,9 @@ val add_notation : locality_flag -> env -> constr_expr ->
 
 val add_notation_extra_printing_rule : string -> string -> string -> unit
 
-(** Declaring delimiter keys and default scopes *)
+(** Declaring scopes, delimiter keys and default scopes *)
 
+val declare_scope : scope_name -> unit
 val add_delimiters : scope_name -> string -> unit
 val remove_delimiters : scope_name -> unit
 val add_class_scope : scope_name -> scope_class list -> unit

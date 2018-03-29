@@ -1306,8 +1306,18 @@ type notation_obj = {
   notobj_notation : notation * notation_location;
 }
 
-let load_notation _ (_, nobj) =
-  Option.iter Notation.declare_scope nobj.notobj_scope
+let load_notation_common silently_define_scope_if_undefined _ (_, nobj) =
+  (* When the default shall be to require that a scope already exists *)
+  (* the call to ensure_scope will have to be removed *)
+  if silently_define_scope_if_undefined then
+    (* Don't warn if the scope is not defined: *)
+    (* there was already a warning at "cache" time *)
+    Option.iter Notation.declare_scope nobj.notobj_scope
+  else
+    Option.iter Notation.ensure_scope nobj.notobj_scope
+
+let load_notation =
+  load_notation_common true
 
 let open_notation i (_, nobj) =
   let scope = nobj.notobj_scope in
@@ -1331,7 +1341,7 @@ let open_notation i (_, nobj) =
   end
 
 let cache_notation o =
-  load_notation 1 o;
+  load_notation_common false 1 o;
   open_notation 1 o
 
 let subst_notation (subst, nobj) =
@@ -1566,25 +1576,39 @@ let add_infix local env ({CAst.loc;v=inf},modifiers) pr sc =
   add_notation local env c (df,modifiers) sc
 
 (**********************************************************************)
-(* Delimiters and classes bound to scopes                             *)
+(* Scopes, delimiters and classes bound to scopes                     *)
 
 type scope_command =
-  | ScopeDelim of string
+  | ScopeDeclare
+  | ScopeDelimAdd of string
+  | ScopeDelimRemove
   | ScopeClasses of scope_class list
-  | ScopeRemove
 
-let load_scope_command _ (_,(scope,dlm)) =
-  Notation.declare_scope scope
+let load_scope_command_common silently_define_scope_if_undefined _ (_,(scope,o)) =
+  let declare_scope_if_needed =
+    if silently_define_scope_if_undefined then Notation.declare_scope
+    else Notation.ensure_scope in
+  match o with
+  | ScopeDeclare -> Notation.declare_scope scope
+  (* When the default shall be to require that a scope already exists *)
+  (* the call to declare_scope_if_needed will have to be removed below *)
+  | ScopeDelimAdd dlm -> declare_scope_if_needed scope
+  | ScopeDelimRemove -> declare_scope_if_needed scope
+  | ScopeClasses cl -> declare_scope_if_needed scope
+
+let load_scope_command =
+  load_scope_command_common true
 
 let open_scope_command i (_,(scope,o)) =
   if Int.equal i 1 then
     match o with
-    | ScopeDelim dlm -> Notation.declare_delimiters scope dlm
+    | ScopeDeclare -> ()
+    | ScopeDelimAdd dlm -> Notation.declare_delimiters scope dlm
+    | ScopeDelimRemove -> Notation.remove_delimiters scope
     | ScopeClasses cl -> List.iter (Notation.declare_scope_class scope) cl
-    | ScopeRemove -> Notation.remove_delimiters scope
 
 let cache_scope_command o =
-  load_scope_command 1 o;
+  load_scope_command_common false 1 o;
   open_scope_command 1 o
 
 let subst_scope_command (subst,(scope,o as x)) = match o with
@@ -1604,11 +1628,14 @@ let inScopeCommand : scope_name * scope_command -> obj =
       subst_function = subst_scope_command;
       classify_function = (fun obj -> Substitute obj)}
 
+let declare_scope scope =
+  Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeDeclare))
+
 let add_delimiters scope key =
-  Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeDelim key))
+  Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeDelimAdd key))
 
 let remove_delimiters scope =
-  Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeRemove))
+  Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeDelimRemove))
 
 let add_class_scope scope cl =
   Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeClasses cl))

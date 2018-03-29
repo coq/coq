@@ -846,6 +846,10 @@ GRAMMAR EXTEND Gram
 	 info = hint_info ->
 	   { VernacInstance (true, snd namesup, (fst namesup, expl, t), None, info) }
 
+      (* Should be in syntax, but camlp5 would not factorize *)
+      | IDENT "Declare"; IDENT "Scope"; sc = IDENT ->
+          { VernacDeclareScope sc }
+
       (* System directory *)
       | IDENT "Pwd" -> { VernacChdir None }
       | IDENT "Cd" -> { VernacChdir None }
@@ -1141,8 +1145,8 @@ GRAMMAR EXTEND Gram
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> { l } | -> { [] } ]
          -> { VernacSyntaxExtension (false, (s,l)) }
 
-     (* "Print" "Grammar" should be here but is in "command" entry in order
-        to factorize with other "Print"-based vernac entries *)
+     (* "Print" "Grammar" and "Declare" "Scope" should be here but are in "command" entry in order
+        to factorize with other "Print"-based or "Declare"-based vernac entries *)
   ] ]
   ;
   only_parsing:

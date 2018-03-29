@@ -635,6 +635,10 @@ open Pputils
           keyword (if opening then "Open " else "Close ") ++
             keyword "Scope" ++ spc() ++ str sc
         )
+      | VernacDeclareScope sc ->
+        return (
+          keyword "Declare Scope" ++ spc () ++ str sc
+        )
       | VernacDelimiters (sc,Some key) ->
         return (
           keyword "Delimit Scope" ++ spc () ++ str sc ++

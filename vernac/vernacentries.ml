@@ -408,6 +408,9 @@ let vernac_syntax_extension atts infix l =
   if infix then Metasyntax.check_infix_modifiers (snd l);
   Metasyntax.add_syntax_extension local l
 
+let vernac_declare_scope sc =
+  Metasyntax.declare_scope sc
+
 let vernac_delimiters sc = function
   | Some lr -> Metasyntax.add_delimiters sc lr
   | None -> Metasyntax.remove_delimiters sc
@@ -2094,6 +2097,7 @@ let interp ?proof ~atts ~st c =
   (* Syntax *)
   | VernacSyntaxExtension (infix, sl) ->
       vernac_syntax_extension atts infix sl
+  | VernacDeclareScope sc -> vernac_declare_scope sc
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
   | VernacBindScope (sc,rl) -> vernac_bind_scope sc rl
   | VernacOpenCloseScope (b, s) -> vernac_open_close_scope ~atts (b,s)
