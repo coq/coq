@@ -19,6 +19,65 @@ open Cooking
 open Entries
 open Context.Rel.Declaration
 
+(* Discharging constant *)
+
+let process_constant =
+  let open Safe_typing in
+  function
+  | ConstantEntry _ as ce -> ce
+  | GlobalRecipe r ->
+    let cook = cook_constant ~hcons:(not (Lib.sections_are_opened ())) (Global.env()) r in
+    let ce = match cook.cook_proj with
+      | Some pb ->
+        ProjectionEntry {
+          proj_entry_ind = pb.proj_ind;
+          proj_entry_arg = pb.proj_arg;
+        }
+      | None ->
+        let univs, inst = match cook.cook_universes with
+          | Monomorphic_const uctx -> Monomorphic_const_entry uctx, Univ.Instance.empty
+          | Polymorphic_const auctx ->
+            let inst = Univ.AUContext.instance auctx in
+            let csts = Univ.AUContext.instantiate inst auctx in
+            let uctx = Univ.UContext.make (inst, csts) in
+            Polymorphic_const_entry uctx, inst
+        in
+        let unabstract_univs = Vars.subst_instance_constr inst in
+        let typ = unabstract_univs cook.cook_type in
+        let hyps = Option.map (Context.Named.map unabstract_univs) cook.cook_context in
+        match cook.cook_body with
+        | Undef inline ->
+          ParameterEntry (hyps, (typ, univs), inline)
+        | Def _ | OpaqueDef _ ->
+          let opaque, body = match cook.cook_body with
+            | Undef _ -> assert false
+            | Def body ->
+              let body = unabstract_univs (Mod_subst.force_constr body) in
+              false, Future.from_val ((body, Univ.ContextSet.empty), ())
+            | OpaqueDef o ->
+              let tab = Global.opaque_tables () in
+              let body = Future.chain (Opaqueproof.get_proof tab o) (fun body ->
+                  let csts = match Opaqueproof.get_constraints tab o with
+                    | Some csts -> Future.force csts
+                    | None -> Univ.ContextSet.empty
+                  in
+                  let body = unabstract_univs body in
+                  (body, csts), ())
+              in
+              true,  body
+          in
+          DefinitionEntry {
+            const_entry_body = body;
+            const_entry_secctx = hyps;
+            const_entry_feedback = None;
+            const_entry_type = Some typ;
+            const_entry_universes = univs;
+            const_entry_opaque = opaque;
+            const_entry_inline_code = cook.cook_inline;
+          }
+    in
+    ConstantEntry (PureEntry, ce)
+
 (********************************)
 (* Discharging mutual inductive *)
 

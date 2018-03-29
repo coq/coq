@@ -41,6 +41,7 @@ type coq_cmdopts = {
 
   color : color;
 
+  distrust_sections : bool;
   impredicative_set : Declarations.set_predicativity;
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;

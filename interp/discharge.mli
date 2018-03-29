@@ -12,5 +12,8 @@ open Declarations
 open Entries
 open Opaqueproof
 
+val process_constant :
+  Safe_typing.global_declaration -> Safe_typing.global_declaration
+
 val process_inductive :
   Lib.abstr_info -> work_list -> mutual_inductive_body -> mutual_inductive_entry

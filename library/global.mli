@@ -127,6 +127,9 @@ val is_polymorphic : Globnames.global_reference -> bool
 val is_template_polymorphic : Globnames.global_reference -> bool
 val is_type_in_type : Globnames.global_reference -> bool
 
+val is_distrust_sections : unit -> bool
+val set_distrust_sections : bool -> unit
+
 val constr_of_global_in_context : Environ.env ->
   Globnames.global_reference -> Constr.types * Univ.AUContext.t
 (** Returns the type of the constant in its local universe

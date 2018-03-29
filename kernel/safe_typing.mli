@@ -150,6 +150,9 @@ val add_constraints :
 val set_engagement : Declarations.engagement -> safe_transformer0
 val set_typing_flags : Declarations.typing_flags -> safe_transformer0
 
+val is_distrust_sections : safe_environment -> bool
+val set_distrust_sections : bool -> safe_transformer0
+
 (** {6 Interactive module functions } *)
 
 val start_module : Label.t -> ModPath.t safe_transformer
