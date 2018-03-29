@@ -59,6 +59,7 @@ Table of contents
    addendum/generalized-rewriting
    addendum/parallel-proof-processing
    addendum/miscellaneous-extensions
+   addendum/universe-polymorphism
 
 .. toctree::
    :caption: Reference
