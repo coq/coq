@@ -37,6 +37,10 @@
 /dev/doc/         @Zimmi48
 # Secondary maintainer @maximedenes
 
+/dev/doc/changes.md    @ghost
+# Trick to avoid getting review requests
+# each time someone modifies the dev changelog
+
 /doc/             @maximedenes
 # Secondary maintainer @silene
 
@@ -104,8 +108,8 @@
 /plugins/btauto/  @ppedrot
 # Secondary maintainer @herbelin
 
-# I don't know Pierre Corbineau's GitHub nickname
-/plugins/cc/            @herbelin
+/plugins/cc/           @PierreCorbineau
+# Secondary maintainer @herbelin
 
 /plugins/derive/        @aspiwack
 # Secondary maintainer @ppedrot
@@ -113,8 +117,8 @@
 /plugins/extraction/    @letouzey
 # Secondary maintainer @maximedenes
 
-# I don't know Pierre Corbineau's GitHub nickname
-/plugins/firstorder/    @herbelin
+/plugins/firstorder/   @PierreCorbineau
+# Secondary maintainer @herbelin
 
 /plugins/fourier/       @herbelin
 # Secondary maintainer @gares
@@ -149,8 +153,8 @@
 
 /plugins/quote/ @herbelin
 
-# Should be Pierre Corbineau too
-/plugins/rtauto/ @herbelin
+/plugins/rtauto/       @PierreCorbineau
+# Secondary maintainer @herbelin
 
 ########## Pretyper ##########
 
@@ -293,6 +297,9 @@
 
 /META.coq         @ejgallego
 # Secondary maintainer @letouzey
+
+/dev/build/windows @MSoegtropIMC
+# Secondary maintainer @maximedenes
 
 
 ########## Developer tools ##########
