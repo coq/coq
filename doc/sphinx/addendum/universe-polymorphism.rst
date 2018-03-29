@@ -1,244 +1,288 @@
-\achapter{Polymorphic Universes}
-%HEVEA\cutname{universes.html}
-\aauthor{Matthieu Sozeau}
+.. include:: ../replaces.rst
 
-\label{Universes-full}
-\index{Universes!presentation}
+.. _polymorphicuniverses:
 
-\asection{General Presentation}
+Polymorphic Universes
+======================
 
-\begin{flushleft}
-  \em The status of Universe Polymorphism is experimental.
-\end{flushleft}
+:Author: Matthieu Sozeau
 
-This section describes the universe polymorphic extension of Coq.
-Universe polymorphism makes it possible to write generic definitions making use of
-universes and reuse them at different and sometimes incompatible universe levels.
+General Presentation
+---------------------
 
-A standard example of the difference between universe \emph{polymorphic} and
-\emph{monomorphic} definitions is given by the identity function:
+.. warning::
 
-\begin{coq_example*}
-Definition identity {A : Type} (a : A) := a.
-\end{coq_example*}
+   The status of Universe Polymorphism is experimental.
+
+This section describes the universe polymorphic extension of |Coq|.
+Universe polymorphism makes it possible to write generic definitions
+making use of universes and reuse them at different and sometimes
+incompatible universe levels.
+
+A standard example of the difference between universe *polymorphic*
+and *monomorphic* definitions is given by the identity function:
+
+.. coqtop:: in
+
+   Definition identity {A : Type} (a : A) := a.
 
 By default, constant declarations are monomorphic, hence the identity
-function declares a global universe (say \texttt{Top.1}) for its
-domain. Subsequently, if we try to self-apply the identity, we will get
-an error:
+function declares a global universe (say ``Top.1``) for its domain.
+Subsequently, if we try to self-apply the identity, we will get an
+error:
 
-\begin{coq_eval}
-Set Printing Universes.
-\end{coq_eval}
-\begin{coq_example}
-Fail Definition selfid := identity (@identity).
-\end{coq_example}
+.. coqtop:: all
 
-Indeed, the global level \texttt{Top.1} would have to be strictly smaller than itself
-for this self-application to typecheck, as the type of \texttt{(@identity)} is
-\texttt{forall (A : Type@{Top.1}), A -> A} whose type is itself \texttt{Type@{Top.1+1}}.
+   Fail Definition selfid := identity (@identity).
 
-A universe polymorphic identity function binds its domain universe level
-at the definition level instead of making it global.
+Indeed, the global level ``Top.1`` would have to be strictly smaller than
+itself for this self-application to typecheck, as the type of
+:g:`(@identity)` is :g:`forall (A : Type@{Top.1}), A -> A` whose type is itself
+:g:`Type@{Top.1+1}`.
 
-\begin{coq_example}
-Polymorphic Definition pidentity {A : Type} (a : A) := a.
-About pidentity.
-\end{coq_example}
+A universe polymorphic identity function binds its domain universe
+level at the definition level instead of making it global.
 
-It is then possible to reuse the constant at different levels, like so:
+.. coqtop:: in
 
-\begin{coq_example}
-Definition selfpid := pidentity (@pidentity).
-\end{coq_example}
+   Polymorphic Definition pidentity {A : Type} (a : A) := a.
 
-Of course, the two instances of \texttt{pidentity} in this definition
-are different. This can be seen when \texttt{Set Printing Universes} is
-on:
+.. coqtop:: all
 
-\begin{coq_example}
-Print selfpid.
-\end{coq_example}
+   About pidentity.
 
-Now \texttt{pidentity} is used at two different levels: at the head of
-the application it is instantiated at \texttt{Top.3} while in the
-argument position it is instantiated at \texttt{Top.4}. This definition
-is only valid as long as \texttt{Top.4} is strictly smaller than
-\texttt{Top.3}, as show by the constraints. Note that this definition is
-monomorphic (not universe polymorphic), so the two universes
-(in this case \texttt{Top.3} and \texttt{Top.4}) are actually global levels.
+It is then possible to reuse the constant at different levels, like
+so:
 
-When printing \texttt{pidentity}, we can see the universes it binds in
-the annotation \texttt{@\{Top.2\}}. Additionally, when \texttt{Set
-  Printing Universes} is on we print the ``universe context'' of
-\texttt{pidentity} consisting of the bound universes and the
-constraints they must verify (for \texttt{pidentity} there are no
-constraints).
+.. coqtop:: in
 
-Inductive types can also be declared universes polymorphic on universes
-appearing in their parameters or fields. A typical example is given by
-monoids:
+   Definition selfpid := pidentity (@pidentity).
 
-\begin{coq_example}
-Polymorphic Record Monoid := { mon_car :> Type; mon_unit : mon_car; 
-  mon_op : mon_car -> mon_car -> mon_car }.
-Print Monoid.
-\end{coq_example}
+Of course, the two instances of :g:`pidentity` in this definition are
+different. This can be seen when the :opt:`Printing Universes` option is on:
 
-The \texttt{Monoid}'s carrier universe is polymorphic, hence it is
-possible to instantiate it for example with \texttt{Monoid} itself.
-First we build the trivial unit monoid in \texttt{Set}:
-\begin{coq_example}
-Definition unit_monoid : Monoid := 
-  {| mon_car := unit; mon_unit := tt; mon_op x y := tt |}.
-\end{coq_example} 
+.. coqtop:: none
 
-From this we can build a definition for the monoid of
-\texttt{Set}-monoids (where multiplication would be given by the product
-of monoids).
+   Set Printing Universes.
 
-\begin{coq_example*}
-Polymorphic Definition monoid_monoid : Monoid.
-  refine (@Build_Monoid Monoid unit_monoid (fun x y => x)).
-Defined.
-\end{coq_example*}
-\begin{coq_example}
-Print monoid_monoid.
-\end{coq_example} 
+.. coqtop:: all
 
-As one can see from the constraints, this monoid is ``large'', it lives
-in a universe strictly higher than \texttt{Set}.
+   Print selfpid.
 
-\asection{\tt Polymorphic, Monomorphic}
-\comindex{Polymorphic}
-\comindex{Monomorphic}
-\optindex{Universe Polymorphism}
+Now :g:`pidentity` is used at two different levels: at the head of the
+application it is instantiated at ``Top.3`` while in the argument position
+it is instantiated at ``Top.4``. This definition is only valid as long as
+``Top.4`` is strictly smaller than ``Top.3``, as show by the constraints. Note
+that this definition is monomorphic (not universe polymorphic), so the
+two universes (in this case ``Top.3`` and ``Top.4``) are actually global
+levels.
 
-As shown in the examples, polymorphic definitions and inductives can be
-declared using the \texttt{Polymorphic} prefix. There also exists an
-option \texttt{Set Universe Polymorphism} which will implicitly prepend
-it to any definition of the user. In that case, to make a definition
-producing global universe constraints, one can use the
-\texttt{Monomorphic} prefix. Many other commands support the
-\texttt{Polymorphic} flag, including:
+When printing :g:`pidentity`, we can see the universes it binds in
+the annotation :g:`@{Top.2}`. Additionally, when
+:g:`Set Printing Universes` is on we print the "universe context" of
+:g:`pidentity` consisting of the bound universes and the
+constraints they must verify (for :g:`pidentity` there are no constraints).
 
-\begin{itemize}
-\item \texttt{Lemma}, \texttt{Axiom}, and all the other ``definition''
-  keywords support polymorphism.
-\item \texttt{Variables}, \texttt{Context}, \texttt{Universe} and
-  \texttt{Constraint} in a section support polymorphism.  This means
-  that the universe variables (and associated constraints) are
-  discharged polymorphically over definitions that use them. In other
-  words, two definitions in the section sharing a common variable will
-  both get parameterized by the universes produced by the variable
-  declaration. This is in contrast to a ``mononorphic'' variable which
-  introduces global universes and constraints, making the two
-  definitions depend on the \emph{same} global universes associated to
-  the variable.
-\item \texttt{Hint \{Resolve, Rewrite\}} will use the auto/rewrite hint
+Inductive types can also be declared universes polymorphic on
+universes appearing in their parameters or fields. A typical example
+is given by monoids:
+
+.. coqtop:: in
+
+   Polymorphic Record Monoid := { mon_car :> Type; mon_unit : mon_car;
+     mon_op : mon_car -> mon_car -> mon_car }.
+
+.. coqtop:: in
+
+   Print Monoid.
+
+The Monoid's carrier universe is polymorphic, hence it is possible to
+instantiate it for example with :g:`Monoid` itself. First we build the
+trivial unit monoid in :g:`Set`:
+
+.. coqtop:: in
+
+   Definition unit_monoid : Monoid :=
+     {| mon_car := unit; mon_unit := tt; mon_op x y := tt |}.
+
+From this we can build a definition for the monoid of :g:`Set`\-monoids
+(where multiplication would be given by the product of monoids).
+
+.. coqtop:: in
+
+   Polymorphic Definition monoid_monoid : Monoid.
+     refine (@Build_Monoid Monoid unit_monoid (fun x y => x)).
+   Defined.
+
+.. coqtop:: all
+
+   Print monoid_monoid.
+
+As one can see from the constraints, this monoid is “large”, it lives
+in a universe strictly higher than :g:`Set`.
+
+Polymorphic, Monomorphic
+-------------------------
+
+.. cmd:: Polymorphic @definition
+
+   As shown in the examples, polymorphic definitions and inductives can be
+   declared using the ``Polymorphic`` prefix.
+
+.. opt:: Universe Polymorphism
+
+   Once enabled, this option will implicitly prepend ``Polymorphic`` to any
+   definition of the user.
+
+.. cmd:: Monomorphic @definition
+
+   When the :opt:`Universe Polymorphism` option is set, to make a definition
+   producing global universe constraints, one can use the ``Monomorphic`` prefix.
+
+Many other commands support the ``Polymorphic`` flag, including:
+
+.. TODO add links on each of these?
+
+- ``Lemma``, ``Axiom``, and all the other “definition” keywords support
+  polymorphism.
+
+- ``Variables``, ``Context``, ``Universe`` and ``Constraint`` in a section support
+  polymorphism. This means that the universe variables (and associated
+  constraints) are discharged polymorphically over definitions that use
+  them. In other words, two definitions in the section sharing a common
+  variable will both get parameterized by the universes produced by the
+  variable declaration. This is in contrast to a “mononorphic” variable
+  which introduces global universes and constraints, making the two
+  definitions depend on the *same* global universes associated to the
+  variable.
+
+- :cmd:`Hint Resolve` and :cmd:`Hint Rewrite` will use the auto/rewrite hint
   polymorphically, not at a single instance.
-\end{itemize}
 
-\asection{{\tt Cumulative, NonCumulative}}
-\comindex{Cumulative}
-\comindex{NonCumulative}
-\optindex{Polymorphic Inductive Cumulativity}
+Cumulative, NonCumulative
+-------------------------
 
 Polymorphic inductive types, coinductive types, variants and records can be
-declared cumulative using the \texttt{Cumulative} prefix. Alternatively,
-there is an option \texttt{Set Polymorphic Inductive Cumulativity} which when set,
-makes all subsequent \emph{polymorphic} inductive definitions cumulative.  When set,
-inductive types and the like can be enforced to be
-\emph{non-cumulative} using the \texttt{NonCumulative} prefix. Consider the examples below.
-\begin{coq_example*}
-Polymorphic Cumulative Inductive list {A : Type} :=
-| nil : list
-| cons : A -> list -> list.
-\end{coq_example*}
-\begin{coq_example}
-Print list.
-\end{coq_example}
-When printing \texttt{list}, the universe context indicates the
-subtyping constraints by prefixing the level names with symbols.
+declared cumulative using the :g:`Cumulative` prefix.
+
+.. cmd:: Cumulative @inductive
+
+   Declares the inductive as cumulative
+
+Alternatively, there is an option :g:`Set Polymorphic Inductive
+Cumulativity` which when set, makes all subsequent *polymorphic*
+inductive definitions cumulative.  When set, inductive types and the
+like can be enforced to be non-cumulative using the :g:`NonCumulative`
+prefix.
+
+.. cmd:: NonCumulative @inductive
+
+   Declares the inductive as non-cumulative
+
+.. opt:: Polymorphic Inductive Cumulativity
+
+   When this option is on, it sets all following polymorphic inductive
+   types as cumulative (it is off by default).
+
+Consider the examples below.
+
+.. coqtop:: in
+
+   Polymorphic Cumulative Inductive list {A : Type} :=
+   | nil : list
+   | cons : A -> list -> list.
+
+.. coqtop:: all
+
+   Print list.
+
+When printing :g:`list`, the universe context indicates the subtyping
+constraints by prefixing the level names with symbols.
 
 Because inductive subtypings are only produced by comparing inductives
 to themselves with universes changed, they amount to variance
 information: each universe is either invariant, covariant or
 irrelevant (there are no contravariant subtypings in Coq),
-respectively represented by the symbols \texttt{=}, \texttt{+} and
-\texttt{*}.
+respectively represented by the symbols `=`, `+` and `*`.
 
-Here we see that \texttt{list} binds an irrelevant universe, so any
-two instances of \texttt{list} are convertible:
-$\WTEGCONV{\mathtt{list@\{i\}} A}{\mathtt{list@\{j\}} B}$ whenever
-$\WTEGCONV{A}{B}$ and furthermore their corresponding (when fully
-applied to convertible arguments) constructors.
+Here we see that :g:`list` binds an irrelevant universe, so any two
+instances of :g:`list` are convertible: :math:`E[Γ] ⊢ \mathsf{list}@\{i\}~A
+=_{βδιζη} \mathsf{list}@\{j\}~B` whenever :math:`E[Γ] ⊢ A =_{βδιζη} B` and
+this applies also to their corresponding constructors, when
+they are comparable at the same type.
 
-See Chapter~\ref{Cic} for more details on convertibility and subtyping.
+See :ref:`Conversion-rules` for more details on convertibility and subtyping.
 The following is an example of a record with non-trivial subtyping relation:
-\begin{coq_example*}
-Polymorphic Cumulative Record packType := {pk : Type}.
-\end{coq_example*}
-\begin{coq_example}
-Print packType.
-\end{coq_example}
-\texttt{packType} binds a covariant universe, i.e.
-$\WTEGCONV{\mathtt{packType@\{i\}}}{\mathtt{packType@\{j\}}}$ whenever
-\texttt{i $\leq$ j}.
+
+.. coqtop:: all
+
+   Polymorphic Cumulative Record packType := {pk : Type}.
+
+:g:`packType` binds a covariant universe, i.e.
+
+.. math::
+
+   E[Γ] ⊢ \mathsf{packType}@\{i\} =_{βδιζη}
+   \mathsf{packType}@\{j\}~\mbox{ whenever }~i ≤ j
 
 Cumulative inductive types, coninductive types, variants and records
 only make sense when they are universe polymorphic. Therefore, an
-error is issued whenever the user uses the \texttt{Cumulative} or
-\texttt{NonCumulative} prefix in a monomorphic context.
-Notice that this is not the case for the option \texttt{Set Polymorphic Inductive Cumulativity}.
-That is, this option, when set, makes all subsequent \emph{polymorphic}
-inductive declarations cumulative (unless, of course the \texttt{NonCumulative} prefix is used)
-but has no effect on \emph{monomorphic} inductive declarations.
+error is issued whenever the user uses the :g:`Cumulative` or
+:g:`NonCumulative` prefix in a monomorphic context.
+Notice that this is not the case for the option :g:`Set Polymorphic Inductive Cumulativity`.
+That is, this option, when set, makes all subsequent *polymorphic*
+inductive declarations cumulative (unless, of course the :g:`NonCumulative` prefix is used)
+but has no effect on *monomorphic* inductive declarations.
+
 Consider the following examples.
-\begin{coq_example}
-Monomorphic Cumulative Inductive Unit := unit.
-\end{coq_example}
-\begin{coq_example}
-Monomorphic NonCumulative Inductive Unit := unit.
-\end{coq_example}
-\begin{coq_example*}
-Set Polymorphic Inductive Cumulativity.
-Inductive Unit := unit.
-\end{coq_example*}
-\begin{coq_example}
-Print Unit.
-\end{coq_example}
 
-\subsection*{An example of a proof using cumulativity}
+.. coqtop:: all reset
 
-\begin{coq_example}
-Set Universe Polymorphism.
-Set Polymorphic Inductive Cumulativity.
+   Monomorphic Cumulative Inductive Unit := unit.
 
-Inductive eq@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := eq_refl : eq x x.
+.. coqtop:: all reset
 
-Definition funext_type@{a b e} (A : Type@{a}) (B : A -> Type@{b})
-  := forall f g : (forall a, B a),
-    (forall x, eq@{e} (f x) (g x))
-    -> eq@{e} f g.
+   Monomorphic NonCumulative Inductive Unit := unit.
 
-Section down.
-  Universes a b e e'.
-  Constraint e' < e.
-  Lemma funext_down {A B}
-    (H : @funext_type@{a b e} A B) : @funext_type@{a b e'} A B.
-  Proof.
-    exact H.
-  Defined.
-\end{coq_example}
+.. coqtop:: all reset
 
-\subsection{\tt Cumulativity Weak Constraints}
-\optindex{Cumulativity Weak Constraints}
+   Set Polymorphic Inductive Cumulativity.
+   Inductive Unit := unit.
 
-This option, on by default, causes ``weak'' constraints to be produced
+An example of a proof using cumulativity
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. coqtop:: in
+
+   Set Universe Polymorphism.
+   Set Polymorphic Inductive Cumulativity.
+
+   Inductive eq@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := eq_refl : eq x x.
+
+   Definition funext_type@{a b e} (A : Type@{a}) (B : A -> Type@{b})
+   := forall f g : (forall a, B a),
+                   (forall x, eq@{e} (f x) (g x))
+                   -> eq@{e} f g.
+
+   Section down.
+      Universes a b e e'.
+      Constraint e' < e.
+      Lemma funext_down {A B}
+        (H : @funext_type@{a b e} A B) : @funext_type@{a b e'} A B.
+      Proof.
+        exact H.
+      Defined.
+   End down.
+
+Cumulativity Weak Constraints
+-----------------------------
+
+.. opt:: Cumulativity Weak Constraints
+
+This option, on by default, causes "weak" constraints to be produced
 when comparing universes in an irrelevant position. Processing weak
 constraints is delayed until minimization time. A weak constraint
-between {\tt u} and {\tt v} when neither is smaller than the other and
+between `u` and `v` when neither is smaller than the other and
 one is flexible causes them to be unified. Otherwise the constraint is
 silently discarded.
 
@@ -246,148 +290,156 @@ This heuristic is experimental and may change in future versions.
 Disabling weak constraints is more predictable but may produce
 arbitrary numbers of universes.
 
-\asection{Global and local universes}
 
-Each universe is declared in a global or local environment before it can
-be used. To ensure compatibility, every \emph{global} universe is set to
-be strictly greater than \Set~when it is introduced, while every
-\emph{local} (i.e. polymorphically quantified) universe is introduced as
-greater or equal to \Set.
+Global and local universes
+---------------------------
 
-\asection{Conversion and unification}
+Each universe is declared in a global or local environment before it
+can be used. To ensure compatibility, every *global* universe is set
+to be strictly greater than :g:`Set` when it is introduced, while every
+*local* (i.e. polymorphically quantified) universe is introduced as
+greater or equal to :g:`Set`.
 
-The semantics of conversion and unification have to be modified a little
-to account for the new universe instance arguments to polymorphic
-references. The semantics respect the fact that definitions are
-transparent, so indistinguishable from their bodies during conversion.
 
-This is accomplished by changing one rule of unification, the
-first-order approximation rule, which applies when two applicative terms
+Conversion and unification
+---------------------------
+
+The semantics of conversion and unification have to be modified a
+little to account for the new universe instance arguments to
+polymorphic references. The semantics respect the fact that
+definitions are transparent, so indistinguishable from their bodies
+during conversion.
+
+This is accomplished by changing one rule of unification, the first-
+order approximation rule, which applies when two applicative terms
 with the same head are compared. It tries to short-cut unfolding by
 comparing the arguments directly. In case the constant is universe
-polymorphic, we allow this rule to fire only when unifying the universes
-results in instantiating a so-called flexible universe variables (not
-given by the user). Similarly for conversion, if such an equation of
-applicative terms fail due to a universe comparison not being satisfied,
-the terms are unfolded. This change implies that conversion and
-unification can have different unfolding behaviors on the same
-development with universe polymorphism switched on or off.
+polymorphic, we allow this rule to fire only when unifying the
+universes results in instantiating a so-called flexible universe
+variables (not given by the user). Similarly for conversion, if such
+an equation of applicative terms fail due to a universe comparison not
+being satisfied, the terms are unfolded. This change implies that
+conversion and unification can have different unfolding behaviors on
+the same development with universe polymorphism switched on or off.
 
-\asection{Minimization}
-\optindex{Universe Minimization ToSet}
+
+Minimization
+-------------
 
 Universe polymorphism with cumulativity tends to generate many useless
 inclusion constraints in general. Typically at each application of a
-polymorphic constant $f$, if an argument has expected type
-\verb|Type@{i}| and is given a term of type \verb|Type@{j}|, a $j \le i$
-constraint will be generated. It is however often the case that an
-equation $j = i$ would be more appropriate, when $f$'s
-universes are fresh for example. Consider the following example:
+polymorphic constant :g:`f`, if an argument has expected type :g:`Type@{i}`
+and is given a term of type :g:`Type@{j}`, a :math:`j ≤ i` constraint will be
+generated. It is however often the case that an equation :math:`j = i` would
+be more appropriate, when :g:`f`\'s universes are fresh for example.
+Consider the following example:
 
-\begin{coq_eval}
-Set Printing Universes.
-\end{coq_eval}
-\begin{coq_example}
-Definition id0 := @pidentity nat 0.
-Print id0.
-\end{coq_example}
+.. coqtop:: none
 
-This definition is elaborated by minimizing the universe of id to level
-\Set~while the more general definition would keep the fresh level i
-generated at the application of id and a constraint that $\Set \le i$.
-This minimization process is applied only to fresh universe
-variables. It simply adds an equation between the variable and its lower
-bound if it is an atomic universe (i.e. not an algebraic \texttt{max()}
-universe).
+   Polymorphic Definition pidentity {A : Type} (a : A) := a.
+   Set Printing Universes.
 
-The option \texttt{Unset Universe Minimization ToSet} disallows
-minimization to the sort $\Set$ and only collapses floating universes
-between themselves.
+.. coqtop:: in
 
-\asection{Explicit Universes}
+   Definition id0 := @pidentity nat 0.
 
-The syntax has been extended to allow users to explicitly bind names to
-universes and explicitly instantiate polymorphic definitions.
+.. coqtop:: all
 
-\subsection{\tt Universe {\ident}.
-  \comindex{Universe}
-  \label{UniverseCmd}}
+   Print id0.
 
-In the monorphic case, this command declares a new global universe named
-{\ident}, which can be referred to using its qualified name as
-well. Global universe names live in a separate namespace. The command
-supports the polymorphic flag only in sections, meaning the universe
-quantification will be discharged on each section definition
-independently. One cannot mix polymorphic and monomorphic declarations
-in the same section.
+This definition is elaborated by minimizing the universe of :g:`id0` to
+level :g:`Set` while the more general definition would keep the fresh level
+:g:`i` generated at the application of :g:`id` and a constraint that :g:`Set` :math:`≤ i`.
+This minimization process is applied only to fresh universe variables.
+It simply adds an equation between the variable and its lower bound if
+it is an atomic universe (i.e. not an algebraic max() universe).
 
-\subsection{\tt Constraint {\ident} {\textit{ord}} {\ident}.
-  \comindex{Constraint}
-  \label{ConstraintCmd}}
+.. opt:: Universe Minimization ToSet
 
-This command declares a new constraint between named universes.
-The order relation can be one of $<$, $\le$ or $=$. If consistent, 
-the constraint is then enforced in the global environment. Like
-\texttt{Universe}, it can be used with the \texttt{Polymorphic} prefix
-in sections only to declare constraints discharged at section closing time.
-One cannot declare a global constraint on polymorphic universes.
+   Turning this option off (it is on by default) disallows minimization
+   to the sort :g:`Set` and only collapses floating universes between
+   themselves.
 
-\begin{ErrMsgs}
-\item \errindex{Undeclared universe {\ident}}.
-\item \errindex{Universe inconsistency}
-\end{ErrMsgs}
 
-\subsection{Polymorphic definitions}
+Explicit Universes
+-------------------
+
+The syntax has been extended to allow users to explicitly bind names
+to universes and explicitly instantiate polymorphic definitions.
+
+.. cmd:: Universe @ident.
+
+   In the monorphic case, this command declares a new global universe
+   named :g:`ident`, which can be referred to using its qualified name
+   as well. Global universe names live in a separate namespace. The
+   command supports the polymorphic flag only in sections, meaning the
+   universe quantification will be discharged on each section definition
+   independently. One cannot mix polymorphic and monomorphic
+   declarations in the same section.
+
+
+.. cmd:: Constraint @ident @ord @ident.
+
+   This command declares a new constraint between named universes. The
+   order relation :n:`@ord` can be one of :math:`<`, :math:`≤` or :math:`=`. If consistent, the constraint
+   is then enforced in the global environment. Like ``Universe``, it can be
+   used with the ``Polymorphic`` prefix in sections only to declare
+   constraints discharged at section closing time. One cannot declare a
+   global constraint on polymorphic universes.
+
+   .. exn:: Undeclared universe @ident.
+
+   .. exn:: Universe inconsistency.
+
+
+Polymorphic definitions
+~~~~~~~~~~~~~~~~~~~~~~~
+
 For polymorphic definitions, the declaration of (all) universe levels
 introduced by a definition uses the following syntax:
 
-\begin{coq_example*}
-Polymorphic Definition le@{i j} (A : Type@{i}) : Type@{j} := A.
-\end{coq_example*}
-\begin{coq_example}
-Print le.
-\end{coq_example}
+.. coqtop:: in
 
-During refinement we find that $j$ must be larger or equal than $i$, as
-we are using $A : Type@{i} <= Type@{j}$, hence the generated
-constraint. At the end of a definition or proof, we check that the only
-remaining universes are the ones declared. In the term and in general in
-proof mode, introduced universe names can be referred to in
-terms. Note that local universe names shadow global universe names.
-During a proof, one can use \texttt{Show Universes} to display
-the current context of universes.
+   Polymorphic Definition le@{i j} (A : Type@{i}) : Type@{j} := A.
 
-Definitions can also be instantiated explicitly, giving their full instance:
-\begin{coq_example}
-Check (pidentity@{Set}).
-Universes k l.
-Check (le@{k l}).
-\end{coq_example}
+.. coqtop:: all
+
+   Print le.
+
+During refinement we find that :g:`j` must be larger or equal than :g:`i`, as we
+are using :g:`A : Type@{i} <= Type@{j}`, hence the generated constraint. At the
+end of a definition or proof, we check that the only remaining
+universes are the ones declared. In the term and in general in proof
+mode, introduced universe names can be referred to in terms. Note that
+local universe names shadow global universe names. During a proof, one
+can use :ref:`Show Universes <ShowUniverses>` to display the current context of universes.
+
+Definitions can also be instantiated explicitly, giving their full
+instance:
+
+.. coqtop:: all
+
+   Check (pidentity@{Set}).
+   Monomorphic Universes k l.
+   Check (le@{k l}).
 
 User-named universes and the anonymous universe implicitly attached to
-an explicit $Type$ are considered rigid for unification and are never
+an explicit :g:`Type` are considered rigid for unification and are never
 minimized. Flexible anonymous universes can be produced with an
 underscore or by omitting the annotation to a polymorphic definition.
 
-\begin{coq_example}
-  Check (fun x => x) : Type -> Type.
-  Check (fun x => x) : Type -> Type@{_}.
+.. coqtop:: all
 
-  Check le@{k _}.
-  Check le.
-\end{coq_example}
+   Check (fun x => x) : Type -> Type.
+   Check (fun x => x) : Type -> Type@{_}.
 
-\subsection{\tt Unset Strict Universe Declaration.
-  \optindex{Strict Universe Declaration}
-  \label{StrictUniverseDeclaration}}
+   Check le@{k _}.
+   Check le.
 
-The command \texttt{Unset Strict Universe Declaration} allows one to
-freely use identifiers for universes without declaring them first, with
-the semantics that the first use declares it. In this mode, the universe
-names are not associated with the definition or proof once it has been
-defined. This is meant mainly for debugging purposes.
+.. opt:: Strict Universe Declaration.
 
-%%% Local Variables: 
-%%% mode: latex
-%%% TeX-master: "Reference-Manual"
-%%% End: 
+   The command ``Unset Strict Universe Declaration`` allows one to freely use
+   identifiers for universes without declaring them first, with the
+   semantics that the first use declares it. In this mode, the universe
+   names are not associated with the definition or proof once it has been
+   defined. This is meant mainly for debugging purposes.
