@@ -1,10 +1,5 @@
 image: ocaml/opam:ubuntu
 
-# this doesn't seem to work
-cache:
-  paths:
-    - .opamcache
-
 stages:
   - build
   - test
@@ -39,10 +34,6 @@ before_script:
   - if [ -n "${EXTRA_PACKAGES}" ]; then sudo apt-get update -qq && sudo apt-get install -y -qq ${EXTRA_PACKAGES}; fi
   - if [ -n "${PIP_PACKAGES}" ]; then sudo pip3 install ${PIP_PACKAGES}; fi
 
-  # setup cache
-  - if [ ! "(" -d .opamcache ")" ]; then mv ~/.opam .opamcache; else mv ~/.opam ~/.opam-old; fi
-  - ln -s $(readlink -f .opamcache) ~/.opam
-
   # the default repo in this docker image is a local directory
   # at the time of 4aaeb8abf it lagged behind the official
   # repository such that camlp5 7.01 was not available
@@ -52,7 +43,6 @@ before_script:
   - eval $(opam config env)
   - opam config list
   - opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind num ${EXTRA_OPAM}
-  - rm -rf ~/.opam/log/
   - opam list
 
 # TODO figure out how to build doc for installed coq
