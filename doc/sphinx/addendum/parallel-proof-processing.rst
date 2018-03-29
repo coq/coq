@@ -1,221 +1,229 @@
-\achapter{Asynchronous and Parallel Proof Processing\label{Asyncprocessing}}
-%HEVEA\cutname{async-proofs.html}
-\aauthor{Enrico Tassi}
+.. include:: ../replaces.rst
 
-\label{pralitp}
-\index{Asynchronous and Parallel Proof Processing!presentation}
+.. _asynchronousandparallelproofprocessing:
 
-This chapter explains how proofs can be asynchronously processed by Coq.
-This feature improves the reactivity of the system when used in interactive
-mode via CoqIDE. In addition, it allows Coq to take advantage of
-parallel hardware when used as a batch compiler by decoupling the checking
-of statements and definitions from the construction and checking of proofs
-objects.
+Asynchronous and Parallel Proof Processing
+==========================================
 
-This feature is designed to help dealing with huge libraries of theorems
-characterized by long proofs. In the current state, it may not be beneficial
-on small sets of short files.
+:Author: Enrico Tassi
 
-This feature has some technical limitations that may make it unsuitable for
-some use cases.
+This chapter explains how proofs can be asynchronously processed by
+|Coq|. This feature improves the reactivity of the system when used in
+interactive mode via |CoqIDE|. In addition, it allows |Coq| to take
+advantage of parallel hardware when used as a batch compiler by
+decoupling the checking of statements and definitions from the
+construction and checking of proofs objects.
 
-For example, in interactive mode, some errors coming from the kernel of Coq
-are signaled late.  The type of errors belonging to this category
-are universe inconsistencies.
+This feature is designed to help dealing with huge libraries of
+theorems characterized by long proofs. In the current state, it may
+not be beneficial on small sets of short files.
 
-At the time of writing, only opaque proofs (ending with \texttt{Qed} or \texttt{Admitted}) can be processed asynchronously.
+This feature has some technical limitations that may make it
+unsuitable for some use cases.
 
-Finally, asynchronous processing is disabled when running CoqIDE in Windows. The
-current implementation of the feature is not stable on Windows. It can be
-enabled, as described below at \ref{interactivecaveats}, though doing so is not
-recommended.
+For example, in interactive mode, some errors coming from the kernel
+of |Coq| are signaled late. The type of errors belonging to this
+category are universe inconsistencies.
 
-\section{Proof annotations}
+At the time of writing, only opaque proofs (ending with ``Qed`` or
+``Admitted``) can be processed asynchronously.
 
-To process a proof asynchronously Coq needs to know the precise statement
-of the theorem without looking at the proof.  This requires some annotations
-if the theorem is proved inside a \texttt{Section} (see Section~\ref{Section}).
+Finally, asynchronous processing is disabled when running |CoqIDE| in
+Windows. The current implementation of the feature is not stable on
+Windows. It can be enabled, as described below at :ref:`interactive-mode`,
+though doing so is not recommended.
 
-When a section ends, Coq looks at the proof object to decide which
-section variables are actually used and hence have to be quantified in the
-statement of the theorem.  To avoid making the construction of proofs
-mandatory when ending a section, one can start each proof with the
-\texttt{Proof using} command (Section~\ref{ProofUsing}) that declares which
-section variables the theorem uses.
+Proof annotations
+----------------------
 
-The presence of \texttt{Proof using} is needed to process proofs
-asynchronously in interactive mode.
+To process a proof asynchronously |Coq| needs to know the precise
+statement of the theorem without looking at the proof. This requires
+some annotations if the theorem is proved inside a Section (see
+Section :ref:`TODO-2.4`).
+
+When a section ends, |Coq| looks at the proof object to decide which
+section variables are actually used and hence have to be quantified in
+the statement of the theorem. To avoid making the construction of
+proofs mandatory when ending a section, one can start each proof with
+the ``Proof using`` command (Section :ref:`TODO-7.1.5`) that declares which section
+variables the theorem uses.
+
+The presence of ``Proof`` using is needed to process proofs asynchronously
+in interactive mode.
 
 It is not strictly mandatory in batch mode if it is not the first time
 the file is compiled and if the file itself did not change. When the
-proof does not begin with \texttt{Proof using}, the system records in an
-auxiliary file, produced along with the \texttt{.vo} file, the list of
-section variables used.
+proof does not begin with Proof using, the system records in an
+auxiliary file, produced along with the `.vo` file, the list of section
+variables used.
 
-\subsubsection{Automatic suggestion of proof annotations}
+Automatic suggestion of proof annotations
+`````````````````````````````````````````
 
-The command \texttt{Set Suggest Proof Using} makes Coq suggest, when a
-\texttt{Qed} command is processed, a correct proof annotation. It is up
-to the user to modify the proof script accordingly.
+The command ``Set Suggest Proof Using`` makes |Coq| suggest, when a ``Qed``
+command is processed, a correct proof annotation. It is up to the user
+to modify the proof script accordingly.
 
-\section{Proof blocks and error resilience}
 
-Coq 8.6 introduces a mechanism for error resiliency: in interactive mode Coq
-is able to completely check a document containing errors instead of bailing
-out at the first failure.
+Proof blocks and error resilience
+--------------------------------------
 
-Two kind of errors are supported: errors occurring in vernacular commands and
-errors occurring in proofs.
+|Coq| 8.6 introduced a mechanism for error resiliency: in interactive
+mode |Coq| is able to completely check a document containing errors
+instead of bailing out at the first failure.
 
-To properly recover from a failing tactic, Coq needs to recognize the structure of
-the proof in order to confine the error to a sub proof.  Proof block detection
-is performed by looking at the syntax of the proof script (i.e. also looking at indentation).
-Coq comes with four kind of proof blocks, and an ML API to add new ones.
+Two kind of errors are supported: errors occurring in vernacular
+commands and errors occurring in proofs.
 
-\begin{description}
-\item[curly] blocks are delimited by \texttt{\{} and \texttt{\}}, see \ref{Proof-handling}
-\item[par] blocks are atomic, i.e. just one tactic introduced by the \texttt{par:} goal selector
-\item[indent] blocks end with a tactic indented less than the previous one
-\item[bullet] blocks are delimited by two equal bullet signs at the same indentation level
-\end{description}
+To properly recover from a failing tactic, |Coq| needs to recognize the
+structure of the proof in order to confine the error to a sub proof.
+Proof block detection is performed by looking at the syntax of the
+proof script (i.e. also looking at indentation). |Coq| comes with four
+kind of proof blocks, and an ML API to add new ones.
 
-\subsection{Caveats}
+:curly: blocks are delimited by { and }, see Chapter :ref:`proofhandling`
+:par: blocks are atomic, i.e. just one tactic introduced by the `par:`
+  goal selector
+:indent: blocks end with a tactic indented less than the previous one
+:bullet: blocks are delimited by two equal bullet signs at the same
+  indentation level
 
-When a vernacular command fails the subsequent error messages may be bogus, i.e. caused by
-the first error.  Error resiliency for vernacular commands can be switched off passing
-\texttt{-async-proofs-command-error-resilience off} to CoqIDE.
+Caveats
+````````
 
-An incorrect proof block detection can result into an incorrect error recovery and
-hence in bogus errors.  Proof block detection cannot be precise for bullets or
-any other non well parenthesized proof structure.  Error resiliency can be
-turned off or selectively activated for any set of block kind passing to
-CoqIDE one of the following options:
-\texttt{-async-proofs-tactic-error-resilience off},
-\texttt{-async-proofs-tactic-error-resilience all},
-\texttt{-async-proofs-tactic-error-resilience $blocktype_1$,..., $blocktype_n$}.
-Valid proof block types are: ``curly'', ``par'', ``indent'', ``bullet''.
+When a vernacular command fails the subsequent error messages may be
+bogus, i.e. caused by the first error. Error resiliency for vernacular
+commands can be switched off by passing ``-async-proofs-command-error-resilience off``
+to |CoqIDE|.
 
-\section{Interactive mode}
+An incorrect proof block detection can result into an incorrect error
+recovery and hence in bogus errors. Proof block detection cannot be
+precise for bullets or any other non well parenthesized proof
+structure. Error resiliency can be turned off or selectively activated
+for any set of block kind passing to |CoqIDE| one of the following
+options:
 
-At the time of writing the only user interface supporting asynchronous proof
-processing is CoqIDE.
+- ``-async-proofs-tactic-error-resilience off``
+- ``-async-proofs-tactic-error-resilience all``
+- ``-async-proofs-tactic-error-resilience`` :n:`{*, blocktype}`
 
-When CoqIDE is started, two Coq processes are created.  The master one follows
-the user, giving feedback as soon as possible by skipping proofs, which are
-delegated to the worker process.  The worker process, whose state can be seen
-by clicking on the button in the lower right corner of the main CoqIDE window,
-asynchronously processes the proofs.  If a proof contains an error, it is
-reported in red in the label of the very same button, that can also be used to
-see the list of errors and jump to the corresponding line.
+Valid proof block types are: “curly”, “par”, “indent”, and “bullet”.
 
-If a proof is processed asynchronously the corresponding \texttt{Qed} command
-is colored using a lighter color that usual.  This signals that
-the proof has been delegated to a worker process (or will be processed
-lazily if the \texttt{-async-proofs lazy} option is used). Once finished, the
+.. _interactive-mode:
+
+Interactive mode
+---------------------
+
+At the time of writing the only user interface supporting asynchronous
+proof processing is |CoqIDE|.
+
+When |CoqIDE| is started, two |Coq| processes are created. The master one
+follows the user, giving feedback as soon as possible by skipping
+proofs, which are delegated to the worker process. The worker process,
+whose state can be seen by clicking on the button in the lower right
+corner of the main |CoqIDE| window, asynchronously processes the proofs.
+If a proof contains an error, it is reported in red in the label of
+the very same button, that can also be used to see the list of errors
+and jump to the corresponding line.
+
+If a proof is processed asynchronously the corresponding Qed command
+is colored using a lighter color that usual. This signals that the
+proof has been delegated to a worker process (or will be processed
+lazily if the ``-async-proofs lazy`` option is used). Once finished, the
 worker process will provide the proof object, but this will not be
-automatically checked by the kernel of the main process. To force
-the kernel to check all the proof objects, one has to click the button
+automatically checked by the kernel of the main process. To force the
+kernel to check all the proof objects, one has to click the button
 with the gears. Only then are all the universe constraints checked.
 
-\subsubsection{Caveats}
-\label{interactivecaveats}
+Caveats
+```````
 
-The number of worker processes can be increased by passing CoqIDE the
-\texttt{-async-proofs-j $n$} flag.  Note that the memory consumption
-increases too, since each worker requires the same amount of memory as
-the master process. Also note that increasing the number of workers may
-reduce the reactivity of the master process to user commands.
+The number of worker processes can be increased by passing |CoqIDE|
+the ``-async-proofs-j n`` flag. Note that the memory consumption increases too,
+since each worker requires the same amount of memory as the master
+process. Also note that increasing the number of workers may reduce
+the reactivity of the master process to user commands.
 
-To disable this feature, one can pass the \texttt{-async-proofs off} flag to
-CoqIDE. Conversely, on Windows, where the feature is disabled by default,
-pass the \texttt{-async-proofs on} flag to enable it.
+To disable this feature, one can pass the ``-async-proofs off`` flag to
+|CoqIDE|. Conversely, on Windows, where the feature is disabled by
+default, pass the ``-async-proofs on`` flag to enable it.
 
-Proofs that are known to take little time to process are not delegated to a
-worker process.  The threshold can be configure with \texttt{-async-proofs-delegation-threshold}.  Default is 0.03 seconds.
+Proofs that are known to take little time to process are not delegated
+to a worker process. The threshold can be configure with
+``-async-proofs-delegation-threshold``. Default is 0.03 seconds.
 
-\section{Batch mode}
+Batch mode
+---------------
 
-When Coq is used as a batch compiler by running \texttt{coqc} or
-\texttt{coqtop -compile}, it produces a \texttt{.vo} file for each
-\texttt{.v} file. A \texttt{.vo} file contains, among other things,
-theorems statements and proofs. Hence to produce a \texttt{.vo} Coq need
-to process all the proofs of the \texttt{.v} file.
+When |Coq| is used as a batch compiler by running `coqc` or `coqtop`
+-compile, it produces a `.vo` file for each `.v` file. A `.vo` file contains,
+among other things, theorems statements and proofs. Hence to produce a
+.vo |Coq| need to process all the proofs of the `.v` file.
 
 The asynchronous processing of proofs can decouple the generation of a
-compiled file (like the \texttt{.vo} one) that can be loaded by
-\texttt{Require} from the generation and checking of the proof objects.
-The \texttt{-quick} flag can be passed to \texttt{coqc} or
-\texttt{coqtop} to produce, quickly, \texttt{.vio} files. Alternatively,
-when using a \texttt{Makefile} produced by \texttt{coq\_makefile}, the
-\texttt{quick} target can be used to compile all files using the
-\texttt{-quick} flag.
+compiled file (like the `.vo` one) that can be loaded by ``Require`` from the
+generation and checking of the proof objects. The ``-quick`` flag can be
+passed to `coqc` or `coqtop` to produce, quickly, `.vio` files.
+Alternatively, when using a Makefile produced by `coq_makefile`,
+the ``quick`` target can be used to compile all files using the ``-quick`` flag.
 
-A \texttt{.vio} file can be loaded using \texttt{Require} exactly as a
-\texttt{.vo} file but proofs will not be available (the \texttt{Print}
-command produces an error). Moreover, some universe constraints might be
-missing, so universes inconsistencies might go unnoticed. A
-\texttt{.vio} file does not contain proof objects, but proof tasks,
-i.e. what a worker process can transform into a proof object.
+A `.vio` file can be loaded using ``Require`` exactly as a `.vo` file but
+proofs will not be available (the Print command produces an error).
+Moreover, some universe constraints might be missing, so universes
+inconsistencies might go unnoticed. A `.vio` file does not contain proof
+objects, but proof tasks, i.e. what a worker process can transform
+into a proof object.
 
-Compiling a set of files with the \texttt{-quick} flag allows one to work,
-interactively, on any file without waiting for all the proofs to be checked.
+Compiling a set of files with the ``-quick`` flag allows one to work,
+interactively, on any file without waiting for all the proofs to be
+checked.
 
-When working interactively, one can fully check all the \texttt{.v} files by
-running \texttt{coqc} as usual.
+When working interactively, one can fully check all the `.v` files by
+running `coqc` as usual.
 
-Alternatively one can turn each \texttt{.vio} into the corresponding
-\texttt{.vo}.  All \texttt{.vio} files can be processed in parallel,
-hence this alternative might be faster. The command \texttt{coqtop
- -schedule-vio2vo 2 a b c} can be used to obtain a good scheduling for 2
-workers to produce \texttt{a.vo}, \texttt{b.vo}, and \texttt{c.vo}. When
-using a \texttt{Makefile} produced by \texttt{coq\_makefile}, the
-\texttt{vio2vo} target can be used for that purpose.  Variable \texttt{J}
-should be set to the number of workers, e.g. \texttt{make vio2vo J=2}.
-The only caveat is that, while the \texttt{.vo} files obtained from
-\texttt{.vio} files are complete (they contain all proof terms and
-universe constraints), the satisfiability of all universe constraints has
-not been checked globally (they are checked to be consistent for every
-single proof). Constraints will be checked when these \texttt{.vo} files
-are (recursively) loaded with \texttt{Require}.
+Alternatively one can turn each `.vio` into the corresponding `.vo`. All
+.vio files can be processed in parallel, hence this alternative might
+be faster. The command ``coqtop -schedule-vio2vo 2 a b c`` can be used to
+obtain a good scheduling for two workers to produce `a.vo`, `b.vo`, and
+`c.vo`. When using a Makefile produced by `coq_makefile`, the ``vio2vo`` target
+can be used for that purpose. Variable `J` should be set to the number
+of workers, e.g. ``make vio2vo J=2``. The only caveat is that, while the
+.vo files obtained from `.vio` files are complete (they contain all proof
+terms and universe constraints), the satisfiability of all universe
+constraints has not been checked globally (they are checked to be
+consistent for every single proof). Constraints will be checked when
+these `.vo` files are (recursively) loaded with ``Require``.
 
 There is an extra, possibly even faster, alternative: just check the
-proof tasks stored in \texttt{.vio} files without producing the
-\texttt{.vo} files. This is possibly faster because all the proof tasks
-are independent, hence one can further partition the job to be done
-between workers. The \texttt{coqtop -schedule-vio-checking 6 a b c}
-command can be used to obtain a good scheduling for 6 workers to check
-all the proof tasks of \texttt{a.vio}, \texttt{b.vio}, and
-\texttt{c.vio}. Auxiliary files are used to predict how long a proof task
-will take, assuming it will take the same amount of time it took last
-time. When using a \texttt{Makefile} produced by \texttt{coq\_makefile},
-the \texttt{checkproofs} target can be used to check all \texttt{.vio}
-files. Variable \texttt{J} should be set to the number of workers,
-e.g. \texttt{make checkproofs J=6}. As when converting \texttt{.vio}
-files to \texttt{.vo} files, universe constraints are not checked to be
-globally consistent. Hence this compilation mode is only useful for quick
-regression testing and on developments not making heavy use of the $Type$
-hierarchy.
+proof tasks stored in `.vio` files without producing the `.vo` files. This
+is possibly faster because all the proof tasks are independent, hence
+one can further partition the job to be done between workers. The
+``coqtop -schedule-vio-checking 6 a b c`` command can be used to obtain a
+good scheduling for 6 workers to check all the proof tasks of `a.vio`,
+`b.vio`, and `c.vio`. Auxiliary files are used to predict how long a proof
+task will take, assuming it will take the same amount of time it took
+last time. When using a Makefile produced by coq_makefile, the
+``checkproofs`` target can be used to check all `.vio` files. Variable `J`
+should be set to the number of workers, e.g. ``make checkproofs J=6``. As
+when converting `.vio` files to `.vo` files, universe constraints are not
+checked to be globally consistent. Hence this compilation mode is only
+useful for quick regression testing and on developments not making
+heavy use of the `Type` hierarchy.
 
-\section{Limiting the number of parallel workers}
-\label{coqworkmgr}
+Limiting the number of parallel workers
+--------------------------------------------
 
-Many Coq processes may run on the same computer, and each of them may start
-many additional worker processes. 
-The \texttt{coqworkmgr} utility lets one limit the number of workers, globally.
+Many |Coq| processes may run on the same computer, and each of them may
+start many additional worker processes. The `coqworkmgr` utility lets
+one limit the number of workers, globally.
 
-The utility accepts the \texttt{-j} argument to specify the maximum number of
-workers (defaults to 2). \texttt{coqworkmgr} automatically starts in the
-background and prints an environment variable assignment like
-\texttt{COQWORKMGR\_SOCKET=localhost:45634}. The user must set this variable in
-all the shells from which Coq processes will be started.  If one uses just
-one terminal running the bash shell, then \texttt{export `coqworkmgr -j 4`} will
-do the job.
+The utility accepts the ``-j`` argument to specify the maximum number of
+workers (defaults to 2). `coqworkmgr` automatically starts in the
+background and prints an environment variable assignment
+like ``COQWORKMGR_SOCKET=localhost:45634``. The user must set this variable
+in all the shells from which |Coq| processes will be started. If one
+uses just one terminal running the bash shell, then
+``export ‘coqworkmgr -j 4‘`` will do the job.
 
-After that, all Coq processes, e.g. \texttt{coqide} and \texttt{coqc},
-will honor the limit, globally.
-
-
-%%% Local Variables: 
-%%% mode: latex
-%%% TeX-master: "Reference-Manual"
-%%% End: 
+After that, all |Coq| processes, e.g. `coqide` and `coqc`, will honor the
+limit, globally.

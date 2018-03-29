@@ -54,6 +54,7 @@ Table of contents
    addendum/ring
    addendum/nsatz
    addendum/generalized-rewriting
+   addendum/parallel-proof-processing
 
 .. toctree::
    :caption: Reference
