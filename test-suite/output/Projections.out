@@ -1,0 +1,2 @@
+fun S : store => S.(store_funcs)
+     : store -> host_func
