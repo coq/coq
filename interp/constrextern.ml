@@ -590,11 +590,17 @@ let explicitize inctx impl (cf,f) args =
   let expl () = 
     match ip with
     | Some i ->
-      if not (List.is_empty impl) && is_status_implicit (List.nth impl (i-1)) then
-	raise Expl
+      (* Careful: It is possible to have declared implicits ending
+         before the principal argument *)
+      let is_impl =
+        try is_status_implicit (List.nth impl (i-1))
+        with Failure _ -> false
+      in
+      if is_impl
+      then raise Expl
       else
 	let (args1,args2) = List.chop i args in
-	let (impl1,impl2) = if List.is_empty impl then [],[] else List.chop i impl in
+        let (impl1,impl2) = try List.chop i impl with Failure _ -> impl, [] in
 	let args1 = exprec 1 (args1,impl1) in
 	let args2 = exprec (i+1) (args2,impl2) in
 	let ip = Some (List.length args1) in
