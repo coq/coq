@@ -18,6 +18,7 @@ Require Import Eqdep_dec.
 
 Record Qc : Set := Qcmake { this :> Q ; canon : Qred this = this }.
 
+Declare Scope Qc_scope.
 Delimit Scope Qc_scope with Qc.
 Bind Scope Qc_scope with Qc.
 Arguments Qcmake this%Q _.

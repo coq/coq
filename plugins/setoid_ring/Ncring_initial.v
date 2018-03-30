@@ -79,8 +79,9 @@ Context {R:Type}`{Ring R}.
   | Z0 => 0
   | Zneg p => -(gen_phiPOS p)
   end.
- Local Notation "[ x ]" := (gen_phiZ x) : ZMORPHISM.
- Local Open Scope ZMORPHISM.
+ Declare Scope ZMORPHISM.
+ Notation "[ x ]" := (gen_phiZ x) : ZMORPHISM.
+ Open Scope ZMORPHISM.
 
  Definition get_signZ z :=
   match z with

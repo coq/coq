@@ -46,6 +46,7 @@ Module ZEuclidProp
 
  (** We put notations in a scope, to avoid warnings about
      redefinitions of notations *)
+ Declare Scope euclid.
  Infix "/" := D.div : euclid.
  Infix "mod" := D.modulo : euclid.
  Local Open Scope euclid.

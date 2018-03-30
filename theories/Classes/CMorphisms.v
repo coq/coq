@@ -87,6 +87,7 @@ Hint Extern 2 (ProperProxy ?R _) =>
   not_evar R; class_apply @proper_proper_proxy : typeclass_instances.
 
 (** Notations reminiscent of the old syntax for declaring morphisms. *)
+Declare Scope signature_scope.
 Delimit Scope signature_scope with signature.
 
 Module ProperNotations.

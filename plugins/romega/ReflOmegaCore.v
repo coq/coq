@@ -8,6 +8,7 @@
  *************************************************************************)
 
 Require Import List Bool Sumbool EqNat Setoid Ring_theory Decidable ZArith_base.
+Declare Scope Int_scope.
 Delimit Scope Int_scope with I.
 
 (** * Abstract Integers. *)
@@ -716,6 +717,7 @@ Inductive term : Set :=
   | Topp : term -> term
   | Tvar : N -> term.
 
+Declare Scope romega_scope.
 Bind Scope romega_scope with term.
 Delimit Scope romega_scope with term.
 Arguments Tint _%I.

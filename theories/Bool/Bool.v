@@ -757,6 +757,8 @@ Qed.
     with lazy behavior (for vm_compute)  *)
 (*****************************************)
 
+Declare Scope lazy_bool_scope.
+
 Notation "a &&& b" := (if a then b else false)
  (at level 40, left associativity) : lazy_bool_scope.
 Notation "a ||| b" := (if a then true else b)

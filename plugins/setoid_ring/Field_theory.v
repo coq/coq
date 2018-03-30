@@ -19,6 +19,7 @@ Section MakeFieldPol.
 (* Field elements : R *)
 
 Variable R:Type.
+Declare Scope R_scope.
 Bind Scope R_scope with R.
 Delimit Scope R_scope with ring.
 Local Open Scope R_scope.
@@ -94,6 +95,7 @@ Let rdistr_r := ARdistr_r Rsth Reqe ARth.
 (* Coefficients : C *)
 
 Variable C: Type.
+Declare Scope C_scope.
 Bind Scope C_scope with C.
 Delimit Scope C_scope with coef.
 
@@ -139,6 +141,7 @@ Let rpow_pow := pow_th.(rpow_pow_N).
 
 (* Polynomial expressions : (PExpr C) *)
 
+Declare Scope PE_scope.
 Bind Scope PE_scope with PExpr.
 Delimit Scope PE_scope with poly.
 

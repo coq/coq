@@ -305,6 +305,7 @@ Eval cbv delta beta in fold_right (fun h H => Datatypes.cons h H) v Datatypes.ni
 End VECTORLIST.
 
 Module VectorNotations.
+Declare Scope vector_scope.
 Delimit Scope vector_scope with vector.
 Notation "[ ]" := [] (format "[ ]") : vector_scope.
 Notation "h :: t" := (h :: t) (at level 60, right associativity)

@@ -23,6 +23,7 @@ Inductive positive : Set :=
   | xO : positive -> positive
   | xH : positive.
 
+Declare Scope positive_scope.
 Delimit Scope positive_scope with positive.
 Bind Scope positive_scope with positive.
 Arguments xO _%positive.
@@ -37,6 +38,7 @@ Inductive N : Set :=
   | N0 : N
   | Npos : positive -> N.
 
+Declare Scope N_scope.
 Delimit Scope N_scope with N.
 Bind Scope N_scope with N.
 Arguments Npos _%positive.
@@ -53,6 +55,7 @@ Inductive Z : Set :=
   | Zpos : positive -> Z
   | Zneg : positive -> Z.
 
+Declare Scope Z_scope.
 Delimit Scope Z_scope with Z.
 Bind Scope Z_scope with Z.
 Arguments Zpos _%positive.

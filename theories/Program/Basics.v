@@ -28,6 +28,8 @@ Definition compose {A B C} (g : B -> C) (f : A -> B) :=
 
 Hint Unfold compose.
 
+Declare Scope program_scope.
+
 Notation " g ∘ f " := (compose g f)
   (at level 40, left associativity) : program_scope.
 

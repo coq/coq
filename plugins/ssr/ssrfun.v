@@ -216,6 +216,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Declare Scope fun_scope.
 Delimit Scope fun_scope with FUN.
 Open Scope fun_scope.
 
@@ -225,6 +226,7 @@ Notation "f ^~ y" := (fun x => f x y)
 Notation "@^~ x" := (fun f => f x)
   (at level 10, x at level 8, no associativity, format "@^~  x") : fun_scope.
 
+Declare Scope pair_scope.
 Delimit Scope pair_scope with PAIR.
 Open Scope pair_scope.
 

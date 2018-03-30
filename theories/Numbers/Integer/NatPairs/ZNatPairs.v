@@ -13,15 +13,18 @@
 Require Import NSub ZAxioms.
 Require Export Ring.
 
+Declare Scope pair_scope.
+Local Open Scope pair_scope.
+
 Notation "s #1" := (fst s) (at level 9, format "s '#1'") : pair_scope.
 Notation "s #2" := (snd s) (at level 9, format "s '#2'") : pair_scope.
-Local Open Scope pair_scope.
 
 Module ZPairsAxiomsMod (Import N : NAxiomsMiniSig) <: ZAxiomsMiniSig.
  Module Import NProp.
    Include NSubProp N.
  End NProp.
 
+Declare Scope NScope.
 Delimit Scope NScope with N.
 Bind Scope NScope with N.t.
 Infix "=="  := N.eq (at level 70) : NScope.
@@ -73,6 +76,7 @@ Definition max (n m : t) : t := (max (n#1 + m#2) (m#1 + n#2), n#2 + m#2).
 
 End Z.
 
+Declare Scope ZScope.
 Delimit Scope ZScope with Z.
 Bind Scope ZScope with Z.t.
 Infix "=="  := Z.eq (at level 70) : ZScope.

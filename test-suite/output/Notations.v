@@ -76,6 +76,7 @@ Open Scope nat_scope.
 Inductive znat : Set := Zpos (n : nat) | Zneg (m : nat).
 Coercion Zpos: nat >-> znat.
 
+Declare Scope znat_scope.
 Delimit Scope znat_scope with znat.
 Open Scope znat_scope.
 

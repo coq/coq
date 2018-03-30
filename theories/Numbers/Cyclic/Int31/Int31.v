@@ -50,6 +50,7 @@ Inductive int31 : Type := I31 : digits31 int31.
 Register digits as int31 bits in "coq_int31" by True.
 Register int31 as int31 type in "coq_int31" by True.
 
+Declare Scope int31_scope.
 Delimit Scope int31_scope with int31.
 Bind Scope int31_scope with int31.
 Local Open Scope int31_scope.
