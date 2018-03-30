@@ -55,6 +55,7 @@ Table of contents
    addendum/nsatz
    addendum/generalized-rewriting
    addendum/parallel-proof-processing
+   addendum/miscellaneous-extensions
 
 .. toctree::
    :caption: Reference

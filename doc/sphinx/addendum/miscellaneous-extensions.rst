@@ -1,63 +1,67 @@
-\achapter{\protect{Miscellaneous extensions}}
-%HEVEA\cutname{miscellaneous.html}
+.. include:: ../replaces.rst
 
-\asection{Program derivation}
+.. _miscellaneousextensions:
 
-Coq comes with an extension called {\tt Derive}, which supports
-program derivation. Typically in the style of Bird and Meertens or
-derivations of program refinements. To use the {\tt Derive} extension
-it must first be required with {\tt Require Coq.Derive.Derive}. When
-the extension is loaded, it provides the following command.
+Miscellaneous extensions
+=======================
 
-\subsection[\tt Derive \ident$_1$ SuchThat \term{} As \ident$_2$]
-       {\tt Derive \ident$_1$ SuchThat \term{} As \ident$_2$\comindex{Derive}}
+:Source: https://coq.inria.fr/distrib/current/refman/miscellaneous.html
+:Converted by: Paul Steckler
 
-The name $\ident_1$ can appear in \term. This command opens a new
-proof presenting the user with a goal for \term{} in which the name
-$\ident_1$ is bound to a existential variables {\tt ?x} (formally,
-there are other goals standing for the existential variables but they
-are shelved, as described in Section~\ref{shelve}).
+.. contents::
+   :local:
+   :depth: 1
+----
+
+Program derivation
+-----------------
+
+|Coq| comes with an extension called ``Derive``, which supports program
+derivation. Typically in the style of Bird and Meertens or derivations
+of program refinements. To use the Derive extension it must first be
+required with ``Require Coq.Derive.Derive``. When the extension is loaded,
+it provides the following command:
+
+.. cmd:: Derive @ident SuchThat @term As @ident
+
+The first `ident` can appear in `term`. This command opens a new proof
+presenting the user with a goal for term in which the name `ident` is
+bound to an existential variable `?x` (formally, there are other goals
+standing for the existential variables but they are shelved, as
+described in Section :ref:`TODO-8.17.4`).
 
 When the proof ends two constants are defined:
-\begin{itemize}
-\item The first one is name $\ident_1$ and is defined as the proof of
-  the shelved goal (which is also the value of {\tt ?x}). It is
-always transparent.
-\item The second one is name $\ident_2$. It has type {\tt \term}, and
-  its body is the proof of the initially visible goal. It is opaque if
-  the proof ends with {\tt Qed}, and transparent if the proof ends
-  with {\tt Defined}.
-\end{itemize}
 
-\Example
-\begin{coq_example*}
-Require Coq.derive.Derive.
-Require Import Coq.Numbers.Natural.Peano.NPeano.
++ The first one is named using the first `ident` and is defined as the proof of the
+  shelved goal (which is also the value of `?x`). It is always
+  transparent.
++ The second one is named using the second `ident`. It has type `term`, and its body is
+  the proof of the initially visible goal. It is opaque if the proof
+  ends with ``Qed``, and transparent if the proof ends with ``Defined``.
 
-Section P.
+.. example::
+  .. coqtop:: all
 
-Variables (n m k:nat).
+     Require Coq.derive.Derive.
+     Require Import Coq.Numbers.Natural.Peano.NPeano.
 
-\end{coq_example*}
-\begin{coq_example}
-Derive p SuchThat ((k*n)+(k*m) = p) As h.
-Proof.
-rewrite <- Nat.mul_add_distr_l.
-subst p.
-reflexivity.
-\end{coq_example}
-\begin{coq_example*}
-Qed.
+     Section P.
 
-End P.
+     Variables (n m k:nat).
 
-\end{coq_example*}
-\begin{coq_example}
-Print p.
-Check h.
-\end{coq_example}
+     Derive p SuchThat ((k*n)+(k*m) = p) As h.
+     Proof.
+     rewrite <- Nat.mul_add_distr_l.
+     subst p.
+     reflexivity.
+     Qed.
 
-Any property can be used as \term, not only an equation. In
-particular, it could be an order relation specifying some form of
-program refinement or a non-executable property from which deriving a
-program is convenient.
+     End P.
+
+     Print p.
+     Check h.
+
+Any property can be used as `term`, not only an equation. In particular,
+it could be an order relation specifying some form of program
+refinement or a non-executable property from which deriving a program
+is convenient.
