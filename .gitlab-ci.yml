@@ -85,10 +85,6 @@ before_script:
     - echo 'end:coq.install'
 
     - set +e
-  variables: &build-variables
-    EXTRA_CONF: "-native-compiler yes -coqide opt"
-    EXTRA_PACKAGES: "$COQIDE_PACKAGES"
-    EXTRA_OPAM: "$COQIDE_OPAM"
 
 .warnings-template: &warnings-template
   # keep warnings in test stage so we can test things even when warnings occur
@@ -151,9 +147,9 @@ before_script:
 build:
   <<: *build-template
   variables:
-    EXTRA_CONF: "-with-doc yes"
-    EXTRA_PACKAGES: "$COQDOC_PACKAGES"
-    EXTRA_OPAM: "$COQDOC_OPAM"
+    EXTRA_CONF: "-native-compiler yes -coqide opt -with-doc yes"
+    EXTRA_PACKAGES: "$COQIDE_PACKAGES $COQDOC_PACKAGES"
+    EXTRA_OPAM: "$COQIDE_OPAM $COQDOC_OPAM"
     PIP_PACKAGES: "$SPHINX_PACKAGES"
 
 # no coqide for 32bit: libgtk installation problems
@@ -167,9 +163,10 @@ build:32bit:
 build:bleeding-edge:
   <<: *build-template
   variables:
-    <<: *build-variables
+    EXTRA_CONF: "-native-compiler yes -coqide opt"
     COMPILER: "$COMPILER_BLEEDING_EDGE"
     CAMLP5_VER: "$CAMLP5_VER_BLEEDING_EDGE"
+    EXTRA_PACKAGES: "$COQIDE_PACKAGES"
     EXTRA_OPAM: "$COQIDE_OPAM_BE"
 
 warnings:
