@@ -16,8 +16,6 @@ open Vernacexpr
 
 let default_proof_mode () = Proof_global.get_default_proof_mode_name () [@ocaml.warning "-3"]
 
-let string_of_in_script b = if b then " (inside script)" else ""
-
 let string_of_parallel = function
   | `Yes (solve,abs) ->
        "par" ^ if solve then "solve" else "" ^ if abs then "abs" else ""
@@ -34,7 +32,7 @@ let string_of_vernac_type = function
       "ProofStep " ^ string_of_parallel parallel ^
         Option.default "" proof_block_detection
   | VtProofMode s -> "ProofMode " ^ s
-  | VtQuery (b, route) -> "Query " ^ string_of_in_script b ^ " route " ^ string_of_int route
+  | VtQuery -> "Query"
   | VtMeta -> "Meta "
 
 let string_of_vernac_when = function
@@ -70,7 +68,7 @@ let classify_vernac e =
     | VernacEndProof _ | VernacExactProof _ -> VtQed VtKeep, VtLater
     (* Query *)
     | VernacShow _ | VernacPrint _ | VernacSearch _ | VernacLocate _
-    | VernacCheckMayEval _ -> VtQuery (true,Feedback.default_route), VtLater
+    | VernacCheckMayEval _ -> VtQuery, VtLater
     (* ProofStep *)
     | VernacProof _ 
     | VernacFocus _ | VernacUnfocus
@@ -205,7 +203,7 @@ let classify_vernac e =
        static_control_classifier ~poly e
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match static_control_classifier ~poly e with
-        | ( VtQuery _ | VtProofStep _ | VtSideff _
+        | ( VtQuery | VtProofStep _ | VtSideff _
           | VtProofMode _ | VtMeta), _ as x -> x
         | VtQed _, _ ->
             VtProofStep { parallel = `No; proof_block_detection = None },
@@ -214,6 +212,6 @@ let classify_vernac e =
   in
   static_control_classifier ~poly:(Flags.is_universe_polymorphism ()) e
 
-let classify_as_query = VtQuery (true,Feedback.default_route), VtLater
+let classify_as_query = VtQuery, VtLater
 let classify_as_sideeff = VtSideff [], VtLater
 let classify_as_proofstep = VtProofStep { parallel = `No; proof_block_detection = None}, VtLater
