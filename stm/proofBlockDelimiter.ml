@@ -107,8 +107,8 @@ let () = register_proof_block_delimiter
 
 (* ******************** { block } ***************************************** *)
   
-let static_curly_brace ({ entry_point; prev_node } as view) =
-  assert(Vernacprop.under_control entry_point.ast = Vernacexpr.VernacEndSubproof);
+let static_curly_brace ({ entry_point; prev_node = _ } as view) =
+  assert(entry_point.ast = Vernacexpr.VernacEndSubproof);
   crawl view (fun (nesting,prev) node ->
     if Vernacprop.has_Fail node.ast then `Cont (nesting,node)
     else match Vernacprop.under_control node.ast with
@@ -164,7 +164,7 @@ let static_indent ({ entry_point; prev_node } as view) =
    | Some last_tac ->
       if last_tac.indentation <= entry_point.indentation then None
       else
-        crawl view ~init:(Some last_tac) (fun prev node ->
+        crawl view ~init:(Some last_tac) (fun _prev node ->
         if node.indentation >= last_tac.indentation then `Cont node
         else 
           `Found { block_stop = entry_point.id; block_start = node.id;

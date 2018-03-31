@@ -195,14 +195,14 @@ let find_node qid tab =
 
 let locate qid tab =
   let o = match find_node qid tab with
-    | Absolute (uname,o) | Relative (uname,o) -> o
+    | Absolute (_uname,o) | Relative (_uname,o) -> o
     | Nothing -> raise Not_found
   in
     o
 
 let user_name qid tab =
   let uname = match find_node qid tab with
-    | Absolute (uname,o) | Relative (uname,o) -> uname
+    | Absolute (uname,_o) | Relative (uname,_o) -> uname
     | Nothing -> raise Not_found
   in
     uname
@@ -542,9 +542,10 @@ let pr_global_env env ref =
 let global_inductive ({CAst.loc; v=r} as lr) =
   match global lr with
   | IndRef ind -> ind
-  | ref ->
-      user_err ?loc ~hdr:"global_inductive"
-        (pr_reference lr ++ spc () ++ str "is not an inductive type")
+  | _ref ->
+      user_err ?loc:(loc_of_reference r) ~hdr:"global_inductive"
+        (pr_reference r ++ spc () ++ str "is not an inductive type")
+
 
 (********************************************************************)
 

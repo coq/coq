@@ -243,7 +243,7 @@ let judge_of_variable env id =
 
 let judge_of_projection env sigma p cj =
   let pb = lookup_projection p env in
-  let (ind,u), args =
+  let (_ind,u), args =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj
   in
@@ -253,7 +253,7 @@ let judge_of_projection env sigma p cj =
       {uj_val = EConstr.mkProj (p,cj.uj_val);
        uj_type = ty}
 
-let judge_of_abstraction env name var j =
+let judge_of_abstraction _env name var j =
   { uj_val = mkLambda (name, var.utj_val, j.uj_val);
     uj_type = mkProd (name, var.utj_val, j.uj_type) }
 
@@ -262,7 +262,7 @@ let judge_of_product env name t1 t2 =
   { uj_val = mkProd (name, t1.utj_val, t2.utj_val);
     uj_type = mkSort s }
 
-let judge_of_letin env name defj typj j =
+let judge_of_letin _env name defj typj j =
   { uj_val = mkLetIn (name, defj.uj_val, typj.utj_val, j.uj_val) ;
     uj_type = subst1 defj.uj_val j.uj_type }
 
@@ -304,7 +304,7 @@ let rec execute env evdref cstr =
         let lfj = execute_array env evdref lf in
         e_judge_of_case env evdref ci pj cj lfj
 
-    | Fix ((vn,i as vni),recdef) ->
+    | Fix ((_vn,i as vni),recdef) ->
         let (_,tys,_ as recdef') = execute_recdef env evdref recdef in
 	let fix = (vni,recdef') in
         check_fix env !evdref fix;

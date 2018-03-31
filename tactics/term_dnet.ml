@@ -58,7 +58,7 @@ struct
     | DCtx (ctx,t) -> f ctx ++ spc() ++ str "|-" ++ spc () ++ f t
     | DLambda (t1,t2) -> str "fun"++ spc() ++ f t1 ++ spc() ++ str"->" ++ spc() ++ f t2
     | DApp (t1,t2) -> f t1 ++ spc() ++ f t2
-    | DCase (_,t1,t2,ta) -> str "case"
+    | DCase (_,_t1,_t2,_ta) -> str "case"
     | DFix _ -> str "fix"
     | DCoFix _ -> str "cofix"
     | DCons ((t,dopt),tl) -> f t ++ (match dopt with
@@ -161,22 +161,22 @@ struct
     | DCtx (ctx,c) -> f (f acc ctx) c
     | DLambda (t,c) -> f (f acc t) c
     | DApp (t,u) -> f (f acc t) u
-    | DCase (ci,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
-    | DFix (ia,i,ta,ca) ->
+    | DCase (_ci,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
+    | DFix (_ia,_i,ta,ca) ->
 	Array.fold_left f (Array.fold_left f acc ta) ca
-    | DCoFix(i,ta,ca) ->
+    | DCoFix(_i,ta,ca) ->
 	Array.fold_left f (Array.fold_left f acc ta) ca
     | DCons ((t,topt),u) -> f (Option.fold_left f (f acc t) topt) u
 
   let choose f = function
     | (DRel | DSort | DNil | DRef _) -> invalid_arg "choose"
-    | DCtx (ctx,c) -> f ctx
-    | DLambda (t,c) -> f t
-    | DApp (t,u) -> f u
-    | DCase (ci,p,c,bl) -> f c
-    | DFix (ia,i,ta,ca) -> f ta.(0)
-    | DCoFix (i,ta,ca) -> f ta.(0)
-    | DCons ((t,topt),u) -> f u
+    | DCtx (ctx,_c) -> f ctx
+    | DLambda (t,_c) -> f t
+    | DApp (_t,u) -> f u
+    | DCase (_ci,_p,c,_bl) -> f c
+    | DFix (_ia,_i,ta,_ca) -> f ta.(0)
+    | DCoFix (_i,ta,_ca) -> f ta.(0)
+    | DCons ((_t,_topt),u) -> f u
 
   let dummy_cmp () () = 0
 
@@ -189,11 +189,11 @@ struct
 	| (DCtx (c1,t1), DCtx (c2,t2)
 	  | DApp (c1,t1), DApp (c2,t2)
 	  | DLambda (c1,t1), DLambda (c2,t2)) -> f (f acc c1 c2) t1 t2
-	| DCase (ci,p1,c1,bl1),DCase (_,p2,c2,bl2) ->
+	| DCase (_ci,p1,c1,bl1),DCase (_,p2,c2,bl2) ->
 	    Array.fold_left2 f (f (f acc p1 p2) c1 c2) bl1 bl2
-	| DFix (ia,i,ta1,ca1), DFix (_,_,ta2,ca2) ->
+	| DFix (_ia,_i,ta1,ca1), DFix (_,_,ta2,ca2) ->
 	    Array.fold_left2 f (Array.fold_left2 f acc ta1 ta2) ca1 ca2
-	| DCoFix(i,ta1,ca1), DCoFix(_,ta2,ca2) ->
+	| DCoFix(_i,ta1,ca1), DCoFix(_,ta2,ca2) ->
 	    Array.fold_left2 f (Array.fold_left2 f acc ta1 ta2) ca1 ca2
 	| DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
 	    f (Option.fold_left2 f (f acc t1 t2) topt1 topt2) u1 u2
@@ -287,9 +287,9 @@ struct
     | Rel _          -> Term DRel
     | Sort _         -> Term DSort
     | Var i          -> Term (DRef (VarRef i))
-    | Const (c,u)    -> Term (DRef (ConstRef c))
-    | Ind (i,u)      -> Term (DRef (IndRef i))
-    | Construct (c,u)-> Term (DRef (ConstructRef c))
+    | Const (c,_u)    -> Term (DRef (ConstRef c))
+    | Ind (i,_u)      -> Term (DRef (IndRef i))
+    | Construct (c,_u)-> Term (DRef (ConstructRef c))
     | Term.Meta _    -> assert false
     | Evar (i,_)     ->
       let meta =

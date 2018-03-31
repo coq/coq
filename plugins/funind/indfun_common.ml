@@ -11,7 +11,7 @@ let mk_correct_id id = Nameops.add_suffix (mk_rel_id id) "_correct"
 let mk_complete_id id = Nameops.add_suffix (mk_rel_id id) "_complete"
 let mk_equation_id id = Nameops.add_suffix id "_equation"
 
-let msgnl m =
+let msgnl _m =
   ()
 
 let fresh_id avoid s = Namegen.next_ident_away_in_goal (Id.of_string s) (Id.Set.of_list avoid)
@@ -32,7 +32,7 @@ let id_of_name = function
   | _ -> raise Not_found
 
 let locate  ref =
-    let {CAst.v=qid} = qualid_of_reference ref in
+    let (_loc,qid) = qualid_of_reference ref in
     Nametab.locate qid
 
 let locate_ind ref =
@@ -69,7 +69,7 @@ let chop_rlambda_n  =
       then List.rev acc,rt
       else
 	match DAst.get rt with
-	  | Glob_term.GLambda(name,k,t,b) -> chop_lambda_n ((name,t,None)::acc) (n-1) b
+	  | Glob_term.GLambda(name,_k,t,b) -> chop_lambda_n ((name,t,None)::acc) (n-1) b
 	  | Glob_term.GLetIn(name,v,t,b) -> chop_lambda_n ((name,v,t)::acc) (n-1) b
 	  | _ ->
 	      raise (CErrors.UserError(Some "chop_rlambda_n",
@@ -83,7 +83,7 @@ let chop_rprod_n  =
       then List.rev acc,rt
       else
 	match DAst.get rt with
-	  | Glob_term.GProd(name,k,t,b) -> chop_prod_n ((name,t)::acc) (n-1) b
+	  | Glob_term.GProd(name,_k,t,b) -> chop_prod_n ((name,t)::acc) (n-1) b
 	  | _ -> raise (CErrors.UserError(Some "chop_rprod_n",str "chop_rprod_n: Not enough products"))
   in
   chop_prod_n []
@@ -332,7 +332,7 @@ let discharge_Function (_,finfos) =
 
 let pr_ocst c =
   let sigma, env = Pfedit.get_current_context () in
-  Option.fold_right (fun v acc -> Printer.pr_lconstr_env env sigma (mkConst v)) c (mt ())
+  Option.fold_right (fun v _acc -> Printer.pr_lconstr_env env sigma (mkConst v)) c (mt ())
 
 let pr_info f_info =
   let sigma, env = Pfedit.get_current_context () in
@@ -352,7 +352,7 @@ let pr_info f_info =
   str "graph_ind := " ++ Printer.pr_lconstr_env env sigma (mkInd f_info.graph_ind) ++ fnl ()
 
 let pr_table tb =
-  let l = Cmap_env.fold (fun k v acc -> v::acc) tb [] in
+  let l = Cmap_env.fold (fun _k v acc -> v::acc) tb [] in
   Pp.prlist_with_sep fnl pr_info l
 
 let in_Function : function_info -> Libobject.obj =
@@ -523,7 +523,7 @@ let decompose_lam_n sigma n =
 let lamn n env b =
   let open EConstr in
   let rec lamrec = function
-    | (0, env, b)        -> b
+    | (0, _env, b)        -> b
     | (n, ((v,t)::l), b) -> lamrec (n-1,  l, mkLambda (v,t,b))
     | _ -> assert false
   in
@@ -536,7 +536,7 @@ let compose_lam l b = lamn (List.length l) l b
 let prodn n env b =
   let open EConstr in
   let rec prodrec = function
-    | (0, env, b)        -> b
+    | (0, _env, b)        -> b
     | (n, ((v,t)::l), b) -> prodrec (n-1,  l, mkProd (v,t,b))
     | _ -> assert false
   in

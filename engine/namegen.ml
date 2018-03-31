@@ -338,7 +338,7 @@ let next_name_away_with_default default na avoid =
   let id = match na with Name id -> id | Anonymous -> Id.of_string default in
   next_ident_away id avoid
 
-let reserved_type_name = ref (fun t -> Anonymous)
+let reserved_type_name = ref (fun _t -> Anonymous)
 let set_reserved_typed_name f = reserved_type_name := f
 
 let next_name_away_with_default_using_types default na avoid t =
@@ -439,7 +439,7 @@ let compute_and_force_displayed_name_in sigma flags avoid na c =
     let fresh_id = next_name_for_display sigma flags na avoid in
     (Name fresh_id, Id.Set.add fresh_id avoid)
 
-let compute_displayed_let_name_in sigma flags avoid na c =
+let compute_displayed_let_name_in sigma flags avoid na _c =
   let fresh_id = next_name_for_display sigma flags na avoid in
   (Name fresh_id, Id.Set.add fresh_id avoid)
 

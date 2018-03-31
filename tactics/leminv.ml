@@ -159,7 +159,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let ivars = global_vars env sigma i in
       let revargs,ownsign =
 	fold_named_context
-	  (fun env d (revargs,hyps) ->
+	  (fun _env d (revargs,hyps) ->
             let d = map_named_decl EConstr.of_constr d in
              let id = NamedDecl.get_id d in
              if Id.List.mem id ivars then
@@ -210,7 +210,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let global_named_context = Global.named_context_val () in
   let ownSign = ref begin
     fold_named_context
-      (fun env d sign ->
+      (fun _env d sign ->
         let d = map_named_decl EConstr.of_constr d in
          if mem_named_context_val (NamedDecl.get_id d) global_named_context then sign
 	 else Context.Named.add d sign)
@@ -273,7 +273,7 @@ let lemInv id c =
     | NoSuchBinding ->
 	user_err 
 	  (hov 0 (pr_econstr_env (pf_env gls) (project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
-    | UserError (a,b) ->
+    | UserError (_a,_b) ->
 	 user_err ~hdr:"LemInv"
 	   (str "Cannot refine current goal with the lemma " ++
 	      pr_leconstr_env (pf_env gls) (project gls) c)

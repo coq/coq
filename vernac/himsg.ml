@@ -168,7 +168,7 @@ let explain_unbound_rel env sigma n =
   str "Unbound reference: " ++ pe ++
   str "The reference " ++ int n ++ str " is free."
 
-let explain_unbound_var env v =
+let explain_unbound_var _env v =
   let var = Id.print v in
   str "No such section variable or assumption: " ++ var ++ str "."
 
@@ -321,7 +321,7 @@ let explain_unification_error env sigma p1 p2 = function
           Univ.explain_universe_inconsistency Universes.pr_with_global_universes p]
 	else
           [str "universe inconsistency"]
-     | CannotSolveConstraint ((pb,env,t,u),e) ->
+     | CannotSolveConstraint ((_pb,env,t,u),e) ->
         let t = EConstr.of_constr t in
         let u = EConstr.of_constr u in
         let env = make_all_name_different env sigma in
@@ -498,7 +498,7 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
 	str"Recursive definition is:" ++ spc () ++ pvd ++ str "."
     with e when CErrors.noncritical e -> mt ())
 
-let explain_ill_typed_rec_body env sigma i names vdefj vargs =
+let explain_ill_typed_rec_body env sigma i _names vdefj vargs =
   let env = make_all_name_different env sigma in
   let pvd = pr_leconstr_env env sigma vdefj.(i).uj_val in
   let pvdt, pv = pr_explicit env sigma vdefj.(i).uj_type vargs.(i) in
@@ -540,7 +540,7 @@ let rec explain_evar_kind env sigma evk ty = function
       strbrk "the type of " ++ Id.print id
   | Evar_kinds.BinderType Anonymous ->
       strbrk "the type of this anonymous binder"
-  | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
+  | Evar_kinds.ImplicitArg (c,(_n,ido),_b) ->
       let id = Option.get ido in
       strbrk "the implicit parameter " ++ Id.print id ++ spc () ++ str "of" ++
       spc () ++ Nametab.pr_global_env Id.Set.empty c ++
@@ -576,7 +576,7 @@ let rec explain_evar_kind env sigma evk ty = function
       explain_evar_kind env sigma evk'
       (pr_leconstr_env env sigma ty') (snd evi.evar_source)
 
-let explain_typeclass_resolution env sigma evi k =
+let explain_typeclass_resolution _env sigma evi _k =
   match Typeclasses.class_of_constr sigma (EConstr.of_constr evi.evar_concl) with
   | Some _ ->
     let env = Evd.evar_filtered_env evi in
@@ -585,16 +585,16 @@ let explain_typeclass_resolution env sigma evi k =
       pr_trailing_ne_context_of env sigma
   | _ -> mt()
 
-let explain_placeholder_kind env sigma c e =
+let explain_placeholder_kind _env sigma c e =
   match e with
-  | Some (SeveralInstancesFound n) ->
+  | Some (SeveralInstancesFound _n) ->
       strbrk " (several distinct possible type class instances found)"
   | None ->
       match Typeclasses.class_of_constr sigma (EConstr.of_constr c) with
       | Some _ -> strbrk " (no type class instance found)"
       | _ -> mt ()
 
-let explain_unsolvable_implicit env sigma evk explain =
+let explain_unsolvable_implicit _env sigma evk explain =
   let evi = Evarutil.nf_evar_info sigma (Evd.find_undefined sigma evk) in
   let env = Evd.evar_filtered_env evi in
   let type_of_hole = pr_lconstr_env env sigma evi.evar_concl in
@@ -603,12 +603,12 @@ let explain_unsolvable_implicit env sigma evk explain =
   explain_evar_kind env sigma evk type_of_hole (snd evi.evar_source) ++
   explain_placeholder_kind env sigma evi.evar_concl explain ++ pe
 
-let explain_var_not_found env id =
+let explain_var_not_found _env id =
   str "The variable" ++ spc () ++ Id.print id ++
   spc () ++ str "was not found" ++
   spc () ++ str "in the current" ++ spc () ++ str "environment" ++ str "."
 
-let explain_wrong_case_info env (ind,u) ci =
+let explain_wrong_case_info _env (ind,_u) ci =
   let pi = pr_inductive (Global.env()) ind in
   if eq_ind ci.ci_ind ind then
     str "Pattern-matching expression on an object of inductive type" ++
@@ -683,7 +683,7 @@ let explain_non_linear_unification env sigma m t =
   strbrk " which would require to abstract twice on " ++
   pr_lconstr_env env sigma t ++ str "."
 
-let explain_unsatisfied_constraints env sigma cst =
+let explain_unsatisfied_constraints _env sigma cst =
   strbrk "Unsatisfied constraints: " ++ 
     Univ.pr_constraints (Termops.pr_evd_level sigma) cst ++ 
     spc () ++ str "(maybe a bugged tactic)."
@@ -752,8 +752,8 @@ let explain_cannot_unify_occurrences env sigma nested ((cl2,pos2),t2) ((cl1,pos1
     pr_position (cl1,pos1) ++ ppreason ++ str "."
 
 let pr_constraints printenv env sigma evars cstrs =
-  let (ev, evi) = Evar.Map.choose evars in
-    if Evar.Map.for_all (fun ev' evi' ->
+  let (_ev, evi) = Evar.Map.choose evars in
+    if Evar.Map.for_all (fun _ev' evi' ->
       eq_named_context_val evi.evar_hyps evi'.evar_hyps) evars
     then
       let l = Evar.Map.bindings evars in
@@ -865,9 +865,9 @@ let explain_not_match_error = function
   | FiniteInductiveFieldExpected isfinite ->
     str "type is expected to be " ++
     str (if isfinite then "coinductive" else "inductive")
-  | InductiveNumbersFieldExpected n ->
+  | InductiveNumbersFieldExpected _n ->
     str "number of inductive types differs"
-  | InductiveParamsNumberField n ->
+  | InductiveParamsNumberField _n ->
     str "inductive type has not the right number of parameters"
   | RecordFieldExpected isrecord ->
     str "type is expected " ++ str (if isrecord then "" else "not ") ++
@@ -904,7 +904,7 @@ let explain_not_match_error = function
       let cst = Univ.AUContext.instantiate (Univ.AUContext.instance cst) cst in
       quote (Univ.pr_constraints (Termops.pr_evd_level Evd.empty) cst)
 
-let explain_signature_mismatch l spec why =
+let explain_signature_mismatch l _spec why =
   str "Signature components for label " ++ Label.print l ++
   str " do not match:" ++ spc () ++ explain_not_match_error why ++ str "."
 
@@ -935,7 +935,7 @@ let explain_incompatible_module_types mexpr1 mexpr2 =
       str " arguments, found " ++ int len1 ++ str "."
   else str "Incompatible module types."
 
-let explain_not_equal_module_paths mp1 mp2 =
+let explain_not_equal_module_paths _mp1 _mp2 =
   str "Non equal modules."
 
 let explain_no_such_label l =
@@ -1021,8 +1021,8 @@ let explain_not_a_class env c =
   let c = EConstr.to_constr Evd.empty c in
   pr_constr_env env Evd.empty c ++ str" is not a declared type class."
 
-let explain_unbound_method env cid { CAst.v = id } =
-  str "Unbound method name " ++ Id.print (id) ++ spc () ++
+let explain_unbound_method _env cid id =
+  str "Unbound method name " ++ Id.print (snd id) ++ spc () ++
   str"of class" ++ spc () ++ pr_global cid ++ str "."
 
 let pr_constr_exprs exprs =
@@ -1030,7 +1030,7 @@ let pr_constr_exprs exprs =
 	 (fun d pps -> ws 2 ++ Ppconstr.pr_constr_expr d ++ pps)
          exprs (mt ()))
 
-let explain_mismatched_contexts env c i j =
+let explain_mismatched_contexts env _c i j =
   str"Mismatched contexts while declaring instance: " ++ brk (1,1) ++
     hov 1 (str"Expected:" ++ brk (1, 1) ++ pr_rel_context env Evd.empty j) ++
     fnl () ++ brk (1,1) ++
@@ -1238,7 +1238,7 @@ let explain_wrong_numarg_inductive env ind n =
   str "The inductive type " ++ pr_inductive env ind ++
   str " expects " ++ decline_string n "argument" ++ str "."
 
-let explain_unused_clause env pats =
+let explain_unused_clause _env _pats =
 (* Without localisation
   let s = if List.length pats > 1 then "s" else "" in
   (str ("Unused clause with pattern"^s) ++ spc () ++
@@ -1246,7 +1246,7 @@ let explain_unused_clause env pats =
 *)
   str "This clause is redundant."
 
-let explain_non_exhaustive env pats =
+let explain_non_exhaustive _env pats =
   str "Non exhaustive pattern-matching: no clause found for " ++
   str (String.plural (List.length pats) "pattern") ++
   spc () ++ hov 0 (prlist_with_sep pr_comma pr_cases_pattern pats)

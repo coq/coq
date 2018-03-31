@@ -226,7 +226,7 @@ let lookup_name_as_displayed env sigma t s =
     | _ -> None
   in lookup (Environ.ids_of_named_context_val (Environ.named_context_val env)) 1 t
 
-let lookup_index_as_renamed env sigma t n =
+let lookup_index_as_renamed _env sigma t n =
   let rec lookup n d c = match EConstr.kind sigma c with
     | Prod (name,_,c') ->
 	  (match compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name c' with
@@ -398,8 +398,8 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
         let mat = align_tree nal isgoal rhs sigma in
         List.map (fun (ids,hd,rest) -> Nameops.Name.fold_right Id.Set.add na ids,pat::hd,rest) mat
 
-and contract_branch isgoal e sigma (cdn,mkpat,rhs) =
-  let nal,rhs = decomp_branch cdn [] isgoal e sigma rhs in
+and contract_branch isgoal e sigma (cdn,_can,mkpat,b) =
+  let nal,rhs = decomp_branch cdn [] isgoal e sigma b in
   let mat = align_tree nal isgoal rhs sigma in
   List.map (fun (ids,hd,rhs) -> ids,mkpat rhs hd,rhs) mat
 
@@ -418,7 +418,7 @@ let is_nondep_branch sigma c l =
 let extract_nondep_branches test c b l =
   let rec strip l r =
     match DAst.get r, l with
-      | r', [] -> r
+      | _r', [] -> r
       | GLambda (_,_,_,t), false::l -> strip l t
       | GLetIn (_,_,_,t), true::l -> strip l t
       (* FIXME: do we need adjustment? *)
@@ -448,7 +448,7 @@ let it_destRLambda_or_LetIn_names l c =
               | _ -> DAst.make @@ GApp (c,[a]))
   in aux l [] c
 
-let detype_case computable detype detype_eqns testdep avoid data p c bl =
+let detype_case computable detype detype_eqns testdep _avoid data p c bl =
   let (indsp,st,constagsl,k) = data in
   let synth_type = synthetize_type () in
   let tomatch = detype c in
@@ -457,15 +457,17 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
     then
       Anonymous, None, None
     else
-      let p = detype p in
-      let nl,typ = it_destRLambda_or_LetIn_names k p in
-      let n,typ = match DAst.get typ with
-        | GLambda (x,_,t,c) -> x, c
-        | _ -> Anonymous, typ in
-      let aliastyp =
-        if List.for_all (Name.equal Anonymous) nl then None
-        else Some (CAst.make (indsp,nl)) in
-      n, aliastyp, Some typ
+      match Option.map detype p with
+        | None -> Anonymous, None, None
+        | Some p ->
+            let nl,typ = it_destRLambda_or_LetIn_names k p in
+	    let n,typ = match DAst.get typ with
+              | GLambda (x,_,_t,c) -> x, c
+	      | _ -> Anonymous, typ in
+	    let aliastyp =
+	      if List.for_all (Name.equal Anonymous) nl then None
+	      else Some (Loc.tag (indsp,nl)) in
+            n, aliastyp, Some typ
   in
   let constructs = Array.init (Array.length bl) (fun i -> (indsp,i+1)) in
   let tag =
@@ -519,7 +521,9 @@ type binder_kind = BProd | BLambda | BLetIn
 (**********************************************************************)
 (* Main detyping function                                             *)
 
-let detype_anonymous = ref (fun ?loc n -> anomaly ~label:"detype" (Pp.str "index to an anonymous variable."))
+let detype_anonymous = ref (fun ?loc _n ->
+    ignore(loc);
+    anomaly ~label:"detype" (Pp.str "index to an anonymous variable."))
 let set_detype_anonymous f = detype_anonymous := f
 
 let detype_level sigma l =
@@ -559,7 +563,7 @@ and detype_r d flags avoid env sigma t =
 	(try let _ = Global.lookup_named id in GRef (VarRef id, None)
 	 with Not_found -> GVar id)
     | Sort s -> GSort (detype_sort sigma (ESorts.kind sigma s))
-    | Cast (c1,REVERTcast,c2) when not !Flags.raw_print ->
+    | Cast (c1,REVERTcast,_c2) when not !Flags.raw_print ->
         DAst.get (detype d flags avoid env sigma c1)
     | Cast (c1,k,c2) ->
         let d1 = detype d flags avoid env sigma c1 in
@@ -601,7 +605,7 @@ and detype_r d flags avoid env sigma t =
 	      let pb = Environ.lookup_projection p (snd env) in
 	      let body = pb.Declarations.proj_body in
 	      let ty = Retyping.get_type_of (snd env) sigma c in
-	      let ((ind,u), args) = Inductiveops.find_mrectype (snd env) sigma ty in
+	      let ((_ind,u), args) = Inductiveops.find_mrectype (snd env) sigma ty in
 	      let body' = strip_lam_assum body in
 	      let u = EInstance.kind sigma u in
 	      let body' = CVars.subst_instance_constr u body' in
@@ -693,7 +697,7 @@ and detype_cofix d flags avoid env sigma n (names,tys,bodies) =
 and share_names d flags n l avoid env sigma c t =
   match EConstr.kind sigma c, EConstr.kind sigma t with
     (* factorize even when not necessary to have better presentation *)
-    | Lambda (na,t,c), Prod (na',t',c') ->
+    | Lambda (na,t,c), Prod (na',_t',c') ->
         let na = match (na,na') with
             Name _, _ -> na
           | _, Name _ -> na'
@@ -726,7 +730,7 @@ and share_names d flags n l avoid env sigma c t =
         let t = detype d flags avoid env sigma t in
         (List.rev l,c,t)
 
-and detype_eqns d flags avoid env sigma ci computable constructs consnargsl bl =
+and detype_eqns d flags avoid env sigma ci _computable constructs consnargsl bl =
   try
     if !Flags.raw_print || not (reverse_matching ()) then raise Exit;
     let mat = build_tree Anonymous (snd flags) (avoid,env) sigma ci bl in
@@ -737,7 +741,7 @@ and detype_eqns d flags avoid env sigma ci computable constructs consnargsl bl =
     Array.to_list
       (Array.map3 (detype_eqn d flags avoid env sigma) constructs consnargsl bl)
 
-and detype_eqn d (lax,isgoal as flags) avoid env sigma constr construct_nargs branch =
+and detype_eqn d (_lax,isgoal as flags) avoid env sigma constr construct_nargs branch =
   let make_pat x avoid env b body ty ids =
     if force_wildcard () && noccurn sigma 1 b then
       DAst.make @@ PatVar Anonymous,avoid,(add_name Anonymous body ty env),ids
@@ -884,7 +888,7 @@ let detype_closed_glob ?lax isgoal avoid env sigma t =
           Glob_ops.map_pattern (fun c -> detype_closed_glob cl c) tml eqns
         in
         GCases(sty,po,tml,eqns)
-    | c ->
+    | _c ->
         DAst.get (Glob_ops.map_glob_constr (detype_closed_glob cl) cg)
     ) cg
   in
@@ -905,7 +909,7 @@ let rec subst_cases_pattern subst = DAst.map (function
 let (f_subst_genarg, subst_genarg_hook) = Hook.make ()
 
 let rec subst_glob_constr subst = DAst.map (function
-  | GRef (ref,u) as raw ->
+  | GRef (ref,_u) as raw ->
       let ref',t = subst_global subst ref in
 	if ref' == ref then raw else
          DAst.get (detype Now false Id.Set.empty (Global.env()) Evd.empty (EConstr.of_constr t))

@@ -39,7 +39,7 @@ let is_blank = function
 module Empty =
 struct
   type t
-  let abort (x : t) = assert false
+  let abort (_x : t) = assert false
 end
 
 (* Strings *)

@@ -68,7 +68,7 @@ let create_record () = {
 let ajoute_totalloc e dw = e.totalloc <- e.totalloc +. dw
 let ajoute_ownalloc e dw = e.ownalloc <- e.ownalloc +. dw
 
-let reset_record (n,e) =
+let reset_record (_,e) =
   e.owntime <- 0;
   e.tottime <- 0;
   e.ownalloc <- 0.0;
@@ -348,7 +348,7 @@ let close_profile print =
 	  let updated_data =
 	    match !recording_file with
 	      |	"" -> current_data
-	      | name -> merge_profile !recording_file current_data
+	      | _name -> merge_profile !recording_file current_data
 	  in
 	  if print then format_profile updated_data;
 	  init_profile ()

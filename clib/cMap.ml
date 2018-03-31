@@ -144,13 +144,13 @@ struct
 
   let rec fold_left f (s : 'a map) accu = match map_prj s with
   | MEmpty -> accu
-  | MNode (l, k, v, r, h) ->
+  | MNode (l, k, v, r, _h) ->
     let accu = f k v (fold_left f l accu) in
     fold_left f r accu
 
   let rec fold_right f (s : 'a map) accu = match map_prj s with
   | MEmpty -> accu
-  | MNode (l, k, v, r, h) ->
+  | MNode (l, k, v, r, _h) ->
     let accu = f k v (fold_right f r accu) in
     fold_right f l accu
 
@@ -194,14 +194,14 @@ struct
 
     let rec fold_left f s accu = match map_prj s with
     | MEmpty -> return accu
-    | MNode (l, k, v, r, h) ->
+    | MNode (l, k, v, r, _h) ->
       fold_left f l accu >>= fun accu ->
       f k v accu >>= fun accu ->
       fold_left f r accu
 
     let rec fold_right f s accu = match map_prj s with
     | MEmpty -> return accu
-    | MNode (l, k, v, r, h) ->
+    | MNode (l, k, v, r, _h) ->
       fold_right f r accu >>= fun accu ->
       f k v accu >>= fun accu ->
       fold_right f l accu

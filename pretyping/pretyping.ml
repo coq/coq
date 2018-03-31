@@ -180,16 +180,17 @@ let _ =
 (** Miscellaneous interpretation functions *)
 
 let interp_known_universe_level evd r =
-  let qid = Libnames.qualid_of_reference r in
+  let _loc, qid = Libnames.qualid_of_reference r in
   try
-    match r.CAst.v with
-    | Libnames.Ident id -> Evd.universe_of_name evd id
+    match r with
+    | Libnames.Ident (_loc, id) -> Evd.universe_of_name evd id
     | Libnames.Qualid _ -> raise Not_found
   with Not_found ->
     let univ, k = Nametab.locate_universe qid.CAst.v in
     Univ.Level.make univ k
 
 let interp_universe_level_name ~anon_rigidity evd r =
+  ignore(anon_rigidity);
   try evd, interp_known_universe_level evd r
   with Not_found ->
     match r with (* Qualified generated name *)
@@ -284,7 +285,7 @@ let frozen_and_pending_holes (sigma, sigma') =
     FrozenId undefined0
   else
     let data = lazy begin
-    let add_derivative_of evk evi acc =
+    let add_derivative_of evk _evi acc =
       match advance sigma' evk with None -> acc | Some evk' -> Evar.Set.add evk' acc in
     let frozen = Evar.Map.fold add_derivative_of undefined0 Evar.Set.empty in
     let fold evk _ accu = if not (Evar.Set.mem evk frozen) then Evar.Set.add evk accu else accu in
@@ -340,7 +341,7 @@ let check_extra_evars_are_solved env current_sigma frozen = match frozen with
       if not (Evd.is_defined current_sigma evk) then
         let (loc,k) = evar_source evk current_sigma in
 	match k with
-	| Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
+	| Evar_kinds.ImplicitArg (_gr, (_i, _id), false) -> ()
 	| _ ->
 	    error_unsolvable_implicit ?loc env current_sigma evk None) pending
 
@@ -353,7 +354,7 @@ let check_evars env initial_sigma sigma c =
       if not (Evd.mem initial_sigma evk) then
         let (loc,k) = evar_source evk sigma in
         begin match k with
-          | Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
+          | Evar_kinds.ImplicitArg (_gr, (_i, _id), false) -> ()
           | _ -> Pretype_errors.error_unsolvable_implicit ?loc env sigma evk None
         end
     | _ -> EConstr.iter sigma proc_rec c
@@ -387,7 +388,7 @@ let process_inference_flags flags env initial_sigma (sigma,c,cty) =
 
 let adjust_evar_source evdref na c =
   match na, kind !evdref c with
-  | Name id, Evar (evk,args) ->
+  | Name _id, Evar (evk,args) ->
      let evi = Evd.find !evdref evk in
      begin match evi.evar_source with
      | loc, Evar_kinds.QuestionMark (b,Anonymous) ->
@@ -635,7 +636,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
           new_type_evar env evdref loc in
         { uj_val = e_new_evar env evdref ~src:(loc,k) ~naming ty; uj_type = ty }
 
-  | GHole (k, _naming, Some arg) ->
+  | GHole (_k, _naming, Some arg) ->
       let env = ltac_interp_name_env k0 lvar env !evdref in
       let ty =
         match tycon with
@@ -653,12 +654,12 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
   | GRec (fixkind,names,bl,lar,vdef) ->
     let rec type_bl env ctxt = function
     [] -> ctxt
-      | (na,bk,None,ty)::bl ->
+      | (na,_bk,None,ty)::bl ->
         let ty' = pretype_type empty_valcon env evdref lvar ty in
 	let dcl = LocalAssum (na, ty'.utj_val) in
         let dcl' = LocalAssum (ltac_interp_name lvar na,ty'.utj_val) in
 	  type_bl (push_rel !evdref dcl env) (Context.Rel.add dcl' ctxt) bl
-      | (na,bk,Some bd,ty)::bl ->
+      | (na,_bk,Some bd,ty)::bl ->
         let ty' = pretype_type empty_valcon env evdref lvar ty in
         let bd' = pretype (mk_tycon ty'.utj_val) env evdref lvar bd in
         let dcl = LocalDef (na, bd'.uj_val, ty'.utj_val) in
@@ -678,7 +679,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       match tycon with
       | Some t -> 
  	let fixi = match fixkind with
-	  | GFix (vn,i) -> i
+	  | GFix (_vn,i) -> i
 	  | GCoFix i -> i
 	in e_conv env.ExtraEnv.env evdref ftys.(fixi) t
       | None -> true
@@ -756,13 +757,13 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	match tycon with
 	| None -> []
 	| Some ty ->
-	  let ((ind, i), u) = destConstruct !evdref fj.uj_val in
+	  let ((ind, _i), _u) = destConstruct !evdref fj.uj_val in
 	  let npars = inductive_nparams ind in
 	    if Int.equal npars 0 then []
 	    else
 	      try
-	  	let IndType (indf, args) = find_rectype env.ExtraEnv.env !evdref ty in
-	  	let ((ind',u'),pars) = dest_ind_family indf in
+	  	let IndType (indf, _args) = find_rectype env.ExtraEnv.env !evdref ty in
+	  	let ((ind',_u'),pars) = dest_ind_family indf in
 	  	  if eq_ind ind ind' then List.map EConstr.of_constr pars
 	  	  else (* Let the usual code throw an error *) []
 	      with Not_found -> []
@@ -770,7 +771,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     in
     let app_f = 
       match EConstr.kind !evdref fj.uj_val with
-      | Const (p, u) when Environ.is_projection p env.ExtraEnv.env ->
+      | Const (p, _u) when Environ.is_projection p env.ExtraEnv.env ->
 	let p = Projection.make p false in
 	let pb = Environ.lookup_projection p env.ExtraEnv.env in
 	let npars = pb.Declarations.proj_npars in
@@ -824,7 +825,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     in
       inh_conv_coerce_to_tycon ?loc env evdref resj tycon
 
-  | GLambda(name,bk,c1,c2)      ->
+  | GLambda(name,_bk,c1,c2)      ->
     let tycon' = evd_comb1
       (fun evd tycon ->
 	match tycon with
@@ -846,7 +847,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     let resj = judge_of_abstraction env.ExtraEnv.env (orelse_name name name') j j' in
       inh_conv_coerce_to_tycon ?loc env evdref resj tycon
 
-  | GProd(name,bk,c1,c2)        ->
+  | GProd(name,_bk,c1,c2)        ->
     let j = pretype_type empty_valcon env evdref lvar c1 in
     (* The name specified by ltac is used also to create bindings. So
        the substitution must also be applied on variables before they are
@@ -928,7 +929,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     let fsign = if Flags.version_strictly_greater Flags.V8_6
                 then Context.Rel.map (whd_betaiota !evdref) fsign
                 else fsign (* beta-iota-normalization regression in 8.5 and 8.6 *) in
-    let obj ind p v f =
+    let obj ind p _v f =
       if not record then 
         let nal = List.map (fun na -> ltac_interp_name lvar na) nal in
         let nal = List.rev nal in
@@ -991,7 +992,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 
   | GIf (c,(na,po),b1,b2) ->
     let cj = pretype empty_tycon env evdref lvar c in
-    let (IndType (indf,realargs)) =
+    let (IndType (indf,_realargs)) =
       try find_rectype env.ExtraEnv.env !evdref cj.uj_type
       with Not_found ->
 	let cloc = loc_of_glob_constr c in

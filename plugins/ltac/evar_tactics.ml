@@ -41,7 +41,7 @@ let instantiate_evar evk (ist,rawc) sigma =
 let evar_list sigma c =
   let rec evrec acc c =
     match EConstr.kind sigma c with
-    | Evar (evk, _ as ev) -> ev :: acc
+    | Evar (_evk, _ as ev) -> ev :: acc
     | _ -> EConstr.fold sigma evrec acc c in
   evrec [] c
 

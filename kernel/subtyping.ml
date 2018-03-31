@@ -194,7 +194,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
 	cst
   in
   let mind = MutInd.make1 kn1 in
-  let check_cons_types i cst p1 p2 =
+  let check_cons_types _i cst p1 p2 =
     Array.fold_left3
       (fun cst id t1 t2 -> check_conv (NotConvertibleConstructorField id) cst
 	(inductive_is_polymorphic mib1) infer_conv env t1 t2)
@@ -255,7 +255,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
     cst
 
     
-let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 = 
+let check_constant cst env _mp1 l info1 cb2 spec2 subst1 subst2 = 
   let error why = error_signature_mismatch l spec2 why in
   let check_conv cst poly f = check_conv_error error cst poly f in
   let check_type poly cst env t1 t2 =
@@ -345,13 +345,13 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 	      let c1 = Mod_subst.force_constr lc1 in
 	      let c2 = Mod_subst.force_constr lc2 in
 	      check_conv NotConvertibleBodyField cst poly infer_conv env c1 c2))
-   | IndType ((kn,i),mind1) ->
+   | IndType ((_kn,_i),_mind1) ->
        CErrors.user_err Pp.(str @@
        "The kernel does not recognize yet that a parameter can be " ^
        "instantiated by an inductive type. Hint: you can rename the " ^
        "inductive type and give a definition to map the old name to the new " ^
        "name.")
-   | IndConstr (((kn,i),j),mind1) ->
+   | IndConstr (((_kn,_i),_j),_mind1) ->
       CErrors.user_err Pp.(str @@
        "The kernel does not recognize yet that a parameter can be " ^
        "instantiated by a constructor. Hint: you can rename the " ^

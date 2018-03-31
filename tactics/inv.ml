@@ -64,7 +64,7 @@ let var_occurs_in_pf gl id =
 
 type inversion_status = Dep of constr option | NoDep
 
-let compute_eqn env sigma n i ai =
+let compute_eqn env sigma n i _ai =
   (mkRel (n-i),get_type_of env sigma (mkRel (n-i)))
 
 let make_inv_predicate env evd indf realargs id status concl =
@@ -90,7 +90,7 @@ let make_inv_predicate env evd indf realargs id status concl =
 		let sort = get_sort_family_of env !evd concl in
 		let sort = Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd sort in
 		let p = make_arity env !evd true indf sort in
-		let evd',(p,ptyp) = Unification.abstract_list_all env
+		let evd',(p,_ptyp) = Unification.abstract_list_all env
                   !evd p concl (realargs@[mkVar id])
 		in evd := evd'; p in
 	  let hyps,bodypred = decompose_lam_n_assum !evd (nrealargs+1) pred in
@@ -292,7 +292,7 @@ let error_too_many_names pats =
                            (fun c -> Printer.pr_constr_env env sigma (EConstr.Unsafe.to_constr (snd (c env Evd.empty))))) pats ++
     str ".")
 
-let get_names (allow_conj,issimple) ({CAst.loc;v=pat} as x) = match pat with
+let get_names (allow_conj,issimple) (_loc, pat as x) = match pat with
   | IntroNaming IntroAnonymous | IntroForthcoming _ ->
       user_err Pp.(str "Anonymous pattern not allowed for inversion equations.")
   | IntroNaming (IntroFresh _) ->
@@ -310,11 +310,11 @@ let get_names (allow_conj,issimple) ({CAst.loc;v=pat} as x) = match pat with
         user_err Pp.(str"Conjunctive patterns not allowed for simple inversion equations.")
       else
         user_err Pp.(str"Nested conjunctive patterns not allowed for inversion equations.")
-  | IntroAction (IntroInjection l) ->
+  | IntroAction (IntroInjection _l) ->
       user_err Pp.(str "Injection patterns not allowed for inversion equations.")
   | IntroAction (IntroOrAndPattern (IntroOrPattern _)) ->
       user_err Pp.(str "Disjunctive patterns not allowed for inversion equations.")
-  | IntroAction (IntroApplyOn (c,pat)) ->
+  | IntroAction (IntroApplyOn (_c,_pat)) ->
       user_err Pp.(str "Apply patterns not allowed for inversion equations.")
   | IntroNaming (IntroIdentifier id) ->
       (Some id,[x])
@@ -357,8 +357,8 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     Proofview.Goal.enter begin fun gl ->
     let sigma = project gl in
     (** We only look at the type of hypothesis "id" *)
-    let hyp = pf_nf_evar gl (pf_get_hyp_typ id gl) in
-    let (t,t1,t2) = dest_nf_eq (pf_env gl) sigma hyp in
+    let hyp = pf_nf_evar gl (pf_get_hyp_typ id (Proofview.Goal.assume gl)) in
+    let (_t,t1,t2) = dest_nf_eq (pf_env gl) sigma hyp in
     match (EConstr.kind sigma t1, EConstr.kind sigma t2) with
     | Var id1, _ -> generalizeRewriteIntros as_mode (subst_hyp true id) depids id1
     | _, Var id2 -> generalizeRewriteIntros as_mode (subst_hyp false id) depids id2
@@ -489,7 +489,7 @@ let raw_inversion inv_kind id status names =
   end
 
 (* Error messages of the inversion tactics *)
-let wrap_inv_error id = function (e, info) -> match e with
+let wrap_inv_error _id = function (e, info) -> match e with
   | Indrec.RecursionSchemeError
       (Indrec.NotAllowedCaseAnalysis (_,(Type _ | Prop Pos as k),i)) ->
       Proofview.tclENV >>= fun env ->

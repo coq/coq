@@ -98,7 +98,7 @@ let declare_object_full odecl = declare_object_full odecl
 (* this function describes how the cache, load, open, and export functions
    are triggered. *)
 
-let apply_dyn_fun deflt f lobj =
+let apply_dyn_fun _deflt f lobj =
   let tag = object_tag lobj in
   let dodecl =
     try Hashtbl.find cache_tab tag

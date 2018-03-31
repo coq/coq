@@ -170,7 +170,7 @@ let is_flexible_reference env sigma bound depth f =
   match kind sigma f with
     | Rel n when n >= bound+depth -> (* inductive type *) false
     | Rel n when n >= depth -> (* previous argument *) true
-    | Rel n -> (* since local definitions have been expanded *) false
+    | Rel _n -> (* since local definitions have been expanded *) false
     | Const (kn,_) ->
         let cb = Environ.lookup_constant kn env in
 	(match cb.const_body with Def _ -> true | _ -> false)
@@ -200,8 +200,8 @@ let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc 
 	acc.(i) <- update pos rig acc.(i)
     | App (f,_) when rig && is_flexible_reference env sigma bound depth f ->
 	if strict then () else
-          iter_constr_with_full_binders sigma push_lift (frec false) ed c
-    | Proj (p,c) when rig ->
+          iter_constr_with_full_binders push_lift (frec false) ed c
+    | Proj (_p,c) when rig ->
       if strict then () else
         iter_constr_with_full_binders sigma push_lift (frec false) ed c
     | Case _ when rig ->
@@ -217,8 +217,8 @@ let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc 
 let rec is_rigid_head sigma t = match kind sigma t with
   | Rel _ | Evar _ -> false
   | Ind _ | Const _ | Var _ | Sort _ -> true
-  | Case (_,_,f,_) -> is_rigid_head sigma f
-  | Proj (p,c) -> true
+  | Case (_,_,f,_) -> is_rigid_head f
+  | Proj (_p,_c) -> true
   | App (f,args) ->
       (match kind sigma f with
         | Fix ((fi,i),_) -> is_rigid_head sigma (args.(fi.(i)))
@@ -305,7 +305,7 @@ let force_inference_of = function
 let is_inferable_implicit in_ctx n = function
   | None -> false
   | Some (_,DepRigid (Hyp p),_) -> in_ctx || n >= p
-  | Some (_,DepFlex (Hyp p),_) -> false
+  | Some (_,DepFlex (Hyp _p),_) -> false
   | Some (_,DepFlexAndRigid (_,Hyp q),_) -> in_ctx || n >= q
   | Some (_,DepRigid Conclusion,_) -> in_ctx
   | Some (_,DepFlex Conclusion,_) -> false
@@ -339,7 +339,7 @@ let rec assoc_by_pos k = function
 
 let check_correct_manual_implicits autoimps l =
   List.iter (function
-    | ExplByName id,(b,fi,forced) ->
+    | ExplByName id,(_b,_fi,forced) ->
 	if not forced then
 	  user_err 
             (str "Wrong or non-dependent implicit argument name: " ++ Id.print id ++ str ".")
@@ -352,7 +352,7 @@ let check_correct_manual_implicits autoimps l =
 	    (str "Cannot set implicit argument number " ++ int i ++
 	      str ": it has no name.")) l
 
-let set_manual_implicits env flags enriching autoimps l =
+let set_manual_implicits _env flags enriching autoimps l =
   let try_forced k l =
     try
       let (id, (b, fi, fo)), l' = assoc_by_pos k l in
@@ -370,11 +370,11 @@ let set_manual_implicits env flags enriching autoimps l =
       let l',imp,m =
 	try
           let eq = explicitation_eq in
-	  let (b, fi, fo) = List.assoc_f eq (ExplByName id) l in
+	  let (b, fi, _fo) = List.assoc_f eq (ExplByName id) l in
 	  List.remove_assoc_f eq (ExplByName id) l, (Some Manual), (Some (b, fi))
 	with Not_found ->
 	try
-	  let (id, (b, fi, fo)), l' = assoc_by_pos k l in
+	  let (_id, (b, fi, _fo)), l' = assoc_by_pos k l in
 	    l', (Some Manual), (Some (b,fi))
 	with Not_found ->
           let m = match enriching, imp with
@@ -388,7 +388,7 @@ let set_manual_implicits env flags enriching autoimps l =
 	(* match imp with Some Manual -> (b,f) *)
 	(* | _ ->  *)set_maximality imps' b, f) m in
       Option.map (set_implicit id imp) m :: imps'
-  | (Anonymous,imp)::imps ->
+  | (Anonymous,_imp)::imps ->
       let l', forced = try_forced k l in
 	forced :: merge (k+1) l' imps
   | [] when begin match l with [] -> true | _ -> false end -> []
@@ -519,7 +519,7 @@ let cache_implicits o =
 let subst_implicits_decl subst (r,imps as o) =
   let r' = fst (subst_global subst r) in if r==r' then o else (r',imps)
 
-let subst_implicits (subst,(req,l)) =
+let subst_implicits (subst,(_req,l)) =
   (ImplLocal,List.smartmap (subst_implicits_decl subst) l)
 
 let impls_of_context ctx =
@@ -723,7 +723,7 @@ let make_implicits_list l = [DefaultImpArgs, l]
 let rec drop_first_implicits p l =
   if Int.equal p 0 then l else match l with
   | _,[] as x -> x
-  | DefaultImpArgs,imp::impls ->
+  | DefaultImpArgs,_imp::impls ->
       drop_first_implicits (p-1) (DefaultImpArgs,impls)
   | LessArgsThan n,imp::impls ->
       let n = if is_status_implicit imp then n-1 else n in

@@ -96,7 +96,7 @@ let make_existential ?loc ?(opaque = not (get_proofs_transparency ())) na env ev
   let src = Loc.tag ?loc (Evar_kinds.QuestionMark (Evar_kinds.Define opaque,na)) in
   Evarutil.e_new_evar env evdref ~src c
 
-let app_opt env evdref f t =
+let app_opt _env evdref f t =
   whd_betaiota !evdref (app_opt f t)
 
 let pair_of_array a = (a.(0), a.(1))
@@ -119,7 +119,7 @@ let disc_subset sigma x =
 exception NoSubtacCoercion
   
 let hnf env evd c = whd_all env evd c
-let hnf_nodelta env evd c = whd_betaiota evd c
+let hnf_nodelta _env evd c = whd_betaiota evd c
 
 let lift_args n sign =
   let rec liftrec k = function
@@ -165,12 +165,12 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 	if i < len then
 	  let hdx = l.(i) and hdy = l'.(i) in
 	    try evdref := the_conv_x_leq env hdx hdy !evdref;
-	      let (n, eqT), restT = dest_prod typ in
-	      let (n', eqT'), restT' = dest_prod typ' in
+	      let (_n, _eqT), restT = dest_prod typ in
+	      let (_n', _eqT'), restT' = dest_prod typ' in
 		aux (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
 	    with UnableToUnify _ ->
 	      let (n, eqT), restT = dest_prod typ in
-	      let (n', eqT'), restT' = dest_prod typ' in
+	      let (_n', eqT'), restT' = dest_prod typ' in
 	      let _ =
 		try evdref := the_conv_x_leq env eqT eqT' !evdref
 		with UnableToUnify _ -> raise NoSubtacCoercion
@@ -205,7 +205,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 	| Prop _, Type _ -> None
 	| Type x, Type y when Univ.Universe.equal x y -> None (* false *)
 	| _ -> subco ())
-      | Prod (name, a, b), Prod (name', a', b') ->
+      | Prod (_name, a, b), Prod (_name', a', b') ->
 	  let name' = 
 	    Name (Namegen.next_ident_away Namegen.default_dependent_ident (Termops.vars_of_env env))
 	  in
@@ -227,7 +227,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 
       | App (c, l), App (c', l') ->
 	  (match EConstr.kind !evdref c, EConstr.kind !evdref c' with
-	   Ind (i, u), Ind (i', u') -> (* Inductive types *)
+	   Ind (i, _u), Ind (i', _u') -> (* Inductive types *)
 	     let len = Array.length l in
 	     let sigT = delayed_force sigT_typ in
 	     let prod = delayed_force prod_typ in
@@ -244,13 +244,13 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 		     let c1 = coerce_unify env a a' in
 		     let remove_head a c =
 		       match EConstr.kind !evdref c with
-		       | Lambda (n, t, t') -> c, t'
+		       | Lambda (_n, _t, t') -> c, t'
 		       | Evar (k, args) ->
 			   let (evs, t) = Evardefine.define_evar_as_lambda env !evdref (k,args) in
 			     evdref := evs;
-			     let (n, dom, rng) = destLambda !evdref t in
+			     let (_n, dom, rng) = destLambda !evdref t in
 			       if isEvar !evdref dom then
-				 let (domk, args) = destEvar !evdref dom in
+				 let (domk, _args) = destEvar !evdref dom in
 				   evdref := define domk (EConstr.Unsafe.to_constr a) !evdref;
 			       else ();
 			       t, rng
@@ -302,7 +302,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 			  coerce_application typ typ' c c' l l')
 		 else
 		   subco ()
-	   | x, y when EConstr.eq_constr !evdref c c' ->
+	   | _x, _y when EConstr.eq_constr !evdref c c' ->
 	       if Int.equal (Array.length l) (Array.length l') then
 		 let evm =  !evdref in
 		 let lam_type = Typing.unsafe_type_of env evm c in
@@ -353,7 +353,7 @@ let saturate_evd env evd =
 (* Apply coercion path from p to hj; raise NoCoercion if not applicable *)
 let apply_coercion env sigma p hj typ_cl =
   try
-    let j,t,evd = 
+    let j,_t,evd = 
       List.fold_left
         (fun (ja,typ_cl,sigma) i ->
 	  let ((fv,isid,isproj),ctx) = coercion_value i in
@@ -430,6 +430,7 @@ let inh_coerce_to_sort ?loc env evd j =
 	inh_tosort_force ?loc env evd j
 
 let inh_coerce_to_base ?loc env evd j =
+  ignore(loc);
   if Flags.is_program_mode () then
     let evdref = ref evd in
     let ct, typ' = mu env evdref j.uj_type in
@@ -440,6 +441,7 @@ let inh_coerce_to_base ?loc env evd j =
   else (evd, j)
 
 let inh_coerce_to_prod ?loc env evd t =
+  ignore(loc);
   if Flags.is_program_mode () then
     let evdref = ref evd in
     let _, typ' = mu env evdref t in
@@ -453,7 +455,7 @@ let inh_coerce_to_fail env evd rigidonly v t c1 =
   else
     let evd, v', t' =
       try
-	let t2,t1,p = lookup_path_between env evd (t,c1) in
+	let t2,_t1,p = lookup_path_between env evd (t,c1) in
 	  match v with
 	  | Some v ->
 	    let evd,j =

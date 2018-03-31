@@ -120,7 +120,7 @@ let find_position_gen current ensure assoc lev =
 
 let rec list_mem_assoc_triple x = function
   | [] -> false
-  | (a,b,c) :: l -> Int.equal a x || list_mem_assoc_triple x l
+  | (a,_b,_c) :: l -> Int.equal a x || list_mem_assoc_triple x l
 
 let register_empty_levels accu forpat levels =
   let rec filter accu = function
@@ -198,16 +198,16 @@ let adjust_level assoc from = function
   | (NumLevel n,BorderProd (_,None)) -> Some (Some (n,true))
 (* Compute production name on the right side *)
   (* If NonA or LeftA on the right-hand side, set to NEXT *)
-  | (NumLevel n,BorderProd (Right,Some (NonA|LeftA))) ->
+  | (NumLevel _n,BorderProd (Right,Some (NonA|LeftA))) ->
       Some None
   (* If RightA on the right-hand side, set to the explicit (current) level *)
   | (NumLevel n,BorderProd (Right,Some RightA)) ->
       Some (Some (n,true))
 (* Compute production name on the left side *)
   (* If NonA on the left-hand side, adopt the current assoc ?? *)
-  | (NumLevel n,BorderProd (Left,Some NonA)) -> None
+  | (NumLevel _n,BorderProd (Left,Some NonA)) -> None
   (* If the expected assoc is the current one, set to SELF *)
-  | (NumLevel n,BorderProd (Left,Some a)) when assoc_eq a (camlp5_assoc assoc) ->
+  | (NumLevel _n,BorderProd (Left,Some a)) when assoc_eq a (camlp4_assoc assoc) ->
       None
   (* Otherwise, force the level, n or n-1, according to expected assoc *)
   | (NumLevel n,BorderProd (Left,Some a)) ->
@@ -252,7 +252,7 @@ let target_entry : type s. s target -> s Gram.entry = function
 | ForPattern -> Constr.pattern
 
 let is_self from e = match e with
-| (NumLevel n, BorderProd (Right, _ (* Some(NonA|LeftA) *))) -> false
+| (NumLevel _n, BorderProd (Right, _ (* Some(NonA|LeftA) *))) -> false
 | (NumLevel n, BorderProd (Left, _)) -> Int.equal from n
 | _ -> false
 
@@ -282,7 +282,7 @@ let symbol_of_target : type s. _ -> _ -> _ -> s target -> (s, s) symbol = fun p 
     begin match lev with
     | None -> Aentry g
     | Some None -> Anext
-    | Some (Some (lev, cur)) -> Aentryl (g, lev)
+    | Some (Some (lev, _cur)) -> Aentryl (g, lev)
     end
 
 let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) symbol = fun assoc from typ -> match typ with

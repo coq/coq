@@ -62,15 +62,15 @@ let tclIDTAC_MESSAGE s gls =
   Feedback.msg_info (hov 0 s); tclIDTAC gls
 
 (* General failure tactic *)
-let tclFAIL_s s gls = user_err ~hdr:"Refiner.tclFAIL_s" (str s)
+let tclFAIL_s s _gls = user_err ~hdr:"Refiner.tclFAIL_s" (str s)
 
 (* A special exception for levels for the Fail tactic *)
 exception FailError of int * Pp.t Lazy.t
 
 (* The Fail tactic *)
-let tclFAIL lvl s g = raise (FailError (lvl,lazy s))
+let tclFAIL lvl s _g = raise (FailError (lvl,lazy s))
 
-let tclFAIL_lazy lvl s g = raise (FailError (lvl,s))
+let tclFAIL_lazy lvl s _g = raise (FailError (lvl,s))
 
 let start_tac gls =
   let sigr, g = unpackage gls in

@@ -199,17 +199,21 @@ let qualid_of_reference = CAst.map (function
   | Qualid qid -> qid
   | Ident id -> qualid_of_ident id)
 
-let string_of_reference = CAst.with_val (function
-  | Qualid qid -> string_of_qualid qid
-  | Ident id -> Id.to_string id)
+let string_of_reference = function
+  | Qualid (_loc,qid) -> string_of_qualid qid
+  | Ident (_loc,id) -> Id.to_string id
 
 let pr_reference = CAst.with_val (function
   | Qualid qid -> pr_qualid qid
   | Ident id -> Id.print id)
 
-let eq_reference {CAst.v=r1} {CAst.v=r2} = match r1, r2 with
-| Qualid q1, Qualid q2 -> qualid_eq q1 q2
-| Ident id1, Ident id2 -> Id.equal id1 id2
+let loc_of_reference = function
+  | Qualid (loc,_qid) -> loc
+  | Ident (loc,_id) -> loc
+
+let eq_reference r1 r2 = match r1, r2 with
+| Qualid (_, q1), Qualid (_, q2) -> qualid_eq q1 q2
+| Ident (_, id1), Ident (_, id2) -> Id.equal id1 id2
 | _ -> false
 
 let join_reference {CAst.loc=l1;v=ns} {CAst.loc=l2;v=r} =

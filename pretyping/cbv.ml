@@ -196,11 +196,11 @@ let rec reify_stack t = function
   | TOP -> t
   | APP (args,st) ->
       reify_stack (mkApp(t,Array.map reify_value args)) st
-  | CASE (ty,br,ci,env,st) ->
+  | CASE (ty,br,ci,_env,st) ->
       reify_stack
         (mkCase (ci, ty, t,br))
         st
-  | PROJ (p, pinfo, st) ->
+  | PROJ (p, _pinfo, st) ->
        reify_stack (mkProj (p, t)) st
 
 and reify_value = function (* reduction under binders *)
@@ -211,7 +211,7 @@ and reify_value = function (* reduction under binders *)
       lift n (reify_stack (reify_value v) stk)
   | CBN(t,env) ->
     apply_env env t
-  | LAM (k,ctxt,b,env) ->
+  | LAM (_k,ctxt,b,env) ->
     apply_env env @@
     List.fold_left (fun c (n,t) ->
         mkLambda (n, t, c)) b ctxt
@@ -316,7 +316,7 @@ let rec norm_head info env t stack =
   | (Sort _ | Meta _ | Ind _) -> (VAL(0, t), stack)
   | Prod _ -> (CBN(t,env), stack)
 
-and norm_head_ref k info env stack normt =
+and norm_head_ref k info _env stack normt =
   if red_set_ref (info_flags info.infos) normt then
     match ref_value_cache info.infos info.tab normt with
       | Some body ->
@@ -368,19 +368,19 @@ and cbv_stack_value info env = function
         cbv_stack_term info stk envf redfix
 
     (* constructor in a Case -> IOTA *)
-    | (CONSTR(((sp,n),u),[||]), APP(args,CASE(_,br,ci,env,stk)))
+    | (CONSTR(((_sp,n),_u),[||]), APP(args,CASE(_,br,ci,env,stk)))
             when red_set (info_flags info.infos) fMATCH ->
 	let cargs =
           Array.sub args ci.ci_npar (Array.length args - ci.ci_npar) in
         cbv_stack_term info (stack_app cargs stk) env br.(n-1)
 
     (* constructor of arity 0 in a Case -> IOTA *)
-    | (CONSTR(((_,n),u),[||]), CASE(_,br,_,env,stk))
+    | (CONSTR(((_,n),_u),[||]), CASE(_,br,_,env,stk))
             when red_set (info_flags info.infos) fMATCH ->
                     cbv_stack_term info stk env br.(n-1)
 
     (* constructor in a Projection -> IOTA *)
-    | (CONSTR(((sp,n),u),[||]), APP(args,PROJ(p,pi,stk)))
+    | (CONSTR(((_sp,_n),_u),[||]), APP(args,PROJ(p,pi,stk)))
         when red_set (info_flags info.infos) fMATCH && Projection.unfolded p ->
       let arg = args.(pi.Declarations.proj_npars + pi.Declarations.proj_arg) in
 	cbv_stack_value info env (strip_appl arg stk)
@@ -407,7 +407,7 @@ let rec apply_stack info t = function
         (mkCase (ci, cbv_norm_term info env ty, t,
 		    Array.map (cbv_norm_term info env) br))
         st
-  | PROJ (p, pinfo, st) ->
+  | PROJ (p, _pinfo, st) ->
        apply_stack info (mkProj (p, t)) st
 
 (* performs the reduction on a constr, and returns a constr *)

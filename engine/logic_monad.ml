@@ -88,7 +88,7 @@ struct
   let catch = fun s h -> ();
     fun () -> try s ()
       with Exception e as src ->
-        let (src, info) = CErrors.push src in
+        let (_src, info) = CErrors.push src in
         h (e, info) ()
 
   let read_line = fun () -> try Pervasives.read_line () with e ->
@@ -113,7 +113,7 @@ struct
 
   let run = fun x ->
     try x () with Exception e as src ->
-      let (src, info) = CErrors.push src in
+      let (_src, info) = CErrors.push src in
       Util.iraise (e, info)
 end
 
@@ -197,7 +197,7 @@ struct
     { iolist = fun s nil cons -> m.iolist s nil (fun x s next -> cons (f x) s next) }
 
   let zero e =
-    { iolist = fun _ nil cons -> nil e }
+    { iolist = fun _ nil _cons -> nil e }
 
   let plus m1 m2 =
     { iolist = fun s nil cons -> m1.iolist s (fun e -> (m2 e).iolist s nil cons) cons }

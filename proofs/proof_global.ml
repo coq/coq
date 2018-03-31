@@ -410,7 +410,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
   fun pr_ending -> CEphemeron.get terminator pr_ending
 
 let return_proof ?(allow_partial=false) () =
- let { pid; proof; strength = (_,poly,_) } = cur_pstate () in
+ let { pid; proof; strength = (_,_poly,_) } = cur_pstate () in
  if allow_partial then begin
   let proofs = Proof.partial_proof proof in
   let _,_,_,_, evd = Proof.proof proof in
@@ -463,7 +463,7 @@ module V82 = struct
   let get_current_initial_conclusions () =
   let { pid; strength; proof } = cur_pstate () in
   let initial = Proof.initial_goals proof in
-  let goals = List.map (fun (o, c) -> c) initial in
+  let goals = List.map (fun (_o, c) -> c) initial in
     pid, (goals, strength)
 end
 
@@ -483,16 +483,13 @@ let update_global_env () =
   with_current_proof (fun _ p ->
      Proof.in_proof p (fun sigma ->
        let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
-       let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac p in
+       let (p,(_status,_info)) = Proof.run_tactic (Global.env ()) tac p in
          (p, ())))
 
 (* XXX: Bullet hook, should be really moved elsewhere *)
 let _ =
-  let hook n =
-    try
-      let prf = give_me_the_proof () in
-      (Proof_bullet.suggest prf)
-    with NoCurrentProof -> mt ()
-  in
+  let hook _n =
+    let prf = give_me_the_proof () in
+    (Proof_bullet.suggest prf) in
   Proofview.set_nosuchgoals_hook hook
 

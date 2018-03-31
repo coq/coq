@@ -49,7 +49,7 @@ let clenv_type clenv = meta_instance clenv.evd clenv.templtyp
 let refresh_undefined_univs clenv =
   match EConstr.kind clenv.evd clenv.templval.rebus with
   | Var _ -> clenv, Univ.empty_level_subst
-  | App (f, args) when isVar clenv.evd f -> clenv, Univ.empty_level_subst
+  | App (f, _args) when isVar clenv.evd f -> clenv, Univ.empty_level_subst
   | _ ->  
     let evd', subst = Evd.refresh_undefined_universes clenv.evd in
     let map_freelisted f = { f with rebus = subst_univs_level_constr subst f.rebus } in
@@ -111,8 +111,8 @@ let clenv_environments evd bound t =
 	  let e' = meta_declare mv t1 ~name:na' e in
 	  clrec (e', (mkMeta mv)::metas) (Option.map ((+) (-1)) n)
 	    (if dep then (subst1 (mkMeta mv) t2) else t2)
-      | (n, LetIn (na,b,_,t)) -> clrec (e,metas) n (subst1 b t)
-      | (n, _) -> (e, List.rev metas, t)
+      | (n, LetIn (_na,b,_,t)) -> clrec (e,metas) n (subst1 b t)
+      | (_n, _) -> (e, List.rev metas, t)
   in
   clrec (evd,[]) bound t
 
@@ -281,12 +281,12 @@ let adjust_meta_source evd mv = function
   | loc,Evar_kinds.VarInstance id ->
     let rec match_name c l =
       match EConstr.kind evd c, l with
-      | Lambda (Name id,_,c), a::l when EConstr.eq_constr evd a (mkMeta mv) -> Some id
-      | Lambda (_,_,c), a::l -> match_name c l
+      | Lambda (Name id,_,_c), a::_l when EConstr.eq_constr evd a (mkMeta mv) -> Some id
+      | Lambda (_,_,c), _a::l -> match_name c l
       | _ -> None in
     (* This is very ad hoc code so that an evar inherits the name of the binder
        in situations like "ex_intro (fun x => P) ?ev p" *)
-    let f = function (mv',(Cltyp (_,t) | Clval (_,_,t))) ->
+    let f = function (_mv',(Cltyp (_,t) | Clval (_,_,t))) ->
       if Metaset.mem mv t.freemetas then
         let f,l = decompose_app evd (EConstr.of_constr t.rebus) in
         match EConstr.kind evd f with
@@ -428,7 +428,7 @@ let check_bindings bl =
     | [] -> ()
 
 let explain_no_such_bound_variable evd id =
-  let fold l (n, clb) =
+  let fold l (_n, clb) =
     let na = match clb with
     | Cltyp (na, _) -> na
     | Clval (na, _, _) -> na
@@ -465,7 +465,7 @@ let meta_with_name evd id =
           (str "Binder name \"" ++ Id.print id ++
            strbrk "\" occurs more than once in clause.")
 
-let meta_of_binder clause loc mvs = function
+let meta_of_binder clause _loc mvs = function
   | NamedHyp s -> meta_with_name clause.evd s
   | AnonHyp n ->
       try List.nth mvs (n-1)
@@ -625,7 +625,7 @@ let make_evar_clause env sigma ?len t =
       } in
       let t2 = if dep then subst1 ev t2 else t2 in
       clrec (sigma, hole :: holes) (pred n) t2
-    | LetIn (na, b, _, t) -> clrec (sigma, holes) n (subst1 b t)
+    | LetIn (_na, b, _, t) -> clrec (sigma, holes) n (subst1 b t)
     | _ -> (sigma, holes, t)
   in
   let (sigma, holes, t) = clrec (sigma, []) bound t in

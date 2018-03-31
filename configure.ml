@@ -642,7 +642,7 @@ let camltag = match caml_version_list with
     50: unexpected documentation comment: too common and annoying to avoid
     56: unreachable match case: the [_ -> .] syntax doesn't exist in 4.02.3
 *)
-let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-50"
+let coq_warnings = "-w +a-4-9-41-42-44-45-48-50"
 let coq_warn_error =
     if !prefs.warn_error
     then "-warn-error +a"

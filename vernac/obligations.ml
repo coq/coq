@@ -29,7 +29,7 @@ let succfix (depth, fixrels) =
 
 let check_evars env evm =
   Evar.Map.iter
-  (fun key evi ->
+  (fun key _evi ->
    let (loc,k) = evar_source key evm in
      match k with
      | Evar_kinds.QuestionMark _
@@ -51,7 +51,7 @@ type oblinfo =
 (** Substitute evar references in t using de Bruijn indices,
   where n binders were passed through. *)
 
-let subst_evar_constr evs n idf t =
+let subst_evar_constr evs _n idf t =
   let seen = ref Int.Set.empty in
   let transparent = ref Id.Set.empty in
   let evar_info id = List.assoc_f Evar.equal id evs in
@@ -69,7 +69,7 @@ let subst_evar_constr evs n idf t =
 	  *)
 	let args =
 	  let n = match chop with None -> 0 | Some c -> c in
-	  let (l, r) = List.chop n (List.rev (Array.to_list args)) in
+	  let (_l, r) = List.chop n (List.rev (Array.to_list args)) in
 	    List.rev r
 	in
 	let args =
@@ -101,7 +101,7 @@ let subst_evar_constr evs n idf t =
 
 (** Substitute variable references in t using de Bruijn indices,
   where n binders were passed through. *)
-let subst_vars acc n t =
+let subst_vars acc _n t =
   let var_index id = Util.List.index Id.equal id acc in
   let rec substrec depth c = match Constr.kind c with
     | Var v -> (try mkRel (depth + (var_index v)) with Not_found -> c)
@@ -164,7 +164,7 @@ let evar_dependencies evm oev =
       else aux deps'
   in aux (Evar.Set.singleton oev)
 
-let move_after (id, ev, deps as obl) l = 
+let move_after (id, _ev, deps as obl) l = 
   let rec aux restdeps = function
     | (id', _, _) as obl' :: tl -> 
 	let restdeps' = Evar.Set.remove id' restdeps in
@@ -177,7 +177,7 @@ let move_after (id, ev, deps as obl) l =
 let sort_dependencies evl =
   let rec aux l found list =
     match l with
-    | (id, ev, deps) as obl :: tl ->
+    | (id, _ev, deps) as obl :: tl ->
 	let found' = Evar.Set.union found (Evar.Set.singleton id) in
 	  if Evar.Set.subset deps found' then
 	    aux tl found' (obl :: list)
@@ -210,7 +210,7 @@ let eterm_obligations env name evm fs ?status t ty =
       (fun (id, (n, nstr), ev) l ->
 	 let hyps = Evd.evar_filtered_context ev in
 	 let hyps = trunc_named_context nc_len hyps in
-	 let evtyp, deps, transp = etype_of_evar l hyps ev.evar_concl in
+	 let evtyp, deps, _transp = etype_of_evar l hyps ev.evar_concl in
 	 let evtyp, hyps, chop =
 	   match chop_product fs evtyp with
 	   | Some t -> t, trunc_named_context fs hyps, fs
@@ -240,7 +240,7 @@ let eterm_obligations env name evm fs ?status t ty =
   in
   let ty, _, _ = subst_evar_constr evts 0 mkVar ty in
   let evars = 
-    List.map (fun (ev, info) ->
+    List.map (fun (_ev, info) ->
       let { ev_name = (_, name); ev_status = force_status, status;
 	    ev_src = src; ev_typ = typ; ev_deps = deps; ev_tac = tac } = info
       in
@@ -386,7 +386,7 @@ let subst_deps expand obls deps t =
 let rec prod_app t n =
   match Constr.kind (EConstr.Unsafe.to_constr (Termops.strip_outer_cast Evd.empty (EConstr.of_constr t))) (** FIXME *) with
     | Prod (_,_,b) -> subst1 n b
-    | LetIn (_, b, t, b') -> prod_app (subst1 b b') n
+    | LetIn (_, b, _t, b') -> prod_app (subst1 b b') n
     | _ ->
 	user_err ~hdr:"prod_app"
 	  (str"Needed a product, but didn't find one" ++ fnl ())
@@ -443,7 +443,7 @@ let close sec =
 let input : program_info ProgMap.t -> obj =
   declare_object
     { (default_object "Program state") with
-      cache_function = (fun (na, pi) -> from_prg := pi);
+      cache_function = (fun (_na, pi) -> from_prg := pi);
       load_function = (fun _ (_, pi) -> from_prg := pi);
       discharge_function = (fun _ -> close "section"; None);
       classify_function = (fun _ -> close "module"; Dispose) }
@@ -470,8 +470,8 @@ let subst_body expand prg =
 
 let declare_definition prg =
   let body, typ = subst_body true prg in
-  let nf = Universes.nf_evars_and_universes_opt_subst (fun x -> None)
-    (UState.subst prg.prg_ctx) in
+  let nf = Universes.nf_evars_and_universes_opt_subst (fun _x -> None)
+    (Evd.evar_universe_context_subst prg.prg_ctx) in
   let opaque = prg.prg_opaque in
   let fix_exn = Hook.get get_fix_exn () in
   let typ = nf typ in
@@ -499,7 +499,7 @@ let rec lam_index n t acc =
 
 let compute_possible_guardness_evidences (n,_) fixbody fixtype =
   match n with
-  | Some { CAst.loc; v = n } -> [lam_index n fixbody 0]
+  | Some (_loc, n) -> [lam_index n fixbody 0]
   | None ->
       (* If recursive argument was not given by user, we try all args.
 	 An earlier approach was to look only for inductive arguments,
@@ -529,7 +529,7 @@ let declare_mutual_definition l =
   let fixkind = Option.get first.prg_fixkind in
   let arrrec, recvec = Array.of_list fixtypes, Array.of_list fixdefs in
   let fixdecls = (Array.of_list (List.map (fun x -> Name x.prg_name) l), arrrec, recvec) in
-  let (local,poly,kind) = first.prg_kind in
+  let (local,poly,_kind) = first.prg_kind in
   let fixnames = first.prg_deps in
   let opaque = first.prg_opaque in
   let kind = if fixkind != IsCoFixpoint then Fixpoint else CoFixpoint in
@@ -567,7 +567,7 @@ let decompose_lam_prod c ty =
   let open Context.Rel.Declaration in
   let rec aux ctx c ty =
     match Constr.kind c, Constr.kind ty with
-    | LetIn (x, b, t, c), LetIn (x', b', t', ty)
+    | LetIn (x, b, t, c), LetIn (_x', b', t', ty)
 	 when Constr.equal b b' && Constr.equal t t' ->
        let ctx' = Context.Rel.add (LocalDef (x,b',t')) ctx in
        aux ctx' c ty
@@ -577,7 +577,7 @@ let decompose_lam_prod c ty =
     | LetIn (x, b, t, c), _ ->
        let ctx' = Context.Rel.add (LocalDef (x,b,t)) ctx in
        aux ctx' c (lift 1 ty)
-    | Lambda (x, b, t), Prod (x', b', t')
+    | Lambda (x, _b, t), Prod (_x', b', t')
        (* By invariant, must be convertible *) ->
        let ctx' = Context.Rel.add (LocalAssum (x,b')) ctx in
        aux ctx' t t'
@@ -595,7 +595,7 @@ let shrink_body c ty =
        let ctx, b, ty = decompose_lam_prod c ty in
        ctx, b, Some ty
   in
-  let b', ty', n, args =
+  let b', ty', _n, args =
     List.fold_left (fun (b, ty, i, args) decl ->
         if noccurn 1 b && Option.cata (noccurn 1) true ty then
 	  subst1 mkProp b, Option.map (subst1 mkProp) ty, succ i, args
@@ -672,7 +672,7 @@ let init_prog_info ?(opaque = false) sign n udecl b t ctx deps fixkind
 	mkVar n
     | Some b ->
 	Array.mapi
-	  (fun i (n, t, l, o, d, tac) ->
+	  (fun _i (n, t, l, o, d, tac) ->
             { obl_name = n ; obl_body = None; 
 	      obl_location = l; obl_type = t; obl_status = o;
 	      obl_deps = d; obl_tac = tac })
@@ -737,7 +737,7 @@ let get_any_prog_err () =
 let obligations_solved prg = Int.equal (snd prg.prg_obligations) 0
 
 let all_programs () =
-  ProgMap.fold (fun k p l -> p :: l) !from_prg []
+  ProgMap.fold (fun _k p l -> p :: l) !from_prg []
 
 type progress =
     | Remain of int
@@ -764,7 +764,7 @@ let update_obls prg obls rem =
 	  let kn = declare_definition prg' in
 	    progmap_remove prg';
 	    Defined kn
-      | l ->
+      | _l ->
 	  let progs = List.map (fun x -> get_info (ProgMap.find x !from_prg)) prg'.prg_deps in
 	    if List.for_all (fun x -> obligations_solved x) progs then
 	      let kn = declare_mutual_definition progs in
@@ -807,7 +807,7 @@ let err_not_transp () = pperror not_transp_msg
 let rec string_of_list sep f = function
     [] -> ""
   | x :: [] -> f x
-  | x :: ((y :: _) as tl) -> f x ^ sep ^ string_of_list sep f tl
+  | x :: ((_y :: _) as tl) -> f x ^ sep ^ string_of_list sep f tl
 
 (* Solve an obligation using tactics, return the corresponding proof term *)
 
@@ -829,7 +829,7 @@ let obligation_terminator name num guard hook auto pf =
   let term = Lemmas.universe_proof_terminator guard hook in
   match pf with
   | Admitted _ -> apply_terminator term pf
-  | Proved (opq, id, proof) ->
+  | Proved (opq, _id, proof) ->
     let (_, (entry, uctx, _)) = Pfedit.cook_this_proof proof in
     let env = Global.env () in
     let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
@@ -930,7 +930,7 @@ in
 
 let rec solve_obligation prg num tac =
   let user_num = succ num in
-  let obls, rem = prg.prg_obligations in
+  let obls, _rem = prg.prg_obligations in
   let obl = obls.(num) in
   let remaining = deps_remaining obls obl.obl_deps in
   let () =
@@ -953,15 +953,15 @@ let rec solve_obligation prg num tac =
   let _ = Pfedit.by !default_tactic in
   Option.iter (fun tac -> Proof_global.set_endline_tactic tac) tac
 
-and obligation (user_num, name, typ) tac =
+and obligation (user_num, name, _typ) tac =
   let num = pred user_num in
   let prg = get_prog_err name in
-  let obls, rem = prg.prg_obligations in
+  let obls, _rem = prg.prg_obligations in
     if num < Array.length obls then
       let obl = obls.(num) in
 	match obl.obl_body with
 	    None -> solve_obligation prg num tac
-	  | Some r -> error "Obligation already solved"
+	  | Some _r -> error "Obligation already solved"
     else error (sprintf "Unknown obligation number %i" (succ num))
 
 
@@ -1007,7 +1007,7 @@ and solve_obligation_by_tac prg obls i tac =
           match e with
 	  | Refiner.FailError (_, s) ->
 	      user_err ?loc:(fst obl.obl_location) ~hdr:"solve_obligation" (Lazy.force s)
-          | e -> None (* FIXME really ? *)
+          | _e -> None (* FIXME really ? *)
 
 and solve_prg_obligations prg ?oblset tac =
   let obls, rem = prg.prg_obligations in
@@ -1021,7 +1021,7 @@ and solve_prg_obligations prg ?oblset tac =
   in
   let prgref = ref prg in
   let _ =
-    Array.iteri (fun i x ->
+    Array.iteri (fun i _x ->
       if p i then
         match solve_obligation_by_tac !prgref obls' i tac with
 	| None -> ()
@@ -1039,7 +1039,7 @@ and solve_obligations n tac =
     solve_prg_obligations prg tac
 
 and solve_all_obligations tac =
-  ProgMap.iter (fun k v -> ignore(solve_prg_obligations (get_info v) tac)) !from_prg
+  ProgMap.iter (fun _k v -> ignore(solve_prg_obligations (get_info v) tac)) !from_prg
 
 and try_solve_obligation n prg tac =
   let prg = get_prog prg in
@@ -1107,14 +1107,14 @@ let add_definition n ?term t ctx ?(univdecl=Univdecls.default_univ_decl)
       progmap_add n (CEphemeron.create prg);
       let res = auto_solve_obligations (Some n) tactic in
 	match res with
-	| Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
+	| Remain _rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
 	| _ -> res)
 
 let add_mutual_definitions l ctx ?(univdecl=Univdecls.default_univ_decl) ?tactic
                            ?(kind=Global,false,Definition) ?(reduce=reduce)
     ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) notations fixkind =
   let sign = Decls.initialize_named_context_for_proof () in
-  let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
+  let deps = List.map (fun (n, _b, _t, _imps, _obls) -> n) l in
     List.iter
     (fun  (n, b, t, imps, obls) ->
      let prg = init_prog_info sign ~opaque n univdecl (Some b) t ctx deps (Some fixkind)
@@ -1134,7 +1134,7 @@ let add_mutual_definitions l ctx ?(univdecl=Univdecls.default_univ_decl) ?tactic
     in ()
 
 let admit_prog prg =
-  let obls, rem = prg.prg_obligations in
+  let obls, _rem = prg.prg_obligations in
   let obls = Array.copy obls in
     Array.iteri 
       (fun i x ->
@@ -1171,7 +1171,7 @@ let next_obligation n tac =
   | None -> get_any_prog_err ()
   | Some _ -> get_prog_err n
   in
-  let obls, rem = prg.prg_obligations in
+  let obls, _rem = prg.prg_obligations in
   let is_open _ x = Option.is_empty x.obl_body && List.is_empty (deps_remaining obls x.obl_deps) in
   let i = match Array.findi is_open obls with
   | Some i -> i

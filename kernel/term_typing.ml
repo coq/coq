@@ -133,7 +133,7 @@ let inline_side_effects env body ctx side_eff =
         let subst = Cmap_env.add c (Inr var) subst in
         let ctx = Univ.ContextSet.union ctx univs in
         (subst, var + 1, ctx, (cname c, b, ty, opaque) :: args)
-      | Polymorphic_const auctx ->
+      | Polymorphic_const _auctx ->
         (** Inline the term to emulate universe polymorphism *)
         let subst = Cmap_env.add c (Inl b) subst in
         (subst, var, ctx, args)
@@ -351,9 +351,9 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
 
   | ProjectionEntry {proj_entry_ind = ind; proj_entry_arg = i} ->
     let mib, _ = Inductive.lookup_mind_specif env (ind,0) in
-    let kn, pb = 
+    let _kn, pb = 
       match mib.mind_record with
-      | Some (Some (id, kns, pbs)) -> 
+      | Some (Some (_id, kns, pbs)) -> 
 	if i < Array.length pbs then
 	  kns.(i), pbs.(i)
 	else assert false
@@ -408,7 +408,7 @@ let build_constant_declaration kn env result =
          str "Proof using " ++ declared_vars ++ fnl () ++
          str "to" ++ fnl () ++
          str "Proof using " ++ inferred_vars) in
-  let sort evn l =
+  let sort _evn l =
     List.filter (fun decl ->
       let id = NamedDecl.get_id decl in
       List.exists (NamedDecl.get_id %> Names.Id.equal id) l)
@@ -461,7 +461,7 @@ let build_constant_declaration kn env result =
     let res =
       match result.cook_proj with
       | None -> compile_constant_body env univs def
-      | Some pb ->
+      | Some _pb ->
 	(* The compilation of primitive projections is a bit tricky, because
            they refer to themselves (the body of p looks like fun c =>
            Proj(p,c)). We break the cycle by building an ad-hoc compilation
@@ -589,7 +589,7 @@ let export_side_effects mb env c =
            let cbs_len = List.length cbs in
            let cbs = List.map turn_direct cbs in
            let env = List.fold_left push_seff env cbs in
-           let ecbs = List.map (fun (kn,cb,u,r) ->
+           let ecbs = List.map (fun (kn,cb,_u,r) ->
              kn, cb, r) cbs in
            translate_seff (Some (sl-cbs_len)) rest (ecbs @ acc) env
      in
@@ -608,7 +608,7 @@ let translate_recipe env kn r =
   let hcons = DirPath.is_empty dir in
   build_constant_declaration kn env (Cooking.cook_constant ~hcons env r)
 
-let translate_local_def env id centry =
+let translate_local_def mb env _id centry =
   let open Cooking in
   let body = Future.from_val ((centry.secdef_body, Univ.ContextSet.empty), ()) in
   let centry = {

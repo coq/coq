@@ -97,9 +97,10 @@ let classify_vernac e =
        let guarantee = if poly then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
         VtStartProof(default_proof_mode (),guarantee, idents_of_name i), VtLater
     | VernacStartTheoremProof (_,l) ->
-        let ids = List.map (fun (({v=i}, _), _) -> i) l in
-       let guarantee = if poly then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
-        VtStartProof (default_proof_mode (),guarantee,ids), VtLater
+        let ids = 
+          CList.map_filter (function (Some ((_,i),_pl), _) -> Some i | _ -> None) l in
+        VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
+    | VernacGoal _ -> VtStartProof (default_proof_mode (),GuaranteesOpacity,[]), VtLater
     | VernacFixpoint (discharge,l) ->
        let guarantee =
          if discharge = Decl_kinds.DoDischarge || poly then Doesn'tGuaranteeOpacity

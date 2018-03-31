@@ -53,16 +53,16 @@ let anomaly_on_error f x =
  try f x
  with RetypeError e -> anomaly ~label:"retyping" (print_retype_error e ++ str ".")
 
-let get_type_from_constraints env sigma t =
+let get_type_from_constraints _env sigma t =
   if isEvar sigma (fst (decompose_app_vect sigma t)) then
     match
-      List.map_filter (fun (pbty,env,t1,t2) ->
+      List.map_filter (fun (_pbty,env,t1,t2) ->
         if is_fconv Reduction.CONV env sigma t (EConstr.of_constr t1) then Some t2
         else if is_fconv Reduction.CONV env sigma t (EConstr.of_constr t2) then Some t1
         else None)
         (snd (Evd.extract_all_conv_pbs sigma))
     with
-    | t::l -> t
+    | t::_l -> t
     | _ -> raise Not_found
   else raise Not_found
 
@@ -70,7 +70,7 @@ let rec subst_type env sigma typ = function
   | [] -> typ
   | h::rest ->
       match EConstr.kind sigma (whd_all env sigma typ) with
-        | Prod (na,c1,c2) -> subst_type env sigma (subst1 h c2) rest
+        | Prod (_na,_c1,c2) -> subst_type env sigma (subst1 h c2) rest
         | _ -> retype_error NonFunctionalConstruction
 
 (* If ft is the type of f which itself is applied to args, *)
@@ -109,7 +109,7 @@ let retype ?(polyprop=true) sigma =
     | Evar ev -> existential_type sigma ev
     | Ind (ind, u) -> EConstr.of_constr (rename_type_of_inductive env (ind, EInstance.kind sigma u))
     | Construct (cstr, u) -> EConstr.of_constr (rename_type_of_constructor env (cstr, EInstance.kind sigma u))
-    | Case (_,p,c,lf) ->
+    | Case (_,p,c,_lf) ->
         let Inductiveops.IndType(indf,realargs) =
           let t = type_of env c in
           try Inductiveops.find_rectype env sigma t
@@ -141,12 +141,12 @@ let retype ?(polyprop=true) sigma =
        EConstr.of_constr (try
 	   Inductiveops.type_of_projection_knowing_arg env sigma p c ty
 	 with Invalid_argument _ -> retype_error BadRecursiveType)
-    | Cast (c,_, t) -> t
+    | Cast (_c,_, t) -> t
     | Sort _ | Prod _ -> mkSort (sort_of env cstr)
 
   and sort_of env t =
     match EConstr.kind sigma t with
-    | Cast (c,_, s) when isSort sigma s -> destSort sigma s
+    | Cast (_c,_, s) when isSort sigma s -> destSort sigma s
     | Sort s ->
       begin match ESorts.kind sigma s with
       | Prop _ -> Sorts.type1
@@ -189,7 +189,7 @@ let get_sort_family_of ?(truncation_style=false) ?(polyprop=true) env sigma t =
   let type_of,_,type_of_global_reference_knowing_parameters = retype ~polyprop sigma in
   let rec sort_family_of env t =
     match EConstr.kind sigma t with
-    | Cast (c,_, s) when isSort sigma s -> Sorts.family (destSort sigma s)
+    | Cast (_c,_, s) when isSort sigma s -> Sorts.family (destSort sigma s)
     | Sort _ -> InType
     | Prod (name,t,c2) ->
 	let s2 = sort_family_of (push_rel (LocalAssum (name,t)) env) c2 in
@@ -254,7 +254,7 @@ let sorts_of_context env evc ctxt =
 
 let expand_projection env sigma pr c args =
   let ty = get_type_of ~lax:true env sigma c in
-  let (i,u), ind_args = 
+  let (_i,u), ind_args = 
     try Inductiveops.find_mrectype env sigma ty 
     with Not_found -> retype_error BadRecursiveType
   in

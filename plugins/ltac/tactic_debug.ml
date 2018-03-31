@@ -338,7 +338,7 @@ let db_breakpoint debug s =
   let open Proofview.NonLogical in
   !breakpoint >>= fun opt_breakpoint ->
   match debug with
-  | DebugOn lev when not (CList.is_empty s) && is_breakpoint opt_breakpoint s ->
+  | DebugOn _lev when not (CList.is_empty s) && is_breakpoint opt_breakpoint s ->
       breakpoint:=None
   | _ ->
       return ()
@@ -348,13 +348,13 @@ let db_breakpoint debug s =
 let is_defined_ltac trace =
   let rec aux = function
   | (_, Tacexpr.LtacNameCall f) :: _ -> not (Tacenv.is_ltac_for_ml_tactic f)
-  | (_, Tacexpr.LtacNotationCall f) :: _ -> true
+  | (_, Tacexpr.LtacNotationCall _f) :: _ -> true
   | (_, Tacexpr.LtacAtomCall _) :: _ -> false
   | _ :: tail -> aux tail
   | [] -> false in
   aux (List.rev trace)
 
-let explain_ltac_call_trace last trace loc =
+let explain_ltac_call_trace last trace _loc =
   let calls = last :: List.rev_map snd trace in
   let pr_call ck = match ck with
     | Tacexpr.LtacNotationCall kn -> quote (Pptactic.pr_alias_key kn)

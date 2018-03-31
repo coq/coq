@@ -187,11 +187,11 @@ let constr_of_global_in_context env r =
     let univs = Declareops.constant_polymorphic_context cb in
     mkConstU (c, Univ.make_abstract_instance univs), univs
   | IndRef ind ->
-    let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
+    let (mib, _oib as _specif) = Inductive.lookup_mind_specif env ind in
     let univs = Declareops.inductive_polymorphic_context mib in
     mkIndU (ind, Univ.make_abstract_instance univs), univs
   | ConstructRef cstr ->
-    let (mib,oib as specif) =
+    let (mib, _oib as _specif) =
       Inductive.lookup_mind_specif env (inductive_of_constructor cstr)
     in
     let univs = Declareops.inductive_polymorphic_context mib in
@@ -205,13 +205,13 @@ let type_of_global_in_context env r =
     let univs = Declareops.constant_polymorphic_context cb in
     cb.Declarations.const_type, univs
   | IndRef ind ->
-    let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
+    let (mib, _oib as specif) = Inductive.lookup_mind_specif env ind in
     let univs = Declareops.inductive_polymorphic_context mib in
     let inst = Univ.make_abstract_instance univs in
     let env = Environ.push_context ~strict:false (Univ.AUContext.repr univs) env in
     Inductive.type_of_inductive env (specif, inst), univs
   | ConstructRef cstr ->
-    let (mib,oib as specif) =
+    let (mib, _oib as specif) =
       Inductive.lookup_mind_specif env (inductive_of_constructor cstr) 
     in
     let univs = Declareops.inductive_polymorphic_context mib in
@@ -220,15 +220,15 @@ let type_of_global_in_context env r =
 
 let universes_of_global env r = 
     match r with
-    | VarRef id -> Univ.AUContext.empty
+    | VarRef _id -> Univ.AUContext.empty
     | ConstRef c -> 
       let cb = Environ.lookup_constant c env in 
       Declareops.constant_polymorphic_context cb
     | IndRef ind ->
-      let (mib, oib) = Inductive.lookup_mind_specif env ind in
+      let (mib, _oib) = Inductive.lookup_mind_specif env ind in
       Declareops.inductive_polymorphic_context mib
     | ConstructRef cstr ->
-      let (mib,oib) = 
+      let (mib, _oib) = 
         Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
       Declareops.inductive_polymorphic_context mib
 
@@ -238,7 +238,7 @@ let universes_of_global gr =
 let is_polymorphic r =
   let env = env() in 
   match r with
-  | VarRef id -> false
+  | VarRef _id -> false
   | ConstRef c -> Environ.polymorphic_constant c env
   | IndRef ind -> Environ.polymorphic_ind ind env
   | ConstructRef cstr -> Environ.polymorphic_ind (inductive_of_constructor cstr) env
@@ -246,15 +246,15 @@ let is_polymorphic r =
 let is_template_polymorphic r = 
   let env = env() in 
   match r with
-  | VarRef id -> false
-  | ConstRef c -> false
+  | VarRef _id -> false
+  | ConstRef _c -> false
   | IndRef ind -> Environ.template_polymorphic_ind ind env
   | ConstructRef cstr -> Environ.template_polymorphic_ind (inductive_of_constructor cstr) env
 
 let is_type_in_type r =
   let env = env() in
   match r with
-  | VarRef id -> false
+  | VarRef _id -> false
   | ConstRef c -> Environ.type_in_type_constant c env
   | IndRef ind -> Environ.type_in_type_ind ind env
   | ConstructRef cstr -> Environ.type_in_type_ind (inductive_of_constructor cstr) env

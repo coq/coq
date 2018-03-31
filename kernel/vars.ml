@@ -66,7 +66,7 @@ let isMeta c = match Constr.kind c with
 let noccur_with_meta n m term =
   let rec occur_rec n c = match Constr.kind c with
     | Constr.Rel p -> if n<=p && p<n+m then raise LocalOccur
-    | Constr.App(f,cl) ->
+    | Constr.App(f,_cl) ->
         (match Constr.kind f with
            | Constr.Cast (c,_,_) when isMeta c -> ()
            | Constr.Meta _ -> ()
@@ -188,7 +188,7 @@ let adjust_rel_to_rel_context sign n =
     let open RelDecl in
     match sign with
     | LocalAssum _ :: sign' -> let (n',p) = aux sign' in (n'+1,p)
-    | LocalDef (_,c,_)::sign' -> let (n',p) = aux sign' in (n'+1,if n'<n then p+1 else p)
+    | LocalDef (_,_c,_)::sign' -> let (n',p) = aux sign' in (n'+1,if n'<n then p+1 else p)
     | [] -> (0,n)
   in snd (aux sign)
 

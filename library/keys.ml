@@ -63,7 +63,7 @@ module Keyset = Keymap.Set
 let keys = Summary.ref Keymap.empty ~name:"Keys_decl"
 
 let add_kv k v m =
-  try Keymap.modify k (fun k' vs -> Keyset.add v vs) m
+  try Keymap.modify k (fun _k' vs -> Keyset.add v vs) m
   with Not_found -> Keymap.add k (Keyset.singleton v) m
 
 let add_keys k v = 
@@ -122,8 +122,8 @@ let constr_key kind c =
     let rec aux k = 
       match kind k with
       | Const (c, _) -> KGlob (ConstRef c)
-      | Ind (i, u) -> KGlob (IndRef i)
-      | Construct (c,u) -> KGlob (ConstructRef c)
+      | Ind (i, _u) -> KGlob (IndRef i)
+      | Construct (c,_u) -> KGlob (ConstructRef c)
       | Var id -> KGlob (VarRef id)
       | App (f, _) -> aux f
       | Proj (p, _) -> KGlob (ConstRef (Names.Projection.constant p))

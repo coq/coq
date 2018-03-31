@@ -54,7 +54,7 @@ module Trace = struct
 
   let to_tree = function
     | { head ; opened=[] } -> mirror head
-    | { head ; opened=_::_} -> assert false
+    | { opened=_::_ ; _  } -> assert false
 
 end
 

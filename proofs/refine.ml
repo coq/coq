@@ -62,10 +62,10 @@ let add_if_undefined kn cb env =
 
 (* Add the side effects to the monad's environment, if not already done. *)
 let add_side_effect env = function
-  | { Entries.eff = Entries.SEsubproof (kn, cb, eff_env) } ->
+  | { Entries.eff = Entries.SEsubproof (kn, cb, _eff_env) } ->
     add_if_undefined kn cb env
   | { Entries.eff = Entries.SEscheme (l,_) } ->
-    List.fold_left (fun env (_,kn,cb,eff_env) ->
+    List.fold_left (fun env (_,kn,cb,_eff_env) ->
         add_if_undefined kn cb env) env l
 
 let add_side_effects env effects =

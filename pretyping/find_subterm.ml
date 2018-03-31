@@ -43,7 +43,7 @@ let error_occurrences_error e =
 let error_invalid_occurrence occ =
   error_occurrences_error (InvalidOccurrence occ)
 
-let check_used_occurrences nbocc (nowhere_except_in,locs) =
+let check_used_occurrences nbocc (_nowhere_except_in,locs) =
   let rest = List.filter (fun o -> o >= nbocc) locs in
   match rest with
   | [] -> ()
@@ -134,7 +134,7 @@ let replace_term_occ_gen_modulo sigma occs like_first test bywhat cl occ t =
     with NotUnifiable _ ->
       subst_below k t
   and subst_below k t =
-    map_constr_with_binders_left_to_right sigma (fun d k -> k+1) substrec k t
+    map_constr_with_binders_left_to_right sigma (fun _d k -> k+1) substrec k t
   in
   let t' = substrec 0 t in
   (!pos, t')

@@ -52,9 +52,9 @@ let pr_move_location pr_id = function
   | MoveLast -> str " at bottom"
 
 (** Printing of bindings *)
-let pr_binding prc = let open CAst in function
-  | {loc;v=(NamedHyp id, c)} -> hov 1 (Names.Id.print id ++ str " := " ++ cut () ++ prc c)
-  | {loc;v=(AnonHyp n, c)} -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
+let pr_binding prc = function
+  | _loc, (NamedHyp id, c) -> hov 1 (Names.Id.print id ++ str " := " ++ cut () ++ prc c)
+  | _loc, (AnonHyp n, c) -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
 
 let pr_bindings prc prlc = function
   | ImplicitBindings l ->

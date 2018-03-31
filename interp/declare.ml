@@ -102,7 +102,7 @@ let discharged_hyps kn sechyps =
   let args = Array.to_list (instance_from_variable_context sechyps) in
   List.rev_map (Libnames.make_path dir) args
 
-let discharge_constant ((sp, kn), obj) =
+let discharge_constant ((_sp, kn), obj) =
   let con = Constant.make1 kn in
   let from = Global.lookup_constant con in
   let modlist = replacement_context () in
@@ -173,6 +173,7 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     const_entry_inline_code = inline}
 
 let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
+  ignore(internal);
   let is_poly de = match de.const_entry_universes with
   | Monomorphic_const_entry _ -> false
   | Polymorphic_const_entry _ -> true
@@ -331,7 +332,7 @@ let cache_inductive ((sp,kn),(dhyps,mie)) =
   Dischargedhypsmap.set_discharged_hyps sp dhyps;
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names
 
-let discharge_inductive ((sp,kn),(dhyps,mie)) =
+let discharge_inductive ((_sp,kn),(_dhyps,_mie)) =
   let mind = Global.mind_of_delta_kn kn in
   let mie = Global.lookup_mind mind in
   let repl = replacement_context () in
@@ -385,7 +386,7 @@ let inInductive : inductive_obj -> obj =
 let declare_projections mind =
   let spec,_ = Inductive.lookup_mind_specif (Global.env ()) (mind,0) in
     match spec.mind_record with
-    | Some (Some (_, kns, pjs)) ->
+    | Some (Some (_, kns, _pjs)) ->
       Array.iteri (fun i kn ->
 	let id = Label.to_id (Constant.label kn) in
 	let entry = {proj_entry_ind = mind; proj_entry_arg = i} in
@@ -401,9 +402,9 @@ let declare_mind mie =
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
     | [] -> anomaly (Pp.str "cannot declare an empty list of inductives.") in
-  let (sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
+  let (_sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
   let mind = Global.mind_of_delta_kn kn in
-  let isrecord,isprim = declare_projections mind in
+  let _isrecord,isprim = declare_projections mind in
   declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
   oname, isprim
@@ -457,7 +458,7 @@ let cache_universe_context (p, ctx) =
 let input_universe_context : universe_context_decl -> Libobject.obj =
   declare_object
     { (default_object "Global universe context state") with
-      cache_function = (fun (na, pi) -> cache_universe_context pi);
+      cache_function = (fun (_na, pi) -> cache_universe_context pi);
       load_function = (fun _ (_, pi) -> cache_universe_context pi);
       discharge_function = (fun (_, (p, _ as x)) -> if p then None else Some x);
       classify_function = (fun a -> Keep a) }
@@ -533,7 +534,7 @@ let input_universe : universe_decl -> Libobject.obj =
       load_function = load_universe;
       open_function = open_universe;
       discharge_function = discharge_universe;
-      subst_function = (fun (subst, a) -> (** Actually the name is generated once and for all. *) a);
+      subst_function = (fun (_subst, a) -> (** Actually the name is generated once and for all. *) a);
       classify_function = (fun a -> Substitute a) }
 
 let declare_univ_binders gr pl =
@@ -563,7 +564,7 @@ let do_universe poly l =
                    (str"Cannot declare polymorphic universes outside sections")
   in
   let l =
-    List.map (fun {CAst.v=id} ->
+    List.map (fun (_l, id) ->
       let lev = Universes.new_univ_id () in
       (id, lev)) l
   in
@@ -574,13 +575,13 @@ let do_universe poly l =
 
 type constraint_decl = polymorphic * Univ.Constraint.t
 
-let cache_constraints (na, (p, c)) =
+let cache_constraints (_na, (p, c)) =
   let ctx =
     Univ.ContextSet.add_constraints c
       Univ.ContextSet.empty (* No declared universes here, just constraints *)
   in cache_universe_context (p,ctx)
 
-let discharge_constraints (_, (p, c as a)) =
+let discharge_constraints (_, (p, _c as a)) =
   if p then None else Some a
 
 let input_constraints : constraint_decl -> Libobject.obj =

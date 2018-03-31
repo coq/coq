@@ -188,7 +188,7 @@ let to_string ~filter ?(cutoff=0.0) node =
   let all_total = M.fold (fun _ { total } a -> total +. a) node.children 0.0 in
   let flat_tree =
     let global = ref M.empty in
-    let find_tactic tname l =
+    let find_tactic tname _l =
       try M.find tname !global
       with Not_found ->
         let e = empty_treenode tname in
@@ -248,7 +248,7 @@ let string_of_call ck =
     (match ck with
        | Tacexpr.LtacNotationCall s -> Pptactic.pr_alias_key s
        | Tacexpr.LtacNameCall cst -> Pptactic.pr_ltac_constant cst
-       | Tacexpr.LtacVarCall (id, t) -> Names.Id.print id
+       | Tacexpr.LtacVarCall (id, _t) -> Names.Id.print id
        | Tacexpr.LtacAtomCall te ->
          (Pptactic.pr_glob_tactic (Global.env ())
             (Tacexpr.TacAtom (Loc.tag te)))
@@ -289,7 +289,7 @@ let merge_roots ?(disjoint=true) t1 t2 =
 let rec find_in_stack what acc = function
   | [] -> None
   | { name } as x :: rest when String.equal name what -> Some(acc, x, rest)
-  | { name } as x :: rest -> find_in_stack what (x :: acc) rest
+  | x :: rest -> find_in_stack what (x :: acc) rest
 
 let exit_tactic ~count_call start_time c =
   let diff = time () -. start_time in
@@ -343,7 +343,7 @@ let tclFINALLY tac (finally : unit Proofview.tactic) =
     (fun v -> finally <*> Proofview.tclUNIT v)
     (fun (exn, info) -> finally <*> Proofview.tclZERO ~info exn)
 
-let do_profile s call_trace ?(count_call=true) tac =
+let do_profile _s call_trace tac =
   let open Proofview.Notations in
   Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
   if !is_profiling then

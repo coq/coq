@@ -120,7 +120,7 @@ and fields_of_expression x = fields_of_functor fields_of_expr x
 
 let lookup_constant_in_impl cst fallback =
   try
-    let mp,dp,lab = KerName.repr (Constant.canonical cst) in
+    let mp,_dp,lab = KerName.repr (Constant.canonical cst) in
     let fields = memoize_fields_of_mp mp in
     (* A module found this way is necessarily closed, in particular
        our constant cannot be in an opened section : *)
@@ -144,7 +144,7 @@ let lookup_constant cst =
 
 let lookup_mind_in_impl mind =
   try
-    let mp,dp,lab = KerName.repr (MutInd.canonical mind) in
+    let mp,_dp,lab = KerName.repr (MutInd.canonical mind) in
     let fields = memoize_fields_of_mp mp in
       search_mind_label lab fields
   with Not_found ->
@@ -172,7 +172,7 @@ let fold_constr_with_full_binders g f n acc c =
   | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
   | LetIn (na,b,t,c) -> f (g (LocalDef (na,b,t)) n) (f n (f n acc b) t) c
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
-  | Proj (p,c) -> f n acc c
+  | Proj (_p,c) -> f n acc c
   | Evar (_,l) -> Array.fold_left (f n) acc l
   | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
   | Fix (_,(lna,tl,bl)) ->
@@ -316,7 +316,7 @@ let traverse current t =
 let type_of_constant cb = cb.Declarations.const_type
 
 let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
-  let (idts, knst) = st in
+  let (_idts, knst) = st in
   (** Only keep the transitive dependencies *)
   let (_, graph, ax2ty) = traverse (label_of gr) t in
   let fold obj _ accu = match obj with

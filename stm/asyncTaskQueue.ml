@@ -259,7 +259,7 @@ module Make(T : Task) () = struct
 
   let broadcast { queue } = TQueue.broadcast queue
 
-  let enqueue_task { queue; active } t ~cancel_switch =
+  let enqueue_task { queue; _ } t ~cancel_switch =
     stm_prerr_endline ("Enqueue task "^T.name_of_task t);
     TQueue.push queue (t, cancel_switch)
 

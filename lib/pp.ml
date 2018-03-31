@@ -170,7 +170,7 @@ let rec pr_com ft s =
 (* pretty printing functions *)
 let pp_with ft pp =
   let cpp_open_box = function
-    | Pp_hbox n   -> Format.pp_open_hbox ft ()
+    | Pp_hbox _   -> Format.pp_open_hbox ft ()
     | Pp_vbox n   -> Format.pp_open_vbox ft n
     | Pp_hvbox n  -> Format.pp_open_hvbox ft n
     | Pp_hovbox n -> Format.pp_open_hovbox ft n

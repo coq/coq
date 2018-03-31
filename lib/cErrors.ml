@@ -20,7 +20,7 @@ exception Anomaly of string option * Pp.t (* System errors *)
 
 let _ =
   let pr = function
-  | Anomaly (s, pp) -> Some ("\"Anomaly: " ^ string_of_ppcmds pp ^ "\"")
+  | Anomaly (_, pp) -> Some ("\"Anomaly: " ^ string_of_ppcmds pp ^ "\"")
   | _ -> None
   in
   Printexc.register_printer pr

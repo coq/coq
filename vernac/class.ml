@@ -122,7 +122,7 @@ let get_source lp source =
          | [] -> raise Not_found
          | LocalDef _ :: lt -> aux lt
          | LocalAssum (_,t1) :: lt ->
-            let cl1,u1,lv1 = find_class_type Evd.empty (EConstr.of_constr t1) in
+            let cl1,_u1,lv1 = find_class_type Evd.empty (EConstr.of_constr t1) in
             cl1,lt,lv1,1
        in aux lp
     | Some cl ->
@@ -132,7 +132,7 @@ let get_source lp source =
          | LocalDef _ as decl :: lt -> aux (decl::acc) lt
          | LocalAssum (_,t1) as decl :: lt ->
             try
-              let cl1,u1,lv1 = find_class_type Evd.empty (EConstr.of_constr t1) in
+              let cl1,_u1,lv1 = find_class_type Evd.empty (EConstr.of_constr t1) in
               if cl_typ_eq cl cl1 then cl1,acc,lv1,Context.Rel.nhyps lt+1
               else raise Not_found
             with Not_found -> aux (decl::acc) lt
@@ -148,8 +148,8 @@ let get_target t ind =
     | x -> x
       
 let strength_of_cl = function
-  | CL_CONST kn -> `GLOBAL
-  | CL_SECVAR id -> `LOCAL
+  | CL_CONST _kn -> `GLOBAL
+  | CL_SECVAR _id -> `LOCAL
   | _ -> `GLOBAL
 
 let strength_of_global = function
@@ -210,7 +210,7 @@ let build_id_coercion idf_opt source poly =
     match idf_opt with
       | Some idf -> idf
       | None ->
-	  let cl,u,_ = find_class_type sigma (EConstr.of_constr t) in
+	  let cl,_u,_ = find_class_type sigma (EConstr.of_constr t) in
 	  Id.of_string ("Id_"^(ident_key_of_class source)^"_"^
                         (ident_key_of_class cl))
   in
@@ -245,7 +245,7 @@ let warn_uniform_inheritance =
           Printer.pr_global g ++
             strbrk" does not respect the uniform inheritance condition")
 
-let add_new_coercion_core coef stre poly source target isid =
+let add_new_coercion_core coef stre _poly source target isid =
   check_source source;
   let t, _ = Global.type_of_global_in_context (Global.env ()) coef in
   if coercion_exists coef then raise (CoercionError AlreadyExists);

@@ -150,7 +150,7 @@ module Value = struct
 
 end
 
-let print_top_val env v = Pptactic.pr_value Pptactic.ltop v
+let print_top_val _env v = Pptactic.pr_value Pptactic.ltop v
 
 let catching_error call_trace fail (e, info) =
   let inner_trace =
@@ -332,7 +332,7 @@ let interp_int_or_var_as_list ist = function
   | ArgVar ({v=id} as locid) ->
       (try coerce_to_int_or_var_list (Id.Map.find id ist.lfun)
        with Not_found | CannotCoerceTo _ -> [ArgArg (interp_int ist locid)])
-  | ArgArg n as x -> [x]
+  | ArgArg _n as x -> [x]
 
 let interp_int_or_var_list ist l =
   List.flatten (List.map (interp_int_or_var_as_list ist) l)
@@ -346,7 +346,7 @@ let interp_hyp ist env sigma ({loc;v=id} as locid) =
   if is_variable env id then id
   else Loc.raise ?loc (Logic.RefinerError (env, sigma, Logic.NoSuchHyp id))
 
-let interp_hyp_list_as_list ist env sigma ({loc;v=id} as x) =
+let interp_hyp_list_as_list ist env sigma (_loc,id as x) =
   try coerce_to_hyp_list env sigma (Id.Map.find id ist.lfun)
   with Not_found | CannotCoerceTo _ -> [interp_hyp ist env sigma x]
 
@@ -362,7 +362,7 @@ let interp_reference ist env sigma = function
         VarRef (get_id (Environ.lookup_named id env))
       with Not_found -> error_global_not_found (make ?loc @@ qualid_of_ident id)
 
-let try_interp_evaluable env (loc, id) =
+let try_interp_evaluable env (_loc, id) =
   let v = Environ.lookup_named id env in
   match v with
   | LocalDef _ -> EvalVarRef id
@@ -423,7 +423,7 @@ let extract_ltac_constr_values ist env =
     could barely be defined as a feature... *)
 
 (* Extract the identifier list from lfun: join all branches (what to do else?)*)
-let rec intropattern_ids accu {loc;v=pat} = match pat with
+let rec intropattern_ids accu (_loc,pat) = match pat with
   | IntroNaming (IntroIdentifier id) -> Id.Set.add id accu
   | IntroAction (IntroOrAndPattern (IntroAndPattern l)) ->
       List.fold_left intropattern_ids accu l
@@ -431,7 +431,7 @@ let rec intropattern_ids accu {loc;v=pat} = match pat with
       List.fold_left intropattern_ids accu (List.flatten ll)
   | IntroAction (IntroInjection l) ->
       List.fold_left intropattern_ids accu l
-  | IntroAction (IntroApplyOn ({v=c},pat)) -> intropattern_ids accu pat
+  | IntroAction (IntroApplyOn ((_,_c),pat)) -> intropattern_ids accu pat
   | IntroNaming (IntroAnonymous | IntroFresh _)
   | IntroAction (IntroWildcard | IntroRewrite _)
   | IntroForthcoming _ -> accu
@@ -751,7 +751,7 @@ let message_of_value v =
 let interp_message_token ist = function
   | MsgString s -> Ftactic.return (str s)
   | MsgInt n -> Ftactic.return (int n)
-  | MsgIdent {loc;v=id} ->
+  | MsgIdent (_loc,id) ->
     let v = try Some (Id.Map.find id ist.lfun) with Not_found -> None in
     match v with
     | None -> Ftactic.lift (Tacticals.New.tclZEROMSG (Id.print id ++ str" not found."))
@@ -762,15 +762,15 @@ let interp_message ist l =
   Ftactic.List.map (interp_message_token ist) l >>= fun l ->
   Ftactic.return (prlist_with_sep spc (fun x -> x) l)
 
-let rec interp_intro_pattern ist env sigma = with_loc_val (fun ?loc -> function
-  | IntroAction pat ->
-    let (sigma,pat) = interp_intro_pattern_action ist env sigma pat in
-    sigma, make ?loc @@ IntroAction pat
-  | IntroNaming (IntroIdentifier id) ->
-    sigma, make ?loc @@ interp_intro_pattern_var loc ist env sigma id
-  | IntroNaming pat ->
-    sigma, make ?loc @@ IntroNaming (interp_intro_pattern_naming loc ist env sigma pat)
-  | IntroForthcoming _  as x -> sigma, make ?loc x)
+let rec interp_intro_pattern ist env sigma = function
+  | loc, IntroAction pat ->
+      let (sigma,pat) = interp_intro_pattern_action ist env sigma pat in
+      sigma, (loc, IntroAction pat)
+  | loc, IntroNaming (IntroIdentifier id) ->
+      sigma, (loc, interp_intro_pattern_var loc ist env sigma id)
+  | loc, IntroNaming pat ->
+      sigma, (loc, IntroNaming (interp_intro_pattern_naming loc ist env sigma pat))
+  | _loc, IntroForthcoming _  as x -> sigma, x
 
 and interp_intro_pattern_naming loc ist env sigma = function
   | IntroFresh id -> IntroFresh (interp_ident ist env sigma id)
@@ -888,8 +888,8 @@ let interp_destruction_arg ist gl arg =
       keep,ElimOnConstr begin fun env sigma ->
         interp_open_constr_with_bindings ist env sigma c
       end
-  | keep,ElimOnAnonHyp n as x -> x
-  | keep,ElimOnIdent {loc;v=id} ->
+  | _keep,ElimOnAnonHyp _n as x -> x
+  | keep,ElimOnIdent (loc,id) ->
       let error () = user_err ?loc 
        (strbrk "Cannot coerce " ++ Id.print id ++
         strbrk " neither to a quantified hypothesis nor to a term.")
@@ -920,7 +920,7 @@ let interp_destruction_arg ist gl arg =
           keep,ElimOnAnonHyp (out_gen (topwit wit_int) v)
         else match Value.to_constr v with
         | None -> error ()
-        | Some c -> keep,ElimOnConstr (fun env sigma -> (sigma, (c,NoBindings)))
+        | Some c -> keep,ElimOnConstr (fun _env sigma -> (sigma, (c,NoBindings)))
       with Not_found ->
 	(* We were in non strict (interactive) mode *)
 	if Tactics.is_quantified_hypothesis id gl then
@@ -954,7 +954,7 @@ let interp_context ctxt = in_gen (topwit wit_constr_context) ctxt
 (* Reads a pattern by substituting vars of lfun *)
 let use_types = false
 
-let eval_pattern lfun ist env sigma (bvars,(glob,_),pat as c) =
+let eval_pattern lfun ist env sigma (bvars,(_glob,_),pat as c) =
   if use_types then
     (bvars,interp_typed_pattern ist env sigma c)
   else
@@ -973,11 +973,11 @@ let cons_and_check_name id l =
   else id::l
 
 let rec read_match_goal_hyps lfun ist env sigma lidh = function
-  | (Hyp ({loc;v=na} as locna,mp))::tl ->
+  | (Hyp ((_loc,na) as locna,mp))::tl ->
       let lidh' = Name.fold_right cons_and_check_name na lidh in
       Hyp (locna,read_pattern lfun ist env sigma mp)::
 	(read_match_goal_hyps lfun ist env sigma lidh' tl)
-  | (Def ({loc;v=na} as locna,mv,mp))::tl ->
+  | (Def ((_loc,na) as locna,mv,mp))::tl ->
       let lidh' = Name.fold_right cons_and_check_name na lidh in
       Def (locna,read_pattern lfun ist env sigma mv, read_pattern lfun ist env sigma mp)::
 	(read_match_goal_hyps lfun ist env sigma lidh' tl)
@@ -993,7 +993,7 @@ let rec read_match_rule lfun ist env sigma = function
 
 (* Fully evaluate an untyped constr *)
 let type_uconstr ?(flags = {(constr_flags ()) with use_hook = None })
-  ?(expected_type = WithoutTypeConstraint) ist c =
+  ?(expected_type = WithoutTypeConstraint) _ist c =
   begin fun env sigma ->
   let { closure; term } = c in
   let vars = {
@@ -1027,7 +1027,7 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
   | TacLetIn (false,l,u) -> interp_letin ist l u
   | TacMatchGoal (lz,lr,lmr) -> interp_match_goal ist lz lr lmr
   | TacMatch (lz,c,lmr) -> interp_match ist lz c lmr
-  | TacArg (loc,a) -> interp_tacarg ist a
+  | TacArg (_loc,a) -> interp_tacarg ist a
   | t ->
     (** Delayed evaluation *)
     Ftactic.return (of_tacvalue (VFun (UnnamedAppl,extract_trace ist, ist.lfun, [], t)))
@@ -1211,7 +1211,7 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
         Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Ftactic.return (Value.of_constr c_interp))
       end
-  | TacCall (loc,(r,[])) ->
+  | TacCall (_loc,(r,[])) ->
       interp_ltac_reference true ist r
   | TacCall (loc,(f,l)) ->
       let (>>=) = Ftactic.bind in
@@ -1285,7 +1285,7 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
         if List.is_empty lval then Ftactic.return v else interp_app loc ist v lval
       else
         Ftactic.return (of_tacvalue (VFun(push_appl appl largs,trace,newlfun,lvar,body)))
-    | (VFun(appl,trace,olfun,[],body)) ->
+    | (VFun(_appl,_trace,_olfun,[],_body)) ->
       let extra_args = List.length largs in
       Tacticals.New.tclZEROMSG (str "Illegal tactic application: got " ++
                                 str (string_of_int extra_args) ++
@@ -1473,7 +1473,7 @@ and interp_genarg ist x : Val.t Ftactic.t =
       interp_genarg ist (Genarg.in_gen (glbwit wit1) p) >>= fun p ->
       interp_genarg ist (Genarg.in_gen (glbwit wit2) q) >>= fun q ->
       Ftactic.return (Val.Dyn (Val.typ_pair, (p, q)))
-    | ExtraArg s ->
+    | ExtraArg _s ->
       Geninterp.interp wit ist x
 
 (** returns [true] for genargs which have the same meaning
@@ -1909,7 +1909,7 @@ let register_interp0 wit f =
 
 let def_intern ist x = (ist, x)
 let def_subst _ x = x
-let def_interp ist x = Ftactic.return x
+let def_interp _ist x = Ftactic.return x
 
 let declare_uniform t =
   Genintern.register_intern0 t def_intern;
@@ -1970,7 +1970,7 @@ let () =
   register_interp0 wit_intro_pattern (lifts interp_intro_pattern);
   register_interp0 wit_clause_dft_concl (lift interp_clause);
   register_interp0 wit_constr (lifts interp_constr);
-  register_interp0 wit_tacvalue (fun ist v -> Ftactic.return v);
+  register_interp0 wit_tacvalue (fun _ist v -> Ftactic.return v);
   register_interp0 wit_red_expr (lifts interp_red_expr);
   register_interp0 wit_quant_hyp (lift interp_declared_or_quantified_hypothesis);
   register_interp0 wit_open_constr (lifts interp_open_constr);

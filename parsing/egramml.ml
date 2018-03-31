@@ -52,8 +52,8 @@ type 'r gen_eval = Loc.t -> raw_generic_argument list -> 'r
 
 let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> a = function
 | TyStop -> fun f loc -> f loc []
-| TyNext (rem, tok, None) -> fun f _ -> ty_eval rem f
-| TyNext (rem, tok, Some inj) -> fun f x ->
+| TyNext (rem, _tok, None) -> fun f _ -> ty_eval rem f
+| TyNext (rem, _tok, Some inj) -> fun f x ->
   let f loc args = f loc (inj x :: args) in
   ty_eval rem f
 
@@ -79,6 +79,6 @@ let get_extend_vernac_rule (s, i) =
 let extend_vernac_command_grammar s nt gl =
   let nt = Option.default Vernac_.command nt in
   vernac_exts := (s,gl) :: !vernac_exts;
-  let mkact loc l = VernacExtend (s, l) in
+  let mkact _loc l = VernacExtend (s, l) in
   let rules = [make_rule mkact gl] in
   grammar_extend nt None (None, [None, None, rules])

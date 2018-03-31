@@ -42,7 +42,7 @@ let declare_global_definition ident ce local k pl imps =
   let () = definition_message ident in
   gr
 
-let declare_definition ident (local, p, k) ce pl imps hook =
+let declare_definition ident (local, _p, k) ce pl imps hook =
   let fix_exn = Future.fix_exn_of ce.const_entry_body in
   let r = match local with
   | Discharge when Lib.sections_are_opened () ->
@@ -60,7 +60,7 @@ let declare_definition ident (local, p, k) ce pl imps hook =
     declare_global_definition ident ce local k pl imps in
   Lemmas.call_hook fix_exn hook local r
 
-let declare_fix ?(opaque = false) (_,poly,_ as kind) pl univs f ((def,_),eff) t imps =
+let declare_fix ?(opaque = false) (_,_poly,_ as kind) pl univs f ((def,_),eff) t imps =
   let ce = definition_entry ~opaque ~types:t ~univs ~eff def in
   declare_definition f kind ce pl imps (Lemmas.mk_hook (fun _ r -> r))
 

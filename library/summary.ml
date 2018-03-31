@@ -157,7 +157,7 @@ let surgery_summary { summaries; ml_module } bits =
     String.Map.fold (fun hash state sum -> String.Map.set hash state sum ) summaries bits in
   { summaries; ml_module }
 
-let project_summary { summaries; ml_module } ?(complement=false) ids =
+let project_summary { summaries; _ } ?(complement=false) ids =
   String.Map.filter (fun name _ -> complement <> List.(mem name ids)) summaries
 
 let pointer_equal l1 l2 =

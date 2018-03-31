@@ -41,7 +41,7 @@ type label = Y.t
 type t = Node of X.t * t T_codom.t
 
 let codom_for_all f m =
-  let fold key v accu = f v && accu in
+  let fold _key v accu = f v && accu in
   T_codom.fold fold m true
 
 let empty = Node (X.nil, T_codom.empty)

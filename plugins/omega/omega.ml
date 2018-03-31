@@ -175,7 +175,7 @@ let sbi = string_of_bigint
 
 let rec display_action print_var = function
   | act :: l -> begin match act with
-      | DIVIDE_AND_APPROX (e1,e2,k,d) ->
+      | DIVIDE_AND_APPROX (e1,_e2,k,d) ->
           Printf.printf
             "Inequation E%d is divided by %s and the constant coefficient is \
             rounded by substracting %s.\n" e1.id (sbi k) (sbi d)
@@ -213,7 +213,7 @@ let rec display_action print_var = function
           Printf.printf
             "Equations E%d and E%d imply a contradiction on their \
             constant factors.\n" e1.id e2.id
-      | NEGATE_CONTRADICT(e1,e2,b) ->
+      | NEGATE_CONTRADICT(e1,e2,_b) ->
           Printf.printf
             "Equations E%d and E%d state that their body is at the same time \
             equal and different\n" e1.id e2.id
@@ -319,7 +319,7 @@ let normalize ({id=id; kind=eq_flag; body=e; constant =x} as eq) =
     end else [eq]
 
 let eliminate_with_in new_eq_id {v=v;c=c_unite} eq2
-                        ({body=e1; constant=c1} as eq1) =
+                        ({body=e1; constant=_c1} as eq1) =
   try
     let (f,_) = chop_var v e1 in
     let coeff = if c_unite=?one then neg f.c else if c_unite=? negone then f.c
@@ -353,7 +353,7 @@ let banerjee_step (new_eq_id,new_var_id,print_var) original l1 l2 =
   add_event (STATE {st_new_eq = new_eq; st_def = definition;
 		    st_orig = original; st_coef = m; st_var = sigma});
   let new_eq = List.hd (normalize new_eq) in
-  let eliminated_var, def = chop_var var new_eq.body in
+  let eliminated_var, _def = chop_var var new_eq.body in
   let other_equations =
     Util.List.map_append
       (fun e ->
@@ -367,10 +367,10 @@ let banerjee_step (new_eq_id,new_var_id,print_var) original l1 l2 =
   add_event (EXACT_DIVIDE (original',m));
   List.hd (normalize mod_original),other_equations,inequations
 
-let rec eliminate_one_equation ((new_eq_id,new_var_id,print_var) as new_ids) (e,other,ineqs) =
+let rec eliminate_one_equation ((new_eq_id,_new_var_id,print_var) as new_ids) (e,other,ineqs) =
   if !debug then display_system print_var (e::other);
   try
-    let v,def = chop_factor_1 e.body in
+    let v,_def = chop_factor_1 e.body in
     (Util.List.map_append
       (fun e' -> normalize (eliminate_with_in new_eq_id v e e')) other,
      Util.List.map_append
@@ -452,11 +452,11 @@ let redundancy_elimination new_eq_id system =
   let accu_ineq = ref [] in
   Hashtbl.iter
     (fun p0 p1 -> match (p0,p1) with
-       | (e, (Some x, Some y)) when x.constant =? y.constant ->
+       | (_e, (Some x, Some y)) when x.constant =? y.constant ->
            let id=new_eq_id () in
            add_event (MERGE_EQ(id,x,y.id));
            push {id=id; kind=EQUA; body=x.body; constant=x.constant} accu_eq
-       | (e, (optnorm,optinvert)) ->
+       | (_e, (optnorm,optinvert)) ->
            begin match optnorm with
                Some x -> push x accu_ineq | _ -> () end;
            begin match optinvert with
@@ -485,7 +485,7 @@ let select_variable system =
 let classify v system =
   List.fold_left
     (fun (not_occ,below,over) eq ->
-       try let f,eq' = chop_var v eq.body in
+       try let f,_eq' = chop_var v eq.body in
        if f.c >=? zero then (not_occ,((f.c,eq) :: below),over)
        else (not_occ,below,((neg f.c,eq) :: over))
        with CHOPVAR -> (eq::not_occ,below,over))
@@ -510,7 +510,7 @@ let product new_eq_id dark_shadow low high =
                        constant = eq.constant - delta}
                     else eq
                   in final_eq :: accu
-              | (e::_) -> failwith "Product dardk"
+              | (_e::_) -> failwith "Product dardk"
               | [] -> accu)
          accu high)
     [] low
@@ -521,7 +521,7 @@ let fourier_motzkin (new_eq_id,_,print_var) dark_shadow system =
   let expanded = ineq_out @ product new_eq_id dark_shadow ineq_low ineq_high in
   if !debug then display_system print_var expanded; expanded
 
-let simplify ((new_eq_id,new_var_id,print_var) as new_ids) dark_shadow system =
+let simplify ((new_eq_id,_new_var_id,print_var) as new_ids) dark_shadow system =
   if List.exists (fun e -> e.kind = DISE) system then
     failwith "disequation in simplify";
   clear_history ();
@@ -609,7 +609,7 @@ let negation (eqs,ineqs) =
 
 exception FULL_SOLUTION of action list * int list
 
-let simplify_strong ((new_eq_id,new_var_id,print_var) as new_ids) system =
+let simplify_strong ((new_eq_id,_new_var_id,print_var) as new_ids) system =
   clear_history ();
   List.iter (fun e -> add_event (HYP e)) system;
   (* Initial simplification phase *)

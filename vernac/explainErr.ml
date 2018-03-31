@@ -48,7 +48,7 @@ let _ = CErrors.register_handler explain_exn_default
 
 (** Pre-explain a vernac interpretation error *)
 
-let wrap_vernac_error (exn, info) strm = (EvaluatedError (strm, None), info)
+let wrap_vernac_error (_exn, info) strm = (EvaluatedError (strm, None), info)
 
 let process_vernac_interp_error exn = match fst exn with
   | Univ.UniverseInconsistency i ->

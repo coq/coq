@@ -256,7 +256,7 @@ let local_binder_loc = let open CAst in function
 
 let local_binders_loc bll = match bll with
   | []     -> None
-  | h :: l -> Loc.merge_opt (local_binder_loc h) (local_binder_loc (List.last bll))
+  | h :: _l -> Loc.merge_opt (local_binder_loc h) (local_binder_loc (List.last bll))
 
 (** Folds and maps *)
 
@@ -268,8 +268,8 @@ let is_constructor id =
 
 let rec cases_pattern_fold_names f a pt = match CAst.(pt.v) with
   | CPatRecord l ->
-    List.fold_left (fun acc (r, cp) -> cases_pattern_fold_names f acc cp) a l
-  | CPatAlias (pat,{CAst.v=na}) -> Name.fold_right f na (cases_pattern_fold_names f a pat)
+    List.fold_left (fun acc (_r, cp) -> cases_pattern_fold_names f acc cp) a l
+  | CPatAlias (_pat,id) -> f id a
   | CPatOr (patl) ->
     List.fold_left (cases_pattern_fold_names f) a patl
   | CPatCstr (_,patl1,patl2) ->
@@ -304,9 +304,17 @@ let ids_of_cases_tomatch tms =
          (Option.fold_right (CAst.with_val (Name.fold_right Id.Set.add)) ona l))
     tms Id.Set.empty
 
-let rec fold_local_binders g f n acc b = let open CAst in function
-  | CLocalAssum (nal,bk,t)::l ->
-    let nal = List.(map (fun {v} -> v) nal) in
+let rec fold_constr_expr_binders g f n acc b = function
+  | (nal,_bk,t)::l ->
+    let nal = snd (List.split nal) in
+    let n' = List.fold_right (Name.fold_right g) nal n in
+    f n (fold_constr_expr_binders g f n' acc b l) t
+  | [] ->
+    f n acc b
+
+let rec fold_local_binders g f n acc b = function
+  | CLocalAssum (nal,_bk,t)::l ->
+    let nal = snd (List.split nal) in
     let n' = List.fold_right (Name.fold_right g) nal n in
     f n (fold_local_binders g f n' acc b l) t
   | CLocalDef ( { v = na },c,t)::l ->
@@ -334,24 +342,24 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
     | CDelimiters (_,a) -> f n acc a
     | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CRef _ ->
       acc
-    | CRecord l -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
-    | CCases (sty,rtnpo,al,bl) ->
+    | CRecord l -> List.fold_left (fun acc (_id, c) -> f n acc c) acc l
+    | CCases (_sty,rtnpo,al,bl) ->
       let ids = ids_of_cases_tomatch al in
       let acc = Option.fold_left (f (Id.Set.fold g ids n)) acc rtnpo in
       let acc = List.fold_left (f n) acc (List.map (fun (fst,_,_) -> fst) al) in
-      List.fold_right (fun {CAst.v=(patl,rhs)} acc ->
+      List.fold_right (fun (_loc,(patl,rhs)) acc ->
           let ids = ids_of_pattern_list patl in
           f (Id.Set.fold g ids n) acc rhs) bl acc
-    | CLetTuple (nal,(ona,po),b,c) ->
-      let n' = List.fold_right (CAst.with_val (Name.fold_right g)) nal n in
-      f (Option.fold_right (CAst.with_val (Name.fold_right g)) ona n') (f n acc b) c
+    | CLetTuple (nal,(ona,_po),b,c) ->
+      let n' = List.fold_right (down_located (Name.fold_right g)) nal n in
+      f (Option.fold_right (down_located (Name.fold_right g)) ona n') (f n acc b) c
     | CIf (c,(ona,po),b1,b2) ->
       let acc = f n (f n (f n acc b1) b2) c in
       Option.fold_left
         (f (Option.fold_right (CAst.with_val (Name.fold_right g)) ona n)) acc po
     | CFix (_,l) ->
-      let n' = List.fold_right (fun ( { CAst.v = id },_,_,_,_) -> g id) l n in
-      List.fold_right (fun (_,(_,o),lb,t,c) acc ->
+      let n' = List.fold_right (fun ((_,id),_,_,_,_) -> g id) l n in
+      List.fold_right (fun (_,(_,_o),lb,t,c) acc ->
           fold_local_binders g f n'
             (fold_local_binders g f n acc t lb) c lb) l acc
     | CCoFix (_,_) ->
@@ -448,7 +456,7 @@ let rec replace_vars_constr_expr l = function
 (* Returns the ranges of locs of the notation that are not occupied by args  *)
 (* and which are then occupied by proper symbols of the notation (or spaces) *)
 
-let locs_of_notation ?loc locs ntn =
+let locs_of_notation ?loc locs _ntn =
   let unloc loc = Option.cata Loc.unloc (0,0) loc in
   let (bl, el) = unloc loc        in
   let locs =  List.map unloc locs in
@@ -503,7 +511,7 @@ let split_at_annot bl na =
             (Id.print id ++ str" must be a proper parameter and not a local definition.")
         else
           aux (x :: acc) rest
-      | CLocalPattern _ :: rest ->
+      | CLocalPattern (_,_) :: _rest ->
         Loc.raise ?loc (Stream.Error "pattern with quote not allowed after fix")
       | [] ->
         CErrors.user_err ?loc

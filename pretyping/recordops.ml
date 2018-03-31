@@ -52,7 +52,7 @@ let projection_table =
 type struc_tuple =
     inductive * constructor * (Name.t * bool) list * Constant.t option list
 
-let load_structure i (_,(ind,id,kl,projs)) =
+let load_structure _i (_,(ind,id,kl,projs)) =
   let n = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
   let struc =
     { s_CONST = id; s_EXPECTEDPARAM = n; s_PROJ = projs; s_PROJKIND = kl } in
@@ -264,7 +264,7 @@ let add_canonical_structure warn o =
       with Not_found -> None
       in match ocs with
         | None -> object_table := Refmap.add proj ((pat,s)::l) !object_table;
-        | Some (c, cs) ->
+        | Some (_c, cs) ->
               let old_can_s = (Termops.print_constr (EConstr.of_constr cs.o_DEF))
               and new_can_s = (Termops.print_constr (EConstr.of_constr s.o_DEF)) in
               let prj = (Nametab.pr_global_env Id.Set.empty proj)
@@ -324,13 +324,9 @@ let check_and_decompose_canonical_structure ref =
     | _ ->
        error_not_structure ref "Expected a record or structure constructor applied to arguments." in
   let indsp = match kind f with
-    | Construct ((indsp,1),u) -> indsp
-    | _ -> error_not_structure ref "Expected an instance of a record or structure." in
-  let s =
-    try lookup_structure indsp
-    with Not_found ->
-      error_not_structure ref
-        ("Could not find the record or structure " ^ (MutInd.to_string (fst indsp))) in
+    | Construct ((indsp,1),_u) -> indsp
+    | _ -> error_not_structure ref in
+  let s = try lookup_structure indsp with Not_found -> error_not_structure ref in
   let ntrue_projs = List.count snd s.s_PROJKIND in
   if s.s_EXPECTEDPARAM + ntrue_projs > Array.length args then
     error_not_structure ref "Got too few arguments to the record or structure constructor.";
@@ -344,7 +340,7 @@ let lookup_canonical_conversion (proj,pat) =
 
 let decompose_projection sigma c args =
   match EConstr.kind sigma c with
-  | Const (c, u) ->
+  | Const (c, _u) ->
      let n = find_projection_nparams (ConstRef c) in
      (** Check if there is some canonical projection attached to this structure *)
      let _ = Refmap.find (ConstRef c) !object_table in

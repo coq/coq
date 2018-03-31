@@ -67,7 +67,7 @@ let ground_tac solver startseq =
 		      | Ror->
 			  or_tac  backtrack continue (re_add seq1)
 		      | Rfalse->backtrack
-		      | Rexists(i,dom,triv)->
+		      | Rexists(_i,_dom,_triv)->
 			  let (lfp,seq2)=collect_quantified (project gl) seq in
 			  let backtrack2=toptac (lfp@skipped) seq2 in
 			    if  !qflag && seq.depth>0 then

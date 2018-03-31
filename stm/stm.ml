@@ -93,10 +93,11 @@ module Hooks = struct
 
 let state_computed, state_computed_hook = Hook.make
  ~default:(fun state_id ~in_cache ->
-    feedback ~id:state_id Processed) ()
+        ignore(in_cache);
+        feedback ~id:state_id Processed) ()
 
 let state_ready, state_ready_hook = Hook.make
- ~default:(fun state_id -> ()) ()
+ ~default:(fun _state_id -> ()) ()
 
 let forward_feedback, forward_feedback_hook =
   let m = Mutex.create () in
@@ -273,7 +274,7 @@ end = struct (* {{{ *)
 
   let find_proof_at_depth vcs pl =
     try List.find (function
-          | _, { Vcs_.kind = `Proof(m, n) } -> Int.equal n pl
+          | _, { Vcs_.kind = `Proof(_m, n) } -> Int.equal n pl
           | _, { Vcs_.kind = `Edit _ } -> anomaly(Pp.str "find_proof_at_depth.")
           | _ -> false)
         (List.map (fun h -> h, Vcs_.get_branch vcs h) (Vcs_.branches vcs))
@@ -472,7 +473,7 @@ end = struct (* {{{ *)
 
     let oc = open_out fname_dot in
     output_string oc "digraph states {\n";
-    Dag.iter graph (fun from cf _ l ->
+    Dag.iter graph (fun from _cf _ l ->
       List.iter (fun (dest, trans) ->
        fprintf oc "%s -> %s [xlabel=%s,labelfloat=true];\n"
            (node from) (node dest) (edge trans)) l
@@ -733,7 +734,7 @@ end = struct (* {{{ *)
 
     let run_command () =
       try while true do get_last_job () () done
-      with e -> () (* No failure *)
+      with _e -> () (* No failure *)
 
     let command ~now job =
       if now then job ()
@@ -754,6 +755,7 @@ end = struct (* {{{ *)
 end (* }}} *)
 
 let state_of_id ~doc id =
+  ignore(doc);
   try match (VCS.get_info id).state with
     | Valid s -> `Valid (Some s)
     | Error (e,_) -> `Error e
@@ -1295,9 +1297,9 @@ let register_proof_block_delimiter name static dynamic =
   proof_block_delimiters := (name, (static,dynamic)) :: !proof_block_delimiters
 
 let mk_doc_node id = function
-  | { step = `Cmd { ctac; cast = { indentation; expr }}; next } when ctac ->
+  | { step = `Cmd { ctac; cast = { indentation; expr }}; _ } when ctac ->
        Some { indentation; ast = expr; id }
-  | { step = `Sideff (ReplayCommand { indentation; expr }, _); next } ->
+  | { step = `Sideff (ReplayCommand { indentation; expr }, _); _ } ->
        Some { indentation; ast = expr; id }
   | _ -> None
 let prev_node { id } =
@@ -1322,7 +1324,7 @@ let detect_proof_block id name =
       let static, _ = List.assoc name !proof_block_delimiters in
       begin match static { prev_node; entry_point } with
       | None -> ()
-      | Some ({ block_start; block_stop } as decl) ->
+      | Some decl ->
           VCS.create_proof_block decl name
       end
     with Not_found ->
@@ -1446,7 +1448,7 @@ end = struct (* {{{ *)
 
   let use_response (s : worker_status) t r =
     match s, t, r with
-    | Old c, States _, RespStates l ->
+    | Old _c, States _, RespStates l ->
         List.iter (fun (id,s) -> State.assign id s) l; `End
     | Fresh, BuildProof { t_assign; t_loc; t_name; t_states; t_drop },
               RespBuiltProof (pl, time) ->
@@ -1456,7 +1458,7 @@ end = struct (* {{{ *)
         if !cur_opt.async_proofs_full || t_drop
         then `Stay(t_states,[States t_states])
         else `End
-    | Fresh, BuildProof { t_assign; t_loc; t_name; t_states },
+    | Fresh, BuildProof { t_assign; t_states },
             RespError { e_error_at; e_safe_id = valid; e_msg; e_safe_states } ->
         feedback (InProgress ~-1);
         let info = Stateid.add ~valid Exninfo.null e_error_at in
@@ -1875,7 +1877,7 @@ end = struct (* {{{ *)
       r_name     = t_name }
     with VCS.Expired -> None
 
-  let use_response _ { t_assign; t_state; t_state_fb; t_kill } resp =
+  let use_response _ { t_assign; t_kill } resp =
     match resp with
     | RespBuiltSubProof o -> t_assign (`Val (Some o)); `Stay ((),[])
     | RespNoProgress ->
@@ -1888,7 +1890,7 @@ end = struct (* {{{ *)
         t_kill ();
         `Stay ((),[])
 
-  let on_marshal_error err { t_name } =
+  let on_marshal_error _err { t_name } =
     stm_pr_err ("Fatal marshal error: " ^ t_name );
     flush_all (); exit 1
 
@@ -2221,8 +2223,8 @@ let collect_proof keep cur hd brkind id =
    | _ -> false
  in
  match cur, (VCS.visit id).step, brkind with
- | (parent, x), `Fork _, _ when is_vernac_exact (Vernacprop.under_control x.expr)
-                                && (not (Vernacprop.has_Fail x.expr)) ->
+ | (_parent, { expr = VernacExactProof _ }), `Fork _, _
+ | (_parent, { expr = VernacTime (_, VernacExactProof _) }), `Fork _, _ ->
      `Sync (no_name,`Immediate)
  | _, _, { VCS.kind = `Edit _ }  -> check_policy (collect (Some cur) [] id)
  | _ ->
@@ -2366,7 +2368,7 @@ let known_state ?(redefine_qed=false) ~cache id =
       | `Alias (id,_) -> (fun () ->
             reach view.next; reach id
           ), cache, true
-      | `Cmd { cast = x; cqueue = `SkipQueue } -> (fun () ->
+      | `Cmd { cast = _x; cqueue = `SkipQueue } -> (fun () ->
             reach view.next), cache, true
       | `Cmd { cast = x; cqueue = `TacQueue (solve,abstract,cancel_switch); cblock } ->
           (fun () ->
@@ -2427,7 +2429,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                 VCS.create_proof_task_box nodes ~qed:id ~block_start;
                 begin match brinfo, qed.fproof with
                 | { VCS.kind = `Edit _ }, None -> assert false
-                | { VCS.kind = `Edit (_,_,_, okeep, _) }, Some (ofp, cancel) ->
+                | { VCS.kind = `Edit (_,_,_, okeep, _) }, Some (ofp, _cancel) ->
                     assert(redefine_qed = true);
                     if okeep != keep then
                       msg_warning(strbrk("The command closing the proof changed. "
@@ -2467,7 +2469,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                 end;
                 Proof_global.discard_all ()
               ), (if redefine_qed then `No else `Yes), true
-          | `Sync (name, `Immediate) -> (fun () ->
+          | `Sync (_name, `Immediate) -> (fun () ->
                 reach eop;
                 let st = Vernacstate.freeze_interp_state `No in
                 ignore(stm_vernac_interp id st x);
@@ -2717,7 +2719,7 @@ let merge_proof_branch ~valid ?id qast keep brname =
       VCS.delete_branch brname;
       VCS.propagate_sideff ~action:CherryPickEnv;
       `Ok
-  | { VCS.kind = `Edit (mode, qed_id, master_id, _,_) } ->
+  | { VCS.kind = `Edit (_mode, qed_id, master_id, _,_) } ->
       let ofp =
         match VCS.visit qed_id with
         | { step = `Qed ({ fproof }, _) } -> fproof
@@ -2740,7 +2742,7 @@ let handle_failure (e, info) vcs =
       VCS.print ();
       anomaly(str"error with no safe_id attached:" ++ spc() ++
         CErrors.iprint_no_report (e, info) ++ str".")
-  | Some (safe_id, id) ->
+  | Some (_safe_id, id) ->
       stm_prerr_endline (fun () -> "Failed at state " ^ Stateid.to_string id);
       VCS.restore vcs;
       VCS.print ();
@@ -2789,7 +2791,7 @@ let process_back_meta_command ~part_of_script ~newtip ~head oid aast w =
     anomaly(str"undo classifier: VtMeta + VtLater must imply part_of_script.")
 
 let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
-  ({ verbose; loc; expr } as x) c =
+  ({ expr } as x) c =
   stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
   let vcs = VCS.backup () in
   try
@@ -2817,7 +2819,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
          with e ->
            let e = CErrors.push e in
            Exninfo.iraise (State.exn_on ~valid:Stateid.dummy query_sid e)); `Ok
-      | VtQuery (true, route), w ->
+      | VtQuery (true, _route), w ->
           let id = VCS.new_node ~id:newtip () in
           let queue =
             if !cur_opt.async_proofs_full then `QueryQueue (ref false)
@@ -2853,7 +2855,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
           VCS.commit id (mkTransCmd x [] false `MainQueue);
           List.iter
             (fun bn -> match VCS.get_branch bn with
-            | { VCS.root; kind = `Master; pos } -> ()
+            | { VCS.root = _; kind = `Master; pos = _ } -> ()
             | { VCS.root; kind = `Proof(_,d); pos } ->
                 VCS.delete_branch bn;
                 VCS.branch ~root ~pos bn (`Proof(mode,d))
@@ -2956,6 +2958,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
     handle_failure e vcs
 
 let get_ast ~doc id =
+  ignore(doc);
   match VCS.visit id with
   | { step = `Cmd { cast = { loc; expr } } }
   | { step = `Fork (({ loc; expr }, _, _, _), _) }
@@ -2978,6 +2981,7 @@ let stop_worker n = Slaves.cancel_worker n
 exception End_of_input
 
 let parse_sentence ~doc sid pa =
+  ignore(doc);
   (* XXX: Should this restore the previous state?
      Using reach here to try to really get to the
      proper state makes the error resilience code fail *)
@@ -3031,7 +3035,7 @@ let compute_indentation ?loc sid = Option.cata (fun loc ->
   let len = loc.ep - loc.bp in
   let prev_indent = match ind_len_loc_of_id sid with
     | None         -> 0
-    | Some (i,l,p) -> i + l
+    | Some (i,l,_p) -> i + l
   in
   (* Now if the line has not changed, the need to add the previous indent *)
   let eff_indent = loc.bp - loc.bol_pos in
@@ -3057,7 +3061,9 @@ let add ~doc ~ontop ?newtip verb { CAst.loc; v=ast } =
   | `Ok -> doc, VCS.cur_tip (), `NewTip
   | `Unfocus qed_id -> doc, qed_id, `Unfocus (VCS.cur_tip ())
 
-let set_perspective ~doc id_list = Slaves.set_perspective id_list
+let set_perspective ~doc id_list =
+  ignore(doc);
+  Slaves.set_perspective id_list
 
 type focus = {
   start : Stateid.t;
@@ -3125,7 +3131,7 @@ let edit_at ~doc id =
       | { step = `Sideff (ReplayCommand _,id) } -> id
       | { step = `Sideff _ } -> tip
       | { next } -> master_for_br root next in
-  let reopen_branch start at_id mode qed_id tip old_branch =
+  let reopen_branch start _at_id mode qed_id tip old_branch =
     let master_id, cancel_switch, keep =
       (* Hum, this should be the real start_id in the cluster and not next *)
       match VCS.visit qed_id with
@@ -3176,7 +3182,7 @@ let edit_at ~doc id =
           if has_failed qed_id && is_pure qed_id && not !cur_opt.async_proofs_never_reopen_branch
           then reopen_branch start id mode qed_id tip bn
           else backto id (Some bn)
-      | true, Some { qed = qed_id }, Some(mode,bn) ->
+      | true, Some { qed = _qed_id }, Some(_mode,bn) ->
           if on_cur_branch id then begin
             assert false
           end else if is_ancestor_of_cur_branch id then begin
@@ -3213,19 +3219,25 @@ let edit_at ~doc id =
         VCS.print ();
         Exninfo.iraise (e, info)
 
-let get_current_state ~doc = VCS.cur_tip ()
-let get_ldir ~doc = VCS.get_ldir ()
+let get_current_state ~doc =
+  ignore(doc);
+  VCS.cur_tip ()
 
-let get_doc did = dummy_doc
+let get_ldir ~doc =
+  ignore(doc);
+  VCS.get_ldir ()
+
+let get_doc _did = dummy_doc
 
 (*********************** TTY API (PG, coqtop, coqc) ***************************)
 (******************************************************************************)
 
 let current_proof_depth ~doc =
+  ignore(doc);
   let head = VCS.current_branch () in
   match VCS.get_branch head with
   | { VCS.kind = `Master } -> 0
-  | { VCS.pos = cur; VCS.kind = (`Proof _ | `Edit _); VCS.root = root } ->
+  | { VCS.pos = cur; VCS.kind = (`Proof _ | `Edit _); VCS.root = _root } ->
       let rec distance root =
         if Stateid.equal cur root then 0
         else 1 + distance (VCS.visit cur).next in
@@ -3241,6 +3253,7 @@ let proofname b = match VCS.get_branch b with
   | _ -> None
 
 let get_all_proof_names ~doc =
+  ignore(doc);
   List.map unmangle (CList.map_filter proofname (VCS.branches ()))
 
 (* Export hooks *)

@@ -493,7 +493,7 @@ let coq_dependencies () =
 let rec suffixes = function
   | [] -> assert false
   | [name] -> [[name]]
-  | dir::suffix as l -> l::suffixes suffix
+  | _dir::suffix as l -> l::suffixes suffix
 
 let add_caml_known phys_dir _ f =
   let basename,suff =
@@ -505,7 +505,7 @@ let add_caml_known phys_dir _ f =
     | ".mlpack" -> add_mlpack_known basename (Some phys_dir) suff
     | _ -> ()
 
-let add_coqlib_known recur phys_dir log_dir f =
+let add_coqlib_known recur _phys_dir log_dir f =
   match get_extension f [".vo"; ".vio"] with
     | (basename, (".vo" | ".vio")) ->
         let name = log_dir@[basename] in

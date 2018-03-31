@@ -174,7 +174,7 @@ and nf_whd env sigma whd typ =
       mkApp(capp,args)
   | Vatom_stk(Aid idkey, stk) ->
       constr_type_of_idkey env sigma idkey stk
-  | Vatom_stk(Aind ((mi,i) as ind), stk) ->
+  | Vatom_stk(Aind ((mi,_i) as ind), stk) ->
      let mib = Environ.lookup_mind mi env in
      let nb_univs =
        Univ.AUContext.size (Declareops.inductive_polymorphic_context mib)
@@ -183,9 +183,8 @@ and nf_whd env sigma whd typ =
        let pind = (ind, u) in (mkIndU pind, type_of_ind env pind)
      in
      nf_univ_args ~nb_univs mk env sigma stk
-  | Vatom_stk(Asort s, stk) ->
-    assert (List.is_empty stk); mkSort s
-  | Vuniv_level lvl ->
+  | Vatom_stk(Atype _u, _stk) -> assert false
+  | Vuniv_level _lvl ->
     assert false
 
 and nf_univ_args ~nb_univs mk env sigma stk =
@@ -259,7 +258,7 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       nf_stk env sigma (mkApp(fa,[|c|])) (subst1 c codom) stk
   | Zswitch sw :: stk ->
       assert (from = 0) ;
-      let ((mind,_ as ind), u), allargs = find_rectype_a env t in
+      let ((_mind,_ as ind), u), allargs = find_rectype_a env t in
       let (mib,mip) = Inductive.lookup_mind_specif env ind in
       let nparams = mib.mind_nparams in
       let params,realargs = Util.Array.chop nparams allargs in
@@ -272,7 +271,7 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       let btypes = build_branches_type env sigma ind mib mip u params dep p in
       (* calcul des branches *)
       let bsw = branch_of_switch (nb_rel env) sw in
-      let mkbranch i (n,v) =
+      let mkbranch i (_n,v) =
 	let decl,decl_with_letin,codom = btypes.(i) in
 	let b = nf_val (Termops.push_rels_assum decl env) sigma v codom in
         Termops.it_mkLambda_or_LetIn_from_no_LetIn b decl_with_letin
@@ -387,7 +386,8 @@ let cbv_vm env sigma c t  =
   EConstr.of_constr (nf_val env sigma v t)
 
 let vm_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
-  Reductionops.infer_conv_gen (fun pb ~l2r sigma ts -> Vconv.vm_conv_gen pb)
+  Reductionops.infer_conv_gen (fun pb ~l2r _sigma _ts ->
+      ignore(l2r); Vconv.vm_conv_gen pb)
     ~catch_incon:true ~pb env sigma t1 t2
 
 let _ = if Coq_config.bytecode_compiler then Reductionops.set_vm_infer_conv vm_infer_conv

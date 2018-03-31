@@ -139,7 +139,7 @@ let rec functor_smartmap fty f0 funct = match funct with
     let a' = f0 a in if a==a' then funct else NoFunctor a'
 
 let rec functor_iter fty f0 = function
-  |MoreFunctor (mbid,ty,e) -> fty ty; functor_iter fty f0 e
+  |MoreFunctor (_mbid,ty,e) -> fty ty; functor_iter fty f0 e
   |NoFunctor a -> f0 a
 
 (** {6 Misc operations } *)
@@ -172,7 +172,7 @@ let implem_iter fs fa impl = match impl with
 
 (** {6 Substitutions of modular structures } *)
 
-let id_delta x y = x
+let id_delta x _y = x
 
 let subst_with_body sub = function
   |WithMod(id,mp) as orig ->
@@ -266,7 +266,7 @@ let subst_structure subst = subst_structure subst do_delta_codom
 (* spiwack: here comes the function which takes care of importing
    the retroknowledge declared in the library *)
 (* lclrk : retroknowledge_action list, rkaction : retroknowledge action *)
-let add_retroknowledge mp =
+let add_retroknowledge _mp =
   let perform rkaction env = match rkaction with
     | Retroknowledge.RKRegister (f, e) when (isConst e || isInd e) ->
       Environ.register env f e
@@ -372,7 +372,7 @@ and strengthen_sig mp_from struc mp_to reso = match struc with
     let item' = l,SFBmodule mb' in
     let reso',rest' = strengthen_sig mp_from rest mp_to reso in
     add_delta_resolver reso' mb.mod_delta, item':: rest'
-  |(l,SFBmodtype mty as item) :: rest ->
+  |(_l,SFBmodtype _mty as item) :: rest ->
     let reso',rest' = strengthen_sig mp_from rest mp_to reso in
     reso',item::rest'
 
@@ -628,7 +628,7 @@ let join_structure except otab s =
   let rec join_module : 'a. 'a generic_module_body -> unit = fun mb ->
     Option.iter join_expression mb.mod_type_alg;
     join_signature mb.mod_type
-  and join_field (l,body) = match body with
+  and join_field (_l,body) = match body with
     |SFBconst sb -> join_constant_body except otab sb
     |SFBmind _ -> ()
     |SFBmodule m ->

@@ -195,7 +195,7 @@ let lookup_named_val id env =
   snd(Id.Map.find id env.env_named_context.env_named_map)
 
 (* Warning all the names should be different *)
-let env_of_named id env = env
+let env_of_named _id env = env
 
 (* Global constants *)
 

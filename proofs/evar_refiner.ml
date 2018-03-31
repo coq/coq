@@ -24,7 +24,7 @@ open Ltac_pretype
 
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 
-let depends_on_evar sigma evk _ (pbty,_,t1,t2) =
+let depends_on_evar sigma evk _ (_pbty,_,t1,t2) =
   let t1 = EConstr.of_constr t1 in
   let t2 = EConstr.of_constr t2 in
   try Evar.equal (head_evar sigma t1) evk

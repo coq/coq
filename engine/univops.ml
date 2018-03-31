@@ -66,7 +66,7 @@ let add_up a d b graph =
 
 (* for each node transitive close until you find a non removable, discard the rest *)
 let transitive_close removable graph =
-  let rec do_node a node =
+  let rec do_node _a node =
     if not node.visited
     then
       let keepup =

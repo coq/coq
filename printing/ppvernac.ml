@@ -157,7 +157,7 @@ open Decl_kinds
 
   let pr_explanation (e,b,f) =
     let a = match e with
-      | ExplByPos (n,_) -> anomaly (Pp.str "No more supported.")
+      | ExplByPos (_n,_) -> anomaly (Pp.str "No more supported.")
       | ExplByName id -> pr_id id in
     let a = if f then str"!" ++ a else a in
     if b then str "[" ++ a ++ str "]" else a
@@ -178,7 +178,7 @@ open Decl_kinds
       | StringValue s -> spc() ++ str s
       | StringOptValue None -> mt()
       | StringOptValue (Some s) -> spc() ++ str s
-      | BoolValue b -> mt()
+      | BoolValue _b -> mt()
     in pr_printoption a None ++ pr_opt_value b
 
   let pr_opt_hintbases l = match l with
@@ -279,7 +279,7 @@ open Decl_kinds
       keyword "Import" ++ spc ()
     | None -> mt()
 
-  let pr_module_vardecls pr_c (export,idl,(mty,inl)) =
+  let pr_module_vardecls pr_c (export,idl,(mty,_inl)) =
     let m = pr_module_ast true pr_c mty in
     spc() ++
       hov 1 (str"(" ++ pr_require_token export ++
@@ -289,10 +289,10 @@ open Decl_kinds
     prlist_strict (pr_module_vardecls pr_c) l
 
   let pr_type_option pr_c = function
-    | { v = CHole (k, Misctypes.IntroAnonymous, _) } -> mt()
+    | { CAst.v = CHole (_k, Misctypes.IntroAnonymous, _) } -> mt()
     | _ as c -> brk(0,2) ++ str" :" ++ pr_c c
 
-  let pr_decl_notation prc ({loc; v=ntn},c,scopt) =
+  let pr_decl_notation prc ((_loc,ntn),c,scopt) =
     fnl () ++ keyword "where " ++ qs ntn ++ str " := "
     ++ Flags.without_option Flags.beautify prc c ++
       pr_opt (fun sc -> str ": " ++ str sc) scopt
@@ -446,7 +446,7 @@ open Decl_kinds
     let prpri = match pri with None -> mt() | Some i -> str "| " ++ int i in
     prx ++ prpri ++ prlist (pr_decl_notation pr_constr) ntn
 
-  let pr_record_decl b c fs =
+  let pr_record_decl _b c fs =
     pr_opt pr_lident c ++ (if c = None then str"{" else str" {") ++
       hv 0 (prlist_with_sep pr_semicolon pr_record_field fs ++ str"}")
 
@@ -691,7 +691,7 @@ open Decl_kinds
         )
 
       (* Gallina *)
-      | VernacDefinition ((discharge,kind),id,b) -> (* A verifier... *)
+      | VernacDefinition ((_discharge,kind),id,b) -> (* A verifier... *)
         let pr_def_token dk =
           keyword (
             if Name.is_anonymous (fst id).v
@@ -751,7 +751,7 @@ open Decl_kinds
         let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
         return (hov 2 (pr_assumption_token (n > 1) discharge kind ++
                        pr_non_empty_arg pr_assumption_inline t ++ spc() ++ assumptions))
-      | VernacInductive (cum, p,f,l) ->
+      | VernacInductive (cum, p,_f,l) ->
         let pr_constructor (coe,(id,c)) =
           hov 2 (pr_lident id ++ str" " ++
                    (if coe then str":>" else str":") ++

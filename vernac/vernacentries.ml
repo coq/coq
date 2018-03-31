@@ -66,15 +66,15 @@ let show_proof () =
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
   let pfts = Proof_global.give_me_the_proof () in
-  let gls,_,shelf,givenup,sigma = Proof.proof pfts in
-  pr_evars_int sigma ~shelf ~givenup 1 (Evd.undefined_map sigma)
+  let _gls,_,_,_,sigma = Proof.proof pfts in
+  Feedback.msg_notice (pr_evars_int sigma 1 (Evd.undefined_map sigma))
 
 let show_universes () =
   let pfts = Proof_global.give_me_the_proof () in
-  let gls,_,_,_,sigma = Proof.proof pfts in
-  let ctx = Evd.universe_context_set (Evd.minimize_universes sigma) in
-  Termops.pr_evar_universe_context (Evd.evar_universe_context sigma) ++ fnl () ++
-  str "Normalized constraints: " ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx
+  let _gls,_,_,_,sigma = Proof.proof pfts in
+  let ctx = Evd.universe_context_set (Evd.nf_constraints sigma) in
+    Feedback.msg_notice (Termops.pr_evar_universe_context (Evd.evar_universe_context sigma));
+    Feedback.msg_notice (str"Normalized constraints: " ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx)
 
 (* Simulate the Intro(s) tactic *)
 let show_intro all =
@@ -185,7 +185,7 @@ let print_modules () =
 
 
 let print_module r =
-  let qid = qualid_of_reference r in
+  let (_loc,qid) = qualid_of_reference r in
   try
     let globdir = Nametab.locate_dir qid.v in
       match globdir with
@@ -196,7 +196,7 @@ let print_module r =
     Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid.v)
 
 let print_modtype r =
-  let qid = qualid_of_reference r in
+  let (_loc,qid) = qualid_of_reference r in
   try
     let kn = Nametab.locate_modtype qid.v in
     Printmod.print_modtype kn
@@ -443,7 +443,7 @@ let vernac_notation ~atts =
 let start_proof_and_print k l hook =
   let inference_hook =
     if Flags.is_program_mode () then
-      let hook env sigma ev =
+      let hook _env sigma ev =
         let tac = !Obligations.default_tactic in
         let evi = Evd.find sigma ev in
         let evi = Evarutil.nf_evar_info sigma evi in
@@ -474,7 +474,7 @@ let vernac_definition_hook p = function
 | SubClass -> Class.add_subclass_hook p
 | _ -> no_hook
 
-let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
+let vernac_definition ~atts discharge kind ((_loc,id as lid),pl) def =
   let local = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook atts.polymorphic kind in
   let () =
@@ -525,7 +525,7 @@ let vernac_assumption ~atts discharge kind l nl =
   let local = enforce_locality_exp atts.locality discharge in
   let global = local == Global in
   let kind = local, atts.polymorphic, kind in
-  List.iter (fun (is_coe,(idl,c)) ->
+  List.iter (fun (_is_coe,(idl,_c)) ->
     if Dumpglob.dump () then
       List.iter (fun (lid, _) ->
 	if global then Dumpglob.dump_definition lid false "ax"
@@ -567,7 +567,7 @@ let vernac_record cum k poly finite struc binders sort nameopt cfs =
 let vernac_inductive ~atts cum lo finite indl =
   let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
   if Dumpglob.dump () then
-    List.iter (fun (((coe,(lid,_)), _, _, _, cstrs), _) ->
+    List.iter (fun (((_coe,(lid,_)), _, _, _, cstrs), _) ->
       match cstrs with
 	| Constructors cstrs ->
 	    Dumpglob.dump_definition lid false "ind";
@@ -591,7 +591,7 @@ let vernac_inductive ~atts cum lo finite indl =
       in vernac_record cum (Class true) atts.polymorphic finite id bl c None [f]
   | [ ( _ , _, _, Class _, Constructors _), [] ] ->
       user_err Pp.(str "Inductive classes not supported")
-  | [ ( id , bl , c , Class _, _), _ :: _ ] ->
+  | [ ( _id , _bl , _c , Class _, _), _ :: _ ] ->
       user_err Pp.(str "where clause not supported for classes")
   | [ ( _ , _ , _ , _, RecordDecl _ ) , _ ] ->
       user_err Pp.(str "where clause not supported for (co)inductive records")
@@ -1126,7 +1126,7 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
     | _ :: _, [] -> prev_names
     | prev :: prev_names, Anonymous :: names ->
        prev :: rename prev_names names
-    | prev :: prev_names, (Name id as name) :: names ->
+    | prev :: prev_names, (Name _id as name) :: names ->
        if not (Name.equal prev name) then save_example_renaming (prev,name);
        name :: rename prev_names names
   in
@@ -1180,7 +1180,7 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
                     (strbrk"Argument "++ Name.print name ++ 
                        strbrk " cannot be declared implicit.")
 
-    | Name id :: inf_names, (name, impl) :: implicits ->
+    | Name id :: inf_names, (_name, impl) :: implicits ->
        let max = impl = MaximallyImplicit in
        (ExplByName id,max,false) :: build_implicits inf_names implicits
     
@@ -1701,7 +1701,7 @@ let print_about_hyp_globs ?loc ref_or_by_not udecl glopt =
     let decl = Context.Named.lookup id hyps in
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"
-                     | LocalDef (_,bdy,_) ->"Constant (let in)" in
+                     | LocalDef (_,_bdy,_) ->"Constant (let in)" in
     let sigma, env = Pfedit.get_current_context () in
     v 0 (Id.print id ++ str":" ++ pr_econstr_env env sigma (NamedDecl.get_type decl) ++ fnl() ++ fnl()
 	 ++ str natureofid ++ str " of the goal context.")
@@ -2017,7 +2017,7 @@ let interp ?proof ~atts ~st c =
   | VernacBackTo _     -> anomaly (str "VernacBackTo not handled by Stm.")
 
   (* This one is possible to handle here *)
-  | VernacAbort id    -> CErrors.user_err  (str "Abort cannot be used through the Load command")
+  | VernacAbort _id    -> CErrors.user_err  (str "Abort cannot be used through the Load command")
 
   (* Syntax *)
   | VernacSyntaxExtension (infix, sl) ->
@@ -2125,7 +2125,7 @@ let interp ?proof ~atts ~st c =
   | VernacLocate l ->
     Feedback.msg_notice @@ vernac_locate l
   | VernacRegister (id, r) -> vernac_register id r
-  | VernacComments l -> Flags.if_verbose Feedback.msg_info (str "Comments ok\n")
+  | VernacComments _l -> Flags.if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* Proof management *)
   | VernacFocus n -> vernac_focus n
@@ -2221,7 +2221,7 @@ let restore_timeout () = current_timeout := None
 let locate_if_not_already ?loc (e, info) =
   match Loc.get_loc info with
   | None   -> (e, Option.cata (Loc.add_loc info) info loc)
-  | Some l -> (e, info)
+  | Some _l -> (e, info)
 
 exception HasNotFailed
 exception HasFailed of Pp.t
@@ -2259,43 +2259,40 @@ let with_fail st b f =
 let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
   let orig_univ_poly = Flags.is_universe_polymorphism () in
   let orig_program_mode = Flags.is_program_mode () in
-  let flags f atts =
-    List.fold_left
-      (fun (polymorphism, atts) f ->
-         match f with
-         | VernacProgram when not atts.program ->
-           (polymorphism, { atts with program = true })
-         | VernacProgram ->
-           user_err Pp.(str "Program mode specified twice")
-         | VernacPolymorphic b when polymorphism = None ->
-           (Some b, atts)
-         | VernacPolymorphic _ ->
-           user_err Pp.(str "Polymorphism specified twice")
-         | VernacLocal b when Option.is_empty atts.locality ->
-           (polymorphism, { atts with locality = Some b })
-         | VernacLocal _ ->
-           user_err Pp.(str "Locality specified twice")
-      )
-      (None, atts)
-      f
-  in
-  let rec control = function
-  | VernacExpr (f, v) ->
-    let (polymorphism, atts) = flags f { loc; locality = None; polymorphic = false; program = orig_program_mode; } in
-    aux ~polymorphism ~atts v
-  | VernacFail v -> with_fail st true (fun () -> control v)
-  | VernacTimeout (n,v) ->
-    current_timeout := Some n;
-    control v
-  | VernacRedirect (s, {v}) ->
-    Topfmt.with_output_to_file s control v
-  | VernacTime (batch, {v}) ->
-    System.with_time ~batch control v;
+  let rec aux ?polymorphism ~atts isprogcmd = function
 
-  and aux ~polymorphism ~atts : _ -> unit =
-    function
+    | VernacProgram c when not isprogcmd ->
+      aux ?polymorphism ~atts true c
 
-    | VernacLoad (_,fname) -> vernac_load control fname
+    | VernacProgram _ ->
+      user_err Pp.(str "Program mode specified twice")
+
+    | VernacPolymorphic (b, c) when polymorphism = None ->
+      aux ~polymorphism:b ~atts:atts isprogcmd c
+
+    | VernacPolymorphic (_b, _c) ->
+      user_err Pp.(str "Polymorphism specified twice")
+
+    | VernacLocal (b, c) when Option.is_empty atts.locality ->
+      aux ?polymorphism ~atts:{atts with locality = Some b} isprogcmd c
+
+    | VernacLocal _ ->
+      user_err Pp.(str "Locality specified twice")
+
+    | VernacFail v ->
+      with_fail st true (fun () -> aux ?polymorphism ~atts isprogcmd v)
+
+    | VernacTimeout (n,v) ->
+      current_timeout := Some n;
+      aux ?polymorphism ~atts isprogcmd v
+
+    | VernacRedirect (s, (_,v)) ->
+      Topfmt.with_output_to_file s (aux ?polymorphism ~atts isprogcmd) v
+
+    | VernacTime (_,v) ->
+      System.with_time !Flags.time (aux ?polymorphism ~atts isprogcmd) v;
+
+    | VernacLoad (_,fname) -> vernac_load (aux ?polymorphism ~atts false) fname
 
     | c ->
       check_vernac_supports_locality c atts.locality;

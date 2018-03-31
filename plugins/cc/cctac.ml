@@ -202,8 +202,8 @@ let make_prb gls depth additionnal_terms =
 	 begin
 	   let cid=Constr.mkVar id in
 	   match litteral_of_constr env sigma (NamedDecl.get_type decl) with
-	       `Eq (t,a,b) -> add_equality state cid a b
-	     | `Neq (t,a,b) -> add_disequality state (Hyp cid) a b
+	       `Eq (_t,a,b) -> add_equality state cid a b
+	     | `Neq (_t,a,b) -> add_disequality state (Hyp cid) a b
 	     | `Other ph ->
 		 List.iter
 		   (fun (cidn,nh) ->
@@ -221,7 +221,7 @@ let make_prb gls depth additionnal_terms =
 	 end) (Proofview.Goal.hyps gls);
     begin
       match atom_of_constr env sigma (pf_concl gls) with
-	  `Eq (t,a,b) -> add_disequality state Goal a b
+	  `Eq (_t,a,b) -> add_disequality state Goal a b
 	|	`Other g ->
 		  List.iter
 	      (fun (idp,ph) ->
@@ -400,7 +400,7 @@ let convert_to_hyp_tac c1 t1 c2 t2 p =
   end
 
 (* Essentially [assert (Heq : lhs = rhs) by proof_tac p; discriminate Heq] *)
-let discriminate_tac cstru p =
+let discriminate_tac _cstru p =
   Proofview.Goal.enter begin fun gl ->
     let lhs=constr_of_term p.p_lhs and rhs=constr_of_term p.p_rhs in
     let env = Proofview.Goal.env gl in
@@ -525,7 +525,7 @@ let f_equal =
       begin match EConstr.kind sigma concl with
       | App (r,[|_;t;t'|]) when is_global sigma (Lazy.force _eq) r ->
 	  begin match EConstr.kind sigma t, EConstr.kind sigma t' with
-	  | App (f,v), App (f',v') when Int.equal (Array.length v) (Array.length v') ->
+	  | App (_f,v), App (_f',v') when Int.equal (Array.length v) (Array.length v') ->
 	      let rec cuts i =
 		if i < 0 then Tacticals.New.tclTRY (congruence_tac 1000 [])
 		else Tacticals.New.tclTHENFIRST (cut_eq v.(i) v'.(i)) (cuts (i-1))

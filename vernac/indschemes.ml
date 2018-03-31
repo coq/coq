@@ -157,7 +157,7 @@ let try_declare_scheme what f internal names kn =
 	alarm what internal
 	  (str "Cannot extract computational content from proposition " ++
 	   quote (Printer.pr_inductive (Global.env()) ind) ++ str ".")
-    | EqNotFound (ind',ind) ->
+    | EqNotFound (ind',_ind) ->
 	alarm what internal
 	  (str "Boolean equality on " ++
 	   quote (Printer.pr_inductive (Global.env()) ind') ++
@@ -401,7 +401,7 @@ let do_mutual_induction_scheme lnamedepindsort =
 
 let get_common_underlying_mutual_inductive = function
   | [] -> assert false
-  | (id,(mind,i as ind))::l as all ->
+  | (_id,(mind,_i as ind))::l as all ->
       match List.filter (fun (_,(mind',_)) -> not (MutInd.equal mind mind')) l with
       | (_,ind')::_ ->
 	  raise (RecursionSchemeError (NotMutualInScheme (ind,ind')))
@@ -433,7 +433,7 @@ tried to declare different schemes at once *)
 
 let list_split_rev_at index l =
   let rec aux i acc = function
-      hd :: tl when Int.equal i index -> acc, tl
+      _hd :: tl when Int.equal i index -> acc, tl
     | hd :: tl -> aux (succ i) (hd :: acc) tl
     | [] -> failwith "List.split_when: Invalid argument"
   in aux 0 [] l
@@ -451,17 +451,17 @@ let build_combined_scheme env schemes =
     let evd, c = Evd.fresh_constant_instance env !evdref cst in
     evdref := evd; (c, Typeops.type_of_constant_in env c)) schemes in
   let find_inductive ty =
-    let (ctx, arity) = decompose_prod ty in
+    let (ctx, _arity) = decompose_prod ty in
     let (_, last) = List.hd ctx in
       match Constr.kind last with
-	| App (ind, args) ->
+	| App (ind, _args) ->
 	    let ind = destInd ind in
 	    let (_,spec) = Inductive.lookup_mind_specif env (fst ind) in
 	      ctx, ind, spec.mind_nrealargs
 	| _ -> ctx, destInd last, 0
   in
-  let (c, t) = List.hd defs in
-  let ctx, ind, nargs = find_inductive t in
+  let (_c, t) = List.hd defs in
+  let ctx, _ind, nargs = find_inductive t in
   (* Number of clauses, including the predicates quantification *)
   let prods = nb_prod !evdref (EConstr.of_constr t) - (nargs + 1) in
   let sigma, coqand  = mk_coq_and !evdref in

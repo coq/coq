@@ -54,7 +54,7 @@ let emacs_prompt_endstring   () = if !print_emacs then "</prompt>" else ""
 
 (* Read a char in an input channel, displaying a prompt at every
    beginning of line. *)
-let prompt_char doc ic ibuf count =
+let prompt_char doc ic ibuf _count =
   let bol = match ibuf.bols with
     | ll::_ -> Int.equal ibuf.len ll
     | [] -> Int.equal ibuf.len 0
@@ -234,7 +234,7 @@ let top_buffer =
 
 let set_prompt prompt =
   top_buffer.prompt
-  <- (fun doc ->
+  <- (fun _doc ->
     emacs_prompt_startstring()
     ^ prompt ()
     ^ emacs_prompt_endstring())
@@ -288,7 +288,7 @@ let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
   | FileLoaded (_,_) -> ()
   | Custom (_,_,_) -> ()
   (* Re-enable when we switch back to feedback-based error printing *)
-  | Message (Error,loc,msg) -> ()
+  | Message (Error,_loc,_msg) -> ()
   (* TopErr.print_error_for_buffer ?loc lvl msg top_buffer *)
   | Message (lvl,loc,msg) ->
     TopErr.print_error_for_buffer ?loc lvl msg top_buffer

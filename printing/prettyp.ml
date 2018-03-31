@@ -245,7 +245,7 @@ let print_type_in_type ref =
   else []
 
 let print_primitive_record recflag mipv = function
-  | Some (Some (_, ps,_)) ->
+  | Some (Some (_, _ps,_)) ->
     let eta = match recflag with
     | CoFinite | Finite -> str" without eta conversion"
     | BiFinite -> str " with eta conversion"
@@ -344,7 +344,7 @@ let register_locatable name f =
 exception ObjFound of logical_name
 
 let locate_any_name ref =
-  let {v=qid} = qualid_of_reference ref in
+  let (_loc,qid) = qualid_of_reference ref in
   try Term (Nametab.locate qid)
   with Not_found ->
   try Syntactic (Nametab.locate_syndef qid)
@@ -453,7 +453,7 @@ type locatable_kind =
 | LocAny
 
 let print_located_qualid name flags ref =
-  let {v=qid} = qualid_of_reference ref in
+  let (_loc,qid) = qualid_of_reference ref in
   let located = match flags with
   | LocTerm -> locate_term qid
   | LocModule -> locate_modtype qid @ locate_module qid
@@ -650,14 +650,14 @@ let gallina_print_leaf_entry env sigma with_values ((sp,kn as oname),lobj) =
       | (_,("AUTOHINT"|"GRAMMAR"|"SYNTAXCONSTANT"|"PPSYNTAX"|"TOKEN"|"CLASS"|
 	    "COERCION"|"REQUIRE"|"END-SECTION"|"STRUCTURE")) -> None
       (* To deal with forgotten cases... *)
-      | (_,s) -> None
+      | (_,_s) -> None
 
 let gallina_print_library_entry env sigma with_values ent =
   let pr_name (sp,_) = Id.print (basename sp) in
   match ent with
     | (oname,Lib.Leaf lobj) ->
         gallina_print_leaf_entry env sigma with_values (oname,lobj)
-    | (oname,Lib.OpenedSection (dir,_)) ->
+    | (oname,Lib.OpenedSection (_dir,_)) ->
         Some (str " >>>>>>> Section " ++ pr_name oname)
     | (oname,Lib.ClosedSection _) ->
         Some (str " >>>>>>> Closed Section " ++ pr_name oname)
@@ -793,7 +793,7 @@ let read_sec_context r =
   let rec get_cxt in_cxt = function
     | (_,Lib.OpenedSection ({obj_dir;_},_) as hd)::rest ->
         if DirPath.equal dir obj_dir then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
-    | (_,Lib.ClosedSection _)::rest ->
+    | (_,Lib.ClosedSection _)::_rest ->
         user_err Pp.(str "Cannot print the contents of a closed section.")
 	(* LEM: Actually, we could if we wanted to. *)
     | [] -> []
@@ -811,7 +811,7 @@ let print_sec_context_typ env sigma sec =
 let maybe_error_reject_univ_decl na udecl =
   match na, udecl with
   | _, None | Term (ConstRef _ | IndRef _ | ConstructRef _), Some _ -> ()
-  | (Term (VarRef _) | Syntactic _ | Dir _ | ModuleType _ | Other _ | Undefined _), Some udecl ->
+  | (Term (VarRef _) | Syntactic _ | Dir _ | ModuleType _ | Other _ | Undefined _), Some _udecl ->
     (* TODO Print na somehow *)
     user_err ~hdr:"reject_univ_decl" (str "This object does not support universe names.")
 
@@ -867,7 +867,7 @@ let print_opaque_name env sigma qid =
     | VarRef id ->
         env |> lookup_named id |> print_named_decl env sigma
 
-let print_about_any ?loc env sigma k udecl =
+let print_about_any ?loc env _sigma k udecl =
   maybe_error_reject_univ_decl k udecl;
   match k with
   | Term ref ->
@@ -966,14 +966,14 @@ let print_canonical_projections env sigma =
 
 open Typeclasses
 
-let pr_typeclass env t =
+let pr_typeclass _env t =
   print_ref false t.cl_impl None
 
 let print_typeclasses () =
   let env = Global.env () in
     prlist_with_sep fnl (pr_typeclass env) (typeclasses ())
 
-let pr_instance env i =
+let pr_instance _env i =
   (*   gallina_print_constant_with_infos i.is_impl *)
   (* lighter *)
   print_ref false (instance_impl i) None ++

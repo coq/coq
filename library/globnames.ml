@@ -45,15 +45,15 @@ let subst_constructor subst (ind,j as ref) =
     else (ind',j), mkConstruct (ind',j)
 
 let subst_global_reference subst ref = match ref with
-  | VarRef var -> ref
+  | VarRef _var -> ref
   | ConstRef kn ->
     let kn' = subst_constant subst kn in
       if kn==kn' then ref else ConstRef kn'
   | IndRef ind ->
     let ind' = subst_ind subst ind in
       if ind==ind' then ref else IndRef ind'
-  | ConstructRef ((kn,i),j as c) ->
-    let c',t = subst_constructor subst c in
+  | ConstructRef ((_kn,_i),_j as c) ->
+    let c',_t = subst_constructor subst c in
       if c'==c then ref else ConstructRef c'
 
 let subst_global subst ref = match ref with
@@ -64,7 +64,7 @@ let subst_global subst ref = match ref with
   | IndRef ind ->
       let ind' = subst_ind subst ind in
       if ind==ind' then ref, mkInd ind else IndRef ind', mkInd ind'
-  | ConstructRef ((kn,i),j as c) ->
+  | ConstructRef ((_kn,_i),_j as c) ->
       let c',t = subst_constructor subst c in
 	if c'==c then ref,t else ConstructRef c', t
 
@@ -75,9 +75,9 @@ let canonical_gr = function
   | VarRef id -> VarRef id
 
 let global_of_constr c = match kind c with
-  | Const (sp,u) -> ConstRef sp
-  | Ind (ind_sp,u) -> IndRef ind_sp
-  | Construct (cstr_cp,u) -> ConstructRef cstr_cp
+  | Const (sp,_u) -> ConstRef sp
+  | Ind (ind_sp,_u) -> IndRef ind_sp
+  | Construct (cstr_cp,_u) -> ConstructRef cstr_cp
   | Var id -> VarRef id
   |  _ -> raise Not_found
 
@@ -244,4 +244,4 @@ let pop_global_reference = function
   | ConstRef con -> ConstRef (pop_con con)
   | IndRef (kn,i) -> IndRef (pop_kn kn,i)
   | ConstructRef ((kn,i),j) -> ConstructRef ((pop_kn kn,i),j)
-  | VarRef id -> anomaly (Pp.str "VarRef not poppable.")
+  | VarRef _id -> anomaly (Pp.str "VarRef not poppable.")

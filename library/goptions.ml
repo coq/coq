@@ -238,25 +238,12 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
         { Summary.freeze_function = (fun _ -> read ());
           Summary.unfreeze_function = write;
           Summary.init_function = (fun () -> write default) } in
-      let cache_options (_,(l,m,v)) =
+      let cache_options (_,(_l,m,v)) =
         match m with
         | OptSet -> write v
         | OptAppend -> write (append (read ()) v) in
-      let load_options i (_, (l, _, _) as o) = match l with
-      | OptGlobal -> cache_options o
-      | OptExport -> ()
-      | OptLocal | OptDefault ->
-        (** Ruled out by classify_function *)
-        assert false
-      in
-      let open_options i  (_, (l, _, _) as o) = match l with
-      | OptExport -> if Int.equal i 1 then cache_options o
-      | OptGlobal -> ()
-      | OptLocal | OptDefault ->
-        (** Ruled out by classify_function *)
-        assert false
-      in
-      let subst_options (subst,obj) = obj in
+      let load_options _i o = cache_options o in
+      let subst_options (_subst,obj) = obj in
       let discharge_options (_,(l,_,_ as o)) =
         match l with OptLocal -> None | (OptExport | OptGlobal | OptDefault) -> Some o in
       let classify_options (l,_,_ as o) =
@@ -315,8 +302,8 @@ let set_option_value ?(locality = OptDefault) check_and_cast key v =
   let opt = try Some (get_option key) with Not_found -> None in
   match opt with
   | None -> warn_unknown_option key
-  | Some (name, depr, (read,write,append)) ->
-    write locality (check_and_cast v (read ()))
+  | Some (_name, _depr, (read,write,_append)) ->
+    write (get_locality locality) (check_and_cast v (read ()))
 
 let bad_type_error () = user_err Pp.(str "Bad type of value for this option.")
 
@@ -333,7 +320,7 @@ let check_string_value v = function
   | StringOptValue _ -> StringOptValue (Some v)
   | _ -> bad_type_error ()
 
-let check_unset_value v = function
+let check_unset_value _v = function
   | BoolValue _ -> BoolValue false
   | IntValue _ -> IntValue None
   | StringOptValue _ -> StringOptValue None
@@ -356,8 +343,8 @@ let set_string_option_append_value_gen ?(locality = OptDefault) key v =
   let opt = try Some (get_option key) with Not_found -> None in
   match opt with
   | None -> warn_unknown_option key
-  | Some (name, depr, (read,write,append)) ->
-    append locality (check_string_value v (read ()))
+  | Some (_name, _depr, (read,_write,append)) ->
+    append (get_locality locality) (check_string_value v (read ()))
 
 let set_int_option_value opt v = set_int_option_value_gen opt v
 let set_bool_option_value opt v = set_bool_option_value_gen opt v
@@ -365,7 +352,7 @@ let set_string_option_value opt v = set_string_option_value_gen opt v
 
 (* Printing options/tables *)
 
-let msg_option_value (name,v) =
+let msg_option_value (_name,v) =
   match v with
     | BoolValue true  -> str "on"
     | BoolValue false -> str "off"
@@ -377,7 +364,7 @@ let msg_option_value (name,v) =
 (*     | IdentValue r    -> pr_global_env Id.Set.empty r *)
 
 let print_option_value key =
-  let (name, depr, (read,_,_)) = get_option key in
+  let (name, _depr, (read,_,_)) = get_option key in
   let s = read () in
   match s with
     | BoolValue b ->

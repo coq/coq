@@ -37,7 +37,7 @@ struct
 
   let rec find i s = match map_prj s with
   | MEmpty -> raise Not_found
-  | MNode (l, k, v, r, h) ->
+  | MNode (l, k, v, r, _h) ->
     if i < k then find i l
     else if i = k then v
     else find i r

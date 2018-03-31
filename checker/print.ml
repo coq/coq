@@ -41,10 +41,22 @@ let print_pure_constr fmt csr =
   | Ind ((sp,i),u) ->
     fprintf fmt "Ind(@[%a,%d,%a@])" sp_display sp i pp_instance u
   | Construct (((sp,i),j),u) ->
-    fprintf fmt "Constr(%a,%d,%d,%a)" sp_display sp i j pp_instance u
-  | Case (ci,p,c,bl) ->
-    let pp_match fmt (_,mc) = fprintf fmt " @[%a@]" pp_term mc in
-    fprintf fmt "@[<v><@[%a@]>@,Case@ @[%a@]@ of@[<v>%a@]@,end@]" pp_term p pp_term c (pp_arrayi pp_match) bl
+      print_string "Constr(";
+      sp_display sp;
+      print_string ",";
+      print_int i; print_string ","; print_int j; 
+      print_string ","; print_instance u; print_string ")"
+  | Case (_ci,p,c,bl) ->
+      open_vbox 0;
+      print_string "<"; box_display p; print_string ">";
+      print_cut(); print_string "Case";
+      print_space(); box_display c; print_space (); print_string "of";
+      open_vbox 0;
+      Array.iter (fun x ->  print_cut();  box_display x) bl;
+      close_box();
+      print_cut();
+      print_string "end";
+      close_box()
   | Fix ((t,i),(lna,tl,bl)) ->
     let pp_fixc fmt (k,_) =
       fprintf fmt "@[<v 0> %a/%d@,:@[%a@]@,:=@[%a@]@]@," pp_name lna.(k) t.(k) pp_term tl.(k) pp_term bl.(k) in

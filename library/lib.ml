@@ -63,7 +63,7 @@ let subst_objects subst seg =
 let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
-    | ((sp,kn),Leaf o) :: stk ->
+    | ((_sp,kn),Leaf o) :: stk ->
 	let id = Names.Label.to_id (Names.KerName.label kn) in
 	  (match classify_object o with
 	     | Dispose -> clean acc stk
@@ -148,9 +148,9 @@ let make_oname id = Libnames.make_oname !lib_state.path_prefix id
 
 let recalc_path_prefix () =
   let rec recalc = function
-    | (sp, OpenedSection (dir,_)) :: _ -> dir
-    | (sp, OpenedModule (_,_,dir,_)) :: _ -> dir
-    | (sp, CompilingLibrary dir) :: _ -> dir
+    | (_sp, OpenedSection (dir,_)) :: _ -> dir
+    | (_sp, OpenedModule (_,_,dir,_)) :: _ -> dir
+    | (_sp, CompilingLibrary dir) :: _ -> dir
     | _::l -> recalc l
     | [] -> initial_prefix
   in
@@ -187,8 +187,8 @@ let split_lib_gen test =
       	if test hd
 	then Some (collect after [hd] before)
 	else (match hd with
-		| (sp,ClosedModule  seg)
-		| (sp,ClosedSection seg) ->
+		| (_sp,ClosedModule  seg)
+		| (_sp,ClosedSection seg) ->
 		    (match findeq after seg with
 		       | None -> findeq (hd::after) before
 		       | Some (sub_after,sub_equal,sub_before) ->
@@ -279,7 +279,7 @@ let is_opening_node_or_lib = function
 
 let current_mod_id () =
   try match find_entry_p is_opening_node_or_lib with
-    | oname,OpenedModule (_,_,_,fs) -> basename (fst oname)
+    | oname,OpenedModule (_,_,_,_fs) -> basename (fst oname)
     | oname,CompilingLibrary _ -> basename (fst oname)
     | _ -> user_err Pp.(str "you are not in a module")
   with Not_found -> user_err Pp.(str "no opened modules")
@@ -359,7 +359,7 @@ let end_compilation_checks dir =
   in
   let oname =
     try match find_entry_p is_opening_lib with
-      |	(oname, CompilingLibrary prefix) -> oname
+      |	(oname, CompilingLibrary _prefix) -> oname
       | _ -> assert false
     with Not_found -> anomaly (Pp.str "No module declared.")
   in
@@ -374,7 +374,7 @@ let end_compilation_checks dir =
   oname
 
 let end_compilation oname =
-  let (after,mark,before) = split_lib_at_opening oname in
+  let (after,_mark,_before) = split_lib_at_opening oname in
   lib_state := { !lib_state with comp_name = None };
   !lib_state.path_prefix,after
 
@@ -620,7 +620,7 @@ let init () =
 (* Misc *)
 
 let mp_of_global = function
-  | VarRef id -> !lib_state.path_prefix.obj_mp
+  | VarRef _id -> !lib_state.path_prefix.obj_mp
   | ConstRef cst -> Names.Constant.modpath cst
   | IndRef ind -> Names.ind_modpath ind
   | ConstructRef constr -> Names.constr_modpath constr
@@ -638,7 +638,7 @@ let rec split_modpath = function
     (dp, Names.Label.to_id l :: ids)
 
 let library_part = function
-  |VarRef id -> library_dp ()
+  |VarRef _id -> library_dp ()
   |ref -> dp_of_mp (mp_of_global ref)
 
 (************************)

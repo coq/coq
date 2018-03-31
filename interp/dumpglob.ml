@@ -112,7 +112,7 @@ let type_of_global_ref gr =
     | Globnames.VarRef v ->
 	"var" ^ type_of_logical_kind (Decls.variable_kind v)
     | Globnames.IndRef ind ->
-	let (mib,oib) = Inductive.lookup_mind_specif (Global.env ()) ind in
+	let (mib,_oib) = Inductive.lookup_mind_specif (Global.env ()) ind in
 	  if mib.Declarations.mind_record <> None then
             begin match mib.Declarations.mind_finite with
             | Finite -> "indrec"
@@ -232,7 +232,7 @@ let add_glob ?loc ref =
     add_glob_gen ?loc sp lib_dp ty
 
 let mp_of_kn kn =
-  let mp,sec,l = Names.KerName.repr kn in
+  let mp,_sec,l = Names.KerName.repr kn in
     Names.MPdot (mp,l)
 
 let add_glob_kn ?loc kn =
@@ -241,7 +241,7 @@ let add_glob_kn ?loc kn =
     let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
     add_glob_gen ?loc sp lib_dp "syndef"
 
-let dump_binding ?loc id = ()
+let dump_binding ?loc _id = ignore(loc)
 
 let dump_def ?loc ty secpath id = Option.iter (fun loc ->
   if !glob_output = Feedback then
@@ -260,7 +260,7 @@ let dump_constraint (({ CAst.loc; v = n },_), _, _) sec ty =
     | Names.Anonymous -> ()
 
 let dump_moddef ?loc mp ty =
-  let (dp, l) = Lib.split_modpath mp in
+  let (_dp, l) = Lib.split_modpath mp in
   let mp = Names.DirPath.to_string (Names.DirPath.make l) in
   dump_def ?loc ty "<>" mp
 

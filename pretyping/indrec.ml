@@ -75,7 +75,7 @@ let check_privacy_block mib =
 (* Building case analysis schemes *)
 (* Christine Paulin, 1996 *)
 
-let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
+let mis_make_case_com dep env sigma (_ind, u as pind) (mib,mip as specif) kind =
   let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
   let indf = make_ind_family(pind, Context.Rel.to_extended_list mkRel 0 lnamespar) in
   let constrs = get_constructors env indf in
@@ -317,7 +317,7 @@ let mis_make_indrec env sigma listdepkind mib u =
     let rec
 	assign k = function
 	  | [] -> ()
-          | ((indi,u),mibi,mipi,dep,_)::rest ->
+          | ((indi,_u),_mibi,_mipi,dep,_)::rest ->
               (Array.set depPvec (snd indi) (Some(dep,mkRel k));
                assign (k-1) rest)
     in
@@ -331,7 +331,7 @@ let mis_make_indrec env sigma listdepkind mib u =
   let make_one_rec p =
     let makefix nbconstruct =
       let rec mrec i ln ltyp ldef = function
-	| ((indi,u),mibi,mipi,dep,_)::rest ->
+	| ((indi,u),_mibi,mipi,dep,_)::rest ->
 	    let tyi = snd indi in
 	    let nctyi =
               Array.length mipi.mind_consnames in (* nb constructeurs du type*)
@@ -470,7 +470,7 @@ let mis_make_indrec env sigma listdepkind mib u =
     let ((indi,u),mibi,mipi,dep,kind) = List.nth listdepkind p in
 
       if (mis_is_recursive_subset
-	(List.map (fun ((indi,u),_,_,_,_) -> snd indi) listdepkind)
+	(List.map (fun ((indi,_u),_,_,_,_) -> snd indi) listdepkind)
 	mipi.mind_recargs)
       then
 	let env' = push_rel_context lnamesparrec env in
@@ -546,7 +546,7 @@ let weaken_sort_scheme env evd set sort npars term ty =
 
 let check_arities env listdepkind =
   let _ = List.fold_left
-    (fun ln (((_,ni as mind),u),mibi,mipi,dep,kind) ->
+    (fun ln (((_,ni as mind),u),mibi,mipi,_dep,kind) ->
        let kelim = elim_sorts (mibi,mipi) in
        if not (Sorts.List.mem kind kelim) then raise
 	 (RecursionSchemeError
@@ -563,7 +563,7 @@ let build_mutual_induction_scheme env sigma = function
       let (mib,mip) = lookup_mind_specif env mind in
       if dep && not (Inductiveops.has_dependent_elim mib) then
         raise (RecursionSchemeError (NotAllowedDependentAnalysis (true, mind)));
-      let (sp,tyi) = mind in
+      let (sp,_tyi) = mind in
       let listdepkind =
 	((mind,u),mib,mip,dep,s)::
     	(List.map
@@ -602,7 +602,7 @@ let make_elimination_ident id s = add_suffix id (elimination_suffix s)
 
 let lookup_eliminator ind_sp s =
   let kn,i = ind_sp in
-  let mp,dp,l = KerName.repr (MutInd.canonical kn) in
+  let mp,dp,_l = KerName.repr (MutInd.canonical kn) in
   let ind_id = (Global.lookup_mind kn).mind_packets.(i).mind_typename in
   let id = add_suffix ind_id (elimination_suffix s) in
   (* Try first to get an eliminator defined in the same section as the *)

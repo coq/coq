@@ -40,7 +40,7 @@ let include_dirs () =
   [Filename.get_temp_dir_name (); coqlib () / "kernel"; coqlib () / "library"]
 
 (* Pointer to the function linking an ML object into coq's toplevel *)
-let load_obj = ref (fun x -> () : string -> unit)
+let load_obj = ref (fun _x -> () : string -> unit)
 
 let rt1 = ref (dummy_value ())
 let rt2 = ref (dummy_value ())
@@ -112,7 +112,7 @@ let call_compiler ?profile:(profile=false) ml_filename =
     let res = CUnix.sys_command (ocamlfind ()) args in
     let res = match res with
       | Unix.WEXITED 0 -> true
-      | Unix.WEXITED n | Unix.WSIGNALED n | Unix.WSTOPPED n ->
+      | Unix.WEXITED _n | Unix.WSIGNALED _n | Unix.WSTOPPED _n ->
         warn_native_compiler_failed (Inl res); false
     in
     res, link_filename

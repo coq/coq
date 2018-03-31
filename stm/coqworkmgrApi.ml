@@ -139,7 +139,7 @@ let tryget n =
 let giveback n =
   with_manager
   (fun () -> ())
-  (fun cin cout ->
+  (fun _cin cout ->
     output_string cout (print_request (GiveBack n));
     flush cout)
 

@@ -134,8 +134,15 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
       let loc = match loc' with None -> to_coqloc loc | Some loc -> loc in
       Loc.raise ~loc e
 
-  let comment_state (p,state) =
-    CLexer.get_comment_state !state
+  let with_parsable (_p,state) f x =
+    CLexer.set_lexer_state !state;
+    try
+      let a = f x in
+      state := CLexer.release_lexer_state ();
+      a
+    with e ->
+      CLexer.drop_lexer_state ();
+      raise e
 
   let entry_print ft x = Entry.print ft x
 
@@ -278,7 +285,7 @@ let camlp5_state = ref []
 
 let grammar_delete e reinit (pos,rls) =
   List.iter
-    (fun (n,ass,lev) ->
+    (fun (_n,_ass,lev) ->
       List.iter (fun (pil,_) -> G.delete_rule e pil) (List.rev lev))
     (List.rev rls);
   match reinit with
@@ -358,14 +365,14 @@ let make_rule r = [None, None, r]
 let eoi_entry en =
   let e = Gram.entry_create ((Gram.Entry.name en) ^ "_eoi") in
   let symbs = [Symbols.snterm (Gram.Entry.obj en); Symbols.stoken Tok.EOI] in
-  let act = Gram.action (fun _ x loc -> x) in
+  let act = Gram.action (fun _ x _loc -> x) in
   uncurry (Gram.extend e) (None, make_rule [symbs, act]);
   e
 
 let map_entry f en =
   let e = Gram.entry_create ((Gram.Entry.name en) ^ "_map") in
   let symbs = [Symbols.snterm (Gram.Entry.obj en)] in
-  let act = Gram.action (fun x loc -> f x) in
+  let act = Gram.action (fun x _loc -> f x) in
   uncurry (Gram.extend e) (None, make_rule [symbs, act]);
   e
 
@@ -512,7 +519,7 @@ module Vernac_ =
 
     let () =
       let act_vernac = Gram.action (fun v loc -> Some (to_coqloc loc, v)) in
-      let act_eoi = Gram.action (fun _ loc -> None) in
+      let act_eoi = Gram.action (fun _ _loc -> None) in
       let rule = [
         ([ Symbols.stoken Tok.EOI ], act_eoi);
         ([ Symbols.snterm (Gram.Entry.obj vernac_control) ], act_vernac );

@@ -238,7 +238,7 @@ let invert_name labs l na0 env sigma ref = function
       | _ ->
 	let refi = match ref with
 	  | EvalRel _ | EvalEvar _ -> None
-	  | EvalVar id' -> Some (EvalVar id)
+	  | EvalVar _id' -> Some (EvalVar id)
 	  | EvalConst kn ->
 	      Some (EvalConst (Constant.change_label kn (Label.of_id id))) in
 	match refi with
@@ -275,7 +275,7 @@ let compute_consteval_direct env sigma ref =
 	  with Elimconst -> NotAnElimination)
       | Case (_,_,d,_) when isRel sigma d && not onlyproj -> EliminationCases n
       | Case (_,_,d,_) -> srec env n labs true d
-      | Proj (p, d) when isRel sigma d -> EliminationProj n
+      | Proj (_p, d) when isRel sigma d -> EliminationProj n
       | _ -> NotAnElimination
   in
   match unsafe_reference_opt_value env sigma ref with
@@ -290,12 +290,12 @@ let compute_consteval_mutual_fix env sigma ref =
       | Lambda (na,t,g) when List.is_empty l ->
           let open Context.Rel.Declaration in
 	  srec (push_rel (LocalAssum (na,t)) env) (minarg+1) (t::labs) ref g
-      | Fix ((lv,i),(names,_,_)) ->
+      | Fix ((_lv,i),(names,_,_)) ->
 	  (* Last known constant wrapping Fix is ref = [labs](Fix l) *)
 	  (match compute_consteval_direct env sigma ref with
 	     | NotAnElimination -> (*Above const was eliminable but this not!*)
 		 NotAnElimination
-	     | EliminationFix (minarg',minfxargs,infos) ->
+	     | EliminationFix (minarg',_minfxargs,infos) ->
 		 let refs =
 		   Array.map
 		     (invert_name labs l names.(i) env sigma ref) names in
@@ -354,7 +354,7 @@ let reference_eval env sigma = function
 
 let x = Name default_dependent_ident
 
-let make_elim_fun (names,(nbfix,lv,n)) u largs =
+let make_elim_fun (names,(_nbfix,lv,n)) u largs =
   let lu = List.firstn n largs in
   let p = List.length lv in
   let lyi = List.map fst lv in
@@ -449,7 +449,7 @@ let substl_checking_arity env subst sigma c =
   (* we propagate the constraints: solved problems are substituted;
      the other ones are replaced by the function symbol *)
   let rec nf_fix c = match EConstr.kind sigma c with
-  | Evar (i,[|fx;f|]) when Evar.Map.mem i minargs ->
+  | Evar (i,[|_fx;f|]) when Evar.Map.mem i minargs ->
     (** FIXME: find a less hackish way of doing this *)
     begin match EConstr.kind sigma' c with
     | Evar _ -> f
@@ -504,7 +504,7 @@ let contract_cofix_use_function env sigma f
 
 let reduce_mind_case_use_function func env sigma mia =
   match EConstr.kind sigma mia.mconstr with
-    | Construct ((ind_sp,i),u) ->
+    | Construct ((_ind_sp,i),_u) ->
 	let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
 	applist (mia.mlf.(i-1), real_cargs)
     | CoFix (bodynum,(names,_,_) as cofix) ->
@@ -597,7 +597,7 @@ let recargs = function
   | EvalVar _ | EvalRel _ | EvalEvar _ -> None
   | EvalConst c -> ReductionBehaviour.get (ConstRef c)
 
-let reduce_projection env sigma pb (recarg'hd,stack') stack =
+let reduce_projection _env sigma pb (recarg'hd,stack') stack =
   (match EConstr.kind sigma recarg'hd with
   | Construct _ -> 
     let proj_narg = 
@@ -639,7 +639,7 @@ let whd_nothing_for_iota env sigma s =
 	  (match lookup_named id env with
 	     | LocalDef (_,body,_) -> whrec (body, stack)
 	     | _ -> s)
-      | Evar ev -> s
+      | Evar _ev -> s
       | Meta ev ->
 	(try whrec (EConstr.of_constr (Evd.meta_value sigma ev), stack)
 	with Not_found -> s)
@@ -651,12 +651,12 @@ let whd_nothing_for_iota env sigma s =
       | LetIn (_,b,_,c) -> stacklam whrec [b] sigma c stack
       | Cast (c,_,_) -> whrec (c, stack)
       | App (f,cl)  -> whrec (f, Stack.append_app cl stack)
-      | Lambda (na,t,c) ->
+      | Lambda (_na,_t,c) ->
           (match Stack.decomp stack with
              | Some (a,m) -> stacklam whrec [a] sigma c m
 	     | _ -> s)
 
-      | x -> s
+      | _x -> s
   in
   EConstr.decompose_app sigma (Stack.zip sigma (whrec (s,Stack.empty)))
 
@@ -743,11 +743,11 @@ and whd_simpl_stack env sigma =
     let stack = Array.to_list stack in
     let s' = (x, stack) in
     match EConstr.kind sigma x with
-      | Lambda (na,t,c) ->
+      | Lambda (_na,_t,_c) ->
           (match stack with
              | [] -> s'
-             | a :: rest -> redrec (beta_applist sigma (x, stack)))
-      | LetIn (n,b,t,c) -> redrec (applist (Vars.substl [b] c, stack))
+             | _a :: _rest -> redrec (beta_applist sigma (x, stack)))
+      | LetIn (_n,b,_t,c) -> redrec (applist (Vars.substl [b] c, stack))
       | App (f,cl) -> redrec (applist(f, (Array.to_list cl)@stack))
       | Cast (c,_,_) -> redrec (applist(c, stack))
       | Case (ci,p,c,lf) ->
@@ -767,9 +767,9 @@ and whd_simpl_stack env sigma =
 	     if unf || is_evaluable env (EvalConstRef (Projection.constant p)) then
 	       let pb = lookup_projection p env in
  		 (match unf, ReductionBehaviour.get (ConstRef (Projection.constant p)) with
- 		 | false, Some (l, n, f) when List.mem `ReductionNeverUnfold f -> 
+ 		 | false, Some (_l, _n, f) when List.mem `ReductionNeverUnfold f -> 
                    (* simpl never *) s'
-		 | false, Some (l, n, f) when not (List.is_empty l) ->
+		 | false, Some (l, _n, _f) when not (List.is_empty l) ->
 		   let l' = List.map_filter (fun i -> 
 		     let idx = (i - (pb.Declarations.proj_npars + 1)) in
 		       if idx < 0 then None else Some idx) l in
@@ -844,7 +844,7 @@ let try_red_product env sigma c =
       | Prod (x,a,b) ->
           let open Context.Rel.Declaration in
 	  mkProd (x, a, redrec (push_rel (LocalAssum (x, a)) env) b)
-      | LetIn (x,a,b,t) -> redrec env (Vars.subst1 a t)
+      | LetIn (_x,a,_b,t) -> redrec env (Vars.subst1 a t)
       | Case (ci,p,d,lf) -> simpfun (mkCase (ci,p,redrec env d,lf))
       | Proj (p, c) -> 
 	let c' = 
@@ -942,7 +942,7 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
     | Some c ->
       (match EConstr.kind sigma (snd (decompose_lam sigma c)) with
       | CoFix _ | Fix _ -> s'
-      | Proj (p,t) when
+      | Proj (p,_t) when
 	  (match EConstr.kind sigma constr with
 	  | Const (c', _) -> Constant.equal (Projection.constant p) c'
 	  | _ -> false) ->
@@ -978,7 +978,7 @@ let matches_head env sigma c t =
     parameters. This is a temporary fix while rewrite etc... are not up to equivalence
     of the projection and its eta expanded form.
 *)
-let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c = 
+let change_map_constr_with_binders_left_to_right g f (env, _l as acc) sigma c = 
   match EConstr.kind sigma c with
   | Proj (p, r) -> (* Treat specially for partial applications *)
     let t = Retyping.expand_projection env sigma p r [] in
@@ -988,7 +988,7 @@ let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c =
     let app' = f acc app in
     let a' = f acc a in
       (match EConstr.kind sigma app' with
-      | App (hdf', al') when hdf' == hdf ->
+      | App (hdf', _al') when hdf' == hdf ->
         (* Still the same projection, we ignore the change in parameters *)
 	mkProj (p, a')
       | _ -> mkApp (app', [| a' |]))
@@ -1151,7 +1151,7 @@ let compute = cbv_betadeltaiota
 (* gives [na:ta]c' such that c converts to ([na:ta]c' a), abstracting only
  * the specified occurrences. *)
 
-let abstract_scheme env sigma (locc,a) (c, sigma) =
+let abstract_scheme env _sigma (locc,a) (c, sigma) =
   let ta = Retyping.get_type_of env sigma a in
   let na = named_hd env sigma ta Anonymous in
   if occur_meta sigma ta then user_err Pp.(str "Cannot find a type for the generalisation.");
@@ -1224,7 +1224,7 @@ exception NotStepReducible
 let one_step_reduce env sigma c =
   let rec redrec (x, stack) =
     match EConstr.kind sigma x with
-      | Lambda (n,t,c)  ->
+      | Lambda (_n,_t,c)  ->
           (match stack with
              | []        -> raise NotStepReducible
              | a :: rest -> (Vars.subst1 a c, rest))
@@ -1261,7 +1261,7 @@ let error_cannot_recognize ref =
 
 let reduce_to_ref_gen allow_product env sigma ref t =
   if isIndRef ref then
-    let ((mind,u),t) = reduce_to_ind_gen allow_product env sigma t in
+    let ((mind,_u),t) = reduce_to_ind_gen allow_product env sigma t in
     begin match ref with
     | IndRef mind' when eq_ind mind mind' -> t
     | _ -> error_cannot_recognize ref

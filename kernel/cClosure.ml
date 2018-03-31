@@ -313,6 +313,20 @@ let ref_value_cache ({i_cache = cache} as infos) tab ref =
 let evar_value cache ev =
   cache.i_sigma ev
 
+let defined_rels _flags env =
+(*  if red_local_const (snd flags) then*)
+  let ctx = rel_context env in
+  let len = List.length ctx in
+  let ans = Array.make len None in
+  let open Context.Rel.Declaration in
+  let iter i = function
+    | LocalAssum _ -> ()
+    | LocalDef (_,b,_) -> Array.unsafe_set ans i (Some b)
+  in
+  let () = List.iteri iter ctx in
+  ans
+(*  else (0,[])*)
+
 let create mk_cl flgs env evars =
   let open Pre_env in
   let cache =
@@ -675,7 +689,7 @@ let rec zip m stk =
     | ZcaseT(ci,p,br,e)::s ->
         let t = FCaseT(ci, p, m, br, e) in
         zip {norm=neutr m.norm; term=t} s
-    | Zproj (i,j,cst) :: s ->
+    | Zproj (_i,_j,cst) :: s ->
         zip {norm=neutr m.norm; term=FProj(Projection.make cst true,m)} s
     | Zfix(fx,par)::s ->
         zip fx (par @ append_stack [|m|] s)
@@ -806,13 +820,13 @@ let drop_parameters depth n argstk =
 let eta_expand_ind_stack env ind m s (f, s') =
   let mib = lookup_mind (fst ind) env in
     match mib.Declarations.mind_record with
-    | Some (Some (_,projs,pbs)) when
-        mib.Declarations.mind_finite == Declarations.BiFinite ->
+    | Some (Some (_,projs,_pbs)) when
+	mib.Declarations.mind_finite == Decl_kinds.BiFinite ->
 	(* (Construct, pars1 .. parsm :: arg1...argn :: []) ~= (f, s') ->
 	   arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
       let pars = mib.Declarations.mind_nparams in
       let right = fapp_stack (f, s') in
-      let (depth, args, s) = strip_update_shift_app m s in
+      let (depth, args, _s) = strip_update_shift_app m s in
       (** Try to drop the params, might fail on partially applied constructors. *)
       let argss = try_drop_parameters depth pars args in
       let hstack = Array.map (fun p -> { norm = Red; (* right can't be a constructor though *)
@@ -899,7 +913,7 @@ and knht info e t stk =
     | Fix _ -> knh info (mk_clos2 e t) stk
     | Cast(a,_,_) -> knht info e a stk
     | Rel n -> knh info (clos_rel e n) stk
-    | Proj (p,c) -> knh info (mk_clos2 e t) stk
+    | Proj (_p,_c) -> knh info (mk_clos2 e t) stk
     | (Lambda _|Prod _|Construct _|CoFix _|Ind _|
        LetIn _|Const _|Var _|Evar _|Meta _|Sort _) ->
         (mk_clos2 e t, stk)
@@ -926,7 +940,7 @@ let rec knr info tab m stk =
       (match ref_value_cache info tab (RelKey k) with
           Some v -> kni info tab v stk
         | None -> (set_norm m; (m,stk)))
-  | FConstruct((ind,c),u) ->
+  | FConstruct((_ind,c),_u) ->
      let use_match = red_set info.i_flags fMATCH in
      let use_fix = red_set info.i_flags fFIX in
      if use_match || use_fix then
@@ -939,8 +953,8 @@ let rec knr info tab m stk =
             let rarg = fapp_stack(m,cargs) in
             let stk' = par @ append_stack [|rarg|] s in
             let (fxe,fxbd) = contract_fix_vect fx.term in
-            knit info tab fxe fxbd stk'
-	| (depth, args, Zproj (n, m, cst)::s) when use_match ->
+            knit info fxe fxbd stk'
+	| (depth, args, Zproj (n, m, _cst)::s) when use_match ->
 	    let rargs = drop_parameters depth n args in
 	    let rarg = project_nth_arg m rargs in
             kni info tab rarg s
@@ -992,7 +1006,7 @@ let rec zip_term zfun m stk =
         zip_term zfun h s
     | Zshift(n)::s ->
         zip_term zfun (lift n m) s
-    | Zupdate(rf)::s ->
+    | Zupdate(_rf)::s ->
         zip_term zfun m s
 
 (* Computes the strong normal form of a term.
@@ -1011,7 +1025,7 @@ let rec kl info tab m =
 and norm_head info tab m =
   if is_val m then (incr prune; term_of_fconstr m) else
     match m.term with
-      | FLambda(n,tys,f,e) ->
+      | FLambda(_n,tys,f,e) ->
           let (e',rvtys) =
             List.fold_left (fun (e,ctxt) (na,ty) ->
               (subs_lift e, (na,kl info tab (mk_clos e ty))::ctxt))

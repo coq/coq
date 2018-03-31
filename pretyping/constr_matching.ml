@@ -216,13 +216,13 @@ let matches_core env sigma allow_bound_rels
     | VarRef id, Var id' -> Names.Id.equal id id'
     | ConstRef c, Const (c',_) -> Constant.equal c c'
     | IndRef i, Ind (i', _) -> Names.eq_ind i i'
-    | ConstructRef c, Construct (c',u) -> Names.eq_constructor c c'
+    | ConstructRef c, Construct (c',_u) -> Names.eq_constructor c c'
     | _, _ -> false
   in
   let rec sorec ctx env subst p t =
     let cT = strip_outer_cast sigma t in
     match p, EConstr.kind sigma cT with
-      | PSoApp (n,args),m ->
+      | PSoApp (n,args),_m ->
         let fold (ans, seen) = function
         | PRel n ->
           let () = if Int.Set.mem n seen then user_err (str "Non linear second-order pattern") in
@@ -236,9 +236,9 @@ let matches_core env sigma allow_bound_rels
         else
           raise PatternMatchingFailure
 
-      | PMeta (Some n), m -> merge_binding sigma allow_bound_rels ctx n cT subst
+      | PMeta (Some n), _m -> merge_binding sigma allow_bound_rels ctx n cT subst
 
-      | PMeta None, m -> subst
+      | PMeta None, _m -> subst
 
       | PRef (VarRef v1), Var v2 when Id.equal v1 v2 -> subst
 
@@ -282,7 +282,7 @@ let matches_core env sigma allow_bound_rels
 	   
       | PApp (c1,arg1), App (c2,arg2) ->
 	(match c1, EConstr.kind sigma c2 with
-	| PRef (ConstRef r), Proj (pr,c) when not (Constant.equal r (Projection.constant pr))
+	| PRef (ConstRef r), Proj (pr,_c) when not (Constant.equal r (Projection.constant pr))
 	    || Projection.unfolded pr ->
 	  raise PatternMatchingFailure
 	| PProj (pr1,c1), Proj (pr,c) ->
@@ -298,11 +298,11 @@ let matches_core env sigma allow_bound_rels
           try Array.fold_left2 (sorec ctx env) (sorec ctx env subst c1 c2) arg1 arg2
           with Invalid_argument _ -> raise PatternMatchingFailure)
 	  
-      | PApp (PRef (ConstRef c1), _), Proj (pr, c2) 
+      | PApp (PRef (ConstRef c1), _), Proj (pr, _c2) 
 	when Projection.unfolded pr || not (Constant.equal c1 (Projection.constant pr)) -> 
 	raise PatternMatchingFailure
 	
-      | PApp (c, args), Proj (pr, c2) ->
+      | PApp (_c, _args), Proj (pr, c2) ->
 	(try let term = Retyping.expand_projection env sigma pr c2 [] in
 	       sorec ctx env subst p term
 	 with Retyping.RetypeError _ -> raise PatternMatchingFailure)
@@ -355,7 +355,7 @@ let matches_core env sigma allow_bound_rels
             if not ci1.cip_extensible && not (Int.equal (List.length br1) n2)
             then raise PatternMatchingFailure
           in
-	  let chk_branch subst (j,n,c) =
+	  let chk_branch subst (j,_n,c) =
 	    (* (ind,j+1) is normally known to be a correct constructor
 	       and br2 a correct match over the same inductive *)
 	    assert (j < n2);
@@ -402,7 +402,7 @@ let matches_head env sigma pat c =
         if isPMeta c1 then c else
         let n1 = Array.length arg1 in
         if n1 < Array.length arg2 then mkApp (c2,Array.sub arg2 0 n1) else c
-    | c1, App (c2,arg2) when not (isPMeta c1) -> c2
+    | c1, App (c2,_arg2) when not (isPMeta c1) -> c2
     | _ -> c in
   matches env sigma pat head
 

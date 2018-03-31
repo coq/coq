@@ -55,10 +55,10 @@ let global_inductive_with_alias ({CAst.loc} as lr)  =
   let qid = qualid_of_reference lr in
   try match locate_global_with_alias qid with
   | IndRef ind -> ind
-  | ref ->
-      user_err ?loc ~hdr:"global_inductive"
-        (pr_reference lr ++ spc () ++ str "is not an inductive type.")
-  with Not_found -> Nametab.error_global_not_found qid
+  | _ref ->
+      user_err ?loc:(loc_of_reference r) ~hdr:"global_inductive"
+        (pr_reference r ++ spc () ++ str "is not an inductive type.")
+  with Not_found -> Nametab.error_global_not_found ?loc qid
 
 let global_with_alias ?head r =
   let qid = qualid_of_reference r in

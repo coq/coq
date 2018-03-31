@@ -90,7 +90,7 @@ let update_case_info cache ci modlist =
   try
     let ind, n =
       match share cache (IndRef ci.ci_ind) modlist with
-      | (IndRef f,(u,l)) -> (f, Array.length l)
+      | (IndRef f,(_u,l)) -> (f, Array.length l)
       | _ -> assert false in
     { ci with ci_ind = ind; ci_npar = ci.ci_npar + n }
   with Not_found ->
@@ -131,7 +131,7 @@ let expmod_constr cache modlist c =
 	     let make c = Projection.make c (Projection.unfolded p) in
 	     match kind p' with
 	     | Const (p',_) -> mkProj (make p', substrec c')
-	     | App (f, args) -> 
+	     | App (f, _args) -> 
 	       (match kind f with 
 	       | Const (p', _) -> mkProj (make p', substrec c')
 	       | _ -> assert false)
@@ -206,7 +206,7 @@ let lift_univs cb subst auctx0 =
       let auctx' = Univ.subst_univs_level_abstract_universe_context (Univ.make_instance_subst subst) auctx in
       subst, (Polymorphic_const (AUContext.union auctx0 auctx'))
 
-let cook_constant ~hcons env { from = cb; info } =
+let cook_constant ~hcons _env { from = cb; info } =
   let { Opaqueproof.modlist; abstract } = info in
   let cache = RefTable.create 13 in
   let abstract, usubst, abs_ctx = abstract in
@@ -240,10 +240,17 @@ let cook_constant ~hcons env { from = cb; info } =
 	  | _ -> assert false 
       with Not_found -> (((pb.proj_ind,0),Univ.Instance.empty), 0)
     in 
-    let ctx, ty' = decompose_prod_n (n' + pb.proj_npars + 1) typ in
+    let _ctx, ty' = decompose_prod_n (n' + pb.proj_npars + 1) typ in
       { proj_ind = mind; proj_npars = pb.proj_npars + n'; proj_arg = pb.proj_arg;
 	proj_eta = etab, etat;
 	proj_type = ty'; proj_body = c' }
+  in
+  let univs =
+    match univs with
+    | Monomorphic_const _ctx -> 
+      assert (AUContext.is_empty abs_ctx); univs
+    | Polymorphic_const auctx -> 
+      Polymorphic_const (AUContext.union abs_ctx auctx)
   in
   {
     cook_body = body;

@@ -72,7 +72,7 @@ module ModSubstObjs :
    let table =
      Summary.ref (MPmap.empty : substitutive_objects MPmap.t)
        ~name:"MODULE-SUBSTOBJS"
-   let missing_handler = ref (fun mp -> assert false)
+   let missing_handler = ref (fun _mp -> assert false)
    let set_missing_handler f = (missing_handler := f)
    let set mp objs = (table := MPmap.add mp objs !table)
    let get mp =
@@ -325,7 +325,7 @@ let rec register_mod_objs mp (id,obj) = match object_tag obj with
   | _ -> ()
 
 let handle_missing_substobjs mp = match mp with
-  | MPdot (mp',l) ->
+  | MPdot (mp',_l) ->
     let objs = expand_sobjs (ModSubstObjs.get mp') in
     List.iter (register_mod_objs mp') objs;
     ModSubstObjs.get mp
@@ -355,7 +355,7 @@ let get_applications mexpr =
 let rec compute_subst env mbids sign mp_l inl =
   match mbids,mp_l with
     | _,[] -> mbids,empty_subst
-    | [],r -> user_err Pp.(str "Application of a functor with too few arguments.")
+    | [],_r -> user_err Pp.(str "Application of a functor with too few arguments.")
     | mbid::mbids,mp::mp_l ->
 	let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
 	let mb = Environ.lookup_module mp env in
@@ -595,7 +595,7 @@ let start_module interp_modast export id args res fs =
   mp
 
 let end_module () =
-  let oldoname,oldprefix,fs,lib_stack = Lib.end_module () in
+  let oldoname,_oldprefix,fs,lib_stack = Lib.end_module () in
   let substitute, keep, special = Lib.classify_segment lib_stack in
   let m_info = !openmod_info in
 
@@ -713,7 +713,7 @@ let start_modtype interp_modast id args mtys fs =
   mp
 
 let end_modtype () =
-  let oldoname,prefix,fs,lib_stack = Lib.end_modtype () in
+  let oldoname,_prefix,fs,lib_stack = Lib.end_modtype () in
   let id = basename (fst oldoname) in
   let substitute, _, special = Lib.classify_segment lib_stack in
   let sub_mty_l = !openmodtype_info in
@@ -918,7 +918,7 @@ let end_library ?except dir =
   !end_library_hook();
   let oname = Lib.end_compilation_checks dir in
   let mp,cenv,ast = Global.export ?except dir in
-  let prefix, lib_stack = Lib.end_compilation oname in
+  let _prefix, lib_stack = Lib.end_compilation oname in
   assert (ModPath.equal mp (MPfile dir));
   let substitute, keep, _ = Lib.classify_segment lib_stack in
   cenv,(substitute,keep),ast

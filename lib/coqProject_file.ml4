@@ -92,7 +92,7 @@ and parse_string2 = parser
   | [< >] -> raise (Parsing_error "unterminated string")
 and parse_skip_comment = parser
   | [< ''\n'; s >] -> s
-  | [< 'c; s >] -> parse_skip_comment s
+  | [< '_; s >] -> parse_skip_comment s
   | [< >] -> [< >]
 and parse_args = parser
   | [< '' ' | '\n' | '\t'; s >] -> parse_args s
