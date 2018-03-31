@@ -15,8 +15,6 @@ Require Import Wf_nat.
 Require Export ZArith.
 Require Export DoubleType.
 
-Declare ML Module "int31_syntax_plugin".
-
 (** * 31-bit integers *)
 
 (** This file contains basic definitions of a 31-bit integer
@@ -51,6 +49,7 @@ Register digits as int31 bits in "coq_int31" by True.
 Register int31 as int31 type in "coq_int31" by True.
 
 Declare Scope int31_scope.
+Declare ML Module "int31_syntax_plugin".
 Delimit Scope int31_scope with int31.
 Bind Scope int31_scope with int31.
 Local Open Scope int31_scope.

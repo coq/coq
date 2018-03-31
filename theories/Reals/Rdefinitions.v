@@ -12,12 +12,15 @@
 (**          Definitions for the axiomatization          *)
 (*********************************************************)
 
-Declare ML Module "r_syntax_plugin".
 Require Export ZArith_base.
 
 Parameter R : Set.
 
-(* Declare Scope positive_scope with Key R *)
+(* Declare primitive numeral notations for Scope R_scope *)
+Declare Scope R_scope.
+Declare ML Module "r_syntax_plugin".
+
+(* Declare Scope R_scope with Key R *)
 Delimit Scope R_scope with R.
 
 (* Automatically open scope R_scope for arguments of type R *)

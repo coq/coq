@@ -15,7 +15,6 @@
 Require Import Arith.
 Require Import Ascii.
 Require Import Bool.
-Declare ML Module "string_syntax_plugin".
 
 (** *** Definition of strings *)
 
@@ -25,6 +24,8 @@ Inductive string : Set :=
   | EmptyString : string
   | String : ascii -> string -> string.
 
+Declare Scope string_scope.
+Declare ML Module "string_syntax_plugin".
 Delimit Scope string_scope with string.
 Bind Scope string_scope with string.
 Local Open Scope string_scope.
