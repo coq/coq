@@ -508,7 +508,6 @@ let rec parse = function
 
 let () = Coqtop.toploop_init := (fun coq_args extra_args ->
         let args = parse extra_args in
-        Flags.quiet := true;
         CoqworkmgrApi.(init High);
         coq_args, args)
 
