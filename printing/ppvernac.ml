@@ -591,8 +591,6 @@ open Decl_kinds
         )
       | VernacUndoTo i ->
         return (keyword "Undo" ++ spc() ++ keyword "To" ++ pr_intarg i)
-      | VernacBacktrack (i,j,k) ->
-        return (keyword "Backtrack" ++  spc() ++ prlist_with_sep sep int [i;j;k])
       | VernacFocus i ->
         return (keyword "Focus" ++ pr_opt int i)
       | VernacShow s ->

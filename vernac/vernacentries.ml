@@ -2008,7 +2008,6 @@ let interp ?proof ~atts ~st c =
   | VernacRestart     -> CErrors.user_err  (str "Restart cannot be used through the Load command")
   | VernacUndo _      -> CErrors.user_err  (str "Undo cannot be used through the Load command")
   | VernacUndoTo _    -> CErrors.user_err  (str "UndoTo cannot be used through the Load command")
-  | VernacBacktrack _ -> CErrors.user_err  (str "Backtrack cannot be used through the Load command")
 
   (* Resetting *)
   | VernacResetName _  -> anomaly (str "VernacResetName not handled by Stm.")

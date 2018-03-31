@@ -183,7 +183,7 @@ let classify_vernac e =
     | VernacBack _ | VernacAbortAll
     | VernacUndoTo _ | VernacUndo _
     | VernacResetName _ | VernacResetInitial
-    | VernacBacktrack _ | VernacBackTo _ | VernacRestart -> VtMeta, VtNow
+    | VernacBackTo _ | VernacRestart -> VtMeta, VtNow
     (* What are these? *)
     | VernacRestoreState _
     | VernacWriteState _ -> VtSideff [], VtNow

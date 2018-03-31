@@ -31,7 +31,6 @@ let rec has_Fail = function
 let is_navigation_vernac_expr = function
   | VernacResetInitial
   | VernacResetName _
-  | VernacBacktrack _
   | VernacBackTo _
   | VernacBack _ -> true
   | _ -> false
