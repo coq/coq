@@ -5,6 +5,8 @@
 
 set -e
 
+dev/tools/check-overlays.sh
+
 if ! git diff --cached --name-only -z | xargs -0 dev/tools/check-eof-newline.sh ||
         ! git diff-index --check --cached HEAD >/dev/null 2>&1 ;
 then

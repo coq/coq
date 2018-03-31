@@ -31,4 +31,6 @@ fi
 find . "(" -path ./.git -prune ")" -o -type f -print0 |
     xargs -0 dev/tools/check-eof-newline.sh || CODE=1
 
+dev/tools/check-overlays.sh || CODE=1
+
 exit $CODE
