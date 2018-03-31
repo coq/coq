@@ -263,7 +263,7 @@ let pf_with_evars glsev k gls =
     tclTHEN (Refiner.tclEVARS evd) (k a) gls
 
 let pf_constr_of_global gr k =
-  pf_with_evars (fun gls -> on_snd EConstr.of_constr (pf_apply Evd.fresh_global gls gr)) k
+  pf_with_evars (fun gls -> pf_apply Evd.fresh_global gls gr) k
 
 (** Tacticals of Ltac defined directly in term of Proofview *)
 module New = struct
@@ -506,7 +506,7 @@ module New = struct
       let evi = Evd.find sigma evk in
       match Evd.evar_body evi with
       | Evd.Evar_empty -> Some (evk,evi)
-      | Evd.Evar_defined c -> match Constr.kind c with
+      | Evd.Evar_defined c -> match Constr.kind (EConstr.Unsafe.to_constr c) with
         | Term.Evar (evk,l) -> is_undefined_up_to_restriction sigma evk
         | _ -> 
           (* We make the assumption that there is no way to refine an
@@ -709,7 +709,7 @@ module New = struct
   let gl_make_elim ind = begin fun gl ->
     let gr = Indrec.lookup_eliminator (fst ind) (elimination_sort_of_goal gl) in
     let (sigma, c) = pf_apply Evd.fresh_global gl gr in
-    (sigma, EConstr.of_constr c)
+    (sigma, c)
   end
 
   let gl_make_case_dep (ind, u) = begin fun gl ->
@@ -769,7 +769,6 @@ module New = struct
     Proofview.tclEVARMAP >>= fun sigma ->
     Proofview.tclENV >>= fun env ->
     let (sigma, c) = Evd.fresh_global env sigma ref in
-    let c = EConstr.of_constr c in
     Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT c
 
 end

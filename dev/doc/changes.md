@@ -1,3 +1,12 @@
+## Changes between Coq 8.8 and Coq 8.9
+
+### ML API
+
+Proof engine
+
+  More functions have been changed to use `EConstr`, notably the
+  functions in `Evd`.
+
 ## Changes between Coq 8.7 and Coq 8.8
 
 ### Bug tracker

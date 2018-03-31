@@ -1258,7 +1258,6 @@ let cut c =
   end
 
 let error_uninstantiated_metas t clenv =
-  let t = EConstr.Unsafe.to_constr t in
   let na = meta_name clenv.evd (List.hd (Metaset.elements (metavars_of t))) in
   let id = match na with Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta.")
   in user_err  (str "Cannot find an instance for " ++ Id.print id ++ str".")
@@ -1268,7 +1267,7 @@ let check_unresolved_evars_of_metas sigma clenv =
   (* Refiner.pose_all_metas_as_evars are resolved *)
   List.iter (fun (mv,b) -> match b with
   | Clval (_,(c,_),_) ->
-    (match Constr.kind c.rebus with
+    (match Constr.kind (EConstr.Unsafe.to_constr c.rebus) with
     | Evar (evk,_) when Evd.is_undefined clenv.evd evk
                      && not (Evd.mem sigma evk) ->
       error_uninstantiated_metas (mkMeta mv) clenv
@@ -1445,9 +1444,7 @@ let is_nonrec mind = (Global.lookup_mind (fst mind)).mind_finite == Declarations
 
 let find_ind_eliminator ind s gl =
   let gr = lookup_eliminator ind s in
-  let evd, c = Tacmach.New.pf_apply Evd.fresh_global gl gr in
-  let c = EConstr.of_constr c in
-    evd, c
+  Tacmach.New.pf_apply Evd.fresh_global gl gr
 
 let find_eliminator c gl =
   let ((ind,u),t) = Tacmach.New.pf_reduce_to_quantified_ind gl (Tacmach.New.pf_unsafe_type_of gl c) in
@@ -2612,9 +2609,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
           let eqdata = build_coq_eq_data () in
           let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
           let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
-          let eq = EConstr.of_constr eq in
           let (sigma, refl) = Evd.fresh_global env sigma eqdata.refl in
-          let refl = EConstr.of_constr refl in
           let eq = applist (eq,args) in
           let refl = applist (refl, [t;mkVar id]) in
 	  let term = mkNamedLetIn id c t (mkLetIn (Name heq, refl, eq, ccl)) in
@@ -2668,9 +2663,7 @@ let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
       let eqdata = build_coq_eq_data () in
       let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
       let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
-      let eq = EConstr.of_constr eq in
       let (sigma, refl) = Evd.fresh_global env sigma eqdata.refl in
-      let refl = EConstr.of_constr refl in
       let eq = applist (eq,args) in
       let refl = applist (refl, [t;mkVar id]) in
       let newenv = insert_before [LocalAssum (heq,eq); decl] lastlhyp env in

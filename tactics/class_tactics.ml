@@ -1030,8 +1030,8 @@ module Intpart = Unionfind.Make(Evar.Set)(Evar.Map)
 
 let deps_of_constraints cstrs evm p =
   List.iter (fun (_, _, x, y) ->
-    let evx = Evarutil.undefined_evars_of_term evm (EConstr.of_constr x) in
-    let evy = Evarutil.undefined_evars_of_term evm (EConstr.of_constr y) in
+    let evx = Evarutil.undefined_evars_of_term evm x in
+    let evy = Evarutil.undefined_evars_of_term evm y in
     Intpart.union_set (Evar.Set.union evx evy) p)
     cstrs
 
@@ -1076,7 +1076,7 @@ let error_unresolvable env comp evd =
   | Some s -> Evar.Set.mem ev s
   in
   let fold ev evi (found, accu) =
-    let ev_class = class_of_constr evd (EConstr.of_constr evi.evar_concl) in
+    let ev_class = class_of_constr evd evi.evar_concl in
     if not (Option.is_empty ev_class) && is_part ev then
       (* focus on one instance if only one was searched for *)
       if not found then (true, Some ev)

@@ -15,7 +15,7 @@ open Context.Named.Declaration
 module NamedDecl = Context.Named.Declaration
 
 let extract_prefix env info =
-  let ctx1 = List.rev (Environ.named_context env) in
+  let ctx1 = List.rev (EConstr.named_context env) in
   let ctx2 = List.rev (Evd.evar_context info) in
   let rec share l1 l2 accu = match l1, l2 with
   | d1 :: l1, d2 :: l2 ->
@@ -29,21 +29,21 @@ let typecheck_evar ev env sigma =
   let info = Evd.find sigma ev in
   (** Typecheck the hypotheses. *)
   let type_hyp (sigma, env) decl =
-    let t = EConstr.of_constr (NamedDecl.get_type decl) in
+    let t = NamedDecl.get_type decl in
     let evdref = ref sigma in
     let _ = Typing.e_sort_of env evdref t in
     let () = match decl with
     | LocalAssum _ -> ()
-    | LocalDef (_,body,_) -> Typing.e_check env evdref (EConstr.of_constr body) t
+    | LocalDef (_,body,_) -> Typing.e_check env evdref body t
     in
-    (!evdref, Environ.push_named decl env)
+    (!evdref, EConstr.push_named decl env)
   in
   let (common, changed) = extract_prefix env info in
-  let env = Environ.reset_with_named_context (Environ.val_of_named_context common) env in
+  let env = Environ.reset_with_named_context (EConstr.val_of_named_context common) env in
   let (sigma, env) = List.fold_left type_hyp (sigma, env) changed in
   (** Typecheck the conclusion *)
   let evdref = ref sigma in
-  let _ = Typing.e_sort_of env evdref (EConstr.of_constr (Evd.evar_concl info)) in
+  let _ = Typing.e_sort_of env evdref (Evd.evar_concl info) in
   !evdref
 
 let typecheck_proof c concl env sigma =
@@ -106,7 +106,6 @@ let generic_refine ~typecheck f gl =
   let evs = Evd.map_filter_future_goals (Proofview.Unsafe.advance sigma) evs in
   let comb,shelf,given_up,evkmain = Evd.dispatch_future_goals evs in
   (** Proceed to the refinement *)
-  let c = EConstr.Unsafe.to_constr c in
   let sigma = match Proofview.Unsafe.advance sigma self with
   | None ->
     (** Nothing to do, the goal has been solved by side-effect *)
@@ -124,7 +123,8 @@ let generic_refine ~typecheck f gl =
   (** Mark goals *)
   let sigma = CList.fold_left Proofview.Unsafe.mark_as_goal sigma comb in
   let comb = CList.map (fun x -> Proofview.goal_with_state x state) comb in
-  let trace () = Pp.(hov 2 (str"simple refine"++spc()++ Hook.get pr_constrv env sigma c)) in
+  let trace () = Pp.(hov 2 (str"simple refine"++spc()++
+                            Hook.get pr_constrv env sigma (EConstr.Unsafe.to_constr c))) in
   Proofview.Trace.name_tactic trace (Proofview.tclUNIT v) >>= fun v ->
   Proofview.Unsafe.tclSETENV (Environ.reset_context env) <*>
   Proofview.Unsafe.tclEVARS sigma <*>

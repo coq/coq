@@ -13,7 +13,7 @@ open Names
 open Constr
 open Environ
 
-type t
+type t = Evd.econstr
 (** Type of incomplete terms. Essentially a wrapper around {!Constr.t} ensuring
     that {!Constr.kind} does not observe defined evars. *)
 
@@ -290,6 +290,7 @@ val is_global : Evd.evar_map -> Globnames.global_reference -> t -> bool
 
 (** {5 Extra} *)
 
+val of_existential : Constr.existential -> existential
 val of_named_decl : (Constr.t, Constr.types) Context.Named.Declaration.pt -> (t, types) Context.Named.Declaration.pt
 val of_rel_decl : (Constr.t, Constr.types) Context.Rel.Declaration.pt -> (t, types) Context.Rel.Declaration.pt
 
@@ -307,6 +308,8 @@ sig
 
   val to_named_decl : (t, types) Context.Named.Declaration.pt -> (Constr.t, Constr.types) Context.Named.Declaration.pt
   (** Physical identity. Does not care for defined evars. *)
+
+  val to_named_context : (t, types) Context.Named.pt -> Context.Named.t
 
   val to_sorts : ESorts.t -> Sorts.t
   (** Physical identity. Does not care for normalization. *)

@@ -48,7 +48,7 @@ module V82 = struct
   (* Access to ".evar_concl" *)
   let concl evars gl =
     let evi = Evd.find evars gl in
-    EConstr.of_constr evi.Evd.evar_concl
+    evi.Evd.evar_concl
 
   (* Access to ".evar_extra" *)
   let extra evars gl =
@@ -61,7 +61,6 @@ module V82 = struct
        be shelved. It must not appear as a future_goal, so the future
        goals are restored to their initial value after the evar is
        created. *)
-    let concl = EConstr.Unsafe.to_constr concl in
     let prev_future_goals = Evd.save_future_goals evars in
     let evi = { Evd.evar_hyps = hyps;
 		Evd.evar_concl = concl;
@@ -86,7 +85,7 @@ module V82 = struct
       if not (Evarutil.occur_evar_upto sigma evk c) then ()
       else Pretype_errors.error_occur_check Environ.empty_env sigma evk c
     in
-    Evd.define evk (EConstr.Unsafe.to_constr c) sigma
+    Evd.define evk c sigma
 
   (* Instantiates a goal with an open term, using name of goal for evk' *)
   let partial_solution_to sigma evk evk' c =
@@ -100,7 +99,9 @@ module V82 = struct
   let same_goal evars1 gl1 evars2 gl2 =
     let evi1 = Evd.find evars1 gl1 in
     let evi2 = Evd.find evars2 gl2 in
-    Constr.equal evi1.Evd.evar_concl evi2.Evd.evar_concl &&
+    let c1 = EConstr.Unsafe.to_constr evi1.Evd.evar_concl in
+    let c2 = EConstr.Unsafe.to_constr evi2.Evd.evar_concl in
+    Constr.equal c1 c2 &&
     Environ.eq_named_context_val evi1.Evd.evar_hyps evi2.Evd.evar_hyps
 
   let weak_progress glss gls =

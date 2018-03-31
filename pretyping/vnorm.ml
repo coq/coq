@@ -205,7 +205,7 @@ and nf_univ_args ~nb_univs mk env sigma stk =
 and nf_evar env sigma evk stk =
   let evi = try Evd.find sigma evk with Not_found -> assert false in
   let hyps = Environ.named_context_of_val (Evd.evar_filtered_hyps evi) in
-  let concl = Evd.evar_concl evi in
+  let concl = EConstr.Unsafe.to_constr @@ Evd.evar_concl evi in
   if List.is_empty hyps then
     nf_stk env sigma (mkEvar (evk, [||])) concl stk
   else match stk with

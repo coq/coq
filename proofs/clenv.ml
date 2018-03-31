@@ -62,9 +62,6 @@ let clenv_get_type_of ce c = Retyping.get_type_of (cl_env ce) (cl_sigma ce) c
 
 exception NotExtensibleClause
 
-let mk_freelisted c =
-  map_fl EConstr.of_constr (mk_freelisted (EConstr.Unsafe.to_constr c))
-
 let clenv_push_prod cl =
   let typ = whd_all (cl_env cl) (cl_sigma cl) (clenv_type cl) in
   let rec clrec typ = match EConstr.kind cl.evd typ with
@@ -73,7 +70,7 @@ let clenv_push_prod cl =
 	let mv = new_meta () in
 	let dep = not (noccurn (cl_sigma cl) 1 u) in
 	let na' = if dep then na else Anonymous in
-	let e' = meta_declare mv (EConstr.Unsafe.to_constr t) ~name:na' cl.evd in
+        let e' = meta_declare mv t ~name:na' cl.evd in
 	let concl = if dep then subst1 (mkMeta mv) u else u in
 	let def = applist (cl.templval.rebus,[mkMeta mv]) in
 	{ templval = mk_freelisted def;
@@ -107,8 +104,7 @@ let clenv_environments evd bound t =
 	  let mv = new_meta () in
 	  let dep = not (noccurn evd 1 t2) in
 	  let na' = if dep then na else Anonymous in
-	  let t1 = EConstr.Unsafe.to_constr t1 in
-	  let e' = meta_declare mv t1 ~name:na' e in
+          let e' = meta_declare mv t1 ~name:na' e in
 	  clrec (e', (mkMeta mv)::metas) (Option.map ((+) (-1)) n)
 	    (if dep then (subst1 (mkMeta mv) t2) else t2)
       | (n, LetIn (na,b,_,t)) -> clrec (e,metas) n (subst1 b t)
@@ -167,13 +163,13 @@ let clenv_assign mv rhs clenv =
     user_err Pp.(str "clenv_assign: circularity in unification");
   try
     if meta_defined clenv.evd mv then
-      if not (EConstr.eq_constr clenv.evd (EConstr.of_constr (fst (meta_fvalue clenv.evd mv)).rebus) rhs) then
+      if not (EConstr.eq_constr clenv.evd (fst (meta_fvalue clenv.evd mv)).rebus rhs) then
         error_incompatible_inst clenv mv
       else
 	clenv
     else
       let st = (Conv,TypeNotProcessed) in
-      {clenv with evd = meta_assign mv (EConstr.Unsafe.to_constr rhs_fls.rebus,st) clenv.evd}
+      {clenv with evd = meta_assign mv (rhs_fls.rebus,st) clenv.evd}
   with Not_found ->
     user_err Pp.(str "clenv_assign: undefined meta")
 
@@ -218,7 +214,7 @@ let clenv_assign mv rhs clenv =
 *)
 
 let clenv_metas_in_type_of_meta evd mv =
-  (mk_freelisted (meta_instance evd (map_fl EConstr.of_constr (meta_ftype evd mv)))).freemetas
+  (mk_freelisted (meta_instance evd (meta_ftype evd mv))).freemetas
 
 let dependent_in_type_of_metas clenv mvs =
   List.fold_right
@@ -288,11 +284,11 @@ let adjust_meta_source evd mv = function
        in situations like "ex_intro (fun x => P) ?ev p" *)
     let f = function (mv',(Cltyp (_,t) | Clval (_,_,t))) ->
       if Metaset.mem mv t.freemetas then
-        let f,l = decompose_app evd (EConstr.of_constr t.rebus) in
+        let f,l = decompose_app evd t.rebus in
         match EConstr.kind evd f with
         | Meta mv'' ->
           (match meta_opt_fvalue evd mv'' with
-          | Some (c,_) -> match_name (EConstr.of_constr c.rebus) l
+          | Some (c,_) -> match_name c.rebus l
           | None -> None)
         | _ -> None
       else None in
@@ -502,7 +498,6 @@ let clenv_assign_binding clenv k c =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
   let c_typ = nf_betaiota clenv.env clenv.evd (clenv_get_type_of clenv c) in
   let status,clenv',c = clenv_unify_binding_type clenv c c_typ k_typ in
-  let c = EConstr.Unsafe.to_constr c in
   { clenv' with evd = meta_assign k (c,(Conv,status)) clenv'.evd }
 
 let clenv_match_args bl clenv =
@@ -515,7 +510,7 @@ let clenv_match_args bl clenv =
       (fun clenv {CAst.loc;v=(b,c)} ->
 	let k = meta_of_binder clenv loc mvs b in
         if meta_defined clenv.evd k then
-          if EConstr.eq_constr clenv.evd (EConstr.of_constr (fst (meta_fvalue clenv.evd k)).rebus) c then clenv
+          if EConstr.eq_constr clenv.evd (fst (meta_fvalue clenv.evd k)).rebus c then clenv
           else error_already_defined b
         else
 	  clenv_assign_binding clenv k c)
@@ -677,7 +672,7 @@ let define_with_type sigma env ev c =
   let j = Environ.make_judge c ty in
   let (sigma, j) = Coercion.inh_conv_coerce_to true env sigma j t in
   let (ev, _) = destEvar sigma ev in
-  let sigma = Evd.define ev (EConstr.Unsafe.to_constr j.Environ.uj_val) sigma in
+  let sigma = Evd.define ev j.Environ.uj_val sigma in
   sigma
 
 let solve_evar_clause env sigma hyp_only clause = function

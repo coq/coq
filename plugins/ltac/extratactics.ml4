@@ -296,7 +296,6 @@ let project_hint ~poly pri l2r r =
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let sigma, c = Evd.fresh_global env sigma gr in
-  let c = EConstr.of_constr c in
   let t = Retyping.get_type_of env sigma c in
   let t =
     Tacred.reduce_to_quantified_ref env sigma (Lazy.force coq_iff_ref) t in
@@ -307,7 +306,6 @@ let project_hint ~poly pri l2r r =
   let p =
     if l2r then build_coq_iff_left_proj () else build_coq_iff_right_proj () in
   let sigma, p = Evd.fresh_global env sigma p in
-  let p = EConstr.of_constr p in
   let c = Reductionops.whd_beta sigma (mkApp (c, Context.Rel.to_extended_vect mkRel 0 sign)) in
   let c = it_mkLambda_or_LetIn
     (mkApp (p,[|mkArrow a (lift 1 b);mkArrow b (lift 1 a);c|])) sign in

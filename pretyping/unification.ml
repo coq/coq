@@ -84,7 +84,7 @@ let occur_meta_or_undefined_evar evd c =
     | Evar (ev,args) ->
         (match evar_body (Evd.find evd ev) with
         | Evar_defined c ->
-            occrec c; Array.iter occrec args
+            occrec (EConstr.Unsafe.to_constr c); Array.iter occrec args
         | Evar_empty -> raise Occur)
     | _ -> Constr.iter occrec c
   in try occrec c; false with Occur | Not_found -> true
@@ -189,10 +189,9 @@ let pose_all_metas_as_evars env evd t =
   let rec aux t = match EConstr.kind !evdref t with
   | Meta mv ->
       (match Evd.meta_opt_fvalue !evdref mv with
-       | Some ({rebus=c},_) -> EConstr.of_constr c
+       | Some ({rebus=c},_) -> c
        | None ->
         let {rebus=ty;freemetas=mvs} = Evd.meta_ftype evd mv in
-        let ty = EConstr.of_constr ty in
         let ty = if Evd.Metaset.is_empty mvs then ty else aux ty in
         let ty =
           if Flags.version_strictly_greater Flags.V8_6
@@ -200,7 +199,7 @@ let pose_all_metas_as_evars env evd t =
           else ty (* some beta-iota-normalization "regression" in 8.5 and 8.6 *) in
         let src = Evd.evar_source_of_meta mv !evdref in
         let ev = Evarutil.e_new_evar env evdref ~src ty in
-        evdref := meta_assign mv (EConstr.Unsafe.to_constr ev,(Conv,TypeNotProcessed)) !evdref;
+        evdref := meta_assign mv (ev,(Conv,TypeNotProcessed)) !evdref;
         ev)
   | _ ->
       EConstr.map !evdref aux t in
@@ -1060,7 +1059,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
                 (evd,t2::ks, m-1)
             else
               let mv = new_meta () in
-	      let evd' = meta_declare mv (EConstr.Unsafe.to_constr (substl ks b)) evd in
+              let evd' = meta_declare mv (substl ks b) evd in
 	      (evd', mkMeta mv :: ks, m - 1))
 	  (sigma,[],List.length bs) bs
       in
@@ -1247,7 +1246,7 @@ let try_to_coerce env evd c cty tycon =
   let j = make_judge c cty in
   let (evd',j') = inh_conv_coerce_rigid_to true env evd j tycon in
   let evd' = Evarconv.solve_unif_constraints_with_heuristics env evd' in
-  let evd' = Evd.map_metas_fvalue (fun c -> EConstr.Unsafe.to_constr (nf_evar evd' (EConstr.of_constr c))) evd' in
+  let evd' = Evd.map_metas_fvalue (fun c -> nf_evar evd' c) evd' in
     (evd',j'.uj_val)
 
 let w_coerce_to_type env evd c cty mvty =
@@ -1359,11 +1358,11 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
 	  if meta_defined evd mv then
 	    let {rebus=c'},(status',_) = meta_fvalue evd mv in
             let (take_left,st,(evd,metas',evars')) =
-	      merge_instances env evd flags status' status (EConstr.of_constr c') c
+              merge_instances env evd flags status' status c' c
 	    in
 	    let evd' =
               if take_left then evd
-              else meta_reassign mv (EConstr.Unsafe.to_constr c,(st,TypeProcessed)) evd
+              else meta_reassign mv (c,(st,TypeProcessed)) evd
 	    in
               w_merge_rec evd' (metas'@metas@metas'') (evars'@evars'') eqns
     	  else
@@ -1372,7 +1371,7 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
                 if isMetaOf evd mv (whd_all env evd c) then evd
                 else error_cannot_unify env evd (mkMeta mv,c)
               else
-	        meta_assign mv (EConstr.Unsafe.to_constr c,(status,TypeProcessed)) evd in
+                meta_assign mv (c,(status,TypeProcessed)) evd in
 	    w_merge_rec evd' (metas''@metas) evars'' eqns
     | [] ->
 	(* Process type eqns *)
@@ -1396,17 +1395,17 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
     let (evd', c) = applyHead sp_env evd nargs hdc in
     let (evd'',mc,ec) =
       unify_0 sp_env evd' CUMUL flags
-        (get_type_of sp_env evd' c) (EConstr.of_constr ev.evar_concl) in
+        (get_type_of sp_env evd' c) ev.evar_concl in
     let evd''' = w_merge_rec evd'' mc ec [] in
     if evd' == evd'''
-    then Evd.define sp (EConstr.Unsafe.to_constr c) evd'''
-    else Evd.define sp (EConstr.Unsafe.to_constr (Evarutil.nf_evar evd''' c)) evd''' in
+    then Evd.define sp c evd'''
+    else Evd.define sp (Evarutil.nf_evar evd''' c) evd''' in
 
   let check_types evd = 
     let metas = Evd.meta_list evd in
     let eqns = List.fold_left (fun acc (mv, b) ->
       match b with
-      | Clval (n, (t, (c, TypeNotProcessed)), v) -> (mv, c, EConstr.of_constr t.rebus) :: acc
+      | Clval (n, (t, (c, TypeNotProcessed)), v) -> (mv, c, t.rebus) :: acc
       | _ -> acc) [] metas
     in w_merge_rec evd [] [] eqns
   in
@@ -1416,11 +1415,6 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
                 (List.rev evars) []
   in
   if with_types then check_types res else res
-
-let retract_coercible_metas evd =
-  let (metas, evd) = retract_coercible_metas evd in
-  let map (mv, c, st) = (mv, EConstr.of_constr c, st) in
-  (List.map map metas, evd)
 
 let w_unify_meta_types env ?(flags=default_unify_flags ()) evd =
   let metas,evd = retract_coercible_metas evd in

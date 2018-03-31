@@ -871,7 +871,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
     | Evar ev -> fold ()
     | Meta ev ->
       (match safe_meta_value sigma ev with
-      | Some body -> whrec cst_l (EConstr.of_constr body, stack)
+      | Some body -> whrec cst_l (body, stack)
       | None -> fold ())
     | Const (c,u as const) ->
       reduction_effect_hook env sigma (EConstr.to_constr sigma x)
@@ -1106,7 +1106,7 @@ let local_whd_state_gen flags sigma =
     | Evar ev -> s
     | Meta ev ->
       (match safe_meta_value sigma ev with
-        Some c -> whrec (EConstr.of_constr c,stack)
+        Some c -> whrec (c,stack)
       | None -> s)
 
     | Construct ((ind,c),u) ->
@@ -1392,7 +1392,7 @@ let vm_infer_conv ?(pb=Reduction.CUMUL) env t1 t2 =
 (********************************************************************)
 
 let whd_meta sigma c = match EConstr.kind sigma c with
-  | Meta p -> (try EConstr.of_constr (meta_value sigma p) with Not_found -> c)
+  | Meta p -> (try meta_value sigma p with Not_found -> c)
   | _ -> c
 
 let default_plain_instance_ident = Id.of_string "H"
@@ -1612,7 +1612,7 @@ let meta_value evd mv =
     match meta_opt_fvalue evd mv with
     | Some (b,_) ->
       let metas = Metamap.bind valrec b.freemetas in
-      instance evd metas (EConstr.of_constr b.rebus)
+      instance evd metas b.rebus
     | None -> mkMeta mv
   in
   valrec mv
@@ -1625,9 +1625,8 @@ let meta_instance sigma b =
     instance sigma c_sigma b.rebus
 
 let nf_meta sigma c =
-  let c = EConstr.Unsafe.to_constr c in
   let cl = mk_freelisted c in
-  meta_instance sigma { cl with rebus = EConstr.of_constr cl.rebus }
+  meta_instance sigma { cl with rebus = cl.rebus }
 
 (* Instantiate metas that create beta/iota redexes *)
 
@@ -1648,7 +1647,6 @@ let meta_reducible_instance evd b =
 	(match
 	  try
 	    let g, s = Metamap.find m metas in
-	    let g = EConstr.of_constr g in
             let is_coerce = match s with CoerceToType -> true | _ -> false in
 	    if isConstruct evd g || not is_coerce then Some g else None
 	  with Not_found -> None
@@ -1660,7 +1658,6 @@ let meta_reducible_instance evd b =
 	(match
 	  try
 	    let g, s = Metamap.find m metas in
-	    let g = EConstr.of_constr g in
             let is_coerce = match s with CoerceToType -> true | _ -> false in
 	    if isLambda evd g || not is_coerce then Some g else None
 	  with Not_found -> None
@@ -1669,7 +1666,6 @@ let meta_reducible_instance evd b =
 	   | None -> mkApp (f,Array.map irec l))
     | Meta m ->
 	(try let g, s = Metamap.find m metas in
-          let g = EConstr.of_constr g in
           let is_coerce = match s with CoerceToType -> true | _ -> false in
           if not is_coerce then irec g else u
 	 with Not_found -> u)
@@ -1678,7 +1674,6 @@ let meta_reducible_instance evd b =
 	  (match
 	  try
 	    let g, s = Metamap.find m metas in
-            let g = EConstr.of_constr g in
             let is_coerce = match s with CoerceToType -> true | _ -> false in
 	    if isConstruct evd g || not is_coerce then Some g else None
 	  with Not_found -> None

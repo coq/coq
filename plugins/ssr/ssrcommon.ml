@@ -509,11 +509,12 @@ let pf_abs_evars2 gl rigid (sigma, c0) =
   let nenv = env_size (pf_env gl) in
   let abs_evar n k =
     let evi = Evd.find sigma k in
-    let dc = CList.firstn n (evar_filtered_context evi) in
+    let concl = EConstr.Unsafe.to_constr evi.evar_concl in
+    let dc = EConstr.Unsafe.to_named_context (CList.firstn n (evar_filtered_context evi)) in
     let abs_dc c = function
     | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn x b t (mkArrow t c)
     | NamedDecl.LocalAssum (x,t) -> mkNamedProd x t c in
-    let t = Context.Named.fold_inside abs_dc ~init:evi.evar_concl dc in
+    let t = Context.Named.fold_inside abs_dc ~init:concl dc in
     nf_evar sigma t in
   let rec put evlist c = match Constr.kind c with
   | Evar (k, a) ->  
@@ -569,11 +570,12 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
   let nenv = env_size (pf_env gl) in
   let abs_evar n k =
     let evi = Evd.find sigma k in
-    let dc = CList.firstn n (evar_filtered_context evi) in
+    let concl = EConstr.Unsafe.to_constr evi.evar_concl in
+    let dc = EConstr.Unsafe.to_named_context (CList.firstn n (evar_filtered_context evi)) in
     let abs_dc c = function
     | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn x b t (mkArrow t c)
     | NamedDecl.LocalAssum (x,t) -> mkNamedProd x t c in
-    let t = Context.Named.fold_inside abs_dc ~init:evi.evar_concl dc in
+    let t = Context.Named.fold_inside abs_dc ~init:concl dc in
     nf_evar sigma0 (nf_evar sigma t) in
   let rec put evlist c = match Constr.kind c with
   | Evar (k, a) ->  
@@ -581,7 +583,7 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
     let n = max 0 (Array.length a - nenv) in
     let k_ty = 
       Retyping.get_sort_family_of 
-        (pf_env gl) sigma (EConstr.of_constr (Evd.evar_concl (Evd.find sigma k))) in
+        (pf_env gl) sigma (Evd.evar_concl (Evd.find sigma k)) in
     let is_prop = k_ty = InProp in
     let t = abs_evar n k in (k, (n, t, is_prop)) :: put evlist t
   | _ -> Constr.fold put evlist c in
@@ -746,7 +748,7 @@ let pf_mkSsrConst name gl =
 let pf_fresh_global name gl =
   let sigma, env, it = project gl, pf_env gl, sig_it gl in
   let sigma,t  = Evd.fresh_global env sigma name in
-  t, re_sig it sigma
+  EConstr.Unsafe.to_constr t, re_sig it sigma
 
 let mkProt t c gl =
   let prot, gl = pf_mkSsrConst "protect_term" gl in
@@ -980,7 +982,7 @@ let applyn ~with_evars ?beta ?(with_shelve=false) n t gl =
               if not (EConstr.Vars.closed0 sigma ty) then
                 raise dependent_apply_error;
               let m = Evarutil.new_meta () in
-              loop (meta_declare m (EConstr.Unsafe.to_constr ty) sigma) bo ((EConstr.mkMeta m)::args) (n-1)
+              loop (meta_declare m ty sigma) bo ((EConstr.mkMeta m)::args) (n-1)
           | _ -> assert false
       in loop sigma t [] n in
     pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr_env (pf_env gl) (project gl) t));

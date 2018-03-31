@@ -181,6 +181,7 @@ let build_id_coercion idf_opt source poly =
   let sigma, vs = match source with
     | CL_CONST sp -> Evd.fresh_global env sigma (ConstRef sp)
     | _ -> error_not_transparent source in
+  let vs = EConstr.Unsafe.to_constr vs in
   let c = match constant_opt_value_in env (destConst vs) with
     | Some c -> c
     | None -> error_not_transparent source in

@@ -1015,7 +1015,7 @@ let adjust_impossible_cases pb pred tomatch submat =
     | Evar (evk,_) when snd (evar_source evk !(pb.evdref)) == Evar_kinds.ImpossibleCase ->
         if not (Evd.is_defined !(pb.evdref) evk) then begin
 	  let evd, default = use_unit_judge !(pb.evdref) in
-	  pb.evdref := Evd.define evk (EConstr.Unsafe.to_constr default.uj_type) evd
+          pb.evdref := Evd.define evk default.uj_type evd
         end;
         add_assert_false_case pb tomatch
     | _ ->

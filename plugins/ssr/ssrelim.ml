@@ -356,7 +356,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac
     let ev = List.fold_left Evar.Set.union Evar.Set.empty patterns_ev in
     let ty_ev = Evar.Set.fold (fun i e ->
          let ex = i in
-         let i_ty = EConstr.of_constr (Evd.evar_concl (Evd.find (project gl) ex)) in
+         let i_ty = Evd.evar_concl (Evd.find (project gl) ex) in
          Evar.Set.union e (evars_of_term i_ty))
       ev Evar.Set.empty in
     let inter = Evar.Set.inter ev ty_ev in

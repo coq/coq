@@ -266,7 +266,7 @@ let change_property_sort evd toSort princ princName =
       (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident princName)) in
   let init =
     let nargs =  (princ_info.nparams + (List.length  princ_info.predicates)) in
-    mkApp(princName_as_constr,
+    mkApp(EConstr.Unsafe.to_constr princName_as_constr,
 	  Array.init nargs
 	    (fun i -> mkRel (nargs - i )))
   in
@@ -630,11 +630,14 @@ let build_scheme fas =
 	    in
             let evd',f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
             let _ = evd := evd' in 
-	    let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd (EConstr.of_constr f) in 
-            if isConst f
-            then (destConst f,sort)
-            else user_err Pp.(pr_constr_env (Global.env ()) !evd f ++spc () ++ str "should be the named of a globally defined function")
-	 )
+            let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd f in
+            let c, u =
+              try EConstr.destConst !evd f
+              with DestKO ->
+                user_err Pp.(pr_econstr_env (Global.env ()) !evd f ++spc () ++ str "should be the named of a globally defined function")
+            in
+            (c, EConstr.EInstance.kind !evd u), sort
+         )
 	 fas
 		   ) in
   let bodies_types =

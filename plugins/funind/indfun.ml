@@ -77,8 +77,7 @@ let functional_induction with_clean c princl pat =
 		    user_err  (str "Cannot find induction principle for "
                                      ++ Printer.pr_leconstr_env (Tacmach.pf_env g) sigma (mkConst c') )
 	      in
-	      let princ = EConstr.of_constr princ in
-	      (princ,NoBindings,Tacmach.pf_unsafe_type_of g' princ,g')
+              (princ,NoBindings,Tacmach.pf_unsafe_type_of g' princ,g')
 	   | _ -> raise (UserError(None,str "functional induction must be used with a function" ))
 	 end
       | Some ((princ,binding)) ->
@@ -261,7 +260,6 @@ let derive_inversion fix_names =
 	 let evd,c =
 	   Evd.fresh_global
 	     (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident id)) in 
-        let c = EConstr.of_constr c in
         let (cst, u) = destConst evd c in
 	 evd, (cst, EInstance.kind evd u) :: l
 	)
@@ -283,8 +281,7 @@ let derive_inversion fix_names =
 	       (Global.env ()) evd
 	       (Constrintern.locate_reference (Libnames.qualid_of_ident (mk_rel_id id)))
 	   in 
-	   let id = EConstr.of_constr id in
-	   evd,(fst (destInd evd id))::l
+           evd,(fst (destInd evd id))::l
 	  )
 	  fix_names
 	  (evd',[])
@@ -388,7 +385,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 	     let evd = ref (Evd.from_env env) in
 	     let evd',uprinc = Evd.fresh_global env !evd princ in
              let _ = evd := evd' in 
-	     let princ_type = Typing.e_type_of ~refresh:true env evd (EConstr.of_constr uprinc) in
+             let princ_type = Typing.e_type_of ~refresh:true env evd uprinc in
 	     let princ_type = EConstr.Unsafe.to_constr princ_type in
     	     Functional_principles_types.generate_functional_principle
 	       evd
@@ -425,7 +422,6 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 	    let evd,c =
 	      Evd.fresh_global
 		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
-            let c = EConstr.of_constr c in
             let (cst, u) = destConst evd c in
             let u = EInstance.kind evd u in
             evd,((cst, u) :: l)
@@ -442,7 +438,6 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 	    let evd,c =
 	      Evd.fresh_global
 		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
-            let c = EConstr.of_constr c in
             let (cst, u) = destConst evd c in
             let u = EInstance.kind evd u in
             evd,((cst, u) :: l)

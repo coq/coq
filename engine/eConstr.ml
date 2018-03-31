@@ -13,138 +13,8 @@ open Util
 open Names
 open Constr
 open Context
-open Evd
 
-module API :
-sig
-module ESorts :
-sig
-type t
-val make : Sorts.t -> t
-val kind : Evd.evar_map -> t -> Sorts.t
-val unsafe_to_sorts : t -> Sorts.t
-end
-module EInstance :
-sig
-type t
-val make : Univ.Instance.t -> t
-val kind : Evd.evar_map -> t -> Univ.Instance.t
-val empty : t
-val is_empty : t -> bool
-val unsafe_to_instance : t -> Univ.Instance.t
-end
-type t
-val kind : Evd.evar_map -> t -> (t, t, ESorts.t, EInstance.t) Constr.kind_of_term
-val kind_upto : Evd.evar_map -> constr -> (constr, types, Sorts.t, Univ.Instance.t) Constr.kind_of_term
-val kind_of_type : Evd.evar_map -> t -> (t, t) Term.kind_of_type
-val whd_evar : Evd.evar_map -> t -> t
-val of_kind : (t, t, ESorts.t, EInstance.t) Constr.kind_of_term -> t
-val of_constr : Constr.t -> t
-val to_constr : ?abort_on_undefined_evars:bool -> evar_map -> t -> Constr.t
-val unsafe_to_constr : t -> Constr.t
-val unsafe_eq : (t, Constr.t) eq
-val of_named_decl : (Constr.t, Constr.types) Context.Named.Declaration.pt -> (t, t) Context.Named.Declaration.pt
-val unsafe_to_named_decl : (t, t) Context.Named.Declaration.pt -> (Constr.t, Constr.types) Context.Named.Declaration.pt
-val unsafe_to_rel_decl : (t, t) Context.Rel.Declaration.pt -> (Constr.t, Constr.types) Context.Rel.Declaration.pt
-val of_rel_decl : (Constr.t, Constr.types) Context.Rel.Declaration.pt -> (t, t) Context.Rel.Declaration.pt
-val to_rel_decl : Evd.evar_map -> (t, t) Context.Rel.Declaration.pt -> (Constr.t, Constr.types) Context.Rel.Declaration.pt
-end =
-struct
-
-module ESorts =
-struct
-  type t = Sorts.t
-  let make s = s
-  let kind sigma = function
-  | Sorts.Type u -> Sorts.sort_of_univ (Evd.normalize_universe sigma u)
-  | s -> s
-  let unsafe_to_sorts s = s
-end
-
-module EInstance =
-struct
-  type t = Univ.Instance.t
-  let make i = i
-  let kind sigma i =
-    if Univ.Instance.is_empty i then i
-    else Evd.normalize_universe_instance sigma i
-  let empty = Univ.Instance.empty
-  let is_empty = Univ.Instance.is_empty
-  let unsafe_to_instance t = t
-end
-
-type t = Constr.t
-
-let safe_evar_value sigma ev =
-  try Some (Evd.existential_value sigma ev)
-  with NotInstantiatedEvar | Not_found -> None
-
-let rec whd_evar sigma c =
-  match Constr.kind c with
-  | Evar ev ->
-    begin match safe_evar_value sigma ev with
-    | Some c -> whd_evar sigma c
-    | None -> c
-    end
-  | App (f, args) when isEvar f ->
-    (** Enforce smart constructor invariant on applications *)
-    let ev = destEvar f in
-    begin match safe_evar_value sigma ev with
-    | None -> c
-    | Some f -> whd_evar sigma (mkApp (f, args))
-    end
-  | Cast (c0, k, t) when isEvar c0 ->
-    (** Enforce smart constructor invariant on casts. *)
-    let ev = destEvar c0 in
-    begin match safe_evar_value sigma ev with
-    | None -> c
-    | Some c -> whd_evar sigma (mkCast (c, k, t))
-    end
-  | _ -> c
-
-let kind sigma c = Constr.kind (whd_evar sigma c)
-let kind_upto = kind
-let kind_of_type sigma c = Term.kind_of_type (whd_evar sigma c)
-let of_kind = Constr.of_kind
-let of_constr c = c
-let unsafe_to_constr c = c
-let unsafe_eq = Refl
-
-let to_constr ?(abort_on_undefined_evars=true) sigma c =
-let rec to_constr c = match Constr.kind c with
-| Evar ev ->
-  begin match safe_evar_value sigma ev with
-  | Some c -> to_constr c
-  | None ->
-    if abort_on_undefined_evars then
-      anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
-    else
-      Constr.map (fun c -> to_constr c) c
-  end
-| Sort (Sorts.Type u) ->
-  let u' = Evd.normalize_universe sigma u in
-  if u' == u then c else mkSort (Sorts.sort_of_univ u')
-| Const (c', u) when not (Univ.Instance.is_empty u) ->
-  let u' = Evd.normalize_universe_instance sigma u in
-  if u' == u then c else mkConstU (c', u')
-| Ind (i, u) when not (Univ.Instance.is_empty u) ->
-  let u' = Evd.normalize_universe_instance sigma u in
-  if u' == u then c else mkIndU (i, u')
-| Construct (co, u) when not (Univ.Instance.is_empty u) ->
-  let u' = Evd.normalize_universe_instance sigma u in
-  if u' == u then c else mkConstructU (co, u')
-| _ -> Constr.map (fun c -> to_constr c) c
-in to_constr c
-
-let of_named_decl d = d
-let unsafe_to_named_decl d = d
-let of_rel_decl d = d
-let unsafe_to_rel_decl d = d
-let to_rel_decl sigma d = Context.Rel.Declaration.map_constr (to_constr sigma) d
-
-end
-
-include API
+include Evd.MiniEConstr
 
 type types = t
 type constr = t
@@ -387,8 +257,7 @@ let decompose_prod_n_assum sigma n c =
   in
   prodec_rec Context.Rel.empty n c
 
-let existential_type sigma (evk, args) =
-  of_constr (existential_type sigma (evk, Array.map unsafe_to_constr args))
+let existential_type = Evd.existential_type
 
 let map sigma f c = match kind sigma c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
@@ -749,7 +618,7 @@ let universes_of_constr env sigma c =
          LSet.fold LSet.add (Universe.levels u) s
     | Evar (k, args) ->
        let concl = Evd.evar_concl (Evd.find sigma k) in
-       fold sigma aux (aux s (of_constr concl)) c
+       fold sigma aux (aux s concl) c
     | _ -> fold sigma aux s c
   in aux LSet.empty c
 
@@ -907,6 +776,10 @@ let named_context e = cast_named_context (sym unsafe_eq) (named_context e)
 let val_of_named_context e = val_of_named_context (cast_named_context unsafe_eq e)
 let named_context_of_val e = cast_named_context (sym unsafe_eq) (named_context_of_val e)
 
+let of_existential : Constr.existential -> existential =
+  let gen : type a b. (a,b) eq -> 'c * b array -> 'c * a array = fun Refl x -> x in
+  gen unsafe_eq
+
 let lookup_rel i e = cast_rel_decl (sym unsafe_eq) (lookup_rel i e)
 let lookup_named n e = cast_named_decl (sym unsafe_eq) (lookup_named n e)
 let lookup_named_val n e = cast_named_decl (sym unsafe_eq) (lookup_named_val n e)
@@ -922,7 +795,7 @@ let map_rel_context_in_env f env sign =
 
 let fresh_global ?loc ?rigid ?names env sigma reference =
   let (evd,t) = Evd.fresh_global ?loc ?rigid ?names env sigma reference in
-  evd, of_constr t
+  evd, t
 
 let is_global sigma gr c =
   Globnames.is_global gr (to_constr sigma c)
@@ -934,5 +807,10 @@ let to_instance = EInstance.unsafe_to_instance
 let to_constr = unsafe_to_constr
 let to_rel_decl = unsafe_to_rel_decl
 let to_named_decl = unsafe_to_named_decl
+let to_named_context =
+  let gen : type a b. (a, b) eq -> (a,a) Context.Named.pt -> (b,b) Context.Named.pt
+    = fun Refl x -> x
+  in
+  gen unsafe_eq
 let eq = unsafe_eq
 end

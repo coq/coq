@@ -57,8 +57,8 @@ let get_type_from_constraints env sigma t =
   if isEvar sigma (fst (decompose_app_vect sigma t)) then
     match
       List.map_filter (fun (pbty,env,t1,t2) ->
-        if is_fconv Reduction.CONV env sigma t (EConstr.of_constr t1) then Some t2
-        else if is_fconv Reduction.CONV env sigma t (EConstr.of_constr t2) then Some t1
+        if is_fconv Reduction.CONV env sigma t t1 then Some t2
+        else if is_fconv Reduction.CONV env sigma t t2 then Some t1
         else None)
         (snd (Evd.extract_all_conv_pbs sigma))
     with
@@ -99,7 +99,7 @@ let retype ?(polyprop=true) sigma =
   let rec type_of env cstr =
     match EConstr.kind sigma cstr with
     | Meta n ->
-      (try strip_outer_cast sigma (EConstr.of_constr (Evd.meta_ftype sigma n).Evd.rebus)
+      (try strip_outer_cast sigma (Evd.meta_ftype sigma n).Evd.rebus
        with Not_found -> retype_error (BadMeta n))
     | Rel n ->
 	let ty = RelDecl.get_type (lookup_rel n env) in
@@ -115,7 +115,7 @@ let retype ?(polyprop=true) sigma =
           try Inductiveops.find_rectype env sigma t
           with Not_found ->
           try
-            let t = EConstr.of_constr (get_type_from_constraints env sigma t) in
+            let t = get_type_from_constraints env sigma t in
             Inductiveops.find_rectype env sigma t
           with Not_found -> retype_error BadRecursiveType
         in
