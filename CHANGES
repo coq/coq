@@ -27,6 +27,12 @@ Tools
   Coq was ignoring previous runs and the -async-proofs-delegation-threshold
   option did not have the expected behavior.
 
+Installation
+
+- The -flambda-opts configure option has been removed in favor of
+  generic options -camlflags -camloptflags -camlbyteflags allowing to
+  tweak the flags passed to to the OCaml compiler.
+
 Changes from 8.7.2 to 8.8+beta1
 ===============================
 
