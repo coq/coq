@@ -41,6 +41,8 @@ sig
     ('a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
   val fold_left3 :
     ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b array -> 'c array -> 'd array -> 'a
+  val fold_left4 :
+    ('a -> 'b -> 'c -> 'd -> 'e -> 'a) -> 'a -> 'b array -> 'c array -> 'd array -> 'e array -> 'a
   val fold_left2_i :
     (int -> 'a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
   val fold_left_from : int -> ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
@@ -265,6 +267,16 @@ let fold_left3 f a v1 v2 v3 =
   in
   if Array.length v2 <> lv1 || Array.length v3 <> lv1 then
     invalid_arg "Array.fold_left2";
+  fold a 0
+
+let fold_left4 f a v1 v2 v3 v4 =
+  let lv1 = Array.length v1 in
+  let rec fold a n =
+    if n >= lv1 then a
+    else fold (f a (uget v1 n) (uget v2 n) (uget v3 n) (uget v4 n)) (succ n)
+  in
+  if Array.length v2 <> lv1 || Array.length v3 <> lv1 || Array.length v4 <> lv1 then
+    invalid_arg "Array.fold_left4";
   fold a 0
 
 let fold_left_from n f a v =

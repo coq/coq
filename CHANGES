@@ -11,6 +11,10 @@ Vernacular Commands
 - Removed deprecated commands Arguments Scope and Implicit Arguments
   (not the option). Use the Arguments command instead.
 
+Tactic language
+
+- Support for fix/cofix added in Ltac "match" and "lazymatch".
+
 Changes from 8.7.2 to 8.8+beta1
 ===============================
 

@@ -14,7 +14,6 @@ open CErrors
 open Util
 open Names
 open Nameops
-open Constr
 open Termops
 open Libnames
 open Globnames
@@ -1223,8 +1222,36 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
 	| _ -> anomaly (Pp.str "PCase with non-trivial predicate but unknown inductive.")
       in
       GCases (RegularStyle,rtn,[glob_of_pat avoid env sigma tm,indnames],mat)
-  | PFix f -> DAst.get (Detyping.detype_names false avoid env (Global.env()) sigma (EConstr.of_constr (mkFix f))) (** FIXME bad env *)
-  | PCoFix c -> DAst.get (Detyping.detype_names false avoid env (Global.env()) sigma (EConstr.of_constr (mkCoFix c)))
+  | PFix ((ln,i),(lna,tl,bl)) ->
+     let def_avoid, def_env, lfi =
+       Array.fold_left
+         (fun (avoid, env, l) na ->
+           let id = Namegen.next_name_away na avoid in
+           (Id.Set.add id avoid, Name id :: env, id::l))
+      (avoid, env, []) lna in
+     let n = Array.length tl in
+     let v = Array.map3
+               (fun c t i -> Detyping.share_pattern_names glob_of_pat (i+1) [] def_avoid def_env sigma c (Patternops.lift_pattern n t))
+    bl tl ln in
+     GRec(GFix (Array.map (fun i -> Some i, GStructRec) ln,i),Array.of_list (List.rev lfi),
+       Array.map (fun (bl,_,_) -> bl) v,
+       Array.map (fun (_,_,ty) -> ty) v,
+       Array.map (fun (_,bd,_) -> bd) v)
+  | PCoFix (ln,(lna,tl,bl)) ->
+     let def_avoid, def_env, lfi =
+       Array.fold_left
+         (fun (avoid, env, l) na ->
+           let id = Namegen.next_name_away na avoid in
+           (Id.Set.add id avoid, Name id :: env, id::l))
+         (avoid, env, []) lna in
+     let ntys = Array.length tl in
+     let v = Array.map2
+               (fun c t -> share_pattern_names glob_of_pat 0 [] def_avoid def_env sigma c (Patternops.lift_pattern ntys t))
+               bl tl in
+     GRec(GCoFix ln,Array.of_list (List.rev lfi),
+          Array.map (fun (bl,_,_) -> bl) v,
+          Array.map (fun (_,_,ty) -> ty) v,
+          Array.map (fun (_,bd,_) -> bd) v)
   | PSort s -> GSort s
 
 let extern_constr_pattern env sigma pat =

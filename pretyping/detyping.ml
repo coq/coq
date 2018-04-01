@@ -501,6 +501,97 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
       let eqnl = detype_eqns constructs constagsl bl in
       GCases (tag,pred,[tomatch,(alias,aliastyp)],eqnl)
 
+let rec share_names detype n l avoid env sigma c t =
+  match EConstr.kind sigma c, EConstr.kind sigma t with
+    (* factorize even when not necessary to have better presentation *)
+    | Lambda (na,t,c), Prod (na',t',c') ->
+        let na = match (na,na') with
+            Name _, _ -> na
+          | _, Name _ -> na'
+          | _ -> na in
+        let t' = detype avoid env sigma t in
+        let id = next_name_away na avoid in
+        let avoid = Id.Set.add id avoid and env = add_name (Name id) None t env in
+        share_names detype (n-1) ((Name id,Explicit,None,t')::l) avoid env sigma c c'
+    (* May occur for fix built interactively *)
+    | LetIn (na,b,t',c), _ when n > 0 ->
+        let t'' = detype avoid env sigma t' in
+        let b' = detype avoid env sigma b in
+        let id = next_name_away na avoid in
+        let avoid = Id.Set. add id avoid and env = add_name (Name id) (Some b) t' env in
+        share_names detype n ((Name id,Explicit,Some b',t'')::l) avoid env sigma c (lift 1 t)
+    (* Only if built with the f/n notation or w/o let-expansion in types *)
+    | _, LetIn (_,b,_,t) when n > 0 ->
+        share_names detype n l avoid env sigma c (subst1 b t)
+    (* If it is an open proof: we cheat and eta-expand *)
+    | _, Prod (na',t',c') when n > 0 ->
+        let t'' = detype avoid env sigma t' in
+        let id = next_name_away na' avoid in
+        let avoid = Id.Set.add id avoid and env = add_name (Name id) None t' env in
+        let appc = mkApp (lift 1 c,[|mkRel 1|]) in
+        share_names detype (n-1) ((Name id,Explicit,None,t'')::l) avoid env sigma appc c'
+    (* If built with the f/n notation: we renounce to share names *)
+    | _ ->
+        if n>0 then Feedback.msg_debug (strbrk "Detyping.detype: cannot factorize fix enough");
+        let c = detype avoid env sigma c in
+        let t = detype avoid env sigma t in
+        (List.rev l,c,t)
+
+let rec share_pattern_names detype n l avoid env sigma c t =
+  let open Pattern in
+  if n = 0 then
+    let c = detype avoid env sigma c in
+    let t = detype avoid env sigma t in
+    (List.rev l,c,t)
+  else match c, t with
+    | PLambda (na,t,c), PProd (na',t',c') ->
+        let na = match (na,na') with
+            Name _, _ -> na
+          | _, Name _ -> na'
+          | _ -> na in
+        let t' = detype avoid env sigma t in
+        let id = next_name_away na avoid in
+        let avoid = Id.Set.add id avoid in
+        let env = Name id :: env in
+        share_pattern_names detype (n-1) ((Name id,Explicit,None,t')::l) avoid env sigma c c'
+    | _ ->
+        if n>0 then Feedback.msg_debug (strbrk "Detyping.detype: cannot factorize fix enough");
+        let c = detype avoid env sigma c in
+        let t = detype avoid env sigma t in
+        (List.rev l,c,t)
+
+let detype_fix detype avoid env sigma (vn,_ as nvn) (names,tys,bodies) =
+  let def_avoid, def_env, lfi =
+    Array.fold_left2
+      (fun (avoid, env, l) na ty ->
+         let id = next_name_away na avoid in
+         (Id.Set.add id avoid, add_name (Name id) None ty env, id::l))
+      (avoid, env, []) names tys in
+  let n = Array.length tys in
+  let v = Array.map3
+    (fun c t i -> share_names detype (i+1) [] def_avoid def_env sigma c (lift n t))
+    bodies tys vn in
+  GRec(GFix (Array.map (fun i -> Some i, GStructRec) (fst nvn), snd nvn),Array.of_list (List.rev lfi),
+       Array.map (fun (bl,_,_) -> bl) v,
+       Array.map (fun (_,_,ty) -> ty) v,
+       Array.map (fun (_,bd,_) -> bd) v)
+
+let detype_cofix detype avoid env sigma n (names,tys,bodies) =
+  let def_avoid, def_env, lfi =
+    Array.fold_left2
+      (fun (avoid, env, l) na ty ->
+         let id = next_name_away na avoid in
+         (Id.Set.add id avoid, add_name (Name id) None ty env, id::l))
+      (avoid, env, []) names tys in
+  let ntys = Array.length tys in
+  let v = Array.map2
+    (fun c t -> share_names detype 0 [] def_avoid def_env sigma c (lift ntys t))
+    bodies tys in
+  GRec(GCoFix n,Array.of_list (List.rev lfi),
+       Array.map (fun (bl,_,_) -> bl) v,
+       Array.map (fun (_,_,ty) -> ty) v,
+       Array.map (fun (_,bd,_) -> bd) v)
+
 let detype_universe sigma u =
   let fn (l, n) = Some (Termops.reference_of_level sigma l, n) in
   Univ.Universe.map fn u
@@ -655,76 +746,8 @@ and detype_r d flags avoid env sigma t =
 	  (ci.ci_ind,ci.ci_pp_info.style,
 	   ci.ci_pp_info.cstr_tags,ci.ci_pp_info.ind_tags)
           p c bl
-    | Fix (nvn,recdef) -> detype_fix d flags avoid env sigma nvn recdef
-    | CoFix (n,recdef) -> detype_cofix d flags avoid env sigma n recdef
-
-and detype_fix d flags avoid env sigma (vn,_ as nvn) (names,tys,bodies) =
-  let def_avoid, def_env, lfi =
-    Array.fold_left2
-      (fun (avoid, env, l) na ty ->
-	 let id = next_name_away na avoid in
-	 (Id.Set.add id avoid, add_name (Name id) None ty env, id::l))
-      (avoid, env, []) names tys in
-  let n = Array.length tys in
-  let v = Array.map3
-    (fun c t i -> share_names d flags (i+1) [] def_avoid def_env sigma c (lift n t))
-    bodies tys vn in
-  GRec(GFix (Array.map (fun i -> Some i, GStructRec) (fst nvn), snd nvn),Array.of_list (List.rev lfi),
-       Array.map (fun (bl,_,_) -> bl) v,
-       Array.map (fun (_,_,ty) -> ty) v,
-       Array.map (fun (_,bd,_) -> bd) v)
-
-and detype_cofix d flags avoid env sigma n (names,tys,bodies) =
-  let def_avoid, def_env, lfi =
-    Array.fold_left2
-      (fun (avoid, env, l) na ty ->
-	 let id = next_name_away na avoid in
-	 (Id.Set.add id avoid, add_name (Name id) None ty env, id::l))
-      (avoid, env, []) names tys in
-  let ntys = Array.length tys in
-  let v = Array.map2
-    (fun c t -> share_names d flags 0 [] def_avoid def_env sigma c (lift ntys t))
-    bodies tys in
-  GRec(GCoFix n,Array.of_list (List.rev lfi),
-       Array.map (fun (bl,_,_) -> bl) v,
-       Array.map (fun (_,_,ty) -> ty) v,
-       Array.map (fun (_,bd,_) -> bd) v)
-
-and share_names d flags n l avoid env sigma c t =
-  match EConstr.kind sigma c, EConstr.kind sigma t with
-    (* factorize even when not necessary to have better presentation *)
-    | Lambda (na,t,c), Prod (na',t',c') ->
-        let na = match (na,na') with
-            Name _, _ -> na
-          | _, Name _ -> na'
-          | _ -> na in
-        let t' = detype d flags avoid env sigma t in
-	let id = next_name_away na avoid in
-        let avoid = Id.Set.add id avoid and env = add_name (Name id) None t env in
-        share_names d flags (n-1) ((Name id,Explicit,None,t')::l) avoid env sigma c c'
-    (* May occur for fix built interactively *)
-    | LetIn (na,b,t',c), _ when n > 0 ->
-        let t'' = detype d flags avoid env sigma t' in
-        let b' = detype d flags avoid env sigma b in
-	let id = next_name_away na avoid in
-        let avoid = Id.Set. add id avoid and env = add_name (Name id) (Some b) t' env in
-        share_names d flags n ((Name id,Explicit,Some b',t'')::l) avoid env sigma c (lift 1 t)
-    (* Only if built with the f/n notation or w/o let-expansion in types *)
-    | _, LetIn (_,b,_,t) when n > 0 ->
-	share_names d flags n l avoid env sigma c (subst1 b t)
-    (* If it is an open proof: we cheat and eta-expand *)
-    | _, Prod (na',t',c') when n > 0 ->
-        let t'' = detype d flags avoid env sigma t' in
-	let id = next_name_away na' avoid in
-        let avoid = Id.Set.add id avoid and env = add_name (Name id) None t' env in
-        let appc = mkApp (lift 1 c,[|mkRel 1|]) in
-        share_names d flags (n-1) ((Name id,Explicit,None,t'')::l) avoid env sigma appc c'
-    (* If built with the f/n notation: we renounce to share names *)
-    | _ ->
-        if n>0 then Feedback.msg_debug (strbrk "Detyping.detype: cannot factorize fix enough");
-        let c = detype d flags avoid env sigma c in
-        let t = detype d flags avoid env sigma t in
-        (List.rev l,c,t)
+    | Fix (nvn,recdef) -> detype_fix (detype d flags) avoid env sigma nvn recdef
+    | CoFix (n,recdef) -> detype_cofix (detype d flags) avoid env sigma n recdef
 
 and detype_eqns d flags avoid env sigma ci computable constructs consnargsl bl =
   try
