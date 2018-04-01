@@ -357,6 +357,25 @@ let cproof p1 p2 =
   CList.equal Evar.equal a3 b3 &&
   CList.equal Evar.equal a4 b4
 
+(* We try to behave better when goal printing raises an exception
+   [usually Ctrl-C]
+
+   This is mostly a hack as we should protect printing in a more
+   generic way, but that'll do for now *)
+let top_goal_print oldp newp =
+  try
+    let proof_changed = not (Option.equal cproof oldp newp) in
+    let print_goals = not !Flags.quiet &&
+                      proof_changed && Proof_global.there_are_pending_proofs () in
+    if print_goals then Feedback.msg_notice (pr_open_cur_subgoals ())
+  with
+  | CErrors.Drop | CErrors.Quit as exn -> raise exn
+  | exn ->
+    let (e, info) = CErrors.push exn in
+    let loc = Loc.get_loc info in
+    let msg = CErrors.iprint (e, info) in
+    TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer
+
 let drop_last_doc = ref None
 
 let rec loop ~time ~state =
@@ -367,14 +386,9 @@ let rec loop ~time ~state =
     (* Be careful to keep this loop tail-recursive *)
     let rec vernac_loop ~state =
       let nstate = do_vernac ~time ~state in
-      let proof_changed = not (Option.equal cproof nstate.proof state.proof) in
-      let print_goals = not !Flags.quiet &&
-                        proof_changed && Proof_global.there_are_pending_proofs () in
-      if print_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
+      top_goal_print state.proof nstate.proof;
       loop_flush_all ();
       vernac_loop ~state:nstate
-    (* We recover the current stateid, threading from the caller is
-       not possible due exceptions. *)
     in vernac_loop ~state
   with
     | CErrors.Drop ->
