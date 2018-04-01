@@ -710,13 +710,19 @@ let partition_unifiable sigma l =
 (** Shelves the unifiable goals under focus, i.e. the goals which
     appear in other goals under focus (the unfocused goals are not
     considered). *)
-let shelve_unifiable =
+let shelve_unifiable_informative =
   let open Proof in
   Pv.get >>= fun initial ->
   let (u,n) = partition_unifiable initial.solution initial.comb in
   Comb.set n >>
   InfoL.leaf (Info.Tactic (fun () -> Pp.str"shelve_unifiable")) >>
-  Shelf.modify (fun gls -> gls @ CList.map drop_state u)
+  let u = CList.map drop_state u in
+  Shelf.modify (fun gls -> gls @ u) >>
+  tclUNIT u
+
+let shelve_unifiable =
+  let open Proof in
+  shelve_unifiable_informative >>= fun _ -> tclUNIT ()
 
 (** [guard_no_unifiable] returns the list of unifiable goals if some
     goals are unifiable (see {!shelve_unifiable}) in the current focus. *)
@@ -1034,6 +1040,8 @@ module Unsafe = struct
     mark_in_evm ~goal:true evd content
 
   let advance = Evarutil.advance
+
+  let undefined = undefined
 
   let mark_as_unresolvable p gl =
     { p with solution = mark_in_evm ~goal:false p.solution gl }

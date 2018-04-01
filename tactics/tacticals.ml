@@ -369,9 +369,36 @@ module New = struct
     tclTHENSFIRSTn t1 l (tclUNIT())
   let tclTHENFIRST t1 t2 =
     tclTHENFIRSTn t1 [|t2|]
+
+  let tclBINDFIRST t1 t2 =
+    t1 >>= fun ans ->
+    Proofview.Unsafe.tclGETGOALS >>= fun gls ->
+    match gls with
+    | [] -> tclFAIL 0 (str "Expect at least one goal.")
+    | hd::tl ->
+    Proofview.Unsafe.tclSETGOALS [hd] <*> t2 ans >>= fun ans ->
+    Proofview.Unsafe.tclNEWGOALS tl <*>
+    Proofview.tclUNIT ans
+
   let tclTHENLASTn t1 l =
     tclTHENS3PARTS t1 [||] (tclUNIT()) l
   let tclTHENLAST t1 t2 = tclTHENLASTn t1 [|t2|]
+
+  let option_of_failure f x = try Some (f x) with Failure _ -> None
+
+  let tclBINDLAST t1 t2 =
+    t1 >>= fun ans ->
+    Proofview.Unsafe.tclGETGOALS >>= fun gls ->
+    match option_of_failure List.sep_last gls with
+    | None -> tclFAIL 0 (str "Expect at least one goal.")
+    | Some (last,firstn) ->
+    Proofview.Unsafe.tclSETGOALS [last] <*> t2 ans >>= fun ans ->
+    Proofview.Unsafe.tclGETGOALS >>= fun newgls ->
+    tclEVARMAP >>= fun sigma ->
+    let firstn = Proofview.Unsafe.undefined sigma firstn in
+    Proofview.Unsafe.tclSETGOALS (firstn@newgls) <*>
+    Proofview.tclUNIT ans
+
   let tclTHENS t l =
     tclINDEPENDENT begin
       t <*>Proofview.tclORELSE (* converts the [SizeMismatch] error into an ltac error *)

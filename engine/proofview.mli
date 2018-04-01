@@ -326,6 +326,9 @@ val unifiable : Evd.evar_map -> Evar.t -> Evar.t list -> bool
     considered). *)
 val shelve_unifiable : unit tactic
 
+(** Idem but also returns the list of shelved variables *)
+val shelve_unifiable_informative : Evar.t list tactic
+
 (** [guard_no_unifiable] returns the list of unifiable goals if some
     goals are unifiable (see {!shelve_unifiable}) in the current focus. *)
 val guard_no_unifiable : Names.Name.t list option tactic
@@ -465,6 +468,12 @@ module Unsafe : sig
       into [g']). It returns [None] if [g] has been (partially)
       solved. *)
   val advance : Evd.evar_map -> Evar.t -> Evar.t option
+
+  (** [undefined sigma l] applies [advance] to the goals of [l], then
+      returns the subset of resulting goals which have not yet been
+      defined *)
+  val undefined : Evd.evar_map -> Proofview_monad.goal_with_state list ->
+    Proofview_monad.goal_with_state list
 
   val typeclass_resolvable : unit Evd.Store.field
 
