@@ -39,14 +39,25 @@ module AsyncOpts : sig
 
 end
 
-(** The STM doc type determines some properties such as what
-    uncompleted proofs are allowed and recording of aux files. *)
+(** The STM document type [stm_doc_type] determines some properties
+   such as what uncompleted proofs are allowed and what gets recorded
+   to aux files. *)
 type stm_doc_type =
-  | VoDoc       of string
-  | VioDoc      of string
-  | Interactive of DirPath.t
+  | VoDoc       of string       (* file path *)
+  | VioDoc      of string       (* file path *)
+  | Interactive of DirPath.t    (* module path *)
 
-(* Main initalization routine *)
+(** Coq initalization options:
+
+ - [doc_type]: Type of document being created.
+
+ - [require_libs]: list of libraries/modules to be pre-loaded at
+   startup. A tuple [(modname,modfrom,import)] is equivalent to [From
+   modfrom Require modname]; [import] works similarly to
+   [Library.require_library_from_dirpath], [Some false] will import
+   the module, [Some true] will additionally export it.
+
+*)
 type stm_init_options = {
   (* The STM will set some internal flags differently depending on the
      specified [doc_type]. This distinction should dissappear at some
@@ -72,12 +83,14 @@ type stm_init_options = {
 (** The type of a STM document *)
 type doc
 
+(** [init_core] performs some low-level initalization; should go away
+   in future releases. *)
 val init_core : unit -> unit
 
-(* Starts a new document *)
+(** [new_doc opt] Creates a new document with options [opt] *)
 val new_doc  : stm_init_options -> doc * Stateid.t
 
-(* [parse_sentence sid pa] Reads a sentence from [pa] with parsing
+(** [parse_sentence sid pa] Reads a sentence from [pa] with parsing
    state [sid] Returns [End_of_input] if the stream ends *)
 val parse_sentence : doc:doc -> Stateid.t -> Pcoq.Gram.coq_parsable ->
   Vernacexpr.vernac_control CAst.t
@@ -115,13 +128,14 @@ val query : doc:doc ->
 type focus = { start : Stateid.t; stop : Stateid.t; tip : Stateid.t }
 val edit_at : doc:doc -> Stateid.t -> doc * [ `NewTip | `Focus of focus ]
 
-(* Evaluates the tip of the current branch *)
+(* [observe doc sid]] Check / execute span [sid] *)
+val observe : doc:doc -> Stateid.t -> doc
+
+(* [finish doc] Fully checks a document up to the "current" tip. *)
 val finish : doc:doc -> doc
 
 (* Internal use (fake_ide) only, do not use *)
 val wait : doc:doc -> doc
-
-val observe : doc:doc -> Stateid.t -> doc
 
 val stop_worker : string -> unit
 
