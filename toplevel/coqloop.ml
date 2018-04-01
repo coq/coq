@@ -325,6 +325,24 @@ let cproof p1 p2 =
 
 let drop_last_doc = ref None
 
+(* We try to behave better when goal printing raises an exception
+   [usually Ctrl-C]
+
+   This is mostly a hack as we should protect printing in a more
+   generic way, but that'll do for now *)
+let top_goal_print oldp newp =
+  try
+    let proof_changed = not (Option.equal cproof oldp newp) in
+    let print_goals = not !Flags.quiet &&
+                      proof_changed && Proof_global.there_are_pending_proofs () in
+    if print_goals then Feedback.msg_notice (pr_open_cur_subgoals ())
+  with
+  | exn ->
+    let (e, info) = CErrors.push exn in
+    let loc = Loc.get_loc info in
+    let msg = CErrors.iprint (e, info) in
+    TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer
+
 (* Careful to keep this loop tail-rec *)
 let rec vernac_loop ~state =
   let open CAst in
@@ -346,10 +364,7 @@ let rec vernac_loop ~state =
       else (Feedback.msg_warning (str "There is no ML toplevel."); vernac_loop ~state)
     | {v=VernacControl c; loc} ->
       let nstate = Vernac.process_expr ~state (make ?loc c) in
-      let proof_changed = not (Option.equal cproof nstate.proof state.proof) in
-      let print_goals = not !Flags.quiet &&
-                        proof_changed && Proof_global.there_are_pending_proofs () in
-      if print_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
+      top_goal_print state.proof nstate.proof;
       vernac_loop ~state:nstate
   with
   | Stm.End_of_input ->
