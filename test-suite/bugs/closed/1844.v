@@ -5,7 +5,7 @@ Definition zeq := Z.eq_dec.
 Definition update (A: Set) (x: Z) (v: A) (s: Z -> A) : Z -> A :=
  fun y => if zeq x y then v else s y.
 
-Implicit Arguments update [A].
+Arguments update [A].
 
 Definition ident := Z.
 Parameter operator: Set.

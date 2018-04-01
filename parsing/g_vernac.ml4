@@ -601,14 +601,6 @@ GEXTEND Gram
   ;
 END
 
-let warn_deprecated_arguments_scope =
-  CWarnings.create ~name:"deprecated-arguments-scope" ~category:"deprecated"
-         (fun () -> strbrk "Arguments Scope is deprecated; use Arguments instead")
-
-let warn_deprecated_implicit_arguments =
-  CWarnings.create ~name:"deprecated-implicit-arguments" ~category:"deprecated"
-         (fun () -> strbrk "Implicit Arguments is deprecated; use Arguments instead")
-
 (* Extensions: implicits, coercions, etc. *)
 GEXTEND Gram
   GLOBAL: gallina_ext instance_name hint_info;
@@ -691,20 +683,6 @@ GEXTEND Gram
          let more_implicits = Option.default [] more_implicits in
          VernacArguments (qid, args, more_implicits, !slash_position, mods)
 
- 
-     (* moved there so that camlp5 factors it with the previous rule *)
-     | IDENT "Arguments"; IDENT "Scope"; qid = smart_global;
-       "["; scl = LIST0 [ "_" -> None | sc = IDENT -> Some sc ]; "]" ->
-	warn_deprecated_arguments_scope ~loc:!@loc ();
-        VernacArgumentsScope (qid,scl)
-
-      (* Implicit *)
-      | IDENT "Implicit"; IDENT "Arguments"; qid = smart_global;
-	   pos = LIST0 [ "["; l = LIST0 implicit_name; "]" ->
-	     List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
-	 warn_deprecated_implicit_arguments ~loc:!@loc ();
-	 VernacDeclareImplicits (qid,pos)
-
       | IDENT "Implicit"; "Type"; bl = reserv_list ->
 	   VernacReserve bl
 
@@ -733,12 +711,6 @@ GEXTEND Gram
       | IDENT "clear"; IDENT "implicits"; IDENT "and"; IDENT "scopes" ->
           [`ClearImplicits; `ClearScopes]
       ] ]
-  ;
-  implicit_name:
-    [ [ "!"; id = ident -> (id, false, true)
-    | id = ident -> (id,false,false)
-    | "["; "!"; id = ident; "]" -> (id,true,true)
-    | "["; id = ident; "]" -> (id,true, false) ] ]
   ;
   scope:
     [ [ "%"; key = IDENT -> key ] ]

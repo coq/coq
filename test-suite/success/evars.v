@@ -386,7 +386,7 @@ Record iffT (X Y:Type) : Type := mkIff { iffLR : X->Y; iffRL : Y->X }.
 Record tri (R:Type->Type->Type) (S:Type->Type->Type) (T:Type->Type->Type) := mkTri {
   tri0 : forall a b c, R a b -> S a c -> T b c
 }.
-Implicit Arguments mkTri [R S T].
+Arguments mkTri [R S T].
 Definition tri_iffT : tri iffT iffT iffT :=
   (mkTri
     (fun X0 X1 X2 E01 E02 =>

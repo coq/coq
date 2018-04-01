@@ -6,7 +6,7 @@ Parameter Patch : nat -> nat -> Set.
 Inductive Catch (from to : nat) : Type
     := MkCatch : forall (p : Patch from to),
                  Catch from to.
-Implicit Arguments MkCatch [from to].
+Arguments MkCatch [from to].
 
 Inductive CatchCommute5
         : forall {from mid1 mid2 to : nat},

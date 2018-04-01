@@ -28,8 +28,8 @@ Class interp_pair (abs : Type) :=
  { repr : term;
   link: abs = interp repr }.
 
-Implicit Arguments repr [[interp_pair]].
-Implicit Arguments link [[interp_pair]].
+Arguments repr _ {interp_pair}.
+Arguments link _ {interp_pair}.
 
 Lemma prod_interp `{interp_pair a, interp_pair b} : a * b = interp (Prod (repr a) (repr b)).
   simpl. intros. rewrite <- link. rewrite <- (link b). reflexivity.

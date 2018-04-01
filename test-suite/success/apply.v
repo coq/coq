@@ -39,7 +39,7 @@ Qed.
 (* Check apply/eapply distinction in presence of open terms *)
 
 Parameter h : forall x y z : nat, x = z -> x = y.
-Implicit Arguments h [[x] [y]].
+Arguments h {x y}.
 Goal 1 = 0 -> True.
 intro H.
 apply h in H || exact I.

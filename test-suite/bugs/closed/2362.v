@@ -8,7 +8,7 @@ Class Pointed (M:Type -> Type) :=
 Unset Implicit Arguments.
 Inductive FPair (A B:Type) (neutral: B) : Type:=
  fpair : forall (a:A) (b:B), FPair A B neutral.
-Implicit Arguments fpair [[A] [B] [neutral]].
+Arguments fpair {A B neutral}.
 
 Set Implicit Arguments.
 

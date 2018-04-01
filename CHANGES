@@ -6,6 +6,11 @@ Tools
 - Coq_makefile lets one override or extend the following variables from
   the command line: COQFLAGS, COQCHKFLAGS, COQDOCFLAGS.
 
+Vernacular Commands
+
+- Removed deprecated commands Arguments Scope and Implicit Arguments
+  (not the option). Use the Arguments command instead.
+
 Changes from 8.7.2 to 8.8+beta1
 ===============================
 

@@ -42,7 +42,7 @@ Inductive ctx : Type :=
 Bind Scope context_scope with ctx.
 Delimit Scope context_scope with ctx.
 
-Arguments Scope snoc [context_scope].
+Arguments snoc _%context_scope.
 
 Notation " Γ , τ " := (snoc Γ τ) (at level 25, τ at next level, left associativity) : context_scope.
 

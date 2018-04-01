@@ -145,7 +145,7 @@ let classify_vernac e =
     | VernacAddLoadPath _ | VernacRemoveLoadPath _ | VernacAddMLPath _
     | VernacChdir _ 
     | VernacCreateHintDb _ | VernacRemoveHints _ | VernacHints _
-    | VernacDeclareImplicits _ | VernacArguments _ | VernacArgumentsScope _
+    | VernacArguments _
     | VernacReserve _
     | VernacGeneralizable _
     | VernacSetOpacity _ | VernacSetStrategy _

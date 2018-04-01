@@ -33,7 +33,7 @@ Section Counted_list.
 
 End Counted_list.
 
-Implicit Arguments counted_def_nth [A n].
+Arguments counted_def_nth [A n].
 
 Section Finite_nat_set.
 

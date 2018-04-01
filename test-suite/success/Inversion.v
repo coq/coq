@@ -31,7 +31,7 @@ Inductive in_extension (I : Set) (r : rule I) : extension I -> Type :=
   | in_first : forall e, in_extension r (add_rule r e)
   | in_rest : forall e r', in_extension r e -> in_extension r (add_rule r' e).
 
-Implicit Arguments NL [I].
+Arguments NL [I].
 
 Inductive super_extension (I : Set) (e : extension I) :
 extension I -> Type :=

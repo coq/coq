@@ -42,7 +42,7 @@ match s as a return (S a) with
           pair (ind2 a0) IHl) l)
 end. (* some induction principle *)
 
-Implicit Arguments ind [S].
+Arguments ind [S].
 
 Lemma k : a -> Type. (* some ininteresting lemma *)
 intro;pattern H;apply ind;intros.

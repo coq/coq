@@ -47,7 +47,7 @@ Parameter mkJoinmap :   forall (key: Type) (t: Type) (j: joinable t),
 joinmap key j.
 
 Parameter ADMIT: forall p: Prop, p.
-Implicit Arguments ADMIT [p].
+Arguments ADMIT [p].
 
 Module Share.
 Parameter jb : joinable bool.

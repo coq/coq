@@ -1,7 +1,7 @@
 Definition ifte (T : Set) (A B : Prop) (s : {A} + {B})
   (th el : T) := if s then th else el.
 
-Implicit Arguments ifte.
+Arguments ifte : default implicits.
 
 Lemma Reflexivity_provable :
  forall (A : Set) (a : A) (s : {a = a} + {a <> a}),

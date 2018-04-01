@@ -26,7 +26,7 @@ Record morphism T T' `{e : type T} `{e' : type T'} :=
   mkMorph {
       morph :> T -> T';
       morph_resp : setoid_resp morph}.
-Implicit Arguments mkMorph [T T' e e0 e' e1].
+Arguments mkMorph [T T' e0 e e1 e'].
 Infix "-s>" := morphism (at level 45, right associativity).
 Section Morphisms.
   Context {S T U V} `{eS : type S} `{eT : type T} `{eU : type U} `{eV : type V}.
@@ -334,8 +334,8 @@ Section ILogic_Fun.
 
 End ILogic_Fun.
 
-Implicit Arguments ILFunFrm [[ILOps] [e]].
-Implicit Arguments mkILFunFrm [T Frm ILOps].
+Arguments ILFunFrm _ {e} _ {ILOps}.
+Arguments mkILFunFrm [T] _ [Frm ILOps].
 
 Program Definition ILFun_eq {T R} {ILOps: ILogicOps R} {ILogic: ILogic R} (P : T -> R) :
   @ILFunFrm T _ R ILOps :=

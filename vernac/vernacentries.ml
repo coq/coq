@@ -2025,7 +2025,6 @@ let interp ?proof ~atts ~st c =
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
   | VernacBindScope (sc,rl) -> vernac_bind_scope sc rl
   | VernacOpenCloseScope (b, s) -> vernac_open_close_scope ~atts (b,s)
-  | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope ~atts qid scl
   | VernacInfix (mv,qid,sc) -> vernac_infix ~atts mv qid sc
   | VernacNotation (c,infpl,sc) ->
       vernac_notation ~atts c infpl sc
@@ -2099,8 +2098,6 @@ let interp ?proof ~atts ~st c =
       vernac_hints ~atts dbnames hints
   | VernacSyntacticDefinition (id,c,b) ->
       vernac_syntactic_definition ~atts id c b
-  | VernacDeclareImplicits (qid,l) ->
-      vernac_declare_implicits ~atts qid l
   | VernacArguments (qid, args, more_implicits, nargs, flags) ->
       vernac_arguments ~atts qid args more_implicits nargs flags
   | VernacReserve bl -> vernac_reserve bl
@@ -2168,7 +2165,7 @@ let check_vernac_supports_locality c l =
     | VernacDeclareMLModule _
     | VernacCreateHintDb _ | VernacRemoveHints _ | VernacHints _
     | VernacSyntacticDefinition _
-    | VernacArgumentsScope _ | VernacDeclareImplicits _ | VernacArguments _
+    | VernacArguments _
     | VernacGeneralizable _
     | VernacSetOpacity _ | VernacSetStrategy _
     | VernacSetOption _ | VernacUnsetOption _

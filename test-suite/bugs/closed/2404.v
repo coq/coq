@@ -22,13 +22,13 @@ Section Derived.
   Definition bexportw := exportw base.
   Definition bwweak := wweak base.
 
-  Implicit Arguments bexportw [a b].
+  Arguments bexportw [a b].
 
 Inductive RstarSetProof {I : Type} (T : I -> I -> Type) : I -> I -> Type :=
   starReflS : forall a, RstarSetProof T a a
 | starTransS : forall i j k, T i j -> (RstarSetProof T j k) -> RstarSetProof T i k.
 
-Implicit Arguments starTransS [I T i j k].
+Arguments starTransS [I T i j k].
 
 Definition RstarInv {A : Set} (rel : relation A) : A -> A -> Type :=  (flip (RstarSetProof (flip rel))).
 

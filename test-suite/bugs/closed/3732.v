@@ -16,7 +16,7 @@ Section machine.
   | Inj : forall G, Prop -> propX G
   | ExistsX : forall G A, propX (A :: G) -> propX G.
 
-  Implicit Arguments Inj [G].
+  Arguments Inj [G].
 
   Definition PropX := propX nil.
   Fixpoint last (G : list Type) : Type.
