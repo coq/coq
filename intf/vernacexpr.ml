@@ -442,7 +442,6 @@ type nonrec vernac_expr =
   | VernacRestart
   | VernacUndo of int
   | VernacUndoTo of int
-  | VernacBacktrack of int*int*int
   | VernacFocus of int option
   | VernacUnfocus
   | VernacUnfocused
@@ -502,14 +501,13 @@ type vernac_type =
   | VtProofMode of string
   (* Queries are commands assumed to be "pure", that is to say, they
      don't modify the interpretation state. *)
-  | VtQuery of vernac_part_of_script * Feedback.route_id
+  | VtQuery
   (* To be removed *)
   | VtMeta
   | VtUnknown
 and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)
 and vernac_start = string * opacity_guarantee * Id.t list
 and vernac_sideff_type = Id.t list
-and vernac_part_of_script = bool
 and opacity_guarantee =
   | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
   | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)

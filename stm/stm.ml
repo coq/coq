@@ -363,7 +363,7 @@ module VCS : sig
   val reached : id -> unit
   val goals : id -> int -> unit
   val set_state : id -> cached_state -> unit
-  val get_state : id -> cached_state
+  (* val get_state : id -> cached_state *)
 
   (* cuts from start -> stop, raising Expired if some nodes are not there *)
   val slice : block_start:id -> block_stop:id -> vcs
@@ -579,7 +579,8 @@ end = struct (* {{{ *)
   let set_state id s =
     (get_info id).state <- s;
     if async_proofs_is_master !cur_opt then Hooks.(call state_ready id)
-  let get_state id = (get_info id).state
+  (* let get_state id = (get_info id).state *)
+
   let reached id =
     let info = get_info id in
     info.n_reached <- info.n_reached + 1
@@ -782,18 +783,7 @@ module State : sig
 
   val exn_on : Stateid.t -> valid:Stateid.t -> Exninfo.iexn -> Exninfo.iexn
 
-  (* to send states across worker/master *)
   val get_cached : Stateid.t -> Vernacstate.t
-  val same_env : Vernacstate.t -> Vernacstate.t -> bool
-
-  type proof_part
-
-  type partial_state =
-    [ `Full of Vernacstate.t
-    | `ProofOnly of Stateid.t * proof_part ]
-
-  val proof_part_of_frozen : Vernacstate.t -> proof_part
-  val assign : Stateid.t -> partial_state -> unit
 
   (* Handlers for initial state, prior to document creation. *)
   val register_root_state : unit -> unit
@@ -809,23 +799,6 @@ end = struct (* {{{ *)
    * failed, so the global state may contain garbage *)
   let cur_id = ref Stateid.dummy
   let fix_exn_ref = ref (fun x -> x)
-
-  type proof_part =
-    Proof_global.t *
-    int *                                   (* Evarutil.meta_counter_summary_tag *)
-    int *                                   (* Evd.evar_counter_summary_tag *)
-    Obligations.program_info Names.Id.Map.t (* Obligations.program_tcc_summary_tag *)
-
-  type partial_state =
-    [ `Full of Vernacstate.t
-    | `ProofOnly of Stateid.t * proof_part ]
-
-  let proof_part_of_frozen { Vernacstate.proof; system } =
-    let st = States.summary_of_state system in
-    proof,
-    Summary.project_from_summary st Util.(pi1 summary_pstate),
-    Summary.project_from_summary st Util.(pi2 summary_pstate),
-    Summary.project_from_summary st Util.(pi3 summary_pstate)
 
   let freeze marshallable id =
     VCS.set_state id (Valid (Vernacstate.freeze_interp_state marshallable))
@@ -870,39 +843,6 @@ end = struct (* {{{ *)
     | _ -> anomaly Pp.(str "not a cached state.")
     with VCS.Expired -> anomaly Pp.(str "not a cached state (expired).")
 
-  let assign id what =
-    let open Vernacstate in
-    if VCS.get_state id <> Empty then () else
-    try match what with
-    | `Full s ->
-         let s =
-           try
-            let prev = (VCS.visit id).next in
-            if is_cached_and_valid prev
-            then { s with proof =
-              Proof_global.copy_terminators
-                ~src:(get_cached prev).proof ~tgt:s.proof }
-            else s
-           with VCS.Expired -> s in
-         VCS.set_state id (Valid s)
-    | `ProofOnly(ontop,(pstate,c1,c2,c3)) ->
-         if is_cached_and_valid ontop then
-           let s = get_cached ontop in
-           let s = { s with proof =
-             Proof_global.copy_terminators ~src:s.proof ~tgt:pstate } in
-           let s = { s with system =
-             States.replace_summary s.system
-               begin
-                 let st = States.summary_of_state s.system in
-                 let st = Summary.modify_summary st Util.(pi1 summary_pstate) c1 in
-                 let st = Summary.modify_summary st Util.(pi2 summary_pstate) c2 in
-                 let st = Summary.modify_summary st Util.(pi3 summary_pstate) c3 in
-                 st
-               end
-                } in
-           VCS.set_state id (Valid s)
-    with VCS.Expired -> ()
-
   let exn_on id ~valid (e, info) =
     match Stateid.get info with
     | Some _ -> (e, info)
@@ -911,13 +851,6 @@ end = struct (* {{{ *)
         let (e, info) = Hooks.(call_process_error_once (e, info)) in
         execution_error ?loc id (iprint (e, info));
         (e, Stateid.add info ~valid id)
-
-  let same_env { Vernacstate.system = s1 } { Vernacstate.system = s2 } =
-    let s1 = States.summary_of_state s1 in
-    let e1 = Summary.project_from_summary s1 Global.global_env_summary_tag in
-    let s2 = States.summary_of_state s2 in
-    let e2 = Summary.project_from_summary s2 Global.global_env_summary_tag in
-    e1 == e2
 
   let define ?safe_id ?(redefine=false) ?(cache=`No) ?(feedback_processed=true)
         f id
@@ -1072,7 +1005,7 @@ let stm_vernac_interp ?proof ?route id st { verbose; loc; expr } : Vernacstate.t
   let is_filtered_command = function
     | VernacResetName _ | VernacResetInitial | VernacBack _
     | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
-    | VernacBacktrack _ | VernacAbortAll | VernacAbort _ -> true
+    | VernacAbortAll | VernacAbort _ -> true
     | _ -> false
   in
   let aux_interp st expr =
@@ -1097,7 +1030,6 @@ let stm_vernac_interp ?proof ?route id st { verbose; loc; expr } : Vernacstate.t
 module Backtrack : sig
 
   val record : unit -> unit
-  val backto : Stateid.t -> unit
 
   (* we could navigate the dag, but this ways easy *)
   val branches_of : Stateid.t -> backup
@@ -1121,14 +1053,6 @@ end = struct (* {{{ *)
         else Some { mine; others } in
       info.vcs_backup <- backup, branches)
     [VCS.current_branch (); VCS.Branch.master]
-
-  let backto oid =
-    let info = VCS.get_info oid in
-    match info.vcs_backup with
-    | None, _ ->
-       anomaly Pp.(str"Backtrack.backto "++str(Stateid.to_string oid)++
-               str": a state with no vcs_backup.")
-    | Some vcs, _ -> VCS.restore vcs
 
   let branches_of id =
     let info = VCS.get_info id in
@@ -1220,7 +1144,6 @@ end = struct (* {{{ *)
             match Vcs_.branches vcs with [_] -> `Stop id | _ -> `Cont ())
             () id in
           oid, VtLater
-      | VernacBacktrack (id,_,_)
       | VernacBackTo id ->
           Stateid.of_int id, VtNow
       | _ -> anomaly Pp.(str "incorrect VtMeta classification")
@@ -1350,11 +1273,9 @@ module rec ProofTask : sig
 
   type task =
     | BuildProof of task_build_proof
-    | States of Stateid.t list
 
   type request =
   | ReqBuildProof of (Future.UUID.t,VCS.vcs) Stateid.request * bool * competence
-  | ReqStates of Stateid.t list
 
   include AsyncTaskQueue.Task
   with type task := task
@@ -1388,13 +1309,11 @@ end = struct (* {{{ *)
 
   type task =
     | BuildProof of task_build_proof
-    | States of Stateid.t list
 
   type worker_status = Fresh | Old of competence
 
   type request =
   | ReqBuildProof of (Future.UUID.t,VCS.vcs) Stateid.request * bool * competence
-  | ReqStates of Stateid.t list
 
   type error = {
     e_error_at    : Stateid.t;
@@ -1405,7 +1324,6 @@ end = struct (* {{{ *)
   type response =
     | RespBuiltProof of Proof_global.closed_proof_output * float
     | RespError of error
-    | RespStates of (Stateid.t * State.partial_state) list
 
   let name = ref "proofworker"
   let extra_env () = !async_proofs_workers_extra_env
@@ -1418,19 +1336,14 @@ end = struct (* {{{ *)
     | Fresh, BuildProof { t_states } ->
         not !cur_opt.async_proofs_full ||
         List.exists (fun x -> CList.mem_f Stateid.equal x !perspective) t_states
-    | Old my_states, States l ->
-        List.for_all (fun x -> CList.mem_f Stateid.equal x my_states) l
     | _ -> false
 
   let name_of_task = function
     | BuildProof t -> "proof: " ^ t.t_name
-    | States l -> "states: " ^ String.concat "," (List.map Stateid.to_string l)
   let name_of_request = function
     | ReqBuildProof(r,_,_) -> "proof: " ^ r.Stateid.name
-    | ReqStates l -> "states: "^String.concat "," (List.map Stateid.to_string l)
 
   let request_of_task age = function
-    | States l -> Some (ReqStates l)
     | BuildProof {
         t_exn_info;t_start;t_stop;t_loc;t_uuid;t_name;t_states;t_drop
       } ->
@@ -1446,28 +1359,22 @@ end = struct (* {{{ *)
 
   let use_response (s : worker_status) t r =
     match s, t, r with
-    | Old c, States _, RespStates l ->
-        List.iter (fun (id,s) -> State.assign id s) l; `End
     | Fresh, BuildProof { t_assign; t_loc; t_name; t_states; t_drop },
               RespBuiltProof (pl, time) ->
         feedback (InProgress ~-1);
         t_assign (`Val pl);
         record_pb_time ?loc:t_loc t_name time;
-        if !cur_opt.async_proofs_full || t_drop
-        then `Stay(t_states,[States t_states])
-        else `End
+        `End
     | Fresh, BuildProof { t_assign; t_loc; t_name; t_states },
             RespError { e_error_at; e_safe_id = valid; e_msg; e_safe_states } ->
         feedback (InProgress ~-1);
         let info = Stateid.add ~valid Exninfo.null e_error_at in
         let e = (RemoteException e_msg, info) in
-        t_assign (`Exn e);
-        `Stay(t_states,[States e_safe_states])
+        t_assign (`Exn e); `End
     | _ -> assert false
 
   let on_task_cancellation_or_expiration_or_slave_death = function
     | None -> ()
-    | Some (States _) -> ()
     | Some (BuildProof { t_start = start; t_assign }) ->
         let s = "Worker dies or task expired" in
         let info = Stateid.add ~valid:start Exninfo.null start in
@@ -1537,52 +1444,10 @@ end = struct (* {{{ *)
         let e_safe_states = List.filter State.is_cached_and_valid my_states in
         RespError { e_error_at; e_safe_id; e_msg; e_safe_states }
 
-  let perform_states query =
-    if query = [] then [] else
-    let is_tac e = match Vernac_classifier.classify_vernac e with
-    | VtProofStep _, _ -> true
-    | _ -> false
-    in
-    let initial =
-      let rec aux id =
-        try match VCS.visit id with { next } -> aux next
-        with VCS.Expired -> id in
-      aux (List.hd query) in
-    let get_state seen id =
-      let prev =
-        try
-          let { next = prev; step } = VCS.visit id in
-          if State.is_cached_and_valid prev && List.mem prev seen
-          then Some (prev, State.get_cached prev, step)
-          else None
-        with VCS.Expired -> None in
-      let this =
-        if State.is_cached_and_valid id then Some (State.get_cached id) else None in
-      match prev, this with
-      | _, None -> None
-      | Some (prev, o, `Cmd { cast = { expr }}), Some n
-        when is_tac expr && State.same_env o n -> (* A pure tactic *)
-          Some (id, `ProofOnly (prev, State.proof_part_of_frozen n))
-      | Some _, Some s ->
-          msg_debug (Pp.str "STM: sending back a fat state");
-          Some (id, `Full s)
-      | _, Some s -> Some (id, `Full s) in
-    let rec aux seen = function
-      | [] -> []
-      | id :: rest ->
-          match get_state seen id with
-          | None -> aux seen rest
-          | Some stuff -> stuff :: aux (id :: seen) rest in
-    aux [initial] query
-
   let perform = function
     | ReqBuildProof (bp,drop,states) -> perform_buildp bp drop states
-    | ReqStates sl -> RespStates (perform_states sl)
 
   let on_marshal_error s = function
-    | States _ ->
-      msg_warning Pp.(strbrk("Marshalling error: "^s^". "^
-                             "The system state could not be sent to the master process."))
     | BuildProof { t_exn_info; t_stop; t_assign; t_loc; t_drop = drop_pt } ->
       msg_warning Pp.(strbrk("Marshalling error: "^s^". "^
                              "The system state could not be sent to the worker process. "^
@@ -1762,7 +1627,7 @@ end = struct (* {{{ *)
      match task1, task2 with
      | BuildProof { t_states = s1 },
        BuildProof { t_states = s2 } -> overlap_rel s1 s2
-     | _ -> 0)
+    )
 
   let build_proof ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname =
     let id, valid as t_exn_info = exn_info in
@@ -2757,9 +2622,7 @@ let snapshot_vio ~doc ldir long_f_dot_vo =
 let reset_task_queue = Slaves.reset_task_queue
 
 (* Document building *)
-let process_back_meta_command ~part_of_script ~newtip ~head oid aast w =
-  match part_of_script, w with
-  | true, w ->
+let process_back_meta_command ~newtip ~head oid aast w =
     let id = VCS.new_node ~id:newtip () in
     let { mine; others } = Backtrack.branches_of oid in
     let valid = VCS.get_branch_pos head in
@@ -2779,16 +2642,7 @@ let process_back_meta_command ~part_of_script ~newtip ~head oid aast w =
     VCS.commit id (Alias (oid,aast));
     Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
 
-  | false, VtNow ->
-    stm_prerr_endline (fun () -> "undo to state " ^ Stateid.to_string oid);
-    Backtrack.backto oid;
-    VCS.checkout_shallowest_proof_branch ();
-    Reach.known_state ~cache:(VCS.is_interactive ()) oid; `Ok
-
-  | false, VtLater ->
-    anomaly(str"undo classifier: VtMeta + VtLater must imply part_of_script.")
-
-let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
+let process_transaction ?(newtip=Stateid.fresh ())
   ({ verbose; loc; expr } as x) c =
   stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
   let vcs = VCS.backup () in
@@ -2802,22 +2656,10 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
       (* Meta *)
       | VtMeta, _ ->
         let id, w = Backtrack.undo_vernac_classifier expr in
-        (* Special case Backtrack, as it is never part of a script. See #6240 *)
-        let part_of_script = begin match Vernacprop.under_control expr with
-          | VernacBacktrack _ -> false
-          | _ -> part_of_script
-        end in
-        process_back_meta_command ~part_of_script ~newtip ~head id x w
+        process_back_meta_command ~newtip ~head id x w
+
       (* Query *)
-      | VtQuery (false,route), VtNow ->
-        let query_sid = VCS.cur_tip () in
-        (try
-           let st = Vernacstate.freeze_interp_state `No in
-           ignore(stm_vernac_interp ~route query_sid st x)
-         with e ->
-           let e = CErrors.push e in
-           Exninfo.iraise (State.exn_on ~valid:Stateid.dummy query_sid e)); `Ok
-      | VtQuery (true, route), w ->
+      | VtQuery, w ->
           let id = VCS.new_node ~id:newtip () in
           let queue =
             if !cur_opt.async_proofs_full then `QueryQueue (ref false)
@@ -2828,9 +2670,6 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
             else `MainQueue in
           VCS.commit id (mkTransCmd x [] false queue);
           Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
-
-      | VtQuery (false,_), VtLater ->
-          anomaly(str"classifier: VtQuery + VtLater must imply part_of_script.")
 
       (* Proof *)
       | VtStartProof (mode, guarantee, names), w ->
@@ -3074,13 +2913,9 @@ let query ~doc ~at ~route s =
         let { CAst.loc; v=ast } = parse_sentence ~doc at s in
         let indentation, strlen = compute_indentation ?loc at in
         CWarnings.set_current_loc loc;
-        let clas = Vernac_classifier.classify_vernac ast in
+        let st = State.get_cached at in
         let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
-        match clas with
-        | VtMeta , _ -> (* TODO: can this still happen ? *)
-          ignore(process_transaction ~part_of_script:false aast (VtMeta,VtNow))
-        | _ ->
-          ignore(process_transaction aast (VtQuery (false,route), VtNow))
+        ignore(stm_vernac_interp ~route at st aast)
       done;
     with
     | End_of_input -> ()
