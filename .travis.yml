@@ -54,7 +54,7 @@ env:
   - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
   - TEST_TARGET="validate"                           TW="travis_wait"
   - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
-  - TEST_TARGET="validate"   COMPILER="${COMPILER_BE}+flambda" CAMLP5_VER="${CAMLP5_VER_BE}" NATIVE_COMP="no" EXTRA_CONF="-flambda-opts -O3" EXTRA_OPAM="num" FINDLIB_VER="${FINDLIB_VER_BE}"
+  - TEST_TARGET="validate"   COMPILER="${COMPILER_BE}+flambda" CAMLP5_VER="${CAMLP5_VER_BE}" NATIVE_COMP="no" EXTRA_CONF="-camloptflags '-O3 -unbox-closures'" EXTRA_OPAM="num" FINDLIB_VER="${FINDLIB_VER_BE}"
 
 matrix:
 
@@ -185,7 +185,7 @@ matrix:
       - FINDLIB_VER="${FINDLIB_VER_BE}"
       - CAMLP5_VER="${CAMLP5_VER_BE}"
       - NATIVE_COMP="no"
-      - EXTRA_CONF="-coqide opt -with-doc yes -flambda-opts -O3"
+      - EXTRA_CONF="-coqide opt -with-doc yes -camloptflags '-O3 -unbox-closures'"
       - EXTRA_OPAM="num hevea ${LABLGTK_BE}"
       before_install: *sphinx-install
       addons:
