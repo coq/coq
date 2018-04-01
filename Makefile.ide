@@ -95,8 +95,7 @@ ide-toploop: ide-$(BEST)loop
 ifeq ($(HASCOQIDE),opt)
 $(COQIDE): $(LINKIDEOPT)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa threads.cmxa lablgtk.cmxa \
-		lablgtksourceview2.cmxa str.cmxa $(IDEFLAGS:.cma=.cmxa) $^
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -package str,lablgtk2.sourceview2 -linkpkg $(IDEFLAGS:.cma=.cmxa) -o $@ $^
 	$(STRIP) $@
 else
 $(COQIDE): $(COQIDEBYTE)
@@ -105,8 +104,7 @@ endif
 
 $(COQIDEBYTE): $(LINKIDE)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma \
-	        lablgtksourceview2.cma str.cma $(IDEFLAGS) $(IDECDEPSFLAGS) $^
+	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -package str,lablgtk2.sourceview2 -linkpkg $(IDEFLAGS) $(IDECDEPSFLAGS) -o $@ $^
 
 ide/coqide_main.ml: ide/coqide_main.ml4 config/Makefile # no camlp5deps here
 	$(SHOW)'CAMLP5O   $<'

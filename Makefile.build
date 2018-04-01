@@ -203,8 +203,8 @@ MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP5LIB)
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
 OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 
-BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS)
-OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS) $(FLAMBDA_FLAGS)
+BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS) $(USERBYTEFLAGS)
+OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS) $(USEROPTFLAGS)
 DEPFLAGS=$(LOCALINCLUDES)$(if $(filter plugins/%,$@),, -I ide -I ide/utils)
 
 # On MacOS, the binaries are signed, except our private ones
@@ -764,6 +764,17 @@ endif
 $(VDFILE).d: $(D_DEPEND_BEFORE_SRC) $(VFILES) $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT)
 	$(SHOW)'COQDEP    VFILES'
 	$(HIDE)$(COQDEPBOOT) -boot $(DYNDEP) $(VFILES) $(TOTARGET)
+
+###########################################################################
+# Bisect Coverage
+###########################################################################
+.PHONY: coverage_report
+
+BISECT_FILES=bisect*.out
+coverage_report: test-suite
+	ocveralls $(BISECT_FILES) --send
+# To be enabled in the future.
+#	bisect-ppx-report -html coverage/ $(BISECT_FILES)
 
 ###########################################################################
 

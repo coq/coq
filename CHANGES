@@ -15,6 +15,12 @@ Tactic language
 
 - Support for fix/cofix added in Ltac "match" and "lazymatch".
 
+Installation
+
+- The -flambda-opts configure option has been removed in favor of
+  generic options -camlflags -camloptflags -camlbyteflags allowing to
+  tweak the flags passed to to the OCaml compiler.
+
 Changes from 8.7.2 to 8.8+beta1
 ===============================
 

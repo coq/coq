@@ -128,12 +128,14 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 	Use <command> to open an URL in a browser. %s must appear in <command>,
 	and will be replaced by the URL.
 
--flambda-opts <flags>
-         This experimental option will pass specific user flags to the
-        OCaml optimizing compiler. In most cases, this option is used
+-camlflags <flags>
+-camlbyteflags <flags>
+-camloptflags <flags>
+        These options will pass specific user flags to the
+        OCaml compilers. In most cases, this option is used
         to tweak the flambda backend; we recommend using
 
-        -flambda-opts `-O3 -unbox-closures`
+        -camloptflags "-O3 -unbox-closures"
 
         but of course you are free to try with a different combination
         of flags. You can read more at
