@@ -118,7 +118,7 @@ val eauto : Hints.debug -> int option -> int option -> constr thunk list ->
 val typeclasses_eauto : Class_tactics.search_strategy option -> int option ->
   Id.t list option -> unit Proofview.tactic
 
-val inversion : Misctypes.inversion_kind -> destruction_arg -> intro_pattern option -> Id.t list option -> unit tactic
+val inversion : Inv.inversion_kind -> destruction_arg -> intro_pattern option -> Id.t list option -> unit tactic
 
 val contradiction : constr_with_bindings option -> unit tactic
 

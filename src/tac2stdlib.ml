@@ -186,9 +186,9 @@ let to_strategy v = match Value.to_int v with
 let strategy = make_to_repr to_strategy
 
 let to_inversion_kind v = match Value.to_int v with
-| 0 -> Misctypes.SimpleInversion
-| 1 -> Misctypes.FullInversion
-| 2 -> Misctypes.FullInversionClear
+| 0 -> Inv.SimpleInversion
+| 1 -> Inv.FullInversion
+| 2 -> Inv.FullInversionClear
 | _ -> assert false
 
 let inversion_kind = make_to_repr to_inversion_kind
