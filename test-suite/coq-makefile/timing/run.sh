@@ -40,7 +40,7 @@ INFINITY_REPLACEMENT="+.%" # assume that if the before time is zero, we expected
 
 TO_SED_IN_BOTH=(
     -e s"/${INFINITY}/${INFINITY_REPLACEMENT}/g" # Whether or not something shows up as ∞ depends on whether a time registers as 0.s or as 0.001s, so we can't rely on this being consistent
-    -e s":|\s*N/A\s*$:| ${INFINITY_REPLACEMENT}:g" # Whether or not something shows up as N/A depends on whether a time registers as 0.s or as 0.001s, so we can't rely on this being consistent
+    -e s':|\s*N/A\s*$:| '"${INFINITY_REPLACEMENT}"':g' # Whether or not something shows up as N/A depends on whether a time registers as 0.s or as 0.001s, so we can't rely on this being consistent
     -e s'/ *$//g' # the number of trailing spaces depends on how many digits percentages end up being; since this varies across runs, we remove trailing spaces
     -e s'/[0-9]*\.[0-9]*//g' # the precise timing numbers vary, so we strip them out
     -e s'/^-*$/------/g' # When none of the numbers get over 100 (or 1000, in per-file), the width of the table is different, so we normalize the number of dashes for table separators
