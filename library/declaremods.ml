@@ -17,10 +17,24 @@ open Entries
 open Libnames
 open Libobject
 open Mod_subst
-open Vernacexpr
 open Misctypes
 
 (** {6 Inlining levels} *)
+
+(** Rigid / flexible module signature *)
+
+type 'a module_signature =
+  | Enforce of 'a (** ... : T *)
+  | Check of 'a list (** ... <: T1 <: T2, possibly empty *)
+
+(** Which module inline annotations should we honor,
+    either None or the ones whose level is less or equal
+    to the given integer *)
+
+type inline =
+  | NoInline
+  | DefaultInline
+  | InlineAt of int
 
 let default_inline () = Some (Flags.get_inline_level ())
 

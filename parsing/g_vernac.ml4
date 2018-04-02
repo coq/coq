@@ -17,6 +17,7 @@ open Constrexpr
 open Constrexpr_ops
 open Extend
 open Decl_kinds
+open Declaremods
 open Declarations
 open Misctypes
 open Tok (* necessary for camlp5 *)

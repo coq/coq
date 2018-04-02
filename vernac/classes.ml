@@ -425,7 +425,7 @@ let context poly l =
       let nstatus = match b with
       | None ->
         pi3 (ComAssumption.declare_assumption false decl (t, univs) Universes.empty_binders [] impl
-          Vernacexpr.NoInline (CAst.make id))
+               Declaremods.NoInline (CAst.make id))
       | Some b ->
         let decl = (Discharge, poly, Definition) in
         let entry = Declare.definition_entry ~univs ~types:t b in

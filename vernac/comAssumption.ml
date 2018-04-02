@@ -20,7 +20,6 @@ open Constrintern
 open Impargs
 open Decl_kinds
 open Pretyping
-open Vernacexpr
 open Entries
 
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
@@ -66,7 +65,7 @@ match local with
 | Global | Local | Discharge ->
   let do_instance = should_axiom_into_instance local in
   let local = DeclareDef.get_locality ident ~kind:"axiom" local in
-  let inl = match nl with
+  let inl = let open Declaremods in match nl with
     | NoInline -> None
     | DefaultInline -> Some (Flags.get_inline_level())
     | InlineAt i -> Some i

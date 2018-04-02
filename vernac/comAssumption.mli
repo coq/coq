@@ -19,7 +19,7 @@ open Decl_kinds
 (** {6 Parameters/Assumptions} *)
 
 val do_assumptions : locality * polymorphic * assumption_object_kind ->
-  Vernacexpr.inline -> (ident_decl list * constr_expr) with_coercion list -> bool
+  Declaremods.inline -> (ident_decl list * constr_expr) with_coercion list -> bool
 
 (************************************************************************)
 (** Internal API  *)
@@ -32,5 +32,5 @@ val do_assumptions : locality * polymorphic * assumption_object_kind ->
 val declare_assumption : coercion_flag -> assumption_kind ->
   types in_constant_universes_entry ->
   Universes.universe_binders -> Impargs.manual_implicits ->
-  bool (** implicit *) -> Vernacexpr.inline -> variable CAst.t ->
+  bool (** implicit *) -> Declaremods.inline -> variable CAst.t ->
   global_reference * Univ.Instance.t * bool
