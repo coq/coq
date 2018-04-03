@@ -24,6 +24,7 @@ Table of contents
 .. toctree::
    :caption: The proof engine
 
+   proof-engine/proof-handling
    proof-engine/tactics
    proof-engine/detailed-tactic-examples
    proof-engine/ssreflect-proof-language
