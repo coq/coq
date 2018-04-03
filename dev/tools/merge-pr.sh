@@ -61,10 +61,12 @@ fi
 
 # Fetching PR metadata
 
-TITLE=$(curl -s "$API/pulls/$PR" | jq -r '.title')
+PRDATA=$(curl -s "$API/pulls/$PR")
+
+TITLE=$(echo "$PRDATA" | jq -r '.title')
 info "title for PR $PR is ${BLUE}$TITLE"
 
-BASE_BRANCH=$(curl -s "$API/pulls/$PR" | jq -r '.base.label')
+BASE_BRANCH=$(echo "$PRDATA" | jq -r '.base.label')
 info "PR $PR targets branch ${BLUE}$BASE_BRANCH"
 
 CURRENT_LOCAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -107,17 +109,17 @@ fi;
 
 # Sanity check: CI failed
 
-STATUS=$(curl -s "$API/commits/$COMMIT/status" | jq -r '.state')
+STATUS=$(curl -s "$API/commits/$COMMIT/status")
 
-if [ "$STATUS" != "success" ]; then
-  error "CI unsuccessful on ${BLUE}$(curl -s "$API/commits/$COMMIT/status" |
+if [ "$(echo "$STATUS" | jq -r '.state')" != "success" ]; then
+  error "CI unsuccessful on ${BLUE}$(echo "$STATUS" |
     jq -r -c '.statuses|map(select(.state != "success"))|map(.context)')"
   ask_confirmation
 fi;
 
 # Sanity check: has labels named "needs:"
 
-NEEDS_LABELS=$(curl -s "$API/pulls/$PR" | jq -rc '.labels | map(select(.name | match("needs:"))) | map(.name)')
+NEEDS_LABELS=$(echo "$PRDATA" | jq -rc '.labels | map(select(.name | match("needs:"))) | map(.name)')
 if [ "$NEEDS_LABELS" != "[]" ]; then
   error "needs:something labels still present: ${BLUE}$NEEDS_LABELS"
   ask_confirmation
@@ -125,7 +127,7 @@ fi
 
 # Sanity check: has milestone
 
-MILESTONE=$(curl -s "$API/pulls/$PR" | jq -rc '.milestone.title')
+MILESTONE=$(echo "$PRDATA" | jq -rc '.milestone.title')
 if [ "$MILESTONE" = "null" ]; then
   error "no milestone set, please set one"
   ask_confirmation
@@ -133,7 +135,7 @@ fi
 
 # Sanity check: has kind
 
-KIND=$(curl -s "$API/pulls/$PR" | jq -rc '.labels | map(select(.name | match("kind:"))) | map(.name)')
+KIND=$(echo "$PRDATA" | jq -rc '.labels | map(select(.name | match("kind:"))) | map(.name)')
 if [ "$KIND" = "[]" ]; then
   error "no kind:something label set, please set one"
   ask_confirmation
