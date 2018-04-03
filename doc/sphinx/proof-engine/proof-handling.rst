@@ -2,15 +2,15 @@
 \label{Proof-handling}}
 %HEVEA\cutname{proof-handling.html}
 
-In \Coq's proof editing mode all top-level commands documented in 
+In \Coq's proof editing mode all top-level commands documented in
 Chapter~\ref{Vernacular-commands} remain available
 and the user has access to specialized commands dealing with proof
 development pragmas documented in this section. He can also use some
 other specialized commands called {\em tactics}.  They are the very
 tools allowing the user to deal with logical reasoning. They are
-documented in Chapter~\ref{Tactics}.\\ 
+documented in Chapter~\ref{Tactics}.\\
 When switching in editing proof mode, the prompt
-\index{Prompt} 
+\index{Prompt}
 {\tt Coq <} is changed into {\tt {\ident} <} where {\ident} is the
 declared name of the theorem currently edited.
 
@@ -70,7 +70,7 @@ name is added to the environment as an {\tt Opaque} constant.
 
 \begin{ErrMsgs}
 \item \errindex{Attempt to save an incomplete proof}
-%\item \ident\ \errindex{already exists}\\ 
+%\item \ident\ \errindex{already exists}\\
 %  The implicit name is already defined. You have then to provide
 %  explicitly a new name (see variant 3 below).
 \item Sometimes an error occurs when building the proof term,
@@ -86,13 +86,13 @@ memory overflow.
 \begin{Variants}
 
 \item {\tt Defined.}
-\comindex{Defined} 
-\label{Defined} 
+\comindex{Defined}
+\label{Defined}
 
   Defines the proved term as a transparent constant.
 
 \item {\tt Save {\ident}.}
-  
+
   Forces the name of the original goal to be {\ident}.  This command
   (and the following ones) can only be used if the original goal has
   been opened using the {\tt Goal} command.
@@ -110,7 +110,7 @@ This command applies in proof editing mode. It is equivalent to {\tt
 one gulp, as a proof term (see Section~\ref{exact}).
 
 \variant {\tt Proof.}
-  
+
   Is a noop which is useful to delimit the sequence of tactic commands
   which start a proof, after a {\tt Theorem} command.  It is a good
   practice to use {\tt Proof.} as an opening parenthesis, closed in
@@ -122,9 +122,9 @@ one gulp, as a proof term (see Section~\ref{exact}).
 {{\tt Proof using} {\ident$_1$} {\ldots} {\ident$_n$}{\tt .}
 \comindex{Proof using} \label{ProofUsing}}
 
-This command applies in proof editing mode. 
-It declares the set of section variables (see~\ref{Variable}) 
-used by the proof. At {\tt Qed} time, the system will assert that 
+This command applies in proof editing mode.
+It declares the set of section variables (see~\ref{Variable})
+used by the proof. At {\tt Qed} time, the system will assert that
 the set of section variables actually used in the proof is a subset of
 the declared one.
 
@@ -133,20 +133,20 @@ For example if {\tt T} is variable and {\tt a} is a variable of
 type {\tt T}, the commands {\tt Proof using a} and
 {\tt Proof using T a} are actually equivalent.
 
-\variant {\tt Proof using} {\ident$_1$} {\ldots} {\ident$_n$} {\tt with} {\tac}{\tt .} 
+\variant {\tt Proof using} {\ident$_1$} {\ldots} {\ident$_n$} {\tt with} {\tac}{\tt .}
 in Section~\ref{ProofWith}.
 
-\variant {\tt Proof using All.} 
+\variant {\tt Proof using All.}
 
   Use all section variables.
 
-\variant {\tt Proof using Type.} 
-\variant {\tt Proof using.} 
-  
+\variant {\tt Proof using Type.}
+\variant {\tt Proof using.}
+
   Use only section variables occurring in the statement.
 
-\variant {\tt Proof using Type*.} 
-  
+\variant {\tt Proof using Type*.}
+
   The {\tt *} operator computes the forward transitive closure.
   E.g. if the variable {\tt H} has type {\tt p < 5} then {\tt H} is
   in {\tt p*} since {\tt p} occurs in the type of {\tt H}.
@@ -154,7 +154,7 @@ in Section~\ref{ProofWith}.
   section variables occurring in the statement.
 
 \variant {\tt Proof using -( \ident$_1$} {\ldots} {\tt \ident$_n$  ).}
-  
+
   Use all section variables except {\ident$_1$} {\ldots} {\ident$_n$}.
 
 \variant {\tt Proof using \nterm{collection}$_1$ + \nterm{collection}$_2$ .}
@@ -178,7 +178,7 @@ in Section~\ref{ProofWith}.
 
 The following options modify the behavior of {\tt Proof using}.
 
-\variant {\tt Set Default Proof Using "expression".} 
+\variant {\tt Set Default Proof Using "expression".}
 
   Use {\tt expression} as the default {\tt Proof using} value.
   E.g. {\tt Set Default Proof Using "a b".} will complete all {\tt Proof }
@@ -190,11 +190,11 @@ The following options modify the behavior of {\tt Proof using}.
   the user did not provide one.
 
 % \variant{\tt Unset Proof Using Clear Unused.}
-% 
+%
 %   When {\tt Proof using a} all section variables but for {\tt a} and
 %   the variables used in the type of {\tt a} are cleared.
 %   This option can be used to turn off this behavior.
-% 
+%
 \subsubsection[\tt Collection]{Name a set of section hypotheses for {\tt Proof using}}
 \comindex{Collection}\label{Collection}
 
@@ -203,15 +203,15 @@ with the purpose of making {\tt Proof using} annotations more compact.
 
 \variant {\tt Collection Some := x y z.}
 
-  Define the collection named "Some" containing {\tt x y} and {\tt z} 
+  Define the collection named "Some" containing {\tt x y} and {\tt z}
 
-\variant {\tt Collection Fewer := Some - x.} 
-  
-  Define the collection named "Fewer" containing only {\tt x y} 
+\variant {\tt Collection Fewer := Some - x.}
 
-\variant {\tt Collection Many := Fewer + Some.} 
-\variant {\tt Collection Many := Fewer - Some.} 
-  
+  Define the collection named "Fewer" containing only {\tt x y}
+
+\variant {\tt Collection Many := Fewer + Some.}
+\variant {\tt Collection Many := Fewer - Some.}
+
   Define the collection named "Many" containing the set union or set difference
   of "Fewer" and "Some".
 
@@ -296,7 +296,7 @@ solved or unfocused. This is useful when there are many current
 subgoals which clutter your screen.
 
 \begin{Variant}
-\item {\tt Focus {\num}.}\\ 
+\item {\tt Focus {\num}.}\\
 This focuses the attention on the $\num^{th}$ subgoal to prove.
 \end{Variant}
 
@@ -430,8 +430,8 @@ This makes bullets active (this is the default behavior).
 This command displays the current goals.
 
 \begin{Variants}
-\item {\tt Show {\num}.}\\ 
-  Displays only the {\num}-th subgoal.\\ 
+\item {\tt Show {\num}.}\\
+  Displays only the {\num}-th subgoal.\\
 \begin{ErrMsgs}
 \item \errindex{No such goal}
 \item \errindex{No focused proof}
@@ -457,54 +457,54 @@ Goal exists n, n = 0.
 
 \item {\tt Show Script.}\comindex{Show Script}\\
   Displays the whole list of tactics applied from the beginning
-  of the current proof. 
+  of the current proof.
   This tactics script may contain some holes (subgoals not yet proved).
   They are printed under the form \verb!<Your Tactic Text here>!.
 
 \item {\tt Show Proof.}\comindex{Show Proof}\\
-It displays the proof term generated by the 
-tactics that have been applied. 
+It displays the proof term generated by the
+tactics that have been applied.
 If the proof is not completed, this term contain holes,
-which correspond to the sub-terms which are still to be 
-constructed. These holes appear as a question mark indexed 
-by an integer, and applied to the list of variables in 
-the context, since it may depend on them. 
+which correspond to the sub-terms which are still to be
+constructed. These holes appear as a question mark indexed
+by an integer, and applied to the list of variables in
+the context, since it may depend on them.
 The types obtained by abstracting away the context from the
 type of each hole-placer are also printed.
 
 \item {\tt Show Conjectures.}\comindex{Show Conjectures}\\
-It prints the list of the names of all the theorems that 
+It prints the list of the names of all the theorems that
 are currently being proved.
 As it is possible to start proving a previous lemma during
-the proof of a theorem, this list may contain several 
-names. 
+the proof of a theorem, this list may contain several
+names.
 
 \item{\tt Show Intro.}\comindex{Show Intro}\\
 If the current goal begins by at least one product, this command
-prints the name of the first product, as it would be generated by 
+prints the name of the first product, as it would be generated by
 an anonymous {\tt intro}. The aim of this command is to ease the
-writing of more robust scripts. For example, with an appropriate 
+writing of more robust scripts. For example, with an appropriate
 {\ProofGeneral} macro, it is possible to transform any anonymous {\tt
   intro} into a qualified one such as {\tt intro y13}.
-In the case of a non-product goal, it prints nothing. 
+In the case of a non-product goal, it prints nothing.
 
 \item{\tt Show Intros.}\comindex{Show Intros}\\
-This command is similar to the previous one, it simulates the naming 
+This command is similar to the previous one, it simulates the naming
 process of an {\tt intros}.
 
 \item{\tt Show Existentials.\label{ShowExistentials}}\comindex{Show Existentials}
 \\ It displays
-the set of all uninstantiated existential variables in the current proof tree, 
+the set of all uninstantiated existential variables in the current proof tree,
 along with the type and the context of each variable.
 
 \item{\tt Show Match {\ident}.\label{ShowMatch}}\comindex{Show Match}\\
-This variant displays a template of the Gallina {\tt match} construct 
+This variant displays a template of the Gallina {\tt match} construct
 with a branch for each constructor of the type {\ident}.
 
 Example:
 
 \begin{coq_example}
-Show Match nat.  
+Show Match nat.
 \end{coq_example}
 \begin{ErrMsgs}
 \item \errindex{Unknown inductive type}
@@ -535,7 +535,7 @@ of the proof without having to wait the completion of the proof."
 
 \subsection[\tt Set Hyps Limit {\num}.]{\tt Set Hyps Limit {\num}.\optindex{Hyps Limit}}
 This command sets the maximum number of hypotheses displayed in
-goals after the application of a tactic. 
+goals after the application of a tactic.
 All the hypotheses remains usable in the proof development.
 
 
@@ -575,7 +575,7 @@ This is in general an expensive operation.  See: \\
 \ \url{http://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#VALcompact} \\
 There is also an analogous tactic {\tt optimize\_heap} (see~\ref{tactic-optimizeheap}).
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:
