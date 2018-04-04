@@ -585,21 +585,10 @@ let pr_ssripat _ _ _ = pr_ipat
 let pr_ssripats _ _ _ = pr_ipats
 let pr_ssriorpat _ _ _ = pr_iorpat
 
-(*
-let intern_ipat ist ipat =
-  let rec check_pat = function
-  | IPatClear clr -> ignore (List.map (intern_hyp ist) clr)
-  | IPatCase iorpat -> List.iter (List.iter check_pat) iorpat
-  | IPatDispatch iorpat -> List.iter (List.iter check_pat) iorpat
-  | IPatInj iorpat -> List.iter (List.iter check_pat) iorpat
-  | _ -> () in
-  check_pat ipat; ipat
-*)
-
 let intern_ipat ist =
   map_ipat
     (fun id -> id)
-    (intern_hyp ist) (* TODO: check with ltac, old code was ignoring the result *)
+    (intern_hyp ist)
     (glob_ast_closure_term ist)
 
 let intern_ipats ist = List.map (intern_ipat ist)

@@ -133,6 +133,12 @@ let intro_clear ids future_ipats =
     isCLR_PUSHL clear_ids
 end
 
+let tacCHECK_HYPS_EXIST hyps = Goal.enter begin fun gl ->
+  let ctx = Goal.hyps gl in
+  List.iter (Ssrcommon.check_hyp_exists ctx) hyps;
+  tclUNIT ()
+end
+
 (** [=> []] *****************************************************************)
 let tac_case t =
   Goal.enter begin fun _ ->
@@ -229,7 +235,9 @@ let rec ipat_tac1 future_ipats ipat : unit tactic =
   | IPatNoop -> tclUNIT ()
   | IPatSimpl Nop -> tclUNIT ()
 
-  | IPatClear ids -> intro_clear (List.map Ssrcommon.hyp_id ids) future_ipats
+  | IPatClear ids ->
+      tacCHECK_HYPS_EXIST ids <*>
+      intro_clear (List.map Ssrcommon.hyp_id ids) future_ipats
 
   | IPatSimpl (Simpl n) ->
        V82.tactic ~nf_evars:false (Ssrequality.simpltac (Simpl n))
