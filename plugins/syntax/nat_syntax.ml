@@ -78,8 +78,18 @@ let uninterp_nat (AnyGlobConstr p) =
 (************************************************************************)
 (* Declare the primitive parsers and printers *)
 
+open Notation
+
+let nat_scope = "nat_scope"
+
+let at_declare_ml_module f x =
+  Mltop.declare_cache_obj (fun () -> f x) __coq_plugin_name
+
 let _ =
-  Notation.declare_numeral_interpreter "nat_scope"
-    (nat_path,datatypes_module_name)
-    nat_of_int
-    ([DAst.make @@ GRef (glob_S,None); DAst.make @@ GRef (glob_O,None)], uninterp_nat, true)
+  register_bignumeral_interpretation nat_scope (nat_of_int,uninterp_nat);
+  at_declare_ml_module enable_prim_token_interpretation
+    { pt_scope = nat_scope;
+      pt_uid = nat_scope;
+      pt_required = (nat_path,datatypes_module_name);
+      pt_refs = [glob_S; glob_O];
+      pt_in_match = true }

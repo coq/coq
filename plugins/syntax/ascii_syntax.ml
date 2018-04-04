@@ -83,8 +83,17 @@ let make_ascii_string n =
 
 let uninterp_ascii_string (AnyGlobConstr r) = Option.map make_ascii_string (uninterp_ascii r)
 
+open Notation
+
+let at_declare_ml_module f x =
+  Mltop.declare_cache_obj (fun () -> f x) __coq_plugin_name
+
 let _ =
-  Notation.declare_string_interpreter "char_scope"
-    (ascii_path,ascii_module)
-    interp_ascii_string
-    ([DAst.make @@ GRef (static_glob_Ascii,None)], uninterp_ascii_string, true)
+  let sc = "char_scope" in
+  register_string_interpretation sc (interp_ascii_string,uninterp_ascii_string);
+  at_declare_ml_module enable_prim_token_interpretation
+    { pt_scope = sc;
+      pt_uid = sc;
+      pt_required = (ascii_path,ascii_module);
+      pt_refs = [static_glob_Ascii];
+      pt_in_match = true }

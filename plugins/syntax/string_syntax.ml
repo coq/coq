@@ -64,10 +64,17 @@ let uninterp_string (AnyGlobConstr r) =
   with
    Non_closed_string -> None
 
+open Notation
+
+let at_declare_ml_module f x =
+  Mltop.declare_cache_obj (fun () -> f x) __coq_plugin_name
+
 let _ =
-  Notation.declare_string_interpreter "string_scope"
-    (string_path,["Coq";"Strings";"String"])
-    interp_string
-    ([DAst.make @@ GRef (static_glob_String,None);
-      DAst.make @@ GRef (static_glob_EmptyString,None)],
-     uninterp_string, true)
+  let sc = "string_scope" in
+  register_string_interpretation sc (interp_string,uninterp_string);
+  at_declare_ml_module enable_prim_token_interpretation
+    { pt_scope = sc;
+      pt_uid = sc;
+      pt_required = (string_path,["Coq";"Strings";"String"]);
+      pt_refs = [static_glob_String; static_glob_EmptyString];
+      pt_in_match = true }

@@ -96,10 +96,18 @@ let uninterp_int31 (AnyGlobConstr i) =
   with Non_closed ->
     None
 
+open Notation
+
+let at_declare_ml_module f x =
+  Mltop.declare_cache_obj (fun () -> f x) __coq_plugin_name
+
 (* Actually declares the interpreter for int31 *)
-let _ = Notation.declare_numeral_interpreter int31_scope
-  (int31_path, int31_module)
-  interp_int31
-  ([DAst.make (GRef (int31_construct, None))],
-   uninterp_int31,
-   true)
+
+let _ =
+  register_bignumeral_interpretation int31_scope (interp_int31,uninterp_int31);
+  at_declare_ml_module enable_prim_token_interpretation
+    { pt_scope = int31_scope;
+      pt_uid = int31_scope;
+      pt_required = (int31_path,int31_module);
+      pt_refs = [int31_construct];
+      pt_in_match = true }
