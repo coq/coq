@@ -654,20 +654,6 @@ let uninterp_prim_token c =
       | Some n -> (sc,n)
   with Not_found -> raise Notation_ops.No_match
 
-let uninterp_prim_token_ind_pattern ind args =
-  let ref = IndRef ind in
-  try
-    let k = RefKey (canonical_gr ref) in
-    let (sc,numpr,b) = KeyMap.find k !prim_token_key_table in
-    if not b then raise Notation_ops.No_match;
-    let args' = List.map
-      (fun x -> snd (glob_constr_of_closed_cases_pattern x)) args in
-    let ref = DAst.make @@ GRef (ref,None) in
-    match numpr (AnyGlobConstr (DAst.make @@ GApp (ref,args'))) with
-      | None -> raise Notation_ops.No_match
-      | Some n -> (sc,n)
-  with Not_found -> raise Notation_ops.No_match
-
 let uninterp_prim_token_cases_pattern c =
   try
     let k = cases_pattern_key c in
