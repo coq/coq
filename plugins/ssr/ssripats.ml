@@ -119,13 +119,10 @@ let intro_end =
   Ssrcommon.tcl0G (isCLR_CONSUME)
 
 (** [=> _] *****************************************************************)
-let intro_clear ids future_ipats =
+let intro_clear ids =
   Goal.enter begin fun gl ->
     let _, clear_ids, ren =
       List.fold_left (fun (used_ids, clear_ids, ren) id ->
-          if not(Ssrcommon.is_name_in_ipats id future_ipats) then begin
-            used_ids, id :: clear_ids, ren
-          end else
             let new_id = Ssrcommon.mk_anon_id (Id.to_string id) used_ids in
             (new_id :: used_ids, new_id :: clear_ids, (id, new_id) :: ren))
                      (Tacmach.New.pf_ids_of_hyps gl, [], []) ids
@@ -213,22 +210,22 @@ let tclLOG p t =
     tclUNIT ()
   end
 
-let rec ipat_tac1 future_ipats ipat : unit tactic =
+let rec ipat_tac1 ipat : unit tactic =
   match ipat with
   | IPatView l ->
       Ssrview.tclIPAT_VIEWS ~views:l
-        ~conclusion:(fun ~to_clear:clr -> intro_clear clr future_ipats)
+        ~conclusion:(fun ~to_clear:clr -> intro_clear clr)
   | IPatDispatch ipatss ->
-      tclEXTEND (List.map (ipat_tac future_ipats) ipatss) (tclUNIT ()) []
+      tclEXTEND (List.map ipat_tac ipatss) (tclUNIT ()) []
 
   | IPatId id -> Ssrcommon.tclINTRO_ID id
 
   | IPatCase ipatss ->
-     tclIORPAT (Ssrcommon.tclWITHTOP tac_case) future_ipats ipatss
+     tclIORPAT (Ssrcommon.tclWITHTOP tac_case) ipatss
   | IPatInj ipatss ->
      tclIORPAT (Ssrcommon.tclWITHTOP
        (fun t -> V82.tactic  ~nf_evars:false (Ssrelim.perform_injection t)))
-       future_ipats ipatss
+       ipatss
 
   | IPatAnon Drop -> intro_drop
   | IPatAnon One -> Ssrcommon.tclINTRO_ANON
@@ -239,7 +236,7 @@ let rec ipat_tac1 future_ipats ipat : unit tactic =
 
   | IPatClear ids ->
       tacCHECK_HYPS_EXIST ids <*>
-      intro_clear (List.map Ssrcommon.hyp_id ids) future_ipats
+      intro_clear (List.map Ssrcommon.hyp_id ids)
 
   | IPatSimpl (Simpl n) ->
        V82.tactic ~nf_evars:false (Ssrequality.simpltac (Simpl n))
@@ -256,17 +253,17 @@ let rec ipat_tac1 future_ipats ipat : unit tactic =
 
   | IPatTac t -> t
 
-and ipat_tac future_ipats pl : unit tactic =
+and ipat_tac pl : unit tactic =
   match pl with
   | [] -> tclUNIT ()
   | pat :: pl ->
-      Ssrcommon.tcl0G (tclLOG pat (ipat_tac1 (pl @ future_ipats))) <*>
+      Ssrcommon.tcl0G (tclLOG pat ipat_tac1) <*>
       isTICK pat <*>
-      ipat_tac future_ipats pl
+      ipat_tac pl
 
-and tclIORPAT tac future_ipats = function
+and tclIORPAT tac = function
   | [[]] -> tac
-  | p -> Tacticals.New.tclTHENS tac (List.map (ipat_tac future_ipats) p)
+  | p -> Tacticals.New.tclTHENS tac (List.map ipat_tac p)
 
 let split_at_first_case ipats =
   let rec loop acc = function
@@ -282,12 +279,27 @@ let ssr_exception is_on = function
 
 let option_to_list = function None -> [] | Some x -> [x]
 
+(* Simple pass doing {x}/v ->  /v{x} *)
+let elaborate_ipats l =
+  let rec elab = function
+  | [] -> []
+  | (IPatClear _ as p1) :: (IPatView _ as p2) :: rest -> p2 :: p1 :: elab rest
+  | IPatDispatch p :: rest -> IPatDispatch (List.map elab p) :: elab rest
+  | IPatCase p :: rest -> IPatCase (List.map elab p) :: elab rest
+  | IPatInj p :: rest -> IPatInj (List.map elab p) :: elab rest
+  | (IPatTac _ | IPatId _ | IPatSimpl _ | IPatClear _ |
+     IPatAnon _ | IPatView _ | IPatNoop | IPatRewrite _ |
+     IPatAbstractVars _) as x :: rest -> x :: elab rest
+  in
+    elab l
+
 let main ?eqtac ~first_case_is_dispatch ipats =
+  let ipats = elaborate_ipats ipats in
   let ip_before, case, ip_after = split_at_first_case ipats in
   let case = ssr_exception first_case_is_dispatch case in
   let case = option_to_list case in
   let eqtac = option_to_list (Option.map (fun x -> IPatTac x) eqtac) in
-  Ssrcommon.tcl0G (ipat_tac [] (ip_before @ case @ eqtac @ ip_after) <*> intro_end)
+  Ssrcommon.tcl0G (ipat_tac (ip_before @ case @ eqtac @ ip_after) <*> intro_end)
 
 end (* }}} *)
 
