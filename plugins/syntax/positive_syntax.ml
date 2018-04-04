@@ -91,11 +91,17 @@ let uninterp_positive (AnyGlobConstr p) =
 (* Declaring interpreters and uninterpreters for positive *)
 (************************************************************************)
 
-let _ = Notation.declare_numeral_interpreter "positive_scope"
-  (positive_path,binnums)
-  interp_positive
-  ([DAst.make @@ GRef (glob_xI, None);
-    DAst.make @@ GRef (glob_xO, None);
-    DAst.make @@ GRef (glob_xH, None)],
-   uninterp_positive,
-   true)
+open Notation
+
+let at_declare_ml_module f x =
+  Mltop.declare_cache_obj (fun () -> f x) __coq_plugin_name
+
+let _ =
+  let scope = "positive_scope" in
+  register_bignumeral_interpretation scope (interp_positive,uninterp_positive);
+  at_declare_ml_module enable_prim_token_interpretation
+    { pt_scope = scope;
+      pt_uid = scope;
+      pt_required = (positive_path,binnums);
+      pt_refs = [glob_xI; glob_xO; glob_xH];
+      pt_in_match = true }

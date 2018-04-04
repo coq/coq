@@ -131,9 +131,18 @@ let uninterp_r (AnyGlobConstr p) =
   with Non_closed_number ->
     None
 
-let _ = Notation.declare_numeral_interpreter "R_scope"
-  (r_path,["Coq";"Reals";"Rdefinitions"])
-  r_of_int
-  ([DAst.make @@ GRef (glob_IZR, None)],
-    uninterp_r,
-    false)
+open Notation
+
+let at_declare_ml_module f x =
+  Mltop.declare_cache_obj (fun () -> f x) __coq_plugin_name
+
+let r_scope = "R_scope"
+
+let _ =
+  register_bignumeral_interpretation r_scope (r_of_int,uninterp_r);
+  at_declare_ml_module enable_prim_token_interpretation
+    { pt_scope = r_scope;
+      pt_uid = r_scope;
+      pt_required = (r_path,["Coq";"Reals";"Rdefinitions"]);
+      pt_refs = [glob_IZR];
+      pt_in_match = false }
