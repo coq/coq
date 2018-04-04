@@ -442,7 +442,6 @@ type nonrec vernac_expr =
   | VernacRestart
   | VernacUndo of int
   | VernacUndoTo of int
-  | VernacBacktrack of int*int*int
   | VernacFocus of int option
   | VernacUnfocus
   | VernacUnfocused

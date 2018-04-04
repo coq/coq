@@ -9,10 +9,12 @@
 (************************************************************************)
 
 open Pcoq
+open Pcoq.Prim
 open Vernacexpr
 
 (* Vernaculars specific to the toplevel *)
 type vernac_toplevel =
+  | VernacBacktrack of int * int * int
   | VernacDrop
   | VernacQuit
   | VernacControl of vernac_control
@@ -31,6 +33,8 @@ GEXTEND Gram
   vernac_toplevel: FIRST
     [ [ IDENT "Drop"; "." -> CAst.make VernacDrop
       | IDENT "Quit"; "." -> CAst.make VernacQuit
+      | IDENT "Backtrack"; n = natural ; m = natural ; p = natural; "." ->
+        CAst.make (VernacBacktrack (n,m,p))
       | cmd = main_entry ->
               match cmd with
               | None -> raise Stm.End_of_input

@@ -1072,7 +1072,7 @@ let stm_vernac_interp ?proof ?route id st { verbose; loc; expr } : Vernacstate.t
   let is_filtered_command = function
     | VernacResetName _ | VernacResetInitial | VernacBack _
     | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
-    | VernacBacktrack _ | VernacAbortAll | VernacAbort _ -> true
+    | VernacAbortAll | VernacAbort _ -> true
     | _ -> false
   in
   let aux_interp st expr =
@@ -1097,7 +1097,6 @@ let stm_vernac_interp ?proof ?route id st { verbose; loc; expr } : Vernacstate.t
 module Backtrack : sig
 
   val record : unit -> unit
-  val backto : Stateid.t -> unit
 
   (* we could navigate the dag, but this ways easy *)
   val branches_of : Stateid.t -> backup
@@ -1121,14 +1120,6 @@ end = struct (* {{{ *)
         else Some { mine; others } in
       info.vcs_backup <- backup, branches)
     [VCS.current_branch (); VCS.Branch.master]
-
-  let backto oid =
-    let info = VCS.get_info oid in
-    match info.vcs_backup with
-    | None, _ ->
-       anomaly Pp.(str"Backtrack.backto "++str(Stateid.to_string oid)++
-               str": a state with no vcs_backup.")
-    | Some vcs, _ -> VCS.restore vcs
 
   let branches_of id =
     let info = VCS.get_info id in
@@ -1220,7 +1211,6 @@ end = struct (* {{{ *)
             match Vcs_.branches vcs with [_] -> `Stop id | _ -> `Cont ())
             () id in
           oid, VtLater
-      | VernacBacktrack (id,_,_)
       | VernacBackTo id ->
           Stateid.of_int id, VtNow
       | _ -> anomaly Pp.(str "incorrect VtMeta classification")
@@ -2757,9 +2747,7 @@ let snapshot_vio ~doc ldir long_f_dot_vo =
 let reset_task_queue = Slaves.reset_task_queue
 
 (* Document building *)
-let process_back_meta_command ~part_of_script ~newtip ~head oid aast w =
-  match part_of_script, w with
-  | true, w ->
+let process_back_meta_command ~newtip ~head oid aast w =
     let id = VCS.new_node ~id:newtip () in
     let { mine; others } = Backtrack.branches_of oid in
     let valid = VCS.get_branch_pos head in
@@ -2779,16 +2767,7 @@ let process_back_meta_command ~part_of_script ~newtip ~head oid aast w =
     VCS.commit id (Alias (oid,aast));
     Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
 
-  | false, VtNow ->
-    stm_prerr_endline (fun () -> "undo to state " ^ Stateid.to_string oid);
-    Backtrack.backto oid;
-    VCS.checkout_shallowest_proof_branch ();
-    Reach.known_state ~cache:(VCS.is_interactive ()) oid; `Ok
-
-  | false, VtLater ->
-    anomaly(str"undo classifier: VtMeta + VtLater must imply part_of_script.")
-
-let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
+let process_transaction ?(newtip=Stateid.fresh ())
   ({ verbose; loc; expr } as x) c =
   stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
   let vcs = VCS.backup () in
@@ -2802,12 +2781,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
       (* Meta *)
       | VtMeta, _ ->
         let id, w = Backtrack.undo_vernac_classifier expr in
-        (* Special case Backtrack, as it is never part of a script. See #6240 *)
-        let part_of_script = begin match Vernacprop.under_control expr with
-          | VernacBacktrack _ -> false
-          | _ -> part_of_script
-        end in
-        process_back_meta_command ~part_of_script ~newtip ~head id x w
+        process_back_meta_command ~newtip ~head id x w
       (* Query *)
       | VtQuery (false,route), VtNow ->
         let query_sid = VCS.cur_tip () in
@@ -3074,13 +3048,8 @@ let query ~doc ~at ~route s =
         let { CAst.loc; v=ast } = parse_sentence ~doc at s in
         let indentation, strlen = compute_indentation ?loc at in
         CWarnings.set_current_loc loc;
-        let clas = Vernac_classifier.classify_vernac ast in
         let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
-        match clas with
-        | VtMeta , _ -> (* TODO: can this still happen ? *)
-          ignore(process_transaction ~part_of_script:false aast (VtMeta,VtNow))
-        | _ ->
-          ignore(process_transaction aast (VtQuery (false,route), VtNow))
+        ignore(process_transaction aast (VtQuery (false,route), VtNow))
       done;
     with
     | End_of_input -> ()
