@@ -118,11 +118,11 @@ let intro_end =
   Ssrcommon.tcl0G (isCLR_CONSUME)
 
 (** [=> _] *****************************************************************)
-let intro_clear ids future_ipats =
+let intro_clear ids names_used =
   Goal.enter begin fun gl ->
     let _, clear_ids, ren =
       List.fold_left (fun (used_ids, clear_ids, ren) id ->
-          if not(Ssrcommon.is_name_in_ipats id future_ipats) then begin
+          if not(Id.Set.mem id names_used) then begin
             used_ids, id :: clear_ids, ren
           end else
             let new_id = Ssrcommon.mk_anon_id (Id.to_string id) used_ids in
@@ -212,20 +212,20 @@ let tclLOG p t =
     tclUNIT ()
   end
 
-let rec ipat_tac1 future_ipats ipat : unit tactic =
+let rec ipat_tac1 names_used ipat : unit tactic =
   match ipat with
   | IPatView l ->
       Ssrview.tclIPAT_VIEWS ~views:l
-        ~conclusion:(fun ~to_clear:clr -> intro_clear clr future_ipats)
+        ~conclusion:(fun ~to_clear:clr -> intro_clear clr names_used)
   | IPatDispatch ipatss ->
-      tclEXTEND (List.map ipat_tac ipatss) (tclUNIT ()) []
+      tclEXTEND (List.map (ipat_tac names_used) ipatss) (tclUNIT ()) []
 
   | IPatId id -> Ssrcommon.tclINTRO_ID id
 
   | IPatCase ipatss ->
-     tclIORPAT (Ssrcommon.tclWITHTOP tac_case) ipatss
+     tclIORPAT names_used (Ssrcommon.tclWITHTOP tac_case) ipatss
   | IPatInj ipatss ->
-     tclIORPAT (Ssrcommon.tclWITHTOP
+     tclIORPAT names_used (Ssrcommon.tclWITHTOP
        (fun t -> V82.tactic  ~nf_evars:false (Ssrelim.perform_injection t))) ipatss
 
   | IPatAnon Drop -> intro_drop
@@ -237,7 +237,7 @@ let rec ipat_tac1 future_ipats ipat : unit tactic =
 
   | IPatClear ids ->
       tacCHECK_HYPS_EXIST ids <*>
-      intro_clear (List.map Ssrcommon.hyp_id ids) future_ipats
+      intro_clear (List.map Ssrcommon.hyp_id ids) names_used
 
   | IPatSimpl (Simpl n) ->
        V82.tactic ~nf_evars:false (Ssrequality.simpltac (Simpl n))
@@ -254,17 +254,19 @@ let rec ipat_tac1 future_ipats ipat : unit tactic =
 
   | IPatTac t -> t
 
-and ipat_tac pl : unit tactic =
+and ipat_tac names_used pl : unit tactic =
   match pl with
   | [] -> tclUNIT ()
+  | (IPatClear _ as p1) :: (IPatView _ as p2) :: rest ->
+      ipat_tac names_used (p2 :: p1 :: rest)
   | pat :: pl ->
-      Ssrcommon.tcl0G (tclLOG pat (ipat_tac1 pl)) <*>
+      Ssrcommon.tcl0G (tclLOG pat (ipat_tac1 names_used)) <*>
       isTICK pat <*>
-      ipat_tac pl
+      ipat_tac names_used pl
 
-and tclIORPAT tac = function
+and tclIORPAT names_used tac = function
   | [[]] -> tac
-  | p -> Tacticals.New.tclTHENS tac (List.map ipat_tac p)
+  | p -> Tacticals.New.tclTHENS tac (List.map (ipat_tac names_used) p)
 
 let split_at_first_case ipats =
   let rec loop acc = function
@@ -281,11 +283,13 @@ let ssr_exception is_on = function
 let option_to_list = function None -> [] | Some x -> [x]
 
 let main ?eqtac ~first_case_is_dispatch ipats =
+  let names_used = Ssrcommon.names_of_ipats ipats in
   let ip_before, case, ip_after = split_at_first_case ipats in
   let case = ssr_exception first_case_is_dispatch case in
   let case = option_to_list case in
   let eqtac = option_to_list (Option.map (fun x -> IPatTac x) eqtac) in
-  Ssrcommon.tcl0G (ipat_tac (ip_before @ case @ eqtac @ ip_after) <*> intro_end)
+  Ssrcommon.tcl0G (ipat_tac names_used (ip_before @ case @ eqtac @ ip_after) <*>
+  intro_end)
 
 end (* }}} *)
 

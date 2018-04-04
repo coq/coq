@@ -371,6 +371,8 @@ val pf_interp_gen_aux :
 val is_name_in_ipats :
            Id.t -> ssripats -> bool
 
+val names_of_ipats : ssripats -> Id.Set.t
+
 type profiler = { 
   profile : 'a 'b. ('a -> 'b) -> 'a -> 'b;
   reset : unit -> unit;

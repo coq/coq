@@ -800,9 +800,19 @@ let rec is_name_in_ipats name = function
       List.exists (function SsrHyp(_,id) -> id = name) clr 
       || is_name_in_ipats name tl
   | IPatId id :: tl -> id = name || is_name_in_ipats name tl
-  | (IPatCase l | IPatDispatch l) :: tl -> List.exists (is_name_in_ipats name) l || is_name_in_ipats name tl
+  | (IPatCase l | IPatDispatch l | IPatInj l) :: tl -> List.exists (is_name_in_ipats name) l || is_name_in_ipats name tl
   | _ :: tl -> is_name_in_ipats name tl
   | [] -> false
+
+let names_of_ipats l =
+  let rec aux set = function
+  | IPatId id :: rest ->
+      aux (Names.Id.Set.add id set) rest
+  | (IPatCase l | IPatDispatch l | IPatInj l) :: rest ->
+      aux (List.fold_left aux set l) rest
+  | _ :: rest -> aux set rest
+  | [] -> set in
+  aux Names.Id.Set.empty l
 
 let view_error s gv =
   errorstrm (str ("Cannot " ^ s ^ " view ") ++ pr_term gv)
