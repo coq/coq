@@ -2782,16 +2782,9 @@ let process_transaction ?(newtip=Stateid.fresh ())
       | VtMeta, _ ->
         let id, w = Backtrack.undo_vernac_classifier expr in
         process_back_meta_command ~newtip ~head id x w
+
       (* Query *)
-      | VtQuery (false,route), VtNow ->
-        let query_sid = VCS.cur_tip () in
-        (try
-           let st = Vernacstate.freeze_interp_state `No in
-           ignore(stm_vernac_interp ~route query_sid st x)
-         with e ->
-           let e = CErrors.push e in
-           Exninfo.iraise (State.exn_on ~valid:Stateid.dummy query_sid e)); `Ok
-      | VtQuery (true, route), w ->
+      | VtQuery, w ->
           let id = VCS.new_node ~id:newtip () in
           let queue =
             if !cur_opt.async_proofs_full then `QueryQueue (ref false)
@@ -2802,9 +2795,6 @@ let process_transaction ?(newtip=Stateid.fresh ())
             else `MainQueue in
           VCS.commit id (mkTransCmd x [] false queue);
           Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
-
-      | VtQuery (false,_), VtLater ->
-          anomaly(str"classifier: VtQuery + VtLater must imply part_of_script.")
 
       (* Proof *)
       | VtStartProof (mode, guarantee, names), w ->
@@ -3048,8 +3038,9 @@ let query ~doc ~at ~route s =
         let { CAst.loc; v=ast } = parse_sentence ~doc at s in
         let indentation, strlen = compute_indentation ?loc at in
         CWarnings.set_current_loc loc;
+        let st = State.get_cached at in
         let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
-        ignore(process_transaction aast (VtQuery (false,route), VtNow))
+        ignore(stm_vernac_interp ~route at st aast)
       done;
     with
     | End_of_input -> ()
