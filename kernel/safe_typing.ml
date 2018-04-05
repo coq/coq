@@ -859,10 +859,23 @@ let check_mind mie lab =
     (* The label and the first inductive type name should match *)
     assert (Id.equal (Label.to_id lab) oie.mind_entry_typename)
 
+let warn_positive_coinductive =
+  let open Pp in
+  CWarnings.create ~name:"deprecated-positive-coinductive" ~category:"deprecated"
+    (fun lbl -> str "Coinductive type " ++ Label.print lbl ++ str " is defined \
+      as an algebraic type, which breaks subject reduction of CIC. Please use \
+      a primitive coinductive record instead. Algebraic coinductive types are \
+      deprecated and are to be removed from Coq.")
+
+let check_positive_coinductive lbl mib = match mib.mind_record, mib.mind_finite with
+| (NotRecord | FakeRecord), CoFinite -> warn_positive_coinductive lbl
+| _ -> ()
+
 let add_mind l mie senv =
   let () = check_mind mie l in
   let kn = MutInd.make2 senv.modpath l in
   let mib = Indtypes.check_inductive senv.env kn mie in
+  let () = check_positive_coinductive l mib in
   let mib =
     match mib.mind_hyps with [] -> Declareops.hcons_mind mib | _ -> mib
   in
