@@ -128,12 +128,6 @@ sig
 
   val map : (Level.t * int -> 'a) -> t -> 'a list
 
-  (** [compact u] remaps local variables in [u] such that their indices become
-       consecutive. It returns the new universe and the mapping.
-       Example: compact [(Var 0, i); (Prop, 0); (Var 2; j))] =
-         [(Var 0,i); (Prop, 0); (Var 1; j)], [0; 2]
-  *)
-  val compact : t -> t * int list
 end
 
 type universe = Universe.t
@@ -503,6 +497,13 @@ val abstract_cumulativity_info : CumulativityInfo.t -> Instance.t * ACumulativit
 (** TODO: move universe abstraction out of the kernel *)
 
 val make_abstract_instance : AUContext.t -> Instance.t
+
+(** [compact_univ u] remaps local variables in [u] such that their indices become
+     consecutive. It returns the new universe and the mapping.
+     Example: compact_univ [(Var 0, i); (Prop, 0); (Var 2; j))] =
+       [(Var 0,i); (Prop, 0); (Var 1; j)], [0; 2]
+*)
+val compact_univ : Universe.t -> Universe.t * int list
 
 (** {6 Pretty-printing of universes. } *)
 
