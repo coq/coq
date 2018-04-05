@@ -38,13 +38,11 @@ Whitespace discipline (do not indent using tabs, no trailing spaces, text files 
 
 Here are a few tags Coq developers may add to your PR and what they mean. In general feedback and requests for you as the pull request author will be in the comments and tags are only used to organize pull requests.
 
-- [needs: rebase](https://github.com/coq/coq/pulls?utf8=%E2%9C%93&q=is%3Aopen%20is%3Apr%20label%3A%22needs%3A%20rebase%22%20) indicates the PR should be rebased on top of the latest `master` branch. See the [GitHub documentation](https://help.github.com/articles/about-git-rebase/) for a brief introduction to using `git rebase`.
+- [needs: rebase](https://github.com/coq/coq/pulls?utf8=%E2%9C%93&q=is%3Aopen%20is%3Apr%20label%3A%22needs%3A%20rebase%22) indicates the PR should be rebased on top of the latest `master` branch. See the [GitHub documentation](https://help.github.com/articles/about-git-rebase/) for a brief introduction to using `git rebase`.
 - [needs: fixing](https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+fixing%22) indicates the PR needs a fix, as discussed in the comments.
-- [needs: testing](https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+testing%22) indicates the PR needs testing. This is often used when testing beyond what the test suite can handle is required. For example, performance benchmarking is currently performed with a different infrastructure. Unless some followup is specifically requested you aren't expected to do this additional testing.
+- [needs: benchmarking](https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+benchmarking%22) and [needs: testing](https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+testing%22) indicate the PR needs testing beyond what the test suite can handle. For example, performance benchmarking is currently performed with a different infrastructure. Unless some followup is specifically requested you aren't expected to do this additional testing.
 
-The release manager uses the following filter to know which PRs seem ready for merge. If you are waiting for a PR to be merged, make sure it appears in this list:
-
-- [Pull requests ready for merge](https://github.com/coq/coq/pulls?utf8=%E2%9C%93&q=is%3Apr%20is%3Aopen%20-label%3A%22needs%3A%20discussion%22%20-label%3A%22needs%3A%20testing%22%20-label%3A%22needs%3A%20fixing%22%20-label%3A%22needs%3A%20progress%22%20-label%3A%22needs%3A%20rebase%22%20-label%3A%22needs%3A%20review%22%20-label%3A%22needs%3A%20help%22%20-label%3A%22needs%3A%20independent%20fix%22%20-label%3A%22needs%3A%20feedback%22%20-label%3A%22help%20wanted%22%20-review%3Achanges_requested%20-status%3Apending%20base%3Amaster%20sort%3Aupdated-asc%20-label%3A%22needs%3A%20squashing%22%20)
+To learn more about the merging process, you can read the [merging documentation for Coq maintainers](/dev/doc/MERGING.md).
 
 ## Documentation
 
@@ -52,7 +50,7 @@ Currently the process for contributing to the documentation is the same as for c
 
 Our issue tracker includes a flag to mark bugs related to documentation. You can view a list of documentation-related bugs using a [GitHub issue search](https://github.com/coq/coq/issues?q=is%3Aopen+is%3Aissue+label%3A%22kind%3A+documentation%22). Many of these bugs can be fixed by contributing writing, without knowledge of Coq's OCaml source code.
 
-The sources for the [Coq reference manual](https://coq.inria.fr/distrib/current/refman/) are at [`doc/refman`](/doc/refman). These are written in LaTeX and compiled to HTML with [HeVeA](http://hevea.inria.fr/).
+The sources for the [Coq reference manual](https://coq.inria.fr/distrib/current/refman/) are at [`doc/sphinx`](/doc/sphinx). These are written in reStructuredText and compiled to HTML and PDF with [Sphinx](http://www.sphinx-doc.org/).
 
 You may also contribute to the informal documentation available in [Cocorico](https://github.com/coq/coq/wiki) (the Coq wiki), and the [Coq FAQ](https://github.com/coq/coq/wiki/The-Coq-FAQ). Both of these are editable by anyone with a GitHub account.
 
