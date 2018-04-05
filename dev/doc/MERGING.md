@@ -115,3 +115,8 @@ creating your own GPG key:
 
 The script depends on a few other utilities. If you are a Nix user, the
 simplest way of getting them is to run `nix-shell` first.
+
+**Note for homebrew (MacOS) users:** it has been reported that installing GnuPG
+is not out of the box. Installing explicitly "pinentry-mac" seems important for
+typing of passphrase to work correctly (see also this
+[Stack Overflow Q-and-A](https://stackoverflow.com/questions/39494631/gpg-failed-to-sign-the-data-fatal-failed-to-write-commit-object-git-2-10-0)).
