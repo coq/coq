@@ -73,7 +73,7 @@ done
 # so we create a valid .gitignore by removing all but the first field
 
 while read -r pat _; do
-    printf "%s\n" "$pat" >> .gitignore
+    printf '%s\n' "$pat" >> .gitignore
 done < .github/CODEOWNERS
 
 # associative array [file => owner]
@@ -123,10 +123,10 @@ for f in "${files[@]}"; do
 done
 
 for f in "${!owners[@]}"; do
-    printf "%s: %s\n" "$f" "${owners[$f]}"
+    printf '%s: %s\n' "$f" "${owners[$f]}"
 done | sort -k 2 -k 1 # group by owner
 
-# restort gitignore files
+# restore gitignore files
 rm .gitignore
 find . -name .gitignore.bak -print0 | while IFS= read -r -d '' f; do
     base=${f%.bak}
