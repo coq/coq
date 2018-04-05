@@ -50,7 +50,9 @@ sig
   val map_of_list : ('a -> 'b) -> 'a list -> 'b array
   val chop : int -> 'a array -> 'a array * 'a array
   val smartmap : ('a -> 'a) -> 'a array -> 'a array
+  val smartmap2 : ('a -> 'b -> 'b) -> 'a array -> 'b array -> 'b array
   val smartfoldmap : ('r -> 'a -> 'r * 'a) -> 'r -> 'a array -> 'r * 'a array
+  val smartfoldmap2 : ('r -> 'a -> 'b -> 'r * 'b) -> 'r -> 'a array -> 'b array -> 'r * 'b array
   val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
@@ -359,6 +361,39 @@ let smartmap f (ar : 'a array) =
     ans
   end else ar
 
+let smartmap2 f aux_ar ar =
+  let len = Array.length ar in
+  let aux_len = Array.length aux_ar in
+  let () = if not (Int.equal len aux_len) then invalid_arg "Array.smartmap2" in
+  let i = ref 0 in
+  let break = ref true in
+  let temp = ref None in
+  while !break && (!i < len) do
+    let v = Array.unsafe_get ar !i in
+    let w = Array.unsafe_get aux_ar !i in
+    let v' = f w v in
+    if v == v' then incr i
+    else begin
+      break := false;
+      temp := Some v';
+    end
+  done;
+  if !i < len then begin
+    (** The array is not the same as the original one *)
+    let ans : 'a array = Array.copy ar in
+    let v = match !temp with None -> assert false | Some x -> x in
+    Array.unsafe_set ans !i v;
+    incr i;
+    while !i < len do
+      let v = Array.unsafe_get ans !i in
+      let w = Array.unsafe_get aux_ar !i in
+      let v' = f w v in
+      if v != v' then Array.unsafe_set ans !i v';
+      incr i
+    done;
+    ans
+  end else ar
+
 (** Same as [smartmap] but threads a state meanwhile *)
 let smartfoldmap f accu (ar : 'a array) =
   let len = Array.length ar in
@@ -385,6 +420,43 @@ let smartfoldmap f accu (ar : 'a array) =
     while !i < len do
       let v = Array.unsafe_get ar !i in
       let (accu, v') = f !r v in
+      r := accu;
+      if v != v' then Array.unsafe_set ans !i v';
+      incr i
+    done;
+    !r, ans
+  end else !r, ar
+
+(** Same as [smartmap2] but threads a state meanwhile *)
+let smartfoldmap2 f accu aux_ar ar =
+  let len = Array.length ar in
+  let aux_len = Array.length aux_ar in
+  let () = if not (Int.equal len aux_len) then invalid_arg "Array.smartfoldmap2" in
+  let i = ref 0 in
+  let break = ref true in
+  let r = ref accu in
+  (** This variable is never accessed unset *)
+  let temp = ref None in
+  while !break && (!i < len) do
+    let v = Array.unsafe_get ar !i in
+    let w = Array.unsafe_get aux_ar !i in
+    let (accu, v') = f !r w v in
+    r := accu;
+    if v == v' then incr i
+    else begin
+      break := false;
+      temp := Some v';
+    end
+  done;
+  if !i < len then begin
+    let ans : 'a array = Array.copy ar in
+    let v = match !temp with None -> assert false | Some x -> x in
+    Array.unsafe_set ans !i v;
+    incr i;
+    while !i < len do
+      let v = Array.unsafe_get ar !i in
+      let w = Array.unsafe_get aux_ar !i in
+      let (accu, v') = f !r w v in
       r := accu;
       if v != v' then Array.unsafe_set ans !i v';
       incr i
@@ -557,6 +629,16 @@ struct
     for i = 0 to pred len do
       let x = uget v i in
       f arg x
+    done
+
+  let iter2 f arg v1 v2 =
+    let len1 = Array.length v1 in
+    let len2 = Array.length v2 in
+    let () = if not (Int.equal len2 len1) then invalid_arg "Array.Fun1.iter2" in
+    for i = 0 to pred len1 do
+      let x1 = uget v1 i in
+      let x2 = uget v2 i in
+      f arg x1 x2
     done
 
 end

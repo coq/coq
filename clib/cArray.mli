@@ -86,8 +86,15 @@ sig
   (** [smartmap f a] behaves as [map f a] but returns [a] instead of a copy when
       [f x == x] for all [x] in [a]. *)
 
+  val smartmap2 : ('a -> 'b -> 'b) -> 'a array -> 'b array -> 'b array
+  (** [smartmap2 f a b] behaves as [map2 f a b] but returns [a] instead of a copy when
+      [f x y == y] for all [x] in [a] and [y] in [b] pointwise. *)
+
   val smartfoldmap : ('r -> 'a -> 'r * 'a) -> 'r -> 'a array -> 'r * 'a array
   (** Same as [smartmap] but threads an additional state left-to-right. *)
+
+  val smartfoldmap2 : ('r -> 'a -> 'b -> 'r * 'b) -> 'r -> 'a array -> 'b array -> 'r * 'b array
+  (** Same as [smartmap2] but threads an additional state left-to-right. *)
 
   val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
@@ -151,6 +158,9 @@ sig
 
   val iter : ('r -> 'a -> unit) -> 'r -> 'a array -> unit
   (** [Fun1.iter f x v = iter (f x) v] *)
+
+  val iter2 : ('r -> 'a -> 'b -> unit) -> 'r -> 'a array -> 'b array -> unit
+  (** [Fun1.iter2 f x v1 v2 = iter (f x) v1 v2] *)
 
 end
 (** The functions defined in this module are the same as the main ones, except
