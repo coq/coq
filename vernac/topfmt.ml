@@ -289,6 +289,14 @@ let init_terminal_output ~color =
 let emacs_logger = gen_logger Emacs.quote_info Emacs.quote_warning
 
 (* This is specific to the toplevel *)
+
+type execution_phase =
+  | ParsingCommandLine
+  | Initialization
+  | LoadingPrelude
+  | LoadingRcFile
+  | InteractiveLoop
+
 let pr_loc loc =
     let fname = loc.Loc.fname in
     match fname with
@@ -301,13 +309,28 @@ let pr_loc loc =
 	   int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos) ++
 	   str":")
 
-let print_err_exn ?extra any =
+let pr_phase ?loc phase =
+  match phase, loc with
+  | LoadingRcFile, loc ->
+     (* For when all errors go through feedback:
+     str "While loading rcfile:" ++
+     Option.cata (fun loc -> fnl () ++ pr_loc loc) (mt ()) loc *)
+     Option.map pr_loc loc
+  | LoadingPrelude, loc ->
+     Some (str "While loading initial state:" ++ Option.cata (fun loc -> fnl () ++ pr_loc loc) (mt ()) loc)
+  | _, Some loc -> Some (pr_loc loc)
+  | ParsingCommandLine, _
+  | Initialization, _ -> None
+  | InteractiveLoop, _ ->
+     (* Note: interactive messages such as "foo is defined" are not located *)
+     None
+
+let print_err_exn phase any =
   let (e, info) = CErrors.push any in
   let loc = Loc.get_loc info in
-  let msg_loc = Option.cata pr_loc (mt ()) loc in
-  let pre_hdr = pr_opt_no_spc (fun x -> x) extra ++ msg_loc in
+  let pre_hdr = pr_phase ?loc phase in
   let msg = CErrors.iprint (e, info) ++ fnl () in
-  std_logger ~pre_hdr Feedback.Error msg
+  std_logger ?pre_hdr Feedback.Error msg
 
 let with_output_to_file fname func input =
   let channel = open_out (String.concat "." [fname; "out"]) in

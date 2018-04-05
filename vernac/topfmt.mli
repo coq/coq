@@ -53,8 +53,17 @@ val init_terminal_output : color:bool -> unit
 (** Error printing *)
 (* To be deprecated when we can fully move to feedback-based error
    printing. *)
+
+type execution_phase =
+  | ParsingCommandLine
+  | Initialization
+  | LoadingPrelude
+  | LoadingRcFile
+  | InteractiveLoop
+
 val pr_loc : Loc.t -> Pp.t
-val print_err_exn : ?extra:Pp.t -> exn -> unit
+val pr_phase : ?loc:Loc.t -> execution_phase -> Pp.t option
+val print_err_exn : execution_phase -> exn -> unit
 
 (** [with_output_to_file file f x] executes [f x] with logging
     redirected to a file [file] *)
