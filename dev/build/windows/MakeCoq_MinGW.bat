@@ -34,7 +34,7 @@ REM see -ocaml in ReadMe.txt
 SET INSTALLOCAML=N
 
 REM see -make in ReadMe.txt
-SET INSTALLMAKE=Y
+SET INSTALLMAKE=N
 
 REM see -destcyg in ReadMe.txt
 SET DESTCYG=C:\bin\cygwin_coq
@@ -267,7 +267,6 @@ IF "%INSTALLMODE%" == "mingwincygwin" (
 IF "%MAKEINSTALLER%" == "Y" (
   SET INSTALLMODE=relocatable
   SET INSTALLOCAML=Y
-  SET INSTALLMAKE=Y
 )
 
 REM ========== CONFIRM PARAMETERS ==========
