@@ -226,6 +226,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/BinNums.v
     theories/Numbers/NumPrelude.v
     theories/Numbers/NaryFunctions.v
+    theories/Numbers/AltBinNotations.v
     theories/Numbers/DecimalFacts.v
     theories/Numbers/DecimalNat.v
     theories/Numbers/DecimalPos.v

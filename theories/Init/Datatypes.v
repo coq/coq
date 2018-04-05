@@ -12,7 +12,6 @@ Set Implicit Arguments.
 
 Require Import Notations.
 Require Import Logic.
-Declare ML Module "nat_syntax_plugin".
 
 (********************************************************************)
 (** * Datatypes with zero and one element *)
