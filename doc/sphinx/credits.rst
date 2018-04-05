@@ -376,7 +376,7 @@ contributed by Jean Goubault was integrated in the basic theories.
 Pierre Courtieu developed a command and a tactic to reason on the
 inductive structure of recursively defined functions.
 
-Jacek Chrzszcz designed and implemented the module system of |Coq| whose
+Jacek Chrząszcz designed and implemented the module system of |Coq| whose
 foundations are in Judicaël Courant’s PhD thesis.
 
 The development was coordinated by C. Paulin.
@@ -478,7 +478,7 @@ Marché and Bruno Barras.
 Claude Marché coordinated the edition of the Reference Manual for |Coq|
 V8.0.
 
-Pierre Letouzey and Jacek Chrzszcz respectively maintained the
+Pierre Letouzey and Jacek Chrząszcz respectively maintained the
 extraction tool and module system of |Coq|.
 
 Jean-Christophe Filliâtre, Pierre Letouzey, Hugo Herbelin and other
