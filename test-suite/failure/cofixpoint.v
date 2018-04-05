@@ -1,9 +1,10 @@
 (* A bug in the guard checking of nested cofixpoints. *)
 (* Posted by Maxime Dénès on coqdev (Apr 9, 2014).    *)
 
-CoInductive CoFalse := .
+Set Primitive Projections.
+CoInductive CoFalse := { coFalse : False }.
 
-CoInductive CoTrue := I.
+CoInductive CoTrue := { coTrue : True }.
 
 Fail CoFixpoint loop : CoFalse :=
   (cofix f := loop with g := loop for f).

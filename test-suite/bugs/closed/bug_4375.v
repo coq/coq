@@ -89,8 +89,8 @@ Print a.
 Print b.
 *)
 
-Polymorphic CoInductive foo@{i} (T : Type@{i}) : Type@{i} :=
-| A : foo T -> foo T.
+Set Primitive Projections.
+Polymorphic CoInductive foo@{i} (T : Type@{i}) : Type@{i} := A { a : foo T }.
 
 Polymorphic CoFixpoint cg@{i} (t : Type@{i}) : foo@{i} t :=
   @A@{i} t (cg t).

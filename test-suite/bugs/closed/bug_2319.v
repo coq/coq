@@ -1,6 +1,7 @@
 Section S.
 
-  CoInductive A (X: Type) := mkA: A X -> A X.
+  Set Primitive Projections.
+  CoInductive A (X: Type) := mkA { a : A X }.
   Variable T : Type.
 
   (* This used to loop (bug #2319) *)

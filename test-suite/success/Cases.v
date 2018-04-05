@@ -1211,11 +1211,14 @@ Type
   end.
 
 
-
-CoInductive SStream (A : Set) : (nat -> A -> Prop) -> Type :=
-    scons :
-      forall (P : nat -> A -> Prop) (a : A),
-      P 0 a -> SStream A (fun n : nat => P (S n)) -> SStream A P.
+Set Primitive Projections.
+CoInductive SStream (A : Set) (P : nat -> A -> Prop) : Type :=
+    scons {
+      SStream_a : A;
+      SStream_hd : P 0 SStream_a;
+      SStream_tl : SStream A (fun n : nat => P (S n));
+    }.
+Unset Primitive Projections.
 Parameter B : Set.
 
 Type

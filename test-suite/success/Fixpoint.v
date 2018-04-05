@@ -11,23 +11,28 @@ Fixpoint f (n:nat) (m:=pred n) (l:listn m) (p:=S n) {struct l} : nat :=
 
 Eval compute in (f 2 (consn 0 0 niln)).
 
-CoInductive Stream : nat -> Set :=
-  Consn : forall n, nat -> Stream n -> Stream (S n).
+Set Primitive Projections.
+CoInductive Stream (n : nat) : Set :=
+  Consn {
+    Stream_hd : nat;
+    Stream_tl : Stream (pred n);
+    Stream_eq : 0 <> n;
+  }.
 
 CoFixpoint g (n:nat) (m:=pred n) (l:Stream m) (p:=S n) : Stream p :=
     match n return (let m:=pred n in forall l:Stream m, let p:=S n in Stream p)
     with
-    | O => fun l:Stream 0 => Consn O 0 l
+    | O => fun l:Stream 0 => Consn (S O) 0 l (O_S 0)
     | S n' =>
       fun l:Stream n' =>
       let l' :=
-        match l in Stream q return Stream (pred q) with Consn _ _ l => l end
+        match l in Stream _ return Stream _ with Consn _ _ l _ => l end
       in
-      let a := match l with Consn _ a l => a end in
-      Consn (S n') (S a) (g n' l')
+      let a := match l with Consn _ a l _ => a end in
+      Consn (S (S n')) (S a) (g n' l') (O_S (S n'))
    end l.
 
-Eval compute in (fun l => match g 2 (Consn 0 6 l) with Consn _ a _ => a end).
+Eval compute in (fun l => match g 2 (Consn (S 0) 6 l (O_S 0)) with Consn _ a _ _ => a end).
 
 (* Check inference of simple types in presence of non ambiguous
    dependencies (needs revision 10125) *)

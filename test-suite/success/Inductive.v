@@ -67,9 +67,11 @@ Check (fun x:I1 =>
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-CoInductive LList (A : Set) : Set :=
-  | LNil : LList A
-  | LCons : A -> LList A -> LList A.
+Set Primitive Projections.
+
+CoInductive LList (A : Set) : Set := { llist : option (prod A (LList A)) }.
+Definition LNil A := @Build_LList A None.
+Definition LCons A x l := @Build_LList A (Some (pair x l)).
 
 Arguments LNil [A].
 

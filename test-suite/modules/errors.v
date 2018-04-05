@@ -34,10 +34,10 @@ Module MA6 : SA6. Inductive TA6 (A B:Type):= CA6 : A -> TA6 A B. Fail End MA6.
 Reset Initial.
 
 Module Type SA7. Inductive TA7 (A:Type) := CA7 : A -> TA7 A. End SA7.
-Module MA7 : SA7. CoInductive TA7 (A:Type):= CA7 : A -> TA7 A. Fail End MA7.
+Module MA7 : SA7. Set Primitive Projections. CoInductive TA7 (A:Type):= CA7 { ca7 : A -> TA7 A }. Unset Primitive Projections. Fail End MA7.
 Reset Initial.
 
-Module Type SA8. CoInductive TA8 (A:Type) := CA8 : A -> TA8 A. End SA8.
+Module Type SA8. Set Primitive Projections. CoInductive TA8 (A:Type) := CA8 { ca8 : A -> TA8 A }. Unset Primitive Projections. End SA8.
 Module MA8 : SA8. Inductive TA8 (A:Type):= CA8 : A -> TA8 A. Fail End MA8.
 Reset Initial.
 

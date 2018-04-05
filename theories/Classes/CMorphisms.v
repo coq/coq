@@ -227,7 +227,7 @@ Ltac subrelation_tac T U :=
 
 Hint Extern 3 (@subrelation _ ?T ?U) => subrelation_tac T U : typeclass_instances.
 
-CoInductive apply_subrelation : Prop := do_subrelation.
+Variant apply_subrelation : Prop := do_subrelation.
 
 Ltac proper_subrelation :=
   match goal with
@@ -454,7 +454,7 @@ End GenericInstances.
 
 Class PartialApplication.
 
-CoInductive normalization_done : Prop := did_normalization.
+Variant normalization_done : Prop := did_normalization.
 
 Ltac partial_application_tactic :=
   let rec do_partial_apps H m cont := 

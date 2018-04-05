@@ -256,10 +256,7 @@ Definition S_nat_func : Functor Type_Cat Type_Cat :=
 
 Definition S_nat_alg_cat := Algebra_Cat S_nat_func.
 
-CoInductive CoNat : Set :=
-  | CoO : CoNat
-  | CoS : CoNat -> CoNat
-.
+CoInductive CoNat : Set := { coNat : option CoNat }.
 
 Definition S_nat_coalg_cat := @CoAlgebra_Cat Type_Cat S_nat_func.
 

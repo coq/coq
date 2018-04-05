@@ -1083,22 +1083,14 @@ Proof.
 Qed.
 
  Set Implicit Arguments.
+ Set Primitive Projections.
 
- CoInductive Stream (A:Set) : Set   :=
- |  Cons : A -> Stream A -> Stream A.
+ CoInductive Stream (A:Set) : Set   := Cons { head : A; tail : Stream A }.
 
- CoInductive LList (A: Set) : Set :=
- |  LNil : LList A
- |  LCons : A -> LList A -> LList A.
+ CoInductive LList (A: Set) : Set := { llist : option (prod A (LList A)) }.
 
-
-
-
-
- Definition head (A:Set)(s : Stream A) := match s with Cons a s' => a end.
-
- Definition tail (A : Set)(s : Stream A) :=
-      match s with Cons a s' => s' end.
+ Definition LNil {A : Set} := @Build_LList A None.
+ Definition LCons {A : Set} (x : A) l := Build_LList (Some (pair x l)).
 
  CoFixpoint repeat (A:Set)(a:A) : Stream A := Cons a (repeat a).
 
@@ -1113,12 +1105,10 @@ Eval simpl in (fun (A:Set)(a:A) => repeat a).
 Eval simpl in (fun (A:Set)(a:A) => head (repeat a)).
 
 
-CoInductive EqSt (A: Set) : Stream A -> Stream A -> Prop :=
-  eqst : forall s1 s2: Stream A,
-      head s1 = head s2 ->
-      EqSt (tail s1) (tail s2) ->
-      EqSt s1 s2.
-
+CoInductive EqSt (A : Set) (s1 s2: Stream A) : Prop := eqst {
+  eqst_hd : head s1 = head s2;
+  eqst_tl : EqSt (tail s1) (tail s2);
+}.
 
 Section Parks_Principle.
 Variable A : Set.
@@ -1151,7 +1141,7 @@ Proof.
 Qed.
 
 Ltac infiniteproof f :=
-  cofix f; constructor; [clear f| simpl; try (apply f; clear f)].
+  cofix f; constructor; [clear f| cbn; try (apply f; clear f)].
 
 
 Theorem map_iterate' : forall (A:Set)(f:A->A)(x:A),
@@ -1176,41 +1166,39 @@ Proof.
 Qed.
 
 
-Inductive Finite (A:Set) : LList A -> Prop :=
-|  Lnil_fin : Finite (LNil (A:=A))
-|  Lcons_fin : forall a l, Finite l -> Finite (LCons a l).
+Inductive Finite_node (A:Set) : option (A * LList A) -> Prop :=
+|  Lnil_fin : Finite_node None
+|  Lcons_fin : forall a l, Finite_node l.(llist) -> Finite_node (Some (a, l)).
 
-CoInductive Infinite  (A:Set) : LList A -> Prop :=
-| LCons_inf : forall a l, Infinite l -> Infinite (LCons a l).
+Definition Finite (A : Set) (l : LList A) := Finite_node l.(llist).
+
+CoInductive Infinite  (A:Set) (l : LList A) : Prop :=
+  LCons_inf { lcons_inf : exists hd tl, l.(llist) = Some (hd, tl) /\ Infinite tl }.
 
 Lemma LNil_not_Infinite : forall (A:Set), ~ Infinite (LNil (A:=A)).
 Proof.
-  intros A H;inversion H.
+  intros A H;inversion H as [[a [tl [e r]]]].
+  discriminate.
 Qed.
 
 Lemma Finite_not_Infinite : forall (A:Set)(l:LList A),
                                 Finite l -> ~ Infinite l.
 Proof.
- intros A l H; elim H.
- apply LNil_not_Infinite.
- intros a l0 F0 I0' I1.
- case I0'; inversion_clear I1.
- trivial.
+ intros A l H; unfold Finite in H.
+ remember l.(llist) as n; revert l Heqn.
+ induction H as [|hd tl]; intros l Heqn; intros [[hd' [tl' [e r]]]].
+ + congruence.
+ + eapply (IHFinite_node tl'); [congruence|trivial].
 Qed.
 
 Lemma Not_Finite_Infinite : forall (A:Set)(l:LList A),
                             ~ Finite l -> Infinite l.
 Proof.
  cofix H.
- destruct l.
- intro; absurd (Finite (LNil (A:=A)));[auto|constructor].
- constructor.
- apply H.
- red; intro H1;case H0.
- constructor.
- trivial.
+ intros A l Hf; constructor.
+ remember l.(llist) as n; destruct n as [[hd tl]|].
+ + exists hd, tl; split; [trivial|].
+   apply H; intros Hftl.
+   elim Hf; unfold Finite; rewrite <- Heqn; constructor; trivial.
+ + elim Hf; unfold Finite; rewrite <- Heqn; constructor.
 Qed.
-
-
-
-

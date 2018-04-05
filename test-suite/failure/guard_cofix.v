@@ -5,9 +5,10 @@ subterm3.v). Posted on Coq-club by Maxime Dénès (02/26/2014). *)
 
 (* First example *)
 
-CoInductive CoFalse : Prop := CF : CoFalse -> False -> CoFalse.
+Set Primitive Projections.
+CoInductive CoFalse : Prop := CF { cL : CoFalse; cR : False }.
 
-CoInductive Pandora : Prop := C : CoFalse -> Pandora.
+CoInductive Pandora : Prop := C { c : CoFalse }.
 
 Axiom prop_ext : forall P Q : Prop, (P<->Q) -> P = Q.
 
@@ -31,7 +32,7 @@ Lemma H : omega = CoFalse.
 Proof.
 apply prop_ext; constructor.
   induction 1; assumption.
-destruct 1; destruct H0.
+destruct 1; destruct cR0.
 Qed.
 
 Fail CoFixpoint loop' : CoFalse :=

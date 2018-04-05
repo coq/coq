@@ -44,7 +44,9 @@ fix even_pos_odd_pos 2 with (odd_pos_even_pos n (H:odd n) {struct H} : n >= 1).
   omega.
 Qed.
 
+Set Primitive Projections.
 CoInductive Inf := S { projS : Inf }.
+Unset Primitive Projections.
 Definition expand_Inf (x : Inf) := S (projS x).
 CoFixpoint inf := S inf.
 Eval compute in inf.
