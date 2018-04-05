@@ -297,13 +297,9 @@ type inline =
 type module_ast_inl = module_ast * inline
 type module_binder = bool option * lident list * module_ast_inl
 
-(** Cumulativity can be set globally, locally or unset locally and it
-   can not enabled at all. *)
-type cumulative_inductive_parsing_flag =
-  | GlobalCumulativity
-  | GlobalNonCumulativity
-  | LocalCumulativity
-  | LocalNonCumulativity
+(** [Some b] if locally enabled/disabled according to [b], [None] if
+    we should use the global flag. *)
+type vernac_cumulative = VernacCumulative | VernacNonCumulative
 
 (** {6 The type of vernacular expressions} *)
 
@@ -338,7 +334,7 @@ type nonrec vernac_expr =
   | VernacExactProof of constr_expr
   | VernacAssumption of (Decl_kinds.discharge * Decl_kinds.assumption_object_kind) *
       inline * (ident_decl list * constr_expr) with_coercion list
-  | VernacInductive of cumulative_inductive_parsing_flag * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
+  | VernacInductive of vernac_cumulative option * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of Decl_kinds.discharge * (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of Decl_kinds.discharge * (cofixpoint_expr * decl_notation list) list
   | VernacScheme of (lident option * scheme) list
