@@ -1845,7 +1845,7 @@ let build_inversion_problem loc env sigma tms t =
   (* [pb] is the auxiliary pattern-matching serving as skeleton for the
       return type of the original problem Xi *)
   let s' = Retyping.get_sort_of env sigma t in
-  let sigma, s = Evd.new_sort_variable univ_flexible_alg sigma in
+  let sigma, s = Evd.new_sort_variable univ_flexible sigma in
   let sigma = Evd.set_leq_sort env sigma s' s in
   let evdref = ref sigma in
   let pb =
