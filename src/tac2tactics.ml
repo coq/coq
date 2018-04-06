@@ -106,9 +106,9 @@ let apply adv ev cb cl =
 let mk_destruction_arg = function
 | ElimOnConstr c ->
   let c = c >>= fun c -> return (mk_with_bindings c) in
-  Misctypes.ElimOnConstr (delayed_of_tactic c)
-| ElimOnIdent id -> Misctypes.ElimOnIdent CAst.(make id)
-| ElimOnAnonHyp n -> Misctypes.ElimOnAnonHyp n
+  Tactics.ElimOnConstr (delayed_of_tactic c)
+| ElimOnIdent id -> Tactics.ElimOnIdent CAst.(make id)
+| ElimOnAnonHyp n -> Tactics.ElimOnAnonHyp n
 
 let mk_induction_clause (arg, eqn, as_, occ) =
   let eqn = Option.map (fun ipat -> CAst.make @@ mk_intro_pattern_naming ipat) eqn in
@@ -342,9 +342,9 @@ let on_destruction_arg tac ev arg =
       Proofview.tclEVARMAP >>= fun sigma' ->
       let flags = tactic_infer_flags ev in
       let (sigma', c) = Unification.finish_evar_resolution ~flags env sigma' (sigma, c) in
-      Proofview.tclUNIT (Some sigma', Misctypes.ElimOnConstr (c, lbind))
-    | ElimOnIdent id -> Proofview.tclUNIT (None, Misctypes.ElimOnIdent CAst.(make id))
-    | ElimOnAnonHyp n -> Proofview.tclUNIT (None, Misctypes.ElimOnAnonHyp n)
+      Proofview.tclUNIT (Some sigma', Tactics.ElimOnConstr (c, lbind))
+    | ElimOnIdent id -> Proofview.tclUNIT (None, Tactics.ElimOnIdent CAst.(make id))
+    | ElimOnAnonHyp n -> Proofview.tclUNIT (None, Tactics.ElimOnAnonHyp n)
     in
     arg >>= fun (sigma', arg) ->
     let arg = Some (clear, arg) in
@@ -427,11 +427,11 @@ let inversion knd arg pat ids =
   let inversion _ arg =
     begin match arg with
     | None -> assert false
-    | Some (_, Misctypes.ElimOnAnonHyp n) ->
+    | Some (_, Tactics.ElimOnAnonHyp n) ->
       Inv.inv_clause knd pat ids (AnonHyp n)
-    | Some (_, Misctypes.ElimOnIdent {CAst.v=id}) ->
+    | Some (_, Tactics.ElimOnIdent {CAst.v=id}) ->
       Inv.inv_clause knd pat ids (NamedHyp id)
-    | Some (_, Misctypes.ElimOnConstr c) ->
+    | Some (_, Tactics.ElimOnConstr c) ->
       let open Misctypes in
       let anon = CAst.make @@ IntroNaming IntroAnonymous in
       Tactics.specialize c (Some anon) >>= fun () ->
