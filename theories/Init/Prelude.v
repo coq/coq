@@ -19,8 +19,11 @@ Require Export Peano.
 Require Export Coq.Init.Wf.
 Require Export Coq.Init.Tactics.
 Require Export Coq.Init.Tauto.
-(* Initially available plugins
-   (+ nat_syntax_plugin loaded in Datatypes) *)
+(* Some initially available plugins. See also:
+   - ltac_plugin (in Notations)
+   - nat_syntax_plugin (in Datatypes)
+   - tauto_plugin (in Tauto).
+*)
 Declare ML Module "cc_plugin".
 Declare ML Module "ground_plugin".
 (* Default substrings not considered by queries like SearchAbout *)
