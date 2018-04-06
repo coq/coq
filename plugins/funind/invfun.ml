@@ -969,7 +969,7 @@ let functional_inversion kn hid fconst f_correct : Tacmach.tactic =
 	    Proofview.V82.of_tactic (generalize [applist(f_correct,(Array.to_list f_args)@[res;mkVar hid])]);
 	    thin [hid];
 	    Proofview.V82.of_tactic (Simple.intro hid);
-	    Proofview.V82.of_tactic (Inv.inv FullInversion None (NamedHyp hid));
+            Proofview.V82.of_tactic (Inv.inv Inv.FullInversion None (NamedHyp hid));
 	    (fun g ->
 	       let new_ids = List.filter (fun id -> not (Id.Set.mem id old_ids)) (pf_ids_of_hyps g) in
 	       tclMAP (revert_graph kn pre_tac)  (hid::new_ids)  g

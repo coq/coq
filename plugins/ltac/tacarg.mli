@@ -23,7 +23,7 @@ val wit_tactic : (raw_tactic_expr, glob_tactic_expr, Geninterp.Val.t) genarg_typ
 val wit_ltac : (raw_tactic_expr, glob_tactic_expr, unit) genarg_type
 
 val wit_destruction_arg :
-  (constr_expr with_bindings Tacexpr.destruction_arg,
-   glob_constr_and_expr with_bindings Tacexpr.destruction_arg,
-   delayed_open_constr_with_bindings Tacexpr.destruction_arg) genarg_type
+  (constr_expr with_bindings Tactics.destruction_arg,
+   glob_constr_and_expr with_bindings Tactics.destruction_arg,
+   delayed_open_constr_with_bindings Tactics.destruction_arg) genarg_type
 

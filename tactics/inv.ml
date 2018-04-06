@@ -64,6 +64,11 @@ let var_occurs_in_pf gl id =
 
 type inversion_status = Dep of constr option | NoDep
 
+type inversion_kind =
+  | SimpleInversion
+  | FullInversion
+  | FullInversionClear
+
 let compute_eqn env sigma n i ai =
   (mkRel (n-i),get_type_of env sigma (mkRel (n-i)))
 
