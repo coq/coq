@@ -465,6 +465,10 @@ val map_return_predicate_with_full_binders : ((constr, constr) Context.Rel.Decla
 
 val fold : ('a -> constr -> 'a) -> 'a -> constr -> 'a
 
+val fold_with_full_binders :
+  (rel_declaration -> 'a -> 'a) -> ('a -> 'b -> constr -> 'b) ->
+    'a -> 'b -> constr -> 'b
+
 (** [map f c] maps [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
    not specified *)
