@@ -52,8 +52,11 @@ let () =
 
 (* Rewriting orientation *)
 
-let _ = Metasyntax.add_token_obj "<-"
-let _ = Metasyntax.add_token_obj "->"
+let _ =
+  Mltop.declare_cache_obj
+    (fun () -> Metasyntax.add_token_obj "<-";
+               Metasyntax.add_token_obj "->")
+    "ltac_plugin"
 
 let pr_orient _prc _prlc _prt = function
   | true -> Pp.mt ()
