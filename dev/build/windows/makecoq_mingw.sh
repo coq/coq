@@ -142,18 +142,22 @@ LOGS=`pwd`/buildlogs
 # The current log target (first part of the log file name)
 LOGTARGET=other
 
+# Log command output - take log target name from command name (like log1 make => log target is "<module>-make")
 log1() {
   "$@" > $LOGS/$LOGTARGET-$1.log 2> $LOGS/$LOGTARGET-$1.err
 }
 
+# Log command output - take log target name from command name and first argument (like log2 make install => log target is "<module>-make-install")
 log2() {
   "$@" > $LOGS/$LOGTARGET-$1-$2.log 2> $LOGS/$LOGTARGET-$1-$2.err
 }
 
+# Log command output - take log target name from command name and second argument (like log_1_3 ocaml setup.ml -configure => log target is "<module>-ocaml--configure")
 log_1_3() {
   "$@" > $LOGS/$LOGTARGET-$1-$3.log 2> $LOGS/$LOGTARGET-$1-$3.err
 }
 
+# Log command output - log target name is first argument (like logn untar tar xvaf ... => log target is "<module>-untar")
 logn() {
   LOGTARGETEX=$1
   shift
@@ -1281,7 +1285,6 @@ function get_cygwin_mingw_sources {
 
 function make_coq_installer {
   make_coq
-  make_mingw_make
   get_cygwin_mingw_sources
 
   # Prepare the file lists for the installer. We created to file list dumps of the target folder during the build:
@@ -1334,12 +1337,13 @@ function make_coq_installer {
 }
 
 ###################### ADDONS #####################
+
 function make_addon_bignums {
-  if build_prep https://github.com/coq/bignums/archive/ V8.8+beta1 zip 1; then
+  if build_prep https://github.com/coq/bignums/archive/ V8.8+beta1 zip 1 bignums-8.8+beta1; then
     # To make command lines shorter :-(
     echo 'COQ_SRC_SUBDIRS:=$(filter-out plugins/%,$(COQ_SRC_SUBDIRS)) plugins/syntax' >> Makefile.coq.local
-    logn make make all
-    logn make-install make install
+    log1 make all
+    log2 make install
     build_post
   fi
 }
