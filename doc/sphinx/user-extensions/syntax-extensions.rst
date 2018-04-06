@@ -10,12 +10,12 @@ parses and prints objects, i.e. the translations between the concrete
 and internal representations of terms and commands.
 
 The main commands to provide custom symbolic notations for terms are
-``Notation`` and ``Infix``. They are described in section 12.1. There is also a
+``Notation`` and ``Infix``. They are described in section :ref:`Notations`. There is also a
 variant of ``Notation`` which does not modify the parser. This provides with a
 form of abbreviation and it is described in Section :ref:`Abbreviations`. It is
 sometimes expected that the same symbolic notation has different meanings in
 different contexts. To achieve this form of overloading, |Coq| offers a notion
-of interpretation scope. This is described in Section :ref:`scopes`.
+of interpretation scope. This is described in Section :ref:`Scopes`.
 
 The main command to provide custom notations for tactics is ``Tactic Notation``.
 It is described in Section :ref:`TacticNotation`.
@@ -23,6 +23,8 @@ It is described in Section :ref:`TacticNotation`.
 .. coqtop:: none
 
    Set Printing Depth 50.
+
+.. _Notations:
 
 Notations
 ---------
@@ -68,7 +70,7 @@ have to be given.
 .. note::
 
    The right-hand side of a notation is interpreted at the time the notation is
-   given. In particular, disambiguiation of constants, implicit arguments (see
+   given. In particular, disambiguation of constants, implicit arguments (see
    Section :ref:`ImplicitArguments`), coercions (see Section :ref:`Coercions`),
    etc. are resolved at the time of the declaration of the notation.
 
@@ -689,8 +691,7 @@ side. E.g.:
 Summary
 ~~~~~~~
 
-Syntax of notations
-~~~~~~~~~~~~~~~~~~~
+**Syntax of notations**
 
 The different syntactic variants of the command Notation are given on the
 following figure. The optional :token:`scope` is described in the Section 12.2.
@@ -743,8 +744,7 @@ following figure. The optional :token:`scope` is described in the Section 12.2.
           given to some notation, say ``"{ y } & { z }"`` in fact applies to the
           underlying ``"{ x }"``\-free rule which is ``"y & z"``).
 
-Persistence of notations
-~~~~~~~~~~~~~~~~~~~~~~~~
+**Persistence of notations**
 
 Notations do not survive the end of sections.
 
@@ -752,6 +752,8 @@ Notations do not survive the end of sections.
 
    Notations survive modules unless the command ``Local Notation`` is used instead
    of ``Notation``.
+
+.. _Scopes:
 
 Interpretation scopes
 ----------------------
@@ -1125,6 +1127,8 @@ Displaying informations about scopes
    class of all the existing interpretation scopes. It also displays the
    lonely notations.
 
+.. _Abbreviations:
+
 Abbreviations
 --------------
 
@@ -1186,6 +1190,8 @@ Abbreviations
    Abbreviations do not survive the end of sections. No typing of the
    denoted expression is performed at definition time. Type-checking is
    done only at the time of use of the abbreviation.
+
+.. _TacticNotation:
 
 Tactic Notations
 -----------------
