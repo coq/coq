@@ -3055,7 +3055,6 @@ let add ~doc ~ontop ?newtip verb { CAst.loc; v=ast } =
        str ") than the tip: " ++ str (Stateid.to_string cur_tip) ++ str "." ++ fnl () ++
        str "This is not supported yet, sorry.");
   let indentation, strlen = compute_indentation ?loc ontop in
-  CWarnings.set_current_loc loc;
   (* XXX: Classifiy vernac should be moved inside process transaction *)
   let clas = Vernac_classifier.classify_vernac ast in
   let aast = { verbose = verb; indentation; strlen; loc; expr = ast } in
@@ -3079,7 +3078,6 @@ let query ~doc ~at ~route s =
       while true do
         let { CAst.loc; v=ast } = parse_sentence ~doc at s in
         let indentation, strlen = compute_indentation ?loc at in
-        CWarnings.set_current_loc loc;
         let clas = Vernac_classifier.classify_vernac ast in
         let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
         match clas with
