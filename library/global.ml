@@ -259,6 +259,9 @@ let is_type_in_type r =
   | IndRef ind -> Environ.type_in_type_ind ind env
   | ConstructRef cstr -> Environ.type_in_type_ind (inductive_of_constructor cstr) env
 
+let current_modpath () =
+  Safe_typing.current_modpath (safe_env ())
+
 let current_dirpath () = 
   Safe_typing.current_dirpath (safe_env ())
 

@@ -157,6 +157,8 @@ val set_strategy : Constant.t Names.tableKey -> Conv_oracle.level -> unit
 
 (* Modifies the global state, registering new universes *)
 
+val current_modpath : unit -> ModPath.t
+
 val current_dirpath : unit -> DirPath.t
 
 val with_global : (Environ.env -> DirPath.t -> 'a Univ.in_universe_context_set) -> 'a
