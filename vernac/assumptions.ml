@@ -69,16 +69,15 @@ let rec fields_of_functor f subs mp0 args = function
       fields_of_functor f subs mp0 args e
 
 let rec lookup_module_in_impl mp =
-  try Global.lookup_module mp
-  with Not_found ->
-    (* The module we search might not be exported by its englobing module(s).
-       We access the upper layer, and then do a manual search *)
     match mp with
-    | MPfile _ -> raise Not_found (* can happen if mp is an open module *)
+    | MPfile _ -> raise Not_found
     | MPbound _ -> assert false
     | MPdot (mp',lab') ->
-       let fields = memoize_fields_of_mp mp' in
-       search_mod_label lab' fields
+       if ModPath.equal mp' (Global.current_modpath ()) then
+         Global.lookup_module mp
+       else
+         let fields = memoize_fields_of_mp mp' in
+         search_mod_label lab' fields
 
 and memoize_fields_of_mp mp =
   try MPmap.find mp !modcache
