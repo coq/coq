@@ -35,12 +35,15 @@ val make_cases : string -> string list list
 
 (* XXX STATE: this type hints that restoring the state should be the
    caller's responsibility *)
-val with_fail : Vernacstate.t -> bool -> (unit -> unit) -> unit
+val with_fail : st:Vernacstate.t -> bool -> (unit -> Proof_global.t option) -> Proof_global.t option
 
 val command_focus : unit Proof.focus_kind
 
 val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->
   Evd.evar_map * Redexpr.red_expr) Hook.t
+
+(** Helper *)
+val vernac_require_open_proof : pstate:Proof_global.t option -> (pstate:Proof_global.t -> 'a) -> 'a
 
 (* Flag set when the test-suite is called. Its only effect to display
    verbose information for `Fail` *)

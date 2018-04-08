@@ -191,8 +191,8 @@ end
     from cycling. *)
 let make_prompt () =
   try
-    (Names.Id.to_string (Proof_global.get_current_proof_name ())) ^ " < "
-  with Proof_global.NoCurrentProof ->
+    (Names.Id.to_string (Vernacstate.Proof_global.get_current_proof_name ())) ^ " < "
+  with Vernacstate.Proof_global.NoCurrentProof ->
     "Coq < "
 
 (* the coq prompt added to the default one when in emacs mode
@@ -353,7 +353,7 @@ let print_anyway c =
 let top_goal_print ~doc c oldp newp =
   try
     let proof_changed = not (Option.equal cproof oldp newp) in
-    let print_goals = proof_changed && Proof_global.there_are_pending_proofs () ||
+    let print_goals = proof_changed && Vernacstate.Proof_global.there_are_pending_proofs () ||
                       print_anyway c in
     if not !Flags.quiet && print_goals then begin
       let dproof = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
