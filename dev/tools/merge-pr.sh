@@ -110,6 +110,26 @@ if [ "$BASE_BRANCH" != "coq:$CURRENT_LOCAL_BRANCH" ]; then
   ask_confirmation
 fi;
 
+# Sanity check: the local branch is up-to-date with upstream
+
+LOCAL_BRANCH_COMMIT=$(git rev-parse HEAD)
+UPSTREAM_COMMIT=$(git rev-parse @{u})
+if [ "$LOCAL_BRANCH_COMMIT" != "$UPSTREAM_COMMIT" ]; then
+
+    # Is it just that the upstream branch is behind?
+    # It could just be that we merged other PRs and we didn't push yet
+
+    if git merge-base --is-ancestor -- "$UPSTREAM_COMMIT" "$LOCAL_BRANCH_COMMIT"; then
+        warning "Your branch is ahead of ${REMOTE}."
+        warning "You should see this warning only if you've just merged another PR and did not push yet."
+        ask_confirmation
+    else
+        error "Local branch is not up-to-date with ${REMOTE}."
+        error "Pull before merging."
+        ask_confirmation
+    fi
+fi
+
 # Sanity check: CI failed
 
 STATUS=$(curl -s "$API/commits/$COMMIT/status")
