@@ -16,29 +16,29 @@ open Environ
 open Decl_kinds
 
 (** {6 ... } *)
+
+exception NoSuchGoal
+
 (** [get_goal_context n] returns the context of the [n]th subgoal of
    the current focused proof or raises a [UserError] if there is no
    focused proof or if there is no more subgoals *)
 
-val get_goal_context : int -> Evd.evar_map * env
+val get_goal_context : Proof_global.t -> int -> Evd.evar_map * env
 
 (** [get_current_goal_context ()] works as [get_goal_context 1] *)
-
-val get_current_goal_context : unit -> Evd.evar_map * env
+val get_current_goal_context : Proof_global.t -> Evd.evar_map * env
 
 (** [get_current_context ()] returns the context of the
   current focused goal. If there is no focused goal but there
   is a proof in progress, it returns the corresponding evar_map.
   If there is no pending proof then it returns the current global
   environment and empty evar_map. *)
-
-val get_current_context : ?p:Proof.t -> unit -> Evd.evar_map * env
+val get_current_context : Proof_global.t -> Evd.evar_map * env
 
 (** {6 ... } *)
 
 (** [solve (SelectNth n) tac] applies tactic [tac] to the [n]th
-    subgoal of the current focused proof or raises a [UserError] if no
-    proof is focused or if there is no [n]th subgoal. [solve SelectAll
+    subgoal of the current focused proof. [solve SelectAll
     tac] applies [tac] to all subgoals. *)
 
 val solve : ?with_end_tac:unit Proofview.tactic ->
@@ -46,11 +46,10 @@ val solve : ?with_end_tac:unit Proofview.tactic ->
       Proof.t -> Proof.t * bool
 
 (** [by tac] applies tactic [tac] to the 1st subgoal of the current
-    focused proof or raises a UserError if there is no focused proof or
-    if there is no more subgoals.
+    focused proof.
     Returns [false] if an unsafe tactic has been used. *)
 
-val by : unit Proofview.tactic -> bool
+val by : unit Proofview.tactic -> Proof_global.t -> Proof_global.t * bool
 
 (** Option telling if unification heuristics should be used. *)
 val use_unification_heuristics : unit -> bool
@@ -60,7 +59,7 @@ val use_unification_heuristics : unit -> bool
    UserError if no proof is focused or if there is no such [n]th
    existential variable *)
 
-val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> unit
+val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> Proof_global.t -> Proof_global.t
 
 (** [build_by_tactic typ tac] returns a term of type [typ] by calling
     [tac]. The return boolean, if [false] indicates the use of an unsafe
