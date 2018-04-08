@@ -14,11 +14,13 @@ open Entries
 open Globnames
 open Impargs
 
+(*
 let warn_definition_not_visible =
   CWarnings.create ~name:"definition-not-visible" ~category:"implicits"
     Pp.(fun ident ->
         strbrk "Section definition " ++
         Names.Id.print ident ++ strbrk " is not visible from current goals")
+*)
 
 let warn_local_declaration =
   CWarnings.create ~name:"local-declaration" ~category:"scope"
@@ -38,7 +40,8 @@ let declare_definition ident (local, p, k) ce pl imps hook =
   let gr = match local with
   | Discharge when Lib.sections_are_opened () ->
       let _ = declare_variable ident (Lib.cwd(), SectionLocalDef ce, IsDefinition k) in
-      let () = if Proof_global.there_are_pending_proofs () then warn_definition_not_visible ident in
+      (* XXX *)
+      (* let () = if Proof_global.there_are_pending_proofs () then warn_definition_not_visible ident in *)
       VarRef ident
   | Discharge | Local | Global ->
       let local = get_locality ident ~kind:"definition" local in

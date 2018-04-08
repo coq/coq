@@ -40,6 +40,7 @@ val declare_instance_constant :
   unit
 
 val new_instance :
+  ?ontop:Proof_global.t ->
   ?abstract:bool -> (** Not abstract by default. *)
   ?global:bool -> (** Not global by default. *)
   ?refine:bool -> (** Allow refinement *)
@@ -52,7 +53,8 @@ val new_instance :
   ?tac:unit Proofview.tactic  ->
   ?hook:(GlobRef.t -> unit) ->
   Hints.hint_info_expr ->
-  Id.t
+  (* May open a proof *)
+  Id.t * Proof_global.t option
 
 (** Setting opacity *)
 

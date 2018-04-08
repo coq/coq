@@ -30,7 +30,7 @@ val make_cases : string -> string list list
 
 (* XXX STATE: this type hints that restoring the state should be the
    caller's responsibility *)
-val with_fail : Vernacstate.t -> bool -> (unit -> unit) -> unit
+val with_fail : st:Vernacstate.t -> bool -> (unit -> Proof_global.t option) -> Proof_global.t option
 
 val command_focus : unit Proof.focus_kind
 

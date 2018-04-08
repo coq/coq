@@ -9,9 +9,9 @@
 (************************************************************************)
 
 type t = {
-  system  : States.state;        (* summary + libstack *)
-  proof   : Proof_global.t;      (* proof state *)
-  shallow : bool                 (* is the state trimmed down (libstack) *)
+  system  : States.state;          (* summary + libstack *)
+  proof   : Proof_global.t option; (* proof state *)
+  shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 
 let s_cache = ref None
@@ -33,11 +33,10 @@ let do_if_not_cached rf f v =
   | Some _ ->
     ()
 
-let freeze_interp_state marshallable =
+let freeze_interp_state ~pstate marshallable =
   { system = update_cache s_cache (States.freeze ~marshallable);
-    proof  = update_cache s_proof (Proof_global.freeze ~marshallable);
+    proof  = pstate;
     shallow = marshallable = `Shallow }
 
-let unfreeze_interp_state { system; proof } =
-  do_if_not_cached s_cache States.unfreeze system;
-  do_if_not_cached s_proof Proof_global.unfreeze proof
+let unfreeze_interp_state { system } =
+  do_if_not_cached s_cache States.unfreeze system

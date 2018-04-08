@@ -532,7 +532,7 @@ let match_goals ot nt =
 
 let get_proof_context (p : Proof.t) =
   let goals, _, _, _, sigma = Proof.proof p in
-  sigma, Refiner.pf_env { it = List.(hd goals); sigma }
+  sigma, Refiner.pf_env { Evd.it = List.(hd goals); sigma }
 
 let to_constr pf =
   let open CAst in

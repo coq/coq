@@ -9,12 +9,12 @@
 (************************************************************************)
 
 type t = {
-  system  : States.state;        (* summary + libstack *)
-  proof   : Proof_global.t;      (* proof state *)
-  shallow : bool                 (* is the state trimmed down (libstack) *)
+  system  : States.state;          (* summary + libstack *)
+  proof   : Proof_global.t option; (* proof state *)
+  shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 
-val freeze_interp_state : Summary.marshallable -> t
+val freeze_interp_state : pstate:Proof_global.t option -> Summary.marshallable -> t
 val unfreeze_interp_state : t -> unit
 
 (* WARNING: Do not use, it will go away in future releases *)

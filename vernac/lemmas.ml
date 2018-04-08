@@ -209,8 +209,11 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook =
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
-let fresh_name_for_anonymous_theorem () =
-  let avoid = Id.Set.of_list (Proof_global.get_all_proof_names ()) in
+let fresh_name_for_anonymous_theorem ~pstate =
+  let avoid = match pstate with
+  | None -> Id.Set.empty
+  | Some pstate -> Id.Set.of_list (Proof_global.get_all_proof_names pstate)
+  in
   next_global_ident_away default_thm_id avoid
 
 let check_name_freshness locality {CAst.loc;v=id} : unit =
@@ -220,7 +223,7 @@ let check_name_freshness locality {CAst.loc;v=id} : unit =
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
 
-let save_remaining_recthms (locality,p,kind) norm univs body opaq i (id,(t_i,(_,imps))) =
+let save_remaining_recthms env sigma (locality,p,kind) norm univs body opaq i (id,(t_i,(_,imps))) =
   let t_i = norm t_i in
   let k = IsAssumption Conjectural in
   match body with
@@ -256,7 +259,6 @@ let save_remaining_recthms (locality,p,kind) norm univs body opaq i (id,(t_i,(_,
         | Lambda(na,ty,t) -> mkLambda(na,ty,body_i t)
         | App (t, args) -> mkApp (body_i t, args)
         | _ ->
-          let sigma, env = Pfedit.get_current_context () in
           anomaly Pp.(str "Not a proof by induction: " ++ Printer.pr_constr_env env sigma body ++ str ".") in
       let body_i = body_i body in
       match locality with
@@ -331,7 +333,7 @@ let initialize_named_context_for_proof () =
       let d = if variable_opacity id then NamedDecl.LocalAssum (id, NamedDecl.get_type d) else d in
       Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
 
-let start_proof id ?pl kind sigma ?terminator ?sign c ?(compute_guard=[]) hook =
+let start_proof ?ontop id ?pl kind sigma ?terminator ?sign c ?(compute_guard=[]) hook =
   let terminator = match terminator with
   | None -> standard_proof_terminator compute_guard hook
   | Some terminator -> terminator compute_guard hook
@@ -344,7 +346,7 @@ let start_proof id ?pl kind sigma ?terminator ?sign c ?(compute_guard=[]) hook =
   let goals = [ Global.env_of_context sign , c ] in
   Proof_global.start_proof sigma id ?pl kind goals terminator
 
-let start_proof_univs id ?pl kind sigma ?terminator ?sign c ?(compute_guard=[]) hook =
+let start_proof_univs ?ontop id ?pl kind sigma ?terminator ?sign c ?(compute_guard=[]) hook =
   let terminator = match terminator with
   | None -> universe_proof_terminator compute_guard hook
   | Some terminator -> terminator compute_guard hook
@@ -371,7 +373,7 @@ let rec_tac_initializer finite guard thms snl =
        | (id,n,_)::l -> Tactics.mutual_fix id n l 0
        | _ -> assert false
 
-let start_proof_with_initialization kind sigma decl recguard thms snl hook =
+let start_proof_with_initialization ?ontop kind sigma decl recguard thms snl hook =
   let intro_tac (_, (_, (ids, _))) = Tactics.auto_intros_tac ids in
   let init_tac,guard = match recguard with
   | Some (finite,guard,init_tac) ->
@@ -401,18 +403,20 @@ let start_proof_with_initialization kind sigma decl recguard thms snl hook =
             let norm c = EConstr.to_constr (Evd.from_ctx ctx) c in
             let body = Option.map EConstr.of_constr body in
             let uctx = UState.check_univ_decl ~poly:(pi2 kind) ctx decl in
-            List.map_i (save_remaining_recthms kind norm uctx body opaq) 1 other_thms in
+            let env = Global.env () in
+            List.map_i (save_remaining_recthms env sigma kind norm uctx body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
 	  call_hook (fun exn -> exn) hook strength ref) thms_data in
-      start_proof_univs id ~pl:decl kind sigma t (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard;
-      ignore (Proof_global.with_current_proof (fun _ p ->
+      let pstate = start_proof_univs id ~pl:decl kind sigma t (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard in
+      let pstate, _ = Proof_global.with_current_proof (fun _ p ->
           match init_tac with
           | None -> p,(true,[])
-          | Some tac -> Proof.run_tactic Global.(env ()) tac p))
+          | Some tac -> Proof.run_tactic Global.(env ()) tac p) pstate in
+      pstate
 
-let start_proof_com ?inference_hook kind thms hook =
+let start_proof_com ?ontop ?inference_hook kind thms hook =
   let env0 = Global.env () in
   let decl = fst (List.hd thms) in
   let evd, decl = Constrexpr_ops.interp_univ_decl_opt env0 (snd decl) in
@@ -444,7 +448,7 @@ let start_proof_com ?inference_hook kind thms hook =
     else (* We fix the variables to ensure they won't be lowered to Set *)
       Evd.fix_undefined_variables evd
   in
-    start_proof_with_initialization kind evd decl recguard thms snl hook
+    start_proof_with_initialization ?ontop kind evd decl recguard thms snl hook
 
 (* Saving a proof *)
 
@@ -459,7 +463,7 @@ let _ =
       optread  = (fun () -> !keep_admitted_vars);
       optwrite = (fun b -> keep_admitted_vars := b) }
 
-let save_proof ?proof = function
+let save_proof ?proof ~pstate = function
   | Vernacexpr.Admitted ->
       let pe =
         let open Proof_global in
@@ -475,16 +479,16 @@ let save_proof ?proof = function
             let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
             Admitted(id, k, (sec_vars, (typ, ctx), None), universes)
         | None ->
-            let pftree = Proof_global.give_me_the_proof () in
-            let id, k, typ = Pfedit.current_proof_statement () in
+            let pftree = Proof_global.give_me_the_proof pstate in
+            let id, k, typ = Pfedit.current_proof_statement pstate in
             let typ = EConstr.Unsafe.to_constr typ in
             let universes = Proof.initial_euctx pftree in
             (* This will warn if the proof is complete *)
             let pproofs, _univs =
-              Proof_global.return_proof ~allow_partial:true () in
+              Proof_global.return_proof ~allow_partial:true pstate in
             let sec_vars =
               if not !keep_admitted_vars then None
-              else match Proof_global.get_used_variables(), pproofs with
+              else match Proof_global.get_used_variables pstate, pproofs with
               | Some _ as x, _ -> x
               | None, (pproof, _) :: _ -> 
                   let env = Global.env () in
@@ -492,19 +496,21 @@ let save_proof ?proof = function
                   let ids_def = Environ.global_vars_set env pproof in
                   Some (Environ.keep_hyps env (Id.Set.union ids_typ ids_def))
               | _ -> None in
-	    let decl = Proof_global.get_universe_decl () in
+	    let decl = Proof_global.get_universe_decl pstate in
             let poly = pi2 k in
             let ctx = UState.check_univ_decl ~poly universes decl in
             Admitted(id,k,(sec_vars, (typ, ctx), None), universes)
       in
-      Proof_global.apply_terminator (Proof_global.get_terminator ()) pe
+      Proof_global.apply_terminator (Proof_global.get_terminator pstate) pe;
+      Some pstate
   | Vernacexpr.Proved (is_opaque,idopt) ->
       let (proof_obj,terminator) =
         match proof with
         | None ->
-            Proof_global.close_proof ~keep_body_ucst_separate:false (fun x -> x)
+          Proof_global.close_proof ~keep_body_ucst_separate:false (fun x -> x) pstate
         | Some proof -> proof
       in
       (* if the proof is given explicitly, nothing has to be deleted *)
-      if Option.is_empty proof then Proof_global.discard_current ();
-      Proof_global.(apply_terminator terminator (Proved (is_opaque,idopt,proof_obj)))
+      let pstate = if Option.is_empty proof then Proof_global.discard_current pstate else Some pstate in
+      Proof_global.(apply_terminator terminator (Proved (is_opaque,idopt,proof_obj)));
+      pstate
