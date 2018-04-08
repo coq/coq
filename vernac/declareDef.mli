@@ -13,16 +13,25 @@ open Decl_kinds
 
 val get_locality : Id.t -> kind:string -> Decl_kinds.locality -> bool
 
-val declare_definition : Id.t -> definition_kind ->
-  ?hook:Lemmas.declaration_hook ->
-  Safe_typing.private_constants Entries.definition_entry -> UnivNames.universe_binders -> Impargs.manual_implicits ->
-  GlobRef.t
+val declare_definition
+  :  ontop:Lemmas.t option
+  -> Id.t -> definition_kind
+  -> ?hook:Lemmas.declaration_hook
+  -> Safe_typing.private_constants Entries.definition_entry
+  -> UnivNames.universe_binders
+  -> Impargs.manual_implicits
+  -> GlobRef.t
 
-val declare_fix : ?opaque:bool -> definition_kind ->
-  UnivNames.universe_binders -> Entries.universes_entry ->
-  Id.t -> Safe_typing.private_constants Entries.proof_output ->
-  Constr.types -> Impargs.manual_implicits ->
-  GlobRef.t
+val declare_fix
+  :  ontop:Lemmas.t option
+  -> ?opaque:bool -> definition_kind
+  -> UnivNames.universe_binders
+  -> Entries.universes_entry
+  -> Id.t
+  -> Safe_typing.private_constants Entries.proof_output
+  -> Constr.types
+  -> Impargs.manual_implicits
+  -> GlobRef.t
 
 val prepare_definition : allow_evars:bool ->
   ?opaque:bool -> ?inline:bool -> poly:bool ->

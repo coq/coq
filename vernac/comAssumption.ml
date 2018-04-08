@@ -51,11 +51,12 @@ match local with
   let decl = (Lib.cwd(), SectionLocalAssum ((c,ctx),p,impl), IsAssumption kind) in
   let _ = declare_variable ident decl in
   let () = assumption_message ident in
-  let () =
-    if not !Flags.quiet && Proof_global.there_are_pending_proofs () then
-    Feedback.msg_info Pp.(str"Variable" ++ spc () ++ Id.print ident ++
-    strbrk " is not visible from current goals")
-  in
+  (* XXX *)
+  (* let () =
+   *   if not !Flags.quiet && Proof_global.there_are_pending_proofs () then
+   *   Feedback.msg_info (str"Variable" ++ spc () ++ Id.print ident ++
+   *   strbrk " is not visible from current goals")
+   * in *)
   let r = VarRef ident in
   let () = maybe_declare_manual_implicits true r imps in
   let () = Typeclasses.declare_instance None true r in

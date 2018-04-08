@@ -86,10 +86,10 @@ val add_mutual_definitions :
   notations ->
   fixpoint_kind -> unit
 
-val obligation : int * Names.Id.t option * Constrexpr.constr_expr option ->
-  Genarg.glob_generic_argument option -> unit
+val obligation : ?ontop:Proof_global.t -> int * Names.Id.t option * Constrexpr.constr_expr option ->
+  Genarg.glob_generic_argument option -> Proof_global.t
 
-val next_obligation : Names.Id.t option -> Genarg.glob_generic_argument option -> unit
+val next_obligation : ?ontop:Proof_global.t -> Names.Id.t option -> Genarg.glob_generic_argument option -> Proof_global.t
 
 val solve_obligations : Names.Id.t option -> unit Proofview.tactic option -> progress
 (* Number of remaining obligations to be solved for this program *)

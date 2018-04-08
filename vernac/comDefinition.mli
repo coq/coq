@@ -16,11 +16,18 @@ open Constrexpr
 
 (** {6 Definitions/Let} *)
 
-val do_definition : program_mode:bool ->
-  ?hook:Lemmas.declaration_hook ->
-  Id.t -> definition_kind -> universe_decl_expr option ->
-  local_binder_expr list -> red_expr option -> constr_expr ->
-  constr_expr option -> unit
+val do_definition
+  :  ontop:Lemmas.t option
+  -> program_mode:bool
+  -> ?hook:Lemmas.declaration_hook
+  -> Id.t
+  -> definition_kind
+  -> universe_decl_expr option
+  -> local_binder_expr list
+  -> red_expr option
+  -> constr_expr
+  -> constr_expr option
+  -> unit
 
 (************************************************************************)
 (** Internal API  *)

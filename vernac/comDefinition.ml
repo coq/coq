@@ -90,7 +90,7 @@ let check_definition ~program_mode (ce, evd, _, imps) =
   check_evars_are_solved ~program_mode env evd;
   ce
 
-let do_definition ~program_mode ?hook ident k univdecl bl red_option c ctypopt =
+let do_definition ~ontop ~program_mode ?hook ident k univdecl bl red_option c ctypopt =
   let (ce, evd, univdecl, imps as def) =
     interp_definition ~program_mode univdecl bl (pi2 k) red_option c ctypopt
   in
@@ -112,4 +112,4 @@ let do_definition ~program_mode ?hook ident k univdecl bl red_option c ctypopt =
       ignore(Obligations.add_definition
           ident ~term:c cty ctx ~univdecl ~implicits:imps ~kind:k ~univ_hook obls)
     else let ce = check_definition ~program_mode def in
-      ignore(DeclareDef.declare_definition ident k ce (Evd.universe_binders evd) imps ?hook)
+      ignore(DeclareDef.declare_definition ~ontop ident k ce (Evd.universe_binders evd) imps ?hook)

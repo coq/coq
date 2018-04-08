@@ -39,13 +39,13 @@ val search_about_filter : glob_search_about_item -> filter_function
 goal and the global environment for things matching [pattern] and
 satisfying module exclude/include clauses of [modinout]. *)
 
-val search_by_head : int option -> constr_pattern -> DirPath.t list * bool
+val search_by_head : ?pstate:Proof_global.t -> int option -> constr_pattern -> DirPath.t list * bool
                   -> display_function -> unit
-val search_rewrite : int option -> constr_pattern -> DirPath.t list * bool
+val search_rewrite : ?pstate:Proof_global.t -> int option -> constr_pattern -> DirPath.t list * bool
                   -> display_function -> unit
-val search_pattern : int option -> constr_pattern -> DirPath.t list * bool
+val search_pattern : ?pstate:Proof_global.t -> int option -> constr_pattern -> DirPath.t list * bool
                   -> display_function -> unit
-val search_about   : int option -> (bool * glob_search_about_item) list
+val search_about   : ?pstate:Proof_global.t -> int option -> (bool * glob_search_about_item) list
                   -> DirPath.t list * bool -> display_function -> unit
 
 type search_constraint =
@@ -66,12 +66,12 @@ type 'a coq_object = {
   coq_object_object : 'a;
 }
 
-val interface_search : ?glnum:int -> (search_constraint * bool) list ->
+val interface_search : ?pstate:Proof_global.t -> ?glnum:int -> (search_constraint * bool) list ->
   constr coq_object list
 
 (** {6 Generic search function} *)
 
-val generic_search : int option -> display_function -> unit
+val generic_search : ?pstate:Proof_global.t -> int option -> display_function -> unit
 (** This function iterates over all hypothesis of the goal numbered
     [glnum] (if present) and all known declarations. *)
 

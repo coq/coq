@@ -85,7 +85,7 @@ let ensure_exists f =
 let compile opts copts ~echo ~f_in ~f_out =
   let open Vernac.State in
   let check_pending_proofs () =
-    let pfs = Proof_global.get_all_proof_names () in
+    let pfs = Vernacstate.Proof_global.get_all_proof_names () in
     if not (CList.is_empty pfs) then
       fatal_error (str "There are pending proofs: "
                     ++ (pfs
