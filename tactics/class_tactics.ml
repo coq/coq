@@ -932,11 +932,12 @@ module Search = struct
        try
          (* Instance may try to call this before a proof is set up!
             Thus, give_me_the_proof will fail. Beware! *)
-         let name, poly = try
-             let Proof.{ name; poly } = Proof.data Proof_global.(give_me_the_proof ()) in
-             name, poly
-           with | Proof_global.NoCurrentProof ->
-             Id.of_string "instance", false
+         let name, poly =
+           (* try
+            *   let Proof.{ name; poly } = Proof.data Proof_global.(give_me_the_proof ()) in
+            *   name, poly
+            * with | Proof_global.NoCurrentProof -> *)
+           Id.of_string "instance", false
          in
          let (), pv', (unsafe, shelved, gaveup), _ =
            Proofview.apply ~name ~poly env tac pv
