@@ -41,9 +41,9 @@ val convert_concl_no_check : types -> cast_kind -> unit Proofview.tactic
 val convert_hyp_no_check : named_declaration -> unit Proofview.tactic
 val mutual_fix      :
   Id.t -> int -> (Id.t * int * constr) list -> int -> unit Proofview.tactic
-val fix             : Id.t option -> int -> unit Proofview.tactic
+val fix             : Id.t -> int -> unit Proofview.tactic
 val mutual_cofix    : Id.t -> (Id.t * constr) list -> int -> unit Proofview.tactic
-val cofix           : Id.t option -> unit Proofview.tactic
+val cofix           : Id.t -> unit Proofview.tactic
 
 val convert         : constr -> constr -> unit Proofview.tactic
 val convert_leq     : constr -> constr -> unit Proofview.tactic
