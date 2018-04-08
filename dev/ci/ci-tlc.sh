@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 ci_dir="$(dirname "$0")"
-source ${ci_dir}/ci-common.sh
+. "${ci_dir}/ci-common.sh"
 
-tlc_CI_DIR=${CI_BUILD_DIR}/tlc
+tlc_CI_DIR="${CI_BUILD_DIR}/tlc"
 
-git_checkout ${tlc_CI_BRANCH} ${tlc_CI_GITURL} ${tlc_CI_DIR}
+git_checkout "${tlc_CI_BRANCH}" "${tlc_CI_GITURL}" "${tlc_CI_DIR}"
 
-( cd ${tlc_CI_DIR} && make )
+( cd "${tlc_CI_DIR}" && make )

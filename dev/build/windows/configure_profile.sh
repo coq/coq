@@ -14,30 +14,30 @@
 rcfile=~/.bash_profile
 donefile=~/.bash_profile.upated
 
+# to learn about `exec >> $file`, see https://www.tldp.org/LDP/abs/html/x17974.html
+exec >> $rcfile
+
 if [ ! -f $donefile ] ; then
 
-    echo >> $rcfile
-    
-    if [ "$1" != "" -a "$1" != " " ]; then
-      echo export http_proxy="http://$1" >> $rcfile
-      echo export https_proxy="http://$1" >> $rcfile
-      echo export ftp_proxy="http://$1" >> $rcfile
+    if [ "$1" != "" ] && [ "$1" != " " ]; then
+      echo export http_proxy="http://$1"
+      echo export https_proxy="http://$1"
+      echo export ftp_proxy="http://$1"
     fi
-    
-    mkdir -p $RESULT_INSTALLDIR_CFMT/bin
+
+    mkdir -p "$RESULT_INSTALLDIR_CFMT/bin"
 
     # A tightly controlled path helps to avoid issues
     # Note: the order is important: first have the cygwin binaries, then the mingw binaries in the path!
     # Note: /bin is mounted at /usr/bin and /lib at /usr/lib and it is common to use /usr/bin in PATH
     # See cat /proc/mounts
-    echo "export PATH=/usr/local/bin:/usr/bin:$RESULT_INSTALLDIR_CFMT/bin:/usr/$TARGET_ARCH/sys-root/mingw/bin:/cygdrive/c/Windows/system32:/cygdrive/c/Windows" >> $rcfile
+    echo "export PATH=/usr/local/bin:/usr/bin:$RESULT_INSTALLDIR_CFMT/bin:/usr/$TARGET_ARCH/sys-root/mingw/bin:/cygdrive/c/Windows/system32:/cygdrive/c/Windows"
 
     # find and xargs complain if the environment is larger than (I think) 8k.
     # ORIGINAL_PATH (set by cygwin) can be a few k and exceed the limit
-    echo unset ORIGINAL_PATH >> $rcfile
-    
+    echo unset ORIGINAL_PATH
     # Other installations of OCaml will mess up things
-    echo unset OCAMLLIB >> $rcfile
+    echo unset OCAMLLIB
 
     touch $donefile
 fi

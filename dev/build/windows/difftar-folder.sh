@@ -42,7 +42,7 @@ fi
 if [ "$strip" -gt 0 ] ; then
   # Get the path/name of the first file from teh tar and extract the first $strip path components
   # This assumes that the first file in the tar file has at least $strip many path components
-  prefix=$(tar -t -f $tarfile | head -1 | cut -d / -f -$strip)/
+  prefix=$(tar -t -f "$tarfile" | head -1 | cut -d / -f -$strip)/
 else
   prefix=
 fi
@@ -60,13 +60,13 @@ mkdir -p "$empty"
 
 # Print information (this is ignored by patch)
 
-echo diff/patch file created on $(date) with:
-echo difftar-folder.sh $@
-echo TARFILE=    $tarfile
-echo FOLDER=     $folder
-echo TARSTRIP=   $strip
-echo TARPREFIX=  $prefix
-echo ORIGFOLDER= $orig
+echo diff/patch file created on "$(date)" with:
+echo difftar-folder.sh "$@"
+echo TARFILE=    "$tarfile"
+echo FOLDER=     "$folder"
+echo TARSTRIP=   "$strip"
+echo TARPREFIX=  "$prefix"
+echo ORIGFOLDER= "$orig"
 
 # Make sure tar uses english output (for Mod time differs)
 export LC_ALL=C
@@ -76,14 +76,14 @@ tar --diff -a -f "$tarfile" --strip $strip --directory "$folder" | grep "Mod tim
   # Substitute ': Mod time differs' with nothing
   file=${file/: Mod time differs/}
   # Check if file exists
-  if [ -f "$folder/$file" ] ; then 
+  if [ -f "$folder/$file" ] ; then
     # Extract original file
     tar -x -a -f "$tarfile" --strip $strip --directory "$orig" "$prefix$file"
     # Compute diff
-    diff -u "$orig/$file" "$folder/$file" 
+    diff -u "$orig/$file" "$folder/$file"
   fi
 done
 
 if [ -d "$new" ] ; then
-  diff -u -r --unidirectional-new-file $empty $new
+  diff -u -r --unidirectional-new-file "$empty" "$new"
 fi

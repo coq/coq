@@ -58,16 +58,14 @@ TO_SED_IN_PER_LINE=(
     -e s'/+/-/g' # some code lines don't really change, but this can show up as either -0m00.01s or +0m00.01s, so we need to normalize the signs
     )
 
-for ext in "" .desired; do
-    for file in time-of-build-before.log time-of-build-after.log time-of-build-both.log; do
-        cat ${file}${ext} | grep -v 'warning: undefined variable' | sed "${TO_SED_IN_BOTH[@]}" "${TO_SED_IN_PER_FILE[@]}" > ${file}${ext}.processed
-    done
-done
 for file in time-of-build-before.log time-of-build-after.log time-of-build-both.log; do
-    echo "cat $file"
-    cat "$file"
-    echo
-    diff -u $file.desired.processed $file.processed || exit $?
+  for ext in "" .desired; do
+    grep -v 'warning: undefined variable' < ${file}${ext} | sed "${TO_SED_IN_BOTH[@]}" "${TO_SED_IN_PER_FILE[@]}" > ${file}${ext}.processed
+  done
+  echo "cat $file"
+  cat "$file"
+  echo
+  diff -u $file.desired.processed $file.processed || exit $?
 done
 
 cd ../per-file-before
@@ -92,13 +90,12 @@ echo "cat A.v.timing.diff"
 cat A.v.timing.diff
 echo
 
+file=A.v.timing.diff
+
 for ext in "" .desired; do
-    for file in A.v.timing.diff; do
-        cat ${file}${ext} | sed "${TO_SED_IN_BOTH[@]}" "${TO_SED_IN_PER_LINE[@]}" | sort > ${file}${ext}.processed
-    done
+    sed "${TO_SED_IN_BOTH[@]}" "${TO_SED_IN_PER_LINE[@]}" < "${file}${ext}" | sort > "${file}${ext}.processed"
 done
-for file in A.v.timing.diff; do
-    diff -u $file.desired.processed $file.processed || exit $?
-done
+
+diff -u "$file.desired.processed" "$file.processed" || exit $?
 
 exit 0
