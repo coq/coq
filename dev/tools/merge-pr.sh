@@ -7,7 +7,7 @@ API=https://api.github.com/repos/coq/coq
 OFFICIAL_REMOTE_GIT_URL="git@github.com:coq/coq"
 OFFICIAL_REMOTE_HTTPS_URL="https://github.com/coq/coq"
 
-# This script depends (at least) on git and jq.
+# This script depends (at least) on git (>= 2.7) and jq.
 # It should be used like this: dev/tools/merge-pr.sh /PR number/
 
 RED="\033[31m"
