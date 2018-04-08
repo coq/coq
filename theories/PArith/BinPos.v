@@ -1655,7 +1655,7 @@ Qed.
 
 Lemma sqrtrem_spec p : SqrtSpec (sqrtrem p) p.
 Proof.
-revert p. fix 1.
+revert p. fix sqrtrem_spec 1.
  destruct p; try destruct p; try (constructor; easy);
   apply sqrtrem_step_spec; auto.
 Qed.

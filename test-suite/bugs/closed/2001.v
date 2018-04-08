@@ -7,7 +7,7 @@ Inductive T : Set :=
 | v : T.
 
 Definition f (s:nat) (t:T) : nat.
-fix 2.
+fix f 2.
 intros s t.
 refine
   match t with
