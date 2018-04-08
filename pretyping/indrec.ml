@@ -8,7 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* File initially created by Christine Paulin, 1996 *)
+(* File initially created by Christine Paulin, 1996 (see version
+   control system logs for history and full credits of the file) *)
 
 (* This file builds various inductive schemes *)
 

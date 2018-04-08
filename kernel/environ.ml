@@ -8,19 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Author: Jean-Christophe Filliâtre as part of the rebuilding of Coq
-   around a purely functional abstract type-checker, Aug 1999 *)
-(* Cleaning and lightening of the kernel by Bruno Barras, Nov 2001 *)
-(* Flag for predicativity of Set by Hugo Herbelin in Oct 2003 *)
-(* Support for virtual machine by Benjamin Grégoire in Oct 2004 *)
-(* Support for retroknowledge by Arnaud Spiwack in May 2007 *)
-(* Support for assumption dependencies by Arnaud Spiwack in May 2007 *)
-
-(* Miscellaneous maintenance by Bruno Barras, Hugo Herbelin, Jean-Marc
-   Notin, Matthieu Sozeau *)
-
 (* This file defines the type of environments on which the
    type-checker works, together with simple related functions *)
+
+(* This file was a core component of Jean-Christophe Filliâtre's
+   rebuilding of Coq around a purely functional abstract type-checker,
+   Aug 1999 (see version control system logs for history and full
+   credits of the file) *)
 
 open CErrors
 open Util

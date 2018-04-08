@@ -8,12 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Created by Jacek Chrzaszcz, Aug 2002 as part of the implementation of
-   the Coq module system *)
-(* Inlining and more liberal use of modules and module types by Claudio
-   Sacerdoti, Nov 2004 *)
-(* New structure-based model of modules and miscellaneous bug fixes by
-   Élie Soubiran, from Feb 2008 *)
+(* Created by Jacek Chrzaszcz, Aug 2002 as part of the implementation
+   of the Coq module system; structure-based model of modules by Élie
+   Soubiran, 2008 (see version control system logs for history and
+   full credits of the file) *)
 
 (* This file provides with various operations on modules and module types *)
 

@@ -8,9 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Created by Amokrane Saïbi, Dec 1998 *)
-(* Addition of products and sorts in canonical structures by Pierre
-   Corbineau, Feb 2008 *)
+(* Created by Amokrane Saïbi, Dec 1998 (see version control system
+   logs for history and full credits of the file) *)
 
 (* This file registers properties of records: projections and
    canonical structures *)

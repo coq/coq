@@ -8,7 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* File created by Hugo Herbelin, Nov 2009 *)
+(* File created by Hugo Herbelin, Nov 2009 (see version control system
+   logs for history and full credits of the file) *)
 
 (* This file builds schemes related to equality inductive types,
    especially for dependent rewrite, rewriting on arbitrary equality

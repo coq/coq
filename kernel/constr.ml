@@ -8,22 +8,15 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* File initially created by Gérard Huet and Thierry Coquand in 1984 *)
-(* Extension to inductive constructions by Christine Paulin for Coq V5.6 *)
-(* Extension to mutual inductive constructions by Christine Paulin for
-   Coq V5.10.2 *)
-(* Extension to co-inductive constructions by Eduardo Gimenez *)
-(* Optimization of substitution functions by Chet Murthy *)
-(* Optimization of lifting functions by Bruno Barras, Mar 1997 *)
-(* Hash-consing by Bruno Barras in Feb 1998 *)
-(* Restructuration of Coq of the type-checking kernel by Jean-Christophe 
-   Filliâtre, 1999 *)
-(* Abstraction of the syntax of terms and iterators by Hugo Herbelin, 2000 *)
-(* Cleaning and lightening of the kernel by Bruno Barras, Nov 2001 *)
-
 (* This file defines the internal syntax of the Calculus of
    Inductive Constructions (CIC) terms together with constructors,
    destructors, iterators and basic functions *)
+
+(* This is one of the oldest file, seminally created by Gérard Huet
+   and Thierry Coquand in 1984, with extensions by Christine
+   Paulin to inductive constructions for Coq V5.6 and to mutual
+   inductive constructions for Coq V5.10.2 (see version control system
+   log for history and full credits of the file) *)
 
 open Util
 open Names

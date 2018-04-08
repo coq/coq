@@ -8,15 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Created by Jean-Christophe Filliâtre out of names.ml as part of the
-   rebuilding of Coq around a purely functional abstract type-checker,
-   Aug 1999 *)
-(* Miscellaneous extensions, restructurations and bug-fixes by Hugo
-   Herbelin and Bruno Barras *)
-
-(* This file defines types and combinators regarding indexes-based and
-   names-based contexts *)
-
 (** The modules defined below represent a {e local context}
     as defined by Chapter 4 in the Reference Manual:
 

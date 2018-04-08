@@ -9,8 +9,8 @@
 (************************************************************************)
 
 (* Created by Bruno Barras for Benjamin Grégoire as part of the
-   bytecode-based reduction machine, Oct 2004 *)
-(* Bug fix #1419 by Jean-Marc Notin, Mar 2007 *)
+   bytecode-based reduction machine, Oct 2004 (see version control
+   system logs for history and full credits of the file) *)
 
 (* This file manages the table of global symbols for the bytecode machine *)
 

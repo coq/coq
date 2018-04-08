@@ -8,13 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Created by Hugo Herbelin for Coq V7 by isolating the coercion
-   mechanism out of the type inference algorithm in file trad.ml from
-   Coq V6.3, Nov 1999; The coercion mechanism was implemented in
-   trad.ml by Amokrane Saïbi, May 1996 *)
-(* Addition of products and sorts in canonical structures by Pierre
-   Corbineau, Feb 2008 *)
-(* Turned into an abstract compilation unit by Matthieu Sozeau, March 2006 *)
+(* This file provides support for insertion of coercions *)
+
+(* Created by Hugo Herbelin for Coq V7 by isolating Amokrane Saïbi's
+   seminal coercion mechanism (May 1996) out of the type inference
+   algorithm in file trad.ml from Coq V6.3 (see version control system
+   logs for history and full credits of the file) *)
 
 open CErrors
 open Util

@@ -8,13 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Created in Caml by Gérard Huet for CoC 4.8 [Dec 1988] *)
-(* Functional code by Jean-Christophe Filliâtre for Coq V7.0 [1999] *)
-(* Extension with algebraic universes by HH for Coq V7.0 [Sep 2001] *)
-(* Additional support for sort-polymorphic inductive types by HH [Mar 2006] *)
-
-(* Revisions by Bruno Barras, Hugo Herbelin, Pierre Letouzey *)
-
 open Pp
 open CErrors
 open Util

@@ -8,9 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Created by Arnaud Spiwack, May 2007 *)
-(* Addition of native Head (nb of heading 0) and Tail (nb of trailing 0) by
-   Benjamin Grégoire, Jun 2007 *)
+(* Created by Arnaud Spiwack, May 2007 (see version control system
+   logs for history and full credits of the file) *)
 
 (* This file defines the knowledge that the kernel is able to optimize
    for evaluation in the bytecode virtual machine *)

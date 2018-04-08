@@ -8,9 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Created by Hugo Herbelin from contents related to lemma proofs in
-   file command.ml, Aug 2009 *)
-
 open CErrors
 open Util
 open Pp

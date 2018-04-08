@@ -8,11 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* File created by Vincent Siles, Oct 2007, extended into a generic
-   support for generation of inductive schemes by Hugo Herbelin, Nov 2009 *)
-
 (* This file provides support for registering inductive scheme builders,
    declaring schemes and generating schemes on demand *)
+
+(* File created by Vincent Siles, Oct 2007, extended into a generic
+   support for generation of inductive schemes by Hugo Herbelin, Nov
+   2009 (see version control system logs for history and full credits
+   of the file) *)
 
 open Names
 open Mod_subst

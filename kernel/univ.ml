@@ -8,14 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Created in Caml by Gérard Huet for CoC 4.8 [Dec 1988] *)
-(* Functional code by Jean-Christophe Filliâtre for Coq V7.0 [1999] *)
-(* Extension with algebraic universes by HH for Coq V7.0 [Sep 2001] *)
-(* Additional support for sort-polymorphic inductive types by HH [Mar 2006] *)
-(* Support for universe polymorphism by MS [2014] *)
+(* This file defines basic types and operations about universes. *)
 
-(* Revisions by Bruno Barras, Hugo Herbelin, Pierre Letouzey, Matthieu
-   Sozeau, Pierre-Marie Pédrot *)
+(* Created in Caml by Gérard Huet for CoC 4.8, Dec 1988 (see version
+   control system logs for history and full credits of the file) *)
 
 open Pp
 open CErrors

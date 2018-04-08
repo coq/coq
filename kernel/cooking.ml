@@ -10,7 +10,8 @@
 
 (* Created by Jean-Christophe Filliâtre out of V6.3 file constants.ml
    as part of the rebuilding of Coq around a purely functional
-   abstract type-checker, Nov 1999 *)
+   abstract type-checker, Nov 1999 (see version control system logs
+   for history and full credits of the file) *)
 
 (* This module implements kernel-level discharching of local
    declarations over global constants and inductive types *)

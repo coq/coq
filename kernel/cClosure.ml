@@ -8,18 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Created by Bruno Barras with Benjamin Werner's account to implement
-   a call-by-value conversion algorithm and a lazy reduction machine
-   with sharing, Nov 1996 *)
-(* Addition of zeta-reduction (let-in contraction) by Hugo Herbelin, Oct 2000 *)
-(* Call-by-value machine moved to cbv.ml, Mar 01 *)
-(* Additional tools for module subtyping by Jacek Chrzaszcz, Aug 2002 *)
-(* Extension with closure optimization by Bruno Barras, Aug 2003 *)
-(* Support for evar reduction by Bruno Barras, Feb 2009 *)
-(* Miscellaneous other improvements by Bruno Barras, 1997-2009 *)
+(* This file implements a lazy reduction machine for the Calculus of
+   Inductive Constructions (CIC) *)
 
-(* This file implements a lazy reduction for the Calculus of Inductive
-   Constructions *)
+(* Created by Bruno Barras, Nov 1996 (see version control system logs
+   for history and full credits of the file) *)
 
 open CErrors
 open Util

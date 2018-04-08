@@ -8,18 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(* This file is about graphs of universes. *)
+
 open Pp
 open Util
 open Univ
-
-(* Created in Caml by Gérard Huet for CoC 4.8 [Dec 1988] *)
-(* Functional code by Jean-Christophe Filliâtre for Coq V7.0 [1999] *)
-(* Extension with algebraic universes by HH for Coq V7.0 [Sep 2001] *)
-(* Additional support for sort-polymorphic inductive types by HH [Mar 2006] *)
-(* Support for universe polymorphism by MS [2014] *)
-
-(* Revisions by Bruno Barras, Hugo Herbelin, Pierre Letouzey, Matthieu
-   Sozeau, Pierre-Marie Pédrot, Jacques-Henri Jourdan *)
 
 let error_inconsistency o u v (p:explanation option) =
   raise (UniverseInconsistency (o,Universe.make u,Universe.make v,p))

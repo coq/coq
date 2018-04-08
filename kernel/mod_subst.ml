@@ -9,8 +9,9 @@
 (************************************************************************)
 
 (* Created by Claudio Sacerdoti from contents of term.ml, names.ml and
-   new support for constant inlining in functor application, Nov 2004 *)
-(* Optimizations and bug fixes by Élie Soubiran, from Feb 2008 *)
+   new support for constant inlining in functor application, Nov 2004
+   (see version control system logs for history and full credits of
+   the file) *)
 
 (* This file provides types and functions for managing name
    substitution in module constructions *)

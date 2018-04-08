@@ -9,7 +9,8 @@
 (************************************************************************)
 
 (* Created by Jacek Chrzaszcz, Aug 2002 as part of the implementation of
-   the Coq module system *)
+   the Coq module system (see version control system logs for history
+   and full credits of the file) *)
 
 (* This module provides the main functions for type-checking module
    declarations *)

@@ -8,11 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Created by Hugo Herbelin from contents related to inductive schemes
-   initially developed by Christine Paulin (induction schemes), Vincent
-   Siles (decidable equality and boolean equality) and Matthieu Sozeau
-   (combined scheme) in file command.ml, Sep 2009 *)
-
 (* This file provides entry points for manually or automatically
    declaring new schemes *)
 

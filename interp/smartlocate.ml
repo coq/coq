@@ -8,12 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Created by Hugo Herbelin from code formerly dispatched in
-   syntax_def.ml or tacinterp.ml, Sep 2009 *)
-
 (* This file provides high-level name globalization functions *)
 
-(* *)
 open Pp
 open CErrors
 open Libnames

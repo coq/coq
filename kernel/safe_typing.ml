@@ -9,7 +9,9 @@
 (************************************************************************)
 
 (* Created by Jean-Christophe Filliâtre as part of the rebuilding of
-   Coq around a purely functional abstract type-checker, Dec 1999 *)
+   Coq around a purely functional abstract type-checker, Dec 1999
+   (see version control system logs for history and full credits of
+   the file) *)
 
 (* This file provides the entry points to the kernel type-checker. It
    defines the abstract type of well-formed environments and
