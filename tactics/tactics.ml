@@ -891,9 +891,10 @@ let reduce redexp cl =
     let pr = (pr_econstr_env, pr_leconstr_env, pr_evaluable_reference, pr_constr_pattern_env) in
     Pp.(hov 2 (Pputils.pr_red_expr_env env sigma pr str redexp))
   in
+  (* XXX: Fix trace *)
   let trace () =
-    let sigma, env = Pfedit.get_current_context () in
-    trace env sigma
+    let env = Global.env () in
+    trace env Evd.(from_env env)
   in
   Proofview.Trace.name_tactic trace begin
   Proofview.Goal.enter begin fun gl ->

@@ -395,8 +395,9 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=
     | None -> mt ()
     | Some n -> str " (in " ++ str n ++ str ")"
     in
-    let sigma, env = Pfedit.get_current_context () in
-    pr_hint env sigma t ++ origin
+    (* XXX: Fix tclLOG *)
+    let env = Global.env () in
+    pr_hint env Evd.(from_env env) t ++ origin
   in
   tclLOG dbg pr_hint (run_hint t tactic)
 

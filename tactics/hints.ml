@@ -1514,9 +1514,9 @@ let pr_hint_term env sigma cl =
     (str "No hint applicable for current goal")
 
 (* print all hints that apply to the concl of the current goal *)
-let pr_applicable_hint () =
+let pr_applicable_hint pf =
   let env = Global.env () in
-  let pts = Proof_global.give_me_the_proof () in
+  let pts = Proof_global.give_me_the_proof pf in
   let glss,_,_,_,sigma = Proof.proof pts in
   match glss with
   | [] -> CErrors.user_err Pp.(str "No focused goal.")

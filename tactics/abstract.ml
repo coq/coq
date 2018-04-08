@@ -176,12 +176,15 @@ let abstract_subproof ~opaque id gk tac =
 let anon_id = Id.of_string "anonymous"
 
 let name_op_to_name name_op object_kind suffix =
-  let open Proof_global in
+  (* let open Proof_global in *)
   let default_gk = (Global, false, object_kind) in
+  let name, gk = None, default_gk in
+(* XXX: FIXME Proof_global.t
   let name, gk = match Proof_global.V82.get_current_initial_conclusions () with
   | (id, (_, gk)) -> Some id, gk
   | exception NoCurrentProof -> None, default_gk
   in
+  *)
   match name_op with
   | Some s -> s, gk
   | None ->
