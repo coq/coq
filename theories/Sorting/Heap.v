@@ -148,10 +148,10 @@ Section defs.
     forall l1:list A, Sorted leA l1 ->
     forall l2:list A, Sorted leA l2 -> merge_lem l1 l2.
   Proof.
-    fix 1; intros; destruct l1.
+    fix merge 1; intros; destruct l1.
     apply merge_exist with l2; auto with datatypes.
     rename l1 into l.
-    revert l2 H0. fix 1. intros.
+    revert l2 H0. fix merge0 1. intros.
     destruct l2 as [|a0 l0]. 
     apply merge_exist with (a :: l); simpl; auto with datatypes. 
     induction (leA_dec a a0) as [Hle|Hle].

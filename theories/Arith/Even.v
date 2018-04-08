@@ -38,7 +38,7 @@ Hint Constructors odd: arith.
 
 Lemma even_equiv : forall n, even n <-> Nat.Even n.
 Proof.
- fix 1.
+ fix even_equiv 1.
  destruct n as [|[|n]]; simpl.
  - split; [now exists 0 | constructor].
  - split.
@@ -52,7 +52,7 @@ Qed.
 
 Lemma odd_equiv : forall n, odd n <-> Nat.Odd n.
 Proof.
- fix 1.
+ fix odd_equiv 1.
  destruct n as [|[|n]]; simpl.
  - split.
    + inversion_clear 1.
