@@ -10,6 +10,14 @@ OFFICIAL_REMOTE_HTTPS_URL="https://github.com/coq/coq"
 # This script depends (at least) on git (>= 2.7) and jq.
 # It should be used like this: dev/tools/merge-pr.sh /PR number/
 
+# Set SLOW_CONF to have the confirmation output wait for a newline
+# E.g. call $ SLOW_CONF= dev/tools/merge-pr.sh /PR number/
+if [ -z ${SLOW_CONF+x} ]; then
+    QUICK_CONF="-n 1"
+else
+    QUICK_CONF=""
+fi
+
 RED="\033[31m"
 RESET="\033[0m"
 GREEN="\033[32m"
@@ -33,7 +41,7 @@ fi
 }
 
 ask_confirmation() {
-  read -p "Continue anyway? [y/N] " -n 1 -r
+  read -p "Continue anyway? [y/N] " $QUICK_CONF -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]
   then
