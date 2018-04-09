@@ -633,7 +633,7 @@ let build_scheme fas =
 	    let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd (EConstr.of_constr f) in 
             if isConst f
             then (destConst f,sort)
-            else user_err Pp.(pr_constr_env (Global.env ()) !evd f ++spc () ++ str "should be a function")
+            else user_err Pp.(pr_constr_env (Global.env ()) !evd f ++spc () ++ str "should be the named of a globally defined function")
 	 )
 	 fas
 		   ) in
