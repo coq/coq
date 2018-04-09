@@ -278,10 +278,12 @@ Set Printing Notations.
 
 (* Check insensitivity of "match" clauses to order *)
 
+Module IfPat.
 Notation "'if' t 'is' n .+ 1 'then' p 'else' q" :=
   (match t with S n => p | 0 => q end)
   (at level 200).
 Check fun x => if x is n.+1 then n else 1.
+End IfPat.
 
 (* Examples with binding patterns *)
 
@@ -338,11 +340,13 @@ Check ∀ '(((x,y),true)|((x,y),false)), x>y.
 
 (* Check Georges' printability of a "if is then else" notation *)
 
+Module IfPat2.
 Notation "'if' c 'is' p 'then' u 'else' v" :=
   (match c with p => u | _ => v end)
   (at level 200, p pattern at level 100).
 Check fun p => if p is S n then n else 0.
 Check fun p => if p is Lt then 1 else 0.
+End IfPat2.
 
 (* Check that mixed binders and terms defaults to ident and not pattern *)
 Module F.
@@ -364,3 +368,15 @@ Check {'(x,y)|x+y=0}.
 
 (* Check exists2 with a pattern *)
 Check ex2 (fun x => let '(y,z) := x in y>z) (fun x => let '(y,z) := x in z>y).
+
+Module Issue7110.
+Open Scope list_scope.
+Notation "[ :: x1 , x2 , .. , xn & s ]" := (x1 :: x2 :: .. (xn :: s) ..)
+  (at level 0).
+Definition foo (l : list nat) :=
+  match l with
+  | a :: (b :: l) as l1 => l1
+  | _ => l
+end.
+Print foo.
+End Issue7110.

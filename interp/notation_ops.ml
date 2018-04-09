@@ -1335,10 +1335,10 @@ let rec match_cases_pattern metas (terms,termlists,(),() as sigma) a1 a2 =
  match DAst.get a1, a2 with
   | r1, NVar id2 when Id.List.mem_assoc id2 metas -> (bind_env_cases_pattern sigma id2 a1),(0,[])
   | PatVar Anonymous, NHole _ -> sigma,(0,[])
-  | PatCstr ((ind,_ as r1),largs,_), NRef (ConstructRef r2) when eq_constructor r1 r2 ->
+  | PatCstr ((ind,_ as r1),largs,Anonymous), NRef (ConstructRef r2) when eq_constructor r1 r2 ->
       let l = try add_patterns_for_params_remove_local_defs r1 largs with Not_found -> raise No_match in
       sigma,(0,l)
-  | PatCstr ((ind,_ as r1),args1,_), NApp (NRef (ConstructRef r2),l2)
+  | PatCstr ((ind,_ as r1),args1,Anonymous), NApp (NRef (ConstructRef r2),l2)
       when eq_constructor r1 r2 ->
       let l1 = try add_patterns_for_params_remove_local_defs r1 args1 with Not_found -> raise No_match in
       let le2 = List.length l2 in

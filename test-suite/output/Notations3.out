@@ -223,3 +223,11 @@ fun S : nat => [[S | S.S]]
      : Set
 exists2 '{{y, z}} : nat * nat, y > z & z > y
      : Prop
+foo = 
+fun l : list nat => match l with
+                    | _ :: (_ :: _) as l1 => l1
+                    | _ => l
+                    end
+     : list nat -> list nat
+
+Argument scope is [list_scope]
