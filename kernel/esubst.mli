@@ -56,7 +56,11 @@ val comp : ('a subs * 'a -> 'a) -> 'a subs -> 'a subs -> 'a subs
 (** {6 Compact representation } *)
 (** Compact representation of explicit relocations
     - [ELSHFT(l,n)] == lift of [n], then apply [lift l].
-    - [ELLFT(n,l)] == apply [l] to de Bruijn > [n] i.e under n binders. *)
+    - [ELLFT(n,l)] == apply [l] to de Bruijn > [n] i.e under n binders.
+
+    Invariant ensured by the private flag: no lift contains two consecutive
+    [ELSHFT] nor two consecutive [ELLFT].
+*)
 type lift = private
   | ELID
   | ELSHFT of lift * int
