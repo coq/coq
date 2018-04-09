@@ -628,16 +628,19 @@ let build_scheme fas =
                 user_err ~hdr:"FunInd.build_scheme"
                   (str "Cannot find " ++ Libnames.pr_reference f)
 	    in
-	    let evd',f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
+            let evd',f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
             let _ = evd := evd' in 
 	    let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd (EConstr.of_constr f) in 
-	    (destConst f,sort)
+            if isConst f
+            then (destConst f,sort)
+            else user_err Pp.(pr_constr_env (Global.env ()) !evd f ++spc () ++ str "should be a function")
 	 )
 	 fas
 		   ) in
   let bodies_types =
     make_scheme evd pconstants      
   in
+
   List.iter2
     (fun (princ_id,_,_) def_entry ->
        ignore
