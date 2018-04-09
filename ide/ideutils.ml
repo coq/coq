@@ -37,6 +37,11 @@ let flash_info =
   let flash_context = status#new_context ~name:"Flash" in
     (fun ?(delay=5000) s -> flash_context#flash ~delay s)
 
+(* Note: Setting the same attribute with two separate tags appears to use
+the first value applied and not the second.  I saw this trying to set the background
+color on Windows.  A clean fix, if ever needed, would be to combine the attributes
+of the tags into a single composite tag before applying.  This is left as an
+exercise for the reader. *)
 let insert_with_tags (buf : #GText.buffer_skel) mark rmark tags text =
   (** FIXME: LablGTK2 does not export the C insert_with_tags function, so that
       it has to reimplement its own helper function. Unluckily, it relies on
@@ -50,21 +55,51 @@ let insert_with_tags (buf : #GText.buffer_skel) mark rmark tags text =
     let start = buf#get_iter_at_mark mark in
     let stop = buf#get_iter_at_mark rmark in
     let iter tag = buf#apply_tag tag ~start ~stop in
-    List.iter iter tags
+    List.iter iter (List.rev tags)
+
+let nl_white_regex = Str.regexp "^\\( *\n *\\)"
+let diff_regex = Str.regexp "^diff."
 
 let insert_xml ?(mark = `INSERT) ?(tags = []) (buf : #GText.buffer_skel) msg =
   let open Xml_datatype in
+  let dtags = ref [] in
   let tag name =
     match GtkText.TagTable.lookup buf#tag_table name with
     | None -> raise Not_found
     | Some tag -> new GText.tag tag
   in
   let rmark = `MARK (buf#create_mark buf#start_iter) in
+  (* insert the string, but don't apply diff highlights to white space at the begin/end of line *)
+  let rec insert_str tags s =
+    try
+      let _ = Str.search_forward nl_white_regex s 0 in
+      insert_with_tags buf mark rmark tags (Str.matched_group 1 s);
+      let mend = Str.match_end () in
+      insert_str tags (String.sub s mend (String.length s - mend))
+    with Not_found -> begin
+      let etags = try List.hd !dtags :: tags with hd -> tags in
+      insert_with_tags buf mark rmark etags s
+      end
+  in
   let rec insert tags = function
-  | PCData s -> insert_with_tags buf mark rmark tags s
+  | PCData s -> insert_str tags s
   | Element (t, _, children) ->
-    let tags = try tag t :: tags with Not_found -> tags in
-    List.iter (fun xml -> insert tags xml) children
+    let (pfx, tname) = Pp.split_tag t in
+    let is_diff = try let _ = Str.search_forward diff_regex tname 0 in true with Not_found -> false in
+    let (tags, have_tag) =
+      try
+        let t = tag tname in
+        if is_diff && pfx <> Pp.end_pfx then
+          dtags := t :: !dtags;
+        if pfx = "" then
+          ((if is_diff then tags else t :: tags), true)
+        else
+          (tags, true)
+      with Not_found -> (tags, false)
+    in
+    List.iter (fun xml -> insert tags xml) children;
+    if have_tag && is_diff && pfx <> Pp.start_pfx then
+      dtags := (try List.tl !dtags with tl -> []);
   in
   let () = try insert tags msg with _ -> () in
   buf#delete_mark rmark

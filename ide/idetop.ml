@@ -202,13 +202,30 @@ let export_pre_goals pgs =
     Interface.given_up_goals = pgs.Proof.given_up_goals
   }
 
+let add_diffs oldp newp intf =
+  let open Interface in
+  let (hyps_pp_list, concl_pp) = Proof_diffs.diff_first_goal oldp newp in
+  match intf.fg_goals with
+  | [] -> intf
+  | first_goal :: tl ->
+    { intf with fg_goals = { first_goal with goal_hyp = hyps_pp_list; goal_ccl = concl_pp } :: tl }
+
 let goals () =
+  let oldp =
+    try Some (Proof_global.give_me_the_proof ())
+    with Proof_global.NoCurrentProof -> None in
   let doc = get_doc () in
   set_doc @@ Stm.finish ~doc;
   try
-    let pfts = Proof_global.give_me_the_proof () in
-    Some (export_pre_goals (Proof.map_structured_proof pfts process_goal))
-  with Proof_global.NoCurrentProof -> None
+    let newp = Proof_global.give_me_the_proof () in
+    let intf = export_pre_goals (Proof.map_structured_proof newp process_goal) in
+    if Proof_diffs.show_diffs () then
+      try
+        Some (add_diffs oldp (Some newp) intf)
+      with Pp_diff.Diff_Failure _ -> Some intf
+    else
+      Some intf
+  with Proof_global.NoCurrentProof -> None;;
 
 let evars () =
   try
@@ -513,6 +530,9 @@ let () = Usage.add_to_usage "coqidetop"
 let islave_init ~opts extra_args =
   let args = parse extra_args in
   CoqworkmgrApi.(init High);
+  let open Coqargs in
+    if not opts.diffs_set then
+      Proof_diffs.write_diffs_option "on";
   opts, args
 
 let () =

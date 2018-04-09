@@ -181,6 +181,10 @@ let default_tag_map () = let open Terminal in [
   ; "tactic.keyword"   , make ~bold:true ()
   ; "tactic.primitive" , make ~fg_color:`LIGHT_GREEN ()
   ; "tactic.string"    , make ~fg_color:`LIGHT_RED ()
+  ; "diff.added"       , make ~bg_color:(`RGB(0,141,0)) ~underline:true ()
+  ; "diff.removed"     , make ~bg_color:(`RGB(170,0,0)) ~underline:true ()
+  ; "diff.added.bg"    , make ~bg_color:(`RGB(0,91,0)) ()
+  ; "diff.removed.bg"  , make ~bg_color:(`RGB(91,0,0)) ()
   ]
 
 let tag_map = ref CString.Map.empty
@@ -198,22 +202,36 @@ let parse_color_config file =
 
 let dump_tags () = CString.Map.bindings !tag_map
 
+let empty = Terminal.make ()
+let default_style = Terminal.reset_style
+
+let get_style tag =
+  try CString.Map.find tag !tag_map
+  with Not_found -> empty;;
+
+let get_open_seq tags =
+  let style = List.fold_left (fun a b -> Terminal.merge a (get_style b)) default_style tags in
+  Terminal.eval (Terminal.diff default_style style);;
+
+let get_close_seq tags =
+  let style = List.fold_left (fun a b -> Terminal.merge a (get_style b)) default_style tags in
+  Terminal.eval (Terminal.diff style default_style);;
+
+let diff_tag_stack = ref []  (* global, just like std_ft *)
+
 (** Not thread-safe. We should put a lock somewhere if we print from
     different threads. Do we? *)
 let make_style_stack () =
   (** Default tag is to reset everything *)
-  let empty = Terminal.make () in
-  let default_tag = Terminal.reset_style in
   let style_stack = ref [] in
   let peek () = match !style_stack with
-  | []      -> default_tag  (** Anomalous case, but for robustness *)
+  | []      -> default_style  (** Anomalous case, but for robustness *)
   | st :: _ -> st
   in
-  let push tag =
-    let style =
-      try CString.Map.find tag !tag_map
-      with | Not_found -> empty
-    in
+  let open_tag tag =
+    let (tpfx, ttag) = split_tag tag in
+    if tpfx = end_pfx then "" else
+      let style = get_style ttag in
     (** Merge the current settings and the style being pushed.  This allows
     restoring the previous settings correctly in a pop when both set the same
     attribute.  Example: current settings have red FG, the pushed style has
@@ -221,43 +239,66 @@ let make_style_stack () =
     let style = Terminal.merge (peek ()) style in
     let diff = Terminal.diff (peek ()) style in
     style_stack := style :: !style_stack;
+    if tpfx = start_pfx then diff_tag_stack := ttag :: !diff_tag_stack;
     Terminal.eval diff
   in
-  let pop _ = match !style_stack with
-  | []       -> (** Something went wrong, we fallback *)
-                Terminal.eval default_tag
-  | cur :: rem -> style_stack := rem;
-                if cur = (peek ()) then "" else
-                  if List.length rem = 0 then Terminal.reset else
-                    Terminal.eval (Terminal.diff cur (peek ()))
+  let close_tag tag =
+    let (tpfx, _) = split_tag tag in
+      if tpfx = start_pfx then "" else begin
+        if tpfx = end_pfx then diff_tag_stack := (try List.tl !diff_tag_stack with tl -> []);
+        match !style_stack with
+        | []       -> (** Something went wrong, we fallback *)
+                      Terminal.eval default_style
+        | cur :: rem -> style_stack := rem;
+                      if cur = (peek ()) then "" else
+                        if rem = [] then Terminal.reset else
+                          Terminal.eval (Terminal.diff cur (peek ()))
+      end
   in
   let clear () = style_stack := [] in
-  push, pop, clear
+  open_tag, close_tag, clear
 
 let make_printing_functions () =
-  let empty = Terminal.make () in
   let print_prefix ft tag =
-    let style =
-      try CString.Map.find tag !tag_map
-      with | Not_found -> empty
-    in
-    match style.Terminal.prefix with Some s -> Format.pp_print_string ft s | None -> ()
-  in
+    let (tpfx, ttag) = split_tag tag in
+    if tpfx <> end_pfx then
+      let style = get_style ttag in
+      match style.Terminal.prefix with Some s -> Format.pp_print_string ft s | None -> () in
+
   let print_suffix ft tag =
-    let style =
-      try CString.Map.find tag !tag_map
-      with | Not_found -> empty
-    in
-    match style.Terminal.suffix with Some s -> Format.pp_print_string ft s | None -> ()
-  in
+    let (tpfx, ttag) = split_tag tag in
+    if tpfx <> start_pfx then
+      let style = get_style ttag in
+      match style.Terminal.suffix with Some s -> Format.pp_print_string ft s | None -> () in
+
   print_prefix, print_suffix
 
+let init_output_fns () =
+  let reopen_highlight = ref "" in
+  let open Format in
+  let fns = Format.pp_get_formatter_out_functions !std_ft () in
+  let newline () =
+    if !diff_tag_stack <> [] then begin
+      let close = get_close_seq !diff_tag_stack in
+      fns.out_string close 0 (String.length close);
+      reopen_highlight := get_open_seq (List.rev !diff_tag_stack);
+    end;
+    fns.out_string "\n" 0 1 in
+  let string s off n =
+    if !reopen_highlight <> ""  && String.trim (String.sub s off n) <> "" then begin
+      fns.out_string !reopen_highlight 0 (String.length !reopen_highlight);
+      reopen_highlight := ""
+    end;
+    fns.out_string s off n in
+  let new_fns = { fns with out_string = string; out_newline = newline } in
+  Format.pp_set_formatter_out_functions !std_ft new_fns;;
+
 let init_terminal_output ~color =
-  let push_tag, pop_tag, clear_tag = make_style_stack () in
+  let open_tag, close_tag, clear_tag = make_style_stack () in
   let print_prefix, print_suffix = make_printing_functions () in
   let tag_handler ft = {
-    Format.mark_open_tag   = push_tag;
-    Format.mark_close_tag  = pop_tag;
+    Format.mark_open_tag   = open_tag;
+    Format.mark_close_tag  = close_tag;
     Format.print_open_tag  = print_prefix ft;
     Format.print_close_tag = print_suffix ft;
   } in
@@ -265,6 +306,7 @@ let init_terminal_output ~color =
     (* Use 0-length markers *)
     begin
       std_logger_cleanup := clear_tag;
+      init_output_fns ();
       Format.pp_set_mark_tags !std_ft true;
       Format.pp_set_mark_tags !err_ft true
     end

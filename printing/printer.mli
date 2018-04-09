@@ -171,22 +171,26 @@ val pr_transparent_state   : transparent_state -> Pp.t
 
 (** Proofs, these functions obey [Hyps Limit] and [Compact contexts]. *)
 
-val pr_goal                : goal sigma -> Pp.t
+val pr_goal                : ?diffs:bool -> ?prev_gs:(goal sigma) -> goal sigma -> Pp.t
 
-(** [pr_subgoals ~pr_first pp sigma seeds shelf focus_stack unfocused goals]
+(** [pr_subgoals ~pr_first ~prev_proof pp sigma seeds shelf focus_stack unfocused goals]
    prints the goals of the list [goals] followed by the goals in
    [unfocused], in a short way (typically only the conclusion) except
-   for the first goal if [pr_first] is true. This function can be
-   replaced by another one by calling [set_printer_pr] (see below),
-   typically by plugin writers. The default printer prints only the
+   for the first goal if [pr_first] is true. Also, if [diffs] is true
+   and [pr_first] is true, then highlight diffs relative to [prev] in the
+   output for first goal. This function prints only the
    focused goals unless the conrresponding option
    [enable_unfocused_goal_printing] is set. [seeds] is for printing
    dependent evars (mainly for emacs proof tree mode). *)
-val pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> seeds:goal list -> shelf:goal list -> stack:int list -> unfocused:goal list -> goals:goal list -> Pp.t
+val pr_subgoals            : ?pr_first:bool -> ?diffs:bool -> ?prev:(goal list * evar_map) -> Pp.t option -> evar_map
+                             -> seeds:goal list -> shelf:goal list -> stack:int list
+                             -> unfocused: goal list -> goals:goal list -> Pp.t
 
 val pr_subgoal             : int -> evar_map -> goal list -> Pp.t
 val pr_concl               : int -> evar_map -> goal -> Pp.t
 
+val pr_open_subgoals_diff  : ?quiet:bool -> ?diffs:bool -> ?prev_proof:Proof.t -> Proof.t -> Pp.t
+val diff_pr_open_subgoals  : ?quiet:bool -> Proof.t option -> Proof.t option -> Pp.t
 val pr_open_subgoals       : proof:Proof.t -> Pp.t
 val pr_nth_open_subgoal    : proof:Proof.t -> int -> Pp.t
 val pr_evar                : evar_map -> (Evar.t * evar_info) -> Pp.t
@@ -196,6 +200,8 @@ val pr_ne_evar_set         : Pp.t -> Pp.t -> evar_map ->
   Evar.Set.t -> Pp.t
 
 val pr_prim_rule           : prim_rule -> Pp.t
+
+val print_and_diff : Proof.t option -> Proof.t option -> unit
 
 (** Backwards compatibility *)
 

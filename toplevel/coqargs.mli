@@ -43,6 +43,7 @@ type coq_cmdopts = {
   impredicative_set : Declarations.set_predicativity;
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
+  diffs_set   : bool;
   time        : bool;
 
   filter_opts : bool;

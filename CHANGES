@@ -13,7 +13,7 @@ Tactics
 
 - The undocumented "nameless" forms `fix N`, `cofix` that were
   deprecated in 8.8 have been removed from LTAC's syntax; please use
-  `fix ident N/cofix ident` to explicitely name the (co)fixpoint
+  `fix ident N/cofix ident` to explicitly name the (co)fixpoint
   hypothesis to be introduced.
 
 - Introduction tactics "intro"/"intros" on a goal which is an
@@ -105,11 +105,19 @@ SSReflect
   In particular rule 3 lets one write {x}/v even if v uses the variable x:
   indeed the view is executed before the renaming.
 
-- An empty clear switch is now accepted in intro patterns before a 
+- An empty clear switch is now accepted in intro patterns before a
   view application whenever the view is a variable.
   One can now write {}/v to mean {v}/v.  Remark that {}/x is very similar
   to the idiom {}e for the rewrite tactic (the equation e is used for
   rewriting and then discarded).
+
+Display diffs between proof steps
+
+- coqtop and coqide can now highlight the differences between proof steps
+  in color. This can be enabled from the command line or the
+  "Set Diffs on|off|removed" command. Please see the documentation for
+  details.  Showing diffs in Proof General requires small changes to PG
+  (under discussion).
 
 Changes from 8.8.0 to 8.8.1
 ===========================

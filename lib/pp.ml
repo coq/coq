@@ -139,7 +139,7 @@ let v   n s = Ppcmd_box(Pp_vbox n,s)
 let hv  n s = Ppcmd_box(Pp_hvbox n,s)
 let hov n s = Ppcmd_box(Pp_hovbox n,s)
 
-(* Opening and closed of tags *)
+(* Opening and closing of tags *)
 let tag t s = Ppcmd_tag(t,s)
 
 (* In new syntax only double quote char is escaped by repeating it *)
@@ -166,6 +166,20 @@ let rec pr_com ft s =
   match os with
       Some s2 -> Format.pp_force_newline ft (); pr_com ft s2
     | None -> ()
+
+let start_pfx = "start."
+let end_pfx = "end."
+
+let split_pfx pfx str =
+  let (str_len, pfx_len) = (String.length str, String.length pfx) in
+  if str_len >= pfx_len && (String.sub str 0 pfx_len) = pfx then
+    (pfx, String.sub str pfx_len (str_len - pfx_len)) else ("", str);;
+
+let split_tag tag =
+  let (pfx, ttag) = split_pfx start_pfx tag in
+  if pfx <> "" then (pfx, ttag) else
+    let (pfx, ttag) = split_pfx end_pfx tag in
+    (pfx, ttag);;
 
 (* pretty printing functions *)
 let pp_with ft pp =
@@ -297,3 +311,62 @@ let prvect_with_sep sep elem v = prvecti_with_sep sep (fun _ -> elem) v
 let prvect elem v = prvect_with_sep mt elem v
 
 let surround p = hov 1 (str"(" ++ p ++ str")")
+
+(*** DEBUG code ***)
+
+let db_print_pp fmt pp =
+  let open Format in
+  let block_type fmt btype =
+    let (bt, v) =
+      match btype with
+      | Pp_hbox v -> ("Pp_hbox", v)
+      | Pp_vbox v -> ("Pp_vbox", v)
+      | Pp_hvbox v -> ("Pp_hvbox", v)
+      | Pp_hovbox v -> ("Pp_hovbox", v)
+    in
+    fprintf fmt "%s %d" bt v
+  in
+  let rec db_print_pp_r indent pp =
+    let ind () = fprintf fmt "%s" (String.make (2 * indent) ' ') in
+    ind();
+    match pp with
+    | Ppcmd_empty ->
+        fprintf fmt "Ppcmd_empty@;"
+    | Ppcmd_string str ->
+        fprintf fmt "Ppcmd_string '%s'@;" str
+    | Ppcmd_glue list ->
+        fprintf fmt "Ppcmd_glue@;";
+        List.iter (fun x -> db_print_pp_r (indent + 1) (repr x)) list;
+    | Ppcmd_box (block, pp) ->
+        fprintf fmt "Ppcmd_box %a@;" block_type block;
+        db_print_pp_r (indent + 1) (repr pp);
+    | Ppcmd_tag (tag, pp) ->
+        fprintf fmt "Ppcmd_tag %s@;" tag;
+        db_print_pp_r (indent + 1) (repr pp);
+    | Ppcmd_print_break (i, j) ->
+        fprintf fmt "Ppcmd_print_break %d %d@;" i j
+    | Ppcmd_force_newline ->
+        fprintf fmt "Ppcmd_force_newline@;"
+    | Ppcmd_comment list ->
+        fprintf fmt "Ppcmd_comment@;";
+        List.iter (fun x -> ind(); (fprintf fmt "%s@;" x)) list
+  in
+  pp_open_vbox fmt 0;
+  db_print_pp_r 0 pp;
+  pp_close_box fmt ();
+  pp_print_flush fmt ()
+
+let db_string_of_pp pp =
+  Format.asprintf "%a" db_print_pp pp
+
+let rec flatten pp =
+  match pp with
+  | Ppcmd_glue l -> Ppcmd_glue (List.concat (List.map
+      (fun x -> let x = flatten x in
+                  match x with
+                  | Ppcmd_glue l2 -> l2
+                  | p -> [p])
+      l))
+  | Ppcmd_box (block, pp) -> Ppcmd_box (block, flatten pp)
+  | Ppcmd_tag (tag, pp) -> Ppcmd_tag (tag, flatten pp)
+  | p -> p

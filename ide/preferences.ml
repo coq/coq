@@ -25,6 +25,7 @@ type tag = {
   tag_bold : bool;
   tag_italic : bool;
   tag_underline : bool;
+  tag_strikethrough : bool;
 }
 
 (** Generic preferences *)
@@ -215,15 +216,17 @@ object
     string_of_bool tag.tag_bold;
     string_of_bool tag.tag_italic;
     string_of_bool tag.tag_underline;
+    string_of_bool tag.tag_strikethrough;
   ]
   method into = function
-  | [fg; bg; bd; it; ul] ->
+  | [fg; bg; bd; it; ul; st] ->
     (try Some {
       tag_fg_color = _to fg;
       tag_bg_color = _to bg;
       tag_bold = bool_of_string bd;
       tag_italic = bool_of_string it;
       tag_underline = bool_of_string ul;
+      tag_strikethrough = bool_of_string st;
       }
     with _ -> None)
   | _ -> None
@@ -429,12 +432,13 @@ let tags = ref Util.String.Map.empty
 
 let list_tags () = !tags
 
-let make_tag ?fg ?bg ?(bold = false) ?(italic = false) ?(underline = false) () = {
+let make_tag ?fg ?bg ?(bold = false) ?(italic = false) ?(underline = false) ?(strikethrough = false) () = {
   tag_fg_color = fg;
   tag_bg_color = bg;
   tag_bold = bold;
   tag_italic = italic;
   tag_underline = underline;
+  tag_strikethrough = strikethrough;
 }
 
 let create_tag name default =
@@ -470,6 +474,12 @@ let create_tag name default =
       tag#set_property (`UNDERLINE_SET true);
       tag#set_property (`UNDERLINE `SINGLE)
     end;
+    begin match pref#get.tag_strikethrough with
+    | false -> tag#set_property (`STRIKETHROUGH_SET false)
+    | true ->
+      tag#set_property (`STRIKETHROUGH_SET true);
+      tag#set_property (`STRIKETHROUGH true)
+    end;
   in
   let iter table =
     let tag = GText.tag ~name () in
@@ -480,6 +490,8 @@ let create_tag name default =
   List.iter iter [Tags.Script.table; Tags.Proof.table; Tags.Message.table];
   tags := Util.String.Map.add name pref !tags
 
+(* note these appear to only set the defaults; they don't override
+the user selection from the Edit/Preferences/Tags dialog *)
 let () =
   let iter (name, tag) = create_tag name tag in
   List.iter iter [
@@ -498,6 +510,10 @@ let () =
     ("tactic.keyword", make_tag ());
     ("tactic.primitive", make_tag ());
     ("tactic.string", make_tag ());
+    ("diff.added", make_tag ~bg:"#b6f1c0" ~underline:true ());
+    ("diff.removed", make_tag ~bg:"#f6b9c1" ~strikethrough:true ());
+    ("diff.added.bg", make_tag ~bg:"#e9feee" ());
+    ("diff.removed.bg", make_tag ~bg:"#fce9eb" ());
   ]
 
 let processed_color =
@@ -561,6 +577,7 @@ object (self)
   val bold = GButton.toggle_button ()
   val italic = GButton.toggle_button ()
   val underline = GButton.toggle_button ()
+  val strikethrough = GButton.toggle_button ()
 
   method set_tag tag =
     let track c but set = match c with
@@ -574,6 +591,7 @@ object (self)
     bold#set_active tag.tag_bold;
     italic#set_active tag.tag_italic;
     underline#set_active tag.tag_underline;
+    strikethrough#set_active tag.tag_strikethrough;
 
   method tag =
     let get but set =
@@ -586,6 +604,7 @@ object (self)
       tag_bold = bold#active;
       tag_italic = italic#active;
       tag_underline = underline#active;
+      tag_strikethrough = strikethrough#active;
     }
 
   initializer
@@ -599,6 +618,7 @@ object (self)
     set_stock bold `BOLD;
     set_stock italic `ITALIC;
     set_stock underline `UNDERLINE;
+    set_stock strikethrough `STRIKETHROUGH;
     box#pack fg_color#coerce;
     box#pack fg_unset#coerce;
     box#pack bg_color#coerce;
@@ -606,6 +626,7 @@ object (self)
     box#pack bold#coerce;
     box#pack italic#coerce;
     box#pack underline#coerce;
+    box#pack strikethrough#coerce;
     let cb but obj = obj#set_sensitive (not but#active) in
     let _ = fg_unset#connect#toggled ~callback:(fun () -> cb fg_unset fg_color#misc) in
     let _ = bg_unset#connect#toggled ~callback:(fun () -> cb bg_unset bg_color#misc) in
