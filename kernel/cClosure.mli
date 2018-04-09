@@ -98,25 +98,7 @@ val unfold_red : evaluable_global_reference -> reds
 (***********************************************************************)
 type table_key = Constant.t Univ.puniverses tableKey
 
-type 'a infos_cache
-type 'a infos_tab
-type 'a infos = {
-  i_flags : reds;
-  i_cache : 'a infos_cache }
-
-val ref_value_cache: 'a infos -> 'a infos_tab -> table_key -> 'a option
-val create:
-  repr:('a infos -> 'a infos_tab -> constr -> 'a) ->
-  share:bool ->
-  reds ->
-  env ->
-  (existential -> constr option) ->
-  'a infos
-val create_tab : unit -> 'a infos_tab
-val evar_value : 'a infos_cache -> existential -> constr option
-
-val info_env : 'a infos -> env
-val info_flags: 'a infos -> reds
+module KeyTable : Hashtbl.S with type key = table_key
 
 (***********************************************************************
   s Lazy reduction. *)
@@ -173,7 +155,6 @@ val stack_tail : int -> stack -> stack
 val stack_nth : stack -> int -> fconstr
 val zip_term : (fconstr -> constr) -> constr -> stack -> constr
 val eta_expand_stack : stack -> stack
-val unfold_projection : 'a infos -> Projection.t -> stack_member option
 
 (** To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
@@ -193,27 +174,32 @@ val destFLambda :
   (fconstr subs -> constr -> fconstr) -> fconstr -> Name.t * fconstr * fconstr
 
 (** Global and local constant cache *)
-type clos_infos = fconstr infos
+type clos_infos
+type clos_tab
 val create_clos_infos :
   ?evars:(existential->constr option) -> reds -> env -> clos_infos
 val oracle_of_infos : clos_infos -> Conv_oracle.oracle
 
-val env_of_infos : 'a infos -> env
+val create_tab : unit -> clos_tab
+
+val info_env : clos_infos -> env
+val info_flags: clos_infos -> reds
+val unfold_projection : clos_infos -> Projection.t -> stack_member option
 
 val infos_with_reds : clos_infos -> reds -> clos_infos
 
 (** Reduction function *)
 
 (** [norm_val] is for strong normalization *)
-val norm_val : clos_infos -> fconstr infos_tab -> fconstr -> constr
+val norm_val : clos_infos -> clos_tab -> fconstr -> constr
 
 (** [whd_val] is for weak head normalization *)
-val whd_val : clos_infos -> fconstr infos_tab -> fconstr -> constr
+val whd_val : clos_infos -> clos_tab -> fconstr -> constr
 
 (** [whd_stack] performs weak head normalization in a given stack. It
    stops whenever a reduction is blocked. *)
 val whd_stack :
-  clos_infos -> fconstr infos_tab -> fconstr -> stack -> fconstr * stack
+  clos_infos -> clos_tab -> fconstr -> stack -> fconstr * stack
 
 (** [eta_expand_ind_stack env ind c s t] computes stacks correspoding
     to the conversion of the eta expansion of t, considered as an inhabitant
@@ -230,7 +216,7 @@ val eta_expand_ind_stack : env -> inductive -> fconstr -> stack ->
 (** Conversion auxiliary functions to do step by step normalisation *)
 
 (** [unfold_reference] unfolds references in a [fconstr] *)
-val unfold_reference : clos_infos -> fconstr infos_tab -> table_key -> fconstr option
+val unfold_reference : clos_infos -> clos_tab -> table_key -> fconstr option
 
 val eq_table_key : table_key -> table_key -> bool
 
@@ -243,9 +229,9 @@ val lift_fconstr_vect : int -> fconstr array -> fconstr array
 val mk_clos      : fconstr subs -> constr -> fconstr
 val mk_clos_vect : fconstr subs -> constr array -> fconstr array
 
-val kni: clos_infos -> fconstr infos_tab -> fconstr -> stack -> fconstr * stack
-val knr: clos_infos -> fconstr infos_tab -> fconstr -> stack -> fconstr * stack
-val kl : clos_infos -> fconstr infos_tab -> fconstr -> constr
+val kni: clos_infos -> clos_tab -> fconstr -> stack -> fconstr * stack
+val knr: clos_infos -> clos_tab -> fconstr -> stack -> fconstr * stack
+val kl : clos_infos -> clos_tab -> fconstr -> constr
 
 val to_constr : lift -> fconstr -> constr
 

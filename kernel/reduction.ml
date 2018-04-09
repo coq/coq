@@ -316,8 +316,8 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
 
 type conv_tab = {
   cnv_inf : clos_infos;
-  lft_tab : fconstr infos_tab;
-  rgt_tab : fconstr infos_tab;
+  lft_tab : clos_tab;
+  rgt_tab : clos_tab;
 }
 (** Invariant: for any tl ∈ lft_tab and tr ∈ rgt_tab, there is no mutable memory
     location contained both in tl and in tr. *)
@@ -346,7 +346,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	   | (Sort s1, Sort s2) ->
 	       if not (is_empty_stack v1 && is_empty_stack v2) then
 		 anomaly (Pp.str "conversion was given ill-typed terms (Sort).");
-              sort_cmp_universes (env_of_infos infos.cnv_inf) cv_pb s1 s2 cuniv
+              sort_cmp_universes (info_env infos.cnv_inf) cv_pb s1 s2 cuniv
 	   | (Meta n, Meta m) ->
                if Int.equal n m
                then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv

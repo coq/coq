@@ -310,20 +310,6 @@ let ref_value_cache ({i_cache = cache;_} as infos) tab ref =
     | NotEvaluableConst _ (* Const *)
       -> None
 
-let evar_value cache ev =
-  cache.i_sigma ev
-
-let create ~repr ~share flgs env evars =
-  let cache =
-    { i_repr = repr;
-      i_env = env;
-      i_sigma = evars;
-      i_rels = env.env_rel_context.env_rel_map;
-      i_share = share;
-    }
-  in { i_flags = flgs; i_cache = cache }
-
-
 (**********************************************************************)
 (* Lazy reduction: the one used in kernel operations                  *)
 
@@ -944,7 +930,7 @@ let rec knr info tab m stk =
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
       knit info tab (subs_cons([|v|],e)) bd stk
   | FEvar(ev,env) ->
-      (match evar_value info.i_cache ev with
+      (match info.i_cache.i_sigma ev with
           Some c -> knit info tab env c stk
         | None -> (m,stk))
   | FLOCKED | FRel _ | FAtom _ | FFlex _ | FInd _ | FApp _ | FProj _
@@ -1054,16 +1040,22 @@ let whd_stack infos tab m stk = match m.norm with
 
 (* cache of constants: the body is computed only when needed. *)
 type clos_infos = fconstr infos
+type clos_tab = fconstr infos_tab
 
 let create_clos_infos ?(evars=fun _ -> None) flgs env =
   let share = (Environ.typing_flags env).Declarations.share_reduction in
-  create ~share ~repr:(fun _ _ c -> inject c) flgs env evars
+  let cache = {
+    i_repr = (fun _ _ c -> inject c);
+    i_env = env;
+    i_sigma = evars;
+    i_rels = env.env_rel_context.env_rel_map;
+    i_share = share;
+  } in
+  { i_flags = flgs; i_cache = cache }
 
 let create_tab () = KeyTable.create 17
 
 let oracle_of_infos infos = Environ.oracle infos.i_cache.i_env
-
-let env_of_infos infos = infos.i_cache.i_env
 
 let infos_with_reds infos reds =
   { infos with i_flags = reds }

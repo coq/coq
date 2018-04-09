@@ -134,7 +134,12 @@ let mkSTACK = function
   | STACK(0,v0,stk0), stk -> STACK(0,v0,stack_concat stk0 stk)
   | v,stk -> STACK(0,v,stk)
 
-type cbv_infos = { tab : cbv_value infos_tab; infos : cbv_value infos; sigma : Evd.evar_map }
+type cbv_infos = {
+  env : Environ.env;
+  tab : cbv_value KeyTable.t;
+  reds : RedFlags.reds;
+  sigma : Evd.evar_map
+}
 
 (* Change: zeta reduction cannot be avoided in CBV *)
 
@@ -260,8 +265,8 @@ let rec norm_head info env t stack =
   
   | Proj (p, c) -> 
     let p' =
-      if red_set (info_flags info.infos) (fCONST (Projection.constant p)) 
-      	&& red_set (info_flags info.infos) fBETA 
+      if red_set info.reds (fCONST (Projection.constant p))
+        && red_set info.reds fBETA
       then Projection.unfold p
       else p
     in 
@@ -280,16 +285,16 @@ let rec norm_head info env t stack =
   | Var id -> norm_head_ref 0 info env stack (VarKey id)
 
   | Const sp ->
-    Reductionops.reduction_effect_hook (env_of_infos info.infos) info.sigma
+    Reductionops.reduction_effect_hook info.env info.sigma
       (fst sp) (lazy (reify_stack t stack));
     norm_head_ref 0 info env stack (ConstKey sp)
 
   | LetIn (_, b, _, c) ->
       (* zeta means letin are contracted; delta without zeta means we *)
       (* allow bindings but leave let's in place *)
-      if red_set (info_flags info.infos) fZETA then
+      if red_set info.reds fZETA then
         (* New rule: for Cbv, Delta does not apply to locally bound variables
-           or red_set (info_flags info.infos) fDELTA
+           or red_set info.reds fDELTA
          *)
 	let env' = subs_cons ([|cbv_stack_term info TOP env b|],env) in
         norm_head info env' c stack
@@ -297,7 +302,7 @@ let rec norm_head info env t stack =
 	(CBN(t,env), stack) (* Should we consider a commutative cut ? *)
 
   | Evar ev ->
-      (match evar_value info.infos.i_cache ev with
+      (match Reductionops.safe_evar_value info.sigma ev with
           Some c -> norm_head info env c stack
         | None ->
           let e, xs = ev in
@@ -317,8 +322,8 @@ let rec norm_head info env t stack =
   | Prod _ -> (CBN(t,env), stack)
 
 and norm_head_ref k info env stack normt =
-  if red_set_ref (info_flags info.infos) normt then
-    match ref_value_cache info.infos info.tab normt with
+  if red_set_ref info.reds normt then
+    match cbv_value_cache info normt with
       | Some body ->
          if !debug_cbv then Feedback.msg_debug Pp.(str "Unfolding " ++ debug_pr_key normt);
          strip_appl (shift_value k body) stack
@@ -343,7 +348,7 @@ and cbv_stack_term info stack env t =
 and cbv_stack_value info env = function
   (* a lambda meets an application -> BETA *)
   | (LAM (nlams,ctxt,b,env), APP (args, stk))
-      when red_set (info_flags info.infos) fBETA ->
+      when red_set info.reds fBETA ->
     let nargs = Array.length args in
       if nargs == nlams then
           cbv_stack_term info stk (subs_cons(args,env)) b
@@ -357,31 +362,31 @@ and cbv_stack_value info env = function
 
     (* a Fix applied enough -> IOTA *)
     | (FIXP(fix,env,[||]), stk)
-        when fixp_reducible (info_flags info.infos) fix stk ->
+        when fixp_reducible info.reds fix stk ->
         let (envf,redfix) = contract_fixp env fix in
         cbv_stack_term info stk envf redfix
 
     (* constructor guard satisfied or Cofix in a Case -> IOTA *)
     | (COFIXP(cofix,env,[||]), stk)
-        when cofixp_reducible (info_flags info.infos) cofix stk->
+        when cofixp_reducible info.reds cofix stk->
         let (envf,redfix) = contract_cofixp env cofix in
         cbv_stack_term info stk envf redfix
 
     (* constructor in a Case -> IOTA *)
     | (CONSTR(((sp,n),u),[||]), APP(args,CASE(_,br,ci,env,stk)))
-            when red_set (info_flags info.infos) fMATCH ->
+            when red_set info.reds fMATCH ->
 	let cargs =
           Array.sub args ci.ci_npar (Array.length args - ci.ci_npar) in
         cbv_stack_term info (stack_app cargs stk) env br.(n-1)
 
     (* constructor of arity 0 in a Case -> IOTA *)
     | (CONSTR(((_,n),u),[||]), CASE(_,br,_,env,stk))
-            when red_set (info_flags info.infos) fMATCH ->
+            when red_set info.reds fMATCH ->
                     cbv_stack_term info stk env br.(n-1)
 
     (* constructor in a Projection -> IOTA *)
     | (CONSTR(((sp,n),u),[||]), APP(args,PROJ(p,stk)))
-        when red_set (info_flags info.infos) fMATCH && Projection.unfolded p ->
+        when red_set info.reds fMATCH && Projection.unfolded p ->
       let arg = args.(Projection.npars p + Projection.arg p) in
 	cbv_stack_value info env (strip_appl arg stk)
 
@@ -393,6 +398,29 @@ and cbv_stack_value info env = function
     (* definitely a value *)
     | (head,stk) -> mkSTACK(head, stk)
 
+and cbv_value_cache info ref = match KeyTable.find info.tab ref with
+| v -> Some v
+| exception Not_found ->
+  try
+    let body = match ref with
+    | RelKey n ->
+      let open Context.Rel.Declaration in
+      begin match Environ.lookup_rel n info.env with
+      | LocalDef (_, c, _) -> lift n c
+      | LocalAssum _ -> raise Not_found
+      end
+    | VarKey id ->
+      let open Context.Named.Declaration in
+      begin match Environ.lookup_named id info.env with
+      | LocalDef (_, c, _) -> c
+      | LocalAssum _ -> raise Not_found
+      end
+    | ConstKey cst -> Environ.constant_value_in info.env cst
+    in
+    let v = cbv_stack_term info TOP (subs_id 0) body in
+    let () = KeyTable.add info.tab ref v in
+    Some v
+  with Not_found | Environ.NotEvaluableConst _ -> None
 
 (* When we are sure t will never produce a redex with its stack, we
  * normalize (even under binders) the applied terms and we build the
@@ -453,11 +481,5 @@ let cbv_norm infos constr =
   EConstr.of_constr (with_stats (lazy (cbv_norm_term infos (subs_id 0) constr)))
 
 (* constant bodies are normalized at the first expansion *)
-let create_cbv_infos flgs env sigma =
-  let infos = create
-    ~share:true (** Not used by cbv *)
-    ~repr:(fun old_info tab c -> cbv_stack_term { tab; infos = old_info; sigma } TOP (subs_id 0) c)
-    flgs
-    env
-    (Reductionops.safe_evar_value sigma) in
-  { tab = CClosure.create_tab (); infos; sigma }
+let create_cbv_infos reds env sigma =
+  { tab = KeyTable.create 91; reds; env; sigma }
