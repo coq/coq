@@ -64,14 +64,14 @@ That is, they are recognized by the following lexical class:
 
 \index{ident@\ident}
 \begin{center}
-\begin{tabular}{rcl} 
+\begin{tabular}{rcl}
 {\firstletter} & ::= & {\tt a..z} $\mid$ {\tt A..Z} $\mid$ {\tt \_}
-$\mid$ {\tt unicode-letter}  
+$\mid$ {\tt unicode-letter}
 \\
 {\subsequentletter} & ::= & {\tt a..z} $\mid$ {\tt A..Z} $\mid$ {\tt 0..9}
 $\mid$ {\tt \_} % $\mid$ {\tt \$}
-$\mid$ {\tt '} 
-$\mid$ {\tt unicode-letter}  
+$\mid$ {\tt '}
+$\mid$ {\tt unicode-letter}
 $\mid$ {\tt unicode-id-part} \\
 {\ident} & ::= & {\firstletter} \sequencewithoutblank{\subsequentletter}{}
 \end{tabular}
@@ -227,7 +227,7 @@ called \CIC). The formal presentation of {\CIC} is given in Chapter
 
 \begin{figure}[htbp]
 \begin{centerframe}
-\begin{tabular}{lcl@{\quad~}r}  % warning: page width exceeded with \qquad 
+\begin{tabular}{lcl@{\quad~}r}  % warning: page width exceeded with \qquad
 {\term} & ::= &
          {\tt forall} {\binders} {\tt ,} {\term}  &(\ref{products})\\
  & $|$ & {\tt fun} {\binders} {\tt =>} {\term} &(\ref{abstractions})\\
@@ -272,7 +272,7 @@ called \CIC). The formal presentation of {\CIC} is given in Chapter
 {\binders} & ::= & \nelist{\binder}{}  \\
 &&&\\
 {\binder} & ::= &   {\name} & (\ref{Binders}) \\
- & $|$ & {\tt (} \nelist{\name}{} {\tt :} {\term} {\tt )} &\\  
+ & $|$ & {\tt (} \nelist{\name}{} {\tt :} {\term} {\tt )} &\\
  & $|$ & {\tt (} {\name} {\typecstr} {\tt :=} {\term} {\tt )} &\\
  & $|$ & {\tt '} {\pattern} &\\
 & & &\\
@@ -310,7 +310,7 @@ called \CIC). The formal presentation of {\CIC} is given in Chapter
     {\tt :=} {\term} \\
 {\cofixpointbody} & ::= & {\ident} \zeroone{\binders} {\typecstr} {\tt :=} {\term} \\
   & &\\
-{\annotation} & ::= & {\tt \{ struct} {\ident} {\tt \}} \\ 
+{\annotation} & ::= & {\tt \{ struct} {\ident} {\tt \}} \\
 &&\\
 {\caseitem} & ::= & {\term} \zeroone{{\tt as} \name}
      \zeroone{{\tt in} \qualid \sequence{\pattern}{}} \\
@@ -375,7 +375,7 @@ bound to Peano's representation of natural numbers
 Note: negative integers are not at the same level as {\num}, for this
 would make precedence unnatural.
 
-\subsection{Sorts 
+\subsection{Sorts
 \index{Sorts}
 \index{Type@{\Type}}
 \index{Set@{\Set}}
@@ -417,7 +417,7 @@ e.g. {\tt '(x,y)}.
 
 Some constructions allow the binding of a variable to value. This is
 called a ``let-binder''. The entry {\binder} of the grammar accepts
-either an assumption binder as defined above or a let-binder. 
+either an assumption binder as defined above or a let-binder.
 The notation in the
 latter case is {\tt (}\,{\ident}\,{\tt :=}\,{\term}\,{\tt )}. In a
 let-binder, only one variable can be introduced at the same
@@ -441,7 +441,7 @@ defines the {\em abstraction} of the variable {\ident}, of type
 {\type}, over the term {\term}. It denotes a function of the variable
 {\ident} that evaluates to the expression {\term} (e.g. {\tt fun x:$A$
 => x} denotes the identity function on type $A$).
-% The variable {\ident} is called the {\em parameter} of the function 
+% The variable {\ident} is called the {\em parameter} of the function
 % (we sometimes say the {\em formal parameter}).
 The keyword {\tt fun} can be followed by several binders as given in
 Section~\ref{Binders}. Functions over several variables are
@@ -462,7 +462,7 @@ The expression ``{\tt forall}~{\ident}~{\tt :}~{\type}{\tt
 ,}~{\term}'' denotes the {\em product} of the variable {\ident} of
 type {\type}, over the term {\term}. As for abstractions, {\tt forall}
 is followed by a binder list, and products over several variables are
-equivalent to an iteration of one-variable products. 
+equivalent to an iteration of one-variable products.
 Note that {\term} is intended to be a type.
 
 If the variable {\ident} occurs in {\term}, the product is called {\em
@@ -522,7 +522,7 @@ symbol ``\_'' and {\Coq} will guess the missing piece of information.
 
 {\tt let}~{\ident}~{\tt :=}~{\term$_1$}~{\tt in}~{\term$_2$} denotes
 the local binding of \term$_1$ to the variable $\ident$ in
-\term$_2$. 
+\term$_2$.
 There is a syntactic sugar for let-in definition of functions: {\tt
 let} {\ident} {\binder$_1$} {\ldots} {\binder$_n$} {\tt :=} {\term$_1$}
 {\tt in} {\term$_2$} stands for {\tt let} {\ident} {\tt := fun}
@@ -560,7 +560,7 @@ expression. There are several cases.  In the {\em non dependent} case,
 all branches have the same type, and the {\returntype} is the common
 type of branches. In this case, {\returntype} can usually be omitted
 as it can be inferred from the type of the branches\footnote{Except if
-the inductive type is empty in which case there is no equation that can be 
+the inductive type is empty in which case there is no equation that can be
 used to infer the return type.}.
 
 In the {\em dependent} case, there are three subcases. In the first
@@ -615,7 +615,7 @@ the type of each branch can depend on the type dependencies specific
 to the branch and the whole pattern-matching expression has a type
 determined by the specific dependencies in the type of the term being
 matched. This dependency of the return type in the annotations of the
-inductive type is expressed using a 
+inductive type is expressed using a
   ``in~I~\_~$\ldots$~\_~\pattern$_1$~$\ldots$~\pattern$_n$'' clause, where
 \begin{itemize}
 \item $I$ is the inductive type of the term being matched;
@@ -650,7 +650,7 @@ Finally, the third subcase is a combination of the first and second
 subcase. In particular, it only applies to pattern-matching on terms
 in a type with annotations. For this third subcase, both
 the clauses {\tt as} and {\tt in} are available.
- 
+
 There are specific notations for case analysis on types with one or
 two constructors: ``{\tt if {\ldots} then {\ldots} else {\ldots}}''
 and ``{\tt let (}\nelist{\ldots}{,}{\tt ) := } {\ldots} {\tt in}
@@ -709,12 +709,12 @@ definition have a special syntax: ``{\tt let fix}~$f$~{\ldots}~{\tt
           & $|$ & \nelist{{\tt (} \nelist{\ident}{} {\tt :} {\term} {\tt )}}{} \\
 &&\\
 %% Definitions
-{\definition} & ::= & 
+{\definition} & ::= &
          \zeroone{\tt Local} {\tt Definition} {\ident} \zeroone{\binders} {\typecstr} {\tt :=} {\term} {\tt .} \\
  & $|$ & {\tt Let} {\ident} \zeroone{\binders} {\typecstr} {\tt :=} {\term} {\tt .} \\
 &&\\
 %% Inductives
-{\inductive} & ::= & 
+{\inductive} & ::= &
            {\tt Inductive} \nelist{\inductivebody}{with} {\tt .} \\
  & $|$ & {\tt CoInductive} \nelist{\inductivebody}{with} {\tt .} \\
            & & \\
@@ -779,7 +779,7 @@ a postulate.
 \item \errindex{{\ident} already exists}
 \end{ErrMsgs}
 
-\begin{Variants} 
+\begin{Variants}
 \item \comindex{Parameter}\comindex{Parameters}
   {\tt Parameter {\ident} :{\term}.} \\
   Is equivalent to {\tt Axiom {\ident} : {\term}}
@@ -791,7 +791,7 @@ a postulate.
  {\tt Parameter\,%
 (\,{\ident$_{1,1}$} {\ldots} {\ident$_{1,k_1}$}\,{\tt :}\,{\term$_1$} {\tt )}\;%
 \ldots\;{\tt (}\,{\ident$_{n,1}$}{\ldots}{\ident$_{n,k_n}$}\,{\tt :}\,%
-{\term$_n$} {\tt )}.}\\ 
+{\term$_n$} {\tt )}.}\\
   Adds $n$ blocks of parameters with different specifications.
 
 \item {\tt Local Axiom {\ident} : {\term}.}\\
@@ -833,7 +833,7 @@ Local Parameter}.
  {\tt Variable\,%
 (\,{\ident$_{1,1}$} {\ldots} {\ident$_{1,k_1}$}\,{\tt :}\,{\term$_1$} {\tt )}\;%
 \ldots\;{\tt (}\,{\ident$_{n,1}$} {\ldots}{\ident$_{n,k_n}$}\,{\tt :}\,%
-{\term$_n$} {\tt )}.}\\ 
+{\term$_n$} {\tt )}.}\\
   Adds $n$ blocks of variables with different specifications.
 \item \comindex{Hypothesis}
       \comindex{Hypotheses}
@@ -955,7 +955,7 @@ Local Definition}.
 \label{Variant}}
 
 We gradually explain simple inductive types, simple
-annotated inductive types, simple parametric inductive types, 
+annotated inductive types, simple parametric inductive types,
 mutually inductive types. We explain also co-inductive types.
 
 \subsubsection{Simple inductive types}
@@ -1027,13 +1027,13 @@ to derive (for example, when {\ident} is a proposition).
 Reset Initial.
 \end{coq_eval}
 \begin{Variants}
-\item 
+\item
 \begin{coq_example*}
 Inductive nat : Set := O | S (_:nat).
 \end{coq_example*}
 In the case where inductive types have no annotations (next section
-gives an example of such annotations), 
-%the positivity condition implies that 
+gives an example of such annotations),
+%the positivity condition implies that
 a constructor can be defined by only giving the type of
 its arguments.
 \end{Variants}
@@ -1079,7 +1079,7 @@ built from {\ident}}
 
 \subsubsection{Parametrized inductive types}
 In the previous example, each constructor introduces a
-different instance of the predicate {\tt even}. In some cases, 
+different instance of the predicate {\tt even}. In some cases,
 all the constructors introduces the same generic instance of the
 inductive definition, in which case, instead of an annotation, we use
 a context of parameters which are binders shared by all the
@@ -1172,7 +1172,7 @@ Fail Inductive listw (A:Set) : Set :=
   | consw : A -> listw (A*A) -> listw (A*A).
 \end{coq_example}
 Because the conclusion of the type of constructors should be {\tt
-  listw A} in both cases. 
+  listw A} in both cases.
 
 A parametrized inductive definition can be defined using
 annotations instead of parameters but it will sometimes give a
@@ -1189,7 +1189,7 @@ a less convenient rule for case elimination.
 The definition of a block of mutually inductive types has the form:
 
 \medskip
-{\tt 
+{\tt
 \begin{tabular}{l}
 Inductive {\ident$_1$} : {\type$_1$} :=  \\
 \begin{tabular}{clcl}
@@ -1259,7 +1259,7 @@ with forest : Set :=
 \end{coq_example*}
 
 This declaration generates automatically six induction
-principles. They are respectively 
+principles. They are respectively
 called {\tt tree\_rec}, {\tt tree\_ind}, {\tt
   tree\_rect}, {\tt forest\_rec}, {\tt forest\_ind}, {\tt
   forest\_rect}.  These ones are not the most general ones but are
@@ -1292,7 +1292,7 @@ with forest (A B:Set) : Set :=
 Assume we define an inductive definition inside a section.  When the
 section is closed, the variables declared in the section and occurring
 free in the declaration are added as parameters to the inductive
-definition. 
+definition.
 
 \SeeAlso Section~\ref{Section}.
 
@@ -1357,10 +1357,10 @@ over inductive objects. See Section~\ref{Function} for more advanced
 constructions. The command:
 \begin{center}
   \texttt{Fixpoint {\ident} {\params} {\tt \{struct}
-  \ident$_0$ {\tt \}} : type$_0$ := \term$_0$ 
+  \ident$_0$ {\tt \}} : type$_0$ := \term$_0$
   \comindex{Fixpoint}\label{Fixpoint}}
 \end{center}
-allows defining functions by pattern-matching over inductive objects 
+allows defining functions by pattern-matching over inductive objects
 using a fixed point construction.
 The meaning of this declaration is to define {\it ident} a recursive
 function with arguments specified by the binders in {\params} such
@@ -1375,7 +1375,7 @@ syntactical constraints on a special argument called the decreasing
 argument. They are needed to ensure that the {\tt Fixpoint} definition
 always terminates. The point of the {\tt \{struct \ident {\tt \}}}
 annotation is to let the user tell the system which argument decreases
-along the recursive calls. For instance, one can define the addition 
+along the recursive calls. For instance, one can define the addition
 function as :
 
 \begin{coq_example}
@@ -1399,7 +1399,7 @@ The {\tt match} operator matches a value (here \verb:n:) with the
 various constructors of its (inductive) type. The remaining arguments
 give the respective values to be returned, as functions of the
 parameters of the corresponding constructor. Thus here when \verb:n:
-equals \verb:O: we return \verb:m:, and when \verb:n: equals 
+equals \verb:O: we return \verb:m:, and when \verb:n: equals
 \verb:(S p): we return \verb:(S (add p m)):.
 
 The {\tt match} operator is formally described
@@ -1439,7 +1439,7 @@ Fixpoint plus (n m:nat) {struct m} : nat :=
 The ordinary match operation on natural numbers can be mimicked in the
 following way.
 \begin{coq_example*}
-Fixpoint nat_match 
+Fixpoint nat_match
   (C:Set) (f0:C) (fS:nat -> C -> C) (n:nat) {struct n} : C :=
   match n with
   | O => f0
@@ -1477,8 +1477,8 @@ generally any mutually recursive definitions.
         {\ident$_m$}.
 \end{Variants}
 
-\Example 
-The size of trees and forests can be defined the following way: 
+\Example
+The size of trees and forests can be defined the following way:
 \begin{coq_eval}
 Reset Initial.
 Variables A B : Set.
@@ -1602,13 +1602,13 @@ validated, the proof is generalized into a proof of {\tt forall
     Prop or Type}
 
 \item \errindexbis{{\ident} already exists}{already exists}
- 
+
   The name you provided is already defined. You have then to choose
   another name.
 
 \end{ErrMsgs}
 
-\begin{Variants} 
+\begin{Variants}
 \item {\tt Lemma {\ident} \zeroone{\binders} : {\type}.}\comindex{Lemma}\\
   {\tt Remark {\ident} \zeroone{\binders} : {\type}.}\comindex{Remark}\\
   {\tt Fact {\ident} \zeroone{\binders} : {\type}.}\comindex{Fact}\\
@@ -1627,7 +1627,7 @@ to {\tt Fixpoint} or {\tt CoFixpoint}
 the statements (or the body of the specification, depending on the
 point of view). The inductive or co-inductive types on which the
 induction or coinduction has to be done is assumed to be non ambiguous
-and is guessed by the system. 
+and is guessed by the system.
 
 Like in a {\tt Fixpoint} or {\tt CoFixpoint} definition, the induction
 hypotheses have to be used on {\em structurally smaller} arguments
@@ -1700,7 +1700,7 @@ environment using the keyword {\tt Qed}.
 \item Not only other assertions but any vernacular command can be given
 while in the process of proving a given assertion. In this case, the command is
 understood as if it would have been given before the statements still to be
-proved. 
+proved.
 \item {\tt Proof} is recommended but can currently be omitted. On the
 opposite side, {\tt Qed} (or {\tt Defined}, see below) is mandatory to
 validate a proof.
@@ -1730,8 +1730,7 @@ validate a proof.
   proof mode.
 \end{Variants}
 
-% Local Variables: 
+% Local Variables:
 % mode: LaTeX
 % TeX-master: "Reference-Manual"
-% End: 
-
+% End:
