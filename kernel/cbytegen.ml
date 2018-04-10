@@ -500,22 +500,19 @@ let rec compile_lam env reloc lam sz cont =
   | Lsort (Sorts.Prop _ as s) ->
     compile_structured_constant reloc (Const_sort s) sz cont
   | Lsort (Sorts.Type u) ->
-    (* We separate global and local universes in [u]. The former will be part
-       of the structured constant, while the later (if any) will be applied as
-       arguments. *)
-    let open Univ in begin
-      let u,s = Universe.compact u in
-      (* We assume that [Universe.type0m] is a neutral element for [Universe.sup] *)
-      let compile_get_univ reloc idx sz cont =
-        set_max_stack_size sz;
-        compile_fv_elem reloc (FVuniv_var idx) sz cont
-      in
-      if List.is_empty s then
-        compile_structured_constant reloc (Const_sort (Sorts.Type u)) sz cont
-      else
-        comp_app compile_structured_constant compile_get_univ reloc
+    (* We represent universes as a global constant with local universes
+       "compacted", i.e. as [u arg0 ... argn] where we will substitute (after
+       evaluation) [Var 0,...,Var n] with values of [arg0,...,argn] *)
+    let u,s = Univ.compact_univ u in
+    let compile_get_univ reloc idx sz cont =
+      set_max_stack_size sz;
+      compile_fv_elem reloc (FVuniv_var idx) sz cont
+    in
+    if List.is_empty s then
+      compile_structured_constant reloc (Const_sort (Sorts.Type u)) sz cont
+    else
+      comp_app compile_structured_constant compile_get_univ reloc
         (Const_sort (Sorts.Type u)) (Array.of_list s) sz cont
-    end
 
   | Llet (id,def,body) ->
       compile_lam env reloc def sz
