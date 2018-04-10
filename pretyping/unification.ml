@@ -699,7 +699,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	    if k2 < k1 then sigma,(k1,cN,stN)::metasubst,evarsubst
 	    else sigma,(k2,cM,stM)::metasubst,evarsubst
 	| Meta k, _
-            when not (dependent sigma cM cN) (* helps early trying alternatives *) ->
+            when not (occur_metavariable sigma k cN) (* helps early trying alternatives *) ->
             let sigma = 
 	      if opt.with_types && flags.check_applied_meta_types then
 		(try
@@ -719,7 +719,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
               evarsubst)
 	    else error_cannot_unify_local curenv sigma (m,n,cN)
 	| _, Meta k
-            when not (dependent sigma cN cM) (* helps early trying alternatives *) ->
+            when not (occur_metavariable sigma k cM) (* helps early trying alternatives *) ->
           let sigma = 
 	    if opt.with_types && flags.check_applied_meta_types then
               (try
@@ -1506,7 +1506,8 @@ let indirectly_dependent sigma c d decls =
        it is needed otherwise, as e.g. when abstracting over "2" in
        "forall H:0=2, H=H:>(0=1+1) -> 0=2." where there is now obvious
        way to see that the second hypothesis depends indirectly over 2 *)
-    List.exists (fun d' -> dependent_in_decl sigma (EConstr.mkVar (NamedDecl.get_id d')) d) decls
+    let open Context.Named.Declaration in
+    List.exists (fun d' -> exists (fun c -> Termops.local_occur_var sigma (NamedDecl.get_id d') c) d) decls
 
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
   let sigma = Pretyping.solve_remaining_evars flags env current_sigma pending in

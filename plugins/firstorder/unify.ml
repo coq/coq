@@ -56,12 +56,12 @@ let unif evd t1 t2=
 	  | Meta i,_ ->
 	      let t=subst_meta !sigma nt2 in
 		if Int.Set.is_empty (free_rels evd t) &&
-		  not (dependent evd (EConstr.mkMeta i) t) then
+                  not (occur_metavariable evd i t) then
 		    bind i t else raise (UFAIL(nt1,nt2))
 	  | _,Meta i ->
 	      let t=subst_meta !sigma nt1 in
 		if Int.Set.is_empty (free_rels evd t) &&
-		  not (dependent evd (EConstr.mkMeta i) t) then
+                  not (occur_metavariable evd i t) then
 		    bind i t else raise (UFAIL(nt1,nt2))
 	  | Cast(_,_,_),_->Queue.add (strip_outer_cast evd nt1,nt2) bige
  	  | _,Cast(_,_,_)->Queue.add (nt1,strip_outer_cast evd nt2) bige

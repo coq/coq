@@ -574,7 +574,7 @@ let dependent_decl sigma a =
 
 let rec dep_in_tomatch sigma n = function
   | (Pushed _ | Alias _ | NonDepAlias) :: l -> dep_in_tomatch sigma n l
-  | Abstract (_,d) :: l -> dependent_decl sigma (mkRel n) d || dep_in_tomatch sigma (n+1) l
+  | Abstract (_,d) :: l -> RelDecl.exists (fun c -> not (noccurn sigma n c)) d || dep_in_tomatch sigma (n+1) l
   | [] -> false
 
 let dependencies_in_rhs sigma nargs current tms eqns =
@@ -1704,9 +1704,11 @@ let abstract_tycon ?loc env evdref subst tycon extenv t =
 	List.map_i
 	  (fun i _ -> if Int.List.mem i vl then u else mkRel i) 1
 	  (rel_context extenv) in
-      let rel_filter =
-	List.map (fun a -> not (isRel !evdref a) || dependent !evdref a u
-                           || Int.Set.mem (destRel !evdref a) depvl) inst in
+      let map a = match EConstr.kind !evdref a with
+      | Rel n -> not (noccurn !evdref n u) || Int.Set.mem n depvl
+      | _ -> true
+      in
+      let rel_filter = List.map map inst in
       let named_filter =
 	List.map (fun d -> local_occur_var !evdref (NamedDecl.get_id d) u)
 	  (named_context extenv) in
@@ -1936,8 +1938,8 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
     List.fold_right2 (fun (tm, tmtype) sign (subst, len) ->
       let signlen = List.length sign in
 	match EConstr.kind sigma tm with
-	  | Rel n when dependent sigma tm c
-		&& Int.equal signlen 1 (* The term to match is not of a dependent type itself *) ->
+          | Rel n when Int.equal signlen 1 && not (noccurn sigma n c)
+            (* The term to match is not of a dependent type itself *) ->
 	      ((n, len) :: subst, len - signlen)
 	  | Rel n when signlen > 1 (* The term is of a dependent type,
 				      maybe some variable in its type appears in the tycon. *) ->
@@ -1948,13 +1950,13 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
 		      List.fold_left
 			(fun (subst, len) arg ->
 			  match EConstr.kind sigma arg with
-			  | Rel n when dependent sigma arg c ->
+                          | Rel n when not (noccurn sigma n c) ->
 			      ((n, len) :: subst, pred len)
 			  | _ -> (subst, pred len))
 			(subst, len) realargs
 		    in
 		    let subst =
-		      if dependent sigma tm c && List.for_all (isRel sigma) realargs
+                      if not (noccurn sigma n c) && List.for_all (isRel sigma) realargs
 		      then (n, len) :: subst else subst
 		    in (subst, pred len))
 	  | _ -> (subst, len - signlen))

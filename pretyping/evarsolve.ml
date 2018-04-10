@@ -527,7 +527,7 @@ let is_unification_pattern_meta env evd nb m l t =
   match Option.List.map map l with
   | Some l ->
     begin match find_unification_pattern_args env evd l t with
-    | Some _ as x when not (dependent evd (mkMeta m) t) -> x
+    | Some _ as x when not (occur_metavariable evd m t) -> x
     | _ -> None
     end
   | None ->
@@ -1072,8 +1072,14 @@ let do_restrict_hyps evd (evk,args as ev) filter candidates =
 
 let postpone_non_unique_projection env evd pbty (evk,argsv as ev) sols rhs =
   let rhs = expand_vars_in_term env evd rhs in
-  let filter =
-    restrict_upon_filter evd evk
+  let filter a = match EConstr.kind evd a with
+  | Rel n -> not (noccurn evd  n rhs)
+  | Var id ->
+    local_occur_var evd id rhs
+      || List.exists (fun (id', _) -> Id.equal id id') sols
+  | _ -> true
+  in
+  let filter = restrict_upon_filter evd evk filter argsv in
       (* Keep only variables that occur in rhs *)
       (* This is not safe: is the variable is a local def, its body *)
       (* may contain references to variables that are removed, leading to *)
@@ -1081,9 +1087,6 @@ let postpone_non_unique_projection env evd pbty (evk,argsv as ev) sols rhs =
       (* that says that the body is hidden. Note that expand_vars_in_term *)
       (* expands only rels and vars aliases, not rels or vars bound to an *)
       (* arbitrary complex term *)
-      (fun a -> not (isRel evd a || isVar evd a)
-                || dependent evd a rhs || List.exists (fun (id,_) -> isVarId evd id a) sols)
-      argsv in
   let filter = closure_of_filter evd evk filter in
   let candidates = extract_candidates sols in
   match candidates with
