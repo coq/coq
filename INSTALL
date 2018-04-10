@@ -1,5 +1,5 @@
 
-            INSTALLATION PROCEDURES FOR THE COQ V8.7 SYSTEM
+            INSTALLATION PROCEDURES FOR THE COQ V8.8 SYSTEM
             -----------------------------------------------
 
 
@@ -27,7 +27,7 @@ WHAT DO YOU NEED ?
 
      port install coq
 
-   To compile Coq V8.7 yourself, you need:
+   To compile Coq V8.8 yourself, you need:
 
    - OCaml version 4.02.3 or later
      (available at https://ocaml.org/)
@@ -45,12 +45,26 @@ WHAT DO YOU NEED ?
    - for Coqide, the Lablgtk development files, and the GTK libraries
      including gtksourceview, see INSTALL.ide for more details
 
+   Note that camlp5 and lablgtk should be properly registered with
+   findlib/ocamlfind as Coq's makefile will use it to locate the
+   libraries during the build.
+
    Opam (https://opam.ocaml.org/) is recommended to install ocaml and
    the corresponding packages.
 
    $ opam install ocamlfind camlp5 lablgtk-extras
 
    should get you a reasonable OCaml environment to compile Coq.
+
+   Advanced users may want to experiment with the OCaml Flambda
+   compiler as way to improve the performance of Coq. In order to
+   profit from Flambda, a special build of the OCaml compiler that has
+   the Flambda optimizer enabled must be installed. For OPAM users,
+   this amounts to installing a compiler switch ending in `+flambda`,
+   such as `4.06.1+flambda`. For other users, YMMV. Once `ocamlopt
+   -config` reports that Flambda is available, some further
+   optimization options can be used; see the entry about -flambda-opts
+   below for more details.
 
 QUICK INSTALLATION PROCEDURE.
 =============================
@@ -66,7 +80,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    computer and that "ocamlc" (or, better, its native code version
    "ocamlc.opt") lies in a directory which is present in your $PATH
    environment variable. At the time of writing this sentence, all
-   versions of Objective Caml later or equal to 4.02.1 are
+   versions of Objective Caml later or equal to 4.02.3 are
    supported.
 
    To get Coq in native-code, (it runs 4 to 10 times faster than
@@ -129,9 +143,10 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 	and will be replaced by the URL.
 
 -flambda-opts <flags>
-         This experimental option will pass specific user flags to the
+        This experimental option will pass specific user flags to the
         OCaml optimizing compiler. In most cases, this option is used
-        to tweak the flambda backend; we recommend using
+        to tweak the flambda backend; for maximum performance we
+        recommend using
 
         -flambda-opts `-O3 -unbox-closures`
 
@@ -144,7 +159,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
         a large amount of RAM (>= 10GiB) in some particular files.
 
         We recommend disabling native compilation (`-native-compiler no`)
-        with flambda unless you use a modern (>= 4.06.0) OCaml.
+        with flambda unless you use OCaml >= 4.07.0.
 
         c.f. https://caml.inria.fr/mantis/view.php?id=7630
 
