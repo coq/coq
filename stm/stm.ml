@@ -2803,6 +2803,11 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
       (* Meta *)
       | VtMeta, _ ->
         let id, w = Backtrack.undo_vernac_classifier expr in
+        (* Special case Backtrack, as it is never part of a script. See #6240 *)
+        let part_of_script = begin match Vernacprop.under_control expr with
+          | VernacBacktrack _ -> false
+          | _ -> part_of_script
+        end in
         process_back_meta_command ~part_of_script ~newtip ~head id x w
       (* Query *)
       | VtQuery (false,route), VtNow ->
