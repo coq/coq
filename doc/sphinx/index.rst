@@ -44,6 +44,7 @@ Table of contents
    :caption: Addendum
 
    addendum/extended-pattern-matching
+   addendum/canonical-structures
 
 .. toctree::
    :caption: Reference
