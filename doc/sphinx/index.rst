@@ -39,6 +39,7 @@ Table of contents
    :caption: Practical tools
 
    practical-tools/coq-commands
+   practical-tools/utilities
    practical-tools/coqide
 
 .. toctree::
