@@ -26,7 +26,7 @@ hole: ID;
 LGROUP: '{' [+*?];
 LBRACE: '{';
 RBRACE: '}';
-METACHAR: '%' [|()];
+METACHAR: '%' [|(){}];
 ATOM: '@' | ~[@{} ]+;
 ID: '@' [a-zA-Z0-9_]+;
 WHITESPACE: ' '+;
