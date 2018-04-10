@@ -1,0 +1,3 @@
+The command has indeed failed with message:
+Ltac call to "move (ssrmovearg) (ssrclauses)" failed.
+No assumption is named NO_SUCH_NAME
