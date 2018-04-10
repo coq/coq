@@ -53,6 +53,7 @@ Table of contents
    addendum/program
    addendum/ring
    addendum/nsatz
+   addendum/generalized-rewriting
 
 .. toctree::
    :caption: Reference
