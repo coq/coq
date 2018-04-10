@@ -20,7 +20,7 @@ package "clib" (
   version     = "8.8"
 
   directory   = "clib"
-  requires    = "str, unix, threads"
+  requires    = "num, str, unix, threads"
 
   archive(byte)    = "clib.cma"
   archive(native)  = "clib.cmxa"
