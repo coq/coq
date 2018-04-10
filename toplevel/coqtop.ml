@@ -315,15 +315,23 @@ let check_vio_tasks opts =
 
 (* vio files *)
 let schedule_vio opts =
-  (* We must add update the loadpath here as the scheduling process
-     happens outside of the STM *)
-  let iload_path = build_load_path opts in
-  List.iter Mltop.add_coq_path iload_path;
-
   if opts.vio_checking then
     Vio_checking.schedule_vio_checking opts.vio_files_j opts.vio_files
   else
     Vio_checking.schedule_vio_compilation opts.vio_files_j opts.vio_files
+
+let do_vio opts =
+  (* We must initialize the loadpath here as the vio scheduling
+     process happens outside of the STM *)
+  if opts.vio_files <> [] || opts.vio_tasks <> [] then
+    let iload_path = build_load_path opts in
+    List.iter Mltop.add_coq_path iload_path;
+
+  (* Vio compile pass *)
+  if opts.vio_files <> [] then schedule_vio opts;
+  (* Vio task pass *)
+  if opts.vio_tasks <> [] then check_vio_tasks opts
+
 
 (******************************************************************************)
 (* Color Options                                                              *)
@@ -483,10 +491,9 @@ let init_toplevel arglist =
       end else begin
         try
           compile_files opts;
-          (* Vio compile pass *)
-          if opts.vio_files <> [] then schedule_vio opts;
-          (* Vio task pass *)
-          check_vio_tasks opts;
+          (* Careful this will modify the load-path and state so after
+             this point some stuff may not be safe anymore. *)
+          do_vio opts;
           (* Allow the user to output an arbitrary state *)
           outputstate opts;
           None, opts
