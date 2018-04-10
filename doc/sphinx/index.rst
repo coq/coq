@@ -44,6 +44,7 @@ Table of contents
    :caption: Addendum
 
    addendum/extended-pattern-matching
+   addendum/implicit-coercions
    addendum/canonical-structures
    addendum/type-classes
    addendum/omega

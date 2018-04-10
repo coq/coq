@@ -2191,12 +2191,7 @@ an inductive type or any constant with a type of the form
 Then the user is able to apply an object that is not a function, but
 can be coerced to a function, and more generally to consider that a
 term of type ``A`` is of type ``B`` provided that there is a declared coercion
-between ``A`` and ``B``. The main command is
-
-.. cmd:: Coercion @qualid : @class >-> @class.
-
-which declares the construction denoted by qualid as a coercion
-between the two given classes.
+between ``A`` and ``B``.
 
 More details and examples, and a description of the commands related
 to coercions are provided in :ref:`implicitcoercions`.
