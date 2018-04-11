@@ -7,7 +7,7 @@ Delimit Scope Z_scope with Z.
 Open Scope Z_scope.
 Check 0.
 (* 0 : nat *)
-Require BinNums.
+Require BinInt.
 Check 0.
 (* 0 : BinNums.Z *)
 Back 2.
