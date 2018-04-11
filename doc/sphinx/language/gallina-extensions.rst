@@ -41,7 +41,9 @@ Remark that the type of a particular identifier may depend on a previously-given
 order of the fields is important. Finally, each `param` is a parameter of the record.
 
 More generally, a record may have explicitly defined (a.k.a. manifest)
-fields. For instance, we might have::
+fields. For instance, we might have:
+
+.. coqtop:: in
 
   Record ident param : sort := { ident₁ : type₁ ; ident₂ := term₂ ; ident₃ : type₃ }.
 
@@ -49,6 +51,8 @@ in which case the correctness of |type_3| may rely on the instance |term_2| of |
 may depend on |ident_1|.
 
 .. example::
+
+   The set of rational numbers may be defined as:
 
   .. coqtop:: reset all
 
@@ -169,7 +173,7 @@ and the syntax `term.(@qualid` |term_1| |term_n| `)` to `@qualid` |term_1| `…`
 In each case, `term` is the object projected and the
 other arguments are the parameters of the inductive type.
 
-.. note::. Records defined with the ``Record`` keyword are not allowed to be
+.. note:: Records defined with the ``Record`` keyword are not allowed to be
    recursive (references to the record's name in the type of its field
    raises an  error). To define recursive records, one can use the ``Inductive``
    and ``CoInductive`` keywords, resulting in an inductive or co-inductive record.
@@ -181,7 +185,7 @@ other arguments are the parameters of the inductive type.
    defined with the ``Record`` keyword can be activated with the
    ``Nonrecursive Elimination Schemes`` option (see :ref:`TODO-13.1.1-nonrecursive-elimination-schemes`).
 
-.. note::``Structure`` is a synonym of the keyword ``Record``.
+.. note:: ``Structure`` is a synonym of the keyword ``Record``.
 
 .. warn:: @ident cannot be defined.
 
@@ -217,7 +221,9 @@ the errors of inductive definitions, as described in Section
 Primitive Projections
 ~~~~~~~~~~~~~~~~~~~~~
 
-The option ``Set Primitive Projections`` turns on the use of primitive
+.. opt:: Primitive Projections
+
+Turns on the use of primitive
 projections when defining subsequent records (even through the ``Inductive``
 and ``CoInductive`` commands). Primitive projections
 extended the Calculus of Inductive Constructions with a new binary
@@ -229,11 +235,15 @@ terms when manipulating parameterized records and typechecking time.
 On the user level, primitive projections can be used as a replacement
 for the usual defined ones, although there are a few notable differences.
 
-The internally omitted parameters can be reconstructed at printing time
-even though they are absent in the actual AST manipulated by the kernel. This
-can be obtained by setting the ``Printing Primitive Projection Parameters``
-flag. Another compatibility printing can be activated thanks to the
-``Printing Primitive Projection Compatibility`` option which governs the
+.. opt:: Printing Primitive Projection Parameters
+
+This compatibility option reconstructs internally omitted parameters at
+printing time (even though they are absent in the actual AST manipulated
+by the kernel).
+
+.. opt:: Printing Primitive Projection Compatibility
+
+This compatibility option (on by default) governs the
 printing of pattern-matching over primitive records.
 
 Primitive Record Types
@@ -243,6 +253,8 @@ When the ``Set Primitive Projections`` option is on, definitions of
 record types change meaning. When a type is declared with primitive
 projections, its :g:`match` construct is disabled (see :ref:`primitive_projections` though).
 To eliminate the (co-)inductive type, one must use its defined primitive projections.
+
+.. The following paragraph is quite redundant with what is above
 
 For compatibility, the parameters still appear to the user when
 printing terms even though they are absent in the actual AST
@@ -462,115 +474,62 @@ of :g:`match` expressions.
 Printing nested patterns
 +++++++++++++++++++++++++
 
+.. opt:: Printing Matching.
+
 The Calculus of Inductive Constructions knows pattern-matching only
 over simple patterns. It is however convenient to re-factorize nested
 pattern-matching into a single pattern-matching over a nested
-pattern. |Coq|’s printer tries to do such limited re-factorization.
+pattern.
 
-.. cmd:: Set Printing Matching.
+When this option is on (default), |Coq|’s printer tries to do such
+limited re-factorization.
+Turning it off tells |Coq| to print only simple pattern-matching problems
+in the same way as the |Coq| kernel handles them.
 
-This tells |Coq| to try to use nested patterns. This is the default
-behavior.
-
-.. cmd:: Unset Printing Matching.
-
-This tells |Coq| to print only simple pattern-matching problems in the
-same way as the |Coq| kernel handles them.
-
-.. cmd:: Test Printing Matching.
-
-This tells if the printing matching mode is on or off. The default is
-on.
 
 Factorization of clauses with same right-hand side
 ++++++++++++++++++++++++++++++++++++++++++++++++++
 
+.. opt:: Printing Factorizable Match Patterns.
+
 When several patterns share the same right-hand side, it is additionally
 possible to share the clauses using disjunctive patterns. Assuming that the
-printing matching mode is on, whether |Coq|'s printer shall try to do this kind
-of factorization is governed by the following commands:
-
-.. cmd:: Set Printing Factorizable Match Patterns.
-
-This tells |Coq|'s printer to try to use disjunctive patterns. This is the
-default behavior.
-
-.. cmd:: Unset Printing Factorizable Match Patterns.
-
-This tells |Coq|'s printer not to try to use disjunctive patterns.
-
-.. cmd:: Test Printing Factorizable Match Patterns.
-
-This tells if the factorization of clauses with same right-hand side is on or
-off.
+printing matching mode is on, this option (on by default) tells |Coq|'s
+printer to try to do this kind of factorization.
 
 Use of a default clause
 +++++++++++++++++++++++
 
+.. opt:: Printing Allow Default Clause.
+
 When several patterns share the same right-hand side which do not depend on the
 arguments of the patterns, yet an extra factorization is possible: the
 disjunction of patterns can be replaced with a `_` default clause. Assuming that
-the printing matching mode and the factorization mode are on, whether |Coq|'s
-printer shall try to use a default clause is governed by the following commands:
-
-.. cmd:: Set Printing Allow Default Clause.
-
-This tells |Coq|'s printer to use a default clause when relevant. This is the
-default behavior.
-
-.. cmd:: Unset Printing Allow Default Clause.
-
-This tells |Coq|'s printer not to use a default clause.
-         
-.. cmd:: Test Printing Allow Default Clause.
-
-This tells if the use of a default clause is allowed.
+the printing matching mode and the factorization mode are on, this option (on by
+default) tells |Coq|'s printer to use a default clause when relevant.
 
 Printing of wildcard patterns
 ++++++++++++++++++++++++++++++
 
+.. opt:: Printing Wildcard.
+
 Some variables in a pattern may not occur in the right-hand side of
-the pattern-matching clause. There are options to control the display
-of these variables.
-
-.. cmd:: Set Printing Wildcard.
-
-The variables having no occurrences in the right-hand side of the
+the pattern-matching clause. When this option is on (default), the
+variables having no occurrences in the right-hand side of the
 pattern-matching clause are just printed using the wildcard symbol
 “_”.
-
-.. cmd:: Unset Printing Wildcard.
-
-The variables, even useless, are printed using their usual name. But
-some non-dependent variables have no name. These ones are still
-printed using a “_”.
-
-.. cmd:: Test Printing Wildcard.
-
-This tells if the wildcard printing mode is on or off. The default is
-to print wildcard for useless variables.
 
 
 Printing of the elimination predicate
 +++++++++++++++++++++++++++++++++++++
 
+.. opt:: Printing Synth.
+
 In most of the cases, the type of the result of a matched term is
 mechanically synthesizable. Especially, if the result type does not
-depend of the matched term.
-
-.. cmd:: Set Printing Synth.
-
-The result type is not printed when |Coq| knows that it can re-
+depend of the matched term. When this option is on (default),
+the result type is not printed when |Coq| knows that it can re-
 synthesize it.
-
-.. cmd:: Unset Printing Synth.
-
-This forces the result type to be always printed.
-
-.. cmd:: Test Printing Synth.
-
-This tells if the non-printing of synthesizable types is on or off.
-The default is to not print synthesizable types.
 
 
 Printing matching on irrefutable patterns
@@ -1188,24 +1147,24 @@ some of the fields and give one of its possible implementations:
 Notice that ``M`` is a correct body for the component ``M2`` since its ``T``
 component is equal ``nat`` and hence ``M1.T`` as specified.
 
-**Remarks:**
+.. note::
 
-#. Modules and module types can be nested components of each other.
-#. One can have sections inside a module or a module type, but not a
-   module or a module type inside a section.
-#. Commands like ``Hint`` or ``Notation`` can also appear inside modules and
-   module types. Note that in case of a module definition like:
+  #. Modules and module types can be nested components of each other.
+  #. One can have sections inside a module or a module type, but not a
+     module or a module type inside a section.
+  #. Commands like ``Hint`` or ``Notation`` can also appear inside modules and
+     module types. Note that in case of a module definition like:
 
-::
+  ::
 
-  Module N : SIG := M.
+     Module N : SIG := M.
 
-or::
+  or::
 
-  Module N : SIG. … End N.
+    Module N : SIG. … End N.
 
-hints and the like valid for ``N`` are not those defined in ``M`` (or the module body) but the ones defined
-in ``SIG``.
+  hints and the like valid for ``N`` are not those defined in ``M``
+  (or the module body) but the ones defined in ``SIG``.
 
 
 .. _import_qualid:
@@ -1780,14 +1739,10 @@ appear strictly in the body of the type, they are implicit.
 Mode for automatic declaration of implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In case one wants to systematically declare implicit the arguments
-detectable as such, one may switch to the automatic declaration of
-implicit arguments mode by using the command:
+.. opt:: Implicit Arguments.
 
-.. cmd:: Set Implicit Arguments.
-
-Conversely, one may unset the mode by using ``Unset Implicit Arguments``.
-The mode is off by default. Auto-detection of implicit arguments is
+This option (off by default) allows to systematically declare implicit
+the arguments detectable as such. Auto-detection of implicit arguments is
 governed by options controlling whether strict and contextual implicit
 arguments have to be considered or not.
 
@@ -1796,76 +1751,53 @@ arguments have to be considered or not.
 Controlling strict implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. opt:: Strict Implicit.
+
 When the mode for automatic declaration of implicit arguments is on,
 the default is to automatically set implicit only the strict implicit
 arguments plus, for historical reasons, a small subset of the non-strict
 implicit arguments. To relax this constraint and to set
-implicit all non strict implicit arguments by default, use the command:
+implicit all non strict implicit arguments by default, you can turn this
+option off.
 
-.. cmd:: Unset Strict Implicit.
+.. opt:: Strongly Strict Implicit.
 
-Conversely, use the command ``Set Strict Implicit`` to restore the
-original mode that declares implicit only the strict implicit
-arguments plus a small subset of the non strict implicit arguments.
-
-In the other way round, to capture exactly the strict implicit
-arguments and no more than the strict implicit arguments, use the
-command
-
-.. cmd:: Set Strongly Strict Implicit.
-
-Conversely, use the command ``Unset Strongly Strict Implicit`` to let the
-option “Strict Implicit” decide what to do.
-
-Remark: In versions of |Coq| prior to version 8.0, the default was to
-declare the strict implicit arguments as implicit.
+Use this option (off by default) to capture exactly the strict implicit
+arguments and no more than the strict implicit arguments.
 
 .. _controlling-contextual-implicit-args:
 
 Controlling contextual implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. opt:: Contextual Implicit.
+
 By default, |Coq| does not automatically set implicit the contextual
-implicit arguments. To tell |Coq| to infer also contextual implicit
-argument, use command
-
-.. cmd:: Set Contextual Implicit.
-
-Conversely, use command ``Unset Contextual Implicit`` to unset the
-contextual implicit mode.
+implicit arguments. You can turn this option on to tell |Coq| to also
+infer contextual implicit argument.
 
 .. _controlling-rev-pattern-implicit-args:
 
 Controlling reversible-pattern implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. opt:: Reversible Pattern Implicit.
+
 By default, |Coq| does not automatically set implicit the reversible-pattern
-implicit arguments. To tell |Coq| to infer also reversible-
-pattern implicit argument, use command
-
-.. cmd:: Set Reversible Pattern Implicit.
-
-Conversely, use command ``Unset Reversible Pattern Implicit`` to unset the
-reversible-pattern implicit mode.
+implicit arguments. You can turn this option on to tell |Coq| to also infer
+reversible-pattern implicit argument.
 
 .. _controlling-insertion-implicit-args:
 
 Controlling the insertion of implicit arguments not followed by explicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Implicit arguments can be declared to be automatically inserted when a
+.. opt:: Maximal Implicit Insertion.
+
+Assuming the implicit argument mode is on, this option (off by default)
+declares implicit arguments to be automatically inserted when a
 function is partially applied and the next argument of the function is
-an implicit one. In case the implicit arguments are automatically
-declared (with the command ``Set Implicit Arguments``), the command
-
-.. cmd:: Set Maximal Implicit Insertion.
-
-is used to tell to declare the implicit arguments with a maximal
-insertion status. By default, automatically declared implicit
-arguments are not declared to be insertable maximally. To restore the
-default mode for maximal insertion, use the command
-
-.. cmd:: Unset Maximal Implicit Insertion.
+an implicit one.
 
 Explicit applications
 ~~~~~~~~~~~~~~~~~~~~~
@@ -1935,26 +1867,18 @@ if each of them is to be used maximally or not, use the command
 Explicit displaying of implicit arguments for pretty-printing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default the basic pretty-printing rules hide the inferable implicit
-arguments of an application. To force printing all implicit arguments,
-use command
+.. opt:: Printing Implicit.
 
-.. cmd:: Set Printing Implicit.
+By default, the basic pretty-printing rules hide the inferable implicit
+arguments of an application. Turn this option on to force printing all
+implicit arguments.
 
-Conversely, to restore the hiding of implicit arguments, use command
+.. opt:: Printing Implicit Defensive.
 
-.. cmd:: Unset Printing Implicit.
-
-By default the basic pretty-printing rules display the implicit
+By default, the basic pretty-printing rules display the implicit
 arguments that are not detected as strict implicit arguments. This
 “defensive” mode can quickly make the display cumbersome so this can
-be deactivated by using the command
-
-.. cmd:: Unset Printing Implicit Defensive.
-
-Conversely, to force the display of non strict arguments, use command
-
-.. cmd:: Set Printing Implicit Defensive.
+be deactivated by turning this option off.
 
 See also: ``Set Printing All`` in :ref:`printing_constructions_full`.
 
@@ -1981,17 +1905,14 @@ but succeeds in
 Deactivation of implicit arguments for parsing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Use of implicit arguments can be deactivated by issuing the command:
+.. opt:: Parsing Explicit.
 
-.. cmd:: Set Parsing Explicit.
+Turning this option on, deactivates the use of implicit arguments.
 
 In this case, all arguments of constants, inductive types,
 constructors, etc, including the arguments declared as implicit, have
-to be given as if none arguments were implicit. By symmetry, this also
-affects printing. To restore parsing and normal printing of implicit
-arguments, use:
-
-.. cmd:: Unset Parsing Explicit.
+to be given as if no arguments were implicit. By symmetry, this also
+affects printing.
 
 Canonical structures
 ~~~~~~~~~~~~~~~~~~~~
@@ -2201,38 +2122,30 @@ to coercions are provided in :ref:`implicitcoercions`.
 Printing constructions in full
 ------------------------------
 
+.. opt:: Printing All.
+
 Coercions, implicit arguments, the type of pattern-matching, but also
 notations (see :ref:`syntaxextensionsandinterpretationscopes`) can obfuscate the behavior of some
 tactics (typically the tactics applying to occurrences of subterms are
-sensitive to the implicit arguments). The command
-
-.. cmd:: Set Printing All.
-
+sensitive to the implicit arguments). Turning this option on
 deactivates all high-level printing features such as coercions,
 implicit arguments, returned type of pattern-matching, notations and
 various syntactic sugar for pattern-matching or record projections.
 Otherwise said, ``Set Printing All`` includes the effects of the commands
 ``Set Printing Implicit``, ``Set Printing Coercions``, ``Set Printing Synth``,
 ``Unset Printing Projections``, and ``Unset Printing Notations``. To reactivate
-the high-level printing features, use the command
-
-.. cmd:: Unset Printing All.
+the high-level printing features, use the command ``Unset Printing All``.
 
 Printing universes
 ------------------
 
-The following command:
+.. opt:: Printing Universes.
 
-.. cmd:: Set Printing Universes.
-
-activates the display of the actual level of each occurrence of ``Type``.
+Turn this option on to activate the display of the actual level of each occurrence of ``Type``.
 See :ref:`TODO-4.1.1-sorts` for details. This wizard option, in combination
 with ``Set Printing All`` (see :ref:`printing_constructions_full`) can help to diagnose failures
 to unify terms apparently identical but internally different in the
-Calculus of Inductive Constructions. To reactivate the display of the
-actual level of the occurrences of Type, use
-
-.. cmd:: Unset Printing Universes.
+Calculus of Inductive Constructions.
 
 The constraints on the internal level of the occurrences of Type
 (see :ref:`TODO-4.1.1-sorts`) can be printed using the command
@@ -2314,18 +2227,12 @@ with a named-goal selector, see :ref:`TODO-9.2-goal-selectors`).
 Explicit displaying of existential instances for pretty-printing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The command:
+.. opt:: Printing Existential Instances.
 
-.. cmd:: Set Printing Existential Instances.
+This option (off by default) activates the full display of how the
+context of an existential variable is instantiated at each of the
+occurrences of the existential variable.
 
-activates the full display of how the context of an existential
-variable is instantiated at each of the occurrences of the existential
-variable.
-
-To deactivate the full display of the instances of existential
-variables, use
-
-.. cmd:: Unset Printing Existential Instances.
 
 Solving existential variables using tactics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
