@@ -58,13 +58,13 @@ WHAT DO YOU NEED ?
 
    Advanced users may want to experiment with the OCaml Flambda
    compiler as way to improve the performance of Coq. In order to
-   profit from Flambda, a special build of the OCaml compiler that has
-   the Flambda optimizer enabled must be installed. For OPAM users,
-   this amounts to installing a compiler switch ending in `+flambda`,
-   such as `4.06.1+flambda`. For other users, YMMV. Once `ocamlopt
-   -config` reports that Flambda is available, some further
-   optimization options can be used; see the entry about -flambda-opts
-   below for more details.
+   profit from Flambda, a special build of the OCaml compiler with the
+   Flambda optimizer enabled must be installed. OPAM users can install
+   such a compiler by selecting a compiler switch ending in
+   `+flambda`, for example `4.06.1+flambda`. For users of other
+   package managers, YMMV. Once `ocamlopt -config` reports that
+   Flambda is available, some further optimization options can be
+   used; see the entry about -camlflags below for more details.
 
 QUICK INSTALLATION PROCEDURE.
 =============================
@@ -142,13 +142,14 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 	Use <command> to open an URL in a browser. %s must appear in <command>,
 	and will be replaced by the URL.
 
--flambda-opts <flags>
-        This experimental option will pass specific user flags to the
-        OCaml optimizing compiler. In most cases, this option is used
-        to tweak the flambda backend; for maximum performance we
-        recommend using
+-camlflags     <flags>
+-camlbyteflags <flags>
+-camloptflags  <flags>
+        These options will pass specific user flags to the OCaml
+        compilers. In most cases, this option is used to tweak the
+        flambda backend; for maximum performance we recommend using
 
-        -flambda-opts `-O3 -unbox-closures`
+        -camloptflags "-O3 -unbox-closures"
 
         but of course you are free to try with a different combination
         of flags. You can read more at
