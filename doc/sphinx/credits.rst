@@ -1307,9 +1307,9 @@ features and deprecations, cleanups of the internals of the system along
 with a few new features. The main user visible changes are:
 
 - Kernel: fix a subject reduction failure due to allowing fixpoints
-  on non-recursive values, which allows to recover full parametricity
-  for CIC, by Matthieu Sozeau. Handling of evars in the VM (the kernel
-  still does not accept evars) by Pierre-Marie Pédrot.
+  on non-recursive values, by Matthieu Sozeau.
+  Handling of evars in the VM (the kernel still does not accept evars)
+  by Pierre-Marie Pédrot.
 
 - Notations: many improvements on recursive notations and support for
   destructuring patterns in the syntax of notations by Hugo Herbelin.
