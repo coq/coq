@@ -5,9 +5,6 @@
 Type Classes
 ============
 
-:Source: https://coq.inria.fr/distrib/current/refman/type-classes.html
-:Author: Matthieu Sozeau
-
 This chapter presents a quick reference of the commands related to type
 classes. For an actual introduction to type classes, there is a
 description of the system :cite:`sozeau08` and the literature on type
