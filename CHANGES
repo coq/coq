@@ -1,3 +1,12 @@
+Changes from 8.8+beta1 to 8.8.0
+===============================
+
+Tools
+
+- Asynchronous proof delegation policy was fixed. Since version 8.7
+  Coq was ignoring previous runs and the -async-proofs-delegation-threshold
+  option did not have the expected behavior.
+
 Changes from 8.7.2 to 8.8+beta1
 ===============================
 
