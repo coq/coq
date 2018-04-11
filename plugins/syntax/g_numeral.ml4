@@ -268,17 +268,14 @@ type numnot_option =
   | Abstract of raw_natural_number
 
 type numeral_notation_obj =
-  { num_ty : Libnames.reference;
-    z_pos_ty : z_pos_ty option;
-    int_ty : int_ty;
-    to_kind : conversion_kind;
-    to_ty : constr;
-    of_kind : conversion_kind;
-    of_ty : constr;
-    scope : Notation_term.scope_name;
-    constructors : Glob_term.glob_constr list;
-    warning : numnot_option;
-    path : Libnames.full_path }
+  { num_ty : Libnames.reference; (* i *)
+    z_pos_ty : z_pos_ty option; (* i*)
+    int_ty : int_ty;           (* i *)
+    to_kind : conversion_kind; (* i *)
+    to_ty : constr;            (* i *)
+    of_kind : conversion_kind; (* u *)
+    of_ty : constr;            (* u *)
+    warning : numnot_option; (* i *) }
 
 let interp o ?loc n =
   begin match o.warning with
@@ -314,14 +311,17 @@ let uninterp o (Glob_term.AnyGlobConstr n) =
   | Type_errors.TypeError _ -> None (* cf. eval_constr_app *)
   | NotANumber -> None (* all other functions except big2raw *)
 
-let load_numeral_notation _ (_, o) =
-  Notation.declare_rawnumeral_interpreter o.scope (o.path, [])
-  (interp o)
-  (o.constructors, uninterp o, true)
+let load_numeral_notation _ (_, (opts,infos)) =
+  Notation.(register_rawnumeral_interpretation
+              infos.pt_uid (interp opts, uninterp opts));
+  Notation.enable_prim_token_interpretation infos
 
-let cache_numeral_notation o = load_numeral_notation 1 o
+let cache_numeral_notation x = load_numeral_notation 1 x
 
-let inNumeralNotation : numeral_notation_obj -> Libobject.obj =
+(* TODO: substitution ? *)
+
+let inNumeralNotation :
+  numeral_notation_obj * Notation.prim_token_infos -> Libobject.obj =
   Libobject.declare_object {
     (Libobject.default_object "NUMERAL NOTATION") with
     Libobject.cache_function = cache_numeral_notation;
@@ -331,11 +331,7 @@ let get_constructors ind =
   let mib,oib = Global.lookup_inductive ind in
   let mc = oib.Declarations.mind_consnames in
   Array.to_list
-    (Array.mapi
-       (fun j c ->
-         DAst.make
-           (Glob_term.GRef (ConstructRef (ind, j + 1), None)))
-       mc)
+    (Array.mapi (fun j c -> ConstructRef (ind, j + 1)) mc)
 
 let q_z = qualid_of_string "Coq.Numbers.BinNums.Z"
 let q_positive = qualid_of_string "Coq.Numbers.BinNums.positive"
@@ -453,8 +449,7 @@ let vernac_numeral_notation ty f g scope opts =
          pr_reference ty ++
          str " to Decimal.int or (option int) or uint or Z or (option Z)")
   in
-  Lib.add_anonymous_leaf
-    (inNumeralNotation
+  let o =
        { num_ty = ty;
          z_pos_ty;
          int_ty;
@@ -462,10 +457,16 @@ let vernac_numeral_notation ty f g scope opts =
          to_ty;
          of_kind;
          of_ty;
-         scope;
-         constructors;
-         warning = opts;
-         path = Nametab.path_of_global tyc })
+         warning = opts }
+  in
+  let i = Notation.(
+       { pt_scope = scope;
+         pt_uid = Marshal.to_string o [];
+         pt_required = Nametab.path_of_global tyc,[];
+         pt_refs = constructors;
+         pt_in_match = true })
+  in
+  Lib.add_anonymous_leaf (inNumeralNotation (o,i))
 
 open Ltac_plugin
 open Stdarg
