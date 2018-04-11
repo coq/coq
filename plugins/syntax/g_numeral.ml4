@@ -258,7 +258,11 @@ let big2raw n =
 let raw2big (n,s) =
   if s then Bigint.of_string n else Bigint.neg (Bigint.of_string n)
 
-type target_kind = Int | UInt | Z
+type target_kind =
+  | Int of int_ty (* Coq.Init.Decimal.int + uint *)
+  | UInt of Names.inductive (* Coq.Init.Decimal.uint *)
+  | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
+
 type option_kind = Option | Direct
 type conversion_kind = target_kind * option_kind
 
@@ -268,14 +272,12 @@ type numnot_option =
   | Abstract of raw_natural_number
 
 type numeral_notation_obj =
-  { num_ty : Libnames.reference; (* i *)
-    z_pos_ty : z_pos_ty option; (* i*)
-    int_ty : int_ty;           (* i *)
-    to_kind : conversion_kind; (* i *)
-    to_ty : constr;            (* i *)
-    of_kind : conversion_kind; (* u *)
-    of_ty : constr;            (* u *)
-    warning : numnot_option; (* i *) }
+  { to_kind : conversion_kind;
+    to_ty : constr;
+    of_kind : conversion_kind;
+    of_ty : constr;
+    num_ty : Libnames.reference; (* for warnings / error messages *)
+    warning : numnot_option }
 
 let interp o ?loc n =
   begin match o.warning with
@@ -284,10 +286,10 @@ let interp o ?loc n =
   | _ -> ()
   end;
   let c = match fst o.to_kind with
-    | Int -> coqint_of_rawnum o.int_ty n
-    | UInt when snd n -> coquint_of_rawnum o.int_ty.uint (fst n)
-    | UInt (* n <= 0 *) -> no_such_number ?loc o.num_ty
-    | Z -> z_of_bigint (Option.get o.z_pos_ty) (raw2big n)
+    | Int int_ty -> coqint_of_rawnum int_ty n
+    | UInt uint_ty when snd n -> coquint_of_rawnum uint_ty (fst n)
+    | UInt _ (* n <= 0 *) -> no_such_number ?loc o.num_ty
+    | Z z_pos_ty -> z_of_bigint z_pos_ty (raw2big n)
   in
   match o.warning, snd o.to_kind with
   | Abstract threshold, Direct when rawnum_compare (fst n) threshold >= 0 ->
@@ -304,24 +306,31 @@ let uninterp o (Glob_term.AnyGlobConstr n) =
     let c = eval_constr_app o.of_ty (constr_of_glob n) in
     let c = if snd o.of_kind == Direct then c else uninterp_option c in
     match fst o.of_kind with
-    | Int -> Some (rawnum_of_coqint c)
-    | UInt -> Some (rawnum_of_coquint c, true)
-    | Z -> Some (big2raw (bigint_of_z c))
+    | Int _ -> Some (rawnum_of_coqint c)
+    | UInt _ -> Some (rawnum_of_coquint c, true)
+    | Z _ -> Some (big2raw (bigint_of_z c))
   with
   | Type_errors.TypeError _ -> None (* cf. eval_constr_app *)
   | NotANumber -> None (* all other functions except big2raw *)
 
-let load_numeral_notation _ (_, (opts,infos)) =
-  Notation.(register_rawnumeral_interpretation
-              infos.pt_uid (interp opts, uninterp opts));
-  Notation.enable_prim_token_interpretation infos
+(* Here we only register the interp and uninterp functions
+   for a particular Numeral Notation (determined by a unique
+   string). The actual activation of the notation will be done
+   later (cf. Notation.enable_prim_token_interpretation).
+   This registration of interp/uninterp must be added in the
+   libstack, otherwise this won't work through a Require. *)
+
+let load_numeral_notation _ (_, (uid,opts)) =
+  Notation.register_rawnumeral_interpretation
+    uid (interp opts, uninterp opts)
 
 let cache_numeral_notation x = load_numeral_notation 1 x
 
-(* TODO: substitution ? *)
+(* TODO: substitution ?
+   TODO: uid pas stable par substitution dans opts
+ *)
 
-let inNumeralNotation :
-  numeral_notation_obj * Notation.prim_token_infos -> Libobject.obj =
+let inNumeralNotation : string * numeral_notation_obj -> Libobject.obj =
   Libobject.declare_object {
     (Libobject.default_object "NUMERAL NOTATION") with
     Libobject.cache_function = cache_numeral_notation;
@@ -374,6 +383,20 @@ let has_type f ty =
   try let _ = Constrintern.interp_constr env sigma c in true
   with Pretype_errors.PretypeError _ -> false
 
+let type_error_to f ty loadZ =
+  CErrors.user_err
+    (pr_reference f ++ str " should go from Decimal.int to " ++
+     pr_reference ty ++ str " or (option " ++ pr_reference ty ++ str ")." ++
+     fnl () ++ str "Instead of int, the types uint or Z could be used" ++
+     (if loadZ then str " (load Z first)." else str "."))
+
+let type_error_of g ty loadZ =
+  CErrors.user_err
+    (pr_reference g ++ str " should go from " ++ pr_reference ty ++
+     str " to Decimal.int or (option int)." ++ fnl () ++
+     str "Instead of int, the types uint or Z could be used" ++
+     (if loadZ then str " (load Z first)." else str "."))
+
 let vernac_numeral_notation ty f g scope opts =
   let int_ty = locate_int () in
   let z_pos_ty = locate_z () in
@@ -408,65 +431,50 @@ let vernac_numeral_notation ty f g scope opts =
     if Global.is_polymorphic (Nametab.global f) then
       CErrors.user_err
         (pr_reference f ++ str " cannot be polymorphic for the moment")
-    else if has_type f (arrow cint cty) then Int, Direct
-    else if has_type f (arrow cint (opt cty)) then Int, Option
-    else if has_type f (arrow cuint cty) then UInt, Direct
-    else if has_type f (arrow cuint (opt cty)) then UInt, Option
-    else if Option.is_empty z_pos_ty then
-      CErrors.user_err
-        (pr_reference f ++ str " should go from Decimal.int or uint to " ++
-         pr_reference ty ++ str " or (option " ++ pr_reference ty ++
-         str ")." ++ fnl () ++
-         str "Instead of int, the type Z could also be used (load it first).")
-    else if has_type f (arrow cZ cty) then Z, Direct
-    else if has_type f (arrow cZ (opt cty)) then Z, Option
+    else if has_type f (arrow cint cty) then Int int_ty, Direct
+    else if has_type f (arrow cint (opt cty)) then Int int_ty, Option
+    else if has_type f (arrow cuint cty) then UInt int_ty.uint, Direct
+    else if has_type f (arrow cuint (opt cty)) then UInt int_ty.uint, Option
     else
-       CErrors.user_err
-        (pr_reference f ++ str " should go from Decimal.int or uint or Z to "
-         ++
-         pr_reference ty ++ str " or (option " ++ pr_reference ty ++ str ")")
+      match z_pos_ty with
+      | Some z_pos_ty ->
+         if has_type f (arrow cZ cty) then Z z_pos_ty, Direct
+         else if has_type f (arrow cZ (opt cty)) then Z z_pos_ty, Option
+         else type_error_to f ty false
+      | None -> type_error_to f ty true
   in
   (* Check the type of g *)
   let of_kind =
     if Global.is_polymorphic (Nametab.global g) then
       CErrors.user_err
         (pr_reference g ++ str " cannot be polymorphic for the moment")
-    else if has_type g (arrow cty cint) then Int, Direct
-    else if has_type g (arrow cty (opt cint)) then Int, Option
-    else if has_type g (arrow cty cuint) then UInt, Direct
-    else if has_type g (arrow cty (opt cuint)) then UInt, Option
-    else if Option.is_empty z_pos_ty then
-      CErrors.user_err
-        (pr_reference g ++ str " should go from " ++
-         pr_reference ty ++
-         str " to Decimal.int or (option int) or uint." ++ fnl () ++
-         str "Instead of int, the type Z could also be used (load it first).")
-    else if has_type g (arrow cty cZ) then Z, Direct
-    else if has_type g (arrow cty (opt cZ)) then Z, Option
+    else if has_type g (arrow cty cint) then Int int_ty, Direct
+    else if has_type g (arrow cty (opt cint)) then Int int_ty, Option
+    else if has_type g (arrow cty cuint) then UInt int_ty.uint, Direct
+    else if has_type g (arrow cty (opt cuint)) then UInt int_ty.uint, Option
     else
-      CErrors.user_err
-        (pr_reference g ++ str " should go from " ++
-         pr_reference ty ++
-         str " to Decimal.int or (option int) or uint or Z or (option Z)")
+      match z_pos_ty with
+      | Some z_pos_ty ->
+         if has_type g (arrow cty cZ) then Z z_pos_ty, Direct
+         else if has_type g (arrow cty (opt cZ)) then Z z_pos_ty, Option
+         else type_error_of g ty false
+      | None -> type_error_of g ty true
   in
-  let o =
-       { num_ty = ty;
-         z_pos_ty;
-         int_ty;
-         to_kind;
-         to_ty;
-         of_kind;
-         of_ty;
-         warning = opts }
+  let o = { to_kind; to_ty; of_kind; of_ty;
+            num_ty = ty;
+            warning = opts }
   in
+  (* TODO: un hash suffit-il ? *)
+  let uid = Marshal.to_string o [] in
   let i = Notation.(
        { pt_scope = scope;
-         pt_uid = Marshal.to_string o [];
+         pt_uid = uid;
          pt_required = Nametab.path_of_global tyc,[];
          pt_refs = constructors;
          pt_in_match = true })
   in
-  Lib.add_anonymous_leaf (inNumeralNotation (o,i))
+  Lib.add_anonymous_leaf (inNumeralNotation (uid,o));
+  Notation.enable_prim_token_interpretation i
 
 open Ltac_plugin
 open Stdarg
