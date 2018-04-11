@@ -5,7 +5,7 @@ set -o pipefail
 
 API=https://api.github.com/repos/coq/coq
 OFFICIAL_REMOTE_GIT_URL="git@github.com:coq/coq"
-OFFICIAL_REMOTE_HTTPS_URL="https://github.com/coq/coq"
+OFFICIAL_REMOTE_HTTPS_URL="github.com/coq/coq"
 
 # This script depends (at least) on git (>= 2.7) and jq.
 # It should be used like this: dev/tools/merge-pr.sh /PR number/
@@ -91,8 +91,10 @@ fi
 REMOTE_URL=$(git remote get-url "$REMOTE" --all)
 if [ "$REMOTE_URL" != "${OFFICIAL_REMOTE_GIT_URL}" ] && \
    [ "$REMOTE_URL" != "${OFFICIAL_REMOTE_GIT_URL}.git" ] && \
-   [ "$REMOTE_URL" != "${OFFICIAL_REMOTE_HTTPS_URL}" ] && \
-   [ "$REMOTE_URL" != "${OFFICIAL_REMOTE_HTTPS_URL}.git" ]; then
+   [ "$REMOTE_URL" != "https://${OFFICIAL_REMOTE_HTTPS_URL}" ] && \
+   [ "$REMOTE_URL" != "https://${OFFICIAL_REMOTE_HTTPS_URL}.git" ] && \
+   [[ "$REMOTE_URL" != "https://"*"@${OFFICIAL_REMOTE_HTTPS_URL}" ]] && \
+   [[ "$REMOTE_URL" != "https://"*"@${OFFICIAL_REMOTE_HTTPS_URL}.git" ]] ; then
   error "remote ${BLUE}$REMOTE${RESET} does not point to the official Coq repo"
   error "that is ${BLUE}$OFFICIAL_REMOTE_GIT_URL"
   error "it points to ${BLUE}$REMOTE_URL${RESET} instead"

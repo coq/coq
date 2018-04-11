@@ -70,7 +70,7 @@ To merge the PR proceed in the following way
 ```
 $ git checkout master
 $ git pull
-$ dev/tools/merge-pr XXXX
+$ dev/tools/merge-pr.sh XXXX
 $ git push upstream
 ```
 where `XXXX` is the number of the PR to be merged and `upstream` is the name
