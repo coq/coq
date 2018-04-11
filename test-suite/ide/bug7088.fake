@@ -1,0 +1,13 @@
+ADD { Arguments id T x : rename. }
+ADD { Lemma foo : True. }
+ADD here { Proof. }
+ADD { exact 3. }
+ADD { Qed. }
+WAIT
+EDIT_AT here
+ADD { Arguments id FOO BAR : rename. }
+ADD { exact I. }
+ADD { Qed. }
+ADD { Arguments id T x : assert. }
+JOIN
+
