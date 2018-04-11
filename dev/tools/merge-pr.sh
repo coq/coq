@@ -4,10 +4,19 @@ set -e
 set -o pipefail
 
 API=https://api.github.com/repos/coq/coq
-OFFICIAL_REMOTE_URL="git@github.com:coq/coq"
+OFFICIAL_REMOTE_GIT_URL="git@github.com:coq/coq"
+OFFICIAL_REMOTE_HTTPS_URL="https://github.com/coq/coq"
 
-# This script depends (at least) on git and jq.
+# This script depends (at least) on git (>= 2.7) and jq.
 # It should be used like this: dev/tools/merge-pr.sh /PR number/
+
+# Set SLOW_CONF to have the confirmation output wait for a newline
+# E.g. call $ SLOW_CONF= dev/tools/merge-pr.sh /PR number/
+if [ -z ${SLOW_CONF+x} ]; then
+    QUICK_CONF="-n 1"
+else
+    QUICK_CONF=""
+fi
 
 RED="\033[31m"
 RESET="\033[0m"
@@ -32,7 +41,7 @@ fi
 }
 
 ask_confirmation() {
-  read -p "Continue anyway? [y/N] " -n 1 -r
+  read -p "Continue anyway? [y/N] " $QUICK_CONF -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]
   then
@@ -79,11 +88,13 @@ if [ -z "$REMOTE" ]; then
   error "please run: git branch --set-upstream-to=THE_REMOTE/$CURRENT_LOCAL_BRANCH"
   exit 1
 fi
-REMOTE_URL=$(git remote get-url "$REMOTE" --push)
-if [ "$REMOTE_URL" != "$OFFICIAL_REMOTE_URL" ] && \
-   [ "$REMOTE_URL" != "$OFFICIAL_REMOTE_URL.git" ]; then
+REMOTE_URL=$(git remote get-url "$REMOTE" --all)
+if [ "$REMOTE_URL" != "${OFFICIAL_REMOTE_GIT_URL}" ] && \
+   [ "$REMOTE_URL" != "${OFFICIAL_REMOTE_GIT_URL}.git" ] && \
+   [ "$REMOTE_URL" != "${OFFICIAL_REMOTE_HTTPS_URL}" ] && \
+   [ "$REMOTE_URL" != "${OFFICIAL_REMOTE_HTTPS_URL}.git" ]; then
   error "remote ${BLUE}$REMOTE${RESET} does not point to the official Coq repo"
-  error "that is ${BLUE}$OFFICIAL_REMOTE_URL"
+  error "that is ${BLUE}$OFFICIAL_REMOTE_GIT_URL"
   error "it points to ${BLUE}$REMOTE_URL${RESET} instead"
   ask_confirmation
 fi
@@ -106,6 +117,26 @@ if [ "$BASE_BRANCH" != "coq:$CURRENT_LOCAL_BRANCH" ]; then
   error "PR requests merge in ${BLUE}$BASE_BRANCH${RESET} but you are merging in ${BLUE}$CURRENT_LOCAL_BRANCH"
   ask_confirmation
 fi;
+
+# Sanity check: the local branch is up-to-date with upstream
+
+LOCAL_BRANCH_COMMIT=$(git rev-parse HEAD)
+UPSTREAM_COMMIT=$(git rev-parse @{u})
+if [ "$LOCAL_BRANCH_COMMIT" != "$UPSTREAM_COMMIT" ]; then
+
+    # Is it just that the upstream branch is behind?
+    # It could just be that we merged other PRs and we didn't push yet
+
+    if git merge-base --is-ancestor -- "$UPSTREAM_COMMIT" "$LOCAL_BRANCH_COMMIT"; then
+        warning "Your branch is ahead of ${REMOTE}."
+        warning "You should see this warning only if you've just merged another PR and did not push yet."
+        ask_confirmation
+    else
+        error "Local branch is not up-to-date with ${REMOTE}."
+        error "Pull before merging."
+        ask_confirmation
+    fi
+fi
 
 # Sanity check: CI failed
 
