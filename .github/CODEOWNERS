@@ -60,6 +60,9 @@
 /lib/             @ejgallego
 # Secondary maintainer @ppedrot
 
+/lib/cWarnings.* @maximedenes
+# Secondary maintainer @ejgallego
+
 ########## Proof engine ##########
 
 /engine/          @ppedrot
