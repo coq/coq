@@ -3,6 +3,7 @@ Set Implicit Arguments.
 
 Require Export Relation_Definitions.
 Require Export Setoid.
+Require Import Morphisms.
 
 
 Section Essais.
@@ -40,57 +41,27 @@ Parameter
 
 Hint Resolve equiv_refl equiv_sym equiv_trans: monad.
 
-Instance equiv_rel A: Equivalence (@equiv A).
-Proof.
- constructor.
- intros xa; apply equiv_refl.
- intros xa xb; apply equiv_sym.
- intros xa xb xc; apply equiv_trans.
-Defined.
+Add Parametric Relation A : (K A) (@equiv A)
+    reflexivity proved by (@equiv_refl A)
+    symmetry proved by (@equiv_sym A)
+    transitivity proved by (@equiv_trans A)
+      as equiv_rel.
 
-Definition fequiv (A B: Type)  (f g: A -> K B) := forall (x:A), (equiv (f x) (g
-x)).
-
-Lemma fequiv_refl : forall (A B: Type) (f : A -> K B), fequiv f f.
+Add Parametric Morphism A B : (@bind A B)
+    with signature (@equiv A) ==> (pointwise_relation A (@equiv B)) ==> (@equiv B)
+      as bind_mor.
 Proof.
-  unfold fequiv; auto with monad.
-Qed.
-
-Lemma fequiv_sym : forall (A B: Type) (x y : A -> K B), fequiv x y -> fequiv y
-x.
-Proof.
-  unfold fequiv; auto with monad.
-Qed.
-
-Lemma fequiv_trans : forall (A B: Type) (x y z : A -> K B), fequiv x y ->
-fequiv
-y z -> fequiv x z.
-Proof.
-  unfold fequiv; intros; eapply equiv_trans; auto with monad.
-Qed.
-
-Instance fequiv_re A B: Equivalence (@fequiv A B).
-Proof.
- constructor.
- intros f; apply fequiv_refl.
- intros f g; apply fequiv_sym.
- intros f g h; apply fequiv_trans.
-Defined.
-
-Instance bind_mor A B: Morphisms.Proper (@equiv _ ==> @fequiv _ _ ==> @equiv _) (@bind A B).
-Proof.
- unfold fequiv; intros x y xy_equiv f g fg_equiv; apply bind_compat; auto.
+  unfold pointwise_relation; intros; apply bind_compat; auto.
 Qed.
 
 Lemma test:
   forall (A B: Type) (m1 m2 m3: K A) (f: A -> A -> K B),
- (equiv m1 m2) -> (equiv m2 m3) ->
-   equiv (bind m1 (fun a => bind m2 (fun a' => f a a')))
-         (bind m2 (fun a => bind m3 (fun a' => f a a'))).
+    (equiv m1 m2) -> (equiv m2 m3) ->
+    equiv (bind m1 (fun a => bind m2 (fun a' => f a a')))
+          (bind m2 (fun a => bind m3 (fun a' => f a a'))).
 Proof.
   intros A B m1 m2 m3 f H1 H2.
   setoid_rewrite H1. (* this works *)
-  Fail setoid_rewrite H2.
-Abort.
-(*  trivial by equiv_refl.
-Qed.*)
+  setoid_rewrite H2.
+  reflexivity.
+Qed.
