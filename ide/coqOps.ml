@@ -362,7 +362,12 @@ object(self)
     let query = Coq.query (route_id,(phrase,sid)) in
     Coq.bind (Coq.seq action query) next
 
+  method private still_valid { edit_id = id } =
+    try ignore(Doc.find_id document (fun _ { edit_id = id1 } -> id = id1)); true
+    with Not_found -> false
+
   method private mark_as_needed sentence =
+   if self#still_valid sentence then begin
     Minilib.log_pp Pp.(str "Marking " ++ dbg_to_string buffer false None sentence);
     let start = buffer#get_iter_at_mark sentence.start in
     let stop = buffer#get_iter_at_mark sentence.stop in
@@ -383,6 +388,7 @@ object(self)
     in
     List.iter (fun t -> buffer#remove_tag t ~start ~stop) all_tags;
     List.iter (fun t -> buffer#apply_tag t ~start ~stop) tags
+   end
 
   method private attach_tooltip ?loc sentence text =
     let start_sentence, stop_sentence, phrase = self#get_sentence sentence in
