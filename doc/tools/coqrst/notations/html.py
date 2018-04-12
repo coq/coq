@@ -41,6 +41,9 @@ class TacticNotationsToHTMLVisitor(TacticNotationsVisitor):
 
     def visitHole(self, ctx:TacticNotationsParser.HoleContext):
         tags.span(ctx.ID().getText()[1:], _class="hole")
+        sub = ctx.SUB()
+        if sub:
+            tags.sub(sub.getText()[1:])
 
     def visitMeta(self, ctx:TacticNotationsParser.MetaContext):
         txt = ctx.METACHAR().getText()[1:]

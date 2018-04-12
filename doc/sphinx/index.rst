@@ -28,6 +28,7 @@ Table of contents
    proof-engine/vernacular-commands
    proof-engine/proof-handling
    proof-engine/tactics
+   proof-engine/ltac
    proof-engine/detailed-tactic-examples
    proof-engine/ssreflect-proof-language
 
