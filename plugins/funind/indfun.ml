@@ -91,10 +91,19 @@ let functional_induction with_clean c princl pat =
 	if princ_infos.Tactics.farg_in_concl
 	then [c] else []
       in
+      if List.length args + List.length c_list = 0
+      then user_err Pp.(str "Cannot recognize a valid functional scheme" );
       let encoded_pat_as_patlist =
-        List.make (List.length args + List.length c_list - 1) None @ [pat] in
-      List.map2 (fun c pat -> ((None,Ltac_plugin.Tacexpr.ElimOnConstr (fun env sigma -> (sigma,(c,NoBindings)) )),(None,pat),None))
-        (args@c_list) encoded_pat_as_patlist
+        List.make (List.length args + List.length c_list - 1) None @ [pat]
+      in
+      List.map2
+        (fun c pat ->
+          ((None,
+            Ltac_plugin.Tacexpr.ElimOnConstr (fun env sigma -> (sigma,(c,NoBindings)))),
+           (None,pat),
+           None))
+        (args@c_list)
+        encoded_pat_as_patlist
     in
     let princ' = Some (princ,bindings) in
     let princ_vars =
