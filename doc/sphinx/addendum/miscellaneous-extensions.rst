@@ -5,9 +5,6 @@
 Miscellaneous extensions
 =======================
 
-:Source: https://coq.inria.fr/distrib/current/refman/miscellaneous.html
-:Converted by: Paul Steckler
-
 .. contents::
    :local:
    :depth: 1

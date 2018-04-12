@@ -6,10 +6,7 @@
  The |SSR| proof language
 ------------------------------
 
-:Source: https://coq.inria.fr/distrib/current/refman/ssreflect.html
-:Converted by: Enrico Tassi
-
-Author: Georges Gonthier, Assia Mahboubi, Enrico Tassi
+:Authors: Georges Gonthier, Assia Mahboubi, Enrico Tassi
 
 
 Introduction
