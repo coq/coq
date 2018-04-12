@@ -115,6 +115,9 @@ Standard Library
   Imported. This should be relevant only when importing files which
   don't use -noinit into files which do.
 
+- Added `Coq.Structures.OrderedTypeEx.String_as_OT` to make strings an
+  ordered type (using lexical order).
+
 Universes
 
 - Added `Print Universes Subgraph` variant of `Print Universes`.

@@ -10,6 +10,8 @@
 
 Require Import OrderedType.
 Require Import ZArith.
+Require Import PeanoNat.
+Require Import Ascii String.
 Require Import Omega.
 Require Import NArith Ndec.
 Require Import Compare_dec.
@@ -315,3 +317,94 @@ Module PositiveOrderedTypeBits <: UsualOrderedType.
   Qed.
 
 End PositiveOrderedTypeBits.
+
+(** [String] is an ordered type with respect to the usual lexical order. *)
+
+Module String_as_OT <: UsualOrderedType.
+
+  Definition t := string.
+
+  Definition eq := @eq string.
+  Definition eq_refl := @eq_refl t.
+  Definition eq_sym := @eq_sym t.
+  Definition eq_trans := @eq_trans t.
+
+  Inductive lts : string -> string -> Prop :=
+    | lts_empty : forall a s, lts EmptyString (String a s)
+    | lts_tail : forall a s1 s2, lts s1 s2 -> lts (String a s1) (String a s2)
+    | lts_head : forall (a b : ascii) s1 s2,
+        lt (nat_of_ascii a) (nat_of_ascii b) ->
+        lts (String a s1) (String b s2).
+
+  Definition lt := lts.
+
+  Lemma nat_of_ascii_inverse a b : nat_of_ascii a = nat_of_ascii b -> a = b.
+  Proof.
+    intro H.
+    rewrite <- (ascii_nat_embedding a).
+    rewrite <- (ascii_nat_embedding b).
+    apply f_equal; auto.
+  Qed.
+
+  Lemma lts_tail_unique a s1 s2 : lt (String a s1) (String a s2) ->
+    lt s1 s2.
+  Proof.
+    intro H; inversion H; subst; auto.
+    remember (nat_of_ascii a) as x.
+    apply lt_irrefl in H1; inversion H1.
+  Qed.
+
+  Lemma lt_trans : forall x y z : t, lt x y -> lt y z -> lt x z.
+  Proof.
+    induction x; intros y z H1 H2.
+    - destruct y as [| b y']; inversion H1.
+      destruct z as [| c z']; inversion H2; constructor.
+    - destruct y as [| b y']; inversion H1; subst;
+        destruct z as [| c z']; inversion H2; subst.
+      + constructor. eapply IHx; eauto.
+      + constructor; assumption.
+      + constructor; assumption.
+      + constructor. eapply lt_trans; eassumption.
+  Qed.
+
+  Lemma lt_not_eq : forall x y : t, lt x y -> ~ eq x y.
+  Proof.
+    induction x; intros y LT.
+    - inversion LT. intro. inversion H.
+    - inversion LT; subst; intros EQ.
+      * specialize (IHx s2 H2).
+        inversion EQ; subst; auto.
+        apply IHx; unfold eq; auto.
+      * inversion EQ; subst; auto.
+        apply Nat.lt_irrefl in H2; auto.
+  Qed.
+
+  Definition compare x y : Compare lt eq x y.
+  Proof.
+    generalize dependent y.
+    induction x as [ | a s1]; destruct y as [ | b s2].
+    - apply EQ; constructor.
+    - apply LT; constructor.
+    - apply GT; constructor.
+    - destruct ((nat_of_ascii a) ?= (nat_of_ascii b))%nat eqn:ltb.
+      + assert (a = b).
+        {
+          apply Nat.compare_eq in ltb.
+          assert (ascii_of_nat (nat_of_ascii a)
+                  = ascii_of_nat (nat_of_ascii b)) by auto.
+          repeat rewrite ascii_nat_embedding in H.
+          auto.
+        }
+        subst.
+        destruct (IHs1 s2).
+        * apply LT; constructor; auto.
+        * apply EQ. unfold eq in e. subst. constructor; auto.
+        * apply GT; constructor; auto.
+      + apply nat_compare_lt in ltb.
+        apply LT; constructor; auto.
+      + apply nat_compare_gt in ltb.
+        apply GT; constructor; auto.
+  Defined.
+
+  Definition eq_dec (x y : string): {x = y} + { ~ (x = y)} := string_dec x y.
+End String_as_OT.
