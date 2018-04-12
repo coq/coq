@@ -261,7 +261,7 @@ let check_param = function
 | CLocalAssum (nas, Default _, _) -> List.iter check_named nas
 | CLocalAssum (nas, Generalized _, _) -> ()
 | CLocalPattern {CAst.loc} ->
-    Loc.raise ?loc (Stream.Error "pattern with quote not allowed here.")
+    Loc.raise ?loc (Stream.Error "pattern with quote not allowed here")
 
 let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   check_all_names_different indl;
