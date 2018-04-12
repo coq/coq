@@ -2240,6 +2240,7 @@ This option (off by default) activates the full display of how the
 context of an existential variable is instantiated at each of the
 occurrences of the existential variable.
 
+.. _tactics-in-terms:
 
 Solving existential variables using tactics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
