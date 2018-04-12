@@ -56,8 +56,7 @@ ALLSPHINXOPTS= -d $(SPHINXBUILDDIR)/doctrees $(SPHINXOPTS)
 
 DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
 
-REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
-  RefMan-ltac.v.tex)
+REFMANCOQTEXFILES:=$(addprefix doc/refman/, )
 
 REFMANTEXFILES:=$(addprefix doc/refman/, \
   headers.sty Reference-Manual.tex) \
