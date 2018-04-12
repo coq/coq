@@ -1066,8 +1066,10 @@ let extract_constant env kn cb =
 	  | Undef _ -> warn_info (); mk_typ_ax ()
 	  | Def c ->
 	     (match cb.const_proj with
-              | None -> mk_typ (get_body c)
-              | Some pb -> mk_typ (EConstr.of_constr pb.proj_body))
+              | false -> mk_typ (get_body c)
+              | true ->
+                let pb = lookup_projection (Projection.make kn false) env in
+                mk_typ (EConstr.of_constr pb.proj_body))
 	  | OpaqueDef c ->
 	    add_opaque r;
             if access_opaque () then mk_typ (get_opaque env c)
@@ -1077,8 +1079,10 @@ let extract_constant env kn cb =
 	  | Undef _ -> warn_info (); mk_ax ()
 	  | Def c ->
 	     (match cb.const_proj with
-              | None -> mk_def (get_body c)
-              | Some pb -> mk_def (EConstr.of_constr pb.proj_body))
+              | false -> mk_def (get_body c)
+              | true ->
+                let pb = lookup_projection (Projection.make kn false) env in
+                mk_def (EConstr.of_constr pb.proj_body))
 	  | OpaqueDef c ->
 	    add_opaque r;
             if access_opaque () then mk_def (get_opaque env c)

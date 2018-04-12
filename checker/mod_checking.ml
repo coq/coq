@@ -47,13 +47,8 @@ let check_constant_declaration env kn cb =
   let () = 
     match body_of_constant cb with
     | Some bd ->
-      (match cb.const_proj with 
-      | None -> let j = infer envty bd in
-		  conv_leq envty j ty
-      | Some pb -> 
-	let env' = add_constant kn cb env' in
-	let j = infer env' bd in
-	  conv_leq envty j ty)
+      let j = infer envty bd in
+      conv_leq envty j ty
     | None -> ()
   in
   let env =

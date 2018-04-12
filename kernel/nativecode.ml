@@ -1859,7 +1859,7 @@ and compile_named env sigma univ auxdefs id =
 
 let compile_constant env sigma prefix ~interactive con cb =
   match cb.const_proj with
-  | None ->
+  | false ->
      let no_univs =
        match cb.const_universes with
        | Monomorphic_const _ -> true
@@ -1903,7 +1903,8 @@ let compile_constant env sigma prefix ~interactive con cb =
 	  if interactive then LinkedInteractive prefix
 	  else Linked prefix
     end
-  | Some pb ->
+  | true ->
+      let pb = lookup_projection (Projection.make con false) env in
       let mind = pb.proj_ind in
       let ind = (mind,0) in
       let mib = lookup_mind mind env in
@@ -2029,11 +2030,12 @@ let rec compile_deps env sigma prefix ~interactive init t =
       else
       let comp_stack, (mind_updates, const_updates) =
 	match cb.const_proj, cb.const_body with
-        | None, Def t ->
+        | false, Def t ->
 	   compile_deps env sigma prefix ~interactive init (Mod_subst.force_constr t)
-	| Some pb, _ ->
-	   let mind = pb.proj_ind in
-	   compile_mind_deps env prefix ~interactive init mind
+        | true, _ ->
+          let pb = lookup_projection (Projection.make c false) env in
+          let mind = pb.proj_ind in
+          compile_mind_deps env prefix ~interactive init mind
         | _ -> init
       in
       let code, name =

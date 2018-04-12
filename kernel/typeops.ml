@@ -528,13 +528,3 @@ let judge_of_case env ci pj cj lfj =
   let lf, lft = dest_judgev lfj in
   make_judge (mkCase (ci, (*nf_betaiota*) pj.uj_val, cj.uj_val, lft))
              (type_of_case env ci pj.uj_val pj.uj_type cj.uj_val cj.uj_type lf lft)
-
-let type_of_projection_constant env (p,u) =
-  let cst = Projection.constant p in
-  let cb = lookup_constant cst env in
-  match cb.const_proj with
-  | Some pb ->
-    if Declareops.constant_is_polymorphic cb then
-      Vars.subst_instance_constr u pb.proj_type
-    else pb.proj_type
-  | None -> raise (Invalid_argument "type_of_projection: not a projection")

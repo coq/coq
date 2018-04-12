@@ -5,6 +5,7 @@ open Cic
 
 type globals = {
   env_constants : constant_body Cmap_env.t;
+  env_projections : projection_body Cmap_env.t;
   env_inductives : mutual_inductive_body Mindmap_env.t;
   env_inductives_eq : KerName.t KNmap.t;
   env_modules : module_body MPmap.t;

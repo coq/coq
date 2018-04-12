@@ -708,12 +708,10 @@ let rec lambda_of_constr env c =
     Lcofix(init, (names, ltypes, lbodies))
 
   | Proj (p,c) ->
-    let kn = Projection.constant p in
-    let cb = lookup_constant kn env.global_env in
-    let pb = Option.get cb.const_proj in
+    let pb = lookup_projection p env.global_env in
     let n = pb.proj_arg in
     let lc = lambda_of_constr env c in
-    Lproj (n,kn,lc)
+    Lproj (n,Projection.constant p,lc)
 
 and lambda_of_app env f args =
   match Constr.kind f with

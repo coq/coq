@@ -250,7 +250,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       {
         Cooking.cook_body = Undef nl;
         cook_type = t;
-        cook_proj = None;
+        cook_proj = false;
         cook_universes = univs;
         cook_inline = false;
         cook_context = ctx;
@@ -291,7 +291,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       {
         Cooking.cook_body = def;
         cook_type = typ;
-        cook_proj = None;
+        cook_proj = false;
         cook_universes = Monomorphic_const univs;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
@@ -343,7 +343,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       {
         Cooking.cook_body = def;
         cook_type = typ;
-        cook_proj = None;
+        cook_proj = false;
         cook_universes = univs;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
@@ -370,7 +370,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
     {
       Cooking.cook_body = Def (Mod_subst.from_val (Constr.hcons term));
       cook_type = typ;
-      cook_proj = Some pb;
+      cook_proj = true;
       cook_universes = univs;
       cook_inline = false;
       cook_context = None;
@@ -458,30 +458,8 @@ let build_constant_declaration kn env result =
               check declared inferred) lc) in
   let univs = result.cook_universes in
   let tps = 
-    let res =
-      match result.cook_proj with
-      | None -> Cbytegen.compile_constant_body ~fail_on_error:false env univs def
-      | Some pb ->
-	(* The compilation of primitive projections is a bit tricky, because
-           they refer to themselves (the body of p looks like fun c =>
-           Proj(p,c)). We break the cycle by building an ad-hoc compilation
-           environment. A cleaner solution would be that kernel projections are
-           simply Proj(i,c) with i an int and c a constr, but we would have to
-           get rid of the compatibility layer. *)
-	let cb =
-	  { const_hyps = hyps;
-	    const_body = def;
-	    const_type = typ;
-	    const_proj = result.cook_proj;
-	    const_body_code = None;
-	    const_universes = univs;
-	    const_inline_code = result.cook_inline;
-	    const_typing_flags = Environ.typing_flags env;
-	    }
-	in
-	let env = add_constant kn cb env in
-        Cbytegen.compile_constant_body ~fail_on_error:false env univs def
-    in Option.map Cemitcodes.from_val res
+    let res = Cbytegen.compile_constant_body ~fail_on_error:false env univs def in
+    Option.map Cemitcodes.from_val res
   in
   { const_hyps = hyps;
     const_body = def;

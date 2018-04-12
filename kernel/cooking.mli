@@ -21,7 +21,7 @@ type inline = bool
 type result = {
   cook_body : constant_def;
   cook_type : types;
-  cook_proj : projection_body option;
+  cook_proj : bool;
   cook_universes : constant_universes;
   cook_inline : inline;
   cook_context : Context.Named.t option;
