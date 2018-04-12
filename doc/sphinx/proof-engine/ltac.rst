@@ -1,94 +1,99 @@
-\chapter[The tactic language]{The tactic language\label{TacticLanguage}}
-%HEVEA\cutname{ltac.html}
+.. include:: ../preamble.rst
+.. include:: ../replaces.rst
 
-%\geometry{a4paper,body={5in,8in}}
+.. _ltac:
+
+The tactic language
+===================
 
 This chapter gives a compact documentation of Ltac, the tactic
-language available in {\Coq}. We start by giving the syntax, and next,
+language available in |Coq|. We start by giving the syntax, and next,
 we present the informal semantics. If you want to know more regarding
 this language and especially about its foundations, you can refer
-to~\cite{Del00}. Chapter~\ref{Tactics-examples} is devoted to giving
+to :cite`Del00`. Chapter :ref:`detailedexamplesoftactics` is devoted to giving
 examples of use of this language on small but also with non-trivial
 problems.
 
 
-\section{Syntax}
+Syntax
+------
 
-\def\tacexpr{\textrm{\textsl{expr}}}
-\def\tacexprlow{\textrm{\textsl{tacexpr$_1$}}}
-\def\tacexprinf{\textrm{\textsl{tacexpr$_2$}}}
-\def\tacexprpref{\textrm{\textsl{tacexpr$_3$}}}
-\def\atom{\textrm{\textsl{atom}}}
-%%\def\recclause{\textrm{\textsl{rec\_clause}}}
-\def\letclause{\textrm{\textsl{let\_clause}}}
-\def\matchrule{\textrm{\textsl{match\_rule}}}
-\def\contextrule{\textrm{\textsl{context\_rule}}}
-\def\contexthyp{\textrm{\textsl{context\_hyp}}}
-\def\tacarg{\nterm{tacarg}}
-\def\cpattern{\nterm{cpattern}}
-\def\selector{\textrm{\textsl{selector}}}
-\def\toplevelselector{\textrm{\textsl{toplevel\_selector}}}
+.. todo::
+  \def\tacexpr{\textrm{\textsl{expr}}}
+  \def\tacexprlow{\textrm{\textsl{tacexpr$_1$}}}
+  \def\tacexprinf{\textrm{\textsl{tacexpr$_2$}}}
+  \def\tacexprpref{\textrm{\textsl{tacexpr$_3$}}}
+  \def\atom{\textrm{\textsl{atom}}}
+  \def\letclause{\textrm{\textsl{let\_clause}}}
+  \def\matchrule{\textrm{\textsl{match\_rule}}}
+  \def\contextrule{\textrm{\textsl{context\_rule}}}
+  \def\contexthyp{\textrm{\textsl{context\_hyp}}}
+  \def\tacarg{\nterm{tacarg}}
+  \def\cpattern{\nterm{cpattern}}
+  \def\selector{\textrm{\textsl{selector}}}
+  \def\toplevelselector{\textrm{\textsl{toplevel\_selector}}}
 
+.. todo
 The syntax of the tactic language is given Figures~\ref{ltac}
-and~\ref{ltac-aux}. See Chapter~\ref{BNF-syntax} for a description of
+and~\ref{ltac-aux}. See Chapter :ref:`TODO-BNF-syntax` for a description of
 the BNF metasyntax used in these grammar rules. Various already
 defined entries will be used in this chapter: entries
-{\naturalnumber}, {\integer}, {\ident}, {\qualid}, {\term},
-{\cpattern} and {\atomictac} represent respectively the natural and
+`naturalnumber`, `integer`, `ident`, `qualid`, `term`,
+`cpattern` and `atomictac` represent respectively the natural and
 integer numbers, the authorized identificators and qualified names,
-{\Coq}'s terms and patterns and all the atomic tactics described in
-Chapter~\ref{Tactics}. The syntax of {\cpattern} is the same as that
+|Coq|'s terms and patterns and all the atomic tactics described in
+Chapter :ref:`tactics`. The syntax of `cpattern` is the same as that
 of terms, but it is extended with pattern matching metavariables. In
-{\cpattern}, a pattern-matching metavariable is represented with the
-syntax {\tt ?id} where {\tt id} is an {\ident}. The notation {\tt \_}
+`cpattern`, a pattern-matching metavariable is represented with the
+syntax ``?id`` where ``id`` is an `ident`. The notation ``_``
 can also be used to denote metavariable whose instance is
-irrelevant. In the notation {\tt ?id}, the identifier allows us to
-keep instantiations and to make constraints whereas {\tt \_} shows
+irrelevant. In the notation ``?id``, the identifier allows us to
+keep instantiations and to make constraints whereas ``_ shows
 that we are not interested in what will be matched. On the right hand
 side of pattern-matching clauses, the named metavariable are used
 without the question mark prefix. There is also a special notation for
 second-order pattern-matching problems: in an applicative pattern of
-the form {\tt @?id id$_1$ \ldots id$_n$}, the variable {\tt id}
+.. todo
+the form {\tt @?id id$_1$ \ldots id$_n$}, the variable ``id``
 matches any complex expression with (possible) dependencies in the
 variables {\tt id$_1$ \ldots id$_n$} and returns a functional term of
 the form {\tt fun id$_1$ \ldots id$_n$ => {\term}}.
 
 
-The main entry of the grammar is {\tacexpr}. This language is used in
+The main entry of the grammar is `tacexpr`. This language is used in
 proof mode but it can also be used in toplevel definitions as shown in
+.. todo
 Figure~\ref{ltactop}.
 
-\begin{Remarks}
-\item The infix tacticals ``\dots\ {\tt ||} \dots'', ``\dots\ {\tt +}
-  \dots'', and ``\dots\ {\tt ;} \dots'' are associative.
+.. note::
+   - The infix tacticals ``\dots\ {\tt ||} \dots'', ``\dots\ {\tt +}
+     \dots'', and ``\dots\ {\tt ;} \dots'' are associative.
+     .. todo
 
-\item In {\tacarg}, there is an overlap between {\qualid} as a
-direct tactic argument and {\qualid} as a particular case of
-{\term}. The resolution is done by first looking for a reference of
-the tactic language and if it fails, for a reference to a term. To
-force the resolution as a reference of the tactic language, use the
-form {\tt ltac :} {\qualid}. To force the resolution as a reference to
-a term, use the syntax {\tt ({\qualid})}.
+   - In `tacarg`, there is an overlap between `qualid` as a
+     direct tactic argument and `qualid` as a particular case of
+     `term`. The resolution is done by first looking for a reference of
+     the tactic language and if it fails, for a reference to a term. To
+     force the resolution as a reference of the tactic language, use the
+     form ``ltac:(@qualid)``. To force the resolution as a reference to
+     a term, use the syntax ``(@qualid)`.
 
-\item As shown by the figure, tactical {\tt ||} binds more than the
-prefix tacticals {\tt try}, {\tt repeat}, {\tt do} and
-{\tt abstract} which themselves bind more than the postfix tactical
-``{\tt \dots\ ;[ \dots\ ]}'' which binds more than ``\dots\ {\tt ;}
-\dots''.
+     - As shown by the figure, tactical ``||`` binds more than the
+       prefix tacticals ``try``, ``repeat``, ``do`` and
+       ``abstract`` which themselves bind more than the postfix tactical
+       ``{\tt \dots\ ;[ \dots\ ]}'' which binds more than ``\dots\ {\tt ;}
+       \dots''.
+       .. todo
 
-For instance
-\begin{quote}
-{\tt try repeat \tac$_1$ ||
-  \tac$_2$;\tac$_3$;[\tac$_{31}$|\dots|\tac$_{3n}$];\tac$_4$.}
-\end{quote}
-is understood as
-\begin{quote}
-{\tt (try (repeat (\tac$_1$ || \tac$_2$)));} \\
-{\tt ((\tac$_3$;[\tac$_{31}$|\dots|\tac$_{3n}$]);\tac$_4$).}
-\end{quote}
-\end{Remarks}
+       For instance
+       .. coqtop:: in
+          try repeat tac1 || tac2; tac3; [tac31 | ... | tac3n]; tac4.
+       is understood as
+       .. coqtop:: in
+          try (repeat (tac1 || tac2));
+            ((tac3; [tac31 | ... | tac3n]); tac4).
 
-
+.. todo
 \begin{figure}[htbp]
 \begin{centerframe}
 \begin{tabular}{lcl}
@@ -239,21 +244,17 @@ is understood as
 \label{ltactop}
 \end{figure}
 
+.. _tacticals:
 
-%%
-%% Semantics
-%%
-\section{Semantics}
-%\index[tactic]{Tacticals}
-\index{Tacticals}
-%\label{Tacticals}
+Semantics
+---------
 
-Tactic expressions can only be applied in the context of a proof.  The
+Tactic expressions can only be applied in the context of a proof. The
 evaluation yields either a term, an integer or a tactic. Intermediary
 results can be terms or integers but the final result must be a tactic
 which is then applied to the focused goals.
 
-There is a special case for {\tt match goal} expressions of which
+There is a special case for ``match goal`` expressions of which
 the clauses evaluate to tactics. Such expressions can only be used as
 end result of a tactic expression (never as argument of a non recursive local
 definition or of an application).
@@ -261,525 +262,483 @@ definition or of an application).
 The rest of this section explains the semantics of every construction
 of Ltac.
 
+**Sequence**
 
-%% \subsection{Values}
-
-%% Values are given by Figure~\ref{ltacval}. All these values are tactic values,
-%% i.e. to be applied to a goal, except {\tt Fun}, {\tt Rec} and $arg$ values.
-
-%% \begin{figure}[ht]
-%% \noindent{}\framebox[6in][l]
-%% {\parbox{6in}
-%% {\begin{center}
-%% \begin{tabular}{lp{0.1in}l}
-%% $vexpr$ & ::= & $vexpr$ {\tt ;} $vexpr$\\
-%% & | & $vexpr$ {\tt ; [} {\it (}$vexpr$ {\tt |}{\it )}$^*$ $vexpr$ {\tt
-%% ]}\\
-%% & | & $vatom$\\
-%% \\
-%% $vatom$ & ::= & {\tt Fun} \nelist{\inputfun}{}  {\tt ->} {\tacexpr}\\
-%% %& | & {\tt Rec} \recclause\\
-%% & | &
-%% {\tt Rec} \nelist{\recclause}{\tt And} {\tt In}
-%% {\tacexpr}\\
-%% & | &
-%% {\tt Match Context With} {\it (}$context\_rule$ {\tt |}{\it )}$^*$
-%% $context\_rule$\\
-%% & | & {\tt (} $vexpr$ {\tt )}\\
-%% & | & $vatom$ {\tt Orelse} $vatom$\\
-%% & | & {\tt Do} {\it (}{\naturalnumber} {\it |} {\ident}{\it )} $vatom$\\
-%% & | & {\tt Repeat} $vatom$\\
-%% & | & {\tt Try} $vatom$\\
-%% & | & {\tt First [} {\it (}$vexpr$ {\tt |}{\it )}$^*$ $vexpr$ {\tt ]}\\
-%% & | & {\tt Solve [} {\it (}$vexpr$ {\tt |}{\it )}$^*$ $vexpr$ {\tt ]}\\
-%% & | & {\tt Idtac}\\
-%% & | & {\tt Fail}\\
-%% & | & {\primitivetactic}\\
-%% & | & $arg$
-%% \end{tabular}
-%% \end{center}}}
-%% \caption{Values of ${\cal L}_{tac}$}
-%% \label{ltacval}
-%% \end{figure}
-
-%% \subsection{Evaluation}
-
-\subsubsection[Sequence]{Sequence\tacindex{;}
-\index{Tacticals!;@{\tt {\tac$_1$};\tac$_2$}}}
+.. todo
+   Sequence\tacindex{;}
+   \index{Tacticals!;@{\tt {\tac$_1$};\tac$_2$}}}
 
 A sequence is an expression of the following form:
-\begin{quote}
-{\tacexpr}$_1$ {\tt ;} {\tacexpr}$_2$
-\end{quote}
-The expression {\tacexpr}$_1$ is evaluated to $v_1$, which must be
-a tactic value. The tactic $v_1$ is applied to the current goal,
-possibly producing more goals. Then {\tacexpr}$_2$ is evaluated to
-produce $v_2$, which must be a tactic value. The tactic $v_2$ is applied to
+::
+   tacexpr1 ; tacexpr2
+
+The expression ``tacexpr1`` is evaluated to :math:`v_1`, which must be
+a tactic value. The tactic :math:`v_1` is applied to the current goal,
+possibly producing more goals. Then ``tacexpr2`` is evaluated to
+produce :math:`v_2`, which must be a tactic value. The tactic :math:`v_2` is applied to
 all the goals produced by the prior application. Sequence is associative.
 
-\subsubsection[Local application of tactics]{Local application of tactics\tacindex{[>\ldots$\mid$\ldots$\mid$\ldots]}\tacindex{;[\ldots$\mid$\ldots$\mid$\ldots]}\index{Tacticals![> \mid ]@{\tt {\tac$_0$};[{\tac$_1$}$\mid$\ldots$\mid$\tac$_n$]}}\index{Tacticals!; [ \mid ]@{\tt {\tac$_0$};[{\tac$_1$}$\mid$\ldots$\mid$\tac$_n$]}}}
-%\tacindex{; [ | ]}
-%\index{; [ | ]@{\tt ;[\ldots$\mid$\ldots$\mid$\ldots]}}
+**Local application of tactics**
+
+.. todo
+   \tacindex{[>\ldots$\mid$\ldots$\mid$\ldots]}\tacindex{;[\ldots$\mid$\ldots$\mid$\ldots]}\index{Tacticals![> \mid ]@{\tt {\tac$_0$};[{\tac$_1$}$\mid$\ldots$\mid$\tac$_n$]}}\index{Tacticals!; [ \mid ]@{\tt {\tac$_0$};[{\tac$_1$}$\mid$\ldots$\mid$\tac$_n$]}}}
+   %\tacindex{; [ | ]}
+   %\index{; [ | ]@{\tt ;[\ldots$\mid$\ldots$\mid$\ldots]}}
 
 Different tactics can be applied to the different goals using the following form:
-\begin{quote}
-{\tt [ >} {\tacexpr}$_1$ {\tt |} $...$ {\tt |} {\tacexpr}$_n$ {\tt ]}
-\end{quote}
-The expressions {\tacexpr}$_i$ are evaluated to $v_i$, for $i=0,...,n$
-and all have to be tactics. The $v_i$ is applied to the $i$-th goal,
-for $=1,...,n$. It fails if the number of focused goals is not exactly $n$.
+::
+   [ > tacexpr1 | ... | tacexprn ]
 
-\begin{Variants}
-  \item If no tactic is given for the $i$-th goal, it behaves as if
-    the tactic {\tt idtac} were given. For instance, {\tt [~> | auto
-    ]} is a shortcut for {\tt [ > idtac | auto ]}.
+The expressions ``tacexpri`` are evaluated to :math:`v_i`, for :math:`i=0,...,n`
+and all have to be tactics. The :math:`v_i` is applied to the i-th goal,
+for :math:`i=1,...,n`. It fails if the number of focused goals is not exactly n.
 
-  \item {\tt [ >} {\tacexpr}$_1$ {\tt |} $...$ {\tt |}
-    {\tacexpr}$_i$ {\tt |} {\tacexpr} {\tt ..} {\tt |}
-    {\tacexpr}$_{i+1+j}$ {\tt |} $...$ {\tt |} {\tacexpr}$_n$ {\tt ]}
+*Variants*
 
-  In this variant, {\tt expr} is used for each goal numbered from
-  $i+1$ to $i+j$ (assuming $n$ is the number of goals).
 
-  Note that {\tt ..} is part of the syntax, while $...$ is the meta-symbol used
-  to describe a list of {\tacexpr} of arbitrary length.
-  goals numbered from $i+1$ to $i+j$.
+- If no tactic is given for the i-th goal, it behaves as if
+  the tactic ``idtac`` were given. For instance, ``[ > | auto ]``
+  is a shortcut for ``[ > idtac | auto ]``.
 
-  \item {\tt [ >} {\tacexpr}$_1$ {\tt |} $...$ {\tt |}
-    {\tacexpr}$_i$ {\tt |} {\tt ..} {\tt |} {\tacexpr}$_{i+1+j}$ {\tt |}
-    $...$ {\tt |} {\tacexpr}$_n$ {\tt ]}
+.. todo
+   - {\tt [ >} {\tacexpr}$_1$ {\tt |} $...$ {\tt |}
+     {\tacexpr}$_i$ {\tt |} {\tacexpr} {\tt ..} {\tt |}
+     {\tacexpr}$_{i+1+j}$ {\tt |} $...$ {\tt |} {\tacexpr}$_n$ {\tt ]}
 
-  In this variant, {\tt idtac} is used for the goals numbered from
-  $i+1$ to $i+j$.
+     In this variant, {\tt expr} is used for each goal numbered from
+     $i+1$ to $i+j$ (assuming $n$ is the number of goals).
 
-  \item {\tt [ >} {\tacexpr} {\tt ..} {\tt ]}
+     Note that ``..`` is part of the syntax, while $...$ is the meta-symbol used
+     to describe a list of `tacexpr` of arbitrary length.
+     goals numbered from $i+1$ to $i+j$.
 
-    In this variant, the tactic {\tacexpr} is applied independently to
+   - {\tt [ >} {\tacexpr}$_1$ {\tt |} $...$ {\tt |}
+     {\tacexpr}$_i$ {\tt |} {\tt ..} {\tt |} {\tacexpr}$_{i+1+j}$ {\tt |}
+     $...$ {\tt |} {\tacexpr}$_n$ {\tt ]}
+
+     In this variant, `idtac` is used for the goals numbered from
+     $i+1$ to $i+j$.
+
+- ``[ > @tacexpr .. ]``
+
+    In this variant, the tactic `tacexpr` is applied independently to
     each of the goals, rather than globally. In particular, if there
     are no goal, the tactic is not run at all. A tactic which
-    expects multiple goals, such as {\tt swap}, would act as if a single
+    expects multiple goals, such as ``swap``, would act as if a single
     goal is focused.
 
-  \item {\tacexpr} {\tt ; [ } {\tacexpr}$_1$ {\tt |} $...$ {\tt |} {\tacexpr}$_n$ {\tt ]}
+- ``@tacexpr ; [ tacexpr1 | ... | tacexprn ]``
 
     This variant of local tactic application is paired with a
-    sequence.  In this variant, $n$ must be the number of goals
-    generated by the application of {\tacexpr} to each of the
+    sequence.  In this variant, n must be the number of goals
+    generated by the application of `tacexpr` to each of the
     individual goals independently. All the above variants work in
-    this form too. Formally, {\tacexpr} {\tt ; [} $...$ {\tt ]} is
-    equivalent to
-    \begin{quote}
-    {\tt [ >} {\tacexpr} {\tt ; [ >} $...$ {\tt ]} {\tt ..} {\tt ]}
-    \end{quote}
+    this form too. Formally, ``@tacexpr ; [ ... ]`` is equivalent to
+    ::
+       [ > @tacexpr ; [ > ... ] .. ]
 
-\end{Variants}
+.. _ltac_goal_selectors:
 
-\subsubsection[Goal selectors]{Goal selectors\label{ltac:selector}
-\tacindex{\tt :}\index{Tacticals!:@{\tt :}}}
+**Goal selectors**
+
+.. todo:: \tacindex{\tt :}\index{Tacticals!:@{\tt :}}}
 
 We can restrict the application of a tactic to a subset of
 the currently focused goals with:
-\begin{quote}
-  {\toplevelselector} {\tt :} {\tacexpr}
-\end{quote}
+
+.. tac:: @toplevelselector : @tacexpr
+
 We can also use selectors as a tactical, which allows to use them nested in
-a tactic expression, by using the keyword {\tt only}:
-\begin{quote}
-  {\tt only} {\selector} {\tt :} {\tacexpr}
-\end{quote}
-When selecting several goals, the tactic {\tacexpr} is applied globally to
+a tactic expression, by using the keyword ``only``:
+
+.. tac:: only @selector : @tacexpr
+
+When selecting several goals, the tactic `tacexpr` is applied globally to
 all selected goals.
 
-\begin{Variants}
-  \item{} [{\ident}] {\tt :} {\tacexpr}
+.. tacv:: [@ident] : @tacexpr
 
-    In this variant, {\tacexpr} is applied locally to a goal
-    previously named by the user (see~\ref{ExistentialVariables}).
+    In this variant, `tacexpr` is applied locally to a goal
+    previously named by the user (see :ref:`TODO-ExistentialVariables`).
 
-  \item {\num} {\tt :} {\tacexpr}
+.. tacv:: @num : @tacexpr
 
-    In this variant, {\tacexpr} is applied locally to the
-    {\num}-th goal.
+    In this variant, `tacexpr` is applied locally to the `num`-th goal.
 
-  \item $n_1$-$m_1$, \dots, $n_k$-$m_k$ {\tt :} {\tacexpr}
+.. tacv:: n1-m1, ..., nk-mk : @tacexpr
 
-    In this variant, {\tacexpr} is applied globally to the subset
+    In this variant, `tacexpr` is applied globally to the subset
     of goals described by the given ranges. You can write a single
     $n$ as a shortcut for $n$-$n$ when specifying multiple ranges.
 
-  \item {\tt all:} {\tacexpr}
+.. tacv:: all: @tacexpr
 
-    In this variant, {\tacexpr} is applied to all focused goals.
-    {\tt all:} can only be used at the toplevel of a tactic expression.
+    In this variant, `tacexpr` is applied to all focused goals.
+    `all:` can only be used at the toplevel of a tactic expression.
 
-  \item {\tt par:} {\tacexpr}
+.. tacv:: par: @tacexpr
 
-    In this variant, {\tacexpr} is applied to all focused goals
+    In this variant, `tacexpr` is applied to all focused goals
     in parallel.  The number of workers can be controlled via the
-    command line option {\tt -async-proofs-tac-j} taking as argument
-    the desired number of workers.  Limitations:  {\tt par: } only works
-    on goals containing no existential variables and {\tacexpr} must
+    command line option ``-async-proofs-tac-j`` taking as argument
+    the desired number of workers.  Limitations:  ``par:`` only works
+    on goals containing no existential variables and `tacexpr` must
     either solve the goal completely or do nothing (i.e. it cannot make
     some progress).
-    {\tt par:} can only be used at the toplevel of a tactic expression.
+    ``par:`` can only be used at the toplevel of a tactic expression.
 
-\end{Variants}
+.. exn:: No such goal
 
-\ErrMsg \errindex{No such goal}
+**For loop
+.. todo \index{Tacticals!do@{\tt do}}}
 
-\subsubsection[For loop]{For loop\tacindex{do}
-\index{Tacticals!do@{\tt do}}}
+There is a for loop that repeats a tactic `num` times:
+.. tac:: do @num @tacexpr
 
-There is a for loop that repeats a tactic {\num} times:
-\begin{quote}
-{\tt do} {\num} {\tacexpr}
-\end{quote}
-{\tacexpr} is evaluated to $v$ which must be a tactic value.
-This tactic value $v$ is
-applied {\num} times. Supposing ${\num}>1$, after the first
-application of $v$, $v$ is applied, at least once, to the generated
-subgoals and so on. It fails if the application of $v$ fails before
-the {\num} applications have been completed.
+`tacexpr` is evaluated to :math:`v` which must be a tactic value.
+This tactic value :math:`v` is
+applied `num` times. Supposing `num` is larger than 1, after the first
+application of :math:`v`, :math:`v` is applied, at least once, to the generated
+subgoals and so on. It fails if the application of :math:`v` fails before
+the `num` applications have been completed.
 
-\subsubsection[Repeat loop]{Repeat loop\tacindex{repeat}
-\index{Tacticals!repeat@{\tt repeat}}}
+**Repeat loop**
+.. todo \index{Tacticals!repeat@{\tt repeat}}}
 
 We have a repeat loop with:
-\begin{quote}
-{\tt repeat} {\tacexpr}
-\end{quote}
-{\tacexpr} is evaluated to $v$. If $v$ denotes a tactic, this tactic
+.. tac:: repeat @tacexpr
+
+`tacexpr` is evaluated to :math:`v`. If :math:`v` denotes a tactic, this tactic
 is applied to each focused goal independently. If the application
 succeeds, the tactic is applied recursively to all the generated subgoals
 until it eventually fails.  The recursion stops in a subgoal when the
-tactic has failed \emph{to make progress}.  The tactic {\tt repeat
-  {\tacexpr}} itself never fails.
+tactic has failed *to make progress*.
+The tactic ``repeat @tacexpr`` itself never fails.
 
-\subsubsection[Error catching]{Error catching\tacindex{try}
-\index{Tacticals!try@{\tt try}}}
+**Error catching**
+.. todo:: \index{Tacticals!try@{\tt try}}}
 
 We can catch the tactic errors with:
-\begin{quote}
-{\tt try} {\tacexpr}
-\end{quote}
-{\tacexpr} is evaluated to $v$ which must be a tactic value.
-The tactic value $v$ is
-applied to each focused goal independently. If the application of $v$
+.. tac:: try @tacexpr
+
+`tacexpr` is evaluated to :math:`v` which must be a tactic value.
+The tactic value :math:`v` is
+applied to each focused goal independently. If the application of :math:`v`
 fails in a goal, it catches the error and leaves the goal
 unchanged. If the level of the exception is positive, then the
 exception is re-raised with its level decremented.
 
-\subsubsection[Detecting progress]{Detecting progress\tacindex{progress}}
+**Detecting progress**
 
 We can check if a tactic made progress with:
-\begin{quote}
-{\tt progress} {\tacexpr}
-\end{quote}
-{\tacexpr} is evaluated to $v$ which must be a tactic value.
-The tactic value $v$ is
-applied to each focued subgoal independently. If the application of
-$v$ to one of the focused subgoal produced subgoals equal to the
+.. tac:: progress @tacexpr
+
+`tacexpr` is evaluated to :math:`v` which must be a tactic value.
+The tactic value :math:`v` is
+applied to each focused subgoal independently. If the application of
+:math:`v` to one of the focused subgoal produced subgoals equal to the
 initial goals (up to syntactical equality), then an error of level 0
 is raised.
 
-\ErrMsg \errindex{Failed to progress}
+.. exn:: Failed to progress
 
-\subsubsection[Backtracking branching]{Backtracking branching\tacindex{$+$}
-\index{Tacticals!or@{\tt $+$}}}
+**Backtracking branching**
+.. todo:: \index{Tacticals!or@{\tt $+$}}}
 
 We can branch with the following structure:
-\begin{quote}
-{\tacexpr}$_1$ {\tt +} {\tacexpr}$_2$
-\end{quote}
-{\tacexpr}$_1$ and {\tacexpr}$_2$ are evaluated to $v_1$ and
-$v_2$ which must be tactic values. The tactic value $v_1$ is applied to each
+.. tac:: @tacexpr + @tacexpr
+
+`tacexpr` are evaluated to :math:`v_1` and :math:`v_2`
+which must be tactic values. The tactic value :math:`v_1` is applied to each
 focused goal independently and if it fails or a later tactic fails,
-then the proof backtracks to the current goal and $v_2$ is applied.
+then the proof backtracks to the current goal and :math:`v_2` is applied.
 
 Tactics can be seen as having several successes. When a tactic fails
-it asks for more successes of the prior tactics. {\tacexpr}$_1$ {\tt
-  +} {\tacexpr}$_2$ has all the successes of $v_1$ followed by all the
-successes of $v_2$. Algebraically, ({\tacexpr}$_1$ {\tt +}
-{\tacexpr}$_2$);{\tacexpr}$_3$ $=$ ({\tacexpr}$_1$;{\tacexpr}$_3$)
-{\tt +} ({\tacexpr}$_2$;{\tacexpr}$_3$).
+it asks for more successes of the prior tactics. ``@tacexpr + @tacexpr$
+has all the successes of :math:`v_1` followed by all the
+successes of :math:`v_2`. Algebraically, ``(tacexpr1 + tacexpr2); tacexpr3``
+is the same as ``(tacexpr1; tacexpr3) + (tacexpr2; tacexpr3)``.
 
 Branching is left-associative.
 
-\subsubsection[First tactic to work]{First tactic to work\tacindex{first}
-\index{Tacticals!first@{\tt first}}}
+**First tactic to work**
+.. todo:: \index{Tacticals!first@{\tt first}}}
 
 Backtracking branching may be too expensive. In this case we may
 restrict to a local, left biased, branching and consider the first
 tactic to work (i.e. which does not fail) among a panel of tactics:
-\begin{quote}
-{\tt first [} {\tacexpr}$_1$ {\tt |} $...$ {\tt |} {\tacexpr}$_n$ {\tt ]}
-\end{quote}
-{\tacexpr}$_i$ are evaluated to $v_i$ and $v_i$ must be tactic values,
-for $i=1,...,n$. Supposing $n>1$, it applies, in each focused goal
-independently, $v_1$, if it works, it stops otherwise it tries to
-apply $v_2$ and so on. It fails when there is no applicable tactic. In
-other words, {\tt first [} {\tacexpr}$_1$ {\tt |} $...$ {\tt |}
-  {\tacexpr}$_n$ {\tt ]} behaves, in each goal, as the the first $v_i$
-to have \emph{at least} one success.
+.. tac:: first [ {*| @tacexpr } ]
 
-\ErrMsg \errindex{No applicable tactic}
+Each `tacexpr` must evaluate to a tactic value.
+This applies, independently on each focused goal, the tactic value
+corresponding to the first `tacexpr`. If this works, it stops otherwise it tries
+the second `tacexpr` and so on. This fails when there is no applicable tactic. In
+other words, ``first [ tacexpr1 | ... | tacexprn ]`` behaves on each goal
+as the first tactic value to have *at least* one success.
 
-\variant {\tt first {\tacexpr}}
+.. exn:: No applicable tactic
 
-This is an Ltac alias that gives a primitive access to the {\tt first} tactical
-as a Ltac definition without going through a parsing rule. It expects to be
-given a list of tactics through a {\tt Tactic Notation}, allowing to write
-notations of the following form.
+.. tacv:: first @tacexpr
 
-\Example
+   This is an Ltac alias that gives a primitive access to the ``first`` tactical
+   as a Ltac definition without going through a parsing rule. It expects to be
+   given a list of tactics through a ``Tactic Notation``, allowing to write
+   notations of the following form.
 
-\begin{quote}
-{\tt Tactic Notation "{foo}" tactic\_list(tacs) := first tacs.}
-\end{quote}
+.. example::
 
-\subsubsection[Left-biased branching]{Left-biased branching\tacindex{$\mid\mid$}
-\index{Tacticals!orelse@{\tt $\mid\mid$}}}
+   .. coqtop:: in
+      Tactic Notation "{foo}" tactic_list(tacs) := first tacs.
+
+
+**Left-biased branching**
+.. todo:: \index{Tacticals!orelse@{\tt $\mid\mid$}}}
 
 Yet another way of branching without backtracking is the following structure:
-\begin{quote}
-{\tacexpr}$_1$ {\tt ||} {\tacexpr}$_2$
-\end{quote}
-{\tacexpr}$_1$ and {\tacexpr}$_2$ are evaluated to $v_1$ and
-$v_2$ which must be tactic values. The tactic value $v_1$ is applied in each
-subgoal independently and if it fails \emph{to progress} then $v_2$ is
-applied. {\tacexpr}$_1$ {\tt ||} {\tacexpr}$_2$ is equivalent to {\tt
-  first [} {\tt progress} {\tacexpr}$_1$ {\tt |}
-  {\tacexpr}$_2$ {\tt ]} (except that if it fails, it fails like
-$v_2$). Branching is left-associative.
+.. tac:: @tacexpr || tacexpr
 
-\subsubsection[Generalized biased branching]{Generalized biased branching\tacindex{tryif}
-\index{Tacticals!tryif@{\tt tryif}}}
+Both `tacexpr` are evaluated to tactic values. The first tactic value is applied on each
+subgoal independently and if it fails *to progress* then the second tactic value is
+applied. ``tacexpr1 || tacexpr2`` is equivalent to ``first [ progress tacexpr1 | tacexpr2 ]``
+(except that if it fails, it fails like ``tacexpr2``). Branching is left-associative.
+
+**Generalized biased branching**
+.. todo:: \index{Tacticals!tryif@{\tt tryif}}}
 
 The tactic
-\begin{quote}
-{\tt tryif {\tacexpr}$_1$ then {\tacexpr}$_2$ else {\tacexpr}$_3$}
-\end{quote}
+.. tac:: tryif @tacexpr3 then @tacexpr2 else @tacexpr3}
+
 is a generalization of the biased-branching tactics above. The
-expression {\tacexpr}$_1$ is evaluated to $v_1$, which is then applied
-to each subgoal independently. For each goal where $v_1$ succeeds at
-least once, {\tacexpr}$_2$ is evaluated to $v_2$ which is then applied
-collectively to the generated subgoals. The $v_2$ tactic can trigger
-backtracking points in $v_1$: where $v_1$ succeeds at least once, {\tt
-  tryif {\tacexpr}$_1$ then {\tacexpr}$_2$ else {\tacexpr}$_3$} is
-equivalent to $v_1;v_2$. In each of the goals where $v_1$ does not
-succeed at least once, {\tacexpr}$_3$ is evaluated in $v_3$ which is
+expression ``tacexpr1`` is evaluated to :math:`v_1`, which is then applied
+to each subgoal independently. For each goal where :math:`v_1` succeeds at
+least once, ``tacexpr2`` is evaluated to :math:`v_2` which is then applied
+collectively to the generated subgoals. The :math:`v_2` tactic can trigger
+backtracking points in :math:`v_1`: where :math:`v_1` succeeds at least once,
+``tryif tacexpr1 then tacexpr2 else tacexpr3`` is
+equivalent to :math:`v_1; v_2`. In each of the goals where :math:`v_1` does not
+succeed at least once, ``tacexpr3`` is evaluated in :math:`v_3` which is
 is then applied to the goal.
 
-\subsubsection[Soft cut]{Soft cut\tacindex{once}\index{Tacticals!once@{\tt once}}}
+**Soft cut**
+.. todo:: \index{Tacticals!once@{\tt once}}}
 
 Another way of restricting backtracking is to restrict a tactic to a
-single success \emph{a posteriori}:
-\begin{quote}
-{\tt once} {\tacexpr}
-\end{quote}
-{\tacexpr} is evaluated to $v$ which must be a tactic value.
-The tactic value $v$ is
-applied but only its first success is used. If $v$ fails, {\tt once}
-{\tacexpr} fails like $v$. If $v$ has a least one success, {\tt once}
-{\tacexpr} succeeds once, but cannot produce more successes.
+single success *a posteriori*:
+.. tac:: once @tacexpr
 
-\subsubsection[Checking the successes]{Checking the successes\tacindex{exactly\_once}\index{Tacticals!exactly\_once@{\tt exactly\_once}}}
+`tacexpr` is evaluated to :math:`v` which must be a tactic value.
+The tactic value :math:`v` is
+applied but only its first success is used. If :math:`v` fails, ``once``
+`tacexpr` fails like :math:`v`. If :math:`v` has a least one success, ``once``
+`tacexpr` succeeds once, but cannot produce more successes.
 
-Coq provides an experimental way to check that a tactic has \emph{exactly one} success:
-\begin{quote}
-{\tt exactly\_once} {\tacexpr}
-\end{quote}
-{\tacexpr} is evaluated to $v$ which must be a tactic value.
-The tactic value $v$ is
-applied if it has at most one success. If $v$ fails, {\tt
-  exactly\_once} {\tacexpr} fails like $v$. If $v$ has a exactly one
-success, {\tt exactly\_once} {\tacexpr} succeeds like $v$. If $v$ has
-two or more successes, {\tt exactly\_once} {\tacexpr} fails.
+**Checking the successes**
+.. todo:: \index{Tacticals!exactly\_once@{\tt exactly\_once}}}
 
-The experimental status of this tactic pertains to the fact if $v$ performs side effects, they may occur in a unpredictable way. Indeed, normally $v$ would only be executed up to the first success until backtracking is needed, however {\tt exactly\_once} needs to look ahead to see whether a second success exists, and may run further effects immediately.
+Coq provides an experimental way to check that a tactic has *exactly one* success:
+.. tac:: exactly_once @tacexpr
 
-\ErrMsg \errindex{This tactic has more than one success}
+`tacexpr` is evaluated to :math:`v` which must be a tactic value.
+The tactic value :math:`v` is
+applied if it has at most one success. If :math:`v` fails, ``exactly_once @tacexpr``
+fails like :math:`v`. If :math:`v` has a exactly one
+success, ``exactly_once @tacexpr`` succeeds like :math:`v`. If :math:`v` has
+two or more successes, ``exactly_once @tacexpr`` fails.
 
-\subsubsection[Checking the failure]{Checking the failure\tacindex{assert\_fails}\index{Tacticals!assert\_fails@{\tt assert\_fails}}}
+The experimental status of this tactic pertains to the fact if :math:`v`
+performs side effects, they may occur in a unpredictable way. Indeed,
+normally :math:`v` would only be executed up to the first success until
+backtracking is needed, however {\tt exactly\_once} needs to look ahead to
+see whether a second success exists, and may run further effects immediately.
 
-Coq provides a derived tactic to check that a tactic \emph{fails}:
-\begin{quote}
-{\tt assert\_fails} {\tacexpr}
-\end{quote}
-This behaves like {\tt tryif {\tacexpr} then fail 0 tac "succeeds" else idtac}.
+.. exn:: This tactic has more than one success
 
-\subsubsection[Checking the success]{Checking the success\tacindex{assert\_succeeds}\index{Tacticals!assert\_succeeds@{\tt assert\_succeeds}}}
+**Checking the failure**
+.. todo:: \index{Tacticals!assert\_fails@{\tt assert\_fails}}}
 
-Coq provides a derived tactic to check that a tactic has \emph{at least one} success:
-\begin{quote}
-{\tt assert\_succeeds} {\tacexpr}
-\end{quote}
-This behaves like {\tt tryif (assert\_fails tac) then fail 0 tac "fails" else idtac}.
+Coq provides a derived tactic to check that a tactic fails*:
+.. tac:: assert_fails @tacexpr
 
-\subsubsection[Solving]{Solving\tacindex{solve}
-\index{Tacticals!solve@{\tt solve}}}
+This behaves like ``tryif @tacexpr then fail 0 tac "succeeds" else idtac``.
+
+**Checking the success**
+.. todo:: \index{Tacticals!assert\_succeeds@{\tt assert\_succeeds}}}
+
+Coq provides a derived tactic to check that a tactic has *at least one* success:
+.. tac:: assert_succeeds @tacexpr
+
+This behaves like ``tryif (assert_fails @tacexpr) then fail 0 tac "fails" else idtac``.
+
+**Solving**
+.. todo:: \index{Tacticals!solve@{\tt solve}}}
 
 We may consider the first to solve (i.e. which generates no subgoal) among a
 panel of tactics:
-\begin{quote}
-{\tt solve [} {\tacexpr}$_1$ {\tt |} $...$ {\tt |} {\tacexpr}$_n$ {\tt ]}
-\end{quote}
-{\tacexpr}$_i$ are evaluated to $v_i$ and $v_i$ must be tactic values,
-for $i=1,...,n$. Supposing $n>1$, it applies $v_1$ to each goal
-independently, if it doesn't solve the goal then it tries to apply
-$v_2$ and so on. It fails if there is no solving tactic.
+.. tac:: solve [ {*| @tacexpr } ]
 
-\ErrMsg \errindex{Cannot solve the goal}
+`tacexpr` are evaluated to values which must be tactic values.
+This applies the first one to each goal independently,
+if it doesn't solve the goal then it tries to apply the second one` and so on.
+It fails if there is no solving tactic.
 
-\variant {\tt solve {\tacexpr}}
+.. exn:: Cannot solve the goal
 
-This is an Ltac alias that gives a primitive access to the {\tt solve} tactical.
-See the {\tt first} tactical for more information.
+.. tacv:: solve @tacexpr
 
-\subsubsection[Identity]{Identity\label{ltac:idtac}\tacindex{idtac}
-\index{Tacticals!idtac@{\tt idtac}}}
+This is an Ltac alias that gives a primitive access to the ``solve`` tactical.
+See the ``first`` tactical for more information.
 
-The constant {\tt idtac} is the identity tactic: it leaves any goal
+**Identity**
+.. todo:: \index{Tacticals!idtac@{\tt idtac}}}
+
+.. tac:: idtac
+
+is the identity tactic: it leaves any goal
 unchanged but it appears in the proof script.
 
-\variant {\tt idtac \nelist{\messagetoken}{}}
+.. tacv:: idtac {* @message }
 
 This prints the given tokens. Strings and integers are printed
 literally. If a (term) variable is given, its contents are printed.
 
 
-\subsubsection[Failing]{Failing\tacindex{fail}
-\index{Tacticals!fail@{\tt fail}}
-\tacindex{gfail}\index{Tacticals!gfail@{\tt gfail}}}
+**Failing**
+.. todo::
+   \index{Tacticals!fail@{\tt fail}}
+   \tacindex{gfail}\index{Tacticals!gfail@{\tt gfail}}}
 
-The tactic {\tt fail} is the always-failing tactic: it does not solve
+.. tac:: fail
+
+This tactic is the always-failing tactic: it does not solve
 any goal. It is useful for defining other tacticals since it can be
-caught by {\tt try}, {\tt repeat}, {\tt match goal}, or the branching
-tacticals. The {\tt fail} tactic will, however, succeed if all the
+caught by ``try``, ``repeat``, ``match goal``, or the branching
+tacticals. The ``fail`` tactic will, however, succeed if all the
 goals have already been solved.
 
-\begin{Variants}
-\item {\tt fail $n$}\\ The number $n$ is the failure level. If no
-  level is specified, it defaults to $0$.  The level is used by {\tt
-    try}, {\tt repeat}, {\tt match goal} and the branching tacticals.
-  If $0$, it makes {\tt match goal} considering the next clause
-  (backtracking). If non zero, the current {\tt match goal} block,
-  {\tt try}, {\tt repeat}, or branching command is aborted and the
-  level is decremented. In the case of {\tt +}, a non-zero level skips
-  the first backtrack point, even if the call to {\tt fail $n$} is not
-  enclosed in a {\tt +} command, respecting the algebraic identity.
+.. tacv:: fail @num
 
-\item {\tt fail \nelist{\messagetoken}{}}\\
+The number `num` is the failure level. If no
+level is specified, it defaults to 0.  The level is used by ``try``,
+``repeat``, ``match goal`` and the branching tacticals.
+If 0, it makes ``match goal`` considering the next clause
+(backtracking). If non zero, the current ``match goal`` block,
+``try``, ``repeat``, or branching command is aborted and the
+level is decremented. In the case of ``+``, a non-zero level skips
+the first backtrack point, even if the call to ``fail @num`` is not
+enclosed in a ``+`` command, respecting the algebraic identity.
+
+.. tacv:: fail {* @message }
+
 The given tokens are used for printing the failure message.
 
-\item {\tt fail $n$ \nelist{\messagetoken}{}}\\
+.. tacv:: fail @num {* @message }
+
 This is a combination of the previous variants.
 
-\item {\tt gfail}\\
+.. tacv:: gfail
+
 This variant fails even if there are no goals left.
 
-\item {\tt gfail \nelist{\messagetoken}{}}\\
-{\tt gfail $n$ \nelist{\messagetoken}{}}\\
+.. tacv:: gfail {* @message }
+.. tacv:: gfail @num {* @message }
+
 These variants fail with an error message or an error level even if
 there are no goals left. Be careful however if Coq terms have to be
 printed as part of the failure: term construction always forces the
 tactic into the goals, meaning that if there are no goals when it is
-evaluated, a tactic call like {\tt let x:=H in fail 0 x} will succeed.
+evaluated, a tactic call like ``let x:=H in fail 0 x`` will succeed.
 
-\end{Variants}
+.. exn:: Tactic Failure @message} (level @num).
 
-\ErrMsg \errindex{Tactic Failure {\it message} (level $n$)}.
-
-\subsubsection[Timeout]{Timeout\tacindex{timeout}
-\index{Tacticals!timeout@{\tt timeout}}}
+**Timeout**
+.. todo:: \index{Tacticals!timeout@{\tt timeout}}}
 
 We can force a tactic to stop if it has not finished after a certain
 amount of time:
-\begin{quote}
-{\tt timeout} {\num} {\tacexpr}
-\end{quote}
-{\tacexpr} is evaluated to $v$ which must be a tactic value.
-The tactic value $v$ is
-applied normally, except that it is interrupted after ${\num}$ seconds
+.. tac:: timeout @num @tacexpr
+
+`tacexpr` is evaluated to :math:`v` which must be a tactic value.
+The tactic value :math:`v` is
+applied normally, except that it is interrupted after `num` seconds
 if it is still running. In this case the outcome is a failure.
 
-Warning: For the moment, {\tt timeout} is based on elapsed time in
-seconds, which is very
-machine-dependent: a script that works on a quick machine may fail
-on a slow one. The converse is even possible if you combine a
-{\tt timeout} with some other tacticals. This tactical is hence
-proposed only for convenience during debug or other development
-phases, we strongly advise you to not leave any {\tt timeout} in
-final scripts. Note also that this tactical isn't available on
-the native Windows port of Coq.
+.. caution::
+   For the moment, ``timeout`` is based on elapsed time in
+   seconds, which is very
+   machine-dependent: a script that works on a quick machine may fail
+   on a slow one. The converse is even possible if you combine a
+   ``timeout`` with some other tacticals. This tactical is hence
+   proposed only for convenience during debug or other development
+   phases, we strongly advise you to not leave any ``timeout`` in
+   final scripts. Note also that this tactical isn't available on
+   Windows.
 
-\subsubsection{Timing a tactic\tacindex{time}
-\index{Tacticals!time@{\tt time}}}
+**Timing a tactic**
+.. todo:: \index{Tacticals!time@{\tt time}}}
 
 A tactic execution can be timed:
-\begin{quote}
- {\tt time} {\qstring} {\tacexpr}
-\end{quote}
-evaluates {\tacexpr}
+.. tac:: time {? @string } @tacexpr
+
+evaluates `tacexpr`
 and displays the time the tactic expression ran, whether it fails or
 successes. In case of several successes, the time for each successive
 runs is displayed. Time is in seconds and is machine-dependent. The
-{\qstring} argument is optional. When provided, it is used to identify
-this particular occurrence of {\tt time}.
+`string` argument is optional. When provided, it is used to identify
+this particular occurrence of ``time``.
 
-\subsubsection{Timing a tactic that evaluates to a term\tacindex{time\_constr}\tacindex{restart\_timer}\tacindex{finish\_timing}
-\index{Tacticals!time\_constr@{\tt time\_constr}}}
-\index{Tacticals!restart\_timer@{\tt restart\_timer}}
-\index{Tacticals!finish\_timing@{\tt finish\_timing}}
+**Timing a tactic that evaluates to a term**
+.. todo::
+   \index{Tacticals!time\_constr@{\tt time\_constr}}}
+   \index{Tacticals!restart\_timer@{\tt restart\_timer}}
+   \index{Tacticals!finish\_timing@{\tt finish\_timing}}
 
 Tactic expressions that produce terms can be timed with the experimental tactic
-\begin{quote}
- {\tt time\_constr} {\tacexpr}
-\end{quote}
-which evaluates {\tacexpr\tt{ ()}}
+.. tac:: time_constr @tacexpr
+
+which evaluates ``@tacexpr ()``
 and displays the time the tactic expression evaluated, assuming successful evaluation.
 Time is in seconds and is machine-dependent.
 
 This tactic currently does not support nesting, and will report times based on the innermost execution.
 This is due to the fact that it is implemented using the tactics
-\begin{quote}
- {\tt restart\_timer} {\qstring}
-\end{quote}
+
+.. tac:: restart_timer @string
+
 and
-\begin{quote}
- {\tt finish\_timing} ({\qstring}) {\qstring}
-\end{quote}
+
+.. tac:: finish_timing ({? @string }) @string
+
 which (re)set and display an optionally named timer, respectively.
-The parenthesized {\qstring} argument to {\tt finish\_timing} is also
+The parenthesized `string` argument to ``finish_timing`` is also
 optional, and determines the label associated with the timer for
 printing.
 
-By copying the definition of {\tt time\_constr} from the standard
+By copying the definition of ``time_constr`` from the standard
 library, users can achive support for a fixed pattern of nesting by
-passing different {\qstring} parameters to {\tt restart\_timer} and
-{\tt finish\_timing} at each level of nesting.  For example:
+passing different `string` parameters to ``restart_timer`` and
+``finish_timing`` at each level of nesting. For example:
 
-\begin{coq_example}
-Ltac time_constr1 tac :=
-  let eval_early := match goal with _ => restart_timer "(depth 1)" end in
-  let ret := tac () in
-  let eval_early := match goal with _ => finish_timing ( "Tactic evaluation" ) "(depth 1)" end in
-  ret.
+.. coqtop:: all
+   Ltac time_constr1 tac :=
+     let eval_early := match goal with _ => restart_timer "(depth 1)" end in
+     let ret := tac () in
+     let eval_early := match goal with _ => finish_timing ( "Tactic evaluation" ) "(depth 1)" end in
+     ret.
 
-Goal True.
-  let v := time_constr
-             ltac:(fun _ =>
-                     let x := time_constr1 ltac:(fun _ => constr:(10 * 10)) in
-                     let y := time_constr1 ltac:(fun _ => eval compute in x) in
-                     y) in
-  pose v.
-Abort.
-\end{coq_example}
+   Goal True.
+     let v := time_constr
+                ltac:(fun _ =>
+                       let x := time_constr1 ltac:(fun _ => constr:(10 * 10)) in
+                       let y := time_constr1 ltac:(fun _ => eval compute in x) in
+                       y) in
+     pose v.
 
-\subsubsection[Local definitions]{Local definitions\index{Ltac!let@\texttt{let}}
-\index{Ltac!let rec@\texttt{let rec}}
-\index{let@\texttt{let}!in Ltac}
-\index{let rec@\texttt{let rec}!in Ltac}}
+**Local definitions**
+.. todo::
+   \index{Ltac!let@\texttt{let}}
+   \index{Ltac!let rec@\texttt{let rec}}
+   \index{let@\texttt{let}!in Ltac}
+   \index{let rec@\texttt{let rec}!in Ltac}}
 
 Local definitions can be done as follows:
 \begin{quote}
@@ -799,7 +758,7 @@ Local definitions can be recursive by using {\tt let rec} instead of
 so that the {\tt rec} keyword can be used also in non recursive cases
 so as to avoid the eager evaluation of local definitions.
 
-\subsubsection{Application}
+**Application**
 
 An application is an expression of the following form:
 \begin{quote}
@@ -812,8 +771,6 @@ definition expecting at least $n$ arguments.  The expressions
 %substituting $v_i$ to the formal parameters, for $i=1,...,n$. For recursive
 %clauses, the bodies are lazily substituted (when an identifier to be evaluated
 %is the name of a recursive clause).
-
-%\subsection{Application of tactic values}
 
 \subsubsection[Function construction]{Function construction\index{fun@\texttt{fun}!in Ltac}
 \index{Ltac!fun@\texttt{fun}}}
@@ -967,10 +924,10 @@ We can make pattern matching on goals using the following expression:
 If each hypothesis pattern $hyp_{1,i}$, with $i=1,...,m_1$
 is matched (non-linear first-order unification) by an hypothesis of
 the goal and if {\cpattern}$_1$ is matched by the conclusion of the
-goal, then {\tacexpr}$_1$ is evaluated to $v_1$ by substituting the
+goal, then {\tacexpr}$_1$ is evaluated to :math:`v_1` by substituting the
 pattern matching to the metavariables and the real hypothesis names
 bound to the possible hypothesis names occurring in the hypothesis
-patterns. If $v_1$ is a tactic value, then it is applied to the
+patterns. If :math:`v_1` is a tactic value, then it is applied to the
 goal. If this application fails, then another combination of
 hypotheses is tried with the same proof context pattern. If there is
 no other combination of hypotheses then the second proof context
@@ -1199,8 +1156,8 @@ on. This can be obtained thanks to the option below.
 Basically, {\ltac} toplevel definitions are made as follows:
 %{\tt Tactic Definition} {\ident} {\tt :=} {\tacexpr}\\
 %
-%{\tacexpr} is evaluated to $v$ and $v$ is associated to {\ident}. Next, every
-%script is evaluated by substituting $v$ to {\ident}.
+%{\tacexpr} is evaluated to :math:`v` and :math:`v` is associated to {\ident}. Next, every
+%script is evaluated by substituting :math:`v` to {\ident}.
 %
 %We can define functional definitions by:\\
 \begin{quote}

@@ -58,7 +58,6 @@ DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
 
 REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
   RefMan-gal.v.tex \
-  RefMan-ltac.v.tex \
   Universes.v.tex)
 
 REFMANTEXFILES:=$(addprefix doc/refman/, \
