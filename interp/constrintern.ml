@@ -433,7 +433,7 @@ let glob_local_binder_of_extended = DAst.with_loc_val (fun ?loc -> function
       let t = DAst.make ?loc @@ GHole(Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None) in
       (na,bk,Some c,t)
   | GLocalPattern (_,_,_,_) ->
-      Loc.raise ?loc (Stream.Error "pattern with quote not allowed here.")
+      Loc.raise ?loc (Stream.Error "pattern with quote not allowed here")
   )
 
 let intern_cases_pattern_fwd = ref (fun _ -> failwith "intern_cases_pattern_fwd")
