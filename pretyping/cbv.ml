@@ -71,7 +71,7 @@ and cbv_stack =
   | TOP
   | APP of cbv_value array * cbv_stack
   | CASE of constr * constr array * case_info * cbv_value subs * cbv_stack
-  | PROJ of projection * Declarations.projection_body * cbv_stack
+  | PROJ of Projection.t * Declarations.projection_body * cbv_stack
 
 (* les vars pourraient etre des constr,
    cela permet de retarder les lift: utile ?? *)

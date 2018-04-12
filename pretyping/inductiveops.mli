@@ -129,8 +129,8 @@ val allowed_sorts : env -> inductive -> Sorts.family list
 val has_dependent_elim : mutual_inductive_body -> bool
 
 (** Primitive projections *)
-val projection_nparams : projection -> int
-val projection_nparams_env : env -> projection -> int
+val projection_nparams : Projection.t -> int
+val projection_nparams_env : env -> Projection.t -> int
 val type_of_projection_knowing_arg : env -> evar_map -> Projection.t ->
 				     EConstr.t -> EConstr.types -> types
 

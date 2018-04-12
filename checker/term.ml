@@ -390,7 +390,7 @@ let compare_constr f t1 t2 =
           f h1 h2 && List.for_all2 f l1 l2
         else false
   | Evar (e1,l1), Evar (e2,l2) -> Int.equal e1 e2 && Array.equal f l1 l2
-  | Const c1, Const c2 -> eq_puniverses eq_con_chk c1 c2
+  | Const c1, Const c2 -> eq_puniverses Constant.UserOrd.equal c1 c2
   | Ind c1, Ind c2 -> eq_puniverses eq_ind_chk c1 c2
   | Construct ((c1,i1),u1), Construct ((c2,i2),u2) -> Int.equal i1 i2 && eq_ind_chk c1 c2
     && Univ.Instance.equal u1 u2

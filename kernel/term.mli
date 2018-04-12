@@ -155,7 +155,7 @@ val destCase : constr -> case_info * constr * constr * constr array
 [@@ocaml.deprecated "Alias for [Constr.destCase]"]
 
 (** Destructs a projection *)
-val destProj : constr -> projection * constr
+val destProj : constr -> Projection.t * constr
 [@@ocaml.deprecated "Alias for [Constr.destProj]"]
 
 (** Destructs the {% $ %}i{% $ %}th function of the block
@@ -403,7 +403,7 @@ val mkApp : constr * constr array -> constr
 [@@ocaml.deprecated "Alias for Constr"]
 val mkConst : Constant.t -> constr
 [@@ocaml.deprecated "Alias for Constr"]
-val mkProj : projection * constr -> constr
+val mkProj : Projection.t * constr -> constr
 [@@ocaml.deprecated "Alias for Constr"]
 val mkInd : inductive -> constr
 [@@ocaml.deprecated "Alias for Constr"]
@@ -571,7 +571,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Case      of Constr.case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) Constr.pfixpoint
   | CoFix     of ('constr, 'types) Constr.pcofixpoint
-  | Proj      of projection * 'constr
+  | Proj      of Projection.t * 'constr
 [@@ocaml.deprecated "Alias for Constr.kind_of_term"]
 
 type values = Vmvalues.values

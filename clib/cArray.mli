@@ -114,14 +114,14 @@ sig
   (** Same with two arrays, folding on the left *)
 
   val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
-  (** @deprecated Same as [fold_left_map] *)
+  [@@ocaml.deprecated "Same as [fold_left_map]"]
 
   val fold_map' : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
-  (** @deprecated Same as [fold_right_map] *)
+  [@@ocaml.deprecated "Same as [fold_right_map]"]
 
   val fold_map2' :
     ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
-  (** @deprecated Same as [fold_right2_map] *)
+  [@@ocaml.deprecated "Same as [fold_right2_map]"]
 
   val distinct : 'a array -> bool
   (** Return [true] if every element of the array is unique (for default 

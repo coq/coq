@@ -96,7 +96,7 @@ module type RedFlagsSig = sig
   val red_transparent : reds -> transparent_state
   val mkflags : red_kind list -> reds
   val red_set : reds -> red_kind -> bool
-  val red_projection : reds -> projection -> bool
+  val red_projection : reds -> Projection.t -> bool
 end
 
 module RedFlags = (struct
@@ -364,7 +364,7 @@ and fterm =
   | FInd of pinductive
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
-  | FProj of projection * fconstr
+  | FProj of Projection.t * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)

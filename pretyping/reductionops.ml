@@ -275,12 +275,12 @@ sig
 
   type cst_member =
     | Cst_const of pconstant
-    | Cst_proj of projection
+    | Cst_proj of Projection.t
 
   type 'a member =
   | App of 'a app_node
   | Case of case_info * 'a * 'a array * Cst_stack.t
-  | Proj of int * int * projection * Cst_stack.t
+  | Proj of int * int * Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Cst of cst_member * int * int list * 'a t * Cst_stack.t
   and 'a t = 'a member list
@@ -332,12 +332,12 @@ struct
 
   type cst_member =
     | Cst_const of pconstant
-    | Cst_proj of projection
+    | Cst_proj of Projection.t
 
   type 'a member =
   | App of 'a app_node
   | Case of case_info * 'a * 'a array * Cst_stack.t
-  | Proj of int * int * projection * Cst_stack.t
+  | Proj of int * int * Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Cst of cst_member * int * int list * 'a t * Cst_stack.t
   and 'a t = 'a member list

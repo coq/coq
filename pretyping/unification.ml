@@ -466,7 +466,7 @@ let use_metas_pattern_unification sigma flags nb l =
 
 type key = 
   | IsKey of CClosure.table_key
-  | IsProj of projection * EConstr.constr
+  | IsProj of Projection.t * EConstr.constr
 
 let expand_table_key env = function
   | ConstKey cst -> constant_opt_value_in env cst
