@@ -2,7 +2,7 @@
 Introduction
 ------------------------
 
-This document is the Reference Manual of version of the |Coq|  proof
+This document is the Reference Manual of the |Coq|  proof
 assistant. A companion volume, the |Coq| Tutorial, is provided for the
 beginners. It is advised to read the Tutorial first. A
 book :cite:`CoqArt` on practical uses of the |Coq| system was

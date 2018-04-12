@@ -373,19 +373,22 @@ following rules.
 
 
 
-**Remark**: **Prod-Prop** and **Prod-Set** typing-rules make sense if we consider the
-semantic difference between :math:`\Prop` and :math:`\Set`:
+.. note::
+
+   **Prod-Prop** and **Prod-Set** typing-rules make sense if we consider the
+   semantic difference between :math:`\Prop` and :math:`\Set`:
+
+   + All values of a type that has a sort :math:`\Set` are extractable.
+   + No values of a type that has a sort :math:`\Prop` are extractable.
 
 
-+ All values of a type that has a sort :math:`\Set` are extractable.
-+ No values of a type that has a sort :math:`\Prop` are extractable.
 
-
-
-**Remark**: We may have :math:`\letin{x}{t:T}{u}` well-typed without having
-:math:`((λ x:T.u) t)` well-typed (where :math:`T` is a type of
-:math:`t`). This is because the value :math:`t` associated to
-:math:`x` may be used in a conversion rule (see Section :ref:`Conversion-rules`).
+.. note::
+   We may have :math:`\letin{x}{t:T}{u}` well-typed without having
+   :math:`((λ x:T.u) t)` well-typed (where :math:`T` is a type of
+   :math:`t`). This is because the value :math:`t` associated to
+   :math:`x` may be used in a conversion rule
+   (see Section :ref:`Conversion-rules`).
 
 
 .. _Conversion-rules:
@@ -487,29 +490,31 @@ term :math:`t` of functional type :math:`∀ x:T, U` with its so-called η-expan
 for :math:`x` an arbitrary variable name fresh in :math:`t`.
 
 
-**Remark**: We deliberately do not define η-reduction:
+.. note::
 
-.. math::
-   λ x:T. (t~x) \not\triangleright_η t
+   We deliberately do not define η-reduction:
 
-This is because, in general, the type of :math:`t` need not to be convertible
-to the type of :math:`λ x:T. (t~x)`. E.g., if we take :math:`f` such that:
+   .. math::
+      λ x:T. (t~x) \not\triangleright_η t
 
-.. math::
-   f : ∀ x:\Type(2),\Type(1)
+   This is because, in general, the type of :math:`t` need not to be convertible
+   to the type of :math:`λ x:T. (t~x)`. E.g., if we take :math:`f` such that:
+
+   .. math::
+      f : ∀ x:\Type(2),\Type(1)
    
-then
+   then
 
-.. math::
-   λ x:\Type(1),(f~x) : ∀ x:\Type(1),\Type(1)
+   .. math::
+      λ x:\Type(1),(f~x) : ∀ x:\Type(1),\Type(1)
    
-We could not allow
+   We could not allow
 
-.. math::
-   λ x:Type(1),(f x) \triangleright_η f
+   .. math::
+      λ x:Type(1),(f x) \triangleright_η f
    
-because the type of the reduced term :math:`∀ x:\Type(2),\Type(1)` would not be
-convertible to the type of the original term :math:`∀ x:\Type(1),\Type(1).`
+   because the type of the reduced term :math:`∀ x:\Type(2),\Type(1)` would not be
+   convertible to the type of the original term :math:`∀ x:\Type(1),\Type(1).`
 
 
 .. _Convertibility:
@@ -794,18 +799,18 @@ contains an inductive declaration.
    ---------------------
    E[Γ] ⊢ c : C
 
-**Example.**
-Provided that our environment :math:`E` contains inductive definitions we showed before,
-these two inference rules above enable us to conclude that:
+.. example::
+   Provided that our environment :math:`E` contains inductive definitions we showed before,
+   these two inference rules above enable us to conclude that:
 
-.. math::
-   \begin{array}{l}
+   .. math::
+      \begin{array}{l}
       E[Γ] ⊢ \even : \nat→\Prop\\
       E[Γ] ⊢ \odd : \nat→\Prop\\
       E[Γ] ⊢ \even\_O : \even~O\\
       E[Γ] ⊢ \even\_S : \forall~n:\nat, \odd~n → \even~(S~n)\\
       E[Γ] ⊢ \odd\_S : \forall~n:\nat, \even~n → \odd~(S~n)
-   \end{array}
+      \end{array}
 
 
 
@@ -1135,9 +1140,10 @@ eliminations schemes are allowed.
       Check (fun (A:Prop) (B:Set) => prod A B).
       Check (fun (A:Type) (B:Prop) => prod A B).
 
-Remark: Template polymorphism used to be called “sort-polymorphism of
-inductive types” before universe polymorphism (see Chapter :ref:`polymorphicuniverses`) was
-introduced.
+.. note::
+   Template polymorphism used to be called “sort-polymorphism of
+   inductive types” before universe polymorphism
+   (see Chapter :ref:`polymorphicuniverses`) was introduced.
 
 
 .. _Destructors:
@@ -1473,20 +1479,20 @@ definition :math:`\ind{r}{Γ_I}{Γ_C}` with :math:`Γ_C = [c_1 :C_1 ;…;c_n :C_
 
 
 
-**Example.**
-Below is a typing rule for the term shown in the previous example:
+.. example::
+   Below is a typing rule for the term shown in the previous example:
 
-.. inference:: list example
+   .. inference:: list example
 
-   \begin{array}{l}
-   E[Γ] ⊢ t : (\List ~\nat) \\
-   E[Γ] ⊢ P : B \\
-   [(\List ~\nat)|B] \\
-   E[Γ] ⊢ f_1 : {(\kw{nil} ~\nat)}^P \\
-   E[Γ] ⊢ f_2 : {(\kw{cons} ~\nat)}^P
-   \end{array}
-   ------------------------------------------------
-   E[Γ] ⊢ \case(t,P,f_1 |f_2 ) : (P~t)
+     \begin{array}{l}
+       E[Γ] ⊢ t : (\List ~\nat) \\
+       E[Γ] ⊢ P : B \\
+       [(\List ~\nat)|B] \\
+       E[Γ] ⊢ f_1 : {(\kw{nil} ~\nat)}^P \\
+       E[Γ] ⊢ f_2 : {(\kw{cons} ~\nat)}^P
+     \end{array}
+     ------------------------------------------------
+     E[Γ] ⊢ \case(t,P,f_1 |f_2 ) : (P~t)
 
 
 .. _Definition-of-ι-reduction:
