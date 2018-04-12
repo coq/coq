@@ -1307,9 +1307,9 @@ features and deprecations, cleanups of the internals of the system along
 with a few new features. The main user visible changes are:
 
 - Kernel: fix a subject reduction failure due to allowing fixpoints
-  on non-recursive values, which allows to recover full parametricity
-  for CIC, by Matthieu Sozeau. Handling of evars in the VM (the kernel
-  still does not accept evars) by Pierre-Marie Pédrot.
+  on non-recursive values, by Matthieu Sozeau.
+  Handling of evars in the VM (the kernel still does not accept evars)
+  by Pierre-Marie Pédrot.
 
 - Notations: many improvements on recursive notations and support for
   destructuring patterns in the syntax of notations by Hugo Herbelin.
@@ -1338,7 +1338,14 @@ with a few new features. The main user visible changes are:
 
 - Documentation: a large community effort resulted in the migration
   of the reference manual to the Sphinx documentation tool. The result
-  is this manual.
+  is this manual. The new documentation infrastructure (based on Sphinx)
+  is by Clément Pit-Claudel. The migration was coordinated by Maxime Dénès
+  and Paul Steckler, with some help of Théo Zimmermann during the
+  final integration phase. The 14 people who ported the manual are
+  Calvin Beck, Heiko Becker, Yves Bertot, Maxime Dénès, Richard Ford,
+  Pierre Letouzey, Assia Mahboubi, Clément Pit-Claudel,
+  Laurence Rideau, Matthieu Sozeau, Paul Steckler, Enrico Tassi,
+  Laurent Théry, Nikita Zyuzin.
 
 - Tools: experimental ``-mangle-names`` option to coqtop/coqc for
   linting proof scripts, by Jasper Hugunin.

@@ -10,7 +10,7 @@ used as a user-friendly replacement to `coqtop`. Its main purpose is to
 allow the user to navigate forward and backward into a Coq vernacular
 file, executing corresponding commands or undoing them respectively.
 
-CoqIDE is run by typing the command `coqide` on the command line.
+|CoqIDE| is run by typing the command `coqide` on the command line.
 Without argument, the main screen is displayed with an “unnamed
 buffer”, and with a file name as argument, another buffer displaying
 the contents of that file. Additionally, `coqide` accepts the same
@@ -43,7 +43,7 @@ is the one where Coq commands are currently executed.
 
 Buffers may be edited as in any text editor, and classical basic
 editing commands (Copy/Paste, …) are available in the *Edit* menu.
-CoqIDE offers only basic editing commands, so if you need more complex
+|CoqIDE| offers only basic editing commands, so if you need more complex
 editing commands, you may launch your favorite text editor on the
 current buffer, using the *Edit/External Editor* menu.
 
@@ -86,7 +86,7 @@ If you ever try to execute a command which happens to run during a
 long time, and would like to abort it before its termination, you may
 use the interrupt button (the white cross on a red circle).
 
-There are other buttons on the CoqIDE toolbar: a button to save the running
+There are other buttons on the |CoqIDE| toolbar: a button to save the running
 buffer; a button to close the current buffer (an "X"); buttons to switch among
 buffers (left and right arrows); an "information" button; and a "gears" button.
 
@@ -157,7 +157,7 @@ Queries
 
 We call *query* any vernacular command that does not change the current state,
 such as ``Check``, ``Search``, etc. To run such commands interactively, without
-writing them in scripts, CoqIDE offers a *query pane*. The query pane can be
+writing them in scripts, |CoqIDE| offers a *query pane*. The query pane can be
 displayed on demand by using the ``View`` menu, or using the shortcut ``F1``.
 Queries can also be performed by selecting a particular phrase, then choosing an
 item from the ``Queries`` menu. The response then appears in the message window.
@@ -221,7 +221,7 @@ still edit this configuration file by hand, but this is more involved.
 Using Unicode symbols
 --------------------------
 
-CoqIDE is based on GTK+ and inherits from it support for Unicode in
+|CoqIDE| is based on GTK+ and inherits from it support for Unicode in
 its text windows. Consequently a large set of symbols is available for
 notations.
 
