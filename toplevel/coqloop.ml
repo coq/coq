@@ -272,6 +272,15 @@ let read_sentence ~state input =
     (* TopErr.print_toplevel_parse_error reraise top_buffer; *)
     Exninfo.iraise reraise
 
+let extract_default_loc loc doc_id sid : Loc.t option =
+  match loc with
+  | Some _ -> loc
+  | None ->
+    try
+      let doc = Stm.get_doc doc_id in
+      Option.cata fst None Stm.(get_ast ~doc sid)
+    with _ -> loc
+
 (** Coqloop Console feedback handler *)
 let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
   match fb.contents with
@@ -290,6 +299,9 @@ let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
   (* Re-enable when we switch back to feedback-based error printing *)
   | Message (Error,loc,msg) -> ()
   (* TopErr.print_error_for_buffer ?loc lvl msg top_buffer *)
+  | Message (Warning,loc,msg) ->
+    let loc = extract_default_loc loc fb.doc_id fb.span_id in
+    TopErr.print_error_for_buffer ?loc Warning msg top_buffer
   | Message (lvl,loc,msg) ->
     TopErr.print_error_for_buffer ?loc lvl msg top_buffer
 

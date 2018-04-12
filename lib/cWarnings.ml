@@ -22,10 +22,7 @@ type t = {
 let warnings : (string, t) Hashtbl.t = Hashtbl.create 97
 let categories : (string, string list) Hashtbl.t = Hashtbl.create 97
 
-let current_loc = ref None
 let flags = ref ""
-
-let set_current_loc loc = current_loc := loc
 
 let get_flags () = !flags
 
@@ -170,7 +167,6 @@ let create ~name ~category ?(default=Enabled) pp =
   set_flags !flags;
   fun ?loc x ->
            let w = Hashtbl.find warnings name in
-           let loc = Option.append loc !current_loc in
            match w.status with
            | Disabled -> ()
            | AsError -> CErrors.user_err ?loc (pp x)
