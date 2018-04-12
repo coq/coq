@@ -1,5 +1,5 @@
-(* An example one would like to see succeeding *)
+Require Import Program.Tactics.
 
 Record T := BT { t : Set }.
 Record U (x : T) := BU { u : t x -> Prop }.
-Fail Definition A (H : unit -> Prop) : U (BT unit) := BU _ H.
+Program Definition A (H : unit -> Prop) : U (BT unit) := BU _ H.
