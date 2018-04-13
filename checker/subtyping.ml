@@ -224,7 +224,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
     | Some None, Some None -> true
     | Some (Some (id1,p1,pb1)), Some (Some (id2,p2,pb2)) ->
       Id.equal id1 id2 &&
-      Array.for_all2 eq_con_chk p1 p2 &&
+      Array.for_all2 Constant.UserOrd.equal p1 p2 &&
       Array.for_all2 eq_projection_body pb1 pb2
     | _, _ -> false
   in

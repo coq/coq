@@ -74,7 +74,7 @@ module type RedFlagsSig = sig
 
   (** This tests if the projection is in unfolded state already or
       is unfodable due to delta. *)
-  val red_projection : reds -> projection -> bool
+  val red_projection : reds -> Projection.t -> bool
 end
 
 module RedFlags : RedFlagsSig
@@ -132,7 +132,7 @@ type fterm =
   | FInd of inductive Univ.puniverses
   | FConstruct of constructor Univ.puniverses
   | FApp of fconstr * fconstr array
-  | FProj of projection * fconstr
+  | FProj of Projection.t * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
