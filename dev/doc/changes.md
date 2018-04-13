@@ -5,7 +5,18 @@
 Proof engine
 
   More functions have been changed to use `EConstr`, notably the
-  functions in `Evd`.
+  functions in `Evd`, and in particular `Evd.define`.
+
+  Note that the core function `EConstr.to_constr` now _enforces_ by
+  default that the resulting term is ground, that is to say, free of
+  Evars. This is usually what you want, as open terms should be of
+  type `EConstr.t` to benefit from the invariants the `EConstr` API is
+  meant to guarantee.
+
+  In case you'd like to violate this API invariant, you can use the
+  `abort_on_undefined_evars` flag to `EConstr.to_constr`, but note
+  that setting this flag to false is deprecated so it is only meant to
+  be used as to help port pre-EConstr code.
 
 ## Changes between Coq 8.7 and Coq 8.8
 
