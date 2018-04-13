@@ -75,7 +75,7 @@ There are two additional buttons for navigation within the running buffer. The
 "down" button with a line goes directly to the end; the "up" button with a line
 goes back to the beginning. The handling of errors when using the go-to-the-end
 button depends on whether |Coq| is running in asynchronous mode or not (see
-Chapter :ref:`Asyncprocessing`). If it is not running in that mode, execution
+Chapter :ref:`asynchronousandparallelproofprocessing`). If it is not running in that mode, execution
 stops as soon as an error is found. Otherwise, execution continues, and the
 error is marked with an underline in the error foreground color, with a
 background in the error background color (pink by default). The same
@@ -90,10 +90,10 @@ There are other buttons on the |CoqIDE| toolbar: a button to save the running
 buffer; a button to close the current buffer (an "X"); buttons to switch among
 buffers (left and right arrows); an "information" button; and a "gears" button.
 
-The "information" button is described in Section :ref:`sec:trytactics`.
+The "information" button is described in Section :ref:`try-tactics-automatically`.
 
 The "gears" button submits proof terms to the |Coq| kernel for type-checking.
-When |Coq| uses asynchronous processing (see Chapter :ref:`Asyncprocessing`),
+When |Coq| uses asynchronous processing (see Chapter :ref:`asynchronousandparallelproofprocessing`),
 proofs may have been completed without kernel-checking of generated proof terms.
 The presence of unchecked proof terms is indicated by ``Qed`` statements that
 have a subdued *being-processed* color (light blue by default), rather than the

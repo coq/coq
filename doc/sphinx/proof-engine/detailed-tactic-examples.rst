@@ -6,6 +6,8 @@ Detailed examples of tactics
 This chapter presents detailed examples of certain tactics, to
 illustrate their behavior.
 
+.. _dependent-induction:
+
 dependent induction
 -------------------
 
@@ -316,7 +318,7 @@ explicit proof terms:
 
 This concludes our example.
 
-See also: The ``induction`` :ref:`TODO-9-induction`, ``case`` :ref:`TODO-9-induction` and ``inversion`` :ref:`TODO-8.14-inversion` tactics.
+See also: The :tacn:`induction`, :tacn:`case`, and :tacn:`inversion` tactics.
 
 
 autorewrite
@@ -402,6 +404,8 @@ Example 2: Mac Carthy function
 
    autorewrite with base1 using reflexivity || simpl.
 
+
+.. _quote:
 
 quote
 -----
@@ -544,8 +548,7 @@ Combining variables and constants
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 One can have both variables and constants in abstracts terms; for
-example, this is the case for the ``ring`` tactic
-:ref:`TODO-25-ringandfieldtacticfamilies`. Then one must provide to
+example, this is the case for the :tacn:`ring` tactic. Then one must provide to
 ``quote`` a list of *constructors of constants*. For example, if the list
 is ``[O S]`` then closed natural numbers will be considered as constants
 and other terms as variables.
@@ -606,7 +609,7 @@ don’t expect miracles from it!
 
 See also: comments of source file ``plugins/quote/quote.ml``
 
-See also: the ``ring`` tactic :ref:`TODO-25-ringandfieldtacticfamilies`
+See also: the :tacn:`ring` tactic.
 
 
 Using the tactical language
@@ -868,7 +871,7 @@ Deciding type isomorphisms
 A more tricky problem is to decide equalities between types and modulo
 isomorphisms. Here, we choose to use the isomorphisms of the simply
 typed λ-calculus with Cartesian product and unit type (see, for
-example, [:ref:`TODO-45`]). The axioms of this λ-calculus are given below.
+example, :cite:`TODO-45`). The axioms of this λ-calculus are given below.
 
 .. coqtop:: in reset
 

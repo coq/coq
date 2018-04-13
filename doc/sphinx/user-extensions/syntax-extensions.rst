@@ -381,6 +381,8 @@ Displaying informations about notations
    :opt:`Printing All`
       To disable other elements in addition to notations.
 
+.. _locating-notations:
+
 Locating notations
 ~~~~~~~~~~~~~~~~~~
 
@@ -491,7 +493,7 @@ the following:
 
 This is so because the grammar also contains rules starting with :g:`{}` and
 followed by a term, such as the rule for the notation :g:`{ A } + { B }` for the
-constant :g:`sumbool` (see Section :ref:`sumbool`).
+constant :g:`sumbool` (see Section :ref:`specification`).
 
 Then, in the rule, ``x ident`` is replaced by ``x at level 99 as ident`` meaning
 that ``x`` is parsed as a term at level 99 (as done in the notation for
@@ -829,6 +831,8 @@ lonely notations. These scopes, in opening order, are ``core_scope``,
    These variants survive sections. They behave as if Global were absent when
    not inside a section.
 
+.. _LocalInterpretationRulesForNotations:
+
 Local interpretation rules for notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -897,7 +901,7 @@ Binding arguments of a constant to an interpretation scope
 .. cmdv:: Arguments @qualid {+ @name%scope} : extra scopes
 
    Defines extra argument scopes, to be used in case of coercion to Funclass
-   (see Chapter :ref:`Coercions-full`) or with a computed type.
+   (see Chapter :ref:`implicitcoercions`) or with a computed type.
 
 .. cmdv:: Global Arguments @qualid {+ @name%@scope}
 
@@ -957,7 +961,7 @@ Binding types of arguments to an interpretation scope
    type :g:`t` in :g:`f t a` is not recognized as an argument to be interpreted
    in scope ``scope``.
 
-   More generally, any coercion :n:`@class` (see Chapter :ref:`Coercions-full`)
+   More generally, any coercion :n:`@class` (see Chapter :ref:`implicitcoercions`)
    can be bound to an interpretation scope. The command to do it is
    :n:`Bind Scope @scope with @class`
 

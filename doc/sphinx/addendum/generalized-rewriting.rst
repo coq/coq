@@ -1,14 +1,12 @@
+.. include:: ../preamble.rst
+.. include:: ../replaces.rst
+
 .. _generalizedrewriting:
-
------------------------
- Generalized rewriting
------------------------
-
-:Author: Matthieu Sozeau
 
 Generalized rewriting
 =====================
 
+:Author: Matthieu Sozeau
 
 This chapter presents the extension of several equality related
 tactics to work over user-defined structures (called setoids) that are
@@ -479,7 +477,7 @@ The declaration itself amounts to the definition of an object of the
 record type ``Coq.Classes.RelationClasses.Equivalence`` and a hint added
 to the ``typeclass_instances`` hint database. Morphism declarations are
 also instances of a type class defined in ``Classes.Morphisms``. See the
-documentation on type classes :ref:`TODO-chapter-20-type-classes`
+documentation on type classes :ref:`typeclasses`
 and the theories files in Classes for further explanations.
 
 One can inform the rewrite tactic about morphisms and relations just
@@ -707,7 +705,7 @@ defined constants as transparent by default. This may slow down the
 resolution due to a lot of unifications (all the declared ``Proper``
 instances are tried at each node of the search tree). To speed it up,
 declare your constant as rigid for proof search using the command
-``Typeclasses Opaque`` (see :ref:`TODO-20.6.7-typeclasses-transparency`).
+``Typeclasses Opaque`` (see :ref:`TypeclassesTransparent`).
 
 
 Strategies for rewriting
@@ -812,7 +810,7 @@ Hint databases created for ``autorewrite`` can also be used
 by ``rewrite_strat`` using the ``hints`` strategy that applies any of the
 lemmas at the current subterm. The ``terms`` strategy takes the lemma
 names directly as arguments. The ``eval`` strategy expects a reduction
-expression (see :ref:`TODO-8.7-performing-computations`) and succeeds
+expression (see :ref:`performingcomputations`) and succeeds
 if it reduces the subterm under consideration. The ``fold`` strategy takes
 a term ``c`` and tries to *unify* it to the current subterm, converting it to ``c``
 on success, it is stronger than the tactic ``fold``.

@@ -77,10 +77,11 @@ section.
 Flags, Options and Tables
 -----------------------------
 
-|Coq| configurability is based on flags (e.g. Set Printing All in
-Section :ref:`TODO-2.9-printing-full`), options (e.g. ``Set Printing Widthinteger`` in Section
-:ref:`TODO-6.9.6-set-printing-width`), or tables (e.g. ``Add Printing Record ident``, in Section
-:ref:`TODO-2.2.4-add-printing-record`). The names of flags, options and tables are made of non-empty sequences of identifiers
+|Coq| configurability is based on flags (e.g. ``Set Printing All`` in
+Section :ref:`printing_constructions_full`), options (e.g. ``Set Printing Widthinteger`` in Section
+:ref:`controlling-display`), or tables (e.g. ``Add Printing Record ident``, in Section
+:ref:`record-types`).
+The names of flags, options and tables are made of non-empty sequences of identifiers
 (conventionally with capital initial
 letter). The general commands handling flags, options and tables are
 given below.
@@ -94,7 +95,6 @@ when the current module ends.
 
 
 Variants:
-
 
 .. cmdv:: Local Set @flag.
 
@@ -228,7 +228,7 @@ Variants:
 .. cmdv:: @selector: Check @term.
 
 specifies on which subgoal to perform typing
-(see Section :ref:`TODO-8.1-invocation-of-tactics`).
+(see Section :ref:`invocation-of-tactics`).
 
 .. TODO : convtactic is not a syntax entry
 
@@ -240,7 +240,7 @@ hypothesis introduced in the first subgoal (if a proof is in
 progress).
 
 
-See also: Section :ref:`TODO-8.7-performing-computations`.
+See also: Section :ref:`performingcomputations`.
 
 
 .. cmd:: Compute @term.
@@ -250,7 +250,7 @@ bytecode-based virtual machine. It is a shortcut for ``Eval vm_compute in``
 :n:`@term`.
 
 
-See also: Section :ref:`TODO-8.7-performing-computations`.
+See also: Section :ref:`performingcomputations`.
 
 
 .. cmd::Extraction @term.
@@ -258,7 +258,7 @@ See also: Section :ref:`TODO-8.7-performing-computations`.
 This command displays the extracted term from :n:`@term`. The extraction is
 processed according to the distinction between ``Set`` and ``Prop``; that is
 to say, between logical and computational content (see Section
-:ref:`TODO-4.1.1-sorts`). The extracted term is displayed in OCaml
+:ref:`sorts`). The extracted term is displayed in OCaml
 syntax,
 where global identifiers are still displayed as in |Coq| terms.
 
@@ -272,7 +272,7 @@ Recursively extracts all
 the material needed for the extraction of the qualified identifiers.
 
 
-See also: Chapter ref:`TODO-23-chapter-extraction`.
+See also: Chapter :ref:`extraction`.
 
 
 .. cmd:: Print Assumptions @qualid.
@@ -326,13 +326,13 @@ displays the name and type of all objects (theorems, axioms, etc) of
 the current context whose name contains string. If string is a
 notation’s string denoting some reference :n:`@qualid` (referred to by its
 main symbol as in `"+"` or by its notation’s string as in `"_ + _"` or
-`"_ 'U' _"`, see Section :ref:`TODO-12.1-notations`), the command works like ``Search`` :n:`@qualid`.
+`"_ 'U' _"`, see Section :ref:`notations`), the command works like ``Search`` :n:`@qualid`.
 
 .. cmdv:: Search @string%@key.
 
 The string string must be a notation or the main
 symbol of a notation which is then interpreted in the scope bound to
-the delimiting key :n:`@key` (see Section :ref:`TODO-12.2.2-local-interpretation-rules-for-notations`).
+the delimiting key :n:`@key` (see Section :ref:`LocalInterpretationRulesForNotations`).
 
 .. cmdv:: Search @term_pattern.
 
@@ -364,7 +364,7 @@ This restricts the search to constructions not defined in the modules named by t
 .. cmdv:: @selector: Search [-]@term_pattern_string … [-]@term_pattern_string.
 
 This specifies the goal on which to search hypothesis (see
-Section :ref:`TODO-8.1-invocation-of-tactics`).
+Section :ref:`invocation-of-tactics`).
 By default the 1st goal is searched. This variant can
 be combined with other variants presented here.
 
@@ -382,11 +382,11 @@ be combined with other variants presented here.
    Search (?x * _ + ?x * _)%Z outside OmegaLemmas.
 
 .. note:: Up to |Coq| version 8.4, ``Search`` had the behavior of current
-``SearchHead`` and the behavior of current Search was obtained with
-command ``SearchAbout``. For compatibility, the deprecated name
-SearchAbout can still be used as a synonym of Search. For
-compatibility, the list of objects to search when using ``SearchAbout``
-may also be enclosed by optional[ ] delimiters.
+   ``SearchHead`` and the behavior of current Search was obtained with
+   command ``SearchAbout``. For compatibility, the deprecated name
+   SearchAbout can still be used as a synonym of Search. For
+   compatibility, the list of objects to search when using ``SearchAbout``
+   may also be enclosed by optional ``[ ]`` delimiters.
 
 
 .. cmd:: SearchHead @term.
@@ -420,12 +420,12 @@ Error messages:
 .. exn:: Module/section @qualid not found
 
 No module :n:`@qualid` has been required
-(see Section :ref:`TODO-6.5.1-require`).
+(see Section :ref:`compiled-files`).
 
 .. cmdv:: @selector: SearchHead @term.
 
 This specifies the goal on which to
-search hypothesis (see Section :ref:`TODO-8.1-invocation-of-tactics`).
+search hypothesis (see Section :ref:`invocation-of-tactics`).
 By default the 1st goal is
 searched. This variant can be combined with other variants presented
 here.
@@ -479,7 +479,7 @@ This restricts the search to constructions not defined in the modules named by t
 .. cmdv:: @selector: SearchPattern @term.
 
 This specifies the goal on which to
-search hypothesis (see Section :ref:`TODO-8.1-invocation-of-tactics`). By default the 1st goal is
+search hypothesis (see Section :ref:`invocation-of-tactics`). By default the 1st goal is
 searched. This variant can be combined with other variants presented
 here.
 
@@ -514,7 +514,7 @@ This restricts the search to constructions not defined in the modules named by t
 .. cmdv:: @selector: SearchRewrite @term.
 
 This specifies the goal on which to
-search hypothesis (see Section :ref:`TODO-8.1-invocation-of-tactics`). By default the 1st goal is
+search hypothesis (see Section :ref:`invocation-of-tactics`). By default the 1st goal is
 searched. This variant can be combined with other variants presented
 here.
 
@@ -569,7 +569,7 @@ As Locate but restricted to modules.
 As Locate but restricted to tactics.
 
 
-See also: Section :ref:`TODO-12.1.10-LocateSymbol`
+See also: Section :ref:`locating-notations`
 
 
 .. _loading-files:
@@ -589,7 +589,7 @@ toplevel. This kind of file is called a *script* for |Coq|. The standard
 
 This command loads the file named :n:`ident`.v, searching successively in
 each of the directories specified in the *loadpath*. (see Section
-:ref:`TODO-2.6.3-libraries-and-filesystem`)
+:ref:`libraries-and-filesystem`)
 
 Files loaded this way cannot leave proofs open, and the ``Load``
 command cannot be used inside a proof either.
@@ -610,7 +610,7 @@ will use the default extension ``.v``.
 
 Display, while loading,
 the answers of |Coq| to each command (including tactics) contained in
-the loaded file See also: Section :ref:`TODO-6.9.1-silent`.
+the loaded file See also: Section :ref:`controlling-display`.
 
 Error messages:
 
@@ -626,7 +626,7 @@ Compiled files
 ------------------
 
 This section describes the commands used to load compiled files (see
-Chapter :ref:`TODO-14-coq-commands` for documentation on how to compile a file). A compiled
+Chapter :ref:`thecoqcommands` for documentation on how to compile a file). A compiled
 file is a particular case of module called *library file*.
 
 
@@ -644,7 +644,7 @@ replayed nor rechecked.
 To locate the file in the file system, :n:`@qualid` is decomposed under the
 form `dirpath.ident` and the file `ident.vo` is searched in the physical
 directory of the file system that is mapped in |Coq| loadpath to the
-logical path dirpath (see Section :ref:`TODO-2.6.3-libraries-and-filesystem`). The mapping between
+logical path dirpath (see Section :ref:`libraries-and-filesystem`). The mapping between
 physical directories and logical names at the time of requiring the
 file must be consistent with the mapping used to compile the file. If
 several files match, one of them is picked in an unspecified fashion.
@@ -656,7 +656,7 @@ Variants:
 
 This loads and declares the module :n:`@qualid`
 and its dependencies then imports the contents of :n:`@qualid` as described
-in Section :ref:`TODO-2.5.8-import`.It does not import the modules on which
+:ref:`here <import_qualid>`. It does not import the modules on which
 qualid depends unless these modules were themselves required in module
 :n:`@qualid`
 using ``Require Export``, as described below, or recursively required
@@ -696,7 +696,7 @@ Error messages:
 
 The command did not find the
 file foo.vo. Either foo.v exists but is not compiled or foo.vo is in a
-directory which is not in your LoadPath (see Section :ref:`TODO-2.6.3-libraries-and-filesystem`).
+directory which is not in your LoadPath (see Section :ref:`libraries-and-filesystem`).
 
 .. exn:: Compiled library ident.vo makes inconsistent assumptions over library qualid
 
@@ -725,12 +725,12 @@ the time it was compiled.
 This command
 is not allowed inside a module or a module type being defined. It is
 meant to describe a dependency between compilation units. Note however
-that the commands Import and Export alone can be used inside modules
-(see Section :ref:`TODO-2.5.8-import`).
+that the commands ``Import`` and ``Export`` alone can be used inside modules
+(see Section :ref:`Import <import_qualid>`).
 
 
 
-See also: Chapter :ref:`TODO-14-coq-commands`
+See also: Chapter :ref:`thecoqcommands`
 
 
 .. cmd:: Print Libraries.
@@ -746,8 +746,8 @@ This commands loads the OCaml compiled files
 with names given by the :n:`@string` sequence
 (dynamic link). It is mainly used to load tactics dynamically. The
 files are searched into the current OCaml loadpath (see the
-command ``Add ML Path`` in Section :ref:`TODO-2.6.3-libraries-and-filesystem`). Loading of OCaml files is only possible under the bytecode version of ``coqtop`` (i.e.
-``coqtop`` called with option ``-byte``, see chapter :ref:`TODO-14-coq-commands`), or when |Coq| has been compiled with a
+command ``Add ML Path`` in Section :ref:`libraries-and-filesystem`). Loading of OCaml files is only possible under the bytecode version of ``coqtop`` (i.e.
+``coqtop`` called with option ``-byte``, see chapter :ref:`thecoqcommands`), or when |Coq| has been compiled with a
 version of OCaml that supports native Dynlink (≥ 3.11).
 
 
@@ -774,7 +774,7 @@ Error messages:
 
 This prints the name of all OCaml modules loaded with ``Declare
 ML Module``. To know from where these module were loaded, the user
-should use the command Locate File (see Section :ref:`TODO-6.6.10-locate-file`)
+should use the command ``Locate File`` (see :ref:`here <locate-file>`)
 
 
 .. _loadpath:
@@ -783,7 +783,7 @@ Loadpath
 ------------
 
 Loadpaths are preferably managed using |Coq| command line options (see
-Section `2.6.3-libraries-and-filesystem`) but there remain vernacular commands to manage them
+Section `libraries-and-filesystem`) but there remain vernacular commands to manage them
 for practical purposes. Such commands are only meant to be issued in
 the toplevel, and using them in source files is discouraged.
 
@@ -862,14 +862,14 @@ the paths that extend the :n:`@dirpath` prefix.
 .. cmd:: Add ML Path @string.
 
 This command adds the path :n:`@string` to the current OCaml
-loadpath (see the command `Declare ML Module`` in Section :ref:`TODO-6.5-compiled-files`).
+loadpath (see the command `Declare ML Module`` in Section :ref:`compiled-files`).
 
 
 .. cmd:: Add Rec ML Path @string.
 
 This command adds the directory :n:`@string` and all its subdirectories to
 the current OCaml loadpath (see the command ``Declare ML Module``
-in Section :ref:`TODO-6.5-compiled-files`).
+in Section :ref:`compiled-files`).
 
 
 .. cmd:: Print ML Path @string.
@@ -877,8 +877,9 @@ in Section :ref:`TODO-6.5-compiled-files`).
 This command displays the current OCaml loadpath. This
 command makes sense only under the bytecode version of ``coqtop``, i.e.
 using option ``-byte``
-(see the command Declare ML Module in Section :ref:`TODO-6.5-compiled-files`).
+(see the command Declare ML Module in Section :ref:`compiled-files`).
 
+.. _locate-file:
 
 .. cmd:: Locate File @string.
 
@@ -929,7 +930,7 @@ of the interactive session.
 This commands undoes all the effects of the last vernacular command.
 Commands read from a vernacular file via a ``Load`` are considered as a
 single command. Proof management commands are also handled by this
-command (see Chapter :ref:`TODO-7-proof-handling`). For that, Back may have to undo more than
+command (see Chapter :ref:`proofhandling`). For that, Back may have to undo more than
 one command in order to reach a state where the proof management
 information is available. For instance, when the last command is a
 ``Qed``, the management information about the closed proof has been
@@ -978,9 +979,9 @@ three numbers represent the following:
 
     + *first number* : State label to reach, as for BackTo.
     + *second number* : *Proof state number* to unbury once aborts have been done.
-      |Coq| will compute the number of Undo to perform (see Chapter :ref:`TODO-7-proof-handling`).
+      |Coq| will compute the number of Undo to perform (see Chapter :ref:`proofhandling`).
     + *third number* : Number of Abort to perform, i.e. the number of currently
-      opened nested proofs that must be canceled (see Chapter :ref:`TODO-7-proof-handling`).
+      opened nested proofs that must be canceled (see Chapter :ref:`proofhandling`).
 
 
 
@@ -1035,10 +1036,10 @@ Warnings:
 
 
 #. It only works with the bytecode version of |Coq| (i.e. `coqtop.byte`,
-   see Section `TODO-14.1-interactive-use`).
+   see Section `interactive-use`).
 #. You must have compiled |Coq| from the source package and set the
    environment variable COQTOP to the root of your copy of the sources
-   (see Section `14.3.2-customization-by-envionment-variables`).
+   (see Section `customization-by-environment-variables`).
 
 
 
@@ -1108,7 +1109,7 @@ This command turns off the normal displaying.
 
 This command turns the normal display on.
 
-TODO : check that spaces are handled well
+.. todo:: check that spaces are handled well
 
 .. cmd:: Set Warnings ‘‘(@ident {* , @ident } )’’.
 
@@ -1196,7 +1197,7 @@ This command displays the current state of compaction of goal.
 
 This command resets the displaying of goals to focused goals only
 (default). Unfocused goals are created by focusing other goals with
-bullets (see :ref:`TODO-7.2.7-bullets`) or curly braces (see `7.2.6-curly-braces`).
+bullets (see :ref:`bullets`) or curly braces (see `here <curly-braces>`).
 
 
 .. cmd:: Set Printing Unfocused.
@@ -1221,6 +1222,7 @@ when -emacs is passed.
 This command disables the printing of the “(dependent evars: …)” line
 when -emacs is passed.
 
+.. _vernac-controlling-the-reduction-strategies:
 
 Controlling the reduction strategies and the conversion algorithm
 ----------------------------------------------------------------------
@@ -1249,14 +1251,14 @@ a constant is replacing it by its definition).
 
 ``Opaque`` has also an effect on the conversion algorithm of |Coq|, telling
 it to delay the unfolding of a constant as much as possible when |Coq|
-has to check the conversion (see Section :ref:`TODO-4.3-conversion-rules`) of two distinct
+has to check the conversion (see Section :ref:`conversion-rules`) of two distinct
 applied constants.
 
 The scope of ``Opaque`` is limited to the current section, or current
 file, unless the variant ``Global Opaque`` is used.
 
 
-See also: sections :ref:`TODO-8.7-performing-computations`, :ref:`TODO-8.16-automatizing`, :ref:`TODO-7.1-switching-on-off-proof-editing-mode`
+See also: sections :ref:`performingcomputations`, :ref:`tactics-automatizing`, :ref:`proof-editing-mode`
 
 
 Error messages:
@@ -1294,8 +1296,9 @@ There is no constant referred by :n:`@qualid` in the environment.
 
 
 
-See also: sections :ref:`TODO-8.7-performing-computations`, :ref:`TODO-8.16-automatizing`, :ref:`TODO-7.1-switching-on-off-proof-editing-mode`
+See also: sections :ref:`performingcomputations`, :ref:`tactics-automatizing`, :ref:`proof-editing-mode`
 
+.. _vernac-strategy:
 
 .. cmd:: Strategy @level [ {+ @qualid } ].
 
@@ -1367,7 +1370,7 @@ nothing prevents the user to also perform a
 ``Ltac`` `ident` ``:=`` `convtactic`.
 
 
-See also: sections :ref:`TODO-8.7-performing-computations`
+See also: sections :ref:`performingcomputations`
 
 
 .. _controlling-locality-of-commands:
@@ -1387,8 +1390,8 @@ scope of their effect. There are four kinds of commands:
   section and the module or library file they occur in.  For these
   commands, the Local modifier limits the effect of the command to the
   current section or module it occurs in.  As an example, the ``Coercion``
-  (see Section :ref:`TODO-2.8-coercions`) and ``Strategy`` (see Section :ref:`TODO-6.10.3-strategy`) commands belong
-  to this category.
+  (see Section :ref:`coercions`) and ``Strategy`` (see :ref:`here <vernac-strategy>`)
+  commands belong to this category.
 + Commands whose default behavior is to stop their effect at the end
   of the section they occur in but to extent their effect outside the
   module or library file they occur in.  For these commands, the Local
@@ -1396,14 +1399,14 @@ scope of their effect. There are four kinds of commands:
   command does not occur in a section and the Global modifier extends
   the effect outside the current sections and current module if the
   command occurs in a section.  As an example, the ``Implicit Arguments`` (see
-  Section :ref:`TODO-2.7-implicit-arguments`), Ltac (see Chapter :ref:`TODO-9-tactic-language`) or ``Notation`` (see Section
-  :ref:`TODO-12.1-notations`) commands belong to this category.  Notice that a subclass of
+  Section :ref:`implicitarguments`), Ltac (see Chapter :ref:`TODO-9-tactic-language`) or ``Notation`` (see Section
+  :ref:`notations`) commands belong to this category.  Notice that a subclass of
   these commands do not support extension of their scope outside
   sections at all and the Global is not applicable to them.
 + Commands whose default behavior is to stop their effect at the end
   of the section or module they occur in.  For these commands, the Global
   modifier extends their effect outside the sections and modules they
-  occurs in.  The ``Transparent`` and ``Opaque`` (see Section :ref:`TODO-6.10-opaque`) commands  belong to this category.
+  occurs in.  The ``Transparent`` and ``Opaque`` (see Section :ref:`vernac-controlling-the-reduction-strategies`) commands  belong to this category.
 + Commands whose default behavior is to extend their effect outside
   sections but not outside modules when they occur in a section and to
   extend their effect outside the module or library file they occur in

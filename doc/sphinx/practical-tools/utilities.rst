@@ -33,6 +33,7 @@ For example, to statically link |L_tac|, you can just do:
    % ocamlfind ocamlopt -thread -rectypes -linkall -linkpkg \
                  -package coq.toplevel -package coq.ltac \
                  toplevel/coqtop\_bin.ml -o my\_toplevel.native
+
 and similarly for other plugins.
 
 
@@ -43,7 +44,7 @@ The majority of |Coq| projects are very similar: a collection of ``.v``
 files and eventually some ``.ml`` ones (a |Coq| plugin). The main piece of
 metadata needed in order to build the project are the command line
 options to ``coqc`` (e.g. ``-R``, ``-I``, see also: Section
-:ref:`bycommandline`). Collecting the list of files and options is the job
+:ref:`command-line-options`). Collecting the list of files and options is the job
 of the ``_CoqProject`` file.
 
 A simple example of a ``_CoqProject`` file follows:
@@ -59,7 +60,7 @@ A simple example of a ``_CoqProject`` file follows:
     src/qux_plugin.mlpack
 
 
-Currently, both |CoqIDE| and |ProofGeneral| (version ≥ ``4.3pre``)
+Currently, both |CoqIDE| and Proof-General (version ≥ ``4.3pre``)
 understand ``_CoqProject`` files and invoke |Coq| with the desired options.
 
 The ``coq_makefile`` utility can be used to set up a build infrastructure
@@ -77,7 +78,7 @@ CoqMakefile
   is a generic makefile for ``GNU Make`` that provides
   targets to build the project (both ``.v`` and ``.ml*`` files), to install it
   system-wide in the ``coq-contrib`` directory (i.e. where |Coq| is installed)
-  as well as to invoke |coqdoc| to generate |HTML| documentation.
+  as well as to invoke coqdoc to generate HTML documentation.
 
 CoqMakefile.conf
   contains make variables assignments that reflect
@@ -89,7 +90,7 @@ An optional file ``CoqMakefile.local`` can be provided by the user in order to
 extend ``CoqMakefile``. In particular one can declare custom actions to be
 performed before or after the build process. Similarly one can customize the
 install target or even provide new targets. Extension points are documented in
-paragraph :ref:`coqmakefile:local`.
+paragraph :ref:`coqmakefilelocal`.
 
 The extensions of the files listed in ``_CoqProject`` is used in order to
 decide how to build them. In particular:
@@ -120,25 +121,33 @@ CoqMakefile.local
 The optional file ``CoqMakefile.local`` is included by the generated
 file ``CoqMakefile``. It can contain two kinds of directives.
 
-Variable assignment
-  The variable must belong to the variables listed in the ``Parameters`` section of the generated makefile.
-  Here we describe only few of them.
-    :CAMLPKGS:
-      can be used to specify third party findlib packages, and is
-      passed to the OCaml compiler on building or linking of modules. Eg:
-      ``-package yojson``.
-    :CAMLFLAGS:
-      can be used to specify additional flags to the |OCaml|
-      compiler, like ``-bin-annot`` or ``-w``....
-    :COQC, COQDEP, COQDOC:
-      can be set in order to use alternative binaries
-      (e.g. wrappers)
-    :COQ_SRC_SUBDIRS: can be extended by including other paths in which ``*.cm*`` files are searched. For example ``COQ\_SRC\_SUBDIRS+=user-contrib/Unicoq`` lets you build a plugin containing OCaml code that depends on the OCaml code of ``Unicoq``.
+**Variable assignment**
 
-Rule extension
-  The following makefile rules can be extended.
+The variable must belong to the variables listed in the ``Parameters``
+section of the generated makefile.
+Here we describe only few of them.
 
-  .. example ::
+:CAMLPKGS:
+   can be used to specify third party findlib packages, and is
+   passed to the OCaml compiler on building or linking of modules. Eg:
+   ``-package yojson``.
+:CAMLFLAGS:
+   can be used to specify additional flags to the |OCaml|
+   compiler, like ``-bin-annot`` or ``-w``....
+:COQC, COQDEP, COQDOC:
+   can be set in order to use alternative binaries
+   (e.g. wrappers)
+:COQ_SRC_SUBDIRS:
+   can be extended by including other paths in which ``*.cm*`` files
+   are searched. For example ``COQ\_SRC\_SUBDIRS+=user-contrib/Unicoq``
+   lets you build a plugin containing OCaml code that depends on the
+   OCaml code of ``Unicoq``.
+
+**Rule extension**
+
+The following makefile rules can be extended.
+
+.. example::
 
     ::
 
@@ -147,39 +156,38 @@ Rule extension
         install-extra::
                 cp ThisExtraFile /there/it/goes
 
-  ``pre-all::``
-    run before the all target. One can use this to configure
-   the project, or initialize sub modules or check dependencies are met.
+``pre-all::``
+  run before the ``all`` target. One can use this to configure
+  the project, or initialize sub modules or check dependencies are met.
 
-  ``post-all::``
-    run after the all target. One can use this to run a test
-    suite, or compile extracted code.
+``post-all::``
+  run after the ``all`` target. One can use this to run a test
+  suite, or compile extracted code.
 
+``install-extra::``
+  run after ``install``. One can use this to install extra files.
 
-  ``install-extra::``
-    run after install. One can use this to install extra files.
+``install-doc::``
+  One can use this to install extra doc.
 
-  ``install-doc::``
-    One can use this to install extra doc.
+``uninstall::``
+  \
 
-  ``uninstall::``
-    \
+``uninstall-doc::``
+  \
 
-  ``uninstall-doc::``
-    \
+``clean::``
+  \
 
-  ``clean::``
-    \
+``cleanall::``
+  \
 
-  ``cleanall::``
-    \
+``archclean::``
+  \
 
-  ``archclean::``
-    \
-
-  ``merlin-hook::``
-    One can append lines to the generated .merlin file extending this
-    target.
+``merlin-hook::``
+  One can append lines to the generated ``.merlin`` file extending this
+  target.
 
 Timing targets and performance testing
 ++++++++++++++++++++++++++++++++++++++
@@ -311,8 +319,8 @@ line timing data:
 
 + ``print-pretty-single-time-diff``
     ::
-
        print-pretty-single-time-diff BEFORE=path/to/file.v.before-timing AFTER=path/to/file.v.after-timing
+
     this target will make a sorted table of the per-line timing differences
     between the timing logs in the ``BEFORE`` and ``AFTER`` files, display it, and
     save it to the file specified by the ``TIME_OF_PRETTY_BUILD_FILE`` variable,
@@ -451,14 +459,16 @@ automatically compute the dependencies among the files part of the
 project.
 
 
+.. _coqdoc:
+
 Documenting |Coq| files with coqdoc
 -----------------------------------
 
-|coqdoc| is a documentation tool for the proof assistant |Coq|, similar to
-``javadoc`` or ``ocamldoc``. The task of |coqdoc| is
+coqdoc is a documentation tool for the proof assistant |Coq|, similar to
+``javadoc`` or ``ocamldoc``. The task of coqdoc is
 
 
-#. to produce a nice |Latex| and/or |HTML| document from the |Coq|
+#. to produce a nice |Latex| and/or HTML document from the |Coq|
    sources, readable for a human and not only for the proof assistant;
 #. to help the user navigating in his own (or third-party) sources.
 
@@ -468,18 +478,18 @@ Principles
 ~~~~~~~~~~
 
 Documentation is inserted into |Coq| files as *special comments*. Thus
-your files will compile as usual, whether you use |coqdoc| or not. |coqdoc|
+your files will compile as usual, whether you use coqdoc or not. coqdoc
 presupposes that the given |Coq| files are well-formed (at least
 lexically). Documentation starts with ``(**``, followed by a space, and
 ends with the pending ``*)``. The documentation format is inspired by Todd
 A. Coram’s *Almost Free Text (AFT)* tool: it is mainly ``ASCII`` text with
-some syntax-light controls, described below. |coqdoc| is robust: it
+some syntax-light controls, described below. coqdoc is robust: it
 shouldn’t fail, whatever the input is. But remember: “garbage in,
 garbage out”.
 
 
 |Coq| material inside documentation.
-++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++
 
 |Coq| material is quoted between the delimiters ``[`` and ``]``. Square brackets
 may be nested, the inner ones being understood as being part of the
@@ -494,7 +504,7 @@ followed by a newline and the latter must follow a newline.
 Pretty-printing.
 ++++++++++++++++
 
-|coqdoc| uses different faces for identifiers and keywords. The pretty-
+coqdoc uses different faces for identifiers and keywords. The pretty-
 printing of |Coq| tokens (identifiers or symbols) can be controlled
 using one of the following commands:
 
@@ -512,8 +522,8 @@ or
     (** printing  *token* $...LATEX math...$ #...html...# *)
 
 
-It gives the |Latex| and |HTML| texts to be produced for the given |Coq|
-token. One of the |Latex| or |HTML| text may be omitted, causing the
+It gives the |Latex| and HTML texts to be produced for the given |Coq|
+token. One of the |Latex| or HTML text may be omitted, causing the
 default pretty-printing to be used for this token.
 
 The printing for one token can be removed with
@@ -614,18 +624,18 @@ emphasis. Usually, these are spaces or punctuation.
 
 
 
-Escaping to |Latex| and |HTML|.
+Escaping to |Latex| and HTML.
 +++++++++++++++++++++++++++++++
 
-Pure |Latex| or |HTML| material can be inserted using the following
+Pure |Latex| or HTML material can be inserted using the following
 escape sequences:
 
 
 + ``$...LATEX stuff...$`` inserts some |Latex| material in math mode.
-  Simply discarded in |HTML| output.
+  Simply discarded in HTML output.
 + ``%...LATEX stuff...%`` inserts some |Latex| material. Simply
-  discarded in |HTML| output.
-+ ``#...HTML stuff...#`` inserts some |HTML| material. Simply discarded in
+  discarded in HTML output.
++ ``#...HTML stuff...#`` inserts some HTML material. Simply discarded in
   |Latex| output.
 
 .. note::
@@ -654,7 +664,7 @@ at the beginning of a line.
 Hyperlinks
 ++++++++++
 
-Hyperlinks can be inserted into the |HTML| output, so that any
+Hyperlinks can be inserted into the HTML output, so that any
 identifier is linked to the place of its definition.
 
 ``coqc file.v`` automatically dumps localization information in
@@ -662,7 +672,7 @@ identifier is linked to the place of its definition.
 file``. Take care of erasing this global file, if any, when starting
 the whole compilation process.
 
-Then invoke |coqdoc| or ``coqdoc --glob-from file`` to tell |coqdoc| to look
+Then invoke coqdoc or ``coqdoc --glob-from file`` to tell coqdoc to look
 for name resolutions into the file ``file`` (it will look in ``file.glob``
 by default).
 
@@ -703,17 +713,17 @@ be used around a whole proof.
 Usage
 ~~~~~
 
-|coqdoc| is invoked on a shell command line as follows:
+coqdoc is invoked on a shell command line as follows:
 ``coqdoc <options and files>``.
 Any command line argument which is not an option is considered to be a
 file (even if it starts with a ``-``). |Coq| files are identified by the
 suffixes ``.v`` and ``.g`` and |Latex| files by the suffix ``.tex``.
 
 
-:|HTML| output: This is the default output. One |HTML| file is created for
+:HTML output: This is the default output. One HTML file is created for
   each |Coq| file given on the command line, together with a file
-  ``index.html`` (unless ``option-no-index is passed``). The |HTML| pages use a
-  style sheet named ``style.css``. Such a file is distributed with |coqdoc|.
+  ``index.html`` (unless ``option-no-index is passed``). The HTML pages use a
+  style sheet named ``style.css``. Such a file is distributed with coqdoc.
 :|Latex| output: A single |Latex| file is created, on standard
   output. It can be redirected to a file with option ``-o``. The order of
   files on the command line is kept in the final document. |Latex|
@@ -732,7 +742,7 @@ Command line options
 **Overall options**
 
 
-  :--|HTML|: Select a |HTML| output.
+  :--HTML: Select a HTML output.
   :--|Latex|: Select a |Latex| output.
   :--dvi: Select a DVI output.
   :--ps: Select a PostScript output.
@@ -760,7 +770,7 @@ Command line options
 
 **Index options**
 
-  Default behavior is to build an index, for the |HTML| output only,
+  Default behavior is to build an index, for the HTML output only,
   into ``index.html``.
 
   :--no-index: Do not output the index.
@@ -775,7 +785,7 @@ Command line options
 
   :-toc, --table-of-contents: Insert a table of contents. For a |Latex|
     output, it inserts a ``\tableofcontents`` at the beginning of the
-    document. For a |HTML| output, it builds a table of contents into
+    document. For a HTML output, it builds a table of contents into
     ``toc.html``.
   :--toc-depth int: Only include headers up to depth ``int`` in the table of
     contents.
@@ -803,20 +813,18 @@ Command line options
 **Title options**
 
   :-s , --short: Do not insert titles for the files. The default
-    behavior is to insert a title like “Library Foo” for each file.
+     behavior is to insert a title like “Library Foo” for each file.
   :--lib-name string: Print “string Foo” instead of “Library Foo” in
-    titles. For example “Chapter” and “Module” are reasonable choices.
+     titles. For example “Chapter” and “Module” are reasonable choices.
   :--no-lib-name: Print just “Foo” instead of “Library Foo” in titles.
   :--lib-subtitles: Look for library subtitles. When enabled, the
-  beginning of each file is checked for a comment of the form:
+     beginning of each file is checked for a comment of the form:
 
-  ::
+     ::
+        (** * ModuleName : text *)
 
-
-      (** * ModuleName : text *)
-
-  where ``ModuleName`` must be the name of the file. If it is present, the
-    text is used as a subtitle for the module in appropriate places.
+     where ``ModuleName`` must be the name of the file. If it is present, the
+     text is used as a subtitle for the module in appropriate places.
   :-t string, --title string: Set the document title.
 
 
@@ -854,11 +862,11 @@ Command line options
   :-latin1, --latin1: Select ISO-8859-1 input files. It is equivalent to
     --inputenc latin1 --charset iso-8859-1.
   :-utf8, --utf8: Set --inputenc utf8x for |Latex| output and--charset
-    utf-8 for |HTML| output. Also use Unicode replacements for a couple of
+    utf-8 for HTML output. Also use Unicode replacements for a couple of
     standard plain ASCII notations such as → for ``->`` and ∀ for ``forall``. |Latex|
     UTF-8 support can be found
     at `<http://www.ctan.org/pkg/unicode>`_. For the interpretation of Unicode
-    characters by |Latex|, extra packages which |coqdoc| does not provide
+    characters by |Latex|, extra packages which coqdoc does not provide
     by default might be required, such as textgreek for some Greek letters
     or ``stmaryrd`` for some mathematical symbols. If a Unicode character is
     missing an interpretation in the utf8x input encoding, add
@@ -866,13 +874,13 @@ Command line options
     and declarations can be added with option ``-p``.
   :--inputenc string: Give a |Latex| input encoding, as an option to |Latex|
     package ``inputenc``.
-  :--charset string: Specify the |HTML| character set, to be inserted in
-    the |HTML| header.
+  :--charset string: Specify the HTML character set, to be inserted in
+    the HTML header.
 
 
 
 The coqdoc |Latex| style file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In case you choose to produce a document without the default |Latex|
 preamble (by using option ``--no-preamble``), then you must insert into
@@ -929,16 +937,16 @@ There are options to produce the |Coq| parts in smaller font, italic,
 between horizontal rules, etc. See the man page of ``coq-tex`` for more
 details.
 
-|Coq| and |GNU| |Emacs|
+|Coq| and GNU Emacs
 -----------------------
 
 
-The |Coq| |Emacs| mode
+The |Coq| Emacs mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-|Coq| comes with a Major mode for |GNU| |Emacs|, ``gallina.el``. This mode
+|Coq| comes with a Major mode for GNU Emacs, ``gallina.el``. This mode
 provides syntax highlighting and also a rudimentary indentation
-facility in the style of the ``Caml`` |GNU| |Emacs| mode.
+facility in the style of the ``Caml`` GNU Emacs mode.
 
 Add the following lines to your ``.emacs`` file:
 
@@ -956,26 +964,26 @@ facility:
 
 + pressing ``Tab`` at the beginning of a line indents the line like the
   line above;
-+ extra ``Tab``s increase the indentation level (by 2 spaces by default);
++ extra tabulations increase the indentation level (by 2 spaces by default);
 + ``M-Tab`` decreases the indentation level.
 
 
-An inferior mode to run |Coq| under |Emacs|, by Marco Maggesi, is also
+An inferior mode to run |Coq| under Emacs, by Marco Maggesi, is also
 included in the distribution, in file ``inferior-coq.el``. Instructions to
 use it are contained in this file.
 
 
-Proof General
+Proof-General
 ~~~~~~~~~~~~~
 
-|ProofGeneral| is a generic interface for proof assistants based on
-|Emacs|. The main idea is that the |Coq| commands you are editing are sent
-to a |Coq| toplevel running behind |Emacs| and the answers of the system
-automatically inserted into other |Emacs| buffers. Thus you don’t need
+Proof-General is a generic interface for proof assistants based on
+Emacs. The main idea is that the |Coq| commands you are editing are sent
+to a |Coq| toplevel running behind Emacs and the answers of the system
+automatically inserted into other Emacs buffers. Thus you don’t need
 to copy-paste the |Coq| material from your files to the |Coq| toplevel or
 conversely from the |Coq| toplevel to some files.
 
-|ProofGeneral| is developed and distributed independently of the system
+Proof-General is developed and distributed independently of the system
 |Coq|. It is freely available at `<https://proofgeneral.github.io/>`_.
 
 
