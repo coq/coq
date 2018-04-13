@@ -19,7 +19,7 @@ where :math:`P, Q, P₁,Q₁,\ldots,Pₛ, Qₛ` are polynomials and :math:`A` is
 domain, i.e. a commutative ring with no zero divisor. For example, :math:`A`
 can be :math:`\mathbb{R}`, :math:`\mathbb{Z}`, or :math:`\mathbb{Q}`.
 Note that the equality :math:`=` used in these goals can be
-any setoid equality (see :ref:`TODO-27.2.2`) , not only Leibnitz equality.
+any setoid equality (see :ref:`tactics-enabled-on-user-provided-relations`) , not only Leibnitz equality.
 
 It also proves formulas
 

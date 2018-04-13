@@ -183,7 +183,7 @@ other arguments are the parameters of the inductive type.
 .. note:: Induction schemes are automatically generated for inductive records.
    Automatic generation of induction schemes for non-recursive records
    defined with the ``Record`` keyword can be activated with the
-   ``Nonrecursive Elimination Schemes`` option (see :ref:`TODO-13.1.1-nonrecursive-elimination-schemes`).
+   ``Nonrecursive Elimination Schemes`` option (see :ref:`proofschemes-induction-principles`).
 
 .. note:: ``Structure`` is a synonym of the keyword ``Record``.
 
@@ -195,7 +195,7 @@ other arguments are the parameters of the inductive type.
 
   #. The name `ident` already exists in the environment (see Section :ref:`TODO-1.3.1-axioms`).
   #. The body of `ident` uses an incorrect elimination for
-     `ident` (see Sections :ref:`TODO-1.3.4-fixpoint` and :ref:`TODO-4.5.3-case-expr`).
+     `ident` (see Sections :ref:`TODO-1.3.4-fixpoint` and :ref:`Destructors`).
   #. The type of the projections `ident` depends on previous
      projections which themselves could not be defined.
 
@@ -214,7 +214,7 @@ During the definition of the one-constructor inductive definition, all
 the errors of inductive definitions, as described in Section
 :ref:`TODO-1.3.3-inductive-definitions`, may also occur.
 
-**See also** Coercions and records in Section :ref:`TODO-18.9-coercions-and-records` of the chapter devoted to coercions.
+**See also** Coercions and records in Section :ref:`coercions-classes-as-records` of the chapter devoted to coercions.
 
 .. _primitive_projections:
 
@@ -626,7 +626,7 @@ The following experimental command is available when the ``FunInd`` library has 
 This command can be seen as a generalization of ``Fixpoint``. It is actually a wrapper
 for several ways of defining a function *and other useful related
 objects*, namely: an induction principle that reflects the recursive
-structure of the function (see Section :ref:`TODO-8.5.5-functional-induction`) and its fixpoint equality.
+structure of the function (see :tacn:`function induction`) and its fixpoint equality.
 The meaning of this declaration is to define a function ident,
 similarly to ``Fixpoint`. Like in ``Fixpoint``, the decreasing argument must
 be given (unless the function is not recursive), but it might not
@@ -639,8 +639,8 @@ The ``Function`` construction also enjoys the ``with`` extension to define
 mutually recursive definitions. However, this feature does not work
 for non structurally recursive functions.
 
-See the documentation of functional induction (:ref:`TODO-8.5.5-functional-induction`)
-and ``Functional Scheme`` (:ref:`TODO-13.2-functional-scheme`) for how to use
+See the documentation of functional induction (:tacn:`function induction`)
+and ``Functional Scheme`` (:ref:`functional-scheme`) for how to use
 the induction principle to easily reason about the function.
 
 Remark: To obtain the right principle, it is better to put rigid
@@ -711,7 +711,7 @@ terminating functions.
 
      `functional inversion` will not be available for the function.
 
-See also: :ref:`TODO-13.2-generating-ind-principles` and ref:`TODO-8.5.5-functional-induction`
+See also: :ref:`functional-scheme` and :tacn:`function induction`
 
 Depending on the ``{…}`` annotation, different definition mechanisms are
 used by ``Function``. A more precise description is given below.
@@ -771,6 +771,7 @@ used by ``Function``. A more precise description is given below.
    hand. Remark: Proof obligations are presented as several subgoals
    belonging to a Lemma `ident`\ :math:`_{\sf tcc}`.
 
+.. _section-mechanism:
 
 Section mechanism
 -----------------
@@ -847,7 +848,7 @@ together, as well as a means of massive abstraction.
 
 In the syntax of module application, the ! prefix indicates that any
 `Inline` directive in the type of the functor arguments will be ignored
-(see :ref:`named_module_type` below).
+(see the ``Module Type`` command below).
 
 
 .. cmd:: Module @ident.
@@ -932,8 +933,6 @@ Reserved commands inside an interactive module
     .. cmdv:: Module @ident {* @module_binding} := {+<+ @module_expression}.
 
        is equivalent to an interactive module where each `module_expression` is included.
-
-.. _named_module_type:
 
 .. cmd:: Module Type @ident.
 
@@ -1195,7 +1194,7 @@ component is equal ``nat`` and hence ``M1.T`` as specified.
        Check T.
 
 Some features defined in modules are activated only when a module is
-imported. This is for instance the case of notations (see :ref:`TODO-12.1-Notations`).
+imported. This is for instance the case of notations (see :ref:`Notations`).
 
 Declarations made with the Local flag are never imported by theImport
 command. Such declarations are only accessible through their fully
@@ -1248,6 +1247,8 @@ qualified name.
 Libraries and qualified names
 ---------------------------------
 
+.. _names-of-libraries:
+
 Names of libraries
 ~~~~~~~~~~~~~~~~~~
 
@@ -1260,10 +1261,11 @@ identifiers qualid, i.e. as list of identifiers separated by dots (see
 the name of a library is called a *library root*. All library files of
 the standard library of |Coq| have the reserved root |Coq| but library
 file names based on other roots can be obtained by using |Coq| commands
-(coqc, coqtop, coqdep, …) options ``-Q`` or ``-R`` (see :ref:`TODO-14.3.3-command-line-options`).
+(coqc, coqtop, coqdep, …) options ``-Q`` or ``-R`` (see :ref:`command-line-options`).
 Also, when an interactive |Coq| session starts, a library of root ``Top`` is
-started, unless option ``-top`` or ``-notop`` is set (see :ref:`TODO-14.3.3-command-line-options`).
+started, unless option ``-top`` or ``-notop`` is set (see :ref:`command-line-options`).
 
+.. _qualified-names:
 
 Qualified names
 ~~~~~~~~~~~~~~~
@@ -1298,7 +1300,7 @@ names also applies to library file names.
 
 |Coq| maintains a table called the name table which maps partially qualified
 names of constructions to absolute names. This table is updated by the
-commands ``Require`` (see :ref:`TODO-6.5.1-Require`), Import and Export (see :ref:`import_qualid`) and
+commands ``Require`` (see :ref:`compiled-files`), ``Import`` and ``Export`` (see :ref:`here <import_qualid>`) and
 also each time a new declaration is added to the context. An absolute
 name is called visible from a given short or partially qualified name
 when this latter name is enough to denote it. This means that the
@@ -1329,13 +1331,13 @@ accessible, absolute names can never be hidden.
 See also: Command Locate in :ref:`TODO-6.3.10-locate-qualid` and Locate Library in
 :ref:`TODO-6.6.11-locate-library`.
 
+.. _libraries-and-filesystem:
 
 Libraries and filesystem
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Please note that the questions described here have been subject to
-redesign in |Coq| v8.5. Former versions of |Coq| use the same terminology
-to describe slightly different things.
+.. note:: The questions described here have been subject to redesign in |Coq| 8.5.
+   Former versions of |Coq| use the same terminology to describe slightly different things.
 
 Compiled files (``.vo`` and ``.vio``) store sub-libraries. In order to refer
 to them inside |Coq|, a translation from file-system names to |Coq| names
@@ -1371,7 +1373,7 @@ translation and with an empty logical prefix.
 The command line option ``-R`` is a variant of ``-Q`` which has the strictly
 same behavior regarding loadpaths, but which also makes the
 corresponding ``.vo`` files available through their short names in a way
-not unlike the ``Import`` command (see :ref:`import_qualid`). For instance, ``-R`` `path` ``Lib``
+not unlike the ``Import`` command (see :ref:`here <import_qualid>`). For instance, ``-R`` `path` ``Lib``
 associates to the ``filepath/fOO/Bar/File.vo`` the logical name
 ``Lib.fOO.Bar.File``, but allows this file to be accessed through the
 short names ``fOO.Bar.File,Bar.File`` and ``File``. If several files with
@@ -1379,7 +1381,7 @@ identical base name are present in different subdirectories of a
 recursive loadpath, which of these files is found first may be system-
 dependent and explicit qualification is recommended. The ``From`` argument
 of the ``Require`` command can be used to bypass the implicit shortening
-by providing an absolute root to the required file (see :ref:`TODO-6.5.1-require-qualid`).
+by providing an absolute root to the required file (see :ref:`compiled-files`).
 
 There also exists another independent loadpath mechanism attached to
 OCaml object files (``.cmo`` or ``.cmxs``) rather than |Coq| object
@@ -1387,11 +1389,12 @@ files as described above. The OCaml loadpath is managed using
 the option ``-I`` `path` (in the OCaml world, there is neither a
 notion of logical name prefix nor a way to access files in
 subdirectories of path). See the command ``Declare`` ``ML`` ``Module`` in
-:ref:`TODO-6.5-compiled-files` to understand the need of the OCaml loadpath.
+:ref:`compiled-files` to understand the need of the OCaml loadpath.
 
-See :ref:`TODO-14.3.3-command-line-options` for a more general view over the |Coq| command
+See :ref:`command-line-options` for a more general view over the |Coq| command
 line options.
 
+.. _ImplicitArguments:
 
 Implicit arguments
 ------------------
@@ -2098,6 +2101,7 @@ implicitly, as maximally-inserted arguments. In these binders, the
 binding name for the bound object is optional, whereas the type is
 mandatory, dually to regular binders.
 
+.. _Coercions:
 
 Coercions
 ---------
@@ -2136,19 +2140,21 @@ Otherwise said, ``Set Printing All`` includes the effects of the commands
 ``Unset Printing Projections``, and ``Unset Printing Notations``. To reactivate
 the high-level printing features, use the command ``Unset Printing All``.
 
+.. _printing-universes:
+
 Printing universes
 ------------------
 
 .. opt:: Printing Universes.
 
 Turn this option on to activate the display of the actual level of each occurrence of ``Type``.
-See :ref:`TODO-4.1.1-sorts` for details. This wizard option, in combination
+See :ref:`Sorts` for details. This wizard option, in combination
 with ``Set Printing All`` (see :ref:`printing_constructions_full`) can help to diagnose failures
 to unify terms apparently identical but internally different in the
 Calculus of Inductive Constructions.
 
 The constraints on the internal level of the occurrences of Type
-(see :ref:`TODO-4.1.1-sorts`) can be printed using the command
+(see :ref:`Sorts`) can be printed using the command
 
 .. cmd:: Print {? Sorted} Universes.
 
@@ -2164,6 +2170,7 @@ If `string` ends in ``.dot`` or ``.gv``, the constraints are printed in the DOT
 language, and can be processed by Graphviz tools. The format is
 unspecified if `string` doesn’t end in ``.dot`` or ``.gv``.
 
+.. _existential-variables:
 
 Existential variables
 ---------------------
@@ -2173,9 +2180,9 @@ subterms to eventually be replaced by actual subterms.
 
 Existential variables are generated in place of unsolvable implicit
 arguments or “_” placeholders when using commands such as ``Check`` (see
-Section :ref:`TODO-6.3.1-check`) or when using tactics such as ``refine`` (see Section
-:ref:`TODO-8.2.3-refine`), as well as in place of unsolvable instances when using
-tactics such that ``eapply`` (see Section :ref:`TODO-8.2.4-apply`). An existential
+Section :ref:`requests-to-the-environment`) or when using tactics such as
+:tacn:`refine`, as well as in place of unsolvable instances when using
+tactics such that :tacn:`eapply`. An existential
 variable is defined in a context, which is the context of variables of
 the placeholder which generated the existential variable, and a type,
 which is the expected type of the placeholder.
@@ -2256,5 +2263,5 @@ using highly automated tactics without resorting to writing the proof-term
 by means of the interactive proof engine.
 
 This mechanism is comparable to the ``Declare Implicit Tactic`` command
-defined at :ref:`TODO-8.9.7-implicit-automation`, except that the used
+defined at :ref:`tactics-implicit-automation`, except that the used
 tactic is local to each hole instead of being declared globally.

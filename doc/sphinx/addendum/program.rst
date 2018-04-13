@@ -135,7 +135,8 @@ support types, avoiding uses of proof-irrelevance that would come up
 when reasoning with equality on the subset types themselves.
 
 The next two commands are similar to their standard counterparts
-Definition (see Section `TODO-1.3.2-Definition`_) and Fixpoint (see Section `TODO-1.3.4-Fixpoint`_)
+Definition (see Section :ref:`gallina_def`) and Fixpoint
+(see Section :ref:`TODO-1.3.4-Fixpoint`)
 in that they define constants. However, they may require the user to
 prove some goals to construct the final definitions.
 
@@ -174,7 +175,7 @@ Program Definition
 
       .. TODO refer to production in alias
 
-See also: Sections `TODO-6.10.1-Opaque`_, `TODO-6.10.2-Transparent`_, `TODO-8.7.5-unfold`_
+See also: Sections :ref:`vernac-controlling-the-reduction-strategies`, :tacn:`unfold`
 
 .. _program_fixpoint:
 
@@ -196,7 +197,7 @@ The optional order annotation follows the grammar:
 + :g:`wf R x` which is equivalent to :g:`measure x (R)`.
 
 The structural fixpoint operator behaves just like the one of |Coq| (see
-Section `TODO-1.3.4-Fixpoint`_), except it may also generate obligations. It works
+Section :ref:`TODO-1.3.4-Fixpoint`), except it may also generate obligations. It works
 with mutually recursive definitions too.
 
 .. coqtop:: reset none

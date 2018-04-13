@@ -3,15 +3,10 @@
 .. _miscellaneousextensions:
 
 Miscellaneous extensions
-=======================
-
-.. contents::
-   :local:
-   :depth: 1
-----
+========================
 
 Program derivation
------------------
+------------------
 
 |Coq| comes with an extension called ``Derive``, which supports program
 derivation. Typically in the style of Bird and Meertens or derivations
@@ -25,7 +20,7 @@ The first `ident` can appear in `term`. This command opens a new proof
 presenting the user with a goal for term in which the name `ident` is
 bound to an existential variable `?x` (formally, there are other goals
 standing for the existential variables but they are shelved, as
-described in Section :ref:`TODO-8.17.4`).
+described in :tacn:`shelve`).
 
 When the proof ends two constants are defined:
 
