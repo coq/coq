@@ -2010,7 +2010,8 @@ let interp_redexp env sigma r =
 
 let _ =
   let eval lfun env sigma ty tac =
-    let ist = { lfun = lfun; extra = TacStore.empty; } in
+    let extra = TacStore.set TacStore.empty f_debug (get_debug ()) in
+    let ist = { lfun = lfun; extra; } in
     let tac = interp_tactic ist tac in
     let (c, sigma) = Pfedit.refine_by_tactic env sigma ty tac in
     (EConstr.of_constr c, sigma)
