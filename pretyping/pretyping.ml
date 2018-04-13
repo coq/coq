@@ -829,7 +829,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     in
       inh_conv_coerce_to_tycon ?loc env evdref resj tycon
 
-  | GLambda(name,bk,c1,c2)      ->
+  | GLambda(name,bk,c1,c2) ->
     let tycon' = evd_comb1
       (fun evd tycon ->
 	match tycon with
@@ -851,7 +851,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     let resj = judge_of_abstraction env.ExtraEnv.env (orelse_name name name') j j' in
       inh_conv_coerce_to_tycon ?loc env evdref resj tycon
 
-  | GProd(name,bk,c1,c2)        ->
+  | GProd(name,bk,c1,c2) ->
     let j = pretype_type empty_valcon env evdref lvar c1 in
     (* The name specified by ltac is used also to create bindings. So
        the substitution must also be applied on variables before they are
@@ -875,7 +875,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
         iraise (e, info) in
       inh_conv_coerce_to_tycon ?loc env evdref resj tycon
 
-  | GLetIn(name,c1,t,c2)      ->
+  | GLetIn(name,c1,t,c2) ->
     let tycon1 =
       match t with
       | Some t ->
