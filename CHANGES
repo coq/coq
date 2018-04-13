@@ -73,6 +73,7 @@ Tactics
   of the execution.
 - `vm_compute` now supports existential variables.
 - Calls to `shelve` and `give_up` within calls to tactic `refine` now working.
+- Deprecated tactic `appcontext` was removed.
 
 Focusing
 
@@ -176,6 +177,7 @@ Options
 
   + `Refolding Reduction`
   + `Standard Proposition Elimination`
+  + `Dependent Propositions Elimination`
   + `Discriminate Introduction`
   + `Shrink Abstract`
   + `Tactic Pattern Unification`
@@ -183,6 +185,7 @@ Options
   + `Injection L2R Pattern Order`
   + `Record Elimination Schemes`
   + `Match Strict`
+  + `Tactic Compat Context`
   + `Typeclasses Legacy Resolution`
   + `Typeclasses Module Eta`
   + `Typeclass Resolution After Apply`
