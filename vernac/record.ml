@@ -114,7 +114,7 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
 	(function CLocalDef (b, _, _) -> error default_binder_kind b
 	   | CLocalAssum (ls, bk, ce) -> List.iter (error bk) ls
            | CLocalPattern {CAst.loc} ->
-              Loc.raise ?loc (Stream.Error "pattern with quote not allowed in record parameters.")) ps
+              Loc.raise ?loc (Stream.Error "pattern with quote not allowed in record parameters")) ps
   in 
   let sigma, (impls_env, ((env1,newps), imps)) = interp_context_evars env0 sigma ps in
   let sigma, typ, sort, template = match t with
