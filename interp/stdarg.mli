@@ -38,6 +38,7 @@ val wit_pre_ident : string uniform_genarg_type
 val wit_int_or_var : (int or_var, int or_var, int) genarg_type
 
 val wit_ident : Id.t uniform_genarg_type
+  (* Same as Geninterp.wit_ident *)
 
 val wit_var : (lident, lident, Id.t) genarg_type
 

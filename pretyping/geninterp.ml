@@ -100,3 +100,10 @@ module Interp = Register(InterpObj)
 let interp = Interp.obj
 
 let register_interp0 = Interp.register0
+
+(* We need wit_ident exceptionnaly early *)
+
+let wit_ident =
+  let wit = Genarg.make0 "ident" in
+  let () = register_val0 wit None in
+  wit

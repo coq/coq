@@ -72,3 +72,7 @@ val interp : ('raw, 'glb, 'top) genarg_type -> ('glb, Val.t) interp_fun
 
 val register_interp0 :
   ('raw, 'glb, 'top) genarg_type -> ('glb, Val.t) interp_fun -> unit
+
+(* We need wit_ident exceptionally early *)
+
+val wit_ident : Id.t uniform_genarg_type

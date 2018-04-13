@@ -37,7 +37,8 @@ let wit_int_or_var =
   make0 ~dyn:(val_tag (topwit wit_int)) "int_or_var"
 
 let wit_ident =
-  make0 "ident"
+  (* Early defined in Geninterp *)
+  Geninterp.wit_ident
 
 let wit_var =
   make0 ~dyn:(val_tag (topwit wit_ident)) "var"
