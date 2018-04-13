@@ -215,7 +215,7 @@ let generate_conf_includes oc { ml_includes; r_includes; q_includes } =
 let windrive s =
   if Coq_config.arch_is_win32 && Str.(string_match (regexp "^[a-zA-Z]:") s 0)
   then Str.matched_string s
-  else s
+  else ""
 ;;
 
 let generate_conf_coq_config oc args =
