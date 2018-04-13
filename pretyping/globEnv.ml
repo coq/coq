@@ -33,7 +33,7 @@ type t = {
   (** For locating indices *)
   renamed_env : env;
   (** For name management *)
-  extra : ext_named_context Lazy.t;
+  extra : (Evarutil.ext_named_context * Id.t Id.Map.t) Lazy.t;
   (** Delay the computation of the evar extended environment *)
   lvar : ltac_var_map;
 }
@@ -46,7 +46,7 @@ let make env sigma lvar =
   {
     static_env = env;
     renamed_env = env;
-    extra = lazy (get_extra env sigma);
+    extra = lazy (get_extra env sigma, Id.Map.empty);
     lvar = lvar;
   }
 
@@ -66,12 +66,21 @@ let ltac_interp_name { ltac_idents ; ltac_genargs } = function
                     spc () ++str "It cannot be used in a binder.")
         else na
 
+let push_rel_decl_to_named_context_upto_ltac_interp sigma static_d interpreted_d (extra,renaming) =
+  let open Context.Rel.Declaration in
+  let extra' = push_rel_decl_to_named_context ~hypnaming:KeepExistingNames sigma interpreted_d extra in
+  let new_interpreted_id = Context.Named.Declaration.get_id (List.hd (pi3 extra')) in
+  let renaming = match get_name static_d with
+  | Name static_id -> Id.Map.add static_id new_interpreted_id renaming
+  | _ -> renaming in
+  (extra',renaming)
+
 let push_rel sigma d env =
   let d' = Context.Rel.Declaration.map_name (ltac_interp_name env.lvar) d in
   let env = {
     static_env = push_rel d env.static_env;
     renamed_env = push_rel d' env.renamed_env;
-    extra = lazy (push_rel_decl_to_named_context sigma d' (Lazy.force env.extra));
+    extra = lazy (push_rel_decl_to_named_context_upto_ltac_interp sigma d d' (Lazy.force env.extra));
     lvar = env.lvar;
     } in
   d', env
@@ -83,7 +92,7 @@ let push_rel_context ?(force_names=false) sigma ctx env =
   let env = {
     static_env = push_rel_context ctx env.static_env;
     renamed_env = push_rel_context ctx' env.renamed_env;
-    extra = lazy (List.fold_right (fun d acc -> push_rel_decl_to_named_context sigma d acc) ctx' (Lazy.force env.extra));
+    extra = lazy (List.fold_right2 (push_rel_decl_to_named_context_upto_ltac_interp sigma) ctx ctx' (Lazy.force env.extra));
     lvar = env.lvar;
     } in
   ctx', env
@@ -98,7 +107,7 @@ let new_evar ?src ?naming env sigma typ =
   let open Context.Named.Declaration in
   let inst_vars = List.map (get_id %> mkVar) (named_context env.renamed_env) in
   let inst_rels = List.rev (rel_list 0 (nb_rel env.renamed_env)) in
-  let (subst, _, nc) = Lazy.force env.extra in
+  let (subst, _, nc),_ = Lazy.force env.extra in
   let typ' = csubst_subst subst typ in
   let instance = inst_rels @ inst_vars in
   let sign = val_of_named_context nc in
@@ -192,6 +201,10 @@ let register_constr_interp0 = ConstrInterp.register0
 
 let interp_glob_genarg env sigma ty arg =
   let open Genarg in
+  let renaming = snd (Lazy.force env.extra) in
+  let tag = Geninterp.val_tag (Topwit Geninterp.wit_ident) in
+  let add id id' acc = Id.Map.add id (Geninterp.Val.inject tag id') acc in
+  let ist = Id.Map.fold add renaming env.lvar.ltac_genargs in
   let GenArg (Glbwit tag, arg) = arg in
   let interp = ConstrInterp.obj tag in
-  interp env.lvar.ltac_genargs env.renamed_env sigma ty arg
+  interp ist env.renamed_env sigma ty arg

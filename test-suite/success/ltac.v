@@ -377,3 +377,11 @@ f y true.
 Abort.
 
 End LtacNames.
+
+(* A naming problem initially submitted by Beta Ziliani *)
+
+Section test.
+Variable x : nat.
+Definition ex := fun x y:nat=>ltac:(exact (x + y)).
+Check eq_refl : ex = fun x y : nat => x + y.
+End test.
