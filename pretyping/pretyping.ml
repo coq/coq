@@ -417,12 +417,13 @@ let orelse_name name name' = match name with
   | Anonymous -> name'
   | _ -> name
 
+(* Rename identifiers of the (initial part of) typing "rel" env *)
+(* according to a name substitution *)
 let ltac_interp_name_env k0 lvar env sigma =
-  (* envhd is the initial part of the env when pretype was called first *)
-  (* (in practice is is probably 0, but we have to grant the
+  (* ctxt is the initial part of the env when pretype was called first *)
+  (* (in practice k0 is probably 0, but we have to grant the
      specification of pretype which accepts to start with a non empty
      rel_context) *)
-  (* tail is the part of the env enriched by pretyping *)
   let n = Context.Rel.length (rel_context env) - k0 in
   let ctxt,_ = List.chop n (rel_context env) in
   let open Context.Rel.Declaration in
