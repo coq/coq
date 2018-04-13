@@ -558,7 +558,7 @@ let match_eval_ref_value env sigma constr stack =
     else
       None
   | Proj (p, c) when not (Projection.unfolded p) ->
-     reduction_effect_hook env sigma (EConstr.to_constr sigma constr)
+     reduction_effect_hook env sigma (EConstr.to_constr ~abort_on_undefined_evars:false sigma constr)
         (lazy (EConstr.to_constr sigma (applist (constr,stack))));
      if is_evaluable env (EvalConstRef (Projection.constant p)) then
        Some (mkProj (Projection.unfold p, c))

@@ -381,8 +381,8 @@ let cbv_vm env sigma c t  =
   if Termops.occur_meta sigma c then
     CErrors.user_err Pp.(str "vm_compute does not support metas.");
   (** This evar-normalizes terms beforehand *)
-  let c = EConstr.to_constr sigma c in
-  let t = EConstr.to_constr sigma t in
+  let c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
+  let t = EConstr.to_constr ~abort_on_undefined_evars:false sigma t in
   let v = Vconv.val_of_constr env c in
   EConstr.of_constr (nf_val env sigma v t)
 

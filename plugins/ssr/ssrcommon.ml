@@ -504,7 +504,7 @@ let nf_evar sigma t =
   EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma (EConstr.of_constr t))
 
 let pf_abs_evars2 gl rigid (sigma, c0) =
-  let c0 = EConstr.to_constr sigma c0 in
+  let c0 = EConstr.to_constr ~abort_on_undefined_evars:false sigma c0 in
   let sigma0, ucst = project gl, Evd.evar_universe_context sigma in
   let nenv = env_size (pf_env gl) in
   let abs_evar n k =

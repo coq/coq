@@ -1592,14 +1592,14 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
       Id.Set.subset (collect_vars evd rhs) !names 
   in
   let body =
-    if fast rhs then EConstr.of_constr (EConstr.to_constr evd rhs) (** FIXME? *)
+    if fast rhs then nf_evar evd rhs (** FIXME? *)
     else
       let t' = imitate (env,0) rhs in
 	if !progress then
 	  (recheck_applications conv_algo (evar_env evi) evdref t'; t')
 	else t'
   in (!evdref,body)
-     
+
 (* [define] tries to solve the problem "?ev[args] = rhs" when "?ev" is
  * an (uninstantiated) evar such that "hyps |- ?ev : typ". Otherwise said,
  * [define] tries to find an instance lhs such that

@@ -276,7 +276,7 @@ let unfoldintac occ rdx t (kt,_) gl =
 let foldtac occ rdx ft gl = 
   let sigma0, concl0, env0 = project gl, pf_concl gl, pf_env gl in
   let sigma, t = ft in
-  let t = EConstr.to_constr sigma t in
+  let t = EConstr.to_constr ~abort_on_undefined_evars:false sigma t in
   let fold, conclude = match rdx with
   | Some (_, (In_T _ | In_X_In_T _)) | None ->
     let ise = Evd.create_evar_defs sigma in
@@ -557,7 +557,7 @@ let rwrxtac occ rdx_pat dir rule gl =
       let rpat env sigma0 (sigma, pats) (d, r, lhs, rhs) =
         let sigma, pat =
           let rw_progress rhs t evd = rw_progress rhs (EConstr.of_constr t) evd in
-          mk_tpattern env sigma0 (sigma,EConstr.to_constr sigma r) (rw_progress rhs) d (EConstr.to_constr sigma lhs) in
+          mk_tpattern env sigma0 (sigma, EConstr.to_constr ~abort_on_undefined_evars:false sigma r) (rw_progress rhs) d (EConstr.to_constr ~abort_on_undefined_evars:false sigma lhs) in
         sigma, pats @ [pat] in
       let rpats = List.fold_left (rpat env0 sigma0) (r_sigma,[]) rules in
       let find_R, end_R = mk_tpattern_matcher sigma0 occ ~upats_origin rpats in
@@ -567,7 +567,7 @@ let rwrxtac occ rdx_pat dir rule gl =
       let r = ref None in
       (fun env c _ h -> do_once r (fun () -> find_rule (EConstr.of_constr c), c); mkRel h),
       (fun concl -> closed0_check concl e gl;
-        let (d,(ev,ctx,c)) , x = assert_done r in (d,(ev,ctx, EConstr.to_constr ev c)) , x) in
+        let (d,(ev,ctx,c)) , x = assert_done r in (d,(ev,ctx, EConstr.to_constr ~abort_on_undefined_evars:false ev c)) , x) in
   let concl0 = EConstr.Unsafe.to_constr concl0 in
   let concl = eval_pattern env0 sigma0 concl0 rdx_pat occ find_R in
   let (d, r), rdx = conclude concl in
@@ -589,7 +589,10 @@ let ssrinstancesofrule ist dir arg gl =
     let rpat env sigma0 (sigma, pats) (d, r, lhs, rhs) =
       let sigma, pat =
         let rw_progress rhs t evd = rw_progress rhs (EConstr.of_constr t) evd in
-        mk_tpattern env sigma0 (sigma,EConstr.to_constr sigma r) (rw_progress rhs) d (EConstr.to_constr sigma lhs) in
+        mk_tpattern env sigma0
+          (sigma,EConstr.to_constr ~abort_on_undefined_evars:false sigma r)
+          (rw_progress rhs) d
+          (EConstr.to_constr ~abort_on_undefined_evars:false sigma lhs) in
       sigma, pats @ [pat] in
     let rpats = List.fold_left (rpat env0 sigma0) (r_sigma,[]) rules in
     mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true sigma0 None ~upats_origin rpats in

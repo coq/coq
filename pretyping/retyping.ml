@@ -170,7 +170,7 @@ let retype ?(polyprop=true) sigma =
 
   and type_of_global_reference_knowing_parameters env c args =
     let argtyps =
-      Array.map (fun c -> lazy (EConstr.to_constr sigma (type_of env c))) args in
+      Array.map (fun c -> lazy (EConstr.to_constr ~abort_on_undefined_evars:false sigma (type_of env c))) args in
     match EConstr.kind sigma c with
     | Ind (ind, u) ->
       let u = EInstance.kind sigma u in

@@ -229,7 +229,8 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   in
   (* XXX: Capturing sigma here... bad bad *)
   let hook = Lemmas.mk_hook (hook sigma) in
-  let fullcoqc = EConstr.to_constr sigma def in
+  (* XXX: Grounding non-ground terms here... bad bad *)
+  let fullcoqc = EConstr.to_constr ~abort_on_undefined_evars:false sigma def in
   let fullctyp = EConstr.to_constr sigma typ in
   Obligations.check_evars env sigma;
   let evars, _, evars_def, evars_typ =
@@ -261,9 +262,10 @@ let do_program_recursive local poly fixkind fixl ntns =
   let collect_evars id def typ imps =
     (* Generalize by the recursive prototypes  *)
     let def =
-      EConstr.to_constr evd (Termops.it_mkNamedLambda_or_LetIn (EConstr.of_constr def) rec_sign)
+      EConstr.to_constr ~abort_on_undefined_evars:false evd (Termops.it_mkNamedLambda_or_LetIn (EConstr.of_constr def) rec_sign)
     and typ =
-      EConstr.to_constr evd (Termops.it_mkNamedProd_or_LetIn (EConstr.of_constr typ) rec_sign)
+      (* Worrying... *)
+      EConstr.to_constr ~abort_on_undefined_evars:false evd (Termops.it_mkNamedProd_or_LetIn (EConstr.of_constr typ) rec_sign)
     in
     let evm = collect_evars_of_term evd def typ in
     let evars, _, def, typ =

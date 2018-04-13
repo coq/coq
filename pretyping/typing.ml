@@ -35,7 +35,7 @@ let meta_type evd mv =
 let inductive_type_knowing_parameters env sigma (ind,u) jl =
   let u = Unsafe.to_instance u in
   let mspec = lookup_mind_specif env ind in
-  let paramstyp = Array.map (fun j -> lazy (EConstr.to_constr sigma j.uj_type)) jl in
+  let paramstyp = Array.map (fun j -> lazy (EConstr.to_constr ~abort_on_undefined_evars:false sigma j.uj_type)) jl in
   Inductive.type_of_inductive_knowing_parameters env (mspec,u) paramstyp
 
 let e_type_judgment env evdref j =
@@ -155,7 +155,7 @@ let e_type_case_branches env evdref (ind,largs) pj c =
   let p = pj.uj_val in
   let params = List.map EConstr.Unsafe.to_constr params in
   let () = e_is_correct_arity env evdref c pj ind specif params in
-  let lc = build_branches_type ind specif params (EConstr.to_constr !evdref p) in
+  let lc = build_branches_type ind specif params (EConstr.to_constr ~abort_on_undefined_evars:false !evdref p) in
   let lc = Array.map EConstr.of_constr lc in
   let n = (snd specif).Declarations.mind_nrealdecls in
   let ty = whd_betaiota !evdref (lambda_applist_assum !evdref (n+1) p (realargs@[c])) in
@@ -207,7 +207,7 @@ let enrich_env env evdref =
   Environ.env_of_pre_env penv'
 
 let check_fix env sigma pfix =
-  let inj c = EConstr.to_constr sigma c in
+  let inj c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   let (idx, (ids, cs, ts)) = pfix in
   check_fix env (idx, (ids, Array.map inj cs, Array.map inj ts))
 

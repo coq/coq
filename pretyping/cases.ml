@@ -2581,7 +2581,8 @@ let compile_program_cases ?loc style (typing_function, evdref) tycon env lvar
     let body = it_mkLambda_or_LetIn (applist (j.uj_val, args)) lets in
     let j =
       { uj_val = it_mkLambda_or_LetIn body tomatchs_lets;
-	uj_type = EConstr.of_constr (EConstr.to_constr !evdref tycon); }
+        (* XXX: is this normalization needed? *)
+        uj_type = Evarutil.nf_evar !evdref tycon; }
     in j
 
 (**************************************************************************)
