@@ -525,7 +525,9 @@ This variant displays a template of the Gallina
 
 .. exn:: Unknown inductive type
 
-.. exn:: Show Universes.
+.. _ShowUniverses:
+
+.. cmdv:: Show Universes.
 
 It displays the set of all universe constraints and
 its normalized form at the current stage of the proof, useful for
