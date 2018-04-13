@@ -39,14 +39,14 @@ Proof annotations
 To process a proof asynchronously |Coq| needs to know the precise
 statement of the theorem without looking at the proof. This requires
 some annotations if the theorem is proved inside a Section (see
-Section :ref:`TODO-2.4`).
+Section :ref:`section-mechanism`).
 
 When a section ends, |Coq| looks at the proof object to decide which
 section variables are actually used and hence have to be quantified in
 the statement of the theorem. To avoid making the construction of
 proofs mandatory when ending a section, one can start each proof with
-the ``Proof using`` command (Section :ref:`TODO-7.1.5`) that declares which section
-variables the theorem uses.
+the ``Proof using`` command (Section :ref:`proof-editing-mode`) that
+declares which section variables the theorem uses.
 
 The presence of ``Proof`` using is needed to process proofs asynchronously
 in interactive mode.

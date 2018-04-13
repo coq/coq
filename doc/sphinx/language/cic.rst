@@ -97,7 +97,7 @@ ensure the existence of a mapping of the universes to the positive
 integers, the graph of constraints must remain acyclic. Typing
 expressions that violate the acyclicity of the graph of constraints
 results in a Universe inconsistency error (see also Section
-:ref:`TODO-2.10`).
+:ref:`printing-universes`).
 
 
 .. _Terms:
@@ -709,8 +709,6 @@ called the *context of parameters*. Furthermore, we must have that
 each :math:`T` in :math:`(t:T)∈Γ_I` can be written as: :math:`∀Γ_P,∀Γ_{\mathit{Arr}(t)}, S` where
 :math:`Γ_{\mathit{Arr}(t)}` is called the *Arity* of the inductive type t and :math:`S` is called
 the sort of the inductive type t (not to be confused with :math:`\Sort` which is the set of sorts).
-
-
 ** Examples** The declaration for parameterized lists is:
 
 .. math::
@@ -1058,7 +1056,7 @@ provided that the following side conditions hold:
       we have :math:`(E[Γ_{I′} ;Γ_{P′}] ⊢ C_i : s_{q_i})_{i=1… n}` ;
     + the sorts :math:`s_i` are such that all eliminations, to
       :math:`\Prop`, :math:`\Set` and :math:`\Type(j)`, are allowed
-      (see Section Destructors_).
+      (see Section :ref:`Destructors`).
 
 
 
@@ -1088,14 +1086,14 @@ The sorts :math:`s_j` are chosen canonically so that each :math:`s_j` is minimal
 respect to the hierarchy :math:`\Prop ⊂ \Set_p ⊂ \Type` where :math:`\Set_p` is predicative
 :math:`\Set`. More precisely, an empty or small singleton inductive definition
 (i.e. an inductive definition of which all inductive types are
-singleton – see paragraph Destructors_) is set in :math:`\Prop`, a small non-singleton
+singleton – see Section :ref:`Destructors`) is set in :math:`\Prop`, a small non-singleton
 inductive type is set in :math:`\Set` (even in case :math:`\Set` is impredicative – see
 Section The-Calculus-of-Inductive-Construction-with-impredicative-Set_),
 and otherwise in the Type hierarchy.
 
 Note that the side-condition about allowed elimination sorts in the
 rule **Ind-Family** is just to avoid to recompute the allowed elimination
-sorts at each instance of a pattern-matching (see section Destructors_). As
+sorts at each instance of a pattern-matching (see Section :ref:`Destructors`). As
 an example, let us consider the following definition:
 
 .. example::
@@ -1111,7 +1109,7 @@ in the Type hierarchy. Here, the parameter :math:`A` has this property, hence,
 if :g:`option` is applied to a type in :math:`\Set`, the result is in :math:`\Set`. Note that
 if :g:`option` is applied to a type in :math:`\Prop`, then, the result is not set in
 :math:`\Prop` but in :math:`\Set` still. This is because :g:`option` is not a singleton type
-(see section Destructors_) and it would lose the elimination to :math:`\Set` and :math:`\Type`
+(see Section :ref:`Destructors`) and it would lose the elimination to :math:`\Set` and :math:`\Type`
 if set in :math:`\Prop`.
 
 .. example::
@@ -1278,7 +1276,7 @@ and :math:`I:A` and :math:`λ a x . P : B` then by :math:`[I:A|B]` we mean that 
 :math:`λ a x . P` with :math:`m` in the above match-construct.
 
 
-.. _Notations:
+.. _cic_notations:
 
 **Notations.** The :math:`[I:A|B]` is defined as the smallest relation satisfying the
 following rules: We write :math:`[I|B]` for :math:`[I:A|B]` where :math:`A` is the type of :math:`I`.
@@ -1684,7 +1682,7 @@ possible:
 **Mutual induction**
 
 The principles of mutual induction can be automatically generated
-using the Scheme command described in Section :ref:`TODO-13.1`.
+using the Scheme command described in Section :ref:`proofschemes-induction-principles`.
 
 
 .. _Admissible-rules-for-global-environments:

@@ -41,6 +41,8 @@ are called *proof terms*.
 Coq raises this error message when one attempts to use a proof editing command
 out of the proof editing mode.
 
+.. _proof-editing-mode:
+
 Switching on/off the proof editing mode
 -------------------------------------------
 
@@ -119,7 +121,7 @@ closing ``Qed``.
 
 
 See also: ``Proof with tactic.`` in Section
-:ref:`setimpautotactics`.
+:ref:`tactics-implicit-automation`.
 
 
 .. cmd:: Proof using @ident1 ... @identn.
@@ -136,7 +138,7 @@ example if ``T`` is variable and a is a variable of type ``T``, the commands
 
 .. cmdv:: Proof using @ident1 ... @identn with @tactic.
 
-in Section :ref:`setimpautotactics`.
+in Section :ref:`tactics-implicit-automation`.
 
 .. cmdv:: Proof using All.
 
@@ -262,11 +264,11 @@ Existentials`` (described in Section :ref:`requestinginformation`).
 This command is intended to be used to instantiate existential
 variables when the proof is completed but some uninstantiated
 existential variables remain. To instantiate existential variables
-during proof edition, you should use the tactic instantiate.
+during proof edition, you should use the tactic :tacn:`instantiate`.
 
 
 See also: ``instantiate (num:= term).`` in Section
-:ref:`TODO-controllingtheproofflow`.
+:ref:`controllingtheproofflow`.
 See also: ``Grab Existential Variables.`` below.
 
 
@@ -327,6 +329,7 @@ last ``Focus`` command.
 Succeeds if the proof is fully unfocused, fails is there are some
 goals out of focus.
 
+.. _curly-braces:
 
 .. cmd:: %{ %| %}
 
@@ -356,6 +359,8 @@ You are trying to use ``}`` but the current subproof has not been fully solved.
 
 
 See also error messages about bullets below.
+
+.. _bullets:
 
 Bullets
 ```````
@@ -434,6 +439,7 @@ This makes bullets inactive.
 This makes bullets active (this is the default behavior).
 
 
+.. _requestinginformation:
 
 Requesting information
 ----------------------
@@ -456,7 +462,7 @@ Displays only the :n:`@num`-th subgoal.
 Displays the named goal :n:`@ident`. This is useful in
 particular to display a shelved goal but only works if the
 corresponding existential variable has been named by the user
-(see :ref:`exvariables`) as in the following example.
+(see :ref:`existential-variables`) as in the following example.
 
 .. example::
 
@@ -536,7 +542,7 @@ debugging universe inconsistencies.
 
 .. cmd:: Guarded.
 
-Some tactics (e.g. refine :ref:`applyingtheorems`) allow to build proofs using
+Some tactics (e.g. :tacn:`refine` :ref:`applyingtheorems`) allow to build proofs using
 fixpoint or co-fixpoint constructions. Due to the incremental nature
 of interactive proof construction, the check of the termination (or
 guardedness) of the recursive calls in the fixpoint or cofixpoint

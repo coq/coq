@@ -333,7 +333,7 @@ Variants:
 
 .. cmd:: Program Instance
 
-   Switches the type-checking to Program (chapter :ref:`program`) and
+   Switches the type-checking to Program (chapter :ref:`programs`) and
    uses the obligation mechanism to manage missing fields.
 
 .. cmd:: Declare Instance
