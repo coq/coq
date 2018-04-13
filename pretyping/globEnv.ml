@@ -107,6 +107,11 @@ let e_new_evar env evdref ?src ?naming typ =
   evdref := sigma;
   e
 
+let e_new_type_evar env evdref ~src =
+  let (evd', s) = Evd.new_sort_variable Evd.univ_flexible_alg !evdref in
+  evdref := evd';
+  e_new_evar env evdref ~src (EConstr.mkSort s)
+
 let hide_variable env expansion id =
   let lvar = env.lvar in
   if Id.Map.mem id lvar.ltac_genargs then

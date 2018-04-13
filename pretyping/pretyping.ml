@@ -454,13 +454,7 @@ let pretype_sort ?loc evdref = function
   | GType s -> evd_comb1 (judge_of_Type ?loc) evdref s
 
 let new_type_evar env evdref loc =
-  let sigma = !evdref in
-  let (sigma, (e, _)) =
-    Evarutil.new_type_evar !!env sigma
-      univ_flexible_alg ~src:(loc,Evar_kinds.InternalHole)
-  in
-  evdref := sigma;
-  e
+  e_new_type_evar env evdref ~src:(Loc.tag ?loc Evar_kinds.InternalHole)
 
 (* [pretype tycon env evdref lvar lmeta cstr] attempts to type [cstr] *)
 (* in environment [env], with existential variables [evdref] and *)
@@ -508,16 +502,14 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) evdref
       let ty =
         match tycon with
         | Some ty -> ty
-        | None ->
-          new_type_evar env evdref loc in
+        | None -> new_type_evar env evdref loc in
         { uj_val = e_new_evar env evdref ~src:(loc,k) ~naming ty; uj_type = ty }
 
   | GHole (k, _naming, Some arg) ->
       let ty =
         match tycon with
         | Some ty -> ty
-        | None ->
-          new_type_evar env evdref loc in
+        | None -> new_type_evar env evdref loc in
       let (c, sigma) = GlobEnv.interp_glob_genarg env !evdref ty arg in
       let () = evdref := sigma in
       { uj_val = c; uj_type = ty }

@@ -406,8 +406,13 @@ let coerce_to_indtype typing_fun evdref env matx tomatchl =
 (* Utils *)
 
 let mkExistential env ?(src=(Loc.tag Evar_kinds.InternalHole)) evdref =
-  let (e, u) = evd_comb1 (new_type_evar env  ~src:src) evdref univ_flexible_alg in
+  let (e, u) = evd_comb1 (new_type_evar env ~src:src) evdref univ_flexible_alg in
   e
+
+let evd_comb2 f evdref x y =
+  let (evd',y) = f !evdref x y in
+  evdref := evd';
+  y
 
 let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
   (* Ideally, we could find a common inductive type to which both the
