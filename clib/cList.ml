@@ -286,34 +286,46 @@ let rec filter_loop f p = function
   | x :: l' as l ->
     let b = f x in
     filter_loop f p l';
-    if b then if !p == l' then p := l else p := x :: !p
+    if b then if p.tail == l' then p.tail <- l else p.tail <- x :: p.tail
 
-let filter f = function
+let rec filter f = function
   | [] -> []
   | x :: l' as l ->
-    let p = ref [] in
-    let b = f x in
-    filter_loop f p l';
-    if b then if !p == l' then l else x :: !p else !p
+    if f x then
+      let c = { head = x; tail = [] } in
+      filter_loop f c l';
+      if c.tail == l' then l else cast c
+    else
+      filter f l'
 
 let rec filter2_loop f p q l1 l2 = match l1, l2 with
   | [], [] -> ()
-  | x :: l1, y :: l2 ->
-    if f x y then
-      let c1 = { head = x; tail = [] } in
-      let c2 = { head = y; tail = [] } in
-      let () = p.tail <- cast c1 in
-      let () = q.tail <- cast c2 in
-      filter2_loop f c1 c2 l1 l2
-    else
-      filter2_loop f p q l1 l2
+  | x :: l1', y :: l2' ->
+    let b = f x y in
+    filter2_loop f p q l1' l2';
+    if b then
+      if p.tail == l1' then begin
+          p.tail <- l1;
+          q.tail <- l2
+        end
+      else begin
+          p.tail <- x :: p.tail;
+          q.tail <- y :: q.tail
+        end
   | _ -> invalid_arg "List.filter2"
 
-let filter2 f l1 l2 =
-  let c1 = { head = Obj.magic 0; tail = [] } in
-  let c2 = { head = Obj.magic 0; tail = [] } in
-  filter2_loop f c1 c2 l1 l2;
-  (c1.tail, c2.tail)
+let rec filter2 f l1 l2 = match l1, l2 with
+  | [], [] -> ([],[])
+  | x1 :: l1', x2 :: l2' ->
+    let b = f x1 x2 in
+    if b then
+      let c1 = { head = x1; tail = [] } in
+      let c2 = { head = x2; tail = [] } in
+      filter2_loop f c1 c2 l1' l2';
+      if c1.tail == l1' then (l1, l2) else (cast c1, cast c2)
+    else
+      filter2 f l1' l2'
+  | _ -> invalid_arg "List.filter2"
 
 let filteri p =
   let rec filter_i_rec i = function
@@ -324,10 +336,21 @@ let filteri p =
 
 let smartfilter = filter (* Alias *)
 
+let rec filter_with_loop filter p l = match filter, l with
+  | [], [] -> ()
+  | b :: filter, x :: l' ->
+    filter_with_loop filter p l';
+    if b then if p.tail == l' then p.tail <- l else p.tail <- x :: p.tail
+  | _ -> invalid_arg "List.filter_with"
+
 let rec filter_with filter l = match filter, l with
   | [], [] -> []
-  | true :: filter, x :: l -> x :: filter_with filter l
-  | false :: filter, _ :: l -> filter_with filter l
+  | b :: filter, x :: l' ->
+    if b then
+      let c = { head = x; tail = [] } in
+      filter_with_loop filter c l';
+      if c.tail == l' then l else cast c
+    else filter_with filter l'
   | _ -> invalid_arg "List.filter_with"
 
 let rec map_filter_loop f p = function
@@ -340,10 +363,15 @@ let rec map_filter_loop f p = function
       p.tail <- cast c;
       map_filter_loop f c l
 
-let map_filter f l =
-  let c = { head = Obj.magic 0; tail = [] } in
-  map_filter_loop f c l;
-  c.tail
+let rec map_filter f = function
+  | [] -> []
+  | x :: l' ->
+    match f x with
+    | None -> map_filter f l'
+    | Some y ->
+      let c = { head = y; tail = [] } in
+      map_filter_loop f c l';
+      cast c
 
 let rec map_filter_i_loop f i p = function
   | [] -> ()
@@ -355,10 +383,18 @@ let rec map_filter_i_loop f i p = function
       p.tail <- cast c;
       map_filter_i_loop f (succ i) c l
 
+let rec map_filter_i_loop' f i = function
+  | [] -> []
+  | x :: l' ->
+    match f i x with
+    | None -> map_filter_i_loop' f (succ i) l'
+    | Some y ->
+      let c = { head = y; tail = [] } in
+      map_filter_i_loop f (succ i) c l';
+      cast c
+
 let map_filter_i f l =
-  let c = { head = Obj.magic 0; tail = [] } in
-  map_filter_i_loop f 0 c l;
-  c.tail
+  map_filter_i_loop' f 0 l
 
 let partitioni p =
   let rec aux i = function
