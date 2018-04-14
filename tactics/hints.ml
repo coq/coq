@@ -672,7 +672,7 @@ struct
 
   let add_list env sigma l db = List.fold_left (fun db k -> add_one env sigma k db) db l
 
-  let remove_sdl p sdl = List.Smart.filter p sdl
+  let remove_sdl p sdl = List.filter p sdl
 
   let remove_he st p se =
     let sl1' = remove_sdl p se.sentry_nopat in
@@ -684,7 +684,7 @@ struct
     let filter (_, h) =
       match h.name with PathHints [gr] -> not (List.mem_f GlobRef.equal gr grs) | _ -> true in
     let hintmap = Constr_map.map (remove_he db.hintdb_state filter) db.hintdb_map in
-    let hintnopat = List.Smart.filter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
+    let hintnopat = List.filter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
 
   let remove_one gr db = remove_list [gr] db
