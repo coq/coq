@@ -5185,6 +5185,7 @@ equivalences are indeed taken into account, otherwise only single
 |SSR| proposes an extension of the Search command. Its syntax is:
 
 .. cmd:: Search {? @pattern }  {* {? - } %( @string %| @pattern %) {? % @ident} } {? in {+ {? - } @qualid } }
+   :name: Search (ssreflect)
 
 where :token:`qualid` is the name of an open module. This command returns
 the list of lemmas:

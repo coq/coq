@@ -707,20 +707,18 @@ instances are tried at each node of the search tree). To speed it up,
 declare your constant as rigid for proof search using the command
 ``Typeclasses Opaque`` (see :ref:`TypeclassesTransparent`).
 
-
 Strategies for rewriting
 ------------------------
-
 
 Definitions
 ~~~~~~~~~~~
 
-The generalized rewriting tactic is based on a set of strategies that
-can be combined to obtain custom rewriting procedures. Its set of
-strategies is based on Elan’s rewriting strategies :ref:`TODO-102-biblio`. Rewriting
+The generalized rewriting tactic is based on a set of strategies that can be
+combined to obtain custom rewriting procedures. Its set of strategies is based
+on Elan’s rewriting strategies :cite:`Luttik97specificationof`. Rewriting
 strategies are applied using the tactic ``rewrite_strat s`` where ``s`` is a
-strategy expression. Strategies are defined inductively as described
-by the following grammar:
+strategy expression. Strategies are defined inductively as described by the
+following grammar:
 
 .. productionlist:: rewriting
    s, t, u : `strategy`

@@ -48,6 +48,7 @@ at the |Coq| root directory; this includes the modules
 ``Tactics``.
 Module ``Logic_Type`` also makes it in the initial state.
 
+.. _init-notations:
 
 Notations
 ~~~~~~~~~
@@ -929,9 +930,8 @@ tactics (see Chapter :ref:`tactics`), there are also:
     Goal forall x y z:R, x * y * z <> 0.
     intros; split_Rmult.
 
-These tactics has been written with the tactic language Ltac
-described in Chapter :ref:`thetacticlanguage`.
-
+These tactics has been written with the tactic language |Ltac|
+described in Chapter :ref:`ltac`.
 
 List library
 ~~~~~~~~~~~~

@@ -1,4 +1,4 @@
-.. _BNF-syntax:
+.. _gallinaspecificationlanguage:
 
 ------------------------------------
  The Gallina specification language
@@ -188,6 +188,8 @@ Coq terms are typed. Coq types are recognized by the same syntactic
 class as :token`term`. We denote by :token:`type` the semantic subclass
 of types inside the syntactic class :token:`term`.
 
+.. _gallina-identifiers:
+
 Qualified identifiers and simple identifiers
 --------------------------------------------
 
@@ -229,6 +231,8 @@ There are three sorts :g:`Set`, :g:`Prop` and :g:`Type`.
 -  :g:`Type` is the type of :g:`Prop` and :g:`Set`
 
 More on sorts can be found in Section :ref:`sorts`.
+
+.. _binders:
 
 Binders
 -------
@@ -312,7 +316,7 @@ left.
 
 The notation ``(ident := term)`` for arguments is used for making
 explicit the value of implicit arguments (see
-Section :ref:`Implicits-explicitation`).
+Section :ref:`explicit-applications`).
 
 Type cast
 ---------
@@ -329,6 +333,8 @@ Inferable subterms
 Expressions often contain redundant pieces of information. Subterms that can be
 automatically inferred by Coq can be replaced by the symbol ``_`` and Coq will
 guess the missing piece of information.
+
+.. _let-in:
 
 Let-in definitions
 ------------------
@@ -350,7 +356,7 @@ expression is used to analyze the structure of an inductive objects and
 to apply specific treatments accordingly.
 
 This paragraph describes the basic form of pattern-matching. See
-Section :ref:`Mult-match` and Chapter :ref:`Mult-match-full` for the description
+Section :ref:`Mult-match` and Chapter :ref:`extendedpatternmatching` for the description
 of the general form. The basic form of pattern-matching is characterized
 by a single :token:`match_item` expression, a :token:`mult_pattern` restricted to a
 single :token:`pattern` and :token:`pattern` restricted to the form
@@ -417,7 +423,7 @@ accepted and has the same meaning as the previous one.
 The second subcase is only relevant for annotated inductive types such
 as the equality predicate (see Section :ref:`Equality`),
 the order predicate on natural numbers or the type of lists of a given
-length (see Section :ref:`listn`). In this configuration, the
+length (see Section :ref:`matching-dependent`). In this configuration, the
 type of each branch can depend on the type dependencies specific to the
 branch and the whole pattern-matching expression has a type determined
 by the specific dependencies in the type of the term being matched. This
@@ -460,18 +466,17 @@ in are available.
 
 There are specific notations for case analysis on types with one or two
 constructors: “if … then … else …” and “let (…, ” (see
-Sections :ref:`if-then-else` and :ref:`Letin`).
+Sections :ref:`if-then-else` and :ref:`let-in`).
 
 Recursive functions
 -------------------
 
 The expression “fix :token:`ident`:math:`_1` :token:`binder`:math:`_1` :
 :token:`type`:math:`_1` ``:=`` :token:`term`:math:`_1` with … with
-:token:`ident`:math:`_n` :token:`binder`:math:`_n` : :token:`type`:math:`_n` ``:=``
-:token:`term`:math:`_n` for :token:`ident`:math:`_i`” denotes the
-:math:`i`\ component of a block of functions defined by mutual
-well-founded recursion. It is the local counterpart of the ``Fixpoint``
-command. See Section :ref:`Fixpoint` for more details. When
+:token:`ident`:math:`_n` :token:`binder`:math:`_n` : :token:`type`:math:`_n`
+``:=`` :token:`term`:math:`_n` for :token:`ident`:math:`_i`” denotes the
+:math:`i`\ component of a block of functions defined by mutual well-founded
+recursion. It is the local counterpart of the :cmd:`Fixpoint` command. When
 :math:`n=1`, the “for :token:`ident`:math:`_i`” clause is omitted.
 
 The expression “cofix :token:`ident`:math:`_1` :token:`binder`:math:`_1` :
@@ -531,6 +536,8 @@ dot.
 The different kinds of command are described hereafter. They all suppose
 that the terms occurring in the sentences are well-typed.
 
+.. _gallina-assumptions:
+
 Assumptions
 -----------
 
@@ -541,6 +548,8 @@ preexisting the declaration and if :token:`ident` was not previously defined in
 the same module. This :token:`type` is considered to be the type (or
 specification, or statement) assumed by :token:`ident` and we say that :token:`ident`
 has type :token:`type`.
+
+.. _Axiom:
 
 .. cmd:: Axiom @ident : @term.
 
@@ -568,10 +577,9 @@ has type :token:`type`.
 
 .. cmdv:: Local Axiom @ident : @term.
 
-   Such axioms are never made accessible through their unqualified
-   name by ``Import`` and its variants (see :ref:`Import`). You
-   have to explicitly give their fully qualified name to refer to
-   them.
+   Such axioms are never made accessible through their unqualified name by
+   :cmd:`Import` and its variants. You have to explicitly give their fully
+   qualified name to refer to them.
 
 .. cmdv:: Conjecture @ident : @term
 
@@ -580,11 +588,11 @@ has type :token:`type`.
 .. cmd:: Variable @ident : @term.
 
 This command links :token:`term` to the name :token:`ident` in the context of
-the current section (see Section :ref:`Section` for a description of the section
-mechanism). When the current section is closed, name :token:`ident` will be
-unknown and every object using this variable will be explicitly parametrized
-(the variable is *discharged*). Using the ``Variable`` command out of any
-section is equivalent to using ``Local Parameter``.
+the current section (see Section :ref:`section-mechanism` for a description of
+the section mechanism). When the current section is closed, name :token:`ident`
+will be unknown and every object using this variable will be explicitly
+parametrized (the variable is *discharged*). Using the ``Variable`` command out
+of any section is equivalent to using ``Local Parameter``.
 
 .. exn:: @ident already exists
 
@@ -609,7 +617,7 @@ logical postulates (i.e. when the assertion *term* is of sort ``Prop``),
 and to use the keywords ``Parameter`` and ``Variable`` in other cases
 (corresponding to the declaration of an abstract mathematical entity).
 
-.. _gallina_def:
+.. _gallina-definitions:
 
 Definitions
 -----------
@@ -620,7 +628,7 @@ way to abbreviate a term. In any case, the name can later be replaced at
 any time by its definition.
 
 The operation of unfolding a name into its definition is called
-:math:`\delta`-conversion (see Section :ref:`delta`). A
+:math:`\delta`-conversion (see Section :ref:`delta-reduction`). A
 definition is accepted by the system if and only if the defined term is
 well-typed in the current context of the definition and if the name is
 not already used. The name defined by the definition is called a
@@ -628,7 +636,7 @@ not already used. The name defined by the definition is called a
 type which is the type of its body.
 
 A formal presentation of constants and environments is given in
-Section :ref:`Typed-terms`.
+Section :ref:`typing-rules`.
 
 .. cmd:: Definition @ident := @term.
 
@@ -654,7 +662,7 @@ Section :ref:`Typed-terms`.
 .. cmdv:: Local Definition @ident := @term.
 
    Such definitions are never made accessible through their
-   unqualified name by Import and its variants (see :ref:`Import`).
+   unqualified name by :cmd:`Import` and its variants.
    You have to explicitly give their fully qualified name to refer to them.
 
 .. cmdv:: Example @ident := @term.
@@ -667,7 +675,7 @@ These are synonyms of the Definition forms.
 
 .. exn:: The term @term has type @type while it is expected to have type @type
 
-See also Sections :ref:`Opaque,Transparent,unfold`.
+See also :cmd:`Opaque`, :cmd:`Transparent`, :tac:`unfold`.
 
 .. cmd:: Let @ident := @term.
 
@@ -687,7 +695,10 @@ prefixed by the let-in definition ``let`` :token:`ident` ``:=`` :token:`term`
 
 .. cmdv:: Let CoFixpoint @ident @cofix_body {* with @cofix_body}.
 
-See also Sections :ref:`Section,Opaque,Transparent,unfold`.
+See also Sections :ref:`section-mechanism`, commands :cmd:`Opaque`,
+:cmd:`Transparent`, and tactic :tacn:`unfold`.
+
+.. _gallina-inductive-definitions:
 
 Inductive definitions
 ---------------------
@@ -707,7 +718,7 @@ The name :token:`ident` is the name of the inductively defined type and
 :token:`sort` is the universes where it lives. The :token:`ident` are the names
 of its constructors and :token:`type` their respective types. The types of the
 constructors have to satisfy a *positivity condition* (see Section
-:ref:`Positivity`) for :token:`ident`. This condition ensures the soundness of
+:ref:`positivity`) for :token:`ident`. This condition ensures the soundness of
 the inductive definition. If this is the case, the :token:`ident` are added to
 the environment with their respective types. Accordingly to the universe where
 the inductive type lives (e.g. its type :token:`sort`), Coq provides a number of
@@ -848,8 +859,7 @@ arguments of the constructors rather than their full type.
 The ``Variant`` keyword is identical to the ``Inductive`` keyword, except
 that it disallows recursive definition of types (in particular lists cannot
 be defined with the Variant keyword). No induction scheme is generated for
-this variant, unless the option ``Nonrecursive Elimination Schemes`` is set
-(see :ref:`set-nonrecursive-elimination-schemes`).
+this variant, unless :opt:`Nonrecursive Elimination Schemes` is set.
 
 .. exn:: The @num th argument of @ident must be @ident in @type
 
@@ -891,7 +901,8 @@ instead of parameters but it will sometimes give a different (bigger)
 sort for the inductive definition and will produce a less convenient
 rule for case elimination.
 
-See also Sections :ref:`Cic-inductive-definitions,Tac-induction`.
+See also Section :ref:`inductive-definitions` and the :tacn:`induction`
+tactic.
 
 Mutually defined inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -960,7 +971,9 @@ section is closed, the variables declared in the section and occurring
 free in the declaration are added as parameters to the inductive
 definition.
 
-See also Section :ref:`Section`.
+See also Section :ref:`section-mechanism`.
+
+.. _coinductive-types:
 
 Co-inductive types
 ~~~~~~~~~~~~~~~~~~
@@ -982,12 +995,12 @@ Coq using the ``CoInductive`` command:
    CoInductive Stream : Set :=
      Seq : nat -> Stream -> Stream.
 
-The syntax of this command is the same as the command ``Inductive`` (see
-Section :ref:`gal-Inductive-Definitions`. Notice that no principle of induction
-is derived from the definition of a co-inductive type, since such principles
-only make sense for inductive ones. For co-inductive ones, the only elimination
-principle is case analysis. For example, the usual destructors on streams
-:g:`hd:Stream->nat` and :g:`tl:Str->Str` can be defined as follows:
+The syntax of this command is the same as the command :cmd:`Inductive`. Notice
+that no principle of induction is derived from the definition of a co-inductive
+type, since such principles only make sense for inductive ones. For co-inductive
+ones, the only elimination principle is case analysis. For example, the usual
+destructors on streams :g:`hd:Stream->nat` and :g:`tl:Str->Str` can be defined
+as follows:
 
 .. coqtop:: all
 
@@ -1007,7 +1020,7 @@ predicate is the extensional equality on streams:
 In order to prove the extensionally equality of two streams :g:`s1` and :g:`s2`
 we have to construct an infinite proof of equality, that is, an infinite object
 of type :g:`(EqSt s1 s2)`. We will see how to introduce infinite objects in
-Section :ref:`CoFixpoint`.
+Section :ref:`cofixpoint`.
 
 Definition of recursive functions
 ---------------------------------
@@ -1016,12 +1029,14 @@ Definition of functions by recursion over inductive objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This section describes the primitive form of definition by recursion over
-inductive objects. See Section :ref:`Function` for more advanced constructions.
-The command:
+inductive objects. See the :cmd:`Function` command for more advanced
+constructions.
+
+.. _Fixpoint:
 
 .. cmd:: Fixpoint @ident @params {struct @ident} : @type := @term.
 
-allows defining functions by pattern-matching over inductive objects
+This command allows defining functions by pattern-matching over inductive objects
 using a fixed point construction. The meaning of this declaration is to
 define :token:`ident` a recursive function with arguments specified by the
 binders in :token:`params` such that :token:`ident` applied to arguments corresponding
@@ -1063,7 +1078,8 @@ respective values to be returned, as functions of the parameters of the
 corresponding constructor. Thus here when :g:`n` equals :g:`O` we return
 :g:`m`, and when :g:`n` equals :g:`(S p)` we return :g:`(S (add p m))`.
 
-The match operator is formally described in detail in Section :ref:`Caseexpr`.
+The match operator is formally described in detail in Section
+:ref:`match-construction`.
 The system recognizes that in the inductive call :g:`(add p m)` the first
 argument actually decreases because it is a *pattern variable* coming from
 :g:`match n with`.
@@ -1151,7 +1167,10 @@ The size of trees and forests can be defined the following way:
    end.
 
 A generic command Scheme is useful to build automatically various mutual
-induction principles. It is described in Section :ref:`Scheme`.
+induction principles. It is described in Section
+:ref:`proofschemes-induction-principles`.
+
+.. _cofixpoint:
 
 Definitions of recursive objects in co-inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1160,8 +1179,8 @@ Definitions of recursive objects in co-inductive types
 
 introduces a method for constructing an infinite object of a coinductive
 type. For example, the stream containing all natural numbers can be
-introduced applying the following method to the number :ref:`O` (see
-Section :ref:`CoInductiveTypes` for the definition of :g:`Stream`, :g:`hd` and
+introduced applying the following method to the number :g:`O` (see
+Section :ref:`coinductive-types` for the definition of :g:`Stream`, :g:`hd` and
 :g:`tl`):
 
 .. coqtop:: all
@@ -1204,8 +1223,8 @@ the normal forms of a term:
 
 .. cmdv:: CoFixpoint @ident : @type := @term {+ with @ident : @type := @term }
 
-   As in the ``Fixpoint`` command (see Section :ref:`Fixpoint`), it is possible
-   to introduce a block of mutually dependent methods.
+   As in the :cmd:`Fixpoint` command, it is possible to introduce a block of
+   mutually dependent methods.
 
 .. _Assertions:
 
@@ -1214,7 +1233,7 @@ Assertions and proofs
 
 An assertion states a proposition (or a type) of which the proof (or an
 inhabitant of the type) is interactively built using tactics. The interactive
-proof mode is described in Chapter :ref:`Proof-handling` and the tactics in
+proof mode is described in Chapter :ref:`proofhandling` and the tactics in
 Chapter :ref:`Tactics`. The basic assertion command is:
 
 .. cmd:: Theorem @ident : @type.
@@ -1245,15 +1264,14 @@ the theorem is bound to the name :token:`ident` in the environment.
 
 .. cmdv:: Theorem @ident : @type {* with @ident : @type}.
 
-   This command is useful for theorems that are proved by simultaneous
-   induction over a mutually inductive assumption, or that assert
-   mutually dependent statements in some mutual co-inductive type. It is
-   equivalent to ``Fixpoint`` or ``CoFixpoint`` (see
-   Section :ref:`CoFixpoint`) but using tactics to build
-   the proof of the statements (or the body of the specification,
-   depending on the point of view). The inductive or co-inductive types
-   on which the induction or coinduction has to be done is assumed to be
-   non ambiguous and is guessed by the system.
+   This command is useful for theorems that are proved by simultaneous induction
+   over a mutually inductive assumption, or that assert mutually dependent
+   statements in some mutual co-inductive type. It is equivalent to
+   :cmd:`Fixpoint` or :cmd:`CoFixpoint` but using tactics to build the proof of
+   the statements (or the body of the specification, depending on the point of
+   view). The inductive or co-inductive types on which the induction or
+   coinduction has to be done is assumed to be non ambiguous and is guessed by
+   the system.
 
    Like in a ``Fixpoint`` or ``CoFixpoint`` definition, the induction hypotheses
    have to be used on *structurally smaller* arguments (for a ``Fixpoint``) or
@@ -1261,7 +1279,7 @@ the theorem is bound to the name :token:`ident` in the environment.
    recursive proof arguments are correct is done only at the time of registering
    the lemma in the environment. To know if the use of induction hypotheses is
    correct at some time of the interactive development of a proof, use the
-   command Guarded (see Section :ref:`Guarded`).
+   command :cmd:`Guarded`.
 
    The command can be used also with ``Lemma``, ``Remark``, etc. instead of
    ``Theorem``.
@@ -1270,12 +1288,12 @@ the theorem is bound to the name :token:`ident` in the environment.
 
    This allows defining a term of type :token:`type` using the proof editing
    mode. It behaves as Theorem but is intended to be used in conjunction with
-   Defined (see :ref:`Defined`) in order to define a constant of which the
-   computational behavior is relevant.
+   :cmd:`Defined` in order to define a constant of which the computational
+   behavior is relevant.
 
-   The command can be used also with ``Example`` instead of ``Definition``.
+   The command can be used also with :cmd:`Example` instead of :cmd:`Definition`.
 
-   See also Sections :ref:`Opaque` :ref:`Transparent` :ref:`unfold`.
+   See also :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
 .. cmdv:: Let @ident : @type.
 
@@ -1301,7 +1319,7 @@ A proof starts by the keyword Proof. Then Coq enters the proof editing mode
 until the proof is completed. The proof editing mode essentially contains
 tactics that are described in chapter :ref:`Tactics`. Besides tactics, there are
 commands to manage the proof editing mode. They are described in Chapter
-:ref:`Proof-handling`. When the proof is completed it should be validated and
+:ref:`proofhandling`. When the proof is completed it should be validated and
 put in the environment using the keyword Qed.
 
 .. exn:: @ident already exists
@@ -1319,7 +1337,7 @@ put in the environment using the keyword Qed.
       side, Qed (or Defined, see below) is mandatory to validate a proof.
 
    #. Proofs ended by Qed are declared opaque. Their content cannot be
-      unfolded (see :ref:`Conversion-tactics`), thus
+      unfolded (see :ref:`performingcomputations`), thus
       realizing some form of *proof-irrelevance*. To be able to unfold a
       proof, the proof should be ended by Defined (see below).
 
@@ -1328,7 +1346,7 @@ put in the environment using the keyword Qed.
    Same as ``Proof. … Qed.`` but the proof is then declared transparent,
    which means that its content can be explicitly used for
    type-checking and that it can be unfolded in conversion tactics
-   (see :ref:`Conversion-tactics,Opaque,Transparent`).
+   (see :ref:`performingcomputations`, :cmd:`Opaque`, :cmd:`Transparent`).
 
 .. cmdv:: Proof. … Admitted.
 

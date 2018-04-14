@@ -193,9 +193,9 @@ other arguments are the parameters of the inductive type.
   This message is followed by an explanation of this impossibility.
   There may be three reasons:
 
-  #. The name `ident` already exists in the environment (see Section :ref:`TODO-1.3.1-axioms`).
+  #. The name `ident` already exists in the environment (see :cmd:`Axiom`).
   #. The body of `ident` uses an incorrect elimination for
-     `ident` (see Sections :ref:`TODO-1.3.4-fixpoint` and :ref:`Destructors`).
+     `ident` (see :cmd:`Fixpoint` and :ref:`Destructors`).
   #. The type of the projections `ident` depends on previous
      projections which themselves could not be defined.
 
@@ -212,7 +212,7 @@ other arguments are the parameters of the inductive type.
 
 During the definition of the one-constructor inductive definition, all
 the errors of inductive definitions, as described in Section
-:ref:`TODO-1.3.3-inductive-definitions`, may also occur.
+:ref:`gallina-inductive-definitions`, may also occur.
 
 **See also** Coercions and records in Section :ref:`coercions-classes-as-records` of the chapter devoted to coercions.
 
@@ -316,7 +316,7 @@ printed back as :g:`match` constructs.
 Variants and extensions of :g:`match`
 -------------------------------------
 
-.. _extended pattern-matching:
+.. _mult-match:
 
 Multiple and nested pattern-matching
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -330,8 +330,9 @@ into a sequence of match on simple patterns. Especially, a
 construction defined using the extended match is generally printed
 under its expanded form (see ``Set Printing Matching`` in :ref:`controlling-match-pp`).
 
-See also: :ref:`extended pattern-matching`.
+See also: :ref:`extendedpatternmatching`.
 
+.. _if-then-else:
 
 Pattern-matching on boolean values: the if expression
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -722,7 +723,7 @@ used by ``Function``. A more precise description is given below.
    the following are defined:
 
     + `ident_rect`, `ident_rec` and `ident_ind`, which reflect the pattern
-      matching structure of `term` (see the documentation of :ref:`TODO-1.3.3-Inductive`);
+      matching structure of `term` (see :cmd:`Inductive`);
     + The inductive `R_ident` corresponding to the graph of `ident` (silently);
     + `ident_complete` and `ident_correct` which are inversion information
       linking the function and its graph.
@@ -778,7 +779,7 @@ Section mechanism
 
 The sectioning mechanism can be used to to organize a proof in
 structured sections. Then local declarations become available (see
-Section :ref:`TODO-1.3.2-Definitions`).
+Section :ref:`gallina-definitions`).
 
 
 .. cmd:: Section @ident.
@@ -1240,10 +1241,6 @@ qualified name.
     This option (off by default) disables the printing of the types of fields,
     leaving only their names, for the commands ``Print Module`` and ``Print Module Type``.
 
-.. cmd:: Locate Module @qualid.
-
-    Prints the full name of the module `qualid`.
-
 Libraries and qualified names
 ---------------------------------
 
@@ -1256,7 +1253,7 @@ The theories developed in |Coq| are stored in *library files* which are
 hierarchically classified into *libraries* and *sublibraries*. To
 express this hierarchy, library names are represented by qualified
 identifiers qualid, i.e. as list of identifiers separated by dots (see
-:ref:`TODO-1.2.3-identifiers`). For instance, the library file ``Mult`` of the standard
+:ref:`gallina-identifiers`). For instance, the library file ``Mult`` of the standard
 |Coq| library ``Arith`` is named ``Coq.Arith.Mult``. The identifier that starts
 the name of a library is called a *library root*. All library files of
 the standard library of |Coq| have the reserved root |Coq| but library
@@ -1300,13 +1297,13 @@ names also applies to library file names.
 
 |Coq| maintains a table called the name table which maps partially qualified
 names of constructions to absolute names. This table is updated by the
-commands ``Require`` (see :ref:`compiled-files`), ``Import`` and ``Export`` (see :ref:`here <import_qualid>`) and
+commands :cmd:`Require`, :cmd:`Import` and :cmd:`Export` and
 also each time a new declaration is added to the context. An absolute
 name is called visible from a given short or partially qualified name
 when this latter name is enough to denote it. This means that the
 short or partially qualified name is mapped to the absolute name in
 |Coq| name table. Definitions flagged as Local are only accessible with
-their fully qualified name (see :ref:`TODO-1.3.2-definitions`).
+their fully qualified name (see :ref:`gallina-definitions`).
 
 It may happen that a visible name is hidden by the short name or a
 qualified name of another construction. In this case, the name that
@@ -1328,8 +1325,7 @@ accessible, absolute names can never be hidden.
 
        Locate nat.
 
-See also: Command Locate in :ref:`TODO-6.3.10-locate-qualid` and Locate Library in
-:ref:`TODO-6.6.11-locate-library`.
+See also: Commands :cmd:`Locate` and :cmd:`Locate Library`.
 
 .. _libraries-and-filesystem:
 
@@ -1589,6 +1585,7 @@ Declaring Implicit Arguments
 To set implicit arguments *a posteriori*, one can use the command:
 
 .. cmd:: Arguments @qualid {* @possibly_bracketed_ident }.
+   :name: Arguments (implicits)
 
 where the list of `possibly_bracketed_ident` is a prefix of the list of
 arguments of `qualid` where the ones to be declared implicit are
@@ -1801,6 +1798,8 @@ Assuming the implicit argument mode is on, this option (off by default)
 declares implicit arguments to be automatically inserted when a
 function is partially applied and the next argument of the function is
 an implicit one.
+
+.. _explicit-applications:
 
 Explicit applications
 ~~~~~~~~~~~~~~~~~~~~~
@@ -2147,16 +2146,17 @@ Printing universes
 
 .. opt:: Printing Universes.
 
-Turn this option on to activate the display of the actual level of each occurrence of ``Type``.
-See :ref:`Sorts` for details. This wizard option, in combination
-with ``Set Printing All`` (see :ref:`printing_constructions_full`) can help to diagnose failures
-to unify terms apparently identical but internally different in the
-Calculus of Inductive Constructions.
+Turn this option on to activate the display of the actual level of each
+occurrence of :g:`Type`. See :ref:`Sorts` for details. This wizard option, in
+combination with :opt:`Printing All` can help to diagnose failures to unify
+terms apparently identical but internally different in the Calculus of Inductive
+Constructions.
 
 The constraints on the internal level of the occurrences of Type
 (see :ref:`Sorts`) can be printed using the command
 
 .. cmd:: Print {? Sorted} Universes.
+   :name: Print Universes
 
 If the optional ``Sorted`` option is given, each universe will be made
 equivalent to a numbered label reflecting its level (with a linear
@@ -2164,7 +2164,7 @@ ordering) in the universe hierarchy.
 
 This command also accepts an optional output filename:
 
-.. cmd:: Print {? Sorted} Universes @string.
+.. cmdv:: Print {? Sorted} Universes @string.
 
 If `string` ends in ``.dot`` or ``.gv``, the constraints are printed in the DOT
 language, and can be processed by Graphviz tools. The format is
@@ -2227,7 +2227,7 @@ existential variable used in the same context as its context of definition is wr
 Existential variables can be named by the user upon creation using
 the syntax ``?``\ `ident`. This is useful when the existential
 variable needs to be explicitly handled later in the script (e.g.
-with a named-goal selector, see :ref:`TODO-9.2-goal-selectors`).
+with a named-goal selector, see :ref:`goal-selectors`).
 
 .. _explicit-display-existentials:
 
@@ -2252,7 +2252,7 @@ is not specified and is implementation-dependent. The inner tactic may
 use any variable defined in its scope, including repeated alternations
 between variables introduced by term binding as well as those
 introduced by tactic binding. The expression `tacexpr` can be any tactic
-expression as described in :ref:`thetacticlanguage`.
+expression as described in :ref:`ltac`.
 
 .. coqtop:: all
 

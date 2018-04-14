@@ -736,7 +736,7 @@ and this length is decremented for each rotation down to, but not
 including, 1 because for a list of length ``n``, we can make exactly
 ``n−1`` rotations to generate at most ``n`` distinct lists. Here, it
 must be noticed that we use the natural numbers of Coq for the
-rotation counter. On Figure :ref:`TODO-9.1-tactic-language`, we can
+rotation counter. In :ref:`ltac-syntax`, we can
 see that it is possible to use usual natural numbers but they are only
 used as arguments for primitive tactics and they cannot be handled, in
 particular, we cannot make computations with them. So, a natural
@@ -833,7 +833,7 @@ The pattern matching on goals allows a complete and so a powerful
 backtracking when returning tactic values. An interesting application
 is the problem of deciding intuitionistic propositional logic.
 Considering the contraction-free sequent calculi LJT* of Roy Dyckhoff
-:ref:`TODO-56-biblio`, it is quite natural to code such a tactic
+:cite:`Dyc92`, it is quite natural to code such a tactic
 using the tactic language as shown on figures: :ref:`Deciding
 intuitionistic propositions (1) <decidingintuitionistic1>` and
 :ref:`Deciding intuitionistic propositions (2)
@@ -871,7 +871,7 @@ Deciding type isomorphisms
 A more tricky problem is to decide equalities between types and modulo
 isomorphisms. Here, we choose to use the isomorphisms of the simply
 typed λ-calculus with Cartesian product and unit type (see, for
-example, :cite:`TODO-45`). The axioms of this λ-calculus are given below.
+example, :cite:`RC95`). The axioms of this λ-calculus are given below.
 
 .. coqtop:: in reset
 
