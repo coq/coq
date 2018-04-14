@@ -15,7 +15,6 @@ open Environ
 open EConstr
 open Inductiveops
 open Glob_term
-open Ltac_pretype
 open Evardefine
 
 (** {5 Compilation of pattern-matching } *)
@@ -42,9 +41,9 @@ val irrefutable : env -> cases_pattern -> bool
 
 val compile_cases :
   ?loc:Loc.t -> case_style ->
-  (type_constraint -> env -> evar_map ref -> ltac_var_map -> glob_constr -> unsafe_judgment) * evar_map ref ->
+  (type_constraint -> GlobEnv.t -> evar_map ref -> glob_constr -> unsafe_judgment) * evar_map ref ->
   type_constraint ->
-  env -> ltac_var_map -> glob_constr option * tomatch_tuples * cases_clauses ->
+  GlobEnv.t -> glob_constr option * tomatch_tuples * cases_clauses ->
   unsafe_judgment
 
 val constr_of_pat : 
@@ -59,7 +58,7 @@ val constr_of_pat :
            Names.Id.Set.t
 
 type 'a rhs =
-    { rhs_env    : env;
+    { rhs_env    : GlobEnv.t;
       rhs_vars   : Id.Set.t;
       avoid_ids  : Id.Set.t;
       it         : 'a option}
@@ -103,8 +102,7 @@ and pattern_continuation =
   | Result of cases_pattern list
 
 type 'a pattern_matching_problem =
-    { env       : env;
-      lvar      : Ltac_pretype.ltac_var_map;
+    { env       : GlobEnv.t;
       evdref    : evar_map ref;
       pred      : constr;
       tomatch   : tomatch_stack;
@@ -112,21 +110,19 @@ type 'a pattern_matching_problem =
       mat       : 'a matrix;
       caseloc   : Loc.t option;
       casestyle : case_style;
-      typing_function: type_constraint -> env -> evar_map ref -> 'a option -> unsafe_judgment }
-
+      typing_function: type_constraint -> GlobEnv.t -> evar_map ref -> 'a option -> unsafe_judgment }
 
 val compile : 'a pattern_matching_problem -> unsafe_judgment
 
 val prepare_predicate : ?loc:Loc.t ->
            (type_constraint ->
-            Environ.env -> Evd.evar_map ref -> ltac_var_map -> glob_constr -> unsafe_judgment) ->
-           Environ.env ->
+            GlobEnv.t -> Evd.evar_map ref -> glob_constr -> unsafe_judgment) ->
+           GlobEnv.t ->
            Evd.evar_map ->
-           Ltac_pretype.ltac_var_map ->
            (types * tomatch_type) list ->
-           (rel_context * rel_context) list ->
+           rel_context list ->
            constr option ->
-           glob_constr option -> (Evd.evar_map * Name.t list * constr) list
+           glob_constr option -> (Evd.evar_map * (Name.t * Name.t list) list * constr) list
 
-val make_return_predicate_ltac_lvar : Evd.evar_map -> Name.t ->
-  Glob_term.glob_constr -> constr -> Ltac_pretype.ltac_var_map -> ltac_var_map
+val make_return_predicate_ltac_lvar : GlobEnv.t -> Evd.evar_map -> Name.t ->
+  Glob_term.glob_constr -> constr -> GlobEnv.t

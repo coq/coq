@@ -101,9 +101,4 @@ val glob_constr_of_cases_pattern : 'a cases_pattern_g -> 'a glob_constr_g
 
 val add_patterns_for_params_remove_local_defs : constructor -> 'a cases_pattern_g list -> 'a cases_pattern_g list
 
-(* [ltac_interp_name subst na] interprets a name according to a name
-   substitution (subst.ltac_idents) and a list of names
-   (subst.ltac_genargs) on which to fail; returns [na] otherwise *)
-val ltac_interp_name : Ltac_pretype.ltac_var_map -> Name.t -> Name.t
-
 val empty_lvar : Ltac_pretype.ltac_var_map

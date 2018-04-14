@@ -15,7 +15,6 @@ open Nameops
 open Globnames
 open Glob_term
 open Evar_kinds
-open Ltac_pretype
 
 (* Untyped intermediate terms, after ASTs and before constr. *)
 
@@ -577,22 +576,9 @@ let glob_constr_of_closed_cases_pattern p = match DAst.get p with
 
 let glob_constr_of_cases_pattern p = glob_constr_of_cases_pattern_aux false p
 
-(**********************************************************************)
-(* Interpreting ltac variables *)
+(* This has to be in some file... *)
 
-open Pp
-open CErrors
-
-let ltac_interp_name { ltac_idents ; ltac_genargs } = function
-  | Anonymous -> Anonymous
-  | Name id as n ->
-      try Name (Id.Map.find id ltac_idents)
-      with Not_found ->
-        if Id.Map.mem id ltac_genargs then
-          user_err (str"Ltac variable"++spc()++ Id.print id ++
-                           spc()++str"is not bound to an identifier."++spc()++
-                           str"It cannot be used in a binder.")
-        else n
+open Ltac_pretype
 
 let empty_lvar : ltac_var_map = {
   ltac_constrs = Id.Map.empty;

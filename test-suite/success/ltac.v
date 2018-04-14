@@ -348,3 +348,13 @@ symmetry in H.
 match goal with h:_ |- _ => assert (h=h) end. (* h should be H0 *)
 exact (eq_refl H0).
 Abort.
+
+(* Check that internal names used in "match" compilation to push "term
+   to match" on the environment are not interpreted as ltac variables *)
+
+Module ToMatchNames.
+Ltac g c := let r := constr:(match c return _ with a => 1 end) in idtac.
+Goal True.
+g 1.
+Abort.
+End ToMatchNames.

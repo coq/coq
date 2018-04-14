@@ -2029,7 +2029,7 @@ let _ =
     let (c, sigma) = Pfedit.refine_by_tactic env sigma ty tac in
     (EConstr.of_constr c, sigma)
   in
-  Pretyping.register_constr_interp0 wit_tactic eval
+  GlobEnv.register_constr_interp0 wit_tactic eval
 
 let vernac_debug b =
   set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
