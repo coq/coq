@@ -31,11 +31,11 @@ before_script: &before_script
     source ~/.profile
     printenv
     if [ -n "${EXTRA_PACKAGES}" ]; then sudo apt-get update -yq && sudo apt-get install -yq --no-install-recommends ${EXTRA_PACKAGES}; fi
+    echo . ~/.profile >> $BASH_ENV
 
 opam-switch: &opam-switch
   name: Select opam switch
   command: |
-    source ~/.profile
     opam switch ${COMPILER}
     opam config list
     opam list
@@ -48,7 +48,6 @@ opam-switch: &opam-switch
     - run:
         name: Cache selection
         command: |
-          source ~/.profile
           # We can't use environment variables in cache names
           # So put it in a file and use the checksum
           echo "$COMPILER" > COMPILER
@@ -59,19 +58,16 @@ opam-switch: &opam-switch
     - run:
         name: Update opam lists
         command: |
-          source ~/.profile
           opam repository set-url default https://opam.ocaml.org
           opam update
     - run:
         name: Install opam packages
         command: |
-          source ~/.profile
           opam switch -j ${NJOBS} ${COMPILER}
           opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind ${EXTRA_OPAM}
     - run:
         name: Clean cache
         command: |
-          source ~/.profile
           rm -rf ~/.opam/log/
     - save_cache:
         key: coq-opam-cache-v1-{{ arch }}-{{ checksum "COMPILER" }}-{{ checksum ".circleci/config.yml" }}-
@@ -93,13 +89,10 @@ opam-switch: &opam-switch
     - run: &build-configure
         name: Configure
         command: |
-          source ~/.profile
-
           ./configure -local -native-compiler ${NATIVE_COMP} -coqide no
     - run: &build-build
         name: Build
         command: |
-          source ~/.profile
           make -j ${NJOBS} byte
           make -j ${NJOBS}
           make test-suite/misc/universes/all_stdlib.v
@@ -118,7 +111,6 @@ opam-switch: &opam-switch
     - run:
         name: Test
         command: |
-          source ~/.profile
           dev/ci/ci-wrapper.sh ${CIRCLE_JOB}
     - persist_to_workspace:
         root: *workspace
