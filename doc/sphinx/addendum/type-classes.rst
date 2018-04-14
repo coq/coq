@@ -148,11 +148,10 @@ database.
 Sections and contexts
 ---------------------
 
-To ease the parametrization of developments by type classes, we
-provide a new way to introduce variables into section contexts,
-compatible with the implicit argument mechanism. The new command works
-similarly to the ``Variables`` vernacular (:ref:`TODO-1.3.2-Definitions`), except it
-accepts any binding context as argument. For example:
+To ease the parametrization of developments by type classes, we provide a new
+way to introduce variables into section contexts, compatible with the implicit
+argument mechanism. The new command works similarly to the :cmd:`Variables`
+vernacular, except it accepts any binding context as argument. For example:
 
 .. coqtop:: all
 

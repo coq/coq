@@ -305,6 +305,8 @@ explicitations (as for terms 2.7.11).
         end).
 
 
+.. _matching-dependent:
+
 Matching objects of dependent types
 -----------------------------------
 
@@ -414,6 +416,7 @@ length, by writing
 
 I have a copy of :g:`b` in type :g:`listn 0` resp :g:`listn (S n')`.
 
+.. _match-in-patterns:
 
 Patterns in ``in``
 ~~~~~~~~~~~~~~~~~~

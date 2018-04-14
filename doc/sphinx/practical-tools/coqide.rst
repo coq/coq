@@ -150,8 +150,6 @@ arguments.
 Queries
 ------------
 
-.. _coqide_queryselected:
-
 .. image:: ../_static/coqide-queries.png
    :alt: |CoqIDE| queries
 
@@ -161,7 +159,7 @@ writing them in scripts, |CoqIDE| offers a *query pane*. The query pane can be
 displayed on demand by using the ``View`` menu, or using the shortcut ``F1``.
 Queries can also be performed by selecting a particular phrase, then choosing an
 item from the ``Queries`` menu. The response then appears in the message window.
-Figure :ref:`fig:queryselected` shows the result after selecting of the phrase
+The image above shows the result after selecting of the phrase
 ``Nat.mul`` in the script window, and choosing ``Print`` from the ``Queries``
 menu.
 

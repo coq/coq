@@ -345,13 +345,13 @@ inductive type or a recursive constant and a notation for it.
 Simultaneous definition of terms and notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Thanks to reserved notations, the inductive, co-inductive, record, recursive
-and corecursive definitions can benefit of customized notations. To do
-this, insert a ``where`` notation clause after the definition of the
-(co)inductive type or (co)recursive term (or after the definition of
-each of them in case of mutual definitions). The exact syntax is given
-on Figure 12.1 for inductive, co-inductive, recursive and corecursive
-definitions and on Figure :ref:`record-syntax` for records. Here are examples:
+Thanks to reserved notations, the inductive, co-inductive, record, recursive and
+corecursive definitions can benefit of customized notations. To do this, insert
+a ``where`` notation clause after the definition of the (co)inductive type or
+(co)recursive term (or after the definition of each of them in case of mutual
+definitions). The exact syntax is given by :token:`decl_notation` for inductive,
+co-inductive, recursive and corecursive definitions and in :ref:`record-types`
+for records. Here are examples:
 
 .. coqtop:: in
 
@@ -386,20 +386,16 @@ Displaying informations about notations
 Locating notations
 ~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Locate @symbol
+To know to which notations a given symbol belongs to, use the :cmd:`Locate`
+command. You can call it on any (composite) symbol surrounded by double quotes.
+To locate a particular notation, use a string where the variables of the
+notation are replaced by “_” and where possible single quotes inserted around
+identifiers or tokens starting with a single quote are dropped.
 
-   To know to which notations a given symbol belongs to, use the command
-   ``Locate symbol``, where symbol is any (composite) symbol surrounded by double
-   quotes. To locate a particular notation, use a string where the variables of the
-   notation are replaced by “_” and where possible single quotes inserted around
-   identifiers or tokens starting with a single quote are dropped.
+.. coqtop:: all
 
-   .. coqtop:: all
-
-      Locate "exists".
-      Locate "exists _ .. _ , _".
-
-   .. todo:: See also: Section 6.3.10.
+   Locate "exists".
+   Locate "exists _ .. _ , _".
 
 Notations and binders
 ~~~~~~~~~~~~~~~~~~~~~
@@ -437,8 +433,7 @@ Binders bound in the notation and parsed as patterns
 
 In the same way as patterns can be used as binders, as in
 :g:`fun '(x,y) => x+y` or :g:`fun '(existT _ x _) => x`, notations can be
-defined so that any pattern (in the sense of the entry :n:`@pattern` of
-Figure :ref:`term-syntax-aux`) can be used in place of the
+defined so that any :n:`@pattern` can be used in place of the
 binder. Here is an example:
 
 .. coqtop:: in reset
@@ -477,7 +472,7 @@ variable. Here is an example showing the difference:
 
 The default level for a ``pattern`` is 0. One can use a different level by
 using ``pattern at level`` :math:`n` where the scale is the same as the one for
-terms (Figure :ref:`init-notations`).
+terms (see :ref:`init-notations`).
 
 Binders bound in the notation and parsed as terms
 +++++++++++++++++++++++++++++++++++++++++++++++++
@@ -863,6 +858,7 @@ Binding arguments of a constant to an interpretation scope
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. cmd:: Arguments @qualid {+ @name%@scope}
+   :name: Arguments (scopes)
 
    It is possible to set in advance that some arguments of a given constant have
    to be interpreted in a given scope. The command is

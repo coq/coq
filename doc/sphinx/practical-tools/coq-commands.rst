@@ -106,7 +106,7 @@ and ``coqtop``, unless stated otherwise:
   recursively available from |Coq| using absolute names (extending the
   dirpath prefix) (see Section :ref:`qualified-names`).Note that only those
   subdirectories and files which obey the lexical conventions of what is
-  an ident (see Section :ref:`TODO-1.1`) are taken into account. Conversely, the
+  an :n:`@ident` are taken into account. Conversely, the
   underlying file systems or operating systems may be more restrictive
   than |Coq|. While Linux’s ext4 file system supports any |Coq| recursive
   layout (within the limit of 255 bytes per file name), the default on

@@ -13,33 +13,34 @@ especially about its foundations, you can refer to :cite:`Del00`. Chapter
 :ref:`detailedexamplesoftactics` is devoted to giving examples of use of this
 language on small but also with non-trivial problems.
 
+.. _ltac-syntax:
+
 Syntax
 ------
 
-The syntax of the tactic language is given Figures :ref:`ltac, ltac_aux`. See
-Chapter :ref:`gallina` for a description of the BNF metasyntax used in these
-grammar rules. Various already defined entries will be used in this chapter:
-entries :token:`natural`, :token:`integer`, :token:`ident`, :token:`qualid`,
-:token:`term`, :token:`cpattern` and :token:`atomic_tactic` represent
-respectively the natural and integer numbers, the authorized identificators and
-qualified names, Coq terms and patterns and all the atomic tactics described in
-Chapter :ref:`tactics`. The syntax of :token:`cpattern` is the same as that of
-terms, but it is extended with pattern matching metavariables. In
-:token:`cpattern`, a pattern-matching metavariable is represented with the
-syntax :g:`?id` where :g:`id` is an :token:`ident`. The notation :g:`_` can also
-be used to denote metavariable whose instance is irrelevant. In the notation
-:g:`?id`, the identifier allows us to keep instantiations and to make
-constraints whereas :g:`_` shows that we are not interested in what will be
-matched. On the right hand side of pattern-matching clauses, the named
-metavariable are used without the question mark prefix. There is also a special
-notation for second-order pattern-matching problems: in an applicative pattern
-of the form :g:`@?id id1 … idn`, the variable id matches any complex expression
-with (possible) dependencies in the variables :g:`id1 … idn` and returns a
-functional term of the form :g:`fun id1 … idn => term`.
+The syntax of the tactic language is given below. See Chapter
+:ref:`gallinaspecificationlanguage` for a description of the BNF metasyntax used
+in these grammar rules. Various already defined entries will be used in this
+chapter: entries :token:`natural`, :token:`integer`, :token:`ident`,
+:token:`qualid`, :token:`term`, :token:`cpattern` and :token:`atomic_tactic`
+represent respectively the natural and integer numbers, the authorized
+identificators and qualified names, Coq terms and patterns and all the atomic
+tactics described in Chapter :ref:`tactics`. The syntax of :token:`cpattern` is
+the same as that of terms, but it is extended with pattern matching
+metavariables. In :token:`cpattern`, a pattern-matching metavariable is
+represented with the syntax :g:`?id` where :g:`id` is an :token:`ident`. The
+notation :g:`_` can also be used to denote metavariable whose instance is
+irrelevant. In the notation :g:`?id`, the identifier allows us to keep
+instantiations and to make constraints whereas :g:`_` shows that we are not
+interested in what will be matched. On the right hand side of pattern-matching
+clauses, the named metavariable are used without the question mark prefix. There
+is also a special notation for second-order pattern-matching problems: in an
+applicative pattern of the form :g:`@?id id1 … idn`, the variable id matches any
+complex expression with (possible) dependencies in the variables :g:`id1 … idn`
+and returns a functional term of the form :g:`fun id1 … idn => term`.
 
 The main entry of the grammar is :n:`@expr`. This language is used in proof
-mode but it can also be used in toplevel definitions as shown in
-Figure :ref:`ltactop`.
+mode but it can also be used in toplevel definitions as shown below.
 
 .. note::
 
@@ -153,6 +154,8 @@ Figure :ref:`ltactop`.
    ltac_def         : `ident` [`ident` ... `ident`] := `expr`
                     : | `qualid` [`ident` ... `ident`] ::= `expr`
 
+.. _ltac-semantics:
+
 Semantics
 ---------
 
@@ -228,6 +231,8 @@ following form:
       independently. All the above variants work in this form too.
       Formally, :n:`@expr ; [ ... ]` is equivalent to :n:`[> @expr ; [> ... ] .. ]`.
 
+.. _goal-selectors:
+
 Goal selectors
 ~~~~~~~~~~~~~~
 
@@ -247,7 +252,7 @@ focused goals with:
    .. tacv:: [@ident] : @expr
 
       In this variant, :n:`@expr` is applied locally to a goal previously named
-      by the user (see :ref:`ExistentialVariables`).
+      by the user (see :ref:`existential-variables`).
 
    .. tacv:: @num : @expr
 
@@ -275,6 +280,9 @@ focused goals with:
       the toplevel of a tactic expression.
 
    .. exn:: No such goal
+      :name: No such goal (goal selector)
+
+   .. TODO change error message index entry
 
 For loop
 ~~~~~~~~
@@ -759,7 +767,7 @@ We can carry out pattern matching on terms with:
       matching subterm is tried. If no further subterm matches, the next clause
       is tried. Matching subterms are considered top-bottom and from left to
       right (with respect to the raw printing obtained by setting option
-      ``Printing All``, see Section :ref:`SetPrintingAll`).
+      :opt:`Printing All`).
 
    .. example::
 
@@ -774,6 +782,8 @@ We can carry out pattern matching on terms with:
            end.
          Goal True.
          f (3+4).
+
+.. _ltac-match-goal:
 
 Pattern matching on goals
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1009,6 +1019,7 @@ Proving a subgoal as a separate lemma
          don’t play well with asynchronous proofs.
 
    .. exn:: Proof is not complete
+      :name: Proof is not complete (abstract)
 
 Tactic toplevel definitions
 ---------------------------
@@ -1253,4 +1264,4 @@ Run-time optimization tactic
 
 This tactic behaves like :n:`idtac`, except that running it compacts the
 heap in the OCaml run-time system. It is analogous to the Vernacular
-command ``Optimize Heap`` (see :ref:`vernac-optimizeheap`).
+command :cmd:`Optimize Heap`.

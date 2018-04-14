@@ -1393,16 +1393,15 @@ scope of their effect. There are four kinds of commands:
   (see Section :ref:`coercions`) and ``Strategy`` (see :ref:`here <vernac-strategy>`)
   commands belong to this category.
 + Commands whose default behavior is to stop their effect at the end
-  of the section they occur in but to extent their effect outside the
-  module or library file they occur in.  For these commands, the Local
-  modifier limits the effect of the command to the current module if the
-  command does not occur in a section and the Global modifier extends
-  the effect outside the current sections and current module if the
-  command occurs in a section.  As an example, the ``Implicit Arguments`` (see
-  Section :ref:`implicitarguments`), Ltac (see Chapter :ref:`TODO-9-tactic-language`) or ``Notation`` (see Section
-  :ref:`notations`) commands belong to this category.  Notice that a subclass of
-  these commands do not support extension of their scope outside
-  sections at all and the Global is not applicable to them.
+  of the section they occur in but to extent their effect outside the module or
+  library file they occur in. For these commands, the Local modifier limits the
+  effect of the command to the current module if the command does not occur in a
+  section and the Global modifier extends the effect outside the current
+  sections and current module if the command occurs in a section. As an example,
+  the :cmd:`Implicit Arguments`, :cmd:`Ltac` or :cmd:`Notation` commands belong
+  to this category. Notice that a subclass of these commands do not support
+  extension of their scope outside sections at all and the Global is not
+  applicable to them.
 + Commands whose default behavior is to stop their effect at the end
   of the section or module they occur in.  For these commands, the Global
   modifier extends their effect outside the sections and modules they

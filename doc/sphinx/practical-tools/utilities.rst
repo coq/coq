@@ -114,9 +114,7 @@ distinct plugins because of a clash in their auxiliary module names.
 .. _coqmakefilelocal:
 
 CoqMakefile.local
-+++++++++++++++++
-
-
+~~~~~~~~~~~~~~~~~
 
 The optional file ``CoqMakefile.local`` is included by the generated
 file ``CoqMakefile``. It can contain two kinds of directives.
@@ -190,7 +188,7 @@ The following makefile rules can be extended.
   target.
 
 Timing targets and performance testing
-++++++++++++++++++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The generated ``Makefile`` supports the generation of two kinds of timing
 data: per-file build-times, and per-line times for an individual file.
@@ -365,7 +363,7 @@ line timing data:
 
 
 Reusing/extending the generated Makefile
-++++++++++++++++++++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Including the generated makefile with an include directive is
 discouraged. The contents of this file, including variable names and
@@ -408,8 +406,8 @@ have a generic target for invoking unknown targets.
 
 
 
-Building a subset of the targets with -j
-++++++++++++++++++++++++++++++++++++++++
+Building a subset of the targets with ``-j``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To build, say, two targets foo.vo and bar.vo in parallel one can use
 ``make only TGTS="foo.vo bar.vo" -j``.
@@ -540,27 +538,28 @@ Initially, the pretty-printing table contains the following mapping:
 `->`  →       `<-`   ←       `*`   ×
 `<=`  ≤       `>=`   ≥       `=>`  ⇒
 `<>`  ≠       `<->`  ↔       `|-`  ⊢
-`\/`  ∨       `/\`   ∧       `~`   ¬
+`\/`  ∨       `/\\`   ∧       `~`   ¬
 ==== === ==== ===== === ==== ==== ===
 
 Any of these can be overwritten or suppressed using the printing
 commands.
 
-.. note ::
-  The recognition of tokens is done by a (``ocaml``) lex
-  automaton and thus applies the longest-match rule. For instance, `->~`
-  is recognized as a single token, where |Coq| sees two tokens. It is the
-  responsibility of the user to insert space between tokens *or* to give
-  pretty-printing rules for the possible combinations, e.g.
+.. note::
 
-  ::
+   The recognition of tokens is done by a (``ocaml``) lex
+   automaton and thus applies the longest-match rule. For instance, `->~`
+   is recognized as a single token, where |Coq| sees two tokens. It is the
+   responsibility of the user to insert space between tokens *or* to give
+   pretty-printing rules for the possible combinations, e.g.
+
+   ::
 
       (** printing ->~ %\ensuremath{\rightarrow\lnot}% *)
 
 
 
-Sections.
-+++++++++
+Sections
+++++++++
 
 Sections are introduced by 1 to 4 leading stars (i.e. at the beginning
 of the line) followed by a space. One star is a section, two stars a
@@ -569,7 +568,7 @@ line.
 
 .. example::
 
-  ::
+   ::
 
           (** * Well-founded relations
 
@@ -805,9 +804,10 @@ Command line options
     directory  ``coqdir`` (similarly to |Coq| option ``-R``).
 
     .. note::
-      option ``-R`` only has
-      effect on the files *following* it on the command line, so you will
-      probably need to put this option first.
+
+       option ``-R`` only has
+       effect on the files *following* it on the command line, so you will
+       probably need to put this option first.
 
 
 **Title options**
@@ -821,6 +821,7 @@ Command line options
      beginning of each file is checked for a comment of the form:
 
      ::
+
         (** * ModuleName : text *)
 
      where ``ModuleName`` must be the name of the file. If it is present, the

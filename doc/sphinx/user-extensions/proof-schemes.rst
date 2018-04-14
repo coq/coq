@@ -108,11 +108,10 @@ induction principles when defining a new inductive type with the
 ``Unset Elimination Schemes`` command. It may be reactivated at any time with
 ``Set Elimination Schemes``.
 
-The types declared with the keywords ``Variant`` (see :ref:`TODO-1.3.3`) and ``Record``
-(see :ref:`Record Types <record-types>`) do not have an automatic declaration of the induction
-principles. It can be activated with the command
-``Set Nonrecursive Elimination Schemes``. It can be deactivated again with
-``Unset Nonrecursive Elimination Schemes``.
+.. opt:: Nonrecursive Elimination Schemes
+
+This option controls whether types declared with the keywords :cmd:`Variant` and
+:cmd:`Record` get an automatic declaration of the induction principles.
 
 In addition, the ``Case Analysis Schemes`` flag governs the generation of
 case analysis lemmas for inductive types, i.e. corresponding to the
