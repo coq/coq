@@ -7,29 +7,31 @@ import sys
 
 def serializedATN():
     with StringIO() as buf:
-        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\t")
-        buf.write("F\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b")
+        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\n")
+        buf.write("J\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b")
         buf.write("\t\b\4\t\t\t\4\n\t\n\3\2\3\2\3\2\3\3\3\3\5\3\32\n\3\3")
         buf.write("\3\7\3\35\n\3\f\3\16\3 \13\3\3\4\3\4\3\4\3\4\3\4\5\4\'")
         buf.write("\n\4\3\5\3\5\5\5+\n\5\3\5\3\5\3\5\5\5\60\n\5\3\5\3\5\3")
         buf.write("\6\3\6\5\6\66\n\6\3\6\3\6\5\6:\n\6\3\6\3\6\3\7\3\7\3\b")
-        buf.write("\3\b\3\t\3\t\3\n\3\n\3\n\2\2\13\2\4\6\b\n\f\16\20\22\2")
-        buf.write("\2\2F\2\24\3\2\2\2\4\27\3\2\2\2\6&\3\2\2\2\b(\3\2\2\2")
-        buf.write("\n\63\3\2\2\2\f=\3\2\2\2\16?\3\2\2\2\20A\3\2\2\2\22C\3")
-        buf.write("\2\2\2\24\25\5\4\3\2\25\26\7\2\2\3\26\3\3\2\2\2\27\36")
-        buf.write("\5\6\4\2\30\32\5\f\7\2\31\30\3\2\2\2\31\32\3\2\2\2\32")
-        buf.write("\33\3\2\2\2\33\35\5\6\4\2\34\31\3\2\2\2\35 \3\2\2\2\36")
-        buf.write("\34\3\2\2\2\36\37\3\2\2\2\37\5\3\2\2\2 \36\3\2\2\2!\'")
-        buf.write("\5\20\t\2\"\'\5\16\b\2#\'\5\22\n\2$\'\5\b\5\2%\'\5\n\6")
-        buf.write("\2&!\3\2\2\2&\"\3\2\2\2&#\3\2\2\2&$\3\2\2\2&%\3\2\2\2")
-        buf.write("\'\7\3\2\2\2(*\7\3\2\2)+\7\7\2\2*)\3\2\2\2*+\3\2\2\2+")
-        buf.write(",\3\2\2\2,-\7\t\2\2-/\5\4\3\2.\60\7\t\2\2/.\3\2\2\2/\60")
-        buf.write("\3\2\2\2\60\61\3\2\2\2\61\62\7\5\2\2\62\t\3\2\2\2\63\65")
-        buf.write("\7\4\2\2\64\66\5\f\7\2\65\64\3\2\2\2\65\66\3\2\2\2\66")
-        buf.write("\67\3\2\2\2\679\5\4\3\28:\5\f\7\298\3\2\2\29:\3\2\2\2")
-        buf.write(":;\3\2\2\2;<\7\5\2\2<\13\3\2\2\2=>\7\t\2\2>\r\3\2\2\2")
-        buf.write("?@\7\6\2\2@\17\3\2\2\2AB\7\7\2\2B\21\3\2\2\2CD\7\b\2\2")
-        buf.write("D\23\3\2\2\2\t\31\36&*/\659")
+        buf.write("\3\b\3\t\3\t\5\tD\n\t\3\n\3\n\5\nH\n\n\3\n\2\2\13\2\4")
+        buf.write("\6\b\n\f\16\20\22\2\2\2L\2\24\3\2\2\2\4\27\3\2\2\2\6&")
+        buf.write("\3\2\2\2\b(\3\2\2\2\n\63\3\2\2\2\f=\3\2\2\2\16?\3\2\2")
+        buf.write("\2\20A\3\2\2\2\22E\3\2\2\2\24\25\5\4\3\2\25\26\7\2\2\3")
+        buf.write("\26\3\3\2\2\2\27\36\5\6\4\2\30\32\5\f\7\2\31\30\3\2\2")
+        buf.write("\2\31\32\3\2\2\2\32\33\3\2\2\2\33\35\5\6\4\2\34\31\3\2")
+        buf.write("\2\2\35 \3\2\2\2\36\34\3\2\2\2\36\37\3\2\2\2\37\5\3\2")
+        buf.write("\2\2 \36\3\2\2\2!\'\5\20\t\2\"\'\5\16\b\2#\'\5\22\n\2")
+        buf.write("$\'\5\b\5\2%\'\5\n\6\2&!\3\2\2\2&\"\3\2\2\2&#\3\2\2\2")
+        buf.write("&$\3\2\2\2&%\3\2\2\2\'\7\3\2\2\2(*\7\3\2\2)+\7\7\2\2*")
+        buf.write(")\3\2\2\2*+\3\2\2\2+,\3\2\2\2,-\7\n\2\2-/\5\4\3\2.\60")
+        buf.write("\7\n\2\2/.\3\2\2\2/\60\3\2\2\2\60\61\3\2\2\2\61\62\7\5")
+        buf.write("\2\2\62\t\3\2\2\2\63\65\7\4\2\2\64\66\5\f\7\2\65\64\3")
+        buf.write("\2\2\2\65\66\3\2\2\2\66\67\3\2\2\2\679\5\4\3\28:\5\f\7")
+        buf.write("\298\3\2\2\29:\3\2\2\2:;\3\2\2\2;<\7\5\2\2<\13\3\2\2\2")
+        buf.write("=>\7\n\2\2>\r\3\2\2\2?@\7\6\2\2@\17\3\2\2\2AC\7\7\2\2")
+        buf.write("BD\7\t\2\2CB\3\2\2\2CD\3\2\2\2D\21\3\2\2\2EG\7\b\2\2F")
+        buf.write("H\7\t\2\2GF\3\2\2\2GH\3\2\2\2H\23\3\2\2\2\13\31\36&*/")
+        buf.write("\659CG")
         return buf.getvalue()
 
 
@@ -46,7 +48,7 @@ class TacticNotationsParser ( Parser ):
     literalNames = [ "<INVALID>", "<INVALID>", "'{'", "'}'" ]
 
     symbolicNames = [ "<INVALID>", "LGROUP", "LBRACE", "RBRACE", "METACHAR",
-                      "ATOM", "ID", "WHITESPACE" ]
+                      "ATOM", "ID", "SUB", "WHITESPACE" ]
 
     RULE_top = 0
     RULE_blocks = 1
@@ -68,7 +70,8 @@ class TacticNotationsParser ( Parser ):
     METACHAR=4
     ATOM=5
     ID=6
-    WHITESPACE=7
+    SUB=7
+    WHITESPACE=8
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -502,6 +505,9 @@ class TacticNotationsParser ( Parser ):
         def ATOM(self):
             return self.getToken(TacticNotationsParser.ATOM, 0)
 
+        def SUB(self):
+            return self.getToken(TacticNotationsParser.SUB, 0)
+
         def getRuleIndex(self):
             return TacticNotationsParser.RULE_atomic
 
@@ -518,10 +524,19 @@ class TacticNotationsParser ( Parser ):
 
         localctx = TacticNotationsParser.AtomicContext(self, self._ctx, self.state)
         self.enterRule(localctx, 14, self.RULE_atomic)
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 63
             self.match(TacticNotationsParser.ATOM)
+            self.state = 65
+            self._errHandler.sync(self)
+            _la = self._input.LA(1)
+            if _la==TacticNotationsParser.SUB:
+                self.state = 64
+                self.match(TacticNotationsParser.SUB)
+
+
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -539,6 +554,9 @@ class TacticNotationsParser ( Parser ):
         def ID(self):
             return self.getToken(TacticNotationsParser.ID, 0)
 
+        def SUB(self):
+            return self.getToken(TacticNotationsParser.SUB, 0)
+
         def getRuleIndex(self):
             return TacticNotationsParser.RULE_hole
 
@@ -555,10 +573,19 @@ class TacticNotationsParser ( Parser ):
 
         localctx = TacticNotationsParser.HoleContext(self, self._ctx, self.state)
         self.enterRule(localctx, 16, self.RULE_hole)
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 65
+            self.state = 67
             self.match(TacticNotationsParser.ID)
+            self.state = 69
+            self._errHandler.sync(self)
+            _la = self._input.LA(1)
+            if _la==TacticNotationsParser.SUB:
+                self.state = 68
+                self.match(TacticNotationsParser.SUB)
+
+
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)

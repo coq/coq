@@ -3,6 +3,8 @@
 Proof schemes
 ===============
 
+.. _proofschemes-induction-principles:
+
 Generation of induction principles with ``Scheme``
 --------------------------------------------------------
 
@@ -163,6 +165,8 @@ concluded by the conjunction of their conclusions.
 
     Check tree_forest_mutind.
 
+.. _functional-scheme:
+
 Generation of induction principles with ``Functional`` ``Scheme``
 -----------------------------------------------------------------
 
@@ -229,7 +233,7 @@ definition written by the user.
     simpl; auto with arith.
     Qed.
 
-  We can use directly the functional induction (:ref:`TODO-8.5.5`) tactic instead
+  We can use directly the functional induction (:tacn:`function induction`) tactic instead
   of the pattern/apply trick:
 
   .. coqtop:: all
@@ -305,6 +309,8 @@ definition written by the user.
   .. coqtop:: all
 
     Check tree_size_ind2.
+
+.. _derive-inversion:
      
 Generation of inversion principles with ``Derive`` ``Inversion``
 -----------------------------------------------------------------

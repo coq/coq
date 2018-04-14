@@ -13,7 +13,7 @@ language of commands, called *The Vernacular* is described in Section
 :ref:`vernacular`.
 
 In Coq, logical objects are typed to ensure their logical correctness.  The
-rules implemented by the typing algorithm are described in Chapter :ref:`cic`.
+rules implemented by the typing algorithm are described in Chapter :ref:`calculusofinductiveconstructions`.
 
 
 About the grammars in the manual
@@ -110,6 +110,8 @@ Special tokens
   longest possible one (among all tokens defined at this moment), and so
   on.
 
+.. _term:
+
 Terms
 =====
 
@@ -118,9 +120,9 @@ Syntax of terms
 
 The following grammars describe the basic syntax of the terms of the
 *Calculus of Inductive Constructions* (also called Cic). The formal
-presentation of Cic is given in Chapter :ref:`cic`. Extensions of this syntax
-are given in Chapter :ref:`gallinaextensions`. How to customize the syntax
-is described in Chapter :ref:`syntaxextensions`.
+presentation of Cic is given in Chapter :ref:`calculusofinductiveconstructions`. Extensions of this syntax
+are given in Chapter :ref:`extensionsofgallina`. How to customize the syntax
+is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
 
 .. productionlist:: coq
    term             : forall `binders` , `term`
@@ -201,9 +203,9 @@ Numerals
 
 Numerals have no definite semantics in the calculus. They are mere
 notations that can be bound to objects through the notation mechanism
-(see Chapter :ref:`syntaxextensions` for details).
+(see Chapter :ref:`syntaxextensionsandinterpretationscopes` for details).
 Initially, numerals are bound to Peano’s representation of natural
-numbers (see :ref:`libnats`).
+numbers (see :ref:`datatypes`).
 
 .. note::
 
@@ -227,6 +229,8 @@ There are three sorts :g:`Set`, :g:`Prop` and :g:`Type`.
 -  :g:`Type` is the type of :g:`Prop` and :g:`Set`
 
 More on sorts can be found in Section :ref:`sorts`.
+
+.. _binders:
 
 Binders
 -------
@@ -310,7 +314,7 @@ left.
 
 The notation ``(ident := term)`` for arguments is used for making
 explicit the value of implicit arguments (see
-Section :ref:`Implicits-explicitation`).
+Section :ref:`implicitarguments`).
 
 Type cast
 ---------
@@ -327,6 +331,8 @@ Inferable subterms
 Expressions often contain redundant pieces of information. Subterms that can be
 automatically inferred by Coq can be replaced by the symbol ``_`` and Coq will
 guess the missing piece of information.
+
+.. _let-in:
 
 Let-in definitions
 ------------------
@@ -348,7 +354,7 @@ expression is used to analyze the structure of an inductive objects and
 to apply specific treatments accordingly.
 
 This paragraph describes the basic form of pattern-matching. See
-Section :ref:`Mult-match` and Chapter :ref:`Mult-match-full` for the description
+Section :ref:`extended pattern-matching` and Chapter :ref:`extendedpatternmatching` for the description
 of the general form. The basic form of pattern-matching is characterized
 by a single :token:`match_item` expression, a :token:`mult_pattern` restricted to a
 single :token:`pattern` and :token:`pattern` restricted to the form
@@ -484,6 +490,8 @@ The association of a single fixpoint and a local definition have a special
 syntax: “let fix f … := … in …” stands for “let f := fix f … := … in …”. The
 same applies for co-fixpoints.
 
+.. _vernacular:
+
 The Vernacular
 ==============
 
@@ -604,6 +612,8 @@ It is advised to use the keywords ``Axiom`` and ``Hypothesis`` for
 logical postulates (i.e. when the assertion *term* is of sort ``Prop``),
 and to use the keywords ``Parameter`` and ``Variable`` in other cases
 (corresponding to the declaration of an abstract mathematical entity).
+
+.. _gallina_def:
 
 Definitions
 -----------

@@ -1,6 +1,6 @@
-.. _implicitcoercions:
-
 .. include:: ../replaces.rst
+
+.. _implicitcoercions:
 
 Implicit Coercions
 ====================
@@ -166,7 +166,7 @@ Declaration of Coercions
 
 Assumptions can be declared as coercions at declaration time.
 This extends the grammar of assumptions from
-Figure :ref:`TODO-1.3-sentences-syntax` as follows:
+Figure :ref:`vernacular` as follows:
 
 ..
   FIXME:
@@ -186,7 +186,7 @@ assumptions are declared as coercions.
 
 Similarly, constructors of inductive types can be declared as coercions at
 definition time of the inductive type. This extends and modifies the
-grammar of inductive types from Figure :ref:`TODO-1.3-sentences-syntax` as follows:
+grammar of inductive types from Figure :ref:`vernacular` as follows:
 
 ..
   FIXME:
@@ -267,13 +267,14 @@ Activating the Printing of Coercions
   To skip the printing of coercion `qualid`, use
   ``Remove Printing Coercion`` `qualid`. By default, a coercion is never printed.
 
+.. _coercions-classes-as-records:
 
 Classes as Records
 ------------------
 
 We allow the definition of *Structures with Inheritance* (or
 classes as records) by extending the existing ``Record`` macro
-(see Section :ref:`TODO-2.1-Record`). Its new syntax is:
+(see Section :ref:`record-types`). Its new syntax is:
 
 .. cmd:: Record {? >} @ident {? @binders} : @sort := {? @ident} { {+; @ident :{? >} @term } }.
 
