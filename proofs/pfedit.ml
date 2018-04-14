@@ -233,7 +233,7 @@ let apply_implicit_tactic tac = (); fun env sigma evk ->
 	(Environ.named_context env) ->
       let tac = Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (CErrors.UserError (None,Pp.str"Proof is not complete."))) []) in
       (try
-        let c = Evarutil.nf_evars_universes sigma evi.evar_concl in
+        let c = Evarutil.nf_evars_universes sigma (EConstr.Unsafe.to_constr evi.evar_concl) in
         let c = EConstr.of_constr c in
         if Evarutil.has_undefined_evars sigma c then raise Exit;
         let (ans, _, ctx) =

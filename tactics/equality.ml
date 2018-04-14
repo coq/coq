@@ -1108,8 +1108,6 @@ let make_tuple env sigma (rterm,rty) lind =
   let p = mkLambda (na, a, rty) in
   let sigma, exist_term = Evd.fresh_global env sigma sigdata.intro in
   let sigma, sig_term = Evd.fresh_global env sigma sigdata.typ in
-  let exist_term = EConstr.of_constr exist_term in
-  let sig_term = EConstr.of_constr sig_term in
     sigma,
     (applist(exist_term,[a;p;(mkRel lind);rterm]),
      applist(sig_term,[a;p]))
@@ -1203,7 +1201,6 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
             let w_type = unsafe_type_of env !evdref w in
             if Evarconv.e_cumul env evdref w_type a then
 	      let exist_term = Evarutil.evd_comb1 (Evd.fresh_global env) evdref sigdata.intro in
-	      let exist_term = EConstr.of_constr exist_term in
               applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
             else
               user_err Pp.(str "Cannot solve a unification problem.")
@@ -1372,7 +1369,6 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
       let sigma, (injbody,resty) = build_injector e_env !evdref t1' (mkVar e) cpath in
       let injfun = mkNamedLambda e t injbody in
       let sigma,congr = Evd.fresh_global env sigma eq.congr in
-      let congr = EConstr.of_constr congr in
       let pf = applist(congr,[t;resty;injfun;t1;t2]) in
       let sigma, pf_typ = Typing.type_of env sigma pf in
       let inj_clause = apply_on_clause (pf,pf_typ) eq_clause in

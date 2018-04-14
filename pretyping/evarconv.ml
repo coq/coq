@@ -114,9 +114,6 @@ let flex_kind_of_term ts env evd c sk =
     | Fix _ -> Rigid (* happens when the fixpoint is partially applied *)
     | Cast _ | App _ | Case _ -> assert false
 
-let add_conv_pb (pb, env, x, y) sigma =
-  Evd.add_conv_pb (pb, env, EConstr.Unsafe.to_constr x, EConstr.Unsafe.to_constr y) sigma
-
 let apprec_nohdbeta ts env evd c =
   let (t,sk as appr) = Reductionops.whd_nored_state evd (c, []) in
   if Stack.not_purely_applicative sk
@@ -1045,7 +1042,7 @@ let choose_less_dependent_instance evk evd term args =
   let subst' = List.filter (fun (id,c) -> EConstr.eq_constr evd c term) subst in
   match subst' with
   | [] -> None
-  | (id, _) :: _ -> Some (Evd.define evk (Constr.mkVar id) evd)
+  | (id, _) :: _ -> Some (Evd.define evk (mkVar id) evd)
 
 let apply_on_subterm env evdref f c t =
   let rec applyrec (env,(k,c) as acc) t =
@@ -1085,7 +1082,7 @@ let filter_possible_projections evd c ty ctxt args =
     let a = Array.unsafe_get args i in
     (match decl with
      | NamedDecl.LocalAssum _ -> false
-     | NamedDecl.LocalDef (_,c,_) -> not (isRel evd (EConstr.of_constr c) || isVar evd (EConstr.of_constr c))) ||
+     | NamedDecl.LocalDef (_,c,_) -> not (isRel evd c || isVar evd c)) ||
     a == c ||
     (* Here we make an approximation, for instance, we could also be *)
     (* interested in finding a term u convertible to c such that a occurs *)
@@ -1135,7 +1132,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       end
   | decl'::ctxt', c::l, occs::occsl ->
       let id = NamedDecl.get_id decl' in
-      let t = EConstr.of_constr (NamedDecl.get_type decl') in
+      let t = NamedDecl.get_type decl' in
       let evs = ref [] in
       let ty = Retyping.get_type_of env_rhs evd c in
       let filter' = filter_possible_projections evd c ty ctxt args in
@@ -1183,7 +1180,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
               (* We force abstraction over this unconstrained occurrence *)
               (* and we use typing to propagate this instantiation *)
               (* This is an arbitrary choice *)
-              let evd = Evd.define evk (Constr.mkVar id) evd in
+              let evd = Evd.define evk (mkVar id) evd in
               match evar_conv_x ts env_evar evd CUMUL idty evty with
               | UnifFailure _ -> user_err Pp.(str "Cannot find an instance")
               | Success evd ->
@@ -1205,13 +1202,10 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
 	    (evar_conv_x full_transparent_state)
       with IllTypedInstance _ -> raise (TypingFailed evd)
     in
-      Evd.define evk (EConstr.Unsafe.to_constr rhs) evd 
+      Evd.define evk rhs evd
   in
   abstract_free_holes evd subst, true
   with TypingFailed evd -> evd, false
-
-let to_pb (pb, env, t1, t2) =
-  (pb, env, EConstr.Unsafe.to_constr t1, EConstr.Unsafe.to_constr t2)
 
 let second_order_matching_with_args ts env evd pbty ev l t =
 (*
@@ -1222,7 +1216,7 @@ let second_order_matching_with_args ts env evd pbty ev l t =
   else UnifFailure (evd, ConversionFailed (env,mkApp(mkEvar ev,l),t))
   if b then Success evd else
  *)
-  let pb = to_pb (pbty,env,mkApp(mkEvar ev,l),t) in
+  let pb = (pbty,env,mkApp(mkEvar ev,l),t) in
   UnifFailure (evd, CannotSolveConstraint (pb,ProblemBeyondCapabilities))
 
 let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
@@ -1245,7 +1239,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       | Some evd -> Success evd
       | None ->
          let reason = ProblemBeyondCapabilities in
-         UnifFailure (evd, CannotSolveConstraint (to_pb (pbty,env,t1,t2),reason)))
+         UnifFailure (evd, CannotSolveConstraint ((pbty,env,t1,t2),reason)))
   | (Rel _|Var _), Evar (evk2,args2) when app_empty
       && List.for_all (fun a -> EConstr.eq_constr evd a term1 || isEvar evd a)
         (remove_instance_local_defs evd evk2 args2) ->
@@ -1255,7 +1249,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       | Some evd -> Success evd
       | None ->
          let reason = ProblemBeyondCapabilities in
-         UnifFailure (evd, CannotSolveConstraint (to_pb (pbty,env,t1,t2),reason)))
+         UnifFailure (evd, CannotSolveConstraint ((pbty,env,t1,t2),reason)))
   | Evar (evk1,args1), Evar (evk2,args2) when Evar.equal evk1 evk2 ->
       let f env evd pbty x y = is_fconv ~reds:ts pbty env evd x y in
       Success (solve_refl ~can_drop:true f env evd
@@ -1295,10 +1289,10 @@ let error_cannot_unify env evd pb ?reason t1 t2 =
 
 let check_problems_are_solved env evd =
   match snd (extract_all_conv_pbs evd) with
-  | (pbty,env,t1,t2) as pb::_ -> error_cannot_unify env evd pb (EConstr.of_constr t1) (EConstr.of_constr t2)
+  | (pbty,env,t1,t2) as pb::_ -> error_cannot_unify env evd pb t1 t2
   | _ -> ()
 
-exception MaxUndefined of (Evar.t * evar_info * Constr.t list)
+exception MaxUndefined of (Evar.t * evar_info * EConstr.t list)
 
 let max_undefined_with_candidates evd =
   let fold evk evi () = match evi.evar_candidates with
@@ -1326,7 +1320,7 @@ let rec solve_unconstrained_evars_with_candidates ts evd =
       | a::l ->
           try
             let conv_algo = evar_conv_x ts in
-            let evd = check_evar_instance evd evk (EConstr.of_constr a) conv_algo in
+            let evd = check_evar_instance evd evk a conv_algo in
             let evd = Evd.define evk a evd in
             match reconsider_unif_constraints conv_algo evd with
             | Success evd -> solve_unconstrained_evars_with_candidates ts evd
@@ -1348,7 +1342,7 @@ let solve_unconstrained_impossible_cases env evd =
       let ty = j_type j in
       let conv_algo = evar_conv_x full_transparent_state in
       let evd' = check_evar_instance evd' evk ty conv_algo in
-	Evd.define evk (EConstr.Unsafe.to_constr ty) evd' 
+        Evd.define evk ty evd'
     | _ -> evd') evd evd
 
 let solve_unif_constraints_with_heuristics env
@@ -1357,8 +1351,6 @@ let solve_unif_constraints_with_heuristics env
   let rec aux evd pbs progress stuck =
     match pbs with
     | (pbty,env,t1,t2 as pb) :: pbs ->
-        let t1 = EConstr.of_constr t1 in
-        let t2 = EConstr.of_constr t2 in
         (match apply_conversion_problem_heuristic ts env evd pbty t1 t2 with
 	| Success evd' ->
 	    let (evd', rest) = extract_all_conv_pbs evd' in
@@ -1375,9 +1367,7 @@ let solve_unif_constraints_with_heuristics env
 	  match stuck with
 	  | [] -> (* We're finished *) evd
 	  | (pbty,env,t1,t2 as pb) :: _ ->
-            let t1 = EConstr.of_constr t1 in
-            let t2 = EConstr.of_constr t2 in
-	     (* There remains stuck problems *)
+             (* There remains stuck problems *)
              error_cannot_unify env evd pb t1 t2
   in
   let (evd,pbs) = extract_all_conv_pbs evd in

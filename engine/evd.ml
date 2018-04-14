@@ -21,6 +21,9 @@ open Environ
 (* module RelDecl = Context.Rel.Declaration *)
 module NamedDecl = Context.Named.Declaration
 
+type econstr = constr
+type etypes = types
+
 (** Generic filters *)
 module Filter :
 sig
@@ -537,9 +540,13 @@ let existential_value d (n, args) =
   | Evar_empty ->
     raise NotInstantiatedEvar
 
+let existential_value0 = existential_value
+
 let existential_opt_value d ev =
   try Some (existential_value d ev)
   with NotInstantiatedEvar -> None
+
+let existential_opt_value0 = existential_opt_value
 
 let existential_type d (n, args) =
   let info =
@@ -547,6 +554,8 @@ let existential_type d (n, args) =
     with Not_found ->
       anomaly (str "Evar " ++ str (string_of_existential n) ++ str " was not declared.") in
   instantiate_evar_array info info.evar_concl args
+
+let existential_type0 = existential_type
 
 let add_constraints d c =
   { d with universes = UState.add_constraints d.universes c }
@@ -1065,6 +1074,7 @@ let meta_ftype evd mv =
     | Clval(_,_,b) -> b
 
 let meta_type evd mv = (meta_ftype evd mv).rebus
+let meta_type0 = meta_type
 
 let meta_declare mv v ?(name=Anonymous) evd =
   let metas = Metamap.add mv (Cltyp(name,mk_freelisted v)) evd.metas in
@@ -1217,3 +1227,98 @@ let normalize_evar_universe_context_variables = UState.normalize_variables
 let abstract_undefined_variables = UState.abstract_undefined_variables
 let normalize_evar_universe_context = UState.minimize
 let nf_constraints = minimize_universes
+
+module MiniEConstr = struct
+
+  module ESorts =
+  struct
+    type t = Sorts.t
+    let make s = s
+    let kind sigma = function
+      | Sorts.Type u -> Sorts.sort_of_univ (normalize_universe sigma u)
+      | s -> s
+    let unsafe_to_sorts s = s
+  end
+
+  module EInstance =
+  struct
+    type t = Univ.Instance.t
+    let make i = i
+    let kind sigma i =
+      if Univ.Instance.is_empty i then i
+      else normalize_universe_instance sigma i
+    let empty = Univ.Instance.empty
+    let is_empty = Univ.Instance.is_empty
+    let unsafe_to_instance t = t
+  end
+
+  type t = econstr
+
+  let safe_evar_value sigma ev =
+    try Some (existential_value sigma ev)
+    with NotInstantiatedEvar | Not_found -> None
+
+  let rec whd_evar sigma c =
+    match Constr.kind c with
+    | Evar ev ->
+      begin match safe_evar_value sigma ev with
+        | Some c -> whd_evar sigma c
+        | None -> c
+      end
+    | App (f, args) when isEvar f ->
+      (** Enforce smart constructor invariant on applications *)
+      let ev = destEvar f in
+      begin match safe_evar_value sigma ev with
+        | None -> c
+        | Some f -> whd_evar sigma (mkApp (f, args))
+      end
+    | Cast (c0, k, t) when isEvar c0 ->
+      (** Enforce smart constructor invariant on casts. *)
+      let ev = destEvar c0 in
+      begin match safe_evar_value sigma ev with
+        | None -> c
+        | Some c -> whd_evar sigma (mkCast (c, k, t))
+      end
+    | _ -> c
+
+  let kind sigma c = Constr.kind (whd_evar sigma c)
+  let kind_upto = kind
+  let kind_of_type sigma c = Term.kind_of_type (whd_evar sigma c)
+  let of_kind = Constr.of_kind
+  let of_constr c = c
+  let unsafe_to_constr c = c
+  let unsafe_eq = Refl
+
+  let to_constr ?(abort_on_undefined_evars=true) sigma c =
+    let rec to_constr c = match Constr.kind c with
+      | Evar ev ->
+        begin match safe_evar_value sigma ev with
+          | Some c -> to_constr c
+          | None ->
+            if abort_on_undefined_evars then
+              anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
+            else
+              Constr.map (fun c -> to_constr c) c
+        end
+      | Sort (Sorts.Type u) ->
+        let u' = normalize_universe sigma u in
+        if u' == u then c else mkSort (Sorts.sort_of_univ u')
+      | Const (c', u) when not (Univ.Instance.is_empty u) ->
+        let u' = normalize_universe_instance sigma u in
+        if u' == u then c else mkConstU (c', u')
+      | Ind (i, u) when not (Univ.Instance.is_empty u) ->
+        let u' = normalize_universe_instance sigma u in
+        if u' == u then c else mkIndU (i, u')
+      | Construct (co, u) when not (Univ.Instance.is_empty u) ->
+        let u' = normalize_universe_instance sigma u in
+        if u' == u then c else mkConstructU (co, u')
+      | _ -> Constr.map (fun c -> to_constr c) c
+    in to_constr c
+
+  let of_named_decl d = d
+  let unsafe_to_named_decl d = d
+  let of_rel_decl d = d
+  let unsafe_to_rel_decl d = d
+  let to_rel_decl sigma d = Context.Rel.Declaration.map_constr (to_constr sigma) d
+
+end

@@ -77,7 +77,7 @@ let define_pure_evar_as_product evd evk =
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
   let id = next_ident_away idx (Environ.ids_of_named_context_val evi.evar_hyps) in
-  let concl = Reductionops.whd_all evenv evd (EConstr.of_constr evi.evar_concl) in
+  let concl = Reductionops.whd_all evenv evd evi.evar_concl in
   let s = destSort evd concl in
   let evksrc = evar_source evk evd in
   let src = subterm_source evk ~where:Domain evksrc in
@@ -101,7 +101,7 @@ let define_pure_evar_as_product evd evk =
 	  evd3, rng
   in
   let prod = mkProd (Name id, dom, subst_var id rng) in
-  let evd3 = Evd.define evk (EConstr.Unsafe.to_constr prod) evd2 in
+  let evd3 = Evd.define evk prod evd2 in
     evd3,prod
 
 (* Refine an applied evar to a product and returns its instantiation *)
@@ -128,7 +128,7 @@ let define_pure_evar_as_lambda env evd evk =
   let open Context.Named.Declaration in
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
-  let typ = Reductionops.whd_all evenv evd (EConstr.of_constr (evar_concl evi)) in
+  let typ = Reductionops.whd_all evenv evd (evar_concl evi) in
   let evd1,(na,dom,rng) = match EConstr.kind evd typ with
   | Prod (na,dom,rng) -> (evd,(na,dom,rng))
   | Evar ev' -> let evd,typ = define_evar_as_product evd ev' in evd,destProd evd typ
@@ -141,7 +141,7 @@ let define_pure_evar_as_lambda env evd evk =
   let src = subterm_source evk ~where:Body (evar_source evk evd1) in
   let evd2,body = new_evar newenv evd1 ~src (subst1 (mkVar id) rng) ~filter in
   let lam = mkLambda (Name id, dom, subst_var id body) in
-  Evd.define evk (EConstr.Unsafe.to_constr lam) evd2, lam
+  Evd.define evk lam evd2, lam
 
 let define_evar_as_lambda env evd (evk,args) =
   let evd,lam = define_pure_evar_as_lambda env evd evk in
@@ -166,9 +166,9 @@ let define_evar_as_sort env evd (ev,args) =
   let evd, u = new_univ_variable univ_rigid evd in
   let evi = Evd.find_undefined evd ev in 
   let s = Type u in
-  let concl = Reductionops.whd_all (evar_env evi) evd (EConstr.of_constr evi.evar_concl) in
+  let concl = Reductionops.whd_all (evar_env evi) evd evi.evar_concl in
   let sort = destSort evd concl in
-  let evd' = Evd.define ev (Constr.mkSort s) evd in
+  let evd' = Evd.define ev (mkSort s) evd in
   Evd.set_leq_sort env evd' (Type (Univ.super u)) (ESorts.kind evd' sort), s
 
 (* Propagation of constraints through application and abstraction:

@@ -564,6 +564,7 @@ let resolve_and_replace_implicits ?(flags=Pretyping.all_and_fail_flags) ?(expect
 If someone knows how to prevent solved existantial removal in  understand, please do not hesitate to change the computation of [ctx] here *) 
   let ctx,_,_ = Pretyping.ise_pretype_gen flags env sigma Glob_ops.empty_lvar expected_type rt in
   let ctx, f = Evarutil.nf_evars_and_universes ctx in
+  let f c = EConstr.of_constr (f (EConstr.Unsafe.to_constr c)) in
 
   (* then we map [rt] to replace the implicit holes by their values *)
   let rec change rt =
@@ -586,8 +587,8 @@ If someone knows how to prevent solved existantial removal in  understand, pleas
          with Found evi -> (* we found the evar corresponding to this hole *)
            match evi.evar_body with
            | Evar_defined c ->
-           (* we just have to lift the solution in glob_term *)
-              Detyping.detype Detyping.Now false Id.Set.empty env ctx (EConstr.of_constr (f c))
+             (* we just have to lift the solution in glob_term *)
+              Detyping.detype Detyping.Now false Id.Set.empty env ctx (f c)
            | Evar_empty -> rt (* the hole was not solved : we do nothing *)
        )
     | (GHole(BinderType na,_,_)) -> (* we only want to deal with implicit arguments *)
@@ -609,7 +610,7 @@ If someone knows how to prevent solved existantial removal in  understand, pleas
                 match evi.evar_body with
                 | Evar_defined c ->
                    (* we just have to lift the solution in glob_term *)
-                   Detyping.detype Detyping.Now false Id.Set.empty env ctx (EConstr.of_constr (f c))
+                   Detyping.detype Detyping.Now false Id.Set.empty env ctx (f c)
                 | Evar_empty -> rt (* the hole was not solved : we d when falseo nothing *)
          in 
          res

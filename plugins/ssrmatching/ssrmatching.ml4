@@ -283,7 +283,7 @@ exception NoProgress
 (*      comparison can be much faster than the HO one.          *)
 
 let unif_EQ env sigma p c =
-  let evars = existential_opt_value sigma, Evd.universes sigma in 
+  let evars = existential_opt_value0 sigma, Evd.universes sigma in
   try let _ = Reduction.conv env p ~evars c in true with _ -> false
 
 let unif_EQ_args env sigma pa a =
@@ -337,7 +337,7 @@ let nf_open_term sigma0 ise c =
   let s = ise and s' = ref sigma0 in
   let rec nf c' = match kind c' with
   | Evar ex ->
-    begin try nf (existential_value s ex) with _ ->
+    begin try nf (existential_value0 s ex) with _ ->
     let k, a = ex in let a' = Array.map nf a in
     if not (Evd.mem !s' k) then
       s' := Evd.add !s' k (Evarutil.nf_evar_info s (Evd.find s k));
@@ -347,7 +347,9 @@ let nf_open_term sigma0 ise c =
   let copy_def k evi () =
     if evar_body evi != Evd.Evar_empty then () else
     match Evd.evar_body (Evd.find s k) with
-    | Evar_defined c' -> s' := Evd.define k (nf c') !s'
+      | Evar_defined c' ->
+        let c' = EConstr.of_constr (nf (EConstr.Unsafe.to_constr c')) in
+        s' := Evd.define k c' !s'
     | _ -> () in
   let c' = nf c in let _ = Evd.fold copy_def sigma0 () in
   !s', Evd.evar_universe_context s, EConstr.of_constr c'
@@ -446,7 +448,7 @@ let evars_for_FO ~hack env sigma0 (ise0:evar_map) c0 =
   let nenv = env_size env + if hack then 1 else 0 in
   let rec put c = match kind c with
   | Evar (k, a as ex) ->
-    begin try put (existential_value !sigma ex)
+    begin try put (existential_value0 !sigma ex)
     with NotInstantiatedEvar ->
     if Evd.mem sigma0 k then map put c else
     let evi = Evd.find !sigma k in
@@ -457,11 +459,13 @@ let evars_for_FO ~hack env sigma0 (ise0:evar_map) c0 =
     | Context.Named.Declaration.LocalAssum (x, t) ->
         mkVar x :: d, mkNamedProd x (put t) c in
     let a, t =
-      Context.Named.fold_inside abs_dc ~init:([], (put evi.evar_concl)) dc in
+      Context.Named.fold_inside abs_dc
+        ~init:([], (put @@ EConstr.Unsafe.to_constr evi.evar_concl))
+        (EConstr.Unsafe.to_named_context dc) in
     let m = Evarutil.new_meta () in
-    ise := meta_declare m t !ise;
-    sigma := Evd.define k (applistc (mkMeta m) a) !sigma;
-    put (existential_value !sigma ex)
+    ise := meta_declare m (EConstr.of_constr t) !ise;
+    sigma := Evd.define k (EConstr.of_constr (applistc (mkMeta m) a)) !sigma;
+    put (existential_value0 !sigma ex)
     end
   | _ -> map put c in
   let c1 = put c0 in !ise, c1
@@ -541,7 +545,7 @@ let splay_app ise =
   | App (f, a') -> loop f (Array.append a' a)
   | Cast (c', _, _) -> loop c' a
   | Evar ex ->
-    (try loop (existential_value ise ex) a with _ -> c, a)
+    (try loop (existential_value0 ise ex) a with _ -> c, a)
   | _ -> c, a in
   fun c -> match kind c with
   | App (f, a) -> loop f a
@@ -1255,7 +1259,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
   let fs sigma x = nf_evar sigma x in
   let pop_evar sigma e p =
     let { Evd.evar_body = e_body } as e_def = Evd.find sigma e in
-    let e_body = match e_body with Evar_defined c -> c
+    let e_body = match e_body with Evar_defined c -> EConstr.Unsafe.to_constr c
     | _ -> errorstrm (str "Matching the pattern " ++ pr_constr_env env0 sigma0 p ++
           str " did not instantiate ?" ++ int (Evar.repr e) ++ spc () ++
           str "Does the variable bound by the \"in\" construct occur "++

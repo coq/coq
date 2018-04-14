@@ -181,7 +181,7 @@ let ppproofview p =
   pp(pr_enum Goal.pr_goal gls ++ fnl () ++ Termops.pr_evar_map (Some 1) sigma)
 
 let ppopenconstr (x : Evd.open_constr) =
-  let (evd,c) = x in pp (Termops.pr_evar_map (Some 2) evd ++ envpp pr_constr_env c)
+  let (evd,c) = x in pp (Termops.pr_evar_map (Some 2) evd ++ envpp pr_econstr_env c)
 (* spiwack: deactivated until a replacement is found
 let pppftreestate p = pp(print_pftreestate p)
 *)

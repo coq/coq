@@ -623,7 +623,7 @@ let tacFIND_ABSTRACT_PROOF check_lock abstract_n =
   Goal.enter_one ~__LOC__ begin fun g ->
     let sigma, env = Goal.(sigma g, env g) in
     let l = Evd.fold_undefined (fun e ei l ->
-      match EConstr.kind sigma (EConstr.of_constr ei.Evd.evar_concl) with
+      match EConstr.kind sigma ei.Evd.evar_concl with
       | Term.App(hd, [|ty; n; lock|])
         when (not check_lock ||
                    (occur_existential_or_casted_meta sigma ty &&

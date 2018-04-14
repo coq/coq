@@ -158,7 +158,7 @@ let rec is_class_type evd c =
     | _ -> is_class_constr evd c
       
 let is_class_evar evd evi =
-  is_class_type evd (EConstr.of_constr evi.Evd.evar_concl)
+  is_class_type evd evi.Evd.evar_concl
 
 (*
  * classes persistent object

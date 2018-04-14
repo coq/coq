@@ -75,11 +75,7 @@ let rec contract3' env sigma a b c = function
   | MetaOccurInBody _ | InstanceNotSameType _ | ProblemBeyondCapabilities
   | UnifUnivInconsistency _ as x -> contract3 env sigma a b c, x
   | CannotSolveConstraint ((pb,env',t,u),x) ->
-      let t = EConstr.of_constr t in
-      let u = EConstr.of_constr u in
       let env',t,u = contract2 env' sigma t u in
-      let t = EConstr.Unsafe.to_constr t in
-      let u = EConstr.Unsafe.to_constr u in
       let y,x = contract3' env sigma a b c x in
       y,CannotSolveConstraint ((pb,env',t,u),x)
 
@@ -322,8 +318,6 @@ let explain_unification_error env sigma p1 p2 = function
 	else
           [str "universe inconsistency"]
      | CannotSolveConstraint ((pb,env,t,u),e) ->
-        let t = EConstr.of_constr t in
-        let u = EConstr.of_constr u in
         let env = make_all_name_different env sigma in
         (strbrk "cannot satisfy constraint " ++ pr_leconstr_env env sigma t ++
         str " == " ++ pr_leconstr_env env sigma u)
@@ -562,9 +556,9 @@ let rec explain_evar_kind env sigma evk ty = function
   | Evar_kinds.SubEvar (where,evk') ->
       let evi = Evd.find sigma evk' in
       let pc = match evi.evar_body with
-      | Evar_defined c -> pr_leconstr_env env sigma (EConstr.of_constr c)
+      | Evar_defined c -> pr_leconstr_env env sigma c
       | Evar_empty -> assert false in
-      let ty' = EConstr.of_constr evi.evar_concl in
+      let ty' = evi.evar_concl in
       (match where with
       | Some Evar_kinds.Body -> str "the body of "
       | Some Evar_kinds.Domain -> str "the domain of "
@@ -577,11 +571,11 @@ let rec explain_evar_kind env sigma evk ty = function
       (pr_leconstr_env env sigma ty') (snd evi.evar_source)
 
 let explain_typeclass_resolution env sigma evi k =
-  match Typeclasses.class_of_constr sigma (EConstr.of_constr evi.evar_concl) with
+  match Typeclasses.class_of_constr sigma evi.evar_concl with
   | Some _ ->
     let env = Evd.evar_filtered_env evi in
       fnl () ++ str "Could not find an instance for " ++
-      pr_lconstr_env env sigma evi.evar_concl ++
+      pr_leconstr_env env sigma evi.evar_concl ++
       pr_trailing_ne_context_of env sigma
   | _ -> mt()
 
@@ -590,14 +584,14 @@ let explain_placeholder_kind env sigma c e =
   | Some (SeveralInstancesFound n) ->
       strbrk " (several distinct possible type class instances found)"
   | None ->
-      match Typeclasses.class_of_constr sigma (EConstr.of_constr c) with
+      match Typeclasses.class_of_constr sigma c with
       | Some _ -> strbrk " (no type class instance found)"
       | _ -> mt ()
 
 let explain_unsolvable_implicit env sigma evk explain =
   let evi = Evarutil.nf_evar_info sigma (Evd.find_undefined sigma evk) in
   let env = Evd.evar_filtered_env evi in
-  let type_of_hole = pr_lconstr_env env sigma evi.evar_concl in
+  let type_of_hole = pr_leconstr_env env sigma evi.evar_concl in
   let pe = pr_trailing_ne_context_of env sigma in
   strbrk "Cannot infer " ++
   explain_evar_kind env sigma evk type_of_hole (snd evi.evar_source) ++
@@ -765,7 +759,7 @@ let pr_constraints printenv env sigma evars cstrs =
       let evs =
         prlist
         (fun (ev, evi) -> fnl () ++ pr_existential_key sigma ev ++
-            str " : " ++ pr_lconstr_env env' sigma evi.evar_concl ++ fnl ()) l
+            str " : " ++ pr_leconstr_env env' sigma evi.evar_concl ++ fnl ()) l
       in
       h 0 (pe ++ evs ++ pr_evar_constraints sigma cstrs)
     else

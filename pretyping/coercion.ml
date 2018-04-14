@@ -251,7 +251,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 			     let (n, dom, rng) = destLambda !evdref t in
 			       if isEvar !evdref dom then
 				 let (domk, args) = destEvar !evdref dom in
-				   evdref := define domk (EConstr.Unsafe.to_constr a) !evdref;
+                                   evdref := define domk a !evdref;
 			       else ();
 			       t, rng
 		       | _ -> raise NoSubtacCoercion

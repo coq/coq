@@ -93,12 +93,12 @@ let _ = Hook.set Refine.pr_constr pr_constr_env
 let pr_lconstr_goal_style_env env sigma c = pr_leconstr_core true env sigma (EConstr.of_constr c)
 let pr_constr_goal_style_env env sigma c = pr_econstr_core true env sigma (EConstr.of_constr c)
 
-let pr_open_lconstr_env env sigma (_,c) = pr_lconstr_env env sigma c
-let pr_open_constr_env env sigma (_,c) = pr_constr_env env sigma c
-
 let pr_econstr_n_env env sigma c = pr_econstr_n_core false env sigma c
 let pr_leconstr_env env sigma c = pr_leconstr_core false env sigma c
 let pr_econstr_env env sigma c = pr_econstr_core false env sigma c
+
+let pr_open_lconstr_env env sigma (_,c) = pr_leconstr_env env sigma c
+let pr_open_constr_env env sigma (_,c) = pr_econstr_env env sigma c
 
 (* NB do not remove the eta-redexes! Global.env() has side-effects... *)
 let pr_lconstr t =
@@ -108,11 +108,11 @@ let pr_constr t =
   let (sigma, env) = Pfedit.get_current_context () in
   pr_constr_env env sigma t
 
-let pr_open_lconstr (_,c) = pr_lconstr c
-let pr_open_constr (_,c) = pr_constr c
-
 let pr_leconstr c = pr_lconstr (EConstr.Unsafe.to_constr c)
 let pr_econstr c = pr_constr (EConstr.Unsafe.to_constr c)
+
+let pr_open_lconstr (_,c) = pr_leconstr c
+let pr_open_constr (_,c) = pr_econstr c
 
 let pr_constr_under_binders_env_gen pr env sigma (ids,c) =
   (* Warning: clashes can occur with variables of same name in env but *)
@@ -541,12 +541,12 @@ let pr_evgl_sign sigma evi =
     if List.is_empty ids then mt () else
       (str " (" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")
   in
-  let pc = pr_lconstr_env env sigma evi.evar_concl in
+  let pc = pr_leconstr_env env sigma evi.evar_concl in
   let candidates =
     match evi.evar_body, evi.evar_candidates with
     | Evar_empty, Some l ->
        spc () ++ str "= {" ++
-         prlist_with_sep (fun () -> str "|") (pr_lconstr_env env sigma) l ++ str "}"
+         prlist_with_sep (fun () -> str "|") (pr_leconstr_env env sigma) l ++ str "}"
     | _ ->
        mt ()
   in
@@ -622,8 +622,8 @@ let print_evar_constraints gl sigma =
        end
   in
   let pr_evconstr (pbty,env,t1,t2) =
-    let t1 = Evarutil.nf_evar sigma (EConstr.of_constr t1)
-    and t2 = Evarutil.nf_evar sigma (EConstr.of_constr t2) in
+    let t1 = Evarutil.nf_evar sigma t1
+    and t2 = Evarutil.nf_evar sigma t2 in
     let env =
       (** We currently allow evar instances to refer to anonymous de Bruijn
           indices, so we protect the error printing code in this case by giving

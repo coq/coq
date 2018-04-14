@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module CVars = Vars
-
 open Pp
 open Util
 open Names
@@ -82,14 +80,13 @@ let connect_hint_clenv poly (c, _, ctx) clenv gl =
     if poly then
       (** Refresh the instance of the hint *)
       let (subst, ctx) = Universes.fresh_universe_context_set_instance ctx in
-      let map c = CVars.subst_univs_level_constr subst c in
       let emap c = Vars.subst_univs_level_constr subst c in
       let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
       (** Only metas are mentioning the old universes. *)
       let clenv = {
         templval = Evd.map_fl emap clenv.templval;
         templtyp = Evd.map_fl emap clenv.templtyp;
-        evd = Evd.map_metas map evd;
+        evd = Evd.map_metas emap evd;
         env = Proofview.Goal.env gl;
       } in
       clenv, emap c

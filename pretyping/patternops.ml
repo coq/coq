@@ -184,7 +184,7 @@ let pattern_of_constr env sigma t =
       | Evar_kinds.GoalEvar | Evar_kinds.VarInstance _ ->
         (* These are the two evar kinds used for existing goals *)
         (* see Proofview.mark_in_evm *)
-         if Evd.is_defined sigma evk then pattern_of_constr env (Evd.existential_value sigma ev)
+         if Evd.is_defined sigma evk then pattern_of_constr env (Evd.existential_value0 sigma ev)
          else PEvar (evk,Array.map (pattern_of_constr env) ctxt)
       | Evar_kinds.MatchingVar (Evar_kinds.SecondOrderPatVar ido) -> assert false
       | _ -> 

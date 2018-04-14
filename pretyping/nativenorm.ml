@@ -401,9 +401,9 @@ and nf_evar env sigma evk ty args =
     mkEvar (evk, Array.of_list args), ty
 
 let evars_of_evar_map sigma =
-  { Nativelambda.evars_val = Evd.existential_opt_value sigma;
-    Nativelambda.evars_typ = Evd.existential_type sigma;
-    Nativelambda.evars_metas = Evd.meta_type sigma }
+  { Nativelambda.evars_val = Evd.existential_opt_value0 sigma;
+    Nativelambda.evars_typ = Evd.existential_type0 sigma;
+    Nativelambda.evars_metas = Evd.meta_type0 sigma }
 
 (* fork perf process, return profiler's process id *)
 let start_profiler_linux profile_fn =

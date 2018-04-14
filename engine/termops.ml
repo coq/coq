@@ -115,7 +115,7 @@ let pr_evar_suggested_name evk sigma =
   | _,Evar_kinds.GoalEvar -> Id.of_string "Goal"
   | _ ->
       let env = reset_with_named_context evi.evar_hyps (Global.env()) in
-      Namegen.id_of_name_using_hdchar env sigma (EConstr.of_constr evi.evar_concl) Anonymous
+      Namegen.id_of_name_using_hdchar env sigma evi.evar_concl Anonymous
   in
   let names = EvMap.mapi base_id (undefined_map sigma) in
   let id = EvMap.find evk names in
@@ -154,7 +154,7 @@ let protect f x =
   with e -> str "EXCEPTION: " ++ str (Printexc.to_string e)
 
 let print_kconstr a =
-  protect (fun c -> print_constr (EConstr.of_constr c)) a
+  protect (fun c -> print_constr c) a
 
 let pr_meta_map evd =
   let open Evd in
@@ -197,11 +197,11 @@ let pr_evar_source = function
       let print_constr = print_kconstr in
       let id = Option.get ido in
       str "parameter " ++ Id.print id ++ spc () ++ str "of" ++
-      spc () ++ print_constr (printable_constr_of_global c)
+      spc () ++ print_constr (EConstr.of_constr @@ printable_constr_of_global c)
   | Evar_kinds.InternalHole -> str "internal placeholder"
   | Evar_kinds.TomatchTypeParameter (ind,n) ->
       let print_constr = print_kconstr in
-      pr_nth n ++ str " argument of type " ++ print_constr (mkInd ind)
+      pr_nth n ++ str " argument of type " ++ print_constr (EConstr.mkInd ind)
   | Evar_kinds.GoalEvar -> str "goal evar"
   | Evar_kinds.ImpossibleCase -> str "type of impossible pattern-matching clause"
   | Evar_kinds.MatchingVar _ -> str "matching variable"
@@ -256,7 +256,7 @@ let compute_evar_dependency_graph sigma =
     in
     match evar_body evi with
     | Evar_empty -> acc
-    | Evar_defined c -> Evar.Set.fold fold_ev (evars_of_term c) acc
+    | Evar_defined c -> Evar.Set.fold fold_ev (evars_of_term (EConstr.Unsafe.to_constr c)) acc
   in
   Evd.fold fold sigma EvMap.empty
 
@@ -314,7 +314,8 @@ let print_env_short env =
   let print_constr = print_kconstr in
   let pr_rel_decl = function
     | RelDecl.LocalAssum (n,_) -> Name.print n
-    | RelDecl.LocalDef (n,b,_) -> str "(" ++ Name.print n ++ str " := " ++ print_constr b ++ str ")"
+    | RelDecl.LocalDef (n,b,_) -> str "(" ++ Name.print n ++ str " := "
+                                  ++ print_constr (EConstr.of_constr b) ++ str ")"
   in
   let pr_named_decl = NamedDecl.to_rel_decl %> pr_rel_decl in
   let nc = List.rev (named_context env) in
@@ -335,11 +336,11 @@ let pr_evar_constraints sigma pbs =
       Namegen.make_all_name_different env sigma
     in
     print_env_short env ++ spc () ++ str "|-" ++ spc () ++
-      protect (print_constr_env env sigma) (EConstr.of_constr t1) ++ spc () ++
+      protect (print_constr_env env sigma) t1 ++ spc () ++
       str (match pbty with
             | Reduction.CONV -> "=="
             | Reduction.CUMUL -> "<=") ++
-      spc () ++ protect (print_constr_env env Evd.empty) (EConstr.of_constr t2)
+      spc () ++ protect (print_constr_env env Evd.empty) t2
   in
   prlist_with_sep fnl pr_evconstr pbs
 

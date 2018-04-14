@@ -102,7 +102,6 @@ let generate_type evd g_to_f f graph i =
   let evd',graph =
     Evd.fresh_global  (Global.env ()) !evd  (Globnames.IndRef (fst (destInd !evd graph)))
   in
-  let graph = EConstr.of_constr graph in
   evd:=evd';
   let graph_arity = Typing.e_type_of (Global.env ()) evd graph in
   let ctxt,_ = decompose_prod_assum !evd graph_arity in
@@ -172,7 +171,6 @@ let find_induction_principle evd f =
     | None -> raise Not_found
     | Some rect_lemma ->
        let evd',rect_lemma = Evd.fresh_global  (Global.env ()) !evd  (Globnames.ConstRef rect_lemma) in
-       let rect_lemma = EConstr.of_constr rect_lemma in
        let evd',typ = Typing.type_of ~refresh:true (Global.env ()) evd' rect_lemma in
        evd:=evd';
        rect_lemma,typ
@@ -823,8 +821,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	 (* let lem_cst = fst (destConst (Constrintern.global_reference lem_id)) in *)
 	 let _,lem_cst_constr = Evd.fresh_global
 				  (Global.env ()) !evd (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)) in
-        let lem_cst_constr = EConstr.of_constr lem_cst_constr in
-	 let (lem_cst,_) = destConst !evd lem_cst_constr in
+         let (lem_cst,_) = destConst !evd lem_cst_constr in
 	 update_Function {finfo with correctness_lemma = Some lem_cst};
 
       )
@@ -884,8 +881,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	 let finfo = find_Function_infos (fst f_as_constant) in
 	 let _,lem_cst_constr = Evd.fresh_global
 				  (Global.env ()) !evd (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)) in
-         let lem_cst_constr = EConstr.of_constr lem_cst_constr in
-	 let (lem_cst,_) = destConst !evd lem_cst_constr in
+         let (lem_cst,_) = destConst !evd lem_cst_constr in
 	 update_Function {finfo with completeness_lemma = Some lem_cst}
       )
       funs)

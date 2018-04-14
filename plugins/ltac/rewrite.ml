@@ -428,7 +428,8 @@ let split_head = function
   | [] -> assert(false)
 
 let eq_pb (ty, env, x, y as pb) (ty', env', x', y' as pb') =
-  pb == pb' || (ty == ty' && Constr.equal x x' && Constr.equal y y')
+  let equal x y = Constr.equal (EConstr.Unsafe.to_constr x) (EConstr.Unsafe.to_constr y) in
+  pb == pb' || (ty == ty' && equal x x' && equal y y')
 
 let problem_inclusion x y =
   List.for_all (fun pb -> List.exists (fun pb' -> eq_pb pb pb') y) x
@@ -626,9 +627,9 @@ let solve_remaining_by env sigma holes by =
         (** Evar should not be defined, but just in case *)
       | Some evi ->
         let env = Environ.reset_with_named_context evi.evar_hyps env in
-        let ty = EConstr.of_constr evi.evar_concl in
+        let ty = evi.evar_concl in
         let c, sigma = Pfedit.refine_by_tactic env sigma ty solve_tac in
-        Evd.define evk c sigma
+        Evd.define evk (EConstr.of_constr c) sigma
     in
     List.fold_left solve sigma indep
 
@@ -1862,7 +1863,6 @@ let declare_projection n instance_id r =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let sigma,c = Evd.fresh_global env sigma r in
-  let c = EConstr.of_constr c in
   let ty = Retyping.get_type_of env sigma c in
   let term = proper_projection sigma c ty in
   let sigma, typ = Typing.type_of env sigma term in

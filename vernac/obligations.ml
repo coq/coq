@@ -209,8 +209,10 @@ let eterm_obligations env name evm fs ?status t ty =
     List.fold_right
       (fun (id, (n, nstr), ev) l ->
 	 let hyps = Evd.evar_filtered_context ev in
-	 let hyps = trunc_named_context nc_len hyps in
-	 let evtyp, deps, transp = etype_of_evar l hyps ev.evar_concl in
+         let hyps = trunc_named_context nc_len hyps in
+         let hyps = EConstr.Unsafe.to_named_context hyps in
+         let concl = EConstr.Unsafe.to_constr ev.evar_concl in
+         let evtyp, deps, transp = etype_of_evar l hyps concl in
 	 let evtyp, hyps, chop =
 	   match chop_product fs evtyp with
 	   | Some t -> t, trunc_named_context fs hyps, fs
@@ -356,7 +358,7 @@ let _ =
       optread  = get_shrink_obligations;
       optwrite = set_shrink_obligations; }
 
-let evar_of_obligation o = make_evar (Global.named_context_val ()) o.obl_type
+let evar_of_obligation o = make_evar (Global.named_context_val ()) (EConstr.of_constr o.obl_type)
 
 let get_obligation_body expand obl =
   match obl.obl_body with
@@ -813,10 +815,9 @@ let rec string_of_list sep f = function
 
 let solve_by_tac name evi t poly ctx =
   let id = name in
-  let concl = EConstr.of_constr evi.evar_concl in
   (* spiwack: the status is dropped. *)
   let (entry,_,ctx') = Pfedit.build_constant_by_tactic
-    id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps concl (Tacticals.New.tclCOMPLETE t) in
+    id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps evi.evar_concl (Tacticals.New.tclCOMPLETE t) in
   let env = Global.env () in
   let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
   let body, () = Future.force entry.const_entry_body in

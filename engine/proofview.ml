@@ -45,9 +45,9 @@ let compact el ({ solution } as pv) =
   let pruned_solution = Evd.drop_all_defined solution in
   let apply_subst_einfo _ ei =
     Evd.({ ei with
-       evar_concl =  nf0 ei.evar_concl;
+       evar_concl =  nf ei.evar_concl;
        evar_hyps = Environ.map_named_val nf0 ei.evar_hyps;
-       evar_candidates = Option.map (List.map nf0) ei.evar_candidates }) in
+       evar_candidates = Option.map (List.map nf) ei.evar_candidates }) in
   let new_solution = Evd.raw_map_undefined apply_subst_einfo pruned_solution in
   let new_size = Evd.fold (fun _ _ i -> i+1) new_solution 0 in
   Feedback.msg_info (Pp.str (Printf.sprintf "Evars: %d -> %d\n" size new_size));
@@ -875,8 +875,7 @@ module Progress = struct
 
   (** equality function on hypothesis contexts *)
   let eq_named_context_val sigma1 sigma2 ctx1 ctx2 =
-    let open Environ in
-    let c1 = named_context_of_val ctx1 and c2 = named_context_of_val ctx2 in
+    let c1 = EConstr.named_context_of_val ctx1 and c2 = EConstr.named_context_of_val ctx2 in
     let eq_named_declaration d1 d2 =
       match d1, d2 with
       | LocalAssum (i1,t1), LocalAssum (i2,t2) ->
@@ -1101,7 +1100,7 @@ module Goal = struct
   let gmake_with info env sigma goal state =
     { env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env ;
       sigma = sigma ;
-      concl = EConstr.of_constr (Evd.evar_concl info);
+      concl = Evd.evar_concl info;
       state = state ;
       self = goal }
 

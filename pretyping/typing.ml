@@ -29,7 +29,6 @@ let meta_type evd mv =
   let ty =
     try Evd.meta_ftype evd mv
     with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
-  let ty = Evd.map_fl EConstr.of_constr ty in
   meta_instance evd ty
 
 let inductive_type_knowing_parameters env sigma (ind,u) jl =
@@ -129,7 +128,7 @@ let e_is_correct_arity env evdref c pj ind specif params =
         then error ()
     | Evar (ev,_), [] ->
         let evd, s = Evd.fresh_sort_in_family env !evdref (max_sort allowed_sorts) in
-        evdref := Evd.define ev (Constr.mkSort s) evd
+        evdref := Evd.define ev (mkSort s) evd
     | _, (LocalDef _ as d)::ar' ->
         srec (push_rel d env) (lift 1 pt') ar'
     | _ ->

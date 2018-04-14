@@ -1896,7 +1896,7 @@ end = struct (* {{{ *)
       stm_purify (fun () ->
        let _,_,_,_,sigma0 = Proof.proof (Proof_global.give_me_the_proof ()) in
        let g = Evd.find sigma0 r_goal in
-       let is_ground c = Evarutil.is_ground_term sigma0 (EConstr.of_constr c) in
+       let is_ground c = Evarutil.is_ground_term sigma0 c in
        if not (
          is_ground Evd.(evar_concl g) &&
          List.for_all (Context.Named.Declaration.for_all is_ground)
@@ -1919,7 +1919,6 @@ end = struct (* {{{ *)
         match Evd.(evar_body (find sigma r_goal)) with
         | Evd.Evar_empty -> RespNoProgress
         | Evd.Evar_defined t ->
-            let t = EConstr.of_constr t in
             let t = Evarutil.nf_evar sigma t in
             if Evarutil.is_ground_term sigma t then
               let t = EConstr.Unsafe.to_constr t in

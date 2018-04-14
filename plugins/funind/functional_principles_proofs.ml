@@ -1050,8 +1050,7 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
 	  (Global.env ()) !evd
 	  (Constrintern.locate_reference (qualid_of_ident equation_lemma_id))
       in
-      let res = EConstr.of_constr res in
-      evd:=evd';                       
+      evd:=evd';
       let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd res in 
       res
   in

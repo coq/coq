@@ -265,7 +265,7 @@ Goal.enter_one ~__LOC__ begin fun g ->
     List.fold_left (fun l k ->
       if Evd.is_defined sigma k then
         let bo = get_body Evd.(evar_body (find sigma k)) in
-          k :: l @ Evar.Set.elements (evars_of_econstr sigma bo)
+          k :: l @ Evar.Set.elements (evars_of_econstr sigma (EConstr.Unsafe.to_constr bo))
       else l
     ) [] s in
   let und0 = (* Unassigned evars in the initial goal *)

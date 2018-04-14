@@ -315,7 +315,7 @@ let apply_inference_hook hook evdref frozen = match frozen with
     then
       try
         let sigma, c = hook sigma evk in
-        Evd.define evk (EConstr.Unsafe.to_constr c) sigma
+        Evd.define evk c sigma
       with Exit ->
         sigma
     else
@@ -532,7 +532,7 @@ let pretype_global ?loc rigid env evd gr us =
        interp_instance ?loc evd ~len l
   in
   let (sigma, c) = Evd.fresh_global ?loc ~rigid ?names:instance env.ExtraEnv.env evd gr in
-  (sigma, EConstr.of_constr c)
+  (sigma, c)
 
 let pretype_ref ?loc evdref env ref us =
   match ref with
@@ -1109,7 +1109,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
   let f decl (subst,update) =
     let id = NamedDecl.get_id decl in
-    let t = replace_vars subst (EConstr.of_constr (NamedDecl.get_type decl)) in
+    let t = replace_vars subst (NamedDecl.get_type decl) in
     let c, update =
       try
         let c = List.assoc id update in
@@ -1150,7 +1150,7 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar c = match D
            (* Correction of bug #5315 : we need to define an evar for *all* holes *)
            let evkt = e_new_evar env evdref ~src:(loc, knd) ~naming (mkSort s) in
            let ev,_ = destEvar !evdref evkt in
-           evdref := Evd.define ev (to_constr ~abort_on_undefined_evars:false !evdref v) !evdref;
+           evdref := Evd.define ev (nf_evar !evdref v) !evdref;
            (* End of correction of bug #5315 *)
            { utj_val = v;
 	     utj_type = s }

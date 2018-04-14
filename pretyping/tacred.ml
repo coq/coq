@@ -416,7 +416,7 @@ exception Partial
    reduction is solved by the expanded fix term. *)
 let solve_arity_problem env sigma fxminargs c =
   let evm = ref sigma in
-  let set_fix i = evm := Evd.define i (Constr.mkVar vfx) !evm in
+  let set_fix i = evm := Evd.define i (mkVar vfx) !evm in
   let rec check strict c =
     let c' = whd_betaiotazeta sigma c in
     let (h,rcargs) = decompose_app_vect sigma c' in
@@ -641,7 +641,7 @@ let whd_nothing_for_iota env sigma s =
 	     | _ -> s)
       | Evar ev -> s
       | Meta ev ->
-	(try whrec (EConstr.of_constr (Evd.meta_value sigma ev), stack)
+        (try whrec (Evd.meta_value sigma ev, stack)
 	with Not_found -> s)
       | Const (const, u) when is_transparent_constant full_transparent_state const ->
           let u = EInstance.kind sigma u in

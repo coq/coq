@@ -359,7 +359,7 @@ let pirrel_rewrite pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
           let evs = Evar.Set.elements (Evarutil.undefined_evars_of_term sigma t) in
           let open_evs = List.filter (fun k ->
             Sorts.InProp <> Retyping.get_sort_family_of
-              env sigma (EConstr.of_constr (Evd.evar_concl (Evd.find sigma k))))
+              env sigma (Evd.evar_concl (Evd.find sigma k)))
             evs in
           if open_evs <> [] then Some name else None)
           (List.combine (Array.to_list args) names)
@@ -478,10 +478,10 @@ let rwprocess_rule dir rule gl =
         | _ -> let ra = Array.append a [|r|] in
           function 1 ->
             let sigma, pi1 = Evd.fresh_global env sigma coq_prod.Coqlib.proj1 in
-            EConstr.mkApp (EConstr.of_constr pi1, ra), sigma
+            EConstr.mkApp (pi1, ra), sigma
           | _ ->
             let sigma, pi2 = Evd.fresh_global env sigma coq_prod.Coqlib.proj2 in
-            EConstr.mkApp (EConstr.of_constr pi2, ra), sigma in
+            EConstr.mkApp (pi2, ra), sigma in
         if EConstr.eq_constr sigma a.(0) (EConstr.of_constr (Universes.constr_of_global @@ Coqlib.build_coq_True ())) then
          let s, sigma = sr sigma 2 in
          loop (converse_dir d) sigma s a.(1) rs 0
