@@ -97,7 +97,7 @@ ensure the existence of a mapping of the universes to the positive
 integers, the graph of constraints must remain acyclic. Typing
 expressions that violate the acyclicity of the graph of constraints
 results in a Universe inconsistency error (see also Section
-:ref:`TODO-2.10`).
+:ref:`printing-universes`).
 
 
 .. _Terms:
@@ -401,9 +401,11 @@ can decide if two programs are *intentionally* equal (one says
 *convertible*). Convertibility is described in this section.
 
 
-.. _β-reduction:
+.. _beta-reduction:
 
-**β-reduction.**
+β-reduction
+~~~~~~~~~~~
+
 We want to be able to identify some terms as we can identify the
 application of a function to a given argument with its result. For
 instance the identity function over a given type T can be written
@@ -427,9 +429,11 @@ theoretically of great importance but we will not detail them here and
 refer the interested reader to :cite:`Coq85`.
 
 
-.. _ι-reduction:
+.. _iota-reduction:
 
-**ι-reduction.**
+ι-reduction
+~~~~~~~~~~~
+
 A specific conversion rule is associated to the inductive objects in
 the global environment. We shall give later on (see Section
 :ref:`Well-formed-inductive-definitions`) the precise rules but it
@@ -438,9 +442,11 @@ constructor behaves as expected. This reduction is called ι-reduction
 and is more precisely studied in :cite:`Moh93,Wer94`.
 
 
-.. _δ-reduction:
+.. _delta-reduction:
 
-**δ-reduction.**
+δ-reduction
+~~~~~~~~~~~
+
 We may have variables defined in local contexts or constants defined
 in the global environment. It is legal to identify such a reference
 with its value, that is to expand (or unfold) it into its value. This
@@ -461,9 +467,11 @@ reduction is called δ-reduction and shows as follows.
    E[Γ] ⊢ c~\triangleright_δ~t
 
 
-.. _ζ-reduction:
+.. _zeta-reduction:
 
-**ζ-reduction.**
+ζ-reduction
+~~~~~~~~~~~
+
 |Coq| allows also to remove local definitions occurring in terms by
 replacing the defined variable by its value. The declaration being
 destroyed, this reduction differs from δ-reduction. It is called
@@ -478,9 +486,11 @@ destroyed, this reduction differs from δ-reduction. It is called
    E[Γ] ⊢ \letin{x}{u}{t}~\triangleright_ζ~\subst{t}{x}{u}
 
 
-.. _η-expansion:
+.. _eta-expansion:
 
-**η-expansion.**
+η-expansion
+~~~~~~~~~~~
+
 Another important concept is η-expansion. It is legal to identify any
 term :math:`t` of functional type :math:`∀ x:T, U` with its so-called η-expansion
 
@@ -517,9 +527,11 @@ for :math:`x` an arbitrary variable name fresh in :math:`t`.
    convertible to the type of the original term :math:`∀ x:\Type(1),\Type(1).`
 
 
-.. _Convertibility:
+.. _convertibility:
 
-**Convertibility.**
+Convertibility
+~~~~~~~~~~~~~~
+
 Let us write :math:`E[Γ] ⊢ t \triangleright u` for the contextual closure of the
 relation :math:`t` reduces to :math:`u` in the global environment
 :math:`E` and local context :math:`Γ` with one of the previous
@@ -709,8 +721,6 @@ called the *context of parameters*. Furthermore, we must have that
 each :math:`T` in :math:`(t:T)∈Γ_I` can be written as: :math:`∀Γ_P,∀Γ_{\mathit{Arr}(t)}, S` where
 :math:`Γ_{\mathit{Arr}(t)}` is called the *Arity* of the inductive type t and :math:`S` is called
 the sort of the inductive type t (not to be confused with :math:`\Sort` which is the set of sorts).
-
-
 ** Examples** The declaration for parameterized lists is:
 
 .. math::
@@ -825,8 +835,9 @@ to inconsistent systems. We restrict ourselves to definitions which
 satisfy a syntactic criterion of positivity. Before giving the formal
 rules, we need a few definitions:
 
+Arity of a given sort
++++++++++++++++++++++
 
-**Type is an Arity of Sort S.**
 A type :math:`T` is an *arity of sort s* if it converts to the sort s or to a
 product :math:`∀ x:T,U` with :math:`U` an arity of sort s.
 
@@ -836,7 +847,8 @@ product :math:`∀ x:T,U` with :math:`U` an arity of sort s.
    :math:`\Prop`.
 
 
-**Type is an Arity.**
+Arity
++++++
 A type :math:`T` is an *arity* if there is a :math:`s∈ \Sort` such that :math:`T` is an arity of
 sort s.
 
@@ -846,32 +858,34 @@ sort s.
    :math:`A→ Set` and :math:`∀ A:\Prop,A→ \Prop` are arities.
 
 
-**Type of Constructor of I.**
+Type constructor
+++++++++++++++++
 We say that T is a *type of constructor of I* in one of the following
 two cases:
 
-
 + :math:`T` is :math:`(I~t_1 … t_n )`
 + :math:`T` is :math:`∀ x:U,T'` where :math:`T'` is also a type of constructor of :math:`I`
-
-
 
 .. example::
 
    :math:`\nat` and :math:`\nat→\nat` are types of constructor of :math:`\nat`.
    :math:`∀ A:Type,\List~A` and :math:`∀ A:Type,A→\List~A→\List~A` are types of constructor of :math:`\List`.
 
-**Positivity Condition.**
+.. _positivity:
+
+Positivity Condition
+++++++++++++++++++++
+
 The type of constructor :math:`T` will be said to *satisfy the positivity
 condition* for a constant :math:`X` in the following cases:
-
 
 + :math:`T=(X~t_1 … t_n )` and :math:`X` does not occur free in any :math:`t_i`
 + :math:`T=∀ x:U,V` and :math:`X` occurs only strictly positively in :math:`U` and the type :math:`V`
   satisfies the positivity condition for :math:`X`.
-
   
-**Occurs Strictly Positively.**
+Strict positivity
++++++++++++++++++
+
 The constant :math:`X` *occurs strictly positively* in :math:`T` in the following
 cases:
 
@@ -891,10 +905,11 @@ cases:
   any of the :math:`t_i`, and the (instantiated) types of constructor
   :math:`\subst{C_i}{p_j}{a_j}_{j=1… m}` of :math:`I` satisfy the nested positivity condition for :math:`X`
 
-**Nested Positivity Condition.**
+Nested Positivity
++++++++++++++++++
+
 The type of constructor :math:`T` of :math:`I` *satisfies the nested positivity
 condition* for a constant :math:`X` in the following cases:
-
 
 + :math:`T=(I~b_1 … b_m~u_1 … u_p)`, :math:`I` is an inductive definition with :math:`m`
   parameters and :math:`X` does not occur in any :math:`u_i`
@@ -942,12 +957,11 @@ For instance, if one considers the type
            │
            ╰─ list satisfies the positivity condition for list A ... (bullet 1)
 
-
-
-
 .. _Correctness-rules:
 
-**Correctness rules.**
+Correctness rules
++++++++++++++++++
+
 We shall now describe the rules allowing the introduction of a new
 inductive definition.
 
@@ -1014,7 +1028,9 @@ has type :math:`\Type(k)` with :math:`k<j` and :math:`k≤ i`.
 
 .. _Template-polymorphism:
 
-**Template polymorphism.**
+Template polymorphism
++++++++++++++++++++++
+
 Inductive types declared in Type are polymorphic over their arguments
 in Type. If :math:`A` is an arity of some sort and s is a sort, we write :math:`A_{/s}`
 for the arity obtained from :math:`A` by replacing its sort with s.
@@ -1058,7 +1074,7 @@ provided that the following side conditions hold:
       we have :math:`(E[Γ_{I′} ;Γ_{P′}] ⊢ C_i : s_{q_i})_{i=1… n}` ;
     + the sorts :math:`s_i` are such that all eliminations, to
       :math:`\Prop`, :math:`\Set` and :math:`\Type(j)`, are allowed
-      (see Section Destructors_).
+      (see Section :ref:`Destructors`).
 
 
 
@@ -1088,14 +1104,14 @@ The sorts :math:`s_j` are chosen canonically so that each :math:`s_j` is minimal
 respect to the hierarchy :math:`\Prop ⊂ \Set_p ⊂ \Type` where :math:`\Set_p` is predicative
 :math:`\Set`. More precisely, an empty or small singleton inductive definition
 (i.e. an inductive definition of which all inductive types are
-singleton – see paragraph Destructors_) is set in :math:`\Prop`, a small non-singleton
+singleton – see Section :ref:`Destructors`) is set in :math:`\Prop`, a small non-singleton
 inductive type is set in :math:`\Set` (even in case :math:`\Set` is impredicative – see
 Section The-Calculus-of-Inductive-Construction-with-impredicative-Set_),
 and otherwise in the Type hierarchy.
 
 Note that the side-condition about allowed elimination sorts in the
 rule **Ind-Family** is just to avoid to recompute the allowed elimination
-sorts at each instance of a pattern-matching (see section Destructors_). As
+sorts at each instance of a pattern-matching (see Section :ref:`Destructors`). As
 an example, let us consider the following definition:
 
 .. example::
@@ -1111,7 +1127,7 @@ in the Type hierarchy. Here, the parameter :math:`A` has this property, hence,
 if :g:`option` is applied to a type in :math:`\Set`, the result is in :math:`\Set`. Note that
 if :g:`option` is applied to a type in :math:`\Prop`, then, the result is not set in
 :math:`\Prop` but in :math:`\Set` still. This is because :g:`option` is not a singleton type
-(see section Destructors_) and it would lose the elimination to :math:`\Set` and :math:`\Type`
+(see Section :ref:`Destructors`) and it would lose the elimination to :math:`\Set` and :math:`\Type`
 if set in :math:`\Prop`.
 
 .. example::
@@ -1219,9 +1235,11 @@ Coquand in :cite:`Coq92`. One is the definition by pattern-matching. The
 second one is a definition by guarded fixpoints.
 
 
-.. _The-match…with-end-construction:
+.. _match-construction:
 
-**The match…with …end construction**
+The match ... with ... end construction
++++++++++++++++++++++++++++++++++++++++
+
 The basic idea of this operator is that we have an object :math:`m` in an
 inductive type :math:`I` and we want to prove a property which possibly
 depends on :math:`m`. For this, it is enough to prove the property for
@@ -1278,7 +1296,7 @@ and :math:`I:A` and :math:`λ a x . P : B` then by :math:`[I:A|B]` we mean that 
 :math:`λ a x . P` with :math:`m` in the above match-construct.
 
 
-.. _Notations:
+.. _cic_notations:
 
 **Notations.** The :math:`[I:A|B]` is defined as the smallest relation satisfying the
 following rules: We write :math:`[I|B]` for :math:`[I:A|B]` where :math:`A` is the type of :math:`I`.
@@ -1625,9 +1643,8 @@ Given a variable :math:`y` of type an inductive definition in a declaration
   ones in which one of the :math:`I_l` occurs) are structurally smaller than y.
 
 
-The following definitions are correct, we enter them using the ``Fixpoint``
-command as described in Section :ref:`TODO-1.3.4` and show the internal
-representation.
+The following definitions are correct, we enter them using the :cmd:`Fixpoint`
+command and show the internal representation.
 
 .. example::
    .. coqtop:: all
@@ -1684,7 +1701,7 @@ possible:
 **Mutual induction**
 
 The principles of mutual induction can be automatically generated
-using the Scheme command described in Section :ref:`TODO-13.1`.
+using the Scheme command described in Section :ref:`proofschemes-induction-principles`.
 
 
 .. _Admissible-rules-for-global-environments:

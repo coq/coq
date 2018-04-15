@@ -108,7 +108,7 @@ class CoqObject(ObjectDescription):
             annotation = self.annotation + ' '
             signode += addnodes.desc_annotation(annotation, annotation)
         self._render_signature(signature, signode)
-        return self._name_from_signature(signature)
+        return self.options.get("name") or self._name_from_signature(signature)
 
     @property
     def _index_suffix(self):
@@ -144,14 +144,6 @@ class CoqObject(ObjectDescription):
         """Add name (with target) to the main index."""
         index_text = name + self._index_suffix
         self.indexnode['entries'].append(('single', index_text, target, '', None))
-
-    def run(self):
-        """Small extension of the parent's run method, handling user-provided names."""
-        [idx, node] = super().run()
-        custom_name = self.options.get("name")
-        if custom_name:
-            self.add_target_and_index(custom_name, "", node.children[0])
-        return [idx, node]
 
     def add_target_and_index(self, name, _, signode):
         """Create a target and an index entry for name"""
@@ -194,12 +186,17 @@ class VernacObject(NotationObject):
     annotation = "Command"
 
     def _name_from_signature(self, signature):
-        return stringify_with_ellipses(signature)
+        m = re.match(r"[a-zA-Z ]+", signature)
+        if m:
+            return m.group(0).strip()
 
 class VernacVariantObject(VernacObject):
     """An object to represent variants of Coq commands"""
     index_suffix = "(cmdv)"
     annotation = "Variant"
+
+    def _name_from_signature(self, signature):
+        return None
 
 class TacticNotationObject(NotationObject):
     """An object to represent Coq tactic notations"""

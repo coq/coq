@@ -1,6 +1,6 @@
-.. _implicitcoercions:
-
 .. include:: ../replaces.rst
+
+.. _implicitcoercions:
 
 Implicit Coercions
 ====================
@@ -166,7 +166,7 @@ Declaration of Coercions
 
 Assumptions can be declared as coercions at declaration time.
 This extends the grammar of assumptions from
-Figure :ref:`TODO-1.3-sentences-syntax` as follows:
+Figure :ref:`vernacular` as follows:
 
 ..
   FIXME:
@@ -186,7 +186,7 @@ assumptions are declared as coercions.
 
 Similarly, constructors of inductive types can be declared as coercions at
 definition time of the inductive type. This extends and modifies the
-grammar of inductive types from Figure :ref:`TODO-1.3-sentences-syntax` as follows:
+grammar of inductive types from Figure :ref:`vernacular` as follows:
 
 ..
   FIXME:
@@ -267,29 +267,29 @@ Activating the Printing of Coercions
   To skip the printing of coercion `qualid`, use
   ``Remove Printing Coercion`` `qualid`. By default, a coercion is never printed.
 
+.. _coercions-classes-as-records:
 
 Classes as Records
 ------------------
 
-We allow the definition of *Structures with Inheritance* (or
-classes as records) by extending the existing ``Record`` macro
-(see Section :ref:`TODO-2.1-Record`). Its new syntax is:
+We allow the definition of *Structures with Inheritance* (or classes as records)
+by extending the existing :cmd:`Record` macro. Its new syntax is:
 
-.. cmd:: Record {? >} @ident {? @binders} : @sort := {? @ident} { {+; @ident :{? >} @term } }.
+.. cmdv:: Record {? >} @ident {? @binders} : @sort := {? @ident} { {+; @ident :{? >} @term } }.
 
-  The first identifier `ident` is the name of the defined record and
-  `sort` is its type. The optional identifier after ``:=`` is the name
-  of the constuctor (it will be ``Build_``\ `ident` if not given).
-  The other identifiers are the names of the fields, and the `term`
-  are their respective types. If ``:>`` is used instead of ``:`` in
-  the declaration of a field, then the name of this field is automatically
-  declared as a coercion from the record name to the class of this
-  field type. Remark that the fields always verify the uniform
-  inheritance condition. If the optional ``>`` is given before the
-  record name, then the constructor name is automatically declared as
-  a coercion from the class of the last field type to the record name
-  (this may fail if the uniform inheritance condition is not
-  satisfied).
+   The first identifier `ident` is the name of the defined record and
+   `sort` is its type. The optional identifier after ``:=`` is the name
+   of the constuctor (it will be ``Build_``\ `ident` if not given).
+   The other identifiers are the names of the fields, and the `term`
+   are their respective types. If ``:>`` is used instead of ``:`` in
+   the declaration of a field, then the name of this field is automatically
+   declared as a coercion from the record name to the class of this
+   field type. Remark that the fields always verify the uniform
+   inheritance condition. If the optional ``>`` is given before the
+   record name, then the constructor name is automatically declared as
+   a coercion from the class of the last field type to the record name
+   (this may fail if the uniform inheritance condition is not
+   satisfied).
 
 .. note::
 

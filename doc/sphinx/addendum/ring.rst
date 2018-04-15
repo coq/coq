@@ -701,7 +701,7 @@ for |Coq|’s type-checker. Let us see why:
 At each step of rewriting, the whole context is duplicated in the
 proof term. Then, a tactic that does hundreds of rewriting generates
 huge proof terms. Since ``ACDSimpl`` was too slow, Samuel Boutin rewrote
-it using reflection (see his article in TACS’97 [Bou97]_). Later, it
+it using reflection (see :cite:`Bou97`). Later, it
 was rewritten by Patrick Loiseleur: the new tactic does not any
 more require ``ACDSimpl`` to compile and it makes use of |bdi|-reduction not
 only to replace the rewriting steps, but also to achieve the

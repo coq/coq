@@ -60,7 +60,7 @@ continuous reading. However, it has some structure that is explained
 below.
 
 -  The first part describes the specification language, |Gallina|.
-   Chapters :ref:`thegallinaspecificationlanguage` and :ref:`extensionsofgallina` describe the concrete
+   Chapters :ref:`gallinaspecificationlanguage` and :ref:`extensionsofgallina` describe the concrete
    syntax as well as the meaning of programs, theorems and proofs in the
    Calculus of Inductive Constructions. Chapter :ref:`thecoqlibrary` describes the
    standard library of |Coq|. Chapter :ref:`calculusofinductiveconstructions` is a mathematical description
@@ -76,7 +76,7 @@ below.
    Chapter :ref:`proofhandling`. In Chapter :ref:`tactics`, all commands that
    realize one or more steps of the proof are presented: we call them
    *tactics*. The language to combine these tactics into complex proof
-   strategies is given in Chapter :ref:`thetacticlanguage`. Examples of tactics
+   strategies is given in Chapter :ref:`ltac`. Examples of tactics
    are described in Chapter :ref:`detailedexamplesoftactics`.
 
 -  The third part describes how to extend the syntax of |Coq|. It

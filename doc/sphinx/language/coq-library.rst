@@ -19,7 +19,7 @@ The |Coq| library is structured into two parts:
     developments of |Coq| axiomatizations about sets, lists, sorting,
     arithmetic, etc. This library comes with the system and its modules
     are directly accessible through the ``Require`` command (see
-    Section :ref:`TODO-6.5.1-Require`);
+    Section :ref:`compiled-files`);
 
 In addition, user-provided libraries or developments are provided by
 |Coq| users' community. These libraries and developments are available
@@ -48,6 +48,7 @@ at the |Coq| root directory; this includes the modules
 ``Tactics``.
 Module ``Logic_Type`` also makes it in the initial state.
 
+.. _init-notations:
 
 Notations
 ~~~~~~~~~
@@ -89,6 +90,8 @@ Notation          Precedence    Associativity
 ``/ _``           35            right
 ``_ ^ _``         30            right
 ================  ============  ===============
+
+.. _coq-library-logic:
 
 Logic
 ~~~~~
@@ -521,7 +524,7 @@ provides a scope ``nat_scope`` gathering standard notations for
 common operations (``+``, ``*``) and a decimal notation for
 numbers, allowing for instance to write ``3`` for :g:`S (S (S O)))`. This also works on
 the left hand side of a ``match`` expression (see for example
-section :ref:`TODO-refine-example`). This scope is opened by default.
+section :tacn:`refine`). This scope is opened by default.
 
 .. example::
 
@@ -753,7 +756,7 @@ subdirectories:
 These directories belong to the initial load path of the system, and
 the modules they provide are compiled at installation time. So they
 are directly accessible with the command ``Require`` (see
-Section :ref:`TODO-6.5.1-Require`).
+Section :ref:`compiled-files`).
 
 The different modules of the |Coq| standard library are documented
 online at http://coq.inria.fr/stdlib.
@@ -927,9 +930,8 @@ tactics (see Chapter :ref:`tactics`), there are also:
     Goal forall x y z:R, x * y * z <> 0.
     intros; split_Rmult.
 
-These tactics has been written with the tactic language Ltac
-described in Chapter :ref:`thetacticlanguage`.
-
+These tactics has been written with the tactic language |Ltac|
+described in Chapter :ref:`ltac`.
 
 List library
 ~~~~~~~~~~~~

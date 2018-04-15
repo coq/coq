@@ -35,6 +35,7 @@
 .. |ident_n,1| replace:: `ident`\ :math:`_{n,1}`
 .. |ident_n,k_n| replace:: `ident`\ :math:`_{n,k_n}`
 .. |ident_n| replace:: `ident`\ :math:`_{n}`
+.. |Latex| replace:: :smallcaps:`LaTeX`
 .. |L_tac| replace:: `L`:sub:`tac`
 .. |Ltac| replace:: `L`:sub:`tac`
 .. |ML| replace:: :smallcaps:`ML`
@@ -55,7 +56,7 @@
 .. |module_type_n| replace:: `module_type`\ :math:`_{n}`
 .. |N| replace:: ``N``
 .. |nat| replace:: ``nat``
-.. |Ocaml| replace:: :smallcaps:`OCaml`
+.. |OCaml| replace:: :smallcaps:`OCaml`
 .. |p_1| replace:: `p`\ :math:`_{1}`
 .. |p_i| replace:: `p`\ :math:`_{i}`
 .. |p_n| replace:: `p`\ :math:`_{n}`

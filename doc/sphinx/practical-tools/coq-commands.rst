@@ -16,6 +16,8 @@ The options are (basically) the same for the first two commands, and
 roughly described below. You can also look at the ``man`` pages of
 ``coqtop`` and ``coqc`` for more details.
 
+.. _interactive-use:
+
 Interactive use (coqtop)
 ------------------------
 
@@ -39,10 +41,12 @@ Batch compilation (coqc)
 
 The ``coqc`` command takes a name *file* as argument. Then it looks for a
 vernacular file named *file*.v, and tries to compile it into a
-*file*.vo file (See :ref:`TODO-6.5`). Warning: The name *file* should be a
-regular |Coq| identifier, as defined in Section :ref:'TODO-1.1'. It should contain
-only letters, digits or underscores (_). For instance, ``/bar/foo/toto.v`` is valid, but
-``/bar/foo/to-to.v`` is invalid.
+*file*.vo file (See :ref:`compiled-files`).
+
+.. caution:: The name *file* should be a
+   regular |Coq| identifier, as defined in Section :ref:'TODO-1.1'. It should contain
+   only letters, digits or underscores (_). For instance, ``/bar/foo/toto.v`` is valid, but
+   ``/bar/foo/to-to.v`` is invalid.
 
 
 Customization at launch time
@@ -63,6 +67,7 @@ This file may contain, for instance, ``Add LoadPath`` commands to add
 directories to the load path of |Coq|. It is possible to skip the
 loading of the resource file with the option ``-q``.
 
+.. _customization-by-environment-variables:
 
 By environment variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -70,7 +75,7 @@ By environment variables
 Load path can be specified to the |Coq| system by setting up ``$COQPATH``
 environment variable. It is a list of directories separated by
 ``:`` (``;`` on Windows). |Coq| will also honor ``$XDG_DATA_HOME`` and
-``$XDG_DATA_DIRS`` (see Section :ref:`TODO-2.6.3`).
+``$XDG_DATA_DIRS`` (see Section :ref:`libraries-and-filesystem`).
 
 Some |Coq| commands call other |Coq| commands. In this case, they look for
 the commands in directory specified by ``$COQBIN``. If this variable is
@@ -84,6 +89,8 @@ list of assignments of the form ``name=``:n:``{*; attr}`` where
 ANSI escape code. The list of highlight tags can be retrieved with the
 ``-list-tags`` command-line option of ``coqtop``.
 
+.. _command-line-options:
+
 By command line options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -91,25 +98,25 @@ The following command-line options are recognized by the commands ``coqc``
 and ``coqtop``, unless stated otherwise:
 
 :-I *directory*, -include *directory*: Add physical path *directory*
-  to the OCaml loadpath. See also: :ref:`TODO-2.6.1` and the
-  command Declare ML Module Section :ref:`TODO-6.5`.
+  to the OCaml loadpath. See also: :ref:`names-of-libraries` and the
+  command Declare ML Module Section :ref:`compiled-files`.
 :-Q *directory* dirpath: Add physical path *directory* to the list of
   directories where |Coq| looks for a file and bind it to the the logical
   directory *dirpath*. The subdirectory structure of *directory* is
   recursively available from |Coq| using absolute names (extending the
-  dirpath prefix) (see Section :ref:`TODO-2.6.2`).Note that only those
+  dirpath prefix) (see Section :ref:`qualified-names`).Note that only those
   subdirectories and files which obey the lexical conventions of what is
-  an ident (see Section :ref:`TODO-1.1`) are taken into account. Conversely, the
+  an :n:`@ident` are taken into account. Conversely, the
   underlying file systems or operating systems may be more restrictive
   than |Coq|. While Linux’s ext4 file system supports any |Coq| recursive
   layout (within the limit of 255 bytes per file name), the default on
   NTFS (Windows) or HFS+ (MacOS X) file systems is on the contrary to
   disallow two files differing only in the case in the same directory.
-  See also: Section :ref:`TODO-2.6.1`.
+  See also: Section :ref:`names-of-libraries`.
 :-R *directory* dirpath: Do as -Q *directory* dirpath but make the
   subdirectory structure of *directory* recursively visible so that the
   recursive contents of physical *directory* is available from |Coq| using
-  short or partially qualified names. See also: Section :ref:`TODO-2.6.1`.
+  short or partially qualified names. See also: Section :ref:`names-of-libraries`.
 :-top dirpath: Set the toplevel module name to dirpath instead of Top.
   Not valid for `coqc` as the toplevel module name is inferred from the
   name of the output file.
@@ -145,7 +152,7 @@ and ``coqtop``, unless stated otherwise:
   -compile-verbose.
 :-w (all|none|w₁,…,wₙ): Configure the display of warnings. This
   option expects all, none or a comma-separated list of warning names or
-  categories (see Section :ref:`TODO-6.9.3`).
+  categories (see Section :ref:`controlling-display`).
 :-color (on|off|auto): Enable or not the coloring of output of `coqtop`.
   Default is auto, meaning that `coqtop` dynamically decides, depending on
   whether the output channel supports ANSI escape sequences.
@@ -170,7 +177,7 @@ and ``coqtop``, unless stated otherwise:
 :-compat *version*: Attempt to maintain some backward-compatibility
   with a previous version.
 :-dump-glob *file*: Dump references for global names in file *file*
-  (to be used by coqdoc, see :ref:`TODO-15.4`). By default, if *file.v* is being
+  (to be used by coqdoc, see :ref:`coqdoc`). By default, if *file.v* is being
   compiled, *file.glob* is used.
 :-no-glob: Disable the dumping of references for global names.
 :-image *file*: Set the binary image to be used by `coqc` to be *file*
