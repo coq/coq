@@ -53,16 +53,30 @@ let env env = env.env
 let vars_of_env env =
   Id.Set.union (Id.Map.domain env.lvar.ltac_genargs) (vars_of_env env.env)
 
-let ltac_interp_name { ltac_idents ; ltac_genargs } = function
-  | Anonymous -> Anonymous
+let ltac_interp_name lvar = function
+  | Anonymous -> (lvar, Anonymous)
   | Name id as na ->
-      try Name (Id.Map.find id ltac_idents)
-      with Not_found ->
-        if Id.Map.mem id ltac_genargs then
-          user_err (str "Ltac variable" ++ spc () ++ Id.print id ++
-                    spc () ++ str "is not bound to an identifier." ++
-                    spc () ++str "It cannot be used in a binder.")
-        else na
+    try
+      let na = Name (Id.Map.find id lvar.ltac_idents) in
+      let lvar = {
+        ltac_idents = Id.Map.remove id lvar.ltac_idents;
+        ltac_genargs = Id.Map.remove id lvar.ltac_genargs;
+        ltac_constrs = Id.Map.remove id lvar.ltac_constrs;
+        ltac_uconstrs = Id.Map.remove id lvar.ltac_uconstrs
+      } in
+      (lvar, na)
+    with Not_found ->
+      if Id.Map.mem id lvar.ltac_genargs then
+        user_err (str "Ltac variable" ++ spc () ++ Id.print id ++
+                  spc () ++ str "is not bound to an identifier." ++
+                  spc () ++str "It cannot be used in a binder.")
+      else (lvar, na)
+
+open Context.Rel.Declaration
+
+let interp_decl lvar d =
+  let lvar,na = ltac_interp_name lvar (get_name d) in
+  (lvar,set_name na d)
 
 let push_rel_decl_to_named_context_upto_ltac_interp sigma static_d interpreted_d (extra,renaming) =
   let open Context.Rel.Declaration in
@@ -74,17 +88,16 @@ let push_rel_decl_to_named_context_upto_ltac_interp sigma static_d interpreted_d
   (extra',renaming)
 
 let push_rel sigma d env =
-  let d' = Context.Rel.Declaration.map_name (ltac_interp_name env.lvar) d in
+  let lvar,d' = interp_decl env.lvar d in
   let env = {
     env = push_rel d env.env;
     extra = lazy (push_rel_decl_to_named_context_upto_ltac_interp sigma d d' (Lazy.force env.extra));
-    lvar = env.lvar;
+    lvar = lvar;
     } in
   d', env
 
 let push_rel_context ?(force_names=false) sigma ctx env =
-  let open Context.Rel.Declaration in
-  let ctx' = List.Smart.map (map_name (ltac_interp_name env.lvar)) ctx in
+  let lvar,ctx' = List.fold_left_map interp_decl env.lvar ctx in
   let ctx' = if force_names then Namegen.name_context env.env sigma ctx' else ctx' in
   let env = {
     env = push_rel_context ctx env.env;
