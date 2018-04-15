@@ -60,6 +60,12 @@ Focusing
   e.g. `[x]: {` will focus on a goal (existential variable) named `x`.
   As usual, unfocus with `}` once the sub-goal is fully solved.
 
+Specification language
+
+- A fix to unification (which was sensitive to the ascii name of
+  variables) may occasionally change type inference in incompatible
+  ways, especially regarding the inference of the return clause of "match".
+
 Standard Library
 
 - Added `Ascii.eqb` and `String.eqb` and the `=?` notation for them,

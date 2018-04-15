@@ -599,11 +599,12 @@ let solve_pattern_eqn env sigma l c =
 let make_projectable_subst aliases sigma evi args =
   let sign = evar_filtered_context evi in
   let evar_aliases = compute_var_aliases sign sigma in
-  let (_,full_subst,cstr_subst) =
-    List.fold_right
-      (fun decl (args,all,cstrs) ->
+  let (_,full_subst,cstr_subst,_) =
+    List.fold_right_i
+      (fun i decl (args,all,cstrs,revmap) ->
         match decl,args with
         | LocalAssum (id,c), a::rest ->
+            let revmap = Id.Map.add id i revmap in
             let cstrs =
               let a',args = decompose_app_vect sigma a in
               match EConstr.kind sigma a' with
@@ -611,22 +612,26 @@ let make_projectable_subst aliases sigma evi args =
                   let l = try Constrmap.find (fst cstr) cstrs with Not_found -> [] in
                   Constrmap.add (fst cstr) ((args,id)::l) cstrs
               | _ -> cstrs in
-            (rest,Id.Map.add id [a,normalize_alias_opt sigma aliases a,id] all,cstrs)
+            let all = Int.Map.add i [a,normalize_alias_opt sigma aliases a,id] all in
+            (rest,all,cstrs,revmap)
         | LocalDef (id,c,_), a::rest ->
+            let revmap = Id.Map.add id i revmap in
             (match EConstr.kind sigma c with
             | Var id' ->
                 let idc = normalize_alias_var sigma evar_aliases id' in
-                let sub = try Id.Map.find idc all with Not_found -> [] in
+                let ic, sub =
+                  try let ic = Id.Map.find idc revmap in ic, Int.Map.find ic all
+                  with Not_found -> i, [] (* e.g. [idc] is a filtered variable: treat [id] as an assumption *) in
                 if List.exists (fun (c,_,_) -> EConstr.eq_constr sigma a c) sub then
-                  (rest,all,cstrs)
+                  (rest,all,cstrs,revmap)
                 else
-                  (rest,
-                   Id.Map.add idc ((a,normalize_alias_opt sigma aliases a,id)::sub) all,
-                   cstrs)
+                  let all = Int.Map.add ic ((a,normalize_alias_opt sigma aliases a,id)::sub) all in
+                  (rest,all,cstrs,revmap)
             | _ ->
-                (rest,Id.Map.add id [a,normalize_alias_opt sigma aliases a,id] all,cstrs))
-        | _ -> anomaly (Pp.str "Instance does not match its signature."))
-      sign (Array.rev_to_list args,Id.Map.empty,Constrmap.empty) in
+                let all = Int.Map.add i [a,normalize_alias_opt sigma aliases a,id] all in
+                (rest,all,cstrs,revmap))
+        | _ -> anomaly (Pp.str "Instance does not match its signature.")) 0
+      sign (Array.rev_to_list args,Int.Map.empty,Constrmap.empty,Id.Map.empty) in
   (full_subst,cstr_subst)
 
 (*------------------------------------*
@@ -793,11 +798,11 @@ let rec assoc_up_to_alias sigma aliases y yc = function
 
 let rec find_projectable_vars with_evars aliases sigma y subst =
   let yc = normalize_alias sigma aliases y in
-  let is_projectable idc idcl subst' =
+  let is_projectable idc idcl (subst1,subst2 as subst') =
     (* First test if some [id] aliased to [idc] is bound to [y] in [subst] *)
     try
       let id = assoc_up_to_alias sigma aliases y yc idcl in
-      (id,ProjectVar)::subst'
+      (id,ProjectVar)::subst1,subst2
     with Not_found ->
     (* Then test if [idc] is (indirectly) bound in [subst] to some evar *)
     (* projectable on [y] *)
@@ -812,14 +817,18 @@ let rec find_projectable_vars with_evars aliases sigma y subst =
             let subst,_ = make_projectable_subst aliases sigma evi argsv in
             let l = find_projectable_vars with_evars aliases sigma y subst in
             match l with
-            | [id',p] -> (id,ProjectEvar (t,evi,id',p))::subst'
+            | [id',p] -> (subst1,(id,ProjectEvar (t,evi,id',p))::subst2)
             | _ -> subst'
           end
         | [] -> subst'
         | _ -> anomaly (Pp.str "More than one non var in aliases class of evar instance.")
       else
         subst' in
-  Id.Map.fold is_projectable subst []
+  let subst1,subst2 = Int.Map.fold is_projectable subst ([],[]) in
+  (* We return the substitution with ProjectVar first (from most
+     recent to oldest var), followed by ProjectEvar (from most recent
+     to oldest var too) *)
+  subst1 @ subst2
 
 (* [filter_solution] checks if one and only one possible projection exists
  * among a set of solutions to a projection problem *)
@@ -841,25 +850,6 @@ let rec find_solution_type evarenv = function
   | [id,ProjectEvar _] -> (* bugged *) get_type (lookup_named id evarenv)
   | (id,ProjectEvar _)::l -> find_solution_type evarenv l
   | [] -> assert false
-
-let is_preferred_projection_over sign (id,p) (id',p') =
-  (* We give priority to projection of variables over instantiation of
-     an evar considering that the latter is a stronger decision which
-     may even procude an incorrect (ill-typed) solution *)
-  match p, p' with
-  | ProjectEvar _, ProjectVar -> false
-  | ProjectVar, ProjectEvar _ -> true
-  | _, _ ->
-     List.index Id.equal id sign < List.index Id.equal id' sign
-
-let choose_projection evi sols =
-  let sign = List.map get_id (evar_filtered_context evi) in
-  match sols with
-  | y::l ->
-     List.fold_right (fun (id,p as x) (id',_ as y) ->
-         if is_preferred_projection_over sign x y then x else y)
-    l y
-  | _ -> assert false
 
 (* In case the solution to a projection problem requires the instantiation of
  * subsidiary evars, [do_projection_effects] performs them; it
@@ -1447,12 +1437,8 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
       let c, p = match sols with
         | [] -> raise Not_found
         | [id,p] -> (mkVar id, p)
-        | _ ->
-            if choose then
-              let (id,p) = choose_projection evi sols in
-              (mkVar id, p)
-            else
-              raise (NotUniqueInType sols)
+        | (id,p)::_ ->
+            if choose then (mkVar id, p) else raise (NotUniqueInType sols)
       in
       let ty = lazy (Retyping.get_type_of env !evdref (of_alias t)) in
       let evd = do_projection_effects (evar_define conv_algo ~choose) env ty !evdref p in
@@ -1556,7 +1542,8 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
                 let t =
                   map_constr_with_full_binders !evdref (fun d (env,k) -> push_rel d env, k+1)
                     imitate envk t in
-                t::l
+                (* Less dependent solutions come last *)
+                l@[t]
               with e when CErrors.noncritical e -> l in
             (match candidates with
             | [x] -> x
