@@ -15,6 +15,14 @@ Proof.
   refine (match e return _ with refl_equal => _ end).
   reflexivity.
   Undo 2.
+  (** Check insensitivity to alphabetic order *)
+  refine (match e as a in _ = b return _ with refl_equal => _ end).
+  reflexivity.
+  Undo 2.
+  (** Check insensitivity to alphabetic order *)
+  refine (match e as z in _ = y return _ with refl_equal => _ end).
+  reflexivity.
+  Undo 2.
   (* Next line similarly has a dependent and a non dependent solution *)
   refine (match e with refl_equal => _ end).
   reflexivity.
