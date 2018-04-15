@@ -47,7 +47,7 @@ Debugging with ocamldebug from Emacs
    7. some hints: 
 
    - To debug a failure/error/anomaly, add a breakpoint in
-     Vernac.vernac_com at the with clause of the "try ... interp com
+     `Vernac.interp_vernac` (in `toplevel/vernac.ml`) at the with clause of the "try ... interp com
      with ..." block, then go "back" a few steps to find where the
      failure/error/anomaly has been raised
    - Alternatively, for an error or an anomaly, add breakpoints in the middle  
