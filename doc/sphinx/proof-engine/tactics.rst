@@ -51,20 +51,15 @@ specified, the default selector is used.
      tactic_invocation : toplevel_selector : tactic.
                        : |tactic .
 
-.. cmd:: Set Default Goal Selector @toplevel_selector.
+.. opt:: Default Goal Selector @toplevel_selector.
 
-After using this command, the default selector – used when no selector
-is specified when applying a tactic – is set to the chosen value. The
-initial value is 1, hence the tactics are, by default, applied to the
-first goal. Using Set Default Goal Selector ‘‘all’’ will make is so
-that tactics are, by default, applied to every goal simultaneously.
-Then, to apply a tactic tac to the first goal only, you can write
-1:tac. Although more selectors are available, only ‘‘all’’ or a single
-natural number are valid default goal selectors.
-
-.. cmd:: Test Default Goal Selector.
-
-This command displays the current default selector.
+   This option controls the default selector – used when no selector is
+   specified when applying a tactic – is set to the chosen value. The initial
+   value is 1, hence the tactics are, by default, applied to the first goal.
+   Using value ``all`` will make is so that tactics are, by default, applied to
+   every goal simultaneously. Then, to apply a tactic tac to the first goal
+   only, you can write ``1:tac``. Although more selectors are available, only
+   ``all`` or a single natural number are valid default goal selectors.
 
 .. _bindingslist:
 
@@ -123,14 +118,12 @@ following syntax:
 
 The role of an occurrence clause is to select a set of occurrences of a term in
 a goal. In the first case, the :n:`@ident {? at {* num}}` parts indicate that
-occurrences have to be selected in the hypotheses named :n:`@ident`. If no numbers
-are given for hypothesis :n:`@ident`, then all the occurrences of `term` in the
-hypothesis are selected. If numbers are given, they refer to occurrences of
-`term` when the term is printed using option ``Set Printing All`` (see
-:ref:`printing_constructions_full`), counting from left to right. In
-particular, occurrences of `term` in implicit arguments (see
-:ref:`ImplicitArguments`) or coercions (see :ref:`Coercions`)
-are counted.
+occurrences have to be selected in the hypotheses named :n:`@ident`. If no
+numbers are given for hypothesis :n:`@ident`, then all the occurrences of `term`
+in the hypothesis are selected. If numbers are given, they refer to occurrences
+of `term` when the term is printed using option :opt:`Printing All`, counting
+from left to right. In particular, occurrences of `term` in implicit arguments
+(see :ref:`ImplicitArguments`) or coercions (see :ref:`Coercions`) are counted.
 
 If a minus sign is given between at and the list of occurrences, it
 negates the condition so that the clause denotes all the occurrences
@@ -346,7 +339,7 @@ does.
 This summarizes the different syntaxes for ``apply`` and ``eapply``.
 
 .. tacv:: lapply @term
-   :name: `lapply
+   :name: lapply
 
 This tactic applies to any goal, say :g:`G`. The argument term has to be
 well-formed in the current context, its type being reducible to a non-dependent
@@ -437,7 +430,7 @@ sequence ``cut B. 2:apply H.`` where ``cut`` is described below.
    ``forall A, ... -> A``. Excluding this kind of lemma can be avoided by
    setting the following option:
 
-.. opt:: Set Universal Lemma Under Conjunction.
+.. opt:: Universal Lemma Under Conjunction
 
    This option, which preserves compatibility with versions of Coq prior to
    8.4 is also available for :n:`apply @term in @ident` (see :tacn:`apply ... in`).
@@ -829,15 +822,10 @@ quantification or an implication.
    so that all the arguments of the i-th constructors of the corresponding
    inductive type are introduced can be controlled with the following option:
 
-   .. cmd:: Set Bracketing Last Introduction Pattern.
+   .. opt:: Bracketing Last Introduction Pattern
 
-   Force completion, if needed, when the last introduction pattern is a
-   disjunctive or conjunctive pattern (this is the default).
-
-   .. cmd:: Unset Bracketing Last Introduction Pattern.
-
-   Deactivate completion when the last introduction pattern is a disjunctive or
-   conjunctive pattern.
+      Force completion, if needed, when the last introduction pattern is a
+      disjunctive or conjunctive pattern (on by default).
 
 .. tacn:: clear @ident
    :name: clear
@@ -1239,7 +1227,7 @@ name of the variable (here :g:`n`) is chosen based on :g:`T`.
 
    This is equivalent to :n:`generalize @term` but it generalizes only over the
    specified occurrences of :n:`@term` (counting from left to right on the
-   expression printed using option :g:`Set Printing All`).
+   expression printed using option :opt:`Printing All`).
 
 .. tacv:: generalize @term as @ident
 
@@ -1964,13 +1952,13 @@ It is possible to ensure that :n:`injection @term` erases the original
 hypothesis and leaves the generated equalities in the context rather
 than putting them as antecedents of the current goal, as if giving
 :n:`injection @term as` (with an empty list of names). To obtain this
-behavior, the option ``Set Structural Injection`` must be activated. This
+behavior, the option :opt:`Structural Injection` must be activated. This
 option is off by default.
 
-By default, ``injection`` only creates new equalities between :n:`@terms` whose
+By default, :tacn:`injection` only creates new equalities between :n:`@terms` whose
 type is in sort :g:`Type` or :g:`Set`, thus implementing a special behavior for
 objects that are proofs of a statement in :g:`Prop`. This behavior can be
-turned off by setting the option ``Set Keep Proof Equalities``.
+turned off by setting the option :opt:`Keep Proof Equalities`.
 
 .. tacn:: inversion @ident
    :name: inversion
@@ -1996,8 +1984,8 @@ turned off by setting the option ``Set Keep Proof Equalities``.
    equalities between expressions that appeared in the hypothesis that is
    being processed. By default, no equalities are generated if they
    relate two proofs (i.e. equalities between :n:`@terms` whose type is in sort
-   :g:`Prop`). This behavior can be turned off by using the option ``Set Keep
-   Proof Equalities``.
+   :g:`Prop`). This behavior can be turned off by using the option
+   :opt`Keep Proof Equalities`.
 
 .. tacv:: inversion @num
 
@@ -2513,28 +2501,28 @@ unfolded and cleared.
 
      ..  note::
 
-       The behavior of subst can be controlled using option ``Set Regular Subst
-       Tactic.`` When this option is activated, subst also deals with the
-       following corner cases:
+         The behavior of subst can be controlled using option :opt:`Regular Subst
+         Tactic`. When this option is activated, subst also deals with the
+         following corner cases:
 
-        + A context with ordered hypotheses :n:`@ident`:sub:`1` :n:`= @ident`:sub:`2`
-          and :n:`@ident`:sub:`1` :n:`= t`, or :n:`t′ = @ident`:sub:`1`` with `t′` not
-          a variable, and no other hypotheses of the form :n:`@ident`:sub:`2` :n:`= u`
-          or :n:`u = @ident`:sub:`2`; without the option, a second call to
-          subst would be necessary to replace :n:`@ident`:sub:`2` by `t` or
-          `t′` respectively.
-        + The presence of a recursive equation which without the option would
-          be a cause of failure of :tacn:`subst`.
-        + A context with cyclic dependencies as with hypotheses :n:`@ident`:sub:`1` :n:`= f @ident`:sub:`2`
-          and :n:`@ident`:sub:`2` :n:`= g @ident`:sub:`1` which without the
-          option would be a cause of failure of :tacn:`subst`.
+         + A context with ordered hypotheses :n:`@ident`:sub:`1` :n:`= @ident`:sub:`2`
+           and :n:`@ident`:sub:`1` :n:`= t`, or :n:`t′ = @ident`:sub:`1`` with `t′` not
+           a variable, and no other hypotheses of the form :n:`@ident`:sub:`2` :n:`= u`
+           or :n:`u = @ident`:sub:`2`; without the option, a second call to
+           subst would be necessary to replace :n:`@ident`:sub:`2` by `t` or
+           `t′` respectively.
+         + The presence of a recursive equation which without the option would
+           be a cause of failure of :tacn:`subst`.
+         + A context with cyclic dependencies as with hypotheses :n:`@ident`:sub:`1` :n:`= f @ident`:sub:`2`
+           and :n:`@ident`:sub:`2` :n:`= g @ident`:sub:`1` which without the
+           option would be a cause of failure of :tacn:`subst`.
 
-       Additionally, it prevents a local definition such as :n:`@ident := t` to be
-       unfolded which otherwise it would exceptionally unfold in configurations
-       containing hypotheses of the form :n:`@ident = u`, or :n:`u′ = @ident`
-       with `u′` not a variable. Finally, it preserves the initial order of
-       hypotheses, which without the option it may break. The option is on by
-       default.
+         Additionally, it prevents a local definition such as :n:`@ident := t` to be
+         unfolded which otherwise it would exceptionally unfold in configurations
+         containing hypotheses of the form :n:`@ident = u`, or :n:`u′ = @ident`
+         with `u′` not a variable. Finally, it preserves the initial order of
+         hypotheses, which without the option it may break. The option is on by
+         default.
 
 
 .. tacn:: stepl @term
@@ -3578,24 +3566,21 @@ We propose a smooth transitional path by providing the ``Loose Hint Behavior``
 option which accepts three flags allowing for a fine-grained handling of
 non-imported hints.
 
-**Variants:**
+.. opt:: Loose Hint Behavior %( "Lax" %| "Warn" %| "Strict" %)
 
-.. cmd:: Set Loose Hint Behavior "Lax"
+   This option accepts three values, which control the behavior of hints w.r.t.
+   :cmd:`Import`:
 
-   This is the default, and corresponds to the historical behavior, that
-   is, hints defined outside of a section have a global scope.
+   - "Lax": this is the default, and corresponds to the historical behavior,
+     that is, hints defined outside of a section have a global scope.
 
-.. cmd:: Set Loose Hint Behavior "Warn"
+   - "Warn": outputs a warning when a non-imported hint is used. Note that this
+     is an over-approximation, because a hint may be triggered by a run that
+     will eventually fail and backtrack, resulting in the hint not being
+     actually useful for the proof.
 
-   When set, it outputs a warning when a non-imported hint is used. Note that
-   this is an over-approximation, because a hint may be triggered by a run that
-   will eventually fail and backtrack, resulting in the hint not being actually
-   useful for the proof.
-
-.. cmd:: Set Loose Hint Behavior "Strict"
-
-   When set, it changes the behavior of an unloaded hint to a immediate fail
-   tactic, allowing to emulate an import-scoped hint mechanism.
+   - "Strict": changes the behavior of an unloaded hint to a immediate fail
+     tactic, allowing to emulate an import-scoped hint mechanism.
 
 .. _tactics-implicit-automation:
 
@@ -3734,17 +3719,10 @@ some incompatibilities.
   Empty_set, unit, True``, :tacn:`dintuition` recognizes also all inductive
   types with one constructors and no indices, i.e. record-style connectives.
 
-Some aspects of the tactic :tacn:`intuition` can be controlled using options.
-To avoid that inner negations which do not need to be unfolded are
-unfolded, use:
+.. opt:: Intuition Negation Unfolding
 
-.. cmd:: Unset Intuition Negation Unfolding
-
-
-To do that all negations of the goal are unfolded even inner ones
-(this is the default), use:
-
-.. cmd:: Set Intuition Negation Unfolding
+   Controls whether :tacn:`intuition` unfolds inner negations which do not need
+   to be unfolded. This option is on by default.
 
 .. tacn:: rtauto
    :name: rtauto
@@ -3769,9 +3747,8 @@ usual logical connectives but instead may reason about any first-order class
 inductive definition.
 
 The default tactic used by :tacn:`firstorder` when no rule applies is :g:`auto
-with \*`, it can be reset locally or globally using the ``Set Firstorder
-Solver`` tactic vernacular command and printed using ``Print Firstorder
-Solver``.
+with \*`, it can be reset locally or globally using the :opt:`Firstorder Solver`
+option and printed using :cmd:`Print Firstorder Solver`.
 
 .. tacv:: firstorder @tactic
 
@@ -3792,8 +3769,9 @@ Solver``.
 
   This combines the effects of the different variants of :tacn:`firstorder`.
 
-Proof-search is bounded by a depth parameter which can be set by
-typing the ``Set Firstorder Depth n`` vernacular command.
+.. opt:: Firstorder Depth @natural
+
+   This option controls the proof-search depth bound.
 
 .. tacn:: congruence
    :name: congruence
