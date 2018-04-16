@@ -5,6 +5,8 @@ Tools
 
 - Coq_makefile lets one override or extend the following variables from
   the command line: COQFLAGS, COQCHKFLAGS, COQDOCFLAGS.
+  COQFLAGS is now entirely separate from COQLIBS, so in custom Makefiles
+  $(COQFLAGS) should be replaced by $(COQFLAGS) $(COQLIBS).
 
 Vernacular Commands
 
