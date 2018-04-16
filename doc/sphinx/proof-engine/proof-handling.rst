@@ -58,13 +58,14 @@ statement is eventually completed and validated, the statement is then
 bound to the name ``Unnamed_thm`` (or a variant of this name not already
 used for another statement).
 
-.. cmd:: Qed.
+.. cmd:: Qed
+   :name: Qed (interactive proof)
 
 This command is available in interactive editing proof mode when the
 proof is completed. Then ``Qed`` extracts a proof term from the proof
 script, switches back to Coq top-level and attaches the extracted
 proof term to the declared name of the original goal. This name is
-added to the environment as an ``Opaque`` constant.
+added to the environment as an opaque constant.
 
 
 .. exn:: Attempt to save an incomplete proof
@@ -81,6 +82,7 @@ a while when the proof is large. In some exceptional cases one may
 even incur a memory overflow.
 
 .. cmdv:: Defined.
+   :name: Defined (interactive proof)
 
 Defines the proved term as a transparent constant.
 
@@ -91,6 +93,7 @@ command (and the following ones) can only be used if the original goal
 has been opened using the ``Goal`` command.
 
 .. cmd:: Admitted.
+   :name: Admitted (interactive proof)
 
 This command is available in interactive editing proof mode to give up
 the current proof and declare the initial goal as an axiom.
@@ -105,8 +108,8 @@ This command applies in proof editing mode. It is equivalent to
 That is, you have to give the full proof in one gulp, as a
 proof term (see Section :ref:`applyingtheorems`).
 
-
 .. cmdv:: Proof.
+   :name: Proof (interactive proof)
 
 Is a noop which is useful to delimit the sequence of tactic commands
 which start a proof, after a ``Theorem`` command. It is a good practice to
@@ -182,49 +185,51 @@ Proof using options
 The following options modify the behavior of ``Proof using``.
 
 
-.. cmdv:: Set Default Proof Using "@expression".
+.. opt:: Default Proof Using "@expression".
 
-Use :n:`@expression` as the default ``Proof``` using value. E.g. ``Set Default
-Proof Using "a b"``. will complete all ``Proof`` commands not followed by a
-using part with using ``a`` ``b``.
+   Use :n:`@expression` as the default ``Proof``` using value. E.g. ``Set Default
+   Proof Using "a b"``. will complete all ``Proof`` commands not followed by a
+   using part with using ``a`` ``b``.
 
 
-.. cmdv:: Set Suggest Proof Using.
+.. opt:: Suggest Proof Using.
 
-When ``Qed`` is performed, suggest a using annotation if the user did not
-provide one.
+   When ``Qed`` is performed, suggest a using annotation if the user did not
+   provide one.
 
 ..  _`nameaset`:
 
 Name a set of section hypotheses for ``Proof using``
 ````````````````````````````````````````````````````
 
+.. cmd:: Collection @ident := @section_subset_expr
+
 The command ``Collection`` can be used to name a set of section
 hypotheses, with the purpose of making ``Proof using`` annotations more
 compact.
 
 
-.. cmdv:: Collection Some := x y z.
+.. cmdv:: Collection Some := x y z
 
 Define the collection named "Some" containing ``x``, ``y`` and ``z``.
 
 
-.. cmdv:: Collection Fewer := Some - z.
+.. cmdv:: Collection Fewer := Some - z
 
 Define the collection named "Fewer" containing only ``x`` and ``y``.
 
 
-.. cmdv::  Collection Many := Fewer + Some.
-.. cmdv::  Collection Many := Fewer - Some.
+.. cmdv::  Collection Many := Fewer + Some
+.. cmdv::  Collection Many := Fewer - Some
 
 Define the collection named "Many" containing the set union or set
 difference of "Fewer" and "Some".
 
 
-.. cmdv:: Collection Many := Fewer - (x y).
+.. cmdv:: Collection Many := Fewer - (x y)
 
 Define the collection named "Many" containing the set difference of
-"Fewer" and the unnamed collection ``x`` ``y``.
+"Fewer" and the unnamed collection ``x`` ``y``
 
 
 .. cmd:: Abort.
@@ -288,6 +293,7 @@ backtracks one step.
 Repeats Undo :n:`@num` times.
 
 .. cmdv:: Restart.
+   :name: Restart
 
 This command restores the proof editing process to the original goal.
 
@@ -424,11 +430,11 @@ Set Bullet Behavior
 
 The bullet behavior can be controlled by the following commands.
 
-.. opt:: Bullet Behavior "None".
+.. opt:: Bullet Behavior "None"
 
 This makes bullets inactive.
 
-.. opt:: Bullet Behavior "Strict Subproofs".
+.. opt:: Bullet Behavior "Strict Subproofs"
 
 This makes bullets active (this is the default behavior).
 
@@ -551,7 +557,7 @@ Controlling the effect of proof editing commands
 ------------------------------------------------
 
 
-.. opt:: Hyps Limit @num.
+.. opt:: Hyps Limit @num
 
 This option controls the maximum number of hypotheses displayed in goals
 after the application of a tactic. All the hypotheses remain usable
@@ -560,7 +566,7 @@ When unset, it goes back to the default mode which is to print all
 available hypotheses.
 
 
-.. opt:: Automatic Introduction.
+.. opt:: Automatic Introduction
 
 This option controls the way binders are handled
 in assertion commands such as ``Theorem ident [binders] : form``. When the

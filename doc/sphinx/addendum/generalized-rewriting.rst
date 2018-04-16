@@ -537,14 +537,19 @@ Notice, however, that using the prefixed tactics it is possible to
 pass additional arguments such as ``using relation``.
 
 .. tacv:: setoid_reflexivity
+   :name: setoid_reflexivity
 
 .. tacv:: setoid_symmetry [in @ident]
+   :name: setoid_symmetry
 
 .. tacv:: setoid_transitivity
+   :name: setoid_transitivity
 
 .. tacv:: setoid_rewrite [@orientation] @term [at @occs] [in @ident]
+   :name: setoid_rewrite
 
 .. tacv:: setoid_replace @term with @term [in @ident] [using relation @term] [by @tactic]
+   :name: setoid_replace
 
 
 The ``using relation`` arguments cannot be passed to the unprefixed form.
@@ -583,7 +588,7 @@ Deprecated syntax and backward incompatibilities
 Due to backward compatibility reasons, the following syntax for the
 declaration of setoids and morphisms is also accepted.
 
-.. tacv:: Add Setoid @A @Aeq @ST as @ident
+.. cmd:: Add Setoid @A @Aeq @ST as @ident
 
 where ``Aeq`` is a congruence relation without parameters, ``A`` is its carrier
 and ``ST`` is an object of type (``Setoid_Theory A Aeq``) (i.e. a record
@@ -818,7 +823,8 @@ Usage
 ~~~~~
 
 
-.. tacv:: rewrite_strat @s [in @ident]
+.. tacn:: rewrite_strat @s [in @ident]
+   :name: rewrite_strat
 
    Rewrite using the strategy s in hypothesis ident or the conclusion.
 

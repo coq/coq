@@ -955,7 +955,8 @@ Reserved commands inside an interactive module type:
 
    is a shortcut for the command ``Include`` `module` for each `module`.
 
-.. cmd:: @assumption_keyword Inline @assums.
+.. cmd:: @assumption_keyword Inline @assums
+   :name: Inline
 
    The instance of this assumption will be automatically expanded at functor application, except when
    this functor application is prefixed by a ``!`` annotation.
