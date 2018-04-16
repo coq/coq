@@ -77,14 +77,11 @@ section.
 Flags, Options and Tables
 -----------------------------
 
-|Coq| configurability is based on flags (e.g. ``Set Printing All`` in
-Section :ref:`printing_constructions_full`), options (e.g. ``Set Printing Widthinteger`` in Section
-:ref:`controlling-display`), or tables (e.g. ``Add Printing Record ident``, in Section
-:ref:`record-types`).
-The names of flags, options and tables are made of non-empty sequences of identifiers
-(conventionally with capital initial
-letter). The general commands handling flags, options and tables are
-given below.
+|Coq| configurability is based on flags (e.g. :opt:`Printing All`), options
+(e.g. :opt:`Printing Width`), or tables (e.g. :cmd:`Add Printing Record`). The
+names of flags, options and tables are made of non-empty sequences of
+identifiers (conventionally with capital initial letter). The general commands
+handling flags, options and tables are given below.
 
 .. TODO : flag is not a syntax entry
 
@@ -92,7 +89,6 @@ given below.
 
 This command switches :n:`@flag` on. The original state of :n:`@flag` is restored
 when the current module ends.
-
 
 Variants:
 
@@ -274,11 +270,10 @@ See also: Section :ref:`performingcomputations`.
 .. cmd::Extraction @term.
 
 This command displays the extracted term from :n:`@term`. The extraction is
-processed according to the distinction between ``Set`` and ``Prop``; that is
-to say, between logical and computational content (see Section
-:ref:`sorts`). The extracted term is displayed in OCaml
-syntax,
-where global identifiers are still displayed as in |Coq| terms.
+processed according to the distinction between :g:`Set` and :g:`Prop`; that is
+to say, between logical and computational content (see Section :ref:`sorts`).
+The extracted term is displayed in OCaml syntax, where global identifiers are
+still displayed as in |Coq| terms.
 
 
 Variants:
@@ -1083,20 +1078,11 @@ expressed in seconds), then it is interrupted and an error message is
 displayed.
 
 
-.. cmd:: Set Default Timeout @num.
+.. opt:: Default Timeout @num
 
-After using this command, all subsequent commands behave as if they
-were passed to a Timeout command. Commands already starting by a
-`Timeout` are unaffected.
-
-
-.. cmd:: Unset Default Timeout.
-
-This command turns off the use of a default timeout.
-
-.. cmd:: Test Default Timeout.
-
-This command displays whether some default timeout has been set or not.
+   This option controls a default timeout for subsequent commands, as if they
+   were passed to a :cmd:`Timeout` command. Commands already starting by a
+   :cmd:`Timeout` are unaffected.
 
 .. cmd:: Fail @command.
 
@@ -1117,128 +1103,58 @@ Error messages:
 Controlling display
 -----------------------
 
+.. opt:: Silent
 
-.. cmd:: Set Silent.
+   This option controls the normal displaying.
 
-This command turns off the normal displaying.
+.. opt:: Warnings "@ident {* , @ident }"
 
+   This option configures the display of warnings. It is experimental, and
+   expects, between quotes, a comma-separated list of warning names or
+   categories. Adding - in front of a warning or category disables it, adding +
+   makes it an error. It is possible to use the special categories all and
+   default, the latter containing the warnings enabled by default. The flags are
+   interpreted from left to right, so in case of an overlap, the flags on the
+   right have higher priority, meaning that `A,-A` is equivalent to `-A`.
 
-.. cmd:: Unset Silent.
+.. opt:: Search Output Name Only
 
-This command turns the normal display on.
+   This option restricts the output of search commands to identifier names;
+   turning it on causes invocations of :cmd:`Search`, :cmd:`SearchHead`,
+   :cmd:`SearchPattern`, :cmd:`SearchRewrite` etc. to omit types from their
+   output, printing only identifiers.
 
-.. todo:: check that spaces are handled well
+.. opt:: Printing Width @integer
 
-.. cmd:: Set Warnings ‘‘(@ident {* , @ident } )’’.
+   This command sets which left-aligned part of the width of the screen is used
+   for display. At the time of writing this documentation, the default value
+   is 78.
 
-This command configures the display of warnings. It is experimental,
-and expects, between quotes, a comma-separated list of warning names
-or categories. Adding - in front of a warning or category disables it,
-adding + makes it an error. It is possible to use the special
-categories all and default, the latter containing the warnings enabled
-by default. The flags are interpreted from left to right, so in case
-of an overlap, the flags on the right have higher priority, meaning
-that `A,-A` is equivalent to `-A`.
+.. opt:: Printing Depth @integer
 
+   This option controls the nesting depth of the formatter used for pretty-
+   printing. Beyond this depth, display of subterms is replaced by dots. At the
+   time of writing this documentation, the default value is 50.
 
-.. cmd:: Set Search Output Name Only.
+.. opt:: Printing Compact Contexts
 
-This command restricts the output of search commands to identifier
-names; turning it on causes invocations of ``Search``, ``SearchHead``,
-``SearchPattern``, ``SearchRewrite`` etc. to omit types from their output,
-printing only identifiers.
+   This option controls the compact display mode for goals contexts. When on,
+   the printer tries to reduce the vertical size of goals contexts by putting
+   several variables (even if of different types) on the same line provided it
+   does not exceed the printing width (see :opt:`Printing Width`). At the time
+   of writing this documentation, it is off by default.
 
+.. opt:: Printing Unfocused
 
-.. cmd:: Unset Search Output Name Only.
+   This option controls whether unfocused goals are displayed. Such goals are
+   created by focusing other goals with bullets (see :ref:`bullets`) or curly
+   braces (see `here <curly-braces>`). It is off by default.
 
-This command turns type display in search results back on.
+.. cmd:: Printing Dependent Evars Line
 
+   This option controls the printing of the “(dependent evars: …)” line when
+   ``-emacs`` is passed.
 
-.. cmd:: Set Printing Width @integer.
-
-This command sets which left-aligned part of the width of the screen
-is used for display.
-
-
-.. cmd:: Unset Printing Width.
-
-This command resets the width of the screen used for display to its
-default value (which is 78 at the time of writing this documentation).
-
-
-.. cmd:: Test Printing Width.
-
-This command displays the current screen width used for display.
-
-
-.. cmd:: Set Printing Depth @integer.
-
-This command sets the nesting depth of the formatter used for pretty-
-printing. Beyond this depth, display of subterms is replaced by dots.
-
-
-.. cmd:: Unset Printing Depth.
-
-This command resets the nesting depth of the formatter used for
-pretty-printing to its default value (at the time of writing this
-documentation, the default value is 50).
-
-
-.. cmd:: Test Printing Depth.
-
-This command displays the current nesting depth used for display.
-
-
-.. cmd:: Unset Printing Compact Contexts.
-
-This command resets the displaying of goals contexts to non compact
-mode (default at the time of writing this documentation). Non compact
-means that consecutive variables of different types are printed on
-different lines.
-
-
-.. cmd:: Set Printing Compact Contexts.
-
-This command sets the displaying of goals contexts to compact mode.
-The printer tries to reduce the vertical size of goals contexts by
-putting several variables (even if of different types) on the same
-line provided it does not exceed the printing width (See Set Printing
-Width above).
-
-
-.. cmd:: Test Printing Compact Contexts.
-
-This command displays the current state of compaction of goal.
-
-
-.. cmd:: Unset Printing Unfocused.
-
-This command resets the displaying of goals to focused goals only
-(default). Unfocused goals are created by focusing other goals with
-bullets (see :ref:`bullets`) or curly braces (see `here <curly-braces>`).
-
-
-.. cmd:: Set Printing Unfocused.
-
-This command enables the displaying of unfocused goals. The goals are
-displayed after the focused ones and are distinguished by a separator.
-
-
-.. cmd:: Test Printing Unfocused.
-
-This command displays the current state of unfocused goals display.
-
-
-.. cmd:: Set Printing Dependent Evars Line.
-
-This command enables the printing of the “(dependent evars: …)” line
-when -emacs is passed.
-
-
-.. cmd:: Unset Printing Dependent Evars Line.
-
-This command disables the printing of the “(dependent evars: …)” line
-when -emacs is passed.
 
 .. _vernac-controlling-the-reduction-strategies:
 

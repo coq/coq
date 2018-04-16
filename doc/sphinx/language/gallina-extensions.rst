@@ -148,7 +148,7 @@ available:
 
 It can be activated for printing with
 
-.. cmd:: Set Printing Projections.
+.. opt:: Printing Projections
 
 .. example::
 
@@ -249,7 +249,7 @@ printing of pattern-matching over primitive records.
 Primitive Record Types
 ++++++++++++++++++++++
 
-When the ``Set Primitive Projections`` option is on, definitions of
+When the :opt:`Primitive Projections` option is on, definitions of
 record types change meaning. When a type is declared with primitive
 projections, its :g:`match` construct is disabled (see :ref:`primitive_projections` though).
 To eliminate the (co-)inductive type, one must use its defined primitive projections.
@@ -328,7 +328,7 @@ patterns are allowed, as in ML-like languages.
 The extension just acts as a macro that is expanded during parsing
 into a sequence of match on simple patterns. Especially, a
 construction defined using the extended match is generally printed
-under its expanded form (see ``Set Printing Matching`` in :ref:`controlling-match-pp`).
+under its expanded form (see :opt:`Printing Matching`).
 
 See also: :ref:`extendedpatternmatching`.
 
@@ -1506,10 +1506,10 @@ inserted. In the second case, the function is considered to be
 implicitly applied to the implicit arguments it is waiting for: one
 says that the implicit argument is maximally inserted.
 
-Each implicit argument can be declared to have to be inserted
-maximally or non maximally. This can be governed argument per argument
-by the command ``Implicit Arguments`` (see Section :ref:`declare-implicit-args`) or globally by the
-command ``Set Maximal Implicit Insertion`` (see Section :ref:`controlling-insertion-implicit-args`).
+Each implicit argument can be declared to have to be inserted maximally or non
+maximally. This can be governed argument per argument by the command ``Implicit
+Arguments`` (see Section :ref:`declare-implicit-args`) or globally by the
+:opt:`Maximal Implicit Insertion` option.
 See also :ref:`displaying-implicit-args`.
 
 
@@ -1882,7 +1882,7 @@ arguments that are not detected as strict implicit arguments. This
 “defensive” mode can quickly make the display cumbersome so this can
 be deactivated by turning this option off.
 
-See also: ``Set Printing All`` in :ref:`printing_constructions_full`.
+See also: :opt:`Printing All`.
 
 Interaction with subtyping
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2134,9 +2134,9 @@ sensitive to the implicit arguments). Turning this option on
 deactivates all high-level printing features such as coercions,
 implicit arguments, returned type of pattern-matching, notations and
 various syntactic sugar for pattern-matching or record projections.
-Otherwise said, ``Set Printing All`` includes the effects of the commands
-``Set Printing Implicit``, ``Set Printing Coercions``, ``Set Printing Synth``,
-``Unset Printing Projections``, and ``Unset Printing Notations``. To reactivate
+Otherwise said, :opt:`Printing All` includes the effects of the options
+:opt:`Printing Implicit`, :opt:`Printing Coercions`, :opt:`Printing Synth`,
+:opt:`Printing Projections`, and :opt:`Printing Notations`. To reactivate
 the high-level printing features, use the command ``Unset Printing All``.
 
 .. _printing-universes:

@@ -255,17 +255,16 @@ Displaying Available Coercions
 Activating the Printing of Coercions
 -------------------------------------
 
-.. cmd:: Set Printing Coercions.
+.. opt:: Printing Coercions
 
-  This command forces all the coercions to be printed.
-  Conversely, to skip the printing of coercions, use
-  ``Unset Printing Coercions``. By default, coercions are not printed.
+   When on, this option forces all the coercions to be printed.
+   By default, coercions are not printed.
 
-.. cmd:: Add Printing Coercion @qualid.
+.. cmd:: Add Printing Coercion @qualid
 
-  This command forces coercion denoted by `qualid` to be printed.
-  To skip the printing of coercion `qualid`, use
-  ``Remove Printing Coercion`` `qualid`. By default, a coercion is never printed.
+  This command forces coercion denoted by :n:`@qualid` to be printed. To skip
+  the printing of coercion :n:`@qualid`, use :cmd:`Remove Printing Coercion`. By
+  default, a coercion is never printed.
 
 .. _coercions-classes-as-records:
 
@@ -291,12 +290,9 @@ by extending the existing :cmd:`Record` macro. Its new syntax is:
    (this may fail if the uniform inheritance condition is not
    satisfied).
 
-.. note::
+.. cmdv:: Structure {? >} @ident {? @binders} : @sort := {? @ident} { {+; @ident :{? >} @term } }.
 
-  The keyword ``Structure`` is a synonym of ``Record``.
-
-..
-  FIXME: \comindex{Structure}
+   This is a synonym of :cmd:`Record`.
 
 
 Coercions and Sections
@@ -312,20 +308,17 @@ coercions which do not verify the uniform inheritance condition any longer
 are also forgotten.
 
 Coercions and Modules
---------------------=
+---------------------
 
-From |Coq| version 8.3, the coercions present in a module are activated
-only when the module is explicitly imported. Formerly, the coercions
-were activated as soon as the module was required, whatever it was
-imported or not.
+.. opt:: Automatic Coercions Import
 
-To recover the behavior of the versions of |Coq| prior to 8.3, use the
-following command:
+   Since |Coq| version 8.3, the coercions present in a module are activated
+   only when the module is explicitly imported. Formerly, the coercions
+   were activated as soon as the module was required, whatever it was
+   imported or not.
 
-.. cmd:: Set Automatic Coercions Import.
-
-To cancel the effect of the option, use instead ``Unset Automatic Coercions Import``.
-
+   This option makes it possible to recover the behavior of the versions of
+   |Coq| prior to 8.3.
 
 Examples
 --------
