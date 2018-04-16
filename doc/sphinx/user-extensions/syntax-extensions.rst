@@ -32,6 +32,8 @@ Notations
 Basic notations
 ~~~~~~~~~~~~~~~
 
+.. cmd:: Notation
+
 A *notation* is a symbolic expression denoting some term or term
 pattern.
 
@@ -1200,7 +1202,7 @@ Tactic notations allow to customize the syntax of the tactics of the
 tactic language. Tactic notations obey the following syntax:
 
 .. productionlist:: coq
-   tacn                 : [Local] Tactic Notation [`tactic_level`] [`prod_item` … `prod_item`] := `tactic`.
+   tacn                 : Tactic Notation [`tactic_level`] [`prod_item` … `prod_item`] := `tactic`.
    prod_item            : `string` | `tactic_argument_type`(`ident`)
    tactic_level         : (at level `natural`)
    tactic_argument_type : ident | simple_intropattern | reference
@@ -1211,7 +1213,7 @@ tactic language. Tactic notations obey the following syntax:
                         : | tactic | tactic0 | tactic1 | tactic2 | tactic3
                         : | tactic4 | tactic5
 
-.. cmd:: {? Local} Tactic Notation {? (at level @level)} {+ @prod_item} := @tactic.
+.. cmd:: Tactic Notation {? (at level @level)} {+ @prod_item} := @tactic.
 
    A tactic notation extends the parser and pretty-printer of tactics with a new
    rule made of the list of production items. It then evaluates into the

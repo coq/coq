@@ -39,6 +39,7 @@ This is a synonym to ``Print`` :n:`@qualid` when :n:`@qualid`
 denotes a global constant.
 
 .. cmdv:: About @qualid.
+   :name: About
 
 This displays various information about the object
 denoted by :n:`@qualid`: its kind (module, constant, assumption, inductive,
@@ -61,6 +62,7 @@ Variants:
 
 
 .. cmdv:: Inspect @num.
+   :name: Inspect
 
 This command displays the :n:`@num` last objects of the
 current environment, including sections and modules.
@@ -204,9 +206,17 @@ This command prints the current value of :n:`@option`.
 .. TODO : table is not a syntax entry
 
 .. cmd:: Add @table @value.
+   :name: Add `table` `value`
+
 .. cmd:: Remove @table @value.
+   :name: Remove `table` `value`
+
 .. cmd:: Test @table @value.
+   :name: Test `table` `value`
+
 .. cmd:: Test @table for @value.
+   :name: Test `table` for `value`
+
 .. cmd:: Print Table @table.
 
 These are  general commands for tables.
@@ -711,9 +721,9 @@ The command did not find the
 file foo.vo. Either foo.v exists but is not compiled or foo.vo is in a
 directory which is not in your LoadPath (see Section :ref:`libraries-and-filesystem`).
 
-.. exn:: Compiled library ident.vo makes inconsistent assumptions over library qualid
+.. exn:: Compiled library @ident.vo makes inconsistent assumptions over library qualid
 
-The command tried to load library file `ident.vo` that
+The command tried to load library file :n:`@ident`.vo that
 depends on some specific version of library :n:`@qualid` which is not the
 one already loaded in the current |Coq| session. Probably `ident.v` was
 not properly recompiled with the last version of the file containing
@@ -779,7 +789,7 @@ Error messages:
 
 .. exn:: File not found on loadpath : @string
 
-.. exn:: Loading of ML object file forbidden in a native |Coq|
+.. exn:: Loading of ML object file forbidden in a native Coq
 
 
 
@@ -1043,16 +1053,13 @@ to |Coq| with the command:
 
     go();;
 
+.. warning::
 
-
-Warnings:
-
-
-#. It only works with the bytecode version of |Coq| (i.e. `coqtop.byte`,
-   see Section `interactive-use`).
-#. You must have compiled |Coq| from the source package and set the
-   environment variable COQTOP to the root of your copy of the sources
-   (see Section `customization-by-environment-variables`).
+   #. It only works with the bytecode version of |Coq| (i.e. `coqtop.byte`,
+      see Section `interactive-use`).
+   #. You must have compiled |Coq| from the source package and set the
+      environment variable COQTOP to the root of your copy of the sources
+      (see Section `customization-by-environment-variables`).
 
 
 
@@ -1107,7 +1114,7 @@ Controlling display
 
    This option controls the normal displaying.
 
-.. opt:: Warnings "@ident {* , @ident }"
+.. opt:: Warnings "{+, {? %( - %| + %) } @ident }"
 
    This option configures the display of warnings. It is experimental, and
    expects, between quotes, a comma-separated list of warning names or
@@ -1147,10 +1154,10 @@ Controlling display
 .. opt:: Printing Unfocused
 
    This option controls whether unfocused goals are displayed. Such goals are
-   created by focusing other goals with bullets (see :ref:`bullets`) or curly
-   braces (see `here <curly-braces>`). It is off by default.
+   created by focusing other goals with bullets (see :ref:`bullets` or
+   :ref:`curly braces <curly-braces>`). It is off by default.
 
-.. cmd:: Printing Dependent Evars Line
+.. opt:: Printing Dependent Evars Line
 
    This option controls the printing of the “(dependent evars: …)” line when
    ``-emacs`` is passed.
@@ -1168,7 +1175,7 @@ conversion algorithm lazily compares applicative terms while the other
 is a brute-force but efficient algorithm that first normalizes the
 terms before comparing them. The second algorithm is based on a
 bytecode representation of terms similar to the bytecode
-representation used in the ZINC virtual machine [`98`]. It is
+representation used in the ZINC virtual machine :cite:`Leroy90`. It is
 especially useful for intensive computation of algebraic values, such
 as numbers, and for reflection-based tactics. The commands to fine-
 tune the reduction strategies and the lazy conversion algorithm are

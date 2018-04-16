@@ -178,6 +178,7 @@ Sequence
 A sequence is an expression of the following form:
 
 .. tacn:: @expr ; @expr
+   :name: ;
 
    The expression :n:`@expr__1` is evaluated to :n:`v__1`, which must be
    a tactic value. The tactic :n:`v__1` is applied to the current goal,
@@ -193,6 +194,7 @@ Different tactics can be applied to the different goals using the
 following form:
 
 .. tacn:: [> {*| @expr }]
+   :name: [> ... | ... | ... ] (dispatch)
 
    The expressions :n:`@expr__i` are evaluated to :n:`v__i`, for
    i=0,...,n and all have to be tactics. The :n:`v__i` is applied to the
@@ -240,6 +242,7 @@ We can restrict the application of a tactic to a subset of the currently
 focused goals with:
 
 .. tacn:: @toplevel_selector : @expr
+   :name: ... : ... (goal selector)
 
    We can also use selectors as a tactical, which allows to use them nested
    in a tactic expression, by using the keyword ``only``:
@@ -290,6 +293,7 @@ For loop
 There is a for loop that repeats a tactic :token:`num` times:
 
 .. tacn:: do @num @expr
+   :name: do
 
    :n:`@expr` is evaluated to ``v`` which must be a tactic value. This tactic
    value ``v`` is applied :token:`num` times. Supposing :token:`num` > 1, after the
@@ -303,6 +307,7 @@ Repeat loop
 We have a repeat loop with:
 
 .. tacn:: repeat @expr
+   :name: repeat
 
    :n:`@expr` is evaluated to ``v``. If ``v`` denotes a tactic, this tactic is
    applied to each focused goal independently. If the application succeeds, the
@@ -316,6 +321,7 @@ Error catching
 We can catch the tactic errors with:
 
 .. tacn:: try @expr
+   :name: try
 
    :n:`@expr` is evaluated to ``v`` which must be a tactic value. The tactic
    value ``v`` is applied to each focused goal independently. If the application of
@@ -329,6 +335,7 @@ Detecting progress
 We can check if a tactic made progress with:
 
 .. tacn:: progress expr
+   :name: progress
 
    :n:`@expr` is evaluated to v which must be a tactic value. The tactic value ``v``
    is applied to each focued subgoal independently. If the application of ``v``
@@ -343,6 +350,7 @@ Backtracking branching
 We can branch with the following structure:
 
 .. tacn:: @expr__1 + @expr__2
+   :name: + (backtracking branching)
 
    :n:`@expr__1` and :n:`@expr__2` are evaluated respectively to :n:`v__1` and
    :n:`v__2` which must be tactic values. The tactic value :n:`v__1` is applied to
@@ -365,6 +373,7 @@ restrict to a local, left biased, branching and consider the first
 tactic to work (i.e. which does not fail) among a panel of tactics:
 
 .. tacn:: first [{*| @expr}]
+   :name: first
 
    The :n:`@expr__i` are evaluated to :n:`v__i` and :n:`v__i` must be
    tactic values, for i=1,...,n. Supposing n>1, it applies, in each focused
@@ -396,6 +405,7 @@ Yet another way of branching without backtracking is the following
 structure:
 
 .. tacn:: @expr__1 || @expr__2
+   :name: || (left-biased branching)
 
    :n:`@expr__1` and :n:`@expr__2` are evaluated respectively to :n:`v__1` and
    :n:`v__2` which must be tactic values. The tactic value :n:`v__1` is
@@ -410,6 +420,7 @@ Generalized biased branching
 The tactic
 
 .. tacn:: tryif @expr__1 then @expr__2 else @expr__3
+   :name: tryif
 
    is a generalization of the biased-branching tactics above. The
    expression :n:`@expr__1` is evaluated to :n:`v__1`, which is then
@@ -430,6 +441,7 @@ Another way of restricting backtracking is to restrict a tactic to a
 single success *a posteriori*:
 
 .. tacn:: once @expr
+   :name: once
 
    :n:`@expr` is evaluated to ``v`` which must be a tactic value. The tactic value
    ``v`` is applied but only its first success is used. If ``v`` fails,
@@ -443,6 +455,7 @@ Coq provides an experimental way to check that a tactic has *exactly
 one* success:
 
 .. tacn:: exactly_once @expr
+   :name: exactly_once
 
    :n:`@expr` is evaluated to ``v`` which must be a tactic value. The tactic value
    ``v`` is applied if it has at most one success. If ``v`` fails,
@@ -467,6 +480,7 @@ Checking the failure
 Coq provides a derived tactic to check that a tactic *fails*:
 
 .. tacn:: assert_fails @expr
+   :name: assert_fails
 
    This behaves like :n:`tryif @expr then fail 0 tac "succeeds" else idtac`.
 
@@ -477,6 +491,7 @@ Coq provides a derived tactic to check that a tactic has *at least one*
 success:
 
 .. tacn:: assert_succeeds @expr
+   :name: assert_suceeds
 
    This behaves like
    :n:`tryif (assert_fails tac) then fail 0 tac "fails" else idtac`.
@@ -488,6 +503,7 @@ We may consider the first to solve (i.e. which generates no subgoal)
 among a panel of tactics:
 
 .. tacn:: solve [{*| @expr}]
+   :name: solve
 
    The :n:`@expr__i` are evaluated to :n:`v__i` and :n:`v__i` must be
    tactic values, for i=1,...,n. Supposing n>1, it applies :n:`v__1` to
@@ -508,6 +524,7 @@ The constant :n:`idtac` is the identity tactic: it leaves any goal unchanged but
 it appears in the proof script.
 
 .. tacn:: idtac {* message_token}
+   :name: idtac
 
    This prints the given tokens. Strings and integers are printed
    literally. If a (term) variable is given, its contents are printed.
@@ -516,6 +533,7 @@ Failing
 ~~~~~~~
 
 .. tacn:: fail
+   :name: fail
 
    This is the always-failing tactic: it does not solve any
    goal. It is useful for defining other tacticals since it can be caught by
@@ -543,6 +561,7 @@ Failing
       This is a combination of the previous variants.
 
    .. tacv:: gfail
+      :name: gfail
 
       This variant fails even if there are no goals left.
 
@@ -565,6 +584,7 @@ We can force a tactic to stop if it has not finished after a certain
 amount of time:
 
 .. tacn:: timeout @num @expr
+   :name: timeout
 
    :n:`@expr` is evaluated to ``v`` which must be a tactic value. The tactic value
    ``v`` is applied normally, except that it is interrupted after :n:`@num` seconds
@@ -586,6 +606,7 @@ Timing a tactic
 A tactic execution can be timed:
 
 .. tacn:: time @string @expr
+   :name: time
 
    evaluates :n:`@expr` and displays the time the tactic expression ran, whether it
    fails or successes. In case of several successes, the time for each successive
@@ -600,6 +621,7 @@ Tactic expressions that produce terms can be timed with the experimental
 tactic
 
 .. tacn:: time_constr expr
+   :name: time_constr
 
    which evaluates :n:`@expr ()` and displays the time the tactic expression
    evaluated, assuming successful evaluation. Time is in seconds and is
@@ -610,10 +632,12 @@ tactic
    implemented using the tactics
 
    .. tacn:: restart_timer @string
+      :name: restart_timer
 
    and
 
    .. tacn:: finish_timing {? @string} @string
+      :name: finish_timing
 
    which (re)set and display an optionally named timer, respectively. The
    parenthesized string argument to :n:`finish_timing` is also optional, and
@@ -951,6 +975,7 @@ Testing boolean expressions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tacn:: guard @test
+   :name: guard
 
    The :tacn:`guard` tactic tests a boolean expression, and fails if the expression
    evaluates to false. If the expression evaluates to true, it succeeds
@@ -976,6 +1001,7 @@ Proving a subgoal as a separate lemma
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tacn:: abstract @expr
+   :name: abstract
 
    From the outside, :n:`abstract @expr` is the same as :n:`solve @expr`.
    Internally it saves an auxiliary lemma called ``ident_subproofn`` where
@@ -1000,6 +1026,7 @@ Proving a subgoal as a separate lemma
          don’t play well with asynchronous proofs.
 
    .. tacv:: transparent_abstract @expr
+      :name: transparent_abstract
 
       Save the subproof in a transparent lemma rather than an opaque one.
 
@@ -1220,28 +1247,33 @@ performance bug.
    Unset Ltac Profiling.
 
 .. tacn:: start ltac profiling
+   :name: start ltac profiling
 
    This tactic behaves like :tacn:`idtac` but enables the profiler.
 
 .. tacn:: stop ltac profiling
+   :name: stop ltac profiling
 
    Similarly to :tacn:`start ltac profiling`, this tactic behaves like
    :tacn:`idtac`. Together, they allow you to exclude parts of a proof script
    from profiling.
 
 .. tacn:: reset ltac profile
+   :name: reset ltac profile
 
    This tactic behaves like the corresponding vernacular command
    and allow displaying and resetting the profile from tactic scripts for
    benchmarking purposes.
 
 .. tacn:: show ltac profile
+   :name: show ltac profile
 
    This tactic behaves like the corresponding vernacular command
    and allow displaying and resetting the profile from tactic scripts for
    benchmarking purposes.
 
 .. tacn:: show ltac profile @string
+   :name: show ltac profile
 
    This tactic behaves like the corresponding vernacular command
    and allow displaying and resetting the profile from tactic scripts for
@@ -1261,6 +1293,7 @@ Run-time optimization tactic
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tacn:: optimize_heap
+   :name: optimize_heap
 
 This tactic behaves like :n:`idtac`, except that running it compacts the
 heap in the OCaml run-time system. It is analogous to the Vernacular

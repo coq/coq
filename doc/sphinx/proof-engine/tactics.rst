@@ -51,7 +51,7 @@ specified, the default selector is used.
      tactic_invocation : toplevel_selector : tactic.
                        : |tactic .
 
-.. opt:: Default Goal Selector @toplevel_selector.
+.. opt:: Default Goal Selector @toplevel_selector
 
    This option controls the default selector – used when no selector is
    specified when applying a tactic – is set to the chosen value. The initial
@@ -168,6 +168,7 @@ term of the goal. Let ``T`` be our goal, let ``p`` be a term of type ``U`` then
 .. exn:: Not an exact proof.
 
 .. tacv:: eexact @term.
+   :name: eexact
 
 This tactic behaves like exact but is able to handle terms and goals with
 meta-variables.
@@ -181,6 +182,7 @@ the goal. If it is the case, the subgoal is proved. Otherwise, it fails.
 .. exn:: No such assumption.
 
 .. tacv:: eassumption
+   :name: eassumption
 
 This tactic behaves like assumption but is able to handle goals with
 meta-variables.
@@ -233,6 +235,7 @@ useful to advanced users.
    cast around it.
 
 .. tacv:: simple refine @term
+   :name: simple refine
 
    This tactic behaves like refine, but it does not shelve any subgoal. It does
    not perform any beta-reduction either.
@@ -243,6 +246,7 @@ useful to advanced users.
    resolution of typeclasses.
 
 .. tacv:: simple notypeclasses refine @term
+   :name: simple notypeclasses refine
 
    This tactic behaves like ``simple refine`` except it performs typechecking
    without resolution of typeclasses.
@@ -313,6 +317,7 @@ instantiate (see :ref:`Existential-Variables`). The instantiation is
 intended to be found later in the proof.
 
 .. tacv:: simple apply @term.
+   :name: simple apply
 
 This behaves like ``apply`` but it reasons modulo conversion only on subterms
 that contain no variables to instantiate. For instance, the following example
@@ -335,6 +340,7 @@ does.
 
 .. tacv:: {? simple} apply {+, @term {? with @bindings_list}}
 .. tacv:: {? simple} eapply {+, @term {? with @bindings_list}}
+   :name: simple eapply
 
 This summarizes the different syntaxes for ``apply`` and ``eapply``.
 
@@ -515,8 +521,8 @@ sequence ``cut B. 2:apply H.`` where ``cut`` is described below.
    constructor of :g:`I`, then ``constructor i`` is equivalent to
    ``intros; apply c``:sub:`i`.
 
-.. exn:: Not an inductive product.
-.. exn:: Not enough constructors.
+.. exn:: Not an inductive product
+.. exn:: Not enough constructors
 
 .. tacv:: constructor
 
@@ -534,34 +540,39 @@ sequence ``cut B. 2:apply H.`` where ``cut`` is described below.
     The terms in the @bindings_list are checked in the context where constructor is executed and not in the context where @apply is executed (the introductions are not taken into account).
 
 .. tacv:: split
+   :name: split
 
    This applies only if :g:`I` has a single constructor. It is then
    equivalent to :n:`constructor 1.`. It is typically used in the case of a
    conjunction :g:`A` :math:`\wedge` :g:`B`.
 
-.. exn:: Not an inductive goal with 1 constructor.
+.. exn:: Not an inductive goal with 1 constructor
 
 .. tacv:: exists @val
+   :name: exists
 
    This applies only if :g:`I` has a single constructor. It is then equivalent
    to :n:`intros; constructor 1 with @bindings_list.` It is typically used in
    the case of an existential quantification :math:`\exists`:g:`x, P(x).`
 
-.. exn:: Not an inductive goal with 1 constructor.
+.. exn:: Not an inductive goal with 1 constructor
 
 .. tacv:: exists @bindings_list
 
    This iteratively applies :n:`exists @bindings_list`.
 
 .. tacv:: left
+   :name: left
+
 .. tacv:: right
+   :name: right
 
    These tactics apply only if :g:`I` has two constructors, for
    instance in the case of a disjunction :g:`A` :math:`\vee` :g:`B`.
    Then, they are respectively equivalent to ``constructor 1`` and
    ``constructor 2``.
 
-.. exn:: Not an inductive goal with 2 constructors.
+.. exn:: Not an inductive goal with 2 constructors
 
 .. tacv:: left with @bindings_list
 .. tacv:: right with @bindings_list
@@ -572,15 +583,25 @@ sequence ``cut B. 2:apply H.`` where ``cut`` is described below.
    for the appropriate ``i``.
 
 .. tacv:: econstructor
-.. tacv:: eexists
-.. tacv:: esplit
-.. tacv:: eleft
-.. tacv:: eright
+   :name: econstructor
 
-   These tactics and their variants behave like ``constructor``, ``exists``,
-   ``split``, ``left``, ``right`` and their variants but they introduce
-   existential variables instead of failing when the instantiation of a
-   variable cannot be found (cf. :tacn:`eapply` and :tacn:`apply`).
+.. tacv:: eexists
+   :name: eexists
+
+.. tacv:: esplit
+   :name: esplit
+
+.. tacv:: eleft
+   :name: eleft
+
+.. tacv:: eright
+   :name: eright
+
+   These tactics and their variants behave like :tacn:`constructor`,
+   :tacn:`exists`, :tacn:`split`, :tacn:`left`, :tacn:`right` and their variants
+   but they introduce existential variables instead of failing when the
+   instantiation of a variable cannot be found (cf. :tacn:`eapply` and
+   :tacn:`apply`).
 
 
 .. _managingthelocalcontext:
@@ -611,7 +632,7 @@ the tactic ``intro`` applies the tactic ``hnf`` until the tactic ``intro`` can
 be applied or the goal is not head-reducible.
 
 .. exn:: No product even after head-reduction.
-.. exn:: ident is already used.
+.. exn:: @ident is already used.
 
 .. tacv:: intros
 
@@ -845,6 +866,7 @@ quantification or an implication.
    This is equivalent to :n:`clear @ident. ... clear @ident.`
 
 .. tacv:: clearbody @ident
+   :name: clearbody
 
    This tactic expects :n:`@ident` to be a local definition then clears its
    body. Otherwise said, this tactic turns a definition into an assumption.
@@ -866,7 +888,7 @@ quantification or an implication.
    it.
 
 .. tacn:: revert {+ @ident}
-   :name: revert ...
+   :name: revert
 
 This applies to any goal with variables :n:`{+ @ident}`. It moves the hypotheses
 (possibly defined) to the goal, if this respects dependencies. This tactic is
@@ -982,6 +1004,7 @@ The name of the hypothesis in the proof-term, however, is left unchanged.
 
 .. tacv:: eset (@ident {+ @binder} := @term ) in @goal_occurrences
 .. tacv:: eset @term in @goal_occurrences
+   :name: eset
 
    While the different variants of :tacn:`set` expect that no existential
    variables are generated by the tactic, :n:`eset` removes this constraint. In
@@ -989,6 +1012,7 @@ The name of the hypothesis in the proof-term, however, is left unchanged.
    :tacn:`epose`, i.e. when the :`@term` does not occur in the goal.
 
 .. tacv:: remember @term as @ident
+   :name: remember
 
    This behaves as :n:`set (@ident:= @term ) in *` and using a logical
    (Leibniz’s) equality instead of a local definition.
@@ -1006,6 +1030,8 @@ The name of the hypothesis in the proof-term, however, is left unchanged.
 .. tacv:: eremember @term as @ident
 .. tacv:: eremember @term as @ident in @goal_occurrences
 .. tacv:: eremember @term as @ident eqn:@ident
+   :name: eremember
+
    While the different variants of :n:`remember` expect that no existential
    variables are generated by the tactic, :n:`eremember` removes this constraint.
 
@@ -1112,6 +1138,7 @@ Controlling the proof flow
    .. exn:: Variable @ident is already declared
 
 .. tacv:: eassert form as intro_pattern by tactic
+   :name: eassert
 
 .. tacv:: assert (@ident := @term)
 
@@ -1121,6 +1148,7 @@ Controlling the proof flow
    to prove it.
 
 .. tacv:: pose proof @term {? as intro_pattern}
+   :name: pose proof
 
    This tactic behaves like :n:`assert T {? as intro_pattern} by exact @term`
    where :g:`T` is the type of :g:`term`. In particular,
@@ -1134,6 +1162,7 @@ Controlling the proof flow
    the tactic, :n:`epose proof` removes this constraint.
 
 .. tacv:: enough (@ident : form)
+   :name: enough
 
    This adds a new hypothesis of name :n:`@ident` asserting :n:`form` to the
    goal the tactic :n:`enough` is applied to. A new subgoal stating :n:`form` is
@@ -1159,13 +1188,17 @@ Controlling the proof flow
    applied to all of them.
 
 .. tacv:: eenough (@ident : form) by tactic
+   :name: eenough
+
 .. tacv:: eenough form by tactic
+
 .. tacv:: eenough form as intro_pattern by tactic
 
    While the different variants of :n:`enough` expect that no existential
    variables are generated by the tactic, :n:`eenough` removes this constraint.
 
-.. tacv:: cut form
+.. tacv:: cut @form
+   :name: cut
 
    This tactic applies to any goal. It implements the non-dependent case of
    the “App” rule given in :ref:`typing-rules`. (This is Modus Ponens inference
@@ -1175,6 +1208,7 @@ Controlling the proof flow
 
 .. tacv:: specialize (ident {* @term}) {? as intro_pattern}
 .. tacv:: specialize ident with @bindings_list {? as intro_pattern}
+   :name: specialize
 
    The tactic :n:`specialize` works on local hypothesis :n:`@ident`. The
    premises of this hypothesis (either universal quantifications or
@@ -1416,6 +1450,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    dependent premises of the type of :n:`@term` (see :ref:`syntax of bindings <bindingslist>`).
 
 .. tacv:: edestruct @term
+   :name: edestruct
 
    This tactic behaves like :n:`destruct @term` except that it does not fail if
    the instance of a dependent premises of the type of :n:`@term` is not
@@ -1442,6 +1477,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    the effects of the `with`, `as`, `eqn:`, `using`, and `in` clauses.
 
 .. tacv:: case term
+   :name: case
 
    The tactic :n:`case` is a more basic tactic to perform case analysis without
    recursion. It behaves as :n:`elim @term` but using a case-analysis
@@ -1451,14 +1487,15 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
 
    Analogous to :n:`elim @term with @bindings_list` above.
 
-.. tacv:: ecase @term
-.. tacv:: ecase @term with @bindings_list
+.. tacv:: ecase @term {? with @bindings_list }
+   :name: ecase
 
    In case the type of :n:`@term` has dependent premises, or dependent premises
    whose values are not inferable from the :n:`with @bindings_list` clause,
    :n:`ecase` turns them into existential variables to be resolved later on.
 
 .. tacv:: simple destruct @ident
+   :name: simple destruct
 
    This tactic behaves as :n:`intros until @ident; case @ident` when :n:`@ident`
    is a quantified variable of the goal.
@@ -1549,6 +1586,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    premises of the type of :n:`term` (see :ref:`bindings list <bindingslist>`).
 
 .. tacv:: einduction @term
+   :name: einduction
 
    This tactic behaves like :tacn:`induction` except that it does not fail if
    some dependent premise of the type of :n:`@term` is not inferable. Instead,
@@ -1621,6 +1659,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    (see :ref:`bindings list <bindingslist>`).
 
 .. tacv:: eelim @term
+   :name: eelim
 
    In case the type of :n:`@term` has dependent premises, this turns them into
    existential variables to be resolved later on.
@@ -1639,7 +1678,8 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    These are the most general forms of ``elim`` and ``eelim``. It combines the
    effects of the ``using`` clause and of the two uses of the ``with`` clause.
 
-.. tacv:: elimtype form
+.. tacv:: elimtype @form
+   :name: elimtype
 
    The argument :n:`form` must be inductively defined. :n:`elimtype I` is
    equivalent to :n:`cut I. intro Hn; elim Hn; clear Hn.` Therefore the
@@ -1649,6 +1689,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    :n:`elimtype I; 2:exact t.`
 
 .. tacv:: simple induction @ident
+   :name: simple induction
 
    This tactic behaves as :n:`intros until @ident; elim @ident` when
    :n:`@ident` is a quantified variable of the goal.
@@ -1733,6 +1774,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    other ones need not be further generalized.
 
 .. tacv:: dependent destruction @ident
+   :name: dependent destruction
 
    This performs the generalization of the instance :n:`@ident` but uses
    ``destruct`` instead of induction on the generalized hypothesis. This gives
@@ -1842,6 +1884,7 @@ See also: :ref:`advanced-recursive-functions`
 
 .. tacv:: ediscriminate @num
 .. tacv:: ediscriminate @term {? with @bindings_list}
+   :name: ediscriminate
 
    This works the same as ``discriminate`` but if the type of :n:`@term`, or the
    type of the hypothesis referred to by :n:`@num`, has uninstantiated
@@ -1921,6 +1964,7 @@ the use of a sigma type is avoided.
 
 .. tacv:: einjection @num
 .. tacv:: einjection @term {? with @bindings_list}
+   :name: einjection
 
    This works the same as :n:`injection` but if the type of :n:`@term`, or the
    type of the hypothesis referred to by :n:`@num`, has uninstantiated
@@ -1948,17 +1992,19 @@ the use of a sigma type is avoided.
    to the number of new equalities. The original equality is erased if it
    corresponds to an hypothesis.
 
-It is possible to ensure that :n:`injection @term` erases the original
-hypothesis and leaves the generated equalities in the context rather
-than putting them as antecedents of the current goal, as if giving
-:n:`injection @term as` (with an empty list of names). To obtain this
-behavior, the option :opt:`Structural Injection` must be activated. This
-option is off by default.
+.. opt:: Structural Injection
 
-By default, :tacn:`injection` only creates new equalities between :n:`@terms` whose
-type is in sort :g:`Type` or :g:`Set`, thus implementing a special behavior for
-objects that are proofs of a statement in :g:`Prop`. This behavior can be
-turned off by setting the option :opt:`Keep Proof Equalities`.
+   This option ensure that :n:`injection @term` erases the original hypothesis
+   and leaves the generated equalities in the context rather than putting them
+   as antecedents of the current goal, as if giving :n:`injection @term as`
+   (with an empty list of names). This option is off by default.
+
+.. opt:: Keep Proof Equalities
+
+   By default, :tacn:`injection` only creates new equalities between :n:`@terms`
+   whose type is in sort :g:`Type` or :g:`Set`, thus implementing a special
+   behavior for objects that are proofs of a statement in :g:`Prop`. This option
+   controls this behavior.
 
 .. tacn:: inversion @ident
    :name: inversion
@@ -2110,6 +2156,7 @@ turned off by setting the option :opt:`Keep Proof Equalities`.
    :n:`dependent inversion_clear @ident with @term`.
 
 .. tacv:: simple inversion @ident
+   :name: simple inversion
 
    It is a very primitive inversion tactic that derives all the necessary
    equalities but it does not simplify the constraints as ``inversion`` does.
@@ -2410,6 +2457,7 @@ subgoals.
     leading to failure if these n rewrites are not possible.
 
 .. tacv:: erewrite @term
+   :name: erewrite
 
   This tactic works as :n:`rewrite @term` but turning
   unresolved bindings into existential variables, if any, instead of
@@ -2456,6 +2504,7 @@ subgoals.
   clause argument must not contain any type of nor value of.
 
 .. tacv:: cutrewrite <- (@term = @term)
+   :cutrewrite:
 
   This tactic is deprecated. It acts like :n:`replace @term with @term`, or,
   equivalently as :n:`enough (@term = @term) as <-`.
@@ -2499,30 +2548,30 @@ unfolded and cleared.
    context for which an equality of the form :n:`@ident = t` or :n:`t = @ident`
    or :n:`@ident := t` exists, with :n:`@ident` not occurring in `t`.
 
-     ..  note::
 
-         The behavior of subst can be controlled using option :opt:`Regular Subst
-         Tactic`. When this option is activated, subst also deals with the
-         following corner cases:
+   .. opt:: Regular Subst Tactic
 
-         + A context with ordered hypotheses :n:`@ident`:sub:`1` :n:`= @ident`:sub:`2`
-           and :n:`@ident`:sub:`1` :n:`= t`, or :n:`t′ = @ident`:sub:`1`` with `t′` not
-           a variable, and no other hypotheses of the form :n:`@ident`:sub:`2` :n:`= u`
-           or :n:`u = @ident`:sub:`2`; without the option, a second call to
-           subst would be necessary to replace :n:`@ident`:sub:`2` by `t` or
-           `t′` respectively.
-         + The presence of a recursive equation which without the option would
-           be a cause of failure of :tacn:`subst`.
-         + A context with cyclic dependencies as with hypotheses :n:`@ident`:sub:`1` :n:`= f @ident`:sub:`2`
-           and :n:`@ident`:sub:`2` :n:`= g @ident`:sub:`1` which without the
-           option would be a cause of failure of :tacn:`subst`.
+      This option controls the behavior of :tacn:`subst`. When it is
+      activated, :tacn:`subst` also deals with the following corner cases:
 
-         Additionally, it prevents a local definition such as :n:`@ident := t` to be
-         unfolded which otherwise it would exceptionally unfold in configurations
-         containing hypotheses of the form :n:`@ident = u`, or :n:`u′ = @ident`
-         with `u′` not a variable. Finally, it preserves the initial order of
-         hypotheses, which without the option it may break. The option is on by
-         default.
+      + A context with ordered hypotheses :n:`@ident`:sub:`1` :n:`= @ident`:sub:`2`
+        and :n:`@ident`:sub:`1` :n:`= t`, or :n:`t′ = @ident`:sub:`1`` with `t′` not
+        a variable, and no other hypotheses of the form :n:`@ident`:sub:`2` :n:`= u`
+        or :n:`u = @ident`:sub:`2`; without the option, a second call to
+        subst would be necessary to replace :n:`@ident`:sub:`2` by `t` or
+        `t′` respectively.
+      + The presence of a recursive equation which without the option would
+        be a cause of failure of :tacn:`subst`.
+      + A context with cyclic dependencies as with hypotheses :n:`@ident`:sub:`1` :n:`= f @ident`:sub:`2`
+        and :n:`@ident`:sub:`2` :n:`= g @ident`:sub:`1` which without the
+        option would be a cause of failure of :tacn:`subst`.
+
+      Additionally, it prevents a local definition such as :n:`@ident := t` to be
+      unfolded which otherwise it would exceptionally unfold in configurations
+      containing hypotheses of the form :n:`@ident = u`, or :n:`u′ = @ident`
+      with `u′` not a variable. Finally, it preserves the initial order of
+      hypotheses, which without the option it may break. The option is on by
+      default.
 
 
 .. tacn:: stepl @term
@@ -2536,30 +2585,37 @@ where `eq` is typically a setoid equality. The application of :n:`stepl @term`
 then replaces the goal by :n:`R @term @term` and adds a new goal stating
 :n:`eq @term @term`.
 
-Lemmas are added to the database using the command ``Declare Left Step @term.``
+.. cmd:: Declare Left Step @term
+
+   Adds :n:`@term` to the database used by :tacn:`stepl`.
+
 The tactic is especially useful for parametric setoids which are not accepted
 as regular setoids for :tacn:`rewrite` and :tacn:`setoid_replace` (see
 :ref:`Generalizedrewriting`).
 
 .. tacv:: stepl @term by tactic
 
-  This applies :n:`stepl @term` then applies tactic to the second goal.
+   This applies :n:`stepl @term` then applies tactic to the second goal.
 
 .. tacv:: stepr @term stepr @term by tactic
+   :name: stepr
 
-  This behaves as :tacn:`stepl` but on the right-hand-side of the binary
-  relation. Lemmas are expected to be of the form :g:`forall x y z, R x y -> eq
-  y z -> R x z` and are registered using the command ``Declare Right Step
-  @term.``
+   This behaves as :tacn:`stepl` but on the right-hand-side of the binary
+   relation. Lemmas are expected to be of the form :g:`forall x y z, R x y -> eq
+   y z -> R x z`.
+
+    .. cmd:: Declare Right Step @term
+
+       Adds :n:`@term` to the database used by :tacn:`stepr`.
 
 
 .. tacn:: change @term
    :name: change
 
-  This tactic applies to any goal. It implements the rule ``Conv`` given in
-  :ref:`subtyping-rules`. :g:`change U` replaces the current goal `T`
-  with `U` providing that `U` is well-formed and that `T` and `U` are
-  convertible.
+   This tactic applies to any goal. It implements the rule ``Conv`` given in
+   :ref:`subtyping-rules`. :g:`change U` replaces the current goal `T`
+   with `U` providing that `U` is well-formed and that `T` and `U` are
+   convertible.
 
 .. exn:: Not convertible
 
@@ -2697,6 +2753,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
    and :n:`lazy beta delta -{+ @qualid} iota zeta`.
 
 .. tacv:: vm_compute
+   :name: vm_compute
 
    This tactic evaluates the goal using the optimized call-by-value evaluation
    bytecode-based virtual machine described in :cite:`CompiledStrongReduction`.
@@ -2706,6 +2763,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
    reflection-based tactics.
 
 .. tacv:: native_compute
+   :name: native_compute
 
    This tactic evaluates the goal by compilation to Objective Caml as described
    in :cite:`FullReduction`. If Coq is running in native code, it can be
@@ -3096,7 +3154,7 @@ the :tacn:`auto` and :tacn:`trivial` tactics:
 .. opt:: Info Auto
 .. opt:: Debug Auto
 .. opt:: Info Trivial
-.. opt:: Info Trivial
+.. opt:: Debug Trivial
 
 See also: :ref:`The Hints Databases for auto and eauto <thehintsdatabasesforautoandeauto>`
 
@@ -3251,188 +3309,203 @@ observationally different from the legacy one.
 
 The general command to add a hint to some databases :n:`{+ @ident}` is
 
-.. cmd:: Hint hint_definition : {+ @ident}
+.. cmd:: Hint @hint_definition : {+ @ident}
 
-**Variants:**
+   .. cmdv:: Hint @hint_definition
 
-.. cmd:: Hint hint_definition
+      No database name is given: the hint is registered in the core database.
 
-   No database name is given: the hint is registered in the core database.
+   .. cmdv:: Local Hint @hint_definition : {+ @ident}
 
-.. cmd:: Local Hint hint_definition : {+ @ident}
+      This is used to declare hints that must not be exported to the other modules
+      that require and import the current module. Inside a section, the option
+      Local is useless since hints do not survive anyway to the closure of
+      sections.
 
-   This is used to declare hints that must not be exported to the other modules
-   that require and import the current module. Inside a section, the option
-   Local is useless since hints do not survive anyway to the closure of
-   sections.
+   .. cmdv:: Local Hint @hint_definition
 
-.. cmd:: Local Hint hint_definition
+      Idem for the core database.
 
-   Idem for the core database.
+   .. cmdv:: Hint Resolve @term {? | {? @num} {? @pattern}}
+      :name: Hint Resolve
 
-The ``hint_definition`` is one of the following expressions:
+   This command adds :n:`simple apply @term` to the hint list with the head
+   symbol of the type of :n:`@term`. The cost of that hint is the number of
+   subgoals generated by :n:`simple apply @term` or :n:`@num` if specified. The
+   associated :n:`@pattern` is inferred from the conclusion of the type of
+   :n:`@term` or the given :n:`@pattern` if specified. In case the inferred type
+   of :n:`@term` does not start with a product the tactic added in the hint list
+   is :n:`exact @term`. In case this type can however be reduced to a type
+   starting with a product, the tactic :n:`simple apply @term` is also stored in
+   the hints list. If the inferred type of :n:`@term` contains a dependent
+   quantification on a variable which occurs only in the premisses of the type
+   and not in its conclusion, no instance could be inferred for the variable by
+   unification with the goal. In this case, the hint is added to the hint list
+   of :tacn:`eauto` instead of the hint list of auto and a warning is printed. A
+   typical example of a hint that is used only by :tacn:`eauto` is a transitivity
+   lemma.
 
-+ :n:`Resolve @term {? | {? @num} {? @pattern}}`
-  This command adds :n:`simple apply @term` to the hint list with the head symbol of the type of
-  :n:`@term`. The cost of that hint is the number of subgoals generated by
-  :n:`simple apply @term` or :n:`@num` if specified. The associated :n:`@pattern`
-  is inferred from the conclusion of the type of :n:`@term` or the given
-  :n:`@pattern` if specified. In case the inferred type of :n:`@term` does not
-  start with a product the tactic added in the hint list is :n:`exact @term`.
-  In case this type can however be reduced to a type starting with a product,
-  the tactic :n:`simple apply @term` is also stored in the hints list. If the
-  inferred type of :n:`@term` contains a dependent quantification on a variable
-  which occurs only in the premisses of the type and not in its conclusion, no
-  instance could be inferred for the variable by unification with the goal. In
-  this case, the hint is added to the hint list of :tacn:`eauto` instead of the
-  hint list of auto and a warning is printed. A typical example of a hint that
-  is used only by ``eauto`` is a transitivity lemma.
+   .. exn:: @term cannot be used as a hint
 
-  .. exn:: @term cannot be used as a hint
+      The head symbol of the type of :n:`@term` is a bound variable such that
+      this tactic cannot be associated to a constant.
 
-     The head symbol of the type of :n:`@term` is a bound variable such that
-     this tactic cannot be associated to a constant.
+   .. cmdv:: Hint Resolve {+ @term}
 
-  **Variants:**
+      Adds each :n:`Hint Resolve @term`.
 
-   + :n:`Resolve {+ @term}`
-     Adds each :n:`Resolve @term`.
+   .. cmdv:: Hint Resolve -> @term
 
-   + :n:`Resolve -> @term`
-     Adds the left-to-right implication of an equivalence as a hint (informally
-     the hint will be used as :n:`apply <- @term`, although as mentionned
-     before, the tactic actually used is a restricted version of ``apply``).
+      Adds the left-to-right implication of an equivalence as a hint (informally
+      the hint will be used as :n:`apply <- @term`, although as mentionned
+      before, the tactic actually used is a restricted version of
+      :tacn:`apply`).
 
-   + :n:`Resolve <- @term`
-     Adds the right-to-left implication of an equivalence  as a hint.
+   .. cmdv:: Resolve <- @term
 
-+ :n:`Immediate @term`
-  This command adds :n:`simple apply @term; trivial` to the hint list associated
-  with the head symbol of the type of :n:`@ident` in the given database. This
-  tactic will fail if all the subgoals generated by :n:`simple apply @term` are
-  not solved immediately by the ``trivial`` tactic (which only tries tactics
-  with cost 0).This command is useful for theorems such as the symmetry of
-  equality or :g:`n+1=m+1 -> n=m` that we may like to introduce with a limited
-  use in order to avoid useless proof-search.The cost of this tactic (which
-  never generates subgoals) is always 1, so that it is not used by ``trivial``
-  itself.
+      Adds the right-to-left implication of an equivalence  as a hint.
 
-  .. exn:: @term cannot be used as a hint
+   .. cmdv:: Hint Immediate @term
+      :name: Hint Immediate
 
-  **Variants:**
+      This command adds :n:`simple apply @term; trivial` to the hint list associated
+      with the head symbol of the type of :n:`@ident` in the given database. This
+      tactic will fail if all the subgoals generated by :n:`simple apply @term` are
+      not solved immediately by the ``trivial`` tactic (which only tries tactics
+      with cost 0).This command is useful for theorems such as the symmetry of
+      equality or :g:`n+1=m+1 -> n=m` that we may like to introduce with a limited
+      use in order to avoid useless proof-search. The cost of this tactic (which
+      never generates subgoals) is always 1, so that it is not used by :tacn:`trivial`
+      itself.
 
-  + :n:`Immediate {+ @term}`
-    Adds each :n:`Immediate @term`.
+   .. exn:: @term cannot be used as a hint
 
-+ :n:`Constructors @ident`
-  If :n:`@ident` is an inductive type, this command adds all its constructors as
-  hints of type Resolve. Then, when the conclusion of current goal has the form
-  :n:`(@ident ...)`, ``auto`` will try to apply each constructor.
+   .. cmdv:: Immediate {+ @term}
 
-  .. exn:: @ident is not an inductive type
+      Adds each :n:`Hint Immediate @term`.
 
-  **Variants:**
+   .. cmdv:: Hint Constructors @ident
+      :name: Hint Constructors
 
-    + :n:`Constructors {+ @ident}`
-      Adds each :n:`Constructors @ident`.
+      If :n:`@ident` is an inductive type, this command adds all its constructors as
+      hints of type ``Resolve``. Then, when the conclusion of current goal has the form
+      :n:`(@ident ...)`, :tacn:`auto` will try to apply each constructor.
 
-+ :n:`Unfold @qualid`
-  This adds the tactic :n:`unfold @qualid` to the hint list that will only be
-  used when the head constant of the goal is :n:`@ident`.
-  Its cost is 4.
+   .. exn:: @ident is not an inductive type
 
-  **Variants:**
+   .. cmdv:: Hint Constructors {+ @ident}
 
-    + :n:`Unfold {+ @ident}`
-      Adds each :n:`Unfold @ident`.
+      Adds each :n:`Hint Constructors @ident`.
 
-+ :n:`Transparent`, :n:`Opaque @qualid`
-  This adds a transparency hint to the database, making :n:`@qualid` a
-  transparent or opaque constant during resolution. This information is used
-  during unification of the goal with any lemma in the database and inside the
-  discrimination network to relax or constrain it in the case of discriminated
-  databases.
+   .. cmdv:: Hint Unfold @qualid
+      :name: Hint Unfold
 
-  **Variants:**
+      This adds the tactic :n:`unfold @qualid` to the hint list that will only be
+      used when the head constant of the goal is :n:`@ident`.
+      Its cost is 4.
 
-    + :n:`Transparent`, :n:`Opaque {+ @ident}`
+   .. cmdv:: Hint Unfold {+ @ident}
+
+      Adds each :n:`Hint Unfold @ident`.
+
+   .. cmdv:: Hint %( Transparent %| Opaque %) @qualid
+      :name: Hint ( Transparent | Opaque )
+
+      This adds a transparency hint to the database, making :n:`@qualid` a
+      transparent or opaque constant during resolution. This information is used
+      during unification of the goal with any lemma in the database and inside the
+      discrimination network to relax or constrain it in the case of discriminated
+      databases.
+
+    .. cmdv:: Hint %(Transparent | Opaque) {+ @ident}
+
       Declares each :n:`@ident` as a transparent or opaque constant.
 
-+ :n:`Extern @num {? @pattern} => tactic`
-  This hint type is to extend ``auto`` with tactics other than ``apply`` and
-  ``unfold``. For that, we must specify a cost, an optional :n:`@pattern` and a
-  :n:`tactic` to execute. Here is an example::
+    .. cmdv:: Hint Extern @num {? @pattern} => tactic
 
-    Hint Extern 4 (~(_ = _)) => discriminate.
+       This hint type is to extend :tacn:`auto` with tactics other than :tacn:`apply` and
+       :tacn:`unfold`. For that, we must specify a cost, an optional :n:`@pattern` and a
+       :n:`@tactic` to execute.
 
-  Now, when the head of the goal is a disequality, ``auto`` will try
-  discriminate if it does not manage to solve the goal with hints with a
-  cost less than 4. One can even use some sub-patterns of the pattern in
-  the tactic script. A sub-pattern is a question mark followed by an
-  identifier, like ``?X1`` or ``?X2``. Here is an example:
+       .. example::
 
-  .. example::
-     .. coqtop:: reset all
+          .. coqtop:: in
 
-        Require Import List.
-        Hint Extern 5 ({?X1 = ?X2} + {?X1 <> ?X2}) => generalize  X1, X2; decide equality : eqdec.
-        Goal forall a b:list (nat * nat), {a = b} + {a <> b}.
-        Info 1 auto with eqdec.
+             Hint Extern 4 (~(_ = _)) => discriminate.
 
-+ :n:`Cut @regexp`
+       Now, when the head of the goal is a disequality, ``auto`` will try
+       discriminate if it does not manage to solve the goal with hints with a
+       cost less than 4. One can even use some sub-patterns of the pattern in
+       the tactic script. A sub-pattern is a question mark followed by an
+       identifier, like ``?X1`` or ``?X2``. Here is an example:
 
-  .. warning:: these hints currently only apply to typeclass
-               proof search and the ``typeclasses eauto`` tactic (:ref:`typeclasses-eauto`).
+       .. example::
 
-  This command can be used to cut the proof-search tree according to a regular
-  expression matching paths to be cut. The grammar for regular expressions is
-  the following. Beware, there is no operator precedence during parsing, one can
-  check with ``Print HintDb`` to verify the current cut expression:
+          .. coqtop:: reset all
 
-  .. productionlist:: `regexp`
-     e : ident      hint or instance identifier
-     :|_         any hint
-     :| e\|e′     disjunction
-     :| e e′      sequence
-     :| e *       Kleene star
-     :| emp       empty
-     :| eps       epsilon
-     :| ( e  )
+             Require Import List.
+             Hint Extern 5 ({?X1 = ?X2} + {?X1 <> ?X2}) => generalize  X1, X2; decide equality : eqdec.
+             Goal forall a b:list (nat * nat), {a = b} + {a <> b}.
+             Info 1 auto with eqdec.
 
-  The `emp` regexp does not match any search path while `eps`
-  matches the empty path. During proof search, the path of
-  successive successful hints on a search branch is recorded, as a
-  list of identifiers for the hints (note Hint Extern’s do not have
-  an associated identifier).
-  Before applying any hint :n:`@ident` the current path `p` extended with
-  :n:`@ident` is matched against the current cut expression `c` associated to
-  the hint database. If matching succeeds, the hint is *not* applied. The
-  semantics of ``Hint Cut e`` is to set the cut expression to ``c | e``, the
-  initial cut expression being `emp`.
+    .. cmdv:: Hint Cut @regexp
 
-+ :n:`Mode @qualid {* (+ | ! | -)}`
-  This sets an optional mode of use of the identifier :n:`@qualid`. When
-  proof-search faces a goal that ends in an application of :n:`@qualid` to
-  arguments :n:`@term ... @term`, the mode tells if the hints associated to
-  :n:`@qualid` can be applied or not. A mode specification is a list of n ``+``,
-  ``!`` or ``-`` items that specify if an argument of the identifier is to be
-  treated as an input (``+``), if its head only is an input (``!``) or an output
-  (``-``) of the identifier. For a mode to match a list of arguments, input
-  terms and input heads *must not* contain existential variables or be
-  existential variables respectively, while outputs can be any term. Multiple
-  modes can be declared for a single identifier, in that case only one mode
-  needs to match the arguments for the hints to be applied.The head of a term
-  is understood here as the applicative head, or the match or projection
-  scrutinee’s head, recursively, casts being ignored. ``Hint Mode`` is
-  especially useful for typeclasses, when one does not want to support default
-  instances and avoid ambiguity in general. Setting a parameter of a class as an
-  input forces proof-search to be driven by that index of the class, with ``!``
-  giving more flexibility by allowing existentials to still appear deeper in the
-  index but not at its head.
+       .. warning::
 
-.. note::
- One can use an ``Extern`` hint with no pattern to do pattern-matching on
- hypotheses using ``match goal`` with inside the tactic.
+          These hints currently only apply to typeclass proof search and the
+          :tacn:`typeclasses eauto` tactic.
+
+       This command can be used to cut the proof-search tree according to a regular
+       expression matching paths to be cut. The grammar for regular expressions is
+       the following. Beware, there is no operator precedence during parsing, one can
+       check with :cmd:`Print HintDb` to verify the current cut expression:
+
+       .. productionlist:: `regexp`
+          e : ident      hint or instance identifier
+            :|_         any hint
+            :| e\|e′     disjunction
+            :| e e′      sequence
+            :| e *       Kleene star
+            :| emp       empty
+            :| eps       epsilon
+            :| ( e  )
+
+       The `emp` regexp does not match any search path while `eps`
+       matches the empty path. During proof search, the path of
+       successive successful hints on a search branch is recorded, as a
+       list of identifiers for the hints (note Hint Extern’s do not have
+       an associated identifier).
+       Before applying any hint :n:`@ident` the current path `p` extended with
+       :n:`@ident` is matched against the current cut expression `c` associated to
+       the hint database. If matching succeeds, the hint is *not* applied. The
+       semantics of ``Hint Cut e`` is to set the cut expression to ``c | e``, the
+       initial cut expression being `emp`.
+
+    .. cmdv:: Hint Mode @qualid {* (+ | ! | -)}
+
+       This sets an optional mode of use of the identifier :n:`@qualid`. When
+       proof-search faces a goal that ends in an application of :n:`@qualid` to
+       arguments :n:`@term ... @term`, the mode tells if the hints associated to
+       :n:`@qualid` can be applied or not. A mode specification is a list of n ``+``,
+       ``!`` or ``-`` items that specify if an argument of the identifier is to be
+       treated as an input (``+``), if its head only is an input (``!``) or an output
+       (``-``) of the identifier. For a mode to match a list of arguments, input
+       terms and input heads *must not* contain existential variables or be
+       existential variables respectively, while outputs can be any term. Multiple
+       modes can be declared for a single identifier, in that case only one mode
+       needs to match the arguments for the hints to be applied.The head of a term
+       is understood here as the applicative head, or the match or projection
+       scrutinee’s head, recursively, casts being ignored. ``Hint Mode`` is
+       especially useful for typeclasses, when one does not want to support default
+       instances and avoid ambiguity in general. Setting a parameter of a class as an
+       input forces proof-search to be driven by that index of the class, with ``!``
+       giving more flexibility by allowing existentials to still appear deeper in the
+       index but not at its head.
+
+    .. note::
+
+       One can use an ``Extern`` hint with no pattern to do pattern-matching on
+       hypotheses using ``match goal`` with inside the tactic.
 
 
 Hint databases defined in the Coq standard library
@@ -3587,7 +3660,7 @@ non-imported hints.
 Setting implicit automation tactics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Proof with tactic
+.. cmd:: Proof with @tactic
 
    This command may be used to start a proof. It defines a default tactic
    to be used each time a tactic command ``tactic``:sub:`1` is ended by ``...``.
@@ -3601,11 +3674,11 @@ Setting implicit automation tactics
 
       Combines in a single line ``Proof with`` and ``Proof using``, see :ref:`proof-editing-mode`
 
-   .. cmdv:: Proof using {+ @ident} with tactic
+   .. cmdv:: Proof using {+ @ident} with @tactic
 
       Combines in a single line ``Proof with`` and ``Proof using``, see :ref:`proof-editing-mode`
 
-   .. cmd:: Declare Implicit Tactic tactic
+   .. cmd:: Declare Implicit Tactic @tactic
 
       This command declares a tactic to be used to solve implicit arguments
       that Coq does not know how to solve by unification. It is used every
@@ -3669,11 +3742,12 @@ Therefore, the use of :tacn:`intros` in the previous proof is unnecessary.
   an instantiation of `x` is necessary.
 
 .. tacv:: dtauto
+   :name: dtauto
 
-  While :tacn:`tauto` recognizes inductively defined connectives isomorphic to
-  the standard connective ``and, prod, or, sum, False, Empty_set, unit, True``,
-  :tacn:`dtauto` recognizes also all inductive types with one constructors and
-  no indices, i.e. record-style connectives.
+   While :tacn:`tauto` recognizes inductively defined connectives isomorphic to
+   the standard connective ``and, prod, or, sum, False, Empty_set, unit, True``,
+   :tacn:`dtauto` recognizes also all inductive types with one constructors and
+   no indices, i.e. record-style connectives.
 
 .. tacn:: intuition @tactic
    :name: intuition
@@ -3746,13 +3820,15 @@ first- order reasoning, written by Pierre Corbineau. It is not restricted to
 usual logical connectives but instead may reason about any first-order class
 inductive definition.
 
-The default tactic used by :tacn:`firstorder` when no rule applies is :g:`auto
-with \*`, it can be reset locally or globally using the :opt:`Firstorder Solver`
-option and printed using :cmd:`Print Firstorder Solver`.
+.. opt:: Firstorder Solver
+
+   The default tactic used by :tacn:`firstorder` when no rule applies is
+   :g:`auto with *`, it can be reset locally or globally using this option and
+   printed using :cmd:`Print Firstorder Solver`.
 
 .. tacv:: firstorder @tactic
 
-  Tries to solve the goal with :n:`@tactic` when no logical rule may apply.
+   Tries to solve the goal with :n:`@tactic` when no logical rule may apply.
 
 .. tacv:: firstorder using {+ @qualid}
 
@@ -3991,6 +4067,7 @@ symbol :g:`=`.
 
 .. tacv:: esimplify_eq @num
 .. tacv:: esimplify_eq @term {? with @bindings_list}
+   :name: esimplify_eq
 
    This works the same as ``simplify_eq`` but if the type of :n:`@term`, or the
    type of the hypothesis referred to by :n:`@num`, has uninstantiated
@@ -4002,7 +4079,7 @@ symbol :g:`=`.
    :n:`intro @ident; simplify_eq @ident`.
 
 .. tacn:: dependent rewrite -> @ident
-   :name: dependent rewrite ->
+   :name: dependent rewrite
 
    This tactic applies to any goal. If :n:`@ident` has type
    :g:`(existT B a b)=(existT B a' b')` in the local context (i.e. each
@@ -4270,7 +4347,7 @@ This tactics reverses the list of the focused goals.
    This tactic moves all goals under focus to a shelf. While on the
    shelf, goals will not be focused on. They can be solved by
    unification, or they can be called back into focus with the command
-   :tacn:`Unshelve`.
+   :cmd:`Unshelve`.
 
 .. tacv:: shelve_unifiable
 
@@ -4286,8 +4363,7 @@ This tactics reverses the list of the focused goals.
       all:shelve_unifiable.
       reflexivity.
 
-.. tacn:: Unshelve
-   :name: Unshelve
+.. cmd:: Unshelve
 
    This command moves all the goals on the shelf (see :tacn:`shelve`)
    from the shelf into focus, by appending them to the end of the current

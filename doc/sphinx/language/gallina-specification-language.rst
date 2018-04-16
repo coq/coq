@@ -557,9 +557,10 @@ has type :token:`type`.
    the global context. The fact asserted by *term* is thus assumed as a
    postulate.
 
-.. exn:: @ident already exists
+.. exn:: @ident already exists (Axiom)
 
 .. cmdv:: Parameter @ident : @term.
+   :name: Parameter
 
    Is equivalent to ``Axiom`` :token:`ident` : :token:`term`
 
@@ -582,6 +583,7 @@ has type :token:`type`.
    qualified name to refer to them.
 
 .. cmdv:: Conjecture @ident : @term
+   :name: Conjecture
 
    Is equivalent to ``Axiom`` :token:`ident` : :token:`term`.
 
@@ -594,7 +596,7 @@ will be unknown and every object using this variable will be explicitly
 parametrized (the variable is *discharged*). Using the ``Variable`` command out
 of any section is equivalent to using ``Local Parameter``.
 
-.. exn:: @ident already exists
+.. exn:: @ident already exists (Variable)
 
 .. cmdv:: Variable {+ @ident } : @term.
 
@@ -607,6 +609,7 @@ of any section is equivalent to using ``Local Parameter``.
 .. cmdv:: Variables {+ ( {+ @ident } : @term) }.
 
 .. cmdv:: Hypothesis {+ ( {+ @ident } : @term) }.
+   :name: Hypothesis
 
 .. cmdv:: Hypotheses {+ ( {+ @ident } : @term) }.
 
@@ -643,7 +646,7 @@ Section :ref:`typing-rules`.
    This command binds :token:`term` to the name :token:`ident` in the environment,
    provided that :token:`term` is well-typed.
 
-.. exn:: @ident already exists
+.. exn:: @ident already exists (Definition)
 
 .. cmdv:: Definition @ident : @term := @term.
 
@@ -687,7 +690,7 @@ prefixed by the let-in definition ``let`` :token:`ident` ``:=`` :token:`term`
 ``in``. Using the ``Let`` command out of any section is equivalent to using
 ``Local Definition``.
 
-.. exn:: @ident already exists
+.. exn:: @ident already exists (Let)
 
 .. cmdv:: Let @ident : @term := @term.
 
@@ -1245,20 +1248,25 @@ the theorem is bound to the name :token:`ident` in the environment.
 
 .. exn:: The term @term has type @type which should be Set, Prop or Type
 
-.. exn:: @ident already exists
+.. exn:: @ident already exists (Theorem)
 
    The name you provided is already defined. You have then to choose
    another name.
 
 .. cmdv:: Lemma @ident : @type.
+   :name: Lemma
 
 .. cmdv:: Remark @ident : @type.
+   :name: Remark
 
 .. cmdv:: Fact @ident : @type.
+   :name: Fact
 
 .. cmdv:: Corollary @ident : @type.
+   :name: Corollary
 
 .. cmdv:: Proposition @ident : @type.
+   :name: Proposition
 
    These commands are synonyms of ``Theorem`` :token:`ident` : :token:`type`.
 
@@ -1273,16 +1281,16 @@ the theorem is bound to the name :token:`ident` in the environment.
    coinduction has to be done is assumed to be non ambiguous and is guessed by
    the system.
 
-   Like in a ``Fixpoint`` or ``CoFixpoint`` definition, the induction hypotheses
-   have to be used on *structurally smaller* arguments (for a ``Fixpoint``) or
-   be *guarded by a constructor* (for a ``CoFixpoint``). The verification that
+   Like in a :cmd:`Fixpoint` or :cmd:`CoFixpoint` definition, the induction hypotheses
+   have to be used on *structurally smaller* arguments (for a :cmd:`Fixpoint`) or
+   be *guarded by a constructor* (for a :cmd:`CoFixpoint`). The verification that
    recursive proof arguments are correct is done only at the time of registering
    the lemma in the environment. To know if the use of induction hypotheses is
    correct at some time of the interactive development of a proof, use the
    command :cmd:`Guarded`.
 
-   The command can be used also with ``Lemma``, ``Remark``, etc. instead of
-   ``Theorem``.
+   The command can be used also with :cmd:`Lemma`, :cmd:`Remark`, etc. instead of
+   :cmd:`Theorem`.
 
 .. cmdv:: Definition @ident : @type.
 
@@ -1313,16 +1321,20 @@ the theorem is bound to the name :token:`ident` in the environment.
    This generalizes the syntax of CoFixpoint so that one or more bodies
    can be defined interactively using the proof editing mode.
 
-.. cmd:: Proof. … Qed.
+.. cmd:: Proof
 
-A proof starts by the keyword Proof. Then Coq enters the proof editing mode
-until the proof is completed. The proof editing mode essentially contains
-tactics that are described in chapter :ref:`Tactics`. Besides tactics, there are
-commands to manage the proof editing mode. They are described in Chapter
-:ref:`proofhandling`. When the proof is completed it should be validated and
-put in the environment using the keyword Qed.
+   A proof starts by the keyword Proof. Then Coq enters the proof editing mode
+   until the proof is completed. The proof editing mode essentially contains
+   tactics that are described in chapter :ref:`Tactics`. Besides tactics, there
+   are commands to manage the proof editing mode. They are described in Chapter
+   :ref:`proofhandling`.
 
-.. exn:: @ident already exists
+.. cmd:: Qed
+
+   When the proof is completed it should be validated and put in the environment
+   using the keyword Qed.
+
+.. exn:: @ident already exists (Qed)
 
 .. note::
 
@@ -1341,14 +1353,16 @@ put in the environment using the keyword Qed.
       realizing some form of *proof-irrelevance*. To be able to unfold a
       proof, the proof should be ended by Defined (see below).
 
-.. cmdv:: Proof. … Defined.
+.. cmdv:: Defined
+   :name: Defined
 
-   Same as ``Proof. … Qed.`` but the proof is then declared transparent,
-   which means that its content can be explicitly used for
-   type-checking and that it can be unfolded in conversion tactics
-   (see :ref:`performingcomputations`, :cmd:`Opaque`, :cmd:`Transparent`).
+   Same as :cmd:`Qed` but the proof is then declared transparent, which means
+   that its content can be explicitly used for type-checking and that it can be
+   unfolded in conversion tactics (see :ref:`performingcomputations`,
+   :cmd:`Opaque`, :cmd:`Transparent`).
 
-.. cmdv:: Proof. … Admitted.
+.. cmdv:: Admitted.
+   :name: Admitted
 
    Turns the current asserted statement into an axiom and exits the proof mode.
 

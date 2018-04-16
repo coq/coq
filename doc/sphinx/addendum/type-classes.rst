@@ -314,28 +314,25 @@ optional priority can be declared, 0 being the highest priority as for
 auto hints. If the priority is not specified, it defaults to the number
 of non-dependent binders of the instance.
 
-Variants:
-
-
-.. cmd:: Instance ident {? @binders} : forall {? @binders}, Class t1 … tn [| priority] := @term
+..cmdv:: Instance @ident {? @binders} : forall {? @binders}, Class t1 … tn [| priority] := @term
 
    This syntax is used for declaration of singleton class instances or
    for directly giving an explicit term of type ``forall binders, Class
    t1 … tn``.  One need not even mention the unique field name for
    singleton classes.
 
-.. cmd:: Global Instance
+..cmdv:: Global Instance
 
    One can use the ``Global`` modifier on instances declared in a
    section so that their generalization is automatically redeclared
    after the section is closed.
 
-.. cmd:: Program Instance
+..cmdv:: Program Instance
 
    Switches the type-checking to Program (chapter :ref:`programs`) and
    uses the obligation mechanism to manage missing fields.
 
-.. cmd:: Declare Instance
+..cmdv:: Declare Instance
 
    In a Module Type, this command states that a corresponding concrete
    instance should exist in any implementation of thisModule Type. This
@@ -370,14 +367,10 @@ Context
 Declares variables according to the given binding context, which might
 use :ref:`implicit-generalization`.
 
+.. tacn:: typeclasses eauto
 
-.. _typeclasses-eauto:
-
-``typeclasses eauto``
-~~~~~~~~~~~~~~~~~~~~~
-
-The ``typeclasses eauto`` tactic uses a different resolution engine than
-eauto and auto. The main differences are the following:
+This tactic uses a different resolution engine than :tacn:`eauto` and
+:tacn:`auto`. The main differences are the following:
 
 + Contrary to ``eauto`` and ``auto``, the resolution is done entirely in
   the new proof engine (as of Coq v8.6), meaning that backtracking is
@@ -428,42 +421,46 @@ Variants:
    typeclass subgoals the same as other subgoals (no shelving of
    non-typeclass goals in particular).
 
-.. _autoapply:
+.. tacn:: autoapply @term with @ident
+   :name: autoapply
 
-``autoapply term with ident``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The tactic autoapply applies a term using the transparency information
-of the hint database ident, and does *no* typeclass resolution. This can
-be used in ``Hint Extern``’s for typeclass instances (in the hint
-database ``typeclass_instances``) to allow backtracking on the typeclass
-subgoals created by the lemma application, rather than doing type class
-resolution locally at the hint application time.
+   The tactic autoapply applies a term using the transparency information
+   of the hint database ident, and does *no* typeclass resolution. This can
+   be used in :cmd:`Hint Extern`’s for typeclass instances (in the hint
+   database ``typeclass_instances``) to allow backtracking on the typeclass
+   subgoals created by the lemma application, rather than doing type class
+   resolution locally at the hint application time.
 
 .. _TypeclassesTransparent:
 
 Typeclasses Transparent, Typclasses Opaque
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Typeclasses { Transparent | Opaque } {+ @ident}
+.. cmd:: Typeclasses Transparent {+ @ident}
 
-   This commands defines the transparency of the given identifiers
-   during type class resolution. It is useful when some constants
-   prevent some unifications and make resolution fail. It is also useful
-   to declare constants which should never be unfolded during
-   proof-search, like fixpoints or anything which does not look like an
-   abbreviation. This can additionally speed up proof search as the
-   typeclass map can be indexed by such rigid constants (see
-   :ref:`thehintsdatabasesforautoandeauto`). By default, all constants
-   and local variables are considered transparent. One should take care
-   not to make opaque any constant that is used to abbreviate a type,
-   like:
+   This command defines makes the identifiers transparent during type class
+   resolution.
 
-::
+   .. cmdv:: Typeclasses Opaque {+ @ident}
+      :name: Typeclasses Opaque
 
-   relation A := A -> A -> Prop.
+      Make the identifiers opaque for typeclass search. It is useful when some
+      constants prevent some unifications and make resolution fail. It is also
+      useful to declare constants which should never be unfolded during
+      proof-search, like fixpoints or anything which does not look like an
+      abbreviation. This can additionally speed up proof search as the typeclass
+      map can be indexed by such rigid constants (see
+      :ref:`thehintsdatabasesforautoandeauto`).
 
-This is equivalent to ``Hint Transparent, Opaque ident : typeclass_instances``.
+   By default, all constants and local variables are considered transparent. One
+   should take care not to make opaque any constant that is used to abbreviate a
+   type, like:
+
+   ::
+
+      relation A := A -> A -> Prop.
+
+   This is equivalent to ``Hint Transparent, Opaque ident : typeclass_instances``.
 
 
 .. opt:: Typeclasses Dependency Order
