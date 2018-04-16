@@ -1373,17 +1373,16 @@ The OPAM repository for |Coq| packages has been maintained by Guillaume
 Melquiond, Matthieu Sozeau, Enrico Tassi with contributions from many
 users. A list of packages is available at https://coq.inria.fr/opam/www.
 
-The 40 contributors for this version are Yves Bertot, Joachim
-Breitner, Tej Chajed, Arthur Charguéraud, Jacques-Pascal Deplaix, Maxime
-Dénès, Jim Fehrle, Yannick Forster, Gaëtan Gilbert, Jason Gross, Samuel
-Gruetter, Thomas Hebb, Hugo Herbelin, Jasper Hugunin, Emilio Jesus
-Gallego Arias, Ralf Jung, Johannes Kloos, Matej Košík, Robbert Krebbers,
-Tony Beta Lambda, Vincent Laporte, Pierre Letouzey, Farzon Lotfi,
-Cyprien Mangin, Guillaume Melquiond, Raphaël Monat, Carl Patenaude
-Poulin, Pierre-Marie Pédrot, Matthew Ryan, Matt Quinn, Sigurd Schneider,
-Bernhard Schommer, Matthieu Sozeau, Arnaud Spiwack, Paul Steckler,
-Enrico Tassi, Anton Trunov, Martin Vassor, Vadim Zaliva and Théo
-Zimmermann.
+The 44 contributors for this version are Yves Bertot, Joachim Breitner, Tej
+Chajed, Arthur Charguéraud, Jacques-Pascal Deplaix, Maxime Dénès, Jim Fehrle,
+Julien Forest, Yannick Forster, Gaëtan Gilbert, Jason Gross, Samuel Gruetter,
+Thomas Hebb, Hugo Herbelin, Jasper Hugunin, Emilio Jesus Gallego Arias, Ralf
+Jung, Johannes Kloos, Matej Košík, Robbert Krebbers, Tony Beta Lambda, Vincent
+Laporte, Peter LeFanu Lumsdaine, Pierre Letouzey, Farzon Lotfi, Cyprien Mangin,
+Guillaume Melquiond, Raphaël Monat, Carl Patenaude Poulin, Pierre-Marie Pédrot,
+Clément Pit-Claudel, Matthew Ryan, Matt Quinn, Sigurd Schneider, Bernhard
+Schommer, Michael Soegtrop, Matthieu Sozeau, Arnaud Spiwack, Paul Steckler,
+Enrico Tassi, Anton Trunov, Martin Vassor, Vadim Zaliva and Théo Zimmermann.
 
 Version 8.8 is the third release of |Coq| developed on a time-based
 development cycle. Its development spanned 6 months from the release of
