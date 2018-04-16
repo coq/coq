@@ -122,8 +122,7 @@ Lemma a : forall n, n = 0.
 Proof.
 fix a 1.
 Check a.
-fix 1.
-Fail Check a0.
+Fail fix a 1.
 Abort.
 
 (* Test stability of "induction" *)

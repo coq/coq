@@ -557,8 +557,13 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
   end
 end
 
+let warning_nameless_fix =
+    CWarnings.create ~name:"nameless-fix" ~category:"deprecated" Pp.(fun () ->
+        str "fix/cofix without a name are deprecated, please use the named version.")
+
 let fix ido n = match ido with
   | None ->
+    warning_nameless_fix ();
     Proofview.Goal.enter begin fun gl ->
       let name = Proof_global.get_current_proof_name () in
       let id = new_fresh_id Id.Set.empty name gl in
@@ -610,6 +615,7 @@ end
 
 let cofix ido = match ido with
   | None ->
+    warning_nameless_fix ();
     Proofview.Goal.enter begin fun gl ->
       let name = Proof_global.get_current_proof_name () in
       let id = new_fresh_id Id.Set.empty name gl in

@@ -2978,7 +2978,7 @@ definition of \textsl{div\_aux}:
 
 \begin{alltt}
 Definition div_aux (x y:nat)(H: Acc lt x):nat.
- fix 3.
+ fix div_aux 3.
  intros.
  refine (if eq_nat_dec x 0 
          then 0 
@@ -3010,10 +3010,10 @@ Definition div x y := div_aux x y (lt_wf x).
 
 Let us explain the proof above. In the definition of \citecoq{div\_aux},
 what decreases is not $x$ but the \textsl{proof} of the accessibility
-of $x$. The tactic ``~\texttt{fix 3}~'' is used to indicate that the proof
+of $x$. The tactic ``~\texttt{fix div\_aux 3}~'' is used to indicate that the proof
 proceeds by structural induction on the third argument of the theorem
 --that is, on the accessibility proof. It also introduces a new
-hypothesis in the context, named as the current theorem, and with the
+hypothesis in the context, named ``~\texttt{div\_aux}~'', and with the
 same type as the goal. Then, the proof is refined with an incomplete
 proof term, containing a hole \texttt{\_}.  This hole corresponds to the proof
 of accessibility for $x-y$, and is filled up with the (smaller!)

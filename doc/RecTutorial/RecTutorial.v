@@ -922,7 +922,7 @@ Print minus_decrease.
 
 
 Definition div_aux (x y:nat)(H: Acc lt x):nat.
- fix 3.
+ fix div_aux 3.
  intros.
   refine (if eq_nat_dec x 0
          then 0

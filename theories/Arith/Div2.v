@@ -30,7 +30,7 @@ Lemma ind_0_1_SS :
     P 0 -> P 1 -> (forall n, P n -> P (S (S n))) -> forall n, P n.
 Proof.
   intros P H0 H1 H2.
-  fix 1.
+  fix ind_0_1_SS 1.
   destruct n as [|[|n]].
   - exact H0.
   - exact H1.
@@ -105,7 +105,7 @@ Hint Resolve double_S: arith.
 Lemma even_odd_double n :
   (even n <-> n = double (div2 n)) /\ (odd n <-> n = S (double (div2 n))).
 Proof.
-  revert n. fix 1. destruct n as [|[|n]].
+  revert n. fix even_odd_double 1. destruct n as [|[|n]].
   - (* n = 0 *)
     split; split; auto with arith. inversion 1.
   - (* n = 1 *)
