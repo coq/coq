@@ -20,13 +20,14 @@ repeat: LGROUP (ATOM)? WHITESPACE blocks (WHITESPACE)? RBRACE;
 curlies: LBRACE (whitespace)? blocks (whitespace)? RBRACE;
 whitespace: WHITESPACE;
 meta: METACHAR;
-atomic: ATOM;
-hole: ID;
+atomic: ATOM (SUB)?;
+hole: ID (SUB)?;
 
 LGROUP: '{' [+*?];
 LBRACE: '{';
 RBRACE: '}';
 METACHAR: '%' [|(){}];
-ATOM: '@' | ~[@{} ]+;
-ID: '@' [a-zA-Z0-9_]+;
+ATOM: '@' | '_' | ~[@_{} ]+;
+ID: '@' ('_'? [a-zA-Z0-9])+;
+SUB: '_' '_' [a-zA-Z0-9]+;
 WHITESPACE: ' '+;

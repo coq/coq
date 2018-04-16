@@ -56,19 +56,36 @@ class TacticNotationsToSphinxVisitor(TacticNotationsVisitor):
 
     def visitAtomic(self, ctx:TacticNotationsParser.AtomicContext):
         atom = ctx.ATOM().getText()
-        return [nodes.inline(atom, atom)]
+        sub = ctx.SUB()
+        node = nodes.inline(atom, atom)
+
+        if sub:
+            sub_index = sub.getText()[2:]
+            node += nodes.subscript(sub_index, sub_index)
+
+        return [node]
 
     def visitHole(self, ctx:TacticNotationsParser.HoleContext):
         hole = ctx.ID().getText()
         token_name = hole[1:]
         node = nodes.inline(hole, token_name, classes=["hole"])
+
+        sub = ctx.SUB()
+        if sub:
+            sub_index = sub.getText()[2:]
+            node += nodes.subscript(sub_index, sub_index)
+
         return [addnodes.pending_xref(token_name, node, reftype='token', refdomain='std', reftarget=token_name)]
 
     def visitMeta(self, ctx:TacticNotationsParser.MetaContext):
         meta = ctx.METACHAR().getText()
         metachar = meta[1:] # remove escape char
         token_name = metachar
-        return [nodes.inline(metachar, token_name, classes=["meta"])]
+        if (metachar == "{") or (metachar == "}"):
+            classes=[]
+        else:
+            classes=["meta"]
+        return [nodes.inline(metachar, token_name, classes=classes)]
 
     def visitWhitespace(self, ctx:TacticNotationsParser.WhitespaceContext):
         return [nodes.Text(" ")]

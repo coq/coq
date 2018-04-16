@@ -36,6 +36,7 @@
 .. |ident_n,k_n| replace:: `ident`\ :math:`_{n,k_n}`
 .. |ident_n| replace:: `ident`\ :math:`_{n}`
 .. |L_tac| replace:: `L`:sub:`tac`
+.. |Ltac| replace:: `L`:sub:`tac`
 .. |ML| replace:: :smallcaps:`ML`
 .. |mod_0| replace:: `mod`\ :math:`_{0}`
 .. |mod_1| replace:: `mod`\ :math:`_{1}`
