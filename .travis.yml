@@ -76,9 +76,9 @@ matrix:
       - TEST_TARGET="ci-coquelicot"
     - if: NOT (type = pull_request)
       env:
+      - TEST_TARGET="ci-elpi" EXTRA_OPAM="ppx_tools_versioned ppx_deriving ocaml-migrate-parsetree"
       # ppx_tools_versioned requires a specific version findlib
       - FINDLIB_VER=""
-      - TEST_TARGET="ci-elpi" EXTRA_OPAM="ppx_tools_versioned ppx_deriving ocaml-migrate-parsetree"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-equations"
@@ -199,8 +199,6 @@ matrix:
       - MAIN_TARGET="coqocaml"
       - EXTRA_CONF="-byte-only -coqide byte -warn-error yes"
       - EXTRA_OPAM="hevea ${LABLGTK}"
-      # dummy target
-      - BUILD_TARGET="clean"
       addons:
         apt:
           sources:
@@ -218,8 +216,6 @@ matrix:
       - CAMLP5_VER="${CAMLP5_VER_BE}"
       - EXTRA_CONF="-byte-only -coqide byte -warn-error yes"
       - EXTRA_OPAM="num hevea ${LABLGTK_BE}"
-      # dummy target
-      - BUILD_TARGET="clean"
       addons:
         apt:
           sources:
