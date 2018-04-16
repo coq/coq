@@ -2749,12 +2749,9 @@ type classes inference.
   No inference for ``t``. Unresolved instances are
   quantified in the (inferred) type of ``t`` and abstracted in ``t``.
 
+.. opt:: SsrHave NoTCResolution
 
-The behavior of |SSR| 1.4 and below (never resolve type classes)
-can be restored with the option
-
-.. cmd:: Set SsrHave NoTCResolution.
-
+   This option restores the behavior of |SSR| 1.4 and below (never resolve type classes).
 
 Variants: the suff and wlog tactics
 ```````````````````````````````````
