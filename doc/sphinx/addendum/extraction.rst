@@ -1,16 +1,16 @@
-.. _extraction:
-
 .. include:: ../replaces.rst
 
-Extraction of programs in OCaml and Haskell
-============================================
+.. _extraction:
+
+Extraction of programs in |OCaml| and Haskell
+=============================================
 
 :Authors: Jean-Christophe Filliâtre and Pierre Letouzey
 
 We present here the |Coq| extraction commands, used to build certified
 and relatively efficient functional programs, extracting them from
 either |Coq| functions or |Coq| proofs of specifications. The
-functional languages available as output are currently OCaml, Haskell
+functional languages available as output are currently |OCaml|, Haskell
 and Scheme. In the following, "ML" will be used (abusively) to refer
 to any of the three.
 
@@ -89,11 +89,11 @@ in the |Coq| sources.
 .. cmd:: Extraction TestCompile @qualid ... @qualid.
 
    All the mentioned objects and all their dependencies are extracted
-   to a temporary OCaml file, just as in ``Extraction "file"``. Then
+   to a temporary |OCaml| file, just as in ``Extraction "file"``. Then
    this temporary file and its signature are compiled with the same
-   OCaml compiler used to built |Coq|. This command succeeds only
-   if the extraction and the OCaml compilation succeed. It fails
-   if the current target language of the extraction is not OCaml.
+   |OCaml| compiler used to built |Coq|. This command succeeds only
+   if the extraction and the |OCaml| compilation succeed. It fails
+   if the current target language of the extraction is not |OCaml|.
 
 Extraction Options
 -------------------
@@ -102,26 +102,26 @@ Setting the target language
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ability to fix target language is the first and more important
-of the extraction options. Default is ``Ocaml``.
+of the extraction options. Default is ``OCaml``.
 
-.. cmd:: Extraction Language Ocaml.
+.. cmd:: Extraction Language OCaml.
 .. cmd:: Extraction Language Haskell.
 .. cmd:: Extraction Language Scheme.
 
 Inlining and optimizations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Since OCaml is a strict language, the extracted code has to
+Since |OCaml| is a strict language, the extracted code has to
 be optimized in order to be efficient (for instance, when using
 induction principles we do not want to compute all the recursive calls
 but only the needed ones). So the extraction mechanism provides an
 automatic optimization routine that will be called each time the user
-want to generate OCaml programs. The optimizations can be split in two
+want to generate |OCaml| programs. The optimizations can be split in two
 groups: the type-preserving ones (essentially constant inlining and
 reductions) and the non type-preserving ones (some function
 abstractions of dummy types are removed when it is deemed safe in order
 to have more elegant types). Therefore some constants may not appear in the
-resulting monolithic OCaml program. In the case of modular extraction,
+resulting monolithic |OCaml| program. In the case of modular extraction,
 even if some inlining is done, the inlined constant are nevertheless
 printed, to ensure session-independent programs.
 
@@ -264,10 +264,9 @@ what ML term corresponds to a given axiom.
    be inlined everywhere instead of being declared via a ``let``.
 
    .. note::
-
-   This command is sugar for an ``Extract Constant`` followed
-   by a ``Extraction Inline``. Hence a ``Reset Extraction Inline``
-   will have an effect on the realized and inlined axiom.
+      This command is sugar for an ``Extract Constant`` followed
+      by a ``Extraction Inline``. Hence a ``Reset Extraction Inline``
+      will have an effect on the realized and inlined axiom.
 
 .. caution:: It is the responsibility of the user to ensure that the ML
    terms given to realize the axioms do have the expected types. In
@@ -336,7 +335,7 @@ native boolean type instead of |Coq| one. The syntax is the following:
    argument is considered to have one unit argument, in order to block
    early evaluation of the branch: ``| O => bar`` leads to the functional
    form ``(fun () -> bar)``. For instance, when extracting ``nat``
-   into OCaml ``int``, the code to provide has type:
+   into |OCaml| ``int``, the code to provide has type:
    ``(unit->'a)->(int->'a)->int->'a``.
 
 .. caution:: As for ``Extract Constant``, this command should be used with care:
@@ -347,15 +346,15 @@ native boolean type instead of |Coq| one. The syntax is the following:
   * Extracting an inductive type to a pre-existing ML inductive type
     is quite sound. But extracting to a general type (by providing an
     ad-hoc pattern-matching) will often **not** be fully rigorously
-    correct. For instance, when extracting ``nat`` to OCaml ``int``,
+    correct. For instance, when extracting ``nat`` to |OCaml| ``int``,
     it is theoretically possible to build ``nat`` values that are
-    larger than OCaml ``max_int``. It is the user's responsibility to
+    larger than |OCaml| ``max_int``. It is the user's responsibility to
     be sure that no overflow or other bad events occur in practice.
 
   * Translating an inductive type to an arbitrary ML type does **not**
     magically improve the asymptotic complexity of functions, even if the
     ML type is an efficient representation. For instance, when extracting
-    ``nat`` to OCaml ``int``, the function ``Nat.mul`` stays quadratic.
+    ``nat`` to |OCaml| ``int``, the function ``Nat.mul`` stays quadratic.
     It might be interesting to associate this translation with
     some specific ``Extract Constant`` when primitive counterparts exist.
 
@@ -369,9 +368,9 @@ Typical examples are the following:
 
 .. note::
 
-   When extracting to Ocaml, if an inductive constructor or type has arity 2 and
+   When extracting to |OCaml|, if an inductive constructor or type has arity 2 and
    the corresponding string is enclosed by parentheses, and the string meets
-   Ocaml's lexical criteria for an infix symbol, then the rest of the string is
+   |OCaml|'s lexical criteria for an infix symbol, then the rest of the string is
    used as infix constructor or type.
 
 .. coqtop:: in
@@ -380,7 +379,7 @@ Typical examples are the following:
    Extract Inductive prod => "(*)"  [ "(,)" ].
 
 As an example of translation to a non-inductive datatype, let's turn
-``nat`` into OCaml ``int`` (see caveat above):
+``nat`` into |OCaml| ``int`` (see caveat above):
 
 .. coqtop:: in
 
@@ -394,7 +393,7 @@ directly depends from the names of the |Coq| files. It may happen that
 these filenames are in conflict with already existing files, 
 either in the standard library of the target language or in other
 code that is meant to be linked with the extracted code. 
-For instance the module ``List`` exists both in |Coq| and in OCaml.
+For instance the module ``List`` exists both in |Coq| and in |OCaml|.
 It is possible to instruct the extraction not to use particular filenames.
 
 .. cmd:: Extraction Blacklist @ident ... @ident.
@@ -410,7 +409,7 @@ It is possible to instruct the extraction not to use particular filenames.
 
    Allow the extraction to use any filename.
 
-For OCaml, a typical use of these commands is
+For |OCaml|, a typical use of these commands is
 ``Extraction Blacklist String List``.
 
 Differences between |Coq| and ML type systems
@@ -418,7 +417,7 @@ Differences between |Coq| and ML type systems
 
 Due to differences between |Coq| and ML type systems, 
 some extracted programs are not directly typable in ML. 
-We now solve this problem (at least in OCaml) by adding 
+We now solve this problem (at least in |OCaml|) by adding
 when needed some unsafe casting ``Obj.magic``, which give
 a generic type ``'a`` to any term.
 
@@ -432,7 +431,7 @@ function:
 
    Definition dp {A B:Type}(x:A)(y:B)(f:forall C:Type, C->C) := (f A x, f B y).
 
-In Ocaml, for instance, the direct extracted term would be::
+In |OCaml|, for instance, the direct extracted term would be::
 
    let dp x y f = Pair((f () x),(f () y))
 
@@ -455,12 +454,12 @@ of a constructor; for example:
    Inductive anything : Type := dummy : forall A:Set, A -> anything.
 
 which corresponds to the definition of an ML dynamic type.
-In OCaml, we must cast any argument of the constructor dummy
+In |OCaml|, we must cast any argument of the constructor dummy
 (no GADT are produced yet by the extraction).
 
 Even with those unsafe castings, you should never get error like
 ``segmentation fault``. In fact even if your program may seem
-ill-typed to the Ocaml type-checker, it can't go wrong : it comes 
+ill-typed to the |OCaml| type-checker, it can't go wrong : it comes
 from a Coq well-typed terms, so for example inductive types will always 
 have the correct number of arguments, etc. Of course, when launching
 manually some extracted function, you should apply it to arguments
@@ -470,14 +469,14 @@ More details about the correctness of the extracted programs can be
 found in :cite:`Let02`.
 
 We have to say, though, that in most "realistic" programs, these problems do not
-occur. For example all the programs of Coq library are accepted by the OCaml
+occur. For example all the programs of Coq library are accepted by the |OCaml|
 type-checker without any ``Obj.magic`` (see examples below).
 
 Some examples
 -------------
 
 We present here two examples of extractions, taken from the 
-|Coq| Standard Library. We choose OCaml as target language, 
+|Coq| Standard Library. We choose |OCaml| as target language,
 but all can be done in the other dialects with slight modifications.
 We then indicate where to find other examples and tests of extraction.
 
@@ -493,7 +492,7 @@ This module contains a theorem ``eucl_dev``, whose type is::
 
 where ``diveucl`` is a type for the pair of the quotient and the
 modulo, plus some logical assertions that disappear during extraction.
-We can now extract this program to OCaml:
+We can now extract this program to |OCaml|:
 
 .. coqtop:: none
 
@@ -513,7 +512,7 @@ You can then copy-paste the output to a file ``euclid.ml`` or let
 
    Extraction "euclid" eucl_dev.
 
-Let us play the resulting program (in an OCaml toplevel)::
+Let us play the resulting program (in an |OCaml| toplevel)::
 
    #use "euclid.ml";;
    type nat = O | S of nat
@@ -527,7 +526,7 @@ Let us play the resulting program (in an OCaml toplevel)::
    # eucl_dev (S (S O)) (S (S (S (S (S O)))));;
    - : diveucl = Divex (S (S O), S O)
 
-It is easier to test on OCaml integers::
+It is easier to test on |OCaml| integers::
 
    # let rec nat_of_int = function 0 -> O | n -> S (nat_of_int (n-1));;
    val nat_of_int : int -> nat = <fun>

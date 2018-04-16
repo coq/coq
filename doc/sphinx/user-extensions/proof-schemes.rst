@@ -3,6 +3,8 @@
 Proof schemes
 ===============
 
+.. _proofschemes-induction-principles:
+
 Generation of induction principles with ``Scheme``
 --------------------------------------------------------
 
@@ -106,11 +108,10 @@ induction principles when defining a new inductive type with the
 ``Unset Elimination Schemes`` command. It may be reactivated at any time with
 ``Set Elimination Schemes``.
 
-The types declared with the keywords ``Variant`` (see :ref:`TODO-1.3.3`) and ``Record``
-(see :ref:`Record Types <record-types>`) do not have an automatic declaration of the induction
-principles. It can be activated with the command
-``Set Nonrecursive Elimination Schemes``. It can be deactivated again with
-``Unset Nonrecursive Elimination Schemes``.
+.. opt:: Nonrecursive Elimination Schemes
+
+This option controls whether types declared with the keywords :cmd:`Variant` and
+:cmd:`Record` get an automatic declaration of the induction principles.
 
 In addition, the ``Case Analysis Schemes`` flag governs the generation of
 case analysis lemmas for inductive types, i.e. corresponding to the
@@ -162,6 +163,8 @@ concluded by the conjunction of their conclusions.
   .. coqtop:: all
 
     Check tree_forest_mutind.
+
+.. _functional-scheme:
 
 Generation of induction principles with ``Functional`` ``Scheme``
 -----------------------------------------------------------------
@@ -229,7 +232,7 @@ definition written by the user.
     simpl; auto with arith.
     Qed.
 
-  We can use directly the functional induction (:ref:`TODO-8.5.5`) tactic instead
+  We can use directly the functional induction (:tacn:`function induction`) tactic instead
   of the pattern/apply trick:
 
   .. coqtop:: all
@@ -305,6 +308,8 @@ definition written by the user.
   .. coqtop:: all
 
     Check tree_size_ind2.
+
+.. _derive-inversion:
      
 Generation of inversion principles with ``Derive`` ``Inversion``
 -----------------------------------------------------------------
