@@ -218,15 +218,16 @@ let rec ipat_tac1 future_ipats ipat : unit tactic =
       Ssrview.tclIPAT_VIEWS ~views:l
         ~conclusion:(fun ~to_clear:clr -> intro_clear clr future_ipats)
   | IPatDispatch ipatss ->
-      tclEXTEND (List.map ipat_tac ipatss) (tclUNIT ()) []
+      tclEXTEND (List.map (ipat_tac future_ipats) ipatss) (tclUNIT ()) []
 
   | IPatId id -> Ssrcommon.tclINTRO_ID id
 
   | IPatCase ipatss ->
-     tclIORPAT (Ssrcommon.tclWITHTOP tac_case) ipatss
+     tclIORPAT (Ssrcommon.tclWITHTOP tac_case) future_ipats ipatss
   | IPatInj ipatss ->
      tclIORPAT (Ssrcommon.tclWITHTOP
-       (fun t -> V82.tactic  ~nf_evars:false (Ssrelim.perform_injection t))) ipatss
+       (fun t -> V82.tactic  ~nf_evars:false (Ssrelim.perform_injection t)))
+       future_ipats ipatss
 
   | IPatAnon Drop -> intro_drop
   | IPatAnon One -> Ssrcommon.tclINTRO_ANON
@@ -254,17 +255,17 @@ let rec ipat_tac1 future_ipats ipat : unit tactic =
 
   | IPatTac t -> t
 
-and ipat_tac pl : unit tactic =
+and ipat_tac future_ipats pl : unit tactic =
   match pl with
   | [] -> tclUNIT ()
   | pat :: pl ->
-      Ssrcommon.tcl0G (tclLOG pat (ipat_tac1 pl)) <*>
+      Ssrcommon.tcl0G (tclLOG pat (ipat_tac1 (pl @ future_ipats))) <*>
       isTICK pat <*>
-      ipat_tac pl
+      ipat_tac future_ipats pl
 
-and tclIORPAT tac = function
+and tclIORPAT tac future_ipats = function
   | [[]] -> tac
-  | p -> Tacticals.New.tclTHENS tac (List.map ipat_tac p)
+  | p -> Tacticals.New.tclTHENS tac (List.map (ipat_tac future_ipats) p)
 
 let split_at_first_case ipats =
   let rec loop acc = function
@@ -285,7 +286,7 @@ let main ?eqtac ~first_case_is_dispatch ipats =
   let case = ssr_exception first_case_is_dispatch case in
   let case = option_to_list case in
   let eqtac = option_to_list (Option.map (fun x -> IPatTac x) eqtac) in
-  Ssrcommon.tcl0G (ipat_tac (ip_before @ case @ eqtac @ ip_after) <*> intro_end)
+  Ssrcommon.tcl0G (ipat_tac [] (ip_before @ case @ eqtac @ ip_after) <*> intro_end)
 
 end (* }}} *)
 

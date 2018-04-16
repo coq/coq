@@ -802,8 +802,11 @@ let rec is_name_in_ipats name = function
       List.exists (function SsrHyp(_,id) -> id = name) clr 
       || is_name_in_ipats name tl
   | IPatId id :: tl -> id = name || is_name_in_ipats name tl
-  | (IPatCase l | IPatDispatch l) :: tl -> List.exists (is_name_in_ipats name) l || is_name_in_ipats name tl
-  | _ :: tl -> is_name_in_ipats name tl
+  | IPatAbstractVars ids :: tl ->
+      CList.mem_f Id.equal name ids || is_name_in_ipats name tl
+  | (IPatCase l | IPatDispatch l | IPatInj l) :: tl ->
+      List.exists (is_name_in_ipats name) l || is_name_in_ipats name tl
+  | (IPatView _ | IPatAnon _ | IPatSimpl _ | IPatRewrite _ | IPatTac _ | IPatNoop) :: tl -> is_name_in_ipats name tl
   | [] -> false
 
 let view_error s gv =
