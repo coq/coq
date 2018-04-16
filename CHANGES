@@ -17,7 +17,7 @@ Tactic language
 
 - Support for fix/cofix added in Ltac "match" and "lazymatch".
 
-- Ltac backtraces now contain include trace information about tactics
+- Ltac backtraces now include trace information about tactics
   called by OCaml-defined tactics.
 
 Changes from 8.8+beta1 to 8.8.0
