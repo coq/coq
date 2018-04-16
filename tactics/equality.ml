@@ -1761,7 +1761,16 @@ type subst_tactic_flags = {
 let default_subst_tactic_flags =
   { only_leibniz = false; rewrite_dependent_proof = true }
 
+let warn_deprecated_simple_subst =
+  CWarnings.create ~name:"deprecated-simple-subst" ~category:"deprecated"
+    (fun () -> strbrk"\"simple subst\" is deprecated")
+
 let subst_all ?(flags=default_subst_tactic_flags) () =
+
+  let () =
+    if flags.only_leibniz || not flags.rewrite_dependent_proof then
+      warn_deprecated_simple_subst ()
+  in
 
   if !regular_subst_tactic then
 
