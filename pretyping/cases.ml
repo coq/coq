@@ -373,6 +373,11 @@ let ltac_interp_realnames lvar = function
   | t, IsInd (ty,ind,realnal) -> t, IsInd (ty,ind,List.map (ltac_interp_name lvar) realnal)
   | _ as x -> x
 
+let is_patvar pat =
+  match DAst.get pat with
+  | PatVar _ -> true
+  | _ -> false
+
 let coerce_row typing_fun evdref env lvar pats (tomatch,(na,indopt)) =
   let loc = loc_of_glob_constr tomatch in
   let tycon,realnames = find_tomatch_tycon evdref env loc indopt in
@@ -381,6 +386,7 @@ let coerce_row typing_fun evdref env lvar pats (tomatch,(na,indopt)) =
   let typ = nf_evar !evdref j.uj_type in
   lvar := make_return_predicate_ltac_lvar !evdref na tomatch j.uj_val !lvar;
   let t =
+    if realnames = None && pats <> [] && List.for_all is_patvar pats then NotInd (None,typ) else
     try try_find_ind env !evdref typ realnames
     with Not_found ->
       unify_tomatch_with_patterns evdref env loc typ pats realnames in
