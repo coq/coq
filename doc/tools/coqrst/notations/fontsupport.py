@@ -63,8 +63,7 @@ def trim_font(fnt):
 def center_glyphs(src_font_path, dst_font_path, dst_name):
     fnt = trim_font(fontforge.open(src_font_path))
 
-    size = max(max(g.width for g in fnt.glyphs()),
-               max(glyph_height(g) for g in fnt.glyphs()))
+    size = max(g.width for g in fnt.glyphs())
     fnt.ascent, fnt.descent = size, 0
     for glyph in fnt.glyphs():
         scale_single_glyph(glyph, size, size)
@@ -77,5 +76,5 @@ if __name__ == '__main__':
     from os.path import dirname, join, abspath
     curdir = dirname(abspath(__file__))
     ubuntumono_path = join(curdir, "UbuntuMono-B.ttf")
-    ubuntumono_mod_path = join(curdir, "UbuntuMono-Square.ttf")
-    center_glyphs(ubuntumono_path, ubuntumono_mod_path, "UbuntuMono-Square")
+    ubuntumono_mod_path = join(curdir, "CoqNotations.ttf")
+    center_glyphs(ubuntumono_path, ubuntumono_mod_path, "CoqNotations")

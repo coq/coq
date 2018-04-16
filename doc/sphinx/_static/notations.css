@@ -22,10 +22,10 @@
 }
 
 @font-face { /* This font has been edited to center all characters */
-  font-family: 'UbuntuMono-Square';
+  font-family: 'CoqNotations';
   font-style: normal;
   font-weight: 800;
-  src: local('UbuntuMono-Square'), url(./UbuntuMono-Square.ttf) format('truetype');
+  src: local('CoqNotations'), url(./CoqNotations.ttf) format('truetype');
 }
 
 .notation .notation-sup, .notation .notation-sub {
@@ -34,15 +34,15 @@
     color: black;
     /* cursor: help; */
     display: inline-block;
-    font-size: 0.5em;
+    font-size: 0.45em;
     font-weight: bolder;
-    font-family: UbuntuMono-Square, monospace;
-    height: 2em;
+    font-family: CoqNotations, monospace;
+    height: 2.2em;
     line-height: 1.6em;
     position: absolute;
     right: -1em; /* half of the width */
     text-align: center;
-    width: 2em;
+    width: 2.2em;
 }
 
 .notation .repeat {
