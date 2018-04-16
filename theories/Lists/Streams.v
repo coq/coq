@@ -196,7 +196,7 @@ Lemma ForAll_map : forall (P:Stream B -> Prop) (S:Stream A), ForAll (fun s => P
 (map s)) S <-> ForAll P (map S).
 Proof.
 intros P S.
-split; generalize S; clear S; cofix; intros S; constructor;
+split; generalize S; clear S; cofix ForAll_map; intros S; constructor;
 destruct H as [H0 H]; firstorder.
 Qed.
 
