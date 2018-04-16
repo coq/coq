@@ -35,6 +35,12 @@ Tactic language
   deprecated; please use `fix/cofix ident N` to explicitely name
   hypothesis to be introduced.
 
+Documentation
+
+- The reference manual is now fully ported to Sphinx.
+
+Other small deprecations and bug fixes.
+
 Changes from 8.7.2 to 8.8+beta1
 ===============================
 
