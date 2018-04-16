@@ -66,8 +66,8 @@ Alternatively, you can use some specific targets:
    make doc-html
         to produce all html documents
 
-   make refman
-        to produce all formats of the reference manual
+   make sphinx
+        to produce the HTML version of the reference manual
 
    make tutorial
         to produce all formats of the tutorial
