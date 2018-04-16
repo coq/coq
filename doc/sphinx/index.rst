@@ -16,6 +16,7 @@ Table of contents
 .. toctree::
    :caption: The language
 
+   language/gallina-specification-language
    language/gallina-extensions
    language/coq-library
    language/cic
