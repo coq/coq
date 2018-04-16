@@ -107,6 +107,11 @@ This command switches :n:`@flag` on. The original state
 of :n:`@flag` is *not* restored at the end of the module. Additionally, if
 set in a file, :n:`@flag` is switched on when the file is `Require`-d.
 
+.. cmdv:: Export Set @flag.
+
+   This command switches :n:`@flag` on. The original state
+   of :n:`@flag` is restored at the end of the current module, but :n:`@flag`
+   is switched on when this module is imported.
 
 
 .. cmd:: Unset @flag.
@@ -128,6 +133,11 @@ This command switches :n:`@flag` off. The original
 state of :n:`@flag` is *not* restored at the end of the module. Additionally,
 if set in a file, :n:`@flag` is switched off when the file is `Require`-d.
 
+.. cmdv:: Export Unset @flag.
+
+   This command switches :n:`@flag` off. The original state
+   of :n:`@flag` is restored at the end of the current module, but :n:`@flag`
+   is switched off when this module is imported.
 
 
 .. cmd:: Test @flag.
@@ -157,11 +167,16 @@ original value of :n:`@option` is *not* restored at the end of the module.
 Additionally, if set in a file, :n:`@option` is set to value when the file
 is `Require`-d.
 
+.. cmdv:: Export Set @option.
+
+   This command set :n:`@option` to :n:`@value`. The original state
+   of :n:`@option` is restored at the end of the current module, but :n:`@option`
+   is set to :n:`@value` when this module is imported.
 
 
 .. cmd::  Unset @option.
 
-This command resets option to its default value.
+   This command turns off :n:`@option`.
 
 
 Variants:
@@ -169,17 +184,20 @@ Variants:
 
 .. cmdv:: Local Unset @option.
 
-This command resets :n:`@option` to its default
-value. The original state of :n:`@option` is restored when the current
-*section* ends.
+   This command turns off :n:`@option`. The original state of :n:`@option` is restored when the current
+   *section* ends.
 
 .. cmdv:: Global Unset @option.
 
-This command resets :n:`@option` to its default
-value. The original state of :n:`@option` is *not* restored at the end of the
-module. Additionally, if unset in a file, :n:`@option` is reset to its
-default value when the file is `Require`-d.
+   This command turns off :n:`@option`. The original state of :n:`@option` is *not* restored at the end of the
+   module. Additionally, if unset in a file, :n:`@option` is reset to its
+   default value when the file is `Require`-d.
 
+.. cmdv:: Export Unset @option.
+
+   This command turns off :n:`@option`. The original state of :n:`@option` is restored at the end of the
+   current module, but :n:`@option` is set to its default value when this module
+   is imported.
 
 
 .. cmd:: Test @option.
