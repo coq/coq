@@ -151,7 +151,7 @@ Program Definition
    obligations. Once solved using the commands shown below, it binds the
    final |Coq| term to the name ``ident`` in the environment.
 
-   .. exn:: ident already exists
+   .. exn:: @ident already exists (Program Definition)
 
    .. cmdv:: Program Definition @ident : @type := @term
 
@@ -276,6 +276,7 @@ obligations (e.g. when defining mutually recursive blocks). The
 optional tactic is replaced by the default one if not specified.
 
 .. cmd:: {? Local|Global} Obligation Tactic := @tactic
+   :name: Obligation Tactic
 
    Sets the default obligation solving tactic applied to all obligations
    automatically, whether to solve them or when starting to prove one,

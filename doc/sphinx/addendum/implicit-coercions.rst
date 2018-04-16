@@ -138,7 +138,7 @@ Declaration of Coercions
   .. exn:: @qualid does not respect the uniform inheritance condition
   .. exn:: Found target class ... instead of ...
 
-  .. warn:: Ambigous path:
+  .. warn:: Ambiguous path
 
     When the coercion `qualid` is added to the inheritance graph, non
     valid coercion paths are ignored; they are signaled by a warning
@@ -218,6 +218,7 @@ declaration, this constructor is declared as a coercion.
     Idem but locally to the current section.
 
   .. cmdv:: SubClass @ident := @type.
+     :name: SubClass
 
     If `type` is a class `ident'` applied to some arguments then
     `ident` is defined and an identity coercion of name
@@ -291,6 +292,7 @@ by extending the existing :cmd:`Record` macro. Its new syntax is:
    satisfied).
 
 .. cmdv:: Structure {? >} @ident {? @binders} : @sort := {? @ident} { {+; @ident :{? >} @term } }.
+   :name: Structure
 
    This is a synonym of :cmd:`Record`.
 

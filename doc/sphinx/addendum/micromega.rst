@@ -13,20 +13,19 @@ tactics for solving arithmetic goals over :math:`\mathbb{Z}`, :math:`\mathbb{Q}`
 It also possible to get the tactics for integers by a ``Require Import Lia``,
 rationals ``Require Import Lqa`` and reals ``Require Import Lra``.
 
-+ ``lia`` is a decision procedure for linear integer arithmetic (see Section :ref:`lia <lia>`);
-+ ``nia`` is an incomplete proof procedure for integer non-linear
-  arithmetic (see Section :ref:`nia <nia>`);
-+ ``lra`` is a decision procedure for linear (real or rational) arithmetic
-  (see Section :ref:`lra <lra>`);
-+ ``nra`` is an incomplete proof procedure for non-linear (real or
-  rational) arithmetic (see Section :ref:`nra <nra>`);
-+ ``psatz D n`` where ``D`` is :math:`\mathbb{Z}` or :math:`\mathbb{Q}` or :math:`\mathbb{R}`, and
++ :tacn:`lia` is a decision procedure for linear integer arithmetic;
++ :tacn:`nia` is an incomplete proof procedure for integer non-linear
+  arithmetic;
++ :tacn:`lra` is a decision procedure for linear (real or rational) arithmetic;
++ :tacn:`nra` is an incomplete proof procedure for non-linear (real or
+  rational) arithmetic;
++ :tacn:`psatz` ``D n`` where ``D`` is :math:`\mathbb{Z}` or :math:`\mathbb{Q}` or :math:`\mathbb{R}`, and
   ``n`` is an optional integer limiting the proof search depth
   is an incomplete proof procedure for non-linear arithmetic.
   It is based on John Harrison’s HOL Light
   driver to the external prover `csdp` [#]_. Note that the `csdp` driver is
   generating a *proof cache* which makes it possible to rerun scripts
-  even without `csdp` (see Section :ref:`psatz <psatz>`).
+  even without `csdp`.
 
 The tactics solve propositional formulas parameterized by atomic
 arithmetic expressions interpreted over a domain :math:`D` ∈ {ℤ, ℚ, ℝ}.
@@ -91,12 +90,13 @@ For each conjunct :math:`C_i`, the tactic calls a oracle which searches for
 expression* that is normalized by the ring tactic (see :ref:`theringandfieldtacticfamilies`)
 and checked to be :math:`-1`.
 
-.. _lra:
-
 `lra`: a decision procedure for linear real and rational arithmetic
 -------------------------------------------------------------------
 
-The `lra` tactic is searching for *linear* refutations using Fourier
+.. tacn:: lra
+   :name: lra
+
+This tactic is searching for *linear* refutations using Fourier
 elimination [#]_. As a result, this tactic explores a subset of the *Cone*
 defined as
 
@@ -107,16 +107,17 @@ The deductive power of `lra` is the combined deductive power of
 tactic *e.g.*, :math:`x = 10 * x / 10` is solved by `lra`.
 
 
-.. _lia:
-
 `lia`: a tactic for linear integer arithmetic
 ---------------------------------------------
 
-The tactic lia offers an alternative to the omega and romega tactic
-(see :ref:`omega`). Roughly speaking, the deductive power of lia is
-the combined deductive power of `ring_simplify` and `omega`. However, it
-solves linear goals that `omega` and `romega` do not solve, such as the
-following so-called *omega nightmare* :cite:`TheOmegaPaper`.
+.. tacn:: lia
+   :name: lia
+
+This tactic offers an alternative to the :tacn:`omega` and :tac:`romega`
+tactics. Roughly speaking, the deductive power of lia is the combined deductive
+power of :tacn:`ring_simplify` and :tacn:`omega`. However, it solves linear
+goals that :tacn:`omega` and :tacn:`romega` do not solve, such as the following
+so-called *omega nightmare* :cite:`TheOmegaPaper`.
 
 .. coqtop:: in
 
@@ -124,8 +125,8 @@ following so-called *omega nightmare* :cite:`TheOmegaPaper`.
      27 <= 11 * x + 13 * y <= 45 ->
      -10 <= 7 * x - 9 * y <= 4 -> False.
 
-The estimation of the relative efficiency of `lia` *vs* `omega` and `romega`
-is under evaluation.
+The estimation of the relative efficiency of :tacn:`lia` *vs* :tacn:`omega` and
+:tacn:`romega` is under evaluation.
 
 High level view of `lia`
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -182,12 +183,13 @@ Our current oracle tries to find an expression :math:`e` with a small range
 with an equation :math:`e = i` for :math:`i \in [c_1,c_2]` and recursively search for
 a proof.
 
-.. _nra:
-
 `nra`: a proof procedure for non-linear arithmetic
 --------------------------------------------------
 
-The `nra` tactic is an *experimental* proof procedure for non-linear
+.. tacn:: nra
+   :name: nra
+
+This tactic is an *experimental* proof procedure for non-linear
 arithmetic. The tactic performs a limited amount of non-linear
 reasoning before running the linear prover of `lra`. This pre-processing
 does the following:
@@ -202,21 +204,23 @@ does the following:
 After this pre-processing, the linear prover of `lra` searches for a
 proof by abstracting monomials by variables.
 
-.. _nia:
-
 `nia`: a proof procedure for non-linear integer arithmetic
 ----------------------------------------------------------
 
-The `nia` tactic is a proof procedure for non-linear integer arithmetic.
+.. tacn:: nia
+   :name: nia
+
+This tactic is a proof procedure for non-linear integer arithmetic.
 It performs a pre-processing similar to `nra`. The obtained goal is
 solved using the linear integer prover `lia`.
-
-.. _psatz:
 
 `psatz`: a proof procedure for non-linear arithmetic
 ----------------------------------------------------
 
-The `psatz` tactic explores the :math:`\mathit{Cone}` by increasing degrees – hence the
+.. tacn:: psatz
+   :name: psatz
+
+This tactic explores the :math:`\mathit{Cone}` by increasing degrees – hence the
 depth parameter :math:`n`. In theory, such a proof search is complete – if the
 goal is provable the search eventually stops. Unfortunately, the
 external oracle is using numeric (approximate) optimization techniques
