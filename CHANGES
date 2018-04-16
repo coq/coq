@@ -7,6 +7,12 @@ Tools
   Coq was ignoring previous runs and the -async-proofs-delegation-threshold
   option did not have the expected behavior.
 
+Tactic language
+
+- The undocumented "nameless" forms `fix N`, `cofix N` have been
+  deprecated; please use `fix/cofix ident N` to explicitely name
+  hypothesis to be introduced.
+
 Changes from 8.7.2 to 8.8+beta1
 ===============================
 

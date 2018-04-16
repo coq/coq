@@ -12,7 +12,7 @@ Fail Show Extraction.
 Lemma decListA : forall (xs ys : list A), {xs=ys}+{xs<>ys}.
 Proof.
 Show Extraction.
-fix 1.
+fix decListA 1.
 destruct xs as [|x xs], ys as [|y ys].
 Show Extraction.
 - now left.

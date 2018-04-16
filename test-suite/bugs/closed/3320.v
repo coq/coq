@@ -1,5 +1,5 @@
 Goal forall x : nat, True.
-  fix 1.
+  fix goal 1.
   assumption.
 Fail Qed.
 Undo.

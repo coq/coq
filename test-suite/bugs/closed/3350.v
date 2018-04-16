@@ -55,7 +55,7 @@ Lemma lower_ind (P: forall n (p i:Fin.t (S n)), option (Fin.t n) -> Prop)
                 P (S n) (Fin.FS p) (Fin.FS i) None) :
   forall n (p i:Fin.t (S n)), P n p i (lower p i).
 Proof.
-  fix 2. intros n p.
+  fix lower_ind 2. intros n p.
   refine (match p as p1 in Fin.t (S n1)
                 return forall (i1:Fin.t (S n1)), P n1 p1 i1 (lower p1 i1)
           with

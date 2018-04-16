@@ -315,7 +315,7 @@ Import Private_Parity.
 
 Lemma even_spec : forall n, even n = true <-> Even n.
 Proof.
- fix 1.
+ fix even_spec 1.
   destruct n as [|[|n]]; simpl.
   - split; [ now exists 0 | trivial ].
   - split; [ discriminate | intro H; elim (Even_1 H) ].
@@ -325,7 +325,7 @@ Qed.
 Lemma odd_spec : forall n, odd n = true <-> Odd n.
 Proof.
  unfold odd.
- fix 1.
+ fix odd_spec 1.
   destruct n as [|[|n]]; simpl.
   - split; [ discriminate | intro H; elim (Odd_0 H) ].
   - split; [ now exists 0 | trivial ].
@@ -473,7 +473,7 @@ Notation "( x | y )" := (divide x y) (at level 0) : nat_scope.
 
 Lemma gcd_divide : forall a b, (gcd a b | a) /\ (gcd a b | b).
 Proof.
- fix 1.
+ fix gcd_divide 1.
  intros [|a] b; simpl.
  split.
   now exists 0.
@@ -502,7 +502,7 @@ Qed.
 
 Lemma gcd_greatest : forall a b c, (c|a) -> (c|b) -> (c|gcd a b).
 Proof.
- fix 1.
+ fix gcd_greatest 1.
  intros [|a] b; simpl; auto.
  fold (b mod (S a)).
  intros c H H'. apply gcd_greatest; auto.
@@ -536,7 +536,7 @@ Qed.
 Lemma le_div2 n : div2 (S n) <= n.
 Proof.
  revert n.
- fix 1.
+ fix le_div2 1.
  destruct n; simpl; trivial. apply lt_succ_r.
  destruct n; [simpl|]; trivial. now constructor.
 Qed.
