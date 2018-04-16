@@ -96,21 +96,6 @@ doc/faq/axioms.eps
 doc/faq/axioms.eps_t
 doc/faq/axioms.pdf_t
 doc/faq/axioms.png
-doc/refman/.csdp.cache
-doc/refman/trace
-doc/refman/Reference-Manual.ps
-doc/refman/Reference-Manual.html
-doc/refman/Reference-Manual.out
-doc/refman/Reference-Manual.sh
-doc/refman/cover.html
-doc/refman/styles.hva
-doc/refman/coqide-queries.eps
-doc/refman/coqide.eps
-doc/refman/euclid.ml
-doc/refman/euclid.mli
-doc/refman/heapsort.ml
-doc/refman/heapsort.mli
-doc/refman/html/
 doc/stdlib/Library.out
 doc/stdlib/Library.ps
 doc/stdlib/Library.coqdoc.tex
@@ -177,9 +162,6 @@ dev/myinclude
 
 # coqide generated files (when testing)
 *.crashcoqide
-/doc/refman/Reference-Manual.hoptind
-/doc/refman/Reference-Manual.optidx
-/doc/refman/Reference-Manual.optind
 
 user-contrib
 .*.sw*
