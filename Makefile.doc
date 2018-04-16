@@ -56,29 +56,14 @@ ALLSPHINXOPTS= -d $(SPHINXBUILDDIR)/doctrees $(SPHINXOPTS)
 
 DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
 
-REFMANCOQTEXFILES:=$(addprefix doc/refman/, )
-
-REFMANTEXFILES:=$(addprefix doc/refman/, \
-  headers.sty Reference-Manual.tex) \
-  $(REFMANCOQTEXFILES) \
-
-REFMANEPSFILES:=doc/refman/coqide.eps doc/refman/coqide-queries.eps
-
-REFMANFILES:=$(REFMANTEXFILES) $(DOCCOMMON) $(REFMANEPSFILES) doc/refman/biblio.bib
-
-REFMANPNGFILES:=$(REFMANEPSFILES:.eps=.png)
-
-
 ######################################################################
 ### General rules
 ######################################################################
 
-.PHONY: doc sphinxdoc-html doc-pdf doc-ps refman refman-quick tutorial
-.PHONY: stdlib full-stdlib rectutorial refman-html-dir
+.PHONY: doc sphinxdoc-html doc-pdf doc-ps tutorial
+.PHONY: stdlib full-stdlib rectutorial
 
-INDEXURLS:=doc/refman/html/index_urls.txt
-
-doc: sphinx refman tutorial rectutorial stdlib $(INDEXURLS)
+doc: sphinx tutorial rectutorial stdlib
 
 sphinx: coq
 	$(SHOW)'SPHINXBUILD doc/sphinx'
@@ -87,19 +72,16 @@ sphinx: coq
 	@echo "Build finished. The HTML pages are in $(SPHINXBUILDDIR)/html."
 
 doc-html:\
-  doc/tutorial/Tutorial.v.html doc/refman/html/index.html \
+  doc/tutorial/Tutorial.v.html \
   doc/stdlib/html/index.html doc/RecTutorial/RecTutorial.html
 
 doc-pdf:\
-  doc/tutorial/Tutorial.v.pdf doc/refman/Reference-Manual.pdf \
+  doc/tutorial/Tutorial.v.pdf \
   doc/stdlib/Library.pdf doc/RecTutorial/RecTutorial.pdf
 
 doc-ps:\
-  doc/tutorial/Tutorial.v.ps doc/refman/Reference-Manual.ps \
+  doc/tutorial/Tutorial.v.ps \
   doc/stdlib/Library.ps doc/RecTutorial/RecTutorial.ps
-
-refman: \
-  doc/refman/html/index.html doc/refman/Reference-Manual.ps doc/refman/Reference-Manual.pdf
 
 tutorial: \
   doc/tutorial/Tutorial.v.html doc/tutorial/Tutorial.v.ps doc/tutorial/Tutorial.v.pdf
@@ -157,82 +139,6 @@ SHOWMAKEINDEXERROR=egrep '^!! Input index error|^\*\* Input style error|^   --'
 
 doc/common/version.tex: config/Makefile
 	printf '\\newcommand{\\coqversion}{$(VERSION)}' > doc/common/version.tex
-
-######################################################################
-# Reference Manual
-######################################################################
-
-
-### Reference Manual (printable format)
-
-# The second LATEX compilation is necessary otherwise the pages of the index
-# are not correct (don't know why...) - BB
-doc/refman/Reference-Manual.dvi: $(REFMANFILES) doc/refman/Reference-Manual.tex
-	@(cd doc/refman;\
-	$(LATEX) -interaction=batchmode Reference-Manual;\
-	$(BIBTEX) -terse Reference-Manual $(HIDEBIBTEXINFO);\
-	$(LATEX) -interaction=batchmode Reference-Manual > /dev/null;\
-	$(MAKEINDEX) -q Reference-Manual;\
-	$(SHOWMAKEINDEXERROR) Reference-Manual.ilg;\
-	$(MAKEINDEX) -q Reference-Manual.tacidx -o Reference-Manual.tacind;\
-	$(SHOWMAKEINDEXERROR) Reference-Manual.ilg;\
-	$(MAKEINDEX) -q Reference-Manual.comidx -o Reference-Manual.comind;\
-	$(SHOWMAKEINDEXERROR) Reference-Manual.ilg;\
-	$(MAKEINDEX) -q Reference-Manual.optidx -o Reference-Manual.optind;\
-	$(SHOWMAKEINDEXERROR) Reference-Manual.ilg;\
-	$(MAKEINDEX) -q Reference-Manual.erridx -o Reference-Manual.errind;\
-	$(SHOWMAKEINDEXERROR) Reference-Manual.ilg;\
-	$(LATEX) -interaction=batchmode Reference-Manual > /dev/null;\
-	$(LATEX) -interaction=batchmode Reference-Manual > /dev/null;\
-	../tools/show_latex_messages -no-overfull Reference-Manual.log)
-
-doc/refman/Reference-Manual.pdf: doc/refman/Reference-Manual.dvi $(REFMANPNGFILES)
-	(cd doc/refman;\
-	$(PDFLATEX) -interaction=batchmode Reference-Manual.tex;\
-	../tools/show_latex_messages -no-overfull Reference-Manual.log)
-
-### Reference Manual (browsable format)
-
-doc/refman/Reference-Manual.html: doc/refman/styles.hva doc/refman/headers.hva doc/refman/Reference-Manual.dvi # to ensure bbl file
-	(cd doc/refman; BIBINPUTS=.: $(HEVEA) $(HEVEAOPTS) ./styles.hva ./Reference-Manual.tex)
-
-doc/refman/cover.html: doc/common/styles/html/$(HTMLSTYLE)/cover.html
-	sed -e "s/COQVERSION/$(VERSION)/g" $< > $@
-
-doc/refman/styles.hva: doc/common/styles/html/$(HTMLSTYLE)/styles.hva
-	$(INSTALLLIB) $< doc/refman
-
-INDEXES:= doc/refman/html/command-index.html doc/refman/html/tactic-index.html
-
-refman-html-dir $(INDEXES): doc/refman/html/index.html ;
-
-doc/refman/html/index.html: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
-	       doc/refman/cover.html doc/refman/styles.hva doc/refman/index.html
-	- rm -rf doc/refman/html
-	$(MKDIR) doc/refman/html
-	$(INSTALLLIB) $(REFMANPNGFILES) doc/refman/html
-	(cd doc/refman/html; $(HACHA) -nolinks -tocbis -o toc.html ../styles.hva ../Reference-Manual.html)
-	$(INSTALLLIB) doc/refman/cover.html doc/refman/html/index.html
-	@touch $(INDEXES)
-	(cd doc/common/styles/html/$(HTMLSTYLE);\
-		for f in `find . -name \*.css`; do \
-			$(MKDIR) $$(dirname ../../../../refman/html/$$f);\
-			$(INSTALLLIB) $$f ../../../../refman/html/$$f;\
-		done)
-
-refman-quick:
-	(cd doc/refman;\
-	$(PDFLATEX) -interaction=batchmode Reference-Manual.tex;\
-	../tools/show_latex_messages -no-overfull Reference-Manual.log && \
-	$(HEVEA) $(HEVEAOPTS) ./Reference-Manual.tex)
-
-######################################################################
-# Index file for CoqIDE
-######################################################################
-
-$(INDEXURLS): $(INDEXES)
-	cat $< | grep li-indexenv | grep href= | sed -e 's@.*>\([^<]*\)</span>.*, <a href="\([^"]*\)">.*@\1,\2@' > $@
-
 
 ######################################################################
 # Tutorial
@@ -359,29 +265,19 @@ install-doc-meta:
 	$(INSTALLLIB) doc/LICENSE $(FULLDOCDIR)/LICENSE.doc
 
 install-doc-html: 
-	$(MKDIR) $(addprefix $(FULLDOCDIR)/html/, refman stdlib)
-	(for f in `cd doc/refman/html; find . -type f`; do \
-		$(MKDIR) $$(dirname $(FULLDOCDIR)/html/refman/$$f);\
-		$(INSTALLLIB) doc/refman/html/$$f $(FULLDOCDIR)/html/refman/$$f;\
-	done)
+	$(MKDIR) $(FULLDOCDIR)/html/stdlib
 	$(INSTALLLIB) doc/stdlib/html/* $(FULLDOCDIR)/html/stdlib
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.html $(FULLDOCDIR)/html/RecTutorial.html
 	$(INSTALLLIB) doc/tutorial/Tutorial.v.html $(FULLDOCDIR)/html/Tutorial.html
 
 install-doc-printable: 
 	$(MKDIR) $(FULLDOCDIR)/ps $(FULLDOCDIR)/pdf
-	$(INSTALLLIB) doc/refman/Reference-Manual.pdf \
-		doc/stdlib/Library.pdf $(FULLDOCDIR)/pdf
-	$(INSTALLLIB) doc/refman/Reference-Manual.ps \
-		doc/stdlib/Library.ps $(FULLDOCDIR)/ps
+	$(INSTALLLIB) doc/stdlib/Library.pdf $(FULLDOCDIR)/pdf
+	$(INSTALLLIB) doc/stdlib/Library.ps $(FULLDOCDIR)/ps
 	$(INSTALLLIB) doc/tutorial/Tutorial.v.pdf $(FULLDOCDIR)/pdf/Tutorial.pdf
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.pdf $(FULLDOCDIR)/pdf/RecTutorial.pdf
 	$(INSTALLLIB) doc/tutorial/Tutorial.v.ps $(FULLDOCDIR)/ps/Tutorial.ps
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.ps $(FULLDOCDIR)/ps/RecTutorial.ps
-
-install-doc-index-urls:
-	$(MKDIR) $(FULLDATADIR)
-	$(INSTALLLIB) $(INDEXURLS) $(FULLDATADIR)
 
 install-doc-sphinx:
 	$(MKDIR) $(FULLDOCDIR)/sphinx
@@ -466,13 +362,6 @@ $(OCAMLDOCDIR)/%.pdf: $(OCAMLDOCDIR)/%.tex
 	$(SHOW)'PDFLATEX $*.tex'
 	$(HIDE)(cd $(OCAMLDOCDIR) ; pdflatex -interaction=batchmode $*.tex && pdflatex -interaction=batchmode $*.tex)
 	$(HIDE)(cd doc/tools/; ./show_latex_messages -no-overfull ../../$(OCAMLDOCDIR)/$*.log)
-
-###########################################################################
-# local web server
-###########################################################################
-
-serve-refman-8080: refman
-	cd doc/refman/html; python3 -m http.server 8080
 
 # For emacs:
 # Local Variables:
