@@ -385,3 +385,11 @@ Variable x : nat.
 Definition ex := fun x y:nat=>ltac:(exact (x + y)).
 Check eq_refl : ex = fun x y : nat => x + y.
 End test.
+
+Ltac f_rec n x y := match n with
+  | 3 => constr:((x,y))
+  | _ => constr:(let z := n in ltac:(let ret := f_rec (S n) y z in exact ret))
+ end.
+Theorem Thm : ltac:(let b := f_rec 1 0 0 in exact (b=(1,2))).
+reflexivity.
+Qed.
