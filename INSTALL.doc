@@ -43,7 +43,7 @@ working set of packages for compiling the documentation for Coq is:
   python3 python-pip3
 
 To install the Python packages required to build the user manual, run:
-  pip3 install sphinx sphinx_rtd_theme beautifulsoup4 antlr4-python3-runtime pexpect
+  pip3 install sphinx sphinx_rtd_theme beautifulsoup4 antlr4-python3-runtime pexpect sphinxcontrib-bibtex
 
 
 Compilation
