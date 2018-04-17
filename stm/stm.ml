@@ -92,11 +92,11 @@ let execution_error ?loc state_id msg =
 module Hooks = struct
 
 let state_computed, state_computed_hook = Hook.make
- ~default:(fun state_id ~in_cache ->
+ ~default:(fun ~doc:_ state_id ~in_cache ->
     feedback ~id:state_id Processed) ()
 
 let state_ready, state_ready_hook = Hook.make
- ~default:(fun state_id -> ()) ()
+ ~default:(fun ~doc:_ state_id -> ()) ()
 
 let forward_feedback, forward_feedback_hook =
   let m = Mutex.create () in
@@ -106,7 +106,7 @@ let forward_feedback, forward_feedback_hook =
         with e -> Mutex.unlock m; raise e) ()
 
 let unreachable_state, unreachable_state_hook = Hook.make
- ~default:(fun _ _ -> ()) ()
+ ~default:(fun ~doc:_ _ _ -> ()) ()
 
 include Hook
 
@@ -578,7 +578,7 @@ end = struct (* {{{ *)
     | None -> raise Vcs_aux.Expired
   let set_state id s =
     (get_info id).state <- s;
-    if async_proofs_is_master !cur_opt then Hooks.(call state_ready id)
+    if async_proofs_is_master !cur_opt then Hooks.(call state_ready ~doc:dummy_doc (* XXX should be taken in input *) id)
   let get_state id = (get_info id).state
   let reached id =
     let info = get_info id in
@@ -770,6 +770,7 @@ module State : sig
       Warning: an optimization in installed_cached requires that state
       modifying functions are always executed using this wrapper. *)
   val define :
+    doc:doc ->
     ?safe_id:Stateid.t ->
     ?redefine:bool -> ?cache:Summary.marshallable ->
     ?feedback_processed:bool -> (unit -> unit) -> Stateid.t -> unit
@@ -919,7 +920,7 @@ end = struct (* {{{ *)
     let e2 = Summary.project_from_summary s2 Global.global_env_summary_tag in
     e1 == e2
 
-  let define ?safe_id ?(redefine=false) ?(cache=`No) ?(feedback_processed=true)
+  let define ~doc ?safe_id ?(redefine=false) ?(cache=`No) ?(feedback_processed=true)
         f id
   =
     feedback ~id:id (ProcessingIn !Flags.async_proofs_worker_id);
@@ -938,7 +939,7 @@ end = struct (* {{{ *)
       stm_prerr_endline (fun () -> "setting cur id to "^str_id);
       cur_id := id;
       if feedback_processed then
-        Hooks.(call state_computed id ~in_cache:false);
+        Hooks.(call state_computed ~doc id ~in_cache:false);
       VCS.reached id;
       if Proof_global.there_are_pending_proofs () then
         VCS.goals id (Proof_global.get_open_goals ())
@@ -954,7 +955,7 @@ end = struct (* {{{ *)
         | Some _, None -> (e, info)
         | Some (_,at), Some id -> (e, Stateid.add info ~valid:id at) in
       if cache = `Yes || cache = `Shallow then freeze_invalid id ie;
-      Hooks.(call unreachable_state id ie);
+      Hooks.(call unreachable_state ~doc id ie);
       Exninfo.iraise ie
 
   let init_state = ref None
@@ -1352,6 +1353,7 @@ module rec ProofTask : sig
    and type request := request
 
   val build_proof_here :
+    doc:doc ->
     ?loc:Loc.t ->
     drop_pt:bool ->
     Stateid.t * Stateid.t -> Stateid.t ->
@@ -1466,11 +1468,12 @@ end = struct (* {{{ *)
         execution_error start (Pp.strbrk s);
         feedback (InProgress ~-1)
 
-  let build_proof_here ?loc ~drop_pt (id,valid) eop =
+  let build_proof_here ~doc ?loc ~drop_pt (id,valid) eop =
     Future.create (State.exn_on id ~valid) (fun () ->
       let wall_clock1 = Unix.gettimeofday () in
-      if VCS.is_interactive () = `No then Reach.known_state ~cache:`No eop
-      else Reach.known_state ~cache:`Shallow eop;
+      if VCS.is_interactive () = `No
+      then Reach.known_state ~doc ~cache:`No eop
+      else Reach.known_state ~doc ~cache:`Shallow eop;
       let wall_clock2 = Unix.gettimeofday () in
       Aux_file.record_in_aux_at ?loc "proof_build_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
@@ -1484,7 +1487,7 @@ end = struct (* {{{ *)
       VCS.print ();
       let proof, future_proof, time =
         let wall_clock = Unix.gettimeofday () in
-        let fp = build_proof_here ?loc ~drop_pt:drop exn_info stop in
+        let fp = build_proof_here ~doc:dummy_doc (* XXX should be document *) ?loc ~drop_pt:drop exn_info stop in
         let proof = Future.force fp in
         proof, fp, Unix.gettimeofday () -. wall_clock in
       (* We typecheck the proof with the kernel (in the worker) to spot
@@ -1577,7 +1580,7 @@ end = struct (* {{{ *)
       msg_warning Pp.(strbrk("Marshalling error: "^s^". "^
                              "The system state could not be sent to the worker process. "^
                              "Falling back to local, lazy, evaluation."));
-      t_assign(`Comp(build_proof_here ?loc:t_loc ~drop_pt t_exn_info t_stop));
+      t_assign(`Comp(build_proof_here ~doc:dummy_doc (* XXX should be stored in a closure, it is the same doc that was used to generate the task *) ?loc:t_loc ~drop_pt t_exn_info t_stop));
       feedback (InProgress ~-1)
 
 end (* }}} *)
@@ -1587,6 +1590,7 @@ and Slaves : sig
 
   (* (eventually) remote calls *)
   val build_proof :
+    doc:doc ->
     ?loc:Loc.t -> drop_pt:bool ->
     exn_info:(Stateid.t * Stateid.t) -> block_start:Stateid.t -> block_stop:Stateid.t ->
       name:string -> future_proof * AsyncTaskQueue.cancel_switch
@@ -1634,7 +1638,7 @@ end = struct (* {{{ *)
         with VCS.Expired -> cur in
       aux stop in
     try
-      Reach.known_state ~cache:`No stop;
+      Reach.known_state ~doc:dummy_doc (* XXX should be document *) ~cache:`No stop;
       if drop then
         let _proof = Proof_global.return_proof ~allow_partial:true () in
         `OK_ADMITTED
@@ -1647,7 +1651,7 @@ end = struct (* {{{ *)
         Proof_global.close_proof ~keep_body_ucst_separate:true (fun x -> x) in
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)
-      Reach.known_state ~cache:`No start;
+      Reach.known_state ~doc:dummy_doc (* XXX should be document *) ~cache:`No start;
       (* STATE SPEC:
        * - start: First non-expired state! [This looks very fishy]
        * - end  : start + qed
@@ -1754,7 +1758,7 @@ end = struct (* {{{ *)
        BuildProof { t_states = s2 } -> overlap_rel s1 s2
      | _ -> 0)
 
-  let build_proof ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname =
+  let build_proof ~doc ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname =
     let id, valid as t_exn_info = exn_info in
     let cancel_switch = ref false in
     if TaskQueue.n_workers (Option.get !queue) = 0 then
@@ -1769,7 +1773,7 @@ end = struct (* {{{ *)
         TaskQueue.enqueue_task (Option.get !queue) task ~cancel_switch;
         f, cancel_switch
       end else
-        ProofTask.build_proof_here ?loc ~drop_pt t_exn_info block_stop, cancel_switch
+        ProofTask.build_proof_here ~doc ?loc ~drop_pt t_exn_info block_stop, cancel_switch
     else
       let f, t_assign = Future.create_delegate ~name:pname (State.exn_on id ~valid) in
       let t_uuid = Future.uuid f in
@@ -1892,7 +1896,7 @@ end = struct (* {{{ *)
   let perform { r_state = id; r_state_fb; r_document = vcs; r_ast; r_goal } =
     Option.iter VCS.restore vcs;
     try
-      Reach.known_state ~cache:`No id;
+      Reach.known_state ~doc:dummy_doc (* XXX should be vcs *) ~cache:`No id;
       stm_purify (fun () ->
        let _,_,_,_,sigma0 = Proof.proof (Proof_global.give_me_the_proof ()) in
        let g = Evd.find sigma0 r_goal in
@@ -2047,7 +2051,7 @@ end = struct (* {{{ *)
   let perform { r_where; r_doc; r_what; r_for } =
     VCS.restore r_doc;
     VCS.print ();
-    Reach.known_state ~cache:`No r_where;
+    Reach.known_state ~doc:dummy_doc (* XXX should be r_doc *) ~cache:`No r_where;
     (* STATE *)
     let st = Vernacstate.freeze_interp_state `No in
     try
@@ -2092,7 +2096,8 @@ end (* }}} *)
 and Reach : sig
 
   val known_state :
-    ?redefine_qed:bool -> cache:Summary.marshallable -> Stateid.t -> unit
+    doc:doc -> ?redefine_qed:bool -> cache:Summary.marshallable ->
+      Stateid.t -> unit
 
 end = struct (* {{{ *)
 
@@ -2250,7 +2255,7 @@ let log_processing_sync id name reason = log_string Printf.(sprintf
 
 let wall_clock_last_fork = ref 0.0
 
-let known_state ?(redefine_qed=false) ~cache id =
+let known_state ~doc ?(redefine_qed=false) ~cache id =
 
   let error_absorbing_tactic id blockname exn =
     (* We keep the static/dynamic part of block detection separate, since
@@ -2345,7 +2350,7 @@ let known_state ?(redefine_qed=false) ~cache id =
   and reach ?safe_id ?(redefine_qed=false) ?(cache=cache) id =
     stm_prerr_endline (fun () -> "reaching: " ^ Stateid.to_string id);
     if not redefine_qed && State.is_cached ~cache id then begin
-      Hooks.(call state_computed id ~in_cache:true);
+      Hooks.(call state_computed ~doc id ~in_cache:true);
       stm_prerr_endline (fun () -> "reached (cache)");
       State.install_cached id
     end else
@@ -2426,7 +2431,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                         ^" proof. Reprocess the command declaring "
                         ^"the proof's statement to avoid that."));
                     let fp, cancel =
-                      Slaves.build_proof
+                      Slaves.build_proof ~doc
                         ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name in
                     Future.replace ofp fp;
                     qed.fproof <- Some (fp, cancel);
@@ -2438,10 +2443,10 @@ let known_state ?(redefine_qed=false) ~cache id =
                     reach ~cache:`Shallow block_start;
                     let fp, cancel =
                       if delegate then
-                        Slaves.build_proof
+                        Slaves.build_proof ~doc
                           ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name
                       else
-                        ProofTask.build_proof_here ?loc
+                        ProofTask.build_proof_here ~doc ?loc
                           ~drop_pt exn_info block_stop, ref false
                     in
                     qed.fproof <- Some (fp, cancel);
@@ -2511,7 +2516,7 @@ let known_state ?(redefine_qed=false) ~cache id =
     let cache_step =
       if !cur_opt.async_proofs_cache = Some Force then `Yes
       else cache_step in
-    State.define ?safe_id
+    State.define ~doc ?safe_id
       ~cache:cache_step ~redefine:redefine_qed ~feedback_processed step id;
     stm_prerr_endline (fun () -> "reached: "^ Stateid.to_string id) in
   reach ~redefine_qed id
@@ -2600,7 +2605,7 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
   load_objs require_libs;
 
   (* We record the state at this point! *)
-  State.define ~cache:`Yes ~redefine:true (fun () -> ()) Stateid.initial;
+  State.define ~doc ~cache:`Yes ~redefine:true (fun () -> ()) Stateid.initial;
   Backtrack.record ();
   Slaves.init ();
   if async_proofs_is_master !cur_opt then begin
@@ -2621,7 +2626,7 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
 let observe ~doc id =
   let vcs = VCS.backup () in
   try
-    Reach.known_state ~cache:(VCS.is_interactive ()) id;
+    Reach.known_state ~doc ~cache:(VCS.is_interactive ()) id;
     VCS.print ();
     doc
   with e ->
@@ -2714,7 +2719,7 @@ let merge_proof_branch ~valid ?id qast keep brname =
       VCS.rewrite_merge qed_id ~ours:(Qed (qed ofp)) ~at:master_id brname;
       VCS.delete_branch brname;
       VCS.gc ();
-      let _st = Reach.known_state ~redefine_qed:true ~cache:`No qed_id in
+      let _st : unit = Reach.known_state ~doc:dummy_doc (* XXX should be taken in input *) ~redefine_qed:true ~cache:`No qed_id in
       VCS.checkout VCS.Branch.master;
       `Unfocus qed_id
   | { VCS.kind = `Master } ->
@@ -2766,7 +2771,7 @@ let process_back_meta_command ~newtip ~head oid aast w =
     VCS.commit id (Alias (oid,aast));
     Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
 
-let process_transaction ?(newtip=Stateid.fresh ())
+let process_transaction ~doc ?(newtip=Stateid.fresh ())
   ({ verbose; loc; expr } as x) c =
   stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
   let vcs = VCS.backup () in
@@ -2871,11 +2876,11 @@ let process_transaction ?(newtip=Stateid.fresh ())
           let in_proof = not (VCS.Branch.equal head VCS.Branch.master) in
           let id = VCS.new_node ~id:newtip () in
           let head_id = VCS.get_branch_pos head in
-          let _st = Reach.known_state ~cache:`Yes head_id in (* ensure it is ok *)
+          let _st : unit = Reach.known_state ~doc ~cache:`Yes head_id in (* ensure it is ok *)
           let step () =
             VCS.checkout VCS.Branch.master;
             let mid = VCS.get_branch_pos VCS.Branch.master in
-            let _st' = Reach.known_state ~cache:(VCS.is_interactive ()) mid in
+            let _st' : unit = Reach.known_state ~doc ~cache:(VCS.is_interactive ()) mid in
             let st = Vernacstate.freeze_interp_state `No in
             ignore(stm_vernac_interp id st x);
             (* Vernac x may or may not start a proof *)
@@ -2901,7 +2906,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
               end;
               VCS.checkout_shallowest_proof_branch ();
             end in
-          State.define ~safe_id:head_id ~cache:`Yes step id;
+          State.define ~doc ~safe_id:head_id ~cache:`Yes step id;
           Backtrack.record (); `Ok
 
       | VtUnknown, VtLater ->
@@ -3015,7 +3020,7 @@ let add ~doc ~ontop ?newtip verb { CAst.loc; v=ast } =
   (* XXX: Classifiy vernac should be moved inside process transaction *)
   let clas = Vernac_classifier.classify_vernac ast in
   let aast = { verbose = verb; indentation; strlen; loc; expr = ast } in
-  match process_transaction ?newtip aast clas with
+  match process_transaction ~doc ?newtip aast clas with
   | `Ok -> doc, VCS.cur_tip (), `NewTip
   | `Unfocus qed_id -> doc, qed_id, `Unfocus (VCS.cur_tip ())
 
@@ -3030,7 +3035,7 @@ type focus = {
 let query ~doc ~at ~route s =
   stm_purify (fun s ->
     if Stateid.equal at Stateid.dummy then ignore(finish ~doc:dummy_doc)
-    else Reach.known_state ~cache:`Yes at;
+    else Reach.known_state ~doc ~cache:`Yes at;
     try
       while true do
         let { CAst.loc; v=ast } = parse_sentence ~doc at s in
@@ -3092,7 +3097,7 @@ let edit_at ~doc id =
       VCS.edit_branch (`Edit (mode, qed_id, master_id, keep, old_branch));
     VCS.delete_boxes_of id;
     cancel_switch := true;
-    Reach.known_state ~cache:(VCS.is_interactive ()) id;
+    Reach.known_state ~doc ~cache:(VCS.is_interactive ()) id;
     VCS.checkout_shallowest_proof_branch ();
     `Focus { stop = qed_id; start = master_id; tip } in
   let no_edit = function
@@ -3115,7 +3120,7 @@ let edit_at ~doc id =
     VCS.gc ();
     VCS.print ();
     if not !cur_opt.async_proofs_full then
-      Reach.known_state ~cache:(VCS.is_interactive ()) id;
+      Reach.known_state ~doc ~cache:(VCS.is_interactive ()) id;
     VCS.checkout_shallowest_proof_branch ();
     `NewTip in
   try
@@ -3144,7 +3149,7 @@ let edit_at ~doc id =
       | true, None, _ ->
           if on_cur_branch id then begin
             VCS.reset_branch (VCS.current_branch ()) id;
-            Reach.known_state ~cache:(VCS.is_interactive ()) id;
+            Reach.known_state ~doc ~cache:(VCS.is_interactive ()) id;
             VCS.checkout_shallowest_proof_branch ();
             `NewTip
           end else if is_ancestor_of_cur_branch id then begin

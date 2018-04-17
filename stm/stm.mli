@@ -263,11 +263,12 @@ val register_proof_block_delimiter :
  * the alternative toploop for the worker can be selected by changing
  * the name of the Task(s) above) *)
 
-val state_computed_hook : (Stateid.t -> in_cache:bool -> unit) Hook.t
-val unreachable_state_hook : (Stateid.t -> Exninfo.iexn -> unit) Hook.t
+val state_computed_hook : (doc:doc -> Stateid.t -> in_cache:bool -> unit) Hook.t
+val unreachable_state_hook :
+  (doc:doc -> Stateid.t -> Exninfo.iexn -> unit) Hook.t
 
 (* ready means that master has it at hand *)
-val state_ready_hook : (Stateid.t -> unit) Hook.t
+val state_ready_hook : (doc:doc -> Stateid.t -> unit) Hook.t
 
 (* Messages from the workers to the master *)
 val forward_feedback_hook : (Feedback.feedback -> unit) Hook.t
