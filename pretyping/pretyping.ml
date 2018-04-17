@@ -560,7 +560,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) evdref
       | None -> ()
     in
       (* Note: bodies are not used by push_rec_types, so [||] is safe *)
-    let _,newenv = push_rec_types !evdref (names,ftys) env in
+    let names,newenv = push_rec_types !evdref (names,ftys) env in
     let vdefj =
       Array.map2_i
 	(fun i ctxt def ->

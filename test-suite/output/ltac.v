@@ -71,3 +71,13 @@ Ltac foo :=
   let z := 1 in
   pose v.
 Print Ltac foo.
+
+(* Ltac renaming was not applied to "fix" and "cofix" *)
+
+Goal forall a, a = 0.
+match goal with
+|- (forall x, x = _) => assert (forall n, (fix x n := match n with O => O | S n => x n end) n = n)
+end.
+intro.
+Show.
+Abort.
