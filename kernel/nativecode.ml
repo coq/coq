@@ -1990,8 +1990,10 @@ let compile_mind prefix ~interactive mb mind stack =
       Glet (gn, mkMLlam [|c_uid|] code) :: acc
     in
     let projs = match mb.mind_record with
-    | None | Some None -> []
-    | Some (Some (id, kns, pbs)) -> Array.fold_left_i add_proj [] pbs
+    | NotRecord | FakeRecord -> []
+    | PrimRecord info ->
+      let _, _, pbs = info.(i) in
+      Array.fold_left_i add_proj [] pbs
     in
     projs @ constructors @ gtype :: accu :: stack
   in

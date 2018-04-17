@@ -820,10 +820,12 @@ let drop_parameters depth n argstk =
     constructor is partially applied.
  *)
 let eta_expand_ind_stack env ind m s (f, s') =
+  let open Declarations in
   let mib = lookup_mind (fst ind) env in
     match mib.Declarations.mind_record with
-    | Some (Some (_,projs,pbs)) when
+    | PrimRecord infos when
         mib.Declarations.mind_finite == Declarations.BiFinite ->
+      let (_, projs, _) = infos.(snd ind) in
 	(* (Construct, pars1 .. parsm :: arg1...argn :: []) ~= (f, s') ->
 	   arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
       let pars = mib.Declarations.mind_nparams in
@@ -834,7 +836,7 @@ let eta_expand_ind_stack env ind m s (f, s') =
       let hstack = Array.map (fun p -> { norm = Red; (* right can't be a constructor though *)
 					 term = FProj (Projection.make p true, right) }) projs in
 	argss, [Zapp hstack]
-    | _ -> raise Not_found (* disallow eta-exp for non-primitive records *)
+    | PrimRecord _ | NotRecord | FakeRecord -> raise Not_found (* disallow eta-exp for non-primitive records *)
 
 let rec project_nth_arg n argstk =
   match argstk with

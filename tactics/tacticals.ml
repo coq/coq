@@ -753,8 +753,8 @@ module New = struct
     let (ind,t) = pf_reduce_to_quantified_ind gl (pf_unsafe_type_of gl c) in
     let isrec,mkelim =
       match (Global.lookup_mind (fst (fst ind))).mind_record with
-      | None -> true,gl_make_elim
-      | Some _ -> false,gl_make_case_dep
+      | NotRecord -> true,gl_make_elim
+      | FakeRecord | PrimRecord _ -> false,gl_make_case_dep
     in
     general_elim_then_using mkelim isrec None tac None ind (c, t)
     end

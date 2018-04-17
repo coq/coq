@@ -49,9 +49,9 @@ type one_inductive_entry = {
   mind_entry_lc : constr list }
 
 type mutual_inductive_entry = {
-  mind_entry_record : (Id.t option) option; 
-  (** Some (Some id): primitive record with id the binder name of the record
-      in projections.
+  mind_entry_record : (Id.t array option) option;
+  (** Some (Some ids): primitive records with ids the binder name of each
+      record in their respective projections. Not used by the kernel.
       Some None: non-primitive record *)
   mind_entry_finite : Declarations.recursivity_kind;
   mind_entry_params : (Id.t * local_entry) list;

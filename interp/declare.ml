@@ -383,11 +383,14 @@ let inInductive : inductive_obj -> obj =
     rebuild_function = infer_inductive_subtyping }
 
 let declare_projections univs mind =
+  (** FIXME: handle mutual records *)
+  let mind = (mind, 0) in
   let env = Global.env () in
-  let spec,_ = Inductive.lookup_mind_specif env (mind,0) in
+  let spec,_ = Inductive.lookup_mind_specif env mind in
     match spec.mind_record with
-    | Some (Some (_, kns, _)) ->
-      let projs = Inductiveops.compute_projections env (mind, 0) in
+    | PrimRecord info ->
+      let _, kns, _ = info.(0) in
+      let projs = Inductiveops.compute_projections env mind in
       Array.iter2 (fun kn (term, types) ->
 	let id = Label.to_id (Constant.label kn) in
         let univs = match univs with
@@ -410,8 +413,8 @@ let declare_projections univs mind =
         assert (Constant.equal kn kn')
       ) kns projs;
       true, true
-    | Some None -> true,false
-    | None -> false,false
+    | FakeRecord -> true,false
+    | NotRecord -> false,false
 
 (* for initial declaration *)
 let declare_mind mie =

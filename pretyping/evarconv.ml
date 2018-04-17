@@ -984,9 +984,11 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
 and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =
+  let open Declarations in
   let mib = lookup_mind (fst ind) env in
     match mib.Declarations.mind_record with
-    | Some (Some (id, projs, pbs)) when mib.Declarations.mind_finite == Declarations.BiFinite ->
+    | PrimRecord info when mib.Declarations.mind_finite == Declarations.BiFinite ->
+      let (_, projs, _) = info.(snd ind) in
       let pars = mib.Declarations.mind_nparams in
 	(try 
 	   let l1' = Stack.tail pars sk1 in

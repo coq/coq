@@ -188,12 +188,13 @@ let branch_of_switch lvl ans bs =
     bs ci in
   Array.init (Array.length tbl) branch
 
-let get_proj env ((mind, _n), i) =
+let get_proj env ((mind, n), i) =
   let mib = Environ.lookup_mind mind env in
   match mib.mind_record with
-  | None | Some None ->
+  | NotRecord | FakeRecord ->
     CErrors.anomaly (Pp.strbrk "Return type is not a primitive record")
-  | Some (Some (_, projs, _)) ->
+  | PrimRecord info ->
+    let _, projs, _ = info.(n) in
     Projection.make projs.(i) true
 
 let rec nf_val env sigma v typ =

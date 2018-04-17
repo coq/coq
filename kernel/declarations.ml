@@ -109,13 +109,22 @@ v}
 *)
 
 (** Record information:
-    If the record is not primitive, then None
-    Otherwise, we get:
+    If the type is not a record, then NotRecord
+    If the type is a non-primitive record, then FakeRecord
+    If it is a primitive record, for every type in the block, we get:
     - The identifier for the binder name of the record in primitive projections.
     - The constants associated to each projection.
-    - The checked projection bodies. *)
+    - The checked projection bodies.
 
-type record_body = (Id.t * Constant.t array * projection_body array) option
+    The kernel does not exploit the difference between [NotRecord] and
+    [FakeRecord]. It is mostly used by extraction, and should be extruded from
+    the kernel at some point.
+*)
+
+type record_info =
+| NotRecord
+| FakeRecord
+| PrimRecord of (Id.t * Constant.t array * projection_body array) array
 
 type regular_inductive_arity = {
   mind_user_arity : types;
@@ -181,7 +190,7 @@ type mutual_inductive_body = {
 
     mind_packets : one_inductive_body array;  (** The component of the mutual inductive block *)
 
-    mind_record : record_body option; (** The record information *)
+    mind_record : record_info; (** The record information *)
 
     mind_finite : recursivity_kind;  (** Whether the type is inductive or coinductive *)
 

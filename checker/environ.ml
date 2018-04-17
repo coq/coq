@@ -192,11 +192,12 @@ let add_mind kn mib env =
       (MutInd.to_string kn);
   let new_inds = Mindmap_env.add kn mib env.env_globals.env_inductives in
   let new_projections = match mib.mind_record with
-    | None | Some None -> env.env_globals.env_projections
-    | Some (Some (id, kns, pbs)) ->
-      Array.fold_left2 (fun projs kn pb ->
-          Cmap_env.add kn pb projs)
-        env.env_globals.env_projections kns pbs
+    | NotRecord | FakeRecord -> env.env_globals.env_projections
+    | PrimRecord projs ->
+      Array.fold_left (fun accu (id, kns, pbs) ->
+      Array.fold_left2 (fun accu kn pb ->
+          Cmap_env.add kn pb accu) accu kns pbs)
+        env.env_globals.env_projections projs
   in
   let kn1,kn2 =  MutInd.user kn, MutInd.canonical kn in
   let new_inds_eq = if KerName.equal kn1 kn2 then

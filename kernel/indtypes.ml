@@ -938,6 +938,8 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
     | Some (Some rid) when pkt.mind_kelim == all_sorts
 			   && Array.length pkt.mind_consnames == 1
 			   && pkt.mind_consnrealargs.(0) > 0 ->
+      (** FIXME: adapt to mutual records *)
+      let () = assert (Array.length rid == 1) in
       (** The elimination criterion ensures that all projections can be defined. *)
       let u =
         match aiu with
@@ -949,13 +951,13 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
       let rctx, indty = decompose_prod_assum (subst1 (mkIndU indsp) pkt.mind_nf_lc.(0)) in
 	(try 
 	   let fields, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
-	   let kns, projs = 
+            let kn, projs =
              compute_projections indsp nparamargs paramsctxt
 	       pkt.mind_consnrealdecls pkt.mind_consnrealargs paramslet fields
-	   in Some (Some (rid, kns, projs))
-	 with UndefinableExpansion -> Some None)
-    | Some _ -> Some None
-    | None -> None
+           in PrimRecord [|rid.(0), kn, projs|]
+         with UndefinableExpansion -> FakeRecord)
+    | Some _ -> FakeRecord
+    | None -> NotRecord
   in
     (* Build the mutual inductive *)
     { mind_record = isrecord;
