@@ -368,7 +368,7 @@ let init_color color_mode =
 let toploop_init = ref begin fun opts x ->
   let () = init_color opts.color in
   let () = CoqworkmgrApi.init !WorkerLoop.async_proofs_worker_priority in
-  x
+  opts, x
   end
 
 let print_style_tags opts =
@@ -442,7 +442,7 @@ let init_toplevel arglist =
       let top_lp = Coqinit.toplevel_init_load_path () in
       List.iter Mltop.add_coq_path top_lp;
       Option.iter Mltop.load_ml_object_raw opts.toploop;
-      let extras = !toploop_init opts extras in
+      let opts, extras = !toploop_init opts extras in
       if not (CList.is_empty extras) then begin
         prerr_endline ("Don't know what to do with "^String.concat " " extras);
         prerr_endline "See -help for the list of supported options";

@@ -17,9 +17,9 @@ let rec parse = function
   | x :: rest -> x :: parse rest
   | [] -> []
 
-let loop init _coq_args extra_args =
+let loop init coq_args extra_args =
   let args = parse extra_args in
   Flags.quiet := true;
   init ();
   CoqworkmgrApi.init !async_proofs_worker_priority;
-  args
+  coq_args, args

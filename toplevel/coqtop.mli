@@ -18,5 +18,6 @@ val init_toplevel : string list -> Vernac.State.t option * Coqargs.coq_cmdopts
 val start : unit -> unit
 
 (* For other toploops *)
-val toploop_init : (Coqargs.coq_cmdopts -> string list -> string list) ref
+val toploop_init :
+  (Coqargs.coq_cmdopts -> string list -> Coqargs.coq_cmdopts * string list) ref
 val toploop_run : (Coqargs.coq_cmdopts -> state:Vernac.State.t -> unit) ref
