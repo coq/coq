@@ -32,6 +32,7 @@
 }:
 
 with pkgs;
+with stdenv.lib;
 
 stdenv.mkDerivation rec {
 
@@ -61,8 +62,7 @@ stdenv.mkDerivation rec {
   ] else []) ++ (if doCheck then
 
     # Test-suite dependencies
-    let inherit (stdenv.lib) versionAtLeast optional; in
-    /* ncurses is required to build an OCaml REPL */
+    # ncurses is required to build an OCaml REPL
     optional (!versionAtLeast ocaml.version "4.07") ncurses
     ++ [
     python
@@ -89,6 +89,10 @@ stdenv.mkDerivation rec {
         (path: _: !elem (baseNameOf path) [".git" "result" "bin"]) ./.;
 
   prefixKey = "-prefix ";
+
+  buildFlags = optionals buildDoc [ "world" "sphinx" ];
+
+  installTargets = [ "install" ] ++ optional buildDoc "install-doc-sphinx";
 
   inherit doCheck;
 
