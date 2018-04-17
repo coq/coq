@@ -54,6 +54,20 @@ The sources for the [Coq reference manual](https://coq.inria.fr/distrib/current/
 
 You may also contribute to the informal documentation available in [Cocorico](https://github.com/coq/coq/wiki) (the Coq wiki), and the [Coq FAQ](https://github.com/coq/coq/wiki/The-Coq-FAQ). Both of these are editable by anyone with a GitHub account.
 
+## Following the development
+
+If you want to follow the development activity around Coq, you are encouraged
+to subscribe to the [Coqdev mailing list](https://sympa.inria.fr/sympa/info/coqdev).
+This mailing list has reasonably low traffic.
+
+You may also choose to use GitHub feature to
+["watch" this repository](https://github.com/coq/coq/subscription), but be
+advised that this means receiving a very large number of notifications.
+GitHub gives [some advice](https://blog.github.com/2017-07-18-managing-large-numbers-of-github-notifications/#prioritize-the-notifications-you-receive)
+on how to configure your e-mail client to filter these notifications.
+A possible alternative is to deactivate e-mail notifications and manage your
+GitHub web notifications using a tool such as [Octobox](http://octobox.io/).
+
 ## Contributing outside this repository
 
 There are many useful ways to contribute to the Coq ecosystem that don't involve the Coq repository.
