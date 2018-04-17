@@ -49,17 +49,17 @@ explicit operation performed by ``:``.
 
 Beside the difference of bookkeeping model, this chapter includes
 specific tactics which have no explicit counterpart in Chapter :ref:`tactics`
-such as tactics to mix forward steps and generalizations as generally
-have or without loss.
+such as tactics to mix forward steps and generalizations as
+:tacn:`generally have` or :tacn:`without loss`.
 
 |SSR| adopts the point of view that rewriting, definition
 expansion and partial evaluation participate all to a same concept of
 rewriting a goal in a larger sense. As such, all these functionalities
-are provided by the rewrite tactic.
+are provided by the :tacn:`rewrite (ssreflect)` tactic.
 
 |SSR| includes a little language of patterns to select subterms in
 tactics or tacticals where it matters. Its most notable application is
-in the rewrite tactic, where patterns are used to specify where the
+in the :tacn:`rewrite (ssreflect)` tactic, where patterns are used to specify where the
 rewriting step has to take place.
 
 Finally, |SSR| supports so-called reflection steps, typically
@@ -94,7 +94,7 @@ specific to the authors of |SSR| and which requires a few options
 to be set in a different way than in their default way. All in all,
 this corresponds to working in the following context:
 
-.. coqtop:: all
+.. coqtop:: in
 
    From Coq Require Import ssreflect ssrfun ssrbool.
    Set Implicit Arguments.
@@ -114,14 +114,14 @@ compatible with the rest of |Coq|, up to a few discrepancies:
 + New keywords (``is``) might clash with variable, constant, tactic or
   tactical names, or with quasi-keywords in tactic or vernacular
   notations.
-+ New tactic(al)s names (``last``, ``done``, ``have``, ``suffices``,
-  ``suff``, ``without loss``, ``wlog``, ``congr``, ``unlock``)
++ New tactic(al)s names (:tacn:`last`, :tacn:`done`, :tacn:`have`, :tacn:`suffices`,
+  :tacn:`suff`, :tacn:`without loss`, :tacn:`wlog`, :tacn:`congr`, :tacn:`unlock`)
   might clash with user tactic names.
 + Identifiers with both leading and trailing ``_``, such as ``_x_``, are
   reserved by |SSR| and cannot appear in scripts.
-+ The extensions to the rewrite tactic are partly incompatible with those
++ The extensions to the :tacn:`rewrite` tactic are partly incompatible with those
   available in current versions of |Coq|; in particular: ``rewrite .. in
-  (type of k)`` or ``rewrite .. in *`` or any other variant of ``rewrite``
+  (type of k)`` or ``rewrite .. in *`` or any other variant of :tacn:`rewrite`
   will not work, and the |SSR| syntax and semantics for occurrence selection
   and rule chaining is different. Use an explicit rewrite direction
   (``rewrite <- …`` or ``rewrite -> …``) to access the |Coq| rewrite tactic.
@@ -1082,7 +1082,7 @@ constants to the goal.
 
 Because they are tacticals, ``:`` and ``=>`` can be combined, as in
 
-.. coqtop: in
+.. coqtop:: in
 
    move: m le_n_m => p le_n_p.
 
@@ -1579,7 +1579,7 @@ variables or assumptions from the goal.
 An :token:`s_item` can simplify the set of subgoals or the subgoals themselves:
 
 + ``//`` removes all the “trivial” subgoals that can be resolved by the
-  |SSR| tactic ``done`` described in :ref:`terminators_ssr`, i.e.,
+  |SSR| tactic :tacn:`done` described in :ref:`terminators_ssr`, i.e.,
   it executes ``try done``.
 + ``/=`` simplifies the goal by performing partial evaluation, as per the
   tactic ``simpl`` [#5]_.
@@ -2021,8 +2021,8 @@ with a ``by``, like in:
 
    by apply/eqP; rewrite -dvdn1.
 
-The by tactical is implemented using the user-defined, and extensible
-done tactic. This done tactic tries to solve the current goal by some
+The :tacn:`by` tactical is implemented using the user-defined, and extensible
+:tacn:`done` tactic. This done tactic tries to solve the current goal by some
 trivial means and fails if it doesn’t succeed. Indeed, the tactic
 expression:
 
@@ -2824,8 +2824,8 @@ painful to perform by
 hand, because the statement wlog_statement is tedious to write by hand,
 and sometimes even to read.
 
-|SSR| implements this kind of reasoning step through the without
-loss tactic, whose short name is ``wlog``. It offers support to describe
+|SSR| implements this kind of reasoning step through the :tacn:`without loss`
+tactic, whose short name is :tacn:`wlog`. It offers support to describe
 the shape of the cut statements, by providing the simplifying
 hypothesis and by pointing at the elements of the initial goals which
 should be generalized. The general syntax of without loss is:
@@ -2845,7 +2845,7 @@ on a goal G, it creates two subgoals: a first one to prove the
 formula (term -> G) -> G and a second one to prove the formula
 term -> G.
 
-If the optional list of :token:`itent` is present
+If the optional list of :token:`ident` is present
 on the left side of ``/``, these constants are generalized in the
 premise (term -> G) of the first subgoal. By default bodies of local
 definitions are erased. This behavior can be inhibited by prefixing the
@@ -2858,9 +2858,9 @@ In the second subgoal, the tactic:
    move=> clear_switch i_item.
 
 is performed if at least one of these optional switches is present in
-the ``wlog`` tactic.
+the :tacn:`wlog` tactic.
 
-The ``wlog`` tactic is specially useful when a symmetry argument
+The :tacn:`wlog` tactic is specially useful when a symmetry argument
 simplifies a proof. Here is an example showing the beginning of the
 proof that quotient and reminder of natural number euclidean division
 are unique.
