@@ -3254,4 +3254,9 @@ let forward_feedback_hook = Hooks.forward_feedback_hook
 let unreachable_state_hook = Hooks.unreachable_state_hook
 let () = Hook.set Obligations.stm_get_fix_exn (fun () -> !State.fix_exn_ref)
 
+type document = VCS.vcs
+let backup () = VCS.backup ()
+let restore d = VCS.restore d
+
+
 (* vim:set foldmethod=marker: *)
