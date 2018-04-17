@@ -283,3 +283,7 @@ val get_all_proof_names : doc:doc -> Id.t list
 
 (** Enable STM debugging *)
 val stm_debug : bool ref
+
+type document
+val backup : unit -> document
+val restore : document -> unit
