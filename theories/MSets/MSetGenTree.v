@@ -519,7 +519,7 @@ Qed.
 Local Hint Resolve lt_tree_not_in lt_tree_trans gt_tree_not_in gt_tree_trans.
 
 Ltac induct s x :=
- induction s as [|i l IHl x' r IHr]; simpl; intros;
+ induction s as [|?i ?l ?IHl ?x' ?r ?IHr]; simpl; intros;
  [|elim_compare x x'; intros; inv].
 
 Ltac auto_tc := auto with typeclass_instances.

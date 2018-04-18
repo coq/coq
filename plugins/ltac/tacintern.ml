@@ -232,7 +232,10 @@ let rec intern_intro_pattern lf ist = map (function
 
 and intern_intro_pattern_naming lf ist = function
   | IntroIdentifier id ->
-      IntroIdentifier (intern_ident lf ist id)
+      if !strict_check then
+        if find_var id ist then IntroIdentifier id else Pretype_errors.error_var_not_found id
+      else
+        IntroIdentifier (intern_ident lf ist id)
   | IntroFresh id ->
       IntroFresh (intern_ident lf ist id)
   | IntroAnonymous as x -> x

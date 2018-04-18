@@ -420,14 +420,14 @@ Local Open Scope Int_scope.
 
 Ltac join_tac :=
  let l := fresh "l" in
- intro l; induction l as [| lh ll _ lx lr Hlr];
-   [ | intros x r; induction r as [| rh rl Hrl rx rr _]; unfold join;
-     [ | destruct ((rh+2) <? lh) eqn:LT;
+ intros l; induction l as [| ?lh ?ll _ ?lx ?lr ?Hlr];
+   [ | intros ?x ?r; induction r as [| ?rh ?rl ?Hrl ?rx ?rr _]; unfold join;
+     [ | destruct ((rh+2) <? lh) eqn:?LT;
        [ match goal with |- context b [ bal ?a ?b ?c] =>
            replace (bal a b c)
            with (bal ll lx (join lr x (Node rh rl rx rr))); [ | auto]
          end
-       | destruct ((lh+2) <? rh) eqn:LT';
+       | destruct ((lh+2) <? rh) eqn:?LT';
          [ match goal with |- context b [ bal ?a ?b ?c] =>
              replace (bal a b c)
              with (bal (join (Node lh ll lx lr) x rl) rx rr); [ | auto]

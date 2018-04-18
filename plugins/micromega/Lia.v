@@ -26,7 +26,7 @@ Ltac preprocess :=
   zify ; unfold Z.succ in * ; unfold Z.pred in *.
 
 Ltac zchange := 
-  intros __wit __varmap __ff ;
+  intros ?__wit ?__varmap ?__ff ;
   change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
   apply (ZTautoChecker_sound __ff __wit).
 
