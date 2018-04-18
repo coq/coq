@@ -16,20 +16,20 @@ opam repo add iris-dev https://gitlab.mpi-sws.org/FP/opam-dev.git -p 0 || opam u
 git_checkout "${lambdaRust_CI_BRANCH}" "${lambdaRust_CI_GITURL}" "${lambdaRust_CI_DIR}"
 
 # Extract required version of Iris
-Iris_VERSION=$(grep -F coq-iris < "${lambdaRust_CI_DIR}/opam" | grep -E 'dev\.([0-9.-]+)' -o)
+Iris_VERSION=$(grep -F coq-iris < "${lambdaRust_CI_DIR}/opam" | grep -E 'dev\.([0-9a-z.-]+)' -o)
 Iris_URL=$(opam show "coq-iris.$Iris_VERSION" -f upstream-url)
 read -r -a Iris_URL_PARTS <<< "$(echo "$Iris_URL" | tr '#' ' ')"
 
 # Setup Iris
-git_checkout "${Iris_CI_BRANCH}" "${Iris_URL_PARTS[0]}" "${Iris_CI_DIR}" "${Iris_URL_PARTS[1]}"
+git_checkout "${Iris_CI_BRANCH}" "${Iris_CI_GITURL}" "${Iris_CI_DIR}" "${Iris_URL_PARTS[1]}"
 
 # Extract required version of std++
-stdpp_VERSION=$(grep -F coq-stdpp < "${Iris_CI_DIR}/opam" | grep -E 'dev\.([0-9.-]+)' -o)
+stdpp_VERSION=$(grep -F coq-stdpp < "${Iris_CI_DIR}/opam" | grep -E 'dev\.([0-9a-z.-]+)' -o)
 stdpp_URL=$(opam show "coq-stdpp.$stdpp_VERSION" -f upstream-url)
 read -r -a stdpp_URL_PARTS <<< "$(echo "$stdpp_URL" | tr '#' ' ')"
 
 # Setup std++
-git_checkout "${stdpp_CI_BRANCH}" "${stdpp_URL_PARTS[0]}" "${stdpp_CI_DIR}" "${stdpp_URL_PARTS[1]}"
+git_checkout "${stdpp_CI_BRANCH}" "${stdpp_CI_GITURL}" "${stdpp_CI_DIR}" "${stdpp_URL_PARTS[1]}"
 
 # Build std++
 ( cd "${stdpp_CI_DIR}" && make && make install )
