@@ -480,6 +480,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) evdref
   | GEvar (id, inst) ->
       (* Ne faudrait-il pas s'assurer que hyps est bien un
 	 sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
+      let id = interp_ltac_id env id in
       let evk =
         try Evd.evar_key id !evdref
         with Not_found ->
@@ -499,6 +500,11 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) evdref
       { uj_val = e_new_evar env evdref ~src:(loc,k) ty; uj_type = ty }
 
   | GHole (k, naming, None) ->
+      let open Namegen in
+      let naming = match naming with
+        | IntroIdentifier id -> IntroIdentifier (interp_ltac_id env id)
+        | IntroAnonymous -> IntroAnonymous
+        | IntroFresh id -> IntroFresh (interp_ltac_id env id) in
       let ty =
         match tycon with
         | Some ty -> ty
