@@ -49,7 +49,7 @@ let pr_glbtype_gen pr lvl c =
     | T5_r | T5_l | T2 | T1 -> fun x -> x
     | T0 -> paren
     in
-    paren (pr_glbtype lvl t ++ spc () ++ pr_typref kn)
+    paren (pr_glbtype T1 t ++ spc () ++ pr_typref kn)
   | GTypRef (Other kn, tl) ->
     let paren = match lvl with
     | T5_r | T5_l | T2 | T1 -> fun x -> x
