@@ -25,8 +25,8 @@ then
 
     # reset work tree and index
     # NB: untracked files which were not added are untouched
-    git apply --cached -R "$index"
-    git apply -R "$tree"
+    git apply --whitespace=nowarn --cached -R "$index"
+    git apply --whitespace=nowarn -R "$tree"
 
     # Fix index
     # For end of file newlines we must go through the worktree
@@ -43,7 +43,7 @@ then
     # making git fail. Don't fail now: we fix the worktree first.
     if [ -s "$fixed_index" ]
     then
-        git apply -R "$fixed_index"
+        git apply --whitespace=nowarn -R "$fixed_index"
     fi
 
     # Fix worktree
