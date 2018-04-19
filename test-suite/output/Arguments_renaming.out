@@ -1,6 +1,5 @@
 The command has indeed failed with message:
-To rename arguments the "rename" flag must be specified.
-Argument A renamed to B.
+Flag "rename" expected to rename A into B.
 File "stdin", line 2, characters 0-25:
 Warning: This command is just asserting the names of arguments of identity.
 If this is what you want add ': assert' to silence the warning. If you want
@@ -113,5 +112,4 @@ Argument z cannot be declared implicit.
 The command has indeed failed with message:
 Extra arguments: y.
 The command has indeed failed with message:
-To rename arguments the "rename" flag must be specified.
-Argument A renamed to R.
+Flag "rename" expected to rename A into R.

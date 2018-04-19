@@ -1131,15 +1131,16 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
   let names = rename prev_names names in
   let renaming_specified = Option.has_some !example_renaming in
 
-  if !rename_flag_required && not rename_flag then
-    user_err ~hdr:"vernac_declare_arguments"
-      (strbrk "To rename arguments the \"rename\" flag must be specified."
-    ++ spc () ++
-       match !example_renaming with
-       | None -> mt ()
-       | Some (o,n) ->
-          str "Argument " ++ Name.print o ++
-            str " renamed to " ++ Name.print n ++ str ".");
+  if !rename_flag_required && not rename_flag then begin
+    let msg =
+      match !example_renaming with
+      | None ->
+        strbrk "To rename arguments the \"rename\" flag must be specified."
+      | Some (o,n) ->
+        strbrk "Flag \"rename\" expected to rename " ++ Name.print o ++
+        strbrk " into " ++ Name.print n ++ str "."
+    in user_err ~hdr:"vernac_declare_arguments" msg
+  end;
 
   let duplicate_names =
     List.duplicates Name.equal (List.filter ((!=) Anonymous) names)
