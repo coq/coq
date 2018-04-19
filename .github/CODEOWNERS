@@ -11,6 +11,9 @@
 /dev/ci/*.sh      @ejgallego
 # Secondary maintainer @SkySkimmer
 
+/.circleci/       @SkySkimmer
+# Secondary maintainer @ejgallego
+
 /.travis.yml      @ejgallego
 # Secondary maintainer @SkySkimmer
 
