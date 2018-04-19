@@ -127,4 +127,28 @@ induction 1 as (n,H,IH).
 exact Logic.I.
 Qed.
 
+(* Make "intro"/"intros" progress on existential variables *)
 
+Module Evar.
+
+Goal exists (A:Prop), A.
+eexists.
+unshelve (intro x).
+- exact nat.
+- exact (x=x).
+- auto.
+Qed.
+
+Goal exists (A:Prop), A.
+eexists.
+unshelve (intros x).
+- exact nat.
+- exact (x=x).
+- auto.
+Qed.
+
+Definition d := ltac:(intro x; exact (x*x)).
+
+Definition d' : nat -> _ := ltac:(intros;exact 0).
+
+End Evar.
