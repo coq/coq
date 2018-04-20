@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Names
 open CErrors
 open Util
 open Cic
@@ -297,6 +298,11 @@ let oracle_order infos l2r k1 k2 =
      if Int.equal n1 n2 then l2r
      else n1 < n2
 
+let eq_table_key univ =
+  Names.eq_table_key (fun (c1,u1) (c2,u2) ->
+      Constant.UserOrd.equal c1 c2 &&
+      Univ.Instance.check_eq univ u1 u2)
+
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv univ cv_pb infos lft1 lft2 term1 term2 =
   eqappr univ cv_pb infos (lft1, (term1,[])) (lft2, (term2,[]))
@@ -343,7 +349,7 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
     (* 2 constants, 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
 	(try (* try first intensional equality *)
-	  if eq_table_key fl1 fl2
+          if eq_table_key univ fl1 fl2
           then convert_stacks univ infos lft1 lft2 v1 v2
           else raise NotConvertible
         with NotConvertible ->
