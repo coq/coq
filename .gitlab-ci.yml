@@ -319,6 +319,9 @@ ci-geocoq:
   <<: *ci-template
   allow_failure: true
 
+ci-fcsl-pcm:
+  <<: *ci-template
+
 # ci-fiat-crypto:
 #   <<: *ci-template
 #   # out of memory error

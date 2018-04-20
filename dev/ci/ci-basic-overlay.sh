@@ -150,3 +150,9 @@
 ########################################################################
 : "${Elpi_CI_BRANCH:=coq-master}"
 : "${Elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi.git}"
+
+########################################################################
+# fcsl-pcm
+########################################################################
+: "${fcsl_pcm_CI_BRANCH:=master}"
+: "${fcsl_pcm_CI_GITURL:=https://github.com/imdea-software/fcsl-pcm.git}"
