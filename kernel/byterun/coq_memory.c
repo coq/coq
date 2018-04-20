@@ -24,10 +24,6 @@ value * coq_stack_threshold;
 asize_t coq_max_stack_size = Coq_max_stack_size;
 /* global_data */
 
-
-value coq_global_data;
-value coq_atom_tbl;
-
 int drawinstr;
 /* interp state */
 
@@ -58,9 +54,6 @@ static void (*coq_prev_scan_roots_hook) (scanning_action);
 static void coq_scan_roots(scanning_action action)
 {
   register value * i;
-  /* Scan the global variables */
-  (*action)(coq_global_data, &coq_global_data);
-  (*action)(coq_atom_tbl, &coq_atom_tbl);
   /* Scan the stack */
   for (i = coq_sp; i < coq_stack_high; i++) {
     (*action) (*i, i);
@@ -79,24 +72,10 @@ void init_coq_stack()
   coq_max_stack_size = Coq_max_stack_size;
 }  
 
-void init_coq_global_data(long requested_size)
-{
-  int i;
-  coq_global_data = alloc_shr(requested_size, 0);
-  for (i = 0; i < requested_size; i++) 
-    Field (coq_global_data, i) = Val_unit;
-}
-
-void init_coq_atom_tbl(long requested_size){
-  int i;
-  coq_atom_tbl = alloc_shr(requested_size, 0);
-  for (i = 0; i < requested_size; i++) Field (coq_atom_tbl, i) = Val_unit;
-}
-
 void init_coq_interpreter()
 {
   coq_sp = coq_stack_high;
-  coq_interprete(NULL, Val_unit, Val_unit, 0);
+  coq_interprete(NULL, Val_unit, Atom(0), Atom(0), Val_unit, 0);
 }
 
 static int coq_vm_initialized = 0;
@@ -112,8 +91,6 @@ value init_coq_vm(value unit) /* ML */
 #endif /* THREADED_CODE */
     /* Allocate the table of global and the stack */
     init_coq_stack();
-    init_coq_global_data(Coq_global_data_Size);
-    init_coq_atom_tbl(40);
     /* Initialing the interpreter */
     init_coq_interpreter();
     
@@ -155,53 +132,6 @@ void realloc_coq_stack(asize_t required_space)
   coq_stack_threshold = coq_stack_low + Coq_stack_threshold / sizeof(value);
   coq_sp = new_sp;
 #undef shift
-}
-
-value get_coq_global_data(value unit)                /* ML */
-{
-  return coq_global_data;
-}
-
-value get_coq_atom_tbl(value unit)                  /* ML */
-{
-  return coq_atom_tbl;
-}
-
-value realloc_coq_global_data(value size)           /* ML */
-{
-  mlsize_t requested_size, actual_size, i;
-  value new_global_data;
-  requested_size = Long_val(size);
-  actual_size = Wosize_val(coq_global_data);
-  if (requested_size >= actual_size) {
-    requested_size = (requested_size + 0x100) & 0xFFFFFF00;
-    new_global_data = alloc_shr(requested_size, 0);
-    for (i = 0; i < actual_size; i++)
-      initialize(&Field(new_global_data, i), Field(coq_global_data, i));
-    for (i = actual_size; i < requested_size; i++){
-      Field (new_global_data, i) = Val_long (0);
-    }
-    coq_global_data = new_global_data;
-  }
-  return Val_unit;
-}
-
-value realloc_coq_atom_tbl(value size)            /* ML */
-{
-  mlsize_t requested_size, actual_size, i;
-  value new_atom_tbl;
-  requested_size = Long_val(size);
-  actual_size = Wosize_val(coq_atom_tbl);
-  if (requested_size >= actual_size) {
-    requested_size = (requested_size + 0x100) & 0xFFFFFF00;
-    new_atom_tbl = alloc_shr(requested_size, 0);
-    for (i = 0; i < actual_size; i++)
-      initialize(&Field(new_atom_tbl, i), Field(coq_atom_tbl, i));
-    for (i = actual_size; i < requested_size; i++)
-      Field (new_atom_tbl, i) = Val_long (0);
-    coq_atom_tbl = new_atom_tbl;
-  }
-  return Val_unit;
 }
 
 value coq_set_drawinstr(value unit)

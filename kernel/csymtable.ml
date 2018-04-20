@@ -26,7 +26,9 @@ open Cbytegen
 module NamedDecl = Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
 
-external eval_tcode : tcode -> values array -> values = "coq_eval_tcode"
+external eval_tcode : tcode -> atom array -> vm_global -> values array -> values = "coq_eval_tcode"
+
+type global_data = { mutable glob_len : int; mutable glob_val : values array }
 
 (*******************)
 (* Linkage du code *)
@@ -37,21 +39,28 @@ external eval_tcode : tcode -> values array -> values = "coq_eval_tcode"
 (* [global_data] contient les valeurs des constantes globales
    (axiomes,definitions), les annotations des switch et les structured
    constant *)
-external global_data : unit -> values array = "get_coq_global_data"
+let global_data = {
+  glob_len = 0;
+  glob_val = Array.make 4096 crazy_val;
+}
 
-(* [realloc_global_data n] augmente de n la taille de [global_data] *)
-external realloc_global_data : int -> unit = "realloc_coq_global_data"
+let get_global_data () = Vmvalues.vm_global global_data.glob_val
+
+let realloc_global_data n =
+  let n = min (2 * n + 0x100) Sys.max_array_length in
+  let ans = Array.make n crazy_val in
+  let src = global_data.glob_val in
+  let () = Array.blit src 0 ans 0 (Array.length src) in
+  global_data.glob_val <- ans
 
 let check_global_data n =
-  if n >= Array.length (global_data()) then realloc_global_data n
-
-let num_global = ref 0
+  if n >= Array.length global_data.glob_val then realloc_global_data n
 
 let set_global v =
-  let n = !num_global in
+  let n = global_data.glob_len in
   check_global_data n;
-  (global_data()).(n) <- v;
-  incr num_global;
+  global_data.glob_val.(n) <- v;
+  global_data.glob_len <- global_data.glob_len + 1;
   n
 
 (* table pour les structured_constant et les annotations des switchs *)
@@ -164,7 +173,7 @@ and eval_to_patch env (buff,pl,fv) =
   in
   let tc = patch buff pl slots in
   let vm_env = Array.map (slot_for_fv env) fv in
-  eval_tcode tc vm_env
+  eval_tcode tc (get_atom_rel ()) (vm_global global_data.glob_val) vm_env
 
 and val_of_constr env c =
   match compile ~fail_on_error:true env c with

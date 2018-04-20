@@ -42,8 +42,11 @@ external push_vstack : vstack -> int -> unit = "coq_push_vstack"
 
 
 (* interpreteur *)
-external interprete : tcode -> values -> vm_env -> int -> values =
-  "coq_interprete_ml"
+external coq_interprete : tcode -> values -> atom array -> vm_global -> vm_env -> int -> values =
+  "coq_interprete_byte" "coq_interprete_ml"
+
+let interprete code v env k =
+  coq_interprete code v (get_atom_rel ()) (Csymtable.get_global_data ()) env k
 
 (* Functions over arguments *)
 
@@ -184,6 +187,6 @@ let apply_whd k whd =
       push_val v;
       interprete (cofix_upd_code to_up) (cofix_upd_val to_up) (cofix_upd_env to_up) 0
   | Vatom_stk(a,stk) ->
-      apply_stack (val_of_atom a) stk v 
+      apply_stack (val_of_atom a) stk v
   | Vuniv_level lvl -> assert false
 
