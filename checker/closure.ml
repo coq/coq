@@ -135,22 +135,16 @@ let betaiotazeta = mkflags [fBETA;fIOTA;fZETA]
  * instantiations (cbv or lazy) are.
  *)
 
-type 'a tableKey =
-  | ConstKey of 'a
-  | VarKey of Id.t
-  | RelKey of int
-
 type table_key = Constant.t puniverses tableKey
+
+
+let eq_pconstant_key (c,u) (c',u') =
+  eq_constant_key c c' && Univ.Instance.equal u u'
 
 module KeyHash =
 struct
   type t = table_key
-  let equal k1 k2 = match k1, k2 with
-  | ConstKey (c1,u1), ConstKey (c2,u2) -> Constant.UserOrd.equal c1 c2 
-    && Univ.Instance.equal u1 u2
-  | VarKey id1, VarKey id2 -> Id.equal id1 id2
-  | RelKey i1, RelKey i2 -> Int.equal i1 i2
-  | (ConstKey _ | VarKey _ | RelKey _), _ -> false
+  let equal = Names.eq_table_key eq_pconstant_key
 
   open Hashset.Combine
 
@@ -200,8 +194,6 @@ let defined_rels flags env =
 (*  else (0,[])*)
 
 let mind_equiv_infos info = mind_equiv info.i_env
-
-let eq_table_key = KeyHash.equal
 
 let create mk_cl flgs env =
   { i_flags = flgs;

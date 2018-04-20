@@ -46,3 +46,16 @@ Inductive constraint4 : (Type -> Type) -> Type
   := mk_constraint4 : let U1 := Type in
                       let U2 := Type in
                       constraint4 (fun x : U1 => (x : U2)).
+
+Module CMP_CON.
+  (* Comparison of opaque constants MUST be up to the universe graph.
+     See #6798. *)
+  Universe big.
+
+  Polymorphic Lemma foo@{u} : Type@{big}.
+  Proof. exact Type@{u}. Qed.
+
+  Universes U V.
+
+  Definition yo : foo@{U} = foo@{V} := eq_refl.
+End CMP_CON.
