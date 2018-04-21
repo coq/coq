@@ -87,6 +87,9 @@ matrix:
       - TEST_TARGET="ci-geocoq"
     - if: NOT (type = pull_request)
       env:
+      - TEST_TARGET="ci-fcsl-pcm"
+    - if: NOT (type = pull_request)
+      env:
       - TEST_TARGET="ci-fiat-crypto"
     - if: NOT (type = pull_request)
       env:
