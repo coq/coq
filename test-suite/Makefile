@@ -116,9 +116,9 @@ bugs: $(BUGS)
 
 clean:
 	rm -f trace .lia.cache
-	$(SHOW) "RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log>"
+	$(SHOW) "RM        <**/*.vo> <**/*.vio> <**/*.log>"
 	$(HIDE)find . \( \
-	  -name '*.stamp' -o -name '*.vo' -o -name '*.vio' -o -name '*.log' \
+	  -name '*.vo' -o -name '*.vio' -o -name '*.log' \
 	\) -print0 | xargs -0 rm -f
 
 distclean: clean
@@ -128,12 +128,10 @@ distclean: clean
 # Per-subsystem targets
 #######################################################################
 
-define mkstamp
-$(1): $(1).stamp ; @true
-$(1).stamp: $(patsubst %.v,%.v.log,$(wildcard $(1)/*.v)) ; \
-	$(HIDE)touch $$@
+define vdeps
+$(1): $(patsubst %.v,%.v.log,$(wildcard $(1)/*.v))
 endef
-$(foreach S,$(VSUBSYSTEMS),$(eval $(call mkstamp,$(S))))
+$(foreach S,$(VSUBSYSTEMS),$(eval $(call vdeps,$(S))))
 
 #######################################################################
 # Summary
