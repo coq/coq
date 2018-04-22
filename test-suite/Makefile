@@ -79,6 +79,8 @@ log_anomaly = "==========> FAILURE <=========="
 log_failure = "==========> FAILURE <=========="
 log_intro = "==========> TESTING $(1) <=========="
 
+FAIL = >&2 echo 'FAILED    $@'
+
 #######################################################################
 # Testing subsystems
 #######################################################################
@@ -219,6 +221,7 @@ $(addsuffix .log,$(wildcard bugs/opened/*.v)): %.v.log: %.v
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error! (bug seems to be closed, please check)"; \
+	    $(FAIL); \
 	  fi; \
 	} > "$@"
 
@@ -234,6 +237,7 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error! (bug seems to be opened, please check)"; \
+	    $(FAIL); \
 	  fi; \
 	} > "$@"
 
@@ -249,6 +253,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be prepared" ; \
+	    $(FAIL); \
 	  else \
 	    echo $(log_success); \
 	    echo "    $<...correctly prepared" ; \
@@ -267,6 +272,7 @@ $(addsuffix .log,$(wildcard success/*.v micromega/*.v modules/*.v)): %.v.log: %.
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error! (should be accepted)"; \
+	    $(FAIL); \
 	  fi; \
 	} > "$@"
 
@@ -283,6 +289,7 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error! (should be accepted)"; \
+	    $(FAIL); \
 	  fi; \
 	} > "$@"
 
@@ -297,6 +304,7 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error! (should be rejected)"; \
+	    $(FAIL); \
 	  fi; \
 	} > "$@"
 
@@ -319,6 +327,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error! (unexpected output)"; \
+	    $(FAIL); \
 	  fi; \
 	  rm $$tmpoutput; \
 	} > "$@"
@@ -361,6 +370,7 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error! (unexpected output)"; \
+	    $(FAIL); \
 	  fi; \
 	  rm $$tmpoutput; \
 	  rm $$tmpexpected; \
@@ -377,6 +387,7 @@ $(addsuffix .log,$(wildcard interactive/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error! (should be accepted)"; \
+	    $(FAIL); \
 	  fi; \
 	} > "$@"
 
@@ -409,6 +420,7 @@ $(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	    else \
 	      echo $(log_failure); \
 	      echo "    $<...Error! (should run faster)"; \
+	      $(FAIL); \
 	    fi; \
 	  fi; \
 	} > "$@"
@@ -426,6 +438,7 @@ $(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v $(PREREQUISITELOG
           else \
 	      echo $(log_failure); \
 	      echo "    $<...Good news! (wish seems to be granted, please check)"; \
+	      $(FAIL); \
           fi; \
 	} > "$@"
 
@@ -460,6 +473,7 @@ $(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error!"; \
+	    $(FAIL); \
 	  fi; \
 	} > "$@"
 
@@ -478,6 +492,7 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error!"; \
+	    $(FAIL); \
 	  fi; \
 	} > "$@"
 
@@ -497,6 +512,7 @@ vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error!"; \
+	    $(FAIL); \
 	  fi; \
 	} > "$@"
 
@@ -515,6 +531,7 @@ coqchk: $(patsubst %.v,%.chk.log,$(wildcard coqchk/*.v))
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error!"; \
+	    $(FAIL); \
 	  fi; \
 	} > "$@"
 
@@ -534,6 +551,7 @@ coqwc/%.v.log : coqwc/%.v
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error! (unexpected output)"; \
+	    $(FAIL); \
 	  fi; \
 	  rm $$tmpoutput; \
 	} > "$@"
@@ -554,6 +572,7 @@ coq-makefile/%.log : coq-makefile/%/run.sh
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error!"; \
+	    $(FAIL); \
 	  fi; \
 	) > "$@"
 
@@ -578,5 +597,6 @@ $(addsuffix .log,$(wildcard coqdoc/*.v)): %.v.log: %.v %.html.out %.tex.out $(PR
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error! (unexpected output)"; \
+	    $(FAIL); \
 	  fi; \
 	} > "$@"
