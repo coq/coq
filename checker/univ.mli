@@ -49,6 +49,7 @@ sig
   val make : Level.t -> t
   (** Create a universe representing the given level. *)
 
+  val pr : t -> Pp.t
 end
 
 type universe = Universe.t
@@ -140,7 +141,14 @@ val check_constraints : constraints -> universes -> bool
 
 (** Polymorphic maps from universe levels to 'a *)
 module LMap : CSig.MapS with type key = universe_level
-module LSet : CSig.SetS with type elt = universe_level
+module LSet :
+sig
+  include CSig.SetS with type elt = Level.t
+
+  val pr : t -> Pp.t
+  (** Pretty-printing *)
+end
+
 type 'a universe_map = 'a LMap.t
 
 (** {6 Substitution} *)
@@ -215,6 +223,8 @@ sig
 
   val instantiate : Instance.t -> t -> Constraint.t
   val repr : t -> UContext.t
+
+  val pr : (Level.t -> Pp.t) -> t -> Pp.t
 
 end
 
