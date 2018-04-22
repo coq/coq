@@ -303,7 +303,18 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
       | Constant cb1 ->
 	let cb1 = subst_const_body subst1 cb1 in
 	let cb2 = subst_const_body subst2 cb2 in
-	(*Start by checking types*)
+        (*Start by checking universes *)
+        let env =
+          match cb1.const_universes, cb2.const_universes with
+          | Monomorphic_const _, Monomorphic_const _ -> env
+          | Polymorphic_const auctx1, Polymorphic_const auctx2 ->
+            check_polymorphic_instance error env auctx1 auctx2
+          | Monomorphic_const _, Polymorphic_const _ ->
+            error ()
+          | Polymorphic_const _, Monomorphic_const _ ->
+            error ()
+        in
+        (* Now check types *)
 	let typ1 = cb1.const_type in
 	let typ2 = cb2.const_type in
 	check_type env typ1 typ2;
