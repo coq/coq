@@ -117,14 +117,15 @@ run: $(SUBSYSTEMS)
 bugs: $(BUGS)
 
 clean:
-	rm -f trace .lia.cache
-	$(SHOW) "RM        <**/*.vo> <**/*.vio> <**/*.log>"
+	rm -f trace .lia.cache output/MExtraction.out
+	$(SHOW) "RM        <**/*.vo> <**/*.vio> <**/*.log> <**/*.glob>"
 	$(HIDE)find . \( \
-	  -name '*.vo' -o -name '*.vio' -o -name '*.log' \
+	  -name '*.vo' -o -name '*.vio' -o -name '*.log' -o -name '*.glob' \
 	\) -print0 | xargs -0 rm -f
 
 distclean: clean
-	$(HIDE)find . -name '*.log' -print0 | xargs -0 rm -f
+	$(SHOW) "RM        <**/*.aux>"
+	$(HIDE)find . -name '*.aux' -print0 | xargs -0 rm -f
 
 #######################################################################
 # Per-subsystem targets
