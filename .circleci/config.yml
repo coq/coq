@@ -173,6 +173,9 @@ jobs:
   geocoq:
     <<: *ci-template
 
+  fcsl-pcm:
+    <<: *ci-template
+
   fiat-crypto:
     <<: *ci-template
 
@@ -248,6 +251,7 @@ workflows:
       - elpi: *req-main
       - equations: *req-main
       - geocoq: *req-main
+      - fcsl-pcm: *req-main
       - fiat-crypto: *req-main
       - fiat-parsers: *req-main
       - flocq: *req-main

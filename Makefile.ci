@@ -17,6 +17,7 @@ CI_TARGETS=ci-bignums \
     ci-cpdt \
     ci-elpi \
     ci-equations \
+    ci-fcsl-pcm \
     ci-fiat-crypto \
     ci-fiat-parsers \
     ci-flocq \
