@@ -19,6 +19,7 @@ Tactic language
 
 - Ltac backtraces now include trace information about tactics
   called by OCaml-defined tactics.
+- Option "Ltac Debug" now applies also to terms built using Ltac functions.
 
 Changes from 8.8+beta1 to 8.8.0
 ===============================
