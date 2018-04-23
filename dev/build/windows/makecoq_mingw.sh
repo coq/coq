@@ -970,6 +970,10 @@ function make_lablgtk {
     # These changes are included in dev/build/windows/patches_coq/lablgtk-2.18.3.patch
 
     log2 make world
+
+    # lablgtk does not escape FINDLIBDIR path, which can contain backslashes
+    sed -i "s|^FINDLIBDIR=.*|FINDLIBDIR=$PREFIXOCAML/libocaml/site-lib|" config.make
+
     log2 make install
     log2 make clean
     build_post

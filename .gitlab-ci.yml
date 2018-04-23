@@ -134,6 +134,24 @@ before_script:
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
 
+.windows-template: &windows-template
+  stage: test
+  artifacts:
+    name: "%CI_JOB_NAME%"
+    paths:
+      - dev\nsis\*.exe
+      - coq-opensource-archive-windows-*.zip
+    expire_in: 1 week
+  dependencies: []
+  tags:
+    - windows
+  before_script: []
+  script:
+    - call dev/ci/gitlab.bat
+  only:
+    variables:
+      - $WINDOWS == "enabled"
+
 build:base:
   <<: *build-template
   variables:
@@ -159,6 +177,16 @@ build:edge+flambda:
     OPAM_VARIANT: "+flambda"
     COQ_EXTRA_CONF: "-native-compiler no -coqide opt -flambda-opts "
     COQ_EXTRA_CONF_QUOTE: "-O3 -unbox-closures"
+
+windows64:
+  <<: *windows-template
+  variables:
+    ARCH: "64"
+
+windows32:
+  <<: *windows-template
+  variables:
+    ARCH: "32"
 
 warnings:base:
   <<: *warnings-template
