@@ -9,9 +9,23 @@
 (************************************************************************)
 
 open Names
-open Vernacexpr
 
 (** {6 Modules } *)
+
+(** Rigid / flexible module signature *)
+
+type 'a module_signature =
+  | Enforce of 'a (** ... : T *)
+  | Check of 'a list (** ... <: T1 <: T2, possibly empty *)
+
+(** Which module inline annotations should we honor,
+    either None or the ones whose level is less or equal
+    to the given integer *)
+
+type inline =
+  | NoInline
+  | DefaultInline
+  | InlineAt of int
 
 type 'modast module_interpretor =
   Environ.env -> Misctypes.module_kind -> 'modast ->

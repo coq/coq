@@ -281,20 +281,22 @@ type bullet =
 
 (** Rigid / flexible module signature *)
 
-type 'a module_signature =
+type 'a module_signature = 'a Declaremods.module_signature =
   | Enforce of 'a (** ... : T *)
   | Check of 'a list (** ... <: T1 <: T2, possibly empty *)
+[@@ocaml.deprecated "please use [Declaremods.module_signature]."]
 
 (** Which module inline annotations should we honor,
     either None or the ones whose level is less or equal
     to the given integer *)
 
-type inline =
+type inline = Declaremods.inline =
   | NoInline
   | DefaultInline
   | InlineAt of int
+[@@ocaml.deprecated "please use [Declaremods.inline]."]
 
-type module_ast_inl = module_ast * inline
+type module_ast_inl = module_ast * Declaremods.inline
 type module_binder = bool option * lident list * module_ast_inl
 
 (** [Some b] if locally enabled/disabled according to [b], [None] if
@@ -333,7 +335,7 @@ type nonrec vernac_expr =
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of (Decl_kinds.discharge * Decl_kinds.assumption_object_kind) *
-      inline * (ident_decl list * constr_expr) with_coercion list
+      Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
   | VernacInductive of vernac_cumulative option * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of Decl_kinds.discharge * (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of Decl_kinds.discharge * (cofixpoint_expr * decl_notation list) list
@@ -373,7 +375,7 @@ type nonrec vernac_expr =
   | VernacDeclareModule of bool option * lident *
       module_binder list * module_ast_inl
   | VernacDefineModule of bool option * lident * module_binder list *
-      module_ast_inl module_signature * module_ast_inl list
+      module_ast_inl Declaremods.module_signature * module_ast_inl list
   | VernacDeclareModuleType of lident *
       module_binder list * module_ast_inl list * module_ast_inl list
   | VernacInclude of module_ast_inl list

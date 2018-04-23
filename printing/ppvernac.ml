@@ -16,12 +16,13 @@ open Util
 open CAst
 
 open Extend
-open Vernacexpr
-open Pputils
 open Libnames
+open Decl_kinds
 open Constrexpr
 open Constrexpr_ops
-open Decl_kinds
+open Vernacexpr
+open Declaremods
+open Pputils
 
   open Ppconstr
 
