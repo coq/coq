@@ -17,7 +17,7 @@ open Decl_kinds
 
 (** [constr_expr] is the abstract syntax tree produced by the parser *)
 
-type universe_decl_expr = (lident list, glob_constraint list) gen_universe_decl
+type universe_decl_expr = (lident list, Glob_term.glob_constraint list) gen_universe_decl
 
 type ident_decl = lident * universe_decl_expr option
 type name_decl = lname * universe_decl_expr option
@@ -50,7 +50,7 @@ type prim_token =
   | Numeral of raw_natural_number * sign
   | String of string
 
-type instance_expr = Misctypes.glob_level list
+type instance_expr = Glob_term.glob_level list
 
 type cases_pattern_expr_r =
   | CPatAlias of cases_pattern_expr * lname
@@ -98,7 +98,7 @@ and constr_expr_r =
   | CHole   of Evar_kinds.t option * intro_pattern_naming_expr * Genarg.raw_generic_argument option
   | CPatVar of patvar
   | CEvar   of Glob_term.existential_name * (Id.t * constr_expr) list
-  | CSort   of glob_sort
+  | CSort   of Glob_term.glob_sort
   | CCast   of constr_expr * constr_expr cast_type
   | CNotation of notation * constr_notation_substitution
   | CGeneralization of binding_kind * abstraction_kind option * constr_expr

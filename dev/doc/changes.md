@@ -2,6 +2,12 @@
 
 ### ML API
 
+Misctypes
+
+  Syntax for universe sorts and kinds has been moved from `Misctypes`
+  to `Glob_term`, as these are turned into kernel terms by
+  `Pretyping`.
+
 Proof engine
 
 - More functions have been changed to use `EConstr`, notably the

@@ -29,7 +29,7 @@ let smartmap_cast_type f c =
 
 (** Equalities on [glob_sort] *)
 
-let glob_sort_eq g1 g2 = match g1, g2 with
+let glob_sort_eq g1 g2 = let open Glob_term in match g1, g2 with
 | GProp, GProp -> true
 | GSet, GSet -> true
 | GType l1, GType l2 ->
