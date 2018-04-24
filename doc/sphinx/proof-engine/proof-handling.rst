@@ -34,7 +34,7 @@ terms of λ-calculus, known as the *Curry-Howard isomorphism*
 terms are called *proof terms*.
 
 
-.. exn:: No focused proof
+.. exn:: No focused proof.
 
 Coq raises this error message when one attempts to use a proof editing command
 out of the proof editing mode.
@@ -68,7 +68,7 @@ proof term to the declared name of the original goal. This name is
 added to the environment as an opaque constant.
 
 
-.. exn:: Attempt to save an incomplete proof
+.. exn:: Attempt to save an incomplete proof.
 
 .. note::
 
@@ -239,7 +239,7 @@ the previous proof development, or to the |Coq| toplevel if no other
 proof was edited.
 
 
-.. exn:: No focused proof (No proof-editing in progress)
+.. exn:: No focused proof (No proof-editing in progress).
 
 
 
@@ -298,7 +298,7 @@ Repeats Undo :n:`@num` times.
 This command restores the proof editing process to the original goal.
 
 
-.. exn:: No focused proof to restart
+.. exn:: No focused proof to restart.
 
 
 .. cmd:: Focus.
@@ -349,14 +349,14 @@ This focuses on the :n:`@num` th subgoal to prove.
 
 Error messages:
 
-.. exn:: This proof is focused, but cannot be unfocused this way
+.. exn:: This proof is focused, but cannot be unfocused this way.
 
 You are trying to use ``}`` but the current subproof has not been fully solved.
 
-.. exn:: No such goal
-   :name: No such goal (focusing)
+.. exn:: No such goal.
+   :name: No such goal. (Focusing)
 
-.. exn:: Brackets only support the single numbered goal selector
+.. exn:: Brackets only support the single numbered goal selector.
 
 See also error messages about bullets below.
 
@@ -409,11 +409,11 @@ The following example script illustrates all these features:
     assumption.
 
 
-.. exn:: Wrong bullet @bullet1 : Current bullet @bullet2 is not finished.
+.. exn:: Wrong bullet @bullet1: Current bullet @bullet2 is not finished.
 
 Before using bullet :n:`@bullet1` again, you should first finish proving the current focused goal. Note that :n:`@bullet1` and :n:`@bullet2` may be the same.
 
-.. exn:: Wrong bullet @bullet1 : Bullet @bullet2 is mandatory here.
+.. exn:: Wrong bullet @bullet1: Bullet @bullet2 is mandatory here.
 
 You must put :n:`@bullet2` to focus next goal. No other bullet is allowed here.
 
@@ -449,8 +449,8 @@ This command displays the current goals.
 
 Displays only the :n:`@num`-th subgoal.
 
-.. exn:: No such goal
-.. exn:: No focused proof
+.. exn:: No such goal.
+.. exn:: No focused proof.
 
 .. cmdv:: Show @ident.
 
@@ -524,7 +524,7 @@ This variant displays a template of the Gallina
 
      Show Match nat.
 
-.. exn:: Unknown inductive type
+.. exn:: Unknown inductive type.
 
 .. _ShowUniverses:
 

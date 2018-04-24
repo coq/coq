@@ -689,11 +689,11 @@ presence of partial application of `wrong` in the body of
 For now, dependent cases are not treated for non structurally
 terminating functions.
 
-.. exn:: The recursive argument must be specified
-.. exn:: No argument name @ident
-.. exn:: Cannot use mutual definition with well-founded recursion or measure
+.. exn:: The recursive argument must be specified.
+.. exn:: No argument name @ident.
+.. exn:: Cannot use mutual definition with well-founded recursion or measure.
 
-.. warn:: Cannot define graph for @ident
+.. warn:: Cannot define graph for @ident.
 
     The generation of the graph relation (`R_ident`) used to compute the induction scheme of ident
     raised a typing error. Only `ident` is defined; the induction scheme
@@ -703,12 +703,12 @@ terminating functions.
       which ``Function`` cannot deal with yet.
     - the definition is not a *pattern-matching tree* as explained above.
 
-.. warn:: Cannot define principle(s) for @ident
+.. warn:: Cannot define principle(s) for @ident.
 
      The generation of the graph relation (`R_ident`) succeeded but the induction principle
      could not be built. Only `ident` is defined. Please report.
 
-.. warn:: Cannot build functional inversion principle
+.. warn:: Cannot build functional inversion principle.
 
      `functional inversion` will not be available for the function.
 
@@ -820,7 +820,7 @@ Section :ref:`gallina-definitions`).
     Notice the difference between the value of `x’` and `x’’` inside section
     `s1` and outside.
 
-    .. exn:: This is not the last opened section
+    .. exn:: This is not the last opened section.
 
 **Remarks:**
 
@@ -906,11 +906,11 @@ Reserved commands inside an interactive module
    functor) its components (constants, inductive types, submodules etc.)
    are now available through the dot notation.
 
-    .. exn:: No such label @ident
+    .. exn:: No such label @ident.
 
-    .. exn:: Signature components for label @ident do not match
+    .. exn:: Signature components for label @ident do not match.
 
-    .. exn:: This is not the last opened module
+    .. exn:: This is not the last opened module.
 
 .. cmd:: Module @ident := @module_expression.
 
@@ -965,7 +965,7 @@ Reserved commands inside an interactive module type:
 
    This command closes the interactive module type `ident`.
 
-   .. exn:: This is not the last opened module type
+   .. exn:: This is not the last opened module type.
 
 .. cmd:: Module Type @ident := @module_type.
 
@@ -1225,7 +1225,7 @@ qualified name.
        When the module containing the command Export qualid
        is imported, qualid is imported as well.
 
-    .. exn:: @qualid is not a module
+    .. exn:: @qualid is not a module.
 
     .. warn:: Trying to mask the absolute name @qualid!
 
@@ -1525,6 +1525,7 @@ force the given argument to be guessed by replacing it by “_”. If
 possible, the correct argument will be automatically generated.
 
 .. exn:: Cannot infer a term for this placeholder.
+   :name: Cannot infer a term for this placeholder. (Casual use of implicit arguments)
 
    |Coq| was not able to deduce an instantiation of a “_”.
 

@@ -151,7 +151,8 @@ Program Definition
    obligations. Once solved using the commands shown below, it binds the
    final |Coq| term to the name ``ident`` in the environment.
 
-   .. exn:: @ident already exists (Program Definition)
+   .. exn:: @ident already exists.
+      :name: @ident already exists. (Program Definition)
 
    .. cmdv:: Program Definition @ident : @type := @term
 
@@ -349,7 +350,7 @@ Frequently Asked Questions
 ---------------------------
 
 
-.. exn:: Ill-formed recursive definition
+.. exn:: Ill-formed recursive definition.
 
   This error can happen when one tries to define a function by structural
   recursion on a subset object, which means the |Coq| function looks like:

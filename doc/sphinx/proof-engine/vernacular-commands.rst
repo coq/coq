@@ -23,9 +23,9 @@ defined object referred by :n:`@qualid`.
 Error messages:
 
 
-.. exn:: @qualid not a defined object
+.. exn:: @qualid not a defined object.
 
-.. exn:: Universe instance should have length :n:`num`.
+.. exn:: Universe instance should have length @num.
 
 .. exn:: This object does not support universe names.
 
@@ -336,7 +336,7 @@ of the name of library lemmas.
 Error messages:
 
 
-.. exn:: The reference @qualid was not found in the current environment
+.. exn:: The reference @qualid was not found in the current environment.
 
 There is no constant in the environment named qualid.
 
@@ -440,7 +440,7 @@ This restricts the search to constructions not defined in the modules named by t
 
 Error messages:
 
-.. exn:: Module/section @qualid not found
+.. exn:: Module/section @qualid not found.
 
 No module :n:`@qualid` has been required
 (see Section :ref:`compiled-files`).
@@ -637,11 +637,11 @@ the loaded file See also: Section :ref:`controlling-display`.
 
 Error messages:
 
-.. exn:: Can’t find file @ident on loadpath
+.. exn:: Can’t find file @ident on loadpath.
 
-.. exn:: Load is not supported inside proofs
+.. exn:: Load is not supported inside proofs.
 
-.. exn:: Files processed by Load cannot leave open proofs
+.. exn:: Files processed by Load cannot leave open proofs.
 
 .. _compiled-files:
 
@@ -713,15 +713,15 @@ comes from a given package by making explicit its absolute root.
 
 Error messages:
 
-.. exn:: Cannot load qualid: no physical path bound to dirpath
+.. exn:: Cannot load qualid: no physical path bound to dirpath.
 
-.. exn:: Cannot find library foo in loadpath
+.. exn:: Cannot find library foo in loadpath.
 
 The command did not find the
 file foo.vo. Either foo.v exists but is not compiled or foo.vo is in a
 directory which is not in your LoadPath (see Section :ref:`libraries-and-filesystem`).
 
-.. exn:: Compiled library @ident.vo makes inconsistent assumptions over library qualid
+.. exn:: Compiled library @ident.vo makes inconsistent assumptions over library qualid.
 
 The command tried to load library file :n:`@ident`.vo that
 depends on some specific version of library :n:`@qualid` which is not the
@@ -729,13 +729,13 @@ one already loaded in the current |Coq| session. Probably `ident.v` was
 not properly recompiled with the last version of the file containing
 module :n:`@qualid`.
 
-.. exn:: Bad magic number
+.. exn:: Bad magic number.
 
 The file `ident.vo` was found but either it is not a
 |Coq| compiled module, or it was compiled with an incompatible
 version of |Coq|.
 
-.. exn:: The file `ident.vo` contains library dirpath and not library dirpath’
+.. exn:: The file `ident.vo` contains library dirpath and not library dirpath’.
 
 The library file `dirpath’` is indirectly required by the
 ``Require`` command but it is bound in the current loadpath to the
@@ -743,7 +743,7 @@ file `ident.vo` which was bound to a different library name `dirpath` at
 the time it was compiled.
 
 
-.. exn:: Require is not allowed inside a module or a module type
+.. exn:: Require is not allowed inside a module or a module type.
 
 This command
 is not allowed inside a module or a module type being defined. It is
@@ -787,9 +787,9 @@ if outside a section.
 
 Error messages:
 
-.. exn:: File not found on loadpath : @string
+.. exn:: File not found on loadpath: @string.
 
-.. exn:: Loading of ML object file forbidden in a native Coq
+.. exn:: Loading of ML object file forbidden in a native Coq.
 
 
 
@@ -937,7 +937,7 @@ over the name of a module or of an object inside a module.
 
 Error messages:
 
-.. exn:: @ident: no such entry
+.. exn:: @ident: no such entry.
 
 Variants:
 
@@ -976,7 +976,7 @@ before that proof.
 Error messages:
 
 
-.. exn:: Invalid backtrack
+.. exn:: Invalid backtrack.
 
 The user wants to undo more commands than available in the history.
 
@@ -1012,7 +1012,7 @@ three numbers represent the following:
 Error messages:
 
 
-.. exn:: Invalid backtrack
+.. exn:: Invalid backtrack.
 
 
 The destination state label is unknown.
@@ -1205,7 +1205,7 @@ See also: sections :ref:`performingcomputations`, :ref:`tactics-automatizing`, :
 Error messages:
 
 
-.. exn:: The reference @qualid was not found in the current environment
+.. exn:: The reference @qualid was not found in the current environment.
 
 There is no constant referred by :n:`@qualid` in the environment.
 Nevertheless, if you asked ``Opaque`` `foo` `bar` and if `bar` does not exist, `foo` is set opaque.
@@ -1231,7 +1231,7 @@ used.
 Error messages:
 
 
-.. exn:: The reference @qualid was not found in the current environment
+.. exn:: The reference @qualid was not found in the current environment.
 
 There is no constant referred by :n:`@qualid` in the environment.
 
