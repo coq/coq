@@ -917,45 +917,33 @@ condition* for a constant :math:`X` in the following cases:
   satisfies the nested positivity condition for :math:`X`
 
 
-For instance, if one considers the type
-
 .. example::
-  .. coqtop:: all
+   For instance, if one considers the following variant of a tree type
+   branching over the natural numbers:
 
-     Module TreeExample.
-     Inductive tree (A:Type) : Type :=
-     | leaf : tree A
-     | node : A -> (nat -> tree A) -> tree A.
+  .. coqtop:: in
+
+     Inductive nattree (A:Type) : Type :=
+     | leaf : nattree A
+     | node : A -> (nat -> nattree A) -> nattree A.
      End TreeExample.
      
-::
+    Then every instantiated constructor of ``nattree A`` satisfies the nested positivity
+    condition for ``nattree``:
 
-    [TODO Note: This commentary does not seem to correspond to the
-     preceding example.  Instead it is referring to the first example
-     in Inductive Definitions section.  It seems we should either
-     delete the preceding example and refer the the example above of
-     type `list A`, or else we should rewrite the commentary below.]
-     
-    Then every instantiated constructor of list A satisfies the nested positivity
-    condition for list
-      │
-      ├─ concerning type list A of constructor nil:
-      │    Type list A of constructor nil satisfies the positivity condition for list
-      │    because list does not appear in any (real) arguments of the type of that
-      |    constructor (primarily because list does not have any (real)
-      |    arguments) ... (bullet 1)
-      │
-      ╰─ concerning type ∀ A → list A → list A of constructor cons:
-           Type ∀ A : Type, A → list A → list A of constructor cons
-           satisfies the positivity condition for list because:
-           │
-           ├─ list occurs only strictly positively in Type ... (bullet 3)
-           │
-           ├─ list occurs only strictly positively in A ... (bullet 3)
-           │
-           ├─ list occurs only strictly positively in list A ... (bullet 4)
-           │
-           ╰─ list satisfies the positivity condition for list A ... (bullet 1)
+    + Type ``nattree A`` of constructor ``leaf`` satisfies the positivity condition for
+      ``nattree`` because ``nattree`` does not appear in any (real) arguments of the
+      type of that constructor (primarily because ``nattree`` does not have any (real)
+      arguments) ... (bullet 1)
+
+    + Type ``A → (nat → nattree A) → nattree A`` of constructor ``node`` satisfies the
+      positivity condition for ``nattree`` because:
+
+      - ``nattree`` occurs only strictly positively in ``A`` ... (bullet 3)
+
+      - ``nattree`` occurs only strictly positively in ``nat → nattree A`` ... (bullet 3 + 2)
+
+      - ``nattree`` satisfies the positivity condition for ``nattree A`` ... (bullet 1)
 
 .. _Correctness-rules:
 
