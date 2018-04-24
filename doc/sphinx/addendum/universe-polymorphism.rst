@@ -79,7 +79,7 @@ levels.
 
 When printing :g:`pidentity`, we can see the universes it binds in
 the annotation :g:`@{Top.2}`. Additionally, when
-:g:`Set Printing Universes` is on we print the "universe context" of
+:opt:`Printing Universes` is on we print the "universe context" of
 :g:`pidentity` consisting of the bound universes and the
 constraints they must verify (for :g:`pidentity` there are no constraints).
 
@@ -169,7 +169,7 @@ declared cumulative using the :g:`Cumulative` prefix.
 
    Declares the inductive as cumulative
 
-Alternatively, there is an option :g:`Set Polymorphic Inductive
+Alternatively, there is an option :opt:`Polymorphic Inductive
 Cumulativity` which when set, makes all subsequent *polymorphic*
 inductive definitions cumulative.  When set, inductive types and the
 like can be enforced to be non-cumulative using the :g:`NonCumulative`
@@ -229,7 +229,7 @@ Cumulative inductive types, coninductive types, variants and records
 only make sense when they are universe polymorphic. Therefore, an
 error is issued whenever the user uses the :g:`Cumulative` or
 :g:`NonCumulative` prefix in a monomorphic context.
-Notice that this is not the case for the option :g:`Set Polymorphic Inductive Cumulativity`.
+Notice that this is not the case for the option :opt:`Polymorphic Inductive Cumulativity`.
 That is, this option, when set, makes all subsequent *polymorphic*
 inductive declarations cumulative (unless, of course the :g:`NonCumulative` prefix is used)
 but has no effect on *monomorphic* inductive declarations.
@@ -438,7 +438,7 @@ underscore or by omitting the annotation to a polymorphic definition.
 
 .. opt:: Strict Universe Declaration.
 
-   The command ``Unset Strict Universe Declaration`` allows one to freely use
+   Turning this option off allows one to freely use
    identifiers for universes without declaring them first, with the
    semantics that the first use declares it. In this mode, the universe
    names are not associated with the definition or proof once it has been
