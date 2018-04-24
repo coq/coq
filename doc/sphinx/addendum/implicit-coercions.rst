@@ -129,16 +129,16 @@ Declaration of Coercions
   Declares the construction denoted by `qualid` as a coercion between
   the two given classes.
 
-  .. exn:: @qualid not declared
-  .. exn:: @qualid is already a coercion
-  .. exn:: Funclass cannot be a source class
-  .. exn:: @qualid is not a function
-  .. exn:: Cannot find the source class of @qualid
-  .. exn:: Cannot recognize @class as a source class of @qualid
-  .. exn:: @qualid does not respect the uniform inheritance condition
+  .. exn:: @qualid not declared.
+  .. exn:: @qualid is already a coercion.
+  .. exn:: Funclass cannot be a source class.
+  .. exn:: @qualid is not a function.
+  .. exn:: Cannot find the source class of @qualid.
+  .. exn:: Cannot recognize @class as a source class of @qualid.
+  .. exn:: @qualid does not respect the uniform inheritance condition.
   .. exn:: Found target class ... instead of ...
 
-  .. warn:: Ambiguous path
+  .. warn:: Ambiguous path.
 
     When the coercion `qualid` is added to the inheritance graph, non
     valid coercion paths are ignored; they are signaled by a warning
@@ -211,7 +211,7 @@ declaration, this constructor is declared as a coercion.
   function with type :g:`forall (x₁:T₁)..(xₙ:Tₙ)(y:C x₁..xₙ),D t₁..tₘ`,
   and we declare it as an identity coercion between ``C`` and ``D``.
 
-  .. exn:: @class must be a transparent constant
+  .. exn:: @class must be a transparent constant.
 
   .. cmdv:: Local Identity Coercion @ident : @ident >-> @ident.
 

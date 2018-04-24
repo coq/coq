@@ -288,8 +288,8 @@ focused goals with:
       nothing (i.e. it cannot make some progress). ``par:`` can only be used at
       the toplevel of a tactic expression.
 
-   .. exn:: No such goal
-      :name: No such goal (goal selector)
+   .. exn:: No such goal.
+      :name: No such goal. (Goal selector)
 
    .. TODO change error message index entry
 
@@ -348,7 +348,7 @@ We can check if a tactic made progress with:
    to one of the focused subgoal produced subgoals equal to the initial
    goals (up to syntactical equality), then an error of level 0 is raised.
 
-   .. exn:: Failed to progress
+   .. exn:: Failed to progress.
 
 Backtracking branching
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -389,7 +389,7 @@ tactic to work (i.e. which does not fail) among a panel of tactics:
    :n:`first [:@expr__1 | ... | @expr__n]` behaves, in each goal, as the the first
    :n:`v__i` to have *at least* one success.
 
-   .. exn:: Error message: No applicable tactic
+   .. exn:: No applicable tactic.
 
    .. tacv:: first @expr
 
@@ -478,7 +478,7 @@ one* success:
       whether a second success exists, and may run further effects
       immediately.
 
-   .. exn:: This tactic has more than one success
+   .. exn:: This tactic has more than one success.
 
 Checking the failure
 ~~~~~~~~~~~~~~~~~~~~
@@ -516,7 +516,7 @@ among a panel of tactics:
    each goal independently, if it doesn’t solve the goal then it tries to
    apply :n:`v__2` and so on. It fails if there is no solving tactic.
 
-   .. exn:: Cannot solve the goal
+   .. exn:: Cannot solve the goal.
 
    .. tacv:: solve @expr
 
@@ -760,11 +760,11 @@ We can carry out pattern matching on terms with:
    branches or inside the right-hand side of the selected branch even if it
    has backtracking points.
 
-   .. exn:: No matching clauses for match
+   .. exn:: No matching clauses for match.
 
       No pattern can be used and, in particular, there is no :n:`_` pattern.
 
-   .. exn:: Argument of match does not evaluate to a term
+   .. exn:: Argument of match does not evaluate to a term.
 
       This happens when :n:`@expr` does not denote a term.
 
@@ -844,7 +844,7 @@ We can make pattern matching on goals using the following expression:
    branches or combinations of hypotheses, or inside the right-hand side of
    the selected branch even if it has backtracking points.
 
-   .. exn:: No matching clauses for match goal
+   .. exn:: No matching clauses for match goal.
 
       No clause succeeds, i.e. all matching patterns, if any, fail at the
       application of the right-hand-side.
@@ -891,7 +891,7 @@ produce subgoals but generates a term to be used in tactic expressions:
    match expression. This expression evaluates replaces the hole of the
    value of :n:`@ident` by the value of :n:`@expr`.
 
-   .. exn:: not a context variable
+   .. exn:: Not a context variable.
 
 Generating fresh hypothesis names
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1001,7 +1001,7 @@ Testing boolean expressions
          all:let n:= numgoals in guard n<4.
          Fail all:let n:= numgoals in guard n=2.
 
-   .. exn:: Condition not satisfied
+   .. exn:: Condition not satisfied.
 
 Proving a subgoal as a separate lemma
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1051,8 +1051,8 @@ Proving a subgoal as a separate lemma
          with tactics is fragile, and explicitly named and reused subterms
          don’t play well with asynchronous proofs.
 
-   .. exn:: Proof is not complete
-      :name: Proof is not complete (abstract)
+   .. exn:: Proof is not complete.
+      :name: Proof is not complete. (abstract)
 
 Tactic toplevel definitions
 ---------------------------

@@ -557,7 +557,8 @@ has type :token:`type`.
    the global context. The fact asserted by *term* is thus assumed as a
    postulate.
 
-.. exn:: @ident already exists (Axiom)
+.. exn:: @ident already exists.
+   :name: @ident already exists. (Axiom)
 
 .. cmdv:: Parameter @ident : @term.
    :name: Parameter
@@ -596,7 +597,8 @@ will be unknown and every object using this variable will be explicitly
 parametrized (the variable is *discharged*). Using the ``Variable`` command out
 of any section is equivalent to using ``Local Parameter``.
 
-.. exn:: @ident already exists (Variable)
+.. exn:: @ident already exists.
+   :name: @ident already exists. (Variable)
 
 .. cmdv:: Variable {+ @ident } : @term.
 
@@ -646,7 +648,8 @@ Section :ref:`typing-rules`.
    This command binds :token:`term` to the name :token:`ident` in the environment,
    provided that :token:`term` is well-typed.
 
-.. exn:: @ident already exists (Definition)
+.. exn:: @ident already exists.
+   :name: @ident already exists. (Definition)
 
 .. cmdv:: Definition @ident : @term := @term.
 
@@ -676,7 +679,7 @@ Section :ref:`typing-rules`.
 
 These are synonyms of the Definition forms.
 
-.. exn:: The term @term has type @type while it is expected to have type @type
+.. exn:: The term @term has type @type while it is expected to have type @type.
 
 See also :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
@@ -690,7 +693,8 @@ prefixed by the let-in definition ``let`` :token:`ident` ``:=`` :token:`term`
 ``in``. Using the ``Let`` command out of any section is equivalent to using
 ``Local Definition``.
 
-.. exn:: @ident already exists (Let)
+.. exn:: @ident already exists.
+   :name: @ident already exists. (Let)
 
 .. cmdv:: Let @ident : @term := @term.
 
@@ -803,9 +807,9 @@ and to prove that if any natural number :g:`n` satisfies :g:`P` its double
 successor :g:`(S (S n))` satisfies also :g:`P`. This is indeed analogous to the
 structural induction principle we got for :g:`nat`.
 
-.. exn:: Non strictly positive occurrence of @ident in @type
+.. exn:: Non strictly positive occurrence of @ident in @type.
 
-.. exn:: The conclusion of @type is not valid; it must be built from @ident
+.. exn:: The conclusion of @type is not valid; it must be built from @ident.
 
 Parametrized inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -864,7 +868,7 @@ that it disallows recursive definition of types (in particular lists cannot
 be defined with the Variant keyword). No induction scheme is generated for
 this variant, unless :opt:`Nonrecursive Elimination Schemes` is set.
 
-.. exn:: The @num th argument of @ident must be @ident in @type
+.. exn:: The @num th argument of @ident must be @ident in @type.
 
 New from Coq V8.1
 +++++++++++++++++
@@ -1246,9 +1250,10 @@ After the statement is asserted, Coq needs a proof. Once a proof of
 validated, the proof is generalized into a proof of forall , :token:`type` and
 the theorem is bound to the name :token:`ident` in the environment.
 
-.. exn:: The term @term has type @type which should be Set, Prop or Type
+.. exn:: The term @term has type @type which should be Set, Prop or Type.
 
-.. exn:: @ident already exists (Theorem)
+.. exn:: @ident already exists.
+   :name: @ident already exists. (Theorem)
 
    The name you provided is already defined. You have then to choose
    another name.
@@ -1334,7 +1339,8 @@ the theorem is bound to the name :token:`ident` in the environment.
    When the proof is completed it should be validated and put in the environment
    using the keyword Qed.
 
-.. exn:: @ident already exists (Qed)
+.. exn:: @ident already exists.
+   :name: @ident already exists. (Qed)
 
 .. note::
 

@@ -591,24 +591,24 @@ generated expression and the original.
 Here is a summary of the error messages corresponding to each
 situation:
 
-.. exn:: The constructor @ident expects @num arguments
+.. exn:: The constructor @ident expects @num arguments.
 
    The variable ident is bound several times in pattern termFound a constructor
    of inductive type term while a constructor of term is expectedPatterns are
    incorrect (because constructors are not applied to the correct number of the
    arguments, because they are not linear or they are wrongly typed).
 
-.. exn:: Non exhaustive pattern-matching
+.. exn:: Non exhaustive pattern-matching.
 
    The pattern matching is not exhaustive.
 
 .. exn:: The elimination predicate term should be of arity @num (for non \
-         dependent case) or @num (for dependent case)
+         dependent case) or @num (for dependent case).
 
    The elimination predicate provided to match has not the expected arity.
 
 .. exn:: Unable to infer a match predicate
-         Either there is a type incompatibility or the problem involves dependencies
+         Either there is a type incompatibility or the problem involves dependencies.
 
    There is a type mismatch between the different branches. The user should
    provide an elimination predicate.

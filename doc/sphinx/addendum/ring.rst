@@ -171,21 +171,21 @@ performs the simplification in the hypothesis named :n:`@ident`.
 Error messages:
 
 
-.. exn:: not a valid ring equation
+.. exn:: Not a valid ring equation.
 
   The conclusion of the goal is not provable in the corresponding ring theory.
 
-.. exn:: arguments of ring_simplify do not have all the same type 
+.. exn:: Arguments of ring_simplify do not have all the same type.
   
   ``ring_simplify`` cannot simplify terms of several rings at the same
   time. Invoke the tactic once per ring structure.
 
-.. exn:: cannot find a declared ring structure over @term
+.. exn:: Cannot find a declared ring structure over @term.
 
   No ring has been declared for the type of the terms to be simplified.
   Use ``Add Ring`` first.
 
-.. exn:: cannot find a declared ring structure for equality @term 
+.. exn:: Cannot find a declared ring structure for equality @term.
 
   Same as above is the case of the ``ring`` tactic.
 
@@ -396,18 +396,18 @@ div :n:`@term`
 
 Error messages:
 
-.. exn:: bad ring structure
+.. exn:: Bad ring structure.
 
   The proof of the ring structure provided is not
   of the expected type.
 
-.. exn:: bad lemma for decidability of equality
+.. exn:: Bad lemma for decidability of equality.
 
   The equality function
   provided in the case of a computational ring has not the expected
   type.
 
-.. exn:: ring operation should be declared as a morphism
+.. exn:: Ring operation should be declared as a morphism.
 
   A setoid associated to the carrier of the ring structure has been found, 
   but the ring operation should be declared as morphism. See :ref:`tactics-enabled-on-user-provided-relations`.

@@ -56,7 +56,7 @@ Messages from ``omega``
 When ``omega`` does not solve the goal, one of the following errors
 is generated:
 
-.. exn:: omega can't solve this system
+.. exn:: omega can't solve this system.
 
   This may happen if your goal is not quantifier-free (if it is
   universally quantified, try ``intros`` first; if it contains
@@ -65,20 +65,20 @@ is generated:
   operators unknown from ``omega``. Finally, your goal may be really
   wrong!
 
-.. exn:: omega: Not a quantifier-free goal
+.. exn:: omega: Not a quantifier-free goal.
 
   If your goal is universally quantified, you should first apply
   ``intro`` as many time as needed.
 
-.. exn:: omega: Unrecognized predicate or connective: @ident
+.. exn:: omega: Unrecognized predicate or connective: @ident.
 
 .. exn:: omega: Unrecognized atomic proposition: ...
 
-.. exn:: omega: Can't solve a goal with proposition variables
+.. exn:: omega: Can't solve a goal with proposition variables.
 
-.. exn:: omega: Unrecognized proposition
+.. exn:: omega: Unrecognized proposition.
 
-.. exn:: omega: Can't solve a goal with non-linear products
+.. exn:: omega: Can't solve a goal with non-linear products.
 
 .. exn:: omega: Can't solve a goal with equality on type ...
 

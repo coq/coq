@@ -92,7 +92,7 @@ bindings_list`` where ``bindings_list`` may be of two different forms:
   the ``n``-th non dependent premise of the ``term``, as determined by the type
   of ``term``.
 
-  .. exn:: No such binder
+  .. exn:: No such binder.
 
 + A bindings list can also be a simple list of terms :n:`{* term}`.
   In that case the references to which these terms correspond are
@@ -226,19 +226,20 @@ useful to advanced users.
 
      Defined.
 
-.. exn:: invalid argument
+.. exn:: Invalid argument.
 
    The tactic ``refine`` does not know what to do with the term you gave.
 
-.. exn:: Refine passed ill-formed term
+.. exn:: Refine passed ill-formed term.
 
    The term you gave is not a valid proof (not easy to debug in general). This
    message may also occur in higher-level tactics that call ``refine``
    internally.
 
-.. exn:: Cannot infer a term for this placeholder
+.. exn:: Cannot infer a term for this placeholder.
+   :name: Cannot infer a term for this placeholder. (refine)
 
-   There is a hole in the term you gave which type cannot be inferred. Put a
+   There is a hole in the term you gave whose type cannot be inferred. Put a
    cast around it.
 
 .. tacv:: simple refine @term
@@ -528,8 +529,8 @@ sequence ``cut B. 2:apply H.`` where ``cut`` is described below.
    constructor of :g:`I`, then ``constructor i`` is equivalent to
    ``intros; apply c``:sub:`i`.
 
-.. exn:: Not an inductive product
-.. exn:: Not enough constructors
+.. exn:: Not an inductive product.
+.. exn:: Not enough constructors.
 
 .. tacv:: constructor
 
@@ -562,7 +563,7 @@ sequence ``cut B. 2:apply H.`` where ``cut`` is described below.
    to :n:`intros; constructor 1 with @bindings_list.` It is typically used in
    the case of an existential quantification :math:`\exists`:g:`x, P(x).`
 
-.. exn:: Not an inductive goal with 1 constructor
+.. exn:: Not an inductive goal with 1 constructor.
 
 .. tacv:: exists @bindings_list
 
@@ -579,7 +580,7 @@ sequence ``cut B. 2:apply H.`` where ``cut`` is described below.
    Then, they are respectively equivalent to ``constructor 1`` and
    ``constructor 2``.
 
-.. exn:: Not an inductive goal with 2 constructors
+.. exn:: Not an inductive goal with 2 constructors.
 
 .. tacv:: left with @bindings_list
 .. tacv:: right with @bindings_list
@@ -656,7 +657,7 @@ be applied or the goal is not head-reducible.
    This applies ``intro`` but forces :n:`@ident` to be the name of the
    introduced hypothesis.
 
-.. exn:: name @ident is already used
+.. exn:: Name @ident is already used.
 
 .. note:: If a name used by intro hides the base name of a global
    constant then the latter can still be referred to by a qualified name
@@ -675,7 +676,7 @@ be applied or the goal is not head-reducible.
    `(@ident:term)` and discharges the variable named `ident` of the current
    goal.
 
-.. exn:: No such hypothesis in current goal
+.. exn:: No such hypothesis in current goal.
 
 .. tacv:: intros until @num
 
@@ -704,7 +705,7 @@ be applied or the goal is not head-reducible.
    too so as to respect the order of dependencies between hypotheses.
    Note that :n:`intro at bottom` is a synonym for :n:`intro` with no argument.
 
-.. exn:: No such hypothesis : @ident.
+.. exn:: No such hypothesis: @ident.
 
 .. tacv:: intro @ident after @ident
 .. tacv:: intro @ident before @ident
@@ -883,7 +884,7 @@ quantification or an implication.
    This tactic expects :n:`@ident` to be a local definition then clears its
    body. Otherwise said, this tactic turns a definition into an assumption.
 
-.. exn:: @ident is not a local definition
+.. exn:: @ident is not a local definition.
 
 .. tacv:: clear - {+ @ident}
 
@@ -950,9 +951,9 @@ the inverse of :tacn:`intro`.
    This moves ident at the bottom of the local context (at the end of the
    context).
 
-.. exn:: No such hypothesis
-.. exn:: Cannot move @ident after @ident : it occurs in the type of @ident
-.. exn:: Cannot move @ident after @ident : it depends on @ident
+.. exn:: No such hypothesis.
+.. exn:: Cannot move @ident after @ident : it occurs in the type of @ident.
+.. exn:: Cannot move @ident after @ident : it depends on @ident.
 
 .. example::
    .. coqtop:: all
@@ -979,8 +980,8 @@ The name of the hypothesis in the proof-term, however, is left unchanged.
    particular, the target identifiers may contain identifiers that exist in the
    source context, as long as the latter are also renamed by the same tactic.
 
-.. exn:: No such hypothesis
-.. exn:: @ident is already used
+.. exn:: No such hypothesis.
+.. exn:: @ident is already used.
 
 .. tacn:: set (@ident := @term)
    :name: set
@@ -992,7 +993,7 @@ The name of the hypothesis in the proof-term, however, is left unchanged.
    first checks that all subterms matching the pattern are compatible before
    doing the replacement using the leftmost subterm matching the pattern.
 
-.. exn:: The variable @ident is already defined
+.. exn:: The variable @ident is already defined.
 
 .. tacv:: set (@ident := @term ) in @goal_occurrences
 
@@ -1110,7 +1111,7 @@ Controlling the proof flow
    :g:`U` [2]_. The subgoal :g:`U` comes first in the list of subgoals remaining to
    prove.
 
-.. exn:: Not a proposition or a type
+.. exn:: Not a proposition or a type.
 
    Arises when the argument form is neither of type :g:`Prop`, :g:`Set` nor
    :g:`Type`.
@@ -1125,8 +1126,8 @@ Controlling the proof flow
    This tactic behaves like :n:`assert` but applies tactic to solve the subgoals
    generated by assert.
 
-   .. exn:: Proof is not complete
-      :name: Proof is not complete (assert)
+   .. exn:: Proof is not complete.
+      :name: Proof is not complete. (assert)
 
 .. tacv:: assert form as intro_pattern
 
@@ -1147,7 +1148,7 @@ Controlling the proof flow
    the type of :g:`term`. This is deprecated in favor of :n:`pose proof`. If the
    head of term is :n:`@ident`, the tactic behaves as :n:`specialize @term`.
 
-   .. exn:: Variable @ident is already declared
+   .. exn:: Variable @ident is already declared.
 
 .. tacv:: eassert form as intro_pattern by tactic
    :name: eassert
@@ -1239,8 +1240,8 @@ Controlling the proof flow
    the goal. The :n:`as` clause is especially useful in this case to immediately
    introduce the instantiated statement as a local hypothesis.
 
-   .. exn:: @ident is used in hypothesis @ident
-   .. exn:: @ident is used in conclusion
+   .. exn:: @ident is used in hypothesis @ident.
+   .. exn:: @ident is used in conclusion.
 
 .. tacn:: generalize @term
    :name: generalize
@@ -1364,7 +1365,7 @@ goals cannot be closed with :g:`Qed` but only with :g:`Admitted`.
    a singleton inductive type (e.g. :g:`True` or :g:`x=x`), or two contradictory
    hypotheses.
 
-.. exn:: No such assumption
+.. exn:: No such assumption.
 
 .. tacv:: contradiction @ident
 
@@ -1570,9 +1571,9 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       intros n H.
       induction n.
 
-.. exn:: Not an inductive product
+.. exn:: Not an inductive product.
 
-.. exn:: Unable to find an instance for the variables @ident ... @ident
+.. exn:: Unable to find an instance for the variables @ident ... @ident.
 
    Use in this case the variant :tacn:`elim ... with` below.
 
@@ -1846,8 +1847,8 @@ See also: :ref:`advanced-recursive-functions`
   :ref:`functional-scheme`
   :tacn:`inversion`
 
-.. exn:: Cannot find induction information on @qualid
-.. exn:: Not the right number of induction arguments
+.. exn:: Cannot find induction information on @qualid.
+.. exn:: Not the right number of induction arguments.
 
 .. tacv:: functional induction (@qualid {+ @term}) as @disj_conj_intro_pattern using @term with @bindings_list
 
@@ -1880,8 +1881,8 @@ See also: :ref:`advanced-recursive-functions`
    :n:`@ident` is first introduced in the local context using
    :n:`intros until @ident`.
 
-.. exn:: No primitive equality found
-.. exn:: Not a discriminable equality
+.. exn:: No primitive equality found.
+.. exn:: Not a discriminable equality.
 
 .. tacv:: discriminate @num
 
@@ -1909,7 +1910,7 @@ See also: :ref:`advanced-recursive-functions`
    the form :n:`@term <> @term`, this behaves as
    :n:`intro @ident; discriminate @ident`.
 
-   .. exn:: No discriminable equalities
+   .. exn:: No discriminable equalities.
 
 .. tacn:: injection @term
    :name: injection
@@ -1958,10 +1959,10 @@ the use of a sigma type is avoided.
    then :n:`injection @ident` first introduces the hypothesis in the local
    context using :n:`intros until @ident`.
 
-.. exn:: Not a projectable equality but a discriminable one
-.. exn:: Nothing to do, it is an equality between convertible @terms
-.. exn:: Not a primitive equality
-.. exn:: Nothing to inject
+.. exn:: Not a projectable equality but a discriminable one.
+.. exn:: Nothing to do, it is an equality between convertible @terms.
+.. exn:: Not a primitive equality.
+.. exn:: Nothing to inject.
 
 .. tacv:: injection @num
 
@@ -1987,7 +1988,7 @@ the use of a sigma type is avoided.
    If the current goal is of the form :n:`@term <> @term` , this behaves as
    :n:`intro @ident; injection @ident`.
 
-   .. exn:: goal does not satisfy the expected preconditions
+   .. exn:: goal does not satisfy the expected preconditions.
 
 .. tacv:: injection @term {? with @bindings_list} as {+ @intro_pattern}
 .. tacv:: injection @num as {+ intro_pattern}
@@ -2406,7 +2407,7 @@ Hence, some of the variables :g:`x`\ :sub:`i` are solved by unification,
 and some of the types :g:`A`\ :sub:`1`:g:`, ..., A`\ :sub:`n` become new
 subgoals.
 
-.. exn:: The @term provided does not end with an equation
+.. exn:: The @term provided does not end with an equation.
 
 .. exn:: Tactic generated a subgoal identical to the original goal. This happens if @term does not occur in the goal.
 
@@ -2484,7 +2485,7 @@ subgoals.
    the assumption, or if its symmetric form occurs. It is equivalent to
    :n:`cut @term = @term; [intro H`:sub:`n` :n:`; rewrite <- H`:sub:`n` :n:`; clear H`:sub:`n`:n:`|| assumption || symmetry; try assumption]`.
 
-.. exn:: @terms do not have convertible types
+.. exn:: @terms do not have convertible types.
 
 .. tacv:: replace @term with @term by tactic
 
@@ -2629,7 +2630,7 @@ as regular setoids for :tacn:`rewrite` and :tacn:`setoid_replace` (see
    with `U` providing that `U` is well-formed and that `T` and `U` are
    convertible.
 
-.. exn:: Not convertible
+.. exn:: Not convertible.
 
 
 .. tacv:: change @term with @term
@@ -2642,7 +2643,7 @@ as regular setoids for :tacn:`rewrite` and :tacn:`setoid_replace` (see
   This replaces the occurrences numbered :n:`{+ @num}` of :n:`@term by @term`
   in the current goal. The terms :n:`@term` and :n:`@term` must be convertible.
 
-.. exn:: Too few occurrences
+.. exn:: Too few occurrences.
 
 .. tacv:: change @term in @ident
 .. tacv:: change @term with @term in @ident
@@ -2817,7 +2818,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
    definition (say :g:`t`) and then reduces
    :g:`(t t`:sub:`1` :g:`... t`:sub:`n` :g:`)` according to :math:`\beta`:math:`\iota`:math:`\zeta`-reduction rules.
 
-.. exn:: Not reducible
+.. exn:: Not reducible.
 
 .. tacn:: hnf
    :name: hnf
@@ -2944,7 +2945,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
    This applies ``simpl`` only to the :n:`{+ @num}` occurrences of the subterms
    matching :n:`@pattern` in the current goal.
 
-   .. exn:: Too few occurrences
+   .. exn:: Too few occurrences.
 
 .. tacv:: simpl @qualid
 .. tacv:: simpl @string
@@ -2974,7 +2975,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
    :n:`@qualid` refers in the current goal and then replaces it with its
    :math:`\beta`:math:`\iota`-normal form.
 
-.. exn:: @qualid does not denote an evaluable constant
+.. exn:: @qualid does not denote an evaluable constant.
 
 .. tacv:: unfold @qualid in @ident
 
@@ -2991,9 +2992,9 @@ the conversion in hypotheses :n:`{+ @ident}`.
    The lists :n:`{+, @num}` specify the occurrences of :n:`@qualid` to be
    unfolded. Occurrences are located from left to right.
 
-   .. exn:: bad occurrence number of @qualid
+   .. exn:: Bad occurrence number of @qualid.
 
-   .. exn:: @qualid does not occur
+   .. exn:: @qualid does not occur.
 
 .. tacv:: unfold @string
 
@@ -3083,7 +3084,7 @@ Conversion tactics applied to hypotheses
 
    Example: :n:`unfold not in (Type of H1) (Type of H3)`.
 
-.. exn:: No such hypothesis : ident.
+.. exn:: No such hypothesis: @ident.
 
 
 .. _automation:
@@ -3908,7 +3909,7 @@ match against it.
    Adds :n:`{+ @term}` to the pool of terms used by :tacn:`congruence`. This helps
    in case you have partially applied constructors in your goal.
 
-.. exn:: I don’t know how to handle dependent equality
+.. exn:: I don’t know how to handle dependent equality.
 
   The decision procedure managed to find a proof of the goal or of a
   discriminable equality but this proof could not be built in Coq because of
@@ -3939,7 +3940,7 @@ succeeds, and results in an error otherwise.
    This tactic checks whether its arguments are equal modulo alpha
    conversion and casts.
 
-.. exn:: Not equal
+.. exn:: Not equal.
 
 .. tacn:: unify @term @term
    :name: unify
@@ -3947,7 +3948,7 @@ succeeds, and results in an error otherwise.
    This tactic checks whether its arguments are unifiable, potentially
    instantiating existential variables.
 
-.. exn:: Not unifiable
+.. exn:: Not unifiable.
 
 .. tacv:: unify @term @term with @ident
 
@@ -3961,7 +3962,7 @@ succeeds, and results in an error otherwise.
    variable. Existential variables are uninstantiated variables generated
    by :tacn:`eapply` and some other tactics.
 
-.. exn:: Not an evar
+.. exn:: Not an evar.
 
 .. tacn:: has_evar @term
    :name: has_evar
@@ -3970,7 +3971,7 @@ succeeds, and results in an error otherwise.
    a subterm. Unlike context patterns combined with ``is_evar``, this tactic
    scans all subterms, including those under binders.
 
-.. exn:: No evars
+.. exn:: No evars.
 
 .. tacn:: is_var @term
    :name: is_var
@@ -3978,7 +3979,7 @@ succeeds, and results in an error otherwise.
    This tactic checks whether its argument is a variable or hypothesis in
    the current goal context or in the opened sections.
 
-.. exn:: Not a variable or hypothesis
+.. exn:: Not a variable or hypothesis.
 
 
 .. _equality:
@@ -4005,7 +4006,7 @@ This tactic applies to a goal that has the form :g:`t=u`. It checks that `t`
 and `u` are convertible and then solves the goal. It is equivalent to apply
 :tacn:`refl_equal`.
 
-.. exn:: The conclusion is not a substitutive equation
+.. exn:: The conclusion is not a substitutive equation.
 
 .. exn:: Unable to unify ... with ...
 
@@ -4123,8 +4124,8 @@ Inversion
 available after a ``Require Import FunInd``.
 
 
-.. exn:: Hypothesis @ident must contain at least one Function
-.. exn:: Cannot find inversion information for hypothesis @ident
+.. exn:: Hypothesis @ident must contain at least one Function.
+.. exn:: Cannot find inversion information for hypothesis @ident.
 
   This error may be raised when some inversion lemma failed to be generated by
   Function.
@@ -4155,7 +4156,7 @@ function :n:`@ident`. This function must be a fixpoint on a simple recursive
 datatype: see :ref:`quote` for the full details.
 
 
-.. exn:: quote: not a simple fixpoint
+.. exn:: quote: not a simple fixpoint.
 
   Happens when quote is not able to perform inversion properly.
 
