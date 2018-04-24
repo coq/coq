@@ -65,7 +65,7 @@ conditions holds:
 We then write :g:`f : C >-> D`. The restriction on the type
 of coercions is called *the uniform inheritance condition*.
 
-.. note:: The abstract classe ``Sortclass`` can be used as a source class, but
+.. note:: The abstract class ``Sortclass`` can be used as a source class, but
           the abstract class ``Funclass`` cannot.
 
 To coerce an object :g:`t:C t₁..tₙ` of ``C`` towards ``D``, we have to
