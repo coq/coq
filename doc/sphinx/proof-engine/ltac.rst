@@ -547,7 +547,7 @@ Failing
    :tacn:`fail` tactic will, however, succeed if all the goals have already been
    solved.
 
-   .. tacv:: fail @natural
+   .. tacv:: fail @num
 
       The number is the failure level. If no level is specified, it defaults to 0.
       The level is used by :tacn:`try`, :tacn:`repeat`, :tacn:`match goal` and the branching
@@ -555,14 +555,14 @@ Failing
       (backtracking). If non zero, the current :tacn:`match goal` block, :tacn:`try`,
       :tacn:`repeat`, or branching command is aborted and the level is decremented. In
       the case of :n:`+`, a non-zero level skips the first backtrack point, even if
-      the call to :n:`fail @natural` is not enclosed in a :n:`+` command,
+      the call to :n:`fail @num` is not enclosed in a :n:`+` command,
       respecting the algebraic identity.
 
    .. tacv:: fail {* message_token}
 
       The given tokens are used for printing the failure message.
 
-   .. tacv:: fail @natural {* message_token}
+   .. tacv:: fail @num {* message_token}
 
       This is a combination of the previous variants.
 
@@ -573,7 +573,7 @@ Failing
 
    .. tacv:: gfail {* message_token}
 
-   .. tacv:: gfail @natural {* message_token}
+   .. tacv:: gfail @num {* message_token}
 
       These variants fail with an error message or an error level even if
       there are no goals left. Be careful however if Coq terms have to be
@@ -581,7 +581,7 @@ Failing
       tactic into the goals, meaning that if there are no goals when it is
       evaluated, a tactic call like :n:`let x:=H in fail 0 x` will succeed.
 
-   .. exn:: Tactic Failure message (level @natural).
+   .. exn:: Tactic Failure message (level @num).
 
 Timeout
 ~~~~~~~
