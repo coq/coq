@@ -326,7 +326,7 @@ last ``Focus`` command.
 
 .. cmd:: Unfocused.
 
-Succeeds if the proof is fully unfocused, fails is there are some
+Succeeds if the proof is fully unfocused, fails if there are some
 goals out of focus.
 
 .. _curly-braces:
