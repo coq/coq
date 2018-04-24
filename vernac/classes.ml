@@ -51,7 +51,6 @@ let _ =
        | IsGlobal gr -> Hints.IsGlobRef gr
      in
      let info =
-       let open Vernacexpr in
        { info with hint_pattern =
 		   Option.map
                      (Constrintern.intern_constr_pattern (Global.env()) Evd.(from_env Global.(env())))

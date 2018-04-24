@@ -315,7 +315,7 @@ let project_hint ~poly pri l2r r =
   let ctx = Evd.const_univ_entry ~poly sigma in
   let c = EConstr.to_constr sigma c in
   let c = Declare.declare_definition ~internal:Declare.InternalTacticRequest id (c,ctx) in
-  let info = {Vernacexpr.hint_priority = pri; hint_pattern = None} in
+  let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
     (info,false,true,Hints.PathAny, Hints.IsGlobRef (Globnames.ConstRef c))
 
 let add_hints_iff ~atts l2r lc n bl =

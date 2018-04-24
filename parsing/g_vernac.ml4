@@ -645,7 +645,7 @@ GEXTEND Gram
 
       | IDENT "Existing"; IDENT "Instances"; ids = LIST1 global;
         pri = OPT [ "|"; i = natural -> i ] ->
-         let info = { hint_priority = pri; hint_pattern = None } in
+         let info = { Typeclasses.hint_priority = pri; hint_pattern = None } in
          let insts = List.map (fun i -> (i, info)) ids in
 	  VernacDeclareInstances insts
 
@@ -770,8 +770,8 @@ GEXTEND Gram
   ;
   hint_info:
     [ [ "|"; i = OPT natural; pat = OPT constr_pattern ->
-         { hint_priority = i; hint_pattern = pat }
-      | -> { hint_priority = None; hint_pattern = None } ] ]
+         { Typeclasses.hint_priority = i; hint_pattern = pat }
+      | -> { Typeclasses.hint_priority = None; hint_pattern = None } ] ]
   ;
   reserv_list:
     [ [ bl = LIST1 reserv_tuple -> bl | b = simple_reserv -> [b] ] ]

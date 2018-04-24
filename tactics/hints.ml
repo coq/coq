@@ -28,12 +28,13 @@ open Termops
 open Inductiveops
 open Typing
 open Decl_kinds
+open Vernacexpr
+open Typeclasses
 open Pattern
 open Patternops
 open Clenv
 open Tacred
 open Printer
-open Vernacexpr
 
 module NamedDecl = Context.Named.Declaration
 
@@ -94,7 +95,6 @@ let secvars_of_hyps hyps =
   else pred
 
 let empty_hint_info =
-  let open Vernacexpr in
   { hint_priority = None; hint_pattern = None }
 
 (************************************************************************)
