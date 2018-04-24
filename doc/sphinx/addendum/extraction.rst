@@ -76,10 +76,10 @@ produce one monolithic file or one file per |Coq| library.
    but instead of producing one monolithic file, this command splits
    the produced code in separate ML files, one per corresponding Coq
    ``.v`` file. This command is hence quite similar to
-   ``Recursive Extraction Library``, except that only the needed
+   :cmd:`Recursive Extraction Library`, except that only the needed
    parts of Coq libraries are extracted instead of the whole.
    The naming convention in case of name clash is the same one as
-   ``Extraction Library``: identifiers are here renamed using prefixes
+   :cmd:`Extraction Library`: identifiers are here renamed using prefixes
    ``coq_``  or ``Coq_``.
 
 The following command is meant to help automatic testing of
@@ -223,7 +223,7 @@ principles of extraction (logical parts and types).
    by a number indicating its position, starting from 1.
 
 When an actual extraction takes place, an error is normally raised if the
-``Extraction Implicit`` declarations cannot be honored, that is
+:cmd:`Extraction Implicit` declarations cannot be honored, that is
 if any of the implicited variables still occurs in the final code.
 This behavior can be relaxed via the following option:
 
@@ -264,8 +264,8 @@ what ML term corresponds to a given axiom.
    be inlined everywhere instead of being declared via a ``let``.
 
    .. note::
-      This command is sugar for an ``Extract Constant`` followed
-      by a ``Extraction Inline``. Hence a ``Reset Extraction Inline``
+      This command is sugar for an :cmd:`Extract Constant` followed
+      by a :cmd:`Extraction Inline`. Hence a :cmd:`Reset Extraction Inline`
       will have an effect on the realized and inlined axiom.
 
 .. caution:: It is the responsibility of the user to ensure that the ML
@@ -294,7 +294,7 @@ The number of type variables is checked by the system. For example:
    Axiom Y : Set -> Set -> Set.
    Extract Constant Y "'a" "'b" => " 'a * 'b ".
 
-Realizing an axiom via ``Extract Constant`` is only useful in the
+Realizing an axiom via :cmd:`Extract Constant` is only useful in the
 case of an informative axiom (of sort ``Type`` or ``Set``). A logical axiom
 have no computational content and hence will not appears in extracted
 terms. But a warning is nonetheless issued if extraction encounters a
@@ -338,7 +338,7 @@ native boolean type instead of |Coq| one. The syntax is the following:
    into |OCaml| ``int``, the code to provide has type:
    ``(unit->'a)->(int->'a)->int->'a``.
 
-.. caution:: As for ``Extract Constant``, this command should be used with care:
+.. caution:: As for :cmd:`Extract Constant`, this command should be used with care:
 
   * The ML code provided by the user is currently **not** checked at all by
     extraction, even for syntax errors.
@@ -356,7 +356,7 @@ native boolean type instead of |Coq| one. The syntax is the following:
     ML type is an efficient representation. For instance, when extracting
     ``nat`` to |OCaml| ``int``, the function ``Nat.mul`` stays quadratic.
     It might be interesting to associate this translation with
-    some specific ``Extract Constant`` when primitive counterparts exist.
+    some specific :cmd:`Extract Constant` when primitive counterparts exist.
 
 Typical examples are the following:
 
@@ -388,7 +388,7 @@ As an example of translation to a non-inductive datatype, let's turn
 Avoiding conflicts with existing filenames
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When using ``Extraction Library``, the names of the extracted files
+When using :cmd:`Extraction Library`, the names of the extracted files
 directly depends from the names of the |Coq| files. It may happen that
 these filenames are in conflict with already existing files, 
 either in the standard library of the target language or in other
