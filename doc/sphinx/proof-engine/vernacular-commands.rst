@@ -1131,13 +1131,13 @@ Controlling display
    :cmd:`SearchPattern`, :cmd:`SearchRewrite` etc. to omit types from their
    output, printing only identifiers.
 
-.. opt:: Printing Width @integer
+.. opt:: Printing Width @num
 
    This command sets which left-aligned part of the width of the screen is used
    for display. At the time of writing this documentation, the default value
    is 78.
 
-.. opt:: Printing Depth @integer
+.. opt:: Printing Depth @num
 
    This option controls the nesting depth of the formatter used for pretty-
    printing. Beyond this depth, display of subterms is replaced by dots. At the

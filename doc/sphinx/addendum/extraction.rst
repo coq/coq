@@ -131,14 +131,14 @@ order to produce more readable code.
 
 The type-preserving optimizations are controlled by the following |Coq| options:
 
-.. opt:: Extraction Optimize.
+.. opt:: Extraction Optimize
 
    Default is on. This controls all type-preserving optimizations made on
    the ML terms (mostly reduction of dummy beta/iota redexes, but also
    simplifications on Cases, etc). Turn this option off if you want a
    ML term as close as possible to the Coq term.
 
-.. opt:: Extraction Conservative Types.
+.. opt:: Extraction Conservative Types
 
    Default is off. This controls the non type-preserving optimizations
    made on ML terms (which try to avoid function abstraction of dummy
@@ -146,7 +146,7 @@ The type-preserving optimizations are controlled by the following |Coq| options:
    implies that ``e':t'`` where ``e'`` and ``t'`` are the extracted
    code of ``e`` and ``t`` respectively.
 
-.. opt:: Extraction KeepSingleton.
+.. opt:: Extraction KeepSingleton
 
    Default is off. Normally, when the extraction of an inductive type
    produces a singleton type (i.e. a type with only one constructor, and
@@ -155,7 +155,7 @@ The type-preserving optimizations are controlled by the following |Coq| options:
    The typical example is ``sig``. This option allows disabling this
    optimization when one wishes to preserve the inductive structure of types.
 
-.. opt:: Extraction AutoInline.
+.. opt:: Extraction AutoInline
 
    Default is on. The extraction mechanism inlines the bodies of
    some defined constants, according to some heuristics
@@ -227,7 +227,7 @@ When an actual extraction takes place, an error is normally raised if the
 if any of the implicited variables still occurs in the final code.
 This behavior can be relaxed via the following option:
 
-.. opt:: Extraction SafeImplicits.
+.. opt:: Extraction SafeImplicits
 
    Default is on. When this option is off, a warning is emitted
    instead of an error if some implicited variables still occur in the

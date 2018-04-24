@@ -475,7 +475,7 @@ of :g:`match` expressions.
 Printing nested patterns
 +++++++++++++++++++++++++
 
-.. opt:: Printing Matching.
+.. opt:: Printing Matching
 
 The Calculus of Inductive Constructions knows pattern-matching only
 over simple patterns. It is however convenient to re-factorize nested
@@ -491,7 +491,7 @@ in the same way as the |Coq| kernel handles them.
 Factorization of clauses with same right-hand side
 ++++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. opt:: Printing Factorizable Match Patterns.
+.. opt:: Printing Factorizable Match Patterns
 
 When several patterns share the same right-hand side, it is additionally
 possible to share the clauses using disjunctive patterns. Assuming that the
@@ -501,7 +501,7 @@ printer to try to do this kind of factorization.
 Use of a default clause
 +++++++++++++++++++++++
 
-.. opt:: Printing Allow Default Clause.
+.. opt:: Printing Allow Default Clause
 
 When several patterns share the same right-hand side which do not depend on the
 arguments of the patterns, yet an extra factorization is possible: the
@@ -512,7 +512,7 @@ default) tells |Coq|'s printer to use a default clause when relevant.
 Printing of wildcard patterns
 ++++++++++++++++++++++++++++++
 
-.. opt:: Printing Wildcard.
+.. opt:: Printing Wildcard
 
 Some variables in a pattern may not occur in the right-hand side of
 the pattern-matching clause. When this option is on (default), the
@@ -524,7 +524,7 @@ pattern-matching clause are just printed using the wildcard symbol
 Printing of the elimination predicate
 +++++++++++++++++++++++++++++++++++++
 
-.. opt:: Printing Synth.
+.. opt:: Printing Synth
 
 In most of the cases, the type of the result of a matched term is
 mechanically synthesizable. Especially, if the result type does not
@@ -1742,7 +1742,7 @@ appear strictly in the body of the type, they are implicit.
 Mode for automatic declaration of implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Implicit Arguments.
+.. opt:: Implicit Arguments
 
 This option (off by default) allows to systematically declare implicit
 the arguments detectable as such. Auto-detection of implicit arguments is
@@ -1754,7 +1754,7 @@ arguments have to be considered or not.
 Controlling strict implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Strict Implicit.
+.. opt:: Strict Implicit
 
 When the mode for automatic declaration of implicit arguments is on,
 the default is to automatically set implicit only the strict implicit
@@ -1763,7 +1763,7 @@ implicit arguments. To relax this constraint and to set
 implicit all non strict implicit arguments by default, you can turn this
 option off.
 
-.. opt:: Strongly Strict Implicit.
+.. opt:: Strongly Strict Implicit
 
 Use this option (off by default) to capture exactly the strict implicit
 arguments and no more than the strict implicit arguments.
@@ -1773,7 +1773,7 @@ arguments and no more than the strict implicit arguments.
 Controlling contextual implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Contextual Implicit.
+.. opt:: Contextual Implicit
 
 By default, |Coq| does not automatically set implicit the contextual
 implicit arguments. You can turn this option on to tell |Coq| to also
@@ -1784,7 +1784,7 @@ infer contextual implicit argument.
 Controlling reversible-pattern implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Reversible Pattern Implicit.
+.. opt:: Reversible Pattern Implicit
 
 By default, |Coq| does not automatically set implicit the reversible-pattern
 implicit arguments. You can turn this option on to tell |Coq| to also infer
@@ -1795,7 +1795,7 @@ reversible-pattern implicit argument.
 Controlling the insertion of implicit arguments not followed by explicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Maximal Implicit Insertion.
+.. opt:: Maximal Implicit Insertion
 
 Assuming the implicit argument mode is on, this option (off by default)
 declares implicit arguments to be automatically inserted when a
@@ -1867,18 +1867,18 @@ Displaying what the implicit arguments are
 To display the implicit arguments associated to an object, and to know
 if each of them is to be used maximally or not, use the command
 
-.. cmd:: Print Implicit @qualid.
+.. cmd:: Print Implicit @qualid
 
 Explicit displaying of implicit arguments for pretty-printing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Printing Implicit.
+.. opt:: Printing Implicit
 
 By default, the basic pretty-printing rules hide the inferable implicit
 arguments of an application. Turn this option on to force printing all
 implicit arguments.
 
-.. opt:: Printing Implicit Defensive.
+.. opt:: Printing Implicit Defensive
 
 By default, the basic pretty-printing rules display the implicit
 arguments that are not detected as strict implicit arguments. This
@@ -1910,9 +1910,9 @@ but succeeds in
 Deactivation of implicit arguments for parsing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Parsing Explicit.
+.. opt:: Parsing Explicit
 
-Turning this option on, deactivates the use of implicit arguments.
+Turning this option on (it is off by default) deactivates the use of implicit arguments.
 
 In this case, all arguments of constants, inductive types,
 constructors, etc, including the arguments declared as implicit, have
@@ -2128,7 +2128,7 @@ to coercions are provided in :ref:`implicitcoercions`.
 Printing constructions in full
 ------------------------------
 
-.. opt:: Printing All.
+.. opt:: Printing All
 
 Coercions, implicit arguments, the type of pattern-matching, but also
 notations (see :ref:`syntaxextensionsandinterpretationscopes`) can obfuscate the behavior of some
@@ -2147,7 +2147,7 @@ the high-level printing features, use the command ``Unset Printing All``.
 Printing universes
 ------------------
 
-.. opt:: Printing Universes.
+.. opt:: Printing Universes
 
 Turn this option on to activate the display of the actual level of each
 occurrence of :g:`Type`. See :ref:`Sorts` for details. This wizard option, in
@@ -2237,7 +2237,7 @@ with a named-goal selector, see :ref:`goal-selectors`).
 Explicit displaying of existential instances for pretty-printing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Printing Existential Instances.
+.. opt:: Printing Existential Instances
 
 This option (off by default) activates the full display of how the
 context of an existential variable is instantiated at each of the
