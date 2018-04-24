@@ -15,7 +15,6 @@
 #directory "tactics";;
 #directory "printing";;
 #directory "grammar";;
-#directory "intf";;
 #directory "stm";;
 #directory "vernac";;
 

@@ -10,8 +10,6 @@ S kernel
 B kernel
 S kernel/byterun
 B kernel/byterun
-S intf
-B intf
 S library
 B library
 S engine

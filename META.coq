@@ -90,19 +90,6 @@ package "library" (
 
 )
 
-package "intf" (
-
-  description = "Coq Public Data Types"
-  version     = "8.8"
-
-  requires    = "coq.library"
-
-  directory   = "intf"
-
-  archive(byte)    = "intf.cma"
-  archive(native)  = "intf.cmxa"
-)
-
 package "engine" (
 
   description = "Coq Tactic Engine"

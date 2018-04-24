@@ -17,12 +17,6 @@ toplevel
 Special components
 ------------------
 
-intf :
-
- Contains mli-only interfaces, many of them providing a.s.t.
- used for dialog bewteen coq components. Ex: Constrexpr.constr_expr
- produced by parsing and transformed by interp.
-
 grammar :
 
  Camlp5 syntax extensions. The file grammar/grammar.cma is used

@@ -75,7 +75,7 @@ INSTALLSH:=./install.sh
 MKDIR:=install -d
 
 CORESRCDIRS:=\
-  config 	clib 		lib		kernel	intf	kernel/byterun	library \
+  config 	clib 		lib		kernel		kernel/byterun	library \
   engine 	pretyping	interp	proofs	parsing 	printing \
   tactics 	vernac		stm		toplevel
 
@@ -102,7 +102,7 @@ BYTERUN:=$(addprefix kernel/byterun/, \
 # respecting this order is useful for developers that want to load or link
 # the libraries directly
 
-CORECMA:=clib/clib.cma lib/lib.cma kernel/kernel.cma intf/intf.cma library/library.cma \
+CORECMA:=clib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
         engine/engine.cma pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma vernac/vernac.cma \
 	stm/stm.cma toplevel/toplevel.cma
