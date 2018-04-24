@@ -3122,6 +3122,7 @@ hints of the database named core.
    to know what lemmas/assumptions were used.
 
 .. tacv:: debug auto
+   :name: debug auto
 
    Behaves like :tacn:`auto` but shows the tactics it tries to solve the goal,
    including failing paths.
@@ -3141,7 +3142,9 @@ hints of the database named core.
 .. tacv:: trivial with *
 .. tacv:: trivial using {+ @lemma}
 .. tacv:: debug trivial
+   :name: debug trivial
 .. tacv:: info_trivial
+   :name: info_trivial
 .. tacv:: {? info_}trivial {? using {+ @lemma}} {? with {+ @ident}}
 
 .. note::
