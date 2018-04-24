@@ -3891,9 +3891,10 @@ match against it.
   hypotheses using assert in order for :tacn:`congruence` to use them.
 
 .. tacv:: congruence with {+ @term}
+   :name: congruence with
 
-  Adds :n:`{+ @term}` to the pool of terms used by :tacn:`congruence`. This helps
-  in case you have partially applied constructors in your goal.
+   Adds :n:`{+ @term}` to the pool of terms used by :tacn:`congruence`. This helps
+   in case you have partially applied constructors in your goal.
 
 .. exn:: I don’t know how to handle dependent equality
 
@@ -3907,7 +3908,7 @@ match against it.
   arguments are supplied for some partially applied constructors. Any term of an
   appropriate type will allow the tactic to successfully solve the goal. Those
   additional arguments can be given to congruence by filling in the holes in the
-  terms given in the error message, using the with variant described above.
+  terms given in the error message, using the :tacn:`congruence with` variant described above.
 
 .. opt:: Congruence Verbose
 
