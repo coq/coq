@@ -717,6 +717,7 @@ Local definitions
 Local definitions can be done as follows:
 
 .. tacn:: let @ident__1 := @expr__1 {* with @ident__i := @expr__i} in @expr
+   :name: let ... := ...
 
    each :n:`@expr__i` is evaluated to :n:`v__i`, then, :n:`@expr` is evaluated
    by substituting :n:`v__i` to each occurrence of :n:`@ident__i`, for
