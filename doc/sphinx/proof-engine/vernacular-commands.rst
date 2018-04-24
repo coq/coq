@@ -15,6 +15,7 @@ Displaying
 .. _Print:
 
 .. cmd:: Print @qualid.
+   :name: Print
 
 This command displays on the screen information about the declared or
 defined object referred by :n:`@qualid`.
@@ -34,8 +35,9 @@ Variants:
 
 
 .. cmdv:: Print Term @qualid.
+   :name: Print Term
 
-This is a synonym to ``Print`` :n:`@qualid` when :n:`@qualid`
+This is a synonym of :cmd:`Print` :n:`@qualid` when :n:`@qualid`
 denotes a global constant.
 
 .. cmdv:: About @qualid.
@@ -50,7 +52,7 @@ argument scopes. It does not print the body of definitions or proofs.
 
 This locally renames the polymorphic universes of :n:`@qualid`.
 An underscore means the raw universe is printed.
-This form can be used with ``Print Term`` and ``About``.
+This form can be used with :cmd:`Print Term` and :cmd:`About`.
 
 .. cmd:: Print All.
 
