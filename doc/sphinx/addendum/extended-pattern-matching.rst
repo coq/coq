@@ -273,7 +273,7 @@ This option (off by default) removes parameters from constructors in patterns:
      match l with
      | nil => nil
      | cons _ l' => l'
-     end)
+     end).
    Unset Asymmetric Patterns.
 
 Implicit arguments in patterns
