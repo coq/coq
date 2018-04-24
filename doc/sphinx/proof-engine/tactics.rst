@@ -2430,8 +2430,8 @@ subgoals.
         In particular a failure will happen if any of these three simpler tactics
         fails.
       + :n:`rewrite H in * |-` will do :n:`rewrite H in H`:sub:`i` for all hypotheses
-        :g:`H`:sub:`i` :g:`<> H`. A success will happen as soon as at least one of these
-        simpler tactics succeeds.
+        :g:`H`:sub:`i` different from :g:`H`.
+        A success will happen as soon as at least one of these simpler tactics succeeds.
       + :n:`rewrite H in *` is a combination of :n:`rewrite H` and :n:`rewrite H in * |-`
         that succeeds if at least one of these two tactics succeeds.
 
