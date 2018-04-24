@@ -3255,7 +3255,8 @@ See also: :tacn:`autorewrite` for examples showing the use of this tactic.
 
    This tactic tries to solve the current goal by a number of standard closing steps.
    In particular, it tries to close the current goal using the closing tactics
-   :tacn:`trivial`, reflexivity, symmetry, contradiction and inversion of hypothesis.
+   :tacn:`trivial`, :tacn:`reflexivity`, :tacn:`symmetry`, :tacn:`contradiction`
+   and :tacn:`inversion` of hypothesis.
    If this fails, it tries introducing variables and splitting and-hypotheses,
    using the closing tactics afterwards, and splitting the goal using
    :tacn:`split` and recursing.
@@ -3266,7 +3267,7 @@ See also: :tacn:`autorewrite` for examples showing the use of this tactic.
 .. tacv:: now @tactic
    :name: now
 
-   Run :n:`@tac` followed by ``easy``. This is a notation for :n:`@tactic; easy`.
+   Run :n:`@tactic` followed by :tacn:`easy`. This is a notation for :n:`@tactic; easy`.
 
 Controlling automation
 --------------------------
@@ -3276,7 +3277,7 @@ Controlling automation
 The hints databases for auto and eauto
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The hints for ``auto`` and ``eauto`` are stored in databases. Each database
+The hints for :tacn:`auto` and :tacn:`eauto` are stored in databases. Each database
 maps head symbols to a list of hints. One can use the command
 
 .. cmd:: Print Hint @ident
