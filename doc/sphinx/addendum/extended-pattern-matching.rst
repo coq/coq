@@ -46,7 +46,7 @@ the expressiveness of the theory remains the same. Once the stage of
 parsing has finished only simple patterns remain. Re-nesting of
 pattern is performed at printing time. An easy way to see the result
 of the expansion is to toggle off the nesting performed at printing
-(use here :opt:`Set Printing Matching`), then by printing the term with :cmd:`Print`
+(use here :opt:`Printing Matching`), then by printing the term with :cmd:`Print`
 if the term is a constant, or using the command :cmd:`Check`.
 
 The extended ``match`` still accepts an optional *elimination predicate*

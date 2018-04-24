@@ -1147,7 +1147,7 @@ Info trace
    script. In particular, the calls to idtac in branches which failed are
    not printed.
 
-   .. opt:: Info Level @num.
+   .. opt:: Info Level @num
 
       This option is an alternative to the ``Info`` command.
 

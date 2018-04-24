@@ -95,7 +95,7 @@ has been opened using the ``Goal`` command.
 .. cmd:: Admitted.
    :name: Admitted (interactive proof)
 
-This command is available in interactive editing proof mode to give up
+This command is available in interactive editing mode to give up
 the current proof and declare the initial goal as an axiom.
 
 .. cmd:: Proof @term.
@@ -185,14 +185,14 @@ Proof using options
 The following options modify the behavior of ``Proof using``.
 
 
-.. opt:: Default Proof Using "@expression".
+.. opt:: Default Proof Using "@expression"
 
    Use :n:`@expression` as the default ``Proof``` using value. E.g. ``Set Default
    Proof Using "a b"``. will complete all ``Proof`` commands not followed by a
    using part with using ``a`` ``b``.
 
 
-.. opt:: Suggest Proof Using.
+.. opt:: Suggest Proof Using
 
    When ``Qed`` is performed, suggest a using annotation if the user did not
    provide one.
@@ -427,17 +427,12 @@ You just finished a goal focused by ``{``, you must unfocus it with ``}``.
 
 Set Bullet Behavior
 ```````````````````
+.. opt:: Bullet Behavior  %( "None" %| "Strict Subproofs" %)
 
-The bullet behavior can be controlled by the following commands.
+   This option controls the bullet behavior and can take two possible values:
 
-.. opt:: Bullet Behavior "None"
-
-This makes bullets inactive.
-
-.. opt:: Bullet Behavior "Strict Subproofs"
-
-This makes bullets active (this is the default behavior).
-
+   - "None": this makes bullets inactive.
+   - "Strict Subproofs": this makes bullets active (this is the default behavior).
 
 .. _requestinginformation:
 

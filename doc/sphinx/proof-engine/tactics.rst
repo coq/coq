@@ -3860,7 +3860,7 @@ inductive definition.
 
   This combines the effects of the different variants of :tacn:`firstorder`.
 
-.. opt:: Firstorder Depth @natural
+.. opt:: Firstorder Depth @num
 
    This option controls the proof-search depth bound.
 
