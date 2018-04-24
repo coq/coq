@@ -272,7 +272,7 @@ Summary of the commands
 
 .. _Class:
 
-.. cmd:: Class @ident {? @binders} : {? @sort} := {? @ident} { {+; @ident :{? >} @term } }.
+.. cmd:: Class @ident {? @binders} : {? @sort} := {? @ident} { {+; @ident :{? >} @term } }
 
    The ``Class`` command is used to declare a type class with parameters
    ``binders`` and fields the declared record fields.

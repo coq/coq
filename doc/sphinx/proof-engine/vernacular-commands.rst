@@ -14,7 +14,7 @@ Displaying
 
 .. _Print:
 
-.. cmd:: Print @qualid.
+.. cmd:: Print @qualid
    :name: Print
 
 This command displays on the screen information about the declared or
@@ -34,13 +34,13 @@ Error messages:
 Variants:
 
 
-.. cmdv:: Print Term @qualid.
+.. cmdv:: Print Term @qualid
    :name: Print Term
 
 This is a synonym of :cmd:`Print` :n:`@qualid` when :n:`@qualid`
 denotes a global constant.
 
-.. cmdv:: About @qualid.
+.. cmdv:: About @qualid
    :name: About
 
 This displays various information about the object
@@ -54,7 +54,7 @@ This locally renames the polymorphic universes of :n:`@qualid`.
 An underscore means the raw universe is printed.
 This form can be used with :cmd:`Print Term` and :cmd:`About`.
 
-.. cmd:: Print All.
+.. cmd:: Print All
 
 This command displays information about the current state of the
 environment, including sections and modules.
@@ -63,13 +63,13 @@ environment, including sections and modules.
 Variants:
 
 
-.. cmdv:: Inspect @num.
+.. cmdv:: Inspect @num
    :name: Inspect
 
 This command displays the :n:`@num` last objects of the
 current environment, including sections and modules.
 
-.. cmdv:: Print Section @ident.
+.. cmdv:: Print Section @ident
 
 The name :n:`@ident` should correspond to a currently open section,
 this command displays the objects defined since the beginning of this
@@ -89,32 +89,32 @@ handling flags, options and tables are given below.
 
 .. TODO : flag is not a syntax entry
 
-.. cmd:: Set @flag.
+.. cmd:: Set @flag
 
 This command switches :n:`@flag` on. The original state of :n:`@flag` is restored
 when the current module ends.
 
 Variants:
 
-.. cmdv:: Local Set @flag.
+.. cmdv:: Local Set @flag
 
 This command switches :n:`@flag` on. The original state
 of :n:`@flag` is restored when the current *section* ends.
 
-.. cmdv:: Global Set @flag.
+.. cmdv:: Global Set @flag
 
 This command switches :n:`@flag` on. The original state
 of :n:`@flag` is *not* restored at the end of the module. Additionally, if
 set in a file, :n:`@flag` is switched on when the file is `Require`-d.
 
-.. cmdv:: Export Set @flag.
+.. cmdv:: Export Set @flag
 
    This command switches :n:`@flag` on. The original state
    of :n:`@flag` is restored at the end of the current module, but :n:`@flag`
    is switched on when this module is imported.
 
 
-.. cmd:: Unset @flag.
+.. cmd:: Unset @flag
 
 This command switches :n:`@flag` off. The original state of :n:`@flag` is restored
 when the current module ends.
@@ -122,30 +122,30 @@ when the current module ends.
 
 Variants:
 
-.. cmdv:: Local Unset @flag.
+.. cmdv:: Local Unset @flag
 
 This command switches :n:`@flag` off. The original
 state of :n:`@flag` is restored when the current *section* ends.
 
-.. cmdv:: Global Unset @flag.
+.. cmdv:: Global Unset @flag
 
 This command switches :n:`@flag` off. The original
 state of :n:`@flag` is *not* restored at the end of the module. Additionally,
 if set in a file, :n:`@flag` is switched off when the file is `Require`-d.
 
-.. cmdv:: Export Unset @flag.
+.. cmdv:: Export Unset @flag
 
    This command switches :n:`@flag` off. The original state
    of :n:`@flag` is restored at the end of the current module, but :n:`@flag`
    is switched off when this module is imported.
 
 
-.. cmd:: Test @flag.
+.. cmd:: Test @flag
 
 This command prints whether :n:`@flag` is on or off.
 
 
-.. cmd:: Set @option @value.
+.. cmd:: Set @option @value
 
 This command sets :n:`@option` to :n:`@value`. The original value of ` option` is
 restored when the current module ends.
@@ -155,26 +155,26 @@ Variants:
 
 .. TODO : option and value are not syntax entries
 
-.. cmdv:: Local Set @option @value.
+.. cmdv:: Local Set @option @value
 
 This command sets :n:`@option` to :n:`@value`. The
 original value of :n:`@option` is restored at the end of the module.
 
-.. cmdv:: Global Set @option @value.
+.. cmdv:: Global Set @option @value
 
 This command sets :n:`@option` to :n:`@value`. The
 original value of :n:`@option` is *not* restored at the end of the module.
 Additionally, if set in a file, :n:`@option` is set to value when the file
 is `Require`-d.
 
-.. cmdv:: Export Set @option.
+.. cmdv:: Export Set @option
 
    This command set :n:`@option` to :n:`@value`. The original state
    of :n:`@option` is restored at the end of the current module, but :n:`@option`
    is set to :n:`@value` when this module is imported.
 
 
-.. cmd::  Unset @option.
+.. cmd::  Unset @option
 
    This command turns off :n:`@option`.
 
@@ -182,48 +182,48 @@ is `Require`-d.
 Variants:
 
 
-.. cmdv:: Local Unset @option.
+.. cmdv:: Local Unset @option
 
    This command turns off :n:`@option`. The original state of :n:`@option` is restored when the current
    *section* ends.
 
-.. cmdv:: Global Unset @option.
+.. cmdv:: Global Unset @option
 
    This command turns off :n:`@option`. The original state of :n:`@option` is *not* restored at the end of the
    module. Additionally, if unset in a file, :n:`@option` is reset to its
    default value when the file is `Require`-d.
 
-.. cmdv:: Export Unset @option.
+.. cmdv:: Export Unset @option
 
    This command turns off :n:`@option`. The original state of :n:`@option` is restored at the end of the
    current module, but :n:`@option` is set to its default value when this module
    is imported.
 
 
-.. cmd:: Test @option.
+.. cmd:: Test @option
 
 This command prints the current value of :n:`@option`.
 
 
 .. TODO : table is not a syntax entry
 
-.. cmd:: Add @table @value.
+.. cmd:: Add @table @value
    :name: Add `table` `value`
 
-.. cmd:: Remove @table @value.
+.. cmd:: Remove @table @value
    :name: Remove `table` `value`
 
-.. cmd:: Test @table @value.
+.. cmd:: Test @table @value
    :name: Test `table` `value`
 
-.. cmd:: Test @table for @value.
+.. cmd:: Test @table for @value
    :name: Test `table` for `value`
 
-.. cmd:: Print Table @table.
+.. cmd:: Print Table @table
 
 These are  general commands for tables.
 
-.. cmd:: Print Options.
+.. cmd:: Print Options
 
 This command lists all available flags, options and tables.
 
@@ -231,7 +231,7 @@ This command lists all available flags, options and tables.
 Variants:
 
 
-.. cmdv:: Print Tables.
+.. cmdv:: Print Tables
 
 This is a synonymous of ``Print Options``.
 
@@ -241,7 +241,7 @@ This is a synonymous of ``Print Options``.
 Requests to the environment
 -------------------------------
 
-.. cmd:: Check @term.
+.. cmd:: Check @term
 
 This command displays the type of :n:`@term`. When called in proof mode, the
 term is checked in the local context of the current subgoal.
@@ -251,14 +251,14 @@ Variants:
 
 .. TODO : selector is not a syntax entry
 
-.. cmdv:: @selector: Check @term.
+.. cmdv:: @selector: Check @term
 
 specifies on which subgoal to perform typing
 (see Section :ref:`invocation-of-tactics`).
 
 .. TODO : convtactic is not a syntax entry
 
-.. cmd:: Eval @convtactic in @term.
+.. cmd:: Eval @convtactic in @term
 
 This command performs the specified reduction on :n:`@term`, and displays
 the resulting term with its type. The term to be reduced may depend on
@@ -269,7 +269,7 @@ progress).
 See also: Section :ref:`performingcomputations`.
 
 
-.. cmd:: Compute @term.
+.. cmd:: Compute @term
 
 This command performs a call-by-value evaluation of term by using the
 bytecode-based virtual machine. It is a shortcut for ``Eval vm_compute in``
@@ -290,23 +290,23 @@ relies.
 Variants:
 
 
-.. cmdv:: Print Opaque Dependencies @qualid.
+.. cmdv:: Print Opaque Dependencies @qualid
 
 Displays the set of opaque constants :n:`@qualid` relies on in addition to
 the assumptions.
 
-.. cmdv:: Print Transparent Dependencies @qualid.
+.. cmdv:: Print Transparent Dependencies @qualid
 
 Displays the set of
 transparent constants :n:`@qualid` relies on in addition to the assumptions.
 
-.. cmdv:: Print All Dependencies @qualid.
+.. cmdv:: Print All Dependencies @qualid
 
 Displays all assumptions and constants :n:`@qualid` relies on.
 
 
 
-.. cmd:: Search @qualid.
+.. cmd:: Search @qualid
 
 This command displays the name and type of all objects (hypothesis of
 the current goal, theorems, axioms, etc) of the current context whose
@@ -323,7 +323,7 @@ There is no constant in the environment named qualid.
 
 Variants:
 
-.. cmdv:: Search @string.
+.. cmdv:: Search @string
 
 If :n:`@string` is a valid identifier, this command
 displays the name and type of all objects (theorems, axioms, etc) of
@@ -332,20 +332,20 @@ notation’s string denoting some reference :n:`@qualid` (referred to by its
 main symbol as in `"+"` or by its notation’s string as in `"_ + _"` or
 `"_ 'U' _"`, see Section :ref:`notations`), the command works like ``Search`` :n:`@qualid`.
 
-.. cmdv:: Search @string%@key.
+.. cmdv:: Search @string%@key
 
 The string string must be a notation or the main
 symbol of a notation which is then interpreted in the scope bound to
 the delimiting key :n:`@key` (see Section :ref:`LocalInterpretationRulesForNotations`).
 
-.. cmdv:: Search @term_pattern.
+.. cmdv:: Search @term_pattern
 
 This searches for all statements or types of
 definition that contains a subterm that matches the pattern
 `term_pattern` (holes of the pattern are either denoted by `_` or by
 `?ident` when non linear patterns are expected).
 
-.. cmdv:: Search { + [-]@term_pattern_string }.
+.. cmdv:: Search { + [-]@term_pattern_string }
 
 where
 :n:`@term_pattern_string` is a term_pattern, a string, or a string followed
@@ -357,15 +357,15 @@ correspond to valid identifiers. If a term_pattern or a string is
 prefixed by `-`, the search excludes the objects that mention that
 term_pattern or that string.
 
-.. cmdv:: Search @term_pattern_string … @term_pattern_string inside {+ @qualid } .
+.. cmdv:: Search @term_pattern_string … @term_pattern_string inside {+ @qualid }
 
 This restricts the search to constructions defined in the modules named by the given :n:`qualid` sequence.
 
-.. cmdv:: Search @term_pattern_string … @term_pattern_string outside {+ @qualid }.
+.. cmdv:: Search @term_pattern_string … @term_pattern_string outside {+ @qualid }
 
 This restricts the search to constructions not defined in the modules named by the given :n:`qualid` sequence.
 
-.. cmdv:: @selector: Search [-]@term_pattern_string … [-]@term_pattern_string.
+.. cmdv:: @selector: Search [-]@term_pattern_string … [-]@term_pattern_string
 
 This specifies the goal on which to search hypothesis (see
 Section :ref:`invocation-of-tactics`).
@@ -393,7 +393,7 @@ be combined with other variants presented here.
    may also be enclosed by optional ``[ ]`` delimiters.
 
 
-.. cmd:: SearchHead @term.
+.. cmd:: SearchHead @term
 
 This command displays the name and type of all hypothesis of the
 current goal (if any) and theorems of the current context whose
@@ -411,11 +411,11 @@ useful to remind the user of the name of library lemmas.
 
 Variants:
 
-.. cmdv:: SearchHead @term inside {+ @qualid }.
+.. cmdv:: SearchHead @term inside {+ @qualid }
 
 This restricts the search to constructions defined in the modules named by the given :n:`qualid` sequence.
 
-.. cmdv:: SearchHead term outside {+ @qualid }.
+.. cmdv:: SearchHead term outside {+ @qualid }
 
 This restricts the search to constructions not defined in the modules named by the given :n:`qualid` sequence.
 
@@ -426,7 +426,7 @@ Error messages:
 No module :n:`@qualid` has been required
 (see Section :ref:`compiled-files`).
 
-.. cmdv:: @selector: SearchHead @term.
+.. cmdv:: @selector: SearchHead @term
 
 This specifies the goal on which to
 search hypothesis (see Section :ref:`invocation-of-tactics`).
@@ -437,7 +437,7 @@ here.
 .. note:: Up to |Coq| version 8.4, ``SearchHead`` was named ``Search``.
 
 
-.. cmd:: SearchPattern @term.
+.. cmd:: SearchPattern @term
 
 This command displays the name and type of all hypothesis of the
 current goal (if any) and theorems of the current context whose
@@ -472,15 +472,15 @@ must occur in two places by using pattern variables `?ident`.
 Variants:
 
 
-.. cmdv:: SearchPattern @term inside {+ @qualid } .
+.. cmdv:: SearchPattern @term inside {+ @qualid }
 
 This restricts the search to constructions defined in the modules named by the given :n:`qualid` sequence.
 
-.. cmdv:: SearchPattern @term outside {+ @qualid }.
+.. cmdv:: SearchPattern @term outside {+ @qualid }
 
 This restricts the search to constructions not defined in the modules named by the given :n:`qualid` sequence.
 
-.. cmdv:: @selector: SearchPattern @term.
+.. cmdv:: @selector: SearchPattern @term
 
 This specifies the goal on which to
 search hypothesis (see Section :ref:`invocation-of-tactics`). By default the 1st goal is
@@ -489,7 +489,7 @@ here.
 
 
 
-.. cmdv:: SearchRewrite @term.
+.. cmdv:: SearchRewrite @term
 
 This command displays the name and type of all hypothesis of the
 current goal (if any) and theorems of the current context whose
@@ -507,15 +507,15 @@ expression term. Holes in term are denoted by “_”.
 Variants:
 
 
-.. cmdv:: SearchRewrite term inside {+ @qualid }.
+.. cmdv:: SearchRewrite term inside {+ @qualid }
 
 This restricts the search to constructions defined in the modules named by the given :n:`qualid` sequence.
 
-.. cmdv:: SearchRewrite @term outside {+ @qualid }.
+.. cmdv:: SearchRewrite @term outside {+ @qualid }
 
 This restricts the search to constructions not defined in the modules named by the given :n:`qualid` sequence.
 
-.. cmdv:: @selector: SearchRewrite @term.
+.. cmdv:: @selector: SearchRewrite @term
 
 This specifies the goal on which to
 search hypothesis (see Section :ref:`invocation-of-tactics`). By default the 1st goal is
@@ -534,7 +534,7 @@ here.
    this blacklist.
 
 
-.. cmd:: Locate @qualid.
+.. cmd:: Locate @qualid
 
 This command displays the full name of objects whose name is a prefix
 of the qualified identifier :n:`@qualid`, and consequently the |Coq| module in
@@ -560,15 +560,15 @@ qualified name spaces of |Coq|: terms, modules, Ltac, etc.
 Variants:
 
 
-.. cmdv:: Locate Term @qualid.
+.. cmdv:: Locate Term @qualid
 
 As Locate but restricted to terms.
 
-.. cmdv:: Locate Module @qualid.
+.. cmdv:: Locate Module @qualid
 
 As Locate but restricted to modules.
 
-.. cmdv:: Locate Ltac @qualid.
+.. cmdv:: Locate Ltac @qualid
 
 As Locate but restricted to tactics.
 
@@ -589,7 +589,7 @@ toplevel. This kind of file is called a *script* for |Coq|. The standard
 (and default) extension of |Coq|’s script files is .v.
 
 
-.. cmd:: Load @ident.
+.. cmd:: Load @ident
 
 This command loads the file named :n:`ident`.v, searching successively in
 each of the directories specified in the *loadpath*. (see Section
@@ -601,16 +601,16 @@ command cannot be used inside a proof either.
 Variants:
 
 
-.. cmdv:: Load @string.
+.. cmdv:: Load @string
 
 Loads the file denoted by the string :n:`@string`, where
 string is any complete filename. Then the `~` and .. abbreviations are
 allowed as well as shell variables. If no extension is specified, |Coq|
 will use the default extension ``.v``.
 
-.. cmdv:: Load Verbose @ident.
+.. cmdv:: Load Verbose @ident
 
-.. cmdv:: Load Verbose @string.
+.. cmdv:: Load Verbose @string
 
 Display, while loading,
 the answers of |Coq| to each command (including tactics) contained in
@@ -634,7 +634,7 @@ Chapter :ref:`thecoqcommands` for documentation on how to compile a file). A com
 file is a particular case of module called *library file*.
 
 
-.. cmd:: Require @qualid.
+.. cmd:: Require @qualid
 
 This command looks in the loadpath for a file containing module :n:`@qualid`
 and adds the corresponding module to the environment of |Coq|. As
@@ -656,7 +656,7 @@ several files match, one of them is picked in an unspecified fashion.
 
 Variants:
 
-.. cmdv:: Require Import @qualid.
+.. cmdv:: Require Import @qualid
 
 This loads and declares the module :n:`@qualid`
 and its dependencies then imports the contents of :n:`@qualid` as described
@@ -668,13 +668,13 @@ through a sequence of ``Require Export``.  If the module required has
 already been loaded, ``Require Import`` :n:`@qualid` simply imports it, as ``Import``
 :n:`@qualid` would.
 
-.. cmdv:: Require Export @qualid.
+.. cmdv:: Require Export @qualid
 
 This command acts as ``Require Import`` :n:`@qualid`,
 but if a further module, say `A`, contains a command ``Require Export`` `B`,
 then the command ``Require Import`` `A` also imports the module `B.`
 
-.. cmdv:: Require [Import | Export] {+ @qualid }.
+.. cmdv:: Require [Import | Export] {+ @qualid }
 
 This loads the
 modules named by the :n:`qualid` sequence and their recursive
@@ -683,7 +683,7 @@ dependencies. If
 all the recursive dependencies that were marked or transitively marked
 as ``Export``.
 
-.. cmdv:: From @dirpath Require @qualid.
+.. cmdv:: From @dirpath Require @qualid
 
 This command acts as ``Require``, but picks
 any library whose absolute name is of the form dirpath.dirpath’.qualid
@@ -737,14 +737,14 @@ that the commands ``Import`` and ``Export`` alone can be used inside modules
 See also: Chapter :ref:`thecoqcommands`
 
 
-.. cmd:: Print Libraries.
+.. cmd:: Print Libraries
 
 This command displays the list of library files loaded in the
 current |Coq| session. For each of these libraries, it also tells if it
 is imported.
 
 
-.. cmd:: Declare ML Module {+ @string } .
+.. cmd:: Declare ML Module {+ @string }
 
 This commands loads the OCaml compiled files
 with names given by the :n:`@string` sequence
@@ -758,7 +758,7 @@ version of OCaml that supports native Dynlink (≥ 3.11).
 Variants:
 
 
-.. cmdv:: Local Declare ML Module {+ @string }.
+.. cmdv:: Local Declare ML Module {+ @string }
 
 This variant is not
 exported to the modules that import the module where they occur, even
@@ -774,7 +774,7 @@ Error messages:
 
 
 
-.. cmd:: Print ML Modules.
+.. cmd:: Print ML Modules
 
 This prints the name of all OCaml modules loaded with ``Declare
 ML Module``. To know from where these module were loaded, the user
@@ -792,12 +792,12 @@ for practical purposes. Such commands are only meant to be issued in
 the toplevel, and using them in source files is discouraged.
 
 
-.. cmd:: Pwd.
+.. cmd:: Pwd
 
 This command displays the current working directory.
 
 
-.. cmd:: Cd @string.
+.. cmd:: Cd @string
 
 This command changes the current directory according to :n:`@string` which
 can be any valid path.
@@ -806,13 +806,13 @@ can be any valid path.
 Variants:
 
 
-.. cmdv:: Cd.
+.. cmdv:: Cd
 
 Is equivalent to Pwd.
 
 
 
-.. cmd:: Add LoadPath @string as @dirpath.
+.. cmd:: Add LoadPath @string as @dirpath
 
 This command is equivalent to the command line option
 ``-Q`` :n:`@string` :n:`@dirpath`. It adds the physical directory string to the current
@@ -821,14 +821,14 @@ This command is equivalent to the command line option
 Variants:
 
 
-.. cmdv:: Add LoadPath @string.
+.. cmdv:: Add LoadPath @string
 
 Performs as Add LoadPath :n:`@string` as :n:`@dirpath` but
 for the empty directory path.
 
 
 
-.. cmd:: Add Rec LoadPath @string as @dirpath.
+.. cmd:: Add Rec LoadPath @string as @dirpath
 
 This command is equivalent to the command line option
 ``-R`` :n:`@string` :n:`@dirpath`. It adds the physical directory string and all its
@@ -837,19 +837,19 @@ subdirectories to the current |Coq| loadpath.
 Variants:
 
 
-.. cmdv:: Add Rec LoadPath @string.
+.. cmdv:: Add Rec LoadPath @string
 
 Works as ``Add Rec LoadPath`` :n:`@string` as :n:`@dirpath` but for the empty
 logical directory path.
 
 
 
-.. cmd:: Remove LoadPath @string.
+.. cmd:: Remove LoadPath @string
 
 This command removes the path :n:`@string` from the current |Coq| loadpath.
 
 
-.. cmd:: Print LoadPath.
+.. cmd:: Print LoadPath
 
 This command displays the current |Coq| loadpath.
 
@@ -857,26 +857,26 @@ This command displays the current |Coq| loadpath.
 Variants:
 
 
-.. cmdv:: Print LoadPath @dirpath.
+.. cmdv:: Print LoadPath @dirpath
 
 Works as ``Print LoadPath`` but displays only
 the paths that extend the :n:`@dirpath` prefix.
 
 
-.. cmd:: Add ML Path @string.
+.. cmd:: Add ML Path @string
 
 This command adds the path :n:`@string` to the current OCaml
 loadpath (see the command `Declare ML Module`` in Section :ref:`compiled-files`).
 
 
-.. cmd:: Add Rec ML Path @string.
+.. cmd:: Add Rec ML Path @string
 
 This command adds the directory :n:`@string` and all its subdirectories to
 the current OCaml loadpath (see the command ``Declare ML Module``
 in Section :ref:`compiled-files`).
 
 
-.. cmd:: Print ML Path @string.
+.. cmd:: Print ML Path @string
 
 This command displays the current OCaml loadpath. This
 command makes sense only under the bytecode version of ``coqtop``, i.e.
@@ -885,13 +885,13 @@ using option ``-byte``
 
 .. _locate-file:
 
-.. cmd:: Locate File @string.
+.. cmd:: Locate File @string
 
 This command displays the location of file string in the current
 loadpath. Typically, string is a .cmo or .vo or .v file.
 
 
-.. cmd:: Locate Library @dirpath.
+.. cmd:: Locate Library @dirpath
 
 This command gives the status of the |Coq| module dirpath. It tells if
 the module is loaded and if not searches in the load path for a module
@@ -908,7 +908,7 @@ interactively, they cannot be part of a vernacular file loaded via
 ``Load`` or compiled by ``coqc``.
 
 
-.. cmd:: Reset @ident.
+.. cmd:: Reset @ident
 
 This command removes all the objects in the environment since :n:`@ident`
 was introduced, including :n:`@ident`. :n:`@ident` may be the name of a defined or
@@ -922,14 +922,14 @@ Error messages:
 
 Variants:
 
-.. cmd:: Reset Initial.
+.. cmd:: Reset Initial
 
 Goes back to the initial state, just after the start
 of the interactive session.
 
 
 
-.. cmd:: Back.
+.. cmd:: Back
 
 This commands undoes all the effects of the last vernacular command.
 Commands read from a vernacular file via a ``Load`` are considered as a
@@ -945,7 +945,7 @@ the statement of this proof.
 Variants:
 
 
-.. cmdv:: Back @num.
+.. cmdv:: Back @num
 
 Undoes :n:`@num` vernacular commands. As for Back, some extra
 commands may be undone in order to reach an adequate state. For
@@ -961,7 +961,7 @@ Error messages:
 
 The user wants to undo more commands than available in the history.
 
-.. cmd:: BackTo @num.
+.. cmd:: BackTo @num
 
 This command brings back the system to the state labeled :n:`@num`,
 forgetting the effect of all commands executed after this state. The
@@ -975,7 +975,7 @@ necessary.
 Variants:
 
 
-.. cmdv:: Backtrack @num @num @num.
+.. cmdv:: Backtrack @num @num @num
 
 `Backtrack` is a *deprecated* form of
 `BackTo` which allows explicitly manipulating the proof environment. The
@@ -1005,12 +1005,12 @@ Quitting and debugging
 --------------------------
 
 
-.. cmd:: Quit.
+.. cmd:: Quit
 
 This command permits to quit |Coq|.
 
 
-.. cmd:: Drop.
+.. cmd:: Drop
 
 This is used mostly as a debug facility by |Coq|’s implementors and does
 not concern the casual user. This command permits to leave |Coq|
@@ -1046,19 +1046,19 @@ to |Coq| with the command:
 
 .. TODO : command is not a syntax entry
 
-.. cmd:: Time @command.
+.. cmd:: Time @command
 
 This command executes the vernacular command :n:`@command` and displays the
 time needed to execute it.
 
 
-.. cmd:: Redirect @string @command.
+.. cmd:: Redirect @string @command
 
 This command executes the vernacular command :n:`@command`, redirecting its
 output to ":n:`@string`.out".
 
 
-.. cmd:: Timeout @num @command.
+.. cmd:: Timeout @num @command
 
 This command executes the vernacular command :n:`@command`. If the command
 has not terminated after the time specified by the :n:`@num` (time
@@ -1072,7 +1072,7 @@ displayed.
    were passed to a :cmd:`Timeout` command. Commands already starting by a
    :cmd:`Timeout` are unaffected.
 
-.. cmd:: Fail @command.
+.. cmd:: Fail @command
 
 For debugging scripts, sometimes it is desirable to know
 whether a command or a tactic fails. If the given :n:`@command`
@@ -1162,7 +1162,7 @@ as numbers, and for reflection-based tactics. The commands to fine-
 tune the reduction strategies and the lazy conversion algorithm are
 described first.
 
-.. cmd:: Opaque {+ @qualid }.
+.. cmd:: Opaque {+ @qualid }
 
 This command has an effect on unfoldable constants, i.e. on constants
 defined by ``Definition`` or ``Let`` (with an explicit body), or by a command
@@ -1191,7 +1191,7 @@ Error messages:
 There is no constant referred by :n:`@qualid` in the environment.
 Nevertheless, if you asked ``Opaque`` `foo` `bar` and if `bar` does not exist, `foo` is set opaque.
 
-.. cmd:: Transparent {+ @qualid }.
+.. cmd:: Transparent {+ @qualid }
 
 This command is the converse of `Opaque`` and it applies on unfoldable
 constants to restore their unfoldability after an Opaque command.
@@ -1222,7 +1222,7 @@ See also: sections :ref:`performingcomputations`, :ref:`tactics-automatizing`, :
 
 .. _vernac-strategy:
 
-.. cmd:: Strategy @level [ {+ @qualid } ].
+.. cmd:: Strategy @level [ {+ @qualid } ]
 
 This command generalizes the behavior of Opaque and Transparent
 commands. It is used to fine-tune the strategy for unfolding
@@ -1254,7 +1254,7 @@ regarding sections and modules is the same as for the ``Transparent`` and
 ``Opaque`` commands.
 
 
-.. cmd:: Print Strategy @qualid.
+.. cmd:: Print Strategy @qualid
 
 This command prints the strategy currently associated to :n:`@qualid`. It
 fails if :n:`@qualid` is not an unfoldable reference, that is, neither a
@@ -1271,13 +1271,13 @@ Error messages:
 Variants:
 
 
-.. cmdv:: Print Strategies.
+.. cmdv:: Print Strategies
 
 Print all the currently non-transparent strategies.
 
 
 
-.. cmd:: Declare Reduction @ident := @convtactic.
+.. cmd:: Declare Reduction @ident := @convtactic
 
 This command allows giving a short name to a reduction expression, for
 instance lazy beta delta [foo bar]. This short name can then be used
@@ -1301,8 +1301,8 @@ Controlling the locality of commands
 -----------------------------------------
 
 
-.. cmd:: Local @command.
-.. cmd:: Global @command.
+.. cmd:: Local @command
+.. cmd:: Global @command
 
 Some commands support a Local or Global prefix modifier to control the
 scope of their effect. There are four kinds of commands:

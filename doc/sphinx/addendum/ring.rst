@@ -303,7 +303,7 @@ following property:
 
 The syntax for adding a new ring is 
 
-.. cmd:: Add Ring @ident : @term {? ( @ring_mod {* , @ring_mod } )}.
+.. cmd:: Add Ring @ident : @term {? ( @ring_mod {* , @ring_mod } )}
 
 The :n:`@ident` is not relevant. It is just used for error messages. The
 :n:`@term` is a proof that the ring signature satisfies the (semi-)ring
@@ -656,7 +656,7 @@ zero for the correctness of the algorithm.
 
 The syntax for adding a new field is 
 
-.. cmd:: Add Field @ident : @term {? ( @field_mod {* , @field_mod } )}.
+.. cmd:: Add Field @ident : @term {? ( @field_mod {* , @field_mod } )}
 
 The :n:`@ident` is not relevant. It is just used for error
 messages. :n:`@term` is a proof that the field signature satisfies the

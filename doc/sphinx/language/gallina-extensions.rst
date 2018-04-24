@@ -30,7 +30,7 @@ expressions. In this sense, the ``Record`` construction allows defining
 
 In the expression:
 
-.. cmd:: Record @ident {* @param } {? : @sort} := {? @ident} { {*; @ident {* @binder } : @term } }.
+.. cmd:: Record @ident {* @param } {? : @sort} := {? @ident} { {*; @ident {* @binder } : @term } }
 
 the first identifier `ident` is the name of the defined record and `sort` is its
 type. The optional identifier following ``:=`` is the name of its constructor. If it is omitted,
@@ -70,7 +70,7 @@ depends on both ``top`` and ``bottom``.
 Let us now see the work done by the ``Record`` macro. First the macro
 generates a variant type definition with just one constructor:
 
-.. cmd:: Variant @ident {* @params} : @sort := @ident {* (@ident : @term_1)}.
+.. cmd:: Variant @ident {* @params} : @sort := @ident {* (@ident : @term_1)}
 
 To build an object of type `ident`, one should provide the constructor
 |ident_0| with the appropriate number of terms filling the fields of the record.
@@ -105,15 +105,15 @@ to be all present if the missing ones can be inferred or prompted for
 
 This syntax can be disabled globally for printing by
 
-.. cmd:: Unset Printing Records.
+.. cmd:: Unset Printing Records
 
 For a given type, one can override this using either
 
-.. cmd:: Add Printing Record @ident.
+.. cmd:: Add Printing Record @ident
 
 to get record syntax or
 
-.. cmd:: Add Printing Constructor @ident.
+.. cmd:: Add Printing Constructor @ident
 
 to get constructor syntax.
 
@@ -539,23 +539,23 @@ Printing matching on irrefutable patterns
 If an inductive type has just one constructor, pattern-matching can be
 written using the first destructuring let syntax.
 
-.. cmd:: Add Printing Let @ident.
+.. cmd:: Add Printing Let @ident
 
    This adds `ident` to the list of inductive types for which pattern-matching
    is written using a let expression.
 
-.. cmd:: Remove Printing Let @ident.
+.. cmd:: Remove Printing Let @ident
 
    This removes ident from this list. Note that removing an inductive
    type from this list has an impact only for pattern-matching written
    using :g:`match`. Pattern-matching explicitly written using a destructuring
    :g:`let` are not impacted.
 
-.. cmd:: Test Printing Let for @ident.
+.. cmd:: Test Printing Let for @ident
 
    This tells if `ident` belongs to the list.
 
-.. cmd:: Print Table Printing Let.
+.. cmd:: Print Table Printing Let
 
    This prints the list of inductive types for which pattern-matching is
    written using a let expression.
@@ -571,20 +571,20 @@ Printing matching on booleans
 If an inductive type is isomorphic to the boolean type, pattern-matching
 can be written using ``if`` … ``then`` … ``else`` …:
 
-.. cmd:: Add Printing If @ident.
+.. cmd:: Add Printing If @ident
 
    This adds ident to the list of inductive types for which pattern-matching is
    written using an if expression.
 
-.. cmd:: Remove Printing If @ident.
+.. cmd:: Remove Printing If @ident
 
    This removes ident from this list.
 
-.. cmd:: Test Printing If for @ident.
+.. cmd:: Test Printing If for @ident
 
    This tells if ident belongs to the list.
 
-.. cmd:: Print Table Printing If.
+.. cmd:: Print Table Printing If
 
    This prints the list of inductive types for which pattern-matching is
    written using an if expression.
@@ -622,7 +622,7 @@ Advanced recursive functions
 
 The following experimental command is available when the ``FunInd`` library has been loaded via ``Require Import FunInd``:
 
-.. cmd:: Function @ident {* @binder} { @decrease_annot } : @type := @term.
+.. cmd:: Function @ident {* @binder} { @decrease_annot } : @type := @term
 
 This command can be seen as a generalization of ``Fixpoint``. It is actually a wrapper
 for several ways of defining a function *and other useful related
@@ -782,12 +782,12 @@ structured sections. Then local declarations become available (see
 Section :ref:`gallina-definitions`).
 
 
-.. cmd:: Section @ident.
+.. cmd:: Section @ident
 
    This command is used to open a section named `ident`.
 
 
-.. cmd:: End @ident.
+.. cmd:: End @ident
 
     This command closes the section named `ident`. After closing of the
     section, the local declarations (variables and local definitions) get
@@ -852,25 +852,25 @@ In the syntax of module application, the ! prefix indicates that any
 (see the ``Module Type`` command below).
 
 
-.. cmd:: Module @ident.
+.. cmd:: Module @ident
 
    This command is used to start an interactive module named `ident`.
 
-.. cmdv:: Module @ident {* @module_binding}.
+.. cmdv:: Module @ident {* @module_binding}
 
    Starts an interactive functor with
    parameters given by module_bindings.
 
-.. cmdv:: Module @ident : @module_type.
+.. cmdv:: Module @ident : @module_type
 
    Starts an interactive module specifying its module type.
 
-.. cmdv:: Module @ident {* @module_binding} : @module_type.
+.. cmdv:: Module @ident {* @module_binding} : @module_type
 
    Starts an interactive functor with parameters given by the list of `module binding`, and output module
    type `module_type`.
 
-.. cmdv:: Module @ident <: {+<: @module_type }.
+.. cmdv:: Module @ident <: {+<: @module_type }
 
    Starts an interactive module satisfying each `module_type`.
 
@@ -879,14 +879,14 @@ In the syntax of module application, the ! prefix indicates that any
    Starts an interactive functor with parameters given by the list of `module_binding`. The output module type
    is verified against each `module_type`.
 
-.. cmdv:: Module [ Import | Export ].
+.. cmdv:: Module [ Import | Export ]
 
    Behaves like ``Module``, but automatically imports or exports the module.
 
 Reserved commands inside an interactive module
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Include @module.
+.. cmd:: Include @module
 
    Includes the content of module in the current
    interactive module. Here module can be a module expression or a module
@@ -894,11 +894,11 @@ Reserved commands inside an interactive module
    expression then the system tries to instantiate module by the current
    interactive module.
 
-.. cmd:: Include {+<+ @module}.
+.. cmd:: Include {+<+ @module}
 
    is a shortcut for the commands ``Include`` `module` for each `module`.
 
-.. cmd:: End @ident.
+.. cmd:: End @ident
 
    This command closes the interactive module `ident`. If the module type
    was given the content of the module is matched against it and an error
@@ -912,34 +912,34 @@ Reserved commands inside an interactive module
 
     .. exn:: This is not the last opened module.
 
-.. cmd:: Module @ident := @module_expression.
+.. cmd:: Module @ident := @module_expression
 
     This command defines the module identifier `ident` to be equal
     to `module_expression`.
 
-    .. cmdv:: Module @ident {* @module_binding} := @module_expression.
+    .. cmdv:: Module @ident {* @module_binding} := @module_expression
 
        Defines a functor with parameters given by the list of `module_binding` and body `module_expression`.
 
-    .. cmdv:: Module @ident {* @module_binding} : @module_type := @module_expression.
+    .. cmdv:: Module @ident {* @module_binding} : @module_type := @module_expression
 
        Defines a functor with parameters given by the list of `module_binding` (possibly none), and output module type `module_type`,
        with body `module_expression`.
 
-    .. cmdv:: Module @ident {* @module_binding} <: {+<: @module_type} := @module_expression.
+    .. cmdv:: Module @ident {* @module_binding} <: {+<: @module_type} := @module_expression
 
        Defines a functor with parameters given by module_bindings (possibly none) with body `module_expression`.
        The body is checked against each |module_type_i|.
 
-    .. cmdv:: Module @ident {* @module_binding} := {+<+ @module_expression}.
+    .. cmdv:: Module @ident {* @module_binding} := {+<+ @module_expression}
 
        is equivalent to an interactive module where each `module_expression` is included.
 
-.. cmd:: Module Type @ident.
+.. cmd:: Module Type @ident
 
 This command is used to start an interactive module type `ident`.
 
-    .. cmdv:: Module Type @ident {* @module_binding}.
+    .. cmdv:: Module Type @ident {* @module_binding}
 
        Starts an interactive functor type with parameters given by `module_bindings`.
 
@@ -947,11 +947,11 @@ This command is used to start an interactive module type `ident`.
 Reserved commands inside an interactive module type:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Include @module.
+.. cmd:: Include @module
 
    Same as ``Include`` inside a module.
 
-.. cmd:: Include {+<+ @module}.
+.. cmd:: Include {+<+ @module}
 
    is a shortcut for the command ``Include`` `module` for each `module`.
 
@@ -961,30 +961,30 @@ Reserved commands inside an interactive module type:
    The instance of this assumption will be automatically expanded at functor application, except when
    this functor application is prefixed by a ``!`` annotation.
 
-.. cmd:: End @ident.
+.. cmd:: End @ident
 
    This command closes the interactive module type `ident`.
 
    .. exn:: This is not the last opened module type.
 
-.. cmd:: Module Type @ident := @module_type.
+.. cmd:: Module Type @ident := @module_type
 
    Defines a module type `ident` equal to `module_type`.
 
-    .. cmdv:: Module Type @ident {* @module_binding} := @module_type.
+    .. cmdv:: Module Type @ident {* @module_binding} := @module_type
 
        Defines a functor type `ident` specifying functors taking arguments `module_bindings` and
        returning `module_type`.
 
-    .. cmdv:: Module Type @ident {* @module_binding} := {+<+ @module_type }.
+    .. cmdv:: Module Type @ident {* @module_binding} := {+<+ @module_type }
 
        is equivalent to an interactive module type were each `module_type` is included.
 
-.. cmd:: Declare Module @ident : @module_type.
+.. cmd:: Declare Module @ident : @module_type
 
    Declares a module `ident` of type `module_type`.
 
-    .. cmdv:: Declare Module @ident {* @module_binding} : @module_type.
+    .. cmdv:: Declare Module @ident {* @module_binding} : @module_type
 
        Declares a functor with parameters given by the list of `module_binding` and output module type
        `module_type`.
@@ -1170,7 +1170,7 @@ component is equal ``nat`` and hence ``M1.T`` as specified.
 
 .. _import_qualid:
 
-.. cmd:: Import @qualid.
+.. cmd:: Import @qualid
 
     If `qualid` denotes a valid basic module (i.e. its module type is a
     signature), makes its components available by their short names.
@@ -1229,11 +1229,11 @@ qualified name.
 
     .. warn:: Trying to mask the absolute name @qualid!
 
-.. cmd:: Print Module @ident.
+.. cmd:: Print Module @ident
 
     Prints the module type and (optionally) the body of the module `ident`.
 
-.. cmd:: Print Module Type @ident.
+.. cmd:: Print Module Type @ident
 
     Prints the module type corresponding to `ident`.
 
@@ -1588,7 +1588,7 @@ Declaring Implicit Arguments
 
 To set implicit arguments *a posteriori*, one can use the command:
 
-.. cmd:: Arguments @qualid {* @possibly_bracketed_ident }.
+.. cmd:: Arguments @qualid {* @possibly_bracketed_ident }
    :name: Arguments (implicits)
 
 where the list of `possibly_bracketed_ident` is a prefix of the list of
@@ -1602,7 +1602,7 @@ of `qualid`.
 
 Implicit arguments can be cleared with the following syntax:
 
-.. cmd:: Arguments @qualid : clear implicits.
+.. cmd:: Arguments @qualid : clear implicits
 
 .. cmdv:: Global Arguments @qualid {* @possibly_bracketed_ident }
 
@@ -1611,13 +1611,13 @@ Implicit arguments can be cleared with the following syntax:
    implicit arguments known from inside the section to be the ones
    declared by the command.
 
-.. cmdv:: Local Arguments @qualid {* @possibly_bracketed_ident }.
+.. cmdv:: Local Arguments @qualid {* @possibly_bracketed_ident }
 
    When in a module, tell not to activate the
    implicit arguments ofqualid declared by this command to contexts that
    require the module.
 
-.. cmdv:: {? Global | Local } Arguments @qualid {*, {+ @possibly_bracketed_ident } }.
+.. cmdv:: {? Global | Local } Arguments @qualid {*, {+ @possibly_bracketed_ident } }
 
    For names of constants, inductive types,
    constructors, lemmas which can only be applied to a fixed number of
@@ -1669,7 +1669,7 @@ Automatic declaration of implicit arguments
 |Coq| can also automatically detect what are the implicit arguments of a
 defined object. The command is just
 
-.. cmd:: Arguments @qualid : default implicits.
+.. cmd:: Arguments @qualid : default implicits
 
 The auto-detection is governed by options telling if strict,
 contextual, or reversible-pattern implicit arguments must be
@@ -1842,7 +1842,7 @@ Renaming implicit arguments
 
 Implicit arguments names can be redefined using the following syntax:
 
-.. cmd:: Arguments @qualid {* @name} : @rename.
+.. cmd:: Arguments @qualid {* @name} : @rename
 
 With the assert flag, ``Arguments`` can be used to assert that a given
 object has the expected number of arguments and that these arguments
@@ -1933,7 +1933,7 @@ Assume that `qualid` denotes an object ``(Build_struc`` |c_1| … |c_n| ``)`` in
 structure *struct* of which the fields are |x_1|, …, |x_n|. Assume that
 `qualid` is declared as a canonical structure using the command
 
-.. cmd:: Canonical Structure @qualid.
+.. cmd:: Canonical Structure @qualid
 
 Then, each time an equation of the form ``(``\ |x_i| ``_)`` |eq_beta_delta_iota_zeta| |c_i| has to be
 solved during the type-checking process, `qualid` is used as a solution.
@@ -1974,11 +1974,11 @@ and ``B`` can be synthesized in the next statement.
 Remark: If a same field occurs in several canonical structure, then
 only the structure declared first as canonical is considered.
 
-.. cmdv:: Canonical Structure @ident := @term : @type.
+.. cmdv:: Canonical Structure @ident := @term : @type
 
-.. cmdv:: Canonical Structure @ident := @term.
+.. cmdv:: Canonical Structure @ident := @term
 
-.. cmdv:: Canonical Structure @ident : @type := @term.
+.. cmdv:: Canonical Structure @ident : @type := @term
 
 These are equivalent to a regular definition of `ident` followed by the declaration
 ``Canonical Structure`` `ident`.
@@ -2006,7 +2006,7 @@ It is possible to bind variable names to a given type (e.g. in a
 development using arithmetic, it may be convenient to bind the names `n`
 or `m` to the type ``nat`` of natural numbers). The command for that is
 
-.. cmd:: Implicit Types {+ @ident } : @type.
+.. cmd:: Implicit Types {+ @ident } : @type
 
 The effect of the command is to automatically set the type of bound
 variables starting with `ident` (either `ident` itself or `ident` followed by
@@ -2028,7 +2028,7 @@ case, this latter type is considered).
 
        Lemma cons_inj_bool : forall (m n:bool) l, n :: l = m :: l -> n = m.
 
-.. cmdv:: Implicit Type @ident : @type.
+.. cmdv:: Implicit Type @ident : @type
 
   This is useful for declaring the implicit type of a single variable.
 
@@ -2067,7 +2067,7 @@ the ``Generalizable`` vernacular command to avoid unexpected
 generalizations when mistyping identifiers. There are several commands
 that specify which variables should be generalizable.
 
-.. cmd:: Generalizable All Variables.
+.. cmd:: Generalizable All Variables
 
    All variables are candidate for
    generalization if they appear free in the context under a
@@ -2075,16 +2075,16 @@ that specify which variables should be generalizable.
    of typos. In such cases, the context will probably contain some
    unexpected generalized variable.
 
-.. cmd:: Generalizable No Variables.
+.. cmd:: Generalizable No Variables
 
    Disable implicit generalization  entirely. This is the default behavior.
 
-.. cmd:: Generalizable (Variable | Variables) {+ @ident }.
+.. cmd:: Generalizable (Variable | Variables) {+ @ident }
 
    Allow generalization of the given identifiers only. Calling this command multiple times
    adds to the allowed identifiers.
 
-.. cmd:: Global Generalizable.
+.. cmd:: Global Generalizable
 
    Allows exporting the choice of generalizable variables.
 
@@ -2159,7 +2159,7 @@ Constructions.
 The constraints on the internal level of the occurrences of Type
 (see :ref:`Sorts`) can be printed using the command
 
-.. cmd:: Print {? Sorted} Universes.
+.. cmd:: Print {? Sorted} Universes
    :name: Print Universes
 
 If the optional ``Sorted`` option is given, each universe will be made
@@ -2168,7 +2168,7 @@ ordering) in the universe hierarchy.
 
 This command also accepts an optional output filename:
 
-.. cmdv:: Print {? Sorted} Universes @string.
+.. cmdv:: Print {? Sorted} Universes @string
 
 If `string` ends in ``.dot`` or ``.gv``, the constraints are printed in the DOT
 language, and can be processed by Graphviz tools. The format is

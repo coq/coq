@@ -551,7 +551,7 @@ has type :token:`type`.
 
 .. _Axiom:
 
-.. cmd:: Axiom @ident : @term.
+.. cmd:: Axiom @ident : @term
 
    This command links *term* to the name *ident* as its specification in
    the global context. The fact asserted by *term* is thus assumed as a
@@ -560,24 +560,24 @@ has type :token:`type`.
 .. exn:: @ident already exists.
    :name: @ident already exists. (Axiom)
 
-.. cmdv:: Parameter @ident : @term.
+.. cmdv:: Parameter @ident : @term
    :name: Parameter
 
    Is equivalent to ``Axiom`` :token:`ident` : :token:`term`
 
-.. cmdv:: Parameter {+ @ident } : @term.
+.. cmdv:: Parameter {+ @ident } : @term
 
    Adds parameters with specification :token:`term`
 
-.. cmdv:: Parameter {+ ( {+ @ident } : @term ) }.
+.. cmdv:: Parameter {+ ( {+ @ident } : @term ) }
 
    Adds blocks of parameters with different specifications.
 
-.. cmdv:: Parameters {+ ( {+ @ident } : @term ) }.
+.. cmdv:: Parameters {+ ( {+ @ident } : @term ) }
 
    Synonym of ``Parameter``.
 
-.. cmdv:: Local Axiom @ident : @term.
+.. cmdv:: Local Axiom @ident : @term
 
    Such axioms are never made accessible through their unqualified name by
    :cmd:`Import` and its variants. You have to explicitly give their fully
@@ -588,7 +588,7 @@ has type :token:`type`.
 
    Is equivalent to ``Axiom`` :token:`ident` : :token:`term`.
 
-.. cmd:: Variable @ident : @term.
+.. cmd:: Variable @ident : @term
 
 This command links :token:`term` to the name :token:`ident` in the context of
 the current section (see Section :ref:`section-mechanism` for a description of
@@ -600,20 +600,20 @@ of any section is equivalent to using ``Local Parameter``.
 .. exn:: @ident already exists.
    :name: @ident already exists. (Variable)
 
-.. cmdv:: Variable {+ @ident } : @term.
+.. cmdv:: Variable {+ @ident } : @term
 
    Links :token:`term` to each :token:`ident`.
 
-.. cmdv:: Variable {+ ( {+ @ident } : @term) }.
+.. cmdv:: Variable {+ ( {+ @ident } : @term) }
 
    Adds blocks of variables with different specifications.
 
-.. cmdv:: Variables {+ ( {+ @ident } : @term) }.
+.. cmdv:: Variables {+ ( {+ @ident } : @term) }
 
-.. cmdv:: Hypothesis {+ ( {+ @ident } : @term) }.
+.. cmdv:: Hypothesis {+ ( {+ @ident } : @term) }
    :name: Hypothesis
 
-.. cmdv:: Hypotheses {+ ( {+ @ident } : @term) }.
+.. cmdv:: Hypotheses {+ ( {+ @ident } : @term) }
 
 Synonyms of ``Variable``.
 
@@ -643,7 +643,7 @@ type which is the type of its body.
 A formal presentation of constants and environments is given in
 Section :ref:`typing-rules`.
 
-.. cmd:: Definition @ident := @term.
+.. cmd:: Definition @ident := @term
 
    This command binds :token:`term` to the name :token:`ident` in the environment,
    provided that :token:`term` is well-typed.
@@ -651,31 +651,31 @@ Section :ref:`typing-rules`.
 .. exn:: @ident already exists.
    :name: @ident already exists. (Definition)
 
-.. cmdv:: Definition @ident : @term := @term.
+.. cmdv:: Definition @ident : @term := @term
 
    It checks that the type of :token:`term`:math:`_2` is definitionally equal to
    :token:`term`:math:`_1`, and registers :token:`ident` as being of type
    :token:`term`:math:`_1`, and bound to value :token:`term`:math:`_2`.
 
 
-.. cmdv:: Definition @ident {* @binder } : @term := @term.
+.. cmdv:: Definition @ident {* @binder } : @term := @term
 
    This is equivalent to ``Definition`` :token:`ident` : :g:`forall`
    :token:`binder`:math:`_1` … :token:`binder`:math:`_n`, :token:`term`:math:`_1` := 
    fun :token:`binder`:math:`_1` …
    :token:`binder`:math:`_n` => :token:`term`:math:`_2`.
 
-.. cmdv:: Local Definition @ident := @term.
+.. cmdv:: Local Definition @ident := @term
 
    Such definitions are never made accessible through their
    unqualified name by :cmd:`Import` and its variants.
    You have to explicitly give their fully qualified name to refer to them.
 
-.. cmdv:: Example @ident := @term.
+.. cmdv:: Example @ident := @term
 
-.. cmdv:: Example @ident : @term := @term.
+.. cmdv:: Example @ident : @term := @term
 
-.. cmdv:: Example @ident {* @binder } : @term := @term.
+.. cmdv:: Example @ident {* @binder } : @term := @term
 
 These are synonyms of the Definition forms.
 
@@ -683,7 +683,7 @@ These are synonyms of the Definition forms.
 
 See also :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
-.. cmd:: Let @ident := @term.
+.. cmd:: Let @ident := @term
 
 This command binds the value :token:`term` to the name :token:`ident` in the
 environment of the current section. The name :token:`ident` disappears when the
@@ -696,11 +696,11 @@ prefixed by the let-in definition ``let`` :token:`ident` ``:=`` :token:`term`
 .. exn:: @ident already exists.
    :name: @ident already exists. (Let)
 
-.. cmdv:: Let @ident : @term := @term.
+.. cmdv:: Let @ident : @term := @term
 
-.. cmdv:: Let Fixpoint @ident @fix_body {* with @fix_body}.
+.. cmdv:: Let Fixpoint @ident @fix_body {* with @fix_body}
 
-.. cmdv:: Let CoFixpoint @ident @cofix_body {* with @cofix_body}.
+.. cmdv:: Let CoFixpoint @ident @cofix_body {* with @cofix_body}
 
 See also Sections :ref:`section-mechanism`, commands :cmd:`Opaque`,
 :cmd:`Transparent`, and tactic :tacn:`unfold`.
@@ -916,7 +916,7 @@ Mutually defined inductive types
 
 The definition of a block of mutually inductive types has the form:
 
-.. cmdv:: Inductive @ident : @term := {? | } @ident : @type {* | @ident : @type } {* with @ident : @term := {? | } @ident : @type {* | @ident : @type }}.
+.. cmdv:: Inductive @ident : @term := {? | } @ident : @type {* | @ident : @type } {* with @ident : @term := {? | } @ident : @type {* | @ident : @type }}
 
 It has the same semantics as the above ``Inductive`` definition for each
 :token:`ident` All :token:`ident` are simultaneously added to the environment.
@@ -928,7 +928,7 @@ parameters correspond to a local context in which the whole set of
 inductive declarations is done. For this reason, the parameters must be
 strictly the same for each inductive types The extended syntax is:
 
-.. cmdv:: Inductive @ident {+ @binder} : @term := {? | } @ident : @type {* | @ident : @type } {* with @ident {+ @binder} : @term := {? | } @ident : @type {* | @ident : @type }}.
+.. cmdv:: Inductive @ident {+ @binder} : @term := {? | } @ident : @type {* | @ident : @type } {* with @ident {+ @binder} : @term := {? | } @ident : @type {* | @ident : @type }}
 
 The typical example of a mutual inductive data type is the one for trees and
 forests. We assume given two types :g:`A` and :g:`B` as variables. It can
@@ -1041,7 +1041,7 @@ constructions.
 
 .. _Fixpoint:
 
-.. cmd:: Fixpoint @ident @params {struct @ident} : @type := @term.
+.. cmd:: Fixpoint @ident @params {struct @ident} : @type := @term
 
 This command allows defining functions by pattern-matching over inductive objects
 using a fixed point construction. The meaning of this declaration is to
@@ -1155,7 +1155,7 @@ The ``Fixpoint`` construction enjoys also the with extension to define functions
 over mutually defined inductive types or more generally any mutually recursive
 definitions.
 
-.. cmdv:: Fixpoint @ident @params {struct @ident} : @type := @term {* with @ident {+ @params} : @type := @term}.
+.. cmdv:: Fixpoint @ident @params {struct @ident} : @type := @term {* with @ident {+ @params} : @type := @term}
 
 allows to define simultaneously fixpoints.
 
@@ -1182,7 +1182,7 @@ induction principles. It is described in Section
 Definitions of recursive objects in co-inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: CoFixpoint @ident : @type := @term.
+.. cmd:: CoFixpoint @ident : @type := @term
 
 introduces a method for constructing an infinite object of a coinductive
 type. For example, the stream containing all natural numbers can be
@@ -1243,7 +1243,7 @@ inhabitant of the type) is interactively built using tactics. The interactive
 proof mode is described in Chapter :ref:`proofhandling` and the tactics in
 Chapter :ref:`Tactics`. The basic assertion command is:
 
-.. cmd:: Theorem @ident : @type.
+.. cmd:: Theorem @ident : @type
 
 After the statement is asserted, Coq needs a proof. Once a proof of
 :token:`type` under the assumptions represented by :token:`binders` is given and
@@ -1258,24 +1258,24 @@ the theorem is bound to the name :token:`ident` in the environment.
    The name you provided is already defined. You have then to choose
    another name.
 
-.. cmdv:: Lemma @ident : @type.
+.. cmdv:: Lemma @ident : @type
    :name: Lemma
 
-.. cmdv:: Remark @ident : @type.
+.. cmdv:: Remark @ident : @type
    :name: Remark
 
-.. cmdv:: Fact @ident : @type.
+.. cmdv:: Fact @ident : @type
    :name: Fact
 
-.. cmdv:: Corollary @ident : @type.
+.. cmdv:: Corollary @ident : @type
    :name: Corollary
 
-.. cmdv:: Proposition @ident : @type.
+.. cmdv:: Proposition @ident : @type
    :name: Proposition
 
    These commands are synonyms of ``Theorem`` :token:`ident` : :token:`type`.
 
-.. cmdv:: Theorem @ident : @type {* with @ident : @type}.
+.. cmdv:: Theorem @ident : @type {* with @ident : @type}
 
    This command is useful for theorems that are proved by simultaneous induction
    over a mutually inductive assumption, or that assert mutually dependent
@@ -1297,7 +1297,7 @@ the theorem is bound to the name :token:`ident` in the environment.
    The command can be used also with :cmd:`Lemma`, :cmd:`Remark`, etc. instead of
    :cmd:`Theorem`.
 
-.. cmdv:: Definition @ident : @type.
+.. cmdv:: Definition @ident : @type
 
    This allows defining a term of type :token:`type` using the proof editing
    mode. It behaves as Theorem but is intended to be used in conjunction with
@@ -1308,20 +1308,20 @@ the theorem is bound to the name :token:`ident` in the environment.
 
    See also :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
-.. cmdv:: Let @ident : @type.
+.. cmdv:: Let @ident : @type
 
    Like Definition :token:`ident` : :token:`type`. except that the definition is
    turned into a let-in definition generalized over the declarations depending
    on it after closing the current section.
 
-.. cmdv:: Fixpoint @ident @binders with .
+.. cmdv:: Fixpoint @ident @binders with
 
    This generalizes the syntax of Fixpoint so that one or more bodies
    can be defined interactively using the proof editing mode (when a
    body is omitted, its type is mandatory in the syntax). When the block
    of proofs is completed, it is intended to be ended by Defined.
 
-.. cmdv:: CoFixpoint @ident with.
+.. cmdv:: CoFixpoint @ident with
 
    This generalizes the syntax of CoFixpoint so that one or more bodies
    can be defined interactively using the proof editing mode.
@@ -1367,7 +1367,7 @@ the theorem is bound to the name :token:`ident` in the environment.
    unfolded in conversion tactics (see :ref:`performingcomputations`,
    :cmd:`Opaque`, :cmd:`Transparent`).
 
-.. cmdv:: Admitted.
+.. cmdv:: Admitted
    :name: Admitted
 
    Turns the current asserted statement into an axiom and exits the proof mode.

@@ -124,7 +124,7 @@ term consists of the successive application of its coercions.
 Declaration of Coercions
 -------------------------
 
-.. cmd:: Coercion @qualid : @class >-> @class.
+.. cmd:: Coercion @qualid : @class >-> @class
 
   Declares the construction denoted by `qualid` as a coercion between
   the two given classes.
@@ -144,22 +144,22 @@ Declaration of Coercions
     valid coercion paths are ignored; they are signaled by a warning
     displaying these paths of the form :g:`[f₁;..;fₙ] : C >-> D`.
 
-  .. cmdv:: Local Coercion @qualid : @class >-> @class.
+  .. cmdv:: Local Coercion @qualid : @class >-> @class
 
     Declares the construction denoted by `qualid` as a coercion local to
     the current section.
 
-  .. cmdv:: Coercion @ident := @term.
+  .. cmdv:: Coercion @ident := @term
 
     This defines `ident` just like ``Definition`` `ident` ``:=`` `term`,
     and then declares `ident` as a coercion between it source and its target.
 
-  .. cmdv:: Coercion @ident := @term : @type.
+  .. cmdv:: Coercion @ident := @term : @type
 
     This defines `ident` just like ``Definition`` `ident` : `type` ``:=`` `term`,
     and then declares `ident` as a coercion between it source and its target.
 
-  .. cmdv:: Local Coercion @ident := @term.
+  .. cmdv:: Local Coercion @ident := @term
 
     This defines `ident` just like ``Let`` `ident` ``:=`` `term`,
     and then declares `ident` as a coercion between it source and its target.
@@ -202,7 +202,7 @@ grammar of inductive types from Figure :ref:`vernacular` as follows:
 Especially, if the extra ``>`` is present in a constructor
 declaration, this constructor is declared as a coercion.
 
-.. cmd:: Identity Coercion @ident : @class >-> @class.
+.. cmd:: Identity Coercion @ident : @class >-> @class
 
   If ``C`` is the source `class` and ``D`` the destination, we check
   that ``C`` is a constant with a body of the form
@@ -213,11 +213,11 @@ declaration, this constructor is declared as a coercion.
 
   .. exn:: @class must be a transparent constant.
 
-  .. cmdv:: Local Identity Coercion @ident : @ident >-> @ident.
+  .. cmdv:: Local Identity Coercion @ident : @ident >-> @ident
 
     Idem but locally to the current section.
 
-  .. cmdv:: SubClass @ident := @type.
+  .. cmdv:: SubClass @ident := @type
      :name: SubClass
 
     If `type` is a class `ident'` applied to some arguments then
@@ -229,7 +229,7 @@ declaration, this constructor is declared as a coercion.
 
       ``Identity Coercion`` `Id_ident_ident'` : `ident` ``>->`` `ident'`.
 
-  .. cmdv:: Local SubClass @ident := @type.
+  .. cmdv:: Local SubClass @ident := @type
 
     Same as before but locally to the current section.
 
@@ -237,19 +237,19 @@ declaration, this constructor is declared as a coercion.
 Displaying Available Coercions
 -------------------------------
 
-.. cmd:: Print Classes.
+.. cmd:: Print Classes
 
   Print the list of declared classes in the current context.
 
-.. cmd:: Print Coercions.
+.. cmd:: Print Coercions
 
   Print the list of declared coercions in the current context.
 
-.. cmd:: Print Graph.
+.. cmd:: Print Graph
 
   Print the list of valid coercion paths in the current context.
 
-.. cmd:: Print Coercion Paths @class @class.
+.. cmd:: Print Coercion Paths @class @class
 
   Print the list of valid coercion paths between the two given classes.
 
@@ -275,7 +275,7 @@ Classes as Records
 We allow the definition of *Structures with Inheritance* (or classes as records)
 by extending the existing :cmd:`Record` macro. Its new syntax is:
 
-.. cmdv:: Record {? >} @ident {? @binders} : @sort := {? @ident} { {+; @ident :{? >} @term } }.
+.. cmdv:: Record {? >} @ident {? @binders} : @sort := {? @ident} { {+; @ident :{? >} @term } }
 
    The first identifier `ident` is the name of the defined record and
    `sort` is its type. The optional identifier after ``:=`` is the name
@@ -291,7 +291,7 @@ by extending the existing :cmd:`Record` macro. Its new syntax is:
    (this may fail if the uniform inheritance condition is not
    satisfied).
 
-.. cmdv:: Structure {? >} @ident {? @binders} : @sort := {? @ident} { {+; @ident :{? >} @term } }.
+.. cmdv:: Structure {? >} @ident {? @binders} : @sort := {? @ident} { {+; @ident :{? >} @term } }
    :name: Structure
 
    This is a synonym of :cmd:`Record`.

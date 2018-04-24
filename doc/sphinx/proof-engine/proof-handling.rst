@@ -49,7 +49,7 @@ the assertion of a theorem using an assertion command like :cmd:`Theorem`. The
 list of assertion commands is given in Section :ref:`Assertions`. The command
 :cmd:`Goal` can also be used.
 
-.. cmd:: Goal @form.
+.. cmd:: Goal @form
 
 This is intended for quick assertion of statements, without knowing in
 advance which name to give to the assertion, typically for quick
@@ -81,34 +81,36 @@ proof term is completely rechecked at this point, one may have to wait
 a while when the proof is large. In some exceptional cases one may
 even incur a memory overflow.
 
-.. cmdv:: Defined.
+.. cmdv:: Defined
    :name: Defined (interactive proof)
 
 Defines the proved term as a transparent constant.
 
-.. cmdv:: Save @ident.
+.. cmdv:: Save @ident
 
 Forces the name of the original goal to be :n:`@ident`. This
 command (and the following ones) can only be used if the original goal
 has been opened using the ``Goal`` command.
 
-.. cmd:: Admitted.
+.. cmd:: Admitted
    :name: Admitted (interactive proof)
 
 This command is available in interactive editing mode to give up
 the current proof and declare the initial goal as an axiom.
 
-.. cmd:: Proof @term.
+.. cmd:: Proof @term
    :name: Proof `term`
 
 This command applies in proof editing mode. It is equivalent to
 
-.. cmd:: exact @term. Qed.
+.. coqtop:: in
+
+   exact @term. Qed.
 
 That is, you have to give the full proof in one gulp, as a
 proof term (see Section :ref:`applyingtheorems`).
 
-.. cmdv:: Proof.
+.. cmdv:: Proof
    :name: Proof (interactive proof)
 
 Is a noop which is useful to delimit the sequence of tactic commands
@@ -121,7 +123,7 @@ See also: ``Proof with tactic.`` in Section
 :ref:`tactics-implicit-automation`.
 
 
-.. cmd:: Proof using @ident1 ... @identn.
+.. cmd:: Proof using @ident1 ... @identn
 
 This command applies in proof editing mode. It declares the set of
 section variables (see :ref:`gallina-assumptions`) used by the proof. At ``Qed`` time, the
@@ -133,23 +135,23 @@ example if ``T`` is variable and a is a variable of type ``T``, the commands
 ``Proof using a`` and ``Proof using T a``` are actually equivalent.
 
 
-.. cmdv:: Proof using @ident1 ... @identn with @tactic.
+.. cmdv:: Proof using @ident1 ... @identn with @tactic
 
 in Section :ref:`tactics-implicit-automation`.
 
-.. cmdv:: Proof using All.
+.. cmdv:: Proof using All
 
 Use all section variables.
 
 
-.. cmdv:: Proof using Type.
+.. cmdv:: Proof using Type
 
-.. cmdv:: Proof using.
+.. cmdv:: Proof using
 
 Use only section variables occurring in the statement.
 
 
-.. cmdv:: Proof using Type*.
+.. cmdv:: Proof using Type*
 
 The ``*`` operator computes the forward transitive closure. E.g. if the
 variable ``H`` has type ``p < 5`` then ``H`` is in ``p*`` since ``p`` occurs in the type
@@ -157,21 +159,21 @@ of ``H``. ``Type*`` is the forward transitive closure of the entire set of
 section variables occurring in the statement.
 
 
-.. cmdv:: Proof using -(@ident1 ... @identn).
+.. cmdv:: Proof using -(@ident1 ... @identn)
 
 Use all section variables except :n:`@ident1` ... :n:`@identn`.
 
 
-.. cmdv:: Proof using @collection1 + @collection2 .
+.. cmdv:: Proof using @collection1 + @collection2
 
 
-.. cmdv:: Proof using @collection1 - @collection2 .
+.. cmdv:: Proof using @collection1 - @collection2
 
 
-.. cmdv:: Proof using @collection - ( @ident1 ... @identn ).
+.. cmdv:: Proof using @collection - ( @ident1 ... @identn )
 
 
-.. cmdv:: Proof using @collection * .
+.. cmdv:: Proof using @collection *
 
 Use section variables being, respectively, in the set union, set
 difference, set complement, set forward transitive closure. See
@@ -232,7 +234,7 @@ Define the collection named "Many" containing the set difference of
 "Fewer" and the unnamed collection ``x`` ``y``
 
 
-.. cmd:: Abort.
+.. cmd:: Abort
 
 This command cancels the current proof development, switching back to
 the previous proof development, or to the |Coq| toplevel if no other
@@ -243,18 +245,18 @@ proof was edited.
 
 
 
-.. cmdv::  Abort @ident.
+.. cmdv::  Abort @ident
 
 Aborts the editing of the proof named :n:`@ident`.
 
-.. cmdv:: Abort All.
+.. cmdv:: Abort All
 
 Aborts all current goals, switching back to the |Coq|
 toplevel.
 
 
 
-.. cmd:: Existential @num := @term.
+.. cmd:: Existential @num := @term
 
 This command instantiates an existential variable. :n:`@num` is an index in
 the list of uninstantiated existential variables displayed by ``Show
@@ -271,7 +273,7 @@ See also: ``instantiate (num:= term).`` in Section
 See also: ``Grab Existential Variables.`` below.
 
 
-.. cmd:: Grab Existential Variables.
+.. cmd:: Grab Existential Variables
 
 This command can be run when a proof has no more goal to be solved but
 has remaining uninstantiated existential variables. It takes every
@@ -282,17 +284,17 @@ Navigation in the proof tree
 --------------------------------
 
 
-.. cmd:: Undo.
+.. cmd:: Undo
 
 This command cancels the effect of the last command. Thus, it
 backtracks one step.
 
 
-.. cmdv:: Undo @num.
+.. cmdv:: Undo @num
 
 Repeats Undo :n:`@num` times.
 
-.. cmdv:: Restart.
+.. cmdv:: Restart
    :name: Restart
 
 This command restores the proof editing process to the original goal.
@@ -301,7 +303,7 @@ This command restores the proof editing process to the original goal.
 .. exn:: No focused proof to restart.
 
 
-.. cmd:: Focus.
+.. cmd:: Focus
 
 This focuses the attention on the first subgoal to prove and the
 printing of the other subgoals is suspended until the focused subgoal
@@ -309,7 +311,7 @@ is solved or unfocused. This is useful when there are many current
 subgoals which clutter your screen.
 
 
-.. cmdv:: Focus @num.
+.. cmdv:: Focus @num
 
 This focuses the attention on the :n:`@num` th subgoal to
 prove.
@@ -317,14 +319,14 @@ prove.
 *This command is deprecated since 8.8*: prefer the use of bullets or
 focusing brackets instead, including :n:`@num : %{`
 
-.. cmd:: Unfocus.
+.. cmd:: Unfocus
 
 This command restores to focus the goal that were suspended by the
 last ``Focus`` command.
 
 *This command is deprecated since 8.8.*
 
-.. cmd:: Unfocused.
+.. cmd:: Unfocused
 
 Succeeds if the proof is fully unfocused, fails if there are some
 goals out of focus.
@@ -440,7 +442,7 @@ Requesting information
 ----------------------
 
 
-.. cmd:: Show.
+.. cmd:: Show
 
 This command displays the current goals.
 
@@ -452,7 +454,7 @@ Displays only the :n:`@num`-th subgoal.
 .. exn:: No such goal.
 .. exn:: No focused proof.
 
-.. cmdv:: Show @ident.
+.. cmdv:: Show @ident
 
 Displays the named goal :n:`@ident`. This is useful in
 particular to display a shelved goal but only works if the
@@ -467,7 +469,7 @@ corresponding existential variable has been named by the user
     eexists ?[n].
     Show n.
 
-.. cmdv:: Show Script.
+.. cmdv:: Show Script
 
 Displays the whole list of tactics applied from the
 beginning of the current proof. This tactics script may contain some
@@ -475,7 +477,7 @@ holes (subgoals not yet proved). They are printed under the form
 
 ``<Your Tactic Text here>``.
 
-.. cmdv:: Show Proof.
+.. cmdv:: Show Proof
 
 It displays the proof term generated by the tactics
 that have been applied. If the proof is not completed, this term
@@ -485,14 +487,14 @@ integer, and applied to the list of variables in the context, since it
 may depend on them. The types obtained by abstracting away the context
 from the type of each hole-placer are also printed.
 
-.. cmdv:: Show Conjectures.
+.. cmdv:: Show Conjectures
 
 It prints the list of the names of all the
 theorems that are currently being proved. As it is possible to start
 proving a previous lemma during the proof of a theorem, this list may
 contain several names.
 
-.. cmdv:: Show Intro.
+.. cmdv:: Show Intro
 
 If the current goal begins by at least one product,
 this command prints the name of the first product, as it would be
@@ -502,18 +504,18 @@ Proof General macro, it is possible to transform any anonymous ``intro``
 into a qualified one such as ``intro y13``. In the case of a non-product
 goal, it prints nothing.
 
-.. cmdv:: Show Intros.
+.. cmdv:: Show Intros
 
 This command is similar to the previous one, it
 simulates the naming process of an intros.
 
-.. cmdv:: Show Existentials.
+.. cmdv:: Show Existentials
 
 It displays the set of all uninstantiated
 existential variables in the current proof tree, along with the type
 and the context of each variable.
 
-.. cmdv:: Show Match @ident.
+.. cmdv:: Show Match @ident
 
 This variant displays a template of the Gallina
 ``match`` construct with a branch for each constructor of the type
@@ -528,14 +530,14 @@ This variant displays a template of the Gallina
 
 .. _ShowUniverses:
 
-.. cmdv:: Show Universes.
+.. cmdv:: Show Universes
 
 It displays the set of all universe constraints and
 its normalized form at the current stage of the proof, useful for
 debugging universe inconsistencies.
 
 
-.. cmd:: Guarded.
+.. cmd:: Guarded
 
 Some tactics (e.g. :tacn:`refine`) allow to build proofs using
 fixpoint or co-fixpoint constructions. Due to the incremental nature
@@ -580,13 +582,13 @@ When experiencing high memory usage the following commands can be used
 to force |Coq| to optimize some of its internal data structures.
 
 
-.. cmd:: Optimize Proof.
+.. cmd:: Optimize Proof
 
 This command forces |Coq| to shrink the data structure used to represent
 the ongoing proof.
 
 
-.. cmd:: Optimize Heap.
+.. cmd:: Optimize Heap
 
 This command forces the |OCaml| runtime to perform a heap compaction.
 This is in general an expensive operation.
