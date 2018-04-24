@@ -103,5 +103,17 @@ Note that this function is executed before _Coqproject is read if it exists."
      2 (3 . 4) (5 . 6)))
   (add-to-list 'compilation-error-regexp-alist 'coq-backtrace))
 
+(defvar bug-reference-bug-regexp)
+(defvar bug-reference-url-format)
+(defun coqdev-setup-bug-reference-mode ()
+  "Setup `bug-reference-bug-regexp' and `bug-reference-url-format' for Coq.
+
+This does not enable `bug-reference-mode'."
+  (let ((dir (coqdev-default-directory)))
+    (when dir
+      (setq-local bug-reference-bug-regexp "#\\(?2:[0-9]+\\)")
+      (setq-local bug-reference-url-format "https://github.com/coq/coq/issues/%s"))))
+(add-hook 'hack-local-variables-hook #'coqdev-setup-bug-reference-mode)
+
 (provide 'coqdev)
 ;;; coqdev ends here
