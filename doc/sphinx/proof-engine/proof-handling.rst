@@ -283,84 +283,80 @@ uninstantiated existential variable and turns it into a goal.
 Navigation in the proof tree
 --------------------------------
 
-
 .. cmd:: Undo
 
-This command cancels the effect of the last command. Thus, it
-backtracks one step.
-
+   This command cancels the effect of the last command. Thus, it
+   backtracks one step.
 
 .. cmdv:: Undo @num
 
-Repeats Undo :n:`@num` times.
+   Repeats Undo :n:`@num` times.
 
 .. cmdv:: Restart
    :name: Restart
 
-This command restores the proof editing process to the original goal.
+   This command restores the proof editing process to the original goal.
 
-
-.. exn:: No focused proof to restart.
-
+   .. exn:: No focused proof to restart.
 
 .. cmd:: Focus
 
-This focuses the attention on the first subgoal to prove and the
-printing of the other subgoals is suspended until the focused subgoal
-is solved or unfocused. This is useful when there are many current
-subgoals which clutter your screen.
-
+   This focuses the attention on the first subgoal to prove and the
+   printing of the other subgoals is suspended until the focused subgoal
+   is solved or unfocused. This is useful when there are many current
+   subgoals which clutter your screen.
 
 .. cmdv:: Focus @num
 
-This focuses the attention on the :n:`@num` th subgoal to
-prove.
+   This focuses the attention on the :n:`@num` th subgoal to prove.
 
-*This command is deprecated since 8.8*: prefer the use of bullets or
-focusing brackets instead, including :n:`@num : %{`
+   .. deprecated:: 8.8
+
+      Prefer the use of bullets or
+      focusing brackets instead, including :n:`@num : %{`
 
 .. cmd:: Unfocus
 
-This command restores to focus the goal that were suspended by the
-last ``Focus`` command.
+   This command restores to focus the goal that were suspended by the
+   last ``Focus`` command.
 
-*This command is deprecated since 8.8.*
+   .. deprecated:: 8.8
 
 .. cmd:: Unfocused
 
-Succeeds if the proof is fully unfocused, fails if there are some
-goals out of focus.
+   Succeeds if the proof is fully unfocused, fails if there are some
+   goals out of focus.
 
 .. _curly-braces:
 
 .. cmd:: %{ %| %}
 
-The command ``{`` (without a terminating period) focuses on the first
-goal, much like ``Focus.`` does, however, the subproof can only be
-unfocused when it has been fully solved ( *i.e.* when there is no
-focused goal left). Unfocusing is then handled by ``}`` (again, without a
-terminating period). See also example in next section.
+   The command ``{`` (without a terminating period) focuses on the first
+   goal, much like ``Focus.`` does, however, the subproof can only be
+   unfocused when it has been fully solved ( *i.e.* when there is no
+   focused goal left). Unfocusing is then handled by ``}`` (again, without a
+   terminating period). See also example in next section.
 
-Note that when a focused goal is proved a message is displayed
-together with a suggestion about the right bullet or ``}`` to unfocus it
-or focus the next one.
+   Note that when a focused goal is proved a message is displayed
+   together with a suggestion about the right bullet or ``}`` to unfocus it
+   or focus the next one.
 
 .. cmdv:: @num: %{
 
-This focuses on the :n:`@num` th subgoal to prove.
+   This focuses on the :n:`@num` th subgoal to prove.
 
-Error messages:
+   Error messages:
 
-.. exn:: This proof is focused, but cannot be unfocused this way.
+   .. exn:: This proof is focused, but cannot be unfocused this way.
 
-You are trying to use ``}`` but the current subproof has not been fully solved.
+      You are trying to use ``}`` but the current subproof has not been fully solved.
 
-.. exn:: No such goal.
-   :name: No such goal. (Focusing)
+   .. exn:: No such goal.
+      :name: No such goal. (Focusing)
 
-.. exn:: Brackets only support the single numbered goal selector.
+   .. exn:: Brackets only support the single numbered goal selector.
 
-See also error messages about bullets below.
+      See also error messages about bullets below.
 
 .. _bullets:
 
