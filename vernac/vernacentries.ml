@@ -909,7 +909,7 @@ let vernac_set_used_variables e =
     if List.is_empty to_clear then (p, ())
     else
       let tac = Tactics.clear to_clear in
-      fst (Pfedit.solve SelectAll None tac p), ()
+      fst (Pfedit.solve Goal_select.SelectAll None tac p), ()
   end
 
 (*****************************)
@@ -1611,7 +1611,7 @@ let get_current_context_of_args = function
 
 let query_command_selector ?loc = function
   | None -> None
-  | Some (SelectNth n) -> Some n
+  | Some (Goal_select.SelectNth n) -> Some n
   | _ -> user_err ?loc ~hdr:"query_command_selector"
       (str "Query commands only support the single numbered goal selector.")
 
@@ -1911,7 +1911,7 @@ let vernac_subproof gln =
   Proof_global.simple_with_current_proof (fun _ p ->
     match gln with
     | None -> Proof.focus subproof_cond () 1 p
-    | Some (SelectNth n) -> Proof.focus subproof_cond () n p
+    | Some (Goal_select.SelectNth n) -> Proof.focus subproof_cond () n p
     | _ -> user_err ~hdr:"bracket_selector"
              (str "Brackets only support the single numbered goal selector."))
 

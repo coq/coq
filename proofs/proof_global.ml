@@ -83,6 +83,7 @@ type proof_ending =
   | Proved of Vernacexpr.opacity_flag *
               Misctypes.lident option *
               proof_object
+
 type proof_terminator = proof_ending -> unit
 type closed_proof = proof_object * proof_terminator
 

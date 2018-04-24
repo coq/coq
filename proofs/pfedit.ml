@@ -100,8 +100,8 @@ let solve ?with_end_tac gi info_lvl tac pr =
       | None -> tac
       | Some _ -> Proofview.Trace.record_info_trace tac
     in
-    let tac = match gi with
-      | Vernacexpr.SelectAlreadyFocused ->
+    let tac = let open Goal_select in match gi with
+      | SelectAlreadyFocused ->
         let open Proofview.Notations in
         Proofview.numgoals >>= fun n ->
         if n == 1 then tac
@@ -113,10 +113,10 @@ let solve ?with_end_tac gi info_lvl tac pr =
           in
           Proofview.tclZERO e
 
-      | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i tac
-      | Vernacexpr.SelectList l -> Proofview.tclFOCUSLIST l tac
-      | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id tac
-      | Vernacexpr.SelectAll -> tac
+      | SelectNth i -> Proofview.tclFOCUS i i tac
+      | SelectList l -> Proofview.tclFOCUSLIST l tac
+      | SelectId id -> Proofview.tclFOCUSID id tac
+      | SelectAll -> tac
     in
     let tac =
       if use_unification_heuristics () then
@@ -133,7 +133,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
   with
     Proof_global.NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof")
 
-let by tac = Proof_global.with_current_proof (fun _ -> solve (Vernacexpr.SelectNth 1) None tac)
+let by tac = Proof_global.with_current_proof (fun _ -> solve (Goal_select.SelectNth 1) None tac)
 
 let instantiate_nth_evar_com n com = 
   Proof_global.simple_with_current_proof (fun _ p -> Proof.V82.instantiate_evar n com p)

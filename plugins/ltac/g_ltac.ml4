@@ -416,7 +416,7 @@ let is_explicit_terminator = function TacSolve _ -> true | _ -> false
 VERNAC tactic_mode EXTEND VernacSolve
 | [ - ltac_selector_opt(g) ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
     [ classify_as_proofstep ] -> [
-    let g = Option.default (Proof_bullet.get_default_goal_selector ()) g in
+    let g = Option.default (Goal_select.get_default_goal_selector ()) g in
     vernac_solve g n t def
   ]
 | [ - "par" ":" ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>

@@ -75,7 +75,7 @@ val current_proof_statement :
     tac] applies [tac] to all subgoals. *)
 
 val solve : ?with_end_tac:unit Proofview.tactic ->
-      Vernacexpr.goal_selector -> int option -> unit Proofview.tactic ->
+      Goal_select.t -> int option -> unit Proofview.tactic ->
       Proof.t -> Proof.t * bool
 
 (** [by tac] applies tactic [tac] to the 1st subgoal of the current

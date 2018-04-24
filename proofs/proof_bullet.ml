@@ -10,19 +10,22 @@
 
 open Proof
 
-type t = Vernacexpr.bullet
+type t =
+    | Dash of int
+    | Star of int
+    | Plus of int
 
 let bullet_eq b1 b2 = match b1, b2 with
-| Vernacexpr.Dash n1, Vernacexpr.Dash n2 -> n1 = n2
-| Vernacexpr.Star n1, Vernacexpr.Star n2 -> n1 = n2
-| Vernacexpr.Plus n1, Vernacexpr.Plus n2 -> n1 = n2
+| Dash n1, Dash n2 -> n1 = n2
+| Star n1, Star n2 -> n1 = n2
+| Plus n1, Plus n2 -> n1 = n2
 | _ -> false
 
 let pr_bullet b =
   match b with
-  | Vernacexpr.Dash n -> Pp.(str (String.make n '-'))
-  | Vernacexpr.Star n -> Pp.(str (String.make n '*'))
-  | Vernacexpr.Plus n -> Pp.(str (String.make n '+'))
+  | Dash n -> Pp.(str (String.make n '-'))
+  | Star n -> Pp.(str (String.make n '*'))
+  | Plus n -> Pp.(str (String.make n '+'))
 
 
 type behavior = {
@@ -195,54 +198,5 @@ let put p b =
 let suggest p =
   (!current_behavior).suggest p
 
-(**********************************************************)
-(*                                                        *)
-(*                     Default goal selector              *)
-(*                                                        *)
-(**********************************************************)
-
-
-(* Default goal selector: selector chosen when a tactic is applied
-   without an explicit selector. *)
-let default_goal_selector = ref (Vernacexpr.SelectNth 1)
-let get_default_goal_selector () = !default_goal_selector
-
-let pr_range_selector (i, j) =
-  if i = j then Pp.int i
-  else Pp.(int i ++ str "-" ++ int j)
-
-let pr_goal_selector = function
-  | Vernacexpr.SelectAlreadyFocused -> Pp.str "!"
-  | Vernacexpr.SelectAll -> Pp.str "all"
-  | Vernacexpr.SelectNth i -> Pp.int i
-  | Vernacexpr.SelectList l ->
-    Pp.(str "["
-     ++ prlist_with_sep pr_comma pr_range_selector l
-     ++ str "]")
-  | Vernacexpr.SelectId id -> Names.Id.print id
-
-let parse_goal_selector = function
-  | "!" -> Vernacexpr.SelectAlreadyFocused
-  | "all" -> Vernacexpr.SelectAll
-  | i ->
-      let err_msg = "The default selector must be \"all\" or \"!\" or a natural number." in
-      begin try
-              let i = int_of_string i in
-              if i < 0 then CErrors.user_err Pp.(str err_msg);
-              Vernacexpr.SelectNth i
-        with Failure _ -> CErrors.user_err Pp.(str err_msg)
-      end
-
-let _ =
-  Goptions.(declare_string_option{optdepr = false;
-                                  optname = "default goal selector" ;
-                                  optkey = ["Default";"Goal";"Selector"] ;
-                                  optread = begin fun () ->
-                                            Pp.string_of_ppcmds
-                                              (pr_goal_selector !default_goal_selector)
-                                            end;
-                                  optwrite = begin fun n ->
-                                    default_goal_selector := parse_goal_selector n
-                                  end
-                                 })
-
+let pr_goal_selector = Goal_select.pr_goal_selector
+let get_default_goal_selector = Goal_select.get_default_goal_selector
