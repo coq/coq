@@ -145,7 +145,7 @@ prove some goals to construct the final definitions.
 Program Definition
 ~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Program Definition @ident := @term.
+.. cmd:: Program Definition @ident := @term
 
    This command types the value term in Russell and generates proof
    obligations. Once solved using the commands shown below, it binds the
@@ -167,7 +167,7 @@ Program Definition
       .. exn:: In environment … the term: @term does not have type @type. Actually, it has type ...
 
 
-   .. cmdv:: Program Definition @ident @binders : @type := @term.
+   .. cmdv:: Program Definition @ident @binders : @type := @term
 
       This is equivalent to:
 
@@ -182,7 +182,7 @@ See also: Sections :ref:`vernac-controlling-the-reduction-strategies`, :tacn:`un
 Program Fixpoint
 ~~~~~~~~~~~~~~~~
 
-.. cmd:: Program Fixpoint @ident @params {? {@order}} : @type := @term.
+.. cmd:: Program Fixpoint @ident @params {? {@order}} : @type := @term
 
 The optional order annotation follows the grammar:
 
@@ -255,7 +255,7 @@ using the syntax:
 Program Lemma
 ~~~~~~~~~~~~~
 
-.. cmd:: Program Lemma @ident : @type.
+.. cmd:: Program Lemma @ident : @type
 
    The Russell language can also be used to type statements of logical
    properties. It will generate obligations, try to solve them

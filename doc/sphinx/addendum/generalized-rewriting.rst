@@ -179,7 +179,7 @@ A parametric relation :g:`Aeq: forall (y1 : β1 ... ym : βm )`,
 :g:`relation (A t1 ... tn)` over :g:`(A : αi -> ... αn -> Type)` can be
 declared with the following command:
 
-.. cmd::  Add Parametric Relation (x1 : T1) ... (xn : Tk) : (A t1 ... tn) (Aeq t′1 ... t′m ) {? reflexivity proved by refl} {? symmetry proved by sym} {? transitivity proved by trans} as @ident.
+.. cmd::  Add Parametric Relation (x1 : T1) ... (xn : Tk) : (A t1 ... tn) (Aeq t′1 ... t′m ) {? reflexivity proved by refl} {? symmetry proved by sym} {? transitivity proved by trans} as @ident
 
 after having required the ``Setoid`` module with the ``Require Setoid``
 command.
@@ -226,7 +226,7 @@ replace terms with related ones only in contexts that are syntactic
 compositions of parametric morphism instances declared with the
 following command.
 
-.. cmd:: Add Parametric Morphism (x1 : T1 ) ... (xk : Tk ) : (f t1 ... tn ) with signature sig as @ident.
+.. cmd:: Add Parametric Morphism (x1 : T1 ) ... (xk : Tk ) : (f t1 ... tn ) with signature sig as @ident
 
 The command declares ``f`` as a parametric morphism of signature ``sig``. The
 identifier ``id`` gives a unique name to the morphism and it is used as
@@ -598,7 +598,7 @@ packing together the reflexivity, symmetry and transitivity lemmas).
 Notice that the syntax is not completely backward compatible since the
 identifier was not required.
 
-.. cmd:: Add Morphism f : @ident.
+.. cmd:: Add Morphism f : @ident
 
 The latter command also is restricted to the declaration of morphisms
 without parameters. It is not fully backward compatible since the

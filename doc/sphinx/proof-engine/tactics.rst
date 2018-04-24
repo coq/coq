@@ -3295,7 +3295,7 @@ One can optionally declare a hint database using the command ``Create
 HintDb``. If a hint is added to an unknown database, it will be
 automatically created.
 
-.. cmd:: Create HintDb @ident {? discriminated}.
+.. cmd:: Create HintDb @ident {? discriminated}
 
 This command creates a new database named :n:`@ident`. The database is
 implemented by a Discrimination Tree (DT) that serves as an index of

@@ -1086,7 +1086,7 @@ Basically, |Ltac| toplevel definitions are made as follows:
 Printing |Ltac| tactics
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Print Ltac @qualid.
+.. cmd:: Print Ltac @qualid
 
    Defined |Ltac| functions can be displayed using this command.
 

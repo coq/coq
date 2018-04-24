@@ -367,7 +367,7 @@ Explicit Universes
 The syntax has been extended to allow users to explicitly bind names
 to universes and explicitly instantiate polymorphic definitions.
 
-.. cmd:: Universe @ident.
+.. cmd:: Universe @ident
 
    In the monorphic case, this command declares a new global universe
    named :g:`ident`, which can be referred to using its qualified name
@@ -378,7 +378,7 @@ to universes and explicitly instantiate polymorphic definitions.
    declarations in the same section.
 
 
-.. cmd:: Constraint @ident @ord @ident.
+.. cmd:: Constraint @ident @ord @ident
 
    This command declares a new constraint between named universes. The
    order relation :n:`@ord` can be one of :math:`<`, :math:`≤` or :math:`=`. If consistent, the constraint

@@ -37,11 +37,11 @@ Generating ML Code
 The next two commands are meant to be used for rapid preview of
 extraction. They both display extracted term(s) inside |Coq|.
 
-.. cmd:: Extraction @qualid.
+.. cmd:: Extraction @qualid
 
    Extraction of the mentioned object in the |Coq| toplevel.
 
-.. cmd:: Recursive Extraction @qualid ... @qualid.
+.. cmd:: Recursive Extraction {+ @qualid }
 
    Recursive extraction of all the mentioned objects and
    all their dependencies in the |Coq| toplevel.
@@ -49,7 +49,7 @@ extraction. They both display extracted term(s) inside |Coq|.
 All the following commands produce real ML files. User can choose to
 produce one monolithic file or one file per |Coq| library.
 
-.. cmd:: Extraction "@file" @qualid ... @qualid.
+.. cmd:: Extraction "@file" {+ @qualid }
 
    Recursive extraction of all the mentioned objects and all
    their dependencies in one monolithic `file`.
@@ -57,19 +57,19 @@ produce one monolithic file or one file per |Coq| library.
    language to fulfill its syntactic conventions, keeping original
    names as much as possible.
   
-.. cmd:: Extraction Library @ident.
+.. cmd:: Extraction Library @ident
 
    Extraction of the whole |Coq| library ``ident.v`` to an ML module
    ``ident.ml``. In case of name clash, identifiers are here renamed
    using prefixes ``coq_``  or ``Coq_`` to ensure a session-independent
    renaming.
 
-.. cmd:: Recursive Extraction Library @ident.
+.. cmd:: Recursive Extraction Library @ident
 
    Extraction of the |Coq| library ``ident.v`` and all other modules 
    ``ident.v`` depends on.
 
-.. cmd:: Separate Extraction @qualid ... @qualid.
+.. cmd:: Separate Extraction {+ @qualid }
 
    Recursive extraction of all the mentioned objects and all
    their dependencies, just as ``Extraction "file"``,
@@ -86,7 +86,7 @@ The following command is meant to help automatic testing of
 the extraction, see for instance the ``test-suite`` directory
 in the |Coq| sources.
 
-.. cmd:: Extraction TestCompile @qualid ... @qualid.
+.. cmd:: Extraction TestCompile {+ @qualid }
 
    All the mentioned objects and all their dependencies are extracted
    to a temporary |OCaml| file, just as in ``Extraction "file"``. Then
@@ -104,9 +104,9 @@ Setting the target language
 The ability to fix target language is the first and more important
 of the extraction options. Default is ``OCaml``.
 
-.. cmd:: Extraction Language OCaml.
-.. cmd:: Extraction Language Haskell.
-.. cmd:: Extraction Language Scheme.
+.. cmd:: Extraction Language OCaml
+.. cmd:: Extraction Language Haskell
+.. cmd:: Extraction Language Scheme
 
 Inlining and optimizations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -163,22 +163,22 @@ The type-preserving optimizations are controlled by the following |Coq| options:
    Those heuristics are not always perfect; if you want to disable
    this feature, turn this option off.
 
-.. cmd:: Extraction Inline @qualid ... @qualid.
+.. cmd:: Extraction Inline {+ @qualid }
 
    In addition to the automatic inline feature, the constants
    mentionned by this command will always be inlined during extraction.
 
-.. cmd:: Extraction NoInline @qualid ... @qualid.
+.. cmd:: Extraction NoInline {+ @qualid }
 
    Conversely, the constants mentionned by this command will
    never be inlined during extraction.
 
-.. cmd:: Print Extraction Inline. 
+.. cmd:: Print Extraction Inline
 
    Prints the current state of the table recording the custom inlinings 
    declared by the two previous commands. 
 
-.. cmd:: Reset Extraction Inline.
+.. cmd:: Reset Extraction Inline
 
    Empties the table recording the custom inlinings (see the
    previous commands).
@@ -213,7 +213,7 @@ code elimination performed during extraction, in a way which
 is independent but complementary to the main elimination
 principles of extraction (logical parts and types).
 
-.. cmd:: Extraction Implicit @qualid [ @ident ... @ident ].
+.. cmd:: Extraction Implicit @qualid [ {+ @ident } ]
 
    This experimental command allows declaring some arguments of
    `qualid` as implicit, i.e. useless in extracted code and hence to
@@ -253,12 +253,12 @@ a closed term, and of course the system cannot guess the program which
 realizes an axiom.  Therefore, it is possible to tell the system
 what ML term corresponds to a given axiom. 
 
-.. cmd:: Extract Constant @qualid => @string.
+.. cmd:: Extract Constant @qualid => @string
 
    Give an ML extraction for the given constant.
    The `string` may be an identifier or a quoted string.
 
-.. cmd:: Extract Inlined Constant @qualid => @string.
+.. cmd:: Extract Inlined Constant @qualid => @string
 
    Same as the previous one, except that the given ML terms will
    be inlined everywhere instead of being declared via a ``let``.
@@ -285,7 +285,7 @@ Notice that in the case of type scheme axiom (i.e. whose type is an
 arity, that is a sequence of product finished by a sort), then some type
 variables have to be given (as quoted strings). The syntax is then:
 
-.. cmdv:: Extract Constant @qualid @string ... @string => @string.
+.. cmdv:: Extract Constant @qualid @string ... @string => @string
 
 The number of type variables is checked by the system. For example:
 
@@ -314,7 +314,7 @@ The system also provides a mechanism to specify ML terms for inductive
 types and constructors. For instance, the user may want to use the ML
 native boolean type instead of |Coq| one. The syntax is the following:
 
-.. cmd:: Extract Inductive @qualid => @string [ @string ... @string ].
+.. cmd:: Extract Inductive @qualid => @string [ {+ @string } ]
 
    Give an ML extraction for the given inductive type. You must specify
    extractions for the type itself (first `string`) and all its
@@ -322,7 +322,7 @@ native boolean type instead of |Coq| one. The syntax is the following:
    the ML extraction must be an ML inductive datatype, and the native
    pattern-matching of the language will be used.
 
-.. cmdv:: Extract Inductive @qualid => @string [ @string ... @string ] @string.
+.. cmdv:: Extract Inductive @qualid => @string [ {+ @string } ] @string
 
    Same as before, with a final extra `string` that indicates how to
    perform pattern-matching over this inductive type. In this form,
@@ -396,16 +396,16 @@ code that is meant to be linked with the extracted code.
 For instance the module ``List`` exists both in |Coq| and in |OCaml|.
 It is possible to instruct the extraction not to use particular filenames.
 
-.. cmd:: Extraction Blacklist @ident ... @ident.
+.. cmd:: Extraction Blacklist {+ @ident }
 
    Instruct the extraction to avoid using these names as filenames
    for extracted code.
 
-.. cmd:: Print Extraction Blacklist.
+.. cmd:: Print Extraction Blacklist
 
    Show the current list of filenames the extraction should avoid.
 
-.. cmd:: Reset Extraction Blacklist.
+.. cmd:: Reset Extraction Blacklist
 
    Allow the extraction to use any filename.
 

@@ -423,7 +423,7 @@ an improvement over ``all null s``.
 
 The syntax of the new declaration is
 
-.. cmd:: Prenex Implicits {+ @ident}.
+.. cmd:: Prenex Implicits {+ @ident}
 
 Let us denote :math:`c_1` … :math:`c_n` the list of identifiers given to a
 ``Prenex Implicits`` command.  The command checks that each ci is the name of
