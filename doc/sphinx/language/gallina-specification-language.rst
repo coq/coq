@@ -216,6 +216,11 @@ numbers (see :ref:`datatypes`).
    Negative integers are not at the same level as :token:`num`, for this
    would make precedence unnatural.
 
+.. index::
+   single: Set (sort)
+   single: Prop
+   single: Type
+
 Sorts
 -----
 
@@ -262,6 +267,8 @@ fun and forall gets identical. Moreover, parentheses can be omitted in
 the case of a single sequence of bindings sharing the same type (e.g.:
 :g:`fun (x y z : A) => t` can be shortened in :g:`fun x y z : A => t`).
 
+.. index:: fun ... => ...
+
 Abstractions
 ------------
 
@@ -281,6 +288,8 @@ fun :token:`ident`\ :math:`_{n}` : :token:`type` => :token:`term`”. If
 a let-binder occurs in
 the list of binders, it is expanded to a let-in definition (see
 Section :ref:`let-in`).
+
+.. index:: forall
 
 Products
 --------
@@ -320,6 +329,11 @@ The notation :n:`(@ident := @term)` for arguments is used for making
 explicit the value of implicit arguments (see
 Section :ref:`explicit-applications`).
 
+.. index::
+   single: ... : ... (type cast)
+   single: ... <: ...
+   single: ... <<: ...
+
 Type cast
 ---------
 
@@ -329,12 +343,19 @@ the type of :token:`term` to be :token:`type`.
 :n:`@term <: @type` locally sets up the virtual machine for checking that
 :token:`term` has type :token:`type`.
 
+:n:`@term <<: @type` uses native compilation for checking that :token:`term`
+has type :token:`type`.
+
+.. index:: _
+
 Inferable subterms
 ------------------
 
 Expressions often contain redundant pieces of information. Subterms that can be
 automatically inferred by Coq can be replaced by the symbol ``_`` and Coq will
 guess the missing piece of information.
+
+.. index:: let ... := ... (term)
 
 .. _let-in:
 
@@ -346,6 +367,8 @@ denotes the local binding of :token:`term` to the variable
 :token:`ident` in :token:`term`’. There is a syntactic sugar for let-in
 definition of functions: :n:`let @ident {+ @binder} := @term in @term’`
 stands for :n:`let @ident := fun {+ @binder} => @term in @term’`.
+
+.. index:: match ... with ...
 
 Definition by case analysis
 ---------------------------
@@ -466,6 +489,10 @@ a type with annotations. For this third subcase, both the clauses ``as`` and
 There are specific notations for case analysis on types with one or two
 constructors: ``if … then … else …`` and ``let (…,…) := … in …`` (see
 Sections :ref:`if-then-else` and :ref:`irrefutable-patterns`).
+
+.. index::
+   single: fix
+   single: cofix
 
 Recursive functions
 -------------------
