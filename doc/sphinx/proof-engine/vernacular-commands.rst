@@ -279,28 +279,7 @@ bytecode-based virtual machine. It is a shortcut for ``Eval vm_compute in``
 See also: Section :ref:`performingcomputations`.
 
 
-.. cmd::Extraction @term.
-
-This command displays the extracted term from :n:`@term`. The extraction is
-processed according to the distinction between :g:`Set` and :g:`Prop`; that is
-to say, between logical and computational content (see Section :ref:`sorts`).
-The extracted term is displayed in OCaml syntax, where global identifiers are
-still displayed as in |Coq| terms.
-
-
-Variants:
-
-
-.. cmdv:: Recursive Extraction {+ @qualid }.
-
-Recursively extracts all
-the material needed for the extraction of the qualified identifiers.
-
-
-See also: Chapter :ref:`extraction`.
-
-
-.. cmd:: Print Assumptions @qualid.
+.. cmd:: Print Assumptions @qualid
 
 This commands display all the assumptions (axioms, parameters and
 variables) a theorem or definition depends on. Especially, it informs
