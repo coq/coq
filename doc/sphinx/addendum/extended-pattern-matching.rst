@@ -75,7 +75,7 @@ by:
 Multiple patterns
 -----------------
 
-Using multiple patterns in the definition of max lets us write:
+Using multiple patterns in the definition of ``max`` lets us write:
 
 .. coqtop:: in undo
 
@@ -430,7 +430,7 @@ become impossible branches. In an impossible branch, you can answer
 anything but False_rect unit has the advantage to be subterm of
 anything.
 
-To be concrete: the tail function can be written:
+To be concrete: the ``tail`` function can be written:
 
 .. coqtop:: in
 
