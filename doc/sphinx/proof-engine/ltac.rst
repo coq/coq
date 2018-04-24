@@ -1101,10 +1101,11 @@ Info trace
 ~~~~~~~~~~
 
 .. cmd:: Info @num @expr
+   :name: Info
 
    This command can be used to print the trace of the path eventually taken by an
    |Ltac| script. That is, the list of executed tactics, discarding
-   all the branches which have failed. To that end the Info command can be
+   all the branches which have failed. To that end the :cmd:`Info` command can be
    used with the following syntax.
 
 
@@ -1131,23 +1132,22 @@ Info trace
 
          Info 1 t 1||t 0.
 
-   The trace produced by ``Info`` tries its best to be a reparsable
+   The trace produced by :cmd:`Info` tries its best to be a reparsable
    |Ltac| script, but this goal is not achievable in all generality.
    So some of the output traces will contain oddities.
 
-   As an additional help for debugging, the trace produced by ``Info`` contains
-   (in comments) the messages produced by the idtac
-   tacticals \ `4.2 <#ltac%3Aidtac>`__ at the right possition in the
-   script. In particular, the calls to idtac in branches which failed are
+   As an additional help for debugging, the trace produced by :cmd:`Info` contains
+   (in comments) the messages produced by the :tacn:`idtac` tactical at the right
+   position in the script. In particular, the calls to idtac in branches which failed are
    not printed.
 
    .. opt:: Info Level @num
 
-      This option is an alternative to the ``Info`` command.
+      This option is an alternative to the :cmd:`Info` command.
 
       This will automatically print the same trace as :n:`Info @num` at each
       tactic call. The unfolding level can be overridden by a call to the
-      ``Info`` command.
+      :cmd:`Info` command.
 
 Interactive debugger
 ~~~~~~~~~~~~~~~~~~~~
