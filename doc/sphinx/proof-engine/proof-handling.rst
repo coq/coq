@@ -542,13 +542,13 @@ debugging universe inconsistencies.
 
 .. cmd:: Guarded.
 
-Some tactics (e.g. :tacn:`refine` :ref:`applyingtheorems`) allow to build proofs using
+Some tactics (e.g. :tacn:`refine`) allow to build proofs using
 fixpoint or co-fixpoint constructions. Due to the incremental nature
 of interactive proof construction, the check of the termination (or
 guardedness) of the recursive calls in the fixpoint or cofixpoint
 constructions is postponed to the time of the completion of the proof.
 
-The command ``Guarded`` allows checking if the guard condition for
+The command :cmd:`Guarded` allows checking if the guard condition for
 fixpoint and cofixpoint is violated at some time of the construction
 of the proof without having to wait the completion of the proof.
 
@@ -570,13 +570,12 @@ available hypotheses.
 
 This option controls the way binders are handled
 in assertion commands such as ``Theorem ident [binders] : form``. When the
-option is set, which is the default, binders are automatically put in
+option is on, which is the default, binders are automatically put in
 the local context of the goal to prove.
 
-The option can be unset by issuing ``Unset Automatic Introduction``. When
-the option is unset, binders are discharged on the statement to be
-proved and a tactic such as intro (see Section :ref:`managingthelocalcontext`) has to be
-used to move the assumptions to the local context.
+When the option is off, binders are discharged on the statement to be
+proved and a tactic such as :tacn:`intro` (see Section :ref:`managingthelocalcontext`)
+has to be used to move the assumptions to the local context.
 
 
 Controlling memory usage
@@ -597,4 +596,4 @@ the ongoing proof.
 This command forces the |OCaml| runtime to perform a heap compaction.
 This is in general an expensive operation.
 See: `OCaml Gc <http://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#VALcompact>`_
-There is also an analogous tactic :tac:`optimize_heap`.
+There is also an analogous tactic :tacn:`optimize_heap`.

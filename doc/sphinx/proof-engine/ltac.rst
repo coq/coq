@@ -1223,7 +1223,7 @@ performance bug.
 
    .. warning::
 
-      Backtracking across a Reset Ltac Profile will not restore the information.
+      Backtracking across a :cmd:`Reset Ltac Profile` will not restore the information.
 
 .. coqtop:: reset in
 
@@ -1286,8 +1286,8 @@ performance bug.
    benchmarking purposes.
 
 You can also pass the ``-profile-ltac`` command line option to ``coqc``, which
-performs a ``Set Ltac Profiling`` at the beginning of each document, and a
-``Show Ltac Profile`` at the end.
+turns the :opt:`Ltac Profiling` option on at the beginning of each document,
+and performs a :cmd:`Show Ltac Profile` at the end.
 
 .. warning::
 

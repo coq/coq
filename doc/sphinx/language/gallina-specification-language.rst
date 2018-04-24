@@ -678,7 +678,7 @@ These are synonyms of the Definition forms.
 
 .. exn:: The term @term has type @type while it is expected to have type @type
 
-See also :cmd:`Opaque`, :cmd:`Transparent`, :tac:`unfold`.
+See also :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
 .. cmd:: Let @ident := @term.
 

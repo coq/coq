@@ -113,7 +113,7 @@ tactic *e.g.*, :math:`x = 10 * x / 10` is solved by `lra`.
 .. tacn:: lia
    :name: lia
 
-This tactic offers an alternative to the :tacn:`omega` and :tac:`romega`
+This tactic offers an alternative to the :tacn:`omega` and :tacn:`romega`
 tactics. Roughly speaking, the deductive power of lia is the combined deductive
 power of :tacn:`ring_simplify` and :tacn:`omega`. However, it solves linear
 goals that :tacn:`omega` and :tacn:`romega` do not solve, such as the following
