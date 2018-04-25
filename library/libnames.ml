@@ -174,8 +174,6 @@ type global_dir_reference =
   | DirOpenModtype of object_prefix
   | DirOpenSection of object_prefix
   | DirModule of object_prefix
-  | DirClosedSection of DirPath.t
-      (* this won't last long I hope! *)
 
 let eq_op op1 op2 =
   DirPath.equal op1.obj_dir op2.obj_dir &&
@@ -187,7 +185,6 @@ let eq_global_dir_reference r1 r2 = match r1, r2 with
 | DirOpenModtype op1, DirOpenModtype op2 -> eq_op op1 op2
 | DirOpenSection op1, DirOpenSection op2 -> eq_op op1 op2
 | DirModule op1, DirModule op2 -> eq_op op1 op2
-| DirClosedSection dp1, DirClosedSection dp2 -> DirPath.equal dp1 dp2
 | _ -> false
 
 type reference_r =

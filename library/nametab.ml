@@ -432,7 +432,6 @@ let full_name_module qid =
 let locate_section qid =
   match locate_dir qid with
     | DirOpenSection { obj_dir; _ } -> obj_dir
-    | DirClosedSection dir -> dir
     | _ -> raise Not_found
 
 let locate_all qid =
