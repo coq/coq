@@ -626,7 +626,7 @@ binder. If the goal is a product, the tactic implements the "Lam" rule given in
 :ref:`Typing-rules` [1]_. If the goal starts with a let binder, then the
 tactic implements a mix of the "Let" and "Conv".
 
-If the current goal is a dependent product :math:`\forall` :g:`x:T, U` (resp
+If the current goal is a dependent product :g:`forall x:T, U` (resp
 :g:`let x:=t in U`) then ``intro`` puts :g:`x:T` (resp :g:`x:=t`) in the local
 context. The new subgoal is :g:`U`.
 
@@ -637,11 +637,10 @@ puts in the local context either :g:`Hn:T` (if :g:`T` is of type :g:`Set` or
 new subgoal is :g:`U`.
 
 If the goal is an existential variable, ``intro`` forces the resolution of the
-existential variable into a dependent product :math:`\forall`:g:`x:?X, ?Y`, puts
+existential variable into a dependent product :math:`forall`:g:`x:?X, ?Y`, puts
 :g:`x:?X` in the local context and leaves :g:`?Y` as a new subgoal allowed to
 depend on :g:`x`.
 
-If the goal is neither a product, nor starting with a let definition, nor an existential variable,
 the tactic ``intro`` applies the tactic ``hnf`` until the tactic ``intro`` can
 be applied or the goal is not head-reducible.
 
@@ -760,7 +759,7 @@ be applied or the goal is not head-reducible.
 
 
    Assuming a goal of type :g:`Q → P` (non-dependent product), or of type
-   :math:`\forall`:g:`x:T, P` (dependent product), the behavior of
+   :g:`forall x:T, P` (dependent product), the behavior of
    :n:`intros p` is defined inductively over the structure of the introduction
    pattern :n:`p`:
 
@@ -2153,9 +2152,9 @@ See also: :ref:`advanced-recursive-functions`
 
    This variant allows you to specify the generalization of the goal. It is
    useful when the system fails to generalize the goal automatically. If
-   :n:`@ident` has type :g:`(I t)` and :g:`I` has type :math:`\forall`
-   :g:`(x:T), s`, then :n:`@term` must be of type :g:`I:`:math:`\forall`
-   :g:`(x:T), I x -> s'` where :g:`s'` is the type of the goal.
+   :n:`@ident` has type :g:`(I t)` and :g:`I` has type :g:`forall (x:T), s`,
+   then :n:`@term` must be of type :g:`I:forall (x:T), I x -> s'` where
+   :g:`s'` is the type of the goal.
 
 .. tacv:: dependent inversion @ident as @intro_pattern with @term
 
