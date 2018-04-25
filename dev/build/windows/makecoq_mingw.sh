@@ -144,24 +144,24 @@ LOGTARGET=other
 
 # Log command output - take log target name from command name (like log1 make => log target is "<module>-make")
 log1() {
-  "$@" > "$LOGS/$LOGTARGET-$1.log" 2> "$LOGS/$LOGTARGET-$1.err"
+  "$@" > >(tee "$LOGS/$LOGTARGET-$1.log" | sed -e "s/^/$LOGTARGET-$1.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1.err" | sed -e "s/^/$LOGTARGET-$1.err: /" 1>&2)
 }
 
 # Log command output - take log target name from command name and first argument (like log2 make install => log target is "<module>-make-install")
 log2() {
-  "$@" > "$LOGS/$LOGTARGET-$1-$2.log" 2> "$LOGS/$LOGTARGET-$1-$2.err"
+  "$@" > >(tee "$LOGS/$LOGTARGET-$1-$2.log" | sed -e "s/^/$LOGTARGET-$1-$2.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1-$2.err" | sed -e "s/^/$LOGTARGET-$1-$2.err: /" 1>&2)
 }
 
 # Log command output - take log target name from command name and second argument (like log_1_3 ocaml setup.ml -configure => log target is "<module>-ocaml--configure")
 log_1_3() {
-  "$@" > "$LOGS/$LOGTARGET-$1-$3.log" 2> "$LOGS/$LOGTARGET-$1-$3.err"
+  "$@" > >(tee "$LOGS/$LOGTARGET-$1-$3.log" | sed -e "s/^/$LOGTARGET-$1-$3.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1-$3.err" | sed -e "s/^/$LOGTARGET-$1-$3.err: /" 1>&2)
 }
 
 # Log command output - log target name is first argument (like logn untar tar xvaf ... => log target is "<module>-untar")
 logn() {
   LOGTARGETEX=$1
   shift
-  "$@" > "$LOGS/$LOGTARGET-$LOGTARGETEX.log" 2> "$LOGS/$LOGTARGET-$LOGTARGETEX.err"
+  "$@" > >(tee "$LOGS/$LOGTARGET-$LOGTARGETEX.log" | sed -e "s/^/$LOGTARGET-$LOGTARGETEX.log: /") 2> >(tee "$LOGS/$LOGTARGET-$LOGTARGETEX.err" | sed -e "s/^/$LOGTARGET-$LOGTARGETEX.err: /" 1>&2)
 }
 
 ###################### 'UNFIX' SED #####################
