@@ -1099,15 +1099,14 @@ let thin id sigma goal =
   let ids = Id.Set.singleton id in
   let env = Goal.V82.env sigma goal in
   let cl = Goal.V82.concl sigma goal in
-  let evdref = ref (Evd.clear_metas sigma) in
+  let sigma = Evd.clear_metas sigma in
   let ans =
-    try Some (Evarutil.clear_hyps_in_evi env evdref (Environ.named_context_val env) cl ids)
+    try Some (Evarutil.clear_hyps_in_evi env sigma (Environ.named_context_val env) cl ids)
     with Evarutil.ClearDependencyError _ -> None
   in
   match ans with
   | None -> sigma
-  | Some (hyps, concl) ->
-    let sigma = !evdref in
+  | Some (sigma, hyps, concl) ->
     let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) in
     let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
     sigma

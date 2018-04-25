@@ -221,11 +221,11 @@ type clear_dependency_error =
 
 exception ClearDependencyError of Id.t * clear_dependency_error * GlobRef.t option
 
-val clear_hyps_in_evi : env -> evar_map ref -> named_context_val -> types ->
-  Id.Set.t -> named_context_val * types
+val clear_hyps_in_evi : env -> evar_map -> named_context_val -> types ->
+  Id.Set.t -> evar_map * named_context_val * types
 
-val clear_hyps2_in_evi : env -> evar_map ref -> named_context_val -> types -> types ->
-  Id.Set.t -> named_context_val * types * types
+val clear_hyps2_in_evi : env -> evar_map -> named_context_val -> types -> types ->
+  Id.Set.t -> evar_map * named_context_val * types * types
 
 type csubst
 

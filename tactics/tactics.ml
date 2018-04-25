@@ -247,13 +247,12 @@ let clear_gen fail = function
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let concl = Proofview.Goal.concl gl in
-    let evdref = ref sigma in
-    let (hyps, concl) =
-      try clear_hyps_in_evi env evdref (named_context_val env) concl ids
+    let (sigma, hyps, concl) =
+      try clear_hyps_in_evi env sigma (named_context_val env) concl ids
       with Evarutil.ClearDependencyError (id,err,inglobal) -> fail env sigma id err inglobal
     in
     let env = reset_with_named_context hyps env in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref)
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (Refine.refine ~typecheck:false begin fun sigma ->
       Evarutil.new_evar env sigma ~principal:true concl
     end)
@@ -431,9 +430,8 @@ let get_previous_hyp_position env sigma id =
 
 let clear_hyps2 env sigma ids sign t cl =
   try
-    let evdref = ref (Evd.clear_metas sigma) in
-    let (hyps,t,cl) = Evarutil.clear_hyps2_in_evi env evdref sign t cl ids in
-    (hyps, t, cl, !evdref)
+    let sigma = Evd.clear_metas sigma in
+    Evarutil.clear_hyps2_in_evi env sigma sign t cl ids
   with Evarutil.ClearDependencyError (id,err,inglobal) ->
     error_replacing_dependency env sigma id err inglobal
 
@@ -447,7 +445,7 @@ let internal_cut_gen ?(check=true) dir replace id t =
     let sign',t,concl,sigma =
       if replace then
         let nexthyp = get_next_hyp_position env sigma id (named_context_of_val sign) in
-        let sign',t,concl,sigma = clear_hyps2 env sigma (Id.Set.singleton id) sign t concl in
+        let sigma,sign',t,concl = clear_hyps2 env sigma (Id.Set.singleton id) sign t concl in
         let sign' = insert_decl_in_named_context sigma (LocalAssum (id,t)) nexthyp sign' in
         sign',t,concl,sigma
       else

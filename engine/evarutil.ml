@@ -613,10 +613,11 @@ let rec check_and_clear_in_constr env evdref err ids global c =
 
       | _ -> Constr.map (check_and_clear_in_constr env evdref err ids global) c
 
-let clear_hyps_in_evi_main env evdref hyps terms ids =
+let clear_hyps_in_evi_main env sigma hyps terms ids =
   (* clear_hyps_in_evi erases hypotheses ids in hyps, checking if some
      hypothesis does not depend on a element of ids, and erases ids in
      the contexts of the evars occurring in evi *)
+  let evdref = ref sigma in
   let terms = List.map EConstr.Unsafe.to_constr terms in
   let global = Id.Set.exists is_section_variable ids in
   let terms =
@@ -639,16 +640,16 @@ let clear_hyps_in_evi_main env evdref hyps terms ids =
     in
       remove_hyps ids check_context check_value hyps
   in
-  (nhyps,List.map EConstr.of_constr terms)
+  (!evdref, nhyps,List.map EConstr.of_constr terms)
 
-let clear_hyps_in_evi env evdref hyps concl ids =
-  match clear_hyps_in_evi_main env evdref hyps [concl] ids with
-  | (nhyps,[nconcl]) -> (nhyps,nconcl)
+let clear_hyps_in_evi env sigma hyps concl ids =
+  match clear_hyps_in_evi_main env sigma hyps [concl] ids with
+  | (sigma,nhyps,[nconcl]) -> (sigma,nhyps,nconcl)
   | _ -> assert false
 
-let clear_hyps2_in_evi env evdref hyps t concl ids =
-  match clear_hyps_in_evi_main env evdref hyps [t;concl] ids with
-  | (nhyps,[t;nconcl]) -> (nhyps,t,nconcl)
+let clear_hyps2_in_evi env sigma hyps t concl ids =
+  match clear_hyps_in_evi_main env sigma hyps [t;concl] ids with
+  | (sigma,nhyps,[t;nconcl]) -> (sigma,nhyps,t,nconcl)
   | _ -> assert false
 
 (* spiwack: a few functions to gather evars on which goals depend. *)
