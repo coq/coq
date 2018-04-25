@@ -954,9 +954,20 @@ function make_lablgtk {
 
     # lablgtk shows occasional errors with -j, so don't pass $MAKE_OPT
 
-    # See https://sympa.inria.fr/sympa/arc/caml-list/2015-10/msg00204.html for the make || true + strip
-    logn make-world-pre make world || true
-    "$TARGET_ARCH-strip.exe" --strip-unneeded src/dlllablgtk2.dll
+    # lablgtk binary needs to be stripped - otherwise flexdll goes wild
+    # Fix version 1: explicit strip after failed build - this randomly fails in CI
+    # See https://sympa.inria.fr/sympa/arc/caml-list/2015-10/msg00204.html
+    # logn make-world-pre make world || true
+    # $TARGET_ARCH-strip.exe --strip-unneeded src/dlllablgtk2.dll
+
+    # Fix version 2: Strip by passing linker argument rather than explicit call to strip
+    # See https://github.com/alainfrisch/flexdll/issues/6
+    # Argument to ocamlmklib: -ldopt "-link -Wl,-s"
+    # -ldopt is the okamlmklib linker prefix option
+    # -link is the flexlink linker prefix option
+    # -Wl, is the gcc (linker driver) linker prefix option
+    # -s is the gnu linker option for stripping symbols
+    # These changes are included in dev/build/windows/patches_coq/lablgtk-2.18.3.patch
 
     log2 make world
     log2 make install
