@@ -232,7 +232,7 @@ type clear_dependency_error =
 | OccurHypInSimpleClause of Id.t option
 | EvarTypingBreak of Constr.existential
 
-exception ClearDependencyError of Id.t * clear_dependency_error
+exception ClearDependencyError of Id.t * clear_dependency_error * Globnames.global_reference option
 
 val clear_hyps_in_evi : env -> evar_map ref -> named_context_val -> types ->
   Id.Set.t -> named_context_val * types
