@@ -632,7 +632,7 @@ context. The new subgoal is :g:`U`.
 
 If the goal is a non-dependent product :g:`T`:math:`\rightarrow`:g:`U`, then it
 puts in the local context either :g:`Hn:T` (if :g:`T` is of type :g:`Set` or
-:g:`Prop`) or Xn:T (if the type of :g:`T` is :g:`Type`). The optional index
+:g:`Prop`) or :g:`Xn:T` (if the type of :g:`T` is :g:`Type`). The optional index
 ``n`` is such that ``Hn`` or ``Xn`` is a fresh identifier. In both cases, the
 new subgoal is :g:`U`.
 
