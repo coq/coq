@@ -1176,34 +1176,35 @@ let minimal_free_rels_rec env sigma =
 
 let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
   let sigdata = find_sigma_data env sort_of_ty in
-  let evdref = ref (Evd.clear_metas sigma) in
-  let rec sigrec_clausal_form siglen p_i =
+  let rec sigrec_clausal_form sigma siglen p_i =
     if Int.equal siglen 0 then
       (* is the default value typable with the expected type *)
       let dflt_typ = unsafe_type_of env sigma dflt in
       try
-	let () = evdref := Evarconv.the_conv_x_leq env dflt_typ p_i !evdref in
-	let () =
-          evdref := Evarconv.solve_unif_constraints_with_heuristics env !evdref in
-	dflt
+        let sigma = Evarconv.the_conv_x_leq env dflt_typ p_i sigma in
+        let sigma =
+          Evarconv.solve_unif_constraints_with_heuristics env sigma in
+        sigma, dflt
       with Evarconv.UnableToUnify _ ->
 	user_err Pp.(str "Cannot solve a unification problem.")
     else
-      let (a,p_i_minus_1) = match whd_beta_stack !evdref p_i with
+      let (a,p_i_minus_1) = match whd_beta_stack sigma p_i with
 	| (_sigS,[a;p]) -> (a, p)
  	| _ -> anomaly ~label:"sig_clausal_form" (Pp.str "should be a sigma type.") in
-      let ev = Evarutil.e_new_evar env evdref a in
+      let sigma, ev = Evarutil.new_evar env sigma a in
       let rty = beta_applist sigma (p_i_minus_1,[ev]) in
-      let tuple_tail = sigrec_clausal_form (siglen-1) rty in
-      let evopt = match EConstr.kind !evdref ev with Evar _ -> None | _ -> Some ev in
+      let sigma, tuple_tail = sigrec_clausal_form sigma (siglen-1) rty in
+      let evopt = match EConstr.kind sigma ev with Evar _ -> None | _ -> Some ev in
       match evopt with
 	| Some w ->
-            let w_type = unsafe_type_of env !evdref w in
-            if Evarconv.e_cumul env evdref w_type a then
-	      let exist_term = Evarutil.evd_comb1 (Evd.fresh_global env) evdref sigdata.intro in
-              applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
-            else
+          let w_type = unsafe_type_of env sigma w in
+          begin match Evarconv.cumul env sigma w_type a with
+            | Some sigma ->
+              let sigma, exist_term = Evd.fresh_global env sigma sigdata.intro in
+              sigma, applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
+            | None ->
               user_err Pp.(str "Cannot solve a unification problem.")
+          end
 	| None ->
             (* This at least happens if what has been detected as a
                dependency is not one; use an evasive error message;
@@ -1213,8 +1214,9 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
                unsolved evars would mean not binding rel *)
 	    user_err Pp.(str "Cannot solve a unification problem.")
   in
-  let scf = sigrec_clausal_form siglen ty in
-    !evdref, Evarutil.nf_evar !evdref scf
+  let sigma = Evd.clear_metas sigma in
+  let sigma, scf = sigrec_clausal_form sigma siglen ty in
+    sigma, Evarutil.nf_evar sigma scf
 
 (* The problem is to build a destructor (a generalization of the
    predecessor) which, when applied to a term made of constructors

@@ -3840,7 +3840,8 @@ let specialize_eqs id =
 	| _ ->
 	    if in_eqs then acc, in_eqs, ctx, ty
 	    else
-	      let e = e_new_evar (push_rel_context ctx env) evars t in
+              let sigma, e = Evarutil.new_evar (push_rel_context ctx env) !evars t in
+              evars := sigma;
 		aux false (LocalDef (na,e,t) :: ctx) (mkApp (lift 1 acc, [| mkRel 1 |])) b)
     | t -> acc, in_eqs, ctx, ty
   in

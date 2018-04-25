@@ -1394,6 +1394,16 @@ let the_conv_x_leq env ?(ts=default_transparent_state env) t1 t2 evd =
   | Success evd' -> evd'
   | UnifFailure (evd',e) -> raise (UnableToUnify (evd',e))
 
+let make_opt = function
+  | Success evd -> Some evd
+  | UnifFailure _ -> None
+
+let conv env ?(ts=default_transparent_state env) evd t1 t2 =
+  make_opt(evar_conv_x ts env evd CONV t1 t2)
+
+let cumul env ?(ts=default_transparent_state env) evd t1 t2 =
+  make_opt(evar_conv_x ts env evd CUMUL t1 t2)
+
 let e_conv env ?(ts=default_transparent_state env) evdref t1 t2 =
   match evar_conv_x ts env !evdref CONV t1 t2 with
   | Success evd' -> evdref := evd'; true

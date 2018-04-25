@@ -16,7 +16,9 @@ let init_reference dir s () = Coqlib.coq_reference  "Program" dir s
 let papp evdref r args = 
   let open EConstr in
   let gr = delayed_force r in
-    mkApp (Evarutil.e_new_global evdref gr, args)
+  let evd, hd = Evarutil.new_global !evdref gr in
+  evdref := evd;
+  mkApp (hd, args)
 
 let sig_typ = init_reference ["Init"; "Specif"] "sig"
 let sig_intro = init_reference ["Init"; "Specif"] "exist"

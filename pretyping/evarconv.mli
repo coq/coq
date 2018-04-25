@@ -30,6 +30,9 @@ val the_conv_x_leq : env -> ?ts:transparent_state -> constr -> constr -> evar_ma
 val e_conv  : env -> ?ts:transparent_state -> evar_map ref -> constr -> constr -> bool
 val e_cumul : env -> ?ts:transparent_state -> evar_map ref -> constr -> constr -> bool
 
+val conv : env -> ?ts:transparent_state -> evar_map -> constr -> constr -> evar_map option
+val cumul : env -> ?ts:transparent_state -> evar_map -> constr -> constr -> evar_map option
+
 (** {6 Unification heuristics. } *)
 
 (** Try heuristics to solve pending unification problems and to solve

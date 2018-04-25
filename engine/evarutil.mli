@@ -50,13 +50,6 @@ val new_pure_evar :
 
 val new_pure_evar_full : evar_map -> evar_info -> evar_map * Evar.t
 
-(** the same with side-effects *)
-val e_new_evar :
-  env -> evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> ?hypnaming:naming_mode -> types -> constr
-
 (** Create a new Type existential variable, as we keep track of 
     them during type-checking and unification. *)
 val new_type_evar :
@@ -65,13 +58,7 @@ val new_type_evar :
   ?principal:bool -> ?hypnaming:naming_mode -> rigid ->
   evar_map * (constr * Sorts.t)
 
-val e_new_type_evar : env -> evar_map ref ->
-  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> ?hypnaming:naming_mode -> rigid -> constr * Sorts.t
-
 val new_Type : ?rigid:rigid -> env -> evar_map -> evar_map * constr
-val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
 
 val restrict_evar : evar_map -> Evar.t -> Filter.t ->
   ?src:Evar_kinds.t Loc.located -> constr list option -> evar_map * Evar.t
@@ -79,7 +66,6 @@ val restrict_evar : evar_map -> Evar.t -> Filter.t ->
 (** Polymorphic constants *)
 
 val new_global : evar_map -> GlobRef.t -> evar_map * constr
-val e_new_global : evar_map ref -> GlobRef.t -> constr
 
 (** Create a fresh evar in a context different from its definition context:
    [new_evar_instance sign evd ty inst] creates a new evar of context
@@ -187,8 +173,6 @@ val nf_evars_universes : evar_map -> Constr.constr -> Constr.constr
 
 val nf_evars_and_universes : evar_map -> evar_map * (Constr.constr -> Constr.constr)
 [@@ocaml.deprecated "Use Evd.minimize_universes and nf_evars_universes"]
-val e_nf_evars_and_universes : evar_map ref -> (Constr.constr -> Constr.constr) * Universes.universe_opt_subst
-[@@ocaml.deprecated "Use Evd.minimize_universes and nf_evars_universes"]
 
 (** Normalize the evar map w.r.t. universes, after simplification of constraints.
     Return the substitution function for constrs as well. *)
@@ -276,3 +260,25 @@ type type_constraint = types option
 [@@ocaml.deprecated "use the version in Evardefine"]
 type val_constraint = constr option
 [@@ocaml.deprecated "use the version in Evardefine"]
+
+val e_new_evar :
+  env -> evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
+  ?candidates:constr list -> ?store:Store.t ->
+  ?naming:Misctypes.intro_pattern_naming_expr ->
+  ?principal:bool -> ?hypnaming:naming_mode -> types -> constr
+[@@ocaml.deprecated "Use [Evd.new_evar]"]
+
+val e_new_type_evar : env -> evar_map ref ->
+  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
+  ?naming:Misctypes.intro_pattern_naming_expr ->
+  ?principal:bool -> ?hypnaming:naming_mode -> rigid -> constr * Sorts.t
+[@@ocaml.deprecated "Use [Evd.new_type_evar]"]
+
+val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
+[@@ocaml.deprecated "Use [Evd.new_Type]"]
+
+val e_new_global : evar_map ref -> GlobRef.t -> constr
+[@@ocaml.deprecated "Use [Evd.new_global]"]
+
+val e_nf_evars_and_universes : evar_map ref -> (Constr.constr -> Constr.constr) * Universes.universe_opt_subst
+[@@ocaml.deprecated "Use Evd.minimize_universes and nf_evars_universes"]

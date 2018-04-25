@@ -247,9 +247,10 @@ let coq_nil = coq_reference "nil"
 
 let lapp f args = mkApp(Lazy.force f,args)
 
-let plapp evd f args = 
-  let fc = Evarutil.e_new_global evd (Lazy.force f) in
-    mkApp(fc,args)
+let plapp evdref f args =
+  let evd, fc = Evarutil.new_global !evdref (Lazy.force f) in
+  evdref := evd;
+  mkApp(fc,args)
 
 let dest_rel0 sigma t =
   match EConstr.kind sigma t with
@@ -586,48 +587,52 @@ let make_hyp env evd c =
   let t = Retyping.get_type_of env !evd c in
    plapp evd coq_mkhypo [|t;c|]
 
-let make_hyp_list env evd lH =
-  let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
+let make_hyp_list env evdref lH =
+  let evd, carrier = Evarutil.new_global !evdref (Lazy.force coq_hypo) in
+  evdref := evd;
   let l = 
     List.fold_right
-      (fun c l -> plapp evd coq_cons [|carrier; (make_hyp env evd c); l|]) lH
-      (plapp evd coq_nil [|carrier|])
+      (fun c l -> plapp evdref coq_cons [|carrier; (make_hyp env evdref c); l|]) lH
+      (plapp evdref coq_nil [|carrier|])
   in 
-  let l' = Typing.e_solve_evars env evd l in
+  let l' = Typing.e_solve_evars env evdref l in
   let l' = EConstr.Unsafe.to_constr l' in
-    Evarutil.nf_evars_universes !evd l'
+    Evarutil.nf_evars_universes !evdref l'
 
-let interp_power env evd pow =
-  let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
+let interp_power env evdref pow =
+  let evd, carrier = Evarutil.new_global !evdref (Lazy.force coq_hypo) in
+  evdref := evd;
   match pow with
   | None ->
       let t = ArgArg(Loc.tag (Lazy.force ltac_inv_morph_nothing)) in
-      (TacArg(Loc.tag (TacCall(Loc.tag (t,[])))), plapp evd coq_None [|carrier|])
+      (TacArg(Loc.tag (TacCall(Loc.tag (t,[])))), plapp evdref coq_None [|carrier|])
   | Some (tac, spec) ->
       let tac =
         match tac with
         | CstTac t -> Tacintern.glob_tactic t
         | Closed lc ->
             closed_term_ast (List.map Smartlocate.global_with_alias lc) in
-      let spec = make_hyp env evd (ic_unsafe spec) in
-      (tac, plapp evd coq_Some [|carrier; spec|])
+      let spec = make_hyp env evdref (ic_unsafe spec) in
+      (tac, plapp evdref coq_Some [|carrier; spec|])
 
-let interp_sign env evd sign =
-  let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
+let interp_sign env evdref sign =
+  let evd, carrier = Evarutil.new_global !evdref (Lazy.force coq_hypo) in
+  evdref := evd;
   match sign with
-  | None -> plapp evd coq_None [|carrier|]
+  | None -> plapp evdref coq_None [|carrier|]
   | Some spec ->
-      let spec = make_hyp env evd (ic_unsafe spec) in
-      plapp evd coq_Some [|carrier;spec|]
+      let spec = make_hyp env evdref (ic_unsafe spec) in
+      plapp evdref coq_Some [|carrier;spec|]
        (* Same remark on ill-typed terms ... *)
 
-let interp_div env evd div =
-  let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
+let interp_div env evdref div =
+  let evd, carrier = Evarutil.new_global !evdref (Lazy.force coq_hypo) in
+  evdref := evd;
   match div with
-  | None -> plapp evd coq_None [|carrier|]
+  | None -> plapp evdref coq_None [|carrier|]
   | Some spec ->
-      let spec = make_hyp env evd (ic_unsafe spec) in
-      plapp evd coq_Some [|carrier;spec|]
+      let spec = make_hyp env evdref (ic_unsafe spec) in
+      plapp evdref coq_Some [|carrier;spec|]
        (* Same remark on ill-typed terms ... *)
 
 let add_theory0 name (sigma, rth) eqth morphth cst_tac (pre,post) power sign div =

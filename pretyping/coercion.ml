@@ -94,7 +94,9 @@ open Program
 
 let make_existential ?loc ?(opaque = not (get_proofs_transparency ())) na env evdref c =
   let src = Loc.tag ?loc (Evar_kinds.QuestionMark (Evar_kinds.Define opaque,na)) in
-  Evarutil.e_new_evar env evdref ~src c
+  let evd, v = Evarutil.new_evar env !evdref ~src c in
+  evdref := evd;
+  v
 
 let app_opt env evdref f t =
   whd_betaiota !evdref (app_opt f t)
