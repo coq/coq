@@ -541,11 +541,11 @@ let constraint_type_ord c1 c2 = match c1, c2 with
 (* Universe inconsistency: error raised when trying to enforce a relation
    that would create a cycle in the graph of universes. *)
 
-type univ_inconsistency = constraint_type * universe * universe * explanation option
+type univ_inconsistency = constraint_type * universe * universe * explanation Lazy.t option
 
 exception UniverseInconsistency of univ_inconsistency
 
-let error_inconsistency o u v (p:explanation option) =
+let error_inconsistency o u v p =
   raise (UniverseInconsistency (o,make u,make v,p))
 
 (* Constraints and sets of constraints. *)    
@@ -1235,13 +1235,16 @@ let explain_universe_inconsistency prl (o,u,v,p) =
     | Eq -> str"=" | Lt -> str"<" | Le -> str"<=" 
   in
   let reason = match p with
-    | None | Some [] -> mt()
+    | None -> mt()
     | Some p ->
-      str " because" ++ spc() ++ pr_uni v ++
+      let p = Lazy.force p in
+      if p = [] then mt ()
+      else
+        str " because" ++ spc() ++ pr_uni v ++
 	prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ pr_uni v)
-	p ++
+          p ++
 	(if Universe.equal (snd (List.last p)) u then mt() else
-	    (spc() ++ str "= " ++ pr_uni u)) 
+           (spc() ++ str "= " ++ pr_uni u))
   in
     str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
       pr_rel o ++ spc() ++ pr_uni v ++ reason

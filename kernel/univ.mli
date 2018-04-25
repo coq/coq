@@ -205,7 +205,7 @@ val enforce_leq_level : Level.t constraint_function
   Constraint.t...
 *)
 type explanation = (constraint_type * Universe.t) list
-type univ_inconsistency = constraint_type * Universe.t * Universe.t * explanation option
+type univ_inconsistency = constraint_type * Universe.t * Universe.t * explanation Lazy.t option
 
 exception UniverseInconsistency of univ_inconsistency
 

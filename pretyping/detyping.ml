@@ -36,7 +36,7 @@ type _ delay =
 | Later : [ `thunk ] delay
 
 (** Should we keep details of universes during detyping ? *)
-let print_universes = Flags.univ_print
+let print_universes = ref false
 
 (** If true, prints local context of evars, whatever print_arguments *)
 let print_evar_arguments = ref false

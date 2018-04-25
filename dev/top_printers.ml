@@ -162,8 +162,8 @@ let pp_state_t n = pp (Reductionops.pr_state n)
 (* proof printers *)
 let pr_evar ev = Pp.int (Evar.repr ev)
 let ppmetas metas = pp(Termops.pr_metaset metas)
-let ppevm evd = pp(Termops.pr_evar_map ~with_univs:!Flags.univ_print (Some 2) evd)
-let ppevmall evd = pp(Termops.pr_evar_map ~with_univs:!Flags.univ_print None evd)
+let ppevm evd = pp(Termops.pr_evar_map ~with_univs:!Detyping.print_universes (Some 2) evd)
+let ppevmall evd = pp(Termops.pr_evar_map ~with_univs:!Detyping.print_universes None evd)
 let pr_existentialset evars =
   prlist_with_sep spc pr_evar (Evar.Set.elements evars)
 let ppexistentialset evars =
