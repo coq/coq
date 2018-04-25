@@ -511,8 +511,8 @@ Applying theorems
    on subterms that contain no variables to instantiate. For instance, if
    :g:`id := fun x:nat => x` and :g:`H: forall y, id y = y -> True` and
    :g:`H0 : O = O` then ``simple apply H in H0`` does not succeed because it
-   would require the conversion of :g:`id ?1234` and :g:`O` where :g:`?1234` is
-   a variable to instantiate. Tactic :n:`simple apply @term in @ident` does not
+   would require the conversion of :g:`id ?x` and :g:`O` where :g:`?x` is
+   an existential variable to instantiate. Tactic :n:`simple apply @term in @ident` does not
    either traverse tuples as :n:`apply @term in @ident` does.
 
 .. tacv:: {? simple} apply {+, @term {? with @bindings_list}} in @ident {? as @intro_pattern}
