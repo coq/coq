@@ -117,6 +117,9 @@ matrix:
       - TEST_TARGET="ci-math-comp"
     - if: NOT (type = pull_request)
       env:
+      - TEST_TARGET="ci-mtac2"
+    - if: NOT (type = pull_request)
+      env:
       - TEST_TARGET="ci-sf"
     - if: NOT (type = pull_request)
       env:

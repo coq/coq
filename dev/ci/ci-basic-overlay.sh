@@ -19,13 +19,13 @@
 : "${UniMath_CI_GITURL:=https://github.com/UniMath/UniMath.git}"
 
 ########################################################################
-# Unicoq + Metacoq
+# Unicoq + Mtac2
 ########################################################################
 : "${unicoq_CI_BRANCH:=master}"
 : "${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq.git}"
 
-: "${metacoq_CI_BRANCH:=master}"
-: "${metacoq_CI_GITURL:=https://github.com/MetaCoq/MetaCoq.git}"
+: "${mtac2_CI_BRANCH:=master-sync}"
+: "${mtac2_CI_GITURL:=https://github.com/Mtac2/Mtac2.git}"
 
 ########################################################################
 # Mathclasses + Corn
