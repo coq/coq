@@ -958,7 +958,7 @@ and obligation (user_num, name, typ) tac =
   let num = pred user_num in
   let prg = get_prog_err name in
   let obls, rem = prg.prg_obligations in
-    if num < Array.length obls then
+    if num >= 0 && num < Array.length obls then
       let obl = obls.(num) in
 	match obl.obl_body with
 	    None -> solve_obligation prg num tac
