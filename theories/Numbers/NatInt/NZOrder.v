@@ -432,7 +432,7 @@ Theorem strong_right_induction: right_step' -> forall n, z <= n -> A n.
 Proof.
 intro RS'; apply A'A_right; unfold A'; nzinduct n z;
 [apply rbase | apply rs'_rs''; apply RS'].
-Qed.
+Defined.
 
 Theorem right_induction : A z -> right_step -> forall n, z <= n -> A n.
 Proof.
@@ -458,7 +458,7 @@ destruct (lt_trichotomy n z) as [H | [H | H]].
 apply L; now apply lt_le_incl.
 apply L; now apply eq_le_incl.
 apply strong_right_induction. assumption. now apply lt_le_incl.
-Qed.
+Defined.
 
 End RightInduction.
 

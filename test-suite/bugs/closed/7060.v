@@ -17,5 +17,7 @@ Program Fixpoint fib (n : N) {measure n (N.lt)} : N
     fib (n - 1) + fib (n - 2).
 Solve Obligations with (solve_fib).
 
+(* to debug this, this can be helpful *)
+(* Eval cbv in fib 0. *)
 
 Goal fib 5 = 5. reflexivity. Qed.

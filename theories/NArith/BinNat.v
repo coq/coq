@@ -161,7 +161,7 @@ Theorem bi_induction :
     A 0 -> (forall n, A n <-> A (succ n)) -> forall n : N, A n.
 Proof.
 intros A A_wd A0 AS. apply peano_rect. assumption. intros; now apply -> AS.
-Qed.
+Defined.
 
 Definition recursion {A} : A -> (N -> A -> A) -> N -> A :=
   peano_rect (fun _ => A).
