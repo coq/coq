@@ -143,21 +143,21 @@ LOGS=$(pwd)/buildlogs
 LOGTARGET=other
 
 log1() {
-  "$@" > "$LOGS/$LOGTARGET-$1.log" 2> "$LOGS/$LOGTARGET-$1.err"
+  "$@" > >(tee "$LOGS/$LOGTARGET-$1.log" | sed -e "s/^/$LOGTARGET-$1.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1.err" | sed -e "s/^/$LOGTARGET-$1.err: /" 1>&2)
 }
 
 log2() {
-  "$@" > "$LOGS/$LOGTARGET-$1-$2.log" 2> "$LOGS/$LOGTARGET-$1-$2.err"
+  "$@" > >(tee "$LOGS/$LOGTARGET-$1-$2.log" | sed -e "s/^/$LOGTARGET-$1-$2.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1-$2.err" | sed -e "s/^/$LOGTARGET-$1-$2.err: /" 1>&2)
 }
 
 log_1_3() {
-  "$@" > "$LOGS/$LOGTARGET-$1-$3.log" 2> "$LOGS/$LOGTARGET-$1-$3.err"
+  "$@" > >(tee "$LOGS/$LOGTARGET-$1-$3.log" | sed -e "s/^/$LOGTARGET-$1-$3.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1-$3.err" | sed -e "s/^/$LOGTARGET-$1-$3.err: /" 1>&2)
 }
 
 logn() {
   LOGTARGETEX=$1
   shift
-  "$@" > "$LOGS/$LOGTARGET-$LOGTARGETEX.log" 2> "$LOGS/$LOGTARGET-$LOGTARGETEX.err"
+  "$@" > >(tee "$LOGS/$LOGTARGET-$LOGTARGETEX.log" | sed -e "s/^/$LOGTARGET-$LOGTARGETEX.log: /") 2> >(tee "$LOGS/$LOGTARGET-$LOGTARGETEX.err" | sed -e "s/^/$LOGTARGET-$LOGTARGETEX.err: /" 1>&2)
 }
 
 ###################### 'UNFIX' SED #####################
