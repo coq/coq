@@ -28,7 +28,7 @@ variables:
   COQDOC_PACKAGES: "texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-math-extra texlive-fonts-recommended texlive-fonts-extra latex-xcolor ghostscript transfig imagemagick tipa python3-pip"
   COQDOC_OPAM: "hevea"
   SPHINX_PACKAGES: "bs4 sphinx sphinx_rtd_theme pexpect antlr4-python3-runtime sphinxcontrib-bibtex"
-  ELPI_OPAM: "ppx_tools_versioned ppx_deriving ocaml-migrate-parsetree"
+  ELPI_OPAM: "elpi"
 
 
 before_script:
