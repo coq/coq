@@ -302,6 +302,9 @@
 /dev/build/windows @MSoegtropIMC
 # Secondary maintainer @maximedenes
 
+# This file belongs to CI
+Makefile.ci       @ejgallego
+# Secondary maintainer @SkySkimmer
 
 ########## Developer tools ##########
 
