@@ -1921,7 +1921,7 @@ See also: :ref:`advanced-recursive-functions`
    :g:`t`:sub:`1` and :g:`t`:sub:`2` are equal too.
 
    If :n:`@term` is a proof of a statement of conclusion :n:`@term = @term`,
-   then ``injection`` applies the injectivity of constructors as deep as
+   then :tacn:`injection` applies the injectivity of constructors as deep as
    possible to derive the equality of all the subterms of :n:`@term` and
    :n:`@term` at positions where the terms start to differ. For example, from
    :g:`(S p, S n) = (q, S (S m))` we may derive :g:`S p = q` and
@@ -1931,93 +1931,96 @@ See also: :ref:`advanced-recursive-functions`
    equality of all the subterms at positions where they differ and adds them as
    antecedents to the conclusion of the current goal.
 
-.. example::
+   .. example::
 
-   Consider the following goal:
+      Consider the following goal:
 
-   .. coqtop:: reset all
+      .. coqtop:: in
 
-      Inductive list : Set :=
-      | nil : list
-      | cons : nat -> list -> list.
-      Variable P : list -> Prop.
-      Goal forall l n, P nil -> cons n l = cons 0 nil -> P l.
-      intros.
-      injection H0.
+         Inductive list : Set :=
+         | nil : list
+         | cons : nat -> list -> list.
+         Parameter P : list -> Prop.
+         Goal forall l n, P nil -> cons n l = cons 0 nil -> P l.
 
+      .. coqtop:: all
 
-Beware that injection yields an equality in a sigma type whenever the
-injected object has a dependent type :g:`P` with its two instances in
-different types :g:`(P t`:sub:`1` :g:`... t`:sub:`n` :g:`)` and
-:g:`(P u`:sub:`1` :g:`... u`:sub:`n` :sub:`)`. If :g:`t`:sub:`1` and
-:g:`u`:sub:`1` are the same and have for type an inductive type for which a decidable
-equality has been declared using the command ``Scheme Equality`` (see :ref:`proofschemes-induction-principles`),
-the use of a sigma type is avoided.
+         intros.
+         injection H0.
 
-.. note::
-   If some quantified hypothesis of the goal is named :n:`@ident`,
-   then :n:`injection @ident` first introduces the hypothesis in the local
-   context using :n:`intros until @ident`.
+   Beware that injection yields an equality in a sigma type whenever the
+   injected object has a dependent type :g:`P` with its two instances in
+   different types :g:`(P t`:sub:`1` :g:`... t`:sub:`n` :g:`)` and
+   :g:`(P u`:sub:`1` :g:`... u`:sub:`n` :sub:`)`. If :g:`t`:sub:`1` and
+   :g:`u`:sub:`1` are the same and have for type an inductive type for which a decidable
+   equality has been declared using the command :cmd:`Scheme Equality`
+   (see :ref:`proofschemes-induction-principles`),
+   the use of a sigma type is avoided.
 
-.. exn:: Not a projectable equality but a discriminable one.
-.. exn:: Nothing to do, it is an equality between convertible @terms.
-.. exn:: Not a primitive equality.
-.. exn:: Nothing to inject.
+   .. note::
+      If some quantified hypothesis of the goal is named :n:`@ident`,
+      then :n:`injection @ident` first introduces the hypothesis in the local
+      context using :n:`intros until @ident`.
 
-.. tacv:: injection @num
+   .. exn:: Not a projectable equality but a discriminable one.
+   .. exn:: Nothing to do, it is an equality between convertible @terms.
+   .. exn:: Not a primitive equality.
+   .. exn:: Nothing to inject.
 
-   This does the same thing as :n:`intros until @num` followed by
-   :n:`injection @ident` where :n:`@ident` is the identifier for the last
-   introduced hypothesis.
+   .. tacv:: injection @num
 
-.. tacv:: injection @term with @bindings_list
+      This does the same thing as :n:`intros until @num` followed by
+      :n:`injection @ident` where :n:`@ident` is the identifier for the last
+      introduced hypothesis.
 
-   This does the same as :n:`injection @term` but using the given bindings to
-   instantiate parameters or hypotheses of :n:`@term`.
+   .. tacv:: injection @term with @bindings_list
 
-.. tacv:: einjection @num
-.. tacv:: einjection @term {? with @bindings_list}
-   :name: einjection
+      This does the same as :n:`injection @term` but using the given bindings to
+      instantiate parameters or hypotheses of :n:`@term`.
 
-   This works the same as :n:`injection` but if the type of :n:`@term`, or the
-   type of the hypothesis referred to by :n:`@num`, has uninstantiated
-   parameters, these parameters are left as existential variables.
+   .. tacv:: einjection @num
+      :name: einjection
+   .. tacv:: einjection @term {? with @bindings_list}
 
-.. tacv:: injection
+      This works the same as :n:`injection` but if the type of :n:`@term`, or the
+      type of the hypothesis referred to by :n:`@num`, has uninstantiated
+      parameters, these parameters are left as existential variables.
 
-   If the current goal is of the form :n:`@term <> @term` , this behaves as
-   :n:`intro @ident; injection @ident`.
+   .. tacv:: injection
 
-   .. exn:: goal does not satisfy the expected preconditions.
+      If the current goal is of the form :n:`@term <> @term` , this behaves as
+      :n:`intro @ident; injection @ident`.
 
-.. tacv:: injection @term {? with @bindings_list} as {+ @intro_pattern}
-.. tacv:: injection @num as {+ intro_pattern}
-.. tacv:: injection as {+ intro_pattern}
-.. tacv:: einjection @term {? with @bindings_list} as {+ intro_pattern}
-.. tacv:: einjection @num as {+ intro_pattern}
-.. tacv:: einjection as {+ intro_pattern}
+      .. exn:: goal does not satisfy the expected preconditions.
+
+   .. tacv:: injection @term {? with @bindings_list} as {+ @intro_pattern}
+   .. tacv:: injection @num as {+ intro_pattern}
+   .. tacv:: injection as {+ intro_pattern}
+   .. tacv:: einjection @term {? with @bindings_list} as {+ intro_pattern}
+   .. tacv:: einjection @num as {+ intro_pattern}
+   .. tacv:: einjection as {+ intro_pattern}
 
    These variants apply :n:`intros {+ @intro_pattern}` after the call to
-   ``injection`` or ``einjection`` so that all equalities generated are moved in
+   :tacn:`injection` or :tacn:`einjection` so that all equalities generated are moved in
    the context of hypotheses. The number of :n:`@intro_pattern` must not exceed
    the number of equalities newly generated. If it is smaller, fresh
    names are automatically generated to adjust the list of :n:`@intro_pattern`
    to the number of new equalities. The original equality is erased if it
    corresponds to an hypothesis.
 
-.. opt:: Structural Injection
+   .. opt:: Structural Injection
 
-   This option ensure that :n:`injection @term` erases the original hypothesis
-   and leaves the generated equalities in the context rather than putting them
-   as antecedents of the current goal, as if giving :n:`injection @term as`
-   (with an empty list of names). This option is off by default.
+      This option ensure that :n:`injection @term` erases the original hypothesis
+      and leaves the generated equalities in the context rather than putting them
+      as antecedents of the current goal, as if giving :n:`injection @term as`
+      (with an empty list of names). This option is off by default.
 
-.. opt:: Keep Proof Equalities
+   .. opt:: Keep Proof Equalities
 
-   By default, :tacn:`injection` only creates new equalities between :n:`@terms`
-   whose type is in sort :g:`Type` or :g:`Set`, thus implementing a special
-   behavior for objects that are proofs of a statement in :g:`Prop`. This option
-   controls this behavior.
+      By default, :tacn:`injection` only creates new equalities between :n:`@terms`
+      whose type is in sort :g:`Type` or :g:`Set`, thus implementing a special
+      behavior for objects that are proofs of a statement in :g:`Prop`. This option
+      controls this behavior.
 
 .. tacn:: inversion @ident
    :name: inversion
