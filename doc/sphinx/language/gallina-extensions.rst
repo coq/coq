@@ -874,7 +874,7 @@ In the syntax of module application, the ! prefix indicates that any
 
    Starts an interactive module satisfying each `module_type`.
 
- .. cmdv:: Module @ident {* @module_binding} <: {+<; @module_type }.
+ .. cmdv:: Module @ident {* @module_binding} <: {+<: @module_type }.
 
    Starts an interactive functor with parameters given by the list of `module_binding`. The output module type
    is verified against each `module_type`.
