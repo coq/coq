@@ -227,7 +227,10 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
 (* Precondition: one of the terms of the pb is an uninstantiated evar,
  * possibly applied to arguments. *)
 
-let join_failures evd1 evd2 e1 e2 = (evd2,e2)
+let join_failures evd1 evd2 e1 e2 =
+  match e1, e2 with
+  | _, CannotSolveConstraint (_,ProblemBeyondCapabilities) -> (evd1,e1)
+  | _ -> (evd2,e2)
 
 let rec ise_try evd = function
     [] -> assert false

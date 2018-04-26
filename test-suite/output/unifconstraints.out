@@ -63,3 +63,11 @@ unification constraint:
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
    veeryyyyyyyyyyyyloooooooooooooonggidentifier
+The command has indeed failed with message:
+In environment
+P : nat -> Type
+x : nat
+h : P x
+Unable to unify "P x" with "?P x"
+(unable to find a well-typed instantiation for "?P": cannot ensure that
+"nat -> Type" is a subtype of "nat -> Prop").
