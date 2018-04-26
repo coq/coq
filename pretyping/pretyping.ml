@@ -674,14 +674,18 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     let ftys = Array.map2 (fun e a -> it_mkProd_or_LetIn a e) ctxtv lara in
     let nbfix = Array.length lar in
     let names = Array.map (fun id -> Name id) names in
-    let _ = 
+    let () =
       match tycon with
       | Some t -> 
  	let fixi = match fixkind with
 	  | GFix (vn,i) -> i
 	  | GCoFix i -> i
-	in e_conv env.ExtraEnv.env evdref ftys.(fixi) t
-      | None -> true
+        in
+        begin match conv env.ExtraEnv.env !evdref ftys.(fixi) t with
+          | None -> ()
+          | Some sigma -> evdref := sigma
+        end
+      | None -> ()
     in
       (* Note: bodies are not used by push_rec_types, so [||] is safe *)
     let newenv = push_rec_types !evdref (names,ftys,[||]) env in
@@ -698,7 +702,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	    { uj_val = it_mkLambda_or_LetIn j.uj_val ctxt;
 	      uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
         ctxtv vdef in
-      Typing.check_type_fixpoint ?loc env.ExtraEnv.env evdref names ftys vdefj;
+      evdref := Typing.check_type_fixpoint ?loc env.ExtraEnv.env !evdref names ftys vdefj;
       let nf c = nf_evar !evdref c in
       let ftys = Array.map nf ftys in (** FIXME *)
       let fdefs = Array.map (fun x -> nf (j_val x)) vdefj in
@@ -793,9 +797,12 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	      match candargs with
 	      | [] -> [], j_val hj
 	      | arg :: args -> 
-		if e_conv env.ExtraEnv.env evdref (j_val hj) arg then
-		  args, nf_evar !evdref (j_val hj)
-		else [], j_val hj
+                begin match conv env.ExtraEnv.env !evdref (j_val hj) arg with
+                  | Some sigma -> evdref := sigma;
+                    args, nf_evar !evdref (j_val hj)
+                  | None ->
+                    [], j_val hj
+                end
 	    in
             let ujval = adjust_evar_source evdref na ujval in
 	    let value, typ = app_f n (j_val resj) ujval, subst1 ujval c2 in
@@ -1166,10 +1173,12 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar c = match D
 	match valcon with
 	| None -> tj
 	| Some v ->
-	    if e_cumul env.ExtraEnv.env evdref v tj.utj_val then tj
-	    else
+          begin match cumul env.ExtraEnv.env !evdref v tj.utj_val with
+            | Some sigma -> evdref := sigma; tj
+            | None ->
 	      error_unexpected_type
                 ?loc:(loc_of_glob_constr c) env.ExtraEnv.env !evdref tj.utj_val v
+          end
 
 let ise_pretype_gen flags env sigma lvar kind c =
   let env = make_env env sigma in

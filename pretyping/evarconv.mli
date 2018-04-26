@@ -28,7 +28,10 @@ val the_conv_x_leq : env -> ?ts:transparent_state -> constr -> constr -> evar_ma
 (** The same function resolving evars by side-effect and
    catching the exception *)
 val e_conv  : env -> ?ts:transparent_state -> evar_map ref -> constr -> constr -> bool
+[@@ocaml.deprecated "Use [Evarconv.conv]"]
+
 val e_cumul : env -> ?ts:transparent_state -> evar_map ref -> constr -> constr -> bool
+[@@ocaml.deprecated "Use [Evarconv.cumul]"]
 
 val conv : env -> ?ts:transparent_state -> evar_map -> constr -> constr -> evar_map option
 val cumul : env -> ?ts:transparent_state -> evar_map -> constr -> constr -> evar_map option

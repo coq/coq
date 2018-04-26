@@ -69,10 +69,12 @@ let e_judge_of_applied_inductive_knowing_parameters env evdref funj ind argjv =
          | _ ->
              error_cant_apply_not_functional env !evdref funj argjv
        in
-       if Evarconv.e_cumul env evdref hj.uj_type c1 then
-         apply_rec (n+1) (subst1 hj.uj_val c2) restjl
-       else
-         error_cant_apply_bad_type env !evdref (n, c1, hj.uj_type) funj argjv
+       begin match Evarconv.cumul env !evdref hj.uj_type c1 with
+         | Some sigma -> evdref := sigma;
+           apply_rec (n+1) (subst1 hj.uj_val c2) restjl
+         | None ->
+           error_cant_apply_bad_type env !evdref (n, c1, hj.uj_type) funj argjv
+       end
   in
   apply_rec 1 funj.uj_type (Array.to_list argjv)
 
@@ -93,20 +95,24 @@ let e_judge_of_apply env evdref funj argjv =
          | _ ->
             error_cant_apply_not_functional env !evdref funj argjv
        in
-       if Evarconv.e_cumul env evdref hj.uj_type c1 then
-         apply_rec (n+1) (subst1 hj.uj_val c2) restjl
-       else
-         error_cant_apply_bad_type env !evdref (n, c1, hj.uj_type) funj argjv
+       begin match Evarconv.cumul env !evdref hj.uj_type c1 with
+         | Some sigma -> evdref := sigma;
+           apply_rec (n+1) (subst1 hj.uj_val c2) restjl
+         | None ->
+           error_cant_apply_bad_type env !evdref (n, c1, hj.uj_type) funj argjv
+       end
   in
   apply_rec 1 funj.uj_type (Array.to_list argjv)
 
-let e_check_branch_types env evdref (ind,u) cj (lfj,explft) =
+let check_branch_types env sigma (ind,u) cj (lfj,explft) =
   if not (Int.equal (Array.length lfj) (Array.length explft)) then
-    error_number_branches env !evdref cj (Array.length explft);
-  for i = 0 to Array.length explft - 1 do
-    if not (Evarconv.e_cumul env evdref lfj.(i).uj_type explft.(i)) then
-      error_ill_formed_branch env !evdref cj.uj_val ((ind,i+1),u) lfj.(i).uj_type explft.(i)
-  done
+    error_number_branches env sigma cj (Array.length explft);
+  Array.fold_left2_i (fun i sigma lfj explft ->
+      match Evarconv.cumul env sigma lfj.uj_type explft with
+      | Some sigma -> sigma
+      | None ->
+        error_ill_formed_branch env sigma cj.uj_val ((ind,i+1),u) lfj.uj_type explft)
+    sigma lfj explft
 
 let max_sort l =
   if Sorts.List.mem InType l then InType else
@@ -120,8 +126,11 @@ let e_is_correct_arity env evdref c pj ind specif params =
     let pt' = whd_all env !evdref pt in
     match EConstr.kind !evdref pt', ar with
     | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
-        if not (Evarconv.e_cumul env evdref a1 a1') then error ();
-        srec (push_rel (LocalAssum (na1,a1)) env) t ar'
+      begin match Evarconv.cumul env !evdref a1 a1' with
+        | None -> error ()
+        | Some sigma -> evdref := sigma;
+          srec (push_rel (LocalAssum (na1,a1)) env) t ar'
+      end
     | Sort s, [] ->
         let s = ESorts.kind !evdref s in
         if not (Sorts.List.mem (Sorts.family s) allowed_sorts)
@@ -167,19 +176,21 @@ let e_judge_of_case env evdref ci pj cj lfj =
   let indspec = ((ind, EInstance.kind !evdref u), spec) in
   let _ = check_case_info env (fst indspec) ci in
   let (bty,rslty) = e_type_case_branches env evdref indspec pj cj.uj_val in
-  e_check_branch_types env evdref (fst indspec) cj (lfj,bty);
+  evdref := check_branch_types env !evdref (fst indspec) cj (lfj,bty);
   { uj_val  = mkCase (ci, pj.uj_val, cj.uj_val, Array.map j_val lfj);
     uj_type = rslty }
 
-let check_type_fixpoint ?loc env evdref lna lar vdefj =
+let check_type_fixpoint ?loc env sigma lna lar vdefj =
   let lt = Array.length vdefj in
-    if Int.equal (Array.length lar) lt then
-      for i = 0 to lt-1 do
-        if not (Evarconv.e_cumul env evdref (vdefj.(i)).uj_type
-		  (lift lt lar.(i))) then
-          error_ill_typed_rec_body ?loc env !evdref
-            i lna vdefj lar
-      done
+  assert (Int.equal (Array.length lar) lt);
+  Array.fold_left2_i (fun i sigma defj ar ->
+      match Evarconv.cumul env sigma defj.uj_type (lift lt ar) with
+      | Some sigma -> sigma
+      | None ->
+        error_ill_typed_rec_body ?loc env sigma
+          i lna vdefj lar)
+    sigma vdefj lar
+
 
 (* FIXME: might depend on the level of actual parameters!*)
 let check_allowed_sort env sigma ind c p =
@@ -194,10 +205,12 @@ let check_allowed_sort env sigma ind c p =
 
 let e_judge_of_cast env evdref cj k tj =
   let expected_type = tj.utj_val in
-  if not (Evarconv.e_cumul env evdref cj.uj_type expected_type) then
+  match Evarconv.cumul env !evdref cj.uj_type expected_type with
+  | None ->
     error_actual_type_core env !evdref cj expected_type;
-  { uj_val = mkCast (cj.uj_val, k, expected_type);
-    uj_type = expected_type }
+  | Some sigma -> evdref := sigma;
+    { uj_val = mkCast (cj.uj_val, k, expected_type);
+      uj_type = expected_type }
 
 let enrich_env env evdref =
   let penv = Environ.pre_env env in
@@ -374,7 +387,7 @@ and execute_recdef env evdref (names,lar,vdef) =
   let env1 = push_rec_types (names,lara,vdef) env in
   let vdefj = execute_array env1 evdref vdef in
   let vdefv = Array.map j_val vdefj in
-  let _ = check_type_fixpoint env1 evdref names lara vdefj in
+  evdref := check_type_fixpoint env1 !evdref names lara vdefj;
   (names,lara,vdefv)
 
 and execute_array env evdref = Array.map (execute env evdref)
@@ -382,8 +395,10 @@ and execute_array env evdref = Array.map (execute env evdref)
 let e_check env evdref c t =
   let env = enrich_env env evdref in
   let j = execute env evdref c in
-  if not (Evarconv.e_cumul env evdref j.uj_type t) then
+  match Evarconv.cumul env !evdref j.uj_type t with
+  | None ->
     error_actual_type_core env !evdref j t
+  | Some sigma -> evdref := sigma
 
 (* Type of a constr *)
 

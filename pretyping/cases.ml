@@ -315,13 +315,15 @@ let try_find_ind env sigma typ realnames =
   IsInd (typ,ind,names)
 
 let inh_coerce_to_ind evdref env loc ty tyi =
-  let sigma = !evdref in
+  let orig = !evdref in
   let expected_typ = inductive_template evdref env loc tyi in
   (* Try to refine the type with inductive information coming from the
      constructor and renounce if not able to give more information *)
   (* devrait être indifférent d'exiger leq ou pas puisque pour
      un inductif cela doit être égal *)
-  if not (e_cumul env evdref expected_typ ty) then evdref := sigma
+  match cumul env !evdref expected_typ ty with
+  | Some sigma -> evdref := sigma
+  | None -> evdref := orig
 
 let binding_vars_of_inductive sigma = function
   | NotInd _ -> []
@@ -427,7 +429,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
 	    let current =
 	      if List.is_empty deps && isEvar !(pb.evdref) typ then
 	      (* Don't insert coercions if dependent; only solve evars *)
-		let _ = e_cumul pb.env pb.evdref indt typ in
+                let () = Option.iter ((:=) pb.evdref) (cumul pb.env !(pb.evdref) indt typ) in
 		current
 	      else
 		(evd_comb2 (Coercion.inh_conv_coerce_to true pb.env)
@@ -1738,9 +1740,10 @@ let build_tycon ?loc env tycon_env s subst tycon extenv evdref t =
         let evd,tt = Typing.type_of extenv !evdref t in
         evdref := evd;
         (t,tt) in
-  let b = e_cumul env evdref tt (mkSort s) (* side effect *) in
-  if not b then anomaly (Pp.str "Build_tycon: should be a type.");
-  { uj_val = t; uj_type = tt }
+  match cumul env !evdref tt (mkSort s) with
+  | None -> anomaly (Pp.str "Build_tycon: should be a type.");
+  | Some sigma -> evdref := sigma;
+    { uj_val = t; uj_type = tt }
 
 (* For a multiple pattern-matching problem Xi on t1..tn with return
  * type T, [build_inversion_problem Gamma Sigma (t1..tn) T] builds a return

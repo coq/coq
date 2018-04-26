@@ -3813,7 +3813,10 @@ let specialize_eqs id =
   let ty = Tacmach.New.pf_get_hyp_typ id gl in
   let evars = ref (Proofview.Goal.sigma gl) in
   let unif env evars c1 c2 =
-    compare_upto_variables !evars c1 c2 && Evarconv.e_conv env evars c1 c2
+    compare_upto_variables !evars c1 c2 &&
+    (match Evarconv.conv env !evars c1 c2 with
+     | Some sigma -> evars := sigma; true
+     | None -> false)
   in
   let rec aux in_eqs ctx acc ty =
     match EConstr.kind !evars ty with
@@ -4366,7 +4369,7 @@ let check_expected_type env sigma (elimc,bl) elimt =
   let sigma,cl = make_evar_clause env sigma ~len:(n - 1) elimt in
   let sigma = solve_evar_clause env sigma true cl bl in
   let (_,u,_) = destProd sigma cl.cl_concl in
-  fun t -> Evarconv.e_cumul env (ref sigma) t u
+  fun t -> Option.has_some (Evarconv.cumul env sigma t u)
 
 let check_enough_applied env sigma elim =
   (* A heuristic to decide whether the induction arg is enough applied *)
