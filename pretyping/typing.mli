@@ -28,15 +28,18 @@ val type_of : ?refresh:bool -> env -> evar_map -> constr -> evar_map * types
 val e_type_of : ?refresh:bool -> env -> evar_map ref -> constr -> types
 
 (** Typecheck a type and return its sort *)
+val sort_of : env -> evar_map -> types -> evar_map * Sorts.t
 val e_sort_of : env -> evar_map ref -> types -> Sorts.t
 
 (** Typecheck a term has a given type (assuming the type is OK) *)
+val check : env -> evar_map -> constr -> types -> evar_map
 val e_check   : env -> evar_map ref -> constr -> types -> unit
 
 (** Returns the instantiated type of a metavariable *)
 val meta_type : evar_map -> metavariable -> types
 
 (** Solve existential variables using typing *)
+val solve_evars : env -> evar_map -> constr -> evar_map * constr
 val e_solve_evars : env -> evar_map ref -> constr -> constr
 
 (** Raise an error message if incorrect elimination for this inductive *)

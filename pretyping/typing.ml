@@ -400,6 +400,11 @@ let e_check env evdref c t =
     error_actual_type_core env !evdref j t
   | Some sigma -> evdref := sigma
 
+let check env sigma c t =
+  let evdref = ref sigma in
+  e_check env evdref c t;
+  !evdref
+
 (* Type of a constr *)
 
 let unsafe_type_of env evd c =
@@ -415,6 +420,11 @@ let e_sort_of env evdref c =
   let j = execute env evdref c in
   let a = e_type_judgment env evdref j in
   a.utj_type
+
+let sort_of env sigma c =
+  let evdref = ref sigma in
+  let a = e_sort_of env evdref c in
+  !evdref, a
 
 (* Try to solve the existential variables by typing *)
 
