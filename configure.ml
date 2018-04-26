@@ -21,11 +21,18 @@ let distributed_exec = ["coqtop";"coqc";"coqchk";"coqdoc";"coqworkmgr";
 
 let verbose = ref false (* for debugging this script *)
 
+let red, yellow, reset =
+  if Unix.isatty Unix.stdout && Unix.isatty Unix.stderr && Sys.os_type = "Unix"
+  then "\027[31m", "\027[33m", "\027[0m"
+  else "", "", ""
+
 (** * Utility functions *)
 let cfprintf oc = kfprintf (fun oc -> fprintf oc "\n%!") oc
 let cprintf s = cfprintf stdout s
 let ceprintf s = cfprintf stderr s
-let die msg = ceprintf "%s\nConfiguration script failed!" msg; exit 1
+let die msg = ceprintf "%s%s%s\nConfiguration script failed!" red msg reset; exit 1
+
+let warn s = cprintf ("%sWarning: " ^^ s ^^ "%s") yellow reset
 
 let s2i = int_of_string
 let i2s = string_of_int
@@ -109,7 +116,7 @@ let run ?(fatal=true) ?(err=StdErr) prog args =
       let cmd = String.concat " " (prog::args) in
       let exn = match e with Failure s -> s | _ -> Printexc.to_string e in
       let msg = sprintf "Error while running '%s' (%s)" cmd exn in
-      if fatal then die msg else (cprintf "W: %s" msg; "", [])
+      if fatal then die msg else (warn "%s" msg; "", [])
 
 let tryrun prog args = run ~fatal:false ~err:DevNull prog args
 
@@ -205,7 +212,7 @@ let win_aware_quote_executable str =
     sprintf "%S" str
   else
     let _ = if contains_suspicious_characters str then
-      cprintf "*Warning* The string %S contains suspicious characters; ocamlfind might fail" str in
+      warn "The string %S contains suspicious characters; ocamlfind might fail" str in
     Str.global_replace (Str.regexp "\\\\") "/" str
 
 (** * Date *)
@@ -414,8 +421,8 @@ let args_options = Arg.align [
     " Do not add debugging information in the Coq executables";
   "-profiling", arg_set (fun p profile -> { p with profile }),
     " Add profiling information in the Coq executables";
-  "-annotate", Arg.Unit (fun () -> cprintf "*Warning* -annotate is deprecated. Please use -annot or -bin-annot instead."),
-    " Deprecated. Please use -annot or -bin-annot instead";
+  "-annotate", Arg.Unit (fun () -> die "-annotate has been removed. Please use -annot or -bin-annot instead."),
+    " Removed option. Please use -annot or -bin-annot instead";
   "-annot", arg_set (fun p annot -> { p with annot }),
     " Dumps ml text annotation files while compiling Coq (e.g. for Tuareg)";
   "-bin-annot", arg_set (fun p bin_annot -> { p with bin_annot }),
@@ -598,7 +605,7 @@ let check_caml_version () =
   else
     let () = cprintf "Your version of OCaml is %s." caml_version in
     if !prefs.force_caml_version then
-      cprintf "*Warning* Your version of OCaml is outdated."
+      warn "Your version of OCaml is outdated."
     else
       die "You need OCaml 4.02.1 or later."
 
@@ -620,7 +627,7 @@ let check_findlib_version () =
   else
     let () = cprintf "Your version of OCamlfind is %s." findlib_version in
     if !prefs.force_findlib_version then
-      cprintf "*Warning* Your version of OCamlfind is outdated."
+      warn "Your version of OCamlfind is outdated."
     else
       die "You need OCamlfind 1.4.1 or later."
 
@@ -731,17 +738,17 @@ let camlp5libdir = shorten_camllib fullcamlp5libdir
 
 (** * Native compiler *)
 
-let msg_byteonly () =
-  cprintf "Only the bytecode version of Coq will be available."
+let msg_byteonly =
+  "Only the bytecode version of Coq will be available."
 
 let msg_no_ocamlopt () =
-  cprintf "Cannot find the OCaml native-code compiler."; msg_byteonly ()
+  warn "Cannot find the OCaml native-code compiler.\n%s" msg_byteonly
 
 let msg_no_camlp5_cmxa () =
-  cprintf "Cannot find the native-code library of camlp5."; msg_byteonly ()
+  warn "Cannot find the native-code library of camlp5.\n%s" msg_byteonly
 
 let msg_no_dynlink_cmxa () =
-  cprintf "Cannot find native-code dynlink library."; msg_byteonly ();
+  warn "Cannot find native-code dynlink library.\n%s" msg_byteonly;
   cprintf "For building a native-code Coq, you may try to first";
   cprintf "compile and install a dummy dynlink.cmxa (see dev/dynlink.ml)";
   cprintf "and then run ./configure -natdynlink no"
@@ -757,8 +764,7 @@ let check_native () =
   else
     let () =
       if version <> caml_version then
-        cprintf
-          "Warning: Native and bytecode compilers do not have the same version!"
+        warn "Native and bytecode compilers do not have the same version!"
     in cprintf "You have native-code compilation. Good!"
 
 let best_compiler =
@@ -813,7 +819,7 @@ let get_source = function
 (** Is some location a suitable LablGtk2 installation ? *)
 
 let check_lablgtkdir ?(fatal=false) src dir =
-  let yell msg = if fatal then die msg else (cprintf "%s" msg; false) in
+  let yell msg = if fatal then die msg else (warn "%s" msg; false) in
   let msg = get_source src in
   if not (dir_exists dir) then
     yell (sprintf "No such directory '%s' (%s)." dir msg)
@@ -849,7 +855,7 @@ let get_lablgtkdir () =
 
 let check_lablgtk_version src dir = match src with
 | Manual | Stdlib ->
-  cprintf "Warning: could not check the version of lablgtk2.\nMake sure your version is at least 2.18.3.";
+  warn "Could not check the version of lablgtk2.\nMake sure your version is at least 2.18.3.";
   (true, "an unknown version")
 | OCamlFind ->
   let v, _ = tryrun camlexec.find ["query"; "-format"; "%v"; "lablgtk2"] in
@@ -860,7 +866,11 @@ let check_lablgtk_version src dir = match src with
     else if vi < [2; 18; 3] then
       begin
         (* Version 2.18.3 is known to report incorrectly as 2.18.0, and Launchpad packages report as version 2.16.0 due to a misconfigured META file; see https://bugs.launchpad.net/ubuntu/+source/lablgtk2/+bug/1577236 *)
-        cprintf "Warning: Your installed lablgtk reports as %s.\n It is possible that the installed version is actually more recent\n but reports an incorrect version. If the installed version is\n actually more recent than 2.18.3, that's fine; if it is not,\n CoqIDE will compile but may be very unstable." v;
+        warn "Your installed lablgtk reports as %s.\n\
+It is possible that the installed version is actually more recent\n\
+but reports an incorrect version. If the installed version is\n\
+actually more recent than 2.18.3, that's fine; if it is not,\n
+CoqIDE will compile but may be very unstable." v;
         (true, "an unknown version")
       end
     else
