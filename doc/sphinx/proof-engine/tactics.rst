@@ -503,7 +503,7 @@ Applying theorems
 
 .. tacv:: eapply {+, @term with @bindings_list} in @ident as @intro_pattern.
 
-   This works as :tacn:`apply ... in as`  but using ``eapply``.
+   This works as :tacn:`apply ... in ... as`  but using ``eapply``.
 
 .. tacv:: simple apply @term in @ident
 
@@ -518,8 +518,8 @@ Applying theorems
 .. tacv:: {? simple} apply {+, @term {? with @bindings_list}} in @ident {? as @intro_pattern}
 .. tacv:: {? simple} eapply {+, @term {? with @bindings_list}} in @ident {? as @intro_pattern}
 
-   This summarizes the different syntactic variants of :n:`apply @term in
-   @ident` and :n:`eapply @term in @ident`.
+   This summarizes the different syntactic variants of :n:`apply @term in @ident`
+   and :n:`eapply @term in @ident`.
 
 .. tacn:: constructor @num
    :name: constructor
