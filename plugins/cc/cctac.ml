@@ -49,7 +49,7 @@ let whd_delta env sigma t =
 (* decompose member of equality in an applicative format *)
 
 (** FIXME: evar leak *)
-let sf_of env sigma c = e_sort_of env (ref sigma) c
+let sf_of env sigma c = snd (sort_of env sigma c)
 
 let rec decompose_term env sigma t=
     match EConstr.kind sigma (whd env sigma t) with
@@ -264,9 +264,8 @@ let app_global_with_holes f args n =
       let ans = mkApp (fc, args) in
       let (sigma, holes) = gen_holes env sigma t n [] in
       let ans = applist (ans, holes) in
-      let evdref = ref sigma in
-      let () = Typing.e_check env evdref ans concl in
-      (!evdref, ans)
+      let sigma = Typing.check env sigma ans concl in
+      (sigma, ans)
     end
   end
 

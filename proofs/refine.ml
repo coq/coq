@@ -30,26 +30,19 @@ let typecheck_evar ev env sigma =
   (** Typecheck the hypotheses. *)
   let type_hyp (sigma, env) decl =
     let t = NamedDecl.get_type decl in
-    let evdref = ref sigma in
-    let _ = Typing.e_sort_of env evdref t in
-    let () = match decl with
-    | LocalAssum _ -> ()
-    | LocalDef (_,body,_) -> Typing.e_check env evdref body t
+    let sigma, _ = Typing.sort_of env sigma t in
+    let sigma = match decl with
+    | LocalAssum _ -> sigma
+    | LocalDef (_,body,_) -> Typing.check env sigma body t
     in
-    (!evdref, EConstr.push_named decl env)
+    (sigma, EConstr.push_named decl env)
   in
   let (common, changed) = extract_prefix env info in
   let env = Environ.reset_with_named_context (EConstr.val_of_named_context common) env in
   let (sigma, env) = List.fold_left type_hyp (sigma, env) changed in
   (** Typecheck the conclusion *)
-  let evdref = ref sigma in
-  let _ = Typing.e_sort_of env evdref (Evd.evar_concl info) in
-  !evdref
-
-let typecheck_proof c concl env sigma =
-  let evdref = ref sigma in
-  let () = Typing.e_check env evdref c concl in
-  !evdref
+  let sigma, _ = Typing.sort_of env sigma (Evd.evar_concl info) in
+  sigma
 
 let (pr_constrv,pr_constr) =
   Hook.make ~default:(fun _env _sigma _c -> Pp.str"<constr>") ()
@@ -93,7 +86,7 @@ let generic_refine ~typecheck f gl =
   let fold accu ev = typecheck_evar ev env accu in
   let sigma = if typecheck then Evd.fold_future_goals fold sigma evs else sigma in
   (** Check that the refined term is typesafe *)
-  let sigma = if typecheck then typecheck_proof c concl env sigma else sigma in
+  let sigma = if typecheck then Typing.check env sigma c concl else sigma in
   (** Check that the goal itself does not appear in the refined term *)
   let self = Proofview.Goal.goal gl in
   let _ =

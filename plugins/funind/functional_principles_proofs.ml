@@ -1051,7 +1051,8 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
 	  (Constrintern.locate_reference (qualid_of_ident equation_lemma_id))
       in
       evd:=evd';
-      let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd res in 
+      let sigma, _ = Typing.type_of ~refresh:true (Global.env ()) !evd res in
+      evd := sigma;
       res
   in
   let nb_intro_to_do = nb_prod (project g) (pf_concl g) in

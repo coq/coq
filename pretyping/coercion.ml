@@ -197,7 +197,8 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 		    (subst1 hdy restT') (succ i)  (fun x -> eq_app (co x))
 	else Some (fun x -> 
 	  let term = co x in
-	    Typing.e_solve_evars env evdref term)
+          let sigma, term = Typing.solve_evars env !evdref term in
+          evdref := sigma; term)
       in
 	if isEvar !evdref c || isEvar !evdref c' || not (Program.is_program_generalized_coercion ()) then
 	  (* Second-order unification needed. *)
@@ -343,8 +344,9 @@ let app_coercion env evdref coercion v =
   match coercion with
   | None -> v
   | Some f ->
-     let v' = Typing.e_solve_evars env evdref (f v) in
-     whd_betaiota !evdref v'
+    let sigma, v' = Typing.solve_evars env !evdref (f v) in
+    evdref := sigma;
+    whd_betaiota !evdref v'
 
 let coerce_itf ?loc env evd v t c1 =
   let evdref = ref evd in

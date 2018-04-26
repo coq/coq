@@ -199,9 +199,7 @@ let interp_recursive ~program_mode ~cofix fixl notations =
              try
                let sigma, h_term = fix_proto sigma in
                let app = mkApp (h_term, [|sort; t|]) in
-               let _evd = ref sigma in
-               let res = Typing.e_solve_evars env _evd app in
-               !_evd, res
+               Typing.solve_evars env sigma app
              with e when CErrors.noncritical e -> sigma, t
            in
            sigma, LocalAssum (id,fixprot) :: env'

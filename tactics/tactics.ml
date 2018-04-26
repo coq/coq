@@ -1985,24 +1985,22 @@ let on_the_bodies = function
 exception DependsOnBody of Id.t option
 
 let check_is_type env sigma ty =
-  let evdref = ref sigma in
   try
-    let _ = Typing.e_sort_of env evdref ty in
-    !evdref
+    let sigma, _ = Typing.sort_of env sigma ty in
+    sigma
   with e when CErrors.noncritical e ->
     raise (DependsOnBody None)
 
 let check_decl env sigma decl =
   let open Context.Named.Declaration in
   let ty = NamedDecl.get_type decl in
-  let evdref = ref sigma in
   try
-    let _ = Typing.e_sort_of env evdref ty in
-    let _ = match decl with
-    | LocalAssum _ -> ()
-    | LocalDef (_,c,_) -> Typing.e_check env evdref c ty
+    let sigma, _ = Typing.sort_of env sigma ty in
+    let sigma = match decl with
+    | LocalAssum _ -> sigma
+    | LocalDef (_,c,_) -> Typing.check env sigma c ty
     in
-    !evdref
+    sigma
   with e when CErrors.noncritical e ->
     let id = NamedDecl.get_id decl in
     raise (DependsOnBody (Some id))

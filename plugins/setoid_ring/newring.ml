@@ -505,10 +505,12 @@ let ring_equality env evd (r,add,mul,opp,req) =
 	let op_morph =
 	  match opp with
               Some opp -> plapp evd coq_eq_morph [|r;add;mul;opp|]
-            | None -> plapp evd coq_eq_smorph [|r;add;mul|] in
-	let setoid = Typing.e_solve_evars env evd setoid in
-	let op_morph = Typing.e_solve_evars env evd op_morph in
-	  (setoid,op_morph)
+          | None -> plapp evd coq_eq_smorph [|r;add;mul|] in
+        let sigma = !evd in
+        let sigma, setoid = Typing.solve_evars env sigma setoid in
+        let sigma, op_morph = Typing.solve_evars env sigma op_morph in
+        evd := sigma;
+        (setoid,op_morph)
     | _ ->
 	let setoid = setoid_of_relation (Global.env ()) evd r req in
 	let signature = [Some (r,Some req);Some (r,Some req)],Some(r,Some req) in
@@ -595,7 +597,8 @@ let make_hyp_list env evdref lH =
       (fun c l -> plapp evdref coq_cons [|carrier; (make_hyp env evdref c); l|]) lH
       (plapp evdref coq_nil [|carrier|])
   in 
-  let l' = Typing.e_solve_evars env evdref l in
+  let sigma, l' = Typing.solve_evars env !evdref l in
+  evdref := sigma;
   let l' = EConstr.Unsafe.to_constr l' in
     Evarutil.nf_evars_universes !evdref l'
 
@@ -733,7 +736,9 @@ let make_term_list env evd carrier rl =
   let l = List.fold_right
     (fun x l -> plapp evd coq_cons [|carrier;x;l|]) rl
     (plapp evd coq_nil [|carrier|])
-  in Typing.e_solve_evars env evd l
+  in
+  let sigma, l = Typing.solve_evars env !evd l in
+  evd := sigma; l
 
 let carg c = Tacinterp.Value.of_constr (EConstr.of_constr c)
 let tacarg expr =

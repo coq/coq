@@ -691,11 +691,9 @@ let interp_may_eval f ist env sigma = function
 	let (sigma,ic) = f ist env sigma c in
 	let ctxt = coerce_to_constr_context (Id.Map.find s ist.lfun) in
 	let ctxt = EConstr.Unsafe.to_constr ctxt in
-	let evdref = ref sigma in
-	let ic = EConstr.Unsafe.to_constr ic in
+        let ic = EConstr.Unsafe.to_constr ic in
 	let c = subst_meta [Constr_matching.special_meta,ic] ctxt in
-	let c = Typing.e_solve_evars env evdref (EConstr.of_constr c) in
-	!evdref , c
+        Typing.solve_evars env sigma (EConstr.of_constr c)
       with
 	| Not_found ->
 	    user_err ?loc ~hdr:"interp_may_eval"

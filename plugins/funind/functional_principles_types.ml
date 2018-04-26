@@ -291,7 +291,8 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   let new_princ_name =
     next_ident_away_in_goal (Id.of_string "___________princ_________") Id.Set.empty
   in
-  let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd (EConstr.of_constr new_principle_type) in
+  let sigma, _ = Typing.type_of ~refresh:true (Global.env ()) !evd (EConstr.of_constr new_principle_type) in
+  evd := sigma;
   let hook = Lemmas.mk_hook (hook new_principle_type) in
   begin
     Lemmas.start_proof
@@ -630,7 +631,8 @@ let build_scheme fas =
 	    in
             let evd',f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
             let _ = evd := evd' in 
-            let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd f in
+            let sigma, _ = Typing.type_of ~refresh:true (Global.env ()) !evd f in
+            evd := sigma;
             let c, u =
               try EConstr.destConst !evd f
               with DestKO ->
