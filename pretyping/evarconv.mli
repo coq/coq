@@ -69,7 +69,7 @@ val second_order_matching : transparent_state -> env -> evar_map ->
 
 (** Declare function to enforce evars resolution by using typing constraints *)
 
-val set_solve_evars : (env -> evar_map ref -> constr -> constr) -> unit
+val set_solve_evars : (env -> evar_map -> constr -> evar_map * constr) -> unit
 
 type unify_fun = transparent_state ->
   env -> evar_map -> conv_pb -> constr -> constr -> Evarsolve.unification_result

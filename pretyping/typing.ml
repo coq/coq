@@ -443,4 +443,9 @@ let e_solve_evars env evdref c =
   (* side-effect on evdref *)
   nf_evar !evdref c
 
-let _ = Evarconv.set_solve_evars (fun env evdref c -> e_solve_evars env evdref c)
+let solve_evars env sigma c =
+  let evdref = ref sigma in
+  let c = e_solve_evars env evdref c in
+  !evdref, c
+
+let _ = Evarconv.set_solve_evars (fun env sigma c -> solve_evars env sigma c)

@@ -1159,17 +1159,18 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
 
   let subst = make_subst (ctxt,Array.to_list args,argoccs) in
 
-  let evdref = ref evd in
-  let rhs = set_holes evdref rhs subst in
-  let evd = !evdref in
+  let evd, rhs =
+    let evdref = ref evd in
+    let rhs = set_holes evdref rhs subst in
+    !evdref, rhs
+  in
 
   (* We instantiate the evars of which the value is forced by typing *)
   let evd,rhs =
-    let evdref = ref evd in
-    try let c = !solve_evars env_evar evdref rhs in !evdref,c
+    try !solve_evars env_evar evd rhs
     with e when Pretype_errors.precatchable_exception e ->
       (* Could not revert all subterms *)
-      raise (TypingFailed !evdref) in
+      raise (TypingFailed evd) in
 
   let rec abstract_free_holes evd = function
   | (id,idty,c,_,evsref,_,_)::l ->
