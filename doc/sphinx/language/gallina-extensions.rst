@@ -1436,7 +1436,9 @@ For instance, the first argument of
 
 in module ``List.v`` is strict because :g:`list` is an inductive type and :g:`A`
 will always be inferable from the type :g:`list A` of the third argument of
-:g:`cons`. On the contrary, the second argument of a term of type
+:g:`cons`. Also, the first argument of :g:`cons` is strict with respect to the second one,
+since the first argument is exactly the type of the second argument.
+On the contrary, the second argument of a term of type
 ::
 
   forall P:nat->Prop, forall n:nat, P n -> ex nat P
