@@ -360,6 +360,9 @@ ci-math-classes:
 ci-math-comp:
   <<: *ci-template
 
+ci-mtac2:
+  <<: *ci-template
+
 ci-sf:
   <<: *ci-template
   variables:

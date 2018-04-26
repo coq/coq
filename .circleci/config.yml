@@ -207,6 +207,9 @@ jobs:
   math-comp:
     <<: *ci-template
 
+  mtac2:
+    <<: *ci-template
+
   sf:
     <<: *ci-template
     environment:
@@ -251,6 +254,7 @@ workflows:
           requires:
             - build
             - bignums
+      - mtac2: *req-main
       - corn:
           requires:
             - build
