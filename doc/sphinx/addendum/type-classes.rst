@@ -68,8 +68,8 @@ the remaining fields, e.g.:
    Defined.
 
 One has to take care that the transparency of every field is
-determined by the transparency of the ``Instance`` proof. One can use
-alternatively the ``Program Instance`` variant which has richer facilities
+determined by the transparency of the :cmd:`Instance` proof. One can use
+alternatively the :cmd:`Program Instance` variant which has richer facilities
 for dealing with obligations.
 
 
@@ -269,12 +269,9 @@ the Existing Instance command to achieve the same effect.
 Summary of the commands
 -----------------------
 
-
-.. _Class:
-
 .. cmd:: Class @ident {? @binders} : {? @sort} := {? @ident} { {+; @ident :{? >} @term } }
 
-   The ``Class`` command is used to declare a type class with parameters
+   The :cmd:`Class` command is used to declare a type class with parameters
    ``binders`` and fields the declared record fields.
 
 Variants:
@@ -299,12 +296,10 @@ Variants:
    This variant declares a class a posteriori from a constant or
    inductive definition. No methods or instances are defined.
 
-.. _Instance:
-
 .. cmd:: Instance @ident {? @binders} : Class t1 … tn [| priority] := { field1 := b1 ; …; fieldi := bi }
 
-The ``Instance`` command is used to declare a type class instance named
-``ident`` of the class ``Class`` with parameters ``t1`` to ``tn`` and
+The :cmd:`Instance` command is used to declare a type class instance named
+``ident`` of the class :cmd:`Class` with parameters ``t1`` to ``tn`` and
 fields ``b1`` to ``bi``, where each field must be a declared field of
 the class.  Missing fields must be filled in interactive proof mode.
 
@@ -314,112 +309,106 @@ optional priority can be declared, 0 being the highest priority as for
 auto hints. If the priority is not specified, it defaults to the number
 of non-dependent binders of the instance.
 
-..cmdv:: Instance @ident {? @binders} : forall {? @binders}, Class t1 … tn [| priority] := @term
+.. cmdv:: Instance @ident {? @binders} : forall {? @binders}, Class t1 … tn [| priority] := @term
 
    This syntax is used for declaration of singleton class instances or
    for directly giving an explicit term of type ``forall binders, Class
    t1 … tn``.  One need not even mention the unique field name for
    singleton classes.
 
-..cmdv:: Global Instance
+.. cmdv:: Global Instance
 
    One can use the ``Global`` modifier on instances declared in a
    section so that their generalization is automatically redeclared
    after the section is closed.
 
-..cmdv:: Program Instance
+.. cmdv:: Program Instance
+   :name: Program Instance
 
    Switches the type-checking to Program (chapter :ref:`programs`) and
    uses the obligation mechanism to manage missing fields.
 
-..cmdv:: Declare Instance
+.. cmdv:: Declare Instance
+   :name: Declare Instance
 
    In a Module Type, this command states that a corresponding concrete
-   instance should exist in any implementation of thisModule Type. This
-   is similar to the distinction betweenParameter vs. Definition, or
-   between Declare Module and Module.
+   instance should exist in any implementation of this Module Type. This
+   is similar to the distinction between :cmd:`Parameter` vs. :cmd:`Definition`, or
+   between :cmd:`Declare Module` and :cmd:`Module`.
 
 
-Besides the ``Class`` and ``Instance`` vernacular commands, there are a
+Besides the :cmd:`Class` and :cmd:`Instance` vernacular commands, there are a
 few other commands related to type classes.
-
-.. _ExistingInstance:
-
-Existing Instance
-~~~~~~~~~~~~~~~~~
 
 .. cmd:: Existing Instance {+ @ident} [| priority]
 
-This commands adds an arbitrary list of constants whose type ends with
-an applied type class to the instance database with an optional
-priority.  It can be used for redeclaring instances at the end of
-sections, or declaring structure projections as instances. This is
-equivalent to ``Hint Resolve ident : typeclass_instances``, except it
-registers instances for ``Print Instances``.
-
-.. _Context:
-
-Context
-~~~~~~~
+   This commands adds an arbitrary list of constants whose type ends with
+   an applied type class to the instance database with an optional
+   priority.  It can be used for redeclaring instances at the end of
+   sections, or declaring structure projections as instances. This is
+   equivalent to ``Hint Resolve ident : typeclass_instances``, except it
+   registers instances for :cmd:`Print Instances`.
 
 .. cmd:: Context @binders
 
-Declares variables according to the given binding context, which might
-use :ref:`implicit-generalization`.
+   Declares variables according to the given binding context, which might
+   use :ref:`implicit-generalization`.
 
 .. tacn:: typeclasses eauto
+   :name: typeclasses eauto
 
-This tactic uses a different resolution engine than :tacn:`eauto` and
-:tacn:`auto`. The main differences are the following:
+   This tactic uses a different resolution engine than :tacn:`eauto` and
+   :tacn:`auto`. The main differences are the following:
 
-+ Contrary to ``eauto`` and ``auto``, the resolution is done entirely in
-  the new proof engine (as of Coq v8.6), meaning that backtracking is
-  available among dependent subgoals, and shelving goals is supported.
-  typeclasses eauto is a multi-goal tactic. It analyses the dependencies
-  between subgoals to avoid backtracking on subgoals that are entirely
-  independent.
+   + Contrary to :tacn:`eauto` and :tacn:`auto`, the resolution is done entirely in
+     the new proof engine (as of Coq 8.6), meaning that backtracking is
+     available among dependent subgoals, and shelving goals is supported.
+     typeclasses eauto is a multi-goal tactic. It analyses the dependencies
+     between subgoals to avoid backtracking on subgoals that are entirely
+     independent.
 
-+ When called with no arguments, typeclasses eauto uses
-  thetypeclass_instances database by default (instead of core).
-  Dependent subgoals are automatically shelved, and shelved goals can
-  remain after resolution ends (following the behavior ofCoq 8.5).
-  *Note: * As of Coq 8.6, all:once (typeclasses eauto) faithfully
-  mimicks what happens during typeclass resolution when it is called
-  during refinement/type-inference, except that *only* declared class
-  subgoals are considered at the start of resolution during type
-  inference, while “all” can select non-class subgoals as well. It might
-  move to ``all:typeclasses eauto`` in future versions when the
-  refinement engine will be able to backtrack.
+   + When called with no arguments, typeclasses eauto uses
+     the ``typeclass_instances`` database by default (instead of core).
+     Dependent subgoals are automatically shelved, and shelved goals can
+     remain after resolution ends (following the behavior of Coq 8.5).
 
-+ When called with specific databases (e.g. with), typeclasses eauto
-  allows shelved goals to remain at any point during search and treat
-  typeclasses goals like any other.
+     .. note::
+        As of Coq 8.6, ``all:once (typeclasses eauto)`` faithfully
+        mimicks what happens during typeclass resolution when it is called
+        during refinement/type-inference, except that *only* declared class
+        subgoals are considered at the start of resolution during type
+        inference, while ``all`` can select non-class subgoals as well. It might
+        move to ``all:typeclasses eauto`` in future versions when the
+        refinement engine will be able to backtrack.
 
-+ The transparency information of databases is used consistently for
-  all hints declared in them. It is always used when calling the
-  unifier. When considering the local hypotheses, we use the transparent
-  state of the first hint database given. Using an empty database
-  (created with Create HintDb for example) with unfoldable variables and
-  constants as the first argument of typeclasses eauto hence makes
-  resolution with the local hypotheses use full conversion during
-  unification.
+   + When called with specific databases (e.g. with), typeclasses eauto
+     allows shelved goals to remain at any point during search and treat
+     typeclasses goals like any other.
+
+   + The transparency information of databases is used consistently for
+     all hints declared in them. It is always used when calling the
+     unifier. When considering the local hypotheses, we use the transparent
+     state of the first hint database given. Using an empty database
+     (created with :cmd:`Create HintDb` for example) with unfoldable variables and
+     constants as the first argument of typeclasses eauto hence makes
+     resolution with the local hypotheses use full conversion during
+     unification.
 
 
-Variants:
+   .. cmdv:: typeclasses eauto @num
 
-#. ``typeclasses eauto [num]``
+      .. warning::
+         The semantics for the limit :n:`@num`
+         is different than for auto. By default, if no limit is given the
+         search is unbounded. Contrary to auto, introduction steps (intro) are
+         counted, which might result in larger limits being necessary when
+         searching with typeclasses eauto than auto.
 
-   *Warning:* The semantics for the limit num
-   is different than for auto. By default, if no limit is given the
-   search is unbounded. Contrary to auto, introduction steps (intro) are
-   counted, which might result in larger limits being necessary when
-   searching with typeclasses eauto than auto.
+   .. cmdv:: typeclasses eauto with {+ @ident}
 
-#. ``typeclasses eauto with {+ @ident}``
-
-   This variant runs resolution with the given hint databases. It treats
-   typeclass subgoals the same as other subgoals (no shelving of
-   non-typeclass goals in particular).
+      This variant runs resolution with the given hint databases. It treats
+      typeclass subgoals the same as other subgoals (no shelving of
+      non-typeclass goals in particular).
 
 .. tacn:: autoapply @term with @ident
    :name: autoapply
@@ -441,34 +430,36 @@ Typeclasses Transparent, Typclasses Opaque
    This command defines makes the identifiers transparent during type class
    resolution.
 
-   .. cmdv:: Typeclasses Opaque {+ @ident}
-      :name: Typeclasses Opaque
+.. cmd:: Typeclasses Opaque {+ @ident}
 
-      Make the identifiers opaque for typeclass search. It is useful when some
-      constants prevent some unifications and make resolution fail. It is also
-      useful to declare constants which should never be unfolded during
-      proof-search, like fixpoints or anything which does not look like an
-      abbreviation. This can additionally speed up proof search as the typeclass
-      map can be indexed by such rigid constants (see
-      :ref:`thehintsdatabasesforautoandeauto`).
+   Make the identifiers opaque for typeclass search. It is useful when some
+   constants prevent some unifications and make resolution fail. It is also
+   useful to declare constants which should never be unfolded during
+   proof-search, like fixpoints or anything which does not look like an
+   abbreviation. This can additionally speed up proof search as the typeclass
+   map can be indexed by such rigid constants (see
+   :ref:`thehintsdatabasesforautoandeauto`).
 
-   By default, all constants and local variables are considered transparent. One
-   should take care not to make opaque any constant that is used to abbreviate a
-   type, like:
+By default, all constants and local variables are considered transparent. One
+should take care not to make opaque any constant that is used to abbreviate a
+type, like:
 
-   ::
+::
 
-      relation A := A -> A -> Prop.
+   relation A := A -> A -> Prop.
 
-   This is equivalent to ``Hint Transparent, Opaque ident : typeclass_instances``.
+This is equivalent to ``Hint Transparent, Opaque ident : typeclass_instances``.
 
+
+Options
+~~~~~~~
 
 .. opt:: Typeclasses Dependency Order
 
    This option (on by default since 8.6) respects the dependency order
    between subgoals, meaning that subgoals which are depended on by other
    subgoals come first, while the non-dependent subgoals were put before
-   the dependent ones previously (Coq v8.5 and below). This can result in
+   the dependent ones previously (Coq 8.5 and below). This can result in
    quite different performance behaviors of proof search.
 
 
@@ -530,6 +521,23 @@ Typeclasses Transparent, Typclasses Opaque
    solution to the typeclass goal of this class is found, we never
    backtrack on it, assuming that it is canonical.
 
+.. opt:: Typeclasses Debug {? Verbosity @num}
+
+   These options allow to see the resolution steps of typeclasses that are
+   performed during search. The ``Debug`` option is synonymous to ``Debug
+   Verbosity 1``, and ``Debug Verbosity 2`` provides more information
+   (tried tactics, shelving of goals, etc…).
+
+.. opt:: Refine Instance Mode
+
+   This option allows to switch the behavior of instance declarations made through
+   the Instance command.
+
+   + When it is on (the default), instances that have unsolved holes in
+     their proof-term silently open the proof mode with the remaining
+     obligations to prove.
+
+   + When it is off, they fail with an error instead.
 
 Typeclasses eauto `:=`
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -546,26 +554,3 @@ Typeclasses eauto `:=`
      default) or breadth-first search.
 
    + ``depth`` This sets the depth limit of the search.
-
-
-Set Typeclasses Debug
-~~~~~~~~~~~~~~~~~~~~~
-
-.. opt:: Typeclasses Debug {? Verbosity @num}
-
-These options allow to see the resolution steps of typeclasses that are
-performed during search. The ``Debug`` option is synonymous to ``Debug
-Verbosity 1``, and ``Debug Verbosity 2`` provides more information
-(tried tactics, shelving of goals, etc…).
-
-
-.. opt:: Refine Instance Mode
-
-This options allows to switch the behavior of instance declarations made through
-the Instance command.
-
-+ When it is on (the default), instances that have unsolved holes in
-  their proof-term silently open the proof mode with the remaining
-  obligations to prove.
-
-+ When it is off, they fail with an error instead.
