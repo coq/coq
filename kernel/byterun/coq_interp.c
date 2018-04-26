@@ -1032,7 +1032,7 @@ value coq_interprete
             CHECK_STACK(nargs+1);
 	    sp -= nargs;
 	    for (i = 0; i < nargs; i++) sp[i] = Field(accu, i + 2); 
-	    *--sp = accu; // Last argument is the pointer to the suspension
+            *--sp = accu; // Leftmost argument is the pointer to the suspension
 	    print_lint(nargs);
 	    coq_extra_args = nargs;
 	    pc = Code_val(coq_env); // Trigger evaluation

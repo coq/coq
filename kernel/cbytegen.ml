@@ -77,6 +77,7 @@ open Pre_env
 (*    ai' = [A_t | accumulate | [Cfx_t | fcofixi] | arg1 | ... | argp ]   *)
 (* If such a block is matched against, we have to force evaluation,       *)
 (* function [fcofixi] is then applied to [ai'] [arg1] ... [argp]          *)
+(* (note that [ai'] is a pointer to the closure, passed as argument)      *)
 (* Once evaluation is completed [ai'] is updated with the result:         *)
 (*  ai' <--                                                               *)
 (*   [A_t | accumulate | [Cfxe_t |fcofixi|result] | arg1 | ... | argp ]   *)
