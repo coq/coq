@@ -309,7 +309,7 @@ let rec pp_instr i =
 	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
   | Kpushfields n -> str "pushfields " ++ int n
   | Kfield n -> str "field " ++ int n
-  | Ksetfield n -> str "set field" ++ int n
+  | Ksetfield n -> str "setfield " ++ int n
 
   | Kstop -> str "stop"
 
