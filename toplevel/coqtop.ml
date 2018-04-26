@@ -489,28 +489,24 @@ let init_toplevel arglist =
         let iload_path = build_load_path opts in
         let require_libs = require_libs opts in
         let stm_options = opts.stm_flags in
-        try
-          let open Vernac.State in
-          let doc, sid =
-            Stm.(new_doc
-                   { doc_type = Interactive opts.toplevel_name;
-                     iload_path; require_libs; stm_options;
-                   }) in
-          let state = { doc; sid; proof = None; time = opts.time } in
-          Some (load_init_vernaculars opts ~state), opts
-        with any -> flush_all(); fatal_error_exn any
+        let open Vernac.State in
+        let doc, sid =
+          Stm.(new_doc
+                 { doc_type = Interactive opts.toplevel_name;
+                   iload_path; require_libs; stm_options;
+                 }) in
+        let state = { doc; sid; proof = None; time = opts.time } in
+        Some (load_init_vernaculars opts ~state), opts
       (* Non interactive: we perform a sequence of compilation steps *)
       end else begin
-        try
-          compile_files opts;
-          (* Careful this will modify the load-path and state so after
-             this point some stuff may not be safe anymore. *)
-          do_vio opts;
-          (* Allow the user to output an arbitrary state *)
-          outputstate opts;
-          None, opts
-        with any -> flush_all(); fatal_error_exn any
-      end;
+        compile_files opts;
+        (* Careful this will modify the load-path and state so after
+           this point some stuff may not be safe anymore. *)
+        do_vio opts;
+        (* Allow the user to output an arbitrary state *)
+        outputstate opts;
+        None, opts
+    end;
     with any ->
       flush_all();
       let extra = Some (str "Error during initialization: ") in
