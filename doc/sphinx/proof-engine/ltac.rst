@@ -245,9 +245,10 @@ focused goals with:
    :name: ... : ... (goal selector)
 
    We can also use selectors as a tactical, which allows to use them nested
-   in a tactic expression, by using the keyword ``only``:
+   in a tactic expression, by using the keyword :tacn:`only`:
 
    .. tacv:: only selector : expr
+      :name: only ... : ...
 
       When selecting several goals, the tactic expr is applied globally to all
       selected goals.
@@ -268,11 +269,13 @@ focused goals with:
       for ``n-n`` when specifying multiple ranges.
 
    .. tacv:: all: @expr
+      :name: all: ...
 
       In this variant, :n:`@expr` is applied to all focused goals. ``all:`` can only
       be used at the toplevel of a tactic expression.
 
    .. tacv:: par: @expr
+      :name: par: ...
 
       In this variant, :n:`@expr` is applied to all focused goals in parallel.
       The number of workers can be controlled via the command line option
