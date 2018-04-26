@@ -421,3 +421,8 @@ Goal exists n : nat, n = n -> True.
 eexists.
 set (H := _ = _).
 Abort.
+
+(* Check interpretation of default evar instance in pretyping *)
+(* (reported as bug #7356) *)
+
+Check fun (P : nat -> Prop) (x:nat) (h:P x) => exist _ ?[z] (h : P ?z).
