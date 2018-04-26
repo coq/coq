@@ -227,13 +227,20 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
 (* Precondition: one of the terms of the pb is an uninstantiated evar,
  * possibly applied to arguments. *)
 
+let join_failures evd1 evd2 e1 e2 = (evd2,e2)
+
 let rec ise_try evd = function
     [] -> assert false
   | [f] -> f evd
   | f1::l ->
       match f1 evd with
       | Success _ as x -> x
-      | UnifFailure _ -> ise_try evd l
+      | UnifFailure (evd1,e1) ->
+          match ise_try evd l with
+          | Success _ as x -> x
+          | UnifFailure (evd2,e2) ->
+              let evd,e = join_failures evd1 evd2 e1 e2 in
+              UnifFailure (evd,e)
 
 let ise_and evd l =
   let rec ise_and i = function
