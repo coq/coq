@@ -70,11 +70,10 @@ let first_goal gls =
 (* tactic -> tactic_list : Apply a tactic to the first goal in the list *)
 
 let apply_tac_list tac glls =
-  let (sigr,lg) = unpackage glls in
-  match lg with
+  match glls.it with
   | (g1::rest) ->
-      let gl = apply_sig_tac sigr tac g1 in
-      repackage sigr (gl@rest)
+      let pack = tac (re_sig g1 glls.sigma) in
+      re_sig (pack.it @ rest) pack.sigma
   | _ -> user_err Pp.(str "apply_tac_list")
 
 let one_step l gl =

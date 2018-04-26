@@ -32,9 +32,8 @@ let get_index = function ArgArg i -> i | _ ->
 
 let tclPERM perm tac gls =
   let subgls = tac gls in
-  let sigma, subgll = Refiner.unpackage subgls in
-  let subgll' = perm subgll in
-  Refiner.repackage sigma subgll'
+  let subgll' = perm subgls.Evd.it in
+  re_sig subgll' subgls.Evd.sigma
 
 let rot_hyps dir i hyps =
   let n = List.length hyps in
