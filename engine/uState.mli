@@ -107,7 +107,7 @@ val merge : ?loc:Loc.t -> bool -> rigid -> t -> Univ.ContextSet.t -> t
 val merge_subst : t -> UnivSubst.universe_opt_subst -> t
 val emit_side_effects : Safe_typing.private_constants -> t -> t
 
-val new_univ_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Level.t
+val new_univ_variable : ?loc:Loc.t -> ?above_set:bool -> rigid -> Id.t option -> t -> t * Univ.Level.t
 val add_global_univ : t -> Univ.Level.t -> t
 
 (** [make_flexible_variable g algebraic l]

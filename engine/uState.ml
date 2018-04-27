@@ -481,7 +481,7 @@ let emit_side_effects eff u =
   let uctxs = Safe_typing.universes_of_private eff in
   List.fold_left (merge true univ_rigid) u uctxs
 
-let new_univ_variable ?loc rigid name
+let new_univ_variable ?loc ?(above_set=true) rigid name
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =
   let u = UnivGen.new_univ_level () in
   let ctx' = Univ.ContextSet.add_universe u ctx in
@@ -499,13 +499,13 @@ let new_univ_variable ?loc rigid name
     | Some n -> add_uctx_names ?loc n u uctx.uctx_names
     | None -> add_uctx_loc u loc uctx.uctx_names
   in
-  let initial =
-    UGraph.add_universe u false uctx.uctx_initial_universes
-  in                                                 
+  let add u =
+    if above_set then UGraph.add_universe u false
+    else UGraph.add_universe_unconstrained u in
   let uctx' =
     {uctx' with uctx_names = names; uctx_local = ctx';
-                uctx_universes = UGraph.add_universe u false uctx.uctx_universes;
-                uctx_initial_universes = initial}
+                uctx_universes = add u uctx.uctx_universes;
+                uctx_initial_universes = add u uctx.uctx_initial_universes}
   in uctx', u
 
 let make_with_initial_binders e us =

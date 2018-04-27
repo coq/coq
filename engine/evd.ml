@@ -784,7 +784,7 @@ let new_univ_level_variable ?loc ?name rigid evd =
     ({evd with universes = uctx'}, u)
 
 let new_univ_variable ?loc ?name rigid evd =
-  let uctx', u = UState.new_univ_variable ?loc rigid name evd.universes in
+  let uctx', u = UState.new_univ_variable ?loc ~above_set:false rigid name evd.universes in
     ({evd with universes = uctx'}, Univ.Universe.make u)
 
 let new_sort_variable ?loc ?name rigid d =
