@@ -152,7 +152,7 @@ let pr_ev evs ev =
 open Auto
 open Unification
 
-let auto_core_unif_flags st freeze = {
+let auto_core_unif_flags st allowed_evars = {
   modulo_conv_on_closed_terms = Some st;
   use_metas_eagerly_in_conv_on_closed_terms = true;
   use_evars_eagerly_in_conv_on_closed_terms = false;
@@ -161,14 +161,14 @@ let auto_core_unif_flags st freeze = {
   check_applied_meta_types = false;
   use_pattern_unification = true;
   use_meta_bound_pattern_unification = true;
-  frozen_evars = freeze;
+  allowed_evars;
   restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = true;
   modulo_eta = false;
 }
 
-let auto_unif_flags freeze st =
-  let fl = auto_core_unif_flags st freeze in
+let auto_unif_flags ?(allowed_evars = AllowAll) st =
+  let fl = auto_core_unif_flags st allowed_evars in
   { core_unify_flags = fl;
     merge_unify_flags = fl;
     subterm_unify_flags = fl;
@@ -358,23 +358,25 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
   let open Proofview.Notations in
   let prods, concl = EConstr.decompose_prod_assum sigma concl in
   let nprods = List.length prods in
-  let freeze =
+  let allowed_evars =
     try
       match hdc with
       | Some (hd,_) when only_classes ->
          let cl = Typeclasses.class_info hd in
          if cl.cl_strict then
-           Evarutil.undefined_evars_of_term sigma concl
-         else Evar.Set.empty
-      | _ -> Evar.Set.empty
-    with e when CErrors.noncritical e -> Evar.Set.empty
+          let undefined = lazy (Evarutil.undefined_evars_of_term sigma concl) in
+          let allowed evk = not (Evar.Set.mem evk (Lazy.force undefined)) in
+          AllowFun allowed
+         else AllowAll
+      | _ -> AllowAll
+    with e when CErrors.noncritical e -> AllowAll
   in
   let hint_of_db = hintmap_of sigma hdc secvars concl in
   let hintl =
     List.map_append
       (fun db ->
         let tacs = hint_of_db db in
-        let flags = auto_unif_flags freeze (Hint_db.transparent_state db) in
+        let flags = auto_unif_flags ~allowed_evars (Hint_db.transparent_state db) in
           List.map (fun x -> (flags, x)) tacs)
       (local_db::db_list)
   in
@@ -1199,7 +1201,7 @@ let autoapply c i =
   let hintdb = try Hints.searchtable_map i with Not_found ->
     CErrors.user_err (Pp.str ("Unknown hint database " ^ i ^ "."))
   in
-  let flags = auto_unif_flags Evar.Set.empty
+  let flags = auto_unif_flags
     (Hints.Hint_db.transparent_state hintdb) in
   let cty = Tacmach.New.pf_unsafe_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
