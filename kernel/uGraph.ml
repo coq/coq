@@ -21,7 +21,7 @@ open Univ
 (* Revisions by Bruno Barras, Hugo Herbelin, Pierre Letouzey, Matthieu
    Sozeau, Pierre-Marie Pédrot, Jacques-Henri Jourdan *)
 
-let error_inconsistency o u v (p:explanation option) =
+let error_inconsistency o u v p =
   raise (UniverseInconsistency (o,Universe.make u,Universe.make v,p))
 
 (* Universes are stratified by a partial ordering $\le$.
@@ -557,8 +557,7 @@ let get_explanation strict u v g =
   else match traverse strict u with Some exp -> exp | None -> assert false
 
 let get_explanation strict u v g =
-  if !Flags.univ_print then Some (get_explanation strict u v g)
-  else None
+  Some (lazy (get_explanation strict u v g))
 
 (* To compare two nodes, we simply do a forward search.
    We implement two improvements:
