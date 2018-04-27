@@ -89,10 +89,10 @@ bindings_list`` where ``bindings_list`` may be of two different forms:
 
 + A bindings list can also be a simple list of terms :n:`{* term}`.
   In that case the references to which these terms correspond are
-  determined by the tactic. In case of ``induction``, ``destruct``, ``elim``
-  and ``case`` (see :ref:`ltac`) the terms have to
+  determined by the tactic. In case of :tacn:`induction`, :tacn:`destruct`, :tacn:`elim`
+  and :tacn:`case`, the terms have to
   provide instances for all the dependent products in the type of term while in
-  the case of ``apply``, or of ``constructor`` and its variants, only instances
+  the case of :tacn:`apply`, or of :tacn:`constructor` and its variants, only instances
   for the dependent products that are not bound in the conclusion of the type
   are required.
 
