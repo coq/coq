@@ -54,7 +54,6 @@ opam-switch: &opam-switch
     - restore_cache:
         keys:
           - coq-opam-cache-v1-{{ arch }}-{{ checksum "COMPILER" }}-{{ checksum ".circleci/config.yml" }}-
-          - coq-opam-cache-v1-{{ arch }}-{{ checksum "COMPILER" }}- # this grabs old cache if checksum doesn't match
     - run:
         name: Update opam lists
         command: |
