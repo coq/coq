@@ -382,7 +382,7 @@ real-all: $(VOFILES) $(if $(USEBYTE),bytefiles,optfiles)
 .PHONY: real-all
 
 real-all.timing.diff: $(VOFILES:.vo=.v.timing.diff)
-.PHONE: real-all.timing.diff
+.PHONY: real-all.timing.diff
 
 bytefiles: $(CMOFILES) $(CMAFILES)
 .PHONY: bytefiles
