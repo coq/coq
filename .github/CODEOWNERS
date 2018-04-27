@@ -301,7 +301,7 @@
 ########## Build system ##########
 
 /Makefile*        @letouzey
-# Secondary maintainer @maximdenes
+# Secondary maintainer @gares
 
 /configure*       @letouzey
 # Secondary maintainer @ejgallego
