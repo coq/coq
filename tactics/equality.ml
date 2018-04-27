@@ -38,7 +38,6 @@ open Coqlib
 open Declarations
 open Indrec
 open Clenv
-open Evd
 open Ind_tables
 open Eqschemes
 open Locus
@@ -107,7 +106,7 @@ let rewrite_core_unif_flags = {
   check_applied_meta_types = true;
   use_pattern_unification = true;
   use_meta_bound_pattern_unification = true;
-  frozen_evars = Evar.Set.empty;
+  allowed_evars = AllowAll;
   restrict_conv_on_strict_subterms = false;
   modulo_betaiota = false;
   modulo_eta = true;
@@ -126,16 +125,17 @@ let freeze_initial_evars sigma flags clause =
   (* We take evars of the type: this may include old evars! For excluding *)
   (* all old evars, including the ones occurring in the rewriting lemma, *)
   (* we would have to take the clenv_value *)
-  let newevars = Evarutil.undefined_evars_of_term sigma (clenv_type clause) in
-  let evars =
-    fold_undefined (fun evk _ evars ->
-      if Evar.Set.mem evk newevars then evars
-      else Evar.Set.add evk evars)
-      sigma Evar.Set.empty in
+  let newevars = lazy (Evarutil.undefined_evars_of_term sigma (clenv_type clause)) in
+  let initial = Evd.undefined_map sigma in
+  let allowed evk =
+    if Evar.Map.mem evk initial then false
+    else Evar.Set.mem evk (Lazy.force newevars)
+  in
+  let allowed_evars = AllowFun allowed in
   {flags with
-    core_unify_flags = {flags.core_unify_flags with frozen_evars = evars};
-    merge_unify_flags = {flags.merge_unify_flags with frozen_evars = evars};
-    subterm_unify_flags = {flags.subterm_unify_flags with frozen_evars = evars}}
+    core_unify_flags = {flags.core_unify_flags with allowed_evars};
+    merge_unify_flags = {flags.merge_unify_flags with allowed_evars};
+    subterm_unify_flags = {flags.subterm_unify_flags with allowed_evars}}
 
 let make_flags frzevars sigma flags clause =
   if frzevars then freeze_initial_evars sigma flags clause else flags
@@ -188,8 +188,7 @@ let rewrite_conv_closed_core_unif_flags = {
 
   use_meta_bound_pattern_unification = true;
 
-  frozen_evars = Evar.Set.empty;
-    (* This is set dynamically *)
+  allowed_evars = AllowAll;
 
   restrict_conv_on_strict_subterms = false;
   modulo_betaiota = false;
@@ -223,8 +222,7 @@ let rewrite_keyed_core_unif_flags = {
 
   use_meta_bound_pattern_unification = true;
 
-  frozen_evars = Evar.Set.empty;
-    (* This is set dynamically *)
+  allowed_evars = AllowAll;
 
   restrict_conv_on_strict_subterms = false;
   modulo_betaiota = true;
