@@ -553,12 +553,31 @@ let is_sort_variable uctx s =
 let subst_univs_context_with_def def usubst (ctx, cst) =
   (Univ.LSet.diff ctx def, UnivSubst.subst_univs_constraints usubst cst)
 
+let is_trivial_leq (l,d,r) =
+  Univ.Level.is_prop l && (d == Univ.Le || (d == Univ.Lt && Univ.Level.is_set r))
+
+(* Prop < i <-> Set+1 <= i <-> Set < i *)
+let translate_cstr (l,d,r as cstr) =
+  let open Univ in
+  if Level.equal Level.prop l && d == Univ.Lt && not (Level.equal Level.set r) then
+    (Level.set, d, r)
+  else cstr
+
+let refresh_constraints univs (ctx, cstrs) =
+  let cstrs', univs' =
+    Univ.Constraint.fold (fun c (cstrs', univs as acc) ->
+      let c = translate_cstr c in
+      if is_trivial_leq c then acc
+      else (Univ.Constraint.add c cstrs', UGraph.enforce_constraint c univs))
+      cstrs (Univ.Constraint.empty, univs)
+  in ((ctx, cstrs'), univs')
+
 let normalize_variables uctx =
   let normalized_variables, undef, def, subst = 
     UnivSubst.normalize_univ_variables uctx.uctx_univ_variables
   in
   let ctx_local = subst_univs_context_with_def def (Univ.make_subst subst) uctx.uctx_local in
-  let ctx_local', univs = Universes.refresh_constraints uctx.uctx_initial_universes ctx_local in
+  let ctx_local', univs = refresh_constraints uctx.uctx_initial_universes ctx_local in
     subst, { uctx with uctx_local = ctx_local';
       uctx_univ_variables = normalized_variables;
       uctx_universes = univs }

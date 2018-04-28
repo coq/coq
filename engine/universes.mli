@@ -36,8 +36,6 @@ val normalize_context_set : UGraph.t -> ContextSet.t ->
   UPairSet.t (* weak equality constraints *) ->
   (universe_opt_subst * LSet.t) in_universe_context_set
 
-val refresh_constraints : UGraph.t -> ContextSet.t -> ContextSet.t * UGraph.t
-
 (** *********************************** Deprecated *)
 
 [@@@ocaml.warning "-3"]

@@ -384,24 +384,6 @@ let normalize_context_set g ctx us algs weak =
 (* let normalize_conkey = CProfile.declare_profile "normalize_context_set" *)
 (* let normalize_context_set a b c = CProfile.profile3 normalize_conkey normalize_context_set a b c *)
 
-let is_trivial_leq (l,d,r) =
-  Univ.Level.is_prop l && (d == Univ.Le || (d == Univ.Lt && Univ.Level.is_set r))
-
-(* Prop < i <-> Set+1 <= i <-> Set < i *)
-let translate_cstr (l,d,r as cstr) =
-  if Level.equal Level.prop l && d == Univ.Lt && not (Level.equal Level.set r) then
-    (Level.set, d, r)
-  else cstr
-
-let refresh_constraints univs (ctx, cstrs) =
-  let cstrs', univs' = 
-    Univ.Constraint.fold (fun c (cstrs', univs as acc) -> 
-      let c = translate_cstr c in
-      if is_trivial_leq c then acc
-      else (Univ.Constraint.add c cstrs', UGraph.enforce_constraint c univs))
-      cstrs (Univ.Constraint.empty, univs)
-  in ((ctx, cstrs'), univs')
-
 (** Deprecated *)
 
 (** UnivNames *)
