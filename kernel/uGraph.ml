@@ -767,18 +767,18 @@ let normalize_universes g =
     g.entries g
 
 let constraints_of_universes g =
+  let module UF = Unionfind.Make (LSet) (LMap) in
+  let uf = UF.create () in
   let constraints_of u v acc =
     match v with
     | Canonical {univ=u; ltle} ->
       UMap.fold (fun v strict acc->
         let typ = if strict then Lt else Le in
         Constraint.add (u,typ,v) acc) ltle acc
-    | Equiv v -> Constraint.add (u,Eq,v) acc
+    | Equiv v -> UF.union u v uf; acc
   in
-  UMap.fold constraints_of g.entries Constraint.empty
-
-let constraints_of_universes g =
-  constraints_of_universes (normalize_universes g)
+  let csts = UMap.fold constraints_of g.entries Constraint.empty in
+  csts, UF.partition uf
 
 (** [sort_universes g] builds a totally ordered universe graph.  The
     output graph should imply the input graph (and the implication

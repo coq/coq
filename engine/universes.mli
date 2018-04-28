@@ -162,8 +162,6 @@ val extend_context : 'a in_universe_context_set -> ContextSet.t ->
     (a global one if there is one) and transitively saturate
     the constraints w.r.t to the equalities. *)
 
-module UF : Unionfind.PartitionSig with type elt = Level.t
-
 val level_subst_of : universe_subst_fn -> universe_level_subst_fn
 val subst_univs_constraints : universe_subst_fn -> Constraint.t -> Constraint.t
 
