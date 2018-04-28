@@ -19,35 +19,6 @@ module UPairSet : CSet.S with type elt = (Level.t * Level.t)
 
 (** Universes *)
 
-val pr_with_global_universes : Level.t -> Pp.t
-val reference_of_level : Level.t -> Libnames.reference
-
-(** Global universe information outside the kernel, to handle
-    polymorphic universes in sections that have to be discharged. *)
-val add_global_universe : Level.t -> Decl_kinds.polymorphic -> unit
-
-val is_polymorphic : Level.t -> bool
-
-(** Local universe name <-> level mapping *)
-
-type universe_binders = Univ.Level.t Names.Id.Map.t
-
-val empty_binders : universe_binders
-
-val register_universe_binders : GlobRef.t -> universe_binders -> unit
-val universe_binders_of_global : GlobRef.t -> universe_binders
-
-type univ_name_list = Misctypes.lname list
-
-(** [universe_binders_with_opt_names ref u l]
-
-    If [l] is [Some univs] return the universe binders naming the levels of [u] by [univs] (skipping Anonymous).
-    May error if the lengths mismatch.
-
-    Otherwise return [universe_binders_of_global ref]. *)
-val universe_binders_with_opt_names : Names.GlobRef.t ->
-  Univ.Level.t list -> univ_name_list option -> universe_binders
-
 (** The global universe counter *)
 type universe_id = DirPath.t * int
 
@@ -226,3 +197,41 @@ val pr_universe_opt_subst : universe_opt_subst -> Pp.t
 
 val solve_constraints_system : Universe.t option array -> Universe.t array -> Universe.t array ->
   Universe.t array
+
+(** *********************************** Deprecated *)
+[@@@ocaml.warning "-3"]
+val set_minimization : bool ref
+[@@ocaml.deprecated "Becoming internal."]
+val is_set_minimization : unit -> bool
+[@@ocaml.deprecated "Becoming internal."]
+
+(** ****** Deprecated: moved to [UnivNames] *)
+
+val pr_with_global_universes : Level.t -> Pp.t
+[@@ocaml.deprecated "Use [UnivNames.pr_with_global_universes]"]
+val reference_of_level : Level.t -> Libnames.reference
+[@@ocaml.deprecated "Use [UnivNames.reference_of_level]"]
+
+val add_global_universe : Level.t -> Decl_kinds.polymorphic -> unit
+[@@ocaml.deprecated "Use [UnivNames.add_global_universe]"]
+
+val is_polymorphic : Level.t -> bool
+[@@ocaml.deprecated "Use [UnivNames.is_polymorphic]"]
+
+type universe_binders = UnivNames.universe_binders
+[@@ocaml.deprecated "Use [UnivNames.universe_binders]"]
+
+val empty_binders : universe_binders
+[@@ocaml.deprecated "Use [UnivNames.empty_binders]"]
+
+val register_universe_binders : Globnames.global_reference -> universe_binders -> unit
+[@@ocaml.deprecated "Use [UnivNames.register_universe_binders]"]
+val universe_binders_of_global : Globnames.global_reference -> universe_binders
+[@@ocaml.deprecated "Use [UnivNames.universe_binders_of_global]"]
+
+type univ_name_list = UnivNames.univ_name_list
+[@@ocaml.deprecated "Use [UnivNames.univ_name_list]"]
+
+val universe_binders_with_opt_names : Globnames.global_reference ->
+  Univ.Level.t list -> univ_name_list option -> universe_binders
+[@@ocaml.deprecated "Use [UnivNames.universe_binders_with_opt_names]"]

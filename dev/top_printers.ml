@@ -203,7 +203,7 @@ let pproof p = pp(Proof.pr_proof p)
 let ppuni u = pp(Universe.pr u)
 let ppuni_level u = pp (Level.pr u)
 
-let prlev = Universes.pr_with_global_universes
+let prlev = UnivNames.pr_with_global_universes
 let ppuniverse_set l = pp (LSet.pr prlev l)
 let ppuniverse_instance l = pp (Instance.pr prlev l)
 let ppuniverse_context l = pp (pr_universe_context prlev l)

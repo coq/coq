@@ -197,7 +197,7 @@ let rec pr_disjunction pr = function
 let pr_puniverses f env (c,u) = 
   f env c ++ 
   (if Flags.is_universe_polymorphism () && not (Univ.Instance.is_empty u) then
-    str"(*" ++ Univ.Instance.pr Universes.pr_with_global_universes u ++ str"*)"
+    str"(*" ++ Univ.Instance.pr UnivNames.pr_with_global_universes u ++ str"*)"
   else mt())
 
 let explain_elim_arity env sigma ind sorts c pj okinds =
@@ -314,7 +314,7 @@ let explain_unification_error env sigma p1 p2 = function
      | UnifUnivInconsistency p ->
         if !Constrextern.print_universes then
 	  [str "universe inconsistency: " ++
-          Univ.explain_universe_inconsistency Universes.pr_with_global_universes p]
+          Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes p]
 	else
           [str "universe inconsistency"]
      | CannotSolveConstraint ((pb,env,t,u),e) ->
@@ -886,7 +886,7 @@ let explain_not_match_error = function
     str"polymorphic universe instances do not match"
   | IncompatibleUniverses incon ->
     str"the universe constraints are inconsistent: " ++
-      Univ.explain_universe_inconsistency Universes.pr_with_global_universes incon
+      Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes incon
   | IncompatiblePolymorphism (env, t1, t2) ->
     str "conversion of polymorphic values generates additional constraints: " ++
       quote (Printer.safe_pr_lconstr_env env Evd.empty t1) ++ spc () ++

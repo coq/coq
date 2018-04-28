@@ -555,7 +555,7 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let univs = UState.const_univ_entry ~poly first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
-  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) Universes.empty_binders univs)
+  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) UnivNames.empty_binders univs)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
     List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;

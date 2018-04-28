@@ -24,7 +24,7 @@ module UPairSet = Universes.UPairSet
 
 (* 2nd part used to check consistency on the fly. *)
 type t =
- { uctx_names : Universes.universe_binders * uinfo Univ.LMap.t;
+ { uctx_names : UnivNames.universe_binders * uinfo Univ.LMap.t;
    uctx_local : Univ.ContextSet.t; (** The local context of variables *)
    uctx_seff_univs : Univ.LSet.t; (** Local universes used through private constants *)
    uctx_univ_variables : Universes.universe_opt_subst;
@@ -298,7 +298,7 @@ let reference_of_level uctx =
     fun l ->
       try CAst.make @@ Libnames.Ident (Option.get (Univ.LMap.find l map_rev).uname)
       with Not_found | Option.IsNone ->
-        Universes.reference_of_level l
+        UnivNames.reference_of_level l
 
 let pr_uctx_level uctx l =
   Libnames.pr_reference (reference_of_level uctx l)

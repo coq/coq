@@ -37,7 +37,7 @@ type one_inductive_impls =
   Impargs.manual_implicits list (** for constrs *)
 
 val declare_mutual_inductive_with_eliminations :
-  mutual_inductive_entry -> Universes.universe_binders -> one_inductive_impls list ->
+  mutual_inductive_entry -> UnivNames.universe_binders -> one_inductive_impls list ->
   MutInd.t
 
 (** Exported for Funind *)
@@ -64,4 +64,4 @@ val extract_mutual_inductive_declaration_components :
 val interp_mutual_inductive :
   structured_inductive_expr -> decl_notation list -> cumulative_inductive_flag ->
   polymorphic -> private_flag -> Declarations.recursivity_kind ->
-  mutual_inductive_entry * Universes.universe_binders * one_inductive_impls list
+  mutual_inductive_entry * UnivNames.universe_binders * one_inductive_impls list

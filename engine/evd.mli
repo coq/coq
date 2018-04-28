@@ -550,7 +550,7 @@ val constrain_variables : Univ.LSet.t -> UState.t -> UState.t
 
 
 val evar_universe_context_of_binders :
-  Universes.universe_binders -> UState.t
+  UnivNames.universe_binders -> UState.t
 [@@ocaml.deprecated "Alias of UState.of_binders"]
 
 val make_evar_universe_context : env -> Misctypes.lident list option -> UState.t
@@ -559,7 +559,7 @@ val restrict_universe_context : evar_map -> Univ.LSet.t -> evar_map
 (** Raises Not_found if not a name for a universe in this map. *)
 val universe_of_name : evar_map -> Id.t -> Univ.Level.t
 
-val universe_binders : evar_map -> Universes.universe_binders
+val universe_binders : evar_map -> UnivNames.universe_binders
 val add_constraints_context : UState.t ->
   Univ.Constraint.t -> UState.t
 [@@ocaml.deprecated "Alias of UState.add_constraints"]

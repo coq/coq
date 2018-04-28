@@ -20,7 +20,7 @@ val declare_projections :
   ?kind:Decl_kinds.definition_object_kind ->
   Id.t ->
   bool list ->
-  Universes.universe_binders ->
+  UnivNames.universe_binders ->
   Impargs.manual_implicits list ->
   Context.Rel.t ->
     (Name.t * bool) list * Constant.t option list

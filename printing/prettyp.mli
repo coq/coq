@@ -34,10 +34,10 @@ val print_eval :
     Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t
 
 val print_name : env -> Evd.evar_map -> reference or_by_notation ->
-  Universes.univ_name_list option -> Pp.t
+  UnivNames.univ_name_list option -> Pp.t
 val print_opaque_name : env -> Evd.evar_map -> reference -> Pp.t
 val print_about : env -> Evd.evar_map -> reference or_by_notation ->
-  Universes.univ_name_list option -> Pp.t
+  UnivNames.univ_name_list option -> Pp.t
 val print_impargs : reference or_by_notation -> Pp.t
 
 (** Pretty-printing functions for classes and coercions *)
@@ -84,8 +84,8 @@ val print_located_module : reference -> Pp.t
 val print_located_other : string -> reference -> Pp.t
 
 type object_pr = {
-  print_inductive           : MutInd.t -> Universes.univ_name_list option -> Pp.t;
-  print_constant_with_infos : Constant.t -> Universes.univ_name_list option -> Pp.t;
+  print_inductive           : MutInd.t -> UnivNames.univ_name_list option -> Pp.t;
+  print_constant_with_infos : Constant.t -> UnivNames.univ_name_list option -> Pp.t;
   print_section_variable    : env -> Evd.evar_map -> variable -> Pp.t;
   print_syntactic_def       : env -> KerName.t -> Pp.t;
   print_module              : bool -> ModPath.t -> Pp.t;

@@ -316,7 +316,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
                 let gr = Nametab.locate (Libnames.qualid_of_ident fid) in
                 let kn = destConstRef gr in
                 Declare.definition_message fid;
-                Universes.register_universe_binders gr ubinders;
+                UnivNames.register_universe_binders gr ubinders;
                 kn, mkProj (Projection.make kn false,mkRel 1)
 	      else
 		let ccl = subst_projection fid subst ti in
@@ -352,7 +352,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
 		      applist (mkConstU (kn,u),proj_args) 
                   in
                   Declare.definition_message fid;
-                  Universes.register_universe_binders (ConstRef kn) ubinders;
+                  UnivNames.register_universe_binders (ConstRef kn) ubinders;
 		    kn, constr_fip
                 with Type_errors.TypeError (ctx,te) ->
                   raise (NotDefinable (BadTypedProj (fid,ctx,te))) 
@@ -465,9 +465,9 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
       in
       let cref = ConstRef cst in
       Impargs.declare_manual_implicits false cref [paramimpls];
-      Universes.register_universe_binders cref ubinders;
+      UnivNames.register_universe_binders cref ubinders;
       Impargs.declare_manual_implicits false (ConstRef proj_cst) [List.hd fieldimpls];
-      Universes.register_universe_binders (ConstRef proj_cst) ubinders;
+      UnivNames.register_universe_binders (ConstRef proj_cst) ubinders;
       Classes.set_typeclass_transparency (EvalConstRef cst) false false;
       let sub = match List.hd coers with
 	| Some b -> Some ((if b then Backward else Forward), List.hd priorities) 

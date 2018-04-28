@@ -423,13 +423,13 @@ let context poly l =
       let decl = (Discharge, poly, Definitional) in
       let nstatus = match b with
       | None ->
-        pi3 (ComAssumption.declare_assumption false decl (t, univs) Universes.empty_binders [] impl
+        pi3 (ComAssumption.declare_assumption false decl (t, univs) UnivNames.empty_binders [] impl
                Declaremods.NoInline (CAst.make id))
       | Some b ->
         let decl = (Discharge, poly, Definition) in
         let entry = Declare.definition_entry ~univs ~types:t b in
         let hook = Lemmas.mk_hook (fun _ gr -> gr) in
-        let _ = DeclareDef.declare_definition id decl entry Universes.empty_binders [] hook in
+        let _ = DeclareDef.declare_definition id decl entry UnivNames.empty_binders [] hook in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
 	status && nstatus

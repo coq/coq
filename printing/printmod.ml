@@ -140,7 +140,7 @@ let print_mutual_inductive env mind mib udecl =
                        (AUContext.instance (Declareops.inductive_polymorphic_context mib)))
     else []
   in
-  let bl = Universes.universe_binders_with_opt_names (IndRef (mind, 0)) univs udecl in
+  let bl = UnivNames.universe_binders_with_opt_names (IndRef (mind, 0)) univs udecl in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
   hov 0 (Printer.pr_polymorphic (Declareops.inductive_is_polymorphic mib) ++
          Printer.pr_cumulative
@@ -183,7 +183,7 @@ let print_record env mind mib udecl =
   let cstrtype = hnf_prod_applist_assum env nparamdecls cstrtypes.(0) args in
   let fields = get_fields cstrtype in
   let envpar = push_rel_context params env in
-  let bl = Universes.universe_binders_with_opt_names (IndRef (mind,0))
+  let bl = UnivNames.universe_binders_with_opt_names (IndRef (mind,0))
       (Array.to_list (Univ.Instance.to_array u)) udecl in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
   let keyword =

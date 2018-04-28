@@ -34,9 +34,9 @@ val union : t -> t -> t
 
 val of_context_set : Univ.ContextSet.t -> t
 
-val of_binders : Universes.universe_binders -> t
+val of_binders : UnivNames.universe_binders -> t
 
-val universe_binders : t -> Universes.universe_binders
+val universe_binders : t -> UnivNames.universe_binders
 
 (** {5 Projections} *)
 
