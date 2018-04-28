@@ -1023,6 +1023,18 @@ Proof.
   intros; rewrite H by intuition; rewrite IHl; auto.
 Qed.
 
+Lemma ext_in_map :
+  forall (A B : Type)(f g:A->B) l, map f l = map g l -> forall a, In a l -> f a = g a.
+Proof. induction l; intros [=] ? []; subst; auto. Qed.
+
+Arguments ext_in_map [A B f g l].
+
+Lemma map_ext_in_iff :
+   forall (A B : Type)(f g:A->B) l, map f l = map g l <-> forall a, In a l -> f a = g a.
+Proof. split; [apply ext_in_map | apply map_ext_in]. Qed.
+
+Arguments map_ext_in_iff [A B f g l].
+
 Lemma map_ext :
   forall (A B : Type)(f g:A->B), (forall a, f a = g a) -> forall l, map f l = map g l.
 Proof.
@@ -1717,6 +1729,32 @@ Section Cutting.
 	       end
     end.
 
+  Lemma firstn_skipn_comm : forall m n l,
+  firstn m (skipn n l) = skipn n (firstn (n + m) l).
+  Proof. now intros m; induction n; intros []; simpl; destruct m. Qed.
+
+  Lemma skipn_firstn_comm : forall m n l,
+  skipn m (firstn n l) = firstn (n - m) (skipn m l).
+  Proof. now induction m; intros [] []; simpl; rewrite ?firstn_nil. Qed.
+
+  Lemma skipn_O : forall l, skipn 0 l = l.
+  Proof. reflexivity. Qed.
+
+  Lemma skipn_nil : forall n, skipn n ([] : list A) = [].
+  Proof. now intros []. Qed.
+
+  Lemma skipn_cons n a l: skipn (S n) (a::l) = skipn n l.
+  Proof. reflexivity. Qed.
+
+  Lemma skipn_none : forall l, skipn (length l) l = [].
+  Proof. now induction l. Qed.
+
+  Lemma skipn_all2 n: forall l, length l <= n -> skipn n l = [].
+  Proof.
+    intros l L%Nat.sub_0_le; rewrite <-(firstn_all l) at 1.
+    now rewrite skipn_firstn_comm, L.
+  Qed.
+
   Lemma firstn_skipn : forall n l, firstn n l ++ skipn n l = l.
   Proof.
     induction n.
@@ -1728,6 +1766,51 @@ Section Cutting.
   Lemma firstn_length : forall n l, length (firstn n l) = min n (length l).
   Proof.
     induction n; destruct l; simpl; auto.
+  Qed.
+
+  Lemma skipn_length n :
+    forall l, length (skipn n l) = length l - n.
+  Proof.
+    induction n.
+    - intros l; simpl; rewrite Nat.sub_0_r; reflexivity.
+    - destruct l; simpl; auto.
+  Qed.
+
+  Lemma skipn_all l: skipn (length l) l = nil.
+  Proof. now induction l. Qed.
+
+  Lemma skipn_app n : forall l1 l2,
+    skipn n (l1 ++ l2) = (skipn n l1) ++ (skipn (n - length l1) l2).
+  Proof. induction n; auto; intros [|]; simpl; auto. Qed.
+
+  Lemma firstn_skipn_rev: forall x l,
+      firstn x l = rev (skipn (length l - x) (rev l)).
+  Proof.
+    intros x l; rewrite <-(firstn_skipn x l) at 3.
+    rewrite rev_app_distr, skipn_app, rev_app_distr, rev_length,
+            skipn_length, Nat.sub_diag; simpl; rewrite rev_involutive.
+    rewrite <-app_nil_r at 1; f_equal; symmetry; apply length_zero_iff_nil.
+    repeat rewrite rev_length, skipn_length; apply Nat.sub_diag.
+  Qed.
+
+  Lemma firstn_rev: forall x l,
+    firstn x (rev l) = rev (skipn (length l - x) l).
+  Proof.
+    now intros x l; rewrite firstn_skipn_rev, rev_involutive, rev_length.
+  Qed.
+
+  Lemma skipn_rev: forall x l,
+      skipn x (rev l) = rev (firstn (length l - x) l).
+  Proof.
+    intros x l; rewrite firstn_skipn_rev, rev_involutive, <-rev_length.
+    destruct (Nat.le_ge_cases (length (rev l)) x) as [L | L].
+    - rewrite skipn_all2; [apply Nat.sub_0_le in L | trivial].
+      now rewrite L, Nat.sub_0_r, skipn_none.
+    - replace (length (rev l) - (length (rev l) - x))
+         with (length (rev l) + x - length (rev l)).
+      rewrite minus_plus. reflexivity.
+      rewrite <- (Nat.sub_add _ _ L) at 2.
+      now rewrite <-!(Nat.add_comm x), <-minus_plus_simpl_l_reverse.
   Qed.
 
    Lemma removelast_firstn : forall n l, n < length l ->
@@ -2071,6 +2154,14 @@ Section NatSeq.
   Proof.
    revert start; induction len; simpl; constructor; trivial.
    rewrite in_seq. intros (H,_). apply (Lt.lt_irrefl _ H).
+  Qed.
+
+  Lemma seq_app : forall len1 len2 start,
+    seq start (len1 + len2) = seq start len1 ++ seq (start + len1) len2.
+  Proof.
+    induction len1 as [|len1' IHlen]; intros; simpl in *.
+    - now rewrite Nat.add_0_r.
+    - now rewrite Nat.add_succ_r, IHlen.
   Qed.
 
 End NatSeq.
