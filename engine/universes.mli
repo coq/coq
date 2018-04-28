@@ -12,37 +12,11 @@ open Names
 open Constr
 open Environ
 open Univ
-open UnivSubst
 
-(** Unordered pairs of universe levels (ie (u,v) = (v,u)) *)
-module UPairSet : CSet.S with type elt = (Level.t * Level.t)
-
-(** Universes *)
-
-(** Simplification and pruning of constraints:
-    [normalize_context_set ctx us]
-
-    - Instantiate the variables in [us] with their most precise
-    universe levels respecting the constraints.
-
-    - Normalizes the context [ctx] w.r.t. equality constraints, 
-    choosing a canonical universe in each equivalence class 
-    (a global one if there is one) and transitively saturate
-    the constraints w.r.t to the equalities. *)
-
-val normalize_context_set : UGraph.t -> ContextSet.t ->
-  universe_opt_subst (* The defined and undefined variables *) ->
-  LSet.t (* univ variables that can be substituted by algebraics *) ->
-  UPairSet.t (* weak equality constraints *) ->
-  (universe_opt_subst * LSet.t) in_universe_context_set
-
-(** *********************************** Deprecated *)
-
+(** ************************************** *)
+(** This entire module is deprecated. **** *)
+(** ************************************** *)
 [@@@ocaml.warning "-3"]
-val set_minimization : bool ref
-[@@ocaml.deprecated "Becoming internal."]
-val is_set_minimization : unit -> bool
-[@@ocaml.deprecated "Becoming internal."]
 
 (** ****** Deprecated: moved to [UnivNames] *)
 
@@ -250,3 +224,15 @@ val eq_constr_univs_infer_with :
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   UGraph.t -> 'a constraint_accumulator -> constr -> constr -> 'a -> 'a option
 [@@ocaml.deprecated "Use [UnivProblem.eq_constr_univs_infer_with]"]
+
+(** ****** Deprecated: moved to [UnivMinim] *)
+
+module UPairSet = UnivMinim.UPairSet
+[@@ocaml.deprecated "Use [UnivMinim.UPairSet]"]
+
+val normalize_context_set : UGraph.t -> ContextSet.t ->
+  universe_opt_subst (* The defined and undefined variables *) ->
+  LSet.t (* univ variables that can be substituted by algebraics *) ->
+  UPairSet.t (* weak equality constraints *) ->
+  (universe_opt_subst * LSet.t) in_universe_context_set
+[@@ocaml.deprecated "Use [UnivMinim.normalize_context_set]"]

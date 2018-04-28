@@ -20,7 +20,7 @@ type uinfo = {
   uloc : Loc.t option;
 }
 
-module UPairSet = Universes.UPairSet
+module UPairSet = UnivMinim.UPairSet
 
 (* 2nd part used to check consistency on the fly. *)
 type t =
@@ -630,7 +630,7 @@ let refresh_undefined_univ_variables uctx =
     uctx', subst
 
 let minimize uctx =
-  let open Universes in
+  let open UnivMinim in
   let ((vars',algs'), us') =
     normalize_context_set uctx.uctx_universes uctx.uctx_local uctx.uctx_univ_variables
       uctx.uctx_univ_algebraic uctx.uctx_weak_constraints

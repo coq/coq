@@ -2,6 +2,7 @@ UnivNames
 UnivGen
 UnivSubst
 UnivProblem
+UnivMinim
 Universes
 Univops
 UState
