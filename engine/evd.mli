@@ -354,7 +354,7 @@ val whd_sort_variable : evar_map -> econstr -> econstr
 
 exception UniversesDiffer
 
-val add_universe_constraints : evar_map -> Universes.Constraints.t -> evar_map
+val add_universe_constraints : evar_map -> UnivProblem.Set.t -> evar_map
 (** Add the given universe unification constraints to the evar map.
     @raise UniversesDiffer in case a first-order unification fails.
     @raise UniverseInconsistency .
@@ -543,7 +543,7 @@ val empty_evar_universe_context : UState.t
 val union_evar_universe_context : UState.t -> UState.t ->
   UState.t
 [@@ocaml.deprecated "Alias of UState.union"]
-val evar_universe_context_subst : UState.t -> Universes.universe_opt_subst
+val evar_universe_context_subst : UState.t -> UnivSubst.universe_opt_subst
 [@@ocaml.deprecated "Alias of UState.subst"]
 val constrain_variables : Univ.LSet.t -> UState.t -> UState.t
 [@@ocaml.deprecated "Alias of UState.constrain_variables"]
@@ -603,7 +603,7 @@ val check_leq : evar_map -> Univ.Universe.t -> Univ.Universe.t -> bool
 
 val evar_universe_context : evar_map -> UState.t
 val universe_context_set : evar_map -> Univ.ContextSet.t
-val universe_subst : evar_map -> Universes.universe_opt_subst
+val universe_subst : evar_map -> UnivSubst.universe_opt_subst
 val universes : evar_map -> UGraph.t
 
 (** [to_universe_context evm] extracts the local universes and
@@ -622,7 +622,7 @@ val merge_universe_context : evar_map -> UState.t -> evar_map
 val set_universe_context : evar_map -> UState.t -> evar_map
 
 val merge_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> Univ.ContextSet.t -> evar_map
-val merge_universe_subst : evar_map -> Universes.universe_opt_subst -> evar_map
+val merge_universe_subst : evar_map -> UnivSubst.universe_opt_subst -> evar_map
 
 val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
 

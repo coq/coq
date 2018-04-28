@@ -1,5 +1,7 @@
 UnivNames
 UnivGen
+UnivSubst
+UnivProblem
 Universes
 Univops
 UState

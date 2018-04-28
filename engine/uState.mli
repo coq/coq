@@ -44,7 +44,7 @@ val context_set : t -> Univ.ContextSet.t
 (** The local context of the state, i.e. a set of bound variables together
     with their associated constraints. *)
 
-val subst : t -> Universes.universe_opt_subst
+val subst : t -> UnivSubst.universe_opt_subst
 (** The local universes that are unification variables *)
 
 val ugraph : t -> UGraph.t
@@ -79,7 +79,7 @@ val add_constraints : t -> Univ.Constraint.t -> t
   @raise UniversesDiffer when universes differ
 *)
 
-val add_universe_constraints : t -> Universes.Constraints.t -> t
+val add_universe_constraints : t -> UnivProblem.Set.t -> t
 (**
   @raise UniversesDiffer when universes differ
 *)
@@ -104,7 +104,7 @@ val univ_flexible : rigid
 val univ_flexible_alg : rigid
 
 val merge : ?loc:Loc.t -> bool -> rigid -> t -> Univ.ContextSet.t -> t
-val merge_subst : t -> Universes.universe_opt_subst -> t
+val merge_subst : t -> UnivSubst.universe_opt_subst -> t
 val emit_side_effects : Safe_typing.private_constants -> t -> t
 
 val new_univ_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Level.t

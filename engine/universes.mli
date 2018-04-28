@@ -8,63 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Util
 open Names
 open Constr
 open Environ
 open Univ
+open UnivSubst
 
 (** Unordered pairs of universe levels (ie (u,v) = (v,u)) *)
 module UPairSet : CSet.S with type elt = (Level.t * Level.t)
 
 (** Universes *)
-
-(** {6 Constraints for type inference}
-
-    When doing conversion of universes, not only do we have =/<= constraints but
-    also Lub constraints which correspond to unification of two levels which might
-    not be necessary if unfolding is performed.
-
-    UWeak constraints come from irrelevant universes in cumulative polymorphism.
-*)
-
-type universe_constraint =
-  | ULe of Universe.t * Universe.t
-  | UEq of Universe.t * Universe.t
-  | ULub of Level.t * Level.t
-  | UWeak of Level.t * Level.t
-
-module Constraints : sig
-  include Set.S with type elt = universe_constraint
-
-  val is_trivial : universe_constraint -> bool
-
-  val pr : t -> Pp.t
-end
-
-type universe_constraints = Constraints.t
-[@@ocaml.deprecated "Use Constraints.t"]
-
-type 'a constraint_accumulator = Constraints.t -> 'a -> 'a option
-type 'a universe_constrained = 'a * Constraints.t
-type 'a universe_constraint_function = 'a -> 'a -> Constraints.t -> Constraints.t
-
-val subst_univs_universe_constraints : universe_subst_fn -> 
-  Constraints.t -> Constraints.t
-
-val enforce_eq_instances_univs : bool -> Instance.t universe_constraint_function
-
-(** With [force_weak] UWeak constraints are turned into equalities,
-   otherwise they're forgotten. *)
-val to_constraints : force_weak:bool -> UGraph.t -> Constraints.t -> Constraint.t
-
-(** [eq_constr_univs_infer_With kind1 kind2 univs m n] is a variant of
-    {!eq_constr_univs_infer} taking kind-of-term functions, to expose
-    subterms of [m] and [n], arguments. *)
-val eq_constr_univs_infer_with :
-  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
-  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
-  UGraph.t -> 'a constraint_accumulator -> constr -> constr -> 'a -> 'a option
 
 (** Simplification and pruning of constraints:
     [normalize_context_set ctx us]
@@ -77,52 +30,13 @@ val eq_constr_univs_infer_with :
     (a global one if there is one) and transitively saturate
     the constraints w.r.t to the equalities. *)
 
-val level_subst_of : universe_subst_fn -> universe_level_subst_fn
-val subst_univs_constraints : universe_subst_fn -> Constraint.t -> Constraint.t
-
-val subst_univs_constr : universe_subst -> constr -> constr
-
-type universe_opt_subst = Universe.t option universe_map
-
-val make_opt_subst : universe_opt_subst -> universe_subst_fn
-
-val subst_opt_univs_constr : universe_opt_subst -> constr -> constr
-
 val normalize_context_set : UGraph.t -> ContextSet.t ->
   universe_opt_subst (* The defined and undefined variables *) ->
   LSet.t (* univ variables that can be substituted by algebraics *) ->
   UPairSet.t (* weak equality constraints *) ->
   (universe_opt_subst * LSet.t) in_universe_context_set
 
-val normalize_univ_variables : universe_opt_subst -> 
-  universe_opt_subst * LSet.t * LSet.t * universe_subst
-
-val normalize_univ_variable : 
-  find:(Level.t -> Universe.t) ->
-  Level.t -> Universe.t
-
-val normalize_univ_variable_opt_subst : universe_opt_subst ->
-  (Level.t -> Universe.t)
-
-val normalize_univ_variable_subst : universe_subst ->
-  (Level.t -> Universe.t)
-
-val normalize_universe_opt_subst : universe_opt_subst ->
-  (Universe.t -> Universe.t)
-
-val normalize_universe_subst : universe_subst ->
-  (Universe.t -> Universe.t)
-
-(** Full universes substitutions into terms *)
-
-val nf_evars_and_universes_opt_subst : (existential -> constr option) -> 
-  universe_opt_subst -> constr -> constr
-
 val refresh_constraints : UGraph.t -> ContextSet.t -> ContextSet.t * UGraph.t
-
-(** Pretty-printing *)
-
-val pr_universe_opt_subst : universe_opt_subst -> Pp.t
 
 (** *********************************** Deprecated *)
 
@@ -246,3 +160,95 @@ val constr_of_reference : Globnames.global_reference -> constr
 
 val type_of_global : Globnames.global_reference -> types in_universe_context_set
 [@@ocaml.deprecated "Use [UnivGen.type_of_global]"]
+
+(** ****** Deprecated: moved to [UnivSubst] *)
+
+val level_subst_of : universe_subst_fn -> universe_level_subst_fn
+[@@ocaml.deprecated "Use [UnivSubst.level_subst_of]"]
+
+val subst_univs_constraints : universe_subst_fn -> Constraint.t -> Constraint.t
+[@@ocaml.deprecated "Use [UnivSubst.subst_univs_constraints]"]
+
+val subst_univs_constr : universe_subst -> constr -> constr
+[@@ocaml.deprecated "Use [UnivSubst.subst_univs_constr]"]
+
+type universe_opt_subst = UnivSubst.universe_opt_subst
+[@@ocaml.deprecated "Use [UnivSubst.universe_opt_subst]"]
+
+val make_opt_subst : universe_opt_subst -> universe_subst_fn
+[@@ocaml.deprecated "Use [UnivSubst.make_opt_subst]"]
+
+val subst_opt_univs_constr : universe_opt_subst -> constr -> constr
+[@@ocaml.deprecated "Use [UnivSubst.subst_opt_univs_constr]"]
+
+val normalize_univ_variables : universe_opt_subst ->
+  universe_opt_subst * LSet.t * LSet.t * universe_subst
+[@@ocaml.deprecated "Use [UnivSubst.normalize_univ_variables]"]
+
+val normalize_univ_variable :
+  find:(Level.t -> Universe.t) ->
+  Level.t -> Universe.t
+[@@ocaml.deprecated "Use [UnivSubst.normalize_univ_variable]"]
+
+val normalize_univ_variable_opt_subst : universe_opt_subst ->
+  (Level.t -> Universe.t)
+[@@ocaml.deprecated "Use [UnivSubst.normalize_univ_variable_opt_subst]"]
+
+val normalize_univ_variable_subst : universe_subst ->
+  (Level.t -> Universe.t)
+[@@ocaml.deprecated "Use [UnivSubst.normalize_univ_variable_subst]"]
+
+val normalize_universe_opt_subst : universe_opt_subst ->
+  (Universe.t -> Universe.t)
+[@@ocaml.deprecated "Use [UnivSubst.normalize_universe_opt_subst]"]
+
+val normalize_universe_subst : universe_subst ->
+  (Universe.t -> Universe.t)
+[@@ocaml.deprecated "Use [UnivSubst.normalize_universe_subst]"]
+
+val nf_evars_and_universes_opt_subst : (existential -> constr option) ->
+  universe_opt_subst -> constr -> constr
+[@@ocaml.deprecated "Use [UnivSubst.nf_evars_and_universes_opt_subst]"]
+
+val pr_universe_opt_subst : universe_opt_subst -> Pp.t
+[@@ocaml.deprecated "Use [UnivSubst.pr_universe_opt_subst]"]
+
+(** ****** Deprecated: moved to [UnivProblem] *)
+
+type universe_constraint = UnivProblem.t =
+  | ULe of Universe.t * Universe.t [@ocaml.deprecated "Use [UnivProblem.ULe]"]
+  | UEq of Universe.t * Universe.t [@ocaml.deprecated "Use [UnivProblem.UEq]"]
+  | ULub of Level.t * Level.t [@ocaml.deprecated "Use [UnivProblem.ULub]"]
+  | UWeak of Level.t * Level.t [@ocaml.deprecated "Use [UnivProblem.UWeak]"]
+[@@ocaml.deprecated "Use [UnivProblem.t]"]
+
+module Constraints = UnivProblem.Set
+[@@ocaml.deprecated "Use [UnivProblem.Set]"]
+
+type 'a constraint_accumulator = 'a UnivProblem.accumulator
+[@@ocaml.deprecated "Use [UnivProblem.accumulator]"]
+type 'a universe_constrained = 'a UnivProblem.constrained
+[@@ocaml.deprecated "Use [UnivProblem.constrained]"]
+type 'a universe_constraint_function = 'a UnivProblem.constraint_function
+[@@ocaml.deprecated "Use [UnivProblem.constraint_function]"]
+
+val subst_univs_universe_constraints : universe_subst_fn ->
+  Constraints.t -> Constraints.t
+[@@ocaml.deprecated "Use [UnivProblem.Set.subst_univs]"]
+
+val enforce_eq_instances_univs : bool -> Instance.t universe_constraint_function
+[@@ocaml.deprecated "Use [UnivProblem.enforce_eq_instances_univs]"]
+
+(** With [force_weak] UWeak constraints are turned into equalities,
+   otherwise they're forgotten. *)
+val to_constraints : force_weak:bool -> UGraph.t -> Constraints.t -> Constraint.t
+[@@ocaml.deprecated "Use [UnivProblem.to_constraints]"]
+
+(** [eq_constr_univs_infer_With kind1 kind2 univs m n] is a variant of
+    {!eq_constr_univs_infer} taking kind-of-term functions, to expose
+    subterms of [m] and [n], arguments. *)
+val eq_constr_univs_infer_with :
+  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
+  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
+  UGraph.t -> 'a constraint_accumulator -> constr -> constr -> 'a -> 'a option
+[@@ocaml.deprecated "Use [UnivProblem.eq_constr_univs_infer_with]"]

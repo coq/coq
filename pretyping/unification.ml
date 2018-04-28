@@ -561,16 +561,16 @@ let is_rigid_head sigma flags t =
     | Proj (_, _) -> false (* Why aren't Prod, Sort rigid heads ? *)
 
 let force_eqs c =
-  let open Universes in
-  Constraints.fold
+  let open UnivProblem in
+  Set.fold
     (fun c acc ->
        let c' = match c with
          (* Should we be forcing weak constraints? *)
          | ULub (l, r) | UWeak (l, r) -> UEq (Univ.Universe.make l,Univ.Universe.make r)
          | ULe _ | UEq _ -> c
        in
-        Constraints.add c' acc)
-    c Constraints.empty
+        Set.add c' acc)
+    c Set.empty
 
 let constr_cmp pb env sigma flags t u =
   let cstrs =

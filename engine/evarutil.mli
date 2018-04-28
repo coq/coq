@@ -284,5 +284,5 @@ val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
 val e_new_global : evar_map ref -> GlobRef.t -> constr
 [@@ocaml.deprecated "Use [Evd.new_global]"]
 
-val e_nf_evars_and_universes : evar_map ref -> (Constr.constr -> Constr.constr) * Universes.universe_opt_subst
+val e_nf_evars_and_universes : evar_map ref -> (Constr.constr -> Constr.constr) * UnivSubst.universe_opt_subst
 [@@ocaml.deprecated "Use Evd.minimize_universes and nf_evars_universes"]

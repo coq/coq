@@ -701,7 +701,7 @@ let reducible_mind_case sigma c = match EConstr.kind sigma c with
 let magicaly_constant_of_fixbody env sigma reference bd = function
   | Name.Anonymous -> bd
   | Name.Name id ->
-    let open Universes in
+    let open UnivProblem in
     try
       let (cst_mod,cst_sect,_) = Constant.repr3 reference in
       let cst = Constant.make3 cst_mod cst_sect (Label.of_id id) in
@@ -712,7 +712,7 @@ let magicaly_constant_of_fixbody env sigma reference bd = function
         let csts = EConstr.eq_constr_universes env sigma (EConstr.of_constr t) bd in
         begin match csts with
         | Some csts ->
-          let subst = Constraints.fold (fun cst acc ->
+          let subst = Set.fold (fun cst acc ->
               let l, r = match cst with
                 | ULub (u, v) | UWeak (u, v) -> u, v
                 | UEq (u, v) | ULe (u, v) ->

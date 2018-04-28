@@ -446,28 +446,28 @@ let compare_constr sigma cmp c1 c2 =
   compare_gen kind (fun _ _ -> Univ.Instance.equal) Sorts.equal cmp 0 (unsafe_to_constr c1) (unsafe_to_constr c2)
 
 let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
-  let open Universes in
+  let open UnivProblem in
   if not nargs_ok then enforce_eq_instances_univs false u u' cstrs
   else
     CArray.fold_left3
       (fun cstrs v u u' ->
          let open Univ.Variance in
          match v with
-         | Irrelevant -> Constraints.add (UWeak (u,u')) cstrs
+         | Irrelevant -> Set.add (UWeak (u,u')) cstrs
          | Covariant ->
            let u = Univ.Universe.make u in
            let u' = Univ.Universe.make u' in
            (match cv_pb with
-            | Reduction.CONV -> Constraints.add (UEq (u,u')) cstrs
-            | Reduction.CUMUL -> Constraints.add (ULe (u,u')) cstrs)
+            | Reduction.CONV -> Set.add (UEq (u,u')) cstrs
+            | Reduction.CUMUL -> Set.add (ULe (u,u')) cstrs)
          | Invariant ->
            let u = Univ.Universe.make u in
            let u' = Univ.Universe.make u' in
-           Constraints.add (UEq (u,u')) cstrs)
+           Set.add (UEq (u,u')) cstrs)
       cstrs variances (Univ.Instance.to_array u) (Univ.Instance.to_array u')
 
 let cmp_inductives cv_pb (mind,ind as spec) nargs u1 u2 cstrs =
-  let open Universes in
+  let open UnivProblem in
   match mind.Declarations.mind_universes with
   | Declarations.Monomorphic_ind _ ->
     assert (Univ.Instance.length u1 = 0 && Univ.Instance.length u2 = 0);
@@ -480,7 +480,7 @@ let cmp_inductives cv_pb (mind,ind as spec) nargs u1 u2 cstrs =
     compare_cumulative_instances cv_pb (Int.equal num_param_arity nargs) variances u1 u2 cstrs
 
 let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
-  let open Universes in
+  let open UnivProblem in
   match mind.Declarations.mind_universes with
   | Declarations.Monomorphic_ind _ ->
     cstrs
@@ -491,7 +491,7 @@ let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
     if not (Int.equal num_cnstr_args nargs)
     then enforce_eq_instances_univs false u1 u2 cstrs
     else
-      Array.fold_left2 (fun cstrs u1 u2 -> Universes.(Constraints.add (UWeak (u1,u2)) cstrs))
+      Array.fold_left2 (fun cstrs u1 u2 -> UnivProblem.(Set.add (UWeak (u1,u2)) cstrs))
         cstrs (Univ.Instance.to_array u1) (Univ.Instance.to_array u2)
 
 let eq_universes env sigma cstrs cv_pb ref nargs l l' =
@@ -499,8 +499,8 @@ let eq_universes env sigma cstrs cv_pb ref nargs l l' =
   else
     let l = Evd.normalize_universe_instance sigma l
     and l' = Evd.normalize_universe_instance sigma l' in
-    let open Universes in
     let open GlobRef in
+    let open UnivProblem in
     match ref with
     | VarRef _ -> assert false (* variables don't have instances *)
     | ConstRef _ ->
@@ -515,11 +515,11 @@ let eq_universes env sigma cstrs cv_pb ref nargs l l' =
       true
 
 let test_constr_universes env sigma leq m n =
-  let open Universes in
+  let open UnivProblem in
   let kind c = kind_upto sigma c in
-  if m == n then Some Constraints.empty
+  if m == n then Some Set.empty
   else
-    let cstrs = ref Constraints.empty in
+    let cstrs = ref Set.empty in
     let cv_pb = if leq then Reduction.CUMUL else Reduction.CONV in
     let eq_universes ref nargs l l' = eq_universes env sigma cstrs Reduction.CONV ref nargs l l'
     and leq_universes ref nargs l l' = eq_universes env sigma cstrs cv_pb ref nargs l l' in
@@ -527,7 +527,7 @@ let test_constr_universes env sigma leq m n =
       let s1 = ESorts.kind sigma (ESorts.make s1) in
       let s2 = ESorts.kind sigma (ESorts.make s2) in
       if Sorts.equal s1 s2 then true
-      else (cstrs := Constraints.add 
+      else (cstrs := Set.add
               (UEq (Sorts.univ_of_sort s1,Sorts.univ_of_sort s2)) !cstrs;
 	    true)
     in
@@ -536,7 +536,7 @@ let test_constr_universes env sigma leq m n =
       let s2 = ESorts.kind sigma (ESorts.make s2) in
       if Sorts.equal s1 s2 then true
       else 
-	(cstrs := Constraints.add 
+        (cstrs := Set.add
            (ULe (Sorts.univ_of_sort s1,Sorts.univ_of_sort s2)) !cstrs;
 	 true)
     in
@@ -574,15 +574,15 @@ let compare_head_gen_proj env sigma equ eqs eqc' nargs m n =
   | _ -> Constr.compare_head_gen_with kind kind equ eqs eqc' nargs m n
 
 let eq_constr_universes_proj env sigma m n =
-  let open Universes in
-  if m == n then Some Constraints.empty
+  let open UnivProblem in
+  if m == n then Some Set.empty
   else 
-    let cstrs = ref Constraints.empty in
+    let cstrs = ref Set.empty in
     let eq_universes ref l l' = eq_universes env sigma cstrs Reduction.CONV ref l l' in
     let eq_sorts s1 s2 =
       if Sorts.equal s1 s2 then true
       else
-	(cstrs := Constraints.add 
+        (cstrs := Set.add
            (UEq (Sorts.univ_of_sort s1, Sorts.univ_of_sort s2)) !cstrs;
 	 true)
     in

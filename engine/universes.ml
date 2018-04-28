@@ -8,11 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Sorts
 open Util
-open Pp
-open Constr
 open Univ
+open UnivSubst
 
 (* To disallow minimization to Set *)
 
@@ -27,190 +25,6 @@ let _ =
             optread  = is_set_minimization;
             optwrite = (:=) set_minimization })
 
-type universe_constraint =
-  | ULe of Universe.t * Universe.t
-  | UEq of Universe.t * Universe.t
-  | ULub of Level.t * Level.t
-  | UWeak of Level.t * Level.t
-
-module Constraints = struct
-  module S = Set.Make(
-  struct 
-    type t = universe_constraint
-
-    let compare x y =
-      match x, y with
-      | ULe (u, v), ULe (u', v') ->
-        let i = Universe.compare u u' in
-        if Int.equal i 0 then Universe.compare v v'
-        else i
-      | UEq (u, v), UEq (u', v') ->
-        let i = Universe.compare u u' in
-        if Int.equal i 0 then Universe.compare v v'
-        else if Universe.equal u v' && Universe.equal v u' then 0
-        else i
-      | ULub (u, v), ULub (u', v') | UWeak (u, v), UWeak (u', v') ->
-        let i = Level.compare u u' in
-        if Int.equal i 0 then Level.compare v v'
-        else if Level.equal u v' && Level.equal v u' then 0
-        else i
-      | ULe _, _ -> -1
-      | _, ULe _ -> 1
-      | UEq _, _ -> -1
-      | _, UEq _ -> 1
-      | ULub _, _ -> -1
-      | _, ULub _ -> 1
-  end)
-  
-  include S
-
-  let is_trivial = function
-    | ULe (u, v) | UEq (u, v) -> Universe.equal u v
-    | ULub (u, v) | UWeak (u, v) -> Level.equal u v
-
-  let add cst s =
-    if is_trivial cst then s
-    else add cst s
-
-  let pr_one = function
-    | ULe (u, v) -> Universe.pr u ++ str " <= " ++ Universe.pr v
-    | UEq (u, v) -> Universe.pr u ++ str " = " ++ Universe.pr v
-    | ULub (u, v) -> Level.pr u ++ str " /\\ " ++ Level.pr v
-    | UWeak (u, v) -> Level.pr u ++ str " ~ " ++ Level.pr v
-
-  let pr c =
-    fold (fun cst pp_std ->
-        pp_std ++ pr_one cst ++ fnl ()) c (str "")
-
-  let equal x y = 
-    x == y || equal x y
-
-end
-
-type universe_constraints = Constraints.t
-type 'a constraint_accumulator = universe_constraints -> 'a -> 'a option
-type 'a universe_constrained = 'a * universe_constraints
-
-type 'a universe_constraint_function = 'a -> 'a -> universe_constraints -> universe_constraints
-
-let enforce_eq_instances_univs strict x y c = 
-  let mk u v = if strict then ULub (u, v) else UEq (Universe.make u, Universe.make v) in
-  let ax = Instance.to_array x and ay = Instance.to_array y in
-    if Array.length ax != Array.length ay then
-      CErrors.anomaly (Pp.str "Invalid argument: enforce_eq_instances_univs called with" ++
-	       Pp.str " instances of different lengths.");
-    CArray.fold_right2
-      (fun x y -> Constraints.add (mk x y))
-      ax ay c
-
-let enforce_univ_constraint (u,d,v) =
-  match d with
-  | Eq -> enforce_eq u v
-  | Le -> enforce_leq u v
-  | Lt -> enforce_leq (super u) v
-
-let subst_univs_level fn l =
-  try Some (fn l)
-  with Not_found -> None
-
-let subst_univs_constraint fn (u,d,v as c) cstrs =
-  let u' = subst_univs_level fn u in
-  let v' = subst_univs_level fn v in
-  match u', v' with
-  | None, None -> Constraint.add c cstrs
-  | Some u, None -> enforce_univ_constraint (u,d,Universe.make v) cstrs
-  | None, Some v -> enforce_univ_constraint (Universe.make u,d,v) cstrs
-  | Some u, Some v -> enforce_univ_constraint (u,d,v) cstrs
-
-let subst_univs_constraints subst csts =
-  Constraint.fold
-    (fun c cstrs -> subst_univs_constraint subst c cstrs)
-    csts Constraint.empty
-
-let level_subst_of f =
-  fun l ->
-    try let u = f l in
-          match Universe.level u with
-          | None -> l
-          | Some l -> l
-    with Not_found -> l
-
-let subst_univs_universe_constraint fn = function
-  | ULe (u, v) ->
-    let u' = subst_univs_universe fn u and v' = subst_univs_universe fn v in
-    if Universe.equal u' v' then None
-    else Some (ULe (u',v'))
-  | UEq (u, v) ->
-    let u' = subst_univs_universe fn u and v' = subst_univs_universe fn v in
-    if Universe.equal u' v' then None
-    else Some (ULe (u',v'))
-  | ULub (u, v) ->
-    let u' = level_subst_of fn u and v' = level_subst_of fn v in
-    if Level.equal u' v' then None
-    else Some (ULub (u',v'))
-  | UWeak (u, v) ->
-    let u' = level_subst_of fn u and v' = level_subst_of fn v in
-    if Level.equal u' v' then None
-    else Some (UWeak (u',v'))
-
-let subst_univs_universe_constraints subst csts =
-  Constraints.fold 
-    (fun c -> Option.fold_right Constraints.add (subst_univs_universe_constraint subst c))
-    csts Constraints.empty 
-
-let to_constraints ~force_weak g s =
-  let invalid () =
-    raise (Invalid_argument "to_constraints: non-trivial algebraic constraint between universes")
-  in
-  let tr cst acc =
-    match cst with
-    | ULub (l, l') -> Constraint.add (l, Eq, l') acc
-    | UWeak (l, l') when force_weak -> Constraint.add (l, Eq, l') acc
-    | UWeak  _-> acc
-    | ULe (l, l') ->
-      begin match Universe.level l, Universe.level l' with
-        | Some l, Some l' -> Constraint.add (l, Le, l') acc
-        | None, Some _ -> enforce_leq l l' acc
-        | _, None ->
-          if UGraph.check_leq g l l'
-          then acc
-          else invalid ()
-      end
-    | UEq (l, l') ->
-      begin match Universe.level l, Universe.level l' with
-        | Some l, Some l' -> Constraint.add (l, Eq, l') acc
-        | None, _ | _, None ->
-          if UGraph.check_eq g l l'
-          then acc
-          else invalid ()
-      end
-  in
-  Constraints.fold tr s Constraint.empty
-
-(** Variant of [eq_constr_univs_infer] taking kind-of-term functions,
-    to expose subterms of [m] and [n], arguments. *)
-let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
-  (* spiwack: duplicates the code of [eq_constr_univs_infer] because I
-     haven't find a way to factor the code without destroying
-     pointer-equality optimisations in [eq_constr_univs_infer].
-     Pointer equality is not sufficient to ensure equality up to
-     [kind1,kind2], because [kind1] and [kind2] may be different,
-     typically evaluating [m] and [n] in different evar maps. *)
-  let cstrs = ref accu in
-  let eq_universes _ _ = UGraph.check_eq_instances univs in
-  let eq_sorts s1 s2 = 
-    if Sorts.equal s1 s2 then true
-    else
-      let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-      match fold (Constraints.singleton (UEq (u1, u2))) !cstrs with
-      | None -> false
-      | Some accu -> cstrs := accu; true
-  in
-  let rec eq_constr' nargs m n =
-    Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' nargs m n
-  in
-  let res = Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' 0 m n in
-  if res then Some !cstrs else None
 
 (** Simplification *)
 
@@ -242,136 +56,6 @@ let choose_canonical ctx flexible algs s =
 	    else
 	      let canon = LSet.choose algs in
 		canon, (global, rigid, LSet.remove canon flexible)
-
-let subst_univs_fn_constr f c =
-  let changed = ref false in
-  let fu = Univ.subst_univs_universe f in
-  let fi = Univ.Instance.subst_fn (level_subst_of f) in
-  let rec aux t =
-    match kind t with
-    | Sort (Sorts.Type u) ->
-      let u' = fu u in
-        if u' == u then t else
-          (changed := true; mkSort (Sorts.sort_of_univ u'))
-    | Const (c, u) ->
-      let u' = fi u in
-        if u' == u then t
-        else (changed := true; mkConstU (c, u'))
-    | Ind (i, u) ->
-      let u' = fi u in
-        if u' == u then t
-        else (changed := true; mkIndU (i, u'))
-    | Construct (c, u) ->
-      let u' = fi u in
-        if u' == u then t
-        else (changed := true; mkConstructU (c, u'))
-    | _ -> map aux t
-  in
-  let c' = aux c in
-    if !changed then c' else c
-
-let subst_univs_constr subst c =
-  if Univ.is_empty_subst subst then c
-  else
-    let f = Univ.make_subst subst in
-      subst_univs_fn_constr f c
-
-let subst_univs_constr =
-  if Flags.profile then
-    let subst_univs_constr_key = CProfile.declare_profile "subst_univs_constr" in
-      CProfile.profile2 subst_univs_constr_key subst_univs_constr
-  else subst_univs_constr
-
-let normalize_univ_variable ~find =
-  let rec aux cur =
-    let b = find cur in
-    let b' = subst_univs_universe aux b in
-      if Universe.equal b' b then b
-      else b'
-  in aux
-
-let normalize_univ_variable_opt_subst ectx =
-  let find l = 
-    match Univ.LMap.find l ectx with
-    | Some b -> b
-    | None -> raise Not_found
-  in
-  normalize_univ_variable ~find
-
-let normalize_univ_variable_subst subst =
-  let find l = Univ.LMap.find l subst in
-  normalize_univ_variable ~find
-
-let normalize_universe_opt_subst subst =
-  let normlevel = normalize_univ_variable_opt_subst subst in
-    subst_univs_universe normlevel
-
-let normalize_universe_subst subst =
-  let normlevel = normalize_univ_variable_subst subst in
-    subst_univs_universe normlevel
-
-let normalize_opt_subst ctx = 
-  let normalize = normalize_universe_opt_subst ctx in
-  Univ.LMap.mapi (fun u -> function
-      | None -> None
-      | Some v -> Some (normalize v)) ctx
-
-type universe_opt_subst = Universe.t option universe_map
-
-let subst_univs_fn_puniverses f (c, u as cu) =
-  let u' = Instance.subst_fn f u in
-    if u' == u then cu else (c, u')
-
-let nf_evars_and_universes_opt_subst f subst =
-  let subst = normalize_univ_variable_opt_subst subst in
-  let lsubst = level_subst_of subst in
-  let rec aux c =
-    match kind c with
-    | Evar (evk, args) ->
-      let args = Array.map aux args in
-      (match try f (evk, args) with Not_found -> None with
-      | None -> mkEvar (evk, args)
-      | Some c -> aux c)
-    | Const pu ->
-      let pu' = subst_univs_fn_puniverses lsubst pu in
-        if pu' == pu then c else mkConstU pu'
-    | Ind pu ->
-      let pu' = subst_univs_fn_puniverses lsubst pu in
-        if pu' == pu then c else mkIndU pu'
-    | Construct pu ->
-      let pu' = subst_univs_fn_puniverses lsubst pu in
-        if pu' == pu then c else mkConstructU pu'
-    | Sort (Type u) ->
-      let u' = Univ.subst_univs_universe subst u in
-        if u' == u then c else mkSort (sort_of_univ u')
-    | _ -> Constr.map aux c
-  in aux
-
-let make_opt_subst s = 
-  fun x -> 
-    (match Univ.LMap.find x s with
-    | Some u -> u
-    | None -> raise Not_found)
-
-let subst_opt_univs_constr s = 
-  let f = make_opt_subst s in
-  subst_univs_fn_constr f
-
-let normalize_univ_variables ctx = 
-  let ctx = normalize_opt_subst ctx in
-  let undef, def, subst =
-    Univ.LMap.fold (fun u v (undef, def, subst) -> 
-      match v with
-      | None -> (Univ.LSet.add u undef, def, subst)
-      | Some b -> (undef, Univ.LSet.add u def, Univ.LMap.add u b subst))
-    ctx (Univ.LSet.empty, Univ.LSet.empty, Univ.LMap.empty)
-  in ctx, undef, def, subst
-
-let pr_universe_body = function
-  | None -> mt ()
-  | Some v -> str" := " ++ Univ.Universe.pr v
-
-let pr_universe_opt_subst = Univ.LMap.pr pr_universe_body
 
 (* Eq < Le < Lt *)
 let compare_constraint_type d d' =
@@ -448,6 +132,7 @@ let instantiate_with_lbound u lbound lower ~alg ~enforce (ctx, us, algs, insts, 
 type constraints_map = (Univ.constraint_type * Univ.LMap.key) list Univ.LMap.t
 
 let _pr_constraints_map (cmap:constraints_map) =
+  let open Pp in
   LMap.fold (fun l cstrs acc -> 
     Level.pr l ++ str " => " ++ 
       prlist_with_sep spc (fun (d,r) -> pr_constraint_type d ++ Level.pr r) cstrs ++
@@ -763,3 +448,37 @@ let extend_context = UnivGen.extend_context
 let constr_of_global = UnivGen.constr_of_global
 let constr_of_reference = UnivGen.constr_of_global
 let type_of_global = UnivGen.type_of_global
+
+(** UnivSubst *)
+
+let level_subst_of = UnivSubst.level_subst_of
+let subst_univs_constraints = UnivSubst.subst_univs_constraints
+let subst_univs_constr = UnivSubst.subst_univs_constr
+type universe_opt_subst = UnivSubst.universe_opt_subst
+let make_opt_subst = UnivSubst.make_opt_subst
+let subst_opt_univs_constr = UnivSubst.subst_opt_univs_constr
+let normalize_univ_variables = UnivSubst.normalize_univ_variables
+let normalize_univ_variable = UnivSubst.normalize_univ_variable
+let normalize_univ_variable_opt_subst = UnivSubst.normalize_univ_variable_opt_subst
+let normalize_univ_variable_subst = UnivSubst.normalize_univ_variable_subst
+let normalize_universe_opt_subst = UnivSubst.normalize_universe_opt_subst
+let normalize_universe_subst = UnivSubst.normalize_universe_subst
+let nf_evars_and_universes_opt_subst = UnivSubst.nf_evars_and_universes_opt_subst
+let pr_universe_opt_subst = UnivSubst.pr_universe_opt_subst
+
+(** UnivProblem *)
+
+type universe_constraint = UnivProblem.t =
+  | ULe of Universe.t * Universe.t
+  | UEq of Universe.t * Universe.t
+  | ULub of Level.t * Level.t
+  | UWeak of Level.t * Level.t
+
+module Constraints = UnivProblem.Set
+type 'a constraint_accumulator = 'a UnivProblem.accumulator
+type 'a universe_constrained = 'a UnivProblem.constrained
+type 'a universe_constraint_function = 'a UnivProblem.constraint_function
+let subst_univs_universe_constraints = UnivProblem.Set.subst_univs
+let enforce_eq_instances_univs = UnivProblem.enforce_eq_instances_univs
+let to_constraints = UnivProblem.to_constraints
+let eq_constr_univs_infer_with = UnivProblem.eq_constr_univs_infer_with

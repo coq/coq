@@ -209,11 +209,11 @@ let ppuniverse_instance l = pp (Instance.pr prlev l)
 let ppuniverse_context l = pp (pr_universe_context prlev l)
 let ppuniverse_context_set l = pp (pr_universe_context_set prlev l)
 let ppuniverse_subst l = pp (Univ.pr_universe_subst l)
-let ppuniverse_opt_subst l = pp (Universes.pr_universe_opt_subst l)
+let ppuniverse_opt_subst l = pp (UnivSubst.pr_universe_opt_subst l)
 let ppuniverse_level_subst l = pp (Univ.pr_universe_level_subst l)
 let ppevar_universe_context l = pp (Termops.pr_evar_universe_context l)
 let ppconstraints c = pp (pr_constraints Level.pr c)
-let ppuniverseconstraints c = pp (Universes.Constraints.pr c)
+let ppuniverseconstraints c = pp (UnivProblem.Set.pr c)
 let ppuniverse_context_future c = 
   let ctx = Future.force c in
     ppuniverse_context ctx
