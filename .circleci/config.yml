@@ -126,7 +126,7 @@ jobs:
     <<: *opam-boot-template
     environment:
       <<: *envvars
-      EXTRA_OPAM: "ocamlgraph ppx_tools_versioned ppx_deriving ocaml-migrate-parsetree"
+      EXTRA_OPAM: "ocamlgraph elpi"
 
   # Build and prepare test environment
   build: *build-template
