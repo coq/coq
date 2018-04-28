@@ -26,27 +26,27 @@ let step_count = ref 0
 
 let node_count = ref 0
 
-let logic_constant s = Universes.constr_of_global @@
+let logic_constant s = UnivGen.constr_of_global @@
   Coqlib.coq_reference "refl_tauto" ["Init";"Logic"] s
 
 let li_False = lazy (destInd (logic_constant "False"))
 let li_and   = lazy (destInd (logic_constant "and"))
 let li_or    = lazy (destInd (logic_constant "or"))
 
-let pos_constant s = Universes.constr_of_global @@
+let pos_constant s = UnivGen.constr_of_global @@
   Coqlib.coq_reference "refl_tauto" ["Numbers";"BinNums"] s
 
 let l_xI = lazy (pos_constant "xI")
 let l_xO = lazy (pos_constant "xO")
 let l_xH = lazy (pos_constant "xH")
 
-let store_constant s = Universes.constr_of_global @@
+let store_constant s = UnivGen.constr_of_global @@
   Coqlib.coq_reference "refl_tauto" ["rtauto";"Bintree"] s
 
 let l_empty = lazy (store_constant "empty")
 let l_push = lazy (store_constant "push")
 
-let constant s = Universes.constr_of_global @@
+let constant s = UnivGen.constr_of_global @@
   Coqlib.coq_reference "refl_tauto" ["rtauto";"Rtauto"] s
 
 let l_Reflect = lazy (constant "Reflect")

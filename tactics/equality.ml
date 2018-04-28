@@ -1781,7 +1781,7 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
       try
         let lbeq,u,(_,x,y) = find_eq_data_decompose (NamedDecl.get_type decl) in
         let u = EInstance.kind sigma u in
-        let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
+        let eq = UnivGen.constr_of_global_univ (lbeq.eq,u) in
         if flags.only_leibniz then restrict_to_eq_and_identity eq;
         match EConstr.kind sigma x, EConstr.kind sigma y with
         | Var z, _  when not (is_evaluable env (EvalVarRef z)) ->
@@ -1832,7 +1832,7 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
     try
       let lbeq,u,(_,x,y) = find_eq_data_decompose c in
       let u = EInstance.kind sigma u in
-      let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
+      let eq = UnivGen.constr_of_global_univ (lbeq.eq,u) in
       if flags.only_leibniz then restrict_to_eq_and_identity eq;
       (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
       if EConstr.eq_constr sigma x y then failwith "caught";

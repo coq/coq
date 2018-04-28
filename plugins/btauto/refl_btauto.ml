@@ -2,11 +2,11 @@ let contrib_name = "btauto"
 
 let init_constant dir s =
   let find_constant contrib dir s =
-    Universes.constr_of_global (Coqlib.find_reference contrib dir s)
+    UnivGen.constr_of_global (Coqlib.find_reference contrib dir s)
   in
   find_constant contrib_name dir s
 
-let get_constant dir s = lazy (Universes.constr_of_global @@ Coqlib.coq_reference contrib_name dir s)
+let get_constant dir s = lazy (UnivGen.constr_of_global @@ Coqlib.coq_reference contrib_name dir s)
 
 let get_inductive dir s =
   let glob_ref () = Coqlib.find_reference contrib_name ("Coq" :: dir) s in

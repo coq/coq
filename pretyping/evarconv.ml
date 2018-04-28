@@ -49,7 +49,7 @@ let _ = Goptions.declare_bool_option {
 (* XXX: we would like to search for this with late binding
    "data.id.type" etc... *)
 let impossible_default_case () =
-  let c, ctx = Universes.fresh_global_instance (Global.env()) (Globnames.ConstRef Coqlib.id) in
+  let c, ctx = UnivGen.fresh_global_instance (Global.env()) (Globnames.ConstRef Coqlib.id) in
   let (_, u) = Constr.destConst c in
   Some (c, Constr.mkConstU (Coqlib.type_of_id, u), ctx)
 
@@ -210,7 +210,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       else match (Stack.strip_n_app (l_us-1) sk2_effective) with
       | None -> raise Not_found
       | Some (l',el,s') -> (l'@Stack.append_app [|el|] Stack.empty,s') in
-  let u, ctx' = Universes.fresh_instance_from ctx None in
+  let u, ctx' = UnivGen.fresh_instance_from ctx None in
   let subst = Univ.make_inverse_instance_subst u in
   let c = EConstr.of_constr c in
   let c' = subst_univs_level_constr subst c in

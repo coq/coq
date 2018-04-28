@@ -226,7 +226,7 @@ let unify_resolve_refine poly flags gls ((c, t, ctx),n,clenv) =
   Refine.refine ~typecheck:false begin fun sigma ->
       let sigma, term, ty =
         if poly then
-          let (subst, ctx) = Universes.fresh_universe_context_set_instance ctx in
+          let (subst, ctx) = UnivGen.fresh_universe_context_set_instance ctx in
           let map c = Vars.subst_univs_level_constr subst c in
           let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
           sigma, map c, map t

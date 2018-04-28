@@ -75,7 +75,7 @@ let pf_ids_set_of_hyps gls =
 let pf_get_new_id id gls =
   next_ident_away id (pf_ids_set_of_hyps gls)
 
-let pf_global gls id = EConstr.of_constr (Universes.constr_of_global (Constrintern.construct_reference (pf_hyps gls) id))
+let pf_global gls id = EConstr.of_constr (UnivGen.constr_of_global (Constrintern.construct_reference (pf_hyps gls) id))
 
 let pf_reduction_of_red_expr gls re c =
   let (redfun, _) = reduction_of_red_expr (pf_env gls) re in

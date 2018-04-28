@@ -60,7 +60,7 @@ module Make(T : Task) () = struct
   type request = Request of T.request
 
   type more_data =
-    | MoreDataUnivLevel of Universes.universe_id list
+    | MoreDataUnivLevel of UnivGen.universe_id list
 
   let slave_respond (Request r) =
     let res = T.perform r in
@@ -171,7 +171,7 @@ module Make(T : Task) () = struct
         | Unix.WSIGNALED sno -> Printf.sprintf "signalled(%d)" sno
         | Unix.WSTOPPED sno -> Printf.sprintf "stopped(%d)" sno) in
     let more_univs n =
-      CList.init n (fun _ -> Universes.new_univ_id ()) in
+      CList.init n (fun _ -> UnivGen.new_univ_id ()) in
 
     let rec kill_if () =
       if not (Worker.is_alive proc) then ()
@@ -310,7 +310,7 @@ module Make(T : Task) () = struct
       Marshal.to_channel oc (RespFeedback (debug_with_pid fb)) []; flush oc in
     ignore (Feedback.add_feeder (fun x -> slave_feeder (Option.get !slave_oc) x));
     (* We ask master to allocate universe identifiers *)
-    Universes.set_remote_new_univ_id (bufferize (fun () ->
+    UnivGen.set_remote_new_univ_id (bufferize (fun () ->
       marshal_response (Option.get !slave_oc) RespGetCounterNewUnivLevel;
       match unmarshal_more_data (Option.get !slave_ic) with
       | MoreDataUnivLevel l -> l));

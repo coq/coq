@@ -471,7 +471,7 @@ let emit_side_effects eff u =
 
 let new_univ_variable ?loc rigid name
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =
-  let u = Universes.new_univ_level () in
+  let u = UnivGen.new_univ_level () in
   let ctx' = Univ.ContextSet.add_universe u ctx in
   let uctx', pred =
     match rigid with
@@ -582,7 +582,7 @@ let fix_undefined_variables uctx =
     uctx_univ_algebraic = algs' }
 
 let refresh_undefined_univ_variables uctx =
-  let subst, ctx' = Universes.fresh_universe_context_set_instance uctx.uctx_local in
+  let subst, ctx' = UnivGen.fresh_universe_context_set_instance uctx.uctx_local in
   let subst_fn u = Univ.subst_univs_level_level subst u in
   let alg = Univ.LSet.fold (fun u acc -> Univ.LSet.add (subst_fn u) acc)
     uctx.uctx_univ_algebraic Univ.LSet.empty 

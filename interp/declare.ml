@@ -564,7 +564,7 @@ let do_universe poly l =
   in
   let l =
     List.map (fun {CAst.v=id} ->
-      let lev = Universes.new_univ_id () in
+      let lev = UnivGen.new_univ_id () in
       (id, lev)) l
   in
   let src = if poly then BoundUniv else UnqualifiedUniv in

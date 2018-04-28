@@ -105,7 +105,7 @@ let protect_tac_in map id =
 let closed_term t l =
   let open Quote_plugin in
   Proofview.tclEVARMAP >>= fun sigma ->
-  let l = List.map Universes.constr_of_global l in
+  let l = List.map UnivGen.constr_of_global l in
   let cs = List.fold_right Quote.ConstrSet.add l Quote.ConstrSet.empty in
   if Quote.closed_under sigma cs t then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (mt())
 
@@ -233,7 +233,7 @@ let stdlib_modules =
   ]
 
 let coq_constant c =
-  lazy (EConstr.of_constr (Universes.constr_of_global @@ Coqlib.gen_reference_in_modules "Ring" stdlib_modules c))
+  lazy (EConstr.of_constr (UnivGen.constr_of_global @@ Coqlib.gen_reference_in_modules "Ring" stdlib_modules c))
 let coq_reference c =
   lazy (Coqlib.gen_reference_in_modules "Ring" stdlib_modules c)
 
@@ -279,7 +279,7 @@ let plugin_modules =
     ]
 
 let my_constant c =
-  lazy (EConstr.of_constr (Universes.constr_of_global @@ Coqlib.gen_reference_in_modules "Ring" plugin_modules c))
+  lazy (EConstr.of_constr (UnivGen.constr_of_global @@ Coqlib.gen_reference_in_modules "Ring" plugin_modules c))
 let my_reference c =
   lazy (Coqlib.gen_reference_in_modules "Ring" plugin_modules c)
 
@@ -927,7 +927,7 @@ let ftheory_to_obj : field_info -> obj =
 let field_equality evd r inv req =
   match EConstr.kind !evd req with
     | App (f, [| _ |]) when eq_constr_nounivs !evd f (Lazy.force coq_eq) ->
-        let c = Universes.constr_of_global (Coqlib.build_coq_eq_data()).congr in
+        let c = UnivGen.constr_of_global (Coqlib.build_coq_eq_data()).congr in
         let c = EConstr.of_constr c in
         mkApp(c,[|r;r;inv|])
     | _ ->

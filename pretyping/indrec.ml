@@ -86,7 +86,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
     if not (Sorts.List.mem kind (elim_sorts specif)) then
       raise
 	(RecursionSchemeError
-	   (NotAllowedCaseAnalysis (false, fst (Universes.fresh_sort_in_family env kind), pind)))
+           (NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family env kind), pind)))
   in
   let ndepar = mip.mind_nrealdecls + 1 in
 
@@ -550,7 +550,7 @@ let check_arities env listdepkind =
        let kelim = elim_sorts (mibi,mipi) in
        if not (Sorts.List.mem kind kelim) then raise
 	 (RecursionSchemeError
-	  (NotAllowedCaseAnalysis (true, fst (Universes.fresh_sort_in_family env
+          (NotAllowedCaseAnalysis (true, fst (UnivGen.fresh_sort_in_family env
 					      kind),(mind,u))))
        else if Int.List.mem ni ln then raise
 	 (RecursionSchemeError (NotMutualInScheme (mind,mind)))

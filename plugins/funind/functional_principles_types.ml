@@ -689,7 +689,7 @@ let build_case_scheme fa =
   let scheme_type = EConstr.Unsafe.to_constr ((Typing.unsafe_type_of env sigma) (EConstr.of_constr scheme)) in
   let sorts =
     (fun (_,_,x) ->
-       Universes.new_sort_in_family x
+       UnivGen.new_sort_in_family x
     )
       fa
   in

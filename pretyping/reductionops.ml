@@ -83,7 +83,7 @@ let declare_reduction_effect funkey f =
 
 (** A function to set the value of the print function *)
 let set_reduction_effect x funkey =
-  let termkey = Universes.constr_of_global x in
+  let termkey = UnivGen.constr_of_global x in
   Lib.add_anonymous_leaf (inReductionEffect (termkey,funkey))
 
 
@@ -705,7 +705,7 @@ let magicaly_constant_of_fixbody env sigma reference bd = function
     try
       let (cst_mod,cst_sect,_) = Constant.repr3 reference in
       let cst = Constant.make3 cst_mod cst_sect (Label.of_id id) in
-      let (cst, u), ctx = fresh_constant_instance env cst in
+      let (cst, u), ctx = UnivGen.fresh_constant_instance env cst in
       match constant_opt_value_in env (cst,u) with
       | None -> bd
       | Some t ->

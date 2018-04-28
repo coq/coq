@@ -380,7 +380,7 @@ let do_mutual_induction_scheme lnamedepindsort =
 	 match inst with
 	 | None ->
 	    let _, ctx = Global.type_of_global_in_context env0 (IndRef ind) in
-	    let u, ctx = Universes.fresh_instance_from ctx None in
+            let u, ctx = UnivGen.fresh_instance_from ctx None in
             let evd = Evd.from_ctx (UState.of_context_set ctx) in
 	      evd, (ind,u), Some u
 	 | Some ui -> evd, (ind, ui), inst

@@ -1221,7 +1221,7 @@ let genclrtac cl cs clr =
       (fun type_err gl ->
          tclTHEN
            (tclTHEN (Proofview.V82.of_tactic (Tactics.elim_type (EConstr.of_constr
-             (Universes.constr_of_global @@ Coqlib.build_coq_False ())))) (old_cleartac clr))
+             (UnivGen.constr_of_global @@ Coqlib.build_coq_False ())))) (old_cleartac clr))
            (fun gl -> raise type_err)
            gl))
     (old_cleartac clr)

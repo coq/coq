@@ -89,7 +89,7 @@ let rec prolog l n gl =
 
 let out_term env = function
   | IsConstr (c, _) -> c
-  | IsGlobRef gr -> EConstr.of_constr (fst (Universes.fresh_global_instance env gr))
+  | IsGlobRef gr -> EConstr.of_constr (fst (UnivGen.fresh_global_instance env gr))
 
 let prolog_tac l n =
   Proofview.V82.tactic begin fun gl ->

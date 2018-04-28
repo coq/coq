@@ -102,7 +102,7 @@ let get_coq_eq ctx =
     let eq = Globnames.destIndRef Coqlib.glob_eq in
     (* Do not force the lazy if they are not defined *)
     let eq, ctx = with_context_set ctx 
-      (Universes.fresh_inductive_instance (Global.env ()) eq) in
+      (UnivGen.fresh_inductive_instance (Global.env ()) eq) in
       mkIndU eq, mkConstructUi (eq,1), ctx
   with Not_found ->
     user_err Pp.(str "eq not found.")
@@ -192,7 +192,7 @@ let get_non_sym_eq_data env (ind,u) =
 (**********************************************************************)
 
 let build_sym_scheme env ind =
-  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
+  let (ind,u as indu), ctx = UnivGen.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
   let cstr n =
@@ -241,11 +241,11 @@ let sym_scheme_kind =
 let const_of_scheme kind env ind ctx = 
   let sym_scheme, eff = (find_scheme kind ind) in
   let sym, ctx = with_context_set ctx 
-    (Universes.fresh_constant_instance (Global.env()) sym_scheme) in
+    (UnivGen.fresh_constant_instance (Global.env()) sym_scheme) in
     mkConstU sym, ctx, eff
 
 let build_sym_involutive_scheme env ind =
-  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
+  let (ind,u as indu), ctx = UnivGen.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
   let eq,eqrefl,ctx = get_coq_eq ctx in
@@ -353,7 +353,7 @@ let sym_involutive_scheme_kind =
 (**********************************************************************)
 
 let build_l2r_rew_scheme dep env ind kind =
-  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
+  let (ind,u as indu), ctx = UnivGen.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
   let sym, ctx, eff = const_of_scheme sym_scheme_kind env ind ctx in
@@ -392,7 +392,7 @@ let build_l2r_rew_scheme dep env ind kind =
                      rel_vect (nrealargs+4) nrealargs;
                      rel_vect 1 nrealargs;
 		     [|mkRel 1|]]) in
-  let s, ctx' = Universes.fresh_sort_in_family (Global.env ()) kind in
+  let s, ctx' = UnivGen.fresh_sort_in_family (Global.env ()) kind in
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
   let ci = make_case_info (Global.env()) ind RegularStyle in
@@ -469,7 +469,7 @@ let build_l2r_rew_scheme dep env ind kind =
 (**********************************************************************)
 
 let build_l2r_forward_rew_scheme dep env ind kind =
-  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
+  let (ind,u as indu), ctx = UnivGen.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
   let cstr n p =
@@ -495,7 +495,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
     name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
   let realsign_ind_P n aP =
     name_context env ((LocalAssum (Name varH,aP))::realsign_P n) in
-  let s, ctx' = Universes.fresh_sort_in_family (Global.env ()) kind in
+  let s, ctx' = UnivGen.fresh_sort_in_family (Global.env ()) kind in
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
   let ci = make_case_info (Global.env()) ind RegularStyle in
@@ -561,7 +561,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
 (**********************************************************************)
 
 let build_r2l_forward_rew_scheme dep env ind kind = 
-  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
+  let (ind,u as indu), ctx = UnivGen.fresh_inductive_instance env ind in
   let ((mib,mip as specif),constrargs,realsign,paramsctxt,nrealargs) =
     get_non_sym_eq_data env indu in
   let cstr n =
@@ -573,7 +573,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   let applied_ind = build_dependent_inductive indu specif in
   let realsign_ind =
     name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
-  let s, ctx' = Universes.fresh_sort_in_family (Global.env ()) kind in
+  let s, ctx' = UnivGen.fresh_sort_in_family (Global.env ()) kind in
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
   let ci = make_case_info (Global.env()) ind RegularStyle in
@@ -755,7 +755,7 @@ let rew_r2l_scheme_kind =
 
 let build_congr env (eq,refl,ctx) ind =
   let (ind,u as indu), ctx = with_context_set ctx 
-    (Universes.fresh_inductive_instance env ind) in
+    (UnivGen.fresh_inductive_instance env ind) in
   let (mib,mip) = lookup_mind_specif env ind in
   if not (Int.equal (Array.length mib.mind_packets) 1) || not (Int.equal (Array.length mip.mind_nf_lc) 1) then
     error "Not an inductive type with a single constructor.";
@@ -778,7 +778,7 @@ let build_congr env (eq,refl,ctx) ind =
   let varH = fresh env (Id.of_string "H") in
   let varf = fresh env (Id.of_string "f") in
   let ci = make_case_info (Global.env()) ind RegularStyle in
-  let uni, ctx = Universes.extend_context (Universes.new_global_univ ()) ctx in
+  let uni, ctx = UnivGen.extend_context (UnivGen.new_global_univ ()) ctx in
   let ctx = (fst ctx, Univ.enforce_leq uni (univ_of_eq env eq) (snd ctx)) in
   let c = 
   my_it_mkLambda_or_LetIn paramsctxt

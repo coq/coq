@@ -804,19 +804,19 @@ let make_flexible_variable evd ~algebraic u =
 (****************************************)
 
 let fresh_sort_in_family ?loc ?(rigid=univ_flexible) env evd s = 
-  with_context_set ?loc rigid evd (Universes.fresh_sort_in_family env s)
+  with_context_set ?loc rigid evd (UnivGen.fresh_sort_in_family env s)
 
 let fresh_constant_instance ?loc env evd c =
-  with_context_set ?loc univ_flexible evd (Universes.fresh_constant_instance env c)
+  with_context_set ?loc univ_flexible evd (UnivGen.fresh_constant_instance env c)
 
 let fresh_inductive_instance ?loc env evd i =
-  with_context_set ?loc univ_flexible evd (Universes.fresh_inductive_instance env i)
+  with_context_set ?loc univ_flexible evd (UnivGen.fresh_inductive_instance env i)
 
 let fresh_constructor_instance ?loc env evd c =
-  with_context_set ?loc univ_flexible evd (Universes.fresh_constructor_instance env c)
+  with_context_set ?loc univ_flexible evd (UnivGen.fresh_constructor_instance env c)
 
 let fresh_global ?loc ?(rigid=univ_flexible) ?names env evd gr =
-  with_context_set ?loc rigid evd (Universes.fresh_global_instance ?names env gr)
+  with_context_set ?loc rigid evd (UnivGen.fresh_global_instance ?names env gr)
 
 let whd_sort_variable evd t = t
 

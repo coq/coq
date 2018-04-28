@@ -79,7 +79,7 @@ let connect_hint_clenv poly (c, _, ctx) clenv gl =
   let clenv, c =
     if poly then
       (** Refresh the instance of the hint *)
-      let (subst, ctx) = Universes.fresh_universe_context_set_instance ctx in
+      let (subst, ctx) = UnivGen.fresh_universe_context_set_instance ctx in
       let emap c = Vars.subst_univs_level_constr subst c in
       let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
       (** Only metas are mentioning the old universes. *)

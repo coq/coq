@@ -19,22 +19,6 @@ module UPairSet : CSet.S with type elt = (Level.t * Level.t)
 
 (** Universes *)
 
-(** The global universe counter *)
-type universe_id = DirPath.t * int
-
-val set_remote_new_univ_id : universe_id RemoteCounter.installer
-
-(** Side-effecting functions creating new universe levels. *)
-
-val new_univ_id : unit -> universe_id
-val new_univ_level : unit -> Level.t
-val new_univ : unit -> Universe.t
-val new_Type : unit -> types
-val new_Type_sort : unit -> Sorts.t
-
-val new_global_univ : unit -> Universe.t in_universe_context_set
-val new_sort_in_family : Sorts.family -> Sorts.t
-
 (** {6 Constraints for type inference}
 
     When doing conversion of universes, not only do we have =/<= constraints but
@@ -81,43 +65,6 @@ val eq_constr_univs_infer_with :
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   UGraph.t -> 'a constraint_accumulator -> constr -> constr -> 'a -> 'a option
-
-(** Build a fresh instance for a given context, its associated substitution and 
-    the instantiated constraints. *)
-
-val fresh_instance_from_context : AUContext.t -> 
-  Instance.t constrained
-
-val fresh_instance_from : AUContext.t -> Instance.t option ->
-  Instance.t in_universe_context_set
-
-val fresh_sort_in_family : env -> Sorts.family -> 
-  Sorts.t in_universe_context_set
-val fresh_constant_instance : env -> Constant.t ->
-  pconstant in_universe_context_set
-val fresh_inductive_instance : env -> inductive ->
-  pinductive in_universe_context_set
-val fresh_constructor_instance : env -> constructor ->
-  pconstructor in_universe_context_set
-
-val fresh_global_instance : ?names:Univ.Instance.t -> env -> GlobRef.t ->
-  constr in_universe_context_set
-
-val fresh_global_or_constr_instance : env -> Globnames.global_reference_or_constr -> 
-  constr in_universe_context_set
-
-(** Get fresh variables for the universe context.
-    Useful to make tactics that manipulate constrs in universe contexts polymorphic. *)
-val fresh_universe_context_set_instance : ContextSet.t -> 
-  universe_level_subst * ContextSet.t
-
-(** Raises [Not_found] if not a global reference. *)
-val global_of_constr : constr -> GlobRef.t puniverses
-
-val constr_of_global_univ : GlobRef.t puniverses -> constr
-
-val extend_context : 'a in_universe_context_set -> ContextSet.t -> 
-  'a in_universe_context_set
 
 (** Simplification and pruning of constraints:
     [normalize_context_set ctx us]
@@ -166,22 +113,6 @@ val normalize_universe_opt_subst : universe_opt_subst ->
 val normalize_universe_subst : universe_subst ->
   (Universe.t -> Universe.t)
 
-(** Create a fresh global in the global environment, without side effects.
-    BEWARE: this raises an ANOMALY on polymorphic constants/inductives: 
-    the constraints should be properly added to an evd. 
-    See Evd.fresh_global, Evarutil.new_global, and pf_constr_of_global for
-    the proper way to get a fresh copy of a global reference. *)
-val constr_of_global : GlobRef.t -> constr
-
-(** ** DEPRECATED ** synonym of [constr_of_global] *)
-val constr_of_reference : GlobRef.t -> constr
-[@@ocaml.deprecated "synonym of [constr_of_global]"]
-
-(** Returns the type of the global reference, by creating a fresh instance of polymorphic 
-    references and computing their instantiated universe context. (side-effect on the
-    universe counter, use with care). *)
-val type_of_global : GlobRef.t -> types in_universe_context_set
-
 (** Full universes substitutions into terms *)
 
 val nf_evars_and_universes_opt_subst : (existential -> constr option) -> 
@@ -199,6 +130,7 @@ val solve_constraints_system : Universe.t option array -> Universe.t array -> Un
   Universe.t array
 
 (** *********************************** Deprecated *)
+
 [@@@ocaml.warning "-3"]
 val set_minimization : bool ref
 [@@ocaml.deprecated "Becoming internal."]
@@ -235,3 +167,87 @@ type univ_name_list = UnivNames.univ_name_list
 val universe_binders_with_opt_names : Globnames.global_reference ->
   Univ.Level.t list -> univ_name_list option -> universe_binders
 [@@ocaml.deprecated "Use [UnivNames.universe_binders_with_opt_names]"]
+
+(** ****** Deprecated: moved to [UnivGen] *)
+
+type universe_id = UnivGen.universe_id
+[@@ocaml.deprecated "Use [UnivGen.universe_id]"]
+
+val set_remote_new_univ_id : universe_id RemoteCounter.installer
+[@@ocaml.deprecated "Use [UnivGen.set_remote_new_univ_id]"]
+
+val new_univ_id : unit -> universe_id
+[@@ocaml.deprecated "Use [UnivGen.new_univ_id]"]
+
+val new_univ_level : unit -> Level.t
+[@@ocaml.deprecated "Use [UnivGen.new_univ_level]"]
+
+val new_univ : unit -> Universe.t
+[@@ocaml.deprecated "Use [UnivGen.new_univ]"]
+
+val new_Type : unit -> types
+[@@ocaml.deprecated "Use [UnivGen.new_Type]"]
+
+val new_Type_sort : unit -> Sorts.t
+[@@ocaml.deprecated "Use [UnivGen.new_Type_sort]"]
+
+val new_global_univ : unit -> Universe.t in_universe_context_set
+[@@ocaml.deprecated "Use [UnivGen.new_global_univ]"]
+
+val new_sort_in_family : Sorts.family -> Sorts.t
+[@@ocaml.deprecated "Use [UnivGen.new_sort_in_family]"]
+
+val fresh_instance_from_context : AUContext.t ->
+  Instance.t constrained
+[@@ocaml.deprecated "Use [UnivGen.fresh_instance_from_context]"]
+
+val fresh_instance_from : AUContext.t -> Instance.t option ->
+  Instance.t in_universe_context_set
+[@@ocaml.deprecated "Use [UnivGen.fresh_instance_from]"]
+
+val fresh_sort_in_family : env -> Sorts.family ->
+  Sorts.t in_universe_context_set
+[@@ocaml.deprecated "Use [UnivGen.fresh_sort_in_family]"]
+
+val fresh_constant_instance : env -> Constant.t ->
+  pconstant in_universe_context_set
+[@@ocaml.deprecated "Use [UnivGen.fresh_constant_instance]"]
+
+val fresh_inductive_instance : env -> inductive ->
+  pinductive in_universe_context_set
+[@@ocaml.deprecated "Use [UnivGen.fresh_inductive_instance]"]
+
+val fresh_constructor_instance : env -> constructor ->
+  pconstructor in_universe_context_set
+[@@ocaml.deprecated "Use [UnivGen.fresh_constructor_instance]"]
+
+val fresh_global_instance : ?names:Univ.Instance.t -> env -> Globnames.global_reference ->
+  constr in_universe_context_set
+[@@ocaml.deprecated "Use [UnivGen.fresh_global_instance]"]
+
+val fresh_global_or_constr_instance : env -> Globnames.global_reference_or_constr ->
+  constr in_universe_context_set
+[@@ocaml.deprecated "Use [UnivGen.fresh_global_or_constr_instance]"]
+
+val fresh_universe_context_set_instance : ContextSet.t ->
+  universe_level_subst * ContextSet.t
+[@@ocaml.deprecated "Use [UnivGen.fresh_universe_context_set_instance]"]
+
+val global_of_constr : constr -> Globnames.global_reference puniverses
+[@@ocaml.deprecated "Use [UnivGen.global_of_constr]"]
+
+val constr_of_global_univ : Globnames.global_reference puniverses -> constr
+[@@ocaml.deprecated "Use [UnivGen.constr_of_global_univ]"]
+
+val extend_context : 'a in_universe_context_set -> ContextSet.t ->
+  'a in_universe_context_set
+[@@ocaml.deprecated "Use [UnivGen.extend_context]"]
+
+val constr_of_global : Globnames.global_reference -> constr
+[@@ocaml.deprecated "Use [UnivGen.constr_of_global]"]
+
+val constr_of_reference : Globnames.global_reference -> constr
+[@@ocaml.deprecated "Use [UnivGen.constr_of_global]"]
+
+val type_of_global : Globnames.global_reference -> types in_universe_context_set
+[@@ocaml.deprecated "Use [UnivGen.type_of_global]"]
