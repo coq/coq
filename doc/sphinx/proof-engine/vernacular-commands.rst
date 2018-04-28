@@ -360,6 +360,7 @@ Requests to the environment
             Search (?x * _ + ?x * _)%Z outside OmegaLemmas.
 
    .. cmdv:: SearchAbout
+      :name: SearchAbout
 
       .. deprecated:: 8.5
 
@@ -416,7 +417,7 @@ Requests to the environment
    current goal (if any) and theorems of the current context whose
    statement’s conclusion or last hypothesis and conclusion matches the
    expressionterm where holes in the latter are denoted by `_`.
-   It is a variant of Search @term_pattern that does not look for subterms
+   It is a variant of :n:`Search @term_pattern` that does not look for subterms
    but searches for statements whose conclusion has exactly the expected
    form, or whose statement finishes by the given series of
    hypothesis/conclusion.
@@ -625,6 +626,7 @@ file is a particular case of module called *library file*.
 
 
    .. cmdv:: Require Import @qualid
+      :name: Require Import
 
       This loads and declares the module :n:`@qualid`
       and its dependencies then imports the contents of :n:`@qualid` as described
@@ -637,10 +639,11 @@ file is a particular case of module called *library file*.
       :cmd:`Import` :n:`@qualid` would.
 
    .. cmdv:: Require Export @qualid
+      :name: Require Export
 
-      This command acts as ``Require Import`` :n:`@qualid`,
-      but if a further module, say `A`, contains a command ``Require Export`` `B`,
-      then the command ``Require Import`` `A` also imports the module `B.`
+      This command acts as :cmd:`Require Import` :n:`@qualid`,
+      but if a further module, say `A`, contains a command :cmd:`Require Export` `B`,
+      then the command :cmd:`Require Import` `A` also imports the module `B.`
 
    .. cmdv:: Require [Import | Export] {+ @qualid }
 
@@ -653,7 +656,7 @@ file is a particular case of module called *library file*.
 
    .. cmdv:: From @dirpath Require @qualid
 
-      This command acts as ``Require``, but picks
+      This command acts as :cmd:`Require`, but picks
       any library whose absolute name is of the form dirpath.dirpath’.qualid
       for some `dirpath’`. This is useful to ensure that the :n:`@qualid` library
       comes from a given package by making explicit its absolute root.
@@ -895,6 +898,7 @@ interactively, they cannot be part of a vernacular file loaded via
    necessary.
 
    .. cmdv:: Backtrack @num @num @num
+      :name: Backtrack
 
       .. deprecated:: 8.4
 
@@ -1022,12 +1026,14 @@ Controlling display
    output, printing only identifiers.
 
 .. opt:: Printing Width @num
+   :name: Printing Width
 
    This command sets which left-aligned part of the width of the screen is used
    for display. At the time of writing this documentation, the default value
    is 78.
 
 .. opt:: Printing Depth @num
+   :name: Printing Depth
 
    This option controls the nesting depth of the formatter used for pretty-
    printing. Beyond this depth, display of subterms is replaced by dots. At the
@@ -1208,28 +1214,29 @@ scope of their effect. There are four kinds of commands:
 + Commands whose default is to extend their effect both outside the
   section and the module or library file they occur in.  For these
   commands, the Local modifier limits the effect of the command to the
-  current section or module it occurs in.  As an example, the ``Coercion``
-  (see Section :ref:`coercions`) and ``Strategy`` (see :ref:`here <vernac-strategy>`)
-  commands belong to this category.
+  current section or module it occurs in.  As an example, the :cmd:`Coercion`
+  and :cmd:`Strategy` commands belong to this category.
 + Commands whose default behavior is to stop their effect at the end
   of the section they occur in but to extent their effect outside the module or
   library file they occur in. For these commands, the Local modifier limits the
   effect of the command to the current module if the command does not occur in a
   section and the Global modifier extends the effect outside the current
   sections and current module if the command occurs in a section. As an example,
-  the :cmd:`Implicit Arguments`, :cmd:`Ltac` or :cmd:`Notation` commands belong
+  the :cmd:`Arguments`, :cmd:`Ltac` or :cmd:`Notation` commands belong
   to this category. Notice that a subclass of these commands do not support
   extension of their scope outside sections at all and the Global is not
   applicable to them.
 + Commands whose default behavior is to stop their effect at the end
-  of the section or module they occur in.  For these commands, the Global
+  of the section or module they occur in.  For these commands, the ``Global``
   modifier extends their effect outside the sections and modules they
-  occurs in.  The ``Transparent`` and ``Opaque`` (see Section :ref:`vernac-controlling-the-reduction-strategies`) commands  belong to this category.
+  occurs in.  The :cmd:`Transparent` and :cmd:`Opaque`
+  (see Section :ref:`vernac-controlling-the-reduction-strategies`) commands
+  belong to this category.
 + Commands whose default behavior is to extend their effect outside
   sections but not outside modules when they occur in a section and to
   extend their effect outside the module or library file they occur in
   when no section contains them.For these commands, the Local modifier
   limits the effect to the current section or module while the Global
   modifier extends the effect outside the module even when the command
-  occurs in a section.  The ``Set`` and ``Unset`` commands belong to this
+  occurs in a section.  The :cmd:`Set` and :cmd:`Unset` commands belong to this
   category.

@@ -1175,52 +1175,53 @@ component is equal ``nat`` and hence ``M1.T`` as specified.
     If `qualid` denotes a valid basic module (i.e. its module type is a
     signature), makes its components available by their short names.
 
-.. example::
+    .. example::
 
-    .. coqtop:: reset all
+       .. coqtop:: reset all
 
-       Module Mod.
+          Module Mod.
 
-       Definition T:=nat.
+          Definition T:=nat.
 
-       Check T.
+          Check T.
 
-       End Mod.
+          End Mod.
 
-       Check Mod.T.
+          Check Mod.T.
 
-       Fail Check T.
+          Fail Check T.
 
-       Import Mod.
+          Import Mod.
 
-       Check T.
+          Check T.
 
-Some features defined in modules are activated only when a module is
-imported. This is for instance the case of notations (see :ref:`Notations`).
+    Some features defined in modules are activated only when a module is
+    imported. This is for instance the case of notations (see :ref:`Notations`).
 
-Declarations made with the Local flag are never imported by theImport
-command. Such declarations are only accessible through their fully
-qualified name.
+    Declarations made with the ``Local`` flag are never imported by the :cmd:`Import`
+    command. Such declarations are only accessible through their fully
+    qualified name.
 
-.. example::
+    .. example::
 
-    .. coqtop:: all
+       .. coqtop:: all
 
-       Module A.
+          Module A.
 
-       Module B.
+          Module B.
 
-       Local Definition T := nat.
+          Local Definition T := nat.
 
-       End B.
+          End B.
 
-       End A.
+          End A.
 
-       Import A.
+          Import A.
 
-       Fail Check B.T.
+          Fail Check B.T.
 
     .. cmdv:: Export @qualid
+       :name: Export
 
        When the module containing the command Export qualid
        is imported, qualid is imported as well.
@@ -1231,16 +1232,17 @@ qualified name.
 
 .. cmd:: Print Module @ident
 
-    Prints the module type and (optionally) the body of the module `ident`.
+   Prints the module type and (optionally) the body of the module :n:`@ident`.
 
 .. cmd:: Print Module Type @ident
 
-    Prints the module type corresponding to `ident`.
+   Prints the module type corresponding to :n:`@ident`.
 
 .. opt:: Short Module Printing
 
-    This option (off by default) disables the printing of the types of fields,
-    leaving only their names, for the commands ``Print Module`` and ``Print Module Type``.
+   This option (off by default) disables the printing of the types of fields,
+   leaving only their names, for the commands :cmd:`Print Module` and
+   :cmd:`Print Module Type`.
 
 Libraries and qualified names
 ---------------------------------
@@ -1510,9 +1512,8 @@ implicitly applied to the implicit arguments it is waiting for: one
 says that the implicit argument is maximally inserted.
 
 Each implicit argument can be declared to have to be inserted maximally or non
-maximally. This can be governed argument per argument by the command ``Implicit
-Arguments`` (see Section :ref:`declare-implicit-args`) or globally by the
-:opt:`Maximal Implicit Insertion` option.
+maximally. This can be governed argument per argument by the command
+:cmd:`Arguments (implicits)` or globally by the :opt:`Maximal Implicit Insertion` option.
 See also :ref:`displaying-implicit-args`.
 
 
@@ -1565,7 +1566,7 @@ absent in every situation but still be able to specify it if needed:
 
 
 The syntax is supported in all top-level definitions:
-``Definition``, ``Fixpoint``, ``Lemma`` and so on. For (co-)inductive datatype
+:cmd:`Definition`, :cmd:`Fixpoint`, :cmd:`Lemma` and so on. For (co-)inductive datatype
 declarations, the semantics are the following: an inductive parameter
 declared as an implicit argument need not be repeated in the inductive
 definition but will become implicit for the constructors of the

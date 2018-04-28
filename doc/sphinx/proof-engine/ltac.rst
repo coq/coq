@@ -245,7 +245,7 @@ focused goals with:
    :name: ... : ... (goal selector)
 
    We can also use selectors as a tactical, which allows to use them nested
-   in a tactic expression, by using the keyword :tacn:`only`:
+   in a tactic expression, by using the keyword ``only``:
 
    .. tacv:: only selector : expr
       :name: only ... : ...
@@ -820,6 +820,7 @@ We can make pattern matching on goals using the following expression:
 .. we should provide the full grammar here
 
 .. tacn:: match goal with {+| {+ hyp} |- @cpattern => @expr } | _ => @expr end
+   :name: match goal
 
    If each hypothesis pattern :n:`hyp`\ :sub:`1,i`, with i=1,...,m\ :sub:`1` is
    matched (non-linear first-order unification) by an hypothesis of the
