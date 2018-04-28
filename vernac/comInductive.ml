@@ -202,7 +202,7 @@ let is_direct_sort_constraint s v = match s with
   | Some u -> Univ.univ_level_mem u v
   | None -> false
 
-let solve_constraints_system levels level_bounds level_min =
+let solve_constraints_system levels level_bounds =
   let open Univ in
   let levels =
     Array.mapi (fun i o ->
@@ -273,7 +273,7 @@ let inductive_levels env evd poly arities inds =
   (* Take the transitive closure of the system of constructors *)
   (* level constraints and remove the recursive dependencies *)
   let levels' = solve_constraints_system (Array.of_list levels)
-    (Array.of_list cstrs_levels) (Array.of_list min_levels)
+    (Array.of_list cstrs_levels)
   in
   let evd, arities =
     CList.fold_left3 (fun (evd, arities) cu (arity,(ctx,du)) len ->
