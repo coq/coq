@@ -124,11 +124,6 @@ val refresh_constraints : UGraph.t -> ContextSet.t -> ContextSet.t * UGraph.t
 
 val pr_universe_opt_subst : universe_opt_subst -> Pp.t
 
-(** {6 Support for template polymorphism } *)
-
-val solve_constraints_system : Universe.t option array -> Universe.t array -> Universe.t array ->
-  Universe.t array
-
 (** *********************************** Deprecated *)
 
 [@@@ocaml.warning "-3"]
