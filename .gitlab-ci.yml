@@ -1,12 +1,15 @@
-image: ubuntu:xenial
+image: ubuntu:bionic
 
 stages:
   - opam-boot
   - build
   - test
 
+# some default values
 variables:
-  # some default values
+  # Format: $IMAGE-V$DATE-$HOUR-$MINUTE
+  CACHEKEY: bionic-V2018-04-29-00-50
+  DEBIAN_FRONTEND: "noninteractive"
   NJOBS: "2"
   COMPILER: "4.02.3"
   CAMLP5_VER: "6.14"
@@ -16,26 +19,26 @@ variables:
   # some useful values
   COMPILER_32BIT: "4.02.3+32bit"
 
-  COMPILER_BLEEDING_EDGE: "4.06.0"
-  CAMLP5_VER_BLEEDING_EDGE: "7.03"
+  COMPILER_BLEEDING_EDGE: "4.06.1"
+  CAMLP5_VER_BLEEDING_EDGE: "7.05"
 
-  TIMING_PACKAGES: "time python"
+  TIMING_PACKAGES: "time python3"
 
   COQIDE_PACKAGES: "libgtk2.0-dev libgtksourceview2.0-dev"
   #COQIDE_PACKAGES_32BIT: "libgtk2.0-dev:i386 libgtksourceview2.0-dev:i386"
-  COQIDE_OPAM: "lablgtk-extras"
-  COQIDE_OPAM_BE: "lablgtk.2.18.6 lablgtk-extras.1.6"
-  COQDOC_PACKAGES: "texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-math-extra texlive-fonts-recommended texlive-fonts-extra latex-xcolor ghostscript tipa python3-pip"
-  COQDOC_OPAM: "hevea"
-  SPHINX_PACKAGES: "bs4 sphinx sphinx_rtd_theme pexpect antlr4-python3-runtime sphinxcontrib-bibtex"
+  COQIDE_OPAM: "lablgtk.2.18.5 conf-gtksourceview.2"
+  COQIDE_OPAM_BE: "lablgtk.2.18.6 conf-gtksourceview.2"
+  COQDOC_PACKAGES: "texlive-latex-extra texlive-fonts-recommended hevea python3-sphinx python3-pexpect python3-sphinx-rtd-theme python3-bs4 python3-sphinxcontrib.bibtex python3-pip"
+  SPHINX_PACKAGES: "antlr4-python3-runtime"
   ELPI_OPAM: "elpi"
 
-
 before_script:
+  - cat /proc/{cpu,mem}info || true
   - ls -a # figure out if artifacts are around
   - printenv
 #  - if [ "$COMPILER" = "$COMPILER_32BIT" ]; then sudo dpkg --add-architecture i386; fi
   - apt-get update -qq && apt-get install -y -qq m4 opam ${EXTRA_PACKAGES}
+  # This should be replaced by standard debian packages once python3-antlr4 makes to the archive.
   - if [ -n "${PIP_PACKAGES}" ]; then pip3 install ${PIP_PACKAGES}; fi
   # if no cache running opam config fails!
   - if [ -d .opamcache ]; then eval $(opam config env); fi
@@ -57,9 +60,6 @@ before_script:
       - .opamcache
     expire_in: 1 week
   script:
-    # the default repo in this docker image is a local directory
-    # at the time of 4aaeb8abf it lagged behind the official
-    # repository such that camlp5 7.01 was not available
     - opam init -a -y -j $NJOBS --compiler=${COMPILER} default https://opam.ocaml.org
     - eval $(opam config env)
     - opam update
@@ -178,16 +178,16 @@ opam-boot:
   cache:
     paths: &cache-paths
       - .opamcache
-    key: main
+    key: "main-$CACHEKEY"
   variables:
-    EXTRA_OPAM: "$COQIDE_OPAM $COQDOC_OPAM ocamlgraph $ELPI_OPAM"
+    EXTRA_OPAM: "$COQIDE_OPAM ocamlgraph $ELPI_OPAM"
     EXTRA_PACKAGES: "$COQIDE_PACKAGES"
 
 opam-boot:32bit:
   <<: *opam-boot-template
   cache:
     paths: *cache-paths
-    key: 32bit
+    key: "32bit-$CACHEKEY"
   variables:
     COMPILER: "$COMPILER_32BIT"
     EXTRA_PACKAGES: "gcc-multilib"
@@ -196,7 +196,7 @@ opam-boot:bleeding-edge:
   <<: *opam-boot-template
   cache:
     paths: *cache-paths
-    key: be
+    key: "be-$CACHEKEY"
   variables:
     COMPILER: "$COMPILER_BLEEDING_EDGE"
     CAMLP5_VER: "$CAMLP5_VER_BLEEDING_EDGE"
