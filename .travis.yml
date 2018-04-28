@@ -160,8 +160,6 @@ matrix:
           - texlive-fonts-extra
           - latex-xcolor
           - ghostscript
-          - transfig
-          - imagemagick
           - tipa
           - python3
           - python3-pip
