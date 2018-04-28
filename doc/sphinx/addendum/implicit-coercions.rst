@@ -263,9 +263,12 @@ Activating the Printing of Coercions
 
 .. cmd:: Add Printing Coercion @qualid
 
-  This command forces coercion denoted by :n:`@qualid` to be printed. To skip
-  the printing of coercion :n:`@qualid`, use :cmd:`Remove Printing Coercion`. By
-  default, a coercion is never printed.
+   This command forces coercion denoted by :n:`@qualid` to be printed.
+   By default, a coercion is never printed.
+
+.. cmd:: Remove Printing Coercion @qualid
+
+   Use this command, to skip the printing of coercion :n:`@qualid`.
 
 .. _coercions-classes-as-records:
 

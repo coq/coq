@@ -649,6 +649,7 @@ be applied or the goal is not head-reducible.
 .. exn:: @ident is already used.
 
 .. tacv:: intros
+   :name: intros
 
    This repeats ``intro`` until it meets the head-constant. It never
    reduces head-constants and it never fails.
@@ -715,7 +716,7 @@ be applied or the goal is not head-reducible.
 
    These tactics behave as previously but naming the introduced hypothesis
    :n:`@ident`. It is equivalent to :n:`intro @ident` followed by the
-   appropriate call to move (see :tacn:`move ... after`).
+   appropriate call to ``move`` (see :tacn:`move ... after ...`).
 
 .. tacn:: intros @intro_pattern_list
    :name: intros ...
@@ -918,7 +919,7 @@ the inverse of :tacn:`intro`.
    depend on it.
 
 .. tacn:: move @ident after @ident
-   :name: move .. after ...
+   :name: move ... after ...
 
    This moves the hypothesis named :n:`@ident` in the local context after the
    hypothesis named :n:`@ident`, where “after” is in reference to the
@@ -2149,7 +2150,7 @@ See also: :ref:`advanced-recursive-functions`
    :n:`dependent inversion_clear @ident`.
 
 .. tacv:: dependent inversion @ident with @term
-   :name: dependent inversion ...
+   :name: dependent inversion ... with ...
 
    This variant allows you to specify the generalization of the goal. It is
    useful when the system fails to generalize the goal automatically. If
@@ -2164,7 +2165,7 @@ See also: :ref:`advanced-recursive-functions`
 
 .. tacv:: dependent inversion_clear @ident with @term
 
-   Like :tacn:`dependent inversion ...` with but clears :n:`@ident` from the
+   Like :tacn:`dependent inversion ... with ...` with but clears :n:`@ident` from the
    local context.
 
 .. tacv:: dependent inversion_clear @ident as @intro_pattern with @term
@@ -3194,7 +3195,7 @@ can solve such a goal:
       Goal forall P:nat -> Prop, P 0 -> exists n, P n.
       eauto.
 
-Note that :tacn:`ex_intro` should be declared as a hint.
+Note that ``ex_intro`` should be declared as a hint.
 
 
 .. tacv:: {? info_}eauto {? @num} {? using {+ @lemma}} {? with {+ @ident}}
@@ -3445,6 +3446,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       Declares each :n:`@ident` as a transparent or opaque constant.
 
    .. cmdv:: Hint Extern @num {? @pattern} => tactic
+      :name: Hint Extern
 
       This hint type is to extend :tacn:`auto` with tactics other than :tacn:`apply` and
       :tacn:`unfold`. For that, we must specify a cost, an optional :n:`@pattern` and a
@@ -3665,6 +3667,7 @@ option which accepts three flags allowing for a fine-grained handling of
 non-imported hints.
 
 .. opt:: Loose Hint Behavior %( "Lax" %| "Warn" %| "Strict" %)
+   :name: Loose Hint Behavior
 
    This option accepts three values, which control the behavior of hints w.r.t.
    :cmd:`Import`:
@@ -3809,14 +3812,15 @@ some incompatibilities.
 
 .. tacv:: intuition
 
-  Is equivalent to :g:`intuition auto with *`.
+   Is equivalent to :g:`intuition auto with *`.
 
 .. tacv:: dintuition
+   :name: dintuition
 
-  While :tacn:`intuition` recognizes inductively defined connectives
-  isomorphic to the standard connective ``and, prod, or, sum, False,
-  Empty_set, unit, True``, :tacn:`dintuition` recognizes also all inductive
-  types with one constructors and no indices, i.e. record-style connectives.
+   While :tacn:`intuition` recognizes inductively defined connectives
+   isomorphic to the standard connective ``and``, ``prod``, ``or``, ``sum``, ``False``,
+   ``Empty_set``, ``unit``, ``True``, :tacn:`dintuition` recognizes also all inductive
+   types with one constructors and no indices, i.e. record-style connectives.
 
 .. opt:: Intuition Negation Unfolding
 
@@ -3845,11 +3849,14 @@ first- order reasoning, written by Pierre Corbineau. It is not restricted to
 usual logical connectives but instead may reason about any first-order class
 inductive definition.
 
-.. opt:: Firstorder Solver
+.. opt:: Firstorder Solver @tactic
 
    The default tactic used by :tacn:`firstorder` when no rule applies is
-   :g:`auto with *`, it can be reset locally or globally using this option and
-   printed using :cmd:`Print Firstorder Solver`.
+   :g:`auto with *`, it can be reset locally or globally using this option.
+
+   .. cmd:: Print Firstorder Solver
+
+      Prints the default tactic used by :tacn:`firstorder` when no rule applies.
 
 .. tacv:: firstorder @tactic
 
@@ -4012,8 +4019,8 @@ solved by :tacn:`f_equal`.
    :name: reflexivity
 
 This tactic applies to a goal that has the form :g:`t=u`. It checks that `t`
-and `u` are convertible and then solves the goal. It is equivalent to apply
-:tacn:`refl_equal`.
+and `u` are convertible and then solves the goal. It is equivalent to
+``apply refl_equal``.
 
 .. exn:: The conclusion is not a substitutive equation.
 
@@ -4105,7 +4112,7 @@ symbol :g:`=`.
    :n:`intro @ident; simplify_eq @ident`.
 
 .. tacn:: dependent rewrite -> @ident
-   :name: dependent rewrite
+   :name: dependent rewrite ->
 
    This tactic applies to any goal. If :n:`@ident` has type
    :g:`(existT B a b)=(existT B a' b')` in the local context (i.e. each
@@ -4116,6 +4123,7 @@ symbol :g:`=`.
    :tacn:`injection` and :tacn:`inversion` tactics.
 
 .. tacv:: dependent rewrite <- @ident
+   :name: dependent rewrite <-
 
    Analogous to :tacn:`dependent rewrite ->` but uses the equality from right to
    left.
@@ -4375,19 +4383,20 @@ This tactics reverses the list of the focused goals.
    unification, or they can be called back into focus with the command
    :cmd:`Unshelve`.
 
-.. tacv:: shelve_unifiable
+   .. tacv:: shelve_unifiable
+      :name: shelve_unifiable
 
-   Shelves only the goals under focus that are mentioned in other goals.
-   Goals that appear in the type of other goals can be solved by unification.
+      Shelves only the goals under focus that are mentioned in other goals.
+      Goals that appear in the type of other goals can be solved by unification.
 
-.. example::
+      .. example::
 
-   .. coqtop:: all reset
+         .. coqtop:: all reset
 
-      Goal exists n, n=0.
-      refine (ex_intro _ _ _).
-      all:shelve_unifiable.
-      reflexivity.
+            Goal exists n, n=0.
+            refine (ex_intro _ _ _).
+            all: shelve_unifiable.
+            reflexivity.
 
 .. cmd:: Unshelve
 

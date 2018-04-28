@@ -26,6 +26,11 @@ solvable. This is the restriction meant by "Presburger arithmetic".
 If the tactic cannot solve the goal, it fails with an error message.
 In any case, the computation eventually stops.
 
+.. tacv:: romega
+   :name: romega
+
+   To be documented.
+
 Arithmetical goals recognized by ``omega``
 ------------------------------------------
 
