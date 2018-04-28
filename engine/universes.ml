@@ -116,7 +116,15 @@ let universe_binders_with_opt_names ref levels = function
 
 let set_minimization = ref true
 let is_set_minimization () = !set_minimization
-			    
+
+let _ =
+  Goptions.(declare_bool_option
+          { optdepr  = false;
+            optname  = "minimization to Set";
+            optkey   = ["Universe";"Minimization";"ToSet"];
+            optread  = is_set_minimization;
+            optwrite = (:=) set_minimization })
+
 type universe_constraint =
   | ULe of Universe.t * Universe.t
   | UEq of Universe.t * Universe.t

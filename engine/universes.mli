@@ -17,9 +17,6 @@ open Univ
 (** Unordered pairs of universe levels (ie (u,v) = (v,u)) *)
 module UPairSet : CSet.S with type elt = (Level.t * Level.t)
 
-val set_minimization : bool ref
-val is_set_minimization : unit -> bool
-
 (** Universes *)
 
 val pr_with_global_universes : Level.t -> Pp.t

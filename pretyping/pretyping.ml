@@ -169,14 +169,6 @@ let _ =
 	    optread  = is_strict_universe_declarations;
 	    optwrite = (:=) strict_universe_declarations })
 
-let _ =
-  Goptions.(declare_bool_option
-	  { optdepr  = false;
-	    optname  = "minimization to Set";
-	    optkey   = ["Universe";"Minimization";"ToSet"];
-	    optread  = Universes.is_set_minimization;
-	    optwrite = (:=) Universes.set_minimization })
-
 (** Miscellaneous interpretation functions *)
 
 let interp_known_universe_level evd r =
