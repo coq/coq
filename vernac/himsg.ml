@@ -194,12 +194,6 @@ let rec pr_disjunction pr = function
   | a::l -> pr a ++ str "," ++ spc () ++ pr_disjunction pr l
   | [] -> assert false
 
-let pr_puniverses f env (c,u) = 
-  f env c ++ 
-  (if Flags.is_universe_polymorphism () && not (Univ.Instance.is_empty u) then
-    str"(*" ++ Univ.Instance.pr Universes.pr_with_global_universes u ++ str"*)"
-  else mt())
-
 let explain_elim_arity env sigma ind sorts c pj okinds =
   let open EConstr in
   let env = make_all_name_different env sigma in

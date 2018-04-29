@@ -20,6 +20,7 @@ open EConstr
 val print_sort : Sorts.t -> Pp.t
 val pr_sort_family : Sorts.family -> Pp.t
 val pr_fix : ('a -> Pp.t) -> ('a, 'a) pfixpoint -> Pp.t
+val pr_puniverses : Pp.t -> Univ.Instance.t -> Pp.t
 
 (** about contexts *)
 val push_rel_assum : Name.t * types -> env -> env

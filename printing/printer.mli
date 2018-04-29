@@ -140,6 +140,7 @@ val pr_constructor         : env -> constructor -> Pp.t
 val pr_inductive           : env -> inductive -> Pp.t
 val pr_evaluable_reference : evaluable_global_reference -> Pp.t
 
+val pr_puniverses          : (env -> 'a -> Pp.t) -> env -> 'a Univ.puniverses -> Pp.t
 val pr_pconstant           : env -> pconstant -> Pp.t
 val pr_pinductive          : env -> pinductive -> Pp.t
 val pr_pconstructor        : env -> pconstructor -> Pp.t
