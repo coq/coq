@@ -91,10 +91,14 @@ sig
       [f x y == y] for all [x] in [a] and [y] in [b] pointwise. *)
 
   val smartfoldmap : ('r -> 'a -> 'r * 'a) -> 'r -> 'a array -> 'r * 'a array
-  (** Same as [smartmap] but threads an additional state left-to-right. *)
+  (** [smartfoldmap f a b] behaves as [fold_left_map] but
+      returns [b] as second component instead of a copy of [b] when
+      the output array is pointwise the same as the input array [b] *)
 
   val smartfoldmap2 : ('r -> 'a -> 'b -> 'r * 'b) -> 'r -> 'a array -> 'b array -> 'r * 'b array
-  (** Same as [smartmap2] but threads an additional state left-to-right. *)
+  (** [smartfoldmap2 f a b c] behaves as [fold_left2_map] but
+      returns [c] as second component instead of a copy of [c] when
+      the output array is pointwise the same as the input array [c] *)
 
   val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
