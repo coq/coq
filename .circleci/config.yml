@@ -8,83 +8,29 @@ defaults:
     # reference syntax)
     working_directory: ~/coq
     docker:
-      - image: ocaml/opam:ubuntu
+      - image: coqci/base:V2018-05-05
 
   environment: &envvars
-    # required by some of the targets, e.g. compcert, passed for
-    # instance to opam to configure the number of parallel jobs
-    # allowed
-    NJOBS: 2
-    COMPILER: "system"
-    CAMLP5_VER: "6.14"
     NATIVE_COMP: "yes"
-
-    # some useful values
-    TIMING_PACKAGES: &timing-packages "time python"
 
 version: 2
 
 before_script: &before_script
-  name: Install system packages
+  name: Setup OPAM Switch
   command: |
     echo export TERM=xterm >> ~/.profile
     source ~/.profile
-    printenv
-    if [ -n "${EXTRA_PACKAGES}" ]; then sudo apt-get update -yq && sudo apt-get install -yq --no-install-recommends ${EXTRA_PACKAGES}; fi
     echo . ~/.profile >> $BASH_ENV
-
-opam-switch: &opam-switch
-  name: Select opam switch
-  command: |
-    opam switch ${COMPILER}
+    printenv | sort
+    opam switch "$COMPILER"
     opam config list
     opam list
-
-.opam-boot-template: &opam-boot-template
-  <<: *params
-  steps:
-    - checkout
-    - run: *before_script
-    - run:
-        name: Cache selection
-        command: |
-          # We can't use environment variables in cache names
-          # So put it in a file and use the checksum
-          echo "$COMPILER" > COMPILER
-    - restore_cache:
-        keys:
-          - coq-opam-cache-v1-{{ arch }}-{{ checksum "COMPILER" }}-{{ checksum ".circleci/config.yml" }}-
-    - run:
-        name: Update opam lists
-        command: |
-          opam repository set-url default https://opam.ocaml.org
-          opam update
-    - run:
-        name: Install opam packages
-        command: |
-          opam switch -j ${NJOBS} ${COMPILER}
-          opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind ${EXTRA_OPAM}
-    - run:
-        name: Clean cache
-        command: |
-          rm -rf ~/.opam/log/
-    - save_cache:
-        key: coq-opam-cache-v1-{{ arch }}-{{ checksum "COMPILER" }}-{{ checksum ".circleci/config.yml" }}-
-        paths:
-          - ~/.opam
-    - persist_to_workspace:
-        root: &workspace ~/
-        paths:
-          - .opam/
 
 .build-template: &build-template
   <<: *params
   steps:
     - checkout
     - run: *before_script
-    - attach_workspace: &attach_workspace
-        at: *workspace
-    - run: *opam-switch
     - run: &build-configure
         name: Configure
         command: |
@@ -96,7 +42,7 @@ opam-switch: &opam-switch
           make -j ${NJOBS}
           make test-suite/misc/universes/all_stdlib.v
     - persist_to_workspace:
-        root: *workspace
+        root: &workspace ~/
         paths:
           - coq/
 
@@ -106,7 +52,9 @@ opam-switch: &opam-switch
   <<: *params
   steps:
     - run: *before_script
-    - attach_workspace: *attach_workspace
+    - attach_workspace: &attach_workspace
+        at: *workspace
+
     - run:
         name: Test
         command: |
@@ -115,18 +63,9 @@ opam-switch: &opam-switch
         root: *workspace
         paths:
           - coq/
-  environment: &ci-template-vars
-    <<: *envvars
-    EXTRA_PACKAGES: *timing-packages
 
 # Defines individual jobs, see the workflows section below for job orchestration
 jobs:
-
-  opam-boot:
-    <<: *opam-boot-template
-    environment:
-      <<: *envvars
-      EXTRA_OPAM: "ocamlgraph elpi"
 
   # Build and prepare test environment
   build: *build-template
@@ -136,24 +75,15 @@ jobs:
 
   color:
     <<: *ci-template
-    environment:
-      <<: *ci-template-vars
-      EXTRA_PACKAGES: *timing-packages
 
   compcert:
     <<: *ci-template
 
   coq-dpdgraph:
     <<: *ci-template
-    environment:
-      <<: *ci-template-vars
-      EXTRA_PACKAGES: "time python autoconf automake"
 
   coquelicot:
     <<: *ci-template
-    environment:
-      <<: *ci-template-vars
-      EXTRA_PACKAGES: "time python autoconf automake"
 
   elpi:
     <<: *ci-template
@@ -172,15 +102,9 @@ jobs:
 
   fiat-parsers:
     <<: *ci-template
-    environment:
-      <<: *ci-template-vars
-      EXTRA_PACKAGES: *timing-packages
 
   flocq:
     <<: *ci-template
-    environment:
-      <<: *ci-template-vars
-      EXTRA_PACKAGES: "time python autoconf automake"
 
   math-classes:
     <<: *ci-template
@@ -193,9 +117,6 @@ jobs:
 
   hott:
     <<: *ci-template
-    environment:
-      <<: *ci-template-vars
-      EXTRA_PACKAGES: "time python autoconf automake"
 
   iris-lambda-rust:
     <<: *ci-template
@@ -214,9 +135,6 @@ jobs:
 
   sf:
     <<: *ci-template
-    environment:
-      <<: *ci-template-vars
-      EXTRA_PACKAGES: "time python wget"
 
   unimath:
     <<: *ci-template
@@ -226,14 +144,11 @@ jobs:
 
 workflows:
   version: 2
+
   # Run on each push
   main:
     jobs:
-      - opam-boot
-
-      - build:
-          requires:
-            - opam-boot
+      - build
 
       - bignums: &req-main
           requires:

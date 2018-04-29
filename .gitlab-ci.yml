@@ -1,76 +1,35 @@
-image: ubuntu:bionic
+image: coqci/base:V2018-05-05
 
 stages:
-  - opam-boot
   - build
   - test
 
 # some default values
 variables:
-  # Format: $IMAGE-V$DATE-$HOUR-$MINUTE
-  CACHEKEY: bionic-V2018-04-29-00-50
-  DEBIAN_FRONTEND: "noninteractive"
-  NJOBS: "2"
-  COMPILER: "4.02.3"
-  CAMLP5_VER: "6.14"
-  OPAMROOT: "$CI_PROJECT_DIR/.opamcache"
-  OPAMROOTISOK: "true"
-
-  # some useful values
-  COMPILER_32BIT: "4.02.3+32bit"
-
-  COMPILER_BLEEDING_EDGE: "4.06.1"
-  CAMLP5_VER_BLEEDING_EDGE: "7.05"
-
-  TIMING_PACKAGES: "time python3"
-
-  COQIDE_PACKAGES: "libgtk2.0-dev libgtksourceview2.0-dev"
-  #COQIDE_PACKAGES_32BIT: "libgtk2.0-dev:i386 libgtksourceview2.0-dev:i386"
-  COQIDE_OPAM: "lablgtk.2.18.5 conf-gtksourceview.2"
-  COQIDE_OPAM_BE: "lablgtk.2.18.6 conf-gtksourceview.2"
-  COQDOC_PACKAGES: "texlive-latex-extra texlive-fonts-recommended hevea python3-sphinx python3-pexpect python3-sphinx-rtd-theme python3-bs4 python3-sphinxcontrib.bibtex python3-pip"
-  SPHINX_PACKAGES: "antlr4-python3-runtime"
-  ELPI_OPAM: "elpi"
+  # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
+  # for reference]
+  CACHEKEY: bionic_coq-V2018-05-03
+  # By default, jobs run in the base switch; override to select another switch
+  OPAM_SWITCH: "base"
+  # Used to select special compiler switches such as flambda, 32bits, etc...
+  OPAM_VARIANT: ""
 
 before_script:
   - cat /proc/{cpu,mem}info || true
   - ls -a # figure out if artifacts are around
-  - printenv
-#  - if [ "$COMPILER" = "$COMPILER_32BIT" ]; then sudo dpkg --add-architecture i386; fi
-  - apt-get update -qq && apt-get install -y -qq m4 opam ${EXTRA_PACKAGES}
-  # This should be replaced by standard debian packages once python3-antlr4 makes to the archive.
-  - if [ -n "${PIP_PACKAGES}" ]; then pip3 install ${PIP_PACKAGES}; fi
-  # if no cache running opam config fails!
-  - if [ -d .opamcache ]; then eval $(opam config env); fi
+  - printenv | sort
+  - declare -A switch_table
+  - switch_table=( ["base"]="$COMPILER" ["be"]="$COMPILER_BE" )
+  - opam switch -y "${switch_table[$OPAM_SWITCH]}$OPAM_VARIANT"
+  - eval $(opam config env)
+  - opam list
+  - opam config list
 
-################ OPAM SYSTEM ######################
-# - use cache between pipelines
-# - use artifacts between jobs
-#   (in https://gitlab.com/SkySkimmer/coq/-/jobs/63255417
-#    the cache wasn't available at the build step)
-# every non opam-boot job must set dependencies (for ci it's in the template)
-# otherwise all opam-boot artifacts are used together and we get some random switch
+################ GITLAB CACHING ######################
+# - use artifacts between jobs                       #
+######################################################
 
-# set cache key when using
-.opam-boot-template: &opam-boot-template
-  stage: opam-boot
-  artifacts:
-    name: "opam-$COMPILER"
-    paths:
-      - .opamcache
-    expire_in: 1 week
-  script:
-    - opam init -a -y -j $NJOBS --compiler=${COMPILER} default https://opam.ocaml.org
-    - eval $(opam config env)
-    - opam update
-    - opam config list
-    - opam list
-    - opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind num ${EXTRA_OPAM}
-    - rm -rf ~/.opam/log/
-    - opam list
-
-# TODO figure out how to build doc for installed coq
-# set dependencies when using
+# TODO figure out how to build doc for installed Coq
 .build-template: &build-template
   stage: build
   artifacts:
@@ -80,21 +39,16 @@ before_script:
       - config/Makefile
       - test-suite/misc/universes/all_stdlib.v
     expire_in: 1 week
-  dependencies:
-    - not-a-real-job
   script:
     - set -e
-    - printenv
-    - opam config list
-    - opam list
 
     - echo 'start:coq.config'
     - ./configure -prefix "$(pwd)/_install_ci" ${EXTRA_CONF}
     - echo 'end:coq.config'
 
     - echo 'start:coq.build'
-    - make -j ${NJOBS} byte
-    - make -j ${NJOBS}
+    - make -j "$NJOBS" byte
+    - make -j "$NJOBS"
     - make test-suite/misc/universes/all_stdlib.v
     - echo 'end:coq:build'
 
@@ -106,12 +60,9 @@ before_script:
 
     - set +e
 
-# set dependencies when using
 .warnings-template: &warnings-template
   # keep warnings in test stage so we can test things even when warnings occur
   stage: test
-  dependencies:
-    - not-a-real-job
   script:
     - set -e
 
@@ -120,14 +71,17 @@ before_script:
     - echo 'end:coq.config'
 
     - echo 'start:coq.build'
-    - make -j ${NJOBS} coqocaml
+    - make -j "$NJOBS" coqocaml
     - echo 'end:coq:build'
 
     - set +e
   variables: &warnings-variables
     EXTRA_CONF: "-native-compiler yes -coqide byte -byte-only"
-    EXTRA_PACKAGES: "$COQIDE_PACKAGES"
-    EXTRA_OPAM: "$COQIDE_OPAM"
+
+# every non build job must set dependencies otherwise all build
+# artifacts are used together and we may get some random Coq. To that
+# purpose, we add a spurious dependency `not-a-real-job` that must be
+# overridden otherwise the CI will fail.
 
 # set dependencies when using
 .test-suite-template: &test-suite-template
@@ -140,7 +94,7 @@ before_script:
     # careful with the ending /
     - BIN=$(readlink -f ../_install_ci/bin)/
     - LIB=$(readlink -f ../_install_ci/lib/coq)/
-    - make -j ${NJOBS} BIN="$BIN" LIB="$LIB" all
+    - make -j "$NJOBS" BIN="$BIN" LIB="$LIB" all
   artifacts:
     name: "$CI_JOB_NAME.logs"
     when: on_failure
@@ -163,161 +117,96 @@ before_script:
   script:
     - set -e
     - echo 'start:coq.test'
-    - make -f Makefile.ci -j ${NJOBS} ${TEST_TARGET}
+    - make -f Makefile.ci -j "$NJOBS" ${TEST_TARGET}
     - echo 'end:coq.test'
     - set +e
   dependencies:
-    - opam-boot
     - build
   variables: &ci-template-vars
     TEST_TARGET: "$CI_JOB_NAME"
-    EXTRA_PACKAGES: "$TIMING_PACKAGES"
-
-opam-boot:
-  <<: *opam-boot-template
-  cache:
-    paths: &cache-paths
-      - .opamcache
-    key: "main-$CACHEKEY"
-  variables:
-    EXTRA_OPAM: "$COQIDE_OPAM ocamlgraph $ELPI_OPAM"
-    EXTRA_PACKAGES: "$COQIDE_PACKAGES"
-
-opam-boot:32bit:
-  <<: *opam-boot-template
-  cache:
-    paths: *cache-paths
-    key: "32bit-$CACHEKEY"
-  variables:
-    COMPILER: "$COMPILER_32BIT"
-    EXTRA_PACKAGES: "gcc-multilib"
-
-opam-boot:bleeding-edge:
-  <<: *opam-boot-template
-  cache:
-    paths: *cache-paths
-    key: "be-$CACHEKEY"
-  variables:
-    COMPILER: "$COMPILER_BLEEDING_EDGE"
-    CAMLP5_VER: "$CAMLP5_VER_BLEEDING_EDGE"
-    EXTRA_PACKAGES: "$COQIDE_PACKAGES"
-    EXTRA_OPAM: "$COQIDE_OPAM_BE"
 
 build:
   <<: *build-template
-  dependencies:
-    - opam-boot
   variables:
     EXTRA_CONF: "-native-compiler yes -coqide opt -with-doc yes"
-    EXTRA_PACKAGES: "$COQIDE_PACKAGES $COQDOC_PACKAGES"
-    PIP_PACKAGES: "$SPHINX_PACKAGES"
 
 # no coqide for 32bit: libgtk installation problems
 build:32bit:
   <<: *build-template
-  dependencies:
-    - opam-boot:32bit
   variables:
+    OPAM_VARIANT: "+32bit"
     EXTRA_CONF: "-native-compiler yes"
-    EXTRA_PACKAGES: "gcc-multilib"
 
 build:bleeding-edge:
   <<: *build-template
-  dependencies:
-    - opam-boot:bleeding-edge
   variables:
+    OPAM_SWITCH: be
     EXTRA_CONF: "-native-compiler yes -coqide opt"
-    EXTRA_PACKAGES: "$COQIDE_PACKAGES"
 
 warnings:
   <<: *warnings-template
-  dependencies:
-    - opam-boot
 
 # warnings:32bit:
 #   <<: *warnings-template
 #   variables:
 #     <<: *warnings-variables
-#     EXTRA_PACKAGES: "$gcc-multilib COQIDE_PACKAGES_32BIT"
-#   dependencies:
-#     - opam-boot:32bit
 
 warnings:bleeding-edge:
   <<: *warnings-template
-  dependencies:
-    - opam-boot:bleeding-edge
+  variables:
+    OPAM_SWITCH: be
 
 test-suite:
   <<: *test-suite-template
   dependencies:
-    - opam-boot
     - build
-  variables:
-    EXTRA_PACKAGES: "$TIMING_PACKAGES"
 
 test-suite:32bit:
   <<: *test-suite-template
   dependencies:
-    - opam-boot:32bit
     - build:32bit
   variables:
-    EXTRA_PACKAGES: "gcc-multilib $TIMING_PACKAGES"
+    OPAM_VARIANT: "+32bit"
 
 test-suite:bleeding-edge:
   <<: *test-suite-template
   dependencies:
-    - opam-boot:bleeding-edge
     - build:bleeding-edge
   variables:
-    EXTRA_PACKAGES: "$TIMING_PACKAGES"
+    OPAM_SWITCH: be
 
 validate:
   <<: *validate-template
   dependencies:
-    - opam-boot
     - build
 
 validate:32bit:
   <<: *validate-template
   dependencies:
-    - opam-boot:32bit
     - build:32bit
   variables:
-    EXTRA_PACKAGES: "gcc-multilib"
+    OPAM_VARIANT: "+32bit"
 
 ci-bignums:
   <<: *ci-template
 
 ci-color:
   <<: *ci-template
-  variables:
-    <<: *ci-template-vars
-    EXTRA_PACKAGES: "$TIMING_PACKAGES"
 
 ci-compcert:
   <<: *ci-template
 
 ci-coq-dpdgraph:
   <<: *ci-template
-  variables:
-    <<: *ci-template-vars
-    EXTRA_PACKAGES: "$TIMING_PACKAGES autoconf"
 
 ci-coquelicot:
   <<: *ci-template
-  variables:
-    <<: *ci-template-vars
-    EXTRA_PACKAGES: "$TIMING_PACKAGES autoconf"
 
 ci-elpi:
   <<: *ci-template
 
 ci-equations:
   <<: *ci-template
-
-ci-geocoq:
-  <<: *ci-template
-  allow_failure: true
 
 ci-fcsl-pcm:
   <<: *ci-template
@@ -329,24 +218,18 @@ ci-fcsl-pcm:
 
 ci-fiat-parsers:
   <<: *ci-template
-  variables:
-    <<: *ci-template-vars
-    EXTRA_PACKAGES: "$TIMING_PACKAGES"
 
 ci-flocq:
   <<: *ci-template
-  variables:
-    <<: *ci-template-vars
-    EXTRA_PACKAGES: "$TIMING_PACKAGES autoconf"
 
 ci-formal-topology:
   <<: *ci-template
 
+ci-geocoq:
+  <<: *ci-template
+
 ci-hott:
   <<: *ci-template
-  variables:
-    <<: *ci-template-vars
-    EXTRA_PACKAGES: "$TIMING_PACKAGES autoconf"
 
 ci-iris-lambda-rust:
   <<: *ci-template
@@ -368,9 +251,6 @@ ci-pidetop:
 
 ci-sf:
   <<: *ci-template
-  variables:
-    <<: *ci-template-vars
-    EXTRA_PACKAGES: "$TIMING_PACKAGES wget"
 
 ci-unimath:
   <<: *ci-template
