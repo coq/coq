@@ -22,10 +22,7 @@ To produce all the documents, the following tools are needed:
   - dvips
   - bibtex
   - makeindex
-  - fig2dev (transfig)
-  - convert (ImageMagick)
   - hevea
-  - hacha
   - Python 3
   - Sphinx 1.6.5 (http://www.sphinx-doc.org/en/stable/)
   - sphinx_rtd_theme
@@ -38,9 +35,8 @@ Under Debian based operating systems (Debian, Ubuntu, ...) a
 working set of packages for compiling the documentation for Coq is:
 
   texlive texlive-latex-extra texlive-math-extra texlive-fonts-extra
-  texlive-humanities texlive-pictures latex-xcolor hevea transfig
-  imagemagick
-  python3 python-pip3
+  texlive-humanities texlive-pictures latex-xcolor hevea python3
+  python-pip3
 
 To install the Python packages required to build the user manual, run:
   pip3 install sphinx sphinx_rtd_theme beautifulsoup4 antlr4-python3-runtime pexpect sphinxcontrib-bibtex
