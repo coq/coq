@@ -433,12 +433,15 @@ class CoqtopDirective(Directive):
 
     Here is a list of permissible options:
 
-    Display
+    - Display options
+
       - ``all``: Display input and output
       - ``in``: Display only input
       - ``out``: Display only output
       - ``none``: Display neither (useful for setup commands)
-    Behaviour
+
+    - Behavior options
+
       - ``reset``: Send a ``Reset Initial`` command before running this block
       - ``undo``: Send an ``Undo n`` (``n`` = number of sentences) command after
         running all the commands in this block
