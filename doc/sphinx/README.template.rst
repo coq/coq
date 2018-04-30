@@ -3,7 +3,8 @@
 =============================
 
 ..
-   This README is auto-generated from the coqrst docs; use ``./regen_readme.py`` to rebuild the it.
+   README.rst is auto-generated from README.template.rst and the coqrst docs;
+   use ``doc/tools/coqrst/regen_readme.py`` to rebuild it.
 
 Coq's documentation is written in `reStructuredText <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_ (“reST”), and compiled with `Sphinx <http://www.sphinx-doc.org/en/master/>`_.
 
