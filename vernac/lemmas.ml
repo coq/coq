@@ -451,7 +451,7 @@ let start_proof_com ?inference_hook kind thms hook =
            (ids, imps @ lift_implicits (Context.Rel.nhyps ctx) imps'))))
       evd thms in
   let recguard,thms,snl = look_for_possibly_mutual_statements evd thms in
-  let evd, _nf = Evarutil.nf_evars_and_universes evd in
+  let evd = Evd.minimize_universes evd in
   (* XXX: This nf_evar is critical too!! We are normalizing twice if
      you look at the previous lines... *)
   let thms = List.map (fun (n, (t, info)) -> (n, (nf_evar evd t, info))) thms in

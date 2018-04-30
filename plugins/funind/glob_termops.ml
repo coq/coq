@@ -563,8 +563,8 @@ let resolve_and_replace_implicits ?(flags=Pretyping.all_and_fail_flags) ?(expect
   (* FIXME : JF (30/03/2017) I'm not completely sure to have split understand as needed. 
 If someone knows how to prevent solved existantial removal in  understand, please do not hesitate to change the computation of [ctx] here *) 
   let ctx,_,_ = Pretyping.ise_pretype_gen flags env sigma Glob_ops.empty_lvar expected_type rt in
-  let ctx, f = Evarutil.nf_evars_and_universes ctx in
-  let f c = EConstr.of_constr (f (EConstr.Unsafe.to_constr c)) in
+  let ctx = Evd.minimize_universes ctx in
+  let f c = EConstr.of_constr (Evarutil.nf_evars_universes ctx (EConstr.Unsafe.to_constr c)) in
 
   (* then we map [rt] to replace the implicit holes by their values *)
   let rec change rt =

@@ -1619,17 +1619,16 @@ let vernac_check_may_eval ~atts redexp glopt rc =
   let glopt = query_command_selector ?loc:atts.loc glopt in
   let (sigma, env) = get_current_context_of_args glopt in
   let sigma', c = interp_open_constr env sigma rc in
-  let c = EConstr.Unsafe.to_constr c in
   let sigma' = Evarconv.solve_unif_constraints_with_heuristics env sigma' in
   Evarconv.check_problems_are_solved env sigma';
-  let sigma',nf = Evarutil.nf_evars_and_universes sigma' in
+  let sigma' = Evd.minimize_universes sigma' in
   let uctx = Evd.universe_context_set sigma' in
   let env = Environ.push_context_set uctx (Evarutil.nf_env_evar sigma' env) in
-  let c = nf c in
   let j =
-    if Evarutil.has_undefined_evars sigma' (EConstr.of_constr c) then
-      Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' (EConstr.of_constr c))
+    if Evarutil.has_undefined_evars sigma' c then
+      Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c)
     else
+      let c = EConstr.to_constr sigma' c in
       (* OK to call kernel which does not support evars *)
       Termops.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
   in

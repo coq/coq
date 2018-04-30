@@ -4953,9 +4953,9 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
 
   let evd, ctx, concl =
     (* FIXME: should be done only if the tactic succeeds *)
-    let evd, nf = nf_evars_and_universes !evdref in
+    let evd = Evd.minimize_universes !evdref in
     let ctx = Evd.universe_context_set evd in
-      evd, ctx, nf concl
+      evd, ctx, Evarutil.nf_evars_universes evd concl
   in
   let concl = EConstr.of_constr concl in
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac) in
