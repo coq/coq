@@ -829,6 +829,8 @@ let is_univ_copy max u =
   else
     false
 
+let dump_bytecode = ref false
+
 let dump_bytecodes init code fvs =
   let open Pp in
     (str "code =" ++ fnl () ++
@@ -872,7 +874,7 @@ let compile ~fail_on_error ?universes:(universes=0) env c =
         reloc, init_code
     in
     let fv = List.rev (!(reloc.in_env).fv_rev) in
-    (if !Flags.dump_bytecode then
+    (if !dump_bytecode then
       Feedback.msg_debug (dump_bytecodes init_code !fun_code fv)) ;
     Some (init_code,!fun_code, Array.of_list fv)
   with TooLargeInductive msg ->

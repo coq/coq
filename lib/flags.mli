@@ -10,6 +10,25 @@
 
 (** Global options of the system. *)
 
+(** WARNING: don't add new entries to this file!
+
+    This file is own its way to deprecation in favor of a purely
+   functional state, but meanwhile it will contain options that are
+   truly global to the system such as [compat] or [debug]
+
+    If you are thinking about adding a global flag, well, just
+   don't. First of all, options make testins exponentially more
+   expensive, due to the growth of flag combinations. So please make
+   some effort in order for your idea to work in a configuration-free
+   manner.
+
+    If you absolutely must pass an option to your new system, then do
+   so as a functional argument so flags are exposed to unit
+   testing. Then, register such parameters with the proper
+   state-handling mechanism of the top-level subsystem of Coq.
+
+ *)
+
 (** Command-line flags  *)
 
 val boot : bool ref
@@ -126,13 +145,3 @@ val print_mod_uid : bool ref
 
 val profile_ltac : bool ref
 val profile_ltac_cutoff : float ref
-
-(** Dump the bytecode after compilation (for debugging purposes) *)
-val dump_bytecode : bool ref
-val set_dump_bytecode : bool -> unit
-val get_dump_bytecode : unit -> bool
-
-(** Dump the VM lambda code after compilation (for debugging purposes) *)
-val dump_lambda : bool ref
-val set_dump_lambda : bool -> unit
-val get_dump_lambda : unit -> bool

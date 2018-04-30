@@ -25,3 +25,6 @@ val dynamic_int31_compilation : bool -> lambda array -> lambda
 (*spiwack: compiling function to insert dynamic decompilation before
            matching integers (in case they are in processor representation) *)
 val int31_escape_before_match : bool -> lambda -> lambda
+
+(** Dump the VM lambda code after compilation (for debugging purposes) *)
+val dump_lambda : bool ref

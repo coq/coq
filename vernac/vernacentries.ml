@@ -1465,22 +1465,22 @@ let _ =
       optkey   = ["Printing";"Universes"];
       optread  = (fun () -> !Constrextern.print_universes);
       optwrite = (fun b -> Constrextern.print_universes:=b) }
-     
+
 let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "dumping bytecode after compilation";
       optkey   = ["Dump";"Bytecode"];
-      optread  = Flags.get_dump_bytecode;
-      optwrite = Flags.set_dump_bytecode }
+      optread  = (fun () -> !Cbytegen.dump_bytecode);
+      optwrite = (:=) Cbytegen.dump_bytecode }
 
 let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "dumping VM lambda code after compilation";
       optkey   = ["Dump";"Lambda"];
-      optread  = Flags.get_dump_lambda;
-      optwrite = Flags.set_dump_lambda }
+      optread  = (fun () -> !Clambda.dump_lambda);
+      optwrite = (:=) Clambda.dump_lambda }
 
 let _ =
   declare_bool_option
