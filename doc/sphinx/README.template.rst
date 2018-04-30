@@ -81,3 +81,13 @@ Coq roles
 In addition to the objects and directives above, the ``coqrst`` Sphinx plugin defines the following roles:
 
 [ROLES]
+
+Tips and tricks
+===============
+
+The ``dev/tools/coqdev.el`` folder contains a convenient Emacs function to quickly insert Sphinx roles and quotes.  It takes a single character (one of ``gntm:```), and inserts one of `:g:`, `:n:`, `:t:`, or an arbitrary role, or double quotes.  You can also select a region of text, and wrap it in single or double backticks using that function.
+
+Use the following snippet to bind it to :kbd:`F12` in ``rst-mode``::
+
+   (with-eval-after-load 'rst
+     (define-key rst-mode-map (kbd "<f12>") #'coqdev-sphinx-rst-coq-action))
