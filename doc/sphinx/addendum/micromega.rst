@@ -150,9 +150,10 @@ are a way to take into account the discreteness of :math:`\mathbb{Z}` by roundin
 
 .. _ceil_thm:
 
-**Theorem**. Let :math:`p` be an integer and :math:`c` a rational constant. Then
+.. thm:: Bound on the ceiling function
 
- :math:`p \ge c \rightarrow p \ge \lceil{c}\rceil`
+   Let :math:`p` be an integer and :math:`c` a rational constant. Then
+   :math:`p \ge c \rightarrow p \ge \lceil{c}\rceil`.
 
 For instance, from 2 x = 1 we can deduce
 
