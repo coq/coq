@@ -81,9 +81,6 @@ val if_silent : ('a -> unit) -> 'a -> unit
 val if_verbose : ('a -> unit) -> 'a -> unit
 
 (* Miscellaneus flags for vernac *)
-val make_auto_intros : bool -> unit
-val is_auto_intros : unit -> bool
-
 val program_mode : bool ref
 val is_program_mode : unit -> bool
 

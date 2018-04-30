@@ -1328,14 +1328,6 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optdepr  = true; (* remove in 8.8 *)
-      optname  = "automatic introduction of variables";
-      optkey   = ["Automatic";"Introduction"];
-      optread  = Flags.is_auto_intros;
-      optwrite = Flags.make_auto_intros }
-
-let _ =
-  declare_bool_option
     { optdepr  = false;
       optname  = "coercion printing";
       optkey   = ["Printing";"Coercions"];

@@ -566,19 +566,6 @@ When unset, it goes back to the default mode which is to print all
 available hypotheses.
 
 
-.. opt:: Automatic Introduction
-
-This option controls the way binders are handled
-in assertion commands such as ``Theorem ident [binders] : form``. When the
-option is set, which is the default, binders are automatically put in
-the local context of the goal to prove.
-
-The option can be unset by issuing ``Unset Automatic Introduction``. When
-the option is unset, binders are discharged on the statement to be
-proved and a tactic such as intro (see Section :ref:`managingthelocalcontext`) has to be
-used to move the assumptions to the local context.
-
-
 Controlling memory usage
 ------------------------
 

@@ -1,12 +1,10 @@
 (* Automatic computing of guard in "Theorem with"; check that guard is not
    computed when the user explicitly indicated it *)
 
-Unset Automatic Introduction.
-
 Inductive T : Set :=
 | v : T.
 
-Definition f (s:nat) (t:T) : nat.
+Definition f : forall (s:nat) (t:T) : nat.
 fix f 2.
 intros s t.
 refine
