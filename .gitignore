@@ -61,6 +61,7 @@ plugins/micromega/csdpcert
 plugins/micromega/.micromega.ml.generated
 kernel/byterun/dllcoqrun.so
 coqdoc.sty
+coqdoc.css
 time-of-build.log
 time-of-build-pretty.log
 time-of-build-before.log
