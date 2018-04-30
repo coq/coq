@@ -66,6 +66,7 @@ type coq_cmdopts = {
 
   color : color;
 
+  distrust_sections : bool;
   impredicative_set : Declarations.set_predicativity;
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
@@ -114,6 +115,7 @@ let init_args = {
 
   color = `AUTO;
 
+  distrust_sections = false;
   impredicative_set = Declarations.PredicativeSet;
   stm_flags    = Stm.AsyncOpts.default_opts;
   debug        = false;
@@ -544,6 +546,8 @@ let parse_args arglist : coq_cmdopts * string list =
       Flags.ide_slave := true;
       { oval with toploop = Some "coqidetop" }
 
+    | "-distrust-sections" ->
+      { oval with distrust_sections = true }
     |"-impredicative-set" ->
       { oval with impredicative_set = Declarations.ImpredicativeSet }
     |"-indices-matter" -> Indtypes.enforce_indices_matter (); oval

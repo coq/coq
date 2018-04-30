@@ -126,6 +126,7 @@ type safe_environment =
     univ : Univ.ContextSet.t;
     future_cst : Univ.ContextSet.t Future.computation list;
     engagement : engagement option;
+    distrust_sections : bool;
     required : vodigest DPMap.t;
     loads : (ModPath.t * module_body) list;
     local_retroknowledge : Retroknowledge.action list;
@@ -155,6 +156,7 @@ let empty_environment =
     future_cst = [];
     univ = Univ.ContextSet.empty;
     engagement = None;
+    distrust_sections = false;
     required = DPMap.empty;
     loads = [];
     local_retroknowledge = [];
@@ -197,6 +199,10 @@ let check_engagement env expected_impredicative_set =
         CErrors.user_err Pp.(str "Needs option -impredicative-set.")
     | _ -> ()
   end
+
+let is_distrust_sections env = env.distrust_sections
+
+let set_distrust_sections b env = {env with distrust_sections = b}
 
 (** {6 Stm machinery } *)
 
@@ -531,6 +537,9 @@ let add_constant dir l decl senv =
       | ConstantEntry (PureEntry, ce) ->
         Term_typing.translate_constant Term_typing.Pure senv.env kn ce
       | GlobalRecipe r ->
+        if senv.distrust_sections
+        then CErrors.user_err ~hdr:"add_constant"
+            Pp.(str "Not allowed to trust sections for " ++ Label.print l);
         let cb = Term_typing.translate_recipe senv.env kn r in
         if no_section then Declareops.hcons_const_body cb else cb in
     add_constant_aux no_section senv (kn, cb) in

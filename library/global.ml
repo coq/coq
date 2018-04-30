@@ -259,6 +259,13 @@ let is_type_in_type r =
   | IndRef ind -> Environ.type_in_type_ind ind env
   | ConstructRef cstr -> Environ.type_in_type_ind (inductive_of_constructor cstr) env
 
+let set_distrust_sections b =
+  globalize0 (Safe_typing.set_distrust_sections b)
+
+let is_distrust_sections () =
+  let senv = safe_env () in
+  Safe_typing.is_distrust_sections senv
+
 let current_dirpath () = 
   Safe_typing.current_dirpath (safe_env ())
 

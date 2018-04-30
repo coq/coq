@@ -110,6 +110,11 @@ let discharge_constant ((sp, kn), obj) =
   let new_hyps = (discharged_hyps kn hyps) @ obj.cst_hyps in
   let abstract = (named_of_variable_context hyps, subst, uctx) in
   let new_decl = GlobalRecipe{ from; info = { Opaqueproof.modlist; abstract}} in
+  let new_decl =
+    if Global.is_distrust_sections ()
+    then Discharge.process_constant new_decl
+    else new_decl
+  in
   Some { obj with cst_hyps = new_hyps; cst_decl = Some new_decl; }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)

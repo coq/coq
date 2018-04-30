@@ -450,6 +450,7 @@ let init_toplevel arglist =
       end;
       Flags.if_verbose print_header ();
       Mltop.init_known_plugins ();
+      Global.set_distrust_sections opts.distrust_sections;
       Global.set_engagement opts.impredicative_set;
 
       (* Allow the user to load an arbitrary state here *)

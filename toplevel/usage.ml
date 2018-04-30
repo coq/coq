@@ -76,6 +76,7 @@ let print_usage_channel co command =
 \n  -emacs                 tells Coq it is executed under Emacs\
 \n  -noglob                do not dump globalizations\
 \n  -dump-glob f           dump globalizations in file f (to be used by coqdoc)\
+\n  -distrust-sections     developer option, do not use\
 \n  -impredicative-set     set sort Set impredicative\
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
 \n  -type-in-type          disable universe consistency checking\
