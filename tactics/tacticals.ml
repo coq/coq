@@ -496,7 +496,9 @@ module New = struct
     | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i
     | Vernacexpr.SelectList l -> Proofview.tclFOCUSLIST l
     | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id
-    | Vernacexpr.SelectAll -> fun tac -> tac
+    | Vernacexpr.SelectAll -> anomaly ~label:"tclSELECT" Pp.(str "SelectAll not allowed here")
+    | Vernacexpr.SelectAlreadyFocused ->
+      anomaly ~label:"tclSELECT" Pp.(str "SelectAlreadyFocused not allowed here")
 
   (* Check that holes in arguments have been resolved *)
 

@@ -325,6 +325,7 @@ GEXTEND Gram
   ;
   toplevel_selector:
     [ [ sel = selector_body; ":" -> sel
+    |   "!"; ":" -> SelectAlreadyFocused
     |   IDENT "all"; ":" -> SelectAll ] ]
   ;
   tactic_mode:

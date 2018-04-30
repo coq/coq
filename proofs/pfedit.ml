@@ -101,6 +101,18 @@ let solve ?with_end_tac gi info_lvl tac pr =
       | Some _ -> Proofview.Trace.record_info_trace tac
     in
     let tac = match gi with
+      | Vernacexpr.SelectAlreadyFocused ->
+        let open Proofview.Notations in
+        Proofview.numgoals >>= fun n ->
+        if n == 1 then tac
+        else
+          let e = CErrors.UserError
+              (None,
+               Pp.(str "Expected a single focused goal but " ++
+                   int n ++ str " goals are focused."))
+          in
+          Proofview.tclZERO e
+
       | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i tac
       | Vernacexpr.SelectList l -> Proofview.tclFOCUSLIST l tac
       | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id tac
