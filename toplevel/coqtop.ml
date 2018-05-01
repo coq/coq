@@ -435,10 +435,22 @@ let init_toplevel arglist =
        * early since the master waits us to connect back *)
       Spawned.init_channels ();
       Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
-      if opts.print_where then (print_endline(Envars.coqlib ()); exit(exitcode opts));
-      if opts.print_config then (Envars.print_config stdout Coq_config.all_src_dirs; exit (exitcode opts));
-      if opts.print_tags then (print_style_tags opts; exit (exitcode opts));
-      if opts.filter_opts then (print_string (String.concat "\n" extras); exit 0);
+      if opts.print_where then begin
+        print_endline (Envars.coqlib ());
+        exit (exitcode opts)
+      end;
+      if opts.print_config then begin
+        Envars.print_config stdout Coq_config.all_src_dirs;
+        exit (exitcode opts)
+      end;
+      if opts.print_tags then begin
+        print_style_tags opts;
+        exit (exitcode opts)
+      end;
+      if opts.filter_opts then begin
+        print_string (String.concat "\n" extras);
+        exit 0;
+      end;
       let top_lp = Coqinit.toplevel_init_load_path () in
       List.iter Mltop.add_coq_path top_lp;
       Option.iter Mltop.load_ml_object_raw opts.toploop;
