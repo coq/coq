@@ -1,0 +1,5 @@
+-R theories/ Tuto0
+-I src
+
+src/g_tuto0.ml4
+src/tuto0_plugin.mlpack
