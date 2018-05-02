@@ -303,7 +303,7 @@
 # Secondary maintainer @maximedenes
 
 # This file belongs to CI
-Makefile.ci       @ejgallego
+/Makefile.ci       @ejgallego
 # Secondary maintainer @SkySkimmer
 
 /Makefile.doc        @maximedenes
