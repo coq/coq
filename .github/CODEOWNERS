@@ -306,6 +306,9 @@
 Makefile.ci       @ejgallego
 # Secondary maintainer @SkySkimmer
 
+/Makefile.doc        @maximedenes
+# Secondary maintainer @silene
+
 ########## Developer tools ##########
 
 /dev/tools/backport-pr.sh     @Zimmi48
