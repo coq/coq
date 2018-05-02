@@ -29,6 +29,7 @@ CI_TARGETS=ci-bignums \
     ci-math-classes \
     ci-math-comp \
     ci-mtac2 \
+    ci-pidetop \
     ci-sf \
     ci-tlc \
     ci-unimath \
