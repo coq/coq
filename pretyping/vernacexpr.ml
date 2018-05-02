@@ -16,17 +16,13 @@ open Libnames
 (** Vernac expressions, produced by the parser *)
 type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
 
-(* spiwack: I'm choosing, for now, to have [goal_selector] be a
-   different type than [goal_reference] mostly because if it makes sense
-   to print a goal that is out of focus (or already solved) it doesn't
-   make sense to apply a tactic to it. Hence it the types may look very
-   similar, they do not seem to mean the same thing. *)
-type goal_selector =
+type goal_selector = Goal_select.t =
   | SelectAlreadyFocused
   | SelectNth of int
   | SelectList of (int * int) list
   | SelectId of Id.t
   | SelectAll
+[@@ocaml.deprecated "Use Goal_select.t"]
 
 type goal_identifier = string
 type scope_name = string
@@ -69,7 +65,7 @@ type printable =
   | PrintScopes
   | PrintScope of string
   | PrintVisibility of string option
-  | PrintAbout of reference or_by_notation * Universes.univ_name_list option * goal_selector option
+  | PrintAbout of reference or_by_notation * Universes.univ_name_list option * Goal_select.t option
   | PrintImplicit of reference or_by_notation
   | PrintAssumptions of bool * bool * reference or_by_notation
   | PrintStrategy of reference or_by_notation option
@@ -198,7 +194,6 @@ type one_inductive_expr =
   ident_decl * local_binder_expr list * constr_expr option * constructor_expr list
 
 type typeclass_constraint = name_decl * Decl_kinds.binding_kind * constr_expr
-
 and typeclass_context = typeclass_constraint list
 
 type proof_expr =
@@ -270,13 +265,11 @@ type extend_name =
 
 (* This type allows registering the inlining of constants in native compiler.
    It will be extended with primitive inductive types and operators *)
-type register_kind = 
+type register_kind =
   | RegisterInline
 
-type bullet =
-    | Dash of int
-    | Star of int
-    | Plus of int
+type bullet = Proof_bullet.t
+[@@ocaml.deprecated "Alias type, please use [Proof_bullet.t]"]
 
 (** {6 Types concerning the module layer} *)
 
@@ -426,11 +419,11 @@ type nonrec vernac_expr =
   | VernacRemoveOption of Goptions.option_name * option_ref_value list
   | VernacMemOption of Goptions.option_name * option_ref_value list
   | VernacPrintOption of Goptions.option_name
-  | VernacCheckMayEval of Genredexpr.raw_red_expr option * goal_selector option * constr_expr
+  | VernacCheckMayEval of Genredexpr.raw_red_expr option * Goal_select.t option * constr_expr
   | VernacGlobalCheck of constr_expr
   | VernacDeclareReduction of string * Genredexpr.raw_red_expr
   | VernacPrint of printable
-  | VernacSearch of searchable * goal_selector option * search_restriction
+  | VernacSearch of searchable * Goal_select.t option * search_restriction
   | VernacLocate of locatable
   | VernacRegister of lident * register_kind
   | VernacComments of comment list
@@ -444,8 +437,8 @@ type nonrec vernac_expr =
   | VernacFocus of int option
   | VernacUnfocus
   | VernacUnfocused
-  | VernacBullet of bullet
-  | VernacSubproof of goal_selector option
+  | VernacBullet of Proof_bullet.t
+  | VernacSubproof of Goal_select.t option
   | VernacEndSubproof
   | VernacShow of showable
   | VernacCheckGuard

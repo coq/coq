@@ -145,7 +145,7 @@ open Pputils
         | SearchString (s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
   let pr_search a gopt b pr_p =
-    pr_opt (fun g -> Proof_bullet.pr_goal_selector g ++ str ":"++ spc()) gopt
+    pr_opt (fun g -> Goal_select.pr_goal_selector g ++ str ":"++ spc()) gopt
     ++
       match a with
       | SearchHead c -> keyword "SearchHead" ++ spc() ++ pr_p c ++ pr_in_out_modules b
@@ -508,7 +508,7 @@ open Pputils
     | PrintVisibility s ->
       keyword "Print Visibility" ++ pr_opt str s
     | PrintAbout (qid,l,gopt) ->
-       pr_opt (fun g -> Proof_bullet.pr_goal_selector g ++ str ":"++ spc()) gopt
+       pr_opt (fun g -> Goal_select.pr_goal_selector g ++ str ":"++ spc()) gopt
        ++ keyword "About" ++ spc()  ++ pr_smart_global qid ++ pr_univ_name_list l
     | PrintImplicit qid ->
       keyword "Print Implicit" ++ spc()  ++ pr_smart_global qid
@@ -1122,7 +1122,7 @@ open Pputils
           | None -> hov 2 (keyword "Check" ++ spc() ++ pr_lconstr c)
         in
         let pr_i = match io with None -> mt ()
-                               | Some i -> Proof_bullet.pr_goal_selector i ++ str ": " in
+                               | Some i -> Goal_select.pr_goal_selector i ++ str ": " in
         return (pr_i ++ pr_mayeval r c)
       | VernacGlobalCheck c ->
         return (hov 2 (keyword "Type" ++ pr_constrarg c))
@@ -1176,7 +1176,8 @@ open Pputils
       | VernacProofMode s ->
         return (keyword "Proof Mode" ++ str s)
       | VernacBullet b ->
-        return (begin match b with
+        (* XXX: Redundant with Proof_bullet.print *)
+        return (let open Proof_bullet in begin match b with
           | Dash n -> str (String.make n '-')
           | Star n -> str (String.make n '*')
           | Plus n -> str (String.make n '+')
@@ -1184,7 +1185,7 @@ open Pputils
       | VernacSubproof None ->
         return (str "{")
       | VernacSubproof (Some i) ->
-        return (Proof_bullet.pr_goal_selector i ++ str ":" ++ spc () ++ str "{")
+        return (Goal_select.pr_goal_selector i ++ str ":" ++ spc () ++ str "{")
       | VernacEndSubproof ->
         return (str "}")
 

@@ -48,6 +48,7 @@ let instance_name = Gram.entry_create "vernac:instance_name"
 let section_subset_expr = Gram.entry_create "vernac:section_subset_expr"
 
 let make_bullet s =
+  let open Proof_bullet in
   let n = String.length s in
   match s.[0] with
   | '-' -> Dash n

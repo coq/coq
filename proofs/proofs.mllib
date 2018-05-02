@@ -5,6 +5,7 @@ Proof_type
 Logic
 Refine
 Proof
+Goal_select
 Proof_bullet
 Proof_global
 Redexpr

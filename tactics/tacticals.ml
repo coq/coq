@@ -492,12 +492,12 @@ module New = struct
     Proofview.tclINDEPENDENT (Proofview.tclPROGRESS t)
 
   (* Select a subset of the goals *)
-  let tclSELECT = function
-    | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i
-    | Vernacexpr.SelectList l -> Proofview.tclFOCUSLIST l
-    | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id
-    | Vernacexpr.SelectAll -> anomaly ~label:"tclSELECT" Pp.(str "SelectAll not allowed here")
-    | Vernacexpr.SelectAlreadyFocused ->
+  let tclSELECT = let open Goal_select in function
+    | SelectNth i -> Proofview.tclFOCUS i i
+    | SelectList l -> Proofview.tclFOCUSLIST l
+    | SelectId id -> Proofview.tclFOCUSID id
+    | SelectAll -> anomaly ~label:"tclSELECT" Pp.(str "SelectAll not allowed here")
+    | SelectAlreadyFocused ->
       anomaly ~label:"tclSELECT" Pp.(str "SelectAlreadyFocused not allowed here")
 
   (* Check that holes in arguments have been resolved *)

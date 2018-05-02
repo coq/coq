@@ -23,8 +23,8 @@ val crawl :
     static_block_declaration option
 
 val unit_val : Stm.DynBlockData.t
-val of_bullet_val : Vernacexpr.bullet -> Stm.DynBlockData.t
-val to_bullet_val : Stm.DynBlockData.t -> Vernacexpr.bullet
+val of_bullet_val : Proof_bullet.t -> Stm.DynBlockData.t
+val to_bullet_val : Stm.DynBlockData.t -> Proof_bullet.t
 val of_vernac_control_val : Vernacexpr.vernac_control -> Stm.DynBlockData.t
 val to_vernac_control_val : Stm.DynBlockData.t -> Vernacexpr.vernac_control
 

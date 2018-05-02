@@ -2288,7 +2288,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                Proof_global.unfreeze proof;
                Proof_global.with_current_proof (fun _ p ->
                  feedback ~id:id Feedback.AddedAxiom;
-                 fst (Pfedit.solve Vernacexpr.SelectAll None tac p), ());
+                 fst (Pfedit.solve Goal_select.SelectAll None tac p), ());
                (* STATE SPEC:
                 * - start: Modifies the input state adding a proof.
                 * - end  : maybe after recovery command.

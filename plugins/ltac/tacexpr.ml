@@ -35,7 +35,7 @@ type advanced_flag = bool  (* true = advanced         false = basic *)
 type letin_flag = bool     (* true = use local def    false = use Leibniz *)
 type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use default *)
 
-type goal_selector = Vernacexpr.goal_selector =
+type goal_selector = Goal_select.t =
   | SelectAlreadyFocused
   | SelectNth of int
   | SelectList of (int * int) list
@@ -270,7 +270,7 @@ and 'a gen_tactic_expr =
       ('p,'a gen_tactic_expr) match_rule list
   | TacFun of 'a gen_tactic_fun_ast
   | TacArg of 'a gen_tactic_arg located
-  | TacSelect of Vernacexpr.goal_selector * 'a gen_tactic_expr
+  | TacSelect of Goal_select.t * 'a gen_tactic_expr
   (* For ML extensions *)
   | TacML of (ml_tactic_entry * 'a gen_tactic_arg list) Loc.located
   (* For syntax extensions *)

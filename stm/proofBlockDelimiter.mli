@@ -38,6 +38,6 @@ val crawl :
 val unit_val : Stm.DynBlockData.t
 
 (* Bullets *)
-val of_bullet_val : Vernacexpr.bullet -> Stm.DynBlockData.t
-val to_bullet_val : Stm.DynBlockData.t -> Vernacexpr.bullet
+val of_bullet_val : Proof_bullet.t -> Stm.DynBlockData.t
+val to_bullet_val : Stm.DynBlockData.t -> Proof_bullet.t
 
