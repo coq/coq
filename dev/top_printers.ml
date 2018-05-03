@@ -221,7 +221,9 @@ let ppcumulativity_info c = pp (Univ.pr_cumulativity_info Univ.Level.pr c)
 let ppabstract_cumulativity_info c = pp (Univ.pr_abstract_cumulativity_info Univ.Level.pr c)
 let ppuniverses u = pp (UGraph.pr_universes Level.pr u)
 let ppnamedcontextval e =
-  pp (pr_named_context (Global.env ()) Evd.empty (named_context_of_val e))
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  pp (pr_named_context env sigma (named_context_of_val e))
 
 let ppenv e = pp
   (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++

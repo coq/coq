@@ -165,7 +165,7 @@ let error_not_product ?loc env sigma c =
 (*s Error in conversion from AST to glob_constr *)
 
 let error_var_not_found ?loc s =
-  raise_pretype_error ?loc (empty_env, Evd.empty, VarNotFound s)
+  raise_pretype_error ?loc (empty_env, Evd.from_env empty_env, VarNotFound s)
 
 (*s Typeclass errors *)
 

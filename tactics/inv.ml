@@ -292,7 +292,7 @@ let error_too_many_names pats =
     str "Unexpected " ++
     str (String.plural (List.length pats) "introduction pattern") ++
     str ": " ++ pr_enum (Miscprint.pr_intro_pattern
-                           (fun c -> Printer.pr_constr_env env sigma (EConstr.Unsafe.to_constr (snd (c env Evd.empty))))) pats ++
+                           (fun c -> Printer.pr_constr_env env sigma (EConstr.Unsafe.to_constr (snd (c env (Evd.from_env env)))))) pats ++
     str ".")
 
 let get_names (allow_conj,issimple) ({CAst.loc;v=pat} as x) = match pat with
@@ -496,9 +496,10 @@ let wrap_inv_error id = function (e, info) -> match e with
   | Indrec.RecursionSchemeError
       (Indrec.NotAllowedCaseAnalysis (_,(Type _ | Prop Pos as k),i)) ->
       Proofview.tclENV >>= fun env ->
+      Proofview.tclEVARMAP >>= fun sigma ->
       tclZEROMSG (
 	(strbrk "Inversion would require case analysis on sort " ++
-	pr_sort Evd.empty k ++
+        pr_sort sigma k ++
 	strbrk " which is not allowed for inductive definition " ++
 	pr_inductive env (fst i) ++ str "."))
   | e -> Proofview.tclZERO ~info e

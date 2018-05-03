@@ -708,9 +708,9 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
 ;;
 
 
-let fixed_upat = function
+let fixed_upat evd = function
 | {up_k = KpatFlex | KpatEvar _ | KpatProj _} -> false 
-| {up_t = t} -> not (occur_existential Evd.empty (EConstr.of_constr t)) (** FIXME *)
+| {up_t = t} -> not (occur_existential evd (EConstr.of_constr t)) (** FIXME *)
 
 let do_once r f = match !r with Some _ -> () | None -> r := Some (f ())
 
@@ -769,7 +769,7 @@ let mk_tpattern_matcher ?(all_instances=false)
 let p2t p = mkApp(p.up_f,p.up_a) in 
 let source () = match upats_origin, upats with
   | None, [p] -> 
-      (if fixed_upat p then str"term " else str"partial term ") ++ 
+      (if fixed_upat ise p then str"term " else str"partial term ") ++
       pr_constr_pat (p2t p) ++ spc()
   | Some (dir,rule), [p] -> str"The " ++ pr_dir_side dir ++ str" of " ++ 
       pr_constr_pat rule ++ fnl() ++ ws 4 ++ pr_constr_pat (p2t p) ++ fnl()

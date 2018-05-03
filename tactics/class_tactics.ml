@@ -1174,7 +1174,7 @@ let solve_inst env evd filter unique split fail =
 let _ =
   Hook.set Typeclasses.solve_all_instances_hook solve_inst
 
-let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
+let resolve_one_typeclass env ?(sigma=Evd.from_env env) gl unique =
   let nc, gl, subst, _ = Evarutil.push_rel_context_to_named_context env sigma gl in
   let (gl,t,sigma) =
     Goal.V82.mk_goal sigma nc gl Store.empty in

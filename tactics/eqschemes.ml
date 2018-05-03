@@ -78,7 +78,7 @@ let build_dependent_inductive ind (mib,mip) =
        Context.Rel.to_extended_list mkRel mip.mind_nrealdecls mib.mind_params_ctxt
        @ Context.Rel.to_extended_list mkRel 0 realargs)
 
-let named_hd env t na = named_hd env Evd.empty (EConstr.of_constr t) na
+let named_hd env t na = named_hd env (Evd.from_env env) (EConstr.of_constr t) na
 let name_assumption env = function
 | LocalAssum (na,t) -> LocalAssum (named_hd env t na, t)
 | LocalDef (na,c,t) -> LocalDef (named_hd env c na, c, t)
@@ -109,7 +109,7 @@ let get_coq_eq ctx =
 
 let univ_of_eq env eq =
   let eq = EConstr.of_constr eq in
-  match Constr.kind (EConstr.Unsafe.to_constr (Retyping.get_type_of env Evd.empty eq)) with
+  match Constr.kind (EConstr.Unsafe.to_constr (Retyping.get_type_of env (Evd.from_env env) eq)) with
   | Prod (_,t,_) -> (match Constr.kind t with Sort (Type u) -> u | _ -> assert false)
   | _ -> assert false
 
@@ -620,7 +620,9 @@ let build_r2l_forward_rew_scheme dep env ind kind =
 (**********************************************************************)
 
 let fix_r2l_forward_rew_scheme (c, ctx') =
-  let t = Retyping.get_type_of (Global.env()) Evd.empty (EConstr.of_constr c) in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let t = Retyping.get_type_of env sigma (EConstr.of_constr c) in
   let t = EConstr.Unsafe.to_constr t in
   let ctx,_ = decompose_prod_assum t in
   match ctx with
@@ -630,7 +632,7 @@ let fix_r2l_forward_rew_scheme (c, ctx') =
         (mkLambda_or_LetIn (RelDecl.map_constr (liftn (-1) 1) p)
 	  (mkLambda_or_LetIn (RelDecl.map_constr (liftn (-1) 2) hp)
 	    (mkLambda_or_LetIn (RelDecl.map_constr (lift 2) ind)
-	      (EConstr.Unsafe.to_constr (Reductionops.whd_beta Evd.empty
+              (EConstr.Unsafe.to_constr (Reductionops.whd_beta sigma
 		(EConstr.of_constr (applist (c,
 	          Context.Rel.to_extended_list mkRel 3 indargs @ [mkRel 1;mkRel 3;mkRel 2]))))))))
       in c', ctx'

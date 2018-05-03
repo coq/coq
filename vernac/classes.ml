@@ -196,7 +196,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 	let (_, ty_constr) = instance_constructor (k,u) subst in
         let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
         let sigma = Evd.minimize_universes sigma in
-        Pretyping.check_evars env Evd.empty sigma termtype;
+        Pretyping.check_evars env (Evd.from_env env) sigma termtype;
         let univs = Evd.check_univ_decl ~poly sigma decl in
         let termtype = to_constr sigma termtype in
         let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
@@ -290,7 +290,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
       (* Beware of this step, it is required as to minimize universes. *)
       let sigma = Evd.minimize_universes sigma in
       (* Check that the type is free of evars now. *)
-      Pretyping.check_evars env Evd.empty sigma termtype;
+      Pretyping.check_evars env (Evd.from_env env) sigma termtype;
       let termtype = to_constr sigma termtype in
       let term = Option.map (to_constr ~abort_on_undefined_evars:false sigma) term in
         if not (Evd.has_undefined sigma) && not (Option.is_empty term) then
@@ -365,7 +365,7 @@ let context poly l =
   let sigma, (_, ((env', fullctx), impls)) = interp_context_evars env sigma l in
   (* Note, we must use the normalized evar from now on! *)
   let sigma = Evd.minimize_universes sigma in
-  let ce t = Pretyping.check_evars env Evd.empty sigma t in
+  let ce t = Pretyping.check_evars env (Evd.from_env env) sigma t in
   let () = List.iter (fun decl -> Context.Rel.Declaration.iter_constr ce decl) fullctx in
   let ctx =
     try named_of_rel_context fullctx

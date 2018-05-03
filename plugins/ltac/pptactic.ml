@@ -149,9 +149,12 @@ let string_of_genarg_arg (ArgumentType arg) =
              let open Genprint in
              match generic_top_print (in_gen (Topwit wit) x) with
              | TopPrinterBasic pr -> pr ()
-             | TopPrinterNeedsContext pr -> pr (Global.env()) Evd.empty
+             | TopPrinterNeedsContext pr ->
+               let env = Global.env() in
+               pr env (Evd.from_env env)
              | TopPrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
-                printer (Global.env()) Evd.empty default_ensure_surrounded
+               let env = Global.env() in
+               printer env (Evd.from_env env) default_ensure_surrounded
           end
         | _ -> default
 

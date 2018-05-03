@@ -367,7 +367,7 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
      () in
 
   (* Try further to solve evars, and instantiate them *)
-  let sigma = solve_remaining_evars all_and_fail_flags env_params sigma Evd.empty in
+  let sigma = solve_remaining_evars all_and_fail_flags env_params sigma (Evd.from_env env_params) in
   (* Compute renewed arities *)
   let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in
@@ -381,10 +381,10 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf cl,impsl)) constructors in
   let ctx_params = List.map Termops.(map_rel_decl (EConstr.to_constr sigma)) ctx_params in
   let uctx = Evd.check_univ_decl ~poly sigma decl in
-  List.iter (fun c -> check_evars env_params Evd.empty sigma (EConstr.of_constr c)) arities;
-  Context.Rel.iter (fun c -> check_evars env0 Evd.empty sigma (EConstr.of_constr c)) ctx_params;
+  List.iter (fun c -> check_evars env_params (Evd.from_env env_params) sigma (EConstr.of_constr c)) arities;
+  Context.Rel.iter (fun c -> check_evars env0 (Evd.from_env env0) sigma (EConstr.of_constr c)) ctx_params;
   List.iter (fun (_,ctyps,_) ->
-    List.iter (fun c -> check_evars env_ar_params Evd.empty sigma (EConstr.of_constr c)) ctyps)
+    List.iter (fun c -> check_evars env_ar_params (Evd.from_env env_ar_params) sigma (EConstr.of_constr c)) ctyps)
     constructors;
 
   (* Build the inductive entries *)

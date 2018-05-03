@@ -232,7 +232,7 @@ let interp_recursive ~program_mode ~cofix fixl notations =
   (env,rec_sign,decl,sigma), (fixnames,fixdefs,fixtypes), List.combine3 fixctxs fiximps fixannots
 
 let check_recursive isfix env evd (fixnames,fixdefs,_) =
-  check_evars_are_solved env evd Evd.empty;
+  check_evars_are_solved env evd (Evd.from_env env);
   if List.for_all Option.has_some fixdefs then begin
     let fixdefs = List.map Option.get fixdefs in
     check_mutuality env evd isfix (List.combine fixnames fixdefs)

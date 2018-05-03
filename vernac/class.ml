@@ -67,7 +67,7 @@ let explain_coercion_error g = function
 let check_reference_arity ref =
   let env = Global.env () in
   let c, _ = Global.type_of_global_in_context env ref in
-  if not (Reductionops.is_arity env Evd.empty (EConstr.of_constr c)) (** FIXME *) then
+  if not (Reductionops.is_arity env (Evd.from_env env) (EConstr.of_constr c)) (** FIXME *) then
     raise (CoercionError (NotAClass ref))
 
 let check_arity = function

@@ -237,11 +237,11 @@ let is_rigid env sigma t =
      is_rigid_head sigma t
   | _ -> true
 
-let find_displayed_name_in all avoid na (env, b) =
+let find_displayed_name_in sigma all avoid na (env, b) =
   let envnames_b = (env, b) in
   let flag = RenamingElsewhereFor envnames_b in
-  if all then compute_and_force_displayed_name_in Evd.empty flag avoid na b
-  else compute_displayed_name_in Evd.empty flag avoid na b
+  if all then compute_and_force_displayed_name_in sigma flag avoid na b
+  else compute_displayed_name_in sigma flag avoid na b
 
 let compute_implicits_names_gen all env sigma t =
   let open Context.Rel.Declaration in
@@ -249,7 +249,7 @@ let compute_implicits_names_gen all env sigma t =
     let t = whd_all env sigma t in
     match kind sigma t with
     | Prod (na,a,b) ->
-       let na',avoid' = find_displayed_name_in all avoid na (names,b) in
+       let na',avoid' = find_displayed_name_in sigma all avoid na (names,b) in
        aux (push_rel (LocalAssum (na,a)) env) avoid' (na'::names) b
     | _ -> List.rev names
   in aux env Id.Set.empty [] t

@@ -377,7 +377,10 @@ let interp_head_pat hpat =
   | Cast (c', _, _) -> loop c'
   | Prod (_, _, c') -> loop c'
   | LetIn (_, _, _, c') -> loop c'
-  | _ -> Constr_matching.is_matching (Global.env()) Evd.empty p (EConstr.of_constr c) in
+  | _ ->
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    Constr_matching.is_matching env sigma p (EConstr.of_constr c) in
   filter_head, loop
 
 let all_true _ = true

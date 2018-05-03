@@ -369,8 +369,11 @@ let coq_True = lazy (init_constant "True")
 (* uses build_coq_and, build_coq_not, build_coq_or, build_coq_ex *)
 
 (* For unfold *)
-let evaluable_ref_of_constr s c = match EConstr.kind Evd.empty (Lazy.force c) with
-  | Const (kn,u) when Tacred.is_evaluable (Global.env()) (EvalConstRef kn) ->
+let evaluable_ref_of_constr s c =
+  let env = Global.env () in
+  let evd = Evd.from_env env in
+  match EConstr.kind evd (Lazy.force c) with
+  | Const (kn,u) when Tacred.is_evaluable env (EvalConstRef kn) ->
       EvalConstRef kn
   | _ -> anomaly ~label:"Coq_omega" (Pp.str (s^" is not an evaluable constant."))
 

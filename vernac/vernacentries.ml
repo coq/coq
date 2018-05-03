@@ -1651,7 +1651,9 @@ let vernac_check_may_eval ~atts redexp glopt rc =
 
 let vernac_declare_reduction ~atts s r =
   let local = make_locality atts.locality in
-  declare_red_expr local s (snd (Hook.get f_interp_redexp (Global.env()) Evd.empty r))
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  declare_red_expr local s (snd (Hook.get f_interp_redexp env sigma r))
 
   (* The same but avoiding the current goal context if any *)
 let vernac_global_check c =

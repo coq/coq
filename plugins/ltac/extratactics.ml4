@@ -613,10 +613,12 @@ END
 
 VERNAC COMMAND EXTEND RetroknowledgeRegister CLASSIFIED AS SIDEFF
  | [ "Register" constr(c) "as" retroknowledge_field(f) "by" constr(b)] ->
-           [ let tc,_ctx = Constrintern.interp_constr (Global.env ()) Evd.empty c in
-             let tb,_ctx(*FIXME*) = Constrintern.interp_constr (Global.env ()) Evd.empty b in
-             let tc = EConstr.to_constr Evd.empty tc in
-             let tb = EConstr.to_constr Evd.empty tb in
+           [ let env = Global.env () in
+             let evd = Evd.from_env env in
+             let tc,_ctx = Constrintern.interp_constr env evd c in
+             let tb,_ctx(*FIXME*) = Constrintern.interp_constr env evd b in
+             let tc = EConstr.to_constr evd tc in
+             let tb = EConstr.to_constr evd tb in
              Global.register f tc tb ]
 END
 
@@ -779,7 +781,7 @@ let  mkCaseEq a  : unit Proofview.tactic =
             let concl = Proofview.Goal.concl gl in
             let env = Proofview.Goal.env gl in
             (** FIXME: this looks really wrong. Does anybody really use this tactic? *)
-            let (_, c) = Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env Evd.empty concl in
+            let (_, c) = Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env (Evd.from_env env) concl in
 	    change_concl c
           end;
 	  simplest_case a]
@@ -1106,7 +1108,9 @@ END
 VERNAC COMMAND EXTEND Declare_keys CLASSIFIED AS SIDEFF
 | [ "Declare" "Equivalent" "Keys" constr(c) constr(c') ] -> [
   let get_key c =
-    let (evd, c) = Constrintern.interp_open_constr (Global.env ()) Evd.empty c in
+    let env = Global.env () in
+    let evd = Evd.from_env env in
+    let (evd, c) = Constrintern.interp_open_constr env evd c in
     let kind c = EConstr.kind evd c in
     Keys.constr_key kind c
   in

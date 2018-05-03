@@ -272,7 +272,10 @@ let status force =
 let export_coq_object t = {
   Interface.coq_object_prefix = t.Search.coq_object_prefix;
   Interface.coq_object_qualid = t.Search.coq_object_qualid;
-  Interface.coq_object_object = Pp.string_of_ppcmds (pr_lconstr_env (Global.env ()) Evd.empty t.Search.coq_object_object)
+  Interface.coq_object_object =
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    Pp.string_of_ppcmds (pr_lconstr_env env sigma t.Search.coq_object_object)
 }
 
 let pattern_of_string ?env s =
@@ -282,7 +285,7 @@ let pattern_of_string ?env s =
     | Some e -> e
   in
   let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
-  let (_, pat) = Constrintern.intern_constr_pattern env Evd.empty constr in
+  let (_, pat) = Constrintern.intern_constr_pattern env (Evd.from_env env) constr in
   pat
 
 let dirpath_of_string_list s =

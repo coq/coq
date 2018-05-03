@@ -157,7 +157,7 @@ let do_assumptions kind nl l =
       ((sigma,env,ienv),((is_coe,idl),t,imps)))
     (sigma,env,empty_internalization_env) l
   in
-  let sigma = solve_remaining_evars all_and_fail_flags env sigma Evd.empty in
+  let sigma = solve_remaining_evars all_and_fail_flags env sigma (Evd.from_env env) in
   (* The universe constraints come from the whole telescope. *)
   let sigma = Evd.minimize_universes sigma in
   let nf_evar c = EConstr.to_constr sigma c in

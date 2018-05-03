@@ -266,7 +266,9 @@ let pperror cmd = CErrors.user_err ~hdr:"Program" cmd
 let error s = pperror (str s)
 
 let reduce c =
-  EConstr.Unsafe.to_constr (Reductionops.clos_norm_flags CClosure.betaiota (Global.env ()) Evd.empty (EConstr.of_constr c))
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  EConstr.Unsafe.to_constr (Reductionops.clos_norm_flags CClosure.betaiota env sigma (EConstr.of_constr c))
 
 exception NoObligations of Id.t option
 
@@ -521,8 +523,10 @@ let declare_mutual_definition l =
     List.split3
       (List.map (fun x -> 
 	let subs, typ = (subst_body true x) in
-	let term = snd (Reductionops.splay_lam_n (Global.env ()) Evd.empty len (EConstr.of_constr subs)) in
-	let typ = snd (Reductionops.splay_prod_n (Global.env ()) Evd.empty len (EConstr.of_constr typ)) in
+        let env = Global.env () in
+        let sigma = Evd.from_env env in
+        let term = snd (Reductionops.splay_lam_n env sigma len (EConstr.of_constr subs)) in
+        let typ = snd (Reductionops.splay_prod_n env sigma len (EConstr.of_constr typ)) in
 	let term = EConstr.Unsafe.to_constr term in
 	let typ = EConstr.Unsafe.to_constr typ in
 	  x.prg_reduce term, x.prg_reduce typ, x.prg_implicits) l)
@@ -1069,9 +1073,11 @@ let show_obligations_of_prg ?(msg=true) prg =
 		       if !showed > 0 then (
 		         decr showed;
 			 let x = subst_deps_obl obls x in
+                         let env = Global.env () in
+                         let sigma = Evd.from_env env in
 			 Feedback.msg_info (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
 				   str "of" ++ spc() ++ Id.print n ++ str ":" ++ spc () ++
-				   hov 1 (Printer.pr_constr_env (Global.env ()) Evd.empty x.obl_type ++
+                                   hov 1 (Printer.pr_constr_env env sigma x.obl_type ++
 					    str "." ++ fnl ())))
 		   | Some _ -> ())
       obls
@@ -1087,9 +1093,11 @@ let show_obligations ?(msg=true) n =
 let show_term n =
   let prg = get_prog_err n in
   let n = prg.prg_name in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
     (Id.print n ++ spc () ++ str":" ++ spc () ++
-	     Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
-	    ++ Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_body)
+             Printer.pr_constr_env env sigma prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
+            ++ Printer.pr_constr_env env sigma prg.prg_body)
 
 let add_definition n ?term t ctx ?(univdecl=Univdecls.default_univ_decl)
                    ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
