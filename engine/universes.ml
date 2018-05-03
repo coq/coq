@@ -592,35 +592,6 @@ let subst_univs_constr =
       CProfile.profile2 subst_univs_constr_key subst_univs_constr
   else subst_univs_constr
 
-let subst_univs_fn_puniverses lsubst (c, u as cu) =
-  let u' = Instance.subst_fn lsubst u in
-    if u' == u then cu else (c, u')
-
-let nf_evars_and_universes_opt_subst f subst =
-  let subst = fun l -> match LMap.find l subst with None -> raise Not_found | Some l' -> l' in
-  let lsubst = level_subst_of subst in
-  let rec aux c =
-    match kind c with
-    | Evar (evk, args) ->
-      let args = Array.map aux args in
-      (match try f (evk, args) with Not_found -> None with
-      | None -> c
-      | Some c -> aux c)
-    | Const pu -> 
-      let pu' = subst_univs_fn_puniverses lsubst pu in
-	if pu' == pu then c else mkConstU pu'
-    | Ind pu ->
-      let pu' = subst_univs_fn_puniverses lsubst pu in
-	if pu' == pu then c else mkIndU pu'
-    | Construct pu ->
-      let pu' = subst_univs_fn_puniverses lsubst pu in
-	if pu' == pu then c else mkConstructU pu'
-    | Sort (Type u) ->
-      let u' = Univ.subst_univs_universe subst u in
-	if u' == u then c else mkSort (sort_of_univ u')
-    | _ -> Constr.map aux c
-  in aux
-
 let fresh_universe_context_set_instance ctx =
   if ContextSet.is_empty ctx then LMap.empty, ctx
   else
@@ -678,6 +649,35 @@ let normalize_opt_subst ctx =
   in !ectx
 
 type universe_opt_subst = Universe.t option universe_map
+
+let subst_univs_fn_puniverses f (c, u as cu) =
+  let u' = Instance.subst_fn f u in
+    if u' == u then cu else (c, u')
+
+let nf_evars_and_universes_opt_subst f subst =
+  let subst = normalize_univ_variable_opt_subst (ref subst) in
+  let lsubst = level_subst_of subst in
+  let rec aux c =
+    match kind c with
+    | Evar (evk, args) ->
+      let args = Array.map aux args in
+      (match try f (evk, args) with Not_found -> None with
+      | None -> mkEvar (evk, args)
+      | Some c -> aux c)
+    | Const pu ->
+      let pu' = subst_univs_fn_puniverses lsubst pu in
+        if pu' == pu then c else mkConstU pu'
+    | Ind pu ->
+      let pu' = subst_univs_fn_puniverses lsubst pu in
+        if pu' == pu then c else mkIndU pu'
+    | Construct pu ->
+      let pu' = subst_univs_fn_puniverses lsubst pu in
+        if pu' == pu then c else mkConstructU pu'
+    | Sort (Type u) ->
+      let u' = Univ.subst_univs_universe subst u in
+        if u' == u then c else mkSort (sort_of_univ u')
+    | _ -> Constr.map aux c
+  in aux
 
 let make_opt_subst s = 
   fun x -> 

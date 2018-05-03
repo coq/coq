@@ -1290,30 +1290,14 @@ module MiniEConstr = struct
   let unsafe_eq = Refl
 
   let to_constr ?(abort_on_undefined_evars=true) sigma c =
-    let rec to_constr c = match Constr.kind c with
-      | Evar ev ->
-        begin match safe_evar_value sigma ev with
-          | Some c -> to_constr c
-          | None ->
-            if abort_on_undefined_evars then
-              anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
-            else
-              Constr.map (fun c -> to_constr c) c
-        end
-      | Sort (Sorts.Type u) ->
-        let u' = normalize_universe sigma u in
-        if u' == u then c else mkSort (Sorts.sort_of_univ u')
-      | Const (c', u) when not (Univ.Instance.is_empty u) ->
-        let u' = normalize_universe_instance sigma u in
-        if u' == u then c else mkConstU (c', u')
-      | Ind (i, u) when not (Univ.Instance.is_empty u) ->
-        let u' = normalize_universe_instance sigma u in
-        if u' == u then c else mkIndU (i, u')
-      | Construct (co, u) when not (Univ.Instance.is_empty u) ->
-        let u' = normalize_universe_instance sigma u in
-        if u' == u then c else mkConstructU (co, u')
-      | _ -> Constr.map (fun c -> to_constr c) c
-    in to_constr c
+    let evar_value =
+      if not abort_on_undefined_evars then fun ev -> safe_evar_value sigma ev
+      else fun ev ->
+        match safe_evar_value sigma ev with
+        | Some _ as v -> v
+        | None -> anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
+    in
+    Universes.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c
 
   let of_named_decl d = d
   let unsafe_to_named_decl d = d
