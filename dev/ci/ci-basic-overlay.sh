@@ -156,3 +156,9 @@
 ########################################################################
 : "${fcsl_pcm_CI_BRANCH:=master}"
 : "${fcsl_pcm_CI_GITURL:=https://github.com/imdea-software/fcsl-pcm.git}"
+
+########################################################################
+# pidetop
+########################################################################
+: "${pidetop_CI_BRANCH:=v8.9}"
+: "${pidetop_CI_GITURL:=https://bitbucket.org/coqpide/pidetop.git}"

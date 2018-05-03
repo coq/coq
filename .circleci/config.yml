@@ -209,6 +209,9 @@ jobs:
   mtac2:
     <<: *ci-template
 
+  pidetop:
+    <<: *ci-template
+
   sf:
     <<: *ci-template
     environment:
@@ -266,6 +269,7 @@ workflows:
       - iris-lambda-rust: *req-main
       - ltac2: *req-main
       - math-comp: *req-main
+      - pidetop: *req-main
       - sf: *req-main
       - unimath: *req-main
       - vst: *req-main

@@ -363,6 +363,9 @@ ci-math-comp:
 ci-mtac2:
   <<: *ci-template
 
+ci-pidetop:
+  <<: *ci-template
+
 ci-sf:
   <<: *ci-template
   variables:
