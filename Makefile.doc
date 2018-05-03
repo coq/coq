@@ -32,10 +32,7 @@ BIBTEX:=BIBINPUTS=.: bibtex -min-crossrefs=10
 MAKEINDEX:=makeindex
 PDFLATEX:=pdflatex
 DVIPS:=dvips
-FIG2DEV:=fig2dev
-CONVERT:=convert
 HEVEA:=hevea
-HACHA:=hacha
 HEVEAOPTS:=-fix -exec xxdate.exe
 HEVEALIB:=/usr/local/lib/hevea:/usr/lib/hevea
 HTMLSTYLE:=coqremote
@@ -109,20 +106,6 @@ endif
 
 %.ps: %.dvi
 	(cd `dirname $<`; $(DVIPS) -q -o `basename $@` `basename $<`)
-
-%.png: %.fig
-	$(FIG2DEV) -L png -m 2 $< $@
-
-%.pdf: %.fig
-	$(FIG2DEV) -L pdftex $< $@
-	$(FIG2DEV) -L pdftex_t -p `basename $@` $< $@_t
-
-%.eps: %.fig
-	$(FIG2DEV) -L pstex $< $@
-	$(FIG2DEV) -L pstex_t -p `basename $@` $< $@_t
-
-%.eps: %.png
-	$(CONVERT) $< $@
 
 ######################################################################
 # Macros for filtering outputs
