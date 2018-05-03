@@ -1,19 +1,17 @@
-image: ocaml/opam:ubuntu
-
-# this doesn't seem to work
-cache:
-  paths:
-    - .opamcache
+image: ubuntu:latest
 
 stages:
+  - opam-boot
   - build
   - test
 
 variables:
   # some default values
   NJOBS: "2"
-  COMPILER: "system"
+  COMPILER: "4.02.3"
   CAMLP5_VER: "6.14"
+  OPAMROOT: "$CI_PROJECT_DIR/.opamcache"
+  OPAMROOTISOK: "true"
 
   # some useful values
   COMPILER_32BIT: "4.02.3+32bit"
@@ -30,32 +28,49 @@ variables:
   COQDOC_PACKAGES: "texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-math-extra texlive-fonts-recommended texlive-fonts-extra latex-xcolor ghostscript transfig imagemagick tipa python3-pip"
   COQDOC_OPAM: "hevea"
   SPHINX_PACKAGES: "bs4 sphinx sphinx_rtd_theme pexpect antlr4-python3-runtime sphinxcontrib-bibtex"
+  ELPI_OPAM: "ppx_tools_versioned ppx_deriving ocaml-migrate-parsetree"
 
 
 before_script:
-  - ls # figure out if artifacts are around
+  - ls -a # figure out if artifacts are around
   - printenv
 #  - if [ "$COMPILER" = "$COMPILER_32BIT" ]; then sudo dpkg --add-architecture i386; fi
-  - if [ -n "${EXTRA_PACKAGES}" ]; then sudo apt-get update -qq && sudo apt-get install -y -qq ${EXTRA_PACKAGES}; fi
-  - if [ -n "${PIP_PACKAGES}" ]; then sudo pip3 install ${PIP_PACKAGES}; fi
+  - apt-get update -qq && apt-get install -y -qq m4 opam ${EXTRA_PACKAGES}
+  - if [ -n "${PIP_PACKAGES}" ]; then pip3 install ${PIP_PACKAGES}; fi
+  # if no cache running opam config fails!
+  - if [ -d .opamcache ]; then eval $(opam config env); fi
 
-  # setup cache
-  - if [ ! "(" -d .opamcache ")" ]; then mv ~/.opam .opamcache; else mv ~/.opam ~/.opam-old; fi
-  - ln -s $(readlink -f .opamcache) ~/.opam
+################ OPAM SYSTEM ######################
+# - use cache between pipelines
+# - use artifacts between jobs
+#   (in https://gitlab.com/SkySkimmer/coq/-/jobs/63255417
+#    the cache wasn't available at the build step)
+# every non opam-boot job must set dependencies (for ci it's in the template)
+# otherwise all opam-boot artifacts are used together and we get some random switch
 
-  # the default repo in this docker image is a local directory
-  # at the time of 4aaeb8abf it lagged behind the official
-  # repository such that camlp5 7.01 was not available
-  - opam repository set-url default https://opam.ocaml.org
-  - opam update
-  - opam switch ${COMPILER}
-  - eval $(opam config env)
-  - opam config list
-  - opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind num ${EXTRA_OPAM}
-  - rm -rf ~/.opam/log/
-  - opam list
+# set cache key when using
+.opam-boot-template: &opam-boot-template
+  stage: opam-boot
+  artifacts:
+    name: "opam-$COMPILER"
+    paths:
+      - .opamcache
+    expire_in: 1 week
+  script:
+    # the default repo in this docker image is a local directory
+    # at the time of 4aaeb8abf it lagged behind the official
+    # repository such that camlp5 7.01 was not available
+    - opam init -a -y -j $NJOBS --compiler=${COMPILER} default https://opam.ocaml.org
+    - eval $(opam config env)
+    - opam update
+    - opam config list
+    - opam list
+    - opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind num ${EXTRA_OPAM}
+    - rm -rf ~/.opam/log/
+    - opam list
 
 # TODO figure out how to build doc for installed coq
+# set dependencies when using
 .build-template: &build-template
   stage: build
   artifacts:
@@ -65,8 +80,13 @@ before_script:
       - config/Makefile
       - test-suite/misc/universes/all_stdlib.v
     expire_in: 1 week
+  dependencies:
+    - not-a-real-job
   script:
     - set -e
+    - printenv
+    - opam config list
+    - opam list
 
     - echo 'start:coq.config'
     - ./configure -prefix "$(pwd)/_install_ci" ${EXTRA_CONF}
@@ -86,10 +106,12 @@ before_script:
 
     - set +e
 
+# set dependencies when using
 .warnings-template: &warnings-template
   # keep warnings in test stage so we can test things even when warnings occur
   stage: test
-  dependencies: []
+  dependencies:
+    - not-a-real-job
   script:
     - set -e
 
@@ -107,8 +129,11 @@ before_script:
     EXTRA_PACKAGES: "$COQIDE_PACKAGES"
     EXTRA_OPAM: "$COQIDE_OPAM"
 
+# set dependencies when using
 .test-suite-template: &test-suite-template
   stage: test
+  dependencies:
+    - not-a-real-job
   script:
     - cd test-suite
     - make clean
@@ -122,8 +147,11 @@ before_script:
     paths:
       - test-suite/logs
 
+# set dependencies when using
 .validate-template: &validate-template
   stage: test
+  dependencies:
+    - not-a-real-job
   script:
     - cd _install_ci
     - find lib/coq/ -name '*.vo' -print0 > vofiles
@@ -139,57 +167,90 @@ before_script:
     - echo 'end:coq.test'
     - set +e
   dependencies:
+    - opam-boot
     - build
   variables: &ci-template-vars
     TEST_TARGET: "$CI_JOB_NAME"
     EXTRA_PACKAGES: "$TIMING_PACKAGES"
 
-build:
-  <<: *build-template
+opam-boot:
+  <<: *opam-boot-template
+  cache:
+    paths: &cache-paths
+      - .opamcache
+    key: main
   variables:
-    EXTRA_CONF: "-native-compiler yes -coqide opt -with-doc yes"
-    EXTRA_PACKAGES: "$COQIDE_PACKAGES $COQDOC_PACKAGES"
-    EXTRA_OPAM: "$COQIDE_OPAM $COQDOC_OPAM"
-    PIP_PACKAGES: "$SPHINX_PACKAGES"
+    EXTRA_OPAM: "$COQIDE_OPAM $COQDOC_OPAM ocamlgraph $ELPI_OPAM"
+    EXTRA_PACKAGES: "$COQIDE_PACKAGES"
 
-# no coqide for 32bit: libgtk installation problems
-build:32bit:
-  <<: *build-template
+opam-boot:32bit:
+  <<: *opam-boot-template
+  cache:
+    paths: *cache-paths
+    key: 32bit
   variables:
-    EXTRA_CONF: "-native-compiler yes"
-    EXTRA_PACKAGES: "gcc-multilib"
     COMPILER: "$COMPILER_32BIT"
+    EXTRA_PACKAGES: "gcc-multilib"
 
-build:bleeding-edge:
-  <<: *build-template
+opam-boot:bleeding-edge:
+  <<: *opam-boot-template
+  cache:
+    paths: *cache-paths
+    key: be
   variables:
-    EXTRA_CONF: "-native-compiler yes -coqide opt"
     COMPILER: "$COMPILER_BLEEDING_EDGE"
     CAMLP5_VER: "$CAMLP5_VER_BLEEDING_EDGE"
     EXTRA_PACKAGES: "$COQIDE_PACKAGES"
     EXTRA_OPAM: "$COQIDE_OPAM_BE"
 
+build:
+  <<: *build-template
+  dependencies:
+    - opam-boot
+  variables:
+    EXTRA_CONF: "-native-compiler yes -coqide opt -with-doc yes"
+    EXTRA_PACKAGES: "$COQIDE_PACKAGES $COQDOC_PACKAGES"
+    PIP_PACKAGES: "$SPHINX_PACKAGES"
+
+# no coqide for 32bit: libgtk installation problems
+build:32bit:
+  <<: *build-template
+  dependencies:
+    - opam-boot:32bit
+  variables:
+    EXTRA_CONF: "-native-compiler yes"
+    EXTRA_PACKAGES: "gcc-multilib"
+
+build:bleeding-edge:
+  <<: *build-template
+  dependencies:
+    - opam-boot:bleeding-edge
+  variables:
+    EXTRA_CONF: "-native-compiler yes -coqide opt"
+    EXTRA_PACKAGES: "$COQIDE_PACKAGES"
+
 warnings:
   <<: *warnings-template
+  dependencies:
+    - opam-boot
 
 # warnings:32bit:
 #   <<: *warnings-template
 #   variables:
 #     <<: *warnings-variables
 #     EXTRA_PACKAGES: "$gcc-multilib COQIDE_PACKAGES_32BIT"
-#     COMPILER: "$COMPILER_32BIT"
+#   dependencies:
+#     - opam-boot:32bit
 
 warnings:bleeding-edge:
   <<: *warnings-template
-  variables:
-    <<: *warnings-variables
-    COMPILER: "$COMPILER_BLEEDING_EDGE"
-    CAMLP5_VER: "$CAMLP5_VER_BLEEDING_EDGE"
-    EXTRA_OPAM: "$COQIDE_OPAM_BE"
+  dependencies:
+    - opam-boot:bleeding-edge
 
 test-suite:
   <<: *test-suite-template
   dependencies:
+    - opam-boot
     - build
   variables:
     EXTRA_PACKAGES: "$TIMING_PACKAGES"
@@ -197,31 +258,31 @@ test-suite:
 test-suite:32bit:
   <<: *test-suite-template
   dependencies:
+    - opam-boot:32bit
     - build:32bit
   variables:
-    COMPILER: "$COMPILER_32BIT"
     EXTRA_PACKAGES: "gcc-multilib $TIMING_PACKAGES"
 
 test-suite:bleeding-edge:
   <<: *test-suite-template
   dependencies:
+    - opam-boot:bleeding-edge
     - build:bleeding-edge
   variables:
-    COMPILER: "$COMPILER_BLEEDING_EDGE"
-    CAMLP5_VER: "$CAMLP5_VER_BLEEDING_EDGE"
     EXTRA_PACKAGES: "$TIMING_PACKAGES"
 
 validate:
   <<: *validate-template
   dependencies:
+    - opam-boot
     - build
 
 validate:32bit:
   <<: *validate-template
   dependencies:
+    - opam-boot:32bit
     - build:32bit
   variables:
-    COMPILER: "$COMPILER_32BIT"
     EXTRA_PACKAGES: "gcc-multilib"
 
 ci-bignums:
@@ -240,7 +301,6 @@ ci-coq-dpdgraph:
   <<: *ci-template
   variables:
     <<: *ci-template-vars
-    EXTRA_OPAM: "ocamlgraph"
     EXTRA_PACKAGES: "$TIMING_PACKAGES autoconf"
 
 ci-coquelicot:
@@ -251,9 +311,6 @@ ci-coquelicot:
 
 ci-elpi:
   <<: *ci-template
-  variables:
-    <<: *ci-template-vars
-    EXTRA_OPAM: "ppx_tools_versioned ppx_deriving ocaml-migrate-parsetree"
 
 ci-equations:
   <<: *ci-template
