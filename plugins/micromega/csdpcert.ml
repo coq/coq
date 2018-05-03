@@ -20,7 +20,6 @@ open Sos_types
 open Sos_lib
 
 module Mc = Micromega
-module Ml2C = Mutils.CamlToCoq
 module C2Ml = Mutils.CoqToCaml
 
 type micromega_polys = (Micromega.q Mc.pol * Mc.op1) list
@@ -28,7 +27,6 @@ type csdp_certificate = S of Sos_types.positivstellensatz option | F of string
 type provername = string * int option
 
 
-let debug = false
 let flags = [Open_append;Open_binary;Open_creat]
 
 let chan = open_out_gen flags 0o666 "trace"
@@ -54,27 +52,6 @@ struct
 
 end
 open M
-
-open Mutils
-
-
-
-
-let canonical_sum_to_string = function s -> failwith "not implemented"
-
-let print_canonical_sum m = Format.print_string (canonical_sum_to_string m)
-
-let print_list_term o l =
-  output_string o "print_list_term\n";
- List.iter (fun (e,k) -> Printf.fprintf o "q: %s %s ;"
-  (string_of_poly (poly_of_term (expr_to_term e)))
-  (match k with
-    Mc.Equal -> "= "
-   | Mc.Strict -> "> "
-   | Mc.NonStrict -> ">= "
-   | _ -> failwith "not_implemented")) (List.map (fun (e, o) -> Mc.denorm e , o) l) ;
- output_string o "\n"
-
 
 let partition_expr l =
  let rec f i = function
@@ -125,7 +102,7 @@ let real_nonlinear_prover d l =
    (sets_of_list neq) in
 
   let (cert_ideal, cert_cone,monoid) = deepen_until d (fun d ->
-   list_try_find (fun m -> let (ci,cc) =
+   tryfind (fun m -> let (ci,cc) =
     real_positivnullstellensatz_general false d peq pge (poly_neg (fst m) ) in
 		      (ci,cc,snd m)) monoids) 0 in
 
@@ -144,7 +121,7 @@ let real_nonlinear_prover d l =
     | l   -> Monoid l in
     List.fold_right (fun x y -> Product(x,y)) lt sq in
 
-  let proof = list_fold_right_elements
+  let proof = end_itlist
    (fun s t -> Sum(s,t)) (proof_ne :: proofs_ideal @ proofs_cone) in
    S (Some proof)
  with
@@ -158,7 +135,7 @@ let pure_sos  l =
  (* If there is no strict inequality,
     I should nonetheless be able to try something - over Z  > is equivalent to -1  >= *)
  try
-  let l = List.combine l (interval 0 (List.length l -1)) in
+  let l = List.combine l (CList.interval 0 (List.length l -1)) in
   let (lt,i) =  try (List.find (fun (x,_) -> Pervasives.(=) (snd x) Mc.Strict) l)
    with Not_found -> List.hd l in
   let plt = poly_neg (poly_of_term (expr_to_term (fst lt))) in
@@ -182,13 +159,6 @@ let run_prover prover pb =
     | "real_nonlinear_prover", Some d -> real_nonlinear_prover d pb
     | "pure_sos", None -> pure_sos pb
     | prover, _ -> (Printf.printf "unknown prover: %s\n" prover; exit 1)
-
-
-let output_csdp_certificate o = function
-  | S None -> output_string o "S None"
-  | S (Some p) -> Printf.fprintf o "S (Some %a)" output_psatz p
-  | F s        -> Printf.fprintf o "F %s" s
-
 
 let main () =
   try

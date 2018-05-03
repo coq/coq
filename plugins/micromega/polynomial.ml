@@ -20,9 +20,9 @@ open Utils
 
 type var = int
 
+let debug = false
 
 let (<+>) = add_num
-let (<->) = minus_num
 let (<*>) = mult_num
 
 
@@ -33,8 +33,6 @@ sig
  val is_const : t -> bool
  val var : var -> t
  val is_var : t -> bool
- val find : var -> t -> int
- val mult : var -> t -> t
  val prod : t -> t -> t
  val exp  : t -> int -> t
  val div  : t -> t -> t *  int
@@ -99,9 +97,6 @@ struct
  (* Get the degre of a variable in a monomial *)
  let find x m = try find x m with Not_found -> 0
   
- (* Multiply a monomial by a variable *)
- let mult x m = add x (  (find x m) + 1) m
-   
  (* Product of monomials *)
  let prod m1 m2 = Map.fold (fun k d m -> add k ((find k m) + d) m) m1 m2
 
@@ -145,14 +140,10 @@ sig
  val variable : var -> t
  val add : Monomial.t -> num -> t -> t
  val constant : num -> t
- val mult : Monomial.t -> num -> t -> t
  val product : t -> t -> t
  val addition : t -> t -> t
  val uminus : t -> t
  val fold : (Monomial.t -> num -> 'a -> 'a) -> t -> 'a -> 'a
- val pp : out_channel -> t -> unit
- val compare : t -> t -> int
- val is_null : t -> bool
  val is_linear : t -> bool
 end =
 struct
@@ -161,12 +152,6 @@ struct
  open P
 
  type t = num P.t
-
- let pp o p = P.iter 
-   (fun k v -> 
-	if Monomial.compare Monomial.const k = 0
-	then         Printf.fprintf o "%s " (string_of_num v)
-	else Printf.fprintf o "%s*%a " (string_of_num v) Monomial.pp k) p  
 
  (* Get the coefficient of monomial mn *)
  let get : Monomial.t -> t -> num = 
@@ -219,10 +204,6 @@ struct
   fun p -> map (fun v -> minus_num v) p
 
  let fold = P.fold
-
- let is_null p = fold (fun mn vl b -> b && sign_num vl = 0) p  true
-
- let compare = compare compare_num
 
  let is_linear p = P.fold (fun m _ acc -> acc && (Monomial.is_const m || Monomial.is_var m)) p true
 
@@ -277,7 +258,6 @@ module Vect =
 	xfrom_list 0 l
 
     let zero_num = Int 0
-    let unit_num = Int 1
 
 
     let to_list m =
@@ -311,11 +291,6 @@ module Vect =
 	      |  1 -> (k,v) :: (set i n l)
 	      |  _  -> failwith "compare_num"
 
-    let gcd m =
-      let res = List.fold_left (fun x (i,e) -> Big_int.gcd_big_int  x (Utils.numerator e))  Big_int.zero_big_int m in
-	if Big_int.compare_big_int res Big_int.zero_big_int = 0
-	then Big_int.unit_big_int else res
-
     let mul z t =
       match z with
 	| Int 0 -> []
@@ -345,7 +320,7 @@ module Vect =
 
 
 
-    let compare : t -> t -> int = Utils.Cmp.compare_list (fun x y -> Utils.Cmp.compare_lexical
+    let compare : t -> t -> int = Mutils.Cmp.compare_list (fun x y -> Mutils.Cmp.compare_lexical
       [
 	(fun () -> Int.compare (fst x) (fst y));
 	(fun () -> compare_num (snd x) (snd y))])
@@ -395,17 +370,7 @@ let opMult o1 o2 =
     | Eq , Ge | Ge , Eq -> Ge
     | Ge , Ge -> Ge
 
-let opAdd o1 o2 =
-  match o1 , o2 with
-    | Eq , _ | _ , Eq -> Eq
-    | Ge , Ge -> Ge
-
-
-
-
 open Big_int
-
-type index = int
 
 type prf_rule = 
   | Hyp of int 
@@ -549,35 +514,6 @@ let mul_proof_ext (p,c) prf =
    | [] -> mul_proof (numerator c) prf
    |  _ -> MulC((p,c),prf)
   
-
-
-(*
-  let rec scale_prf_rule = function
-	    | Hyp i -> (unit_big_int, Hyp i)
-  | Def i -> (unit_big_int, Def i)
-  | Cst c -> (unit_big_int, Cst i)
-  | Zero  -> (unit_big_int, Zero)
-  | Square p -> (unit_big_int,Square p)
-  | Div(c,pr) -> 
-  let (bi,pr') = scale_prf_rule pr in
-  (mult_big_int c bi , pr')
-  | MulC(p,pr) -> 
-  let bi,pr' = scale_prf_rule pr in
-  (bi,MulC p,pr')
-  | MulPrf(p1,p2) -> 
-  let b1,p1 = scale_prf_rule p1 in
-  let b2,p2 = scale_prf_rule p2 in
-	    
-  
-  | AddPrf(p1,p2) -> 
-	    let b1,p1 = scale_prf_rule p1 in
-  let b2,p2 = scale_prf_rule p2 in
-  let g =  gcd_big_int
-*)
-	  
-
-
-
 
 module LinPoly = 
 struct

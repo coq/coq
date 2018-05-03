@@ -9,8 +9,6 @@
 
 open Num
 
-let debugging = ref false;;
-
 (* ------------------------------------------------------------------------- *)
 (* Comparisons that are reflexive on NaN and also short-circuiting.          *)
 (* ------------------------------------------------------------------------- *)
@@ -21,7 +19,6 @@ let (=?) = fun x y -> cmp x y = 0;;
 let (<?) = fun x y -> cmp x y < 0;;
 let (<=?) = fun x y -> cmp x y <= 0;;
 let (>?) = fun x y -> cmp x y > 0;;
-let (>=?) = fun x y -> cmp x y >= 0;;
 
 (* ------------------------------------------------------------------------- *)
 (* Combinators.                                                              *)
@@ -59,21 +56,8 @@ let lcm_num x y =
 
 
 (* ------------------------------------------------------------------------- *)
-(* List basics.                                                              *)
-(* ------------------------------------------------------------------------- *)
-
-let rec el n l =
-  if n = 0 then List.hd l else el (n - 1) (List.tl l);;
-
-
-(* ------------------------------------------------------------------------- *)
 (* Various versions of list iteration.                                       *)
 (* ------------------------------------------------------------------------- *)
-
-let rec itlist f l b =
-  match l with
-    [] -> b
-  | (h::t) -> f h (itlist f t b);;
 
 let rec end_itlist f l =
   match l with
@@ -81,39 +65,26 @@ let rec end_itlist f l =
       | [x]    -> x
       | (h::t) -> f h (end_itlist f t);;
 
-let rec itlist2 f l1 l2 b =
-  match (l1,l2) with
-    ([],[]) -> b
-  | (h1::t1,h2::t2) -> f h1 h2 (itlist2 f t1 t2 b)
-  | _ -> failwith "itlist2";;
-
 (* ------------------------------------------------------------------------- *)
 (* All pairs arising from applying a function over two lists.                *)
 (* ------------------------------------------------------------------------- *)
 
 let rec allpairs f l1 l2 =
   match l1 with
-   h1::t1 ->  itlist (fun x a -> f h1 x :: a) l2 (allpairs f t1 l2)
+   h1::t1 -> List.fold_right (fun x a -> f h1 x :: a) l2 (allpairs f t1 l2)
   | [] -> [];;
 
 (* ------------------------------------------------------------------------- *)
 (* String operations (surely there is a better way...)                       *)
 (* ------------------------------------------------------------------------- *)
 
-let implode l = itlist (^) l "";;
+let implode l = List.fold_right (^) l "";;
 
 let explode s =
   let rec exap n l =
       if n < 0 then l else
       exap (n - 1) ((String.sub s n 1)::l) in
   exap (String.length s - 1) [];;
-
-
-(* ------------------------------------------------------------------------- *)
-(* Attempting function or predicate applications.                            *)
-(* ------------------------------------------------------------------------- *)
-
-let can f x = try (f x; true) with Failure _ -> false;;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -126,12 +97,8 @@ let rec funpow n f x =
 
 
 (* ------------------------------------------------------------------------- *)
-(* Replication and sequences.                                                *)
+(* Sequences.                                                *)
 (* ------------------------------------------------------------------------- *)
-
-let rec replicate x n =
-    if n < 1 then []
-    else x::(replicate x (n - 1));;
 
 let rec (--) = fun m n -> if m > n then [] else m::((m + 1) -- n);;
 
@@ -139,22 +106,10 @@ let rec (--) = fun m n -> if m > n then [] else m::((m + 1) -- n);;
 (* Various useful list operations.                                           *)
 (* ------------------------------------------------------------------------- *)
 
-let rec forall p l =
-  match l with
-    [] -> true
-  | h::t -> p(h) && forall p t;;
-
 let rec tryfind f l =
   match l with
       [] -> failwith "tryfind"
     | (h::t) -> try f h with Failure _ -> tryfind f t;;
-
-let index x =
-  let rec ind n l =
-    match l with
-      [] -> failwith "index"
-    | (h::t) -> if x =? h then n else ind (n + 1) t in
-  ind 0;;
 
 (* ------------------------------------------------------------------------- *)
 (* "Set" operations on lists.                                                *)
@@ -168,45 +123,15 @@ let rec mem x lis =
 let insert x l =
   if mem x l then l else x::l;;
 
-let union l1 l2 = itlist insert l1 l2;;
+let union l1 l2 = List.fold_right insert l1 l2;;
 
 let subtract l1 l2 = List.filter (fun x -> not (mem x l2)) l1;;
-
-(* ------------------------------------------------------------------------- *)
-(* Merging and bottom-up mergesort.                                          *)
-(* ------------------------------------------------------------------------- *)
-
-let rec merge ord l1 l2 =
-  match l1 with
-    [] -> l2
-  | h1::t1 -> match l2 with
-                [] -> l1
-              | h2::t2 -> if ord h1 h2 then h1::(merge ord t1 l2)
-                          else h2::(merge ord l1 t2);;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Common measure predicates to use with "sort".                             *)
 (* ------------------------------------------------------------------------- *)
 
 let increasing f x y = f x <? f y;;
-
-let decreasing f x y = f x >? f y;;
-
-(* ------------------------------------------------------------------------- *)
-(* Zipping, unzipping etc.                                                   *)
-(* ------------------------------------------------------------------------- *)
-
-let rec zip l1 l2 =
-  match (l1,l2) with
-        ([],[]) -> []
-      | (h1::t1,h2::t2) -> (h1,h2)::(zip t1 t2)
-      | _ -> failwith "zip";;
-
-let rec unzip =
-  function [] -> [],[]
-         | ((a,b)::rest) -> let alist,blist = unzip rest in
-                            (a::alist,b::blist);;
 
 (* ------------------------------------------------------------------------- *)
 (* Iterating functions over lists.                                           *)
@@ -443,8 +368,6 @@ let apply f = applyd f (fun x -> failwith "apply");;
 
 let tryapplyd f a d = applyd f (fun x -> d) a;;
 
-let defined f x = try apply f x; true with Failure _ -> false;;
-
 (* ------------------------------------------------------------------------- *)
 (* Undefinition.                                                             *)
 (* ------------------------------------------------------------------------- *)
@@ -490,8 +413,6 @@ let graph f = setify (foldl (fun a x y -> (x,y)::a) [] f);;
 
 let dom f = setify(foldl (fun a x y -> x::a) [] f);;
 
-let ran f = setify(foldl (fun a x y -> y::a) [] f);;
-
 (* ------------------------------------------------------------------------- *)
 (* More parser basics.                                                       *)
 (* ------------------------------------------------------------------------- *)
@@ -499,7 +420,7 @@ let ran f = setify(foldl (fun a x y -> y::a) [] f);;
 exception Noparse;;
 
 
-let isspace,issep,isbra,issymb,isalpha,isnum,isalnum =
+let isspace,isnum =
   let charcode s = Char.code(String.get s 0) in
   let spaces = " \t\n\r"
   and separators = ",;"
@@ -508,7 +429,7 @@ let isspace,issep,isbra,issymb,isalpha,isnum,isalnum =
   and alphas = "'abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   and nums = "0123456789" in
   let allchars = spaces^separators^brackets^symbs^alphas^nums in
-  let csetsize = itlist ((o) max charcode) (explode allchars) 256 in
+  let csetsize = List.fold_right ((o) max charcode) (explode allchars) 256 in
   let ctable = Array.make csetsize 0 in
   do_list (fun c -> Array.set ctable (charcode c) 1) (explode spaces);
   do_list (fun c -> Array.set ctable (charcode c) 2) (explode separators);
@@ -517,13 +438,8 @@ let isspace,issep,isbra,issymb,isalpha,isnum,isalnum =
   do_list (fun c -> Array.set ctable (charcode c) 16) (explode alphas);
   do_list (fun c -> Array.set ctable (charcode c) 32) (explode nums);
   let isspace c = Array.get ctable (charcode c) = 1
-  and issep c  = Array.get ctable (charcode c) = 2
-  and isbra c  = Array.get ctable (charcode c) = 4
-  and issymb c = Array.get ctable (charcode c) = 8
-  and isalpha c = Array.get ctable (charcode c) = 16
-  and isnum c = Array.get ctable (charcode c) = 32
-  and isalnum c = Array.get ctable (charcode c) >= 16 in
-  isspace,issep,isbra,issymb,isalpha,isnum,isalnum;;
+  and isnum c = Array.get ctable (charcode c) = 32 in
+  isspace,isnum;;
 
 let parser_or parser1 parser2 input =
   try parser1 input
@@ -566,9 +482,6 @@ let rec atleast n prs i =
   (if n <= 0 then many prs
    else prs ++ atleast (n - 1) prs >> (fun (h,t) -> h::t)) i;;
 
-let finished input =
-  if input = [] then 0,input else failwith "Unparsed input";;
-
 (* ------------------------------------------------------------------------- *)
 
 let temp_path = Filename.get_temp_dir_name ();;
@@ -589,7 +502,7 @@ let strings_of_file filename =
   (Pervasives.close_in fd; data);;
 
 let string_of_file filename =
-  end_itlist (fun s t -> s^"\n"^t) (strings_of_file filename);;
+  String.concat "\n" (strings_of_file filename);;
 
 let file_of_string filename s =
   let fd = Pervasives.open_out filename in

@@ -1,13 +1,9 @@
+open Util
 open Num
-module Utils = Mutils
 open Polynomial
 open Vect
 
-let map_option = Utils.map_option
-let from_option = Utils.from_option
-
 let debug = false
-type ('a,'b) lr = Inl of 'a | Inr of 'b
 
 let compare_float (p : float) q = Pervasives.compare p q
 
@@ -26,9 +22,6 @@ struct
       Intervals needs to be explicitly normalised.
       *)
 
-  type who = Left | Right
-
-
   (** if then interval [itv] is empty, [norm_itv itv] returns [None]
       otherwise, it returns [Some itv] *)
 
@@ -36,14 +29,6 @@ struct
     match itv with
       | Some a , Some b -> if a <=/ b then Some itv else None
       |   _             -> Some itv
-
-  (** [opp_itv itv] computes the opposite interval *)
-  let opp_itv itv =
-  let (l,r) = itv in
-    (map_option minus_num r, map_option minus_num l)
-
-
-
 
 (** [inter i1 i2 = None] if the intersection of intervals is empty
     [inter i1 i2 = Some i] if [i] is the intersection of the intervals [i1] and [i2] *)
@@ -92,10 +77,6 @@ type vector = Vect.t
 
 module ISet = Set.Make(Int)
 
-
-module PSet = ISet
-
-
 module System = Hashtbl.Make(Vect)
 
 type proof =
@@ -131,14 +112,6 @@ and cstr_info = {
 
 (** To be thrown when a system has no solution *)
 exception SystemContradiction of proof
-let hyps prf =
-  let rec hyps prf acc =
-    match prf with
-      | Assum i -> ISet.add i acc
-      | Elim(_,prf1,prf2)
-      | And(prf1,prf2) -> hyps prf1 (hyps prf2 acc) in
-    hyps prf ISet.empty
-
 
 (** Pretty printing *)
   let rec pp_proof o prf =
@@ -146,26 +119,6 @@ let hyps prf =
       | Assum i -> Printf.fprintf o "H%i" i
       | Elim(v, prf1,prf2) -> Printf.fprintf o "E(%i,%a,%a)" v pp_proof prf1 pp_proof prf2
       | And(prf1,prf2)   -> Printf.fprintf o "A(%a,%a)"  pp_proof prf1 pp_proof prf2
-
-let pp_bound o  = function
-  | None -> output_string o "oo"
-  | Some a -> output_string o (string_of_num a)
-
-let pp_itv o (l,r) = Printf.fprintf o "(%a,%a)" pp_bound l pp_bound r
-
-
-let pp_iset o s =
-  output_string o "{" ;
-  ISet.fold (fun i _ -> Printf.fprintf o "%i " i) s ();
-  output_string o "}"
-
-let pp_pset o s =
-  output_string o "{" ;
-  PSet.fold (fun i _ -> Printf.fprintf o "%i " i) s ();
-  output_string o "}"
-
-
-let pp_info o i = pp_itv o i.bound
 
 let pp_cstr o (vect,bnd) =
     let (l,r) = bnd in
@@ -182,11 +135,6 @@ let pp_cstr o (vect,bnd) =
 let pp_system o sys=
   System.iter (fun vect ibnd ->
     pp_cstr o (vect,(!ibnd).bound)) sys
-
-
-
-let pp_split_cstr o (vl,v,c,_) =
-  Printf.fprintf o "(val x = %s ,%a,%s)" (string_of_num vl) pp_vect  v  (string_of_num c)
 
 (** [merge_cstr_info] takes:
     - the intersection of bounds and
@@ -243,8 +191,8 @@ let normalise_cstr vect cinfo =
 	      (if n <>/ Int 1 then List.map (fun (x,nx) -> (x,nx // n)) vect else vect),
 			     let divn x = x // n in
 			       if Int.equal (sign_num n) 1
-			       then{cinfo with bound = (map_option divn l , map_option  divn r) }
-			       else {cinfo with pos = cinfo.neg ; neg = cinfo.pos ; bound = (map_option divn r , map_option divn l)})
+                               then{cinfo with bound = (Option.map divn l , Option.map  divn r) }
+                               else {cinfo with pos = cinfo.neg ; neg = cinfo.pos ; bound = (Option.map divn r , Option.map divn l)})
 
 (** For compatibility, there is an external representation of constraints *)
 
@@ -281,7 +229,7 @@ let load_system l =
 
   let sys = System.create 1000 in
 
-  let li = Mutils.mapi (fun e i -> (e,i)) l in
+  let li = List.mapi (fun i e -> (e,i)) l in
 
   let vars = List.fold_left (fun vrs (cstr,i) ->
     match norm_cstr cstr i with
@@ -335,9 +283,6 @@ let add (v1,c1)   (v2,c2)  =
     (*    Printf.printf "add(%a,%s,%a,%s) -> %a\n" pp_vect v1 (string_of_num c1) pp_vect v2 (string_of_num c2) pp_vect (fst res) ;*)
     res
 
-type tlr = (num * vector * cstr_info) list
-type tm = (vector * cstr_info ) list
-
 (** To perform Fourier elimination, constraints are categorised depending on the sign of the variable to eliminate. *)
 
 (** [split x vect info (l,m,r)]
@@ -381,8 +326,8 @@ let project vr sys =
       let {neg = n1 ; pos = p1 ; bound = bound1 ; prf = prf1} = info1
       and {neg = n2 ; pos = p2 ; bound = bound2 ; prf = prf2} = info2 in
 
-      let bnd1 = from_option (fst bound1)
-      and bnd2 = from_option (fst bound2) in
+      let bnd1 = Option.get (fst bound1)
+      and bnd2 = Option.get (fst bound2) in
       let bound = (bnd1 // v1) +/ (bnd2 // minus_num v2) in
       let vres,(n,p) = add (vect1,v1) (vect2,minus_num v2)  in
         (vres,{neg = n ; pos = p ; bound = (Some bound, None); prf = Elim(vr,info1.prf,info2.prf)}) in
@@ -419,13 +364,13 @@ let project_using_eq vr c vect bound  prf (vect',info') =
 	let bndres =
 	  let f x = cst +/ x // c2 in
 	  let (l,r) = info'.bound in
-	    (map_option f l , map_option f r) in
+            (Option.map f l , Option.map f r) in
 
 	  (vres,{neg = n ; pos = p ; bound = bndres ; prf = Elim(vr,prf,info'.prf)})
     | None -> (vect',info')
 
 let elim_var_using_eq vr vect cst  prf sys =
-  let c = from_option (get vr vect) in
+  let c = Option.get (get vr vect) in
 
   let elim_var = project_using_eq vr c vect cst prf  in
 
@@ -444,9 +389,7 @@ let elim_var_using_eq vr vect cst  prf sys =
 (** [size sys] computes the number of entries in the system of constraints *)
 let size sys = System.fold (fun v iref s -> s + (!iref).neg + (!iref).pos) sys 0
 
-module IMap = Map.Make(Int)
-
-let pp_map o map = IMap.fold (fun k elt () -> Printf.fprintf o "%i -> %s\n" k (string_of_num elt)) map ()
+module IMap = CMap.Make(Int)
 
 (** [eval_vect map vect] evaluates vector [vect] using the values of [map].
     If [map] binds all the variables of [vect], we get
@@ -475,8 +418,8 @@ let restrict_bound n sum (itv:interval) =
       | 0 -> if in_bound itv sum
 	then (None,None) (* redundant *)
 	else failwith "SystemContradiction"
-      | 1 ->  map_option f l , map_option f r
-      | _ -> map_option f r , map_option f l
+      | 1 ->  Option.map f l , Option.map f r
+      | _ -> Option.map f r , Option.map f l
 
 
 (** [bound_of_variable map v sys] computes the interval of [v] in
@@ -612,12 +555,6 @@ struct
     match bnd with
       |(Some a, Some b) -> a =/ b
       | _   -> false
-
-  let eq_bound bnd c =
-    match bnd with
-      |(Some a, Some b) -> a =/ b && c =/ b
-      | _   -> false
-
 
   let rec unroll_until v l =
     match l with
