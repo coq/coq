@@ -18,13 +18,21 @@ COQTOPBYTE:=bin/coqtop.byte$(EXE)
 COQTOPEXE:=bin/coqtop$(EXE)
 
 COQDEP:=bin/coqdep$(EXE)
+COQDEPBYTE:=bin/coqdep.byte$(EXE)
 COQMAKEFILE:=bin/coq_makefile$(EXE)
+COQMAKEFILEBYTE:=bin/coq_makefile.byte$(EXE)
 GALLINA:=bin/gallina$(EXE)
+GALLINABYTE:=bin/gallina.byte$(EXE)
 COQTEX:=bin/coq-tex$(EXE)
+COQTEXBYTE:=bin/coq-tex.byte$(EXE)
 COQWC:=bin/coqwc$(EXE)
+COQWCBYTE:=bin/coqwc.byte$(EXE)
 COQDOC:=bin/coqdoc$(EXE)
+COQDOCBYTE:=bin/coqdoc.byte$(EXE)
 COQC:=bin/coqc$(EXE)
+COQCBYTE:=bin/coqc.byte$(EXE)
 COQWORKMGR:=bin/coqworkmgr$(EXE)
+COQWORKMGRBYTE:=bin/coqworkmgr.byte$(EXE)
 COQMAKE_ONE_TIME_FILE:=tools/make-one-time-file.py
 COQTIME_FILE_MAKER:=tools/TimeFileMaker.py
 COQMAKE_BOTH_TIME_FILES:=tools/make-both-time-files.py
@@ -36,12 +44,16 @@ TOOLS_HELPERS:=tools/CoqMakefile.in $(COQMAKE_ONE_TIME_FILE) $(COQTIME_FILE_MAKE
 	$(COQMAKE_BOTH_TIME_FILES) $(COQMAKE_BOTH_SINGLE_TIMING_FILES)
 
 COQDEPBOOT:=bin/coqdep_boot$(EXE)
+COQDEPBOOTBYTE:=bin/coqdep_boot.byte$(EXE)
 OCAMLLIBDEP:=bin/ocamllibdep$(EXE)
+OCAMLLIBDEPBYTE:=bin/ocamllibdep.byte$(EXE)
 FAKEIDE:=bin/fake_ide$(EXE)
+FAKEIDEBYTE:=bin/fake_ide.byte$(EXE)
 
 PRIVATEBINARIES:=$(FAKEIDE) $(OCAMLLIBDEP) $(COQDEPBOOT)
 
 CSDPCERT:=plugins/micromega/csdpcert$(EXE)
+CSDPCERTBYTE:=plugins/micromega/csdpcert.byte$(EXE)
 
 ###########################################################################
 # Object and Source files
