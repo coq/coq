@@ -19,6 +19,12 @@ Vernacular Commands
 - Removed deprecated commands Arguments Scope and Implicit Arguments
   (not the option). Use the Arguments command instead.
 
+Tactics
+
+- Introduction tactics "intro"/"intros" on a goal which is an
+  existential variable now force a refinement of the goal into a
+  dependent product rather than failing.
+
 Tactic language
 
 - Support for fix/cofix added in Ltac "match" and "lazymatch".

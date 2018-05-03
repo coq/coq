@@ -634,7 +634,12 @@ puts in the local context either :g:`Hn:T` (if :g:`T` is of type :g:`Set` or
 ``n`` is such that ``Hn`` or ``Xn`` is a fresh identifier. In both cases, the
 new subgoal is :g:`U`.
 
-If the goal is neither a product nor starting with a let definition,
+If the goal is an existential variable, ``intro`` forces the resolution of the
+existential variable into a dependent product :math:`\forall`:g:`x:?X, ?Y`, puts
+:g:`x:?X` in the local context and leaves :g:`?Y` as a new subgoal allowed to
+depend on :g:`x`.
+
+If the goal is neither a product, nor starting with a let definition, nor an existential variable,
 the tactic ``intro`` applies the tactic ``hnf`` until the tactic ``intro`` can
 be applied or the goal is not head-reducible.
 

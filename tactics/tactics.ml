@@ -979,6 +979,11 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
     | LetIn (name,b,t,u) when not dep_flag || not (noccurn sigma 1 u) ->
         let name = find_name false (LocalDef (name,b,t)) name_flag gl in
 	build_intro_tac name move_flag tac
+    | Evar ev when force_flag ->
+        let sigma, t = Evardefine.define_evar_as_product sigma ev in
+        Tacticals.New.tclTHEN
+          (Proofview.Unsafe.tclEVARS sigma)
+          (intro_then_gen name_flag move_flag force_flag dep_flag tac)
     | _ ->
         begin if not force_flag then Proofview.tclZERO (RefinerError (env, sigma, IntroNeedsProduct))
             (* Note: red_in_concl includes betaiotazeta and this was like *)
