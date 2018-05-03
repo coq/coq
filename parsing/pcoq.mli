@@ -65,10 +65,10 @@ module type S =
   type symbol = Tok.t Gramext.g_symbol
   type action = Gramext.g_action
   type production_rule = symbol list * action
-  type single_extend_statment =
+  type single_extend_statement =
       string option * Gramext.g_assoc option * production_rule list
-  type extend_statment =
-      Gramext.position option * single_extend_statment list
+  type extend_statement =
+      Gramext.position option * single_extend_statement list
 
   type coq_parsable
 
@@ -264,7 +264,7 @@ type gram_reinit = gram_assoc * gram_position
 (** Type of reinitialization data *)
 
 val grammar_extend : 'a Gram.entry -> gram_reinit option ->
-  'a Extend.extend_statment -> unit
+  'a Extend.extend_statement -> unit
 (** Extend the grammar of Coq, without synchronizing it with the backtracking
     mechanism. This means that grammar extensions defined this way will survive
     an undo. *)
@@ -279,7 +279,7 @@ type 'a grammar_command
     marshallable. *)
 
 type extend_rule =
-| ExtendRule : 'a Gram.entry * gram_reinit option * 'a extend_statment -> extend_rule
+| ExtendRule : 'a Gram.entry * gram_reinit option * 'a extend_statement -> extend_rule
 
 type 'a grammar_extension = 'a -> GramState.t -> extend_rule list * GramState.t
 (** Grammar extension entry point. Given some ['a] and a current grammar state,

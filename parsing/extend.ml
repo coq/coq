@@ -116,7 +116,7 @@ and 'a rules =
 type 'a production_rule =
 | Rule : ('a, 'act, Loc.t -> 'a) rule * 'act -> 'a production_rule
 
-type 'a single_extend_statment =
+type 'a single_extend_statement =
   string option *
   (** Level *)
   gram_assoc option *
@@ -124,6 +124,6 @@ type 'a single_extend_statment =
   'a production_rule list
   (** Symbol list with the interpretation function *)
 
-type 'a extend_statment =
+type 'a extend_statement =
   gram_position option *
-  'a single_extend_statment list
+  'a single_extend_statement list
