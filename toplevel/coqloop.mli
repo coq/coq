@@ -30,7 +30,7 @@ val top_buffer : input_buffer
 val set_prompt : (unit -> string) -> unit
 
 (** Toplevel feedback printer. *)
-val coqloop_feed : Feedback.feedback -> unit
+val coqloop_feed : Topfmt.execution_phase -> Feedback.feedback -> unit
 
 (** Main entry point of Coq: read and execute vernac commands. *)
 val loop : state:Vernac.State.t -> Vernac.State.t
