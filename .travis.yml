@@ -275,7 +275,7 @@ install:
 - opam switch "$COMPILER" && opam update
 - eval $(opam config env)
 - opam config list
-- opam install -j ${NJOBS} -y num camlp5${CAMLP5_VER} ocamlfind${FINDLIB_VER} ${EXTRA_OPAM}
+- opam install -j ${NJOBS} -y num ocamlfind${FINDLIB_VER} jbuilder camlp5${CAMLP5_VER} ${EXTRA_OPAM}
 - opam list
 
 script:
