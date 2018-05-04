@@ -188,7 +188,7 @@ open Pputils
     | ModeNoHeadEvar -> str"!"
     | ModeOutput -> str"-"
 
-  let pr_hint_info pr_pat { hint_priority = pri; hint_pattern = pat } =
+  let pr_hint_info pr_pat { Typeclasses.hint_priority = pri; hint_pattern = pat } =
     pr_opt (fun x -> str"|" ++ int x) pri ++
     pr_opt (fun y -> (if Option.is_empty pri then str"| " else mt()) ++ pr_pat y) pat
 

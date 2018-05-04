@@ -25,6 +25,13 @@ module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 (*i*)
 
+(* Core typeclasses hints *)
+type 'a hint_info_gen =
+    { hint_priority : int option;
+      hint_pattern : 'a option }
+
+type hint_info_expr = Constrexpr.constr_pattern_expr hint_info_gen
+
 let typeclasses_unique_solutions = ref false
 let set_typeclasses_unique_solutions d = (:=) typeclasses_unique_solutions d
 let get_typeclasses_unique_solutions () = !typeclasses_unique_solutions
@@ -73,7 +80,7 @@ type typeclass = {
   cl_props : Context.Rel.t;
 
   (* The method implementaions as projections. *)
-  cl_projs : (Name.t * (direction * Vernacexpr.hint_info_expr) option
+  cl_projs : (Name.t * (direction * hint_info_expr) option
 	      * Constant.t option) list;
   
   cl_strict : bool;
@@ -85,7 +92,7 @@ type typeclasses = typeclass Refmap.t
 
 type instance = {
   is_class: global_reference;
-  is_info: Vernacexpr.hint_info_expr;
+  is_info: hint_info_expr;
   (* Sections where the instance should be redeclared,
      None for discard, Some 0 for none. *)
   is_global: int option;
@@ -96,7 +103,7 @@ type instances = (instance Refmap.t) Refmap.t
 
 let instance_impl is = is.is_impl
 
-let hint_priority is = is.is_info.Vernacexpr.hint_priority
+let hint_priority is = is.is_info.hint_priority
 
 let new_instance cl info glob impl =
   let global =
@@ -265,8 +272,6 @@ let check_instance env sigma c =
       (Retyping.get_type_of env sigma c) in
       not (Evd.has_undefined evd)
   with e when CErrors.noncritical e -> false
-
-open Vernacexpr
 
 let build_subclasses ~check env sigma glob { hint_priority = pri } =
   let _id = Nametab.basename_of_global glob in

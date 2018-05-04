@@ -260,7 +260,7 @@ module Vernac_ :
     val noedit_mode : vernac_expr Gram.entry
     val command_entry : vernac_expr Gram.entry
     val red_expr : raw_red_expr Gram.entry
-    val hint_info : Vernacexpr.hint_info_expr Gram.entry
+    val hint_info : Typeclasses.hint_info_expr Gram.entry
   end
 
 (** The main entry: reads an optional vernac command *)

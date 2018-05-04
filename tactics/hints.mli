@@ -31,7 +31,7 @@ type debug = Debug | Info | Off
 
 val secvars_of_hyps : ('c, 't) Context.Named.pt -> Id.Pred.t
 
-val empty_hint_info : 'a hint_info_gen
+val empty_hint_info : 'a Typeclasses.hint_info_gen
 
 (** Pre-created hint databases *)
 
@@ -144,7 +144,7 @@ type hint_db = Hint_db.t
 
 type hnf = bool
 
-type hint_info = (patvar list * constr_pattern) hint_info_gen
+type hint_info = (patvar list * constr_pattern) Typeclasses.hint_info_gen
 
 type hint_term =
   | IsGlobRef of global_reference
