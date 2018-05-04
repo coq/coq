@@ -108,6 +108,11 @@ VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
          (Simple_check.simple_check3 v)) ]
 END
 
+(* This command takes a name and return its value.  It does less
+  than Print, because it fails on constructors, axioms, and inductive types.
+  This should be improved, because the error message is an anomaly.
+  Anomalies should never appear even when using a command outside of its
+  intended use. *)
 VERNAC COMMAND EXTEND ExamplePrint CLASSIFIED AS QUERY
 | [ "Cmd8" reference(r) ] ->
   [ let env = Global.env() in
