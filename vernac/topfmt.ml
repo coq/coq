@@ -89,12 +89,14 @@ let set_margin v =
   Format.pp_set_margin Format.str_formatter v;
   Format.pp_set_margin !std_ft v;
   Format.pp_set_margin !deep_ft v;
+  Format.pp_set_margin !err_ft v;
   (* Heuristic, based on usage: the column on the right of max_indent
      column is 20% of width, capped to 30 characters *)
   let m = max (64 * v / 100) (v-30) in
   Format.pp_set_max_indent Format.str_formatter m;
   Format.pp_set_max_indent !std_ft m;
-  Format.pp_set_max_indent !deep_ft m
+  Format.pp_set_max_indent !deep_ft m;
+  Format.pp_set_max_indent !err_ft m
 
 (** Console display of feedback *)
 
