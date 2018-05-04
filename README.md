@@ -20,5 +20,5 @@ How to write plugins in Coq
     - A command that uses a name and exploits the existing definitions
       or theorems
     - A command that exploits an existing ongoing proof
-    - A commandthat defines a new tactic
+    - A command that defines a new tactic
 
