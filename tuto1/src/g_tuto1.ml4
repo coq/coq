@@ -79,9 +79,29 @@ VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
 | [ "Cmd5" constr(e) ] ->
   [ let v = Constrintern.interp_constr (Global.env())
       (Evd.from_env (Global.env())) e in
+    let (_, ctx) = v in
+    let evd = Evd.from_ctx ctx in
+    Feedback.msg_notice
+    (Termops.print_constr_env (Global.env()) evd
+       (Simple_check.simple_check1 v)) ]
+END
+
+VERNAC COMMAND EXTEND Check2 CLASSIFIED AS QUERY
+| [ "Cmd6" constr(e) ] ->
+  [ let v = Constrintern.interp_constr (Global.env())
+      (Evd.from_env (Global.env())) e in
+    let evd, ty = Simple_check.simple_check2 v in
+    Feedback.msg_notice
+      (Termops.print_constr_env (Global.env()) evd ty) ]
+END
+
+VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
+| [ "Cmd7" constr(e) ] ->
+  [ let v = Constrintern.interp_constr (Global.env())
+      (Evd.from_env (Global.env())) e in
     let (a, ctx) = v in
     let evd = Evd.from_ctx ctx in
       Feedback.msg_notice
       (Termops.print_constr_env (Global.env()) evd
-         (Simple_check.simple_check v)) ]
+         (Simple_check.simple_check3 v)) ]
 END
