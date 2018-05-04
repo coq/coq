@@ -1,3 +1,6 @@
+(* A more advanced example of how to explore the structure of terms of
+  type constr is given in the coq-dpdgraph plugin. *)
+
 let simple_body_access gref =
   match gref with
   | Globnames.VarRef _ ->

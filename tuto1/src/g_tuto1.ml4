@@ -1,3 +1,5 @@
+DECLARE PLUGIN "tuto1_plugin"
+
 open Pp
 (* This one is necessary, to avoid message about missing wit_string *)
 open Stdarg
