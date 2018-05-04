@@ -1,25 +1,25 @@
-let packed_declare_definition ident
-  (value_with_constraints : EConstr.constr Evd.in_evar_universe_context) =
-  begin
-    let evalue, st = value_with_constraints in
-    let evd = Evd.from_ctx st in
-    let value = EConstr.to_constr evd evalue in
-(* Question to developers: could the next 3 lines be removed:
-   similar stuff present in comDefinition and elpi, but not in Mtac2 *)
-    let evd = Evd.minimize_universes evd in
-    let used = Univops.universes_of_constr (Global.env()) value in
-    let evd = Evd.restrict_universe_context evd used in
-    let decl = Univdecls.default_univ_decl in
-    let uctx = Evd.check_univ_decl ~poly:true evd decl in
-    let ce = Declare.definition_entry ~univs:uctx value in
-    let _  =
-      Pretyping.check_evars_are_solved (Global.env ()) evd Evd.empty in
-    let k = (Decl_kinds.Global,
-             true (* polymorphic *), Decl_kinds.Definition) in
-    let binders = Evd.universe_binders evd in
-    let implicits = [] in
-    let hook = Lemmas.mk_hook (fun _ x -> x) in
-    ignore(DeclareDef.declare_definition ident k ce binders implicits hook)
-  end
+let edeclare ident (_, poly, _ as k) ~opaque sigma udecl body tyopt imps hook =
+  let open EConstr in
+  let env = Global.env () in
+  let sigma = Evd.minimize_universes sigma in
+  let body = to_constr sigma body in
+  let tyopt = Option.map (to_constr sigma) tyopt in
+  let uvars_fold uvars c =
+    Univ.LSet.union uvars (Univops.universes_of_constr env c) in
+  let uvars = List.fold_left uvars_fold Univ.LSet.empty
+     (Option.List.cons tyopt [body]) in
+  let sigma = Evd.restrict_universe_context sigma uvars in
+  let univs = Evd.check_univ_decl ~poly sigma udecl in
+  let ubinders = Evd.universe_binders sigma in
+  let ce = Declare.definition_entry ?types:tyopt ~univs body in
+  DeclareDef.declare_definition ident k ce ubinders imps hook
+
+let packed_declare_definition ident value_with_constraints =
+  let body, ctx = value_with_constraints in
+  let sigma = Evd.from_ctx ctx in
+  let k = (Decl_kinds.Global, true, Decl_kinds.Definition) in
+  let udecl = Univdecls.default_univ_decl in
+  let nohook = Lemmas.mk_hook (fun _ x -> x) in
+  ignore (edeclare ident k ~opaque:false sigma udecl body None [] nohook)
 
 (* But this definition cannot be undone by Reset ident *)
