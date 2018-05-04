@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Rebuild README.rst from README.template.rst."""
+"""Rebuild sphinx/README.rst from sphinx/README.template.rst."""
 
 import re
 from os import sys, path

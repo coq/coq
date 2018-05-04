@@ -553,8 +553,8 @@ has type :token:`type`.
 
 .. cmd:: Axiom @ident : @term
 
-   This command links *term* to the name *ident* as its specification in
-   the global context. The fact asserted by *term* is thus assumed as a
+   This command links :token:`term` to the name :token:`ident` as its specification in
+   the global context. The fact asserted by :token:`term` is thus assumed as a
    postulate.
 
 .. exn:: @ident already exists.

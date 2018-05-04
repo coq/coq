@@ -215,8 +215,8 @@ class VernacVariantObject(VernacObject):
 
        .. cmd:: Axiom @ident : @term.
 
-          This command links *term* to the name *ident* as its specification in
-          the global context. The fact asserted by *term* is thus assumed as a
+          This command links :token:`term` to the name :token:`term` as its specification in
+          the global context. The fact asserted by :token:`term` is thus assumed as a
           postulate.
 
           .. cmdv:: Parameter @ident : @term.
@@ -340,7 +340,7 @@ class ExceptionObject(NotationObject):
 
           .. exn:: Proof is not complete
 
-             Raised is :n:`@tactic` does not fully solve the goal.
+             Raised if :n:`@tactic` does not fully solve the goal.
     """
     subdomain = "exn"
     index_suffix = "(err)"
@@ -362,8 +362,8 @@ class WarningObject(NotationObject):
 
        .. warn:: Ambiguous path
 
-         When the coercion `qualid` is added to the inheritance graph, non
-         valid coercion paths are ignored.
+          When the coercion :token:`qualid` is added to the inheritance graph, non
+          valid coercion paths are ignored.
     """
     subdomain = "warn"
     index_suffix = "(warn)"
@@ -377,7 +377,8 @@ def NotationRole(role, rawtext, text, lineno, inliner, options={}, content=[]):
     #pylint: disable=unused-argument, dangerous-default-value
     """Any text using the notation syntax (``@id``, ``{+, …}``, etc.).
 
-    Use this to explain tactic equivalences (for example, you might write this::
+    Use this to explain tactic equivalences.  For example, you might write
+    this::
 
        :n:`generalize @term as @ident` is just like :n:`generalize @term`, but
        it names the introduced hypothesis :token:`ident`.
@@ -445,6 +446,10 @@ class CoqtopDirective(Directive):
       - ``reset``: Send a ``Reset Initial`` command before running this block
       - ``undo``: Send an ``Undo n`` (``n`` = number of sentences) command after
         running all the commands in this block
+
+    ``coqtop``\ 's state is preserved across consecutive ``.. coqtop::`` blocks
+    of the same document (``coqrst`` creates a single ``coqtop`` process per
+    reST source file).  Use the ``reset`` option to reset Coq's state.
     """
     has_content = True
     required_arguments = 0

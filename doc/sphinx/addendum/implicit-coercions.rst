@@ -140,29 +140,29 @@ Declaration of Coercions
 
   .. warn:: Ambiguous path.
 
-    When the coercion `qualid` is added to the inheritance graph, non
-    valid coercion paths are ignored; they are signaled by a warning
-    displaying these paths of the form :g:`[f₁;..;fₙ] : C >-> D`.
+     When the coercion :token:`qualid` is added to the inheritance graph, non
+     valid coercion paths are ignored; they are signaled by a warning
+     displaying these paths of the form :g:`[f₁;..;fₙ] : C >-> D`.
 
   .. cmdv:: Local Coercion @qualid : @class >-> @class
 
-    Declares the construction denoted by `qualid` as a coercion local to
-    the current section.
+     Declares the construction denoted by `qualid` as a coercion local to
+     the current section.
 
   .. cmdv:: Coercion @ident := @term
 
-    This defines `ident` just like ``Definition`` `ident` ``:=`` `term`,
-    and then declares `ident` as a coercion between it source and its target.
+     This defines `ident` just like ``Definition`` `ident` ``:=`` `term`,
+     and then declares `ident` as a coercion between it source and its target.
 
   .. cmdv:: Coercion @ident := @term : @type
 
-    This defines `ident` just like ``Definition`` `ident` : `type` ``:=`` `term`,
-    and then declares `ident` as a coercion between it source and its target.
+     This defines `ident` just like ``Definition`` `ident` : `type` ``:=`` `term`,
+     and then declares `ident` as a coercion between it source and its target.
 
   .. cmdv:: Local Coercion @ident := @term
 
-    This defines `ident` just like ``Let`` `ident` ``:=`` `term`,
-    and then declares `ident` as a coercion between it source and its target.
+     This defines `ident` just like ``Let`` `ident` ``:=`` `term`,
+     and then declares `ident` as a coercion between it source and its target.
 
 Assumptions can be declared as coercions at declaration time.
 This extends the grammar of assumptions from
