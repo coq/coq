@@ -436,7 +436,7 @@ let new_pure_evar_full evd evi =
   let evd = Evd.declare_future_goal evk evd in
   (evd, evk)
 
-let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?candidates ?(store = Store.empty) ?naming ?(principal=false) typ =
+let new_pure_evar?(src=default_source) ?(filter = Filter.identity) ?candidates ?(store = Store.empty) ?naming ?(principal=false) sign evd typ =
   let default_naming = Misctypes.IntroAnonymous in
   let naming = Option.default default_naming naming in
   let name = match naming with
@@ -463,14 +463,14 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
   in
   (evd, newevk)
 
-let new_evar_instance sign evd typ ?src ?filter ?candidates ?store ?naming ?principal instance =
+let new_evar_instance ?src ?filter ?candidates ?store ?naming ?principal sign evd typ instance =
   let open EConstr in
   assert (not !Flags.debug ||
             List.distinct (ids_of_named_context (named_context_of_val sign)));
   let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?candidates ?store ?naming ?principal typ in
   evd, mkEvar (newevk,Array.of_list instance)
 
-let new_evar_from_context sign evd ?src ?filter ?candidates ?store ?naming ?principal typ =
+let new_evar_from_context ?src ?filter ?candidates ?store ?naming ?principal sign evd typ =
   let instance = List.map (NamedDecl.get_id %> EConstr.mkVar) (named_context_of_val sign) in
   let instance =
     match filter with
@@ -480,7 +480,7 @@ let new_evar_from_context sign evd ?src ?filter ?candidates ?store ?naming ?prin
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
-let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal ?hypnaming typ =
+let new_evar ?src ?filter ?candidates ?store ?naming ?principal ?hypnaming env evd typ =
   let sign,typ',instance,subst = push_rel_context_to_named_context ?hypnaming env evd typ in
   let map c = csubst_subst subst c in
   let candidates = Option.map (fun l -> List.map map l) candidates in
@@ -490,7 +490,7 @@ let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal ?hypnami
     | Some filter -> Filter.filter_list filter instance in
   new_evar_instance sign evd typ' ?src ?filter ?candidates ?store ?naming ?principal instance
 
-let new_type_evar env evd ?src ?filter ?naming ?principal ?hypnaming rigid =
+let new_type_evar ?src ?filter ?naming ?principal ?hypnaming env evd rigid =
   let (evd', s) = new_sort_variable rigid evd in
   let (evd', e) = new_evar env evd' ?src ?filter ?naming ?principal ?hypnaming (EConstr.mkSort s) in
   evd', (e, s)
