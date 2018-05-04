@@ -532,7 +532,7 @@ let add_constant dir l decl senv =
         Term_typing.translate_constant Term_typing.Pure senv.env kn ce
       | GlobalRecipe r ->
         let cb = Term_typing.translate_recipe senv.env kn r in
-        if no_section then Declareops.hcons_const_body cb else cb in
+        if no_section then hcons_const_body cb else cb in
     add_constant_aux no_section senv (kn, cb) in
   kn, senv
 
@@ -551,7 +551,7 @@ let add_mind dir l mie senv =
   let kn = MutInd.make3 senv.modpath dir l in
   let mib = Term_typing.translate_mind senv.env kn mie in
   let mib =
-    match mib.mind_hyps with [] -> Declareops.hcons_mind mib | _ -> mib
+    match mib.mind_hyps with [] -> hcons_mind mib | _ -> mib
   in
   kn, add_field (l,SFBmind mib) (I kn) senv
 
@@ -560,7 +560,7 @@ let add_mind dir l mie senv =
 let add_modtype l params_mte inl senv =
   let mp = MPdot(senv.modpath, l) in
   let mtb = Mod_typing.translate_modtype senv.env mp inl params_mte  in
-  let mtb = Declareops.hcons_module_type mtb in
+  let mtb = hcons_module_type mtb in
   let senv' = add_field (l,SFBmodtype mtb) MT senv in
   mp, senv'
 
@@ -581,7 +581,7 @@ let full_add_module_type mp mt senv =
 let add_module l me inl senv =
   let mp = MPdot(senv.modpath, l) in
   let mb = Mod_typing.translate_module senv.env mp inl me in
-  let mb = Declareops.hcons_module_body mb in
+  let mb = hcons_module_body mb in
   let senv' = add_field (l,SFBmodule mb) M senv in
   let senv'' =
     if Modops.is_functor mb.mod_type then senv'

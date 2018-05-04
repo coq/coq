@@ -534,7 +534,7 @@ let type_of_projection_constant env (p,u) =
   let cb = lookup_constant cst env in
   match cb.const_proj with
   | Some pb ->
-    if Declareops.constant_is_polymorphic cb then
+    if constant_is_polymorphic cb then
       Vars.subst_instance_constr u pb.proj_type
     else pb.proj_type
   | None -> raise (Invalid_argument "type_of_projection: not a projection")

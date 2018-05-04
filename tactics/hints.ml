@@ -1311,7 +1311,7 @@ let interp_hints poly =
 	    (fun i -> let c = (ind,i+1) in
 		      let gr = ConstructRef c in
 			empty_hint_info, 
-                        (Declareops.inductive_is_polymorphic mib), true,
+                        (Declarations.inductive_is_polymorphic mib), true,
 			PathHints [gr], IsGlobRef gr)
       in HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
   | HintsExtern (pri, patcom, tacexp) ->

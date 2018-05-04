@@ -133,3 +133,10 @@ type side_effect = {
   from_env : Declarations.structure_body CEphemeron.key;
   eff      : side_eff;
 }
+
+(** {6 Stm machinery } *)
+
+let string_of_side_effect { eff } = match eff with
+  | SEsubproof (c,_,_) -> "P(" ^ Names.Constant.to_string c ^ ")"
+  | SEscheme (cl,_) ->
+      "S(" ^ String.concat ", " (List.map (fun (_,c,_,_) -> Names.Constant.to_string c) cl) ^ ")"
