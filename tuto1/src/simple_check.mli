@@ -1,0 +1,1 @@
+val simple_check : EConstr.constr Evd.in_evar_universe_context -> EConstr.constr

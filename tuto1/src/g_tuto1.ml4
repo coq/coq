@@ -74,3 +74,14 @@ VERNAC COMMAND EXTEND Define1 CLASSIFIED AS SIDEFF
       (Evd.from_env (Global.env())) e in
     Simple_declare.packed_declare_definition i v ]
 END
+
+VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
+| [ "Cmd5" constr(e) ] ->
+  [ let v = Constrintern.interp_constr (Global.env())
+      (Evd.from_env (Global.env())) e in
+    let (a, ctx) = v in
+    let evd = Evd.from_ctx ctx in
+      Feedback.msg_notice
+      (Termops.print_constr_env (Global.env()) evd
+         (Simple_check.simple_check v)) ]
+END

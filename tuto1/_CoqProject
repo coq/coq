@@ -1,6 +1,8 @@
 -R theories Tuto1
 -I src
 
+src/simple_check.mli
+src/simple_check.ml
 src/simple_declare.mli
 src/simple_declare.ml
 src/g_tuto1.ml4
