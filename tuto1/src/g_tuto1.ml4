@@ -105,3 +105,13 @@ VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
       (Termops.print_constr_env (Global.env()) evd
          (Simple_check.simple_check3 v)) ]
 END
+
+VERNAC COMMAND EXTEND ExamplePrint CLASSIFIED AS QUERY
+| [ "Cmd8" reference(r) ] ->
+  [ let env = Global.env() in
+    let evd = Evd.from_env env in
+    Feedback.msg_notice
+    (Termops.print_constr_env env evd
+      (EConstr.of_constr
+        (Simple_print.simple_body_access (Nametab.global r)))) ]
+END

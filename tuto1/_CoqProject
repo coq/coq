@@ -1,9 +1,13 @@
 -R theories Tuto1
 -I src
 
+theories/Loader.v
+
 src/simple_check.mli
 src/simple_check.ml
 src/simple_declare.mli
 src/simple_declare.ml
+src/simple_print.ml
+src/simple_print.mli
 src/g_tuto1.ml4
 src/tuto1_plugin.mlpack
