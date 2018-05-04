@@ -1,5 +1,8 @@
 -R theories/ Tuto0
 -I src
 
+theories/Loader.v
+src/tuto0_main.ml
+src/tuto0_main.mli
 src/g_tuto0.ml4
 src/tuto0_plugin.mlpack
