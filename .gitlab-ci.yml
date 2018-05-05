@@ -125,6 +125,15 @@ before_script:
   variables: &ci-template-vars
     TEST_TARGET: "$CI_JOB_NAME"
 
+.ci-template-flambda: &ci-template-flambda
+  <<: *ci-template
+  dependencies:
+    - build:edge+flambda
+  variables:
+    <<: *ci-template-vars
+    OPAM_SWITCH: "edge"
+    OPAM_VARIANT: "+flambda"
+
 build:base:
   <<: *build-template
   variables:
@@ -222,10 +231,10 @@ ci-bignums:
   <<: *ci-template
 
 ci-color:
-  <<: *ci-template
+  <<: *ci-template-flambda
 
 ci-compcert:
-  <<: *ci-template
+  <<: *ci-template-flambda
 
 ci-coq-dpdgraph:
   <<: *ci-template
@@ -243,7 +252,7 @@ ci-fcsl-pcm:
   <<: *ci-template
 
 ci-fiat-crypto:
-  <<: *ci-template
+  <<: *ci-template-flambda
 
 ci-fiat-parsers:
   <<: *ci-template
@@ -252,16 +261,16 @@ ci-flocq:
   <<: *ci-template
 
 ci-formal-topology:
-  <<: *ci-template
+  <<: *ci-template-flambda
 
 ci-geocoq:
-  <<: *ci-template
+  <<: *ci-template-flambda
 
 ci-hott:
   <<: *ci-template
 
 ci-iris-lambda-rust:
-  <<: *ci-template
+  <<: *ci-template-flambda
 
 ci-ltac2:
   <<: *ci-template
@@ -270,7 +279,7 @@ ci-math-classes:
   <<: *ci-template
 
 ci-math-comp:
-  <<: *ci-template
+  <<: *ci-template-flambda
 
 ci-mtac2:
   <<: *ci-template
@@ -282,7 +291,7 @@ ci-sf:
   <<: *ci-template
 
 ci-unimath:
-  <<: *ci-template
+  <<: *ci-template-flambda
 
 ci-vst:
-  <<: *ci-template
+  <<: *ci-template-flambda
