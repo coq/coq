@@ -263,107 +263,107 @@ Applying theorems
 .. tacn:: apply @term
    :name: apply
 
-This tactic applies to any goal. The argument term is a term well-formed in the
-local context. The tactic apply tries to match the current goal against the
-conclusion of the type of term. If it succeeds, then the tactic returns as many
-subgoals as the number of non-dependent premises of the type of term. If the
-conclusion of the type of term does not match the goal *and* the conclusion is
-an inductive type isomorphic to a tuple type, then each component of the tuple
-is recursively matched to the goal in the left-to-right order.
+   This tactic applies to any goal. The argument term is a term well-formed in the
+   local context. The tactic apply tries to match the current goal against the
+   conclusion of the type of term. If it succeeds, then the tactic returns as many
+   subgoals as the number of non-dependent premises of the type of term. If the
+   conclusion of the type of term does not match the goal *and* the conclusion is
+   an inductive type isomorphic to a tuple type, then each component of the tuple
+   is recursively matched to the goal in the left-to-right order.
 
-The tactic ``apply`` relies on first-order unification with dependent types
-unless the conclusion of the type of ``term`` is of the form :g:`P (t`:sub:`1`
-:g:`...` :g:`t`:sub:`n` :g:`)` with `P` to be instantiated. In the latter case, the behavior
-depends on the form of the goal. If the goal is of the form
-:g:`(fun x => Q) u`:sub:`1` :g:`...` :g:`u`:sub:`n` and the :g:`t`:sub:`i` and
-:g:`u`:sub:`i` unifies, then :g:`P` is taken to be :g:`(fun x => Q)`. Otherwise,
-``apply`` tries to define :g:`P` by abstracting over :g:`t`:sub:`1`  :g:`...`
-:g:`t`:sub:`n` in the goal. See :tacn:`pattern` to transform the goal so that it
-gets the form :g:`(fun x => Q) u`:sub:`1` :g:`...`  :g:`u`:sub:`n`.
+   The tactic :tacn:`apply` relies on first-order unification with dependent types
+   unless the conclusion of the type of :token:`term` is of the form :g:`P (t`:sub:`1`
+   :g:`...` :g:`t`:sub:`n` :g:`)` with `P` to be instantiated. In the latter case, the behavior
+   depends on the form of the goal. If the goal is of the form
+   :g:`(fun x => Q) u`:sub:`1` :g:`...` :g:`u`:sub:`n` and the :g:`t`:sub:`i` and
+   :g:`u`:sub:`i` unifies, then :g:`P` is taken to be :g:`(fun x => Q)`. Otherwise,
+   :tacn:`apply` tries to define :g:`P` by abstracting over :g:`t`:sub:`1`  :g:`...`
+   :g:`t`:sub:`n` in the goal. See :tacn:`pattern` to transform the goal so that it
+   gets the form :g:`(fun x => Q) u`:sub:`1` :g:`...`  :g:`u`:sub:`n`.
 
-.. exn:: Unable to unify ... with ... .
+   .. exn:: Unable to unify ... with ... .
 
-The apply tactic failed to match the conclusion of term and the current goal.
-You can help the apply tactic by transforming your goal with the
-:tacn:`change` or :tacn:`pattern` tactics.
+      The apply tactic failed to match the conclusion of :token:`term` and the
+      current goal. You can help the apply tactic by transforming your goal with
+      the :tacn:`change` or :tacn:`pattern` tactics.
 
-.. exn:: Unable to find an instance for the variables {+ @ident}.
+   .. exn:: Unable to find an instance for the variables {+ @ident}.
 
-This occurs when some instantiations of the premises of term are not deducible
-from the unification. This is the case, for instance, when you want to apply a
-transitivity property. In this case, you have to use one of the variants below:
+      This occurs when some instantiations of the premises of :token:`term` are not deducible
+      from the unification. This is the case, for instance, when you want to apply a
+      transitivity property. In this case, you have to use one of the variants below:
 
-.. tacv:: apply @term with {+ @term}
+   .. tacv:: apply @term with {+ @term}
 
-Provides apply with explicit instantiations for all dependent premises of the
-type of term that do not occur in the conclusion and consequently cannot be
-found by unification. Notice that the collection :n:`{+ @term}` must be given
-according to the order of these dependent premises of the type of term.
+      Provides apply with explicit instantiations for all dependent premises of the
+      type of term that do not occur in the conclusion and consequently cannot be
+      found by unification. Notice that the collection :n:`{+ @term}` must be given
+      according to the order of these dependent premises of the type of term.
 
-.. exn:: Not the right number of missing arguments.
+      .. exn:: Not the right number of missing arguments.
 
-.. tacv:: apply @term with @bindings_list
+   .. tacv:: apply @term with @bindings_list
 
-This also provides apply with values for instantiating premises. Here, variables
-are referred by names and non-dependent products by increasing numbers (see
-:ref:`bindings list <bindingslist>`).
+      This also provides apply with values for instantiating premises. Here, variables
+      are referred by names and non-dependent products by increasing numbers (see
+      :ref:`bindings list <bindingslist>`).
 
-.. tacv:: apply {+, @term}
+   .. tacv:: apply {+, @term}
 
-This is a shortcut for ``apply term``:sub:`1`
-``; [.. | ... ; [ .. | apply`` ``term``:sub:`n` ``] ... ]``,
-i.e. for the successive applications of ``term``:sub:`i+1` on the last subgoal
-generated by ``apply term``:sub:`i` , starting from the application of
-``term``:sub:`1`.
+      This is a shortcut for :n:`apply @term`:sub:`1`
+      :n:`; [.. | ... ; [ .. | apply @term`:sub:`n` :n:`] ... ]`,
+      i.e. for the successive applications of :token:`term`:sub:`i+1` on the last subgoal
+      generated by :n:`apply @term`:sub:`i` , starting from the application of
+      :token:`term`:sub:`1`.
 
-.. tacv:: eapply @term
-   :name: eapply
+   .. tacv:: eapply @term
+      :name: eapply
 
-The tactic ``eapply`` behaves like ``apply`` but it does not fail when no
-instantiations are deducible for some variables in the premises. Rather, it
-turns these variables into existential variables which are variables still to
-instantiate (see :ref:`Existential-Variables`). The instantiation is
-intended to be found later in the proof.
+      The tactic :tacn:`eapply` behaves like :tacn:`apply` but it does not fail when no
+      instantiations are deducible for some variables in the premises. Rather, it
+      turns these variables into existential variables which are variables still to
+      instantiate (see :ref:`Existential-Variables`). The instantiation is
+      intended to be found later in the proof.
 
-.. tacv:: simple apply @term.
-   :name: simple apply
+   .. tacv:: simple apply @term.
+      :name: simple apply
 
-This behaves like ``apply`` but it reasons modulo conversion only on subterms
-that contain no variables to instantiate. For instance, the following example
-does not succeed because it would require the conversion of ``id ?foo`` and
-``O``.
+      This behaves like :tacn:`apply` but it reasons modulo conversion only on subterms
+      that contain no variables to instantiate. For instance, the following example
+      does not succeed because it would require the conversion of ``id ?foo`` and
+      :g:`O`.
 
-.. example::
+      .. example::
 
-   .. coqtop:: all
+         .. coqtop:: all
 
-      Definition id (x : nat) := x.
-      Hypothesis H : forall y, id y = y.
-      Goal O = O.
-      Fail simple apply H.
+            Definition id (x : nat) := x.
+            Parameter H : forall y, id y = y.
+            Goal O = O.
+            Fail simple apply H.
 
-Because it reasons modulo a limited amount of conversion, ``simple apply`` fails
-quicker than ``apply`` and it is then well-suited for uses in user-defined
-tactics that backtrack often. Moreover, it does not traverse tuples as ``apply``
-does.
+      Because it reasons modulo a limited amount of conversion, :tacn:`simple apply` fails
+      quicker than :tacn:`apply` and it is then well-suited for uses in user-defined
+      tactics that backtrack often. Moreover, it does not traverse tuples as :tacn:`apply`
+      does.
 
-.. tacv:: {? simple} apply {+, @term {? with @bindings_list}}
-.. tacv:: {? simple} eapply {+, @term {? with @bindings_list}}
-   :name: simple eapply
+   .. tacv:: {? simple} apply {+, @term {? with @bindings_list}}
+   .. tacv:: {? simple} eapply {+, @term {? with @bindings_list}}
+      :name: simple eapply
 
-This summarizes the different syntaxes for ``apply`` and ``eapply``.
+      This summarizes the different syntaxes for :tacn:`apply` and :tacn:`eapply`.
 
-.. tacv:: lapply @term
-   :name: lapply
+   .. tacv:: lapply @term
+      :name: lapply
 
-This tactic applies to any goal, say :g:`G`. The argument term has to be
-well-formed in the current context, its type being reducible to a non-dependent
-product :g:`A -> B` with :g:`B` possibly containing products. Then it generates
-two subgoals :g:`B->G` and :g:`A`. Applying ``lapply H`` (where :g:`H` has type
-:g:`A->B` and :g:`B` does not start with a product) does the same as giving the
-sequence ``cut B. 2:apply H.`` where ``cut`` is described below.
+      This tactic applies to any goal, say :g:`G`. The argument term has to be
+      well-formed in the current context, its type being reducible to a non-dependent
+      product :g:`A -> B` with :g:`B` possibly containing products. Then it generates
+      two subgoals :g:`B->G` and :g:`A`. Applying ``lapply H`` (where :g:`H` has type
+      :g:`A->B` and :g:`B` does not start with a product) does the same as giving the
+      sequence ``cut B. 2:apply H.`` where ``cut`` is described below.
 
-.. warn:: When @term contains more than one non dependent product the tactic lapply only takes into account the first product.
+      .. warn:: When @term contains more than one non dependent product the tactic lapply only takes into account the first product.
 
 .. example::
    Assume we have a transitive relation ``R`` on ``nat``:
