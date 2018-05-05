@@ -8,9 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Printf
-open Coqdep_lexer
+open Format
 open Unix
+open Coqdep_lexer
 open Minisys
 
 (** [coqdep_boot] is a stripped-down version of [coqdep], whose
@@ -20,13 +20,14 @@ open Minisys
     options (see for instance [option_dynlink] below).
 *)
 
+let coqdep_warning args =
+  eprintf "*** Warning: @[";
+  kfprintf (fun fmt -> fprintf fmt "@]\n%!") err_formatter args
+
 module StrSet = Set.Make(String)
 
 module StrList = struct type t = string list let compare = compare end
 module StrListMap = Map.Make(StrList)
-
-let stderr = Pervasives.stderr
-let stdout = Pervasives.stdout
 
 type dynlink = Opt | Byte | Both | No | Variable
 
@@ -114,8 +115,7 @@ let same_path_opt s s' =
 
 let warning_ml_clash x s suff s' suff' =
   if suff = suff' && not (same_path_opt s s') then
-  eprintf
-    "*** Warning: %s%s already found in %s (discarding %s%s)\n" x suff
+  coqdep_warning "%s%s already found in %s (discarding %s%s)\n" x suff
     (match s with None -> "." | Some d -> d)
     ((match s' with None -> "." | Some d -> d) // x) suff
 
@@ -180,13 +180,11 @@ let error_cannot_parse s (i,j) =
   exit 1
 
 let warning_module_notfound f s =
-  eprintf "*** Warning: in file %s, library %s is required and has not been found in the loadpath!\n%!"
+  coqdep_warning "in file %s, library %s is required and has not been found in the loadpath!"
     f (String.concat "." s)
 
 let warning_declare f s =
-  eprintf "*** Warning: in file %s, declared ML module " f;
-  eprintf "%s has not been found!\n" s;
-  flush stderr
+  coqdep_warning "in file %s, declared ML module %s has not been found!" f s
 
 let warning_clash file dir =
   match StrListMap.find dir !clash_v with
@@ -203,8 +201,7 @@ let warning_clash file dir =
   | _ -> assert false
 
 let warning_cannot_open_dir dir =
-  eprintf "*** Warning: cannot open %s\n" dir;
-  flush stderr
+  coqdep_warning "cannot open %s" dir
 
 let safe_assoc from verbose file k =
   if verbose && StrListMap.mem k !clash_v then warning_clash file k;
@@ -451,15 +448,13 @@ let mL_dependencies () =
        in
        let efullname = escape fullname in
        printf "%s.cmo:%s%s\n" efullname dep intf;
-       printf "%s.cmx:%s%s\n" efullname dep_opt intf;
-       flush stdout)
+       printf "%s.cmx:%s%s\n%!" efullname dep_opt intf)
     (List.rev !mlAccu);
   List.iter
     (fun (name,dirname) ->
        let fullname = file_name name dirname in
        let (dep,_) = traite_fichier_ML fullname ".mli" in
-       printf "%s.cmi:%s\n" (escape fullname) dep;
-       flush stdout)
+       printf "%s.cmi:%s\n%!" (escape fullname) dep)
     (List.rev !mliAccu);
   List.iter
     (fun (name,dirname) ->
@@ -468,8 +463,7 @@ let mL_dependencies () =
        let efullname = escape fullname in
        printf "%s_MLLIB_DEPENDENCIES:=%s\n" efullname (String.concat " " dep);
        printf "%s.cma:$(addsuffix .cmo,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname;
-       printf "%s.cmxa:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname;
-       flush stdout)
+       printf "%s.cmxa:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n%!" efullname efullname)
     (List.rev !mllibAccu);
   List.iter
     (fun (name,dirname) ->
@@ -483,7 +477,7 @@ let mL_dependencies () =
        List.iter (fun dep ->
          printf "%s.cmx : FOR_PACK=-for-pack %s\n" dep efullname_capital)
          dep;
-       flush stdout)
+       printf "%!")
     (List.rev !mlpackAccu)
 
 let coq_dependencies () =
@@ -496,8 +490,7 @@ let coq_dependencies () =
        printf "\n";
        printf "%s.vio: %s.v" ename ename;
        traite_fichier_Coq ".vio" true (name ^ ".v");
-       printf "\n";
-       flush stdout)
+       printf "\n%!")
     (List.rev !vAccu)
 
 let rec suffixes = function

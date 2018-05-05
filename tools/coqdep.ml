@@ -8,15 +8,24 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Printf
+open Format
 open Coqdep_lexer
 open Coqdep_common
-open System
+open Minisys
 
 (** The basic parts of coqdep (i.e. the parts used by [coqdep -boot])
     are now in [Coqdep_common]. The code that remains here concerns
     the other options. Calling this complete coqdep with the [-boot]
     option should be equivalent to calling [coqdep_boot].
+
+    As of today, this module depends on the following Coq modules:
+
+    - Flags
+    - Envars
+    - CoqProject_file
+
+    All of it for `coqlib` handling. Ideally we would like to clean
+    coqlib handling up so this can be bootstrapped earlier.
 *)
 
 let option_D = ref false
@@ -31,8 +40,7 @@ let warning_mult suf iter =
       let d' = Hashtbl.find tab f in
       if (Filename.dirname (file_name f d))
         <> (Filename.dirname (file_name f d')) then begin
-	  eprintf "*** Warning : the file %s is defined twice!\n" (f ^ suf);
-	  flush stderr
+          coqdep_warning "the file %s is defined twice!" (f ^ suf)
 	end
     with Not_found -> () end;
     Hashtbl.add tab f d
@@ -80,9 +88,7 @@ let mL_dep_list b f =
 	while true do
 	  let (Use_module str) = caml_action buf in
 	  if str = b then begin
-	    eprintf "*** Warning : in file %s the" f;
-	    eprintf " notation %s. is useless !\n" b;
-	    flush stderr
+            coqdep_warning "in file %s the notation %s. is useless !\n" f b
 	  end else
             if not (List.mem str !deja_vu) then addQueue deja_vu str
       	done; []
@@ -98,16 +104,13 @@ let affiche_Declare f dcl =
   printf "\n*** In file %s: \n" f;
   printf "Declare ML Module";
   List.iter (fun str -> printf " \"%s\"" str) dcl;
-  printf ".\n";
-  flush stdout
+  printf ".\n%!"
 
 let warning_Declare f dcl =
-  eprintf "*** Warning : in file %s, the ML modules" f;
-  eprintf " declaration should be\n";
+  eprintf "*** Warning : in file %s, the ML modules declaration should be\n" f;
   eprintf "*** Declare ML Module";
   List.iter (fun str -> eprintf " \"%s\"" str) dcl;
-  eprintf ".\n";
-  flush stderr
+  eprintf ".\n%!"
 
 let traite_Declare f =
   let decl_list = ref ([] : string list) in
@@ -149,7 +152,7 @@ let declare_dependencies () =
   List.iter
     (fun (name,_) ->
        traite_Declare (name^".v");
-       flush stdout)
+       pp_print_flush std_formatter ())
     (List.rev !vAccu)
 
 (** DAGs guaranteed to be transitive reductions *)
@@ -426,11 +429,11 @@ let coq_dependencies_dump chan dumpboxes =
     (DAG.empty, List.fold_left (fun ih (file, _) -> insert_raw_graph file ih) [] !vAccu,
     List.map fst !vAccu) !vAccu
   in
-  fprintf chan "digraph dependencies {\n"; flush chan;
+  fprintf chan "digraph dependencies {\n";
   if dumpboxes then print_graphs chan (pop_common_prefix graphs)
   else List.iter (fun (name, _) -> fprintf chan "\"%s\"[label=\"%s\"]\n" name (basename_noext name)) !vAccu;
   DAG.iter (fun name dep -> fprintf chan "\"%s\" -> \"%s\"\n" dep name) deps;
-  fprintf chan "}\n"
+  fprintf chan "}\n%!"
 
 end
 
@@ -498,7 +501,7 @@ let rec parse = function
   | "-suffix" :: s :: ll -> suffixe := s ; parse ll
   | "-suffix" :: [] -> usage ()
   | "-slash" :: ll ->
-    Printf.eprintf "warning: option -slash has no effect and is deprecated.\n";
+    coqdep_warning "warning: option -slash has no effect and is deprecated.";
     parse ll
   | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse ll
   | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse ll
@@ -520,7 +523,6 @@ let coqdep () =
   if !option_boot then begin
     add_rec_dir_import add_known "theories" ["Coq"];
     add_rec_dir_import add_known "plugins" ["Coq"];
-    add_caml_dir "tactics";
     add_rec_dir_import (fun _ -> add_caml_known) "theories" ["Coq"];
     add_rec_dir_import (fun _ -> add_caml_known) "plugins" ["Coq"];
   end else begin
@@ -531,7 +533,7 @@ let coqdep () =
     let user = coqlib//"user-contrib" in
     if Sys.file_exists user then add_rec_dir_no_import add_coqlib_known user [];
     List.iter (fun s -> add_rec_dir_no_import add_coqlib_known s [])
-      (Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (Pp.str x)));
+      (Envars.xdg_dirs ~warn:(fun x -> coqdep_warning "%s" x));
     List.iter (fun s -> add_rec_dir_no_import add_coqlib_known s []) Envars.coqpath;
   end;
   List.iter (fun (f,d) -> add_mli_known f d ".mli") !mliAccu;
@@ -547,7 +549,8 @@ let coqdep () =
   | None -> ()
   | Some (box, file) ->
     let chan = open_out file in
-    try Graph.coq_dependencies_dump chan box; close_out chan
+    let chan_fmt = formatter_of_out_channel chan in
+    try Graph.coq_dependencies_dump chan_fmt box; close_out chan
     with e -> close_out chan; raise e
   end
 
@@ -556,4 +559,4 @@ let _ =
     coqdep ()
   with CErrors.UserError(s,p) ->
     let pp = (match s with | None -> p | Some s -> Pp.(str s ++ str ": " ++ p))  in
-    Format.eprintf "%a@\n%!" Pp.pp_with pp
+    eprintf "%a@\n%!" Pp.pp_with pp
