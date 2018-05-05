@@ -13,7 +13,7 @@ In addition to standard reST directives (a directive is similar to a LaTeX envir
 Coq objects
 ===========
 
-Our Coq domain define multiple `objects <Objects>`_.  Each object has a *signature* (think *type signature*), followed by an optional body (a description of that object).  The following example defines two objects: a variant of the ``simpl`` tactic, and an error that it may raise::
+Our Coq domain define multiple `objects`_.  Each object has a *signature* (think *type signature*), followed by an optional body (a description of that object).  The following example defines two objects: a variant of the ``simpl`` tactic, and an error that it may raise::
 
    .. tacv:: simpl @pattern at {+ @num}
       :name: simpl_at
@@ -34,7 +34,7 @@ Names (link targets) are auto-generated for most simple objects, though they can
 Notations
 ---------
 
-The signatures of most objects can be written using a succinct DSL for Coq notations (think regular expressions written with a Lispy syntax).  A typical signature might look like ``Hint Extern @num {? @pattern} => @tactic``, which means that the ``Hint Extern`` command takes a number (``num``), followed by an optional pattern, and a mandatory tactic.  The language has the following constructs (the full grammar is in `TacticNotations.g <doc/tools/coqrst/notations/TacticNotations.g>`_):
+The signatures of most objects can be written using a succinct DSL for Coq notations (think regular expressions written with a Lispy syntax).  A typical signature might look like ``Hint Extern @num {? @pattern} => @tactic``, which means that the ``Hint Extern`` command takes a number (``num``), followed by an optional pattern, and a mandatory tactic.  The language has the following constructs (the full grammar is in `TacticNotations.g </doc/tools/coqrst/notations/TacticNotations.g>`_):
 
 ``@…``
   A placeholder (``@ident``, ``@num``, ``@tactic``\ …)
@@ -279,9 +279,7 @@ In addition to the objects and directives above, the ``coqrst`` Sphinx plugin de
     creates a link to that.  When referring to a placeholder that happens to be
     a grammar production, ``:token:`…``` is typically preferable to ``:n:`@…```.
 
-``:production:`` A Sphinx role to format grammar productions not included in a
-    `productionlist` directive.
-
+``:production:`` A grammar production not included in a ``productionlist`` directive.
     Useful to informally introduce a production, as part of running text.
 
     Example::
@@ -296,10 +294,25 @@ In addition to the objects and directives above, the ``coqrst`` Sphinx plugin de
 Tips and tricks
 ===============
 
+Nested lemmas
+-------------
+
+The ``.. coqtop::`` directive does *not* reset Coq after running its contents.  That is, the following will create two nested lemmas::
+
+   .. coqtop:: all
+
+      Lemma l1: 1 + 1 = 2.
+
+   .. coqtop:: all
+
+      Lemma l2: 2 + 2 <> 1.
+
+Add either ``undo`` to the first block or ``reset`` to the second block to avoid nesting lemmas.
+
 Abbreviations and macros
 ------------------------
 
-Abbreviations and placeholders for specially-formatted names (like ``|Cic|``, ``|Coq|``, ``|CoqIDE|``, and ``|Gallina|``) are defined in a `separate file <doc/sphinx/replaces.rst>`_ included by most chapters of the manual.  Some useful LaTeX macros (like ``\alors``), are defined in `<doc/sphinx/replaces.rst>`_.
+Abbreviations and placeholders for specially-formatted names (like ``|Cic|``, ``|Coq|``, ``|CoqIDE|``, ``|Ltac|``, and ``|Gallina|``) are defined in a `separate file </doc/sphinx/replaces.rst>`_ included by most chapters of the manual.  Some useful LaTeX macros are defined in `</doc/sphinx/preamble.rst>`_.
 
 Emacs
 -----

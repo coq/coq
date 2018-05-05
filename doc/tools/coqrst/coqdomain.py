@@ -829,8 +829,7 @@ class IndexXRefRole(XRefRole):
         return title, target
 
 def GrammarProductionRole(typ, rawtext, text, lineno, inliner, options={}, content=[]):
-    """A Sphinx role to format grammar productions not included in a
-    `productionlist` directive.
+    """A grammar production not included in a ``productionlist`` directive.
 
     Useful to informally introduce a production, as part of running text.
 
