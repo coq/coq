@@ -167,99 +167,100 @@ Applying theorems
 .. tacn:: exact @term
    :name: exact
 
-This tactic applies to any goal. It gives directly the exact proof
-term of the goal. Let ``T`` be our goal, let ``p`` be a term of type ``U`` then
-``exact p`` succeeds iff ``T`` and ``U`` are convertible (see
-:ref:`Conversion-rules`).
+   This tactic applies to any goal. It gives directly the exact proof
+   term of the goal. Let ``T`` be our goal, let ``p`` be a term of type ``U`` then
+   ``exact p`` succeeds iff ``T`` and ``U`` are convertible (see
+   :ref:`Conversion-rules`).
 
-.. exn:: Not an exact proof.
+   .. exn:: Not an exact proof.
 
-.. tacv:: eexact @term.
-   :name: eexact
+   .. tacv:: eexact @term.
+      :name: eexact
 
-This tactic behaves like exact but is able to handle terms and goals with
-meta-variables.
+      This tactic behaves like exact but is able to handle terms and goals with
+      meta-variables.
 
 .. tacn:: assumption
    :name: assumption
 
-This tactic looks in the local context for an hypothesis which type is equal to
-the goal. If it is the case, the subgoal is proved. Otherwise, it fails.
+   This tactic looks in the local context for an hypothesis which type is equal to
+   the goal. If it is the case, the subgoal is proved. Otherwise, it fails.
 
-.. exn:: No such assumption.
+   .. exn:: No such assumption.
 
-.. tacv:: eassumption
-   :name: eassumption
+   .. tacv:: eassumption
+      :name: eassumption
 
-This tactic behaves like assumption but is able to handle goals with
-meta-variables.
+      This tactic behaves like assumption but is able to handle goals with
+      meta-variables.
 
 .. tacn:: refine @term
    :name: refine
 
-This tactic applies to any goal. It behaves like exact with a big
-difference: the user can leave some holes (denoted by ``_`` or``(_:type)``) in
-the term. refine will generate as many subgoals as there are holes in
-the term. The type of holes must be either synthesized by the system
-or declared by an explicit cast like ``(_:nat->Prop)``. Any subgoal that
-occurs in other subgoals is automatically shelved, as if calling
-shelve_unifiable (see Section 8.17.4). This low-level tactic can be
-useful to advanced users.
+   This tactic applies to any goal. It behaves like :tacn:`exact` with a big
+   difference: the user can leave some holes (denoted by ``_`` or ``(_:type)``) in
+   the term. :tacn:`refine` will generate as many subgoals as there are holes in
+   the term. The type of holes must be either synthesized by the system
+   or declared by an explicit cast like ``(_:nat->Prop)``. Any subgoal that
+   occurs in other subgoals is automatically shelved, as if calling
+   :tacn:`shelve_unifiable`. This low-level tactic can be
+   useful to advanced users.
 
-.. example::
-  .. coqtop:: reset all
+   .. example::
+      .. coqtop:: reset all
 
-     Inductive Option : Set :=
-     | Fail : Option
-     | Ok : bool -> Option.
+         Inductive Option : Set :=
+         | Fail : Option
+         | Ok : bool -> Option.
 
-     Definition get : forall x:Option, x <> Fail -> bool.
+         Definition get : forall x:Option, x <> Fail -> bool.
 
-     refine
-       (fun x:Option =>
-          match x return x <> Fail -> bool with
-          | Fail => _
-          | Ok b => fun _ => b
-          end).
+         refine
+           (fun x:Option =>
+           match x return x <> Fail -> bool with
+           | Fail => _
+           | Ok b => fun _ => b
+           end).
 
-     intros; absurd (Fail = Fail); trivial.
+         intros; absurd (Fail = Fail); trivial.
 
-     Defined.
+         Defined.
 
-.. exn:: Invalid argument.
+   .. exn:: Invalid argument.
 
-   The tactic ``refine`` does not know what to do with the term you gave.
+      The tactic :tacn:`refine` does not know what to do with the term you gave.
 
-.. exn:: Refine passed ill-formed term.
+   .. exn:: Refine passed ill-formed term.
 
-   The term you gave is not a valid proof (not easy to debug in general). This
-   message may also occur in higher-level tactics that call ``refine``
-   internally.
+      The term you gave is not a valid proof (not easy to debug in general). This
+      message may also occur in higher-level tactics that call :tacn:`refine`
+      internally.
 
-.. exn:: Cannot infer a term for this placeholder.
-   :name: Cannot infer a term for this placeholder. (refine)
+   .. exn:: Cannot infer a term for this placeholder.
+      :name: Cannot infer a term for this placeholder. (refine)
 
-   There is a hole in the term you gave whose type cannot be inferred. Put a
-   cast around it.
+      There is a hole in the term you gave whose type cannot be inferred. Put a
+      cast around it.
 
-.. tacv:: simple refine @term
-   :name: simple refine
+   .. tacv:: simple refine @term
+      :name: simple refine
 
-   This tactic behaves like refine, but it does not shelve any subgoal. It does
-   not perform any beta-reduction either.
+      This tactic behaves like refine, but it does not shelve any subgoal. It does
+      not perform any beta-reduction either.
 
-.. tacv:: notypeclasses refine @term
+   .. tacv:: notypeclasses refine @term
+      :name: notypeclasses refine
 
-   This tactic behaves like ``refine`` except it performs typechecking without
-   resolution of typeclasses.
+      This tactic behaves like :tacn:`refine` except it performs typechecking without
+      resolution of typeclasses.
 
-.. tacv:: simple notypeclasses refine @term
-   :name: simple notypeclasses refine
+   .. tacv:: simple notypeclasses refine @term
+      :name: simple notypeclasses refine
 
-   This tactic behaves like ``simple refine`` except it performs typechecking
-   without resolution of typeclasses.
+      This tactic behaves like :tacn:`simple refine` except it performs typechecking
+      without resolution of typeclasses.
 
-.. tacv:: apply @term
+.. tacn:: apply @term
    :name: apply
 
 This tactic applies to any goal. The argument term is a term well-formed in the
