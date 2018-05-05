@@ -43,4 +43,4 @@ RUN opam switch -y -j $NJOBS $COMPILER_BE && eval $(opam config env) && \
 
 # BE+flambda switch
 RUN opam switch -y -j $NJOBS "${COMPILER_BE}+flambda" && eval $(opam config env) && \
-    opam install -j $NJOBS $BASE_OPAM camlp5.$CAMLP5_VER_BE $COQIDE_OPAM_BE
+    opam install -j $NJOBS $BASE_OPAM camlp5.$CAMLP5_VER_BE $COQIDE_OPAM_BE $CI_OPAM
