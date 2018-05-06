@@ -12,7 +12,6 @@ open Util
 open Names
 open EConstr
 open Environ
-open Globnames
 open Decl_kinds
 open Evd
 open Misctypes
@@ -25,7 +24,7 @@ open Vernacexpr
 
 exception Bound
 
-val decompose_app_bound : evar_map -> constr -> global_reference * constr array
+val decompose_app_bound : evar_map -> constr -> GlobRef.t * constr array
 
 type debug = Debug | Info | Off
 
@@ -51,7 +50,7 @@ type 'a hints_path_atom_gen =
   (* For forward hints, their names is the list of projections *)
   | PathAny
 
-type hints_path_atom = global_reference hints_path_atom_gen
+type hints_path_atom = GlobRef.t hints_path_atom_gen
 type hint_db_name = string
 
 type 'a with_metadata = private {
@@ -81,7 +80,7 @@ type 'a hints_path_gen =
   | PathEpsilon
 
 type pre_hints_path = Libnames.reference hints_path_gen
-type hints_path = global_reference hints_path_gen
+type hints_path = GlobRef.t hints_path_gen
     
 val normalize_path : hints_path -> hints_path
 val path_matches : hints_path -> hints_path_atom list -> bool
@@ -91,15 +90,15 @@ val pp_hints_path_atom : ('a -> Pp.t) -> 'a hints_path_atom_gen -> Pp.t
 val pp_hints_path : hints_path -> Pp.t
 val pp_hint_mode : hint_mode -> Pp.t
 val glob_hints_path_atom :
-  Libnames.reference hints_path_atom_gen -> Globnames.global_reference hints_path_atom_gen
+  Libnames.reference hints_path_atom_gen -> GlobRef.t hints_path_atom_gen
 val glob_hints_path :
-  Libnames.reference hints_path_gen -> Globnames.global_reference hints_path_gen
+  Libnames.reference hints_path_gen -> GlobRef.t hints_path_gen
 
 module Hint_db :
   sig
     type t
     val empty : ?name:hint_db_name -> transparent_state -> bool -> t
-    val find : global_reference -> t -> search_entry
+    val find : GlobRef.t -> t -> search_entry
 
     (** All hints which have no pattern.
      * [secvars] represent the set of section variables that
@@ -107,27 +106,27 @@ module Hint_db :
     val map_none : secvars:Id.Pred.t -> t -> full_hint list
 
     (** All hints associated to the reference *)
-    val map_all : secvars:Id.Pred.t -> global_reference -> t -> full_hint list
+    val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments, _not_ using the discrimination net. *)
     val map_existential : evar_map -> secvars:Id.Pred.t ->
-      (global_reference * constr array) -> constr -> t -> full_hint list
+      (GlobRef.t * constr array) -> constr -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments and using the discrimination net. *)
-    val map_eauto : evar_map -> secvars:Id.Pred.t -> (global_reference * constr array) -> constr -> t -> full_hint list
+    val map_eauto : evar_map -> secvars:Id.Pred.t -> (GlobRef.t * constr array) -> constr -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments. *)
     val map_auto : evar_map -> secvars:Id.Pred.t ->
-       (global_reference * constr array) -> constr -> t -> full_hint list
+       (GlobRef.t * constr array) -> constr -> t -> full_hint list
 
     val add_one : env -> evar_map -> hint_entry -> t -> t
     val add_list : env -> evar_map -> hint_entry list -> t -> t
-    val remove_one : global_reference -> t -> t
-    val remove_list : global_reference list -> t -> t
-    val iter : (global_reference option ->
+    val remove_one : GlobRef.t -> t -> t
+    val remove_list : GlobRef.t list -> t -> t
+    val iter : (GlobRef.t option ->
                 hint_mode array list -> full_hint list -> unit) -> t -> unit
 
     val use_dn : t -> bool
@@ -147,7 +146,7 @@ type hnf = bool
 type hint_info = (patvar list * constr_pattern) Typeclasses.hint_info_gen
 
 type hint_term =
-  | IsGlobRef of global_reference
+  | IsGlobRef of GlobRef.t
   | IsConstr of constr * Univ.ContextSet.t
 
 type hints_entry =
@@ -157,7 +156,7 @@ type hints_entry =
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference list * bool
-  | HintsModeEntry of global_reference * hint_mode list
+  | HintsModeEntry of GlobRef.t * hint_mode list
   | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 
 val searchtable_map : hint_db_name -> hint_db
@@ -171,7 +170,7 @@ val searchtable_add : (hint_db_name * hint_db) -> unit
 
 val create_hint_db : bool -> hint_db_name -> transparent_state -> bool -> unit
 
-val remove_hints : bool -> hint_db_name list -> global_reference list -> unit
+val remove_hints : bool -> hint_db_name list -> GlobRef.t list -> unit
 
 val current_db_names : unit -> String.Set.t
 
@@ -264,7 +263,7 @@ val rewrite_db : hint_db_name
 
 val pr_searchtable : env -> evar_map -> Pp.t
 val pr_applicable_hint : unit -> Pp.t
-val pr_hint_ref : env -> evar_map -> global_reference -> Pp.t
+val pr_hint_ref : env -> evar_map -> GlobRef.t -> Pp.t
 val pr_hint_db_by_name : env -> evar_map -> hint_db_name -> Pp.t
 val pr_hint_db_env : env -> evar_map -> Hint_db.t -> Pp.t
 val pr_hint_db : Hint_db.t -> Pp.t

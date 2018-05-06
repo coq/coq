@@ -74,7 +74,7 @@ let subst_ubinder (subst,(ref,l as orig)) =
 let discharge_ubinder (_,(ref,l)) =
   Some (Lib.discharge_global ref, l)
 
-let ubinder_obj : Globnames.global_reference * universe_binders -> Libobject.obj =
+let ubinder_obj : GlobRef.t * universe_binders -> Libobject.obj =
   let open Libobject in
   declare_object { (default_object "universe binder") with
     cache_function = cache_ubinder;

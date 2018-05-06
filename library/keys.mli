@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Globnames
-
 type key
 
 val declare_equiv_keys : key -> key -> unit
@@ -21,5 +19,5 @@ val equiv_keys : key -> key -> bool
 val constr_key : ('a -> ('a, 't, 'u, 'i) Constr.kind_of_term) -> 'a -> key option
 (** Compute the head key of a term. *)
 
-val pr_keys : (global_reference -> Pp.t) -> Pp.t
+val pr_keys : (Names.GlobRef.t -> Pp.t) -> Pp.t
 (** Pretty-print the mapping *)

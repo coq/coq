@@ -885,7 +885,7 @@ let is_res r = match DAst.get r with
 | _ -> false
 
 let is_gr c gr = match DAst.get c with
-| GRef (r, _) -> Globnames.eq_gr r gr
+| GRef (r, _) -> GlobRef.equal r gr
 | _ -> false
 
 let is_gvar c = match DAst.get c with
@@ -894,7 +894,7 @@ let is_gvar c = match DAst.get c with
 
 let same_raw_term rt1 rt2 = 
   match DAst.get rt1, DAst.get rt2 with 
-    | GRef(r1,_), GRef (r2,_) -> Globnames.eq_gr r1 r2
+    | GRef(r1,_), GRef (r2,_) -> GlobRef.equal r1 r2
     | GHole _, GHole _ -> true
     | _ -> false
 let decompose_raw_eq lhs rhs = 

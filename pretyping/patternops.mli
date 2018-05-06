@@ -8,12 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open EConstr
-open Globnames
-open Glob_term
+open Names
 open Mod_subst
 open Misctypes
+open Glob_term
 open Pattern
+open EConstr
 open Ltac_pretype
 
 (** {5 Functions on patterns} *)
@@ -32,12 +32,12 @@ exception BoundPattern
    type [t] or raises [BoundPattern] (even if a sort); it raises an anomaly
    if [t] is an abstraction *)
 
-val head_pattern_bound : constr_pattern -> global_reference
+val head_pattern_bound : constr_pattern -> GlobRef.t
 
 (** [head_of_constr_reference c] assumes [r] denotes a reference and
    returns its label; raises an anomaly otherwise *)
 
-val head_of_constr_reference : Evd.evar_map -> constr -> global_reference
+val head_of_constr_reference : Evd.evar_map -> constr -> GlobRef.t
 
 (** [pattern_of_constr c] translates a term [c] with metavariables into
    a pattern; currently, no destructor (Cases, Fix, Cofix) and no

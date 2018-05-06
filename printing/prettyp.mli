@@ -12,7 +12,6 @@ open Names
 open Environ
 open Reductionops
 open Libnames
-open Globnames
 open Misctypes
 open Evd
 
@@ -50,7 +49,7 @@ val print_canonical_projections : env -> Evd.evar_map -> Pp.t
 
 (** Pretty-printing functions for type classes and instances *)
 val print_typeclasses : unit -> Pp.t
-val print_instances : global_reference -> Pp.t
+val print_instances : GlobRef.t -> Pp.t
 val print_all_instances : unit -> Pp.t
 
 val inspect : env -> Evd.evar_map -> int -> Pp.t

@@ -701,22 +701,6 @@ end
 module Constrmap = Map.Make(ConstructorOrdered)
 module Constrmap_env = Map.Make(ConstructorOrdered_env)
 
-type global_reference =
-  | VarRef of variable           (** A reference to the section-context. *)
-  | ConstRef of Constant.t       (** A reference to the environment. *)
-  | IndRef of inductive          (** A reference to an inductive type. *)
-  | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
-
-(* Better to have it here that in closure, since used in grammar.cma *)
-type evaluable_global_reference =
-  | EvalVarRef of Id.t
-  | EvalConstRef of Constant.t
-
-let eq_egr e1 e2 = match e1, e2 with
-    EvalConstRef con1, EvalConstRef con2 -> Constant.equal con1 con2
-  | EvalVarRef id1, EvalVarRef id2 -> Id.equal id1 id2
-  | _, _ -> false
-
 (** {6 Hash-consing of name objects } *)
 
 module Hind = Hashcons.Make(
@@ -903,6 +887,34 @@ struct
 end
 
 type projection = Projection.t
+
+module GlobRef = struct
+
+  type t =
+    | VarRef of variable           (** A reference to the section-context. *)
+    | ConstRef of Constant.t       (** A reference to the environment. *)
+    | IndRef of inductive          (** A reference to an inductive type. *)
+    | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
+
+  let equal gr1 gr2 =
+    gr1 == gr2 || match gr1,gr2 with
+    | ConstRef con1, ConstRef con2 -> Constant.equal con1 con2
+    | IndRef kn1, IndRef kn2 -> eq_ind kn1 kn2
+    | ConstructRef kn1, ConstructRef kn2 -> eq_constructor kn1 kn2
+    | VarRef v1, VarRef v2 -> Id.equal v1 v2
+    | (ConstRef _ | IndRef _ | ConstructRef _ | VarRef _), _ -> false
+
+end
+
+type evaluable_global_reference =
+  | EvalVarRef of Id.t
+  | EvalConstRef of Constant.t
+
+(* Better to have it here that in closure, since used in grammar.cma *)
+let eq_egr e1 e2 = match e1, e2 with
+    EvalConstRef con1, EvalConstRef con2 -> Constant.equal con1 con2
+  | EvalVarRef id1, EvalVarRef id2 -> Id.equal id1 id2
+  | _, _ -> false
 
 let constant_of_kn = Constant.make1
 let constant_of_kn_equiv = Constant.make

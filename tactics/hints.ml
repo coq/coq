@@ -115,7 +115,7 @@ type 'a hints_path_atom_gen =
   (* For forward hints, their names is the list of projections *)
   | PathAny
 
-type hints_path_atom = global_reference hints_path_atom_gen
+type hints_path_atom = GlobRef.t hints_path_atom_gen
 
 type 'a hints_path_gen =
   | PathAtom of 'a hints_path_atom_gen
@@ -126,10 +126,10 @@ type 'a hints_path_gen =
   | PathEpsilon
 
 type pre_hints_path = Libnames.reference hints_path_gen
-type hints_path = global_reference hints_path_gen
+type hints_path = GlobRef.t hints_path_gen
 
 type hint_term =
-  | IsGlobRef of global_reference
+  | IsGlobRef of GlobRef.t
   | IsConstr of constr * Univ.ContextSet.t
 
 type 'a with_uid = {
@@ -153,7 +153,7 @@ type 'a with_metadata = {
 
 type full_hint = hint with_metadata
 
-type hint_entry = global_reference option * 
+type hint_entry = GlobRef.t option *
   raw_hint hint_ast with_uid with_metadata
 
 type import_level = [ `LAX | `WARN | `STRICT ]
@@ -308,7 +308,7 @@ let instantiate_hint env sigma p =
   { p with code = { p.code with obj = code } }
 
 let hints_path_atom_eq h1 h2 = match h1, h2 with
-| PathHints l1, PathHints l2 -> List.equal eq_gr l1 l2
+| PathHints l1, PathHints l2 -> List.equal GlobRef.equal l1 l2
 | PathAny, PathAny -> true
 | _ -> false
 
@@ -365,7 +365,7 @@ let path_seq p p' =
 let rec path_derivate hp hint =
   let rec derivate_atoms hints hints' =
     match hints, hints' with
-    | gr :: grs, gr' :: grs' when eq_gr gr gr' -> derivate_atoms grs grs'
+    | gr :: grs, gr' :: grs' when GlobRef.equal gr gr' -> derivate_atoms grs grs'
     | [], [] -> PathEpsilon
     | [], hints -> PathEmpty
     | grs, [] -> PathAtom (PathHints grs)
@@ -474,28 +474,28 @@ module Hint_db :
 sig
 type t
 val empty : ?name:hint_db_name -> transparent_state -> bool -> t
-val find : global_reference -> t -> search_entry
+val find : GlobRef.t -> t -> search_entry
 val map_none : secvars:Id.Pred.t -> t -> full_hint list
-val map_all : secvars:Id.Pred.t -> global_reference -> t -> full_hint list
+val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
 val map_existential : evar_map -> secvars:Id.Pred.t ->
-		      (global_reference * constr array) -> constr -> t -> full_hint list
+                      (GlobRef.t * constr array) -> constr -> t -> full_hint list
 val map_eauto : evar_map -> secvars:Id.Pred.t ->
-		(global_reference * constr array) -> constr -> t -> full_hint list
+                (GlobRef.t * constr array) -> constr -> t -> full_hint list
 val map_auto : evar_map -> secvars:Id.Pred.t ->
-	       (global_reference * constr array) -> constr -> t -> full_hint list
+               (GlobRef.t * constr array) -> constr -> t -> full_hint list
 val add_one : env -> evar_map -> hint_entry -> t -> t
 val add_list : env -> evar_map -> hint_entry list -> t -> t
-val remove_one : global_reference -> t -> t
-val remove_list : global_reference list -> t -> t
-val iter : (global_reference option -> hint_mode array list -> full_hint list -> unit) -> t -> unit
+val remove_one : GlobRef.t -> t -> t
+val remove_list : GlobRef.t list -> t -> t
+val iter : (GlobRef.t option -> hint_mode array list -> full_hint list -> unit) -> t -> unit
 val use_dn : t -> bool
 val transparent_state : t -> transparent_state
 val set_transparent_state : t -> transparent_state -> t
 val add_cut : hints_path -> t -> t
-val add_mode : global_reference -> hint_mode array -> t -> t
+val add_mode : GlobRef.t -> hint_mode array -> t -> t
 val cut : t -> hints_path
 val unfolds : t -> Id.Set.t * Cset.t
-val fold : (global_reference option -> hint_mode array list -> full_hint list -> 'a -> 'a) ->
+val fold : (GlobRef.t option -> hint_mode array list -> full_hint list -> 'a -> 'a) ->
   t -> 'a -> 'a
 
 end =
@@ -510,7 +510,7 @@ struct
     hintdb_map : search_entry Constr_map.t;
     (* A list of unindexed entries starting with an unfoldable constant
        or with no associated pattern. *)
-    hintdb_nopat : (global_reference option * stored_data) list;
+    hintdb_nopat : (GlobRef.t option * stored_data) list;
     hintdb_name : string option;
   }
 
@@ -664,7 +664,7 @@ struct
 
   let remove_list grs db =
     let filter (_, h) =
-      match h.name with PathHints [gr] -> not (List.mem_f eq_gr gr grs) | _ -> true in
+      match h.name with PathHints [gr] -> not (List.mem_f GlobRef.equal gr grs) | _ -> true in
     let hintmap = Constr_map.map (remove_he db.hintdb_state filter) db.hintdb_map in
     let hintnopat = List.smartfilter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
@@ -1015,9 +1015,9 @@ type hint_action =
   | CreateDB of bool * transparent_state
   | AddTransparency of evaluable_global_reference list * bool
   | AddHints of hint_entry list
-  | RemoveHints of global_reference list
+  | RemoveHints of GlobRef.t list
   | AddCut of hints_path
-  | AddMode of global_reference * hint_mode array
+  | AddMode of GlobRef.t * hint_mode array
 
 let add_cut dbname path =
   let db = get_db dbname in
@@ -1226,7 +1226,7 @@ type hints_entry =
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference list * bool
-  | HintsModeEntry of global_reference * hint_mode list
+  | HintsModeEntry of GlobRef.t * hint_mode list
   | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 
 let default_prepare_hint_ident = Id.of_string "H"

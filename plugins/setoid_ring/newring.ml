@@ -78,7 +78,7 @@ and mk_clos_app_but f_map subs f args n =
     | None -> mk_atom (mkApp (f, args))
 
 let interp_map l t =
-  try Some(List.assoc_f eq_gr t l) with Not_found -> None
+  try Some(List.assoc_f GlobRef.equal t l) with Not_found -> None
 
 let protect_maps = ref String.Map.empty
 let add_map s m = protect_maps := String.Map.add s m !protect_maps

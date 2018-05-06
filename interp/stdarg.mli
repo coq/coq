@@ -14,7 +14,6 @@ open Loc
 open Names
 open EConstr
 open Libnames
-open Globnames
 open Genredexpr
 open Pattern
 open Constrexpr
@@ -42,7 +41,7 @@ val wit_ident : Id.t uniform_genarg_type
 
 val wit_var : (lident, lident, Id.t) genarg_type
 
-val wit_ref : (reference, global_reference located or_var, global_reference) genarg_type
+val wit_ref : (reference, GlobRef.t located or_var, GlobRef.t) genarg_type
 
 val wit_quant_hyp : quantified_hypothesis uniform_genarg_type
 
@@ -81,8 +80,8 @@ val wit_clause_dft_concl :  (lident Locus.clause_expr, lident Locus.clause_expr,
 
 val wit_integer : int uniform_genarg_type
 val wit_preident : string uniform_genarg_type
-val wit_reference : (reference, global_reference located or_var, global_reference) genarg_type
-val wit_global : (reference, global_reference located or_var, global_reference) genarg_type
+val wit_reference : (reference, GlobRef.t located or_var, GlobRef.t) genarg_type
+val wit_global : (reference, GlobRef.t located or_var, GlobRef.t) genarg_type
 val wit_clause :  (lident Locus.clause_expr, lident Locus.clause_expr, Names.Id.t Locus.clause_expr) genarg_type
 val wit_quantified_hypothesis : quantified_hypothesis uniform_genarg_type
 val wit_intropattern : (constr_expr intro_pattern_expr CAst.t, glob_constr_and_expr intro_pattern_expr CAst.t, intro_pattern) genarg_type

@@ -10,7 +10,7 @@
 
 val invfun :
   Misctypes.quantified_hypothesis ->
-  Globnames.global_reference option ->
+  Names.GlobRef.t option ->
   Evar.t Evd.sigma -> Evar.t list Evd.sigma
 val derive_correctness :
   (Evd.evar_map ref ->

@@ -652,7 +652,7 @@ let add_inline_entries b l =
 
 (* Registration of operations for rollback. *)
 
-let inline_extraction : bool * global_reference list -> obj =
+let inline_extraction : bool * GlobRef.t list -> obj =
   declare_object
     {(default_object "Extraction Inline") with
        cache_function = (fun (_,(b,l)) -> add_inline_entries b l);
@@ -736,7 +736,7 @@ let add_implicits r l =
 
 (* Registration of operations for rollback. *)
 
-let implicit_extraction : global_reference * int_or_id list -> obj =
+let implicit_extraction : GlobRef.t * int_or_id list -> obj =
   declare_object
     {(default_object "Extraction Implicit") with
        cache_function = (fun (_,(r,l)) -> add_implicits r l);
@@ -857,7 +857,7 @@ let find_custom_match pv =
 
 (* Registration of operations for rollback. *)
 
-let in_customs : global_reference * string list * string -> obj =
+let in_customs : GlobRef.t * string list * string -> obj =
   declare_object
     {(default_object "ML extractions") with
        cache_function = (fun (_,(r,ids,s)) -> add_custom r ids s);
@@ -867,7 +867,7 @@ let in_customs : global_reference * string list * string -> obj =
         (fun (s,(r,ids,str)) -> (fst (subst_global s r), ids, str))
     }
 
-let in_custom_matchs : global_reference * string -> obj =
+let in_custom_matchs : GlobRef.t * string -> obj =
   declare_object
     {(default_object "ML extractions custom matchs") with
        cache_function = (fun (_,(r,s)) -> add_custom_match r s);

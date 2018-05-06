@@ -80,7 +80,7 @@ val coerce_to_hyp : Environ.env -> Evd.evar_map -> Value.t -> Id.t
 
 val coerce_to_hyp_list : Environ.env -> Evd.evar_map -> Value.t -> Id.t list
 
-val coerce_to_reference : Environ.env -> Evd.evar_map -> Value.t -> Globnames.global_reference
+val coerce_to_reference : Environ.env -> Evd.evar_map -> Value.t -> GlobRef.t
 
 val coerce_to_quantified_hypothesis : Evd.evar_map -> Value.t -> quantified_hypothesis
 

@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Constr
 open Environ
 open Pattern
@@ -130,8 +129,8 @@ val pr_cumulativity_info   : evar_map -> Univ.CumulativityInfo.t -> Pp.t
 
 (** Printing global references using names as short as possible *)
 
-val pr_global_env          : Id.Set.t -> global_reference -> Pp.t
-val pr_global              : global_reference -> Pp.t
+val pr_global_env          : Id.Set.t -> GlobRef.t -> Pp.t
+val pr_global              : GlobRef.t -> Pp.t
 
 val pr_constant            : env -> Constant.t -> Pp.t
 val pr_existential_key     : evar_map -> Evar.t -> Pp.t

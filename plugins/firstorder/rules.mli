@@ -11,21 +11,20 @@
 open Names
 open Constr
 open EConstr
-open Globnames
 
 type tactic = unit Proofview.tactic
 
 type seqtac= (Sequent.t -> tactic) -> Sequent.t -> tactic
 
-type lseqtac= global_reference -> seqtac
+type lseqtac= GlobRef.t -> seqtac
 
 type 'a with_backtracking = tactic -> 'a
 
 val wrap : int -> bool -> seqtac
 
-val basename_of_global: global_reference -> Id.t
+val basename_of_global: GlobRef.t -> Id.t
 
-val clear_global: global_reference -> tactic
+val clear_global: GlobRef.t -> tactic
 
 val axiom_tac : constr -> Sequent.t -> tactic
 
@@ -41,7 +40,7 @@ val left_and_tac : pinductive -> lseqtac with_backtracking
 
 val left_or_tac : pinductive -> lseqtac with_backtracking
 
-val left_false_tac : global_reference -> tactic
+val left_false_tac : GlobRef.t -> tactic
 
 val ll_ind_tac : pinductive -> constr list -> lseqtac with_backtracking
 

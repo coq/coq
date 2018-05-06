@@ -369,8 +369,8 @@ let pirrel_rewrite pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
 ;;
 
 let is_construct_ref sigma c r =
-  EConstr.isConstruct sigma c && eq_gr (ConstructRef (fst(EConstr.destConstruct sigma c))) r
-let is_ind_ref sigma c r = EConstr.isInd sigma c && eq_gr (IndRef (fst(EConstr.destInd sigma c))) r
+  EConstr.isConstruct sigma c && GlobRef.equal (ConstructRef (fst(EConstr.destConstruct sigma c))) r
+let is_ind_ref sigma c r = EConstr.isInd sigma c && GlobRef.equal (IndRef (fst(EConstr.destInd sigma c))) r
 
 let rwcltac cl rdx dir sr gl =
   let n, r_n,_, ucst = pf_abs_evars gl sr in

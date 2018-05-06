@@ -10,7 +10,6 @@
 
 open Names
 open Constr
-open Globnames
 
 (** Operations concerning records and canonical structures *)
 
@@ -40,10 +39,10 @@ val lookup_structure : inductive -> struc_typ
 val lookup_projections : inductive -> Constant.t option list
 
 (** raise [Not_found] if not a projection *)
-val find_projection_nparams : global_reference -> int
+val find_projection_nparams : GlobRef.t -> int
 
 (** raise [Not_found] if not a projection *)
-val find_projection : global_reference -> struc_typ
+val find_projection : GlobRef.t -> struc_typ
 
 (** {6 Canonical structures } *)
 (** A canonical structure declares "canonical" conversion hints between 
@@ -52,7 +51,7 @@ val find_projection : global_reference -> struc_typ
 
 (** A cs_pattern characterizes the form of a component of canonical structure *)
 type cs_pattern =
-    Const_cs of global_reference
+    Const_cs of GlobRef.t
   | Prod_cs
   | Sort_cs of Sorts.family
   | Default_cs
@@ -71,9 +70,9 @@ val cs_pattern_of_constr : Environ.env -> constr -> cs_pattern * int option * co
 
 val pr_cs_pattern : cs_pattern -> Pp.t
 
-val lookup_canonical_conversion : (global_reference * cs_pattern) -> constr * obj_typ
-val declare_canonical_structure : global_reference -> unit
+val lookup_canonical_conversion : (GlobRef.t * cs_pattern) -> constr * obj_typ
+val declare_canonical_structure : GlobRef.t -> unit
 val is_open_canonical_projection :
   Environ.env -> Evd.evar_map -> Reductionops.state -> bool
 val canonical_projections : unit ->
-  ((global_reference * cs_pattern) * obj_typ) list
+  ((GlobRef.t * cs_pattern) * obj_typ) list

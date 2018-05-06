@@ -75,7 +75,7 @@ val error_global_not_found : qualid CAst.t -> 'a
 
 type visibility = Until of int | Exactly of int
 
-val push : visibility -> full_path -> global_reference -> unit
+val push : visibility -> full_path -> GlobRef.t -> unit
 val push_modtype : visibility -> full_path -> ModPath.t -> unit
 val push_dir : visibility -> DirPath.t -> global_dir_reference -> unit
 val push_syndef : visibility -> full_path -> syndef_name -> unit
@@ -91,7 +91,7 @@ val push_universe : visibility -> full_path -> universe_id -> unit
 (** These functions globalize a (partially) qualified name or fail with
    [Not_found] *)
 
-val locate : qualid -> global_reference
+val locate : qualid -> GlobRef.t
 val locate_extended : qualid -> extended_global_reference
 val locate_constant : qualid -> Constant.t
 val locate_syndef : qualid -> syndef_name
@@ -105,20 +105,20 @@ val locate_universe : qualid -> universe_id
    references, like [locate] and co, but raise a nice error message
    in case of failure *)
 
-val global : reference -> global_reference
+val global : reference -> GlobRef.t
 val global_inductive : reference -> inductive
 
 (** These functions locate all global references with a given suffix;
    if [qualid] is valid as such, it comes first in the list *)
 
-val locate_all : qualid -> global_reference list
+val locate_all : qualid -> GlobRef.t list
 val locate_extended_all : qualid -> extended_global_reference list
 val locate_extended_all_dir : qualid -> global_dir_reference list
 val locate_extended_all_modtype : qualid -> ModPath.t list
 
 (** Mapping a full path to a global reference *)
 
-val global_of_path : full_path -> global_reference
+val global_of_path : full_path -> GlobRef.t
 val extended_global_of_path : full_path -> extended_global_reference
 
 (** {6 These functions tell if the given absolute name is already taken } *)
@@ -144,7 +144,7 @@ val full_name_module : qualid -> DirPath.t
    definition, and the (full) dirpath associated to a module path *)
 
 val path_of_syndef : syndef_name -> full_path
-val path_of_global : global_reference -> full_path
+val path_of_global : GlobRef.t -> full_path
 val dirpath_of_module : ModPath.t -> DirPath.t
 val path_of_modtype : ModPath.t -> full_path
 
@@ -155,12 +155,12 @@ val path_of_universe : universe_id -> full_path
 (** Returns in particular the dirpath or the basename of the full path
    associated to global reference *)
 
-val dirpath_of_global : global_reference -> DirPath.t
-val basename_of_global : global_reference -> Id.t
+val dirpath_of_global : GlobRef.t -> DirPath.t
+val basename_of_global : GlobRef.t -> Id.t
 
 (** Printing of global references using names as short as possible.
     @raise Not_found when the reference is not in the global tables. *)
-val pr_global_env : Id.Set.t -> global_reference -> Pp.t
+val pr_global_env : Id.Set.t -> GlobRef.t -> Pp.t
 
 
 (** The [shortest_qualid] functions given an object with [user_name]
@@ -168,7 +168,7 @@ val pr_global_env : Id.Set.t -> global_reference -> Pp.t
    Coq.A.B.x that denotes the same object.
    @raise Not_found for unknown objects. *)
 
-val shortest_qualid_of_global : Id.Set.t -> global_reference -> qualid
+val shortest_qualid_of_global : Id.Set.t -> GlobRef.t -> qualid
 val shortest_qualid_of_syndef : Id.Set.t -> syndef_name -> qualid
 val shortest_qualid_of_modtype : ModPath.t -> qualid
 val shortest_qualid_of_module : ModPath.t -> qualid
@@ -177,7 +177,7 @@ val shortest_qualid_of_universe : universe_id -> qualid
 (** Deprecated synonyms *)
 
 val extended_locate : qualid -> extended_global_reference (*= locate_extended *)
-val absolute_reference : full_path -> global_reference (** = global_of_path *)
+val absolute_reference : full_path -> GlobRef.t (** = global_of_path *)
 
 (** {5 Generic name handling} *)
 

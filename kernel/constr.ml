@@ -654,7 +654,7 @@ let map_with_binders g f l c0 = match kind c0 with
     let bl' = CArray.Fun1.smartmap f l' bl in
     mkCoFix (ln,(lna,tl',bl'))
 
-type instance_compare_fn = global_reference -> int ->
+type instance_compare_fn = GlobRef.t -> int ->
   Univ.Instance.t -> Univ.Instance.t -> bool
 
 type constr_compare_fn = int -> constr -> constr -> bool
@@ -692,10 +692,10 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t
   | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && Array.equal (eq 0) l1 l2
   | Const (c1,u1), Const (c2,u2) ->
     (* The args length currently isn't used but may as well pass it. *)
-    Constant.equal c1 c2 && leq_universes (ConstRef c1) nargs u1 u2
-  | Ind (c1,u1), Ind (c2,u2) -> eq_ind c1 c2 && leq_universes (IndRef c1) nargs u1 u2
+    Constant.equal c1 c2 && leq_universes (GlobRef.ConstRef c1) nargs u1 u2
+  | Ind (c1,u1), Ind (c2,u2) -> eq_ind c1 c2 && leq_universes (GlobRef.IndRef c1) nargs u1 u2
   | Construct (c1,u1), Construct (c2,u2) ->
-    eq_constructor c1 c2 && leq_universes (ConstructRef c1) nargs u1 u2
+    eq_constructor c1 c2 && leq_universes (GlobRef.ConstructRef c1) nargs u1 u2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
     eq 0 p1 p2 && eq 0 c1 c2 && Array.equal (eq 0) bl1 bl2
   | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->

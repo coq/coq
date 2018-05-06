@@ -25,10 +25,10 @@ module ReductionBehaviour : sig
 
 (** [set is_local ref (recargs, nargs, flags)] *)
   val set :
-    bool -> Globnames.global_reference -> (int list * int * flag list) -> unit
+    bool -> GlobRef.t -> (int list * int * flag list) -> unit
   val get :
-    Globnames.global_reference -> (int list * int * flag list) option
-  val print : Globnames.global_reference -> Pp.t
+    GlobRef.t -> (int list * int * flag list) option
+  val print : GlobRef.t -> Pp.t
 end
 
 (** {6 Support for reduction effects } *)
@@ -41,7 +41,7 @@ val declare_reduction_effect : effect_name ->
   (Environ.env -> Evd.evar_map -> Constr.constr -> unit) -> unit
 
 (* [set_reduction_effect cst name] declares effect [name] to be called when [cst] is found *)
-val set_reduction_effect : Globnames.global_reference -> effect_name -> unit
+val set_reduction_effect : GlobRef.t -> effect_name -> unit
 
 (* [effect_hook env sigma key term] apply effect associated to [key] on [term] *)
 val reduction_effect_hook : Environ.env -> Evd.evar_map -> Constr.constr ->

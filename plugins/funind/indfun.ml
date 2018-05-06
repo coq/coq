@@ -846,7 +846,7 @@ let rec get_args b t : Constrexpr.local_binder_expr list *
     | _ -> [],b,t
 
 
-let make_graph (f_ref:global_reference) =
+let make_graph (f_ref : GlobRef.t) =
   let c,c_body =
     match f_ref with
     | ConstRef c ->

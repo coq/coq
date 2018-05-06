@@ -500,21 +500,6 @@ val constructor_user_hash : constructor -> int
 val constructor_syntactic_ord : constructor -> constructor -> int
 val constructor_syntactic_hash : constructor -> int
 
-(** {6 Global reference is a kernel side type for all references together } *)
-type global_reference =
-  | VarRef of variable           (** A reference to the section-context. *)
-  | ConstRef of Constant.t       (** A reference to the environment. *)
-  | IndRef of inductive          (** A reference to an inductive type. *)
-  | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
-
-(** Better to have it here that in Closure, since required in grammar.cma *)
-type evaluable_global_reference =
-  | EvalVarRef of Id.t
-  | EvalConstRef of Constant.t
-
-val eq_egr : evaluable_global_reference ->  evaluable_global_reference
-  -> bool
-
 (** {6 Hash-consing } *)
 
 val hcons_con : Constant.t -> Constant.t
@@ -748,6 +733,29 @@ end
 
 type projection = Projection.t
 [@@ocaml.deprecated "Alias for [Projection.t]"]
+
+(** {6 Global reference is a kernel side type for all references together } *)
+
+(* XXX: Should we define GlobRefCan GlobRefUser? *)
+module GlobRef : sig
+
+  type t =
+    | VarRef of variable           (** A reference to the section-context. *)
+    | ConstRef of Constant.t       (** A reference to the environment. *)
+    | IndRef of inductive          (** A reference to an inductive type. *)
+    | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
+
+  val equal : t -> t -> bool
+
+end
+
+(** Better to have it here that in Closure, since required in grammar.cma *)
+(* XXX: Move to a module *)
+type evaluable_global_reference =
+  | EvalVarRef of Id.t
+  | EvalConstRef of Constant.t
+
+val eq_egr : evaluable_global_reference ->  evaluable_global_reference -> bool
 
 val constant_of_kn_equiv : KerName.t -> KerName.t -> Constant.t
 [@@ocaml.deprecated "Same as [Constant.make]"]

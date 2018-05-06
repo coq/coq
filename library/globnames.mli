@@ -14,71 +14,73 @@ open Constr
 open Mod_subst
 
 (** {6 Global reference is a kernel side type for all references together } *)
-type global_reference = Names.global_reference =
+type global_reference = GlobRef.t =
   | VarRef of variable           (** A reference to the section-context. *)
   | ConstRef of Constant.t       (** A reference to the environment. *)
   | IndRef of inductive          (** A reference to an inductive type. *)
   | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
+[@@ocaml.deprecated "Use Names.GlobRef.t"]
 
-val isVarRef : global_reference -> bool
-val isConstRef : global_reference -> bool
-val isIndRef : global_reference -> bool
-val isConstructRef : global_reference -> bool
+val isVarRef : GlobRef.t -> bool
+val isConstRef : GlobRef.t -> bool
+val isIndRef : GlobRef.t -> bool
+val isConstructRef : GlobRef.t -> bool
 
-val eq_gr : global_reference -> global_reference -> bool
-val canonical_gr : global_reference -> global_reference
+val eq_gr : GlobRef.t -> GlobRef.t -> bool
+[@@ocaml.deprecated "Use Names.GlobRef.equal"]
+val canonical_gr : GlobRef.t -> GlobRef.t
 
-val destVarRef : global_reference -> variable
-val destConstRef : global_reference -> Constant.t
-val destIndRef : global_reference -> inductive
-val destConstructRef : global_reference -> constructor
+val destVarRef : GlobRef.t -> variable
+val destConstRef : GlobRef.t -> Constant.t
+val destIndRef : GlobRef.t -> inductive
+val destConstructRef : GlobRef.t -> constructor
 
-val is_global : global_reference -> constr -> bool
+val is_global : GlobRef.t -> constr -> bool
 
 val subst_constructor : substitution -> constructor -> constructor * constr
-val subst_global : substitution -> global_reference -> global_reference * constr
-val subst_global_reference : substitution -> global_reference -> global_reference
+val subst_global : substitution -> GlobRef.t -> GlobRef.t * constr
+val subst_global_reference : substitution -> GlobRef.t -> GlobRef.t
 
 (** This constr is not safe to be typechecked, universe polymorphism is not 
     handled here: just use for printing *)
-val printable_constr_of_global : global_reference -> constr
+val printable_constr_of_global : GlobRef.t -> constr
 
 (** Turn a construction denoting a global reference into a global reference;
    raise [Not_found] if not a global reference *)
-val global_of_constr : constr -> global_reference
+val global_of_constr : constr -> GlobRef.t
 
 (** Obsolete synonyms for constr_of_global and global_of_constr *)
-val reference_of_constr : constr -> global_reference
+val reference_of_constr : constr -> GlobRef.t
 [@@ocaml.deprecated "Alias of Globnames.global_of_constr"]
 
 module RefOrdered : sig
-  type t = global_reference
+  type t = GlobRef.t
   val compare : t -> t -> int
   val equal : t -> t -> bool
   val hash : t -> int
 end
 
 module RefOrdered_env : sig
-  type t = global_reference
+  type t = GlobRef.t
   val compare : t -> t -> int
   val equal : t -> t -> bool
   val hash : t -> int
 end
 
-module Refset : CSig.SetS with type elt = global_reference
+module Refset : CSig.SetS with type elt = GlobRef.t
 module Refmap : Map.ExtS
-  with type key = global_reference and module Set := Refset
+  with type key = GlobRef.t and module Set := Refset
 
-module Refset_env : CSig.SetS with type elt = global_reference
+module Refset_env : CSig.SetS with type elt = GlobRef.t
 module Refmap_env : Map.ExtS
-  with type key = global_reference and module Set := Refset_env
+  with type key = GlobRef.t and module Set := Refset_env
 
 (** {6 Extended global references } *)
 
 type syndef_name = KerName.t
 
 type extended_global_reference =
-  | TrueGlobal of global_reference
+  | TrueGlobal of GlobRef.t
   | SynDef of syndef_name
 
 module ExtRefOrdered : sig
@@ -89,7 +91,7 @@ module ExtRefOrdered : sig
 end
 
 type global_reference_or_constr = 
-  | IsGlobal of global_reference
+  | IsGlobal of GlobRef.t
   | IsConstr of constr
 
 (** {6 Temporary function to brutally form kernel names from section paths } *)
@@ -100,7 +102,6 @@ val encode_con : DirPath.t -> Id.t -> Constant.t
 val decode_con : Constant.t -> DirPath.t * Id.t
 
 (** {6 Popping one level of section in global names } *)
-
 val pop_con : Constant.t -> Constant.t
 val pop_kn : MutInd.t-> MutInd.t
-val pop_global_reference : global_reference -> global_reference
+val pop_global_reference : GlobRef.t -> GlobRef.t

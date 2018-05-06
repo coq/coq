@@ -418,7 +418,7 @@ let injectl2rtac sigma c = match EConstr.kind sigma c with
 let is_injection_case c gl =
   let gl, cty = pfe_type_of gl c in
   let (mind,_), _ = pf_reduce_to_quantified_ind gl cty in
-  eq_gr (IndRef mind) (Coqlib.build_coq_eq ())
+  GlobRef.equal (IndRef mind) (Coqlib.build_coq_eq ())
 
 let perform_injection c gl =
   let gl, cty = pfe_type_of gl c in

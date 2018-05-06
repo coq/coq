@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Misctypes
 open Glob_term
 
@@ -23,7 +22,7 @@ open Glob_term
 
 type notation_constr =
   (** Part common to [glob_constr] and [cases_pattern] *)
-  | NRef of global_reference
+  | NRef of GlobRef.t
   | NVar of Id.t
   | NApp of notation_constr * notation_constr list
   | NHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option

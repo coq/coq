@@ -31,11 +31,11 @@ type typeclass = {
 
   (** The class implementation: a record parameterized by the context with defs in it or a definition if
      the class is a singleton. This acts as the class' global identifier. *)
-  cl_impl : global_reference;
+  cl_impl : GlobRef.t;
 
   (** Context in which the definitions are typed. Includes both typeclass parameters and superclasses.
       The global reference gives a direct link to the class itself. *)
-  cl_context : global_reference option list * Context.Rel.t;
+  cl_context : GlobRef.t option list * Context.Rel.t;
 
   (** Context of definitions and properties on defs, will not be shared *)
   cl_props : Context.Rel.t;
@@ -56,17 +56,17 @@ type typeclass = {
 
 type instance
 
-val instances : global_reference -> instance list
+val instances : GlobRef.t -> instance list
 val typeclasses : unit -> typeclass list
 val all_instances : unit -> instance list
 
 val add_class : typeclass -> unit
 
-val new_instance : typeclass -> hint_info_expr -> bool -> global_reference -> instance
+val new_instance : typeclass -> hint_info_expr -> bool -> GlobRef.t -> instance
 val add_instance : instance -> unit
 val remove_instance : instance -> unit
 
-val class_info : global_reference -> typeclass (** raises a UserError if not a class *)
+val class_info : GlobRef.t -> typeclass (** raises a UserError if not a class *)
 
 
 (** These raise a UserError if not a class.
@@ -80,12 +80,12 @@ val typeclass_univ_instance : typeclass Univ.puniverses -> typeclass
 (** Just return None if not a class *)
 val class_of_constr : evar_map -> EConstr.constr -> (EConstr.rel_context * ((typeclass * EConstr.EInstance.t) * constr list)) option
   
-val instance_impl : instance -> global_reference
+val instance_impl : instance -> GlobRef.t
 
 val hint_priority : instance -> int option
 
-val is_class : global_reference -> bool
-val is_instance : global_reference -> bool
+val is_class : GlobRef.t -> bool
+val is_instance : GlobRef.t -> bool
 
 (** Returns the term and type for the given instance of the parameters and fields
    of the type class. *)
@@ -127,24 +127,24 @@ val set_typeclass_transparency : evaluable_global_reference -> bool -> bool -> u
 val classes_transparent_state_hook : (unit -> transparent_state) Hook.t
 val classes_transparent_state : unit -> transparent_state
 
-val add_instance_hint_hook : 
-  (global_reference_or_constr -> global_reference list ->
+val add_instance_hint_hook :
+  (global_reference_or_constr -> GlobRef.t list ->
    bool (* local? *) -> hint_info_expr -> Decl_kinds.polymorphic -> unit) Hook.t
-val remove_instance_hint_hook : (global_reference -> unit) Hook.t
-val add_instance_hint : global_reference_or_constr -> global_reference list -> 
+val remove_instance_hint_hook : (GlobRef.t -> unit) Hook.t
+val add_instance_hint : global_reference_or_constr -> GlobRef.t list ->
   bool -> hint_info_expr -> Decl_kinds.polymorphic -> unit
-val remove_instance_hint : global_reference -> unit
+val remove_instance_hint : GlobRef.t -> unit
 
 val solve_all_instances_hook : (env -> evar_map -> evar_filter -> bool -> bool -> bool -> evar_map) Hook.t
 val solve_one_instance_hook : (env -> evar_map -> EConstr.types -> bool -> evar_map * EConstr.constr) Hook.t
 
-val declare_instance : hint_info_expr option -> bool -> global_reference -> unit
+val declare_instance : hint_info_expr option -> bool -> GlobRef.t -> unit
 
 
 (** Build the subinstances hints for a given typeclass object.
     check tells if we should check for existence of the 
     subinstances and add only the missing ones. *)
 
-val build_subclasses : check:bool -> env -> evar_map -> global_reference ->
+val build_subclasses : check:bool -> env -> evar_map -> GlobRef.t ->
                        hint_info_expr ->
-                       (global_reference list * hint_info_expr * constr) list
+                       (GlobRef.t list * hint_info_expr * constr) list

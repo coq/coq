@@ -211,7 +211,7 @@ type left_pattern=
   | Lexists of pinductive
   | LA of constr*left_arrow_pattern
 
-type t={id:global_reference;
+type t={id:GlobRef.t;
 	constr:constr;
 	pat:(left_pattern,right_pattern) sum;
 	atoms:atoms}

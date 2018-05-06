@@ -1505,7 +1505,7 @@ let tclOPTION o d =
 let tacIS_INJECTION_CASE ?ty t = begin
   tclOPTION ty (tacTYPEOF t) >>= fun ty ->
   tacREDUCE_TO_QUANTIFIED_IND ty >>= fun ((mind,_),_) ->
-  tclUNIT (Globnames.eq_gr (Globnames.IndRef mind) (Coqlib.build_coq_eq ()))
+  tclUNIT (GlobRef.equal (GlobRef.IndRef mind) (Coqlib.build_coq_eq ()))
 end
 
 let tclWITHTOP tac = Goal.enter begin fun gl ->

@@ -8,10 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Util
 open Names
 open Libnames
-open Globnames
-open Util
 
 (** This module collects the global references, constructions and
     patterns of the standard library used in ocaml files *)
@@ -44,14 +43,14 @@ open Util
 
 type message = string
 
-val find_reference : message -> string list -> string -> global_reference
-val coq_reference : message -> string list -> string -> global_reference
+val find_reference : message -> string list -> string -> GlobRef.t
+val coq_reference : message -> string list -> string -> GlobRef.t
 
 (** For tactics/commands requiring vernacular libraries *)
 val check_required_library : string list -> unit
 
 (** Search in several modules (not prefixed by "Coq") *)
-val gen_reference_in_modules : string->string list list-> string -> global_reference
+val gen_reference_in_modules : string->string list list-> string -> GlobRef.t
 
 val arith_modules : string list list
 val zarith_base_modules : string list list
@@ -78,24 +77,24 @@ val type_of_id : Constant.t
 
 (** Natural numbers *)
 val nat_path : full_path
-val glob_nat : global_reference
+val glob_nat : GlobRef.t
 val path_of_O : constructor
 val path_of_S : constructor
-val glob_O : global_reference
-val glob_S : global_reference
+val glob_O : GlobRef.t
+val glob_S : GlobRef.t
 
 (** Booleans *)
-val glob_bool : global_reference
+val glob_bool : GlobRef.t
 val path_of_true : constructor
 val path_of_false : constructor
-val glob_true : global_reference
-val glob_false : global_reference
+val glob_true : GlobRef.t
+val glob_false : GlobRef.t
 
 
 (** Equality *)
-val glob_eq : global_reference
-val glob_identity : global_reference
-val glob_jmeq : global_reference
+val glob_eq : GlobRef.t
+val glob_identity : GlobRef.t
+val glob_jmeq : GlobRef.t
 
 (** {6 ... } *)
 (** Constructions and patterns related to Coq initial state are unknown
@@ -106,18 +105,18 @@ val glob_jmeq : global_reference
    at runtime. *)
 
 type coq_bool_data = {
-  andb : global_reference;
-  andb_prop : global_reference;
-  andb_true_intro : global_reference}
+  andb : GlobRef.t;
+  andb_prop : GlobRef.t;
+  andb_true_intro : GlobRef.t}
 val build_bool_type : coq_bool_data delayed
 
 (** {6 For Equality tactics } *)
 type coq_sigma_data = {
-  proj1 : global_reference;
-  proj2 : global_reference;
-  elim  : global_reference;
-  intro : global_reference;
-  typ   : global_reference }
+  proj1 : GlobRef.t;
+  proj2 : GlobRef.t;
+  elim  : GlobRef.t;
+  intro : GlobRef.t;
+  typ   : GlobRef.t }
 
 val build_sigma_set : coq_sigma_data delayed
 val build_sigma_type : coq_sigma_data delayed
@@ -132,30 +131,30 @@ val build_sigma : coq_sigma_data delayed
 val build_prod : coq_sigma_data delayed
 
 type coq_eq_data = {
-  eq   : global_reference;
-  ind  : global_reference;
-  refl : global_reference;
-  sym  : global_reference;
-  trans: global_reference;
-  congr: global_reference }
+  eq   : GlobRef.t;
+  ind  : GlobRef.t;
+  refl : GlobRef.t;
+  sym  : GlobRef.t;
+  trans: GlobRef.t;
+  congr: GlobRef.t }
 
 val build_coq_eq_data : coq_eq_data delayed
 
 val build_coq_identity_data : coq_eq_data delayed
 val build_coq_jmeq_data : coq_eq_data delayed
 
-val build_coq_eq       : global_reference delayed (** = [(build_coq_eq_data()).eq] *)
-val build_coq_eq_refl  : global_reference delayed (** = [(build_coq_eq_data()).refl] *)
-val build_coq_eq_sym   : global_reference delayed (** = [(build_coq_eq_data()).sym] *)
-val build_coq_f_equal2 : global_reference delayed
+val build_coq_eq       : GlobRef.t delayed (** = [(build_coq_eq_data()).eq] *)
+val build_coq_eq_refl  : GlobRef.t delayed (** = [(build_coq_eq_data()).refl] *)
+val build_coq_eq_sym   : GlobRef.t delayed (** = [(build_coq_eq_data()).sym] *)
+val build_coq_f_equal2 : GlobRef.t delayed
 
 (** Data needed for discriminate and injection *)
 
 type coq_inversion_data = {
-  inv_eq   : global_reference; (** : forall params, args -> Prop *)
-  inv_ind  : global_reference; (** : forall params P (H : P params) args, eq params args 
+  inv_eq   : GlobRef.t; (** : forall params, args -> Prop *)
+  inv_ind  : GlobRef.t; (** : forall params P (H : P params) args, eq params args
 			 ->  P args *)
-  inv_congr: global_reference  (** : forall params B (f:t->B) args, eq params args -> 
+  inv_congr: GlobRef.t  (** : forall params B (f:t->B) args, eq params args ->
 			 f params = f args *)
 }
 
@@ -165,45 +164,45 @@ val build_coq_inversion_jmeq_data : coq_inversion_data delayed
 val build_coq_inversion_eq_true_data : coq_inversion_data delayed
 
 (** Specif *)
-val build_coq_sumbool : global_reference delayed
+val build_coq_sumbool : GlobRef.t delayed
 
 (** {6 ... } *)
 (** Connectives 
    The False proposition *)
-val build_coq_False : global_reference delayed
+val build_coq_False : GlobRef.t delayed
 
 (** The True proposition and its unique proof *)
-val build_coq_True : global_reference delayed
-val build_coq_I : global_reference delayed
+val build_coq_True : GlobRef.t delayed
+val build_coq_I : GlobRef.t delayed
 
 (** Negation *)
-val build_coq_not : global_reference delayed
+val build_coq_not : GlobRef.t delayed
 
 (** Conjunction *)
-val build_coq_and : global_reference delayed
-val build_coq_conj : global_reference delayed
-val build_coq_iff : global_reference delayed
+val build_coq_and : GlobRef.t delayed
+val build_coq_conj : GlobRef.t delayed
+val build_coq_iff : GlobRef.t delayed
 
-val build_coq_iff_left_proj : global_reference delayed
-val build_coq_iff_right_proj : global_reference delayed
+val build_coq_iff_left_proj : GlobRef.t delayed
+val build_coq_iff_right_proj : GlobRef.t delayed
 
 (** Disjunction *)
-val build_coq_or : global_reference delayed
+val build_coq_or : GlobRef.t delayed
 
 (** Existential quantifier *)
-val build_coq_ex : global_reference delayed
+val build_coq_ex : GlobRef.t delayed
 
-val coq_eq_ref : global_reference lazy_t
-val coq_identity_ref : global_reference lazy_t
-val coq_jmeq_ref : global_reference lazy_t
-val coq_eq_true_ref : global_reference lazy_t
-val coq_existS_ref : global_reference lazy_t
-val coq_existT_ref : global_reference lazy_t
-val coq_exist_ref : global_reference lazy_t
-val coq_not_ref : global_reference lazy_t
-val coq_False_ref : global_reference lazy_t
-val coq_sumbool_ref : global_reference lazy_t
-val coq_sig_ref : global_reference lazy_t
+val coq_eq_ref : GlobRef.t lazy_t
+val coq_identity_ref : GlobRef.t lazy_t
+val coq_jmeq_ref : GlobRef.t lazy_t
+val coq_eq_true_ref : GlobRef.t lazy_t
+val coq_existS_ref : GlobRef.t lazy_t
+val coq_existT_ref : GlobRef.t lazy_t
+val coq_exist_ref : GlobRef.t lazy_t
+val coq_not_ref : GlobRef.t lazy_t
+val coq_False_ref : GlobRef.t lazy_t
+val coq_sumbool_ref : GlobRef.t lazy_t
+val coq_sig_ref : GlobRef.t lazy_t
 
-val coq_or_ref : global_reference lazy_t
-val coq_iff_ref : global_reference lazy_t
+val coq_or_ref : GlobRef.t lazy_t
+val coq_iff_ref : GlobRef.t lazy_t

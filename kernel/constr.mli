@@ -413,7 +413,7 @@ val compare_head : constr_compare_fn -> constr_compare_fn
 (** Convert a global reference applied to 2 instances. The int says
    how many arguments are given (as we can only use cumulativity for
    fully applied inductives/constructors) .*)
-type instance_compare_fn = global_reference -> int ->
+type instance_compare_fn = GlobRef.t -> int ->
   Univ.Instance.t -> Univ.Instance.t -> bool
 
 (** [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to

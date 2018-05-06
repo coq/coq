@@ -4,7 +4,7 @@
 
 Proof engine
 
-  More functions have been changed to use `EConstr`, notably the
+- More functions have been changed to use `EConstr`, notably the
   functions in `Evd`, and in particular `Evd.define`.
 
   Note that the core function `EConstr.to_constr` now _enforces_ by
@@ -17,6 +17,10 @@ Proof engine
   `abort_on_undefined_evars` flag to `EConstr.to_constr`, but note
   that setting this flag to false is deprecated so it is only meant to
   be used as to help port pre-EConstr code.
+
+- A few type alias have been deprecated, in all cases the message
+  should indicate what the canonical form is. An important change is
+  the move of `Globnames.global_reference` to `Names.GlobRef.t`.
 
 ## Changes between Coq 8.7 and Coq 8.8
 
@@ -93,6 +97,11 @@ Declaration of printers for arguments used only in vernac command
   "declare_extra_genarg_pprule", otherwise, a failure at runtime might
   happen. An alternative is to register the corresponding argument as
   a value, using "Geninterp.register_val0 wit None".
+
+Types Alias deprecation and type relocation.
+
+- A few type alias have been deprecated, in all cases the message
+  should indicate what the canonical form is.
 
 ### STM API
 

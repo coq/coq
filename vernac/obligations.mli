@@ -12,7 +12,6 @@ open Environ
 open Constr
 open Evd
 open Names
-open Globnames
 
 (* This is a hack to make it possible for Obligations to craft a Qed
  * behind the scenes.  The fix_exn the Stm attaches to the Future proof
@@ -49,7 +48,7 @@ type obligation_info =
 type progress = (* Resolution status of a program *)
   | Remain of int  (* n obligations remaining *)
   | Dependent (* Dependent on other definitions *)
-  | Defined of global_reference (* Defined as id *)
+  | Defined of GlobRef.t (* Defined as id *)
 
 val default_tactic : unit Proofview.tactic ref
 

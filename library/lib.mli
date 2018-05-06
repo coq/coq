@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-
+open Names
 (** Lib: record of operations, backtrack, low-level sections *)
 
 (** This module provides a general mechanism to keep a trace of all operations
@@ -28,7 +28,7 @@ type node =
 
 and library_segment = (Libnames.object_name * node) list
 
-type lib_objects = (Names.Id.t * Libobject.obj) list
+type lib_objects = (Id.t * Libobject.obj) list
 
 (** {6 Object iteration functions. } *)
 
@@ -54,13 +54,13 @@ val segment_of_objects :
 (** Adding operations (which call the [cache] method, and getting the
   current list of operations (most recent ones coming first). *)
 
-val add_leaf : Names.Id.t -> Libobject.obj -> Libnames.object_name
+val add_leaf : Id.t -> Libobject.obj -> Libnames.object_name
 val add_anonymous_leaf : ?cache_first:bool -> Libobject.obj -> unit
 val pull_to_head : Libnames.object_name -> unit
 
 (** this operation adds all objects with the same name and calls [load_object]
    for each of them *)
-val add_leaves : Names.Id.t -> Libobject.obj list -> Libnames.object_name
+val add_leaves : Id.t -> Libobject.obj list -> Libnames.object_name
 
 (** {6 ... } *)
 
@@ -76,15 +76,15 @@ val contents_after : Libnames.object_name -> library_segment
 (** {6 Functions relative to current path } *)
 
 (** User-side names *)
-val cwd : unit -> Names.DirPath.t
-val cwd_except_section : unit -> Names.DirPath.t
-val current_dirpath : bool -> Names.DirPath.t (* false = except sections *)
-val make_path : Names.Id.t -> Libnames.full_path
-val make_path_except_section : Names.Id.t -> Libnames.full_path
+val cwd : unit -> DirPath.t
+val cwd_except_section : unit -> DirPath.t
+val current_dirpath : bool -> DirPath.t (* false = except sections *)
+val make_path : Id.t -> Libnames.full_path
+val make_path_except_section : Id.t -> Libnames.full_path
 
 (** Kernel-side names *)
-val current_mp : unit -> Names.ModPath.t
-val make_kn : Names.Id.t -> Names.KerName.t
+val current_mp : unit -> ModPath.t
+val make_kn : Id.t -> KerName.t
 
 (** Are we inside an opened section *)
 val sections_are_opened : unit -> bool
@@ -97,19 +97,19 @@ val is_modtype : unit -> bool
    if the latest module started is a module type.  *)
 val is_modtype_strict : unit -> bool
 val is_module : unit -> bool
-val current_mod_id : unit -> Names.module_ident
+val current_mod_id : unit -> module_ident
 
 (** Returns the opening node of a given name *)
-val find_opening_node : Names.Id.t -> node
+val find_opening_node : Id.t -> node
 
 (** {6 Modules and module types } *)
 
 val start_module :
-  export -> Names.module_ident -> Names.ModPath.t ->
+  export -> module_ident -> ModPath.t ->
   Summary.frozen -> Libnames.object_prefix
 
 val start_modtype :
-  Names.module_ident -> Names.ModPath.t ->
+  module_ident -> ModPath.t ->
   Summary.frozen -> Libnames.object_prefix
 
 val end_module :
@@ -124,23 +124,23 @@ val end_modtype :
 
 (** {6 Compilation units } *)
 
-val start_compilation : Names.DirPath.t -> Names.ModPath.t -> unit
-val end_compilation_checks : Names.DirPath.t -> Libnames.object_name
+val start_compilation : DirPath.t -> ModPath.t -> unit
+val end_compilation_checks : DirPath.t -> Libnames.object_name
 val end_compilation :
   Libnames.object_name-> Libnames.object_prefix * library_segment
 
 (** The function [library_dp] returns the [DirPath.t] of the current
    compiling library (or [default_library]) *)
-val library_dp : unit -> Names.DirPath.t
+val library_dp : unit -> DirPath.t
 
 (** Extract the library part of a name even if in a section *)
-val dp_of_mp : Names.ModPath.t -> Names.DirPath.t
-val split_modpath : Names.ModPath.t -> Names.DirPath.t * Names.Id.t list
-val library_part :  Globnames.global_reference -> Names.DirPath.t
+val dp_of_mp : ModPath.t -> DirPath.t
+val split_modpath : ModPath.t -> DirPath.t * Id.t list
+val library_part :  GlobRef.t -> DirPath.t
 
 (** {6 Sections } *)
 
-val open_section : Names.Id.t -> unit
+val open_section : Id.t -> unit
 val close_section : unit -> unit
 
 (** {6 We can get and set the state of the operations (used in [States]). } *)
@@ -164,31 +164,31 @@ type abstr_info = private {
   (** Universe quantification, same length as the substitution *)
 }
 
-val instance_from_variable_context : variable_context -> Names.Id.t array
+val instance_from_variable_context : variable_context -> Id.t array
 val named_of_variable_context : variable_context -> Context.Named.t
 
-val section_segment_of_constant : Names.Constant.t -> abstr_info
-val section_segment_of_mutual_inductive: Names.MutInd.t -> abstr_info
-val section_segment_of_reference : Globnames.global_reference -> abstr_info
+val section_segment_of_constant : Constant.t -> abstr_info
+val section_segment_of_mutual_inductive: MutInd.t -> abstr_info
+val section_segment_of_reference : GlobRef.t -> abstr_info
 
-val variable_section_segment_of_reference : Globnames.global_reference -> variable_context
+val variable_section_segment_of_reference : GlobRef.t -> variable_context
 
-val section_instance : Globnames.global_reference -> Univ.Instance.t * Names.Id.t array
-val is_in_section : Globnames.global_reference -> bool
+val section_instance : GlobRef.t -> Univ.Instance.t * Id.t array
+val is_in_section : GlobRef.t -> bool
 
-val add_section_variable : Names.Id.t -> Decl_kinds.binding_kind -> Decl_kinds.polymorphic -> Univ.ContextSet.t -> unit
+val add_section_variable : Id.t -> Decl_kinds.binding_kind -> Decl_kinds.polymorphic -> Univ.ContextSet.t -> unit
 val add_section_context : Univ.ContextSet.t -> unit
 val add_section_constant : Decl_kinds.polymorphic ->
-  Names.Constant.t -> Context.Named.t -> unit
+  Constant.t -> Context.Named.t -> unit
 val add_section_kn : Decl_kinds.polymorphic ->
-  Names.MutInd.t -> Context.Named.t -> unit
+  MutInd.t -> Context.Named.t -> unit
 val replacement_context : unit -> Opaqueproof.work_list
 
 (** {6 Discharge: decrease the section level if in the current section } *)
 
-val discharge_kn :  Names.MutInd.t -> Names.MutInd.t
-val discharge_con : Names.Constant.t -> Names.Constant.t
-val discharge_global : Globnames.global_reference -> Globnames.global_reference
-val discharge_inductive : Names.inductive -> Names.inductive
+val discharge_kn :  MutInd.t -> MutInd.t
+val discharge_con : Constant.t -> Constant.t
+val discharge_global : GlobRef.t -> GlobRef.t
+val discharge_inductive : inductive -> inductive
 val discharge_abstract_universe_context :
   abstr_info -> Univ.AUContext.t -> Univ.universe_level_subst * Univ.AUContext.t

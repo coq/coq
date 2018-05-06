@@ -104,7 +104,7 @@ module ReductionBehaviour = struct
   type flag = [ `ReductionDontExposeCase | `ReductionNeverUnfold ]
   type req =
     | ReqLocal
-    | ReqGlobal of global_reference * (int list * int * flag list)
+    | ReqGlobal of GlobRef.t * (int list * int * flag list)
 
   let load _ (_,(_,(r, b))) =
     table := Refmap.add r b !table

@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Misctypes
 
 (** The kinds of existential variable *)
@@ -24,7 +23,7 @@ type matching_var_kind = FirstOrderPatVar of patvar | SecondOrderPatVar of patva
 type subevar_kind = Domain | Codomain | Body
 
 type t =
-  | ImplicitArg of global_reference * (int * Id.t option)
+  | ImplicitArg of GlobRef.t * (int * Id.t option)
      * bool (** Force inference *)
   | BinderType of Name.t
   | NamedHole of Id.t (* coming from some ?[id] syntax *)

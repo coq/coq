@@ -8,9 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Names
 open Constr
 open EConstr
-open Globnames
 
 val qflag : bool ref
 
@@ -35,7 +35,7 @@ type atoms = {positive:constr list;negative:constr list}
 
 type side = Hyp | Concl | Hint
 
-val dummy_id: global_reference
+val dummy_id: GlobRef.t
 
 val build_atoms : Environ.env -> Evd.evar_map -> counter ->
   side -> constr -> bool * atoms
@@ -65,13 +65,13 @@ type left_pattern=
   | Lexists of pinductive
   | LA of constr*left_arrow_pattern
 
-type t={id: global_reference;
+type t={id: GlobRef.t;
 	constr: constr;
 	pat: (left_pattern,right_pattern) sum;
 	atoms: atoms}
 
 (*exception Is_atom of constr*)
 
-val build_formula : Environ.env -> Evd.evar_map -> side -> global_reference -> types ->
+val build_formula : Environ.env -> Evd.evar_map -> side -> GlobRef.t -> types ->
   counter -> (t,types) sum
 

@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Misctypes
 
 (** {5 Patterns} *)
@@ -21,7 +20,7 @@ type case_info_pattern =
       cip_extensible : bool (** does this match end with _ => _ ? *) }
 
 type constr_pattern =
-  | PRef of global_reference
+  | PRef of GlobRef.t
   | PVar of Id.t
   | PEvar of existential_key * constr_pattern array
   | PRel of int

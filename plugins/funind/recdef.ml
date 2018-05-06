@@ -181,7 +181,7 @@ let simpl_iter clause =
     clause
 
 (* Others ugly things ... *)
-let (value_f: Constr.t list -> global_reference -> Constr.t) =
+let (value_f: Constr.t list -> GlobRef.t -> Constr.t) =
   let open Term in
   let open Constr in
   fun al fterm ->
@@ -215,7 +215,7 @@ let (value_f: Constr.t list -> global_reference -> Constr.t) =
     let body = EConstr.Unsafe.to_constr body in
     it_mkLambda_or_LetIn body context
 
-let (declare_f : Id.t -> logical_kind -> Constr.t list -> global_reference -> global_reference) =
+let (declare_f : Id.t -> logical_kind -> Constr.t list -> GlobRef.t -> GlobRef.t) =
   fun f_id kind input_type fterm_ref ->
     declare_fun f_id kind (value_f input_type fterm_ref);;
 
@@ -356,7 +356,7 @@ type 'a infos =
       f_id : Id.t;  (* function name *)
       f_constr : constr;  (* function term *)
       f_terminate : constr; (* termination proof term *)
-      func : global_reference; (* functional reference *)
+      func : GlobRef.t; (* functional reference *)
       info : 'a;
       is_main_branch : bool; (* on the main branch or on a matched expression *)
       is_final : bool; (* final first order term or not *)
@@ -1456,7 +1456,7 @@ let com_terminate
 
 
 
-let start_equation (f:global_reference) (term_f:global_reference)
+let start_equation (f:GlobRef.t) (term_f:GlobRef.t)
   (cont_tactic:Id.t list -> tactic) g =
   let sigma = project g in
   let ids = pf_ids_of_hyps g in
@@ -1473,7 +1473,7 @@ let start_equation (f:global_reference) (term_f:global_reference)
     observe_tac (str "prove_eq") (cont_tactic x)]) g;;
 
 let (com_eqn : int -> Id.t ->
-       global_reference -> global_reference -> global_reference
+       GlobRef.t -> GlobRef.t -> GlobRef.t
 	 -> Constr.t -> unit) =
   fun nb_arg eq_name functional_ref f_ref terminate_ref equation_lemma_type ->
     let open CVars in

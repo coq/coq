@@ -37,7 +37,7 @@ struct
   type 't t =
     | DRel
     | DSort
-    | DRef    of global_reference
+    | DRef    of GlobRef.t
     | DCtx    of 't * 't (* (binding list, subterm) = Prods and LetIns *)
     | DLambda of 't * 't
     | DApp    of 't * 't (* binary app *)

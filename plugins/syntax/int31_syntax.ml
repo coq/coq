@@ -26,7 +26,7 @@ let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 let make_path dir id = Libnames.make_path (make_dir dir) (Id.of_string id)
 
 let is_gr c gr = match DAst.get c with
-| GRef (r, _) -> Globnames.eq_gr r gr
+| GRef (r, _) -> GlobRef.equal r gr
 | _ -> false
 
 let make_mind mp id = Names.MutInd.make2 mp (Label.make id)

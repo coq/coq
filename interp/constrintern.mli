@@ -13,7 +13,6 @@ open Evd
 open Environ
 open Misctypes
 open Libnames
-open Globnames
 open Glob_term
 open Pattern
 open EConstr
@@ -143,7 +142,7 @@ val intern_constr_pattern :
     constr_pattern_expr -> patvar list * constr_pattern
 
 (** Raise Not_found if syndef not bound to a name and error if unexisting ref *)
-val intern_reference : reference -> global_reference
+val intern_reference : reference -> GlobRef.t
 
 (** Expands abbreviations (syndef); raise an error if not existing *)
 val interp_reference : ltac_sign -> reference -> glob_constr
@@ -175,11 +174,11 @@ val interp_context_evars :
 (** Locating references of constructions, possibly via a syntactic definition 
    (these functions do not modify the glob file) *)
 
-val locate_reference :  Libnames.qualid -> Globnames.global_reference
+val locate_reference :  Libnames.qualid -> GlobRef.t
 val is_global : Id.t -> bool
-val construct_reference : ('c, 't) Context.Named.pt -> Id.t -> Globnames.global_reference
-val global_reference : Id.t -> Globnames.global_reference
-val global_reference_in_absolute_module : DirPath.t -> Id.t -> Globnames.global_reference
+val construct_reference : ('c, 't) Context.Named.pt -> Id.t -> GlobRef.t
+val global_reference : Id.t -> GlobRef.t
+val global_reference_in_absolute_module : DirPath.t -> Id.t -> GlobRef.t
 
 (** Interprets a term as the left-hand side of a notation. The returned map is
     guaranteed to have the same domain as the input one. *)

@@ -259,7 +259,7 @@ type interp_rule =
    according to the key of the pattern (adapted from Chet Murthy by HH) *)
 
 type key =
-  | RefKey of global_reference
+  | RefKey of GlobRef.t
   | Oth
 
 let key_compare k1 k2 = match k1, k2 with
@@ -778,7 +778,7 @@ let rebuild_arguments_scope sigma (req,r,n,l,_) =
       (req,r,0,l1@l,cls1)
 
 type arguments_scope_obj =
-    arguments_scope_discharge_request * global_reference *
+    arguments_scope_discharge_request * GlobRef.t *
     (* Used to communicate information from discharge to rebuild *)
     (* set to 0 otherwise *) int *
     scope_name option list * scope_class option list

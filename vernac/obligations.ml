@@ -561,7 +561,7 @@ let declare_mutual_definition l =
     List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;
     Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
     let gr = List.hd kns in
-    let kn = match gr with ConstRef kn -> kn | _ -> assert false in
+    let kn = match gr with GlobRef.ConstRef kn -> kn | _ -> assert false in
     Lemmas.call_hook fix_exn first.prg_hook local gr first.prg_ctx;
     List.iter progmap_remove l; kn
 
@@ -744,7 +744,7 @@ let all_programs () =
 type progress =
     | Remain of int
     | Dependent
-    | Defined of global_reference
+    | Defined of GlobRef.t
 
 let obligations_message rem =
   if rem > 0 then
@@ -770,7 +770,7 @@ let update_obls prg obls rem =
 	  let progs = List.map (fun x -> get_info (ProgMap.find x !from_prg)) prg'.prg_deps in
 	    if List.for_all (fun x -> obligations_solved x) progs then
 	      let kn = declare_mutual_definition progs in
-		Defined (ConstRef kn)
+                Defined (GlobRef.ConstRef kn)
 	    else Dependent)
 
 let is_defined obls x = not (Option.is_empty obls.(x).obl_body)
@@ -891,7 +891,7 @@ let obligation_terminator name num guard hook auto pf =
 
 let obligation_hook prg obl num auto ctx' _ gr =
   let obls, rem = prg.prg_obligations in
-  let cst = match gr with ConstRef cst -> cst | _ -> assert false in
+  let cst = match gr with GlobRef.ConstRef cst -> cst | _ -> assert false in
   let transparent = evaluable_constant cst (Global.env ()) in
   let () = match obl.obl_status with
       (true, Evar_kinds.Expand) 
