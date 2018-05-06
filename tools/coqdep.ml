@@ -512,6 +512,9 @@ let rec parse = function
   | f :: ll -> treat_file None f; parse ll
   | [] -> ()
 
+(* Exception to be raised by Envars *)
+exception CoqlibError of string
+
 let coqdep () =
   if Array.length Sys.argv < 2 then usage ();
   if not Coq_config.has_natdynlink then option_dynlink := No;
@@ -526,7 +529,7 @@ let coqdep () =
     add_rec_dir_import (fun _ -> add_caml_known) "theories" ["Coq"];
     add_rec_dir_import (fun _ -> add_caml_known) "plugins" ["Coq"];
   end else begin
-    Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
+    Envars.set_coqlib ~fail:(fun msg -> raise (CoqlibError msg));
     let coqlib = Envars.coqlib () in
     add_rec_dir_import add_coqlib_known (coqlib//"theories") ["Coq"];
     add_rec_dir_import add_coqlib_known (coqlib//"plugins") ["Coq"];
@@ -557,6 +560,5 @@ let coqdep () =
 let _ =
   try
     coqdep ()
-  with CErrors.UserError(s,p) ->
-    let pp = (match s with | None -> p | Some s -> Pp.(str s ++ str ": " ++ p))  in
-    eprintf "%a@\n%!" Pp.pp_with pp
+  with CoqlibError msg ->
+    eprintf "*** Error: %s@\n%!" msg
