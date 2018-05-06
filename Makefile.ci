@@ -36,6 +36,12 @@ CI_TARGETS=ci-bignums \
 
 .PHONY: ci-all $(CI_TARGETS)
 
+ci-help:
+	echo '*** Coq CI system, please specify a target to build.'
+	false
+
+ci-all: $(CI_TARGETS)
+
 ci-color: ci-bignums
 
 ci-math-classes: ci-bignums
@@ -47,8 +53,6 @@ ci-formal-topology: ci-corn
 # Generic rule, we use make to ease travis integration with mixed rules
 $(CI_TARGETS): ci-%:
 	+./dev/ci/ci-wrapper.sh $*
-
-ci-all: $(CI_TARGETS)
 
 # For emacs:
 # Local Variables:
