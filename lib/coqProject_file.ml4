@@ -8,6 +8,14 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(* This needs to go trou feedback as it is invoked from IDEs, but
+   ideally we would like to make this independent so it can be
+   bootstrapped. *)
+
+(* Note the problem with the error invokation below calling exit... *)
+(* let error msg = Feedback.msg_error msg *)
+let warning msg = Feedback.msg_warning Pp.(str msg)
+
 type arg_source = CmdLine | ProjectFile
 
 type 'a sourced = { thing : 'a; source : arg_source }
@@ -122,7 +130,7 @@ let process_cmd_line orig_dir proj args =
   let sourced x = { thing = x; source = if !parsing_project_file then ProjectFile else CmdLine } in
   let orig_dir = (* avoids turning foo.v in ./foo.v *)
     if orig_dir = "." then "" else orig_dir in
-  let error s = Format.eprintf "@[%a]@@\n%!" Pp.pp_with Pp.(str (s^".")); exit 1 in
+  let error s = (Format.eprintf "Error: @[%s@].@\n%!" s; exit 1) in
   let mk_path d =
     let p = CUnix.correct_path d orig_dir in
     { path = CUnix.remove_path_dot (post_canonize p);
@@ -140,7 +148,7 @@ let process_cmd_line orig_dir proj args =
   | ("-full"|"-opt") :: r -> aux { proj with use_ocamlopt =  true } r
   | "-install" :: d :: r ->
     if proj.install_kind <> None then
-      Feedback.msg_warning (Pp.str "-install set more than once.");
+      (warning "-install set more than once.@\n%!");
     let install = match d with
       | "user" -> UserInstall
       | "none" -> NoInstall
@@ -167,8 +175,7 @@ let process_cmd_line orig_dir proj args =
     let file = CUnix.remove_path_dot (CUnix.correct_path file orig_dir) in
     let () = match proj.project_file with
       | None -> ()
-      | Some _ -> Feedback.msg_warning (Pp.str
-	"Multiple project files are deprecated.")
+      | Some _ -> warning "Multiple project files are deprecated.@\n%!"
     in
     parsing_project_file := true;
     let proj = aux { proj with project_file = Some file } (parse file) in
