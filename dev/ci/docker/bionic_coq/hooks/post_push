@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+COQCI_VERSION=V2018-05-05
+docker tag $IMAGE_NAME $DOCKER_REPO:$COQCI_VERSION
+docker push $DOCKER_REPO:$COQCI_VERSION
+
+docker tag $IMAGE_NAME coqci/base:$COQCI_VERSION
+docker push coqci/base:$COQCI_VERSION

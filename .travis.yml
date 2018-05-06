@@ -39,11 +39,11 @@ env:
   - NJOBS=2
   # system is == 4.02.3
   - COMPILER="system"
-  - COMPILER_BE="4.06.0"
+  - COMPILER_BE="4.06.1"
   - CAMLP5_VER=".6.14"
   - CAMLP5_VER_BE=".7.03"
   - FINDLIB_VER=".1.4.1"
-  - FINDLIB_VER_BE=".1.7.3"
+  - FINDLIB_VER_BE=".1.8.0"
   - LABLGTK="lablgtk.2.18.3 lablgtk-extras.1.6"
   - LABLGTK_BE="lablgtk.2.18.6 lablgtk-extras.1.6"
   - NATIVE_COMP="yes"
@@ -67,7 +67,7 @@ matrix:
       - TEST_TARGET="ci-color"
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="ci-compcert"
+      - TEST_TARGET="ci-compcert" EXTRA_OPAM="menhir"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
