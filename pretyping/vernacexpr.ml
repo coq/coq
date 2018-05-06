@@ -303,6 +303,9 @@ type module_binder = bool option * lident list * module_ast_inl
     we should use the global flag. *)
 type vernac_cumulative = VernacCumulative | VernacNonCumulative
 
+(** [Some b] if locally specified, [None] to use global flag. *)
+type vernac_uniformity = VernacUniformParams | VernacNonUniformParams
+
 (** {6 The type of vernacular expressions} *)
 
 type vernac_implicit_status = Implicit | MaximallyImplicit | NotImplicit
@@ -336,7 +339,7 @@ type nonrec vernac_expr =
   | VernacExactProof of constr_expr
   | VernacAssumption of (Decl_kinds.discharge * Decl_kinds.assumption_object_kind) *
       Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
-  | VernacInductive of vernac_cumulative option * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
+  | VernacInductive of vernac_cumulative option * Decl_kinds.private_flag * vernac_uniformity option * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of Decl_kinds.discharge * (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of Decl_kinds.discharge * (cofixpoint_expr * decl_notation list) list
   | VernacScheme of (lident option * scheme) list

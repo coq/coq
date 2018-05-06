@@ -733,7 +733,7 @@ open Pputils
         let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
         return (hov 2 (pr_assumption_token (n > 1) discharge kind ++
                        pr_non_empty_arg pr_assumption_inline t ++ spc() ++ assumptions))
-      | VernacInductive (cum, p,f,l) ->
+      | VernacInductive (cum, p, uni, f, l) ->
         let pr_constructor (coe,(id,c)) =
           hov 2 (pr_lident id ++ str" " ++
                    (if coe then str":>" else str":") ++
@@ -765,14 +765,20 @@ open Pputils
                        | Inductive_kw -> "Inductive" | CoInductive -> "CoInductive"
                        | Class _ -> "Class" | Variant -> "Variant"
           in
-          if p then
+          if p then (* Why only when p? *)
             let cm =
               match cum with
               | Some VernacCumulative -> "Cumulative"
               | Some VernacNonCumulative -> "NonCumulative"
               | None -> ""
             in
-            cm ^ " " ^ kind
+            let uniform_tag =
+              match uni with
+              | Some VernacUniformParams -> "Uniform "
+              | Some VernacNonUniformParams -> "NonUniform "
+              | None -> ""
+            in
+            cm ^ " " ^ uniform_tag ^ kind
           else kind
         in
         return (

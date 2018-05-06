@@ -22,6 +22,8 @@ type private_flag = bool
 
 type cumulative_inductive_flag = bool
 
+type uniform_inductive_flag = bool
+
 type theorem_kind =
   | Theorem
   | Lemma

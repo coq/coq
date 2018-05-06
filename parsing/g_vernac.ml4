@@ -162,11 +162,12 @@ GEXTEND Gram
       | IDENT "Let"; id = identref; b = def_body ->
           VernacDefinition ((DoDischarge, Let), (lname_of_lident id, None), b)
       (* Gallina inductive declarations *)
-      | cum = OPT cumulativity_token; priv = private_token; f = finite_token;
+      | cum = OPT cumulativity_token; priv = private_token;
+        uni = OPT uniformity_token; f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
 	  let (k,f) = f in
           let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
-          VernacInductive (cum, priv,f,indl)
+          VernacInductive (cum, priv, uni, f, indl)
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           VernacFixpoint (NoDischarge, recs)
       | IDENT "Let"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
@@ -250,6 +251,10 @@ GEXTEND Gram
   cumulativity_token:
     [ [ IDENT "Cumulative" -> VernacCumulative
       | IDENT "NonCumulative" -> VernacNonCumulative ] ]
+  ;
+  uniformity_token:
+    [ [ IDENT "Uniform" -> VernacUniformParams
+      | IDENT "NonUniform" -> VernacNonUniformParams ] ]
   ;
   private_token:
     [ [ IDENT "Private" -> true | -> false ] ]
