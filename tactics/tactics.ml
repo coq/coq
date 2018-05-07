@@ -4927,6 +4927,7 @@ let shrink_entry sign const =
   } in
   (const, args)
 
+(** Internal function only used by tclABSTRACT *)
 let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   let open Tacticals.New in
   let open Tacmach.New in
