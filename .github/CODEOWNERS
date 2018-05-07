@@ -71,6 +71,11 @@
 /engine/          @ppedrot
 # Secondary maintainer @aspiwack
 
+/engine/universes.ml{,i} @SkySkimmer
+/engine/univops.ml{,i} @SkySkimmer
+/engine/uState.ml{,i} @SkySkimmer
+# Secondary maintainer @mattam82
+
 ########## Grammar macros ##########
 
 /grammar/         @ppedrot
@@ -93,6 +98,11 @@
 
 /kernel/byterun/  @maximedenes
 # Secondary maintainer @silene
+
+/kernel/sorts.ml{,i} @SkySkimmer
+/kernel/uGraph.ml{,i} @SkySkimmer
+/kernel/univ.ml{,i} @SkySkimmer
+# Secondary maintainer @mattam82
 
 ########## Library ##########
 
@@ -291,7 +301,7 @@
 ########## Build system ##########
 
 /Makefile*        @letouzey
-# Secondary maintainer @maximdenes
+# Secondary maintainer @gares
 
 /configure*       @letouzey
 # Secondary maintainer @ejgallego
