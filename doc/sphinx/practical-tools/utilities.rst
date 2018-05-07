@@ -137,7 +137,7 @@ Here we describe only few of them.
    (e.g. wrappers)
 :COQ_SRC_SUBDIRS:
    can be extended by including other paths in which ``*.cm*`` files
-   are searched. For example ``COQ\_SRC\_SUBDIRS+=user-contrib/Unicoq``
+   are searched. For example ``COQ_SRC_SUBDIRS+=user-contrib/Unicoq``
    lets you build a plugin containing OCaml code that depends on the
    OCaml code of ``Unicoq``.
 

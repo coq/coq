@@ -12,14 +12,14 @@ This tactic does not need any parameter:
 
 .. tacn:: omega
 
-``omega`` solves a goal in Presburger arithmetic, i.e. a universally
+:tacn:`omega` solves a goal in Presburger arithmetic, i.e. a universally
 quantified formula made of equations and inequations. Equations may
 be specified either on the type ``nat`` of natural numbers or on
 the type ``Z`` of binary-encoded integer numbers. Formulas on
 ``nat`` are automatically injected into ``Z``.  The procedure
 may use any hypothesis of the current proof session to solve the goal.
 
-Multiplication is handled by ``omega`` but only goals where at
+Multiplication is handled by :tacn:`omega` but only goals where at
 least one of the two multiplicands of products is a constant are
 solvable. This is the restriction meant by "Presburger arithmetic".
 
@@ -29,7 +29,7 @@ In any case, the computation eventually stops.
 Arithmetical goals recognized by ``omega``
 ------------------------------------------
 
-``omega`` applied only to quantifier-free formulas built from the
+:tacn:`omega` applied only to quantifier-free formulas built from the
 connectors::
 
    /\  \/  ~  ->
@@ -38,11 +38,11 @@ on atomic formulas. Atomic formulas are built from the predicates::
 
    =  <  <=  >  >=
 
-on ``nat`` or ``Z``. In expressions of type ``nat``, ``omega`` recognizes::
+on ``nat`` or ``Z``. In expressions of type ``nat``, :tacn:`omega` recognizes::
 
    +  -  *  S  O  pred
 
-and in expressions of type ``Z``, ``omega`` recognizes numeral constants and::
+and in expressions of type ``Z``, :tacn:`omega` recognizes numeral constants and::
 
    +  -  *  Z.succ Z.pred
 
@@ -53,32 +53,32 @@ were arbitrary variables of type ``nat`` or ``Z``.
 Messages from ``omega``
 -----------------------
 
-When ``omega`` does not solve the goal, one of the following errors
+When :tacn:`omega` does not solve the goal, one of the following errors
 is generated:
 
-.. exn:: omega can't solve this system
+.. exn:: omega can't solve this system.
 
   This may happen if your goal is not quantifier-free (if it is
-  universally quantified, try ``intros`` first; if it contains
-  existentials quantifiers too, ``omega`` is not strong enough to solve your
+  universally quantified, try :tacn:`intros` first; if it contains
+  existentials quantifiers too, :tacn:`omega` is not strong enough to solve your
   goal). This may happen also if your goal contains arithmetical
-  operators unknown from ``omega``. Finally, your goal may be really
+  operators unknown from :tacn:`omega`. Finally, your goal may be really
   wrong!
 
-.. exn:: omega: Not a quantifier-free goal
+.. exn:: omega: Not a quantifier-free goal.
 
   If your goal is universally quantified, you should first apply
-  ``intro`` as many time as needed.
+  :tacn:`intro` as many times as needed.
 
-.. exn:: omega: Unrecognized predicate or connective: @ident
+.. exn:: omega: Unrecognized predicate or connective: @ident.
 
 .. exn:: omega: Unrecognized atomic proposition: ...
 
-.. exn:: omega: Can't solve a goal with proposition variables
+.. exn:: omega: Can't solve a goal with proposition variables.
 
-.. exn:: omega: Unrecognized proposition
+.. exn:: omega: Unrecognized proposition.
 
-.. exn:: omega: Can't solve a goal with non-linear products
+.. exn:: omega: Can't solve a goal with non-linear products.
 
 .. exn:: omega: Can't solve a goal with equality on type ...
 
@@ -115,21 +115,23 @@ Options
 
 .. opt:: Stable Omega
 
-This deprecated option (on by default) is for compatibility with Coq pre 8.5. It
-resets internal name counters to make executions of ``omega`` independent.
+   .. deprecated:: 8.5
+
+   This deprecated option (on by default) is for compatibility with Coq pre 8.5. It
+   resets internal name counters to make executions of :tacn:`omega` independent.
 
 .. opt:: Omega UseLocalDefs
 
-This option (on by default) allows ``omega`` to use the bodies of local
-variables.
+   This option (on by default) allows :tacn:`omega` to use the bodies of local
+   variables.
 
 .. opt:: Omega System
 
-This option (off by default) activate the printing of debug information
+   This option (off by default) activate the printing of debug information
 
 .. opt:: Omega Action
 
-This option (off by default) activate the printing of debug information
+   This option (off by default) activate the printing of debug information
 
 Technical data
 --------------
@@ -149,7 +151,7 @@ Overview of the tactic
 Overview of the OMEGA decision procedure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The OMEGA decision procedure involved in the ``omega`` tactic uses
+The OMEGA decision procedure involved in the :tacn:`omega` tactic uses
 a small subset of the decision procedure presented in :cite:`TheOmegaPaper`
 Here is an overview, look at the original paper for more information.
 

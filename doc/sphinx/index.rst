@@ -3,9 +3,6 @@
 .. include:: preamble.rst
 .. include:: replaces.rst
 
-Introduction
-===========================================
-
 .. include:: introduction.rst
 .. include:: credits.rst
 

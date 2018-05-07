@@ -46,7 +46,7 @@ the expressiveness of the theory remains the same. Once the stage of
 parsing has finished only simple patterns remain. Re-nesting of
 pattern is performed at printing time. An easy way to see the result
 of the expansion is to toggle off the nesting performed at printing
-(use here :opt:`Set Printing Matching`), then by printing the term with :cmd:`Print`
+(use here :opt:`Printing Matching`), then by printing the term with :cmd:`Print`
 if the term is a constant, or using the command :cmd:`Check`.
 
 The extended ``match`` still accepts an optional *elimination predicate*
@@ -75,7 +75,7 @@ by:
 Multiple patterns
 -----------------
 
-Using multiple patterns in the definition of max lets us write:
+Using multiple patterns in the definition of ``max`` lets us write:
 
 .. coqtop:: in undo
 
@@ -273,7 +273,7 @@ This option (off by default) removes parameters from constructors in patterns:
      match l with
      | nil => nil
      | cons _ l' => l'
-     end)
+     end).
    Unset Asymmetric Patterns.
 
 Implicit arguments in patterns
@@ -430,7 +430,7 @@ become impossible branches. In an impossible branch, you can answer
 anything but False_rect unit has the advantage to be subterm of
 anything.
 
-To be concrete: the tail function can be written:
+To be concrete: the ``tail`` function can be written:
 
 .. coqtop:: in
 
@@ -591,24 +591,24 @@ generated expression and the original.
 Here is a summary of the error messages corresponding to each
 situation:
 
-.. exn:: The constructor @ident expects @num arguments
+.. exn:: The constructor @ident expects @num arguments.
 
    The variable ident is bound several times in pattern termFound a constructor
    of inductive type term while a constructor of term is expectedPatterns are
    incorrect (because constructors are not applied to the correct number of the
    arguments, because they are not linear or they are wrongly typed).
 
-.. exn:: Non exhaustive pattern-matching
+.. exn:: Non exhaustive pattern-matching.
 
    The pattern matching is not exhaustive.
 
 .. exn:: The elimination predicate term should be of arity @num (for non \
-         dependent case) or @num (for dependent case)
+         dependent case) or @num (for dependent case).
 
    The elimination predicate provided to match has not the expected arity.
 
 .. exn:: Unable to infer a match predicate
-         Either there is a type incompatibility or the problem involves dependencies
+         Either there is a type incompatibility or the problem involves dependencies.
 
    There is a type mismatch between the different branches. The user should
    provide an elimination predicate.

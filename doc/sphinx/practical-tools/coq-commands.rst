@@ -171,7 +171,7 @@ and ``coqtop``, unless stated otherwise:
   Coq's auto-generated name scheme with names of the form *ident0*, *ident1*,
   etc. The command ``Set Mangle Names`` turns the behavior on in a document,
   and ``Set Mangle Names Prefix "ident"`` changes the used prefix. This feature
-  s intended to be used as a linter for developments that want to be robust to
+  is intended to be used as a linter for developments that want to be robust to
   changes in the auto-generated name scheme. The options are provided to
   facilitate tracking down problems.
 :-compat *version*: Attempt to maintain some backward-compatibility
