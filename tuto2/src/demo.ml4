@@ -6,11 +6,7 @@
    TODO: update the part related to "Cmd6" once I get an answer to this question:
          https://sympa.inria.fr/sympa/arc/coqdev/2017-06/msg00037.html
 
-   TODO: figure out why does Summary.Local.ref function requre argument "name" ?
-         (Can it be any string?
-          Must it be a unique string (per each state variable?)
-          Must it be a unique string global (for all plugins)?)
-          What would happen if it were an empty string?
+   TODO: figure out why does Summary.Local.ref function requires argument "name" ?
 *)   
 
 (* -------------------------------------------------------------------------- *)
