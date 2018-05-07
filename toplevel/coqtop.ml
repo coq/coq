@@ -315,11 +315,12 @@ let compile cur_feeder opts ~echo ~f_in ~f_out =
   CoqworkmgrApi.giveback 1
 
 let compile_file cur_feeder opts (f_in, echo) =
+  let f_out = opts.compilation_output_name in
   if !Flags.beautify then
     Flags.with_option Flags.beautify_file
-      (fun f_in -> compile cur_feeder opts ~echo ~f_in ~f_out:None) f_in
+      (fun f_in -> compile cur_feeder opts ~echo ~f_in ~f_out) f_in
   else
-    compile cur_feeder opts ~echo ~f_in ~f_out:None
+    compile cur_feeder opts ~echo ~f_in ~f_out
 
 let compile_files cur_feeder opts =
   let compile_list = List.rev opts.compile_list in
