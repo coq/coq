@@ -24,3 +24,8 @@ val check_for_interrupt : unit -> unit
 val timeout : int -> ('a -> 'b) -> 'a -> exn -> 'b
 (** [timeout n f x e] tries to compute [f x], and if it fails to do so
     before [n] seconds, it raises [e] instead. *)
+
+(** Set a particular timeout function; warning, this is an internal
+   API and it is scheduled to go away. *)
+type timeout = { timeout : 'a 'b. int -> ('a -> 'b) -> 'a -> exn -> 'b }
+val set_timeout : timeout -> unit
