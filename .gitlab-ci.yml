@@ -1,4 +1,4 @@
-image: coqci/base:V2018-05-05
+image: coqci/base:V2018-05-07
 
 stages:
   - build

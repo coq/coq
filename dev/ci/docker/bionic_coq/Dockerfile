@@ -15,12 +15,13 @@ ENV NJOBS="2" \
     OPAMROOT=/root/.opamcache \
     OPAMROOTISOK="true"
 
+# Base opam is the set of base packages required by Coq
 ENV COMPILER="4.02.3" \
-    BASE_OPAM="num ocamlfind jbuilder"
+    BASE_OPAM="num ocamlfind jbuilder ounit"
 
 RUN opam init -a -y -j $NJOBS --compiler="$COMPILER" default https://opam.ocaml.org && eval $(opam config env) && opam update
 
-# Setup of the base switch
+# Setup of the base switch; CI_OPAM contains Coq's CI dependencies.
 ENV CAMLP5_VER="6.14" \
     COQIDE_OPAM="lablgtk.2.18.5 conf-gtksourceview.2" \
     CI_OPAM="menhir elpi ocamlgraph"
