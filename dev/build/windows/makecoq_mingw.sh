@@ -144,24 +144,24 @@ LOGTARGET=other
 
 # Log command output - take log target name from command name (like log1 make => log target is "<module>-make")
 log1() {
-  "$@" > "$LOGS/$LOGTARGET-$1.log" 2> "$LOGS/$LOGTARGET-$1.err"
+  "$@" > >(tee "$LOGS/$LOGTARGET-$1.log" | sed -e "s/^/$LOGTARGET-$1.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1.err" | sed -e "s/^/$LOGTARGET-$1.err: /" 1>&2)
 }
 
 # Log command output - take log target name from command name and first argument (like log2 make install => log target is "<module>-make-install")
 log2() {
-  "$@" > "$LOGS/$LOGTARGET-$1-$2.log" 2> "$LOGS/$LOGTARGET-$1-$2.err"
+  "$@" > >(tee "$LOGS/$LOGTARGET-$1-$2.log" | sed -e "s/^/$LOGTARGET-$1-$2.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1-$2.err" | sed -e "s/^/$LOGTARGET-$1-$2.err: /" 1>&2)
 }
 
 # Log command output - take log target name from command name and second argument (like log_1_3 ocaml setup.ml -configure => log target is "<module>-ocaml--configure")
 log_1_3() {
-  "$@" > "$LOGS/$LOGTARGET-$1-$3.log" 2> "$LOGS/$LOGTARGET-$1-$3.err"
+  "$@" > >(tee "$LOGS/$LOGTARGET-$1-$3.log" | sed -e "s/^/$LOGTARGET-$1-$3.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1-$3.err" | sed -e "s/^/$LOGTARGET-$1-$3.err: /" 1>&2)
 }
 
 # Log command output - log target name is first argument (like logn untar tar xvaf ... => log target is "<module>-untar")
 logn() {
   LOGTARGETEX=$1
   shift
-  "$@" > "$LOGS/$LOGTARGET-$LOGTARGETEX.log" 2> "$LOGS/$LOGTARGET-$LOGTARGETEX.err"
+  "$@" > >(tee "$LOGS/$LOGTARGET-$LOGTARGETEX.log" | sed -e "s/^/$LOGTARGET-$LOGTARGETEX.log: /") 2> >(tee "$LOGS/$LOGTARGET-$LOGTARGETEX.err" | sed -e "s/^/$LOGTARGET-$LOGTARGETEX.err: /" 1>&2)
 }
 
 ###################### 'UNFIX' SED #####################
@@ -954,9 +954,20 @@ function make_lablgtk {
 
     # lablgtk shows occasional errors with -j, so don't pass $MAKE_OPT
 
-    # See https://sympa.inria.fr/sympa/arc/caml-list/2015-10/msg00204.html for the make || true + strip
-    logn make-world-pre make world || true
-    "$TARGET_ARCH-strip.exe" --strip-unneeded src/dlllablgtk2.dll
+    # lablgtk binary needs to be stripped - otherwise flexdll goes wild
+    # Fix version 1: explicit strip after failed build - this randomly fails in CI
+    # See https://sympa.inria.fr/sympa/arc/caml-list/2015-10/msg00204.html
+    # logn make-world-pre make world || true
+    # $TARGET_ARCH-strip.exe --strip-unneeded src/dlllablgtk2.dll
+
+    # Fix version 2: Strip by passing linker argument rather than explicit call to strip
+    # See https://github.com/alainfrisch/flexdll/issues/6
+    # Argument to ocamlmklib: -ldopt "-link -Wl,-s"
+    # -ldopt is the okamlmklib linker prefix option
+    # -link is the flexlink linker prefix option
+    # -Wl, is the gcc (linker driver) linker prefix option
+    # -s is the gnu linker option for stripping symbols
+    # These changes are included in dev/build/windows/patches_coq/lablgtk-2.18.3.patch
 
     log2 make world
     log2 make install
