@@ -645,8 +645,8 @@ GEXTEND Gram
          t = class_rawexpr ->
           VernacCoercion (CAst.make ~loc:!@loc @@ ByNotation ntn, s, t)
 
-      | IDENT "Context"; c = binders ->
-	  VernacContext c
+      | IDENT "Context"; c = LIST1 binder ->
+          VernacContext (List.flatten c)
 
       | IDENT "Instance"; namesup = instance_name; ":";
 	 expl = [ "!" -> Decl_kinds.Implicit | -> Decl_kinds.Explicit ] ; t = operconstr LEVEL "200";
