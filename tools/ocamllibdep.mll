@@ -116,8 +116,18 @@ let error_cannot_parse s (i,j) =
   Printf.eprintf "File \"%s\", characters %i-%i: Syntax error\n" s i j;
   exit 1
 
+let same_path_opt s s' =
+  let nf s = (* ./foo/a.ml and foo/a.ml are the same file *)
+    if Filename.is_implicit s
+    then "." // s
+    else s
+  in
+  let s = match s with None -> "." | Some s -> nf s in
+  let s' = match s' with None -> "." | Some s' -> nf s' in
+  s = s'
+
 let warning_ml_clash x s suff s' suff' =
-  if suff = suff' then
+  if suff = suff' && not (same_path_opt s s') then
   eprintf
     "*** Warning: %s%s already found in %s (discarding %s%s)\n" x suff
     (match s with None -> "." | Some d -> d)
