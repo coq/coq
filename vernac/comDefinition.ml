@@ -90,7 +90,7 @@ let interp_definition pl bl poly red_option c ctypopt =
      Note: in program mode some evars may remain. *)
   let ctx = List.map Termops.(map_rel_decl (to_constr ~abort_on_undefined_evars:false evd)) ctx in
   let c = Term.it_mkLambda_or_LetIn (EConstr.to_constr ~abort_on_undefined_evars:false evd c) ctx in
-  let tyopt = Option.map (fun ty -> Term.it_mkProd_or_LetIn (EConstr.to_constr evd ty) ctx) tyopt in
+  let tyopt = Option.map (fun ty -> Term.it_mkProd_or_LetIn (EConstr.to_constr ~abort_on_undefined_evars:false evd ty) ctx) tyopt in
   (* Keep only useful universes. *)
   let uvars_fold uvars c =
     Univ.LSet.union uvars (universes_of_constr env evd (of_constr c))
@@ -118,7 +118,7 @@ let do_definition ~program_mode ident k univdecl bl red_option c ctypopt hook =
       assert(Univ.ContextSet.is_empty ctx);
       let typ = match ce.const_entry_type with
         | Some t -> t
-        | None -> EConstr.to_constr evd (Retyping.get_type_of env evd (EConstr.of_constr c))
+        | None -> EConstr.to_constr ~abort_on_undefined_evars:false evd (Retyping.get_type_of env evd (EConstr.of_constr c))
       in
       Obligations.check_evars env evd;
       let obls, _, c, cty =
