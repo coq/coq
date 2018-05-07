@@ -1,14 +1,3 @@
-(* This will be compilable once the following pull-requests:
-   - https://github.com/coq/coq/pull/759
-   - https://github.com/coq/coq/pull/761
-   will be merged.
-
-   TODO: update the part related to "Cmd6" once I get an answer to this question:
-         https://sympa.inria.fr/sympa/arc/coqdev/2017-06/msg00037.html
-
-   TODO: figure out why does Summary.Local.ref function requires argument "name" ?
-*)   
-
 (* -------------------------------------------------------------------------- *)
 (*                                                                            *)
 (*                            Initial ritual dance                            *)
