@@ -1,5 +1,11 @@
 DECLARE PLUGIN "tuto1_plugin"
 
+(* If we forget this line and include our own tactic definition using
+  TACTIC EXTEND, as below, then we get the strage error message
+  no implementation available for Tacentries, only when compiling
+  theories/Loader.v
+*)
+open Ltac_plugin
 open Pp
 (* This one is necessary, to avoid message about missing wit_string *)
 open Stdarg
@@ -121,4 +127,22 @@ VERNAC COMMAND EXTEND ExamplePrint CLASSIFIED AS QUERY
     (Termops.print_constr_env env evd
       (EConstr.of_constr
         (Simple_print.simple_body_access (Nametab.global r)))) ]
+END
+
+TACTIC EXTEND my_intro
+| [ "my_intro" ident(i) ] ->
+  [ Tactics.introduction ~check:false i]
+END
+
+(* if one write this:
+  VERNAC COMMAND EXTEND exploreproof CLASSIFIED AS QUERY
+  it gives an error message that is basically impossible to understand. *)
+
+VERNAC COMMAND EXTEND ExploreProof CLASSIFIED AS QUERY
+| [ "Cmd9" ] ->
+  [ let p = Proof_global.give_me_the_proof () in
+    let sigma, env = Pfedit.get_current_context () in
+    let pprf = Proof.partial_proof p in
+    Feedback.msg_notice
+      (Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf) ]
 END
