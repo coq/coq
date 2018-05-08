@@ -40,11 +40,7 @@ let error msg = CErrors.user_err Pp.(str msg)
 
 type protect_flag = Eval|Prot|Rec
 
-let tag_arg tag_rec map subs i c =
-  match map i with
-      Eval -> mk_clos subs c
-    | Prot -> mk_atom c
-    | Rec -> if Int.equal i (-1) then mk_clos subs c else tag_rec c
+type protection = Evd.evar_map -> EConstr.t -> GlobRef.t -> (Int.t -> protect_flag) option
 
 let global_head_of_constr sigma c = 
   let f, args = decompose_app sigma c in
@@ -55,32 +51,24 @@ let global_of_constr_nofail c =
   try global_of_constr c
   with Not_found -> VarRef (Id.of_string "dummy")
 
-let rec mk_clos_but f_map subs t =
-  let open Term in
-  match f_map (global_of_constr_nofail t) with
-    | Some map -> tag_arg (mk_clos_but f_map subs) map subs (-1) t
-    | None ->
-        (match Constr.kind t with
-            App(f,args) -> mk_clos_app_but f_map subs f args 0
-          | Prod _ -> mk_clos_deep (mk_clos_but f_map) subs t
-          | _ -> mk_atom t)
+let rec mk_clos_but f_map n t =
+  let (f, args) = Constr.decompose_appvect t in
+  match f_map (global_of_constr_nofail f) with
+  | Some tag ->
+      let map i t = tag_arg f_map n (tag i) t in
+      if Array.is_empty args then map (-1) f
+      else mk_red (FApp (map (-1) f, Array.mapi map args))
+  | None -> mk_atom t
 
-and mk_clos_app_but f_map subs f args n =
-  let open Constr in
-  if n >= Array.length args then mk_atom(mkApp(f, args))
-  else
-    let fargs, args' = Array.chop n args in
-    let f' = mkApp(f,fargs) in
-    match f_map (global_of_constr_nofail f') with
-    | Some map ->
-       let f i t = tag_arg (mk_clos_but f_map subs) map subs i t in
-       mk_red (FApp (f (-1) f', Array.mapi f args'))
-    | None -> mk_atom (mkApp (f, args))
+and tag_arg f_map n tag c = match tag with
+| Eval -> mk_clos (Esubst.subs_id n) c
+| Prot -> mk_atom c
+| Rec -> mk_clos_but f_map n c
 
 let interp_map l t =
   try Some(List.assoc_f GlobRef.equal t l) with Not_found -> None
 
-let protect_maps = ref String.Map.empty
+let protect_maps : protection String.Map.t ref = ref String.Map.empty
 let add_map s m = protect_maps := String.Map.add s m !protect_maps
 let lookup_map map =
   try String.Map.find map !protect_maps
@@ -90,8 +78,14 @@ let lookup_map map =
 let protect_red map env sigma c0 =
   let evars ev = Evarutil.safe_evar_value sigma ev in
   let c = EConstr.Unsafe.to_constr c0 in
-  EConstr.of_constr (kl (create_clos_infos ~evars all env) (create_tab ())
-    (mk_clos_but (lookup_map map sigma c0) (Esubst.subs_id 0) c));;
+  let tab = create_tab () in
+  let infos = create_clos_infos ~evars all env in
+  let map = lookup_map map sigma c0 in
+  let rec eval n c = match Constr.kind c with
+  | Prod (na, t, u) -> Constr.mkProd (na, eval n t, eval (n + 1) u)
+  | _ -> kl infos tab (mk_clos_but map n c)
+  in
+  EConstr.of_constr (eval 0 c)
 
 let protect_tac map =
   Tactics.reduct_option (protect_red map,DEFAULTcast) None
