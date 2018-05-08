@@ -7,12 +7,15 @@ How to write plugins in Coq
     - Example of function call to print a simple message.
     - To use it:
 
-<pre>
+```bash
     cd tuto0; make
     coqtop -I src -R theories Tuto0
-</pre>
+```
 
-    In the Coq session type:  `Require Tuto0.Loader. HelloWorld.`
+  In the Coq session type:
+```coq
+    Require Tuto0.Loader. HelloWorld.
+```
 
   # tuto1 : Ocaml to Coq communication
   Explore the memory of Coq, modify it
