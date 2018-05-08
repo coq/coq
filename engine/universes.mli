@@ -184,19 +184,18 @@ val normalize_univ_variables : universe_opt_subst ->
 
 val normalize_univ_variable : 
   find:(Level.t -> Universe.t) ->
-  update:(Level.t -> Universe.t -> Universe.t) ->
   Level.t -> Universe.t
 
-val normalize_univ_variable_opt_subst : universe_opt_subst ref ->
+val normalize_univ_variable_opt_subst : universe_opt_subst ->
   (Level.t -> Universe.t)
 
-val normalize_univ_variable_subst : universe_subst ref ->
+val normalize_univ_variable_subst : universe_subst ->
   (Level.t -> Universe.t)
 
-val normalize_universe_opt_subst : universe_opt_subst ref ->
+val normalize_universe_opt_subst : universe_opt_subst ->
   (Universe.t -> Universe.t)
 
-val normalize_universe_subst : universe_subst ref ->
+val normalize_universe_subst : universe_subst ->
   (Universe.t -> Universe.t)
 
 (** Create a fresh global in the global environment, without side effects.

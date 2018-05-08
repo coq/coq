@@ -156,7 +156,7 @@ let process_universe_constraints ctx cstrs =
   let univs = ctx.uctx_universes in
   let vars = ref ctx.uctx_univ_variables in
   let weak = ref ctx.uctx_weak_constraints in
-  let normalize = normalize_univ_variable_opt_subst vars in
+  let normalize u = normalize_univ_variable_opt_subst !vars u in
   let nf_constraint = function
     | ULub (u, v) -> ULub (level_subst_of normalize u, level_subst_of normalize v)
     | UWeak (u, v) -> UWeak (level_subst_of normalize u, level_subst_of normalize v)
