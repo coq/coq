@@ -10,10 +10,7 @@
 
 # Makefile for the Coq documentation
 
-# To compile documentation, you need the following tools:
-# Dvi: latex (latex2e), bibtex, makeindex
-# Pdf: pdflatex
-# Html: hevea (http://hevea.inria.fr) >= 1.05
+# Read INSTALL.doc to learn about the dependencies
 
 # The main entry point :
 
@@ -32,16 +29,7 @@ BIBTEX:=BIBINPUTS=.: bibtex -min-crossrefs=10
 MAKEINDEX:=makeindex
 PDFLATEX:=pdflatex
 DVIPS:=dvips
-HEVEA:=hevea
-HEVEAOPTS:=-fix -exec xxdate.exe
-HEVEALIB:=/usr/local/lib/hevea:/usr/lib/hevea
 HTMLSTYLE:=coqremote
-export TEXINPUTS:=$(HEVEALIB):
-ifdef COQDOC_NOBOOT
-COQTEXOPTS:=-n 72 -sl -small
-else
-COQTEXOPTS:=-boot -n 72 -sl -small
-endif
 
 # Sphinx-related variables
 SPHINXOPTS= -j4
@@ -57,10 +45,10 @@ DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
 ### General rules
 ######################################################################
 
-.PHONY: doc sphinxdoc-html doc-pdf doc-ps tutorial
-.PHONY: stdlib full-stdlib rectutorial
+.PHONY: doc sphinxdoc-html doc-pdf doc-ps
+.PHONY: stdlib full-stdlib
 
-doc: sphinx tutorial rectutorial stdlib
+doc: sphinx stdlib
 
 sphinx: coq
 	$(SHOW)'SPHINXBUILD doc/sphinx'
@@ -69,19 +57,13 @@ sphinx: coq
 	@echo "Build finished. The HTML pages are in $(SPHINXBUILDDIR)/html."
 
 doc-html:\
-  doc/tutorial/Tutorial.v.html \
-  doc/stdlib/html/index.html doc/RecTutorial/RecTutorial.html
+  doc/stdlib/html/index.html
 
 doc-pdf:\
-  doc/tutorial/Tutorial.v.pdf \
-  doc/stdlib/Library.pdf doc/RecTutorial/RecTutorial.pdf
+  doc/stdlib/Library.pdf
 
 doc-ps:\
-  doc/tutorial/Tutorial.v.ps \
-  doc/stdlib/Library.ps doc/RecTutorial/RecTutorial.ps
-
-tutorial: \
-  doc/tutorial/Tutorial.v.html doc/tutorial/Tutorial.v.ps doc/tutorial/Tutorial.v.pdf
+  doc/stdlib/Library.ps
 
 stdlib: \
   doc/stdlib/html/index.html doc/stdlib/Library.ps doc/stdlib/Library.pdf
@@ -89,20 +71,9 @@ stdlib: \
 full-stdlib: \
   doc/stdlib/html/index.html doc/stdlib/FullLibrary.ps doc/stdlib/FullLibrary.pdf
 
-rectutorial: doc/RecTutorial/RecTutorial.html \
-  doc/RecTutorial/RecTutorial.ps doc/RecTutorial/RecTutorial.pdf
-
 ######################################################################
 ### Implicit rules
 ######################################################################
-
-ifdef QUICK
-%.v.tex: %.tex
-	$(COQTEX) $(COQTEXOPTS) $<
-else
-%.v.tex: %.tex $(COQTEX) $(COQTOPEXE) $(ALLVO)
-	$(COQTEX) $(COQTEXOPTS) $<
-endif
 
 %.ps: %.dvi
 	(cd `dirname $<`; $(DVIPS) -q -o `basename $@` `basename $<`)
@@ -122,23 +93,6 @@ SHOWMAKEINDEXERROR=egrep '^!! Input index error|^\*\* Input style error|^   --'
 
 doc/common/version.tex: config/Makefile
 	printf '\\newcommand{\\coqversion}{$(VERSION)}' > doc/common/version.tex
-
-######################################################################
-# Tutorial
-######################################################################
-
-doc/tutorial/Tutorial.v.dvi: $(DOCCOMMON) doc/tutorial/Tutorial.v.tex
-	(cd doc/tutorial;\
-	$(LATEX) -interaction=batchmode Tutorial.v;\
-	../tools/show_latex_messages Tutorial.v.log)
-
-doc/tutorial/Tutorial.v.pdf: $(DOCCOMMON) doc/tutorial/Tutorial.v.tex
-	(cd doc/tutorial;\
-	$(PDFLATEX) -interaction=batchmode Tutorial.v.tex;\
-	../tools/show_latex_messages Tutorial.v.log)
-
-doc/tutorial/Tutorial.v.html: $(DOCCOMMON) doc/tutorial/Tutorial.v.tex
-	(cd doc/tutorial; $(HEVEA) $(HEVEAOPTS) Tutorial.v)
 
 ######################################################################
 # Standard library
@@ -214,26 +168,6 @@ doc/stdlib/FullLibrary.pdf: $(DOCCOMMON) doc/stdlib/FullLibrary.coqdoc.tex doc/s
 	../tools/show_latex_messages -no-overfull FullLibrary.log)
 
 ######################################################################
-# Tutorial on inductive types
-######################################################################
-
-doc/RecTutorial/RecTutorial.dvi: doc/common/version.tex doc/common/title.tex doc/RecTutorial/RecTutorial.tex
-	(cd doc/RecTutorial;\
-	$(LATEX) -interaction=batchmode RecTutorial;\
-	$(BIBTEX) -terse RecTutorial;\
-	$(LATEX) -interaction=batchmode RecTutorial > /dev/null;\
-	$(LATEX) -interaction=batchmode RecTutorial > /dev/null;\
-	../tools/show_latex_messages RecTutorial.log)
-
-doc/RecTutorial/RecTutorial.pdf: doc/common/version.tex doc/common/title.tex doc/RecTutorial/RecTutorial.dvi
-	(cd doc/RecTutorial;\
-	$(PDFLATEX) -interaction=batchmode RecTutorial.tex;\
-	../tools/show_latex_messages RecTutorial.log)
-
-doc/RecTutorial/RecTutorial.html: doc/RecTutorial/RecTutorial.tex
-	(cd doc/RecTutorial; $(HEVEA) $(HEVEAOPTS) RecTutorial)
-
-######################################################################
 # Install all documentation files
 ######################################################################
 
@@ -250,17 +184,11 @@ install-doc-meta:
 install-doc-html: 
 	$(MKDIR) $(FULLDOCDIR)/html/stdlib
 	$(INSTALLLIB) doc/stdlib/html/* $(FULLDOCDIR)/html/stdlib
-	$(INSTALLLIB) doc/RecTutorial/RecTutorial.html $(FULLDOCDIR)/html/RecTutorial.html
-	$(INSTALLLIB) doc/tutorial/Tutorial.v.html $(FULLDOCDIR)/html/Tutorial.html
 
 install-doc-printable: 
 	$(MKDIR) $(FULLDOCDIR)/ps $(FULLDOCDIR)/pdf
 	$(INSTALLLIB) doc/stdlib/Library.pdf $(FULLDOCDIR)/pdf
 	$(INSTALLLIB) doc/stdlib/Library.ps $(FULLDOCDIR)/ps
-	$(INSTALLLIB) doc/tutorial/Tutorial.v.pdf $(FULLDOCDIR)/pdf/Tutorial.pdf
-	$(INSTALLLIB) doc/RecTutorial/RecTutorial.pdf $(FULLDOCDIR)/pdf/RecTutorial.pdf
-	$(INSTALLLIB) doc/tutorial/Tutorial.v.ps $(FULLDOCDIR)/ps/Tutorial.ps
-	$(INSTALLLIB) doc/RecTutorial/RecTutorial.ps $(FULLDOCDIR)/ps/RecTutorial.ps
 
 install-doc-sphinx:
 	$(MKDIR) $(FULLDOCDIR)/sphinx
