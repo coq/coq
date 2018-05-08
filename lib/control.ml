@@ -85,4 +85,7 @@ let timeout_fun = match Sys.os_type with
 | "Unix" | "Cygwin" -> { timeout = unix_timeout }
 | _ -> { timeout = windows_timeout }
 
-let timeout n f e = timeout_fun.timeout n f e
+let timeout_fun_ref = ref timeout_fun
+let set_timeout f = timeout_fun_ref := f
+
+let timeout n f e = !timeout_fun_ref.timeout n f e
