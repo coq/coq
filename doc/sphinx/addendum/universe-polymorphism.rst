@@ -412,7 +412,7 @@ end of a definition or proof, we check that the only remaining
 universes are the ones declared. In the term and in general in proof
 mode, introduced universe names can be referred to in terms. Note that
 local universe names shadow global universe names. During a proof, one
-can use :ref:`Show Universes <ShowUniverses>` to display the current context of universes.
+can use :cmd:`Show Universes` to display the current context of universes.
 
 Definitions can also be instantiated explicitly, giving their full
 instance:
