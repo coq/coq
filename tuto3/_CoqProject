@@ -1,0 +1,7 @@
+-R theories Tuto3
+-I src
+
+theories/Loader.v
+
+src/g_tuto3.ml4
+src/tuto3_plugin.mlpack
