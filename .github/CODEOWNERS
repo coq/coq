@@ -71,9 +71,9 @@
 /engine/          @ppedrot
 # Secondary maintainer @aspiwack
 
-/engine/universes.ml{,i} @SkySkimmer
-/engine/univops.ml{,i} @SkySkimmer
-/engine/uState.ml{,i} @SkySkimmer
+/engine/universes.* @SkySkimmer
+/engine/univops.* @SkySkimmer
+/engine/uState.* @SkySkimmer
 # Secondary maintainer @mattam82
 
 ########## Grammar macros ##########
@@ -99,9 +99,9 @@
 /kernel/byterun/  @maximedenes
 # Secondary maintainer @silene
 
-/kernel/sorts.ml{,i} @SkySkimmer
-/kernel/uGraph.ml{,i} @SkySkimmer
-/kernel/univ.ml{,i} @SkySkimmer
+/kernel/sorts.* @SkySkimmer
+/kernel/uGraph.* @SkySkimmer
+/kernel/univ.* @SkySkimmer
 # Secondary maintainer @mattam82
 
 ########## Library ##########
