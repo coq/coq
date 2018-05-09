@@ -48,5 +48,3 @@ How to write plugins in Coq
   - Using these terms in tactics
 
   compilation and loading must be performed as for `tuto0`.
-    
-    
