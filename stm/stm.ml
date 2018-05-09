@@ -2113,12 +2113,6 @@ let delegate name =
   || VCS.is_vio_doc ()
   || !cur_opt.async_proofs_full
 
-let warn_deprecated_nested_proofs =
-  CWarnings.create ~name:"deprecated-nested-proofs" ~category:"deprecated"
-         (fun () ->
-          strbrk ("Nested proofs are deprecated and will "^
-                    "stop working in a future Coq version"))
-
 let collect_proof keep cur hd brkind id =
  stm_prerr_endline (fun () -> "Collecting proof ending at "^Stateid.to_string id);
  let no_name = "" in
@@ -2200,8 +2194,7 @@ let collect_proof keep cur hd brkind id =
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
         `MaybeASync (parent last, accn, name, delegate name)
-    | `Sideff _ ->
-       warn_deprecated_nested_proofs ();
+    | `Sideff (CherryPickEnv,_) ->
         `Sync (no_name,`NestedProof)
     | _ -> `Sync (no_name,`Unknown) in
  let make_sync why = function
