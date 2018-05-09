@@ -200,7 +200,7 @@ need to force the parsing level of y, as follows.
 For the sake of factorization with Coq predefined rules, simple rules
 have to be observed for notations starting with a symbol: e.g. rules
 starting with “{” or “(” should be put at level 0. The list of Coq
-predefined notations can be found in Chapter 3.
+predefined notations can be found in Chapter :ref:`thecoqlibrary`.
 
 .. cmd:: Print Grammar constr.
 

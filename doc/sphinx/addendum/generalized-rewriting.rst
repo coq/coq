@@ -179,7 +179,7 @@ A parametric relation :g:`Aeq: forall (y1 : β1 ... ym : βm )`,
 :g:`relation (A t1 ... tn)` over :g:`(A : αi -> ... αn -> Type)` can be
 declared with the following command:
 
-.. cmd::  Add Parametric Relation (x1 : T1) ... (xn : Tk) : (A t1 ... tn) (Aeq t′1 ... t′m ) {? reflexivity proved by refl} {? symmetry proved by sym} {? transitivity proved by trans} as @ident.
+.. cmd::  Add Parametric Relation (x1 : T1) ... (xn : Tk) : (A t1 ... tn) (Aeq t′1 ... t′m ) {? reflexivity proved by refl} {? symmetry proved by sym} {? transitivity proved by trans} as @ident
 
 after having required the ``Setoid`` module with the ``Require Setoid``
 command.
@@ -218,15 +218,15 @@ For Leibniz equality, we may declare:
     [reflexivity proved by @refl_equal A]
   ...
 
-Some tactics (``reflexivity``, ``symmetry``, ``transitivity``) work only on
+Some tactics (:tacn:`reflexivity`, :tacn:`symmetry`, :tacn:`transitivity`) work only on
 relations that respect the expected properties. The remaining tactics
-(``replace``, ``rewrite`` and derived tactics such as ``autorewrite``) do not
+(`replace`, :tacn:`rewrite` and derived tactics such as :tacn:`autorewrite`) do not
 require any properties over the relation. However, they are able to
 replace terms with related ones only in contexts that are syntactic
 compositions of parametric morphism instances declared with the
 following command.
 
-.. cmd:: Add Parametric Morphism (x1 : T1 ) ... (xk : Tk ) : (f t1 ... tn ) with signature sig as @ident.
+.. cmd:: Add Parametric Morphism (x1 : T1 ) ... (xk : Tk ) : (f t1 ... tn ) with signature sig as @ident
 
 The command declares ``f`` as a parametric morphism of signature ``sig``. The
 identifier ``id`` gives a unique name to the morphism and it is used as
@@ -317,7 +317,7 @@ instance mechanism. The behavior on section close is to generalize the
 instances by the variables of the section (and possibly hypotheses
 used in the proofs of instance declarations) but not to export them in
 the rest of the development for proof search. One can use the
-``Existing Instance`` command to do so outside the section, using the name of the
+cmd:`Existing Instance` command to do so outside the section, using the name of the
 declared morphism suffixed by ``_Morphism``, or use the ``Global`` modifier
 for the corresponding class instance declaration
 (see :ref:`First Class Setoids and Morphisms <first-class-setoids-and-morphisms>`) at
@@ -427,7 +427,7 @@ equality over ordered lists) ``set_eq ==> set_eq ==> set_eq``
 ``multiset_eq ==> multiset_eq ==> multiset_eq`` (``multiset_eq``
 being the equality over unordered lists).
 
-To declare multiple signatures for a morphism, repeat the ``Add Morphism``
+To declare multiple signatures for a morphism, repeat the :cmd:`Add Morphism`
 command.
 
 When morphisms have multiple signatures it can be the case that a
@@ -530,8 +530,8 @@ Tactics enabled on user provided relations
 
 The following tactics, all prefixed by ``setoid_``, deal with arbitrary
 registered relations and morphisms. Moreover, all the corresponding
-unprefixed tactics (i.e. ``reflexivity``, ``symmetry``, ``transitivity``,
-``replace``, ``rewrite``) have been extended to fall back to their prefixed
+unprefixed tactics (i.e. :tacn:`reflexivity`, :tacn:`symmetry`, :tacn:`transitivity`,
+:tacn:`replace`, :tacn:`rewrite`) have been extended to fall back to their prefixed
 counterparts when the relation involved is not Leibniz equality.
 Notice, however, that using the prefixed tactics it is possible to
 pass additional arguments such as ``using relation``.
@@ -564,21 +564,23 @@ on a given type.
 
 Every derived tactic that is based on the unprefixed forms of the
 tactics considered above will also work up to user defined relations.
-For instance, it is possible to register hints for ``autorewrite`` that
+For instance, it is possible to register hints for :tacn:`autorewrite` that
 are not proof of Leibniz equalities. In particular it is possible to
-exploit ``autorewrite`` to simulate normalization in a term rewriting
+exploit :tacn:`autorewrite` to simulate normalization in a term rewriting
 system up to user defined equalities.
 
 
 Printing relations and morphisms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``Print Instances`` command can be used to show the list of currently
+.. cmd:: Print Instances
+
+This command can be used to show the list of currently
 registered ``Reflexive`` (using ``Print Instances Reflexive``), ``Symmetric``
 or ``Transitive`` relations, Equivalences, PreOrders, PERs, and Morphisms
 (implemented as ``Proper`` instances). When the rewriting tactics refuse
 to replace a term in a context because the latter is not a composition
-of morphisms, the ``Print Instances`` commands can be useful to understand
+of morphisms, the :cmd:`Print Instances` command can be useful to understand
 what additional morphisms should be registered.
 
 
@@ -596,7 +598,7 @@ packing together the reflexivity, symmetry and transitivity lemmas).
 Notice that the syntax is not completely backward compatible since the
 identifier was not required.
 
-.. cmd:: Add Morphism f : @ident.
+.. cmd:: Add Morphism f : @ident
 
 The latter command also is restricted to the declaration of morphisms
 without parameters. It is not fully backward compatible since the
@@ -610,11 +612,11 @@ Notice that several limitations of the old implementation have been
 lifted. In particular, it is now possible to declare several relations
 with the same carrier and several signatures for the same morphism.
 Moreover, it is now also possible to declare several morphisms having
-the same signature. Finally, the replace and rewrite tactics can be
+the same signature. Finally, the :tacn:`replace` and :tacn:`rewrite` tactics can be
 used to replace terms in contexts that were refused by the old
 implementation. As discussed in the next section, the semantics of the
-new ``setoid_rewrite`` command differs slightly from the old one and
-``rewrite``.
+new :tacn:`setoid_rewrite` tactic differs slightly from the old one and
+tacn:`rewrite`.
 
 
 Extensions
@@ -624,8 +626,9 @@ Extensions
 Rewriting under binders
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-warning:: Due to compatibility issues, this feature is enabled only
-when calling the ``setoid_rewrite`` tactics directly and not ``rewrite``.
+.. warning::
+   Due to compatibility issues, this feature is enabled only
+   when calling the :tacn:`setoid_rewrite` tactic directly and not :tacn:`rewrite`.
 
 To be able to rewrite under binding constructs, one must declare
 morphisms with respect to pointwise (setoid) equivalence of functions.
@@ -672,12 +675,12 @@ where ``list_equiv`` implements an equivalence on lists parameterized by
 an equivalence on the elements.
 
 Note that when one does rewriting with a lemma under a binder using
-``setoid_rewrite``, the application of the lemma may capture the bound
+:tacn:`setoid_rewrite`, the application of the lemma may capture the bound
 variable, as the semantics are different from rewrite where the lemma
-is first matched on the whole term. With the new ``setoid_rewrite``,
+is first matched on the whole term. With the new :tacn:`setoid_rewrite`,
 matching is done on each subterm separately and in its local
 environment, and all matches are rewritten *simultaneously* by
-default. The semantics of the previous ``setoid_rewrite`` implementation
+default. The semantics of the previous :tacn:`setoid_rewrite` implementation
 can almost be recovered using the ``at 1`` modifier.
 
 
@@ -710,7 +713,7 @@ defined constants as transparent by default. This may slow down the
 resolution due to a lot of unifications (all the declared ``Proper``
 instances are tried at each node of the search tree). To speed it up,
 declare your constant as rigid for proof search using the command
-``Typeclasses Opaque`` (see :ref:`TypeclassesTransparent`).
+:cmd:`Typeclasses Opaque`.
 
 Strategies for rewriting
 ------------------------
@@ -809,8 +812,8 @@ strategy. Their counterparts ``bottomup`` and ``topdown`` perform as many
 rewritings as possible, starting from the bottom or the top of the
 term.
 
-Hint databases created for ``autorewrite`` can also be used
-by ``rewrite_strat`` using the ``hints`` strategy that applies any of the
+Hint databases created for :tacn:`autorewrite` can also be used
+by :tacn:`rewrite_strat` using the ``hints`` strategy that applies any of the
 lemmas at the current subterm. The ``terms`` strategy takes the lemma
 names directly as arguments. The ``eval`` strategy expects a reduction
 expression (see :ref:`performingcomputations`) and succeeds

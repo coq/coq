@@ -34,7 +34,7 @@ terms of λ-calculus, known as the *Curry-Howard isomorphism*
 terms are called *proof terms*.
 
 
-.. exn:: No focused proof
+.. exn:: No focused proof.
 
 Coq raises this error message when one attempts to use a proof editing command
 out of the proof editing mode.
@@ -49,7 +49,7 @@ the assertion of a theorem using an assertion command like :cmd:`Theorem`. The
 list of assertion commands is given in Section :ref:`Assertions`. The command
 :cmd:`Goal` can also be used.
 
-.. cmd:: Goal @form.
+.. cmd:: Goal @form
 
 This is intended for quick assertion of statements, without knowing in
 advance which name to give to the assertion, typically for quick
@@ -68,7 +68,7 @@ proof term to the declared name of the original goal. This name is
 added to the environment as an opaque constant.
 
 
-.. exn:: Attempt to save an incomplete proof
+.. exn:: Attempt to save an incomplete proof.
 
 .. note::
 
@@ -81,34 +81,36 @@ proof term is completely rechecked at this point, one may have to wait
 a while when the proof is large. In some exceptional cases one may
 even incur a memory overflow.
 
-.. cmdv:: Defined.
+.. cmdv:: Defined
    :name: Defined (interactive proof)
 
 Defines the proved term as a transparent constant.
 
-.. cmdv:: Save @ident.
+.. cmdv:: Save @ident
 
 Forces the name of the original goal to be :n:`@ident`. This
 command (and the following ones) can only be used if the original goal
 has been opened using the ``Goal`` command.
 
-.. cmd:: Admitted.
+.. cmd:: Admitted
    :name: Admitted (interactive proof)
 
-This command is available in interactive editing proof mode to give up
+This command is available in interactive editing mode to give up
 the current proof and declare the initial goal as an axiom.
 
-.. cmd:: Proof @term.
+.. cmd:: Proof @term
    :name: Proof `term`
 
 This command applies in proof editing mode. It is equivalent to
 
-.. cmd:: exact @term. Qed.
+.. coqtop:: in
+
+   exact @term. Qed.
 
 That is, you have to give the full proof in one gulp, as a
 proof term (see Section :ref:`applyingtheorems`).
 
-.. cmdv:: Proof.
+.. cmdv:: Proof
    :name: Proof (interactive proof)
 
 Is a noop which is useful to delimit the sequence of tactic commands
@@ -121,7 +123,7 @@ See also: ``Proof with tactic.`` in Section
 :ref:`tactics-implicit-automation`.
 
 
-.. cmd:: Proof using @ident1 ... @identn.
+.. cmd:: Proof using @ident1 ... @identn
 
 This command applies in proof editing mode. It declares the set of
 section variables (see :ref:`gallina-assumptions`) used by the proof. At ``Qed`` time, the
@@ -133,23 +135,23 @@ example if ``T`` is variable and a is a variable of type ``T``, the commands
 ``Proof using a`` and ``Proof using T a``` are actually equivalent.
 
 
-.. cmdv:: Proof using @ident1 ... @identn with @tactic.
+.. cmdv:: Proof using @ident1 ... @identn with @tactic
 
 in Section :ref:`tactics-implicit-automation`.
 
-.. cmdv:: Proof using All.
+.. cmdv:: Proof using All
 
 Use all section variables.
 
 
-.. cmdv:: Proof using Type.
+.. cmdv:: Proof using Type
 
-.. cmdv:: Proof using.
+.. cmdv:: Proof using
 
 Use only section variables occurring in the statement.
 
 
-.. cmdv:: Proof using Type*.
+.. cmdv:: Proof using Type*
 
 The ``*`` operator computes the forward transitive closure. E.g. if the
 variable ``H`` has type ``p < 5`` then ``H`` is in ``p*`` since ``p`` occurs in the type
@@ -157,21 +159,21 @@ of ``H``. ``Type*`` is the forward transitive closure of the entire set of
 section variables occurring in the statement.
 
 
-.. cmdv:: Proof using -(@ident1 ... @identn).
+.. cmdv:: Proof using -(@ident1 ... @identn)
 
 Use all section variables except :n:`@ident1` ... :n:`@identn`.
 
 
-.. cmdv:: Proof using @collection1 + @collection2 .
+.. cmdv:: Proof using @collection1 + @collection2
 
 
-.. cmdv:: Proof using @collection1 - @collection2 .
+.. cmdv:: Proof using @collection1 - @collection2
 
 
-.. cmdv:: Proof using @collection - ( @ident1 ... @identn ).
+.. cmdv:: Proof using @collection - ( @ident1 ... @identn )
 
 
-.. cmdv:: Proof using @collection * .
+.. cmdv:: Proof using @collection *
 
 Use section variables being, respectively, in the set union, set
 difference, set complement, set forward transitive closure. See
@@ -185,14 +187,14 @@ Proof using options
 The following options modify the behavior of ``Proof using``.
 
 
-.. opt:: Default Proof Using "@expression".
+.. opt:: Default Proof Using "@expression"
 
    Use :n:`@expression` as the default ``Proof``` using value. E.g. ``Set Default
    Proof Using "a b"``. will complete all ``Proof`` commands not followed by a
    using part with using ``a`` ``b``.
 
 
-.. opt:: Suggest Proof Using.
+.. opt:: Suggest Proof Using
 
    When ``Qed`` is performed, suggest a using annotation if the user did not
    provide one.
@@ -232,29 +234,29 @@ Define the collection named "Many" containing the set difference of
 "Fewer" and the unnamed collection ``x`` ``y``
 
 
-.. cmd:: Abort.
+.. cmd:: Abort
 
 This command cancels the current proof development, switching back to
 the previous proof development, or to the |Coq| toplevel if no other
 proof was edited.
 
 
-.. exn:: No focused proof (No proof-editing in progress)
+.. exn:: No focused proof (No proof-editing in progress).
 
 
 
-.. cmdv::  Abort @ident.
+.. cmdv::  Abort @ident
 
 Aborts the editing of the proof named :n:`@ident`.
 
-.. cmdv:: Abort All.
+.. cmdv:: Abort All
 
 Aborts all current goals, switching back to the |Coq|
 toplevel.
 
 
 
-.. cmd:: Existential @num := @term.
+.. cmd:: Existential @num := @term
 
 This command instantiates an existential variable. :n:`@num` is an index in
 the list of uninstantiated existential variables displayed by ``Show
@@ -271,7 +273,7 @@ See also: ``instantiate (num:= term).`` in Section
 See also: ``Grab Existential Variables.`` below.
 
 
-.. cmd:: Grab Existential Variables.
+.. cmd:: Grab Existential Variables
 
 This command can be run when a proof has no more goal to be solved but
 has remaining uninstantiated existential variables. It takes every
@@ -281,84 +283,80 @@ uninstantiated existential variable and turns it into a goal.
 Navigation in the proof tree
 --------------------------------
 
+.. cmd:: Undo
 
-.. cmd:: Undo.
+   This command cancels the effect of the last command. Thus, it
+   backtracks one step.
 
-This command cancels the effect of the last command. Thus, it
-backtracks one step.
+.. cmdv:: Undo @num
 
+   Repeats Undo :n:`@num` times.
 
-.. cmdv:: Undo @num.
-
-Repeats Undo :n:`@num` times.
-
-.. cmdv:: Restart.
+.. cmdv:: Restart
    :name: Restart
 
-This command restores the proof editing process to the original goal.
+   This command restores the proof editing process to the original goal.
 
+   .. exn:: No focused proof to restart.
 
-.. exn:: No focused proof to restart
+.. cmd:: Focus
 
+   This focuses the attention on the first subgoal to prove and the
+   printing of the other subgoals is suspended until the focused subgoal
+   is solved or unfocused. This is useful when there are many current
+   subgoals which clutter your screen.
 
-.. cmd:: Focus.
+.. cmdv:: Focus @num
 
-This focuses the attention on the first subgoal to prove and the
-printing of the other subgoals is suspended until the focused subgoal
-is solved or unfocused. This is useful when there are many current
-subgoals which clutter your screen.
+   This focuses the attention on the :n:`@num` th subgoal to prove.
 
+   .. deprecated:: 8.8
 
-.. cmdv:: Focus @num.
+      Prefer the use of bullets or
+      focusing brackets instead, including :n:`@num : %{`
 
-This focuses the attention on the :n:`@num` th subgoal to
-prove.
+.. cmd:: Unfocus
 
-*This command is deprecated since 8.8*: prefer the use of bullets or
-focusing brackets instead, including :n:`@num : %{`
+   This command restores to focus the goal that were suspended by the
+   last ``Focus`` command.
 
-.. cmd:: Unfocus.
+   .. deprecated:: 8.8
 
-This command restores to focus the goal that were suspended by the
-last ``Focus`` command.
+.. cmd:: Unfocused
 
-*This command is deprecated since 8.8.*
-
-.. cmd:: Unfocused.
-
-Succeeds if the proof is fully unfocused, fails is there are some
-goals out of focus.
+   Succeeds if the proof is fully unfocused, fails if there are some
+   goals out of focus.
 
 .. _curly-braces:
 
 .. cmd:: %{ %| %}
 
-The command ``{`` (without a terminating period) focuses on the first
-goal, much like ``Focus.`` does, however, the subproof can only be
-unfocused when it has been fully solved ( *i.e.* when there is no
-focused goal left). Unfocusing is then handled by ``}`` (again, without a
-terminating period). See also example in next section.
+   The command ``{`` (without a terminating period) focuses on the first
+   goal, much like ``Focus.`` does, however, the subproof can only be
+   unfocused when it has been fully solved ( *i.e.* when there is no
+   focused goal left). Unfocusing is then handled by ``}`` (again, without a
+   terminating period). See also example in next section.
 
-Note that when a focused goal is proved a message is displayed
-together with a suggestion about the right bullet or ``}`` to unfocus it
-or focus the next one.
+   Note that when a focused goal is proved a message is displayed
+   together with a suggestion about the right bullet or ``}`` to unfocus it
+   or focus the next one.
 
 .. cmdv:: @num: %{
 
-This focuses on the :n:`@num` th subgoal to prove.
+   This focuses on the :n:`@num` th subgoal to prove.
 
-Error messages:
+   Error messages:
 
-.. exn:: This proof is focused, but cannot be unfocused this way
+   .. exn:: This proof is focused, but cannot be unfocused this way.
 
-You are trying to use ``}`` but the current subproof has not been fully solved.
+      You are trying to use ``}`` but the current subproof has not been fully solved.
 
-.. exn:: No such goal
-   :name: No such goal (focusing)
+   .. exn:: No such goal.
+      :name: No such goal. (Focusing)
 
-.. exn:: Brackets only support the single numbered goal selector
+   .. exn:: Brackets only support the single numbered goal selector.
 
-See also error messages about bullets below.
+      See also error messages about bullets below.
 
 .. _bullets:
 
@@ -409,11 +407,11 @@ The following example script illustrates all these features:
     assumption.
 
 
-.. exn:: Wrong bullet @bullet1 : Current bullet @bullet2 is not finished.
+.. exn:: Wrong bullet @bullet1: Current bullet @bullet2 is not finished.
 
 Before using bullet :n:`@bullet1` again, you should first finish proving the current focused goal. Note that :n:`@bullet1` and :n:`@bullet2` may be the same.
 
-.. exn:: Wrong bullet @bullet1 : Bullet @bullet2 is mandatory here.
+.. exn:: Wrong bullet @bullet1: Bullet @bullet2 is mandatory here.
 
 You must put :n:`@bullet2` to focus next goal. No other bullet is allowed here.
 
@@ -427,17 +425,12 @@ You just finished a goal focused by ``{``, you must unfocus it with ``}``.
 
 Set Bullet Behavior
 ```````````````````
+.. opt:: Bullet Behavior  %( "None" %| "Strict Subproofs" %)
 
-The bullet behavior can be controlled by the following commands.
+   This option controls the bullet behavior and can take two possible values:
 
-.. opt:: Bullet Behavior "None"
-
-This makes bullets inactive.
-
-.. opt:: Bullet Behavior "Strict Subproofs"
-
-This makes bullets active (this is the default behavior).
-
+   - "None": this makes bullets inactive.
+   - "Strict Subproofs": this makes bullets active (this is the default behavior).
 
 .. _requestinginformation:
 
@@ -445,7 +438,7 @@ Requesting information
 ----------------------
 
 
-.. cmd:: Show.
+.. cmd:: Show
 
 This command displays the current goals.
 
@@ -454,10 +447,10 @@ This command displays the current goals.
 
 Displays only the :n:`@num`-th subgoal.
 
-.. exn:: No such goal
-.. exn:: No focused proof
+.. exn:: No such goal.
+.. exn:: No focused proof.
 
-.. cmdv:: Show @ident.
+.. cmdv:: Show @ident
 
 Displays the named goal :n:`@ident`. This is useful in
 particular to display a shelved goal but only works if the
@@ -472,7 +465,7 @@ corresponding existential variable has been named by the user
     eexists ?[n].
     Show n.
 
-.. cmdv:: Show Script.
+.. cmdv:: Show Script
 
 Displays the whole list of tactics applied from the
 beginning of the current proof. This tactics script may contain some
@@ -480,7 +473,7 @@ holes (subgoals not yet proved). They are printed under the form
 
 ``<Your Tactic Text here>``.
 
-.. cmdv:: Show Proof.
+.. cmdv:: Show Proof
 
 It displays the proof term generated by the tactics
 that have been applied. If the proof is not completed, this term
@@ -490,14 +483,14 @@ integer, and applied to the list of variables in the context, since it
 may depend on them. The types obtained by abstracting away the context
 from the type of each hole-placer are also printed.
 
-.. cmdv:: Show Conjectures.
+.. cmdv:: Show Conjectures
 
 It prints the list of the names of all the
 theorems that are currently being proved. As it is possible to start
 proving a previous lemma during the proof of a theorem, this list may
 contain several names.
 
-.. cmdv:: Show Intro.
+.. cmdv:: Show Intro
 
 If the current goal begins by at least one product,
 this command prints the name of the first product, as it would be
@@ -507,18 +500,18 @@ Proof General macro, it is possible to transform any anonymous ``intro``
 into a qualified one such as ``intro y13``. In the case of a non-product
 goal, it prints nothing.
 
-.. cmdv:: Show Intros.
+.. cmdv:: Show Intros
 
 This command is similar to the previous one, it
 simulates the naming process of an intros.
 
-.. cmdv:: Show Existentials.
+.. cmdv:: Show Existentials
 
 It displays the set of all uninstantiated
 existential variables in the current proof tree, along with the type
 and the context of each variable.
 
-.. cmdv:: Show Match @ident.
+.. cmdv:: Show Match @ident
 
 This variant displays a template of the Gallina
 ``match`` construct with a branch for each constructor of the type
@@ -529,26 +522,26 @@ This variant displays a template of the Gallina
 
      Show Match nat.
 
-.. exn:: Unknown inductive type
+.. exn:: Unknown inductive type.
 
 .. _ShowUniverses:
 
-.. cmdv:: Show Universes.
+.. cmdv:: Show Universes
 
 It displays the set of all universe constraints and
 its normalized form at the current stage of the proof, useful for
 debugging universe inconsistencies.
 
 
-.. cmd:: Guarded.
+.. cmd:: Guarded
 
-Some tactics (e.g. :tacn:`refine` :ref:`applyingtheorems`) allow to build proofs using
+Some tactics (e.g. :tacn:`refine`) allow to build proofs using
 fixpoint or co-fixpoint constructions. Due to the incremental nature
 of interactive proof construction, the check of the termination (or
 guardedness) of the recursive calls in the fixpoint or cofixpoint
 constructions is postponed to the time of the completion of the proof.
 
-The command ``Guarded`` allows checking if the guard condition for
+The command :cmd:`Guarded` allows checking if the guard condition for
 fixpoint and cofixpoint is violated at some time of the construction
 of the proof without having to wait the completion of the proof.
 
@@ -570,13 +563,12 @@ available hypotheses.
 
 This option controls the way binders are handled
 in assertion commands such as ``Theorem ident [binders] : form``. When the
-option is set, which is the default, binders are automatically put in
+option is on, which is the default, binders are automatically put in
 the local context of the goal to prove.
 
-The option can be unset by issuing ``Unset Automatic Introduction``. When
-the option is unset, binders are discharged on the statement to be
-proved and a tactic such as intro (see Section :ref:`managingthelocalcontext`) has to be
-used to move the assumptions to the local context.
+When the option is off, binders are discharged on the statement to be
+proved and a tactic such as :tacn:`intro` (see Section :ref:`managingthelocalcontext`)
+has to be used to move the assumptions to the local context.
 
 
 Controlling memory usage
@@ -586,15 +578,15 @@ When experiencing high memory usage the following commands can be used
 to force |Coq| to optimize some of its internal data structures.
 
 
-.. cmd:: Optimize Proof.
+.. cmd:: Optimize Proof
 
 This command forces |Coq| to shrink the data structure used to represent
 the ongoing proof.
 
 
-.. cmd:: Optimize Heap.
+.. cmd:: Optimize Heap
 
 This command forces the |OCaml| runtime to perform a heap compaction.
 This is in general an expensive operation.
 See: `OCaml Gc <http://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#VALcompact>`_
-There is also an analogous tactic :tac:`optimize_heap`.
+There is also an analogous tactic :tacn:`optimize_heap`.

@@ -245,9 +245,10 @@ focused goals with:
    :name: ... : ... (goal selector)
 
    We can also use selectors as a tactical, which allows to use them nested
-   in a tactic expression, by using the keyword ``only``:
+   in a tactic expression, by using the keyword :tacn:`only`:
 
    .. tacv:: only selector : expr
+      :name: only ... : ...
 
       When selecting several goals, the tactic expr is applied globally to all
       selected goals.
@@ -268,11 +269,13 @@ focused goals with:
       for ``n-n`` when specifying multiple ranges.
 
    .. tacv:: all: @expr
+      :name: all: ...
 
       In this variant, :n:`@expr` is applied to all focused goals. ``all:`` can only
       be used at the toplevel of a tactic expression.
 
    .. tacv:: par: @expr
+      :name: par: ...
 
       In this variant, :n:`@expr` is applied to all focused goals in parallel.
       The number of workers can be controlled via the command line option
@@ -282,8 +285,8 @@ focused goals with:
       nothing (i.e. it cannot make some progress). ``par:`` can only be used at
       the toplevel of a tactic expression.
 
-   .. exn:: No such goal
-      :name: No such goal (goal selector)
+   .. exn:: No such goal.
+      :name: No such goal. (Goal selector)
 
    .. TODO change error message index entry
 
@@ -342,7 +345,7 @@ We can check if a tactic made progress with:
    to one of the focused subgoal produced subgoals equal to the initial
    goals (up to syntactical equality), then an error of level 0 is raised.
 
-   .. exn:: Failed to progress
+   .. exn:: Failed to progress.
 
 Backtracking branching
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -383,7 +386,7 @@ tactic to work (i.e. which does not fail) among a panel of tactics:
    :n:`first [:@expr__1 | ... | @expr__n]` behaves, in each goal, as the the first
    :n:`v__i` to have *at least* one success.
 
-   .. exn:: Error message: No applicable tactic
+   .. exn:: No applicable tactic.
 
    .. tacv:: first @expr
 
@@ -472,7 +475,7 @@ one* success:
       whether a second success exists, and may run further effects
       immediately.
 
-   .. exn:: This tactic has more than one success
+   .. exn:: This tactic has more than one success.
 
 Checking the failure
 ~~~~~~~~~~~~~~~~~~~~
@@ -510,7 +513,7 @@ among a panel of tactics:
    each goal independently, if it doesn’t solve the goal then it tries to
    apply :n:`v__2` and so on. It fails if there is no solving tactic.
 
-   .. exn:: Cannot solve the goal
+   .. exn:: Cannot solve the goal.
 
    .. tacv:: solve @expr
 
@@ -541,7 +544,7 @@ Failing
    :tacn:`fail` tactic will, however, succeed if all the goals have already been
    solved.
 
-   .. tacv:: fail @natural
+   .. tacv:: fail @num
 
       The number is the failure level. If no level is specified, it defaults to 0.
       The level is used by :tacn:`try`, :tacn:`repeat`, :tacn:`match goal` and the branching
@@ -549,14 +552,14 @@ Failing
       (backtracking). If non zero, the current :tacn:`match goal` block, :tacn:`try`,
       :tacn:`repeat`, or branching command is aborted and the level is decremented. In
       the case of :n:`+`, a non-zero level skips the first backtrack point, even if
-      the call to :n:`fail @natural` is not enclosed in a :n:`+` command,
+      the call to :n:`fail @num` is not enclosed in a :n:`+` command,
       respecting the algebraic identity.
 
    .. tacv:: fail {* message_token}
 
       The given tokens are used for printing the failure message.
 
-   .. tacv:: fail @natural {* message_token}
+   .. tacv:: fail @num {* message_token}
 
       This is a combination of the previous variants.
 
@@ -567,7 +570,7 @@ Failing
 
    .. tacv:: gfail {* message_token}
 
-   .. tacv:: gfail @natural {* message_token}
+   .. tacv:: gfail @num {* message_token}
 
       These variants fail with an error message or an error level even if
       there are no goals left. Be careful however if Coq terms have to be
@@ -575,7 +578,7 @@ Failing
       tactic into the goals, meaning that if there are no goals when it is
       evaluated, a tactic call like :n:`let x:=H in fail 0 x` will succeed.
 
-   .. exn:: Tactic Failure message (level @natural).
+   .. exn:: Tactic Failure message (level @num).
 
 Timeout
 ~~~~~~~
@@ -754,11 +757,11 @@ We can carry out pattern matching on terms with:
    branches or inside the right-hand side of the selected branch even if it
    has backtracking points.
 
-   .. exn:: No matching clauses for match
+   .. exn:: No matching clauses for match.
 
       No pattern can be used and, in particular, there is no :n:`_` pattern.
 
-   .. exn:: Argument of match does not evaluate to a term
+   .. exn:: Argument of match does not evaluate to a term.
 
       This happens when :n:`@expr` does not denote a term.
 
@@ -838,7 +841,7 @@ We can make pattern matching on goals using the following expression:
    branches or combinations of hypotheses, or inside the right-hand side of
    the selected branch even if it has backtracking points.
 
-   .. exn:: No matching clauses for match goal
+   .. exn:: No matching clauses for match goal.
 
       No clause succeeds, i.e. all matching patterns, if any, fail at the
       application of the right-hand-side.
@@ -885,7 +888,7 @@ produce subgoals but generates a term to be used in tactic expressions:
    match expression. This expression evaluates replaces the hole of the
    value of :n:`@ident` by the value of :n:`@expr`.
 
-   .. exn:: not a context variable
+   .. exn:: Not a context variable.
 
 Generating fresh hypothesis names
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -995,7 +998,7 @@ Testing boolean expressions
          all:let n:= numgoals in guard n<4.
          Fail all:let n:= numgoals in guard n=2.
 
-   .. exn:: Condition not satisfied
+   .. exn:: Condition not satisfied.
 
 Proving a subgoal as a separate lemma
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1045,8 +1048,8 @@ Proving a subgoal as a separate lemma
          with tactics is fragile, and explicitly named and reused subterms
          don’t play well with asynchronous proofs.
 
-   .. exn:: Proof is not complete
-      :name: Proof is not complete (abstract)
+   .. exn:: Proof is not complete.
+      :name: Proof is not complete. (abstract)
 
 Tactic toplevel definitions
 ---------------------------
@@ -1086,7 +1089,7 @@ Basically, |Ltac| toplevel definitions are made as follows:
 Printing |Ltac| tactics
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Print Ltac @qualid.
+.. cmd:: Print Ltac @qualid
 
    Defined |Ltac| functions can be displayed using this command.
 
@@ -1101,10 +1104,11 @@ Info trace
 ~~~~~~~~~~
 
 .. cmd:: Info @num @expr
+   :name: Info
 
    This command can be used to print the trace of the path eventually taken by an
    |Ltac| script. That is, the list of executed tactics, discarding
-   all the branches which have failed. To that end the Info command can be
+   all the branches which have failed. To that end the :cmd:`Info` command can be
    used with the following syntax.
 
 
@@ -1131,23 +1135,22 @@ Info trace
 
          Info 1 t 1||t 0.
 
-   The trace produced by ``Info`` tries its best to be a reparsable
+   The trace produced by :cmd:`Info` tries its best to be a reparsable
    |Ltac| script, but this goal is not achievable in all generality.
    So some of the output traces will contain oddities.
 
-   As an additional help for debugging, the trace produced by ``Info`` contains
-   (in comments) the messages produced by the idtac
-   tacticals \ `4.2 <#ltac%3Aidtac>`__ at the right possition in the
-   script. In particular, the calls to idtac in branches which failed are
+   As an additional help for debugging, the trace produced by :cmd:`Info` contains
+   (in comments) the messages produced by the :tacn:`idtac` tactical at the right
+   position in the script. In particular, the calls to idtac in branches which failed are
    not printed.
 
-   .. opt:: Info Level @num.
+   .. opt:: Info Level @num
 
-      This option is an alternative to the ``Info`` command.
+      This option is an alternative to the :cmd:`Info` command.
 
       This will automatically print the same trace as :n:`Info @num` at each
       tactic call. The unfolding level can be overridden by a call to the
-      ``Info`` command.
+      :cmd:`Info` command.
 
 Interactive debugger
 ~~~~~~~~~~~~~~~~~~~~
@@ -1217,7 +1220,7 @@ performance bug.
 
    .. warning::
 
-      Backtracking across a Reset Ltac Profile will not restore the information.
+      Backtracking across a :cmd:`Reset Ltac Profile` will not restore the information.
 
 .. coqtop:: reset in
 
@@ -1280,8 +1283,8 @@ performance bug.
    benchmarking purposes.
 
 You can also pass the ``-profile-ltac`` command line option to ``coqc``, which
-performs a ``Set Ltac Profiling`` at the beginning of each document, and a
-``Show Ltac Profile`` at the end.
+turns the :opt:`Ltac Profiling` option on at the beginning of each document,
+and performs a :cmd:`Show Ltac Profile` at the end.
 
 .. warning::
 
