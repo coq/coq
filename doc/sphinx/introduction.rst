@@ -2,12 +2,11 @@
 Introduction
 ------------------------
 
-This document is the Reference Manual of the |Coq|  proof
-assistant. A companion volume, the |Coq| Tutorial, is provided for the
-beginners. It is advised to read the Tutorial first. A
-book :cite:`CoqArt` on practical uses of the |Coq| system was
-published in 2004 and is a good support for both the beginner and the
-advanced user.
+This document is the Reference Manual of the |Coq| proof assistant.
+To start using Coq, it is advised to first read a tutorial.
+Links to several tutorials can be found at
+https://coq.inria.fr/documentation (see also
+https://github.com/coq/coq/wiki#coq-tutorials).
 
 The |Coq| system is designed to develop mathematical proofs, and
 especially to write formal specifications, programs and to verify that
