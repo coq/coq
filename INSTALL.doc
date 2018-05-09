@@ -42,7 +42,7 @@ Then, install the Python3 Antlr4 package:
   pip3 install antlr4-python3-runtime
 
 Nix users should get the correct development environment to build the
-Sphinx documentation from Coq's `default.nix`. [Note Nix setup doesn't
+HTML documentation from Coq's `default.nix`. [Note Nix setup doesn't
 include the LaTeX packages needed to build the full documentation.]
 
 If you are in an older/different distribution you can install the
