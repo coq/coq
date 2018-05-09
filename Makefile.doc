@@ -25,7 +25,6 @@ doc-no:
 ######################################################################
 
 LATEX:=latex
-BIBTEX:=BIBINPUTS=.: bibtex -min-crossrefs=10
 MAKEINDEX:=makeindex
 PDFLATEX:=pdflatex
 DVIPS:=dvips
@@ -45,7 +44,7 @@ DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
 ### General rules
 ######################################################################
 
-.PHONY: doc sphinxdoc-html doc-pdf doc-ps
+.PHONY: doc doc-html doc-pdf doc-ps
 .PHONY: stdlib full-stdlib
 
 doc: sphinx stdlib
@@ -57,7 +56,7 @@ sphinx: coq
 	@echo "Build finished. The HTML pages are in $(SPHINXBUILDDIR)/html."
 
 doc-html:\
-  doc/stdlib/html/index.html
+  doc/stdlib/html/index.html sphinx
 
 doc-pdf:\
   doc/stdlib/Library.pdf
@@ -77,13 +76,6 @@ full-stdlib: \
 
 %.ps: %.dvi
 	(cd `dirname $<`; $(DVIPS) -q -o `basename $@` `basename $<`)
-
-######################################################################
-# Macros for filtering outputs
-######################################################################
-
-HIDEBIBTEXINFO=| grep -v "^A level-1 auxiliary file"
-SHOWMAKEINDEXERROR=egrep '^!! Input index error|^\*\* Input style error|^   --'
 
 ######################################################################
 # Common
@@ -172,16 +164,17 @@ doc/stdlib/FullLibrary.pdf: $(DOCCOMMON) doc/stdlib/FullLibrary.coqdoc.tex doc/s
 ######################################################################
 
 .PHONY: install-doc install-doc-meta install-doc-html install-doc-printable \
-	install-doc-index-urls install-doc-sphinx
+	install-doc-sphinx install-doc-stdlib-html
 
-install-doc: install-doc-meta install-doc-html install-doc-printable \
-	install-doc-index-urls install-doc-sphinx
+install-doc: install-doc-meta install-doc-html install-doc-printable
 
 install-doc-meta:
 	$(MKDIR) $(FULLDOCDIR)
 	$(INSTALLLIB) doc/LICENSE $(FULLDOCDIR)/LICENSE.doc
 
-install-doc-html: 
+install-doc-html: install-doc-stdlib-html install-doc-sphinx
+
+install-doc-stdlib-html:
 	$(MKDIR) $(FULLDOCDIR)/html/stdlib
 	$(INSTALLLIB) doc/stdlib/html/* $(FULLDOCDIR)/html/stdlib
 

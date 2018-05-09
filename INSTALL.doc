@@ -20,7 +20,6 @@ To produce all the documents, the following tools are needed:
   - latex (latex2e)
   - pdflatex
   - dvips
-  - bibtex
   - makeindex
   - Python 3
   - Sphinx 1.6.5 (http://www.sphinx-doc.org/en/stable/)
