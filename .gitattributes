@@ -5,48 +5,51 @@
 # Because our commit hook automatically does [apply whitespace=fix] we
 # disable whitespace checking for all files except those where we want
 # it. Otherwise rogue global configuration and forgotten local
-# configuration can break commits.
+# configuration can break commits. Note that git cannot fix but can
+# detect a blank-at-eof when it comes from removing a chunk of text at
+# the end of the file, leaving an extra newline from before that
+# chunk, so we disable blank-at-eof.
 * -whitespace
 
 # tabs are allowed in Makefiles.
-Makefile* whitespace=trailing-space
-tools/CoqMakefile.in whitespace=trailing-space
+Makefile* whitespace=blank-at-eol
+tools/CoqMakefile.in whitespace=blank-at-eol
 
 # in general we don't want tabs.
-*.asciidoc whitespace=trailing-space,tab-in-indent
-*.bib whitespace=trailing-space,tab-in-indent
-*.c whitespace=trailing-space,tab-in-indent
-*.css whitespace=trailing-space,tab-in-indent
-*.dtd whitespace=trailing-space,tab-in-indent
-*.el whitespace=trailing-space,tab-in-indent
-*.g whitespace=trailing-space,tab-in-indent
-*.h whitespace=trailing-space,tab-in-indent
-*.html whitespace=trailing-space,tab-in-indent
-*.hva whitespace=trailing-space,tab-in-indent
-*.js whitespace=trailing-space,tab-in-indent
-*.json whitespace=trailing-space,tab-in-indent
-*.lang whitespace=trailing-space,tab-in-indent
-*.md whitespace=trailing-space,tab-in-indent
-*.merlin whitespace=trailing-space,tab-in-indent
-*.ml whitespace=trailing-space,tab-in-indent
-*.ml4 whitespace=trailing-space,tab-in-indent
-*.mli whitespace=trailing-space,tab-in-indent
-*.mll whitespace=trailing-space,tab-in-indent
-*.mllib whitespace=trailing-space,tab-in-indent
-*.mlp whitespace=trailing-space,tab-in-indent
-*.mlpack whitespace=trailing-space,tab-in-indent
-*.nsh whitespace=trailing-space,tab-in-indent
-*.nsi whitespace=trailing-space,tab-in-indent
-*.py whitespace=trailing-space,tab-in-indent
-*.rst whitespace=trailing-space,tab-in-indent
-*.sh whitespace=trailing-space,tab-in-indent
-*.sty whitespace=trailing-space,tab-in-indent
-*.tex whitespace=trailing-space,tab-in-indent
-*.tokens whitespace=trailing-space,tab-in-indent
-*.txt whitespace=trailing-space,tab-in-indent
-*.v whitespace=trailing-space,tab-in-indent
-*.xml whitespace=trailing-space,tab-in-indent
-*.yml whitespace=trailing-space,tab-in-indent
+*.asciidoc whitespace=blank-at-eol,tab-in-indent
+*.bib whitespace=blank-at-eol,tab-in-indent
+*.c whitespace=blank-at-eol,tab-in-indent
+*.css whitespace=blank-at-eol,tab-in-indent
+*.dtd whitespace=blank-at-eol,tab-in-indent
+*.el whitespace=blank-at-eol,tab-in-indent
+*.g whitespace=blank-at-eol,tab-in-indent
+*.h whitespace=blank-at-eol,tab-in-indent
+*.html whitespace=blank-at-eol,tab-in-indent
+*.hva whitespace=blank-at-eol,tab-in-indent
+*.js whitespace=blank-at-eol,tab-in-indent
+*.json whitespace=blank-at-eol,tab-in-indent
+*.lang whitespace=blank-at-eol,tab-in-indent
+*.md whitespace=blank-at-eol,tab-in-indent
+*.merlin whitespace=blank-at-eol,tab-in-indent
+*.ml whitespace=blank-at-eol,tab-in-indent
+*.ml4 whitespace=blank-at-eol,tab-in-indent
+*.mli whitespace=blank-at-eol,tab-in-indent
+*.mll whitespace=blank-at-eol,tab-in-indent
+*.mllib whitespace=blank-at-eol,tab-in-indent
+*.mlp whitespace=blank-at-eol,tab-in-indent
+*.mlpack whitespace=blank-at-eol,tab-in-indent
+*.nsh whitespace=blank-at-eol,tab-in-indent
+*.nsi whitespace=blank-at-eol,tab-in-indent
+*.py whitespace=blank-at-eol,tab-in-indent
+*.rst whitespace=blank-at-eol,tab-in-indent
+*.sh whitespace=blank-at-eol,tab-in-indent
+*.sty whitespace=blank-at-eol,tab-in-indent
+*.tex whitespace=blank-at-eol,tab-in-indent
+*.tokens whitespace=blank-at-eol,tab-in-indent
+*.txt whitespace=blank-at-eol,tab-in-indent
+*.v whitespace=blank-at-eol,tab-in-indent
+*.xml whitespace=blank-at-eol,tab-in-indent
+*.yml whitespace=blank-at-eol,tab-in-indent
 
 # CR is desired for these Windows files.
-*.bat whitespace=cr-at-eol,trailing-space,tab-in-indent
+*.bat whitespace=cr-at-eol,blank-at-eol,tab-in-indent
