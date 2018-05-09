@@ -15,6 +15,7 @@ CI_TARGETS=ci-bignums \
     ci-coquelicot \
     ci-corn \
     ci-cpdt \
+    ci-cross-crypto \
     ci-elpi \
     ci-equations \
     ci-fcsl-pcm \

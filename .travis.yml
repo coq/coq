@@ -76,6 +76,9 @@ matrix:
       - TEST_TARGET="ci-coquelicot"
     - if: NOT (type = pull_request)
       env:
+      - TEST_TARGET="ci-cross-crypto"
+    - if: NOT (type = pull_request)
+      env:
       - TEST_TARGET="ci-elpi" EXTRA_OPAM="elpi"
       # ppx_tools_versioned requires a specific version findlib
       - FINDLIB_VER=""
