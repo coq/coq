@@ -77,8 +77,11 @@ let collect_constants () =
     let gr_Q = find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq" in
     let gr_R = find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq_refl" in
     let gr_N = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "nat" in
+    let gr_C = find_reference "Tuto3" ["Tuto3"; "Data"] "C" in
+    let gr_F = find_reference "Tuto3" ["Tuto3"; "Data"] "S_ev" in
+    let gr_P = find_reference "Tuto3" ["Tuto3"; "Data"] "s_half_proof" in
     constants := List.map (fun x -> of_constr (constr_of_global x))
-      [gr_S; gr_O; gr_E; gr_D; gr_Q; gr_R; gr_N];
+      [gr_S; gr_O; gr_E; gr_D; gr_Q; gr_R; gr_N; gr_C; gr_F; gr_P];
     !constants
   else
     !constants
@@ -118,6 +121,21 @@ let c_N () =
     _ :: _ :: _ :: _ :: _ :: _ :: it :: _ -> it
   | _ -> failwith "could not obtain an internal representation of nat"
 
+let c_C () =
+  match collect_constants () with
+    _ :: _ :: _ :: _ :: _ :: _ :: _ :: it :: _ -> it
+  | _ -> failwith "could not obtain an internal representation of cmp"
+
+let c_F () =
+  match collect_constants () with
+    _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: it :: _ -> it
+  | _ -> failwith "could not obtain an internal representation of S_ev"
+
+let c_P () =
+  match collect_constants () with
+    _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: it :: _ -> it
+  | _ -> failwith "could not obtain an internal representation of s_half_proof"
+
 let mk_nat n =
   let c_S = c_S () in
   let c_O = c_O () in
@@ -143,7 +161,50 @@ let example_classes n =
   let evd, the_type = Typing.type_of env evd c_half in
   let _ = Feedback.msg_notice (Termops.print_constr_env env evd c_half) in
   let proved_equality =
-    EConstr.mkCast(EConstr.mkApp (c_R, [| c_N; c_half |]), DEFAULTcast,
+    EConstr.mkCast(EConstr.mkApp (c_R, [| c_N; c_half |]), Constr.DEFAULTcast,
       EConstr.mkApp (c_Q, [| c_N; c_half; n_half|])) in
   let evd, final_type = Typing.type_of env evd proved_equality in
   Feedback.msg_notice (Termops.print_constr_env env evd proved_equality)
+
+(* This function, together with definitions in Data.v, shows how to
+  trigger automatic proofs at the time of typechecking.
+
+   n is a number for which we want to find the half (and a proof that
+   this half is indeed the half)
+*)
+let example_canonical n =
+(* Construct a natural representation of this integer. *)
+  let c_n = mk_nat n in
+(* terms for "nat", "eq", "S_ev", "eq_refl", "C" *)
+  let c_N = c_N () in
+  let c_Q = c_Q () in
+  let c_F = c_F () in
+  let c_R = c_R () in
+  let c_C = c_C () in
+  let c_P = c_P () in
+(* the last argument of C *)
+  let refl_term = EConstr.mkApp (c_R, [|c_N; c_n |]) in
+  let env = Global.env () in
+  let evd = Evd.from_env env in
+(* Now we build two existential variables, for the value of the half and for
+   the "S_ev" structure that triggers the proof search. *)
+  let evd, ev1 = Evarutil.new_evar env evd c_N in
+(* This is the type for the second existential variable *)
+  let csev = EConstr.mkApp (c_F, [| ev1 |]) in
+  let evd, ev2 = Evarutil.new_evar env evd csev in
+(* Now we build the C structure. *)
+  let test_term = EConstr.mkApp (c_C, [| c_n; ev1; ev2; refl_term |]) in
+(* Type-checking this term will compute values for the existential variables *)
+  let evd, final_type = Typing.type_of env evd test_term in
+(* The computed type has two parameters, the second one is the proof. *)
+  let value = match EConstr.kind evd final_type with
+      | App(_, [| _; the_half |]) -> the_half
+      | _ -> failwith "expecting the whole type to be ""cmp _ the_half""" in
+  let _ = Feedback.msg_notice (Termops.print_constr_env env evd value) in
+(* I wish for a nicer way to get the value of ev2 in the evar_map *)
+  let prf_struct = EConstr.of_constr (EConstr.to_constr evd ev2) in
+  let the_prf = EConstr.mkApp (c_P, [| ev1; prf_struct |]) in
+  let evd, the_statement = Typing.type_of env evd the_prf in
+  Feedback.msg_notice
+    (Termops.print_constr_env env evd the_prf ++ str " has type " ++
+     Termops.print_constr_env env evd the_statement)
