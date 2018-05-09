@@ -1,7 +1,7 @@
 DECLARE PLUGIN "tuto1_plugin"
 
 (* If we forget this line and include our own tactic definition using
-  TACTIC EXTEND, as below, then we get the strage error message
+  TACTIC EXTEND, as below, then we get the strange error message
   no implementation available for Tacentries, only when compiling
   theories/Loader.v
 *)
