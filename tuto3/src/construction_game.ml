@@ -43,12 +43,11 @@ let dangling_identity2 env evd =
           EConstr.mkRel 1)
 
 let example_sort_app_lambda () =
-(* Next, I wish to construct a lambda-abstraction without giving precisely
-   the type for the abstracted variable. *)
     let env = Global.env () in
     let evd = Evd.from_env env in
     let c_v = c_one () in
-    let evd, c_f = dangling_identity env evd in
+(* dangling_identity and dangling_identity2 can be used interchangeably here *)
+    let evd, c_f = dangling_identity2 env evd in
     let c_1 = EConstr.mkApp (c_f, [| c_v |]) in
     let _ = Feedback.msg_notice
        (Termops.print_constr_env env evd c_1) in
@@ -63,3 +62,61 @@ let example_sort_app_lambda () =
       ((Termops.print_constr_env env evd c_1) ++
        str " has type " ++
        (Termops.print_constr_env env evd the_type))
+
+let constants = ref ([] : EConstr.constr list)
+
+let collect_constants () =
+  if (!constants = []) then
+    let open Coqlib in
+    let open EConstr in
+    let open Universes in
+    let gr_S = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "S" in
+    let gr_O = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "O" in
+    let gr_E = find_reference "Tuto3" ["Tuto3"; "Data"] "EvenNat" in
+    let gr_D = find_reference "Tuto3" ["Tuto3"; "Data"] "tuto_div2" in
+    constants := List.map (fun x -> of_constr (constr_of_global x))
+      [gr_S; gr_O; gr_E; gr_D];
+    !constants
+  else
+    !constants
+
+let c_S () =
+  match collect_constants () with
+    it :: _ -> it
+  | _ -> failwith "could not obtain an internal representation of S : nat"
+
+let c_O () =
+  match collect_constants () with
+    _ :: it :: _ -> it
+  | _ -> failwith "could not obtain an internal representation of 0 : nat"
+
+let c_E () =
+  match collect_constants () with
+    _ :: _ :: it :: _ -> it
+  | _ -> failwith "could not obtain an internal representation of EvenNat"
+
+let c_D () =
+  match collect_constants () with
+    _ :: _ :: _ :: it :: _ -> it
+  | _ -> failwith "could not obtain an internal representation of tuto_div2"
+
+let mk_nat n =
+  let c_S = c_S () in  
+  let c_O = c_O () in
+  let rec buildup = function
+    | 0 -> c_O
+    | n -> EConstr.mkApp (c_S, [| buildup (n - 1) |]) in
+  if n <= 0 then c_O else buildup n
+
+let example_classes n =
+  let c_n = mk_nat n in
+  let c_div = c_D () in
+  let c_even = c_E () in
+  let arg_type = EConstr.mkApp (c_even, [| c_n |]) in
+  let env = Global.env () in
+  let evd = Evd.from_env env in
+  let evd, instance = Evarutil.new_evar env evd arg_type in
+  let c_1 = EConstr.mkApp (c_div, [|c_n; instance|]) in
+  let _ = Feedback.msg_notice (Termops.print_constr_env env evd c_1) in
+  let evd, the_type = Typing.type_of env evd c_1 in
+  Feedback.msg_notice (Termops.print_constr_env env evd c_1)

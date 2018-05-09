@@ -1,6 +1,7 @@
 -R theories Tuto3
 -I src
 
+theories/Data.v
 theories/Loader.v
 
 src/construction_game.ml

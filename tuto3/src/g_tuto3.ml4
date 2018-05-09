@@ -21,6 +21,10 @@ VERNAC COMMAND EXTEND ShowTypeConstruction CLASSIFIED AS QUERY
 END
 
 VERNAC COMMAND EXTEND ShowOneConstruction CLASSIFIED AS QUERY
-| [ "Tuto3_2" ] -> [ example_sort_app_lambda() ]
+| [ "Tuto3_2" ] -> [ example_sort_app_lambda () ]
+END
+
+VERNAC COMMAND EXTEND TriggerClasses CLASSIFIED AS QUERY
+| [ "Tuto3_3" int(n) ] -> [ example_classes n ]
 END
 
