@@ -74,8 +74,11 @@ let collect_constants () =
     let gr_O = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "O" in
     let gr_E = find_reference "Tuto3" ["Tuto3"; "Data"] "EvenNat" in
     let gr_D = find_reference "Tuto3" ["Tuto3"; "Data"] "tuto_div2" in
+    let gr_Q = find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq" in
+    let gr_R = find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq_refl" in
+    let gr_N = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "nat" in
     constants := List.map (fun x -> of_constr (constr_of_global x))
-      [gr_S; gr_O; gr_E; gr_D];
+      [gr_S; gr_O; gr_E; gr_D; gr_Q; gr_R; gr_N];
     !constants
   else
     !constants
@@ -100,8 +103,23 @@ let c_D () =
     _ :: _ :: _ :: it :: _ -> it
   | _ -> failwith "could not obtain an internal representation of tuto_div2"
 
+let c_Q () =
+  match collect_constants () with
+    _ :: _ :: _ :: _ :: it :: _ -> it
+  | _ -> failwith "could not obtain an internal representation of eq"
+
+let c_R () =
+  match collect_constants () with
+    _ :: _ :: _ :: _ :: _ :: it :: _ -> it
+  | _ -> failwith "could not obtain an internal representation of eq_refl"
+
+let c_N () =
+  match collect_constants () with
+    _ :: _ :: _ :: _ :: _ :: _ :: it :: _ -> it
+  | _ -> failwith "could not obtain an internal representation of nat"
+
 let mk_nat n =
-  let c_S = c_S () in  
+  let c_S = c_S () in
   let c_O = c_O () in
   let rec buildup = function
     | 0 -> c_O
@@ -110,13 +128,22 @@ let mk_nat n =
 
 let example_classes n =
   let c_n = mk_nat n in
+  let n_half = mk_nat (n / 2) in
+  let c_N = c_N () in
   let c_div = c_D () in
   let c_even = c_E () in
+  let c_Q = c_Q () in
+  let c_R = c_R () in
   let arg_type = EConstr.mkApp (c_even, [| c_n |]) in
   let env = Global.env () in
   let evd = Evd.from_env env in
   let evd, instance = Evarutil.new_evar env evd arg_type in
-  let c_1 = EConstr.mkApp (c_div, [|c_n; instance|]) in
-  let _ = Feedback.msg_notice (Termops.print_constr_env env evd c_1) in
-  let evd, the_type = Typing.type_of env evd c_1 in
-  Feedback.msg_notice (Termops.print_constr_env env evd c_1)
+  let c_half = EConstr.mkApp (c_div, [|c_n; instance|]) in
+  let _ = Feedback.msg_notice (Termops.print_constr_env env evd c_half) in
+  let evd, the_type = Typing.type_of env evd c_half in
+  let _ = Feedback.msg_notice (Termops.print_constr_env env evd c_half) in
+  let proved_equality =
+    EConstr.mkCast(EConstr.mkApp (c_R, [| c_N; c_half |]), DEFAULTcast,
+      EConstr.mkApp (c_Q, [| c_N; c_half; n_half|])) in
+  let evd, final_type = Typing.type_of env evd proved_equality in
+  Feedback.msg_notice (Termops.print_constr_env env evd proved_equality)
