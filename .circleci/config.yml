@@ -8,7 +8,7 @@ defaults:
     # reference syntax)
     working_directory: ~/coq
     docker:
-      - image: coqci/base:V2018-05-07
+      - image: coqci/base:V2018-05-07-V2
 
   environment: &envvars
     NATIVE_COMP: "yes"
