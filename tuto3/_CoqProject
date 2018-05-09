@@ -3,5 +3,7 @@
 
 theories/Loader.v
 
+src/construction_game.ml
+src/construction_game.mli
 src/g_tuto3.ml4
 src/tuto3_plugin.mlpack
