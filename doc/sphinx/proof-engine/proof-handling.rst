@@ -8,12 +8,13 @@
 In |Coq|’s proof editing mode all top-level commands documented in
 Chapter :ref:`vernacularcommands` remain available and the user has access to specialized
 commands dealing with proof development pragmas documented in this
-section. He can also use some other specialized commands called
+section. They can also use some other specialized commands called
 *tactics*. They are the very tools allowing the user to deal with
 logical reasoning. They are documented in Chapter :ref:`tactics`.
-When switching in editing proof mode, the prompt ``Coq <`` is changed into
-``ident <`` where ``ident`` is the declared name of the theorem currently
-edited.
+
+Coq user interfaces usually have a way of marking whether the user has
+switched to proof editing mode. For instance, in coqtop the prompt ``Coq <``   is changed into
+:n:`@ident <`   where :token:`ident` is the declared name of the theorem currently edited.
 
 At each stage of a proof development, one has a list of goals to
 prove. Initially, the list consists only in the theorem itself. After
