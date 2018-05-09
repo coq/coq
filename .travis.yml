@@ -41,7 +41,7 @@ env:
   - COMPILER="system"
   - COMPILER_BE="4.06.1"
   - CAMLP5_VER=".6.14"
-  - CAMLP5_VER_BE=".7.03"
+  - CAMLP5_VER_BE=".7.05"
   - FINDLIB_VER=".1.4.1"
   - FINDLIB_VER_BE=".1.8.0"
   - LABLGTK="lablgtk.2.18.3 lablgtk-extras.1.6"
