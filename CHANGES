@@ -33,6 +33,14 @@ Tactic language
   called by OCaml-defined tactics.
 - Option "Ltac Debug" now applies also to terms built using Ltac functions.
 
+Changes from 8.8.0 to 8.8.1
+===========================
+
+Notations
+
+- Fixed unexpected collision between only-parsing and only-printing
+  notations (issue #7462).
+
 Changes from 8.8+beta1 to 8.8.0
 ===============================
 
