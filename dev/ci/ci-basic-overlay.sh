@@ -91,6 +91,12 @@
 : "${VST_CI_GITURL:=https://github.com/PrincetonUniversity/VST.git}"
 
 ########################################################################
+# cross-crypto
+########################################################################
+: "${cross_crypto_CI_BRANCH:=master}"
+: "${cross_crypto_CI_GITURL:=https://github.com/mit-plv/cross-crypto.git}"
+
+########################################################################
 # fiat_parsers
 ########################################################################
 : "${fiat_parsers_CI_BRANCH:=master}"

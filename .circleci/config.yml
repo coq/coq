@@ -85,6 +85,9 @@ jobs:
   coquelicot:
     <<: *ci-template
 
+  cross-crypto:
+    <<: *ci-template
+
   elpi:
     <<: *ci-template
 
@@ -160,6 +163,7 @@ workflows:
       - compcert: *req-main
       - coq-dpdgraph: *req-main
       - coquelicot: *req-main
+      - cross-crypto: *req-main
       - elpi: *req-main
       - equations: *req-main
       - geocoq: *req-main

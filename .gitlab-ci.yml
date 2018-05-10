@@ -242,6 +242,9 @@ ci-coq-dpdgraph:
 ci-coquelicot:
   <<: *ci-template
 
+ci-cross-crypto:
+  <<: *ci-template
+
 ci-elpi:
   <<: *ci-template
 
