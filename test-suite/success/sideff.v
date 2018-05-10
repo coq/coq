@@ -5,6 +5,8 @@ Proof.
   apply (const tt tt).
 Qed.
 
+Set Nested Proofs Allowed.
+
 Lemma foobar' : unit.
   Lemma aux : forall A : Type, A -> unit.
   Proof. intros. pose (foo := idw A). exact tt. Show Universes. Qed.

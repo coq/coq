@@ -4,6 +4,7 @@
 # Test backtracking in presence of nested proofs
 # Third, undo inside an inner proof
 #
+ADD { Set Nested Proofs Allowed. }
 ADD { Lemma aa : True -> True /\ True. }
 ADD { intro H. }
 ADD { split. }

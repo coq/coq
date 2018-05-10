@@ -2771,6 +2771,14 @@ let process_back_meta_command ~newtip ~head oid aast w =
     VCS.commit id (Alias (oid,aast));
     Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
 
+let allow_nested_proofs = ref false
+let _ = Goptions.declare_bool_option
+    { Goptions.optdepr  = false;
+      Goptions.optname  = "Nested Proofs Allowed";
+      Goptions.optkey   = ["Nested";"Proofs";"Allowed"];
+      Goptions.optread  = (fun () -> !allow_nested_proofs);
+      Goptions.optwrite = (fun b -> allow_nested_proofs := b) }
+
 let process_transaction ~doc ?(newtip=Stateid.fresh ())
   ({ verbose; loc; expr } as x) c =
   stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
@@ -2802,6 +2810,15 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
 
       (* Proof *)
       | VtStartProof (mode, guarantee, names), w ->
+
+         if not !allow_nested_proofs && VCS.proof_nesting () > 0 then
+           "Nested proofs are not allowed unless you turn option Nested Proofs Allowed on."
+           |> Pp.str
+           |> (fun s -> (UserError (None, s), Exninfo.null))
+           |> State.exn_on ~valid:Stateid.dummy Stateid.dummy
+           |> Exninfo.iraise
+         else
+
           let id = VCS.new_node ~id:newtip () in
           let bname = VCS.mk_branch_name x in
           VCS.checkout VCS.Branch.master;

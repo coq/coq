@@ -41,6 +41,8 @@ Proof. f_equal.
   8.5: 2 goals, skipn n l = l -> k ++ skipn n l = skipn n l
     and skipn n l = l
 *)
+Abort.
+
 Require Import List.
 Fixpoint replicate {A} (n : nat) (x : A) : list A :=
   match n with 0 => nil | S n => x :: replicate n x end.

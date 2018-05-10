@@ -37,17 +37,20 @@ Fail g1 I.
 Fail f1 I.
 Fail g2 I.
 Fail f2 I.
+Abort.
 
 Ltac h x := injection x.
 Goal True -> False.
 Fail h I.
 intro H.
 Fail h H.
+Abort.
 
 (* Check printing of the "var" argument "Hx" *)
 Ltac m H := idtac H; exact H.
 Goal True.
 let a:=constr:(let Hx := 0 in ltac:(m Hx)) in idtac.
+Abort.
 
 (* Check consistency of interpretation scopes (#4398) *)
 

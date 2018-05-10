@@ -13,6 +13,7 @@ Goal forall A (x x' : A) (xs xs' : list A) (H : x::xs = x'::xs'),
   match goal with
     | [ |- context G[@hd] ] => idtac
   end.
+Abort.
 
 (* This second example comes from CFGV where inspecting subterms of a
    match is expecting to inspect first the term to match (even though
@@ -35,3 +36,4 @@ Ltac mydestruct :=
 Goal forall x, match x with 0 => 0 | _ => 0 end = 0.
 intros.
 mydestruct.
+Abort.
