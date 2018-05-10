@@ -148,9 +148,8 @@ $(IDETOP): ide/idetop.ml $(LINKCMX) $(LIBCOQRUN) $(IDETOPCMX)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) -I ide -I ide/protocol/ \
 			   $(SYSMOD) -package camlp5.gramlib \
-			   $(LINKCMX) $(IDETOPCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
+			   $(LINKCMX) $(IDETOPCMX) $(OPTFLAGS) $< -o $@
 	$(STRIP_HIDE) $@
-	$(CODESIGN_HIDE) $@
 
 $(IDETOPBYTE): ide/idetop.ml $(LINKCMO) $(LIBCOQRUN) $(IDETOPCMA)
 	$(SHOW)'COQMKTOP -o $@'
@@ -275,7 +274,6 @@ $(COQIDEAPP)/Contents/Resources:$(COQIDEAPP)/Contents/Resources/etc $(COQIDEAPP)
 	$(INSTALLLIB) ide/MacOS/*.icns $@
 
 $(COQIDEAPP):$(COQIDEAPP)/Contents/Resources
-	$(CODESIGN_HIDE) $@
 
 ###########################################################################
 # CoqIde for Windows special targets
