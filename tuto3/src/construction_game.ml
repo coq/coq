@@ -173,7 +173,8 @@ let example_classes n =
   Feedback.msg_notice (Termops.print_constr_env env evd proved_equality)
 
 (* This function, together with definitions in Data.v, shows how to
-  trigger automatic proofs at the time of typechecking.
+   trigger automatic proofs at the time of typechecking, based on
+   canonical structures.
 
    n is a number for which we want to find the half (and a proof that
    this half is indeed the half)

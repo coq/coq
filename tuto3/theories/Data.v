@@ -23,7 +23,6 @@ Canonical Structure can_ev_default n d (Pd : 2 * n = d) : S_ev n :=
 Canonical Structure can_ev0 : S_ev 0 :=
   Build_S_ev 0 0 (@eq_refl _ 0).
 
-
 Lemma can_ev_rec n : forall (s : S_ev n), S_ev (S n).
 Proof.
 intros s; exists (S (S (double_of _ s))).
@@ -42,4 +41,3 @@ Check (C _ _ _ eq_refl : cmp 6 _).
 Check (C _ _ _ eq_refl : cmp 7 _).
 
 *)
-
