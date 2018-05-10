@@ -137,8 +137,8 @@ val availability_of_notation : scope_name option * notation -> local_scopes ->
 
 (** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 
-val declare_notation_level : notation -> level -> unit
-val level_of_notation : notation -> level (** raise [Not_found] if no level *)
+val declare_notation_level : ?onlyprint:bool -> notation -> level -> unit
+val level_of_notation : ?onlyprint:bool -> notation -> level (** raise [Not_found] if no level or not respecting onlyprint *)
 
 (** {6 Miscellaneous} *)
 

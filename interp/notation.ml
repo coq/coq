@@ -429,13 +429,15 @@ let rec find_without_delimiters find (ntn_scope,ntn) = function
 
 (* Uninterpreted notation levels *)
 
-let declare_notation_level ntn level =
+let declare_notation_level ?(onlyprint=false) ntn level =
   if String.Map.mem ntn !notation_level_map then
     anomaly (str "Notation " ++ str ntn ++ str " is already assigned a level.");
-  notation_level_map := String.Map.add ntn level !notation_level_map
+  notation_level_map := String.Map.add ntn (level,onlyprint) !notation_level_map
 
-let level_of_notation ntn =
-  String.Map.find ntn !notation_level_map
+let level_of_notation ?(onlyprint=false) ntn =
+  let (level,onlyprint') = String.Map.find ntn !notation_level_map in
+  if onlyprint' && not onlyprint then raise Not_found;
+  level
 
 (* The mapping between notations and their interpretation *)
 
