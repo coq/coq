@@ -28,7 +28,7 @@ VERNAC COMMAND EXTEND TriggerClasses CLASSIFIED AS QUERY
 | [ "Tuto3_3" int(n) ] -> [ example_classes n ]
 END
 
-VERNAC COMMAND EXTEND TriggerClasses CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND TriggerCanonical CLASSIFIED AS QUERY
 | [ "Tuto3_4" int(n) ] -> [ example_canonical n ]
 END
 

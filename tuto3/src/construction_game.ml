@@ -155,6 +155,7 @@ let example_classes n =
   let arg_type = EConstr.mkApp (c_even, [| c_n |]) in
   let env = Global.env () in
   let evd = Evd.from_env env in
+  let evd0 = evd in
   let evd, instance = Evarutil.new_evar env evd arg_type in
   let c_half = EConstr.mkApp (c_div, [|c_n; instance|]) in
   let _ = Feedback.msg_notice (Termops.print_constr_env env evd c_half) in
@@ -163,6 +164,11 @@ let example_classes n =
   let proved_equality =
     EConstr.mkCast(EConstr.mkApp (c_R, [| c_N; c_half |]), Constr.DEFAULTcast,
       EConstr.mkApp (c_Q, [| c_N; c_half; n_half|])) in
+(* This is where we force the system to compute with type classes. *)
+(* Question to coq developers: why do we pass two evd arguments to
+   solve_remaining_evars? Is the choice of evd0 relevant here? *)
+  let evd = Pretyping.solve_remaining_evars
+    (Pretyping.default_inference_flags true) env evd evd0 in
   let evd, final_type = Typing.type_of env evd proved_equality in
   Feedback.msg_notice (Termops.print_constr_env env evd proved_equality)
 
