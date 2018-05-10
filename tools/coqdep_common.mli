@@ -10,6 +10,8 @@
 
 module StrSet : Set.S with type elt = string
 
+val coqdep_warning : ('a, Format.formatter, unit, unit) format4 -> 'a
+
 (** [find_dir_logpath dir] Return the logical path of directory [dir]
     if it has been given one. Raise [Not_found] otherwise. In
     particular we can check if "." has been attributed a logical path
