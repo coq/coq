@@ -14,9 +14,9 @@ then
 
     # We fix whitespace in the index and in the working tree
     # separately to preserve non-added changes.
-    index=$(mktemp "git-fix-ws-index.XXXXX")
-    fixed_index=$(mktemp "git-fix-ws-index-fixed.XXXXX")
-    tree=$(mktemp "git-fix-ws-tree.XXXXX")
+    index=$(mktemp "git-fix-ws-index.XXXXXX")
+    fixed_index=$(mktemp "git-fix-ws-index-fixed.XXXXXX")
+    tree=$(mktemp "git-fix-ws-tree.XXXXXX")
     1>&2 echo "Patches are saved in '$index', '$fixed_index' and '$tree'."
     1>&2 echo "If an error destroys your changes you can recover using them."
     1>&2 echo "(The files are cleaned up on success.)"
