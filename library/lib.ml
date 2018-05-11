@@ -183,22 +183,11 @@ let split_lib_gen test =
     | before -> after,equal,before
   in
   let rec findeq after = function
-    | hd :: before ->
-      	if test hd
-	then Some (collect after [hd] before)
-	else (match hd with
-		| (sp,ClosedModule  seg)
-		| (sp,ClosedSection seg) ->
-		    (match findeq after seg with
-		       | None -> findeq (hd::after) before
-		       | Some (sub_after,sub_equal,sub_before) ->
-			   Some (sub_after, sub_equal, (List.append sub_before before)))
-		| _ -> findeq (hd::after) before)
-    | [] -> None
+    | hd :: before when test hd -> collect after [hd] before
+    | hd :: before -> findeq (hd::after) before
+    | [] -> user_err Pp.(str "no such entry")
   in
-    match findeq [] !lib_state.lib_stk with
-      | None -> user_err Pp.(str "no such entry")
-      | Some r -> r
+  findeq [] !lib_state.lib_stk
 
 let eq_object_name (fp1, kn1) (fp2, kn2) =
   eq_full_path fp1 fp2 && Names.KerName.equal kn1 kn2
