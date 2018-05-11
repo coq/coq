@@ -386,9 +386,9 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Ltac induction2 :=
     simple induction s;
      [ simpl; auto; try solve [ intros; inv ]
-     | intros x l Hrec; simple induction s';
+     | intros ?x ?l ?Hrec; simple induction s';
         [ simpl; auto; try solve [ intros; inv ]
-        | intros x' l' Hrec'; simpl; elim_compare x x'; intros; inv; auto ]].
+        | intros ?x' ?l' ?Hrec'; simpl; elim_compare x x'; intros; inv; auto ]].
 
   Lemma union_inf :
    forall (s s' : t) (a : elt) (Hs : Ok s) (Hs' : Ok s'),

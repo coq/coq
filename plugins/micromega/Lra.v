@@ -23,7 +23,7 @@ Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin".
 
 Ltac rchange := 
-  intros __wit __varmap __ff ;
+  intros ?__wit ?__varmap ?__ff ;
   change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
   apply (RTautoChecker_sound __ff __wit).
 

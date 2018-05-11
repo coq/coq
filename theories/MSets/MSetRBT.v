@@ -759,18 +759,18 @@ Hint Rewrite lbalS_spec rbalS_spec : rb.
 (** ** Append for deletion *)
 
 Ltac append_tac l r :=
- induction l as [| lc ll _ lx lr IHlr];
- [intro r; simpl
- |induction r as [| rc rl IHrl rx rr _];
+ induction l as [| ?lc ?ll _ ?lx ?lr ?IHlr];
+ [intros ?r; simpl
+ |induction r as [| ?rc ?rl ?IHrl ?rx ?rr _];
    [simpl
    |destruct lc, rc;
      [specialize (IHlr rl); clear IHrl
      |simpl;
-      assert (Hr:notred (Bk rl rx rr)) by (simpl; trivial);
+      assert (notred (Bk rl rx rr)) as ?Hr by (simpl; trivial);
       set (r:=Bk rl rx rr) in *; clearbody r; clear IHrl rl rx rr;
       specialize (IHlr r)
      |change (append _ _) with (Rd (append (Bk ll lx lr) rl) rx rr);
-      assert (Hl:notred (Bk ll lx lr)) by (simpl; trivial);
+      assert (notred (Bk ll lx lr)) as ?Hl by (simpl; trivial);
       set (l:=Bk ll lx lr) in *; clearbody l; clear IHlr ll lx lr
      |specialize (IHlr rl); clear IHrl]]].
 

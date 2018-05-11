@@ -1738,7 +1738,7 @@ Qed.
 
 Ltac destr_pggcdn IHn :=
  match goal with |- context [ ggcdn _ ?x ?y ] =>
-  generalize (IHn x y); destruct ggcdn as (g,(u,v)); simpl
+  generalize (IHn x y); destruct ggcdn as (?g,(?u,?v)); simpl
  end.
 
 Lemma ggcdn_correct_divisors : forall n a b,
