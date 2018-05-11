@@ -4,13 +4,13 @@
 The Coq documentation includes
 
 - A Reference Manual
-- A Tutorial
 - A document presenting the Coq standard library
-- A list of questions/answers in the FAQ style
 
-The sources of the documents are mainly made of LaTeX code from which
-user-readable PostScript or PDF files, or a user-browsable bunch of
-html files are generated.
+The reference manual is written is reStructuredText and compiled
+using Sphinx (see `doc/sphinx/README.rst`) to learn more.
+
+The documentation for the standard library is generated from
+the `.v` source files using coqdoc.
 
 Prerequisite
 ------------
@@ -20,9 +20,7 @@ To produce all the documents, the following tools are needed:
   - latex (latex2e)
   - pdflatex
   - dvips
-  - bibtex
   - makeindex
-  - hevea
   - Python 3
   - Sphinx 1.6.5 (http://www.sphinx-doc.org/en/stable/)
   - sphinx_rtd_theme
@@ -35,7 +33,7 @@ Under recent Debian based operating systems (Debian 10 "Buster",
 Ubuntu 18.04, ...) a working set of packages for compiling the
 documentation for Coq is:
 
-  texlive-latex-extra texlive-fonts-recommended hevea python3-sphinx
+  texlive-latex-extra texlive-fonts-recommended python3-sphinx
   python3-pexpect python3-sphinx-rtd-theme python3-bs4
   python3-sphinxcontrib.bibtex python3-pip
 
@@ -44,7 +42,7 @@ Then, install the Python3 Antlr4 package:
   pip3 install antlr4-python3-runtime
 
 Nix users should get the correct development environment to build the
-Sphinx documentation from Coq's `default.nix`. [Note Nix setup doesn't
+HTML documentation from Coq's `default.nix`. [Note Nix setup doesn't
 include the LaTeX packages needed to build the full documentation.]
 
 If you are in an older/different distribution you can install the
@@ -75,15 +73,6 @@ Alternatively, you can use some specific targets:
    make sphinx
         to produce the HTML version of the reference manual
 
-   make tutorial
-        to produce all formats of the tutorial
-
-   make rectutorial
-        to produce all formats of the tutorial on recursive types
-
-   make faq
-        to produce all formats of the FAQ
-
    make stdlib
         to produce all formats of the Coq standard library
 
@@ -99,7 +88,4 @@ To install all produced documents, do:
 
   make DOCDIR=/some/directory/for/documentation install-doc
 
-DOCDIR defauts to /usr/share/doc/coq
-
-
-
+DOCDIR defaults to /usr/share/doc/coq

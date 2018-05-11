@@ -90,9 +90,9 @@ stdenv.mkDerivation rec {
 
   prefixKey = "-prefix ";
 
-  buildFlags = optionals buildDoc [ "world" "sphinx" ];
+  buildFlags = [ "world" ] ++ optional buildDoc "doc-html";
 
-  installTargets = [ "install" ] ++ optional buildDoc "install-doc-sphinx";
+  installTargets = [ "install" ] ++ optional buildDoc "install-doc-html";
 
   inherit doCheck;
 
