@@ -1,7 +1,6 @@
 DECLARE PLUGIN "tuto3_plugin"
 
 open Ltac_plugin
-open Pp
 
 open Construction_game
 
@@ -24,15 +23,20 @@ VERNAC COMMAND EXTEND ShowOneConstruction CLASSIFIED AS QUERY
 | [ "Tuto3_2" ] -> [ example_sort_app_lambda () ]
 END
 
+TACTIC EXTEND collapse_hyps
+| [ "pack" "hypothesis" ident(i) ] ->
+  [ Tuto_tactic.pack_tactic i ]
+END
+
+(* More advanced examples, where automatic proof happens but
+   no tactic is being called explicitely.  The first one uses
+   type classes. *)
 VERNAC COMMAND EXTEND TriggerClasses CLASSIFIED AS QUERY
 | [ "Tuto3_3" int(n) ] -> [ example_classes n ]
 END
 
+(* The second one uses canonical structures. *)
 VERNAC COMMAND EXTEND TriggerCanonical CLASSIFIED AS QUERY
 | [ "Tuto3_4" int(n) ] -> [ example_canonical n ]
 END
 
-TACTIC EXTEND collapse_hyps
-| [ "hide" "hypothesis" ident(i) ] ->
-  [ Tuto_tactic.hide_tactic i ]
-END

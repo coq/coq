@@ -1,5 +1,18 @@
 Require Import ArithRing.
 
+Inductive pack (A: Type) : Type :=
+  packer : A -> pack A.
+
+Arguments packer {A}.
+
+Definition uncover (A : Type) (packed : pack A) : A :=
+  match packed with packer v => v end.
+
+Notation "!!!" := (pack _) (at level 0, only printing).
+
+(* The following data is used as material for automatic proofs
+  based on type classes. *)
+
 Class EvenNat the_even := {half : nat; half_prop : 2 * half = the_even}.
 
 Instance EvenNat0 : EvenNat 0 := {half := 0; half_prop := eq_refl}.
@@ -11,6 +24,18 @@ Instance EvenNat_rec n (p : EvenNat n) : EvenNat (S (S n)) :=
  {half := S (@half _ p); half_prop := even_rec n (@half _ p) (@half_prop _ p)}.
 
 Definition tuto_div2 n (p : EvenNat n) := @half _ p.
+
+(* to be used in the following examples
+Compute (@half 8 _).
+
+Check (@half_prop 8 _).
+
+Check (@half_prop 7 _).
+
+and in command Tuto3_3 8. *)
+
+(* The following data is used as material for automatic proofs
+  based on canonical structures. *)
 
 Record S_ev n := Build_S_ev {double_of : nat; _ : 2 * n = double_of}.
 
@@ -41,10 +66,3 @@ Check (C _ _ _ eq_refl : cmp 6 _).
 Check (C _ _ _ eq_refl : cmp 7 _).
 
 *)
-
-Inductive hide (A: Type) : Type :=
-  hide_marker : A -> hide A.
-
-Arguments hide_marker {A}.
-
-Notation "!!!" := (hide _) (at level 0, only printing).
