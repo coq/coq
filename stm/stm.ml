@@ -2768,7 +2768,7 @@ let allow_nested_proofs = ref false
 let _ = Goptions.declare_bool_option
     { Goptions.optdepr  = false;
       Goptions.optname  = "Nested Proofs Allowed";
-      Goptions.optkey   = ["Nested";"Proofs";"Allowed"];
+      Goptions.optkey   = Vernac_classifier.stm_allow_nested_proofs_option_name;
       Goptions.optread  = (fun () -> !allow_nested_proofs);
       Goptions.optwrite = (fun b -> allow_nested_proofs := b) }
 
