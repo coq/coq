@@ -8,12 +8,13 @@
 In |Coq|’s proof editing mode all top-level commands documented in
 Chapter :ref:`vernacularcommands` remain available and the user has access to specialized
 commands dealing with proof development pragmas documented in this
-section. He can also use some other specialized commands called
+section. They can also use some other specialized commands called
 *tactics*. They are the very tools allowing the user to deal with
 logical reasoning. They are documented in Chapter :ref:`tactics`.
-When switching in editing proof mode, the prompt ``Coq <`` is changed into
-``ident <`` where ``ident`` is the declared name of the theorem currently
-edited.
+
+Coq user interfaces usually have a way of marking whether the user has
+switched to proof editing mode. For instance, in coqtop the prompt ``Coq <``   is changed into
+:n:`@ident <`   where :token:`ident` is the declared name of the theorem currently edited.
 
 At each stage of a proof development, one has a list of goals to
 prove. Initially, the list consists only in the theorem itself. After
@@ -36,8 +37,8 @@ terms are called *proof terms*.
 
 .. exn:: No focused proof.
 
-Coq raises this error message when one attempts to use a proof editing command
-out of the proof editing mode.
+   Coq raises this error message when one attempts to use a proof editing command
+   out of the proof editing mode.
 
 .. _proof-editing-mode:
 
@@ -46,139 +47,149 @@ Switching on/off the proof editing mode
 
 The proof editing mode is entered by asserting a statement, which typically is
 the assertion of a theorem using an assertion command like :cmd:`Theorem`. The
-list of assertion commands is given in Section :ref:`Assertions`. The command
+list of assertion commands is given in :ref:`Assertions`. The command
 :cmd:`Goal` can also be used.
 
 .. cmd:: Goal @form
 
-This is intended for quick assertion of statements, without knowing in
-advance which name to give to the assertion, typically for quick
-testing of the provability of a statement. If the proof of the
-statement is eventually completed and validated, the statement is then
-bound to the name ``Unnamed_thm`` (or a variant of this name not already
-used for another statement).
+   This is intended for quick assertion of statements, without knowing in
+   advance which name to give to the assertion, typically for quick
+   testing of the provability of a statement. If the proof of the
+   statement is eventually completed and validated, the statement is then
+   bound to the name ``Unnamed_thm`` (or a variant of this name not already
+   used for another statement).
 
 .. cmd:: Qed
    :name: Qed (interactive proof)
 
-This command is available in interactive editing proof mode when the
-proof is completed. Then ``Qed`` extracts a proof term from the proof
-script, switches back to Coq top-level and attaches the extracted
-proof term to the declared name of the original goal. This name is
-added to the environment as an opaque constant.
+   This command is available in interactive editing proof mode when the
+   proof is completed. Then :cmd:`Qed` extracts a proof term from the proof
+   script, switches back to Coq top-level and attaches the extracted
+   proof term to the declared name of the original goal. This name is
+   added to the environment as an opaque constant.
 
+   .. exn:: Attempt to save an incomplete proof.
 
-.. exn:: Attempt to save an incomplete proof.
+   .. note::
 
-.. note::
+      Sometimes an error occurs when building the proof term, because
+      tactics do not enforce completely the term construction
+      constraints.
 
-   Sometimes an error occurs when building the proof term, because
-   tactics do not enforce completely the term construction
-   constraints.
+      The user should also be aware of the fact that since the
+      proof term is completely rechecked at this point, one may have to wait
+      a while when the proof is large. In some exceptional cases one may
+      even incur a memory overflow.
 
-The user should also be aware of the fact that since the
-proof term is completely rechecked at this point, one may have to wait
-a while when the proof is large. In some exceptional cases one may
-even incur a memory overflow.
+   .. cmdv:: Defined
+      :name: Defined (interactive proof)
 
-.. cmdv:: Defined
-   :name: Defined (interactive proof)
+      Defines the proved term as a transparent constant.
 
-Defines the proved term as a transparent constant.
+   .. cmdv:: Save @ident
+      :name: Save
 
-.. cmdv:: Save @ident
-
-Forces the name of the original goal to be :n:`@ident`. This
-command (and the following ones) can only be used if the original goal
-has been opened using the ``Goal`` command.
+      Forces the name of the original goal to be :token:`ident`. This
+      command (and the following ones) can only be used if the original goal
+      has been opened using the :cmd:`Goal` command.
 
 .. cmd:: Admitted
    :name: Admitted (interactive proof)
 
-This command is available in interactive editing mode to give up
-the current proof and declare the initial goal as an axiom.
+   This command is available in interactive editing mode to give up
+   the current proof and declare the initial goal as an axiom.
+
+.. cmd:: Abort
+
+   This command cancels the current proof development, switching back to
+   the previous proof development, or to the |Coq| toplevel if no other
+   proof was edited.
+
+   .. exn:: No focused proof (No proof-editing in progress).
+
+   .. cmdv::  Abort @ident
+
+      Aborts the editing of the proof named :token:`ident` (in case you have
+      nested proofs).
+
+   .. cmdv:: Abort All
+
+      Aborts all current goals.
 
 .. cmd:: Proof @term
    :name: Proof `term`
 
-This command applies in proof editing mode. It is equivalent to
+   This command applies in proof editing mode. It is equivalent to
+   :n:`exact @term. Qed.`
+   That is, you have to give the full proof in one gulp, as a
+   proof term (see Section :ref:`applyingtheorems`).
 
-.. coqtop:: in
-
-   exact @term. Qed.
-
-That is, you have to give the full proof in one gulp, as a
-proof term (see Section :ref:`applyingtheorems`).
-
-.. cmdv:: Proof
+.. cmd:: Proof
    :name: Proof (interactive proof)
 
-Is a noop which is useful to delimit the sequence of tactic commands
-which start a proof, after a ``Theorem`` command. It is a good practice to
-use ``Proof``. as an opening parenthesis, closed in the script with a
-closing ``Qed``.
+   Is a no-op which is useful to delimit the sequence of tactic commands
+   which start a proof, after a :cmd:`Theorem` command. It is a good practice to
+   use :cmd:`Proof` as an opening parenthesis, closed in the script with a
+   closing :cmd:`Qed`.
 
+   .. seealso:: :cmd:`Proof with`
 
-See also: ``Proof with tactic.`` in Section
-:ref:`tactics-implicit-automation`.
+.. cmd:: Proof using {+ @ident }
 
+   This command applies in proof editing mode. It declares the set of
+   section variables (see :ref:`gallina-assumptions`) used by the proof.
+   At :cmd:`Qed` time, the
+   system will assert that the set of section variables actually used in
+   the proof is a subset of the declared one.
 
-.. cmd:: Proof using @ident1 ... @identn
+   The set of declared variables is closed under type dependency. For
+   example if ``T`` is variable and a is a variable of type ``T``, the commands
+   ``Proof using a`` and ``Proof using T a`` are actually equivalent.
 
-This command applies in proof editing mode. It declares the set of
-section variables (see :ref:`gallina-assumptions`) used by the proof. At ``Qed`` time, the
-system will assert that the set of section variables actually used in
-the proof is a subset of the declared one.
+   .. cmdv:: Proof using {+ @ident } with @tactic
 
-The set of declared variables is closed under type dependency. For
-example if ``T`` is variable and a is a variable of type ``T``, the commands
-``Proof using a`` and ``Proof using T a``` are actually equivalent.
+      Combines in a single line :cmd:`Proof with` and :cmd:`Proof using`.
 
+      .. seealso:: :ref:`tactics-implicit-automation`
 
-.. cmdv:: Proof using @ident1 ... @identn with @tactic
+   .. cmdv:: Proof using All
 
-in Section :ref:`tactics-implicit-automation`.
+      Use all section variables.
 
-.. cmdv:: Proof using All
+   .. cmdv:: Proof using {? Type }
 
-Use all section variables.
+      Use only section variables occurring in the statement.
 
+   .. cmdv:: Proof using Type*
 
-.. cmdv:: Proof using Type
+      The ``*`` operator computes the forward transitive closure. E.g. if the
+      variable ``H`` has type ``p < 5`` then ``H`` is in ``p*`` since ``p`` occurs in the type
+      of ``H``. ``Type*`` is the forward transitive closure of the entire set of
+      section variables occurring in the statement.
 
-.. cmdv:: Proof using
+   .. cmdv:: Proof using -({+ @ident })
 
-Use only section variables occurring in the statement.
+      Use all section variables except the list of :token:`ident`.
 
+   .. cmdv:: Proof using @collection1 + @collection2
 
-.. cmdv:: Proof using Type*
+      Use section variables from the union of both collections.
+      See :ref:`nameaset` to know how to form a named collection.
 
-The ``*`` operator computes the forward transitive closure. E.g. if the
-variable ``H`` has type ``p < 5`` then ``H`` is in ``p*`` since ``p`` occurs in the type
-of ``H``. ``Type*`` is the forward transitive closure of the entire set of
-section variables occurring in the statement.
+   .. cmdv:: Proof using @collection1 - @collection2
 
+      Use section variables which are in the first collection but not in the
+      second one.
 
-.. cmdv:: Proof using -(@ident1 ... @identn)
+   .. cmdv:: Proof using @collection - ({+ @ident })
 
-Use all section variables except :n:`@ident1` ... :n:`@identn`.
+      Use section variables which are in the first collection but not in the
+      list of :token:`ident`.
 
+   .. cmdv:: Proof using @collection *
 
-.. cmdv:: Proof using @collection1 + @collection2
-
-
-.. cmdv:: Proof using @collection1 - @collection2
-
-
-.. cmdv:: Proof using @collection - ( @ident1 ... @identn )
-
-
-.. cmdv:: Proof using @collection *
-
-Use section variables being, respectively, in the set union, set
-difference, set complement, set forward transitive closure. See
-Section :ref:`nameaset` to know how to form a named collection. The ``*`` operator
-binds stronger than ``+`` and ``-``.
+      Use section variables in the forward transitive closure of the collection.
+      The ``*`` operator binds stronger than ``+`` and ``-``.
 
 
 Proof using options
@@ -189,14 +200,14 @@ The following options modify the behavior of ``Proof using``.
 
 .. opt:: Default Proof Using "@expression"
 
-   Use :n:`@expression` as the default ``Proof``` using value. E.g. ``Set Default
-   Proof Using "a b"``. will complete all ``Proof`` commands not followed by a
-   using part with using ``a`` ``b``.
+   Use :n:`@expression` as the default ``Proof using`` value. E.g. ``Set Default
+   Proof Using "a b"`` will complete all ``Proof`` commands not followed by a
+   ``using`` part with ``using a b``.
 
 
 .. opt:: Suggest Proof Using
 
-   When ``Qed`` is performed, suggest a using annotation if the user did not
+   When :cmd:`Qed` is performed, suggest a ``using`` annotation if the user did not
    provide one.
 
 ..  _`nameaset`:
@@ -204,80 +215,50 @@ The following options modify the behavior of ``Proof using``.
 Name a set of section hypotheses for ``Proof using``
 ````````````````````````````````````````````````````
 
-.. cmd:: Collection @ident := @section_subset_expr
+.. cmd:: Collection @ident := @expression
 
-The command ``Collection`` can be used to name a set of section
-hypotheses, with the purpose of making ``Proof using`` annotations more
-compact.
+   This can be used to name a set of section
+   hypotheses, with the purpose of making ``Proof using`` annotations more
+   compact.
 
+   .. example::
 
-.. cmdv:: Collection Some := x y z
+      Define the collection named ``Some`` containing ``x``, ``y`` and ``z``::
 
-Define the collection named "Some" containing ``x``, ``y`` and ``z``.
+         Collection Some := x y z.
 
+      Define the collection named ``Fewer`` containing only ``x`` and ``y``::
 
-.. cmdv:: Collection Fewer := Some - z
+         Collection Fewer := Some - z
 
-Define the collection named "Fewer" containing only ``x`` and ``y``.
+      Define the collection named ``Many`` containing the set union or set
+      difference of ``Fewer`` and ``Some``::
 
+         Collection Many := Fewer + Some
+         Collection Many := Fewer - Some
 
-.. cmdv::  Collection Many := Fewer + Some
-.. cmdv::  Collection Many := Fewer - Some
+      Define the collection named ``Many`` containing the set difference of
+      ``Fewer`` and the unnamed collection ``x y``::
 
-Define the collection named "Many" containing the set union or set
-difference of "Fewer" and "Some".
-
-
-.. cmdv:: Collection Many := Fewer - (x y)
-
-Define the collection named "Many" containing the set difference of
-"Fewer" and the unnamed collection ``x`` ``y``
-
-
-.. cmd:: Abort
-
-This command cancels the current proof development, switching back to
-the previous proof development, or to the |Coq| toplevel if no other
-proof was edited.
-
-
-.. exn:: No focused proof (No proof-editing in progress).
-
-
-
-.. cmdv::  Abort @ident
-
-Aborts the editing of the proof named :n:`@ident`.
-
-.. cmdv:: Abort All
-
-Aborts all current goals, switching back to the |Coq|
-toplevel.
+         Collection Many := Fewer - (x y)
 
 
 
 .. cmd:: Existential @num := @term
 
-This command instantiates an existential variable. :n:`@num` is an index in
-the list of uninstantiated existential variables displayed by ``Show
-Existentials`` (described in Section :ref:`requestinginformation`).
+   This command instantiates an existential variable. :token:`num` is an index in
+   the list of uninstantiated existential variables displayed by :cmd:`Show Existentials`.
 
-This command is intended to be used to instantiate existential
-variables when the proof is completed but some uninstantiated
-existential variables remain. To instantiate existential variables
-during proof edition, you should use the tactic :tacn:`instantiate`.
-
-
-See also: ``instantiate (num:= term).`` in Section
-:ref:`controllingtheproofflow`.
-See also: ``Grab Existential Variables.`` below.
-
+   This command is intended to be used to instantiate existential
+   variables when the proof is completed but some uninstantiated
+   existential variables remain. To instantiate existential variables
+   during proof edition, you should use the tactic :tacn:`instantiate`.
 
 .. cmd:: Grab Existential Variables
 
-This command can be run when a proof has no more goal to be solved but
-has remaining uninstantiated existential variables. It takes every
-uninstantiated existential variable and turns it into a goal.
+   This command can be run when a proof has no more goal to be solved but
+   has remaining uninstantiated existential variables. It takes every
+   uninstantiated existential variable and turns it into a goal.
 
 
 Navigation in the proof tree
@@ -290,7 +271,7 @@ Navigation in the proof tree
 
 .. cmdv:: Undo @num
 
-   Repeats Undo :n:`@num` times.
+   Repeats Undo :token:`num` times.
 
 .. cmdv:: Restart
    :name: Restart
@@ -306,19 +287,22 @@ Navigation in the proof tree
    is solved or unfocused. This is useful when there are many current
    subgoals which clutter your screen.
 
+   .. deprecated:: 8.8
+
+      Prefer the use of bullets or focusing brackets (see below).
+
 .. cmdv:: Focus @num
 
-   This focuses the attention on the :n:`@num` th subgoal to prove.
+   This focuses the attention on the :token:`num` th subgoal to prove.
 
    .. deprecated:: 8.8
 
-      Prefer the use of bullets or
-      focusing brackets instead, including :n:`@num : %{`
+      Prefer the use of focusing brackets with a goal selector (see below).
 
 .. cmd:: Unfocus
 
    This command restores to focus the goal that were suspended by the
-   last ``Focus`` command.
+   last :cmd:`Focus` command.
 
    .. deprecated:: 8.8
 
@@ -332,7 +316,7 @@ Navigation in the proof tree
 .. cmd:: %{ %| %}
 
    The command ``{`` (without a terminating period) focuses on the first
-   goal, much like ``Focus.`` does, however, the subproof can only be
+   goal, much like :cmd:`Focus` does, however, the subproof can only be
    unfocused when it has been fully solved ( *i.e.* when there is no
    focused goal left). Unfocusing is then handled by ``}`` (again, without a
    terminating period). See also example in next section.
@@ -341,9 +325,9 @@ Navigation in the proof tree
    together with a suggestion about the right bullet or ``}`` to unfocus it
    or focus the next one.
 
-.. cmdv:: @num: %{
+   .. cmdv:: @num: %{
 
-   This focuses on the :n:`@num` th subgoal to prove.
+      This focuses on the :token:`num` th subgoal to prove.
 
    Error messages:
 
@@ -409,19 +393,19 @@ The following example script illustrates all these features:
 
 .. exn:: Wrong bullet @bullet1: Current bullet @bullet2 is not finished.
 
-Before using bullet :n:`@bullet1` again, you should first finish proving the current focused goal. Note that :n:`@bullet1` and :n:`@bullet2` may be the same.
+   Before using bullet :n:`@bullet1` again, you should first finish proving the current focused goal. Note that :n:`@bullet1` and :n:`@bullet2` may be the same.
 
 .. exn:: Wrong bullet @bullet1: Bullet @bullet2 is mandatory here.
 
-You must put :n:`@bullet2` to focus next goal. No other bullet is allowed here.
+   You must put :n:`@bullet2` to focus next goal. No other bullet is allowed here.
 
 .. exn:: No such goal. Focus next goal with bullet @bullet.
 
-You tried to applied a tactic but no goal where under focus. Using :n:`@bullet` is  mandatory here.
+   You tried to apply a tactic but no goal where under focus. Using :n:`@bullet` is  mandatory here.
 
 .. exn:: No such goal. Try unfocusing with %{.
 
-You just finished a goal focused by ``{``, you must unfocus it with ``}``.
+   You just finished a goal focused by ``{``, you must unfocus it with ``}``.
 
 Set Bullet Behavior
 ```````````````````
@@ -440,110 +424,116 @@ Requesting information
 
 .. cmd:: Show
 
-This command displays the current goals.
+   This command displays the current goals.
+
+   .. exn:: No focused proof.
+
+   .. cmdv:: Show @num
+
+      Displays only the :token:`num` th subgoal.
+
+      .. exn:: No such goal.
 
 
-.. cmdv:: Show @num
+   .. cmdv:: Show @ident
 
-Displays only the :n:`@num`-th subgoal.
+      Displays the named goal :token:`ident`. This is useful in
+      particular to display a shelved goal but only works if the
+      corresponding existential variable has been named by the user
+      (see :ref:`existential-variables`) as in the following example.
 
-.. exn:: No such goal.
-.. exn:: No focused proof.
+      .. example::
 
-.. cmdv:: Show @ident
+         .. coqtop:: all
 
-Displays the named goal :n:`@ident`. This is useful in
-particular to display a shelved goal but only works if the
-corresponding existential variable has been named by the user
-(see :ref:`existential-variables`) as in the following example.
+            Goal exists n, n = 0.
+            eexists ?[n].
+            Show n.
 
-.. example::
+   .. cmdv:: Show Script
+      :name: Show Script
 
-  .. coqtop:: all
+      Displays the whole list of tactics applied from the
+      beginning of the current proof. This tactics script may contain some
+      holes (subgoals not yet proved). They are printed under the form
 
-    Goal exists n, n = 0.
-    eexists ?[n].
-    Show n.
+      ``<Your Tactic Text here>``.
 
-.. cmdv:: Show Script
+   .. cmdv:: Show Proof
+      :name: Show Proof
 
-Displays the whole list of tactics applied from the
-beginning of the current proof. This tactics script may contain some
-holes (subgoals not yet proved). They are printed under the form
+      It displays the proof term generated by the tactics
+      that have been applied. If the proof is not completed, this term
+      contain holes, which correspond to the sub-terms which are still to be
+      constructed. These holes appear as a question mark indexed by an
+      integer, and applied to the list of variables in the context, since it
+      may depend on them. The types obtained by abstracting away the context
+      from the type of each hole-placer are also printed.
 
-``<Your Tactic Text here>``.
+   .. cmdv:: Show Conjectures
+      :name: Show Conjectures
 
-.. cmdv:: Show Proof
+      It prints the list of the names of all the
+      theorems that are currently being proved. As it is possible to start
+      proving a previous lemma during the proof of a theorem, this list may
+      contain several names.
 
-It displays the proof term generated by the tactics
-that have been applied. If the proof is not completed, this term
-contain holes, which correspond to the sub-terms which are still to be
-constructed. These holes appear as a question mark indexed by an
-integer, and applied to the list of variables in the context, since it
-may depend on them. The types obtained by abstracting away the context
-from the type of each hole-placer are also printed.
+   .. cmdv:: Show Intro
+      :name: Show Intro
 
-.. cmdv:: Show Conjectures
+      If the current goal begins by at least one product,
+      this command prints the name of the first product, as it would be
+      generated by an anonymous :tacn:`intro`. The aim of this command is to ease
+      the writing of more robust scripts. For example, with an appropriate
+      Proof General macro, it is possible to transform any anonymous :tacn:`intro`
+      into a qualified one such as ``intro y13``. In the case of a non-product
+      goal, it prints nothing.
 
-It prints the list of the names of all the
-theorems that are currently being proved. As it is possible to start
-proving a previous lemma during the proof of a theorem, this list may
-contain several names.
+   .. cmdv:: Show Intros
+      :name: Show Intros
 
-.. cmdv:: Show Intro
+      This command is similar to the previous one, it
+      simulates the naming process of an :tacn:`intros`.
 
-If the current goal begins by at least one product,
-this command prints the name of the first product, as it would be
-generated by an anonymous ``intro``. The aim of this command is to ease
-the writing of more robust scripts. For example, with an appropriate
-Proof General macro, it is possible to transform any anonymous ``intro``
-into a qualified one such as ``intro y13``. In the case of a non-product
-goal, it prints nothing.
+   .. cmdv:: Show Existentials
+      :name: Show Existentials
 
-.. cmdv:: Show Intros
+      It displays the set of all uninstantiated
+      existential variables in the current proof tree, along with the type
+      and the context of each variable.
 
-This command is similar to the previous one, it
-simulates the naming process of an intros.
+   .. cmdv:: Show Match @ident
 
-.. cmdv:: Show Existentials
+      This variant displays a template of the Gallina
+      ``match`` construct with a branch for each constructor of the type
+      :token:`ident`
 
-It displays the set of all uninstantiated
-existential variables in the current proof tree, along with the type
-and the context of each variable.
+      .. example::
+         .. coqtop:: all
 
-.. cmdv:: Show Match @ident
+            Show Match nat.
 
-This variant displays a template of the Gallina
-``match`` construct with a branch for each constructor of the type
-:n:`@ident`
+      .. exn:: Unknown inductive type.
 
-.. example::
-  .. coqtop:: all
+   .. cmdv:: Show Universes
+      :name: Show Universes
 
-     Show Match nat.
-
-.. exn:: Unknown inductive type.
-
-.. _ShowUniverses:
-
-.. cmdv:: Show Universes
-
-It displays the set of all universe constraints and
-its normalized form at the current stage of the proof, useful for
-debugging universe inconsistencies.
+      It displays the set of all universe constraints and
+      its normalized form at the current stage of the proof, useful for
+      debugging universe inconsistencies.
 
 
 .. cmd:: Guarded
 
-Some tactics (e.g. :tacn:`refine`) allow to build proofs using
-fixpoint or co-fixpoint constructions. Due to the incremental nature
-of interactive proof construction, the check of the termination (or
-guardedness) of the recursive calls in the fixpoint or cofixpoint
-constructions is postponed to the time of the completion of the proof.
+   Some tactics (e.g. :tacn:`refine`) allow to build proofs using
+   fixpoint or co-fixpoint constructions. Due to the incremental nature
+   of interactive proof construction, the check of the termination (or
+   guardedness) of the recursive calls in the fixpoint or cofixpoint
+   constructions is postponed to the time of the completion of the proof.
 
-The command :cmd:`Guarded` allows checking if the guard condition for
-fixpoint and cofixpoint is violated at some time of the construction
-of the proof without having to wait the completion of the proof.
+   The command :cmd:`Guarded` allows checking if the guard condition for
+   fixpoint and cofixpoint is violated at some time of the construction
+   of the proof without having to wait the completion of the proof.
 
 
 Controlling the effect of proof editing commands
