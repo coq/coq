@@ -409,6 +409,11 @@ val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -
 
 (** {6 Other tactics. } *)
 
+(** Syntactic equality up to universes. With [strict] the universe
+   constraints must be already true to succeed, without [strict] they
+   are added to the evar map. *)
+val constr_eq : strict:bool -> constr -> constr -> unit Proofview.tactic
+
 val unify           : ?state:Names.transparent_state -> constr -> constr -> unit Proofview.tactic
 
 val cache_term_by_tactic_then : opaque:bool -> ?goal_type:(constr option) -> Id.t -> Decl_kinds.goal_kind -> unit Proofview.tactic -> (constr -> constr list -> unit Proofview.tactic) -> unit Proofview.tactic

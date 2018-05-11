@@ -28,6 +28,12 @@ Tactics
 - The `simple apply` tactic now respects the `Opaque` flag when called from
   Ltac (`auto` still does not respect it).
 
+- Tactic `constr_eq` now adds universe constraints needed for the
+  identity to the context (it used to ignore them). New tactic
+  `constr_eq_strict` checks that the required constraints already hold
+  without adding new ones. Preexisting tactic `constr_eq_nounivs` can
+  still be used if you really want to ignore universe constraints.
+
 Tools
 
 - Coq_makefile lets one override or extend the following variables from
