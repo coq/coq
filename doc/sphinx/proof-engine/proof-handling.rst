@@ -60,7 +60,6 @@ list of assertion commands is given in :ref:`Assertions`. The command
    used for another statement).
 
 .. cmd:: Qed
-   :name: Qed (interactive proof)
 
    This command is available in interactive editing proof mode when the
    proof is completed. Then :cmd:`Qed` extracts a proof term from the proof
@@ -82,9 +81,12 @@ list of assertion commands is given in :ref:`Assertions`. The command
       even incur a memory overflow.
 
    .. cmdv:: Defined
-      :name: Defined (interactive proof)
+      :name: Defined
 
-      Defines the proved term as a transparent constant.
+      Same as :cmd:`Qed` but the proof is then declared transparent, which means
+      that its content can be explicitly used for type-checking and that it can be
+      unfolded in conversion tactics (see :ref:`performingcomputations`,
+      :cmd:`Opaque`, :cmd:`Transparent`).
 
    .. cmdv:: Save @ident
       :name: Save
@@ -94,7 +96,6 @@ list of assertion commands is given in :ref:`Assertions`. The command
       has been opened using the :cmd:`Goal` command.
 
 .. cmd:: Admitted
-   :name: Admitted (interactive proof)
 
    This command is available in interactive editing mode to give up
    the current proof and declare the initial goal as an axiom.
@@ -125,7 +126,6 @@ list of assertion commands is given in :ref:`Assertions`. The command
    proof term (see Section :ref:`applyingtheorems`).
 
 .. cmd:: Proof
-   :name: Proof (interactive proof)
 
    Is a no-op which is useful to delimit the sequence of tactic commands
    which start a proof, after a :cmd:`Theorem` command. It is a good practice to
