@@ -66,7 +66,6 @@ let rec decompose_term env sigma t=
 	      decompose_term env sigma b)
     | Construct c ->
 	let (((mind,i_ind),i_con),u)= c in 
-	let u = EInstance.kind sigma u in
 	let canon_mind = MutInd.make1 (MutInd.canonical mind) in
 	let canon_ind = canon_mind,i_ind in
 	let (oib,_)=Global.lookup_inductive (canon_ind) in
@@ -76,13 +75,11 @@ let rec decompose_term env sigma t=
 		       ci_nhyps=nargs-oib.mind_nparams}
     | Ind c -> 
 	let (mind,i_ind),u = c in 
-	let u = EInstance.kind sigma u in
 	let canon_mind = MutInd.make1 (MutInd.canonical mind) in
-	let canon_ind = canon_mind,i_ind in  (Symb (Constr.mkIndU (canon_ind,u)))
+        let canon_ind = canon_mind,i_ind in  (Symb (sigma,mkIndU (canon_ind,u)))
     | Const (c,u) -> 
-	let u = EInstance.kind sigma u in
 	let canon_const = Constant.make1 (Constant.canonical c) in 
-	  (Symb (Constr.mkConstU (canon_const,u)))
+          (Symb (sigma,mkConstU (canon_const,u)))
     | Proj (p, c) -> 
 	let canon_const kn = Constant.make1 (Constant.canonical kn) in 
 	let p' = Projection.map canon_const p in
@@ -90,7 +87,7 @@ let rec decompose_term env sigma t=
 	decompose_term env sigma c
     | _ ->
        let t = Termops.strip_outer_cast sigma t in
-       if closed0 sigma t then Symb (EConstr.to_constr ~abort_on_undefined_evars:false sigma t) else raise Not_found
+       if closed0 sigma t then Symb (sigma,t) else raise Not_found
 
 (* decompose equality in members and type *)
 open Termops
@@ -142,11 +139,11 @@ let patterns_of_constr env sigma nrels term=
 	  let valid1 =
 	    if not (Int.equal (Int.Set.cardinal rels1) nrels) then Creates_variables
 	    else if non_trivial patt1 then Normal
-	    else Trivial (EConstr.to_constr sigma args.(0))
+            else Trivial args.(0)
 	  and valid2 =
 	    if not (Int.equal (Int.Set.cardinal rels2) nrels) then Creates_variables
 	    else if non_trivial patt2 then Normal
-	    else Trivial (EConstr.to_constr sigma args.(0)) in
+            else Trivial args.(0) in
 	    if valid1 != Creates_variables
 	      || valid2 != Creates_variables  then
 	      nrels,valid1,patt1,valid2,patt2
@@ -200,9 +197,9 @@ let make_prb gls depth additionnal_terms =
       (fun decl ->
          let id = NamedDecl.get_id decl in
 	 begin
-	   let cid=Constr.mkVar id in
+           let cid=mkVar id in
 	   match litteral_of_constr env sigma (NamedDecl.get_type decl) with
-	       `Eq (t,a,b) -> add_equality state cid a b
+               `Eq (t,a,b) -> add_equality state (sigma,cid) a b
 	     | `Neq (t,a,b) -> add_disequality state (Hyp cid) a b
 	     | `Other ph ->
 		 List.iter
@@ -289,16 +286,14 @@ let refresh_universes ty k =
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evm) (k ty)
   end
 
-let constr_of_term c = EConstr.of_constr (constr_of_term c)
-
 let rec proof_tac p : unit Proofview.tactic =
   Proofview.Goal.enter begin fun gl ->
+  let sigma = Proofview.Goal.sigma gl in
   let type_of t = Tacmach.New.pf_unsafe_type_of gl t in
   try (* type_of can raise exceptions *)
   match p.p_rule with
-      Ax c -> exact_check (EConstr.of_constr c)
-    | SymAx c ->
-        let c = EConstr.of_constr c in
+      Ax (_,c) -> exact_check c
+    | SymAx (_,c) ->
 	let l=constr_of_term p.p_lhs and
 	    r=constr_of_term p.p_rhs in
 	refresh_universes (type_of l) (fun typ ->
@@ -340,7 +335,7 @@ let rec proof_tac p : unit Proofview.tactic =
                 Tacticals.New.tclZEROMSG
 		    (Pp.str
 		       "I don't know how to handle dependent equality")]])))
-  | Inject (prf,cstr,nargs,argind) ->
+  | Inject (prf,(cstr,u),nargs,argind) ->
 	 let ti=constr_of_term prf.p_lhs in
 	 let tj=constr_of_term prf.p_rhs in
 	 let default=constr_of_term p.p_lhs in
@@ -348,7 +343,7 @@ let rec proof_tac p : unit Proofview.tactic =
 	 refresh_universes (type_of ti) (fun intype ->
          refresh_universes (type_of default) (fun outtype ->
          let sigma, proj =
-           build_projection intype cstr special default gl
+           build_projection intype (cstr,EInstance.kind sigma u) special default gl
          in
 	 let injt=
            app_global_with_holes _f_equal [|intype;outtype;proj;ti;tj|] 1 in
@@ -418,8 +413,7 @@ let discriminate_tac cstru p =
 let build_term_to_complete uf pac =
   let cinfo = get_constructor_info uf pac.cnode in
   let real_args = List.rev_map (fun i -> constr_of_term (term uf i)) pac.args in
-  let (kn, u) = cinfo.ci_constr in
-  (applist (mkConstructU (kn, EInstance.make u), real_args), pac.arity)
+  (applist (mkConstructU cinfo.ci_constr, real_args), pac.arity)
 
 let cc_tactic depth additionnal_terms =
   Proofview.Goal.enter begin fun gl ->
@@ -470,13 +464,10 @@ let cc_tactic depth additionnal_terms =
 	    let ta=term uf dis.lhs and tb=term uf dis.rhs in
 	    match dis.rule with
 	      Goal -> proof_tac p
-	    | Hyp id -> refute_tac (EConstr.of_constr id) ta tb p
+            | Hyp id -> refute_tac id ta tb p
 	    | HeqG id ->
-                let id = EConstr.of_constr id in
 		convert_to_goal_tac id ta tb p
 	    | HeqnH (ida,idb) ->
-                let ida = EConstr.of_constr ida in
-                let idb = EConstr.of_constr idb in
 		convert_to_hyp_tac ida ta idb tb p
   end
 

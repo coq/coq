@@ -12,17 +12,17 @@
 (* proof-trees that will be transformed into proof-terms in cctac.ml4   *)
 
 open CErrors
-open Constr
+open EConstr
 open Ccalgo
 open Pp
 
 type rule=
-    Ax of constr
-  | SymAx of constr
+    Ax of (Evd.evar_map*constr)
+  | SymAx of (Evd.evar_map*constr)
   | Refl of term
   | Trans of proof*proof
   | Congr of proof*proof
-  | Inject of proof*pconstructor*int*int
+  | Inject of proof*(Names.constructor*EInstance.t)*int*int
 and proof =
     {p_lhs:term;p_rhs:term;p_rule:rule}
 
