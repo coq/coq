@@ -4,6 +4,8 @@
 theories/Data.v
 theories/Loader.v
 
+src/tuto_tactic.ml
+src/tuto_tactic.mli
 src/construction_game.ml
 src/construction_game.mli
 src/g_tuto3.ml4

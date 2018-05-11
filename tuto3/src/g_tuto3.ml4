@@ -32,3 +32,7 @@ VERNAC COMMAND EXTEND TriggerCanonical CLASSIFIED AS QUERY
 | [ "Tuto3_4" int(n) ] -> [ example_canonical n ]
 END
 
+TACTIC EXTEND collapse_hyps
+| [ "hide" "hypothesis" ident(i) ] ->
+  [ Tuto_tactic.hide_tactic i ]
+END

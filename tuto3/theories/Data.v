@@ -41,3 +41,10 @@ Check (C _ _ _ eq_refl : cmp 6 _).
 Check (C _ _ _ eq_refl : cmp 7 _).
 
 *)
+
+Inductive hide (A: Type) : Type :=
+  hide_marker : A -> hide A.
+
+Arguments hide_marker {A}.
+
+Notation "!!!" := (hide _) (at level 0, only printing).
