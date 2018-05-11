@@ -42,9 +42,8 @@ How to write plugins in Coq
   - Obtaining existing values from memory
   - Composing values
   - Verifying types
-  - Leveraging type inference
-  - Leveraging coercion
   - Using these terms in commands
   - Using these terms in tactics
+  - Automatic proofs without tactics using type classes and canonical structures
 
   compilation and loading must be performed as for `tuto0`.
