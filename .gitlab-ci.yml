@@ -278,9 +278,6 @@ ci-iris-lambda-rust:
 ci-ltac2:
   <<: *ci-template
 
-ci-math-classes:
-  <<: *ci-template
-
 ci-math-comp:
   <<: *ci-template-flambda
 
