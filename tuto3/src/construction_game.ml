@@ -63,7 +63,7 @@ let example_sort_app_lambda () =
        str " has type " ++
        (Termops.print_constr_env env evd the_type))
 
-let constants = ref ([] : EConstr.constr list)
+let constants = ref ([] : EConstr.t list)
 
 let collect_constants () =
   if (!constants = []) then
