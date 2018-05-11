@@ -376,7 +376,6 @@ let pr_located_qualid = function
         | DirOpenModtype { obj_dir ; _ } -> "Open Module Type", obj_dir
         | DirOpenSection { obj_dir ; _ } -> "Open Section", obj_dir
         | DirModule { obj_dir ; _ } -> "Module", obj_dir
-	| DirClosedSection dir -> "Closed Section", dir
       in
       str s ++ spc () ++ DirPath.print dir
   | ModuleType mp ->

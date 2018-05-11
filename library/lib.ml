@@ -569,13 +569,11 @@ let close_section () =
   in
   let (secdecls,mark,before) = split_lib_at_opening oname in
   lib_state := { !lib_state with lib_stk = before };
-  let full_olddir = !lib_state.path_prefix.obj_dir in
   pop_path_prefix ();
   add_entry oname (ClosedSection (List.rev (mark::secdecls)));
   let newdecls = List.map discharge_item secdecls in
   Summary.unfreeze_summaries fs;
-  List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;
-  Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)
+  List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls
 
 (* State and initialization. *)
 

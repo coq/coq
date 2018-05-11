@@ -125,8 +125,6 @@ type global_dir_reference =
   | DirOpenModtype of object_prefix
   | DirOpenSection of object_prefix
   | DirModule of object_prefix
-  | DirClosedSection of DirPath.t
-      (** this won't last long I hope! *)
 
 val eq_global_dir_reference : 
   global_dir_reference -> global_dir_reference -> bool
