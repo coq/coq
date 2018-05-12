@@ -4,7 +4,9 @@ How to write plugins in Coq
   # tuto0 : basics of project organization
   package a ml4 file in a plugin, organize a `Makefile`, `_CoqProject`
   - Example of syntax to add a new toplevel command
-  - Example of function call to print a simple message.
+  - Example of function call to print a simple message
+  - Example of syntax to add a simple tactic
+      (that does nothing and prints a message)
   - To use it:
 
 ```bash
