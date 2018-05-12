@@ -55,15 +55,20 @@ Customization at launch time
 By resource file
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-When |Coq| is launched, with either ``coqtop`` or ``coqc``, the resource file
-``$XDG_CONFIG_HOME/coq/coqrc.xxx`` is loaded, where ``$XDG_CONFIG_HOME``
+When |Coq| is launched, with either ``coqtop`` or ``coqc``, the
+resource file ``$XDG_CONFIG_HOME/coq/coqrc.xxx``, if it exists, will
+be implicitly prepended to any document read by Coq, whether it is an
+interactive session or a file to compile. Here, ``$XDG_CONFIG_HOME``
 is the configuration directory of the user (by default its home
-directory ``/.config`` and ``xxx`` is the version number (e.g. 8.8). If
+directory ``~/.config``) and ``xxx`` is the version number (e.g. 8.8). If
 this file is not found, then the file ``$XDG_CONFIG_HOME/coqrc`` is
-searched. You can also specify an arbitrary name for the resource file
+searched. If not found, it is the file ``~/.coqrc.xxx`` which is searched,
+and, if still not found, the file ``~/.coqrc``. If the latter is also
+absent, no resource file is loaded.
+You can also specify an arbitrary name for the resource file
 (see option ``-init-file`` below).
 
-This file may contain, for instance, ``Add LoadPath`` commands to add
+The resource file may contain, for instance, ``Add LoadPath`` commands to add
 directories to the load path of |Coq|. It is possible to skip the
 loading of the resource file with the option ``-q``.
 
