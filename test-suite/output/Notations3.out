@@ -231,3 +231,13 @@ fun l : list nat => match l with
      : list nat -> list nat
 
 Argument scope is [list_scope]
+Notation
+"'exists' x .. y , p" := ex (fun x => .. (ex (fun y => p)) ..) : type_scope
+(default interpretation)
+"'exists' ! x .. y , p" := ex
+                             (unique
+                                (fun x => .. (ex (unique (fun y => p))) ..))
+: type_scope (default interpretation)
+Notation
+"( x , y , .. , z )" := pair .. (pair x y) .. z : core_scope
+(default interpretation)
