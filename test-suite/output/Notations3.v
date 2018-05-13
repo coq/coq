@@ -380,3 +380,8 @@ Definition foo (l : list nat) :=
 end.
 Print foo.
 End Issue7110.
+
+Module LocateNotations.
+Locate "exists".
+Locate "( _ , _ , .. , _ )".
+End LocateNotations.
