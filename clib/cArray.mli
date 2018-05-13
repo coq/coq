@@ -163,32 +163,32 @@ sig
       of the main ones, when the returned array is of same type as one of
       the original array. *)
 
+  module Fun1 :
+  sig
+    val map : ('r -> 'a -> 'b) -> 'r -> 'a array -> 'b array
+    (** [Fun1.map f x v = map (f x) v] *)
+
+    val smartmap : ('r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
+    [@@ocaml.deprecated "Same as [Fun1.Smart.map]"]
+
+    val iter : ('r -> 'a -> unit) -> 'r -> 'a array -> unit
+    (** [Fun1.iter f x v = iter (f x) v] *)
+
+    val iter2 : ('r -> 'a -> 'b -> unit) -> 'r -> 'a array -> 'b array -> unit
+    (** [Fun1.iter2 f x v1 v2 = iter (f x) v1 v2] *)
+
+    module Smart :
+    sig
+      val map : ('r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
+      (** [Fun1.Smart.map f x v = Smart.map (f x) v] *)
+    end
+
+  end
+  (** The functions defined in this module are the same as the main ones, except
+      that they are all higher-order, and their function arguments have an
+      additional parameter. This allows us to prevent closure creation in critical
+      cases. *)
+
 end
 
 include ExtS
-
-module Fun1 :
-sig
-  val map : ('r -> 'a -> 'b) -> 'r -> 'a array -> 'b array
-  (** [Fun1.map f x v = map (f x) v] *)
-
-  val smartmap : ('r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
-  [@@ocaml.deprecated "Same as [Fun1.Smart.map]"]
-
-  val iter : ('r -> 'a -> unit) -> 'r -> 'a array -> unit
-  (** [Fun1.iter f x v = iter (f x) v] *)
-
-  val iter2 : ('r -> 'a -> 'b -> unit) -> 'r -> 'a array -> 'b array -> unit
-  (** [Fun1.iter2 f x v1 v2 = iter (f x) v1 v2] *)
-
-  module Smart :
-  sig
-    val map : ('r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
-    (** [Fun1.Smart.map f x v = Smart.map (f x) v] *)
-  end
-
-end
-(** The functions defined in this module are the same as the main ones, except
-    that they are all higher-order, and their function arguments have an
-    additional parameter. This allows us to prevent closure creation in critical
-    cases. *)

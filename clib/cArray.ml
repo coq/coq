@@ -81,6 +81,18 @@ sig
     val fold_left_map : ('a -> 'b -> 'a * 'b) -> 'a -> 'b array -> 'a * 'b array
     val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'c) -> 'a -> 'b array -> 'c array -> 'a * 'c array
   end
+  module Fun1 :
+  sig
+    val map : ('r -> 'a -> 'b) -> 'r -> 'a array -> 'b array
+    val smartmap : ('r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
+    [@@ocaml.deprecated "Same as [Fun1.Smart.map]"]
+    val iter : ('r -> 'a -> unit) -> 'r -> 'a array -> unit
+    val iter2 : ('r -> 'a -> 'b -> unit) -> 'r -> 'a array -> 'b array -> unit
+    module Smart :
+    sig
+      val map : ('r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
+    end
+  end
 end
 
 include Array

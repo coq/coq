@@ -931,7 +931,7 @@ let dependent_main noevar sigma m t =
       match EConstr.kind sigma m, EConstr.kind sigma t with
 	| App (fm,lm), App (ft,lt) when Array.length lm < Array.length lt ->
 	    deprec m (mkApp (ft,Array.sub lt 0 (Array.length lm)));
-	    CArray.Fun1.iter deprec m
+            Array.Fun1.iter deprec m
 	      (Array.sub lt
 		(Array.length lm) ((Array.length lt) - (Array.length lm)))
 	| _, Cast (c,_,_) when noevar && isMeta sigma c -> ()

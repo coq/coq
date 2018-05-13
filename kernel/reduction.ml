@@ -84,7 +84,7 @@ let map_lift (l : lift) (v : fconstr array) = match v with
 | [|c0; c1|] -> [|(l, c0); (l, c1)|]
 | [|c0; c1; c2|] -> [|(l, c0); (l, c1); (l, c2)|]
 | [|c0; c1; c2; c3|] -> [|(l, c0); (l, c1); (l, c2); (l, c3)|]
-| v -> CArray.Fun1.map (fun l t -> (l, t)) l v
+| v -> Array.Fun1.map (fun l t -> (l, t)) l v
 
 let pure_stack lfts stk =
   let rec pure_rec lfts stk =
