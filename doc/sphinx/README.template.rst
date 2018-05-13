@@ -22,6 +22,7 @@ Our Coq domain define multiple `objects`_.  Each object has a *signature* (think
       matching :n:`@pattern` in the current goal.
 
       .. exn:: Too few occurrences
+         :undocumented:
 
 Objects are automatically collected into indices, and can be linked to using the role version of the object's directive. For example, you could link to the tactic variant above using ``:tacv:`simpl_at```, and to its exception using ``:exn:`Too few occurrences```.
 
@@ -30,6 +31,8 @@ Names (link targets) are auto-generated for most simple objects, though they can
 - Options, errors, warnings have their name set to their signature, with ``...`` replacing all notation bits.  For example, the auto-generated name of ``.. exn:: @qualid is not a module`` is ``... is not a module``, and a link to it would take the form ``:exn:`... is not a module```.
 - Vernacs (commands) have their name set to the first word of their signature.  For example, the auto-generated name of ``Axiom @ident : @term`` is ``Axiom``, and a link to it would take the form ``:cmd:`Axiom```.
 - Vernac variants, tactic notations, and tactic variants do not have a default name.
+
+Most objects should have a body (i.e. a block of indented text following the signature, called “contents” in Sphinx terms).  Undocumented objects should have the `:undocumented:` flag instead, as shown above.
 
 Notations
 ---------
@@ -112,6 +115,8 @@ DON'T
 
      Foo all the :token:`bar`\ s in
      the current context
+
+You can set the ``report_undocumented_coq_objects`` setting in ``conf.py`` to ``"info"`` or ``"warning"`` to get a list of all Coq objects without a description.
 
 Overusing ``:token:``
 ---------------------
