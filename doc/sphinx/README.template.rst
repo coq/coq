@@ -83,6 +83,62 @@ In addition to the objects and directives above, the ``coqrst`` Sphinx plugin de
 
 [ROLES]
 
+Common mistakes
+===============
+
+Improper nesting
+----------------
+
+DO
+  .. code::
+
+     .. cmd:: Foo @bar
+
+        Foo the first instance of :token:`bar`\ s.
+
+        .. cmdv:: Foo All
+
+           Foo all the :token:`bar`\ s in
+           the current context
+
+DON'T
+  .. code::
+
+     .. cmd:: Foo @bar
+
+     Foo the first instance of :token:`bar`\ s.
+
+     .. cmdv:: Foo All
+
+     Foo all the :token:`bar`\ s in
+     the current context
+
+Overusing ``:token:``
+---------------------
+
+DO
+  .. code::
+
+     This is equivalent to :n:`Axiom @ident : @term`.
+
+DON'T
+  .. code::
+
+     This is equivalent to ``Axiom`` :token`ident` : :token:`term`.
+
+Omitting annotations
+--------------------
+
+DO
+  .. code::
+
+     .. tacv:: assert @form as @intro_pattern
+
+DON'T
+  .. code::
+
+     .. tacv:: assert form as intro_pattern
+
 Tips and tricks
 ===============
 
