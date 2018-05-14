@@ -55,6 +55,7 @@ before_script:
     paths:
       - _install_ci
       - config/Makefile
+      - config/coq_config.py
       - test-suite/misc/universes/all_stdlib.v
     expire_in: 1 week
   script:
@@ -70,7 +71,7 @@ before_script:
 
     - echo 'start:coq.build'
     - make -j "$NJOBS" byte
-    - make -j "$NJOBS"
+    - make -j "$NJOBS" world $EXTRA_TARGET
     - make test-suite/misc/universes/all_stdlib.v
     - echo 'end:coq:build'
 
@@ -108,6 +109,19 @@ before_script:
 # artifacts are used together and we may get some random Coq. To that
 # purpose, we add a spurious dependency `not-a-real-job` that must be
 # overridden otherwise the CI will fail.
+
+.doc-templare: &doc-template
+  stage: test
+  dependencies:
+    - not-a-real-job
+  script:
+    - SPHINXENV='COQBIN="'"$PWD"'/_install_ci/bin/" COQBOOT=no'
+    - make -j "$NJOBS" SPHINXENV="$SPHINXENV" SPHINX_DEPS= sphinx
+    - make install-doc-sphinx
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _install_ci/share/doc/coq/
 
 # set dependencies when using
 .test-suite-template: &test-suite-template
@@ -181,7 +195,9 @@ before_script:
 build:base:
   <<: *build-template
   variables:
-    COQ_EXTRA_CONF: "-native-compiler yes -coqide opt -with-doc yes"
+    COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
+    # coqdoc for stdlib, until we know how to build it from installed Coq
+    EXTRA_TARGET: "stdlib"
 
 # no coqide for 32bit: libgtk installation problems
 build:base+32bit:
@@ -227,6 +243,11 @@ warnings:edge:
   variables:
     <<: *warnings-variables
     OPAM_SWITCH: edge
+
+documentation:
+  <<: *doc-template
+  dependencies:
+    - build:base
 
 test-suite:base:
   <<: *test-suite-template

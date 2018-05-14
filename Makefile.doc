@@ -31,6 +31,7 @@ DVIPS:=dvips
 HTMLSTYLE:=coqremote
 
 # Sphinx-related variables
+SPHINXENV:=COQBIN="$(CURDIR)/bin/"
 SPHINXOPTS= -j4
 SPHINXBUILD= sphinx-build
 SPHINXBUILDDIR= doc/sphinx/_build
@@ -55,7 +56,7 @@ endif
 
 sphinx: $(SPHINX_DEPS)
 	$(SHOW)'SPHINXBUILD doc/sphinx'
-	$(HIDE)COQBIN="$(abspath bin)" $(SPHINXBUILD) -W -b html $(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/html
+	$(HIDE)$(SPHINXENV) $(SPHINXBUILD) -W -b html $(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(SPHINXBUILDDIR)/html."
 
