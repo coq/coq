@@ -49,7 +49,11 @@ DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
 
 doc: sphinx stdlib
 
-sphinx: coq
+ifndef QUICK
+SPHINX_DEPS := coq
+endif
+
+sphinx: $(SPHINX_DEPS)
 	$(SHOW)'SPHINXBUILD doc/sphinx'
 	$(HIDE)COQBIN="$(PWD)/bin" $(SPHINXBUILD) -W -b html $(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/html
 	@echo
