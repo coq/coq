@@ -96,10 +96,10 @@ bindings_list`` where ``bindings_list`` may be of two different forms:
 
 + A bindings list can also be a simple list of terms :n:`{* term}`.
   In that case the references to which these terms correspond are
-  determined by the tactic. In case of ``induction``, ``destruct``, ``elim``
-  and ``case`` (see :ref:`ltac`) the terms have to
+  determined by the tactic. In case of :tacn:`induction`, :tacn:`destruct`, :tacn:`elim`
+  and :tacn:`case`, the terms have to
   provide instances for all the dependent products in the type of term while in
-  the case of ``apply``, or of ``constructor`` and its variants, only instances
+  the case of :tacn:`apply`, or of :tacn:`constructor` and its variants, only instances
   for the dependent products that are not bound in the conclusion of the type
   are required.
 
@@ -503,7 +503,7 @@ Applying theorems
 
 .. tacv:: eapply {+, @term with @bindings_list} in @ident as @intro_pattern.
 
-   This works as :tacn:`apply ... in as`  but using ``eapply``.
+   This works as :tacn:`apply ... in ... as`  but using ``eapply``.
 
 .. tacv:: simple apply @term in @ident
 
@@ -511,15 +511,15 @@ Applying theorems
    on subterms that contain no variables to instantiate. For instance, if
    :g:`id := fun x:nat => x` and :g:`H: forall y, id y = y -> True` and
    :g:`H0 : O = O` then ``simple apply H in H0`` does not succeed because it
-   would require the conversion of :g:`id ?1234` and :g:`O` where :g:`?1234` is
-   a variable to instantiate. Tactic :n:`simple apply @term in @ident` does not
+   would require the conversion of :g:`id ?x` and :g:`O` where :g:`?x` is
+   an existential variable to instantiate. Tactic :n:`simple apply @term in @ident` does not
    either traverse tuples as :n:`apply @term in @ident` does.
 
 .. tacv:: {? simple} apply {+, @term {? with @bindings_list}} in @ident {? as @intro_pattern}
 .. tacv:: {? simple} eapply {+, @term {? with @bindings_list}} in @ident {? as @intro_pattern}
 
-   This summarizes the different syntactic variants of :n:`apply @term in
-   @ident` and :n:`eapply @term in @ident`.
+   This summarizes the different syntactic variants of :n:`apply @term in @ident`
+   and :n:`eapply @term in @ident`.
 
 .. tacn:: constructor @num
    :name: constructor
@@ -626,22 +626,21 @@ binder. If the goal is a product, the tactic implements the "Lam" rule given in
 :ref:`Typing-rules` [1]_. If the goal starts with a let binder, then the
 tactic implements a mix of the "Let" and "Conv".
 
-If the current goal is a dependent product :math:`\forall` :g:`x:T, U` (resp
+If the current goal is a dependent product :g:`forall x:T, U` (resp
 :g:`let x:=t in U`) then ``intro`` puts :g:`x:T` (resp :g:`x:=t`) in the local
 context. The new subgoal is :g:`U`.
 
 If the goal is a non-dependent product :g:`T`:math:`\rightarrow`:g:`U`, then it
 puts in the local context either :g:`Hn:T` (if :g:`T` is of type :g:`Set` or
-:g:`Prop`) or Xn:T (if the type of :g:`T` is :g:`Type`). The optional index
+:g:`Prop`) or :g:`Xn:T` (if the type of :g:`T` is :g:`Type`). The optional index
 ``n`` is such that ``Hn`` or ``Xn`` is a fresh identifier. In both cases, the
 new subgoal is :g:`U`.
 
 If the goal is an existential variable, ``intro`` forces the resolution of the
-existential variable into a dependent product :math:`\forall`:g:`x:?X, ?Y`, puts
+existential variable into a dependent product :math:`forall`:g:`x:?X, ?Y`, puts
 :g:`x:?X` in the local context and leaves :g:`?Y` as a new subgoal allowed to
 depend on :g:`x`.
 
-If the goal is neither a product, nor starting with a let definition, nor an existential variable,
 the tactic ``intro`` applies the tactic ``hnf`` until the tactic ``intro`` can
 be applied or the goal is not head-reducible.
 
@@ -760,7 +759,7 @@ be applied or the goal is not head-reducible.
 
 
    Assuming a goal of type :g:`Q → P` (non-dependent product), or of type
-   :math:`\forall`:g:`x:T, P` (dependent product), the behavior of
+   :g:`forall x:T, P` (dependent product), the behavior of
    :n:`intros p` is defined inductively over the structure of the introduction
    pattern :n:`p`:
 
@@ -2153,9 +2152,9 @@ See also: :ref:`advanced-recursive-functions`
 
    This variant allows you to specify the generalization of the goal. It is
    useful when the system fails to generalize the goal automatically. If
-   :n:`@ident` has type :g:`(I t)` and :g:`I` has type :math:`\forall`
-   :g:`(x:T), s`, then :n:`@term` must be of type :g:`I:`:math:`\forall`
-   :g:`(x:T), I x -> s'` where :g:`s'` is the type of the goal.
+   :n:`@ident` has type :g:`(I t)` and :g:`I` has type :g:`forall (x:T), s`,
+   then :n:`@term` must be of type :g:`I:forall (x:T), I x -> s'` where
+   :g:`s'` is the type of the goal.
 
 .. tacv:: dependent inversion @ident as @intro_pattern with @term
 
