@@ -28,6 +28,9 @@ docker-boot:
     - if docker pull "$IMAGE"; then echo "Image prebuilt!"; exit 0; fi
     - docker build -t "$IMAGE" .
     - docker push "$IMAGE"
+  except:
+    variables:
+      - $SKIP_DOCKER == "true"
 
 before_script:
   - cat /proc/{cpu,mem}info || true
