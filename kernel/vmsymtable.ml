@@ -300,8 +300,5 @@ and val_of_constr env sigma c =
   | Some v -> eval_to_patch env sigma v
   | None -> assert false
 
-let set_transparent_const _kn = () (* !?! *)
-let set_opaque_const _kn = () (* !?! *)
-
 let vm_interp code v env k =
   coq_interprete code v (get_atom_rel ()) (get_global_data ()) env k
