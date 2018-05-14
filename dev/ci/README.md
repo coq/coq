@@ -36,9 +36,8 @@ On the condition that:
 - You do not push, to the branches that we test, commits that haven't been
   first tested to compile with the corresponding branch(es) of Coq.
 
-- Your development compiles in less than 35 minutes with just two threads.
-  If this is not the case, consider adding a "lite" target that compiles just
-  part of it.
+- You maintain a reasonable build time for your development, or you provide
+  a "lite" target that we can use.
 
 In case you forget to comply with these last three conditions, we would reach
 out to you and give you a 30-day grace period during which your development
@@ -54,9 +53,10 @@ Add a new `ci-mydev.sh` script to [`dev/ci`](/dev/ci) (have a look at
 set the corresponding variables in
 [`ci-basic-overlay.sh`](/dev/ci/ci-basic-overlay.sh); add the corresponding
 target to [`Makefile.ci`](/Makefile.ci); add new jobs to
-[`.travis.yml`](/.travis.yml) and [`.gitlab-ci.yml`](/.gitlab-ci.yml) so that
-this new target is run. **Do not hesitate to submit an incomplete pull request
-if you need help to finish it.**
+[`.gitlab-ci.yml`](/.gitlab-ci.yml),
+[`.circleci/config.yml`](/.circleci/config.yml) and
+[`.travis.yml`](/.travis.yml) so that this new target is run. **Do not
+hesitate to submit an incomplete pull request if you need help to finish it.**
 
 You may also be interested in having your development tested in our
 performance benchmark. Currently this is done by providing an OPAM package
@@ -71,24 +71,38 @@ When you submit a pull request (PR) on Coq GitHub repository, this will
 automatically launch a battery of CI tests. The PR will not be integrated
 unless these tests pass.
 
-Currently, we have two CI platforms:
+We are currently running tests on the following platforms:
 
-- Travis is the main CI platform. It tests the compilation of Coq, of the
+- GitLab CI is the main CI platform. It tests the compilation of Coq, of the
   documentation, and of CoqIDE on Linux with several versions of OCaml /
   camlp5, and with warnings as errors; it runs the test-suite and tests the
-  compilation of several external developments. It also tests the compilation
-  of Coq on OS X.
+  compilation of several external developments.
+
+- Circle CI runs tests that are redundant with GitLab CI and may be removed
+  eventually.
+
+- Travis CI is used to test the compilation of Coq and run the test-suite on
+  macOS. It also runs a linter that checks whitespace discipline. A
+  [pre-commit hook](/dev/tools/pre-commit) is automatically installed by
+  `./configure`. It should allow complying with this discipline without pain.
 
 - AppVeyor is used to test the compilation of Coq and run the test-suite on
   Windows.
 
-You can anticipate the results of these tests prior to submitting your PR
-by having them run of your fork of Coq, on GitHub or GitLab. This can be
-especially helpful given that our Travis platform is often overloaded and
-therefore there can be a significant delay before these tests are actually
-run on your PR. To take advantage of this, simply create a Travis account
-and link it to your GitHub account, or activate the pipelines on your GitLab
-fork.
+You can anticipate the results of most of these tests prior to submitting your
+PR by running GitLab CI on your private branches. To do so follow these steps:
+
+1. Log into GitLab CI (the easiest way is to sign in with your GitHub account).
+2. Click on "New Project".
+3. Choose "CI / CD for external repository" then click on "GitHub".
+4. Find your fork of the Coq repository and click on "Connect".
+5. You are encouraged to go to the CI / CD general settings and increase the
+   timeout from 1h to 2h for better reliability.
+
+Now everytime you push (including force-push unless you changed the default
+GitLab setting) to your fork on GitHub, it will be synchronized on GitLab and
+CI will be run. You will receive an e-mail with a report of the failures if
+there are some.
 
 You can also run one CI target locally (using `make ci-somedev`).
 
@@ -97,36 +111,29 @@ so that it doesn't, or provide a branch fixing these developments (or at
 least work with the author of the development / other Coq developers to
 prepare these fixes). Then, add an overlay in
 [`dev/ci/user-overlays`](/dev/ci/user-overlays) (see the README there)
-in a separate commit in your PR.
+as part of your PR.
 
 The process to merge your PR is then to submit PRs to the external
 development repositories, merge the latter first (if the fixes are
-backward-compatible), drop the overlay commit and merge the PR on Coq then.
+backward-compatible), and merge the PR on Coq then.
 
 See also [`test-suite/README.md`](/test-suite/README.md) for information about adding new tests to the test-suite.
 
 
-Travis specific information
----------------------------
+Advanced GitLab CI information
+------------------------------
 
-Travis rebuilds all of Coq's executables and stdlib for each job. Coq
-is built with `./configure -local`, then used for the job's test.
-
-
-GitLab specific information
----------------------------
-
-GitLab is set up to use the "build artifact" feature to avoid
-rebuilding Coq. In one job, Coq is built with `./configure -prefix
-install` and `make install` is run, then the `install` directory
+GitLab CI is set up to use the "build artifact" feature to avoid
+rebuilding Coq. In one job, Coq is built with `./configure -prefix _install_ci`
+and `make install` is run, then the `_install_ci` directory
 persists to and is used by the next jobs.
 
 Artifacts can also be downloaded from the GitLab repository.
 Currently, available artifacts are:
 - the Coq executables and stdlib, in three copies varying in
-  architecture and Ocaml version used to build Coq.
-- the Coq documentation, in two different copies varying in the OCaml
-  version used to build Coq
+  architecture and OCaml version used to build Coq.
+- the Coq documentation, built only in the `build:base` job. When submitting
+  a documentation PR, this can help reviewers checking the rendered result.
 
 As an exception to the above, jobs testing that compilation triggers
-no Ocaml warnings build Coq in parallel with other tests.
+no OCaml warnings build Coq in parallel with other tests.
