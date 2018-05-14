@@ -338,3 +338,6 @@
 /dev/tools/pre-commit @SkySkimmer
 
 /dev/tools/sudo-apt-get-update @JasonGross
+
+/dev/tools/check-owners*.sh @SkySkimmer
+# Secondary maintainer @maximedenes
