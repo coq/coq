@@ -3411,7 +3411,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       Adds each :n:`Hint Unfold @ident`.
 
    .. cmdv:: Hint %( Transparent %| Opaque %) @qualid
-      :name: Hint %( Transparent %| Opaque %)
+      :name: Hint ( Transparent | Opaque )
 
       This adds a transparency hint to the database, making :n:`@qualid` a
       transparent or opaque constant during resolution. This information is used
