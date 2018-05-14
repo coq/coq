@@ -165,15 +165,15 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
   | NApp (a,args) -> GApp (f e a, List.map (f e) args)
   | NList (x,y,iter,tail,swap) ->
       let t = f e tail in let it = f e iter in
-      let innerl = (ldots_var,t)::(if swap then [] else [x, lt @@ GVar y]) in
+      let innerl = (ldots_var,t)::(if swap then [y, lt @@ GVar x] else []) in
       let inner  = lt @@ GApp (lt @@ GVar (ldots_var),[subst_glob_vars innerl it]) in
-      let outerl = (ldots_var,inner)::(if swap then [x, lt @@ GVar y] else []) in
+      let outerl = (ldots_var,inner)::(if swap then [] else [y, lt @@ GVar x]) in
       DAst.get (subst_glob_vars outerl it)
   | NBinderList (x,y,iter,tail,swap) ->
       let t = f e tail in let it = f e iter in
-      let innerl = (ldots_var,t)::(if swap then [] else [x, lt @@ GVar y]) in
+      let innerl = (ldots_var,t)::(if swap then [y, lt @@ GVar x] else []) in
       let inner  = lt @@ GApp (lt @@ GVar ldots_var,[subst_glob_vars innerl it]) in
-      let outerl = (ldots_var,inner)::(if swap then [x, lt @@ GVar y] else []) in
+      let outerl = (ldots_var,inner)::(if swap then [] else [y, lt @@ GVar x]) in
       DAst.get (subst_glob_vars outerl it)
   | NLambda (na,ty,c) ->
       let e',disjpat,na = g e na in GLambda (na,Explicit,f e ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
