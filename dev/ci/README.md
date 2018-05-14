@@ -96,7 +96,8 @@ PR by running GitLab CI on your private branches. To do so follow these steps:
 2. Click on "New Project".
 3. Choose "CI / CD for external repository" then click on "GitHub".
 4. Find your fork of the Coq repository and click on "Connect".
-5. You are encouraged to go to the CI / CD general settings and increase the
+5. If GitLab did not do so automatically, [enable the Container Registry](https://docs.gitlab.com/ee/user/project/container_registry.html#enable-the-container-registry-for-your-project).
+6. You are encouraged to go to the CI / CD general settings and increase the
    timeout from 1h to 2h for better reliability.
 
 Now everytime you push (including force-push unless you changed the default
@@ -137,3 +138,27 @@ Currently, available artifacts are:
 
 As an exception to the above, jobs testing that compilation triggers
 no OCaml warnings build Coq in parallel with other tests.
+
+### GitLab and Windows
+
+
+If your repository has access to runners tagged `windows`, setting the
+secret variable `WINDOWS` to `enabled` will add jobs building Windows
+versions of Coq (32bit and 64bit).
+
+The Windows jobs are enabled on Coq's repository, where pipelines for
+pull requests run.
+
+### GitLab and Docker
+
+System and opam packages are installed in a Docker image. The image is
+automatically built and uploaded to your GitLab registry, and is
+loaded by subsequent jobs.
+
+The Docker building job reuses the uploaded image if it is available,
+but if you wish to save more time you can skip the job by setting
+`SKIP_DOCKER` to `true`.
+
+This means you will need to change its value when the Docker image
+needs to be updated. You can do so for a single pipeline by starting
+it through the web interface.
