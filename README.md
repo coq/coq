@@ -1,5 +1,6 @@
 # Coq
 
+[![pipeline status](https://gitlab.com/coq/coq/badges/master/pipeline.svg)](https://gitlab.com/coq/coq/commits/master)
 [![Travis](https://travis-ci.org/coq/coq.svg?branch=master)](https://travis-ci.org/coq/coq/builds)
 [![Appveyor](https://ci.appveyor.com/api/projects/status/eln43k05pa2vm908/branch/master?svg=true)](https://ci.appveyor.com/project/coq/coq/branch/master)
 [![Circle CI](https://circleci.com/gh/coq/coq/tree/master.svg?style=shield)](https://circleci.com/gh/coq/workflows/coq/tree/master)
