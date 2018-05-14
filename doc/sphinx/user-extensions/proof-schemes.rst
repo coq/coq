@@ -26,6 +26,7 @@ induction for objects in type `identᵢ`.
   natural in case of inductively defined relations.
 
 .. cmdv:: Scheme Equality for @ident
+   :name: Scheme Equality
 
    Tries to generate a Boolean equality and a proof of the decidability of the usual equality. If `ident`
    involves some other inductive types, their equality has to be defined first.

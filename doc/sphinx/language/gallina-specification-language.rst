@@ -609,6 +609,7 @@ of any section is equivalent to using ``Local Parameter``.
    Adds blocks of variables with different specifications.
 
 .. cmdv:: Variables {+ ( {+ @ident } : @term) }
+   :name: Variables
 
 .. cmdv:: Hypothesis {+ ( {+ @ident } : @term) }
    :name: Hypothesis
@@ -672,6 +673,7 @@ Section :ref:`typing-rules`.
    You have to explicitly give their fully qualified name to refer to them.
 
 .. cmdv:: Example @ident := @term
+   :name: Example
 
 .. cmdv:: Example @ident : @term := @term
 

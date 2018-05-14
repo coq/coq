@@ -916,9 +916,8 @@ Binding arguments of a constant to an interpretation scope
 
 .. seealso::
 
-   :cmd:`About @qualid`
-     The command to show the scopes bound to the arguments of a
-     function is described in Section 2.
+   The command :cmd:`About` can be used to show the scopes bound to the
+   arguments of a function.
 
 .. note::
 
