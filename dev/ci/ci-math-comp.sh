@@ -5,11 +5,10 @@ ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
 mathcomp_CI_DIR="${CI_BUILD_DIR}/math-comp"
+oddorder_CI_DIR="${CI_BUILD_DIR}/odd-order"
 
-checkout_mathcomp "${mathcomp_CI_DIR}"
+git_checkout "${mathcomp_CI_BRANCH}" "${mathcomp_CI_GITURL}" "${mathcomp_CI_DIR}"
+git_checkout "${oddorder_CI_BRANCH}" "${oddorder_CI_GITURL}" "${oddorder_CI_DIR}"
 
-# odd_order takes too much time for travis.
-( cd "${mathcomp_CI_DIR}/mathcomp"                  && \
-  sed -i.bak '/PFsection/d'                  Make && \
-  sed -i.bak '/stripped_odd_order_theorem/d' Make && \
-  make Makefile.coq && make -f Makefile.coq all )
+( cd "${mathcomp_CI_DIR}/mathcomp" && make && make install )
+( cd "${oddorder_CI_DIR}/" && make )

@@ -87,13 +87,7 @@ matrix:
       - TEST_TARGET="ci-equations"
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="ci-geocoq"
-    - if: NOT (type = pull_request)
-      env:
       - TEST_TARGET="ci-fcsl-pcm"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-fiat-crypto"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-fiat-parsers"
@@ -102,22 +96,13 @@ matrix:
       - TEST_TARGET="ci-flocq"
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="ci-formal-topology"
-    - if: NOT (type = pull_request)
-      env:
       - TEST_TARGET="ci-hott"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-iris-lambda-rust"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-ltac2"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-math-classes"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-math-comp"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-mtac2"
@@ -127,12 +112,6 @@ matrix:
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-sf"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-unimath"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-vst"
 
     - env:
       - TEST_TARGET="lint"
