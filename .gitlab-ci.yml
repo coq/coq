@@ -76,7 +76,7 @@ before_script:
 
     - set +e
   variables: &warnings-variables
-    COQ_EXTRA_CONF: "-native-compiler yes -coqide byte -byte-only"
+    COQ_EXTRA_CONF: "-native-compiler yes -coqide byte -byte-only -warn-error yes"
 
 # every non build job must set dependencies otherwise all build
 # artifacts are used together and we may get some random Coq. To that
@@ -171,6 +171,7 @@ warnings:base:
 warnings:edge:
   <<: *warnings-template
   variables:
+    <<: *warnings-variables
     OPAM_SWITCH: edge
 
 test-suite:base:
