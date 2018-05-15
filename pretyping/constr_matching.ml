@@ -427,7 +427,7 @@ let special_meta = (-1)
 
 type matching_result =
     { m_sub : bound_ident_map * patvar_map;
-      m_ctx : constr; }
+      m_ctx : constr Lazy.t; }
 
 let mkresult s c n = IStream.Cons ( { m_sub=s; m_ctx=c; } , (IStream.thunk n) )
 
@@ -451,7 +451,7 @@ let authorized_occ env sigma closed pat c mk_ctx =
     let subst = matches_core_closed env sigma pat c in
     if closed && Id.Map.exists (fun _ c -> not (closed0 sigma c)) (snd subst)
     then (fun next -> next ())
-    else (fun next -> mkresult subst (mk_ctx (mkMeta special_meta)) next)
+    else (fun next -> mkresult subst (lazy (mk_ctx (mkMeta special_meta))) next)
   with PatternMatchingFailure -> (fun next -> next ())
 
 let subargs env v = Array.map_to_list (fun c -> (env, c)) v
