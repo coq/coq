@@ -1245,37 +1245,37 @@ inhabitant of the type) is interactively built using tactics. The interactive
 proof mode is described in Chapter :ref:`proofhandling` and the tactics in
 Chapter :ref:`Tactics`. The basic assertion command is:
 
-.. cmd:: Theorem @ident : @type
+.. cmd:: Theorem @ident {? @binders } : @type
 
-After the statement is asserted, Coq needs a proof. Once a proof of
-:token:`type` under the assumptions represented by :token:`binders` is given and
-validated, the proof is generalized into a proof of forall , :token:`type` and
-the theorem is bound to the name :token:`ident` in the environment.
+   After the statement is asserted, Coq needs a proof. Once a proof of
+   :token:`type` under the assumptions represented by :token:`binders` is given and
+   validated, the proof is generalized into a proof of :n:`forall @binders, @type` and
+   the theorem is bound to the name :token:`ident` in the environment.
 
-.. exn:: The term @term has type @type which should be Set, Prop or Type.
+   .. exn:: The term @term has type @type which should be Set, Prop or Type.
 
-.. exn:: @ident already exists.
-   :name: @ident already exists. (Theorem)
+   .. exn:: @ident already exists.
+      :name: @ident already exists. (Theorem)
 
-   The name you provided is already defined. You have then to choose
-   another name.
+      The name you provided is already defined. You have then to choose
+      another name.
 
-.. cmdv:: Lemma @ident : @type
-   :name: Lemma
+   The following commands are synonyms of :n:`Theorem @ident {? @binders } : type`:
 
-.. cmdv:: Remark @ident : @type
-   :name: Remark
+   .. cmdv:: Lemma @ident {? @binders } : @type
+      :name: Lemma
 
-.. cmdv:: Fact @ident : @type
-   :name: Fact
+   .. cmdv:: Remark @ident {? @binders } : @type
+      :name: Remark
 
-.. cmdv:: Corollary @ident : @type
-   :name: Corollary
+   .. cmdv:: Fact @ident {? @binders } : @type
+      :name: Fact
 
-.. cmdv:: Proposition @ident : @type
-   :name: Proposition
+   .. cmdv:: Corollary @ident {? @binders } : @type
+      :name: Corollary
 
-   These commands are synonyms of ``Theorem`` :token:`ident` : :token:`type`.
+   .. cmdv:: Proposition @ident {? @binders } : @type
+      :name: Proposition
 
 .. cmdv:: Theorem @ident : @type {* with @ident : @type}
 
@@ -1302,13 +1302,13 @@ the theorem is bound to the name :token:`ident` in the environment.
 .. cmdv:: Definition @ident : @type
 
    This allows defining a term of type :token:`type` using the proof editing
-   mode. It behaves as Theorem but is intended to be used in conjunction with
+   mode. It behaves as :cmd:`Theorem` but is intended to be used in conjunction with
    :cmd:`Defined` in order to define a constant of which the computational
    behavior is relevant.
 
    The command can be used also with :cmd:`Example` instead of :cmd:`Definition`.
 
-   See also :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
+   .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
 .. cmdv:: Let @ident : @type
 
@@ -1328,21 +1328,14 @@ the theorem is bound to the name :token:`ident` in the environment.
    This generalizes the syntax of CoFixpoint so that one or more bodies
    can be defined interactively using the proof editing mode.
 
-.. cmd:: Proof
+A proof starts by the keyword :cmd:`Proof`. Then Coq enters the proof editing mode
+until the proof is completed. The proof editing mode essentially contains
+tactics that are described in chapter :ref:`Tactics`. Besides tactics, there
+are commands to manage the proof editing mode. They are described in Chapter
+:ref:`proofhandling`.
 
-   A proof starts by the keyword Proof. Then Coq enters the proof editing mode
-   until the proof is completed. The proof editing mode essentially contains
-   tactics that are described in chapter :ref:`Tactics`. Besides tactics, there
-   are commands to manage the proof editing mode. They are described in Chapter
-   :ref:`proofhandling`.
-
-.. cmd:: Qed
-
-   When the proof is completed it should be validated and put in the environment
-   using the keyword Qed.
-
-.. exn:: @ident already exists.
-   :name: @ident already exists. (Qed)
+When the proof is completed it should be validated and put in the environment
+using the keyword :cmd:`Qed`.
 
 .. note::
 
@@ -1351,28 +1344,19 @@ the theorem is bound to the name :token:`ident` in the environment.
    #. Not only other assertions but any vernacular command can be given
       while in the process of proving a given assertion. In this case, the
       command is understood as if it would have been given before the
-      statements still to be proved.
+      statements still to be proved. Nonetheless, this practice is discouraged
+      and may stop working in future versions.
 
-   #. Proof is recommended but can currently be omitted. On the opposite
-      side, Qed (or Defined, see below) is mandatory to validate a proof.
-
-   #. Proofs ended by Qed are declared opaque. Their content cannot be
+   #. Proofs ended by :cmd:`Qed` are declared opaque. Their content cannot be
       unfolded (see :ref:`performingcomputations`), thus
       realizing some form of *proof-irrelevance*. To be able to unfold a
-      proof, the proof should be ended by Defined (see below).
+      proof, the proof should be ended by :cmd:`Defined`.
 
-.. cmdv:: Defined
-   :name: Defined
+   #. :cmd:`Proof` is recommended but can currently be omitted. On the opposite
+      side, :cmd:`Qed` (or :cmd:`Defined`) is mandatory to validate a proof.
 
-   Same as :cmd:`Qed` but the proof is then declared transparent, which means
-   that its content can be explicitly used for type-checking and that it can be
-   unfolded in conversion tactics (see :ref:`performingcomputations`,
-   :cmd:`Opaque`, :cmd:`Transparent`).
-
-.. cmdv:: Admitted
-   :name: Admitted
-
-   Turns the current asserted statement into an axiom and exits the proof mode.
+   #. One can also use :cmd:`Admitted` in place of :cmd:`Qed` to turn the
+      current asserted statement into an axiom and exit the proof editing mode.
 
 .. [1]
    This is similar to the expression “*entry* :math:`\{` sep *entry*
