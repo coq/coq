@@ -69,9 +69,6 @@ type kind_load =
 (* Must be always initialized *)
 let load = ref WithoutTop
 
-(* Are we in a native version of Coq? *)
-let is_native = Dynlink.is_native
-
 (* Sets and initializes a toplevel (if any) *)
 let set_top toplevel = load :=
   WithTop toplevel;
@@ -89,7 +86,7 @@ let is_ocaml_top () =
     |_ -> false
 
 (* Tests if we can load ML files *)
-let has_dynlink = Coq_config.has_natdynlink || not is_native
+let has_dynlink = Coq_config.has_natdynlink || not Sys.(backend_type = Native)
 
 (* Runs the toplevel loop of Ocaml *)
 let ocaml_toploop () =
@@ -149,7 +146,7 @@ let dir_ml_use s =
     | WithTop t -> t.use_file s
     | _ ->
        let moreinfo =
-	 if Dynlink.is_native then " Loading ML code works only in bytecode."
+         if Sys.(backend_type = Native) then " Loading ML code works only in bytecode."
 	 else ""
        in
       user_err ~hdr:"Mltop.dir_ml_use" (str "Could not load ML code." ++ str moreinfo)
@@ -257,7 +254,8 @@ let file_of_name name =
        str"Loadpath: " ++ str(String.concat ":" !coq_mlpath_copy)) in
   if not (Filename.is_relative name) then
     if Sys.file_exists name then name else fail name
-  else if is_native then
+  else if Sys.(backend_type = Native) then
+    (* XXX: Dynlink.adapt_filename does the same? *)
     let name = match suffix with
       | Some ((".cmo"|".cma") as suffix) ->
           (Filename.chop_suffix name suffix) ^ ".cmxs"

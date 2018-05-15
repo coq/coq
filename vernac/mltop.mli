@@ -21,9 +21,6 @@ type toplevel = {
 (** Sets and initializes a toplevel (if any) *)
 val set_top : toplevel -> unit
 
-(** Are we in a native version of Coq? *)
-val is_native : bool
-
 (** Removes the toplevel (if any) *)
 val remove : unit -> unit
 

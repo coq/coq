@@ -1,5 +1,10 @@
-Changes beyond 8.9
-==================
+Changes from 8.9 to 8.10
+========================
+
+OCaml
+
+- Coq 8.10 requires OCaml >= 4.05.0, bumped from 4.02.3 See the
+  INSTALL file for more information on dependencies.
 
 Plugins
 

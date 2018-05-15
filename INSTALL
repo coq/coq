@@ -29,7 +29,7 @@ WHAT DO YOU NEED ?
 
    To compile Coq yourself, you need:
 
-   - OCaml (version >= 4.02.3)
+   - OCaml (version >= 4.05.0)
      (available at https://ocaml.org/)
      (This version of Coq has been tested up to OCaml 4.07.0)
 
@@ -39,7 +39,7 @@ WHAT DO YOU NEED ?
    - Findlib (version >= 1.4.1)
      (available at http://projects.camlcity.org/projects/findlib.html)
 
-   - Camlp5 (version >= 6.14)
+   - Camlp5 (version >= 7.01)
      (available at https://camlp5.github.io/)
 
    - GNU Make version 3.81 or later
@@ -88,7 +88,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    computer and that "ocamlc" (or, better, its native code version
    "ocamlc.opt") lies in a directory which is present in your $PATH
    environment variable. At the time of writing this sentence, all
-   versions of Objective Caml later or equal to 4.02.3 are
+   versions of Objective Caml later or equal to 4.05.0 are
    supported.
 
    To get Coq in native-code, (it runs 4 to 10 times faster than
