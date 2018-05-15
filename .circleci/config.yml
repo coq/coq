@@ -160,22 +160,22 @@ workflows:
           requires:
             - build
             - bignums
-      - compcert: *req-main
-      - coq-dpdgraph: *req-main
-      - coquelicot: *req-main
-      - cross-crypto: *req-main
-      - elpi: *req-main
-      - equations: *req-main
-      - geocoq: *req-main
-      - fcsl-pcm: *req-main
-      - fiat-crypto: *req-main
-      - fiat-parsers: *req-main
-      - flocq: *req-main
+      # - compcert: *req-main
+      # - coq-dpdgraph: *req-main
+      # - coquelicot: *req-main
+      # - cross-crypto: *req-main
+      # - elpi: *req-main
+      # - equations: *req-main
+      # - geocoq: *req-main
+      # - fcsl-pcm: *req-main
+      # - fiat-crypto: *req-main
+      # - fiat-parsers: *req-main
+      # - flocq: *req-main
       - math-classes:
           requires:
             - build
             - bignums
-      - mtac2: *req-main
+      # - mtac2: *req-main
       - corn:
           requires:
             - build
@@ -184,11 +184,11 @@ workflows:
           requires:
             - build
             - corn
-      - hott: *req-main
-      - iris-lambda-rust: *req-main
-      - ltac2: *req-main
-      - math-comp: *req-main
-      - pidetop: *req-main
-      - sf: *req-main
-      - unimath: *req-main
-      - vst: *req-main
+      # - hott: *req-main
+      # - iris-lambda-rust: *req-main
+      # - ltac2: *req-main
+      # - math-comp: *req-main
+      # - pidetop: *req-main
+      # - sf: *req-main
+      # - unimath: *req-main
+      # - vst: *req-main
