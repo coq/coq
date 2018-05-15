@@ -170,7 +170,7 @@ module PatternMatching (E:StaticEnvironment) = struct
             let nctx = { subst } in
             match merge ctx nctx with
             | None -> (map s (e, info)).stream k ctx
-            | Some nctx -> Proofview.tclOR (k (Some m_ctx) nctx) (fun e -> (map s e).stream k ctx)
+            | Some nctx -> Proofview.tclOR (k (Some (Lazy.force m_ctx)) nctx) (fun e -> (map s e).stream k ctx)
         }
       in
       map (Constr_matching.match_subterm E.env E.sigma (Id.Set.empty,p) term) imatching_error

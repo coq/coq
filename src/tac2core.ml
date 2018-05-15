@@ -557,7 +557,7 @@ let () = define2 "pattern_matches_subterm" pattern constr begin fun pat c ->
   | IStream.Cons ({ m_sub = (_, sub); m_ctx }, s) ->
     let ans = Id.Map.bindings sub in
     let of_pair (id, c) = Value.of_tuple [| Value.of_ident id; Value.of_constr c |] in
-    let ans = Value.of_tuple [| Value.of_constr m_ctx; Value.of_list of_pair ans |] in
+    let ans = Value.of_tuple [| Value.of_constr (Lazy.force m_ctx); Value.of_list of_pair ans |] in
     Proofview.tclOR (return ans) (fun _ -> of_ans s)
   in
   pf_apply begin fun env sigma ->
@@ -589,7 +589,7 @@ let () = define2 "pattern_matches_subterm_vect" pattern constr begin fun pat c -
   | IStream.Cons ({ m_sub = (_, sub); m_ctx }, s) ->
     let ans = Id.Map.bindings sub in
     let ans = Array.map_of_list snd ans in
-    let ans = Value.of_tuple [| Value.of_constr m_ctx; Value.of_array Value.of_constr ans |] in
+    let ans = Value.of_tuple [| Value.of_constr (Lazy.force m_ctx); Value.of_array Value.of_constr ans |] in
     Proofview.tclOR (return ans) (fun _ -> of_ans s)
   in
   pf_apply begin fun env sigma ->
