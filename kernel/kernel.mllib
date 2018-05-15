@@ -29,8 +29,11 @@ Cbytegen
 Nativecode
 Nativelib
 Environ
+Csymtable
+Vm
 CClosure
 Reduction
+Vconv
 Nativeconv
 Type_errors
 Modops
@@ -43,6 +46,3 @@ Subtyping
 Mod_typing
 Nativelibrary
 Safe_typing
-Csymtable
-Vm
-Vconv

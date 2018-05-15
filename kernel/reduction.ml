@@ -789,24 +789,6 @@ let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_sta
     env univs t1 t2 = 
   infer_conv_universes CUMUL l2r evars ts env univs t1 t2
 
-(* This reference avoids always having to link C code with the kernel *)
-let vm_conv = ref (fun cv_pb env ->
-		   gen_conv cv_pb env ~evars:((fun _->None), universes env))
-
-let warn_bytecode_compiler_failed =
-  let open Pp in
-  CWarnings.create ~name:"bytecode-compiler-failed" ~category:"bytecode-compiler"
-         (fun () -> strbrk "Bytecode compiler failed, " ++
-                      strbrk "falling back to standard conversion")
-
-let set_vm_conv (f:conv_pb -> types kernel_conversion_function) = vm_conv := f
-let vm_conv cv_pb env t1 t2 =
-  try
-    !vm_conv cv_pb env t1 t2
-  with Not_found | Invalid_argument _ ->
-    warn_bytecode_compiler_failed ();
-    gen_conv cv_pb env t1 t2
-
 let default_conv cv_pb ?(l2r=false) env t1 t2 =
     gen_conv cv_pb env t1 t2
 

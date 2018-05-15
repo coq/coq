@@ -163,7 +163,7 @@ let warn_no_native_compiler =
 let native_conv cv_pb sigma env t1 t2 =
   if not Coq_config.native_compiler then begin
     warn_no_native_compiler ();
-    vm_conv cv_pb env t1 t2
+    Vconv.vm_conv cv_pb env t1 t2
   end
   else
   let univs = Environ.universes env in
