@@ -624,7 +624,8 @@ where:
   list is a natural, this element should be a number, and not an Ltac
   variable. The empty list ``{}`` is not interpreted as a valid occurrence
   switch, it is rather used as a flag to signal the intent of the user to
-  clear the name following it (see :ref:`ssr_rewrite_occ_switch`)
+  clear the name following it (see :ref:`ssr_rewrite_occ_switch` and
+  :ref:`introduction_ssr`)
 
 The tactic:
 
@@ -1540,7 +1541,7 @@ whose general syntax is
    :name: =>
 
 .. prodn::
-   i_item ::= @i_pattern %| @s_item %| @clear_switch %| /@term
+   i_item ::= @i_pattern %| @s_item %| @clear_switch %| {? %{%} } /@term
 
 .. prodn::
    s_item ::= /= %| // %| //=
@@ -1642,6 +1643,11 @@ The view is applied to the top assumption.
   While it is good style to use the :token:`i_item` i * to pop the variables
   and assumptions corresponding to each constructor, this is not enforced by
   |SSR|.
+``/`` :token:`term`
+  Interprets the top of the stack with the view :token:`term`.
+  It is equivalent to ``move/term``. The optional flag ``{}`` can
+  be used to signal that the :token:`term`, when it is a context entry,
+  has to be cleared.
 ``-``
   does nothing, but counts as an intro pattern. It can also be used to
   force the interpretation of ``[`` :token:`i_item` * ``| … |``
@@ -5284,7 +5290,7 @@ generalization item see :ref:`structure_ssr`
 
 intro pattern :ref:`introduction_ssr`
 
-.. prodn:: i_item ::= @clear_switch %| @s_item %| @i_pattern %| / @term
+.. prodn:: i_item ::= @clear_switch %| @s_item %| @i_pattern %| {? %{%} } / @term
 
 intro item  see :ref:`introduction_ssr`
 
