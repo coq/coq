@@ -37,7 +37,7 @@ and lambda =
                   (* annotations, term being matched, accu, branches *)
   | Lif           of lambda * lambda * lambda
   | Lfix          of (int array * int) * fix_decl 
-  | Lcofix        of int * fix_decl 
+  | Lcofix        of int * fix_decl (* must be in eta-expanded form *)
   | Lmakeblock    of prefix * pconstructor * int * lambda array
                   (* prefix, constructor name, constructor tag, arguments *)
 	(* A fully applied constructor *)
@@ -49,6 +49,10 @@ and lambda =
   | Lind          of prefix * pinductive
   | Llazy
   | Lforce
+
+(* Cofixpoints have to be in eta-expanded form for their call-by-need evaluation
+to be correct. Otherwise, memoization of previous evaluations will be applied
+again to extra arguments (see #7333). *)
 
 and lam_branches = (constructor * Name.t array * lambda) array 
 
