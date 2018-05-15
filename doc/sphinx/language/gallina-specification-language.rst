@@ -1339,7 +1339,8 @@ using the keyword :cmd:`Qed`.
 
 .. note::
 
-   #. Several statements can be simultaneously asserted.
+   #. Several statements can be simultaneously asserted provided option
+      :opt:`Nested Proofs Allowed` was turned on.
 
    #. Not only other assertions but any vernacular command can be given
       while in the process of proving a given assertion. In this case, the

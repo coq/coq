@@ -113,6 +113,8 @@ list of assertion commands is given in :ref:`Assertions`. The command
       Aborts the editing of the proof named :token:`ident` (in case you have
       nested proofs).
 
+      .. seealso:: :opt:`Nested Proofs Allowed`
+
    .. cmdv:: Abort All
 
       Aborts all current goals.
@@ -559,6 +561,17 @@ Controlling the effect of proof editing commands
    When the option is off, binders are discharged on the statement to be
    proved and a tactic such as :tacn:`intro` (see Section :ref:`managingthelocalcontext`)
    has to be used to move the assumptions to the local context.
+
+
+.. opt:: Nested Proofs Allowed
+
+   When turned on (it is off by default), this option enables support for nested
+   proofs: a new assertion command can be inserted before the current proof is
+   finished, in which case Coq will temporarily switch to the proof of this
+   *nested lemma*. When the proof of the nested lemma is finished (with :cmd:`Qed`
+   or :cmd:`Defined`), its statement will be made available (as if it had been
+   proved before starting the previous proof) and Coq will switch back to the
+   proof of the previous assertion.
 
 
 Controlling memory usage
