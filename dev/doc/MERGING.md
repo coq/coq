@@ -112,7 +112,7 @@ are signed. Consequently, it depends on the GnuPG command utility being
 installed and a GPG key being available. Here is a short tutorial to
 creating your own GPG key:
 <https://ekaia.org/blog/2009/05/10/creating-new-gpgkey/>. To link it with
-git, use https://help.github.com/articles/telling-git-about-your-gpg-key/.
+git & github, follow https://help.github.com/articles/signing-commits-with-gpg/.
 
 The script depends on a few other utilities. If you are a Nix user, the
 simplest way of getting them is to run `nix-shell` first.
