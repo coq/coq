@@ -955,7 +955,7 @@ let set_strategy e k l = { e with env =
 
 open Retroknowledge
 
-(* the Environ.register function syncrhonizes the proactive and reactive
+(* the Environ.register function synchronizes the proactive and reactive
    retroknowledge. *)
 let dispatch =
 

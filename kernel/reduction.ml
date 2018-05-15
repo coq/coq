@@ -862,6 +862,17 @@ let dest_prod env =
   in
   decrec env Context.Rel.empty
 
+let dest_lam env =
+  let rec decrec env m c =
+    let t = whd_all env c in
+    match kind t with
+      | Lambda (n,a,c0) ->
+          let d = LocalAssum (n,a) in
+          decrec (push_rel d env) (Context.Rel.add d m) c0
+      | _ -> m,t
+  in
+  decrec env Context.Rel.empty
+
 (* The same but preserving lets in the context, not internal ones. *)
 let dest_prod_assum env =
   let rec prodec_rec env l ty =
@@ -907,3 +918,12 @@ let is_arity env c =
     let _ = dest_arity env c in
     true
   with NotArity -> false
+
+let eta_expand env t ty =
+  let ctxt, codom = dest_prod env ty in
+  let ctxt',t = dest_lam env t in
+  let d = Context.Rel.nhyps ctxt - Context.Rel.nhyps ctxt' in
+  let eta_args = List.rev_map mkRel (List.interval 1 d) in
+  let t = Term.applistc (Vars.lift d t) eta_args in
+  let t = Term.it_mkLambda_or_LetIn t (List.firstn d ctxt) in
+  Term.it_mkLambda_or_LetIn t ctxt'

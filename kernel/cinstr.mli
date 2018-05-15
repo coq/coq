@@ -31,13 +31,17 @@ and lambda =
   | Lprim         of pconstant * int (* arity *) * instruction * lambda array
   | Lcase         of case_info * reloc_table * lambda * lambda * lam_branches
   | Lfix          of (int array * int) * fix_decl
-  | Lcofix        of int * fix_decl
+  | Lcofix        of int * fix_decl (* must be in eta-expanded form *)
   | Lmakeblock    of int * lambda array
   | Lval          of structured_constant
   | Lsort         of Sorts.t
   | Lind          of pinductive
   | Lproj         of int * Constant.t * lambda
   | Luint         of uint
+
+(* Cofixpoints have to be in eta-expanded form for their call-by-need evaluation
+to be correct. Otherwise, memoization of previous evaluations will be applied
+again to extra arguments (see #7333). *)
 
 and lam_branches =
   { constant_branches : lambda array;

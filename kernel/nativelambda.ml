@@ -570,6 +570,7 @@ let rec lambda_of_constr env sigma c =
       Lfix(rec_init, (names, ltypes, lbodies))
 	
   | CoFix(init,(names,type_bodies,rec_bodies)) ->
+      let rec_bodies = Array.map2 (Reduction.eta_expand !global_env) rec_bodies type_bodies in
       let ltypes = lambda_of_args env sigma 0 type_bodies in 
       Renv.push_rels env names;
       let lbodies = lambda_of_args env sigma 0 rec_bodies in
