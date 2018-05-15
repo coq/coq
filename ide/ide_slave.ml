@@ -352,7 +352,6 @@ let about () = {
 }
 
 let handle_exn (e, info) =
-  let (e, info) = ExplainErr.process_vernac_interp_error (e, info) in
   let dummy = Stateid.dummy in
   let loc_of e = match Loc.get_loc e with
     | Some loc -> Some (Loc.unloc loc)
