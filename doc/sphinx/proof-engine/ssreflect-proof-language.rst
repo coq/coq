@@ -623,7 +623,8 @@ where:
 + In the occurrence switch :token:`occ_switch`, if the first element of the
   list is a natural, this element should be a number, and not an Ltac
   variable. The empty list ``{}`` is not interpreted as a valid occurrence
-  switch.
+  switch, it is rather used as a flag to signal the intent of the user to
+  clear the name following it (see :ref:`ssr_rewrite_occ_switch`)
 
 The tactic:
 
@@ -3236,6 +3237,7 @@ the equality.
   Indeed the left hand side of ``H`` does not match
   the redex identified by the pattern ``x + y * 4``.
 
+.. _ssr_rewrite_occ_switch:
 
 Occurrence switches and redex switches
 ``````````````````````````````````````
@@ -3260,6 +3262,9 @@ the rewrite tactic. The effect of the tactic on the initial goal is to
 rewrite this lemma at the second occurrence of the first matching
 ``x + y + 0`` of the explicit rewrite redex ``_ + y + 0``.
 
+An empty occurrence switch ``{}`` is not interpreted as a valid occurrence
+switch. It has the effect of clearing the :token:`r_item` (when it is the name
+of a context entry).
 
 Occurrence selection and repetition
 ```````````````````````````````````
