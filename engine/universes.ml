@@ -605,31 +605,25 @@ let fresh_universe_context_set_instance ctx =
     let cst' = subst_univs_level_constraints subst cst in
       subst, (univs', cst')
 
-let normalize_univ_variable ~find ~update =
+let normalize_univ_variable ~find =
   let rec aux cur =
     let b = find cur in
     let b' = subst_univs_universe aux b in
       if Universe.equal b' b then b
-      else update cur b'
+      else b'
   in aux
 
 let normalize_univ_variable_opt_subst ectx =
   let find l = 
-    match Univ.LMap.find l !ectx with
+    match Univ.LMap.find l ectx with
     | Some b -> b
     | None -> raise Not_found
   in
-  let update l b =
-    assert (match Universe.level b with Some l' -> not (Level.equal l l') | None -> true);
-    try ectx := Univ.LMap.add l (Some b) !ectx; b with Not_found -> assert false
-  in normalize_univ_variable ~find ~update
+  normalize_univ_variable ~find
 
 let normalize_univ_variable_subst subst =
-  let find l = Univ.LMap.find l !subst in
-  let update l b =
-    assert (match Universe.level b with Some l' -> not (Level.equal l l') | None -> true);
-    try subst := Univ.LMap.set l b !subst; b with Not_found -> assert false in
-    normalize_univ_variable ~find ~update
+  let find l = Univ.LMap.find l subst in
+  normalize_univ_variable ~find
 
 let normalize_universe_opt_subst subst =
   let normlevel = normalize_univ_variable_opt_subst subst in
@@ -640,13 +634,10 @@ let normalize_universe_subst subst =
     subst_univs_universe normlevel
 
 let normalize_opt_subst ctx = 
-  let ectx = ref ctx in
-  let normalize = normalize_univ_variable_opt_subst ectx in
-  let () =
-    Univ.LMap.iter (fun u v ->
-      if Option.is_empty v then ()
-      else try ignore(normalize u) with Not_found -> assert(false)) ctx 
-  in !ectx
+  let normalize = normalize_universe_opt_subst ctx in
+  Univ.LMap.mapi (fun u -> function
+      | None -> None
+      | Some v -> Some (normalize v)) ctx
 
 type universe_opt_subst = Universe.t option universe_map
 
@@ -655,7 +646,7 @@ let subst_univs_fn_puniverses f (c, u as cu) =
     if u' == u then cu else (c, u')
 
 let nf_evars_and_universes_opt_subst f subst =
-  let subst = normalize_univ_variable_opt_subst (ref subst) in
+  let subst = normalize_univ_variable_opt_subst subst in
   let lsubst = level_subst_of subst in
   let rec aux c =
     match kind c with
@@ -975,7 +966,7 @@ let normalize_context_set g ctx us algs weak =
   (* Process weak constraints: when one side is flexible and the 2
      universes are unrelated unify them. *)
   let ctx, us, g = UPairSet.fold (fun (u,v) (ctx, us, g as acc) ->
-      let norm = let us = ref us in level_subst_of (normalize_univ_variable_opt_subst us) in
+      let norm = level_subst_of (normalize_univ_variable_opt_subst us) in
       let u = norm u and v = norm v in
       let set_to a b =
         (LSet.remove a ctx,
@@ -994,7 +985,6 @@ let normalize_context_set g ctx us algs weak =
   (* Noneqs is now in canonical form w.r.t. equality constraints, 
      and contains only inequality constraints. *)
   let noneqs =
-    let us = ref us in
     let norm = level_subst_of (normalize_univ_variable_opt_subst us) in
     Constraint.fold (fun (u,d,v) noneqs ->
         let u = norm u and v = norm v in
