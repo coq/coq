@@ -412,8 +412,8 @@ let pr_docc = function
 let pr_ssrdocc _ _ _ = pr_docc
 
 ARGUMENT EXTEND ssrdocc TYPED AS ssrclear option * ssrocc PRINTED BY pr_ssrdocc
-| [ "{" ne_ssrhyp_list(clr) "}" ] -> [ mkclr clr ]
 | [ "{" ssrocc(occ) "}" ] -> [ mkocc occ ]
+| [ "{" ssrhyp_list(clr) "}" ] -> [ mkclr clr ]
 END
 
 (* Old kinds of terms *)
@@ -578,7 +578,7 @@ let rec map_ipat map_id map_ssrhyp map_ast_closure_term = function
   | IPatCase iorpat -> IPatCase (List.map (List.map (map_ipat map_id map_ssrhyp map_ast_closure_term)) iorpat)
   | IPatDispatch iorpat -> IPatDispatch (List.map (List.map (map_ipat map_id map_ssrhyp map_ast_closure_term)) iorpat)
   | IPatInj iorpat -> IPatInj (List.map (List.map (map_ipat map_id map_ssrhyp map_ast_closure_term)) iorpat)
-  | IPatView v -> IPatView (List.map map_ast_closure_term v)
+  | IPatView (clr,v) -> IPatView (clr,List.map map_ast_closure_term v)
   | IPatTac _ -> assert false (*internal usage only *)
 
 let wit_ssripatrep = add_genarg "ssripatrep" pr_ipat
@@ -646,7 +646,7 @@ let interp_ipat ist gl =
   | IPatInj iorpat -> IPatInj (List.map (List.map interp) iorpat)
   | IPatAbstractVars l ->
      IPatAbstractVars (List.map get_intro_id (List.map (interp_introid ist gl) l))
-  | IPatView l -> IPatView (List.map (fun x -> snd(interp_ast_closure_term ist
+  | IPatView (clr,l) -> IPatView (clr,List.map (fun x -> snd(interp_ast_closure_term ist
      gl x)) l)
   | (IPatSimpl _ | IPatAnon _ | IPatRewrite _ | IPatNoop) as x -> x
   | IPatTac _ -> assert false (*internal usage only *)
@@ -683,11 +683,17 @@ ARGUMENT EXTEND ssripat TYPED AS ssripatrep list PRINTED BY pr_ssripats
 (* TODO  | [ "+" ] -> [ [IPatAnon Temporary] ] *)
   | [ ssrsimpl_ne(sim) ] -> [ [IPatSimpl sim] ]
   | [ ssrdocc(occ) "->" ] -> [ match occ with
+      | Some [], _ -> CErrors.user_err ~loc (str"occ_switch expected")
       | None, occ -> [IPatRewrite (occ, L2R)]
       | Some clr, _ -> [IPatClear clr; IPatRewrite (allocc, L2R)]]
   | [ ssrdocc(occ) "<-" ] -> [ match occ with
+      | Some [], _ -> CErrors.user_err ~loc (str"occ_switch expected")
       | None, occ ->  [IPatRewrite (occ, R2L)]
       | Some clr, _ -> [IPatClear clr; IPatRewrite (allocc, R2L)]]
+  | [ ssrdocc(occ) ssrfwdview(v) ] -> [ match occ with
+      | Some [], _ -> [IPatView (true,v)]
+      | Some cl, _ -> check_hyps_uniq [] cl; [IPatClear cl;IPatView (false,v)]
+      | _ -> CErrors.user_err ~loc (str"Only identifiers are allowed here") ]
   | [ ssrdocc(occ) ] -> [ match occ with
       | Some cl, _ -> check_hyps_uniq [] cl; [IPatClear cl]
       | _ -> CErrors.user_err ~loc (str"Only identifiers are allowed here")]
@@ -705,7 +711,7 @@ ARGUMENT EXTEND ssripat TYPED AS ssripatrep list PRINTED BY pr_ssripats
   | [ "-/" integer(n) "/=" ] -> [ [IPatNoop;IPatSimpl(SimplCut (n,~-1))] ]
   | [ "-/" integer(n) "/" integer (m) "=" ] ->
       [ [IPatNoop;IPatSimpl(SimplCut(n,m))] ]
-  | [ ssrfwdview(v) ] -> [ [IPatView v] ]
+  | [ ssrfwdview(v) ] -> [ [IPatView (false,v)] ]
   | [ "[" ":" ident_list(idl) "]" ] -> [ [IPatAbstractVars idl] ]
   | [ "[:" ident_list(idl) "]" ] -> [ [IPatAbstractVars idl] ]
 END
@@ -1678,7 +1684,10 @@ let pr_gen (docc, dt) = pr_docc docc ++ pr_cpattern dt
 let pr_ssrgen _ _ _ = pr_gen
 
 ARGUMENT EXTEND ssrgen TYPED AS ssrdocc * cpattern PRINTED BY pr_ssrgen
-| [ ssrdocc(docc) cpattern(dt) ] -> [ docc, dt ]
+| [ ssrdocc(docc) cpattern(dt) ] -> [
+     match docc with
+     | Some [], _ -> CErrors.user_err ~loc (str"Clear flag {} not allowed here")
+     | _ -> docc, dt ]
 | [ cpattern(dt) ] -> [ nodocc, dt ]
 END
 

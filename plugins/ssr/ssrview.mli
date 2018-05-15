@@ -20,9 +20,11 @@ module AdaptorDb : sig
 
 end
 
-(* Apply views to the top of the stack (intro pattern) *)
+(* Apply views to the top of the stack (intro pattern). If clear_if_id is
+ * true (default false) then views that happen to be a variable are considered
+ * as to be cleared (see the to_clear argument to the continuation) *)
 val tclIPAT_VIEWS :
-    views:ast_closure_term list ->
+    views:ast_closure_term list -> ?clear_if_id:bool ->
     conclusion:(to_clear:Names.Id.t list -> unit Proofview.tactic) ->
   unit Proofview.tactic
 

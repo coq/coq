@@ -75,6 +75,12 @@ SSReflect
   In particular rule 3 lets one write {x}/v even if v uses the variable x:
   indeed the view is executed before the renaming.
 
+- An empty clear switch is now accepted in intro patterns before a 
+  view application whenever the view is a variable.
+  One can now write {}/v to mean {v}/v.  Remark that {}/x is very similar
+  to the idiom {}e for the rewrite tactic (the equation e is used for
+  rewriting and then discarded).
+
 Changes from 8.8.0 to 8.8.1
 ===========================
 

@@ -212,8 +212,8 @@ let tclLOG p t =
 
 let rec ipat_tac1 ipat : unit tactic =
   match ipat with
-  | IPatView l ->
-      Ssrview.tclIPAT_VIEWS ~views:l
+  | IPatView (clear_if_id,l) ->
+      Ssrview.tclIPAT_VIEWS ~views:l ~clear_if_id
         ~conclusion:(fun ~to_clear:clr -> intro_clear clr)
   | IPatDispatch ipatss ->
       tclEXTEND (List.map ipat_tac ipatss) (tclUNIT ()) []
@@ -588,7 +588,7 @@ let ssrmovetac = function
        (tacVIEW_THEN_GRAB view ~conclusion) <*>
      tclIPAT (IPatClear clr :: ipats)
   | _::_ as view, (_, ({ gens = []; clr }, ipats)) ->
-     tclIPAT (IPatView view :: IPatClear clr :: ipats)
+     tclIPAT (IPatView (false,view) :: IPatClear clr :: ipats)
   | _, (Some pat, (dgens, ipats)) ->
     let dgentac = with_dgens dgens eqmovetac in
     dgentac <*> tclIPAT (eqmoveipats pat ipats)
