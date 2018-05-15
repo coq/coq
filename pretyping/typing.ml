@@ -215,10 +215,7 @@ let judge_of_cast env sigma cj k tj =
              uj_type = expected_type }
 
 let enrich_env env sigma =
-  let penv = Environ.pre_env env in
-  let penv' = Pre_env.({ penv with env_stratification =
-    { penv.env_stratification with env_universes = Evd.universes sigma } }) in
-  Environ.env_of_pre_env penv'
+  set_universes env @@ Evd.universes sigma
 
 let check_fix env sigma pfix =
   let inj c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in

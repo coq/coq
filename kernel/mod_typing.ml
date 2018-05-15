@@ -120,7 +120,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
 	  const_body = def;
           const_universes = univs ;
 	  const_body_code = Option.map Cemitcodes.from_val
-                              (compile_constant_body env' cb.const_universes def) }
+                              (Cbytegen.compile_constant_body ~fail_on_error:false env' cb.const_universes def) }
       in
       before@(lab,SFBconst(cb'))::after, c', ctx'
     else

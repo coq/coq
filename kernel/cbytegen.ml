@@ -20,7 +20,7 @@ open Cinstr
 open Clambda
 open Constr
 open Declarations
-open Pre_env
+open Environ
 
 
 (* Compilation of variables + computing free variables                    *)

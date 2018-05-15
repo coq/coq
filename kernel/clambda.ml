@@ -6,7 +6,7 @@ open Constr
 open Declarations
 open Cbytecodes
 open Cinstr
-open Pre_env
+open Environ
 open Pp
 
 let pr_con sp = str(Names.Label.to_string (Constant.label sp))

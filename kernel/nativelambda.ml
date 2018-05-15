@@ -12,7 +12,7 @@ open Names
 open Esubst
 open Constr
 open Declarations
-open Pre_env
+open Environ
 open Nativevalues
 open Nativeinstr
 

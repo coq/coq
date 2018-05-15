@@ -13,7 +13,6 @@ open Util
 open Names
 open Term
 open Constr
-open Pre_env
 open Environ
 open Evd
 open Termops

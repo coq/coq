@@ -6,9 +6,6 @@ open Vm
 open Vmvalues
 open Csymtable
 
-let val_of_constr env c =
-  val_of_constr (pre_env env) c
-
 (* Test la structure des piles *)
 
 let compare_zipper z1 z2 =

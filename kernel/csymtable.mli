@@ -12,7 +12,7 @@
 
 open Names
 open Constr
-open Pre_env
+open Environ
 
 val val_of_constr : env -> constr -> Vmvalues.values
 

@@ -460,7 +460,7 @@ let build_constant_declaration kn env result =
   let tps = 
     let res =
       match result.cook_proj with
-      | None -> compile_constant_body env univs def
+      | None -> Cbytegen.compile_constant_body ~fail_on_error:false env univs def
       | Some pb ->
 	(* The compilation of primitive projections is a bit tricky, because
            they refer to themselves (the body of p looks like fun c =>
@@ -480,7 +480,7 @@ let build_constant_declaration kn env result =
 	    }
 	in
 	let env = add_constant kn cb env in
-	compile_constant_body env univs def
+        Cbytegen.compile_constant_body ~fail_on_error:false env univs def
     in Option.map Cemitcodes.from_val res
   in
   { const_hyps = hyps;

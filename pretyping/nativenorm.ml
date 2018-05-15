@@ -457,13 +457,12 @@ let native_norm env sigma c ty =
   if not Coq_config.native_compiler then
     user_err Pp.(str "Native_compute reduction has been disabled at configure time.")
   else
-  let penv = Environ.pre_env env in
   (*
   Format.eprintf "Numbers of free variables (named): %i\n" (List.length vl1);
   Format.eprintf "Numbers of free variables (rel): %i\n" (List.length vl2);
   *)
   let ml_filename, prefix = Nativelib.get_ml_filename () in
-  let code, upd = mk_norm_code penv (evars_of_evar_map sigma) prefix c in
+  let code, upd = mk_norm_code env (evars_of_evar_map sigma) prefix c in
   let profile = get_profiling_enabled () in
   match Nativelib.compile ml_filename code ~profile:profile with
     | true, fn ->
