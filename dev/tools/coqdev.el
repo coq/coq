@@ -23,7 +23,7 @@
 
 ;; If you load this file from a git repository, checking out an old
 ;; commit will make it disappear and cause errors for your Emacs
-;; startup. To ignore those errors use (require 'coqdev nil t). If you
+;; startup.  To ignore those errors use (require 'coqdev nil t).  If you
 ;; check out a malicious commit Emacs startup would allow it to run
 ;; arbitrary code, to avoid this you can copy coqdev.el to any
 ;; location and adjust the load path accordingly (of course if you run
@@ -114,6 +114,37 @@ This does not enable `bug-reference-mode'."
       (setq-local bug-reference-bug-regexp "#\\(?2:[0-9]+\\)")
       (setq-local bug-reference-url-format "https://github.com/coq/coq/issues/%s"))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-bug-reference-mode)
+
+(defun coqdev-sphinx-quote-coq-refman-region (left right &optional offset beg end)
+  "Add LEFT and RIGHT around the BEG..END.
+Leave the point after RIGHT.  BEG and END default to the bounds
+of the current region.  Leave point OFFSET characters after the
+left quote (if OFFSET is nil, leave the point after the right
+quote)."
+  (unless beg
+    (if (region-active-p)
+        (setq beg (region-beginning) end (region-end))
+      (setq beg (point) end nil)))
+  (save-excursion
+    (goto-char (or end beg))
+    (insert right))
+  (save-excursion
+    (goto-char beg)
+    (insert left))
+  (if (and end (not offset)) ;; Second test handles the ::`` case
+      (goto-char (+ end (length left) (length right)))
+    (goto-char (+ beg (or offset (length left))))))
+
+(defun coqdev-sphinx-rst-coq-action ()
+  "Insert a Sphinx role template or quote the current region."
+  (interactive)
+  (pcase (read-char "Command [gntm:`]?")
+    (?g (coqdev-sphinx-quote-coq-refman-region ":g:`" "`"))
+    (?n (coqdev-sphinx-quote-coq-refman-region ":n:`" "`"))
+    (?t (coqdev-sphinx-quote-coq-refman-region ":token:`" "`"))
+    (?m (coqdev-sphinx-quote-coq-refman-region ":math:`" "`"))
+    (?: (coqdev-sphinx-quote-coq-refman-region "::`" "`" 1))
+    (?` (coqdev-sphinx-quote-coq-refman-region "``" "``"))))
 
 (provide 'coqdev)
 ;;; coqdev ends here

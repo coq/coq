@@ -32,8 +32,9 @@ COQDOC_OPTIONS = ['--body-only', '--no-glob', '--no-index', '--no-externals',
 COQDOC_SYMBOLS = ["->", "<-", "<->", "=>", "<=", ">=", "<>", "~", "/\\", "\\/", "|-", "*", "forall", "exists"]
 COQDOC_HEADER = "".join("(** remove printing {} *)".format(s) for s in COQDOC_SYMBOLS)
 
-def coqdoc(coq_code, coqdoc_bin = os.path.join(os.getenv("COQBIN"),"coqdoc")):
+def coqdoc(coq_code, coqdoc_bin=None):
     """Get the output of coqdoc on coq_code."""
+    coqdoc_bin = coqdoc_bin or os.path.join(os.getenv("COQBIN"), "coqdoc")
     fd, filename = mkstemp(prefix="coqdoc-", suffix=".v")
     try:
         os.write(fd, COQDOC_HEADER.encode("utf-8"))

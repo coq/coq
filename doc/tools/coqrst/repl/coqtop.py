@@ -41,7 +41,9 @@ class CoqTop:
                            the ansicolors module)
         :param args:       Additional arugments to coqtop.
         """
-        self.coqtop_bin = coqtop_bin or os.path.join(os.getenv('COQBIN'),"coqtop")
+        self.coqtop_bin = coqtop_bin or os.path.join(os.getenv('COQBIN', ""), "coqtop")
+        if not pexpect.utils.which(self.coqtop_bin):
+            raise ValueError("coqtop binary not found: '{}'".format(self.coqtop_bin))
         self.args = (args or []) + ["-boot", "-color", "on"] * color
         self.coqtop = None
 

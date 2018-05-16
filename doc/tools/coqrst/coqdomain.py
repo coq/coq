@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ##########################################################################
 ##         #   The Coq Proof Assistant / The Coq Development Team       ##
 ##  v      #   INRIA, CNRS and contributors - Copyright 1999-2018       ##
@@ -57,30 +58,37 @@ def make_target(objtype, targetid):
     return "coq:{}.{}".format(objtype, targetid)
 
 class CoqObject(ObjectDescription):
-    """A generic Coq object; all Coq objects are subclasses of this.
+    """A generic Coq object for Sphinx; all Coq objects are subclasses of this.
 
     The fields and methods to override are listed at the top of this class'
     implementation.  Each object supports the :name: option, which gives an
     explicit name to link to.
 
-    See the documentation of CoqDomain for high-level information.
+    See the comments and docstrings in CoqObject for more information.
     """
 
-    # The semantic domain in which this object lives.
+    # The semantic domain in which this object lives (eg. “tac”, “cmd”, “chm”…).
     # It matches exactly one of the roles used for cross-referencing.
-    subdomain = None
+    subdomain = None # type: str
 
-    # The suffix to use in indices for objects of this type
-    index_suffix = None
+    # The suffix to use in indices for objects of this type (eg. “(tac)”)
+    index_suffix = None # type: str
 
     # The annotation to add to headers of objects of this type
-    annotation = None
+    # (eg. “Command”, “Theorem”)
+    annotation = None # type: str
 
     def _name_from_signature(self, signature): # pylint: disable=no-self-use, unused-argument
         """Convert a signature into a name to link to.
 
+        ‘Signature’ is Sphinx parlance for an object's header (think “type
+        signature”); for example, the signature of the simplest form of the
+        ``exact`` tactic is ``exact @id``.
+
         Returns None by default, in which case no name will be automatically
-        generated.
+        generated.  This is a convenient way to automatically generate names
+        (link targets) without having to write explicit names everywhere.
+
         """
         return None
 
@@ -100,7 +108,7 @@ class CoqObject(ObjectDescription):
 
     def handle_signature(self, signature, signode):
         """Prefix signature with the proper annotation, then render it using
-        _render_signature.
+        ``_render_signature`` (for example, add “Command” in front of commands).
 
         :returns: the name given to the resulting node, if any
         """
@@ -109,11 +117,6 @@ class CoqObject(ObjectDescription):
             signode += addnodes.desc_annotation(annotation, annotation)
         self._render_signature(signature, signode)
         return self.options.get("name") or self._name_from_signature(signature)
-
-    @property
-    def _index_suffix(self):
-        if self.index_suffix:
-            return " " + self.index_suffix
 
     def _record_name(self, name, target_id):
         """Record a name, mapping it to target_id
@@ -141,12 +144,14 @@ class CoqObject(ObjectDescription):
         return targetid
 
     def _add_index_entry(self, name, target):
-        """Add name (with target) to the main index."""
-        index_text = name + self._index_suffix
+        """Add `name` (pointing to `target`) to the main index."""
+        index_text = name
+        if self.index_suffix:
+            index_text += " " + self.index_suffix
         self.indexnode['entries'].append(('single', index_text, target, '', None))
 
     def add_target_and_index(self, name, _, signode):
-        """Create a target and an index entry for name"""
+        """Attach a link target to `signode` and an index entry for `name`."""
         if name:
             target = self._add_target(signode, name)
             # remove trailing . , found in commands, but not ... (ellipsis)
@@ -156,31 +161,44 @@ class CoqObject(ObjectDescription):
             return target
 
 class PlainObject(CoqObject):
-    """A base class for objects whose signatures should be rendered literaly."""
+    """A base class for objects whose signatures should be rendered literally."""
     def _render_signature(self, signature, signode):
         signode += addnodes.desc_name(signature, signature)
 
 class NotationObject(CoqObject):
-    """A base class for objects whose signatures should be rendered as nested boxes."""
+    """A base class for objects whose signatures should be rendered as nested boxes.
+
+    Objects that inherit from this class can use the notation grammar (“{+ …}”,
+    “@…”, etc.) in their signature.
+    """
     def _render_signature(self, signature, signode):
         position = self.state_machine.get_source_and_line(self.lineno)
         tacn_node = parse_notation(signature, *position)
         signode += addnodes.desc_name(signature, '', tacn_node)
 
-class TacticObject(PlainObject):
-    """An object to represent Coq tactics"""
-    subdomain = "tac"
-    index_suffix = "(tac)"
-    annotation = None
-
 class GallinaObject(PlainObject):
-    """An object to represent Coq theorems"""
+    r"""A theorem.
+
+    Example::
+
+       .. thm:: Bound on the ceiling function
+
+          Let :math:`p` be an integer and :math:`c` a rational constant. Then
+          :math:`p \ge c \rightarrow p \ge \lceil{c}\rceil`.
+    """
     subdomain = "thm"
     index_suffix = "(thm)"
     annotation = "Theorem"
 
 class VernacObject(NotationObject):
-    """An object to represent Coq commands"""
+    """A Coq command.
+
+    Example::
+
+       .. cmd:: Infix "@symbol" := @term ({+, @modifier}).
+
+          This command is equivalent to :n:`…`.
+    """
     subdomain = "cmd"
     index_suffix = "(cmd)"
     annotation = "Command"
@@ -191,7 +209,20 @@ class VernacObject(NotationObject):
             return m.group(0).strip()
 
 class VernacVariantObject(VernacObject):
-    """An object to represent variants of Coq commands"""
+    """A variant of a Coq command.
+
+    Example::
+
+       .. cmd:: Axiom @ident : @term.
+
+          This command links :token:`term` to the name :token:`term` as its specification in
+          the global context. The fact asserted by :token:`term` is thus assumed as a
+          postulate.
+
+          .. cmdv:: Parameter @ident : @term.
+
+             This is equivalent to :n:`Axiom @ident : @term`.
+    """
     index_suffix = "(cmdv)"
     annotation = "Variant"
 
@@ -199,18 +230,49 @@ class VernacVariantObject(VernacObject):
         return None
 
 class TacticNotationObject(NotationObject):
-    """An object to represent Coq tactic notations"""
+    """A tactic, or a tactic notation.
+
+    Example::
+
+       .. tacn:: do @num @expr
+
+          :token:`expr` is evaluated to ``v`` which must be a tactic value. …
+    """
     subdomain = "tacn"
     index_suffix = "(tacn)"
     annotation = None
 
 class TacticNotationVariantObject(TacticNotationObject):
-    """An object to represent variants of Coq tactic notations"""
+    """A variant of a tactic.
+
+    Example::
+
+       .. tacn:: fail
+
+          This is the always-failing tactic: it does not solve any goal. It is
+          useful for defining other tacticals since it can be caught by
+          :tacn:`try`, :tacn:`repeat`, :tacn:`match goal`, or the branching
+          tacticals. …
+
+          .. tacv:: fail @natural
+
+             The number is the failure level. If no level is specified, it
+             defaults to 0. …
+    """
     index_suffix = "(tacnv)"
     annotation = "Variant"
 
 class OptionObject(NotationObject):
-    """An object to represent Coq options"""
+    """A Coq option.
+
+    Example::
+
+       .. opt:: Nonrecursive Elimination Schemes
+
+          This option controls whether types declared with the keywords
+          :cmd:`Variant` and :cmd:`Record` get an automatic declaration of the
+          induction principles.
+    """
     subdomain = "opt"
     index_suffix = "(opt)"
     annotation = "Option"
@@ -219,7 +281,13 @@ class OptionObject(NotationObject):
         return stringify_with_ellipses(signature)
 
 class ProductionObject(NotationObject):
-    """An object to represent grammar productions"""
+    """Grammar productions.
+
+    This is useful if you intend to document individual grammar productions.
+    Otherwise, use Sphinx's `production lists
+    <http://www.sphinx-doc.org/en/stable/markup/para.html#directive-productionlist>`_.
+    """
+    # FIXME (CPC): I have no idea what this does :/  Someone should add an example.
     subdomain = "prodn"
     index_suffix = None
     annotation = None
@@ -258,7 +326,22 @@ class ProductionObject(NotationObject):
         return [idx, node]
 
 class ExceptionObject(NotationObject):
-    """An object to represent Coq errors."""
+    """An error raised by a Coq command or tactic.
+
+    This commonly appears nested in the ``.. tacn::`` that raises the
+    exception.
+
+    Example::
+
+       .. tacv:: assert @form by @tactic
+
+          This tactic applies :n:`@tactic` to solve the subgoals generated by
+          ``assert``.
+
+          .. exn:: Proof is not complete
+
+             Raised if :n:`@tactic` does not fully solve the goal.
+    """
     subdomain = "exn"
     index_suffix = "(err)"
     annotation = "Error"
@@ -269,7 +352,19 @@ class ExceptionObject(NotationObject):
         return stringify_with_ellipses(signature)
 
 class WarningObject(NotationObject):
-    """An object to represent Coq warnings."""
+    """An warning raised by a Coq command or tactic..
+
+    Do not mistake this for ``.. warning::``; this directive is for warning
+    messages produced by Coq.
+
+
+    Example::
+
+       .. warn:: Ambiguous path
+
+          When the coercion :token:`qualid` is added to the inheritance graph, non
+          valid coercion paths are ignored.
+    """
     subdomain = "warn"
     index_suffix = "(warn)"
     annotation = "Warning"
@@ -280,14 +375,33 @@ class WarningObject(NotationObject):
 
 def NotationRole(role, rawtext, text, lineno, inliner, options={}, content=[]):
     #pylint: disable=unused-argument, dangerous-default-value
-    """And inline role for notations"""
+    """Any text using the notation syntax (``@id``, ``{+, …}``, etc.).
+
+    Use this to explain tactic equivalences.  For example, you might write
+    this::
+
+       :n:`generalize @term as @ident` is just like :n:`generalize @term`, but
+       it names the introduced hypothesis :token:`ident`.
+
+    Note that this example also uses ``:token:``.  That's because ``ident`` is
+    defined in the the Coq manual as a grammar production, and ``:token:``
+    creates a link to that.  When referring to a placeholder that happens to be
+    a grammar production, ``:token:`…``` is typically preferable to ``:n:`@…```.
+    """
     notation = utils.unescape(text, 1)
     position = inliner.reporter.get_source_and_line(lineno)
     return [nodes.literal(rawtext, '', parse_notation(notation, *position, rawtext=rawtext))], []
 
 def coq_code_role(role, rawtext, text, lineno, inliner, options={}, content=[]):
     #pylint: disable=dangerous-default-value
-    """And inline role for Coq source code"""
+    """Coq code.
+
+    Use this for Gallina and Ltac snippets::
+
+       :g:`apply plus_comm; reflexivity`
+       :g:`Set Printing All.`
+       :g:`forall (x: t), P(x)`
+    """
     options['language'] = 'Coq'
     return code_role(role, rawtext, text, lineno, inliner, options, content)
     ## Too heavy:
@@ -300,15 +414,14 @@ def coq_code_role(role, rawtext, text, lineno, inliner, options={}, content=[]):
     # node = nodes.literal(rawtext, '', *highlight_using_coqdoc(code), classes=classes)
     # return [node], []
 
-# TODO pass different languages?
-LtacRole = GallinaRole = VernacRole = coq_code_role
+CoqCodeRole = coq_code_role
 
 class CoqtopDirective(Directive):
     """A reST directive to describe interactions with Coqtop.
 
     Usage::
 
-       .. coqtop:: (options)+
+       .. coqtop:: options…
 
           Coq code to send to coqtop
 
@@ -321,20 +434,28 @@ class CoqtopDirective(Directive):
 
     Here is a list of permissible options:
 
-    Display
-      - ‘all’: Display input and output
-      - ‘in’: Display only input
-      - ‘out’: Display only output
-      - ‘none’: Display neither (useful for setup commands)
-    Behaviour
-      - ‘reset’: Send a `Reset Initial` command before running this block
-      - ‘undo’: Send an `Undo n` (n=number of sentences) command after running
-        all the commands in this block
+    - Display options
+
+      - ``all``: Display input and output
+      - ``in``: Display only input
+      - ``out``: Display only output
+      - ``none``: Display neither (useful for setup commands)
+
+    - Behavior options
+
+      - ``reset``: Send a ``Reset Initial`` command before running this block
+      - ``undo``: Send an ``Undo n`` (``n`` = number of sentences) command after
+        running all the commands in this block
+
+    ``coqtop``\ 's state is preserved across consecutive ``.. coqtop::`` blocks
+    of the same document (``coqrst`` creates a single ``coqtop`` process per
+    reST source file).  Use the ``reset`` option to reset Coq's state.
     """
     has_content = True
     required_arguments = 0
     optional_arguments = 1
     final_argument_whitespace = True
+    directive_name = "coqtop"
 
     def run(self):
         # Uses a ‘container’ instead of a ‘literal_block’ to disable
@@ -349,12 +470,26 @@ class CoqtopDirective(Directive):
         return [node]
 
 class CoqdocDirective(Directive):
-    """A reST directive to display Coqtop-formatted source code"""
+    """A reST directive to display Coqtop-formatted source code.
+
+    Usage::
+
+       .. coqdoc::
+
+          Coq code to highlight
+
+    Example::
+
+       .. coqdoc::
+
+          Definition test := 1.
+    """
     # TODO implement this as a Pygments highlighter?
     has_content = True
     required_arguments = 0
     optional_arguments = 0
     final_argument_whitespace = True
+    directive_name = "coqdoc"
 
     def run(self):
         # Uses a ‘container’ instead of a ‘literal_block’ to disable
@@ -365,8 +500,24 @@ class CoqdocDirective(Directive):
         return [wrapper]
 
 class ExampleDirective(BaseAdmonition):
-    """A reST directive for examples"""
+    """A reST directive for examples.
+
+    This behaves like a generic admonition; see
+    http://docutils.sourceforge.net/docs/ref/rst/directives.html#generic-admonition
+    for more details.
+
+    Example::
+
+       .. example:: Adding a hint to a database
+
+          The following adds ``plus_comm`` to the ``plu`` database:
+
+          .. coqdoc::
+
+             Hint Resolve plus_comm : plu.
+    """
     node_class = nodes.admonition
+    directive_name = "example"
 
     def run(self):
         # ‘BaseAdmonition’ checks whether ‘node_class’ is ‘nodes.admonition’,
@@ -380,8 +531,17 @@ class ExampleDirective(BaseAdmonition):
 class PreambleDirective(MathDirective):
     r"""A reST directive for hidden math.
 
-    Mostly useful to let MathJax know about `\def`s and `\newcommand`s
+    Mostly useful to let MathJax know about `\def`\ s and `\newcommand`\ s.
+
+    Example::
+
+       .. preamble::
+
+          \newcommand{\paren}[#1]{\left(#1\right)}
     """
+
+    directive_name = "preamble"
+
     def run(self):
         self.options['nowrap'] = True
         [node] = super().run()
@@ -389,14 +549,17 @@ class PreambleDirective(MathDirective):
         return [node]
 
 class InferenceDirective(Directive):
-    r"""A small example of what directives let you do in Sphinx.
+    r"""A reST directive to format inference rules.
+
+    This also serves as a small illustration of the way to create new Sphinx
+    directives.
 
     Usage::
 
        .. inference:: name
 
-          \n-separated premisses
-          ----------------------
+          newline-separated premisses
+          ------------------------
           conclusion
 
     Example::
@@ -413,6 +576,7 @@ class InferenceDirective(Directive):
     optional_arguments = 0
     has_content = True
     final_argument_whitespace = True
+    directive_name = "inference"
 
     def make_math_node(self, latex):
         node = displaymath()
@@ -613,7 +777,7 @@ class CoqSubdomainsIndex(Index):
     Just as in the original manual, we want to have separate indices for each
     Coq subdomain (tactics, commands, options, etc)"""
 
-    name, localname, shortname, subdomains = None, None, None, None # Must be overwritten
+    name, localname, shortname, subdomains = None, None, None, [] # Must be overwritten
 
     def generate(self, docnames=None):
         content = defaultdict(list)
@@ -635,7 +799,7 @@ class CoqVernacIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "cmdindex", "Command Index", "commands", ["cmd"]
 
 class CoqTacticIndex(CoqSubdomainsIndex):
-    name, localname, shortname, subdomains = "tacindex", "Tactic Index", "tactics", ["tac", "tacn"]
+    name, localname, shortname, subdomains = "tacindex", "Tactic Index", "tactics", ["tacn"]
 
 class CoqOptionIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "optindex", "Option Index", "options", ["opt"]
@@ -665,10 +829,18 @@ class IndexXRefRole(XRefRole):
         return title, target
 
 def GrammarProductionRole(typ, rawtext, text, lineno, inliner, options={}, content=[]):
-    """An inline role to declare grammar productions that are not in fact included
-    in a `productionlist` directive.
+    """A grammar production not included in a ``productionlist`` directive.
 
-    Useful to informally introduce a production, as part of running text
+    Useful to informally introduce a production, as part of running text.
+
+    Example::
+
+       :production:`string` indicates a quoted string.
+
+    You're not likely to use this role very commonly; instead, use a
+    `production list
+    <http://www.sphinx-doc.org/en/stable/markup/para.html#directive-productionlist>`_
+    and reference its tokens using ``:token:`…```.
     """
     #pylint: disable=dangerous-default-value, unused-argument
     env = inliner.document.settings.env
@@ -680,6 +852,8 @@ def GrammarProductionRole(typ, rawtext, text, lineno, inliner, options={}, conte
     set_role_source_info(inliner, lineno, node)
     env.domaindata['std']['objects']['token', text] = env.docname, targetid
     return [node], []
+
+GrammarProductionRole.role_name = "production"
 
 class CoqDomain(Domain):
     """A domain to document Coq code.
@@ -703,7 +877,6 @@ class CoqDomain(Domain):
         # ObjType (= directive type) → (Local name, *xref-roles)
         'cmd': ObjType('cmd', 'cmd'),
         'cmdv': ObjType('cmdv', 'cmd'),
-        'tac': ObjType('tac', 'tac'),
         'tacn': ObjType('tacn', 'tacn'),
         'tacv': ObjType('tacv', 'tacn'),
         'opt': ObjType('opt', 'opt'),
@@ -720,7 +893,6 @@ class CoqDomain(Domain):
         # the same role.
         'cmd': VernacObject,
         'cmdv': VernacVariantObject,
-        'tac': TacticObject,
         'tacn': TacticNotationObject,
         'tacv': TacticNotationVariantObject,
         'opt': OptionObject,
@@ -733,7 +905,6 @@ class CoqDomain(Domain):
     roles = {
         # Each of these roles lives in a different semantic “subdomain”
         'cmd': XRefRole(warn_dangling=True),
-        'tac': XRefRole(warn_dangling=True),
         'tacn': XRefRole(warn_dangling=True),
         'opt': XRefRole(warn_dangling=True),
         'thm': XRefRole(warn_dangling=True),
@@ -743,12 +914,8 @@ class CoqDomain(Domain):
         # This one is special
         'index': IndexXRefRole(),
         # These are used for highlighting
-        'notation': NotationRole,
-        'gallina': GallinaRole,
-        'ltac': LtacRole,
         'n': NotationRole,
-        'g': GallinaRole,
-        'l': LtacRole, #FIXME unused?
+        'g': CoqCodeRole
     }
 
     indices = [CoqVernacIndex, CoqTacticIndex, CoqOptionIndex, CoqGallinaIndex, CoqProductionIndex, CoqExceptionIndex]
@@ -759,7 +926,6 @@ class CoqDomain(Domain):
         # others, such as “version”
         'objects' : { # subdomain → name → docname, objtype, targetid
             'cmd': {},
-            'tac': {},
             'tacn': {},
             'opt': {},
             'thm': {},
@@ -829,11 +995,18 @@ def simplify_source_code_blocks_for_latex(app, doctree, fromdocname): # pylint: 
     for node in doctree.traverse(is_coqtop_or_coqdoc_block):
         if is_html:
             node.rawsource = '' # Prevent pygments from kicking in
+        elif 'coqtop-hidden' in node['classes']:
+            node.parent.remove(node)
         else:
-            if 'coqtop-hidden' in node['classes']:
-                node.parent.remove(node)
-            else:
-                node.replace_self(nodes.literal_block(node.rawsource, node.rawsource, language="Coq"))
+            node.replace_self(nodes.literal_block(node.rawsource, node.rawsource, language="Coq"))
+
+COQ_ADDITIONAL_DIRECTIVES = [CoqtopDirective,
+                             CoqdocDirective,
+                             ExampleDirective,
+                             InferenceDirective,
+                             PreambleDirective]
+
+COQ_ADDITIONAL_ROLES = [GrammarProductionRole]
 
 def setup(app):
     """Register the Coq domain"""
@@ -845,12 +1018,13 @@ def setup(app):
 
     # Add domain, directives, and roles
     app.add_domain(CoqDomain)
-    app.add_role("production", GrammarProductionRole)
-    app.add_directive("coqtop", CoqtopDirective)
-    app.add_directive("coqdoc", CoqdocDirective)
-    app.add_directive("example", ExampleDirective)
-    app.add_directive("inference", InferenceDirective)
-    app.add_directive("preamble", PreambleDirective)
+
+    for role in COQ_ADDITIONAL_ROLES:
+        app.add_role(role.role_name, role)
+
+    for directive in COQ_ADDITIONAL_DIRECTIVES:
+        app.add_directive(directive.directive_name, directive)
+
     app.add_transform(CoqtopBlocksTransform)
     app.connect('doctree-resolved', simplify_source_code_blocks_for_latex)
 
