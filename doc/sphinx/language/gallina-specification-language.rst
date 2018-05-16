@@ -1173,7 +1173,8 @@ equality:
    Axiom Stream_ext : forall (s1 s2: Stream), EqSt s1 s2 -> s1 = s2.
 
 As of Coq 8.9, it is now advised to use negative co-inductive types rather than
-their positive counterparts.
+their positive counterparts. As such, the latter are deprecated and their
+support is expected to be discontinued in a future version of Coq.
 
 .. seealso::
    :ref:`primitive_projections` for more information about negative

@@ -806,6 +806,11 @@ Details of changes in 8.9+beta1
 Kernel
 
 - Mutually defined records are now supported.
+- Positive coinductive types, i.e. the ones defined by a list of constructors,
+  are now deprecated. They were a source of loss of subject reduction in CIC.
+  It is now advised to use their negative counterparts instead, that is, by
+  setting the "Primitive Projections" flag and defining them as records with
+  projections.
 
 Notations
 
