@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 DOUT=misc/tmp_coqc_dash_o/
 OUT=${DOUT}coqc_dash_o.vo
