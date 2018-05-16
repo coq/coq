@@ -2832,6 +2832,7 @@ should be generalized. The general syntax of without loss is:
 
 .. tacn:: wlog {? suff } {? @clear_switch } {? @i_item } : {* @ident } / @term
    :name: wlog
+.. tacv:: without loss {? suff } {? @clear_switch } {? @i_item } : {* @ident } / @term
 
 where each :token:`ident` is a constant in the context
 of the goal. Open syntax is supported for :token:`term`.
@@ -2839,6 +2840,7 @@ of the goal. Open syntax is supported for :token:`term`.
 In its defective form:
 
 .. tacv:: wlog: / @term
+.. tacv:: without loss: / @term
 
 
 on a goal G, it creates two subgoals: a first one to prove the
@@ -5391,6 +5393,7 @@ rewrite  see :ref:`rewriting_ssr`
 .. tacn:: have suff {? @clear_switch } {? @i_pattern } {? : @term } := @term
 .. tacv:: have suff {? @clear_switch } {? @i_pattern } : @term {? by @tactic }
 .. tacv:: gen have {? @ident , } {? @i_pattern } : {+ @gen_item } / @term {? by @tactic }
+.. tacv:: generally have {? @ident , } {? @i_pattern } : {+ @gen_item } / @term {? by @tactic }
 
 forward  chaining see :ref:`structure_ssr`
 
@@ -5400,7 +5403,9 @@ forward  chaining see :ref:`structure_ssr`
 specializing see :ref:`structure_ssr`
 
 .. tacn:: suff {* @i_item } {? @i_pattern } {+ @binder } : @term {? by @tactic }
+.. tacv:: suffices {* @i_item } {? @i_pattern } {+ @binder } : @term {? by @tactic }
 .. tacv:: suff {? have } {? @clear_switch } {? @i_pattern } : @term {? by @tactic }
+.. tacv:: suffices {? have } {? @clear_switch } {? @i_pattern } : @term {? by @tactic }
 
 backchaining see :ref:`structure_ssr`
 
