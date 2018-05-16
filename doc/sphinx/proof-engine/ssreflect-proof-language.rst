@@ -2817,11 +2817,11 @@ Another useful construct is reduction, showing that a particular case
 is in fact general enough to prove a general property. This kind of
 reasoning step usually starts with: “Without loss of generality, we
 can suppose that …”. Formally, this corresponds to the proof of a goal
-G by introducing a cut wlog_statement -> G. Hence the user shall
-provide a proof for both (wlog_statement -> G) -> G and
-wlog_statement -> G. However, such cuts are usually rather
+``G`` by introducing a cut ``wlog_statement -> G``. Hence the user shall
+provide a proof for both ``(wlog_statement -> G) -> G`` and
+``wlog_statement -> G``. However, such cuts are usually rather
 painful to perform by
-hand, because the statement wlog_statement is tedious to write by hand,
+hand, because the statement ``wlog_statement`` is tedious to write by hand,
 and sometimes even to read.
 
 |SSR| implements this kind of reasoning step through the :tacn:`without loss`
@@ -2881,9 +2881,10 @@ are unique.
      wlog: q1 q2 r1 r2 / q1 <= q2.
        by case (le_gt_dec q1 q2)=> H; last symmetry; eauto with arith.
 
-The ``wlog suff`` variant is simpler, since it cuts wlog_statement instead
-of wlog_statement -> G. It thus opens the goals wlog_statement -> G
-and wlog_statement.
+The ``wlog suff`` variant is simpler, since it cuts ``wlog_statement`` instead
+of ``wlog_statement -> G``. It thus opens the goals
+``wlog_statement -> G``
+and ``wlog_statement``.
 
 In its simplest form the ``generally have : …`` tactic is equivalent to
 ``wlog suff : …`` followed by last first. When the ``have`` tactic is used
