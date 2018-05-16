@@ -71,11 +71,6 @@ git_checkout()
     echo "${_DEST}: $(git log -1 --format='%s | %H | %cd | %aN')" )
 }
 
-checkout_mathcomp()
-{
-  git_checkout "${mathcomp_CI_BRANCH}" "${mathcomp_CI_GITURL}" "${1}"
-}
-
 make()
 {
     # +x: add x only if defined
@@ -93,7 +88,8 @@ install_ssreflect()
 {
   echo 'Installing ssreflect' && echo -en 'travis_fold:start:ssr.install\\r'
 
-  checkout_mathcomp "${mathcomp_CI_DIR}"
+  git_checkout "${mathcomp_CI_BRANCH}" "${mathcomp_CI_GITURL}" "${mathcomp_CI_DIR}"
+
   ( cd "${mathcomp_CI_DIR}/mathcomp" && \
     sed -i.bak '/ssrtest/d'     Make && \
     sed -i.bak '/odd_order/d'   Make && \

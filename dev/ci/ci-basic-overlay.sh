@@ -11,6 +11,8 @@
 ########################################################################
 : "${mathcomp_CI_BRANCH:=master}"
 : "${mathcomp_CI_GITURL:=https://github.com/math-comp/math-comp.git}"
+: "${oddorder_CI_BRANCH:=master}"
+: "${oddorder_CI_GITURL:=https://github.com/math-comp/odd-order.git}"
 
 ########################################################################
 # UniMath
