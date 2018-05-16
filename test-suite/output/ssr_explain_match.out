@@ -1,0 +1,55 @@
+File "stdin", line 12, characters 0-61:
+Warning: Notation _ - _ was already used in scope nat_scope.
+[notation-overridden,parsing]
+File "stdin", line 12, characters 0-61:
+Warning: Notation _ <= _ was already used in scope nat_scope.
+[notation-overridden,parsing]
+File "stdin", line 12, characters 0-61:
+Warning: Notation _ < _ was already used in scope nat_scope.
+[notation-overridden,parsing]
+File "stdin", line 12, characters 0-61:
+Warning: Notation _ >= _ was already used in scope nat_scope.
+[notation-overridden,parsing]
+File "stdin", line 12, characters 0-61:
+Warning: Notation _ > _ was already used in scope nat_scope.
+[notation-overridden,parsing]
+File "stdin", line 12, characters 0-61:
+Warning: Notation _ <= _ <= _ was already used in scope nat_scope.
+[notation-overridden,parsing]
+File "stdin", line 12, characters 0-61:
+Warning: Notation _ < _ <= _ was already used in scope nat_scope.
+[notation-overridden,parsing]
+File "stdin", line 12, characters 0-61:
+Warning: Notation _ <= _ < _ was already used in scope nat_scope.
+[notation-overridden,parsing]
+File "stdin", line 12, characters 0-61:
+Warning: Notation _ < _ < _ was already used in scope nat_scope.
+[notation-overridden,parsing]
+File "stdin", line 12, characters 0-61:
+Warning: Notation _ + _ was already used in scope nat_scope.
+[notation-overridden,parsing]
+File "stdin", line 12, characters 0-61:
+Warning: Notation _ * _ was already used in scope nat_scope.
+[notation-overridden,parsing]
+BEGIN INSTANCES
+instance: (x + y + z) matches: (x + y + z)
+instance: (x + y) matches: (x + y)
+instance: (x + y) matches: (x + y)
+END INSTANCES
+BEGIN INSTANCES
+instance: (addnC (x + y) z) matches: (x + y + z)
+instance: (addnC x y) matches: (x + y)
+instance: (addnC x y) matches: (x + y)
+END INSTANCES
+BEGIN INSTANCES
+instance: (addnA x y z) matches: (x + y + z)
+END INSTANCES
+BEGIN INSTANCES
+instance: (addnA x y z) matches: (x + y + z)
+instance: (addnC z (x + y)) matches: (x + y + z)
+instance: (addnC y x) matches: (x + y)
+instance: (addnC y x) matches: (x + y)
+END INSTANCES
+The command has indeed failed with message:
+Ltac call to "ssrinstancesoftpat (cpattern)" failed.
+Not supported
