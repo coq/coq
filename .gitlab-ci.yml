@@ -1,6 +1,7 @@
-image: coqci/base:V2018-05-07-V2
+image: "$IMAGE"
 
 stages:
+  - docker
   - build
   - test
 
@@ -9,10 +10,27 @@ variables:
   # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
   # for reference]
   CACHEKEY: bionic_coq-V2018-05-07-V2
+  IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
   # Used to select special compiler switches such as flambda, 32bits, etc...
   OPAM_VARIANT: ""
+
+docker-boot:
+  stage: docker
+  image: docker:stable
+  services:
+    - docker:dind
+  before_script: []
+  script:
+    - docker login -u gitlab-ci-token -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
+    - cd dev/ci/docker/bionic_coq/
+    - if docker pull "$IMAGE"; then echo "Image prebuilt!"; exit 0; fi
+    - docker build -t "$IMAGE" .
+    - docker push "$IMAGE"
+  except:
+    variables:
+      - $SKIP_DOCKER == "true"
 
 before_script:
   - cat /proc/{cpu,mem}info || true
