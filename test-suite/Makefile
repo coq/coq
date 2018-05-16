@@ -26,6 +26,7 @@
 ###########################################################################
 
 include ../config/Makefile
+include ../Makefile.common
 
 #######################################################################
 # Variables
@@ -258,31 +259,25 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 SYSMOD:=-package num,str,unix,dynlink,threads
 
-COQSRCDIRS=-I $(LIB)/clib -I $(LIB)/lib -I $(LIB)/kernel -I $(LIB)/kernel/byterun \
--I $(LIB)/library -I $(LIB)/engine -I $(LIB)/pretyping -I $(LIB)/interp \
--I $(LIB)/proofs -I $(LIB)/parsing -I $(LIB)/printing -I $(LIB)/tactics -I $(LIB)/vernac \
--I $(LIB)/stm -I $(LIB)/toplevel
+COQSRCDIRS:=$(addprefix -I $(LIB)/,$(CORESRCDIRS))
+COQCMXS:=$(addprefix $(LIB)/,$(LINKCMX))
 
 # ML files from unit-test framework, not containing tests
-UNIT_SRCFILES=$(shell find ./unit-tests/src -name *.ml)
+UNIT_SRCFILES:=$(shell find ./unit-tests/src -name *.ml)
 UNIT_ALLMLFILES:=$(shell find ./unit-tests -name *.ml)
 UNIT_MLFILES:=$(filter-out $(UNIT_SRCFILES),$(UNIT_ALLMLFILES))
 UNIT_LOGFILES:=$(patsubst %.ml,%.ml.log,$(UNIT_MLFILES))
 
 UNIT_CMXS=utest.cmx
 
-# this is same link order as CORECMA in Makefile.common in Coq root dir
-COQCMXAS=clib.cmxa lib.cmxa kernel.cmxa library.cmxa engine.cmxa pretyping.cmxa \
- interp.cmxa proofs.cmxa parsing.cmxa printing.cmxa tactics.cmxa vernac.cmxa stm.cmxa toplevel.cmxa
-
-unit-tests/src/utest.cmx : unit-tests/src/utest.ml unit-tests/src/utest.cmi
+unit-tests/src/utest.cmx: unit-tests/src/utest.ml unit-tests/src/utest.cmi
 	$(SHOW) 'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) -c -I unit-tests/src -package oUnit $<
-unit-tests/src/utest.cmi : unit-tests/src/utest.mli
+unit-tests/src/utest.cmi: unit-tests/src/utest.mli
 	$(SHOW) 'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) -package oUnit $<
 
-$(UNIT_LOGFILES) : unit-tests/src/utest.cmx
+$(UNIT_LOGFILES): unit-tests/src/utest.cmx
 
 unit-tests: $(UNIT_LOGFILES)
 
@@ -291,7 +286,7 @@ unit-tests/%.ml.log: unit-tests/%.ml
 	$(SHOW) 'TEST      $<'
 	$(HIDE)$(OCAMLOPT) -linkall -linkpkg -cclib -lcoqrun \
 		   $(SYSMOD) -package camlp5.gramlib,oUnit  \
-	     -I unit-tests/src $(COQSRCDIRS) $(COQCMXAS) \
+	     -I unit-tests/src $(COQSRCDIRS) $(COQCMXS) \
 	     $(UNIT_CMXS) $< -o $<.test;
 	$(HIDE)./$<.test
 
