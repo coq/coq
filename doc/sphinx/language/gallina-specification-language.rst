@@ -1112,6 +1112,59 @@ co-inductive definitions are also allowed.
    object of type :g:`(EqSt s1 s2)`. We will see how to introduce infinite
    objects in Section :ref:`cofixpoint`.
 
+Caveat
+++++++
+
+The ability to define co-inductive types by constructors, hereafter called
+*positive co-inductive types*, is known to break subject reduction. The story is
+a bit long: this is due to dependent pattern-matching which implies
+propositional η-equality, which itself would require full η-conversion for
+subject reduction to hold, but full η-conversion is not acceptable as it would
+make type-checking undecidable.
+
+Since the introduction of primitive records in Coq 8.5, an alternative
+presentation is available, called *negative co-inductive types*. This consists
+in defining a co-inductive type as a primitive record type through its
+projections. Such a technique is akin to the *co-pattern* style that can be
+found in e.g. Agda, and preserves subject reduction.
+
+The above example can be rewritten in the following way.
+
+.. coqtop:: all
+
+   Set Primitive Projections.
+   CoInductive Stream : Set := Seq { hd : nat; tl : Stream }.
+   CoInductive EqSt (s1 s2: Stream) : Prop := eqst {
+     eqst_hd : hd s1 = hd s2;
+     eqst_tl : EqSt (tl s1) (tl s2);
+   }.
+
+Some properties that hold over positive streams are lost when going to the
+negative presentation, typically when they imply equality over streams.
+For instance, propositional η-equality is lost when going to the negative
+presentation. It is nonetheless logically consistent to recover it through an
+axiom.
+
+.. coqtop:: all
+
+   Axiom Stream_eta : forall s: Stream, s = cons (hs s) (tl s).
+
+More generally, as in the case of positive coinductive types, it is consistent
+to further identify extensional equality of coinductive types with propositional
+equality:
+
+.. coqtop:: all
+
+   Axiom Stream_ext : forall (s1 s2: Stream), EqSt s1 s2 -> s1 = s2.
+
+As of Coq 8.9, it is now advised to use negative co-inductive types rather than
+their positive counterparts.
+
+.. seealso::
+   :ref:`primitive_projections` for more information about negative
+   records and primitive projections.
+
+
 Definition of recursive functions
 ---------------------------------
 
