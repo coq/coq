@@ -1,3 +1,6 @@
+# CACHEKEY: "bionic_coq-V2018-05-07-V2"
+# ^^ Update when modifying this file.
+
 FROM ubuntu:bionic
 LABEL maintainer="e@x80.org"
 

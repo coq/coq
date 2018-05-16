@@ -8,10 +8,11 @@ defaults:
     # reference syntax)
     working_directory: ~/coq
     docker:
-      - image: coqci/base:V2018-05-07-V2
+      - image: $CI_REGISTRY_IMAGE:$CACHEKEY
 
   environment: &envvars
-    NATIVE_COMP: "yes"
+    CACHEKEY: "bionic_coq-V2018-05-07-V2"
+    CI_REGISTRY_IMAGE: registry.gitlab.com/coq/coq
 
 version: 2
 
@@ -46,7 +47,9 @@ before_script: &before_script
         paths:
           - coq/
 
-  environment: *envvars
+  environment:
+    <<: *envvars
+    NATIVE_COMP: "yes"
 
 .ci-template: &ci-template
   <<: *params
@@ -63,6 +66,7 @@ before_script: &before_script
         root: *workspace
         paths:
           - coq/
+  environment: *envvars
 
 # Defines individual jobs, see the workflows section below for job orchestration
 jobs:
