@@ -83,7 +83,7 @@ let patch_int buff reloc =
   let () = CArray.iter iter reloc in
   buff
 
-let patch buff pl f =
+let patch (buff, pl) f =
   (** Order seems important here? *)
   let reloc = CArray.map (fun (r, pos) -> (f r, pos)) pl.reloc_infos in
   let buff = patch_int buff reloc in
@@ -429,7 +429,7 @@ let rec emit env insns remaining = match insns with
 
 (* Initialization *)
 
-type to_patch = emitcodes * patches * fv
+type to_patch = emitcodes * patches
 
 (* Substitution *)
 let subst_strcst s sc =
@@ -451,28 +451,27 @@ let subst_patches subst p =
   let infos = CArray.map (fun (r, pos) -> (subst_reloc subst r, pos)) p.reloc_infos in
   { reloc_infos = infos; }
 
-let subst_to_patch s (code,pl,fv) =
-  code, subst_patches s pl, fv
+let subst_to_patch s (code, pl) =
+  (code, subst_patches s pl)
 
 type body_code =
-  | BCdefined of to_patch
+  | BCdefined of to_patch * fv
   | BCalias of Names.Constant.t
   | BCconstant
 
 let subst_body_code s = function
-| BCdefined tp -> BCdefined (subst_to_patch s tp)
+| BCdefined (tp, fv) -> BCdefined (subst_to_patch s tp, fv)
 | BCalias cu -> BCalias (subst_constant s cu)
 | BCconstant -> BCconstant
 
-let to_memory (init_code, fun_code, fv) =
+let to_memory code =
   let env = {
     out_buffer = Bytes.create 1024;
     out_position = 0;
     label_table = Array.make 16 (Label_undefined []);
     reloc_info = RelocTable.create 91;
   } in
-  emit env init_code [];
-  emit env fun_code [];
+  emit env code [];
   (** Later uses of this string are all purely functional *)
   let code = Bytes.sub_string env.out_buffer 0 env.out_position in
   let code = CString.hcons code in
@@ -484,4 +483,4 @@ let to_memory (init_code, fun_code, fv) =
       Label_defined _ -> assert true
     | Label_undefined patchlist ->
         assert (patchlist = []))) env.label_table;
-  (code, reloc, fv)
+  (code, reloc)

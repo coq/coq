@@ -18,7 +18,7 @@ open Environ
 val compile :
   fail_on_error:bool -> ?universes:int ->
   env -> (existential -> constr option) -> constr ->
-  (bytecodes * bytecodes * fv) option
+  (to_patch * fv) option
 (** init, fun, fv *)
 
 val compile_constant_body : fail_on_error:bool ->

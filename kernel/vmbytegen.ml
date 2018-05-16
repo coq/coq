@@ -878,7 +878,8 @@ let compile ~fail_on_error ?universes:(universes=0) env sigma c =
     let fv = List.rev (!(cenv.in_env).fv_rev) in
     (if !dump_bytecode then
       Feedback.msg_debug (dump_bytecodes init_code !fun_code fv)) ;
-    Some (init_code,!fun_code, Array.of_list fv)
+    let res = init_code @ !fun_code in
+    Some (to_memory res, Array.of_list fv)
   with TooLargeInductive msg as exn ->
     let _, info = Exninfo.capture exn in
     let fn = if fail_on_error then
@@ -899,7 +900,7 @@ let compile_constant_body ~fail_on_error env univs = function
         | _ ->
             let sigma _ = assert false in
             let res = compile ~fail_on_error ~universes:instance_size env sigma body in
-              Option.map (fun x -> BCdefined (to_memory x)) res
+            Option.map (fun (code, fv) -> BCdefined (code, fv)) res
 
 (* Shortcut of the previous function used during module strengthening *)
 
