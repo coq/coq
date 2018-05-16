@@ -59,14 +59,17 @@ let vm_global (v : values array) = (Obj.magic v : vm_global)
 (*******************************************)
 
 type tcode
+(** A block whose first field is a C-allocated VM bytecode, encoded as char*.
+    This is compatible with the representation of the Coq VM closures. *)
+
+type tcode_array
 
 external mkAccuCode : int -> tcode = "coq_makeaccu"
 external offset_tcode : tcode -> int -> tcode = "coq_offset_tcode"
 
-let tcode_of_obj v = ((Obj.obj v):tcode)
-let fun_code v = tcode_of_obj (Obj.field (Obj.repr v) 0)
-let fix_code v = fun_code v
-let cofix_upd_code v = fun_code v
+let fun_code v = (Obj.magic v : tcode)
+let fix_code = fun_code
+let cofix_upd_code = fun_code
 
 
 type vswitch = {
@@ -255,6 +258,7 @@ external kind_of_closure : Obj.t -> int = "coq_kind_of_closure"
 external is_accumulate : tcode -> bool = "coq_is_accumulate_code"
 external int_tcode : tcode -> int -> int = "coq_int_tcode"
 external accumulate : unit -> tcode = "accumulate_code"
+external set_bytecode_field : Obj.t -> int -> tcode -> unit = "coq_set_bytecode_field"
 let accumulate = accumulate ()
 
 let whd_val : values -> whd =
@@ -284,7 +288,7 @@ let whd_val : values -> whd =
 let obj_of_atom : atom -> Obj.t =
   fun a ->
     let res = Obj.new_block accu_tag 2 in
-    Obj.set_field res 0 (Obj.repr accumulate);
+    set_bytecode_field res 0 accumulate;
     Obj.set_field res 1 (Obj.repr a);
     res
 
@@ -370,17 +374,20 @@ external closure_arity : vfun -> int = "coq_closure_arity"
 external offset : Obj.t -> int = "coq_offset"
 external offset_closure : Obj.t -> int -> Obj.t = "coq_offset_closure"
 external offset_closure_fix : vfix -> int -> vm_env = "coq_offset_closure"
+external tcode_array : tcode_array -> tcode array = "coq_tcode_array"
 
 let first o = (offset_closure o (offset o))
 let first_fix (v:vfix) = (Obj.magic (first (Obj.repr v)) : vfix)
 
 let last o = (Obj.field o (Obj.size o - 1))
-let fix_types (v:vfix) = (Obj.magic (last (Obj.repr v)) : tcode array)
-let cofix_types (v:vcofix) = (Obj.magic (last (Obj.repr v)) : tcode array)
+let fix_types (v:vfix) = tcode_array (Obj.magic (last (Obj.repr v)) : tcode_array)
+let cofix_types (v:vcofix) = tcode_array (Obj.magic (last (Obj.repr v)) : tcode_array)
 
 let current_fix vf = - (offset (Obj.repr vf) / 2)
 
-let unsafe_fb_code fb i = tcode_of_obj (Obj.field (Obj.repr fb) (2 * i))
+let unsafe_fb_code fb i =
+  let off = (2 * i) * (Sys.word_size / 8) in
+  Obj.obj (Obj.add_offset (Obj.repr fb) (Int32.of_int off))
 
 let unsafe_rec_arg fb i = int_tcode (unsafe_fb_code fb i) 1
 
@@ -442,13 +449,12 @@ let relaccu_code i =
 let mk_fix_body k ndef fb =
   let e = Obj.dup (Obj.repr fb) in
   for i = 0 to ndef - 1 do
-    Obj.set_field e (2 * i) (Obj.repr (relaccu_code (k + i)))
+    set_bytecode_field e (2 * i) (relaccu_code (k + i))
   done;
   let fix_body i =
-    let jump_grabrec c = offset_tcode c 2 in
-    let c = jump_grabrec (unsafe_fb_code fb i)  in
+    let c = offset_tcode (unsafe_fb_code fb i) 2 in
     let res = Obj.new_block Obj.closure_tag 2 in
-    Obj.set_field res 0 (Obj.repr c);
+    set_bytecode_field res 0 c;
     Obj.set_field res 1 (offset_closure e (2*i));
     ((Obj.obj res) : vfun)  in
   Array.init ndef fix_body
@@ -486,7 +492,7 @@ let mk_cofix_body apply_varray k ndef vcf =
     Obj.set_field e 0 c;
     let atom = Obj.new_block cofix_tag 1 in
     let self = Obj.new_block accu_tag 2 in
-    Obj.set_field self 0 (Obj.repr accumulate);
+    set_bytecode_field self 0 accumulate;
     Obj.set_field self 1 (Obj.repr atom);
     apply_varray (Obj.obj e) [|Obj.obj self|] in
   Array.init ndef cofix_body

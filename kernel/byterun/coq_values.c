@@ -9,6 +9,7 @@
 /***********************************************************************/
 
 #include <stdio.h>
+#include <caml/memory.h>
 #include "coq_fix_code.h"
 #include "coq_instruct.h"
 #include "coq_memory.h"
@@ -58,10 +59,36 @@ value coq_offset_closure(value v, value offset){
   return (value)&Field(v, Int_val(offset));
 }
 
-value coq_offset_tcode(value code,value offset){
-  return((value)((code_t)code + Int_val(offset)));
+value coq_set_bytecode_field(value v, value i, value code) {
+  // No write barrier because the bytecode does not live on the OCaml heap
+  Field(v, Long_val(i)) = (value) Code_val(code);
+  return Val_unit;
 }
 
-value coq_int_tcode(value code, value offset) {
+value coq_offset_tcode(value code,value offset){
+  CAMLparam1(code);
+  CAMLlocal1(res);
+  res = caml_alloc_small(1, Abstract_tag);
+  Code_val(res) = Code_val(code) + Int_val(offset);
+  CAMLreturn(res);
+}
+
+value coq_int_tcode(value pc, value offset) {
+  code_t code = Code_val(pc);
   return Val_int(*((code_t) code + Int_val(offset)));
+}
+
+value coq_tcode_array(value tcodes) {
+  CAMLparam1(tcodes);
+  CAMLlocal2(res, tmp);
+  int i;
+  /* Assumes that the vector of types is small. This was implicit in the
+    previous code which was building the type array using Alloc_small. */
+  res = caml_alloc_small(Wosize_val(tcodes), Default_tag);
+  for (i = 0; i < Wosize_val(tcodes); i++) {
+    tmp = caml_alloc_small(1, Abstract_tag);
+    Code_val(tmp) = (code_t) Field(tcodes, i);
+    Store_field(res, i, tmp);
+  }
+  CAMLreturn(res);
 }

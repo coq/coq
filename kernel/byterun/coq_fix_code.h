@@ -26,7 +26,7 @@ void init_arity();
 
 #define Is_instruction(pc,instr) (*pc == VALINSTR(instr))
 
-value coq_tcode_of_code(value code, value len);
+value coq_tcode_of_code(value code);
 value coq_makeaccu (value i);
 value coq_pushpop (value i);
 value coq_is_accumulate_code(value code);

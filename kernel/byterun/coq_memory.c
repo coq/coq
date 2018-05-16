@@ -10,6 +10,8 @@
 
 #include <stdio.h>
 #include <string.h> 
+#include <caml/alloc.h>
+#include <caml/address_class.h>
 #include "coq_gc.h"
 #include "coq_instruct.h"
 #include "coq_fix_code.h"
@@ -46,7 +48,11 @@ value coq_static_alloc(value size) /* ML */
 
 value accumulate_code(value unit) /* ML */
 {
-  return (value) accumulate;
+  CAMLparam1(unit);
+  CAMLlocal1(res);
+  res = caml_alloc_small(1, Abstract_tag);
+  Code_val(res) = accumulate;
+  CAMLreturn(res);
 }
 
 static void (*coq_prev_scan_roots_hook) (scanning_action);
@@ -56,6 +62,10 @@ static void coq_scan_roots(scanning_action action)
   register value * i;
   /* Scan the stack */
   for (i = coq_sp; i < coq_stack_high; i++) {
+#ifdef NO_NAKED_POINTERS
+    /* The VM stack may contain C-allocated bytecode */
+    if (Is_block(*i) && !Is_in_heap_or_young(*i)) continue;
+#endif
     (*action) (*i, i);
   };
   /* Hook */
@@ -94,8 +104,12 @@ value init_coq_vm(value unit) /* ML */
     /* Initialing the interpreter */
     init_coq_interpreter();
     
-    /* Some predefined pointer code */
-    accumulate = (code_t) coq_stat_alloc(sizeof(opcode_t));
+    /* Some predefined pointer code.
+     * It is typically contained in accumlator blocks whose tag is 0 and thus
+     * scanned by the GC, so make it look like an OCaml block. */
+    value accu_block = (value) coq_stat_alloc(2 * sizeof(value));
+    Hd_hp (accu_block) = Make_header (1, Abstract_tag, Caml_black);        \
+    accumulate = (code_t) Val_hp(accu_block);
     *accumulate = VALINSTR(ACCUMULATE);
 
   /* Initialize GC */
