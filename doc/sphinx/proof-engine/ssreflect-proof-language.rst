@@ -2021,8 +2021,11 @@ with a ``by``, like in:
 
    by apply/eqP; rewrite -dvdn1.
 
+.. tacn:: done
+   :name: done
+
 The :tacn:`by` tactical is implemented using the user-defined, and extensible
-:tacn:`done` tactic. This done tactic tries to solve the current goal by some
+:tacn:`done` tactic. This :tacn:`done` tactic tries to solve the current goal by some
 trivial means and fails if it doesn’t succeed. Indeed, the tactic
 expression:
 
@@ -2833,6 +2836,7 @@ should be generalized. The general syntax of without loss is:
 .. tacn:: wlog {? suff } {? @clear_switch } {? @i_item } : {* @ident } / @term
    :name: wlog
 .. tacv:: without loss {? suff } {? @clear_switch } {? @i_item } : {* @ident } / @term
+   :name: without loss
 
 where each :token:`ident` is a constant in the context
 of the goal. Open syntax is supported for :token:`term`.
@@ -5394,6 +5398,7 @@ rewrite  see :ref:`rewriting_ssr`
 .. tacv:: have suff {? @clear_switch } {? @i_pattern } : @term {? by @tactic }
 .. tacv:: gen have {? @ident , } {? @i_pattern } : {+ @gen_item } / @term {? by @tactic }
 .. tacv:: generally have {? @ident , } {? @i_pattern } : {+ @gen_item } / @term {? by @tactic }
+   :name: generally have
 
 forward  chaining see :ref:`structure_ssr`
 
@@ -5403,7 +5408,9 @@ forward  chaining see :ref:`structure_ssr`
 specializing see :ref:`structure_ssr`
 
 .. tacn:: suff {* @i_item } {? @i_pattern } {+ @binder } : @term {? by @tactic }
+   :name: suff
 .. tacv:: suffices {* @i_item } {? @i_pattern } {+ @binder } : @term {? by @tactic }
+   :name: suffices
 .. tacv:: suff {? have } {? @clear_switch } {? @i_pattern } : @term {? by @tactic }
 .. tacv:: suffices {? have } {? @clear_switch } {? @i_pattern } : @term {? by @tactic }
 
