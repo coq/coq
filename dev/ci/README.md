@@ -162,3 +162,46 @@ but if you wish to save more time you can skip the job by setting
 This means you will need to change its value when the Docker image
 needs to be updated. You can do so for a single pipeline by starting
 it through the web interface.
+
+Setting up runners
+------------------
+
+Some of the runners we use come from Inria's CloudStack infrastructure, accessible at:
+
+https://ci.inria.fr/project/coq/slaves
+
+and
+
+https://sesi-cloud-ctl1.inria.fr/client/
+
+Both links require an Inria CI account. When using the second one, type "ci/coq"
+for the domain.
+
+To create a new VM, use the first link, click "Add slave", select Win7x64 and
+"xLarge instance", then click "Create slave".
+
+To connect to the VMs, follow instructions at: https://wiki.inria.fr/ciportal/Slaves_Access_Tutorial
+
+We recommend to use rdesktop for Windows, and ssh for macOS and Linux.
+
+### Windows
+
+#### Installation of GitLab Runner
+
+Here are the steps to prepare specifically an Inria CloudStack VM to work as a runner for our GitLab:
+
+- Download GitLab Runner at
+  https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-windows-amd64.exe
+  and save as C:\Gitlab-Runner\gitlab-runner.exe
+- Install git (64 bits) from https://git-scm.com/download/win, to C:\Program Files\git
+- When asked, choose autocrlf=input
+- Install 7zip from https://www.7-zip.org/download.html, to C:\Program Files\7-Zip
+- Start an administrator command prompt
+- Run gitlab-runner.exe register and give the relevant settings (runner should use the tag "windows")
+- Run gitlab-runner.exe install
+- Run gitlab-runner.exe start
+- Reboot the VMs (will put git in path for shell jobs)
+
+#### Registering the runner
+
+Follow the general documentation here: https://docs.gitlab.com/runner/install/windows.html
