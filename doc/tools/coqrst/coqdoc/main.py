@@ -40,7 +40,7 @@ def coqdoc(coq_code, coqdoc_bin=None):
         os.write(fd, COQDOC_HEADER.encode("utf-8"))
         os.write(fd, coq_code.encode("utf-8"))
         os.close(fd)
-        return check_output([coqdoc_bin] + COQDOC_OPTIONS + [filename], timeout = 2).decode("utf-8")
+        return check_output([coqdoc_bin] + COQDOC_OPTIONS + [filename], timeout = 10).decode("utf-8")
     finally:
         os.remove(filename)
 
