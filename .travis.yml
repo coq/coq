@@ -49,16 +49,22 @@ env:
   - NATIVE_COMP="yes"
   - COQ_DEST="-local"
   - MAIN_TARGET="world"
-  # Main test suites
-  matrix:
-  - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
-  - TEST_TARGET="validate"                           TW="travis_wait"
-  - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
-  - TEST_TARGET="validate"   COMPILER="${COMPILER_BE}+flambda" CAMLP5_VER="${CAMLP5_VER_BE}" NATIVE_COMP="no" EXTRA_CONF="-flambda-opts -O3" FINDLIB_VER="${FINDLIB_VER_BE}"
 
 matrix:
 
   include:
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="validate"                           TW="travis_wait"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="validate"   COMPILER="${COMPILER_BE}+flambda" CAMLP5_VER="${CAMLP5_VER_BE}" NATIVE_COMP="no" EXTRA_CONF="-flambda-opts -O3" FINDLIB_VER="${FINDLIB_VER_BE}"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-bignums"
@@ -146,7 +152,8 @@ matrix:
         - dev/lint-repository.sh
 
     # Full Coq test-suite with two compilers
-    - env:
+    - if: NOT (type = pull_request)
+      env:
       - TEST_TARGET="test-suite"
       - EXTRA_CONF="-coqide opt -with-doc yes"
       - EXTRA_OPAM="${LABLGTK}"
@@ -174,7 +181,8 @@ matrix:
           - python3-pip
           - python3-setuptools
 
-    - env:
+    - if: NOT (type = pull_request)
+      env:
       - TEST_TARGET="test-suite"
       - COMPILER="${COMPILER_BE}"
       - FINDLIB_VER="${FINDLIB_VER_BE}"
@@ -189,7 +197,8 @@ matrix:
           packages: *extra-packages
 
     # Full test-suite with flambda
-    - env:
+    - if: NOT (type = pull_request)
+      env:
       - TEST_TARGET="test-suite"
       - COMPILER="${COMPILER_BE}+flambda"
       - FINDLIB_VER="${FINDLIB_VER_BE}"
@@ -205,7 +214,8 @@ matrix:
           packages: *extra-packages
 
     # Ocaml warnings with two compilers
-    - env:
+    - if: NOT (type = pull_request)
+      env:
       - MAIN_TARGET="coqocaml"
       - EXTRA_CONF="-byte-only -coqide byte -warn-error yes"
       - EXTRA_OPAM="${LABLGTK}"
@@ -219,7 +229,8 @@ matrix:
           - libgtk2.0-dev
           - libgtksourceview2.0-dev
 
-    - env:
+    - if: NOT (type = pull_request)
+      env:
       - MAIN_TARGET="coqocaml"
       - COMPILER="${COMPILER_BE}"
       - FINDLIB_VER="${FINDLIB_VER_BE}"
