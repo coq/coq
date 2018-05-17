@@ -154,12 +154,6 @@ before_script:
 
 .windows-template: &windows-template
   stage: test
-  artifacts:
-    name: "%CI_JOB_NAME%"
-    paths:
-      - dev\nsis\*.exe
-      - coq-opensource-archive-windows-*.zip
-    expire_in: 1 week
   dependencies: []
   tags:
     - windows
