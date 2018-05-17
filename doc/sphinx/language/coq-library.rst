@@ -200,6 +200,8 @@ The following abbreviations are allowed:
 The type annotation ``:A`` can be omitted when ``A`` can be
 synthesized by the system.
 
+.. _coq-equality:
+
 Equality
 ++++++++
 
