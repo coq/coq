@@ -1124,4 +1124,11 @@ def setup(app):
     # Tell Sphinx about extra settings
     app.add_config_value("report_undocumented_coq_objects", None, 'env')
 
-    return {'version': '0.1', "parallel_read_safe": True}
+    # ``env_version`` is used by Sphinx to know when to invalidate
+    # coqdomain-specific bits in its caches.  It should be incremented when the
+    # contents of ``env.domaindata['coq']`` change.  See
+    # `https://github.com/sphinx-doc/sphinx/issues/4460`.
+    meta = { "version": "0.1",
+             "env_version": 1,
+             "parallel_read_safe": True }
+    return meta
