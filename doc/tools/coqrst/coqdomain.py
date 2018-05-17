@@ -732,14 +732,14 @@ class CoqDomain(Domain):
 
     roles = {
         # Each of these roles lives in a different semantic “subdomain”
-        'cmd': XRefRole(),
-        'tac': XRefRole(),
-        'tacn': XRefRole(),
-        'opt': XRefRole(),
-        'thm': XRefRole(),
-        'prodn' : XRefRole(),
-        'exn': XRefRole(),
-        'warn': XRefRole(),
+        'cmd': XRefRole(warn_dangling=True),
+        'tac': XRefRole(warn_dangling=True),
+        'tacn': XRefRole(warn_dangling=True),
+        'opt': XRefRole(warn_dangling=True),
+        'thm': XRefRole(warn_dangling=True),
+        'prodn' : XRefRole(warn_dangling=True),
+        'exn': XRefRole(warn_dangling=True),
+        'warn': XRefRole(warn_dangling=True),
         # This one is special
         'index': IndexXRefRole(),
         # These are used for highlighting

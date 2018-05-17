@@ -599,6 +599,7 @@ Notice that the syntax is not completely backward compatible since the
 identifier was not required.
 
 .. cmd:: Add Morphism f : @ident
+   :name: Add Morphism
 
 The latter command also is restricted to the declaration of morphisms
 without parameters. It is not fully backward compatible since the
@@ -616,7 +617,7 @@ the same signature. Finally, the :tacn:`replace` and :tacn:`rewrite` tactics can
 used to replace terms in contexts that were refused by the old
 implementation. As discussed in the next section, the semantics of the
 new :tacn:`setoid_rewrite` tactic differs slightly from the old one and
-tacn:`rewrite`.
+:tacn:`rewrite`.
 
 
 Extensions
