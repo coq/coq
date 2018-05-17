@@ -1,4 +1,4 @@
-Declare ML Module "demo".
+Declare ML Module "demo_plugin".
 
 Cmd1.
 Cmd2 With Some Terminal Parameters.
