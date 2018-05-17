@@ -89,6 +89,7 @@ byte: coqbyte coqide-byte pluginsbyte printers
 MLFILES := $(MLSTATICFILES) $(GENMLFILES) $(ML4FILES:.ml4=.ml)
 
 include Makefile.common
+include Makefile.vofiles
 include Makefile.doc      ## provides the 'documentation' rule
 include Makefile.checker
 include Makefile.ide      ## provides the 'coqide' rule

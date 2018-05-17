@@ -105,15 +105,11 @@ BYTERUN:=$(addprefix kernel/byterun/, \
 CORECMA:=clib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
         engine/engine.cma pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma vernac/vernac.cma \
-	stm/stm.cma toplevel/toplevel.cma
+        stm/stm.cma toplevel/toplevel.cma
 
 TOPLOOPCMA:=stm/proofworkertop.cma stm/tacworkertop.cma stm/queryworkertop.cma
 
 GRAMMARCMA:=grammar/grammar.cma
-
-# modules known by the toplevel of Coq
-
-OBJSMOD:=$(shell cat $(CORECMA:.cma=.mllib))
 
 ###########################################################################
 # plugins object files
@@ -163,39 +159,7 @@ PLUGINSOPT:=$(PLUGINSCMO:.cmo=.cmxs)
 LINKCMO:=$(CORECMA) $(STATICPLUGINS)
 LINKCMX:=$(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cmo=.cmx)
 
-###########################################################################
-# vo files
-###########################################################################
-
-THEORIESVO := $(patsubst %.v,%.vo,$(shell find theories -type f -name "*.v"))
-PLUGINSVO := $(patsubst %.v,%.vo,$(shell find plugins -type f -name "*.v"))
-ALLVO := $(THEORIESVO) $(PLUGINSVO)
-VFILES := $(ALLVO:.vo=.v)
-
-## More specific targets
-
-THEORIESLIGHTVO:= \
- $(filter theories/Init/% theories/Logic/% theories/Unicode/% theories/Arith/%, $(THEORIESVO))
-
 ALLSTDLIB := test-suite/misc/universes/all_stdlib
-
-# convert a (stdlib) filename into a module name:
-# remove .vo, replace theories and plugins by Coq, and replace slashes by dots
-vo_to_mod = $(subst /,.,$(patsubst theories/%,Coq.%,$(patsubst plugins/%,Coq.%,$(1:.vo=))))
-
-ALLMODS:=$(call vo_to_mod,$(ALLVO))
-
-
-# Converting a stdlib filename into native compiler filenames
-# Used for install targets
-vo_to_cm = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.vo=.cm*)))))
-
-vo_to_obj = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.vo=.o)))))
-
-GLOBFILES:=$(ALLVO:.vo=.glob)
-LIBFILES:=$(ALLVO) $(call vo_to_cm,$(ALLVO)) \
-	    $(call vo_to_obj,$(ALLVO)) \
-	    $(VFILES) $(GLOBFILES)
 
 # For emacs:
 # Local Variables:

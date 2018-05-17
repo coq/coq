@@ -8,9 +8,6 @@
 ##         #     (see LICENSE file for the text of the license)         ##
 ##########################################################################
 
-# This is a standalone Makefile to run the test-suite. It can be used
-# outside of the Coq source tree (if BIN is overridden).
-
 # There is one %.v.log target per %.v test file. The target will be
 # filled with the output, timings and status of the test. There is
 # also one target per directory containing %.v files, that runs all
@@ -22,6 +19,14 @@
 
 # The "run" target runs all tests that have not been run yet. To force
 # all tests to be run, use the "clean" target.
+
+
+###########################################################################
+# Includes
+###########################################################################
+
+include ../config/Makefile
+include ../Makefile.common
 
 #######################################################################
 # Variables
@@ -97,7 +102,7 @@ VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
   coqdoc ssr
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile
+SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile unit-tests
 
 PREREQUISITELOG = prerequisite/admit.v.log			\
   prerequisite/make_local.v.log prerequisite/make_notation.v.log \
@@ -118,13 +123,16 @@ bugs: $(BUGS)
 
 clean:
 	rm -f trace .lia.cache output/MExtraction.out
-	$(SHOW) "RM        <**/*.vo> <**/*.vio> <**/*.log> <**/*.glob>"
+	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log> <**/*.glob>'
 	$(HIDE)find . \( \
-	  -name '*.vo' -o -name '*.vio' -o -name '*.log' -o -name '*.glob' \
-	\) -print0 | xargs -0 rm -f
-
+	  -name '*.stamp' -o -name '*.vo' -o -name '*.vio' -o -name '*.log' -o -name '*.glob' \
+	  \) -print0 | xargs -0 rm -f
+	$(SHOW) 'RM        <**/*.cmx> <**/*.cmi> <**/*.o> <**/*.test>'
+	$(HIDE)find unit-tests \( \
+	  -name '*.cmx' -o -name '*.cmi' -o -name '*.o' -o -name '*.test' \
+	  \) -print0 | xargs -0 rm -f
 distclean: clean
-	$(SHOW) "RM        <**/*.aux>"
+	$(SHOW) 'RM        <**/*.aux>'
 	$(HIDE)find . -name '*.aux' -print0 | xargs -0 rm -f
 
 #######################################################################
@@ -165,12 +173,13 @@ summary:
 	  $(call summary_dir, "Coqwc tests", coqwc); \
 	  $(call summary_dir, "Coq makefile", coq-makefile); \
 	  $(call summary_dir, "Coqdoc tests", coqdoc); \
+	  $(call summary_dir, "Unit tests", unit-tests); \
 	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
 	  nb_failure=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_failure) | wc -l`; \
 	  nb_tests=`expr $$nb_success + $$nb_failure`; \
-	  pourcentage=`expr 100 \* $$nb_success / $$nb_tests`; \
+	  percentage=`expr 100 \* $$nb_success / $$nb_tests`; \
 	  echo; \
-	  echo "$$nb_success tests passed over $$nb_tests, i.e. $$pourcentage %"; \
+	  echo "$$nb_success tests passed over $$nb_tests, i.e. $$percentage %"; \
 	}
 
 summary.log:
@@ -242,6 +251,44 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
+
+#######################################################################
+# Unit tests
+#######################################################################
+
+OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
+SYSMOD:=-package num,str,unix,dynlink,threads
+
+COQSRCDIRS:=$(addprefix -I $(LIB)/,$(CORESRCDIRS))
+COQCMXS:=$(addprefix $(LIB)/,$(LINKCMX))
+
+# ML files from unit-test framework, not containing tests
+UNIT_SRCFILES:=$(shell find ./unit-tests/src -name *.ml)
+UNIT_ALLMLFILES:=$(shell find ./unit-tests -name *.ml)
+UNIT_MLFILES:=$(filter-out $(UNIT_SRCFILES),$(UNIT_ALLMLFILES))
+UNIT_LOGFILES:=$(patsubst %.ml,%.ml.log,$(UNIT_MLFILES))
+
+UNIT_CMXS=utest.cmx
+
+unit-tests/src/utest.cmx: unit-tests/src/utest.ml unit-tests/src/utest.cmi
+	$(SHOW) 'OCAMLOPT  $<'
+	$(HIDE)$(OCAMLOPT) -c -I unit-tests/src -package oUnit $<
+unit-tests/src/utest.cmi: unit-tests/src/utest.mli
+	$(SHOW) 'OCAMLOPT  $<'
+	$(HIDE)$(OCAMLOPT) -package oUnit $<
+
+$(UNIT_LOGFILES): unit-tests/src/utest.cmx
+
+unit-tests: $(UNIT_LOGFILES)
+
+# Build executable, run it to generate log file
+unit-tests/%.ml.log: unit-tests/%.ml
+	$(SHOW) 'TEST      $<'
+	$(HIDE)$(OCAMLOPT) -linkall -linkpkg -cclib -lcoqrun \
+		   $(SYSMOD) -package camlp5.gramlib,oUnit  \
+	     -I unit-tests/src $(COQSRCDIRS) $(COQCMXS) \
+	     $(UNIT_CMXS) $< -o $<.test;
+	$(HIDE)./$<.test
 
 #######################################################################
 # Other generic tests

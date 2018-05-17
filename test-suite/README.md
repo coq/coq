@@ -73,3 +73,6 @@ When you fix a bug, you should usually add a regression test here as well.
 The error "(bug seems to be opened, please check)" when running `make test-suite` means that a test in `bugs/closed` failed to compile.
 
 There are also output tests in `test-suite/output` which consist of a `.v` file and a `.out` file with the expected output.
+
+There are unit tests of OCaml code in `test-suite/unit-tests`. These tests are contained in `.ml` files, and rely on the `OUnit`
+unit-test framework, as described at http://ounit.forge.ocamlcore.org/.  Use `make unit-tests' in the unit-tests directory to run them.

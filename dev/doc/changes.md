@@ -22,6 +22,11 @@ Proof engine
   should indicate what the canonical form is. An important change is
   the move of `Globnames.global_reference` to `Names.GlobRef.t`.
 
+### Unit testing
+
+  The test suite now allows writing unit tests against OCaml code in the Coq
+  code base. Those unit tests create a dependency on the OUnit test framework.
+
 ## Changes between Coq 8.7 and Coq 8.8
 
 ### Bug tracker

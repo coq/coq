@@ -58,7 +58,7 @@ FIND_SKIP_DIRS:='(' \
   -name '_build_ci' -o \
   -name '_install_ci' -o \
   -name 'user-contrib' -o \
-  -name 'coq-makefile' -o \
+  -name 'test-suite' -o \
   -name '.opamcache' -o \
   -name '.coq-native' \
 ')' -prune -o

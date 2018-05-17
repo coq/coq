@@ -88,6 +88,8 @@ test-suite/coqdoc/Coqdoc.*
 test-suite/coqdoc/index.html
 test-suite/coqdoc/coqdoc.css
 test-suite/output/MExtraction.out
+test-suite/oUnit-anon.cache
+test-suite/unit-tests/**/*.test
 
 # documentation
 
