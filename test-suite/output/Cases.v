@@ -163,6 +163,7 @@ match goal with |- ?y + _ = _ => pose (match y as y with 0 => 0 | S n => 0 end) 
 match goal with |- ?y + _ = _ => pose (match y as y return y=y with 0 => eq_refl | S n => eq_refl end) end.
 match goal with |- ?y + _ = _ => pose (match y return y=y with 0 => eq_refl | S n => eq_refl end) end.
 Show.
+Abort.
 
 Lemma lem5 (p:nat) : eq_refl p = eq_refl p.
 let y := fresh "n" in (* Checking that y is hidden *)

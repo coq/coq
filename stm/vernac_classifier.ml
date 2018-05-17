@@ -54,13 +54,20 @@ let idents_of_name : Names.Name.t -> Names.Id.t list =
   | Names.Anonymous -> []
   | Names.Name n -> [n]
 
+let stm_allow_nested_proofs_option_name = ["Nested";"Proofs";"Allowed"]
+
+let options_affecting_stm_scheduling =
+  [ Vernacentries.universe_polymorphism_option_name;
+    stm_allow_nested_proofs_option_name ]
+
 let classify_vernac e =
   let static_classifier ~poly e = match e with
     (* Univ poly compatibility: we run it now, so that we can just
      * look at Flags in stm.ml.  Would be nicer to have the stm
      * look at the entire dag to detect this option. *)
     | ( VernacSetOption (_, l,_) | VernacUnsetOption (_, l))
-      when CList.equal String.equal l Vernacentries.universe_polymorphism_option_name ->
+      when CList.exists (CList.equal String.equal l)
+        options_affecting_stm_scheduling ->
        VtSideff [], VtNow
     (* Qed *)
     | VernacAbort _ -> VtQed VtDrop, VtLater

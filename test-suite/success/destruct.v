@@ -422,6 +422,7 @@ Abort.
 Goal forall b:bool, b = b.
 intros.
 destruct b eqn:H.
+Abort.
 
 (* Check natural instantiation behavior when the goal has already an evar *)
 

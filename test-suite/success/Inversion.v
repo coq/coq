@@ -107,6 +107,7 @@ Goal forall o, foo2 o -> 0 = 1.
 intros.
 eapply trans_eq.
 inversion H.
+Abort.
 
 (* Check that the part of "injection" that is called by "inversion"
    does the same number of intros as the number of equations
@@ -136,6 +137,7 @@ Goal True -> True.
 intro.
 Fail inversion H using False.
 Fail inversion foo using True_ind.
+Abort.
 
 (* Was failing at some time between 7 and 10 September 2014 *)
 (* even though, it is not clear that the resulting context is interesting *)

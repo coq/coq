@@ -589,6 +589,8 @@ Close Scope Z_scope.
 
 Theorem S_is_not_O : forall n, S n <> 0.
 
+Set Nested Proofs Allowed.
+
 Definition Is_zero (x:nat):= match x with
                                      | 0 => True
                                      | _ => False

@@ -25,3 +25,4 @@ val classify_as_query : vernac_classification
 val classify_as_sideeff : vernac_classification
 val classify_as_proofstep : vernac_classification
 
+val stm_allow_nested_proofs_option_name : string list

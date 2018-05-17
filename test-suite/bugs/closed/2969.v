@@ -12,6 +12,7 @@ eexists.
 reflexivity.
 Grab Existential Variables.
 admit.
+Admitted.
 
 (* Alternative variant which failed but without raising anomaly *)
 
@@ -24,3 +25,4 @@ clearbody n n0.
 exact I.
 Grab Existential Variables.
 admit.
+Admitted.

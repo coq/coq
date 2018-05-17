@@ -2113,12 +2113,6 @@ let delegate name =
   || VCS.is_vio_doc ()
   || !cur_opt.async_proofs_full
 
-let warn_deprecated_nested_proofs =
-  CWarnings.create ~name:"deprecated-nested-proofs" ~category:"deprecated"
-         (fun () ->
-          strbrk ("Nested proofs are deprecated and will "^
-                    "stop working in a future Coq version"))
-
 let collect_proof keep cur hd brkind id =
  stm_prerr_endline (fun () -> "Collecting proof ending at "^Stateid.to_string id);
  let no_name = "" in
@@ -2200,8 +2194,7 @@ let collect_proof keep cur hd brkind id =
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
         `MaybeASync (parent last, accn, name, delegate name)
-    | `Sideff _ ->
-       warn_deprecated_nested_proofs ();
+    | `Sideff (CherryPickEnv,_) ->
         `Sync (no_name,`NestedProof)
     | _ -> `Sync (no_name,`Unknown) in
  let make_sync why = function
@@ -2771,6 +2764,14 @@ let process_back_meta_command ~newtip ~head oid aast w =
     VCS.commit id (Alias (oid,aast));
     Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
 
+let allow_nested_proofs = ref false
+let _ = Goptions.declare_bool_option
+    { Goptions.optdepr  = false;
+      Goptions.optname  = "Nested Proofs Allowed";
+      Goptions.optkey   = Vernac_classifier.stm_allow_nested_proofs_option_name;
+      Goptions.optread  = (fun () -> !allow_nested_proofs);
+      Goptions.optwrite = (fun b -> allow_nested_proofs := b) }
+
 let process_transaction ~doc ?(newtip=Stateid.fresh ())
   ({ verbose; loc; expr } as x) c =
   stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
@@ -2802,6 +2803,15 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
 
       (* Proof *)
       | VtStartProof (mode, guarantee, names), w ->
+
+         if not !allow_nested_proofs && VCS.proof_nesting () > 0 then
+           "Nested proofs are not allowed unless you turn option Nested Proofs Allowed on."
+           |> Pp.str
+           |> (fun s -> (UserError (None, s), Exninfo.null))
+           |> State.exn_on ~valid:Stateid.dummy Stateid.dummy
+           |> Exninfo.iraise
+         else
+
           let id = VCS.new_node ~id:newtip () in
           let bname = VCS.mk_branch_name x in
           VCS.checkout VCS.Branch.master;
