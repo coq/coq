@@ -25,10 +25,11 @@ val mk_new_meta : unit -> constr
 (** {6 Creating a fresh evar given their type and context} *)
 
 val new_evar_from_context :
-  named_context_val -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
+  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> types -> evar_map * EConstr.t
+  ?principal:bool ->
+  named_context_val -> evar_map  -> types -> evar_map * EConstr.t
 
 type naming_mode =
   | KeepUserNameAndRenameExistingButSectionNames
@@ -37,41 +38,31 @@ type naming_mode =
   | FailIfConflict
 
 val new_evar :
-  env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
+  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> ?hypnaming:naming_mode -> types -> evar_map * EConstr.t
+  ?principal:bool -> ?hypnaming:naming_mode ->
+  env -> evar_map -> types -> evar_map * EConstr.t
 
 val new_pure_evar :
-  named_context_val -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
+  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> types -> evar_map * Evar.t
+  ?principal:bool ->
+  named_context_val -> evar_map -> types -> evar_map * Evar.t
 
 val new_pure_evar_full : evar_map -> evar_info -> evar_map * Evar.t
-
-(** the same with side-effects *)
-val e_new_evar :
-  env -> evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> ?hypnaming:naming_mode -> types -> constr
 
 (** Create a new Type existential variable, as we keep track of 
     them during type-checking and unification. *)
 val new_type_evar :
-  env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> ?hypnaming:naming_mode -> rigid ->
-  evar_map * (constr * Sorts.t)
-
-val e_new_type_evar : env -> evar_map ref ->
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> ?hypnaming:naming_mode -> rigid -> constr * Sorts.t
+  ?principal:bool -> ?hypnaming:naming_mode ->
+  env -> evar_map -> rigid ->
+  evar_map * (constr * Sorts.t)
 
 val new_Type : ?rigid:rigid -> env -> evar_map -> evar_map * constr
-val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
 
 val restrict_evar : evar_map -> Evar.t -> Filter.t ->
   ?src:Evar_kinds.t Loc.located -> constr list option -> evar_map * Evar.t
@@ -79,7 +70,6 @@ val restrict_evar : evar_map -> Evar.t -> Filter.t ->
 (** Polymorphic constants *)
 
 val new_global : evar_map -> GlobRef.t -> evar_map * constr
-val e_new_global : evar_map ref -> GlobRef.t -> constr
 
 (** Create a fresh evar in a context different from its definition context:
    [new_evar_instance sign evd ty inst] creates a new evar of context
@@ -88,10 +78,10 @@ val e_new_global : evar_map ref -> GlobRef.t -> constr
    of [inst] are typed in the occurrence context and their type (seen
    as a telescope) is [sign] *)
 val new_evar_instance :
- named_context_val -> evar_map -> types -> 
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t -> ?candidates:constr list ->
   ?store:Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool ->
+ named_context_val -> evar_map -> types ->
   constr list -> evar_map * constr
 
 val make_pure_subst : evar_info -> 'a array -> (Id.t * 'a) list
@@ -187,8 +177,6 @@ val nf_evars_universes : evar_map -> Constr.constr -> Constr.constr
 
 val nf_evars_and_universes : evar_map -> evar_map * (Constr.constr -> Constr.constr)
 [@@ocaml.deprecated "Use Evd.minimize_universes and nf_evars_universes"]
-val e_nf_evars_and_universes : evar_map ref -> (Constr.constr -> Constr.constr) * Universes.universe_opt_subst
-[@@ocaml.deprecated "Use Evd.minimize_universes and nf_evars_universes"]
 
 (** Normalize the evar map w.r.t. universes, after simplification of constraints.
     Return the substitution function for constrs as well. *)
@@ -237,11 +225,11 @@ type clear_dependency_error =
 
 exception ClearDependencyError of Id.t * clear_dependency_error * GlobRef.t option
 
-val clear_hyps_in_evi : env -> evar_map ref -> named_context_val -> types ->
-  Id.Set.t -> named_context_val * types
+val clear_hyps_in_evi : env -> evar_map -> named_context_val -> types ->
+  Id.Set.t -> evar_map * named_context_val * types
 
-val clear_hyps2_in_evi : env -> evar_map ref -> named_context_val -> types -> types ->
-  Id.Set.t -> named_context_val * types * types
+val clear_hyps2_in_evi : env -> evar_map -> named_context_val -> types -> types ->
+  Id.Set.t -> evar_map * named_context_val * types * types
 
 type csubst
 
@@ -276,3 +264,25 @@ type type_constraint = types option
 [@@ocaml.deprecated "use the version in Evardefine"]
 type val_constraint = constr option
 [@@ocaml.deprecated "use the version in Evardefine"]
+
+val e_new_evar :
+  env -> evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
+  ?candidates:constr list -> ?store:Store.t ->
+  ?naming:Misctypes.intro_pattern_naming_expr ->
+  ?principal:bool -> ?hypnaming:naming_mode -> types -> constr
+[@@ocaml.deprecated "Use [Evd.new_evar]"]
+
+val e_new_type_evar : env -> evar_map ref ->
+  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
+  ?naming:Misctypes.intro_pattern_naming_expr ->
+  ?principal:bool -> ?hypnaming:naming_mode -> rigid -> constr * Sorts.t
+[@@ocaml.deprecated "Use [Evd.new_type_evar]"]
+
+val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
+[@@ocaml.deprecated "Use [Evd.new_Type]"]
+
+val e_new_global : evar_map ref -> GlobRef.t -> constr
+[@@ocaml.deprecated "Use [Evd.new_global]"]
+
+val e_nf_evars_and_universes : evar_map ref -> (Constr.constr -> Constr.constr) * Universes.universe_opt_subst
+[@@ocaml.deprecated "Use Evd.minimize_universes and nf_evars_universes"]

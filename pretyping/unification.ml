@@ -198,8 +198,8 @@ let pose_all_metas_as_evars env evd t =
           then nf_betaiota env evd ty (* How it was in Coq <= 8.4 (but done in logic.ml at this time) *)
           else ty (* some beta-iota-normalization "regression" in 8.5 and 8.6 *) in
         let src = Evd.evar_source_of_meta mv !evdref in
-        let ev = Evarutil.e_new_evar env evdref ~src ty in
-        evdref := meta_assign mv (ev,(Conv,TypeNotProcessed)) !evdref;
+        let evd, ev = Evarutil.new_evar env !evdref ~src ty in
+        evdref := meta_assign mv (ev,(Conv,TypeNotProcessed)) evd;
         ev)
   | _ ->
       EConstr.map !evdref aux t in

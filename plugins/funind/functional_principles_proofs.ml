@@ -243,7 +243,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
       raise NoChange;
     end
   in
-  let eq_constr c1 c2 = Evarconv.e_conv env (ref sigma) c1 c2 in
+  let eq_constr c1 c2 = Option.has_some (Evarconv.conv env sigma c1 c2) in
   if not (noccurn sigma 1 end_of_type)
   then nochange "dependent"; (* if end_of_type depends on this term we don't touch it  *)
     if not (isApp sigma t) then nochange "not an equality";
@@ -1051,7 +1051,8 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
 	  (Constrintern.locate_reference (qualid_of_ident equation_lemma_id))
       in
       evd:=evd';
-      let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd res in 
+      let sigma, _ = Typing.type_of ~refresh:true (Global.env ()) !evd res in
+      evd := sigma;
       res
   in
   let nb_intro_to_do = nb_prod (project g) (pf_concl g) in

@@ -295,8 +295,11 @@ let inductive_template evdref env tmloc ind =
         | LocalAssum (na,ty) ->
             let ty = EConstr.of_constr ty in
 	    let ty' = substl subst ty in
-	    let e = e_new_evar env evdref ~src:(hole_source n) ty' in
-	    (e::subst,e::evarl,n+1)
+            let e = evd_comb1
+                (Evarutil.new_evar env ~src:(hole_source n))
+                evdref ty'
+            in
+            (e::subst,e::evarl,n+1)
 	| LocalDef (na,b,ty) ->
             let b = EConstr.of_constr b in
 	    (substl subst b::subst,evarl,n+1))
@@ -314,13 +317,15 @@ let try_find_ind env sigma typ realnames =
   IsInd (typ,ind,names)
 
 let inh_coerce_to_ind evdref env loc ty tyi =
-  let sigma = !evdref in
+  let orig = !evdref in
   let expected_typ = inductive_template evdref env loc tyi in
   (* Try to refine the type with inductive information coming from the
      constructor and renounce if not able to give more information *)
   (* devrait être indifférent d'exiger leq ou pas puisque pour
      un inductif cela doit être égal *)
-  if not (e_cumul env evdref expected_typ ty) then evdref := sigma
+  match cumul env !evdref expected_typ ty with
+  | Some sigma -> evdref := sigma
+  | None -> evdref := orig
 
 let binding_vars_of_inductive sigma = function
   | NotInd _ -> []
@@ -372,8 +377,7 @@ let coerce_row typing_fun evdref env lvar pats (tomatch,(na,indopt)) =
   let loc = loc_of_glob_constr tomatch in
   let tycon,realnames = find_tomatch_tycon evdref env loc indopt in
   let j = typing_fun tycon env evdref !lvar tomatch in
-  let evd, j = Coercion.inh_coerce_to_base ?loc:(loc_of_glob_constr tomatch) env !evdref j in
-  evdref := evd;
+  let j = evd_comb1 (Coercion.inh_coerce_to_base ?loc:(loc_of_glob_constr tomatch) env) evdref j in
   let typ = nf_evar !evdref j.uj_type in
   lvar := make_return_predicate_ltac_lvar !evdref na tomatch j.uj_val !lvar;
   let t =
@@ -396,12 +400,8 @@ let coerce_to_indtype typing_fun evdref env lvar matx tomatchl =
 (* Utils *)
 
 let mkExistential env ?(src=(Loc.tag Evar_kinds.InternalHole)) evdref =
-  let e, u = e_new_type_evar env evdref univ_flexible_alg ~src:src in e
-
-let evd_comb2 f evdref x y =
-  let (evd',y) = f !evdref x y in
-  evdref := evd';
-  y
+  let (e, u) = evd_comb1 (new_type_evar env  ~src:src) evdref univ_flexible_alg in
+  e
 
 let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
   (* Ideally, we could find a common inductive type to which both the
@@ -424,7 +424,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
 	    let current =
 	      if List.is_empty deps && isEvar !(pb.evdref) typ then
 	      (* Don't insert coercions if dependent; only solve evars *)
-		let _ = e_cumul pb.env pb.evdref indt typ in
+                let () = Option.iter ((:=) pb.evdref) (cumul pb.env !(pb.evdref) indt typ) in
 		current
 	      else
 		(evd_comb2 (Coercion.inh_conv_coerce_to true pb.env)
@@ -1014,8 +1014,8 @@ let adjust_impossible_cases pb pred tomatch submat =
     begin match Constr.kind pred with
     | Evar (evk,_) when snd (evar_source evk !(pb.evdref)) == Evar_kinds.ImpossibleCase ->
         if not (Evd.is_defined !(pb.evdref) evk) then begin
-	  let evd, default = use_unit_judge !(pb.evdref) in
-          pb.evdref := Evd.define evk default.uj_type evd
+          let default = evd_comb0 use_unit_judge pb.evdref in
+          pb.evdref := Evd.define evk default.uj_type !(pb.evdref)
         end;
         add_assert_false_case pb tomatch
     | _ ->
@@ -1681,7 +1681,7 @@ let abstract_tycon ?loc env evdref subst tycon extenv t =
 	    (fun i _ ->
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context env) in
-        let ev' = e_new_evar env evdref ~src ty in
+        let ev' = evd_comb1 (Evarutil.new_evar env ~src) evdref ty in
         begin match solve_simple_eqn (evar_conv_x full_transparent_state) env !evdref (None,ev,substl inst ev') with
         | Success evd -> evdref := evd
         | UnifFailure _ -> assert false
@@ -1712,7 +1712,7 @@ let abstract_tycon ?loc env evdref subst tycon extenv t =
 	  (named_context extenv) in
       let filter = Filter.make (rel_filter @ named_filter) in
       let candidates = u :: List.map mkRel vl in
-      let ev = e_new_evar extenv evdref ~src ~filter ~candidates ty in
+      let ev = evd_comb1 (Evarutil.new_evar extenv ~src ~filter ~candidates) evdref ty in
       lift k ev
   in
   aux (0,extenv,subst0) t0
@@ -1724,17 +1724,20 @@ let build_tycon ?loc env tycon_env s subst tycon extenv evdref t =
            we are in an impossible branch *)
 	let n = Context.Rel.length (rel_context env) in
 	let n' = Context.Rel.length (rel_context tycon_env) in
-	let impossible_case_type, u =
-	  e_new_type_evar (reset_context env) evdref univ_flexible_alg ~src:(Loc.tag ?loc Evar_kinds.ImpossibleCase) in
-	(lift (n'-n) impossible_case_type, mkSort u)
+        let impossible_case_type, u =
+          evd_comb1
+            (new_type_evar (reset_context env) ~src:(Loc.tag ?loc Evar_kinds.ImpossibleCase))
+            evdref univ_flexible_alg
+        in
+        (lift (n'-n) impossible_case_type, mkSort u)
     | Some t ->
         let t = abstract_tycon ?loc tycon_env evdref subst tycon extenv t in
-        let evd,tt = Typing.type_of extenv !evdref t in
-        evdref := evd;
+        let tt = evd_comb1 (Typing.type_of extenv) evdref t in
         (t,tt) in
-  let b = e_cumul env evdref tt (mkSort s) (* side effect *) in
-  if not b then anomaly (Pp.str "Build_tycon: should be a type.");
-  { uj_val = t; uj_type = tt }
+  match cumul env !evdref tt (mkSort s) with
+  | None -> anomaly (Pp.str "Build_tycon: should be a type.");
+  | Some sigma -> evdref := sigma;
+    { uj_val = t; uj_type = tt }
 
 (* For a multiple pattern-matching problem Xi on t1..tn with return
  * type T, [build_inversion_problem Gamma Sigma (t1..tn) T] builds a return
@@ -1923,9 +1926,7 @@ let extract_arity_signature ?(dolift=true) env0 lvar tomatchl tmsign =
 let inh_conv_coerce_to_tycon ?loc env evdref j tycon =
   match tycon with
     | Some p ->
-	let (evd',j) = Coercion.inh_conv_coerce_to ?loc true env !evdref j p in
-          evdref := evd';
-          j
+      evd_comb2 (Coercion.inh_conv_coerce_to ?loc true env) evdref j p
     | None -> j
 
 (* We put the tycon inside the arity signature, possibly discovering dependencies. *)

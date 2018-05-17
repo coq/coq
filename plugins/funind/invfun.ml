@@ -103,7 +103,8 @@ let generate_type evd g_to_f f graph i =
     Evd.fresh_global  (Global.env ()) !evd  (Globnames.IndRef (fst (destInd !evd graph)))
   in
   evd:=evd';
-  let graph_arity = Typing.e_type_of (Global.env ()) evd graph in
+  let sigma, graph_arity = Typing.type_of (Global.env ()) !evd graph in
+  evd := sigma;
   let ctxt,_ = decompose_prod_assum !evd graph_arity in
   let fun_ctxt,res_type =
     match ctxt with
@@ -769,7 +770,8 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	 let type_info = (type_of_lemma_ctxt,type_of_lemma_concl) in
 	 graphs_constr.(i) <- graph;
 	 let type_of_lemma = EConstr.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
-	 let _ = Typing.e_type_of (Global.env ()) evd type_of_lemma in 
+         let sigma, _ = Typing.type_of (Global.env ()) !evd type_of_lemma in
+         evd := sigma;
 	   let type_of_lemma = nf_zeta type_of_lemma in
 	   observe (str "type_of_lemma := " ++ Printer.pr_leconstr_env (Global.env ()) !evd type_of_lemma);
 	   type_of_lemma,type_info

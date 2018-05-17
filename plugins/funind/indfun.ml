@@ -385,7 +385,8 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 	     let evd = ref (Evd.from_env env) in
 	     let evd',uprinc = Evd.fresh_global env !evd princ in
              let _ = evd := evd' in 
-             let princ_type = Typing.e_type_of ~refresh:true env evd uprinc in
+             let sigma, princ_type = Typing.type_of ~refresh:true env !evd uprinc in
+             evd := sigma;
 	     let princ_type = EConstr.Unsafe.to_constr princ_type in
     	     Functional_principles_types.generate_functional_principle
 	       evd

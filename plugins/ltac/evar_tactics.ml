@@ -85,9 +85,7 @@ let let_evar name typ =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
-    let sigma = ref sigma in
-    let _ = Typing.e_sort_of env sigma typ in
-    let sigma = !sigma in
+    let sigma, _ = Typing.sort_of env sigma typ in
     let id = match name with
     | Name.Anonymous ->
       let id = Namegen.id_of_name_using_hdchar env sigma typ name in

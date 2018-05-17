@@ -184,9 +184,7 @@ let havetac ist
      let gs =
        List.map (fun (_,a) ->
          Ssripats.Internal.pf_find_abstract_proof false gl (EConstr.Unsafe.to_constr a.(1))) skols_args in
-     let tacopen_skols gl =
-        let stuff, g = Refiner.unpackage gl in
-        Refiner.repackage stuff (gs @ [g]) in
+     let tacopen_skols gl = re_sig (gs @ [gl.Evd.it]) gl.Evd.sigma in
      let gl, ty = pf_e_type_of gl t in
      gl, ty, Proofview.V82.of_tactic (Tactics.apply t), id,
        Tacticals.tclTHEN (Tacticals.tclTHEN itac_c simpltac)

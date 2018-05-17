@@ -48,31 +48,35 @@ exception NoCoercion
 exception NoCoercionNoUnifier of evar_map * unification_error
 
 (* Here, funj is a coercion therefore already typed in global context *)
-let apply_coercion_args env evd check isproj argl funj =
-  let evdref = ref evd in
-  let rec apply_rec acc typ = function
+let apply_coercion_args env sigma check isproj argl funj =
+  let rec apply_rec sigma acc typ = function
     | [] ->
       if isproj then
-	let cst = fst (destConst !evdref (j_val funj)) in
+        let cst = fst (destConst sigma (j_val funj)) in
 	let p = Projection.make cst false in
 	let pb = lookup_projection p env in
 	let args = List.skipn pb.Declarations.proj_npars argl in
 	let hd, tl = match args with hd :: tl -> hd, tl | [] -> assert false in
-	  { uj_val = applist (mkProj (p, hd), tl);
-	    uj_type = typ }
+        sigma, { uj_val = applist (mkProj (p, hd), tl);
+                 uj_type = typ }
       else
-	{ uj_val = applist (j_val funj,argl);
-	  uj_type = typ }
+        sigma, { uj_val = applist (j_val funj,argl);
+                 uj_type = typ }
     | h::restl -> (* On devrait pouvoir s'arranger pour qu'on n'ait pas a faire hnf_constr *)
-      match EConstr.kind !evdref (whd_all env !evdref typ) with
+      match EConstr.kind sigma (whd_all env sigma typ) with
       | Prod (_,c1,c2) ->
-        if check && not (e_cumul env evdref (Retyping.get_type_of env !evdref h) c1) then
-	  raise NoCoercion;
-        apply_rec (h::acc) (subst1 h c2) restl
+        let sigma =
+          if check then
+            begin match cumul env sigma (Retyping.get_type_of env sigma h) c1 with
+              | None -> raise NoCoercion
+              | Some sigma -> sigma
+            end
+          else sigma
+        in
+        apply_rec sigma (h::acc) (subst1 h c2) restl
       | _ -> anomaly (Pp.str "apply_coercion_args.")
   in
-  let res = apply_rec [] funj.uj_type argl in
-    !evdref, res
+  apply_rec sigma [] funj.uj_type argl
 
 (* appliquer le chemin de coercions de patterns p *)
 let apply_pattern_coercion ?loc pat p =
@@ -94,7 +98,9 @@ open Program
 
 let make_existential ?loc ?(opaque = not (get_proofs_transparency ())) na env evdref c =
   let src = Loc.tag ?loc (Evar_kinds.QuestionMark (Evar_kinds.Define opaque,na)) in
-  Evarutil.e_new_evar env evdref ~src c
+  let evd, v = Evarutil.new_evar env !evdref ~src c in
+  evdref := evd;
+  v
 
 let app_opt env evdref f t =
   whd_betaiota !evdref (app_opt f t)
@@ -191,7 +197,8 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 		    (subst1 hdy restT') (succ i)  (fun x -> eq_app (co x))
 	else Some (fun x -> 
 	  let term = co x in
-	    Typing.e_solve_evars env evdref term)
+          let sigma, term = Typing.solve_evars env !evdref term in
+          evdref := sigma; term)
       in
 	if isEvar !evdref c || isEvar !evdref c' || not (Program.is_program_generalized_coercion ()) then
 	  (* Second-order unification needed. *)
@@ -337,8 +344,9 @@ let app_coercion env evdref coercion v =
   match coercion with
   | None -> v
   | Some f ->
-     let v' = Typing.e_solve_evars env evdref (f v) in
-     whd_betaiota !evdref v'
+    let sigma, v' = Typing.solve_evars env !evdref (f v) in
+    evdref := sigma;
+    whd_betaiota !evdref v'
 
 let coerce_itf ?loc env evd v t c1 =
   let evdref = ref evd in

@@ -247,13 +247,12 @@ let clear_gen fail = function
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let concl = Proofview.Goal.concl gl in
-    let evdref = ref sigma in
-    let (hyps, concl) =
-      try clear_hyps_in_evi env evdref (named_context_val env) concl ids
+    let (sigma, hyps, concl) =
+      try clear_hyps_in_evi env sigma (named_context_val env) concl ids
       with Evarutil.ClearDependencyError (id,err,inglobal) -> fail env sigma id err inglobal
     in
     let env = reset_with_named_context hyps env in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref)
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (Refine.refine ~typecheck:false begin fun sigma ->
       Evarutil.new_evar env sigma ~principal:true concl
     end)
@@ -431,9 +430,8 @@ let get_previous_hyp_position env sigma id =
 
 let clear_hyps2 env sigma ids sign t cl =
   try
-    let evdref = ref (Evd.clear_metas sigma) in
-    let (hyps,t,cl) = Evarutil.clear_hyps2_in_evi env evdref sign t cl ids in
-    (hyps, t, cl, !evdref)
+    let sigma = Evd.clear_metas sigma in
+    Evarutil.clear_hyps2_in_evi env sigma sign t cl ids
   with Evarutil.ClearDependencyError (id,err,inglobal) ->
     error_replacing_dependency env sigma id err inglobal
 
@@ -447,7 +445,7 @@ let internal_cut_gen ?(check=true) dir replace id t =
     let sign',t,concl,sigma =
       if replace then
         let nexthyp = get_next_hyp_position env sigma id (named_context_of_val sign) in
-        let sign',t,concl,sigma = clear_hyps2 env sigma (Id.Set.singleton id) sign t concl in
+        let sigma,sign',t,concl = clear_hyps2 env sigma (Id.Set.singleton id) sign t concl in
         let sign' = insert_decl_in_named_context sigma (LocalAssum (id,t)) nexthyp sign' in
         sign',t,concl,sigma
       else
@@ -1987,24 +1985,22 @@ let on_the_bodies = function
 exception DependsOnBody of Id.t option
 
 let check_is_type env sigma ty =
-  let evdref = ref sigma in
   try
-    let _ = Typing.e_sort_of env evdref ty in
-    !evdref
+    let sigma, _ = Typing.sort_of env sigma ty in
+    sigma
   with e when CErrors.noncritical e ->
     raise (DependsOnBody None)
 
 let check_decl env sigma decl =
   let open Context.Named.Declaration in
   let ty = NamedDecl.get_type decl in
-  let evdref = ref sigma in
   try
-    let _ = Typing.e_sort_of env evdref ty in
-    let _ = match decl with
-    | LocalAssum _ -> ()
-    | LocalDef (_,c,_) -> Typing.e_check env evdref c ty
+    let sigma, _ = Typing.sort_of env sigma ty in
+    let sigma = match decl with
+    | LocalAssum _ -> sigma
+    | LocalDef (_,c,_) -> Typing.check env sigma c ty
     in
-    !evdref
+    sigma
   with e when CErrors.noncritical e ->
     let id = NamedDecl.get_id decl in
     raise (DependsOnBody (Some id))
@@ -3815,7 +3811,10 @@ let specialize_eqs id =
   let ty = Tacmach.New.pf_get_hyp_typ id gl in
   let evars = ref (Proofview.Goal.sigma gl) in
   let unif env evars c1 c2 =
-    compare_upto_variables !evars c1 c2 && Evarconv.e_conv env evars c1 c2
+    compare_upto_variables !evars c1 c2 &&
+    (match Evarconv.conv env !evars c1 c2 with
+     | Some sigma -> evars := sigma; true
+     | None -> false)
   in
   let rec aux in_eqs ctx acc ty =
     match EConstr.kind !evars ty with
@@ -3840,7 +3839,8 @@ let specialize_eqs id =
 	| _ ->
 	    if in_eqs then acc, in_eqs, ctx, ty
 	    else
-	      let e = e_new_evar (push_rel_context ctx env) evars t in
+              let sigma, e = Evarutil.new_evar (push_rel_context ctx env) !evars t in
+              evars := sigma;
 		aux false (LocalDef (na,e,t) :: ctx) (mkApp (lift 1 acc, [| mkRel 1 |])) b)
     | t -> acc, in_eqs, ctx, ty
   in
@@ -4367,7 +4367,7 @@ let check_expected_type env sigma (elimc,bl) elimt =
   let sigma,cl = make_evar_clause env sigma ~len:(n - 1) elimt in
   let sigma = solve_evar_clause env sigma true cl bl in
   let (_,u,_) = destProd sigma cl.cl_concl in
-  fun t -> Evarconv.e_cumul env (ref sigma) t u
+  fun t -> Option.has_some (Evarconv.cumul env sigma t u)
 
 let check_enough_applied env sigma elim =
   (* A heuristic to decide whether the induction arg is enough applied *)

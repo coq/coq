@@ -190,9 +190,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
         ~src:(Loc.tag @@ Evar_kinds.QuestionMark (Evar_kinds.Define false,Anonymous)) wf_proof in
     sigma, mkApp (h_a_term, [| argtyp ; wf_rel ; h_e_term; prop |])
   in
-  let _evd = ref sigma in
-  let def = Typing.e_solve_evars env _evd def in
-  let sigma = !_evd in
+  let sigma, def = Typing.solve_evars env sigma def in
   let sigma = Evarutil.nf_evar_map sigma in
   let def = mkApp (def, [|intern_body_lam|]) in
   let binders_rel = nf_evar_context sigma binders_rel in

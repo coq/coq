@@ -33,9 +33,11 @@ let re_sig it  gc = { it = it; sigma = gc; }
 type 'a sigma   = 'a Evd.sigma;;
 type tactic     = Proof_type.tactic;;
 
+[@@@ocaml.warning "-3"]
 let unpackage = Refiner.unpackage
 let repackage = Refiner.repackage
 let apply_sig_tac = Refiner.apply_sig_tac
+[@@@ocaml.warning "+3"]
 
 let sig_it   = Refiner.sig_it
 let project  = Refiner.project

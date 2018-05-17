@@ -436,7 +436,7 @@ let new_pure_evar_full evd evi =
   let evd = Evd.declare_future_goal evk evd in
   (evd, evk)
 
-let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?candidates ?(store = Store.empty) ?naming ?(principal=false) typ =
+let new_pure_evar?(src=default_source) ?(filter = Filter.identity) ?candidates ?(store = Store.empty) ?naming ?(principal=false) sign evd typ =
   let default_naming = Misctypes.IntroAnonymous in
   let naming = Option.default default_naming naming in
   let name = match naming with
@@ -463,14 +463,14 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
   in
   (evd, newevk)
 
-let new_evar_instance sign evd typ ?src ?filter ?candidates ?store ?naming ?principal instance =
+let new_evar_instance ?src ?filter ?candidates ?store ?naming ?principal sign evd typ instance =
   let open EConstr in
   assert (not !Flags.debug ||
             List.distinct (ids_of_named_context (named_context_of_val sign)));
   let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?candidates ?store ?naming ?principal typ in
   evd, mkEvar (newevk,Array.of_list instance)
 
-let new_evar_from_context sign evd ?src ?filter ?candidates ?store ?naming ?principal typ =
+let new_evar_from_context ?src ?filter ?candidates ?store ?naming ?principal sign evd typ =
   let instance = List.map (NamedDecl.get_id %> EConstr.mkVar) (named_context_of_val sign) in
   let instance =
     match filter with
@@ -480,7 +480,7 @@ let new_evar_from_context sign evd ?src ?filter ?candidates ?store ?naming ?prin
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
-let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal ?hypnaming typ =
+let new_evar ?src ?filter ?candidates ?store ?naming ?principal ?hypnaming env evd typ =
   let sign,typ',instance,subst = push_rel_context_to_named_context ?hypnaming env evd typ in
   let map c = csubst_subst subst c in
   let candidates = Option.map (fun l -> List.map map l) candidates in
@@ -490,7 +490,7 @@ let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal ?hypnami
     | Some filter -> Filter.filter_list filter instance in
   new_evar_instance sign evd typ' ?src ?filter ?candidates ?store ?naming ?principal instance
 
-let new_type_evar env evd ?src ?filter ?naming ?principal ?hypnaming rigid =
+let new_type_evar ?src ?filter ?naming ?principal ?hypnaming env evd rigid =
   let (evd', s) = new_sort_variable rigid evd in
   let (evd', e) = new_evar env evd' ?src ?filter ?naming ?principal ?hypnaming (EConstr.mkSort s) in
   evd', (e, s)
@@ -613,10 +613,11 @@ let rec check_and_clear_in_constr env evdref err ids global c =
 
       | _ -> Constr.map (check_and_clear_in_constr env evdref err ids global) c
 
-let clear_hyps_in_evi_main env evdref hyps terms ids =
+let clear_hyps_in_evi_main env sigma hyps terms ids =
   (* clear_hyps_in_evi erases hypotheses ids in hyps, checking if some
      hypothesis does not depend on a element of ids, and erases ids in
      the contexts of the evars occurring in evi *)
+  let evdref = ref sigma in
   let terms = List.map EConstr.Unsafe.to_constr terms in
   let global = Id.Set.exists is_section_variable ids in
   let terms =
@@ -639,16 +640,16 @@ let clear_hyps_in_evi_main env evdref hyps terms ids =
     in
       remove_hyps ids check_context check_value hyps
   in
-  (nhyps,List.map EConstr.of_constr terms)
+  (!evdref, nhyps,List.map EConstr.of_constr terms)
 
-let clear_hyps_in_evi env evdref hyps concl ids =
-  match clear_hyps_in_evi_main env evdref hyps [concl] ids with
-  | (nhyps,[nconcl]) -> (nhyps,nconcl)
+let clear_hyps_in_evi env sigma hyps concl ids =
+  match clear_hyps_in_evi_main env sigma hyps [concl] ids with
+  | (sigma,nhyps,[nconcl]) -> (sigma,nhyps,nconcl)
   | _ -> assert false
 
-let clear_hyps2_in_evi env evdref hyps t concl ids =
-  match clear_hyps_in_evi_main env evdref hyps [t;concl] ids with
-  | (nhyps,[t;nconcl]) -> (nhyps,t,nconcl)
+let clear_hyps2_in_evi env sigma hyps t concl ids =
+  match clear_hyps_in_evi_main env sigma hyps [t;concl] ids with
+  | (sigma,nhyps,[t;nconcl]) -> (sigma,nhyps,t,nconcl)
   | _ -> assert false
 
 (* spiwack: a few functions to gather evars on which goals depend. *)
