@@ -1,4 +1,4 @@
-DECLARE PLUGIN "tuto0"
+DECLARE PLUGIN "tuto0_plugin"
 
 open Pp
 open Ltac_plugin
