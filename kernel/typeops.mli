@@ -22,9 +22,9 @@ open Environ
  *)
 
 
-val infer      : env -> constr       -> unsafe_judgment
-val infer_v    : env -> constr array -> unsafe_judgment array
-val infer_type : env -> types        -> unsafe_type_judgment
+val infer : env -> constr -> unsafe_judgment
+val infer_v : env -> constr array -> unsafe_judgment array
+val infer_type : ?allow_alg:bool -> env -> types -> unsafe_type_judgment
 
 val check_context :
   env -> Constr.rel_context -> env

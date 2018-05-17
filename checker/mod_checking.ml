@@ -28,7 +28,7 @@ let check_constant_declaration env kn cb =
     | Some _, _ -> assert false
   in
   let ty = cb.const_type in
-  let _ = infer_type env' ty in
+  let _ = infer_type ~allow_alg:true env' ty in
   let () =
     match Environ.body_of_constant_body env cb with
     | Some bd ->

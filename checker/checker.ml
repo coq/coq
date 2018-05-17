@@ -295,7 +295,8 @@ let explain_exn = function
       | IllFormedRecBody _ -> str"IllFormedRecBody"
       | IllTypedRecBody _ -> str"IllTypedRecBody"
       | UnsatisfiedConstraints _ -> str"UnsatisfiedConstraints"
-      | UndeclaredUniverse _ -> str"UndeclaredUniverse"))
+      | UndeclaredUniverse _ -> str"UndeclaredUniverse"
+      | DisallowedAlgebraicUniverse _ -> str "DisallowedAlgebraicUniverse"))
 
   | Indtypes.InductiveError e ->
       hov 0 (str "Error related to inductive types")

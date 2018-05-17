@@ -277,18 +277,19 @@ let typecheck_inductive env mie =
 	   if isArity ind.mind_entry_arity then
 	     let (ctx,s) = dest_arity env_params ind.mind_entry_arity in
 	       match s with
-	       | Type u when Univ.universe_level u = None ->
+               | Type u when not (Univ.Universe.is_level u) ->
 	         (** We have an algebraic universe as the conclusion of the arity,
-		     typecheck the dummy Π ctx, Prop and do a special case for the conclusion.
+                     typecheck the dummy Π ctx, Prop and do a special case for the conclusion.
+                     XXX why
 		 *)
-	         let proparity = infer_type env_params (mkArity (ctx, Sorts.prop)) in
+                 let proparity = infer_type ~allow_alg:true env_params (mkArity (ctx, Sorts.prop)) in
 		 let (cctx, _) = destArity proparity.utj_val in
 		   (* Any universe is well-formed, we don't need to check [s] here *)
 		   mkArity (cctx, s)
 	       | _ -> 
-		 let arity = infer_type env_params ind.mind_entry_arity in
+                 let arity = infer_type ~allow_alg:true env_params ind.mind_entry_arity in
 		   arity.utj_val
-	   else let arity = infer_type env_params ind.mind_entry_arity in
+           else let arity = infer_type ~allow_alg:true env_params ind.mind_entry_arity in
 		  arity.utj_val
 	 in
 	 let (sign, deflev) = dest_arity env_params arity in

@@ -58,7 +58,7 @@ let typecheck_arity env params inds =
   let check_arity arctxt = function
     | RegularArity mar ->
         let ar = mar.mind_user_arity in
-        let _ = Typeops.infer_type env ar in
+        let _ = Typeops.infer_type ~allow_alg:true env ar in
         Reduction.conv env (Term.it_mkProd_or_LetIn (Constr.mkSort mar.mind_sort) arctxt) ar;
         ar
     | TemplateArity par ->

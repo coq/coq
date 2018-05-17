@@ -135,6 +135,10 @@ Kernel
 
 - Mutually defined records are now supported.
 
+- Algebraic universes are forbidden in most places. They remain
+  allowed only in the codomain of the type of a definition or
+  inductive type.
+
 Notations
 
 - New support for autonomous grammars of terms, called "custom

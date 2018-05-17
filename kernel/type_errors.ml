@@ -63,6 +63,7 @@ type ('constr, 'types) ptype_error =
       int * Name.t array * ('constr, 'types) punsafe_judgment array * 'types array
   | UnsatisfiedConstraints of Univ.Constraint.t
   | UndeclaredUniverse of Univ.Level.t
+  | DisallowedAlgebraicUniverse of Univ.Universe.t
 
 type type_error = (constr, types) ptype_error
 
@@ -129,3 +130,6 @@ let error_unsatisfied_constraints env c =
 
 let error_undeclared_universe env l =
   raise (TypeError (env, UndeclaredUniverse l))
+
+let error_disallowed_algebraic_universe env u =
+  raise (TypeError (env, DisallowedAlgebraicUniverse u))
