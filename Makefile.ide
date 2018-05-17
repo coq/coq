@@ -39,11 +39,11 @@ COQIDEINAPP:=$(COQIDEAPP)/Contents/MacOS/coqide
 # one that will be loaded by coqidetop) refers to some
 # core modules of coq, for instance printing/*.
 
-IDESRCDIRS:= $(CORESRCDIRS) ide ide/utils
+IDESRCDIRS:= $(CORESRCDIRS) ide ide/protocol
 
 COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) $(COQIDEINCLUDES)
 
-IDEDEPS:=clib/clib.cma lib/lib.cma
+IDEDEPS:=clib/clib.cma lib/lib.cma ide/protocol/ideprotocol.cma
 IDECMA:=ide/ide.cma
 IDETOPEXE=bin/coqidetop$(EXE)
 IDETOP=bin/coqidetop.opt$(EXE)
@@ -146,7 +146,7 @@ $(IDETOPEXE): $(IDETOP:.opt=.$(BEST))
 
 $(IDETOP): ide/idetop.ml $(LINKCMX) $(LIBCOQRUN) $(IDETOPCMX)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) -I ide \
+	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) -I ide -I ide/protocol/ \
 			   $(SYSMOD) -package camlp5.gramlib \
 			   $(LINKCMX) $(IDETOPCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
 	$(STRIP) $@
@@ -154,7 +154,7 @@ $(IDETOP): ide/idetop.ml $(LINKCMX) $(LIBCOQRUN) $(IDETOPCMX)
 
 $(IDETOPBYTE): ide/idetop.ml $(LINKCMO) $(LIBCOQRUN) $(IDETOPCMA)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(OCAMLC) -linkall -linkpkg $(MLINCLUDES) -I ide \
+	$(HIDE)$(OCAMLC) -linkall -linkpkg $(MLINCLUDES) -I ide -I ide/protocol/ \
 	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
 			 $(SYSMOD) -package camlp5.gramlib \
 			 $(LINKCMO) $(IDETOPCMA) $(BYTEFLAGS) $< -o $@

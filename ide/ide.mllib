@@ -9,15 +9,7 @@ Config_lexer
 Utf8_convert
 Preferences
 Project_file
-Serialize
-Richprinter
-Xml_lexer
-Xml_parser
-Xml_printer
-Serialize
-Richpp
 Topfmt
-Xmlprotocol
 Ideutils
 Coq
 Coq_lex

@@ -206,7 +206,7 @@ OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 
 BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS) $(FLAMBDA_FLAGS)
-DEPFLAGS=$(LOCALINCLUDES)$(if $(filter plugins/%,$@),, -I ide -I ide/utils)
+DEPFLAGS=$(LOCALINCLUDES)$(if $(filter plugins/%,$@),, -I ide -I ide/protocol)
 
 # On MacOS, the binaries are signed, except our private ones
 ifeq ($(shell which codesign > /dev/null 2>&1 && echo $(ARCH)),Darwin)
@@ -551,14 +551,11 @@ $(COQWORKMGRBYTE): $(COQWORKMGRCMO)
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqidetop
 
-FAKEIDECMO:=clib/clib.cma lib/lib.cma ide/document.cmo	\
- ide/serialize.cmo ide/xml_lexer.cmo ide/xml_parser.cmo	\
- ide/xml_printer.cmo ide/richpp.cmo ide/xmlprotocol.cmo	\
- tools/fake_ide.cmo
+FAKEIDECMO:=clib/clib.cma lib/lib.cma ide/protocol/ideprotocol.cma ide/document.cmo tools/fake_ide.cmo
 
 $(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOP)
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml, -I ide -package str -package dynlink)
+	$(HIDE)$(call bestocaml, -I ide -I ide/protocol -package str -package dynlink)
 
 $(FAKEIDEBYTE): $(FAKEIDECMO) | $(IDETOPLOOPCMA)
 	$(SHOW)'OCAMLC -o $@'
@@ -659,7 +656,7 @@ kernel/kernel.cmxa: kernel/kernel.mllib
 	$(SHOW)'OCAMLOPT -pack -o $@'
 	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -pack -o $@ $(filter-out %.mlpack, $^)
 
-COND_IDEFLAGS=$(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,)
+COND_IDEFLAGS=$(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide -I ide/protocol,)
 COND_PRINTERFLAGS=$(if $(filter dev/%,$<), -I dev,)
 
 COND_BYTEFLAGS= \
