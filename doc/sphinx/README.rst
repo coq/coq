@@ -274,14 +274,12 @@ In addition to the objects above, the ``coqrst`` Sphinx plugin defines the follo
           -----------------------------
           \WTEG{\forall~x:T,U}{\Prop}
 
-``.. preamble::`` A reST directive for hidden math.
-    Mostly useful to let MathJax know about `\def`\ s and `\newcommand`\ s.
+``.. preamble::`` A reST directive to include a TeX file.
+    Mostly useful to let MathJax know about `\def`s and `\newcommand`s.
 
-    Example::
+    Usage::
 
-       .. preamble::
-
-          \newcommand{\paren}[#1]{\left(#1\right)}
+       .. preamble:: preamble.tex
 
 Coq roles
 =========
