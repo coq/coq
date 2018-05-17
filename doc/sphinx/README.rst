@@ -278,8 +278,8 @@ In addition to the objects above, the ``coqrst`` Sphinx plugin defines the follo
 
        .. inference:: name
 
-          newline-separated premisses
-          ------------------------
+          newline-separated premises
+          --------------------------
           conclusion
 
     Example::
