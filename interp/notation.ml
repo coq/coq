@@ -49,7 +49,6 @@ type notation_location = (DirPath.t * DirPath.t) * string
 type notation_data = {
   not_interp : interpretation;
   not_location : notation_location;
-  not_onlyprinting : bool;
 }
 
 type scope = {
@@ -430,13 +429,15 @@ let rec find_without_delimiters find (ntn_scope,ntn) = function
 
 (* Uninterpreted notation levels *)
 
-let declare_notation_level ntn level =
+let declare_notation_level ?(onlyprint=false) ntn level =
   if String.Map.mem ntn !notation_level_map then
     anomaly (str "Notation " ++ str ntn ++ str " is already assigned a level.");
-  notation_level_map := String.Map.add ntn level !notation_level_map
+  notation_level_map := String.Map.add ntn (level,onlyprint) !notation_level_map
 
-let level_of_notation ntn =
-  String.Map.find ntn !notation_level_map
+let level_of_notation ?(onlyprint=false) ntn =
+  let (level,onlyprint') = String.Map.find ntn !notation_level_map in
+  if onlyprint' && not onlyprint then raise Not_found;
+  level
 
 (* The mapping between notations and their interpretation *)
 
@@ -449,20 +450,21 @@ let warn_notation_overridden =
 let declare_notation_interpretation ntn scopt pat df ~onlyprint =
   let scope = match scopt with Some s -> s | None -> default_scope in
   let sc = find_scope scope in
-  let () =
-    if String.Map.mem ntn sc.notations then
-    let which_scope = match scopt with
-    | None -> mt ()
-    | Some _ -> spc () ++ strbrk "in scope" ++ spc () ++ str scope in
-    warn_notation_overridden (ntn,which_scope)
-  in
-  let notdata = {
-    not_interp = pat;
-    not_location = df;
-    not_onlyprinting = onlyprint;
-  } in
-  let sc = { sc with notations = String.Map.add ntn notdata sc.notations } in
-  let () = scope_map := String.Map.add scope sc !scope_map in
+  if not onlyprint then begin
+    let () =
+      if String.Map.mem ntn sc.notations then
+      let which_scope = match scopt with
+      | None -> mt ()
+      | Some _ -> spc () ++ strbrk "in scope" ++ spc () ++ str scope in
+      warn_notation_overridden (ntn,which_scope)
+    in
+    let notdata = {
+      not_interp = pat;
+      not_location = df;
+    } in
+    let sc = { sc with notations = String.Map.add ntn notdata sc.notations } in
+    scope_map := String.Map.add scope sc !scope_map
+  end;
   begin match scopt with
   | None -> scope_stack := SingleNotation ntn :: !scope_stack
   | Some _ -> ()
@@ -487,7 +489,6 @@ let rec find_interpretation ntn find = function
 
 let find_notation ntn sc =
   let n = String.Map.find ntn (find_scope sc).notations in
-  let () = if n.not_onlyprinting then raise Not_found in
   (n.not_interp, n.not_location)
 
 let notation_of_prim_token = function
@@ -631,7 +632,6 @@ let exists_notation_in_scope scopt ntn onlyprint r =
   try
     let sc = String.Map.find scope !scope_map in
     let n = String.Map.find ntn sc.notations in
-    onlyprint = n.not_onlyprinting && 
     interpretation_eq n.not_interp r
   with Not_found -> false
 

@@ -738,12 +738,12 @@ let cache_one_syntax_extension se =
   let prec = se.synext_level in
   let onlyprint = se.synext_notgram.notgram_onlyprinting in
   try
-    let oldprec = Notation.level_of_notation ntn in
+    let oldprec = Notation.level_of_notation ~onlyprint ntn in
     if not (Notation.level_eq prec oldprec) then error_incompatible_level ntn oldprec prec;
   with Not_found ->
     if is_active_compat se.synext_compat then begin
       (* Reserve the notation level *)
-      Notation.declare_notation_level ntn prec;
+      Notation.declare_notation_level ntn prec ~onlyprint;
       (* Declare the parsing rule *)
       if not onlyprint then List.iter (check_and_extend_constr_grammar ntn) se.synext_notgram.notgram_rules;
       (* Declare the notation rule *)
@@ -1274,7 +1274,7 @@ exception NoSyntaxRule
 
 let recover_notation_syntax ntn =
   try
-    let prec = Notation.level_of_notation ntn in
+    let prec = Notation.level_of_notation ~onlyprint:true ntn (* Be as little restrictive as possible *) in
     let pp_rule,_ = Notation.find_notation_printing_rule ntn in
     let pp_extra_rules = Notation.find_notation_extra_printing_rules ntn in
     let pa_rule = Notation.find_notation_parsing_rules ntn in
