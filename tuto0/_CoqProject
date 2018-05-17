@@ -2,6 +2,8 @@
 -I src
 
 theories/Loader.v
+theories/Demo.v
+
 src/tuto0_main.ml
 src/tuto0_main.mli
 src/g_tuto0.ml4
