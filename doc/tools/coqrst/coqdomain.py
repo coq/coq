@@ -655,12 +655,12 @@ class PreambleDirective(Directive):
 
        .. preamble:: preamble.tex
     """
-
     has_content = False
     required_arguments = 1
     optional_arguments = 0
     final_argument_whitespace = True
     option_spec = {}
+    directive_name = "preamble"
 
     def run(self):
         document = self.state.document

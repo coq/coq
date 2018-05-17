@@ -1,8 +1,5 @@
-.. _introduction:
-
-------------------------
-Introduction
-------------------------
+.. include:: preamble.rst
+.. include:: replaces.rst
 
 This document is the Reference Manual of the |Coq| proof assistant.
 To start using Coq, it is advised to first read a tutorial.

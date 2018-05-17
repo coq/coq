@@ -1,11 +1,4 @@
-.. include:: preamble.rst
-.. include:: replaces.rst
-
 .. _credits:
-
--------------------------------------------
-Credits
--------------------------------------------
 
 Coq is a proof assistant for higher-order logic, allowing the
 development of computer programs consistent with their formal
