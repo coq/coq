@@ -1,11 +1,16 @@
-.. include:: preamble.rst
-.. include:: replaces.rst
+==========================
+ The Coq Reference Manual
+==========================
+
+.. _introduction:
+
+Introduction
+------------
 
 .. include:: introduction.rst
 
-------------------
 Table of contents
-------------------
+-----------------
 
 .. toctree::
    :caption: Indexes
@@ -80,12 +85,12 @@ Table of contents
 
    zebibliography
 
-This material (the Coq Reference Manual) may be distributed only subject to the
-terms and conditions set forth in the Open Publication License, v1.0 or later
-(the latest version is presently available at
-http://www.opencontent.org/openpub). Options A and B are not elected.
+License
+-------
+
+.. include:: license.rst
 
 .. [#PG] Proof-General is available at https://proofgeneral.github.io/.
-         Optionally, you can enhance it with the minor mode
-         Company-Coq :cite:`Pit16`
-         (see https://github.com/cpitclaudel/company-coq).
+   Optionally, you can enhance it with the minor mode
+   Company-Coq :cite:`Pit16`
+   (see https://github.com/cpitclaudel/company-coq).

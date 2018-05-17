@@ -66,8 +66,30 @@ source_suffix = '.rst'
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
 
+from shutil import copyfile
+
+SUPPORTED_FORMATS = { fmt: os.path.abspath("index-{}.rst".format(fmt))
+                      for fmt in ["html", "latex"] }
+MASTER_DOC = os.path.abspath("index.rst")
+
+# Add extra cases here to support more formats
+def copy_master_doc(app):
+    for fmt, rst_path in SUPPORTED_FORMATS.items():
+        if app.tags.has(fmt):
+            copyfile(rst_path, MASTER_DOC)
+            break
+    else:
+        MSG = """Unexpected builder; expected one of {!r}.
+Add support for this new builder in `copy_master_doc` in conf.py."""
+        from sphinx.errors import ConfigError
+        raise ConfigError(MSG.format(list(SUPPORTED_FORMATS.keys())))
+
+def setup(app):
+    app.connect('builder-inited', copy_master_doc)
+
 # The master toctree document.
-master_doc = 'index'
+# We create this file in `copy_master_doc` above.
+master_doc = "index"
 
 # General information about the project.
 project = 'Coq'
@@ -104,6 +126,8 @@ exclude_patterns = [
     'Thumbs.db',
     '.DS_Store',
     'introduction.rst',
+    'index-*.rst', # One of these gets copied to index.rst in `copy_master_doc`
+    'refman-preamble.rst',
     'README.rst',
     'README.template.rst'
 ]
@@ -267,12 +291,12 @@ latex_elements = {
     'papersize': 'letterpaper',
     'classoptions': ',openany', # No blank pages
     'polyglossia' : '\\usepackage{polyglossia}',
-    'microtype' : '\\usepackage{microtype}',
     "preamble": r"""
                  \usepackage{unicode-math}
+                 \usepackage{microtype}
 
                  % Macro definitions
-                 \input{preamble.tex}
+                 \usepackage{refman-preamble}
 
                  % Style definitions for notations
                  \usepackage{coqnotations}
@@ -286,21 +310,15 @@ latex_engine = "xelatex"
 ########
 
 latex_additional_files = [
-    "preamble.tex",
+    "refman-preamble.sty",
     "_static/coqnotations.sty"
 ]
 
-# Grouping the document tree into LaTeX files. List of tuples
-# (source start file, target name, title,
-#  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-   (master_doc, 'CoqRefMan.tex', 'Coq Documentation',
-    'The Coq Development Team', 'manual'),
-]
+latex_documents = [('index', 'CoqRefMan.tex', project, author, 'manual')]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-latex_logo = "../../ide/coq.png"
+# latex_logo = "../../ide/coq.png"
 
 # If true, show page references after internal links.
 #latex_show_pagerefs = False
