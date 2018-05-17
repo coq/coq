@@ -1,6 +1,41 @@
 How to write plugins in Coq
 ===========================
   # Working environment : merlin, tuareg (open question)
+  
+  ## OCaml & related tools
+
+  These instructions use [OPAM](http://opam.ocaml.org/doc/Install.html)
+
+```shell
+opam init --root=$PWD/CIW2018 --compiler=4.06.0 -j2
+eval `opam config env --root=$PWD/CIW2018`
+opam install camlp5 ocamlfind num # Coq's dependencies
+opam install lablgtk              # Coqide's dependencies (optional)
+opam install merlin               # prints instructions for vim and emacs
+```
+
+  ## Coq
+
+```shell
+git clone git@github.com:coq/coq.git
+cd coq
+./configure -profile devel
+make -j2
+cd ..
+export PATH=$PWD/coq/bin:$PATH
+```
+
+  ## This tutorial
+
+```shell
+git clone git@github.com:ybertot/plugin_tutorials.git
+cd plugin_tutorials/tuto0
+make .merlin                # run before opening .ml files in your editor
+make                        # build
+```
+  
+  
+  
   # tuto0 : basics of project organization
   package a ml4 file in a plugin, organize a `Makefile`, `_CoqProject`
   - Example of syntax to add a new toplevel command
