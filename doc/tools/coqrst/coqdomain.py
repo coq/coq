@@ -34,7 +34,7 @@ from sphinx.util.logging import getLogger
 from sphinx.directives import ObjectDescription
 from sphinx.domains import Domain, ObjType, Index
 from sphinx.domains.std import token_xrefs
-from sphinx.ext.mathbase import MathDirective, displaymath
+from sphinx.ext import mathbase
 
 from . import coqdoc
 from .repl import ansicolors
@@ -57,6 +57,15 @@ def highlight_using_coqdoc(sentence):
 def make_target(objtype, targetid):
     """Create a target to an object of type objtype and id targetid"""
     return "coq:{}.{}".format(objtype, targetid)
+
+def make_math_node(latex, docname, nowrap):
+    node = mathbase.displaymath()
+    node['latex'] = latex
+    node['label'] = None # Otherwise equations are numbered
+    node['nowrap'] = nowrap
+    node['docname'] = docname
+    node['number'] = None
+    return node
 
 class CoqObject(ObjectDescription):
     """A generic Coq object for Sphinx; all Coq objects are subclasses of this.
@@ -637,24 +646,39 @@ class ExampleDirective(BaseAdmonition):
         self.options['classes'] = ['admonition', 'note']
         return super().run()
 
-class PreambleDirective(MathDirective):
-    r"""A reST directive for hidden math.
+class PreambleDirective(Directive):
+    r"""A reST directive to include a TeX file.
 
-    Mostly useful to let MathJax know about `\def`\ s and `\newcommand`\ s.
+    Mostly useful to let MathJax know about `\def`s and `\newcommand`s.
 
-    Example::
+    Usage::
 
-       .. preamble::
-
-          \newcommand{\paren}[#1]{\left(#1\right)}
+       .. preamble:: preamble.tex
     """
 
-    directive_name = "preamble"
+    has_content = False
+    required_arguments = 1
+    optional_arguments = 0
+    final_argument_whitespace = True
+    option_spec = {}
 
     def run(self):
-        self.options['nowrap'] = True
-        [node] = super().run()
+        document = self.state.document
+        env = document.settings.env
+
+        if not document.settings.file_insertion_enabled:
+            msg = 'File insertion disabled'
+            return [document.reporter.warning(msg, line=self.lineno)]
+
+        rel_fname, abs_fname = env.relfn2path(self.arguments[0])
+        env.note_dependency(rel_fname)
+
+        with open(abs_fname, encoding="utf-8") as ltx:
+            latex = ltx.read()
+
+        node = make_math_node(latex, env.docname, nowrap=True)
         node['classes'] = ["math-preamble"]
+        set_source_info(self, node)
         return [node]
 
 class InferenceDirective(Directive):
@@ -687,15 +711,6 @@ class InferenceDirective(Directive):
     final_argument_whitespace = True
     directive_name = "inference"
 
-    def make_math_node(self, latex):
-        node = displaymath()
-        node['latex'] = latex
-        node['label'] = None # Otherwise equations are numbered
-        node['nowrap'] = False
-        node['docname'] = self.state.document.settings.env.docname
-        node['number'] = None
-        return node
-
     @staticmethod
     def prepare_latex_operand(op):
         # TODO: Could use a fancier inference class in LaTeX
@@ -715,7 +730,8 @@ class InferenceDirective(Directive):
         title = self.arguments[0]
         content = '\n'.join(self.content)
         latex = self.prepare_latex(content)
-        math_node = self.make_math_node(latex)
+        docname = self.state.document.settings.env.docname
+        math_node = make_math_node(latex, docname, nowrap=False)
 
         tid = nodes.make_id(title)
         target = nodes.target('', '', ids=['inference-' + tid])
