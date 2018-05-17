@@ -11,7 +11,7 @@ Program derivation
 |Coq| comes with an extension called ``Derive``, which supports program
 derivation. Typically in the style of Bird and Meertens or derivations
 of program refinements. To use the Derive extension it must first be
-required with ``Require Coq.Derive.Derive``. When the extension is loaded,
+required with ``Require Coq.derive.Derive``. When the extension is loaded,
 it provides the following command:
 
 .. cmd:: Derive @ident SuchThat @term As @ident
