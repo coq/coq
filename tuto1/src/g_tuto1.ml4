@@ -7,7 +7,8 @@ DECLARE PLUGIN "tuto1_plugin"
 *)
 open Ltac_plugin
 open Pp
-(* This one is necessary, to avoid message about missing wit_string *)
+(* This module defines the types of arguments to be used in the
+   EXTEND directives below, for example the string one. *)
 open Stdarg
 
 VERNAC COMMAND EXTEND HelloWorld CLASSIFIED AS QUERY
@@ -68,7 +69,7 @@ END
 (* When adding a definition, we have to be careful that just
   the operation of constructing a well-typed term may already change
   the environment, at the level of universe constraints (which
-  are recorded in the evd component).  The fonction
+  are recorded in the evd component).  The function
   Constrintern.interp_constr ignores this side-effect, so it should
   not be used here. *)
 
