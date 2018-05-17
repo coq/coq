@@ -39,26 +39,32 @@ env:
   - NJOBS=2
   # system is == 4.02.3
   - COMPILER="system"
-  - COMPILER_BE="4.06.0"
+  - COMPILER_BE="4.06.1"
   - CAMLP5_VER=".6.14"
-  - CAMLP5_VER_BE=".7.03"
+  - CAMLP5_VER_BE=".7.05"
   - FINDLIB_VER=".1.4.1"
-  - FINDLIB_VER_BE=".1.7.3"
+  - FINDLIB_VER_BE=".1.8.0"
   - LABLGTK="lablgtk.2.18.3 lablgtk-extras.1.6"
   - LABLGTK_BE="lablgtk.2.18.6 lablgtk-extras.1.6"
   - NATIVE_COMP="yes"
   - COQ_DEST="-local"
   - MAIN_TARGET="world"
-  # Main test suites
-  matrix:
-  - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
-  - TEST_TARGET="validate"                           TW="travis_wait"
-  - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
-  - TEST_TARGET="validate"   COMPILER="${COMPILER_BE}+flambda" CAMLP5_VER="${CAMLP5_VER_BE}" NATIVE_COMP="no" EXTRA_CONF="-flambda-opts -O3" FINDLIB_VER="${FINDLIB_VER_BE}"
 
 matrix:
 
   include:
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="validate"                           TW="travis_wait"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="validate"   COMPILER="${COMPILER_BE}+flambda" CAMLP5_VER="${CAMLP5_VER_BE}" NATIVE_COMP="no" EXTRA_CONF="-flambda-opts -O3" FINDLIB_VER="${FINDLIB_VER_BE}"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-bignums"
@@ -67,7 +73,7 @@ matrix:
       - TEST_TARGET="ci-color"
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="ci-compcert"
+      - TEST_TARGET="ci-compcert" EXTRA_OPAM="menhir"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
@@ -84,13 +90,7 @@ matrix:
       - TEST_TARGET="ci-equations"
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="ci-geocoq"
-    - if: NOT (type = pull_request)
-      env:
       - TEST_TARGET="ci-fcsl-pcm"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-fiat-crypto"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-fiat-parsers"
@@ -99,13 +99,7 @@ matrix:
       - TEST_TARGET="ci-flocq"
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="ci-formal-topology"
-    - if: NOT (type = pull_request)
-      env:
       - TEST_TARGET="ci-hott"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-iris-lambda-rust"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-ltac2"
@@ -114,16 +108,7 @@ matrix:
       - TEST_TARGET="ci-math-classes"
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="ci-math-comp"
-    - if: NOT (type = pull_request)
-      env:
       - TEST_TARGET="ci-sf"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-unimath"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-vst"
 
     - env:
       - TEST_TARGET="lint"
@@ -137,7 +122,8 @@ matrix:
         - dev/lint-repository.sh
 
     # Full Coq test-suite with two compilers
-    - env:
+    - if: NOT (type = pull_request)
+      env:
       - TEST_TARGET="test-suite"
       - EXTRA_CONF="-coqide opt -with-doc yes"
       - EXTRA_OPAM="hevea ${LABLGTK}"
@@ -165,7 +151,8 @@ matrix:
           - python3-pip
           - python3-setuptools
 
-    - env:
+    - if: NOT (type = pull_request)
+      env:
       - TEST_TARGET="test-suite"
       - COMPILER="${COMPILER_BE}"
       - FINDLIB_VER="${FINDLIB_VER_BE}"
@@ -180,7 +167,8 @@ matrix:
           packages: *extra-packages
 
     # Full test-suite with flambda
-    - env:
+    - if: NOT (type = pull_request)
+      env:
       - TEST_TARGET="test-suite"
       - COMPILER="${COMPILER_BE}+flambda"
       - FINDLIB_VER="${FINDLIB_VER_BE}"
@@ -196,7 +184,8 @@ matrix:
           packages: *extra-packages
 
     # Ocaml warnings with two compilers
-    - env:
+    - if: NOT (type = pull_request)
+      env:
       - MAIN_TARGET="coqocaml"
       - EXTRA_CONF="-byte-only -coqide byte -warn-error yes"
       - EXTRA_OPAM="hevea ${LABLGTK}"
@@ -210,7 +199,8 @@ matrix:
           - libgtk2.0-dev
           - libgtksourceview2.0-dev
 
-    - env:
+    - if: NOT (type = pull_request)
+      env:
       - MAIN_TARGET="coqocaml"
       - COMPILER="${COMPILER_BE}"
       - FINDLIB_VER="${FINDLIB_VER_BE}"
@@ -272,6 +262,7 @@ install:
 - if [ "${TRAVIS_OS_NAME}" == "linux" ]; then travis_retry ./dev/tools/sudo-apt-get-update.sh -q; fi
 - if [ "${TRAVIS_OS_NAME}" == "linux" ]; then sudo apt-get install -y opam aspcud gcc-multilib; fi
 - opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
+- opam switch "$COMPILER" && opam update
 - eval $(opam config env)
 - opam config list
 - opam install -j ${NJOBS} -y num camlp5${CAMLP5_VER} ocamlfind${FINDLIB_VER} ${EXTRA_OPAM}
