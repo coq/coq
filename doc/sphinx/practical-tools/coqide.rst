@@ -263,7 +263,7 @@ for the ∀ symbol. A list of symbol codes is available at
 An alternative method which does not require to know the hexadecimal
 code of the character is to use an Input Method Editor. On POSIX
 systems (Linux distributions, BSD variants and MacOS X), you can
-use `uim` version 1.6 or later which provides a :math:`\LaTeX`-style input
+use `uim` version 1.6 or later which provides a LaTeX-style input
 method.
 
 To configure uim, execute uim-pref-gtk as your regular user. In the
