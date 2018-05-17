@@ -379,6 +379,7 @@ we have the following equivalence
 Notice that the printing uses the :g:`if` syntax because `sumbool` is
 declared as such (see :ref:`controlling-match-pp`).
 
+.. _irrefutable-patterns:
 
 Irrefutable patterns: the destructuring let variants
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

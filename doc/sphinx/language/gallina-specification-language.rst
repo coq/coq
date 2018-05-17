@@ -48,26 +48,26 @@ Blanks
 
 Comments
   Comments in Coq are enclosed between ``(*`` and ``*)``, and can be nested.
-  They can contain any character. However, string literals must be
+  They can contain any character. However, :token:`string` literals must be
   correctly closed. Comments are treated as blanks.
 
 Identifiers and access identifiers
-  Identifiers, written ident, are sequences of letters, digits, ``_`` and
+  Identifiers, written :token:`ident`, are sequences of letters, digits, ``_`` and
   ``'``, that do not start with a digit or ``'``. That is, they are
   recognized by the following lexical class:
 
   .. productionlist:: coq
      first_letter      : a..z ∣ A..Z ∣ _ ∣ unicode-letter
      subsequent_letter : a..z ∣ A..Z ∣ 0..9 ∣ _ ∣ ' ∣ unicode-letter ∣ unicode-id-part
-     ident             : `first_letter` [`subsequent_letter` … `subsequent_letter`]
-     access_ident      : . `ident`
+     ident             : `first_letter`[`subsequent_letter`…`subsequent_letter`]
+     access_ident      : .`ident`
 
-  All characters are meaningful. In particular, identifiers are case-
-  sensitive. The entry ``unicode-letter`` non-exhaustively includes Latin,
+  All characters are meaningful. In particular, identifiers are case-sensitive.
+  The entry ``unicode-letter`` non-exhaustively includes Latin,
   Greek, Gothic, Cyrillic, Arabic, Hebrew, Georgian, Hangul, Hiragana
   and Katakana characters, CJK ideographs, mathematical letter-like
-  symbols, hyphens, non-breaking space, … The entry ``unicode-id-part`` non-
-  exhaustively includes symbols for prime letters and subscripts.
+  symbols, hyphens, non-breaking space, … The entry ``unicode-id-part``
+  non-exhaustively includes symbols for prime letters and subscripts.
 
   Access identifiers, written :token:`access_ident`, are identifiers prefixed by
   `.` (dot) without blank. They are used in the syntax of qualified
@@ -79,8 +79,8 @@ Natural numbers and integers
 
   .. productionlist:: coq
      digit   : 0..9
-     num     : `digit` … `digit`
-     integer : [-] `num`
+     num     : `digit`…`digit`
+     integer : [-]`num`
 
 Strings
   Strings are delimited by ``"`` (double quote), and enclose a sequence of
@@ -139,14 +139,14 @@ is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
                     : | `term` <: `term`
                     : | `term` :>
                     : | `term` -> `term`
-                    : | `term` arg … arg
+                    : | `term` `arg` … `arg`
                     : | @ `qualid` [`term` … `term`]
                     : | `term` % `ident`
                     : | match `match_item` , … , `match_item` [`return_type`] with
                     :   [[|] `equation` | … | `equation`] end
                     : | `qualid`
                     : | `sort`
-                    : | num
+                    : | `num`
                     : | _
                     : | ( `term` )
    arg              : `term`
@@ -155,6 +155,7 @@ is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
    binder           : `name`
                     : | ( `name` … `name` : `term` )
                     : | ( `name` [: `term`] := `term` )
+                    : | ' `pattern`
    name             : `ident` | _
    qualid           : `ident` | `qualid` `access_ident`
    sort             : Prop | Set | Type
@@ -162,7 +163,7 @@ is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
                     : | `fix_body` with `fix_body` with … with `fix_body` for `ident`
    cofix_bodies     : `cofix_body`
                     : | `cofix_body` with `cofix_body` with … with `cofix_body` for `ident`
-   fix_body         : `ident` `binders` [annotation] [: `term`] := `term`
+   fix_body         : `ident` `binders` [`annotation`] [: `term`] := `term`
    cofix_body       : `ident` [`binders`] [: `term`] := `term`
    annotation       : { struct `ident` }
    match_item       : `term` [as `name`] [in `qualid` [`pattern` … `pattern`]]
@@ -176,7 +177,7 @@ is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
                     : | `pattern` % `ident`
                     : | `qualid`
                     : | _
-                    : | num
+                    : | `num`
                     : | ( `or_pattern` , … , `or_pattern` )
    or_pattern       : `pattern` | … | `pattern`
 
@@ -185,7 +186,7 @@ Types
 -----
 
 Coq terms are typed. Coq types are recognized by the same syntactic
-class as :token`term`. We denote by :token:`type` the semantic subclass
+class as :token:`term`. We denote by :production:`type` the semantic subclass
 of types inside the syntactic class :token:`term`.
 
 .. _gallina-identifiers:
@@ -197,8 +198,8 @@ Qualified identifiers and simple identifiers
 (definitions, lemmas, theorems, remarks or facts), *global variables*
 (parameters or axioms), *inductive types* or *constructors of inductive
 types*. *Simple identifiers* (or shortly :token:`ident`) are a syntactic subset
-of qualified identifiers. Identifiers may also denote local *variables*,
-what qualified identifiers do not.
+of qualified identifiers. Identifiers may also denote *local variables*,
+while qualified identifiers do not.
 
 Numerals
 --------
@@ -211,7 +212,7 @@ numbers (see :ref:`datatypes`).
 
 .. note::
 
-   negative integers are not at the same level as :token:`num`, for this
+   Negative integers are not at the same level as :token:`num`, for this
    would make precedence unnatural.
 
 Sorts
@@ -220,12 +221,12 @@ Sorts
 There are three sorts :g:`Set`, :g:`Prop` and :g:`Type`.
 
 -  :g:`Prop` is the universe of *logical propositions*. The logical propositions
-   themselves are typing the proofs. We denote propositions by *form*.
+   themselves are typing the proofs. We denote propositions by :production:`form`.
    This constitutes a semantic subclass of the syntactic class :token:`term`.
 
 -  :g:`Set` is is the universe of *program types* or *specifications*. The
    specifications themselves are typing the programs. We denote
-   specifications by *specif*. This constitutes a semantic subclass of
+   specifications by :production:`specif`. This constitutes a semantic subclass of
    the syntactic class :token:`term`.
 
 -  :g:`Type` is the type of :g:`Prop` and :g:`Set`
@@ -241,18 +242,18 @@ Various constructions such as :g:`fun`, :g:`forall`, :g:`fix` and :g:`cofix`
 *bind* variables. A binding is represented by an identifier. If the binding
 variable is not used in the expression, the identifier can be replaced by the
 symbol :g:`_`. When the type of a bound variable cannot be synthesized by the
-system, it can be specified with the notation ``(ident : type)``. There is also
+system, it can be specified with the notation :n:`(@ident : @type)`. There is also
 a notation for a sequence of binding variables sharing the same type:
-``(``:token:`ident`:math:`_1`…:token:`ident`:math:`_n` : :token:`type```)``. A
+:n:`({+ @ident} : @type)`. A
 binder can also be any pattern prefixed by a quote, e.g. :g:`'(x,y)`.
 
 Some constructions allow the binding of a variable to value. This is
 called a “let-binder”. The entry :token:`binder` of the grammar accepts
 either an assumption binder as defined above or a let-binder. The notation in
-the latter case is ``(ident := term)``. In a let-binder, only one
+the latter case is :n:`(@ident := @term)`. In a let-binder, only one
 variable can be introduced at the same time. It is also possible to give
 the type of the variable as follows:
-``(ident : term := term)``.
+:n:`(@ident : @type := @term)`.
 
 Lists of :token:`binder` are allowed. In the case of :g:`fun` and :g:`forall`,
 it is intended that at least one binder of the list is an assumption otherwise
@@ -263,7 +264,7 @@ the case of a single sequence of bindings sharing the same type (e.g.:
 Abstractions
 ------------
 
-The expression ``fun ident : type => term`` defines the
+The expression :n:`fun @ident : @type => @term` defines the
 *abstraction* of the variable :token:`ident`, of type :token:`type`, over the term
 :token:`term`. It denotes a function of the variable :token:`ident` that evaluates to
 the expression :token:`term` (e.g. :g:`fun x : A => x` denotes the identity
@@ -283,7 +284,7 @@ Section :ref:`let-in`).
 Products
 --------
 
-The expression :g:`forall ident : type, term` denotes the
+The expression :n:`forall @ident : @type, @term` denotes the
 *product* of the variable :token:`ident` of type :token:`type`, over the term :token:`term`.
 As for abstractions, :g:`forall` is followed by a binder list, and products
 over several variables are equivalent to an iteration of one-variable
@@ -314,17 +315,17 @@ The expression :token:`term`\ :math:`_0` :token:`term`\ :math:`_1` ...
 :token:`term`\ :math:`_1` ) … ) :token:`term`\ :math:`_n` : associativity is to the
 left.
 
-The notation ``(ident := term)`` for arguments is used for making
+The notation :n:`(@ident := @term)` for arguments is used for making
 explicit the value of implicit arguments (see
 Section :ref:`explicit-applications`).
 
 Type cast
 ---------
 
-The expression ``term : type`` is a type cast expression. It enforces
+The expression :n:`@term : @type` is a type cast expression. It enforces
 the type of :token:`term` to be :token:`type`.
 
-``term <: type`` locally sets up the virtual machine for checking that
+:n:`@term <: @type` locally sets up the virtual machine for checking that
 :token:`term` has type :token:`type`.
 
 Inferable subterms
@@ -339,20 +340,18 @@ guess the missing piece of information.
 Let-in definitions
 ------------------
 
-``let`` :token:`ident` := :token:`term`:math:`_1` in :token:`term`:math:`_2`
-denotes the local binding of :token:`term`:math:`_1` to the variable
-:token:`ident` in :token:`term`:math:`_2`. There is a syntactic sugar for let-in
-definition of functions: ``let`` :token:`ident` :token:`binder`:math:`_1` …
-:token:`binder`:math:`_n` := :token:`term`:math:`_1` in :token:`term`:math:`_2`
-stands for ``let`` :token:`ident` := ``fun`` :token:`binder`:math:`_1` …
-:token:`binder`:math:`_n` => :token:`term`:math:`_1` in :token:`term`:math:`_2`.
+:n:`let @ident := @term in @term’`
+denotes the local binding of :token:`term` to the variable
+:token:`ident` in :token:`term`’. There is a syntactic sugar for let-in
+definition of functions: :n:`let @ident {+ @binder} := @term in @term’`
+stands for :n:`let @ident := fun {+ @binder} => @term in @term’`.
 
 Definition by case analysis
 ---------------------------
 
 Objects of inductive types can be destructurated by a case-analysis
 construction called *pattern-matching* expression. A pattern-matching
-expression is used to analyze the structure of an inductive objects and
+expression is used to analyze the structure of an inductive object and
 to apply specific treatments accordingly.
 
 This paragraph describes the basic form of pattern-matching. See
@@ -360,14 +359,14 @@ Section :ref:`Mult-match` and Chapter :ref:`extendedpatternmatching` for the des
 of the general form. The basic form of pattern-matching is characterized
 by a single :token:`match_item` expression, a :token:`mult_pattern` restricted to a
 single :token:`pattern` and :token:`pattern` restricted to the form
-:token:`qualid` :token:`ident`.
+:n:`@qualid {* @ident}`.
 
-The expression match :token:`term`:math:`_0` :token:`return_type` with
+The expression match ":token:`term`:math:`_0` :token:`return_type` with
 :token:`pattern`:math:`_1` => :token:`term`:math:`_1` :math:`|` … :math:`|`
-:token:`pattern`:math:`_n` => :token:`term`:math:`_n` end, denotes a
-:token:`pattern-matching` over the term :token:`term`:math:`_0` (expected to be
+:token:`pattern`:math:`_n` => :token:`term`:math:`_n` end" denotes a
+*pattern-matching* over the term :token:`term`:math:`_0` (expected to be
 of an inductive type :math:`I`). The terms :token:`term`:math:`_1`\ …\
-:token:`term`:math:`_n` are the :token:`branches` of the pattern-matching
+:token:`term`:math:`_n` are the *branches* of the pattern-matching
 expression. Each of :token:`pattern`:math:`_i` has a form :token:`qualid`
 :token:`ident` where :token:`qualid` must denote a constructor. There should be
 exactly one branch for every constructor of :math:`I`.
@@ -395,40 +394,39 @@ is dependent in the return type. For instance, in the following example:
 
    Definition bool_case (b:bool) : or (eq bool b true) (eq bool b false) :=
      match b as x return or (eq bool x true) (eq bool x false) with
-     | true => or_introl (eq bool true true) (eq bool true false)
-       (eq_refl bool true)
-     | false => or_intror (eq bool false true) (eq bool false false)
-       (eq_refl bool false)
+     | true => or_introl (eq bool true true) (eq bool true false) (eq_refl bool true)
+     | false => or_intror (eq bool false true) (eq bool false false) (eq_refl bool false)
      end.
 
-the branches have respective types or :g:`eq bool true true :g:`eq bool true
-false` and or :g:`eq bool false true` :g:`eq bool false false` while the whole
-pattern-matching expression has type or :g:`eq bool b true` :g:`eq bool b
-false`, the identifier :g:`x` being used to represent the dependency. Remark
-that when the term being matched is a variable, the as clause can be
-omitted and the term being matched can serve itself as binding name in
-the return type. For instance, the following alternative definition is
-accepted and has the same meaning as the previous one.
+the branches have respective types ":g:`or (eq bool true true) (eq bool true false)`"
+and ":g:`or (eq bool false true) (eq bool false false)`" while the whole
+pattern-matching expression has type ":g:`or (eq bool b true) (eq bool b false)`",
+the identifier :g:`b` being used to represent the dependency.
 
-.. coqtop:: in
+.. note::
 
-   Definition bool_case (b:bool) : or (eq bool b true) (eq bool b false) :=
-     match b return or (eq bool b true) (eq bool b false) with
-     | true => or_introl (eq bool true true) (eq bool true false)
-       (eq_refl bool true)
-     | false => or_intror (eq bool false true) (eq bool false false)
-       (eq_refl bool false)
-   end.
+   When the term being matched is a variable, the ``as`` clause can be
+   omitted and the term being matched can serve itself as binding name in
+   the return type. For instance, the following alternative definition is
+   accepted and has the same meaning as the previous one.
+
+   .. coqtop:: in
+
+      Definition bool_case (b:bool) : or (eq bool b true) (eq bool b false) :=
+      match b return or (eq bool b true) (eq bool b false) with
+      | true => or_introl (eq bool true true) (eq bool true false) (eq_refl bool true)
+      | false => or_intror (eq bool false true) (eq bool false false) (eq_refl bool false)
+      end.
 
 The second subcase is only relevant for annotated inductive types such
-as the equality predicate (see Section :ref:`Equality`),
+as the equality predicate (see Section :ref:`coq-equality`),
 the order predicate on natural numbers or the type of lists of a given
 length (see Section :ref:`matching-dependent`). In this configuration, the
 type of each branch can depend on the type dependencies specific to the
 branch and the whole pattern-matching expression has a type determined
 by the specific dependencies in the type of the term being matched. This
 dependency of the return type in the annotations of the inductive type
-is expressed using a “in I _ ... _ :token:`pattern`:math:`_1` ...
+is expressed using a “:g:`in` :math:`I` :g:`_ … _` :token:`pattern`:math:`_1` …
 :token:`pattern`:math:`_n`” clause, where
 
 -  :math:`I` is the inductive type of the term being matched;
@@ -452,44 +450,43 @@ For instance, in the following example:
    | eq_refl _ => eq_refl A x
    end.
 
-the type of the branch has type :g:`eq A x x` because the third argument of
-g:`eq` is g:`x` in the type of the pattern :g:`refl_equal`. On the contrary, the
+the type of the branch is :g:`eq A x x` because the third argument of
+:g:`eq` is :g:`x` in the type of the pattern :g:`eq_refl`. On the contrary, the
 type of the whole pattern-matching expression has type :g:`eq A y x` because the
 third argument of eq is y in the type of H. This dependency of the case analysis
-in the third argument of :g:`eq` is expressed by the identifier g:`z` in the
+in the third argument of :g:`eq` is expressed by the identifier :g:`z` in the
 return type.
 
 Finally, the third subcase is a combination of the first and second
 subcase. In particular, it only applies to pattern-matching on terms in
-a type with annotations. For this third subcase, both the clauses as and
-in are available.
+a type with annotations. For this third subcase, both the clauses ``as`` and
+``in`` are available.
 
 There are specific notations for case analysis on types with one or two
-constructors: “if … then … else …” and “let (…, ” (see
-Sections :ref:`if-then-else` and :ref:`let-in`).
+constructors: ``if … then … else …`` and ``let (…,…) := … in …`` (see
+Sections :ref:`if-then-else` and :ref:`irrefutable-patterns`).
 
 Recursive functions
 -------------------
 
-The expression “fix :token:`ident`:math:`_1` :token:`binder`:math:`_1` :
-:token:`type`:math:`_1` ``:=`` :token:`term`:math:`_1` with … with
+The expression “``fix`` :token:`ident`:math:`_1` :token:`binder`:math:`_1` ``:``
+:token:`type`:math:`_1` ``:=`` :token:`term`:math:`_1` ``with … with``
 :token:`ident`:math:`_n` :token:`binder`:math:`_n` : :token:`type`:math:`_n`
-``:=`` :token:`term`:math:`_n` for :token:`ident`:math:`_i`” denotes the
-:math:`i`\ component of a block of functions defined by mutual well-founded
+``:=`` :token:`term`:math:`_n` ``for`` :token:`ident`:math:`_i`” denotes the
+:math:`i`-th component of a block of functions defined by mutual structural
 recursion. It is the local counterpart of the :cmd:`Fixpoint` command. When
-:math:`n=1`, the “for :token:`ident`:math:`_i`” clause is omitted.
+:math:`n=1`, the “``for`` :token:`ident`:math:`_i`” clause is omitted.
 
-The expression “cofix :token:`ident`:math:`_1` :token:`binder`:math:`_1` :
-:token:`type`:math:`_1` with … with :token:`ident`:math:`_n` :token:`binder`:math:`_n`
-: :token:`type`:math:`_n` for :token:`ident`:math:`_i`” denotes the
-:math:`i`\ component of a block of terms defined by a mutual guarded
-co-recursion. It is the local counterpart of the ``CoFixpoint`` command. See
-Section :ref:`CoFixpoint` for more details. When
-:math:`n=1`, the “ for :token:`ident`:math:`_i`” clause is omitted.
+The expression “``cofix`` :token:`ident`:math:`_1` :token:`binder`:math:`_1` ``:``
+:token:`type`:math:`_1` ``with … with`` :token:`ident`:math:`_n` :token:`binder`:math:`_n`
+: :token:`type`:math:`_n` ``for`` :token:`ident`:math:`_i`” denotes the
+:math:`i`-th component of a block of terms defined by a mutual guarded
+co-recursion. It is the local counterpart of the :cmd:`CoFixpoint` command. When
+:math:`n=1`, the “``for`` :token:`ident`:math:`_i`” clause is omitted.
 
 The association of a single fixpoint and a local definition have a special
-syntax: “let fix f … := … in …” stands for “let f := fix f … := … in …”. The
-same applies for co-fixpoints.
+syntax: :n:`let fix @ident @binders := @term in` stands for
+:n:`let @ident := fix @ident @binders := @term in`. The same applies for co-fixpoints.
 
 .. _vernacular:
 
