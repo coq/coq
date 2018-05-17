@@ -307,6 +307,9 @@ latex_elements = {
 
                  % Style definitions for notations
                  \usepackage{coqnotations}
+
+                 % Style tweaks
+                 \newcssclass{sigannot}{\textrm{#1:}}
                  """
 }
 
