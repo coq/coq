@@ -542,23 +542,23 @@ Controlling the effect of proof editing commands
 
 .. opt:: Hyps Limit @num
 
-This option controls the maximum number of hypotheses displayed in goals
-after the application of a tactic. All the hypotheses remain usable
-in the proof development.
-When unset, it goes back to the default mode which is to print all
-available hypotheses.
+   This option controls the maximum number of hypotheses displayed in goals
+   after the application of a tactic. All the hypotheses remain usable
+   in the proof development.
+   When unset, it goes back to the default mode which is to print all
+   available hypotheses.
 
 
 .. opt:: Automatic Introduction
 
-This option controls the way binders are handled
-in assertion commands such as ``Theorem ident [binders] : form``. When the
-option is on, which is the default, binders are automatically put in
-the local context of the goal to prove.
+   This option controls the way binders are handled
+   in assertion commands such as :n:`Theorem @ident {? @binders} : @term`. When the
+   option is on, which is the default, binders are automatically put in
+   the local context of the goal to prove.
 
-When the option is off, binders are discharged on the statement to be
-proved and a tactic such as :tacn:`intro` (see Section :ref:`managingthelocalcontext`)
-has to be used to move the assumptions to the local context.
+   When the option is off, binders are discharged on the statement to be
+   proved and a tactic such as :tacn:`intro` (see Section :ref:`managingthelocalcontext`)
+   has to be used to move the assumptions to the local context.
 
 
 Controlling memory usage
@@ -570,13 +570,13 @@ to force |Coq| to optimize some of its internal data structures.
 
 .. cmd:: Optimize Proof
 
-This command forces |Coq| to shrink the data structure used to represent
-the ongoing proof.
+   This command forces |Coq| to shrink the data structure used to represent
+   the ongoing proof.
 
 
 .. cmd:: Optimize Heap
 
-This command forces the |OCaml| runtime to perform a heap compaction.
-This is in general an expensive operation.
-See: `OCaml Gc <http://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#VALcompact>`_
-There is also an analogous tactic :tacn:`optimize_heap`.
+   This command forces the |OCaml| runtime to perform a heap compaction.
+   This is in general an expensive operation.
+   See: `OCaml Gc <http://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#VALcompact>`_
+   There is also an analogous tactic :tacn:`optimize_heap`.
