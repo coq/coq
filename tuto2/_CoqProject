@@ -3,4 +3,4 @@
 
 theories/Test.v
 src/demo.ml4
-src/tuto_plugin.mlpack
+src/demo_plugin.mlpack

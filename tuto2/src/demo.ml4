@@ -4,23 +4,29 @@
 (*                                                                            *)
 (* -------------------------------------------------------------------------- *)
 
-DECLARE PLUGIN "demo"
+DECLARE PLUGIN "demo_plugin"
 
 (*
-   Use this macro before any of the other Ocaml macros.
+   Use this macro before any of the other OCaml macros.
 
    Each plugin has a unique name.
-   We have decided to name this plugin as "demo".
+   We have decided to name this plugin as "demo_plugin".
    That means that:
    
    (1) If we want to load this particular plugin to Coq toplevel,
        we must use the following command.
 
-         Declare ML Module "demo".
+         Declare ML Module "demo_plugin".
 
-   (2) The above command will succeed only if there is "demo.cmxs"
+   (2) The above command will succeed only if there is "demo_plugin.cmxs"
        in some of the directories that Coq is supposed to look
        (i.e. the ones we specified via "-I ..." command line options).
+
+   (3) The file "demo_plugin.mlpack" lists the OCaml modules to be linked in
+       "demo_plugin.cmxs".
+
+   (4) The file "demo_plugin.mlpack" as well as all .ml, .mli and .ml4 files
+       are listed in the "_CoqProject" file.
 *)
 
 (* -------------------------------------------------------------------------- *)
