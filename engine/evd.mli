@@ -703,4 +703,6 @@ module MiniEConstr : sig
     (t, t) Context.Rel.Declaration.pt
   val to_rel_decl : evar_map -> (t, t) Context.Rel.Declaration.pt ->
     (Constr.t, Constr.types) Context.Rel.Declaration.pt
+  val map_rel_context_gen : (t -> Constr.t) ->
+    (t, t) Context.Rel.pt -> (Constr.t, Constr.t) Context.Rel.pt
 end

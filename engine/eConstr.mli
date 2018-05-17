@@ -318,6 +318,9 @@ val of_rel_decl : (Constr.t, Constr.types) Context.Rel.Declaration.pt -> (t, typ
 
 val to_rel_decl : Evd.evar_map -> (t, types) Context.Rel.Declaration.pt -> (Constr.t, Constr.types) Context.Rel.Declaration.pt
 
+val map_rel_context_gen : (t -> Constr.t) ->
+  (t, types) Context.Rel.pt -> (Constr.t, Constr.types) Context.Rel.pt
+
 (** {5 Unsafe operations} *)
 
 module Unsafe :

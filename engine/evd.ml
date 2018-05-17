@@ -1381,5 +1381,5 @@ module MiniEConstr = struct
   let of_rel_decl d = d
   let unsafe_to_rel_decl d = d
   let to_rel_decl sigma d = Context.Rel.Declaration.map_constr (to_constr sigma) d
-
+  let map_rel_context_gen = Context.Rel.map
 end
