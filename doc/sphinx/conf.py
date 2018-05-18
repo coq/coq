@@ -106,7 +106,7 @@ def setup(app):
 master_doc = "index"
 
 # General information about the project.
-project = 'Coq'
+project = 'The Coq Reference Manual'
 copyright = '1999-2018, Inria'
 author = 'The Coq Development Team'
 
