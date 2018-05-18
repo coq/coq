@@ -322,6 +322,7 @@
 /Makefile.ci       @ejgallego
 # Secondary maintainer @SkySkimmer
 
+# This file belongs to the doc
 /Makefile.doc        @maximedenes
 # Secondary maintainer @silene
 
