@@ -304,8 +304,9 @@ latex_elements = {
     'cmappkg': '',
     'papersize': 'letterpaper',
     'classoptions': ',openany', # No blank pages
-    'polyglossia' : '\\usepackage{polyglossia}',
-    "preamble": r"""
+    'polyglossia': '\\usepackage{polyglossia}',
+    'sphinxsetup': 'verbatimwithframe=false',
+    'preamble': r"""
                  \usepackage{unicode-math}
                  \usepackage{microtype}
 
