@@ -166,6 +166,7 @@ primary_domain = 'coq'
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 highlight_language = 'text'
+suppress_warnings = ["misc.highlighting_failure"]
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
