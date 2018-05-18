@@ -110,7 +110,9 @@ class CoqObject(ObjectDescription):
         # Explicit object naming
         'name': directives.unchanged,
         # Silence warnings produced by report_undocumented_coq_objects
-        'undocumented': directives.flag
+        'undocumented': directives.flag,
+        # noindex omits this object from its index
+        'noindex': directives.flag
     }
 
     def subdomain_data(self):
@@ -174,13 +176,16 @@ class CoqObject(ObjectDescription):
         """Add `name` (pointing to `target`) to the main index."""
         assert isinstance(name, str)
         if not name.startswith("_"):
-            index_text = name
+            # remove trailing . , found in commands, but not ... (ellipsis)
+            trim = name.endswith(".") and not name.endswith("...")
+            index_text = name[:-1] if trim else name
             if self.index_suffix:
                 index_text += " " + self.index_suffix
             self.indexnode['entries'].append(('single', index_text, target, '', None))
 
     def add_target_and_index(self, name, _, signode):
-        """Attach a link target to `signode` and an index entry for `name`."""
+        """Attach a link target to `signode` and an index entry for `name`.
+        This is only called (from ``ObjectDescription.run``) if ``:noindex:`` isn't specified."""
         if name:
             target = self._add_target(signode, name)
             self._add_index_entry(name, target)
