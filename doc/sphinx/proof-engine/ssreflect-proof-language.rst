@@ -1484,7 +1484,7 @@ The abstract tactic
 ```````````````````
 
 .. tacn:: abstract: {+ d_item}
-   :name abstract (ssreflect)
+   :name: abstract (ssreflect)
 
 This tactic assigns an abstract constant previously introduced with the ``[:
 name ]`` intro pattern (see section :ref:`introduction_ssr`).
