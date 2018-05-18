@@ -569,16 +569,17 @@ class CoqtopDirective(Directive):
     required_arguments = 0
     optional_arguments = 1
     final_argument_whitespace = True
+    option_spec = { 'name': directives.unchanged }
     directive_name = "coqtop"
 
     def run(self):
         # Uses a ‘container’ instead of a ‘literal_block’ to disable
         # Pygments-based post-processing (we could also set rawsource to '')
         content = '\n'.join(self.content)
-        options = self.arguments[0].split() if self.arguments else ['in']
-        if 'all' in options:
-            options.extend(['in', 'out'])
-        node = nodes.container(content, coqtop_options = list(set(options)),
+        args = self.arguments[0].split() if self.arguments else ['in']
+        if 'all' in args:
+            args.extend(['in', 'out'])
+        node = nodes.container(content, coqtop_options = list(set(args)),
                                classes=['coqtop', 'literal-block'])
         self.add_name(node)
         return [node]
@@ -603,6 +604,7 @@ class CoqdocDirective(Directive):
     required_arguments = 0
     optional_arguments = 0
     final_argument_whitespace = True
+    option_spec = { 'name': directives.unchanged }
     directive_name = "coqdoc"
 
     def run(self):
@@ -611,6 +613,7 @@ class CoqdocDirective(Directive):
         content = '\n'.join(self.content)
         node = nodes.inline(content, '', *highlight_using_coqdoc(content))
         wrapper = nodes.container(content, node, classes=['coqdoc', 'literal-block'])
+        self.add_name(wrapper)
         return [wrapper]
 
 class ExampleDirective(BaseAdmonition):
