@@ -396,7 +396,7 @@ Add either ``undo`` to the first block or ``reset`` to the second block to avoid
 Abbreviations and macros
 ------------------------
 
-Abbreviations and placeholders for specially-formatted names (like ``|Cic|``, ``|Coq|``, ``|CoqIDE|``, ``|Ltac|``, and ``|Gallina|``) are defined in a `separate file </doc/sphinx/replaces.rst>`_ included by most chapters of the manual.  Some useful LaTeX macros are defined in `</doc/sphinx/preamble.rst>`_.
+Substitutions for specially-formatted names (like ``|Cic|``, ``|Coq|``, ``|CoqIDE|``, ``|Ltac|``, and ``|Gallina|``), along with some useful LaTeX macros, are defined in a `separate file </doc/sphinx/refman-preamble.rst>`_.  This file is automatically included in all manual pages.
 
 Emacs
 -----

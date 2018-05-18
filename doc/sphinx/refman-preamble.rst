@@ -1,4 +1,13 @@
-.. some handy replacements for common items
+.. This file is automatically prepended to all other files using the ``rst_prolog`` option.
+
+.. only:: html
+
+   .. This is included once per page in the HTML build, and a single time (in the
+      document's preamble) in the LaTeX one.
+
+   .. preamble:: /refman-preamble.sty
+
+.. Some handy replacements for common items
 
 .. role:: smallcaps
 

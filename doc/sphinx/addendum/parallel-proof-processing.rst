@@ -1,5 +1,3 @@
-.. include:: ../replaces.rst
-
 .. _asynchronousandparallelproofprocessing:
 
 Asynchronous and Parallel Proof Processing
