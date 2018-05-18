@@ -80,7 +80,7 @@ Alternatively, you can use some specific targets:
   to produce all HTML documents
 
 - `make sphinx`
-   to produce the HTML version of the reference manual
+   to produce the HTML and PDF versions of the reference manual
 
 - `make stdlib`
   to produce all formats of the Coq standard library

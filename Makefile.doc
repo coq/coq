@@ -58,17 +58,24 @@ ifndef QUICK
 SPHINX_DEPS := coq
 endif
 
-sphinx: $(SPHINX_DEPS)
-	$(SHOW)'SPHINXBUILD doc/sphinx'
-	$(HIDE)$(SPHINXENV) $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/html
-	@echo
-	@echo "Build finished. The HTML pages are in $(SPHINXBUILDDIR)/html."
+# sphinx-html and sphinx-latex
+sphinx-%: $(SPHINX_DEPS)
+	$(SHOW)'SPHINXBUILD doc/sphinx ($*)'
+	$(HIDE)$(SPHINXENV) $(SPHINXBUILD) -b $* \
+		$(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/$*
+
+sphinx-pdf: sphinx-latex
+	+$(MAKE) -C $(SPHINXBUILDDIR)/latex
+
+sphinx:
+	+$(MAKE) sphinx-html
+	+$(MAKE) sphinx-pdf
 
 doc-html:\
-  doc/stdlib/html/index.html sphinx
+  doc/stdlib/html/index.html sphinx-html
 
 doc-pdf:\
-  doc/stdlib/Library.pdf
+  doc/stdlib/Library.pdf sphinx-pdf
 
 doc-ps:\
   doc/stdlib/Library.ps
@@ -181,7 +188,7 @@ install-doc-meta:
 	$(MKDIR) $(FULLDOCDIR)
 	$(INSTALLLIB) doc/LICENSE $(FULLDOCDIR)/LICENSE.doc
 
-install-doc-html: install-doc-stdlib-html install-doc-sphinx
+install-doc-html: install-doc-stdlib-html install-doc-sphinx-html
 
 install-doc-stdlib-html:
 	$(MKDIR) $(FULLDOCDIR)/html/stdlib
@@ -192,7 +199,7 @@ install-doc-printable:
 	$(INSTALLLIB) doc/stdlib/Library.pdf $(FULLDOCDIR)/pdf
 	$(INSTALLLIB) doc/stdlib/Library.ps $(FULLDOCDIR)/ps
 
-install-doc-sphinx:
+install-doc-sphinx-html:
 	$(MKDIR) $(FULLDOCDIR)/sphinx
 	(for f in `cd doc/sphinx/_build; find . -type f`; do \
 		$(MKDIR) $$(dirname $(FULLDOCDIR)/sphinx/$$f);\
