@@ -310,16 +310,15 @@ The :n:`@ident` is not relevant. It is just used for error messages. The
 axioms. The optional list of modifiers is used to tailor the behavior
 of the tactic. The following list describes their syntax and effects:
 
-.. prodn::
-   ring_mod ::= abstract %| decidable @term %| morphism @term
-                %| setoid @term @term 
-                %| constants [@ltac] 
-                %| preprocess [@ltac]
-                %| postprocess [@ltac]
-                %| power_tac @term [@ltac] 
-                %| sign @term
-                %| div @term
-
+.. productionlist:: coq
+   ring_mod : abstract | decidable `term` | morphism `term`
+            : | setoid `term` `term`
+            : | constants [`ltac`]
+            : | preprocess [`ltac`]
+            : | postprocess [`ltac`]
+            : | power_tac `term` [`ltac`]
+            : | sign `term`
+            : | div `term`
 
 abstract
   declares the ring as abstract. This is the default.
@@ -663,8 +662,8 @@ messages. :n:`@term` is a proof that the field signature satisfies the
 (semi-)field axioms. The optional list of modifiers is used to tailor
 the behavior of the tactic.
 
-.. prodn::
-   field_mod := @ring_mod %| completeness @term
+.. productionlist:: coq
+   field_mod : `ring_mod` | completeness `term`
 
 Since field tactics are built upon ``ring``
 tactics, all modifiers of the ``Add Ring`` apply. There is only one
