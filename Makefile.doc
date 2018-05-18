@@ -62,19 +62,26 @@ DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
 
 doc: sphinx tutorial rectutorial stdlib
 
+# sphinx-html and sphinx-latex
+sphinx-%: coq
+	$(SHOW)'SPHINXBUILD doc/sphinx ($*)'
+	$(HIDE)COQBIN="$(abspath bin)" $(SPHINXBUILD) -b $* \
+		$(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/$*
+
+sphinx-pdf: sphinx-latex
+	+$(MAKE) -C $(SPHINXBUILDDIR)/latex
+
 sphinx: coq
-	$(SHOW)'SPHINXBUILD doc/sphinx'
-	$(HIDE)COQBIN="$(abspath bin)" $(SPHINXBUILD) -W -b html $(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/html
-	@echo
-	@echo "Build finished. The HTML pages are in $(SPHINXBUILDDIR)/html."
+	+$(MAKE) sphinx-html
+	+$(MAKE) sphinx-pdf
 
 doc-html:\
-  doc/tutorial/Tutorial.v.html \
-  doc/stdlib/html/index.html doc/RecTutorial/RecTutorial.html
+  doc/tutorial/Tutorial.v.html doc/stdlib/html/index.html \
+  doc/RecTutorial/RecTutorial.html sphinx-html
 
 doc-pdf:\
-  doc/tutorial/Tutorial.v.pdf \
-  doc/stdlib/Library.pdf doc/RecTutorial/RecTutorial.pdf
+  doc/tutorial/Tutorial.v.pdf doc/stdlib/Library.pdf \
+  doc/RecTutorial/RecTutorial.pdf sphinx-pdf
 
 doc-ps:\
   doc/tutorial/Tutorial.v.ps \
@@ -247,7 +254,9 @@ install-doc-meta:
 	$(MKDIR) $(FULLDOCDIR)
 	$(INSTALLLIB) doc/LICENSE $(FULLDOCDIR)/LICENSE.doc
 
-install-doc-html: 
+install-doc-html: install-doc-stdlib-html install-doc-sphinx-html
+
+install-doc-stdlib-html:
 	$(MKDIR) $(FULLDOCDIR)/html/stdlib
 	$(INSTALLLIB) doc/stdlib/html/* $(FULLDOCDIR)/html/stdlib
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.html $(FULLDOCDIR)/html/RecTutorial.html
@@ -262,7 +271,7 @@ install-doc-printable:
 	$(INSTALLLIB) doc/tutorial/Tutorial.v.ps $(FULLDOCDIR)/ps/Tutorial.ps
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.ps $(FULLDOCDIR)/ps/RecTutorial.ps
 
-install-doc-sphinx:
+install-doc-sphinx-html:
 	$(MKDIR) $(FULLDOCDIR)/sphinx
 	(for f in `cd doc/sphinx/_build; find . -type f`; do \
 		$(MKDIR) $$(dirname $(FULLDOCDIR)/sphinx/$$f);\
