@@ -419,7 +419,7 @@ DO
 
         first [ t1 | … | tn ].
 
-DONT
+DON'T
   .. code::
 
      A tactic of the form:
@@ -450,6 +450,36 @@ DON'T
      The term ``let a = 1 in a a`` is ill-typed.
 
 Plain quotes produce plain text, without highlighting or cross-references.
+
+Overusing the ``example`` directive
+-----------------------------------
+
+DO
+  .. code::
+
+     Here is a useful axiom:
+
+     .. coqdoc::
+
+        Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
+
+DO
+  .. code::
+
+     .. example:: Using proof-irrelevance
+
+        If you assume the axiom above, …
+
+DON'T
+  .. code::
+
+     Here is a useful axiom:
+
+     .. example::
+
+        .. coqdoc::
+
+           Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
 
 Tips and tricks
 ===============
