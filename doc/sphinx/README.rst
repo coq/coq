@@ -123,10 +123,23 @@ Here is the list of all objects of the Coq domain (The symbol :black_nib: indica
           :cmd:`Variant` and :cmd:`Record` get an automatic declaration of the
           induction principles.
 
-``.. prodn::`` :black_nib: Grammar productions.
+``.. prodn::`` A grammar production.
     This is useful if you intend to document individual grammar productions.
     Otherwise, use Sphinx's `production lists
     <http://www.sphinx-doc.org/en/stable/markup/para.html#directive-productionlist>`_.
+
+    Unlike ``.. productionlist``\ s, this directive accepts notation syntax.
+
+
+    Usage::
+
+       .. prodn:: token += production
+       .. prodn:: token ::= production
+
+    Example::
+
+        .. prodn:: term += let: @pattern := @term in @term
+        .. prodn:: occ_switch ::= { {? + %| - } {* @num } }
 
 ``.. tacn::`` :black_nib: A tactic, or a tactic notation.
     Example::
