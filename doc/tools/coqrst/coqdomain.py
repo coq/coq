@@ -496,7 +496,7 @@ def coq_code_role(role, rawtext, text, lineno, inliner, options={}, content=[]):
 CoqCodeRole = coq_code_role
 
 class CoqtopDirective(Directive):
-    """A reST directive to describe interactions with Coqtop.
+    r"""A reST directive to describe interactions with Coqtop.
 
     Usage::
 
