@@ -59,7 +59,7 @@
 ########## Coqchk ##########
 
 /checker/         @barras
-# Secondary maintainer @maximedenes
+# Secondary maintainers @maximedenes @ppedrot
 
 ########## Coq lib ##########
 
@@ -100,7 +100,7 @@
 ########## Kernel ##########
 
 /kernel/          @maximedenes
-# Secondary maintainer @barras
+# Secondary maintainers @barras @ppedrot
 
 /kernel/byterun/  @maximedenes
 # Secondary maintainer @silene
