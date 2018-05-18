@@ -1,6 +1,3 @@
-.. include:: ../preamble.rst
-.. include:: ../replaces.rst
-
 .. _ltac:
 
 The tactic language

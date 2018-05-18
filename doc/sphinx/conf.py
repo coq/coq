@@ -36,6 +36,12 @@ sys.path.append(os.path.abspath('../../config/'))
 
 import coq_config
 
+# -- Prolog ---------------------------------------------------------------
+
+# Include substitution definitions in all files
+with open("refman-preamble.rst") as s:
+    rst_prolog = s.read()
+
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.

@@ -1,5 +1,3 @@
-.. include:: ../replaces.rst
-
 .. _coqintegrateddevelopmentenvironment:
 
 |Coq| Integrated Development Environment
