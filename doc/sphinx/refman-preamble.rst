@@ -30,7 +30,7 @@
 .. |class_2| replace:: `class`\ :math:`_{2}`
 .. |Coq| replace:: :smallcaps:`Coq`
 .. |CoqIDE| replace:: :smallcaps:`CoqIDE`
-.. |eq_beta_delta_iota_zeta| replace:: `=`\ :math:`_{\small{\beta\delta\iota\zeta}}`
+.. |eq_beta_delta_iota_zeta| replace:: `=`\ :math:`_{\beta\delta\iota\zeta}`
 .. |Gallina| replace:: :smallcaps:`Gallina`
 .. |ident_0| replace:: `ident`\ :math:`_{0}`
 .. |ident_1,1| replace:: `ident`\ :math:`_{1,1}`

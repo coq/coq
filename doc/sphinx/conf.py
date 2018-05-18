@@ -316,6 +316,9 @@ latex_elements = {
 
                  % Style tweaks
                  \newcssclass{sigannot}{\textrm{#1:}}
+
+                 % Silence 'LaTeX Warning: Command \nobreakspace invalid in math mode'
+                 \everymath{\def\nobreakspace{\ }}
                  """
 }
 
