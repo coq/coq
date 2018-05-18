@@ -42,10 +42,12 @@ let run_one logit test =
   let results = perform_test (fun _ -> ()) test in
   process_results results
 
-(* run list of OUnit test cases, log results *)
-let run_tests ml_fn tests =
+let open_log_out_ch ml_fn =
   let log_fn = ml_fn ^ ".log" in
-  let out_ch = open_out log_fn in
+  open_out log_fn
+
+(* run list of OUnit test cases, log results *)
+let run_tests ml_fn out_ch tests =
   let cprintf s = cfprintf out_ch s in
   let ceprintf s = cfprintf stderr s in
   let logit = logger out_ch in
