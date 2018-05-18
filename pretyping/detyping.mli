@@ -14,7 +14,6 @@ open EConstr
 open Glob_term
 open Termops
 open Mod_subst
-open Misctypes
 open Evd
 open Ltac_pretype
 

@@ -29,7 +29,6 @@ open Indtypes
 open Pretyping
 open Evarutil
 open Indschemes
-open Misctypes
 open Context.Rel.Declaration
 open Entries
 
@@ -380,7 +379,7 @@ let extract_params indl =
 let extract_inductive indl =
   List.map (fun (({CAst.v=indname},pl),_,ar,lc) -> {
     ind_name = indname; ind_univs = pl;
-    ind_arity = Option.cata (fun x -> x) (CAst.make @@ CSort (GType [])) ar;
+    ind_arity = Option.cata (fun x -> x) (CAst.make @@ CSort (Glob_term.GType [])) ar;
     ind_lc = List.map (fun (_,({CAst.v=id},t)) -> (id,t)) lc
   }) indl
 

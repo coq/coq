@@ -22,7 +22,7 @@ open Ltac_pretype
 open Evardefine
 
 val interp_known_glob_level : ?loc:Loc.t -> Evd.evar_map ->
-  Misctypes.glob_level -> Univ.Level.t
+  glob_level -> Univ.Level.t
 
 (** An auxiliary function for searching for fixpoint guard indexes *)
 

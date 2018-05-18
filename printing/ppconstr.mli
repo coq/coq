@@ -41,8 +41,8 @@ val pr_name : Name.t -> Pp.t
 val pr_qualid : qualid -> Pp.t
 val pr_patvar : patvar -> Pp.t
 
-val pr_glob_level : glob_level -> Pp.t
-val pr_glob_sort : glob_sort -> Pp.t
+val pr_glob_level : Glob_term.glob_level -> Pp.t
+val pr_glob_sort : Glob_term.glob_sort -> Pp.t
 val pr_guard_annot : (constr_expr -> Pp.t) ->
   local_binder_expr list ->
   lident option * recursion_order_expr ->

@@ -245,7 +245,7 @@ let interp_known_level_info ?loc evd = function
     with Not_found ->
       user_err ?loc ~hdr:"interp_known_level_info" (str "Undeclared universe " ++ Libnames.pr_reference ref)
 
-let interp_level_info ?loc evd : Misctypes.level_info -> _ = function
+let interp_level_info ?loc evd : level_info -> _ = function
   | UUnknown -> new_univ_level_variable ?loc univ_rigid evd
   | UAnonymous -> new_univ_level_variable ?loc univ_flexible evd
   | UNamed s -> interp_universe_level_name ~anon_rigidity:univ_flexible evd s
@@ -499,7 +499,7 @@ let interp_known_glob_level ?loc evd = function
   | GSet -> Univ.Level.set
   | GType s -> interp_known_level_info ?loc evd s
 
-let interp_glob_level ?loc evd : Misctypes.glob_level -> _ = function
+let interp_glob_level ?loc evd : glob_level -> _ = function
   | GProp -> evd, Univ.Level.prop
   | GSet -> evd, Univ.Level.set
   | GType s -> interp_level_info ?loc evd s

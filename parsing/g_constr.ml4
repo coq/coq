@@ -10,6 +10,7 @@
 
 open Names
 open Libnames
+open Glob_term
 open Constrexpr
 open Constrexpr_ops
 open Util

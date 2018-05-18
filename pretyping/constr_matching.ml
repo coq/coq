@@ -20,7 +20,6 @@ open EConstr
 open Vars
 open Pattern
 open Patternops
-open Misctypes
 open Context.Rel.Declaration
 open Ltac_pretype
 (*i*)
@@ -277,6 +276,7 @@ let matches_core env sigma allow_bound_rels
 
       | PSort ps, Sort s ->
 
+        let open Glob_term in
         begin match ps, ESorts.kind sigma s with
         | GProp, Prop Null -> subst
         | GSet, Prop Pos -> subst

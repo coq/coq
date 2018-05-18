@@ -30,7 +30,7 @@ type constr_pattern =
   | PLambda of Name.t * constr_pattern * constr_pattern
   | PProd of Name.t * constr_pattern * constr_pattern
   | PLetIn of Name.t * constr_pattern * constr_pattern option * constr_pattern
-  | PSort of glob_sort
+  | PSort of Glob_term.glob_sort
   | PMeta of patvar option
   | PIf of constr_pattern * constr_pattern * constr_pattern
   | PCase of case_info_pattern * constr_pattern * constr_pattern *
