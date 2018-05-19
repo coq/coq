@@ -847,7 +847,7 @@ function make_ocaml {
 
 function make_ocaml_tools {
   make_findlib
-  make_menhir
+  # make_menhir
   make_camlp5
 }
 
@@ -856,7 +856,7 @@ function make_ocaml_tools {
 function make_ocaml_libs {
   make_findlib
   make_lablgtk
-  make_stdint
+  # make_stdint
 }
 
 ##### FINDLIB Ocaml library manager #####
