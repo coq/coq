@@ -254,7 +254,7 @@ let dump_def ?loc ty secpath id = Option.iter (fun loc ->
 let dump_definition {CAst.loc;v=id} sec s =
   dump_def ?loc s (Names.DirPath.to_string (Lib.current_dirpath sec)) (Names.Id.to_string id)
 
-let dump_constraint (({ CAst.loc; v = n },_), _, _) sec ty =
+let dump_constraint { CAst.loc; v = n } sec ty =
   match n with
     | Names.Name id -> dump_definition CAst.(make ?loc id) sec ty
     | Names.Anonymous -> ()

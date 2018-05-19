@@ -216,7 +216,7 @@ type syntax_modifier =
 type proof_end =
   | Admitted
   (*                         name in `Save ident` when closing goal *)
-  | Proved of opacity_flag * lident option
+  | Proved of Proof_global.opacity_flag * lident option
 
 type scheme =
   | InductionScheme of bool * reference or_by_notation * sort_expr
@@ -351,14 +351,14 @@ type nonrec vernac_expr =
   | VernacCoercion of reference or_by_notation *
       class_rawexpr * class_rawexpr
   | VernacIdentityCoercion of lident * class_rawexpr * class_rawexpr
-  | VernacNameSectionHypSet of lident * section_subset_expr 
+  | VernacNameSectionHypSet of lident * section_subset_expr
 
   (* Type classes *)
   | VernacInstance of
       bool * (* abstract instance *)
       local_binder_expr list * (* super *)
-	typeclass_constraint * (* instance name, class name, params *)
-	(bool * constr_expr) option * (* props *)
+        typeclass_constraint * (* instance name, class name, params *)
+        (bool * constr_expr) option * (* props *)
         Typeclasses.hint_info_expr
 
   | VernacContext of local_binder_expr list

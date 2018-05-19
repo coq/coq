@@ -13,7 +13,7 @@ open Glob_term
 open Constrexpr
 open Libnames
 
-val declare_generalizable : Vernacexpr.locality_flag -> Misctypes.lident list option -> unit
+val declare_generalizable : local:bool -> Misctypes.lident list option -> unit
 
 val ids_of_list : Id.t list -> Id.Set.t
 val destClassApp : constr_expr -> (reference * constr_expr list * instance_expr option) CAst.t

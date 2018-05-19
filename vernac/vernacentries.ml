@@ -855,7 +855,7 @@ let vernac_identity_coercion ~atts id qids qidt =
 
 let vernac_instance ~atts abst sup inst props pri =
   let global = not (make_section_locality atts.locality) in
-  Dumpglob.dump_constraint inst false "inst";
+  Dumpglob.dump_constraint (fst (pi1 inst)) false "inst";
   let program_mode = Flags.is_program_mode () in
   ignore(Classes.new_instance ~program_mode ~abstract:abst ~global atts.polymorphic sup inst props pri)
 
@@ -1268,7 +1268,7 @@ let vernac_reserve bl =
 
 let vernac_generalizable ~atts =
   let local = make_non_locality atts.locality in
-  Implicit_quantifiers.declare_generalizable local
+  Implicit_quantifiers.declare_generalizable ~local
 
 let _ =
   declare_bool_option

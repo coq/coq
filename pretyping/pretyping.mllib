@@ -27,8 +27,6 @@ Pattern
 Patternops
 Constr_matching
 Tacred
-Extend
-Vernacexpr
 Typeclasses_errors
 Typeclasses
 Classops
