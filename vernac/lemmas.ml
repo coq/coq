@@ -334,8 +334,8 @@ let universe_proof_terminator compute_guard hook =
       Feedback.feedback Feedback.AddedAxiom
   | Proved (opaque,idopt,proof) ->
       let is_opaque, export_seff = match opaque with
-        | Vernacexpr.Transparent -> false, true
-        | Vernacexpr.Opaque      -> true, false
+        | Transparent -> false, true
+        | Opaque      -> true, false
       in
       let proof = get_proof proof compute_guard
         (hook (Some (proof.Proof_global.universes))) is_opaque in

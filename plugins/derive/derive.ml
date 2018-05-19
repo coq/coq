@@ -61,7 +61,7 @@ let start_deriving f suchthat lemma =
         | Proved (opaque, None, obj) ->
             match Proof_global.(obj.entries) with
             | [_;f_def;lemma_def] ->
-                opaque <> Vernacexpr.Transparent , f_def , lemma_def
+                opaque <> Proof_global.Transparent , f_def , lemma_def
             | _ -> assert false
       in
       (** The opacity of [f_def] is adjusted to be [false], as it

@@ -717,6 +717,7 @@ open Pputils
         return (keyword "Admitted")
 
       | VernacEndProof (Proved (opac,o)) -> return (
+        let open Proof_global in
         match o with
           | None -> (match opac with
               | Transparent -> keyword "Defined"

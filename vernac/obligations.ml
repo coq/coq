@@ -849,12 +849,12 @@ let obligation_terminator name num guard hook auto pf =
     let obl = obls.(num) in
     let status =
       match obl.obl_status, opq with
-      | (_, Evar_kinds.Expand), Vernacexpr.Opaque -> err_not_transp ()
-      | (true, _), Vernacexpr.Opaque -> err_not_transp ()
-      | (false, _), Vernacexpr.Opaque -> Evar_kinds.Define true
-      | (_, Evar_kinds.Define true), Vernacexpr.Transparent ->
+      | (_, Evar_kinds.Expand), Opaque -> err_not_transp ()
+      | (true, _), Opaque -> err_not_transp ()
+      | (false, _), Opaque -> Evar_kinds.Define true
+      | (_, Evar_kinds.Define true), Transparent ->
         Evar_kinds.Define false
-      | (_, status), Vernacexpr.Transparent -> status
+      | (_, status), Transparent -> status
     in
     let obl = { obl with obl_status = false, status } in
     let ctx =

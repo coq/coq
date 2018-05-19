@@ -10,6 +10,7 @@
 
 open Constrexpr
 open Vernacexpr
+open Proof_global
 open Misctypes
 
 open Pcoq

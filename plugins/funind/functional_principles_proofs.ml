@@ -1013,7 +1013,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
   lemma_type
   (Lemmas.mk_hook (fun _ _ -> ()));
   ignore (Pfedit.by (Proofview.V82.tactic prove_replacement));
-  Lemmas.save_proof (Vernacexpr.(Proved(Transparent,None))); 
+  Lemmas.save_proof (Vernacexpr.(Proved(Proof_global.Transparent,None)));
   evd
 
 

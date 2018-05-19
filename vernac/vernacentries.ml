@@ -518,7 +518,7 @@ let vernac_exact_proof c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the begining of a proof. *)
   let status = Pfedit.by (Tactics.exact_proof c) in
-  save_proof (Vernacexpr.(Proved(Opaque,None)));
+  save_proof (Vernacexpr.(Proved(Proof_global.Opaque,None)));
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_assumption ~atts discharge kind l nl =

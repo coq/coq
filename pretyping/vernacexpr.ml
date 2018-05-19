@@ -135,7 +135,8 @@ type search_restriction =
 
 type rec_flag       = bool (* true = Rec;           false = NoRec          *)
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
-type opacity_flag   = Opaque | Transparent
+type opacity_flag   = Proof_global.opacity_flag = Opaque | Transparent
+ [@ocaml.deprecated "Please use [Proof_global.opacity_flag]"]
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = bool option
   (* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)

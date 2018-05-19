@@ -818,7 +818,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	 ignore (Pfedit.by
 		   (Proofview.V82.tactic (observe_tac ("prove correctness ("^(Id.to_string f_id)^")")
 						      (proving_tac i))));
-	 (Lemmas.save_proof (Vernacexpr.(Proved(Transparent,None))));
+         (Lemmas.save_proof (Vernacexpr.(Proved(Proof_global.Transparent,None))));
 	 let finfo = find_Function_infos (fst f_as_constant) in
 	 (* let lem_cst = fst (destConst (Constrintern.global_reference lem_id)) in *)
 	 let _,lem_cst_constr = Evd.fresh_global
@@ -879,7 +879,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	 ignore (Pfedit.by
 	   (Proofview.V82.tactic (observe_tac ("prove completeness ("^(Id.to_string f_id)^")")
 	      (proving_tac i)))) ;
-	 (Lemmas.save_proof (Vernacexpr.(Proved(Transparent,None))));
+         (Lemmas.save_proof (Vernacexpr.(Proved(Proof_global.Transparent,None))));
 	 let finfo = find_Function_infos (fst f_as_constant) in
 	 let _,lem_cst_constr = Evd.fresh_global
 				  (Global.env ()) !evd (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)) in
