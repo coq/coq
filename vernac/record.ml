@@ -562,12 +562,18 @@ let add_inductive_class ind =
 	cl_unique = !typeclasses_unique }
   in add_class k
 
+let warn_already_existing_class =
+  CWarnings.create ~name:"already-existing-class" ~category:"automation" Pp.(fun g ->
+      Printer.pr_global g ++ str " is already declared as a typeclass.")
+
 let declare_existing_class g =
-  match g with
-  | ConstRef x -> add_constant_class x
-  | IndRef x -> add_inductive_class x
-  | _ -> user_err ~hdr:"declare_existing_class"
-		      (Pp.str"Unsupported class type, only constants and inductives are allowed")
+  if Typeclasses.is_class g then warn_already_existing_class g
+  else
+    match g with
+    | ConstRef x -> add_constant_class x
+    | IndRef x -> add_inductive_class x
+    | _ -> user_err ~hdr:"declare_existing_class"
+             (Pp.str"Unsupported class type, only constants and inductives are allowed")
 
 open Vernacexpr
 
