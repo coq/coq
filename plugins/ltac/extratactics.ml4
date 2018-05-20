@@ -320,7 +320,7 @@ let project_hint ~poly pri l2r r =
 
 let add_hints_iff ~atts l2r lc n bl =
   let open Vernacinterp in
-  Hints.add_hints (Locality.make_module_locality atts.locality) bl
+  Hints.add_hints ~local:(Locality.make_module_locality atts.locality) bl
     (Hints.HintsResolveEntry (List.map (project_hint ~poly:atts.polymorphic n l2r) lc))
 
 VERNAC COMMAND FUNCTIONAL EXTEND HintResolveIffLR CLASSIFIED AS SIDEFF

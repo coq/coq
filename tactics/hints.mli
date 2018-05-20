@@ -178,7 +178,7 @@ val current_pure_db : unit -> hint_db list
 
 val interp_hints : polymorphic -> hints_expr -> hints_entry
 
-val add_hints : locality_flag -> hint_db_name list -> hints_entry -> unit
+val add_hints : local:bool -> hint_db_name list -> hints_entry -> unit
 
 val prepare_hint : bool (* Check no remaining evars *) ->
   (bool * bool) (* polymorphic or monomorphic, local or global *) ->

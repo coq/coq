@@ -977,7 +977,7 @@ let vernac_remove_hints ~atts dbs ids =
 
 let vernac_hints ~atts lb h =
   let local = enforce_module_locality atts.locality in
-  Hints.add_hints local lb (Hints.interp_hints atts.polymorphic h)
+  Hints.add_hints ~local lb (Hints.interp_hints atts.polymorphic h)
 
 let vernac_syntactic_definition ~atts lid x y =
   Dumpglob.dump_definition lid false "syndef";

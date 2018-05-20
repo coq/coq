@@ -41,7 +41,7 @@ let _ = Goptions.declare_bool_option {
 let typeclasses_db = "typeclass_instances"
 
 let set_typeclass_transparency c local b = 
-  Hints.add_hints local [typeclasses_db] 
+  Hints.add_hints ~local [typeclasses_db]
     (Hints.HintsTransparencyEntry ([c], b))
     
 let _ =
@@ -56,7 +56,7 @@ let _ =
                      (Constrintern.intern_constr_pattern (Global.env()) Evd.(from_env Global.(env())))
 		     info.hint_pattern } in
      Flags.silently (fun () ->
-	Hints.add_hints local [typeclasses_db]
+       Hints.add_hints ~local [typeclasses_db]
 	  (Hints.HintsResolveEntry
 	     [info, poly, false, Hints.PathHints path, inst'])) ());
   Hook.set Typeclasses.set_typeclass_transparency_hook set_typeclass_transparency;
