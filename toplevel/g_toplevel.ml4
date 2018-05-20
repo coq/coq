@@ -35,7 +35,7 @@ GEXTEND Gram
       | IDENT "Quit"; "." -> CAst.make VernacQuit
       | IDENT "Backtrack"; n = natural ; m = natural ; p = natural; "." ->
         CAst.make (VernacBacktrack (n,m,p))
-      | cmd = main_entry ->
+      | cmd = Pvernac.main_entry ->
               match cmd with
               | None -> raise Stm.End_of_input
               | Some (loc,c) -> CAst.make ~loc (VernacControl c)

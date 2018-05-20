@@ -20,9 +20,9 @@ open Extraargs
 open Tacmach
 open Rewrite
 open Stdarg
-open Pcoq.Vernac_
 open Pcoq.Prim
 open Pcoq.Constr
+open Pvernac.Vernac_
 open Pltac
 
 DECLARE PLUGIN "ltac_plugin"

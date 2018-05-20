@@ -1969,7 +1969,7 @@ let vernac_load interp fname =
     interp x in
   let parse_sentence = Flags.with_option Flags.we_are_parsing
     (fun po ->
-    match Pcoq.Gram.entry_parse Pcoq.main_entry po with
+    match Pcoq.Gram.entry_parse Pvernac.main_entry po with
       | Some x -> x
       | None -> raise End_of_input) in
   let fname =

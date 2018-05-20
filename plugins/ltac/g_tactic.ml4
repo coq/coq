@@ -211,7 +211,7 @@ let warn_deprecated_eqn_syntax =
 
 (* Auxiliary grammar rules *)
 
-open Vernac_
+open Pvernac.Vernac_
 
 GEXTEND Gram
   GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis

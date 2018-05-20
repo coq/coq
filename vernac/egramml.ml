@@ -77,7 +77,7 @@ let get_extend_vernac_rule (s, i) =
   | Failure _ -> raise Not_found
 
 let extend_vernac_command_grammar s nt gl =
-  let nt = Option.default Vernac_.command nt in
+  let nt = Option.default Pvernac.Vernac_.command nt in
   vernac_exts := (s,gl) :: !vernac_exts;
   let mkact loc l = VernacExtend (s, l) in
   let rules = [make_rule mkact gl] in

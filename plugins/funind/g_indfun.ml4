@@ -123,7 +123,7 @@ ARGUMENT EXTEND auto_using'
 END
 
 module Gram = Pcoq.Gram
-module Vernac = Pcoq.Vernac_
+module Vernac = Pvernac.Vernac_
 module Tactic = Pltac
 
 type function_rec_definition_loc_argtype = (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) Loc.located
