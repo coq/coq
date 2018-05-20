@@ -6,6 +6,18 @@ version = "8.8"
 directory = ""
 requires = "camlp5"
 
+package "grammar" (
+
+  description = "Coq Camlp5 Grammar Extensions for Plugins"
+  version     = "8.8"
+
+  requires    = "camlp5.gramlib"
+  directory   = "grammar"
+
+  archive(byte)   = "grammar.cma"
+  archive(native) = "grammar.cmxa"
+)
+
 package "config" (
 
   description = "Coq Configuration Variables"
@@ -127,18 +139,6 @@ package "interp" (
   archive(byte)    = "interp.cma"
   archive(native)  = "interp.cmxa"
 
-)
-
-package "grammar" (
-
-  description = "Coq Base Grammar"
-  version     = "8.8"
-
-  requires    = "coq.interp"
-  directory   = "grammar"
-
-  archive(byte)   = "grammar.cma"
-  archive(native) = "grammar.cmxa"
 )
 
 package "proofs" (
