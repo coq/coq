@@ -3,8 +3,6 @@ CLexer
 Extend
 Vernacexpr
 Pcoq
-Egramml
-Egramcoq
 G_constr
 G_vernac
 G_prim
