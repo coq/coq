@@ -116,3 +116,10 @@ val error_invalid_pattern_notation : ?loc:Loc.t -> unit -> 'a
 
 (** Placeholder for global option, should be moved to a parameter *)
 val asymmetric_patterns : bool ref
+
+(** Local universe and constraint declarations. *)
+val interp_univ_decl : Environ.env -> universe_decl_expr ->
+                       Evd.evar_map * UState.universe_decl
+
+val interp_univ_decl_opt : Environ.env -> universe_decl_expr option ->
+                       Evd.evar_map * UState.universe_decl

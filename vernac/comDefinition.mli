@@ -29,4 +29,4 @@ val do_definition : program_mode:bool ->
 val interp_definition :
   universe_decl_expr option -> local_binder_expr list -> polymorphic -> red_expr option -> constr_expr ->
   constr_expr option -> Safe_typing.private_constants definition_entry * Evd.evar_map *
-                        Univdecls.universe_decl * Impargs.manual_implicits
+                        UState.universe_decl * Impargs.manual_implicits

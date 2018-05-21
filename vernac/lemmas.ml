@@ -436,7 +436,7 @@ let start_proof_with_initialization kind sigma decl recguard thms snl hook =
 let start_proof_com ?inference_hook kind thms hook =
   let env0 = Global.env () in
   let decl = fst (List.hd thms) in
-  let evd, decl = Univdecls.interp_univ_decl_opt env0 (snd decl) in
+  let evd, decl = Constrexpr_ops.interp_univ_decl_opt env0 (snd decl) in
   let evd, thms = List.fold_left_map (fun evd ((id, _), (bl, t)) ->
     let evd, (impls, ((env, ctx), imps)) = interp_context_evars env0 evd bl in
     let evd, (t', imps') = interp_type_evars_impls ~impls env evd t in
@@ -456,7 +456,7 @@ let start_proof_com ?inference_hook kind thms hook =
      you look at the previous lines... *)
   let thms = List.map (fun (n, (t, info)) -> (n, (nf_evar evd t, info))) thms in
   let () =
-    let open Misctypes in
+    let open UState in
     if not (decl.univdecl_extensible_instance && decl.univdecl_extensible_constraints) then
        ignore (Evd.check_univ_decl ~poly:(pi2 kind) evd decl)
   in

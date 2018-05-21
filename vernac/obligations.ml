@@ -308,7 +308,7 @@ type program_info_aux = {
   prg_body: constr;
   prg_type: constr;
   prg_ctx:  UState.t;
-  prg_univdecl: Univdecls.universe_decl;
+  prg_univdecl: UState.universe_decl;
   prg_obligations: obligations;
   prg_deps : Id.t list;
   prg_fixkind : fixpoint_kind option ;
@@ -1099,7 +1099,7 @@ let show_term n =
              Printer.pr_constr_env env sigma prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
             ++ Printer.pr_constr_env env sigma prg.prg_body)
 
-let add_definition n ?term t ctx ?(univdecl=Univdecls.default_univ_decl)
+let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
                    ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
     ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) obls =
   let sign = Decls.initialize_named_context_for_proof () in
@@ -1119,7 +1119,7 @@ let add_definition n ?term t ctx ?(univdecl=Univdecls.default_univ_decl)
 	| Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
 	| _ -> res)
 
-let add_mutual_definitions l ctx ?(univdecl=Univdecls.default_univ_decl) ?tactic
+let add_mutual_definitions l ctx ?(univdecl=UState.default_univ_decl) ?tactic
                            ?(kind=Global,false,Definition) ?(reduce=reduce)
     ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) notations fixkind =
   let sign = Decls.initialize_named_context_for_proof () in

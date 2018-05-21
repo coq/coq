@@ -71,14 +71,14 @@ val apply_terminator : proof_terminator -> proof_ending -> unit
     evar map [sigma] (which can typically contain universe
     constraints), and with universe bindings pl. *)
 val start_proof :
-  Evd.evar_map -> Names.Id.t -> ?pl:Univdecls.universe_decl ->
+  Evd.evar_map -> Names.Id.t -> ?pl:UState.universe_decl ->
   Decl_kinds.goal_kind -> (Environ.env * EConstr.types) list  ->
     proof_terminator -> unit
 
 (** Like [start_proof] except that there may be dependencies between
     initial goals. *)
 val start_dependent_proof :
-  Names.Id.t -> ?pl:Univdecls.universe_decl -> Decl_kinds.goal_kind ->
+  Names.Id.t -> ?pl:UState.universe_decl -> Decl_kinds.goal_kind ->
   Proofview.telescope -> proof_terminator -> unit
 
 (** Update the proofs global environment after a side-effecting command
@@ -130,7 +130,7 @@ val set_used_variables :
 val get_used_variables : unit -> Context.Named.t option
 
 (** Get the universe declaration associated to the current proof. *)
-val get_universe_decl : unit -> Univdecls.universe_decl
+val get_universe_decl : unit -> UState.universe_decl
 
 module V82 : sig
   val get_current_initial_conclusions : unit -> Names.Id.t *(EConstr.types list *

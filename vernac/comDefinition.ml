@@ -65,7 +65,7 @@ let interp_definition pl bl poly red_option c ctypopt =
   let open EConstr in
   let env = Global.env() in
   (* Explicitly bound universes and constraints *)
-  let evd, decl = Univdecls.interp_univ_decl_opt env pl in
+  let evd, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
   (* Build the parameters *)
   let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars env evd bl in
   (* Build the type *)

@@ -55,7 +55,7 @@ open Pputils
            (if extensible then str"+" else mt())
 
   let pr_universe_decl l =
-    let open Misctypes in
+    let open UState in
     match l with
     | None -> mt ()
     | Some l ->

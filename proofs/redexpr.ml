@@ -263,7 +263,7 @@ let subst_mps subst c =
   EConstr.of_constr (Mod_subst.subst_mps subst (EConstr.Unsafe.to_constr c))
 
 let subst_red_expr subs =
-  Miscops.map_red_expr_gen
+  Redops.map_red_expr_gen
     (subst_mps subs)
     (Mod_subst.subst_evaluable_reference subs)
     (Patternops.subst_pattern subs)

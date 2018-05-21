@@ -16,13 +16,10 @@ Evarsolve
 Recordops
 Evarconv
 Typing
-Constrexpr
-Genredexpr
 Miscops
 Glob_term
 Ltac_pretype
 Glob_ops
-Redops
 Pattern
 Patternops
 Constr_matching
@@ -37,4 +34,3 @@ Indrec
 Cases
 Pretyping
 Unification
-Univdecls

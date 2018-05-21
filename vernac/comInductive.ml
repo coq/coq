@@ -333,7 +333,7 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   List.iter check_param paramsl;
   let env0 = Global.env() in
   let pl = (List.hd indl).ind_univs in
-  let sigma, decl = Univdecls.interp_univ_decl_opt env0 pl in
+  let sigma, decl = interp_univ_decl_opt env0 pl in
   let sigma, (impls, ((env_params, ctx_params), userimpls)) =
     interp_context_evars env0 sigma paramsl
   in

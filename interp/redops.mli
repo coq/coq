@@ -13,3 +13,8 @@ open Genredexpr
 val make_red_flag : 'a red_atom list -> 'a glob_red_flag
 
 val all_flags : 'a glob_red_flag
+
+(** Mapping [red_expr_gen] *)
+
+val map_red_expr_gen : ('a -> 'd) -> ('b -> 'e) -> ('c -> 'f) ->
+  ('a,'b,'c) red_expr_gen -> ('d,'e,'f) red_expr_gen

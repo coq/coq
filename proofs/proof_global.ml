@@ -97,7 +97,7 @@ type pstate = {
   proof : Proof.t;
   strength : Decl_kinds.goal_kind;
   mode : proof_mode CEphemeron.key;
-  universe_decl: Univdecls.universe_decl;
+  universe_decl: UState.universe_decl;
 }
 
 type t = pstate list
@@ -238,13 +238,6 @@ let activate_proof_mode mode =
 let disactivate_current_proof_mode () =
   CEphemeron.iter_opt !current_proof_mode (fun x -> x.reset ())
 
-let default_universe_decl =
-  let open Misctypes in
-  { univdecl_instance = [];
-    univdecl_extensible_instance = true;
-    univdecl_constraints = Univ.Constraint.empty;
-    univdecl_extensible_constraints = true }
-
 (** [start_proof sigma id pl str goals terminator] starts a proof of name
     [id] with goals [goals] (a list of pairs of environment and
     conclusion); [str] describes what kind of theorem/definition this
@@ -253,7 +246,7 @@ let default_universe_decl =
     end of the proof to close the proof. The proof is started in the
     evar map [sigma] (which can typically contain universe
     constraints), and with universe bindings pl. *)
-let start_proof sigma id ?(pl=default_universe_decl) str goals terminator =
+let start_proof sigma id ?(pl=UState.default_univ_decl) str goals terminator =
   let initial_state = {
     pid = id;
     terminator = CEphemeron.create terminator;
@@ -265,7 +258,7 @@ let start_proof sigma id ?(pl=default_universe_decl) str goals terminator =
     universe_decl = pl } in
   push initial_state pstates
 
-let start_dependent_proof id ?(pl=default_universe_decl) str goals terminator =
+let start_dependent_proof id ?(pl=UState.default_univ_decl) str goals terminator =
   let initial_state = {
     pid = id;
     terminator = CEphemeron.create terminator;

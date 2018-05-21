@@ -230,6 +230,7 @@ GEXTEND Gram
                 ext = [ "+" -> true | -> false ]; "}" -> (l',ext)
               | ext = [ "}" -> true | "|}" -> false ] -> ([], ext) ]
          ->
+         let open UState in
          { univdecl_instance = l;
            univdecl_extensible_instance = ext;
            univdecl_constraints = fst cs;

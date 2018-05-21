@@ -49,7 +49,7 @@ val interp_recursive :
   structured_fixpoint_expr list -> decl_notation list ->
 
   (* env / signature / univs / evar_map *)
-  (Environ.env * EConstr.named_context * Univdecls.universe_decl * Evd.evar_map) *
+  (Environ.env * EConstr.named_context * UState.universe_decl * Evd.evar_map) *
   (* names / defs / types *)
   (Id.t list * Constr.constr option list * Constr.types list) *
   (* ctx per mutual def / implicits / struct annotations *)
@@ -74,19 +74,19 @@ type recursive_preentry =
 val interp_fixpoint :
   cofix:bool ->
   structured_fixpoint_expr list -> decl_notation list ->
-  recursive_preentry * Univdecls.universe_decl * UState.t *
+  recursive_preentry * UState.universe_decl * UState.t *
   (EConstr.rel_context * Impargs.manual_implicits * int option) list
 
 (** Registering fixpoints and cofixpoints in the environment *)
 (** [Not used so far] *)
 val declare_fixpoint :
   locality -> polymorphic ->
-  recursive_preentry * Univdecls.universe_decl * UState.t *
+  recursive_preentry * UState.universe_decl * UState.t *
   (Context.Rel.t * Impargs.manual_implicits * int option) list ->
   Proof_global.lemma_possible_guards -> decl_notation list -> unit
 
 val declare_cofixpoint : locality -> polymorphic ->
-  recursive_preentry * Univdecls.universe_decl * UState.t *
+  recursive_preentry * UState.universe_decl * UState.t *
   (Context.Rel.t * Impargs.manual_implicits * int option) list ->
   decl_notation list -> unit
 

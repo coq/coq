@@ -173,11 +173,12 @@ let interp_recursive ~program_mode ~cofix fixl notations =
         | None , acc -> acc
         | x , None -> x
         | Some ls , Some us ->
-           let lsu = ls.univdecl_instance and usu = us.univdecl_instance in
+          let open UState in
+          let lsu = ls.univdecl_instance and usu = us.univdecl_instance in
            if not (CList.for_all2eq (fun x y -> Id.equal x.CAst.v y.CAst.v) lsu usu) then
              user_err Pp.(str "(co)-recursive definitions should all have the same universe binders");
            Some us) fixl None in
-  let sigma, decl = Univdecls.interp_univ_decl_opt env all_universes in
+  let sigma, decl = interp_univ_decl_opt env all_universes in
   let sigma, (fixctxs, fiximppairs, fixannots) =
     on_snd List.split3 @@
       List.fold_left_map (fun sigma -> interp_fix_context env sigma ~cofix) sigma fixl in
