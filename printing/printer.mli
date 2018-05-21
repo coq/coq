@@ -222,14 +222,3 @@ val pr_assumptionset : env -> evar_map -> types ContextObjectMap.t -> Pp.t
 
 val pr_goal_by_id : proof:Proof.t -> Id.t -> Pp.t
 
-type printer_pr = {
- pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> seeds:goal list -> shelf:goal list -> stack:int list -> unfocused:goal list -> goals:goal list -> Pp.t;
-
- pr_subgoal             : int -> evar_map -> goal list -> Pp.t;
- pr_goal                : goal sigma -> Pp.t;
-}
-
-val set_printer_pr : printer_pr -> unit
-
-val default_printer_pr : printer_pr
-

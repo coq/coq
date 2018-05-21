@@ -494,7 +494,7 @@ let pr_transparent_state (ids, csts) =
 	str"CONSTANTS: " ++ pr_cpred csts ++ fnl ())
 
 (* display complete goal *)
-let default_pr_goal gs =
+let pr_goal gs =
   let g = sig_it gs in
   let sigma = project gs in
   let env = Goal.V82.env sigma g in
@@ -591,11 +591,11 @@ let pr_ne_evar_set hd tl sigma l =
     mt ()
 
 let pr_selected_subgoal name sigma g =
-  let pg = default_pr_goal { sigma=sigma ; it=g; } in
+  let pg = pr_goal { sigma=sigma ; it=g; } in
   let header = pr_goal_header name sigma g in
   v 0 (header ++ str " is:" ++ cut () ++ pg)
 
-let default_pr_subgoal n sigma =
+let pr_subgoal n sigma =
   let rec prrec p = function
     | [] -> user_err Pp.(str "No such goal.")
     | g::rest ->
@@ -695,7 +695,7 @@ let print_dependent_evars gl sigma seeds =
 (* spiwack: [seeds] is for printing dependent evars in emacs mode. *)
 (* spiwack: [pr_first] is true when the first goal must be singled out
    and printed in its entirety. *)
-let default_pr_subgoals ?(pr_first=true)
+let pr_subgoals ?(pr_first=true)
                         close_cmd sigma ~seeds ~shelf ~stack ~unfocused ~goals =
   (** Printing functions for the extra informations. *)
   let rec print_stack a = function
@@ -739,7 +739,7 @@ let default_pr_subgoals ?(pr_first=true)
   in
   let print_multiple_goals g l =
     if pr_first then
-      default_pr_goal { it = g ; sigma = sigma; }
+      pr_goal { it = g ; sigma = sigma; }
       ++ (if l=[] then mt () else cut ())
       ++ pr_rec 2 l
     else 
@@ -779,33 +779,6 @@ let default_pr_subgoals ?(pr_first=true)
                  ++ pr_rec (List.length rest + 2) unfocused))
 	++ print_dependent_evars (Some g1) sigma seeds
       )
-
-(**********************************************************************)
-(* Abstraction layer                                                  *)
-
-
-type printer_pr = {
- pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> seeds:goal list -> shelf:goal list -> stack:int list -> unfocused:goal list -> goals:goal list -> Pp.t;
- pr_subgoal             : int -> evar_map -> goal list -> Pp.t;
- pr_goal                : goal sigma -> Pp.t;
-}
-
-let default_printer_pr = {
- pr_subgoals = default_pr_subgoals;
- pr_subgoal  = default_pr_subgoal;
- pr_goal     = default_pr_goal;
-}
-
-let printer_pr = ref default_printer_pr
-
-let set_printer_pr = (:=) printer_pr
-
-let pr_subgoals ?pr_first x = !printer_pr.pr_subgoals ?pr_first x
-let pr_subgoal  x = !printer_pr.pr_subgoal  x
-let pr_goal     x = !printer_pr.pr_goal     x
-
-(* End abstraction layer                                              *)
-(**********************************************************************)
 
 let pr_open_subgoals ~proof =
   (* spiwack: it shouldn't be the job of the printer to look up stuff
