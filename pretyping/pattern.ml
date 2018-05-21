@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Misctypes
 
 (** {5 Patterns} *)
 
@@ -25,7 +24,7 @@ type case_info_pattern =
 type constr_pattern =
   | PRef of GlobRef.t
   | PVar of Id.t
-  | PEvar of existential_key * constr_pattern array
+  | PEvar of Evar.t * constr_pattern array
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
   | PSoApp of patvar * constr_pattern list

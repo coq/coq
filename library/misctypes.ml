@@ -38,10 +38,6 @@ type 'id move_location =
   | MoveFirst
   | MoveLast (** can be seen as "no move" when doing intro *)
 
-(** A synonym of [Evar.t], also defined in Term *)
-
-type existential_key = Evar.t
-
 (** Casts *)
 
 type 'a cast_type =
