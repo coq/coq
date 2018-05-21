@@ -23,7 +23,6 @@ open Libobject
 open Namegen
 open Libnames
 open Smartlocate
-open Misctypes
 open Termops
 open Inductiveops
 open Typing
@@ -100,6 +99,8 @@ let empty_hint_info =
 (*           The Type of Constructions Autotactic Hints                 *)
 (************************************************************************)
 
+type hint_info_expr = Constrexpr.constr_pattern_expr hint_info_gen
+
 type 'a hint_ast =
   | Res_pf     of 'a (* Hint Apply *)
   | ERes_pf    of 'a (* Hint EApply *)
@@ -165,7 +166,7 @@ type hint_mode =
   | ModeOutput (* Anything *)
 
 type hints_expr =
-  | HintsResolve of (Typeclasses.hint_info_expr * bool * reference_or_constr) list
+  | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
   | HintsImmediate of reference_or_constr list
   | HintsUnfold of reference list
   | HintsTransparency of reference list * bool
@@ -1235,7 +1236,7 @@ let add_trivials env sigma l local dbnames =
 
 type hnf = bool
 
-type hint_info = (patvar list * constr_pattern) hint_info_gen
+type nonrec hint_info = hint_info
 
 type hints_entry =
   | HintsResolveEntry of (hint_info * polymorphic * hnf * hints_path_atom * hint_term) list

@@ -14,10 +14,10 @@ open EConstr
 open Environ
 open Decl_kinds
 open Evd
-open Misctypes
 open Tactypes
 open Clenv
 open Pattern
+open Typeclasses
 
 (** {6 General functions. } *)
 
@@ -32,6 +32,8 @@ val secvars_of_hyps : ('c, 't) Context.Named.pt -> Id.Pred.t
 val empty_hint_info : 'a Typeclasses.hint_info_gen
 
 (** Pre-created hint databases *)
+
+type hint_info_expr = Constrexpr.constr_pattern_expr hint_info_gen
 
 type 'a hint_ast =
   | Res_pf     of 'a (* Hint Apply *)
@@ -80,7 +82,7 @@ type hint_mode =
   | ModeOutput (* Anything *)
 
 type hints_expr =
-  | HintsResolve of (Typeclasses.hint_info_expr * bool * reference_or_constr) list
+  | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
   | HintsImmediate of reference_or_constr list
   | HintsUnfold of Libnames.reference list
   | HintsTransparency of Libnames.reference list * bool
@@ -159,8 +161,6 @@ module Hint_db :
 type hint_db = Hint_db.t
 
 type hnf = bool
-
-type hint_info = (patvar list * constr_pattern) Typeclasses.hint_info_gen
 
 type hint_term =
   | IsGlobRef of GlobRef.t
@@ -290,3 +290,5 @@ val pr_hint : env -> evar_map -> hint -> Pp.t
 (** Hook for changing the initialization of auto *)
 val add_hints_init : (unit -> unit) -> unit
 
+type nonrec hint_info = hint_info
+[@@ocaml.deprecated "Use [Typeclasses.hint_info]"]
