@@ -87,6 +87,6 @@ val declare_univ_binders : GlobRef.t -> UnivNames.universe_binders -> unit
 
 val declare_universe_context : polymorphic -> Univ.ContextSet.t -> unit
 
-val do_universe : polymorphic -> Misctypes.lident list -> unit
+val do_universe : polymorphic -> lident list -> unit
 val do_constraint : polymorphic -> (Glob_term.glob_level * Univ.constraint_type * Glob_term.glob_level) list ->
                     unit

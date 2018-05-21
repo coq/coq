@@ -92,7 +92,7 @@ let pr_grammar = function
 (* Parse a format (every terminal starting with a letter or a single
    quote (except a single quote alone) must be quoted) *)
 
-let parse_format ({CAst.loc;v=str} : Misctypes.lstring) =
+let parse_format ({CAst.loc;v=str} : lstring) =
   let len = String.length str in
   (* TODO: update the line of the location when the string contains newlines *)
   let make_loc i j = Option.map (Loc.shift_loc (i+1) (j-len)) loc in
@@ -792,7 +792,7 @@ type notation_modifier = {
   only_parsing  : bool;
   only_printing : bool;
   compat        : Flags.compat_version option;
-  format        : Misctypes.lstring option;
+  format        : lstring option;
   extra         : (string * string) list;
 }
 
@@ -1104,7 +1104,7 @@ module SynData = struct
     only_parsing  : bool;
     only_printing : bool;
     compat        : Flags.compat_version option;
-    format        : Misctypes.lstring option;
+    format        : lstring option;
     extra         : (string * string) list;
 
     (* XXX: Callback to printing, must remove *)

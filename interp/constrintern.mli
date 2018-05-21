@@ -11,7 +11,6 @@
 open Names
 open Evd
 open Environ
-open Misctypes
 open Libnames
 open Glob_term
 open Pattern

@@ -852,3 +852,9 @@ let eq_egr e1 e2 = match e1, e2 with
     EvalConstRef con1, EvalConstRef con2 -> Constant.equal con1 con2
   | EvalVarRef id1, EvalVarRef id2 -> Id.equal id1 id2
   | _, _ -> false
+
+(** Located identifiers and objects with syntax. *)
+
+type lident = Id.t CAst.t
+type lname = Name.t CAst.t
+type lstring = string CAst.t

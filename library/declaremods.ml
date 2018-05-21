@@ -17,7 +17,6 @@ open Entries
 open Libnames
 open Libobject
 open Mod_subst
-open Misctypes
 
 (** {6 Inlining levels} *)
 

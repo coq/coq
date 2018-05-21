@@ -52,7 +52,7 @@ type ('a,'b,'c) red_expr_gen =
 type ('a,'b,'c) may_eval =
   | ConstrTerm of 'a
   | ConstrEval of ('a,'b,'c) red_expr_gen * 'a
-  | ConstrContext of Misctypes.lident * 'a
+  | ConstrContext of Names.lident * 'a
   | ConstrTypeOf of 'a
 
 open Libnames

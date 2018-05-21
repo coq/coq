@@ -11,6 +11,7 @@
 open Pp
 open CErrors
 open Util
+open Names
 open Tacexpr
 open Genredexpr
 open Constrexpr
@@ -383,19 +384,19 @@ GEXTEND Gram
   ;
   hypident:
     [ [ id = id_or_meta ->
-        let id : Misctypes.lident = id in
+        let id : lident = id in
         id,InHyp
       | "("; IDENT "type"; IDENT "of"; id = id_or_meta; ")" ->
-        let id : Misctypes.lident = id in
+        let id : lident = id in
         id,InHypTypeOnly
       | "("; IDENT "value"; IDENT "of"; id = id_or_meta; ")" ->
-        let id : Misctypes.lident = id in
+        let id : lident = id in
         id,InHypValueOnly
     ] ]
   ;
   hypident_occ:
     [ [ (id,l)=hypident; occs=occs ->
-        let id : Misctypes.lident = id in
+        let id : lident = id in
         ((occs,id),l) ] ]
   ;
   in_clause:

@@ -36,7 +36,7 @@ type 'modast module_interpretor =
     Entries.module_struct_entry * module_kind * Univ.ContextSet.t
 
 type 'modast module_params =
-  (Misctypes.lident list * ('modast * inline)) list
+  (lident list * ('modast * inline)) list
 
 (** [declare_module interp_modast id fargs typ exprs]
    declares module [id], with structure constructed by [interp_modast]

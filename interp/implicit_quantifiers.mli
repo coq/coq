@@ -13,7 +13,7 @@ open Glob_term
 open Constrexpr
 open Libnames
 
-val declare_generalizable : local:bool -> Misctypes.lident list option -> unit
+val declare_generalizable : local:bool -> lident list option -> unit
 
 val ids_of_list : Id.t list -> Id.Set.t
 val destClassApp : constr_expr -> (reference * constr_expr list * instance_expr option) CAst.t
@@ -31,7 +31,7 @@ val free_vars_of_binders :
    order with the location of their first occurrence *)
 
 val generalizable_vars_of_glob_constr : ?bound:Id.Set.t -> ?allowed:Id.Set.t ->
-  glob_constr -> Misctypes.lident list
+  glob_constr -> lident list
 
 val make_fresh : Id.Set.t -> Environ.env -> Id.t -> Id.t
 

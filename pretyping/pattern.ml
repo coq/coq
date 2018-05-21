@@ -13,6 +13,9 @@ open Misctypes
 
 (** {5 Patterns} *)
 
+(** Cases pattern variables *)
+type patvar = Id.t
+
 type case_info_pattern =
     { cip_style : Constr.case_style;
       cip_ind : inductive option;

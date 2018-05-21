@@ -95,7 +95,7 @@ and constr_expr_r =
   | CIf of constr_expr * (lname option * constr_expr option)
          * constr_expr * constr_expr
   | CHole   of Evar_kinds.t option * intro_pattern_naming_expr * Genarg.raw_generic_argument option
-  | CPatVar of patvar
+  | CPatVar of Pattern.patvar
   | CEvar   of Glob_term.existential_name * (Id.t * constr_expr) list
   | CSort   of Glob_term.glob_sort
   | CCast   of constr_expr * constr_expr cast_type

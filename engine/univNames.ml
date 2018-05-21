@@ -89,7 +89,7 @@ let register_universe_binders ref ubinders =
   if not (Id.Map.is_empty ubinders)
   then Lib.add_anonymous_leaf (ubinder_obj (ref,ubinders))
 
-type univ_name_list = Misctypes.lname list
+type univ_name_list = Names.lname list
 
 let universe_binders_with_opt_names ref levels = function
   | None -> universe_binders_of_global ref

@@ -605,3 +605,9 @@ type evaluable_global_reference =
   | EvalConstRef of Constant.t
 
 val eq_egr : evaluable_global_reference ->  evaluable_global_reference -> bool
+
+(** Located identifiers and objects with syntax. *)
+
+type lident = Id.t CAst.t
+type lname = Name.t CAst.t
+type lstring = string CAst.t

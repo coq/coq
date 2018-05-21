@@ -27,7 +27,7 @@ val continue : unit -> unit
 val add_glob : ?loc:Loc.t -> Names.GlobRef.t -> unit
 val add_glob_kn : ?loc:Loc.t -> Names.KerName.t -> unit
 
-val dump_definition : Misctypes.lident -> bool -> string -> unit
+val dump_definition : Names.lident -> bool -> string -> unit
 val dump_moddef : ?loc:Loc.t -> Names.ModPath.t -> string -> unit
 val dump_modref  : ?loc:Loc.t -> Names.ModPath.t -> string -> unit
 val dump_reference  : ?loc:Loc.t -> string -> string -> string -> unit
@@ -39,7 +39,7 @@ val dump_notation :
   (Constrexpr.notation * Notation.notation_location) Loc.located ->
   Notation_term.scope_name option -> bool -> unit
 
-val dump_constraint : Misctypes.lname -> bool -> string -> unit
+val dump_constraint : Names.lname -> bool -> string -> unit
 
 val dump_string : string -> unit
 

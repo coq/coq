@@ -76,7 +76,7 @@ val db_logic_failure : debug_info -> exn -> unit Proofview.NonLogical.t
 
 (** Prints a logic failure message for a rule *)
 val db_breakpoint : debug_info ->
-  Misctypes.lident message_token list -> unit Proofview.NonLogical.t
+  lident message_token list -> unit Proofview.NonLogical.t
 
 val extract_ltac_trace :
   ?loc:Loc.t -> Tacexpr.ltac_trace -> Pp.t option Loc.located

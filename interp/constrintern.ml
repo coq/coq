@@ -606,7 +606,7 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renam
     (renaming',env), None, Name id'
 
 type binder_action =
-| AddLetIn of Misctypes.lname * constr_expr * constr_expr option
+| AddLetIn of lname * constr_expr * constr_expr option
 | AddTermIter of (constr_expr * subscopes) Names.Id.Map.t
 | AddPreBinderIter of Id.t * local_binder_expr (* A binder to be internalized *)
 | AddBinderIter of Id.t * extended_glob_local_binder (* A binder already internalized - used for generalized binders *)
@@ -1073,11 +1073,11 @@ let interp_reference vars r =
 
 (** Private internalization patterns *)
 type 'a raw_cases_pattern_expr_r =
-  | RCPatAlias of 'a raw_cases_pattern_expr * Misctypes.lname
+  | RCPatAlias of 'a raw_cases_pattern_expr * lname
   | RCPatCstr  of GlobRef.t
     * 'a raw_cases_pattern_expr list * 'a raw_cases_pattern_expr list
   (** [RCPatCstr (loc, c, l1, l2)] represents [((@ c l1) l2)] *)
-  | RCPatAtom  of (Misctypes.lident * (Notation_term.tmp_scope_name option * Notation_term.scope_name list)) option
+  | RCPatAtom  of (lident * (Notation_term.tmp_scope_name option * Notation_term.scope_name list)) option
   | RCPatOr    of 'a raw_cases_pattern_expr list
 and 'a raw_cases_pattern_expr = ('a raw_cases_pattern_expr_r, 'a) DAst.t
 
@@ -1385,7 +1385,7 @@ let sort_fields ~complete loc fields completer =
 (** {6 Manage multiple aliases} *)
 
 type alias = {
-  alias_ids : Misctypes.lident list;
+  alias_ids : lident list;
   alias_map : Id.t Id.Map.t;
 }
 

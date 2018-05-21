@@ -10,18 +10,6 @@
 
 open Names
 
-(** Basic types used both in [constr_expr], [glob_constr], and [vernacexpr] *)
-
-(** Located identifiers and objects with syntax. *)
-
-type lident = Id.t CAst.t
-type lname = Name.t CAst.t
-type lstring = string CAst.t
-
-(** Cases pattern variables *)
-
-type patvar = Id.t
-
 (** Introduction patterns *)
 
 type 'constr intro_pattern_expr =

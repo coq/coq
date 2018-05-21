@@ -10,7 +10,6 @@
 
 open Names
 open Mod_subst
-open Misctypes
 open Glob_term
 open Pattern
 open EConstr

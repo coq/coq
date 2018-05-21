@@ -39,7 +39,7 @@ val pr_name : Name.t -> Pp.t
 [@@ocaml.deprecated "alias of Names.Name.print"]
 
 val pr_qualid : qualid -> Pp.t
-val pr_patvar : patvar -> Pp.t
+val pr_patvar : Pattern.patvar -> Pp.t
 
 val pr_glob_level : Glob_term.glob_level -> Pp.t
 val pr_glob_sort : Glob_term.glob_sort -> Pp.t
