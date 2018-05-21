@@ -1,0 +1,20 @@
+opam-version: "1.2"
+maintainer:  "The Coq Development Team <coqdev@sympa.inria.fr>"
+authors:     "The Coq Development Team"
+homepage:    "https://coq.inria.fr/"
+bug-reports: "https://github.com/coq/coq/issues"
+dev-repo:    "https://github.com/coq/coq.git"
+license:     "LGPL-2.1"
+
+name: "coqide"
+available: [ocaml-version >= "4.02.3"]
+
+depends: [
+  "coq"       { >= "8.9" & < "8.10" }
+  "camlp5"
+  "jbuild"    { build }
+  "ocamlfind" { build }
+  "num"
+]
+
+build: [["jbuilder" "build" "-p" name "-j" jobs]]
