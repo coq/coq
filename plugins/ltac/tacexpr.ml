@@ -164,7 +164,7 @@ type 'a gen_atomic_tactic_expr =
 
   (* Equality and inversion *)
   | TacRewrite of evars_flag *
-      (bool * multi * 'dtrm with_bindings_arg) list * 'nam clause_expr *
+      (bool * Equality.multi * 'dtrm with_bindings_arg) list * 'nam clause_expr *
       (* spiwack: using ['dtrm] here is a small hack, may not be
          stable by a change in the representation of delayed
          terms. Because, in fact, it is the whole "with_bindings"

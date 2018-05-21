@@ -546,6 +546,12 @@ let apply_special_clear_request clear_flag f =
       e when catchable_exception e -> tclIDTAC
   end
 
+type multi =
+  | Precisely of int
+  | UpTo of int
+  | RepeatStar
+  | RepeatPlus
+
 let general_multi_rewrite with_evars l cl tac =
   let do1 l2r f =
     Proofview.Goal.enter begin fun gl ->

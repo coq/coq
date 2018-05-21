@@ -61,6 +61,12 @@ val general_rewrite_in          :
 val general_rewrite_clause :
   orientation -> evars_flag -> ?tac:(unit Proofview.tactic * conditions) -> constr with_bindings -> clause -> unit Proofview.tactic
 
+type multi =
+  | Precisely of int
+  | UpTo of int
+  | RepeatStar
+  | RepeatPlus
+
 val general_multi_rewrite :
   evars_flag -> (bool * multi * clear_flag * delayed_open_constr_with_bindings) list ->
     clause -> (unit Proofview.tactic * conditions) option -> unit Proofview.tactic

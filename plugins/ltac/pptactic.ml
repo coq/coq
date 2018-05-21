@@ -493,7 +493,7 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_orient b = if b then mt () else str "<- "
 
-  let pr_multi = function
+  let pr_multi = let open Equality in function
     | Precisely 1 -> mt ()
     | Precisely n -> int n ++ str "!"
     | UpTo n -> int n ++ str "?"

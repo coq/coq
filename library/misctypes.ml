@@ -106,9 +106,3 @@ type rec_flag = bool       (* true = recursive        false = not recursive *)
 type advanced_flag = bool  (* true = advanced         false = basic *)
 type letin_flag = bool     (* true = use local def    false = use Leibniz *)
 type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use default *)
-
-type multi =
-  | Precisely of int
-  | UpTo of int
-  | RepeatStar
-  | RepeatPlus

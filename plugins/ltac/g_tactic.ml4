@@ -494,12 +494,12 @@ GEXTEND Gram
     | -> None ] ]
   ;
   rewriter :
-    [ [ "!"; c = constr_with_bindings_arg -> (RepeatPlus,c)
-      | ["?"| LEFTQMARK]; c = constr_with_bindings_arg -> (RepeatStar,c)
-      | n = natural; "!"; c = constr_with_bindings_arg -> (Precisely n,c)
-      |	n = natural; ["?" | LEFTQMARK]; c = constr_with_bindings_arg -> (UpTo n,c)
-      | n = natural; c = constr_with_bindings_arg -> (Precisely n,c)
-      | c = constr_with_bindings_arg -> (Precisely 1, c)
+    [ [ "!"; c = constr_with_bindings_arg -> (Equality.RepeatPlus,c)
+      | ["?"| LEFTQMARK]; c = constr_with_bindings_arg -> (Equality.RepeatStar,c)
+      | n = natural; "!"; c = constr_with_bindings_arg -> (Equality.Precisely n,c)
+      |	n = natural; ["?" | LEFTQMARK]; c = constr_with_bindings_arg -> (Equality.UpTo n,c)
+      | n = natural; c = constr_with_bindings_arg -> (Equality.Precisely n,c)
+      | c = constr_with_bindings_arg -> (Equality.Precisely 1, c)
       ] ]
   ;
   oriented_rewriter :
