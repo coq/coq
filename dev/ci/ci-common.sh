@@ -10,6 +10,10 @@ if [ -n "${GITLAB_CI}" ];
 then
     export COQBIN="$PWD/_install_ci/bin"
     export CI_BRANCH="$CI_COMMIT_REF_NAME"
+    if [[ ${CI_BRANCH#pr-} =~ ^[0-9]*$ ]]
+    then
+        export CI_PULL_REQUEST="${CI_BRANCH#pr-}"
+    fi
 else
     if [ -n "${TRAVIS}" ];
     then
@@ -20,7 +24,8 @@ else
         export CI_PULL_REQUEST="$CIRCLE_PR_NUMBER"
         export CI_BRANCH="$CIRCLE_BRANCH"
     else # assume local
-        export CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+        CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+        export CI_BRANCH
     fi
     export COQBIN="$PWD/bin"
 fi
@@ -35,10 +40,10 @@ ls "$COQBIN"
 CI_BUILD_DIR="$PWD/_build_ci"
 
 # shellcheck source=ci-basic-overlay.sh
-source "${ci_dir}/ci-basic-overlay.sh"
+. "${ci_dir}/ci-basic-overlay.sh"
 for overlay in "${ci_dir}"/user-overlays/*.sh; do
     # shellcheck source=/dev/null
-    source "${overlay}"
+    . "${overlay}"
 done
 
 mathcomp_CI_DIR="${CI_BUILD_DIR}/math-comp"
@@ -66,11 +71,6 @@ git_checkout()
     echo "${_DEST}: $(git log -1 --format='%s | %H | %cd | %aN')" )
 }
 
-checkout_mathcomp()
-{
-  git_checkout ${mathcomp_CI_BRANCH} ${mathcomp_CI_GITURL} ${1}
-}
-
 make()
 {
     # +x: add x only if defined
@@ -88,7 +88,8 @@ install_ssreflect()
 {
   echo 'Installing ssreflect' && echo -en 'travis_fold:start:ssr.install\\r'
 
-  checkout_mathcomp "${mathcomp_CI_DIR}"
+  git_checkout "${mathcomp_CI_BRANCH}" "${mathcomp_CI_GITURL}" "${mathcomp_CI_DIR}"
+
   ( cd "${mathcomp_CI_DIR}/mathcomp" && \
     sed -i.bak '/ssrtest/d'     Make && \
     sed -i.bak '/odd_order/d'   Make && \

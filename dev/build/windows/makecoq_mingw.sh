@@ -142,18 +142,22 @@ LOGS=$(pwd)/buildlogs
 # The current log target (first part of the log file name)
 LOGTARGET=other
 
+# Log command output - take log target name from command name (like log1 make => log target is "<module>-make")
 log1() {
   "$@" > >(tee "$LOGS/$LOGTARGET-$1.log" | sed -e "s/^/$LOGTARGET-$1.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1.err" | sed -e "s/^/$LOGTARGET-$1.err: /" 1>&2)
 }
 
+# Log command output - take log target name from command name and first argument (like log2 make install => log target is "<module>-make-install")
 log2() {
   "$@" > >(tee "$LOGS/$LOGTARGET-$1-$2.log" | sed -e "s/^/$LOGTARGET-$1-$2.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1-$2.err" | sed -e "s/^/$LOGTARGET-$1-$2.err: /" 1>&2)
 }
 
+# Log command output - take log target name from command name and second argument (like log_1_3 ocaml setup.ml -configure => log target is "<module>-ocaml--configure")
 log_1_3() {
   "$@" > >(tee "$LOGS/$LOGTARGET-$1-$3.log" | sed -e "s/^/$LOGTARGET-$1-$3.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1-$3.err" | sed -e "s/^/$LOGTARGET-$1-$3.err: /" 1>&2)
 }
 
+# Log command output - log target name is first argument (like logn untar tar xvaf ... => log target is "<module>-untar")
 logn() {
   LOGTARGETEX=$1
   shift
@@ -843,7 +847,7 @@ function make_ocaml {
 
 function make_ocaml_tools {
   make_findlib
-  make_menhir
+  # make_menhir
   make_camlp5
 }
 
@@ -852,7 +856,7 @@ function make_ocaml_tools {
 function make_ocaml_libs {
   make_findlib
   make_lablgtk
-  make_stdint
+  # make_stdint
 }
 
 ##### FINDLIB Ocaml library manager #####
@@ -966,6 +970,10 @@ function make_lablgtk {
     # These changes are included in dev/build/windows/patches_coq/lablgtk-2.18.3.patch
 
     log2 make world
+
+    # lablgtk does not escape FINDLIBDIR path, which can contain backslashes
+    sed -i "s|^FINDLIBDIR=.*|FINDLIBDIR=$PREFIXOCAML/libocaml/site-lib|" config.make
+
     log2 make install
     log2 make clean
     build_post
@@ -1302,7 +1310,6 @@ function get_cygwin_mingw_sources {
 
 function make_coq_installer {
   make_coq
-  make_mingw_make
   get_cygwin_mingw_sources
 
   # Prepare the file lists for the installer. We created to file list dumps of the target folder during the build:
@@ -1355,12 +1362,13 @@ function make_coq_installer {
 }
 
 ###################### ADDONS #####################
+
 function make_addon_bignums {
-  if build_prep https://github.com/coq/bignums/archive/ V8.8+beta1 zip 1; then
+  if build_prep https://github.com/coq/bignums/archive/ V8.8.0 zip 1 bignums-8.8.0; then
     # To make command lines shorter :-(
     echo 'COQ_SRC_SUBDIRS:=$(filter-out plugins/%,$(COQ_SRC_SUBDIRS)) plugins/syntax' >> Makefile.coq.local
-    logn make make all
-    logn make-install make install
+    log1 make all
+    log2 make install
     build_post
   fi
 }
