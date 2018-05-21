@@ -44,6 +44,7 @@ TO_SED_IN_BOTH=(
     -e s'/ *$//g' # the number of trailing spaces depends on how many digits percentages end up being; since this varies across runs, we remove trailing spaces
     -e s'/[0-9]*\.[0-9]*//g' # the precise timing numbers vary, so we strip them out
     -e s'/^-*$/------/g' # When none of the numbers get over 100 (or 1000, in per-file), the width of the table is different, so we normalize the number of dashes for table separators
+    -e s'/+/-/g' # some code lines don't really change, but this can show up as either -0m00.01s or +0m00.01s, so we need to normalize the signs; additionally, some N/A's show up where we expect to get -∞ on the per-line file, and so the ∞-replacement gets the sign wrong, so we must correct it
 )
 
 TO_SED_IN_PER_FILE=(
@@ -55,7 +56,6 @@ TO_SED_IN_PER_FILE=(
 TO_SED_IN_PER_LINE=(
     -e s'/0//g' # unclear whether this is actually needed above and beyond s'/[0-9]*\.[0-9]*//g'; it's been here from the start
     -e s'/  */ /g' # Sometimes 0 will show up as 0m00.s, sometimes it'll end up being more like 0m00.001s; we must strip out the spaces that result from left-aligning numbers of different widths based on how many digits Coq's [-time] gives
-    -e s'/+/-/g' # some code lines don't really change, but this can show up as either -0m00.01s or +0m00.01s, so we need to normalize the signs
     )
 
 for ext in "" .desired; do
