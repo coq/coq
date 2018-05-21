@@ -1,5 +1,5 @@
 open Names
-open Misctypes
+open Tactypes
 
 val warn_cannot_define_graph : ?loc:Loc.t -> Pp.t * Pp.t -> unit
 

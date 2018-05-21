@@ -19,6 +19,7 @@ open Environ
 open Constrexpr
 open Notation_gram
 open Tacexpr
+open Tactypes
 
 type 'a grammar_tactic_prod_item_expr =
 | TacTerm of string

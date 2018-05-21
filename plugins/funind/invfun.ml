@@ -23,7 +23,7 @@ open Tacticals
 open Tactics
 open Indfun_common
 open Tacmach
-open Misctypes
+open Tactypes
 open Termops
 open Context.Rel.Declaration
 
@@ -239,7 +239,7 @@ let prove_fun_correct evd funs_constr graphs_constr schemes lemmas_types_infos i
       List.map
 	(fun decl ->
 	   List.map
-             (fun id -> CAst.make @@ IntroNaming (IntroIdentifier id))
+             (fun id -> CAst.make @@ IntroNaming (Namegen.IntroIdentifier id))
 	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum evd (RelDecl.get_type decl)))))
 	)
 	branches
@@ -257,7 +257,7 @@ let prove_fun_correct evd funs_constr graphs_constr schemes lemmas_types_infos i
       	List.fold_right
           (fun {CAst.v=pat} acc ->
       	     match pat with
-	       | IntroNaming (IntroIdentifier id) -> id::acc
+               | IntroNaming (Namegen.IntroIdentifier id) -> id::acc
       	       | _ -> anomaly (Pp.str "Not an identifier.")
       	  )
       	  (List.nth intro_pats (pred i))

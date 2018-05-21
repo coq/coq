@@ -56,8 +56,8 @@ val find_intro_names : rel_context -> goal sigma -> Id.t list
 
 val intro                : unit Proofview.tactic
 val introf               : unit Proofview.tactic
-val intro_move        : Id.t option -> Id.t move_location -> unit Proofview.tactic
-val intro_move_avoid  : Id.t option -> Id.Set.t -> Id.t move_location -> unit Proofview.tactic
+val intro_move        : Id.t option -> Id.t Logic.move_location -> unit Proofview.tactic
+val intro_move_avoid  : Id.t option -> Id.Set.t -> Id.t Logic.move_location -> unit Proofview.tactic
 
   (** [intro_avoiding idl] acts as intro but prevents the new Id.t
      to belong to [idl] *)
@@ -117,11 +117,11 @@ val use_clear_hyp_by_default : unit -> bool
 (** {6 Introduction tactics with eliminations. } *)
 
 val intro_patterns : evars_flag -> intro_patterns -> unit Proofview.tactic
-val intro_patterns_to : evars_flag -> Id.t move_location -> intro_patterns ->
+val intro_patterns_to : evars_flag -> Id.t Logic.move_location -> intro_patterns ->
   unit Proofview.tactic
-val intro_patterns_bound_to : evars_flag -> int -> Id.t move_location -> intro_patterns ->
+val intro_patterns_bound_to : evars_flag -> int -> Id.t Logic.move_location -> intro_patterns ->
   unit Proofview.tactic
-val intro_pattern_to : evars_flag -> Id.t move_location -> delayed_open_constr intro_pattern_expr ->
+val intro_pattern_to : evars_flag -> Id.t Logic.move_location -> delayed_open_constr intro_pattern_expr ->
   unit Proofview.tactic
 
 (** Implements user-level "intros", with [] standing for "**" *)
@@ -188,7 +188,7 @@ val apply_clear_request : clear_flag -> bool -> constr -> unit Proofview.tactic
 
 val specialize    : constr with_bindings -> intro_pattern option -> unit Proofview.tactic
 
-val move_hyp      : Id.t -> Id.t move_location -> unit Proofview.tactic
+val move_hyp      : Id.t -> Id.t Logic.move_location -> unit Proofview.tactic
 val rename_hyp    : (Id.t * Id.t) list -> unit Proofview.tactic
 
 val revert        : Id.t list -> unit Proofview.tactic

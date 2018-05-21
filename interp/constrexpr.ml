@@ -10,7 +10,6 @@
 
 open Names
 open Libnames
-open Misctypes
 open Decl_kinds
 
 (** {6 Concrete syntax for terms } *)
@@ -94,11 +93,11 @@ and constr_expr_r =
                  constr_expr * constr_expr
   | CIf of constr_expr * (lname option * constr_expr option)
          * constr_expr * constr_expr
-  | CHole   of Evar_kinds.t option * intro_pattern_naming_expr * Genarg.raw_generic_argument option
+  | CHole   of Evar_kinds.t option * Namegen.intro_pattern_naming_expr * Genarg.raw_generic_argument option
   | CPatVar of Pattern.patvar
   | CEvar   of Glob_term.existential_name * (Id.t * constr_expr) list
   | CSort   of Glob_term.glob_sort
-  | CCast   of constr_expr * constr_expr cast_type
+  | CCast   of constr_expr * constr_expr Glob_term.cast_type
   | CNotation of notation * constr_notation_substitution
   | CGeneralization of binding_kind * abstraction_kind option * constr_expr
   | CPrim of prim_token

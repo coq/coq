@@ -29,6 +29,18 @@ open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
 
+(** General evar naming using intro patterns  *)
+type intro_pattern_naming_expr =
+  | IntroIdentifier of Id.t
+  | IntroFresh of Id.t
+  | IntroAnonymous
+
+let intro_pattern_naming_eq nam1 nam2 = match nam1, nam2 with
+| IntroAnonymous, IntroAnonymous -> true
+| IntroIdentifier id1, IntroIdentifier id2 -> Names.Id.equal id1 id2
+| IntroFresh id1, IntroFresh id2 -> Names.Id.equal id1 id2
+| _ -> false
+
 (**********************************************************************)
 (* Conventional names *)
 

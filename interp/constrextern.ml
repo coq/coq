@@ -17,6 +17,7 @@ open Nameops
 open Termops
 open Libnames
 open Globnames
+open Namegen
 open Impargs
 open CAst
 open Constrexpr
@@ -719,7 +720,7 @@ let extended_glob_local_binder_of_decl loc = function
   | (p,bk,None,t) -> GLocalAssum (p,bk,t)
   | (p,bk,Some x, t) ->
     match DAst.get t with
-    | GHole (_, Misctypes.IntroAnonymous, None) -> GLocalDef (p,bk,x,None)
+    | GHole (_, IntroAnonymous, None) -> GLocalDef (p,bk,x,None)
     | _ -> GLocalDef (p,bk,x,Some t)
 
 let extended_glob_local_binder_of_decl ?loc u = DAst.make ?loc (extended_glob_local_binder_of_decl loc u)
@@ -754,13 +755,13 @@ let rec extern inctx scopes vars r =
 
   | GVar id -> CRef (make ?loc @@ Ident id,None)
 
-  | GEvar (n,[]) when !print_meta_as_hole -> CHole (None, Misctypes.IntroAnonymous, None)
+  | GEvar (n,[]) when !print_meta_as_hole -> CHole (None, IntroAnonymous, None)
 
   | GEvar (n,l) ->
       extern_evar n (List.map (on_snd (extern false scopes vars)) l)
 
   | GPatVar kind ->
-      if !print_meta_as_hole then CHole (None, Misctypes.IntroAnonymous, None) else
+      if !print_meta_as_hole then CHole (None, IntroAnonymous, None) else
        (match kind with
          | Evar_kinds.SecondOrderPatVar n -> CPatVar n
          | Evar_kinds.FirstOrderPatVar n -> CEvar (n,[]))
@@ -916,7 +917,7 @@ let rec extern inctx scopes vars r =
 
   | GCast (c, c') ->
       CCast (sub_extern true scopes vars c,
-	     Miscops.map_cast_type (extern_typ scopes vars) c')
+             map_cast_type (extern_typ scopes vars) c')
   | GProj (p, c) ->
     let pr = extern_reference ?loc Id.Set.empty (ConstRef (Projection.constant p)) in
     CProj (pr, sub_extern inctx scopes vars c)
@@ -1159,7 +1160,7 @@ let extern_closed_glob ?lax goal_concl_style env sigma t =
 
 let any_any_branch =
   (* | _ => _ *)
-  CAst.make ([],[DAst.make @@ PatVar Anonymous], DAst.make @@ GHole (Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None))
+  CAst.make ([],[DAst.make @@ PatVar Anonymous], DAst.make @@ GHole (Evar_kinds.InternalHole,IntroAnonymous,None))
 
 let compute_displayed_name_in_pattern sigma avoid na c =
   let open Namegen in
@@ -1183,7 +1184,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
 	    anomaly ~label:"glob_constr_of_pattern" (Pp.str "index to an anonymous variable.")
       with Not_found -> Id.of_string ("_UNBOUND_REL_"^(string_of_int n)) in
       GVar id
-  | PMeta None -> GHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous,None)
+  | PMeta None -> GHole (Evar_kinds.InternalHole, IntroAnonymous,None)
   | PMeta (Some n) -> GPatVar (Evar_kinds.FirstOrderPatVar n)
   | PProj (p,c) -> GApp (DAst.make @@ GRef (ConstRef (Projection.constant p),None),
 			 [glob_of_pat avoid env sigma c])

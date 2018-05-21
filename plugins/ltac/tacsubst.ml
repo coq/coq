@@ -15,6 +15,7 @@ open Genarg
 open Stdarg
 open Tacarg
 open Misctypes
+open Tactypes
 open Globnames
 open Genredexpr
 open Patternops

@@ -29,6 +29,8 @@ open Extraargs
 open Ppconstr
 
 open Misctypes
+open Namegen
+open Tactypes
 open Decl_kinds
 open Constrexpr
 open Constrexpr_ops
@@ -543,7 +545,7 @@ END
 
 let remove_loc x = x.CAst.v
 
-let ipat_of_intro_pattern p = Misctypes.(
+let ipat_of_intro_pattern p = Tactypes.(
   let rec ipat_of_intro_pattern = function
     | IntroNaming (IntroIdentifier id) -> IPatId id
     | IntroAction IntroWildcard -> IPatAnon Drop
@@ -595,16 +597,15 @@ let intern_ipats ist = List.map (intern_ipat ist)
 
 let interp_intro_pattern = interp_wit wit_intro_pattern
 
-let interp_introid ist gl id = Misctypes.(
+let interp_introid ist gl id =
  try IntroNaming (IntroIdentifier (hyp_id (snd (interp_hyp ist gl (SsrHyp (Loc.tag id))))))
  with _ -> (snd (interp_intro_pattern ist gl (CAst.make @@ IntroNaming (IntroIdentifier id)))).CAst.v
-)
 
 let get_intro_id = function
   | IntroNaming (IntroIdentifier id) -> id
   | _ -> assert false
 
-let rec add_intro_pattern_hyps ipat hyps = Misctypes.(
+let rec add_intro_pattern_hyps ipat hyps =
   let {CAst.loc=loc;v=ipat} = ipat in
   match ipat with
   | IntroNaming (IntroIdentifier id) ->
@@ -623,7 +624,6 @@ let rec add_intro_pattern_hyps ipat hyps = Misctypes.(
   | IntroForthcoming _ -> 
     (* As in ipat_of_intro_pattern, was unable to determine which kind
       of ipat interp_introid could return [HH] *) assert false
-)
 
 (* We interp the ipat using the standard ltac machinery for ids, since
  * we have no clue what a name could be bound to (maybe another ipat) *)
@@ -1064,7 +1064,7 @@ let rec format_constr_expr h0 c0 = let open CAst in match h0, c0 with
   | BFdef :: h, { v = CLetIn({CAst.v=x}, v, oty, c) } ->
     let bs, c' = format_constr_expr h c in
     Bdef (x, oty, v) :: bs, c'
-  | [BFcast], { v = CCast (c, CastConv t) } ->
+  | [BFcast], { v = CCast (c, Glob_term.CastConv t) } ->
     [Bcast t], c
   | BFrec (has_str, has_cast) :: h, 
     { v = CFix ( _, [_, (Some locn, CStructRec), bl, t, c]) } ->
@@ -1093,7 +1093,7 @@ let wit_ssrfwdfmt = add_genarg "ssrfwdfmt" pr_fwdfmt
 
 let mkFwdVal fk c = ((fk, []), c)
 let mkssrFwdVal fk c = ((fk, []), (c,None))
-let dC t = CastConv t
+let dC t = Glob_term.CastConv t
 
 let same_ist { interp_env = x } { interp_env = y } =
   match x,y with
@@ -1210,8 +1210,8 @@ let push_binders c2 bs =
   | [] -> c
   | _ -> anomaly "binder not a lambda nor a let in" in
   match c2 with
-  | { loc; v = CCast (ct, CastConv cty) } ->
-      CAst.make ?loc @@ (CCast (loop false ct bs, CastConv (loop true cty bs)))
+  | { loc; v = CCast (ct, Glob_term.CastConv cty) } ->
+      CAst.make ?loc @@ (CCast (loop false ct bs, Glob_term.CastConv (loop true cty bs)))
   | ct -> loop false ct bs
 
 let rec fix_binders = let open CAst in function

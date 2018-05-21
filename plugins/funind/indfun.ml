@@ -10,7 +10,7 @@ open Libnames
 open Globnames
 open Glob_term
 open Declarations
-open Misctypes
+open Tactypes
 open Decl_kinds
 
 module RelDecl = Context.Rel.Declaration
@@ -782,7 +782,7 @@ let rec add_args id new_args = CAst.map (function
   | CSort _ as b -> b
   | CCast(b1,b2)  ->
       CCast(add_args id new_args b1,
-	    Miscops.map_cast_type (add_args id new_args) b2)
+            Glob_ops.map_cast_type (add_args id new_args) b2)
   | CRecord pars ->
       CRecord (List.map (fun (e,o) -> e, add_args id new_args o) pars)
   | CNotation _ -> anomaly ~label:"add_args " (Pp.str "CNotation.")

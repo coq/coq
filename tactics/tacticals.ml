@@ -159,8 +159,6 @@ type branch_assumptions = {
   ba        : branch_args;       (* the branch args *)
   assums    : named_context}   (* the list of assumptions introduced *)
 
-open Misctypes
-
 let fix_empty_or_and_pattern nv l =
   (* 1- The syntax does not distinguish between "[ ]" for one clause with no
      names and "[ ]" for no clause at all *)
@@ -194,7 +192,7 @@ let check_or_and_pattern_size ?loc check_and names branchsigns =
         if not (Int.equal p p1 || Int.equal p p2) then err1 p1 p2;
         if Int.equal p p1 then
           IntroAndPattern
-            (List.extend branchsigns.(0) (CAst.make @@ IntroNaming IntroAnonymous) l)
+            (List.extend branchsigns.(0) (CAst.make @@ IntroNaming Namegen.IntroAnonymous) l)
         else
           names
       else

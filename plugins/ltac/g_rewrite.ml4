@@ -11,7 +11,6 @@
 (* Syntax for rewriting with strategies *)
 
 open Names
-open Misctypes
 open Locus
 open Constrexpr
 open Glob_term
@@ -20,6 +19,7 @@ open Extraargs
 open Tacmach
 open Rewrite
 open Stdarg
+open Tactypes
 open Pcoq.Prim
 open Pcoq.Constr
 open Pvernac.Vernac_

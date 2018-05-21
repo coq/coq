@@ -11,7 +11,7 @@
 open Tacexpr
 open Mod_subst
 open Genarg
-open Misctypes
+open Tactypes
 
 (** Substitution of tactics at module closing time *)
 

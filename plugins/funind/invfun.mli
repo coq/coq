@@ -9,7 +9,7 @@
 (************************************************************************)
 
 val invfun :
-  Misctypes.quantified_hypothesis ->
+  Tactypes.quantified_hypothesis ->
   Names.GlobRef.t option ->
   Evar.t Evd.sigma -> Evar.t list Evd.sigma
 val derive_correctness :

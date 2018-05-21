@@ -263,7 +263,7 @@ open Evar_kinds
 let mkPattern c = snd (Patternops.pattern_of_glob_constr c)
 let mkGApp f args = DAst.make @@ GApp (f, args)
 let mkGHole = DAst.make @@
-  GHole (QuestionMark (Define false,Anonymous), Misctypes.IntroAnonymous, None)
+  GHole (QuestionMark (Define false,Anonymous), Namegen.IntroAnonymous, None)
 let mkGProd id c1 c2 = DAst.make @@
   GProd (Name (Id.of_string id), Explicit, c1, c2)
 let mkGArrow c1 c2 = DAst.make @@

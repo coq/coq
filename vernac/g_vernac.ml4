@@ -12,6 +12,7 @@ open Pp
 open CErrors
 open Util
 open Names
+open Glob_term
 open Vernacexpr
 open Constrexpr
 open Constrexpr_ops
@@ -20,6 +21,7 @@ open Decl_kinds
 open Declaremods
 open Declarations
 open Misctypes
+open Namegen
 open Tok (* necessary for camlp5 *)
 
 open Pcoq
@@ -338,7 +340,7 @@ GEXTEND Gram
   ;
   type_cstr:
     [ [ ":"; c=lconstr -> c
-      | -> CAst.make ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None) ] ]
+      | -> CAst.make ~loc:!@loc @@ CHole (None, IntroAnonymous, None) ] ]
   ;
   (* Inductive schemes *)
   scheme:
@@ -394,7 +396,7 @@ GEXTEND Gram
 	     (None,DefExpr(id,mkCLambdaN ~loc:!@loc l b,None)) ] ]
   ;
   record_binder:
-    [ [ id = name -> (None,AssumExpr(id, CAst.make ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None)))
+    [ [ id = name -> (None,AssumExpr(id, CAst.make ~loc:!@loc @@ CHole (None, IntroAnonymous, None)))
       | id = name; f = record_binder_body -> f id ] ]
   ;
   assum_list:
@@ -413,7 +415,7 @@ GEXTEND Gram
       t= [ coe = of_type_with_opt_coercion; c = lconstr ->
 	            fun l id -> (not (Option.is_empty coe),(id,mkCProdN ~loc:!@loc l c))
             |  ->
-		 fun l id -> (false,(id,mkCProdN ~loc:!@loc l (CAst.make ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None)))) ]
+                 fun l id -> (false,(id,mkCProdN ~loc:!@loc l (CAst.make ~loc:!@loc @@ CHole (None, IntroAnonymous, None)))) ]
 	 -> t l
      ]]
 ;

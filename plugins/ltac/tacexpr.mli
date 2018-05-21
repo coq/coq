@@ -17,6 +17,7 @@ open Genarg
 open Pattern
 open Misctypes
 open Locus
+open Tactypes
 
 type ltac_constant = KerName.t
 
@@ -75,7 +76,7 @@ type 'id message_token =
 
 type ('dconstr,'id) induction_clause =
     'dconstr with_bindings Tactics.destruction_arg *
-    (intro_pattern_naming_expr CAst.t option (* eqn:... *)
+    (Namegen.intro_pattern_naming_expr CAst.t option (* eqn:... *)
     * 'dconstr or_and_intro_pattern_expr CAst.t or_var option) (* as ... *)
     * 'id clause_expr option (* in ... *)
 
@@ -134,7 +135,7 @@ type delayed_open_constr = EConstr.constr delayed_open
 type intro_pattern = delayed_open_constr intro_pattern_expr CAst.t
 type intro_patterns = delayed_open_constr intro_pattern_expr CAst.t list
 type or_and_intro_pattern = delayed_open_constr or_and_intro_pattern_expr CAst.t
-type intro_pattern_naming = intro_pattern_naming_expr CAst.t
+type intro_pattern_naming = Namegen.intro_pattern_naming_expr CAst.t
 
 (** Generic expressions for atomic tactics *)
 
@@ -152,7 +153,7 @@ type 'a gen_atomic_tactic_expr =
       'dtrm intro_pattern_expr CAst.t option * 'trm
   | TacGeneralize of ('trm with_occurrences * Name.t) list
   | TacLetTac of evars_flag * Name.t * 'trm * 'nam clause_expr * letin_flag *
-      intro_pattern_naming_expr CAst.t option
+      Namegen.intro_pattern_naming_expr CAst.t option
 
   (* Derived basic tactics *)
   | TacInductionDestruct of

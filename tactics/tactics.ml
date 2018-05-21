@@ -44,6 +44,7 @@ open Unification
 open Locus
 open Locusops
 open Misctypes
+open Tactypes
 open Proofview.Notations
 open Context.Named.Declaration
 

@@ -10,7 +10,6 @@ open Indfun_common
 open CErrors
 open Util
 open Glob_termops
-open Misctypes
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration

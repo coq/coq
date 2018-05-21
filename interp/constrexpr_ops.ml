@@ -14,8 +14,9 @@ open CAst
 open Names
 open Nameops
 open Libnames
+open Namegen
+open Glob_term
 open Constrexpr
-open Misctypes
 open Decl_kinds
 
 (***********************)
@@ -161,7 +162,7 @@ let rec constr_expr_eq e1 e2 =
     | CEvar (id1, c1), CEvar (id2, c2) ->
       Id.equal id1 id2 && List.equal instance_eq c1 c2
     | CSort s1, CSort s2 ->
-      Miscops.glob_sort_eq s1 s2
+      Glob_ops.glob_sort_eq s1 s2
   | CCast(t1,c1), CCast(t2,c2) ->
     constr_expr_eq t1 t2 && cast_expr_eq c1 c2
     | CNotation(n1, s1), CNotation(n2, s2) ->
@@ -395,7 +396,7 @@ let map_constr_expr_with_binders g f e = CAst.map (function
       let (e,bl) = map_local_binders f g e bl in CLambdaN (bl,f e b)
     | CLetIn (na,a,t,b) ->
       CLetIn (na,f e a,Option.map (f e) t,f (Name.fold_right g (na.CAst.v) e) b)
-    | CCast (a,c) -> CCast (f e a, Miscops.map_cast_type (f e) c)
+    | CCast (a,c) -> CCast (f e a, Glob_ops.map_cast_type (f e) c)
     | CNotation (n,(l,ll,bl,bll)) ->
       (* This is an approximation because we don't know what binds what *)
       CNotation (n,(List.map (f e) l,List.map (List.map (f e)) ll, bl,
@@ -545,7 +546,7 @@ let coerce_to_id = function
 
 let coerce_to_name = function
   | { CAst.loc; v = CRef ({v=Ident id},None) } -> CAst.make ?loc @@ Name id
-  | { CAst.loc; v = CHole (None,Misctypes.IntroAnonymous,None) } -> CAst.make ?loc Anonymous
+  | { CAst.loc; v = CHole (None,IntroAnonymous,None) } -> CAst.make ?loc Anonymous
   | { CAst.loc; _ } -> CErrors.user_err ?loc ~hdr:"coerce_to_name"
                          (str "This expression should be a name.")
 
@@ -569,7 +570,7 @@ let mkAppPattern ?loc p lp =
 let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
   | CRef (r,None) ->
      CPatAtom (Some r)
-  | CHole (None,Misctypes.IntroAnonymous,None) ->
+  | CHole (None,IntroAnonymous,None) ->
      CPatAtom None
   | CLetIn ({CAst.loc;v=Name id},b,None,{ CAst.v = CRef ({v=Ident id'},None) }) when Id.equal id id' ->
       CPatAlias (coerce_to_cases_pattern_expr b, CAst.(make ?loc @@ Name id))

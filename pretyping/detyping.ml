@@ -27,7 +27,6 @@ open Libnames
 open Globnames
 open Nametab
 open Mod_subst
-open Misctypes
 open Decl_kinds
 open Context.Named.Declaration
 open Ltac_pretype
@@ -1027,7 +1026,7 @@ let rec subst_glob_constr subst = DAst.map (function
 
   | GCast (r1,k) as raw ->
       let r1' = subst_glob_constr subst r1 in
-      let k' = Miscops.smartmap_cast_type (subst_glob_constr subst) k in
+      let k' = smartmap_cast_type (subst_glob_constr subst) k in
       if r1' == r1 && k' == k then raw else GCast (r1',k')
 
   | GProj (p,c) as raw ->

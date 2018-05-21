@@ -24,7 +24,8 @@ open Globnames
 open Inductiveops
 open Tactics
 open Ind_tables
-open Misctypes
+open Namegen
+open Tactypes
 open Proofview.Notations
 
 module RelDecl = Context.Rel.Declaration

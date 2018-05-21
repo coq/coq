@@ -10,55 +10,6 @@
 
 open Names
 
-(** Introduction patterns *)
-
-type 'constr intro_pattern_expr =
-  | IntroForthcoming of bool
-  | IntroNaming of intro_pattern_naming_expr
-  | IntroAction of 'constr intro_pattern_action_expr
-and intro_pattern_naming_expr =
-  | IntroIdentifier of Id.t
-  | IntroFresh of Id.t
-  | IntroAnonymous
-and 'constr intro_pattern_action_expr =
-  | IntroWildcard
-  | IntroOrAndPattern of 'constr or_and_intro_pattern_expr
-  | IntroInjection of ('constr intro_pattern_expr) CAst.t list
-  | IntroApplyOn of 'constr CAst.t * 'constr intro_pattern_expr CAst.t
-  | IntroRewrite of bool
-and 'constr or_and_intro_pattern_expr =
-  | IntroOrPattern of ('constr intro_pattern_expr) CAst.t list list
-  | IntroAndPattern of ('constr intro_pattern_expr) CAst.t list
-
-(** Move destination for hypothesis *)
-
-type 'id move_location =
-  | MoveAfter of 'id
-  | MoveBefore of 'id
-  | MoveFirst
-  | MoveLast (** can be seen as "no move" when doing intro *)
-
-(** Casts *)
-
-type 'a cast_type =
-  | CastConv of 'a
-  | CastVM of 'a
-  | CastCoerce (** Cast to a base type (eg, an underlying inductive type) *)
-  | CastNative of 'a
-
-(** Bindings *)
-
-type quantified_hypothesis = AnonHyp of int | NamedHyp of Id.t
-
-type 'a explicit_bindings = (quantified_hypothesis * 'a) CAst.t list
-
-type 'a bindings =
-  | ImplicitBindings of 'a list
-  | ExplicitBindings of 'a explicit_bindings
-  | NoBindings
-
-type 'a with_bindings = 'a * 'a bindings
-
 (** Some utility types for parsing *)
 
 type 'a or_var =

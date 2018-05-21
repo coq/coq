@@ -16,6 +16,7 @@ open Constrexpr
 open Tacexpr
 open Genredexpr
 open Misctypes
+open Tactypes
 
 val open_constr : constr_expr Gram.entry
 val constr_with_bindings : constr_expr with_bindings Gram.entry

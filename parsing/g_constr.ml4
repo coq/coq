@@ -16,7 +16,7 @@ open Constrexpr
 open Constrexpr_ops
 open Util
 open Tok
-open Misctypes
+open Namegen
 open Decl_kinds
 
 open Pcoq

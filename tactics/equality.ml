@@ -43,6 +43,7 @@ open Eqschemes
 open Locus
 open Locusops
 open Misctypes
+open Tactypes
 open Proofview.Notations
 open Unification
 open Context.Named.Declaration

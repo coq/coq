@@ -15,6 +15,7 @@ open Tacexpr
 open Genarg
 open Redexpr
 open Misctypes
+open Tactypes
 
 val ltac_trace_info : ltac_trace Exninfo.t
 

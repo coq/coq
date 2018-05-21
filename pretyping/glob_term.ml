@@ -18,7 +18,6 @@
 
 open Names
 open Decl_kinds
-open Misctypes
 
 type existential_name = Id.t
 
@@ -40,6 +39,14 @@ type glob_constraint = glob_level * Univ.constraint_type * glob_level
 
 type sort_info = (Libnames.reference * int) option list
 type glob_sort = sort_info glob_sort_gen
+
+(** Casts *)
+
+type 'a cast_type =
+  | CastConv of 'a
+  | CastVM of 'a
+  | CastCoerce (** Cast to a base type (eg, an underlying inductive type) *)
+  | CastNative of 'a
 
 (**  The kind of patterns that occurs in "match ... with ... end"
 
@@ -73,7 +80,7 @@ type 'a glob_constr_r =
   | GRec  of 'a fix_kind_g * Id.t array * 'a glob_decl_g list array *
              'a glob_constr_g array * 'a glob_constr_g array
   | GSort of glob_sort
-  | GHole of Evar_kinds.t * intro_pattern_naming_expr * Genarg.glob_generic_argument option
+  | GHole of Evar_kinds.t * Namegen.intro_pattern_naming_expr * Genarg.glob_generic_argument option
   | GCast of 'a glob_constr_g * 'a glob_constr_g cast_type
   | GProj of Projection.t * 'a glob_constr_g
 and 'a glob_constr_g = ('a glob_constr_r, 'a) DAst.t

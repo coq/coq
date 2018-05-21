@@ -145,7 +145,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 	  (fun avoid (clname, _) ->
 	    match clname with
             | Some cl ->
-		let t = CAst.make @@ CHole (None, Misctypes.IntroAnonymous, None) in
+                let t = CAst.make @@ CHole (None, Namegen.IntroAnonymous, None) in
 		  t, avoid
 	    | None -> failwith ("new instance: under-applied typeclass"))
 	  cl
@@ -255,7 +255,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 			   k.cl_projs;
 			 c :: props, rest'
 		     with Not_found ->
-		       ((CAst.make @@ CHole (None(* Some Evar_kinds.GoalEvar *), Misctypes.IntroAnonymous, None)) :: props), rest
+                       ((CAst.make @@ CHole (None(* Some Evar_kinds.GoalEvar *), Namegen.IntroAnonymous, None)) :: props), rest
 		   else props, rest)
 		([], props) k.cl_props
 	    in

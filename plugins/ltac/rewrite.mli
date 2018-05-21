@@ -12,9 +12,9 @@ open Names
 open Environ
 open EConstr
 open Constrexpr
-open Tacexpr
-open Misctypes
 open Evd
+open Tactypes
+open Tacexpr
 open Tacinterp
 
 (** TODO: document and clean me! *)

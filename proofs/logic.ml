@@ -23,7 +23,6 @@ open Typing
 open Proof_type
 open Type_errors
 open Retyping
-open Misctypes
 
 module NamedDecl = Context.Named.Declaration
 
@@ -185,6 +184,22 @@ let check_decl_position env sigma sign d =
  * on the right side [right] if [toleft=false].
  * If [with_dep] then dependent hypotheses are moved accordingly. *)
 
+(** Move destination for hypothesis *)
+
+type 'id move_location =
+  | MoveAfter of 'id
+  | MoveBefore of 'id
+  | MoveFirst
+  | MoveLast (** can be seen as "no move" when doing intro *)
+
+(** Printing of [move_location] *)
+
+let pr_move_location pr_id = function
+  | MoveAfter id -> brk(1,1) ++ str "after " ++ pr_id id
+  | MoveBefore id -> brk(1,1) ++ str "before " ++ pr_id id
+  | MoveFirst -> str " at top"
+  | MoveLast -> str " at bottom"
+
 let move_location_eq m1 m2 = match m1, m2 with
 | MoveAfter id1, MoveAfter id2 -> Id.equal id1 id2
 | MoveBefore id1, MoveBefore id2 -> Id.equal id1 id2
@@ -236,7 +251,7 @@ let move_hyp sigma toleft (left,declfrom,right) hto =
 	      (first, d::middle)
             else
 	      user_err ~hdr:"move_hyp" (str "Cannot move " ++ Id.print (NamedDecl.get_id declfrom) ++
-	        Miscprint.pr_move_location Id.print hto ++
+                pr_move_location Id.print hto ++
 	        str (if toleft then ": it occurs in the type of " else ": it depends on ")
 	        ++ Id.print hyp ++ str ".")
           else

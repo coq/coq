@@ -13,6 +13,8 @@ open Names
 open Constr
 open EConstr
 open Misctypes
+open Namegen
+open Tactypes
 open Genarg
 open Stdarg
 open Geninterp

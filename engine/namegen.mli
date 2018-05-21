@@ -15,6 +15,16 @@ open Environ
 open Evd
 open EConstr
 
+(** General evar naming using intro patterns  *)
+type intro_pattern_naming_expr =
+  | IntroIdentifier of Id.t
+  | IntroFresh of Id.t
+  | IntroAnonymous
+
+(** Equalities on [intro_pattern_naming] *)
+val intro_pattern_naming_eq :
+  intro_pattern_naming_expr -> intro_pattern_naming_expr -> bool
+
 (*********************************************************************
    Conventional default names *)
 

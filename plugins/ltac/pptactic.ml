@@ -20,6 +20,7 @@ open Stdarg
 open Libnames
 open Notation_gram
 open Misctypes
+open Tactypes
 open Locus
 open Decl_kinds
 open Genredexpr
@@ -749,7 +750,7 @@ let pr_goal_selector ~toplevel s =
         | TacIntroPattern (ev,(_::_ as p)) ->
            hov 1 (primitive (if ev then "eintros" else "intros") ++
                     (match p with
-                    | [{CAst.v=Misctypes.IntroForthcoming false}] -> mt ()
+                    | [{CAst.v=IntroForthcoming false}] -> mt ()
                     | _ -> spc () ++ prlist_with_sep spc (Miscprint.pr_intro_pattern pr.pr_dconstr) p))
         | TacApply (a,ev,cb,inhyp) ->
           hov 1 (

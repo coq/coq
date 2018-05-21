@@ -12,12 +12,14 @@ open Pp
 open CErrors
 open Util
 open Names
+open Namegen
 open Tacexpr
 open Genredexpr
 open Constrexpr
 open Libnames
 open Tok
 open Misctypes
+open Tactypes
 open Locus
 open Decl_kinds
 

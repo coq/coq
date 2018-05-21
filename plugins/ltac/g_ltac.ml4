@@ -12,9 +12,11 @@ DECLARE PLUGIN "ltac_plugin"
 
 open Util
 open Pp
+open Glob_term
 open Constrexpr
 open Tacexpr
 open Misctypes
+open Namegen
 open Genarg
 open Genredexpr
 open Tok (* necessary for camlp5 *)

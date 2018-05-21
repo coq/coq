@@ -11,7 +11,7 @@
 open Genarg
 open Tacexpr
 open Constrexpr
-open Misctypes
+open Tactypes
 
 (** Generic arguments based on Ltac. *)
 

@@ -2103,7 +2103,7 @@ let mk_JMeq_refl evdref typ x =
 
 let hole na = DAst.make @@
   GHole (Evar_kinds.QuestionMark (Evar_kinds.Define false,na),
-         Misctypes.IntroAnonymous, None)
+         IntroAnonymous, None)
 
 let constr_of_pat env evdref arsign pat avoid =
   let rec typ env (ty, realargs) pat avoid =

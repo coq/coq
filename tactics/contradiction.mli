@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open EConstr
-open Misctypes
+open Tactypes
 
 val absurd                      : constr -> unit Proofview.tactic
 val contradiction               : constr with_bindings option -> unit Proofview.tactic

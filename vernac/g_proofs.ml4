@@ -8,10 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Glob_term
 open Constrexpr
 open Vernacexpr
 open Proof_global
-open Misctypes
 
 open Pcoq
 open Pcoq.Prim
