@@ -749,6 +749,9 @@ module GlobRef : sig
 
 end
 
+type global_reference = GlobRef.t
+[@@ocaml.deprecated "Alias for [GlobRef.t]"]
+
 (** Better to have it here that in Closure, since required in grammar.cma *)
 (* XXX: Move to a module *)
 type evaluable_global_reference =

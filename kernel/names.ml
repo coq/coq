@@ -906,6 +906,9 @@ module GlobRef = struct
 
 end
 
+type global_reference = GlobRef.t
+[@@ocaml.deprecated "Alias for [GlobRef.t]"]
+
 type evaluable_global_reference =
   | EvalVarRef of Id.t
   | EvalConstRef of Constant.t
