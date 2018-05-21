@@ -126,8 +126,8 @@ let compare e1 e2 = match e1, e2 with
 | FVrel r1, FVrel r2 -> Int.compare r1 r2
 | FVrel _, (FVuniv_var _ | FVevar _) -> -1
 | FVuniv_var i1, FVuniv_var i2 -> Int.compare i1 i2
-| FVuniv_var i1, (FVnamed _ | FVrel _) -> 1
-| FVuniv_var i1, FVevar _ -> -1
+| FVuniv_var _i1, (FVnamed _ | FVrel _) -> 1
+| FVuniv_var _i1, FVevar _ -> -1
 | FVevar _, (FVnamed _ | FVrel _ | FVuniv_var _) -> 1
 | FVevar e1, FVevar e2 -> Evar.compare e1 e2
 

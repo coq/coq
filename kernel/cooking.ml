@@ -91,7 +91,7 @@ let update_case_info cache ci modlist =
   try
     let ind, n =
       match share cache (IndRef ci.ci_ind) modlist with
-      | (IndRef f,(u,l)) -> (f, Array.length l)
+      | (IndRef f,(_u,l)) -> (f, Array.length l)
       | _ -> assert false in
     { ci with ci_ind = ind; ci_npar = ci.ci_npar + n }
   with Not_found ->

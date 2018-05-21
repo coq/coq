@@ -194,7 +194,7 @@ let check_universes_invariants g =
   UMap.iter (fun l u ->
     match u with
     | Canonical u ->
-      UMap.iter (fun v strict ->
+      UMap.iter (fun v _strict ->
           incr n_edges;
           let v = repr g v in
           assert (topo_compare u v = -1);
@@ -435,7 +435,7 @@ let reorder g u v =
     | n0::q0 ->
       (* Computing new root. *)
       let root, rank_rest =
-        List.fold_left (fun ((best, rank_rest) as acc) n ->
+        List.fold_left (fun ((best, _rank_rest) as acc) n ->
           if n.rank >= best.rank then n, best.rank else acc)
           (n0, min_int) q0
       in
@@ -809,7 +809,7 @@ let normalize_universes g =
   in
   UMap.fold (fun _ u g ->
     match u with
-    | Equiv u -> g
+    | Equiv _u -> g
     | Canonical u ->
       let _, u, g = get_ltle g u in
       let _, _, g = get_gtge g u in
@@ -821,7 +821,7 @@ let constraints_of_universes g =
   let uf = UF.create () in
   let constraints_of u v acc =
     match v with
-    | Canonical {univ=u; ltle} ->
+    | Canonical {univ=u; ltle; _} ->
       UMap.fold (fun v strict acc->
         let typ = if strict then Lt else Le in
         Constraint.add (u,typ,v) acc) ltle acc
@@ -943,7 +943,7 @@ let check_eq_instances g t1 t2 =
 (** Pretty-printing *)
 
 let pr_arc prl = function
-  | _, Canonical {univ=u; ltle} ->
+  | _, Canonical {univ=u; ltle; _} ->
     if UMap.is_empty ltle then mt ()
     else
       prl u ++ str " " ++
@@ -963,7 +963,7 @@ let pr_universes prl g =
 
 let dump_universes output g =
   let dump_arc u = function
-    | Canonical {univ=u; ltle} ->
+    | Canonical {univ=u; ltle; _} ->
         let u_str = Level.to_string u in
         UMap.iter (fun v strict ->
           let typ = if strict then Lt else Le in

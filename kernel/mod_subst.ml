@@ -319,12 +319,12 @@ let subst_con sub cst =
 let subst_con_kn sub con =
   subst_con sub (con,Univ.Instance.empty)
 
-let subst_pcon sub (con,u as pcon) = 
-  try let con', can = subst_con0 sub pcon in 
+let subst_pcon sub (_con,u as pcon) =
+  try let con', _can = subst_con0 sub pcon in
 	con',u
   with No_subst -> pcon
 
-let subst_pcon_term sub (con,u as pcon) = 
+let subst_pcon_term sub (_con,u as pcon) =
   try let con', can = subst_con0 sub pcon in 
 	(con',u), can
   with No_subst -> pcon, mkConstU pcon
@@ -441,7 +441,7 @@ let replace_mp_in_kn mpfrom mpto kn =
 let rec mp_in_mp mp mp1 =
   match mp1 with
     | _ when ModPath.equal mp1 mp -> true
-    | MPdot (mp2,l) -> mp_in_mp mp mp2
+    | MPdot (mp2,_l) -> mp_in_mp mp mp2
     | _ -> false
 
 let subset_prefixed_by mp resolver =

@@ -25,9 +25,9 @@ let rec conv_val env pb lvl v1 v2 cu =
     | Vfun f1, Vfun f2 ->
 	let v = mk_rel_accu lvl in
 	conv_val env CONV (lvl+1) (f1 v) (f2 v) cu
-    | Vfun f1, _ ->
+    | Vfun _f1, _ ->
 	conv_val env CONV lvl v1 (fun x -> v2 x) cu
-    | _, Vfun f2 ->
+    | _, Vfun _f2 ->
 	conv_val env CONV lvl (fun x -> v1 x) v2 cu
     | Vaccu k1, Vaccu k2 ->
 	conv_accu env pb lvl k1 k2 cu
@@ -110,7 +110,7 @@ and conv_atom env pb lvl a1 a2 cu =
 	else
 	  if not (Int.equal (Array.length f1) (Array.length f2)) then raise NotConvertible
 	  else conv_fix env lvl t1 f1 t2 f2 cu 
-    | Aprod(_,d1,c1), Aprod(_,d2,c2) ->
+    | Aprod(_,d1,_c1), Aprod(_,d2,_c2) ->
        let cu = conv_val env CONV lvl d1 d2 cu in
        let v = mk_rel_accu lvl in
        conv_val env pb (lvl + 1) (d1 v) (d2 v) cu

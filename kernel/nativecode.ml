@@ -1007,7 +1007,7 @@ let compile_prim decl cond paux =
  *)
   let rec opt_prim_aux paux =
     match paux with
-    | PAprim(prefix, kn, op, args) ->
+    | PAprim(_prefix, _kn, op, args) ->
 	let args = Array.map opt_prim_aux args in
 	app_prim (Coq_primitive(op,None)) args
 (*
@@ -1071,7 +1071,7 @@ let ml_of_instance instance u =
   match t with
   | Lrel(id ,i) -> get_rel env id i
   | Lvar id -> get_var env id
-  | Lmeta(mv,ty) ->
+  | Lmeta(mv,_ty) ->
      let tyn = fresh_lname Anonymous in
      let i = push_symbol (SymbMeta mv) in
      MLapp(MLprimitive Mk_meta, [|get_meta_code i; MLlocal tyn|])
@@ -1184,7 +1184,7 @@ let ml_of_instance instance u =
       let lf,env_n = push_rels (empty_env env.env_univ ()) ids in
       let t_params = Array.make ndef [||] in
       let t_norm_f = Array.make ndef (Gnorm (l,-1)) in
-      let mk_let envi (id,def) t = MLlet (id,def,t) in
+      let mk_let _envi (id,def) t = MLlet (id,def,t) in
       let mk_lam_or_let (params,lets,env) (id,def) =
         let ln,env' = push_rel env id in
         match def with
@@ -1217,7 +1217,7 @@ let ml_of_instance instance u =
          (Array.map (fun g -> mkMLapp (MLglobal g) fv_args') t_norm_f) in
       (* Compilation of fix *)
       let fv_args = fv_args env fvn fvr in      
-      let lf, env = push_rels env ids in
+      let lf, _env = push_rels env ids in
       let lf_args = Array.map (fun id -> MLlocal id) lf in
       let mk_norm = MLapp(MLglobal norm, fv_args) in
       let mkrec i lname = 
@@ -1272,9 +1272,9 @@ let ml_of_instance instance u =
       let mk_norm = MLapp(MLglobal norm, fv_args) in
       let lnorm = fresh_lname Anonymous in
       let ltype = fresh_lname Anonymous in
-      let lf, env = push_rels env ids in
+      let lf, _env = push_rels env ids in
       let lf_args = Array.map (fun id -> MLlocal id) lf in
-      let upd i lname cont =
+      let upd i _lname cont =
 	let paramsi = t_params.(i) in
 	let pargsi = Array.map (fun id -> MLlocal id) paramsi in
 	let uniti = fresh_lname Anonymous in
@@ -1305,7 +1305,7 @@ let ml_of_instance instance u =
 	(lname, paramsi, body) in
       MLletrec(Array.mapi mkrec lf, lf_args.(start)) *)
 
-  | Lmakeblock (prefix,(cn,u),_,args) ->
+  | Lmakeblock (prefix,(cn,_u),_,args) ->
      let args = Array.map (ml_of_lam env l) args in
      MLconstruct(prefix,cn,args)
   | Lconstruct (prefix, (cn,u)) ->
@@ -1561,7 +1561,7 @@ let rec list_of_mp acc = function
 let list_of_mp mp = list_of_mp [] mp
 
 let string_of_kn kn =
-  let (mp,dp,l) = KerName.repr kn in
+  let (mp,_dp,l) = KerName.repr kn in
   let mp = list_of_mp mp in
   String.concat "_" mp ^ "_" ^ string_of_label l
 
@@ -1987,7 +1987,7 @@ let compile_mind mb mind stack =
 	       (MLconstruct("", c, Array.map (fun id -> MLlocal id) args)))::acc
     in
     let constructors = Array.fold_left_i add_construct [] ob.mind_reloc_tbl in
-    let add_proj proj_arg acc pb =
+    let add_proj proj_arg acc _pb =
       let tbl = ob.mind_reloc_tbl in
       (* Building info *)
       let ci = { ci_ind = ind; ci_npar = nparams;
@@ -2053,9 +2053,9 @@ let compile_mind_deps env prefix ~interactive
 let compile_deps env sigma prefix ~interactive init t =
   let rec aux env lvl init t =
   match kind t with
-  | Ind ((mind,_),u) -> compile_mind_deps env prefix ~interactive init mind
+  | Ind ((mind,_),_u) -> compile_mind_deps env prefix ~interactive init mind
   | Const c ->
-    let c,u = get_alias env c in
+    let c,_u = get_alias env c in
     let cb,(nameref,_) = lookup_constant_key c env in
     let (_, (_, const_updates)) = init in
     if is_code_loaded ~interactive nameref
@@ -2074,11 +2074,11 @@ let compile_deps env sigma prefix ~interactive init t =
       let comp_stack = code@comp_stack in
       let const_updates = Cmap_env.add c (nameref, name) const_updates in
       comp_stack, (mind_updates, const_updates)
-  | Construct (((mind,_),_),u) -> compile_mind_deps env prefix ~interactive init mind
+  | Construct (((mind,_),_),_u) -> compile_mind_deps env prefix ~interactive init mind
   | Proj (p,c) ->
     let init = compile_mind_deps env prefix ~interactive init (Projection.mind p) in
     aux env lvl init c
-  | Case (ci, p, c, ac) ->
+  | Case (ci, _p, _c, _ac) ->
       let mind = fst ci.ci_ind in
       let init = compile_mind_deps env prefix ~interactive init mind in
       fold_constr_with_binders succ (aux env) lvl init t

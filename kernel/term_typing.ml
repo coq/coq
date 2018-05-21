@@ -73,7 +73,7 @@ type _ trust =
 let uniq_seff_rev = SideEffects.repr
 let uniq_seff l =
   let ans = List.rev (SideEffects.repr l) in
-  List.map_append (fun { eff } -> eff) ans
+  List.map_append (fun { eff ; _ } -> eff) ans
 
 let empty_seff = SideEffects.empty
 let add_seff mb eff effs =
@@ -122,7 +122,7 @@ let inline_side_effects env body ctx side_eff =
         let subst = Cmap_env.add c (Inr var) subst in
         let ctx = Univ.ContextSet.union ctx univs in
         (subst, var + 1, ctx, (cname c, b, ty, opaque) :: args)
-      | Polymorphic_const auctx ->
+      | Polymorphic_const _auctx ->
         (** Inline the term to emulate universe polymorphism *)
         let subst = Cmap_env.add c (Inl b) subst in
         (subst, var, ctx, args)
@@ -250,9 +250,9 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       delay even in the polymorphic case.  *)
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true;
-		       const_entry_universes = Monomorphic_const_entry univs } as c) ->
+                       const_entry_universes = Monomorphic_const_entry univs; _ } as c) ->
       let env = push_context_set ~strict:true univs env in
-      let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
+      let { const_entry_body = body; const_entry_feedback = feedback_id ; _ } = c in
       let tyj = infer_type env typ in
       let proofterm =
         Future.chain body (fun ((body,uctx),side_eff) ->
@@ -288,8 +288,8 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
 
   (** Other definitions have to be processed immediately. *)
   | DefinitionEntry c ->
-      let { const_entry_type = typ; const_entry_opaque = opaque } = c in
-      let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
+      let { const_entry_type = typ; const_entry_opaque = opaque ; _ } = c in
+      let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
       let (body, ctx), side_eff = Future.join body in
       let body, ctx, _ = match trust with
       | Pure -> body, ctx, []
@@ -348,7 +348,7 @@ let record_aux env s_ty s_bo =
         (keep_hyps env s_bo)) in
   Aux_file.record_in_aux "context_used" v
 
-let build_constant_declaration kn env result =
+let build_constant_declaration _kn env result =
   let open Cooking in
   let typ = result.cook_type in
   let check declared inferred =
@@ -478,7 +478,7 @@ let export_eff eff =
   (eff.seff_constant, eff.seff_body, eff.seff_role)
 
 let export_side_effects mb env c =
-      let { const_entry_body = body } = c in
+      let { const_entry_body = body; _ } = c in
       let _, eff = Future.force body in
       let ce = { c with
         const_entry_body = Future.chain body
@@ -493,7 +493,7 @@ let export_side_effects mb env c =
       let seff, signatures = List.fold_left aux ([],[]) (uniq_seff_rev eff) in
       let trusted = check_signatures mb signatures in
       let push_seff env eff =
-        let { seff_constant = kn; seff_body = cb } = eff in
+        let { seff_constant = kn; seff_body = cb ; _ } = eff in
         let env = Environ.add_constant kn cb env in
         match cb.const_universes with
         | Polymorphic_const _ -> env
@@ -511,7 +511,7 @@ let export_side_effects mb env c =
           if Int.equal sl 0 then
            let env, cbs =
              List.fold_left (fun (env,cbs) eff ->
-              let { seff_constant = kn; seff_body = ocb; seff_env = u } = eff in
+              let { seff_constant = kn; seff_body = ocb; seff_env = u ; _ } = eff in
                let ce = constant_entry_of_side_effect ocb u in
                let cb = translate_constant Pure env kn ce in
                let eff = { eff with
@@ -543,7 +543,7 @@ let translate_recipe env kn r =
   let hcons = DirPath.is_empty dir in
   build_constant_declaration kn env (Cooking.cook_constant ~hcons r)
 
-let translate_local_def env id centry =
+let translate_local_def env _id centry =
   let open Cooking in
   let body = Future.from_val ((centry.secdef_body, Univ.ContextSet.empty), ()) in
   let centry = {

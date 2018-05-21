@@ -54,13 +54,13 @@ let mkProd_wo_LetIn decl c =
   let open Context.Rel.Declaration in
   match decl with
   | LocalAssum (na,t) -> mkProd (na, t, c)
-  | LocalDef (na,b,t) -> subst1 b c
+  | LocalDef (_na,b,_t) -> subst1 b c
 
 let mkNamedProd_wo_LetIn decl c =
   let open Context.Named.Declaration in
   match decl with
     | LocalAssum (id,t) -> mkNamedProd id t c
-    | LocalDef (id,b,t) -> subst1 b (subst_var id c)
+    | LocalDef (id,b,_t) -> subst1 b (subst_var id c)
 
 (* non-dependent product t1 -> t2 *)
 let mkArrow t1 t2 = mkProd (Anonymous, t1, t2)
@@ -81,7 +81,7 @@ let mkNamedLambda_or_LetIn decl c =
 (* prodn n [xn:Tn;..;x1:T1;Gamma] b = (x1:T1)..(xn:Tn)b *)
 let prodn n env b =
   let rec prodrec = function
-    | (0, env, b)        -> b
+    | (0, _env, b)        -> b
     | (n, ((v,t)::l), b) -> prodrec (n-1,  l, mkProd (v,t,b))
     | _ -> assert false
   in
@@ -93,7 +93,7 @@ let compose_prod l b = prodn (List.length l) l b
 (* lamn n [xn:Tn;..;x1:T1;Gamma] b = [x1:T1]..[xn:Tn]b *)
 let lamn n env b =
   let rec lamrec = function
-    | (0, env, b)        -> b
+    | (0, _env, b)        -> b
     | (n, ((v,t)::l), b) -> lamrec (n-1,  l, mkLambda (v,t,b))
     | _ -> assert false
   in
@@ -276,7 +276,7 @@ let decompose_prod_n_assum n =
       | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
       | Cast (c,_,_)      -> prodec_rec l n c
-      | c -> user_err (str  "decompose_prod_n_assum: not enough assumptions")
+      | _ -> user_err (str  "decompose_prod_n_assum: not enough assumptions")
   in
   prodec_rec Context.Rel.empty n
 
@@ -297,7 +297,7 @@ let decompose_lam_n_assum n =
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) n c
       | Cast (c,_,_)      -> lamdec_rec l n c
-      | c -> user_err (str "decompose_lam_n_assum: not enough abstractions")
+      | _c -> user_err (str "decompose_lam_n_assum: not enough abstractions")
   in
   lamdec_rec Context.Rel.empty n
 
@@ -313,7 +313,7 @@ let decompose_lam_n_decls n =
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
       | Cast (c,_,_)      -> lamdec_rec l n c
-      | c -> user_err (str "decompose_lam_n_decls: not enough abstractions")
+      | _ -> user_err (str "decompose_lam_n_decls: not enough abstractions")
   in
   lamdec_rec Context.Rel.empty n
 

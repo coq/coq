@@ -296,12 +296,12 @@ let eq_named_context_val c1 c2 =
 
 (* A local const is evaluable if it is defined  *)
 
-open Context.Named.Declaration
-
 let named_type id env =
+  let open Context.Named.Declaration in
   get_type (lookup_named id env)
 
 let named_body id env =
+  let open Context.Named.Declaration in
   get_value (lookup_named id env)
 
 let evaluable_named id env =
@@ -333,7 +333,7 @@ let fold_named_context f env ~init =
   let rec fold_right env =
     match match_named_context_val env.env_named_context with
     | None -> init
-    | Some (d, v, rem) ->
+    | Some (d, _v, rem) ->
 	let env =
 	  reset_with_named_context rem env in
 	f env d (fold_right env)
@@ -415,7 +415,7 @@ let constant_type env (kn,u) =
   let cb = lookup_constant kn env in
   match cb.const_universes with
   | Monomorphic_const _ -> cb.const_type, Univ.Constraint.empty
-  | Polymorphic_const ctx -> 
+  | Polymorphic_const _ctx ->
     let csts = constraints_of cb u in
     (subst_instance_constr u cb.const_type, csts)
 
@@ -508,14 +508,14 @@ let get_projections env ind =
   Declareops.inductive_make_projections ind mib
 
 (* Mutual Inductives *)
-let polymorphic_ind (mind,i) env =
+let polymorphic_ind (mind,_i) env =
   Declareops.inductive_is_polymorphic (lookup_mind mind env)
 
 let polymorphic_pind (ind,u) env =
   if Univ.Instance.is_empty u then false
   else polymorphic_ind ind env
 
-let type_in_type_ind (mind,i) env =
+let type_in_type_ind (mind,_i) env =
   not (lookup_mind mind env).mind_typing_flags.check_universes
 
 let template_polymorphic_ind (mind,i) env =
@@ -527,7 +527,7 @@ let template_polymorphic_pind (ind,u) env =
   if not (Univ.Instance.is_empty u) then false
   else template_polymorphic_ind ind env
   
-let add_mind_key kn (mind, _ as mind_key) env =
+let add_mind_key kn (_mind, _ as mind_key) env =
   let new_inds = Mindmap_env.add kn mind_key env.env_globals.env_inductives in
   let new_globals =
     { env.env_globals with
@@ -543,7 +543,7 @@ let lookup_constant_variables c env =
   let cmap = lookup_constant c env in
   Context.Named.to_vars cmap.const_hyps
 
-let lookup_inductive_variables (kn,i) env =
+let lookup_inductive_variables (kn,_i) env =
   let mis = lookup_mind kn env in
   Context.Named.to_vars mis.mind_hyps
 
@@ -579,6 +579,7 @@ let global_vars_set env constr =
    contained in the types of the needed variables. *)
 
 let really_needed env needed =
+  let open! Context.Named.Declaration in
   Context.Named.fold_inside
     (fun need decl ->
       if Id.Set.mem (get_id decl) need then
@@ -594,6 +595,7 @@ let really_needed env needed =
     (named_context env)
 
 let keep_hyps env needed =
+  let open Context.Named.Declaration in
   let really_needed = really_needed env needed in
   Context.Named.fold_outside
     (fun d nsign ->
@@ -647,6 +649,7 @@ type unsafe_type_judgment = types punsafe_type_judgment
 exception Hyp_not_found
 
 let apply_to_hyp ctxt id f =
+  let open Context.Named.Declaration in
   let rec aux rtail ctxt =
     match match_named_context_val ctxt with
     | Some (d, v, ctxt) ->
@@ -663,6 +666,7 @@ let remove_hyps ids check_context check_value ctxt =
   let rec remove_hyps ctxt = match match_named_context_val ctxt with
   | None -> empty_named_context_val, false
   | Some (d, v, rctxt) ->
+     let open Context.Named.Declaration in
     let (ans, seen) = remove_hyps rctxt in
     if Id.Set.mem (get_id d) ids then (ans, true)
     else if not seen then ctxt, false

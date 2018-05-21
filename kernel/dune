@@ -13,3 +13,8 @@
 
 (documentation
  (package coq))
+
+; In dev profile, we check the kernel against a more strict set of
+; warnings.
+(env
+ (dev (flags :standard -w +a-4-44-50)))

@@ -86,7 +86,7 @@ struct
     | Level (n,d) as x -> 
       let d' = Names.DirPath.hcons d in
         if d' == d then x else Level (n,d')
-    | Var n as x -> x
+    | Var _n as x -> x
 
   open Hashset.Combine
 
@@ -206,13 +206,13 @@ module LMap = struct
   include M
 
   let union l r = 
-    merge (fun k l r -> 
+    merge (fun _k l r ->
       match l, r with
       | Some _, _ -> l
       | _, _ -> r) l r
 
   let subst_union l r = 
-    merge (fun k l r -> 
+    merge (fun _k l r ->
       match l, r with
       | Some (Some _), _ -> l
       | Some None, None -> l
@@ -365,14 +365,14 @@ struct
       else f v ++ str"+" ++ int n
 
     let is_level = function
-      | (v, 0) -> true
+      | (_v, 0) -> true
       | _ -> false
 
     let level = function
       | (v,0) -> Some v
       | _ -> None
 	
-    let get_level (v,n) = v
+    let get_level (v,_n) = v
 
     let map f (v, n as x) = 
       let v' = f v in 
@@ -582,7 +582,7 @@ struct
 	prl u2 ++ fnl () )  c (str "")
 
   let universes_of c =
-    fold (fun (u1, op, u2) unvs -> LSet.add u2 (LSet.add u1 unvs)) c LSet.empty
+    fold (fun (u1, _op, u2) unvs -> LSet.add u2 (LSet.add u1 unvs)) c LSet.empty
 end
 
 let universes_of_constraints = Constraint.universes_of
@@ -907,7 +907,7 @@ let subst_instance_constraints s csts =
 type universe_instance = Instance.t
 
 type 'a puniverses = 'a * Instance.t
-let out_punivs (x, y) = x
+let out_punivs (x, _y) = x
 let in_punivs x = (x, Instance.empty)
 let eq_puniverses f (x, u) (y, u') =
   f x y && Instance.equal u u'
@@ -932,8 +932,8 @@ struct
   let hcons (univs, cst) =
     (Instance.hcons univs, hcons_constraints cst)
 
-  let instance (univs, cst) = univs
-  let constraints (univs, cst) = cst
+  let instance (univs, _cst) = univs
+  let constraints (_univs, cst) = cst
 
   let union (univs, cst) (univs', cst') =
     Instance.append univs univs', Constraint.union cst cst'
@@ -952,7 +952,7 @@ struct
   include UContext
 
   let repr (inst, cst) =
-    (Array.mapi (fun i l -> Level.var i) inst, cst)
+    (Array.mapi (fun i _l -> Level.var i) inst, cst)
 
   let instantiate inst (u, cst) =
     assert (Array.length u = Array.length inst);
@@ -988,8 +988,8 @@ struct
   let hcons (univs, variance) = (* should variance be hconsed? *)
     (UContext.hcons univs, variance)
 
-  let univ_context (univs, subtypcst) = univs
-  let variance (univs, variance) = variance
+  let univ_context (univs, _subtypcst) = univs
+  let variance (_univs, variance) = variance
 
   (** This function takes a universe context representing constraints
      of an inductive and produces a CumulativityInfo.t with the
@@ -1066,8 +1066,8 @@ struct
     if is_empty ctx then mt() else
       h 0 (LSet.pr prl univs ++ str " |= ") ++ h 0 (v 0 (Constraint.pr prl cst))
 
-  let constraints (univs, cst) = cst
-  let levels (univs, cst) = univs
+  let constraints (_univs, cst) = cst
+  let levels (univs, _cst) = univs
 
   let size (univs,_) = LSet.cardinal univs
 end
@@ -1155,7 +1155,7 @@ let make_inverse_instance_subst i =
       LMap.empty arr
 
 let make_abstract_instance (ctx, _) = 
-  Array.mapi (fun i l -> Level.var i) ctx
+  Array.mapi (fun i _l -> Level.var i) ctx
 
 let abstract_universes ctx =
   let instance = UContext.instance ctx in

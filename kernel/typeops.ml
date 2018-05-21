@@ -118,14 +118,14 @@ let check_hyps_inclusion env f c sign =
 (* Type of constants *)
 
 
-let type_of_constant env (kn,u as cst) =
+let type_of_constant env (kn,_u as cst) =
   let cb = lookup_constant kn env in
   let () = check_hyps_inclusion env mkConstU cst cb.const_hyps in
   let ty, cu = constant_type env cst in
   let () = check_constraints cu env in
     ty
 
-let type_of_constant_in env (kn,u as cst) =
+let type_of_constant_in env (kn,_u as cst) =
   let cb = lookup_constant kn env in
   let () = check_hyps_inclusion env mkConstU cst cb.const_hyps in
   constant_type_in env cst
@@ -142,7 +142,7 @@ let type_of_constant_in env (kn,u as cst) =
   and no upper constraint exists on the sort $s$, we don't need to compute $s$
 *)
 
-let type_of_abstraction env name var ty =
+let type_of_abstraction _env name var ty =
   mkProd (name, var, ty)
 
 (* Type of an application. *)
@@ -204,7 +204,7 @@ let sort_of_product env domsort rangsort =
 
   where j.uj_type is convertible to a sort s2
 *)
-let type_of_product env name s1 s2 =
+let type_of_product env _name s1 s2 =
   let s = sort_of_product env s1 s2 in
     mkSort s
 
@@ -247,7 +247,7 @@ let check_cast env c ct k expected_type =
    dynamic constraints of the form u<=v are enforced *)
 
 let type_of_inductive_knowing_parameters env (ind,u as indu) args =
-  let (mib,mip) as spec = lookup_mind_specif env ind in
+  let (mib,_mip) as spec = lookup_mind_specif env ind in
   check_hyps_inclusion env mkIndU indu mib.mind_hyps;
   let t,cst = Inductive.constrained_type_of_inductive_knowing_parameters 
     env (spec,u) args
@@ -264,7 +264,7 @@ let type_of_inductive env (ind,u as indu) =
 
 (* Constructors. *)
 
-let type_of_constructor env (c,u as cu) =
+let type_of_constructor env (c,_u as cu) =
   let () =
     let ((kn,_),_) = c in
     let mib = lookup_mind kn env in
@@ -285,7 +285,7 @@ let check_branch_types env (ind,u) c ct lft explft =
     | Invalid_argument _ ->
         error_number_branches env (make_judge c ct) (Array.length explft)
 
-let type_of_case env ci p pt c ct lf lft =
+let type_of_case env ci p pt c ct _lf lft =
   let (pind, _ as indspec) =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (make_judge c ct) in
@@ -399,7 +399,7 @@ let rec execute env cstr =
         let lft = execute_array env lf in
           type_of_case env ci p pt c ct lf lft
 
-    | Fix ((vn,i as vni),recdef) ->
+    | Fix ((_vn,i as vni),recdef) ->
       let (fix_ty,recdef') = execute_recdef env recdef i in
       let fix = (vni,recdef') in
         check_fix env fix; fix_ty
@@ -432,12 +432,12 @@ and execute_array env = Array.map (execute env)
 
 (* Derived functions *)
 
-let universe_levels_of_constr env c =
+let universe_levels_of_constr _env c =
   let rec aux s c =
     match kind c with
-    | Const (c, u) ->
+    | Const (_c, u) ->
        LSet.fold LSet.add (Instance.levels u) s
-    | Ind ((mind,_), u) | Construct (((mind,_),_), u) ->
+    | Ind ((_mind,_), u) | Construct (((_mind,_),_), u) ->
        LSet.fold LSet.add (Instance.levels u) s
     | Sort u when not (Sorts.is_small u) ->
       let u = Sorts.univ_of_sort u in
@@ -530,7 +530,7 @@ let judge_of_product env x varj outj =
   make_judge (mkProd (x, varj.utj_val, outj.utj_val))
              (mkSort (sort_of_product env varj.utj_type outj.utj_type))
 
-let judge_of_letin env name defj typj j =
+let judge_of_letin _env name defj typj j =
   make_judge (mkLetIn (name, defj.uj_val, typj.utj_val, j.uj_val))
              (subst1 defj.uj_val j.uj_type)
 

@@ -138,7 +138,7 @@ let rec functor_smart_map fty f0 funct = match funct with
     let a' = f0 a in if a==a' then funct else NoFunctor a'
 
 let rec functor_iter fty f0 = function
-  |MoreFunctor (mbid,ty,e) -> fty ty; functor_iter fty f0 e
+  |MoreFunctor (_mbid,ty,e) -> fty ty; functor_iter fty f0 e
   |NoFunctor a -> f0 a
 
 (** {6 Misc operations } *)
@@ -171,7 +171,7 @@ let implem_iter fs fa impl = match impl with
 
 (** {6 Substitutions of modular structures } *)
 
-let id_delta x y = x
+let id_delta x _y = x
 
 let subst_with_body sub = function
   |WithMod(id,mp) as orig ->
@@ -200,7 +200,7 @@ let rec subst_structure sub do_delta sign =
 
 and subst_body : 'a. _ -> _ -> (_ -> 'a -> 'a) -> _ -> 'a generic_module_body -> 'a generic_module_body =
   fun is_mod sub subst_impl do_delta mb ->
-  let { mod_mp=mp; mod_expr=me; mod_type=ty; mod_type_alg=aty } = mb in
+  let { mod_mp=mp; mod_expr=me; mod_type=ty; mod_type_alg=aty; _ } = mb in
   let mp' = subst_mp sub mp in
   let sub =
     if ModPath.equal mp mp' then sub
@@ -371,7 +371,7 @@ and strengthen_sig mp_from struc mp_to reso = match struc with
     let item' = l,SFBmodule mb' in
     let reso',rest' = strengthen_sig mp_from rest mp_to reso in
     add_delta_resolver reso' mb.mod_delta, item':: rest'
-  |(l,SFBmodtype mty as item) :: rest ->
+  |(_l,SFBmodtype _mty as item) :: rest ->
     let reso',rest' = strengthen_sig mp_from rest mp_to reso in
     reso',item::rest'
 
@@ -628,7 +628,7 @@ let join_structure except otab s =
   let rec join_module : 'a. 'a generic_module_body -> unit = fun mb ->
     Option.iter join_expression mb.mod_type_alg;
     join_signature mb.mod_type
-  and join_field (l,body) = match body with
+  and join_field (_l,body) = match body with
     |SFBconst sb -> join_constant_body except otab sb
     |SFBmind _ -> ()
     |SFBmodule m ->

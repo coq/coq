@@ -413,7 +413,7 @@ let code_makeblock ~stack_size ~arity ~tag cont =
     Kpush :: nest_block tag arity cont
   end
 
-let compile_structured_constant cenv sc sz cont =
+let compile_structured_constant _cenv sc sz cont =
   set_max_stack_size sz;
   Kconst sc :: cont
 
@@ -534,7 +534,7 @@ let rec compile_lam env cenv lam sz cont =
       comp_app compile_structured_constant compile_get_univ cenv
         (Const_sort (Sorts.Type u)) (Array.of_list s) sz cont
 
-  | Llet (id,def,body) ->
+  | Llet (_id,def,body) ->
       compile_lam env cenv def sz
         (Kpush ::
          compile_lam env (push_local sz cenv) body (sz+1) (add_pop 1 cont))
@@ -561,7 +561,7 @@ let rec compile_lam env cenv lam sz cont =
     | _ -> comp_app (compile_lam env) (compile_lam env) cenv f args sz cont
     end
 
-  | Lfix ((rec_args, init), (decl, types, bodies)) ->
+  | Lfix ((rec_args, init), (_decl, types, bodies)) ->
       let ndef = Array.length types in
       let rfv = ref empty_fv in
       let lbl_types = Array.make ndef Label.no in
@@ -594,7 +594,7 @@ let rec compile_lam env cenv lam sz cont =
 	(Kclosurerec(fv.size,init,lbl_types,lbl_bodies) :: cont)
 
 
-  | Lcofix(init, (decl,types,bodies)) ->
+  | Lcofix(init, (_decl,types,bodies)) ->
       let ndef = Array.length types in
       let lbl_types = Array.make ndef Label.no in
       let lbl_bodies = Array.make ndef Label.no in
