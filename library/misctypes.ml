@@ -75,7 +75,6 @@ type 'a bindings =
 
 type 'a with_bindings = 'a * 'a bindings
 
-
 (** Some utility types for parsing *)
 
 type 'a or_var =
@@ -92,11 +91,6 @@ type 'a or_by_notation = 'a or_by_notation_r CAst.t
 
 (* NB: the last string in [ByNotation] is actually a [Notation.delimiters],
    but this formulation avoids a useless dependency. *)
-
-
-(** Kinds of modules *)
-
-type module_kind = Module | ModType | ModAny
 
 (** Various flags *)
 

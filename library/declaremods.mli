@@ -27,9 +27,13 @@ type inline =
   | DefaultInline
   | InlineAt of int
 
+(** Kinds of modules *)
+
+type module_kind = Module | ModType | ModAny
+
 type 'modast module_interpretor =
-  Environ.env -> Misctypes.module_kind -> 'modast ->
-    Entries.module_struct_entry * Misctypes.module_kind * Univ.ContextSet.t
+  Environ.env -> module_kind -> 'modast ->
+    Entries.module_struct_entry * module_kind * Univ.ContextSet.t
 
 type 'modast module_params =
   (Misctypes.lident list * ('modast * inline)) list
