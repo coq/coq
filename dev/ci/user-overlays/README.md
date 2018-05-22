@@ -14,8 +14,9 @@ testing is possible. It changes the value of some variables from
 The file contains very simple logic to test the pull request number or branch
 name and apply it only in this case.
 
-The name of your overlay file should be of the form
-`five_digit_PR_number-GitHub_handle-branch_name.sh`.
+The name of your overlay file should start with a five-digit pull request
+number, followed by a dash, anything (for instance your GitHub nickname
+and the branch name), then a `.sh` extension (`[0-9]{5}-[a-zA-Z0-9-_]+.sh`).
 
 Example: `00669-maximedenes-ssr-merge.sh` containing
 
