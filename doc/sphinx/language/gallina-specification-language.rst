@@ -1260,6 +1260,12 @@ Chapter :ref:`Tactics`. The basic assertion command is:
       The name you provided is already defined. You have then to choose
       another name.
 
+   .. exn:: Nested proofs are not allowed unless you turn option Nested Proofs Allowed on.
+
+      You are asserting a new statement while already being in proof editing mode.
+      This feature, called nested proofs, is disabled by default.
+      To activate it, turn option :opt:`Nested Proofs Allowed` on.
+
    The following commands are synonyms of :n:`Theorem @ident {? @binders } : type`:
 
    .. cmdv:: Lemma @ident {? @binders } : @type
