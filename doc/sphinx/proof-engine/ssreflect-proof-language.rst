@@ -2691,7 +2691,7 @@ type classes inference.
   Full inference for ``ty``. The first subgoal demands a
   proof of such instantiated statement.
 
-+ .. coqtop:: in undo
++ .. coqdoc::
 
      have foo : ty := .
 
