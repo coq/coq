@@ -142,7 +142,13 @@ end
 
 (** Level sets and maps *)
 module LMap = HMap.Make (Level)
-module LSet = LMap.Set
+module LSet = struct
+  include LMap.Set
+
+  let pr s =
+    str"{" ++ prlist_with_sep spc Level.pr (elements s) ++ str"}"
+
+end
 
 type 'a universe_map = 'a LMap.t
 

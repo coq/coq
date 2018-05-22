@@ -1,0 +1,39 @@
+source checker.dbg
+
+load_printer checker_printers.cmo
+
+install_printer Checker_printers.pP
+
+install_printer Checker_printers.ppfuture
+
+install_printer Checker_printers.ppid
+install_printer Checker_printers.pplab
+install_printer Checker_printers.ppmbid
+install_printer Checker_printers.ppdir
+install_printer Checker_printers.ppmp
+install_printer Checker_printers.ppcon
+install_printer Checker_printers.ppproj
+install_printer Checker_printers.ppkn
+install_printer Checker_printers.ppmind
+install_printer Checker_printers.ppind
+
+install_printer Checker_printers.ppbigint
+
+install_printer Checker_printers.ppintset
+install_printer Checker_printers.ppidset
+
+install_printer Checker_printers.ppidmapgen
+
+install_printer Checker_printers.ppididmap
+
+install_printer Checker_printers.ppuni
+install_printer Checker_printers.ppuni_level
+install_printer Checker_printers.ppuniverse_set
+install_printer Checker_printers.ppuniverse_instance
+install_printer Checker_printers.ppauniverse_context
+install_printer Checker_printers.ppuniverse_context
+install_printer Checker_printers.ppconstraints
+install_printer Checker_printers.ppuniverse_context_future
+install_printer Checker_printers.ppuniverses
+
+install_printer Checker_printers.pploc

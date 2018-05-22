@@ -73,9 +73,12 @@ checker/check.cmxa: checker/check.mllib | md5chk
 
 CHECKGENFILES:=$(addprefix checker/, names.mli names.ml esubst.mli esubst.ml)
 
+CHECKMLFILES:=$(filter checker/%, $(MLFILES) $(MLIFILES)) $(CHECKGENFILES) \
+  $(filter dev/checker_%, $(MLFILES) $(MLIFILES))
+
 $(CHECKMLDFILE).d: $(filter checker/%, $(MLFILES) $(MLIFILES) $(CHECKGENFILES))
 	$(SHOW)'OCAMLDEP  checker/MLFILES checker/MLIFILES'
-	$(HIDE)$(OCAMLFIND) ocamldep -slash $(CHKLIBS) $(filter checker/%, $(MLFILES) $(MLIFILES) $(CHECKGENFILES)) $(TOTARGET)
+	$(HIDE)$(OCAMLFIND) ocamldep -slash $(CHKLIBS) $(CHECKMLFILES) $(TOTARGET)
 
 $(CHECKMLLIBFILE).d: $(filter checker/%, $(MLLIBFILES) $(MLPACKFILES) $(CHECKGENFILES)) | $(OCAMLLIBDEP)
 	$(SHOW)'OCAMLLIBDEP  checker/MLLIBFILES checker/MLPACKFILES'
@@ -92,6 +95,14 @@ checker/%.cmo: checker/%.ml
 checker/%.cmx: checker/%.ml
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -c $<
+
+dev/checker_%.cmo: dev/checker_%.ml
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) -I dev/ -c $<
+
+dev/checker_%.cmi: dev/checker_%.mli
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) -I dev/ -c $<
 
 md5chk:
 	$(SHOW)'MD5SUM cic.mli'

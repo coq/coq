@@ -14,7 +14,15 @@
 
 export CAML_LD_LIBRARY_PATH=$COQTOP/kernel/byterun:$CAML_LD_LIBRARY_PATH
 
-exec $OCAMLDEBUG \
+GUESS_CHECKER=
+for arg in "$@"; do
+    if [ "${arg##*/}" = coqchk.byte ]; then
+        GUESS_CHECKER=1
+    fi
+done
+
+if [ -z "$GUESS_CHECKER" ]; then
+    exec $OCAMLDEBUG \
 	-I $CAMLP5LIB -I +threads \
 	-I $COQTOP \
 	-I $COQTOP/config -I $COQTOP/printing -I $COQTOP/grammar -I $COQTOP/clib \
@@ -35,3 +43,11 @@ exec $OCAMLDEBUG \
         -I $COQTOP/plugins/xml        -I $COQTOP/plugins/ltac \
         -I $COQTOP/ide \
 	"$@"
+else
+    exec $OCAMLDEBUG \
+        -I $CAMLP5LIB -I +threads \
+        -I $COQTOP \
+        -I $COQTOP/config -I $COQTOP/clib \
+        -I $COQTOP/lib -I $COQTOP/checker \
+        "$@"
+fi

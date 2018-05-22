@@ -17,7 +17,7 @@
 
 .PHONY: devel printers
 
-DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo
+DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/checker_printers.cmo
 
 devel: printers
 printers: $(CORECMA) $(DEBUGPRINTERS) dev/camlp5.dbg
