@@ -141,7 +141,6 @@ no OCaml warnings build Coq in parallel with other tests.
 
 ### GitLab and Windows
 
-
 If your repository has access to runners tagged `windows`, setting the
 secret variable `WINDOWS` to `enabled` will add jobs building Windows
 versions of Coq (32bit and 64bit).
@@ -154,6 +153,10 @@ pull requests run.
 System and opam packages are installed in a Docker image. The image is
 automatically built and uploaded to your GitLab registry, and is
 loaded by subsequent jobs.
+
+**IMPORTANT**: When updating Coq's CI docker image, you must modify
+the `CACHEKEY` variable in `.gitlab-ci.yml`, `.circleci/config.yml`,
+and `Dockerfile`.
 
 The Docker building job reuses the uploaded image if it is available,
 but if you wish to save more time you can skip the job by setting
