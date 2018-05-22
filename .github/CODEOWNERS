@@ -51,7 +51,7 @@
 # each time someone modifies the dev changelog
 
 /doc/             @maximedenes
-# Secondary maintainer @silene
+# Secondary maintainer @silene @Zimmi48
 
 /man/             @silene
 # Secondary maintainer @maximedenes
