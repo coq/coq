@@ -147,7 +147,6 @@ $(IDETOPEXE): $(IDETOP:.opt=.$(BEST))
 $(IDETOP): ide/idetop.ml $(LINKCMX) $(LIBCOQRUN) $(IDETOPCMX)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) -I ide \
-	                   -I kernel/byterun/ -cclib -lcoqrun \
 			   $(SYSMOD) -package camlp5.gramlib \
 			   $(LINKCMX) $(IDETOPCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
 	$(STRIP) $@

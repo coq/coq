@@ -57,9 +57,6 @@ package "vm" (
 # We currently prefer static linking of the VM.
   archive(byte)    = "libcoqrun.a"
   linkopts(byte)   = "-custom"
-
-  linkopts(native) = "-cclib -lcoqrun"
-
 )
 
 package "kernel" (
