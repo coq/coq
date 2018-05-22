@@ -75,16 +75,12 @@ let ml_path_if c p =
   let f x = { recursive = false; path_spec = MlPath x } in
   if c then List.map f p else []
 
-(* LoadPath for toploop toplevels *)
+(* LoadPath for developers *)
 let toplevel_init_load_path () =
   let coqlib = Envars.coqlib () in
   (* NOTE: These directories are searched from last to first *)
   (* first, developer specific directory to open *)
-  ml_path_if Coq_config.local [coqlib/"dev"] @
-
-  (* main loops *)
-  ml_path_if (Coq_config.local || !Flags.boot) [coqlib/"stm"; coqlib/"ide"] @
-  ml_path_if (System.exists_dir (coqlib/"toploop")) [coqlib/"toploop"]
+  ml_path_if Coq_config.local [coqlib/"dev"]
 
 (* LoadPath for Coq user libraries *)
 let libs_init_load_path ~load_init =

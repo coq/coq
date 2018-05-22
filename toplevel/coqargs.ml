@@ -52,7 +52,6 @@ type coq_cmdopts = {
   compilation_mode : compilation_mode;
 
   toplevel_name : Names.DirPath.t;
-  toploop : string option;
 
   compile_list: (string * bool) list;  (* bool is verbosity  *)
   compilation_output_name : string option;
@@ -81,6 +80,8 @@ type coq_cmdopts = {
   print_config: bool;
   output_context : bool;
 
+  print_emacs : bool;
+
   inputstate  : string option;
   outputstate : string option;
 
@@ -100,7 +101,6 @@ let init_args = {
   compilation_mode = BuildVo;
 
   toplevel_name = Names.(DirPath.make [Id.of_string "Top"]);
-  toploop = None;
 
   compile_list = [];
   compilation_output_name = None;
@@ -128,6 +128,8 @@ let init_args = {
   print_where  = false;
   print_config = false;
   output_context = false;
+
+  print_emacs = false;
 
   inputstate  = None;
   outputstate = None;
@@ -191,11 +193,8 @@ let set_vio_checking_j opts opt j =
 
 (** Options for proof general *)
 let set_emacs opts =
-  if not (Option.is_empty opts.toploop) then
-    CErrors.user_err Pp.(str "Flag -emacs is incompatible with a custom toplevel loop");
-  Coqloop.print_emacs := true;
   Printer.enable_goal_tags_printing := true;
-  { opts with color = `OFF }
+  { opts with color = `OFF; print_emacs = true }
 
 let set_color opts = function
 | "yes" | "on" -> { opts with color = `ON }
@@ -310,12 +309,9 @@ let usage batch =
   let lp = Coqinit.toplevel_init_load_path () in
   (* Necessary for finding the toplevels below *)
   List.iter Mltop.add_coq_path lp;
-  if batch then Usage.print_usage_coqc ()
-  else begin
-    Mltop.load_ml_objects_raw_rex
-      (Str.regexp (if Mltop.is_native then "^.*top.cmxs$" else "^.*top.cma$"));
-    Usage.print_usage_coqtop ()
-  end
+  if batch
+  then Usage.print_usage_coqc ()
+  else Usage.print_usage_coqtop ()
 
 (* Main parsing routine *)
 let parse_args arglist : coq_cmdopts * string list =
@@ -401,7 +397,7 @@ let parse_args arglist : coq_cmdopts * string list =
       }}
 
     |"-async-proofs-worker-priority" ->
-      WorkerLoop.async_proofs_worker_priority := get_priority opt (next ());
+      CoqworkmgrApi.async_proofs_worker_priority := get_priority opt (next ());
       oval
 
     |"-async-proofs-private-flags" ->
@@ -500,11 +496,6 @@ let parse_args arglist : coq_cmdopts * string list =
       let oval = add_compile oval false (next ()) in
       { oval with compilation_mode = Vio2Vo }
 
-    |"-toploop" ->
-      if !Coqloop.print_emacs then
-        CErrors.user_err Pp.(str "Flags -toploop and -emacs are incompatible");
-      { oval with toploop = Some (next ()) }
-
     |"-w" | "-W" ->
       let w = next () in
       if w = "none" then
@@ -538,12 +529,6 @@ let parse_args arglist : coq_cmdopts * string list =
     |"-stm-debug" -> Stm.stm_debug := true; oval
     |"-emacs" -> set_emacs oval
     |"-filteropts" -> { oval with filter_opts = true }
-    |"-ideslave" ->
-      if !Coqloop.print_emacs then
-        CErrors.user_err Pp.(str "Flags -ideslave and -emacs are incompatible");
-      Flags.ide_slave := true;
-      { oval with toploop = Some "coqidetop" }
-
     |"-impredicative-set" ->
       { oval with impredicative_set = Declarations.ImpredicativeSet }
     |"-indices-matter" -> Indtypes.enforce_indices_matter (); oval

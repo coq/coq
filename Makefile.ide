@@ -36,7 +36,7 @@ COQIDEINAPP:=$(COQIDEAPP)/Contents/MacOS/coqide
 
 # Note : for just building bin/coqide, we could only consider
 # config, lib, ide and ide/utils. But the coqidetop plugin (the
-# one that will be loaded by coqtop -ideslave) refers to some
+# one that will be loaded by coqidetop) refers to some
 # core modules of coq, for instance printing/*.
 
 IDESRCDIRS:= $(CORESRCDIRS) ide ide/utils
@@ -45,7 +45,9 @@ COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) $(COQIDEINCLUDES)
 
 IDEDEPS:=clib/clib.cma lib/lib.cma
 IDECMA:=ide/ide.cma
-IDETOPLOOPCMA=ide/coqidetop.cma
+IDETOPEXE=bin/coqidetop$(EXE)
+IDETOP=bin/coqidetop.opt$(EXE)
+IDETOPBYTE=bin/coqidetop.byte$(EXE)
 
 LINKIDE:=$(IDEDEPS) $(IDECDEPS) $(IDECMA) ide/coqide_main.mli ide/coqide_main.ml
 LINKIDEOPT:=$(IDEOPTCDEPS) $(patsubst %.cma,%.cmxa,$(IDEDEPS:.cmo=.cmx)) $(IDECMA:.cma=.cmxa) ide/coqide_main.mli ide/coqide_main.ml
@@ -88,15 +90,15 @@ endif
 
 coqide-files: $(IDEFILES)
 
-ide-byteloop: $(IDETOPLOOPCMA)
-ide-optloop: $(IDETOPLOOPCMA:.cma=.cmxs)
-ide-toploop: ide-$(BEST)loop
+ide-byteloop: $(IDETOPBYTE)
+ide-optloop: $(IDETOP)
+ide-toploop: $(IDETOPEXE)
 
 ifeq ($(HASCOQIDE),opt)
 $(COQIDE): $(LINKIDEOPT)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa threads.cmxa lablgtk.cmxa \
-		lablgtksourceview2.cmxa str.cmxa $(IDEFLAGS:.cma=.cmxa) $^
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
+	       -linkpkg -package str,unix,dynlink,threads,lablgtk2.sourceview2 $(IDEFLAGS:.cma=.cmxa) $^
 	$(STRIP) $@
 else
 $(COQIDE): $(COQIDEBYTE)
@@ -105,8 +107,8 @@ endif
 
 $(COQIDEBYTE): $(LINKIDE)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma \
-	        lablgtksourceview2.cma str.cma $(IDEFLAGS) $(IDECDEPSFLAGS) $^
+	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ \
+	       -linkpkg -package str,unix,dynlink,threads,lablgtk2.sourceview2 $(IDEFLAGS) $(IDECDEPSFLAGS) $^
 
 ide/coqide_main.ml: ide/coqide_main.ml4 config/Makefile # no camlp5deps here
 	$(SHOW)'CAMLP5O   $<'
@@ -134,6 +136,29 @@ ide/ideutils.cmo: ide/ideutils.ml
 ide/ideutils.cmx: ide/ideutils.ml
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(filter-out -safe-string,$(OCAMLOPT)) $(COQIDEFLAGS) $(filter-out -safe-string,$(OPTFLAGS)) -c $<
+
+IDETOPCMA:=ide/ide_common.cma
+IDETOPCMX:=$(IDETOPCMA:.cma=.cmxa)
+
+# Special rule for coqidetop
+$(IDETOPEXE): $(IDETOP:.opt=.$(BEST))
+	cp $< $@
+
+$(IDETOP): ide/idetop.ml $(LINKCMX) $(LIBCOQRUN) $(IDETOPCMX)
+	$(SHOW)'COQMKTOP -o $@'
+	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) -I ide \
+	                   -I kernel/byterun/ -cclib -lcoqrun \
+			   $(SYSMOD) -package camlp5.gramlib \
+			   $(LINKCMX) $(IDETOPCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
+	$(STRIP) $@
+	$(CODESIGN) $@
+
+$(IDETOPBYTE): ide/idetop.ml $(LINKCMO) $(LIBCOQRUN) $(IDETOPCMA)
+	$(SHOW)'COQMKTOP -o $@'
+	$(HIDE)$(OCAMLC) -linkall -linkpkg $(MLINCLUDES) -I ide \
+	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
+			 $(SYSMOD) -package camlp5.gramlib \
+			 $(LINKCMO) $(IDETOPCMA) $(BYTEFLAGS) $< -o $@
 
 ####################
 ## Install targets
@@ -164,13 +189,11 @@ install-ide-bin:
 
 install-ide-toploop:
 ifeq ($(BEST),opt)
-	$(MKDIR) $(FULLCOQLIB)/toploop/
-	$(INSTALLBIN) $(IDETOPLOOPCMA:.cma=.cmxs) $(FULLCOQLIB)/toploop/
+	$(INSTALLBIN) $(IDETOPEXE) $(IDETOP) $(FULLBINDIR)
 endif
 install-ide-toploop-byte:
 ifneq ($(BEST),opt)
-	$(MKDIR) $(FULLCOQLIB)/toploop/
-	$(INSTALLBIN) $(IDETOPLOOPCMA) $(FULLCOQLIB)/toploop/
+	$(INSTALLBIN) $(IDETOPEXE) $(IDETOPBYTE) $(FULLBINDIR)
 endif
 
 install-ide-devfiles:
@@ -206,8 +229,7 @@ $(COQIDEAPP)/Contents:
 $(COQIDEINAPP): ide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
-		unix.cmxa lablgtk.cmxa lablgtksourceview2.cmxa str.cmxa \
-		threads.cmxa $(IDEFLAGS:.cma=.cmxa) $^
+	        -linkpkg -package str,unix,dynlink,threads,lablgtk2.sourceview2 $(IDEFLAGS:.cma=.cmxa) $^
 	$(STRIP) $@
 
 $(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents

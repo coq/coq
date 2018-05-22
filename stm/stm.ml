@@ -1849,7 +1849,7 @@ end = struct (* {{{ *)
     | RespError of Pp.t
     | RespNoProgress
 
-  let name = ref "tacworker"
+  let name = ref "tacticworker"
   let extra_env () = [||]
   type competence = unit
   type worker_status = Fresh | Old of competence

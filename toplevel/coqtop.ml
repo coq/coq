@@ -30,8 +30,6 @@ let print_header () =
   Feedback.msg_notice (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
   flush_all ()
 
-let warning s = Flags.(with_option warn Feedback.msg_warning (strbrk s))
-
 (* Feedback received in the init stage, this is different as the STM
    will not be generally be initialized, thus stateid, etc... may be
    bogus. For now we just print to the console too *)
@@ -40,23 +38,6 @@ let coqtop_init_feed = Coqloop.coqloop_feed Topfmt.Initialization
 let coqtop_doc_feed = Coqloop.coqloop_feed Topfmt.LoadingPrelude
 
 let coqtop_rcfile_feed = Coqloop.coqloop_feed Topfmt.LoadingRcFile
-
-(* Default toplevel loop *)
-let console_toploop_run opts ~state =
-  (* We initialize the console only if we run the toploop_run *)
-  let tl_feed = Feedback.add_feeder (Coqloop.coqloop_feed Topfmt.InteractiveLoop) in
-  if Dumpglob.dump () then begin
-    Flags.if_verbose warning "Dumpglob cannot be used in interactive mode.";
-    Dumpglob.noglob ()
-  end;
-  let _ = Coqloop.loop ~state in
-  (* Initialise and launch the Ocaml toplevel *)
-  Coqinit.init_ocaml_path();
-  Mltop.ocaml_toploop();
-  (* We let the feeder in place for users of Drop *)
-  Feedback.del_feeder tl_feed
-
-let toploop_run = ref console_toploop_run
 
 let memory_stat = ref false
 let print_memory_stat () =
@@ -387,12 +368,6 @@ let init_color color_mode =
   else
     Topfmt.init_terminal_output ~color:false
 
-let toploop_init = ref begin fun opts x ->
-  let () = init_color opts.color in
-  let () = CoqworkmgrApi.init !WorkerLoop.async_proofs_worker_priority in
-  opts, x
-  end
-
 let print_style_tags opts =
   let () = init_color opts.color in
   let tags = Topfmt.dump_tags () in
@@ -435,7 +410,7 @@ let init_gc () =
              Gc.space_overhead = 120}
 
 (** Main init routine *)
-let init_toplevel arglist =
+let init_toplevel custom_init arglist =
   (* Coq's init process, phase 1:
      OCaml parameters, basic structures, and IO
    *)
@@ -475,8 +450,7 @@ let init_toplevel arglist =
       end;
       let top_lp = Coqinit.toplevel_init_load_path () in
       List.iter Mltop.add_coq_path top_lp;
-      Option.iter Mltop.load_ml_object_raw opts.toploop;
-      let opts, extras = !toploop_init opts extras in
+      let opts, extras = custom_init ~opts extras in
       if not (CList.is_empty extras) then begin
         prerr_endline ("Don't know what to do with "^String.concat " " extras);
         prerr_endline "See -help for the list of supported options";
@@ -540,11 +514,23 @@ let init_toplevel arglist =
   Feedback.del_feeder !init_feeder;
   res
 
-let start () =
-  match init_toplevel (List.tl (Array.to_list Sys.argv)) with
+type custom_toplevel = {
+  init : opts:coq_cmdopts -> string list -> coq_cmdopts * string list;
+  run : opts:coq_cmdopts -> state:Vernac.State.t -> unit;
+}
+
+let coqtop_init ~opts extra =
+  init_color opts.color;
+  CoqworkmgrApi.(init !async_proofs_worker_priority);
+  opts, extra
+
+let coqtop_toplevel = { init = coqtop_init; run = Coqloop.loop; }
+
+let start_coq custom =
+  match init_toplevel custom.init (List.tl (Array.to_list Sys.argv)) with
   (* Batch mode *)
   | Some state, opts when not opts.batch_mode ->
-    !toploop_run opts ~state;
+    custom.run ~opts ~state;
     exit 1
   | _ , opts ->
     flush_all();

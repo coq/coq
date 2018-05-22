@@ -383,29 +383,34 @@ grammar/%.cmi: grammar/%.mli
 
 .PHONY: coqbinaries coqbyte
 
-coqbinaries: $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
+coqbinaries: $(TOPBIN) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
+coqbyte: $(TOPBYTE) $(CHICKENBYTE)
 
-coqbyte: $(COQTOPBYTE) $(CHICKENBYTE)
+# Special rule for coqtop
+$(COQTOPEXE): $(TOPBIN:.opt=.$(BEST))
+	cp $< $@
 
-COQTOP_OPT=toplevel/coqtop_opt_bin.ml
-COQTOP_BYTE=toplevel/coqtop_byte_bin.ml
-
-ifeq ($(BEST),opt)
-$(COQTOPEXE): $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs) $(COQTOP_OPT)
+bin/%.opt$(EXE): topbin/%_bin.ml $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(OCAMLOPT) -linkall -linkpkg -I vernac -I toplevel \
+	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) \
 	                   -I kernel/byterun/ -cclib -lcoqrun \
 			   $(SYSMOD) -package camlp5.gramlib \
-			   $(LINKCMX) $(OPTFLAGS) $(LINKMETADATA) $(COQTOP_OPT) -o $@
+			   $(LINKCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
 	$(STRIP) $@
 	$(CODESIGN) $@
-else
-$(COQTOPEXE): $(COQTOPBYTE)
-	cp $< $@
-endif
 
+bin/%.byte$(EXE): topbin/%_bin.ml $(LINKCMO) $(LIBCOQRUN)
+	$(SHOW)'COQMKTOP -o $@'
+	$(HIDE)$(OCAMLC) -linkall -linkpkg $(MLINCLUDES) \
+	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
+			 $(SYSMOD) -package camlp5.gramlib \
+			 $(LINKCMO) $(BYTEFLAGS) $< -o $@
+
+COQTOP_BYTE=topbin/coqtop_byte_bin.ml
+
+# Special rule for coqtop.byte
 # VMBYTEFLAGS will either contain -custom of the right -dllpath for the VM
-$(COQTOPBYTE): $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA) $(COQTOP_BYTE)
+$(COQTOPBYTE): $(LINKCMO) $(LIBCOQRUN) $(COQTOP_BYTE)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLC) -linkall -linkpkg -I lib -I vernac -I toplevel \
 	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
@@ -477,7 +482,7 @@ COQMAKEFILECMO:=clib/clib.cma lib/lib.cma tools/coq_makefile.cmo
 
 $(COQMAKEFILE): $(call bestobj,$(COQMAKEFILECMO))
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml, -package str,unix,threads)
+	$(HIDE)$(call bestocaml, -package str)
 
 $(COQTEX): $(call bestobj, tools/coq_tex.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
@@ -499,16 +504,16 @@ $(COQWORKMGR): $(call bestobj, clib/clib.cma lib/lib.cma stm/spawned.cmo stm/coq
 	$(HIDE)$(call bestocaml, $(SYSMOD))
 
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
-# a connection to coqtop -ideslave
+# a connection to coqidetop
 
 FAKEIDECMO:=clib/clib.cma lib/lib.cma ide/document.cmo	\
  ide/serialize.cmo ide/xml_lexer.cmo ide/xml_parser.cmo	\
  ide/xml_printer.cmo ide/richpp.cmo ide/xmlprotocol.cmo	\
  tools/fake_ide.cmo
 
-$(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOPLOOPCMA:.cma=$(BESTDYN))
+$(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOP)
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml, -I ide -package str,unix,threads)
+	$(HIDE)$(call bestocaml, -I ide -package str -package dynlink)
 
 # votour: a small vo explorer (based on the checker)
 

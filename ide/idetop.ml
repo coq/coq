@@ -18,9 +18,8 @@ open Printer
 module NamedDecl = Context.Named.Declaration
 module CompactedDecl = Context.Compacted.Declaration
 
-(** Ide_slave : an implementation of [Interface], i.e. mainly an interp
-    function and a rewind function. This specialized loop is triggered
-    when the -ideslave option is passed to Coqtop. *)
+(** Idetop : an implementation of [Interface], i.e. mainly an interp
+    function and a rewind function. *)
 
 
 (** Signal handling: we postpone ^C during input and output phases,
@@ -429,7 +428,7 @@ let eval_call c =
   Xmlprotocol.abstract_eval_call handler c
 
 (** Message dispatching.
-    Since coqtop -ideslave starts 1 thread per slave, and each
+    Since [coqidetop] starts 1 thread per slave, and each
     thread forwards feedback messages from the slave to the GUI on the same
     xml channel, we need mutual exclusion.  The mutex should be per-channel, but
     here we only use 1 channel. *)
@@ -457,7 +456,7 @@ let msg_format = ref (fun () ->
 
 (* The loop ignores the command line arguments as the current model delegates
    its handing to the toplevel container. *)
-let loop _args ~state =
+let loop ~opts:_ ~state =
   let open Vernac.State in
   set_doc state.doc;
   init_signal_handler ();
@@ -506,13 +505,16 @@ let rec parse = function
   | x :: rest -> x :: parse rest
   | [] -> []
 
-let () = Coqtop.toploop_init := (fun coq_args extra_args ->
-        let args = parse extra_args in
-        CoqworkmgrApi.(init High);
-        coq_args, args)
-
-let () = Coqtop.toploop_run := loop
-
 let () = Usage.add_to_usage "coqidetop"
 "  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\
 \n  --help-XML-protocol    print documentation of the Coq XML protocol\n"
+
+let islave_init ~opts extra_args =
+  let args = parse extra_args in
+  CoqworkmgrApi.(init High);
+  opts, args
+
+let () =
+  let open Coqtop in
+  let custom = { init = islave_init; run = loop; } in
+  start_coq custom

@@ -8,9 +8,22 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module W = AsyncTaskQueue.MakeWorker(Stm.QueryTask) ()
+let rec parse = function
+  | "--xml_format=Ppcmds" :: rest -> parse rest
+  | x :: rest -> x :: parse rest
+  | [] -> []
 
-let () = Coqtop.toploop_init := WorkerLoop.loop W.init_stdout
+let arg_init init ~opts extra_args =
+  let extra_args = parse extra_args in
+  Flags.quiet := true;
+  init ();
+  CoqworkmgrApi.(init !async_proofs_worker_priority);
+  opts, extra_args
 
-let () = Coqtop.toploop_run := (fun _ ~state:_ -> W.main_loop ())
-
+let start ~init ~loop =
+  let open Coqtop in
+  let custom = {
+    init = arg_init init;
+    run = (fun ~opts:_ ~state:_ -> loop ());
+  } in
+  start_coq custom

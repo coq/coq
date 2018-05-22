@@ -16,8 +16,9 @@ let coq_macos_version = "8.7.90" (** "[...] should be a string comprised of
 three non-negative, period-separated integers [...]" *)
 let vo_magic = 8791
 let state_magic = 58791
-let distributed_exec = ["coqtop";"coqc";"coqchk";"coqdoc";"coqworkmgr";
-"coqdoc";"coq_makefile";"coq-tex";"gallina";"coqwc";"csdpcert";"coqdep"]
+let distributed_exec =
+  ["coqtop.opt"; "coqidetop.opt"; "coqqueryworker.opt"; "coqproofworker.opt"; "coqtacticworker.opt";
+   "coqc";"coqchk";"coqdoc";"coqworkmgr";"coq_makefile";"coq-tex";"gallina";"coqwc";"csdpcert";"coqdep"]
 
 let verbose = ref false (* for debugging this script *)
 
