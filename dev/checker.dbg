@@ -1,5 +1,6 @@
 load_printer threads.cma
 load_printer str.cma
 load_printer clib.cma
+load_printer dynlink.cma
 load_printer lib.cma
 load_printer check.cma

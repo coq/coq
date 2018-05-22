@@ -2,8 +2,8 @@ source camlp5.dbg
 load_printer threads.cma
 load_printer str.cma
 load_printer clib.cma
-load_printer lib.cma
 load_printer dynlink.cma
+load_printer lib.cma
 load_printer kernel.cma
 load_printer library.cma
 load_printer engine.cma
