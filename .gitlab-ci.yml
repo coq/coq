@@ -112,7 +112,7 @@ before_script:
     # careful with the ending /
     - BIN=$(readlink -f ../_install_ci/bin)/
     - LIB=$(readlink -f ../_install_ci/lib/coq)/
-    - make -j "$NJOBS" BIN="$BIN" LIB="$LIB" all
+    - make -j "$NJOBS" COQBIN="$BIN" COQLIB="$LIB" all
   artifacts:
     name: "$CI_JOB_NAME.logs"
     when: on_failure

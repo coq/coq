@@ -302,7 +302,7 @@ let with_time ~batch f x =
     raise e
 
 let get_toplevel_path top =
-  let dir = Filename.dirname Sys.argv.(0) in
+  let dir = Filename.dirname Sys.executable_name in
   let exe = if Sys.(os_type = "Win32" || os_type = "Cygwin") then ".exe" else "" in
   let eff = if Dynlink.is_native then ".opt" else ".byte" in
   dir ^ Filename.dir_sep ^ top ^ eff ^ exe
