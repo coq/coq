@@ -191,7 +191,7 @@ construct differs from the latter in that
 + The pattern can be nested (deep pattern matching), in particular,
   this allows expression of the form:
 
-.. coqtop:: in
+.. coqdoc::
 
    let: exist (x, y) p_xy := Hp in … .
 
@@ -222,11 +222,7 @@ construct differs from the latter in that
 
 
 The ``let:`` construct is just (more legible) notation for the primitive
-|Gallina| expression
-
-.. coqtop:: in
-
-   match term with pattern => term end.
+|Gallina| expression :n:`match @term with @pattern => @term end`.
 
 The |SSR| destructuring assignment supports all the dependent
 match annotations; the full syntax is
@@ -286,28 +282,17 @@ assignment with a refutable pattern, adapted to the pure functional
 setting of |Gallina|, which lacks a ``Match_Failure`` exception.
 
 Like ``let:`` above, the ``if…is`` construct is just (more legible) notation
-for the primitive |Gallina| expression:
-
-.. coqtop:: in
-
-   match term with pattern => term | _ => term end.
+for the primitive |Gallina| expression
+:n:`match @term with @pattern => @term | _ => @term end`.
 
 Similarly, it will always be displayed as the expansion of this form
 in terms of primitive match expressions (where the default expression
 may be replicated).
 
 Explicit pattern testing also largely subsumes the generalization of
-the if construct to all binary data types; compare:
-
-.. coqtop:: in
-
-   if term is inl _ then term else term.
-
-and:
-
-.. coqtop:: in
-
-   if term then term else term.
+the ``if`` construct to all binary data types; compare
+:n:`if @term is inl _ then @term else @term` and
+:n:`if @term then @term else @term`.
 
 The latter appears to be marginally shorter, but it is quite
 ambiguous, and indeed often requires an explicit annotation
@@ -1147,9 +1132,7 @@ induction on the top variable ``m`` with
    elim=> [|m IHm] n le_n.
 
 The general form of the localization tactical in is also best
-explained in terms of the goal stack:
-
-.. coqtop:: in
+explained in terms of the goal stack::
 
    tactic in a H1 H2 *.
 
@@ -1229,15 +1212,11 @@ The |SSR| case tactic has a special behavior on equalities. If the
 top assumption of the goal is an equality, the case tactic “destructs”
 it as a set of equalities between the constructor arguments of its
 left and right hand sides, as per the tactic injection. For example,
-``case`` changes the goal
-
-.. coqtop:: in
+``case`` changes the goal::
 
    (x, y) = (1, 2) -> G.
 
-into
-
-.. coqtop:: in
+into::
 
    x = 1 -> y = 2 -> G.
 
@@ -1289,9 +1268,7 @@ In fact the |SSR| tactic:
 .. tacn:: apply
    :name: apply (ssreflect)
 
-is a synonym for:
-
-.. coqtop:: in
+is a synonym for::
 
    intro top; first [refine top | refine (top _) | refine (top _ _) | …]; clear top.
 
@@ -1322,18 +1299,14 @@ existential metavariables of sort Prop.
 
    Note that the last ``_`` of the tactic
    ``apply: (ex_intro _ (exist _ y _))``
-   represents a proof that ``y < 3``. Instead of generating the goal
-
-   .. coqtop:: in
+   represents a proof that ``y < 3``. Instead of generating the goal::
 
       0 < proj1_sig (exist (fun n : nat => n < 3) y ?Goal).
 
    the system tries to prove ``y < 3`` calling the trivial tactic.
    If it succeeds, let’s say because the context contains
    ``H : y < 3``, then the
-   system generates the following goal:
-
-   .. coqtop:: in
+   system generates the following goal::
 
       0 < proj1_sig (exist (fun n => n < 3) y H).
 
@@ -1737,7 +1710,7 @@ new constant as an equation. The tactic:
 
 .. coqtop:: in
 
-  move En: (size l) => n.
+   move En: (size l) => n.
 
 where ``l`` is a list, replaces ``size l`` by ``n`` in the goal and
 adds the fact ``En : size l = n`` to the context.
@@ -1745,7 +1718,7 @@ This is quite different from:
 
 .. coqtop:: in
 
-  pose n := (size l).
+   pose n := (size l).
 
 which generates a definition ``n := (size l)``. It is not possible to
 generalize or rewrite such a definition; on the other hand, it is
@@ -1999,19 +1972,9 @@ into a closing one (similar to now). Its general syntax is:
 .. tacn:: by @tactic
    :name: by
 
-The Ltac expression:
-
-.. coqtop:: in
-
-   by [@tactic | [@tactic | …].
-
-is equivalent to:
-
-.. coqtop:: in
-
-   [by @tactic | by @tactic | ...].
-
-and this form should be preferred to the former.
+The Ltac expression :n:`by [@tactic | [@tactic | …]` is equivalent to
+:n:`[by @tactic | by @tactic | ...]` and this form should be preferred
+to the former.
 
 In the script provided as example in section :ref:`indentation_ssr`, the
 paragraph corresponding to each sub-case ends with a tactic line prefixed
@@ -2027,17 +1990,7 @@ with a ``by``, like in:
 The :tacn:`by` tactical is implemented using the user-defined, and extensible
 :tacn:`done` tactic. This :tacn:`done` tactic tries to solve the current goal by some
 trivial means and fails if it doesn’t succeed. Indeed, the tactic
-expression:
-
-.. coqtop:: in
-
-   by tactic.
-
-is equivalent to:
-
-.. coqtop:: in
-
-   tactic; done.
+expression :n:`by @tactic` is equivalent to :n:`@tactic; done`.
 
 Conversely, the tactic
 
