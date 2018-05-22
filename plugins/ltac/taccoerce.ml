@@ -17,6 +17,7 @@ open Namegen
 open Tactypes
 open Genarg
 open Stdarg
+open Tacarg
 open Geninterp
 open Pp
 

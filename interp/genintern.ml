@@ -26,9 +26,15 @@ let empty_glob_sign env = {
   extra = Store.empty;
 }
 
+(** In globalize tactics, we need to keep the initial [constr_expr] to recompute
+   in the environment by the effective calls to Intro, Inversion, etc
+   The [constr_expr] field is [None] in TacDef though *)
+type glob_constr_and_expr = Glob_term.glob_constr * Constrexpr.constr_expr option
+type glob_constr_pattern_and_expr = Id.Set.t * glob_constr_and_expr * Pattern.constr_pattern
+
 type ('raw, 'glb) intern_fun = glob_sign -> 'raw -> glob_sign * 'glb
 type 'glb subst_fun = substitution -> 'glb -> 'glb
-type 'glb ntn_subst_fun = Tactypes.glob_constr_and_expr Id.Map.t -> 'glb -> 'glb
+type 'glb ntn_subst_fun = glob_constr_and_expr Id.Map.t -> 'glb -> 'glb
 
 module InternObj =
 struct

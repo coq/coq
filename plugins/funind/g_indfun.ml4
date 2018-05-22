@@ -15,6 +15,7 @@ open Indfun_common
 open Indfun
 open Genarg
 open Stdarg
+open Tacarg
 open Tactypes
 open Pcoq
 open Pcoq.Prim

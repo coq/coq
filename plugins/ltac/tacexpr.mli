@@ -118,7 +118,7 @@ type ml_tactic_entry = {
 
 (** Composite types *)
 
-type glob_constr_and_expr = Tactypes.glob_constr_and_expr
+type glob_constr_and_expr = Genintern.glob_constr_and_expr
 
 type open_constr_expr = unit * constr_expr
 type open_glob_constr = unit * glob_constr_and_expr
