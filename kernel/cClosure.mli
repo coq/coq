@@ -244,6 +244,6 @@ val kni: clos_infos -> fconstr infos_tab -> fconstr -> stack -> fconstr * stack
 val knr: clos_infos -> fconstr infos_tab -> fconstr -> stack -> fconstr * stack
 val kl : clos_infos -> fconstr infos_tab -> fconstr -> constr
 
-val to_constr : (lift -> fconstr -> constr) -> lift -> fconstr -> constr
+val to_constr : lift -> fconstr -> constr
 
 (** End of cbn debug section i*)

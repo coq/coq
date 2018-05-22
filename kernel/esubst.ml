@@ -134,6 +134,29 @@ let rec exp_rel lams k subs =
 
 let expand_rel k subs = exp_rel 0 k subs
 
+let rec subs_map f = function
+| ESID _ as s -> s
+| CONS (x, s) -> CONS (Array.map f x, subs_map f s)
+| SHIFT (n, s) -> SHIFT (n, subs_map f s)
+| LIFT (n, s) -> LIFT (n, subs_map f s)
+
+let rec lift_subst mk_cl s1 s2 = match s1 with
+| ELID -> subs_map (fun c -> mk_cl ELID c) s2
+| ELSHFT(s, k) -> subs_shft(k, lift_subst mk_cl s s2)
+| ELLFT (k, s) ->
+  match s2 with
+  | CONS(x,s') ->
+      CONS(CArray.Fun1.map mk_cl s1 x, lift_subst mk_cl s1 s')
+  | ESID n -> lift_subst mk_cl s (ESID (n + k))
+  | SHIFT(k',s') ->
+      if k<k'
+      then subs_shft(k, lift_subst mk_cl s (subs_shft(k'-k, s')))
+      else subs_shft(k', lift_subst mk_cl (el_liftn (k-k') s) s')
+  | LIFT(k',s') ->
+      if k<k'
+      then subs_liftn k (lift_subst mk_cl s (subs_liftn (k'-k) s'))
+      else subs_liftn k' (lift_subst mk_cl (el_liftn (k-k') s) s')
+
 let rec comp mk_cl s1 s2 =
   match (s1, s2) with
     | _, ESID _ -> s1
