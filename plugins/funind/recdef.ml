@@ -49,7 +49,7 @@ open Context.Rel.Declaration
 
 (* Ugly things which should not be here *)
 
-let coq_constant m s = EConstr.of_constr @@ Universes.constr_of_global @@
+let coq_constant m s = EConstr.of_constr @@ UnivGen.constr_of_global @@
   Coqlib.coq_reference "RecursiveDefinition" m s
 
 let arith_Nat = ["Arith";"PeanoNat";"Nat"]
@@ -61,7 +61,7 @@ let pr_leconstr_rd =
 
 let coq_init_constant s =
   EConstr.of_constr (
-    Universes.constr_of_global @@
+    UnivGen.constr_of_global @@
     Coqlib.gen_reference_in_modules "RecursiveDefinition" Coqlib.init_modules s)
 
 let find_reference sl s =
@@ -1241,7 +1241,7 @@ let get_current_subgoals_types () =
 
 exception EmptySubgoals
 let build_and_l sigma l =
-  let and_constr =  Universes.constr_of_global @@ Coqlib.build_coq_and () in
+  let and_constr =  UnivGen.constr_of_global @@ Coqlib.build_coq_and () in
   let conj_constr = coq_conj () in
   let mk_and p1 p2 =
     mkApp(EConstr.of_constr and_constr,[|p1;p2|]) in

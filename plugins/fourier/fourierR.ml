@@ -283,15 +283,15 @@ let fourier_lineq lineq1 =
 let get = Lazy.force
 let cget = get
 let eget c = EConstr.of_constr (Lazy.force c)
-let constant path s = Universes.constr_of_global @@
+let constant path s = UnivGen.constr_of_global @@
   Coqlib.coq_reference "Fourier" path s
 
 (* Standard library *)
 open Coqlib
 let coq_sym_eqT = lazy (build_coq_eq_sym ())
-let coq_False = lazy (Universes.constr_of_global @@ build_coq_False ())
-let coq_not = lazy (Universes.constr_of_global @@ build_coq_not ())
-let coq_eq = lazy (Universes.constr_of_global @@ build_coq_eq ())
+let coq_False = lazy (UnivGen.constr_of_global @@ build_coq_False ())
+let coq_not = lazy (UnivGen.constr_of_global @@ build_coq_not ())
+let coq_eq = lazy (UnivGen.constr_of_global @@ build_coq_eq ())
 
 (* Rdefinitions *)
 let constant_real = constant ["Reals";"Rdefinitions"]

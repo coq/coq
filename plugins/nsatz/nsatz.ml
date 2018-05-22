@@ -136,7 +136,7 @@ let mul = function
   | (Const n,q) when eq_num n num_1 -> q
   | (p,q) -> Mul(p,q)
 
-let gen_constant msg path s = Universes.constr_of_global @@
+let gen_constant msg path s = UnivGen.constr_of_global @@
   coq_reference msg path s
 
 let tpexpr  = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PExpr")

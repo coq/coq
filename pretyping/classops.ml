@@ -316,7 +316,7 @@ let lookup_pattern_path_between env (s,t) =
 
 let coercion_value { coe_value = c; coe_type = t; coe_context = ctx; 
 		     coe_is_identity = b; coe_is_projection = b' } =
-  let subst, ctx = Universes.fresh_universe_context_set_instance ctx in
+  let subst, ctx = UnivGen.fresh_universe_context_set_instance ctx in
   let c' = Vars.subst_univs_level_constr subst c 
   and t' = Vars.subst_univs_level_constr subst t in
     (make_judge (EConstr.of_constr c') (EConstr.of_constr t'), b, b'), ctx
@@ -440,7 +440,7 @@ let cache_coercion env sigma (_, c) =
   let () = add_class c.coercion_target in
   let is, _ = class_info c.coercion_source in
   let it, _ = class_info c.coercion_target in
-  let value, ctx = Universes.fresh_global_instance env c.coercion_type in
+  let value, ctx = UnivGen.fresh_global_instance env c.coercion_type in
   let typ = Retyping.get_type_of env sigma (EConstr.of_constr value) in
   let typ = EConstr.Unsafe.to_constr typ in
   let xf =

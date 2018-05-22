@@ -86,7 +86,7 @@ let tj_nf_evar sigma {utj_val=v;utj_type=t} =
   {utj_val=nf_evar sigma v;utj_type=t}
 
 let nf_evars_universes evm =
-  Universes.nf_evars_and_universes_opt_subst (safe_evar_value evm) 
+  UnivSubst.nf_evars_and_universes_opt_subst (safe_evar_value evm)
     (Evd.universe_subst evm)
     
 let nf_evars_and_universes evm =
@@ -830,13 +830,13 @@ let subterm_source evk ?where (loc,k) =
 (* Add equality constraints for covariant/invariant positions. For
    irrelevant positions, unify universes when flexible. *)
 let compare_cumulative_instances cv_pb variances u u' sigma =
-  let open Universes in
+  let open UnivProblem in
   let cstrs = Univ.Constraint.empty in
-  let soft = Constraints.empty in
+  let soft = Set.empty in
   let cstrs, soft = Array.fold_left3 (fun (cstrs, soft) v u u' ->
       let open Univ.Variance in
       match v with
-      | Irrelevant -> cstrs, Constraints.add (UWeak (u,u')) soft
+      | Irrelevant -> cstrs, Set.add (UWeak (u,u')) soft
       | Covariant when cv_pb == Reduction.CUMUL ->
         Univ.Constraint.add (u,Univ.Le,u') cstrs, soft
       | Covariant | Invariant -> Univ.Constraint.add (u,Univ.Eq,u') cstrs, soft)
@@ -848,10 +848,10 @@ let compare_cumulative_instances cv_pb variances u u' sigma =
   | exception Univ.UniverseInconsistency p -> Inr p
 
 let compare_constructor_instances evd u u' =
-  let open Universes in
+  let open UnivProblem in
   let soft =
-    Array.fold_left2 (fun cs u u' -> Constraints.add (UWeak (u,u')) cs)
-      Constraints.empty (Univ.Instance.to_array u) (Univ.Instance.to_array u')
+    Array.fold_left2 (fun cs u u' -> Set.add (UWeak (u,u')) cs)
+      Set.empty (Univ.Instance.to_array u) (Univ.Instance.to_array u')
   in
   Evd.add_universe_constraints evd soft
 
@@ -870,7 +870,7 @@ let eq_constr_univs_test sigma1 sigma2 t u =
     with Univ.UniverseInconsistency _ | UniversesDiffer -> None
   in
   let ans =
-    Universes.eq_constr_univs_infer_with
+    UnivProblem.eq_constr_univs_infer_with
       (fun t -> kind_of_term_upto sigma1 t)
       (fun u -> kind_of_term_upto sigma2 u)
       (universes sigma2) fold t u sigma2

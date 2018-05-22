@@ -32,8 +32,8 @@ type goal_reference =
   | NthGoal of int
   | GoalId of Id.t
 
-type univ_name_list = Universes.univ_name_list
-[@@ocaml.deprecated "Use [Universes.univ_name_list]"]
+type univ_name_list = UnivNames.univ_name_list
+[@@ocaml.deprecated "Use [UnivNames.univ_name_list]"]
 
 type printable =
   | PrintTables
@@ -49,7 +49,7 @@ type printable =
   | PrintMLLoadPath
   | PrintMLModules
   | PrintDebugGC
-  | PrintName of reference or_by_notation * Universes.univ_name_list option
+  | PrintName of reference or_by_notation * UnivNames.univ_name_list option
   | PrintGraph
   | PrintClasses
   | PrintTypeClasses
@@ -65,7 +65,7 @@ type printable =
   | PrintScopes
   | PrintScope of string
   | PrintVisibility of string option
-  | PrintAbout of reference or_by_notation * Universes.univ_name_list option * Goal_select.t option
+  | PrintAbout of reference or_by_notation * UnivNames.univ_name_list option * Goal_select.t option
   | PrintImplicit of reference or_by_notation
   | PrintAssumptions of bool * bool * reference or_by_notation
   | PrintStrategy of reference or_by_notation option

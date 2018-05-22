@@ -93,7 +93,7 @@ let one_base general_rewrite_maybe_in tac_main bas =
   let try_rewrite dir ctx c tc =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
-    let subst, ctx' = Universes.fresh_universe_context_set_instance ctx in
+    let subst, ctx' = UnivGen.fresh_universe_context_set_instance ctx in
     let c' = Vars.subst_univs_level_constr subst c in
     let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx' in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)

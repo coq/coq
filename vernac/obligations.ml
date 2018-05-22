@@ -259,7 +259,7 @@ let eterm_obligations env name evm fs ?status t ty =
 let tactics_module = ["Program";"Tactics"]
 let safe_init_constant md name () =
   Coqlib.check_required_library ("Coq"::md);
-  Universes.constr_of_global (Coqlib.coq_reference "Obligations" md name)
+  UnivGen.constr_of_global (Coqlib.coq_reference "Obligations" md name)
 let hide_obligation = safe_init_constant tactics_module "obligation"
 
 let pperror cmd = CErrors.user_err ~hdr:"Program" cmd
@@ -472,7 +472,7 @@ let subst_body expand prg =
 
 let declare_definition prg =
   let body, typ = subst_body true prg in
-  let nf = Universes.nf_evars_and_universes_opt_subst (fun x -> None)
+  let nf = UnivSubst.nf_evars_and_universes_opt_subst (fun x -> None)
     (UState.subst prg.prg_ctx) in
   let opaque = prg.prg_opaque in
   let fix_exn = Hook.get get_fix_exn () in
@@ -555,7 +555,7 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let univs = UState.const_univ_entry ~poly first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
-  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) Universes.empty_binders univs)
+  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) UnivNames.empty_binders univs)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
     List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;

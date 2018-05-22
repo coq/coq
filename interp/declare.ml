@@ -487,7 +487,7 @@ let add_universe src (dp, i) =
   Option.iter (fun poly ->
       let ctx = Univ.ContextSet.add_universe level Univ.ContextSet.empty in
       Global.push_context_set poly ctx;
-      Universes.add_global_universe level poly;
+      UnivNames.add_global_universe level poly;
       if poly then Lib.add_section_context ctx)
     optpoly
 
@@ -538,7 +538,7 @@ let input_universe : universe_decl -> Libobject.obj =
 
 let declare_univ_binders gr pl =
   if Global.is_polymorphic gr then
-    Universes.register_universe_binders gr pl
+    UnivNames.register_universe_binders gr pl
   else
     let l = match gr with
       | ConstRef c -> Label.to_id @@ Constant.label c
@@ -564,7 +564,7 @@ let do_universe poly l =
   in
   let l =
     List.map (fun {CAst.v=id} ->
-      let lev = Universes.new_univ_id () in
+      let lev = UnivGen.new_univ_id () in
       (id, lev)) l
   in
   let src = if poly then BoundUniv else UnqualifiedUniv in
@@ -595,7 +595,7 @@ let input_constraints : constraint_decl -> Libobject.obj =
 let do_constraint poly l =
   let u_of_id x =
     let level = Pretyping.interp_known_glob_level (Evd.from_env (Global.env ())) x in
-    Universes.is_polymorphic level, level
+    UnivNames.is_polymorphic level, level
   in
   let in_section = Lib.sections_are_opened () in
   let () =

@@ -342,7 +342,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
      normalise them for the kernel. *)
   let subst_evar k =
     Proof.in_proof proof (fun m -> Evd.existential_opt_value0 m k) in
-  let nf = Universes.nf_evars_and_universes_opt_subst subst_evar
+  let nf = UnivSubst.nf_evars_and_universes_opt_subst subst_evar
     (UState.subst universes) in
   let make_body =
     if poly || now then

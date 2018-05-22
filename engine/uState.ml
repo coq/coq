@@ -20,14 +20,14 @@ type uinfo = {
   uloc : Loc.t option;
 }
 
-module UPairSet = Universes.UPairSet
+module UPairSet = UnivMinim.UPairSet
 
 (* 2nd part used to check consistency on the fly. *)
 type t =
- { uctx_names : Universes.universe_binders * uinfo Univ.LMap.t;
+ { uctx_names : UnivNames.universe_binders * uinfo Univ.LMap.t;
    uctx_local : Univ.ContextSet.t; (** The local context of variables *)
    uctx_seff_univs : Univ.LSet.t; (** Local universes used through private constants *)
-   uctx_univ_variables : Universes.universe_opt_subst;
+   uctx_univ_variables : UnivSubst.universe_opt_subst;
    (** The local universes that are unification variables *)
    uctx_univ_algebraic : Univ.LSet.t; 
    (** The subset of unification variables that can be instantiated with
@@ -152,7 +152,8 @@ let drop_weak_constraints = ref false
 
 let process_universe_constraints ctx cstrs =
   let open Univ in
-  let open Universes in
+  let open UnivSubst in
+  let open UnivProblem in
   let univs = ctx.uctx_universes in
   let vars = ref ctx.uctx_univ_variables in
   let weak = ref ctx.uctx_weak_constraints in
@@ -203,7 +204,7 @@ let process_universe_constraints ctx cstrs =
   in
   let unify_universes cst local =
     let cst = nf_constraint cst in
-      if Constraints.is_trivial cst then local
+      if UnivProblem.is_trivial cst then local
       else 
           match cst with
           | ULe (l, r) ->
@@ -241,7 +242,7 @@ let process_universe_constraints ctx cstrs =
           | UEq (l, r) -> equalize_universes l r local
   in
   let local = 
-    Constraints.fold unify_universes cstrs Univ.Constraint.empty
+    UnivProblem.Set.fold unify_universes cstrs Univ.Constraint.empty
   in
     !vars, !weak, local
 
@@ -249,13 +250,14 @@ let add_constraints ctx cstrs =
   let univs, local = ctx.uctx_local in
   let cstrs' = Univ.Constraint.fold (fun (l,d,r) acc -> 
     let l = Univ.Universe.make l and r = Univ.Universe.make r in
-    let cstr' = match d with
+    let cstr' = let open UnivProblem in
+      match d with
       | Univ.Lt ->
-        Universes.ULe (Univ.Universe.super l, r)
-      | Univ.Le -> Universes.ULe (l, r)
-      | Univ.Eq -> Universes.UEq (l, r)
-    in Universes.Constraints.add cstr' acc)
-    cstrs Universes.Constraints.empty
+        ULe (Univ.Universe.super l, r)
+      | Univ.Le -> ULe (l, r)
+      | Univ.Eq -> UEq (l, r)
+    in UnivProblem.Set.add cstr' acc)
+    cstrs UnivProblem.Set.empty
   in
   let vars, weak, local' = process_universe_constraints ctx cstrs' in
   { ctx with
@@ -298,7 +300,7 @@ let reference_of_level uctx =
     fun l ->
       try CAst.make @@ Libnames.Ident (Option.get (Univ.LMap.find l map_rev).uname)
       with Not_found | Option.IsNone ->
-        Universes.reference_of_level l
+        UnivNames.reference_of_level l
 
 let pr_uctx_level uctx l =
   Libnames.pr_reference (reference_of_level uctx l)
@@ -471,7 +473,7 @@ let emit_side_effects eff u =
 
 let new_univ_variable ?loc rigid name
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =
-  let u = Universes.new_univ_level () in
+  let u = UnivGen.new_univ_level () in
   let ctx' = Univ.ContextSet.add_universe u ctx in
   let uctx', pred =
     match rigid with
@@ -549,14 +551,33 @@ let is_sort_variable uctx s =
   | _ -> None
 
 let subst_univs_context_with_def def usubst (ctx, cst) =
-  (Univ.LSet.diff ctx def, Universes.subst_univs_constraints usubst cst)
+  (Univ.LSet.diff ctx def, UnivSubst.subst_univs_constraints usubst cst)
+
+let is_trivial_leq (l,d,r) =
+  Univ.Level.is_prop l && (d == Univ.Le || (d == Univ.Lt && Univ.Level.is_set r))
+
+(* Prop < i <-> Set+1 <= i <-> Set < i *)
+let translate_cstr (l,d,r as cstr) =
+  let open Univ in
+  if Level.equal Level.prop l && d == Univ.Lt && not (Level.equal Level.set r) then
+    (Level.set, d, r)
+  else cstr
+
+let refresh_constraints univs (ctx, cstrs) =
+  let cstrs', univs' =
+    Univ.Constraint.fold (fun c (cstrs', univs as acc) ->
+      let c = translate_cstr c in
+      if is_trivial_leq c then acc
+      else (Univ.Constraint.add c cstrs', UGraph.enforce_constraint c univs))
+      cstrs (Univ.Constraint.empty, univs)
+  in ((ctx, cstrs'), univs')
 
 let normalize_variables uctx =
   let normalized_variables, undef, def, subst = 
-    Universes.normalize_univ_variables uctx.uctx_univ_variables 
+    UnivSubst.normalize_univ_variables uctx.uctx_univ_variables
   in
   let ctx_local = subst_univs_context_with_def def (Univ.make_subst subst) uctx.uctx_local in
-  let ctx_local', univs = Universes.refresh_constraints uctx.uctx_initial_universes ctx_local in
+  let ctx_local', univs = refresh_constraints uctx.uctx_initial_universes ctx_local in
     subst, { uctx with uctx_local = ctx_local';
       uctx_univ_variables = normalized_variables;
       uctx_universes = univs }
@@ -582,7 +603,7 @@ let fix_undefined_variables uctx =
     uctx_univ_algebraic = algs' }
 
 let refresh_undefined_univ_variables uctx =
-  let subst, ctx' = Universes.fresh_universe_context_set_instance uctx.uctx_local in
+  let subst, ctx' = UnivGen.fresh_universe_context_set_instance uctx.uctx_local in
   let subst_fn u = Univ.subst_univs_level_level subst u in
   let alg = Univ.LSet.fold (fun u acc -> Univ.LSet.add (subst_fn u) acc)
     uctx.uctx_univ_algebraic Univ.LSet.empty 
@@ -609,7 +630,7 @@ let refresh_undefined_univ_variables uctx =
     uctx', subst
 
 let minimize uctx =
-  let open Universes in
+  let open UnivMinim in
   let ((vars',algs'), us') =
     normalize_context_set uctx.uctx_universes uctx.uctx_local uctx.uctx_univ_variables
       uctx.uctx_univ_algebraic uctx.uctx_weak_constraints

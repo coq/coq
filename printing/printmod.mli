@@ -15,6 +15,6 @@ val printable_body : DirPath.t -> bool
 
 val pr_mutual_inductive_body : Environ.env ->
   MutInd.t -> Declarations.mutual_inductive_body ->
-  Universes.univ_name_list option -> Pp.t
+  UnivNames.univ_name_list option -> Pp.t
 val print_module : bool -> ModPath.t -> Pp.t
 val print_modtype : ModPath.t -> Pp.t

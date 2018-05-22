@@ -69,19 +69,19 @@ let z_module = [["Coq";"ZArith";"BinInt"]]
 
 let init_constant x =
   EConstr.of_constr @@
-  Universes.constr_of_global @@
+  UnivGen.constr_of_global @@
   Coqlib.gen_reference_in_modules "Omega" Coqlib.init_modules x
 let constant x =
   EConstr.of_constr @@
-  Universes.constr_of_global @@
+  UnivGen.constr_of_global @@
   Coqlib.gen_reference_in_modules "Omega" coq_modules x
 let z_constant x =
   EConstr.of_constr @@
-  Universes.constr_of_global @@
+  UnivGen.constr_of_global @@
   Coqlib.gen_reference_in_modules "Omega" z_module x
 let bin_constant x =
   EConstr.of_constr @@
-  Universes.constr_of_global @@
+  UnivGen.constr_of_global @@
   Coqlib.gen_reference_in_modules "Omega" bin_module x
 
 (* Logic *)
@@ -170,7 +170,7 @@ let mk_list univ typ l =
   loop l
 
 let mk_plist =
-  let type1lev = Universes.new_univ_level () in
+  let type1lev = UnivGen.new_univ_level () in
   fun l -> mk_list type1lev EConstr.mkProp l
 
 let mk_list = mk_list Univ.Level.set

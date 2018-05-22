@@ -35,8 +35,8 @@ open Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 type object_pr = {
-  print_inductive           : MutInd.t -> Universes.univ_name_list option -> Pp.t;
-  print_constant_with_infos : Constant.t -> Universes.univ_name_list option -> Pp.t;
+  print_inductive           : MutInd.t -> UnivNames.univ_name_list option -> Pp.t;
+  print_constant_with_infos : Constant.t -> UnivNames.univ_name_list option -> Pp.t;
   print_section_variable    : env -> Evd.evar_map -> variable -> Pp.t;
   print_syntactic_def       : env -> KerName.t -> Pp.t;
   print_module              : bool -> ModPath.t -> Pp.t;
@@ -93,7 +93,7 @@ let print_ref reduce ref udecl =
   let inst = Univ.AUContext.instance univs in
   let univs = Univ.UContext.make (inst, Univ.AUContext.instantiate inst univs) in
   let env = Global.env () in
-  let bl = Universes.universe_binders_with_opt_names ref
+  let bl = UnivNames.universe_binders_with_opt_names ref
       (Array.to_list (Univ.Instance.to_array inst)) udecl in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
   let inst =
@@ -594,7 +594,7 @@ let print_constant with_values sep sp udecl =
   in
   let ctx =
     UState.of_binders
-      (Universes.universe_binders_with_opt_names (ConstRef sp) ulist udecl)
+      (UnivNames.universe_binders_with_opt_names (ConstRef sp) ulist udecl)
   in
   let env = Global.env () and sigma = Evd.from_ctx ctx in
   let pr_ltype = pr_ltype_env env sigma in

@@ -876,7 +876,7 @@ let fresh_global_or_constr env sigma poly cr =
   let isgr, (c, ctx) =
     match cr with
     | IsGlobRef gr ->
-      let (c, ctx) = Universes.fresh_global_instance env gr in
+      let (c, ctx) = UnivGen.fresh_global_instance env gr in
        true, (EConstr.of_constr c, ctx)
     | IsConstr (c, ctx) -> false, (c, ctx)
   in

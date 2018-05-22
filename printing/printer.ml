@@ -293,7 +293,7 @@ let pr_global = pr_global_env Id.Set.empty
 let pr_puniverses f env (c,u) =
   f env c ++ 
   (if !Constrextern.print_universes then
-    str"(*" ++ Univ.Instance.pr Universes.pr_with_global_universes u ++ str"*)"
+    str"(*" ++ Univ.Instance.pr UnivNames.pr_with_global_universes u ++ str"*)"
    else mt ())
 
 let pr_constant env cst = pr_global_env (Termops.vars_of_env env) (ConstRef cst)

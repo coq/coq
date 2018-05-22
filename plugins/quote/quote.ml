@@ -120,7 +120,7 @@ open Proofview.Notations
   the constants are loaded in the environment *)
 
 let constant dir s =
-  EConstr.of_constr @@ Universes.constr_of_global @@
+  EConstr.of_constr @@ UnivGen.constr_of_global @@
     Coqlib.coq_reference "Quote" ("quote"::dir) s
 
 let coq_Empty_vm = lazy (constant ["Quote"] "Empty_vm")

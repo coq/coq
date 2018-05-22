@@ -59,15 +59,15 @@ exception NonSingletonProp of inductive
 exception DecidabilityMutualNotSupported
 exception NoDecidabilityCoInductive
 
-let constr_of_global g = lazy (Universes.constr_of_global g)
+let constr_of_global g = lazy (UnivGen.constr_of_global g)
 
 (* Some pre declaration of constant we are going to use *)
 let bb = constr_of_global Coqlib.glob_bool
 
-let andb_prop = fun _ -> Universes.constr_of_global (Coqlib.build_bool_type()).Coqlib.andb_prop
+let andb_prop = fun _ -> UnivGen.constr_of_global (Coqlib.build_bool_type()).Coqlib.andb_prop
 
 let andb_true_intro = fun _ ->
-  Universes.constr_of_global
+  UnivGen.constr_of_global
     (Coqlib.build_bool_type()).Coqlib.andb_true_intro
 
 let tt = constr_of_global Coqlib.glob_true
@@ -76,9 +76,9 @@ let ff = constr_of_global Coqlib.glob_false
 
 let eq = constr_of_global Coqlib.glob_eq
 
-let sumbool () = Universes.constr_of_global (Coqlib.build_coq_sumbool ())
+let sumbool () = UnivGen.constr_of_global (Coqlib.build_coq_sumbool ())
 
-let andb = fun _ -> Universes.constr_of_global (Coqlib.build_bool_type()).Coqlib.andb
+let andb = fun _ -> UnivGen.constr_of_global (Coqlib.build_bool_type()).Coqlib.andb
 
 let induct_on c = induction false None c None None
 
@@ -863,7 +863,7 @@ let compute_dec_goal ind lnamesparrec nparrec =
         create_input (
           mkNamedProd n (mkFullInd ind (2*nparrec)) (
             mkNamedProd m (mkFullInd ind (2*nparrec+1)) (
-              mkApp(sumbool(),[|eqnm;mkApp (Universes.constr_of_global @@ Coqlib.build_coq_not(),[|eqnm|])|])
+              mkApp(sumbool(),[|eqnm;mkApp (UnivGen.constr_of_global @@ Coqlib.build_coq_not(),[|eqnm|])|])
           )
         )
       )

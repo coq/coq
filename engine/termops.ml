@@ -47,7 +47,7 @@ let pr_fix pr_constr ((t,i),(lna,tl,bl)) =
 
 let pr_puniverses p u = 
   if Univ.Instance.is_empty u then p 
-  else p ++ str"(*" ++ Univ.Instance.pr Universes.pr_with_global_universes u ++ str"*)"
+  else p ++ str"(*" ++ Univ.Instance.pr UnivNames.pr_with_global_universes u ++ str"*)"
 
 let rec pr_constr c = match kind c with
   | Rel n -> str "#"++int n
@@ -306,7 +306,7 @@ let pr_evar_universe_context ctx =
      str"ALGEBRAIC UNIVERSES:"++brk(0,1)++
      h 0 (Univ.LSet.pr prl (UState.algebraics ctx)) ++ fnl() ++
      str"UNDEFINED UNIVERSES:"++brk(0,1)++
-     h 0 (Universes.pr_universe_opt_subst (UState.subst ctx)) ++ fnl() ++
+     h 0 (UnivSubst.pr_universe_opt_subst (UState.subst ctx)) ++ fnl() ++
      str "WEAK CONSTRAINTS:"++brk(0,1)++
      h 0 (UState.pr_weak prl ctx) ++ fnl ())
 

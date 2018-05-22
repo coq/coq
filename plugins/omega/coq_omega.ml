@@ -206,7 +206,7 @@ let coq_modules =
   init_modules @arith_modules @ [logic_dir] @ zarith_base_modules
     @ [["Coq"; "omega"; "OmegaLemmas"]]
 
-let gen_constant_in_modules n m s = EConstr.of_constr (Universes.constr_of_global @@ gen_reference_in_modules n m s)
+let gen_constant_in_modules n m s = EConstr.of_constr (UnivGen.constr_of_global @@ gen_reference_in_modules n m s)
 let init_constant = gen_constant_in_modules "Omega" init_modules
 let constant = gen_constant_in_modules "Omega" coq_modules
 

@@ -804,19 +804,19 @@ let make_flexible_variable evd ~algebraic u =
 (****************************************)
 
 let fresh_sort_in_family ?loc ?(rigid=univ_flexible) env evd s = 
-  with_context_set ?loc rigid evd (Universes.fresh_sort_in_family env s)
+  with_context_set ?loc rigid evd (UnivGen.fresh_sort_in_family env s)
 
 let fresh_constant_instance ?loc env evd c =
-  with_context_set ?loc univ_flexible evd (Universes.fresh_constant_instance env c)
+  with_context_set ?loc univ_flexible evd (UnivGen.fresh_constant_instance env c)
 
 let fresh_inductive_instance ?loc env evd i =
-  with_context_set ?loc univ_flexible evd (Universes.fresh_inductive_instance env i)
+  with_context_set ?loc univ_flexible evd (UnivGen.fresh_inductive_instance env i)
 
 let fresh_constructor_instance ?loc env evd c =
-  with_context_set ?loc univ_flexible evd (Universes.fresh_constructor_instance env c)
+  with_context_set ?loc univ_flexible evd (UnivGen.fresh_constructor_instance env c)
 
 let fresh_global ?loc ?(rigid=univ_flexible) ?names env evd gr =
-  with_context_set ?loc rigid evd (Universes.fresh_global_instance ?names env gr)
+  with_context_set ?loc rigid evd (UnivGen.fresh_global_instance ?names env gr)
 
 let whd_sort_variable evd t = t
 
@@ -843,12 +843,12 @@ let universe_rigidity evd l =
 
 let normalize_universe evd =
   let vars = UState.subst evd.universes in
-  let normalize = Universes.normalize_universe_opt_subst vars in
+  let normalize = UnivSubst.normalize_universe_opt_subst vars in
     normalize
 
 let normalize_universe_instance evd l =
   let vars = UState.subst evd.universes in
-  let normalize = Universes.level_subst_of (Universes.normalize_univ_variable_opt_subst vars) in
+  let normalize = UnivSubst.level_subst_of (UnivSubst.normalize_univ_variable_opt_subst vars) in
     Univ.Instance.subst_fn normalize l
 
 let normalize_sort evars s =
@@ -866,7 +866,7 @@ let set_eq_sort env d s1 s2 =
   | Some (u1, u2) ->
     if not (type_in_type env) then
       add_universe_constraints d
-        (Universes.Constraints.singleton (Universes.UEq (u1,u2)))
+        (UnivProblem.Set.singleton (UnivProblem.UEq (u1,u2)))
     else
       d
 
@@ -878,7 +878,7 @@ let set_leq_level d u1 u2 =
 
 let set_eq_instances ?(flex=false) d u1 u2 =
   add_universe_constraints d
-    (Universes.enforce_eq_instances_univs flex u1 u2 Universes.Constraints.empty)
+    (UnivProblem.enforce_eq_instances_univs flex u1 u2 UnivProblem.Set.empty)
 
 let set_leq_sort env evd s1 s2 =
   let s1 = normalize_sort evd s1 
@@ -887,7 +887,7 @@ let set_leq_sort env evd s1 s2 =
   | None -> evd
   | Some (u1, u2) ->
      if not (type_in_type env) then
-       add_universe_constraints evd (Universes.Constraints.singleton (Universes.ULe (u1,u2)))
+       add_universe_constraints evd (UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2)))
      else evd
 	    
 let check_eq evd s s' =
@@ -1297,7 +1297,7 @@ module MiniEConstr = struct
         | Some _ as v -> v
         | None -> anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
     in
-    Universes.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c
+    UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c
 
   let of_named_decl d = d
   let unsafe_to_named_decl d = d
