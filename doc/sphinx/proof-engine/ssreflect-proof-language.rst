@@ -193,7 +193,7 @@ construct differs from the latter in that
 
 .. coqtop:: in
 
-  let: exist (x, y) p_xy := Hp in … .
+   let: exist (x, y) p_xy := Hp in … .
 
 + The destructured constructor is explicitly given in the pattern, and
   is used for type inference.
@@ -434,7 +434,7 @@ a functional constant, whose implicit arguments are prenex, i.e., the first
 As these prenex implicit arguments are ubiquitous and have often large
 display strings, it is strongly recommended to change the default
 display settings of |Coq| so that they are not printed (except after
-a ``Set Printing All command``). All |SSR| library files thus start
+a ``Set Printing All`` command). All |SSR| library files thus start
 with the incantation
 
 .. coqtop:: all undo
@@ -496,10 +496,10 @@ Definitions
 .. tacn:: pose
    :name: pose (ssreflect)
 
-This tactic allows to add a defined constant to a proof context.
-|SSR| generalizes this tactic in several ways. In particular, the
-|SSR| pose tactic supports *open syntax*: the body of the
-definition does not need surrounding parentheses. For instance:
+   This tactic allows to add a defined constant to a proof context.
+   |SSR| generalizes this tactic in several ways. In particular, the
+   |SSR| pose tactic supports *open syntax*: the body of the
+   definition does not need surrounding parentheses. For instance:
 
 .. coqtop:: reset
 
@@ -1212,8 +1212,8 @@ product or a ``let…in``, and performs ``hnf`` otherwise.
 
 Of course this tactic is most often used in combination with the
 bookkeeping tacticals (see section :ref:`introduction_ssr` and :ref:`discharge_ssr`). These
-combinations mostly subsume the ``intros``, ``generalize``, ``revert``, ``rename``,
-``clear`` and ``pattern`` tactics.
+combinations mostly subsume the :tacn:`intros`, :tacn:`generalize`, :tacn:`revert`, :tacn:`rename`,
+:tacn:`clear` and :tacn:`pattern` tactics.
 
 
 The case tactic
@@ -1834,7 +1834,7 @@ compact syntax:
 
 .. coqtop:: in
 
-  case: {2}_ / eqP.
+   case: {2}_ / eqP.
 
 where ``_`` is interpreted as ``(_ == _)`` since
 ``eqP T a b : reflect (a = b) (a == b)`` and reflect is a type family with
@@ -2738,7 +2738,7 @@ type classes inference.
   Full inference for ``ty``. The first subgoal demands a
   proof of such instantiated statement.
 
-+ coqtop::
++ .. coqtop:: in undo
 
      have foo : ty := .
 
@@ -2929,7 +2929,7 @@ Advanced generalization
 The complete syntax for the items on the left hand side of the ``/``
 separator is the following one:
 
-.. tacv wlog … : {? @clear_switch | {? @  } @ident | ( {? @  } @ident := @c_pattern) } / @term
+.. tacv:: wlog … : {? @clear_switch | {? @  } @ident | ( {? @  } @ident := @c_pattern) } / @term
 
 Clear operations are intertwined with generalization operations. This
 helps in particular avoiding dependency issues while generalizing some
@@ -4691,9 +4691,11 @@ Note that the goal interpretation view mechanism supports both ``apply``
 and ``exact`` tactics. As expected, a goal interpretation view command
 exact/term should solve the current goal or it will fail.
 
-*Warning* Goal interpretation view tactics are *not* compatible with
-the bookkeeping tactical ``=>`` since this would be redundant with the
-``apply: term => _`` construction.
+.. warning::
+
+   Goal interpretation view tactics are *not* compatible with
+   the bookkeeping tactical ``=>`` since this would be redundant with the
+   ``apply: term => _`` construction.
 
 
 Boolean reflection
