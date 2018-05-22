@@ -35,7 +35,7 @@ docker-boot:
 before_script:
   - cat /proc/{cpu,mem}info || true
   - ls -a # figure out if artifacts are around
-  - printenv | sort
+  - printenv -0 | sort -z | tr '\0' '\n'
   - declare -A switch_table
   - switch_table=( ["base"]="$COMPILER" ["edge"]="$COMPILER_BE" )
   - opam switch -y "${switch_table[$OPAM_SWITCH]}$OPAM_VARIANT"
