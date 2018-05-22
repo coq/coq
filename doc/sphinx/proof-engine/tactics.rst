@@ -971,7 +971,7 @@ quantification or an implication.
       move H0 before H.
 
 .. tacn:: rename @ident into @ident
-   :name: rename ... into ...
+   :name: rename
 
 This renames hypothesis :n:`@ident` into :n:`@ident` in the current context.
 The name of the hypothesis in the proof-term, however, is left unchanged.
