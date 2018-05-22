@@ -43,8 +43,8 @@ A maintainer is expected to be reasonably reactive, but no specific timeframe is
 given for reviewing.
 
 (*) In case a component is touched in a trivial way (adding/removing one file in
-a `Makefile`, etc), or by applying a systematic process (global renaming,
-deprecationg propagation, etc) that has been reviewed globally, the assignee can
+a `Makefile`, etc), or by applying a systematic refactoring process (global
+renaming for instance) that has been reviewed globally, the assignee can
 say in a comment they think a review is not required and proceed with the merge.
 
 ## Merging
@@ -92,7 +92,9 @@ messy history when there are conflicts.
 ### What to do if the PR has overlays
 
 If the PR breaks compatibility of some developments in CI, then the author must
-have prepared overlays for these developments (see [`dev/ci/README.md`](/dev/ci/README.md))
+have prepared overlays for these developments (see
+[`dev/ci/user-overlays/README.md`](/dev/ci/user-overlays/README.md) for
+detailed explanations of what this is)
 and the PR must absolutely update the `CHANGES` file.
 
 There are two cases to consider:

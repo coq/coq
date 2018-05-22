@@ -1,8 +1,21 @@
 # Add overlays for your pull requests in this directory
 
-An overlay is a file containing very simple logic to test whether we are currently building a specific pull request or git branch (useful so that overlays work on your own fork) and which changes some of the variables whose default can be found in [`ci-basic-overlay.sh`](/dev/ci/ci-basic-overlay.sh).
+When your pull request breaks an external development we test in our CI, you
+must prepare a patch (or ask someone to prepare a patch) to fix this development.
+Backward compatible patches are to be preferred, especially on libraries (it is
+harder to make backward compatible patches for plugins).
 
-The name of your overlay file should be of the form `five_digit_PR_number-GitHub_handle-branch_name.sh`.
+Once you have a patched version, you can add an overlay to your pull request:
+this is a file which defines where to look for the patched version so that
+testing is possible. It changes the value of some variables from
+[`ci-basic-overlay.sh`](/dev/ci/ci-basic-overlay.sh) (generally both the
+`_CI_BRANCH` and the `_CI_GITURL` variables of a given development at once).
+
+The file contains very simple logic to test the pull request number or branch
+name and apply it only in this case.
+
+The name of your overlay file should be of the form
+`five_digit_PR_number-GitHub_handle-branch_name.sh`.
 
 Example: `00669-maximedenes-ssr-merge.sh` containing
 
