@@ -293,7 +293,7 @@ let rec subst_pattern subst pat =
 	  PProj(p',c')
   | PApp (f,args) ->
       let f' = subst_pattern subst f in
-      let args' = Array.smartmap (subst_pattern subst) args in
+      let args' = Array.Smart.map (subst_pattern subst) args in
 	if f' == f && args' == args then pat else
 	  PApp (f',args')
   | PSoApp (i,args) ->
@@ -339,13 +339,13 @@ let rec subst_pattern subst pat =
       then pat
       else PCase(cip', typ', c', branches')
   | PFix (lni,(lna,tl,bl)) ->
-      let tl' = Array.smartmap (subst_pattern subst) tl in
-      let bl' = Array.smartmap (subst_pattern subst) bl in
+      let tl' = Array.Smart.map (subst_pattern subst) tl in
+      let bl' = Array.Smart.map (subst_pattern subst) bl in
       if bl' == bl && tl' == tl then pat
       else PFix (lni,(lna,tl',bl'))
   | PCoFix (ln,(lna,tl,bl)) ->
-      let tl' = Array.smartmap (subst_pattern subst) tl in
-      let bl' = Array.smartmap (subst_pattern subst) bl in
+      let tl' = Array.Smart.map (subst_pattern subst) tl in
+      let bl' = Array.Smart.map (subst_pattern subst) bl in
       if bl' == bl && tl' == tl then pat
       else PCoFix (ln,(lna,tl',bl'))
 

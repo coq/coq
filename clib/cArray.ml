@@ -50,9 +50,9 @@ sig
   val map_of_list : ('a -> 'b) -> 'a list -> 'b array
   val chop : int -> 'a array -> 'a array * 'a array
   val smartmap : ('a -> 'a) -> 'a array -> 'a array
-  val smartmap2 : ('a -> 'b -> 'b) -> 'a array -> 'b array -> 'b array
+  [@@ocaml.deprecated "Same as [Smart.map]"]
   val smartfoldmap : ('r -> 'a -> 'r * 'a) -> 'r -> 'a array -> 'r * 'a array
-  val smartfoldmap2 : ('r -> 'a -> 'b -> 'r * 'b) -> 'r -> 'a array -> 'b array -> 'r * 'b array
+  [@@ocaml.deprecated "Same as [Smart.fold_left_map]"]
   val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
@@ -74,6 +74,13 @@ sig
   val rev_of_list : 'a list -> 'a array
   val rev_to_list : 'a array -> 'a list
   val filter_with : bool list -> 'a array -> 'a array
+  module Smart :
+  sig
+    val map : ('a -> 'a) -> 'a array -> 'a array
+    val map2 : ('a -> 'b -> 'b) -> 'a array -> 'b array -> 'b array
+    val fold_left_map : ('a -> 'b -> 'a * 'b) -> 'a -> 'b array -> 'a * 'b array
+    val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'c) -> 'a -> 'b array -> 'c array -> 'a * 'c array
+  end
 end
 
 include Array
@@ -328,142 +335,6 @@ let chop n v =
   if n > vlen then failwith "Array.chop";
   (Array.sub v 0 n, Array.sub v n (vlen-n))
 
-(* If none of the elements is changed by f we return ar itself.
-   The while loop looks for the first such an element.
-   If found, we break here and the new array is produced,
-   but f is not re-applied to elements that are already checked *)
-let smartmap f (ar : 'a array) =
-  let len = Array.length ar in
-  let i = ref 0 in
-  let break = ref true in
-  let temp = ref None in
-  while !break && (!i < len) do
-    let v = Array.unsafe_get ar !i in
-    let v' = f v in
-    if v == v' then incr i
-    else begin
-      break := false;
-      temp := Some v';
-    end
-  done;
-  if !i < len then begin
-    (** The array is not the same as the original one *)
-    let ans : 'a array = Array.copy ar in
-    let v = match !temp with None -> assert false | Some x -> x in
-    Array.unsafe_set ans !i v;
-    incr i;
-    while !i < len do
-      let v = Array.unsafe_get ans !i in
-      let v' = f v in
-      if v != v' then Array.unsafe_set ans !i v';
-      incr i
-    done;
-    ans
-  end else ar
-
-let smartmap2 f aux_ar ar =
-  let len = Array.length ar in
-  let aux_len = Array.length aux_ar in
-  let () = if not (Int.equal len aux_len) then invalid_arg "Array.smartmap2" in
-  let i = ref 0 in
-  let break = ref true in
-  let temp = ref None in
-  while !break && (!i < len) do
-    let v = Array.unsafe_get ar !i in
-    let w = Array.unsafe_get aux_ar !i in
-    let v' = f w v in
-    if v == v' then incr i
-    else begin
-      break := false;
-      temp := Some v';
-    end
-  done;
-  if !i < len then begin
-    (** The array is not the same as the original one *)
-    let ans : 'a array = Array.copy ar in
-    let v = match !temp with None -> assert false | Some x -> x in
-    Array.unsafe_set ans !i v;
-    incr i;
-    while !i < len do
-      let v = Array.unsafe_get ans !i in
-      let w = Array.unsafe_get aux_ar !i in
-      let v' = f w v in
-      if v != v' then Array.unsafe_set ans !i v';
-      incr i
-    done;
-    ans
-  end else ar
-
-(** Same as [smartmap] but threads a state meanwhile *)
-let smartfoldmap f accu (ar : 'a array) =
-  let len = Array.length ar in
-  let i = ref 0 in
-  let break = ref true in
-  let r = ref accu in
-  (** This variable is never accessed unset *)
-  let temp = ref None in
-  while !break && (!i < len) do
-    let v = Array.unsafe_get ar !i in
-    let (accu, v') = f !r v in
-    r := accu;
-    if v == v' then incr i
-    else begin
-      break := false;
-      temp := Some v';
-    end
-  done;
-  if !i < len then begin
-    let ans : 'a array = Array.copy ar in
-    let v = match !temp with None -> assert false | Some x -> x in
-    Array.unsafe_set ans !i v;
-    incr i;
-    while !i < len do
-      let v = Array.unsafe_get ar !i in
-      let (accu, v') = f !r v in
-      r := accu;
-      if v != v' then Array.unsafe_set ans !i v';
-      incr i
-    done;
-    !r, ans
-  end else !r, ar
-
-(** Same as [smartmap2] but threads a state meanwhile *)
-let smartfoldmap2 f accu aux_ar ar =
-  let len = Array.length ar in
-  let aux_len = Array.length aux_ar in
-  let () = if not (Int.equal len aux_len) then invalid_arg "Array.smartfoldmap2" in
-  let i = ref 0 in
-  let break = ref true in
-  let r = ref accu in
-  (** This variable is never accessed unset *)
-  let temp = ref None in
-  while !break && (!i < len) do
-    let v = Array.unsafe_get ar !i in
-    let w = Array.unsafe_get aux_ar !i in
-    let (accu, v') = f !r w v in
-    r := accu;
-    if v == v' then incr i
-    else begin
-      break := false;
-      temp := Some v';
-    end
-  done;
-  if !i < len then begin
-    let ans : 'a array = Array.copy ar in
-    let v = match !temp with None -> assert false | Some x -> x in
-    Array.unsafe_set ans !i v;
-    incr i;
-    while !i < len do
-      let v = Array.unsafe_get ar !i in
-      let w = Array.unsafe_get aux_ar !i in
-      let (accu, v') = f !r w v in
-      r := accu;
-      if v != v' then Array.unsafe_set ans !i v';
-      incr i
-    done;
-    !r, ans
-  end else !r, ar
-
 let map2 f v1 v2 =
   let len1 = Array.length v1 in
   let len2 = Array.length v2 in
@@ -580,29 +451,21 @@ let rev_to_list a =
 let filter_with filter v =
   Array.of_list (CList.filter_with filter (Array.to_list v))
 
-module Fun1 =
+module Smart =
 struct
 
-  let map f arg v = match v with
-  | [| |] -> [| |]
-  | _ ->
-    let len = Array.length v in
-    let x0 = Array.unsafe_get v 0 in
-    let ans = Array.make len (f arg x0) in
-    for i = 1 to pred len do
-      let x = Array.unsafe_get v i in
-      Array.unsafe_set ans i (f arg x)
-    done;
-    ans
-
-  let smartmap f arg (ar : 'a array) =
+  (* If none of the elements is changed by f we return ar itself.
+     The while loop looks for the first such an element.
+     If found, we break here and the new array is produced,
+     but f is not re-applied to elements that are already checked *)
+  let map f (ar : 'a array) =
     let len = Array.length ar in
     let i = ref 0 in
     let break = ref true in
     let temp = ref None in
     while !break && (!i < len) do
       let v = Array.unsafe_get ar !i in
-      let v' = f arg v in
+      let v' = f v in
       if v == v' then incr i
       else begin
         break := false;
@@ -617,12 +480,136 @@ struct
       incr i;
       while !i < len do
         let v = Array.unsafe_get ans !i in
-        let v' = f arg v in
+        let v' = f v in
         if v != v' then Array.unsafe_set ans !i v';
         incr i
       done;
       ans
     end else ar
+
+  let map2 f aux_ar ar =
+    let len = Array.length ar in
+    let aux_len = Array.length aux_ar in
+    let () = if not (Int.equal len aux_len) then invalid_arg "Array.Smart.map2" in
+    let i = ref 0 in
+    let break = ref true in
+    let temp = ref None in
+    while !break && (!i < len) do
+      let v = Array.unsafe_get ar !i in
+      let w = Array.unsafe_get aux_ar !i in
+      let v' = f w v in
+      if v == v' then incr i
+      else begin
+        break := false;
+        temp := Some v';
+      end
+    done;
+    if !i < len then begin
+      (** The array is not the same as the original one *)
+      let ans : 'a array = Array.copy ar in
+      let v = match !temp with None -> assert false | Some x -> x in
+      Array.unsafe_set ans !i v;
+      incr i;
+      while !i < len do
+        let v = Array.unsafe_get ans !i in
+        let w = Array.unsafe_get aux_ar !i in
+        let v' = f w v in
+        if v != v' then Array.unsafe_set ans !i v';
+        incr i
+      done;
+      ans
+    end else ar
+
+  (** Same as [Smart.map] but threads a state meanwhile *)
+  let fold_left_map f accu (ar : 'a array) =
+    let len = Array.length ar in
+    let i = ref 0 in
+    let break = ref true in
+    let r = ref accu in
+    (** This variable is never accessed unset *)
+    let temp = ref None in
+    while !break && (!i < len) do
+      let v = Array.unsafe_get ar !i in
+      let (accu, v') = f !r v in
+      r := accu;
+      if v == v' then incr i
+      else begin
+        break := false;
+        temp := Some v';
+      end
+    done;
+    if !i < len then begin
+      let ans : 'a array = Array.copy ar in
+      let v = match !temp with None -> assert false | Some x -> x in
+      Array.unsafe_set ans !i v;
+      incr i;
+      while !i < len do
+        let v = Array.unsafe_get ar !i in
+        let (accu, v') = f !r v in
+        r := accu;
+        if v != v' then Array.unsafe_set ans !i v';
+        incr i
+      done;
+      !r, ans
+    end else !r, ar
+
+  (** Same as [Smart.map2] but threads a state meanwhile *)
+  let fold_left2_map f accu aux_ar ar =
+    let len = Array.length ar in
+    let aux_len = Array.length aux_ar in
+    let () = if not (Int.equal len aux_len) then invalid_arg "Array.Smart.fold_left2_map" in
+    let i = ref 0 in
+    let break = ref true in
+    let r = ref accu in
+    (** This variable is never accessed unset *)
+    let temp = ref None in
+    while !break && (!i < len) do
+      let v = Array.unsafe_get ar !i in
+      let w = Array.unsafe_get aux_ar !i in
+      let (accu, v') = f !r w v in
+      r := accu;
+      if v == v' then incr i
+      else begin
+        break := false;
+        temp := Some v';
+      end
+    done;
+    if !i < len then begin
+      let ans : 'a array = Array.copy ar in
+      let v = match !temp with None -> assert false | Some x -> x in
+      Array.unsafe_set ans !i v;
+      incr i;
+      while !i < len do
+        let v = Array.unsafe_get ar !i in
+        let w = Array.unsafe_get aux_ar !i in
+        let (accu, v') = f !r w v in
+        r := accu;
+        if v != v' then Array.unsafe_set ans !i v';
+        incr i
+      done;
+      !r, ans
+    end else !r, ar
+
+end
+
+(* Deprecated aliases *)
+let smartmap = Smart.map
+let smartfoldmap = Smart.fold_left_map
+
+module Fun1 =
+struct
+
+  let map f arg v = match v with
+  | [| |] -> [| |]
+  | _ ->
+    let len = Array.length v in
+    let x0 = Array.unsafe_get v 0 in
+    let ans = Array.make len (f arg x0) in
+    for i = 1 to pred len do
+      let x = Array.unsafe_get v i in
+      Array.unsafe_set ans i (f arg x)
+    done;
+    ans
 
   let iter f arg v =
     let len = Array.length v in
@@ -640,5 +627,41 @@ struct
       let x2 = uget v2 i in
       f arg x1 x2
     done
+
+  module Smart =
+  struct
+
+    let map f arg (ar : 'a array) =
+      let len = Array.length ar in
+      let i = ref 0 in
+      let break = ref true in
+      let temp = ref None in
+      while !break && (!i < len) do
+        let v = Array.unsafe_get ar !i in
+        let v' = f arg v in
+        if v == v' then incr i
+        else begin
+          break := false;
+          temp := Some v';
+        end
+      done;
+      if !i < len then begin
+        (** The array is not the same as the original one *)
+        let ans : 'a array = Array.copy ar in
+        let v = match !temp with None -> assert false | Some x -> x in
+        Array.unsafe_set ans !i v;
+        incr i;
+        while !i < len do
+          let v = Array.unsafe_get ans !i in
+          let v' = f arg v in
+          if v != v' then Array.unsafe_set ans !i v';
+          incr i
+        done;
+        ans
+      end else ar
+
+  end
+
+  let smartmap = Smart.map
 
 end

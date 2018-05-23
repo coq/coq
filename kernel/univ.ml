@@ -853,7 +853,7 @@ struct
   let length a = Array.length a
 
   let subst_fn fn t = 
-    let t' = CArray.smartmap fn t in
+    let t' = CArray.Smart.map fn t in
       if t' == t then t else of_array t'
 
   let levels x = LSet.of_array x
@@ -890,7 +890,7 @@ let subst_instance_level s l =
   | _ -> l
 
 let subst_instance_instance s i = 
-  Array.smartmap (fun l -> subst_instance_level s l) i
+  Array.Smart.map (fun l -> subst_instance_level s l) i
 
 let subst_instance_universe s u =
   let f x = Universe.Expr.map (fun u -> subst_instance_level s u) x in

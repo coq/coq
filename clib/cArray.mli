@@ -83,24 +83,14 @@ sig
       Raise [Failure "Array.chop"] if [i] is not a valid index. *)
 
   val smartmap : ('a -> 'a) -> 'a array -> 'a array
-  (** [smartmap f a] behaves as [map f a] but returns [a] instead of a copy when
-      [f x == x] for all [x] in [a]. *)
-
-  val smartmap2 : ('a -> 'b -> 'b) -> 'a array -> 'b array -> 'b array
-  (** [smartmap2 f a b] behaves as [map2 f a b] but returns [a] instead of a copy when
-      [f x y == y] for all [x] in [a] and [y] in [b] pointwise. *)
+  [@@ocaml.deprecated "Same as [Smart.map]"]
 
   val smartfoldmap : ('r -> 'a -> 'r * 'a) -> 'r -> 'a array -> 'r * 'a array
-  (** [smartfoldmap f a b] behaves as [fold_left_map] but
-      returns [b] as second component instead of a copy of [b] when
-      the output array is pointwise the same as the input array [b] *)
-
-  val smartfoldmap2 : ('r -> 'a -> 'b -> 'r * 'b) -> 'r -> 'a array -> 'b array -> 'r * 'b array
-  (** [smartfoldmap2 f a b c] behaves as [fold_left2_map] but
-      returns [c] as second component instead of a copy of [c] when
-      the output array is pointwise the same as the input array [c] *)
+  [@@ocaml.deprecated "Same as [Smart.fold_left_map]"]
 
   val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
+  (** See also [Smart.map2] *)
+
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
     ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
@@ -113,13 +103,13 @@ sig
 
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
   (** [fold_left_map f e_0 [|l_1...l_n|] = e_n,[|k_1...k_n|]]
-    where [(e_i,k_i)=f e_{i-1} l_i] *)
+    where [(e_i,k_i)=f e_{i-1} l_i]; see also [Smart.fold_left_map] *)
 
   val fold_right_map : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
   (** Same, folding on the right *)
 
   val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
-  (** Same with two arrays, folding on the left *)
+  (** Same with two arrays, folding on the left; see also [Smart.fold_left2_map] *)
 
   val fold_right2_map : ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
   (** Same with two arrays, folding on the left *)
@@ -148,6 +138,31 @@ sig
   (** [filter_with b a] selects elements of [a] whose corresponding element in
       [b] is [true].  Raise [Invalid_argument _] when sizes differ. *)
 
+  module Smart :
+  sig
+    val map : ('a -> 'a) -> 'a array -> 'a array
+    (** [Smart.map f a] behaves as [map f a] but returns [a] instead of a copy when
+        [f x == x] for all [x] in [a]. *)
+
+    val map2 : ('a -> 'b -> 'b) -> 'a array -> 'b array -> 'b array
+    (** [Smart.map2 f a b] behaves as [map2 f a b] but returns [a] instead of a copy when
+        [f x y == y] for all [x] in [a] and [y] in [b] pointwise. *)
+
+    val fold_left_map : ('a -> 'b -> 'a * 'b) -> 'a -> 'b array -> 'a * 'b array
+    (** [Smart.fold_left_mapf a b] behaves as [fold_left_map] but
+        returns [b] as second component instead of a copy of [b] when
+        the output array is pointwise the same as the input array [b] *)
+
+    val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'c) -> 'a -> 'b array -> 'c array -> 'a * 'c array
+    (** [Smart.fold_left2_map f a b c] behaves as [fold_left2_map] but
+        returns [c] as second component instead of a copy of [c] when
+        the output array is pointwise the same as the input array [c] *)
+
+  end
+  (** The functions defined in this module are optimized specializations
+      of the main ones, when the returned array is of same type as one of
+      the original array. *)
+
 end
 
 include ExtS
@@ -158,13 +173,19 @@ sig
   (** [Fun1.map f x v = map (f x) v] *)
 
   val smartmap : ('r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
-  (** [Fun1.smartmap f x v = smartmap (f x) v] *)
+  [@@ocaml.deprecated "Same as [Fun1.Smart.map]"]
 
   val iter : ('r -> 'a -> unit) -> 'r -> 'a array -> unit
   (** [Fun1.iter f x v = iter (f x) v] *)
 
   val iter2 : ('r -> 'a -> 'b -> unit) -> 'r -> 'a array -> 'b array -> unit
   (** [Fun1.iter2 f x v1 v2 = iter (f x) v1 v2] *)
+
+  module Smart :
+  sig
+    val map : ('r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
+    (** [Fun1.Smart.map f x v = Smart.map (f x) v] *)
+  end
 
 end
 (** The functions defined in this module are the same as the main ones, except

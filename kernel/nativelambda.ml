@@ -102,10 +102,10 @@ let rec map_lam_with_binders g f n lam =
       if body == body' && def == def' then lam else Llet(id,def',body')
   | Lapp(fct,args) ->
       let fct' = f n fct in
-      let args' = Array.smartmap (f n) args in
+      let args' = Array.Smart.map (f n) args in
       if fct == fct' && args == args' then lam else mkLapp fct' args'
   | Lprim(prefix,kn,op,args) ->
-      let args' = Array.smartmap (f n) args in
+      let args' = Array.Smart.map (f n) args in
       if args == args' then lam else Lprim(prefix,kn,op,args')
   | Lcase(annot,t,a,br) ->
       let t' = f n t in
@@ -116,7 +116,7 @@ let rec map_lam_with_binders g f n lam =
 	  if Array.is_empty ids then f n body 
 	  else f (g (Array.length ids) n) body in
 	if body == body' then b else (cn,ids,body') in
-      let br' = Array.smartmap on_b br in
+      let br' = Array.Smart.map on_b br in
       if t == t' && a == a' && br == br' then lam else Lcase(annot,t',a',br')
   | Lif(t,bt,bf) ->
       let t' = f n t in
@@ -124,17 +124,17 @@ let rec map_lam_with_binders g f n lam =
       let bf' = f n bf in
       if t == t' && bt == bt' && bf == bf' then lam else Lif(t',bt',bf')
   | Lfix(init,(ids,ltypes,lbodies)) ->
-      let ltypes' = Array.smartmap (f n) ltypes in
-      let lbodies' = Array.smartmap (f (g (Array.length ids) n)) lbodies in
+      let ltypes' = Array.Smart.map (f n) ltypes in
+      let lbodies' = Array.Smart.map (f (g (Array.length ids) n)) lbodies in
       if ltypes == ltypes' && lbodies == lbodies' then lam
       else Lfix(init,(ids,ltypes',lbodies'))
   | Lcofix(init,(ids,ltypes,lbodies)) ->
-      let ltypes' = Array.smartmap (f n) ltypes in
-      let lbodies' = Array.smartmap (f (g (Array.length ids) n)) lbodies in
+      let ltypes' = Array.Smart.map (f n) ltypes in
+      let lbodies' = Array.Smart.map (f (g (Array.length ids) n)) lbodies in
       if ltypes == ltypes' && lbodies == lbodies' then lam
       else Lcofix(init,(ids,ltypes',lbodies'))
   | Lmakeblock(prefix,cn,tag,args) ->
-      let args' = Array.smartmap (f n) args in
+      let args' = Array.Smart.map (f n) args in
       if args == args' then lam else Lmakeblock(prefix,cn,tag,args')
   | Luint u ->
     let u' = map_uint g f n u in
@@ -144,7 +144,7 @@ and map_uint g f n u =
   match u with
   | UintVal _ -> u
   | UintDigits(prefix,c,args) ->
-    let args' = Array.smartmap (f n) args in
+    let args' = Array.Smart.map (f n) args in
     if args == args' then u else UintDigits(prefix,c,args')
   | UintDecomp(prefix,c,a) ->
     let a' = f n a in
@@ -177,7 +177,7 @@ let rec lam_exsubst subst lam =
 
 let lam_subst_args subst args =
   if is_subs_id subst then args 
-  else Array.smartmap (lam_exsubst subst) args
+  else Array.Smart.map (lam_exsubst subst) args
   
 (** Simplification of lambda expression *)
       
@@ -272,7 +272,7 @@ and simplify_app substf f substa args =
   (* TODO | Lproj -> simplify if the argument is known or a known global *)
   | _ -> mkLapp (simplify substf f) (simplify_args substa args)
   
-and simplify_args subst args = Array.smartmap (simplify subst) args
+and simplify_args subst args = Array.Smart.map (simplify subst) args
 
 and reduce_lapp substf lids body substa largs =
   match lids, largs with

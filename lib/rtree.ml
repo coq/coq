@@ -103,11 +103,11 @@ let rec map f t = match t with
 let smartmap f t = match t with
     Param _ -> t
   | Node (a,sons) ->
-      let a'=f a and sons' = Array.smartmap (map f) sons in
+      let a'=f a and sons' = Array.Smart.map (map f) sons in
       if a'==a && sons'==sons then t
       else Node (a',sons')
   | Rec(j,defs) ->
-      let defs' = Array.smartmap (map f) defs in
+      let defs' = Array.Smart.map (map f) defs in
       if defs'==defs then t
       else Rec(j,defs')
 

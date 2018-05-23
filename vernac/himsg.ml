@@ -86,7 +86,7 @@ let j_nf_betaiotaevar env sigma j =
     uj_type = Reductionops.nf_betaiota env sigma j.uj_type }
 
 let jv_nf_betaiotaevar env sigma jl =
-  Array.map (fun j -> j_nf_betaiotaevar env sigma j) jl
+  Array.Smart.map (fun j -> j_nf_betaiotaevar env sigma j) jl
 
 (** Printers *)
 

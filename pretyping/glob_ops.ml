@@ -331,7 +331,7 @@ let bound_glob_vars =
 
 (** Mapping of names in binders *)
 
-(* spiwack: I used a smartmap-style kind of mapping here, because the
+(* spiwack: I used a smart-style kind of mapping here, because the
    operation will be the identity almost all of the time (with any
    term outside of Ltac to begin with). But to be honest, there would
    probably be no significant penalty in doing reallocation as

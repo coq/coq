@@ -400,9 +400,9 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
        lb_type_of_p >>= fun (lb_type_of_p,eff) ->
        Proofview.tclEVARMAP >>= fun sigma ->
        let lb_args = Array.append (Array.append
-                          (Array.map (fun x -> x) v)
-                          (Array.map (fun x -> do_arg sigma x 1) v))
-                          (Array.map (fun x -> do_arg sigma x 2) v)
+                          v
+                          (Array.Smart.map (fun x -> do_arg sigma x 1) v))
+                          (Array.Smart.map (fun x -> do_arg sigma x 2) v)
         in let app =  if Array.is_empty lb_args
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
            in
@@ -471,9 +471,9 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
 		 user_err err_msg
                in let bl_args =
                         Array.append (Array.append
-                          (Array.map (fun x -> x) v)
-                          (Array.map (fun x -> do_arg sigma x 1) v))
-                          (Array.map (fun x -> do_arg sigma x 2) v )
+                          v
+                          (Array.Smart.map (fun x -> do_arg sigma x 1) v))
+                          (Array.Smart.map (fun x -> do_arg sigma x 2) v )
                 in
                 let app =  if Array.is_empty bl_args
                            then bl_t1 else mkApp (bl_t1,bl_args)
@@ -923,7 +923,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
 	    (* left *)
 	    Tacticals.New.tclTHENLIST [
 	      simplest_left;
-              apply (EConstr.of_constr (mkApp(blI,Array.map(fun x->mkVar x) xargs)));
+              apply (EConstr.of_constr (mkApp(blI,Array.map mkVar xargs)));
               Auto.default_auto
             ]
             ;
@@ -939,7 +939,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
               assert_by (Name freshH3)
 		(EConstr.of_constr (mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|])))
 		(Tacticals.New.tclTHENLIST [
-		  apply (EConstr.of_constr (mkApp(lbI,Array.map (fun x->mkVar x) xargs)));
+                  apply (EConstr.of_constr (mkApp(lbI,Array.map mkVar xargs)));
                   Auto.default_auto
 		]);
 	      Equality.general_rewrite_bindings_in true

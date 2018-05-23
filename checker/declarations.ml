@@ -231,7 +231,7 @@ let rec map_kn f f' c =
 	  in
 	  let p' = func p in
 	  let ct' = func ct in
-	  let l' = Array.smartmap func l in
+          let l' = Array.Smart.map func l in
 	    if (ci.ci_ind==ci_ind && p'==p
 		&& l'==l && ct'==ct)then c
 	    else
@@ -260,21 +260,21 @@ let rec map_kn f f' c =
 	    else LetIn (na, b', t', ct')
       | App (ct,l) ->
 	  let ct' = func ct in
-	  let l' = Array.smartmap func l in
+          let l' = Array.Smart.map func l in
 	    if (ct'== ct && l'==l) then c
 	    else App (ct',l')
       | Evar (e,l) ->
-	  let l' = Array.smartmap func l in
+          let l' = Array.Smart.map func l in
 	    if (l'==l) then c
 	    else Evar (e,l')
       | Fix (ln,(lna,tl,bl)) ->
-	  let tl' = Array.smartmap func tl in
-	  let bl' = Array.smartmap func bl in
+          let tl' = Array.Smart.map func tl in
+          let bl' = Array.Smart.map func bl in
 	    if (bl == bl'&& tl == tl') then c
 	    else Fix (ln,(lna,tl',bl'))
       | CoFix(ln,(lna,tl,bl)) ->
-	  let tl' = Array.smartmap func tl in
-	  let bl' = Array.smartmap func bl in
+          let tl' = Array.Smart.map func tl in
+          let bl' = Array.Smart.map func bl in
 	    if (bl == bl'&& tl == tl') then c
 	    else CoFix (ln,(lna,tl',bl'))
       | _ -> c
@@ -544,10 +544,10 @@ let subst_mind_packet sub mbp =
     mind_consnrealdecls = mbp.mind_consnrealdecls;
     mind_consnrealargs = mbp.mind_consnrealargs;
     mind_typename = mbp.mind_typename;
-    mind_nf_lc = Array.smartmap (subst_mps sub) mbp.mind_nf_lc;
+    mind_nf_lc = Array.Smart.map (subst_mps sub) mbp.mind_nf_lc;
     mind_arity_ctxt = subst_rel_context sub mbp.mind_arity_ctxt;
     mind_arity = subst_ind_arity sub mbp.mind_arity;
-    mind_user_lc = Array.smartmap (subst_mps sub) mbp.mind_user_lc;
+    mind_user_lc = Array.Smart.map (subst_mps sub) mbp.mind_user_lc;
     mind_nrealargs = mbp.mind_nrealargs;
     mind_nrealdecls = mbp.mind_nrealdecls;
     mind_kelim = mbp.mind_kelim;
@@ -560,7 +560,7 @@ let subst_mind_packet sub mbp =
 let subst_mind sub mib =
   { mib with
     mind_params_ctxt = map_rel_context (subst_mps sub) mib.mind_params_ctxt;
-    mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets }
+    mind_packets = Array.Smart.map (subst_mind_packet sub) mib.mind_packets }
 
 (* Modules *)
 

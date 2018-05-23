@@ -285,7 +285,7 @@ let map sigma f c = match kind sigma c with
       else mkLetIn (na, b', t', k')
   | App (b,l) ->
       let b' = f b in
-      let l' = Array.smartmap f l in
+      let l' = Array.Smart.map f l in
       if b'==b && l'==l then c
       else mkApp (b', l')
   | Proj (p,t) ->
@@ -293,23 +293,23 @@ let map sigma f c = match kind sigma c with
       if t' == t then c
       else mkProj (p, t')
   | Evar (e,l) ->
-      let l' = Array.smartmap f l in
+      let l' = Array.Smart.map f l in
       if l'==l then c
       else mkEvar (e, l')
   | Case (ci,p,b,bl) ->
       let b' = f b in
       let p' = f p in
-      let bl' = Array.smartmap f bl in
+      let bl' = Array.Smart.map f bl in
       if b'==b && p'==p && bl'==bl then c
       else mkCase (ci, p', b', bl')
   | Fix (ln,(lna,tl,bl)) ->
-      let tl' = Array.smartmap f tl in
-      let bl' = Array.smartmap f bl in
+      let tl' = Array.Smart.map f tl in
+      let bl' = Array.Smart.map f bl in
       if tl'==tl && bl'==bl then c
       else mkFix (ln,(lna,tl',bl'))
   | CoFix(ln,(lna,tl,bl)) ->
-      let tl' = Array.smartmap f tl in
-      let bl' = Array.smartmap f bl in
+      let tl' = Array.Smart.map f tl in
+      let bl' = Array.Smart.map f bl in
       if tl'==tl && bl'==bl then c
       else mkCoFix (ln,(lna,tl',bl'))
 
@@ -339,7 +339,7 @@ let map_with_binders sigma g f l c0 = match kind sigma c0 with
     else mkLetIn (na, b', t', c')
   | App (c, al) ->
     let c' = f l c in
-    let al' = CArray.Fun1.smartmap f l al in
+    let al' = CArray.Fun1.Smart.map f l al in
     if c' == c && al' == al then c0
     else mkApp (c', al')
   | Proj (p, t) ->
@@ -347,25 +347,25 @@ let map_with_binders sigma g f l c0 = match kind sigma c0 with
     if t' == t then c0
     else mkProj (p, t')
   | Evar (e, al) ->
-    let al' = CArray.Fun1.smartmap f l al in
+    let al' = CArray.Fun1.Smart.map f l al in
     if al' == al then c0
     else mkEvar (e, al')
   | Case (ci, p, c, bl) ->
     let p' = f l p in
     let c' = f l c in
-    let bl' = CArray.Fun1.smartmap f l bl in
+    let bl' = CArray.Fun1.Smart.map f l bl in
     if p' == p && c' == c && bl' == bl then c0
     else mkCase (ci, p', c', bl')
   | Fix (ln, (lna, tl, bl)) ->
-    let tl' = CArray.Fun1.smartmap f l tl in
+    let tl' = CArray.Fun1.Smart.map f l tl in
     let l' = iterate g (Array.length tl) l in
-    let bl' = CArray.Fun1.smartmap f l' bl in
+    let bl' = CArray.Fun1.Smart.map f l' bl in
     if tl' == tl && bl' == bl then c0
     else mkFix (ln,(lna,tl',bl'))
   | CoFix(ln,(lna,tl,bl)) ->
-    let tl' = CArray.Fun1.smartmap f l tl in
+    let tl' = CArray.Fun1.Smart.map f l tl in
     let l' = iterate g (Array.length tl) l in
-    let bl' = CArray.Fun1.smartmap f l' bl in
+    let bl' = CArray.Fun1.Smart.map f l' bl in
     mkCoFix (ln,(lna,tl',bl'))
 
 let iter sigma f c = match kind sigma c with

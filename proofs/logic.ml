@@ -481,7 +481,7 @@ and mk_arggoals sigma goal goalacc funty allargs =
       let env = Goal.V82.env sigma goal in
       raise (RefinerError (env,sigma,CannotApply (t, harg)))
   in
-  Array.smartfoldmap foldmap (goalacc, funty, sigma) allargs
+  Array.Smart.fold_left_map foldmap (goalacc, funty, sigma) allargs
 
 and mk_casegoals sigma goal goalacc p c =
   let env = Goal.V82.env sigma goal in

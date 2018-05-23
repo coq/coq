@@ -610,12 +610,12 @@ let rec subst_notation_constr subst bound raw =
 
   | NRec (fk,idl,dll,tl,bl) ->
       let dll' =
-	Array.smartmap (List.smartmap (fun (na,oc,b as x) ->
-	  let oc' =  Option.smartmap (subst_notation_constr subst bound) oc in
+        Array.Smart.map (List.smartmap (fun (na,oc,b as x) ->
+          let oc' =  Option.smartmap (subst_notation_constr subst bound) oc in
 	  let b' =  subst_notation_constr subst bound b in
 	  if oc' == oc && b' == b then x else (na,oc',b'))) dll in
-      let tl' = Array.smartmap (subst_notation_constr subst bound) tl in
-      let bl' = Array.smartmap (subst_notation_constr subst bound) bl in
+      let tl' = Array.Smart.map (subst_notation_constr subst bound) tl in
+      let bl' = Array.Smart.map (subst_notation_constr subst bound) bl in
       if dll' == dll && tl' == tl && bl' == bl then raw else
 	  NRec (fk,idl,dll',tl',bl')
 

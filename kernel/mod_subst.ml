@@ -367,7 +367,7 @@ let rec map_kn f f' c =
 	  in
 	  let p' = func p in
 	  let ct' = func ct in
-	  let l' = Array.smartmap func l in
+          let l' = Array.Smart.map func l in
 	    if (ci.ci_ind==ci_ind && p'==p
 		&& l'==l && ct'==ct)then c
 	    else
@@ -396,21 +396,21 @@ let rec map_kn f f' c =
 	    else mkLetIn (na, b', t', ct')
       | App (ct,l) ->
 	  let ct' = func ct in
-	  let l' = Array.smartmap func l in
+          let l' = Array.Smart.map func l in
 	    if (ct'== ct && l'==l) then c
 	    else mkApp (ct',l')
       | Evar (e,l) ->
-	  let l' = Array.smartmap func l in
+          let l' = Array.Smart.map func l in
 	    if (l'==l) then c
 	    else mkEvar (e,l')
       | Fix (ln,(lna,tl,bl)) ->
-	  let tl' = Array.smartmap func tl in
-	  let bl' = Array.smartmap func bl in
+          let tl' = Array.Smart.map func tl in
+          let bl' = Array.Smart.map func bl in
 	    if (bl == bl'&& tl == tl') then c
 	    else mkFix (ln,(lna,tl',bl'))
       | CoFix(ln,(lna,tl,bl)) ->
-	  let tl' = Array.smartmap func tl in
-	  let bl' = Array.smartmap func bl in
+          let tl' = Array.Smart.map func tl in
+          let bl' = Array.Smart.map func bl in
 	    if (bl == bl'&& tl == tl') then c
 	    else mkCoFix (ln,(lna,tl',bl'))
       | _ -> c

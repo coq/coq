@@ -1000,9 +1000,9 @@ let rec subst_glob_constr subst = DAst.map (function
           GIf (c',(na,po'),b1',b2')
 
   | GRec (fix,ida,bl,ra1,ra2) as raw ->
-      let ra1' = Array.smartmap (subst_glob_constr subst) ra1
-      and ra2' = Array.smartmap (subst_glob_constr subst) ra2 in
-      let bl' = Array.smartmap
+      let ra1' = Array.Smart.map (subst_glob_constr subst) ra1
+      and ra2' = Array.Smart.map (subst_glob_constr subst) ra2 in
+      let bl' = Array.Smart.map
         (List.smartmap (fun (na,k,obd,ty as dcl) ->
           let ty' = subst_glob_constr subst ty in
           let obd' = Option.smartmap (subst_glob_constr subst) obd in

@@ -457,7 +457,7 @@ let rec canonize_name sigma c =
       | LetIn (na,b,t,ct) ->
 	  mkLetIn (na, func b,func t,func ct)
       | App (ct,l) ->
-	  mkApp (func ct,Array.smartmap func l)
+          mkApp (func ct,Array.Smart.map func l)
       | Proj(p,c) ->
 	let p' = Projection.map (fun kn ->
           Constant.make1 (Constant.canonical kn)) p in 
