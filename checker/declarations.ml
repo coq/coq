@@ -480,7 +480,7 @@ let dest_subterms p =
   let (_,cstrs) = Rtree.dest_node p in
   Array.map (fun t -> Array.to_list (snd (Rtree.dest_node t))) cstrs
 
-let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
+let subst_wf_paths sub p = Rtree.Smart.map (subst_recarg sub) p
 
 let eq_recarg r1 r2 = match r1, r2 with
   | Norec, Norec -> true

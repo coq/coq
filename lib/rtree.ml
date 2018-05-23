@@ -94,22 +94,28 @@ let is_node t =
       Node _ -> true
     | _ -> false
 
-
 let rec map f t = match t with
     Param(i,j) -> Param(i,j)
   | Node (a,sons) -> Node (f a, Array.map (map f) sons)
   | Rec(j,defs) -> Rec (j, Array.map (map f) defs)
 
-let smartmap f t = match t with
-    Param _ -> t
-  | Node (a,sons) ->
-      let a'=f a and sons' = Array.Smart.map (map f) sons in
-      if a'==a && sons'==sons then t
-      else Node (a',sons')
-  | Rec(j,defs) ->
-      let defs' = Array.Smart.map (map f) defs in
-      if defs'==defs then t
-      else Rec(j,defs')
+module Smart =
+struct
+
+  let map f t = match t with
+      Param _ -> t
+    | Node (a,sons) ->
+        let a'=f a and sons' = Array.Smart.map (map f) sons in
+        if a'==a && sons'==sons then t
+        else Node (a',sons')
+    | Rec(j,defs) ->
+        let defs' = Array.Smart.map (map f) defs in
+        if defs'==defs then t
+        else Rec(j,defs')
+
+end
+
+let smartmap = Smart.map
 
 (** Structural equality test, parametrized by an equality on elements *)
 

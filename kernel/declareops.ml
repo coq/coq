@@ -178,7 +178,7 @@ let recarg_length p j =
   let (_,cstrs) = Rtree.dest_node p in
   Array.length (snd (Rtree.dest_node cstrs.(j-1)))
 
-let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
+let subst_wf_paths sub p = Rtree.Smart.map (subst_recarg sub) p
 
 (** {7 Substitution of inductive declarations } *)
 
