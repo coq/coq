@@ -75,9 +75,8 @@ val iter2 : ('a -> 'b -> unit) -> 'a option -> 'b option -> unit
 (** [map f x] is [None] if [x] is [None] and [Some (f y)] if [x] is [Some y]. *)
 val map : ('a -> 'b) -> 'a option -> 'b option
 
-(** [smartmap f x] does the same as [map f x] except that it tries to share
-    some memory. *)
 val smartmap : ('a -> 'a) -> 'a option -> 'a option
+[@@ocaml.deprecated "Same as [Smart.map]"]
 
 (** [fold_left f a x] is [f a y] if [x] is [Some y], and [a] otherwise. *)
 val fold_left : ('b -> 'a -> 'b) -> 'b -> 'a option -> 'b
@@ -123,6 +122,16 @@ val lift_left : ('a -> 'b -> 'c) -> 'a option -> 'b -> 'c option
     [Some w]. It is [None] otherwise. *)
 val lift2 : ('a -> 'b -> 'c) -> 'a option -> 'b option -> 'c option
 
+(** {6 Smart operations} *)
+
+module Smart :
+sig
+
+  (** [Smart.map f x] does the same as [map f x] except that it tries to share
+      some memory. *)
+  val map : ('a -> 'a) -> 'a option -> 'a option
+
+end
 
 (** {6 Operations with Lists} *)
 

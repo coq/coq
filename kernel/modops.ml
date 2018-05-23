@@ -210,7 +210,7 @@ and subst_body : 'a. _ -> _ -> (_ -> 'a -> 'a) -> _ -> 'a generic_module_body ->
   in
   let ty' = subst_signature sub do_delta ty in
   let me' = subst_impl sub me in
-  let aty' = Option.smartmap (subst_expression sub id_delta) aty in
+  let aty' = Option.Smart.map (subst_expression sub id_delta) aty in
   let delta' = do_delta mb.mod_delta sub in
   if mp==mp' && me==me' && ty==ty' && aty==aty' && delta'==mb.mod_delta
   then mb

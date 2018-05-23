@@ -599,7 +599,7 @@ and subst_body : 'a. (_ -> 'a -> 'a) -> _ -> 'a generic_module_body -> 'a generi
     mod_mp = subst_mp sub mb.mod_mp;
     mod_expr = subst_impl sub mb.mod_expr;
     mod_type = subst_signature sub mb.mod_type;
-    mod_type_alg = Option.smartmap (subst_expression sub) mb.mod_type_alg }
+    mod_type_alg = Option.Smart.map (subst_expression sub) mb.mod_type_alg }
 
 and subst_module sub mb =
   subst_body (fun sub e -> implem_map (subst_signature sub) (subst_expression sub) e) sub mb

@@ -343,7 +343,7 @@ let map_inpattern_binders f ({loc;v=(id,nal)} as x) =
   else CAst.make ?loc (id,r)
 
 let map_tomatch_binders f ((c,(na,inp)) as x) : tomatch_tuple =
-  let r = Option.smartmap (fun p -> map_inpattern_binders f p) inp in
+  let r = Option.Smart.map (fun p -> map_inpattern_binders f p) inp in
   if r == inp then x
   else c,(f na, r)
 

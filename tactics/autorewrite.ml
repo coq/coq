@@ -30,7 +30,7 @@ let subst_hint subst hint =
   let cst' = subst_mps subst hint.rew_lemma in
   let typ' = subst_mps subst hint.rew_type in
   let pat' = subst_mps subst hint.rew_pat in
-  let t' = Option.smartmap (Genintern.generic_substitute subst) hint.rew_tac in
+  let t' = Option.Smart.map (Genintern.generic_substitute subst) hint.rew_tac in
     if hint.rew_lemma == cst' && hint.rew_type == typ' && hint.rew_tac == t' then hint else
       { hint with
 	rew_lemma = cst'; rew_type = typ';

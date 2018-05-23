@@ -42,7 +42,7 @@ let map_decl_arity f g = function
 
 let hcons_template_arity ar =
   { template_param_levels = ar.template_param_levels;
-      (* List.Smart.map (Option.smartmap Univ.hcons_univ_level) ar.template_param_levels; *)
+      (* List.Smart.map (Option.Smart.map Univ.hcons_univ_level) ar.template_param_levels; *)
     template_level = Univ.hcons_univ ar.template_level }
 
 (** {6 Constants } *)
@@ -94,7 +94,7 @@ let subst_const_body sub cb =
   else
     let body' = subst_const_def sub cb.const_body in
     let type' = subst_const_type sub cb.const_type in
-    let proj' = Option.smartmap (subst_const_proj sub) cb.const_proj in
+    let proj' = Option.Smart.map (subst_const_proj sub) cb.const_proj in
     if body' == cb.const_body && type' == cb.const_type
       && proj' == cb.const_proj then cb
     else
@@ -217,7 +217,7 @@ let subst_mind_record sub (id, ps, pb as r) =
     else (id, ps', pb')
 
 let subst_mind_body sub mib =
-  { mind_record = Option.smartmap (Option.smartmap (subst_mind_record sub)) mib.mind_record ;
+  { mind_record = Option.Smart.map (Option.Smart.map (subst_mind_record sub)) mib.mind_record ;
     mind_finite = mib.mind_finite ;
     mind_ntypes = mib.mind_ntypes ;
     mind_hyps = (match mib.mind_hyps with [] -> [] | _ -> assert false);

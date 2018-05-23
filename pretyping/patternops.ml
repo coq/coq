@@ -312,7 +312,7 @@ let rec subst_pattern subst pat =
 	  PProd (name,c1',c2')
   | PLetIn (name,c1,t,c2) ->
       let c1' = subst_pattern subst c1 in
-      let t' = Option.smartmap (subst_pattern subst) t in
+      let t' = Option.Smart.map (subst_pattern subst) t in
       let c2' = subst_pattern subst c2 in
 	if c1' == c1 && t' == t && c2' == c2 then pat else
 	  PLetIn (name,c1',t',c2')
@@ -326,7 +326,7 @@ let rec subst_pattern subst pat =
 	  PIf (c',c1',c2')
   | PCase (cip,typ,c,branches) ->
       let ind = cip.cip_ind in
-      let ind' = Option.smartmap (subst_ind subst) ind in
+      let ind' = Option.Smart.map (subst_ind subst) ind in
       let cip' = if ind' == ind then cip else { cip with cip_ind = ind' } in
       let typ' = subst_pattern subst typ in
       let c' = subst_pattern subst c in

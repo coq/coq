@@ -1065,8 +1065,8 @@ let subst_autohint (subst, obj) =
     in if gr' == gr then gr else gr'
   in
   let subst_hint (k,data as hint) =
-    let k' = Option.smartmap subst_key k in
-    let pat' = Option.smartmap (subst_pattern subst) data.pat in
+    let k' = Option.Smart.map subst_key k in
+    let pat' = Option.Smart.map (subst_pattern subst) data.pat in
     let subst_mps subst c = EConstr.of_constr (subst_mps subst (EConstr.Unsafe.to_constr c)) in
     let code' = match data.code.obj with
       | Res_pf (c,t,ctx) ->
