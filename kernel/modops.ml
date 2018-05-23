@@ -130,10 +130,10 @@ let destr_nofunctor = function
   |NoFunctor a -> a
   |MoreFunctor _ -> error_is_a_functor ()
 
-let rec functor_smartmap fty f0 funct = match funct with
+let rec functor_smart_map fty f0 funct = match funct with
   |MoreFunctor (mbid,ty,e) ->
     let ty' = fty ty in
-    let e' = functor_smartmap fty f0 e in
+    let e' = functor_smart_map fty f0 e in
     if ty==ty' && e==e' then funct else MoreFunctor (mbid,ty',e')
   |NoFunctor a ->
     let a' = f0 a in if a==a' then funct else NoFunctor a'
@@ -245,12 +245,12 @@ and subst_expr sub do_delta seb = match seb with
     if meb==meb' && wdb==wdb' then seb else MEwith(meb',wdb')
 
 and subst_expression sub do_delta =
-  functor_smartmap
+  functor_smart_map
     (subst_modtype sub do_delta)
     (subst_expr sub do_delta)
 
 and subst_signature sub do_delta =
-  functor_smartmap
+  functor_smart_map
     (subst_modtype sub do_delta)
     (subst_structure sub do_delta)
 
@@ -598,10 +598,10 @@ and clean_field l field = match field with
 and clean_structure l = List.Smart.map (clean_field l)
 
 and clean_signature l =
-  functor_smartmap (clean_module_type l) (clean_structure l)
+  functor_smart_map (clean_module_type l) (clean_structure l)
 
 and clean_expression l =
-  functor_smartmap (clean_module_type l) (fun me -> me)
+  functor_smart_map (clean_module_type l) (fun me -> me)
 
 let rec collect_mbid l sign =  match sign with
   |MoreFunctor (mbid,ty,m) ->
