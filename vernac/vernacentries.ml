@@ -543,6 +543,12 @@ let should_treat_as_cumulative cum poly =
     else user_err Pp.(str "The NonCumulative prefix can only be used in a polymorphic context.")
   | None -> poly && Flags.is_polymorphic_inductive_cumulativity ()
 
+let should_treat_as_uniform uni =
+  match uni with
+  | Some VernacUniformParams -> true
+  | Some VernacNonUniformParams -> false
+  | None -> false (* TODO: Add a flag *)
+
 let vernac_record cum k poly finite struc binders sort nameopt cfs =
   let is_cumulative = should_treat_as_cumulative cum poly in
   let const = match nameopt with
@@ -561,7 +567,7 @@ let vernac_record cum k poly finite struc binders sort nameopt cfs =
     then the type is declared private (as per the [Private] keyword). [finite]
     indicates whether the type is inductive, co-inductive or
     neither. *)
-let vernac_inductive ~atts cum lo finite indl =
+let vernac_inductive ~atts cum lo uni finite indl =
   if Dumpglob.dump () then
     List.iter (fun (((coe,(lid,_)), _, _, _, cstrs), _) ->
       match cstrs with
@@ -599,7 +605,8 @@ let vernac_inductive ~atts cum lo finite indl =
     in
     let indl = List.map unpack indl in
     let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
-    ComInductive.do_mutual_inductive indl is_cumulative atts.polymorphic lo finite
+    let is_uniform = should_treat_as_uniform uni in
+    ComInductive.do_mutual_inductive indl is_cumulative atts.polymorphic lo is_uniform finite
 
 let vernac_fixpoint ~atts discharge l =
   let local = enforce_locality_exp atts.locality discharge in
@@ -2034,7 +2041,7 @@ let interp ?proof ~atts ~st c =
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption ((discharge,kind),nl,l) ->
       vernac_assumption ~atts discharge kind l nl
-  | VernacInductive (cum, priv,finite,l) -> vernac_inductive ~atts cum priv finite l
+  | VernacInductive (cum, priv, uni, finite, l) -> vernac_inductive ~atts cum priv uni finite l
   | VernacFixpoint (discharge, l) -> vernac_fixpoint ~atts discharge l
   | VernacCoFixpoint (discharge, l) -> vernac_cofixpoint ~atts discharge l
   | VernacScheme l -> vernac_scheme l
