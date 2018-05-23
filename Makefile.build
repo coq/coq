@@ -241,6 +241,10 @@ $(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) $(LINKMETADATA) -o $@ -linkpkg $(1) $^ && 
 $(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(CUSTOM) -o $@ -linkpkg $(1) $^)
 endef
 
+define ocamlbyte
+$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(CUSTOM) -o $@ -linkpkg $(1) $^
+endef
+
 # Camlp5 settings
 
 CAMLP5DEPS:=grammar/grammar.cma
@@ -424,6 +428,10 @@ $(COQC): $(call bestobj, $(COQCCMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, $(SYSMOD))
 
+$(COQCBYTE): $(COQCCMO)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(call ocamlbyte, $(SYSMOD))
+
 ###########################################################################
 # other tools
 ###########################################################################
@@ -461,9 +469,17 @@ $(COQDEPBOOT): $(call bestobj, $(COQDEPBOOTSRC))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I tools -package unix)
 
+$(COQDEPBOOTBYTE): $(COQDEPBOOTSRC)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(call ocamlbyte, -I tools -package unix)
+
 $(OCAMLLIBDEP): $(call bestobj, tools/ocamllibdep.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I tools -package unix)
+
+$(OCAMLLIBDEPBYTE): tools/ocamllibdep.cmo
+	$(SHOW)'OCAMLBEST -o $@'
+	$(HIDE)$(call ocamlbyte, -I tools -package unix)
 
 # The full coqdep (unused by this build, but distributed by make install)
 
@@ -474,9 +490,17 @@ $(COQDEP): $(call bestobj, $(COQDEPCMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, $(SYSMOD))
 
+$(COQDEPBYTE): $(COQDEPCMO)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(call ocamlbyte, $(SYSMOD))
+
 $(GALLINA): $(call bestobj, tools/gallina_lexer.cmo tools/gallina.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,)
+
+$(GALLINABYTE): tools/gallina_lexer.cmo tools/gallina.cmo
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(call ocamlbyte,)
 
 COQMAKEFILECMO:=clib/clib.cma lib/lib.cma tools/coq_makefile.cmo
 
@@ -484,13 +508,25 @@ $(COQMAKEFILE): $(call bestobj,$(COQMAKEFILECMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -package str)
 
+$(COQMAKEFILEBYTE): $(COQMAKEFILECMO)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(call ocamlbyte, -package str,unix,threads)
+
 $(COQTEX): $(call bestobj, tools/coq_tex.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -package str)
 
+$(COQTEXBYTE): tools/coq_tex.cmo
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(call ocamlbyte, -package str)
+
 $(COQWC): $(call bestobj, tools/coqwc.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -package str)
+
+$(COQWCBYTE): tools/coqwc.cmo
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(call ocamlbyte, -package str)
 
 COQDOCCMO:=clib/clib.cma lib/lib.cma $(addprefix tools/coqdoc/, \
   cdglobals.cmo alpha.cmo index.cmo tokens.cmo output.cmo cpretty.cmo main.cmo )
@@ -499,9 +535,19 @@ $(COQDOC): $(call bestobj, $(COQDOCCMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -package str,unix)
 
-$(COQWORKMGR): $(call bestobj, clib/clib.cma lib/lib.cma stm/spawned.cmo stm/coqworkmgrApi.cmo tools/coqworkmgr.cmo)
+$(COQDOCBYTE): $(COQDOCCMO)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(call ocamlbyte, -package str,unix)
+
+COQWORKMGRCMO:=clib/clib.cma lib/lib.cma stm/spawned.cmo stm/coqworkmgrApi.cmo tools/coqworkmgr.cmo
+
+$(COQWORKMGR): $(call bestobj, $(COQWORKMGRCMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, $(SYSMOD))
+
+$(COQWORKMGRBYTE): $(COQWORKMGRCMO)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(call ocamlbyte, $(SYSMOD))
 
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqidetop
@@ -515,11 +561,21 @@ $(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOP)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I ide -package str -package dynlink)
 
+$(FAKEIDEBYTE): $(FAKEIDECMO) | $(IDETOPLOOPCMA)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(call ocamlbyte, -I ide -package str,unix,threads)
+
 # votour: a small vo explorer (based on the checker)
 
-bin/votour: $(call bestobj, clib/cObj.cmo checker/analyze.cmo checker/values.cmo checker/votour.cmo)
+VOTOURCMO:=clib/cObj.cmo checker/analyze.cmo checker/values.cmo checker/votour.cmo
+
+bin/votour: $(call bestobj, $(VOTOURCMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I checker)
+
+bin/votour.byte: $(VOTOURCMO)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(call ocamlbyte, -I checker)
 
 ###########################################################################
 # Csdp to micromega special targets
@@ -532,6 +588,10 @@ CSDPCERTCMO:=clib/clib.cma $(addprefix plugins/micromega/, \
 $(CSDPCERT): $(call bestobj, $(CSDPCERTCMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -package num,unix)
+
+$(CSDPCERTBYTE): $(CSDPCERTCMO)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(call ocamlbyte, -package num,unix)
 
 ###########################################################################
 # tests
