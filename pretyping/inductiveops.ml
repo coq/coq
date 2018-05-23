@@ -17,7 +17,6 @@ open Constr
 open Vars
 open Termops
 open Declarations
-open Declareops
 open Environ
 open Reductionops
 open Context.Rel.Declaration

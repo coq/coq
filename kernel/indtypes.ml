@@ -16,7 +16,6 @@ open Term
 open Constr
 open Vars
 open Declarations
-open Declareops
 open Inductive
 open Environ
 open Reduction

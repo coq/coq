@@ -138,7 +138,7 @@ let lookup_constant_in_impl cst fallback =
 let lookup_constant cst =
   try
     let cb = Global.lookup_constant cst in
-    if Declareops.constant_has_body cb then cb
+    if constant_has_body cb then cb
     else lookup_constant_in_impl cst (Some cb)
   with Not_found -> lookup_constant_in_impl cst None
 
@@ -201,7 +201,7 @@ let rec traverse current ctx accu t = match Constr.kind t with
     begin match Constr.(kind oty, kind c) with
     | Lambda(_,_,oty), Const (kn, _)
       when Vars.noccurn 1 oty &&
-      not (Declareops.constant_has_body (lookup_constant kn)) ->
+      not (constant_has_body (lookup_constant kn)) ->
         let body () = Option.map fst (Global.body_of_constant_body (lookup_constant kn)) in
         traverse_object
           ~inhabits:(current,ctx,Vars.subst1 mkProp oty) accu body (ConstRef kn)
@@ -334,11 +334,11 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
           let l = try Refmap_env.find obj ax2ty with Not_found -> [] in
           ContextObjectMap.add (Axiom (Guarded kn, l)) Constr.mkProp accu
       in
-    if not (Declareops.constant_has_body cb) || not cb.const_typing_flags.check_universes then
+    if not (constant_has_body cb) || not cb.const_typing_flags.check_universes then
       let t = type_of_constant cb in
       let l = try Refmap_env.find obj ax2ty with Not_found -> [] in
       ContextObjectMap.add (Axiom (Constant kn,l)) t accu
-    else if add_opaque && (Declareops.is_opaque cb || not (Cpred.mem kn knst)) then
+    else if add_opaque && (is_opaque cb || not (Cpred.mem kn knst)) then
       let t = type_of_constant cb in
       ContextObjectMap.add (Opaque kn) t accu
     else if add_transparent then

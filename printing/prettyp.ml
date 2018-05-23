@@ -550,8 +550,8 @@ let print_typed_body env evd (val_0,typ) =
   (print_body env evd val_0 ++ fnl () ++ str "     : " ++ pr_ltype_env env evd typ)
 
 let print_instance sigma cb =
-  if Declareops.constant_is_polymorphic cb then
-    let univs = Declareops.constant_polymorphic_context cb in
+  if constant_is_polymorphic cb then
+    let univs = constant_polymorphic_context cb in
     let inst = Univ.AUContext.instance univs in
     let univs = Univ.UContext.make (inst, Univ.AUContext.instantiate inst univs) in
     pr_universe_instance sigma univs
@@ -598,7 +598,7 @@ let print_constant with_values sep sp udecl =
   in
   let env = Global.env () and sigma = Evd.from_ctx ctx in
   let pr_ltype = pr_ltype_env env sigma in
-  hov 0 (pr_polymorphic (Declareops.constant_is_polymorphic cb) ++
+  hov 0 (pr_polymorphic (constant_is_polymorphic cb) ++
     match val_0 with
     | None ->
 	str"*** [ " ++
@@ -850,7 +850,7 @@ let print_opaque_name env sigma qid =
   match Nametab.global qid with
     | ConstRef cst ->
 	let cb = Global.lookup_constant cst in
-        if Declareops.constant_has_body cb then
+        if constant_has_body cb then
           print_constant_with_infos cst None
         else
 	  user_err Pp.(str "Not a defined constant.")

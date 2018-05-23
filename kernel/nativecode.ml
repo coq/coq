@@ -1960,7 +1960,7 @@ let param_name = Name (Id.of_string "params")
 let arg_name = Name (Id.of_string "arg")
 
 let compile_mind prefix ~interactive mb mind stack =
-  let u = Declareops.inductive_polymorphic_context mb in
+  let u = inductive_polymorphic_context mb in
   let f i stack ob =
     let gtype = Gtype((mind, i), Array.map snd ob.mind_reloc_tbl) in
     let j = push_symbol (SymbInd (mind,i)) in

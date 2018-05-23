@@ -550,7 +550,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
     let finfos = find_Function_infos (fst first_fun) in
     try
       let equation =  Option.get finfos.equation_lemma in
-      Declareops.is_opaque (Global.lookup_constant equation)
+      Declarations.is_opaque (Global.lookup_constant equation)
     with Option.IsNone -> (* non recursive definition *)
       false
   in

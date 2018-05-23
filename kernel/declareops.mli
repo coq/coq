@@ -20,56 +20,76 @@ open Entries
 
 val map_decl_arity : ('a -> 'c) -> ('b -> 'd) ->
   ('a, 'b) declaration_arity -> ('c, 'd) declaration_arity
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 (** {6 Constants} *)
 
 val subst_const_body : substitution -> constant_body -> constant_body
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 (** Is there a actual body in const_body ? *)
 
 val constant_has_body : constant_body -> bool
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 val constant_polymorphic_context : constant_body -> AUContext.t
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 (** Is the constant polymorphic? *)
 val constant_is_polymorphic : constant_body -> bool
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 (** Return the universe context, in case the definition is polymorphic, otherwise
     the context is empty. *)
 
 val is_opaque : constant_body -> bool
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 (** Side effects *)
 
 val string_of_side_effect : side_effect -> string
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 (** {6 Inductive types} *)
 
 val eq_recarg : recarg -> recarg -> bool
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 val subst_recarg : substitution -> recarg -> recarg
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 val mk_norec : wf_paths
+[@@ocaml.deprecated "Use version from [Declarations]"]
 val mk_paths : recarg -> wf_paths list array -> wf_paths
+[@@ocaml.deprecated "Use version from [Declarations]"]
 val dest_recarg : wf_paths -> recarg
+[@@ocaml.deprecated "Use version from [Declarations]"]
 val dest_subterms : wf_paths -> wf_paths list array
+[@@ocaml.deprecated "Use version from [Declarations]"]
 val recarg_length : wf_paths -> int -> int
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 val subst_wf_paths : substitution -> wf_paths -> wf_paths
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 val subst_mind_body : substitution -> mutual_inductive_body -> mutual_inductive_body
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 val inductive_polymorphic_context : mutual_inductive_body -> AUContext.t
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 (** Is the inductive polymorphic? *)
 val inductive_is_polymorphic : mutual_inductive_body -> bool
+[@@ocaml.deprecated "Use version from [Declarations]"]
 (** Is the inductive cumulative? *)
 val inductive_is_cumulative : mutual_inductive_body -> bool
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 (** {6 Kernel flags} *)
 
 (** A default, safe set of flags for kernel type-checking *)
 val safe_flags : Conv_oracle.oracle -> typing_flags
+[@@ocaml.deprecated "Use version from [Declarations]"]
 
 (** {6 Hash-consing} *)
 
@@ -78,6 +98,10 @@ val safe_flags : Conv_oracle.oracle -> typing_flags
     and other known elements *)
 
 val hcons_const_body : constant_body -> constant_body
+[@@ocaml.deprecated "Use version from [Declarations]"]
 val hcons_mind : mutual_inductive_body -> mutual_inductive_body
+[@@ocaml.deprecated "Use version from [Declarations]"]
 val hcons_module_body : module_body -> module_body
+[@@ocaml.deprecated "Use version from [Declarations]"]
 val hcons_module_type : module_type_body -> module_type_body
+[@@ocaml.deprecated "Use version from [Declarations]"]

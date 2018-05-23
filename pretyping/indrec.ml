@@ -24,7 +24,6 @@ open Constr
 open Vars
 open Namegen
 open Declarations
-open Declareops
 open Inductive
 open Inductiveops
 open Environ

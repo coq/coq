@@ -90,8 +90,8 @@ let build_ind_type env mip =
   Inductive.type_of_inductive env mip
 
 let print_one_inductive env sigma mib ((_,i) as ind) =
-  let u = if Declareops.inductive_is_polymorphic mib then 
-      Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib)
+  let u = if inductive_is_polymorphic mib then
+      Univ.AUContext.instance (inductive_polymorphic_context mib)
     else Univ.Instance.empty in
   let mip = mib.mind_packets.(i) in
   let params = Inductive.inductive_paramdecls (mib,u) in
@@ -102,8 +102,8 @@ let print_one_inductive env sigma mib ((_,i) as ind) =
   let cstrtypes = Array.map (fun c -> hnf_prod_applist_assum env nparamdecls c args) cstrtypes in
   let envpar = push_rel_context params env in
   let inst =
-    if Declareops.inductive_is_polymorphic mib then
-      let ctx = Declareops.inductive_polymorphic_context mib in
+    if inductive_is_polymorphic mib then
+      let ctx = inductive_polymorphic_context mib in
       let ctx = Univ.UContext.make (u, Univ.AUContext.instantiate u ctx) in
       Printer.pr_universe_instance sigma ctx
     else mt ()
@@ -135,17 +135,17 @@ let print_mutual_inductive env mind mib udecl =
   in
   let univs =
     let open Univ in
-    if Declareops.inductive_is_polymorphic mib then
+    if inductive_is_polymorphic mib then
       Array.to_list (Instance.to_array
-                       (AUContext.instance (Declareops.inductive_polymorphic_context mib)))
+                       (AUContext.instance (inductive_polymorphic_context mib)))
     else []
   in
   let bl = UnivNames.universe_binders_with_opt_names (IndRef (mind, 0)) univs udecl in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
-  hov 0 (Printer.pr_polymorphic (Declareops.inductive_is_polymorphic mib) ++
+  hov 0 (Printer.pr_polymorphic (inductive_is_polymorphic mib) ++
          Printer.pr_cumulative
-           (Declareops.inductive_is_polymorphic mib) 
-           (Declareops.inductive_is_cumulative mib) ++
+           (inductive_is_polymorphic mib)
+           (inductive_is_cumulative mib) ++
          def keyword ++ spc () ++
          prlist_with_sep (fun () -> fnl () ++ str"  with ")
            (print_one_inductive env sigma mib) inds ++
@@ -170,8 +170,8 @@ let get_fields =
 
 let print_record env mind mib udecl =
   let u = 
-    if Declareops.inductive_is_polymorphic mib then 
-      Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib)
+    if inductive_is_polymorphic mib then
+      Univ.AUContext.instance (inductive_polymorphic_context mib)
     else Univ.Instance.empty 
   in
   let mip = mib.mind_packets.(0) in
@@ -195,10 +195,10 @@ let print_record env mind mib udecl =
   in
   hov 0 (
     hov 0 (
-      Printer.pr_polymorphic (Declareops.inductive_is_polymorphic mib) ++
+      Printer.pr_polymorphic (inductive_is_polymorphic mib) ++
       Printer.pr_cumulative
-        (Declareops.inductive_is_polymorphic mib)
-        (Declareops.inductive_is_cumulative mib) ++
+        (inductive_is_polymorphic mib)
+        (inductive_is_cumulative mib) ++
       def keyword ++ spc () ++ Id.print mip.mind_typename ++ brk(1,4) ++
       print_params env sigma params ++
       str ": " ++ Printer.pr_lconstr_env envpar sigma arity ++ brk(1,2) ++
@@ -316,9 +316,9 @@ let print_body is_impl env mp (l,body) =
     | SFBmodule _ -> keyword "Module" ++ spc () ++ name
     | SFBmodtype _ -> keyword "Module Type" ++ spc () ++ name
     | SFBconst cb ->
-       let ctx = Declareops.constant_polymorphic_context cb in
+       let ctx = constant_polymorphic_context cb in
        let u =
-	 if Declareops.constant_is_polymorphic cb then
+         if constant_is_polymorphic cb then
             Univ.AUContext.instance ctx
 	 else Univ.Instance.empty
        in

@@ -1494,14 +1494,12 @@ let is_not_strict t =
    restriction for the moment.
 *)
 
-open Declareops
-
 let inline_test r t =
   if not (auto_inline ()) then false
   else
     let c = match r with ConstRef c -> c | _ -> assert false in
     let has_body =
-      try constant_has_body (Global.lookup_constant c)
+      try Declarations.constant_has_body (Global.lookup_constant c)
       with Not_found -> false
     in
     has_body &&

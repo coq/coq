@@ -15,7 +15,6 @@ open Univ
 open Constr
 open Vars
 open Declarations
-open Declareops
 open Environ
 open Reduction
 open Type_errors
@@ -443,7 +442,7 @@ type subterm_spec =
   | Dead_code
   | Not_subterm
 
-let eq_wf_paths = Rtree.equal Declareops.eq_recarg
+let eq_wf_paths = Rtree.equal eq_recarg
 
 let inter_recarg r1 r2 = match r1, r2 with
 | Norec, Norec -> Some r1
@@ -453,9 +452,9 @@ let inter_recarg r1 r2 = match r1, r2 with
 | Imbr i1, Mrec i2 -> if Names.eq_ind i1 i2 then Some r2 else None
 | _ -> None
 
-let inter_wf_paths = Rtree.inter Declareops.eq_recarg inter_recarg Norec
+let inter_wf_paths = Rtree.inter eq_recarg inter_recarg Norec
 
-let incl_wf_paths = Rtree.incl Declareops.eq_recarg inter_recarg Norec
+let incl_wf_paths = Rtree.incl eq_recarg inter_recarg Norec
 
 let spec_of_tree t =
   if eq_wf_paths t mk_norec

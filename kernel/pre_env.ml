@@ -106,7 +106,7 @@ let empty_env = {
   env_stratification = {
     env_universes = UGraph.initial_universes;
     env_engagement = PredicativeSet };
-  env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
+  env_typing_flags = safe_flags Conv_oracle.empty;
   retroknowledge = Retroknowledge.initial_retroknowledge;
   indirect_pterms = Opaqueproof.empty_opaquetab }
 

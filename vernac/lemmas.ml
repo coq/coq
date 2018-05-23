@@ -17,7 +17,6 @@ open Pp
 open Names
 open Constr
 open Declarations
-open Declareops
 open Entries
 open Nameops
 open Globnames

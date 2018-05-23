@@ -275,7 +275,7 @@ let warn_non_primitive_record =
 let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers ubinders fieldimpls fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
-  let poly = Declareops.inductive_is_polymorphic mib in
+  let poly = inductive_is_polymorphic mib in
   let u = match ctx with
     | Polymorphic_const_entry ctx -> Univ.UContext.instance ctx
     | Monomorphic_const_entry ctx -> Univ.Instance.empty
@@ -548,7 +548,7 @@ let add_inductive_class ind =
   let mind, oneind = Global.lookup_inductive ind in
   let k =
     let ctx = oneind.mind_arity_ctxt in
-    let univs = Declareops.inductive_polymorphic_context mind in
+    let univs = inductive_polymorphic_context mind in
     let env = push_context ~strict:false (Univ.AUContext.repr univs) (Global.env ()) in
     let env = push_rel_context ctx env in
     let inst = Univ.make_abstract_instance univs in

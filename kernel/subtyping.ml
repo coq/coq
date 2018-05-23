@@ -20,7 +20,6 @@ open Util
 open Term
 open Constr
 open Declarations
-open Declareops
 open Reduction
 open Inductive
 open Modops
@@ -110,7 +109,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   let check_conv why cst poly f = check_conv_error error why cst poly f in
   let mib1 =
     match info1 with
-      | IndType ((_,0), mib) -> Declareops.subst_mind_body subst1 mib
+      | IndType ((_,0), mib) -> subst_mind_body subst1 mib
       | _ -> error (InductiveFieldExpected mib2)
   in
   let env, inst =
@@ -134,9 +133,9 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
       let env = check_polymorphic_instance error env auctx auctx' in
       env, Univ.make_abstract_instance auctx'
     | _ -> error 
-             (CumulativeStatusExpected (Declareops.inductive_is_cumulative mib2))
+             (CumulativeStatusExpected (inductive_is_cumulative mib2))
   in
-  let mib2 =  Declareops.subst_mind_body subst2 mib2 in
+  let mib2 = subst_mind_body subst2 mib2 in
   let check_inductive_type cst name t1 t2 =
 
     (* Due to template polymorphism, the conclusions of
@@ -310,8 +309,8 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
   match info1 with
     | Constant cb1 ->
       let () = assert (List.is_empty cb1.const_hyps && List.is_empty cb2.const_hyps) in
-      let cb1 = Declareops.subst_const_body subst1 cb1 in
-      let cb2 = Declareops.subst_const_body subst2 cb2 in
+      let cb1 = subst_const_body subst1 cb1 in
+      let cb2 = subst_const_body subst2 cb2 in
       (* Start by checking universes *)
       let poly, env =
         match cb1.const_universes, cb2.const_universes with

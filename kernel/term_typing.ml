@@ -517,7 +517,7 @@ let constant_entry_of_side_effect cb u =
     const_entry_feedback = None;
     const_entry_type = Some cb.const_type;
     const_entry_universes = univs;
-    const_entry_opaque = Declareops.is_opaque cb;
+    const_entry_opaque = is_opaque cb;
     const_entry_inline_code = cb.const_inline_code }
 ;;
 

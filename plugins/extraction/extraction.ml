@@ -14,7 +14,6 @@ open Names
 open Term
 open Constr
 open Declarations
-open Declareops
 open Environ
 open Reduction
 open Reductionops

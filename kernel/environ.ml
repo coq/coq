@@ -262,7 +262,7 @@ exception NotEvaluableConst of const_evaluation_result
 
 let constant_value_and_type env (kn, u) =
   let cb = lookup_constant kn env in
-    if Declareops.constant_is_polymorphic cb then
+    if constant_is_polymorphic cb then
       let cst = constraints_of cb u in
       let b' = match cb.const_body with
 	| Def l_body -> Some (subst_instance_constr u (Mod_subst.force_constr l_body))
@@ -284,7 +284,7 @@ let constant_value_and_type env (kn, u) =
 (* constant_type gives the type of a constant *)
 let constant_type_in env (kn,u) =
   let cb = lookup_constant kn env in
-    if Declareops.constant_is_polymorphic cb then
+    if constant_is_polymorphic cb then
       subst_instance_constr u cb.const_type
     else cb.const_type
 
@@ -310,7 +310,7 @@ let evaluable_constant kn env =
     | Undef _ -> false
 
 let polymorphic_constant cst env =
-  Declareops.constant_is_polymorphic (lookup_constant cst env)
+  constant_is_polymorphic (lookup_constant cst env)
 
 let polymorphic_pconstant (cst,u) env =
   if Univ.Instance.is_empty u then false
@@ -333,7 +333,7 @@ let is_projection cst env =
 let lookup_mind = lookup_mind
 
 let polymorphic_ind (mind,i) env =
-  Declareops.inductive_is_polymorphic (lookup_mind mind env)
+  inductive_is_polymorphic (lookup_mind mind env)
 
 let polymorphic_pind (ind,u) env =
   if Univ.Instance.is_empty u then false

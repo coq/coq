@@ -675,7 +675,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Tacmach.tacti
         with Not_found ->  user_err Pp.(str "No graph found")
       in
       if infos.is_general
-        || Rtree.is_infinite Declareops.eq_recarg graph_def.mind_recargs
+        || Rtree.is_infinite eq_recarg graph_def.mind_recargs
       then
 	let eq_lemma =
 	  try Option.get (infos).equation_lemma
