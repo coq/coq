@@ -48,10 +48,12 @@ type proof_object = {
   universes: UState.t;
 }
 
+type opacity_flag = Opaque | Transparent
+
 type proof_ending =
   | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry *
                 UState.t
-  | Proved of Vernacexpr.opacity_flag *
+  | Proved of opacity_flag *
               Misctypes.lident option *
               proof_object
 type proof_terminator

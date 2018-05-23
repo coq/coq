@@ -58,7 +58,7 @@ let in_generalizable : bool * Misctypes.lident list option -> obj =
     classify_function = (fun (local, _ as obj) -> if local then Dispose else Keep obj)
   }
 
-let declare_generalizable local gen =
+let declare_generalizable ~local gen =
  Lib.add_anonymous_leaf (in_generalizable (local, gen))
 
 let find_generalizable_ident id = Id.Pred.mem (root_of_id id) !generalizable_table

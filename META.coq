@@ -131,10 +131,10 @@ package "interp" (
 
 package "grammar" (
 
-  description = "Coq Base Grammar"
+  description = "Coq Camlp5 Grammar Extensions for Plugins"
   version     = "8.8"
 
-  requires    = "coq.interp"
+  requires    = "camlp5.gramlib"
   directory   = "grammar"
 
   archive(byte)   = "grammar.cma"

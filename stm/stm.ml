@@ -1511,7 +1511,7 @@ end = struct (* {{{ *)
           stm_vernac_interp stop
             ~proof:(pobject, terminator) st
             { verbose = false; loc; indentation = 0; strlen = 0;
-              expr = VernacExpr ([], VernacEndProof (Proved (Opaque,None))) }) in
+              expr = VernacExpr ([], VernacEndProof (Proved (Proof_global.Opaque,None))) }) in
         ignore(Future.join checked_proof);
       end;
       (* STATE: Restore the state XXX: handle exn *)
@@ -1661,7 +1661,7 @@ end = struct (* {{{ *)
       let st = Vernacstate.freeze_interp_state `No in
       ignore(stm_vernac_interp stop ~proof st
         { verbose = false; loc; indentation = 0; strlen = 0;
-          expr = VernacExpr ([], VernacEndProof (Proved (Opaque,None))) });
+          expr = VernacExpr ([], VernacEndProof (Proved (Proof_global.Opaque,None))) });
       `OK proof
       end
     with e ->
@@ -2121,7 +2121,7 @@ let collect_proof keep cur hd brkind id =
    | id :: _ -> Names.Id.to_string id in
  let loc = (snd cur).loc in
  let is_defined_expr = function
-   | VernacEndProof (Proved (Transparent,_)) -> true
+   | VernacEndProof (Proved (Proof_global.Transparent,_)) -> true
    | _ -> false in
  let is_defined = function
    | _, { expr = e } -> is_defined_expr (Vernacprop.under_control e)

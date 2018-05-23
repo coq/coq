@@ -38,8 +38,8 @@ val dump_binding : ?loc:Loc.t -> Names.Id.Set.elt -> unit
 val dump_notation :
   (Constrexpr.notation * Notation.notation_location) Loc.located ->
   Notation_term.scope_name option -> bool -> unit
-val dump_constraint :
-  Vernacexpr.typeclass_constraint -> bool -> string -> unit
+
+val dump_constraint : Misctypes.lname -> bool -> string -> unit
 
 val dump_string : string -> unit
 

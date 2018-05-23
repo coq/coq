@@ -72,7 +72,7 @@ let declare_fun f_id kind ?univs value =
   let ce = definition_entry ?univs value (*FIXME *) in
     ConstRef(declare_constant f_id (DefinitionEntry ce, kind));;
 
-let defined () = Lemmas.save_proof (Vernacexpr.(Proved (Transparent,None)))
+let defined () = Lemmas.save_proof (Vernacexpr.(Proved (Proof_global.Transparent,None)))
 
 let def_of_const t =
    match (Constr.kind t) with
@@ -1306,9 +1306,9 @@ let build_new_goal_type () =
 let is_opaque_constant c =
   let cb = Global.lookup_constant c in
   match cb.Declarations.const_body with
-    | Declarations.OpaqueDef _ -> Vernacexpr.Opaque
-    | Declarations.Undef _ -> Vernacexpr.Opaque
-    | Declarations.Def _ -> Vernacexpr.Transparent
+    | Declarations.OpaqueDef _ -> Proof_global.Opaque
+    | Declarations.Undef _ -> Proof_global.Opaque
+    | Declarations.Def _ -> Proof_global.Transparent
 
 let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decompose_and_tac,nb_goal)   =
   (* Pp.msgnl (str "gls_type := " ++ Printer.pr_lconstr gls_type); *)
