@@ -510,8 +510,8 @@ let raw_map f d =
     in
     ans
   in
-  let defn_evars = EvMap.smartmapi f d.defn_evars in
-  let undf_evars = EvMap.smartmapi f d.undf_evars in
+  let defn_evars = EvMap.Smart.mapi f d.defn_evars in
+  let undf_evars = EvMap.Smart.mapi f d.undf_evars in
   { d with defn_evars; undf_evars; }
 
 let raw_map_undefined f d =
@@ -524,7 +524,7 @@ let raw_map_undefined f d =
     in
     ans
   in
-  { d with undf_evars = EvMap.smartmapi f d.undf_evars; }
+  { d with undf_evars = EvMap.Smart.mapi f d.undf_evars; }
 
 let is_evar = mem
 
@@ -1040,11 +1040,11 @@ let map_metas_fvalue f evd =
   | Clval(id,(c,s),typ) -> Clval(id,(mk_freelisted (f c.rebus),s),typ)
   | x -> x
   in
-  set_metas evd (Metamap.smartmap map evd.metas)
+  set_metas evd (Metamap.Smart.map map evd.metas)
 
 let map_metas f evd =
   let map cl = map_clb f cl in
-  set_metas evd (Metamap.smartmap map evd.metas)
+  set_metas evd (Metamap.Smart.map map evd.metas)
 
 let meta_opt_fvalue evd mv =
   match Metamap.find mv evd.metas with
@@ -1120,7 +1120,7 @@ let retract_coercible_metas evd =
     Cltyp (na, typ)
   | v -> v
   in
-  let metas = Metamap.smartmapi map evd.metas in
+  let metas = Metamap.Smart.mapi map evd.metas in
   !mc, set_metas evd metas
 
 let evar_source_of_meta mv evd =

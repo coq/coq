@@ -35,8 +35,15 @@ sig
   val fold_left : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   val fold_right : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   val smartmap : ('a -> 'a) -> 'a t -> 'a t
+  (** [@@ocaml.deprecated "Same as [Smart.map]"] *)
   val smartmapi : (key -> 'a -> 'a) -> 'a t -> 'a t
+  (** [@@ocaml.deprecated "Same as [Smart.mapi]"] *)
   val height : 'a t -> int
+  module Smart :
+  sig
+    val map : ('a -> 'a) -> 'a t -> 'a t
+    val mapi : (key -> 'a -> 'a) -> 'a t -> 'a t
+  end
   module Unsafe :
   sig
     val map : (key -> 'a -> key * 'b) -> 'a t -> 'b t
@@ -59,8 +66,15 @@ sig
   val fold_left : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
   val fold_right : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
   val smartmap : ('a -> 'a) -> 'a map -> 'a map
+  (** [@@ocaml.deprecated "Same as [Smart.map]"] *)
   val smartmapi : (M.t -> 'a -> 'a) -> 'a map -> 'a map
+  (** [@@ocaml.deprecated "Same as [Smart.mapi]"] *)
   val height : 'a map -> int
+  module Smart :
+  sig
+    val map : ('a -> 'a) -> 'a map -> 'a map
+    val mapi : (M.t -> 'a -> 'a) -> 'a map -> 'a map
+  end
   module Unsafe :
   sig
     val map : (M.t -> 'a -> M.t * 'b) -> 'a map -> 'b map
@@ -154,27 +168,35 @@ struct
     let accu = f k v (fold_right f r accu) in
     fold_right f l accu
 
-  let rec smartmap f (s : 'a map) = match map_prj s with
-  | MEmpty -> map_inj MEmpty
-  | MNode (l, k, v, r, h) ->
-    let l' = smartmap f l in
-    let r' = smartmap f r in
-    let v' = f v in
-    if l == l' && r == r' && v == v' then s
-    else map_inj (MNode (l', k, v', r', h))
-
-  let rec smartmapi f (s : 'a map) = match map_prj s with
-  | MEmpty -> map_inj MEmpty
-  | MNode (l, k, v, r, h) ->
-    let l' = smartmapi f l in
-    let r' = smartmapi f r in
-    let v' = f k v in
-    if l == l' && r == r' && v == v' then s
-    else map_inj (MNode (l', k, v', r', h))
-
   let height s = match map_prj s with
   | MEmpty -> 0
   | MNode (_, _, _, _, h) -> h
+
+  module Smart =
+  struct
+
+    let rec map f (s : 'a map) = match map_prj s with
+    | MEmpty -> map_inj MEmpty
+    | MNode (l, k, v, r, h) ->
+      let l' = map f l in
+      let r' = map f r in
+      let v' = f v in
+      if l == l' && r == r' && v == v' then s
+      else map_inj (MNode (l', k, v', r', h))
+
+    let rec mapi f (s : 'a map) = match map_prj s with
+    | MEmpty -> map_inj MEmpty
+    | MNode (l, k, v, r, h) ->
+      let l' = mapi f l in
+      let r' = mapi f r in
+      let v' = f k v in
+      if l == l' && r == r' && v == v' then s
+      else map_inj (MNode (l', k, v', r', h))
+
+  end
+
+  let smartmap = Smart.map
+  let smartmapi = Smart.mapi
 
   module Unsafe =
   struct

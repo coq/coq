@@ -383,13 +383,21 @@ struct
     let m = Map.set k x m in
     Int.Map.set h m s
 
-  let smartmap f s =
-    let fs m = Map.smartmap f m in
-    Int.Map.smartmap fs s
+  module Smart =
+  struct
 
-  let smartmapi f s =
-    let fs m = Map.smartmapi f m in
-    Int.Map.smartmap fs s
+    let map f s =
+      let fs m = Map.Smart.map f m in
+      Int.Map.Smart.map fs s
+
+    let mapi f s =
+      let fs m = Map.Smart.mapi f m in
+      Int.Map.Smart.map fs s
+
+  end
+
+  let smartmap = Smart.map
+  let smartmapi = Smart.mapi
 
   let height s = Int.Map.height s
 
