@@ -42,7 +42,7 @@ let map_decl_arity f g = function
 
 let hcons_template_arity ar =
   { template_param_levels = ar.template_param_levels;
-      (* List.smartmap (Option.smartmap Univ.hcons_univ_level) ar.template_param_levels; *)
+      (* List.Smart.map (Option.smartmap Univ.hcons_univ_level) ar.template_param_levels; *)
     template_level = Univ.hcons_univ ar.template_level }
 
 (** {6 Constants } *)
@@ -70,7 +70,7 @@ let is_opaque cb = match cb.const_body with
 let subst_rel_declaration sub =
   RelDecl.map_constr (subst_mps sub)
 
-let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
+let subst_rel_context sub = List.Smart.map (subst_rel_declaration sub)
 
 let subst_const_type sub arity =
   if is_empty_subst sub then arity
@@ -117,7 +117,7 @@ let subst_const_body sub cb =
 let hcons_rel_decl =
   RelDecl.map_name Names.Name.hcons %> RelDecl.map_value Constr.hcons %> RelDecl.map_type Constr.hcons
 
-let hcons_rel_context l = List.smartmap hcons_rel_decl l
+let hcons_rel_context l = List.Smart.map hcons_rel_decl l
 
 let hcons_const_def = function
   | Undef inl -> Undef inl
@@ -331,7 +331,7 @@ and hcons_structure_body sb =
     let sfb' = hcons_structure_field_body sfb in
     if l == l' && sfb == sfb' then fb else (l', sfb')
   in
-  List.smartmap map sb
+  List.Smart.map map sb
 
 and hcons_module_signature ms =
   hcons_functorize hcons_module_type hcons_structure_body hcons_module_signature ms

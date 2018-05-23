@@ -741,7 +741,7 @@ let subst_arguments_scope (subst,(req,r,n,scl,cls)) =
         match subst_scope_class subst cl with
         | Some cl'  as ocl' when cl' != cl -> ocl'
         | _ -> ocl in
-  let cls' = List.smartmap subst_cl cls in
+  let cls' = List.Smart.map subst_cl cls in
   (ArgsScopeNoDischarge,r',n,scl,cls')
 
 let discharge_arguments_scope (_,(req,r,n,l,_)) =

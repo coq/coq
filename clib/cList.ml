@@ -39,6 +39,7 @@ sig
   val map_filter_i : (int -> 'a -> 'b option) -> 'a list -> 'b list
   val filter_with : bool list -> 'a list -> 'a list
   val smartmap : ('a -> 'a) -> 'a list -> 'a list
+  [@@ocaml.deprecated "Same as [Smart.map]"]
   val map_left : ('a -> 'b) -> 'a list -> 'b list
   val map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
   val map2_i :
@@ -53,6 +54,7 @@ sig
     (int -> 'a -> bool) -> 'a list -> 'a list * 'a list
   val map_of_array : ('a -> 'b) -> 'a array -> 'b list
   val smartfilter : ('a -> bool) -> 'a list -> 'a list
+  [@@ocaml.deprecated "Same as [Smart.map]"]
   val extend : bool list -> 'a -> 'a list -> 'a list
   val count : ('a -> bool) -> 'a list -> int
   val index : 'a eq -> 'a -> 'a list -> int
@@ -116,6 +118,12 @@ sig
   val cartesians_filter :
     ('a -> 'b -> 'b option) -> 'b -> 'a list list -> 'b list
   val factorize_left : 'a eq -> ('a * 'b) list -> ('a * 'b list) list
+
+  module Smart :
+  sig
+    val map : ('a -> 'a) -> 'a list -> 'a list
+    val filter : ('a -> bool) -> 'a list -> 'a list
+  end
 
   module type MonoS = sig
     type elt
@@ -365,13 +373,6 @@ let assign l n e =
   in
   assrec [] l n
 
-let rec smartmap f l = match l with
-    [] -> l
-  | h::tl ->
-      let h' = f h and tl' = smartmap f tl in
-        if h'==h && tl'==tl then l
-        else h'::tl'
-
 let map_left = map
 
 let map2_i f i l1 l2 =
@@ -397,15 +398,6 @@ let map4 f l1 l2 l3 l4 =
     | (_, _, _, _) -> invalid_arg "map4"
   in
   map (l1,l2,l3,l4)
-
-let rec smartfilter f l = match l with
-    [] -> l
-  | h::tl ->
-      let tl' = smartfilter f tl in
-        if f h then
-          if tl' == tl then l
-          else h :: tl'
-        else tl'
 
 let rec extend l a l' = match l,l' with
   | true::l, b::l' -> b :: extend l a l'
@@ -895,6 +887,30 @@ let rec factorize_left cmp = function
       let al,l' = partition (fun (a',_) -> cmp a a') l in
       (a,(b::List.map snd al)) :: factorize_left cmp l'
   | [] -> []
+
+module Smart =
+struct
+
+  let rec map f l = match l with
+    [] -> l
+  | h::tl ->
+      let h' = f h and tl' = map f tl in
+        if h'==h && tl'==tl then l
+        else h'::tl'
+
+  let rec filter f l = match l with
+    [] -> l
+  | h::tl ->
+      let tl' = filter f tl in
+        if f h then
+          if tl' == tl then l
+          else h :: tl'
+        else tl'
+
+end
+
+let smartmap = Smart.map
+let smartfilter = Smart.filter
 
 module type MonoS = sig
   type elt

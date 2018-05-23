@@ -521,7 +521,7 @@ let rec subst_pat subst pat =
   | PatVar _ -> pat
   | PatCstr (((kn,i),j),cpl,n) ->
       let kn' = subst_mind subst kn
-      and cpl' = List.smartmap (subst_pat subst) cpl in
+      and cpl' = List.Smart.map (subst_pat subst) cpl in
       if kn' == kn && cpl' == cpl then pat else
         DAst.make ?loc:pat.CAst.loc @@ PatCstr (((kn',i),j),cpl',n)
 
@@ -536,7 +536,7 @@ let rec subst_notation_constr subst bound raw =
 
   | NApp (r,rl) ->
       let r' = subst_notation_constr subst bound r
-      and rl' = List.smartmap (subst_notation_constr subst bound) rl in
+      and rl' = List.Smart.map (subst_notation_constr subst bound) rl in
 	if r' == r && rl' == rl then raw else
 	  NApp(r',rl')
 
@@ -573,7 +573,7 @@ let rec subst_notation_constr subst bound raw =
 
   | NCases (sty,rtntypopt,rl,branches) ->
       let rtntypopt' = Option.smartmap (subst_notation_constr subst bound) rtntypopt
-      and rl' = List.smartmap
+      and rl' = List.Smart.map
         (fun (a,(n,signopt) as x) ->
 	  let a' = subst_notation_constr subst bound a in
 	  let signopt' = Option.map (fun ((indkn,i),nal as z) ->
@@ -581,9 +581,9 @@ let rec subst_notation_constr subst bound raw =
 	    if indkn == indkn' then z else ((indkn',i),nal)) signopt in
 	  if a' == a && signopt' == signopt then x else (a',(n,signopt')))
         rl
-      and branches' = List.smartmap
+      and branches' = List.Smart.map
                         (fun (cpl,r as branch) ->
-                           let cpl' = List.smartmap (subst_pat subst) cpl
+                           let cpl' = List.Smart.map (subst_pat subst) cpl
                            and r' = subst_notation_constr subst bound r in
                              if cpl' == cpl && r' == r then branch else
                                (cpl',r'))
@@ -610,7 +610,7 @@ let rec subst_notation_constr subst bound raw =
 
   | NRec (fk,idl,dll,tl,bl) ->
       let dll' =
-        Array.Smart.map (List.smartmap (fun (na,oc,b as x) ->
+        Array.Smart.map (List.Smart.map (fun (na,oc,b as x) ->
           let oc' =  Option.smartmap (subst_notation_constr subst bound) oc in
 	  let b' =  subst_notation_constr subst bound b in
 	  if oc' == oc && b' == b then x else (na,oc',b'))) dll in

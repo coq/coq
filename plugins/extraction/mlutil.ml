@@ -550,15 +550,15 @@ let dump_unused_vars a =
        if v' == v then a else MLfix (i,ids,v')
 
     | MLapp (b,l) ->
-       let b' = ren env b and l' = List.smartmap (ren env) l in
+       let b' = ren env b and l' = List.Smart.map (ren env) l in
        if b' == b && l' == l then a else MLapp (b',l')
 
     | MLcons(t,r,l) ->
-       let l' = List.smartmap (ren env) l in
+       let l' = List.Smart.map (ren env) l in
        if l' == l then a else MLcons (t,r,l')
 
     | MLtuple l ->
-       let l' = List.smartmap (ren env) l in
+       let l' = List.Smart.map (ren env) l in
        if l' == l then a else MLtuple l'
 
     | MLmagic b ->

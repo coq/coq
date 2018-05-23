@@ -197,7 +197,7 @@ let rec subst_structure sub do_delta sign =
       let mtb' = subst_modtype sub do_delta mtb in
       if mtb==mtb' then orig else (l,SFBmodtype mtb')
   in
-  List.smartmap subst_body sign
+  List.Smart.map subst_body sign
 
 and subst_body : 'a. _ -> _ -> (_ -> 'a -> 'a) -> _ -> 'a generic_module_body -> 'a generic_module_body =
   fun is_mod sub subst_impl do_delta mb ->
@@ -595,7 +595,7 @@ and clean_field l field = match field with
     if mb==mb' then field else (lab,SFBmodule mb')
   |_ -> field
 
-and clean_structure l = List.smartmap (clean_field l)
+and clean_structure l = List.Smart.map (clean_field l)
 
 and clean_signature l =
   functor_smartmap (clean_module_type l) (clean_structure l)

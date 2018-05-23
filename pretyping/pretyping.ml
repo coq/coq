@@ -421,7 +421,7 @@ let ltac_interp_name_env k0 lvar env sigma =
   let n = Context.Rel.length (rel_context env) - k0 in
   let ctxt,_ = List.chop n (rel_context env) in
   let open Context.Rel.Declaration in
-  let ctxt' = List.smartmap (map_name (ltac_interp_name lvar)) ctxt in
+  let ctxt' = List.Smart.map (map_name (ltac_interp_name lvar)) ctxt in
   if List.equal (fun d1 d2 -> Name.equal (get_name d1) (get_name d2)) ctxt ctxt' then env
   else push_rel_context sigma ctxt' (pop_rel_context n env sigma)
 

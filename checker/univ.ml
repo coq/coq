@@ -314,7 +314,7 @@ struct
 
   let for_all = List.for_all
 
-  let smartmap = List.smartmap
+  let smart_map = List.Smart.map
 
 end
 
@@ -956,7 +956,7 @@ let subst_instance_instance s i =
 
 let subst_instance_universe s u =
   let f x = Universe.Expr.map (fun u -> subst_instance_level s u) x in
-  let u' = Universe.smartmap f u in
+  let u' = Universe.smart_map f u in
     if u == u' then u
     else Universe.sort u'
 
@@ -1097,7 +1097,7 @@ let subst_univs_level_level subst l =
 
 let subst_univs_level_universe subst u =
   let f x = Universe.Expr.map (fun u -> subst_univs_level_level subst u) x in
-  let u' = Universe.smartmap f u in
+  let u' = Universe.smart_map f u in
     if u == u' then u
     else Universe.sort u'
 

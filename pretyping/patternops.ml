@@ -297,7 +297,7 @@ let rec subst_pattern subst pat =
 	if f' == f && args' == args then pat else
 	  PApp (f',args')
   | PSoApp (i,args) ->
-      let args' = List.smartmap (subst_pattern subst) args in
+      let args' = List.Smart.map (subst_pattern subst) args in
 	if args' == args then pat else
 	  PSoApp (i,args')
   | PLambda (name,c1,c2) ->
@@ -334,7 +334,7 @@ let rec subst_pattern subst pat =
 	let c' = subst_pattern subst c in
 	if c' == c then br else (i,n,c')
       in
-      let branches' = List.smartmap subst_branch branches in
+      let branches' = List.Smart.map subst_branch branches in
       if cip' == cip && typ' == typ && c' == c && branches' == branches
       then pat
       else PCase(cip', typ', c', branches')

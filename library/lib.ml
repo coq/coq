@@ -51,7 +51,7 @@ let subst_objects subst seg =
       if obj' == obj then node else
 	(id, obj')
   in
-    List.smartmap subst_one seg
+    List.Smart.map subst_one seg
 
 (*let load_and_subst_objects i prefix subst seg =
   List.rev (List.fold_left (fun seg (id,obj as node) ->

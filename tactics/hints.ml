@@ -448,7 +448,7 @@ let subst_path_atom subst p =
   | PathAny -> p
   | PathHints grs ->
     let gr' gr = fst (subst_global subst gr) in
-    let grs' = List.smartmap gr' grs in
+    let grs' = List.Smart.map gr' grs in
       if grs' == grs then p else PathHints grs'
 
 let rec subst_hints_path subst hp =
@@ -654,7 +654,7 @@ struct
 
   let add_list env sigma l db = List.fold_left (fun db k -> add_one env sigma k db) db l
 
-  let remove_sdl p sdl = List.smartfilter p sdl 
+  let remove_sdl p sdl = List.Smart.filter p sdl
 
   let remove_he st p se =
     let sl1' = remove_sdl p se.sentry_nopat in
@@ -666,7 +666,7 @@ struct
     let filter (_, h) =
       match h.name with PathHints [gr] -> not (List.mem_f GlobRef.equal gr grs) | _ -> true in
     let hintmap = Constr_map.map (remove_he db.hintdb_state filter) db.hintdb_map in
-    let hintnopat = List.smartfilter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
+    let hintnopat = List.Smart.filter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
 
   let remove_one gr db = remove_list [gr] db
@@ -1104,13 +1104,13 @@ let subst_autohint (subst, obj) =
   let action = match obj.hint_action with
     | CreateDB _ -> obj.hint_action
     | AddTransparency (grs, b) ->
-      let grs' = List.smartmap (subst_evaluable_reference subst) grs in
+      let grs' = List.Smart.map (subst_evaluable_reference subst) grs in
       if grs == grs' then obj.hint_action else AddTransparency (grs', b)
     | AddHints hintlist ->
-      let hintlist' = List.smartmap subst_hint hintlist in
+      let hintlist' = List.Smart.map subst_hint hintlist in
       if hintlist' == hintlist then obj.hint_action else AddHints hintlist'
     | RemoveHints grs ->
-      let grs' = List.smartmap (subst_global_reference subst) grs in
+      let grs' = List.Smart.map (subst_global_reference subst) grs in
       if grs == grs' then obj.hint_action else RemoveHints grs'
     | AddCut path ->
       let path' = subst_hints_path subst path in

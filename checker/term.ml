@@ -243,7 +243,7 @@ let map_rel_decl f = function
        LocalDef (n, body', typ')
 
 let map_rel_context f =
-  List.smartmap (map_rel_decl f)
+  List.Smart.map (map_rel_decl f)
 
 let extended_rel_list n hyps =
   let rec reln l p = function

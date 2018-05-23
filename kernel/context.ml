@@ -192,7 +192,7 @@ struct
   let equal eq l = List.equal (fun c -> Declaration.equal eq c) l
 
   (** Map all terms in a given rel-context. *)
-  let map f = List.smartmap (Declaration.map_constr f)
+  let map f = List.Smart.map (Declaration.map_constr f)
 
   (** Perform a given action on every declaration in a given rel-context. *)
   let iter f = List.iter (Declaration.iter_constr f)
@@ -392,7 +392,7 @@ struct
   let equal eq l = List.equal (fun c -> Declaration.equal eq c) l
 
   (** Map all terms in a given named-context. *)
-  let map f = List.smartmap (Declaration.map_constr f)
+  let map f = List.Smart.map (Declaration.map_constr f)
 
   (** Perform a given action on every declaration in a given named-context. *)
   let iter f = List.iter (Declaration.iter_constr f)

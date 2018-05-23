@@ -456,10 +456,10 @@ struct
   let super l = 
     if is_small l then type1
     else
-      List.smartmap (fun x -> Expr.successor x) l
+      List.Smart.map (fun x -> Expr.successor x) l
 
   let addn n l =
-    List.smartmap (fun x -> Expr.addn n x) l
+    List.Smart.map (fun x -> Expr.addn n x) l
 
   let rec merge_univs l1 l2 =
     match l1, l2 with
@@ -500,7 +500,7 @@ struct
 
   let for_all = List.for_all
 
-  let smartmap = List.smartmap
+  let smart_map = List.Smart.map
 
   let map = List.map
 end
@@ -894,7 +894,7 @@ let subst_instance_instance s i =
 
 let subst_instance_universe s u =
   let f x = Universe.Expr.map (fun u -> subst_instance_level s u) x in
-  let u' = Universe.smartmap f u in
+  let u' = Universe.smart_map f u in
     if u == u' then u
     else Universe.sort u'
 
@@ -1100,7 +1100,7 @@ let subst_univs_level_level subst l =
 
 let subst_univs_level_universe subst u =
   let f x = Universe.Expr.map (fun u -> subst_univs_level_level subst u) x in
-  let u' = Universe.smartmap f u in
+  let u' = Universe.smart_map f u in
     if u == u' then u
     else Universe.sort u'
 

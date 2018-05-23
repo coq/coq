@@ -513,7 +513,7 @@ let subst_decl_arity f g sub ar =
 let subst_rel_declaration sub =
   Term.map_rel_decl (subst_mps sub)
 
-let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
+let subst_rel_context sub = List.Smart.map (subst_rel_declaration sub)
 
 let constant_is_polymorphic cb =
   match cb.const_universes with
