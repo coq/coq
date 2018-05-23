@@ -1392,7 +1392,7 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
 	      
   and mimick_undefined_evar evd flags hdc nargs sp =
     let ev = Evd.find_undefined evd sp in
-    let sp_env = Global.env_of_context ev.evar_hyps in
+    let sp_env = Global.env_of_context (evar_filtered_hyps ev) in
     let (evd', c) = applyHead sp_env evd nargs hdc in
     let (evd'',mc,ec) =
       unify_0 sp_env evd' CUMUL flags
