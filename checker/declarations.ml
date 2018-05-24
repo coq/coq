@@ -231,7 +231,7 @@ let rec map_kn f f' c =
 	  in
 	  let p' = func p in
 	  let ct' = func ct in
-	  let l' = Array.smartmap func l in
+          let l' = Array.Smart.map func l in
 	    if (ci.ci_ind==ci_ind && p'==p
 		&& l'==l && ct'==ct)then c
 	    else
@@ -260,21 +260,21 @@ let rec map_kn f f' c =
 	    else LetIn (na, b', t', ct')
       | App (ct,l) ->
 	  let ct' = func ct in
-	  let l' = Array.smartmap func l in
+          let l' = Array.Smart.map func l in
 	    if (ct'== ct && l'==l) then c
 	    else App (ct',l')
       | Evar (e,l) ->
-	  let l' = Array.smartmap func l in
+          let l' = Array.Smart.map func l in
 	    if (l'==l) then c
 	    else Evar (e,l')
       | Fix (ln,(lna,tl,bl)) ->
-	  let tl' = Array.smartmap func tl in
-	  let bl' = Array.smartmap func bl in
+          let tl' = Array.Smart.map func tl in
+          let bl' = Array.Smart.map func bl in
 	    if (bl == bl'&& tl == tl') then c
 	    else Fix (ln,(lna,tl',bl'))
       | CoFix(ln,(lna,tl,bl)) ->
-	  let tl' = Array.smartmap func tl in
-	  let bl' = Array.smartmap func bl in
+          let tl' = Array.Smart.map func tl in
+          let bl' = Array.Smart.map func bl in
 	    if (bl == bl'&& tl == tl') then c
 	    else CoFix (ln,(lna,tl',bl'))
       | _ -> c
@@ -480,7 +480,7 @@ let dest_subterms p =
   let (_,cstrs) = Rtree.dest_node p in
   Array.map (fun t -> Array.to_list (snd (Rtree.dest_node t))) cstrs
 
-let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
+let subst_wf_paths sub p = Rtree.Smart.map (subst_recarg sub) p
 
 let eq_recarg r1 r2 = match r1, r2 with
   | Norec, Norec -> true
@@ -513,7 +513,7 @@ let subst_decl_arity f g sub ar =
 let subst_rel_declaration sub =
   Term.map_rel_decl (subst_mps sub)
 
-let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
+let subst_rel_context sub = List.Smart.map (subst_rel_declaration sub)
 
 let constant_is_polymorphic cb =
   match cb.const_universes with
@@ -544,10 +544,10 @@ let subst_mind_packet sub mbp =
     mind_consnrealdecls = mbp.mind_consnrealdecls;
     mind_consnrealargs = mbp.mind_consnrealargs;
     mind_typename = mbp.mind_typename;
-    mind_nf_lc = Array.smartmap (subst_mps sub) mbp.mind_nf_lc;
+    mind_nf_lc = Array.Smart.map (subst_mps sub) mbp.mind_nf_lc;
     mind_arity_ctxt = subst_rel_context sub mbp.mind_arity_ctxt;
     mind_arity = subst_ind_arity sub mbp.mind_arity;
-    mind_user_lc = Array.smartmap (subst_mps sub) mbp.mind_user_lc;
+    mind_user_lc = Array.Smart.map (subst_mps sub) mbp.mind_user_lc;
     mind_nrealargs = mbp.mind_nrealargs;
     mind_nrealdecls = mbp.mind_nrealdecls;
     mind_kelim = mbp.mind_kelim;
@@ -560,7 +560,7 @@ let subst_mind_packet sub mbp =
 let subst_mind sub mib =
   { mib with
     mind_params_ctxt = map_rel_context (subst_mps sub) mib.mind_params_ctxt;
-    mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets }
+    mind_packets = Array.Smart.map (subst_mind_packet sub) mib.mind_packets }
 
 (* Modules *)
 
@@ -599,7 +599,7 @@ and subst_body : 'a. (_ -> 'a -> 'a) -> _ -> 'a generic_module_body -> 'a generi
     mod_mp = subst_mp sub mb.mod_mp;
     mod_expr = subst_impl sub mb.mod_expr;
     mod_type = subst_signature sub mb.mod_type;
-    mod_type_alg = Option.smartmap (subst_expression sub) mb.mod_type_alg }
+    mod_type_alg = Option.Smart.map (subst_expression sub) mb.mod_type_alg }
 
 and subst_module sub mb =
   subst_body (fun sub e -> implem_map (subst_signature sub) (subst_expression sub) e) sub mb

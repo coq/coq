@@ -482,7 +482,7 @@ let rec lft_fconstr n ft =
 let lift_fconstr k f =
   if Int.equal k 0 then f else lft_fconstr k f
 let lift_fconstr_vect k v =
-  if Int.equal k 0 then v else CArray.Fun1.map lft_fconstr k v
+  if Int.equal k 0 then v else Array.Fun1.map lft_fconstr k v
 
 let clos_rel e i =
   match expand_rel i e with
@@ -547,7 +547,7 @@ let mk_clos_vect env v = match v with
 | [|v0; v1; v2|] -> [|mk_clos env v0; mk_clos env v1; mk_clos env v2|]
 | [|v0; v1; v2; v3|] ->
   [|mk_clos env v0; mk_clos env v1; mk_clos env v2; mk_clos env v3|]
-| v -> CArray.Fun1.map mk_clos env v
+| v -> Array.Fun1.map mk_clos env v
 
 (* Translate the head constructor of t from constr to fconstr. This
    function is parameterized by the function to apply on the direct
@@ -562,7 +562,7 @@ let mk_clos_deep clos_fun env t =
           term = FCast (clos_fun env a, k, clos_fun env b)}
     | App (f,v) ->
         { norm = Red;
-	  term = FApp (clos_fun env f, CArray.Fun1.map clos_fun env v) }
+          term = FApp (clos_fun env f, Array.Fun1.map clos_fun env v) }
     | Proj (p,c) ->
 	{ norm = Red;
 	  term = FProj (p, clos_fun env c) }
@@ -605,21 +605,21 @@ let rec to_constr constr_fun lfts v =
 		Array.map (fun b -> constr_fun lfts (mk_clos env b)) ve)
     | FFix ((op,(lna,tys,bds)),e) ->
         let n = Array.length bds in
-        let ftys = CArray.Fun1.map mk_clos e tys in
-        let fbds = CArray.Fun1.map mk_clos (subs_liftn n e) bds in
+        let ftys = Array.Fun1.map mk_clos e tys in
+        let fbds = Array.Fun1.map mk_clos (subs_liftn n e) bds in
 	let lfts' = el_liftn n lfts in
-	mkFix (op, (lna, CArray.Fun1.map constr_fun lfts ftys,
-		         CArray.Fun1.map constr_fun lfts' fbds))
+        mkFix (op, (lna, Array.Fun1.map constr_fun lfts ftys,
+                         Array.Fun1.map constr_fun lfts' fbds))
     | FCoFix ((op,(lna,tys,bds)),e) ->
         let n = Array.length bds in
-        let ftys = CArray.Fun1.map mk_clos e tys in
-        let fbds = CArray.Fun1.map mk_clos (subs_liftn n e) bds in
+        let ftys = Array.Fun1.map mk_clos e tys in
+        let fbds = Array.Fun1.map mk_clos (subs_liftn n e) bds in
 	let lfts' = el_liftn (Array.length bds) lfts in
-	mkCoFix (op, (lna, CArray.Fun1.map constr_fun lfts ftys,
-		           CArray.Fun1.map constr_fun lfts' fbds))
+        mkCoFix (op, (lna, Array.Fun1.map constr_fun lfts ftys,
+                           Array.Fun1.map constr_fun lfts' fbds))
     | FApp (f,ve) ->
 	mkApp (constr_fun lfts f,
-	       CArray.Fun1.map constr_fun lfts ve)
+               Array.Fun1.map constr_fun lfts ve)
     | FProj (p,c) ->
         mkProj (p,constr_fun lfts c)
 
@@ -1024,14 +1024,14 @@ and norm_head info tab m =
       | FProd(na,dom,rng) ->
           mkProd(na, kl info tab dom, kl info tab rng)
       | FCoFix((n,(na,tys,bds)),e) ->
-          let ftys = CArray.Fun1.map mk_clos e tys in
+          let ftys = Array.Fun1.map mk_clos e tys in
           let fbds =
-            CArray.Fun1.map mk_clos (subs_liftn (Array.length na) e) bds in
+            Array.Fun1.map mk_clos (subs_liftn (Array.length na) e) bds in
           mkCoFix(n,(na, CArray.map (kl info tab) ftys, CArray.map (kl info tab) fbds))
       | FFix((n,(na,tys,bds)),e) ->
-          let ftys = CArray.Fun1.map mk_clos e tys in
+          let ftys = Array.Fun1.map mk_clos e tys in
           let fbds =
-            CArray.Fun1.map mk_clos (subs_liftn (Array.length na) e) bds in
+            Array.Fun1.map mk_clos (subs_liftn (Array.length na) e) bds in
           mkFix(n,(na, CArray.map (kl info tab) ftys, CArray.map (kl info tab) fbds))
       | FEvar((i,args),env) ->
           mkEvar(i, Array.map (fun a -> kl info tab (mk_clos env a)) args)

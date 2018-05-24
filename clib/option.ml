@@ -100,12 +100,6 @@ let map f = function
   | Some y -> Some (f y)
   | _ -> None
 
-(** [smartmap f x] does the same as [map f x] except that it tries to share
-    some memory. *)
-let smartmap f = function
-  | Some y as x -> let y' = f y in if y' == y then x else Some y'
-  | _ -> None
-
 (** [fold_left f a x] is [f a y] if [x] is [Some y], and [a] otherwise. *)
 let fold_left f a = function
   | Some y -> f a y
@@ -175,6 +169,21 @@ let lift2 f x y =
   | Some z, Some w -> Some (f z w)
   | _,_ -> None
 
+
+(** {6 Smart operations} *)
+
+module Smart =
+struct
+
+  (** [Smart.map f x] does the same as [map f x] except that it tries to share
+      some memory. *)
+  let map f = function
+    | Some y as x -> let y' = f y in if y' == y then x else Some y'
+    | _ -> None
+
+end
+
+let smartmap = Smart.map
 
 (** {6 Operations with Lists} *)
 

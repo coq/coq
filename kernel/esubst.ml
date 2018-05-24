@@ -140,7 +140,7 @@ let rec comp mk_cl s1 s2 =
     | ESID _, _ -> s2
     | SHIFT(k,s), _ -> subs_shft(k, comp mk_cl s s2)
     | _, CONS(x,s') ->
-        CONS(CArray.Fun1.map (fun s t -> mk_cl(s,t)) s1 x, comp mk_cl s1 s')
+        CONS(Array.Fun1.map (fun s t -> mk_cl(s,t)) s1 x, comp mk_cl s1 s')
     | CONS(x,s), SHIFT(k,s') ->
         let lg = Array.length x in
         if k == lg then comp mk_cl s s'

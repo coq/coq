@@ -538,7 +538,7 @@ let subst_implicits_decl subst (r,imps as o) =
   let r' = fst (subst_global subst r) in if r==r' then o else (r',imps)
 
 let subst_implicits (subst,(req,l)) =
-  (ImplLocal,List.smartmap (subst_implicits_decl subst) l)
+  (ImplLocal,List.Smart.map (subst_implicits_decl subst) l)
 
 let impls_of_context ctx =
   let map (decl, impl) = match impl with

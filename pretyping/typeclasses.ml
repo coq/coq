@@ -180,12 +180,12 @@ let subst_class (subst,cl) =
   let do_subst_con c = Mod_subst.subst_constant subst c
   and do_subst c = Mod_subst.subst_mps subst c
   and do_subst_gr gr = fst (subst_global subst gr) in
-  let do_subst_ctx = List.smartmap (RelDecl.map_constr do_subst) in
+  let do_subst_ctx = List.Smart.map (RelDecl.map_constr do_subst) in
   let do_subst_context (grs,ctx) =
-    List.smartmap (Option.smartmap do_subst_gr) grs,
+    List.Smart.map (Option.Smart.map do_subst_gr) grs,
     do_subst_ctx ctx in
-  let do_subst_projs projs = List.smartmap (fun (x, y, z) -> 
-    (x, y, Option.smartmap do_subst_con z)) projs in
+  let do_subst_projs projs = List.Smart.map (fun (x, y, z) ->
+    (x, y, Option.Smart.map do_subst_con z)) projs in
   { cl_univs = cl.cl_univs;
     cl_impl = do_subst_gr cl.cl_impl;
     cl_context = do_subst_context cl.cl_context;
@@ -223,7 +223,7 @@ let discharge_class (_,cl) =
                              | Some (_, ((tc,_), _)) -> Some tc.cl_impl)
 			    ctx'
       in
-      List.smartmap (Option.smartmap Lib.discharge_global) grs
+      List.Smart.map (Option.Smart.map Lib.discharge_global) grs
       @ newgrs
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
   let cl_impl' = Lib.discharge_global cl.cl_impl in
@@ -234,12 +234,12 @@ let discharge_class (_,cl) =
     let usubst, cl_univs' = Lib.discharge_abstract_universe_context info cl.cl_univs in
     let context = discharge_context ctx (subst, usubst) cl.cl_context in
     let props = discharge_rel_context (subst, usubst) (succ (List.length (fst cl.cl_context))) cl.cl_props in
-    let discharge_proj (x, y, z) = x, y, Option.smartmap Lib.discharge_con z in
+    let discharge_proj (x, y, z) = x, y, Option.Smart.map Lib.discharge_con z in
       { cl_univs = cl_univs';
         cl_impl = cl_impl';
 	cl_context = context;
 	cl_props = props;
-	cl_projs = List.smartmap discharge_proj cl.cl_projs;
+        cl_projs = List.Smart.map discharge_proj cl.cl_projs;
 	cl_strict = cl.cl_strict;
 	cl_unique = cl.cl_unique
       }

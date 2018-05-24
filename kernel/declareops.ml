@@ -42,7 +42,7 @@ let map_decl_arity f g = function
 
 let hcons_template_arity ar =
   { template_param_levels = ar.template_param_levels;
-      (* List.smartmap (Option.smartmap Univ.hcons_univ_level) ar.template_param_levels; *)
+      (* List.Smart.map (Option.Smart.map Univ.hcons_univ_level) ar.template_param_levels; *)
     template_level = Univ.hcons_univ ar.template_level }
 
 (** {6 Constants } *)
@@ -70,7 +70,7 @@ let is_opaque cb = match cb.const_body with
 let subst_rel_declaration sub =
   RelDecl.map_constr (subst_mps sub)
 
-let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
+let subst_rel_context sub = List.Smart.map (subst_rel_declaration sub)
 
 let subst_const_type sub arity =
   if is_empty_subst sub then arity
@@ -94,7 +94,7 @@ let subst_const_body sub cb =
   else
     let body' = subst_const_def sub cb.const_body in
     let type' = subst_const_type sub cb.const_type in
-    let proj' = Option.smartmap (subst_const_proj sub) cb.const_proj in
+    let proj' = Option.Smart.map (subst_const_proj sub) cb.const_proj in
     if body' == cb.const_body && type' == cb.const_type
       && proj' == cb.const_proj then cb
     else
@@ -117,7 +117,7 @@ let subst_const_body sub cb =
 let hcons_rel_decl =
   RelDecl.map_name Names.Name.hcons %> RelDecl.map_value Constr.hcons %> RelDecl.map_type Constr.hcons
 
-let hcons_rel_context l = List.smartmap hcons_rel_decl l
+let hcons_rel_context l = List.Smart.map hcons_rel_decl l
 
 let hcons_const_def = function
   | Undef inl -> Undef inl
@@ -178,7 +178,7 @@ let recarg_length p j =
   let (_,cstrs) = Rtree.dest_node p in
   Array.length (snd (Rtree.dest_node cstrs.(j-1)))
 
-let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
+let subst_wf_paths sub p = Rtree.Smart.map (subst_recarg sub) p
 
 (** {7 Substitution of inductive declarations } *)
 
@@ -198,10 +198,10 @@ let subst_mind_packet sub mbp =
     mind_consnrealdecls = mbp.mind_consnrealdecls;
     mind_consnrealargs = mbp.mind_consnrealargs;
     mind_typename = mbp.mind_typename;
-    mind_nf_lc = Array.smartmap (subst_mps sub) mbp.mind_nf_lc;
+    mind_nf_lc = Array.Smart.map (subst_mps sub) mbp.mind_nf_lc;
     mind_arity_ctxt = subst_rel_context sub mbp.mind_arity_ctxt;
     mind_arity = subst_ind_arity sub mbp.mind_arity;
-    mind_user_lc = Array.smartmap (subst_mps sub) mbp.mind_user_lc;
+    mind_user_lc = Array.Smart.map (subst_mps sub) mbp.mind_user_lc;
     mind_nrealargs = mbp.mind_nrealargs;
     mind_nrealdecls = mbp.mind_nrealdecls;
     mind_kelim = mbp.mind_kelim;
@@ -211,13 +211,13 @@ let subst_mind_packet sub mbp =
     mind_reloc_tbl = mbp.mind_reloc_tbl }
 
 let subst_mind_record sub (id, ps, pb as r) =
-  let ps' = Array.smartmap (subst_constant sub) ps in
-  let pb' = Array.smartmap (subst_const_proj sub) pb in
+  let ps' = Array.Smart.map (subst_constant sub) ps in
+  let pb' = Array.Smart.map (subst_const_proj sub) pb in
     if ps' == ps && pb' == pb then r
     else (id, ps', pb')
 
 let subst_mind_body sub mib =
-  { mind_record = Option.smartmap (Option.smartmap (subst_mind_record sub)) mib.mind_record ;
+  { mind_record = Option.Smart.map (Option.Smart.map (subst_mind_record sub)) mib.mind_record ;
     mind_finite = mib.mind_finite ;
     mind_ntypes = mib.mind_ntypes ;
     mind_hyps = (match mib.mind_hyps with [] -> [] | _ -> assert false);
@@ -225,7 +225,7 @@ let subst_mind_body sub mib =
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =
       Context.Rel.map (subst_mps sub) mib.mind_params_ctxt;
-    mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
+    mind_packets = Array.Smart.map (subst_mind_packet sub) mib.mind_packets ;
     mind_universes = mib.mind_universes;
     mind_private = mib.mind_private;
     mind_typing_flags = mib.mind_typing_flags;
@@ -263,15 +263,15 @@ let hcons_ind_arity =
 (** Substitution of inductive declarations *)
 
 let hcons_mind_packet oib =
-  let user = Array.smartmap Constr.hcons oib.mind_user_lc in
-  let nf = Array.smartmap Constr.hcons oib.mind_nf_lc in
+  let user = Array.Smart.map Constr.hcons oib.mind_user_lc in
+  let nf = Array.Smart.map Constr.hcons oib.mind_nf_lc in
   (* Special optim : merge [mind_user_lc] and [mind_nf_lc] if possible *)
   let nf = if Array.equal (==) user nf then user else nf in
   { oib with
     mind_typename = Names.Id.hcons oib.mind_typename;
     mind_arity_ctxt = hcons_rel_context oib.mind_arity_ctxt;
     mind_arity = hcons_ind_arity oib.mind_arity;
-    mind_consnames = Array.smartmap Names.Id.hcons oib.mind_consnames;
+    mind_consnames = Array.Smart.map Names.Id.hcons oib.mind_consnames;
     mind_user_lc = user;
     mind_nf_lc = nf }
 
@@ -283,7 +283,7 @@ let hcons_mind_universes miu =
 
 let hcons_mind mib =
   { mib with
-    mind_packets = Array.smartmap hcons_mind_packet mib.mind_packets;
+    mind_packets = Array.Smart.map hcons_mind_packet mib.mind_packets;
     mind_params_ctxt = hcons_rel_context mib.mind_params_ctxt;
     mind_universes = hcons_mind_universes mib.mind_universes }
 
@@ -331,7 +331,7 @@ and hcons_structure_body sb =
     let sfb' = hcons_structure_field_body sfb in
     if l == l' && sfb == sfb' then fb else (l', sfb')
   in
-  List.smartmap map sb
+  List.Smart.map map sb
 
 and hcons_module_signature ms =
   hcons_functorize hcons_module_type hcons_structure_body hcons_module_signature ms

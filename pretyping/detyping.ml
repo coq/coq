@@ -920,7 +920,7 @@ let rec subst_cases_pattern subst = DAst.map (function
   | PatVar _ as pat -> pat
   | PatCstr (((kn,i),j),cpl,n) as pat ->
       let kn' = subst_mind subst kn
-      and cpl' = List.smartmap (subst_cases_pattern subst) cpl in
+      and cpl' = List.Smart.map (subst_cases_pattern subst) cpl in
 	if kn' == kn && cpl' == cpl then pat else
 	  PatCstr (((kn',i),j),cpl',n)
   )
@@ -940,7 +940,7 @@ let rec subst_glob_constr subst = DAst.map (function
 
   | GApp (r,rl) as raw ->
       let r' = subst_glob_constr subst r
-      and rl' = List.smartmap (subst_glob_constr subst) rl in
+      and rl' = List.Smart.map (subst_glob_constr subst) rl in
 	if r' == r && rl' == rl then raw else
 	  GApp(r',rl')
 
@@ -957,25 +957,25 @@ let rec subst_glob_constr subst = DAst.map (function
   | GLetIn (n,r1,t,r2) as raw ->
       let r1' = subst_glob_constr subst r1 in
       let r2' = subst_glob_constr subst r2 in
-      let t' = Option.smartmap (subst_glob_constr subst) t in
+      let t' = Option.Smart.map (subst_glob_constr subst) t in
 	if r1' == r1 && t == t' && r2' == r2 then raw else
 	  GLetIn (n,r1',t',r2')
 
   | GCases (sty,rtno,rl,branches) as raw ->
     let open CAst in
-      let rtno' = Option.smartmap (subst_glob_constr subst) rtno
-      and rl' = List.smartmap (fun (a,x as y) ->
+      let rtno' = Option.Smart.map (subst_glob_constr subst) rtno
+      and rl' = List.Smart.map (fun (a,x as y) ->
         let a' = subst_glob_constr subst a in
         let (n,topt) = x in
-        let topt' = Option.smartmap
+        let topt' = Option.Smart.map
           (fun ({loc;v=((sp,i),y)} as t) ->
             let sp' = subst_mind subst sp in
             if sp == sp' then t else CAst.(make ?loc ((sp',i),y))) topt in
         if a == a' && topt == topt' then y else (a',(n,topt'))) rl
-      and branches' = List.smartmap
+      and branches' = List.Smart.map
                         (fun ({loc;v=(idl,cpl,r)} as branch) ->
 			   let cpl' =
-			     List.smartmap (subst_cases_pattern subst) cpl
+                             List.Smart.map (subst_cases_pattern subst) cpl
 			   and r' = subst_glob_constr subst r in
 			     if cpl' == cpl && r' == r then branch else
                                CAst.(make ?loc (idl,cpl',r')))
@@ -985,14 +985,14 @@ let rec subst_glob_constr subst = DAst.map (function
 	  GCases (sty,rtno',rl',branches')
 
   | GLetTuple (nal,(na,po),b,c) as raw ->
-      let po' = Option.smartmap (subst_glob_constr subst) po
+      let po' = Option.Smart.map (subst_glob_constr subst) po
       and b' = subst_glob_constr subst b
       and c' = subst_glob_constr subst c in
 	if po' == po && b' == b && c' == c then raw else
           GLetTuple (nal,(na,po'),b',c')
 
   | GIf (c,(na,po),b1,b2) as raw ->
-      let po' = Option.smartmap (subst_glob_constr subst) po
+      let po' = Option.Smart.map (subst_glob_constr subst) po
       and b1' = subst_glob_constr subst b1
       and b2' = subst_glob_constr subst b2
       and c' = subst_glob_constr subst c in
@@ -1000,12 +1000,12 @@ let rec subst_glob_constr subst = DAst.map (function
           GIf (c',(na,po'),b1',b2')
 
   | GRec (fix,ida,bl,ra1,ra2) as raw ->
-      let ra1' = Array.smartmap (subst_glob_constr subst) ra1
-      and ra2' = Array.smartmap (subst_glob_constr subst) ra2 in
-      let bl' = Array.smartmap
-        (List.smartmap (fun (na,k,obd,ty as dcl) ->
+      let ra1' = Array.Smart.map (subst_glob_constr subst) ra1
+      and ra2' = Array.Smart.map (subst_glob_constr subst) ra2 in
+      let bl' = Array.Smart.map
+        (List.Smart.map (fun (na,k,obd,ty as dcl) ->
           let ty' = subst_glob_constr subst ty in
-          let obd' = Option.smartmap (subst_glob_constr subst) obd in
+          let obd' = Option.Smart.map (subst_glob_constr subst) obd in
           if ty'==ty && obd'==obd then dcl else (na,k,obd',ty')))
         bl in
 	if ra1' == ra1 && ra2' == ra2 && bl'==bl then raw else
@@ -1018,7 +1018,7 @@ let rec subst_glob_constr subst = DAst.map (function
       if nref == ref then knd else Evar_kinds.ImplicitArg (nref, i, b)
     | _ -> knd
     in
-    let nsolve = Option.smartmap (Hook.get f_subst_genarg subst) solve in
+    let nsolve = Option.Smart.map (Hook.get f_subst_genarg subst) solve in
     if nsolve == solve && nknd == knd then raw
     else GHole (nknd, naming, nsolve)
 

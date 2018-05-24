@@ -331,19 +331,19 @@ let bound_glob_vars =
 
 (** Mapping of names in binders *)
 
-(* spiwack: I used a smartmap-style kind of mapping here, because the
+(* spiwack: I used a smart-style kind of mapping here, because the
    operation will be the identity almost all of the time (with any
    term outside of Ltac to begin with). But to be honest, there would
    probably be no significant penalty in doing reallocation as
    pattern-matching expressions are usually rather small. *)
 
 let map_inpattern_binders f ({loc;v=(id,nal)} as x) =
-  let r = CList.smartmap f nal in
+  let r = CList.Smart.map f nal in
   if r == nal then x
   else CAst.make ?loc (id,r)
 
 let map_tomatch_binders f ((c,(na,inp)) as x) : tomatch_tuple =
-  let r = Option.smartmap (fun p -> map_inpattern_binders f p) inp in
+  let r = Option.Smart.map (fun p -> map_inpattern_binders f p) inp in
   if r == inp then x
   else c,(f na, r)
 
@@ -355,7 +355,7 @@ let rec map_case_pattern_binders f = DAst.map (function
   | PatCstr (c,ps,na) as x ->
       let rna = f na in
       let rps =
-        CList.smartmap (fun p -> map_case_pattern_binders f p) ps
+        CList.Smart.map (fun p -> map_case_pattern_binders f p) ps
       in
       if rna == na && rps == ps then x
       else PatCstr(c,rps,rna)
@@ -366,13 +366,13 @@ let map_cases_branch_binders f ({CAst.loc;v=(il,cll,rhs)} as x) : cases_clause =
      It is intended to be a superset of the free variable of the
      right-hand side, if I understand correctly. But I'm not sure when
      or how they are used. *)
-  let r = List.smartmap (fun cl -> map_case_pattern_binders f cl) cll in
+  let r = List.Smart.map (fun cl -> map_case_pattern_binders f cl) cll in
   if r == cll then x
   else CAst.make ?loc (il,r,rhs)
 
 let map_pattern_binders f tomatch branches =
-  CList.smartmap (fun tm -> map_tomatch_binders f tm) tomatch,
-  CList.smartmap (fun br -> map_cases_branch_binders f br) branches
+  CList.Smart.map (fun tm -> map_tomatch_binders f tm) tomatch,
+  CList.Smart.map (fun br -> map_cases_branch_binders f br) branches
 
 (** /mapping of names in binders *)
 

@@ -53,7 +53,7 @@ let subst_one_scheme subst (ind,const) =
   (subst_ind subst ind,subst_constant subst const)
 
 let subst_scheme (subst,(kind,l)) =
-  (kind,Array.map (subst_one_scheme subst) l)
+  (kind,Array.Smart.map (subst_one_scheme subst) l)
 
 let discharge_scheme (_,(kind,l)) =
   Some (kind,Array.map (fun (ind,const) ->

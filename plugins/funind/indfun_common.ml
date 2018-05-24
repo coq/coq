@@ -269,12 +269,12 @@ let subst_Function (subst,finfos) =
   in
   let function_constant' = do_subst_con finfos.function_constant in
   let graph_ind' = do_subst_ind finfos.graph_ind in
-  let equation_lemma' = Option.smartmap do_subst_con finfos.equation_lemma in
-  let correctness_lemma' = Option.smartmap do_subst_con finfos.correctness_lemma in
-  let completeness_lemma' = Option.smartmap do_subst_con finfos.completeness_lemma in
-  let rect_lemma' = Option.smartmap do_subst_con finfos.rect_lemma in
-  let rec_lemma' = Option.smartmap do_subst_con finfos.rec_lemma in
-  let prop_lemma' =  Option.smartmap do_subst_con finfos.prop_lemma in
+  let equation_lemma' = Option.Smart.map do_subst_con finfos.equation_lemma in
+  let correctness_lemma' = Option.Smart.map do_subst_con finfos.correctness_lemma in
+  let completeness_lemma' = Option.Smart.map do_subst_con finfos.completeness_lemma in
+  let rect_lemma' = Option.Smart.map do_subst_con finfos.rect_lemma in
+  let rec_lemma' = Option.Smart.map do_subst_con finfos.rec_lemma in
+  let prop_lemma' =  Option.Smart.map do_subst_con finfos.prop_lemma in
   if function_constant' == finfos.function_constant &&
     graph_ind' == finfos.graph_ind &&
     equation_lemma' == finfos.equation_lemma &&
@@ -302,12 +302,12 @@ let classify_Function infos = Libobject.Substitute infos
 let discharge_Function (_,finfos) =
   let function_constant' = Lib.discharge_con finfos.function_constant
   and graph_ind' = Lib.discharge_inductive finfos.graph_ind
-  and equation_lemma' = Option.smartmap Lib.discharge_con finfos.equation_lemma
-  and correctness_lemma' = Option.smartmap Lib.discharge_con finfos.correctness_lemma
-  and completeness_lemma' = Option.smartmap Lib.discharge_con finfos.completeness_lemma
-  and rect_lemma' = Option.smartmap Lib.discharge_con finfos.rect_lemma
-  and rec_lemma' = Option.smartmap Lib.discharge_con finfos.rec_lemma
-  and prop_lemma' = Option.smartmap Lib.discharge_con finfos.prop_lemma
+  and equation_lemma' = Option.Smart.map Lib.discharge_con finfos.equation_lemma
+  and correctness_lemma' = Option.Smart.map Lib.discharge_con finfos.correctness_lemma
+  and completeness_lemma' = Option.Smart.map Lib.discharge_con finfos.completeness_lemma
+  and rect_lemma' = Option.Smart.map Lib.discharge_con finfos.rect_lemma
+  and rec_lemma' = Option.Smart.map Lib.discharge_con finfos.rec_lemma
+  and prop_lemma' = Option.Smart.map Lib.discharge_con finfos.prop_lemma
   in
   if function_constant' == finfos.function_constant &&
     graph_ind' == finfos.graph_ind &&

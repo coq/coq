@@ -521,7 +521,7 @@ let rec subst_pat subst pat =
   | PatVar _ -> pat
   | PatCstr (((kn,i),j),cpl,n) ->
       let kn' = subst_mind subst kn
-      and cpl' = List.smartmap (subst_pat subst) cpl in
+      and cpl' = List.Smart.map (subst_pat subst) cpl in
       if kn' == kn && cpl' == cpl then pat else
         DAst.make ?loc:pat.CAst.loc @@ PatCstr (((kn',i),j),cpl',n)
 
@@ -536,7 +536,7 @@ let rec subst_notation_constr subst bound raw =
 
   | NApp (r,rl) ->
       let r' = subst_notation_constr subst bound r
-      and rl' = List.smartmap (subst_notation_constr subst bound) rl in
+      and rl' = List.Smart.map (subst_notation_constr subst bound) rl in
 	if r' == r && rl' == rl then raw else
 	  NApp(r',rl')
 
@@ -566,14 +566,14 @@ let rec subst_notation_constr subst bound raw =
 
   | NLetIn (n,r1,t,r2) ->
       let r1' = subst_notation_constr subst bound r1 in
-      let t' = Option.smartmap (subst_notation_constr subst bound) t in
+      let t' = Option.Smart.map (subst_notation_constr subst bound) t in
       let r2' = subst_notation_constr subst bound r2 in
 	if r1' == r1 && t == t' && r2' == r2 then raw else
 	  NLetIn (n,r1',t',r2')
 
   | NCases (sty,rtntypopt,rl,branches) ->
-      let rtntypopt' = Option.smartmap (subst_notation_constr subst bound) rtntypopt
-      and rl' = List.smartmap
+      let rtntypopt' = Option.Smart.map (subst_notation_constr subst bound) rtntypopt
+      and rl' = List.Smart.map
         (fun (a,(n,signopt) as x) ->
 	  let a' = subst_notation_constr subst bound a in
 	  let signopt' = Option.map (fun ((indkn,i),nal as z) ->
@@ -581,9 +581,9 @@ let rec subst_notation_constr subst bound raw =
 	    if indkn == indkn' then z else ((indkn',i),nal)) signopt in
 	  if a' == a && signopt' == signopt then x else (a',(n,signopt')))
         rl
-      and branches' = List.smartmap
+      and branches' = List.Smart.map
                         (fun (cpl,r as branch) ->
-                           let cpl' = List.smartmap (subst_pat subst) cpl
+                           let cpl' = List.Smart.map (subst_pat subst) cpl
                            and r' = subst_notation_constr subst bound r in
                              if cpl' == cpl && r' == r then branch else
                                (cpl',r'))
@@ -594,14 +594,14 @@ let rec subst_notation_constr subst bound raw =
           NCases (sty,rtntypopt',rl',branches')
 
   | NLetTuple (nal,(na,po),b,c) ->
-      let po' = Option.smartmap (subst_notation_constr subst bound) po
+      let po' = Option.Smart.map (subst_notation_constr subst bound) po
       and b' = subst_notation_constr subst bound b
       and c' = subst_notation_constr subst bound c in
 	if po' == po && b' == b && c' == c then raw else
 	  NLetTuple (nal,(na,po'),b',c')
 
   | NIf (c,(na,po),b1,b2) ->
-      let po' = Option.smartmap (subst_notation_constr subst bound) po
+      let po' = Option.Smart.map (subst_notation_constr subst bound) po
       and b1' = subst_notation_constr subst bound b1
       and b2' = subst_notation_constr subst bound b2
       and c' = subst_notation_constr subst bound c in
@@ -610,12 +610,12 @@ let rec subst_notation_constr subst bound raw =
 
   | NRec (fk,idl,dll,tl,bl) ->
       let dll' =
-	Array.smartmap (List.smartmap (fun (na,oc,b as x) ->
-	  let oc' =  Option.smartmap (subst_notation_constr subst bound) oc in
+        Array.Smart.map (List.Smart.map (fun (na,oc,b as x) ->
+          let oc' =  Option.Smart.map (subst_notation_constr subst bound) oc in
 	  let b' =  subst_notation_constr subst bound b in
 	  if oc' == oc && b' == b then x else (na,oc',b'))) dll in
-      let tl' = Array.smartmap (subst_notation_constr subst bound) tl in
-      let bl' = Array.smartmap (subst_notation_constr subst bound) bl in
+      let tl' = Array.Smart.map (subst_notation_constr subst bound) tl in
+      let bl' = Array.Smart.map (subst_notation_constr subst bound) bl in
       if dll' == dll && tl' == tl && bl' == bl then raw else
 	  NRec (fk,idl,dll',tl',bl')
 
@@ -628,7 +628,7 @@ let rec subst_notation_constr subst bound raw =
       if nref == ref then knd else Evar_kinds.ImplicitArg (nref, i, b)
     | _ -> knd
     in
-    let nsolve = Option.smartmap (Genintern.generic_substitute subst) solve in
+    let nsolve = Option.Smart.map (Genintern.generic_substitute subst) solve in
     if nsolve == solve && nknd == knd then raw
     else NHole (nknd, naming, nsolve)
 

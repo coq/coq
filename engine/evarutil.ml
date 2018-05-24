@@ -214,7 +214,7 @@ let mk_new_meta () = EConstr.mkMeta(new_meta())
 
 let non_instantiated sigma =
   let listev = Evd.undefined_map sigma in
-  Evar.Map.smartmap (fun evi -> nf_evar_info sigma evi) listev
+  Evar.Map.Smart.map (fun evi -> nf_evar_info sigma evi) listev
 
 (************************)
 (* Manipulating filters *)

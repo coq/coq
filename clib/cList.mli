@@ -75,8 +75,7 @@ sig
       [b] is [true]. Raise [Invalid_argument _] when sizes differ. *)
 
   val smartmap : ('a -> 'a) -> 'a list -> 'a list
-  (** [smartmap f [a1...an] = List.map f [a1...an]] but if for all i
-    [f ai == ai], then [smartmap f l == l] *)
+  [@@ocaml.deprecated "Same as [Smart.map]"]
 
   val map_left : ('a -> 'b) -> 'a list -> 'b list
   (** As [map] but ensures the left-to-right order of evaluation. *)
@@ -97,8 +96,7 @@ sig
   (** [map_of_array f a] behaves as [List.map f (Array.to_list a)] *)
 
   val smartfilter : ('a -> bool) -> 'a list -> 'a list
-  (** [smartfilter f [a1...an] = List.filter f [a1...an]] but if for all i
-    [f ai = true], then [smartfilter f l == l] *)
+  [@@ocaml.deprecated "Same as [Smart.filter]"]
 
   val extend : bool list -> 'a -> 'a list -> 'a list
 (** [extend l a [a1..an]] assumes that the number of [true] in [l] is [n];
@@ -257,6 +255,17 @@ sig
   (** Keep only those products that do not return None *)
 
   val factorize_left : 'a eq -> ('a * 'b) list -> ('a * 'b list) list
+
+  module Smart :
+  sig
+    val map : ('a -> 'a) -> 'a list -> 'a list
+    (** [Smart.map f [a1...an] = List.map f [a1...an]] but if for all i
+        [f ai == ai], then [Smart.map f l == l] *)
+
+    val filter : ('a -> bool) -> 'a list -> 'a list
+    (** [Smart.filter f [a1...an] = List.filter f [a1...an]] but if for all i
+        [f ai = true], then [Smart.filter f l == l] *)
+  end
 
   module type MonoS = sig
     type elt

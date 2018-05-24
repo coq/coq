@@ -92,9 +92,9 @@ let cache_strategy (_,str) =
 
 let subst_strategy (subs,(local,obj)) =
   local,
-  List.smartmap
+  List.Smart.map
     (fun (k,ql as entry) ->
-      let ql' = List.smartmap (Mod_subst.subst_evaluable_reference subs) ql in
+      let ql' = List.Smart.map (Mod_subst.subst_evaluable_reference subs) ql in
       if ql==ql' then entry else (k,ql'))
     obj
 

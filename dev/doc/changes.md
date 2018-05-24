@@ -28,6 +28,13 @@ Proof engine
   should indicate what the canonical form is. An important change is
   the move of `Globnames.global_reference` to `Names.GlobRef.t`.
 
+ML Libraries used by Coq
+
+- Introduction of a "Smart" module for collecting "smart*" functions, e.g.
+  Array.Smart.map.
+- Uniformization of some names, e.g. Array.Smart.fold_left_map instead
+  of Array.smartfoldmap.
+
 ### Unit testing
 
   The test suite now allows writing unit tests against OCaml code in the Coq

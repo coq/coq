@@ -541,24 +541,24 @@ let dump_unused_vars a =
 
     | MLcase (t,e,br) ->
        let e' = ren env e in
-       let br' = Array.smartmap (ren_branch env) br in
+       let br' = Array.Smart.map (ren_branch env) br in
        if e' == e && br' == br then a else MLcase (t,e',br')
 
     | MLfix (i,ids,v) ->
        let env' = List.init (Array.length ids) (fun _ -> ref false) @ env in
-       let v' = Array.smartmap (ren env') v in
+       let v' = Array.Smart.map (ren env') v in
        if v' == v then a else MLfix (i,ids,v')
 
     | MLapp (b,l) ->
-       let b' = ren env b and l' = List.smartmap (ren env) l in
+       let b' = ren env b and l' = List.Smart.map (ren env) l in
        if b' == b && l' == l then a else MLapp (b',l')
 
     | MLcons(t,r,l) ->
-       let l' = List.smartmap (ren env) l in
+       let l' = List.Smart.map (ren env) l in
        if l' == l then a else MLcons (t,r,l')
 
     | MLtuple l ->
-       let l' = List.smartmap (ren env) l in
+       let l' = List.Smart.map (ren env) l in
        if l' == l then a else MLtuple l'
 
     | MLmagic b ->

@@ -1404,7 +1404,7 @@ let plain_instance sigma s c =
     | Meta p -> (try lift n (Metamap.find p s) with Not_found -> u)
     | App (f,l) when isCast sigma f ->
         let (f,_,t) = destCast sigma f in
-        let l' = CArray.Fun1.smartmap irec n l in
+        let l' = Array.Fun1.Smart.map irec n l in
         (match EConstr.kind sigma f with
         | Meta p ->
 	    (* Don't flatten application nodes: this is used to extract a
@@ -1413,7 +1413,7 @@ let plain_instance sigma s c =
 	    (try let g = Metamap.find p s in
 	    match EConstr.kind sigma g with
             | App _ ->
-                let l' = CArray.Fun1.smartmap lift 1 l' in
+                let l' = Array.Fun1.Smart.map lift 1 l' in
                 mkLetIn (Name default_plain_instance_ident,g,t,mkApp(mkRel 1, l'))
             | _ -> mkApp (g,l')
 	    with Not_found -> mkApp (f,l'))
