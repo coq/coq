@@ -20,7 +20,6 @@ open Constrexpr
 open Notation_term
 open Glob_term
 open Glob_ops
-open Ppextend
 open Context.Named.Declaration
 
 (*i*)
@@ -56,9 +55,6 @@ type scope = {
   delimiters: delimiters option
 }
 
-(* Uninterpreted notation map: notation -> level * DirPath.t *)
-let notation_level_map = ref String.Map.empty
-
 (* Scopes table: scope_name -> symbol_interpretation *)
 let scope_map = ref String.Map.empty
 
@@ -74,44 +70,6 @@ let default_scope = "" (* empty name, not available from outside *)
 
 let init_scope_map () =
   scope_map := String.Map.add default_scope empty_scope !scope_map
-
-(**********************************************************************)
-(* Operations on scopes *)
-
-let parenRelation_eq t1 t2 = match t1, t2 with
-| L, L | E, E | Any, Any -> true
-| Prec l1, Prec l2 -> Int.equal l1 l2
-| _ -> false
-
-open Extend
-
-let production_level_eq l1 l2 = true (* (l1 = l2) *)
-
-let production_position_eq pp1 pp2 = true (* pp1 = pp2 *) (* match pp1, pp2 with
-| NextLevel, NextLevel -> true
-| NumLevel n1, NumLevel n2 -> Int.equal n1 n2
-| (NextLevel | NumLevel _), _ -> false *)
-
-let constr_entry_key_eq eq v1 v2 = match v1, v2 with
-| ETName, ETName -> true
-| ETReference, ETReference -> true
-| ETBigint, ETBigint -> true
-| ETBinder b1, ETBinder b2 -> b1 == b2
-| ETConstr lev1, ETConstr lev2 -> eq lev1 lev2
-| ETConstrAsBinder (bk1,lev1), ETConstrAsBinder (bk2,lev2) -> eq lev1 lev2 && bk1 = bk2
-| ETPattern (b1,n1), ETPattern (b2,n2) -> b1 = b2 && Option.equal Int.equal n1 n2
-| ETOther (s1,s1'), ETOther (s2,s2') -> String.equal s1 s2 && String.equal s1' s2'
-| (ETName | ETReference | ETBigint | ETBinder _ | ETConstr _ | ETPattern _ | ETOther _ | ETConstrAsBinder _), _ -> false
-
-let level_eq_gen strict (l1, t1, u1) (l2, t2, u2) =
-  let tolerability_eq (i1, r1) (i2, r2) = Int.equal i1 i2 && parenRelation_eq r1 r2 in
-  let prod_eq (l1,pp1) (l2,pp2) =
-    if strict then production_level_eq l1 l2 && production_position_eq pp1 pp2
-    else production_level_eq l1 l2 in
-  Int.equal l1 l2 && List.equal tolerability_eq t1 t2
-  && List.equal (constr_entry_key_eq prod_eq) u1 u2
-
-let level_eq = level_eq_gen false
 
 let declare_scope scope =
   try let _ = String.Map.find scope !scope_map in ()
@@ -426,18 +384,6 @@ let rec find_without_delimiters find (ntn_scope,ntn) = function
   | [] ->
       (* Can we switch to [scope]? Yes if it has defined delimiters *)
       find_with_delimiters ntn_scope
-
-(* Uninterpreted notation levels *)
-
-let declare_notation_level ?(onlyprint=false) ntn level =
-  if String.Map.mem ntn !notation_level_map then
-    anomaly (str "Notation " ++ str ntn ++ str " is already assigned a level.");
-  notation_level_map := String.Map.add ntn (level,onlyprint) !notation_level_map
-
-let level_of_notation ?(onlyprint=false) ntn =
-  let (level,onlyprint') = String.Map.find ntn !notation_level_map in
-  if onlyprint' && not onlyprint then raise Not_found;
-  level
 
 (* The mapping between notations and their interpretation *)
 
@@ -1113,63 +1059,24 @@ let pr_visibility prglob = function
   | None -> pr_scope_stack prglob !scope_stack
 
 (**********************************************************************)
-(* Mapping notations to concrete syntax *)
-
-type unparsing_rule = unparsing list * precedence
-type extra_unparsing_rules = (string * string) list
-(* Concrete syntax for symbolic-extension table *)
-let notation_rules =
-  ref (String.Map.empty : (unparsing_rule * extra_unparsing_rules * notation_grammar) String.Map.t)
-
-let declare_notation_rule ntn ~extra unpl gram =
-  notation_rules := String.Map.add ntn (unpl,extra,gram) !notation_rules
-
-let find_notation_printing_rule ntn =
-  try pi1 (String.Map.find ntn !notation_rules)
-  with Not_found -> anomaly (str "No printing rule found for " ++ str ntn ++ str ".")
-let find_notation_extra_printing_rules ntn =
-  try pi2 (String.Map.find ntn !notation_rules)
-  with Not_found -> []
-let find_notation_parsing_rules ntn =
-  try pi3 (String.Map.find ntn !notation_rules)
-  with Not_found -> anomaly (str "No parsing rule found for " ++ str ntn ++ str ".")
-
-let get_defined_notations () =
-  String.Set.elements @@ String.Map.domain !notation_rules
-
-let add_notation_extra_printing_rule ntn k v =
-  try
-    notation_rules :=
-      let p, pp, gr = String.Map.find ntn !notation_rules in
-      String.Map.add ntn (p, (k,v) :: pp, gr) !notation_rules
-  with Not_found ->
-    user_err ~hdr:"add_notation_extra_printing_rule"
-      (str "No such Notation.")
-
-(**********************************************************************)
 (* Synchronisation with reset *)
 
 let freeze _ =
- (!scope_map, !notation_level_map, !scope_stack, !arguments_scope,
-  !delimiters_map, !notations_key_table, !notation_rules,
-  !scope_class_map)
+ (!scope_map, !scope_stack, !arguments_scope,
+  !delimiters_map, !notations_key_table, !scope_class_map)
 
-let unfreeze (scm,nlm,scs,asc,dlm,fkm,pprules,clsc) =
+let unfreeze (scm,scs,asc,dlm,fkm,clsc) =
   scope_map := scm;
-  notation_level_map := nlm;
   scope_stack := scs;
   delimiters_map := dlm;
   arguments_scope := asc;
   notations_key_table := fkm;
-  notation_rules := pprules;
   scope_class_map := clsc
 
 let init () =
   init_scope_map ();
-  notation_level_map := String.Map.empty;
   delimiters_map := String.Map.empty;
   notations_key_table := KeyMap.empty;
-  notation_rules := String.Map.empty;
   scope_class_map := initial_scope_class_map
 
 let _ =

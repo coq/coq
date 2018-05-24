@@ -14,7 +14,6 @@ open Libnames
 open Constrexpr
 open Glob_term
 open Notation_term
-open Ppextend
 
 (** Notations *)
 
@@ -31,8 +30,6 @@ type local_scopes = tmp_scope_name option * scope_name list
 val declare_scope : scope_name -> unit
 
 val current_scopes : unit -> scopes
-
-val level_eq : level -> level -> bool
 
 (** Check where a scope is opened or not in a scope list, or in
  * the current opened scopes *)
@@ -135,11 +132,6 @@ val uninterp_ind_pattern_notations : inductive -> notation_rule list
 val availability_of_notation : scope_name option * notation -> local_scopes ->
   (scope_name option * delimiters option) option
 
-(** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
-
-val declare_notation_level : ?onlyprint:bool -> notation -> level -> unit
-val level_of_notation : ?onlyprint:bool -> notation -> level (** raise [Not_found] if no level or not respecting onlyprint *)
-
 (** {6 Miscellaneous} *)
 
 val interp_notation_as_global_reference : ?loc:Loc.t -> (GlobRef.t -> bool) ->
@@ -199,21 +191,6 @@ val locate_notation : (glob_constr -> Pp.t) -> notation ->
       scope_name option -> Pp.t
 
 val pr_visibility: (glob_constr -> Pp.t) -> scope_name option -> Pp.t
-
-(** {6 Printing rules for notations} *)
-
-(** Declare and look for the printing rule for symbolic notations *)
-type unparsing_rule = unparsing list * precedence
-type extra_unparsing_rules = (string * string) list
-val declare_notation_rule :
-  notation -> extra:extra_unparsing_rules -> unparsing_rule -> notation_grammar -> unit
-val find_notation_printing_rule : notation -> unparsing_rule
-val find_notation_extra_printing_rules : notation -> extra_unparsing_rules
-val find_notation_parsing_rules : notation -> notation_grammar
-val add_notation_extra_printing_rule : notation -> string -> string -> unit
-
-(** Returns notations with defined parsing/printing rules *)
-val get_defined_notations : unit -> notation list
 
 (** Rem: printing rules for primitive token are canonical *)
 

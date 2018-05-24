@@ -687,7 +687,7 @@ let is_onlybinding_meta id metas =
 let is_onlybinding_pattern_like_meta isvar id metas =
   try match Id.List.assoc id metas with
       | _,NtnTypeBinder (NtnBinderParsedAsConstr
-                           (Extend.AsIdentOrPattern | Extend.AsStrictPattern)) -> true
+                           (AsIdentOrPattern | AsStrictPattern)) -> true
       | _,NtnTypeBinder (NtnParsedAsPattern strict) -> not (strict && isvar)
       | _ -> false
   with Not_found -> false

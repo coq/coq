@@ -17,7 +17,7 @@ open Names
 open Misctypes
 open Environ
 open Constrexpr
-open Notation_term
+open Notation_gram
 open Tacexpr
 
 type 'a grammar_tactic_prod_item_expr =
@@ -153,5 +153,5 @@ val pr_value : tolerability -> Val.t -> Pp.t
 
 val ltop : tolerability
 
-val make_constr_printer : (env -> Evd.evar_map -> Notation_term.tolerability -> 'a -> Pp.t) ->
+val make_constr_printer : (env -> Evd.evar_map -> tolerability -> 'a -> Pp.t) ->
   'a Genprint.top_printer

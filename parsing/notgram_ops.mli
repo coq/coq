@@ -8,29 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Notation_term
+(* Merge with metasyntax? *)
+open Constrexpr
+open Notation_gram
 
-(** {6 Pretty-print. } *)
+val level_eq : level -> level -> bool
 
-type ppbox =
-  | PpHB of int
-  | PpHOVB of int
-  | PpHVB of int
-  | PpVB of int
+(** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 
-type ppcut =
-  | PpBrk of int * int
-  | PpFnl
-
-val ppcmd_of_box : ppbox -> Pp.t -> Pp.t
-
-val ppcmd_of_cut : ppcut -> Pp.t
-
-type unparsing =
-  | UnpMetaVar of int * parenRelation
-  | UnpBinderMetaVar of int * parenRelation
-  | UnpListMetaVar of int * parenRelation * unparsing list
-  | UnpBinderListMetaVar of int * bool * unparsing list
-  | UnpTerminal of string
-  | UnpBox of ppbox * unparsing Loc.located list
-  | UnpCut of ppcut
+val declare_notation_level : ?onlyprint:bool -> notation -> level -> unit
+val level_of_notation : ?onlyprint:bool -> notation -> level (** raise [Not_found] if no level or not respecting onlyprint *)

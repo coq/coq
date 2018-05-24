@@ -16,7 +16,7 @@ open Libnames
 open Constrexpr
 open Names
 open Misctypes
-open Notation_term
+open Notation_gram
 
 val prec_less : precedence -> tolerability -> bool
 

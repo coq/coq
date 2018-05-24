@@ -8,10 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
-open Notation_term
+open Constrexpr
+open Notation_gram
 
-(*s Pretty-print. *)
+(** {6 Pretty-print. } *)
 
 type ppbox =
   | PpHB of int
@@ -23,16 +23,13 @@ type ppcut =
   | PpBrk of int * int
   | PpFnl
 
-let ppcmd_of_box = function
-  | PpHB n -> h n
-  | PpHOVB n -> hov n
-  | PpHVB n -> hv n
-  | PpVB n -> v n
+val ppcmd_of_box : ppbox -> Pp.t -> Pp.t
 
-let ppcmd_of_cut = function
-  | PpFnl -> fnl ()
-  | PpBrk(n1,n2) -> brk(n1,n2)
+val ppcmd_of_cut : ppcut -> Pp.t
 
+(** {6 Printing rules for notations} *)
+
+(** Declare and look for the printing rule for symbolic notations *)
 type unparsing =
   | UnpMetaVar of int * parenRelation
   | UnpBinderMetaVar of int * parenRelation
@@ -41,3 +38,15 @@ type unparsing =
   | UnpTerminal of string
   | UnpBox of ppbox * unparsing Loc.located list
   | UnpCut of ppcut
+
+type unparsing_rule = unparsing list * precedence
+type extra_unparsing_rules = (string * string) list
+
+val declare_notation_rule : notation -> extra:extra_unparsing_rules -> unparsing_rule -> notation_grammar -> unit
+val find_notation_printing_rule : notation -> unparsing_rule
+val find_notation_extra_printing_rules : notation -> extra_unparsing_rules
+val find_notation_parsing_rules : notation -> notation_grammar
+val add_notation_extra_printing_rule : notation -> string -> string -> unit
+
+(** Returns notations with defined parsing/printing rules *)
+val get_defined_notations : unit -> notation list

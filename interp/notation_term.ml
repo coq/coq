@@ -62,6 +62,11 @@ type subscopes = tmp_scope_name option * scope_name list
 (** Type of the meta-variables of an notation_constr: in a recursive pattern x..y,
     x carries the sequence of objects bound to the list x..y  *)
 
+type constr_as_binder_kind =
+  | AsIdent
+  | AsIdentOrPattern
+  | AsStrictPattern
+
 type notation_binder_source =
   (* This accepts only pattern *)
   (* NtnParsedAsPattern true means only strict pattern (no single variable) at printing *)
@@ -69,7 +74,7 @@ type notation_binder_source =
   (* This accepts only ident *)
   | NtnParsedAsIdent
   (* This accepts ident, or pattern, or both *)
-  | NtnBinderParsedAsConstr of Extend.constr_as_binder_kind
+  | NtnBinderParsedAsConstr of constr_as_binder_kind
 
 type notation_var_instance_type =
   | NtnTypeConstr | NtnTypeBinder of notation_binder_source | NtnTypeConstrList | NtnTypeBinderList
@@ -90,34 +95,4 @@ type reversibility_status = APrioriReversible | HasLtac | NonInjective of Id.t l
 type notation_interp_env = {
   ninterp_var_type : notation_var_internalization_type Id.Map.t;
   ninterp_rec_vars : Id.t Id.Map.t;
-}
-
-type grammar_constr_prod_item =
-  | GramConstrTerminal of Tok.t
-  | GramConstrNonTerminal of Extend.constr_prod_entry_key * Id.t option
-  | GramConstrListMark of int * bool * int
-    (* tells action rule to make a list of the n previous parsed items;
-       concat with last parsed list when true; additionally release
-       the p last items as if they were parsed autonomously *)
-
-(** Dealing with precedences *)
-
-type precedence = int
-type parenRelation = L | E | Any | Prec of precedence
-type tolerability = precedence * parenRelation
-
-type level = precedence * tolerability list * Extend.constr_entry_key list
-
-(** Grammar rules for a notation *)
-
-type one_notation_grammar = {
-  notgram_level : level;
-  notgram_assoc : Extend.gram_assoc option;
-  notgram_notation : Constrexpr.notation;
-  notgram_prods : grammar_constr_prod_item list list;
-}
-
-type notation_grammar = {
-  notgram_onlyprinting : bool;
-  notgram_rules : one_notation_grammar list
 }

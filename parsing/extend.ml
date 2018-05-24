@@ -31,11 +31,6 @@ type production_level =
   | NextLevel
   | NumLevel of int
 
-type constr_as_binder_kind =
-  | AsIdent
-  | AsIdentOrPattern
-  | AsStrictPattern
-
 (** User-level types used to tell how to parse or interpret of the non-terminal *)
 
 type 'a constr_entry_key_gen =
@@ -44,7 +39,7 @@ type 'a constr_entry_key_gen =
   | ETBigint
   | ETBinder of bool  (* open list of binders if true, closed list of binders otherwise *)
   | ETConstr of 'a
-  | ETConstrAsBinder of constr_as_binder_kind * 'a
+  | ETConstrAsBinder of Notation_term.constr_as_binder_kind * 'a
   | ETPattern of bool * int option (* true = strict pattern, i.e. not a single variable *)
   | ETOther of string * string
 

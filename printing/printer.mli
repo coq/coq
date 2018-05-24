@@ -36,7 +36,7 @@ val pr_constr              : constr -> Pp.t
 [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 val pr_constr_goal_style_env : env -> evar_map -> constr -> Pp.t
 
-val pr_constr_n_env        : env -> evar_map -> Notation_term.tolerability -> constr -> Pp.t
+val pr_constr_n_env        : env -> evar_map -> Notation_gram.tolerability -> constr -> Pp.t
 
 (** Same, but resilient to [Nametab] errors. Prints fully-qualified
     names when [shortest_qualid_of_global] has failed. Prints "??"
@@ -57,7 +57,7 @@ val pr_leconstr_env     : env -> evar_map -> EConstr.t -> Pp.t
 val pr_leconstr         : EConstr.t -> Pp.t
 [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
-val pr_econstr_n_env    : env -> evar_map -> Notation_term.tolerability -> EConstr.t -> Pp.t
+val pr_econstr_n_env    : env -> evar_map -> Notation_gram.tolerability -> EConstr.t -> Pp.t
 
 val pr_etype_env           : env -> evar_map -> EConstr.types -> Pp.t
 val pr_letype_env           : env -> evar_map -> EConstr.types -> Pp.t
@@ -87,7 +87,7 @@ val pr_type_env            : env -> evar_map -> types -> Pp.t
 val pr_type                : types -> Pp.t
 [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
-val pr_closed_glob_n_env   : env -> evar_map -> Notation_term.tolerability -> closed_glob_constr -> Pp.t
+val pr_closed_glob_n_env   : env -> evar_map -> Notation_gram.tolerability -> closed_glob_constr -> Pp.t
 val pr_closed_glob_env     : env -> evar_map -> closed_glob_constr -> Pp.t
 val pr_closed_glob         : closed_glob_constr -> Pp.t
 [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]

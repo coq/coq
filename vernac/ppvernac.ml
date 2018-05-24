@@ -102,7 +102,7 @@ open Pputils
     | NumLevel n -> keyword "at" ++ spc () ++ keyword "level" ++ spc () ++ int n
     | NextLevel -> keyword "at" ++ spc () ++ keyword "next" ++ spc () ++ keyword "level"
 
-  let pr_constr_as_binder_kind = function
+  let pr_constr_as_binder_kind = let open Notation_term in function
     | AsIdent -> keyword "as ident"
     | AsIdentOrPattern -> keyword "as pattern"
     | AsStrictPattern -> keyword "as strict pattern"
