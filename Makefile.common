@@ -193,9 +193,12 @@ vo_to_cm = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst theo
 vo_to_obj = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.vo=.o)))))
 
 GLOBFILES:=$(ALLVO:.vo=.glob)
-LIBFILES:=$(ALLVO) $(call vo_to_cm,$(ALLVO)) \
-	    $(call vo_to_obj,$(ALLVO)) \
-	    $(VFILES) $(GLOBFILES)
+ifdef NATIVECOMPUTE
+NATIVEFILES := $(call vo_to_cm,$(ALLVO)) $(call vo_to_obj,$(ALLVO))
+else
+NATIVEFILES :=
+endif
+LIBFILES:=$(ALLVO) $(NATIVEFILES) $(VFILES) $(GLOBFILES)
 
 # For emacs:
 # Local Variables:
