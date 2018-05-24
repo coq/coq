@@ -107,19 +107,32 @@ there are some.
 
 You can also run one CI target locally (using `make ci-somedev`).
 
-Whenever your PR breaks tested developments, you should either adapt it
-so that it doesn't, or provide a branch fixing these developments (or at
-least work with the author of the development / other Coq developers to
-prepare these fixes). Then, add an overlay in
-[`dev/ci/user-overlays`](/dev/ci/user-overlays) (see the README there)
-as part of your PR.
-
-The process to merge your PR is then to submit PRs to the external
-development repositories, merge the latter first (if the fixes are
-backward-compatible), and merge the PR on Coq then.
-
 See also [`test-suite/README.md`](/test-suite/README.md) for information about adding new tests to the test-suite.
 
+### Breaking changes
+
+When your PR breaks an external project we test in our CI, you must prepare a
+patch (or ask someone to prepare a patch) to fix the project:
+
+1. Fork the external project, create a new branch, push a commit adapting
+   the project to your changes.
+2. Test your pull request with your adapted version of the external project by
+   adding an overlay file to your pull request (cf.
+   [`dev/ci/user-overlays/README.md`](/dev/ci/user-overlays/README.md)).
+3. Fixes to external libraries (pure Coq projects) *must* be backward
+   compatible (i.e. they should also work with the development version of Coq,
+   and the latest stable version). This will allow you to open a PR on the
+   external project repository to have your changes merged *before* your PR on
+   Coq can be integrated.
+
+   On the other hand, patches to plugins (projects linking to the Coq ML API)
+   can very rarely be made backward compatible and plugins we test will
+   generally have a dedicated branch per Coq version.
+   You can still open a pull request but the merging will be requested by the
+   developer who merges the PR on Coq. There are plans to improve this, cf.
+   [#6724](https://github.com/coq/coq/issues/6724).
+
+Moreover your PR must absolutely update the [`CHANGES`](/CHANGES) file.
 
 Advanced GitLab CI information
 ------------------------------
