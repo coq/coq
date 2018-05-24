@@ -23,7 +23,7 @@ type reduction_tactic_error =
 
 exception ReductionTacticError of reduction_tactic_error
 
-(** {6 Reduction functions associated to tactics. {% \label{%}tacred{% }%} } *)
+(** {6 Reduction functions associated to tactics. } *)
 
 (** Evaluable global reference *)
 

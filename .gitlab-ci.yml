@@ -275,7 +275,7 @@ doc:refman:
   dependencies:
     - build:base
 
-doc:ml-api:
+doc:ml-api:ocamldoc:
   stage: test
   dependencies:
     - build:edge
@@ -286,6 +286,19 @@ doc:ml-api:
     name: "$CI_JOB_NAME"
     paths:
       - dev/ocamldoc
+
+doc:ml-api:odoc:
+  <<: *dune-template
+  stage: test
+  dependencies:
+    - build:egde:dune:dev
+  variables:
+    OPAM_SWITCH: edge
+    DUNE_TARGET: apidoc
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _build/default/_doc/
 
 test-suite:base:
   <<: *test-suite-template

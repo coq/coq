@@ -13,7 +13,7 @@
 (** The route of a generic argument, from parsing to evaluation.
 In the following diagram, "object" can be tactic_expr, constr, tactic_arg, etc.
 
-{% \begin{%}verbatim{% }%}
+{% \begin{verbatim} %}
              parsing          in_raw                            out_raw
    char stream ---> raw_object ---> raw_object generic_argument -------+
                           encapsulation                          decaps|
@@ -36,7 +36,7 @@ In the following diagram, "object" can be tactic_expr, constr, tactic_arg, etc.
     |
     V
 effective use
-{% \end{%}verbatim{% }%}
+{% \end{verbatim} %}
 
 To distinguish between the uninterpreted, globalized and
 interpreted worlds, we annotate the type [generic_argument] by a

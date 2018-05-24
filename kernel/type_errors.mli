@@ -12,7 +12,7 @@ open Names
 open Constr
 open Environ
 
-(** Type errors. {% \label{%}typeerrors{% }%} *)
+(** Type errors. {% \label{typeerrors} %} *)
 
 (*i Rem: NotEnoughAbstractionInFixBody should only occur with "/i" Fix
     notation i*)
