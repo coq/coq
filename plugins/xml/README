@@ -1,4 +1,0 @@
-The xml export plugin for Coq has been removed from the sources.
-A backward compatible plug-in will be provided as a third-party plugin.
-For more informations, contact
-Claudio Sacerdoti Coen <claudio.sacerdoticoen@unibo.it>.
