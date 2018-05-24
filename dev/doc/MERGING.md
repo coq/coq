@@ -1,8 +1,8 @@
 # Merging changes in Coq
 
-This document describes how patches (submitted as pull requests
-on the `master` branch) should be
-merged into the main repository (https://github.com/coq/coq).
+This document describes how patches, submitted as pull requests (PRs) on the
+`master` branch, should be merged into the main repository
+(https://github.com/coq/coq).
 
 ## Code owners
 
@@ -10,8 +10,8 @@ The [CODEOWNERS](/.github/CODEOWNERS) file describes, for each part of the
 system, two owners. One is the principal maintainer of the component, the other
 is the secondary maintainer.
 
-When a pull request is submitted, GitHub will automatically ask the principal
-maintainer for a review. If the pull request touches several parts, all the
+When a PR is submitted, GitHub will automatically ask the principal
+maintainer for a review. If the PR touches several parts, all the
 corresponding principal maintainers will be asked for a review.
 
 Maintainers are never assigned as reviewer on their own PRs.
@@ -43,9 +43,30 @@ A maintainer is expected to be reasonably reactive, but no specific timeframe is
 given for reviewing.
 
 (*) In case a component is touched in a trivial way (adding/removing one file in
-a `Makefile`, etc), or by applying a systematic process (global renaming,
-deprecationg propagation, etc) that has been reviewed globally, the assignee can
+a `Makefile`, etc), or by applying a systematic refactoring process (global
+renaming for instance) that has been reviewed globally, the assignee can
 say in a comment they think a review is not required and proceed with the merge.
+
+### Breaking changes
+
+If the PR breaks compatibility of some external projects in CI, then fixes to
+those external projects should have been prepared (cf. the relevant sub-section
+in the [CI README](/dev/ci/README.md#Breaking-changes) and the PR can be tested
+with these fixes thanks to ["overlays"](/dev/ci/user-overlays/README.md).
+
+Moreover the PR must absolutely update the [`CHANGES`](/CHANGES) file.
+
+If overlays are missing, ask the author to prepare them and label the PR with
+the [needs: overlay](https://github.com/coq/coq/labels/needs%3A%20overlay) label.
+
+When fixes are ready, there are two cases to consider:
+
+- For patches that are backward compatible (best scenario), you should get the
+  external project maintainers to integrate them before merging the PR.
+- For patches that are not backward compatible (which is often the case when
+  patching plugins after an update to the Coq API), you can proceed to merge
+  the PR and then notify the external project maintainers they can merge the
+  patch.
 
 ## Merging
 
@@ -88,22 +109,6 @@ Maintainers MUST NOT merge their own patches.
 DON'T USE the GitHub interface for merging, since it will prevent the automated
 backport script from operating properly, generates bad commit messages, and a
 messy history when there are conflicts.
-
-### What to do if the PR has overlays
-
-If the PR breaks compatibility of some developments in CI, then the author must
-have prepared overlays for these developments (see [`dev/ci/README.md`](/dev/ci/README.md))
-and the PR must absolutely update the `CHANGES` file.
-
-There are two cases to consider:
-
-- If the patch is backward compatible (best scenario), then you should get
-  upstream maintainers to integrate it before merging the PR.
-- If the patch is not backward compatible (which is often the case when
-  patching plugins after an update to the Coq API), then you can proceed to
-  merge the PR and then notify upstream they can merge the patch. This is a
-  less preferable scenario because it is probably going to create
-  spurious CI failures for unrelated PRs.
 
 ### Merge script dependencies
 
