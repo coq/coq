@@ -1,0 +1,6 @@
+(library
+ (name pretyping)
+ (synopsis "Coq's Type Inference Component (Pretyper)")
+ (public_name coq.pretyping)
+ (wrapped false)
+ (libraries camlp5.gramlib engine))

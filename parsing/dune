@@ -1,0 +1,20 @@
+(library
+ (name parsing)
+ (public_name coq.parsing)
+ (wrapped false)
+ (libraries proofs))
+
+(rule
+ (targets cLexer.ml)
+ (deps (:ml4-file cLexer.ml4))
+ (action (run camlp5o -loc loc -impl %{ml4-file} -o %{targets})))
+
+(rule
+ (targets g_prim.ml)
+ (deps (:mlg-file g_prim.mlg))
+ (action (run coqpp %{mlg-file})))
+
+(rule
+ (targets g_constr.ml)
+ (deps (:mlg-file g_constr.mlg))
+ (action (run coqpp %{mlg-file})))

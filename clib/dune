@@ -1,0 +1,8 @@
+(library
+ (name clib)
+ (synopsis "Coq's Utility Library [general purpose]")
+ (public_name coq.clib)
+ (wrapped false)
+ (modules_without_implementation cSig)
+ (libraries threads str unix dynlink))
+

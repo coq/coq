@@ -317,13 +317,11 @@ $(LIBCOQRUN): kernel/byterun/coq_jumptbl.h $(BYTERUN)
 	cd $(dir $(LIBCOQRUN)) && \
 	$(OCAMLFIND) ocamlmklib -oc $(COQRUN) $(notdir $(BYTERUN))
 
-kernel/byterun/coq_jumptbl.h : kernel/byterun/coq_instruct.h
-	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&coq_lbl_\1/gp' \
-               -e '/^}/q' $< $(TOTARGET)
+kernel/byterun/coq_jumptbl.h : kernel/byterun/coq_instruct.h kernel/byterun/make_jumptbl.sh
+	kernel/byterun/make_jumptbl.sh $< $@
 
-kernel/copcodes.ml: kernel/byterun/coq_instruct.h
-	tr -d "\r" < $< | sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' | \
-	awk -f kernel/make-opcodes $(TOTARGET)
+kernel/copcodes.ml: kernel/byterun/coq_instruct.h kernel/make_opcodes.sh kernel/make-opcodes
+	kernel/make_opcodes.sh $< $@
 
 %.o: %.c
 	$(SHOW)'OCAMLC    $<'

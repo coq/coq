@@ -256,6 +256,15 @@
 
 /theories/Vectors/        @herbelin
 
+########## Dune  ##########
+
+/Makefile.dune         @ejgallego
+/tools/coq_dune*       @ejgallego
+/dune*                 @ejgallego
+/coq.opam              @ejgallego
+/ide/coqide.opam       @ejgallego
+# Secondary maintainer @Zimmi48
+
 ########## Tools ##########
 
 /tools/coqdoc/         @silene

@@ -1,0 +1,13 @@
+(library
+ (name config)
+ (synopsis "Coq Configuration Variables")
+ (public_name coq.config)
+ (wrapped false))
+
+; Dune doesn't use configure's output, but it is still necessary for
+; some Coq files to work; will be fixed in the future.
+(rule
+ (targets coq_config.ml)
+ (mode fallback)
+ (deps %{project_root}/configure.ml %{project_root}/dev/ocamldebug-coq.run)
+ (action (chdir %{project_root} (run %{ocaml} configure.ml -local -warn-error yes -native-compiler yes))))

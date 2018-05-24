@@ -1,0 +1,6 @@
+(library
+ (name printing)
+ (synopsis "Coq's Term Pretty Printing Library")
+ (public_name coq.printing)
+ (wrapped false)
+ (libraries parsing proofs))

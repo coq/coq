@@ -1,0 +1,5 @@
+(library
+ (name recdef_plugin)
+ (public_name coq.plugins.recdef)
+ (synopsis "Coq's functional induction plugin")
+ (libraries coq.plugins.extraction))

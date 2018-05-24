@@ -88,6 +88,20 @@ after_script:
 
     - set +e
 
+.dune-template: &dune-template
+  stage: build
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _build/
+    expire_in: 1 week
+  script:
+    - set -e
+    - echo 'start:coq.dune'
+    - make -f Makefile.dune world
+    - echo 'end:coq.dune'
+    - set +e
+
 # every non build job must set dependencies otherwise all build
 # artifacts are used together and we may get some random Coq. To that
 # purpose, we add a spurious dependency `not-a-real-job` that must be
@@ -202,6 +216,11 @@ build:edge+flambda:
     OPAM_VARIANT: "+flambda"
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt -flambda-opts "
     COQ_EXTRA_CONF_QUOTE: "-O3 -unbox-closures"
+
+build:egde:dune:
+  <<: *dune-template
+  variables:
+    OPAM_SWITCH: edge
 
 windows64:
   <<: *windows-template

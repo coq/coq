@@ -1,0 +1,5 @@
+(library
+ (name omega_plugin)
+ (public_name coq.plugins.omega)
+ (synopsis "Coq's omega plugin")
+ (libraries coq.plugins.ltac))

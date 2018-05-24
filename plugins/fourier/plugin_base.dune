@@ -1,0 +1,5 @@
+(library
+ (name fourier_plugin)
+ (public_name coq.plugins.fourier)
+ (synopsis "Coq's fourier plugin")
+ (libraries coq.plugins.ltac))

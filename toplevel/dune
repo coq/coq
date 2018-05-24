@@ -1,0 +1,13 @@
+(library
+ (name toplevel)
+ (public_name coq.toplevel)
+ (synopsis "Coq's Interactive Shell [terminal-based]")
+ (wrapped false)
+ (libraries num coq.stm))
+; Coqlevel provides the `Num` library to plugins, we could also use
+; -linkall in the plugins file, to be discussed.
+
+(rule
+ (targets g_toplevel.ml)
+ (deps (:mlg-file g_toplevel.mlg))
+ (action (run coqpp %{mlg-file})))

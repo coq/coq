@@ -1,0 +1,5 @@
+(library
+ (name cc_plugin)
+ (public_name coq.plugins.cc)
+ (synopsis "Coq's congruence closure plugin")
+ (libraries coq.plugins.ltac))

@@ -1,0 +1,5 @@
+(library
+ (name rtauto_plugin)
+ (public_name coq.plugins.rtauto)
+ (synopsis "Coq's rtauto plugin")
+ (libraries coq.plugins.ltac))

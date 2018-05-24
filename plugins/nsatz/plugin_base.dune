@@ -1,0 +1,5 @@
+(library
+ (name nsatz_plugin)
+ (public_name coq.plugins.nsatz)
+ (synopsis "Coq's nsatz solver plugin")
+ (libraries num coq.plugins.ltac))

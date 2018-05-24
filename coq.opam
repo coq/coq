@@ -1,0 +1,22 @@
+opam-version: "1.2"
+maintainer: "The Coq development team <coqdev@inria.fr>"
+authors: "The Coq development team, INRIA, CNRS, and contributors."
+homepage: "https://coq.inria.fr/"
+bug-reports: "https://github.com/coq/coq/issues"
+dev-repo: "https://github.com/coq/coq.git"
+license: "LGPL-2.1"
+
+available: [ ocaml-version >= "4.02.3" ]
+
+depends: [
+  "dune"      { build }
+  "ocamlfind" { build }
+  "num"
+  "camlp5"
+]
+
+build: [
+  [ "dune" "build" "@vodeps" ]
+  [ "dune" "exec" "coq_dune" "_build/default/.vfiles.d" ]
+  [ "dune" "build" "-p" package "-j" jobs ]
+]

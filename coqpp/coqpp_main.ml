@@ -181,7 +181,7 @@ let print_fun fmt (vars, body) =
   in
   let () = fprintf fmt "fun@ " in
   let () = List.iter iter vars in
-  (** FIXME: use Coq locations in the macros *)
+  (* FIXME: use Coq locations in the macros *)
   let () = fprintf fmt "loc ->@ @[%s@]" body.code in
   ()
 

@@ -1,0 +1,41 @@
+(library
+ (name grammar)
+ (synopsis "Coq Camlp5 Grammar Extensions for Plugins")
+ (public_name coq.grammar)
+ (wrapped false)
+ (flags (:standard -w -58))
+ (libraries camlp5))
+
+; Custom camlp5! This is a net speedup, and a preparation for using
+; Dune's preprocessor abilities.
+(rule
+ (targets coqmlp5)
+ (action (run mkcamlp5.opt pa_o.cmx pa_op.cmx pr_dump.cmx pa_extend.cmx q_MLast.cmx pa_macro.cmx pr_o.cmx -o coqmlp5)))
+
+(rule
+ (targets coqp5)
+ (action (run mkcamlp5.opt pa_o.cmx pa_op.cmx pr_dump.cmx pa_extend.cmx q_MLast.cmx pa_macro.cmx pr_o.cmx %{dep:grammar.cmxa} -o coqp5)))
+
+(install
+ (section bin)
+ (files coqp5 coqmlp5))
+
+(rule
+ (targets q_util.ml)
+ (deps (:mlp-file q_util.mlp))
+ (action (run coqmlp5 -loc loc -impl %{mlp-file} -o %{targets})))
+
+(rule
+ (targets argextend.ml)
+ (deps (:mlp-file argextend.mlp))
+ (action (run coqmlp5 -loc loc -impl %{mlp-file} -o %{targets})))
+
+(rule
+ (targets tacextend.ml)
+ (deps (:mlp-file tacextend.mlp))
+ (action (run coqmlp5 -loc loc -impl %{mlp-file} -o %{targets})))
+
+(rule
+ (targets vernacextend.ml)
+ (deps (:mlp-file vernacextend.mlp))
+ (action (run coqmlp5 -loc loc -impl %{mlp-file} -o %{targets})))
