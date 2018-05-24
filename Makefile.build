@@ -397,7 +397,6 @@ $(COQTOPEXE): $(TOPBIN:.opt=.$(BEST))
 bin/%.opt$(EXE): topbin/%_bin.ml $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) \
-	                   -I kernel/byterun/ -cclib -lcoqrun \
 			   $(SYSMOD) -package camlp5.gramlib \
 			   $(LINKCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
 	$(STRIP) $@
@@ -636,6 +635,11 @@ test-suite: world byte $(ALLSTDLIB).v
 kernel/kernel.cma: kernel/kernel.mllib
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(VMBYTEFLAGS) -a -o $@ $(filter-out %.mllib, $^)
+
+# Specific rule for kernel.cmxa as to adjoin -cclib -lcoqrun
+kernel/kernel.cmxa: kernel/kernel.mllib
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -I kernel/byterun/ -cclib -lcoqrun -a -o $@ $(filter-out %.mllib, $^)
 
 %.cma: %.mllib
 	$(SHOW)'OCAMLC -a -o $@'
