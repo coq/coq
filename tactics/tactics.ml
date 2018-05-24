@@ -43,7 +43,6 @@ open Pretype_errors
 open Unification
 open Locus
 open Locusops
-open Misctypes
 open Tactypes
 open Proofview.Notations
 open Context.Named.Declaration
@@ -1154,6 +1153,11 @@ let tactic_infer_flags with_evar = {
   Pretyping.fail_evar = not with_evar;
   Pretyping.expand_evars = true }
 
+type evars_flag = bool     (* true = pose evars       false = fail on evars *)
+type rec_flag = bool       (* true = recursive        false = not recursive *)
+type advanced_flag = bool  (* true = advanced         false = basic *)
+type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use default *)
+
 type 'a core_destruction_arg =
   | ElimOnConstr of 'a
   | ElimOnIdent of lident
@@ -1282,7 +1286,7 @@ let do_replace id = function
 
 let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) 
     targetid id sigma0 clenv tac =
-  let clenv = Clenvtac.clenv_pose_dependent_evars with_evars clenv in
+  let clenv = Clenvtac.clenv_pose_dependent_evars ~with_evars clenv in
   let clenv =
     if with_classes then
       { clenv with evd = Typeclasses.resolve_typeclasses 
@@ -2259,7 +2263,7 @@ let intro_or_and_pattern ?loc with_evars bracketed ll thin tac id =
   let c = mkVar id in
   let t = Tacmach.New.pf_unsafe_type_of gl c in
   let (ind,t) = Tacmach.New.pf_reduce_to_quantified_ind gl t in
-  let branchsigns = compute_constructor_signatures false ind in
+  let branchsigns = compute_constructor_signatures ~rec_flag:false ind in
   let nv_with_let = Array.map List.length branchsigns in
   let ll = fix_empty_or_and_pattern (Array.length branchsigns) ll in
   let ll = get_and_check_or_and_pattern ?loc ll branchsigns in
@@ -4197,7 +4201,7 @@ let induction_tac with_evars params indvars elim =
   let elimclause' = recolle_clenv i params indvars elimclause gl in
   (* one last resolution (useless?) *)
   let resolved = clenv_unique_resolver ~flags:(elim_flags ()) elimclause' gl in
-  Clenvtac.clenv_refine with_evars resolved
+  Clenvtac.clenv_refine ~with_evars resolved
   end
 
 (* Apply induction "in place" taking into account dependent

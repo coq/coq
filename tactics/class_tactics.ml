@@ -207,7 +207,7 @@ let clenv_unique_resolver_tac with_evars ~flags clenv' =
       try Proofview.tclUNIT (clenv_unique_resolver ~flags clenv' gls)
       with e -> Proofview.tclZERO e
     in resolve >>= fun clenv' ->
-       Clenvtac.clenv_refine with_evars ~with_classes:false clenv'
+       Clenvtac.clenv_refine ~with_evars ~with_classes:false clenv'
   end
 
 let unify_e_resolve poly flags = begin fun gls (c,_,clenv) ->

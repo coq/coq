@@ -18,7 +18,6 @@ open Clenv
 open Redexpr
 open Pattern
 open Unification
-open Misctypes
 open Tactypes
 open Locus
 open Ltac_pretype
@@ -90,6 +89,11 @@ val intros_clearing      : bool list -> unit Proofview.tactic
 
 val try_intros_until :
   (Id.t -> unit Proofview.tactic) -> quantified_hypothesis -> unit Proofview.tactic
+
+type evars_flag = bool     (* true = pose evars       false = fail on evars *)
+type rec_flag = bool       (* true = recursive        false = not recursive *)
+type advanced_flag = bool  (* true = advanced         false = basic *)
+type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use default *)
 
 (** Apply a tactic on a quantified hypothesis, an hypothesis in context
    or a term with bindings *)

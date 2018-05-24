@@ -223,7 +223,7 @@ let compute_induction_names_gen check_and branchletsigns = function
 let compute_induction_names = compute_induction_names_gen true
 
 (* Compute the let-in signature of case analysis or standard induction scheme *)
-let compute_constructor_signatures isrec ((_,k as ity),u) =
+let compute_constructor_signatures ~rec_flag ((_,k as ity),u) =
   let rec analrec c recargs =
     match Constr.kind c, recargs with
     | Prod (_,_,c), recarg::rest ->
@@ -231,7 +231,7 @@ let compute_constructor_signatures isrec ((_,k as ity),u) =
         begin match Declareops.dest_recarg recarg with
         | Norec | Imbr _  -> true :: rest
         | Mrec (_,j)  ->
-            if isrec && Int.equal j k then true :: true :: rest
+            if rec_flag && Int.equal j k then true :: true :: rest
             else true :: rest
         end
     | LetIn (_,_,_,c), rest -> false :: analrec c rest
@@ -634,7 +634,7 @@ module New = struct
   (* Find the right elimination suffix corresponding to the sort of the goal *)
   (* c should be of type A1->.. An->B with B an inductive definition *)
   let general_elim_then_using mk_elim
-      isrec allnames tac predicate ind (c, t) =
+      rec_flag allnames tac predicate ind (c, t) =
     Proofview.Goal.enter begin fun gl ->
     let sigma, elim = mk_elim ind gl in
     let ind = on_snd (fun u -> EInstance.kind sigma u) ind in
@@ -663,7 +663,7 @@ module New = struct
             (str "The elimination combinator " ++ str name_elim ++ str " is unknown.")
     in
     let elimclause' = clenv_fchain ~with_univs:false indmv elimclause indclause in
-    let branchsigns = compute_constructor_signatures isrec ind in
+    let branchsigns = compute_constructor_signatures ~rec_flag ind in
     let brnames = compute_induction_names_gen false branchsigns allnames in
     let flags = Unification.elim_flags () in
     let elimclause' =
@@ -686,7 +686,7 @@ module New = struct
     in
     let branchtacs = List.init (Array.length branchsigns) after_tac in
     Proofview.tclTHEN
-      (Clenvtac.clenv_refine false clenv')
+      (Clenvtac.clenv_refine clenv')
       (Proofview.tclEXTEND [] tclIDTAC branchtacs)
     end) end
 

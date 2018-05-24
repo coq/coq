@@ -26,12 +26,3 @@ type 'a or_by_notation = 'a or_by_notation_r CAst.t
 
 (* NB: the last string in [ByNotation] is actually a [Notation.delimiters],
    but this formulation avoids a useless dependency. *)
-
-(** Various flags *)
-
-type direction_flag = bool (* true = Left-to-right    false = right-to-right *)
-type evars_flag = bool     (* true = pose evars       false = fail on evars *)
-type rec_flag = bool       (* true = recursive        false = not recursive *)
-type advanced_flag = bool  (* true = advanced         false = basic *)
-type letin_flag = bool     (* true = use local def    false = use Leibniz *)
-type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use default *)

@@ -99,7 +99,7 @@ let unify_resolve poly flags ((c : raw_hint), clenv) =
   Proofview.Goal.enter begin fun gl ->
   let clenv, c = connect_hint_clenv poly c clenv gl in
   let clenv = clenv_unique_resolver ~flags clenv gl in
-  Clenvtac.clenv_refine false clenv
+  Clenvtac.clenv_refine clenv
   end
 
 let unify_resolve_nodelta poly h = unify_resolve poly auto_unif_flags h

@@ -15,8 +15,8 @@ open EConstr
 open Environ
 open Ind_tables
 open Locus
-open Misctypes
 open Tactypes
+open Tactics
 (*i*)
 
 type dep_proof_flag = bool (* true = support rewriting dependent proofs *)

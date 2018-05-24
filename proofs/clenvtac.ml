@@ -54,7 +54,7 @@ let clenv_cast_meta clenv =
 let clenv_value_cast_meta clenv =
     clenv_cast_meta clenv (clenv_value clenv)
 
-let clenv_pose_dependent_evars with_evars clenv =
+let clenv_pose_dependent_evars ?(with_evars=false) clenv =
   let dep_mvs = clenv_dependent clenv in
   let env, sigma = clenv.env, clenv.evd in
   if not (List.is_empty dep_mvs) && not with_evars then
@@ -75,12 +75,12 @@ let check_tc evd =
   let has_typeclass = Evar.Map.exists check (Evd.undefined_map evd) in
   (has_typeclass, !has_resolvable)
 
-let clenv_refine with_evars ?(with_classes=true) clenv =
+let clenv_refine ?(with_evars=false) ?(with_classes=true) clenv =
   (** ppedrot: a Goal.enter here breaks things, because the tactic below may
       solve goals by side effects, while the compatibility layer keeps those
       useless goals. That deserves a FIXME. *)
   Proofview.V82.tactic begin fun gl ->
-  let clenv = clenv_pose_dependent_evars with_evars clenv in
+  let clenv = clenv_pose_dependent_evars ~with_evars clenv in
   let evd' =
     if with_classes then
       let (has_typeclass, has_resolvable) = check_tc clenv.evd in
@@ -105,10 +105,10 @@ open Unification
 
 let dft = default_unify_flags
 
-let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
+let res_pf ?with_evars ?(with_classes=true) ?(flags=dft ()) clenv =
   Proofview.Goal.enter begin fun gl ->
     let clenv = clenv_unique_resolver ~flags clenv gl in
-    clenv_refine with_evars ~with_classes clenv
+    clenv_refine ?with_evars ~with_classes clenv
   end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en

@@ -155,7 +155,7 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   let c1 = args.(arglen - 2) in
   let c2 = args.(arglen - 1) in
   let try_occ (evd', c') =
-    Clenvtac.clenv_pose_dependent_evars true {eqclause with evd = evd'}
+    Clenvtac.clenv_pose_dependent_evars ~with_evars:true {eqclause with evd = evd'}
   in
   let flags = make_flags frzevars (Tacmach.New.project gl) rewrite_unif_flags eqclause in
   let occs =
@@ -1044,7 +1044,7 @@ let onEquality with_evars tac (c,lbindc) =
   let t = type_of c in
   let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
   let eq_clause = pf_apply make_clenv_binding gl (c,t') lbindc in
-  let eq_clause' = Clenvtac.clenv_pose_dependent_evars with_evars eq_clause in
+  let eq_clause' = Clenvtac.clenv_pose_dependent_evars ~with_evars eq_clause in
   let eqn = clenv_type eq_clause' in
   let (eq,u,eq_args) = find_this_eq_data_decompose gl eqn in
   tclTHEN
