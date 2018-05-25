@@ -59,3 +59,23 @@ Module CMP_CON.
 
   Definition yo : foo@{U} = foo@{V} := eq_refl.
 End CMP_CON.
+
+Set Universe Polymorphism.
+
+Module POLY_SUBTYP.
+
+  Module Type T.
+    Axiom foo : Type.
+    Parameter bar@{u v|u = v} : foo@{u}.
+  End T.
+
+  Module M.
+    Axiom foo : Type.
+    Axiom bar@{u v|u = v} : foo@{v}.
+  End M.
+
+  Module F (A:T). End F.
+
+  Module X := F M.
+
+End POLY_SUBTYP.
