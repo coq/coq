@@ -563,20 +563,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
   end
 end
 
-let warning_nameless_fix =
-    CWarnings.create ~name:"nameless-fix" ~category:"deprecated" Pp.(fun () ->
-        str "fix/cofix without a name are deprecated, please use the named version.")
-
-let fix ido n = match ido with
-  | None ->
-    warning_nameless_fix ();
-    Proofview.Goal.enter begin fun gl ->
-      let name = Proof_global.get_current_proof_name () in
-      let id = new_fresh_id Id.Set.empty name gl in
-      mutual_fix id n [] 0
-    end
-  | Some id ->
-    mutual_fix id n [] 0
+let fix id n = mutual_fix id n [] 0
 
 let rec check_is_mutcoind env sigma cl =
   let b = whd_all env sigma cl in
@@ -619,16 +606,7 @@ let mutual_cofix f others j = Proofview.Goal.enter begin fun gl ->
   end
 end
 
-let cofix ido = match ido with
-  | None ->
-    warning_nameless_fix ();
-    Proofview.Goal.enter begin fun gl ->
-      let name = Proof_global.get_current_proof_name () in
-      let id = new_fresh_id Id.Set.empty name gl in
-      mutual_cofix id [] 0
-    end
-  | Some id ->
-      mutual_cofix id [] 0
+let cofix id = mutual_cofix id [] 0
 
 (**************************************************************)
 (*          Reduction and conversion tactics                  *)

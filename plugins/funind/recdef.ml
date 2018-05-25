@@ -1152,7 +1152,7 @@ let termination_proof_header is_mes input_type ids args_id relation
 			tclTHEN (Proofview.V82.of_tactic (Tactics.generalize [mkVar id])) (Proofview.V82.of_tactic (clear [id])))
 		     ))
 	       ;
-		observe_tac (str "fix") (Proofview.V82.of_tactic (fix (Some hrec) (nargs+1)));
+                observe_tac (str "fix") (Proofview.V82.of_tactic (fix hrec (nargs+1)));
 		h_intros args_id;
 		Proofview.V82.of_tactic (Simple.intro wf_rec_arg);
 		observe_tac (str "tac") (tac wf_rec_arg hrec wf_rec_arg acc_inv)

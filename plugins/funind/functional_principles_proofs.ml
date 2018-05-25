@@ -1242,7 +1242,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	      if this_fix_info.idx + 1 = 0
 	      then tclIDTAC (* Someone  tries to defined a principle on a fully parametric definition declared as a fixpoint (strange but ....) *)
 	      else
-		observe_tac_stream (str "h_fix " ++ int (this_fix_info.idx +1) ) (Proofview.V82.of_tactic (fix (Some this_fix_info.name) (this_fix_info.idx +1)))
+                observe_tac_stream (str "h_fix " ++ int (this_fix_info.idx +1) ) (Proofview.V82.of_tactic (fix this_fix_info.name (this_fix_info.idx +1)))
 	    else
 	      Proofview.V82.of_tactic (Tactics.mutual_fix this_fix_info.name (this_fix_info.idx + 1)
 		other_fix_infos 0)
@@ -1657,7 +1657,7 @@ let prove_principle_for_gen
 (*       observe_tac "reverting" *) (revert (List.rev (acc_rec_arg_id::args_ids)));
 (*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl () ++  *)
 (* 			   str "fix arg num" ++ int (List.length args_ids + 1) ); tclIDTAC g); *)
-      (* observe_tac "h_fix " *) (Proofview.V82.of_tactic (fix (Some fix_id) (List.length args_ids + 1)));
+      (* observe_tac "h_fix " *) (Proofview.V82.of_tactic (fix fix_id (List.length args_ids + 1)));
 (*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl() ++ pr_lconstr_env (pf_env g ) (pf_unsafe_type_of g (mkVar fix_id) )); tclIDTAC g); *)
       h_intros (List.rev (acc_rec_arg_id::args_ids));
       Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_ref));
