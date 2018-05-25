@@ -501,12 +501,12 @@ end
 
 let () = define_prim0 "tac_admit" Proofview.give_up
 
-let () = define_prim2 "tac_fix" (option ident) int begin fun idopt n ->
-  Tactics.fix idopt n
+let () = define_prim2 "tac_fix" ident int begin fun ident n ->
+  Tactics.fix ident n
 end
 
-let () = define_prim1 "tac_cofix" (option ident) begin fun idopt ->
-  Tactics.cofix idopt
+let () = define_prim1 "tac_cofix" ident begin fun ident ->
+  Tactics.cofix ident
 end
 
 let () = define_prim1 "tac_clear" (list ident) begin fun ids ->
