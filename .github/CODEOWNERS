@@ -58,9 +58,9 @@
 
 ########## Coqchk ##########
 
-/checker/         @barras
-/test-suite/coqchk/     @barras
-# Secondary maintainers @maximedenes @ppedrot
+/checker/               @ppedrot
+/test-suite/coqchk/     @ppedrot
+# Secondary maintainers @maximedenes
 
 ########## Coq lib ##########
 
