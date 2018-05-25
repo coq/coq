@@ -287,7 +287,10 @@ let foldtac occ rdx ft gl =
     (fun env c _ h -> try find_T env c h ~k:(fun env t _ _ -> t) with NoMatch ->c),
     (fun () -> try end_T () with NoMatch -> fake_pmatcher_end ())
   | _ -> 
-    (fun env c _ h -> try let sigma = unify_HO env sigma (EConstr.of_constr c) (EConstr.of_constr t) in EConstr.to_constr sigma (EConstr.of_constr t)
+    (fun env c _ h ->
+       try
+         let sigma = unify_HO env sigma (EConstr.of_constr c) (EConstr.of_constr t) in
+         EConstr.to_constr ~abort_on_undefined_evars:false sigma (EConstr.of_constr t)
     with _ -> errorstrm Pp.(str "fold pattern " ++ pr_constr_pat t ++ spc ()
       ++ str "does not match redex " ++ pr_constr_pat c)), 
     fake_pmatcher_end in
