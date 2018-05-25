@@ -10,7 +10,7 @@
 
 let proto_version = 0
 let prefer_sock = Sys.os_type = "Win32"
-let accept_timeout = 2.0
+let accept_timeout = 10.0
 
 let pr_err s = Printf.eprintf "(Spawn  ,%d) %s\n%!" (Unix.getpid ()) s
 let prerr_endline s = if !Flags.debug then begin pr_err s end else ()
