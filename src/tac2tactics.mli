@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Tac2expr
 open EConstr
 open Genredexpr
@@ -57,16 +56,16 @@ val letin_pat_tac : evars_flag -> (bool * intro_pattern_naming) option ->
 
 val reduce : Redexpr.red_expr -> clause -> unit tactic
 
-val simpl : global_reference glob_red_flag ->
+val simpl : GlobRef.t glob_red_flag ->
   (Pattern.constr_pattern * occurrences) option -> clause -> unit tactic
 
-val cbv : global_reference glob_red_flag -> clause -> unit tactic
+val cbv : GlobRef.t glob_red_flag -> clause -> unit tactic
 
-val cbn : global_reference glob_red_flag -> clause -> unit tactic
+val cbn : GlobRef.t glob_red_flag -> clause -> unit tactic
 
-val lazy_ : global_reference glob_red_flag -> clause -> unit tactic
+val lazy_ : GlobRef.t glob_red_flag -> clause -> unit tactic
 
-val unfold : (global_reference * occurrences) list -> clause -> unit tactic
+val unfold : (GlobRef.t * occurrences) list -> clause -> unit tactic
 
 val pattern : (constr * occurrences) list -> clause -> unit tactic
 
@@ -78,16 +77,16 @@ val eval_red : constr -> constr tactic
 
 val eval_hnf : constr -> constr tactic
 
-val eval_simpl : global_reference glob_red_flag ->
+val eval_simpl : GlobRef.t glob_red_flag ->
   (Pattern.constr_pattern * occurrences) option -> constr -> constr tactic
 
-val eval_cbv : global_reference glob_red_flag -> constr -> constr tactic
+val eval_cbv : GlobRef.t glob_red_flag -> constr -> constr tactic
 
-val eval_cbn : global_reference glob_red_flag -> constr -> constr tactic
+val eval_cbn : GlobRef.t glob_red_flag -> constr -> constr tactic
 
-val eval_lazy : global_reference glob_red_flag -> constr -> constr tactic
+val eval_lazy : GlobRef.t glob_red_flag -> constr -> constr tactic
 
-val eval_unfold : (global_reference * occurrences) list -> constr -> constr tactic
+val eval_unfold : (GlobRef.t * occurrences) list -> constr -> constr tactic
 
 val eval_fold : constr list -> constr -> constr tactic
 
@@ -122,4 +121,4 @@ val inversion : Inv.inversion_kind -> destruction_arg -> intro_pattern option ->
 
 val contradiction : constr_with_bindings option -> unit tactic
 
-val firstorder : unit thunk option -> global_reference list -> Id.t list -> unit tactic
+val firstorder : unit thunk option -> GlobRef.t list -> Id.t list -> unit tactic

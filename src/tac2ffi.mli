@@ -131,9 +131,9 @@ val of_constant : Constant.t -> valexpr
 val to_constant : valexpr -> Constant.t
 val constant : Constant.t repr
 
-val of_reference : Globnames.global_reference -> valexpr
-val to_reference : valexpr -> Globnames.global_reference
-val reference : Globnames.global_reference repr
+val of_reference : GlobRef.t -> valexpr
+val to_reference : valexpr -> GlobRef.t
+val reference : GlobRef.t repr
 
 val of_ext : 'a Val.tag -> 'a -> valexpr
 val to_ext : 'a Val.tag -> valexpr -> 'a
