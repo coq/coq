@@ -51,19 +51,21 @@
 # each time someone modifies the dev changelog
 
 /doc/             @maximedenes
-# Secondary maintainer @silene
+# Secondary maintainer @silene @Zimmi48
 
 /man/             @silene
 # Secondary maintainer @maximedenes
 
 ########## Coqchk ##########
 
-/checker/         @barras
-# Secondary maintainer @maximedenes
+/checker/               @ppedrot
+/test-suite/coqchk/     @ppedrot
+# Secondary maintainers @maximedenes
 
 ########## Coq lib ##########
 
 /clib/            @ppedrot
+/test-suite/unit-tests/clib/ @ppedrot
 # Secondary maintainer @ejgallego
 
 /lib/             @ejgallego
@@ -90,6 +92,7 @@
 ########## CoqIDE ##########
 
 /ide/             @ppedrot
+/test-suite/ide/  @ppedrot
 # Secondary maintainer @gares
 
 ########## Interpretation ##########
@@ -100,7 +103,7 @@
 ########## Kernel ##########
 
 /kernel/          @maximedenes
-# Secondary maintainer @barras
+# Secondary maintainers @barras @ppedrot
 
 /kernel/byterun/  @maximedenes
 # Secondary maintainer @silene
@@ -146,7 +149,8 @@
 /plugins/ltac/          @ppedrot
 # Secondary maintainer @herbelin
 
-/plugins/micromega/     @fajb
+/plugins/micromega/    @fajb
+/test-suite/micromega/ @fajb
 # Secondary maintainer @bgregoir
 
 /plugins/nsatz/         @thery
@@ -162,7 +166,8 @@
 /plugins/ssrmatching/   @gares
 # Secondary maintainer @maximedenes
 
-/plugins/ssr/           @gares
+/plugins/ssr/          @gares
+/test-suite/ssr/       @gares
 # Secondary maintainer @maximedenes
 
 /plugins/syntax/        @ppedrot
@@ -190,13 +195,20 @@
 
 ########## STM ##########
 
-/stm/             @gares
-# Secondary maintainer @ejgallego
+/stm/                    @gares
+/test-suite/interactive/ @gares
+/test-suite/stm/         @gares
+/test-suite/vio/         @gares
+# Secondary maintainer   @ejgallego
 
 ########## Tactics ##########
 
 /tactics/         @ppedrot
 # Secondary maintainer @mattam82
+
+/tactics/class_tactics.* @mattam82
+/test-suite/typeclasses/ @mattam82
+# Secondary maintainer   @ppedrot
 
 ########## Standard library ##########
 
@@ -276,14 +288,14 @@
 
 ########## Tools ##########
 
-/tools/coqdoc/          @silene
+/tools/coqdoc/         @silene
+/test-suite/coqdoc/    @silene
 # Secondary maintainer @mattam82
 
-/tools/coq_makefile*    @gares
-# Secondary maintainer @silene
-
-/tools/CoqMakefile*     @gares
-# Secondary maintainer @silene
+/tools/coq_makefile*      @gares
+/tools/CoqMakefile*       @gares
+/test-suite/coq-makefile/ @gares
+# Secondary maintainer    @silene
 
 /tools/coqdep*          @ppedrot
 # Secondary maintainer @maximedenes
@@ -291,7 +303,8 @@
 /tools/coq_tex*         @silene
 # Secondary maintainer @gares
 
-/tools/coqwc*           @silene
+/tools/coqwc*          @silene
+/test-suite/coqwc/     @silene
 # Secondary maintainer @gares
 
 ########## Toplevel ##########
@@ -322,8 +335,23 @@
 /Makefile.ci       @ejgallego
 # Secondary maintainer @SkySkimmer
 
+# This file belongs to the doc
 /Makefile.doc        @maximedenes
 # Secondary maintainer @silene
+
+########## Test suite ##########
+
+/test-suite/Makefile    @gares
+/test-suite/_CoqProject @gares
+/test-suite/README.md   @gares
+# Secondary maintainer  @SkySkimmer
+
+/test-suite/save-logs   @SkySkimmer
+
+/test-suite/complexity/ @herbelin
+
+/test-suite/unit-tests/src/ @jfehrle
+# Secondary maintainer      @SkySkimmer
 
 ########## Developer tools ##########
 
