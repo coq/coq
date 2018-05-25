@@ -646,63 +646,65 @@ Section :ref:`typing-rules`.
    This command binds :token:`term` to the name :token:`ident` in the environment,
    provided that :token:`term` is well-typed.
 
-.. exn:: @ident already exists.
-   :name: @ident already exists. (Definition)
+   .. exn:: @ident already exists.
+      :name: @ident already exists. (Definition)
+      :undocumented:
 
-.. cmdv:: Definition @ident : @term := @term
+   .. cmdv:: Definition @ident : @type := @term
 
-   It checks that the type of :token:`term`:math:`_2` is definitionally equal to
-   :token:`term`:math:`_1`, and registers :token:`ident` as being of type
-   :token:`term`:math:`_1`, and bound to value :token:`term`:math:`_2`.
+      This variant checks that the type of :token:`term` is definitionally equal to
+      :token:`type`, and registers :token:`ident` as being of type
+      :token:`type`, and bound to value :token:`term`.
 
+      .. exn:: The term @term has type @type while it is expected to have type @type'.
+         :undocumented:
 
-.. cmdv:: Definition @ident {* @binder } : @term := @term
+   .. cmdv:: Definition @ident @binders {? : @term } := @term
 
-   This is equivalent to ``Definition`` :token:`ident` : :g:`forall`
-   :token:`binder`:math:`_1` … :token:`binder`:math:`_n`, :token:`term`:math:`_1` := 
-   fun :token:`binder`:math:`_1` …
-   :token:`binder`:math:`_n` => :token:`term`:math:`_2`.
+      This is equivalent to
+      :n:`Definition @ident : forall @binders, @term := fun @binders => @term`.
 
-.. cmdv:: Local Definition @ident := @term
+   .. cmdv:: Local Definition @ident {? @binders } {? : @type } := @term
+      :name: Local Definition
 
-   Such definitions are never made accessible through their
-   unqualified name by :cmd:`Import` and its variants.
-   You have to explicitly give their fully qualified name to refer to them.
+      Such definitions are never made accessible through their
+      unqualified name by :cmd:`Import` and its variants.
+      You have to explicitly give their fully qualified name to refer to them.
 
-.. cmdv:: Example @ident := @term
-   :name: Example
+   .. cmdv:: {? Local } Example @ident {? @binders } {? : @type } := @term
+      :name: Example
 
-.. cmdv:: Example @ident : @term := @term
+      This is equivalent to :cmd:`Definition`.
 
-.. cmdv:: Example @ident {* @binder } : @term := @term
-
-These are synonyms of the Definition forms.
-
-.. exn:: The term @term has type @type while it is expected to have type @type.
-
-See also :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
+.. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
 .. cmd:: Let @ident := @term
 
-This command binds the value :token:`term` to the name :token:`ident` in the
-environment of the current section. The name :token:`ident` disappears when the
-current section is eventually closed, and, all persistent objects (such
-as theorems) defined within the section and depending on :token:`ident` are
-prefixed by the let-in definition ``let`` :token:`ident` ``:=`` :token:`term`
-``in``. Using the ``Let`` command out of any section is equivalent to using
-``Local Definition``.
+   This command binds the value :token:`term` to the name :token:`ident` in the
+   environment of the current section. The name :token:`ident` disappears when the
+   current section is eventually closed, and all persistent objects (such
+   as theorems) defined within the section and depending on :token:`ident` are
+   prefixed by the let-in definition :n:`let @ident := @term in`.
+   Using the :cmd:`Let` command out of any section is equivalent to using
+   :cmd:`Local Definition`.
 
-.. exn:: @ident already exists.
-   :name: @ident already exists. (Let)
+   .. exn:: @ident already exists.
+      :name: @ident already exists. (Let)
+      :undocumented:
 
-.. cmdv:: Let @ident : @term := @term
+   .. cmdv:: Let @ident {? @binders } {? : @type } := @term
+      :undocumented:
 
-.. cmdv:: Let Fixpoint @ident @fix_body {* with @fix_body}
+   .. cmdv:: Let Fixpoint @ident @fix_body {* with @fix_body}
+      :name: Let Fixpoint
+      :undocumented:
 
-.. cmdv:: Let CoFixpoint @ident @cofix_body {* with @cofix_body}
+   .. cmdv:: Let CoFixpoint @ident @cofix_body {* with @cofix_body}
+      :name: Let CoFixpoint
+      :undocumented:
 
-See also Sections :ref:`section-mechanism`, commands :cmd:`Opaque`,
-:cmd:`Transparent`, and tactic :tacn:`unfold`.
+.. seealso:: Section :ref:`section-mechanism`, commands :cmd:`Opaque`,
+             :cmd:`Transparent`, and tactic :tacn:`unfold`.
 
 .. _gallina-inductive-definitions:
 
