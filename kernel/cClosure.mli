@@ -239,9 +239,6 @@ val lift_fconstr_vect : int -> fconstr array -> fconstr array
 
 val mk_clos      : fconstr subs -> constr -> fconstr
 val mk_clos_vect : fconstr subs -> constr array -> fconstr array
-val mk_clos_deep :
-  (fconstr subs -> constr -> fconstr) ->
-   fconstr subs -> constr -> fconstr
 
 val kni: clos_infos -> fconstr infos_tab -> fconstr -> stack -> fconstr * stack
 val knr: clos_infos -> fconstr infos_tab -> fconstr -> stack -> fconstr * stack
