@@ -524,6 +524,9 @@ The Vernacular
                       : | Proof . … Admitted .
 
 .. todo:: This use of … in this grammar is inconsistent
+          What about removing the proof part of this grammar from this chapter
+          and putting it somewhere where top-level tactics can be described as well?
+          See also #7583.
 
 This grammar describes *The Vernacular* which is the language of
 commands of Gallina. A sentence of the vernacular language, like in
@@ -548,77 +551,74 @@ has type :token:`type`.
 
 .. _Axiom:
 
-.. cmd:: Axiom @ident : @term
+.. cmd:: Parameter @ident : @type
 
-   This command links :token:`term` to the name :token:`ident` as its specification in
-   the global context. The fact asserted by :token:`term` is thus assumed as a
+   This command links :token:`type` to the name :token:`ident` as its specification in
+   the global context. The fact asserted by :token:`type` is thus assumed as a
    postulate.
 
-.. exn:: @ident already exists.
-   :name: @ident already exists. (Axiom)
+   .. exn:: @ident already exists.
+      :name: @ident already exists. (Axiom)
+      :undocumented:
 
-.. cmdv:: Parameter @ident : @term
-   :name: Parameter
+   .. cmdv:: Parameter {+ @ident } : @type
 
-   Is equivalent to ``Axiom`` :token:`ident` : :token:`term`
+      Adds several parameters with specification :token:`type`.
 
-.. cmdv:: Parameter {+ @ident } : @term
+   .. cmdv:: Parameter {+ ( {+ @ident } : @type ) }
 
-   Adds parameters with specification :token:`term`
+      Adds blocks of parameters with different specifications.
 
-.. cmdv:: Parameter {+ ( {+ @ident } : @term ) }
+   .. cmdv:: Local Parameter {+ ( {+ @ident } : @type ) }
+      :name: Local Parameter
 
-   Adds blocks of parameters with different specifications.
+      Such parameters are never made accessible through their unqualified name by
+      :cmd:`Import` and its variants. You have to explicitly give their fully
+      qualified name to refer to them.
 
-.. cmdv:: Parameters {+ ( {+ @ident } : @term ) }
+   .. cmdv:: {? Local } Parameters {+ ( {+ @ident } : @type ) }
+             {? Local } Axiom {+ ( {+ @ident } : @type ) }
+             {? Local } Axioms {+ ( {+ @ident } : @type ) }
+             {? Local } Conjecture {+ ( {+ @ident } : @type ) }
+             {? Local } Conjectures {+ ( {+ @ident } : @type ) }
+      :name: Parameters; Axiom; Axioms; Conjecture; Conjectures
 
-   Synonym of ``Parameter``.
+      These variants are synonyms of :n:`{? Local } Parameter {+ ( {+ @ident } : @type ) }`.
 
-.. cmdv:: Local Axiom @ident : @term
+.. cmd:: Variable @ident : @type
 
-   Such axioms are never made accessible through their unqualified name by
-   :cmd:`Import` and its variants. You have to explicitly give their fully
-   qualified name to refer to them.
+   This command links :token:`type` to the name :token:`ident` in the context of
+   the current section (see Section :ref:`section-mechanism` for a description of
+   the section mechanism). When the current section is closed, name :token:`ident`
+   will be unknown and every object using this variable will be explicitly
+   parametrized (the variable is *discharged*). Using the :cmd:`Variable` command out
+   of any section is equivalent to using :cmd:`Local Parameter`.
 
-.. cmdv:: Conjecture @ident : @term
-   :name: Conjecture
+   .. exn:: @ident already exists.
+      :name: @ident already exists. (Variable)
+      :undocumented:
 
-   Is equivalent to ``Axiom`` :token:`ident` : :token:`term`.
+   .. cmdv:: Variable {+ @ident } : @term
 
-.. cmd:: Variable @ident : @term
+      Links :token:`type` to each :token:`ident`.
 
-This command links :token:`term` to the name :token:`ident` in the context of
-the current section (see Section :ref:`section-mechanism` for a description of
-the section mechanism). When the current section is closed, name :token:`ident`
-will be unknown and every object using this variable will be explicitly
-parametrized (the variable is *discharged*). Using the ``Variable`` command out
-of any section is equivalent to using ``Local Parameter``.
+   .. cmdv:: Variable {+ ( {+ @ident } : @term ) }
 
-.. exn:: @ident already exists.
-   :name: @ident already exists. (Variable)
+      Adds blocks of variables with different specifications.
 
-.. cmdv:: Variable {+ @ident } : @term
+   .. cmdv:: Variables {+ ( {+ @ident } : @term) }
+             Hypothesis {+ ( {+ @ident } : @term) }
+             Hypotheses {+ ( {+ @ident } : @term) }
+      :name: Variables; Hypothesis; Hypotheses
 
-   Links :token:`term` to each :token:`ident`.
+      These variants are synonyms of :n:`Variable {+ ( {+ @ident } : @term) }`.
 
-.. cmdv:: Variable {+ ( {+ @ident } : @term) }
-
-   Adds blocks of variables with different specifications.
-
-.. cmdv:: Variables {+ ( {+ @ident } : @term) }
-   :name: Variables
-
-.. cmdv:: Hypothesis {+ ( {+ @ident } : @term) }
-   :name: Hypothesis
-
-.. cmdv:: Hypotheses {+ ( {+ @ident } : @term) }
-
-Synonyms of ``Variable``.
-
-It is advised to use the keywords ``Axiom`` and ``Hypothesis`` for
-logical postulates (i.e. when the assertion *term* is of sort ``Prop``),
-and to use the keywords ``Parameter`` and ``Variable`` in other cases
-(corresponding to the declaration of an abstract mathematical entity).
+.. note::
+   It is advised to use the commands :cmd:`Axiom`, :cmd:`Conjecture` and
+   :cmd:`Hypothesis` (and their plural forms) for logical postulates (i.e. when
+   the assertion :token:`type` is of sort :g:`Prop`), and to use the commands
+   :cmd:`Parameter` and :cmd:`Variable` (and their plural forms) in other cases
+   (corresponding to the declaration of an abstract mathematical entity).
 
 .. _gallina-definitions:
 
