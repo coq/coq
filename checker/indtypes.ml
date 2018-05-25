@@ -598,16 +598,18 @@ let check_subtyping cumi paramsctxt env inds =
 let check_inductive env kn mib =
   Flags.if_verbose Feedback.msg_notice (str "  checking ind: " ++ MutInd.print kn);
   (* check mind_constraints: should be consistent with env *)
-  let ind_ctx =
+  let env0 =
     match mib.mind_universes with
-    | Monomorphic_ind _ -> Univ.UContext.empty (** Already in the global environment *)
-    | Polymorphic_ind auctx -> Univ.AUContext.repr auctx
+    | Monomorphic_ind _ -> env
+    | Polymorphic_ind auctx ->
+      let uctx = Univ.AUContext.repr auctx in
+      Environ.push_context uctx env
     | Cumulative_ind cumi -> 
-      Univ.AUContext.repr (Univ.ACumulativityInfo.univ_context cumi)
+      let uctx = Univ.AUContext.repr (Univ.ACumulativityInfo.univ_context cumi) in
+      Environ.push_context uctx env
   in
-  let env = Environ.push_context ind_ctx env in
   (** Locally set the oracle for further typechecking *)
-  let env0 = Environ.set_oracle env mib.mind_typing_flags.conv_oracle in
+  let env0 = Environ.set_oracle env0 mib.mind_typing_flags.conv_oracle in
   (* check mind_record : TODO ? check #constructor = 1 ? *)
   (* check mind_finite : always OK *)
   (* check mind_ntypes *)
