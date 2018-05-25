@@ -97,8 +97,10 @@ class CoqObject(ObjectDescription):
         raise NotImplementedError(self)
 
     option_spec = {
-        # One can give an explicit name to each documented object
-        'name': directives.unchanged
+        # Explicit object naming
+        'name': directives.unchanged,
+        # Silence warnings produced by report_undocumented_coq_objects
+        'undocumented': directives.flag
     }
 
     def _subdomain(self):
@@ -159,6 +161,24 @@ class CoqObject(ObjectDescription):
                 name = name[0:-1]
             self._add_index_entry(name, target)
             return target
+
+    def _warn_if_undocumented(self):
+        document = self.state.document
+        config = document.settings.env.config
+        report = config.report_undocumented_coq_objects
+        if report and not self.content and "undocumented" not in self.options:
+            # This is annoyingly convoluted, but we don't want to raise warnings
+            # or interrupt the generation of the current node.  For more details
+            # see https://github.com/sphinx-doc/sphinx/issues/4976.
+            msg = 'No contents in directive {}'.format(self.name)
+            node = document.reporter.info(msg, line=self.lineno)
+            getLogger(__name__).info(node.astext())
+            if report == "warning":
+                raise self.warning(msg)
+
+    def run(self):
+        self._warn_if_undocumented()
+        return super().run()
 
 class PlainObject(CoqObject):
     """A base class for objects whose signatures should be rendered literally."""
@@ -1035,5 +1055,8 @@ def setup(app):
     app.add_javascript("notations.js")
     app.add_stylesheet("notations.css")
     app.add_stylesheet("pre-text.css")
+
+    # Tell Sphinx about extra settings
+    app.add_config_value("report_undocumented_coq_objects", None, 'env')
 
     return {'version': '0.1', "parallel_read_safe": True}

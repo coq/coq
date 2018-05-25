@@ -51,6 +51,10 @@ extensions = [
     'coqrst.coqdomain'
 ]
 
+# Change this to "info" or "warning" to get notifications about undocumented Coq
+# objects (objects with no contents).
+report_undocumented_coq_objects = None
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
