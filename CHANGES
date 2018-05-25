@@ -83,7 +83,7 @@ Focusing
   e.g. `[x]: {` will focus on a goal (existential variable) named `x`.
   As usual, unfocus with `}` once the sub-goal is fully solved.
 
-Specification language
+Specification language, type inference
 
 - A fix to unification (which was sensitive to the ascii name of
   variables) may occasionally change type inference in incompatible
@@ -93,6 +93,11 @@ Specification language
   variables which are bound to local definitions might exceptionally
   induce an overhead if the cost of checking the conversion of the
   corresponding definitions is additionally high (PR #8215).
+
+- A few improvements in inference of the return clause of "match" can
+  exceptionally introduce incompatibilities (PR #262). This can be
+  solved by writing an explicit "return" clause, sometimes even simply
+  an explicit "return _" clause.
 
 Standard Library
 
