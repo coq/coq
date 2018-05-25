@@ -118,7 +118,7 @@ class CoqObject(ObjectDescription):
             annotation = self.annotation + ' '
             signode += addnodes.desc_annotation(annotation, annotation)
         self._render_signature(signature, signode)
-        return self.options.get("name") or self._name_from_signature(signature)
+        return self._names.get(signature) or self._name_from_signature(signature)
 
     def _record_name(self, name, target_id):
         """Record a name, mapping it to target_id
@@ -176,8 +176,22 @@ class CoqObject(ObjectDescription):
             if report == "warning":
                 raise self.warning(msg)
 
+    def _prepare_names(self):
+        sigs = self.get_signatures()
+        names = self.options.get("name")
+        if names is None:
+            self._names = {}
+        else:
+            names = [n.strip() for n in names.split(";")]
+            if len(names) != len(sigs):
+                ERR = ("Expected {} semicolon-separated names, got {}.  " +
+                       "Please provide one name per signature line.")
+                raise self.error(ERR.format(len(names), len(sigs)))
+            self._names = dict(zip(sigs, names))
+
     def run(self):
         self._warn_if_undocumented()
+        self._prepare_names()
         return super().run()
 
 class PlainObject(CoqObject):
