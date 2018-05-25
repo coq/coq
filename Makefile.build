@@ -560,7 +560,7 @@ $(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOP)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I ide -package str -package dynlink)
 
-$(FAKEIDEBYTE): $(FAKEIDECMO) | $(IDETOPLOOPCMA)
+$(FAKEIDEBYTE): $(FAKEIDECMO) | $(IDETOPBYTE)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(call ocamlbyte, -I ide -package str,unix,threads)
 
