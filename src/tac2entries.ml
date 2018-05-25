@@ -248,12 +248,12 @@ let open_typext i obj = perform_typext (Exactly i) obj
 let subst_typext (subst, e) =
   let open Mod_subst in
   let subst_data data =
-    let edata_args = List.smartmap (fun e -> subst_type subst e) data.edata_args in
+    let edata_args = List.Smart.map (fun e -> subst_type subst e) data.edata_args in
     if edata_args == data.edata_args then data
     else { data with edata_args }
   in
   let typext_type = subst_kn subst e.typext_type in
-  let typext_expr = List.smartmap subst_data e.typext_expr in
+  let typext_expr = List.Smart.map subst_data e.typext_expr in
   if typext_type == e.typext_type && typext_expr == e.typext_expr then
     e
   else

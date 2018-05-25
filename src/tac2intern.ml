@@ -840,7 +840,7 @@ and intern_let_rec env loc ids el e =
     let env = push_name na (monomorphic (GTypVar id)) env in
     (env, (loc, na, t, e, id))
   in
-  let (env, el) = List.fold_map map env el in
+  let (env, el) = List.fold_left_map map env el in
   let fold (loc, na, tc, e, id) (el, tl) =
     let loc_e = e.loc in
     let (e, t) = intern_rec env e in
@@ -1314,7 +1314,7 @@ let rec subst_type subst t = match t with
   else GTypArrow (t1', t2')
 | GTypRef (kn, tl) ->
   let kn' = subst_or_tuple subst_kn subst kn in
-  let tl' = List.smartmap (fun t -> subst_type subst t) tl in
+  let tl' = List.Smart.map (fun t -> subst_type subst t) tl in
   if kn' == kn && tl' == tl then t else GTypRef (kn', tl')
 
 let rec subst_expr subst e = match e with
@@ -1328,7 +1328,7 @@ let rec subst_expr subst e = match e with
   GTacLet (r, bs, subst_expr subst e)
 | GTacCst (t, n, el) as e0 ->
   let t' = subst_or_tuple subst_kn subst t in
-  let el' = List.smartmap (fun e -> subst_expr subst e) el in
+  let el' = List.Smart.map (fun e -> subst_expr subst e) el in
   if t' == t && el' == el then e0 else GTacCst (t', n, el')
 | GTacCse (e, ci, cse0, cse1) ->
   let cse0' = Array.map (fun e -> subst_expr subst e) cse0 in
@@ -1362,19 +1362,19 @@ let rec subst_expr subst e = match e with
   if arg' == arg then e else GTacExt (tag, arg')
 | GTacOpn (kn, el) as e0 ->
   let kn' = subst_kn subst kn in
-  let el' = List.smartmap (fun e -> subst_expr subst e) el in
+  let el' = List.Smart.map (fun e -> subst_expr subst e) el in
   if kn' == kn && el' == el then e0 else GTacOpn (kn', el')
 
 let subst_typedef subst e = match e with
 | GTydDef t ->
-  let t' = Option.smartmap (fun t -> subst_type subst t) t in
+  let t' = Option.Smart.map (fun t -> subst_type subst t) t in
   if t' == t then e else GTydDef t'
 | GTydAlg galg ->
   let map (c, tl as p) =
-    let tl' = List.smartmap (fun t -> subst_type subst t) tl in
+    let tl' = List.Smart.map (fun t -> subst_type subst t) tl in
     if tl' == tl then p else (c, tl')
   in
-  let constrs' = List.smartmap map galg.galg_constructors in
+  let constrs' = List.Smart.map map galg.galg_constructors in
   if constrs' == galg.galg_constructors then e
   else GTydAlg { galg with galg_constructors = constrs' }
 | GTydRec fields ->
@@ -1382,7 +1382,7 @@ let subst_typedef subst e = match e with
     let t' = subst_type subst t in
     if t' == t then p else (c, mut, t')
   in
-  let fields' = List.smartmap map fields in
+  let fields' = List.Smart.map map fields in
   if fields' == fields then e else GTydRec fields'
 | GTydOpn -> GTydOpn
 
@@ -1408,7 +1408,7 @@ let rec subst_rawtype subst ({loc;v=tr} as t) = match tr with
   if t1' == t1 && t2' == t2 then t else CAst.make ?loc @@ CTypArrow (t1', t2')
 | CTypRef (ref, tl) ->
   let ref' = subst_or_relid subst ref in
-  let tl' = List.smartmap (fun t -> subst_rawtype subst t) tl in
+  let tl' = List.Smart.map (fun t -> subst_rawtype subst t) tl in
   if ref' == ref && tl' == tl then t else CAst.make ?loc @@ CTypRef (ref', tl')
 
 let subst_tacref subst ref = match ref with
@@ -1429,7 +1429,7 @@ let subst_projection subst prj = match prj with
 let rec subst_rawpattern subst ({loc;v=pr} as p) = match pr with
 | CPatVar _ -> p
 | CPatRef (c, pl) ->
-  let pl' = List.smartmap (fun p -> subst_rawpattern subst p) pl in
+  let pl' = List.Smart.map (fun p -> subst_rawpattern subst p) pl in
   let c' = subst_or_relid subst c in
   if pl' == pl && c' == c then p else CAst.make ?loc @@ CPatRef (c', pl')
 | CPatCnv (pat, ty) ->
@@ -1448,12 +1448,12 @@ let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
   if ref' == ref then t else CAst.make ?loc @@ CTacCst ref'
 | CTacFun (bnd, e) ->
   let map pat = subst_rawpattern subst pat in
-  let bnd' = List.smartmap map bnd in
+  let bnd' = List.Smart.map map bnd in
   let e' = subst_rawexpr subst e in
   if bnd' == bnd && e' == e then t else CAst.make ?loc @@ CTacFun (bnd', e')
 | CTacApp (e, el) ->
   let e' = subst_rawexpr subst e in
-  let el' = List.smartmap (fun e -> subst_rawexpr subst e) el in
+  let el' = List.Smart.map (fun e -> subst_rawexpr subst e) el in
   if e' == e && el' == el then t else CAst.make ?loc @@ CTacApp (e', el')
 | CTacLet (isrec, bnd, e) ->
   let map (na, e as p) =
@@ -1461,7 +1461,7 @@ let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
     let e' = subst_rawexpr subst e in
     if na' == na && e' == e then p else (na', e')
   in
-  let bnd' = List.smartmap map bnd in
+  let bnd' = List.Smart.map map bnd in
   let e' = subst_rawexpr subst e in
   if bnd' == bnd && e' == e then t else CAst.make ?loc @@ CTacLet (isrec, bnd', e')
 | CTacCnv (e, c) ->
@@ -1479,7 +1479,7 @@ let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
     if p' == p && e' == e then x else (p', e')
   in
   let e' = subst_rawexpr subst e in
-  let bl' = List.smartmap map bl in
+  let bl' = List.Smart.map map bl in
   if e' == e && bl' == bl then t else CAst.make ?loc @@ CTacCse (e', bl')
 | CTacRec el ->
   let map (prj, e as p) =
@@ -1487,7 +1487,7 @@ let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
     let e' = subst_rawexpr subst e in
     if prj' == prj && e' == e then p else (prj', e')
   in
-  let el' = List.smartmap map el in
+  let el' = List.Smart.map map el in
   if el' == el then t else CAst.make ?loc @@ CTacRec el'
 | CTacPrj (e, prj) ->
     let prj' = subst_projection subst prj in
