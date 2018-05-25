@@ -974,7 +974,7 @@ let () =
     let c, sigma = Pfedit.refine_by_tactic env sigma concl tac in
     (EConstr.of_constr c, sigma)
   in
-  Pretyping.register_constr_interp0 wit_ltac2 interp
+  GlobEnv.register_constr_interp0 wit_ltac2 interp
 
 let () =
   let interp ist env sigma concl id =
@@ -984,7 +984,7 @@ let () =
     let sigma = Typing.check env sigma c concl in
     (c, sigma)
   in
-  Pretyping.register_constr_interp0 wit_ltac2_quotation interp
+  GlobEnv.register_constr_interp0 wit_ltac2_quotation interp
 
 let () =
   let pr_raw id = Genprint.PrinterBasic mt in
