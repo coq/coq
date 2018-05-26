@@ -718,63 +718,80 @@ explain also co-inductive types.
 Simple inductive types
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The definition of a simple inductive type has the following form:
+.. cmd:: Inductive @ident : {? @sort } := {? | } @ident : @type {* | @ident : @type }
 
-.. cmd:: Inductive @ident : @sort := {? | } @ident : @type {* | @ident : @type }
+   This command defines a simple inductive type and its constructors.
+   The first :token:`ident` is the name of the inductively defined type
+   and :token:`sort` is the universe where it lives. The next :token:`ident`\s
+   are the names of its constructors and :token:`type` their respective types.
+   Depending on the universe where the inductive type :token:`ident` lives
+   (e.g. its type :token:`sort`), Coq provides a number of destructors.
+   Destructors are named :token:`ident`\ ``_ind``, :token:`ident`\ ``_rec``
+   or :token:`ident`\ ``_rect`` which respectively correspond to elimination
+   principles on :g:`Prop`, :g:`Set` and :g:`Type`.
+   The type of the destructors expresses structural induction/recursion
+   principles over objects of type :token:`ident`.
+   The constant :token:`ident`\ ``_ind`` is always provided,
+   whereas :token:`ident`\ ``_rec`` and :token:`ident`\ ``_rect`` can be
+   impossible to derive (for example, when :token:`ident` is a proposition).
 
-The name :token:`ident` is the name of the inductively defined type and
-:token:`sort` is the universes where it lives. The :token:`ident` are the names
-of its constructors and :token:`type` their respective types. The types of the
-constructors have to satisfy a *positivity condition* (see Section
-:ref:`positivity`) for :token:`ident`. This condition ensures the soundness of
-the inductive definition. If this is the case, the :token:`ident` are added to
-the environment with their respective types. Accordingly to the universe where
-the inductive type lives (e.g. its type :token:`sort`), Coq provides a number of
-destructors for :token:`ident`. Destructors are named ``ident_ind``,
-``ident_rec`` or ``ident_rect`` which respectively correspond to
-elimination principles on :g:`Prop`, :g:`Set` and :g:`Type`. The type of the
-destructors expresses structural induction/recursion principles over objects of
-:token:`ident`. We give below two examples of the use of the Inductive
-definitions.
+   .. exn:: Non strictly positive occurrence of @ident in @type.
 
-The set of natural numbers is defined as:
+      The types of the constructors have to satisfy a *positivity condition*
+      (see Section :ref:`positivity`). This condition ensures the soundness of
+      the inductive definition.
 
-.. coqtop:: all
+   .. exn:: The conclusion of @type is not valid; it must be built from @ident.
 
-   Inductive nat : Set :=
-   | O : nat
-   | S : nat -> nat.
+      The conclusion of the type of the constructors must be the inductive type
+      :token:`ident` being defined (or :token:`ident` applied to arguments in
+      the case of annotated inductive types — cf. next section).
 
-The type nat is defined as the least :g:`Set` containing :g:`O` and closed by
-the :g:`S` constructor. The names :g:`nat`, :g:`O` and :g:`S` are added to the
-environment.
+   .. example::
+      The set of natural numbers is defined as:
 
-Now let us have a look at the elimination principles. They are three of them:
-:g:`nat_ind`, :g:`nat_rec` and :g:`nat_rect`. The type of :g:`nat_ind` is:
+      .. coqtop:: all
 
-.. coqtop:: all
+         Inductive nat : Set :=
+         | O : nat
+         | S : nat -> nat.
 
-   Check nat_ind.
+      The type nat is defined as the least :g:`Set` containing :g:`O` and closed by
+      the :g:`S` constructor. The names :g:`nat`, :g:`O` and :g:`S` are added to the
+      environment.
 
-This is the well known structural induction principle over natural
-numbers, i.e. the second-order form of Peano’s induction principle. It
-allows proving some universal property of natural numbers (:g:`forall
-n:nat, P n`) by induction on :g:`n`.
+      Now let us have a look at the elimination principles. They are three of them:
+      :g:`nat_ind`, :g:`nat_rec` and :g:`nat_rect`. The type of :g:`nat_ind` is:
 
-The types of :g:`nat_rec` and :g:`nat_rect` are similar, except that they pertain
-to :g:`(P:nat->Set)` and :g:`(P:nat->Type)` respectively. They correspond to
-primitive induction principles (allowing dependent types) respectively
-over sorts ``Set`` and ``Type``. The constant ``ident_ind`` is always
-provided, whereas ``ident_rec`` and ``ident_rect`` can be impossible
-to derive (for example, when :token:`ident` is a proposition).
+      .. coqtop:: all
 
-.. coqtop:: in
+         Check nat_ind.
 
-   Inductive nat : Set := O | S (_:nat).
+      This is the well known structural induction principle over natural
+      numbers, i.e. the second-order form of Peano’s induction principle. It
+      allows proving some universal property of natural numbers (:g:`forall
+      n:nat, P n`) by induction on :g:`n`.
 
-In the case where inductive types have no annotations (next section
-gives an example of such annotations), a constructor can be defined
-by only giving the type of its arguments.
+      The types of :g:`nat_rec` and :g:`nat_rect` are similar, except that they pertain
+      to :g:`(P:nat->Set)` and :g:`(P:nat->Type)` respectively. They correspond to
+      primitive induction principles (allowing dependent types) respectively
+      over sorts ``Set`` and ``Type``.
+
+   .. cmdv:: Inductive @ident {? : @sort } := {? | } {*| @ident {? @binders } {? : @type } }
+
+      Constructors :token:`ident`\s can come with :token:`binders` in which case,
+      the actual type of the constructor is :n:`forall @binders, @type`.
+
+      In the case where inductive types have no annotations (next section
+      gives an example of such annotations), a constructor can be defined
+      by only giving the type of its arguments.
+
+      .. example::
+
+         .. coqtop:: in
+
+            Inductive nat : Set := O | S (_:nat).
+
 
 Simple annotated inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -783,82 +800,78 @@ In an annotated inductive types, the universe where the inductive type
 is defined is no longer a simple sort, but what is called an arity,
 which is a type whose conclusion is a sort.
 
-As an example of annotated inductive types, let us define the
-:g:`even` predicate:
+.. example::
 
-.. coqtop:: all
+   As an example of annotated inductive types, let us define the
+   :g:`even` predicate:
 
-   Inductive even : nat -> Prop :=
-   | even_0 : even O
-   | even_SS : forall n:nat, even n -> even (S (S n)).
+   .. coqtop:: all
 
-The type :g:`nat->Prop` means that even is a unary predicate (inductively
-defined) over natural numbers. The type of its two constructors are the
-defining clauses of the predicate even. The type of :g:`even_ind` is:
+      Inductive even : nat -> Prop :=
+      | even_0 : even O
+      | even_SS : forall n:nat, even n -> even (S (S n)).
 
-.. coqtop:: all
+   The type :g:`nat->Prop` means that even is a unary predicate (inductively
+   defined) over natural numbers. The type of its two constructors are the
+   defining clauses of the predicate even. The type of :g:`even_ind` is:
 
-   Check even_ind.
+   .. coqtop:: all
 
-From a mathematical point of view it asserts that the natural numbers satisfying
-the predicate even are exactly in the smallest set of naturals satisfying the
-clauses :g:`even_0` or :g:`even_SS`. This is why, when we want to prove any
-predicate :g:`P` over elements of :g:`even`, it is enough to prove it for :g:`O`
-and to prove that if any natural number :g:`n` satisfies :g:`P` its double
-successor :g:`(S (S n))` satisfies also :g:`P`. This is indeed analogous to the
-structural induction principle we got for :g:`nat`.
+      Check even_ind.
 
-.. exn:: Non strictly positive occurrence of @ident in @type.
-
-.. exn:: The conclusion of @type is not valid; it must be built from @ident.
+   From a mathematical point of view it asserts that the natural numbers satisfying
+   the predicate even are exactly in the smallest set of naturals satisfying the
+   clauses :g:`even_0` or :g:`even_SS`. This is why, when we want to prove any
+   predicate :g:`P` over elements of :g:`even`, it is enough to prove it for :g:`O`
+   and to prove that if any natural number :g:`n` satisfies :g:`P` its double
+   successor :g:`(S (S n))` satisfies also :g:`P`. This is indeed analogous to the
+   structural induction principle we got for :g:`nat`.
 
 Parametrized inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the previous example, each constructor introduces a different
-instance of the predicate even. In some cases, all the constructors
-introduces the same generic instance of the inductive definition, in
-which case, instead of an annotation, we use a context of parameters
-which are binders shared by all the constructors of the definition.
+.. cmdv:: Inductive @ident @binders {? : @type } := {? | } @ident : @type {* | @ident : @type}
 
-The general scheme is:
+   In the previous example, each constructor introduces a different
+   instance of the predicate :g:`even`. In some cases, all the constructors
+   introduce the same generic instance of the inductive definition, in
+   which case, instead of an annotation, we use a context of parameters
+   which are :token:`binders` shared by all the constructors of the definition.
 
-.. cmdv:: Inductive @ident {+ @binder} : @term := {? | } @ident : @type {* | @ident : @type}
+   Parameters differ from inductive type annotations in the fact that the
+   conclusion of each type of constructor invoke the inductive type with
+   the same values of parameters as its specification.
 
-Parameters differ from inductive type annotations in the fact that the
-conclusion of each type of constructor :g:`term` invoke the inductive type with
-the same values of parameters as its specification.
+   .. example::
 
-A typical example is the definition of polymorphic lists:
+      A typical example is the definition of polymorphic lists:
 
-.. coqtop:: in
+      .. coqtop:: in
 
-   Inductive list (A:Set) : Set :=
-   | nil : list A
-   | cons : A -> list A -> list A.
+         Inductive list (A:Set) : Set :=
+         | nil : list A
+         | cons : A -> list A -> list A.
 
-.. note::
+      In the type of :g:`nil` and :g:`cons`, we write :g:`(list A)` and not
+      just :g:`list`. The constructors :g:`nil` and :g:`cons` will have respectively
+      types:
 
-   In the type of :g:`nil` and :g:`cons`, we write :g:`(list A)` and not
-   just :g:`list`. The constructors :g:`nil` and :g:`cons` will have respectively
-   types:
+      .. coqtop:: all
 
-   .. coqtop:: all
+         Check nil.
+         Check cons.
 
-      Check nil.
-      Check cons.
+      Types of destructors are also quantified with :g:`(A:Set)`.
 
-   Types of destructors are also quantified with :g:`(A:Set)`.
+      Once again, it is possible to specify only the type of the arguments
+      of the constructors, and to omit the type of the conclusion:
+
+      .. coqtop:: in
+
+         Inductive list (A:Set) : Set := nil | cons (_:A) (_:list A).
 
 Variants
 ++++++++
-
-.. coqtop:: in
-
-   Inductive list (A:Set) : Set := nil | cons (_:A) (_:list A).
-
-This is an alternative definition of lists where we specify the
-arguments of the constructors rather than their full type.
 
 .. coqtop:: in
 
