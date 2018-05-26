@@ -103,7 +103,7 @@ let construct_of_constr_block = construct_of_constr false
 let type_of_ind env (ind, u) =
   type_of_inductive env (Inductive.lookup_mind_specif env ind, u)
 
-let build_branches_type env sigma (mind,_ as _ind) mib mip u params dep p =
+let build_branches_type env sigma (mind,_ as _ind) mib mip u params p =
   let rtbl = mip.mind_reloc_tbl in
   (* [build_one_branch i cty] construit le type de la ieme branche (commence
      a 0) et les lambda correspondant aux realargs *)
@@ -120,20 +120,17 @@ let build_branches_type env sigma (mind,_ as _ind) mib mip u params dep p =
     let codom =
       let ndecl = List.length decl in
       let papp = mkApp(lift ndecl p,crealargs) in
-      if dep then
-	let cstr = ith_constructor_of_inductive ind (i+1) in
-        let relargs = Array.init carity (fun i -> mkRel (carity-i)) in
-	let params = Array.map (lift ndecl) params in
-	let dep_cstr = mkApp(mkApp(mkConstructU (cstr,u),params),relargs) in
-	mkApp(papp,[|dep_cstr|])
-      else papp
+      let cstr = ith_constructor_of_inductive ind (i+1) in
+      let relargs = Array.init carity (fun i -> mkRel (carity-i)) in
+      let params = Array.map (lift ndecl) params in
+      let dep_cstr = mkApp(mkApp(mkConstructU (cstr,u),params),relargs) in
+      mkApp(papp,[|dep_cstr|])
     in
     decl, decl_with_letin, codom
   in Array.mapi build_one_branch mip.mind_nf_lc
 
-let build_case_type dep p realargs c =
-  if dep then mkApp(mkApp(p, realargs), [|c|])
-  else mkApp(p, realargs)
+let build_case_type p realargs c =
+  mkApp(mkApp(p, realargs), [|c|])
 
 (* La fonction de normalisation *)
 
@@ -266,9 +263,9 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       let nparamdecls = Context.Rel.length (Inductive.inductive_paramdecls (mib,u)) in
       let pT =
         hnf_prod_applist_assum env nparamdecls (type_of_ind env (ind,u)) (Array.to_list params) in
-      let dep, p = nf_predicate env sigma (ind,u) mip params (type_of_switch sw) pT in
+      let p = nf_predicate env sigma (ind,u) mip params (type_of_switch sw) pT in
       (* Calcul du type des branches *)
-      let btypes = build_branches_type env sigma ind mib mip u params dep p in
+      let btypes = build_branches_type env sigma ind mib mip u params p in
       (* calcul des branches *)
       let bsw = branch_of_switch (nb_rel env) sw in
       let mkbranch i (n,v) =
@@ -277,7 +274,7 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
         Termops.it_mkLambda_or_LetIn_from_no_LetIn b decl_with_letin
       in
       let branchs = Array.mapi mkbranch bsw in
-      let tcase = build_case_type dep p realargs c in
+      let tcase = build_case_type p realargs c in
       let ci = sw.sw_annot.Cbytecodes.ci in
       nf_stk env sigma (mkCase(ci, p, c, branchs)) tcase stk
   | Zproj p :: stk ->
@@ -289,17 +286,17 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
 and nf_predicate env sigma ind mip params v pT =
   match kind (whd_allnolet env pT) with
   | LetIn (name,b,t,pT) ->
-      let dep,body =
+      let body =
         nf_predicate (push_rel (LocalDef (name,b,t)) env) sigma ind mip params v pT in
-      dep, mkLetIn (name,b,t,body)
+      mkLetIn (name,b,t,body)
   | Prod (name,dom,codom) -> begin
     match whd_val v with
     | Vfun f ->
       let k = nb_rel env in
       let vb = reduce_fun k f in
-      let dep,body =
+      let body =
 	nf_predicate (push_rel (LocalAssum (name,dom)) env) sigma ind mip params vb codom in
-      dep, mkLambda(name,dom,body)
+      mkLambda(name,dom,body)
     | _ -> assert false
     end
   | _ ->
@@ -313,8 +310,8 @@ and nf_predicate env sigma ind mip params v pT =
       let params = if Int.equal n 0 then params else Array.map (lift n) params in
       let dom = mkApp(mkIndU ind,Array.append params rargs) in
       let body = nf_vtype (push_rel (LocalAssum (name,dom)) env) sigma vb in
-      true, mkLambda(name,dom,body)
-    | _ -> false, nf_val env sigma v crazy_type
+      mkLambda(name,dom,body)
+    | _ -> nf_val env sigma v crazy_type
 
 and nf_args env sigma vargs ?from:(f=0) t =
   let t = ref t in
