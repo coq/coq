@@ -124,7 +124,7 @@ tools/coqwc.ml
 tools/coqdep_lexer.ml
 tools/ocamllibdep.ml
 tools/coqdoc/cpretty.ml
-ide/xml_lexer.ml
+ide/protocol/xml_lexer.ml
 
 # .ml4 / .mlp files
 
