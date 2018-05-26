@@ -35,6 +35,12 @@ ML Libraries used by Coq
 - Uniformization of some names, e.g. Array.Smart.fold_left_map instead
   of Array.smartfoldmap.
 
+Printer.ml API
+
+- The mechanism in Printer that allowed dynamically overriding pr_subgoals,
+  pr_subgoal and pr_goal was removed to simplify the code.  It was
+  earlierly used by PCoq.
+
 ### Unit testing
 
   The test suite now allows writing unit tests against OCaml code in the Coq
