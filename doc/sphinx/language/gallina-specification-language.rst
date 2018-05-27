@@ -924,71 +924,67 @@ Variants
 Mutually defined inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The definition of a block of mutually inductive types has the form:
+.. cmdv:: Inductive @ident {? : @type } := {? | } {*| @ident : @type } {* with {? | } {*| @ident {? : @type } } }
 
-.. cmdv:: Inductive @ident : @term := {? | } @ident : @type {* | @ident : @type } {* with @ident : @term := {? | } @ident : @type {* | @ident : @type }}
+   This variant allows defining a block of mutually inductive types.
+   It has the same semantics as the above :cmd:`Inductive` definition for each
+   :token:`ident`. All :token:`ident` are simultaneously added to the environment.
+   Then well-typing of constructors can be checked. Each one of the :token:`ident`
+   can be used on its own.
 
-It has the same semantics as the above ``Inductive`` definition for each
-:token:`ident` All :token:`ident` are simultaneously added to the environment.
-Then well-typing of constructors can be checked. Each one of the :token:`ident`
-can be used on its own.
+   .. cmdv:: Inductive @ident @binders {? : @type } := {? | } {*| @ident : @type } {* with {? | } {*| @ident @binders {? : @type } } }
 
-It is also possible to parametrize these inductive definitions. However,
-parameters correspond to a local context in which the whole set of
-inductive declarations is done. For this reason, the parameters must be
-strictly the same for each inductive types The extended syntax is:
+      In this variant, the inductive definitions are parametrized
+      with :token:`binders`. However, parameters correspond to a local context
+      in which the whole set of inductive declarations is done. For this
+      reason, the parameters must be strictly the same for each inductive types.
 
-.. cmdv:: Inductive @ident {+ @binder} : @term := {? | } @ident : @type {* | @ident : @type } {* with @ident {+ @binder} : @term := {? | } @ident : @type {* | @ident : @type }}
+.. example::
+   The typical example of a mutual inductive data type is the one for trees and
+   forests. We assume given two types :g:`A` and :g:`B` as variables. It can
+   be declared the following way.
 
-The typical example of a mutual inductive data type is the one for trees and
-forests. We assume given two types :g:`A` and :g:`B` as variables. It can
-be declared the following way.
+   .. coqtop:: in
 
-.. coqtop:: in
+      Variables A B : Set.
 
-   Variables A B : Set.
+      Inductive tree : Set := node : A -> forest -> tree
 
-   Inductive tree : Set :=
-     node : A -> forest -> tree
+      with forest : Set :=
+      | leaf : B -> forest
+      | cons : tree -> forest -> forest.
 
-   with forest : Set :=
-   | leaf : B -> forest
-   | cons : tree -> forest -> forest.
+   This declaration generates automatically six induction principles. They are
+   respectively called :g:`tree_rec`, :g:`tree_ind`, :g:`tree_rect`,
+   :g:`forest_rec`, :g:`forest_ind`, :g:`forest_rect`. These ones are not the most
+   general ones but are just the induction principles corresponding to each
+   inductive part seen as a single inductive definition.
 
-This declaration generates automatically six induction principles. They are
-respectively called :g:`tree_rec`, :g:`tree_ind`, :g:`tree_rect`,
-:g:`forest_rec`, :g:`forest_ind`, :g:`forest_rect`. These ones are not the most
-general ones but are just the induction principles corresponding to each
-inductive part seen as a single inductive definition.
+   To illustrate this point on our example, we give the types of :g:`tree_rec`
+   and :g:`forest_rec`.
 
-To illustrate this point on our example, we give the types of :g:`tree_rec`
-and :g:`forest_rec`.
+   .. coqtop:: all
 
-.. coqtop:: all
+      Check tree_rec.
 
-   Check tree_rec.
+      Check forest_rec.
 
-   Check forest_rec.
+   Assume we want to parametrize our mutual inductive definitions with the
+   two type variables :g:`A` and :g:`B`, the declaration should be
+   done the following way:
 
-Assume we want to parametrize our mutual inductive definitions with the
-two type variables :g:`A` and :g:`B`, the declaration should be
-done the following way:
+   .. coqtop:: in
 
-.. coqtop:: in
+      Inductive tree (A B:Set) : Set := node : A -> forest A B -> tree A B
 
-   Inductive tree (A B:Set) : Set :=
-     node : A -> forest A B -> tree A B
+      with forest (A B:Set) : Set :=
+      | leaf : B -> forest A B
+      | cons : tree A B -> forest A B -> forest A B.
 
-   with forest (A B:Set) : Set :=
-     | leaf : B -> forest A B
-     | cons : tree A B -> forest A B -> forest A B.
-
-Assume we define an inductive definition inside a section. When the
-section is closed, the variables declared in the section and occurring
-free in the declaration are added as parameters to the inductive
-definition.
-
-See also Section :ref:`section-mechanism`.
+   Assume we define an inductive definition inside a section
+   (cf. :ref:`section-mechanism`). When the section is closed, the variables
+   declared in the section and occurring free in the declaration are added as
+   parameters to the inductive definition.
 
 .. _coinductive-types:
 
