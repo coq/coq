@@ -999,41 +999,47 @@ constructors. Infinite objects are introduced by a non-ending (but
 effective) process of construction, defined in terms of the constructors
 of the type.
 
-An example of a co-inductive type is the type of infinite sequences of
-natural numbers, usually called streams. It can be introduced in
-Coq using the ``CoInductive`` command:
+.. cmd:: CoInductive @ident @binders {? : @type } := {? | } @ident : @type {* | @ident : @type}
 
-.. coqtop:: all
+   This command introduces a co-inductive type.
+   The syntax of the command is the same as the command :cmd:`Inductive`.
+   No principle of induction is derived from the definition of a co-inductive
+   type, since such principles only make sense for inductive types.
+   For co-inductive types, the only elimination principle is case analysis.
 
-   CoInductive Stream : Set :=
-     Seq : nat -> Stream -> Stream.
+.. example::
+   An example of a co-inductive type is the type of infinite sequences of
+   natural numbers, usually called streams.
 
-The syntax of this command is the same as the command :cmd:`Inductive`. Notice
-that no principle of induction is derived from the definition of a co-inductive
-type, since such principles only make sense for inductive ones. For co-inductive
-ones, the only elimination principle is case analysis. For example, the usual
-destructors on streams :g:`hd:Stream->nat` and :g:`tl:Str->Str` can be defined
-as follows:
+   .. coqtop:: in
 
-.. coqtop:: all
+      CoInductive Stream : Set := Seq : nat -> Stream -> Stream.
 
-   Definition hd (x:Stream) := let (a,s) := x in a.
-   Definition tl (x:Stream) := let (a,s) := x in s.
+   The usual destructors on streams :g:`hd:Stream->nat` and :g:`tl:Str->Str`
+   can be defined as follows:
+
+   .. coqtop:: in
+
+      Definition hd (x:Stream) := let (a,s) := x in a.
+      Definition tl (x:Stream) := let (a,s) := x in s.
 
 Definition of co-inductive predicates and blocks of mutually
-co-inductive definitions are also allowed. An example of a co-inductive
-predicate is the extensional equality on streams:
+co-inductive definitions are also allowed.
 
-.. coqtop:: all
+.. example::
+   An example of a co-inductive predicate is the extensional equality on
+   streams:
 
-   CoInductive EqSt : Stream -> Stream -> Prop :=
-     eqst : forall s1 s2:Stream,
-              hd s1 = hd s2 -> EqSt (tl s1) (tl s2) -> EqSt s1 s2.
+   .. coqtop:: in
 
-In order to prove the extensionally equality of two streams :g:`s1` and :g:`s2`
-we have to construct an infinite proof of equality, that is, an infinite object
-of type :g:`(EqSt s1 s2)`. We will see how to introduce infinite objects in
-Section :ref:`cofixpoint`.
+      CoInductive EqSt : Stream -> Stream -> Prop :=
+        eqst : forall s1 s2:Stream,
+                 hd s1 = hd s2 -> EqSt (tl s1) (tl s2) -> EqSt s1 s2.
+
+   In order to prove the extensional equality of two streams :g:`s1` and :g:`s2`
+   we have to construct an infinite proof of equality, that is, an infinite
+   object of type :g:`(EqSt s1 s2)`. We will see how to introduce infinite
+   objects in Section :ref:`cofixpoint`.
 
 Definition of recursive functions
 ---------------------------------
