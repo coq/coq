@@ -179,36 +179,36 @@ let rec is_nth_suffix n l suf =
   | _ :: l -> is_nth_suffix (pred n) l suf
 
 (* Given the list of signatures of side effects, checks if they match.
- * I.e. if they are ordered descendants of the current revstruct *)
+ * I.e. if they are ordered descendants of the current revstruct.
+   Returns the number of effects that can be trusted. *)
 let check_signatures curmb sl =
-  let is_direct_ancestor (sl, curmb) (mb, how_many) =
-    match curmb with
-    | None -> None, None
-    | Some curmb ->
+  let is_direct_ancestor accu (mb, how_many) =
+    match accu with
+    | None -> None
+    | Some (n, curmb) ->
         try
           let mb = CEphemeron.get mb in
-          match sl with
-          | None -> sl, None
-          | Some n ->
-              if is_nth_suffix how_many mb curmb
-              then Some (n + how_many), Some mb
-              else None, None
-        with CEphemeron.InvalidKey -> None, None in
-  let sl, _ = List.fold_left is_direct_ancestor (Some 0,Some curmb) sl in
-  sl
+          if is_nth_suffix how_many mb curmb
+          then Some (n + how_many, mb)
+          else None
+        with CEphemeron.InvalidKey -> None in
+  let sl = List.fold_left is_direct_ancestor (Some (0, curmb)) sl in
+  match sl with
+  | None -> 0
+  | Some (n, _) -> n
 
 let skip_trusted_seff sl b e =
   let rec aux sl b e acc =
     let open Context.Rel.Declaration in
-    match sl, kind b with
-    | (None|Some 0), _ -> b, e, acc
-    | Some sl, LetIn (n,c,ty,bo) ->
-       aux (Some (sl-1)) bo
+    if Int.equal sl 0 then b, e, acc
+    else match kind b with
+    | LetIn (n,c,ty,bo) ->
+       aux (sl - 1) bo
          (Environ.push_rel (LocalDef (n,c,ty)) e) (`Let(n,c,ty)::acc)
-    | Some sl, App(hd,arg) ->
+    | App(hd,arg) ->
        begin match kind hd with
        | Lambda (n,ty,bo) ->
-           aux (Some (sl-1)) bo
+           aux (sl - 1) bo
              (Environ.push_rel (LocalAssum (n,ty)) e) (`Cut(n,ty,arg)::acc)
        | _ -> assert false
        end
@@ -575,23 +575,24 @@ let export_side_effects mb env c =
           end
       in
       let rec translate_seff sl seff acc env =
-        match sl, seff with
-        | _, [] -> List.rev acc, ce
-        | (None | Some 0), cbs :: rest ->
+        match seff with
+        | [] -> List.rev acc, ce
+        | cbs :: rest ->
+          if Int.equal sl 0 then
            let env, cbs =
              List.fold_left (fun (env,cbs) (kn, ocb, u, r) ->
                let ce = constant_entry_of_side_effect ocb u in
                let cb = translate_constant Pure env kn ce in
                (push_seff env (kn, cb,`Nothing, Subproof),(kn,cb,r) :: cbs)) 
              (env,[]) cbs in
-           translate_seff sl rest (cbs @ acc) env
-        | Some sl, cbs :: rest ->
+           translate_seff 0 rest (cbs @ acc) env
+          else
            let cbs_len = List.length cbs in
            let cbs = List.map turn_direct cbs in
            let env = List.fold_left push_seff env cbs in
            let ecbs = List.map (fun (kn,cb,u,r) ->
              kn, cb, r) cbs in
-           translate_seff (Some (sl-cbs_len)) rest (ecbs @ acc) env
+           translate_seff (sl - cbs_len) rest (ecbs @ acc) env
      in
        translate_seff trusted seff [] env
 ;;
