@@ -870,6 +870,44 @@ Parametrized inductive types
 
          Inductive list (A:Set) : Set := nil | cons (_:A) (_:list A).
 
+.. note::
+   + It is possible in the type of a constructor, to
+     invoke recursively the inductive definition on an argument which is not
+     the parameter itself.
+
+     One can define :
+
+     .. coqtop:: all
+
+        Inductive list2 (A:Set) : Set :=
+        | nil2 : list2 A
+        | cons2 : A -> list2 (A*A) -> list2 A.
+
+     that can also be written by specifying only the type of the arguments:
+
+     .. coqtop:: all reset
+
+        Inductive list2 (A:Set) : Set := nil2 | cons2 (_:A) (_:list2 (A*A)).
+
+     But the following definition will give an error:
+
+     .. coqtop:: all
+
+        Fail Inductive listw (A:Set) : Set :=
+        | nilw : listw (A*A)
+        | consw : A -> listw (A*A) -> listw (A*A).
+
+     because the conclusion of the type of constructors should be :g:`listw A`
+     in both cases.
+
+   + A parametrized inductive definition can be defined using annotations
+     instead of parameters but it will sometimes give a different (bigger)
+     sort for the inductive definition and will produce a less convenient
+     rule for case elimination.
+
+.. seealso::
+   Section :ref:`inductive-definitions` and the :tacn:`induction` tactic.
+
 Variants
 ~~~~~~~~
 
@@ -882,47 +920,6 @@ Variants
 
    .. exn:: The @num th argument of @ident must be @ident in @type.
       :undocumented:
-
-New from Coq V8.1
-+++++++++++++++++
-
-The condition on parameters for inductive definitions has been relaxed
-since Coq V8.1. It is now possible in the type of a constructor, to
-invoke recursively the inductive definition on an argument which is not
-the parameter itself.
-
-One can define :
-
-.. coqtop:: all
-
-   Inductive list2 (A:Set) : Set :=
-   | nil2 : list2 A
-   | cons2 : A -> list2 (A*A) -> list2 A.
-
-that can also be written by specifying only the type of the arguments:
-
-.. coqtop:: all reset
-
-   Inductive list2 (A:Set) : Set := nil2 | cons2 (_:A) (_:list2 (A*A)).
-
-But the following definition will give an error:
-
-.. coqtop:: all
-
-   Fail Inductive listw (A:Set) : Set :=
-   | nilw : listw (A*A)
-   | consw : A -> listw (A*A) -> listw (A*A).
-
-Because the conclusion of the type of constructors should be :g:`listw A` in
-both cases.
-
-A parametrized inductive definition can be defined using annotations
-instead of parameters but it will sometimes give a different (bigger)
-sort for the inductive definition and will produce a less convenient
-rule for case elimination.
-
-See also Section :ref:`inductive-definitions` and the :tacn:`induction`
-tactic.
 
 Mutually defined inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
