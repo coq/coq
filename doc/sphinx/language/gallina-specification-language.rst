@@ -871,18 +871,17 @@ Parametrized inductive types
          Inductive list (A:Set) : Set := nil | cons (_:A) (_:list A).
 
 Variants
-++++++++
+~~~~~~~~
 
-.. coqtop:: in
+.. cmd:: Variant @ident @binders {? : @type } := {? | } @ident : @type {* | @ident : @type}
 
-   Variant sum (A B:Set) : Set := left : A -> sum A B | right : B -> sum A B.
+   The :cmd:`Variant` command is identical to the :cmd:`Inductive` command, except
+   that it disallows recursive definition of types (for instance, lists cannot
+   be defined using :cmd:`Variant`). No induction scheme is generated for
+   this variant, unless option :opt:`Nonrecursive Elimination Schemes` is on.
 
-The ``Variant`` keyword is identical to the ``Inductive`` keyword, except
-that it disallows recursive definition of types (in particular lists cannot
-be defined with the Variant keyword). No induction scheme is generated for
-this variant, unless :opt:`Nonrecursive Elimination Schemes` is set.
-
-.. exn:: The @num th argument of @ident must be @ident in @type.
+   .. exn:: The @num th argument of @ident must be @ident in @type.
+      :undocumented:
 
 New from Coq V8.1
 +++++++++++++++++
