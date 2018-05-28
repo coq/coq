@@ -45,6 +45,12 @@ let pp_letin pat def body =
 
 (*s Ocaml renaming issues. *)
 
+(* Extraction should avoid generating names clashing keywords of course, but
+   also with builtins, since those cannot be used once masked (by an "open", for
+   example). See #7017.
+
+   The list of OCaml builtins can be found in ocaml/typing/predef.ml *)
+
 let keywords =
   List.fold_right (fun s -> Id.Set.add (Id.of_string s))
   [ "and"; "as"; "assert"; "begin"; "class"; "constraint"; "do";
@@ -54,7 +60,10 @@ let keywords =
     "module"; "mutable"; "new"; "object"; "of"; "open"; "or";
     "parser"; "private"; "rec"; "sig"; "struct"; "then"; "to"; "true";
     "try"; "type"; "val"; "virtual"; "when"; "while"; "with"; "mod";
-    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "unit" ; "_" ; "__" ]
+    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "unit" ; "bool"; "int" ;
+    "float"; "array"; "char"; "string"; "nativeint"; "bytes"; "exn"; "list";
+    "option"; "int32"; "int64"; "lazy_t"; "extension_constructor"; "floatarray";
+    "true"; "false"; "None"; "Some"; "_" ; "__" ]
   Id.Set.empty
 
 (* Note: do not shorten [str "foo" ++ fnl ()] into [str "foo\n"],
