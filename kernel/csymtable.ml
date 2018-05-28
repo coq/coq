@@ -20,7 +20,7 @@ open Vmvalues
 open Cemitcodes
 open Cbytecodes
 open Declarations
-open Pre_env
+open Environ
 open Cbytegen
 
 module NamedDecl = Context.Named.Declaration
@@ -142,23 +142,23 @@ and slot_for_fv env fv =
       | None -> v_of_id id, Id.Set.empty
       | Some c ->
           val_of_constr (env_of_id id env) c,
-          Environ.global_vars_set (Environ.env_of_pre_env env) c in
+          Environ.global_vars_set env c in
     build_lazy_val cache (v, d); v in
   let val_of_rel i = val_of_rel (nb_rel env - i) in
   let idfun _ x = x in
   match fv with
   | FVnamed id ->
-      let nv = Pre_env.lookup_named_val id env in
+      let nv = lookup_named_val id env in
       begin match force_lazy_val nv with
       | None ->
-	 env |> Pre_env.lookup_named id |> NamedDecl.get_value |> fill_fv_cache nv id val_of_named idfun
+         env |> lookup_named id |> NamedDecl.get_value |> fill_fv_cache nv id val_of_named idfun
       | Some (v, _) -> v
       end
   | FVrel i ->
-      let rv = Pre_env.lookup_rel_val i env in
+      let rv = lookup_rel_val i env in
       begin match force_lazy_val rv with
       | None ->
-        env |> Pre_env.lookup_rel i |> RelDecl.get_value |> fill_fv_cache rv i val_of_rel env_of_rel
+        env |> lookup_rel i |> RelDecl.get_value |> fill_fv_cache rv i val_of_rel env_of_rel
       | Some (v, _) -> v
       end
   | FVevar evk -> val_of_evar evk

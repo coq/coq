@@ -52,7 +52,7 @@ val add_module : module_body -> env -> env
 
 (** same as add_module, but for a module whose native code has been linked by
 the native compiler. The linking information is updated. *)
-val add_linked_module : module_body -> Pre_env.link_info -> env -> env
+val add_linked_module : module_body -> link_info -> env -> env
 
 (** same, for a module type *)
 val add_module_type : ModPath.t -> module_type_body -> env -> env

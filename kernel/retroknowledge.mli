@@ -134,7 +134,7 @@ val get_native_before_match_info : retroknowledge -> entry ->
 				   Nativeinstr.lambda -> Nativeinstr.lambda
 
 
-(** the following functions are solely used in Pre_env and Environ to implement
+(** the following functions are solely used in Environ and Safe_typing to implement
    the functions  register and unregister (and mem) of Environ *)
 val add_field : retroknowledge -> field -> entry -> retroknowledge
 val mem : retroknowledge -> field -> bool

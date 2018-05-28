@@ -10,7 +10,7 @@
 open Names
 open Constr
 open Declarations
-open Pre_env
+open Environ
 open Nativelambda
 
 (** This file defines the mllambda code generation phase of the native

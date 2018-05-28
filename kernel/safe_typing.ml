@@ -59,6 +59,7 @@
    etc.
 *)
 
+open CErrors
 open Util
 open Names
 open Declarations
@@ -914,16 +915,12 @@ let register field value by_clause senv =
 but it is meant to become a replacement for environ.register *)
 let register_inline kn senv =
   let open Environ in
-  let open Pre_env in
   if not (evaluable_constant kn senv.env) then
     CErrors.user_err Pp.(str "Register inline: an evaluable constant is expected");
-  let env = pre_env senv.env in
+  let env = senv.env in
   let (cb,r) = Cmap_env.find kn env.env_globals.env_constants in
   let cb = {cb with const_inline_code = true} in
-  let new_constants = Cmap_env.add kn (cb,r) env.env_globals.env_constants in
-  let new_globals = { env.env_globals with env_constants = new_constants } in
-  let env = { env with env_globals = new_globals } in
-  { senv with env = env_of_pre_env env }
+  let env = add_constant kn cb env in { senv with env}
 
 let add_constraints c =
   add_constraints
@@ -953,3 +950,125 @@ Would this be correct with respect to undo's and stuff ?
 let set_strategy e k l = { e with env =
    (Environ.set_oracle e.env
       (Conv_oracle.set_strategy (Environ.oracle e.env) k l)) }
+
+(** Register retroknowledge hooks *)
+
+open Retroknowledge
+
+(* the Environ.register function synchronizes the proactive and reactive
+   retroknowledge. *)
+let dispatch =
+
+  (* subfunction used for static decompilation of int31 (after a vm_compute,
+     see pretyping/vnorm.ml for more information) *)
+  let constr_of_int31 =
+    let nth_digit_plus_one i n = (* calculates the nth (starting with 0)
+                                    digit of i and adds 1 to it
+                                    (nth_digit_plus_one 1 3 = 2) *)
+      if Int.equal (i land (1 lsl n)) 0 then
+        1
+      else
+        2
+    in
+      fun ind -> fun digit_ind -> fun tag ->
+        let array_of_int i =
+          Array.init 31 (fun n -> Constr.mkConstruct
+                           (digit_ind, nth_digit_plus_one i (30-n)))
+        in
+        (* We check that no bit above 31 is set to one. This assertion used to
+        fail in the VM, and led to conversion tests failing at Qed. *)
+        assert (Int.equal (tag lsr 31) 0);
+        Constr.mkApp(Constr.mkConstruct(ind, 1), array_of_int tag)
+  in
+
+  (* subfunction which dispatches the compiling information of an
+     int31 operation which has a specific vm instruction (associates
+     it to the name of the coq definition in the reactive retroknowledge) *)
+  let int31_op n op prim kn =
+    { empty_reactive_info with
+      vm_compiling = Some (Clambda.compile_prim n op kn);
+      native_compiling = Some (Nativelambda.compile_prim prim (Univ.out_punivs kn));
+    }
+  in
+
+fun rk value field ->
+  (* subfunction which shortens the (very common) dispatch of operations *)
+  let int31_op_from_const n op prim =
+    match Constr.kind value with
+      | Constr.Const kn ->  int31_op n op prim kn
+      | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant.")
+  in
+  let int31_binop_from_const op prim = int31_op_from_const 2 op prim in
+  let int31_unop_from_const op prim = int31_op_from_const 1 op prim in
+  match field with
+    | KInt31 (grp, Int31Type) ->
+        let int31bit =
+          (* invariant : the type of bits is registered, otherwise the function
+             would raise Not_found. The invariant is enforced in safe_typing.ml *)
+          match field with
+          | KInt31 (grp, Int31Type) -> Retroknowledge.find rk (KInt31 (grp,Int31Bits))
+          | _ -> anomaly ~label:"Environ.register"
+              (Pp.str "add_int31_decompilation_from_type called with an abnormal field.")
+        in
+        let i31bit_type =
+          match Constr.kind int31bit with
+          | Constr.Ind (i31bit_type,_) -> i31bit_type
+          |  _ -> anomaly ~label:"Environ.register"
+              (Pp.str "Int31Bits should be an inductive type.")
+        in
+        let int31_decompilation =
+          match Constr.kind value with
+          | Constr.Ind (i31t,_) ->
+              constr_of_int31 i31t i31bit_type
+          | _ -> anomaly ~label:"Environ.register"
+              (Pp.str "should be an inductive type.")
+        in
+        { empty_reactive_info with
+          vm_decompile_const = Some int31_decompilation;
+          vm_before_match = Some Clambda.int31_escape_before_match;
+          native_before_match = Some (Nativelambda.before_match_int31 i31bit_type);
+        }
+    | KInt31 (_, Int31Constructor) ->
+        { empty_reactive_info with
+          vm_constant_static = Some Clambda.compile_structured_int31;
+          vm_constant_dynamic = Some Clambda.dynamic_int31_compilation;
+          native_constant_static = Some Nativelambda.compile_static_int31;
+          native_constant_dynamic = Some Nativelambda.compile_dynamic_int31;
+        }
+    | KInt31 (_, Int31Plus) -> int31_binop_from_const Cbytecodes.Kaddint31
+                                                          CPrimitives.Int31add
+    | KInt31 (_, Int31PlusC) -> int31_binop_from_const Cbytecodes.Kaddcint31
+                                                           CPrimitives.Int31addc
+    | KInt31 (_, Int31PlusCarryC) -> int31_binop_from_const Cbytecodes.Kaddcarrycint31
+                                                                CPrimitives.Int31addcarryc
+    | KInt31 (_, Int31Minus) -> int31_binop_from_const Cbytecodes.Ksubint31
+                                                           CPrimitives.Int31sub
+    | KInt31 (_, Int31MinusC) -> int31_binop_from_const Cbytecodes.Ksubcint31
+                                                            CPrimitives.Int31subc
+    | KInt31 (_, Int31MinusCarryC) -> int31_binop_from_const
+                                        Cbytecodes.Ksubcarrycint31 CPrimitives.Int31subcarryc
+    | KInt31 (_, Int31Times) -> int31_binop_from_const Cbytecodes.Kmulint31
+                                                           CPrimitives.Int31mul
+    | KInt31 (_, Int31TimesC) -> int31_binop_from_const Cbytecodes.Kmulcint31
+                                                           CPrimitives.Int31mulc
+    | KInt31 (_, Int31Div21) -> int31_op_from_const 3 Cbytecodes.Kdiv21int31
+                                                           CPrimitives.Int31div21
+    | KInt31 (_, Int31Diveucl) -> int31_binop_from_const Cbytecodes.Kdivint31
+                                                         CPrimitives.Int31diveucl
+    | KInt31 (_, Int31AddMulDiv) -> int31_op_from_const 3 Cbytecodes.Kaddmuldivint31
+                                                         CPrimitives.Int31addmuldiv
+    | KInt31 (_, Int31Compare) -> int31_binop_from_const Cbytecodes.Kcompareint31
+                                                             CPrimitives.Int31compare
+    | KInt31 (_, Int31Head0) -> int31_unop_from_const Cbytecodes.Khead0int31
+                                                          CPrimitives.Int31head0
+    | KInt31 (_, Int31Tail0) -> int31_unop_from_const Cbytecodes.Ktail0int31
+                                                          CPrimitives.Int31tail0
+    | KInt31 (_, Int31Lor) -> int31_binop_from_const Cbytecodes.Klorint31
+                                                         CPrimitives.Int31lor
+    | KInt31 (_, Int31Land) -> int31_binop_from_const Cbytecodes.Klandint31
+                                                          CPrimitives.Int31land
+    | KInt31 (_, Int31Lxor) -> int31_binop_from_const Cbytecodes.Klxorint31
+                                                          CPrimitives.Int31lxor
+    | _ -> empty_reactive_info
+
+let _ = Hook.set Retroknowledge.dispatch_hook dispatch

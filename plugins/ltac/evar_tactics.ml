@@ -52,7 +52,7 @@ let instantiate_tac n c ido =
     match ido with
 	ConclLocation () -> evar_list sigma (pf_concl gl)
       | HypLocation (id,hloc) ->
-	  let decl = Environ.lookup_named_val id (Goal.V82.hyps sigma (sig_it gl)) in
+          let decl = Environ.lookup_named id (pf_env gl) in
 	    match hloc with
 		InHyp ->
 		  (match decl with

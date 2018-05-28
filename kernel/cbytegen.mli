@@ -12,7 +12,7 @@ open Cbytecodes
 open Cemitcodes
 open Constr
 open Declarations
-open Pre_env
+open Environ
 
 (** Should only be used for monomorphic terms *)
 val compile : fail_on_error:bool ->

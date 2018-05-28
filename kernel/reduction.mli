@@ -87,10 +87,6 @@ val infer_conv_leq : ?l2r:bool -> ?evars:(existential->constr option) ->
 val generic_conv : conv_pb -> l2r:bool -> (existential->constr option) ->
   Names.transparent_state -> (constr,'a) generic_conversion_function
 
-(** option for conversion *)
-val set_vm_conv : (conv_pb -> types kernel_conversion_function) -> unit
-val vm_conv : conv_pb -> types kernel_conversion_function
-
 val default_conv     : conv_pb -> ?l2r:bool -> types kernel_conversion_function
 val default_conv_leq : ?l2r:bool -> types kernel_conversion_function
 
@@ -122,6 +118,7 @@ val betazeta_appvect : int -> constr -> constr array -> constr
 
 val dest_prod       : env -> types -> Context.Rel.t * types
 val dest_prod_assum : env -> types -> Context.Rel.t * types
+val dest_lam        : env -> types -> Context.Rel.t * constr
 val dest_lam_assum  : env -> types -> Context.Rel.t * types
 
 exception NotArity
@@ -129,4 +126,4 @@ exception NotArity
 val dest_arity : env -> types -> Term.arity (* raises NotArity if not an arity *)
 val is_arity   : env -> types -> bool
 
-val warn_bytecode_compiler_failed : ?loc:Loc.t -> unit -> unit
+val eta_expand : env -> constr -> types -> constr

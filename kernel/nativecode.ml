@@ -16,7 +16,7 @@ open Util
 open Nativevalues
 open Nativeinstr
 open Nativelambda
-open Pre_env
+open Environ
 
 [@@@ocaml.warning "-32-37"]
 
@@ -1837,7 +1837,7 @@ and apply_fv env sigma univ (fv_named,fv_rel) auxdefs ml =
 
 and compile_rel env sigma univ auxdefs n =
   let open Context.Rel.Declaration in
-  let decl = Pre_env.lookup_rel n env in
+  let decl = lookup_rel n env in
   let n = List.length env.env_rel_context.env_rel_ctx - n in
   match decl with
   | LocalDef (_,t,_) ->

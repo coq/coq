@@ -783,7 +783,7 @@ let of_existential : Constr.existential -> existential =
 
 let lookup_rel i e = cast_rel_decl (sym unsafe_eq) (lookup_rel i e)
 let lookup_named n e = cast_named_decl (sym unsafe_eq) (lookup_named n e)
-let lookup_named_val n e = cast_named_decl (sym unsafe_eq) (lookup_named_val n e)
+let lookup_named_val n e = cast_named_decl (sym unsafe_eq) (lookup_named_ctxt n e)
 
 let map_rel_context_in_env f env sign =
   let rec aux env acc = function

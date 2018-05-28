@@ -1,13 +1,14 @@
 open Names
 open Cinstr
+open Environ
 
 exception TooLargeInductive of Pp.t
 
-val lambda_of_constr : optimize:bool -> Pre_env.env -> Constr.t -> lambda
+val lambda_of_constr : optimize:bool -> env -> Constr.t -> lambda
 
 val decompose_Llam : lambda -> Name.t array * lambda
 
-val get_alias : Pre_env.env -> Constant.t -> Constant.t
+val get_alias : env -> Constant.t -> Constant.t
 
 val compile_prim : int -> Cbytecodes.instruction -> Constr.pconstant -> bool -> lambda array -> lambda
 

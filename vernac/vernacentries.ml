@@ -266,7 +266,7 @@ let print_namespace ns =
   let matches mp = match match_modulepath ns mp with
   | Some [] -> true
   | _ -> false in
-  let constants = (Environ.pre_env (Global.env ())).Pre_env.env_globals.Pre_env.env_constants in
+  let constants = (Global.env ()).Environ.env_globals.Environ.env_constants in
   let constants_in_namespace =
     Cmap_env.fold (fun c (body,_) acc ->
       let kn = Constant.user c in

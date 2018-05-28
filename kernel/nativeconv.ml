@@ -136,9 +136,8 @@ and conv_fix env lvl t1 f1 t2 f2 cu =
   aux 0 cu
 
 let native_conv_gen pb sigma env univs t1 t2 =
-  let penv = Environ.pre_env env in 
   let ml_filename, prefix = get_ml_filename () in
-  let code, upds = mk_conv_code penv sigma prefix t1 t2 in
+  let code, upds = mk_conv_code env sigma prefix t1 t2 in
   match compile ml_filename code ~profile:false with
   | (true, fn) ->
       begin
@@ -163,7 +162,7 @@ let warn_no_native_compiler =
 let native_conv cv_pb sigma env t1 t2 =
   if not Coq_config.native_compiler then begin
     warn_no_native_compiler ();
-    vm_conv cv_pb env t1 t2
+    Vconv.vm_conv cv_pb env t1 t2
   end
   else
   let univs = Environ.universes env in

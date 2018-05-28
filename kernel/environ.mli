@@ -28,16 +28,60 @@ open Declarations
    - a set of universe constraints
    - a flag telling if Set is, can be, or cannot be set impredicative *)
 
+type lazy_val
 
+val build_lazy_val : lazy_val -> (Vmvalues.values * Id.Set.t) -> unit
+val force_lazy_val : lazy_val -> (Vmvalues.values * Id.Set.t) option
+val dummy_lazy_val : unit -> lazy_val
 
+(** Linking information for the native compiler *)
+type link_info =
+  | Linked of string
+  | LinkedInteractive of string
+  | NotLinked
 
-type env
-val pre_env : env -> Pre_env.env
-val env_of_pre_env : Pre_env.env -> env
+type key = int CEphemeron.key option ref
+
+type constant_key = constant_body * (link_info ref * key)
+
+type mind_key = mutual_inductive_body * link_info ref
+
+type globals = {
+  env_constants : constant_key Cmap_env.t;
+  env_inductives : mind_key Mindmap_env.t;
+  env_modules : module_body MPmap.t;
+  env_modtypes : module_type_body MPmap.t
+}
+
+type stratification = {
+  env_universes : UGraph.t;
+  env_engagement : engagement
+}
+
+type named_context_val = private {
+  env_named_ctx : Context.Named.t;
+  env_named_map : (Context.Named.Declaration.t * lazy_val) Id.Map.t;
+}
+
+type rel_context_val = private {
+  env_rel_ctx : Context.Rel.t;
+  env_rel_map : (Context.Rel.Declaration.t * lazy_val) Range.t;
+}
+
+type env = private {
+  env_globals       : globals;           (* globals = constants + inductive types + modules + module-types *)
+  env_named_context : named_context_val; (* section variables *)
+  env_rel_context   : rel_context_val;
+  env_nb_rel        : int;
+  env_stratification : stratification;
+  env_typing_flags  : typing_flags;
+  retroknowledge : Retroknowledge.retroknowledge;
+  indirect_pterms : Opaqueproof.opaquetab;
+}
+
 val oracle : env -> Conv_oracle.oracle
 val set_oracle : env -> Conv_oracle.oracle -> env
 
-type named_context_val
 val eq_named_context_val : named_context_val -> named_context_val -> bool
 
 val empty_env : env
@@ -70,7 +114,9 @@ val push_rec_types   : rec_declaration -> env -> env
 (** Looks up in the context of local vars referred by indice ([rel_context]) 
    raises [Not_found] if the index points out of the context *)
 val lookup_rel    : int -> env -> Context.Rel.Declaration.t
+val lookup_rel_val : int -> env -> lazy_val
 val evaluable_rel : int -> env -> bool
+val env_of_rel     : int -> env -> env
 
 (** {6 Recurrence on [rel_context] } *)
 
@@ -102,7 +148,8 @@ val push_named_context_val  :
    raises [Not_found] if the Id.t is not found *)
 
 val lookup_named     : variable -> env -> Context.Named.Declaration.t
-val lookup_named_val : variable -> named_context_val -> Context.Named.Declaration.t
+val lookup_named_val : variable -> env -> lazy_val
+val lookup_named_ctxt : variable -> named_context_val -> Context.Named.Declaration.t
 val evaluable_named  : variable -> env -> bool
 val named_type : variable -> env -> types
 val named_body : variable -> env -> constr option
@@ -111,6 +158,8 @@ val named_body : variable -> env -> constr option
 
 val fold_named_context :
   (env -> Context.Named.Declaration.t -> 'a -> 'a) -> env -> init:'a -> 'a
+
+val set_universes : env -> UGraph.t -> env
 
 (** Recurrence on [named_context] starting from younger decl *)
 val fold_named_context_reverse :
@@ -129,8 +178,9 @@ val pop_rel_context : int -> env -> env
   {6 Add entries to global environment } *)
 
 val add_constant : Constant.t -> constant_body -> env -> env
-val add_constant_key : Constant.t -> constant_body -> Pre_env.link_info ->
+val add_constant_key : Constant.t -> constant_body -> link_info ->
   env -> env
+val lookup_constant_key :  Constant.t -> env -> constant_key
 
 (** Looks up in the context of global constant names 
    raises [Not_found] if the required path is not found *)
@@ -172,7 +222,8 @@ val lookup_projection    : Names.Projection.t -> env -> projection_body
 val is_projection : Constant.t -> env -> bool
 
 (** {5 Inductive types } *)
-val add_mind_key : MutInd.t -> Pre_env.mind_key -> env -> env
+val lookup_mind_key : MutInd.t -> env -> mind_key
+val add_mind_key : MutInd.t -> mind_key -> env -> env
 val add_mind : MutInd.t -> mutual_inductive_body -> env -> env
 
 (** Looks up in the context of global inductive names 
@@ -251,10 +302,6 @@ type 'types punsafe_type_judgment = {
 
 type unsafe_type_judgment = types punsafe_type_judgment
 
-(** {6 Compilation of global declaration } *)
-
-val compile_constant_body : env -> constant_universes -> constant_def -> Cemitcodes.body_code option
-
 exception Hyp_not_found
 
 (** [apply_to_hyp sign id f] split [sign] into [tail::(id,_,_)::head] and
@@ -264,7 +311,7 @@ val apply_to_hyp : named_context_val -> variable ->
   (Context.Named.t -> Context.Named.Declaration.t -> Context.Named.t -> Context.Named.Declaration.t) ->
     named_context_val
 
-val remove_hyps : Id.Set.t -> (Context.Named.Declaration.t -> Context.Named.Declaration.t) -> (Pre_env.lazy_val -> Pre_env.lazy_val) -> named_context_val -> named_context_val
+val remove_hyps : Id.Set.t -> (Context.Named.Declaration.t -> Context.Named.Declaration.t) -> (lazy_val -> lazy_val) -> named_context_val -> named_context_val
 
 
 
@@ -278,4 +325,4 @@ val registered : env -> field -> bool
 val register : env -> field -> Retroknowledge.entry -> env
 
 (** Native compiler *)
-val no_link_info : Pre_env.link_info
+val no_link_info : link_info

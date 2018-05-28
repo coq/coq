@@ -6,9 +6,6 @@ open Vm
 open Vmvalues
 open Csymtable
 
-let val_of_constr env c =
-  val_of_constr (pre_env env) c
-
 (* Test la structure des piles *)
 
 let compare_zipper z1 z2 =
@@ -185,8 +182,18 @@ and conv_arguments env ?from:(from=0) k args1 args2 cu =
       !rcu
     else raise NotConvertible
 
+let warn_bytecode_compiler_failed =
+  let open Pp in
+  CWarnings.create ~name:"bytecode-compiler-failed" ~category:"bytecode-compiler"
+         (fun () -> strbrk "Bytecode compiler failed, " ++
+                      strbrk "falling back to standard conversion")
+
 let vm_conv_gen cv_pb env univs t1 t2 =
-  try 
+  if not Coq_config.bytecode_compiler then
+    Reduction.generic_conv cv_pb ~l2r:false (fun _ -> None)
+      full_transparent_state env univs t1 t2
+  else
+  try
     let v1 = val_of_constr env t1 in
     let v2 = val_of_constr env t2 in
     fst (conv_val env cv_pb (nb_rel env) v1 v2 univs)
@@ -204,5 +211,3 @@ let vm_conv cv_pb env t1 t2 =
   if not b then
     let univs = (univs, checked_universes) in
     let _ = vm_conv_gen cv_pb env univs t1 t2 in ()
-
-let _ = if Coq_config.bytecode_compiler then Reduction.set_vm_conv vm_conv

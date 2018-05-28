@@ -221,7 +221,7 @@ let check_cast env c ct k expected_type =
   try
     match k with
     | VMcast ->
-      vm_conv CUMUL env ct expected_type
+      Vconv.vm_conv CUMUL env ct expected_type
     | DEFAULTcast ->
       default_conv ~l2r:false CUMUL env ct expected_type
     | REVERTcast ->

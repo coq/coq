@@ -789,24 +789,6 @@ let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_sta
     env univs t1 t2 = 
   infer_conv_universes CUMUL l2r evars ts env univs t1 t2
 
-(* This reference avoids always having to link C code with the kernel *)
-let vm_conv = ref (fun cv_pb env ->
-		   gen_conv cv_pb env ~evars:((fun _->None), universes env))
-
-let warn_bytecode_compiler_failed =
-  let open Pp in
-  CWarnings.create ~name:"bytecode-compiler-failed" ~category:"bytecode-compiler"
-         (fun () -> strbrk "Bytecode compiler failed, " ++
-                      strbrk "falling back to standard conversion")
-
-let set_vm_conv (f:conv_pb -> types kernel_conversion_function) = vm_conv := f
-let vm_conv cv_pb env t1 t2 =
-  try
-    !vm_conv cv_pb env t1 t2
-  with Not_found | Invalid_argument _ ->
-    warn_bytecode_compiler_failed ();
-    gen_conv cv_pb env t1 t2
-
 let default_conv cv_pb ?(l2r=false) env t1 t2 =
     gen_conv cv_pb env t1 t2
 
@@ -880,6 +862,17 @@ let dest_prod env =
   in
   decrec env Context.Rel.empty
 
+let dest_lam env =
+  let rec decrec env m c =
+    let t = whd_all env c in
+    match kind t with
+      | Lambda (n,a,c0) ->
+          let d = LocalAssum (n,a) in
+          decrec (push_rel d env) (Context.Rel.add d m) c0
+      | _ -> m,t
+  in
+  decrec env Context.Rel.empty
+
 (* The same but preserving lets in the context, not internal ones. *)
 let dest_prod_assum env =
   let rec prodec_rec env l ty =
@@ -925,3 +918,12 @@ let is_arity env c =
     let _ = dest_arity env c in
     true
   with NotArity -> false
+
+let eta_expand env t ty =
+  let ctxt, codom = dest_prod env ty in
+  let ctxt',t = dest_lam env t in
+  let d = Context.Rel.nhyps ctxt - Context.Rel.nhyps ctxt' in
+  let eta_args = List.rev_map mkRel (List.interval 1 d) in
+  let t = Term.applistc (Vars.lift d t) eta_args in
+  let t = Term.it_mkLambda_or_LetIn t (List.firstn d ctxt) in
+  Term.it_mkLambda_or_LetIn t ctxt'

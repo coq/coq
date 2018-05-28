@@ -265,7 +265,7 @@ type 'a infos_cache = {
   i_repr : 'a infos -> 'a infos_tab -> constr -> 'a;
   i_env : env;
   i_sigma : existential -> constr option;
-  i_rels : (Context.Rel.Declaration.t * Pre_env.lazy_val) Range.t;
+  i_rels : (Context.Rel.Declaration.t * lazy_val) Range.t;
 }
 
 and 'a infos = {
@@ -314,12 +314,11 @@ let evar_value cache ev =
   cache.i_sigma ev
 
 let create mk_cl flgs env evars =
-  let open Pre_env in
   let cache =
     { i_repr = mk_cl;
       i_env = env;
       i_sigma = evars;
-      i_rels = (Environ.pre_env env).env_rel_context.env_rel_map;
+      i_rels = env.env_rel_context.env_rel_map;
     }
   in { i_flags = flgs; i_cache = cache }
 

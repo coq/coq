@@ -1379,7 +1379,7 @@ let smash_rel_context sign =
 let fold_named_context_both_sides f l ~init = List.fold_right_and_left f l init
 
 let mem_named_context_val id ctxt =
-  try ignore(Environ.lookup_named_val id ctxt); true with Not_found -> false
+  try ignore(Environ.lookup_named_ctxt id ctxt); true with Not_found -> false
 
 let map_rel_decl f = function
 | RelDecl.LocalAssum (id, t) -> RelDecl.LocalAssum (id, f t)
