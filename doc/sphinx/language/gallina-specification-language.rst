@@ -986,6 +986,10 @@ Mutually defined inductive types
    declared in the section and occurring free in the declaration are added as
    parameters to the inductive definition.
 
+.. seealso::
+   A generic command :cmd:`Scheme` is useful to build automatically various
+   mutual induction principles.
+
 .. _coinductive-types:
 
 Co-inductive types
@@ -1053,197 +1057,178 @@ constructions.
 
 .. _Fixpoint:
 
-.. cmd:: Fixpoint @ident @params {struct @ident} : @type := @term
+.. cmd:: Fixpoint @ident @binders {? {struct @ident} } {? : @type } := @term
 
-This command allows defining functions by pattern-matching over inductive objects
-using a fixed point construction. The meaning of this declaration is to
-define :token:`ident` a recursive function with arguments specified by the
-binders in :token:`params` such that :token:`ident` applied to arguments corresponding
-to these binders has type :token:`type`:math:`_0`, and is equivalent to the
-expression :token:`term`:math:`_0`. The type of the :token:`ident` is consequently
-:g:`forall` :token:`params`, :token:`type`:math:`_0` and the value is equivalent to
-:g:`fun` :token:`params` :g:`=>` :token:`term`:math:`_0`.
+   This command allows defining functions by pattern-matching over inductive
+   objects using a fixed point construction. The meaning of this declaration is
+   to define :token:`ident` a recursive function with arguments specified by
+   the :token:`binders` such that :token:`ident` applied to arguments
+   corresponding to these :token:`binders` has type :token:`type`, and is
+   equivalent to the expression :token:`term`. The type of :token:`ident` is
+   consequently :n:`forall @binders, @type` and its value is equivalent
+   to :n:`fun @binders => @term`.
 
-To be accepted, a ``Fixpoint`` definition has to satisfy some syntactical
-constraints on a special argument called the decreasing argument. They
-are needed to ensure that the Fixpoint definition always terminates. The
-point of the {struct :token:`ident`} annotation is to let the user tell the
-system which argument decreases along the recursive calls. For instance,
-one can define the addition function as :
+   To be accepted, a :cmd:`Fixpoint` definition has to satisfy some syntactical
+   constraints on a special argument called the decreasing argument. They
+   are needed to ensure that the :cmd:`Fixpoint` definition always terminates.
+   The point of the :n:`{struct @ident}` annotation is to let the user tell the
+   system which argument decreases along the recursive calls.
 
-.. coqtop:: all
+   The :n:`{struct @ident}` annotation may be left implicit, in this case the
+   system tries successively arguments from left to right until it finds one
+   that satisfies the decreasing condition.
 
-   Fixpoint add (n m:nat) {struct n} : nat :=
-   match n with
-   | O => m
-   | S p => S (add p m)
-   end.
+   .. note::
 
-The ``{struct`` :token:`ident```}`` annotation may be left implicit, in this case the
-system try successively arguments from left to right until it finds one that
-satisfies the decreasing condition.
+      + Some fixpoints may have several arguments that fit as decreasing
+        arguments, and this choice influences the reduction of the fixpoint.
+        Hence an explicit annotation must be used if the leftmost decreasing
+        argument is not the desired one. Writing explicit annotations can also
+        speed up type-checking of large mutual fixpoints.
 
-.. note::
+      + In order to keep the strong normalization property, the fixed point
+        reduction will only be performed when the argument in position of the
+        decreasing argument (which type should be in an inductive definition)
+        starts with a constructor.
 
-   Some fixpoints may have several arguments that fit as decreasing
-   arguments, and this choice influences the reduction of the fixpoint. Hence an
-   explicit annotation must be used if the leftmost decreasing argument is not the
-   desired one. Writing explicit annotations can also speed up type-checking of
-   large mutual fixpoints.
 
-The match operator matches a value (here :g:`n`) with the various
-constructors of its (inductive) type. The remaining arguments give the
-respective values to be returned, as functions of the parameters of the
-corresponding constructor. Thus here when :g:`n` equals :g:`O` we return
-:g:`m`, and when :g:`n` equals :g:`(S p)` we return :g:`(S (add p m))`.
+   .. example::
+      One can define the addition function as :
 
-The match operator is formally described in detail in Section
-:ref:`match-construction`.
-The system recognizes that in the inductive call :g:`(add p m)` the first
-argument actually decreases because it is a *pattern variable* coming from
-:g:`match n with`.
+      .. coqtop:: all
 
-.. example::
+         Fixpoint add (n m:nat) {struct n} : nat :=
+         match n with
+         | O => m
+         | S p => S (add p m)
+         end.
 
-  The following definition is not correct and generates an error message:
+      The match operator matches a value (here :g:`n`) with the various
+      constructors of its (inductive) type. The remaining arguments give the
+      respective values to be returned, as functions of the parameters of the
+      corresponding constructor. Thus here when :g:`n` equals :g:`O` we return
+      :g:`m`, and when :g:`n` equals :g:`(S p)` we return :g:`(S (add p m))`.
 
-  .. coqtop:: all
+      The match operator is formally described in
+      Section :ref:`match-construction`.
+      The system recognizes that in the inductive call :g:`(add p m)` the first
+      argument actually decreases because it is a *pattern variable* coming
+      from :g:`match n with`.
 
-     Fail Fixpoint wrongplus (n m:nat) {struct n} : nat :=
-     match m with
-     | O => n
-     | S p => S (wrongplus n p)
-     end.
+   .. example::
 
-  because the declared decreasing argument n actually does not decrease in
-  the recursive call. The function computing the addition over the second
-  argument should rather be written:
+      The following definition is not correct and generates an error message:
 
-  .. coqtop:: all
+      .. coqtop:: all
 
-     Fixpoint plus (n m:nat) {struct m} : nat :=
-     match m with
-     | O => n
-     | S p => S (plus n p)
-     end.
+         Fail Fixpoint wrongplus (n m:nat) {struct n} : nat :=
+         match m with
+         | O => n
+         | S p => S (wrongplus n p)
+         end.
 
-.. example::
+      because the declared decreasing argument :g:`n` does not actually
+      decrease in the recursive call. The function computing the addition over
+      the second argument should rather be written:
 
-  The ordinary match operation on natural numbers can be mimicked in the
-  following way.
+      .. coqtop:: all
 
-  .. coqtop:: all
+         Fixpoint plus (n m:nat) {struct m} : nat :=
+         match m with
+         | O => n
+         | S p => S (plus n p)
+         end.
 
-     Fixpoint nat_match
-       (C:Set) (f0:C) (fS:nat -> C -> C) (n:nat) {struct n} : C :=
-     match n with
-     | O => f0
-     | S p => fS p (nat_match C f0 fS p)
-     end.
+   .. example::
 
-.. example::
+      The recursive call may not only be on direct subterms of the recursive
+      variable :g:`n` but also on a deeper subterm and we can directly write
+      the function :g:`mod2` which gives the remainder modulo 2 of a natural
+      number.
 
-  The recursive call may not only be on direct subterms of the recursive
-  variable n but also on a deeper subterm and we can directly write the
-  function mod2 which gives the remainder modulo 2 of a natural number.
+      .. coqtop:: all
 
-  .. coqtop:: all
+         Fixpoint mod2 (n:nat) : nat :=
+         match n with
+         | O => O
+         | S p => match p with
+                  | O => S O
+                  | S q => mod2 q
+                  end
+         end.
 
-     Fixpoint mod2 (n:nat) : nat :=
-     match n with
-     | O => O
-     | S p => match p with
-              | O => S O
-              | S q => mod2 q
-              end
-     end.
 
-In order to keep the strong normalization property, the fixed point
-reduction will only be performed when the argument in position of the
-decreasing argument (which type should be in an inductive definition)
-starts with a constructor.
+   .. cmdv:: Fixpoint @ident @binders {? {struct @ident} } {? : @type } := @term {* with @ident @binders {? : @type } := @term }
 
-The ``Fixpoint`` construction enjoys also the with extension to define functions
-over mutually defined inductive types or more generally any mutually recursive
-definitions.
+      This variant allows defining simultaneously several mutual fixpoints.
+      It is especially useful when defining functions over mutually defined
+      inductive types.
 
-.. cmdv:: Fixpoint @ident @params {struct @ident} : @type := @term {* with @ident {+ @params} : @type := @term}
+      .. example::
+         The size of trees and forests can be defined the following way:
 
-allows to define simultaneously fixpoints.
+         .. coqtop:: all
 
-The size of trees and forests can be defined the following way:
-
-.. coqtop:: all
-
-   Fixpoint tree_size (t:tree) : nat :=
-   match t with
-   | node a f => S (forest_size f)
-   end
-   with forest_size (f:forest) : nat :=
-   match f with
-   | leaf b => 1
-   | cons t f' => (tree_size t + forest_size f')
-   end.
-
-A generic command Scheme is useful to build automatically various mutual
-induction principles. It is described in Section
-:ref:`proofschemes-induction-principles`.
+            Fixpoint tree_size (t:tree) : nat :=
+            match t with
+            | node a f => S (forest_size f)
+            end
+            with forest_size (f:forest) : nat :=
+            match f with
+            | leaf b => 1
+            | cons t f' => (tree_size t + forest_size f')
+            end.
 
 .. _cofixpoint:
 
 Definitions of recursive objects in co-inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: CoFixpoint @ident : @type := @term
+.. cmd:: CoFixpoint @ident {? @binders } {? : @type } := @term
 
-introduces a method for constructing an infinite object of a coinductive
-type. For example, the stream containing all natural numbers can be
-introduced applying the following method to the number :g:`O` (see
-Section :ref:`coinductive-types` for the definition of :g:`Stream`, :g:`hd` and
-:g:`tl`):
+   This command introduces a method for constructing an infinite object of a
+   coinductive type. For example, the stream containing all natural numbers can
+   be introduced applying the following method to the number :g:`O` (see
+   Section :ref:`coinductive-types` for the definition of :g:`Stream`, :g:`hd`
+   and :g:`tl`):
 
-.. coqtop:: all
+   .. coqtop:: all
 
-   CoFixpoint from (n:nat) : Stream := Seq n (from (S n)).
+      CoFixpoint from (n:nat) : Stream := Seq n (from (S n)).
 
-Oppositely to recursive ones, there is no decreasing argument in a
-co-recursive definition. To be admissible, a method of construction must
-provide at least one extra constructor of the infinite object for each
-iteration. A syntactical guard condition is imposed on co-recursive
-definitions in order to ensure this: each recursive call in the
-definition must be protected by at least one constructor, and only by
-constructors. That is the case in the former definition, where the
-single recursive call of :g:`from` is guarded by an application of
-:g:`Seq`. On the contrary, the following recursive function does not
-satisfy the guard condition:
+   Oppositely to recursive ones, there is no decreasing argument in a
+   co-recursive definition. To be admissible, a method of construction must
+   provide at least one extra constructor of the infinite object for each
+   iteration. A syntactical guard condition is imposed on co-recursive
+   definitions in order to ensure this: each recursive call in the
+   definition must be protected by at least one constructor, and only by
+   constructors. That is the case in the former definition, where the single
+   recursive call of :g:`from` is guarded by an application of :g:`Seq`.
+   On the contrary, the following recursive function does not satisfy the
+   guard condition:
 
-.. coqtop:: all
+   .. coqtop:: all
 
-   Fail CoFixpoint filter (p:nat -> bool) (s:Stream) : Stream :=
-     if p (hd s) then Seq (hd s) (filter p (tl s)) else filter p (tl s).
+      Fail CoFixpoint filter (p:nat -> bool) (s:Stream) : Stream :=
+        if p (hd s) then Seq (hd s) (filter p (tl s)) else filter p (tl s).
 
-The elimination of co-recursive definition is done lazily, i.e. the
-definition is expanded only when it occurs at the head of an application
-which is the argument of a case analysis expression. In any other
-context, it is considered as a canonical expression which is completely
-evaluated. We can test this using the command ``Eval``, which computes
-the normal forms of a term:
+   The elimination of co-recursive definition is done lazily, i.e. the
+   definition is expanded only when it occurs at the head of an application
+   which is the argument of a case analysis expression. In any other
+   context, it is considered as a canonical expression which is completely
+   evaluated. We can test this using the command :cmd:`Eval`, which computes
+   the normal forms of a term:
 
-.. coqtop:: all
+   .. coqtop:: all
 
-   Eval compute in (from 0).
-   Eval compute in (hd (from 0)).
-   Eval compute in (tl (from 0)).
+      Eval compute in (from 0).
+      Eval compute in (hd (from 0)).
+      Eval compute in (tl (from 0)).
 
-.. cmdv:: CoFixpoint @ident @params : @type := @term
+   .. cmdv:: CoFixpoint @ident {? @binders } {? : @type } := @term {* with @ident {? @binders } : {? @type } := @term }
 
-   As for most constructions, arguments of co-fixpoints expressions
-   can be introduced before the :g:`:=` sign.
-
-.. cmdv:: CoFixpoint @ident : @type := @term {+ with @ident : @type := @term }
-
-   As in the :cmd:`Fixpoint` command, it is possible to introduce a block of
-   mutually dependent methods.
+      As in the :cmd:`Fixpoint` command, it is possible to introduce a block of
+      mutually dependent methods.
 
 .. _Assertions:
 
