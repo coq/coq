@@ -1248,6 +1248,7 @@ Chapter :ref:`Tactics`. The basic assertion command is:
    the theorem is bound to the name :token:`ident` in the environment.
 
    .. exn:: The term @term has type @type which should be Set, Prop or Type.
+      :undocumented:
 
    .. exn:: @ident already exists.
       :name: @ident already exists. (Theorem)
