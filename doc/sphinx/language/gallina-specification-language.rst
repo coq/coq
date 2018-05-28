@@ -1271,7 +1271,7 @@ Chapter :ref:`Tactics`. The basic assertion command is:
 
       These commands are all synonyms of :n:`Theorem @ident {? @binders } : type`.
 
-.. cmdv:: Theorem @ident : @type {* with @ident : @type}
+.. cmdv:: Theorem @ident {? @binders } : @type {* with @ident {? @binders } : @type}
 
    This command is useful for theorems that are proved by simultaneous induction
    over a mutually inductive assumption, or that assert mutually dependent
@@ -1293,7 +1293,7 @@ Chapter :ref:`Tactics`. The basic assertion command is:
    The command can be used also with :cmd:`Lemma`, :cmd:`Remark`, etc. instead of
    :cmd:`Theorem`.
 
-.. cmdv:: Definition @ident : @type
+.. cmdv:: Definition @ident {? @binders } : @type
 
    This allows defining a term of type :token:`type` using the proof editing
    mode. It behaves as :cmd:`Theorem` but is intended to be used in conjunction with
@@ -1304,22 +1304,22 @@ Chapter :ref:`Tactics`. The basic assertion command is:
 
    .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
-.. cmdv:: Let @ident : @type
+.. cmdv:: Let @ident {? @binders } : @type
 
-   Like Definition :token:`ident` : :token:`type`. except that the definition is
+   Like :n:`Definition @ident {? @binders } : @type` except that the definition is
    turned into a let-in definition generalized over the declarations depending
    on it after closing the current section.
 
-.. cmdv:: Fixpoint @ident @binders with
+.. cmdv:: Fixpoint @ident @binders : @type {* with @ident @binders : @type}
 
-   This generalizes the syntax of Fixpoint so that one or more bodies
+   This generalizes the syntax of :cmd:`Fixpoint` so that one or more bodies
    can be defined interactively using the proof editing mode (when a
    body is omitted, its type is mandatory in the syntax). When the block
-   of proofs is completed, it is intended to be ended by Defined.
+   of proofs is completed, it is intended to be ended by :cmd:`Defined`.
 
-.. cmdv:: CoFixpoint @ident with
+.. cmdv:: CoFixpoint @ident {? @binders } : @type {* with @ident {? @binders } : @type}
 
-   This generalizes the syntax of CoFixpoint so that one or more bodies
+   This generalizes the syntax of :cmd:`CoFixpoint` so that one or more bodies
    can be defined interactively using the proof editing mode.
 
 A proof starts by the keyword :cmd:`Proof`. Then Coq enters the proof editing mode
