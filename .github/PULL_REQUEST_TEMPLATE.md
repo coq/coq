@@ -10,6 +10,9 @@
 Fixes / closes #????
 
 
+<!-- If there is a user-visible change in coqc/coqtop/coqchk/coq_makefile behavior and testing is not prohibitively expensive: -->
+<!-- (Otherwise, remove this line.) -->
+- [ ] Added / updated test-suite
 <!-- If this is a feature pull request / breaks compatibility: -->
 <!-- (Otherwise, remove these lines.) -->
 - [ ] Corresponding documentation was added / updated (including any warning and error messages added / removed / modified).
