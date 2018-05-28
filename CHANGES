@@ -53,6 +53,10 @@ Coq binaries and process model
 Changes from 8.8.0 to 8.8.1
 ===========================
 
+Kernel
+
+- Fix a critical bug with cofixpoints and vm_compute/native_compute (#7333).
+
 Notations
 
 - Fixed unexpected collision between only-parsing and only-printing
