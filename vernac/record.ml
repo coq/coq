@@ -152,7 +152,7 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
     interp_fields_evars env_ar sigma impls_env nots (binders_of_decls fs)
   in
   let sigma =
-    Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma Evd.empty in
+    Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma (Evd.from_env env_ar) in
   let sigma, typ =
     let _, univ = compute_constructor_level sigma env_ar newfs in
       if not def && (Sorts.is_prop sort ||
@@ -172,7 +172,7 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
   let newfs = List.map (EConstr.to_rel_decl sigma) newfs in
   let newps = List.map (EConstr.to_rel_decl sigma) newps in
   let typ = EConstr.to_constr sigma typ in
-  let ce t = Pretyping.check_evars env0 Evd.empty sigma (EConstr.of_constr t) in
+  let ce t = Pretyping.check_evars env0 (Evd.from_env env0) sigma (EConstr.of_constr t) in
   let univs = Evd.check_univ_decl ~poly sigma decl in
   let ubinders = Evd.universe_binders sigma in
     List.iter (iter_constr ce) (List.rev newps);

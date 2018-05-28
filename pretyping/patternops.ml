@@ -279,9 +279,11 @@ let lift_pattern k = liftn_pattern k 1
 let rec subst_pattern subst pat =
   match pat with
   | PRef ref ->
-      let ref',t = subst_global subst ref in
-	if ref' == ref then pat else
-	 pattern_of_constr (Global.env()) Evd.empty t
+    let ref',t = subst_global subst ref in
+    if ref' == ref then pat else
+      let env = Global.env () in
+      let evd = Evd.from_env env in
+      pattern_of_constr env evd t
   | PVar _
   | PEvar _
   | PRel _ -> pat

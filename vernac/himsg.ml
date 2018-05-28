@@ -848,9 +848,9 @@ let explain_not_match_error = function
     str "the body of definitions differs"
   | NotConvertibleTypeField (env, typ1, typ2) ->
     str "expected type" ++ spc ()  ++
-    quote (Printer.safe_pr_lconstr_env env Evd.empty typ2) ++ spc () ++
+    quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) typ2) ++ spc () ++
     str "but found type" ++ spc () ++
-    quote (Printer.safe_pr_lconstr_env env Evd.empty typ1)
+    quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) typ1)
   | NotSameConstructorNamesField ->
     str "constructor names differ"
   | NotSameInductiveNameInBlockField ->
@@ -889,9 +889,9 @@ let explain_not_match_error = function
       Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes incon
   | IncompatiblePolymorphism (env, t1, t2) ->
     str "conversion of polymorphic values generates additional constraints: " ++
-      quote (Printer.safe_pr_lconstr_env env Evd.empty t1) ++ spc () ++
+      quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t1) ++ spc () ++
       str "compared to " ++ spc () ++
-      quote (Printer.safe_pr_lconstr_env env Evd.empty t2)
+      quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t2)
   | IncompatibleConstraints cst ->
     str " the expected (polymorphic) constraints do not imply " ++
       let cst = Univ.AUContext.instantiate (Univ.AUContext.instance cst) cst in
@@ -1011,8 +1011,9 @@ let explain_module_internalization_error = function
 (* Typeclass errors *)
 
 let explain_not_a_class env c =
-  let c = EConstr.to_constr Evd.empty c in
-  pr_constr_env env Evd.empty c ++ str" is not a declared type class."
+  let sigma = Evd.from_env env in
+  let c = EConstr.to_constr sigma c in
+  pr_constr_env env sigma c ++ str" is not a declared type class."
 
 let explain_unbound_method env cid { CAst.v = id } =
   str "Unbound method name " ++ Id.print (id) ++ spc () ++
@@ -1025,7 +1026,7 @@ let pr_constr_exprs exprs =
 
 let explain_mismatched_contexts env c i j =
   str"Mismatched contexts while declaring instance: " ++ brk (1,1) ++
-    hov 1 (str"Expected:" ++ brk (1, 1) ++ pr_rel_context env Evd.empty j) ++
+    hov 1 (str"Expected:" ++ brk (1, 1) ++ pr_rel_context env (Evd.from_env env) j) ++
     fnl () ++ brk (1,1) ++
     hov 1 (str"Found:" ++ brk (1, 1) ++ pr_constr_exprs i)
 
@@ -1087,19 +1088,19 @@ let explain_refiner_error env sigma = function
 (* Inductive errors *)
 
 let error_non_strictly_positive env c v =
-  let pc = pr_lconstr_env env Evd.empty c in
-  let pv = pr_lconstr_env env Evd.empty v in
+  let pc = pr_lconstr_env env (Evd.from_env env) c in
+  let pv = pr_lconstr_env env (Evd.from_env env) v in
   str "Non strictly positive occurrence of " ++ pv ++ str " in" ++
   brk(1,1) ++ pc ++ str "."
 
 let error_ill_formed_inductive env c v =
-  let pc = pr_lconstr_env env Evd.empty c in
-  let pv = pr_lconstr_env env Evd.empty v in
+  let pc = pr_lconstr_env env (Evd.from_env env) c in
+  let pv = pr_lconstr_env env (Evd.from_env env) v in
   str "Not enough arguments applied to the " ++ pv ++
   str " in" ++ brk(1,1) ++ pc ++ str "."
 
 let error_ill_formed_constructor env id c v nparams nargs =
-  let pv = pr_lconstr_env env Evd.empty v in
+  let pv = pr_lconstr_env env (Evd.from_env env) v in
   let atomic = Int.equal (nb_prod Evd.empty (EConstr.of_constr c)) (** FIXME *) 0 in
   str "The type of constructor" ++ brk(1,1) ++ Id.print id ++ brk(1,1) ++
   str "is not valid;" ++ brk(1,1) ++
@@ -1119,12 +1120,12 @@ let error_ill_formed_constructor env id c v nparams nargs =
 
 let pr_ltype_using_barendregt_convention_env env c =
   (* Use goal_concl_style as an approximation of Barendregt's convention (?) *)
-  quote (pr_goal_concl_style_env env Evd.empty (EConstr.of_constr c))
+  quote (pr_goal_concl_style_env env (Evd.from_env env) (EConstr.of_constr c))
 
 let error_bad_ind_parameters env c n v1 v2  =
   let pc = pr_ltype_using_barendregt_convention_env env c in
-  let pv1 = pr_lconstr_env env Evd.empty v1 in
-  let pv2 = pr_lconstr_env env Evd.empty v2 in
+  let pv1 = pr_lconstr_env env (Evd.from_env env) v1 in
+  let pv2 = pr_lconstr_env env (Evd.from_env env) v2 in
   str "Last occurrence of " ++ pv2 ++ str " must have " ++ pv1 ++
   str " as " ++ pr_nth n ++ str " argument in" ++ brk(1,1) ++ pc ++ str "."
 
@@ -1142,7 +1143,7 @@ let error_same_names_overlap idl =
   prlist_with_sep pr_comma Id.print idl ++ str "."
 
 let error_not_an_arity env c =
-  str "The type" ++ spc () ++ pr_lconstr_env env Evd.empty c ++ spc () ++
+  str "The type" ++ spc () ++ pr_lconstr_env env (Evd.from_env env) c ++ spc () ++
   str "is not an arity."
 
 let error_bad_entry () =
@@ -1316,4 +1317,4 @@ let explain_reduction_tactic_error = function
       str "The abstracted term" ++ spc () ++
       quote (pr_goal_concl_style_env env sigma c) ++
       spc () ++ str "is not well typed." ++ fnl () ++
-      explain_type_error env' Evd.empty e
+      explain_type_error env' (Evd.from_env env') e

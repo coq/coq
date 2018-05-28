@@ -509,7 +509,9 @@ let notation_constr_of_glob_constr nenv a =
 
 let notation_constr_of_constr avoiding t =
   let t = EConstr.of_constr t in
-  let t = Detyping.detype Detyping.Now false avoiding (Global.env()) Evd.empty t in
+  let env = Global.env () in
+  let evd = Evd.from_env env in
+  let t = Detyping.detype Detyping.Now false avoiding env evd t in
   let nenv = {
     ninterp_var_type = Id.Map.empty;
     ninterp_rec_vars = Id.Map.empty;

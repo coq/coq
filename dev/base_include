@@ -204,7 +204,9 @@ let e s =
    implicit syntax *)
 
 let constr_of_string s = 
-  Constrintern.interp_constr (Global.env()) Evd.empty (parse_constr s);;
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  Constrintern.interp_constr env sigma (parse_constr s);;
 
 (* get the body of a constant *)
 

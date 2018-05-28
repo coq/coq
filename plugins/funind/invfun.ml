@@ -67,7 +67,7 @@ let observe_tac s tac g =
 let nf_zeta =
   Reductionops.clos_norm_flags  (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
     Environ.empty_env
-    Evd.empty
+    (Evd.from_env Environ.empty_env)
 
 let thin ids gl = Proofview.V82.of_tactic (Tactics.clear ids) gl
 

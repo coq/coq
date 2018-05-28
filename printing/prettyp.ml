@@ -77,7 +77,9 @@ let print_ref reduce ref udecl =
   let typ = EConstr.of_constr typ in
   let typ =
     if reduce then
-      let ctx,ccl = Reductionops.splay_prod_assum (Global.env()) Evd.empty typ
+      let env = Global.env () in
+      let sigma = Evd.from_env env in
+      let ctx,ccl = Reductionops.splay_prod_assum env sigma typ
       in EConstr.it_mkProd_or_LetIn ccl ctx
     else typ in
   let univs = Global.universes_of_global ref in
@@ -717,7 +719,10 @@ let print_eval x = !object_pr.print_eval x
 (**** Printing declarations and judgments *)
 (****  Abstract layer                 *****)
 
-let print_typed_value x = print_typed_value_in_env (Global.env ()) Evd.empty x
+let print_typed_value x =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  print_typed_value_in_env env sigma x
 
 let print_judgment env sigma {uj_val=trm;uj_type=typ} =
   print_typed_value_in_env env sigma (trm, typ)

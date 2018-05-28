@@ -323,7 +323,6 @@ let print_body is_impl env mp (l,body) =
 	 else Univ.Instance.empty
        in
        let ctx = Univ.UContext.make (u, Univ.AUContext.instantiate u ctx) in
-       let sigma = Evd.empty in
       (match cb.const_body with
 	| Def _ -> def "Definition" ++ spc ()
 	| OpaqueDef _ when is_impl -> def "Theorem" ++ spc ()
@@ -332,17 +331,17 @@ let print_body is_impl env mp (l,body) =
 	  | None -> mt ()
 	  | Some env ->
 	    str " :" ++ spc () ++
-	    hov 0 (Printer.pr_ltype_env env sigma
+            hov 0 (Printer.pr_ltype_env env (Evd.from_env env)
 		(Vars.subst_instance_constr u
    		  cb.const_type)) ++
 	    (match cb.const_body with
 	      | Def l when is_impl ->
 		spc () ++
 		hov 2 (str ":= " ++
-		       Printer.pr_lconstr_env env sigma
+                       Printer.pr_lconstr_env env (Evd.from_env env)
 			  (Vars.subst_instance_constr u (Mod_subst.force_constr l)))
 	      | _ -> mt ()) ++ str "." ++
-	    Printer.pr_universe_ctx sigma ctx)
+            Printer.pr_universe_ctx (Evd.from_env env) ctx)
     | SFBmind mib ->
       try
 	let env = Option.get env in
@@ -387,7 +386,7 @@ let rec print_typ_expr env mp locals mty =
       let s = String.concat "." (List.map Id.to_string idl) in
       (* XXX: What should env and sigma be here? *)
       let env = Global.env () in
-      let sigma = Evd.empty in
+      let sigma = Evd.from_env env in
       hov 2 (print_typ_expr env' mp locals me ++ spc() ++ str "with" ++ spc()
              ++ def "Definition"++ spc() ++ str s ++ spc() ++ str ":="++ spc()
              ++ Printer.pr_lconstr_env env sigma c)

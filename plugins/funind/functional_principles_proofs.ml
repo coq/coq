@@ -230,7 +230,7 @@ let isAppConstruct ?(env=Global.env ()) sigma t =
   with Not_found -> false
 
 let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta  *)
-  Reductionops.clos_norm_flags CClosure.betaiotazeta  Environ.empty_env Evd.empty
+  Reductionops.clos_norm_flags CClosure.betaiotazeta  Environ.empty_env @@ Evd.from_env Environ.empty_env
 
 
 exception NoChange
@@ -1099,10 +1099,12 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
     let get_body const =
       match Global.body_of_constant const with
 	| Some (body, _) ->
+          let env = Global.env () in
+          let sigma = Evd.from_env env in
 	     Tacred.cbv_norm_flags
 	       (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
-	       (Global.env ())
-	       (Evd.empty)
+               env
+               sigma
 	       (EConstr.of_constr body)
 	| None -> user_err Pp.(str "Cannot define a principle over an axiom ")
     in
@@ -1340,7 +1342,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		     nb_rec_hyps = -100;
 		     rec_hyps = [];
 		     info =
-                       Reductionops.nf_betaiota (pf_env g) Evd.empty
+                       Reductionops.nf_betaiota (pf_env g) (project g)
 			 (applist(fbody_with_full_params,
 				  (List.rev_map var_of_decl princ_params)@
 				    (List.rev_map mkVar args_id)

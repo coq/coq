@@ -42,7 +42,7 @@ type recursion_scheme_error =
 
 exception RecursionSchemeError of recursion_scheme_error
 
-let named_hd env t na = named_hd env Evd.empty (EConstr.of_constr t) na
+let named_hd env t na = named_hd env (Evd.from_env env) (EConstr.of_constr t) na
 let name_assumption env = function
 | LocalAssum (na,t) -> LocalAssum (named_hd env t na, t)
 | LocalDef (na,c,t) -> LocalDef (named_hd env c na, c, t)

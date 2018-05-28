@@ -98,7 +98,10 @@ let rec pr_constr c = match kind c with
 
 let term_printer = ref (fun _env _sigma c -> pr_constr (EConstr.Unsafe.to_constr c))
 let print_constr_env env sigma t = !term_printer env sigma t
-let print_constr t = !term_printer (Global.env()) Evd.empty t
+let print_constr t =
+  let env = Global.env () in
+  let evd = Evd.from_env env in
+  !term_printer env evd t
 let set_print_constr f = term_printer := f
 
 module EvMap = Evar.Map
@@ -340,7 +343,7 @@ let pr_evar_constraints sigma pbs =
       str (match pbty with
             | Reduction.CONV -> "=="
             | Reduction.CUMUL -> "<=") ++
-      spc () ++ protect (print_constr_env env Evd.empty) t2
+      spc () ++ protect (print_constr_env env @@ Evd.from_env env) t2
   in
   prlist_with_sep fnl pr_evconstr pbs
 
@@ -434,27 +437,29 @@ let pr_metaset metas =
 
 let pr_var_decl env decl =
   let open NamedDecl in
+  let evd = Evd.from_env env in
   let pbody = match decl with
     | LocalAssum _ ->  mt ()
     | LocalDef (_,c,_) ->
 	(* Force evaluation *)
 	let c = EConstr.of_constr c in
-	let pb = print_constr_env env Evd.empty c in
+        let pb = print_constr_env env evd c in
 	  (str" := " ++ pb ++ cut () ) in
-  let pt = print_constr_env env Evd.empty (EConstr.of_constr (get_type decl)) in
+  let pt = print_constr_env env evd (EConstr.of_constr (get_type decl)) in
   let ptyp = (str" : " ++ pt) in
     (Id.print (get_id decl) ++ hov 0 (pbody ++ ptyp))
 
 let pr_rel_decl env decl =
   let open RelDecl in
+  let evd = Evd.from_env env in
   let pbody = match decl with
     | LocalAssum _ -> mt ()
     | LocalDef (_,c,_) ->
 	(* Force evaluation *)
 	let c = EConstr.of_constr c in
-	let pb = print_constr_env env Evd.empty c in
+        let pb = print_constr_env env evd c in
 	  (str":=" ++ spc () ++ pb ++ spc ()) in
-  let ptyp = print_constr_env env Evd.empty (EConstr.of_constr (get_type decl)) in
+  let ptyp = print_constr_env env evd (EConstr.of_constr (get_type decl)) in
     match get_name decl with
       | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
       | Name id -> hov 0 (Id.print id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)

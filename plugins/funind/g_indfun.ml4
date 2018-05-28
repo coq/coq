@@ -38,7 +38,9 @@ let pr_fun_ind_using_typed prc prlc _ opt_c =
   match opt_c with
     | None -> mt ()
     | Some b ->
-      let (_, b) = b (Global.env ()) Evd.empty in
+      let env = Global.env () in
+      let evd = Evd.from_env env in
+      let (_, b) = b env evd in
       spc () ++ hov 2 (str "using" ++ spc () ++ Miscprint.pr_with_bindings prc prlc b)
 
 

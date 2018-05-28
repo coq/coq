@@ -229,7 +229,9 @@ let extend_with_auto_hints env sigma l seq =
 
 let print_cmap map=
   let print_entry c l s=
-    let xc=Constrextern.extern_constr false (Global.env ()) Evd.empty (EConstr.of_constr c) in
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    let xc=Constrextern.extern_constr false env sigma (EConstr.of_constr c) in
       str "| " ++
       prlist Printer.pr_global l ++
       str " : " ++

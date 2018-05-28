@@ -199,7 +199,7 @@ let warn_projection_no_head_constant =
           let env = Termops.push_rels_assum sign env in
           let con_pp = Nametab.pr_global_env Id.Set.empty (ConstRef con) in
           let proji_sp_pp = Nametab.pr_global_env Id.Set.empty (ConstRef proji_sp) in
-          let term_pp = Termops.print_constr_env env Evd.empty (EConstr.of_constr t) in
+          let term_pp = Termops.print_constr_env env (Evd.from_env env) (EConstr.of_constr t) in
           strbrk "Projection value has no head constant: "
           ++ term_pp ++ strbrk " in canonical instance "
           ++ con_pp ++ str " of " ++ proji_sp_pp ++ strbrk ", ignoring it.")
@@ -211,7 +211,7 @@ let compute_canonical_projections warn (con,ind) =
   let u = Univ.make_abstract_instance ctx in
   let v = (mkConstU (con,u)) in
   let c = Environ.constant_value_in env (con,u) in
-  let sign,t = Reductionops.splay_lam env Evd.empty (EConstr.of_constr c) in
+  let sign,t = Reductionops.splay_lam env (Evd.from_env env) (EConstr.of_constr c) in
   let sign = List.map (on_snd EConstr.Unsafe.to_constr) sign in
   let t = EConstr.Unsafe.to_constr t in
   let lt = List.rev_map snd sign in
@@ -317,7 +317,9 @@ let check_and_decompose_canonical_structure ref =
   let vc = match Environ.constant_opt_value_in env (sp, u) with
     | Some vc -> vc
     | None -> error_not_structure ref "Could not find its value in the global environment." in
-  let body = snd (splay_lam (Global.env()) Evd.empty (EConstr.of_constr vc)) (** FIXME *) in
+  let env = Global.env () in
+  let evd = Evd.from_env env in
+  let body = snd (splay_lam (Global.env()) evd (EConstr.of_constr vc)) in
   let body = EConstr.Unsafe.to_constr body in
   let f,args = match kind body with
     | App (f,args) -> f,args

@@ -1263,7 +1263,9 @@ let prepare_hint check (poly,local) env init (sigma,c) =
       subst := (evar,mkVar id)::!subst;
       mkNamedLambda id t (iter (replace_term sigma evar (mkVar id) c)) in
   let c' = iter c in
-    if check then Pretyping.check_evars (Global.env()) Evd.empty sigma c';
+    let env = Global.env () in
+    let empty_sigma = Evd.from_env env in
+    if check then Pretyping.check_evars env empty_sigma sigma c';
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
     if poly then IsConstr (c', diff)
     else if local then IsConstr (c', diff)
@@ -1276,7 +1278,9 @@ let interp_hints poly =
   let sigma = Evd.from_env env in
   let f poly c =
     let evd,c = Constrintern.interp_open_constr env sigma c in
-      prepare_hint true (poly,false) (Global.env()) Evd.empty (evd,c) in
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+      prepare_hint true (poly,false) env sigma (evd,c) in
   let fref r =
     let gr = global_with_alias r in
     Dumpglob.add_glob ?loc:r.CAst.loc gr;

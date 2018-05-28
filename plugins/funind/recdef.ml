@@ -106,12 +106,12 @@ let const_of_ref = function
 
 let nf_zeta env =
   Reductionops.clos_norm_flags  (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
-    env
-    Evd.empty
+    env (Evd.from_env env)
 
 
 let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta  *)
-  Reductionops.clos_norm_flags CClosure.betaiotazeta  Environ.empty_env Evd.empty
+  Reductionops.clos_norm_flags CClosure.betaiotazeta  Environ.empty_env
+    (Evd.from_env Environ.empty_env)
 
 
 
