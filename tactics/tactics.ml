@@ -128,14 +128,14 @@ let unsafe_intro env store decl b =
     (sigma, mkNamedLambda_or_LetIn decl ev)
   end
 
-let introduction ?(check=true) id =
+let introduction id =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let sigma = Tacmach.New.project gl in
     let hyps = named_context_val (Proofview.Goal.env gl) in
     let store = Proofview.Goal.extra gl in
     let env = Proofview.Goal.env gl in
-    let () = if check && mem_named_context_val id hyps then
+    let () = if mem_named_context_val id hyps then
       user_err ~hdr:"Tactics.introduction"
         (str "Variable " ++ Id.print id ++ str " is already declared.")
     in

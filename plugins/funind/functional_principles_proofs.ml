@@ -598,7 +598,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	Proofview.V82.of_tactic (intro_using heq_id);
 	onLastHypId (fun heq_id -> tclTHENLIST [
 	(* Then the new hypothesis *)
-	tclMAP (fun id -> Proofview.V82.of_tactic (introduction ~check:false id)) dyn_infos.rec_hyps;
+        tclMAP (fun id -> Proofview.V82.of_tactic (introduction id)) dyn_infos.rec_hyps;
 	observe_tac "after_introduction" (fun g' ->
 	   (* We get infos on the equations introduced*)
 	   let new_term_value_eq = pf_unsafe_type_of g' (mkVar heq_id) in
