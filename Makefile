@@ -78,6 +78,7 @@ export MLLIBFILES := $(call find, '*.mllib')
 export MLPACKFILES := $(call find, '*.mlpack')
 export ML4FILES := $(call find, '*.ml4')
 export CFILES := $(call findindir, 'kernel/byterun', '*.c')
+export MERLINFILES := $(call find, '.merlin')
 
 # NB: The lists of currently existing .ml and .mli files will change
 # before and after a build or a make clean. Hence we do not export
