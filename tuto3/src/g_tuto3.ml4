@@ -16,7 +16,7 @@ VERNAC COMMAND EXTEND ShowTypeConstruction CLASSIFIED AS QUERY
     let evd, _ =
       Typing.type_of (Global.env()) (Evd.from_env (Global.env())) new_type_2 in
     Feedback.msg_notice
-      (Termops.print_constr_env env evd new_type_2) ]
+      (Printer.pr_econstr_env env evd new_type_2) ]
 END
 
 VERNAC COMMAND EXTEND ShowOneConstruction CLASSIFIED AS QUERY
