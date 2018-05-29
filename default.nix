@@ -22,7 +22,7 @@
 # a symlink to where Coq was installed.
 
 { pkgs ? (import <nixpkgs> {})
-, ocamlPackages ? pkgs.ocamlPackages
+, ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_06
 , buildIde ? true
 , buildDoc ? true
 , doCheck ? true
@@ -35,9 +35,11 @@ stdenv.mkDerivation rec {
 
   name = "coq";
 
-  buildInputs = (with ocamlPackages; [
+  buildInputs = [
 
     # Coq dependencies
+    hostname
+  ] ++ (with ocamlPackages; [
     ocaml
     findlib
     camlp5_strict
@@ -65,11 +67,11 @@ stdenv.mkDerivation rec {
     python
     rsync
     which
+    ocamlPackages.ounit
 
   ] else []) ++ (if lib.inNixShell then [
     ocamlPackages.merlin
     ocamlPackages.ocpIndent
-    ocamlPackages.ocp-index
 
     # Dependencies of the merging script
     jq
