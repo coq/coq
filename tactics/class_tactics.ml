@@ -1229,8 +1229,11 @@ let is_ground c =
 let autoapply c i =
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
+  let hintdb = try Hints.searchtable_map i with Not_found ->
+    CErrors.user_err (Pp.str ("Unknown hint database " ^ i ^ "."))
+  in
   let flags = auto_unif_flags Evar.Set.empty
-    (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
+    (Hints.Hint_db.transparent_state hintdb) in
   let cty = Tacmach.New.pf_unsafe_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
     unify_e_resolve false flags gl
