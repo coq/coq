@@ -327,7 +327,7 @@ let rule_id = mk_internal_id "rewrite rule"
 
 exception PRtype_error of (Environ.env * Evd.evar_map * Pretype_errors.pretype_error) option
 
-let pirrel_rewrite pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
+let pirrel_rewrite ?(under=false) pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
 (*   ppdebug(lazy(str"sigma@pirrel_rewrite=" ++ pr_evar_map None sigma)); *)
   let env = pf_env gl in
   let beta = Reductionops.clos_norm_flags CClosure.beta env sigma in
@@ -357,7 +357,7 @@ let pirrel_rewrite pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
   in
   ppdebug(lazy Pp.(str"pirrel_rewrite proof term of type: " ++ pr_econstr_env env sigma proof_ty));
   try refine_with 
-    ~first_goes_last:(not !ssroldreworder) ~with_evars:false (sigma, proof) gl
+    ~first_goes_last:(not !ssroldreworder) ~with_evars:under (sigma, proof) gl
   with _ -> 
     (* we generate a msg like: "Unable to find an instance for the variable" *)
     let hd_ty, miss = match EConstr.kind sigma c with
@@ -385,7 +385,7 @@ let is_construct_ref sigma c r =
   EConstr.isConstruct sigma c && GlobRef.equal (ConstructRef (fst(EConstr.destConstruct sigma c))) r
 let is_ind_ref sigma c r = EConstr.isInd sigma c && GlobRef.equal (IndRef (fst(EConstr.destInd sigma c))) r
 
-let rwcltac cl rdx dir sr gl =
+let rwcltac ?under cl rdx dir sr gl =
   let sr =
     let sigma, r = sr in
     let sigma = resolve_typeclasses ~where:r ~fail:false (pf_env gl) sigma in
@@ -405,7 +405,7 @@ let rwcltac cl rdx dir sr gl =
       match EConstr.kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
       | AtomicType(e, a) when is_ind_ref sigma e c_eq ->
           let new_rdx = if dir = L2R then a.(2) else a.(1) in
-          pirrel_rewrite cl rdx rdxt new_rdx dir (sigma,c) c_ty, tclIDTAC, gl
+          pirrel_rewrite ?under cl rdx rdxt new_rdx dir (sigma,c) c_ty, tclIDTAC, gl
       | _ -> 
           let cl' = EConstr.mkApp (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl, [|rdx|]) in
           let sigma, _ = Typing.type_of env sigma cl' in
@@ -547,7 +547,7 @@ let rwprocess_rule dir rule gl =
   in
     r_sigma, rules
 
-let rwrxtac occ rdx_pat dir rule gl =
+let rwrxtac ?under occ rdx_pat dir rule gl =
   let env = pf_env gl in
   let r_sigma, rules = rwprocess_rule dir rule gl in
   let find_rule rdx =
@@ -585,7 +585,7 @@ let rwrxtac occ rdx_pat dir rule gl =
   let concl = eval_pattern env0 sigma0 concl0 rdx_pat occ find_R in
   let (d, r), rdx = conclude concl in
   let r = Evd.merge_universe_context (pi1 r) (pi2 r), EConstr.of_constr (pi3 r) in
-  rwcltac (EConstr.of_constr concl) (EConstr.of_constr rdx) d r gl
+  rwcltac ?under (EConstr.of_constr concl) (EConstr.of_constr rdx) d r gl
 ;;
 
 let ssrinstancesofrule ist dir arg gl =
@@ -614,7 +614,7 @@ let ssrinstancesofrule ist dir arg gl =
 
 let ipat_rewrite occ dir c gl = rwrxtac occ None dir (project gl, c) gl
 
-let rwargtac ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) gl =
+let rwargtac ?under ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) gl =
   let fail = ref false in
   let interp_rpattern gl gc =
     try interp_rpattern gl gc
@@ -628,7 +628,7 @@ let rwargtac ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) gl =
     (match kind with
     | RWred sim -> simplintac occ rx sim
     | RWdef -> if dir = R2L then foldtac occ rx t else unfoldintac occ rx t gt
-    | RWeq -> rwrxtac occ rx dir t) gl in
+    | RWeq -> rwrxtac ?under occ rx dir t) gl in
   let ctac = old_cleartac (interp_clr (project gl) (oclr, (fst gt, snd (interp gt gl)))) in
   if !fail then ctac gl else tclTHEN (tclMULT mult rwtac) ctac gl
 
@@ -638,8 +638,8 @@ let rwargtac ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) gl =
 
 (** The "rewrite" tactic *)
 
-let ssrrewritetac ist rwargs =
-  tclTHENLIST (List.map (rwargtac ist) rwargs)
+let ssrrewritetac ?under ist rwargs =
+  tclTHENLIST (List.map (rwargtac ?under ist) rwargs)
 
 (** The "unlock" tactic *)
 
@@ -660,4 +660,3 @@ let unlocktac ist args gl =
     (fun gl -> unfoldtac None None (project gl,locked) xInParens gl); 
     Proofview.V82.of_tactic (Ssrelim.casetac key (fun ?seed:_ k -> k)) ] in
   tclTHENLIST (List.map utac args @ ktacs) gl
-

@@ -49,6 +49,7 @@ val ssrinstancesofrule :
   Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 val ssrrewritetac :
+  ?under:bool ->
   Ltac_plugin.Tacinterp.interp_sign ->
   ((Ssrast.ssrdir * (int * Ssrast.ssrmmod)) *
      (((Ssrast.ssrhyps option * Ssrmatching.occ) *
