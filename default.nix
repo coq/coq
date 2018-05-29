@@ -67,6 +67,7 @@ stdenv.mkDerivation rec {
     python
     rsync
     which
+    ocamlPackages.ounit
 
   ] else []) ++ (if lib.inNixShell then [
     ocamlPackages.merlin
