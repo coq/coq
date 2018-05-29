@@ -35,9 +35,11 @@ stdenv.mkDerivation rec {
 
   name = "coq";
 
-  buildInputs = (with ocamlPackages; [
+  buildInputs = [
 
     # Coq dependencies
+    hostname
+  ] ++ (with ocamlPackages; [
     ocaml
     findlib
     camlp5_strict
