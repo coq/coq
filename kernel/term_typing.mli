@@ -46,15 +46,9 @@ val uniq_seff : side_effects -> side_effect list
 (** Return the list of individual side-effects in the order of their
     creation. *)
 
-val equal_eff : side_effect -> side_effect -> bool
-
 val translate_constant :
   'a trust -> env -> Constant.t -> 'a constant_entry ->
     constant_body
-
-type side_effect_role =
-  | Subproof
-  | Schema of inductive * string
 
 type exported_side_effect = 
   Constant.t * constant_body * side_effect_role

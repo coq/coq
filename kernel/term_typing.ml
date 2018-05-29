@@ -27,17 +27,6 @@ module NamedDecl = Context.Named.Declaration
 
 (* Insertion of constants and parameters in environment. *)
 
-let equal_eff e1 e2 =
-  let open Entries in
-  match e1, e2 with
-  | { eff = SEsubproof (c1,_,_) }, { eff = SEsubproof (c2,_,_) } ->
-        Names.Constant.equal c1 c2
-  | { eff = SEscheme (cl1,_) }, { eff = SEscheme (cl2,_) } ->
-        CList.for_all2eq
-          (fun (_,c1,_,_) (_,c2,_,_) -> Names.Constant.equal c1 c2)
-          cl1 cl2
-  | _ -> false
-
 module SideEffects :
 sig
   type t
@@ -48,17 +37,11 @@ sig
 end =
 struct
 
-let compare_seff e1 e2 = match e1, e2 with
-| SEsubproof (c1, _, _), SEsubproof (c2, _, _) -> Constant.CanOrd.compare c1 c2
-| SEscheme (cl1, _), SEscheme (cl2, _) ->
-  let cmp (_, c1, _, _) (_, c2, _, _) = Constant.CanOrd.compare c1 c2 in
-  CList.compare cmp cl1 cl2
-| SEsubproof _, SEscheme _ -> -1
-| SEscheme _, SEsubproof _ -> 1
-
 module SeffOrd = struct
 type t = side_effect
-let compare e1 e2 = compare_seff e1.eff e2.eff
+let compare e1 e2 =
+  let cmp e1 e2 = Constant.CanOrd.compare e1.seff_constant e2.seff_constant in
+  List.compare cmp e1.eff e2.eff
 end
 
 module SeffSet = Set.Make(SeffOrd)
@@ -94,11 +77,8 @@ let mk_pure_proof c = (c, Univ.ContextSet.empty), empty_seff
 let inline_side_effects env body ctx side_eff =
   (** First step: remove the constants that are still in the environment *)
   let filter { eff = se; from_env = mb } =
-    let cbl = match se with
-    | SEsubproof (c, cb, b) -> [c, cb, b]
-    | SEscheme (cl,_) ->
-      List.map (fun (_, c, cb, b) -> c, cb, b) cl
-    in
+    let map e = (e.seff_constant, e.seff_body, e.seff_env) in
+    let cbl = List.map map se in
     let not_exists (c,_,_) =
       try ignore(Environ.lookup_constant c env); false
       with Not_found -> true in 
@@ -468,20 +448,23 @@ let constant_entry_of_side_effect cb u =
     const_entry_inline_code = cb.const_inline_code }
 ;;
 
-let turn_direct (kn,cb,u,r as orig) =
-  match cb.const_body, u with
-  | OpaqueDef _, `Opaque (b,c) ->
-      let pt = Future.from_val (b,c) in
-      kn, { cb with const_body = OpaqueDef (Opaqueproof.create pt) }, u, r
-   | _ -> orig
-;;
-
-type side_effect_role =
-  | Subproof
-  | Schema of inductive * string
+let turn_direct orig =
+  let cb = orig.seff_body in
+  if Declareops.is_opaque cb then
+    let p = match orig.seff_env with
+    | `Opaque (b, c) -> (b, c)
+    | _ -> assert false
+    in
+    let const_body = OpaqueDef (Opaqueproof.create (Future.from_val p)) in
+    let cb = { cb with const_body } in
+    { orig with seff_body = cb }
+  else orig
 
 type exported_side_effect = 
   Constant.t * constant_body * side_effect_role
+
+let export_eff eff =
+  (eff.seff_constant, eff.seff_body, eff.seff_role)
 
 let export_side_effects mb env c =
       let { const_entry_body = body } = c in
@@ -489,37 +472,26 @@ let export_side_effects mb env c =
       let ce = { c with
         const_entry_body = Future.chain body
           (fun (b_ctx, _) -> b_ctx, ()) } in
-      let not_exists (c,_,_,_) =
-        try ignore(Environ.lookup_constant c env); false
+      let not_exists e =
+        try ignore(Environ.lookup_constant e.seff_constant env); false
         with Not_found -> true in 
       let aux (acc,sl) { eff = se; from_env = mb } =
-        let cbl = match se with
-          | SEsubproof (c,cb,b) -> [c,cb,b,Subproof]
-          | SEscheme (cl,k) ->
-              List.map (fun (i,c,cb,b) -> c,cb,b,Schema(i,k)) cl in
-        let cbl = List.filter not_exists cbl in
-        if cbl = [] then acc, sl
+        let cbl = List.filter not_exists se in
+        if List.is_empty cbl then acc, sl
         else cbl :: acc, (mb,List.length cbl) :: sl in
       let seff, signatures = List.fold_left aux ([],[]) (uniq_seff_rev eff) in
       let trusted = check_signatures mb signatures in
-      let push_seff env = function
-        | kn, cb, `Nothing, _ ->
-          begin
-            let env = Environ.add_constant kn cb env in
-            match cb.const_universes with
-            | Monomorphic_const ctx ->
-              Environ.push_context_set ~strict:true ctx env
-            | Polymorphic_const _ -> env
-          end
-        | kn, cb, `Opaque(_, ctx), _ ->
-          begin
-            let env = Environ.add_constant kn cb env in
-            match cb.const_universes with
-            | Monomorphic_const cstctx ->
-              let env = Environ.push_context_set ~strict:true cstctx env in
-              Environ.push_context_set ~strict:true ctx env
-            | Polymorphic_const _ -> env
-          end
+      let push_seff env eff =
+        let { seff_constant = kn; seff_body = cb } = eff in
+        let env = Environ.add_constant kn cb env in
+        match cb.const_universes with
+        | Polymorphic_const _ -> env
+        | Monomorphic_const ctx ->
+          let ctx = match eff.seff_env with
+          | `Nothing -> ctx
+          | `Opaque(_, ctx') -> Univ.ContextSet.union ctx' ctx
+          in
+          Environ.push_context_set ~strict:true ctx env
       in
       let rec translate_seff sl seff acc env =
         match seff with
@@ -527,18 +499,22 @@ let export_side_effects mb env c =
         | cbs :: rest ->
           if Int.equal sl 0 then
            let env, cbs =
-             List.fold_left (fun (env,cbs) (kn, ocb, u, r) ->
+             List.fold_left (fun (env,cbs) eff ->
+              let { seff_constant = kn; seff_body = ocb; seff_env = u } = eff in
                let ce = constant_entry_of_side_effect ocb u in
                let cb = translate_constant Pure env kn ce in
-               (push_seff env (kn, cb,`Nothing, Subproof),(kn,cb,r) :: cbs)) 
+               let eff = { eff with
+                seff_body = cb;
+                seff_env = `Nothing;
+               } in
+               (push_seff env eff, export_eff eff :: cbs))
              (env,[]) cbs in
            translate_seff 0 rest (cbs @ acc) env
           else
            let cbs_len = List.length cbs in
            let cbs = List.map turn_direct cbs in
            let env = List.fold_left push_seff env cbs in
-           let ecbs = List.map (fun (kn,cb,u,r) ->
-             kn, cb, r) cbs in
+           let ecbs = List.map export_eff cbs in
            translate_seff (sl - cbs_len) rest (ecbs @ acc) env
      in
        translate_seff trusted seff [] env

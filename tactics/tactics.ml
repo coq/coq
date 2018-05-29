@@ -5000,7 +5000,7 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   let evd = Evd.set_universe_context evd ectx in
   let open Safe_typing in
   let eff = private_con_of_con (Global.safe_env ()) cst in
-  let effs = add_private eff
+  let effs = concat_private eff
     Entries.(snd (Future.force const.const_entry_body)) in
   let solve =
     Proofview.tclEFFECTS effs <*>

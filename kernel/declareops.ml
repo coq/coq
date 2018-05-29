@@ -292,13 +292,6 @@ let hcons_mind mib =
     mind_params_ctxt = hcons_rel_context mib.mind_params_ctxt;
     mind_universes = hcons_mind_universes mib.mind_universes }
 
-(** {6 Stm machinery } *)
-
-let string_of_side_effect { Entries.eff } = match eff with
-  | Entries.SEsubproof (c,_,_) -> "P(" ^ Names.Constant.to_string c ^ ")"
-  | Entries.SEscheme (cl,_) ->
-      "S(" ^ String.concat ", " (List.map (fun (_,c,_,_) -> Names.Constant.to_string c) cl) ^ ")"
-
 (** Hashconsing of modules *)
 
 let hcons_functorize hty he hself f = match f with

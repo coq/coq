@@ -154,7 +154,7 @@ let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
   let const = define mode id c (Declareops.inductive_is_polymorphic mib) ctx in
   declare_scheme kind [|ind,const|];
-  const, Safe_typing.add_private
+  const, Safe_typing.concat_private
      (Safe_typing.private_con_of_scheme ~kind (Global.safe_env()) [ind,const]) eff
 
 let define_individual_scheme kind mode names (mind,i as ind) =
@@ -174,7 +174,7 @@ let define_mutual_scheme_base kind suff f mode names mind =
   let schemes = Array.mapi (fun i cst -> ((mind,i),cst)) consts in
   declare_scheme kind schemes;
   consts,
-  Safe_typing.add_private 
+  Safe_typing.concat_private
     (Safe_typing.private_con_of_scheme
       ~kind (Global.safe_env()) (Array.to_list schemes))
     eff 
@@ -187,7 +187,7 @@ let define_mutual_scheme kind mode names mind =
 
 let find_scheme_on_env_too kind ind =
   let s = String.Map.find kind (Indmap.find ind !scheme_map) in
-  s, Safe_typing.add_private
+  s, Safe_typing.concat_private
       (Safe_typing.private_con_of_scheme
             ~kind (Global.safe_env()) [ind, s])
       Safe_typing.empty_private_constants

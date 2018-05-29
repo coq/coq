@@ -77,10 +77,8 @@ let adjust_guardness_conditions const = function
                   with Not_found -> false in 
                 if exists c e then e else Environ.add_constant c cb e in
               let env = List.fold_left (fun env { eff } ->
-                match eff with
-                | SEsubproof (c, cb,_) -> add c cb env
-                | SEscheme (l,_) ->
-                    List.fold_left (fun e (_,c,cb,_) -> add c cb e) env l)
+                let fold acc eff = add eff.seff_constant eff.seff_body acc in
+                List.fold_left fold env eff)
                 env (Safe_typing.side_effects_of_private_constants eff) in
               let indexes =
                 search_guard env

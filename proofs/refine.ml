@@ -49,17 +49,14 @@ let (pr_constrv,pr_constr) =
 
 (* Get the side-effect's constant declarations to update the monad's
   * environmnent *)
-let add_if_undefined kn cb env =
-  try ignore(Environ.lookup_constant kn env); env
-  with Not_found -> Environ.add_constant kn cb env
+let add_if_undefined env eff =
+  let open Entries in
+  try ignore(Environ.lookup_constant eff.seff_constant env); env
+  with Not_found -> Environ.add_constant eff.seff_constant eff.seff_body env
 
 (* Add the side effects to the monad's environment, if not already done. *)
-let add_side_effect env = function
-  | { Entries.eff = Entries.SEsubproof (kn, cb, eff_env) } ->
-    add_if_undefined kn cb env
-  | { Entries.eff = Entries.SEscheme (l,_) } ->
-    List.fold_left (fun env (_,kn,cb,eff_env) ->
-        add_if_undefined kn cb env) env l
+let add_side_effect env { Entries.eff } =
+  List.fold_left add_if_undefined env eff
 
 let add_side_effects env effects =
   List.fold_left (fun env eff -> add_side_effect env eff) env effects
