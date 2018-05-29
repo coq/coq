@@ -22,7 +22,7 @@
 # a symlink to where Coq was installed.
 
 { pkgs ? (import <nixpkgs> {})
-, ocamlPackages ? pkgs.ocamlPackages
+, ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_06
 , buildIde ? true
 , buildDoc ? true
 , doCheck ? true
