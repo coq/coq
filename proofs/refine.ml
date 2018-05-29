@@ -55,11 +55,8 @@ let add_if_undefined env eff =
   with Not_found -> Environ.add_constant eff.seff_constant eff.seff_body env
 
 (* Add the side effects to the monad's environment, if not already done. *)
-let add_side_effect env { Entries.eff } =
+let add_side_effects env eff =
   List.fold_left add_if_undefined env eff
-
-let add_side_effects env effects =
-  List.fold_left (fun env eff -> add_side_effect env eff) env effects
 
 let generic_refine ~typecheck f gl =
   let sigma = Proofview.Goal.sigma gl in

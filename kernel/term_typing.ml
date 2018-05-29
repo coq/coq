@@ -27,6 +27,11 @@ module NamedDecl = Context.Named.Declaration
 
 (* Insertion of constants and parameters in environment. *)
 
+type side_effect = {
+  from_env : Declarations.structure_body CEphemeron.key;
+  eff      : side_eff list;
+}
+
 module SideEffects :
 sig
   type t
@@ -66,10 +71,14 @@ type _ trust =
 | SideEffects : structure_body -> side_effects trust
 
 let uniq_seff_rev = SideEffects.repr
-let uniq_seff l = List.rev (SideEffects.repr l)
+let uniq_seff l =
+  let ans = List.rev (SideEffects.repr l) in
+  List.map_append (fun { eff } -> eff) ans
 
 let empty_seff = SideEffects.empty
-let add_seff = SideEffects.add
+let add_seff mb eff effs =
+  let from_env = CEphemeron.create mb in
+  SideEffects.add { eff; from_env } effs
 let concat_seff = SideEffects.concat
 
 let mk_pure_proof c = (c, Univ.ContextSet.empty), empty_seff

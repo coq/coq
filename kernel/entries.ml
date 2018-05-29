@@ -120,6 +120,7 @@ type seff_env =
      Same as the constant_body's but not in an ephemeron *)
   | `Opaque of Constr.t * Univ.ContextSet.t ]
 
+(** Not used by the kernel. *)
 type side_effect_role =
   | Subproof
   | Schema of inductive * string
@@ -129,9 +130,4 @@ type side_eff = {
   seff_body : Declarations.constant_body;
   seff_env : seff_env;
   seff_role : side_effect_role;
-}
-
-type side_effect = {
-  from_env : Declarations.structure_body CEphemeron.key;
-  eff      : side_eff list;
 }

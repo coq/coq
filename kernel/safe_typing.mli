@@ -44,7 +44,7 @@ type 'a safe_transformer = safe_environment -> 'a * safe_environment
 type private_constants
 
 val side_effects_of_private_constants :
-  private_constants -> Entries.side_effect list
+  private_constants -> Entries.side_eff list
 (** Return the list of individual side-effects in the order of their
     creation. *)
 

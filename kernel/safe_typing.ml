@@ -233,28 +233,23 @@ let make_eff env cst r =
 let private_con_of_con env c =
   let open Entries in
   let eff = [make_eff env c Subproof] in
-  let from_env = CEphemeron.create env.revstruct in
-  add_private { eff; from_env; } empty_private_constants
+  add_private env.revstruct eff empty_private_constants
 
 let private_con_of_scheme ~kind env cl =
   let open Entries in
   let eff = List.map (fun (i, c) -> make_eff env c (Schema (i, kind))) cl in
-  let from_env = CEphemeron.create env.revstruct in
-  add_private { eff; from_env; } empty_private_constants
+  add_private env.revstruct eff empty_private_constants
 
 let universes_of_private eff =
   let open Entries in
-  let fold acc { eff } =
-    let fold acc eff =
-      let acc = match eff.seff_env with
-      | `Nothing -> acc
-      | `Opaque (_, ctx) -> ctx :: acc
-      in
-      match eff.seff_body.const_universes with
-      | Monomorphic_const ctx -> ctx :: acc
-      | Polymorphic_const _ -> acc
+  let fold acc eff =
+    let acc = match eff.seff_env with
+    | `Nothing -> acc
+    | `Opaque (_, ctx) -> ctx :: acc
     in
-    List.fold_left fold acc eff
+    match eff.seff_body.const_universes with
+    | Monomorphic_const ctx -> ctx :: acc
+    | Polymorphic_const _ -> acc
   in
   List.fold_left fold [] (Term_typing.uniq_seff eff)
 
