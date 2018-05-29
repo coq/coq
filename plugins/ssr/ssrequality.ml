@@ -347,7 +347,7 @@ let pirrel_rewrite pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
     try Typing.type_of env sigma proof with _ -> raise PRtype_error in
   ppdebug(lazy Pp.(str"pirrel_rewrite proof term of type: " ++ pr_econstr_env env sigma proof_ty));
   try refine_with 
-    ~first_goes_last:(not !ssroldreworder) ~with_evars:false (sigma, proof) gl
+    ~first_goes_last:(not !ssroldreworder) ~with_evars:true (sigma, proof) gl
   with _ -> 
     (* we generate a msg like: "Unable to find an instance for the variable" *)
     let hd_ty, miss = match EConstr.kind sigma c with
