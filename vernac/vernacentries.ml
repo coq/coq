@@ -977,7 +977,7 @@ let vernac_remove_hints ~atts dbs ids =
 
 let vernac_hints ~atts lb h =
   let local = enforce_module_locality atts.locality in
-  Hints.add_hints local lb (Hints.interp_hints atts.polymorphic h)
+  Hints.add_hints ~local lb (Hints.interp_hints atts.polymorphic h)
 
 let vernac_syntactic_definition ~atts lid x y =
   Dumpglob.dump_definition lid false "syndef";
@@ -1971,7 +1971,7 @@ let vernac_load interp fname =
     interp x in
   let parse_sentence = Flags.with_option Flags.we_are_parsing
     (fun po ->
-    match Pcoq.Gram.entry_parse Pcoq.main_entry po with
+    match Pcoq.Gram.entry_parse Pvernac.main_entry po with
       | Some x -> x
       | None -> raise End_of_input) in
   let fname =

@@ -21,9 +21,9 @@ open Tok (* necessary for camlp5 *)
 open Names
 
 open Pcoq
-open Pcoq.Constr
-open Pcoq.Vernac_
 open Pcoq.Prim
+open Pcoq.Constr
+open Pvernac.Vernac_
 open Pltac
 
 let fail_default_value = ArgArg 0
@@ -58,8 +58,8 @@ let tacdef_body = new_entry "tactic:tacdef_body"
 let _ =
   let mode = {
     Proof_global.name = "Classic";
-    set = (fun () -> set_command_entry tactic_mode);
-    reset = (fun () -> set_command_entry Pcoq.Vernac_.noedit_mode);
+    set = (fun () -> Pvernac.set_command_entry tactic_mode);
+    reset = (fun () -> Pvernac.(set_command_entry noedit_mode));
   } in
   Proof_global.register_proof_mode mode
 

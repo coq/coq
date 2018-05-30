@@ -76,15 +76,15 @@ let pr_grammar = function
       pr_entry Pcoq.Constr.pattern
   | "vernac" ->
       str "Entry vernac_control is" ++ fnl () ++
-      pr_entry Pcoq.Vernac_.vernac_control ++
+      pr_entry Pvernac.Vernac_.vernac_control ++
       str "Entry command is" ++ fnl () ++
-      pr_entry Pcoq.Vernac_.command ++
+      pr_entry Pvernac.Vernac_.command ++
       str "Entry syntax is" ++ fnl () ++
-      pr_entry Pcoq.Vernac_.syntax ++
+      pr_entry Pvernac.Vernac_.syntax ++
       str "Entry gallina is" ++ fnl () ++
-      pr_entry Pcoq.Vernac_.gallina ++
+      pr_entry Pvernac.Vernac_.gallina ++
       str "Entry gallina_ext is" ++ fnl () ++
-      pr_entry Pcoq.Vernac_.gallina_ext
+      pr_entry Pvernac.Vernac_.gallina_ext
   | name -> pr_registered_grammar name
 
 (**********************************************************************)

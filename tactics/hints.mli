@@ -18,7 +18,6 @@ open Misctypes
 open Tactypes
 open Clenv
 open Pattern
-open Vernacexpr
 
 (** {6 General functions. } *)
 
@@ -70,6 +69,24 @@ type search_entry
 (** The head may not be bound. *)
 
 type hint_entry
+
+type reference_or_constr =
+  | HintsReference of Libnames.reference
+  | HintsConstr of Constrexpr.constr_expr
+
+type hint_mode =
+  | ModeInput (* No evars *)
+  | ModeNoHeadEvar (* No evar at the head *)
+  | ModeOutput (* Anything *)
+
+type hints_expr =
+  | HintsResolve of (Typeclasses.hint_info_expr * bool * reference_or_constr) list
+  | HintsImmediate of reference_or_constr list
+  | HintsUnfold of Libnames.reference list
+  | HintsTransparency of Libnames.reference list * bool
+  | HintsMode of Libnames.reference * hint_mode list
+  | HintsConstructors of Libnames.reference list
+  | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
 
 type 'a hints_path_gen =
   | PathAtom of 'a hints_path_atom_gen
@@ -178,7 +195,7 @@ val current_pure_db : unit -> hint_db list
 
 val interp_hints : polymorphic -> hints_expr -> hints_entry
 
-val add_hints : locality_flag -> hint_db_name list -> hints_entry -> unit
+val add_hints : local:bool -> hint_db_name list -> hints_entry -> unit
 
 val prepare_hint : bool (* Check no remaining evars *) ->
   (bool * bool) (* polymorphic or monomorphic, local or global *) ->

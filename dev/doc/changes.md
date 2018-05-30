@@ -4,7 +4,7 @@
 
 Misctypes
 
-  Syntax for universe sorts and kinds has been moved from `Misctypes`
+- Syntax for universe sorts and kinds has been moved from `Misctypes`
   to `Glob_term`, as these are turned into kernel terms by
   `Pretyping`.
 
@@ -40,6 +40,16 @@ Printer.ml API
 - The mechanism in Printer that allowed dynamically overriding pr_subgoals,
   pr_subgoal and pr_goal was removed to simplify the code.  It was
   earlierly used by PCoq.
+
+Vernacular commands
+
+- The implementation of vernacular commands has been refactored so it
+  is self-contained now, including the parsing and extension
+  mechanisms. This involves a couple of non-backward compatible
+  changes due to layering issues, where some functions have been moved
+  from `Pcoq` to `Pvernac` and from `Vernacexpr` to modules in
+  `tactics/`. In all cases adapting is a matter of changing the module
+  name.
 
 ### Unit testing
 

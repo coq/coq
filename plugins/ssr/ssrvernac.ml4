@@ -19,7 +19,7 @@ open Constrexpr_ops
 open Pcoq
 open Pcoq.Prim
 open Pcoq.Constr
-open Pcoq.Vernac_
+open Pvernac.Vernac_
 open Ltac_plugin
 open Notation_ops
 open Notation_term

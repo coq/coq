@@ -25,8 +25,8 @@ open Tok (* necessary for camlp5 *)
 open Pcoq
 open Pcoq.Prim
 open Pcoq.Constr
-open Pcoq.Vernac_
 open Pcoq.Module
+open Pvernac.Vernac_
 
 let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:"; "where"; "at" ]
 let _ = List.iter CLexer.add_keyword vernac_kw

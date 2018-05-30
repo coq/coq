@@ -28,7 +28,6 @@ open Termops
 open Inductiveops
 open Typing
 open Decl_kinds
-open Vernacexpr
 open Typeclasses
 open Pattern
 open Patternops
@@ -155,6 +154,24 @@ type full_hint = hint with_metadata
 
 type hint_entry = GlobRef.t option *
   raw_hint hint_ast with_uid with_metadata
+
+type reference_or_constr =
+  | HintsReference of reference
+  | HintsConstr of Constrexpr.constr_expr
+
+type hint_mode =
+  | ModeInput (* No evars *)
+  | ModeNoHeadEvar (* No evar at the head *)
+  | ModeOutput (* Anything *)
+
+type hints_expr =
+  | HintsResolve of (Typeclasses.hint_info_expr * bool * reference_or_constr) list
+  | HintsImmediate of reference_or_constr list
+  | HintsUnfold of reference list
+  | HintsTransparency of reference list * bool
+  | HintsMode of reference * hint_mode list
+  | HintsConstructors of reference list
+  | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
 
 type import_level = [ `LAX | `WARN | `STRICT ]
 
@@ -1326,7 +1343,7 @@ let interp_hints poly =
       let _, tacexp = Genintern.generic_intern env tacexp in
       HintsExternEntry ({ hint_priority = Some pri; hint_pattern = pat }, tacexp)
 
-let add_hints local dbnames0 h =
+let add_hints ~local dbnames0 h =
   if String.List.mem "nocore" dbnames0 then
     user_err Pp.(str "The hint database \"nocore\" is meant to stay empty.");
   let dbnames = if List.is_empty dbnames0 then ["core"] else dbnames0 in

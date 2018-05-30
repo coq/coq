@@ -145,7 +145,6 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
 
 end
 
-
 let warning_verbose = Gramext.warning_verbose
 
 let of_coq_assoc = function
@@ -387,7 +386,6 @@ let create_universe u =
 let uprim   = create_universe "prim"
 let uconstr = create_universe "constr"
 let utactic = create_universe "tactic"
-let uvernac = create_universe "vernac"
 
 let get_univ u =
   if Hashtbl.mem utables u then u
@@ -493,44 +491,6 @@ module Module =
     let module_type = Gram.entry_create "module_type"
   end
 
-module Vernac_ =
-  struct
-    let gec_vernac s = Gram.entry_create ("vernac:" ^ s)
-
-    (* The different kinds of vernacular commands *)
-    let gallina = gec_vernac "gallina"
-    let gallina_ext = gec_vernac "gallina_ext"
-    let command = gec_vernac "command"
-    let syntax = gec_vernac "syntax_command"
-    let vernac_control = gec_vernac "Vernac.vernac_control"
-    let rec_definition = gec_vernac "Vernac.rec_definition"
-    let red_expr = make_gen_entry utactic "red_expr"
-    let hint_info = gec_vernac "hint_info"
-    (* Main vernac entry *)
-    let main_entry = Gram.entry_create "vernac"
-    let noedit_mode = gec_vernac "noedit_command"
-
-    let () =
-      let act_vernac = Gram.action (fun v loc -> Some (to_coqloc loc, v)) in
-      let act_eoi = Gram.action (fun _ loc -> None) in
-      let rule = [
-        ([ Symbols.stoken Tok.EOI ], act_eoi);
-        ([ Symbols.snterm (Gram.Entry.obj vernac_control) ], act_vernac );
-      ] in
-      uncurry (Gram.extend main_entry) (None, make_rule rule)
-
-    let command_entry_ref = ref noedit_mode
-    let command_entry =
-      Gram.Entry.of_parser "command_entry"
-        (fun strm -> Gram.parse_tokens_after_filter !command_entry_ref strm)
-
-  end
-
-let main_entry = Vernac_.main_entry
-
-let set_command_entry e = Vernac_.command_entry_ref := e
-let get_command_entry () = !Vernac_.command_entry_ref
-
 let epsilon_value f e =
   let r = Rule (Next (Stop, e), fun x _ -> f x) in
   let ext = of_coq_extend_statement (None, [None, None, [r]]) in
@@ -635,7 +595,6 @@ let () =
   Grammar.register0 wit_ref (Prim.reference);
   Grammar.register0 wit_sort_family (Constr.sort_family);
   Grammar.register0 wit_constr (Constr.constr);
-  Grammar.register0 wit_red_expr (Vernac_.red_expr);
   ()
 
 (** Registering extra grammar *)

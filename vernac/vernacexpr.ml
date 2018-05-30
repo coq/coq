@@ -103,14 +103,16 @@ type comment =
   | CommentString of string
   | CommentInt of int
 
-type reference_or_constr =
+type reference_or_constr = Hints.reference_or_constr =
   | HintsReference of reference
   | HintsConstr of constr_expr
+[@@ocaml.deprecated "Please use [Hints.hints_expr]"]
 
-type hint_mode =
+type hint_mode = Hints.hint_mode =
   | ModeInput (* No evars *)
   | ModeNoHeadEvar (* No evar at the head *)
   | ModeOutput (* Anything *)
+[@@ocaml.deprecated "Please use [Hints.hints_expr]"]
 
 type 'a hint_info_gen = 'a Typeclasses.hint_info_gen =
     { hint_priority : int option;
@@ -120,14 +122,15 @@ type 'a hint_info_gen = 'a Typeclasses.hint_info_gen =
 type hint_info_expr = Typeclasses.hint_info_expr
 [@@ocaml.deprecated "Please use [Typeclasses.hint_info_expr]"]
 
-type hints_expr =
-  | HintsResolve of (Typeclasses.hint_info_expr * bool * reference_or_constr) list
-  | HintsImmediate of reference_or_constr list
+type hints_expr = Hints.hints_expr =
+  | HintsResolve of (Typeclasses.hint_info_expr * bool * Hints.reference_or_constr) list
+  | HintsImmediate of Hints.reference_or_constr list
   | HintsUnfold of reference list
   | HintsTransparency of reference list * bool
-  | HintsMode of reference * hint_mode list
+  | HintsMode of reference * Hints.hint_mode list
   | HintsConstructors of reference list
   | HintsExtern of int * constr_expr option * Genarg.raw_generic_argument
+[@@ocaml.deprecated "Please use [Hints.hints_expr]"]
 
 type search_restriction =
   | SearchInside of reference list
@@ -401,7 +404,7 @@ type nonrec vernac_expr =
   (* Commands *)
   | VernacCreateHintDb of string * bool
   | VernacRemoveHints of string list * reference list
-  | VernacHints of string list * hints_expr
+  | VernacHints of string list * Hints.hints_expr
   | VernacSyntacticDefinition of lident * (Id.t list * constr_expr) *
       onlyparsing_flag
   | VernacArguments of reference or_by_notation *

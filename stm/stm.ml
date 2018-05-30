@@ -2976,7 +2976,7 @@ let parse_sentence ~doc sid pa =
        str "All is good if not parsing changes occur between the two states, however if they do, a problem might occur.");
   Flags.with_option Flags.we_are_parsing (fun () ->
       try
-        match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
+        match Pcoq.Gram.entry_parse Pvernac.main_entry pa with
         | None            -> raise End_of_input
         | Some (loc, cmd) -> CAst.make ~loc cmd
       with e when CErrors.noncritical e ->

@@ -16,7 +16,7 @@ open Misctypes
 open Pcoq
 open Pcoq.Prim
 open Pcoq.Constr
-open Pcoq.Vernac_
+open Pvernac.Vernac_
 
 let thm_token = G_vernac.thm_token
 

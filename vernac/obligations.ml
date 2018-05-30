@@ -616,7 +616,7 @@ let shrink_body c ty =
 let unfold_entry cst = Hints.HintsUnfoldEntry [EvalConstRef cst]
 
 let add_hint local prg cst =
-  Hints.add_hints local [Id.to_string prg.prg_name] (unfold_entry cst)
+  Hints.add_hints ~local [Id.to_string prg.prg_name] (unfold_entry cst)
 
 let it_mkLambda_or_LetIn_or_clean t ctx =
   let open Context.Rel.Declaration in
