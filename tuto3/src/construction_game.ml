@@ -50,7 +50,7 @@ let example_sort_app_lambda () =
     let evd, c_f = dangling_identity2 env evd in
     let c_1 = EConstr.mkApp (c_f, [| c_v |]) in
     let _ = Feedback.msg_notice
-       (Termops.print_constr_env env evd c_1) in
+       (Printer.pr_econstr_env env evd c_1) in
     (* type verification happens here.  Type verification will update
        existential variable information in the evd part. *)
     let evd, the_type =
@@ -59,9 +59,9 @@ let example_sort_app_lambda () =
   existential variable being instantiated to the "nat" type, even
   though c_1 still contains the meta-variable. *)
     Feedback.msg_notice
-      ((Termops.print_constr_env env evd c_1) ++
+      ((Printer.pr_econstr_env env evd c_1) ++
        str " has type " ++
-       (Termops.print_constr_env env evd the_type))
+       (Printer.pr_econstr_env env evd the_type))
 
 let constants = ref ([] : EConstr.t list)
 
@@ -158,9 +158,9 @@ let example_classes n =
   let evd0 = evd in
   let evd, instance = Evarutil.new_evar env evd arg_type in
   let c_half = EConstr.mkApp (c_div, [|c_n; instance|]) in
-  let _ = Feedback.msg_notice (Termops.print_constr_env env evd c_half) in
+  let _ = Feedback.msg_notice (Printer.pr_econstr_env env evd c_half) in
   let evd, the_type = Typing.type_of env evd c_half in
-  let _ = Feedback.msg_notice (Termops.print_constr_env env evd c_half) in
+  let _ = Feedback.msg_notice (Printer.pr_econstr_env env evd c_half) in
   let proved_equality =
     EConstr.mkCast(EConstr.mkApp (c_R, [| c_N; c_half |]), Constr.DEFAULTcast,
       EConstr.mkApp (c_Q, [| c_N; c_half; n_half|])) in
@@ -170,7 +170,7 @@ let example_classes n =
   let evd = Pretyping.solve_remaining_evars
     (Pretyping.default_inference_flags true) env evd evd0 in
   let evd, final_type = Typing.type_of env evd proved_equality in
-  Feedback.msg_notice (Termops.print_constr_env env evd proved_equality)
+  Feedback.msg_notice (Printer.pr_econstr_env env evd proved_equality)
 
 (* This function, together with definitions in Data.v, shows how to
    trigger automatic proofs at the time of typechecking, based on
@@ -206,11 +206,11 @@ let example_canonical n =
   let value = match EConstr.kind evd final_type with
       | Constr.App(_, [| _; the_half |]) -> the_half
       | _ -> failwith "expecting the whole type to be \"cmp _ the_half\"" in
-  let _ = Feedback.msg_notice (Termops.print_constr_env env evd value) in
+  let _ = Feedback.msg_notice (Printer.pr_econstr_env env evd value) in
 (* I wish for a nicer way to get the value of ev2 in the evar_map *)
   let prf_struct = EConstr.of_constr (EConstr.to_constr evd ev2) in
   let the_prf = EConstr.mkApp (c_P, [| ev1; prf_struct |]) in
   let evd, the_statement = Typing.type_of env evd the_prf in
   Feedback.msg_notice
-    (Termops.print_constr_env env evd the_prf ++ str " has type " ++
-     Termops.print_constr_env env evd the_statement)
+    (Printer.pr_econstr_env env evd the_prf ++ str " has type " ++
+     Printer.pr_econstr_env env evd the_statement)
