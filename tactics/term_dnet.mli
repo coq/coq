@@ -26,7 +26,7 @@ open Mod_subst
    The results returned here are perfect, since post-filtering is done
    inside here.
 
-   See lib/dnet.mli for more details.
+   See tactics/dnet.mli for more details.
 *)
 
 (** Identifiers to store (right hand side of the association) *)
