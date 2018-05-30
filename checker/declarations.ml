@@ -196,7 +196,12 @@ let subst_con0 sub con u =
   let dup con = con, Const (con, u) in
   let side,con',resolve = gen_subst_mp rebuild_con sub mp1 mp2 in
   match constant_of_delta_with_inline resolve con' with
-    | Some t -> con', t
+    | Some (ctx, t) ->
+      (** FIXME: we never typecheck the inlined term, so that it could well
+          be garbage. What environment do we type it in though? The substitution
+          code should be moot in the checker but it **is** used nonetheless. *)
+      let () = assert (Univ.AUContext.size ctx == Univ.Instance.length u) in
+      con', subst_instance_constr u t
     | None ->
       let con'' = match side with
 	| User -> constant_of_delta resolve con'
@@ -340,7 +345,7 @@ let gen_subst_delta_resolver dom subst resolver =
     let kkey' = if dom then subst_kn subst kkey else kkey in
     let hint' = match hint with
       | Equiv kequ -> Equiv (subst_kn_delta subst kequ)
-      | Inline (lev,Some t) -> Inline (lev,Some (subst_mps subst t))
+      | Inline (lev,Some (ctx, t)) -> Inline (lev,Some (ctx, subst_mps subst t))
       | Inline (_,None) -> hint
     in
     Deltamap.add_kn kkey' hint' rslv

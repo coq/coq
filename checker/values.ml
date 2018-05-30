@@ -15,7 +15,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 92de14d7bf9134532e8a0cff5618bd50 checker/cic.mli
+MD5 fb80632357e3ffa988c6bba3fa6ade64 checker/cic.mli
 
 *)
 
@@ -173,7 +173,7 @@ let v_section_ctxt = v_enum "emptylist" 1
 (** kernel/mod_subst *)
 
 let v_delta_hint =
-  v_sum "delta_hint" 0 [|[|Int; Opt v_constr|];[|v_kn|]|]
+  v_sum "delta_hint" 0 [|[|Int; Opt (v_pair v_abs_context v_constr)|];[|v_kn|]|]
 
 let v_resolver =
   v_tuple "delta_resolver"
