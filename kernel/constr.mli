@@ -402,6 +402,15 @@ val iter : (constr -> unit) -> constr -> unit
 val iter_with_binders :
   ('a -> 'a) -> ('a -> constr -> unit) -> 'a -> constr -> unit
 
+(** [iter_with_binders g f n c] iters [f n] on the immediate
+   subterms of [c]; it carries an extra data [n] (typically a lift
+   index) which is processed by [g] (which typically add 1 to [n]) at
+   each binder traversal; it is not recursive and the order with which
+   subterms are processed is not specified *)
+
+val fold_constr_with_binders :
+  ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
+
 type constr_compare_fn = int -> constr -> constr -> bool
 
 (** [compare_head f c1 c2] compare [c1] and [c2] using [f] to compare
