@@ -32,6 +32,8 @@ vo_to_obj = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst the
 GLOBFILES:=$(ALLVO:.vo=.glob)
 ifdef NATIVECOMPUTE
 NATIVEFILES := $(call vo_to_cm,$(ALLVO)) $(call vo_to_obj,$(ALLVO))
+else
+NATIVEFILES :=
 endif
 LIBFILES:=$(ALLVO) $(NATIVEFILES) $(VFILES) $(GLOBFILES)
 
