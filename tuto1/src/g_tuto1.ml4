@@ -91,7 +91,7 @@ VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
     let (_, ctx) = v in
     let evd = Evd.from_ctx ctx in
     Feedback.msg_notice
-    (Termops.print_constr_env (Global.env()) evd
+    (Printer.pr_econstr_env (Global.env()) evd
        (Simple_check.simple_check1 v)) ]
 END
 
@@ -101,7 +101,7 @@ VERNAC COMMAND EXTEND Check2 CLASSIFIED AS QUERY
       (Evd.from_env (Global.env())) e in
     let evd, ty = Simple_check.simple_check2 v in
     Feedback.msg_notice
-      (Termops.print_constr_env (Global.env()) evd ty) ]
+      (Printer.pr_econstr_env (Global.env()) evd ty) ]
 END
 
 VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
@@ -111,7 +111,7 @@ VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
     let (a, ctx) = v in
     let evd = Evd.from_ctx ctx in
       Feedback.msg_notice
-      (Termops.print_constr_env (Global.env()) evd
+      (Printer.pr_econstr_env (Global.env()) evd
          (Simple_check.simple_check3 v)) ]
 END
 
@@ -125,7 +125,7 @@ VERNAC COMMAND EXTEND ExamplePrint CLASSIFIED AS QUERY
   [ let env = Global.env() in
     let evd = Evd.from_env env in
     Feedback.msg_notice
-    (Termops.print_constr_env env evd
+    (Printer.pr_econstr_env env evd
       (EConstr.of_constr
         (Simple_print.simple_body_access (Nametab.global r)))) ]
 END
