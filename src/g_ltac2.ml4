@@ -841,8 +841,8 @@ END
 let _ =
   let mode = {
     Proof_global.name = "Ltac2";
-    set = (fun () -> set_command_entry tac2mode);
-    reset = (fun () -> set_command_entry Pcoq.Vernac_.noedit_mode);
+    set = (fun () -> Pvernac.set_command_entry tac2mode);
+    reset = (fun () -> Pvernac.(set_command_entry Vernac_.noedit_mode));
   } in
   Proof_global.register_proof_mode mode
 
