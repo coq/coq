@@ -2016,21 +2016,22 @@ let compile_mind_deps env prefix ~interactive
 
 (* This function compiles all necessary dependencies of t, and generates code in
    reverse order, as well as linking information updates *)
-let rec compile_deps env sigma prefix ~interactive init t =
+let compile_deps env sigma prefix ~interactive init t =
+  let rec aux env lvl init t =
   match kind t with
   | Ind ((mind,_),u) -> compile_mind_deps env prefix ~interactive init mind
   | Const c ->
-      let c,u = get_alias env c in
-      let cb,(nameref,_) = lookup_constant_key c env in
-      let (_, (_, const_updates)) = init in
-      if is_code_loaded ~interactive nameref
-        || (Cmap_env.mem c const_updates)
-      then init
-      else
+    let c,u = get_alias env c in
+    let cb,(nameref,_) = lookup_constant_key c env in
+    let (_, (_, const_updates)) = init in
+    if is_code_loaded ~interactive nameref
+    || (Cmap_env.mem c const_updates)
+    then init
+    else
       let comp_stack, (mind_updates, const_updates) =
 	match cb.const_proj, cb.const_body with
         | None, Def t ->
-	   compile_deps env sigma prefix ~interactive init (Mod_subst.force_constr t)
+           aux env lvl init (Mod_subst.force_constr t)
 	| Some pb, _ ->
 	   let mind = pb.proj_ind in
 	   compile_mind_deps env prefix ~interactive init mind
@@ -2045,12 +2046,30 @@ let rec compile_deps env sigma prefix ~interactive init t =
   | Construct (((mind,_),_),u) -> compile_mind_deps env prefix ~interactive init mind
   | Proj (p,c) ->
     let term = mkApp (mkConst (Projection.constant p), [|c|]) in
-      compile_deps env sigma prefix ~interactive init term
+    aux env lvl init term
   | Case (ci, p, c, ac) ->
       let mind = fst ci.ci_ind in
       let init = compile_mind_deps env prefix ~interactive init mind in
-      Constr.fold (compile_deps env sigma prefix ~interactive) init t
-  | _ -> Constr.fold (compile_deps env sigma prefix ~interactive) init t
+      fold_constr_with_binders succ (aux env) lvl init t
+  | Var id ->
+    let open Context.Named.Declaration in
+    begin match lookup_named id env with
+      | LocalDef (_,t,_) ->
+        aux env lvl init t
+      | _ -> init
+    end
+  | Rel n when n > lvl ->
+    let open Context.Rel.Declaration in
+    let decl = lookup_rel n env in
+    let env = env_of_rel n env in
+    begin match decl with
+    | LocalDef (_,t,_) ->
+      aux env lvl init t
+    | LocalAssum _ -> init
+    end
+  | _ -> fold_constr_with_binders succ (aux env) lvl init t
+  in
+  aux env 0 init t
 
 let compile_constant_field env prefix con acc cb =
     let (gl, _) =
