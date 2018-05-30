@@ -184,7 +184,6 @@ let example_canonical n =
   let c_n = mk_nat n in
 (* terms for "nat", "eq", "S_ev", "eq_refl", "C" *)
   let c_N = c_N () in
-  let c_Q = c_Q () in
   let c_F = c_F () in
   let c_R = c_R () in
   let c_C = c_C () in
@@ -205,8 +204,8 @@ let example_canonical n =
   let evd, final_type = Typing.type_of env evd test_term in
 (* The computed type has two parameters, the second one is the proof. *)
   let value = match EConstr.kind evd final_type with
-      | App(_, [| _; the_half |]) -> the_half
-      | _ -> failwith "expecting the whole type to be ""cmp _ the_half""" in
+      | Constr.App(_, [| _; the_half |]) -> the_half
+      | _ -> failwith "expecting the whole type to be \"cmp _ the_half\"" in
   let _ = Feedback.msg_notice (Termops.print_constr_env env evd value) in
 (* I wish for a nicer way to get the value of ev2 in the evar_map *)
   let prf_struct = EConstr.of_constr (EConstr.to_constr evd ev2) in
