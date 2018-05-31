@@ -1196,6 +1196,8 @@ let pr_vernac_flag =
   | VernacPolymorphic false -> keyword "Monomorphic"
   | VernacGuarded true -> keyword "Guarded"
   | VernacGuarded false -> keyword "Unguarded"
+  | VernacCheckedPositive true -> keyword "Checked" ++ spc() ++ keyword "Positive"
+  | VernacCheckedPositive false -> keyword "Assumed" ++ spc() ++ keyword "Positive"
   | VernacProgram -> keyword "Program"
   | VernacLocal local -> pr_locality local
 

@@ -19,12 +19,10 @@ open Vernacexpr
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
 val do_fixpoint :
-  (* When [Some false], assume guarded. *)
-  bool option -> locality -> polymorphic -> (fixpoint_expr * decl_notation list) list -> unit
+  check_guard:check_guard -> locality -> polymorphic -> (fixpoint_expr * decl_notation list) list -> unit
 
 val do_cofixpoint :
-  (* When [Some false], assume guarded. *)
-  bool option -> locality -> polymorphic -> (cofixpoint_expr * decl_notation list) list -> unit
+  check_guard:check_guard -> locality -> polymorphic -> (cofixpoint_expr * decl_notation list) list -> unit
 
 (************************************************************************)
 (** Internal API  *)
@@ -80,13 +78,13 @@ val interp_fixpoint :
 (** Registering fixpoints and cofixpoints in the environment *)
 (** [Not used so far] *)
 val declare_fixpoint :
-  bool option -> locality -> polymorphic ->
+  check_guard:check_guard -> locality -> polymorphic ->
   recursive_preentry * Univdecls.universe_decl * UState.t *
   (Context.Rel.t * Impargs.manual_implicits * int option) list ->
   Proof_global.lemma_possible_guards -> decl_notation list -> unit
 
 val declare_cofixpoint :
-  bool option -> locality -> polymorphic ->
+  check_guard:check_guard -> locality -> polymorphic ->
   recursive_preentry * Univdecls.universe_decl * UState.t *
   (Context.Rel.t * Impargs.manual_implicits * int option) list ->
   decl_notation list -> unit

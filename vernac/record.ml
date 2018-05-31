@@ -411,7 +411,7 @@ let declare_structure finite ubinders univs id idbuild paramimpls params arity t
     }
   in
   let mie = InferCumulativity.infer_inductive (Global.env ()) mie in
-  let kn = ComInductive.declare_mutual_inductive_with_eliminations mie ubinders [(paramimpls,[])] in
+  let kn = ComInductive.declare_mutual_inductive_with_eliminations ~check_positivity:None mie ubinders [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let cstr = (rsp,1) in
   let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name coers ubinders fieldimpls fields in

@@ -508,12 +508,12 @@ The Vernacular
                       : | ( `ident` … `ident` : `term` ) … ( `ident` … `ident` : `term` )
    definition         : [Local] Definition `ident` [`binders`] [: `term`] := `term` .
                       : | Let `ident` [`binders`] [: `term`] := `term` .
-   inductive          : Inductive `ind_body` with … with `ind_body` .
-                      : | CoInductive `ind_body` with … with `ind_body` .
+   inductive          : [Assumed Positive] Inductive `ind_body` with … with `ind_body` .
+                      : | [Assumed Positive] CoInductive `ind_body` with … with `ind_body` .
    ind_body           : `ident` [`binders`] : `term` :=
                       : [[|] `ident` [`binders`] [:`term`] | … | `ident` [`binders`] [:`term`]]
    fixpoint           : [Unguarded] Fixpoint `fix_body` with … with `fix_body` .
-                      : | CoFixpoint `cofix_body` with … with `cofix_body` .
+                      : | [Unguarded] CoFixpoint `cofix_body` with … with `cofix_body` .
    assertion          : `assertion_keyword` `ident` [`binders`] : `term` .
    assertion_keyword  : Theorem | Lemma
                       : | Remark | Fact
@@ -740,6 +740,13 @@ Simple inductive types
       The types of the constructors have to satisfy a *positivity condition*
       (see Section :ref:`positivity`). This condition ensures the soundness of
       the inductive definition.
+
+   .. cmdv:: Assumed Positive Inductive @ident : {? @sort } := {? | } @ident : @type {* | @ident : @type }
+      :name: Assumed Positive Inductive
+
+      The positivity condition checking can be disabled using :cmd:`Assumed Positive
+      Inductive`. Warning: this can break the consistency of the system, use at your
+      own risk. Unchecked inductive types are printed by :cmd:`Print Assumptions`.
 
    .. exn:: The conclusion of @type is not valid; it must be built from @ident.
 
@@ -1045,6 +1052,13 @@ co-inductive definitions are also allowed.
    object of type :g:`(EqSt s1 s2)`. We will see how to introduce infinite
    objects in Section :ref:`cofixpoint`.
 
+.. cmdv:: Assumed Positive CoInductive @ident : {? @sort } := {? | } @ident : @type {* | @ident : @type }
+   :name: Assumed Positive CoInductive
+
+   The positivity condition checking can be disabled using :cmd:`Assumed Positive
+   CoInductive`. Warning: this can break the consistency of the system, use at your
+   own risk. Unchecked coinductive types are printed by :cmd:`Print Assumptions`.
+
 Definition of recursive functions
 ---------------------------------
 
@@ -1141,16 +1155,12 @@ constructions.
 
    .. example::
 
-<<<<<<< 8a15241643eaf41b8b367f05b465fd90153437a2
       The recursive call may not only be on direct subterms of the recursive
       variable :g:`n` but also on a deeper subterm and we can directly write
       the function :g:`mod2` which gives the remainder modulo 2 of a natural
       number.
-=======
-The check of decreasing argument can be temporary disabled using ``Unguarded``.
-Warning: this can break the consistency of the system, use at your own risk.
-Unchecked fixpoint are printed by ``Print Assumptions``.
->>>>>>> Fix documentation.
+
+      .. coqtop:: all
 
          Fixpoint mod2 (n:nat) : nat :=
          match n with
@@ -1184,10 +1194,12 @@ Unchecked fixpoint are printed by ``Print Assumptions``.
             end.
 
    .. cmdv:: Unguarded Fixpoint @ident @binders {? {struct @ident} } {? : @type } := @term
+      :name: Unguarded Fixpoint
 
-      The check of decreasing argument can be temporary disabled using ``Unguarded``.
-      Warning: this can break the consistency of the system, use at your own risk.
-      Unchecked fixpoint are printed by ``Print Assumptions``.
+      The check of decreasing argument can be temporary disabled using :cmd:`Unguarded Fixpoint`.
+      Warning: this can break the consistency of the system, use at your own risk. Decreasing
+      argument can still be specified but the decrease is not checked anymore. Unchecked fixpoint
+      are printed by :cmd:`Print Assumptions`.
 
       .. example::
          False can be proved in the following way.
@@ -1199,20 +1211,22 @@ Unchecked fixpoint are printed by ``Print Assumptions``.
 
       .. example::
 
-         Decreasing argument can still be specified but the decrease is not checked anymore.
-         Here is for instance the definition of the Ackermann function.
-
          .. coqtop:: all
 
-            Unguarded Fixpoint ackermann (m n : nat) {struct m} : nat.
-              destruct m. exact (S n).
-              destruct n. exact (ackermann m 1).
-              exact (ackermann m (ackermann (S m) n)).
-            Defined.
+            Unguarded Fixpoint ackermann (m n : nat) {struct m} : nat :=
+              match m with
+              | 0 => S n
+              | S m =>
+                  match n with
+                  | 0 => ackermann m 1
+                  | S n => ackermann m (ackermann (S m) n)
+                  end
+              end.
 
             Print Assumptions ackermann.
-            (* ackermann is assumed to be guarded *)
 
+         Note that the proper way to define the Ackermann function is to use
+         well-founded recursion (see. :cmd:`Program Fixpoint`).
 
 .. _cofixpoint:
 
@@ -1266,10 +1280,11 @@ Definitions of recursive objects in co-inductive types
       mutually dependent methods.
 
    .. cmdv:: Unguarded CoFixpoint @ident {? @binders } {? : @type } := @term
+      :name: Unguarded CoFixpoint
 
-      Define a cofixpoint without checking productivity.
-      Warning: this can break the consistency of the system, use at your own risk.
-      Unchecked cofixpoint are printed by ``Print Assumptions``.
+      Define a cofixpoint without checking productivity. Warning: this can
+      break the consistency of the system, use at your own risk. Unchecked
+      cofixpoint are printed by :cmd:`Print Assumptions`.
 
 .. _Assertions:
 

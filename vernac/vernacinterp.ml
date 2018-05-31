@@ -18,6 +18,7 @@ type atts = {
   loc : Loc.t option;
   locality : bool option;
   check_guard : bool option;
+  check_positivity : bool option;
   polymorphic : bool;
   program : bool;
 }

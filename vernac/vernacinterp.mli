@@ -16,6 +16,7 @@ type atts = {
   loc : Loc.t option;
   locality : bool option;
   check_guard : bool option; (* None -> use global setting (true by default); Some -> override *)
+  check_positivity : bool option; (* None -> use global setting (true by default); Some -> override *)
   polymorphic : bool;
   program : bool;
 }

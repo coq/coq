@@ -599,7 +599,7 @@ let vernac_inductive ~atts cum lo finite indl =
     in
     let indl = List.map unpack indl in
     let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
-    ComInductive.do_mutual_inductive indl is_cumulative atts.polymorphic lo finite
+    ComInductive.do_mutual_inductive ~check_positivity:atts.check_positivity indl is_cumulative atts.polymorphic lo finite
 
 let vernac_fixpoint ~atts discharge l =
   let local = enforce_locality_exp atts.locality discharge in
@@ -607,10 +607,9 @@ let vernac_fixpoint ~atts discharge l =
     List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   (* XXX: Switch to the attribute system and match on ~atts *)
   let do_fixpoint = if Flags.is_program_mode () then
-      (* TODO: Unguarded Program Fixpoint *)
       ComProgramFixpoint.do_fixpoint
     else
-      ComFixpoint.do_fixpoint atts.check_guard
+      ComFixpoint.do_fixpoint ~check_guard:atts.check_guard
   in
   do_fixpoint local atts.polymorphic l
 
@@ -621,7 +620,7 @@ let vernac_cofixpoint ~atts discharge l =
   let do_cofixpoint = if Flags.is_program_mode () then
       ComProgramFixpoint.do_cofixpoint
     else
-      ComFixpoint.do_cofixpoint atts.check_guard
+      ComFixpoint.do_cofixpoint ~check_guard:atts.check_guard
   in
   do_cofixpoint local atts.polymorphic l
 
@@ -2191,7 +2190,14 @@ let check_vernac_supports_guarded c p =
   match p, c with
   | None, _ -> ()
   | Some _, (VernacFixpoint _ | VernacCoFixpoint _) -> ()
-  | Some _, _ -> user_err Pp.(str "This command does not support Guarded")
+  | Some _, _ -> user_err Pp.(str "This command does not support Unguarded")
+
+(* Vernaculars that take a check_positivity flag *)
+let check_vernac_supports_check_positivity c p =
+  match p, c with
+  | None, _ -> ()
+  | Some _, VernacInductive _ -> ()
+  | Some _, _ -> user_err Pp.(str "This command does not support Assumed Positive")
 
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
@@ -2280,14 +2286,18 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
          | VernacGuarded b when Option.is_empty atts.check_guard ->
            (polymorphism, { atts with check_guard = Some b })
          | VernacGuarded _ ->
-           user_err Pp.(str "Guarded specified twice")
+           user_err Pp.(str "Unguarded specified twice")
+         | VernacCheckedPositive b when Option.is_empty atts.check_positivity ->
+           (polymorphism, { atts with check_positivity = Some b })
+         | VernacCheckedPositive _ ->
+           user_err Pp.(str "Assumed Positivity specified twice")
       )
       (None, atts)
       f
   in
   let rec control = function
   | VernacExpr (f, v) ->
-    let (polymorphism, atts) = flags f { loc; locality = None; check_guard = None; polymorphic = false; program = orig_program_mode; } in
+    let (polymorphism, atts) = flags f { loc; locality = None; check_guard = None; check_positivity = None; polymorphic = false; program = orig_program_mode; } in
     aux ~polymorphism ~atts v
   | VernacFail v -> with_fail st true (fun () -> control v)
   | VernacTimeout (n,v) ->
@@ -2307,6 +2317,7 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
       check_vernac_supports_locality c atts.locality;
       check_vernac_supports_polymorphism c polymorphism;
       check_vernac_supports_guarded c atts.check_guard;
+      check_vernac_supports_check_positivity c atts.check_positivity;
       let polymorphic = Option.default (Flags.is_universe_polymorphism ()) polymorphism in
       Flags.make_universe_polymorphism polymorphic;
       Obligations.set_program_mode atts.program;

@@ -12,6 +12,8 @@
 
 type discharge = DoDischarge | NoDischarge
 
+type check_guard = bool option
+
 type locality = Discharge | Local | Global
 
 type binding_kind = Explicit | Implicit

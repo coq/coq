@@ -202,7 +202,7 @@ let classify_vernac e =
       let poly = List.fold_left (fun poly f ->
           match f with
           | VernacPolymorphic b -> b
-          | (VernacProgram | VernacLocal _ | VernacGuarded _) -> poly
+          | (VernacProgram | VernacLocal _ | VernacGuarded _ | VernacCheckedPositive _) -> poly
         ) poly f in
       static_classifier ~poly e
     | VernacTimeout (_,e) -> static_control_classifier ~poly e

@@ -471,7 +471,7 @@ let is_recursive mie =
       List.exists (fun t -> is_recursive_constructor (nparams+1) t) ind.mind_entry_lc
   | _ -> false
 
-let declare_mutual_inductive_with_eliminations mie pl impls =
+let declare_mutual_inductive_with_eliminations ~check_positivity mie pl impls =
   (* spiwack: raises an error if the structure is supposed to be non-recursive,
         but isn't *)
   begin match mie.mind_entry_finite with
@@ -483,6 +483,10 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
   | _ -> ()
   end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
+  let original_typing_flag = Environ.typing_flags (Global.env ()) in
+  let new_typing_flag = Option.cata (fun b -> {original_typing_flag with Declarations.check_guarded = b})
+                                    original_typing_flag check_positivity in
+  Global.set_typing_flags new_typing_flag;
   let (_, kn), prim = declare_mind mie in
   let mind = Global.mind_of_delta_kn kn in
   List.iteri (fun i (indimpls, constrimpls) ->
@@ -496,6 +500,7 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
                     (ConstructRef (ind, succ j)) impls)
                 constrimpls)
       impls;
+  Global.set_typing_flags original_typing_flag;
   let warn_prim = match mie.mind_entry_record with Some (Some _) -> not prim | _ -> false in
   Flags.if_verbose Feedback.msg_info (minductive_message warn_prim names);
   if mie.mind_entry_private == None
@@ -506,15 +511,15 @@ type one_inductive_impls =
   Impargs.manual_explicitation list (* for inds *)*
   Impargs.manual_explicitation list list (* for constrs *)
 
-let do_mutual_inductive indl cum poly prv finite =
+let do_mutual_inductive ~check_positivity indl cum poly prv finite =
   let indl,coes,ntns = extract_mutual_inductive_declaration_components indl in
   (* Interpret the types *)
   let mie,pl,impls = interp_mutual_inductive indl ntns cum poly prv finite in
   (* Declare the mutual inductive block with its associated schemes *)
-  ignore (declare_mutual_inductive_with_eliminations mie pl impls);
+  ignore (declare_mutual_inductive_with_eliminations ~check_positivity mie pl impls);
   (* Declare the possible notations of inductive types *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env ())) ntns;
   (* Declare the coercions *)
   List.iter (fun qid -> Class.try_add_new_coercion (locate qid) ~local:false poly) coes;
   (* If positivity is assumed declares itself as unsafe. *)
-  if Environ.deactivated_guard (Global.env ()) then Feedback.feedback Feedback.AddedAxiom else ()
+  if check_positivity = Some false || Environ.deactivated_guard (Global.env ()) then Feedback.feedback Feedback.AddedAxiom else ()

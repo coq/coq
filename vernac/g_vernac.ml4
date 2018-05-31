@@ -74,13 +74,20 @@ GEXTEND Gram
       | IDENT "Redirect"; s = ne_string; c = located_vernac -> VernacRedirect (s, c)
       | IDENT "Timeout"; n = natural; v = vernac_control -> VernacTimeout(n,v)
       | IDENT "Fail"; v = vernac_control -> VernacFail v
-      | (f, v) = vernac -> VernacExpr(f, v) ]
+      | (f, v) = vernac_guard -> VernacExpr(f, v) ]
     ]
   ;
-  vernac:
-    [ [ IDENT "Unguarded";   (f, v) = vernac_loc -> (VernacGuarded false  :: f, v)
-      (* Disabled to not confuse the user: for the moment there is not way to disable guard check globally. *)
-      (* | IDENT "Guarded"; (f, v) = vernac_loc -> (VernacGuarded true :: f, v) *)
+  vernac_guard:
+    [ [ IDENT "Unguarded";   (f, v) = vernac_positive -> (VernacGuarded false  :: f, v)
+      (* Disabled to not confuse the user: for the moment there is no way to disable guard check globally. *)
+      (* | IDENT "Guarded"; (f, v) = vernac_positive -> (VernacGuarded true :: f, v) *)
+      | v = vernac_positive -> v ]
+    ]
+  ;
+  vernac_positive:
+    [ [ IDENT "Assumed"; IDENT "Positive"; (f, v) = vernac_loc -> (VernacCheckedPositive false  :: f, v)
+      (* Disabled to not confuse the user: for the moment there is no way to disable guard check globally. *)
+      (* | IDENT "Checked"; IDENT "Positive"; (f, v) = vernac_loc -> (VernacCheckedPositive true :: f, v) *)
       | v = vernac_loc -> v ]
     ]
   ;

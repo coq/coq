@@ -8,6 +8,13 @@ Misctypes
   to `Glob_term`, as these are turned into kernel terms by
   `Pretyping`.
 
+- Arguments `check_guard` or `check_positivity` have been added to
+  `do_(co)fixpoint`, `declare_(co)fixpoint`, `do_mutual_inductive`,
+  and `declare_mutual_inductive_with_eliminations`. You can set it
+  to `None` if you don't want to customize guard/positivity checking.
+  Attributes have been added to `Vernacinterp.atts`, they also can be
+  set to `None`.
+
 Proof engine
 
 - More functions have been changed to use `EConstr`, notably the

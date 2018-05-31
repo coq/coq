@@ -20,8 +20,9 @@ open Decl_kinds
 (** Entry points for the vernacular commands Inductive and CoInductive *)
 
 val do_mutual_inductive :
-  (one_inductive_expr * decl_notation list) list -> cumulative_inductive_flag ->
-  polymorphic -> private_flag -> Declarations.recursivity_kind -> unit
+  check_positivity:check_guard -> (one_inductive_expr * decl_notation list) list ->
+  cumulative_inductive_flag -> polymorphic -> private_flag ->
+  Declarations.recursivity_kind -> unit
 
 (************************************************************************)
 (** Internal API  *)
@@ -37,8 +38,8 @@ type one_inductive_impls =
   Impargs.manual_implicits list (** for constrs *)
 
 val declare_mutual_inductive_with_eliminations :
-  mutual_inductive_entry -> UnivNames.universe_binders -> one_inductive_impls list ->
-  MutInd.t
+  check_positivity:check_guard -> mutual_inductive_entry -> UnivNames.universe_binders ->
+  one_inductive_impls list -> MutInd.t
 
 (** Exported for Funind *)
 
