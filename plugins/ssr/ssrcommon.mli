@@ -482,3 +482,6 @@ module MakeState(S : StateType) : sig
   val get : Proofview.Goal.t -> S.state
 
 end
+
+val is_ind_ref : Evd.evar_map -> EConstr.t -> Names.GlobRef.t -> bool
+val is_construct_ref : Evd.evar_map -> EConstr.t -> Names.GlobRef.t -> bool

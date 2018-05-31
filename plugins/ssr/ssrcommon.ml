@@ -1540,5 +1540,9 @@ let get g =
 
 end
 
+let is_construct_ref sigma c r =
+  EConstr.isConstruct sigma c && GlobRef.equal (ConstructRef (fst(EConstr.destConstruct sigma c))) r
+let is_ind_ref sigma c r = EConstr.isInd sigma c && GlobRef.equal (IndRef (fst(EConstr.destInd sigma c))) r
+
 
 (* vim: set filetype=ocaml foldmethod=marker: *)

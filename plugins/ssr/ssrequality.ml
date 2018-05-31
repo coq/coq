@@ -19,7 +19,6 @@ open Context
 open Vars
 open Locus
 open Printer
-open Globnames
 open Termops
 open Tacinterp
 
@@ -381,10 +380,6 @@ let pirrel_rewrite ?(under=false) pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl
       (Pp.fnl()++str"Rule's type:" ++ spc() ++ pr_econstr_env env sigma hd_ty))
 ;;
 
-let is_construct_ref sigma c r =
-  EConstr.isConstruct sigma c && GlobRef.equal (ConstructRef (fst(EConstr.destConstruct sigma c))) r
-let is_ind_ref sigma c r = EConstr.isInd sigma c && GlobRef.equal (IndRef (fst(EConstr.destInd sigma c))) r
-
 let rwcltac ?under cl rdx dir sr gl =
   let sr =
     let sigma, r = sr in
@@ -403,7 +398,7 @@ let rwcltac ?under cl rdx dir sr gl =
       let sigma, c_ty = Typing.type_of env sigma c in
         ppdebug(lazy Pp.(str"c_ty@rwcltac=" ++ pr_econstr_env env sigma c_ty));
       match EConstr.kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
-      | AtomicType(e, a) when is_ind_ref sigma e c_eq ->
+      | AtomicType(e, a) when Ssrcommon.is_ind_ref sigma e c_eq ->
           let new_rdx = if dir = L2R then a.(2) else a.(1) in
           pirrel_rewrite ?under cl rdx rdxt new_rdx dir (sigma,c) c_ty, tclIDTAC, gl
       | _ -> 
