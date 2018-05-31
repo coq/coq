@@ -649,17 +649,6 @@ module Search = struct
 	Evd.add sigma gl evi')
       sigma goals
 
-  let fail_if_nonclass info =
-    Proofview.Goal.enter begin fun gl ->
-      let sigma = Proofview.Goal.sigma gl in
-      if is_class_type sigma (Proofview.Goal.concl gl) then
-        Proofview.tclUNIT ()
-      else (if !typeclasses_debug > 1 then
-              Feedback.msg_debug (pr_depth info.search_depth ++
-                                    str": failure due to non-class subgoal " ++
-                                    pr_ev sigma (Proofview.Goal.goal gl));
-            Proofview.tclZERO NoApplicableEx) end
-
   (** The general hint application tactic.
       tac1 + tac2 .... The choice of OR or ORELSE is determined
       depending on the dependencies of the goal and the unique/Prop
@@ -798,13 +787,8 @@ module Search = struct
       in
       if path_matches derivs [] then aux e tl
       else
-        let filter =
-          if false (* in 8.6, still allow non-class subgoals
-                    info.search_only_classes *) then fail_if_nonclass info
-          else Proofview.tclUNIT ()
-        in
         ortac
-             (with_shelf (tac <*> filter) >>= fun s ->
+             (with_shelf tac >>= fun s ->
               let i = !idx in incr idx; result s i None)
              (fun e' ->
 	      if CErrors.noncritical (fst e') then
@@ -868,12 +852,9 @@ module Search = struct
   let search_tac_gl ?st only_classes dep hints depth i sigma gls gl :
         unit Proofview.tactic =
     let open Proofview in
-    if false (* In 8.6, still allow non-class goals only_classes && not (is_class_type sigma (Goal.concl gl)) *) then
-      Tacticals.New.tclZEROMSG (str"Not a subgoal for a class")
-    else
-      let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
-      let info = make_autogoal ?st only_classes dep (cut_of_hints hints) i gl in
-      search_tac hints depth 1 info
+    let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
+    let info = make_autogoal ?st only_classes dep (cut_of_hints hints) i gl in
+    search_tac hints depth 1 info
 
   let search_tac ?(st=full_transparent_state) only_classes dep hints depth =
     let open Proofview in
