@@ -51,11 +51,7 @@ val ssrinstancesofrule :
 val ssrrewritetac :
   ?under:bool ->
   Ltac_plugin.Tacinterp.interp_sign ->
-  ((Ssrast.ssrdir * (int * Ssrast.ssrmmod)) *
-     (((Ssrast.ssrhyps option * Ssrmatching.occ) *
-         Ssrmatching.rpattern option) *
-        (ssrwkind * Ssrast.ssrterm)))
-           list -> Tacmach.tactic
+   ssrrwarg list -> Tacmach.tactic
 
 val ipat_rewrite : ssrocc -> ssrdir -> EConstr.t -> Tacmach.tactic
 
