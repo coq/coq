@@ -11,10 +11,6 @@
 open Util
 open Names
 
-(* Identifiers *)
-
-let pr_id id = Id.print id
-
 (* Utilities *)
 
 let code_of_0 = Char.code '0'
@@ -191,28 +187,6 @@ struct
 
 end
 
-open Name
-
-(* Compatibility *)
-let out_name = get_id
-let name_fold = fold_right
-let name_iter = iter
-let name_app = map
-let name_fold_map = fold_left_map
-let name_cons = cons
-let name_max = pick
-let pr_name = print
-
-let pr_lab l = Label.print l
-
 (* Metavariables *)
 let pr_meta = Pp.int
 let string_of_meta = string_of_int
-
-(* Deprecated *)
-open Libnames
-let default_library = default_library
-let coq_string = coq_string
-let coq_root = coq_root
-let default_root_prefix = default_root_prefix
-

@@ -75,20 +75,6 @@ let freeze_summaries ~marshallable : frozen =
     ml_module = Option.map (fun decl -> decl.freeze_function marshallable) !sum_mod;
   }
 
-let unfreeze_single name state =
-  let decl =
-    try String.Map.find name !sum_map
-    with
-    | Not_found ->
-      CErrors.anomaly Pp.(str "trying to unfreeze unregistered summary " ++ str name)
-  in
-  try decl.unfreeze_function state
-  with e when CErrors.noncritical e ->
-    let e = CErrors.push e in
-    Feedback.msg_warning
-      Pp.(seq [str "Error unfreezing summary "; str name; fnl (); CErrors.iprint e]);
-    iraise e
-
 let warn_summary_out_of_scope =
   let name = "summary-out-of-scope" in
   let category = "dev" in
@@ -141,36 +127,6 @@ let remove_from_summary st tag =
   let id = unmangle (Dyn.repr tag) in
   let summaries = String.Map.remove id st.summaries in
   {st with summaries}
-
-(** Selective freeze *)
-
-type frozen_bits = Dyn.t String.Map.t
-
-let freeze_summary ~marshallable ?(complement=false) ids =
-  let sub_map = String.Map.filter (fun id _ -> complement <> List.(mem id ids)) !sum_map in
-  String.Map.map (fun decl -> decl.freeze_function marshallable) sub_map
-
-let unfreeze_summary = String.Map.iter unfreeze_single
-
-let surgery_summary { summaries; ml_module } bits =
-  let summaries =
-    String.Map.fold (fun hash state sum -> String.Map.set hash state sum ) summaries bits in
-  { summaries; ml_module }
-
-let project_summary { summaries; ml_module } ?(complement=false) ids =
-  String.Map.filter (fun name _ -> complement <> List.(mem name ids)) summaries
-
-let pointer_equal l1 l2 =
-  let ptr_equal d1 d2 =
-    let Dyn.Dyn (t1, x1) = d1 in
-    let Dyn.Dyn (t2, x2) = d2 in
-    match Dyn.eq t1 t2 with
-    | None -> false
-    | Some Refl -> x1 == x2
-  in
-  let l1, l2 = String.Map.bindings l1, String.Map.bindings l2 in
-  CList.for_all2eq
-    (fun (id1,v1) (id2,v2) -> id1 = id2 && ptr_equal v1 v2) l1 l2
 
 (** All-in-one reference declaration + registration *)
 

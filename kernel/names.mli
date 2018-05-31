@@ -538,168 +538,14 @@ val eq_ind_chk : inductive -> inductive -> bool
 
 (** {6 Deprecated functions. For backward compatibility.} *)
 
-(** {5 Identifiers} *)
-
-type identifier = Id.t
-[@@ocaml.deprecated "Alias for [Id.t]"]
-
-val string_of_id : Id.t -> string
-[@@ocaml.deprecated "Same as [Id.to_string]."]
-
-val id_of_string : string -> Id.t
-[@@ocaml.deprecated "Same as [Id.of_string]."]
-
-val id_ord : Id.t -> Id.t -> int
-[@@ocaml.deprecated "Same as [Id.compare]."]
-
-val id_eq : Id.t -> Id.t -> bool
-[@@ocaml.deprecated "Same as [Id.equal]."]
-
-module Idset  : Set.S with type elt = Id.t and type t = Id.Set.t
-[@@ocaml.deprecated "Same as [Id.Set]."]
-
-module Idpred : Predicate.S with type elt = Id.t and type t = Id.Pred.t
-[@@ocaml.deprecated "Same as [Id.Pred]."]
-
-module Idmap : module type of Id.Map
-[@@ocaml.deprecated "Same as [Id.Map]."]
-
-(** {5 Directory paths} *)
-
-type dir_path = DirPath.t
-[@@ocaml.deprecated "Alias for [DirPath.t]."]
-
-val dir_path_ord : DirPath.t -> DirPath.t -> int
-[@@ocaml.deprecated "Same as [DirPath.compare]."]
-
-val dir_path_eq : DirPath.t -> DirPath.t -> bool
-[@@ocaml.deprecated "Same as [DirPath.equal]."]
-
-val make_dirpath : module_ident list -> DirPath.t
-[@@ocaml.deprecated "Same as [DirPath.make]."]
-
-val repr_dirpath : DirPath.t -> module_ident list
-[@@ocaml.deprecated "Same as [DirPath.repr]."]
-
-val empty_dirpath : DirPath.t
-[@@ocaml.deprecated "Same as [DirPath.empty]."]
-
-val is_empty_dirpath : DirPath.t -> bool
-[@@ocaml.deprecated "Same as [DirPath.is_empty]."]
-
-val string_of_dirpath : DirPath.t -> string
-[@@ocaml.deprecated "Same as [DirPath.to_string]."]
-
-val initial_dir : DirPath.t
-[@@ocaml.deprecated "Same as [DirPath.initial]."]
-
-(** {5 Labels} *)
-
-type label = Label.t
-[@@ocaml.deprecated "Same as [Label.t]."]
-(** Alias type *)
-
-val mk_label : string -> Label.t
-[@@ocaml.deprecated "Same as [Label.make]."]
-
-val string_of_label : Label.t -> string
-[@@ocaml.deprecated "Same as [Label.to_string]."]
-
-val pr_label : Label.t -> Pp.t
-[@@ocaml.deprecated "Same as [Label.print]."]
-
-val label_of_id : Id.t -> Label.t
-[@@ocaml.deprecated "Same as [Label.of_id]."]
-
-val id_of_label : Label.t -> Id.t
-[@@ocaml.deprecated "Same as [Label.to_id]."]
-
-val eq_label : Label.t -> Label.t -> bool
-[@@ocaml.deprecated "Same as [Label.equal]."]
-
-(** {5 Unique bound module names} *)
-
 type mod_bound_id = MBId.t
 [@@ocaml.deprecated "Same as [MBId.t]."]
-
-val mod_bound_id_ord : MBId.t -> MBId.t -> int
-[@@ocaml.deprecated "Same as [MBId.compare]."]
-
-val mod_bound_id_eq : MBId.t -> MBId.t -> bool
-[@@ocaml.deprecated "Same as [MBId.equal]."]
-
-val make_mbid : DirPath.t -> Id.t -> MBId.t
-[@@ocaml.deprecated "Same as [MBId.make]."]
-
-val repr_mbid : MBId.t -> int * Id.t * DirPath.t
-[@@ocaml.deprecated "Same as [MBId.repr]."]
-
-val id_of_mbid : MBId.t -> Id.t
-[@@ocaml.deprecated "Same as [MBId.to_id]."]
-
-val string_of_mbid : MBId.t -> string
-[@@ocaml.deprecated "Same as [MBId.to_string]."]
-
-val debug_string_of_mbid : MBId.t -> string
-[@@ocaml.deprecated "Same as [MBId.debug_to_string]."]
-
-(** {5 Names} *)
-
-val name_eq : Name.t -> Name.t -> bool
-[@@ocaml.deprecated "Same as [Name.equal]."]
-
 (** {5 Module paths} *)
 
 type module_path = ModPath.t =
   | MPfile of DirPath.t
   | MPbound of MBId.t
   | MPdot of ModPath.t * Label.t
-[@@ocaml.deprecated "Alias type"]
-
-val mp_ord : ModPath.t -> ModPath.t -> int
-[@@ocaml.deprecated "Same as [ModPath.compare]."]
-
-val mp_eq : ModPath.t -> ModPath.t -> bool
-[@@ocaml.deprecated "Same as [ModPath.equal]."]
-
-val check_bound_mp : ModPath.t -> bool
-[@@ocaml.deprecated "Same as [ModPath.is_bound]."]
-
-val string_of_mp : ModPath.t -> string
-[@@ocaml.deprecated "Same as [ModPath.to_string]."]
-
-val initial_path : ModPath.t
-[@@ocaml.deprecated "Same as [ModPath.initial]."]
-
-(** {5 Kernel names} *)
-
-type kernel_name = KerName.t
-[@@ocaml.deprecated "Alias type"]
-
-val make_kn : ModPath.t -> DirPath.t -> Label.t -> KerName.t
-[@@ocaml.deprecated "Same as [KerName.make]."]
-
-val repr_kn : KerName.t -> ModPath.t * DirPath.t * Label.t
-[@@ocaml.deprecated "Same as [KerName.repr]."]
-
-val modpath : KerName.t -> ModPath.t
-[@@ocaml.deprecated "Same as [KerName.modpath]."]
-
-val label : KerName.t -> Label.t
-[@@ocaml.deprecated "Same as [KerName.label]."]
-
-val string_of_kn : KerName.t -> string
-[@@ocaml.deprecated "Same as [KerName.to_string]."]
-
-val pr_kn : KerName.t -> Pp.t
-[@@ocaml.deprecated "Same as [KerName.print]."]
-
-val kn_ord : KerName.t -> KerName.t -> int
-[@@ocaml.deprecated "Same as [KerName.compare]."]
-
-(** {5 Constant names} *)
-
-type constant = Constant.t
 [@@ocaml.deprecated "Alias type"]
 
 module Projection : sig
@@ -749,6 +595,9 @@ module GlobRef : sig
 
 end
 
+type global_reference = GlobRef.t
+[@@ocaml.deprecated "Alias for [GlobRef.t]"]
+
 (** Better to have it here that in Closure, since required in grammar.cma *)
 (* XXX: Move to a module *)
 type evaluable_global_reference =
@@ -756,101 +605,3 @@ type evaluable_global_reference =
   | EvalConstRef of Constant.t
 
 val eq_egr : evaluable_global_reference ->  evaluable_global_reference -> bool
-
-val constant_of_kn_equiv : KerName.t -> KerName.t -> Constant.t
-[@@ocaml.deprecated "Same as [Constant.make]"]
-
-val constant_of_kn : KerName.t -> Constant.t
-[@@ocaml.deprecated "Same as [Constant.make1]"]
-
-val make_con : ModPath.t -> DirPath.t -> Label.t -> Constant.t
-[@@ocaml.deprecated "Same as [Constant.make3]"]
-
-val repr_con : Constant.t -> ModPath.t * DirPath.t * Label.t
-[@@ocaml.deprecated "Same as [Constant.repr3]"]
-
-val user_con : Constant.t -> KerName.t
-[@@ocaml.deprecated "Same as [Constant.user]"]
-
-val canonical_con : Constant.t -> KerName.t
-[@@ocaml.deprecated "Same as [Constant.canonical]"]
-
-val con_modpath : Constant.t -> ModPath.t
-[@@ocaml.deprecated "Same as [Constant.modpath]"]
-
-val con_label : Constant.t -> Label.t
-[@@ocaml.deprecated "Same as [Constant.label]"]
-
-val eq_constant : Constant.t -> Constant.t -> bool
-[@@ocaml.deprecated "Same as [Constant.equal]"]
-
-val con_ord : Constant.t -> Constant.t -> int
-[@@ocaml.deprecated "Same as [Constant.CanOrd.compare]"]
-
-val con_user_ord : Constant.t -> Constant.t -> int
-[@@ocaml.deprecated "Same as [Constant.UserOrd.compare]"]
-
-val con_with_label : Constant.t -> Label.t -> Constant.t
-[@@ocaml.deprecated "Same as [Constant.change_label]"]
-
-val string_of_con : Constant.t -> string
-[@@ocaml.deprecated "Same as [Constant.to_string]"]
-
-val pr_con : Constant.t -> Pp.t
-[@@ocaml.deprecated "Same as [Constant.print]"]
-
-val debug_pr_con : Constant.t -> Pp.t
-[@@ocaml.deprecated "Same as [Constant.debug_print]"]
-
-val debug_string_of_con : Constant.t -> string
-[@@ocaml.deprecated "Same as [Constant.debug_to_string]"]
-
-(** {5 Mutual Inductive names} *)
-
-type mutual_inductive = MutInd.t
-[@@ocaml.deprecated "Alias type"]
-
-val mind_of_kn : KerName.t -> MutInd.t
-[@@ocaml.deprecated "Same as [MutInd.make1]"]
-
-val mind_of_kn_equiv : KerName.t -> KerName.t -> MutInd.t
-[@@ocaml.deprecated "Same as [MutInd.make]"]
-
-val make_mind : ModPath.t -> DirPath.t -> Label.t -> MutInd.t
-[@@ocaml.deprecated "Same as [MutInd.make3]"]
-
-val user_mind : MutInd.t -> KerName.t
-[@@ocaml.deprecated "Same as [MutInd.user]"]
-
-val canonical_mind : MutInd.t -> KerName.t
-[@@ocaml.deprecated "Same as [MutInd.canonical]"]
-
-val repr_mind : MutInd.t -> ModPath.t * DirPath.t * Label.t
-[@@ocaml.deprecated "Same as [MutInd.repr3]"]
-
-val eq_mind : MutInd.t -> MutInd.t -> bool
-[@@ocaml.deprecated "Same as [MutInd.equal]"]
-
-val mind_ord : MutInd.t -> MutInd.t -> int
-[@@ocaml.deprecated "Same as [MutInd.CanOrd.compare]"]
-
-val mind_user_ord : MutInd.t -> MutInd.t -> int
-[@@ocaml.deprecated "Same as [MutInd.UserOrd.compare]"]
-
-val mind_label : MutInd.t -> Label.t
-[@@ocaml.deprecated "Same as [MutInd.label]"]
-
-val mind_modpath : MutInd.t -> ModPath.t
-[@@ocaml.deprecated "Same as [MutInd.modpath]"]
-
-val string_of_mind : MutInd.t -> string
-[@@ocaml.deprecated "Same as [MutInd.to_string]"]
-
-val pr_mind : MutInd.t -> Pp.t
-[@@ocaml.deprecated "Same as [MutInd.print]"]
-
-val debug_pr_mind : MutInd.t -> Pp.t
-[@@ocaml.deprecated "Same as [MutInd.debug_print]"]
-
-val debug_string_of_mind : MutInd.t -> string
-[@@ocaml.deprecated "Same as [MutInd.debug_to_string]"]

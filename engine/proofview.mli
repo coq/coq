@@ -495,10 +495,6 @@ module Goal : sig
   (** Type of goals. *)
   type t
 
-  (** Assume that you do not need the goal to be normalized. *)
-  val assume : t -> t
-  [@@ocaml.deprecated "Normalization is enforced by EConstr, [assume] is not needed anymore"]
-
   (** Normalises the argument goal. *)
   val normalize : t -> t tactic
 
@@ -588,11 +584,6 @@ module V82 : sig
      Resets the proofview's goals so that it contains all unresolved evars
      (in chronological order of insertion). *)
   val grab : proofview -> proofview
-
-  (* Returns the open goals of the proofview together with the evar_map to 
-     interpret them. *)
-  val goals : proofview -> Evar.t list Evd.sigma
-  [@@ocaml.deprecated "Use [Proofview.proofview]"]
 
   val top_goals : entry -> proofview -> Evar.t list Evd.sigma
 

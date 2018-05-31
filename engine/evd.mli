@@ -33,14 +33,6 @@ type etypes = econstr
 
 (** {5 Existential variables and unification states} *)
 
-type evar = Evar.t
-[@@ocaml.deprecated "use Evar.t"]
-(** Existential variables. *)
-
-(** {6 Evars} *)
-val string_of_existential : Evar.t -> string
-[@@ocaml.deprecated "use Evar.print"]
-
 (** {6 Evar filters} *)
 
 module Filter :
@@ -129,10 +121,6 @@ val map_evar_body : (econstr -> econstr) -> evar_body -> evar_body
 val map_evar_info : (econstr -> econstr) -> evar_info -> evar_info
 
 (** {6 Unification state} **)
-
-type evar_universe_context = UState.t
-[@@ocaml.deprecated "Alias of UState.t"]
-(** The universe context associated to an evar map *)
 
 type evar_map
 (** Type of unification state. Essentially a bunch of state-passing data needed
@@ -529,48 +517,11 @@ val univ_flexible_alg : rigid
 
 type 'a in_evar_universe_context = 'a * UState.t
 
-val evar_universe_context_set : UState.t -> Univ.ContextSet.t
-[@@ocaml.deprecated "Alias of UState.context_set"]
-val evar_universe_context_constraints : UState.t -> Univ.Constraint.t
-[@@ocaml.deprecated "Alias of UState.constraints"]
-val evar_context_universe_context : UState.t -> Univ.UContext.t
-[@@ocaml.deprecated "alias of UState.context"]
-
-val evar_universe_context_of : Univ.ContextSet.t -> UState.t
-[@@ocaml.deprecated "Alias of UState.of_context_set"]
-val empty_evar_universe_context : UState.t
-[@@ocaml.deprecated "Alias of UState.empty"]
-val union_evar_universe_context : UState.t -> UState.t ->
-  UState.t
-[@@ocaml.deprecated "Alias of UState.union"]
-val evar_universe_context_subst : UState.t -> UnivSubst.universe_opt_subst
-[@@ocaml.deprecated "Alias of UState.subst"]
-val constrain_variables : Univ.LSet.t -> UState.t -> UState.t
-[@@ocaml.deprecated "Alias of UState.constrain_variables"]
-
-
-val evar_universe_context_of_binders :
-  UnivNames.universe_binders -> UState.t
-[@@ocaml.deprecated "Alias of UState.of_binders"]
-
-val make_evar_universe_context : env -> Misctypes.lident list option -> UState.t
-[@@ocaml.deprecated "Use UState.make or UState.make_with_initial_binders"]
 val restrict_universe_context : evar_map -> Univ.LSet.t -> evar_map
 (** Raises Not_found if not a name for a universe in this map. *)
 val universe_of_name : evar_map -> Id.t -> Univ.Level.t
 
 val universe_binders : evar_map -> UnivNames.universe_binders
-val add_constraints_context : UState.t ->
-  Univ.Constraint.t -> UState.t
-[@@ocaml.deprecated "Alias of UState.add_constraints"]
-
-
-val normalize_evar_universe_context_variables : UState.t -> 
-  Univ.universe_subst in_evar_universe_context
-[@@ocaml.deprecated "Alias of UState.normalize_variables"]
-
-val normalize_evar_universe_context : UState.t -> UState.t
-[@@ocaml.deprecated "Alias of UState.minimize"]
 
 val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Level.t
 val new_univ_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Universe.t
@@ -627,8 +578,6 @@ val merge_universe_subst : evar_map -> UnivSubst.universe_opt_subst -> evar_map
 val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
 
 val nf_univ_variables : evar_map -> evar_map * Univ.universe_subst
-val abstract_undefined_variables : UState.t -> UState.t
-[@@ocaml.deprecated "Alias of UState.abstract_undefined_variables"]
 
 val fix_undefined_variables : evar_map -> evar_map
 
@@ -636,8 +585,6 @@ val refresh_undefined_universes : evar_map -> evar_map * Univ.universe_level_sub
 
 (** Universe minimization *)
 val minimize_universes : evar_map -> evar_map
-val nf_constraints : evar_map -> evar_map
-[@@ocaml.deprecated "Alias of Evd.minimize_universes"]
 
 val update_sigma_env : evar_map -> env -> evar_map
 

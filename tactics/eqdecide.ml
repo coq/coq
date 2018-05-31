@@ -17,7 +17,7 @@
 open Util
 open Names
 open Namegen
-open Term
+open Constr
 open EConstr
 open Declarations
 open Tactics

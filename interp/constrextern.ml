@@ -28,7 +28,6 @@ open Pattern
 open Nametab
 open Notation
 open Detyping
-open Misctypes
 open Decl_kinds
 
 module NamedDecl = Context.Named.Declaration
@@ -931,7 +930,7 @@ and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 and factorize_prod scopes vars na bk aty c =
   let store, get = set_temporary_memory () in
   match na, DAst.get c with
-  | Name id, GCases (LetPatternStyle, None, [(e,(Anonymous,None))],(_::_ as eqns))
+  | Name id, GCases (Constr.LetPatternStyle, None, [(e,(Anonymous,None))],(_::_ as eqns))
          when is_gvar id e && List.length (store (factorize_eqns eqns)) = 1 ->
     (match get () with
      | [{CAst.v=(ids,disj_of_patl,b)}] ->
@@ -959,7 +958,7 @@ and factorize_prod scopes vars na bk aty c =
 and factorize_lambda inctx scopes vars na bk aty c =
   let store, get = set_temporary_memory () in
   match na, DAst.get c with
-  | Name id, GCases (LetPatternStyle, None, [(e,(Anonymous,None))],(_::_ as eqns))
+  | Name id, GCases (Constr.LetPatternStyle, None, [(e,(Anonymous,None))],(_::_ as eqns))
          when is_gvar id e && List.length (store (factorize_eqns eqns)) = 1 ->
     (match get () with
      | [{CAst.v=(ids,disj_of_patl,b)}] ->
@@ -1209,7 +1208,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PIf (c,b1,b2) ->
       GIf (glob_of_pat avoid env sigma c, (Anonymous,None),
            glob_of_pat avoid env sigma b1, glob_of_pat avoid env sigma b2)
-  | PCase ({cip_style=LetStyle; cip_ind_tags=None},PMeta None,tm,[(0,n,b)]) ->
+  | PCase ({cip_style=Constr.LetStyle; cip_ind_tags=None},PMeta None,tm,[(0,n,b)]) ->
       let nal,b = it_destRLambda_or_LetIn_names n (glob_of_pat avoid env sigma b) in
       GLetTuple (nal,(Anonymous,None),glob_of_pat avoid env sigma tm,b)
   | PCase (info,p,tm,bl) ->
@@ -1228,7 +1227,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
 	  return_type_of_predicate ind nargs (glob_of_pat avoid env sigma p)
 	| _ -> anomaly (Pp.str "PCase with non-trivial predicate but unknown inductive.")
       in
-      GCases (RegularStyle,rtn,[glob_of_pat avoid env sigma tm,indnames],mat)
+      GCases (Constr.RegularStyle,rtn,[glob_of_pat avoid env sigma tm,indnames],mat)
   | PFix ((ln,i),(lna,tl,bl)) ->
      let def_avoid, def_env, lfi =
        Array.fold_left

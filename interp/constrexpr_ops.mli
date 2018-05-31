@@ -60,14 +60,6 @@ val mkCPatOr : ?loc:Loc.t -> cases_pattern_expr list -> cases_pattern_expr
 val mkAppPattern : ?loc:Loc.t -> cases_pattern_expr -> cases_pattern_expr list -> cases_pattern_expr
 (** Apply a list of pattern arguments to a pattern *)
 
-(** @deprecated variant of mkCLambdaN *)
-val abstract_constr_expr : constr_expr -> local_binder_expr list -> constr_expr
-[@@ocaml.deprecated "deprecated variant of mkCLambdaN"]
-
-(** @deprecated variant of mkCProdN *)
-val prod_constr_expr : constr_expr -> local_binder_expr list -> constr_expr
-[@@ocaml.deprecated "deprecated variant of mkCProdN"]
-
 (** {6 Destructors}*)
 
 val coerce_reference_to_id : reference -> Id.t

@@ -259,12 +259,6 @@ val subterm_source : Evar.t -> ?where:Evar_kinds.subevar_kind -> Evar_kinds.t Lo
 
 val meta_counter_summary_tag : int Summary.Dyn.tag
 
-(** Deprecated *)
-type type_constraint = types option
-[@@ocaml.deprecated "use the version in Evardefine"]
-type val_constraint = constr option
-[@@ocaml.deprecated "use the version in Evardefine"]
-
 val e_new_evar :
   env -> evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->

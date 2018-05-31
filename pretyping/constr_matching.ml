@@ -13,6 +13,7 @@ open Pp
 open CErrors
 open Util
 open Names
+open Constr
 open Globnames
 open Termops
 open Term

@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Pp
+open Constr
 open Genarg
 open Stdarg
 open Pcoq.Prim
@@ -169,7 +170,7 @@ END
 
 
 TACTIC EXTEND convert_concl_no_check
-| ["convert_concl_no_check" constr(x) ] -> [ Tactics.convert_concl_no_check x Term.DEFAULTcast ]
+| ["convert_concl_no_check" constr(x) ] -> [ Tactics.convert_concl_no_check x DEFAULTcast ]
 END
 
 let pr_pre_hints_path_atom _ _ _ = Hints.pp_hints_path_atom Libnames.pr_reference

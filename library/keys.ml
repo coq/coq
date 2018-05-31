@@ -11,9 +11,9 @@
 (** Keys for unification and indexing *)
 
 open Names
-open Term
-open Globnames
+open Constr
 open Libobject
+open Globnames
 
 type key =
   | KGlob of GlobRef.t

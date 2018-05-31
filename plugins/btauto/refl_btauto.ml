@@ -1,3 +1,15 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
+(* <O___,, *       (see CREDITS file for the list of authors)           *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
+open Constr
+
 let contrib_name = "btauto"
 
 let init_constant dir s =
@@ -106,7 +118,7 @@ module Bool = struct
     let negb = Lazy.force negb in
 
     let rec aux c = match decomp_term sigma c with
-    | Term.App (head, args) ->
+    | App (head, args) ->
       if head === andb && Array.length args = 2 then
         Andb (aux args.(0), aux args.(1))
       else if head === orb && Array.length args = 2 then
@@ -116,9 +128,9 @@ module Bool = struct
       else if head === negb && Array.length args = 1 then
         Negb (aux args.(0))
       else Var (Env.add env c)
-    | Term.Case (info, r, arg, pats) ->
+    | Case (info, r, arg, pats) ->
       let is_bool =
-        let i = info.Term.ci_ind in
+        let i = info.ci_ind in
         Names.eq_ind i (Lazy.force ind)
       in
       if is_bool then
@@ -176,9 +188,9 @@ module Btauto = struct
     let _, var = Tacmach.pf_reduction_of_red_expr gl (Genredexpr.CbvVm None) var in
     let var = EConstr.Unsafe.to_constr var in
     let rec to_list l = match decomp_term (Tacmach.project gl) l with
-    | Term.App (c, _)
+    | App (c, _)
       when c === (Lazy.force CoqList._nil) -> []
-    | Term.App (c, [|_; h; t|])
+    | App (c, [|_; h; t|])
       when c === (Lazy.force CoqList._cons) ->
       if h === (Lazy.force Bool.trueb) then (true :: to_list t)
       else if h === (Lazy.force Bool.falseb) then (false :: to_list t)
@@ -218,7 +230,7 @@ module Btauto = struct
       let concl = EConstr.Unsafe.to_constr concl in
       let t = decomp_term (Tacmach.New.project gl) concl in
       match t with
-      | Term.App (c, [|typ; p; _|]) when c === eq ->
+      | App (c, [|typ; p; _|]) when c === eq ->
       (* should be an equality [@eq poly ?p (Cst false)] *)
           let tac = Tacticals.New.tclORELSE0 Tactics.reflexivity (Proofview.V82.tactic (print_counterexample p env)) in
           tac
@@ -236,7 +248,7 @@ module Btauto = struct
       let bool = Lazy.force Bool.typ in
       let t = decomp_term sigma concl in
       match t with
-      | Term.App (c, [|typ; tl; tr|])
+      | App (c, [|typ; tl; tr|])
           when typ === bool && c === eq ->
           let env = Env.empty () in
           let fl = Bool.quote env sigma tl in

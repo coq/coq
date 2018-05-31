@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Names
+open Constr
 open Libnames
 open Glob_term
 open Constrexpr

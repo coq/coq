@@ -132,8 +132,6 @@ end
 
 module Store = Store.Make ()
 
-type evar = Evar.t
-
 let string_of_existential evk = "?X" ^ string_of_int (Evar.repr evk)
 
 type evar_body =
@@ -1205,28 +1203,6 @@ module Monad =
 (* Failure explanation *)
 
 type unsolvability_explanation = SeveralInstancesFound of int
-
-(** Deprecated *)
-type evar_universe_context = UState.t
-let empty_evar_universe_context = UState.empty
-let union_evar_universe_context = UState.union
-let evar_universe_context_set = UState.context_set
-let evar_universe_context_constraints = UState.constraints
-let evar_context_universe_context = UState.context
-let evar_universe_context_of = UState.of_context_set
-let evar_universe_context_subst = UState.subst
-let add_constraints_context = UState.add_constraints
-let constrain_variables = UState.constrain_variables
-let evar_universe_context_of_binders = UState.of_binders
-let make_evar_universe_context e l =
-  let g = Environ.universes e in
-  match l with
-  | None -> UState.make g
-  | Some l -> UState.make_with_initial_binders g l
-let normalize_evar_universe_context_variables = UState.normalize_variables
-let abstract_undefined_variables = UState.abstract_undefined_variables
-let normalize_evar_universe_context = UState.minimize
-let nf_constraints = minimize_universes
 
 module MiniEConstr = struct
 

@@ -1085,8 +1085,6 @@ module Goal = struct
     self : Evar.t ; (* for compatibility with old-style definitions *)
   }
 
-  let assume (gl : t) = (gl : t)
-
   let print { sigma; self } = { Evd.it = self; sigma }
 
   let state { state=state } = state
@@ -1273,11 +1271,6 @@ module V82 = struct
     { pv with comb = List.map with_empty_state goals }
       
     
-
-  (* Returns the open goals of the proofview together with the evar_map to 
-     interpret them. *)
-  let goals { comb = comb ; solution = solution; } =
-   { Evd.it = List.map drop_state comb ; sigma = solution }
 
   let top_goals initial { solution=solution; } =
     let goals = CList.map (fun (t,_) -> fst (Constr.destEvar (EConstr.Unsafe.to_constr t))) initial in
