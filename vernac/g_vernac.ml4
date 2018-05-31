@@ -78,9 +78,15 @@ GEXTEND Gram
     ]
   ;
   vernac:
+    [ [ IDENT "Unguarded";   (f, v) = vernac_loc -> (VernacGuarded false  :: f, v)
+      (* Disabled to not confuse the user: for the moment there is not way to disable guard check globally. *)
+      (* | IDENT "Guarded"; (f, v) = vernac_loc -> (VernacGuarded true :: f, v) *)
+      | v = vernac_loc -> v ]
+    ]
+  ;
+  vernac_loc:
     [ [ IDENT "Local"; (f, v) = vernac_poly -> (VernacLocal true :: f, v)
       | IDENT "Global"; (f, v) = vernac_poly -> (VernacLocal false :: f, v)
-
       | v = vernac_poly -> v ]
     ]
   ;
@@ -169,17 +175,13 @@ GEXTEND Gram
           let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
           VernacInductive (cum, priv,f,indl)
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
-          VernacFixpoint (None, NoDischarge, recs)
+          VernacFixpoint (NoDischarge, recs)
       | IDENT "Let"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
-          VernacFixpoint (None, DoDischarge, recs)
-      | IDENT "Unguarded"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
-          VernacFixpoint (Some false, NoDischarge, recs)
+          VernacFixpoint (DoDischarge, recs)
       | "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
-          VernacCoFixpoint (None, NoDischarge, corecs)
+          VernacCoFixpoint (NoDischarge, corecs)
       | IDENT "Let"; "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
-          VernacCoFixpoint (None, DoDischarge, corecs)
-      | IDENT "Unguarded"; "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
-          VernacCoFixpoint (Some false, DoDischarge, corecs)
+          VernacCoFixpoint (DoDischarge, corecs)
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
 	      l = LIST1 identref SEP "," -> VernacCombinedScheme (id, l)

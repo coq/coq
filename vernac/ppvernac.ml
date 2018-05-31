@@ -781,26 +781,18 @@ open Pputils
           (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
         )
 
-      | VernacFixpoint (guarded, local, recs) ->
-        let guarded = match guarded with
-          | Some false -> keyword "Unguarded" ++ spc ()
-          | _ -> str ""
-        in
+      | VernacFixpoint (local, recs) ->
         let local = match local with
           | DoDischarge -> keyword "Let" ++ spc ()
           | NoDischarge -> str ""
         in
         return (
-          hov 0 (guarded ++ local ++ keyword "Fixpoint" ++ spc () ++
+          hov 0 (local ++ keyword "Fixpoint" ++ spc () ++
                    prlist_with_sep (fun _ -> fnl () ++ keyword "with"
                      ++ spc ()) pr_rec_definition recs)
         )
 
-      | VernacCoFixpoint (guarded, local, corecs) ->
-        let guarded = match guarded with
-          | Some false -> keyword "Unguarded" ++ spc ()
-          | _ -> str ""
-        in
+      | VernacCoFixpoint (local, corecs) ->
         let local = match local with
           | DoDischarge -> keyword "Let" ++ spc ()
           | NoDischarge -> str ""
@@ -812,7 +804,7 @@ open Pputils
             prlist (pr_decl_notation pr_constr) ntn
         in
         return (
-          hov 0 (guarded ++ local ++ keyword "CoFixpoint" ++ spc() ++
+          hov 0 (local ++ keyword "CoFixpoint" ++ spc() ++
                    prlist_with_sep (fun _ -> fnl() ++ keyword "with" ++ spc ()) pr_onecorec corecs)
         )
       | VernacScheme l ->
@@ -1202,6 +1194,8 @@ let pr_vernac_flag =
   function
   | VernacPolymorphic true -> keyword "Polymorphic"
   | VernacPolymorphic false -> keyword "Monomorphic"
+  | VernacGuarded true -> keyword "Guarded"
+  | VernacGuarded false -> keyword "Unguarded"
   | VernacProgram -> keyword "Program"
   | VernacLocal local -> pr_locality local
 

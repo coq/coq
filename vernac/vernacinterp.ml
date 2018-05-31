@@ -17,6 +17,7 @@ type deprecation = bool
 type atts = {
   loc : Loc.t option;
   locality : bool option;
+  check_guard : bool option;
   polymorphic : bool;
   program : bool;
 }

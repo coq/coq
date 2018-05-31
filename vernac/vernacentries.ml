@@ -601,7 +601,7 @@ let vernac_inductive ~atts cum lo finite indl =
     let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
     ComInductive.do_mutual_inductive indl is_cumulative atts.polymorphic lo finite
 
-let vernac_fixpoint ~atts guarded discharge l =
+let vernac_fixpoint ~atts discharge l =
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
@@ -610,18 +610,18 @@ let vernac_fixpoint ~atts guarded discharge l =
       (* TODO: Unguarded Program Fixpoint *)
       ComProgramFixpoint.do_fixpoint
     else
-      ComFixpoint.do_fixpoint guarded
+      ComFixpoint.do_fixpoint atts.check_guard
   in
   do_fixpoint local atts.polymorphic l
 
-let vernac_cofixpoint ~atts guarded discharge l =
+let vernac_cofixpoint ~atts discharge l =
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   let do_cofixpoint = if Flags.is_program_mode () then
       ComProgramFixpoint.do_cofixpoint
     else
-      ComFixpoint.do_cofixpoint guarded
+      ComFixpoint.do_cofixpoint atts.check_guard
   in
   do_cofixpoint local atts.polymorphic l
 
@@ -2038,8 +2038,8 @@ let interp ?proof ~atts ~st c =
   | VernacAssumption ((discharge,kind),nl,l) ->
       vernac_assumption ~atts discharge kind l nl
   | VernacInductive (cum, priv,finite,l) -> vernac_inductive ~atts cum priv finite l
-  | VernacFixpoint (guarded, discharge, l) -> vernac_fixpoint ~atts guarded discharge l
-  | VernacCoFixpoint (guarded, discharge, l) -> vernac_cofixpoint ~atts guarded discharge l
+  | VernacFixpoint (discharge, l) -> vernac_fixpoint ~atts discharge l
+  | VernacCoFixpoint (discharge, l) -> vernac_cofixpoint ~atts discharge l
   | VernacScheme l -> vernac_scheme l
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
   | VernacUniverse l -> vernac_universe ~atts l
@@ -2186,6 +2186,13 @@ let check_vernac_supports_polymorphism c p =
     | VernacExtend _ | VernacUniverse _ | VernacConstraint _) -> ()
   | Some _, _ -> user_err Pp.(str "This command does not support Polymorphism")
 
+(* Vernaculars that take a guarded flag *)
+let check_vernac_supports_guarded c p =
+  match p, c with
+  | None, _ -> ()
+  | Some _, (VernacFixpoint _ | VernacCoFixpoint _) -> ()
+  | Some _, _ -> user_err Pp.(str "This command does not support Guarded")
+
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
 
@@ -2270,13 +2277,17 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
            (polymorphism, { atts with locality = Some b })
          | VernacLocal _ ->
            user_err Pp.(str "Locality specified twice")
+         | VernacGuarded b when Option.is_empty atts.check_guard ->
+           (polymorphism, { atts with check_guard = Some b })
+         | VernacGuarded _ ->
+           user_err Pp.(str "Guarded specified twice")
       )
       (None, atts)
       f
   in
   let rec control = function
   | VernacExpr (f, v) ->
-    let (polymorphism, atts) = flags f { loc; locality = None; polymorphic = false; program = orig_program_mode; } in
+    let (polymorphism, atts) = flags f { loc; locality = None; check_guard = None; polymorphic = false; program = orig_program_mode; } in
     aux ~polymorphism ~atts v
   | VernacFail v -> with_fail st true (fun () -> control v)
   | VernacTimeout (n,v) ->
@@ -2295,6 +2306,7 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
     | c ->
       check_vernac_supports_locality c atts.locality;
       check_vernac_supports_polymorphism c polymorphism;
+      check_vernac_supports_guarded c atts.check_guard;
       let polymorphic = Option.default (Flags.is_universe_polymorphism ()) polymorphism in
       Flags.make_universe_polymorphism polymorphic;
       Obligations.set_program_mode atts.program;
