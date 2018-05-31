@@ -1141,10 +1141,16 @@ constructions.
 
    .. example::
 
+<<<<<<< 8a15241643eaf41b8b367f05b465fd90153437a2
       The recursive call may not only be on direct subterms of the recursive
       variable :g:`n` but also on a deeper subterm and we can directly write
       the function :g:`mod2` which gives the remainder modulo 2 of a natural
       number.
+=======
+The check of decreasing argument can be temporary disabled using ``Unguarded``.
+Warning: this can break the consistency of the system, use at your own risk.
+Unchecked fixpoint are printed by ``Print Assumptions``.
+>>>>>>> Fix documentation.
 
          Fixpoint mod2 (n:nat) : nat :=
          match n with
@@ -1260,6 +1266,7 @@ Definitions of recursive objects in co-inductive types
       mutually dependent methods.
 
    .. cmdv:: Unguarded CoFixpoint @ident {? @binders } {? : @type } := @term
+
       Define a cofixpoint without checking productivity.
       Warning: this can break the consistency of the system, use at your own risk.
       Unchecked cofixpoint are printed by ``Print Assumptions``.
