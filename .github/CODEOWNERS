@@ -307,6 +307,11 @@
 /test-suite/coqwc/     @silene
 # Secondary maintainer @gares
 
+/tools/TimeFileMaker.py                 @JasonGross
+/tools/make-both-single-timing-files.py @JasonGross
+/tools/make-both-time-files.py          @JasonGross
+/tools/make-one-time-file.py            @JasonGross
+
 ########## Toplevel ##########
 
 /toplevel/        @ejgallego
