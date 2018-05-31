@@ -58,7 +58,7 @@ FULLDOCDIR=$(DOCDIR)
 endif
 
 .PHONY: install-coq install-binaries install-byte install-opt
-.PHONY: install-tools install-library install-devfiles
+.PHONY: install-tools install-library install-devfiles install-merlin
 .PHONY: install-coq-info install-coq-manpages install-emacs install-latex
 .PHONY: install-meta
 
@@ -111,6 +111,9 @@ install-devfiles:
 ifeq ($(BEST),opt)
 	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMX) $(CORECMA:.cma=.a) $(STATICPLUGINS:.cma=.a)
 endif
+
+install-merlin:
+	$(INSTALLSH) $(FULLCOQLIB) $(wildcard $(INSTALLCMX:.cmx=.cmt) $(INSTALLCMI:.cmi=.cmti) $(MLIFILES) $(MLFILES) $(MERLINFILES))
 
 install-library:
 	$(MKDIR) $(FULLCOQLIB)
