@@ -2344,7 +2344,7 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
   let orig_program_mode = Flags.is_program_mode () in
   let rec control = function
   | VernacExpr (f, v) ->
-    let (polymorphism, atts) = attributes_of_flags f { loc; locality = None; polymorphic = false; program = orig_program_mode; } in
+    let (polymorphism, atts) = attributes_of_flags f (mk_atts ~program:orig_program_mode ()) in
     aux ~polymorphism ~atts v
   | VernacFail v -> with_fail st true (fun () -> control v)
   | VernacTimeout (n,v) ->

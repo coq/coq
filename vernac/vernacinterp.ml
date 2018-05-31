@@ -21,6 +21,9 @@ type atts = {
   program : bool;
 }
 
+let mk_atts ?(loc=None) ?(locality=None) ?(polymorphic=false) ?(program=false) () : atts =
+  { loc ; locality ; polymorphic ; program }
+
 type 'a vernac_command = 'a -> atts:atts -> st:Vernacstate.t -> Vernacstate.t
 
 type plugin_args = Genarg.raw_generic_argument list
