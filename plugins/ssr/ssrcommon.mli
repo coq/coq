@@ -312,6 +312,7 @@ val applyn :
            with_evars:bool ->
            ?beta:bool ->
            ?with_shelve:bool ->
+           ?first_goes_last:bool ->
            int ->
            EConstr.t -> v82tac
 exception NotEnoughProducts
