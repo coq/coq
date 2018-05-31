@@ -8,4 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val interp_hints : poly:bool -> Vernacexpr.hints_expr -> Hints.hints_entry
+val interp_hints : poly:bool -> Hints.commit -> Vernacexpr.hints_expr -> Hints.hints_entry

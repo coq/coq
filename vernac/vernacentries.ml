@@ -1294,7 +1294,7 @@ let vernac_remove_hints ~module_local dbnames ids =
   in
   Hints.remove_hints module_local dbnames (List.map Smartlocate.global_with_alias ids)
 
-let vernac_hints ~atts dbnames h =
+let vernac_hints ~atts dbnames h commit =
   let dbnames =
     if List.is_empty dbnames then
       (warn_implicit_core_hint_db (); ["core"])
@@ -1312,7 +1312,7 @@ let vernac_hints ~atts dbnames h =
       "This command does not support the export attribute in sections.");
   | OptDefault | OptLocal -> ()
   in
-  Hints.add_hints ~locality dbnames (ComHints.interp_hints ~poly h)
+  Hints.add_hints ~locality dbnames (ComHints.interp_hints ~poly commit h)
 
 let vernac_syntactic_definition ~atts lid x only_parsing =
   let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
@@ -2157,9 +2157,9 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacRemoveHints (dbnames,ids) ->
     VtDefault(fun () ->
         with_module_locality ~atts vernac_remove_hints dbnames ids)
-  | VernacHints (dbnames,hints) ->
+  | VernacHints (dbnames,hints,commit) ->
     VtDefault(fun () ->
-        vernac_hints ~atts dbnames hints)
+        vernac_hints ~atts dbnames hints commit)
   | VernacSyntacticDefinition (id,c,b) ->
      VtDefault(fun () -> vernac_syntactic_definition ~atts id c b)
   | VernacArguments (qid, args, more_implicits, flags) ->

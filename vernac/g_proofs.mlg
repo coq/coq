@@ -102,7 +102,9 @@ GRAMMAR EXTEND Gram
       | IDENT "Remove"; IDENT "Hints"; ids = LIST1 global; dbnames = opt_hintbases ->
           { VernacRemoveHints (dbnames, ids) }
       | IDENT "Hint"; h = hint; dbnames = opt_hintbases ->
-          { VernacHints (dbnames, h) }
+          { VernacHints (dbnames, h, NoCommit) }
+      | IDENT "Committed"; IDENT "Hint"; h = hint; dbnames = opt_hintbases ->
+          { VernacHints (dbnames, h, Commit) }
       ] ];
   reference_or_constr:
    [ [ r = global -> { HintsReference r }

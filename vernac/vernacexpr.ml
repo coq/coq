@@ -412,7 +412,7 @@ type nonrec vernac_expr =
   (* Commands *)
   | VernacCreateHintDb of string * bool
   | VernacRemoveHints of string list * qualid list
-  | VernacHints of string list * hints_expr
+  | VernacHints of string list * hints_expr * Hints.commit
   | VernacSyntacticDefinition of
       lident * (Id.t list * constr_expr) *
       onlyparsing_flag

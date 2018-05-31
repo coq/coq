@@ -146,9 +146,15 @@ type hint = {
   (** Is the hint polymorpic and hence should be refreshed at each application *)
 }
 
+type commit =
+  | NoCommit
+  | Commit
+
 type 'a with_metadata =
   { pri     : int
   (** A number lower is higher priority *)
+  ; commit : commit
+  (** Is the hint committed? *)
   ; pat     : constr_pattern option
   (** A pattern for the concl of the Goal *)
   ; name    : hints_path_atom
@@ -789,7 +795,7 @@ let secvars_of_constr env sigma c =
 let secvars_of_global env gr =
   secvars_of_idset (vars_of_global env gr)
 
-let make_exact_entry env sigma info ~poly ?(name=PathAny) (c, cty, ctx) =
+let make_exact_entry env sigma info commit ~poly ?(name=PathAny) (c, cty, ctx) =
   let secvars = secvars_of_constr env sigma c in
   let cty = strip_outer_cast sigma cty in
     match EConstr.kind sigma cty with
@@ -806,11 +812,11 @@ let make_exact_entry env sigma info ~poly ?(name=PathAny) (c, cty, ctx) =
         | None -> pat
         in
         (Some hd,
-         { pri; pat = Some pat; name;
+         { pri; pat = Some pat; name; commit;
            db = None; secvars;
            code = with_uid (Give_exact (c, cty, ctx, poly)); })
 
-let make_apply_entry env sigma (eapply,hnf,verbose) info ~poly ?(name=PathAny) (c, cty, ctx) =
+let make_apply_entry env sigma (eapply,hnf,verbose) info commit ~poly ?(name=PathAny) (c, cty, ctx) =
   let cty = if hnf then hnf_constr env sigma cty else cty in
   match EConstr.kind sigma cty with
   | Prod _ ->
@@ -830,7 +836,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) info ~poly ?(name=PathAny) (
     in
     if Int.equal nmiss 0 then
       (Some hd,
-       { pri; pat = Some pat; name;
+       { pri; pat = Some pat; name; commit;
          db = None;
          secvars;
          code = with_uid (Res_pf(c,cty,ctx,poly)); })
@@ -849,7 +855,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) info ~poly ?(name=PathAny) (
         )
       end;
       (Some hd,
-       { pri; pat = Some pat; name;
+       { pri; pat = Some pat; name; commit;
          db = None; secvars;
          code = with_uid (ERes_pf(c,cty,ctx,poly)); })
     end
@@ -888,14 +894,14 @@ let fresh_global_or_constr env sigma poly cr =
       (c, Univ.ContextSet.empty)
     end
 
-let make_resolves env sigma flags info ~check ~poly ?name cr =
+let make_resolves env sigma flags info commit ~check ~poly ?name cr =
   let c, ctx = fresh_global_or_constr env sigma poly cr in
   let cty = Retyping.get_type_of env sigma c in
   let try_apply f =
     try Some (f (c, cty, ctx)) with Failure _ -> None in
   let ents = List.map_filter try_apply
-                             [make_exact_entry env sigma info ~poly ?name;
-                              make_apply_entry env sigma flags info ~poly ?name]
+                             [make_exact_entry env sigma info commit ~poly ?name;
+                              make_apply_entry env sigma flags info commit ~poly ?name]
   in
   if check && List.is_empty ents then
     user_err ~hdr:"Hint"
@@ -909,7 +915,7 @@ let make_resolve_hyp env sigma decl =
   let hname = NamedDecl.get_id decl in
   let c = mkVar hname in
   try
-    [make_apply_entry env sigma (true, true, false) empty_hint_info ~poly:false
+    [make_apply_entry env sigma (true, true, false) empty_hint_info NoCommit ~poly:false
        ~name:(PathHints [GlobRef.VarRef hname])
        (c, NamedDecl.get_type decl, Univ.ContextSet.empty)]
   with
@@ -922,17 +928,17 @@ let make_unfold eref =
   let g = global_of_evaluable_reference eref in
   (Some g,
    { pri = 4;
+     commit = Commit; (* TODO check if this is used *)
      pat = None;
      name = PathHints [g];
      db = None;
      secvars = secvars_of_global (Global.env ()) g;
      code = with_uid (Unfold_nth eref) })
 
-let make_extern pri pat tacast =
+let make_extern pri pat commit tacast =
   let hdconstr = Option.map try_head_pattern pat in
   (hdconstr,
-   { pri = pri;
-     pat = pat;
+   { pri; commit; pat;
      name = PathAny;
      db = None;
      secvars = Id.Pred.empty; (* Approximation *)
@@ -950,16 +956,15 @@ let make_mode ref m =
            str" arguments while the mode declares " ++ int (Array.length m'))
     else m'
 
-let make_trivial env sigma poly ?(name=PathAny) r =
+let make_trivial env sigma ~poly commit ?(name=PathAny) r =
   let c,ctx = fresh_global_or_constr env sigma poly r in
   let sigma = Evd.merge_context_set univ_flexible sigma ctx in
   let t = hnf_constr env sigma (Retyping.get_type_of env sigma c) in
   let hd = head_constr sigma t in
   let ce = mk_clenv_from_env env sigma None (c,t) in
   (Some hd,
-   { pri=1;
+   { pri=1; commit; name;
      pat = Some (Patternops.pattern_of_constr env ce.evd (EConstr.to_constr sigma (clenv_type ce)));
-     name = name;
      db = None;
      secvars = secvars_of_constr env sigma c;
      code= with_uid (Res_pf_THEN_trivial_fail(c,t,ctx,poly)) })
@@ -1185,9 +1190,9 @@ let add_resolves env sigma clist ~local ~superglobal dbnames =
   List.iter
     (fun dbname ->
       let r =
-        List.flatten (List.map (fun (pri, poly, hnf, path, gr) ->
+        List.flatten (List.map (fun (pri, poly, commit, hnf, path, gr) ->
           make_resolves env sigma (true,hnf,not !Flags.quiet)
-            pri ~check:true ~poly ~name:path gr) clist)
+            pri commit ~check:true ~poly ~name:path gr) clist)
       in
       let hint = make_hint ~local dbname (AddHints { superglobal; hints = r }) in
       Lib.add_anonymous_leaf (inAutoHint hint))
@@ -1225,22 +1230,23 @@ let add_transparency l b ~local ~superglobal dbnames =
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_extern info tacast ~local ~superglobal dbname =
+let add_extern info commit tacast ~local ~superglobal dbname =
   let pat = match info.hint_pattern with
   | None -> None
   | Some (_, pat) -> Some pat
   in
   let hint = make_hint ~local dbname
-                       (AddHints { superglobal; hints = [make_extern (Option.get info.hint_priority) pat tacast] }) in
+      (AddHints { superglobal;
+                  hints = [make_extern (Option.get info.hint_priority) pat commit tacast] }) in
   Lib.add_anonymous_leaf (inAutoHint hint)
 
-let add_externs info tacast ~local ~superglobal dbnames =
-  List.iter (add_extern info tacast ~local ~superglobal) dbnames
+let add_externs info commit tacast ~local ~superglobal dbnames =
+  List.iter (add_extern info commit tacast ~local ~superglobal) dbnames
 
 let add_trivials env sigma l ~local ~superglobal dbnames =
   List.iter
     (fun dbname ->
-      let l = List.map (fun (name, poly, c) -> make_trivial env sigma poly ~name c) l in
+      let l = List.map (fun (name, poly, commit, c) -> make_trivial env sigma ~poly commit ~name c) l in
       let hint = make_hint ~local dbname (AddHints { superglobal; hints = l }) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
@@ -1250,13 +1256,13 @@ type hnf = bool
 type nonrec hint_info = hint_info
 
 type hints_entry =
-  | HintsResolveEntry of (hint_info * bool * hnf * hints_path_atom * hint_term) list
-  | HintsImmediateEntry of (hints_path_atom * bool * hint_term) list
+  | HintsResolveEntry of (hint_info * bool * commit * hnf * hints_path_atom * hint_term) list
+  | HintsImmediateEntry of (hints_path_atom * bool * commit * hint_term) list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
-  | HintsExternEntry of hint_info * Genarg.glob_generic_argument
+  | HintsExternEntry of hint_info * commit * Genarg.glob_generic_argument
 
 let default_prepare_hint_ident = Id.of_string "H"
 
@@ -1316,8 +1322,8 @@ let add_hints ~locality dbnames h =
   | HintsUnfoldEntry lhints -> add_unfolds lhints ~local ~superglobal dbnames
   | HintsTransparencyEntry (lhints, b) ->
       add_transparency lhints b ~local ~superglobal dbnames
-  | HintsExternEntry (info, tacexp) ->
-      add_externs info tacexp ~local ~superglobal dbnames
+  | HintsExternEntry (info, commit, tacexp) ->
+      add_externs info commit tacexp ~local ~superglobal dbnames
 
 let expand_constructor_hints env sigma lems =
   List.map_append (fun (evd,lem) ->
@@ -1338,10 +1344,10 @@ let expand_constructor_hints env sigma lems =
 let constructor_hints env sigma eapply lems =
   let lems = expand_constructor_hints env sigma lems in
   List.map_append (fun (poly, lem) ->
-      make_resolves env sigma (eapply,true,false) empty_hint_info ~check:true ~poly lem) lems
+      make_resolves env sigma (eapply,true,false) empty_hint_info NoCommit ~check:true ~poly lem) lems
 
-let make_resolves env sigma info ~check ~poly ?name hint =
-  make_resolves env sigma (true, false, false) info ~check ~poly ?name hint
+let make_resolves env sigma info commit ~check ~poly ?name hint =
+  make_resolves env sigma (true, false, false) info commit ~check ~poly ?name hint
 
 let make_local_hint_db env sigma ts eapply lems =
   let map c = c env sigma in
@@ -1585,6 +1591,7 @@ module FullHint =
 struct
   type t = full_hint
   let priority (h : t) = h.pri
+  let commit (h:t) = h.commit
   let pattern (h : t) = h.pat
   let database (h : t) = h.db
   let run (h : t) k = run_hint h.code k

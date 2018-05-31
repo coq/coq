@@ -240,12 +240,17 @@ open Pputils
     | ModeNoHeadEvar -> str"!"
     | ModeOutput -> str"-"
 
+  let pr_hint_commit = function
+    | Hints.NoCommit -> mt ()
+    | Hints.Commit -> str "Commited"
+
   let pr_hint_info pr_pat { Typeclasses.hint_priority = pri; hint_pattern = pat } =
     pr_opt (fun x -> str"|" ++ int x) pri ++
     pr_opt (fun y -> (if Option.is_empty pri then str"| " else mt()) ++ pr_pat y) pat
 
-  let pr_hints db h pr_c pr_pat =
+  let pr_hints db h commit pr_c pr_pat =
     let opth = pr_opt_hintbases db  in
+    let ppcommited = pr_hint_commit commit in
     let pph =
       let open Hints in
       match h with
@@ -283,7 +288,7 @@ open Pputils
           keyword "Extern" ++ spc() ++ int n ++ spc() ++ pat ++ str" =>" ++
             spc() ++ Pputils.pr_raw_generic env sigma tac
     in
-    hov 2 (keyword "Hint "++ pph ++ opth)
+    hov 2 (ppcommited ++ keyword "Hint "++ pph ++ opth)
 
   let pr_with_declaration pr_c = function
     | CWith_Definition (id,udecl,c) ->
@@ -1078,8 +1083,8 @@ open Pputils
                    prlist_with_sep spc (fun r -> pr_id (coerce_reference_to_id r)) ids ++
                    pr_opt_hintbases dbnames)
         )
-      | VernacHints (dbnames,h) ->
-        return (pr_hints dbnames h (pr_constr env sigma) (pr_constr_pattern_expr env sigma))
+      | VernacHints (dbnames,h,commit) ->
+        return (pr_hints dbnames h commit (pr_constr env sigma) (pr_constr_pattern_expr env sigma))
       | VernacSyntacticDefinition (id,(ids,c),{onlyparsing}) ->
         return (
           hov 2

@@ -311,7 +311,7 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
     begin fun gl ->
     let tacs = e_trivial_resolve db_list local_db secvars only_classes
                                  (pf_env gl) (project gl) (pf_concl gl) in
-      tclFIRST (List.map (fun (x,_,_,_,_) -> x) tacs)
+      tclFIRST (List.map (fun (x,_,_,_,_,_) -> x) tacs)
     end
   in
   let tacl =
@@ -341,6 +341,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
     fun (flags, h) ->
       let b = FullHint.priority h in
       let p = FullHint.pattern h in
+      let commit = FullHint.commit h in
       let name = FullHint.name h in
       let tac = function
         | Res_pf h ->
@@ -395,8 +396,8 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
         | _ -> mt ()
       in
         match FullHint.repr h with
-        | Extern _ -> (tac, b, true, name, lazy (FullHint.print env sigma h ++ pp))
-        | _ -> (tac, b, false, name, lazy (FullHint.print env sigma h ++ pp))
+        | Extern _ -> (tac, commit, b, true, name, lazy (FullHint.print env sigma h ++ pp))
+        | _ -> (tac, commit, b, false, name, lazy (FullHint.print env sigma h ++ pp))
   in
   let hint_of_db = hintmap_of sigma hdc secvars concl in
   let hintl = List.map_filter (fun db -> match hint_of_db db with
@@ -515,11 +516,11 @@ let make_resolve_hyp env sigma st only_classes pri decl =
             (List.map_append
              (fun (path,info,c) ->
               let h = IsConstr (EConstr.of_constr c,Univ.ContextSet.empty) [@ocaml.warning "-3"] in
-              make_resolves env sigma ~name:(PathHints path) info ~check:true ~poly:false h)
+              make_resolves env sigma ~name:(PathHints path) info NoCommit ~check:true ~poly:false h)
                hints)
         else []
       in
-        (hints @ make_resolves env sigma pri ~name ~check:false ~poly:false (IsGlobRef id))
+        (hints @ make_resolves env sigma pri NoCommit ~name ~check:false ~poly:false (IsGlobRef id))
     else []
 
 let make_hints g (modes,st) only_classes sign =
@@ -617,13 +618,14 @@ module Search = struct
     let concl = Goal.concl gl in
     let sigma = Goal.sigma gl in
     let unique = not info.search_dep || is_unique env sigma concl in
-    let backtrack = needs_backtrack env sigma unique concl in
+    let backtrack_goal = needs_backtrack env sigma unique concl in
     if !typeclasses_debug > 0 then
       Feedback.msg_debug
         (pr_depth info.search_depth ++ str": looking for " ++
            Printer.pr_econstr_env (Goal.env gl) sigma concl ++
-           (if backtrack then str" with backtracking"
+           (if backtrack_goal then str" with backtracking"
             else str" without backtracking"));
+    (* TODO: clarify the debug message wrt the new notion of commited hints *)
     let secvars = compute_secvars gl in
     match e_possible_resolve hints info.search_hints secvars
             info.search_only_classes env sigma concl with
@@ -635,10 +637,18 @@ module Search = struct
        we don't need to backtrack, as long as no evar appears in the goal
        This is an overapproximation. Evars could appear in this goal only
        and not any other *)
-    let ortac = if backtrack then Proofview.tclOR else Proofview.tclORELSE in
     let idx = ref 1 in
     let foundone = ref false in
-    let rec onetac e (tac, pat, b, name, pp) tl =
+    let rec onetac e (tac, commit, pat, b, name, pp) tl =
+      let steptac hint_tac hint_subgoals_cont other_hints_cont =
+        match commit, backtrack_goal with
+        | NoCommit, true ->
+          Proofview.tclOR (hint_tac >>= hint_subgoals_cont) other_hints_cont
+        | NoCommit, false ->
+          Proofview.tclORELSE (hint_tac >>= hint_subgoals_cont) other_hints_cont
+        | Commit, _ ->
+          Proofview.tclIFCATCH hint_tac hint_subgoals_cont other_hints_cont
+      in
       let derivs = path_derivate info.search_cut name in
       let pr_error ie =
         if !typeclasses_debug > 1 then
@@ -749,11 +759,11 @@ module Search = struct
       in
       if path_matches derivs [] then aux e tl
       else
-        ortac
-             (with_shelf tac >>= fun s ->
-              let i = !idx in incr idx; result s i None)
-             (fun e' ->
-                (pr_error e'; aux (merge_exceptions e e') tl))
+        steptac
+          (with_shelf tac)
+          (fun s -> let i = !idx in incr idx; result s i None)
+          (fun e' -> pr_error e'; aux (merge_exceptions e e') tl)
+
     and aux e = function
       | x :: xs -> onetac e x xs
       | [] ->
@@ -768,7 +778,7 @@ module Search = struct
          | (StuckClass,ie) -> Proofview.tclZERO ~info:ie StuckClass
          | (_,ie) -> Proofview.tclZERO ~info:ie NoApplicableEx
     in
-    if backtrack then aux (NoApplicableEx,Exninfo.null) poss
+    if backtrack_goal then aux (NoApplicableEx,Exninfo.null) poss
     else tclONCE (aux (NoApplicableEx,Exninfo.null) poss)
 
   let hints_tac hints info kont : unit Proofview.tactic =

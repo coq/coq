@@ -45,7 +45,7 @@ let add_instance_hint inst path ~locality info poly =
      Flags.silently (fun () ->
        Hints.add_hints ~locality [typeclasses_db]
           (Hints.HintsResolveEntry
-             [info, poly, false, Hints.PathHints path, inst])) ()
+             [info, poly, Hints.NoCommit, false, Hints.PathHints path, inst])) ()
 
 let is_local_for_hint i =
   match i.is_global with
