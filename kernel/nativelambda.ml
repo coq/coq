@@ -296,15 +296,17 @@ let is_value lc =
   match lc with
   | Lval _ -> true
   | Lmakeblock(_,_,_,args) when Array.is_empty args -> true
+  | Luint (UintVal _) -> true
   | _ -> false
-	
+
 let get_value lc =
   match lc with
   | Lval v -> v
-  | Lmakeblock(_,_,tag,args) when Array.is_empty args -> 
+  | Lmakeblock(_,_,tag,args) when Array.is_empty args ->
       Nativevalues.mk_int tag
+  | Luint (UintVal i) -> Nativevalues.mk_uint i
   | _ -> raise Not_found
-	
+
 let make_args start _end =
   Array.init (start - _end + 1) (fun i -> Lrel (Anonymous, start - i))
     
