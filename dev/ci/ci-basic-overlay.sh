@@ -156,3 +156,15 @@
 ########################################################################
 : "${fcsl_pcm_CI_BRANCH:=master}"
 : "${fcsl_pcm_CI_GITURL:=https://github.com/imdea-software/fcsl-pcm.git}"
+
+########################################################################
+# ext-lib
+########################################################################
+: "${ext_lib_CI_BRANCH:=master}"
+: "${ext_lib_CI_GITURL:=https://github.com/coq-ext-lib/coq-ext-lib.git}"
+
+########################################################################
+# quickchick
+########################################################################
+: "${quickchick_CI_BRANCH:=8.8}"
+: "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick.git}"

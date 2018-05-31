@@ -325,6 +325,9 @@ ci-ltac2:
 ci-math-comp:
   <<: *ci-template-flambda
 
+ci-quickchick:
+  <<: *ci-template
+
 ci-sf:
   <<: *ci-template
 
