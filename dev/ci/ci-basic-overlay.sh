@@ -170,3 +170,15 @@
 ########################################################################
 : "${pidetop_CI_BRANCH:=v8.9}"
 : "${pidetop_CI_GITURL:=https://bitbucket.org/coqpide/pidetop.git}"
+
+########################################################################
+# ext-lib
+########################################################################
+: "${ext_lib_CI_BRANCH:=master}"
+: "${ext_lib_CI_GITURL:=https://github.com/coq-ext-lib/coq-ext-lib.git}"
+
+########################################################################
+# quickchick
+########################################################################
+: "${quickchick_CI_BRANCH:=master}"
+: "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick.git}"
