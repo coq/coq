@@ -303,12 +303,12 @@ let try_add_new_coercion_with_source ref ~local poly ~source =
   try_add_new_coercion_core ref ~local poly (Some source) None false
 
 let add_coercion_hook poly local ref =
-  let stre = match local with
+  let local = match local with
+  | Discharge
   | Local -> true
   | Global -> false
-  | Discharge -> assert false
   in
-  let () = try_add_new_coercion ref ~local:stre poly in
+  let () = try_add_new_coercion ref ~local poly in
   let msg = pr_global_env Id.Set.empty ref ++ str " is now a coercion" in
   Flags.if_verbose Feedback.msg_info msg
 
