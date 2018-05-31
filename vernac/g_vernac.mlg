@@ -79,8 +79,25 @@ GRAMMAR EXTEND Gram
       | IDENT "Redirect"; s = ne_string; c = located_vernac -> { VernacRedirect (s, c) }
       | IDENT "Timeout"; n = natural; v = vernac_control -> { VernacTimeout(n,v) }
       | IDENT "Fail"; v = vernac_control -> { VernacFail v }
-      | v = vernac -> { let (f, v) = v in VernacExpr(f, v) } ]
+      | v = decorated_vernac -> { let (f, v) = v in VernacExpr(f, v) } ]
     ]
+  ;
+  decorated_vernac:
+  [[ a = attributes ; fv = vernac -> let (f, v) = fv in (List.append a f, v)
+  | fv = vernac -> fv
+  ]]
+  ;
+  attributes: [[ "#[" ; a = LIST1 attribute SEP "," ; "]" -> a ]]
+  ;
+  attribute:
+  [[
+    IDENT "polymorphic" -> VernacPolymorphic true
+  | IDENT "monomorphic" -> VernacPolymorphic false
+  | IDENT "program" -> VernacProgram
+  | IDENT "local" -> VernacLocal true
+  | IDENT "global" -> VernacLocal false
+  | IDENT "coercion" -> VernacCoercion
+  ]]
   ;
   vernac:
     [ [ IDENT "Local"; v = vernac_poly -> { let (f, v) = v in (VernacLocal true :: f, v) }
