@@ -512,7 +512,7 @@ The Vernacular
                       : | CoInductive `ind_body` with … with `ind_body` .
    ind_body           : `ident` [`binders`] : `term` :=
                       : [[|] `ident` [`binders`] [:`term`] | … | `ident` [`binders`] [:`term`]]
-   fixpoint           : Fixpoint `fix_body` with … with `fix_body` .
+   fixpoint           : [Unguarded] Fixpoint `fix_body` with … with `fix_body` .
                       : | CoFixpoint `cofix_body` with … with `cofix_body` .
    assertion          : `assertion_keyword` `ident` [`binders`] : `term` .
    assertion_keyword  : Theorem | Lemma
@@ -1146,8 +1146,6 @@ constructions.
       the function :g:`mod2` which gives the remainder modulo 2 of a natural
       number.
 
-      .. coqtop:: all
-
          Fixpoint mod2 (n:nat) : nat :=
          match n with
          | O => O
@@ -1178,6 +1176,37 @@ constructions.
             | leaf b => 1
             | cons t f' => (tree_size t + forest_size f')
             end.
+
+   .. cmdv:: Unguarded Fixpoint @ident @binders {? {struct @ident} } {? : @type } := @term
+
+      The check of decreasing argument can be temporary disabled using ``Unguarded``.
+      Warning: this can break the consistency of the system, use at your own risk.
+      Unchecked fixpoint are printed by ``Print Assumptions``.
+
+      .. example::
+         False can be proved in the following way.
+
+         .. coqtop:: all
+
+            Unguarded Fixpoint f (n : nat) : False
+              := f n.
+
+      .. example::
+
+         Decreasing argument can still be specified but the decrease is not checked anymore.
+         Here is for instance the definition of the Ackermann function.
+
+         .. coqtop:: all
+
+            Unguarded Fixpoint ackermann (m n : nat) {struct m} : nat.
+              destruct m. exact (S n).
+              destruct n. exact (ackermann m 1).
+              exact (ackermann m (ackermann (S m) n)).
+            Defined.
+
+            Print Assumptions ackermann.
+            (* ackermann is assumed to be guarded *)
+
 
 .. _cofixpoint:
 
@@ -1229,6 +1258,11 @@ Definitions of recursive objects in co-inductive types
 
       As in the :cmd:`Fixpoint` command, it is possible to introduce a block of
       mutually dependent methods.
+
+   .. cmdv:: Unguarded CoFixpoint @ident {? @binders } {? : @type } := @term
+      Define a cofixpoint without checking productivity.
+      Warning: this can break the consistency of the system, use at your own risk.
+      Unchecked cofixpoint are printed by ``Print Assumptions``.
 
 .. _Assertions:
 

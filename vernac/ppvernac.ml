@@ -781,18 +781,26 @@ open Pputils
           (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
         )
 
-      | VernacFixpoint (local, recs) ->
+      | VernacFixpoint (safe, local, recs) ->
+        let safe = match safe with
+          | Some false -> keyword "Unsafe" ++ spc ()
+          | _ -> str ""
+        in
         let local = match local with
-          | DoDischarge -> "Let "
-          | NoDischarge -> ""
+          | DoDischarge -> keyword "Let" ++ spc ()
+          | NoDischarge -> str ""
         in
         return (
-          hov 0 (str local ++ keyword "Fixpoint" ++ spc () ++
+          hov 0 (safe ++ local ++ keyword "Fixpoint" ++ spc () ++
                    prlist_with_sep (fun _ -> fnl () ++ keyword "with"
                      ++ spc ()) pr_rec_definition recs)
         )
 
-      | VernacCoFixpoint (local, corecs) ->
+      | VernacCoFixpoint (safe, local, corecs) ->
+        let safe = match safe with
+          | Some false -> keyword "Unsafe " ++ spc ()
+          | _ -> str ""
+        in
         let local = match local with
           | DoDischarge -> keyword "Let" ++ spc ()
           | NoDischarge -> str ""
@@ -804,7 +812,7 @@ open Pputils
             prlist (pr_decl_notation pr_constr) ntn
         in
         return (
-          hov 0 (local ++ keyword "CoFixpoint" ++ spc() ++
+          hov 0 (safe ++ local ++ keyword "CoFixpoint" ++ spc() ++
                    prlist_with_sep (fun _ -> fnl() ++ keyword "with" ++ spc ()) pr_onecorec corecs)
         )
       | VernacScheme l ->

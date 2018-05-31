@@ -37,6 +37,9 @@ Vernacular Commands
 - Nested proofs may be enabled through the option `Nested Proofs Allowed`.
   By default, they are disabled and produce an error. The deprecation
   warning which used to occur when using nested proofs has been removed.
+- Guard check can be temporary disabled to define non terminating fixpoints
+  or non productive cofixpoints with the commands `Unguarded Fixpoints`
+  and `Unguarded CoFixpoint`.
 
 Coq binaries and process model
 

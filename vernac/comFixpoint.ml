@@ -243,7 +243,11 @@ let interp_fixpoint ~cofix l ntns =
   check_recursive true env evd fix;
   (fix,pl,Evd.evar_universe_context evd,info)
 
-let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
+(* guarded: Some b -> set check_guarded to b, None -> does not change it *)
+let declare_fixpoint guarded local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
+  let original_typing_flag = Environ.typing_flags (Global.env ()) in
+  let new_typing_flag = Option.cata (fun b -> {original_typing_flag with Declarations.check_guarded = b}) original_typing_flag guarded in
+  Global.set_typing_flags new_typing_flag;
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
@@ -254,7 +258,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
         fixdefs) in
     let evd = Evd.from_ctx ctx in
     Lemmas.start_proof_with_initialization (Global,poly,DefinitionBody Fixpoint)
-      evd pl (Some(false,indexes,init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
+      evd pl (Some(false,indexes,init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> Global.set_typing_flags original_typing_flag))
   else begin
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in
@@ -273,12 +277,16 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, Fixpoint) pl ctx)
               fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
+    Global.set_typing_flags original_typing_flag;
     fixpoint_message (Some indexes) fixnames;
   end;
   (* Declare notations *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns
 
-let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
+let declare_cofixpoint guarded local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
+  let original_typing_flag = Environ.typing_flags (Global.env ()) in
+  let new_typing_flag = Option.cata (fun b -> {original_typing_flag with Declarations.check_guarded = b}) original_typing_flag guarded in
+  Global.set_typing_flags new_typing_flag;
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
@@ -289,7 +297,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
         fixdefs) in
     let evd = Evd.from_ctx ctx in
       Lemmas.start_proof_with_initialization (Global,poly, DefinitionBody CoFixpoint)
-      evd pl (Some(true,[],init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
+      evd pl (Some(true,[],init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> Global.set_typing_flags original_typing_flag))
   else begin
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in
@@ -306,6 +314,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, CoFixpoint) pl ctx)
               fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
+    Global.set_typing_flags original_typing_flag;
     cofixpoint_message fixnames
   end;
   (* Declare notations *)
@@ -337,16 +346,16 @@ let check_safe () =
   let flags = Environ.typing_flags (Global.env ()) in
   flags.check_universes && flags.check_guarded
 
-let do_fixpoint local poly l =
+let do_fixpoint guarded local poly l =
   let fixl, ntns = extract_fixpoint_components true l in
   let (_, _, _, info as fix) = interp_fixpoint ~cofix:false fixl ntns in
   let possible_indexes =
     List.map compute_possible_guardness_evidences info in
-  declare_fixpoint local poly fix possible_indexes ntns;
-  if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()
+  declare_fixpoint guarded local poly fix possible_indexes ntns;
+  if guarded = Some false || not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()
 
-let do_cofixpoint local poly l =
+let do_cofixpoint guarded local poly l =
   let fixl,ntns = extract_cofixpoint_components l in
   let cofix = interp_fixpoint ~cofix:true fixl ntns in
-  declare_cofixpoint local poly cofix ntns;
-  if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()
+  declare_cofixpoint guarded local poly cofix ntns;
+  if guarded = Some false || not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()

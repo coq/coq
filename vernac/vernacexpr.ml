@@ -337,8 +337,8 @@ type nonrec vernac_expr =
   | VernacAssumption of (Decl_kinds.discharge * Decl_kinds.assumption_object_kind) *
       Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
   | VernacInductive of vernac_cumulative option * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
-  | VernacFixpoint of Decl_kinds.discharge * (fixpoint_expr * decl_notation list) list
-  | VernacCoFixpoint of Decl_kinds.discharge * (cofixpoint_expr * decl_notation list) list
+  | VernacFixpoint of bool option * Decl_kinds.discharge * (fixpoint_expr * decl_notation list) list
+  | VernacCoFixpoint of bool option * Decl_kinds.discharge * (cofixpoint_expr * decl_notation list) list
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list

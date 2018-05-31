@@ -601,26 +601,27 @@ let vernac_inductive ~atts cum lo finite indl =
     let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
     ComInductive.do_mutual_inductive indl is_cumulative atts.polymorphic lo finite
 
-let vernac_fixpoint ~atts discharge l =
+let vernac_fixpoint ~atts guarded discharge l =
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   (* XXX: Switch to the attribute system and match on ~atts *)
   let do_fixpoint = if Flags.is_program_mode () then
+      (* TODO: Unguarded Program Fixpoint *)
       ComProgramFixpoint.do_fixpoint
     else
-      ComFixpoint.do_fixpoint
+      ComFixpoint.do_fixpoint guarded
   in
   do_fixpoint local atts.polymorphic l
 
-let vernac_cofixpoint ~atts discharge l =
+let vernac_cofixpoint ~atts guarded discharge l =
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   let do_cofixpoint = if Flags.is_program_mode () then
       ComProgramFixpoint.do_cofixpoint
     else
-      ComFixpoint.do_cofixpoint
+      ComFixpoint.do_cofixpoint guarded
   in
   do_cofixpoint local atts.polymorphic l
 
@@ -2037,8 +2038,8 @@ let interp ?proof ~atts ~st c =
   | VernacAssumption ((discharge,kind),nl,l) ->
       vernac_assumption ~atts discharge kind l nl
   | VernacInductive (cum, priv,finite,l) -> vernac_inductive ~atts cum priv finite l
-  | VernacFixpoint (discharge, l) -> vernac_fixpoint ~atts discharge l
-  | VernacCoFixpoint (discharge, l) -> vernac_cofixpoint ~atts discharge l
+  | VernacFixpoint (guarded, discharge, l) -> vernac_fixpoint ~atts guarded discharge l
+  | VernacCoFixpoint (guarded, discharge, l) -> vernac_cofixpoint ~atts guarded discharge l
   | VernacScheme l -> vernac_scheme l
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
   | VernacUniverse l -> vernac_universe ~atts l

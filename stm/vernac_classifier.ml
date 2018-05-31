@@ -105,7 +105,7 @@ let classify_vernac e =
         let ids = List.map (fun (({v=i}, _), _) -> i) l in
        let guarantee = if poly then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
         VtStartProof (default_proof_mode (),guarantee,ids), VtLater
-    | VernacFixpoint (discharge,l) ->
+    | VernacFixpoint (_, discharge,l) ->
        let guarantee =
          if discharge = Decl_kinds.DoDischarge || poly then Doesn'tGuaranteeOpacity
          else GuaranteesOpacity
@@ -116,7 +116,7 @@ let classify_vernac e =
         if open_proof
         then VtStartProof (default_proof_mode (),guarantee,ids), VtLater
         else VtSideff ids, VtLater
-    | VernacCoFixpoint (discharge,l) ->
+    | VernacCoFixpoint (_, discharge,l) ->
        let guarantee =
          if discharge = Decl_kinds.DoDischarge || poly then Doesn'tGuaranteeOpacity
          else GuaranteesOpacity

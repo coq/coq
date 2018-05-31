@@ -169,13 +169,17 @@ GEXTEND Gram
           let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
           VernacInductive (cum, priv,f,indl)
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
-          VernacFixpoint (NoDischarge, recs)
+          VernacFixpoint (None, NoDischarge, recs)
       | IDENT "Let"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
-          VernacFixpoint (DoDischarge, recs)
+          VernacFixpoint (None, DoDischarge, recs)
+      | IDENT "Unguarded"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
+          VernacFixpoint (Some false, NoDischarge, recs)
       | "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
-          VernacCoFixpoint (NoDischarge, corecs)
+          VernacCoFixpoint (None, NoDischarge, corecs)
       | IDENT "Let"; "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
-          VernacCoFixpoint (DoDischarge, corecs)
+          VernacCoFixpoint (None, DoDischarge, corecs)
+      | IDENT "Unguarded"; "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
+          VernacCoFixpoint (Some false, DoDischarge, corecs)
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
 	      l = LIST1 identref SEP "," -> VernacCombinedScheme (id, l)
