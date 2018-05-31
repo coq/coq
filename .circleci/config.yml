@@ -32,6 +32,10 @@ before_script: &before_script
   steps:
     - checkout
     - run: *before_script
+    - run: &build-clean
+        name: Clean
+        command: |
+          make clean # ensure that `make clean` works on a fresh clone
     - run: &build-configure
         name: Configure
         command: |

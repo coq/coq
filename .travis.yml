@@ -281,6 +281,10 @@ install:
 script:
 
 - set -e
+- echo 'Testing make clean...' && echo -en 'travis_fold:start:coq.clean\\r'
+- make clean # ensure that `make clean` works on a fresh clone
+- echo -en 'travis_fold:end:coq.clean\\r'
+
 - echo 'Configuring Coq...' && echo -en 'travis_fold:start:coq.config\\r'
 - ./configure ${COQ_DEST} -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
 - echo -en 'travis_fold:end:coq.config\\r'

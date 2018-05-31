@@ -60,6 +60,10 @@ before_script:
   script:
     - set -e
 
+    - echo 'start:coq.clean'
+    - make clean # ensure that `make clean` works on a fresh clone
+    - echo 'end:coq.clean'
+
     - echo 'start:coq.config'
     - ./configure -prefix "$(pwd)/_install_ci" ${COQ_EXTRA_CONF}"$COQ_EXTRA_CONF_QUOTE"
     - echo 'end:coq.config'
@@ -83,6 +87,10 @@ before_script:
   stage: test
   script:
     - set -e
+
+    - echo 'start:coq.clean'
+    - make clean # ensure that `make clean` works on a fresh clone
+    - echo 'end:coq.clean'
 
     - echo 'start:coq.config'
     - ./configure -local ${COQ_EXTRA_CONF}
