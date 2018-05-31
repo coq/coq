@@ -50,11 +50,6 @@ let _ =
      let inst' = match inst with IsConstr c -> Hints.IsConstr (EConstr.of_constr c, Univ.ContextSet.empty)
        | IsGlobal gr -> Hints.IsGlobRef gr
      in
-     let info =
-       { info with hint_pattern =
-		   Option.map
-                     (Constrintern.intern_constr_pattern (Global.env()) Evd.(from_env Global.(env())))
-		     info.hint_pattern } in
      Flags.silently (fun () ->
        Hints.add_hints ~local [typeclasses_db]
 	  (Hints.HintsResolveEntry
@@ -63,10 +58,17 @@ let _ =
   Hook.set Typeclasses.classes_transparent_state_hook
     (fun () -> Hints.Hint_db.transparent_state (Hints.searchtable_map typeclasses_db))
 
+let intern_info {hint_priority;hint_pattern} =
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
+  let hint_pattern = Option.map (Constrintern.intern_constr_pattern env sigma) hint_pattern in
+  {hint_priority;hint_pattern}
+
 (** TODO: add subinstances *)
 let existing_instance glob g info =
   let c = global g in
   let info = Option.default Hints.empty_hint_info info in
+  let info = intern_info info in
   let instance, _ = Global.type_of_global_in_context (Global.env ()) c in
   let _, r = Term.decompose_prod_assum instance in
     match class_of_constr Evd.empty (EConstr.of_constr r) with
@@ -107,6 +109,7 @@ open Pp
 
 let instance_hook k info global imps ?hook cst =
   Impargs.maybe_declare_manual_implicits false cst ~enriching:false imps;
+  let info = intern_info info in
   Typeclasses.declare_instance (Some info) (not global) cst;
   (match hook with Some h -> h cst | None -> ())
 
@@ -301,7 +304,8 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
             if program_mode then
 	      let hook vis gr _ =
 		let cst = match gr with ConstRef kn -> kn | _ -> assert false in
-		  Impargs.declare_manual_implicits false gr ~enriching:false [imps];
+                  Impargs.declare_manual_implicits false gr ~enriching:false [imps];
+                  let pri = intern_info pri in
 		  Typeclasses.declare_instance (Some pri) (not global) (ConstRef cst)
 	      in
 	      let obls, constr, typ =

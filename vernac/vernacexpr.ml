@@ -119,11 +119,11 @@ type 'a hint_info_gen = 'a Typeclasses.hint_info_gen =
       hint_pattern : 'a option }
 [@@ocaml.deprecated "Please use [Typeclasses.hint_info_gen]"]
 
-type hint_info_expr = Typeclasses.hint_info_expr
-[@@ocaml.deprecated "Please use [Typeclasses.hint_info_expr]"]
+type hint_info_expr = Hints.hint_info_expr
+[@@ocaml.deprecated "Please use [Hints.hint_info_expr]"]
 
 type hints_expr = Hints.hints_expr =
-  | HintsResolve of (Typeclasses.hint_info_expr * bool * Hints.reference_or_constr) list
+  | HintsResolve of (Hints.hint_info_expr * bool * Hints.reference_or_constr) list
   | HintsImmediate of Hints.reference_or_constr list
   | HintsUnfold of reference list
   | HintsTransparency of reference list * bool
@@ -362,12 +362,12 @@ type nonrec vernac_expr =
       local_binder_expr list * (* super *)
         typeclass_constraint * (* instance name, class name, params *)
         (bool * constr_expr) option * (* props *)
-        Typeclasses.hint_info_expr
+        Hints.hint_info_expr
 
   | VernacContext of local_binder_expr list
 
   | VernacDeclareInstances of
-    (reference * Typeclasses.hint_info_expr) list (* instances names, priorities and patterns *)
+    (reference * Hints.hint_info_expr) list (* instances names, priorities and patterns *)
 
   | VernacDeclareClass of reference (* inductive or definition name *)
 

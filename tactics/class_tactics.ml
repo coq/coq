@@ -546,12 +546,7 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
           let hints = build_subclasses ~check:false env sigma (VarRef id) empty_hint_info in
             (List.map_append
              (fun (path,info,c) ->
-	      let info =
-                { info with hint_pattern =
-                            Option.map (Constrintern.intern_constr_pattern env sigma)
-                                       info.hint_pattern }
-	      in
-	      make_resolves env sigma ~name:(PathHints path)
+              make_resolves env sigma ~name:(PathHints path)
                   (true,false,not !Flags.quiet) info false
                  (IsConstr (EConstr.of_constr c,Univ.ContextSet.empty)))
                hints)
