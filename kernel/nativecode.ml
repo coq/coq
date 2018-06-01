@@ -53,7 +53,7 @@ type gname =
   | Gind of string * inductive (* prefix, inductive name *)
   | Gconstruct of string * constructor (* prefix, constructor name *)
   | Gconstant of string * Constant.t (* prefix, constant name *)
-  | Gproj of string * Constant.t (* prefix, constant name *)
+  | Gproj of string * inductive * int (* prefix, inductive, index (start from 0) *)
   | Gcase of Label.t option * int
   | Gpred of Label.t option * int
   | Gfixtype of Label.t option * int
@@ -108,7 +108,7 @@ let gname_hash gn = match gn with
 | Ginternal s -> combinesmall 9 (String.hash s)
 | Grel i -> combinesmall 10 (Int.hash i)
 | Gnamed id -> combinesmall 11 (Id.hash id)
-| Gproj (s, p) -> combinesmall 12 (combine (String.hash s) (Constant.hash p))
+| Gproj (s, p, i) -> combinesmall 12 (combine (String.hash s) (combine (ind_hash p) i))
 
 let case_ctr = ref (-1)
 
@@ -1070,7 +1070,7 @@ let ml_of_instance instance u =
   | Lconst (prefix, (c, u)) ->
      let args = ml_of_instance env.env_univ u in
      mkMLapp (MLglobal(Gconstant (prefix, c))) args
-  | Lproj (prefix,c) -> MLglobal(Gproj (prefix,c))
+  | Lproj (prefix, ind, i) -> MLglobal(Gproj (prefix, ind, i))
   | Lprim _ ->
       let decl,cond,paux = extract_prim (ml_of_lam env l) t in
       compile_prim decl cond paux
@@ -1544,8 +1544,8 @@ let string_of_gname g =
       Format.sprintf "%sconstruct_%s_%i_%i" prefix (string_of_mind mind) i (j-1)
   | Gconstant (prefix, c) ->
       Format.sprintf "%sconst_%s" prefix (string_of_con c)
-  | Gproj (prefix, c) ->
-      Format.sprintf "%sproj_%s" prefix (string_of_con c)
+  | Gproj (prefix, (mind, n), i) ->
+      Format.sprintf "%sproj_%s_%i_%i" prefix (string_of_mind mind) n i
   | Gcase (l,i) ->
       Format.sprintf "case_%s_%i" (string_of_label_def l) i
   | Gpred (l,i) ->
@@ -1930,7 +1930,8 @@ let compile_constant env sigma prefix ~interactive con cb =
       let accu_br = MLapp (MLprimitive Mk_proj, [|get_const_code i;accu|]) in
       let code = MLmatch(asw,MLlocal cf_uid,accu_br,[|[((ind,1),cargs)],MLlocal ci_uid|]) in
       let code = MLlet(cf_uid, MLapp (MLprimitive Force_cofix, [|MLlocal c_uid|]), code) in
-      let gn = Gproj ("",con) in
+      (** FIXME: handle mutual records *)
+      let gn = Gproj ("", (pb.proj_ind, 0), pb.proj_arg) in
       let fargs = Array.init (pb.proj_npars + 1) (fun _ -> fresh_lname Anonymous) in
       let arg = fargs.(pb.proj_npars) in
         Glet(Gconstant ("", con), mkMLlam fargs (MLapp (MLglobal gn, [|MLlocal

@@ -519,8 +519,11 @@ let rec lambda_of_constr env sigma c =
   | Construct _ ->  lambda_of_app env sigma c empty_args
 
   | Proj (p, c) ->
-    let kn = Projection.constant p in
-      mkLapp (Lproj (get_const_prefix !global_env kn, kn)) [|lambda_of_constr env sigma c|]
+    let pb = lookup_projection p !global_env in
+    (** FIXME: handle mutual records *)
+    let ind = (pb.proj_ind, 0) in
+    let prefix = get_mind_prefix !global_env (fst ind) in
+    mkLapp (Lproj (prefix, ind, pb.proj_arg)) [|lambda_of_constr env sigma c|]
 
   | Case(ci,t,a,branches) ->  
       let (mind,i as ind) = ci.ci_ind in
