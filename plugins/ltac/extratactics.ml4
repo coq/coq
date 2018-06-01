@@ -950,6 +950,22 @@ TACTIC EXTEND is_const
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constant") ]
 END;;
 
+let rec is_literal sigma t =
+  match EConstr.kind sigma t with
+  | Ind _ -> true
+  | Construct _ -> true
+  | App(f, args) -> is_literal sigma f && Array.for_all (is_literal sigma) args
+  | _ -> false
+
+TACTIC EXTEND is_literal
+| [ "is_literal" constr(x) ] -> [
+  Proofview.tclEVARMAP >>= fun sigma ->
+  if is_literal sigma x then
+    Proofview.tclUNIT ()
+  else
+    Tacticals.New.tclFAIL 0 (Pp.str "not a literal") ]
+END;;
+
 (* Command to grab the evars left unresolved at the end of a proof. *)
 (* spiwack: I put it in extratactics because it is somewhat tied with
    the semantics of the LCF-style tactics, hence with the classic tactic
