@@ -50,6 +50,8 @@ val get_evar : symbols -> int -> Evar.t
 
 val get_level : symbols -> int -> Univ.Level.t
 
+val get_proj : symbols -> int -> inductive * int
+
 val get_symbols : unit -> symbols
 
 type code_location_update
