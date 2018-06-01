@@ -100,7 +100,6 @@ let subst_const_body sub cb =
       { const_hyps = [];
         const_body = body';
         const_type = type';
-        const_proj = cb.const_proj;
         const_body_code =
           Option.map (Cemitcodes.subst_to_patch_subst sub) cb.const_body_code;
         const_universes = cb.const_universes;

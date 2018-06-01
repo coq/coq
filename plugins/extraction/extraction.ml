@@ -1065,7 +1065,7 @@ let extract_constant env kn cb =
         (match cb.const_body with
 	  | Undef _ -> warn_info (); mk_typ_ax ()
 	  | Def c ->
-	     (match cb.const_proj with
+             (match Environ.is_projection kn env with
               | false -> mk_typ (get_body c)
               | true ->
                 let pb = lookup_projection (Projection.make kn false) env in
@@ -1078,7 +1078,7 @@ let extract_constant env kn cb =
         (match cb.const_body with
 	  | Undef _ -> warn_info (); mk_ax ()
 	  | Def c ->
-	     (match cb.const_proj with
+             (match Environ.is_projection kn env with
               | false -> mk_def (get_body c)
               | true ->
                 let pb = lookup_projection (Projection.make kn false) env in

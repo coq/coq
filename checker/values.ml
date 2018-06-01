@@ -15,7 +15,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 fb80632357e3ffa988c6bba3fa6ade64 checker/cic.mli
+MD5 3d9612f0adc70404fddb093b85c7d168 checker/cic.mli
 
 *)
 
@@ -240,7 +240,6 @@ let v_cb = v_tuple "constant_body"
     v_constr;
     Any;
     v_const_univs;
-    v_bool;
     v_bool;
     v_typing_flags|]
 

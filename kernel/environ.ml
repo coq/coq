@@ -490,7 +490,7 @@ let lookup_projection cst env =
   Cmap_env.find (Projection.constant cst) env.env_globals.env_projections
 
 let is_projection cst env =
-  (lookup_constant cst env).const_proj
+  Cmap_env.mem cst env.env_globals.env_projections
 
 (* Mutual Inductives *)
 let polymorphic_ind (mind,i) env =

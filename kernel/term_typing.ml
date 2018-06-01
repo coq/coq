@@ -250,7 +250,6 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       {
         Cooking.cook_body = Undef nl;
         cook_type = t;
-        cook_proj = false;
         cook_universes = univs;
         cook_inline = false;
         cook_context = ctx;
@@ -291,7 +290,6 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       {
         Cooking.cook_body = def;
         cook_type = typ;
-        cook_proj = false;
         cook_universes = Monomorphic_const univs;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
@@ -343,7 +341,6 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       {
         Cooking.cook_body = def;
         cook_type = typ;
-        cook_proj = false;
         cook_universes = univs;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
@@ -370,7 +367,6 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
     {
       Cooking.cook_body = Def (Mod_subst.from_val (Constr.hcons term));
       cook_type = typ;
-      cook_proj = true;
       cook_universes = univs;
       cook_inline = false;
       cook_context = None;
@@ -464,7 +460,6 @@ let build_constant_declaration kn env result =
   { const_hyps = hyps;
     const_body = def;
     const_type = typ;
-    const_proj = result.cook_proj;
     const_body_code = tps;
     const_universes = univs;
     const_inline_code = result.cook_inline;

@@ -241,7 +241,6 @@ type constant_body = {
     const_type : constr;
     const_body_code : to_patch_substituted;
     const_universes : constant_universes;
-    const_proj : bool;
     const_inline_code : bool;
     const_typing_flags : typing_flags;
 }
