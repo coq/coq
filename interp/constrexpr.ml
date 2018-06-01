@@ -22,6 +22,15 @@ type name_decl = lname * universe_decl_expr option
 
 type notation = string
 
+type 'a or_by_notation_r =
+  | AN of 'a
+  | ByNotation of (string * string option)
+
+type 'a or_by_notation = 'a or_by_notation_r CAst.t
+
+(* NB: the last string in [ByNotation] is actually a [Notation.delimiters],
+   but this formulation avoids a useless dependency. *)
+
 type explicitation =
   | ExplByPos of int * Id.t option (* a reference to the n-th product starting from left *)
   | ExplByName of Id.t

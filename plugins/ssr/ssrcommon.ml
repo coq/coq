@@ -181,7 +181,6 @@ let option_assert_get o msg =
 (** Constructors for rawconstr *)
 open Glob_term
 open Globnames
-open Misctypes
 open Decl_kinds
 
 let mkRHole = DAst.make @@ GHole (Evar_kinds.InternalHole, Namegen.IntroAnonymous, None)

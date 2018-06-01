@@ -10,7 +10,6 @@
 
 open Ltac_plugin
 open Names
-open Misctypes
 open Tacexpr
 open Geninterp
 open Quote
@@ -24,7 +23,7 @@ let x = Id.of_string "x"
 
 let make_cont (k : Val.t) (c : EConstr.t) =
   let c = Tacinterp.Value.of_constr c in
-  let tac = TacCall (Loc.tag (ArgVar CAst.(make cont), [Reference (ArgVar CAst.(make x))])) in
+  let tac = TacCall (Loc.tag (Locus.ArgVar CAst.(make cont), [Reference (Locus.ArgVar CAst.(make x))])) in
   let ist = { lfun = Id.Map.add cont k (Id.Map.singleton x c); extra = TacStore.empty; } in
   Tacinterp.eval_tactic_ist ist (TacArg (Loc.tag tac))
 

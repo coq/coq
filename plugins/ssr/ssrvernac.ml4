@@ -27,7 +27,6 @@ open Glob_term
 open Globnames
 open Stdarg
 open Genarg
-open Misctypes
 open Decl_kinds
 open Libnames
 open Pp

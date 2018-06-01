@@ -27,7 +27,6 @@ open Tacexpr
 open Genarg
 open Stdarg
 open Tacarg
-open Misctypes
 open Namegen
 open Tactypes
 open Locus

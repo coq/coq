@@ -19,7 +19,6 @@ open Tacmach
 open Tacexpr
 open Taccoerce
 open Tacinterp
-open Misctypes
 open Locus
 
 (** Adding scopes for generic arguments not defined through ARGUMENT EXTEND *)

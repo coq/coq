@@ -8,9 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Misctypes
-
-val dump_global : Libnames.reference or_by_notation -> unit
+val dump_global : Libnames.reference Constrexpr.or_by_notation -> unit
 
 (** Vernacular entries *)
 val vernac_require :

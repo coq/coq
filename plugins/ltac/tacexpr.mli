@@ -15,7 +15,6 @@ open Libnames
 open Genredexpr
 open Genarg
 open Pattern
-open Misctypes
 open Locus
 open Tactypes
 
@@ -306,7 +305,7 @@ constraint 'a = <
 
 type g_trm = glob_constr_and_expr
 type g_pat = glob_constr_pattern_and_expr
-type g_cst = evaluable_global_reference and_short_name or_var
+type g_cst = evaluable_global_reference Stdarg.and_short_name or_var
 type g_ref = ltac_constant located or_var
 type g_nam = lident
 

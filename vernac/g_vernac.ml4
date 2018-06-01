@@ -20,7 +20,6 @@ open Extend
 open Decl_kinds
 open Declaremods
 open Declarations
-open Misctypes
 open Namegen
 open Tok (* necessary for camlp5 *)
 

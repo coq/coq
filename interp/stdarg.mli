@@ -17,9 +17,11 @@ open Libnames
 open Genredexpr
 open Pattern
 open Constrexpr
-open Misctypes
 open Genarg
 open Genintern
+open Locus
+
+type 'a and_short_name = 'a * lident option
 
 val wit_unit : unit uniform_genarg_type
 

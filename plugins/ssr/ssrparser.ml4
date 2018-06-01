@@ -22,13 +22,13 @@ open Libnames
 open Tactics
 open Tacmach
 open Util
+open Locus
 open Tacexpr
 open Tacinterp
 open Pltac
 open Extraargs
 open Ppconstr
 
-open Misctypes
 open Namegen
 open Tactypes
 open Decl_kinds
@@ -303,24 +303,24 @@ END
 
 
 let pr_index = function
-  | Misctypes.ArgVar {CAst.v=id} -> pr_id id
-  | Misctypes.ArgArg n when n > 0 -> int n
+  | ArgVar {CAst.v=id} -> pr_id id
+  | ArgArg n when n > 0 -> int n
   | _ -> mt ()
 let pr_ssrindex _ _ _ = pr_index
 
-let noindex = Misctypes.ArgArg 0
+let noindex = ArgArg 0
 
 let check_index ?loc i =
   if i > 0 then i else CErrors.user_err ?loc (str"Index not positive")
 let mk_index ?loc = function
-  | Misctypes.ArgArg i -> Misctypes.ArgArg (check_index ?loc i)
+  | ArgArg i -> ArgArg (check_index ?loc i)
   | iv -> iv
 
 let interp_index ist gl idx =
   Tacmach.project gl,
   match idx with
-  | Misctypes.ArgArg _ -> idx
-  | Misctypes.ArgVar id ->
+  | ArgArg _ -> idx
+  | ArgVar id ->
     let i =
       try
         let v = Id.Map.find id.CAst.v ist.Tacinterp.lfun in
@@ -338,7 +338,7 @@ let interp_index ist gl idx =
         | None -> raise Not_found
         end end
     with _ -> CErrors.user_err ?loc:id.CAst.loc (str"Index not a number") in
-    Misctypes.ArgArg (check_index ?loc:id.CAst.loc i)
+    ArgArg (check_index ?loc:id.CAst.loc i)
 
 open Pltac
 

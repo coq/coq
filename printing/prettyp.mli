@@ -12,7 +12,6 @@ open Names
 open Environ
 open Reductionops
 open Libnames
-open Misctypes
 open Evd
 
 (** A Pretty-Printer for the Calculus of Inductive Constructions. *)
@@ -33,12 +32,12 @@ val print_eval :
   reduction_function -> env -> Evd.evar_map ->
     Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t
 
-val print_name : env -> Evd.evar_map -> reference or_by_notation ->
+val print_name : env -> Evd.evar_map -> reference Constrexpr.or_by_notation ->
   UnivNames.univ_name_list option -> Pp.t
 val print_opaque_name : env -> Evd.evar_map -> reference -> Pp.t
-val print_about : env -> Evd.evar_map -> reference or_by_notation ->
+val print_about : env -> Evd.evar_map -> reference Constrexpr.or_by_notation ->
   UnivNames.univ_name_list option -> Pp.t
-val print_impargs : reference or_by_notation -> Pp.t
+val print_impargs : reference Constrexpr.or_by_notation -> Pp.t
 
 (** Pretty-printing functions for classes and coercions *)
 val print_graph : env -> evar_map -> Pp.t

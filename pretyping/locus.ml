@@ -9,9 +9,12 @@
 (************************************************************************)
 
 open Names
-open Misctypes
 
 (** Locus : positions in hypotheses and goals *)
+
+type 'a or_var =
+  | ArgArg of 'a
+  | ArgVar of lident
 
 (** {6 Occurrences} *)
 

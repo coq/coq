@@ -15,7 +15,6 @@ open Pp
 open Glob_term
 open Constrexpr
 open Tacexpr
-open Misctypes
 open Namegen
 open Genarg
 open Genredexpr
@@ -28,7 +27,7 @@ open Pcoq.Constr
 open Pvernac.Vernac_
 open Pltac
 
-let fail_default_value = ArgArg 0
+let fail_default_value = Locus.ArgArg 0
 
 let arg_of_expr = function
     TacArg (loc,a) -> a
@@ -199,9 +198,9 @@ GEXTEND Gram
      non ambiguous name where dots are replaced by "_"? Probably too
      verbose most of the time. *)
   fresh_id:
-    [ [ s = STRING -> ArgArg s (*| id = ident -> ArgVar (!@loc,id)*)
+    [ [ s = STRING -> Locus.ArgArg s (*| id = ident -> Locus.ArgVar (!@loc,id)*)
         | qid = qualid -> let (_pth,id) = Libnames.repr_qualid qid.CAst.v in
-                          ArgVar (CAst.make ~loc:!@loc id) ] ]
+                          Locus.ArgVar (CAst.make ~loc:!@loc id) ] ]
   ;
   constr_eval:
     [ [ IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->

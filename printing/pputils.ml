@@ -11,7 +11,6 @@
 open Util
 open Pp
 open Genarg
-open Misctypes
 open Locus
 open Genredexpr
 
@@ -122,7 +121,7 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) keyword = function
 let pr_red_expr_env env sigma (pr_constr,pr_lconstr,pr_ref,pr_pattern) =
   pr_red_expr (pr_constr env sigma, pr_lconstr env sigma, pr_ref, pr_pattern env sigma)
 
-let pr_or_by_notation f = function
+let pr_or_by_notation f = let open Constrexpr in function
   | {CAst.loc; v=AN v} -> f v
   | {CAst.loc; v=ByNotation (s,sc)} -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 

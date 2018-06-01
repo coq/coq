@@ -14,7 +14,6 @@ open EConstr
 open Tacexpr
 open Genarg
 open Redexpr
-open Misctypes
 open Tactypes
 
 val ltac_trace_info : ltac_trace Exninfo.t
@@ -132,7 +131,7 @@ val interp_ltac_var : (value -> 'a) -> interp_sign ->
 
 val interp_int : interp_sign -> lident -> int
 
-val interp_int_or_var : interp_sign -> int or_var -> int
+val interp_int_or_var : interp_sign -> int Locus.or_var -> int
 
 val default_ist : unit -> Geninterp.interp_sign
 (** Empty ist with debug set on the current value. *)

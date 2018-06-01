@@ -42,7 +42,6 @@ open Ind_tables
 open Eqschemes
 open Locus
 open Locusops
-open Misctypes
 open Tactypes
 open Proofview.Notations
 open Unification

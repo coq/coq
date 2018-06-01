@@ -57,7 +57,6 @@ type ('a,'b,'c) may_eval =
 
 open Libnames
 open Constrexpr
-open Misctypes
 
 type r_trm = constr_expr
 type r_pat = constr_pattern_expr

@@ -20,6 +20,7 @@ open Environ
 open Libnames
 open Globnames
 open Glob_term
+open Locus
 open Tacexpr
 open Coqlib
 open Mod_subst
@@ -29,7 +30,6 @@ open Printer
 open Declare
 open Decl_kinds
 open Entries
-open Misctypes
 open Newring_ast
 open Proofview.Notations
 

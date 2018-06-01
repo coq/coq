@@ -11,6 +11,8 @@
 open Genarg
 open Geninterp
 
+type 'a and_short_name = 'a * Names.lident option
+
 let make0 ?dyn name =
   let wit = Genarg.make0 name in
   let () = register_val0 wit dyn in

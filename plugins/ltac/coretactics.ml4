@@ -10,7 +10,6 @@
 
 open Util
 open Locus
-open Misctypes
 open Tactypes
 open Genredexpr
 open Stdarg

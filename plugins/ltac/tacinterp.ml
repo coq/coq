@@ -36,7 +36,6 @@ open Stdarg
 open Tacarg
 open Printer
 open Pretyping
-open Misctypes
 open Tactypes
 open Locus
 open Tacintern

@@ -15,7 +15,6 @@ open Libnames
 open Constrexpr
 open Tacexpr
 open Genredexpr
-open Misctypes
 open Tactypes
 
 val open_constr : constr_expr Gram.entry
@@ -27,7 +26,7 @@ val constr_eval : (constr_expr,reference or_by_notation,constr_expr) may_eval Gr
 val uconstr : constr_expr Gram.entry
 val quantified_hypothesis : quantified_hypothesis Gram.entry
 val destruction_arg : constr_expr with_bindings Tactics.destruction_arg Gram.entry
-val int_or_var : int or_var Gram.entry
+val int_or_var : int Locus.or_var Gram.entry
 val simple_tactic : raw_tactic_expr Gram.entry
 val simple_intropattern : constr_expr intro_pattern_expr CAst.t Gram.entry
 val in_clause : Names.lident Locus.clause_expr Gram.entry

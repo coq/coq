@@ -23,7 +23,6 @@ open Constrexpr
 open Constrexpr_ops
 open Notation_gram
 open Decl_kinds
-open Misctypes
 open Namegen
 (*i*)
 
@@ -243,8 +242,8 @@ let tag_var = tag Tag.variable
     | x -> pr_ast Name.print x
 
   let pr_or_var pr = function
-    | ArgArg x -> pr x
-    | ArgVar id -> pr_lident id
+    | Locus.ArgArg x -> pr x
+    | Locus.ArgVar id -> pr_lident id
 
   let pr_prim_token = function
     | Numeral (n,s) -> str (if s then n else "-"^n)

@@ -18,7 +18,6 @@ open Pp
 open CErrors
 open Libnames
 open Globnames
-open Misctypes
 open Syntax_def
 open Notation_term
 
@@ -65,13 +64,13 @@ let global_with_alias ?head r =
   try locate_global_with_alias ?head qid
   with Not_found -> Nametab.error_global_not_found qid
 
-let smart_global ?head = CAst.with_loc_val (fun ?loc -> function
+let smart_global ?head = let open Constrexpr in CAst.with_loc_val (fun ?loc -> function
   | AN r ->
     global_with_alias ?head r
   | ByNotation (ntn,sc) ->
     Notation.interp_notation_as_global_reference ?loc (fun _ -> true) ntn sc)
 
-let smart_global_inductive = CAst.with_loc_val (fun ?loc -> function
+let smart_global_inductive = let open Constrexpr in CAst.with_loc_val (fun ?loc -> function
   | AN r ->
     global_inductive_with_alias r
   | ByNotation (ntn,sc) ->

@@ -12,7 +12,6 @@ open Util
 open Names
 open Constr
 open EConstr
-open Misctypes
 open Namegen
 open Tactypes
 open Genarg
@@ -368,7 +367,7 @@ let coerce_to_int_or_var_list v =
   match Value.to_list v with
   | None -> raise (CannotCoerceTo "an int list")
   | Some l ->
-    let map n = ArgArg (coerce_to_int n) in
+    let map n = Locus.ArgArg (coerce_to_int n) in
     List.map map l
 
 (** Abstract application, to print ltac functions *)

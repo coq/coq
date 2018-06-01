@@ -17,7 +17,7 @@ val tclSEQAT :
   Tacinterp.interp_sign ->
   Tacinterp.Value.t ->
   Ssrast.ssrdir ->
-  int Misctypes.or_var *
+  int Locus.or_var *
     (('a * Tacinterp.Value.t option list) *
        Tacinterp.Value.t option) ->
   Tacmach.tactic
@@ -37,7 +37,7 @@ val hinttac :
 
 val ssrdotac :
   Tacinterp.interp_sign ->
-  ((int Misctypes.or_var * Ssrast.ssrmmod) *
+  ((int Locus.or_var * Ssrast.ssrmmod) *
      (bool * Tacinterp.Value.t option list)) *
     ((Ssrast.ssrhyps *
         ((Ssrast.ssrhyp_or_id * string) *

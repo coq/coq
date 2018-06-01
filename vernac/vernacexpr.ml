@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Misctypes
 open Constrexpr
 open Libnames
 

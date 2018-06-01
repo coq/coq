@@ -19,7 +19,6 @@ open Geninterp
 open Stdarg
 open Libnames
 open Notation_gram
-open Misctypes
 open Tactypes
 open Locus
 open Decl_kinds

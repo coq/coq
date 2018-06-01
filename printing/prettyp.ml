@@ -26,7 +26,6 @@ open Libobject
 open Libnames
 open Globnames
 open Recordops
-open Misctypes
 open Printer
 open Printmod
 open Context.Rel.Declaration
@@ -843,12 +842,12 @@ let print_any_name env sigma na udecl =
 
 let print_name env sigma na udecl =
   match na with
-  | {loc; v=ByNotation (ntn,sc)} ->
+  | {loc; v=Constrexpr.ByNotation (ntn,sc)} ->
       print_any_name env sigma
         (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
                ntn sc))
         udecl
-  | {loc; v=AN ref} ->
+  | {loc; v=Constrexpr.AN ref} ->
       print_any_name env sigma (locate_any_name ref) udecl
 
 let print_opaque_name env sigma qid =
@@ -896,11 +895,11 @@ let print_about_any ?loc env sigma k udecl =
 
 let print_about env sigma na udecl =
   match na with
-  | {loc;v=ByNotation (ntn,sc)} ->
+  | {loc;v=Constrexpr.ByNotation (ntn,sc)} ->
       print_about_any ?loc env sigma
         (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
                ntn sc)) udecl
-  | {loc;v=AN ref} ->
+  | {loc;v=Constrexpr.AN ref} ->
       print_about_any ?loc env sigma (locate_any_name ref) udecl
 
 (* for debug *)
