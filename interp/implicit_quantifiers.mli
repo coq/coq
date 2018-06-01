@@ -45,3 +45,7 @@ val implicit_application : Id.Set.t -> ?allow_partial:bool ->
   (Id.Set.t -> GlobRef.t option * Context.Rel.Declaration.t ->
     Constrexpr.constr_expr * Id.Set.t) ->
   constr_expr -> constr_expr * Id.Set.t
+
+(* Should be likely located elsewhere *)
+exception MismatchedContextInstance of Environ.env * Typeclasses_errors.contexts * constr_expr list * Context.Rel.t (* found, expected *)
+val mismatched_ctx_inst_err : Environ.env -> Typeclasses_errors.contexts -> constr_expr list -> Context.Rel.t -> 'a

@@ -41,6 +41,15 @@ Printer.ml API
   pr_subgoal and pr_goal was removed to simplify the code.  It was
   earlierly used by PCoq.
 
+Source code organization
+
+- We have eliminated / fused some redundant modules and relocated a
+  few interfaces files. The `intf` folder is gone, and now for example
+  `Constrexpr` is located in `interp/`, `Vernacexpr` in `vernac/` and
+  so on. Changes should be compatible, but in a few cases stricter
+  layering requirements may mean that functions have moved. In all
+  cases adapting is a matter of changing the module name.
+
 Vernacular commands
 
 - The implementation of vernacular commands has been refactored so it

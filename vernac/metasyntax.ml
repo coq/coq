@@ -15,6 +15,7 @@ open Names
 open Constrexpr
 open Constrexpr_ops
 open Notation_term
+open Notation_gram
 open Notation_ops
 open Ppextend
 open Extend
@@ -709,7 +710,7 @@ let error_parsing_incompatible_level ntn ntn' oldprec prec =
     pr_level ntn prec ++ str ".")
 
 type syntax_extension = {
-  synext_level : Notation_term.level;
+  synext_level : Notation_gram.level;
   synext_notation : notation;
   synext_notgram : notation_grammar;
   synext_unparsing : unparsing list;
@@ -728,8 +729,8 @@ let check_and_extend_constr_grammar ntn rule =
     let ntn_for_grammar = rule.notgram_notation in
     if String.equal ntn ntn_for_grammar then raise Not_found;
     let prec = rule.notgram_level in
-    let oldprec = Notation.level_of_notation ntn_for_grammar in
-    if not (Notation.level_eq prec oldprec) then error_parsing_incompatible_level ntn ntn_for_grammar oldprec prec;
+    let oldprec = Notgram_ops.level_of_notation ntn_for_grammar in
+    if not (Notgram_ops.level_eq prec oldprec) then error_parsing_incompatible_level ntn ntn_for_grammar oldprec prec;
   with Not_found ->
     Egramcoq.extend_constr_grammar rule
 
@@ -738,16 +739,16 @@ let cache_one_syntax_extension se =
   let prec = se.synext_level in
   let onlyprint = se.synext_notgram.notgram_onlyprinting in
   try
-    let oldprec = Notation.level_of_notation ~onlyprint ntn in
-    if not (Notation.level_eq prec oldprec) then error_incompatible_level ntn oldprec prec;
+    let oldprec = Notgram_ops.level_of_notation ~onlyprint ntn in
+    if not (Notgram_ops.level_eq prec oldprec) then error_incompatible_level ntn oldprec prec;
   with Not_found ->
     if is_active_compat se.synext_compat then begin
       (* Reserve the notation level *)
-      Notation.declare_notation_level ntn prec ~onlyprint;
+      Notgram_ops.declare_notation_level ntn prec ~onlyprint;
       (* Declare the parsing rule *)
       if not onlyprint then List.iter (check_and_extend_constr_grammar ntn) se.synext_notgram.notgram_rules;
       (* Declare the notation rule *)
-      Notation.declare_notation_rule ntn
+      declare_notation_rule ntn
         ~extra:se.synext_extra (se.synext_unparsing, pi1 prec) se.synext_notgram
     end
 
@@ -1061,7 +1062,7 @@ let find_precedence lev etyps symbols onlyprint =
       [],Option.get lev
 
 let check_curly_brackets_notation_exists () =
-  try let _ = Notation.level_of_notation "{ _ }" in ()
+  try let _ = Notgram_ops.level_of_notation "{ _ }" in ()
   with Not_found ->
     user_err Pp.(str "Notations involving patterns of the form \"{ _ }\" are treated \n\
 specially and require that the notation \"{ _ }\" is already reserved.")
@@ -1274,10 +1275,10 @@ exception NoSyntaxRule
 
 let recover_notation_syntax ntn =
   try
-    let prec = Notation.level_of_notation ~onlyprint:true ntn (* Be as little restrictive as possible *) in
-    let pp_rule,_ = Notation.find_notation_printing_rule ntn in
-    let pp_extra_rules = Notation.find_notation_extra_printing_rules ntn in
-    let pa_rule = Notation.find_notation_parsing_rules ntn in
+    let prec = Notgram_ops.level_of_notation ~onlyprint:true ntn (* Be as little restrictive as possible *) in
+    let pp_rule,_ = find_notation_printing_rule ntn in
+    let pp_extra_rules = find_notation_extra_printing_rules ntn in
+    let pa_rule = find_notation_parsing_rules ntn in
     { synext_level = prec;
       synext_notation = ntn;
       synext_notgram = pa_rule;
@@ -1444,7 +1445,7 @@ let add_notation_extra_printing_rule df k v =
   let notk = 
     let _,_, symbs = analyze_notation_tokens ~onlyprint:true df in
     make_notation_key symbs in
-  Notation.add_notation_extra_printing_rule notk k v
+  add_notation_extra_printing_rule notk k v
 
 (* Infix notations *)
 

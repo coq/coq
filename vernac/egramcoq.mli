@@ -15,5 +15,5 @@
 
 (** {5 Adding notations} *)
 
-val extend_constr_grammar : Notation_term.one_notation_grammar -> unit
+val extend_constr_grammar : Notation_gram.one_notation_grammar -> unit
 (** Add a term notation rule to the parsing system. *)

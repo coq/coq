@@ -19,7 +19,7 @@ open Constr
 open Libnames
 open Pputils
 open Ppextend
-open Notation_term
+open Notation_gram
 open Constrexpr
 open Constrexpr_ops
 open Decl_kinds
@@ -87,8 +87,6 @@ let tag_var = tag Tag.variable
   let prec_of_prim_token = function
     | Numeral (_,b) -> if b then lposint else lnegint
     | String _ -> latom
-
-  open Notation
 
   let print_hunks n pr pr_patt pr_binders (terms, termlists, binders, binderlists) unps =
     let env = ref terms and envlist = ref termlists and bl = ref binders and bll = ref binderlists in

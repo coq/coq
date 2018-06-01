@@ -1033,7 +1033,6 @@ let explain_mismatched_contexts env c i j =
 let explain_typeclass_error env = function
   | NotAClass c -> explain_not_a_class env c
   | UnboundMethod (cid, id) -> explain_unbound_method env cid id
-  | MismatchedContextInstance (c,i,j) -> explain_mismatched_contexts env c i j
 
 (* Refiner errors *)
 

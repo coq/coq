@@ -17,11 +17,13 @@ open Glob_term
 open Constrexpr
 open Libnames
 open Typeclasses
-open Typeclasses_errors
 open Pp
 open Libobject
 open Nameops
 open Context.Rel.Declaration
+
+exception MismatchedContextInstance of Environ.env * Typeclasses_errors.contexts * constr_expr list * Context.Rel.t (* found, expected *)
+let mismatched_ctx_inst_err env c n m = raise (MismatchedContextInstance (env, c, n, m))
 
 module RelDecl = Context.Rel.Declaration
 (*i*)
@@ -238,7 +240,7 @@ let implicit_application env ?(allow_partial=true) f ty =
 	      let applen = List.fold_left (fun acc (x, y) -> opt_succ y acc) 0 par in
 	      let needlen = List.fold_left (fun acc x -> opt_succ x acc) 0 ci in
 		if not (Int.equal needlen applen) then
-		  Typeclasses_errors.mismatched_ctx_inst (Global.env ()) Parameters (List.map fst par) rd
+                  mismatched_ctx_inst_err (Global.env ()) Typeclasses_errors.Parameters (List.map fst par) rd
 	    end;
 	  let pars = List.rev (List.combine ci rd) in
 	  let args, avoid = combine_params avoid f par pars in

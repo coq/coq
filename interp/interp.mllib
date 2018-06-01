@@ -1,3 +1,6 @@
+Constrexpr
+Genredexpr
+Redops
 Tactypes
 Stdarg
 Genintern
@@ -7,7 +10,6 @@ Notation
 Syntax_def
 Smartlocate
 Constrexpr_ops
-Ppextend
 Dumpglob
 Reserve
 Impargs

@@ -24,7 +24,7 @@ open Decl_kinds
     proof of mutually dependent theorems) *)
 
 val start_proof :
-  Id.t -> ?pl:Univdecls.universe_decl -> goal_kind -> Evd.evar_map -> named_context_val -> EConstr.constr ->
+  Id.t -> ?pl:UState.universe_decl -> goal_kind -> Evd.evar_map -> named_context_val -> EConstr.constr ->
   ?init_tac:unit Proofview.tactic ->
   Proof_global.proof_terminator -> unit
 

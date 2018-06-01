@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Misctypes
-open Genredexpr
 
 (** Mapping [cast_type] *)
 
@@ -24,11 +23,6 @@ val glob_sort_eq : Glob_term.glob_sort -> Glob_term.glob_sort -> bool
 
 val intro_pattern_naming_eq :
   intro_pattern_naming_expr -> intro_pattern_naming_expr -> bool
-
-(** Mapping [red_expr_gen] *)
-
-val map_red_expr_gen : ('a -> 'd) -> ('b -> 'e) -> ('c -> 'f) ->
-  ('a,'b,'c) red_expr_gen -> ('d,'e,'f) red_expr_gen
 
 (** Mapping bindings *)
 

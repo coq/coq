@@ -102,7 +102,7 @@ let binders_of_decls = List.map binder_of_decl
 
 let typecheck_params_and_fields finite def id poly pl t ps nots fs =
   let env0 = Global.env () in
-  let sigma, decl = Univdecls.interp_univ_decl_opt env0 pl in
+  let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env0 pl in
   let _ =
     let error bk {CAst.loc; v=name} =
       match bk, name with

@@ -305,8 +305,20 @@ let reference_of_level uctx =
 let pr_uctx_level uctx l =
   Libnames.pr_reference (reference_of_level uctx l)
 
+type ('a, 'b) gen_universe_decl = {
+  univdecl_instance : 'a; (* Declared universes *)
+  univdecl_extensible_instance : bool; (* Can new universes be added *)
+  univdecl_constraints : 'b; (* Declared constraints *)
+  univdecl_extensible_constraints : bool (* Can new constraints be added *) }
+
 type universe_decl =
-  (Misctypes.lident list, Univ.Constraint.t) Misctypes.gen_universe_decl
+  (Misctypes.lident list, Univ.Constraint.t) gen_universe_decl
+
+let default_univ_decl =
+  { univdecl_instance = [];
+    univdecl_extensible_instance = true;
+    univdecl_constraints = Univ.Constraint.empty;
+    univdecl_extensible_constraints = true }
 
 let error_unbound_universes left uctx =
   let open Univ in
@@ -367,7 +379,6 @@ let check_implication uctx cstrs cstrs' =
       (str "Universe constraints are not implied by the ones declared.")
 
 let check_mono_univ_decl uctx decl =
-  let open Misctypes in
   let () =
     let names = decl.univdecl_instance in
     let extensible = decl.univdecl_extensible_instance in
@@ -380,7 +391,6 @@ let check_mono_univ_decl uctx decl =
   uctx.uctx_local
 
 let check_univ_decl ~poly uctx decl =
-  let open Misctypes in
   let ctx =
     let names = decl.univdecl_instance in
     let extensible = decl.univdecl_extensible_instance in

@@ -54,7 +54,7 @@ val default_tactic : unit Proofview.tactic ref
 
 val add_definition : Names.Id.t -> ?term:constr -> types -> 
   UState.t ->
-  ?univdecl:Univdecls.universe_decl -> (* Universe binders and constraints *)
+  ?univdecl:UState.universe_decl -> (* Universe binders and constraints *)
   ?implicits:(Constrexpr.explicitation * (bool * bool * bool)) list ->
   ?kind:Decl_kinds.definition_kind ->
   ?tactic:unit Proofview.tactic ->
@@ -72,7 +72,7 @@ val add_mutual_definitions :
   (Names.Id.t * constr * types *
       (Constrexpr.explicitation * (bool * bool * bool)) list * obligation_info) list ->
   UState.t ->
-  ?univdecl:Univdecls.universe_decl -> (* Universe binders and constraints *)
+  ?univdecl:UState.universe_decl -> (* Universe binders and constraints *)
   ?tactic:unit Proofview.tactic ->
   ?kind:Decl_kinds.definition_kind ->
   ?reduce:(constr -> constr) ->

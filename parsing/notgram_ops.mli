@@ -8,14 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Local universe and constraint declarations. *)
-type universe_decl =
-  (Misctypes.lident list, Univ.Constraint.t) Misctypes.gen_universe_decl
+(* Merge with metasyntax? *)
+open Constrexpr
+open Notation_gram
 
-val default_univ_decl : universe_decl
+val level_eq : level -> level -> bool
 
-val interp_univ_decl : Environ.env -> Constrexpr.universe_decl_expr ->
-                       Evd.evar_map * universe_decl
+(** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 
-val interp_univ_decl_opt : Environ.env -> Constrexpr.universe_decl_expr option ->
-                       Evd.evar_map * universe_decl
+val declare_notation_level : ?onlyprint:bool -> notation -> level -> unit
+val level_of_notation : ?onlyprint:bool -> notation -> level (** raise [Not_found] if no level or not respecting onlyprint *)

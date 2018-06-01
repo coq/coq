@@ -12,7 +12,6 @@
 open Names
 open EConstr
 open Environ
-open Constrexpr
 (*i*)
 
 type contexts = Parameters | Properties
@@ -20,7 +19,6 @@ type contexts = Parameters | Properties
 type typeclass_error =
     | NotAClass of constr
     | UnboundMethod of GlobRef.t * Misctypes.lident (* Class name, method *)
-    | MismatchedContextInstance of contexts * constr_expr list * Context.Rel.t (* found, expected *)
 
 exception TypeClassError of env * typeclass_error
 
@@ -29,5 +27,3 @@ let typeclass_error env err = raise (TypeClassError (env, err))
 let not_a_class env c = typeclass_error env (NotAClass c)
 
 let unbound_method env cid id = typeclass_error env (UnboundMethod (cid, id))
-
-let mismatched_ctx_inst env c n m = typeclass_error env (MismatchedContextInstance (c, n, m))

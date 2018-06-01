@@ -77,8 +77,8 @@ let existing_instance glob g info =
                          ~hdr:"declare_instance"
                          (Pp.str "Constant does not build instances of a declared type class.")
 
-let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
-let mismatched_props env n m = mismatched_ctx_inst env Properties n m
+let mismatched_params env n m = Implicit_quantifiers.mismatched_ctx_inst_err env Parameters n m
+let mismatched_props env n m = Implicit_quantifiers.mismatched_ctx_inst_err env Properties n m
 
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 
@@ -137,7 +137,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
   ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
   let ({CAst.loc;v=instid}, pl) = instid in
-  let sigma, decl = Univdecls.interp_univ_decl_opt env pl in
+  let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
   let tclass, ids =
     match bk with
     | Decl_kinds.Implicit ->

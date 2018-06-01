@@ -8,14 +8,14 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open CErrors
 open Util
-open Pcoq
-open Constrexpr
-open Notation_term
-open Extend
-open Libnames
+open CErrors
 open Names
+open Libnames
+open Constrexpr
+open Extend
+open Notation_gram
+open Pcoq
 
 (**********************************************************************)
 (* This determines (depending on the associativity of the current

@@ -16,8 +16,7 @@ open Decl_kinds
 (** {6 Concrete syntax for terms } *)
 
 (** [constr_expr] is the abstract syntax tree produced by the parser *)
-
-type universe_decl_expr = (lident list, Glob_term.glob_constraint list) gen_universe_decl
+type universe_decl_expr = (lident list, Glob_term.glob_constraint list) UState.gen_universe_decl
 
 type ident_decl = lident * universe_decl_expr option
 type name_decl = lname * universe_decl_expr option

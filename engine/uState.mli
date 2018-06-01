@@ -138,8 +138,16 @@ val refresh_undefined_univ_variables : t -> t * Univ.universe_level_subst
 (** Universe minimization *)
 val minimize : t -> t
 
+type ('a, 'b) gen_universe_decl = {
+  univdecl_instance : 'a; (* Declared universes *)
+  univdecl_extensible_instance : bool; (* Can new universes be added *)
+  univdecl_constraints : 'b; (* Declared constraints *)
+  univdecl_extensible_constraints : bool (* Can new constraints be added *) }
+
 type universe_decl =
-  (Misctypes.lident list, Univ.Constraint.t) Misctypes.gen_universe_decl
+  (Misctypes.lident list, Univ.Constraint.t) gen_universe_decl
+
+val default_univ_decl : universe_decl
 
 (** [check_univ_decl ctx decl]
 

@@ -11,20 +11,16 @@
 open Names
 open EConstr
 open Environ
-open Constrexpr
 
 type contexts = Parameters | Properties
 
 type typeclass_error =
   | NotAClass of constr
   | UnboundMethod of GlobRef.t * Misctypes.lident (** Class name, method *)
-  | MismatchedContextInstance of contexts * constr_expr list * Context.Rel.t (** found, expected *)
 
 exception TypeClassError of env * typeclass_error
 
 val not_a_class : env -> constr -> 'a
 
 val unbound_method : env -> GlobRef.t -> Misctypes.lident -> 'a
-
-val mismatched_ctx_inst : env -> contexts -> constr_expr list -> Context.Rel.t -> 'a
 

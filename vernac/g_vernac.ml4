@@ -230,6 +230,7 @@ GEXTEND Gram
                 ext = [ "+" -> true | -> false ]; "}" -> (l',ext)
               | ext = [ "}" -> true | "|}" -> false ] -> ([], ext) ]
          ->
+         let open UState in
          { univdecl_instance = l;
            univdecl_extensible_instance = ext;
            univdecl_constraints = fst cs;
@@ -1147,8 +1148,8 @@ GEXTEND Gram
     [ [ "at"; n = level -> n ] ]
   ;
   constr_as_binder_kind:
-    [ [ "as"; IDENT "ident" -> AsIdent
-      | "as"; IDENT "pattern" -> AsIdentOrPattern
-      | "as"; IDENT "strict"; IDENT "pattern" -> AsStrictPattern ] ]
+    [ [ "as"; IDENT "ident" -> Notation_term.AsIdent
+      | "as"; IDENT "pattern" -> Notation_term.AsIdentOrPattern
+      | "as"; IDENT "strict"; IDENT "pattern" -> Notation_term.AsStrictPattern ] ]
   ;
 END

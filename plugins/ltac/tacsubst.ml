@@ -112,7 +112,7 @@ let subst_glob_constr_or_pattern subst (bvars,c,p) =
   (bvars,subst_glob_constr subst c,subst_pattern subst p)
 
 let subst_redexp subst =
-  Miscops.map_red_expr_gen
+  Redops.map_red_expr_gen
     (subst_glob_constr subst)
     (subst_evaluable subst)
     (subst_glob_constr_or_pattern subst)
