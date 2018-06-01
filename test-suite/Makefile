@@ -362,25 +362,32 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
+	  output=$*.out.real; \
 	  $(call get_command_based_on_flags,"$<") "$<" $(call get_coq_prog_args,"$<") 2>&1 \
 	    | grep -v "Welcome to Coq" \
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
 	    | grep -v "^<W>" \
 	    | sed 's/File "[^"]*"/File "stdin"/' \
-	    > $$tmpoutput; \
-	  diff -u --strip-trailing-cr $*.out $$tmpoutput 2>&1; R=$$?; times; \
+	    > $$output; \
+	  diff -u --strip-trailing-cr $*.out $$output 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
+	    rm $$output; \
 	  else \
 	    echo $(log_failure); \
 	    echo "    $<...Error! (unexpected output)"; \
 	    $(FAIL); \
 	  fi; \
-	  rm $$tmpoutput; \
 	} > "$@"
+
+.PHONY: approve-output
+approve-output: output
+	$(HIDE)for f in output/*.out.real; do \
+	  mv "$$f" "$${f%.real}"; \
+	  echo "Updated $${f%.real}!"; \
+	done
 
 # the expected output for the MExtraction test is
 # /plugins/micromega/micromega.ml except with additional newline
