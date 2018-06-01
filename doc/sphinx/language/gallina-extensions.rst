@@ -13,42 +13,37 @@ Extensions of |Gallina|
 Record types
 ----------------
 
-The ``Record`` construction is a macro allowing the definition of
+The :cmd:`Record` construction is a macro allowing the definition of
 records as is done in many programming languages. Its syntax is
-described in the grammar below. In fact, the ``Record`` macro is more general
+described in the grammar below. In fact, the :cmd:`Record` macro is more general
 than the usual record types, since it allows also for “manifest”
-expressions. In this sense, the ``Record`` construction allows defining
+expressions. In this sense, the :cmd:`Record` construction allows defining
 “signatures”.
 
 .. _record_grammar:
 
   .. productionlist:: `sentence`
-     record         : `record_keyword` ident [binders] [: sort] := [ident] { [`field` ; … ; `field`] }.
+     record         : `record_keyword` `ident` [ `binders` ] [: `sort` ] := [ `ident` ] { [ `field` ; … ; `field` ] }.
      record_keyword : Record | Inductive | CoInductive
-     field          : name [binders] : type [ where notation ]
-                    : | name [binders] [: term] := term
+     field          : `ident` [ `binders` ] : `type` [ where `notation` ]
+                    : | `ident` [ `binders` ] [: `type` ] := `term`
 
 In the expression:
 
-.. cmd:: Record @ident {* @param } {? : @sort} := {? @ident} { {*; @ident {* @binder } : @term } }
+.. cmd:: Record @ident @binders {? : @sort} := {? @ident} { {*; @ident @binders : @type } }
 
-the first identifier `ident` is the name of the defined record and `sort` is its
+the first identifier :token:`ident` is the name of the defined record and :token:`sort` is its
 type. The optional identifier following ``:=`` is the name of its constructor. If it is omitted,
-the default name ``Build_``\ `ident`, where `ident` is the record name, is used. If `sort` is
+the default name ``Build_``\ :token:`ident`, where :token:`ident` is the record name, is used. If :token:`sort` is
 omitted, the default sort is `\Type`. The identifiers inside the brackets are the names of
-fields. For a given field `ident`, its type is :g:`forall binder …, term`.
+fields. For a given field :token:`ident`, its type is :g:`forall binders, type`.
 Remark that the type of a particular identifier may depend on a previously-given identifier. Thus the
-order of the fields is important. Finally, each `param` is a parameter of the record.
+order of the fields is important. Finally, :token:`binders` are parameters of the record.
 
 More generally, a record may have explicitly defined (a.k.a. manifest)
 fields. For instance, we might have:
-
-.. coqtop:: in
-
-  Record ident param : sort := { ident₁ : type₁ ; ident₂ := term₂ ; ident₃ : type₃ }.
-
-in which case the correctness of |type_3| may rely on the instance |term_2| of |ident_2| and |term_2| in turn
-may depend on |ident_1|.
+:n:`Record @ident @binders : @sort := { @ident₁ : @type₁ ; @ident₂ := @term₂ ; @ident₃ : @type₃ }`.
+in which case the correctness of :n:`@type₃` may rely on the instance :n:`@term₂` of :n:`@ident₂` and :n:`@term₂` may in turn depend on :n:`@ident₁`.
 
 .. example::
 
@@ -69,11 +64,10 @@ depends on both ``top`` and ``bottom``.
 
 Let us now see the work done by the ``Record`` macro. First the macro
 generates a variant type definition with just one constructor:
+:n:`Variant @ident {? @binders } : @sort := @ident₀ {? @binders }`.
 
-.. cmd:: Variant @ident {* @params} : @sort := @ident {* (@ident : @term_1)}
-
-To build an object of type `ident`, one should provide the constructor
-|ident_0| with the appropriate number of terms filling the fields of the record.
+To build an object of type :n:`@ident`, one should provide the constructor
+:n:`@ident₀` with the appropriate number of terms filling the fields of the record.
 
 .. example:: Let us define the rational :math:`1/2`:
 
@@ -379,6 +373,7 @@ we have the following equivalence
 Notice that the printing uses the :g:`if` syntax because `sumbool` is
 declared as such (see :ref:`controlling-match-pp`).
 
+.. _irrefutable-patterns:
 
 Irrefutable patterns: the destructuring let variants
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
