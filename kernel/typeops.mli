@@ -100,8 +100,6 @@ val judge_of_case : env -> case_info
   -> unsafe_judgment -> unsafe_judgment -> unsafe_judgment array
     -> unsafe_judgment
 
-val type_of_projection_constant : env -> Projection.t puniverses -> types
-
 val type_of_constant_in : env -> pconstant -> types
 
 (** Check that hyps are included in env and fails with error otherwise *)

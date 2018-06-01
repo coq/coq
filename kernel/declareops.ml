@@ -94,14 +94,13 @@ let subst_const_body sub cb =
   else
     let body' = subst_const_def sub cb.const_body in
     let type' = subst_const_type sub cb.const_type in
-    let proj' = Option.Smart.map (subst_const_proj sub) cb.const_proj in
     if body' == cb.const_body && type' == cb.const_type
-      && proj' == cb.const_proj then cb
+    then cb
     else
       { const_hyps = [];
         const_body = body';
         const_type = type';
-        const_proj = proj';
+        const_proj = cb.const_proj;
         const_body_code =
           Option.map (Cemitcodes.subst_to_patch_subst sub) cb.const_body_code;
         const_universes = cb.const_universes;

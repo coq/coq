@@ -52,6 +52,7 @@ type mind_key = mutual_inductive_body * link_info ref
 
 type globals = {
   env_constants : constant_key Cmap_env.t;
+  env_projections : projection_body Cmap_env.t;
   env_inductives : mind_key Mindmap_env.t;
   env_modules : module_body MPmap.t;
   env_modtypes : module_type_body MPmap.t}
@@ -108,6 +109,7 @@ let empty_rel_context_val = {
 let empty_env = {
   env_globals = {
     env_constants = Cmap_env.empty;
+    env_projections = Cmap_env.empty;
     env_inductives = Mindmap_env.empty;
     env_modules = MPmap.empty;
     env_modtypes = MPmap.empty};
@@ -485,14 +487,10 @@ let type_in_type_constant cst env =
   not (lookup_constant cst env).const_typing_flags.check_universes
 
 let lookup_projection cst env =
-  match (lookup_constant (Projection.constant cst) env).const_proj with 
-  | Some pb -> pb
-  | None -> anomaly (Pp.str "lookup_projection: constant is not a projection.")
+  Cmap_env.find (Projection.constant cst) env.env_globals.env_projections
 
 let is_projection cst env =
-  match (lookup_constant cst env).const_proj with 
-  | Some _ -> true
-  | None -> false
+  (lookup_constant cst env).const_proj
 
 (* Mutual Inductives *)
 let polymorphic_ind (mind,i) env =
@@ -514,11 +512,18 @@ let template_polymorphic_pind (ind,u) env =
   if not (Univ.Instance.is_empty u) then false
   else template_polymorphic_ind ind env
   
-let add_mind_key kn mind_key env =
+let add_mind_key kn (mind, _ as mind_key) env =
   let new_inds = Mindmap_env.add kn mind_key env.env_globals.env_inductives in
+  let new_projections = match mind.mind_record with
+    | None | Some None -> env.env_globals.env_projections
+    | Some (Some (id, kns, pbs)) ->
+      Array.fold_left2 (fun projs kn pb ->
+          Cmap_env.add kn pb projs)
+        env.env_globals.env_projections kns pbs
+  in
   let new_globals =
     { env.env_globals with
-	env_inductives = new_inds } in
+        env_inductives = new_inds; env_projections = new_projections; } in
   { env with env_globals = new_globals }
 
 let add_mind kn mib env =

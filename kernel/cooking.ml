@@ -156,7 +156,7 @@ type inline = bool
 type result = {
   cook_body : constant_def;
   cook_type : types;
-  cook_proj : projection_body option;
+  cook_proj : bool;
   cook_universes : constant_universes;
   cook_inline : inline;
   cook_context : Context.Named.t option;
@@ -227,28 +227,10 @@ let cook_constant ~hcons env { from = cb; info } =
 		  hyps)
       hyps ~init:cb.const_hyps in
   let typ = abstract_constant_type (expmod cb.const_type) hyps in
-  let projection pb =
-    let c' = abstract_constant_body (expmod pb.proj_body) hyps in
-    let etab = abstract_constant_body (expmod (fst pb.proj_eta)) hyps in
-    let etat = abstract_constant_body (expmod (snd pb.proj_eta)) hyps in
-    let ((mind, _), _), n' =
-      try 
-	let c' = share_univs cache (IndRef (pb.proj_ind,0)) Univ.Instance.empty modlist in
-	  match kind c' with
-	  | App (f,l) -> (destInd f, Array.length l)
-	  | Ind ind -> ind, 0
-	  | _ -> assert false 
-      with Not_found -> (((pb.proj_ind,0),Univ.Instance.empty), 0)
-    in 
-    let ctx, ty' = decompose_prod_n (n' + pb.proj_npars + 1) typ in
-      { proj_ind = mind; proj_npars = pb.proj_npars + n'; proj_arg = pb.proj_arg;
-	proj_eta = etab, etat;
-	proj_type = ty'; proj_body = c' }
-  in
   {
     cook_body = body;
     cook_type = typ;
-    cook_proj = Option.map projection cb.const_proj;
+    cook_proj = cb.const_proj;
     cook_universes = univs;
     cook_inline = cb.const_inline_code;
     cook_context = Some const_hyps;

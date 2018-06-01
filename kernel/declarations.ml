@@ -87,7 +87,7 @@ type constant_body = {
     const_type : types;
     const_body_code : Cemitcodes.to_patch_substituted option;
     const_universes : constant_universes;
-    const_proj : projection_body option;
+    const_proj : bool;
     const_inline_code : bool;
     const_typing_flags : typing_flags; (** The typing options which
                                            were used for

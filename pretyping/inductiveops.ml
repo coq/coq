@@ -629,6 +629,10 @@ let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
         env evdref scl ar.template_level (ctx,ar.template_param_levels) in
       !evdref, EConstr.of_constr (mkArity (List.rev ctx,scl))
 
+let type_of_projection_constant env (p,u) =
+  let pb = lookup_projection p env in
+  Vars.subst_instance_constr u pb.proj_type
+
 let type_of_projection_knowing_arg env sigma p c ty =
   let c = EConstr.Unsafe.to_constr c in
   let IndType(pars,realargs) =
@@ -637,7 +641,7 @@ let type_of_projection_knowing_arg env sigma p c ty =
       raise (Invalid_argument "type_of_projection_knowing_arg_type: not an inductive type")
   in
   let (_,u), pars = dest_ind_family pars in
-  substl (c :: List.rev pars) (Typeops.type_of_projection_constant env (p,u))
+  substl (c :: List.rev pars) (type_of_projection_constant env (p,u))
 
 (***********************************************)
 (* Guard condition *)

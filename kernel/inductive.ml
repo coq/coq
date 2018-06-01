@@ -803,9 +803,7 @@ let rec subterm_specif renv stack t =
          (* We take the subterm specs of the constructor of the record *)
          let wf_args = (dest_subterms wf).(0) in
          (* We extract the tree of the projected argument *)
-         let kn = Projection.constant p in
-         let cb = lookup_constant kn renv.env in
-         let pb = Option.get cb.const_proj in
+         let pb = lookup_projection p renv.env in
          let n = pb.proj_arg in
          spec_of_tree (List.nth wf_args n)
        | Dead_code -> Dead_code

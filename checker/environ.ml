@@ -7,6 +7,7 @@ open Declarations
 
 type globals = {
   env_constants : constant_body Cmap_env.t;
+  env_projections : projection_body Cmap_env.t;
   env_inductives : mutual_inductive_body Mindmap_env.t;
   env_inductives_eq : KerName.t KNmap.t;
   env_modules : module_body MPmap.t;
@@ -34,6 +35,7 @@ let empty_oracle = {
 let empty_env = {
   env_globals =
   { env_constants = Cmap_env.empty;
+    env_projections = Cmap_env.empty;
     env_inductives = Mindmap_env.empty;
     env_inductives_eq = KNmap.empty;
     env_modules = MPmap.empty;
@@ -165,12 +167,10 @@ let evaluable_constant cst env =
   with Not_found | NotEvaluableConst _ -> false
 
 let is_projection cst env = 
-  not (Option.is_empty (lookup_constant cst env).const_proj)
+  (lookup_constant cst env).const_proj
 
 let lookup_projection p env =
-  match (lookup_constant (Projection.constant p) env).const_proj with 
-  | Some pb -> pb
-  | None -> anomaly ("lookup_projection: constant is not a projection.")
+  Cmap_env.find (Projection.constant p) env.env_globals.env_projections
 
 (* Mutual Inductives *)
 let scrape_mind env kn=
@@ -194,6 +194,13 @@ let add_mind kn mib env =
     Printf.ksprintf anomaly ("Inductive %s is already defined.")
       (MutInd.to_string kn);
   let new_inds = Mindmap_env.add kn mib env.env_globals.env_inductives in
+  let new_projections = match mib.mind_record with
+    | None | Some None -> env.env_globals.env_projections
+    | Some (Some (id, kns, pbs)) ->
+      Array.fold_left2 (fun projs kn pb ->
+          Cmap_env.add kn pb projs)
+        env.env_globals.env_projections kns pbs
+  in
   let kn1,kn2 =  MutInd.user kn, MutInd.canonical kn in
   let new_inds_eq = if KerName.equal kn1 kn2 then
     env.env_globals.env_inductives_eq
@@ -201,8 +208,9 @@ let add_mind kn mib env =
     KNmap.add kn1 kn2  env.env_globals.env_inductives_eq in
   let new_globals =
     { env.env_globals with
-	env_inductives = new_inds;
-	env_inductives_eq = new_inds_eq} in
+      env_inductives = new_inds;
+      env_projections = new_projections;
+      env_inductives_eq = new_inds_eq} in
   { env with env_globals = new_globals }
 
 
