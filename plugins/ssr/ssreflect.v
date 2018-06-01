@@ -528,25 +528,49 @@ Module Type UNDER.
 Parameter Under :
   forall (R : Type), R -> R -> Prop.
 Parameter Under_from_eq :
-  forall (T : Type) (x y : T),
-  @Under T x y -> x = y.
+  forall (T : Type) (x y : T), @Under T x y -> x = y.
+
+(** [Over, over, over_done]: for "by rewrite over" *)
+Parameter Over :
+  forall (R : Type), R -> R -> Prop.
 Parameter over :
-  forall (T : Type) (x : T),
-  @Under T x x <-> True.
+  forall (T : Type) (x : T) (y : T), @Under T x y = @Over T x y.
+Parameter over_done :
+  forall (T : Type) (x : T), @Over T x x.
+(* We need both hints below, otherwise the test-suite does not pass *)
+Hint Extern 0 (@Over _ _ _) => solve [ apply over_done ] : core.
+(* => for test_under_eq_big *)
+Hint Resolve over_done : core.
+(* => for test_over_1_1 *)
+
+(** [under_done]: for Ltac-style over *)
+Parameter under_done :
+  forall (T : Type) (x : T), @Under T x x.
 Notation "''Under[' x ]" := (@Under _ x _)
   (at level 8, format "''Under['  x  ]").
 End UNDER.
 
 Module Export Under : UNDER.
 Definition Under := @eq.
-Definition Under_done := @refl_equal.
 Lemma Under_from_eq (T : Type) (x y : T) :
   @Under T x y -> x = y.
-Proof. easy. Qed.
-Lemma over (T : Type) (x : T) :
-  @Under T x x <-> True.
-Proof. easy. Qed.
+Proof. by []. Qed.
+Definition Over := Under.
+Lemma over :
+  forall (T : Type) (x : T) (y : T), @Under T x y = @Over T x y.
+Proof. by []. Qed.
+Lemma over_done :
+  forall (T : Type) (x : T), @Over T x x.
+Proof. by []. Qed.
+Lemma under_done :
+  forall (T : Type) (x : T), @Under T x x.
+Proof. by []. Qed.
 End Under.
 
 Register Under as plugins.ssreflect.Under.
 Register Under_from_eq as plugins.ssreflect.Under_from_eq.
+
+Ltac over :=
+  by apply Under.under_done.
+(* [exact: Under.under_done] woud be more satisfying,
+   but issue with 2-var test-suite (test_over_2_2) *)
