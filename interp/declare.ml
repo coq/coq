@@ -382,17 +382,33 @@ let inInductive : inductive_obj -> obj =
     discharge_function = discharge_inductive;
     rebuild_function = infer_inductive_subtyping }
 
-let declare_projections mind =
+let declare_projections univs mind =
   let spec,_ = Inductive.lookup_mind_specif (Global.env ()) (mind,0) in
     match spec.mind_record with
-    | Some (Some (_, kns, pjs)) ->
-      Array.iteri (fun i kn ->
+    | Some (Some (_, kns, pbs)) ->
+      Array.iter2 (fun kn pb ->
 	let id = Label.to_id (Constant.label kn) in
-	let entry = {proj_entry_ind = mind; proj_entry_arg = i} in
-	let kn' = declare_constant id (ProjectionEntry entry,
-				       IsDefinition StructureComponent)
-	in
-	  assert(Constant.equal kn kn')) kns; true,true
+        let univs = match univs with
+        | Monomorphic_ind_entry _ ->
+          (** Global constraints already defined through the inductive *)
+          Monomorphic_const_entry Univ.ContextSet.empty
+        | Polymorphic_ind_entry ctx ->
+          Polymorphic_const_entry ctx
+        | Cumulative_ind_entry ctx ->
+          Polymorphic_const_entry (Univ.CumulativityInfo.univ_context ctx)
+        in
+        let term, types = match univs with
+        | Monomorphic_const_entry _ -> pb.proj_eta
+        | Polymorphic_const_entry ctx ->
+          let u = Univ.UContext.instance ctx in
+          let term, types = pb.proj_eta in
+          Vars.subst_instance_constr u term, Vars.subst_instance_constr u types
+        in
+        let entry = definition_entry ~types ~univs term in
+        let kn' = declare_constant id (DefinitionEntry entry, IsDefinition StructureComponent) in
+        assert (Constant.equal kn kn')
+      ) kns pbs;
+      true, true
     | Some None -> true,false
     | None -> false,false
 
@@ -403,7 +419,7 @@ let declare_mind mie =
     | [] -> anomaly (Pp.str "cannot declare an empty list of inductives.") in
   let (sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
   let mind = Global.mind_of_delta_kn kn in
-  let isrecord,isprim = declare_projections mind in
+  let isrecord,isprim = declare_projections mie.mind_entry_universes mind in
   declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
   oname, isprim

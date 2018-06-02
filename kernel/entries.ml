@@ -95,14 +95,9 @@ type inline = int option (* inlining level, None for no inlining *)
 type parameter_entry = 
     Context.Named.t option * types in_constant_universes_entry * inline
 
-type projection_entry = {
-  proj_entry_ind : MutInd.t;
-  proj_entry_arg : int }
-
 type 'a constant_entry =
   | DefinitionEntry of 'a definition_entry
   | ParameterEntry of parameter_entry
-  | ProjectionEntry of projection_entry
 
 (** {6 Modules } *)
 

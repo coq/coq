@@ -346,32 +346,6 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         cook_context = c.const_entry_secctx;
       }
 
-  | ProjectionEntry {proj_entry_ind = ind; proj_entry_arg = i} ->
-    let mib, _ = Inductive.lookup_mind_specif env (ind,0) in
-    let kn, pb = 
-      match mib.mind_record with
-      | Some (Some (id, kns, pbs)) -> 
-	if i < Array.length pbs then
-	  kns.(i), pbs.(i)
-	else assert false
-      | _ -> assert false
-    in
-    let univs =
-      match mib.mind_universes with
-      | Monomorphic_ind ctx -> Monomorphic_const ctx
-      | Polymorphic_ind auctx -> Polymorphic_const auctx
-      | Cumulative_ind acumi ->
-        Polymorphic_const (Univ.ACumulativityInfo.univ_context acumi)
-    in
-    let term, typ = pb.proj_eta in
-    {
-      Cooking.cook_body = Def (Mod_subst.from_val (Constr.hcons term));
-      cook_type = typ;
-      cook_universes = univs;
-      cook_inline = false;
-      cook_context = None;
-    }
-
 let record_aux env s_ty s_bo =
   let in_ty = keep_hyps env s_ty in
   let v =
