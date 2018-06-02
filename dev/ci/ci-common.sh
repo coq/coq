@@ -8,6 +8,7 @@ export NJOBS
 
 if [ -n "${GITLAB_CI}" ];
 then
+    export OCAMLPATH="$PWD/_install_ci/lib:$OCAMLPATH"
     export COQBIN="$PWD/_install_ci/bin"
     export CI_BRANCH="$CI_COMMIT_REF_NAME"
     if [[ ${CI_BRANCH#pr-} =~ ^[0-9]*$ ]]
@@ -27,6 +28,7 @@ else
         CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
         export CI_BRANCH
     fi
+    export OCAMLPATH="$PWD:$OCAMLPATH"
     export COQBIN="$PWD/bin"
 fi
 export PATH="$COQBIN:$PATH"
