@@ -218,9 +218,11 @@ ODOCDOTOPTS=-dot -dot-reduce
 
 source-doc: mli-doc $(OCAMLDOCDIR)/coq.pdf
 
+OCAMLDOC_CAML_FLAGS=-rectypes -I +threads $(MLINCLUDES)
+
 $(OCAMLDOCDIR)/coq.tex: $(DOCMLIS:.mli=.cmi)
 	$(SHOW)'OCAMLDOC -latex -o $@'
-	$(HIDE)$(OCAMLFIND) ocamldoc -latex -rectypes -I $(MYCAMLP5LIB) $(MLINCLUDES)\
+	$(HIDE)$(OCAMLFIND) ocamldoc -latex $(OCAMLDOC_CAML_FLAGS) \
 	$(DOCMLIS) -noheader -t "Coq mlis documentation" \
 	-intro $(OCAMLDOCDIR)/docintro -o $@.tmp
 	$(SHOW)'OCAMLDOC utf8 fix'
@@ -230,31 +232,31 @@ $(OCAMLDOCDIR)/coq.tex: $(DOCMLIS:.mli=.cmi)
 
 mli-doc: $(DOCMLIS:.mli=.cmi)
 	$(SHOW)'OCAMLDOC -html'
-	$(HIDE)$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads -I $(MYCAMLP5LIB) $(MLINCLUDES) \
+	$(HIDE)$(OCAMLFIND) ocamldoc -charset utf-8 -html $(OCAMLDOC_CAML_FLAGS) \
 	$(DOCMLIS) -d $(OCAMLDOCDIR)/html -colorize-code \
 	-t "Coq mlis documentation" -intro $(OCAMLDOCDIR)/docintro \
 	-css-style style.css
 
 ml-dot: $(MLFILES)
-	$(OCAMLFIND) ocamldoc -dot -dot-reduce -rectypes -I +threads -I $(CAMLLIB) -I $(MYCAMLP5LIB) $(MLINCLUDES) \
+	$(OCAMLFIND) ocamldoc -dot -dot-reduce $(OCAMLDOC_CAML_FLAGS) \
 	$(filter $(addsuffix /%.ml,$(CORESRCDIRS)),$(MLFILES)) -o $(OCAMLDOCDIR)/coq.dot
 
 %_dep.png: %.dot
 	$(DOT) -Tpng $< -o $@
 
 %_types.dot: %.mli
-	$(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -dot-types -o $@ $<
+	$(OCAMLFIND) ocamldoc $(OCAMLDOC_CAML_FLAGS) $(ODOCDOTOPTS) -dot-types -o $@ $<
 
-OCAMLDOC_MLLIBD = $(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ \
+OCAMLDOC_MLLIBD = $(OCAMLFIND) ocamldoc $(OCAMLDOC_CAML_FLAGS) $(ODOCDOTOPTS) -o $@ \
   $(foreach lib,$(|:.mllib.d=_MLLIB_DEPENDENCIES),$(addsuffix .ml,$($(lib))))
 
 %.dot: | %.mllib.d
 	$(OCAMLDOC_MLLIBD)
 
-ml-doc:
+ml-doc: kernel/copcodes.cmi
 	$(SHOW)'OCAMLDOC -html'
 	$(HIDE)mkdir -p $(OCAMLDOCDIR)/html/implementation
-	$(HIDE)$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads $(MLINCLUDES) $(COQIDEFLAGS) \
+	$(HIDE)$(OCAMLFIND) ocamldoc -charset utf-8 -html $(OCAMLDOC_CAML_FLAGS) \
 	$(DOCMLS) -d $(OCAMLDOCDIR)/html/implementation -colorize-code \
 	-t "Coq mls documentation" \
 	-css-style ../style.css
@@ -269,7 +271,7 @@ tactics/tactics.dot: | tactics/tactics.mllib.d ltac/ltac.mllib.d
 	$(OCAMLDOC_MLLIBD)
 
 %.dot: %.mli
-	$(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $<
+	$(OCAMLFIND) ocamldoc $(OCAMLDOC_CAML_FLAGS) $(ODOCDOTOPTS) -o $@ $<
 
 $(OCAMLDOCDIR)/%.pdf: $(OCAMLDOCDIR)/%.tex
 	$(SHOW)'PDFLATEX $*.tex'
