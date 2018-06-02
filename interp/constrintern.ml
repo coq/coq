@@ -1141,9 +1141,18 @@ let check_number_of_pattern loc n l =
   if not (Int.equal n p) then raise (InternalizationError (loc,BadPatternsNumber (n,p)))
 
 let check_or_pat_variables loc ids idsl =
-  if List.exists (fun ids' -> not (List.eq_set (fun {loc;v=id} {v=id'} -> Id.equal id id') ids ids')) idsl then
-    user_err ?loc  (str
-    "The components of this disjunctive pattern must bind the same variables.")
+  let eq_id {v=id} {v=id'} = Id.equal id id' in
+  (* Collect remaining patterns which do not have the same variables as the first pattern *)
+  let idsl = List.filter (fun ids' -> not (List.eq_set eq_id ids ids')) idsl in
+  match idsl with
+  | ids'::_ ->
+    (* Look for an [id] which is either in [ids] and not in [ids'] or in [ids'] and not in [ids] *)
+    let ids'' = List.subtract eq_id ids ids' in
+    let ids'' = if ids'' = [] then List.subtract eq_id ids' ids else ids'' in
+    user_err ?loc
+      (strbrk "The components of this disjunctive pattern must bind the same variables (" ++
+       Id.print (List.hd ids'').v ++ strbrk " is not bound in all patterns).")
+  | [] -> ()
 
 (** Use only when params were NOT asked to the user.
     @return if letin are included *)
