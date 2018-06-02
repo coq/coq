@@ -999,7 +999,7 @@ let intern_qualid qid intern env ntnvars us args =
   match intern_extended_global_of_qualid qid with
   | TrueGlobal ref -> (DAst.make ?loc @@ GRef (ref, us)), true, args
   | SynDef sp ->
-      let (ids,c) = Syntax_def.search_syntactic_definition sp in
+      let (ids,c) = Syntax_def.search_syntactic_definition ?loc sp in
       let nids = List.length ids in
       if List.length args < nids then error_not_enough_arguments ?loc;
       let args1,args2 = List.chop nids args in
