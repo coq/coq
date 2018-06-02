@@ -12,13 +12,11 @@ git_checkout "${pidetop_CI_BRANCH}" "${pidetop_CI_GITURL}" "${pidetop_CI_DIR}"
 # `-local`. We need to improve this divergence but if we use Dune this
 # "local" oddity goes away automatically so not bothering...
 if [ -d "$COQBIN/../lib/coq" ]; then
-   COQOCAMLLIB="$COQBIN/../lib/"
    COQLIB="$COQBIN/../lib/coq/"
 else
-   COQOCAMLLIB="$COQBIN/../"
    COQLIB="$COQBIN/../"
 fi
 
-( cd "${pidetop_CI_DIR}" && OCAMLPATH="$COQOCAMLLIB" jbuilder build @install )
+( cd "${pidetop_CI_DIR}" && jbuilder build @install )
 
 echo -en '4\nexit' | "$pidetop_CI_DIR/_build/install/default/bin/pidetop" -coqlib "$COQLIB" -main-channel stdfds
