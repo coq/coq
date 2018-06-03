@@ -342,6 +342,9 @@ ci-mtac2:
 ci-pidetop:
   <<: *ci-template
 
+ci-quickchick:
+  <<: *ci-template-flambda
+
 ci-sf:
   <<: *ci-template
 
