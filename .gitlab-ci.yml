@@ -343,7 +343,7 @@ ci-pidetop:
   <<: *ci-template
 
 ci-quickchick:
-  <<: *ci-template
+  <<: *ci-template-flambda
 
 ci-sf:
   <<: *ci-template
