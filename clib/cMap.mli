@@ -58,10 +58,10 @@ sig
   (** Folding keys in decreasing order. *)
 
   val smartmap : ('a -> 'a) -> 'a t -> 'a t
-  (** [@@ocaml.deprecated "Same as [Smart.map]"] *)
+  [@@ocaml.deprecated "Same as [Smart.map]"]
 
   val smartmapi : (key -> 'a -> 'a) -> 'a t -> 'a t
-  (** [@@ocaml.deprecated "Same as [Smart.mapi]"] *)
+  [@@ocaml.deprecated "Same as [Smart.mapi]"]
 
   val height : 'a t -> int
   (** An indication of the logarithmic size of a map *)
