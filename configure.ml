@@ -33,7 +33,7 @@ let cprintf s = cfprintf stdout s
 let ceprintf s = cfprintf stderr s
 let die msg = ceprintf "%s%s%s\nConfiguration script failed!" red msg reset; exit 1
 
-let warn s = cprintf ("%sWarning: " ^^ s ^^ "%s") yellow reset
+let warn s = kfprintf (fun oc -> cfprintf oc "%s" reset) stdout ("%sWarning: " ^^ s) yellow
 
 let s2i = int_of_string
 let i2s = string_of_int
