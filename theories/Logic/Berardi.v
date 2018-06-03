@@ -82,7 +82,7 @@ End Retracts.
 (** This lemma is basically a commutation of implication and existential
     quantification:  (EX x | A -> P(x))  <=> (A -> EX x | P(x))
     which is provable in classical logic ( => is already provable in
-    intuitionnistic logic). *)
+    intuitionistic logic). *)
 
 Lemma L1 : forall A B:Prop, retract_cond (pow A) (pow B).
 Proof.
@@ -136,7 +136,7 @@ trivial.
 Qed.
 
 
-Theorem classical_proof_irrelevence : T = F.
+Theorem classical_proof_irrelevance : T = F.
 Proof.
 generalize not_has_fixpoint.
 unfold Not_b.
@@ -147,5 +147,8 @@ elim is_true; elim is_false; trivial.
 intros not_true is_true.
 elim not_true; trivial.
 Qed.
+
+
+Notation classical_proof_irrelevence := classical_proof_irrelevance (compat "8.8").
 
 End Berardis_paradox.
