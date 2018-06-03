@@ -54,3 +54,15 @@ used, and include a complete source example leading to the bug.
 ## Contributing
 
 Guidelines for contributing to Coq in various ways are listed in the [contributor's guide](CONTRIBUTING.md).
+
+## Continuous builds
+
+Coq's Continuous Integration system provides documentation and binary
+builds for all the development branches. In particular, you can access:
+
+- Coq's Documentation [master branch]
+  https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_install_ci/share/doc/coq/sphinx/html/index.html?job=build:base
+- Coq's Standard Library Documentation [master branch]
+  https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_install_ci/share/doc/coq/html/stdlib/index.html?job=build:base
+- Coq's ML API Documentation [master branch]
+  https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/dev/ocamldoc/html/index.html?job=build:base
