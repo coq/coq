@@ -326,7 +326,7 @@ ci-math-comp:
   <<: *ci-template-flambda
 
 ci-quickchick:
-  <<: *ci-template
+  <<: *ci-template-flambda
 
 ci-sf:
   <<: *ci-template
