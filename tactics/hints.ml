@@ -1379,12 +1379,10 @@ let expand_constructor_hints env sigma lems =
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
 
-let add_hint_lemmas env sigma eapply lems hint_db =
+let constructor_hints env sigma eapply lems =
   let lems = expand_constructor_hints env sigma lems in
-  let hintlist' =
-    List.map_append (fun (poly, lem) ->
-		     make_resolves env sigma (eapply,true,false) empty_hint_info poly lem) lems in
-  Hint_db.add_list env sigma hintlist' hint_db
+  List.map_append (fun (poly, lem) ->
+      make_resolves env sigma (eapply,true,false) empty_hint_info poly lem) lems
 
 let make_local_hint_db env sigma ts eapply lems =
   let map c = c env sigma in
@@ -1395,8 +1393,9 @@ let make_local_hint_db env sigma ts eapply lems =
     | Some ts -> ts
   in
   let hintlist = List.map_append (make_resolve_hyp env sigma) sign in
-  add_hint_lemmas env sigma eapply lems
-    (Hint_db.add_list env sigma hintlist (Hint_db.empty ts false))
+  Hint_db.empty ts false
+  |> Hint_db.add_list env sigma hintlist
+  |> Hint_db.add_list env sigma (constructor_hints env sigma eapply lems)
 
 let make_local_hint_db env sigma ?ts eapply lems =
   make_local_hint_db env sigma ts eapply lems
