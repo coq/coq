@@ -1,0 +1,101 @@
+diff/patch file created on Wed, Apr 25, 2018 11:08:05 AM with:
+difftar-folder.sh ../coq-msoegtrop/dev/build/windows/source_cache/lablgtk-2.18.3.tar.gz lablgtk-2.18.3 1
+TARFILE= ../coq-msoegtrop/dev/build/windows/source_cache/lablgtk-2.18.3.tar.gz
+FOLDER= lablgtk-2.18.3
+TARSTRIP= 1
+TARPREFIX= lablgtk-2.18.3/
+ORIGFOLDER= lablgtk-2.18.3.orig
+--- lablgtk-2.18.3.orig/configure	2014-10-29 08:51:05.000000000 +0100
++++ lablgtk-2.18.3/configure	2018-04-25 10:58:54.454501600 +0200
+@@ -2667,7 +2667,7 @@
+ fi
+ 
+ 
+-if test "`$OCAMLFIND printconf stdlib`" != "`$CAMLC -where`"; then
++if test "`$OCAMLFIND printconf stdlib | tr '\\' '/'`" != "`$CAMLC -where | tr '\\' '/'`"; then
+   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Ignoring ocamlfind" >&5
+ $as_echo "$as_me: WARNING: Ignoring ocamlfind" >&2;}
+   OCAMLFIND=no
+--- lablgtk-2.18.3.orig/src/glib.mli	2014-10-29 08:51:06.000000000 +0100
++++ lablgtk-2.18.3/src/glib.mli	2018-04-25 10:58:54.493555500 +0200
+@@ -75,6 +75,7 @@
+   type condition = [ `ERR | `HUP | `IN | `NVAL | `OUT | `PRI]
+   type id
+   val channel_of_descr : Unix.file_descr -> channel
++  val channel_of_descr_socket : Unix.file_descr -> channel
+   val add_watch :
+     cond:condition list -> callback:(condition list -> bool) -> ?prio:int -> channel -> id
+   val remove : id -> unit
+--- lablgtk-2.18.3.orig/src/glib.ml	2014-10-29 08:51:06.000000000 +0100
++++ lablgtk-2.18.3/src/glib.ml	2018-04-25 10:58:54.479543500 +0200
+@@ -72,6 +72,8 @@
+   type id
+   external channel_of_descr : Unix.file_descr -> channel
+     = "ml_g_io_channel_unix_new"
++  external channel_of_descr_socket : Unix.file_descr -> channel
++    = "ml_g_io_channel_unix_new_socket"
+   external remove : id -> unit = "ml_g_source_remove"
+   external add_watch :
+     cond:condition list -> callback:(condition list -> bool) -> ?prio:int -> channel -> id
+--- lablgtk-2.18.3.orig/src/Makefile	2014-10-29 08:51:06.000000000 +0100
++++ lablgtk-2.18.3/src/Makefile	2018-04-25 10:58:54.506522500 +0200
+@@ -461,9 +461,9 @@
+ 	  do rm -f "$(BINDIR)"/$$f; done
+ 
+ lablgtk.cma liblablgtk2$(XA): $(COBJS) $(MLOBJS)
+-	$(LIBRARIAN) -o lablgtk -oc lablgtk2 $^ $(GTKLIBS)
++	$(LIBRARIAN) -ldopt "-link -Wl,-s" -o lablgtk -oc lablgtk2 $^ $(GTKLIBS)
+ lablgtk.cmxa: $(COBJS) $(MLOBJS:.cmo=.cmx)
+-	$(LIBRARIAN) -o lablgtk -oc lablgtk2 $^ $(GTKLIBS)
++	$(LIBRARIAN) -ldopt "-link -Wl,-s" -o lablgtk -oc lablgtk2 $^ $(GTKLIBS)
+ lablgtk.cmxs: DYNLINKLIBS=$(GTK_LIBS)
+ 
+ lablgtkgl.cma liblablgtkgl2$(XA): $(GLCOBJS) $(GLMLOBJS)
+--- lablgtk-2.18.3.orig/src/ml_glib.c	2014-10-29 08:51:06.000000000 +0100
++++ lablgtk-2.18.3/src/ml_glib.c	2018-04-25 10:58:54.539535600 +0200
+@@ -25,6 +25,8 @@
+ #include <string.h>
+ #include <locale.h>
+ #ifdef _WIN32
++/* to kill a #warning: include winsock2.h before windows.h */
++#include <winsock2.h>
+ #include "win32.h"
+ #include <wtypes.h>
+ #include <io.h>
+@@ -38,6 +40,11 @@
+ #include <caml/callback.h>
+ #include <caml/threads.h>
+ 
++#ifdef _WIN32
++/* for Socket_val */
++#include <caml/unixsupport.h>
++#endif
++
+ #include "wrappers.h"
+ #include "ml_glib.h"
+ #include "glib_tags.h"
+@@ -325,14 +332,23 @@
+ 
+ #ifndef _WIN32
+ ML_1 (g_io_channel_unix_new, Int_val, Val_GIOChannel_noref)
++CAMLprim value ml_g_io_channel_unix_new_socket (value arg1) {
++  return Val_GIOChannel_noref (g_io_channel_unix_new (Int_val (arg1))); 
++}
+ 
+ #else
+ CAMLprim value ml_g_io_channel_unix_new(value wh)
+ {
+   return Val_GIOChannel_noref
+-    (g_io_channel_unix_new
++    (g_io_channel_win32_new_fd
+      (_open_osfhandle((long)*(HANDLE*)Data_custom_val(wh), O_BINARY)));
+ }
++
++CAMLprim value ml_g_io_channel_unix_new_socket(value wh)
++{
++  return Val_GIOChannel_noref
++    (g_io_channel_win32_new_socket(Socket_val(wh)));
++}
+ #endif
+ 
+ static gboolean ml_g_io_channel_watch(GIOChannel *s, GIOCondition c,

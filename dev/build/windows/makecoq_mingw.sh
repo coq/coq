@@ -480,19 +480,19 @@ function make_sed {
 ##### LIBPNG #####
 
 function make_libpng {
-  build_conf_make_inst  http://prdownloads.sourceforge.net/libpng  libpng-1.6.18  tar.gz  true
+  build_conf_make_inst  http://prdownloads.sourceforge.net/libpng  libpng-1.6.34  tar.gz  true
 }
 
 ##### PIXMAN #####
 
 function make_pixman {
-  build_conf_make_inst  http://cairographics.org/releases  pixman-0.32.8  tar.gz  true
+  build_conf_make_inst  http://cairographics.org/releases  pixman-0.34.0  tar.gz  true
 }
 
 ##### FREETYPE #####
 
 function make_freetype {
-  build_conf_make_inst  http://sourceforge.net/projects/freetype/files/freetype2/2.6.1  freetype-2.6.1  tar.bz2  true
+  build_conf_make_inst  http://sourceforge.net/projects/freetype/files/freetype2/2.9.1  freetype-2.9.1  tar.bz2  true
 }
 
 ##### EXPAT #####
@@ -508,7 +508,7 @@ function make_fontconfig {
   make_expat
   # CONFIGURE PARAMETERS
   # build/install fails without --disable-docs
-  build_conf_make_inst  http://www.freedesktop.org/software/fontconfig/release  fontconfig-2.11.94  tar.gz  true  --disable-docs
+  build_conf_make_inst  http://www.freedesktop.org/software/fontconfig/release  fontconfig-2.12.93  tar.gz  true  --disable-docs
 }
 
 ##### ICONV #####
@@ -588,8 +588,7 @@ function make_glib {
   make_gettext
   make_libffi
   make_libpcre
-  # build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/glib/2.46  glib-2.46.0  tar.xz  true
-  build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/glib/2.47  glib-2.47.5  tar.xz  true
+  build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/glib/2.57  glib-2.57.1  tar.xz  true
 }
 
 ##### ATK #####
@@ -597,7 +596,7 @@ function make_glib {
 function make_atk {
   make_gettext
   make_glib
-  build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/atk/2.18  atk-2.18.0  tar.xz  true
+  build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/atk/2.29  atk-2.29.1  tar.xz  true
 }
 
 ##### PIXBUF #####
@@ -610,7 +609,7 @@ function make_gdk-pixbuf {
   # CONFIGURE PARAMETERS
   # --with-included-loaders=yes statically links the image file format handlers
   # This avoids "Cannot open pixbuf loader module file '/usr/x86_64-w64-mingw32/sys-root/mingw/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache': No such file or directory"
-  build_conf_make_inst  http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/2.32  gdk-pixbuf-2.32.1  tar.xz  true  --with-included-loaders=yes
+  build_conf_make_inst  http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/2.36  gdk-pixbuf-2.36.12  tar.xz  true  --with-included-loaders=yes
 }
 
 ##### CAIRO #####
@@ -621,7 +620,7 @@ function make_cairo {
   make_glib
   make_pixman
   make_fontconfig
-  build_conf_make_inst  http://cairographics.org/releases  cairo-1.14.2  tar.xz  true
+  build_conf_make_inst  http://cairographics.org/releases  rcairo-1.15.13  tar.xz  true
 }
 
 ##### PANGO #####
@@ -630,7 +629,7 @@ function make_pango {
   make_cairo
   make_glib
   make_fontconfig
-  build_conf_make_inst  http://ftp.gnome.org/pub/GNOME/sources/pango/1.38  pango-1.38.0  tar.xz  true
+  build_conf_make_inst  http://ftp.gnome.org/pub/GNOME/sources/pango/1.42  pango-1.42.1  tar.xz  true
 }
 
 ##### GTK2 #####
@@ -647,7 +646,7 @@ function make_gtk2 {
     make_pango
     make_gdk-pixbuf
     make_cairo
-    build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/gtk+/2.24  gtk+-2.24.28  tar.xz  patch_gtk2
+    build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/gtk+/2.24  gtk+-2.24.32  tar.xz  patch_gtk2
   fi
 }
 
@@ -660,7 +659,7 @@ function make_gtk3 {
   make_gdk-pixbuf
   make_cairo
   make_libepoxy
-  build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/gtk+/3.16  gtk+-3.16.7  tar.xz  true
+  build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/gtk+/3.22  gtk+-3.22.30  tar.xz  true
 
   # make all incl. tests and examples runs through fine
   # make install fails with issue with
@@ -740,7 +739,7 @@ function install_flexlink {
 # An alternative is to first build an OCaml without shared library support and build flexlink with it
 
 function get_flex_dll_link_bin {
-  if build_prep http://alain.frisch.fr/flexdll flexdll-bin-0.34 zip 1 ; then
+  if build_prep https://github.com/alainfrisch/flexdll/releases/download/0.37/ flexdll-bin-0.37 zip 1 ; then
     install_flexdll
     install_flexlink
     build_post
@@ -750,7 +749,7 @@ function get_flex_dll_link_bin {
 # Build flexdll and flexlink from sources after building OCaml
 
 function make_flex_dll_link {
-  if build_prep http://alain.frisch.fr/flexdll flexdll-0.34 tar.gz ; then
+  if build_prep https://github.com/alainfrisch/flexdll/releases/download/0.37/ flexdll-bin-0.37 zip ; then
     if [ "$TARGET_ARCH" == "i686-w64-mingw32" ]; then
       # shellcheck disable=SC2086
       log1 make $MAKE_OPT build_mingw flexlink.exe
@@ -791,11 +790,10 @@ function make_ln {
 
 function make_ocaml {
   get_flex_dll_link_bin
-  if build_prep http://caml.inria.fr/pub/distrib/ocaml-4.02 ocaml-4.02.3 tar.gz 1 ; then
-  # if build_prep http://caml.inria.fr/pub/distrib/ocaml-4.01 ocaml-4.01.0 tar.gz 1 ; then
-    # See README.win32
-    cp config/m-nt.h config/m.h
-    cp config/s-nt.h config/s.h
+  if build_prep http://caml.inria.fr/pub/distrib/ocaml-4.06 ocaml-4.06.1 tar.gz 1 ; then
+    # See README.win32.adoc
+    cp config/m-nt.h byterun/caml/m.h
+    cp config/s-nt.h byterun/caml/s.h
     if [ "$TARGET_ARCH" == "i686-w64-mingw32" ]; then
         cp config/Makefile.mingw config/Makefile
     elif [ "$TARGET_ARCH" == "x86_64-w64-mingw32" ]; then
@@ -831,9 +829,9 @@ function make_ocaml {
       # 4.01 installs these files, 4.02 doesn't. So delete them and copy them from the sources.
       rm -f ./*.txt
       cp LICENSE      "$PREFIXOCAML/license_readme/ocaml/License.txt"
-      cp INSTALL      "$PREFIXOCAML/license_readme/ocaml/Install.txt"
-      cp README       "$PREFIXOCAML/license_readme/ocaml/ReadMe.txt"
-      cp README.win32 "$PREFIXOCAML/license_readme/ocaml/ReadMeWin32.txt"
+      cp INSTALL.adoc "$PREFIXOCAML/license_readme/ocaml/Install.txt"
+      cp README.adoc  "$PREFIXOCAML/license_readme/ocaml/ReadMe.txt"
+      cp README.win32.adoc "$PREFIXOCAML/license_readme/ocaml/ReadMeWin32.txt"
       cp VERSION      "$PREFIXOCAML/license_readme/ocaml/Version.txt"
       cp Changes      "$PREFIXOCAML/license_readme/ocaml/Changes.txt"
     fi
@@ -854,16 +852,30 @@ function make_ocaml_tools {
 ##### OCAML EXTRA LIBRARIES #####
 
 function make_ocaml_libs {
+  make_num
   make_findlib
   make_lablgtk
   # make_stdint
+}
+
+##### Ocaml num library #####
+function make_num {
+  make_ocaml
+  # We need this commit due to windows fixed, IMHO this is better than patching v1.1.
+  if build_prep https://github.com/ocaml/num/archive/ 7dd5e935aaa2b902585b3b2d0e55ad9b2442fff0 zip 1 num-1.1-7d; then
+    log2 make all
+    # log2 make test
+    log2 make install
+    log2 make clean
+    build_post
+  fi
 }
 
 ##### FINDLIB Ocaml library manager #####
 
 function make_findlib {
   make_ocaml
-  if build_prep https://opam.ocaml.org/archives ocamlfind.1.5.6+opam tar.gz 1 ; then
+  if build_prep https://opam.ocaml.org/archives ocamlfind.1.8.0+opam tar.gz 1 ; then
     logn configure ./configure -bindir "$PREFIXOCAML\\bin" -sitelib "$PREFIXOCAML\\libocaml\\site-lib" -config "$PREFIXOCAML\\etc\\findlib.conf"
     # Note: findlib doesn't support -j 8, so don't pass MAKE_OPT
     log2 make all
@@ -900,7 +912,7 @@ function make_camlp4 {
   if ! command camlp4 ; then
     make_ocaml
     make_findlib
-    if build_prep https://github.com/ocaml/camlp4/archive 4.02+6 tar.gz 1 camlp4-4.02+6 ; then
+    if build_prep https://github.com/ocaml/camlp4/archive 4.06+2 tar.gz 1 camlp4-4.06+2 ; then
       # See https://github.com/ocaml/camlp4/issues/41#issuecomment-112018910
       logn configure ./configure
       # Note: camlp4 doesn't support -j 8, so don't pass MAKE_OPT
@@ -917,7 +929,8 @@ function make_camlp4 {
 function make_camlp5 {
   make_ocaml
   make_findlib
-  if build_prep http://camlp5.gforge.inria.fr/distrib/src camlp5-6.14 tgz 1 ; then
+
+  if build_prep https://github.com/camlp5/camlp5/archive rel705 tar.gz 1 camlp5-rel705; then
     logn configure ./configure
     # Somehow my virus scanner has the boot.new/SAVED directory locked after the move for a second => repeat until success
     sed -i 's/mv boot.new boot/until mv boot.new boot; do sleep 1; done/' Makefile
@@ -944,10 +957,10 @@ function make_camlp5 {
 function make_lablgtk {
   make_ocaml
   make_findlib
-  make_camlp4 # required by lablgtk-2.18.3 and lablgtk-2.18.5
+  # make_camlp4 # required by lablgtk-2.18.3 and lablgtk-2.18.5
   make_gtk2
   make_gtk_sourceview2
-  if build_prep https://forge.ocamlcore.org/frs/download.php/1479 lablgtk-2.18.3 tar.gz 1 ; then
+  if build_prep https://forge.ocamlcore.org/frs/download.php/1726 lablgtk-2.18.6 tar.gz 1 ; then
     # configure should be fixed to search for $TARGET_ARCH-pkg-config.exe
     cp "/bin/$TARGET_ARCH-pkg-config.exe"  bin_special/pkg-config.exe
     logn configure ./configure --build="$BUILD" --host="$HOST" --target="$TARGET" --prefix="$PREFIXOCAML"
@@ -1130,8 +1143,10 @@ function copy_coq_license {
 
 function make_coq {
   make_ocaml
-  make_lablgtk
+  make_num
+  make_findlib
   make_camlp5
+  make_lablgtk
   if
     case $COQ_VERSION in
       # e.g. git-v8.6 => download from https://github.com/coq/coq/archive/v8.6.zip
