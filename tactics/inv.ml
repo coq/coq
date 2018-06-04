@@ -469,7 +469,7 @@ let raw_inversion inv_kind id status names =
       make_inv_predicate env evdref indf realargs id status concl in
     let sigma = !evdref in
     let (cut_concl,case_tac) =
-      if status != NoDep && (dependent sigma c concl) then
+      if status != NoDep && (local_occur_var sigma id concl) then
         Reductionops.beta_applist sigma (elim_predicate, realargs@[c]),
         case_then_using
       else

@@ -857,6 +857,13 @@ let occur_meta_or_existential sigma c =
     | _ -> EConstr.iter sigma occrec c
   in try occrec c; false with Occur -> true
 
+let occur_metavariable sigma m c =
+  let rec occrec c = match EConstr.kind sigma c with
+  | Meta m' -> if Int.equal m m' then raise Occur
+  | _ -> EConstr.iter sigma occrec c
+  in
+  try occrec c; false with Occur -> true
+
 let occur_evar sigma n c =
   let rec occur_rec c = match EConstr.kind sigma c with
     | Evar (sp,_) when Evar.equal sp n -> raise Occur

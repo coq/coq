@@ -1808,9 +1808,9 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
     (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
     if EConstr.eq_constr sigma x y then Proofview.tclUNIT () else
       match EConstr.kind sigma x, EConstr.kind sigma y with
-      | Var x', _ when not (dependent sigma x y) && not (is_evaluable env (EvalVarRef x')) ->
+      | Var x', _ when not (Termops.local_occur_var sigma x' y) && not (is_evaluable env (EvalVarRef x')) ->
           subst_one flags.rewrite_dependent_proof x' (hyp,y,true)
-      | _, Var y' when not (dependent sigma y x) && not (is_evaluable env (EvalVarRef y')) ->
+      | _, Var y' when not (Termops.local_occur_var sigma y' x) && not (is_evaluable env (EvalVarRef y')) ->
           subst_one flags.rewrite_dependent_proof y' (hyp,x,false)
       | _ ->
           Proofview.tclUNIT ()
