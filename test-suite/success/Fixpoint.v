@@ -91,3 +91,33 @@ apply Cons2.
 exact b.
 apply (ex1 (S n) (negb b)).
 Defined.
+
+Section visibility.
+
+  Let Fixpoint imm (n:nat) : True := I.
+
+  Let Fixpoint by_proof (n:nat) : True.
+  Proof. exact I. Defined.
+End visibility.
+
+Fail Check imm.
+Fail Check by_proof.
+
+Module Import mod_local.
+  Fixpoint imm_importable (n:nat) : True := I.
+
+  Local Fixpoint imm_local (n:nat) : True := I.
+
+  Fixpoint by_proof_importable (n:nat) : True.
+  Proof. exact I. Defined.
+
+  Local Fixpoint by_proof_local (n:nat) : True.
+  Proof. exact I. Defined.
+End mod_local.
+
+Check imm_importable.
+Fail Check imm_local.
+Check mod_local.imm_local.
+Check by_proof_importable.
+Fail Check by_proof_local.
+Check mod_local.by_proof_local.
