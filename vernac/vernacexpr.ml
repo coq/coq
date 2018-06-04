@@ -106,13 +106,13 @@ type comment =
 type reference_or_constr = Hints.reference_or_constr =
   | HintsReference of reference
   | HintsConstr of constr_expr
-[@@ocaml.deprecated "Please use [Hints.hints_expr]"]
+[@@ocaml.deprecated "Please use [Hints.reference_or_constr]"]
 
 type hint_mode = Hints.hint_mode =
   | ModeInput (* No evars *)
   | ModeNoHeadEvar (* No evar at the head *)
   | ModeOutput (* Anything *)
-[@@ocaml.deprecated "Please use [Hints.hints_expr]"]
+[@@ocaml.deprecated "Please use [Hints.hint_mode]"]
 
 type 'a hint_info_gen = 'a Typeclasses.hint_info_gen =
     { hint_priority : int option;
