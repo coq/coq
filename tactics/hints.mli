@@ -83,6 +83,7 @@ type hint_mode =
 
 type hints_expr =
   | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
+  | HintsResolveIFF of bool * Libnames.reference list * int option
   | HintsImmediate of reference_or_constr list
   | HintsUnfold of Libnames.reference list
   | HintsTransparency of Libnames.reference list * bool

@@ -200,6 +200,9 @@ open Pputils
           keyword "Resolve " ++ prlist_with_sep sep
             (fun (info, _, c) -> pr_reference_or_constr pr_c c ++ pr_hint_info pr_pat info)
             l
+        | HintsResolveIFF (l2r, l, n) ->
+          keyword "Resolve " ++ str (if l2r then "->" else "<-")
+          ++ prlist_with_sep sep pr_reference l
         | HintsImmediate l ->
           keyword "Immediate" ++ spc() ++
             prlist_with_sep sep (fun c -> pr_reference_or_constr pr_c c) l

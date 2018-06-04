@@ -167,6 +167,7 @@ type hint_mode =
 
 type hints_expr =
   | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
+  | HintsResolveIFF of bool * reference list * int option
   | HintsImmediate of reference_or_constr list
   | HintsUnfold of reference list
   | HintsTransparency of reference list * bool
@@ -1290,6 +1291,35 @@ let prepare_hint check (poly,local) env init (sigma,c) =
     else (Lib.add_anonymous_leaf (input_context_set diff);
 	  IsConstr (c', Univ.ContextSet.empty))
 
+let project_hint ~poly pri l2r r =
+  let open EConstr in
+  let open Coqlib in
+  let gr = Smartlocate.global_with_alias r in
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
+  let sigma, c = Evd.fresh_global env sigma gr in
+  let t = Retyping.get_type_of env sigma c in
+  let t =
+    Tacred.reduce_to_quantified_ref env sigma (Lazy.force coq_iff_ref) t in
+  let sign,ccl = decompose_prod_assum sigma t in
+  let (a,b) = match snd (decompose_app sigma ccl) with
+    | [a;b] -> (a,b)
+    | _ -> assert false in
+  let p =
+    if l2r then build_coq_iff_left_proj () else build_coq_iff_right_proj () in
+  let sigma, p = Evd.fresh_global env sigma p in
+  let c = Reductionops.whd_beta sigma (mkApp (c, Context.Rel.to_extended_vect mkRel 0 sign)) in
+  let c = it_mkLambda_or_LetIn
+    (mkApp (p,[|mkArrow a (lift 1 b);mkArrow b (lift 1 a);c|])) sign in
+  let id =
+    Nameops.add_suffix (Nametab.basename_of_global gr) ("_proj_" ^ (if l2r then "l2r" else "r2l"))
+  in
+  let ctx = Evd.const_univ_entry ~poly sigma in
+  let c = EConstr.to_constr sigma c in
+  let c = Declare.declare_definition ~internal:Declare.InternalTacticRequest id (c,ctx) in
+  let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
+    (info,false,true,PathAny, IsGlobRef (Globnames.ConstRef c))
+
 let interp_hints poly =
   fun h ->
   let env = Global.env () in
@@ -1319,6 +1349,8 @@ let interp_hints poly =
   in
   match h with
   | HintsResolve lhints -> HintsResolveEntry (List.map fres lhints)
+  | HintsResolveIFF (l2r, lc, n) ->
+    HintsResolveEntry (List.map (project_hint ~poly n l2r) lc)
   | HintsImmediate lhints -> HintsImmediateEntry (List.map fi lhints)
   | HintsUnfold lhints -> HintsUnfoldEntry (List.map fr lhints)
   | HintsTransparency (lhints, b) ->

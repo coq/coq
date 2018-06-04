@@ -98,15 +98,8 @@ GEXTEND Gram
 	    VernacCreateHintDb (id, b)
       | IDENT "Remove"; IDENT "Hints"; ids = LIST1 global; dbnames = opt_hintbases ->
 	  VernacRemoveHints (dbnames, ids)
-      | IDENT "Hint"; h = hint;
-	  dbnames = opt_hintbases ->
+      | IDENT "Hint"; h = hint; dbnames = opt_hintbases ->
           VernacHints (dbnames, h)
-      (* Declare "Resolve" explicitly so as to be able to later extend with
-         "Resolve ->" and "Resolve <-" *)
-      | IDENT "Hint"; IDENT "Resolve"; lc = LIST1 reference_or_constr; 
-	info = hint_info; dbnames = opt_hintbases ->
-          VernacHints (dbnames,
-	    HintsResolve (List.map (fun x -> (info, true, x)) lc))
       ] ];
   reference_or_constr:
    [ [ r = global -> HintsReference r
@@ -115,6 +108,10 @@ GEXTEND Gram
   hint:
     [ [ IDENT "Resolve"; lc = LIST1 reference_or_constr; info = hint_info ->
           HintsResolve (List.map (fun x -> (info, true, x)) lc)
+      | IDENT "Resolve"; "->"; lc = LIST1 global; n = OPT natural ->
+          HintsResolveIFF (true, lc, n)
+      | IDENT "Resolve"; "<-"; lc = LIST1 global; n = OPT natural ->
+          HintsResolveIFF (false, lc, n)
       | IDENT "Immediate"; lc = LIST1 reference_or_constr -> HintsImmediate lc
       | IDENT "Transparent"; lc = LIST1 global -> HintsTransparency (lc, true)
       | IDENT "Opaque"; lc = LIST1 global -> HintsTransparency (lc, false)

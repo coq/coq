@@ -124,6 +124,7 @@ type hint_info_expr = Hints.hint_info_expr
 
 type hints_expr = Hints.hints_expr =
   | HintsResolve of (Hints.hint_info_expr * bool * Hints.reference_or_constr) list
+  | HintsResolveIFF of bool * reference list * int option
   | HintsImmediate of Hints.reference_or_constr list
   | HintsUnfold of reference list
   | HintsTransparency of reference list * bool
