@@ -3703,19 +3703,24 @@ Setting implicit automation tactics
       time the term argument of a tactic has one of its holes not fully
       resolved.
 
-   .. example::
+      .. deprecated:: 8.9
 
-      .. coqtop:: all
+         This command is deprecated. Use :ref:`typeclasses <typeclasses>` or
+         :ref:`tactics-in-terms <tactics-in-terms>` instead.
 
-         Parameter quo : nat -> forall n:nat, n<>0 -> nat.
-         Notation "x // y" := (quo x y _) (at level 40).
-         Declare Implicit Tactic assumption.
-         Goal forall n m, m<>0 -> { q:nat & { r | q * m + r = n } }.
-         intros.
-         exists (n // m).
+      .. example::
 
-      The tactic ``exists (n // m)`` did not fail. The hole was solved
-      by ``assumption`` so that it behaved as ``exists (quo n m H)``.
+         .. coqtop:: all
+
+            Parameter quo : nat -> forall n:nat, n<>0 -> nat.
+            Notation "x // y" := (quo x y _) (at level 40).
+            Declare Implicit Tactic assumption.
+            Goal forall n m, m<>0 -> { q:nat & { r | q * m + r = n } }.
+            intros.
+            exists (n // m).
+
+         The tactic ``exists (n // m)`` did not fail. The hole was solved
+         by ``assumption`` so that it behaved as ``exists (quo n m H)``.
 
 .. _decisionprocedures:
 

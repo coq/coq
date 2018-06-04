@@ -23,6 +23,8 @@ Tactics
 
 - Option "Ltac Debug" now applies also to terms built using Ltac functions.
 
+- Deprecated the Implicit Tactic family of commands.
+
 Tools
 
 - Coq_makefile lets one override or extend the following variables from
