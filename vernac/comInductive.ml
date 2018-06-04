@@ -146,7 +146,6 @@ let interp_cstrs env sigma impls mldata arity ind =
   let sigma, (ctyps'', cimpls) =
     on_snd List.split @@
     List.fold_left_map (fun sigma l ->
-        on_snd (on_fst EConstr.Unsafe.to_constr) @@
         interp_type_evars_impls env sigma ~impls l) sigma ctyps' in
   sigma, (cnames, ctyps'', cimpls)
 
@@ -327,14 +326,17 @@ let check_param = function
 | CLocalPattern {CAst.loc} ->
     Loc.raise ?loc (Stream.Error "pattern with quote not allowed here")
 
-let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
+let interp_mutual_inductive_gen env0 (uparamsl,paramsl,indl) notations cum poly prv finite =
   check_all_names_different indl;
   List.iter check_param paramsl;
-  let env0 = Global.env() in
+  if not (List.is_empty uparamsl) && not (List.is_empty notations)
+  then user_err (str "Inductives with uniform parameters may not have attached notations.");
   let pl = (List.hd indl).ind_univs in
   let sigma, decl = interp_univ_decl_opt env0 pl in
+  let sigma, (uimpls, ((env_uparams, ctx_uparams), useruimpls)) =
+    interp_context_evars env0 sigma uparamsl in
   let sigma, (impls, ((env_params, ctx_params), userimpls)) =
-    interp_context_evars env0 sigma paramsl
+    interp_context_evars ~impl_env:uimpls env_uparams sigma paramsl
   in
   let indnames = List.map (fun ind -> ind.ind_name) indl in
 
@@ -346,15 +348,15 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   let sigma, arities = List.fold_left_map (fun sigma -> interp_ind_arity env_params sigma) sigma indl in
 
   let fullarities = List.map (fun (c, _, _) -> EConstr.it_mkProd_or_LetIn c ctx_params) arities in
-  let env_ar = push_types env0 indnames fullarities in
+  let env_ar = push_types env_uparams indnames fullarities in
   let env_ar_params = EConstr.push_rel_context ctx_params env_ar in
 
   (* Compute interpretation metadatas *)
   let indimpls = List.map (fun (_, _, impls) -> userimpls @
     lift_implicits (Context.Rel.nhyps ctx_params) impls) arities in
   let arities = List.map pi1 arities and aritypoly = List.map pi2 arities in
-  let impls = compute_internalization_env env0 sigma ~impls (Inductive (params,true)) indnames fullarities indimpls in
-  let ntn_impls = compute_internalization_env env0 sigma (Inductive (params,true)) indnames fullarities indimpls in
+  let impls = compute_internalization_env env_uparams sigma ~impls (Inductive (params,true)) indnames fullarities indimpls in
+  let ntn_impls = compute_internalization_env env_uparams sigma (Inductive (params,true)) indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data sigma env_params params) arities indnames in
 
   let sigma, constructors =
@@ -364,6 +366,25 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
      (* Interpret the constructor types *)
      List.fold_left3_map (fun sigma -> interp_cstrs env_ar_params sigma impls) sigma mldatas arities indl)
      () in
+
+  (* generalize over the uniform parameters *)
+  let nparams = Context.Rel.length ctx_params in
+  let nuparams = Context.Rel.length ctx_uparams in
+  let uargs = Context.Rel.to_extended_vect EConstr.mkRel 0 ctx_uparams in
+  let uparam_subst =
+    List.init (List.length indl) EConstr.(fun i -> mkApp (mkRel (i + 1 + nuparams), uargs))
+    @ List.init nuparams EConstr.(fun i -> mkRel (i + 1)) in
+  let generalize_constructor c = EConstr.Unsafe.to_constr (EConstr.Vars.substnl uparam_subst nparams c) in
+  let constructors = List.map (fun (cnames,ctypes,cimpls) ->
+                         (cnames,List.map generalize_constructor ctypes,cimpls))
+                       constructors
+  in
+  let ctx_params = ctx_params @ ctx_uparams in
+  let userimpls = useruimpls @ (lift_implicits (Context.Rel.nhyps ctx_uparams) userimpls) in
+  let indimpls = List.map (fun iimpl -> useruimpls @ (lift_implicits (Context.Rel.nhyps ctx_uparams) iimpl)) indimpls in
+  let fullarities = List.map (fun c -> EConstr.it_mkProd_or_LetIn c ctx_uparams) fullarities in
+  let env_ar = push_types env0 indnames fullarities in
+  let env_ar_params = EConstr.push_rel_context ctx_params env_ar in
 
   (* Try further to solve evars, and instantiate them *)
   let sigma = solve_remaining_evars all_and_fail_flags env_params sigma (Evd.from_env env_params) in
@@ -422,6 +443,9 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   (if poly && cum then
       InferCumulativity.infer_inductive env_ar mind_ent
    else mind_ent), Evd.universe_binders sigma, impls
+
+let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
+  interp_mutual_inductive_gen (Global.env()) ([],paramsl,indl) notations cum poly prv finite
 
 (* Very syntactical equality *)
 let eq_local_binders bl1 bl2 =
@@ -505,10 +529,15 @@ type one_inductive_impls =
   Impargs.manual_explicitation list (* for inds *)*
   Impargs.manual_explicitation list list (* for constrs *)
 
-let do_mutual_inductive indl cum poly prv finite =
-  let indl,coes,ntns = extract_mutual_inductive_declaration_components indl in
+type uniform_inductive_flag =
+  | UniformParameters
+  | NonUniformParameters
+
+let do_mutual_inductive indl cum poly prv ~uniform finite =
+  let (params,indl),coes,ntns = extract_mutual_inductive_declaration_components indl in
   (* Interpret the types *)
-  let mie,pl,impls = interp_mutual_inductive indl ntns cum poly prv finite in
+  let indl = match uniform with UniformParameters -> (params, [], indl) | NonUniformParameters -> ([], params, indl) in
+  let mie,pl,impls = interp_mutual_inductive_gen (Global.env()) indl ntns cum poly prv finite in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (declare_mutual_inductive_with_eliminations mie pl impls);
   (* Declare the possible notations of inductive types *)

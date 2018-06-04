@@ -537,6 +537,8 @@ let should_treat_as_cumulative cum poly =
     else user_err Pp.(str "The NonCumulative prefix can only be used in a polymorphic context.")
   | None -> poly && Flags.is_polymorphic_inductive_cumulativity ()
 
+let should_treat_as_uniform () = ComInductive.NonUniformParameters (* TODO: Add a flag *)
+
 let vernac_record cum k poly finite records =
   let is_cumulative = should_treat_as_cumulative cum poly in
   let map ((coe, (id, pl)), binders, sort, nameopt, cfs) =
@@ -642,7 +644,8 @@ let vernac_inductive ~atts cum lo finite indl =
     in
     let indl = List.map unpack indl in
     let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
-    ComInductive.do_mutual_inductive indl is_cumulative atts.polymorphic lo finite
+    let uniform = should_treat_as_uniform () in
+    ComInductive.do_mutual_inductive indl is_cumulative atts.polymorphic lo ~uniform finite
   else
     user_err (str "Mixed record-inductive definitions are not allowed")
 (*
@@ -2089,7 +2092,7 @@ let interp ?proof ~atts ~st c =
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption ((discharge,kind),nl,l) ->
       vernac_assumption ~atts discharge kind l nl
-  | VernacInductive (cum, priv,finite,l) -> vernac_inductive ~atts cum priv finite l
+  | VernacInductive (cum, priv, finite, l) -> vernac_inductive ~atts cum priv finite l
   | VernacFixpoint (discharge, l) -> vernac_fixpoint ~atts discharge l
   | VernacCoFixpoint (discharge, l) -> vernac_cofixpoint ~atts discharge l
   | VernacScheme l -> vernac_scheme l
