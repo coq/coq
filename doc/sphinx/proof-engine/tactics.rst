@@ -2868,8 +2868,8 @@ the conversion in hypotheses :n:`{+ @ident}`.
         .. coqtop:: all
 
            Definition fcomp A B C f (g : A -> B) (x : A) : C := f (g x).
-           Notation "f \o g" := (fcomp f g) (at level 50).
            Arguments fcomp {A B C} f g x /.
+           Notation "f \o g" := (fcomp f g) (at level 50).
 
      After that command the expression :g:`(f \o g)` is left untouched by
      ``simpl`` while :g:`((f \o g) t)` is reduced to :g:`(f (g t))`.
