@@ -59,7 +59,7 @@ let warn_meta_collision =
             strbrk " and a metavariable of same name.")
 
 
-let constrain sigma n (ids, m) (names, terms as subst) =
+let constrain sigma n (ids, m) ((names,seen as names_seen), terms as subst) =
   let open EConstr in
   try
     let (ids', m') = Id.Map.find n terms in
@@ -67,19 +67,21 @@ let constrain sigma n (ids, m) (names, terms as subst) =
     else raise PatternMatchingFailure
   with Not_found ->
     let () = if Id.Map.mem n names then warn_meta_collision n in
-    (names, Id.Map.add n (ids, m) terms)
+    (names_seen, Id.Map.add n (ids, m) terms)
 
-let add_binders na1 na2 binding_vars (names, terms as subst) =
+let add_binders na1 na2 binding_vars ((names,seen), terms as subst) =
   match na1, na2 with
   | Name id1, Name id2 when Id.Set.mem id1 binding_vars ->
     if Id.Map.mem id1 names then
       let () = Glob_ops.warn_variable_collision id1 in
-      (names, terms)
+      subst
     else
+      let id2 = Namegen.next_ident_away id2 seen in
       let names = Id.Map.add id1 id2 names in
+      let seen = Id.Set.add id2 seen in
       let () = if Id.Map.mem id1 terms then
         warn_meta_collision id1 in
-      (names, terms)
+      ((names,seen), terms)
   | _ -> subst
 
 let rec build_lambda sigma vars ctx m = match vars with
@@ -413,13 +415,15 @@ let matches_core env sigma allow_bound_rels
          | PFix _ | PCoFix _| PEvar _), _ -> raise PatternMatchingFailure
 
   in
-  sorec [] env (Id.Map.empty, Id.Map.empty) pat c
+  sorec [] env ((Id.Map.empty,Id.Set.empty), Id.Map.empty) pat c
 
 let matches_core_closed env sigma pat c =
   let names, subst = matches_core env sigma false pat c in
-  (names, Id.Map.map snd subst)
+  (fst names, Id.Map.map snd subst)
 
-let extended_matches env sigma = matches_core env sigma true
+let extended_matches env sigma pat c =
+  let (names,_), subst = matches_core env sigma true pat c in
+  names, subst
 
 let matches env sigma pat c =
   snd (matches_core_closed env sigma (Id.Set.empty,pat) c)
