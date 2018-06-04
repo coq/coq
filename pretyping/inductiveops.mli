@@ -198,6 +198,14 @@ val compute_projections : Environ.env -> inductive -> (constr * types) array
 (** Given a primitive record type, for every field computes the eta-expanded
     projection and its type. *)
 
+val legacy_match_projection : Environ.env -> inductive -> constr array
+(** Given a record type, computes the legacy match-based projection of the
+    projections.
+
+    BEWARE: such terms are ill-typed, and should thus only be used in upper
+    layers. The kernel will probably badly fail if presented with one of
+    those. *)
+
 (********************)
 
 val type_of_inductive_knowing_conclusion :

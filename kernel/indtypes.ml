@@ -797,16 +797,13 @@ exception UndefinableExpansion
     build an expansion function.
     The term built is expecting to be substituted first by 
     a substitution of the form [params, x : ind params] *)
-let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
+let compute_projections ((kn, _ as ind), u) nparamargs params
     mind_consnrealdecls mind_consnrealargs paramslet ctx =
   let mp, dp, l = MutInd.repr3 kn in
   (** We build a substitution smashing the lets in the record parameters so
       that typechecking projections requires just a substitution and not
       matching with a parameter context. *)
-  let indty, paramsletsubst =
-    (* [ty] = [Ind inst] is typed in context [params] *)
-    let inst = Context.Rel.to_extended_vect mkRel 0 paramslet in
-    let ty = mkApp (mkIndU indu, inst) in
+  let paramsletsubst =
     (* [Ind inst] is typed in context [params-wo-let] *)
     let inst' = rel_list 0 nparamargs in
     (* {params-wo-let |- subst:params] *)
@@ -814,48 +811,21 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
     (* {params-wo-let, x:Ind inst' |- subst':(params,x:Ind inst)] *)
     let subst = (* For the record parameter: *)
       mkRel 1 :: List.map (lift 1) subst in
-      ty, subst
+    subst
   in
-  let ci = 
-    let print_info =
-      { ind_tags = []; cstr_tags = [|Context.Rel.to_tags ctx|]; style = LetStyle } in
-      { ci_ind     = ind;
-	ci_npar    = nparamargs;
-	ci_cstr_ndecls = mind_consnrealdecls;
-	ci_cstr_nargs = mind_consnrealargs;
-	ci_pp_info = print_info }
-  in
-  let len = List.length ctx in
-  let x = Name x in
-  let compat_body ccl i = 
-    (* [ccl] is defined in context [params;x:indty] *)
-    (* [ccl'] is defined in context [params;x:indty;x:indty] *)
-    let ccl' = liftn 1 2 ccl in
-    let p = mkLambda (x, lift 1 indty, ccl') in
-    let branch = it_mkLambda_or_LetIn (mkRel (len - i)) ctx in
-    let body = mkCase (ci, p, mkRel 1, [|lift 1 branch|]) in
-      it_mkLambda_or_LetIn (mkLambda (x,indty,body)) params
-  in
-  let projections decl (i, j, kns, pbs, subst, letsubst) =
+  let projections decl (i, j, kns, pbs, letsubst) =
     match decl with
     | LocalDef (na,c,t) ->
         (* From [params, field1,..,fieldj |- c(params,field1,..,fieldj)]
            to [params, x:I, field1,..,fieldj |- c(params,field1,..,fieldj)] *)
         let c = liftn 1 j c in
         (* From [params, x:I, field1,..,fieldj |- c(params,field1,..,fieldj)]
-           to [params, x:I |- c(params,proj1 x,..,projj x)] *)
-        let c1 = substl subst c in
-        (* From [params, x:I |- subst:field1,..,fieldj]
-           to [params, x:I |- subst:field1,..,fieldj+1] where [subst]
-           is represented with instance of field1 last *)
-        let subst = c1 :: subst in
-        (* From [params, x:I, field1,..,fieldj |- c(params,field1,..,fieldj)]
            to [params-wo-let, x:I |- c(params,proj1 x,..,projj x)] *)
         let c2 = substl letsubst c in
         (* From [params-wo-let, x:I |- subst:(params, x:I, field1,..,fieldj)]
            to [params-wo-let, x:I |- subst:(params, x:I, field1,..,fieldj+1)] *)
         let letsubst = c2 :: letsubst in
-        (i, j+1, kns, pbs, subst, letsubst)
+        (i, j+1, kns, pbs, letsubst)
     | LocalAssum (na,t) ->
       match na with
       | Name id ->
@@ -868,17 +838,14 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
 	let projty = substl letsubst t in
         (* from [params, x:I, field1,..,fieldj |- t(field1,..,fieldj)]
            to [params, x:I |- t(proj1 x,..,projj x)] *)
-	let ty = substl subst t in
 	let fterm = mkProj (Projection.make kn false, mkRel 1) in
-	let compat = compat_body ty (j - 1) in
 	let body = { proj_ind = fst ind; proj_npars = nparamargs;
-                      proj_arg = i; proj_type = projty; proj_body = compat } in
-	  (i + 1, j + 1, kn :: kns, body :: pbs,
-	   fterm :: subst, fterm :: letsubst)
+                      proj_arg = i; proj_type = projty; } in
+        (i + 1, j + 1, kn :: kns, body :: pbs, fterm :: letsubst)
       | Anonymous -> raise UndefinableExpansion
   in
-  let (_, _, kns, pbs, subst, letsubst) =
-    List.fold_right projections ctx (0, 1, [], [], [], paramsletsubst)
+  let (_, _, kns, pbs, letsubst) =
+    List.fold_right projections ctx (0, 1, [], [], paramsletsubst)
   in
     Array.of_list (List.rev kns),
     Array.of_list (List.rev pbs)
@@ -983,7 +950,7 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
 	(try 
 	   let fields, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
 	   let kns, projs = 
-	     compute_projections indsp pkt.mind_typename rid nparamargs paramsctxt
+             compute_projections indsp nparamargs paramsctxt
 	       pkt.mind_consnrealdecls pkt.mind_consnrealargs paramslet fields
 	   in Some (Some (rid, kns, projs))
 	 with UndefinableExpansion -> Some None)

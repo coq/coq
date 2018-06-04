@@ -549,6 +549,9 @@ let compute_projections env (kn, _ as ind) =
   in
   Array.rev_of_list pbs
 
+let legacy_match_projection env ind =
+  Array.map pi3 (compute_projections env ind)
+
 let compute_projections ind mib =
   let ans = compute_projections ind mib in
   Array.map (fun (prj, ty, _) -> (prj, ty)) ans
