@@ -879,14 +879,6 @@ quantification or an implication.
 
    This is equivalent to :n:`clear @ident. ... clear @ident.`
 
-.. tacv:: clearbody @ident
-   :name: clearbody
-
-   This tactic expects :n:`@ident` to be a local definition then clears its
-   body. Otherwise said, this tactic turns a definition into an assumption.
-
-.. exn:: @ident is not a local definition.
-
 .. tacv:: clear - {+ @ident}
 
    This tactic clears all the hypotheses except the ones depending in the
@@ -900,6 +892,15 @@ quantification or an implication.
 
    This clears the hypothesis :n:`@ident` and all the hypotheses that depend on
    it.
+
+.. tacv:: clearbody {+ @ident}
+   :name: clearbody
+
+   This tactic expects :n:`{+ @ident}` to be local definitions and clears their
+   respective bodies.
+   In other words, it turns the given definitions into assumptions.
+
+.. exn:: @ident is not a local definition.
 
 .. tacn:: revert {+ @ident}
    :name: revert
