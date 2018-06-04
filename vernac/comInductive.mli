@@ -51,13 +51,16 @@ type structured_one_inductive_expr = {
   ind_arity : constr_expr;
   ind_lc : (Id.t * constr_expr) list
 }
+[@@ocaml.deprecated "This API is internal"]
 
 type structured_inductive_expr =
   local_binder_expr list * structured_one_inductive_expr list
+[@@ocaml.deprecated "This API is internal"]
 
 val extract_mutual_inductive_declaration_components :
   (one_inductive_expr * decl_notation list) list ->
     structured_inductive_expr * (*coercions:*) qualid list * decl_notation list
+[@@ocaml.deprecated "This API is internal"]
 
 (** Typing mutual inductive definitions *)
 
@@ -65,3 +68,4 @@ val interp_mutual_inductive :
   structured_inductive_expr -> decl_notation list -> cumulative_inductive_flag ->
   polymorphic -> private_flag -> Declarations.recursivity_kind ->
   mutual_inductive_entry * UnivNames.universe_binders * one_inductive_impls list
+[@@ocaml.deprecated "This API is internal"]
