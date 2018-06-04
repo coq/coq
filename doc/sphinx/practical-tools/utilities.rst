@@ -139,7 +139,19 @@ Here we describe only few of them.
    can be extended by including other paths in which ``*.cm*`` files
    are searched. For example ``COQ_SRC_SUBDIRS+=user-contrib/Unicoq``
    lets you build a plugin containing OCaml code that depends on the
-   OCaml code of ``Unicoq``.
+   OCaml code of ``Unicoq``
+:COQFLAGS:
+   override the flags passed to ``coqc``. By default ``-q``.
+:COQEXTRAFLAGS:
+   extend the flags passed to ``coqc``
+:COQCHKFLAGS:
+   override the flags passed to ``coqchk``.  By default ``-silent -o``.
+:COQCHKEXTRAFLAGS:
+   extend the flags passed to ``coqchk``
+:COQDOCFLAGS:
+   override the flags passed to ``coqdoc``. By default ``-interpolate -utf8``.
+:COQDOCEXTRAFLAGS:
+   extend the flags passed to ``coqdoc``
 
 **Rule extension**
 
