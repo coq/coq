@@ -125,7 +125,7 @@ Tactics
   profiling, and "Set NativeCompute Profile Filename" customizes
   the profile filename.
 - The tactic "omega" is now aware of the bodies of context variables
-  such as "x := 5 : Z" (see BZ#148). This could be disabled via
+  such as "x := 5 : Z" (see #1362). This could be disabled via
   Unset Omega UseLocalDefs.
 - The tactic "romega" is also aware now of the bodies of context variables.
 - The tactic "zify" resp. "omega with N" is now aware of N.pred.
@@ -310,7 +310,7 @@ Improvements around some error messages.
 
 Many bug fixes including two important ones:
 
-- BZ#5730: CoqIDE becomes unresponsive on file open.
+- Bug #5730: CoqIDE becomes unresponsive on file open.
 - coq_makefile: make sure compile flags for Coq and coq_makefile are in sync
   (in particular, make sure the `-safe-string` option is used to compile plugins).
 
@@ -360,7 +360,7 @@ Tactics
   which behave like the corresponding variants with no "e" but turn
   unresolved implicit arguments into existential variables, on the
   shelf, rather than failing.
-- Tactic injection has become more powerful (closes BZ#4890) and its
+- Tactic injection has become more powerful (closes bug #4890) and its
   documentation has been updated.
 - New variants of the `first` and `solve` tacticals that do not rely
   on parsing rules, meant to define tactic notations.
@@ -406,7 +406,7 @@ Standard Library
   file ChoiceFacts.v.
 - New lemmas about iff and about orders on positive and Z.
 - New lemmas on powerRZ.
-- Strengthened statement of JMeq_eq_dep (closes BZ#4912).
+- Strengthened statement of JMeq_eq_dep (closes bug #4912).
 - The BigN, BigZ, BigZ libraries are no longer part of the Coq standard
   library, they are now provided by a separate repository
     https://github.com/coq/bignums
@@ -481,12 +481,12 @@ XML Protocol and internal changes
 
 See dev/doc/changes.txt
 
-Many bugfixes including BZ#1859, BZ#2884, BZ#3613, BZ#3943, BZ#3994,
-BZ#4250, BZ#4709, BZ#4720, BZ#4824, BZ#4844, BZ#4911, BZ#5026, BZ#5233,
-BZ#5275, BZ#5315, BZ#5336, BZ#5360, BZ#5390, BZ#5414, BZ#5417, BZ#5420,
-BZ#5439, BZ#5449, BZ#5475, BZ#5476, BZ#5482, BZ#5501, BZ#5507, BZ#5520,
-BZ#5523, BZ#5524, BZ#5553, BZ#5577, BZ#5578, BZ#5589, BZ#5597, BZ#5598,
-BZ#5607, BZ#5618, BZ#5619, BZ#5620, BZ#5641, BZ#5648, BZ#5651, BZ#5671.
+Many bugfixes including #1859, #2884, #3613, #3943, #3994,
+#4250, #4709, #4720, #4824, #4844, #4911, #5026, #5233,
+#5275, #5315, #5336, #5360, #5390, #5414, #5417, #5420,
+#5439, #5449, #5475, #5476, #5482, #5501, #5507, #5520,
+#5523, #5524, #5553, #5577, #5578, #5589, #5597, #5598,
+#5607, #5618, #5619, #5620, #5641, #5648, #5651, #5671.
 
 Many bugfixes on OS X and Windows (now the test-suite passes on these
 platforms too).
@@ -2662,7 +2662,7 @@ Tactics
   a registered setoid equality before starting to reduce in H. This is unlikely
   to break any script. Should this happen nonetheless, one can insert manually
   some "unfold ... in H" before rewriting.
-- Fixed various bugs about (setoid) rewrite ... in ... (in particular BZ#1101)
+- Fixed various bugs about (setoid) rewrite ... in ... (in particular bug #5941)
 - "rewrite ... in" now accepts a clause as place where to rewrite instead of
   juste a simple hypothesis name. For instance:
    rewrite H in H1,H2 |- * means rewrite H in H1; rewrite H in H2; rewrite H
@@ -3239,11 +3239,11 @@ Incompatibilities
 Bugs
 
 - Improved localisation of errors in Syntactic Definitions
-- Induction principle creation failure in presence of let-in fixed (BZ#238)
-- Inversion bugs fixed (BZ#212 and BZ#220)
-- Omega bug related to Set fixed (BZ#180)
-- Type-checking inefficiency of nested destructuring let-in fixed (BZ#216)
-- Improved handling of let-in during holes resolution phase (BZ#239)
+- Induction principle creation failure in presence of let-in fixed (#1459)
+- Inversion bugs fixed (#1427 and #1437)
+- Omega bug related to Set fixed (#1384)
+- Type-checking inefficiency of nested destructuring let-in fixed (#1435)
+- Improved handling of let-in during holes resolution phase (#1460)
 
 Efficiency
 
@@ -3256,18 +3256,18 @@ Changes from V7.3 to V7.3.1
 Bug fixes
 
   - Corrupted Field tactic and Match Context tactic construction fixed
-  - Checking of names already existing in Assert added (BZ#182)
-  - Invalid argument bug in Exact tactic solved (BZ#183)
-  - Colliding bound names bug fixed (BZ#202)
-  - Wrong non-recursivity test for Record fixed (BZ#189)
-  - Out of memory/seg fault bug related to parametric inductive fixed (BZ#195)
+  - Checking of names already existing in Assert added (#1386)
+  - Invalid argument bug in Exact tactic solved (#1387)
+  - Colliding bound names bug fixed (#1412)
+  - Wrong non-recursivity test for Record fixed (#1394)
+  - Out of memory/seg fault bug related to parametric inductive fixed (#1404)
   - Setoid_replace/Setoid_rewrite bug wrt "==" fixed
 
 Misc
 
   - Ocaml version >= 3.06 is needed to compile Coq from sources
   - Simplification of fresh names creation strategy for Assert, Pose and
-    LetTac (BZ#192)
+    LetTac (#1402)
 
 Changes from V7.2 to V7.3
 =========================
