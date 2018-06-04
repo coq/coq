@@ -1051,7 +1051,12 @@ let norm_val info tab v =
 
 let inject c = mk_clos (subs_id 0) c
 
-let whd_stack infos tab m stk =
+let whd_stack infos tab m stk = match m.norm with
+| Whnf | Norm ->
+  (** No need to perform [kni] nor to unlock updates because
+      every head subterm of [m] is [Whnf] or [Norm] *)
+  knh infos m stk
+| Red | Cstr ->
   let k = kni infos tab m stk in
   let () = if !share then ignore (fapp_stack k) in (* to unlock Zupdates! *)
   k
