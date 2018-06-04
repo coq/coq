@@ -211,7 +211,6 @@ type projection_body = {
   proj_npars : int;
   proj_arg : int;
   proj_type : constr; (* Type under params *)
-  proj_eta : constr * constr; (* Eta-expanded term and type *)
   proj_body : constr; (* For compatibility, the match version *)
 }
 

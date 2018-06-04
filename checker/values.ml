@@ -15,7 +15,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 3d9612f0adc70404fddb093b85c7d168 checker/cic.mli
+MD5 125f04aeb55b2fa027db6bfb9dffc6a2 checker/cic.mli
 
 *)
 
@@ -225,9 +225,7 @@ let v_cst_def =
 
 let v_projbody =
   v_tuple "projection_body"
-	  [|v_cst;Int;Int;v_constr;
-	    v_tuple "proj_eta" [|v_constr;v_constr|];
-	    v_constr|]
+    [|v_cst;Int;Int;v_constr;v_constr|]
 
 let v_typing_flags =
   v_tuple "typing_flags" [|v_bool; v_bool; v_oracle|]

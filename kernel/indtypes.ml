@@ -869,14 +869,10 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
         (* from [params, x:I, field1,..,fieldj |- t(field1,..,fieldj)]
            to [params, x:I |- t(proj1 x,..,projj x)] *)
 	let ty = substl subst t in
-	let term = mkProj (Projection.make kn true, mkRel 1) in
 	let fterm = mkProj (Projection.make kn false, mkRel 1) in
 	let compat = compat_body ty (j - 1) in
-	let etab = it_mkLambda_or_LetIn (mkLambda (x, indty, term)) params in
-	let etat = it_mkProd_or_LetIn (mkProd (x, indty, ty)) params in
 	let body = { proj_ind = fst ind; proj_npars = nparamargs;
-		     proj_arg = i; proj_type = projty; proj_eta = etab, etat; 
-		     proj_body = compat } in
+                      proj_arg = i; proj_type = projty; proj_body = compat } in
 	  (i + 1, j + 1, kn :: kns, body :: pbs,
 	   fterm :: subst, fterm :: letsubst)
       | Anonymous -> raise UndefinableExpansion

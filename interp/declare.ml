@@ -383,10 +383,12 @@ let inInductive : inductive_obj -> obj =
     rebuild_function = infer_inductive_subtyping }
 
 let declare_projections univs mind =
-  let spec,_ = Inductive.lookup_mind_specif (Global.env ()) (mind,0) in
+  let env = Global.env () in
+  let spec,_ = Inductive.lookup_mind_specif env (mind,0) in
     match spec.mind_record with
-    | Some (Some (_, kns, pbs)) ->
-      Array.iter2 (fun kn pb ->
+    | Some (Some (_, kns, _)) ->
+      let projs = Inductiveops.compute_projections env (mind, 0) in
+      Array.iter2 (fun kn (term, types) ->
 	let id = Label.to_id (Constant.label kn) in
         let univs = match univs with
         | Monomorphic_ind_entry _ ->
@@ -398,16 +400,15 @@ let declare_projections univs mind =
           Polymorphic_const_entry (Univ.CumulativityInfo.univ_context ctx)
         in
         let term, types = match univs with
-        | Monomorphic_const_entry _ -> pb.proj_eta
+        | Monomorphic_const_entry _ -> term, types
         | Polymorphic_const_entry ctx ->
           let u = Univ.UContext.instance ctx in
-          let term, types = pb.proj_eta in
           Vars.subst_instance_constr u term, Vars.subst_instance_constr u types
         in
         let entry = definition_entry ~types ~univs term in
         let kn' = declare_constant id (DefinitionEntry entry, IsDefinition StructureComponent) in
         assert (Constant.equal kn kn')
-      ) kns pbs;
+      ) kns projs;
       true, true
     | Some None -> true,false
     | None -> false,false

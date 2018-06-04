@@ -54,7 +54,6 @@ type projection_body = {
   proj_npars : int;
   proj_arg : int; (** Projection index, starting from 0 *)
   proj_type : types; (* Type under params *)
-  proj_eta : constr * types; (* Eta-expanded term and type *)
   proj_body : constr; (* For compatibility with VMs only, the match version *)
 }
 

@@ -194,6 +194,10 @@ val make_case_or_project :
 val make_default_case_info : env -> case_style -> inductive -> case_info
 i*)
 
+val compute_projections : Environ.env -> inductive -> (constr * types) array
+(** Given a primitive record type, for every field computes the eta-expanded
+    projection and its type. *)
+
 (********************)
 
 val type_of_inductive_knowing_conclusion :
