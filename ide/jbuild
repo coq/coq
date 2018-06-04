@@ -1,0 +1,27 @@
+(jbuild_version 1)
+
+(executable
+ ((name idetop)
+  (public_name coqidetop.opt)
+  (package coqide)
+  (modules (idetop))
+  (libraries (coq.toplevel coqide.protocol))
+  (flags -rectypes)
+  (link_flags -linkall)))
+
+(rule
+ ((targets (coqide_main.ml))
+  (deps (coqide_main.ml4))
+  ; XXX: when Coq is built with dune the following line will do the job:
+  ; (action (run coqmlp5 -loc loc -impl ${<} -o ${@}))))
+  (action (system "camlp5o pa_extend.cmo q_MLast.cmo pa_macro.cmo pr_o.cmo -loc loc -impl ${<} -o ${@}"))))
+
+(executable
+ ((name coqide_main)
+  (public_name coqide)
+  (package coqide)
+  (flags -rectypes)
+  (modules (:standard \ idetop))
+  (libraries (dynlink threads str lablgtk2.sourceview2 coq.lib coqide.protocol))))
+
+(ocamllex (utf8_convert config_lexer coq_lex))

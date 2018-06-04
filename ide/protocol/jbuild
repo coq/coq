@@ -1,0 +1,10 @@
+(jbuild_version 1)
+
+(library
+ ((name protocol)
+  (public_name coqide.protocol)
+  (wrapped false)
+  (flags (-rectypes))
+  (libraries (coq.lib))))
+
+(ocamllex (xml_lexer))
