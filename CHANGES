@@ -52,6 +52,9 @@ Vernacular Commands
 - Nested proofs may be enabled through the option `Nested Proofs Allowed`.
   By default, they are disabled and produce an error. The deprecation
   warning which used to occur when using nested proofs has been removed.
+- Added option Uniform Inductive Parameters which abstracts over parameters
+  before typechecking constructors, allowing to write for example
+  `Inductive list (A : Type) := nil : list | cons : A -> list -> list.`
 
 Coq binaries and process model
 
