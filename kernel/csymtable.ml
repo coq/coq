@@ -78,9 +78,9 @@ module AnnotTable = Hashtbl.Make (struct
 end)
 
 module ProjNameTable = Hashtbl.Make (struct
-  type t = Constant.t
-  let equal = Constant.equal
-  let hash = Constant.hash
+  type t = inductive * int
+  let equal (i1, n1) (i2, n2) = eq_ind i1 i2 && Int.equal n1 n2
+  let hash (ind, n) = Hashset.Combine.combine (ind_hash ind) n
 end)
 
 let str_cst_tbl : int SConstTable.t = SConstTable.create 31

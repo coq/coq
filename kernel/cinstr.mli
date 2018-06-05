@@ -36,7 +36,7 @@ and lambda =
   | Lval          of structured_constant
   | Lsort         of Sorts.t
   | Lind          of pinductive
-  | Lproj         of int * Constant.t * lambda
+  | Lproj         of (inductive * int) * lambda
   | Luint         of uint
 
 (* Cofixpoints have to be in eta-expanded form for their call-by-need evaluation

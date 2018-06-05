@@ -138,8 +138,8 @@ and conv_stack env k stk1 stk2 cu =
 	done;
 	conv_stack env k stk1 stk2 !rcu
       else raise NotConvertible
-  | Zproj p1 :: stk1, Zproj p2 :: stk2 ->
-    if Constant.equal p1 p2 then conv_stack env k stk1 stk2 cu
+  | Zproj (i1, n1) :: stk1, Zproj (i2, n2) :: stk2 ->
+    if eq_ind i1 i2 && Int.equal n1 n2 then conv_stack env k stk1 stk2 cu
     else raise NotConvertible
   | [], _ | Zapp _ :: _, _ | Zfix _ :: _, _ | Zswitch _ :: _, _
   | Zproj _ :: _, _ -> raise NotConvertible

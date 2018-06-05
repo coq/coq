@@ -280,8 +280,15 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       let tcase = build_case_type dep p realargs c in
       let ci = sw.sw_annot.Cbytecodes.ci in
       nf_stk env sigma (mkCase(ci, p, c, branchs)) tcase stk
-  | Zproj p :: stk ->
+  | Zproj ((mind, n), i) :: stk ->
      assert (from = 0) ;
+    let mib = Environ.lookup_mind mind env in
+    let p = match mib.mind_record with
+    | PrimRecord info ->
+      let (_, kns, _) = info.(n) in
+      kns.(i)
+    | FakeRecord | NotRecord -> assert false
+    in
      let p' = Projection.make p true in
      let ty = Inductiveops.type_of_projection_knowing_arg env sigma p' (EConstr.of_constr c) (EConstr.of_constr t) in
      nf_stk env sigma (mkProj(p',c)) ty stk

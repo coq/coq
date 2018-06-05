@@ -111,9 +111,9 @@ let rec pp_lam lam =
       (str "(PRIM " ++ pr_con kn ++  spc() ++
        prlist_with_sep spc pp_lam  (Array.to_list args) ++
        str")")
-  | Lproj(i,kn,arg) ->
+  | Lproj(((mind, n), i), arg) ->
     hov 1
-      (str "(proj#" ++ int i ++ spc() ++ pr_con kn ++ str "(" ++ pp_lam arg
+      (str "(proj#" ++ int i ++ spc() ++ MutInd.print mind ++ spc () ++ int n ++ str "(" ++ pp_lam arg
        ++ str ")")
   | Luint _ ->
     str "(uint)"
@@ -205,9 +205,9 @@ let rec map_lam_with_binders g f n lam =
   | Lprim(kn,ar,op,args) ->
     let args' = Array.Smart.map (f n) args in
     if args == args' then lam else Lprim(kn,ar,op,args')
-  | Lproj(i,kn,arg) ->
+  | Lproj (p, arg) ->
     let arg' = f n arg in
-    if arg == arg' then lam else Lproj(i,kn,arg')
+    if arg == arg' then lam else Lproj (p, arg')
   | Luint u ->
     let u' = map_uint g f n u in
     if u == u' then lam else Luint u'
@@ -376,7 +376,7 @@ let rec occurrence k kind lam =
     let kind = occurrence_args k kind ltypes in
     let _ = occurrence_args (k+Array.length ids) false lbodies in
     kind
-  | Lproj(_,_,arg) ->
+  | Lproj (_, arg) ->
     occurrence k kind arg
   | Luint u -> occurrence_uint k kind u
 
@@ -711,7 +711,7 @@ let rec lambda_of_constr env c =
     let pb = lookup_projection p env.global_env in
     let n = pb.proj_arg in
     let lc = lambda_of_constr env c in
-    Lproj (n,Projection.constant p,lc)
+    Lproj ((pb.proj_ind, n), lc)
 
 and lambda_of_app env f args =
   match Constr.kind f with
