@@ -366,13 +366,10 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
   let ground_test =
     if is_ground_term evd term1 && is_ground_term evd term2 then (
       let e =
-	try
-	  let evd, b = infer_conv ~catch_incon:false ~pb:pbty ~ts:(fst ts)
-	    env evd term1 term2
-	  in
-	    if b then Success evd
-	    else UnifFailure (evd, ConversionFailed (env,term1,term2))
-	with Univ.UniverseInconsistency e -> UnifFailure (evd, UnifUnivInconsistency e)
+          match infer_conv ~catch_incon:false ~pb:pbty ~ts:(fst ts) env evd term1 term2 with
+          | Some evd -> Success evd
+          | None -> UnifFailure (evd, ConversionFailed (env,term1,term2))
+          | exception Univ.UniverseInconsistency e -> UnifFailure (evd, UnifUnivInconsistency e)
       in
 	match e with
 	| UnifFailure (evd, e) when not (is_ground_env evd env) -> None

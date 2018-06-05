@@ -579,16 +579,16 @@ let constr_cmp pb env sigma flags t u =
   in 
   match cstrs with
   | Some cstrs ->
-      begin try Evd.add_universe_constraints sigma cstrs, true
-      with Univ.UniverseInconsistency _ -> sigma, false
+      begin try Some (Evd.add_universe_constraints sigma cstrs)
+      with Univ.UniverseInconsistency _ -> None
       | Evd.UniversesDiffer -> 
 	if is_rigid_head sigma flags t then 
-          try Evd.add_universe_constraints sigma (force_eqs cstrs), true
-	  with Univ.UniverseInconsistency _ -> sigma, false
-	else sigma, false
+          try Some (Evd.add_universe_constraints sigma (force_eqs cstrs))
+          with Univ.UniverseInconsistency _ -> None
+        else None
       end
   | None ->
-    sigma, false
+    None
     
 let do_reduce ts (env, nb) sigma c =
   Stack.zip sigma (fst (whd_betaiota_deltazeta_for_iota_state
@@ -623,9 +623,9 @@ let check_compatibility env pbty flags (sigma,metasubst,evarsubst : subst0) tyM 
   | None -> sigma
   | Some n ->
     if is_ground_term sigma m && is_ground_term sigma n then
-      let sigma, b = infer_conv ~pb:pbty ~ts:flags.modulo_delta_types env sigma m n in
-	if b then sigma
-	else error_cannot_unify env sigma (m,n)
+      match infer_conv ~pb:pbty ~ts:flags.modulo_delta_types env sigma m n with
+      | Some sigma -> sigma
+      | None -> error_cannot_unify env sigma (m,n)
     else sigma
 
 
@@ -740,11 +740,12 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	| Evar (evk,_ as ev), Evar (evk',_)
             when not (Evar.Set.mem evk flags.frozen_evars)
               && Evar.equal evk evk' ->
-            let sigma',b = constr_cmp cv_pb env sigma flags cM cN in
-            if b then
-	      sigma',metasubst,evarsubst
-            else
+            begin match constr_cmp cv_pb env sigma flags cM cN with
+            | Some sigma ->
+              sigma, metasubst, evarsubst
+            | None ->
 	      sigma,metasubst,((curenv,ev,cN)::evarsubst)
+            end
 	| Evar (evk,_ as ev), _
             when not (Evar.Set.mem evk flags.frozen_evars) 
 	      && not (occur_evar sigma evk cN) ->
@@ -942,9 +943,9 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
   and unify_not_same_head curenvnb pb opt (sigma, metas, evars as substn : subst0) cM cN =
     try canonical_projections curenvnb pb opt cM cN substn
     with ex when precatchable_exception ex ->
-    let sigma', b = constr_cmp cv_pb env sigma flags cM cN in
-      if b then (sigma', metas, evars)
-      else
+    match constr_cmp cv_pb env sigma flags cM cN with
+    | Some sigma -> (sigma, metas, evars)
+    | None ->
 	try reduce curenvnb pb opt substn cM cN
 	with ex when precatchable_exception ex ->
 	let (f1,l1) =
@@ -1001,12 +1002,13 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	       (* Renounce, maybe metas/evars prevents typing *) sigma
 	   else sigma
 	 in 
-	 let sigma, b = infer_conv ~pb ~ts:convflags curenv sigma m1 n1 in
-	    if b then Some (sigma, metasubst, evarsubst)
-	    else 
-	      if is_ground_term sigma m1 && is_ground_term sigma n1 then
-		error_cannot_unify curenv sigma (cM,cN)
-	      else None
+        match infer_conv ~pb ~ts:convflags curenv sigma m1 n1 with
+        | Some sigma ->
+          Some (sigma, metasubst, evarsubst)
+        | None ->
+          if is_ground_term sigma m1 && is_ground_term sigma n1 then
+            error_cannot_unify curenv sigma (cM,cN)
+          else None
     in
       match res with
       | Some substn -> substn
@@ -1109,11 +1111,13 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
     then
       None
     else 
-      let sigma, b = match flags.modulo_conv_on_closed_terms with
+      let ans = match flags.modulo_conv_on_closed_terms with
 	| Some convflags -> infer_conv ~pb:cv_pb ~ts:convflags env sigma m n
         | _ -> constr_cmp cv_pb env sigma flags m n in
-	if b then Some sigma
-	else if (match flags.modulo_conv_on_closed_terms, flags.modulo_delta with
+      match ans with
+      | Some sigma -> ans
+      | None ->
+        if (match flags.modulo_conv_on_closed_terms, flags.modulo_delta with
         | Some (cv_id, cv_k), (dl_id, dl_k) ->
           Id.Pred.subset dl_id cv_id && Cpred.subset dl_k cv_k
         | None,(dl_id, dl_k) ->
@@ -1603,8 +1607,10 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
   let merge_fun c1 c2 =
     match c1, c2 with
     | Some (evd,c1,x), Some (_,c2,_) ->
-      let (evd,b) = infer_conv ~pb:CONV env evd c1 c2 in
-      if b then Some (evd, c1, x) else raise (NotUnifiable None)
+      begin match infer_conv ~pb:CONV env evd c1 c2 with
+      | Some evd -> Some (evd, c1, x)
+      | None -> raise (NotUnifiable None)
+      end
     | Some _, None -> c1
     | None, Some _ -> c2
     | None, None -> None in
@@ -1921,10 +1927,11 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
   let (evd',cllist) = w_unify_to_subterm_list env evd flags p oplist typ in
   let typp = Typing.meta_type evd' p in
   let evd',(pred,predtyp) = abstract_list_all env evd' typp typ cllist in
-  let evd', b = infer_conv ~pb:CUMUL env evd' predtyp typp in
-  if not b then
+  match infer_conv ~pb:CUMUL env evd' predtyp typp with
+  | None ->
     error_wrong_abstraction_type env evd'
       (Evd.meta_name evd p) pred typp predtyp;
+  | Some evd' ->
   w_merge env false flags.merge_unify_flags
           (evd',[p,pred,(Conv,TypeProcessed)],[])
 

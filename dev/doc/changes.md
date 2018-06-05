@@ -28,6 +28,10 @@ Proof engine
   should indicate what the canonical form is. An important change is
   the move of `Globnames.global_reference` to `Names.GlobRef.t`.
 
+- Unification API returns `evar_map option` instead of `bool * evar_map`
+  with the guarantee that the `evar_map` was unchanged if the boolean
+  was false.
+
 ML Libraries used by Coq
 
 - Introduction of a "Smart" module for collecting "smart*" functions, e.g.

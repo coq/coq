@@ -309,9 +309,10 @@ let check_meta_variables env sigma c =
 
 let check_conv_leq_goal env sigma arg ty conclty =
   if !check then
-    let evm, b = Reductionops.infer_conv env sigma (EConstr.of_constr ty) (EConstr.of_constr conclty) in
-      if b then evm 
-      else raise (RefinerError (env, sigma, BadType (arg,ty,conclty)))
+    let ans = Reductionops.infer_conv env sigma (EConstr.of_constr ty) (EConstr.of_constr conclty) in
+    match ans with
+    | Some evm -> evm
+    | None -> raise (RefinerError (env, sigma, BadType (arg,ty,conclty)))
   else sigma
 
 exception Stop of EConstr.t list
