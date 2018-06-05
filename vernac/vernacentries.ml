@@ -537,7 +537,12 @@ let should_treat_as_cumulative cum poly =
     else user_err Pp.(str "The NonCumulative prefix can only be used in a polymorphic context.")
   | None -> poly && Flags.is_polymorphic_inductive_cumulativity ()
 
-let should_treat_as_uniform () = ComInductive.NonUniformParameters (* TODO: Add a flag *)
+let uniform_inductive_parameters = ref false
+
+let should_treat_as_uniform () =
+  if !uniform_inductive_parameters
+  then ComInductive.UniformParameters
+  else ComInductive.NonUniformParameters
 
 let vernac_record cum k poly finite records =
   let is_cumulative = should_treat_as_cumulative cum poly in
@@ -1472,6 +1477,14 @@ let _ =
       optkey   = ["Polymorphic"; "Inductive"; "Cumulativity"];
       optread  = Flags.is_polymorphic_inductive_cumulativity;
       optwrite = Flags.make_polymorphic_inductive_cumulativity }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "Uniform inductive parameters";
+      optkey   = ["Uniform"; "Inductive"; "Parameters"];
+      optread  = (fun () -> !uniform_inductive_parameters);
+      optwrite = (fun b -> uniform_inductive_parameters := b) }
 
 let _ =
   declare_int_option
