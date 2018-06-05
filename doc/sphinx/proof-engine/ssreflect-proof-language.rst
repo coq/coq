@@ -37,7 +37,7 @@ bookkeeping is performed on the conclusion of the goal, using for that
 purpose a couple of syntactic constructions behaving similar to tacticals
 (and often named as such in this chapter). The ``:`` tactical moves hypotheses
 from the context to the conclusion, while ``=>`` moves hypotheses from the
-conclusion to the context, and in moves back and forth an hypothesis from the
+conclusion to the context, and ``in`` moves back and forth an hypothesis from the
 context to the conclusion for the time of applying an action to it.
 
 While naming hypotheses is commonly done by means of an ``as`` clause in the
@@ -47,6 +47,8 @@ often followed by ``=>`` to explicitly name them. While generalizing the
 goal is normally not explicitly needed in Chapter :ref:`tactics`, it is an
 explicit operation performed by ``:``.
 
+.. seealso:: :ref:`bookkeeping_ssr`
+
 Beside the difference of bookkeeping model, this chapter includes
 specific tactics which have no explicit counterpart in Chapter :ref:`tactics`
 such as tactics to mix forward steps and generalizations as
@@ -55,12 +57,12 @@ such as tactics to mix forward steps and generalizations as
 |SSR| adopts the point of view that rewriting, definition
 expansion and partial evaluation participate all to a same concept of
 rewriting a goal in a larger sense. As such, all these functionalities
-are provided by the :tacn:`rewrite (ssreflect)` tactic.
+are provided by the :tacn:`rewrite <rewrite (ssreflect)>` tactic.
 
 |SSR| includes a little language of patterns to select subterms in
 tactics or tacticals where it matters. Its most notable application is
-in the :tacn:`rewrite (ssreflect)` tactic, where patterns are used to specify where the
-rewriting step has to take place.
+in the :tacn:`rewrite <rewrite (ssreflect)>` tactic, where patterns are
+used to specify where the rewriting step has to take place.
 
 Finally, |SSR| supports so-called reflection steps, typically
 allowing to switch back and forth between the computational view and
@@ -87,7 +89,7 @@ Getting started
 ~~~~~~~~~~~~~~~
 
 To be available, the tactics presented in this manual need the
-following minimal set of libraries to loaded: ``ssreflect.v``,
+following minimal set of libraries to be loaded: ``ssreflect.v``,
 ``ssrfun.v`` and ``ssrbool.v``.
 Moreover, these tactics come with a methodology
 specific to the authors of |SSR| and which requires a few options
@@ -100,6 +102,10 @@ this corresponds to working in the following context:
    Set Implicit Arguments.
    Unset Strict Implicit.
    Unset Printing Implicit Defensive.
+
+.. seealso::
+   :opt:`Implicit Arguments`, :opt:`Strict Implicit`,
+   :opt:`Printing Implicit Defensive`
 
 .. _compatibility_issues_ssr:
 
@@ -139,7 +145,7 @@ compatible with the rest of |Coq|, up to a few discrepancies:
   Note that the full
   syntax of |SSR|’s rewrite and reserved identifiers are enabled
   only if the ssreflect module has been required and if ``SsrSyntax`` has
-  been imported. Thus a file that requires (without importing) ssreflect
+  been imported. Thus a file that requires (without importing) ``ssreflect``
   and imports ``SsrSyntax``, can be required and imported without
   automatically enabling |SSR|’s extended rewrite syntax and
   reserved identifiers.
@@ -148,9 +154,10 @@ compatible with the rest of |Coq|, up to a few discrepancies:
   such as have, set and pose.
 + The generalization of if statements to non-Boolean conditions is turned off
   by |SSR|, because it is mostly subsumed by Coercion to ``bool`` of the
-  ``sumXXX`` types (declared in ``ssrfun.v``) and the ``if`` *term* ``is`` *pattern* ``then``
-  *term* ``else`` *term* construct (see :ref:`pattern_conditional_ssr`).  To use the
-  generalized form, turn off the |SSR| Boolean if notation using the command:
+  ``sumXXX`` types (declared in ``ssrfun.v``) and the
+  :n:`if @term is @pattern then @term else @term` construct
+  (see :ref:`pattern_conditional_ssr`).  To use the
+  generalized form, turn off the |SSR| Boolean ``if`` notation using the command:
   ``Close Scope boolean_if_scope``.
 + The following two options can be unset to disable the incompatible
   rewrite syntax and allow reserved identifiers to appear in scripts.
@@ -486,15 +493,6 @@ Definitions
    |SSR| pose tactic supports *open syntax*: the body of the
    definition does not need surrounding parentheses. For instance:
 
-.. coqtop:: reset
-
-   From Coq Require Import ssreflect.
-   Set Implicit Arguments.
-   Unset Strict Implicit.
-   Unset Printing Implicit Defensive.
-   Lemma test : True.
-   Proof.
-
 .. coqtop:: in
 
    pose t := x + y.
@@ -503,9 +501,17 @@ is a valid tactic expression.
 
 The pose tactic is also improved for the local definition of higher
 order terms. Local definitions of functions can use the same syntax as
-global ones. For example, the tactic ``pose`` supoprts parameters:
+global ones.
+For example, the tactic :tacn:`pose <pose (ssreflect)>` supoprts parameters:
 
 .. example::
+
+   .. coqtop:: reset
+
+      From Coq Require Import ssreflect.
+      Set Implicit Arguments.
+      Unset Strict Implicit.
+      Unset Printing Implicit Defensive.
 
    .. coqtop:: all
 
@@ -616,7 +622,7 @@ where:
   surrounding the second :token:`term` are mandatory.
 + In the occurrence switch :token:`occ_switch`, if the first element of the
   list is a natural, this element should be a number, and not an Ltac
-  variable. The empty list {} is not interpreted as a valid occurrence
+  variable. The empty list ``{}`` is not interpreted as a valid occurrence
   switch.
 
 The tactic:
@@ -652,7 +658,7 @@ The tactic first tries to find a subterm of the goal matching
 the second :token:`term`
 (and its type), and stops at the first subterm it finds. Then
 the occurrences of this subterm selected by the optional :token:`occ_switch`
-are replaced by :token:`ident` and a definition ``ident := term``
+are replaced by :token:`ident` and a definition :n:`@ident := @term`
 is added to the
 context. If no :token:`occ_switch` is present, then all the occurrences are
 abstracted.
@@ -661,20 +667,20 @@ abstracted.
 Matching
 ````````
 
-The matching algorithm compares a pattern ``term`` with a subterm of the
+The matching algorithm compares a pattern :token:`term` with a subterm of the
 goal by comparing their heads and then pairwise unifying their
 arguments (modulo conversion). Head symbols match under the following
 conditions:
 
 
-+ If the head of ``term`` is a constant, then it should be syntactically
++ If the head of :token:`term` is a constant, then it should be syntactically
   equal to the head symbol of the subterm.
 + If this head is a projection of a canonical structure, then
   canonical structure equations are used for the matching.
 + If the head of term is *not* a constant, the subterm should have the
   same structure (λ abstraction,let…in structure …).
-+ If the head of ``term`` is a hole, the subterm should have at least as
-  many arguments as ``term``.
++ If the head of :token:`term` is a hole, the subterm should have at least as
+  many arguments as :token:`term`.
 
 .. example::
 
