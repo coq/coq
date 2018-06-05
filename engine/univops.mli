@@ -14,5 +14,8 @@ open Univ
 (** The universes of monomorphic constants appear. *)
 val universes_of_constr : Environ.env -> constr -> LSet.t
 
-(** Shrink a universe context to a restricted set of variables *)
+(** [restrict_universe_context (univs,csts) keep] restricts [univs] to
+   the universes in [keep]. The constraints [csts] are adjusted so
+   that transitive constraints between remaining universes (those in
+   [keep] and those not in [univs]) are preserved. *)
 val restrict_universe_context : ContextSet.t -> LSet.t -> ContextSet.t

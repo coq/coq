@@ -503,7 +503,7 @@ let insert_edge strict ucan vcan g =
     let () = cleanup_universes g in
     raise e
 
-let add_universe vlev strict g =
+let add_universe_gen vlev g =
   try
     let _arcv = UMap.find vlev g.entries in
       raise AlreadyDeclared
@@ -520,8 +520,14 @@ let add_universe vlev strict g =
     }
     in
     let entries = UMap.add vlev (Canonical v) g.entries in
-    let g = { entries; index = g.index - 1; n_nodes = g.n_nodes + 1; n_edges = g.n_edges } in
-    insert_edge strict (get_set_arc g) v g
+    { entries; index = g.index - 1; n_nodes = g.n_nodes + 1; n_edges = g.n_edges }, v
+
+let add_universe vlev strict g =
+  let g, v = add_universe_gen vlev g in
+  insert_edge strict (get_set_arc g) v g
+
+let add_universe_unconstrained vlev g =
+  fst (add_universe_gen vlev g)
 
 exception Found_explanation of explanation
 
@@ -696,6 +702,9 @@ let enforce_univ_lt u v g =
     error_inconsistency Lt u v (get_explanation false v u g)
 
 let empty_universes =
+  { entries = UMap.empty; index = 0; n_nodes = 0; n_edges = 0 }
+
+let initial_universes =
   let set_arc = Canonical {
     univ = Level.set;
     ltle = LMap.empty;
@@ -717,9 +726,6 @@ let empty_universes =
   let entries = UMap.add Level.set set_arc (UMap.singleton Level.prop prop_arc) in
   let empty = { entries; index = (-2); n_nodes = 2; n_edges = 0 } in
   enforce_univ_lt Level.prop Level.set empty
-
-(* Prop = Set is forbidden here. *)
-let initial_universes = empty_universes
 
 let is_initial_universes g = UMap.equal (==) g.entries initial_universes.entries
 
@@ -779,6 +785,42 @@ let constraints_of_universes g =
   in
   let csts = UMap.fold constraints_of g.entries Constraint.empty in
   csts, UF.partition uf
+
+(* domain g.entries = kept + removed *)
+let constraints_for ~kept g =
+  (* rmap: partial map from canonical universes to kept universes *)
+  let rmap, csts = LSet.fold (fun u (rmap,csts) ->
+      let arcu = repr g u in
+      if LSet.mem arcu.univ kept then
+        LMap.add arcu.univ arcu.univ rmap, enforce_eq_level u arcu.univ csts
+      else
+        match LMap.find arcu.univ rmap with
+        | v -> rmap, enforce_eq_level u v csts
+        | exception Not_found -> LMap.add arcu.univ u rmap, csts)
+      kept (LMap.empty,Constraint.empty)
+  in
+  let rec add_from u csts todo = match todo with
+    | [] -> csts
+    | (v,strict)::todo ->
+      let v = repr g v in
+      (match LMap.find v.univ rmap with
+       | v ->
+         let d = if strict then Lt else Le in
+         let csts = Constraint.add (u,d,v) csts in
+         add_from u csts todo
+       | exception Not_found ->
+         (* v is not equal to any kept universe *)
+         let todo = LMap.fold (fun v' strict' todo ->
+             (v',strict || strict') :: todo)
+             v.ltle todo
+         in
+         add_from u csts todo)
+  in
+  LSet.fold (fun u csts ->
+      let arc = repr g u in
+      LMap.fold (fun v strict csts -> add_from u csts [v,strict])
+        arc.ltle csts)
+    kept csts
 
 (** [sort_universes g] builds a totally ordered universe graph.  The
     output graph should imply the input graph (and the implication

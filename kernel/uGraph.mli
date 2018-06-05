@@ -49,13 +49,15 @@ exception AlreadyDeclared
 
 val add_universe : Level.t -> bool -> t -> t
 
+(** Add a universe without (Prop,Set) <= u *)
+val add_universe_unconstrained : Level.t -> t -> t
+
 (** {6 Pretty-printing of universes. } *)
 
 val pr_universes : (Level.t -> Pp.t) -> t -> Pp.t
 
 (** The empty graph of universes *)
 val empty_universes : t
-[@@ocaml.deprecated "Use UGraph.initial_universes"]
 
 val sort_universes : t -> t
 
@@ -63,6 +65,12 @@ val sort_universes : t -> t
    [csts] are the non-Eq constraints and [partition] is the partition
    of the universes into equivalence classes. *)
 val constraints_of_universes : t -> Constraint.t * LSet.t list
+
+(** [constraints_for ~kept g] returns the constraints about the
+   universes [kept] in [g] up to transitivity.
+
+    eg if [g] is [a <= b <= c] then [constraints_for ~kept:{a, c} g] is [a <= c]. *)
+val constraints_for : kept:LSet.t -> t -> Constraint.t
 
 val check_subtype : AUContext.t check_function
 (** [check_subtype univ ctx1 ctx2] checks whether [ctx2] is an instance of
