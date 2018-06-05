@@ -76,3 +76,17 @@ There are also output tests in `test-suite/output` which consist of a `.v` file 
 
 There are unit tests of OCaml code in `test-suite/unit-tests`. These tests are contained in `.ml` files, and rely on the `OUnit`
 unit-test framework, as described at http://ounit.forge.ocamlcore.org/.  Use `make unit-tests' in the unit-tests directory to run them.
+
+## Fixing output tests
+
+When an output test `output/foo.v` fails, the output is stored in
+`output/foo.out.real`. Move that file to the reference file
+`output/foo.out` to update the test, approving the new output. Target
+`approve-output` will do this for all failing output tests
+automatically.
+
+Don't forget to check the updated `.out` files into git!
+
+Note that `output/MExtraction.out` is special: it is copied from
+`micromega/micromega.ml` in the plugin source directory. Automatic
+approval will incorrectly update the copy.
