@@ -31,7 +31,7 @@ and lambda =
   | Llet          of Name.t * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of prefix * pconstant
-  | Lproj         of prefix * Constant.t (* prefix, projection name *)
+  | Lproj         of prefix * inductive * int (* prefix, inductive, index starting from 0 *)
   | Lprim         of prefix * Constant.t * CPrimitives.t * lambda array
   | Lcase         of annot_sw * lambda * lambda * lam_branches 
                   (* annotations, term being matched, accu, branches *)

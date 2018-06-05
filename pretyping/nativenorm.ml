@@ -188,6 +188,14 @@ let branch_of_switch lvl ans bs =
     bs ci in
   Array.init (Array.length tbl) branch
 
+let get_proj env ((mind, _n), i) =
+  let mib = Environ.lookup_mind mind env in
+  match mib.mind_record with
+  | None | Some None ->
+    CErrors.anomaly (Pp.strbrk "Return type is not a primitive record")
+  | Some (Some (_, projs, _)) ->
+    Projection.make projs.(i) true
+
 let rec nf_val env sigma v typ =
   match kind_of_value v with
   | Vaccu accu -> nf_accu env sigma accu
@@ -279,9 +287,10 @@ and nf_atom env sigma atom =
       let codom = nf_type env sigma (codom vn) in
       mkProd(n,dom,codom)
   | Ameta (mv,_) -> mkMeta mv
-  | Aproj(p,c) ->
+  | Aproj (p, c) ->
       let c = nf_accu env sigma c in
-	mkProj(Projection.make p true,c)
+      let p = get_proj env p in
+      mkProj(p, c)
   | _ -> fst (nf_atom_type env sigma atom)
 
 and nf_atom_type env sigma atom =
@@ -357,7 +366,8 @@ and nf_atom_type env sigma atom =
   | Aproj(p,c) ->
       let c,tc = nf_accu_type env sigma c in
       let cj = make_judge c tc in
-      let uj = Typeops.judge_of_projection env (Projection.make p true) cj in
+      let p = get_proj env p in
+      let uj = Typeops.judge_of_projection env p cj in
       uj.uj_val, uj.uj_type
 
 

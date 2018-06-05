@@ -114,8 +114,8 @@ and conv_atom env pb lvl a1 a2 cu =
        let cu = conv_val env CONV lvl d1 d2 cu in
        let v = mk_rel_accu lvl in
        conv_val env pb (lvl + 1) (d1 v) (d2 v) cu
-    | Aproj(p1,ac1), Aproj(p2,ac2) ->
-       if not (Constant.equal p1 p2) then raise NotConvertible
+    | Aproj((ind1, i1), ac1), Aproj((ind2, i2), ac2) ->
+       if not (eq_ind ind1 ind2 && Int.equal i1 i2) then raise NotConvertible
        else conv_accu env CONV lvl ac1 ac2 cu
     | Arel _, _ | Aind _, _ | Aconstant _, _ | Asort _, _ | Avar _, _
     | Acase _, _ | Afix _, _ | Acofix _, _ | Acofixe _, _ | Aprod _, _

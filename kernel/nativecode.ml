@@ -53,7 +53,7 @@ type gname =
   | Gind of string * inductive (* prefix, inductive name *)
   | Gconstruct of string * constructor (* prefix, constructor name *)
   | Gconstant of string * Constant.t (* prefix, constant name *)
-  | Gproj of string * Constant.t (* prefix, constant name *)
+  | Gproj of string * inductive * int (* prefix, inductive, index (start from 0) *)
   | Gcase of Label.t option * int
   | Gpred of Label.t option * int
   | Gfixtype of Label.t option * int
@@ -108,7 +108,7 @@ let gname_hash gn = match gn with
 | Ginternal s -> combinesmall 9 (String.hash s)
 | Grel i -> combinesmall 10 (Int.hash i)
 | Gnamed id -> combinesmall 11 (Id.hash id)
-| Gproj (s, p) -> combinesmall 12 (combine (String.hash s) (Constant.hash p))
+| Gproj (s, p, i) -> combinesmall 12 (combine (String.hash s) (combine (ind_hash p) i))
 
 let case_ctr = ref (-1)
 
@@ -152,6 +152,7 @@ type symbol =
   | SymbMeta of metavariable
   | SymbEvar of Evar.t
   | SymbLevel of Univ.Level.t
+  | SymbProj of (inductive * int)
 
 let dummy_symb = SymbValue (dummy_value ())
 
@@ -166,6 +167,7 @@ let eq_symbol sy1 sy2 =
   | SymbMeta m1, SymbMeta m2 -> Int.equal m1 m2
   | SymbEvar evk1, SymbEvar evk2 -> Evar.equal evk1 evk2
   | SymbLevel l1, SymbLevel l2 -> Univ.Level.equal l1 l2
+  | SymbProj (i1, k1), SymbProj (i2, k2) -> eq_ind i1 i2 && Int.equal k1 k2
   | _, _ -> false
 
 let hash_symbol symb =
@@ -179,6 +181,7 @@ let hash_symbol symb =
   | SymbMeta m -> combinesmall 7 m
   | SymbEvar evk -> combinesmall 8 (Evar.hash evk)
   | SymbLevel l -> combinesmall 9 (Univ.Level.hash l)
+  | SymbProj (i, k) -> combinesmall 10 (combine (ind_hash i) k)
 
 module HashedTypeSymbol = struct
   type t = symbol
@@ -240,6 +243,11 @@ let get_level tbl i =
   match tbl.(i) with
     | SymbLevel u -> u
     | _ -> anomaly (Pp.str "get_level failed.")
+
+let get_proj tbl i =
+  match tbl.(i) with
+    | SymbProj p -> p
+    | _ -> anomaly (Pp.str "get_proj failed.")
 
 let push_symbol x =
   try HashtblSymbol.find symb_tbl x
@@ -885,6 +893,10 @@ let get_level_code i =
   MLapp (MLglobal (Ginternal "get_level"),
     [|MLglobal symbols_tbl_name; MLint i|])
 
+let get_proj_code i =
+  MLapp (MLglobal (Ginternal "get_proj"),
+    [|MLglobal symbols_tbl_name; MLint i|])
+
 type rlist =
   | Rnil 
   | Rcons of (constructor * lname option array) list ref * LNset.t * mllambda * rlist' 
@@ -1070,7 +1082,7 @@ let ml_of_instance instance u =
   | Lconst (prefix, (c, u)) ->
      let args = ml_of_instance env.env_univ u in
      mkMLapp (MLglobal(Gconstant (prefix, c))) args
-  | Lproj (prefix,c) -> MLglobal(Gproj (prefix,c))
+  | Lproj (prefix, ind, i) -> MLglobal(Gproj (prefix, ind, i))
   | Lprim _ ->
       let decl,cond,paux = extract_prim (ml_of_lam env l) t in
       compile_prim decl cond paux
@@ -1544,8 +1556,8 @@ let string_of_gname g =
       Format.sprintf "%sconstruct_%s_%i_%i" prefix (string_of_mind mind) i (j-1)
   | Gconstant (prefix, c) ->
       Format.sprintf "%sconst_%s" prefix (string_of_con c)
-  | Gproj (prefix, c) ->
-      Format.sprintf "%sproj_%s" prefix (string_of_con c)
+  | Gproj (prefix, (mind, n), i) ->
+      Format.sprintf "%sproj_%s_%i_%i" prefix (string_of_mind mind) n i
   | Gcase (l,i) ->
       Format.sprintf "case_%s_%i" (string_of_label_def l) i
   | Gpred (l,i) ->
@@ -1858,8 +1870,6 @@ and compile_named env sigma univ auxdefs id =
       Glet(Gnamed id, MLprimitive (Mk_var id))::auxdefs
 
 let compile_constant env sigma prefix ~interactive con cb =
-  match cb.const_proj with
-  | false ->
      let no_univs =
        match cb.const_universes with
        | Monomorphic_const _ -> true
@@ -1903,39 +1913,6 @@ let compile_constant env sigma prefix ~interactive con cb =
 	  if interactive then LinkedInteractive prefix
 	  else Linked prefix
     end
-  | true ->
-      let pb = lookup_projection (Projection.make con false) env in
-      let mind = pb.proj_ind in
-      let ind = (mind,0) in
-      let mib = lookup_mind mind env in
-      let oib = mib.mind_packets.(0) in
-      let tbl = oib.mind_reloc_tbl in 
-      (* Building info *)
-      let prefix = get_mind_prefix env mind in
-      let ci = { ci_ind = ind; ci_npar = mib.mind_nparams; 
-		 ci_cstr_nargs = [|0|];
-		 ci_cstr_ndecls = [||] (*FIXME*);
-		 ci_pp_info = { ind_tags = []; cstr_tags = [||] (*FIXME*); style = RegularStyle } } in
-      let asw = { asw_ind = ind; asw_prefix = prefix; asw_ci = ci;
-		  asw_reloc = tbl; asw_finite = true } in
-      let c_uid = fresh_lname Anonymous in
-      let cf_uid = fresh_lname Anonymous in
-      let _, arity = tbl.(0) in
-      let ci_uid = fresh_lname Anonymous in
-      let cargs = Array.init arity
-        (fun i -> if Int.equal i pb.proj_arg then Some ci_uid else None)
-      in
-      let i = push_symbol (SymbConst con) in
-      let accu = MLapp (MLprimitive Cast_accu, [|MLlocal cf_uid|]) in
-      let accu_br = MLapp (MLprimitive Mk_proj, [|get_const_code i;accu|]) in
-      let code = MLmatch(asw,MLlocal cf_uid,accu_br,[|[((ind,1),cargs)],MLlocal ci_uid|]) in
-      let code = MLlet(cf_uid, MLapp (MLprimitive Force_cofix, [|MLlocal c_uid|]), code) in
-      let gn = Gproj ("",con) in
-      let fargs = Array.init (pb.proj_npars + 1) (fun _ -> fresh_lname Anonymous) in
-      let arg = fargs.(pb.proj_npars) in
-        Glet(Gconstant ("", con), mkMLlam fargs (MLapp (MLglobal gn, [|MLlocal
-          arg|])))::
-            [Glet(gn, mkMLlam [|c_uid|] code)], Linked prefix
 
 module StringOrd = struct type t = string let compare = String.compare end
 module StringSet = Set.Make(StringOrd)
@@ -1962,10 +1939,12 @@ let arg_name = Name (Id.of_string "arg")
 
 let compile_mind prefix ~interactive mb mind stack =
   let u = Declareops.inductive_polymorphic_context mb in
+  (** Generate data for every block *)
   let f i stack ob =
-    let gtype = Gtype((mind, i), Array.map snd ob.mind_reloc_tbl) in
-    let j = push_symbol (SymbInd (mind,i)) in
-    let name = Gind ("", (mind, i)) in
+    let ind = (mind, i) in
+    let gtype = Gtype(ind, Array.map snd ob.mind_reloc_tbl) in
+    let j = push_symbol (SymbInd ind) in
+    let name = Gind ("", ind) in
     let accu =
       let args =
 	if Int.equal (Univ.AUContext.size u) 0 then
@@ -1979,12 +1958,41 @@ let compile_mind prefix ~interactive mb mind stack =
       Array.init nparams (fun i -> {lname = param_name; luid = i}) in
     let add_construct j acc (_,arity) = 
       let args = Array.init arity (fun k -> {lname = arg_name; luid = k}) in 
-      let c = (mind,i), (j+1) in
+      let c = ind, (j+1) in
 	  Glet(Gconstruct ("", c),
 	     mkMLlam (Array.append params args)
 	       (MLconstruct("", c, Array.map (fun id -> MLlocal id) args)))::acc
     in
-    Array.fold_left_i add_construct (gtype::accu::stack) ob.mind_reloc_tbl
+    let constructors = Array.fold_left_i add_construct [] ob.mind_reloc_tbl in
+    let add_proj j acc pb =
+      let tbl = ob.mind_reloc_tbl in
+      (* Building info *)
+      let ci = { ci_ind = ind; ci_npar = nparams;
+                 ci_cstr_nargs = [|0|];
+                 ci_cstr_ndecls = [||] (*FIXME*);
+                 ci_pp_info = { ind_tags = []; cstr_tags = [||] (*FIXME*); style = RegularStyle } } in
+      let asw = { asw_ind = ind; asw_prefix = ""; asw_ci = ci;
+                  asw_reloc = tbl; asw_finite = true } in
+      let c_uid = fresh_lname Anonymous in
+      let cf_uid = fresh_lname Anonymous in
+      let _, arity = tbl.(0) in
+      let ci_uid = fresh_lname Anonymous in
+      let cargs = Array.init arity
+        (fun i -> if Int.equal i pb.proj_arg then Some ci_uid else None)
+      in
+      let i = push_symbol (SymbProj (ind, j)) in
+      let accu = MLapp (MLprimitive Cast_accu, [|MLlocal cf_uid|]) in
+      let accu_br = MLapp (MLprimitive Mk_proj, [|get_proj_code i;accu|]) in
+      let code = MLmatch(asw,MLlocal cf_uid,accu_br,[|[((ind,1),cargs)],MLlocal ci_uid|]) in
+      let code = MLlet(cf_uid, MLapp (MLprimitive Force_cofix, [|MLlocal c_uid|]), code) in
+      let gn = Gproj ("", (pb.proj_ind, j), pb.proj_arg) in
+      Glet (gn, mkMLlam [|c_uid|] code) :: acc
+    in
+    let projs = match mb.mind_record with
+    | None | Some None -> []
+    | Some (Some (id, kns, pbs)) -> Array.fold_left_i add_proj [] pbs
+    in
+    projs @ constructors @ gtype :: accu :: stack
   in
   Array.fold_left_i f stack mb.mind_packets
 
@@ -2030,13 +2038,9 @@ let compile_deps env sigma prefix ~interactive init t =
     then init
     else
       let comp_stack, (mind_updates, const_updates) =
-	match cb.const_proj, cb.const_body with
-        | false, Def t ->
+        match cb.const_body with
+        | Def t ->
            aux env lvl init (Mod_subst.force_constr t)
-        | true, _ ->
-          let pb = lookup_projection (Projection.make c false) env in
-          let mind = pb.proj_ind in
-          compile_mind_deps env prefix ~interactive init mind
         | _ -> init
       in
       let code, name =
@@ -2047,8 +2051,9 @@ let compile_deps env sigma prefix ~interactive init t =
       comp_stack, (mind_updates, const_updates)
   | Construct (((mind,_),_),u) -> compile_mind_deps env prefix ~interactive init mind
   | Proj (p,c) ->
-    let term = mkApp (mkConst (Projection.constant p), [|c|]) in
-    aux env lvl init term
+    let pb = lookup_projection p env in
+    let init = compile_mind_deps env prefix ~interactive init pb.proj_ind in
+    aux env lvl init c
   | Case (ci, p, c, ac) ->
       let mind = fst ci.ci_ind in
       let init = compile_mind_deps env prefix ~interactive init mind in

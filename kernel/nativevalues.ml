@@ -64,7 +64,7 @@ type atom =
   | Aprod of Name.t * t * (t -> t)
   | Ameta of metavariable * t
   | Aevar of Evar.t * t * t array
-  | Aproj of Constant.t * accumulator
+  | Aproj of (inductive * int) * accumulator
 
 let accumulate_tag = 0
 
