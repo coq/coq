@@ -126,7 +126,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
   in
   let eq_projection_body p1 p2 =
     let check eq f = if not (eq (f p1) (f p2)) then error () in
-    check MutInd.equal (fun x -> x.proj_ind);
+    check eq_ind (fun x -> x.proj_ind);
     check (==) (fun x -> x.proj_npars);
     check (==) (fun x -> x.proj_arg);
     check (eq_constr) (fun x -> x.proj_type);

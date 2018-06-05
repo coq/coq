@@ -203,7 +203,7 @@ let judge_of_projection env p c ct =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (c, ct)
   in
-    assert(MutInd.equal pb.proj_ind (fst ind));
+    assert(eq_ind pb.proj_ind ind);
     let ty = subst_instance_constr u pb.proj_type in
       substl (c :: List.rev args) ty
 

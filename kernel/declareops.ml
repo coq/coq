@@ -84,7 +84,7 @@ let subst_const_def sub def = match def with
   | OpaqueDef o -> OpaqueDef (Opaqueproof.subst_opaque sub o)
 
 let subst_const_proj sub pb =
-  { pb with proj_ind = subst_mind sub pb.proj_ind;
+  { pb with proj_ind = subst_ind sub pb.proj_ind;
     proj_type = subst_mps sub pb.proj_type;
   }
 

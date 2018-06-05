@@ -839,7 +839,7 @@ let compute_projections ((kn, _ as ind), u) nparamargs params
         (* from [params, x:I, field1,..,fieldj |- t(field1,..,fieldj)]
            to [params, x:I |- t(proj1 x,..,projj x)] *)
 	let fterm = mkProj (Projection.make kn false, mkRel 1) in
-	let body = { proj_ind = fst ind; proj_npars = nparamargs;
+        let body = { proj_ind = ind; proj_npars = nparamargs;
                       proj_arg = i; proj_type = projty; } in
         (i + 1, j + 1, kn :: kns, body :: pbs, fterm :: letsubst)
       | Anonymous -> raise UndefinableExpansion

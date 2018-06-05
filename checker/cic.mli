@@ -207,7 +207,7 @@ type inline = int option
     always transparent. *)
 
 type projection_body = {
-  proj_ind : MutInd.t;
+  proj_ind : inductive;
   proj_npars : int;
   proj_arg : int;
   proj_type : constr; (* Type under params *)
