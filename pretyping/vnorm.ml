@@ -266,7 +266,6 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       let nparamdecls = Context.Rel.length (Inductive.inductive_paramdecls (mib,u)) in
       let pT =
         hnf_prod_applist_assum env nparamdecls (type_of_ind env (ind,u)) (Array.to_list params) in
-      let pT = whd_all env pT in
       let dep, p = nf_predicate env sigma (ind,u) mip params (type_of_switch sw) pT in
       (* Calcul du type des branches *)
       let btypes = build_branches_type env sigma ind mib mip u params dep p in
@@ -288,15 +287,24 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
      nf_stk env sigma (mkProj(p',c)) ty stk
 
 and nf_predicate env sigma ind mip params v pT =
-  match whd_val v, kind pT with
-  | Vfun f, Prod _ ->
+  match kind (whd_allnolet env pT) with
+  | LetIn (name,b,t,pT) ->
+      let dep,body =
+        nf_predicate (push_rel (LocalDef (name,b,t)) env) sigma ind mip params v pT in
+      dep, mkLetIn (name,b,t,body)
+  | Prod (name,dom,codom) -> begin
+    match whd_val v with
+    | Vfun f ->
       let k = nb_rel env in
       let vb = reduce_fun k f in
-      let name,dom,codom = decompose_prod env pT in
       let dep,body =
 	nf_predicate (push_rel (LocalAssum (name,dom)) env) sigma ind mip params vb codom in
       dep, mkLambda(name,dom,body)
-  | Vfun f, _ ->
+    | _ -> assert false
+    end
+  | _ ->
+    match whd_val v with
+    | Vfun f ->
       let k = nb_rel env in
       let vb = reduce_fun k f in
       let name = Name (Id.of_string "c") in
@@ -306,7 +314,7 @@ and nf_predicate env sigma ind mip params v pT =
       let dom = mkApp(mkIndU ind,Array.append params rargs) in
       let body = nf_vtype (push_rel (LocalAssum (name,dom)) env) sigma vb in
       true, mkLambda(name,dom,body)
-  | _, _ -> false, nf_val env sigma v crazy_type
+    | _ -> false, nf_val env sigma v crazy_type
 
 and nf_args env sigma vargs ?from:(f=0) t =
   let t = ref t in

@@ -303,10 +303,10 @@ and nf_atom_type env sigma atom =
       let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
       let nparams = mib.mind_nparams in
       let params,realargs = Array.chop nparams allargs in
+      let nparamdecls = Context.Rel.length (Inductive.inductive_paramdecls (mib,u)) in
       let pT = 
-	hnf_prod_applist env 
+        hnf_prod_applist_assum env nparamdecls
 	  (Inductiveops.type_of_inductive env ind) (Array.to_list params) in
-      let pT = whd_all env pT in
       let dep, p = nf_predicate env sigma ind mip params p pT in
       (* Calcul du type des branches *)
       let btypes = build_branches_type env sigma (fst ind) mib mip u params dep p in
@@ -362,20 +362,24 @@ and nf_atom_type env sigma atom =
 
 
 and  nf_predicate env sigma ind mip params v pT =
-  match kind_of_value v, kind pT with
-  | Vfun f, Prod _ ->
+  match kind (whd_allnolet env pT) with
+  | LetIn (name,b,t,pT) ->
+      let dep,body =
+        nf_predicate (push_rel (LocalDef (name,b,t)) env) sigma ind mip params v pT in
+      dep, mkLetIn (name,b,t,body)
+  | Prod (name,dom,codom) -> begin
+    match kind_of_value v with
+    | Vfun f ->
       let k = nb_rel env in
       let vb = f (mk_rel_accu k) in
-      let name,dom,codom =
-	try decompose_prod env pT with
-	  DestKO ->
-	  CErrors.anomaly
-	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
-      in
       let dep,body = 
 	nf_predicate (push_rel (LocalAssum (name,dom)) env) sigma ind mip params vb codom in
       dep, mkLambda(name,dom,body)
-  | Vfun f, _ -> 
+    | _ -> false, nf_type env sigma v
+    end
+  | _ ->
+    match kind_of_value v with
+    | Vfun f ->
       let k = nb_rel env in
       let vb = f (mk_rel_accu k) in
       let name = Name (Id.of_string "c") in
@@ -385,7 +389,7 @@ and  nf_predicate env sigma ind mip params v pT =
       let dom = mkApp(mkIndU ind,Array.append params rargs) in
       let body = nf_type (push_rel (LocalAssum (name,dom)) env) sigma vb in
       true, mkLambda(name,dom,body)
-  | _, _ -> false, nf_type env sigma v
+    | _ -> false, nf_type env sigma v
 
 and nf_evar env sigma evk ty args =
   let evi = try Evd.find sigma evk with Not_found -> assert false in
