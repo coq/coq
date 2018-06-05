@@ -264,16 +264,16 @@ val e_new_evar :
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> ?hypnaming:naming_mode -> types -> constr
-[@@ocaml.deprecated "Use [Evd.new_evar]"]
+[@@ocaml.deprecated "Use [Evarutil.new_evar]"]
 
 val e_new_type_evar : env -> evar_map ref ->
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> ?hypnaming:naming_mode -> rigid -> constr * Sorts.t
-[@@ocaml.deprecated "Use [Evd.new_type_evar]"]
+[@@ocaml.deprecated "Use [Evarutil.new_type_evar]"]
 
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
-[@@ocaml.deprecated "Use [Evd.new_Type]"]
+[@@ocaml.deprecated "Use [Evarutil.new_Type]"]
 
 val e_new_global : evar_map ref -> GlobRef.t -> constr
 [@@ocaml.deprecated "Use [Evarutil.new_global]"]
