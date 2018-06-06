@@ -96,13 +96,13 @@ let warn_compatibility_notation =
   CWarnings.(create ~name:"compatibility-notation"
                     ~category:"deprecated" ~default:Enabled pr_compat_warning)
 
-let verbose_compat kn def = function
+let verbose_compat ?loc kn def = function
   | Some v when Flags.version_strictly_greater v ->
-     warn_compatibility_notation (kn, def, v)
+     warn_compatibility_notation ?loc (kn, def, v)
   | _ -> ()
 
-let search_syntactic_definition kn =
+let search_syntactic_definition ?loc kn =
   let pat,v = KNmap.find kn !syntax_table in
   let def = out_pat pat in
-  verbose_compat kn def v;
+  verbose_compat ?loc kn def v;
   def
