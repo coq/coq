@@ -64,7 +64,7 @@ doc: sphinx tutorial rectutorial stdlib
 
 sphinx: coq
 	$(SHOW)'SPHINXBUILD doc/sphinx'
-	$(HIDE)COQBIN="$(PWD)/bin" $(SPHINXBUILD) -W -b html $(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/html
+	$(HIDE)COQBIN="$(abspath bin)" $(SPHINXBUILD) -W -b html $(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(SPHINXBUILDDIR)/html."
 
