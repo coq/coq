@@ -319,9 +319,17 @@ let build_beq_scheme mode kn =
       let kelim = Inductive.elim_sorts (mib,mib.mind_packets.(i)) in
 	if not (Sorts.List.mem InSet kelim) then
 	  raise (NonSingletonProp (kn,i));
-        if mib.mind_finite = CoFinite then
+        let fix = match mib.mind_finite with
+        | CoFinite ->
 	  raise NoDecidabilityCoInductive;
-        let fix = mkFix (((Array.make nb_ind 0),i),(names,types,cores)) in
+        | Finite ->
+          mkFix (((Array.make nb_ind 0),i),(names,types,cores))
+        | BiFinite ->
+          (** If the inductive type is not recursive, the fixpoint is not
+              used, so let's replace it with garbage *)
+          let subst = List.init nb_ind (fun _ -> mkProp) in
+          Vars.substl subst cores.(i)
+        in
         create_input fix),
        UState.make (Global.universes ())),
       !eff
