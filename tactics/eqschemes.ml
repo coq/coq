@@ -108,9 +108,14 @@ let get_coq_eq ctx =
     user_err Pp.(str "eq not found.")
 
 let univ_of_eq env eq =
-  let eq = EConstr.of_constr eq in
-  match Constr.kind (EConstr.Unsafe.to_constr (Retyping.get_type_of env (Evd.from_env env) eq)) with
-  | Prod (_,t,_) -> (match Constr.kind t with Sort (Type u) -> u | _ -> assert false)
+  let open EConstr in
+  let eq = of_constr eq in
+  let sigma = Evd.from_env env in
+  match kind sigma (Retyping.get_type_of env sigma eq) with
+  | Prod (_,t,_) -> (match kind sigma t with
+                       Sort k ->
+                        (match ESorts.kind sigma k with Type u -> u | _ -> assert false)
+                     | _ -> assert false)
   | _ -> assert false
 
 (**********************************************************************)

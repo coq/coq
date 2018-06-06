@@ -437,8 +437,8 @@ let return_proof ?(allow_partial=false) () =
   (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
       side-effects... This may explain why one need to uniquize side-effects
       thereafter... *)
-  let proofs = 
-    List.map (fun (c, _) -> (Evarutil.nf_evars_universes evd (EConstr.Unsafe.to_constr c), eff)) initial_goals in
+  let proofs =
+    List.map (fun (c, _) -> (EConstr.to_constr evd c, eff)) initial_goals in
     proofs, Evd.evar_universe_context evd
 
 let close_future_proof ~feedback_id proof =

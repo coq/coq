@@ -39,7 +39,7 @@ let proofview p =
 
 let compact el ({ solution } as pv) =
   let nf c = Evarutil.nf_evar solution c in
-  let nf0 c = EConstr.Unsafe.to_constr (Evarutil.nf_evar solution (EConstr.of_constr c)) in
+  let nf0 c = EConstr.(to_constr solution (of_constr c)) in
   let size = Evd.fold (fun _ _ i -> i+1) solution 0 in
   let new_el = List.map (fun (t,ty) -> nf t, nf ty) el in
   let pruned_solution = Evd.drop_all_defined solution in

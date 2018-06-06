@@ -200,8 +200,7 @@ let refine_by_tactic env sigma ty tac =
   | [c, _] -> c
   | _ -> assert false
   in
-  let ans = Reductionops.nf_evar sigma ans in
-  let ans = EConstr.Unsafe.to_constr ans in
+  let ans = EConstr.to_constr ~abort_on_undefined_evars:false sigma ans in
   (** [neff] contains the freshly generated side-effects *)
   let neff = Evd.eval_side_effects sigma in
   (** Reset the old side-effects *)
