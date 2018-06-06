@@ -648,25 +648,24 @@ let check_leq univs u u' =
 
 let check_sort_cmp_universes env pb s0 s1 univs =
   let open Sorts in
-  match (s0,s1) with
+  if not (type_in_type env) then
+    match (s0,s1) with
     | (Prop c1, Prop c2) when is_cumul pb ->
       begin match c1, c2 with
-      | Null, _ | _, Pos -> () (* Prop <= Set *)
-      | _ -> raise NotConvertible
+        | Null, _ | _, Pos -> () (* Prop <= Set *)
+        | _ -> raise NotConvertible
       end
     | (Prop c1, Prop c2) -> if c1 != c2 then raise NotConvertible
     | (Prop c1, Type u) ->
-	if not (type_in_type env) then
-	let u0 = univ_of_sort s0 in
-	(match pb with
-	| CUMUL -> check_leq univs u0 u
-	| CONV -> check_eq univs u0 u)
+      let u0 = univ_of_sort s0 in
+      (match pb with
+       | CUMUL -> check_leq univs u0 u
+       | CONV -> check_eq univs u0 u)
     | (Type u, Prop c) -> raise NotConvertible
     | (Type u1, Type u2) ->
-        if not (type_in_type env) then
-	(match pb with
-	| CUMUL -> check_leq univs u1 u2
-	| CONV -> check_eq univs u1 u2)
+      (match pb with
+       | CUMUL -> check_leq univs u1 u2
+       | CONV -> check_eq univs u1 u2)
 
 let checked_sort_cmp_universes env pb s0 s1 univs =
   check_sort_cmp_universes env pb s0 s1 univs; univs
@@ -699,25 +698,25 @@ let infer_leq (univs, cstrs as cuniv) u u' =
 
 let infer_cmp_universes env pb s0 s1 univs =
   let open Sorts in
-  match (s0,s1) with
+  if type_in_type env then univs
+  else
+    match (s0,s1) with
     | (Prop c1, Prop c2) when is_cumul pb ->
       begin match c1, c2 with
-      | Null, _ | _, Pos -> univs (* Prop <= Set *)
-      | _ -> raise NotConvertible
+        | Null, _ | _, Pos -> univs (* Prop <= Set *)
+        | _ -> raise NotConvertible
       end
     | (Prop c1, Prop c2) -> if c1 == c2 then univs else raise NotConvertible
     | (Prop c1, Type u) ->
       let u0 = univ_of_sort s0 in
-	(match pb with
-	| CUMUL -> infer_leq univs u0 u
-	| CONV -> infer_eq univs u0 u)
+      (match pb with
+       | CUMUL -> infer_leq univs u0 u
+       | CONV -> infer_eq univs u0 u)
     | (Type u, Prop c) -> raise NotConvertible
     | (Type u1, Type u2) ->
-        if not (type_in_type env) then
-	(match pb with
-	| CUMUL -> infer_leq univs u1 u2
-	| CONV -> infer_eq univs u1 u2)
-        else univs
+      (match pb with
+       | CUMUL -> infer_leq univs u1 u2
+       | CONV -> infer_eq univs u1 u2)
 
 let infer_convert_instances ~flex u u' (univs,cstrs) =
   let cstrs' =
