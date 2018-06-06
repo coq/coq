@@ -89,6 +89,11 @@ We are currently running tests on the following platforms:
 - AppVeyor is used to test the compilation of Coq and run the test-suite on
   Windows.
 
+GitLab CI and Travis CI and AppVeyor support putting `[ci skip]` in a commit
+message to bypass CI. Do not use this unless your commit only changes files
+that are not compiled (e.g. Markdown files like this one, or files under
+[`.github/`](/.github/)).
+
 You can anticipate the results of most of these tests prior to submitting your
 PR by running GitLab CI on your private branches. To do so follow these steps:
 
