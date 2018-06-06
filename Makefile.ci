@@ -16,6 +16,7 @@ CI_TARGETS=ci-bignums \
     ci-corn \
     ci-cpdt \
     ci-elpi \
+    ci-ext-lib \
     ci-equations \
     ci-fcsl-pcm \
     ci-fiat-crypto \
@@ -28,7 +29,7 @@ CI_TARGETS=ci-bignums \
     ci-ltac2 \
     ci-math-classes \
     ci-math-comp \
-    ci-metacoq \
+    ci-quickchick \
     ci-sf \
     ci-tlc \
     ci-unimath \
@@ -47,6 +48,8 @@ ci-color: ci-bignums
 ci-math-classes: ci-bignums
 
 ci-corn: ci-math-classes
+
+ci-quickchick: ci-ext-lib
 
 ci-formal-topology: ci-corn
 
