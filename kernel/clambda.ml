@@ -605,6 +605,8 @@ end
 
 open Renv
 
+let (eta_expand,eta_expand_hook) = Hook.make ()
+
 let rec lambda_of_constr env c =
   match Constr.kind c with
   | Meta _ -> raise (Invalid_argument "Cbytegen.lambda_of_constr: Meta")
@@ -700,6 +702,7 @@ let rec lambda_of_constr env c =
     Lfix(rec_init, (names, ltypes, lbodies))
 
   | CoFix(init,(names,type_bodies,rec_bodies)) ->
+    let rec_bodies = Array.map2 (Hook.get eta_expand env.global_env) rec_bodies type_bodies in
     let ltypes = lambda_of_args env 0 type_bodies in
     Renv.push_rels env names;
     let lbodies = lambda_of_args env 0 rec_bodies in

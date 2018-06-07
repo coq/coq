@@ -1,6 +1,10 @@
 Changes from 8.8.0 to 8.8.1
 ===========================
 
+Kernel
+
+- Fix a soundness bug with CoFixpoints and VM/native_compute (see #7333).
+
 Notations
 
 - Fixed unexpected collision between only-parsing and only-printing
