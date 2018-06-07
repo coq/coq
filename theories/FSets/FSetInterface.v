@@ -486,14 +486,14 @@ Module Type Sdep.
   Parameter
     min_elt :
       forall s : t,
-      {x : elt | In x s /\ For_all (fun y => ~ E.lt y x) s} + {Empty s}.
+      {x : elt | In x s /\ For_all (fun y => ~ E.lt y x) s} + (Empty s).
 
   Parameter
     max_elt :
       forall s : t,
-      {x : elt | In x s /\ For_all (fun y => ~ E.lt x y) s} + {Empty s}.
+      {x : elt | In x s /\ For_all (fun y => ~ E.lt x y) s} + (Empty s).
 
-  Parameter choose : forall s : t, {x : elt | In x s} + {Empty s}.
+  Parameter choose : forall s : t, {x : elt | In x s} + (Empty s).
 
   (** The [choose_3] specification of [S] cannot be packed
         in the dependent version of [choose], so we leave it separate. *)

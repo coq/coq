@@ -245,14 +245,14 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
   Qed.
 
   Definition choose_aux: forall s : t,
-    { x : elt | M.choose s = Some x } + { M.choose s = None }.
+    { x : elt | M.choose s = Some x } + (M.choose s = None).
   Proof.
    intros.
    destruct (M.choose s); [left | right]; auto.
    exists e; auto.
   Qed.
 
-  Definition choose : forall s : t, {x : elt | In x s} + {Empty s}.
+  Definition choose : forall s : t, {x : elt | In x s} + (Empty s).
   Proof.
    intros; destruct (choose_aux s) as [(x,Hx)|H].
    left; exists x; apply choose_1; auto.
@@ -305,7 +305,7 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
 
   Definition min_elt :
     forall s : t,
-    {x : elt | In x s /\ For_all (fun y => ~ E.lt y x) s} + {Empty s}.
+    {x : elt | In x s /\ For_all (fun y => ~ E.lt y x) s} + (Empty s).
   Proof.
     intros;
      generalize (min_elt_1 (s:=s)) (min_elt_2 (s:=s)) (min_elt_3 (s:=s)).
@@ -315,7 +315,7 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
 
   Definition max_elt :
     forall s : t,
-    {x : elt | In x s /\ For_all (fun y => ~ E.lt x y) s} + {Empty s}.
+    {x : elt | In x s /\ For_all (fun y => ~ E.lt x y) s} + (Empty s).
   Proof.
     intros;
      generalize (max_elt_1 (s:=s)) (max_elt_2 (s:=s)) (max_elt_3 (s:=s)).

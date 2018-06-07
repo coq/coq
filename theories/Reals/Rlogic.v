@@ -27,7 +27,7 @@ Section Arithmetical_dec.
 Variable P : nat -> Prop.
 Hypothesis HP : forall n, {P n} + {~P n}.
 
-Lemma sig_forall_dec : {n | ~P n} + {forall n, P n}.
+Lemma sig_forall_dec : {n | ~P n} + (forall n, P n).
 Proof.
 assert (Hi: (forall n, 0 < INR n + 1)%R).
   intros n.

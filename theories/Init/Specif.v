@@ -634,28 +634,24 @@ End sig2.
 (** [sumbool] is a boolean type equipped with the justification of
     their value *)
 
-Inductive sumbool (A B:Prop) : Set :=
-  | left : A -> {A} + {B}
-  | right : B -> {A} + {B}
- where "{ A } + { B }" := (sumbool A B) : type_scope.
-
-Add Printing If sumbool.
-
-Arguments left {A B} _, [A] B _.
-Arguments right {A B} _ , A [B] _.
+Notation sumbool := sum (compat "8.6").
+Notation left := inl (compat "8.6").
+Notation right := inr (compat "8.6").
+Notation "{ A } + { B }" := (sum A B) (only parsing, compat "8.6") : type_scope.
+Notation sumbool_rect := sum_rect (compat "8.6").
+Notation sumbool_rec := sum_rec (compat "8.6").
+Notation sumbool_ind := sum_ind (compat "8.6").
 
 (** [sumor] is an option type equipped with the justification of why
     it may not be a regular value *)
 
-Inductive sumor (A:Type) (B:Prop) : Type :=
-  | inleft : A -> A + {B}
-  | inright : B -> A + {B}
- where "A + { B }" := (sumor A B) : type_scope.
-
-Add Printing If sumor.
-
-Arguments inleft {A B} _ , [A] B _.
-Arguments inright {A B} _ , A [B] _.
+Notation sumor := sum (compat "8.6").
+Notation inleft := inl (compat "8.6").
+Notation inright := inr (compat "8.6").
+Notation "A + { B }" := (sum A B) (only parsing, compat "8.6") : type_scope.
+Notation sumor_rect := sum_rect (compat "8.6").
+Notation sumor_rec := sum_rec (compat "8.6").
+Notation sumor_ind := sum_ind (compat "8.6").
 
 (* Unset Universe Polymorphism. *)
 

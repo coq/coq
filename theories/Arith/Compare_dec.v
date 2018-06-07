@@ -14,19 +14,19 @@ Local Open Scope nat_scope.
 
 Implicit Types m n x y : nat.
 
-Definition zerop n : {n = 0} + {0 < n}.
+Definition zerop n : (n = 0) + (0 < n).
 Proof.
   destruct n; auto with arith.
 Defined.
 
-Definition lt_eq_lt_dec n m : {n < m} + {n = m} + {m < n}.
+Definition lt_eq_lt_dec n m : (n < m) + (n = m) + (m < n).
 Proof.
   induction n in m |- *; destruct m; auto with arith.
   destruct (IHn m) as [H|H]; auto with arith.
   destruct H; auto with arith.
 Defined.
 
-Definition gt_eq_gt_dec n m : {m > n} + {n = m} + {n > m}.
+Definition gt_eq_gt_dec n m : (m > n) + (n = m) + (n > m).
 Proof.
   now apply lt_eq_lt_dec.
 Defined.
@@ -55,7 +55,7 @@ Proof.
   exact (le_lt_dec n m).
 Defined.
 
-Definition le_lt_eq_dec n m : n <= m -> {n < m} + {n = m}.
+Definition le_lt_eq_dec n m : n <= m -> (n < m) + (n = m).
 Proof.
   intros; destruct (lt_eq_lt_dec n m); auto with arith.
   intros; absurd (m < n); auto with arith.
@@ -183,9 +183,9 @@ Qed.
 
 Definition nat_compare_alt (n m:nat) :=
   match lt_eq_lt_dec n m with
-    | inleft (left _) => Lt
-    | inleft (right _) => Eq
-    | inright _ => Gt
+    | inl (inl _) => Lt
+    | inl (inr _) => Eq
+    | inr _ => Gt
   end.
 
 Lemma nat_compare_equiv n m : (n ?= m) = nat_compare_alt n m.

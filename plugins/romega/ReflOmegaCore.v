@@ -336,7 +336,7 @@ Module IntProperties (I:Int).
  destruct compare; intuition.
  Qed.
 
- Lemma lt_eq_lt_dec : forall n m, { n<m }+{ n=m }+{ m<n }.
+ Lemma lt_eq_lt_dec : forall n m, (n<m)+(n=m)+(m<n).
  Proof.
   intros.
   generalize (compare_Lt n m)(compare_Eq n m)(compare_Gt n m).

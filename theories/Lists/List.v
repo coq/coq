@@ -82,7 +82,7 @@ Section Facts.
 
   (** Destruction *)
 
-  Theorem destruct_list : forall l : list A, {x:A & {tl:list A | l = x::tl}}+{l = []}.
+  Theorem destruct_list : forall l : list A, {x:A & {tl:list A | l = x::tl}} + (l = []).
   Proof.
     induction l as [|a tail].
     right; reflexivity.

@@ -476,7 +476,7 @@ Proof.
 Qed.
 
 Lemma Nless_total :
- forall a a', {Nless a a' = true} + {Nless a' a = true} + {a = a'}.
+ forall a a', (Nless a a' = true) + (Nless a' a = true) + (a = a').
 Proof.
   induction a using N.binary_rec; intro a'.
   - case_eq (Nless N0 a') ; intros Heqb.

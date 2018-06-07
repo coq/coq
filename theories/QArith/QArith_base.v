@@ -677,7 +677,7 @@ Hint Resolve Qle_not_lt Qlt_not_le Qnot_le_lt Qnot_lt_le
 
 (** Some decidability results about orders. *)
 
-Lemma Q_dec : forall x y, {x<y} + {y<x} + {x==y}.
+Lemma Q_dec : forall x y, (x<y) + (y<x) + (x==y).
 Proof.
   unfold Qlt, Qle, Qeq; intros.
   exact (Z_dec' (Qnum x * QDen y) (Qnum y * QDen x)).

@@ -26,7 +26,7 @@ Local Open Scope Z_scope.
 
 (** * Trichotomy *)
 
-Theorem Ztrichotomy_inf n m : {n < m} + {n = m} + {n > m}.
+Theorem Ztrichotomy_inf n m : (n < m) + (n = m) + (n > m).
 Proof.
   unfold ">", "<". generalize (Z.compare_eq n m).
   destruct (n ?= m); [ left; right | left; left | right]; auto.

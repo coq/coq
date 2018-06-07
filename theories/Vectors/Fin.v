@@ -80,7 +80,7 @@ Fixpoint to_nat {m} (n : t m) : {i | i < m} :=
 
 (** [of_nat p n] answers the p{^ th} element of [fin n] if p < n or a proof of
 p >= n else *)
-Fixpoint of_nat (p n : nat) : (t n) + { exists m, p = n + m } :=
+Fixpoint of_nat (p n : nat) : (t n) + exists m, p = n + m :=
   match n with
    |0 => inright _ (ex_intro _ p eq_refl)
    |S n' => match p with

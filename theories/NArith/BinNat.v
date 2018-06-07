@@ -92,7 +92,7 @@ Defined.
 
 (** Discrimination principle *)
 
-Definition discr n : { p:positive | n = pos p } + { n = 0 }.
+Definition discr n : { p:positive | n = pos p } + (n = 0).
 Proof.
  destruct n; auto.
  left; exists p; auto.

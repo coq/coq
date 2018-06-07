@@ -396,7 +396,7 @@ Qed.
 
 (** Some decidability results about orders. *)
 
-Lemma Qc_dec : forall x y, {x<y} + {y<x} + {x=y}.
+Lemma Qc_dec : forall x y, (x<y) + (y<x) + (x=y).
 Proof.
   unfold Qclt, Qcle; intros.
   destruct (Q_dec x y) as [H|H].
