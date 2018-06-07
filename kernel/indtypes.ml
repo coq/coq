@@ -797,15 +797,23 @@ exception UndefinableExpansion
     build an expansion function.
     The term built is expecting to be substituted first by 
     a substitution of the form [params, x : ind params] *)
-let compute_projections ((kn, _ as ind), u) nparamargs params
-    mind_consnrealdecls mind_consnrealargs paramslet ctx =
+let compute_projections (kn, i as ind) mib =
+  let pkt = mib.mind_packets.(i) in
+  let u = match mib.mind_universes with
+  | Monomorphic_ind _ -> Univ.Instance.empty
+  | Polymorphic_ind auctx -> Univ.make_abstract_instance auctx
+  | Cumulative_ind acumi -> Univ.make_abstract_instance (Univ.ACumulativityInfo.univ_context acumi)
+  in
+  let subst = List.init mib.mind_ntypes (fun i -> mkIndU ((kn, mib.mind_ntypes - i - 1), u)) in
+  let rctx, _ = decompose_prod_assum (substl subst pkt.mind_nf_lc.(0)) in
+  let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
   let mp, dp, l = MutInd.repr3 kn in
   (** We build a substitution smashing the lets in the record parameters so
       that typechecking projections requires just a substitution and not
       matching with a parameter context. *)
   let paramsletsubst =
     (* [Ind inst] is typed in context [params-wo-let] *)
-    let inst' = rel_list 0 nparamargs in
+    let inst' = rel_list 0 mib.mind_nparams in
     (* {params-wo-let |- subst:params] *)
     let subst = subst_of_rel_context_instance paramslet inst' in
     (* {params-wo-let, x:Ind inst' |- subst':(params,x:Ind inst)] *)
@@ -839,7 +847,7 @@ let compute_projections ((kn, _ as ind), u) nparamargs params
         (* from [params, x:I, field1,..,fieldj |- t(field1,..,fieldj)]
            to [params, x:I |- t(proj1 x,..,projj x)] *)
 	let fterm = mkProj (Projection.make kn false, mkRel 1) in
-        let body = { proj_ind = ind; proj_npars = nparamargs;
+        let body = { proj_ind = ind; proj_npars = mib.mind_nparams;
                       proj_arg = i; proj_type = projty; } in
         (i + 1, j + 1, kn :: kns, body :: pbs, fterm :: letsubst)
       | Anonymous -> raise UndefinableExpansion
@@ -932,35 +940,9 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
 	mind_reloc_tbl = rtbl;
       } in
   let packets = Array.map2 build_one_packet inds recargs in
-  let pkt = packets.(0) in
-  let isrecord = 
-    match isrecord with
-    | Some (Some rid) when pkt.mind_kelim == all_sorts
-			   && Array.length pkt.mind_consnames == 1
-			   && pkt.mind_consnrealargs.(0) > 0 ->
-      (** FIXME: adapt to mutual records *)
-      let () = assert (Array.length rid == 1) in
-      (** The elimination criterion ensures that all projections can be defined. *)
-      let u =
-        match aiu with
-        | Monomorphic_ind _ -> Univ.Instance.empty
-        | Polymorphic_ind auctx -> Univ.make_abstract_instance auctx
-        | Cumulative_ind acumi -> Univ.make_abstract_instance (Univ.ACumulativityInfo.univ_context acumi)
-      in
-      let indsp = ((kn, 0), u) in
-      let rctx, indty = decompose_prod_assum (subst1 (mkIndU indsp) pkt.mind_nf_lc.(0)) in
-	(try 
-	   let fields, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
-            let kn, projs =
-             compute_projections indsp nparamargs paramsctxt
-	       pkt.mind_consnrealdecls pkt.mind_consnrealargs paramslet fields
-           in PrimRecord [|rid.(0), kn, projs|]
-         with UndefinableExpansion -> FakeRecord)
-    | Some _ -> FakeRecord
-    | None -> NotRecord
-  in
-    (* Build the mutual inductive *)
-    { mind_record = isrecord;
+  let mib =
+      (* Build the mutual inductive *)
+    { mind_record = NotRecord;
       mind_ntypes = ntypes;
       mind_finite = isfinite;
       mind_hyps = hyps;
@@ -972,6 +954,27 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
       mind_private = prv;
       mind_typing_flags = Environ.typing_flags env;
     }
+  in
+  let record_info = match isrecord with
+  | Some (Some rid) ->
+    let is_record pkt =
+      pkt.mind_kelim == all_sorts
+      && Array.length pkt.mind_consnames == 1
+      && pkt.mind_consnrealargs.(0) > 0
+    in
+    (** The elimination criterion ensures that all projections can be defined. *)
+    if Array.for_all is_record packets then
+      let map i id =
+        let kn, projs = compute_projections (kn, i) mib in
+        (id, kn, projs)
+      in
+      try PrimRecord (Array.mapi map rid)
+      with UndefinableExpansion -> FakeRecord
+    else FakeRecord
+  | Some None -> FakeRecord
+  | None -> NotRecord
+  in
+  { mib with mind_record = record_info }
 
 (************************************************************************)
 (************************************************************************)

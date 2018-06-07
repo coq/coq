@@ -43,7 +43,5 @@ val check_inductive : env -> MutInd.t -> mutual_inductive_entry -> mutual_induct
 val enforce_indices_matter : unit -> unit
 val is_indices_matter : unit -> bool
 
-val compute_projections : pinductive ->
-  int -> Context.Rel.t -> int array -> int array -> 
-  Context.Rel.t -> Context.Rel.t -> 
-  (Constant.t array * projection_body array)
+val compute_projections : inductive ->
+  mutual_inductive_body -> (Constant.t array * projection_body array)
