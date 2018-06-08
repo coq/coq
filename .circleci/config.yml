@@ -11,7 +11,7 @@ defaults:
       - image: $CI_REGISTRY_IMAGE:$CACHEKEY
 
   environment: &envvars
-    CACHEKEY: "bionic_coq-V2018-05-07-V2"
+    CACHEKEY: "bionic_coq-V2018-06-04-V2"
     CI_REGISTRY_IMAGE: registry.gitlab.com/coq/coq
 
 version: 2
