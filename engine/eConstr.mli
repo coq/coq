@@ -182,9 +182,21 @@ val destCoFix : Evd.evar_map -> t -> (t, t) pcofixpoint
 
 val decompose_app : Evd.evar_map -> t -> t * t list
 
+(** Pops lambda abstractions until there are no more, skipping casts. *)
 val decompose_lam : Evd.evar_map -> t -> (Name.t * t) list * t
+
+(** Pops lambda abstractions and letins until there are no more, skipping casts. *)
 val decompose_lam_assum : Evd.evar_map -> t -> rel_context * t
+
+(** Pops [n] lambda abstractions, and pop letins only if needed to
+   expose enough lambdas, skipping casts.
+
+    @raise UserError if the term doesn't have enough lambdas. *)
 val decompose_lam_n_assum : Evd.evar_map -> int -> t -> rel_context * t
+
+(** Pops [n] lambda abstractions and letins, skipping casts.
+
+     @raise UserError if the term doesn't have enough lambdas/letins. *)
 val decompose_lam_n_decls : Evd.evar_map -> int -> t -> rel_context * t
 
 val compose_lam : (Name.t * t) list -> t -> t
