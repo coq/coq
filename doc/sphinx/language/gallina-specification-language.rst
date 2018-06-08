@@ -1260,22 +1260,14 @@ Chapter :ref:`Tactics`. The basic assertion command is:
       The name you provided is already defined. You have then to choose
       another name.
 
-   The following commands are synonyms of :n:`Theorem @ident {? @binders } : type`:
-
    .. cmdv:: Lemma @ident {? @binders } : @type
-      :name: Lemma
+             Remark @ident {? @binders } : @type
+             Fact @ident {? @binders } : @type
+             Corollary @ident {? @binders } : @type
+             Proposition @ident {? @binders } : @type
+      :name: Lemma; Remark; Fact; Corollary; Proposition
 
-   .. cmdv:: Remark @ident {? @binders } : @type
-      :name: Remark
-
-   .. cmdv:: Fact @ident {? @binders } : @type
-      :name: Fact
-
-   .. cmdv:: Corollary @ident {? @binders } : @type
-      :name: Corollary
-
-   .. cmdv:: Proposition @ident {? @binders } : @type
-      :name: Proposition
+      These commands are all synonyms of :n:`Theorem @ident {? @binders } : type`.
 
 .. cmdv:: Theorem @ident : @type {* with @ident : @type}
 

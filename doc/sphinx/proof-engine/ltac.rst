@@ -178,7 +178,7 @@ Sequence
 A sequence is an expression of the following form:
 
 .. tacn:: @expr ; @expr
-   :name: ;
+   :name: ltac-seq
 
    The expression :n:`@expr__1` is evaluated to :n:`v__1`, which must be
    a tactic value. The tactic :n:`v__1` is applied to the current goal,
