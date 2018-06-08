@@ -539,25 +539,36 @@ let should_treat_as_cumulative cum poly =
     else user_err Pp.(str "The NonCumulative prefix can only be used in a polymorphic context.")
   | None -> poly && Flags.is_polymorphic_inductive_cumulativity ()
 
-let vernac_record cum k poly finite struc binders sort nameopt cfs =
+let vernac_record cum k poly finite records =
   let is_cumulative = should_treat_as_cumulative cum poly in
-  let const = match nameopt with
-    | None -> add_prefix "Build_" (fst (snd struc)).v
-    | Some ({v=id} as lid) ->
-	Dumpglob.dump_definition lid false "constr"; id in
-    if Dumpglob.dump () then (
-      Dumpglob.dump_definition (fst (snd struc)) false "rec";
-      List.iter (fun (((_, x), _), _) ->
-	match x with
-        | Vernacexpr.AssumExpr ({loc;v=Name id}, _) -> Dumpglob.dump_definition (make ?loc id) false "proj"
-	| _ -> ()) cfs);
-    ignore(Record.definition_structure (k,is_cumulative,poly,finite,struc,binders,cfs,const,sort))
+  let map ((coe, (id, pl)), binders, sort, nameopt, cfs) =
+    let const = match nameopt with
+    | None -> add_prefix "Build_" id.v
+    | Some lid ->
+      let () = Dumpglob.dump_definition lid false "constr" in
+      lid.v
+    in
+    let () =
+      if Dumpglob.dump () then
+        let () = Dumpglob.dump_definition id false "rec" in
+        let iter (((_, x), _), _) = match x with
+        | Vernacexpr.AssumExpr ({loc;v=Name id}, _) ->
+          Dumpglob.dump_definition (make ?loc id) false "proj"
+        | _ -> ()
+        in
+        List.iter iter cfs
+    in
+    coe, id, pl, binders, cfs, const, sort
+  in
+  let records = List.map map records in
+  ignore(Record.definition_structure k is_cumulative poly finite records)
 
 (** When [poly] is true the type is declared polymorphic. When [lo] is true,
     then the type is declared private (as per the [Private] keyword). [finite]
     indicates whether the type is inductive, co-inductive or
     neither. *)
 let vernac_inductive ~atts cum lo finite indl =
+  let open Pp in
   if Dumpglob.dump () then
     List.iter (fun (((coe,(lid,_)), _, _, _, cstrs), _) ->
       match cstrs with
@@ -567,35 +578,85 @@ let vernac_inductive ~atts cum lo finite indl =
 			 Dumpglob.dump_definition lid false "constr") cstrs
 	| _ -> () (* dumping is done by vernac_record (called below) *) )
       indl;
+  let is_record = function
+  | ((_ , _ , _ , _, RecordDecl _), _) -> true
+  | _ -> false
+  in
+  let is_constructor = function
+  | ((_ , _ , _ , _, Constructors _), _) -> true
+  | _ -> false
+  in
+  let is_defclass = match indl with
+  | [ ( id , bl , c , Class _, Constructors [l]), [] ] -> Some (id, bl, c, l)
+  | _ -> None
+  in
+  if Option.has_some is_defclass then
+    (** Definitional class case *)
+    let (id, bl, c, l) = Option.get is_defclass in
+    let (coe, (lid, ce)) = l in
+    let coe' = if coe then Some true else None in
+    let f = (((coe', AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce)), None), []) in
+    vernac_record cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
+  else if List.for_all is_record indl then
+    (** Mutual record case *)
+    let check_kind ((_, _, _, kind, _), _) = match kind with
+    | Variant ->
+      user_err (str "The Variant keyword does not support syntax { ... }.")
+    | Record | Structure | Class _ | Inductive_kw | CoInductive -> ()
+    in
+    let () = List.iter check_kind indl in
+    let check_where ((_, _, _, _, _), wh) = match wh with
+    | [] -> ()
+    | _ :: _ ->
+      user_err (str "where clause not supported for records")
+    in
+    let () = List.iter check_where indl in
+    let unpack ((id, bl, c, _, decl), _) = match decl with
+    | RecordDecl (oc, fs) ->
+      (id, bl, c, oc, fs)
+    | Constructors _ -> assert false (** ruled out above *)
+    in
+    let ((_, _, _, kind, _), _) = List.hd indl in
+    let kind = match kind with Class _ -> Class false | _ -> kind in
+    let recordl = List.map unpack indl in
+    vernac_record cum kind atts.polymorphic finite recordl
+  else if List.for_all is_constructor indl then
+    (** Mutual inductive case *)
+    let check_kind ((_, _, _, kind, _), _) = match kind with
+    | (Record | Structure) ->
+      user_err (str "The Record keyword is for types defined using the syntax { ... }.")
+    | Class _ ->
+      user_err (str "Inductive classes not supported")
+    | Variant | Inductive_kw | CoInductive -> ()
+    in
+    let () = List.iter check_kind indl in
+    let check_name ((na, _, _, _, _), _) = match na with
+    | (true, _) ->
+      user_err (str "Variant types do not handle the \"> Name\" \
+        syntax, which is reserved for records. Use the \":>\" \
+        syntax on constructors instead.")
+    | _ -> ()
+    in
+    let () = List.iter check_name indl in
+    let unpack (((_, id) , bl, c, _, decl), ntn) = match decl with
+    | Constructors l -> (id, bl, c, l), ntn
+    | RecordDecl _ -> assert false (* ruled out above *)
+    in
+    let indl = List.map unpack indl in
+    let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
+    ComInductive.do_mutual_inductive indl is_cumulative atts.polymorphic lo finite
+  else
+    user_err (str "Mixed record-inductive definitions are not allowed")
+(*
+
   match indl with
-  | [ ( _ , _ , _ ,(Record|Structure), Constructors _ ),_ ] ->
-      user_err Pp.(str "The Record keyword is for types defined using the syntax { ... }.")
-  | [ (_ , _ , _ ,Variant, RecordDecl _),_ ] ->
-      user_err Pp.(str "The Variant keyword does not support syntax { ... }.")
-  | [ ( id , bl , c , b, RecordDecl (oc,fs) ), [] ] ->
-      vernac_record cum (match b with Class _ -> Class false | _ -> b)
-       atts.polymorphic finite id bl c oc fs
   | [ ( id , bl , c , Class _, Constructors [l]), [] ] ->
       let f =
         let (coe, ({loc;v=id}, ce)) = l in
 	let coe' = if coe then Some true else None in
           (((coe', AssumExpr ((make ?loc @@ Name id), ce)), None), [])
-      in vernac_record cum (Class true) atts.polymorphic finite id bl c None [f]
-  | [ ( _ , _, _, Class _, Constructors _), [] ] ->
-      user_err Pp.(str "Inductive classes not supported")
-  | [ ( id , bl , c , Class _, _), _ :: _ ] ->
-      user_err Pp.(str "where clause not supported for classes")
-  | [ ( _ , _ , _ , _, RecordDecl _ ) , _ ] ->
-      user_err Pp.(str "where clause not supported for (co)inductive records")
-  | _ -> let unpack = function
-      | ( (false, id) , bl , c , _ , Constructors l ) , ntn  -> ( id , bl , c , l ) , ntn
-      | ( (true,_),_,_,_,Constructors _),_ ->
-          user_err Pp.(str "Variant types do not handle the \"> Name\" syntax, which is reserved for records. Use the \":>\" syntax on constructors instead.")
-      | _ -> user_err Pp.(str "Cannot handle mutually (co)inductive records.")
-    in
-    let indl = List.map unpack indl in
-    let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
-    ComInductive.do_mutual_inductive indl is_cumulative atts.polymorphic lo finite
+      in vernac_record cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
+    *)
 
 let vernac_fixpoint ~atts discharge l =
   let local = enforce_locality_exp atts.locality discharge in
