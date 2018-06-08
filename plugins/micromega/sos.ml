@@ -95,7 +95,7 @@ let dim (v:vector) = fst v;;
 
 let vector_const c n =
   if c =/ Int 0 then vector_0 n
-  else (n,itlist (fun k -> k |-> c) (1--n) undefined :vector);;
+  else (n,List.fold_right (fun k -> k |-> c) (1--n) undefined :vector);;
 
 let vector_cmul c (v:vector) =
   let n = dim v in
@@ -104,7 +104,7 @@ let vector_cmul c (v:vector) =
 
 let vector_of_list l =
   let n = List.length l in
-  (n,itlist2 (|->) (1--n) l undefined :vector);;
+  (n,List.fold_right2 (|->) (1--n) l undefined :vector);;
 
 (* ------------------------------------------------------------------------- *)
 (* Matrices; again rows and columns indexed from 1.                          *)
@@ -242,7 +242,7 @@ let string_of_monomial m =
   if m = monomial_1 then "1" else
   let vps = List.fold_right (fun (x,k) a -> string_of_varpow x k :: a)
                             (sort humanorder_varpow (graph m)) [] in
-  end_itlist (fun s t -> s^"*"^t) vps;;
+  String.concat "*" vps;;
 
 let string_of_cmonomial (c,m) =
   if m = monomial_1 then string_of_num c
@@ -310,7 +310,7 @@ let rec poly_of_term t = match t with
 let sdpa_of_vector (v:vector) =
   let n = dim v in
   let strs = List.map (o (decimalize 20)  (element v)) (1--n) in
-  end_itlist (fun x y -> x ^ " " ^ y) strs ^ "\n";;
+  String.concat " " strs ^ "\n";;
 
 (* ------------------------------------------------------------------------- *)
 (* String for a matrix numbered k, in SDPA sparse format.                    *)
@@ -321,7 +321,7 @@ let sdpa_of_matrix k (m:matrix) =
   let ms = foldr (fun (i,j) c a -> if i > j then a else ((i,j),c)::a)
                  (snd m) [] in
   let mss = sort (increasing fst) ms in
-  itlist (fun ((i,j),c) a ->
+  List.fold_right (fun ((i,j),c) a ->
      pfx ^ string_of_int i ^ " " ^ string_of_int j ^
      " " ^ decimalize 20 c ^ "\n" ^ a) mss "";;
 
@@ -340,7 +340,7 @@ let sdpa_of_problem comment obj mats =
   "1\n" ^
   string_of_int n ^ "\n" ^
   sdpa_of_vector obj ^
-  itlist2 (fun k m a -> sdpa_of_matrix (k - 1) m ^ a)
+  List.fold_right2 (fun k m a -> sdpa_of_matrix (k - 1) m ^ a)
           (1--List.length mats) mats "";;
 
 (* ------------------------------------------------------------------------- *)
@@ -489,11 +489,11 @@ let scale_then =
   and maximal_element amat acc =
     foldl (fun maxa m c -> max_num maxa (abs_num c)) acc amat in
   fun solver obj mats ->
-    let cd1 = itlist common_denominator mats (Int 1)
+    let cd1 = List.fold_right common_denominator mats (Int 1)
     and cd2 = common_denominator (snd obj)  (Int 1) in
     let mats' = List.map (mapf (fun x -> cd1 */ x)) mats
     and obj' = vector_cmul cd2 obj in
-    let max1 = itlist maximal_element mats' (Int 0)
+    let max1 = List.fold_right maximal_element mats' (Int 0)
     and max2 = maximal_element (snd obj') (Int 0) in
     let scal1 = pow2 (20-int_of_float(log(float_of_num max1) /. log 2.0))
     and scal2 = pow2 (20-int_of_float(log(float_of_num max2) /. log 2.0)) in
@@ -551,7 +551,7 @@ let minimal_convex_hull =
     | (m::ms) -> if in_convex_hull ms m then ms else ms@[m] in
   let augment m ms = funpow 3 augment1 (m::ms) in
   fun mons ->
-    let mons' = itlist augment (List.tl mons) [List.hd mons] in
+    let mons' = List.fold_right augment (List.tl mons) [List.hd mons] in
     funpow (List.length mons') augment1 mons';;
 
 (* ------------------------------------------------------------------------- *)
@@ -612,11 +612,11 @@ let newton_polytope pol =
   let vars = poly_variables pol in
   let mons = List.map (fun m -> List.map (fun x -> monomial_degree x m) vars) (dom pol)
   and ds = List.map (fun x -> (degree x pol + 1) / 2) vars in
-  let all = itlist (fun n -> allpairs (fun h t -> h::t) (0--n)) ds [[]]
+  let all = List.fold_right (fun n -> allpairs (fun h t -> h::t) (0--n)) ds [[]]
   and mons' = minimal_convex_hull mons in
   let all' =
     List.filter (fun m -> in_convex_hull mons' (List.map (fun x -> 2 * x) m)) all in
-  List.map (fun m -> itlist2 (fun v i a -> if i = 0 then a else (v |-> i) a)
+  List.map (fun m -> List.fold_right2 (fun v i a -> if i = 0 then a else (v |-> i) a)
                         vars m monomial_1) (List.rev all');;
 
 (* ------------------------------------------------------------------------- *)
@@ -657,8 +657,8 @@ let deration d =
             foldl (fun a i c -> gcd_num a (numerator c)) (Int 0) (snd l) in
     (c // (a */ a)),mapa (fun x -> a */ x) l in
   let d' = List.map adj d in
-  let a = itlist ((o) lcm_num ( (o) denominator fst)) d' (Int 1) //
-          itlist ((o) gcd_num ( (o) numerator fst)) d' (Int 0)  in
+  let a = List.fold_right ((o) lcm_num ( (o) denominator fst)) d' (Int 1) //
+          List.fold_right ((o) gcd_num ( (o) numerator fst)) d' (Int 0)  in
   (Int 1 // a),List.map (fun (c,l) -> (a */ c,l)) d';;
 
 (* ------------------------------------------------------------------------- *)
@@ -719,7 +719,7 @@ let sdpa_of_blockdiagonal k m =
   let ents =
     foldl (fun a (b,i,j) c -> if i > j then a else ((b,i,j),c)::a) [] m in
   let entss = sort (increasing fst) ents in
-  itlist (fun ((b,i,j),c) a ->
+  List.fold_right (fun ((b,i,j),c) a ->
      pfx ^ string_of_int b ^ " " ^ string_of_int i ^ " " ^ string_of_int j ^
      " " ^ decimalize 20 c ^ "\n" ^ a) entss "";;
 
@@ -732,10 +732,10 @@ let sdpa_of_blockproblem comment nblocks blocksizes obj mats =
   "\"" ^ comment ^ "\"\n" ^
   string_of_int m ^ "\n" ^
   string_of_int nblocks ^ "\n" ^
-  (end_itlist (fun s t -> s^" "^t) (List.map string_of_int blocksizes)) ^
+  (String.concat " " (List.map string_of_int blocksizes)) ^
   "\n" ^
   sdpa_of_vector obj ^
-  itlist2 (fun k m a -> sdpa_of_blockdiagonal (k - 1) m ^ a)
+  List.fold_right2 (fun k m a -> sdpa_of_blockdiagonal (k - 1) m ^ a)
           (1--List.length mats) mats "";;
 
 (* ------------------------------------------------------------------------- *)
@@ -791,14 +791,14 @@ let blocks blocksizes bm =
           (fun a (b,i,j) c -> if b = b0 then ((i,j) |-> c) a else a)
           undefined bm in
         (((bs,bs),m):matrix))
-      (zip blocksizes (1--List.length blocksizes));;
+      (List.combine blocksizes (1--List.length blocksizes));;
 
 (* ------------------------------------------------------------------------- *)
 (* Positiv- and Nullstellensatz. Flag "linf" forces a linear representation. *)
 (* ------------------------------------------------------------------------- *)
 
 let real_positivnullstellensatz_general linf d eqs leqs pol =
-  let vars = itlist ((o) union poly_variables) (pol::eqs @ List.map fst leqs) [] in
+  let vars = List.fold_right ((o) union poly_variables) (pol::eqs @ List.map fst leqs) [] in
   let monoid =
     if linf then
       (poly_const num_1,Rational_lt num_1)::
@@ -808,16 +808,16 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
   let mk_idmultiplier k p =
     let e = d - multidegree p in
     let mons = enumerate_monomials e vars in
-    let nons = zip mons (1--List.length mons) in
+    let nons = List.combine mons (1--List.length mons) in
     mons,
-    itlist (fun (m,n) -> (m |-> ((-k,-n,n) |=> Int 1))) nons undefined in
+    List.fold_right (fun (m,n) -> (m |-> ((-k,-n,n) |=> Int 1))) nons undefined in
   let mk_sqmultiplier k (p,c) =
     let e = (d - multidegree p) / 2 in
     let mons = enumerate_monomials e vars in
-    let nons = zip mons (1--List.length mons) in
+    let nons = List.combine mons (1--List.length mons) in
     mons,
-    itlist (fun (m1,n1) ->
-      itlist (fun (m2,n2) a ->
+    List.fold_right (fun (m1,n1) ->
+      List.fold_right (fun (m2,n2) a ->
           let m = monomial_mul m1 m2 in
           if n1 > n2 then a else
           let c = if n1 = n2 then Int 1 else Int 2 in
@@ -825,17 +825,17 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
           (m |-> equation_add ((k,n1,n2) |=> c) e) a)
          nons)
        nons undefined in
-  let sqmonlist,sqs = unzip(List.map2 mk_sqmultiplier (1--List.length monoid) monoid)
-  and idmonlist,ids =  unzip(List.map2 mk_idmultiplier (1--List.length eqs) eqs) in
+  let sqmonlist,sqs = List.split(List.map2 mk_sqmultiplier (1--List.length monoid) monoid)
+  and idmonlist,ids =  List.split(List.map2 mk_idmultiplier (1--List.length eqs) eqs) in
   let blocksizes = List.map List.length sqmonlist in
   let bigsum =
-    itlist2 (fun p q a -> epoly_pmul p q a) eqs ids
-            (itlist2 (fun (p,c) s a -> epoly_pmul p s a) monoid sqs
+    List.fold_right2 (fun p q a -> epoly_pmul p q a) eqs ids
+            (List.fold_right2 (fun (p,c) s a -> epoly_pmul p s a) monoid sqs
                      (epoly_of_poly(poly_neg pol))) in
   let eqns = foldl (fun a m e -> e::a) [] bigsum in
   let pvs,assig = eliminate_all_equations (0,0,0) eqns in
   let qvars = (0,0,0)::pvs in
-  let allassig = itlist (fun v -> (v |-> (v |=> Int 1))) pvs assig in
+  let allassig = List.fold_right (fun v -> (v |-> (v |=> Int 1))) pvs assig in
   let mk_matrix v =
     foldl (fun m (b,i,j) ass -> if b < 0 then m else
                                 let c = tryapplyd ass v (Int 0) in
@@ -858,8 +858,8 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
     else ());
     let vec = nice_vector d raw_vec in
     let blockmat = iter (1,dim vec)
-     (fun i a -> bmatrix_add (bmatrix_cmul (element vec i) (el i mats)) a)
-     (bmatrix_neg (el 0 mats)) in
+     (fun i a -> bmatrix_add (bmatrix_cmul (element vec i) (List.nth mats i)) a)
+     (bmatrix_neg (List.nth mats 0)) in
     let allmats = blocks blocksizes blockmat in
     vec,List.map diag allmats in
   let vec,ratdias =
@@ -867,7 +867,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
     else tryfind find_rounding (List.map Num.num_of_int (1--31) @
                                 List.map pow2 (5--66)) in
   let newassigs =
-    itlist (fun k -> el (k - 1) pvs |-> element vec k)
+    List.fold_right (fun k -> List.nth pvs (k - 1) |-> element vec k)
            (1--dim vec) ((0,0,0) |=> Int(-1)) in
   let finalassigs =
     foldl (fun a v e -> (v |-> equation_eval newassigs e) a) newassigs
@@ -877,17 +877,17 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
           undefined p in
   let mk_sos mons =
     let mk_sq (c,m) =
-        c,itlist (fun k a -> (el (k - 1) mons |--> element m k) a)
+        c,List.fold_right (fun k a -> (List.nth mons (k - 1) |--> element m k) a)
                  (1--List.length mons) undefined in
     List.map mk_sq in
   let sqs = List.map2 mk_sos sqmonlist ratdias
   and cfs = List.map poly_of_epoly ids in
   let msq = List.filter (fun (a,b) -> b <> []) (List.map2 (fun a b -> a,b) monoid sqs) in
-  let eval_sq sqs = itlist
+  let eval_sq sqs = List.fold_right
    (fun (c,q) -> poly_add (poly_cmul c (poly_mul q q))) sqs poly_0 in
   let sanity =
-    itlist (fun ((p,c),s) -> poly_add (poly_mul p (eval_sq s))) msq
-           (itlist2 (fun p q -> poly_add (poly_mul p q)) cfs eqs
+    List.fold_right (fun ((p,c),s) -> poly_add (poly_mul p (eval_sq s))) msq
+           (List.fold_right2 (fun p q -> poly_add (poly_mul p q)) cfs eqs
                     (poly_neg pol)) in
   if not(is_undefined sanity) then raise Sanity else
   cfs,List.map (fun (a,b) -> snd a,b) msq;;
@@ -913,8 +913,8 @@ let monomial_order =
   fun m1 m2 ->
     if m2 = monomial_1 then true else if m1 = monomial_1 then false else
     let mon1 = dest_monomial m1 and mon2 = dest_monomial m2 in
-    let deg1 = itlist ((o) (+) snd) mon1 0
-    and deg2 = itlist ((o) (+) snd) mon2 0 in
+    let deg1 = List.fold_right ((o) (+) snd) mon1 0
+    and deg2 = List.fold_right ((o) (+) snd) mon2 0 in
     if deg1 < deg2 then false else if deg1 > deg2 then true
     else lexorder mon1 mon2;;
 
@@ -929,7 +929,7 @@ let term_of_varpow =
 let term_of_monomial =
   fun m -> if m = monomial_1 then Const num_1 else
            let m' = dest_monomial m in
-           let vps = itlist (fun (x,k) a -> term_of_varpow x k :: a) m' [] in
+           let vps = List.fold_right (fun (x,k) a -> term_of_varpow x k :: a) m' [] in
            end_itlist (fun s t -> Mul (s,t)) vps;;
 
 let term_of_cmonomial =
@@ -953,202 +953,12 @@ let term_of_sos (pr,sqs) =
   else Product(pr,end_itlist (fun a b -> Sum(a,b)) (List.map term_of_sqterm sqs));;
 
 (* ------------------------------------------------------------------------- *)
-(* Interface to HOL.                                                         *)
-(* ------------------------------------------------------------------------- *)
-(*
-let REAL_NONLINEAR_PROVER translator (eqs,les,lts) =
-  let eq0 = map (poly_of_term o lhand o concl) eqs
-  and le0 = map (poly_of_term o lhand o concl) les
-  and lt0 = map (poly_of_term o lhand o concl) lts in
-  let eqp0 = map (fun (t,i) -> t,Axiom_eq i) (zip eq0 (0--(length eq0 - 1)))
-  and lep0 = map (fun (t,i) -> t,Axiom_le i) (zip le0 (0--(length le0 - 1)))
-  and ltp0 = map (fun (t,i) -> t,Axiom_lt i) (zip lt0 (0--(length lt0 - 1))) in
-  let keq,eq = partition (fun (p,_) -> multidegree p = 0) eqp0
-  and klep,lep = partition (fun (p,_) -> multidegree p = 0) lep0
-  and kltp,ltp = partition (fun (p,_) -> multidegree p = 0) ltp0 in
-  let trivial_axiom (p,ax) =
-    match ax with
-      Axiom_eq n when eval undefined p <>/ num_0 -> el n eqs
-    | Axiom_le n when eval undefined p </ num_0 -> el n les
-    | Axiom_lt n when eval undefined p <=/ num_0 -> el n lts
-    | _ -> failwith "not a trivial axiom" in
-  try let th = tryfind trivial_axiom (keq @ klep @ kltp) in
-      CONV_RULE (LAND_CONV REAL_POLY_CONV THENC REAL_RAT_RED_CONV) th
-  with Failure _ ->
-  let pol = itlist poly_mul (map fst ltp) (poly_const num_1) in
-  let leq = lep @ ltp in
-  let tryall d =
-    let e = multidegree pol in
-    let k = if e = 0 then 0 else d / e in
-    let eq' = map fst eq in
-    tryfind (fun i -> d,i,real_positivnullstellensatz_general false d eq' leq
-                          (poly_neg(poly_pow pol i)))
-            (0--k) in
-  let d,i,(cert_ideal,cert_cone) = deepen tryall 0 in
-  let proofs_ideal =
-    map2 (fun q (p,ax) -> Eqmul(term_of_poly q,ax)) cert_ideal eq
-  and proofs_cone = map term_of_sos cert_cone
-  and proof_ne =
-    if ltp = [] then Rational_lt num_1 else
-    let p = end_itlist (fun s t -> Product(s,t)) (map snd ltp) in
-    funpow i (fun q -> Product(p,q)) (Rational_lt num_1) in
-  let proof = end_itlist (fun s t -> Sum(s,t))
-                         (proof_ne :: proofs_ideal @ proofs_cone) in
-  print_string("Translating proof certificate to HOL");
-  print_newline();
-  translator (eqs,les,lts) proof;;
-*)
-(* ------------------------------------------------------------------------- *)
-(* A wrapper that tries to substitute away variables first.                  *)
-(* ------------------------------------------------------------------------- *)
-(*
-let REAL_NONLINEAR_SUBST_PROVER =
-  let zero = `&0:real`
-  and mul_tm = `( * ):real->real->real`
-  and shuffle1 =
-    CONV_RULE(REWR_CONV(REAL_ARITH `a + x = (y:real) <=> x = y - a`))
-  and shuffle2 =
-    CONV_RULE(REWR_CONV(REAL_ARITH `x + a = (y:real) <=> x = y - a`)) in
-  let rec substitutable_monomial fvs tm =
-    match tm with
-      Var(_,Tyapp("real",[])) when not (mem tm fvs) -> Int 1,tm
-    | Comb(Comb(Const("real_mul",_),c),(Var(_,_) as t))
-         when is_ratconst c && not (mem t fvs)
-          -> rat_of_term c,t
-    | Comb(Comb(Const("real_add",_),s),t) ->
-         (try substitutable_monomial (union (frees t) fvs) s
-          with Failure _ -> substitutable_monomial (union (frees s) fvs) t)
-    | _ -> failwith "substitutable_monomial"
-  and isolate_variable v th =
-    match lhs(concl th) with
-      x when x = v -> th
-    | Comb(Comb(Const("real_add",_),(Var(_,Tyapp("real",[])) as x)),t)
-        when x = v -> shuffle2 th
-    | Comb(Comb(Const("real_add",_),s),t) ->
-        isolate_variable v(shuffle1 th) in
-  let make_substitution th =
-    let (c,v) = substitutable_monomial [] (lhs(concl th)) in
-    let th1 = AP_TERM (mk_comb(mul_tm,term_of_rat(Int 1 // c))) th in
-    let th2 = CONV_RULE(BINOP_CONV REAL_POLY_MUL_CONV) th1 in
-    CONV_RULE (RAND_CONV REAL_POLY_CONV) (isolate_variable v th2) in
-  fun translator ->
-    let rec substfirst(eqs,les,lts) =
-      try let eth = tryfind make_substitution eqs in
-          let modify =
-            CONV_RULE(LAND_CONV(SUBS_CONV[eth] THENC REAL_POLY_CONV)) in
-          substfirst(filter (fun t -> lhand(concl t) <> zero) (map modify eqs),
-                     map modify les,map modify lts)
-      with Failure _ -> REAL_NONLINEAR_PROVER translator (eqs,les,lts) in
-    substfirst;;
-*)
-(* ------------------------------------------------------------------------- *)
-(* Overall function.                                                         *)
-(* ------------------------------------------------------------------------- *)
-(*
-let REAL_SOS =
-  let init = GEN_REWRITE_CONV ONCE_DEPTH_CONV [DECIMAL]
-  and pure = GEN_REAL_ARITH REAL_NONLINEAR_SUBST_PROVER in
-  fun tm -> let th = init tm in EQ_MP (SYM th) (pure(rand(concl th)));;
-*)
-(* ------------------------------------------------------------------------- *)
-(* Add hacks for division.                                                   *)
-(* ------------------------------------------------------------------------- *)
-(*
-let REAL_SOSFIELD =
-  let inv_tm = `inv:real->real` in
-  let prenex_conv =
-    TOP_DEPTH_CONV BETA_CONV THENC
-    PURE_REWRITE_CONV[FORALL_SIMP; EXISTS_SIMP; real_div;
-                      REAL_INV_INV; REAL_INV_MUL; GSYM REAL_POW_INV] THENC
-    NNFC_CONV THENC DEPTH_BINOP_CONV `(/\)` CONDS_CELIM_CONV THENC
-    PRENEX_CONV
-  and setup_conv = NNF_CONV THENC WEAK_CNF_CONV THENC CONJ_CANON_CONV
-  and core_rule t =
-    try REAL_ARITH t
-    with Failure _ -> try REAL_RING t
-    with Failure _ -> REAL_SOS t
-  and is_inv =
-    let is_div = is_binop `(/):real->real->real` in
-    fun tm -> (is_div tm or (is_comb tm && rator tm = inv_tm)) &&
-              not(is_ratconst(rand tm)) in
-  let BASIC_REAL_FIELD tm =
-    let is_freeinv t = is_inv t && free_in t tm in
-    let itms = setify(map rand (find_terms is_freeinv tm)) in
-    let hyps = map (fun t -> SPEC t REAL_MUL_RINV) itms in
-    let tm' = itlist (fun th t -> mk_imp(concl th,t)) hyps tm in
-    let itms' = map (curry mk_comb inv_tm) itms in
-    let gvs = map (genvar o type_of) itms' in
-    let tm'' = subst (zip gvs itms') tm' in
-    let th1 = setup_conv tm'' in
-    let cjs = conjuncts(rand(concl th1)) in
-    let ths = map core_rule cjs in
-    let th2 = EQ_MP (SYM th1) (end_itlist CONJ ths) in
-    rev_itlist (C MP) hyps (INST (zip itms' gvs) th2) in
-  fun tm ->
-    let th0 = prenex_conv tm in
-    let tm0 = rand(concl th0) in
-    let avs,bod = strip_forall tm0 in
-    let th1 = setup_conv bod in
-    let ths = map BASIC_REAL_FIELD (conjuncts(rand(concl th1))) in
-    EQ_MP (SYM th0) (GENL avs (EQ_MP (SYM th1) (end_itlist CONJ ths)));;
-*)
-(* ------------------------------------------------------------------------- *)
-(* Integer version.                                                          *)
-(* ------------------------------------------------------------------------- *)
-(*
-let INT_SOS =
-  let atom_CONV =
-    let pth = prove
-      (`(~(x <= y) <=> y + &1 <= x:int) /\
-        (~(x < y) <=> y <= x) /\
-        (~(x = y) <=> x + &1 <= y \/ y + &1 <= x) /\
-        (x < y <=> x + &1 <= y)`,
-       REWRITE_TAC[INT_NOT_LE; INT_NOT_LT; INT_NOT_EQ; INT_LT_DISCRETE]) in
-    GEN_REWRITE_CONV I [pth]
-  and bub_CONV = GEN_REWRITE_CONV TOP_SWEEP_CONV
-   [int_eq; int_le; int_lt; int_ge; int_gt;
-    int_of_num_th; int_neg_th; int_add_th; int_mul_th;
-    int_sub_th; int_pow_th; int_abs_th; int_max_th; int_min_th] in
-  let base_CONV = TRY_CONV atom_CONV THENC bub_CONV in
-  let NNF_NORM_CONV = GEN_NNF_CONV false
-   (base_CONV,fun t -> base_CONV t,base_CONV(mk_neg t)) in
-  let init_CONV =
-    GEN_REWRITE_CONV DEPTH_CONV [FORALL_SIMP; EXISTS_SIMP] THENC
-    GEN_REWRITE_CONV DEPTH_CONV [INT_GT; INT_GE] THENC
-    CONDS_ELIM_CONV THENC NNF_NORM_CONV in
-  let p_tm = `p:bool`
-  and not_tm = `(~)` in
-  let pth = TAUT(mk_eq(mk_neg(mk_neg p_tm),p_tm)) in
-  fun tm ->
-    let th0 = INST [tm,p_tm] pth
-    and th1 = NNF_NORM_CONV(mk_neg tm) in
-    let th2 = REAL_SOS(mk_neg(rand(concl th1))) in
-    EQ_MP th0 (EQ_MP (AP_TERM not_tm (SYM th1)) th2);;
-*)
-(* ------------------------------------------------------------------------- *)
-(* Natural number version.                                                   *)
-(* ------------------------------------------------------------------------- *)
-(*
-let SOS_RULE tm =
-  let avs = frees tm in
-  let tm' = list_mk_forall(avs,tm) in
-  let th1 = NUM_TO_INT_CONV tm' in
-  let th2 = INT_SOS (rand(concl th1)) in
-  SPECL avs (EQ_MP (SYM th1) th2);;
-*)
-(* ------------------------------------------------------------------------- *)
-(* Now pure SOS stuff.                                                       *)
-(* ------------------------------------------------------------------------- *)
-
-(*prioritize_real();;*)
-
-(* ------------------------------------------------------------------------- *)
 (* Some combinatorial helper functions.                                      *)
 (* ------------------------------------------------------------------------- *)
 
 let rec allpermutations l =
   if l = [] then [[]] else
-  itlist (fun h acc -> List.map (fun t -> h::t)
+  List.fold_right (fun h acc -> List.map (fun t -> h::t)
                 (allpermutations (subtract l [h])) @ acc) l [];;
 
 let changevariables_monomial zoln (m:monomial) =
@@ -1165,14 +975,14 @@ let changevariables zoln pol =
 let sdpa_of_vector (v:vector) =
   let n = dim v in
   let strs = List.map (o (decimalize 20) (element v)) (1--n) in
-  end_itlist (fun x y -> x ^ " " ^ y) strs ^ "\n";;
+  String.concat " " strs ^ "\n";;
 
 let sdpa_of_matrix k (m:matrix) =
   let pfx = string_of_int k ^ " 1 " in
   let ms = foldr (fun (i,j) c a -> if i > j then a else ((i,j),c)::a)
                  (snd m) [] in
   let mss = sort (increasing fst) ms in
-  itlist (fun ((i,j),c) a ->
+  List.fold_right (fun ((i,j),c) a ->
      pfx ^ string_of_int i ^ " " ^ string_of_int j ^
      " " ^ decimalize 20 c ^ "\n" ^ a) mss "";;
 
@@ -1184,7 +994,7 @@ let sdpa_of_problem comment obj mats =
   "1\n" ^
   string_of_int n ^ "\n" ^
   sdpa_of_vector obj ^
-  itlist2 (fun k m a -> sdpa_of_matrix (k - 1) m ^ a)
+  List.fold_right2 (fun k m a -> sdpa_of_matrix (k - 1) m ^ a)
           (1--List.length mats) mats "";;
 
 let run_csdp dbg obj mats =
@@ -1224,9 +1034,9 @@ let sumofsquares_general_symmetry tool pol =
   let sym_eqs =
     let invariants = List.filter
      (fun vars' ->
-        is_undefined(poly_sub pol (changevariables (zip vars vars') pol)))
+        is_undefined(poly_sub pol (changevariables (List.combine vars vars') pol)))
      (allpermutations vars) in
-    let lpns = zip lpps (1--List.length lpps) in
+    let lpns = List.combine lpps (1--List.length lpps) in
     let lppcs =
       List.filter (fun (m,(n1,n2)) -> n1 <= n2)
              (allpairs
@@ -1234,8 +1044,8 @@ let sumofsquares_general_symmetry tool pol =
     let clppcs = end_itlist (@)
        (List.map (fun ((m1,m2),(n1,n2)) ->
                 List.map (fun vars' ->
-                        (changevariables_monomial (zip vars vars') m1,
-                         changevariables_monomial (zip vars vars') m2),(n1,n2))
+                        (changevariables_monomial (List.combine vars vars') m1,
+                         changevariables_monomial (List.combine vars vars') m2),(n1,n2))
                     invariants)
             lppcs) in
     let clppcs_dom = setify(List.map fst clppcs) in
@@ -1247,7 +1057,7 @@ let sumofsquares_general_symmetry tool pol =
         [] -> raise Sanity
       | [h] -> acc
       | h::t -> List.map (fun k -> (k |-> Int(-1)) (h |=> Int 1)) t @ acc in
-    itlist mk_eq eqvcls [] in
+    List.fold_right mk_eq eqvcls [] in
   let eqs = foldl (fun a x y -> y::a) []
    (itern 1 lpps (fun m1 n1 ->
         itern 1 lpps (fun m2 n2 f ->
@@ -1259,7 +1069,7 @@ let sumofsquares_general_symmetry tool pol =
               undefined pol)) @
     sym_eqs in
   let pvs,assig = eliminate_all_equations (0,0) eqs in
-  let allassig = itlist (fun v -> (v |-> (v |=> Int 1))) pvs assig in
+  let allassig = List.fold_right (fun v -> (v |-> (v |=> Int 1))) pvs assig in
   let qvars = (0,0)::pvs in
   let diagents =
     end_itlist equation_add (List.map (fun i -> apply allassig (i,i)) (1--n)) in
@@ -1281,18 +1091,18 @@ let sumofsquares_general_symmetry tool pol =
     else ());
     let vec = nice_vector d raw_vec in
     let mat = iter (1,dim vec)
-     (fun i a -> matrix_add (matrix_cmul (element vec i) (el i mats)) a)
-     (matrix_neg (el 0 mats)) in
+     (fun i a -> matrix_add (matrix_cmul (element vec i) (List.nth mats i)) a)
+     (matrix_neg (List.nth mats 0)) in
     deration(diag mat) in
   let rat,dia =
     if pvs = [] then
-       let mat = matrix_neg (el 0 mats) in
+       let mat = matrix_neg (List.nth mats 0) in
        deration(diag mat)
     else
        tryfind find_rounding (List.map Num.num_of_int (1--31) @
                               List.map pow2 (5--66)) in
   let poly_of_lin(d,v) =
-    d,foldl(fun a i c -> (el (i - 1) lpps |-> c) a) undefined (snd v) in
+    d,foldl(fun a i c -> (List.nth lpps (i - 1) |-> c) a) undefined (snd v) in
   let lins = List.map poly_of_lin dia in
   let sqs = List.map (fun (d,l) -> poly_mul (poly_const d) (poly_pow l 2)) lins in
   let sos = poly_cmul rat (end_itlist poly_add sqs) in
@@ -1300,325 +1110,3 @@ let sumofsquares_general_symmetry tool pol =
 
 let sumofsquares = sumofsquares_general_symmetry csdp;;
 
-(* ------------------------------------------------------------------------- *)
-(* Pure HOL SOS conversion.                                                  *)
-(* ------------------------------------------------------------------------- *)
-(*
-let SOS_CONV =
-  let mk_square =
-    let pow_tm = `(pow)` and two_tm = `2` in
-    fun tm -> mk_comb(mk_comb(pow_tm,tm),two_tm)
-  and mk_prod = mk_binop `( * )`
-  and mk_sum = mk_binop `(+)` in
-  fun tm ->
-    let k,sos = sumofsquares(poly_of_term tm) in
-    let mk_sqtm(c,p) =
-      mk_prod (term_of_rat(k */ c)) (mk_square(term_of_poly p)) in
-    let tm' = end_itlist mk_sum (map mk_sqtm sos) in
-    let th = REAL_POLY_CONV tm and th' = REAL_POLY_CONV tm' in
-    TRANS th (SYM th');;
-*)
-(* ------------------------------------------------------------------------- *)
-(* Attempt to prove &0 <= x by direct SOS decomposition.                     *)
-(* ------------------------------------------------------------------------- *)
-(*
-let PURE_SOS_TAC =
-  let tac =
-    MATCH_ACCEPT_TAC(REWRITE_RULE[GSYM REAL_POW_2] REAL_LE_SQUARE) ORELSE
-    MATCH_ACCEPT_TAC REAL_LE_SQUARE ORELSE
-    (MATCH_MP_TAC REAL_LE_ADD THEN CONJ_TAC) ORELSE
-    (MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC) ORELSE
-    CONV_TAC(RAND_CONV REAL_RAT_REDUCE_CONV THENC REAL_RAT_LE_CONV) in
-  REPEAT GEN_TAC THEN REWRITE_TAC[real_ge] THEN
-  GEN_REWRITE_TAC I [GSYM REAL_SUB_LE] THEN
-  CONV_TAC(RAND_CONV SOS_CONV) THEN
-  REPEAT tac THEN NO_TAC;;
-
-let PURE_SOS tm = prove(tm,PURE_SOS_TAC);;
-*)
-(* ------------------------------------------------------------------------- *)
-(* Examples.                                                                 *)
-(* ------------------------------------------------------------------------- *)
-
-(*****
-
-time REAL_SOS
-  `a1 >= &0 /\ a2 >= &0 /\
-   (a1 * a1 + a2 * a2 = b1 * b1 + b2 * b2 + &2) /\
-   (a1 * b1 + a2 * b2 = &0)
-   ==> a1 * a2 - b1 * b2 >= &0`;;
-
-time REAL_SOS `&3 * x + &7 * a < &4 /\ &3 < &2 * x ==> a < &0`;;
-
-time REAL_SOS
-  `b pow 2 < &4 * a * c ==> ~(a * x pow 2 + b * x + c = &0)`;;
-
-time REAL_SOS
-  `(a * x pow 2 + b * x + c = &0) ==> b pow 2 >= &4 * a * c`;;
-
-time REAL_SOS
- `&0 <= x /\ x <= &1 /\ &0 <= y /\ y <= &1
-  ==> x pow 2 + y pow 2 < &1 \/
-      (x - &1) pow 2 + y pow 2 < &1 \/
-      x pow 2 + (y - &1) pow 2 < &1 \/
-      (x - &1) pow 2 + (y - &1) pow 2 < &1`;;
-
-time REAL_SOS
- `&0 <= b /\ &0 <= c /\ &0 <= x /\ &0 <= y /\
-  (x pow 2 = c) /\ (y pow 2 = a pow 2 * c + b)
-  ==> a * c <= y * x`;;
-
-time REAL_SOS
- `&0 <= x /\ &0 <= y /\ &0 <= z /\ x + y + z <= &3
-  ==> x * y + x * z + y * z >= &3 * x * y * z`;;
-
-time REAL_SOS
- `(x pow 2 + y pow 2 + z pow 2 = &1) ==> (x + y + z) pow 2 <= &3`;;
-
-time REAL_SOS
- `(w pow 2 + x pow 2 + y pow 2 + z pow 2 = &1)
-  ==> (w + x + y + z) pow 2 <= &4`;;
-
-time REAL_SOS
- `x >= &1 /\ y >= &1 ==> x * y >= x + y - &1`;;
-
-time REAL_SOS
- `x > &1 /\ y > &1 ==> x * y > x + y - &1`;;
-
-time REAL_SOS
- `abs(x) <= &1
-  ==> abs(&64 * x pow 7 - &112 * x pow 5 + &56 * x pow 3 - &7 * x) <= &1`;;
-
-time REAL_SOS
- `abs(x - z) <= e /\ abs(y - z) <= e /\ &0 <= u /\ &0 <= v /\ (u + v = &1)
-  ==> abs((u * x + v * y) - z) <= e`;;
-
-(* ------------------------------------------------------------------------- *)
-(* One component of denominator in dodecahedral example.                     *)
-(* ------------------------------------------------------------------------- *)
-
-time REAL_SOS
-  `&2 <= x /\ x <= &125841 / &50000 /\
-   &2 <= y /\ y <= &125841 / &50000 /\
-   &2 <= z /\ z <= &125841 / &50000
-   ==> &2 * (x * z + x * y + y * z) - (x * x + y * y + z * z) >= &0`;;
-
-(* ------------------------------------------------------------------------- *)
-(* Over a larger but simpler interval.                                       *)
-(* ------------------------------------------------------------------------- *)
-
-time REAL_SOS
- `&2 <= x /\ x <= &4 /\ &2 <= y /\ y <= &4 /\ &2 <= z /\ z <= &4
-  ==> &0 <= &2 * (x * z + x * y + y * z) - (x * x + y * y + z * z)`;;
-
-(* ------------------------------------------------------------------------- *)
-(* We can do 12. I think 12 is a sharp bound; see PP's certificate.          *)
-(* ------------------------------------------------------------------------- *)
-
-time REAL_SOS
- `&2 <= x /\ x <= &4 /\ &2 <= y /\ y <= &4 /\ &2 <= z /\ z <= &4
-  ==> &12 <= &2 * (x * z + x * y + y * z) - (x * x + y * y + z * z)`;;
-
-(* ------------------------------------------------------------------------- *)
-(* Gloptipoly example.                                                       *)
-(* ------------------------------------------------------------------------- *)
-
-(*** This works but normalization takes minutes
-
-time REAL_SOS
- `(x - y - &2 * x pow 4 = &0) /\ &0 <= x /\ x <= &2 /\ &0 <= y /\ y <= &3
-  ==> y pow 2 - &7 * y - &12 * x + &17 >= &0`;;
-
- ***)
-
-(* ------------------------------------------------------------------------- *)
-(* Inequality from sci.math (see "Leon-Sotelo, por favor").                  *)
-(* ------------------------------------------------------------------------- *)
-
-time REAL_SOS
-  `&0 <= x /\ &0 <= y /\ (x * y = &1)
-   ==> x + y <= x pow 2 + y pow 2`;;
-
-time REAL_SOS
-  `&0 <= x /\ &0 <= y /\ (x * y = &1)
-   ==> x * y * (x + y) <= x pow 2 + y pow 2`;;
-
-time REAL_SOS
-  `&0 <= x /\ &0 <= y ==> x * y * (x + y) pow 2 <= (x pow 2 + y pow 2) pow 2`;;
-
-(* ------------------------------------------------------------------------- *)
-(* Some examples over integers and natural numbers.                          *)
-(* ------------------------------------------------------------------------- *)
-
-time SOS_RULE `!m n. 2 * m + n = (n + m) + m`;;
-time SOS_RULE `!n. ~(n = 0) ==> (0 MOD n = 0)`;;
-time SOS_RULE  `!m n. m < n ==> (m DIV n = 0)`;;
-time SOS_RULE `!n:num. n <= n * n`;;
-time SOS_RULE  `!m n. n * (m DIV n) <= m`;;
-time SOS_RULE `!n. ~(n = 0) ==> (0 DIV n = 0)`;;
-time SOS_RULE `!m n p. ~(p = 0) /\ m <= n ==> m DIV p <= n DIV p`;;
-time SOS_RULE `!a b n. ~(a = 0) ==> (n <= b DIV a <=> a * n <= b)`;;
-
-(* ------------------------------------------------------------------------- *)
-(* This is particularly gratifying --- cf hideous manual proof in arith.ml   *)
-(* ------------------------------------------------------------------------- *)
-
-(*** This doesn't now seem to work as well as it did; what changed?
-
-time SOS_RULE
- `!a b c d. ~(b = 0) /\ b * c < (a + 1) * d ==> c DIV d <= a DIV b`;;
-
- ***)
-
-(* ------------------------------------------------------------------------- *)
-(* Key lemma for injectivity of Cantor-type pairing functions.               *)
-(* ------------------------------------------------------------------------- *)
-
-time SOS_RULE
- `!x1 y1 x2 y2. ((x1 + y1) EXP 2 + x1 + 1 = (x2 + y2) EXP 2 + x2 + 1)
-                ==> (x1 + y1 = x2 + y2)`;;
-
-time SOS_RULE
- `!x1 y1 x2 y2. ((x1 + y1) EXP 2 + x1 + 1 = (x2 + y2) EXP 2 + x2 + 1) /\
-                (x1 + y1 = x2 + y2)
-                ==> (x1 = x2) /\ (y1 = y2)`;;
-
-time SOS_RULE
- `!x1 y1 x2 y2.
-      (((x1 + y1) EXP 2 + 3 * x1 + y1) DIV 2 =
-       ((x2 + y2) EXP 2 + 3 * x2 + y2) DIV 2)
-       ==> (x1 + y1 = x2 + y2)`;;
-
-time SOS_RULE
- `!x1 y1 x2 y2.
-      (((x1 + y1) EXP 2 + 3 * x1 + y1) DIV 2 =
-       ((x2 + y2) EXP 2 + 3 * x2 + y2) DIV 2) /\
-      (x1 + y1 = x2 + y2)
-      ==> (x1 = x2) /\ (y1 = y2)`;;
-
-(* ------------------------------------------------------------------------- *)
-(* Reciprocal multiplication (actually just ARITH_RULE does these).          *)
-(* ------------------------------------------------------------------------- *)
-
-time SOS_RULE `x <= 127 ==> ((86 * x) DIV 256 = x DIV 3)`;;
-
-time SOS_RULE `x < 2 EXP 16 ==> ((104858 * x) DIV (2 EXP 20) = x DIV 10)`;;
-
-(* ------------------------------------------------------------------------- *)
-(* This is more impressive since it's really nonlinear. See REMAINDER_DECODE *)
-(* ------------------------------------------------------------------------- *)
-
-time SOS_RULE `0 < m /\ m < n  ==> ((m * ((n * x) DIV m + 1)) DIV n = x)`;;
-
-(* ------------------------------------------------------------------------- *)
-(* Some conversion examples.                                                 *)
-(* ------------------------------------------------------------------------- *)
-
-time SOS_CONV
- `&2 * x pow 4 + &2 * x pow 3 * y - x pow 2 * y pow 2 + &5 * y pow 4`;;
-
-time SOS_CONV
- `x pow 4 - (&2 * y * z + &1) * x pow 2 +
-  (y pow 2 * z pow 2 + &2 * y * z + &2)`;;
-
-time SOS_CONV `&4 * x pow 4 +
-          &4 * x pow 3 * y - &7 * x pow 2 * y pow 2 - &2 * x * y pow 3 +
-          &10 * y pow 4`;;
-
-time SOS_CONV `&4 * x pow 4 * y pow 6 + x pow 2 - x * y pow 2 + y pow 2`;;
-
-time SOS_CONV
-  `&4096 * (x pow 4 + x pow 2 + z pow 6 - &3 * x pow 2 * z pow 2) + &729`;;
-
-time SOS_CONV
- `&120 * x pow 2 - &63 * x pow 4 + &10 * x pow 6 +
-  &30 * x * y - &120 * y pow 2 + &120 * y pow 4 + &31`;;
-
-time SOS_CONV
- `&9 * x pow 2 * y pow 4 + &9 * x pow 2 * z pow 4 + &36 * x pow 2 * y pow 3 +
-  &36 * x pow 2 * y pow 2 - &48 * x * y * z pow 2 + &4 * y pow 4 +
-  &4 * z pow 4 - &16 * y pow 3 + &16 * y pow 2`;;
-
-time SOS_CONV
- `(x pow 2 + y pow 2 + z pow 2) *
-  (x pow 4 * y pow 2 + x pow 2 * y pow 4 +
-   z pow 6 - &3 * x pow 2 * y pow 2 *   z pow 2)`;;
-
-time SOS_CONV
- `x pow 4 + y pow 4 + z pow 4 - &4 * x * y * z + x + y + z + &3`;;
-
-(*** I think this will work, but normalization is slow
-
-time SOS_CONV
- `&100 * (x pow 4 + y pow 4 + z pow 4 - &4 * x * y * z + x + y + z) + &212`;;
-
- ***)
-
-time SOS_CONV
- `&100 * ((&2 * x - &2) pow 2 + (x pow 3 - &8 * x - &2) pow 2) - &588`;;
-
-time SOS_CONV
- `x pow 2 * (&120 - &63 * x pow 2 + &10 * x pow 4) + &30 * x * y +
-    &30 * y pow 2 * (&4 * y pow 2 - &4) + &31`;;
-
-(* ------------------------------------------------------------------------- *)
-(* Example of basic rule.                                                    *)
-(* ------------------------------------------------------------------------- *)
-
-time PURE_SOS
-  `!x. x pow 4 + y pow 4 + z pow 4 - &4 * x * y * z + x + y + z + &3
-       >= &1 / &7`;;
-
-time PURE_SOS
- `&0 <= &98 * x pow 12 +
-        -- &980 * x pow 10 +
-        &3038 * x pow 8 +
-        -- &2968 * x pow 6 +
-        &1022 * x pow 4 +
-        -- &84 * x pow 2 +
-        &2`;;
-
-time PURE_SOS
- `!x. &0 <= &2 * x pow 14 +
-            -- &84 * x pow 12 +
-            &1022 * x pow 10 +
-            -- &2968 * x pow 8 +
-            &3038 * x pow 6 +
-            -- &980 * x pow 4 +
-            &98 * x pow 2`;;
-
-(* ------------------------------------------------------------------------- *)
-(* From Zeng et al, JSC vol 37 (2004), p83-99.                               *)
-(* All of them work nicely with pure SOS_CONV, except (maybe) the one noted. *)
-(* ------------------------------------------------------------------------- *)
-
-PURE_SOS
-  `x pow 6 + y pow 6 + z pow 6 - &3 * x pow 2 * y pow 2 * z pow 2 >= &0`;;
-
-PURE_SOS `x pow 4 + y pow 4 + z pow 4 + &1 - &4*x*y*z >= &0`;;
-
-PURE_SOS `x pow 4 + &2*x pow 2*z + x pow 2 - &2*x*y*z + &2*y pow 2*z pow 2 +
-&2*y*z pow 2 + &2*z pow 2 - &2*x + &2* y*z + &1 >= &0`;;
-
-(**** This is harder. Interestingly, this fails the pure SOS test, it seems.
-      Yet only on rounding(!?) Poor Newton polytope optimization or something?
-      But REAL_SOS does finally converge on the second run at level 12!
-
-REAL_SOS
-`x pow 4*y pow 4 - &2*x pow 5*y pow 3*z pow 2 + x pow 6*y pow 2*z pow 4 + &2*x
-pow 2*y pow 3*z - &4* x pow 3*y pow 2*z pow 3 + &2*x pow 4*y*z pow 5 + z pow
-2*y pow 2 - &2*z pow 4*y*x + z pow 6*x pow 2 >= &0`;;
-
- ****)
-
-PURE_SOS
-`x pow 4 + &4*x pow 2*y pow 2 + &2*x*y*z pow 2 + &2*x*y*w pow 2 + y pow 4 + z
-pow 4 + w pow 4 + &2*z pow 2*w pow 2 + &2*x pow 2*w + &2*y pow 2*w + &2*x*y +
-&3*w pow 2 + &2*z pow 2 + &1 >= &0`;;
-
-PURE_SOS
-`w pow 6 + &2*z pow 2*w pow 3 + x pow 4 + y pow 4 + z pow 4 + &2*x pow 2*w +
-&2*x pow 2*z + &3*x pow 2 + w pow 2 + &2*z*w + z pow 2 + &2*z + &2*w + &1 >=
-&0`;;
-
-*****)

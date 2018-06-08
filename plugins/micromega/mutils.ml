@@ -19,8 +19,6 @@
 (*                                                                      *)
 (************************************************************************)
 
-let debug = false
-
 let rec pp_list f o l =
   match l with
     | [] -> ()
@@ -36,28 +34,12 @@ let finally f rst =
     with any -> raise reraise
     ); raise reraise
 
-let map_option f x =
-  match x with
-    | None -> None
-    | Some v -> Some (f v)
-
-let from_option = function
-  | None -> failwith "from_option"
-  | Some v -> v
-
 let rec try_any l x =
  match l with
   | [] -> None
   | (f,s)::l -> match f x with
      | None -> try_any l x
      | x -> x
-
-let iteri f l =
- let rec xiter i l =
-  match l with
-   | [] -> ()
-   | e::l -> f i e ; xiter (i+1) l in
-  xiter 0 l
 
 let all_sym_pairs f l = 
   let pair_with acc e l = List.fold_left (fun acc x -> (f e x) ::acc) acc l in
@@ -77,14 +59,6 @@ let all_pairs f l =
       | e::lx -> xpairs (pair_with acc e l) lx in
     xpairs [] l
 
-
-
-let rec map3 f l1 l2 l3 =
-  match l1 , l2 ,l3 with
-    | [] , [] , [] -> []
-    | e1::l1 , e2::l2 , e3::l3 -> (f e1 e2 e3)::(map3 f l1 l2 l3)
-    |      _   -> invalid_arg "map3"
-
 let rec is_sublist f l1 l2 =
   match l1 ,l2 with
     | [] ,_ -> true
@@ -92,26 +66,6 @@ let rec is_sublist f l1 l2 =
     | e::l1' , e'::l2' ->
 	if f e e' then is_sublist f l1' l2'
 	else is_sublist f l1 l2'
-
-let list_try_find f =
-  let rec try_find_f = function
-    | [] -> failwith "try_find"
-    | h::t -> try f h with Failure _ -> try_find_f t
-  in
-  try_find_f
-
-let list_fold_right_elements f l =
-  let rec aux = function
-    | [] -> invalid_arg "list_fold_right_elements"
-    | [x] -> x
-    | x::l -> f x (aux l) in
-  aux l
-
-let interval n m =
-  let rec interval_n (l,m) =
-    if n > m then l else interval_n (m::l,pred m)
-  in
-  interval_n ([],m)
 
 let extract pred l = 
   List.fold_left (fun (fd,sys) e -> 
@@ -163,51 +117,7 @@ let rats_to_ints l =
   List.map (fun x ->  (div_big_int (mult_big_int (numerator x) c)
 			(denominator x))) l
 
-(* Nasty reordering of lists - useful to trim certificate down *)
-let mapi f l =
- let rec xmapi i l =
-  match l with
-   | []   -> []
-   | e::l ->  (f e i)::(xmapi (i+1) l) in
-  xmapi 0 l
-
-let concatMapi f l = List.rev (mapi (fun e i -> (i,f e)) l)
-
 (* assoc_pos j [a0...an] = [j,a0....an,j+n],j+n+1 *)
-let assoc_pos j l = (mapi (fun e i -> e,i+j) l, j + (List.length l))
-
-let assoc_pos_assoc l =
- let rec xpos i l =
-  match l with
-   | [] -> []
-   | (x,l) ::rst -> let (l',j) = assoc_pos i l in
-		     (x,l')::(xpos j rst) in
-  xpos 0 l
-
-let filter_pos f l =
- (* Could sort ... take care of duplicates... *)
- let rec xfilter l =
-  match l with
-   | []  -> []
-   | (x,e)::l ->
-      if List.exists (fun ee -> List.mem ee f) (List.map snd e)
-      then (x,e)::(xfilter l)
-      else xfilter l in
-  xfilter l
-
-let  select_pos lpos l =
- let rec xselect i lpos l =
-  match lpos with
-   | [] -> []
-   | j::rpos ->
-      match l with
-       | []   -> failwith "select_pos"
-       | e::l ->
-	  if Int.equal i j
-	  then e:: (xselect (i+1) rpos l)
-	  else xselect (i+1) lpos l in
-  xselect 0 lpos l
-
 (**
   * MODULE: Coq to Caml data-structure mappings
   *)
@@ -238,12 +148,6 @@ struct
    | XI i -> 1+(2*(index i))
    | XO i -> 2*(index i)
 
- let z x =
-  match x with
-   | Z0 -> 0
-   | Zpos p -> (positive p)
-   | Zneg p -> - (positive p)
-
  open Big_int
 
  let rec positive_big_int p =
@@ -257,8 +161,6 @@ struct
    | Z0 -> zero_big_int
    | Zpos p -> (positive_big_int p)
    | Zneg p -> minus_big_int (positive_big_int p)
-
- let num x = Num.Big_int (z_big_int x)
 
  let q_to_num {qnum = x ; qden = y} =
   Big_int (z_big_int x) // (Big_int (z_big_int (Zpos y)))
@@ -351,17 +253,6 @@ struct
    | e1::l1 , e2::l2 ->
       let c = cmp e1 e2 in
        if Int.equal c 0 then compare_list cmp l1 l2 else c
-
-(**
-  * hash_list takes a hash function and a list, and computes an integer which
-  * is the hash value of the list.
-  *)
- let hash_list hash l =
-  let rec _hash_list l h =
-   match l with
-    | []  -> h lxor (Hashtbl.hash [])
-    | e::l -> _hash_list l ((hash e) lxor h) 
-  in _hash_list l 0
 
 end
 

@@ -20,28 +20,15 @@
 
 open Pp
 open Names
-open Constr
 open Goptions
 open Mutils
+open Constr
 
 (**
   * Debug flag 
   *)
 
 let debug = false
-
-(**
-  * Time function
-  *)
-
-let time str f x =
- let t0 = (Unix.times()).Unix.tms_utime in
- let res = f x in
- let t1 = (Unix.times()).Unix.tms_utime in
-  (*if debug then*) (Printf.printf "time %s %f\n" str (t1 -. t0) ;
-		     flush stdout);
-  res
-
 
 (* Limit the proof search *)
 
@@ -305,8 +292,7 @@ let rec add_term  t0 = function
   *)
 
 module ISet = Set.Make(Int)
-module IMap = Map.Make(Int)
-  
+
 (**
   * Given a set of integers s=\{i0,...,iN\} and a list m, return the list of
   * elements of m that are at position i0,...,iN.
@@ -395,16 +381,10 @@ struct
 
   let coq_O = lazy (init_constant "O")
   let coq_S = lazy (init_constant "S")
-  let coq_nat = lazy (init_constant "nat")
 
   let coq_N0 = lazy (bin_constant "N0")
   let coq_Npos = lazy (bin_constant "Npos")
 
-  let coq_pair = lazy (init_constant "pair")
-  let coq_None = lazy (init_constant "None")
-  let coq_option = lazy (init_constant "option")
-
-  let coq_positive = lazy (bin_constant "positive")
   let coq_xH = lazy (bin_constant "xH")
   let coq_xO = lazy (bin_constant "xO")
   let coq_xI = lazy (bin_constant "xI")
@@ -416,8 +396,6 @@ struct
 
   let coq_Q = lazy (constant "Q")
   let coq_R = lazy (constant "R")
-
-  let coq_Build_Witness = lazy (constant "Build_Witness")
 
   let coq_Qmake = lazy (constant "Qmake")
 
@@ -455,8 +433,6 @@ struct
   let coq_Zmult = lazy (z_constant "Z.mul")
   let coq_Zpower = lazy (z_constant "Z.pow")
 
-  let coq_Qgt = lazy (constant "Qgt")
-  let coq_Qge = lazy (constant "Qge")
   let coq_Qle = lazy (constant "Qle")
   let coq_Qlt = lazy (constant "Qlt")
   let coq_Qeq = lazy (constant "Qeq")
@@ -476,7 +452,6 @@ struct
   let coq_Rminus = lazy (r_constant "Rminus")
   let coq_Ropp = lazy (r_constant "Ropp")
   let coq_Rmult = lazy (r_constant "Rmult")
-  let coq_Rdiv = lazy (r_constant "Rdiv")
   let coq_Rinv = lazy (r_constant "Rinv")
   let coq_Rpower = lazy (r_constant "pow")
   let coq_IZR    = lazy (r_constant "IZR")
@@ -509,12 +484,6 @@ struct
   let coq_PsatzAdd  = lazy (constant "PsatzAdd")
   let coq_PsatzC  = lazy (constant "PsatzC")
   let coq_PsatzZ    = lazy (constant "PsatzZ")
-  let coq_coneMember    = lazy (constant "coneMember")
-
-  let coq_make_impl = lazy
-   (gen_constant_in_modules "Zmicromega" [["Refl"]] "make_impl")
-  let coq_make_conj = lazy
-   (gen_constant_in_modules "Zmicromega" [["Refl"]] "make_conj")
 
   let coq_TT = lazy
    (gen_constant_in_modules "ZMicromega"
@@ -552,13 +521,6 @@ struct
   let coq_QWitness = lazy
    (gen_constant_in_modules "QMicromega"
      [["Coq"; "micromega"; "QMicromega"]] "QWitness")
-  let coq_ZWitness = lazy
-   (gen_constant_in_modules "QMicromega"
-     [["Coq"; "micromega"; "ZMicromega"]] "ZWitness")
-
-  let coq_N_of_Z = lazy
-   (gen_constant_in_modules "ZArithRing"
-     [["Coq";"setoid_ring";"ZArithRing"]] "N_of_Z")
 
   let coq_Build = lazy
    (gen_constant_in_modules "RingMicromega"
@@ -576,24 +538,6 @@ struct
     * parse_*   functions go from Coq to Micromega terms
     * pp_*      functions pretty-print Coq terms.
     *)
-
-  (* Error datastructures *)
-
-  type parse_error  =
-    | Ukn
-    | BadStr of string
-    | BadNum of int
-    | BadTerm of constr
-    | Msg   of string
-    | Goal of (constr list ) * constr * parse_error
-
-  let string_of_error = function
-   | Ukn -> "ukn"
-   | BadStr s -> s
-   | BadNum i -> string_of_int i
-   | BadTerm _ -> "BadTerm"
-   | Msg  s    -> s
-   | Goal _    -> "Goal"
 
   exception ParseError
 
@@ -648,19 +592,6 @@ struct
     | Mc.N0 -> Lazy.force coq_N0
     | Mc.Npos p -> EConstr.mkApp(Lazy.force coq_Npos,[| dump_positive p|])
 
-  let rec dump_index x =
-   match x with
-    | Mc.XH -> Lazy.force coq_xH
-    | Mc.XO p -> EConstr.mkApp(Lazy.force coq_xO,[| dump_index p |])
-    | Mc.XI p -> EConstr.mkApp(Lazy.force coq_xI,[| dump_index p |])
-
-  let pp_index o x = Printf.fprintf o "%i" (CoqToCaml.index x)
-
-  let pp_n o x =  output_string o  (string_of_int (CoqToCaml.n x))
-
-  let dump_pair t1 t2 dump_t1 dump_t2 (x,y) =
-   EConstr.mkApp(Lazy.force coq_pair,[| t1 ; t2 ; dump_t1 x ; dump_t2 y|])
-
   let parse_z sigma term =
    let (i,c) = get_left_construct sigma term in
     match i with
@@ -676,11 +607,6 @@ struct
     | Mc.Zneg p -> EConstr.mkApp(Lazy.force coq_NEG,[| dump_positive p|])
 
   let pp_z o x = Printf.fprintf o "%s" (Big_int.string_of_big_int (CoqToCaml.z_big_int x))
-
-  let dump_num bd1 =
-   EConstr.mkApp(Lazy.force coq_Qmake,
-                 [|dump_z (CamlToCoq.bigint (numerator bd1)) ;
-                   dump_positive (CamlToCoq.positive_big_int (denominator bd1)) |])
 
   let dump_q q =
    EConstr.mkApp(Lazy.force coq_Qmake,
@@ -719,29 +645,6 @@ struct
       | Mc.CInv t -> EConstr.mkApp(Lazy.force coq_CInv, [| dump_Rcst t |])
       | Mc.COpp t -> EConstr.mkApp(Lazy.force coq_COpp, [| dump_Rcst t |])
 
-  let rec parse_Rcst sigma term = 
-    let (i,c) = get_left_construct sigma term in
-      match i with
-	| 1 -> Mc.C0
-	| 2 -> Mc.C1
-	| 3 -> Mc.CQ (parse_q sigma c.(0))
-	| 4 -> Mc.CPlus(parse_Rcst sigma c.(0), parse_Rcst sigma c.(1))
-	| 5 -> Mc.CMinus(parse_Rcst sigma c.(0), parse_Rcst sigma c.(1))
-	| 6 -> Mc.CMult(parse_Rcst sigma c.(0), parse_Rcst sigma c.(1))
-	| 7 -> Mc.CInv(parse_Rcst sigma c.(0))
-	| 8 -> Mc.COpp(parse_Rcst sigma c.(0))
-	| _ -> raise ParseError
-
-
-
-
-  let rec parse_list sigma parse_elt term =
-   let (i,c) = get_left_construct sigma term in
-    match i with
-     | 1 -> []
-     | 2 -> parse_elt sigma c.(1) :: parse_list sigma parse_elt c.(2)
-     | i -> raise ParseError
-
   let rec dump_list typ dump_elt l =
    match l with
     | [] -> EConstr.mkApp(Lazy.force coq_nil,[| typ |])
@@ -756,21 +659,7 @@ struct
      | e::l -> Printf.fprintf o "%a ,%a" elt e  _pp l in
     Printf.fprintf o "%s%a%s" op _pp l cl
 
-  let pp_var  = pp_positive
-
   let dump_var = dump_positive
-
-  let pp_expr pp_z o e =
-  let rec pp_expr  o e =
-   match e with
-    | Mc.PEX n -> Printf.fprintf o "V %a" pp_var n
-    | Mc.PEc z -> pp_z o z
-    | Mc.PEadd(e1,e2) -> Printf.fprintf o "(%a)+(%a)" pp_expr e1 pp_expr e2
-    | Mc.PEmul(e1,e2) -> Printf.fprintf o "%a*(%a)" pp_expr e1 pp_expr e2
-    | Mc.PEopp e -> Printf.fprintf o "-(%a)" pp_expr e
-    | Mc.PEsub(e1,e2) -> Printf.fprintf o "(%a)-(%a)" pp_expr e1 pp_expr e2
-    | Mc.PEpow(e,n) -> Printf.fprintf o "(%a)^(%a)" pp_expr e pp_n  n in
-    pp_expr o e
 
   let dump_expr typ dump_z e =
    let rec dump_expr  e =
@@ -854,18 +743,6 @@ struct
    | Mc.OpGt-> Lazy.force coq_OpGt
    | Mc.OpLt-> Lazy.force coq_OpLt
 
-  let pp_op o e=
-   match e with
-    | Mc.OpEq-> Printf.fprintf o "="
-    | Mc.OpNEq-> Printf.fprintf o "<>"
-    | Mc.OpLe -> Printf.fprintf o "=<"
-    | Mc.OpGe -> Printf.fprintf o ">="
-    | Mc.OpGt-> Printf.fprintf o ">"
-    | Mc.OpLt-> Printf.fprintf o "<"
-
-  let pp_cstr pp_z o {Mc.flhs = l ; Mc.fop = op ; Mc.frhs = r } =
-   Printf.fprintf o"(%a %a %a)" (pp_expr pp_z) l pp_op op (pp_expr pp_z) r
-
   let dump_cstr typ dump_constant {Mc.flhs = e1 ; Mc.fop = o ; Mc.frhs = e2} =
     EConstr.mkApp(Lazy.force coq_Build,
                   [| typ; dump_expr typ dump_constant e1 ;
@@ -924,11 +801,6 @@ struct
   let parse_qop gl (op,args) =
     (assoc_const gl.sigma op qop_table, args.(0) , args.(1))
 
-  let is_constant sigma t = (* This is an approx *)
-   match EConstr.kind sigma t with
-    | Construct(i,_) -> true
-    |   _ -> false
-
   type 'a op =
     | Binop of ('a Mc.pExpr -> 'a Mc.pExpr -> 'a Mc.pExpr)
     | Opp
@@ -947,8 +819,6 @@ struct
 
   module Env =
   struct
-   type t = EConstr.constr list
-
    let compute_rank_add env sigma v =
     let rec _add env n v =
      match env with
@@ -1168,17 +1038,6 @@ struct
 
   (* generic parsing of arithmetic expressions *)
 
-  let rec f2f = function
-   | TT  -> Mc.TT
-   | FF  -> Mc.FF
-   | X _  -> Mc.X
-   | A (x,_,_) -> Mc.A x
-   | C (a,b)  -> Mc.Cj(f2f a,f2f b)
-   | D (a,b)  -> Mc.D(f2f a,f2f b)
-   | N (a) -> Mc.N(f2f a)
-   | I(a,_,b)  -> Mc.I(f2f a,f2f b)
-
-
   let mkC f1 f2 = C(f1,f2)
   let mkD f1 f2 = D(f1,f2)
   let mkIff f1 f2 = C(I(f1,None,f2),I(f2,None,f1))
@@ -1323,31 +1182,6 @@ let dump_qexpr = lazy
     dump_op  = List.map (fun (x,y) -> (y,Lazy.force x)) qop_table      
   }
 
-  let dump_positive_as_R p =
-  let mult = Lazy.force coq_Rmult in
-  let add  = Lazy.force coq_Rplus  in
-
-  let one  = Lazy.force coq_R1    in 
-  let mk_add x y  = EConstr.mkApp(add,[|x;y|]) in
-  let mk_mult x y = EConstr.mkApp(mult,[|x;y|]) in
-
-  let two  = mk_add one one in 
-
-  let rec dump_positive p = 
-      match p with
-      | Mc.XH   -> one
-      | Mc.XO p -> mk_mult two (dump_positive p)
-      | Mc.XI p -> mk_add one (mk_mult two (dump_positive p)) in
-
-  dump_positive p
-
-let dump_n_as_R n =
-  let z = CoqToCaml.n n in
-  if z = 0
-  then Lazy.force coq_R0
-  else dump_positive_as_R (CamlToCoq.positive z)
-    
-
 let rec dump_Rcst_as_R cst = 
   match cst with
   | Mc.C0 -> Lazy.force coq_R0 
@@ -1481,54 +1315,6 @@ end (**
 
 open M
 
-let rec sig_of_cone = function
- | Mc.PsatzIn n ->          [CoqToCaml.nat n]
- | Mc.PsatzMulE(w1,w2) ->   (sig_of_cone w1)@(sig_of_cone w2)
- | Mc.PsatzMulC(w1,w2) ->   (sig_of_cone w2)
- | Mc.PsatzAdd(w1,w2) ->    (sig_of_cone w1)@(sig_of_cone w2)
- | _  -> []
-
-let same_proof sg cl1 cl2 =
- let rec xsame_proof sg =
-  match sg with
-   | [] -> true
-   | n::sg ->
-     (try Int.equal (List.nth cl1 n) (List.nth cl2 n) with Invalid_argument _ -> false)
-      && (xsame_proof sg ) in
-  xsame_proof sg
-
-let tags_of_clause tgs wit clause =
- let rec xtags tgs = function
-  | Mc.PsatzIn n -> Names.Id.Set.union tgs
-     (snd (List.nth clause (CoqToCaml.nat n) ))
-  | Mc.PsatzMulC(e,w) -> xtags tgs w
-  | Mc.PsatzMulE (w1,w2) | Mc.PsatzAdd(w1,w2) -> xtags (xtags tgs w1) w2
-  |   _   -> tgs in
-  xtags tgs wit
-
-(*let tags_of_cnf wits cnf =
- List.fold_left2 (fun acc w cl -> tags_of_clause acc w cl)
-  Names.Id.Set.empty wits cnf *)
-
-let find_witness prover polys1 = try_any prover polys1
-
-let rec witness prover   l1 l2 =
- match l2 with
-  | [] -> Some []
-  | e :: l2 ->
-     match find_witness prover (e::l1) with
-      | None -> None
-      | Some w ->
-	 (match witness prover l1 l2 with
-	  | None -> None
-	  | Some l -> Some (w::l)
-	 )
-
-let rec apply_ids t ids =
- match ids with
-  | [] -> t
-  | i::ids -> apply_ids (mkApp(t,[| mkVar i |])) ids
-
 let coq_Node = 
  lazy (gen_constant_in_modules "VarMap"
    [["Coq" ; "micromega" ; "VarMap"];["VarMap"]] "Node")
@@ -1558,15 +1344,6 @@ let vm_of_list env =
   | (d,_)::_ -> 
     List.fold_left (fun vm (c,i) ->
       Mc.vm_add d (CamlToCoq.positive i) c vm) Mc.Empty env 
-
-
-let rec pp_varmap o vm =
- match vm with
-  | Mc.Empty -> output_string o "[]"
-  | Mc.Leaf z -> Printf.fprintf o "[%a]" pp_z  z
-  | Mc.Node(l,z,r) -> Printf.fprintf o "[%a, %a, %a]" pp_varmap l  pp_z z pp_varmap r
-
-
 
 let rec dump_proof_term = function
   | Micromega.DoneProof -> Lazy.force coq_doneProof
@@ -1662,44 +1439,10 @@ let qq_domain_spec  = lazy {
  dump_proof = dump_psatz coq_Q dump_q
 }
 
-let rcst_domain_spec  = lazy {
- typ = Lazy.force coq_R;
- coeff = Lazy.force coq_Rcst;
- dump_coeff = dump_Rcst;
- proof_typ = Lazy.force coq_QWitness ;
- dump_proof = dump_psatz coq_Q dump_q
-}
-
 (** Naive topological sort of constr according to the subterm-ordering *)
 
 (* An element is minimal x is minimal w.r.t y if 
    x <= y or (x and y are incomparable) *)
-
-let is_min le x y =
-  if le x y then true
-  else    if le y x then false else true
-
-let is_minimal le l c = List.for_all (is_min le c) l
-    
-let find_rem p l =
-  let rec xfind_rem  acc l =
-    match l with
-    | [] -> (None, acc)
-    | x :: l -> if p x then (Some x, acc @ l)
-      else xfind_rem (x::acc) l in
-  xfind_rem [] l
-
-let find_minimal le l = find_rem (is_minimal le l) l
-  
-let rec mk_topo_order le l =
-  match find_minimal le l with
-  | (None , _) -> []
-  | (Some v,l') -> v ::  (mk_topo_order le l')
-
-    
-let topo_sort_constr l =
-  mk_topo_order (fun c t -> Termops.dependent Evd.empty (** FIXME *) (EConstr.of_constr c) (EConstr.of_constr t)) l
-
 
 (**
   * Instanciate the current Coq goal with a Micromega formula, a varmap, and a
@@ -1778,13 +1521,6 @@ let witness_list prover l =
 
 let witness_list_tags  = witness_list
 
-(* *Deprecated* let is_singleton = function [] -> true | [e] -> true | _ -> false *)
-
-let pp_ml_list pp_elt o l =
-  output_string o "[" ;
-  List.iter (fun x -> Printf.fprintf o "%a ;" pp_elt x) l ;
-  output_string o "]"
-
 (**
   * Prune the proof object, according to the 'diff' between two cnf formulas.
   *)
@@ -1792,7 +1528,7 @@ let pp_ml_list pp_elt o l =
 let compact_proofs (cnf_ff: 'cst cnf) res (cnf_ff': 'cst cnf) =
 
   let compact_proof (old_cl:'cst clause) (prf,prover) (new_cl:'cst clause) =
-    let new_cl = Mutils.mapi (fun (f,_) i -> (f,i)) new_cl in
+    let new_cl = List.mapi (fun i (f,_) -> (f,i)) new_cl in
     let remap i =
       let formula = try fst (List.nth old_cl i) with Failure _ -> failwith "bad old index" in
       List.assoc formula new_cl in
@@ -2158,7 +1894,11 @@ let lift_ratproof  prover l =
   | Some c -> Some (Mc.RatProof( c,Mc.DoneProof))
 
 type micromega_polys = (Micromega.q Mc.pol * Mc.op1) list
+
+[@@@ocaml.warning "-37"]
 type csdp_certificate = S of Sos_types.positivstellensatz option | F of string
+(* Used to read the result of the execution of csdpcert *)
+
 type provername = string * int option
 
 (**
@@ -2405,16 +2145,6 @@ let nlinear_Z =   {
   pp_prf  = pp_proof_term;
   pp_f    = fun o x -> pp_pol pp_z o (fst x)
 }
-
-
-
-let tauto_lia ff = 
-  let prover = linear_Z in
-  let cnf_ff,_ = cnf Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce  ff in
-    match witness_list_tags [prover] cnf_ff with
-      | None -> None
-      | Some l -> Some (List.map fst l)
-
 
 (** 
   * Functions instantiating micromega_gen with the appropriate theories and
