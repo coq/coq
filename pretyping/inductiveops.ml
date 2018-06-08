@@ -465,22 +465,21 @@ let build_branch_type env sigma dep p cs =
 let compute_projections env (kn, i as ind) =
   let open Term in
   let mib = Environ.lookup_mind kn env in
-  let indu = match mib.mind_universes with
-  | Monomorphic_ind _ -> mkInd ind
-  | Polymorphic_ind ctx -> mkIndU (ind, make_abstract_instance ctx)
-  | Cumulative_ind ctx ->
-    mkIndU (ind, make_abstract_instance (ACumulativityInfo.univ_context ctx))
+  let u = match mib.mind_universes with
+  | Monomorphic_ind _ -> Instance.empty
+  | Polymorphic_ind auctx -> make_abstract_instance auctx
+  | Cumulative_ind acumi ->
+    make_abstract_instance (ACumulativityInfo.univ_context acumi)
   in
   let x = match mib.mind_record with
   | NotRecord | FakeRecord ->
     anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
   | PrimRecord info-> Name (pi1 (info.(i)))
   in
-  (** FIXME: handle mutual records *)
-  let pkt = mib.mind_packets.(0) in
-  let { mind_consnrealargs; mind_consnrealdecls } = pkt in
+  let pkt = mib.mind_packets.(i) in
   let { mind_nparams = nparamargs; mind_params_ctxt = params } = mib in
-  let rctx, _ = decompose_prod_assum (subst1 indu pkt.mind_nf_lc.(0)) in
+  let subst = List.init mib.mind_ntypes (fun i -> mkIndU ((kn, mib.mind_ntypes - i - 1), u)) in
+  let rctx, _ = decompose_prod_assum (substl subst pkt.mind_nf_lc.(0)) in
   let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
   let mp, dp, l = MutInd.repr3 kn in
   (** We build a substitution smashing the lets in the record parameters so
@@ -489,6 +488,7 @@ let compute_projections env (kn, i as ind) =
   let indty =
     (* [ty] = [Ind inst] is typed in context [params] *)
     let inst = Context.Rel.to_extended_vect mkRel 0 paramslet in
+    let indu = mkIndU (ind, u) in
     let ty = mkApp (indu, inst) in
     (* [Ind inst] is typed in context [params-wo-let] *)
     ty
@@ -498,8 +498,8 @@ let compute_projections env (kn, i as ind) =
       { ind_tags = []; cstr_tags = [|Context.Rel.to_tags ctx|]; style = LetStyle } in
       { ci_ind     = ind;
         ci_npar    = nparamargs;
-        ci_cstr_ndecls = mind_consnrealdecls;
-        ci_cstr_nargs = mind_consnrealargs;
+        ci_cstr_ndecls = pkt.mind_consnrealdecls;
+        ci_cstr_nargs = pkt.mind_consnrealargs;
         ci_pp_info = print_info }
   in
   let len = List.length ctx in
