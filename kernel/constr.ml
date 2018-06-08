@@ -479,6 +479,34 @@ let iter_with_binders g f n c = match kind c with
       CArray.Fun1.iter f n tl;
       CArray.Fun1.iter f (iterate g (Array.length tl) n) bl
 
+(* [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
+   subterms of [c] starting from [acc] and proceeding from left to
+   right according to the usual representation of the constructions as
+   [fold_constr] but it carries an extra data [n] (typically a lift
+   index) which is processed by [g] (which typically add 1 to [n]) at
+   each binder traversal; it is not recursive *)
+
+let fold_constr_with_binders g f n acc c =
+  match kind c with
+  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+    | Construct _) -> acc
+  | Cast (c,_, t) -> f n (f n acc c) t
+  | Prod (na,t,c) -> f (g  n) (f n acc t) c
+  | Lambda (na,t,c) -> f (g  n) (f n acc t) c
+  | LetIn (na,b,t,c) -> f (g  n) (f n (f n acc b) t) c
+  | App (c,l) -> Array.fold_left (f n) (f n acc c) l
+  | Proj (p,c) -> f n acc c
+  | Evar (_,l) -> Array.fold_left (f n) acc l
+  | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
+  | Fix (_,(lna,tl,bl)) ->
+      let n' = CArray.fold_left2 (fun c n t -> g c) n lna tl in
+      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+  | CoFix (_,(lna,tl,bl)) ->
+      let n' = CArray.fold_left2 (fun c n t -> g c) n lna tl in
+      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+
 (* [map f c] maps [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
    not specified *)
