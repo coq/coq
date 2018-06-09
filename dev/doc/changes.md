@@ -64,6 +64,9 @@ Vernacular commands
   `tactics/`. In all cases adapting is a matter of changing the module
   name.
 
+- Part of the Internal API in `vernac/comInductive` has been deprecated
+  because it appeared to have no more users.
+
 ### Unit testing
 
   The test suite now allows writing unit tests against OCaml code in the Coq
