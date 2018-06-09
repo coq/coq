@@ -79,10 +79,10 @@ module type S =
   type symbol = Tok.t Gramext.g_symbol
   type action = Gramext.g_action
   type production_rule = symbol list * action
-  type single_extend_statment =
+  type single_extend_statement =
       string option * Gramext.g_assoc option * production_rule list
-  type extend_statment =
-      Gramext.position option * single_extend_statment list
+  type extend_statement =
+      Gramext.position option * single_extend_statement list
   type coq_parsable
 
   val parsable : ?file:Loc.source -> char Stream.t -> coq_parsable
@@ -105,10 +105,10 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
   type symbol = Tok.t Gramext.g_symbol
   type action = Gramext.g_action
   type production_rule = symbol list * action
-  type single_extend_statment =
+  type single_extend_statement =
       string option * Gramext.g_assoc option * production_rule list
-  type extend_statment =
-      Gramext.position option * single_extend_statment list
+  type extend_statement =
+      Gramext.position option * single_extend_statement list
 
   type coq_parsable = parsable * CLexer.lexer_state ref
 
@@ -207,9 +207,9 @@ let camlp5_verbosity silent f x =
 
 (** Grammar extensions *)
 
-(** NB: [extend_statment =
-         gram_position option * single_extend_statment list]
-    and [single_extend_statment =
+(** NB: [extend_statement =
+         gram_position option * single_extend_statement list]
+    and [single_extend_statement =
          string option * gram_assoc option * production_rule list]
     and [production_rule = symbol list * action]
 
@@ -263,7 +263,7 @@ let of_coq_extend_statement (pos, st) =
 type gram_reinit = gram_assoc * gram_position
 
 type extend_rule =
-| ExtendRule : 'a G.entry * gram_reinit option * 'a extend_statment -> extend_rule
+| ExtendRule : 'a G.entry * gram_reinit option * 'a extend_statement -> extend_rule
 
 type ext_kind =
   | ByGrammar of extend_rule
