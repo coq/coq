@@ -11,6 +11,18 @@ Table of contents
 ------------------
 
 .. toctree::
+   :caption: Indexes
+
+   genindex
+   coq-cmdindex
+   coq-tacindex
+   coq-optindex
+   coq-exnindex
+
+.. No entries yet
+  * :index:`thmindex`
+
+.. toctree::
    :caption: The language
 
    language/gallina-specification-language
@@ -64,18 +76,6 @@ Table of contents
    :caption: Reference
 
    zebibliography
-
-.. toctree::
-   :caption: Indexes
-	     
-   genindex
-   coq-cmdindex
-   coq-tacindex	      
-   coq-optindex	      
-   coq-exnindex	      
-   
-.. No entries yet
-  * :index:`thmindex`
 
 This material (the Coq Reference Manual) may be distributed only subject to the
 terms and conditions set forth in the Open Publication License, v1.0 or later
