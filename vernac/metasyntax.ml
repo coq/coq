@@ -1311,8 +1311,15 @@ let make_pa_rule level (typs,symbols) ntn need_squash =
 
 let make_pp_rule level (typs,symbols) fmt =
   match fmt with
-  | None -> [UnpBox (PpHOVB 0, make_hunks typs symbols level)]
-  | Some fmt -> hunks_of_format (level, List.split typs) (symbols, parse_format fmt)
+  | None ->
+     let hunks = make_hunks typs symbols level in
+     if List.exists (function _,(UnpCut (PpBrk _) | UnpListMetaVar _) -> true | _ -> false) hunks then
+       [UnpBox (PpHOVB 0,hunks)]
+     else
+       (* Optimization to work around what seems an ocaml Format bug (see Mantis #7804/#7807) *)
+       List.map snd hunks (* drop locations which are dummy *)
+  | Some fmt ->
+     hunks_of_format (level, List.split typs) (symbols, parse_format fmt)
 
 (* let make_syntax_rules i_typs (ntn,prec,need_squash) sy_data fmt extra onlyprint compat = *)
 let make_syntax_rules (sd : SynData.syn_data) = let open SynData in
