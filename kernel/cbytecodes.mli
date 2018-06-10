@@ -160,6 +160,7 @@ type vm_env = {
 
 
 type comp_env = {
+    arity : int;                 (* arity of the current function, 0 if none *)
     nb_uni_stack : int ;         (** number of universes on the stack       *)
     nb_stack : int;              (** number of variables on the stack       *)
     in_stack : int list;         (** position in the stack                  *)
