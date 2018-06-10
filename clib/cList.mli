@@ -354,7 +354,7 @@ sig
   (** [subtract] specialized to physical equality *)
 
   val merge_uniq : 'a cmp -> 'a list -> 'a list -> 'a list
-  (** [@@ocaml.deprecated "Same as [merge_set]"] *)
+  [@@ocaml.deprecated "Same as [merge_set]"]
 
   (** {6 Uniqueness and duplication} *)
 

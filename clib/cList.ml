@@ -116,6 +116,7 @@ sig
   val subtract : 'a eq -> 'a list -> 'a list -> 'a list
   val subtractq : 'a list -> 'a list -> 'a list
   val merge_uniq : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
+  [@@ocaml.deprecated "Same as [merge_set]"]
   val distinct : 'a list -> bool
   val distinct_f : 'a cmp -> 'a list -> bool
   val duplicates : 'a eq -> 'a list -> 'a list
