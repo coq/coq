@@ -385,3 +385,17 @@ Module LocateNotations.
 Locate "exists".
 Locate "( _ , _ , .. , _ )".
 End LocateNotations.
+
+Module Issue7731.
+
+Axiom (P : nat -> Prop).
+Parameter (X : nat).
+Notation "## @ E ^^^" := (P E) (at level 20, E at level 1, format "'[ ' ## '/' @ E '/' ^^^ ']'").
+Notation "%" := X.
+
+Set Printing Width 7.
+Goal ## @ % ^^^.
+Show.
+Abort.
+
+End Issue7731.
