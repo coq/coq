@@ -45,8 +45,8 @@ WHAT DO YOU NEED ?
 
    - a C compiler
 
-   - for Coqide, the Lablgtk development files, and the GTK libraries
-     including gtksourceview, see INSTALL.ide for more details
+   - for CoqIDE, the lablgtk development files (version >= 2.18.3),
+     and the GTK 2.x libraries including gtksourceview2.
 
    Note that num, camlp5 and lablgtk should be properly registered with
    findlib/ocamlfind as Coq's makefile will use it to locate the
