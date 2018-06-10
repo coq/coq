@@ -487,6 +487,15 @@ and check_no_ldots_in_box = function
 let error_not_same ?loc () =
   user_err ?loc Pp.(str "The format is not the same on the right- and left-hand sides of the special token \"..\".")
 
+let find_prod_list_loc sfmt fmt =
+  (* [fmt] is some [UnpTerminal x :: sfmt @ UnpTerminal ".." :: sfmt @ UnpTerminal y :: rest] *)
+  if List.is_empty sfmt then
+    (* No separators; we highlight the sequence "x .." *)
+    Loc.merge_opt (fst (List.hd fmt)) (fst (List.hd (List.tl fmt)))
+  else
+    (* A separator; we highlight the separating sequence *)
+    Loc.merge_opt (fst (List.hd sfmt)) (fst (List.last sfmt))
+
 let skip_var_in_recursive_format = function
   | (_,UnpTerminal s) :: sl (* skip first var *) when not (List.for_all (fun c -> c = " ") (String.explode s)) ->
       (* To do, though not so important: check that the names match
@@ -496,6 +505,8 @@ let skip_var_in_recursive_format = function
   | [] -> assert false
 
 let read_recursive_format sl fmt =
+  (* Turn [[UnpTerminal s :: some-list @ UnpTerminal ".." :: same-some-list @ UnpTerminal s' :: rest] *)
+  (* into [(some-list,rest)] *)
   let get_head fmt =
     let sl = skip_var_in_recursive_format fmt in
     try split_format_at_ldots [] sl with Exit -> error_not_same ?loc:(fst (List.last (if sl = [] then fmt else sl))) () in
@@ -528,10 +539,10 @@ let hunks_of_format (from,(vars,typs)) symfmt =
       let i = index_id m vars in
       let typ = List.nth typs (i-1) in
       let _,prec = precedence_of_entry_type from typ in
-      let slfmt,fmt = read_recursive_format sl fmt in
-      let sl, slfmt = aux (sl,slfmt) in
-      if not (List.is_empty sl) then error_format ?loc:(fst (List.last fmt)) ();
-      let symbs, l = aux (symbs,fmt) in
+      let loc_slfmt,rfmt = read_recursive_format sl fmt in
+      let sl, slfmt = aux (sl,loc_slfmt) in
+      if not (List.is_empty sl) then error_format ?loc:(find_prod_list_loc loc_slfmt fmt) ();
+      let symbs, l = aux (symbs,rfmt) in
       let hunk = match typ with
 	| ETConstr _ -> UnpListMetaVar (i,prec,slfmt)
 	| ETBinder isopen ->
