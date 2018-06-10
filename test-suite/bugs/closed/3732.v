@@ -54,7 +54,8 @@ Section machine.
   Definition interp specs := valid specs nil.
 End machine.
 Notation "'ExX' : A , P" := (ExistsX (A := A) P) (at level 89) : PropX_scope.
-Bind Scope PropX_scope with PropX propX.
+Bind Scope PropX_scope with PropX.
+Bind Scope PropX_scope with propX.
 Variables pc state : Type.
 
 Inductive subs : list Type -> Type :=

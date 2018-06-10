@@ -1867,7 +1867,8 @@ Qed.
 
 End Pos.
 
-Bind Scope positive_scope with Pos.t positive.
+Bind Scope positive_scope with Pos.t.
+Bind Scope positive_scope with positive.
 
 (** Exportation of notations *)
 

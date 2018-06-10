@@ -751,7 +751,8 @@ End Nat.
 (** Re-export notations that should be available even when
     the [Nat] module is not imported. *)
 
-Bind Scope nat_scope with Nat.t nat.
+Bind Scope nat_scope with Nat.t.
+Bind Scope nat_scope with nat.
 
 Infix "^" := Nat.pow : nat_scope.
 Infix "=?" := Nat.eqb (at level 70) : nat_scope.

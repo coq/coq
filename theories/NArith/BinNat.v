@@ -926,7 +926,8 @@ Qed.
 
 End N.
 
-Bind Scope N_scope with N.t N.
+Bind Scope N_scope with N.t.
+Bind Scope N_scope with N.
 
 (** Exportation of notations *)
 
