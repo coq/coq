@@ -1244,7 +1244,8 @@ Qed.
 
 End Z.
 
-Bind Scope Z_scope with Z.t Z.
+Bind Scope Z_scope with Z.t.
+Bind Scope Z_scope with Z.
 
 (** Re-export Notations *)
 
