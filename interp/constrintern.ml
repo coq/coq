@@ -994,9 +994,12 @@ let glob_sort_of_level (level: glob_level) : glob_sort =
   | GType info -> GType [sort_info_of_level_info info]
 
 (* Is it a global reference or a syntactic definition? *)
-let intern_qualid qid intern env ntnvars us args =
+let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
   let loc = qid.loc in
   match intern_extended_global_of_qualid qid with
+  | TrueGlobal (VarRef _) when no_secvar ->
+      (* Rule out section vars since these should have been found by intern_var *)
+      raise Not_found
   | TrueGlobal ref -> (DAst.make ?loc @@ GRef (ref, us)), true, args
   | SynDef sp ->
       let (ids,c) = Syntax_def.search_syntactic_definition ?loc sp in
@@ -1033,13 +1036,6 @@ let intern_qualid qid intern env ntnvars us args =
       in
       c, projapp, args2
 
-(* Rule out section vars since these should have been found by intern_var *)
-let intern_non_secvar_qualid qid intern env ntnvars us args =
-  let c, _, _ as r = intern_qualid qid intern env ntnvars us args in
-  match DAst.get c with
-    | GRef (VarRef _, _) -> raise Not_found
-    | _ -> r
-
 let intern_applied_reference intern env namedctx (_, ntnvars as lvar) us args =
 function
   | {loc; v=Qualid qid} ->
@@ -1055,7 +1051,7 @@ function
       with Not_found ->
       let qid = make ?loc @@ qualid_of_ident id in
       try
-        let r, projapp, args2 = intern_non_secvar_qualid qid intern env ntnvars us args in
+        let r, projapp, args2 = intern_qualid ~no_secvar:true qid intern env ntnvars us args in
 	let x, imp, scopes, l = find_appl_head_data r in
 	  (x,imp,scopes,l), args2
       with Not_found ->
