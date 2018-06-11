@@ -104,7 +104,6 @@ exclude_patterns = [
     'Thumbs.db',
     '.DS_Store',
     'introduction.rst',
-    'credits.rst',
     'README.rst',
     'README.template.rst'
 ]

@@ -1,10 +1,7 @@
-.. _introduction:
-
 .. include:: preamble.rst
 .. include:: replaces.rst
 
 .. include:: introduction.rst
-.. include:: credits.rst
 
 ------------------
 Table of contents
@@ -21,6 +18,12 @@ Table of contents
 
 .. No entries yet
   * :index:`thmindex`
+
+.. toctree::
+   :caption: Preamble
+
+   self
+   credits
 
 .. toctree::
    :caption: The language
