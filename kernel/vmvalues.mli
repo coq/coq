@@ -112,6 +112,7 @@ val val_of_proj : Constant.t -> values -> values
 val val_of_atom : atom -> values
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
+external val_of_proj_name : Constant.t -> values = "%identity"
 
 (** Destructors *)
 

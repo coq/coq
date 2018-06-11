@@ -27,6 +27,7 @@ type reloc_info =
   | Reloc_annot of annot_switch
   | Reloc_const of structured_constant
   | Reloc_getglobal of Names.Constant.t
+  | Reloc_proj_name of Constant.t
 
 let eq_reloc_info r1 r2 = match r1, r2 with
 | Reloc_annot sw1, Reloc_annot sw2 -> eq_annot_switch sw1 sw2
@@ -35,6 +36,8 @@ let eq_reloc_info r1 r2 = match r1, r2 with
 | Reloc_const _, _ -> false
 | Reloc_getglobal c1, Reloc_getglobal c2 -> Constant.equal c1 c2
 | Reloc_getglobal _, _ -> false
+| Reloc_proj_name p1, Reloc_proj_name p2 -> Constant.equal p1 p2
+| Reloc_proj_name _, _ -> false
 
 let hash_reloc_info r =
   let open Hashset.Combine in
@@ -42,6 +45,7 @@ let hash_reloc_info r =
   | Reloc_annot sw -> combinesmall 1 (hash_annot_switch sw)
   | Reloc_const c -> combinesmall 2 (hash_structured_constant c)
   | Reloc_getglobal c -> combinesmall 3 (Constant.hash c)
+  | Reloc_proj_name p -> combinesmall 4 (Constant.hash p)
 
 module RelocTable = Hashtbl.Make(struct
   type t = reloc_info
@@ -187,6 +191,9 @@ let slot_for_getglobal env p =
   enter env (Reloc_getglobal p);
   out_int env 0
 
+let slot_for_proj_name env p =
+  enter env (Reloc_proj_name p);
+  out_int env 0
 
 (* Emission of one instruction *)
 
@@ -277,7 +284,7 @@ let emit_instr env = function
       if n <= 1 then out env (opSETFIELD0+n)
       else (out env opSETFIELD;out_int env n)
   | Ksequence _ -> invalid_arg "Cemitcodes.emit_instr"
-  | Kproj (n,p) -> out env opPROJ; out_int env n; slot_for_const env (Const_proj p)
+  | Kproj (n,p) -> out env opPROJ; out_int env n; slot_for_proj_name env p
   | Kensurestackcapacity size -> out env opENSURESTACKCAPACITY; out_int env size
   (* spiwack *)
   | Kbranch lbl -> out env opBRANCH; out_label env lbl
@@ -353,7 +360,6 @@ type to_patch = emitcodes * patches * fv
 let rec subst_strcst s sc =
   match sc with
   | Const_sort _ | Const_b0 _ | Const_univ_level _ -> sc
-  | Const_proj p -> Const_proj (subst_constant s p)
   | Const_bn(tag,args) -> Const_bn(tag,Array.map (subst_strcst s) args)
   | Const_ind ind -> let kn,i = ind in Const_ind (subst_mind s kn, i)
 
@@ -365,6 +371,7 @@ let subst_reloc s ri =
       Reloc_annot {a with ci = ci}
   | Reloc_const sc -> Reloc_const (subst_strcst s sc)
   | Reloc_getglobal kn -> Reloc_getglobal (subst_constant s kn)
+  | Reloc_proj_name p -> Reloc_proj_name (subst_constant s p)
 
 let subst_patches subst p =
   let infos = CArray.map (fun (r, pos) -> (subst_reloc subst r, pos)) p.reloc_infos in
