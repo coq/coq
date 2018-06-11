@@ -177,7 +177,7 @@ type one_inductive_body = {
 
     mind_recargs : wf_paths; (** Signature of recursive arguments in the constructors *)
 
-    mind_relevant : Sorts.relevance;
+    mind_relevance : Sorts.relevance;
 
 (** {8 Datas for bytecode compilation } *)
 

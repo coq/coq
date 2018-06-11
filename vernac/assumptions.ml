@@ -239,7 +239,7 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
        Array.fold_left (fun accu oib ->
           let pspecif = Univ.in_punivs (mib, oib) in
           let ind_type = Inductive.type_of_inductive global_env pspecif in
-          let indr = oib.mind_relevant in
+          let indr = oib.mind_relevance in
           let ind_name = Name oib.mind_typename in
           Context.Rel.add (Context.Rel.Declaration.LocalAssum (make_annot ind_name indr, ind_type)) accu)
           Context.Rel.empty mib.mind_packets

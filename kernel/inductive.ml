@@ -196,7 +196,7 @@ let instantiate_universes env ctx ar argsorts =
 
 let relevance_of_inductive env ind =
   let _, mip = lookup_mind_specif env ind in
-  mip.mind_relevant
+  mip.mind_relevance
 
 let type_of_inductive_gen ?(polyprop=true) env ((_,mip),u) paramtyps =
   match mip.mind_arity with
@@ -579,7 +579,7 @@ let ienv_push_inductive (env, ra_env) ((mind,u),lpar) =
   let mib = Environ.lookup_mind mind env in
   let ntypes = mib.mind_ntypes in
   let push_ind specif env =
-    let r = specif.mind_relevant in
+    let r = specif.mind_relevance in
     let anon = Context.make_annot Anonymous r in
     let decl = LocalAssum (anon, hnf_prod_applist env (type_of_inductive env ((mib,specif),u)) lpar) in
     push_rel decl env
@@ -1080,7 +1080,7 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
     let ((ind, _), _) as res = check_occur fixenv 1 def in
     let _, ind = lookup_mind_specif env ind in
     (* recursive sprop means non record with projections -> squashed *)
-    if Sorts.Irrelevant == ind.mind_relevant
+    if Sorts.Irrelevant == ind.mind_relevance
     then
       begin
         if names.(i).Context.binder_relevance == Sorts.Relevant

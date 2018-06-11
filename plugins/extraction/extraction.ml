@@ -1070,7 +1070,7 @@ let fake_match_projection env p =
     | NotRecord | FakeRecord -> assert false
     | PrimRecord info ->
       let x, _, _, _ = info.(snd ind) in
-      make_annot (Name x) mip.mind_relevant
+      make_annot (Name x) mip.mind_relevance
   in
   let indty = mkApp (indu, Context.Rel.to_extended_vect mkRel 0 paramslet) in
   let rec fold arg j subst = function

@@ -30,7 +30,7 @@ let relevance_of_constant env c =
 let relevance_of_constructor env ((mi,i),_) =
   let decl = lookup_mind mi env in
   let packet = decl.mind_packets.(i) in
-  packet.mind_relevant
+  packet.mind_relevance
 
 let relevance_of_projection env p =
   let mind = Projection.mind p in

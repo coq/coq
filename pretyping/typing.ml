@@ -397,7 +397,7 @@ let rec execute env sigma cstr =
     | Lambda (name,c1,c2) ->
         let sigma, j = execute env sigma c1 in
         let sigma, var = type_judgment env sigma j in
-        let () = check_binder_annot env var.utj_type name in
+        let name = check_binder_annot var.utj_type name in
         let env1 = push_rel (LocalAssum (name, var.utj_val)) env in
         let sigma, j' = execute env1 sigma c2 in
         sigma, judge_of_abstraction env1 name.binder_name var j'
@@ -405,7 +405,7 @@ let rec execute env sigma cstr =
     | Prod (name,c1,c2) ->
         let sigma, j = execute env sigma c1 in
         let sigma, varj = type_judgment env sigma j in
-        let () = check_binder_annot env varj.utj_type name in
+        let name = check_binder_annot varj.utj_type name in
         let env1 = push_rel (LocalAssum (name, varj.utj_val)) env in
         let sigma, j' = execute env1 sigma c2 in
         let sigma, varj' = type_judgment env1 sigma j' in
@@ -416,7 +416,7 @@ let rec execute env sigma cstr =
         let sigma, j2 = execute env sigma c2 in
         let sigma, j2 = type_judgment env sigma j2 in
         let sigma, _ =  judge_of_cast env sigma j1 DEFAULTcast j2 in
-        let () = check_binder_annot env j2.utj_type name in
+        let name = check_binder_annot j2.utj_type name in
         let env1 = push_rel (LocalDef (name, j1.uj_val, j2.utj_val)) env in
         let sigma, j3 = execute env1 sigma c3 in
         sigma, judge_of_letin env name.binder_name j1 j2 j3

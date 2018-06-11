@@ -386,6 +386,7 @@ let init_with_argv argv =
   let _fhandle = Feedback.(add_feeder (console_feedback_listener Format.err_formatter)) in
   try
     parse_args argv;
+    CWarnings.set_flags ("+"^Typeops.warn_bad_relevance_name);
     if !Flags.debug then Printexc.record_backtrace true;
     Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
     Flags.if_verbose print_header ();

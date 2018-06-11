@@ -68,6 +68,7 @@ sig
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a array -> 'a array
+    val map_i : (int -> 'a -> 'a) -> 'a array -> 'a array
     val map2 : ('a -> 'b -> 'b) -> 'a array -> 'b array -> 'b array
     val fold_left_map : ('a -> 'b -> 'a * 'b) -> 'a -> 'b array -> 'a * 'b array
     val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'c) -> 'a -> 'b array -> 'c array -> 'a * 'c array
@@ -476,6 +477,36 @@ struct
       while !i < len do
         let v = Array.unsafe_get ans !i in
         let v' = f v in
+        if v != v' then Array.unsafe_set ans !i v';
+        incr i
+      done;
+      ans
+    end else ar
+
+  (* Same as map_i but smart *)
+  let map_i f (ar : 'a array) =
+    let len = Array.length ar in
+    let i = ref 0 in
+    let break = ref true in
+    let temp = ref None in
+    while !break && (!i < len) do
+      let v = Array.unsafe_get ar !i in
+      let v' = f !i v in
+      if v == v' then incr i
+      else begin
+        break := false;
+        temp := Some v';
+      end
+    done;
+    if !i < len then begin
+      (* The array is not the same as the original one *)
+      let ans : 'a array = Array.copy ar in
+      let v = match !temp with None -> assert false | Some x -> x in
+      Array.unsafe_set ans !i v;
+      incr i;
+      while !i < len do
+        let v = Array.unsafe_get ans !i in
+        let v' = f !i v in
         if v != v' then Array.unsafe_set ans !i v';
         incr i
       done;

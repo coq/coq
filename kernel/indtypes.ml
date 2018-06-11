@@ -173,7 +173,7 @@ let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lrecparams) =
   let specif = (lookup_mind_specif env mi, u) in
   let ty = type_of_inductive env specif in
   let env' =
-    let r = (snd (fst specif)).mind_relevant in
+    let r = (snd (fst specif)).mind_relevance in
     let anon = Context.make_annot Anonymous r in
     let decl = LocalAssum (anon, hnf_prod_applist env ty lrecparams) in
     push_rel decl env in
@@ -486,7 +486,7 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
     let consnrealargs =
       Array.map (fun (d,_) -> Context.Rel.nhyps d)
         splayed_lc in
-    let mind_relevant = match arity with
+    let mind_relevance = match arity with
       | RegularArity { mind_sort;_ } -> Sorts.relevance_of_sort mind_sort
       | TemplateArity _ -> Sorts.Relevant
     in
@@ -517,7 +517,7 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
 	mind_user_lc = lc;
 	mind_nf_lc = nf_lc;
         mind_recargs = recarg;
-        mind_relevant;
+        mind_relevance;
         mind_nb_constant = !nconst;
 	mind_nb_args = !nblock;
 	mind_reloc_tbl = rtbl;

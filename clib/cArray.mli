@@ -129,6 +129,8 @@ sig
     (** [Smart.map f a] behaves as [map f a] but returns [a] instead of a copy when
         [f x == x] for all [x] in [a]. *)
 
+    val map_i : (int -> 'a -> 'a) -> 'a array -> 'a array
+
     val map2 : ('a -> 'b -> 'b) -> 'a array -> 'b array -> 'b array
     (** [Smart.map2 f a b] behaves as [map2 f a b] but returns [a] instead of a copy when
         [f x y == y] for all [x] in [a] and [y] in [b] pointwise. *)

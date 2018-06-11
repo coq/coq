@@ -303,8 +303,7 @@ let typecheck_inductive env (mie:mutual_inductive_entry) =
   in
 
   (* Params *)
-  let env_params = Typeops.check_context env_univs mie.mind_entry_params in
-  let params = Environ.rel_context env_params in
+  let env_params, params = Typeops.check_context env_univs mie.mind_entry_params in
 
   (* Arities *)
   let env_ar, data = List.fold_left_map (check_arity env_params) env_univs mie.mind_entry_inds in
