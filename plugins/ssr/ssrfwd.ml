@@ -47,6 +47,7 @@ let ssrsettac id ((_, (pat, pty)), (_, occ)) gl =
     let cl = EConstr.Unsafe.to_constr cl in
     try fill_occ_pattern ~raise_NoMatch:true env sigma cl pat occ 1
     with NoMatch -> redex_of_pattern ~resolve_typeclasses:true env pat, cl in
+  let gl = pf_merge_uc ucst gl in
   let c = EConstr.of_constr c in
   let cl = EConstr.of_constr cl in
   if Termops.occur_existential sigma c then errorstrm(str"The pattern"++spc()++
@@ -56,7 +57,6 @@ let ssrsettac id ((_, (pat, pty)), (_, occ)) gl =
   | Cast(t, DEFAULTcast, ty) -> t, (gl, ty)
   | _ -> c, pfe_type_of gl c in
   let cl' = EConstr.mkLetIn (Name id, c, cty, cl) in
-  let gl = pf_merge_uc ucst gl in
   Tacticals.tclTHEN (Proofview.V82.of_tactic (convert_concl cl')) (introid id) gl
 
 open Util
