@@ -97,7 +97,9 @@ INSTALLCMI = $(sort \
 	$(foreach lib,$(CORECMA), $(addsuffix .cmi,$($(lib:.cma=_MLLIB_DEPENDENCIES))))) \
 	$(PLUGINS:.cmo=.cmi)
 
-INSTALLCMX = $(sort $(filter-out checker/% ide/% tools/% dev/% configure.cmx, $(MLFILES:.ml=.cmx)))
+INSTALLCMX = $(sort $(filter-out checker/% ide/% tools/% dev/% \
+	configure.cmx toplevel/coqtop_byte_bin.cmx plugins/extraction/big.cmx, \
+	$(MLFILES:.ml=.cmx)))
 
 install-devfiles:
 	$(MKDIR) $(FULLBINDIR)
