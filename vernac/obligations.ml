@@ -860,7 +860,7 @@ let obligation_terminator name num guard hook auto pf =
       else UState.union prg.prg_ctx ctx
     in
     let uctx = UState.const_univ_entry ~poly:(pi2 prg.prg_kind) ctx in
-    let (_, obl) = declare_obligation prg obl body ty uctx in
+    let (defined, obl) = declare_obligation prg obl body ty uctx in
     let obls = Array.copy obls in
     let _ = obls.(num) <- obl in
     let prg_ctx =
@@ -869,10 +869,12 @@ let obligation_terminator name num guard hook auto pf =
             polymorphic obligation with the existing ones *)
         UState.union prg.prg_ctx ctx
       else
-        (** The first obligation declares the univs of the constant,
+        (** The first obligation, if defined,
+            declares the univs of the constant,
             each subsequent obligation declares its own additional
             universes and constraints if any *)
-        UState.make (Global.universes ())
+        if defined then UState.make (Global.universes ())
+        else ctx
     in
     let prg = { prg with prg_ctx } in
     try
