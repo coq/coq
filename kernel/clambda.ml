@@ -836,10 +836,11 @@ let dynamic_int31_compilation fc args =
   if not fc then raise Not_found else
   Luint (UintDigits args)
 
+let d0 = Lint 0
+let d1 = Lint 1
+
 (* We are relying here on the tags of digits constructors *)
 let digits_from_uint i =
-  let d0 = Lint 0 in
-  let d1 = Lint 1 in
   let digits = Array.make 31 d0 in
   for k = 0 to 30 do
     if Int.equal ((Uint31.to_int i lsr k) land 1) 1 then
