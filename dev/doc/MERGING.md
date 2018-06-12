@@ -76,6 +76,16 @@ documentation and test cases. If not, they should leave a comment on the PR and
 put the approriate label. Otherwise, they are expected to merge the PR using the
 [merge script](../tools/merge-pr.sh).
 
+When CI has a few failures which look spurious, restarting the corresponding
+jobs is a good way of ensuring this was indeed the case.
+To restart a job on Travis, you should connect using your GitHub account;
+being part of the Coq organization on GitHub should give you the permission
+to do so.
+To restart a job on GitLab CI, you should sign into GitLab (this can be done
+using a GitHub account); if you are part of the
+[Coq organization on GitLab](https://gitlab.com/coq), you should see a "Retry"
+button; otherwise, send a request to join the organization.
+
 When the PR has conflicts, the assignee can either:
 - ask the author to rebase the branch, fixing the conflicts
 - warn the author that they are going to rebase the branch, and push to the
