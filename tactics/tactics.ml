@@ -2645,6 +2645,15 @@ let insert_before decls lasthyp env =
       push_named d env)
     ~init:(reset_context env) env
 
+let mk_eq_name env id {CAst.loc;v=ido} =
+  match ido with
+  | IntroAnonymous -> fresh_id_in_env (Id.Set.singleton id) (add_prefix "Heq" id) env
+  | IntroFresh heq_base -> fresh_id_in_env (Id.Set.singleton id) heq_base env
+  | IntroIdentifier id ->
+    if List.mem id (ids_of_named_context (named_context env)) then
+      user_err ?loc  (Id.print id ++ str" is already used.");
+    id
+
 (* unsafe *)
 
 let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
@@ -2654,14 +2663,7 @@ let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
 	     else LocalAssum (id,t)
   in
   match with_eq with
-  | Some (lr,{CAst.loc;v=ido}) ->
-      let heq = match ido with
-      | IntroAnonymous -> fresh_id_in_env (Id.Set.singleton id) (add_prefix "Heq" id) env
-      | IntroFresh heq_base -> fresh_id_in_env (Id.Set.singleton id) heq_base env
-      | IntroIdentifier id ->
-          if List.mem id (ids_of_named_context (named_context env)) then
-            user_err ?loc  (Id.print id ++ str" is already used.");
-          id in
+  | Some (lr,heq) ->
       let eqdata = build_coq_eq_data () in
       let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
       let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
@@ -4396,7 +4398,8 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
   match res with
   | None ->
       (* pattern not found *)
-      let with_eq = Option.map (fun eq -> (false,eq)) eqname in
+      let with_eq = Option.map (fun eq -> (false,mk_eq_name env id eq)) eqname in
+      let inhyps = if List.is_empty inhyps then inhyps else Option.fold_left (fun inhyps (_,heq) -> heq::inhyps) inhyps with_eq in
       (* we restart using bindings after having tried type-class
          resolution etc. on the term given by the user *)
       let flags = tactic_infer_flags (with_evars && (* do not give a success semantics to edestruct on an open term yet *) false) in
@@ -4421,21 +4424,22 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
         else Proofview.tclUNIT ();
         if isrec then Proofview.cycle (-1) else Proofview.tclUNIT ()
       ])
-      tac
+      (tac inhyps)
       in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) tac
 
   | Some (sigma', c) ->
       (* pattern found *)
-      let with_eq = Option.map (fun eq -> (false,eq)) eqname in
       (* TODO: if ind has predicate parameters, use JMeq instead of eq *)
       let env = reset_with_named_context sign env in
+      let with_eq = Option.map (fun eq -> (false,mk_eq_name env id eq)) eqname in
+      let inhyps = if List.is_empty inhyps then inhyps else Option.fold_left (fun inhyps (_,heq) -> heq::inhyps) inhyps with_eq in
       let tac =
       Tacticals.New.tclTHENLIST [
         Refine.refine ~typecheck:false begin fun sigma ->
           mkletin_goal env sigma store with_eq true (id,lastlhyp,ccl,c) None
         end;
-        tac
+        (tac inhyps)
       ]
       in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma') tac
@@ -4485,7 +4489,7 @@ let induction_gen clear_flag isrec with_evars elim
     pose_induction_arg_then
       isrec with_evars info_arg elim id arg t inhyps cls
     (induction_with_atomization_of_ind_arg
-       isrec with_evars elim names id inhyps)
+       isrec with_evars elim names id)
   end 
 
 (* Induction on a list of arguments. First make induction arguments
