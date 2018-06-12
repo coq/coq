@@ -43,6 +43,13 @@ let warn_deprecated_unfocus =
   CWarnings.create ~name:"deprecated-unfocus" ~category:"deprecated"
          (fun () -> Pp.strbrk "The Unfocus command is deprecated")
 
+let warn_deprecated_hint_constr =
+  CWarnings.create ~name:"deprecated-hint-constr" ~category:"deprecated"
+         (fun () ->
+           Pp.strbrk
+             "Declaring arbitrary terms as hints is deprecated; declare a global reference instead"
+         )
+
 }
 
 (* Proof commands *)
@@ -107,7 +114,9 @@ GRAMMAR EXTEND Gram
       ] ];
   reference_or_constr:
    [ [ r = global -> { HintsReference r }
-     | c = constr -> { HintsConstr c } ] ]
+     | c = constr ->
+      { warn_deprecated_hint_constr ~loc ();
+        HintsConstr c } ] ]
   ;
   hint:
     [ [ IDENT "Resolve"; lc = LIST1 reference_or_constr; info = hint_info ->
