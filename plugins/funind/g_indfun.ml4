@@ -168,7 +168,7 @@ END
 
 let pr_fun_scheme_arg (princ_name,fun_name,s) =
   Names.Id.print princ_name ++ str " :=" ++ spc() ++ str "Induction for " ++
-  Libnames.pr_reference fun_name ++ spc() ++ str "Sort " ++
+  Libnames.pr_qualid fun_name ++ spc() ++ str "Sort " ++
   Termops.pr_sort_family s
 
 VERNAC ARGUMENT EXTEND fun_scheme_arg
@@ -181,11 +181,11 @@ let warning_error names e =
   let (e, _) = ExplainErr.process_vernac_interp_error (e, Exninfo.null) in
   match e with
     | Building_graph e ->
-       let names = pr_enum Libnames.pr_reference names in
+       let names = pr_enum Libnames.pr_qualid names in
        let error = if do_observe () then (spc () ++ CErrors.print e) else mt () in
        warn_cannot_define_graph (names,error)
     | Defining_principle e ->
-       let names = pr_enum Libnames.pr_reference names in
+       let names = pr_enum Libnames.pr_qualid names in
        let error = if do_observe () then CErrors.print e else mt () in
        warn_cannot_define_principle (names,error)
     | _ -> raise e

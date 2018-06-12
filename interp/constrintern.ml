@@ -96,8 +96,8 @@ let is_global id =
   with Not_found ->
     false
 
-let global_reference_of_reference ref =
-  locate_reference (qualid_of_reference ref).CAst.v
+let global_reference_of_reference qid =
+  locate_reference qid
 
 let global_reference id =
   locate_reference (qualid_of_ident id)
@@ -117,7 +117,7 @@ let global_reference_in_absolute_module dir id =
 type internalization_error =
   | VariableCapture of Id.t * Id.t
   | IllegalMetavariable
-  | NotAConstructor of reference
+  | NotAConstructor of qualid
   | UnboundFixName of bool * Id.t
   | NonLinearPattern of Id.t
   | BadPatternsNumber of int * int
@@ -131,8 +131,8 @@ let explain_variable_capture id id' =
 let explain_illegal_metavariable =
   str "Metavariables allowed only in patterns"
 
-let explain_not_a_constructor ref =
-  str "Unknown constructor: " ++ pr_reference ref
+let explain_not_a_constructor qid =
+  str "Unknown constructor: " ++ pr_qualid qid
 
 let explain_unbound_fix_name is_cofix id =
   str "The name" ++ spc () ++ Id.print id ++
@@ -404,7 +404,8 @@ let intern_generalized_binder ?(global_level=false) intern_type ntnvars
 	  let name =
 	    let id =
 	      match ty with
-              | { v = CApp ((_, { v = CRef ({v=Ident id},_) } ), _) } -> id
+              | { v = CApp ((_, { v = CRef (qid,_) } ), _) } when qualid_is_ident qid ->
+                qualid_basename qid
 	      | _ -> default_non_dependent_ident
 	    in Implicit_quantifiers.make_fresh ids' (Global.env ()) id
 	  in Name name
@@ -556,7 +557,8 @@ let is_var store pat =
 
 let out_var pat =
   match pat.v with
-  | CPatAtom (Some ({v=Ident id})) -> Name id
+  | CPatAtom (Some qid) when qualid_is_ident qid ->
+    Name (qualid_basename qid)
   | CPatAtom None -> Anonymous
   | _ -> assert false
 
@@ -622,18 +624,18 @@ let error_cannot_coerce_disjunctive_pattern_term ?loc () =
 
 let terms_of_binders bl =
   let rec term_of_pat pt = dmap_with_loc (fun ?loc -> function
-    | PatVar (Name id)   -> CRef (make @@ Ident id, None)
+    | PatVar (Name id)   -> CRef (qualid_of_ident id, None)
     | PatVar (Anonymous) -> error_cannot_coerce_wildcard_term ?loc ()
     | PatCstr (c,l,_) ->
-       let r = make ?loc @@ Qualid (qualid_of_path (path_of_global (ConstructRef c))) in
+       let qid = qualid_of_path ?loc (path_of_global (ConstructRef c)) in
        let hole = CAst.make ?loc @@ CHole (None,IntroAnonymous,None) in
        let params = List.make (Inductiveops.inductive_nparams (fst c)) hole in
-       CAppExpl ((None,r,None),params @ List.map term_of_pat l)) pt in
+       CAppExpl ((None,qid,None),params @ List.map term_of_pat l)) pt in
   let rec extract_variables l = match l with
     | bnd :: l ->
       let loc = bnd.loc in
       begin match DAst.get bnd with
-      | GLocalAssum (Name id,_,_) -> (CAst.make ?loc @@ CRef (make ?loc @@ Ident id, None)) :: extract_variables l
+      | GLocalAssum (Name id,_,_) -> (CAst.make ?loc @@ CRef (qualid_of_ident ?loc id, None)) :: extract_variables l
       | GLocalDef (Name id,_,_,_) -> extract_variables l
       | GLocalDef (Anonymous,_,_,_)
       | GLocalAssum (Anonymous,_,_) -> user_err Pp.(str "Cannot turn \"_\" into a term.")
@@ -806,7 +808,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
    distinction *)
 
 let cases_pattern_of_name {loc;v=na} =
-  let atom = match na with Name id -> Some (make ?loc @@ Ident id) | Anonymous -> None in
+  let atom = match na with Name id -> Some (qualid_of_ident ?loc id) | Anonymous -> None in
   CAst.make ?loc (CPatAtom atom)
 
 let split_by_type ids subst =
@@ -903,7 +905,7 @@ let intern_var env (ltacvars,ntnvars) namedctx loc id us =
   try
     let ty,expl_impls,impls,argsc = Id.Map.find id env.impls in
     let expl_impls = List.map
-      (fun id -> CAst.make ?loc @@ CRef (make ?loc @@ Ident id,None), Some (make ?loc @@ ExplByName id)) expl_impls in
+      (fun id -> CAst.make ?loc @@ CRef (qualid_of_ident ?loc id,None), Some (make ?loc @@ ExplByName id)) expl_impls in
     let tys = string_of_ty ty in
     Dumpglob.dump_reference ?loc "<>" (Id.to_string id) tys;
     gvar (loc,id) us, make_implicits_list impls, argsc, expl_impls
@@ -970,18 +972,17 @@ let dump_extended_global loc = function
   | TrueGlobal ref -> (*feedback_global loc ref;*) Dumpglob.add_glob ?loc ref
   | SynDef sp -> Dumpglob.add_glob_kn ?loc sp
 
-let intern_extended_global_of_qualid {loc;v=qid} =
-  let r = Nametab.locate_extended qid in dump_extended_global loc r; r
+let intern_extended_global_of_qualid qid =
+  let r = Nametab.locate_extended qid in dump_extended_global qid.CAst.loc r; r
 
-let intern_reference ref =
-  let qid = qualid_of_reference ref in
+let intern_reference qid =
   let r =
     try intern_extended_global_of_qualid qid
     with Not_found -> error_global_not_found qid
   in
   Smartlocate.global_of_extended_global r
 
-let sort_info_of_level_info (info: level_info) : (Libnames.reference * int) option =
+let sort_info_of_level_info (info: level_info) : (Libnames.qualid * int) option =
   match info with
   | UAnonymous -> None
   | UUnknown -> None
@@ -1014,7 +1015,7 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
       let c = instantiate_notation_constr loc intern intern_cases_pattern_as_binder ntnvars subst infos c in
       let loc = c.loc in
       let err () =
-        user_err ?loc  (str "Notation " ++ pr_qualid qid.v
+        user_err ?loc  (str "Notation " ++ pr_qualid qid
                   ++ str " cannot have a universe instance,"
                   ++ str " its expanded head does not start with a reference")
       in
@@ -1031,34 +1032,32 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
       | Some [s], GSort (GType []) -> DAst.make ?loc @@ GSort (glob_sort_of_level s)
       | Some [_old_level], GSort _new_sort ->
         (* TODO: add old_level and new_sort to the error message *)
-        user_err ?loc (str "Cannot change universe level of notation " ++ pr_qualid qid.v)
+        user_err ?loc (str "Cannot change universe level of notation " ++ pr_qualid qid)
       | Some _, _ -> err ()
       in
       c, projapp, args2
 
-let intern_applied_reference intern env namedctx (_, ntnvars as lvar) us args =
-function
-  | {loc; v=Qualid qid} ->
-      let qid = make ?loc qid in
-      let r,projapp,args2 =
-        try intern_qualid qid intern env ntnvars us args
-        with Not_found -> error_global_not_found qid
-      in
-      let x, imp, scopes, l = find_appl_head_data r in
-	(x,imp,scopes,l), args2
-  | {loc; v=Ident id} ->
-      try intern_var env lvar namedctx loc id us, args
+let intern_applied_reference intern env namedctx (_, ntnvars as lvar) us args qid =
+  let loc = qid.CAst.loc in
+  if qualid_is_ident qid then
+      try intern_var env lvar namedctx loc (qualid_basename qid) us, args
       with Not_found ->
-      let qid = make ?loc @@ qualid_of_ident id in
       try
         let r, projapp, args2 = intern_qualid ~no_secvar:true qid intern env ntnvars us args in
 	let x, imp, scopes, l = find_appl_head_data r in
 	  (x,imp,scopes,l), args2
       with Not_found ->
-	(* Extra allowance for non globalizing functions *)
-	if !interning_grammar || env.unb then
-	  (gvar (loc,id) us, [], [], []), args
+        (* Extra allowance for non globalizing functions *)
+        if !interning_grammar || env.unb then
+          (gvar (loc,qualid_basename qid) us, [], [], []), args
         else error_global_not_found qid
+  else
+    let r,projapp,args2 =
+      try intern_qualid qid intern env ntnvars us args
+      with Not_found -> error_global_not_found qid
+    in
+    let x, imp, scopes, l = find_appl_head_data r in
+    (x,imp,scopes,l), args2
 
 let interp_reference vars r =
   let (r,_,_,_),_ =
@@ -1262,18 +1261,18 @@ let find_constructor loc add_params ref =
       List.make nb ([], [(Id.Map.empty, DAst.make @@ PatVar Anonymous)])
     | None -> []
 
-let find_pattern_variable = function
-  | {v=Ident id} -> id
-  | {loc;v=Qualid _} as x -> raise (InternalizationError(loc,NotAConstructor x))
+let find_pattern_variable qid =
+  if qualid_is_ident qid then qualid_basename qid
+  else raise (InternalizationError(qid.CAst.loc,NotAConstructor qid))
 
 let check_duplicate loc fields =
-  let eq (ref1, _) (ref2, _) = eq_reference ref1 ref2 in
+  let eq (ref1, _) (ref2, _) = qualid_eq ref1 ref2 in
   let dups = List.duplicates eq fields in
   match dups with
   | [] -> ()
   | (r, _) :: _ ->
     user_err ?loc (str "This record defines several times the field " ++
-      pr_reference r ++ str ".")
+      pr_qualid r ++ str ".")
 
 (** [sort_fields ~complete loc fields completer] expects a list
     [fields] of field assignments [f = e1; g = e2; ...], where [f, g]
@@ -1298,14 +1297,14 @@ let sort_fields ~complete loc fields completer =
             (gr, Recordops.find_projection gr)
           with Not_found ->
             user_err ?loc ~hdr:"intern"
-                         (pr_reference first_field_ref ++ str": Not a projection")
+                         (pr_qualid first_field_ref ++ str": Not a projection")
         in
         (* the number of parameters *)
         let nparams = record.Recordops.s_EXPECTEDPARAM in
         (* the reference constructor of the record *)
         let base_constructor =
           let global_record_id = ConstructRef record.Recordops.s_CONST in
-          try make ?loc @@ Qualid (shortest_qualid_of_global Id.Set.empty global_record_id)
+          try shortest_qualid_of_global ?loc Id.Set.empty global_record_id
           with Not_found ->
             anomaly (str "Environment corruption for records.") in
         let () = check_duplicate loc fields in
@@ -1356,7 +1355,7 @@ let sort_fields ~complete loc fields completer =
                let field_glob_ref = try global_reference_of_reference field_ref
                with Not_found ->
                  user_err ?loc ~hdr:"intern"
-                               (str "The field \"" ++ pr_reference field_ref ++ str "\" does not exist.") in
+                               (str "The field \"" ++ pr_qualid field_ref ++ str "\" does not exist.") in
                let remaining_projs, (field_index, _) =
                  let the_proj (idx, glob_id) = GlobRef.equal field_glob_ref (ConstRef glob_id) in
                  try CList.extract_first the_proj remaining_projs
@@ -1483,10 +1482,9 @@ let drop_notations_pattern looked_for genv =
       end
     | _ -> CErrors.anomaly Pp.(str "Invalid return pattern from Notation.interp_prim_token_cases_pattern_expr."))) x
   in
-  let rec drop_syndef top scopes re pats =
-    let qid = qualid_of_reference re in
+  let rec drop_syndef top scopes qid pats =
     try
-      match locate_extended qid.v with
+      match locate_extended qid with
       | SynDef sp ->
 	let (vars,a) = Syntax_def.search_syntactic_definition sp in
 	(match a with
@@ -1542,10 +1540,10 @@ let drop_notations_pattern looked_for genv =
 	  | Some (a,b,c) -> DAst.make ?loc @@ RCPatCstr(a, b, c)
 	  | None -> raise (InternalizationError (loc,NotAConstructor head))
       end
-     | CPatCstr (r, Some expl_pl, pl) ->
-      let g = try locate (qualid_of_reference r).v
+     | CPatCstr (qid, Some expl_pl, pl) ->
+      let g = try locate qid
 	      with Not_found ->
- 	      raise (InternalizationError (loc,NotAConstructor r)) in
+              raise (InternalizationError (loc,NotAConstructor qid)) in
       if expl_pl == [] then
         (* Convention: (@r) deactivates all further implicit arguments and scopes *)
         DAst.make ?loc @@ RCPatCstr (g, List.map (in_pat false scopes) pl, [])

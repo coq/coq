@@ -87,7 +87,7 @@ let encode_tuple ({CAst.loc} as r) =
 
 module PrintingInductiveMake =
   functor (Test : sig
-     val encode : reference -> inductive
+     val encode : qualid -> inductive
      val member_message : Pp.t -> bool -> Pp.t
      val field : string
      val title : string

@@ -549,8 +549,8 @@ let encode_path ?loc prefix mpdir suffix id =
     | Some (mp,dir) ->
 	(DirPath.repr (dirpath_of_string (ModPath.to_string mp))@
 	DirPath.repr dir) in
-  CAst.make ?loc @@ Qualid (make_qualid
-    (DirPath.make (List.rev (Id.of_string prefix::dir@suffix))) id)
+  make_qualid ?loc
+    (DirPath.make (List.rev (Id.of_string prefix::dir@suffix))) id
 
 let raw_string_of_ref ?loc _ = function
   | ConstRef cst ->
@@ -569,9 +569,9 @@ let raw_string_of_ref ?loc _ = function
       encode_path ?loc "SECVAR" None [] id
 
 let short_string_of_ref ?loc _ = function
-  | VarRef id -> CAst.make ?loc @@ Ident id
-  | ConstRef cst -> CAst.make ?loc @@ Ident (Label.to_id (pi3 (Constant.repr3 cst)))
-  | IndRef (kn,0) -> CAst.make ?loc @@ Ident (Label.to_id (pi3 (MutInd.repr3 kn)))
+  | VarRef id -> qualid_of_ident ?loc id
+  | ConstRef cst -> qualid_of_ident ?loc (Label.to_id (pi3 (Constant.repr3 cst)))
+  | IndRef (kn,0) -> qualid_of_ident ?loc (Label.to_id (pi3 (MutInd.repr3 kn)))
   | IndRef (kn,i) ->
       encode_path ?loc "IND" None [Label.to_id (pi3 (MutInd.repr3 kn))]
         (Id.of_string ("_"^string_of_int i))

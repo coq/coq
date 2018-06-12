@@ -51,7 +51,7 @@ let glob_sort_eq g1 g2 = let open Glob_term in match g1, g2 with
 | GProp, GProp -> true
 | GSet, GSet -> true
 | GType l1, GType l2 ->
-   List.equal (Option.equal (fun (x,m) (y,n) -> Libnames.eq_reference x y && Int.equal m n)) l1 l2
+   List.equal (Option.equal (fun (x,m) (y,n) -> Libnames.qualid_eq x y && Int.equal m n)) l1 l2
 | _ -> false
 
 let binding_kind_eq bk1 bk2 = match bk1, bk2 with

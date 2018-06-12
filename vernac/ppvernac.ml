@@ -16,7 +16,6 @@ open Util
 open CAst
 
 open Extend
-open Libnames
 open Decl_kinds
 open Constrexpr
 open Constrexpr_ops
@@ -79,13 +78,13 @@ open Pputils
   let pr_lname_decl (n, u) =
     pr_lname n ++ pr_universe_decl u
 
-  let pr_smart_global = Pputils.pr_or_by_notation pr_reference
+  let pr_smart_global = Pputils.pr_or_by_notation pr_qualid
 
-  let pr_ltac_ref = Libnames.pr_reference
+  let pr_ltac_ref = Libnames.pr_qualid
 
-  let pr_module = Libnames.pr_reference
+  let pr_module = Libnames.pr_qualid
 
-  let pr_import_module = Libnames.pr_reference
+  let pr_import_module = Libnames.pr_qualid
 
   let sep_end = function
     | VernacBullet _
@@ -157,7 +156,7 @@ open Pputils
   let pr_locality local = if local then keyword "Local" else keyword "Global"
 
   let pr_option_ref_value = function
-    | QualidRefValue id -> pr_reference id
+    | QualidRefValue id -> pr_qualid id
     | StringRefValue s -> qs s
 
   let pr_printoption table b =
@@ -180,7 +179,7 @@ open Pputils
     | _ as z -> str":" ++ spc() ++ prlist_with_sep sep str z
 
   let pr_reference_or_constr pr_c = function
-    | HintsReference r -> pr_reference r
+    | HintsReference r -> pr_qualid r
     | HintsConstr c -> pr_c c
 
   let pr_hint_mode = function
@@ -202,24 +201,24 @@ open Pputils
             l
         | HintsResolveIFF (l2r, l, n) ->
           keyword "Resolve " ++ str (if l2r then "->" else "<-")
-          ++ prlist_with_sep sep pr_reference l
+          ++ prlist_with_sep sep pr_qualid l
         | HintsImmediate l ->
           keyword "Immediate" ++ spc() ++
             prlist_with_sep sep (fun c -> pr_reference_or_constr pr_c c) l
         | HintsUnfold l ->
-          keyword "Unfold" ++ spc () ++ prlist_with_sep sep pr_reference l
+          keyword "Unfold" ++ spc () ++ prlist_with_sep sep pr_qualid l
         | HintsTransparency (l, b) ->
           keyword (if b then "Transparent" else "Opaque")
           ++ spc ()
-          ++ prlist_with_sep sep pr_reference l
+          ++ prlist_with_sep sep pr_qualid l
         | HintsMode (m, l) ->
           keyword "Mode"
           ++ spc ()
-          ++ pr_reference m ++ spc() ++
+          ++ pr_qualid m ++ spc() ++
             prlist_with_sep spc pr_hint_mode l
         | HintsConstructors c ->
           keyword "Constructors"
-          ++ spc() ++ prlist_with_sep spc pr_reference c
+          ++ spc() ++ prlist_with_sep spc pr_qualid c
         | HintsExtern (n,c,tac) ->
           let pat = match c with None -> mt () | Some pat -> pr_pat pat in
           keyword "Extern" ++ spc() ++ int n ++ spc() ++ pat ++ str" =>" ++
@@ -233,7 +232,7 @@ open Pputils
       keyword "Definition" ++ spc() ++ pr_lfqid id ++ pr_universe_decl udecl ++ str" := " ++ p
     | CWith_Module (id,qid) ->
       keyword "Module" ++ spc() ++ pr_lfqid id ++ str" := " ++
-        pr_ast pr_qualid qid
+        pr_qualid qid
 
   let rec pr_module_ast leading_space pr_c = function
     | { loc ; v = CMident qid } ->
@@ -451,7 +450,7 @@ open Pputils
     | PrintFullContext ->
       keyword "Print All"
     | PrintSectionContext s ->
-      keyword "Print Section" ++ spc() ++ Libnames.pr_reference s
+      keyword "Print Section" ++ spc() ++ Libnames.pr_qualid s
     | PrintGrammar ent ->
       keyword "Print Grammar" ++ spc() ++ str ent
     | PrintLoadPath dir ->
@@ -499,9 +498,9 @@ open Pputils
     | PrintName (qid,udecl) ->
       keyword "Print" ++ spc()  ++ pr_smart_global qid ++ pr_univ_name_list udecl
     | PrintModuleType qid ->
-      keyword "Print Module Type" ++ spc() ++ pr_reference qid
+      keyword "Print Module Type" ++ spc() ++ pr_qualid qid
     | PrintModule qid ->
-      keyword "Print Module" ++ spc() ++ pr_reference qid
+      keyword "Print Module" ++ spc() ++ pr_qualid qid
     | PrintInspect n ->
       keyword "Inspect" ++ spc() ++ int n
     | PrintScopes ->
@@ -604,7 +603,7 @@ open Pputils
           | ShowUniverses -> keyword "Show Universes"
           | ShowProofNames -> keyword "Show Conjectures"
           | ShowIntros b -> keyword "Show " ++ (if b then keyword "Intros" else keyword "Intro")
-          | ShowMatch id -> keyword "Show Match " ++ pr_reference id
+          | ShowMatch id -> keyword "Show Match " ++ pr_qualid id
         in
         return (pr_showable s)
       | VernacCheckGuard ->
@@ -901,7 +900,7 @@ open Pputils
 
       | VernacDeclareInstances insts ->
          let pr_inst (id, info) =
-           pr_reference id ++ pr_hint_info pr_constr_pattern_expr info
+           pr_qualid id ++ pr_hint_info pr_constr_pattern_expr info
          in
          return (
           hov 1 (keyword "Existing" ++ spc () ++
@@ -911,7 +910,7 @@ open Pputils
 
       | VernacDeclareClass id ->
         return (
-          hov 1 (keyword "Existing" ++ spc () ++ keyword "Class" ++ spc () ++ pr_reference id)
+          hov 1 (keyword "Existing" ++ spc () ++ keyword "Class" ++ spc () ++ pr_qualid id)
         )
 
       (* Modules and Module Types *)

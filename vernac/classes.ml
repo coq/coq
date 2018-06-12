@@ -229,10 +229,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
             let sigma, c = interp_casted_constr_evars env' sigma term cty in
             Some (Inr (c, subst)), sigma
 	| Some (Inl props) ->
-            let get_id = CAst.map (function
-                | Ident id' -> id'
-                | Qualid id' -> snd (repr_qualid id'))
-	    in
+            let get_id qid = CAst.make ?loc:qid.CAst.loc @@ qualid_basename qid in
 	    let props, rest =
 	      List.fold_left
 		(fun (props, rest) decl ->

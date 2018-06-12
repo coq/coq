@@ -33,11 +33,11 @@ type 'a universe_kind =
   | UUnknown
   | UNamed of 'a
 
-type level_info = Libnames.reference universe_kind
+type level_info = Libnames.qualid universe_kind
 type glob_level = level_info glob_sort_gen
 type glob_constraint = glob_level * Univ.constraint_type * glob_level
 
-type sort_info = (Libnames.reference * int) option list
+type sort_info = (Libnames.qualid * int) option list
 type glob_sort = sort_info glob_sort_gen
 
 (** Casts *)

@@ -41,26 +41,24 @@ let global_of_extended_global = function
   | [],NApp (NRef ref,[]) -> ref
   | _ -> raise Not_found
 
-let locate_global_with_alias ?(head=false) {CAst.loc; v=qid} =
+let locate_global_with_alias ?(head=false) qid =
   let ref = Nametab.locate_extended qid in
   try
     if head then global_of_extended_global_head ref
     else global_of_extended_global ref
   with Not_found ->
-    user_err ?loc (pr_qualid qid ++
+    user_err ?loc:qid.CAst.loc (pr_qualid qid ++
       str " is bound to a notation that does not denote a reference.")
 
-let global_inductive_with_alias ({CAst.loc} as lr)  =
-  let qid = qualid_of_reference lr in
+let global_inductive_with_alias qid  =
   try match locate_global_with_alias qid with
   | IndRef ind -> ind
   | ref ->
-      user_err ?loc ~hdr:"global_inductive"
-        (pr_reference lr ++ spc () ++ str "is not an inductive type.")
+      user_err ?loc:qid.CAst.loc ~hdr:"global_inductive"
+        (pr_qualid qid ++ spc () ++ str "is not an inductive type.")
   with Not_found -> Nametab.error_global_not_found qid
 
-let global_with_alias ?head r =
-  let qid = qualid_of_reference r in
+let global_with_alias ?head qid =
   try locate_global_with_alias ?head qid
   with Not_found -> Nametab.error_global_not_found qid
 

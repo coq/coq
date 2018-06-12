@@ -13,7 +13,7 @@ open Constrexpr
 open Libnames
 
 (** Vernac expressions, produced by the parser *)
-type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
+type class_rawexpr = FunClass | SortClass | RefClass of qualid or_by_notation
 
 type goal_selector = Goal_select.t =
   | SelectAlreadyFocused
@@ -37,37 +37,37 @@ type univ_name_list = UnivNames.univ_name_list
 type printable =
   | PrintTables
   | PrintFullContext
-  | PrintSectionContext of reference
+  | PrintSectionContext of qualid
   | PrintInspect of int
   | PrintGrammar of string
   | PrintLoadPath of DirPath.t option
   | PrintModules
-  | PrintModule of reference
-  | PrintModuleType of reference
+  | PrintModule of qualid
+  | PrintModuleType of qualid
   | PrintNamespace of DirPath.t
   | PrintMLLoadPath
   | PrintMLModules
   | PrintDebugGC
-  | PrintName of reference or_by_notation * UnivNames.univ_name_list option
+  | PrintName of qualid or_by_notation * UnivNames.univ_name_list option
   | PrintGraph
   | PrintClasses
   | PrintTypeClasses
-  | PrintInstances of reference or_by_notation
+  | PrintInstances of qualid or_by_notation
   | PrintCoercions
   | PrintCoercionPaths of class_rawexpr * class_rawexpr
   | PrintCanonicalConversions
   | PrintUniverses of bool * string option
-  | PrintHint of reference or_by_notation
+  | PrintHint of qualid or_by_notation
   | PrintHintGoal
   | PrintHintDbName of string
   | PrintHintDb
   | PrintScopes
   | PrintScope of string
   | PrintVisibility of string option
-  | PrintAbout of reference or_by_notation * UnivNames.univ_name_list option * Goal_select.t option
-  | PrintImplicit of reference or_by_notation
-  | PrintAssumptions of bool * bool * reference or_by_notation
-  | PrintStrategy of reference or_by_notation option
+  | PrintAbout of qualid or_by_notation * UnivNames.univ_name_list option * Goal_select.t option
+  | PrintImplicit of qualid or_by_notation
+  | PrintAssumptions of bool * bool * qualid or_by_notation
+  | PrintStrategy of qualid or_by_notation option
 
 type search_about_item =
   | SearchSubPattern of constr_pattern_expr
@@ -80,11 +80,11 @@ type searchable =
   | SearchAbout of (bool * search_about_item) list
 
 type locatable =
-  | LocateAny of reference or_by_notation
-  | LocateTerm of reference or_by_notation
-  | LocateLibrary of reference
-  | LocateModule of reference
-  | LocateOther of string * reference
+  | LocateAny of qualid or_by_notation
+  | LocateTerm of qualid or_by_notation
+  | LocateLibrary of qualid
+  | LocateModule of qualid
+  | LocateOther of string * qualid
   | LocateFile of string
 
 type showable =
@@ -95,7 +95,7 @@ type showable =
   | ShowUniverses
   | ShowProofNames
   | ShowIntros of bool
-  | ShowMatch of reference
+  | ShowMatch of qualid
 
 type comment =
   | CommentConstr of constr_expr
@@ -103,7 +103,7 @@ type comment =
   | CommentInt of int
 
 type reference_or_constr = Hints.reference_or_constr =
-  | HintsReference of reference
+  | HintsReference of qualid
   | HintsConstr of constr_expr
 [@@ocaml.deprecated "Please use [Hints.reference_or_constr]"]
 
@@ -123,18 +123,18 @@ type hint_info_expr = Hints.hint_info_expr
 
 type hints_expr = Hints.hints_expr =
   | HintsResolve of (Hints.hint_info_expr * bool * Hints.reference_or_constr) list
-  | HintsResolveIFF of bool * reference list * int option
+  | HintsResolveIFF of bool * qualid list * int option
   | HintsImmediate of Hints.reference_or_constr list
-  | HintsUnfold of reference list
-  | HintsTransparency of reference list * bool
-  | HintsMode of reference * Hints.hint_mode list
-  | HintsConstructors of reference list
+  | HintsUnfold of qualid list
+  | HintsTransparency of qualid list * bool
+  | HintsMode of qualid * Hints.hint_mode list
+  | HintsConstructors of qualid list
   | HintsExtern of int * constr_expr option * Genarg.raw_generic_argument
 [@@ocaml.deprecated "Please use [Hints.hints_expr]"]
 
 type search_restriction =
-  | SearchInside of reference list
-  | SearchOutside of reference list
+  | SearchInside of qualid list
+  | SearchOutside of qualid list
 
 type rec_flag       = bool (* true = Rec;           false = NoRec          *)
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
@@ -159,7 +159,7 @@ type option_value = Goptions.option_value =
 
 type option_ref_value =
   | StringRefValue of string
-  | QualidRefValue of reference
+  | QualidRefValue of qualid
 
 (** Identifier and optional list of bound universes and constraints. *)
 
@@ -222,9 +222,9 @@ type proof_end =
   | Proved of Proof_global.opacity_flag * lident option
 
 type scheme =
-  | InductionScheme of bool * reference or_by_notation * sort_expr
-  | CaseScheme of bool * reference or_by_notation * sort_expr
-  | EqualityScheme of reference or_by_notation
+  | InductionScheme of bool * qualid or_by_notation * sort_expr
+  | CaseScheme of bool * qualid or_by_notation * sort_expr
+  | EqualityScheme of qualid or_by_notation
 
 type section_subset_expr =
   | SsEmpty
@@ -348,10 +348,10 @@ type nonrec vernac_expr =
   | VernacBeginSection of lident
   | VernacEndSegment of lident
   | VernacRequire of
-      reference option * export_flag option * reference list
-  | VernacImport of export_flag * reference list
-  | VernacCanonical of reference or_by_notation
-  | VernacCoercion of reference or_by_notation *
+      qualid option * export_flag option * qualid list
+  | VernacImport of export_flag * qualid list
+  | VernacCanonical of qualid or_by_notation
+  | VernacCoercion of qualid or_by_notation *
       class_rawexpr * class_rawexpr
   | VernacIdentityCoercion of lident * class_rawexpr * class_rawexpr
   | VernacNameSectionHypSet of lident * section_subset_expr
@@ -367,9 +367,9 @@ type nonrec vernac_expr =
   | VernacContext of local_binder_expr list
 
   | VernacDeclareInstances of
-    (reference * Hints.hint_info_expr) list (* instances names, priorities and patterns *)
+    (qualid * Hints.hint_info_expr) list (* instances names, priorities and patterns *)
 
-  | VernacDeclareClass of reference (* inductive or definition name *)
+  | VernacDeclareClass of qualid (* inductive or definition name *)
 
   (* Modules and Module Types *)
   | VernacDeclareModule of bool option * lident *
@@ -403,11 +403,11 @@ type nonrec vernac_expr =
 
   (* Commands *)
   | VernacCreateHintDb of string * bool
-  | VernacRemoveHints of string list * reference list
+  | VernacRemoveHints of string list * qualid list
   | VernacHints of string list * Hints.hints_expr
   | VernacSyntacticDefinition of lident * (Id.t list * constr_expr) *
       onlyparsing_flag
-  | VernacArguments of reference or_by_notation *
+  | VernacArguments of qualid or_by_notation *
       vernac_argument_status list (* Main arguments status list *) *
         (Name.t * vernac_implicit_status) list list (* Extra implicit status lists *) *
       int option (* Number of args to trigger reduction *) *
@@ -416,9 +416,9 @@ type nonrec vernac_expr =
           `DefaultImplicits ] list
   | VernacReserve of simple_binder list
   | VernacGeneralizable of (lident list) option
-  | VernacSetOpacity of (Conv_oracle.level * reference or_by_notation list)
+  | VernacSetOpacity of (Conv_oracle.level * qualid or_by_notation list)
   | VernacSetStrategy of
-      (Conv_oracle.level * reference or_by_notation list) list
+      (Conv_oracle.level * qualid or_by_notation list) list
   | VernacUnsetOption of export_flag * Goptions.option_name
   | VernacSetOption of export_flag * Goptions.option_name * option_value
   | VernacAddOption of Goptions.option_name * option_ref_value list

@@ -17,7 +17,6 @@ open Goptions
 open Tacmach.New
 open Tacticals.New
 open Tacinterp
-open Libnames
 open Stdarg
 open Tacarg
 open Pcoq.Prim
@@ -127,7 +126,7 @@ let normalize_evaluables=
 open Genarg
 open Ppconstr
 open Printer
-let pr_firstorder_using_raw _ _ _ = Pptactic.pr_auto_using pr_reference
+let pr_firstorder_using_raw _ _ _ = Pptactic.pr_auto_using pr_qualid
 let pr_firstorder_using_glob _ _ _ = Pptactic.pr_auto_using (pr_or_var (fun x -> pr_global (snd x)))
 let pr_firstorder_using_typed _ _ _ = Pptactic.pr_auto_using pr_global
 

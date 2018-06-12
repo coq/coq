@@ -65,7 +65,7 @@ val create_ltac_quotation : string ->
 val print_ltacs : unit -> unit
 (** Display the list of ltac definitions currently available. *)
 
-val print_located_tactic : Libnames.reference -> unit
+val print_located_tactic : Libnames.qualid -> unit
 (** Display the absolute name of a tactic. *)
 
 type _ ty_sig =

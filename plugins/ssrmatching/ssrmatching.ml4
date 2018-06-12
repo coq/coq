@@ -131,9 +131,12 @@ let add_genarg tag pr =
 (** Constructors for cast type *)
 let dC t = CastConv t
 (** Constructors for constr_expr *)
-let isCVar   = function { CAst.v = CRef ({CAst.v=Ident _},_) } -> true | _ -> false
-let destCVar = function { CAst.v = CRef ({CAst.v=Ident id},_) } -> id | _ ->
-  CErrors.anomaly (str"not a CRef.")
+let isCVar   = function { CAst.v = CRef (qid,_) } -> qualid_is_ident qid | _ -> false
+let destCVar = function
+  | { CAst.v = CRef (qid,_) } when qualid_is_ident qid ->
+    qualid_basename qid
+  | _ ->
+    CErrors.anomaly (str"not a CRef.")
 let isGLambda c = match DAst.get c with GLambda (Name _, _, _, _) -> true | _ -> false
 let destGLambda c = match DAst.get c with GLambda (Name id, _, _, c) -> (id, c)
   | _ -> CErrors.anomaly (str "not a GLambda")
@@ -1019,8 +1022,10 @@ type pattern = Evd.evar_map * (constr, constr) ssrpattern
 let id_of_cpattern (_, (c1, c2), _) =
   let open CAst in
   match DAst.get c1, c2 with
-  | _, Some { v = CRef ({CAst.v=Ident x}, _) } -> Some x
-  | _, Some { v = CAppExpl ((_, {CAst.v=Ident x}, _), []) } -> Some x
+  | _, Some { v = CRef (qid, _) } when qualid_is_ident qid ->
+    Some (qualid_basename qid)
+  | _, Some { v = CAppExpl ((_, qid, _), []) } when qualid_is_ident qid ->
+    Some (qualid_basename qid)
   | GRef (VarRef x, _), None -> Some x
   | _ -> None
 let id_of_Cterm t = match id_of_cpattern t with

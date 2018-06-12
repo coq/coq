@@ -22,7 +22,7 @@ type 'constr coeff_spec =
 
 type cst_tac_spec =
     CstTac of raw_tactic_expr
-  | Closed of reference list
+  | Closed of qualid list
 
 type 'constr ring_mod =
     Ring_kind of 'constr coeff_spec

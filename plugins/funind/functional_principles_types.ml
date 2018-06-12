@@ -627,7 +627,7 @@ let build_scheme fas =
 		Smartlocate.global_with_alias f
 	      with Not_found ->
                 user_err ~hdr:"FunInd.build_scheme"
-                  (str "Cannot find " ++ Libnames.pr_reference f)
+                  (str "Cannot find " ++ Libnames.pr_qualid f)
 	    in
             let evd',f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
             let _ = evd := evd' in 
@@ -668,7 +668,7 @@ let build_case_scheme fa =
     try fst (Global.constr_of_global_in_context (Global.env ()) (Smartlocate.global_with_alias f))
     with Not_found ->
       user_err ~hdr:"FunInd.build_case_scheme"
-        (str "Cannot find " ++ Libnames.pr_reference f) in
+        (str "Cannot find " ++ Libnames.pr_qualid f) in
   let first_fun,u = destConst  funs in
   let funs_mp,funs_dp,_ = Constant.repr3 first_fun in
   let first_fun_kn = try fst (find_Function_infos  first_fun).graph_ind with Not_found -> raise No_graph_found in

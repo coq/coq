@@ -229,7 +229,7 @@ let pf_e gl s =
 let _ = Flags.in_debugger := false
 let _ = Flags.in_toplevel := true
 let _ = Constrextern.set_extern_reference
-  (fun ?loc _ r -> CAst.make ?loc @@ Libnames.Qualid (Nametab.shortest_qualid_of_global Id.Set.empty r));;
+  (fun ?loc _ r -> Nametab.shortest_qualid_of_global ?loc Id.Set.empty r);;
 
 let go () = Coqloop.(loop ~opts:Option.(get !drop_args) ~state:Option.(get !drop_last_doc))
 

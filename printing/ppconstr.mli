@@ -47,7 +47,7 @@ val pr_guard_annot : (constr_expr -> Pp.t) ->
   lident option * recursion_order_expr ->
   Pp.t
 
-val pr_record_body : (reference * constr_expr) list -> Pp.t
+val pr_record_body : (qualid * constr_expr) list -> Pp.t
 val pr_binders : local_binder_expr list -> Pp.t
 val pr_constr_pattern_expr : constr_pattern_expr -> Pp.t
 val pr_lconstr_pattern_expr : constr_pattern_expr -> Pp.t

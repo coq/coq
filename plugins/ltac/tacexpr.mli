@@ -333,8 +333,8 @@ type glob_tactic_arg =
 
 type r_trm = constr_expr
 type r_pat = constr_pattern_expr
-type r_cst = reference or_by_notation
-type r_ref = reference
+type r_cst = qualid or_by_notation
+type r_ref = qualid
 type r_nam = lident
 type r_lev = rlevel
 
@@ -399,4 +399,4 @@ type ltac_trace = ltac_call_kind Loc.located list
 
 type tacdef_body =
   | TacticDefinition of lident * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)
-  | TacticRedefinition of reference * raw_tactic_expr       (* indicates that user employed '::=' in Ltac body *)
+  | TacticRedefinition of qualid * raw_tactic_expr       (* indicates that user employed '::=' in Ltac body *)

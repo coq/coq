@@ -18,8 +18,8 @@ open Globnames
 
 exception GlobalizationError of qualid
 
-let error_global_not_found {CAst.loc;v} =
-  Loc.raise ?loc (GlobalizationError v)
+let error_global_not_found qid =
+  Loc.raise ?loc:qid.CAst.loc (GlobalizationError qid)
 
 (* The visibility can be registered either
    - for all suffixes not shorter then a given int - when the object
@@ -69,7 +69,7 @@ module type NAMETREE = sig
   val find : user_name -> t -> elt
   val exists : user_name -> t -> bool
   val user_name : qualid -> t -> user_name
-  val shortest_qualid : Id.Set.t -> user_name -> t -> qualid
+  val shortest_qualid : ?loc:Loc.t -> Id.Set.t -> user_name -> t -> qualid
   val find_prefixes : qualid -> t -> elt list
 end
 
@@ -220,7 +220,7 @@ let exists uname tab =
   with
       Not_found -> false
 
-let shortest_qualid ctx uname tab =
+let shortest_qualid ?loc ctx uname tab =
   let id,dir = U.repr uname in
   let hidden = Id.Set.mem id ctx in
   let rec find_uname pos dir tree =
@@ -235,7 +235,7 @@ let shortest_qualid ctx uname tab =
   in
   let ptab = Id.Map.find id tab in
   let found_dir = find_uname [] dir ptab in
-    make_qualid (DirPath.make found_dir) id
+    make_qualid ?loc (DirPath.make found_dir) id
 
 let push_node node l =
   match node with
@@ -458,14 +458,13 @@ let global_of_path sp =
 
 let extended_global_of_path sp = ExtRefTab.find sp !the_ccitab
 
-let global ({CAst.loc;v=r} as lr)=
-  let {CAst.loc; v} as qid = qualid_of_reference lr in
-  try match locate_extended v with
+let global qid =
+  try match locate_extended qid with
     | TrueGlobal ref -> ref
     | SynDef _ ->
-        user_err ?loc ~hdr:"global"
+        user_err ?loc:qid.CAst.loc ~hdr:"global"
           (str "Unexpected reference to a notation: " ++
-           pr_qualid v)
+           pr_qualid qid)
   with Not_found ->
     error_global_not_found qid
 
@@ -510,40 +509,40 @@ let path_of_universe mp =
 
 (* Shortest qualid functions **********************************************)
 
-let shortest_qualid_of_global ctx ref =
+let shortest_qualid_of_global ?loc ctx ref =
   match ref with
-    | VarRef id -> make_qualid DirPath.empty id
+    | VarRef id -> make_qualid ?loc DirPath.empty id
     | _ ->
         let sp = Globrevtab.find (TrueGlobal ref) !the_globrevtab in
-        ExtRefTab.shortest_qualid ctx sp !the_ccitab
+        ExtRefTab.shortest_qualid ?loc ctx sp !the_ccitab
 
-let shortest_qualid_of_syndef ctx kn =
+let shortest_qualid_of_syndef ?loc ctx kn =
   let sp = path_of_syndef kn in
-    ExtRefTab.shortest_qualid ctx sp !the_ccitab
+    ExtRefTab.shortest_qualid ?loc ctx sp !the_ccitab
 
-let shortest_qualid_of_module mp =
+let shortest_qualid_of_module ?loc mp =
   let dir = MPmap.find mp !the_modrevtab in
-    DirTab.shortest_qualid Id.Set.empty dir !the_dirtab
+    DirTab.shortest_qualid ?loc Id.Set.empty dir !the_dirtab
 
-let shortest_qualid_of_modtype kn =
+let shortest_qualid_of_modtype ?loc kn =
   let sp = MPmap.find kn !the_modtyperevtab in
-    MPTab.shortest_qualid Id.Set.empty sp !the_modtypetab
+    MPTab.shortest_qualid ?loc Id.Set.empty sp !the_modtypetab
 
-let shortest_qualid_of_universe kn =
+let shortest_qualid_of_universe ?loc kn =
   let sp = UnivIdMap.find kn !the_univrevtab in
-    UnivTab.shortest_qualid Id.Set.empty sp !the_univtab
+    UnivTab.shortest_qualid ?loc Id.Set.empty sp !the_univtab
 
 let pr_global_env env ref =
   try pr_qualid (shortest_qualid_of_global env ref)
   with Not_found as e ->
     if !Flags.debug then Feedback.msg_debug (Pp.str "pr_global_env not found"); raise e
 
-let global_inductive ({CAst.loc; v=r} as lr) =
-  match global lr with
+let global_inductive qid =
+  match global qid with
   | IndRef ind -> ind
   | ref ->
-      user_err ?loc ~hdr:"global_inductive"
-        (pr_reference lr ++ spc () ++ str "is not an inductive type")
+      user_err ?loc:qid.CAst.loc ~hdr:"global_inductive"
+        (pr_qualid qid ++ spc () ++ str "is not an inductive type")
 
 (********************************************************************)
 

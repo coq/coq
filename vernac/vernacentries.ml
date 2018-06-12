@@ -183,29 +183,27 @@ let print_modules () =
   pr_vertical_list DirPath.print only_loaded
 
 
-let print_module r =
-  let qid = qualid_of_reference r in
+let print_module qid =
   try
-    let globdir = Nametab.locate_dir qid.v in
+    let globdir = Nametab.locate_dir qid in
       match globdir with
           DirModule { obj_dir; obj_mp; _ } ->
           Printmod.print_module (Printmod.printable_body obj_dir) obj_mp
 	| _ -> raise Not_found
   with
-    Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid.v)
+    Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid)
 
-let print_modtype r =
-  let qid = qualid_of_reference r in
+let print_modtype qid =
   try
-    let kn = Nametab.locate_modtype qid.v in
+    let kn = Nametab.locate_modtype qid in
     Printmod.print_modtype kn
   with Not_found ->
     (* Is there a module of this name ? If yes we display its type *)
     try
-      let mp = Nametab.locate_module qid.v in
+      let mp = Nametab.locate_module qid in
       Printmod.print_module false mp
     with Not_found ->
-      user_err (str"Unknown Module Type or Module " ++ pr_qualid qid.v)
+      user_err (str"Unknown Module Type or Module " ++ pr_qualid qid)
 
 let print_namespace ns =
   let ns = List.rev (Names.DirPath.repr ns) in
@@ -367,33 +365,32 @@ let msg_found_library = function
   | Library.LibInPath, fulldir, file ->
     hov 0 (DirPath.print fulldir ++ strbrk " is bound to file " ++ str file)
 
-let err_unmapped_library ?loc ?from qid =
+let err_unmapped_library ?from qid =
   let dir = fst (repr_qualid qid) in
   let prefix = match from with
   | None -> str "."
   | Some from ->
     str " and prefix " ++ DirPath.print from ++ str "."
   in
-  user_err ?loc
+  user_err ?loc:qid.CAst.loc
     ~hdr:"locate_library"
     (strbrk "Cannot find a physical path bound to logical path matching suffix " ++
        DirPath.print dir ++ prefix)
 
-let err_notfound_library ?loc ?from qid =
+let err_notfound_library ?from qid =
   let prefix = match from with
   | None -> str "."
   | Some from ->
     str " with prefix " ++ DirPath.print from ++ str "."
   in
-  user_err ?loc ~hdr:"locate_library"
+  user_err ?loc:qid.CAst.loc ~hdr:"locate_library"
      (strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix)
 
-let print_located_library r =
-  let {loc;v=qid} = qualid_of_reference r in
+let print_located_library qid =
   try msg_found_library (Library.locate_qualified_library ~warn:false qid)
   with
-    | Library.LibUnmappedDir -> err_unmapped_library ?loc qid
-    | Library.LibNotFound -> err_notfound_library ?loc qid
+    | Library.LibUnmappedDir -> err_unmapped_library qid
+    | Library.LibNotFound -> err_notfound_library qid
 
 let smart_global r =
   let gr = Smartlocate.smart_global r in
@@ -636,7 +633,7 @@ let vernac_scheme l =
 let vernac_combined_scheme lid l =
   if Dumpglob.dump () then
     (Dumpglob.dump_definition lid false "def";
-     List.iter (fun {loc;v=id} -> dump_global (make ?loc @@ AN (make ?loc @@ Ident id))) l);
+     List.iter (fun {loc;v=id} -> dump_global (make ?loc @@ AN (qualid_of_ident ?loc id))) l);
  Indschemes.do_combined_scheme lid l
 
 let vernac_universe ~atts l =
@@ -657,7 +654,7 @@ let vernac_constraint ~atts l =
 (* Modules            *)
 
 let vernac_import export refl =
-  Library.import_module export (List.map qualid_of_reference refl)
+  Library.import_module export refl
 
 let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
   (* We check the state of the system (in section, in module type)
@@ -675,7 +672,7 @@ let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
   in
   Dumpglob.dump_moddef ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is declared");
-  Option.iter (fun export -> vernac_import export [make @@ Ident id]) export
+  Option.iter (fun export -> vernac_import export [qualid_of_ident id]) export
 
 let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
@@ -700,7 +697,7 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
        List.iter
          (fun (export,id) ->
            Option.iter
-             (fun export -> vernac_import export [make @@ Ident id]) export
+             (fun export -> vernac_import export [qualid_of_ident id]) export
          ) argsexport
     | _::_ ->
        let binders_ast = List.map
@@ -715,14 +712,14 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
 	 (str "Module " ++ Id.print id ++ str " is defined");
-       Option.iter (fun export -> vernac_import export [make @@ Ident id])
+       Option.iter (fun export -> vernac_import export [qualid_of_ident id])
          export
 
 let vernac_end_module export {loc;v=id} =
   let mp = Declaremods.end_module () in
   Dumpglob.dump_modref ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is defined");
-  Option.iter (fun export -> vernac_import export [make ?loc @@ Ident id]) export
+  Option.iter (fun export -> vernac_import export [qualid_of_ident ?loc id]) export
 
 let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
   if Lib.sections_are_opened () then
@@ -747,7 +744,7 @@ let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
        List.iter
          (fun (export,id) ->
            Option.iter
-             (fun export -> vernac_import export [make ?loc @@ Ident id]) export
+             (fun export -> vernac_import export [qualid_of_ident ?loc id]) export
          ) argsexport
 
     | _ :: _ ->
@@ -809,22 +806,20 @@ let warn_require_in_section =
 
 let vernac_require from import qidl =
   if Lib.sections_are_opened () then warn_require_in_section ();
-  let qidl = List.map qualid_of_reference qidl in
   let root = match from with
   | None -> None
   | Some from ->
-    let qid = Libnames.qualid_of_reference from in
-    let (hd, tl) = Libnames.repr_qualid qid.v in
+    let (hd, tl) = Libnames.repr_qualid from in
     Some (Libnames.add_dirpath_suffix hd tl)
   in
-  let locate {loc;v=qid} =
+  let locate qid =
     try
       let warn = not !Flags.quiet in
       let (_, dir, f) = Library.locate_qualified_library ?root ~warn qid in
       (dir, f)
     with
-      | Library.LibUnmappedDir -> err_unmapped_library ?loc ?from:root qid
-      | Library.LibNotFound -> err_notfound_library ?loc ?from:root qid
+      | Library.LibUnmappedDir -> err_unmapped_library ?from:root qid
+      | Library.LibNotFound -> err_notfound_library ?from:root qid
   in
   let modrefl = List.map locate qidl in
   if Dumpglob.dump () then
@@ -1687,10 +1682,10 @@ let print_about_hyp_globs ?loc ref_or_by_not udecl glopt =
     let glnumopt = query_command_selector ?loc glopt in
     let gl,id =
       match glnumopt, ref_or_by_not.v with
-      | None,AN {v=Ident id} -> (* goal number not given, catch any failure *)
-	 (try get_nth_goal 1,id with _ -> raise NoHyp)
-      | Some n,AN {v=Ident id} ->  (* goal number given, catch if wong *)
-	 (try get_nth_goal n,id
+      | None,AN qid when qualid_is_ident qid -> (* goal number not given, catch any failure *)
+         (try get_nth_goal 1, qualid_basename qid with _ -> raise NoHyp)
+      | Some n,AN qid when qualid_is_ident qid ->  (* goal number given, catch if wong *)
+         (try get_nth_goal n, qualid_basename qid
 	  with
 	    Failure _ -> user_err ?loc ~hdr:"print_about_hyp_globs"
                           (str "No such goal: " ++ int n ++ str "."))
@@ -1771,11 +1766,10 @@ let vernac_print ~atts env sigma =
       Printer.pr_assumptionset env sigma nassums
   | PrintStrategy r -> print_strategy r
 
-let global_module r =
-  let {loc;v=qid} = qualid_of_reference r in
+let global_module qid =
   try Nametab.full_name_module qid
   with Not_found ->
-    user_err ?loc ~hdr:"global_module"
+    user_err ?loc:qid.CAst.loc ~hdr:"global_module"
      (str "Module/section " ++ pr_qualid qid ++ str " not found.")
 
 let interp_search_restriction = function

@@ -41,7 +41,7 @@ val wit_ident : Id.t uniform_genarg_type
 
 val wit_var : (lident, lident, Id.t) genarg_type
 
-val wit_ref : (reference, GlobRef.t located or_var, GlobRef.t) genarg_type
+val wit_ref : (qualid, GlobRef.t located or_var, GlobRef.t) genarg_type
 
 val wit_sort_family : (Sorts.family, unit, unit) genarg_type
 
@@ -53,7 +53,7 @@ val wit_open_constr :
   (constr_expr, glob_constr_and_expr, constr) genarg_type
 
 val wit_red_expr :
-  ((constr_expr,reference or_by_notation,constr_expr) red_expr_gen,
+  ((constr_expr,qualid or_by_notation,constr_expr) red_expr_gen,
   (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,
   (constr,evaluable_global_reference,constr_pattern) red_expr_gen) genarg_type
 
@@ -63,10 +63,10 @@ val wit_clause_dft_concl :  (lident Locus.clause_expr, lident Locus.clause_expr,
 
 val wit_integer : int uniform_genarg_type
 val wit_preident : string uniform_genarg_type
-val wit_reference : (reference, GlobRef.t located or_var, GlobRef.t) genarg_type
-val wit_global : (reference, GlobRef.t located or_var, GlobRef.t) genarg_type
+val wit_reference : (qualid, GlobRef.t located or_var, GlobRef.t) genarg_type
+val wit_global : (qualid, GlobRef.t located or_var, GlobRef.t) genarg_type
 val wit_clause :  (lident Locus.clause_expr, lident Locus.clause_expr, Names.Id.t Locus.clause_expr) genarg_type
 val wit_redexpr :
-  ((constr_expr,reference or_by_notation,constr_expr) red_expr_gen,
+  ((constr_expr,qualid or_by_notation,constr_expr) red_expr_gen,
   (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,
   (constr,evaluable_global_reference,constr_pattern) red_expr_gen) genarg_type

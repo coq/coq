@@ -161,7 +161,7 @@ module type RefConvertArg =
 sig
   type t
   val compare : t -> t -> int
-  val encode : reference -> t
+  val encode : qualid -> t
   val subst : substitution -> t -> t
   val printer : t -> Pp.t
   val key : option_name
@@ -172,7 +172,7 @@ end
 module RefConvert = functor (A : RefConvertArg) ->
 struct
   type t = A.t
-  type key = reference
+  type key = qualid
   let compare = A.compare
   let table = ref_table
   let encode = A.encode

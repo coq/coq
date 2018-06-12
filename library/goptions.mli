@@ -89,7 +89,7 @@ module MakeRefTable :
     (A : sig
            type t
            val compare : t -> t -> int
-           val encode : reference -> t
+           val encode : qualid -> t
 	   val subst : substitution -> t -> t
            val printer : t -> Pp.t
            val key : option_name
@@ -147,9 +147,9 @@ val get_string_table :
 
 val get_ref_table :
   option_name ->
-    < add : reference -> unit;
-      remove : reference -> unit;
-      mem : reference -> unit;
+    < add : qualid -> unit;
+      remove : qualid -> unit;
+      mem : qualid -> unit;
       print : unit >
 
 (** The first argument is a locality flag. *)

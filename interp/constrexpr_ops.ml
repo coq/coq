@@ -10,7 +10,6 @@
 
 open Pp
 open Util
-open CAst
 open Names
 open Nameops
 open Libnames
@@ -73,11 +72,11 @@ let rec cases_pattern_expr_eq p1 p2 =
   | CPatAlias(a1,i1), CPatAlias(a2,i2) ->
       eq_ast Name.equal i1 i2 && cases_pattern_expr_eq a1 a2
   | CPatCstr(c1,a1,b1), CPatCstr(c2,a2,b2) ->
-      eq_reference c1 c2 &&
+      qualid_eq c1 c2 &&
       Option.equal (List.equal cases_pattern_expr_eq) a1 a2 &&
       List.equal cases_pattern_expr_eq b1 b2
   | CPatAtom(r1), CPatAtom(r2) ->
-    Option.equal eq_reference r1 r2
+    Option.equal qualid_eq r1 r2
   | CPatOr a1, CPatOr a2 ->
     List.equal cases_pattern_expr_eq a1 a2
   | CPatNotation (n1, s1, l1), CPatNotation (n2, s2, l2) ->
@@ -88,7 +87,7 @@ let rec cases_pattern_expr_eq p1 p2 =
     prim_token_eq i1 i2
   | CPatRecord l1, CPatRecord l2 ->
     let equal (r1, e1) (r2, e2) =
-      eq_reference r1 r2 && cases_pattern_expr_eq e1 e2
+      qualid_eq r1 r2 && cases_pattern_expr_eq e1 e2
     in
     List.equal equal l1 l2
   | CPatDelimiters(s1,e1), CPatDelimiters(s2,e2) ->
@@ -108,7 +107,7 @@ let eq_universes u1 u2 =
 let rec constr_expr_eq e1 e2 =
   if CAst.(e1.v == e2.v) then true
   else match CAst.(e1.v, e2.v) with
-    | CRef (r1,u1), CRef (r2,u2) -> eq_reference r1 r2 && eq_universes u1 u2
+    | CRef (r1,u1), CRef (r2,u2) -> qualid_eq r1 r2 && eq_universes u1 u2
     | CFix(id1,fl1), CFix(id2,fl2) ->
       eq_ast Id.equal id1 id2 &&
       List.equal fix_expr_eq fl1 fl2
@@ -128,7 +127,7 @@ let rec constr_expr_eq e1 e2 =
       constr_expr_eq b1 b2
     | CAppExpl((proj1,r1,_),al1), CAppExpl((proj2,r2,_),al2) ->
       Option.equal Int.equal proj1 proj2 &&
-      eq_reference r1 r2 &&
+      qualid_eq r1 r2 &&
       List.equal constr_expr_eq al1 al2
     | CApp((proj1,e1),al1), CApp((proj2,e2),al2) ->
       Option.equal Int.equal proj1 proj2 &&
@@ -136,7 +135,7 @@ let rec constr_expr_eq e1 e2 =
       List.equal args_eq al1 al2
     | CRecord l1, CRecord l2 ->
       let field_eq (r1, e1) (r2, e2) =
-        eq_reference r1 r2 && constr_expr_eq e1 e2
+        qualid_eq r1 r2 && constr_expr_eq e1 e2
       in
       List.equal field_eq l1 l2
     | CCases(_,r1,a1,brl1), CCases(_,r2,a2,brl2) ->
@@ -178,7 +177,7 @@ let rec constr_expr_eq e1 e2 =
       String.equal s1 s2 &&
       constr_expr_eq e1 e2
     | CProj(p1,c1), CProj(p2,c2) ->
-      eq_reference p1 p2 && constr_expr_eq c1 c2
+      qualid_eq p1 p2 && constr_expr_eq c1 c2
   | (CRef _ | CFix _ | CCoFix _ | CProdN _ | CLambdaN _ | CLetIn _ | CAppExpl _
      | CApp _ | CRecord _ | CCases _ | CLetTuple _ | CIf _ | CHole _
      | CPatVar _ | CEvar _ | CSort _ | CCast _ | CNotation _ | CPrim _
@@ -280,7 +279,9 @@ let rec cases_pattern_fold_names f a pt = match CAst.(pt.v) with
     List.fold_left (cases_pattern_fold_names f)
       (List.fold_left (cases_pattern_fold_names f) a (patl@List.flatten patll)) patl'
   | CPatDelimiters (_,pat) -> cases_pattern_fold_names f a pat
-  | CPatAtom (Some {v=Ident id}) when not (is_constructor id) -> f id a
+  | CPatAtom (Some qid)
+      when qualid_is_ident qid && not (is_constructor @@ qualid_basename qid) ->
+      f (qualid_basename qid) a
   | CPatPrim _ | CPatAtom _ -> a
   | CPatCast ({CAst.loc},_) ->
     CErrors.user_err ?loc ~hdr:"cases_pattern_fold_names"
@@ -363,7 +364,9 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
 
 let free_vars_of_constr_expr c =
   let rec aux bdvars l = function
-    | { CAst.v = CRef ({v=Ident id},_) } -> if Id.List.mem id bdvars then l else Id.Set.add id l
+    | { CAst.v = CRef (qid, _) } when qualid_is_ident qid ->
+      let id = qualid_basename qid in
+      if Id.List.mem id bdvars then l else Id.Set.add id l
     | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
   in aux [] Id.Set.empty c
 
@@ -440,11 +443,13 @@ let map_constr_expr_with_binders g f e = CAst.map (function
   )
 
 (* Used in constrintern *)
-let rec replace_vars_constr_expr l = function
-  | { CAst.loc; v = CRef ({v=Ident id},us) } as x ->
-    (try CAst.make ?loc @@ CRef (make ?loc @@ Ident (Id.Map.find id l),us) with Not_found -> x)
-  | c -> map_constr_expr_with_binders Id.Map.remove
-           replace_vars_constr_expr l c
+let rec replace_vars_constr_expr l r =
+  match r with
+  | { CAst.loc; v = CRef (qid,us) } as x when qualid_is_ident qid ->
+    let id = qualid_basename qid in
+    (try CAst.make ?loc @@ CRef (qualid_of_ident ?loc (Id.Map.find id l),us)
+     with Not_found -> x)
+  | cn -> map_constr_expr_with_binders Id.Map.remove replace_vars_constr_expr l cn
 
 (* Returns the ranges of locs of the notation that are not occupied by args  *)
 (* and which are then occupied by proper symbols of the notation (or spaces) *)
@@ -513,7 +518,7 @@ let split_at_annot bl na =
 
 (** Pseudo-constructors *)
 
-let mkIdentC id   = CAst.make @@ CRef (make @@ Ident id,None)
+let mkIdentC id   = CAst.make @@ CRef (qualid_of_ident id,None)
 let mkRefC r      = CAst.make @@ CRef (r,None)
 let mkCastC (a,k) = CAst.make @@ CCast (a,k)
 let mkLambdaC (idl,bk,a,b) = CAst.make @@ CLambdaN ([CLocalAssum (idl,bk,a)],b)
@@ -532,20 +537,22 @@ let mkCProdN ?loc bll c =
 let mkCLambdaN ?loc bll c =
   CAst.make ?loc @@ CLambdaN (bll,c)
 
-let coerce_reference_to_id = CAst.with_loc_val (fun ?loc -> function
-  | Ident id -> id
-  | Qualid _ ->
-    CErrors.user_err ?loc ~hdr:"coerce_reference_to_id"
-      (str "This expression should be a simple identifier."))
+let coerce_reference_to_id qid =
+  if qualid_is_ident qid then qualid_basename qid
+  else
+    CErrors.user_err ?loc:qid.CAst.loc ~hdr:"coerce_reference_to_id"
+      (str "This expression should be a simple identifier.")
 
 let coerce_to_id = function
-  | { CAst.loc; v = CRef ({v=Ident id},None) } -> CAst.make ?loc id
+  | { CAst.loc; v = CRef (qid,None) } when qualid_is_ident qid ->
+    CAst.make ?loc @@ qualid_basename qid
   | { CAst.loc; _ } -> CErrors.user_err ?loc
                          ~hdr:"coerce_to_id"
                          (str "This expression should be a simple identifier.")
 
 let coerce_to_name = function
-  | { CAst.loc; v = CRef ({v=Ident id},None) } -> CAst.make ?loc @@ Name id
+  | { CAst.loc; v = CRef (qid,None) } when qualid_is_ident qid ->
+    CAst.make ?loc @@ Name (qualid_basename qid)
   | { CAst.loc; v = CHole (None,IntroAnonymous,None) } -> CAst.make ?loc Anonymous
   | { CAst.loc; _ } -> CErrors.user_err ?loc ~hdr:"coerce_to_name"
                          (str "This expression should be a name.")
@@ -572,7 +579,8 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
      CPatAtom (Some r)
   | CHole (None,IntroAnonymous,None) ->
      CPatAtom None
-  | CLetIn ({CAst.loc;v=Name id},b,None,{ CAst.v = CRef ({v=Ident id'},None) }) when Id.equal id id' ->
+  | CLetIn ({CAst.loc;v=Name id},b,None,{ CAst.v = CRef (qid,None) })
+      when qualid_is_ident qid && Id.equal id (qualid_basename qid) ->
       CPatAlias (coerce_to_cases_pattern_expr b, CAst.(make ?loc @@ Name id))
   | CApp ((None,p),args) when List.for_all (fun (_,e) -> e=None) args ->
      (mkAppPattern (coerce_to_cases_pattern_expr p) (List.map (fun (a,_) -> coerce_to_cases_pattern_expr a) args)).CAst.v

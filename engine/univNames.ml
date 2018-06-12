@@ -14,18 +14,19 @@ open Globnames
 open Nametab
 
 
-let reference_of_level l = CAst.make @@
+let qualid_of_level l =
   match Level.name l with
   | Some (d, n as na)  ->
-     let qid =
-       try Nametab.shortest_qualid_of_universe na
-       with Not_found ->
-         let name = Id.of_string_soft (string_of_int n) in
-         Libnames.make_qualid d name
-     in Libnames.Qualid qid
-  | None -> Libnames.Ident Id.(of_string_soft (Level.to_string l))
+    begin
+    try Nametab.shortest_qualid_of_universe na
+    with Not_found ->
+      let name = Id.of_string_soft (string_of_int n) in
+      Libnames.make_qualid d name
+    end
+  | None ->
+    Libnames.qualid_of_ident @@ Id.of_string_soft (Level.to_string l)
 
-let pr_with_global_universes l = Libnames.pr_reference (reference_of_level l)
+let pr_with_global_universes l = Libnames.pr_qualid (qualid_of_level l)
 
 (** Global universe information outside the kernel, to handle
     polymorphic universe names in sections that have to be discharged. *)

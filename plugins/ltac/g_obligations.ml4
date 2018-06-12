@@ -12,7 +12,6 @@
   Syntax for the subtac terms and types.
   Elaborated from correctness/psyntax.ml4 by Jean-Christophe Filliâtre *)
 
-open Libnames
 open Constrexpr
 open Constrexpr_ops
 open Stdarg
@@ -49,7 +48,7 @@ module Tactic = Pltac
 
 open Pcoq
 
-let sigref = mkRefC (CAst.make @@ Qualid (Libnames.qualid_of_string "Coq.Init.Specif.sig"))
+let sigref loc = mkRefC (Libnames.qualid_of_string ~loc "Coq.Init.Specif.sig")
 
 type 'a withtac_argtype = (Tacexpr.raw_tactic_expr option, 'a) Genarg.abstract_argument_type
 
@@ -68,7 +67,7 @@ GEXTEND Gram
 
   Constr.closed_binder:
     [[ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" ->
-	  let typ = mkAppC (sigref, [mkLambdaC ([id], default_binder_kind, t, c)]) in
+          let typ = mkAppC (sigref !@loc, [mkLambdaC ([id], default_binder_kind, t, c)]) in
           [CLocalAssum ([id], default_binder_kind, typ)]
     ] ];
 

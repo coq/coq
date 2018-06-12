@@ -60,6 +60,6 @@ open Constrexpr
 
 type r_trm = constr_expr
 type r_pat = constr_pattern_expr
-type r_cst = reference or_by_notation
+type r_cst = qualid or_by_notation
 
 type raw_red_expr = (r_trm, r_cst, r_pat) red_expr_gen

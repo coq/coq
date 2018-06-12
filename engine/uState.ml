@@ -295,15 +295,15 @@ let constrain_variables diff ctx =
   in
   { ctx with uctx_local = (univs, local); uctx_univ_variables = vars }
   
-let reference_of_level uctx =
+let qualid_of_level uctx =
   let map, map_rev = uctx.uctx_names in 
     fun l ->
-      try CAst.make @@ Libnames.Ident (Option.get (Univ.LMap.find l map_rev).uname)
+      try Libnames.qualid_of_ident (Option.get (Univ.LMap.find l map_rev).uname)
       with Not_found | Option.IsNone ->
-        UnivNames.reference_of_level l
+        UnivNames.qualid_of_level l
 
 let pr_uctx_level uctx l =
-  Libnames.pr_reference (reference_of_level uctx l)
+  Libnames.pr_qualid (qualid_of_level uctx l)
 
 type ('a, 'b) gen_universe_decl = {
   univdecl_instance : 'a; (* Declared universes *)

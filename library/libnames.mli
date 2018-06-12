@@ -65,23 +65,28 @@ val restrict_path : int -> full_path -> full_path
     qualifications of absolute names, including single identifiers.
     The [qualid] are used to access the name table. *)
 
-type qualid
+type qualid_r
+type qualid = qualid_r CAst.t
 
-val make_qualid : DirPath.t -> Id.t -> qualid
+val make_qualid : ?loc:Loc.t -> DirPath.t -> Id.t -> qualid
 val repr_qualid : qualid -> DirPath.t * Id.t
 
 val qualid_eq : qualid -> qualid -> bool
 
 val pr_qualid : qualid -> Pp.t
 val string_of_qualid : qualid -> string
-val qualid_of_string : string -> qualid
+val qualid_of_string : ?loc:Loc.t -> string -> qualid
 
 (** Turns an absolute name, a dirpath, or an Id.t into a
    qualified name denoting the same name *)
 
-val qualid_of_path : full_path -> qualid
-val qualid_of_dirpath : DirPath.t -> qualid
-val qualid_of_ident : Id.t -> qualid
+val qualid_of_path : ?loc:Loc.t -> full_path -> qualid
+val qualid_of_dirpath : ?loc:Loc.t -> DirPath.t -> qualid
+val qualid_of_ident : ?loc:Loc.t -> Id.t -> qualid
+
+val qualid_is_ident : qualid -> bool
+val qualid_path : qualid -> DirPath.t
+val qualid_basename : qualid -> Id.t
 
 (** Both names are passed to objects: a "semantic" [kernel_name], which
    can be substituted and a "syntactic" [full_path] which can be printed
@@ -124,20 +129,6 @@ val eq_global_dir_reference :
   global_dir_reference -> global_dir_reference -> bool
 
 (** {6 ... } *)
-(** A [reference] is the user-level notion of name. It denotes either a
-    global name (referred either by a qualified name or by a single
-    name) or a variable *)
-
-type reference_r =
-  | Qualid of qualid
-  | Ident of Id.t
-type reference = reference_r CAst.t
-
-val eq_reference : reference -> reference -> bool
-val qualid_of_reference : reference -> qualid CAst.t
-val string_of_reference : reference -> string
-val pr_reference : reference -> Pp.t
-val join_reference : reference -> reference -> reference
 
 (** some preset paths *)
 val default_library : DirPath.t

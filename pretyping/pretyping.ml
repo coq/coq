@@ -171,38 +171,37 @@ let _ =
 
 (** Miscellaneous interpretation functions *)
 
-let interp_known_universe_level evd r =
-  let qid = Libnames.qualid_of_reference r in
+let interp_known_universe_level evd qid =
   try
-    match r.CAst.v with
-    | Libnames.Ident id -> Evd.universe_of_name evd id
-    | Libnames.Qualid _ -> raise Not_found
+    let open Libnames in
+    if qualid_is_ident qid then Evd.universe_of_name evd @@ qualid_basename qid
+    else raise Not_found
   with Not_found ->
-    let univ, k = Nametab.locate_universe qid.CAst.v in
+    let univ, k = Nametab.locate_universe qid in
     Univ.Level.make univ k
 
-let interp_universe_level_name ~anon_rigidity evd r =
-  try evd, interp_known_universe_level evd r
+let interp_universe_level_name ~anon_rigidity evd qid =
+  try evd, interp_known_universe_level evd qid
   with Not_found ->
-    match r with (* Qualified generated name *)
-    | {CAst.loc; v=Libnames.Qualid qid} ->
-       let dp, i = Libnames.repr_qualid qid in
-       let num =
-         try int_of_string (Id.to_string i)
-         with Failure _ ->
-           user_err ?loc ~hdr:"interp_universe_level_name"
-                    (Pp.(str "Undeclared global universe: " ++ Libnames.pr_reference r))
-       in
-       let level = Univ.Level.make dp num in
-       let evd =
-         try Evd.add_global_univ evd level
-         with UGraph.AlreadyDeclared -> evd
-       in evd, level
-    | {CAst.loc; v=Libnames.Ident id} -> (* Undeclared *)
-        if not (is_strict_universe_declarations ()) then
-          new_univ_level_variable ?loc ~name:id univ_rigid evd
-        else user_err ?loc ~hdr:"interp_universe_level_name"
-                      (Pp.(str "Undeclared universe: " ++ Id.print id))
+    if Libnames.qualid_is_ident qid then (* Undeclared *)
+      let id = Libnames.qualid_basename qid in
+      if not (is_strict_universe_declarations ()) then
+        new_univ_level_variable ?loc:qid.CAst.loc ~name:id univ_rigid evd
+      else user_err ?loc:qid.CAst.loc ~hdr:"interp_universe_level_name"
+          (Pp.(str "Undeclared universe: " ++ Id.print id))
+    else
+      let dp, i = Libnames.repr_qualid qid in
+      let num =
+        try int_of_string (Id.to_string i)
+        with Failure _ ->
+          user_err ?loc:qid.CAst.loc ~hdr:"interp_universe_level_name"
+            (Pp.(str "Undeclared global universe: " ++ Libnames.pr_qualid qid))
+      in
+      let level = Univ.Level.make dp num in
+      let evd =
+        try Evd.add_global_univ evd level
+        with UGraph.AlreadyDeclared -> evd
+      in evd, level
 
 let interp_universe ?loc evd = function
   | [] -> let evd, l = new_univ_level_variable ?loc univ_rigid evd in
@@ -232,10 +231,10 @@ let interp_known_level_info ?loc evd = function
   | UUnknown | UAnonymous ->
     user_err ?loc ~hdr:"interp_known_level_info"
       (str "Anonymous universes not allowed here.")
-  | UNamed ref ->
-    try interp_known_universe_level evd ref
+  | UNamed qid ->
+    try interp_known_universe_level evd qid
     with Not_found ->
-      user_err ?loc ~hdr:"interp_known_level_info" (str "Undeclared universe " ++ Libnames.pr_reference ref)
+      user_err ?loc ~hdr:"interp_known_level_info" (str "Undeclared universe " ++ Libnames.pr_qualid qid)
 
 let interp_level_info ?loc evd : level_info -> _ = function
   | UUnknown -> new_univ_level_variable ?loc univ_rigid evd

@@ -8,11 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val dump_global : Libnames.reference Constrexpr.or_by_notation -> unit
+val dump_global : Libnames.qualid Constrexpr.or_by_notation -> unit
 
 (** Vernacular entries *)
 val vernac_require :
-  Libnames.reference option -> bool option -> Libnames.reference list -> unit
+  Libnames.qualid option -> bool option -> Libnames.qualid list -> unit
 
 (** The main interpretation function of vernacular expressions *)
 val interp :

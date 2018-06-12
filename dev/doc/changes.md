@@ -2,6 +2,14 @@
 
 ### ML API
 
+Names
+
+- In `Libnames`, the type `reference` and its two constructors `Qualid` and
+  `Ident` have been removed in favor of `qualid`. `Qualid` is now the identity,
+  `Ident` can be replaced by `qualid_of_ident`. Matching over `reference` can be
+  replaced by a test using `qualid_is_ident`. Extracting the ident part of a
+  qualid can be done using `qualid_basename`.
+
 Misctypes
 
 - Syntax for universe sorts and kinds has been moved from `Misctypes`

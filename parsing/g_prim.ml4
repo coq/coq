@@ -18,7 +18,7 @@ let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "'"]
 let _ = List.iter CLexer.add_keyword prim_kw
 
 
-let local_make_qualid l id = make_qualid (DirPath.make l) id
+let local_make_qualid loc l id = make_qualid ~loc (DirPath.make l) id
 
 let my_int_of_string loc s =
   try
@@ -67,8 +67,8 @@ GEXTEND Gram
       ] ]
   ;
   basequalid:
-    [ [ id = ident; (l,id')=fields -> local_make_qualid (l@[id]) id'
-      | id = ident -> qualid_of_ident id
+    [ [ id = ident; (l,id')=fields -> local_make_qualid !@loc (l@[id]) id'
+      | id = ident -> qualid_of_ident ~loc:!@loc id
       ] ]
   ;
   name:
@@ -77,8 +77,8 @@ GEXTEND Gram
   ;
   reference:
     [ [ id = ident; (l,id') = fields ->
-        CAst.make ~loc:!@loc @@ Qualid (local_make_qualid (l@[id]) id')
-      | id = ident -> CAst.make ~loc:!@loc @@ Ident id
+        local_make_qualid !@loc (l@[id]) id'
+      | id = ident -> local_make_qualid !@loc [] id
       ] ]
   ;
   by_notation:
@@ -89,7 +89,7 @@ GEXTEND Gram
       | ntn = by_notation -> CAst.make ~loc:!@loc @@ Constrexpr.ByNotation ntn ] ]
   ;
   qualid:
-    [ [ qid = basequalid -> CAst.make ~loc:!@loc qid ] ]
+    [ [ qid = basequalid -> qid ] ]
   ;
   ne_string:
     [ [ s = STRING ->

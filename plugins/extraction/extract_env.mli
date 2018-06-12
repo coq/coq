@@ -13,14 +13,14 @@
 open Names
 open Libnames
 
-val simple_extraction : reference -> unit
-val full_extraction : string option -> reference list -> unit
-val separate_extraction : reference list -> unit
+val simple_extraction : qualid -> unit
+val full_extraction : string option -> qualid list -> unit
+val separate_extraction : qualid list -> unit
 val extraction_library : bool -> Id.t -> unit
 
 (* For the test-suite : extraction to a temporary file + ocamlc on it *)
 
-val extract_and_compile : reference list -> unit
+val extract_and_compile : qualid list -> unit
 
 (* For debug / external output via coqtop.byte + Drop : *)
 

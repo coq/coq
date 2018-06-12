@@ -20,11 +20,11 @@ val array_get_start : 'a array -> 'a array
 
 val id_of_name : Name.t -> Id.t
 
-val locate_ind : Libnames.reference -> inductive
-val locate_constant : Libnames.reference -> Constant.t
+val locate_ind : Libnames.qualid -> inductive
+val locate_constant : Libnames.qualid -> Constant.t
 val locate_with_msg :
-  Pp.t -> (Libnames.reference -> 'a) ->
-  Libnames.reference -> 'a
+  Pp.t -> (Libnames.qualid -> 'a) ->
+  Libnames.qualid -> 'a
 
 val filter_map : ('a -> bool) -> ('a -> 'b) -> 'a list -> 'b list
 val list_union_eq :

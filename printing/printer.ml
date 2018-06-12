@@ -229,15 +229,15 @@ let dirpath_of_global = function
     dirpath_of_mp (MutInd.modpath kn)
   | VarRef _ -> DirPath.empty
 
-let qualid_of_global env r =
-  Libnames.make_qualid (dirpath_of_global r) (id_of_global env r)
+let qualid_of_global ?loc env r =
+  Libnames.make_qualid ?loc (dirpath_of_global r) (id_of_global env r)
 
 let safe_gen f env sigma c =
   let orig_extern_ref = Constrextern.get_extern_reference () in
   let extern_ref ?loc vars r =
     try orig_extern_ref vars r
     with e when CErrors.noncritical e ->
-      CAst.make ?loc @@ Libnames.Qualid (qualid_of_global env r)
+      qualid_of_global ?loc env r
   in
   Constrextern.set_extern_reference extern_ref;
   try

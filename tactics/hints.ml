@@ -125,7 +125,7 @@ type 'a hints_path_gen =
   | PathEmpty
   | PathEpsilon
 
-type pre_hints_path = Libnames.reference hints_path_gen
+type pre_hints_path = Libnames.qualid hints_path_gen
 type hints_path = GlobRef.t hints_path_gen
 
 type hint_term =
@@ -157,7 +157,7 @@ type hint_entry = GlobRef.t option *
   raw_hint hint_ast with_uid with_metadata
 
 type reference_or_constr =
-  | HintsReference of reference
+  | HintsReference of qualid
   | HintsConstr of Constrexpr.constr_expr
 
 type hint_mode =
@@ -167,12 +167,12 @@ type hint_mode =
 
 type hints_expr =
   | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
-  | HintsResolveIFF of bool * reference list * int option
+  | HintsResolveIFF of bool * qualid list * int option
   | HintsImmediate of reference_or_constr list
-  | HintsUnfold of reference list
-  | HintsTransparency of reference list * bool
-  | HintsMode of reference * hint_mode list
-  | HintsConstructors of reference list
+  | HintsUnfold of qualid list
+  | HintsTransparency of qualid list * bool
+  | HintsMode of qualid * hint_mode list
+  | HintsConstructors of qualid list
   | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
 
 type import_level = [ `LAX | `WARN | `STRICT ]
@@ -1360,7 +1360,7 @@ let interp_hints poly =
       let constr_hints_of_ind qid =
         let ind = global_inductive_with_alias qid in
 	let mib,_ = Global.lookup_inductive ind in
-        Dumpglob.dump_reference ?loc:qid.CAst.loc "<>" (string_of_reference qid) "ind";
+        Dumpglob.dump_reference ?loc:qid.CAst.loc "<>" (string_of_qualid qid) "ind";
           List.init (nconstructors ind) 
 	    (fun i -> let c = (ind,i+1) in
 		      let gr = ConstructRef c in

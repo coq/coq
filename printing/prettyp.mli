@@ -24,20 +24,20 @@ val print_library_entry : env -> Evd.evar_map -> bool -> (object_name * Lib.node
 val print_full_context : env -> Evd.evar_map -> Pp.t
 val print_full_context_typ : env -> Evd.evar_map -> Pp.t
 val print_full_pure_context : env -> Evd.evar_map -> Pp.t
-val print_sec_context : env -> Evd.evar_map -> reference -> Pp.t
-val print_sec_context_typ : env -> Evd.evar_map -> reference -> Pp.t
+val print_sec_context : env -> Evd.evar_map -> qualid -> Pp.t
+val print_sec_context_typ : env -> Evd.evar_map -> qualid -> Pp.t
 val print_judgment : env -> Evd.evar_map -> EConstr.unsafe_judgment -> Pp.t
 val print_safe_judgment : env -> Evd.evar_map -> Safe_typing.judgment -> Pp.t
 val print_eval :
   reduction_function -> env -> Evd.evar_map ->
     Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t
 
-val print_name : env -> Evd.evar_map -> reference Constrexpr.or_by_notation ->
+val print_name : env -> Evd.evar_map -> qualid Constrexpr.or_by_notation ->
   UnivNames.univ_name_list option -> Pp.t
-val print_opaque_name : env -> Evd.evar_map -> reference -> Pp.t
-val print_about : env -> Evd.evar_map -> reference Constrexpr.or_by_notation ->
+val print_opaque_name : env -> Evd.evar_map -> qualid -> Pp.t
+val print_about : env -> Evd.evar_map -> qualid Constrexpr.or_by_notation ->
   UnivNames.univ_name_list option -> Pp.t
-val print_impargs : reference Constrexpr.or_by_notation -> Pp.t
+val print_impargs : qualid Constrexpr.or_by_notation -> Pp.t
 
 (** Pretty-printing functions for classes and coercions *)
 val print_graph : env -> evar_map -> Pp.t
@@ -77,10 +77,10 @@ val register_locatable : string -> 'a locatable_info -> unit
     name describing the kind of objects considered and that is added as a
     grammar command prefix for vernacular commands Locate. *)
 
-val print_located_qualid : reference -> Pp.t
-val print_located_term : reference -> Pp.t
-val print_located_module : reference -> Pp.t
-val print_located_other : string -> reference -> Pp.t
+val print_located_qualid : qualid -> Pp.t
+val print_located_term : qualid -> Pp.t
+val print_located_module : qualid -> Pp.t
+val print_located_other : string -> qualid -> Pp.t
 
 type object_pr = {
   print_inductive           : MutInd.t -> UnivNames.univ_name_list option -> Pp.t;
