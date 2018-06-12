@@ -258,14 +258,12 @@ let pos_universe_var i r sz =
   (* Compilation of a universe variable can happen either at toplevel (the
   current closure correspond to a constant and has local universes) or in a
   local closure (which has no local universes). *)
-  if r.nb_uni_stack != 0 then begin
+  if r.nb_uni_stack != 0 then
     (* Universe variables are represented by De Bruijn levels (not indices),
     starting at 0. The shape of the stack will be [v1|..|vn|u1..up|arg1..argq]
     with size = n + p + q, and q = r.arity. So Kacc (sz - r.arity - 1) will access
     the last universe. *)
-    Printf.eprintf "pos_univ i=%i sz=%i arity=%i nb_univ=%i\n" i sz r.arity r.nb_uni_stack;
     Kacc (sz - r.arity - (r.nb_uni_stack - i))
-  end
   else
     let env = !(r.in_env) in
     let db = FVuniv_var i in
