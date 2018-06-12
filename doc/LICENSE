@@ -14,15 +14,6 @@ License, v1.0 or later (the latest version is presently available at
 http://www.opencontent.org/openpub/).  Options A and B are *not*
 elected.
 
-The Coq Tutorial is a work by Gérard Huet, Gilles Kahn and Christine
-Paulin-Mohring. All documents (the LaTeX source and the PostScript,
-PDF and html outputs) are copyright (c) INRIA 1999-2006. The material
-connected to the Coq Tutorial may be distributed only subject to the
-terms and conditions set forth in the Open Publication License, v1.0
-or later (the latest version is presently available at
-http://www.opencontent.org/openpub/). Options A and B are *not*
-elected.
-
 The Coq Standard Library is a collective work from the Coq Development
 Team whose members are listed in the file CREDITS of the Coq source
 package. All related documents (the Coq vernacular source files and
@@ -30,16 +21,6 @@ the PostScript, PDF and html outputs) are copyright (c) INRIA
 1999-2006. The material connected to the Standard Library is
 distributed under the terms of the Lesser General Public License
 version 2.1 or later. 
-
-The Tutorial on [Co-]Inductive Types in Coq is a work by Pierre
-Castéran and Eduardo Gimenez. All related documents (the LaTeX and
-BibTeX sources and the PostScript, PDF and html outputs) are copyright
-(c) INRIA 1997-2006. The material connected to the Tutorial on
-[Co-]Inductive Types in Coq may be distributed only subject to the
-terms and conditions set forth in the Open Publication License, v1.0
-or later (the latest version is presently available at
-http://www.opencontent.org/openpub/).  Options A and B are
-*not* elected.
 
 ----------------------------------------------------------------------
 
