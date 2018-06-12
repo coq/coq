@@ -1233,12 +1233,7 @@ let explain_wrong_numarg_inductive env ind n =
   str " expects " ++ decline_string n "argument" ++ str "."
 
 let explain_unused_clause env pats =
-(* Without localisation
-  let s = if List.length pats > 1 then "s" else "" in
-  (str ("Unused clause with pattern"^s) ++ spc () ++
-    hov 0 (pr_sequence pr_cases_pattern pats) ++ str ")")
-*)
-  str "This clause is redundant."
+  str "Pattern \"" ++ hov 0 (prlist_with_sep pr_comma pr_cases_pattern pats) ++ strbrk "\" is redundant in this clause."
 
 let explain_non_exhaustive env pats =
   str "Non exhaustive pattern-matching: no clause found for " ++

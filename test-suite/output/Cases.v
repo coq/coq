@@ -217,3 +217,6 @@ Check fun x => match x with a3 | a4 => 3 | _ => 2 end.
 Check fun x => match x with a3 => 3 | a2 | a1 => 4 | _ => 2 end.
 Check fun x => match x with a4 => 3 | a2 | a1 => 4 | _ => 2 end.
 Check fun x => match x with a3 | a4 | a1 => 3 | _ => 2 end.
+
+(* Test redundant clause within a disjunctive pattern *)
+Fail Check fun n m => match n, m with 0, 0 | _, S _ | S 0, _ | S (S _ | _), _ => false end.
