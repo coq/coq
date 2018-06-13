@@ -1313,7 +1313,7 @@ let sort_fields ~complete loc fields completer =
              first_field_index,  (* index of the first field of the record *)
              proj_list)    (* list of projections *)
           =
-          (* elimitate the first field from the projections,
+          (* eliminate the first field from the projections,
              but keep its index *)
           let rec build_proj_list projs proj_kinds idx ~acc_first_idx acc =
             match projs with
