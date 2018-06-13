@@ -399,55 +399,55 @@ let code_makeblock ~stack_size ~arity ~tag cont =
     Kpush :: nest_block tag arity cont
   end
 
-let compile_structured_constant reloc sc sz cont =
+let compile_structured_constant cenv sc sz cont =
   set_max_stack_size sz;
   Kconst sc :: cont
 
 (* compiling application *)
-let comp_args comp_expr reloc args sz cont =
+let comp_args comp_expr cenv args sz cont =
   let nargs_m_1 = Array.length args - 1 in
-  let c = ref (comp_expr reloc args.(0) (sz + nargs_m_1) cont) in
+  let c = ref (comp_expr cenv args.(0) (sz + nargs_m_1) cont) in
   for i = 1 to nargs_m_1 do
-    c := comp_expr reloc args.(i) (sz + nargs_m_1 - i) (Kpush :: !c)
+    c := comp_expr cenv args.(i) (sz + nargs_m_1 - i) (Kpush :: !c)
   done;
   !c
 
-let comp_app comp_fun comp_arg reloc f args sz cont =
+let comp_app comp_fun comp_arg cenv f args sz cont =
   let nargs = Array.length args in
-  if Int.equal nargs 0 then comp_fun reloc f sz cont
+  if Int.equal nargs 0 then comp_fun cenv f sz cont
   else
   match is_tailcall cont with
   | Some k ->
-      comp_args comp_arg reloc args sz
+      comp_args comp_arg cenv args sz
 	(Kpush ::
-	 comp_fun reloc f (sz + nargs)
+         comp_fun cenv f (sz + nargs)
 	   (Kappterm(nargs, k + nargs) :: (discard_dead_code cont)))
   | None ->
       if nargs < 4 then
-	comp_args comp_arg reloc args sz
-	  (Kpush :: (comp_fun reloc f (sz+nargs) (Kapply nargs :: cont)))
+        comp_args comp_arg cenv args sz
+          (Kpush :: (comp_fun cenv f (sz+nargs) (Kapply nargs :: cont)))
       else
 	let lbl,cont1 = label_code cont in
 	Kpush_retaddr lbl ::
-	(comp_args comp_arg reloc args (sz + 3)
-	   (Kpush :: (comp_fun reloc f (sz+3+nargs) (Kapply nargs :: cont1))))
+        (comp_args comp_arg cenv args (sz + 3)
+           (Kpush :: (comp_fun cenv f (sz+3+nargs) (Kapply nargs :: cont1))))
 
 (* Compiling free variables *)
 
-let compile_fv_elem reloc fv sz cont =
+let compile_fv_elem cenv fv sz cont =
   match fv with
-  | FVrel i -> pos_rel i reloc sz :: cont
-  | FVnamed id -> pos_named id reloc :: cont
-  | FVuniv_var i -> pos_universe_var i reloc sz :: cont
-  | FVevar evk -> pos_evar evk reloc :: cont
+  | FVrel i -> pos_rel i cenv sz :: cont
+  | FVnamed id -> pos_named id cenv :: cont
+  | FVuniv_var i -> pos_universe_var i cenv sz :: cont
+  | FVevar evk -> pos_evar evk cenv :: cont
 
-let rec compile_fv reloc l sz cont =
+let rec compile_fv cenv l sz cont =
   match l with
   | [] -> cont
-  | [fvn] -> set_max_stack_size (sz + 1); compile_fv_elem reloc fvn sz cont
+  | [fvn] -> set_max_stack_size (sz + 1); compile_fv_elem cenv fvn sz cont
   | fvn :: tl ->
-      compile_fv_elem reloc fvn sz
-	(Kpush :: compile_fv reloc tl (sz + 1) cont)
+      compile_fv_elem cenv fvn sz
+        (Kpush :: compile_fv cenv tl (sz + 1) cont)
 
 
 (* Compiling constants *)
@@ -472,58 +472,58 @@ let make_areconst n else_lbl cont =
     Kareconst (n, else_lbl)::cont
 
 (* sz is the size of the local stack *)
-let rec compile_lam env reloc lam sz cont =
+let rec compile_lam env cenv lam sz cont =
   set_max_stack_size sz;
   match lam with
-  | Lrel(_, i) -> pos_rel i reloc sz :: cont
+  | Lrel(_, i) -> pos_rel i cenv sz :: cont
 
-  | Lval v -> compile_structured_constant reloc v sz cont
+  | Lval v -> compile_structured_constant cenv v sz cont
 
   | Lproj (n,kn,arg) ->
-     compile_lam env reloc arg sz (Kproj (n,kn) :: cont)
+     compile_lam env cenv arg sz (Kproj (n,kn) :: cont)
 
-  | Lvar id -> pos_named id reloc :: cont
+  | Lvar id -> pos_named id cenv :: cont
 
   | Levar (evk, args) ->
       if Array.is_empty args then
-        compile_fv_elem reloc (FVevar evk) sz cont
+        compile_fv_elem cenv (FVevar evk) sz cont
       else
-        comp_app compile_fv_elem (compile_lam env) reloc (FVevar evk) args sz cont
+        comp_app compile_fv_elem (compile_lam env) cenv (FVevar evk) args sz cont
 
-  | Lconst (kn,u) -> compile_constant env reloc kn u [||] sz cont
+  | Lconst (kn,u) -> compile_constant env cenv kn u [||] sz cont
 
   | Lind (ind,u) ->
     if Univ.Instance.is_empty u then
-      compile_structured_constant reloc (Const_ind ind) sz cont
-    else comp_app compile_structured_constant compile_universe reloc
+      compile_structured_constant cenv (Const_ind ind) sz cont
+    else comp_app compile_structured_constant compile_universe cenv
         (Const_ind ind) (Univ.Instance.to_array u) sz cont
 
   | Lsort (Sorts.Prop _ as s) ->
-    compile_structured_constant reloc (Const_sort s) sz cont
+    compile_structured_constant cenv (Const_sort s) sz cont
   | Lsort (Sorts.Type u) ->
     (* We represent universes as a global constant with local universes
        "compacted", i.e. as [u arg0 ... argn] where we will substitute (after
        evaluation) [Var 0,...,Var n] with values of [arg0,...,argn] *)
     let u,s = Univ.compact_univ u in
-    let compile_get_univ reloc idx sz cont =
+    let compile_get_univ cenv idx sz cont =
       set_max_stack_size sz;
-      compile_fv_elem reloc (FVuniv_var idx) sz cont
+      compile_fv_elem cenv (FVuniv_var idx) sz cont
     in
     if List.is_empty s then
-      compile_structured_constant reloc (Const_sort (Sorts.Type u)) sz cont
+      compile_structured_constant cenv (Const_sort (Sorts.Type u)) sz cont
     else
-      comp_app compile_structured_constant compile_get_univ reloc
+      comp_app compile_structured_constant compile_get_univ cenv
         (Const_sort (Sorts.Type u)) (Array.of_list s) sz cont
 
   | Llet (id,def,body) ->
-      compile_lam env reloc def sz
+      compile_lam env cenv def sz
         (Kpush ::
-         compile_lam env (push_local sz reloc) body (sz+1) (add_pop 1 cont))
+         compile_lam env (push_local sz cenv) body (sz+1) (add_pop 1 cont))
 
   | Lprod (dom,codom) ->
      let cont1 =
-       Kpush :: compile_lam env reloc dom (sz+1) (Kmakeprod :: cont) in
-     compile_lam env reloc codom sz cont1
+       Kpush :: compile_lam env cenv dom (sz+1) (Kmakeprod :: cont) in
+     compile_lam env cenv codom sz cont1
 
   | Llam (ids,body) ->
      let arity = Array.length ids in
@@ -534,12 +534,12 @@ let rec compile_lam env reloc lam sz cont =
      in
      fun_code := [Ksequence(add_grab arity lbl_fun cont_fun,!fun_code)];
      let fv = fv r_fun in
-     compile_fv reloc fv.fv_rev sz (Kclosure(lbl_fun,fv.size) :: cont)
+     compile_fv cenv fv.fv_rev sz (Kclosure(lbl_fun,fv.size) :: cont)
 
   | Lapp (f, args) ->
     begin match f with
-    | Lconst (kn,u) -> compile_constant env reloc kn u args sz cont
-    | _ -> comp_app (compile_lam env) (compile_lam env) reloc f args sz cont
+    | Lconst (kn,u) -> compile_constant env cenv kn u args sz cont
+    | _ -> comp_app (compile_lam env) (compile_lam env) cenv f args sz cont
     end
 
   | Lfix ((rec_args, init), (decl, types, bodies)) ->
@@ -571,7 +571,7 @@ let rec compile_lam env reloc lam sz cont =
 	fun_code := [Ksequence(fcode,!fun_code)]
       done;
       let fv = !rfv in
-      compile_fv reloc fv.fv_rev sz
+      compile_fv cenv fv.fv_rev sz
 	(Kclosurerec(fv.size,init,lbl_types,lbl_bodies) :: cont)
 
 
@@ -607,7 +607,7 @@ let rec compile_lam env reloc lam sz cont =
       done;
       let fv = !rfv in
       set_max_stack_size (sz + fv.size + ndef + 2);
-      compile_fv reloc fv.fv_rev sz
+      compile_fv cenv fv.fv_rev sz
 	(Kclosurecofix(fv.size, init, lbl_types, lbl_bodies) :: cont)
 
 
@@ -625,7 +625,7 @@ let rec compile_lam env reloc lam sz cont =
       let branch1, cont = make_branch cont in
       (* Compilation of the return type *)
       let fcode =
-        ensure_stack_capacity (compile_lam env reloc t sz) [Kpop sz; Kstop]
+        ensure_stack_capacity (compile_lam env cenv t sz) [Kpop sz; Kstop]
       in
       let lbl_typ,fcode = label_code fcode in
       fun_code := [Ksequence(fcode,!fun_code)];
@@ -653,7 +653,7 @@ let rec compile_lam env reloc lam sz cont =
       (* Compilation of constant branches *)
       for i = nconst - 1 downto 0 do
         let aux =
-          compile_lam env reloc branches.constant_branches.(i) sz_b (branch::!c)
+          compile_lam env cenv branches.constant_branches.(i) sz_b (branch::!c)
         in
         let lbl_b,code_b = label_code aux in
         lbl_consts.(i) <- lbl_b;
@@ -665,7 +665,7 @@ let rec compile_lam env reloc lam sz cont =
         let (ids, body) = branches.nonconstant_branches.(i) in
         let arity = Array.length ids in
         let code_b =
-          compile_lam env (push_param arity sz_b reloc)
+          compile_lam env (push_param arity sz_b cenv)
             body (sz_b+arity) (add_pop arity (branch::!c)) in
         let code_b =
             if tag < last_variant_tag then begin
@@ -703,25 +703,25 @@ let rec compile_lam env reloc lam sz cont =
         | Kbranch lbl -> Kpush_retaddr lbl ::  !c
 	| _ -> !c
       in
-      compile_lam env reloc a sz code_sw
+      compile_lam env cenv a sz code_sw
 
   | Lmakeblock (tag,args) ->
     let arity = Array.length args in
     let cont = code_makeblock ~stack_size:(sz+arity-1) ~arity ~tag cont in
-    comp_args (compile_lam env) reloc args sz cont
+    comp_args (compile_lam env) cenv args sz cont
 
   | Lprim (kn, ar, op, args) ->
-    op_compilation env ar op kn reloc args sz cont
+    op_compilation env ar op kn cenv args sz cont
 
   | Luint v ->
      (match v with
-     | UintVal i -> compile_structured_constant reloc (Const_b0 (Uint31.to_int i)) sz cont
+     | UintVal i -> compile_structured_constant cenv (Const_b0 (Uint31.to_int i)) sz cont
      | UintDigits ds ->
        let nargs = Array.length ds in
        if Int.equal nargs 31 then
          let (escape,labeled_cont) = make_branch cont in
          let else_lbl = Label.create() in
-         comp_args (compile_lam env) reloc ds sz
+         comp_args (compile_lam env) cenv ds sz
            ( Kisconst else_lbl::Kareconst(30,else_lbl)::Kcompint31::escape::Klabel else_lbl::Kmakeblock(31, 1)::labeled_cont)
        else
          let code_construct cont = (* spiwack: variant of the global code_construct
@@ -737,40 +737,40 @@ let rec compile_lam env reloc lam sz cont =
            Kclosure(lbl,0) :: cont
          in
          comp_app (fun _ _ _ cont -> code_construct cont)
-           (compile_lam env) reloc () ds sz cont
+           (compile_lam env) cenv () ds sz cont
      | UintDecomp t ->
        let escape_lbl, labeled_cont = label_code cont in
-       compile_lam env  reloc t sz ((Kisconst escape_lbl)::Kdecompint31::labeled_cont))
+       compile_lam env  cenv t sz ((Kisconst escape_lbl)::Kdecompint31::labeled_cont))
 
 
 (* spiwack : compilation of constants with their arguments.
    Makes a special treatment with 31-bit integer addition *)
-and compile_get_global reloc (kn,u) sz cont =
+and compile_get_global cenv (kn,u) sz cont =
   set_max_stack_size sz;
   if Univ.Instance.is_empty u then
     Kgetglobal kn :: cont
   else
     comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
-      compile_universe reloc () (Univ.Instance.to_array u) sz cont
+      compile_universe cenv () (Univ.Instance.to_array u) sz cont
 
-and compile_universe reloc uni sz cont =
+and compile_universe cenv uni sz cont =
   set_max_stack_size sz;
   match Univ.Level.var_index uni with
-  | None -> compile_structured_constant reloc (Const_univ_level uni) sz cont
-  | Some idx -> pos_universe_var idx reloc sz :: cont
+  | None -> compile_structured_constant cenv (Const_univ_level uni) sz cont
+  | Some idx -> pos_universe_var idx cenv sz :: cont
 
-and compile_constant env reloc kn u args sz cont =
+and compile_constant env cenv kn u args sz cont =
   set_max_stack_size sz;
   if Univ.Instance.is_empty u then
     (* normal compilation *)
     comp_app (fun _ _ sz cont ->
-        compile_get_global reloc (kn,u) sz cont)
-      (compile_lam env) reloc () args sz cont
+        compile_get_global cenv (kn,u) sz cont)
+      (compile_lam env) cenv () args sz cont
   else
-    let compile_arg reloc constr_or_uni sz cont =
+    let compile_arg cenv constr_or_uni sz cont =
       match constr_or_uni with
-      | ArgLambda t -> compile_lam env reloc t sz cont
-      | ArgUniv uni -> compile_universe reloc uni sz cont
+      | ArgLambda t -> compile_lam env cenv t sz cont
+      | ArgUniv uni -> compile_universe cenv uni sz cont
     in
     let u = Univ.Instance.to_array u in
     let lu = Array.length u in
@@ -779,7 +779,7 @@ and compile_constant env reloc kn u args sz cont =
         (fun i -> if i < lu then ArgUniv u.(i) else ArgLambda args.(i-lu))
     in
     comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
-      compile_arg reloc () all sz cont
+      compile_arg cenv () all sz cont
 
 (*template for n-ary operation, invariant: n>=1,
   the operations does the following :
@@ -788,34 +788,34 @@ and compile_constant env reloc kn u args sz cont =
   3/ if at least one is not, branches to the normal behavior:
       Kgetglobal (get_alias !global_env kn) *)
 and op_compilation env n op =
-  let code_construct reloc kn sz cont =
+  let code_construct cenv kn sz cont =
      let f_cont =
          let else_lbl = Label.create () in
          Kareconst(n, else_lbl):: Kacc 0:: Kpop 1::
           op:: Kreturn 0:: Klabel else_lbl::
          (* works as comp_app with nargs = n and tailcall cont [Kreturn 0]*)
-          compile_get_global reloc kn sz (
+          compile_get_global cenv kn sz (
             Kappterm(n, n):: []) (* = discard_dead_code [Kreturn 0] *)
      in
      let lbl = Label.create () in
      fun_code := [Ksequence (add_grab n lbl f_cont, !fun_code)];
      Kclosure(lbl, 0)::cont
   in
-  fun kn reloc args sz cont ->
+  fun kn cenv args sz cont ->
   let nargs = Array.length args in
   if Int.equal nargs n then (*if it is a fully applied addition*)
     let (escape, labeled_cont) = make_branch cont in
     let else_lbl = Label.create () in
     assert (n < 4);
-    comp_args (compile_lam env) reloc args sz
+    comp_args (compile_lam env) cenv args sz
       (Kisconst else_lbl::(make_areconst (n-1) else_lbl
          (*Kaddint31::escape::Klabel else_lbl::Kpush::*)
          (op::escape::Klabel else_lbl::Kpush::
          (* works as comp_app with nargs < 4 and non-tailcall cont*)
-         compile_get_global reloc kn (sz+n) (Kapply n::labeled_cont))))
+         compile_get_global cenv kn (sz+n) (Kapply n::labeled_cont))))
   else
-    comp_app (fun reloc _ sz cont -> code_construct reloc kn sz cont)
-      (compile_lam env) reloc () args sz cont
+    comp_app (fun cenv _ sz cont -> code_construct cenv kn sz cont)
+      (compile_lam env) cenv () args sz cont
 
 
 let is_univ_copy max u =
@@ -846,11 +846,11 @@ let compile ~fail_on_error ?universes:(universes=0) env c =
   Label.reset_label_counter ();
   let cont = [Kstop] in
   try
-    let reloc, init_code =
+    let cenv, init_code =
       if Int.equal universes 0 then
         let lam = lambda_of_constr ~optimize:true env c in
-        let reloc = empty_comp_env () in
-        reloc, ensure_stack_capacity (compile_lam env reloc lam 0) cont
+        let cenv = empty_comp_env () in
+        cenv, ensure_stack_capacity (compile_lam env cenv lam 0) cont
       else
         (* We are going to generate a lambda, but merge the universe closure
          * with the function closure if it exists.
@@ -858,7 +858,7 @@ let compile ~fail_on_error ?universes:(universes=0) env c =
         let lam = lambda_of_constr ~optimize:true env c in
         let params, body = decompose_Llam lam in
         let arity = Array.length params in
-        let reloc = empty_comp_env () in
+        let cenv = empty_comp_env () in
         let full_arity = arity + universes in
         let r_fun = comp_env_fun ~univs:universes arity in
         let lbl_fun = Label.create () in
@@ -869,12 +869,12 @@ let compile ~fail_on_error ?universes:(universes=0) env c =
         fun_code := [Ksequence(add_grab full_arity lbl_fun cont_fun,!fun_code)];
         let fv = fv r_fun in
         let init_code =
-          ensure_stack_capacity (compile_fv reloc fv.fv_rev 0)
+          ensure_stack_capacity (compile_fv cenv fv.fv_rev 0)
                          (Kclosure(lbl_fun,fv.size) :: cont)
         in
-        reloc, init_code
+        cenv, init_code
     in
-    let fv = List.rev (!(reloc.in_env).fv_rev) in
+    let fv = List.rev (!(cenv.in_env).fv_rev) in
     (if !dump_bytecode then
       Feedback.msg_debug (dump_bytecodes init_code !fun_code fv)) ;
     Some (init_code,!fun_code, Array.of_list fv)
@@ -922,13 +922,13 @@ let op2_compilation op =
      fun_code := [Ksequence (add_grab 2 lbl f_cont, !fun_code)];
      Kclosure(lbl, 0)::cont
   in
-  fun normal fc _ reloc args sz cont ->
+  fun normal fc _ cenv args sz cont ->
   if not fc then raise Not_found else
   let nargs = Array.length args in
   if nargs=2 then (*if it is a fully applied addition*)
     let (escape, labeled_cont) = make_branch cont in
     let else_lbl = Label.create () in
-      comp_args compile_constr reloc args sz
+      comp_args compile_constr cenv args sz
 	(Kisconst else_lbl::(make_areconst 1  else_lbl
            (*Kaddint31::escape::Klabel else_lbl::Kpush::*)
            (op::escape::Klabel else_lbl::Kpush::
@@ -940,5 +940,5 @@ let op2_compilation op =
     code_construct normal cont
   else
     comp_app (fun _ _ _ cont -> code_construct normal cont)
-      compile_constr reloc () args sz cont *)
+      compile_constr cenv () args sz cont *)
 
