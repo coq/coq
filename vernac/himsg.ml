@@ -568,7 +568,9 @@ let rec explain_evar_kind env sigma evk ty = function
       str " in the partial instance " ++ pc ++
       str " found for ") ++
       explain_evar_kind env sigma evk'
-      (pr_leconstr_env env sigma ty') (snd evi.evar_source)
+        (pr_leconstr_env env sigma ty') (snd evi.evar_source)
+  | Evar_kinds.RecordFieldEvar (field, cons) ->
+     str "field `" ++ Names.Constant.print field ++ str "` of record `" ++ Libnames.pr_reference cons ++ str "`"
 
 let explain_typeclass_resolution env sigma evi k =
   match Typeclasses.class_of_constr sigma evi.evar_concl with

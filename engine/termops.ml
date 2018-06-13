@@ -215,6 +215,7 @@ let pr_evar_source = function
      | Some Evar_kinds.Body -> str "body of "
      | Some Evar_kinds.Domain -> str "domain of "
      | Some Evar_kinds.Codomain -> str "codomain of ") ++ Evar.print evk
+  | Evar_kinds.RecordFieldEvar (field, constructor) -> str "type of record field: " ++ Names.Constant.print field ++ str " of constructor " ++ Libnames.pr_reference constructor
 
 let pr_evar_info evi =
   let open Evd in
