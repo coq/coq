@@ -47,7 +47,8 @@ val build_induction_scheme : env -> evar_map -> pinductive ->
 (** Builds mutual (recursive) induction schemes *)
 
 val build_mutual_induction_scheme :
-  env -> evar_map -> (pinductive * dep_flag * Sorts.family) list -> evar_map * constr list
+  env -> evar_map -> ?force_mutual:bool ->
+  (pinductive * dep_flag * Sorts.family) list -> evar_map * constr list
 
 (** Scheme combinators *)
 
