@@ -29,7 +29,7 @@ val empty_binders : universe_binders
 val register_universe_binders : Names.GlobRef.t -> universe_binders -> unit
 val universe_binders_of_global : Names.GlobRef.t -> universe_binders
 
-type univ_name_list = Misctypes.lname list
+type univ_name_list = Names.lname list
 
 (** [universe_binders_with_opt_names ref u l]
 

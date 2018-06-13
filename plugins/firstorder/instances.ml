@@ -22,7 +22,6 @@ open Reductionops
 open Formula
 open Sequent
 open Names
-open Misctypes
 open Context.Rel.Declaration
 
 let compare_instance inst1 inst2=
@@ -184,12 +183,12 @@ let right_instance_tac inst continue seq=
 	   [introf;
             Proofview.Goal.enter begin fun gl ->
               let id0 = List.nth (pf_ids_of_hyps gl) 0 in
-              split (ImplicitBindings [mkVar id0])
+              split (Tactypes.ImplicitBindings [mkVar id0])
             end;
 	    tclSOLVE [wrap 0 true continue (deepen seq)]];
 	 tclTRY assumption]
     | Real ((0,t),_) ->
-	(tclTHEN (split (ImplicitBindings [t]))
+        (tclTHEN (split (Tactypes.ImplicitBindings [t]))
 	   (tclSOLVE [wrap 0 true continue (deepen seq)]))
     | Real ((m,t),_) ->
 	tclFAIL 0 (Pp.str "not implemented ... yet")

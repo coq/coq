@@ -18,7 +18,6 @@ open Constr
 open Glob_term
 open Pp
 open Mod_subst
-open Misctypes
 open Decl_kinds
 open Pattern
 open Environ
@@ -47,7 +46,7 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
 | PLetIn (v1, b1, t1, c1), PLetIn (v2, b2, t2, c2) ->
   Name.equal v1 v2 && constr_pattern_eq b1 b2 &&
   Option.equal constr_pattern_eq t1 t2 && constr_pattern_eq c1 c2
-| PSort s1, PSort s2 -> Miscops.glob_sort_eq s1 s2
+| PSort s1, PSort s2 -> Glob_ops.glob_sort_eq s1 s2
 | PMeta m1, PMeta m2 -> Option.equal Id.equal m1 m2
 | PIf (t1, l1, r1), PIf (t2, l2, r2) ->
   constr_pattern_eq t1 t2 && constr_pattern_eq l1 l2 && constr_pattern_eq r1 r2
@@ -418,7 +417,7 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
            pat_of_raw metas vars b1,pat_of_raw metas vars b2)
   | GLetTuple (nal,(_,None),b,c) ->
       let mkGLambda na c = DAst.make ?loc @@
-	GLambda (na,Explicit, DAst.make @@ GHole (Evar_kinds.InternalHole, IntroAnonymous, None),c) in
+        GLambda (na,Explicit, DAst.make @@ GHole (Evar_kinds.InternalHole, Namegen.IntroAnonymous, None),c) in
       let c = List.fold_right mkGLambda nal c in
       let cip =
 	{ cip_style = LetStyle;

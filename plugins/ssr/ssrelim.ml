@@ -17,7 +17,7 @@ open Term
 open Constr
 open Termops
 open Globnames
-open Misctypes
+open Tactypes
 open Tacmach
 
 open Ssrmatching_plugin

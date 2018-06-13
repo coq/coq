@@ -26,7 +26,7 @@ open Classes
 open Constrexpr
 open Globnames
 open Evd
-open Misctypes
+open Tactypes
 open Locus
 open Locusops
 open Decl_kinds
@@ -1846,7 +1846,7 @@ let declare_relation ?locality ?(binders=[]) a aeq n refl symm trans =
              (CAst.make @@ Ident (Id.of_string "Equivalence_Symmetric"), lemma2);
              (CAst.make @@ Ident (Id.of_string "Equivalence_Transitive"), lemma3)])
 
-let cHole = CAst.make @@ CHole (None, Misctypes.IntroAnonymous, None)
+let cHole = CAst.make @@ CHole (None, Namegen.IntroAnonymous, None)
 
 let proper_projection sigma r ty =
   let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i)) in

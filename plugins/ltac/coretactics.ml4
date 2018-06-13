@@ -10,11 +10,13 @@
 
 open Util
 open Locus
-open Misctypes
+open Tactypes
 open Genredexpr
 open Stdarg
 open Extraargs
+open Tacarg
 open Names
+open Logic
 
 DECLARE PLUGIN "ltac_plugin"
 

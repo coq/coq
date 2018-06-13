@@ -14,7 +14,6 @@ open EConstr
 open Evd
 open Proof_type
 open Locus
-open Misctypes
 open Tactypes
 
 (** Tacticals i.e. functions from tactics to tactics. *)
@@ -124,7 +123,7 @@ val fix_empty_or_and_pattern : int ->
   delayed_open_constr or_and_intro_pattern_expr ->
   delayed_open_constr or_and_intro_pattern_expr
 
-val compute_constructor_signatures : rec_flag -> inductive * 'a -> bool list array
+val compute_constructor_signatures : rec_flag:bool -> inductive * 'a -> bool list array
 
 (** Useful for [as intro_pattern] modifier *)
 val compute_induction_names :

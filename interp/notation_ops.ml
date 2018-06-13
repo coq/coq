@@ -16,7 +16,7 @@ open Nameops
 open Constr
 open Globnames
 open Decl_kinds
-open Misctypes
+open Namegen
 open Glob_term
 open Glob_ops
 open Mod_subst
@@ -86,7 +86,7 @@ let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
   Array.equal (eq_notation_constr vars) us1 us2 &&
   Array.equal (eq_notation_constr vars) rs1 rs2
 | NSort s1, NSort s2 ->
-  Miscops.glob_sort_eq s1 s2
+  glob_sort_eq s1 s2
 | NCast (t1, c1), NCast (t2, c2) ->
   (eq_notation_constr vars) t1 t2 && cast_type_eq (eq_notation_constr vars) c1 c2
 | NProj (p1, c1), NProj (p2, c2) ->
@@ -158,7 +158,7 @@ let protect g e na =
 let apply_cases_pattern ?loc ((ids,disjpat),id) c =
   let tm = DAst.make ?loc (GVar id) in
   let eqns = List.map (fun pat -> (CAst.make ?loc (ids,[pat],c))) disjpat in
-  DAst.make ?loc @@ GCases (LetPatternStyle, None, [tm,(Anonymous,None)], eqns)
+  DAst.make ?loc @@ GCases (Constr.LetPatternStyle, None, [tm,(Anonymous,None)], eqns)
 
 let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
   let lt x = DAst.make ?loc x in lt @@ match nc with
@@ -216,7 +216,7 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
 	  (e,(na,Explicit,Option.map (f e) oc,f e b)))) e dll in
       let e',idl = Array.fold_left_map (to_id (protect g)) e idl in
       GRec (fk,idl,dll,Array.map (f e) tl,Array.map (f e') bl)
-  | NCast (c,k) -> GCast (f e c,Miscops.map_cast_type (f e) k)
+  | NCast (c,k) -> GCast (f e c,map_cast_type (f e) k)
   | NSort x -> GSort x
   | NHole (x, naming, arg)  -> GHole (x, naming, arg)
   | NRef x -> GRef (x,None)
@@ -434,7 +434,7 @@ let notation_constr_and_vars_of_glob_constr recvars a =
 	   user_err Pp.(str "Binders marked as implicit not allowed in notations.");
 	 add_name found na; (na,Option.map aux oc,aux b))) dll in
       NRec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
-  | GCast (c,k) -> NCast (aux c,Miscops.map_cast_type aux k)
+  | GCast (c,k) -> NCast (aux c,map_cast_type aux k)
   | GSort s -> NSort s
   | GHole (w,naming,arg) ->
      if arg != None then has_ltac := true;
@@ -637,7 +637,7 @@ let rec subst_notation_constr subst bound raw =
 
   | NCast (r1,k) ->
       let r1' = subst_notation_constr subst bound r1 in
-      let k' = Miscops.smartmap_cast_type (subst_notation_constr subst bound) k in
+      let k' = smartmap_cast_type (subst_notation_constr subst bound) k in
       if r1' == r1 && k' == k then raw else NCast(r1',k')
 
   | NProj (p, c) ->
@@ -666,11 +666,11 @@ let abstract_return_type_context pi mklam tml rtno =
 let abstract_return_type_context_glob_constr tml rtn =
   abstract_return_type_context (fun {CAst.v=(_,nal)} -> nal)
     (fun na c -> DAst.make @@
-      GLambda(na,Explicit,DAst.make @@ GHole(Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None),c)) tml rtn
+      GLambda(na,Explicit,DAst.make @@ GHole(Evar_kinds.InternalHole,IntroAnonymous,None),c)) tml rtn
 
 let abstract_return_type_context_notation_constr tml rtn =
   abstract_return_type_context snd
-    (fun na c -> NLambda(na,NHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous, None),c)) tml rtn
+    (fun na c -> NLambda(na,NHole (Evar_kinds.InternalHole, IntroAnonymous, None),c)) tml rtn
 
 let is_term_meta id metas =
   try match Id.List.assoc id metas with _,(NtnTypeConstr | NtnTypeConstrList) -> true | _ -> false
@@ -1194,7 +1194,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | GCast(t1, c1), NCast(t2, c2) ->
     match_cast (match_in u alp metas) (match_in u alp metas sigma t1 t2) c1 c2
   | GSort (GType _), NSort (GType _) when not u -> sigma
-  | GSort s1, NSort s2 when Miscops.glob_sort_eq s1 s2 -> sigma
+  | GSort s1, NSort s2 when glob_sort_eq s1 s2 -> sigma
   | GPatVar _, NHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
   | a, NHole _ -> sigma
 
@@ -1208,7 +1208,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
       let avoid =
         Id.Set.union (free_glob_vars a1) (* as in Namegen: *) (glob_visible_short_qualid a1) in
       let id' = Namegen.next_ident_away id avoid in
-      let t1 = DAst.make @@ GHole(Evar_kinds.BinderType (Name id'),Misctypes.IntroAnonymous,None) in
+      let t1 = DAst.make @@ GHole(Evar_kinds.BinderType (Name id'),IntroAnonymous,None) in
       let sigma = match t2 with
       | NHole _ -> sigma
       | NVar id2 -> bind_term_env alp sigma id2 t1
@@ -1241,7 +1241,7 @@ and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
   let store, get = set_temporary_memory () in
   match na1, DAst.get b1, na2 with
   (* Matching individual binders as part of a recursive pattern *)
-  | Name p, GCases (LetPatternStyle,None,[(e,_)],(_::_ as eqns)), Name id
+  | Name p, GCases (Constr.LetPatternStyle,None,[(e,_)],(_::_ as eqns)), Name id
        when is_gvar p e && is_bindinglist_meta id metas && List.length (store (Detyping.factorize_eqns eqns)) = 1 ->
     (match get () with
      | [{CAst.v=(ids,disj_of_patl,b1)}] ->

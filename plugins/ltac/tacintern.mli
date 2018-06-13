@@ -12,7 +12,7 @@ open Names
 open Tacexpr
 open Genarg
 open Constrexpr
-open Misctypes
+open Tactypes
 
 (** Globalization of tactic expressions :
     Conversion from [raw_tactic_expr] to [glob_tactic_expr] *)

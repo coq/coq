@@ -19,7 +19,7 @@ open Geninterp
 open Stdarg
 open Libnames
 open Notation_gram
-open Misctypes
+open Tactypes
 open Locus
 open Decl_kinds
 open Genredexpr
@@ -493,7 +493,7 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_orient b = if b then mt () else str "<- "
 
-  let pr_multi = function
+  let pr_multi = let open Equality in function
     | Precisely 1 -> mt ()
     | Precisely n -> int n ++ str "!"
     | UpTo n -> int n ++ str "?"
@@ -749,7 +749,7 @@ let pr_goal_selector ~toplevel s =
         | TacIntroPattern (ev,(_::_ as p)) ->
            hov 1 (primitive (if ev then "eintros" else "intros") ++
                     (match p with
-                    | [{CAst.v=Misctypes.IntroForthcoming false}] -> mt ()
+                    | [{CAst.v=IntroForthcoming false}] -> mt ()
                     | _ -> spc () ++ prlist_with_sep spc (Miscprint.pr_intro_pattern pr.pr_dconstr) p))
         | TacApply (a,ev,cb,inhyp) ->
           hov 1 (

@@ -228,7 +228,7 @@ type _ target =
 type prod_info = production_level * production_position
 
 type (_, _) entry =
-| TTName : ('self, Misctypes.lname) entry
+| TTName : ('self, lname) entry
 | TTReference : ('self, reference) entry
 | TTBigint : ('self, Constrexpr.raw_natural_number) entry
 | TTConstr : prod_info * 'r target -> ('r, 'r) entry

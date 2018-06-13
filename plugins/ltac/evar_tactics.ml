@@ -92,7 +92,7 @@ let let_evar name typ =
       Namegen.next_ident_away_in_goal id (Termops.vars_of_env env)
     | Name.Name id -> id
     in
-    let (sigma, evar) = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh id) typ in
+    let (sigma, evar) = Evarutil.new_evar env sigma ~src ~naming:(Namegen.IntroFresh id) typ in
     Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (Tactics.letin_tac None (Name.Name id) evar None Locusops.nowhere)
   end

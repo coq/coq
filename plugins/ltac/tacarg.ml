@@ -19,6 +19,14 @@ let make0 ?dyn name =
   let () = Geninterp.register_val0 wit dyn in
   wit
 
+let wit_intro_pattern = make0 "intropattern"
+let wit_quant_hyp = make0 "quant_hyp"
+let wit_constr_with_bindings = make0 "constr_with_bindings"
+let wit_open_constr_with_bindings = make0 "open_constr_with_bindings"
+let wit_bindings = make0 "bindings"
+let wit_quantified_hypothesis = wit_quant_hyp
+let wit_intropattern = wit_intro_pattern
+
 let wit_tactic : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type =
   make0 "tactic"
 

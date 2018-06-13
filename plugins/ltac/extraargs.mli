@@ -12,7 +12,6 @@ open Tacexpr
 open Names
 open Constrexpr
 open Glob_term
-open Misctypes
 
 val wit_orient : bool Genarg.uniform_genarg_type
 val orient : bool Pcoq.Gram.entry
@@ -20,9 +19,9 @@ val pr_orient : bool -> Pp.t
 
 val wit_rename : (Id.t * Id.t) Genarg.uniform_genarg_type
 
-val occurrences : (int list or_var) Pcoq.Gram.entry
-val wit_occurrences : (int list or_var, int list or_var, int list) Genarg.genarg_type
-val pr_occurrences : int list or_var -> Pp.t
+val occurrences : (int list Locus.or_var) Pcoq.Gram.entry
+val wit_occurrences : (int list Locus.or_var, int list Locus.or_var, int list) Genarg.genarg_type
+val pr_occurrences : int list Locus.or_var -> Pp.t
 val occurrences_of : int list -> Locus.occurrences
 
 val wit_natural : int Genarg.uniform_genarg_type

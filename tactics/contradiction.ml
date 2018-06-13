@@ -14,7 +14,6 @@ open Hipattern
 open Tactics
 open Coqlib
 open Reductionops
-open Misctypes
 open Proofview.Notations
 
 module NamedDecl = Context.Named.Declaration
@@ -120,7 +119,7 @@ let contradiction_term (c,lbind as cl) =
     else
       Proofview.tclORELSE
         begin
-          if lbind = NoBindings then
+          if lbind = Tactypes.NoBindings then
             filter_hyp (fun c -> is_negation_of env sigma typ c)
               (fun id -> simplest_elim (mkApp (mkVar id,[|c|])))
           else

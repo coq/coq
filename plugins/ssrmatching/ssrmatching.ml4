@@ -40,7 +40,7 @@ open Pretyping
 open Ppconstr
 open Printer
 open Globnames
-open Misctypes
+open Namegen
 open Decl_kinds
 open Evar_kinds
 open Constrexpr

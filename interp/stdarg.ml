@@ -11,6 +11,8 @@
 open Genarg
 open Geninterp
 
+type 'a and_short_name = 'a * Names.lident option
+
 let make0 ?dyn name =
   let wit = Genarg.make0 name in
   let () = register_val0 wit dyn in
@@ -34,9 +36,6 @@ let wit_pre_ident : string uniform_genarg_type =
 let wit_int_or_var =
   make0 ~dyn:(val_tag (topwit wit_int)) "int_or_var"
 
-let wit_intro_pattern =
-  make0 "intropattern"
-
 let wit_ident =
   make0 "ident"
 
@@ -44,8 +43,6 @@ let wit_var =
   make0 ~dyn:(val_tag (topwit wit_ident)) "var"
 
 let wit_ref = make0 "ref"
-
-let wit_quant_hyp = make0 "quant_hyp"
 
 let wit_sort_family = make0 "sort_family"
 
@@ -55,12 +52,6 @@ let wit_constr =
 let wit_uconstr = make0 "uconstr"
 
 let wit_open_constr = make0 ~dyn:(val_tag (topwit wit_constr)) "open_constr"
-
-let wit_constr_with_bindings = make0 "constr_with_bindings"
-
-let wit_open_constr_with_bindings = make0 "open_constr_with_bindings"
-
-let wit_bindings = make0 "bindings"
 
 let wit_red_expr = make0 "redexpr"
 
@@ -74,6 +65,4 @@ let wit_preident = wit_pre_ident
 let wit_reference = wit_ref
 let wit_global = wit_ref
 let wit_clause = wit_clause_dft_concl
-let wit_quantified_hypothesis = wit_quant_hyp
-let wit_intropattern = wit_intro_pattern
 let wit_redexpr = wit_red_expr

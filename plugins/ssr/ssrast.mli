@@ -37,7 +37,7 @@ type ssrmult = int * ssrmmod
 type ssrocc = (bool * int list) option
 
 (* index MAYBE REMOVE ONLY INTERNAL stuff between {} *)
-type ssrindex = int Misctypes.or_var
+type ssrindex = int Locus.or_var
 
 (* clear switch {H G} *)
 type ssrclear = ssrhyps

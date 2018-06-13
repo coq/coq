@@ -181,10 +181,9 @@ let option_assert_get o msg =
 (** Constructors for rawconstr *)
 open Glob_term
 open Globnames
-open Misctypes
 open Decl_kinds
 
-let mkRHole = DAst.make @@ GHole (Evar_kinds.InternalHole, IntroAnonymous, None)
+let mkRHole = DAst.make @@ GHole (Evar_kinds.InternalHole, Namegen.IntroAnonymous, None)
 
 let rec mkRHoles n = if n > 0 then mkRHole :: mkRHoles (n - 1) else []
 let rec isRHoles cl = match cl with
@@ -254,7 +253,7 @@ let interp_refine ist gl rc =
 
 
 let interp_open_constr ist gl gc =
-  let (sigma, (c, _)) = Tacinterp.interp_open_constr_with_bindings ist (pf_env gl) (project gl) (gc, Misctypes.NoBindings) in
+  let (sigma, (c, _)) = Tacinterp.interp_open_constr_with_bindings ist (pf_env gl) (project gl) (gc, Tactypes.NoBindings) in
   (project gl, (sigma, c))
 
 let interp_term ist gl (_, c) = snd (interp_open_constr ist gl c)
@@ -861,8 +860,8 @@ let mkCProp loc = CAst.make ?loc @@ CSort GProp
 let mkCType loc = CAst.make ?loc @@ CSort (GType [])
 let mkCVar ?loc id = CAst.make ?loc @@ CRef (CAst.make ?loc @@ Ident id, None)
 let rec mkCHoles ?loc n =
-  if n <= 0 then [] else (CAst.make ?loc @@ CHole (None, IntroAnonymous, None)) :: mkCHoles ?loc (n - 1)
-let mkCHole loc = CAst.make ?loc @@ CHole (None, IntroAnonymous, None)
+  if n <= 0 then [] else (CAst.make ?loc @@ CHole (None, Namegen.IntroAnonymous, None)) :: mkCHoles ?loc (n - 1)
+let mkCHole loc = CAst.make ?loc @@ CHole (None, Namegen.IntroAnonymous, None)
 let mkCLambda ?loc name ty t =  CAst.make ?loc @@
    CLambdaN ([CLocalAssum([CAst.make ?loc name], Default Explicit, ty)], t)
 let mkCArrow ?loc ty t = CAst.make ?loc @@

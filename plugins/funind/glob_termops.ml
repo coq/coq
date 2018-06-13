@@ -5,7 +5,6 @@ open CErrors
 open Util
 open Names
 open Decl_kinds
-open Misctypes
 
 (*
    Some basic functions to rebuild glob_constr
@@ -18,7 +17,7 @@ let mkGLambda(n,t,b)    = DAst.make @@ GLambda(n,Explicit,t,b)
 let mkGProd(n,t,b)      = DAst.make @@ GProd(n,Explicit,t,b)
 let mkGLetIn(n,b,t,c)   = DAst.make @@ GLetIn(n,b,t,c)
 let mkGCases(rto,l,brl) = DAst.make @@ GCases(RegularStyle,rto,l,brl)
-let mkGHole ()          = DAst.make @@ GHole(Evar_kinds.BinderType Anonymous,Misctypes.IntroAnonymous,None)
+let mkGHole ()          = DAst.make @@ GHole(Evar_kinds.BinderType Anonymous,Namegen.IntroAnonymous,None)
 
 (*
   Some basic functions to decompose glob_constrs
@@ -109,7 +108,7 @@ let change_vars =
       | GHole _ as x -> x
       | GCast(b,c) ->
 	  GCast(change_vars mapping b,
-		Miscops.map_cast_type (change_vars mapping) c)
+                Glob_ops.map_cast_type (change_vars mapping) c)
       | GProj(p,c) -> GProj(p, change_vars mapping c)
       ) rt
   and change_vars_br mapping ({CAst.loc;v=(idl,patl,res)} as br) =
@@ -290,7 +289,7 @@ let rec alpha_rt excluded rt =
     | GHole _ as rt -> rt
     | GCast (b,c) ->
 	GCast(alpha_rt excluded b,
-	      Miscops.map_cast_type (alpha_rt excluded) c)
+              Glob_ops.map_cast_type (alpha_rt excluded) c)
     | GApp(f,args) ->
 	GApp(alpha_rt excluded f,
 	     List.map (alpha_rt excluded) args
@@ -440,7 +439,7 @@ let replace_var_by_term x_id term =
       | GHole _ as rt -> rt
       | GCast(b,c) ->
 	  GCast(replace_var_by_pattern b,
-		Miscops.map_cast_type replace_var_by_pattern c)
+                Glob_ops.map_cast_type replace_var_by_pattern c)
       | GProj(p,c) ->
         GProj(p,replace_var_by_pattern c)
     ) x
@@ -542,7 +541,7 @@ let expand_as =
       | GRec _ ->  user_err Pp.(str "Not handled GRec")
       | GCast(b,c) ->
 	  GCast(expand_as map b,
-		Miscops.map_cast_type (expand_as map) c)
+                Glob_ops.map_cast_type (expand_as map) c)
       | GCases(sty,po,el,brl) ->
 	  GCases(sty, Option.map (expand_as map) po, List.map (fun (rt,t) -> expand_as map rt,t) el,
 		List.map (expand_as_br map) brl)

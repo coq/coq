@@ -86,7 +86,6 @@ let _ =
 
 open Constrexpr 
 open Glob_term 
-open Misctypes
 
 let combineCG t1 t2 f g = match t1, t2 with
  | (x, (t1, None)), (_, (t2, None)) -> x, (g t1 t2, None)

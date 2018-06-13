@@ -15,15 +15,15 @@ open Pp
 open CAst
 open Names
 open Nameops
-open Constr
 open Libnames
 open Pputils
 open Ppextend
-open Notation_gram
+open Glob_term
 open Constrexpr
 open Constrexpr_ops
+open Notation_gram
 open Decl_kinds
-open Misctypes
+open Namegen
 (*i*)
 
 module Tag =
@@ -228,7 +228,7 @@ let tag_var = tag Tag.variable
         str "(" ++ pr_id id ++ str ":=" ++ pr ltop a ++ str ")"
 
   let pr_opt_type_spc pr = function
-    | { CAst.v = CHole (_,Misctypes.IntroAnonymous,_) } -> mt ()
+    | { CAst.v = CHole (_,IntroAnonymous,_) } -> mt ()
     | t ->  str " :" ++ pr_sep_com (fun()->brk(1,2)) (pr ltop) t
 
   let pr_lident {loc; v=id} =
@@ -242,8 +242,8 @@ let tag_var = tag Tag.variable
     | x -> pr_ast Name.print x
 
   let pr_or_var pr = function
-    | ArgArg x -> pr x
-    | ArgVar id -> pr_lident id
+    | Locus.ArgArg x -> pr x
+    | Locus.ArgVar id -> pr_lident id
 
   let pr_prim_token = function
     | Numeral (n,s) -> str (if s then n else "-"^n)
@@ -363,7 +363,7 @@ let tag_var = tag Tag.variable
         end
       | Default b ->
         match t with
-          | { CAst.v = CHole (_,Misctypes.IntroAnonymous,_) } ->
+          | { CAst.v = CHole (_,IntroAnonymous,_) } ->
             let s = prlist_with_sep spc pr_lname nal in
             hov 1 (surround_implicit b s)
           | _ ->
@@ -457,7 +457,7 @@ let tag_var = tag Tag.variable
 
   let pr_case_type pr po =
     match po with
-      | None | Some { CAst.v = CHole (_,Misctypes.IntroAnonymous,_) } -> mt()
+      | None | Some { CAst.v = CHole (_,IntroAnonymous,_) } -> mt()
       | Some p ->
         spc() ++ hov 2 (keyword "return" ++ pr_sep_com spc (pr lsimpleconstr) p)
 
@@ -592,7 +592,7 @@ let tag_var = tag Tag.variable
           hv 0 (str"{|" ++ pr_record_body_gen (pr spc) l ++ str" |}"),
           latom
         )
-      | CCases (LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[{v=([[p]],b)}]) ->
+      | CCases (Constr.LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[{v=([[p]],b)}]) ->
         return (
           hv 0 (
             keyword "let" ++ spc () ++ str"'" ++
@@ -643,9 +643,9 @@ let tag_var = tag Tag.variable
         lif
         )
 
-      | CHole (_,Misctypes.IntroIdentifier id,_) ->
+      | CHole (_,IntroIdentifier id,_) ->
         return (str "?[" ++ pr_id id ++ str "]", latom)
-      | CHole (_,Misctypes.IntroFresh id,_) ->
+      | CHole (_,IntroFresh id,_) ->
         return (str "?[?" ++ pr_id id ++ str "]", latom)
       | CHole (_,_,_) ->
         return (str "_", latom)

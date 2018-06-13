@@ -15,14 +15,13 @@
 open Libnames
 open Constrexpr
 open Names
-open Misctypes
 open Notation_gram
 
 val prec_less : precedence -> tolerability -> bool
 
 val pr_tight_coma : unit -> Pp.t
 
-val pr_or_var : ('a -> Pp.t) -> 'a or_var -> Pp.t
+val pr_or_var : ('a -> Pp.t) -> 'a Locus.or_var -> Pp.t
 
 val pr_lident : lident -> Pp.t
 val pr_lname : lname -> Pp.t
@@ -39,7 +38,7 @@ val pr_name : Name.t -> Pp.t
 [@@ocaml.deprecated "alias of Names.Name.print"]
 
 val pr_qualid : qualid -> Pp.t
-val pr_patvar : patvar -> Pp.t
+val pr_patvar : Pattern.patvar -> Pp.t
 
 val pr_glob_level : Glob_term.glob_level -> Pp.t
 val pr_glob_sort : Glob_term.glob_sort -> Pp.t

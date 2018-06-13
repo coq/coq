@@ -14,7 +14,6 @@ open Names
 open Constr
 open Termops
 open Tacmach
-open Misctypes
 open Locusops
 
 open Ssrast
@@ -25,7 +24,7 @@ module NamedDecl = Context.Named.Declaration
 
 (** Tacticals (+, -, *, done, by, do, =>, first, and last). *)
 
-let get_index = function ArgArg i -> i | _ ->
+let get_index = function Locus.ArgArg i -> i | _ ->
   anomaly "Uninterpreted index"
 (* Toplevel constr must be globalized twice ! *)
 

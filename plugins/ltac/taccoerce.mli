@@ -11,9 +11,9 @@
 open Util
 open Names
 open EConstr
-open Misctypes
 open Genarg
 open Geninterp
+open Tactypes
 
 (** Coercions from highest level generic arguments to actual data used by Ltac
     interpretation. Those functions examinate dynamic types and try to return
@@ -56,7 +56,7 @@ val coerce_to_ident_not_fresh : Environ.env -> Evd.evar_map -> Value.t -> Id.t
 val coerce_to_intro_pattern : Environ.env -> Evd.evar_map -> Value.t -> Tacexpr.delayed_open_constr intro_pattern_expr
 
 val coerce_to_intro_pattern_naming :
-  Environ.env -> Evd.evar_map -> Value.t -> intro_pattern_naming_expr
+  Environ.env -> Evd.evar_map -> Value.t -> Namegen.intro_pattern_naming_expr
 
 val coerce_to_hint_base : Value.t -> string
 
@@ -86,7 +86,7 @@ val coerce_to_quantified_hypothesis : Evd.evar_map -> Value.t -> quantified_hypo
 
 val coerce_to_decl_or_quant_hyp : Environ.env -> Evd.evar_map -> Value.t -> quantified_hypothesis
 
-val coerce_to_int_or_var_list : Value.t -> int or_var list
+val coerce_to_int_or_var_list : Value.t -> int Locus.or_var list
 
 (** {5 Missing generic arguments} *)
 

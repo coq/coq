@@ -23,7 +23,6 @@ open Tacred
 open CClosure
 open RedFlags
 open Libobject
-open Misctypes
 
 (* call by value normalisation function using the virtual machine *)
 let cbv_vm env sigma c =
@@ -200,8 +199,8 @@ let decl_red_expr s e =
   end
 
 let out_arg = function
-  | ArgVar _ -> anomaly (Pp.str "Unevaluated or_var variable.")
-  | ArgArg x -> x
+  | Locus.ArgVar _ -> anomaly (Pp.str "Unevaluated or_var variable.")
+  | Locus.ArgArg x -> x
 
 let out_with_occurrences (occs,c) =
   (Locusops.occurrences_map (List.map out_arg) occs, c)

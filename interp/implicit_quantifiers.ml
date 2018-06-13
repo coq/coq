@@ -53,7 +53,7 @@ let cache_generalizable_type (_,(local,cmd)) =
 let load_generalizable_type _ (_,(local,cmd)) =
   generalizable_table := add_generalizable cmd !generalizable_table
 
-let in_generalizable : bool * Misctypes.lident list option -> obj =
+let in_generalizable : bool * lident list option -> obj =
   declare_object {(default_object "GENERALIZED-IDENT") with
     load_function = load_generalizable_type;
     cache_function = cache_generalizable_type;

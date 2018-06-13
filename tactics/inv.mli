@@ -10,7 +10,6 @@
 
 open Names
 open EConstr
-open Misctypes
 open Tactypes
 
 type inversion_status = Dep of constr option | NoDep

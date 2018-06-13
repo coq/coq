@@ -29,7 +29,6 @@ open Decl_kinds
 open Constrexpr
 open Redexpr
 open Lemmas
-open Misctypes
 open Locality
 open Vernacinterp
 
@@ -637,7 +636,7 @@ let vernac_scheme l =
 let vernac_combined_scheme lid l =
   if Dumpglob.dump () then
     (Dumpglob.dump_definition lid false "def";
-     List.iter (fun {loc;v=id} -> dump_global (make ?loc @@ Misctypes.AN (make ?loc @@ Ident id))) l);
+     List.iter (fun {loc;v=id} -> dump_global (make ?loc @@ AN (make ?loc @@ Ident id))) l);
  Indschemes.do_combined_scheme lid l
 
 let vernac_universe ~atts l =

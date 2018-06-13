@@ -12,6 +12,7 @@ open Names
 open Constr
 open Evd
 open Environ
+open Namegen
 open EConstr
 
 (** This module provides useful higher-level functions for evar manipulation. *)
@@ -27,7 +28,7 @@ val mk_new_meta : unit -> constr
 val new_evar_from_context :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr ->
+  ?naming:intro_pattern_naming_expr ->
   ?principal:bool ->
   named_context_val -> evar_map  -> types -> evar_map * EConstr.t
 
@@ -40,14 +41,14 @@ type naming_mode =
 val new_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr ->
+  ?naming:intro_pattern_naming_expr ->
   ?principal:bool -> ?hypnaming:naming_mode ->
   env -> evar_map -> types -> evar_map * EConstr.t
 
 val new_pure_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr ->
+  ?naming:intro_pattern_naming_expr ->
   ?principal:bool ->
   named_context_val -> evar_map -> types -> evar_map * Evar.t
 
@@ -57,7 +58,7 @@ val new_pure_evar_full : evar_map -> evar_info -> evar_map * Evar.t
     them during type-checking and unification. *)
 val new_type_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr ->
+  ?naming:intro_pattern_naming_expr ->
   ?principal:bool -> ?hypnaming:naming_mode ->
   env -> evar_map -> rigid ->
   evar_map * (constr * Sorts.t)
@@ -79,7 +80,7 @@ val new_global : evar_map -> GlobRef.t -> evar_map * constr
    as a telescope) is [sign] *)
 val new_evar_instance :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t -> ?candidates:constr list ->
-  ?store:Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
+  ?store:Store.t -> ?naming:intro_pattern_naming_expr ->
   ?principal:bool ->
  named_context_val -> evar_map -> types ->
   constr list -> evar_map * constr
@@ -262,13 +263,13 @@ val meta_counter_summary_tag : int Summary.Dyn.tag
 val e_new_evar :
   env -> evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr ->
+  ?naming:intro_pattern_naming_expr ->
   ?principal:bool -> ?hypnaming:naming_mode -> types -> constr
 [@@ocaml.deprecated "Use [Evarutil.new_evar]"]
 
 val e_new_type_evar : env -> evar_map ref ->
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr ->
+  ?naming:intro_pattern_naming_expr ->
   ?principal:bool -> ?hypnaming:naming_mode -> rigid -> constr * Sorts.t
 [@@ocaml.deprecated "Use [Evarutil.new_type_evar]"]
 

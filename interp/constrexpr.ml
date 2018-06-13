@@ -10,7 +10,6 @@
 
 open Names
 open Libnames
-open Misctypes
 open Decl_kinds
 
 (** {6 Concrete syntax for terms } *)
@@ -22,6 +21,15 @@ type ident_decl = lident * universe_decl_expr option
 type name_decl = lname * universe_decl_expr option
 
 type notation = string
+
+type 'a or_by_notation_r =
+  | AN of 'a
+  | ByNotation of (string * string option)
+
+type 'a or_by_notation = 'a or_by_notation_r CAst.t
+
+(* NB: the last string in [ByNotation] is actually a [Notation.delimiters],
+   but this formulation avoids a useless dependency. *)
 
 type explicitation =
   | ExplByPos of int * Id.t option (* a reference to the n-th product starting from left *)
@@ -94,11 +102,11 @@ and constr_expr_r =
                  constr_expr * constr_expr
   | CIf of constr_expr * (lname option * constr_expr option)
          * constr_expr * constr_expr
-  | CHole   of Evar_kinds.t option * intro_pattern_naming_expr * Genarg.raw_generic_argument option
-  | CPatVar of patvar
+  | CHole   of Evar_kinds.t option * Namegen.intro_pattern_naming_expr * Genarg.raw_generic_argument option
+  | CPatVar of Pattern.patvar
   | CEvar   of Glob_term.existential_name * (Id.t * constr_expr) list
   | CSort   of Glob_term.glob_sort
-  | CCast   of constr_expr * constr_expr cast_type
+  | CCast   of constr_expr * constr_expr Glob_term.cast_type
   | CNotation of notation * constr_notation_substitution
   | CGeneralization of binding_kind * abstraction_kind option * constr_expr
   | CPrim of prim_token

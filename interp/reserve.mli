@@ -11,5 +11,5 @@
 open Names
 open Notation_term
 
-val declare_reserved_type : Misctypes.lident list -> notation_constr -> unit
+val declare_reserved_type : lident list -> notation_constr -> unit
 val find_reserved_type : Id.t -> notation_constr

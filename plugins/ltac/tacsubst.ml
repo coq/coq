@@ -14,7 +14,7 @@ open Mod_subst
 open Genarg
 open Stdarg
 open Tacarg
-open Misctypes
+open Tactypes
 open Globnames
 open Genredexpr
 open Patternops
@@ -75,7 +75,7 @@ let subst_and_short_name f (c,n) =
 (*  assert (n=None); *)(* since tacdef are strictly globalized *)
   (f c,None)
 
-let subst_or_var f =  function
+let subst_or_var f =  let open Locus in function
   | ArgVar _ as x -> x
   | ArgArg x -> ArgArg (f x)
 

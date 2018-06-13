@@ -32,17 +32,17 @@ val declare_rewriting_schemes : inductive -> unit
 (** Mutual Minimality/Induction scheme *)
 
 val do_mutual_induction_scheme :
-  (Misctypes.lident * bool * inductive * Sorts.family) list -> unit
+  (lident * bool * inductive * Sorts.family) list -> unit
 
 (** Main calls to interpret the Scheme command *)
 
-val do_scheme : (Misctypes.lident option * scheme) list -> unit
+val do_scheme : (lident option * scheme) list -> unit
 
 (** Combine a list of schemes into a conjunction of them *)
 
 val build_combined_scheme : env -> Constant.t list -> Evd.evar_map * constr * types
 
-val do_combined_scheme : Misctypes.lident -> Misctypes.lident list -> unit
+val do_combined_scheme : lident -> lident list -> unit
 
 (** Hook called at each inductive type definition *)
 

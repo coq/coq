@@ -15,7 +15,8 @@ open Indfun_common
 open Indfun
 open Genarg
 open Stdarg
-open Misctypes
+open Tacarg
+open Tactypes
 open Pcoq
 open Pcoq.Prim
 open Pcoq.Constr

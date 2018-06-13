@@ -26,7 +26,7 @@ open Tacticals.New
 open Tactics
 open Elim
 open Equality
-open Misctypes
+open Tactypes
 open Proofview.Notations
 
 module NamedDecl = Context.Named.Declaration
@@ -332,7 +332,7 @@ let rec tclMAP_i allow_conj n tacfun = function
           (tacfun (get_names allow_conj a))
           (tclMAP_i allow_conj (n-1) tacfun l)
 
-let remember_first_eq id x = if !x == MoveLast then x := MoveAfter id
+let remember_first_eq id x = if !x == Logic.MoveLast then x := Logic.MoveAfter id
 
 (* invariant: ProjectAndApply is responsible for erasing the clause
    which it is given as input
@@ -375,7 +375,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
       [if as_mode then clear [id] else tclIDTAC;
        (tclMAP_i (false,false) neqns (function (idopt,_) ->
 	 tclTRY (tclTHEN
-	   (intro_move_avoid idopt avoid MoveLast)
+           (intro_move_avoid idopt avoid Logic.MoveLast)
 	   (* try again to substitute and if still not a variable after *)
 	   (* decomposition, arbitrarily try to rewrite RL !? *)
 	   (tclTRY (onLastHypId (substHypIfVariable (fun id -> subst_hyp false id))))))
@@ -404,7 +404,7 @@ let nLastDecls i tac =
 let rewrite_equations as_mode othin neqns names ba =
   Proofview.Goal.enter begin fun gl ->
   let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
-  let first_eq = ref MoveLast in
+  let first_eq = ref Logic.MoveLast in
   let avoid = if as_mode then Id.Set.of_list (List.map NamedDecl.get_id nodepids) else Id.Set.empty in
   match othin with
     | Some thin ->
@@ -416,20 +416,20 @@ let rewrite_equations as_mode othin neqns names ba =
              (nLastDecls neqns (fun ctx -> clear (ids_of_named_context ctx)));
 	     tclMAP_i (true,false) neqns (fun (idopt,names) ->
                (tclTHEN
-		 (intro_move_avoid idopt avoid MoveLast)
+                 (intro_move_avoid idopt avoid Logic.MoveLast)
 		 (onLastHypId (fun id ->
 		   tclTRY (projectAndApply as_mode thin avoid id first_eq names depids)))))
 	       names;
 	     tclMAP (fun d -> tclIDTAC >>= fun () -> (* delay for [first_eq]. *)
                let idopt = if as_mode then Some (NamedDecl.get_id d) else None in
-	       intro_move idopt (if thin then MoveLast else !first_eq))
+               intro_move idopt (if thin then Logic.MoveLast else !first_eq))
 	       nodepids;
 	     (tclMAP (fun d -> tclTRY (clear [NamedDecl.get_id d])) depids)]
     | None ->
         (* simple inversion *)
         if as_mode then
           tclMAP_i (false,true) neqns (fun (idopt,_) ->
-	    intro_move idopt MoveLast) names
+            intro_move idopt Logic.MoveLast) names
         else
           (tclTHENLIST
              [tclDO neqns intro;

@@ -16,11 +16,11 @@ type contexts = Parameters | Properties
 
 type typeclass_error =
   | NotAClass of constr
-  | UnboundMethod of GlobRef.t * Misctypes.lident (** Class name, method *)
+  | UnboundMethod of GlobRef.t * lident (** Class name, method *)
 
 exception TypeClassError of env * typeclass_error
 
 val not_a_class : env -> constr -> 'a
 
-val unbound_method : env -> GlobRef.t -> Misctypes.lident -> 'a
+val unbound_method : env -> GlobRef.t -> lident -> 'a
 

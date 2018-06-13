@@ -13,7 +13,6 @@ open Extend
 open Genarg
 open Constrexpr
 open Libnames
-open Misctypes
 
 (** The parser of Coq *)
 

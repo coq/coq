@@ -26,7 +26,7 @@ val empty : t
 
 val make : UGraph.t -> t
 
-val make_with_initial_binders : UGraph.t -> Misctypes.lident list -> t
+val make_with_initial_binders : UGraph.t -> lident list -> t
 
 val is_empty : t -> bool
 
@@ -145,7 +145,7 @@ type ('a, 'b) gen_universe_decl = {
   univdecl_extensible_constraints : bool (* Can new constraints be added *) }
 
 type universe_decl =
-  (Misctypes.lident list, Univ.Constraint.t) gen_universe_decl
+  (lident list, Univ.Constraint.t) gen_universe_decl
 
 val default_univ_decl : universe_decl
 

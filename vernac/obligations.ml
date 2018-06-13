@@ -298,10 +298,10 @@ type obligation =
 type obligations = (obligation array * int)
 
 type fixpoint_kind =
-  | IsFixpoint of (Misctypes.lident option * Constrexpr.recursion_order_expr) list
+  | IsFixpoint of (lident option * Constrexpr.recursion_order_expr) list
   | IsCoFixpoint
 
-type notations = (Misctypes.lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
+type notations = (lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
 
 type program_info_aux = {
   prg_name: Id.t;

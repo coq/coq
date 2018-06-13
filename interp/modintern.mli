@@ -11,7 +11,6 @@
 open Environ
 open Entries
 open Constrexpr
-open Misctypes
 
 (** Module internalization errors *)
 
@@ -30,4 +29,4 @@ exception ModuleInternalizationError of module_internalization_error
    isn't ModAny. *)
 
 val interp_module_ast :
-  env -> module_kind -> module_ast -> module_struct_entry * module_kind * Univ.ContextSet.t
+  env -> Declaremods.module_kind -> module_ast -> module_struct_entry * Declaremods.module_kind * Univ.ContextSet.t

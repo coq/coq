@@ -85,8 +85,8 @@ GEXTEND Gram
     [ [ s = ne_string; sc = OPT ["%"; key = IDENT -> key ] -> (s, sc) ] ]
   ;
   smart_global:
-    [ [ c = reference -> CAst.make ~loc:!@loc @@ Misctypes.AN c
-      | ntn = by_notation -> CAst.make ~loc:!@loc @@ Misctypes.ByNotation ntn ] ]
+    [ [ c = reference -> CAst.make ~loc:!@loc @@ Constrexpr.AN c
+      | ntn = by_notation -> CAst.make ~loc:!@loc @@ Constrexpr.ByNotation ntn ] ]
   ;
   qualid:
     [ [ qid = basequalid -> CAst.make ~loc:!@loc qid ] ]

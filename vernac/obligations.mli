@@ -62,10 +62,10 @@ val add_definition : Names.Id.t -> ?term:constr -> types ->
   ?hook:(UState.t -> unit) Lemmas.declaration_hook -> ?opaque:bool -> obligation_info -> progress
 
 type notations =
-    (Misctypes.lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
+    (lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
 
 type fixpoint_kind =
-  | IsFixpoint of (Misctypes.lident option * Constrexpr.recursion_order_expr) list
+  | IsFixpoint of (lident option * Constrexpr.recursion_order_expr) list
   | IsCoFixpoint
 
 val add_mutual_definitions :

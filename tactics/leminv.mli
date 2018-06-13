@@ -11,7 +11,7 @@
 open Names
 open EConstr
 open Constrexpr
-open Misctypes
+open Tactypes
 
 val lemInv_clause :
   quantified_hypothesis -> constr -> Id.t list -> unit Proofview.tactic

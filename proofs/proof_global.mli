@@ -22,7 +22,7 @@ val check_no_pending_proof : unit -> unit
 val get_current_proof_name : unit -> Names.Id.t
 val get_all_proof_names : unit -> Names.Id.t list
 
-val discard : Misctypes.lident -> unit
+val discard : Names.lident -> unit
 val discard_current : unit -> unit
 val discard_all : unit -> unit
 
@@ -54,7 +54,7 @@ type proof_ending =
   | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry *
                 UState.t
   | Proved of opacity_flag *
-              Misctypes.lident option *
+              Names.lident option *
               proof_object
 type proof_terminator
 type closed_proof = proof_object * proof_terminator
@@ -126,7 +126,7 @@ val set_endline_tactic : Genarg.glob_generic_argument -> unit
  * (w.r.t. type dependencies and let-ins covered by it) + a list of
  * ids to be cleared *)
 val set_used_variables :
-  Names.Id.t list -> Context.Named.t * Misctypes.lident list
+  Names.Id.t list -> Context.Named.t * Names.lident list
 val get_used_variables : unit -> Context.Named.t option
 
 (** Get the universe declaration associated to the current proof. *)

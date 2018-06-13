@@ -14,11 +14,11 @@
 open Genarg
 open Geninterp
 open Names
-open Misctypes
 open Environ
 open Constrexpr
 open Notation_gram
 open Tacexpr
+open Tactypes
 
 type 'a grammar_tactic_prod_item_expr =
 | TacTerm of string
@@ -97,7 +97,7 @@ val pr_may_eval :
   ('a -> Pp.t) -> ('a -> Pp.t) -> ('b -> Pp.t) ->
   ('c -> Pp.t) -> ('a,'b,'c) Genredexpr.may_eval -> Pp.t
 
-val pr_and_short_name : ('a -> Pp.t) -> 'a and_short_name -> Pp.t
+val pr_and_short_name : ('a -> Pp.t) -> 'a Stdarg.and_short_name -> Pp.t
 val pr_or_by_notation : ('a -> Pp.t) -> 'a or_by_notation -> Pp.t
 
 val pr_evaluable_reference_env : env -> evaluable_global_reference -> Pp.t

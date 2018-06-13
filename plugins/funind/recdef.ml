@@ -37,7 +37,7 @@ open Glob_term
 open Pretyping
 open Termops
 open Constrintern
-open Misctypes
+open Tactypes
 open Genredexpr
 
 open Equality

@@ -11,12 +11,11 @@
 open Names
 open EConstr
 open Tacticals
-open Misctypes
 open Tactypes
 
 (** Eliminations tactics. *)
 
-val introCaseAssumsThen : evars_flag ->
+val introCaseAssumsThen : Tactics.evars_flag ->
   (intro_patterns -> branch_assumptions -> unit Proofview.tactic) ->
     branch_args -> unit Proofview.tactic
 

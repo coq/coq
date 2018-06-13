@@ -24,11 +24,11 @@ open Tactics
 open Tacticals.New
 open Auto
 open Constr_matching
-open Misctypes
 open Hipattern
 open Proofview.Notations
 open Tacmach.New
 open Coqlib
+open Tactypes
 
 (* This file containts the implementation of the tactics ``Decide
    Equality'' and ``Compare''. They can be used to decide the
@@ -58,14 +58,14 @@ let clear_last =
 
 let choose_eq eqonleft =
   if eqonleft then
-    left_with_bindings false Misctypes.NoBindings
+    left_with_bindings false NoBindings
   else
-    right_with_bindings false Misctypes.NoBindings
+    right_with_bindings false NoBindings
 let choose_noteq eqonleft =
   if eqonleft then
-    right_with_bindings false Misctypes.NoBindings
+    right_with_bindings false NoBindings
   else
-    left_with_bindings false Misctypes.NoBindings
+    left_with_bindings false NoBindings
 
 (* A surgical generalize which selects the right occurrences by hand *)
 (* This prevents issues where c2 is also a subterm of c1 (see e.g. #5449) *)

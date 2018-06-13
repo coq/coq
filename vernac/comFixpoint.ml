@@ -13,7 +13,6 @@ open Decl_kinds
 open Pretyping
 open Evarutil
 open Evarconv
-open Misctypes
 
 module RelDecl = Context.Rel.Declaration
 

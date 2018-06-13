@@ -11,10 +11,8 @@
 open Util
 open CAst
 open Names
-open Constr
 open Nameops
 open Globnames
-open Misctypes
 open Glob_term
 open Evar_kinds
 open Ltac_pretype
@@ -48,12 +46,20 @@ let map_glob_decl_left_to_right f (na,k,obd,ty) =
   let comp2 = f ty in
   (na,k,comp1,comp2)
 
+
+let glob_sort_eq g1 g2 = let open Glob_term in match g1, g2 with
+| GProp, GProp -> true
+| GSet, GSet -> true
+| GType l1, GType l2 ->
+   List.equal (Option.equal (fun (x,m) (y,n) -> Libnames.eq_reference x y && Int.equal m n)) l1 l2
+| _ -> false
+
 let binding_kind_eq bk1 bk2 = match bk1, bk2 with
   | Decl_kinds.Explicit, Decl_kinds.Explicit -> true
   | Decl_kinds.Implicit, Decl_kinds.Implicit -> true
   | (Decl_kinds.Explicit | Decl_kinds.Implicit), _ -> false
 
-let case_style_eq s1 s2 = match s1, s2 with
+let case_style_eq s1 s2 = let open Constr in match s1, s2 with
   | LetStyle, LetStyle -> true
   | IfStyle, IfStyle -> true
   | LetPatternStyle, LetPatternStyle -> true
@@ -141,10 +147,10 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
     fix_kind_eq f kn1 kn2 && Array.equal Id.equal id1 id2 &&
     Array.equal (fun l1 l2 -> List.equal (glob_decl_eq f) l1 l2) decl1 decl2 &&
     Array.equal f c1 c2 && Array.equal f t1 t2
-  | GSort s1, GSort s2 -> Miscops.glob_sort_eq s1 s2
+  | GSort s1, GSort s2 -> glob_sort_eq s1 s2
   | GHole (kn1, nam1, gn1), GHole (kn2, nam2, gn2) ->
     Option.equal (==) gn1 gn2 (** Only thing sensible *) &&
-    Miscops.intro_pattern_naming_eq nam1 nam2
+    Namegen.intro_pattern_naming_eq nam1 nam2
   | GCast (c1, t1), GCast (c2, t2) ->
     f c1 c2 && cast_type_eq f t1 t2
   | GProj (p1, t1), GProj (p2, t2) ->
@@ -153,6 +159,21 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
      GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _ | GCast _ | GProj _), _ -> false
 
 let rec glob_constr_eq c = mk_glob_constr_eq glob_constr_eq c
+
+(** Mapping [cast_type] *)
+
+let map_cast_type f = function
+  | CastConv a -> CastConv (f a)
+  | CastVM a -> CastVM (f a)
+  | CastCoerce -> CastCoerce
+  | CastNative a -> CastNative (f a)
+
+let smartmap_cast_type f c =
+  match c with
+    | CastConv a -> let a' = f a in if a' == a then c else CastConv a'
+    | CastVM a -> let a' = f a in if a' == a then c else CastVM a'
+    | CastCoerce -> CastCoerce
+    | CastNative a -> let a' = f a in if a' == a then c else CastNative a'
 
 let map_glob_constr_left_to_right f = DAst.map (function
   | GApp (g,args) ->
@@ -194,7 +215,7 @@ let map_glob_constr_left_to_right f = DAst.map (function
       GRec (fk,idl,comp1,comp2,comp3)
   | GCast (c,k) ->
       let comp1 = f c in
-      let comp2 = Miscops.map_cast_type f k in
+      let comp2 = map_cast_type f k in
       GCast (comp1,comp2)
   | GProj (p,c) ->
     GProj (p, f c)
@@ -539,7 +560,7 @@ let rec glob_constr_of_cases_pattern_aux isclosed x = DAst.map_with_loc (fun ?lo
   | PatVar (Name id) when not isclosed ->
       GVar id
   | PatVar Anonymous when not isclosed ->
-      GHole (Evar_kinds.QuestionMark (Define false,Anonymous),Misctypes.IntroAnonymous,None)
+      GHole (Evar_kinds.QuestionMark (Define false,Anonymous),Namegen.IntroAnonymous,None)
   | _ -> raise Not_found
   ) x
 

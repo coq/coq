@@ -13,6 +13,8 @@ open Glob_term
 
 (** Equalities *)
 
+val glob_sort_eq : Glob_term.glob_sort -> Glob_term.glob_sort -> bool
+
 val cases_pattern_eq : 'a cases_pattern_g -> 'a cases_pattern_g -> bool
 
 val alias_of_pat : 'a cases_pattern_g -> Name.t
@@ -20,9 +22,14 @@ val alias_of_pat : 'a cases_pattern_g -> Name.t
 val set_pat_alias : Id.t -> 'a cases_pattern_g -> 'a cases_pattern_g
 
 val cast_type_eq : ('a -> 'a -> bool) ->
-  'a Misctypes.cast_type -> 'a Misctypes.cast_type -> bool
+  'a cast_type -> 'a cast_type -> bool
 
 val glob_constr_eq : 'a glob_constr_g -> 'a glob_constr_g -> bool
+
+(** Mapping [cast_type] *)
+
+val map_cast_type : ('a -> 'b) -> 'a cast_type -> 'b cast_type
+val smartmap_cast_type : ('a -> 'a) -> 'a cast_type -> 'a cast_type
 
 (** Operations on [glob_constr] *)
 

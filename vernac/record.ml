@@ -96,7 +96,7 @@ let binder_of_decl = function
   | Vernacexpr.AssumExpr(n,t) -> (n,None,t)
   | Vernacexpr.DefExpr(n,c,t) ->
     (n,Some c, match t with Some c -> c
-                          | None   -> CAst.make ?loc:n.CAst.loc @@ CHole (None, Misctypes.IntroAnonymous, None))
+                          | None   -> CAst.make ?loc:n.CAst.loc @@ CHole (None, Namegen.IntroAnonymous, None))
 
 let binders_of_decls = List.map binder_of_decl
 

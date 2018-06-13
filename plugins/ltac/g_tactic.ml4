@@ -11,12 +11,14 @@
 open Pp
 open CErrors
 open Util
+open Names
+open Namegen
 open Tacexpr
 open Genredexpr
 open Constrexpr
 open Libnames
 open Tok
-open Misctypes
+open Tactypes
 open Locus
 open Decl_kinds
 
@@ -383,19 +385,19 @@ GEXTEND Gram
   ;
   hypident:
     [ [ id = id_or_meta ->
-        let id : Misctypes.lident = id in
+        let id : lident = id in
         id,InHyp
       | "("; IDENT "type"; IDENT "of"; id = id_or_meta; ")" ->
-        let id : Misctypes.lident = id in
+        let id : lident = id in
         id,InHypTypeOnly
       | "("; IDENT "value"; IDENT "of"; id = id_or_meta; ")" ->
-        let id : Misctypes.lident = id in
+        let id : lident = id in
         id,InHypValueOnly
     ] ]
   ;
   hypident_occ:
     [ [ (id,l)=hypident; occs=occs ->
-        let id : Misctypes.lident = id in
+        let id : lident = id in
         ((occs,id),l) ] ]
   ;
   in_clause:
@@ -494,12 +496,12 @@ GEXTEND Gram
     | -> None ] ]
   ;
   rewriter :
-    [ [ "!"; c = constr_with_bindings_arg -> (RepeatPlus,c)
-      | ["?"| LEFTQMARK]; c = constr_with_bindings_arg -> (RepeatStar,c)
-      | n = natural; "!"; c = constr_with_bindings_arg -> (Precisely n,c)
-      |	n = natural; ["?" | LEFTQMARK]; c = constr_with_bindings_arg -> (UpTo n,c)
-      | n = natural; c = constr_with_bindings_arg -> (Precisely n,c)
-      | c = constr_with_bindings_arg -> (Precisely 1, c)
+    [ [ "!"; c = constr_with_bindings_arg -> (Equality.RepeatPlus,c)
+      | ["?"| LEFTQMARK]; c = constr_with_bindings_arg -> (Equality.RepeatStar,c)
+      | n = natural; "!"; c = constr_with_bindings_arg -> (Equality.Precisely n,c)
+      |	n = natural; ["?" | LEFTQMARK]; c = constr_with_bindings_arg -> (Equality.UpTo n,c)
+      | n = natural; c = constr_with_bindings_arg -> (Equality.Precisely n,c)
+      | c = constr_with_bindings_arg -> (Equality.Precisely 1, c)
       ] ]
   ;
   oriented_rewriter :

@@ -21,7 +21,7 @@ type 'a hint_info_gen =
     { hint_priority : int option;
       hint_pattern : 'a option }
 
-type hint_info = (Misctypes.patvar list * Pattern.constr_pattern) hint_info_gen
+type hint_info = (Pattern.patvar list * Pattern.constr_pattern) hint_info_gen
 
 (** This module defines type-classes *)
 type typeclass = {

@@ -436,12 +436,12 @@ let new_pure_evar_full evd evi =
   (evd, evk)
 
 let new_pure_evar?(src=default_source) ?(filter = Filter.identity) ?candidates ?(store = Store.empty) ?naming ?(principal=false) sign evd typ =
-  let default_naming = Misctypes.IntroAnonymous in
+  let default_naming = IntroAnonymous in
   let naming = Option.default default_naming naming in
   let name = match naming with
-  | Misctypes.IntroAnonymous -> None
-  | Misctypes.IntroIdentifier id -> Some id
-  | Misctypes.IntroFresh id ->
+  | IntroAnonymous -> None
+  | IntroIdentifier id -> Some id
+  | IntroFresh id ->
     let has_name id = try let _ = Evd.evar_key id evd in true with Not_found -> false in
     let id = Namegen.next_ident_away_from id has_name in
     Some id

@@ -26,7 +26,7 @@ open Tacred
 open Pretype_errors
 open Evarutil
 open Unification
-open Misctypes
+open Tactypes
 
 (******************************************************************)
 (* Clausal environments *)

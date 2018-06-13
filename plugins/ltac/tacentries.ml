@@ -376,7 +376,7 @@ let add_ml_tactic_notation name ~level prods =
     in
     let ids = List.map_filter get_id prods in
     let entry = { mltac_name = name; mltac_index = len - i - 1 } in
-    let map id = Reference (Misctypes.ArgVar (CAst.make id)) in
+    let map id = Reference (Locus.ArgVar (CAst.make id)) in
     let tac = TacML (Loc.tag (entry, List.map map ids)) in
     add_glob_tactic_notation false ~level prods true ids tac
   in

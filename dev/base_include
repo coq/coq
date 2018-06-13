@@ -108,8 +108,6 @@ open Inductiveops
 open Locusops
 open Find_subterm
 open Unification
-open Miscops
-open Miscops
 open Nativenorm
 open Typeclasses
 open Typeclasses_errors

@@ -15,7 +15,7 @@ open Libnames
 open Genredexpr
 open Genarg
 open Pattern
-open Misctypes
+open Tactypes
 open Locus
 
 type ltac_constant = KerName.t
@@ -75,7 +75,7 @@ type 'id message_token =
 
 type ('dconstr,'id) induction_clause =
     'dconstr with_bindings Tactics.destruction_arg *
-    (intro_pattern_naming_expr CAst.t option (* eqn:... *)
+    (Namegen.intro_pattern_naming_expr CAst.t option (* eqn:... *)
     * 'dconstr or_and_intro_pattern_expr CAst.t or_var option) (* as ... *)
     * 'id clause_expr option (* in ... *)
 
@@ -117,7 +117,7 @@ type ml_tactic_entry = {
 
 (** Composite types *)
 
-type glob_constr_and_expr = Tactypes.glob_constr_and_expr
+type glob_constr_and_expr = Genintern.glob_constr_and_expr
 
 type open_constr_expr = unit * constr_expr
 type open_glob_constr = unit * glob_constr_and_expr
@@ -134,7 +134,7 @@ type delayed_open_constr = EConstr.constr delayed_open
 type intro_pattern = delayed_open_constr intro_pattern_expr CAst.t
 type intro_patterns = delayed_open_constr intro_pattern_expr CAst.t list
 type or_and_intro_pattern = delayed_open_constr or_and_intro_pattern_expr CAst.t
-type intro_pattern_naming = intro_pattern_naming_expr CAst.t
+type intro_pattern_naming = Namegen.intro_pattern_naming_expr CAst.t
 
 (** Generic expressions for atomic tactics *)
 
@@ -152,7 +152,7 @@ type 'a gen_atomic_tactic_expr =
       'dtrm intro_pattern_expr CAst.t option * 'trm
   | TacGeneralize of ('trm with_occurrences * Name.t) list
   | TacLetTac of evars_flag * Name.t * 'trm * 'nam clause_expr * letin_flag *
-      intro_pattern_naming_expr CAst.t option
+      Namegen.intro_pattern_naming_expr CAst.t option
 
   (* Derived basic tactics *)
   | TacInductionDestruct of
@@ -164,7 +164,7 @@ type 'a gen_atomic_tactic_expr =
 
   (* Equality and inversion *)
   | TacRewrite of evars_flag *
-      (bool * multi * 'dtrm with_bindings_arg) list * 'nam clause_expr *
+      (bool * Equality.multi * 'dtrm with_bindings_arg) list * 'nam clause_expr *
       (* spiwack: using ['dtrm] here is a small hack, may not be
          stable by a change in the representation of delayed
          terms. Because, in fact, it is the whole "with_bindings"
@@ -305,7 +305,7 @@ constraint 'a = <
 
 type g_trm = glob_constr_and_expr
 type g_pat = glob_constr_pattern_and_expr
-type g_cst = evaluable_global_reference and_short_name or_var
+type g_cst = evaluable_global_reference Stdarg.and_short_name or_var
 type g_ref = ltac_constant located or_var
 type g_nam = lident
 

@@ -13,7 +13,6 @@ open EConstr
 open Hipattern
 open Names
 open Geninterp
-open Misctypes
 open Ltac_plugin
 open Tacexpr
 open Tacinterp
@@ -94,7 +93,7 @@ let clear id = Tactics.clear [id]
 
 let assumption = Tactics.assumption
 
-let split = Tactics.split_with_bindings false [Misctypes.NoBindings]
+let split = Tactics.split_with_bindings false [Tactypes.NoBindings]
 
 (** Test *)
 
@@ -175,7 +174,7 @@ let flatten_contravariant_disj _ ist =
   | Some (_,args) ->
       let map i arg =
         let typ = mkArrow arg c in
-        let ci = Tactics.constructor_tac false None (succ i) Misctypes.NoBindings in
+        let ci = Tactics.constructor_tac false None (succ i) Tactypes.NoBindings in
         let by = tclTHENLIST [intro; apply hyp; ci; assumption] in
         assert_ ~by typ
       in
@@ -187,7 +186,7 @@ let flatten_contravariant_disj _ ist =
 let make_unfold name =
   let dir = DirPath.make (List.map Id.of_string ["Logic"; "Init"; "Coq"]) in
   let const = Constant.make2 (ModPath.MPfile dir) (Label.make name) in
-  (Locus.AllOccurrences, ArgArg (EvalConstRef const, None))
+  Locus.(AllOccurrences, ArgArg (EvalConstRef const, None))
 
 let u_not = make_unfold "not"
 
@@ -245,7 +244,7 @@ let with_flags flags _ ist =
   let x = CAst.make @@ Id.of_string "x" in
   let arg = Val.Dyn (tag_tauto_flags, flags) in
   let ist = { ist with lfun = Id.Map.add x.CAst.v arg ist.lfun } in
-  eval_tactic_ist ist (TacArg (Loc.tag @@ TacCall (Loc.tag (ArgVar f, [Reference (ArgVar x)]))))
+  eval_tactic_ist ist (TacArg (Loc.tag @@ TacCall (Loc.tag (Locus.ArgVar f, [Reference (Locus.ArgVar x)]))))
 
 let register_tauto_tactic tac name0 args =
   let ids = List.map (fun id -> Id.of_string id) args in

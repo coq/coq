@@ -58,12 +58,23 @@ val error_no_such_hypothesis : Environ.env -> evar_map -> Id.t -> 'a
 
 val catchable_exception : exn -> bool
 
+(** Move destination for hypothesis *)
+
+type 'id move_location =
+  | MoveAfter of 'id
+  | MoveBefore of 'id
+  | MoveFirst
+  | MoveLast (** can be seen as "no move" when doing intro *)
+
+val pr_move_location :
+  ('a -> Pp.t) -> 'a move_location -> Pp.t
+
 val convert_hyp : bool -> Environ.named_context_val -> evar_map ->
   EConstr.named_declaration -> Environ.named_context_val
 
-val move_hyp_in_named_context : Environ.env -> Evd.evar_map -> Id.t -> Id.t Misctypes.move_location ->
+val move_hyp_in_named_context : Environ.env -> Evd.evar_map -> Id.t -> Id.t move_location ->
   Environ.named_context_val -> Environ.named_context_val
 
 val insert_decl_in_named_context : Evd.evar_map ->
-  EConstr.named_declaration -> Id.t Misctypes.move_location ->
+  EConstr.named_declaration -> Id.t move_location ->
   Environ.named_context_val -> Environ.named_context_val

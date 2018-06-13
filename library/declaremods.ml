@@ -17,7 +17,6 @@ open Entries
 open Libnames
 open Libobject
 open Mod_subst
-open Misctypes
 
 (** {6 Inlining levels} *)
 
@@ -35,6 +34,8 @@ type inline =
   | NoInline
   | DefaultInline
   | InlineAt of int
+
+type module_kind = Module | ModType | ModAny
 
 let default_inline () = Some (Flags.get_inline_level ())
 
@@ -994,8 +995,8 @@ let iter_all_segments f =
 (** {6 Some types used to shorten declaremods.mli} *)
 
 type 'modast module_interpretor =
-  Environ.env -> Misctypes.module_kind -> 'modast ->
-    Entries.module_struct_entry * Misctypes.module_kind * Univ.ContextSet.t
+  Environ.env -> module_kind -> 'modast ->
+    Entries.module_struct_entry * module_kind * Univ.ContextSet.t
 
 type 'modast module_params =
   (lident list * ('modast * inline)) list

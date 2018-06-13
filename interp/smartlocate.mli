@@ -11,7 +11,6 @@
 open Names
 open Libnames
 open Globnames
-open Misctypes
 
 (** [locate_global_with_alias] locates global reference possibly following
    a notation if this notation has a role of aliasing; raise [Not_found]
@@ -33,7 +32,7 @@ val global_with_alias : ?head:bool -> reference -> GlobRef.t
 val global_inductive_with_alias : reference -> inductive
 
 (** Locate a reference taking into account notations and "aliases" *)
-val smart_global : ?head:bool -> reference or_by_notation -> GlobRef.t
+val smart_global : ?head:bool -> reference Constrexpr.or_by_notation -> GlobRef.t
 
 (** The same for inductive types *)
-val smart_global_inductive : reference or_by_notation -> inductive
+val smart_global_inductive : reference Constrexpr.or_by_notation -> inductive

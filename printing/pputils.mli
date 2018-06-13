@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Genarg
-open Misctypes
 open Locus
 open Genredexpr
 
@@ -18,7 +17,7 @@ val pr_ast : ('a -> Pp.t) -> 'a CAst.t -> Pp.t
 (** Prints an object surrounded by its commented location *)
 
 val pr_or_var : ('a -> Pp.t) -> 'a or_var -> Pp.t
-val pr_or_by_notation : ('a -> Pp.t) -> 'a or_by_notation -> Pp.t
+val pr_or_by_notation : ('a -> Pp.t) -> 'a Constrexpr.or_by_notation -> Pp.t
 val pr_with_occurrences :
   ('a -> Pp.t) -> (string -> Pp.t) -> 'a with_occurrences -> Pp.t
 

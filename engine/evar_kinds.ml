@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Misctypes
 
 (** The kinds of existential variable *)
 
@@ -18,7 +17,7 @@ open Misctypes
 
 type obligation_definition_status = Define of bool | Expand
 
-type matching_var_kind = FirstOrderPatVar of patvar | SecondOrderPatVar of patvar
+type matching_var_kind = FirstOrderPatVar of Id.t | SecondOrderPatVar of Id.t
 
 type subevar_kind = Domain | Codomain | Body
 

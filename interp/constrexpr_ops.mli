@@ -10,7 +10,6 @@
 
 open Names
 open Libnames
-open Misctypes
 open Constrexpr
 
 (** Constrexpr_ops: utilities on [constr_expr] *)
@@ -44,7 +43,7 @@ val local_binders_loc : local_binder_expr list -> Loc.t option
 val mkIdentC : Id.t -> constr_expr
 val mkRefC : reference -> constr_expr
 val mkAppC : constr_expr * constr_expr list -> constr_expr
-val mkCastC : constr_expr * constr_expr cast_type -> constr_expr
+val mkCastC : constr_expr * constr_expr Glob_term.cast_type -> constr_expr
 val mkLambdaC : lname list * binder_kind * constr_expr * constr_expr -> constr_expr
 val mkLetInC : lname * constr_expr * constr_expr option * constr_expr -> constr_expr
 val mkProdC : lname list * binder_kind * constr_expr * constr_expr -> constr_expr
