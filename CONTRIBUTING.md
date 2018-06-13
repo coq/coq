@@ -22,21 +22,30 @@ If you want to minimize your bug (or help minimize someone else's) for more extr
 
 If you want to contribute a bug fix or feature yourself, pull requests on the [GitHub repository](https://github.com/coq/coq) are the way to contribute directly to the Coq implementation. We recommend you create a fork of the repository on GitHub and push your changes to a new "topic branch" in that fork. From there you can follow the [GitHub pull request documentation](https://help.github.com/articles/about-pull-requests/) to get your changes reviewed and pulled into the Coq source repository.
 
-Documentation for getting started with the Coq sources is located in various files in [`dev/doc`](/dev/doc) (for example, [debugging.md](/dev/doc/debugging.md)). For further help with the Coq sources, feel free to join the [Coq Gitter chat](https://gitter.im/coq/coq) and ask questions.
+Documentation for getting started with the Coq sources is located in various
+files in [`dev/doc`](dev/doc) (for example, [debugging.md](dev/doc/debugging.md)).
+For further help with the Coq sources, feel free to join
+the [Coq Gitter chat](https://gitter.im/coq/coq) and ask questions.
 
 Please make pull requests against the `master` branch.
 
-If it's your first significant contribution to Coq (significant means: more than fixing a typo), your pull request should include a commit adding your name to the [`CREDITS`](/CREDITS) file (possibly with the name of your institution / employer if relevant to your contribution, an ORCID if you have one —you may log into https://orcid.org/ using your institutional account to get one—, and the year of your contribution).
+If it's your first significant contribution to Coq (significant means: more
+than fixing a typo), your pull request should include a commit adding your name
+to the [`CREDITS`](CREDITS) file (possibly with the name of your
+institution / employer if relevant to your contribution, an ORCID if you have
+one —you may log into https://orcid.org/ using your institutional account to
+get one—, and the year of your contribution).
 
 It's helpful to run the Coq test suite with `make test-suite` before submitting
 your change. Our CI runs this test suite and lots of other tests, including
 building external Coq developments, on every pull request, but these results
 take significantly longer to come back (on the order of a few hours). Running
 the test suite locally will take somewhere around 10-15 minutes. Refer to
-[`dev/ci/README.md`](/dev/ci/README.md#information-for-developers) for more
+[`dev/ci/README.md`](dev/ci/README.md#information-for-developers) for more
 information on CI tests, including how to run them on your private branches.
 
-If your pull request fixes a bug, please consider adding a regression test as well. See [`test-suite/README.md`](/test-suite/README.md) for how to do so.
+If your pull request fixes a bug, please consider adding a regression test as
+well. See [`test-suite/README.md`](test-suite/README.md) for how to do so.
 
 Don't be alarmed if the pull request process takes some time. It can take a few days to get feedback, approval on the final changes, and then a merge. Coq doesn't release new versions very frequently so it can take a few months for your change to land in a released version. That said, you can start using the latest Coq `master` branch to take advantage of all the new features, improvements, and fixes.
 
@@ -48,7 +57,8 @@ Here are a few tags Coq developers may add to your PR and what they mean. In gen
 - [needs: fixing](https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+fixing%22) indicates the PR needs a fix, as discussed in the comments.
 - [needs: benchmarking](https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+benchmarking%22) and [needs: testing](https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+testing%22) indicate the PR needs testing beyond what the test suite can handle. For example, performance benchmarking is currently performed with a different infrastructure. Unless some followup is specifically requested you aren't expected to do this additional testing.
 
-To learn more about the merging process, you can read the [merging documentation for Coq maintainers](/dev/doc/MERGING.md).
+To learn more about the merging process, you can read the
+[merging documentation for Coq maintainers](dev/doc/MERGING.md).
 
 ## Documentation
 

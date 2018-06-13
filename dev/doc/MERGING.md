@@ -6,7 +6,7 @@ This document describes how patches, submitted as pull requests (PRs) on the
 
 ## Code owners
 
-The [CODEOWNERS](/.github/CODEOWNERS) file describes, for each part of the
+The [CODEOWNERS](../../.github/CODEOWNERS) file describes, for each part of the
 system, two owners. One is the principal maintainer of the component, the other
 is the secondary maintainer.
 
@@ -51,10 +51,10 @@ say in a comment they think a review is not required and proceed with the merge.
 
 If the PR breaks compatibility of some external projects in CI, then fixes to
 those external projects should have been prepared (cf. the relevant sub-section
-in the [CI README](/dev/ci/README.md#Breaking-changes) and the PR can be tested
-with these fixes thanks to ["overlays"](/dev/ci/user-overlays/README.md).
+in the [CI README](../ci/README.md#Breaking-changes) and the PR can be tested
+with these fixes thanks to ["overlays"](../ci/user-overlays/README.md).
 
-Moreover the PR must absolutely update the [`CHANGES`](/CHANGES) file.
+Moreover the PR must absolutely update the [`CHANGES`](../../CHANGES) file.
 
 If overlays are missing, ask the author to prepare them and label the PR with
 the [needs: overlay](https://github.com/coq/coq/labels/needs%3A%20overlay) label.
@@ -74,7 +74,7 @@ Once all reviewers approved the PR, the assignee is expected to check that CI
 completed without relevant failures, and that the PR comes with appropriate
 documentation and test cases. If not, they should leave a comment on the PR and
 put the approriate label. Otherwise, they are expected to merge the PR using the
-[merge script](/dev/tools/merge-pr.sh).
+[merge script](../tools/merge-pr.sh).
 
 When the PR has conflicts, the assignee can either:
 - ask the author to rebase the branch, fixing the conflicts

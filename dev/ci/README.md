@@ -47,15 +47,15 @@ CI.
 
 ### Add your development by submitting a pull request
 
-Add a new `ci-mydev.sh` script to [`dev/ci`](/dev/ci) (have a look at
-[`ci-coq-dpdgraph.sh`](/dev/ci/ci-coq-dpdgraph.sh) or
-[`ci-fiat-parsers.sh`](/dev/ci/ci-fiat-parsers.sh) for simple examples);
+Add a new `ci-mydev.sh` script to [`dev/ci`](.) (have a look at
+[`ci-coq-dpdgraph.sh`](ci-coq-dpdgraph.sh) or
+[`ci-fiat-parsers.sh`](ci-fiat-parsers.sh) for simple examples);
 set the corresponding variables in
-[`ci-basic-overlay.sh`](/dev/ci/ci-basic-overlay.sh); add the corresponding
-target to [`Makefile.ci`](/Makefile.ci); add new jobs to
-[`.gitlab-ci.yml`](/.gitlab-ci.yml),
-[`.circleci/config.yml`](/.circleci/config.yml) and
-[`.travis.yml`](/.travis.yml) so that this new target is run. **Do not
+[`ci-basic-overlay.sh`](ci-basic-overlay.sh); add the corresponding
+target to [`Makefile.ci`](../../Makefile.ci); add new jobs to
+[`.gitlab-ci.yml`](../../.gitlab-ci.yml),
+[`.circleci/config.yml`](../../.circleci/config.yml) and
+[`.travis.yml`](../../.travis.yml) so that this new target is run. **Do not
 hesitate to submit an incomplete pull request if you need help to finish it.**
 
 You may also be interested in having your development tested in our
@@ -83,7 +83,7 @@ We are currently running tests on the following platforms:
 
 - Travis CI is used to test the compilation of Coq and run the test-suite on
   macOS. It also runs a linter that checks whitespace discipline. A
-  [pre-commit hook](/dev/tools/pre-commit) is automatically installed by
+  [pre-commit hook](../tools/pre-commit) is automatically installed by
   `./configure`. It should allow complying with this discipline without pain.
 
 - AppVeyor is used to test the compilation of Coq and run the test-suite on
@@ -92,7 +92,7 @@ We are currently running tests on the following platforms:
 GitLab CI and Travis CI and AppVeyor support putting `[ci skip]` in a commit
 message to bypass CI. Do not use this unless your commit only changes files
 that are not compiled (e.g. Markdown files like this one, or files under
-[`.github/`](/.github/)).
+[`.github/`](../../.github/)).
 
 You can anticipate the results of most of these tests prior to submitting your
 PR by running GitLab CI on your private branches. To do so follow these steps:
@@ -112,7 +112,7 @@ there are some.
 
 You can also run one CI target locally (using `make ci-somedev`).
 
-See also [`test-suite/README.md`](/test-suite/README.md) for information about adding new tests to the test-suite.
+See also [`test-suite/README.md`](../../test-suite/README.md) for information about adding new tests to the test-suite.
 
 ### Breaking changes
 
@@ -123,7 +123,7 @@ patch (or ask someone to prepare a patch) to fix the project:
    the project to your changes.
 2. Test your pull request with your adapted version of the external project by
    adding an overlay file to your pull request (cf.
-   [`dev/ci/user-overlays/README.md`](/dev/ci/user-overlays/README.md)).
+   [`dev/ci/user-overlays/README.md`](user-overlays/README.md)).
 3. Fixes to external libraries (pure Coq projects) *must* be backward
    compatible (i.e. they should also work with the development version of Coq,
    and the latest stable version). This will allow you to open a PR on the
@@ -137,7 +137,7 @@ patch (or ask someone to prepare a patch) to fix the project:
    developer who merges the PR on Coq. There are plans to improve this, cf.
    [#6724](https://github.com/coq/coq/issues/6724).
 
-Moreover your PR must absolutely update the [`CHANGES`](/CHANGES) file.
+Moreover your PR must absolutely update the [`CHANGES`](../../CHANGES) file.
 
 Advanced GitLab CI information
 ------------------------------
@@ -173,8 +173,9 @@ automatically built and uploaded to your GitLab registry, and is
 loaded by subsequent jobs.
 
 **IMPORTANT**: When updating Coq's CI docker image, you must modify
-the `CACHEKEY` variable in `.gitlab-ci.yml`, `.circleci/config.yml`,
-and `Dockerfile`.
+the `CACHEKEY` variable in [`.gitlab-ci.yml`](../../.gitlab-ci.yml),
+[`.circleci/config.yml`](../../.circleci/config.yml),
+and [`Dockerfile`](docker/bionic_coq/Dockerfile)
 
 The Docker building job reuses the uploaded image if it is available,
 but if you wish to save more time you can skip the job by setting
@@ -182,4 +183,6 @@ but if you wish to save more time you can skip the job by setting
 
 This means you will need to change its value when the Docker image
 needs to be updated. You can do so for a single pipeline by starting
-it through the web interface.
+it through the web interface..
+
+See also [`docker/README.md`](docker/README.md).

@@ -62,20 +62,26 @@ BUILDING SUMMARY FILE
 NO FAILURES
 ```
 
-See [`test-suite/Makefile`](/test-suite/Makefile) for more information.
+See [`test-suite/Makefile`](Makefile) for more information.
 
 ## Adding a test
 
-Regression tests for closed bugs should be added to `test-suite/bugs/closed`, as `1234.v` where `1234` is the bug number.
+Regression tests for closed bugs should be added to
+[`bugs/closed`](bugs/closed), as `1234.v` where `1234` is the bug number.
 Files in this directory are tested for successful compilation.
 When you fix a bug, you should usually add a regression test here as well.
 
-The error "(bug seems to be opened, please check)" when running `make test-suite` means that a test in `bugs/closed` failed to compile.
+The error "(bug seems to be opened, please check)" when running
+`make test-suite` means that a test in [`bugs/closed`](bugs/closed) failed to
+compile.
 
-There are also output tests in `test-suite/output` which consist of a `.v` file and a `.out` file with the expected output.
+There are also output tests in [`output`](output) which consist of a `.v` file
+and a `.out` file with the expected output.
 
-There are unit tests of OCaml code in `test-suite/unit-tests`. These tests are contained in `.ml` files, and rely on the `OUnit`
-unit-test framework, as described at http://ounit.forge.ocamlcore.org/.  Use `make unit-tests' in the unit-tests directory to run them.
+There are unit tests of OCaml code in [`unit-tests`](unit-tests). These tests
+are contained in `.ml` files, and rely on the `OUnit` unit-test framework, as
+described at <http://ounit.forge.ocamlcore.org/>.  Use `make unit-tests` in the
+[`unit-tests`](unit-tests) directory to run them.
 
 ## Fixing output tests
 
@@ -88,5 +94,5 @@ automatically.
 Don't forget to check the updated `.out` files into git!
 
 Note that `output/MExtraction.out` is special: it is copied from
-`micromega/micromega.ml` in the plugin source directory. Automatic
-approval will incorrectly update the copy.
+[`micromega/micromega.ml`](../plugins/micromega/micromega.ml) in the plugin
+source directory. Automatic approval will incorrectly update the copy.
