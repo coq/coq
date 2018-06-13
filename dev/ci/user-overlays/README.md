@@ -6,7 +6,7 @@ request to test it with the adapted version of the external project.
 
 An overlay is a file which defines where to look for the patched version so that
 testing is possible. It redefines some variables from
-[`ci-basic-overlay.sh`](/dev/ci/ci-basic-overlay.sh):
+[`ci-basic-overlay.sh`](../ci-basic-overlay.sh):
 give the name of your branch using a `_CI_BRANCH` variable and the location of
 your fork using a `_CI_GITURL` variable.
 
@@ -28,4 +28,4 @@ if [ "$CI_PULL_REQUEST" = "669" ] || [ "$CI_BRANCH" = "ssr-merge" ]; then
 fi
 ```
 
-(`CI_PULL_REQUEST` and `CI_BRANCH` are set in [`ci-common.sh`](/dev/ci/ci-common.sh))
+(`CI_PULL_REQUEST` and `CI_BRANCH` are set in [`ci-common.sh`](../ci-common.sh))

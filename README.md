@@ -14,11 +14,11 @@ environment for semi-interactive development of machine-checked proofs.
 ## Installation
 Download the pre-built packages of the [latest release](https://github.com/coq/coq/releases/latest) for Windows and MacOS;
 read the [help page](https://coq.inria.fr/opam/www/using.html) on how to install Coq with OPAM;
-or refer to the [`INSTALL` file](/INSTALL) for the procedure to install from source.
+or refer to the [`INSTALL` file](INSTALL) for the procedure to install from source.
 
 ## Documentation
 
-The sources of the documentation can be found in directory [`doc`](/doc). The
+The sources of the documentation can be found in directory [`doc`](doc). The
 documentation of the last released version is available on the Coq
 web site at [coq.inria.fr/documentation](http://coq.inria.fr/documentation).
 See also [Cocorico](https://github.com/coq/coq/wiki) (the Coq wiki),
@@ -26,7 +26,7 @@ and the [Coq FAQ](https://github.com/coq/coq/wiki/The-Coq-FAQ),
 for additional user-contributed documentation.
 
 ## Changes
-There is a file named [`CHANGES`](/CHANGES) that explains the differences and the
+There is a file named [`CHANGES`](CHANGES) that explains the differences and the
 incompatibilities since last versions. If you upgrade Coq, please read
 it carefully.
 
