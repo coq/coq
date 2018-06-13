@@ -47,7 +47,6 @@ type signature_mismatch_error =
   | RecordFieldExpected of bool
   | RecordProjectionsExpected of Name.t list
   | NotEqualInductiveAliases
-  | NoTypeConstraintExpected
   | IncompatibleInstances
   | IncompatibleUniverses of Univ.univ_inconsistency
   | IncompatiblePolymorphism of env * types * types
