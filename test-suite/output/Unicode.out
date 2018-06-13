@@ -1,0 +1,41 @@
+1 subgoal
+  
+  very_very_long_type_name1 : Type
+  very_very_long_type_name2 : Type
+  f : very_very_long_type_name1 → very_very_long_type_name2 → Prop
+  ============================
+  True
+  → True
+    → ∀ (x : very_very_long_type_name1) (y : very_very_long_type_name2),
+        f x y ∧ f x y ∧ f x y ∧ f x y ∧ f x y ∧ f x y
+1 subgoal
+  
+  very_very_long_type_name1 : Type
+  very_very_long_type_name2 : Type
+  f : very_very_long_type_name1 → very_very_long_type_name2 → Prop
+  ============================
+  True
+  → True
+    → ∀ (x : very_very_long_type_name2) (y : very_very_long_type_name1) 
+        (z : very_very_long_type_name2), f y x ∧ f y z
+1 subgoal
+  
+  very_very_long_type_name1 : Type
+  very_very_long_type_name2 : Type
+  f : very_very_long_type_name1 → very_very_long_type_name2 → Prop
+  ============================
+  True
+  → True
+    → ∀ (x : very_very_long_type_name2) (y : very_very_long_type_name1) 
+        (z : very_very_long_type_name2),
+        f y x ∧ f y z ∧ f y x ∧ f y z ∧ f y x ∧ f y z
+1 subgoal
+  
+  very_very_long_type_name1 : Type
+  very_very_long_type_name2 : Type
+  f : very_very_long_type_name1 → very_very_long_type_name2 → Prop
+  ============================
+  True
+  → True
+    → ∃ (x : very_very_long_type_name1) (y : very_very_long_type_name2),
+        f x y ∧ f x y ∧ f x y ∧ f x y ∧ f x y ∧ f x y
