@@ -9,7 +9,6 @@
 (************************************************************************)
 
 (*i*)
-open CErrors
 open Util
 open Names
 open Cic
@@ -132,40 +131,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
     check (eq_constr) (fun x -> x.proj_type);
     true
   in
-  let check_inductive_type t1 t2 =
-
-    (* Due to template polymorphism, the conclusions of
-       t1 and t2, if in Type, are generated as the least upper bounds
-       of the types of the constructors.
-
-       By monotonicity of the infered l.u.b.  wrt subtyping (i.e.  if X:U
-       |- T(X):s and |- M:U' and U'<=U then infer_type(T(M))<=s), each
-       universe in the conclusion of t1 has an bounding universe in
-       the conclusion of t2, so that we don't need to check the
-       subtyping of the conclusions of t1 and t2.
-
-       Even if we'd like to recheck it, the inference of constraints
-       is not designed to deal with algebraic constraints of the form
-       max-univ(u1..un) <= max-univ(u'1..u'n), so that it is not easy
-       to recheck it (in short, we would need the actual graph of
-       constraints as input while type checking is currently designed
-       to output a set of constraints instead) *)
-
-    (* So we cheat and replace the subtyping problem on algebraic
-       constraints of the form max-univ(u1..un) <= max-univ(u'1..u'n)
-       (that we know are necessary true) by trivial constraints that
-       the constraint generator knows how to deal with *)
-
-    let (ctx1,s1) = dest_arity env t1 in
-    let (ctx2,s2) = dest_arity env t2 in
-    let s1,s2 =
-      match s1, s2 with
-      | Type _, Type _ -> (* shortcut here *) Prop Null, Prop Null
-      | (Prop _, Type _) | (Type _,Prop _) -> error ()
-      | _ -> (s1, s2) in
-    check_conv conv_leq env
-      (mkArity (ctx1,s1)) (mkArity (ctx2,s2))
-  in
+  let check_inductive_type t1 t2 = check_conv conv_leq env t1 t2 in
 
   let check_packet p1 p2 =
     let check eq f = if not (eq (f p1) (f p2)) then error () in
@@ -251,52 +217,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
 let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
   let error () = error_not_match l spec2 in
   let check_conv f = check_conv_error error f in
-  let check_type env t1 t2 =
-
-    (* If the type of a constant is generated, it may mention
-       non-variable algebraic universes that the general conversion
-       algorithm is not ready to handle. Anyway, generated types of
-       constants are functions of the body of the constant. If the
-       bodies are the same in environments that are subtypes one of
-       the other, the types are subtypes too (i.e. if Gamma <= Gamma',
-       Gamma |- A |> T, Gamma |- A' |> T' and Gamma |- A=A' then T <= T').
-       Hence they don't have to be checked again *)
-
-    let t1,t2 =
-      if isArity t2 then
-        let (ctx2,s2) = destArity t2 in
-        match s2 with
-        | Type v when not (Univ.is_univ_variable v) ->
-          (* The type in the interface is inferred and is made of algebraic
-             universes *)
-          begin try
-            let (ctx1,s1) = dest_arity env t1 in
-            match s1 with
-            | Type u when not (Univ.is_univ_variable u) ->
-              (* Both types are inferred, no need to recheck them. We
-                 cheat and collapse the types to Prop *)
-                mkArity (ctx1,Prop Null), mkArity (ctx2,Prop Null)
-            | Prop _ ->
-              (* The type in the interface is inferred, it may be the case
-                 that the type in the implementation is smaller because
-                 the body is more reduced. We safely collapse the upper
-                 type to Prop *)
-                mkArity (ctx1,Prop Null), mkArity (ctx2,Prop Null)
-            | Type _ ->
-              (* The type in the interface is inferred and the type in the
-                 implementation is not inferred or is inferred but from a
-                 more reduced body so that it is just a variable. Since
-                 constraints of the form "univ <= max(...)" are not
-                 expressible in the system of algebraic universes: we fail
-                 (the user has to use an explicit type in the interface *)
-                error ()
-          with UserError _ (* "not an arity" *) ->
-            error () end
-        | _ -> t1,t2
-      else
-        (t1,t2) in
-    check_conv conv_leq env t1 t2
-  in
+  let check_type env t1 t2 = check_conv conv_leq env t1 t2 in
     match info1 with
       | Constant cb1 ->
 	let cb1 = subst_const_body subst1 cb1 in
