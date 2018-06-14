@@ -73,22 +73,47 @@ let parray_length = set_global Vmvalues.parray_length
 
 (* table pour les structured_constant et les annotations des switchs *)
 
-module SConstTable = Hashtbl.Make (struct
+module HashMap (M : Hashtbl.HashedType) :
+sig
+  type +'a t
+  val empty : 'a t
+  val add : M.t -> 'a -> 'a t -> 'a t
+  val find : M.t -> 'a t -> 'a
+end =
+struct
+  type 'a t = (M.t * 'a) list Int.Map.t
+  let empty = Int.Map.empty
+  let add k v m =
+    let hash = M.hash k in
+    try Int.Map.modify hash (fun _ l -> (k, v) :: l) m
+    with Not_found -> Int.Map.add hash [k, v] m
+  let find k m =
+    let hash = M.hash k in
+    let l = Int.Map.find hash m in
+    List.assoc_f M.equal k l
+end
+
+module SConstTable = HashMap (struct
   type t = structured_constant
   let equal = eq_structured_constant
   let hash = hash_structured_constant
 end)
 
-module AnnotTable = Hashtbl.Make (struct
+module AnnotTable = HashMap (struct
   type t = annot_switch
   let equal = eq_annot_switch
   let hash = hash_annot_switch
 end)
 
-let str_cst_tbl : int SConstTable.t = SConstTable.create 31
+type global_table = {
+  glob_sconst : int SConstTable.t;
+  glob_annot : int AnnotTable.t;
+}
 
-let annot_tbl : int AnnotTable.t = AnnotTable.create 31
-    (* (annot_switch * int) Hashtbl.t  *)
+let global_table = ref {
+  glob_sconst = SConstTable.empty;
+  glob_annot = AnnotTable.empty;
+}
 
 (*************************************************************)
 (*** Mise a jour des valeurs des variables et des constantes *)
@@ -110,17 +135,19 @@ let key rk =
    dans la table global, rend sa position dans la table *)
 
 let slot_for_str_cst key =
-  try SConstTable.find str_cst_tbl key
+  try SConstTable.find key global_table.contents.glob_sconst
   with Not_found ->
     let n = set_global (val_of_str_const key) in
-    SConstTable.add str_cst_tbl key n;
+    let glob_sconst = SConstTable.add key n global_table.contents.glob_sconst in
+    global_table := { !global_table with glob_sconst };
     n
 
 let slot_for_annot key =
-  try AnnotTable.find annot_tbl key
+  try AnnotTable.find key global_table.contents.glob_annot
   with Not_found ->
-    let n =  set_global (val_of_annot_switch key) in
-    AnnotTable.add annot_tbl key n;
+    let n = set_global (val_of_annot_switch key) in
+    let glob_annot = AnnotTable.add key n global_table.contents.glob_annot in
+    global_table := { !global_table with glob_annot };
     n
 
 let slot_for_caml_prim = function
