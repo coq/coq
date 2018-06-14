@@ -31,6 +31,8 @@ docker-boot:
   except:
     variables:
       - $SKIP_DOCKER == "true"
+  tags:
+    - docker
 
 before_script:
   - cat /proc/{cpu,mem}info || true
