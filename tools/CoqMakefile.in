@@ -216,7 +216,7 @@ ifdef DSTROOT
 DESTDIR := $(DSTROOT)
 endif
 
-concat_path = $(if $(1),$(1)/$(subst $(COQMF_WINDRIVE),/,$(2)),$(2))
+concat_path = $(if $(1),$(1)/$(if $(COQMF_WINDRIVE),$(subst $(COQMF_WINDRIVE),/,$(2)),$(2)),$(2))
 
 COQLIBINSTALL = $(call concat_path,$(DESTDIR),$(COQLIB)user-contrib)
 COQDOCINSTALL = $(call concat_path,$(DESTDIR),$(DOCDIR)user-contrib)
