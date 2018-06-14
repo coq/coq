@@ -1049,8 +1049,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       push_trace(loc,call) ist >>= fun trace ->
       Profile_ltac.do_profile "eval_tactic:2" trace
         (catch_error_tac trace (interp_atomic ist t))
-  | TacFun _ | TacLetIn _ -> assert false
-  | TacMatchGoal _ | TacMatch _ -> assert false
+  | TacFun _ | TacLetIn _ | TacMatchGoal _ | TacMatch _ -> interp_tactic ist tac
   | TacId [] -> Proofview.tclLIFT (db_breakpoint (curr_debug ist) [])
   | TacId s ->
       let msgnl =
