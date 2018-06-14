@@ -215,7 +215,13 @@ let pr_evar_source = function
      | Some Evar_kinds.Body -> str "body of "
      | Some Evar_kinds.Domain -> str "domain of "
      | Some Evar_kinds.Codomain -> str "codomain of ") ++ Evar.print evk
-  | Evar_kinds.RecordFieldEvar (field, constructor) -> str "type of record field: " ++ Names.Constant.print field ++ str " of constructor " ++ Libnames.pr_reference constructor
+  | Evar_kinds.RecordFieldEvar (field, constructor) ->
+          let (name_mut_ind, _) = Names.inductive_of_constructor constructor in
+          str "type of record field " ++
+          Names.Constant.print field ++
+          str " of record " ++
+          Names.MutInd.print name_mut_ind
+
 
 let pr_evar_info evi =
   let open Evd in

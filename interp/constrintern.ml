@@ -1302,9 +1302,9 @@ let sort_fields ~complete loc fields completer =
         in
         (* the number of parameters *)
         let nparams = record.Recordops.s_EXPECTEDPARAM in
+        let global_record_id = ConstructRef record.Recordops.s_CONST in
         (* the reference constructor of the record *)
         let base_constructor =
-          let global_record_id = ConstructRef record.Recordops.s_CONST in
           try make ?loc @@ Qualid (shortest_qualid_of_global Id.Set.empty global_record_id)
           with Not_found ->
             anomaly (str "Environment corruption for records.") in
@@ -1369,7 +1369,7 @@ let sort_fields ~complete loc fields completer =
                (* the order does not matter as we sort them next,
                   List.rev_* is just for efficiency *)
                let remaining_fields =
-                 let complete_field (idx, _field_ref) = (idx, completer idx _field_ref base_constructor) in
+                 let complete_field (idx, field_ref) = (idx, completer idx field_ref record.Recordops.s_CONST) in
                  List.rev_map complete_field remaining_projs in
                List.rev_append remaining_fields acc
         in
@@ -1918,12 +1918,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
        let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
        let fields =
 	 sort_fields ~complete:true loc fs
-                     (fun _idx fieldname constructor -> CAst.make ?loc @@ CHole (Some (Evar_kinds.RecordFieldEvar (fieldname, constructor)),
+                     (fun _idx fieldname constructor -> CAst.make ?loc @@ CHole (Some
+                     (Evar_kinds.RecordFieldEvar (fieldname, constructor)),
                                                            IntroAnonymous, None))
-           (*
-	             (fun _idx -> CAst.make ?loc @@ CHole (Some (Evar_kinds.QuestionMark (st,Anonymous)),
-                                                           IntroAnonymous, None))
-            *)
        in
        begin
 	  match fields with

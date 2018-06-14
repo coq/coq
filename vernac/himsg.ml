@@ -569,8 +569,10 @@ let rec explain_evar_kind env sigma evk ty = function
       str " found for ") ++
       explain_evar_kind env sigma evk'
         (pr_leconstr_env env sigma ty') (snd evi.evar_source)
-  | Evar_kinds.RecordFieldEvar (field, cons) ->
-     str "field `" ++ Names.Constant.print field ++ str "` of record `" ++ Libnames.pr_reference cons ++ str "`"
+  | Evar_kinds.RecordFieldEvar (field, constructor) ->
+          let (name_mut_ind, _) = Names.inductive_of_constructor constructor in
+     str "field " ++ Names.Constant.print field ++ str " of record " ++
+     Names.MutInd.print name_mut_ind
 
 let explain_typeclass_resolution env sigma evi k =
   match Typeclasses.class_of_constr sigma evi.evar_concl with
