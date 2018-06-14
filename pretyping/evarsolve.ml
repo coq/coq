@@ -932,7 +932,7 @@ let invert_arg_from_subst evd aliases k0 subst_in_env_extended_with_k_binders c_
     with Not_found ->
       match expand_alias_once evd aliases t with
       | None -> raise Not_found
-      | Some c -> aux k c in
+      | Some c -> aux k (lift k c) in
   try
     let c = aux 0 c_in_env_extended_with_k_binders in
     Invertible (UniqueProjection (c,!effects))
