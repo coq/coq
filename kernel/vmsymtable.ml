@@ -28,49 +28,6 @@ module RelDecl = Context.Rel.Declaration
 
 external eval_tcode : tcode -> atom array -> vm_global -> values array -> values = "coq_eval_tcode"
 
-type global_data = { mutable glob_len : int; mutable glob_val : values array }
-
-(*******************)
-(* Linkage du code *)
-(*******************)
-
-(* Table des globaux *)
-
-(* [global_data] contient les valeurs des constantes globales
-   (axiomes,definitions), les annotations des switch et les structured
-   constant *)
-let global_data = {
-  glob_len = 0;
-  glob_val = Array.make 4096 crazy_val;
-}
-
-let get_global_data () = Vmvalues.vm_global global_data.glob_val
-
-let realloc_global_data n =
-  let n = min (2 * n + 0x100) Sys.max_array_length in
-  let ans = Array.make n crazy_val in
-  let src = global_data.glob_val in
-  let () = Array.blit src 0 ans 0 (Array.length src) in
-  global_data.glob_val <- ans
-
-let check_global_data n =
-  if n >= Array.length global_data.glob_val then realloc_global_data n
-
-let set_global v =
-  let n = global_data.glob_len in
-  check_global_data n;
-  global_data.glob_val.(n) <- v;
-  global_data.glob_len <- global_data.glob_len + 1;
-  n
-
-(* Initialization of OCaml primitives *)
-let parray_make = set_global Vmvalues.parray_make
-let parray_get = set_global Vmvalues.parray_get
-let parray_get_default = set_global Vmvalues.parray_get_default
-let parray_set = set_global Vmvalues.parray_set
-let parray_copy = set_global Vmvalues.parray_copy
-let parray_length = set_global Vmvalues.parray_length
-
 (* table pour les structured_constant et les annotations des switchs *)
 
 module HashMap (M : Hashtbl.HashedType) :
@@ -105,15 +62,124 @@ module AnnotTable = HashMap (struct
   let hash = hash_annot_switch
 end)
 
+module GlobVal :
+sig
+  type key = int
+  type t
+  val empty : int -> t
+  val push : t -> values -> key * t
+  val vm_global : t -> vm_global
+  (** Warning: due to sharing, the resulting value can be modified by
+      persistent operations. When calling this function one must ensure
+      that no other context modification is performed before the value drops
+      out of scope. *)
+end =
+struct
+  type key = int
+
+  type view =
+  | Root of values array
+  | DSet of int * values * view ref
+
+  type t = {
+    data : view ref;
+    size : int;
+    (** number of actual elements in the array *)
+  }
+
+  let empty n = {
+    data = ref (Root (Array.make n crazy_val));
+    size = 0;
+  }
+
+  let rec rerootk t k = match !t with
+  | Root _ -> k ()
+  | DSet (i, v, t') ->
+    let next () = match !t' with
+    | Root a as n ->
+      let v' = Array.unsafe_get a i in
+      let () = Array.unsafe_set a i v in
+      let () = t := n in
+      let () = t' := DSet (i, v', t) in
+      k ()
+    | DSet _ -> assert false
+    in
+    rerootk t' next
+
+  let reroot t = rerootk t (fun () -> ())
+
+  let push { data = t; size = i } v =
+    let () = reroot t in
+    match !t with
+    | DSet _ -> assert false
+    | Root a as n ->
+      let len = Array.length a in
+      let data =
+        if i < len then
+          let old = Array.unsafe_get a i in
+          if old == v then t
+          else
+            let () = Array.unsafe_set a i v in
+            let res = ref n in
+            let () = t := DSet (i, old, res) in
+            res
+        else
+          let nlen = 2 * len + 1 in
+          let nlen = min nlen Sys.max_array_length in
+          let () = assert (i < nlen) in
+          let a' = Array.make nlen crazy_val in
+          let () = Array.blit a 0 a' 0 len in
+          let () = Array.unsafe_set a' i v in
+          let res = ref (Root a') in
+          let () = t := DSet (i, crazy_val, res) in
+          res
+      in
+      (i, { data; size = i + 1 })
+
+  let vm_global { data; _ } =
+    let () = reroot data in
+    match !data with
+    | DSet _ -> assert false
+    | Root a -> Vmvalues.vm_global a
+
+end
+
+
+(*******************)
+(* Linkage du code *)
+(*******************)
+
+(* Table des globaux *)
+
+(** [global_table] contains values of global constants, switch annotations,
+    and structured constants. *)
+
 type global_table = {
-  glob_sconst : int SConstTable.t;
-  glob_annot : int AnnotTable.t;
+  glob_val : GlobVal.t;
+  glob_sconst : GlobVal.key SConstTable.t;
+  glob_annot : GlobVal.key AnnotTable.t;
 }
 
 let global_table = ref {
+  glob_val = GlobVal.empty 4096;
   glob_sconst = SConstTable.empty;
   glob_annot = AnnotTable.empty;
 }
+
+let get_global_data () = GlobVal.vm_global global_table.contents.glob_val
+
+let set_global v =
+  let (n, glob_val) = GlobVal.push global_table.contents.glob_val v in
+  global_table := { !global_table with glob_val };
+  n
+
+(* Initialization of OCaml primitives *)
+let parray_make = set_global Vmvalues.parray_make
+let parray_get = set_global Vmvalues.parray_get
+let parray_get_default = set_global Vmvalues.parray_get_default
+let parray_set = set_global Vmvalues.parray_set
+let parray_copy = set_global Vmvalues.parray_copy
+let parray_length = set_global Vmvalues.parray_length
 
 (*************************************************************)
 (*** Mise a jour des valeurs des variables et des constantes *)
@@ -222,7 +288,7 @@ and eval_to_patch env sigma (buff,pl,fv) =
     a.(1) <- Obj.magic 2;
     Array.iteri (fun i v -> a.(i + 2) <- slot_for_fv env sigma v) fv;
     a in
-  eval_tcode tc (get_atom_rel ()) (vm_global global_data.glob_val) vm_env
+  eval_tcode tc (get_atom_rel ()) (GlobVal.vm_global global_table.contents.glob_val) vm_env
 
 and val_of_constr env sigma c =
   match compile ~fail_on_error:true env sigma c with
