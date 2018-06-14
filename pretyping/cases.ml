@@ -1427,6 +1427,7 @@ and match_current pb (initial,tomatch) =
 	  let case =
 	    make_case_or_project pb.env !(pb.evdref) indf ci pred current brvals
 	  in
+          let _ = Typing.e_type_of pb.env pb.evdref pred in
 	  Typing.check_allowed_sort pb.env !(pb.evdref) mind current pred;
 	  { uj_val = applist (case, inst);
 	    uj_type = prod_applist !(pb.evdref) typ inst }

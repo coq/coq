@@ -197,10 +197,13 @@ let check_type_fixpoint ?loc env sigma lna lar vdefj =
 
 (* FIXME: might depend on the level of actual parameters!*)
 let check_allowed_sort env sigma ind c p =
-  let pj = Retyping.get_judgment_of env sigma p in
-  let ksort = Sorts.family (ESorts.kind sigma (sort_of_arity env sigma pj.uj_type)) in
   let specif = Global.lookup_inductive (fst ind) in
   let sorts = elim_sorts specif in
+  let pj = Retyping.get_judgment_of env sigma p in
+  let _, s = splay_prod env sigma pj.uj_type in
+  let ksort = match EConstr.kind sigma s with
+  | Sort s -> Sorts.family (ESorts.kind sigma s)
+  | _ -> error_elim_arity env sigma ind sorts c pj None in
   if not (List.exists ((==) ksort) sorts) then
     let s = inductive_sort_family (snd specif) in
     error_elim_arity env sigma ind sorts c pj
