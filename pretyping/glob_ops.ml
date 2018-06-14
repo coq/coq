@@ -269,8 +269,9 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
   | GCases (_,rtntypopt,tml,pl) ->
     let fold_pattern acc {v=(idl,p,c)} = f (List.fold_right g idl v) acc c in
     let fold_tomatch (v',acc) (tm,(na,onal)) =
-      (Option.fold_left (fun v'' {v=(_,nal)} -> List.fold_right (Name.fold_right g) nal v'')
-                        (Name.fold_right g na v') onal,
+      ((if rtntypopt = None then v' else
+       Option.fold_left (fun v'' {v=(_,nal)} -> List.fold_right (Name.fold_right g) nal v'')
+                        (Name.fold_right g na v') onal),
        f v acc tm) in
     let (v',acc) = List.fold_left fold_tomatch (v,acc) tml in
     let acc = Option.fold_left (f v') acc rtntypopt in
@@ -281,6 +282,7 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
   | GIf (c,rtntyp,b1,b2) ->
     f v (f v (f v (fold_return_type_with_binders f g v acc rtntyp) c) b1) b2
   | GRec (_,idl,bll,tyl,bv) ->
+    let v' = Array.fold_right g idl v in
     let f' i acc fid =
       let v,acc =
 	List.fold_left
@@ -288,7 +290,7 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
             (Name.fold_right g na v, f v (Option.fold_left (f v) acc bbd) bty))
           (v,acc)
           bll.(i) in
-      f (Array.fold_right g idl v) (f v acc tyl.(i)) (bv.(i)) in
+      f v' (f v acc tyl.(i)) (bv.(i)) in
     Array.fold_left_i f' acc idl
   | GCast (c,k) ->
     let acc = match k with
