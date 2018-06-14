@@ -1937,28 +1937,32 @@ Otherwise said, `qualid` is canonically used to extend the field |c_i|
 into a complete structure built on |c_i|.
 
 Canonical structures are particularly useful when mixed with coercions
-and strict implicit arguments. Here is an example.
+and strict implicit arguments.
 
-.. coqtop:: all
+.. example::
 
-   Require Import Relations.
+   Here is an example.
 
-   Require Import EqNat.
+   .. coqtop:: all
 
-   Set Implicit Arguments.
+      Require Import Relations.
 
-   Unset Strict Implicit.
+      Require Import EqNat.
 
-   Structure Setoid : Type := {Carrier :> Set; Equal : relation Carrier;
-                               Prf_equiv : equivalence Carrier Equal}.
+      Set Implicit Arguments.
 
-   Definition is_law (A B:Setoid) (f:A -> B) := forall x y:A, Equal x y -> Equal (f x) (f y).
+      Unset Strict Implicit.
 
-   Axiom eq_nat_equiv : equivalence nat eq_nat.
+      Structure Setoid : Type := {Carrier :> Set; Equal : relation Carrier;
+                                  Prf_equiv : equivalence Carrier Equal}.
 
-   Definition nat_setoid : Setoid := Build_Setoid eq_nat_equiv.
+      Definition is_law (A B:Setoid) (f:A -> B) := forall x y:A, Equal x y -> Equal (f x) (f y).
 
-   Canonical Structure nat_setoid.
+      Axiom eq_nat_equiv : equivalence nat eq_nat.
+
+      Definition nat_setoid : Setoid := Build_Setoid eq_nat_equiv.
+
+      Canonical Structure nat_setoid.
 
 Thanks to ``nat_setoid`` declared as canonical, the implicit arguments ``A``
 and ``B`` can be synthesized in the next statement.
@@ -1982,17 +1986,22 @@ These are equivalent to a regular definition of `ident` followed by the declarat
 See also: more examples in user contribution category (Rocq/ALGEBRA).
 
 
-Print Canonical Projections.
-++++++++++++++++++++++++++++
+Printing Canonical Projections
+++++++++++++++++++++++++++++++
 
-This displays the list of global names that are components of some
-canonical structure. For each of them, the canonical structure of
-which it is a projection is indicated. For instance, the above example
-gives the following output:
+.. cmd:: Print Canonical Projections
 
-.. coqtop:: all
+   This displays the list of global names that are components of some
+   canonical structure. For each of them, the canonical structure of
+   which it is a projection is indicated.
 
-   Print Canonical Projections.
+   .. example::
+
+      For instance, the above example gives the following output:
+
+      .. coqtop:: all
+
+         Print Canonical Projections.
 
 
 Implicit types of variables
