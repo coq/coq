@@ -110,3 +110,30 @@ End N.
 Print Assumptions N.foo.
 
 End INCLUDE.
+
+(* Print Assumptions did not enter implementation of submodules (#7192) *)
+
+Module SUBMODULES.
+
+Definition a := True.
+Module Type B. Axiom f : Prop. End B.
+Module Type C. Declare Module D : B. End C.
+Module E: C.
+  Module D <: B. Definition f := a. End D.
+End E.
+Print Assumptions E.D.f.
+
+(* Idem in the scope of a functor *)
+
+Module Type T. End T.
+Module F (X : T).
+  Definition a := True.
+  Module Type B. Axiom f : Prop. End B.
+  Module Type C. Declare Module D : B. End C.
+  Module E: C.
+    Module D <: B. Definition f := a. End D.
+  End E.
+  Print Assumptions E.D.f.
+End F.
+
+End SUBMODULES.
