@@ -339,6 +339,9 @@
 /dev/build/windows @MSoegtropIMC
 # Secondary maintainer @maximedenes
 
+/dev/build/plugin-versions @MSoegtropIMC
+# Secondary maintainer @maximedenes
+
 # This file belongs to CI
 /Makefile.ci       @ejgallego
 # Secondary maintainer @SkySkimmer

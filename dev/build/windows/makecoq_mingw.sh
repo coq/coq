@@ -118,6 +118,9 @@ mkdir -p "$PREFIX/bin"
 mkdir -p "$PREFIXCOQ/bin"
 mkdir -p "$PREFIXOCAML/bin"
 
+# This is required for building addons and plugins
+export COQBIN=$RESULT_INSTALLDIR_CFMT/bin/
+
 ###################### Copy Cygwin Setup Info #####################
 
 # Copy Cygwin repo ini file and installed files db to tarballs folder.
@@ -1211,6 +1214,9 @@ function make_coq {
     # 2.) clean of test suites fails with "cannot run complexity tests (no bogomips found)"
     # make clean
 
+    # Copy plugin version files somewhere, where the plugin builds can find them
+    cp -r dev/build/plugin-versions /build/
+
     build_post
   fi
 }
@@ -1378,11 +1384,39 @@ function make_coq_installer {
 
 ###################### ADDONS #####################
 
+# The bignums library
+# Provides BigN, BigZ, BigQ that used to be part of Coq standard library
+
 function make_addon_bignums {
-  if build_prep https://github.com/coq/bignums/archive/ V8.8+beta1 zip 1 bignums-8.8+beta1; then
+  if build_prep $(/build/plugin-versions/bignums.sh "$COQ_VERSION"); then
     # To make command lines shorter :-(
     echo 'COQ_SRC_SUBDIRS:=$(filter-out plugins/%,$(COQ_SRC_SUBDIRS)) plugins/syntax' >> Makefile.coq.local
     log1 make all
+    log2 make install
+    build_post
+  fi
+}
+
+# Ltac-2 plugin
+# A new (experimental) tactic language
+
+function make_addon_ltac2 {
+  if build_prep $(/build/plugin-versions/ltac2.sh "$COQ_VERSION"); then
+    log1 make all
+    log2 make install
+    build_post
+  fi
+}
+
+# Equations plugin
+# A function definition plugin
+
+function make_addon_equations {
+  if build_prep $(/build/plugin-versions/equations.sh "$COQ_VERSION"); then
+    # Note: PATH is autmatically saved/restored by build_prep / build_post
+    PATH=$COQBIN:$PATH
+    logn coq_makefile ${COQBIN}coq_makefile -f _CoqProject -o Makefile
+    log1 make
     log2 make install
     build_post
   fi
