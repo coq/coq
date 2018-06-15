@@ -33,6 +33,7 @@ let check_evars env evm =
    let (loc,k) = evar_source key evm in
      match k with
      | Evar_kinds.QuestionMark _
+     | Evar_kinds.RecordFieldEvar _
      | Evar_kinds.ImplicitArg (_,_,false) -> ()
      | _ ->
        Pretype_errors.error_unsolvable_implicit ?loc env evm key None)
