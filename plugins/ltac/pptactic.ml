@@ -272,6 +272,8 @@ let string_of_genarg_arg (ArgumentType arg) =
       in
       pr_sequence pr prods
     with Not_found ->
+      (* FIXME: This key, moreover printed with a low-level printer,
+         has no meaning user-side *)
       KerName.print key
 
   let pr_alias_gen pr_gen lev key l =

@@ -358,7 +358,7 @@ let make_case_or_project env sigma indf ci pred c branches =
           not (has_dependent_elim mib) then
        user_err ~hdr:"make_case_or_project"
                     Pp.(str"Dependent case analysis not allowed" ++
-                     str" on inductive type " ++ Names.MutInd.print (fst ind))
+                     str" on inductive type " ++ print_constr_env env sigma (mkInd ind))
      in
      let branch = branches.(0) in
      let ctx, br = decompose_lam_n_assum sigma (Array.length ps) branch in

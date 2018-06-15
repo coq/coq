@@ -307,11 +307,17 @@ val pr_metaset : Metaset.t -> Pp.t
 val pr_evar_universe_context : UState.t -> Pp.t
 val pr_evd_level : evar_map -> Univ.Level.t -> Pp.t
 
-(** debug printer: do not use to display terms to the casual user... *)
+(** Internal hook to register user-level printer *)
 
 val set_print_constr : (env -> Evd.evar_map -> constr -> Pp.t) -> unit
+
+(** User-level printers *)
+
 val print_constr     : constr -> Pp.t
 val print_constr_env : env -> Evd.evar_map -> constr -> Pp.t
+
+(** debug printer: do not use to display terms to the casual user... *)
+
 val print_named_context : env -> Pp.t
 val pr_rel_decl : env -> Constr.rel_declaration -> Pp.t
 val print_rel_context : env -> Pp.t

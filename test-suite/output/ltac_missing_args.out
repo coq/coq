@@ -1,25 +1,25 @@
 The command has indeed failed with message:
-The user-defined tactic "Top.foo" was not fully applied:
+The user-defined tactic "foo" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
 The command has indeed failed with message:
-The user-defined tactic "Top.bar" was not fully applied:
+The user-defined tactic "bar" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
 The command has indeed failed with message:
-The user-defined tactic "Top.bar" was not fully applied:
+The user-defined tactic "bar" was not fully applied:
 There are missing arguments for variables y and _,
 an argument was provided for variable x.
 The command has indeed failed with message:
-The user-defined tactic "Top.baz" was not fully applied:
+The user-defined tactic "baz" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
 The command has indeed failed with message:
-The user-defined tactic "Top.qux" was not fully applied:
+The user-defined tactic "qux" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
 The command has indeed failed with message:
-The user-defined tactic "Top.mydo" was not fully applied:
+The user-defined tactic "mydo" was not fully applied:
 There is a missing argument for variable _,
 no arguments at all were provided.
 The command has indeed failed with message:
@@ -31,7 +31,7 @@ An unnamed user-defined tactic was not fully applied:
 There is a missing argument for variable _,
 no arguments at all were provided.
 The command has indeed failed with message:
-The user-defined tactic "Top.rec" was not fully applied:
+The user-defined tactic "rec" was not fully applied:
 There is a missing argument for variable x,
 no arguments at all were provided.
 The command has indeed failed with message:

@@ -543,7 +543,7 @@ let eqI ind l =
   and e, eff = 
     try let c, eff = find_scheme beq_scheme_kind ind in mkConst c, eff 
     with Not_found -> user_err ~hdr:"AutoIndDecl.eqI"
-      (str "The boolean equality on " ++ MutInd.print (fst ind) ++ str " is needed.");
+      (str "The boolean equality on " ++ Printer.pr_inductive (Global.env ()) ind ++ str " is needed.");
   in (if Array.equal Constr.equal eA [||] then e else mkApp(e,eA)), eff
 
 (**********************************************************************)

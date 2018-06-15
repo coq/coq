@@ -183,7 +183,7 @@ let lookup_mind kn env =
 
 let add_mind kn mib env =
   if Mindmap_env.mem kn env.env_globals.env_inductives then
-    Printf.ksprintf anomaly ("Inductive %s is already defined.")
+    Printf.ksprintf anomaly ("Mutual inductive block %s is already defined.")
       (MutInd.to_string kn);
   let new_inds = Mindmap_env.add kn mib env.env_globals.env_inductives in
   let kn1,kn2 =  MutInd.user kn, MutInd.canonical kn in
