@@ -28,13 +28,11 @@ let controller h pr pw =
   prerr_endline "starting controller thread";
   let main () =
     let ic, oc = open_bin_connection h pr pw in
-    let rec loop () =
+    let loop () =
       try
         match CThread.thread_friendly_input_value ic with
         | Hello _ -> prerr_endline "internal protocol error"; exit 1
         | ReqDie -> prerr_endline "death sentence received"; exit 0
-        | ReqStats ->
-            output_value oc (RespStats (Gc.quick_stat ())); flush oc; loop ()
       with
       | e ->
         prerr_endline ("control channel broken: " ^ Printexc.to_string e);

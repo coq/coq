@@ -25,7 +25,6 @@ module type Control = sig
   type handle
 
   val kill : handle -> unit
-  val stats : handle -> Gc.stat
   val wait : handle -> Unix.process_status
   val unixpid : handle -> int
   
@@ -76,6 +75,5 @@ end
 
 (* This is exported to separate the Spawned module, that for simplicity assumes
  * Threads so it is in a separate file *)
-type req = ReqDie | ReqStats | Hello of int * int
+type req = ReqDie | Hello of int * int
 val proto_version : int
-type resp = RespStats of Gc.stat
