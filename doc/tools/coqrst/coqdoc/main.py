@@ -20,6 +20,7 @@ lexer.
 """
 
 import os
+import platform
 from tempfile import mkstemp
 from subprocess import check_output
 
@@ -36,6 +37,9 @@ def coqdoc(coq_code, coqdoc_bin=None):
     """Get the output of coqdoc on coq_code."""
     coqdoc_bin = coqdoc_bin or os.path.join(os.getenv("COQBIN"), "coqdoc")
     fd, filename = mkstemp(prefix="coqdoc-", suffix=".v")
+    if platform.system().startswith("CYGWIN"):
+        # coqdoc currently doesn't accept cygwin style paths in the form "/cygdrive/c/..."
+        filename = check_output(["cygpath", "-w", filename]).decode("utf-8").strip()
     try:
         os.write(fd, COQDOC_HEADER.encode("utf-8"))
         os.write(fd, coq_code.encode("utf-8"))
