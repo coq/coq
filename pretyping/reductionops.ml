@@ -341,6 +341,7 @@ struct
   | Cst of cst_member * int * int list * 'a t * Cst_stack.t
   and 'a t = 'a member list
 
+  (* Debugging printer *)
   let rec pr_member pr_c member =
     let open Pp in
     let pr_c x = hov 1 (pr_c x) in
@@ -351,7 +352,7 @@ struct
 	 prvect_with_sep (pr_bar) pr_c br
        ++ str ")"
     | Proj (p,cst) ->
-      str "ZProj(" ++ Constant.print (Projection.constant p) ++ str ")"
+      str "ZProj(" ++ Constant.debug_print (Projection.constant p) ++ str ")"
     | Fix (f,args,cst) ->
        str "ZFix(" ++ Termops.pr_fix pr_c f
        ++ pr_comma () ++ pr pr_c args ++ str ")"
@@ -368,11 +369,11 @@ struct
     let open Pp in
       match c with
       | Cst_const (c, u) ->
-	if Univ.Instance.is_empty u then Constant.print c
-	else str"(" ++ Constant.print c ++ str ", " ++ 
+        if Univ.Instance.is_empty u then Constant.debug_print c
+        else str"(" ++ Constant.debug_print c ++ str ", " ++
 	  Univ.Instance.pr Univ.Level.pr u ++ str")"
       | Cst_proj p ->
-	str".(" ++ Constant.print (Projection.constant p) ++ str")"
+        str".(" ++ Constant.debug_print (Projection.constant p) ++ str")"
 
   let empty = []
   let is_empty = CList.is_empty

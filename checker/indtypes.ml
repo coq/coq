@@ -595,8 +595,12 @@ let check_subtyping cumi paramsctxt env inds =
 (************************************************************************)
 (************************************************************************)
 
+let print_mutind ind =
+  let kn = MutInd.user ind in
+  str (ModPath.to_string (KerName.modpath kn) ^ "." ^ Label.to_string (KerName.label kn))
+
 let check_inductive env kn mib =
-  Flags.if_verbose Feedback.msg_notice (str "  checking ind: " ++ MutInd.print kn);
+  Flags.if_verbose Feedback.msg_notice (str "  checking mutind block: " ++ print_mutind kn);
   (* check mind_constraints: should be consistent with env *)
   let env0 =
     match mib.mind_universes with

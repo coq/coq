@@ -655,12 +655,11 @@ module New = struct
       | _ ->
 	  let name_elim =
 	    match EConstr.kind sigma elim with
-	    | Const (kn, _) -> Constant.to_string kn
-	    | Var id -> Id.to_string id
-	    | _ -> "\b"
+            | Const _ | Var _ -> str " " ++ print_constr_env (pf_env gl) sigma elim
+            | _ -> mt ()
 	  in
 	  user_err ~hdr:"Tacticals.general_elim_then_using"
-            (str "The elimination combinator " ++ str name_elim ++ str " is unknown.")
+            (str "The elimination combinator " ++ name_elim ++ str " is unknown.")
     in
     let elimclause' = clenv_fchain ~with_univs:false indmv elimclause indclause in
     let branchsigns = compute_constructor_signatures ~rec_flag ind in

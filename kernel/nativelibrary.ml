@@ -29,7 +29,7 @@ and translate_field prefix mp env acc (l,x) =
   | SFBconst cb ->
      let con = Constant.make3 mp DirPath.empty l in
      (if !Flags.debug then
-	let msg = Printf.sprintf "Compiling constant %s..." (Constant.to_string con) in
+        let msg = Printf.sprintf "Compiling constant %s..." (Constant.to_string con) in
 	Feedback.msg_debug (Pp.str msg));
      compile_constant_field env prefix con acc cb
   | SFBmind mb ->
