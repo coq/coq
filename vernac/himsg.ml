@@ -1,6 +1,6 @@
 (************************************************************************)
 (*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1997-2018       *)
 (* <O___,, *       (see CREDITS file for the list of authors)           *)
 (*   \VV/  **************************************************************)
 (*    //   *    This file is distributed under the terms of the         *)
@@ -570,9 +570,8 @@ let rec explain_evar_kind env sigma evk ty = function
       explain_evar_kind env sigma evk'
         (pr_leconstr_env env sigma ty') (snd evi.evar_source)
   | Evar_kinds.RecordFieldEvar (field, constructor) ->
-          let (name_mut_ind, _) = Names.inductive_of_constructor constructor in
-     str "field " ++ Names.Constant.print field ++ str " of record " ++
-     Names.MutInd.print name_mut_ind
+     str "field " ++ Printer.pr_constant env field ++ str " of record " ++
+     Printer.pr_constructor env constructor
 
 let explain_typeclass_resolution env sigma evi k =
   match Typeclasses.class_of_constr sigma evi.evar_concl with
