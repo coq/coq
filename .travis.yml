@@ -82,11 +82,6 @@ matrix:
       - TEST_TARGET="ci-coquelicot"
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="ci-elpi" EXTRA_OPAM="ppx_tools_versioned ppx_deriving ocaml-migrate-parsetree"
-      # ppx_tools_versioned requires a specific version findlib
-      - FINDLIB_VER=""
-    - if: NOT (type = pull_request)
-      env:
       - TEST_TARGET="ci-equations"
     - if: NOT (type = pull_request)
       env:
