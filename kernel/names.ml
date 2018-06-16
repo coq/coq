@@ -17,7 +17,7 @@
    the module system, Aug 2002 *)
 (* Abstraction over the type of constant for module inlining by Claudio
    Sacerdoti, Nov 2004 *)
-(* Miscellaneous features or improvements by Hugo Herbelin, 
+(* Miscellaneous features or improvements by Hugo Herbelin,
    Élie Soubiran, ... *)
 
 open Pp
@@ -364,7 +364,6 @@ module MPmap = CMap.Make(ModPath)
 module KerName = struct
 
   type t = {
-    canary : Canary.t;
     modpath : ModPath.t;
     dirpath : DirPath.t;
     knlabel : Label.t;
@@ -372,16 +371,14 @@ module KerName = struct
     (** Lazily computed hash. If unset, it is set to negative values. *)
   }
 
-  let canary = Canary.obj
-
   type kernel_name = t
 
   let make modpath dirpath knlabel =
-    { modpath; dirpath; knlabel; refhash = -1; canary; }
+    { modpath; dirpath; knlabel; refhash = -1; }
   let repr kn = (kn.modpath, kn.dirpath, kn.knlabel)
 
   let make2 modpath knlabel =
-    { modpath; dirpath = DirPath.empty; knlabel; refhash = -1; canary; }
+    { modpath; dirpath = DirPath.empty; knlabel; refhash = -1; }
 
   let modpath kn = kn.modpath
   let label kn = kn.knlabel
@@ -437,7 +434,7 @@ module KerName = struct
         * (string -> string)
     let hashcons (hmod,hdir,hstr) kn =
       let { modpath = mp; dirpath = dp; knlabel = l; refhash; } = kn in
-      { modpath = hmod mp; dirpath = hdir dp; knlabel = hstr l; refhash; canary; }
+      { modpath = hmod mp; dirpath = hdir dp; knlabel = hstr l; refhash; }
     let eq kn1 kn2 =
       kn1.modpath == kn2.modpath && kn1.dirpath == kn2.dirpath &&
         kn1.knlabel == kn2.knlabel
