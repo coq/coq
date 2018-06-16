@@ -265,7 +265,7 @@ With argument, position cursor at end of buffer."
     (let ((end (point)))
       (beginning-of-line)
       (coq-send-region (point) end)))
-  (next-line 1))
+  (forward-line 1))
 
 (defun coq-send-abort ()
   "Send the command \"Abort.\" to the inferior Coq process."
