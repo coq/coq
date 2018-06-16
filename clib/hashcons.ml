@@ -10,8 +10,6 @@
 
 (* Hash consing of datastructures *)
 
-(* The generic hash-consing functions (does not use Obj) *)
-
 (* [t] is the type of object to hash-cons
  * [u] is the type of hash-cons functions for the sub-structures
  *   of objects of type t (u usually has the form (t1->t1)*(t2->t2)*...).
@@ -147,42 +145,4 @@ module Hstring = Make(
     let hash s =
       let len = String.length s in
       hash len s 0 0
-  end)
-
-(* Obj.t *)
-exception NotEq
-
-(* From CAMLLIB/caml/mlvalues.h *)
-let no_scan_tag = 251
-let tuple_p obj = Obj.is_block obj && (Obj.tag obj < no_scan_tag)
-
-let comp_obj o1 o2 =
-  if tuple_p o1 && tuple_p o2 then
-    let n1 = Obj.size o1 and n2 = Obj.size o2 in
-      if n1=n2 then
-        try
-          for i = 0 to pred n1 do
-            if not (Obj.field o1 i == Obj.field o2 i) then raise NotEq
-          done; true
-        with NotEq -> false
-      else false
-  else o1=o2
-
-let hash_obj hrec o =
-  begin
-    if tuple_p o then
-      let n = Obj.size o in
-        for i = 0 to pred n do
-          Obj.set_field o i (hrec (Obj.field o i))
-        done
-  end;
-  o
-
-module Hobj = Make(
-  struct
-    type t = Obj.t
-    type u = (Obj.t -> Obj.t) * unit
-    let hashcons (hrec,_) = hash_obj hrec
-    let eq = comp_obj
-    let hash = Hashtbl.hash
   end)

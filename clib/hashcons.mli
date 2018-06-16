@@ -87,6 +87,3 @@ module Hstring : (S with type t = string and type u = unit)
 module Hlist (D:HashedType) :
   (S with type t = D.t list and type u = (D.t list -> D.t list)*(D.t->D.t))
 (** Hashconsing of lists.  *)
-
-module Hobj : (S with type t = Obj.t and type u = (Obj.t -> Obj.t) * unit)
-(** Hashconsing of OCaml values. *)
