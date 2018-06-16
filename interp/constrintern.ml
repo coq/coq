@@ -1915,7 +1915,6 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	    (merge_impargs l args) loc
 
     | CRecord fs ->
-       let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
        let fields =
 	 sort_fields ~complete:true loc fs
                      (fun _idx fieldname constructor -> CAst.make ?loc @@ CHole (Some
