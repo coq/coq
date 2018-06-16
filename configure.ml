@@ -250,7 +250,6 @@ type preferences = {
   datadir : string option;
   mandir : string option;
   docdir : string option;
-  emacslib : string option;
   coqdocdir : string option;
   ocamlfindcmd : string option;
   lablgtkdir : string option;
@@ -288,7 +287,6 @@ let default = {
   datadir = None;
   mandir = None;
   docdir = None;
-  emacslib = None;
   coqdocdir = None;
   ocamlfindcmd = None;
   lablgtkdir = None;
@@ -386,8 +384,6 @@ let args_options = Arg.align [
     "<dir> Where to install man files";
   "-docdir", arg_string_option (fun p docdir -> { p with docdir }),
     "<dir> Where to install doc files";
-  "-emacslib", arg_string_option (fun p emacslib -> { p with emacslib }),
-    "<dir> Where to install emacs files";
   "-coqdocdir", arg_string_option (fun p coqdocdir -> { p with coqdocdir }),
     "<dir> Where to install Coqdoc style files";
   "-ocamlfind", arg_string_option (fun p ocamlfindcmd -> { p with ocamlfindcmd }),
@@ -1008,8 +1004,6 @@ let install = [
     Relative "man", Relative "share/man", Relative "man";
   "DOCDIR", "the Coq documentation", !prefs.docdir,
     Relative "doc", Relative "share/doc/coq", Relative "doc";
-  "EMACSLIB", "the Coq Emacs mode", !prefs.emacslib,
-    Relative "emacs", Relative "share/emacs/site-lisp", Relative "tools";
   "COQDOCDIR", "the Coqdoc LaTeX files", !prefs.coqdocdir,
     Relative "latex", Relative "share/texmf/tex/latex/misc", Relative "tools/coqdoc";
  ]

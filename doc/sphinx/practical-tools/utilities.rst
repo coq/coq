@@ -950,55 +950,6 @@ There are options to produce the |Coq| parts in smaller font, italic,
 between horizontal rules, etc. See the man page of ``coq-tex`` for more
 details.
 
-|Coq| and GNU Emacs
------------------------
-
-
-The |Coq| Emacs mode
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-|Coq| comes with a Major mode for GNU Emacs, ``gallina.el``. This mode
-provides syntax highlighting and also a rudimentary indentation
-facility in the style of the ``Caml`` GNU Emacs mode.
-
-Add the following lines to your ``.emacs`` file:
-
-::
-
-      (setq auto-mode-alist (cons '("\\.v$" . coq-mode) auto-mode-alist))
-      (autoload 'coq-mode "gallina" "Major mode for editing Coq vernacular." t)
-
-
-The |Coq| major mode is triggered by visiting a file with extension ``.v``,
-or manually with the command ``M-x coq-mode``. It gives you the correct
-syntax table for the |Coq| language, and also a rudimentary indentation
-facility:
-
-
-+ pressing ``Tab`` at the beginning of a line indents the line like the
-  line above;
-+ extra tabulations increase the indentation level (by 2 spaces by default);
-+ ``M-Tab`` decreases the indentation level.
-
-
-An inferior mode to run |Coq| under Emacs, by Marco Maggesi, is also
-included in the distribution, in file ``inferior-coq.el``. Instructions to
-use it are contained in this file.
-
-
-Proof-General
-~~~~~~~~~~~~~
-
-Proof-General is a generic interface for proof assistants based on
-Emacs. The main idea is that the |Coq| commands you are editing are sent
-to a |Coq| toplevel running behind Emacs and the answers of the system
-automatically inserted into other Emacs buffers. Thus you don’t need
-to copy-paste the |Coq| material from your files to the |Coq| toplevel or
-conversely from the |Coq| toplevel to some files.
-
-Proof-General is developed and distributed independently of the system
-|Coq|. It is freely available at `<https://proofgeneral.github.io/>`_.
-
 
 Man pages
 ---------
