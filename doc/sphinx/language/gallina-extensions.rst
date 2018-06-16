@@ -1925,69 +1925,61 @@ applied to an unknown structure instance (an implicit argument) and a
 value. The complete documentation of canonical structures can be found
 in :ref:`canonicalstructures`; here only a simple example is given.
 
-Assume that `qualid` denotes an object ``(Build_struc`` |c_1| … |c_n| ``)`` in the
-structure *struct* of which the fields are |x_1|, …, |x_n|. Assume that
-`qualid` is declared as a canonical structure using the command
-
 .. cmd:: Canonical Structure @qualid
 
-Then, each time an equation of the form ``(``\ |x_i| ``_)`` |eq_beta_delta_iota_zeta| |c_i| has to be
-solved during the type-checking process, `qualid` is used as a solution.
-Otherwise said, `qualid` is canonically used to extend the field |c_i|
-into a complete structure built on |c_i|.
+   This command declares :token:`qualid` as a canonical structure.
 
-Canonical structures are particularly useful when mixed with coercions
-and strict implicit arguments.
+   Assume that :token:`qualid` denotes an object ``(Build_struct`` |c_1| … |c_n| ``)`` in the
+   structure :g:`struct` of which the fields are |x_1|, …, |x_n|.
+   Then, each time an equation of the form ``(``\ |x_i| ``_)`` |eq_beta_delta_iota_zeta| |c_i| has to be
+   solved during the type-checking process, :token:`qualid` is used as a solution.
+   Otherwise said, :token:`qualid` is canonically used to extend the field |c_i|
+   into a complete structure built on |c_i|.
 
-.. example::
+   Canonical structures are particularly useful when mixed with coercions
+   and strict implicit arguments.
 
-   Here is an example.
+   .. example::
 
-   .. coqtop:: all
+      Here is an example.
 
-      Require Import Relations.
+      .. coqtop:: all
 
-      Require Import EqNat.
+         Require Import Relations.
 
-      Set Implicit Arguments.
+         Require Import EqNat.
 
-      Unset Strict Implicit.
+         Set Implicit Arguments.
 
-      Structure Setoid : Type := {Carrier :> Set; Equal : relation Carrier;
-                                  Prf_equiv : equivalence Carrier Equal}.
+         Unset Strict Implicit.
 
-      Definition is_law (A B:Setoid) (f:A -> B) := forall x y:A, Equal x y -> Equal (f x) (f y).
+         Structure Setoid : Type := {Carrier :> Set; Equal : relation Carrier;
+                                     Prf_equiv : equivalence Carrier Equal}.
 
-      Axiom eq_nat_equiv : equivalence nat eq_nat.
+         Definition is_law (A B:Setoid) (f:A -> B) := forall x y:A, Equal x y -> Equal (f x) (f y).
 
-      Definition nat_setoid : Setoid := Build_Setoid eq_nat_equiv.
+         Axiom eq_nat_equiv : equivalence nat eq_nat.
 
-      Canonical Structure nat_setoid.
+         Definition nat_setoid : Setoid := Build_Setoid eq_nat_equiv.
 
-Thanks to ``nat_setoid`` declared as canonical, the implicit arguments ``A``
-and ``B`` can be synthesized in the next statement.
+         Canonical Structure nat_setoid.
 
-.. coqtop:: all
+      Thanks to :g:`nat_setoid` declared as canonical, the implicit arguments :g:`A`
+      and :g:`B` can be synthesized in the next statement.
 
-   Lemma is_law_S : is_law S.
+      .. coqtop:: all
 
-Remark: If a same field occurs in several canonical structure, then
-only the structure declared first as canonical is considered.
+         Lemma is_law_S : is_law S.
 
-.. cmdv:: Canonical Structure @ident := @term : @type
+   .. note::
+      If a same field occurs in several canonical structures, then
+      only the structure declared first as canonical is considered.
 
-.. cmdv:: Canonical Structure @ident := @term
+   .. cmdv:: Canonical Structure @ident {? : @type } := @term
 
-.. cmdv:: Canonical Structure @ident : @type := @term
+      This is equivalent to a regular definition of :token:`ident` followed by the
+      declaration :n:`Canonical Structure @ident`.
 
-These are equivalent to a regular definition of `ident` followed by the declaration
-``Canonical Structure`` `ident`.
-
-See also: more examples in user contribution category (Rocq/ALGEBRA).
-
-
-Printing Canonical Projections
-++++++++++++++++++++++++++++++
 
 .. cmd:: Print Canonical Projections
 
