@@ -26,37 +26,35 @@ programs called *tactics*.
 All services of the |Coq| proof assistant are accessible by interpretation
 of a command language called *the vernacular*.
 
-Coq has an interactive mode in which commands are interpreted as the
+Coq has an interactive mode in which commands are interpreted as the
 user types them in from the keyboard and a compiled mode where commands
 are processed from a file.
 
--  The interactive mode may be used as a debugging mode in which the
-   user can develop his theories and proofs step by step, backtracking
-   if needed and so on. The interactive mode is run with the `coqtop` 
-   command from the operating system (which we shall assume to be some
-   variety of UNIX in the rest of this document).
+-  In interactive mode, users can develop their theories and proofs step by
+   step, and query the system for available theorems and definitions. The
+   interactive mode is generally run with the help of an IDE, such
+   as CoqIDE, documented in :ref:`coqintegrateddevelopmentenvironment`,
+   Emacs with Proof-General (available at https://proofgeneral.github.io/),
+   or jsCoq to run Coq in your browser (see https://github.com/ejgallego/jscoq).
+   The `coqtop` read-eval-print-loop can also be used directly, for debugging
+   purposes.
 
 -  The compiled mode acts as a proof checker taking a file containing a
    whole development in order to ensure its correctness. Moreover,
    |Coq|’s compiler provides an output file containing a compact
    representation of its input. The compiled mode is run with the `coqc`
-   command from the operating system.
+   command.
 
-These two modes are documented in Chapter :ref:`thecoqcommands`.
-
-Other modes of interaction with |Coq| are possible: through an emacs shell
-window, an emacs generic user-interface for proof assistant (Proof
-General :cite:`ProofGeneral`) or through a customized
-interface (PCoq :cite:`Pcoq`). These facilities are not
-documented here. There is also a |Coq| Integrated Development Environment
-described in :ref:`coqintegrateddevelopmentenvironment`.
+.. seealso:: :ref:`thecoqcommands`.
 
 How to read this book
 =====================
 
-This is a Reference Manual, not a User Manual, so it is not made for a
-continuous reading. However, it has some structure that is explained
-below.
+This is a Reference Manual, so it is not made for a continuous reading.
+We recommend using the various indexes to quickly locate the documentation
+you are looking for. There is a global index, and a number of specific indexes
+for tactics, vernacular commands, and error messages and warnings.
+Nonetheless, the manual has some structure that is explained below.
 
 -  The first part describes the specification language, |Gallina|.
    Chapters :ref:`gallinaspecificationlanguage` and :ref:`extensionsofgallina` describe the concrete
@@ -66,7 +64,7 @@ below.
    of the formalism. Chapter :ref:`themodulesystem` describes the module
    system.
 
--  The second part describes the proof engine. It is divided in five
+-  The second part describes the proof engine. It is divided in six
    chapters. Chapter :ref:`vernacularcommands` presents all commands (we
    call them *vernacular commands*) that are not directly related to
    interactive proving: requests to the environment, complete or partial
@@ -77,23 +75,23 @@ below.
    *tactics*. The language to combine these tactics into complex proof
    strategies is given in Chapter :ref:`ltac`. Examples of tactics
    are described in Chapter :ref:`detailedexamplesoftactics`.
+   Finally, the |SSR| proof language is presented in
+   Chapter :ref:`thessreflectprooflanguage`.
 
--  The third part describes how to extend the syntax of |Coq|. It
-   corresponds to the Chapter :ref:`syntaxextensionsandinterpretationscopes`.
+-  The third part describes how to extend the syntax of |Coq| in
+   Chapter :ref:`syntaxextensionsandinterpretationscopes` and how to define
+   new induction principles in Chapter :ref:`proofschemes`.
 
 -  In the fourth part more practical tools are documented. First in
    Chapter :ref:`thecoqcommands`, the usage of `coqc` (batch mode) and
    `coqtop` (interactive mode) with their options is described. Then,
    in Chapter :ref:`utilities`, various utilities that come with the
    |Coq| distribution are presented. Finally, Chapter :ref:`coqintegrateddevelopmentenvironment` 
-   describes the |Coq| integrated development environment.
+   describes CoqIDE.
 
 -  The fifth part documents a number of advanced features, including coercions,
    canonical structures, typeclasses, program extraction, and specialized
    solvers and tactics. See the table of contents for a complete list.
-
-At the end of the document, after the global index, the user can find
-specific indexes for tactics, vernacular commands, and error messages.
 
 List of additional documentation
 ================================
@@ -114,5 +112,5 @@ Installation
 
 The |Coq| standard library
     A commented version of sources of the |Coq| standard library
-    (including only the specifications, the proofs are removed) is given
-    in the additional document `Library.ps`.
+    (including only the specifications, the proofs are removed) is
+    available at https://coq.inria.fr/stdlib/.
