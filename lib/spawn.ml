@@ -15,14 +15,12 @@ let accept_timeout = 10.0
 let pr_err s = Printf.eprintf "(Spawn  ,%d) %s\n%!" (Unix.getpid ()) s
 let prerr_endline s = if !Flags.debug then begin pr_err s end else ()
 
-type req = ReqDie | ReqStats | Hello of int * int
-type resp = RespStats of Gc.stat
+type req = ReqDie | Hello of int * int
 
 module type Control = sig
   type handle
 
   val kill : handle -> unit
-  val stats : handle -> Gc.stat
   val wait : handle -> Unix.process_status
   val unixpid : handle -> int
   val uid : handle -> string
@@ -43,7 +41,6 @@ module type MainLoopModel = sig
 end
 
 (* Common code *)
-let assert_ b s = if not b then CErrors.anomaly (Pp.str s)
 
 (* According to http://caml.inria.fr/mantis/view.php?id=5325
  * you can't use the same socket for both writing and reading (may change
@@ -125,14 +122,26 @@ let filter_args args =
   Array.of_list (aux (Array.to_list args))
 
 let spawn_with_control prefer_sock env prog args =
-  let control_sock, control_sock_name = mk_socket_channel () in
-  let extra = [| "-control-channel"; control_sock_name |] in
-  let args = Array.append extra (filter_args args) in
+  (* on non-Unix systems we create a control channel *)
+  let not_Unix = Sys.os_type <> "Unix" in
+  let args = filter_args args in
+  let args, control_sock =
+    if not_Unix then
+      let control_sock, control_sock_name = mk_socket_channel () in
+      let extra = [| "-control-channel"; control_sock_name |] in
+      Array.append extra args, Some control_sock
+    else
+      args, None in
   let (pid, cin, cout, s), is_sock =
-    if Sys.os_type <> "Unix" || prefer_sock
+    if not_Unix (* pipes only work well on Unix *) || prefer_sock
     then spawn_sock env prog args, true
     else spawn_pipe env prog args, false in
-  let _, oob_resp, oob_req = accept control_sock in
+  let oob_resp, oob_req =
+    if not_Unix then
+      let _, oob_resp, oob_req = accept (Option.get control_sock) in
+      Some oob_resp, Some oob_req
+    else
+      None, None in
   pid, oob_resp, oob_req, cin, cout, s, is_sock
 
 let output_death_sentence pid oob_req =
@@ -146,8 +155,8 @@ module Async(ML : MainLoopModel) = struct
 type process = {
   cin  : in_channel;
   cout : out_channel;
-  oob_resp : in_channel;
-  oob_req  : out_channel;
+  oob_resp : in_channel option;
+  oob_req  : out_channel option;
   gchan : ML.async_chan;
   pid : int;
   mutable watch : ML.watch_id option;
@@ -166,11 +175,11 @@ let kill ({ pid = unixpid; oob_resp; oob_req; cin; cout; alive; watch } as p) =
   if not alive then prerr_endline "This process is already dead"
   else begin try
     Option.iter ML.remove_watch watch;
-    output_death_sentence (uid p) oob_req;
+    Option.iter (output_death_sentence (uid p)) oob_req;
     close_in_noerr cin;
     close_out_noerr cout;
-    close_in_noerr oob_resp;
-    close_out_noerr oob_req;
+    Option.iter close_in_noerr oob_resp;
+    Option.iter close_out_noerr oob_req;
     if Sys.os_type = "Unix" then Unix.kill unixpid 9;
     p.watch <- None
   with e -> prerr_endline ("kill: "^Printexc.to_string e) end
@@ -199,12 +208,6 @@ let spawn ?(prefer_sock=prefer_sock) ?(env=Unix.environment ())
   );
   p, cout
 
-let stats { oob_req; oob_resp; alive } =
-  assert_ alive "This process is dead.";
-  output_value oob_req ReqStats;
-  flush oob_req;
-  input_value oob_resp
-
 let rec wait p =
   (* On windows kill is not reliable, so wait may never return. *) 
   if Sys.os_type = "Unix" then 
@@ -221,8 +224,8 @@ module Sync () = struct
 type process = {
   cin  : in_channel;
   cout : out_channel;
-  oob_resp : in_channel;
-  oob_req  : out_channel;
+  oob_resp : in_channel option;
+  oob_req  : out_channel option;
   pid : int;
   mutable alive : bool;
 }
@@ -242,19 +245,13 @@ let kill ({ pid = unixpid; oob_req; oob_resp; cin; cout; alive } as p) =
   p.alive <- false;
   if not alive then prerr_endline "This process is already dead"
   else begin try
-    output_death_sentence (uid p) oob_req;
+    Option.iter (output_death_sentence (uid p)) oob_req;
     close_in_noerr cin;
     close_out_noerr cout;
-    close_in_noerr oob_resp;
-    close_out_noerr oob_req;
+    Option.iter close_in_noerr oob_resp;
+    Option.iter close_out_noerr oob_req;
     if Sys.os_type = "Unix" then Unix.kill unixpid 9;
   with e -> prerr_endline ("kill: "^Printexc.to_string e) end
-
-let stats { oob_req; oob_resp; alive } =
-  assert_ alive "This process is dead.";
-  output_value oob_req ReqStats;
-  flush oob_req;
-  let RespStats g = input_value oob_resp in g
 
 let rec wait p =
   (* On windows kill is not reliable, so wait may never return. *) 
