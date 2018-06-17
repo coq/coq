@@ -106,7 +106,7 @@ argument.
 
 Morphisms can also be contravariant in one or more of their arguments.
 A morphism is contravariant on an argument associated to the relation
-instance :math`R` if it is covariant on the same argument when the inverse
+instance :math:`R` if it is covariant on the same argument when the inverse
 relation :math:`R^{−1}` (``inverse R`` in Coq) is considered. The special arrow ``-->``
 is used in signatures for contravariant morphisms.
 
