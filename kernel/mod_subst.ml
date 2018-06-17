@@ -24,7 +24,7 @@ open Constr
    is the term into which we should inline. *)
 
 type delta_hint =
-  | Inline of int * constr option
+  | Inline of int * (Univ.AUContext.t * constr) option
   | Equiv of KerName.t
 
 (* NB: earlier constructor Prefix_equiv of ModPath.t
@@ -158,7 +158,7 @@ let find_prefix resolve mp =
 
 (** Applying a resolver to a kernel name *)
 
-exception Change_equiv_to_inline of (int * constr)
+exception Change_equiv_to_inline of (int * (Univ.AUContext.t * constr))
 
 let solve_delta_kn resolve kn =
   try
@@ -300,9 +300,10 @@ let subst_con0 sub (cst,u) =
   let knu = KerName.make mpu dir l in
   let knc = if mpu == mpc then knu else KerName.make mpc dir l in
   match search_delta_inline resolve knu knc with
-    | Some t ->
+    | Some (ctx, t) ->
       (* In case of inlining, discard the canonical part (cf #2608) *)
-      Constant.make1 knu, t
+      let () = assert (Int.equal (Univ.AUContext.size ctx) (Univ.Instance.length u)) in
+      Constant.make1 knu, Vars.subst_instance_constr u t
     | None ->
       let knc' =
         progress (kn_of_delta resolve) (if user then knu else knc) ~orelse:knc
@@ -482,7 +483,7 @@ let gen_subst_delta_resolver dom subst resolver =
       | Equiv kequ ->
 	  (try Equiv (subst_kn_delta subst kequ)
 	   with Change_equiv_to_inline (lev,c) -> Inline (lev,Some c))
-      | Inline (lev,Some t) -> Inline (lev,Some (subst_mps subst t))
+      | Inline (lev,Some (ctx, t)) -> Inline (lev,Some (ctx, subst_mps subst t))
       | Inline (_,None) -> hint
     in
     Deltamap.add_kn kkey' hint' rslv

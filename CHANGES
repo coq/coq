@@ -61,6 +61,7 @@ Changes from 8.8.0 to 8.8.1
 Kernel
 
 - Fix a critical bug with cofixpoints and vm_compute/native_compute (#7333).
+- Fix a critical bug with inlining of polymorphic constants (#7615).
 
 Notations
 

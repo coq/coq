@@ -28,7 +28,7 @@ val add_kn_delta_resolver :
   KerName.t -> KerName.t -> delta_resolver -> delta_resolver
 
 val add_inline_delta_resolver :
-  KerName.t -> (int * constr option) -> delta_resolver -> delta_resolver
+  KerName.t -> (int * (Univ.AUContext.t * constr) option) -> delta_resolver -> delta_resolver
 
 val add_delta_resolver : delta_resolver -> delta_resolver -> delta_resolver
 
