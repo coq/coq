@@ -414,8 +414,10 @@ let loc_of_glob_constr c = c.CAst.loc
 (**********************************************************************)
 (* Alpha-renaming                                                     *)
 
+exception UnsoundRenaming
+
 let collide_id l id = List.exists (fun (id',id'') -> Id.equal id id' || Id.equal id id'') l
-let test_id l id = if collide_id l id then raise Not_found
+let test_id l id = if collide_id l id then raise UnsoundRenaming
 let test_na l na = Name.iter (test_id l) na
 
 let update_subst na l =
@@ -428,8 +430,6 @@ let update_subst na l =
        Name id', (id,id')::l
      else na,l)
     na (na,l)
-
-exception UnsoundRenaming
 
 let rename_var l id =
   try
