@@ -280,7 +280,7 @@ let fold_left2_i f a v1 v2 =
   let rec fold a n =
     if n >= lv1 then a else fold (f n a (uget v1 n) (uget v2 n)) (succ n)
   in
-  if Array.length v2 <> lv1 then invalid_arg "Array.fold_left2";
+  if Array.length v2 <> lv1 then invalid_arg "Array.fold_left2_i";
   fold a 0
 
 let fold_left3 f a v1 v2 v3 =
@@ -290,7 +290,7 @@ let fold_left3 f a v1 v2 v3 =
     else fold (f a (uget v1 n) (uget v2 n) (uget v3 n)) (succ n)
   in
   if Array.length v2 <> lv1 || Array.length v3 <> lv1 then
-    invalid_arg "Array.fold_left2";
+    invalid_arg "Array.fold_left3";
   fold a 0
 
 let fold_left4 f a v1 v2 v3 v4 =
