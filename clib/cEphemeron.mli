@@ -33,7 +33,7 @@
 
      An ['a key] can always be marshalled.  When marshalled, a key loses its
      value.  The function [get] raises Not_found on unmarshalled keys.
-     
+
      If a key is garbage collected, the corresponding value is garbage
      collected too (unless extra references to it exist).
      In short no memory management hassle, keys can just replace their
@@ -48,7 +48,7 @@ exception InvalidKey
 val get : 'a key -> 'a
 
 (* These never fail. *)
-val iter_opt : 'a key -> ('a -> unit) -> unit
 val default : 'a key -> 'a -> 'a
+val iter_opt : 'a key -> ('a -> unit) -> unit
 
 val clear : unit -> unit
