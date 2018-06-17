@@ -140,6 +140,24 @@ if [ "$LOCAL_BRANCH_COMMIT" != "$UPSTREAM_COMMIT" ]; then
     fi
 fi
 
+# Sanity check: PR has an outdated version of CI
+
+BASE_COMMIT=$(echo "$PRDATA" | jq -r '.base.sha')
+CI_FILES=(".travis.yml" ".gitlab-ci.yml" "appveyor.yml")
+
+if ! git diff --quiet "$BASE_COMMIT" "$LOCAL_BRANCH_COMMIT" -- "${CI_FILES[@]}"
+then
+    warning "This PR didn't run with the latest version of CI."
+    warning "It is probably a good idea to ask for a rebase."
+    read -p "Do you want to see the diff? [Y/n] " $QUICK_CONF -r
+    echo
+    if [[ ! $REPLY =~ ^[Nn]$ ]]
+    then
+        git diff "$BASE_COMMIT" "$LOCAL_BRANCH_COMMIT" -- "${CI_FILES[@]}"
+    fi
+    ask_confirmation
+fi
+
 # Sanity check: CI failed
 
 STATUS=$(curl -s "$API/commits/$COMMIT/status")
