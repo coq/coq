@@ -161,8 +161,26 @@ val mkCase : case_info * constr * constr * constr array -> constr
 
    where the length of the {% $ %}j{% $ %}th context is {% $ %}ij{% $ %}.
 *)
-type rec_declaration = Name.t array * types array * constr array
-type fixpoint = (int array * int) * rec_declaration
+type ('constr, 'types) prec_declaration =
+    Name.t array * 'types array * 'constr array
+type ('constr, 'types) pfixpoint =
+    (int array * int) * ('constr, 'types) prec_declaration
+  (* The array of [int]'s tells for each component of the array of
+     mutual fixpoints the number of lambdas to skip before finding the
+     recursive argument (e.g., value is 2 in "fix f (x:A) (y:=t) (z:B)
+     (v:=u) (w:I) {struct w}"), telling to skip x and z and that w is
+     the recursive argument);
+     The second component [int] tells which component of the block is
+     returned *)
+
+type ('constr, 'types) pcofixpoint =
+    int * ('constr, 'types) prec_declaration
+  (* The component [int] tells which component of the block of
+     cofixpoint is returned *)
+
+type rec_declaration = (constr, types) prec_declaration
+
+type fixpoint = (constr, types) pfixpoint
 val mkFix : fixpoint -> constr
 
 (** If [funnames = [|f1,.....fn|]]
@@ -176,7 +194,7 @@ val mkFix : fixpoint -> constr
      ...
      with       fn = bn.]
  *)
-type cofixpoint = int * rec_declaration
+type cofixpoint = (constr, types) pcofixpoint
 val mkCoFix : cofixpoint -> constr
 
 
@@ -185,12 +203,6 @@ val mkCoFix : cofixpoint -> constr
 (** [constr array] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
 type 'constr pexistential = Evar.t * 'constr array
-type ('constr, 'types) prec_declaration =
-    Name.t array * 'types array * 'constr array
-type ('constr, 'types) pfixpoint =
-    (int array * int) * ('constr, 'types) prec_declaration
-type ('constr, 'types) pcofixpoint =
-    int * ('constr, 'types) prec_declaration
 
 type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Rel       of int                                  (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)

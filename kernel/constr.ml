@@ -107,20 +107,12 @@ type t = (t, t, Sorts.t, Instance.t) kind_of_term
 type constr = t
 
 type existential = existential_key * constr array
-type rec_declaration = Name.t array * constr array * constr array
-type fixpoint = (int array * int) * rec_declaration
-  (* The array of [int]'s tells for each component of the array of
-     mutual fixpoints the number of lambdas to skip before finding the
-     recursive argument (e.g., value is 2 in "fix f (x:A) (y:=t) (z:B)
-     (v:=u) (w:I) {struct w}"), telling to skip x and z and that w is
-     the recursive argument);
-     The second component [int] tells which component of the block is
-     returned *)
-type cofixpoint = int * rec_declaration
-  (* The component [int] tells which component of the block of
-     cofixpoint is returned *)
 
 type types = constr
+
+type rec_declaration = (constr, types) prec_declaration
+type fixpoint = (constr, types) pfixpoint
+type cofixpoint = (constr, types) pcofixpoint
 
 (*********************)
 (* Term constructors *)
