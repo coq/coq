@@ -814,7 +814,7 @@ let optimize_lambda lam =
 
 let lambda_of_constr ~optimize genv c =
   let env = Renv.make genv in
-  let ids = List.rev_map Context.Rel.Declaration.get_name genv.env_rel_context.env_rel_ctx in
+  let ids = List.rev_map Context.Rel.Declaration.get_name (rel_context genv) in
   Renv.push_rels env (Array.of_list ids);
   let lam = lambda_of_constr env c in
   let lam = if optimize then optimize_lambda lam else lam in
