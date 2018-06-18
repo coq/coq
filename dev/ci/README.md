@@ -47,16 +47,13 @@ CI.
 
 ### Add your development by submitting a pull request
 
-Add a new `ci-mydev.sh` script to [`dev/ci`](.) (have a look at
-[`ci-coq-dpdgraph.sh`](ci-coq-dpdgraph.sh) or
-[`ci-fiat-parsers.sh`](ci-fiat-parsers.sh) for simple examples);
-set the corresponding variables in
-[`ci-basic-overlay.sh`](ci-basic-overlay.sh); add the corresponding
-target to [`Makefile.ci`](../../Makefile.ci); add new jobs to
-[`.gitlab-ci.yml`](../../.gitlab-ci.yml),
-[`.circleci/config.yml`](../../.circleci/config.yml) and
-[`.travis.yml`](../../.travis.yml) so that this new target is run. **Do not
-hesitate to submit an incomplete pull request if you need help to finish it.**
+Add a new `ci-mydev.sh` script to [`dev/ci`](.); set the corresponding
+variables in [`ci-basic-overlay.sh`](ci-basic-overlay.sh); add the
+corresponding target to [`Makefile.ci`](../../Makefile.ci) and a new job to
+[`.gitlab-ci.yml`](../../.gitlab-ci.yml) so that this new target is run.
+Have a look at [#7656](https://github.com/coq/coq/pull/7656/files) for an
+example. **Do not hesitate to submit an incomplete pull request if you need
+help to finish it.**
 
 You may also be interested in having your development tested in our
 performance benchmark. Currently this is done by providing an OPAM package
