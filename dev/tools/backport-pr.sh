@@ -1,11 +1,34 @@
 #!/usr/bin/env bash
 
-# Usage: dev/tools/backport-pr.sh <PR number> [--stop-before-merging]
-
 set -e
 
-PRNUM=$1
-OPTION=$2
+if [[ $# == 0 ]]; then
+    echo "Usage: $0 [--no-conflict] [--no-signature-check] [--stop-before-merging] prnum"
+    exit 1
+fi
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --no-conflict)
+            NO_CONFLICTS="true"
+            shift
+            ;;
+        --no-signature-check)
+            NO_SIGNATURE_CHECK="true"
+            shift
+            ;;
+        --stop-before-merging)
+            STOP_BEFORE_MERGING="true"
+            shift
+            ;;
+        *)
+            if [[ "$PRNUM" != "" ]]; then
+                echo "PRNUM was already set to $PRNUM and is now being overridden with $1."
+            fi
+            PRNUM="$1"
+            shift
+    esac
+done
 
 if ! git log master --grep "Merge PR #${PRNUM}" | grep "." > /dev/null; then
     echo "PR #${PRNUM} does not exist."
@@ -14,7 +37,7 @@ fi
 
 SIGNATURE_STATUS=$(git log master --grep "Merge PR #${PRNUM}" --format="%G?")
 git log master --grep "Merge PR #${PRNUM}" --format="%GG"
-if [[ "${SIGNATURE_STATUS}" != "G" ]]; then
+if [[ "$NO_SIGNATURE_CHECK" != "true" && "$SIGNATURE_STATUS" != "G" ]]; then
     echo
     read -p "Merge commit does not have a good (valid) signature. Bypass? [y/N] " -n 1 -r
     echo
@@ -30,6 +53,14 @@ MESSAGE=$(git log master --grep "Merge PR #${PRNUM}" --format="%s" | sed 's/Merg
 if git checkout -b "${BRANCH}"; then
 
     if ! git cherry-pick -x "${RANGE}"; then
+        if [[ "$NO_CONFLICTS" == "true" ]]; then
+            git status
+            echo "Conflicts! Aborting..."
+            git cherry-pick --abort
+            git checkout -
+            git branch -d "$BRANCH"
+            exit 1
+        fi
         echo "Please fix the conflicts, then exit."
         bash
         while ! git cherry-pick --continue; do
@@ -59,7 +90,7 @@ if ! git diff --exit-code HEAD "${BRANCH}" -- "*.mli"; then
     fi
 fi
 
-if [[ "${OPTION}" == "--stop-before-merging" ]]; then
+if [[ "$STOP_BEFORE_MERGING" == "true" ]]; then
     exit 0
 fi
 
