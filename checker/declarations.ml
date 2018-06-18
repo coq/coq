@@ -196,7 +196,7 @@ let subst_con0 sub con u =
   let dup con = con, Const (con, u) in
   let side,con',resolve = gen_subst_mp rebuild_con sub mp1 mp2 in
   match constant_of_delta_with_inline resolve con' with
-    | Some t -> con', t
+    | Some t -> con', subst_instance_constr u t
     | None ->
       let con'' = match side with
 	| User -> constant_of_delta resolve con'
