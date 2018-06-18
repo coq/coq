@@ -16,6 +16,12 @@ type 'a or_anti =
 | QExpr of 'a
 | QAnti of Id.t CAst.t
 
+type reference_r =
+| QReference of Libnames.qualid
+| QHypothesis of Id.t
+
+type reference = reference_r CAst.t
+
 type quantified_hypothesis =
 | QAnonHyp of int CAst.t
 | QNamedHyp of Id.t CAst.t
@@ -116,8 +122,8 @@ type red_flag_r =
 | QFix
 | QCofix
 | QZeta
-| QConst of Libnames.reference or_anti list CAst.t
-| QDeltaBut of Libnames.reference or_anti list CAst.t
+| QConst of reference or_anti list CAst.t
+| QDeltaBut of reference or_anti list CAst.t
 
 type red_flag = red_flag_r CAst.t
 

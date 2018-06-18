@@ -60,7 +60,7 @@ val of_hintdb : hintdb -> raw_tacexpr
 
 val of_move_location : move_location -> raw_tacexpr
 
-val of_reference : Libnames.reference or_anti -> raw_tacexpr
+val of_reference : reference or_anti -> raw_tacexpr
 
 val of_hyp : ?loc:Loc.t -> Id.t CAst.t -> raw_tacexpr
 (** id ↦ 'Control.hyp @id' *)
@@ -89,7 +89,7 @@ val wit_pattern : (Constrexpr.constr_expr, Pattern.constr_pattern) Arg.tag
 
 val wit_ident : (Id.t, Id.t) Arg.tag
 
-val wit_reference : (Libnames.reference, GlobRef.t) Arg.tag
+val wit_reference : (reference, GlobRef.t) Arg.tag
 (** Beware, at the raw level, [Qualid [id]] has not the same meaning as
     [Ident id]. The first is an unqualified global reference, the second is
     the dynamic reference to id. *)

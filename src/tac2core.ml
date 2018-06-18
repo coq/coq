@@ -910,13 +910,14 @@ let () =
   define_ml_object Tac2quote.wit_pattern obj
 
 let () =
-  let intern self ist qid = match qid with
-  | {CAst.v=Libnames.Ident id} ->
+  let intern self ist ref = match ref.CAst.v with
+  | Tac2qexpr.QHypothesis id ->
     GlbVal (Globnames.VarRef id), gtypref t_reference
-  | {CAst.loc;v=Libnames.Qualid qid} ->
+  | Tac2qexpr.QReference qid ->
     let gr =
       try Nametab.locate qid
       with Not_found ->
+        let loc = ref.CAst.loc in
         Nametab.error_global_not_found (CAst.make ?loc qid)
     in
     GlbVal gr, gtypref t_reference

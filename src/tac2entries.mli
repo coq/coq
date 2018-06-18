@@ -74,7 +74,7 @@ val q_rewriting : rewriting Pcoq.Gram.entry
 val q_clause : clause Pcoq.Gram.entry
 val q_dispatch : dispatch Pcoq.Gram.entry
 val q_occurrences : occurrences Pcoq.Gram.entry
-val q_reference : Libnames.reference or_anti Pcoq.Gram.entry
+val q_reference : reference or_anti Pcoq.Gram.entry
 val q_strategy_flag : strategy_flag Pcoq.Gram.entry
 val q_constr_matching : constr_matching Pcoq.Gram.entry
 val q_goal_matching : goal_matching Pcoq.Gram.entry
