@@ -119,7 +119,6 @@ dev/ocamlweb-doc/lex.ml
 ide/coq_lex.ml
 ide/config_lexer.ml
 ide/utf8_convert.ml
-tools/gallina_lexer.ml
 tools/coqwc.ml
 tools/coqdep_lexer.ml
 tools/ocamllibdep.ml
