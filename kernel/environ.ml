@@ -55,7 +55,8 @@ type globals = {
   env_projections : projection_body Cmap_env.t;
   env_inductives : mind_key Mindmap_env.t;
   env_modules : module_body MPmap.t;
-  env_modtypes : module_type_body MPmap.t}
+  env_modtypes : module_type_body MPmap.t;
+}
 
 type stratification = {
   env_universes : UGraph.t;
@@ -86,7 +87,7 @@ type rel_context_val = {
 }
 
 type env = {
-  env_globals       : globals;           (* globals = constants + inductive types + modules + module-types *)
+  env_globals       : globals;
   env_named_context : named_context_val; (* section variables *)
   env_rel_context   : rel_context_val;
   env_nb_rel        : int;
@@ -207,6 +208,9 @@ let lookup_named_val id env =
 
 let lookup_named_ctxt id ctxt =
   fst (Id.Map.find id ctxt.env_named_map)
+
+let fold_constants f env acc =
+  Cmap_env.fold (fun c (body,_) acc -> f c body acc) env.env_globals.env_constants acc
 
 (* Global constants *)
 

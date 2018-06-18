@@ -918,7 +918,7 @@ let register_inline kn senv =
   if not (evaluable_constant kn senv.env) then
     CErrors.user_err Pp.(str "Register inline: an evaluable constant is expected");
   let env = senv.env in
-  let (cb,r) = Cmap_env.find kn env.env_globals.env_constants in
+  let cb = lookup_constant kn env in
   let cb = {cb with const_inline_code = true} in
   let env = add_constant kn cb env in { senv with env}
 

@@ -263,15 +263,13 @@ let print_namespace ns =
   let matches mp = match match_modulepath ns mp with
   | Some [] -> true
   | _ -> false in
-  let constants = (Global.env ()).Environ.env_globals.Environ.env_constants in
   let constants_in_namespace =
-    Cmap_env.fold (fun c (body,_) acc ->
-      let kn = Constant.user c in
-      if matches (KerName.modpath kn) then
-        acc++fnl()++hov 2 (print_constant kn body)
-      else
-        acc
-    ) constants (str"")
+    Environ.fold_constants (fun c body acc ->
+        let kn = Constant.user c in
+        if matches (KerName.modpath kn)
+        then acc++fnl()++hov 2 (print_constant kn body)
+        else acc)
+      (Global.env ()) (str"")
   in
   (print_list Id.print ns)++str":"++fnl()++constants_in_namespace
 
