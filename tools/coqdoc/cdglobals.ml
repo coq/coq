@@ -85,8 +85,9 @@ let guess_coqlib () =
   let prefix = Filename.dirname coqbin in
   let coqlib = use_suffix prefix Coq_config.coqlibsuffix in
   if Sys.file_exists (coqlib / file) then coqlib else
-  if not Coq_config.local && Sys.file_exists (Coq_config.coqlib / file)
-  then Coq_config.coqlib else prefix
+    let coqlib = try Sys.getenv "COQLIB" with Not_found -> Coq_config.coqlib in
+    if not Coq_config.local && Sys.file_exists (coqlib / file)
+    then coqlib else prefix
 
 let header_trailer = ref true
 let header_file = ref ""

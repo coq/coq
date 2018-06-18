@@ -34,18 +34,22 @@ include ../Makefile.common
 
 # Default value when called from a freshly compiled Coq, but can be
 # easily overridden
-LIB := ..
-BIN := $(shell cd ..; pwd)/bin/
+COQLIB := $(shell cd ..; pwd)
+COQBIN := $(COQLIB)/bin/
 
-coqtop := $(BIN)coqtop -coqlib $(LIB) -boot -q -batch -test-mode -R prerequisite TestSuite
-coqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite
-coqchk := $(BIN)coqchk -coqlib $(LIB) -R prerequisite TestSuite
-coqdoc := $(BIN)coqdoc
-coqtopbyte := $(BIN)coqtop.byte
+PATH := $(COQBIN):$(PATH)
+export COQLIB
+export PATH
+
+coqtop := coqtop -q -batch -test-mode -R prerequisite TestSuite
+coqc := coqc -R prerequisite TestSuite
+coqchk := coqchk -R prerequisite TestSuite
+coqdoc := coqdoc
+coqtopbyte := coqtop.byte
 
 coqtopload := $(coqtop) -top Top -async-proofs-cache force -load-vernac-source
 coqtopcompile := $(coqtop) -compile
-coqdep := $(BIN)coqdep -coqlib $(LIB)
+coqdep := coqdep
 
 VERBOSE?=
 SHOW := $(if $(VERBOSE),@true,@echo)
@@ -259,8 +263,8 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 SYSMOD:=-package num,str,unix,dynlink,threads
 
-COQSRCDIRS:=$(addprefix -I $(LIB)/,$(CORESRCDIRS))
-COQCMXS:=$(addprefix $(LIB)/,$(LINKCMX))
+COQSRCDIRS:=$(addprefix -I $(COQLIB)/,$(CORESRCDIRS))
+COQCMXS:=$(addprefix $(COQLIB)/,$(LINKCMX))
 
 # ML files from unit-test framework, not containing tests
 UNIT_SRCFILES:=$(shell find ./unit-tests/src -name *.ml)
@@ -542,7 +546,7 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(BIN)fake_ide $< "-coqlib $(LIB) -boot -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off" 2>&1; \
+	  fake_ide $< "-async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off" 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -600,7 +604,7 @@ coqwc/%.v.log : coqwc/%.v
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  tmpoutput=`mktemp /tmp/coqwc.XXXXXX`; \
-	  $(BIN)coqwc $< 2>&1 > $$tmpoutput; \
+	  coqwc $< 2>&1 > $$tmpoutput; \
 	  diff -u --strip-trailing-cr coqwc/$*.out $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
@@ -620,7 +624,7 @@ coq-makefile: $(patsubst %/run.sh,%.log,$(wildcard coq-makefile/*/run.sh))
 coq-makefile/%.log : coq-makefile/%/run.sh
 	@echo "TEST      coq-makefile/$*"
 	$(HIDE)(\
-	  export COQBIN=$(BIN);\
+	  export COQBIN=$(COQBIN);\
 	  cd coq-makefile/$* && \
 	  bash run.sh 2>&1; \
 	if [ $$? = 0 ]; then \
