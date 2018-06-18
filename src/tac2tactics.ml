@@ -35,38 +35,38 @@ let delayed_of_thunk r tac env sigma =
   delayed_of_tactic (thaw r tac) env sigma
 
 let mk_bindings = function
-| ImplicitBindings l -> Misctypes.ImplicitBindings l
+| ImplicitBindings l -> Tactypes.ImplicitBindings l
 | ExplicitBindings l ->
   let l = List.map CAst.make l in
-  Misctypes.ExplicitBindings l
-| NoBindings -> Misctypes.NoBindings
+  Tactypes.ExplicitBindings l
+| NoBindings -> Tactypes.NoBindings
 
 let mk_with_bindings (x, b) = (x, mk_bindings b)
 
 let rec mk_intro_pattern = function
-| IntroForthcoming b -> CAst.make @@ Misctypes.IntroForthcoming b
-| IntroNaming ipat -> CAst.make @@ Misctypes.IntroNaming (mk_intro_pattern_naming ipat)
-| IntroAction ipat -> CAst.make @@ Misctypes.IntroAction (mk_intro_pattern_action ipat)
+| IntroForthcoming b -> CAst.make @@ Tactypes.IntroForthcoming b
+| IntroNaming ipat -> CAst.make @@ Tactypes.IntroNaming (mk_intro_pattern_naming ipat)
+| IntroAction ipat -> CAst.make @@ Tactypes.IntroAction (mk_intro_pattern_action ipat)
 
 and mk_intro_pattern_naming = function
-| IntroIdentifier id -> Misctypes.IntroIdentifier id
-| IntroFresh id -> Misctypes.IntroFresh id
-| IntroAnonymous -> Misctypes.IntroAnonymous
+| IntroIdentifier id -> Namegen.IntroIdentifier id
+| IntroFresh id -> Namegen.IntroFresh id
+| IntroAnonymous -> Namegen.IntroAnonymous
 
 and mk_intro_pattern_action = function
-| IntroWildcard -> Misctypes.IntroWildcard
-| IntroOrAndPattern ipat -> Misctypes.IntroOrAndPattern (mk_or_and_intro_pattern ipat)
-| IntroInjection ipats -> Misctypes.IntroInjection (List.map mk_intro_pattern ipats)
+| IntroWildcard -> Tactypes.IntroWildcard
+| IntroOrAndPattern ipat -> Tactypes.IntroOrAndPattern (mk_or_and_intro_pattern ipat)
+| IntroInjection ipats -> Tactypes.IntroInjection (List.map mk_intro_pattern ipats)
 | IntroApplyOn (c, ipat) ->
   let c = CAst.make @@ delayed_of_thunk Tac2ffi.constr c in
-  Misctypes.IntroApplyOn (c, mk_intro_pattern ipat)
-| IntroRewrite b -> Misctypes.IntroRewrite b
+  Tactypes.IntroApplyOn (c, mk_intro_pattern ipat)
+| IntroRewrite b -> Tactypes.IntroRewrite b
 
 and mk_or_and_intro_pattern = function
 | IntroOrPattern ipatss ->
-  Misctypes.IntroOrPattern (List.map (fun ipat -> List.map mk_intro_pattern ipat) ipatss)
+  Tactypes.IntroOrPattern (List.map (fun ipat -> List.map mk_intro_pattern ipat) ipatss)
 | IntroAndPattern ipats ->
-  Misctypes.IntroAndPattern (List.map mk_intro_pattern ipats)
+  Tactypes.IntroAndPattern (List.map mk_intro_pattern ipats)
 
 let mk_intro_patterns ipat = List.map mk_intro_pattern ipat
 
@@ -77,7 +77,7 @@ let mk_occurrences f = function
 | OnlyOccurrences l -> Locus.OnlyOccurrences (List.map f l)
 
 let mk_occurrences_expr occ =
-  mk_occurrences (fun i -> Misctypes.ArgArg i) occ
+  mk_occurrences (fun i -> Locus.ArgArg i) occ
 
 let mk_hyp_location (id, occs, h) =
   ((mk_occurrences_expr occs, id), h)
@@ -188,7 +188,7 @@ let forward fst tac ipat c =
 
 let assert_ = function
 | AssertValue (id, c) ->
-  let ipat = CAst.make @@ Misctypes.IntroNaming (Misctypes.IntroIdentifier id) in
+  let ipat = CAst.make @@ Tactypes.IntroNaming (Namegen.IntroIdentifier id) in
   Tactics.forward true None (Some ipat) c
 | AssertType (ipat, c, tac) ->
   let ipat = Option.map mk_intro_pattern ipat in
@@ -432,8 +432,8 @@ let inversion knd arg pat ids =
     | Some (_, Tactics.ElimOnIdent {CAst.v=id}) ->
       Inv.inv_clause knd pat ids (NamedHyp id)
     | Some (_, Tactics.ElimOnConstr c) ->
-      let open Misctypes in
-      let anon = CAst.make @@ IntroNaming IntroAnonymous in
+      let open Tactypes in
+      let anon = CAst.make @@ IntroNaming Namegen.IntroAnonymous in
       Tactics.specialize c (Some anon) >>= fun () ->
       Tacticals.New.onLastHypId (fun id -> Inv.inv_clause knd pat ids (NamedHyp id))
     end

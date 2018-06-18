@@ -194,10 +194,10 @@ let to_inversion_kind v = match Value.to_int v with
 let inversion_kind = make_to_repr to_inversion_kind
 
 let to_move_location = function
-| ValInt 0 -> Misctypes.MoveFirst
-| ValInt 1 -> Misctypes.MoveLast
-| ValBlk (0, [|id|]) -> Misctypes.MoveAfter (Value.to_ident id)
-| ValBlk (1, [|id|]) -> Misctypes.MoveBefore (Value.to_ident id)
+| ValInt 0 -> Logic.MoveFirst
+| ValInt 1 -> Logic.MoveLast
+| ValBlk (0, [|id|]) -> Logic.MoveAfter (Value.to_ident id)
+| ValBlk (1, [|id|]) -> Logic.MoveBefore (Value.to_ident id)
 | _ -> assert false
 
 let move_location = make_to_repr to_move_location
@@ -424,7 +424,7 @@ let () = define_prim2 "tac_move" ident move_location begin fun id mv ->
 end
 
 let () = define_prim2 "tac_intro" (option ident) (option move_location) begin fun id mv ->
-  let mv = Option.default Misctypes.MoveLast mv in
+  let mv = Option.default Logic.MoveLast mv in
   Tactics.intro_move id mv
 end
 

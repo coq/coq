@@ -12,7 +12,7 @@ open CAst
 open CErrors
 open Names
 open Libnames
-open Misctypes
+open Locus
 open Tac2env
 open Tac2print
 open Tac2expr

@@ -748,7 +748,7 @@ let perform_eval e =
   let v = Tac2interp.interp Tac2interp.empty_environment e in
   let selector, proof =
     try
-      Proof_bullet.get_default_goal_selector (),
+      Goal_select.get_default_goal_selector (),
       Proof_global.give_me_the_proof ()
     with Proof_global.NoCurrentProof ->
       let sigma = Evd.from_env env in
@@ -759,6 +759,7 @@ let perform_eval e =
   | Vernacexpr.SelectList l -> Proofview.tclFOCUSLIST l v
   | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id v
   | Vernacexpr.SelectAll -> v
+  | Vernacexpr.SelectAlreadyFocused -> assert false (** TODO **)
   in
   (** HACK: the API doesn't allow to return a value *)
   let ans = ref None in
@@ -864,7 +865,7 @@ let print_ltac ref =
 let solve default tac =
   let status = Proof_global.with_current_proof begin fun etac p ->
     let with_end_tac = if default then Some etac else None in
-    let g = Proof_bullet.get_default_goal_selector () in
+    let g = Goal_select.get_default_goal_selector () in
     let (p, status) = Pfedit.solve g None tac ?with_end_tac p in
     (* in case a strict subtree was completed,
        go back to the top of the prooftree *)

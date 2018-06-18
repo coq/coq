@@ -948,14 +948,14 @@ let () =
     let lfun = Tac2interp.set_env ist Id.Map.empty in
     let ist = Ltac_plugin.Tacinterp.default_ist () in
     let ist = { ist with Geninterp.lfun = lfun } in
-    let tac = (Obj.magic Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) in
+    let tac = (Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) in
     let wrap (e, info) = set_bt info >>= fun info -> Proofview.tclZERO ~info e in
     Proofview.tclOR tac wrap >>= fun () ->
     return v_unit
   in
   let subst s tac = Genintern.substitute Ltac_plugin.Tacarg.wit_tactic s tac in
   let print env tac =
-    str "ltac1:(" ++ Ltac_plugin.Pptactic.pr_glob_tactic (Obj.magic env) tac ++ str ")"
+    str "ltac1:(" ++ Ltac_plugin.Pptactic.pr_glob_tactic env tac ++ str ")"
   in
   let obj = {
     ml_intern = intern;
@@ -981,9 +981,8 @@ let () =
     let ist = Tac2interp.get_env ist in
     let c = Id.Map.find id ist.env_ist in
     let c = Value.to_constr c in
-    let evdref = ref sigma in
-    let () = Typing.e_check env evdref c concl in
-    (c, !evdref)
+    let sigma = Typing.check env sigma c concl in
+    (c, sigma)
   in
   Pretyping.register_constr_interp0 wit_ltac2_quotation interp
 

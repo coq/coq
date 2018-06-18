@@ -135,7 +135,7 @@ type constr_matching = constr_match_branch list CAst.t
 
 type goal_match_pattern_r = {
   q_goal_match_concl : constr_match_pattern;
-  q_goal_match_hyps : (Misctypes.lname * constr_match_pattern) list;
+  q_goal_match_hyps : (Names.lname * constr_match_pattern) list;
 }
 
 type goal_match_pattern = goal_match_pattern_r CAst.t

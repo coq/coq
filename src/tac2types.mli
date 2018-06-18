@@ -17,7 +17,7 @@ type advanced_flag = bool
 
 type 'a thunk = (unit, 'a) Tac2ffi.fun1
 
-type quantified_hypothesis = Misctypes.quantified_hypothesis =
+type quantified_hypothesis = Tactypes.quantified_hypothesis =
 | AnonHyp of int
 | NamedHyp of Id.t
 
@@ -76,7 +76,7 @@ type induction_clause =
   or_and_intro_pattern option *
   clause option
 
-type multi = Misctypes.multi =
+type multi = Equality.multi =
 | Precisely of int
 | UpTo of int
 | RepeatStar

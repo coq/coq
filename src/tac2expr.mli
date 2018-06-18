@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Loc
 open Names
 open Libnames
 
@@ -78,7 +77,7 @@ type glb_typedef =
 
 type type_scheme = int * int glb_typexpr
 
-type raw_quant_typedef = Misctypes.lident list * raw_typedef
+type raw_quant_typedef = Names.lident list * raw_typedef
 type glb_quant_typedef = int * glb_typedef
 
 (** {5 Term syntax} *)
@@ -159,11 +158,11 @@ type sexpr =
 (** {5 Toplevel statements} *)
 
 type strexpr =
-| StrVal of mutable_flag * rec_flag * (Misctypes.lname * raw_tacexpr) list
+| StrVal of mutable_flag * rec_flag * (Names.lname * raw_tacexpr) list
   (** Term definition *)
 | StrTyp of rec_flag * (qualid CAst.t * redef_flag * raw_quant_typedef) list
   (** Type definition *)
-| StrPrm of Misctypes.lident * raw_typexpr * ml_tactic_name
+| StrPrm of Names.lident * raw_typexpr * ml_tactic_name
   (** External definition *)
 | StrSyn of sexpr list * int option * raw_tacexpr
   (** Syntactic extensions *)

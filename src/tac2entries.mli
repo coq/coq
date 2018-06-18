@@ -13,13 +13,13 @@ open Tac2expr
 (** {5 Toplevel definitions} *)
 
 val register_ltac : ?local:bool -> ?mut:bool -> rec_flag ->
-  (Misctypes.lname * raw_tacexpr) list -> unit
+  (Names.lname * raw_tacexpr) list -> unit
 
 val register_type : ?local:bool -> rec_flag ->
   (qualid CAst.t * redef_flag * raw_quant_typedef) list -> unit
 
 val register_primitive : ?local:bool ->
-  Misctypes.lident -> raw_typexpr -> ml_tactic_name -> unit
+  Names.lident -> raw_typexpr -> ml_tactic_name -> unit
 
 val register_struct : ?local:bool -> strexpr -> unit
 
