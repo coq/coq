@@ -24,6 +24,36 @@ type tag = int
 
 type arity = int
 
+module TyArity :
+sig
+  type 'a ty_arity
+  val ar_0 : t ty_arity [@@ocaml.inline]
+  val ar_1 : (t -> t) ty_arity [@@ocaml.inline]
+  val ar_2 : (t -> t -> t) ty_arity [@@ocaml.inline]
+  val ar_3 : (t -> t -> t -> t) ty_arity [@@ocaml.inline]
+  val ar_4 : (t -> t -> t -> t -> t) ty_arity [@@ocaml.inline]
+
+  val ar_S : 'a ty_arity -> (t -> 'a) ty_arity [@@ocaml.inline]
+  val app : 'a ty_arity -> t -> 'a [@@ocaml.inline]
+  val abs : 'a ty_arity -> 'a -> t [@@ocaml.inline]
+end =
+struct
+type 'a ty_arity = unit
+
+let ar_0 : t ty_arity = ()
+let ar_S (_ : 'a ty_arity) : (t -> 'a) ty_arity = ()
+let ar_1 = ar_S ar_0
+let ar_2 = ar_S ar_1
+let ar_3 = ar_S ar_2
+let ar_4 = ar_S ar_3
+
+let app (_ : 'a ty_arity) (f : t) : 'a = Obj.magic f
+let abs (_ : 'a ty_arity) (f : 'a) : t = Obj.magic f
+
+end
+
+include TyArity
+
 type reloc_table = (tag * arity) array
 
 type annot_sw = {
@@ -134,7 +164,7 @@ let mk_rels_accu lvl len =
   Array.init len (fun i -> mk_rel_accu (lvl + i))
 
 let napply (f:t) (args: t array) =
-  Array.fold_left (fun f a -> f a) f args
+  Array.fold_left (fun f a -> (Obj.magic f : t -> t) a) f args
 
 let mk_constant_accu kn u =
   mk_accu (Aconstant (kn,Univ.Instance.of_array u))
@@ -155,13 +185,13 @@ let mk_var_accu id =
   mk_accu (Avar id)
 
 let mk_sw_accu annot c p ac =
-  mk_accu (Acase(annot,c,p,ac))
+  mk_accu (Acase(annot,c,p,app ar_1 ac))
 
 let mk_prod_accu s dom codom =
-  mk_accu (Aprod (s,dom,codom))
+  mk_accu (Aprod (s,dom,app ar_1 codom))
 
-let mk_meta_accu mv ty =
-  mk_accu (Ameta (mv,ty))
+let mk_meta_accu mv =
+  abs ar_1 (fun ty -> mk_accu (Ameta (mv,ty)))
 
 let mk_evar_accu ev args =
   mk_accu (Aevar (ev, args))
@@ -201,8 +231,8 @@ let force_cofix (cofix : t) =
   match atom with
   | Acofix(typ,norm,pos,f) ->
     let args = args_of_accu accu in
-    let f = Array.fold_right (fun arg f -> f arg) args f in
-    let v = f (Obj.magic ()) in
+    let f = Array.fold_right (fun arg f -> (Obj.magic f : t -> t) arg) args f in
+    let v = (Obj.magic f : t -> t) (Obj.magic ()) in
     set_atom_of_accu accu (Acofixe(typ,norm,pos,v));
       v
   | Acofixe(_,_,_,v) -> v
@@ -221,7 +251,8 @@ let mk_block tag args =
 (* Two instances of dummy_value should not be pointer equal, otherwise
  comparing them as terms would succeed *)
 let dummy_value : unit -> t =
-  fun () _ -> anomaly ~label:"native" (Pp.str "Evaluation failed.")
+  fun () ->
+    abs ar_1 (fun _ -> anomaly ~label:"native" (Pp.str "Evaluation failed."))
 
 let cast_accu v = (Obj.magic v:accumulator)
 [@@ocaml.inline always]
@@ -273,7 +304,7 @@ let kind_of_value (v:t) =
       else
         (* assert (tag = Obj.closure_tag || tag = Obj.infix_tag);
            or ??? what is 1002*)
-        Vfun v
+        Vfun (Obj.magic v : t -> t)
 
 (** Support for machine integers *)
 
@@ -294,7 +325,7 @@ let no_check_head0 x =
 
 let head0 accu x =
  if is_int x then  no_check_head0 x
- else accu x
+ else app ar_1 accu x
 
 let no_check_tail0 x =
   mk_uint (Uint63.tail0 (to_uint x))
@@ -302,7 +333,7 @@ let no_check_tail0 x =
 
 let tail0 accu x =
  if is_int x then no_check_tail0 x
- else accu x
+ else app ar_1 accu x
 
 let no_check_add  x y =
   mk_uint (Uint63.add (to_uint x) (to_uint y))
@@ -310,7 +341,7 @@ let no_check_add  x y =
 
 let add accu x y =
   if is_int x && is_int y then no_check_add x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_sub x y =
   mk_uint (Uint63.sub (to_uint x) (to_uint y))
@@ -318,7 +349,7 @@ let no_check_sub x y =
 
 let sub accu x y =
   if is_int x && is_int y then no_check_sub x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_mul x y =
   mk_uint (Uint63.mul (to_uint x) (to_uint y))
@@ -326,7 +357,7 @@ let no_check_mul x y =
 
 let mul accu x y =
   if is_int x && is_int y then no_check_mul x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_div x y =
   mk_uint (Uint63.div (to_uint x) (to_uint y))
@@ -334,7 +365,7 @@ let no_check_div x y =
 
 let div accu x y =
   if is_int x && is_int y then no_check_div x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_rem x y =
   mk_uint (Uint63.rem (to_uint x) (to_uint y))
@@ -342,7 +373,7 @@ let no_check_rem x y =
 
 let rem accu x y =
   if is_int x && is_int y then no_check_rem x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_divs x y =
   mk_uint (Uint63.divs (to_uint x) (to_uint y))
@@ -350,7 +381,7 @@ let no_check_divs x y =
 
 let divs accu x y =
   if is_int x && is_int y then no_check_divs x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_rems x y =
   mk_uint (Uint63.rems (to_uint x) (to_uint y))
@@ -358,7 +389,7 @@ let no_check_rems x y =
 
 let rems accu x y =
   if is_int x && is_int y then no_check_rems x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_l_sr x y =
   mk_uint (Uint63.l_sr (to_uint x) (to_uint y))
@@ -366,7 +397,7 @@ let no_check_l_sr x y =
 
 let l_sr accu x y =
   if is_int x && is_int y then no_check_l_sr x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_l_sl x y =
   mk_uint (Uint63.l_sl (to_uint x) (to_uint y))
@@ -374,7 +405,7 @@ let no_check_l_sl x y =
 
 let l_sl accu x y =
   if is_int x && is_int y then no_check_l_sl x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_a_sr x y =
   mk_uint (Uint63.a_sr (to_uint x) (to_uint y))
@@ -382,7 +413,7 @@ let no_check_a_sr x y =
 
 let a_sr accu x y =
   if is_int x && is_int y then no_check_a_sr x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_l_and x y =
   mk_uint (Uint63.l_and (to_uint x) (to_uint y))
@@ -390,7 +421,7 @@ let no_check_l_and x y =
 
 let l_and accu x y =
   if is_int x && is_int y then no_check_l_and x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_l_xor x y =
   mk_uint (Uint63.l_xor (to_uint x) (to_uint y))
@@ -398,7 +429,7 @@ let no_check_l_xor x y =
 
 let l_xor accu x y =
   if is_int x && is_int y then no_check_l_xor x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_l_or x y =
   mk_uint (Uint63.l_or (to_uint x) (to_uint y))
@@ -406,7 +437,7 @@ let no_check_l_or x y =
 
 let l_or accu x y =
   if is_int x && is_int y then no_check_l_or x y
-  else accu x y
+  else app ar_2 accu x y
 
 [@@@ocaml.warning "-37"]
 type coq_carry =
@@ -429,7 +460,7 @@ let no_check_addc x y =
 
 let addc accu x y =
   if is_int x && is_int y then no_check_addc x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_subc x y =
   let s = Uint63.sub (to_uint x) (to_uint y) in
@@ -438,7 +469,7 @@ let no_check_subc x y =
 
 let subc accu x y =
   if is_int x && is_int y then no_check_subc x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_addCarryC x y =
   let s =
@@ -449,7 +480,7 @@ let no_check_addCarryC x y =
 
 let addCarryC accu x y =
   if is_int x && is_int y then no_check_addCarryC x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_subCarryC x y =
   let s =
@@ -460,7 +491,7 @@ let no_check_subCarryC x y =
 
 let subCarryC accu x y =
   if is_int x && is_int y then no_check_subCarryC x y
-  else accu x y
+  else app ar_2 accu x y
 
 let of_pair (x, y) =
   (Obj.magic (PPair(mk_uint x, mk_uint y)):t)
@@ -472,7 +503,7 @@ let no_check_mulc x y =
 
 let mulc accu x y =
   if is_int x && is_int y then no_check_mulc x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_diveucl x y =
   let i1, i2 = to_uint x, to_uint y in
@@ -481,7 +512,7 @@ let no_check_diveucl x y =
 
 let diveucl accu x y =
   if is_int x && is_int y then no_check_diveucl x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_div21 x y z =
   let i1, i2, i3 = to_uint x, to_uint y, to_uint z in
@@ -490,7 +521,7 @@ let no_check_div21 x y z =
 
 let div21 accu x y z =
   if is_int x && is_int y && is_int z then no_check_div21 x y z
-  else accu x y z
+  else app ar_3 accu x y z
 
 let no_check_addMulDiv x y z =
   let p, i, j = to_uint x, to_uint y, to_uint z in
@@ -499,7 +530,7 @@ let no_check_addMulDiv x y z =
 
 let addMulDiv accu x y z =
   if is_int x && is_int y && is_int z then no_check_addMulDiv x y z
-  else accu x y z
+  else app ar_3 accu x y z
 
 [@@@ocaml.warning "-34"]
 type coq_bool =
@@ -519,7 +550,7 @@ let no_check_eq x y =
 
 let eq accu x y =
   if is_int x && is_int y then no_check_eq x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_lt x y =
   mk_bool (Uint63.lt (to_uint x) (to_uint y))
@@ -527,7 +558,7 @@ let no_check_lt x y =
 
 let lt accu x y =
   if is_int x && is_int y then no_check_lt x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_le x y =
   mk_bool (Uint63.le (to_uint x) (to_uint y))
@@ -535,7 +566,7 @@ let no_check_le x y =
 
 let le accu x y =
   if is_int x && is_int y then no_check_le x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_lts x y =
   mk_bool (Uint63.lts (to_uint x) (to_uint y))
@@ -543,7 +574,7 @@ let no_check_lts x y =
 
 let lts accu x y =
   if is_int x && is_int y then no_check_lts x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_les x y =
   mk_bool (Uint63.les (to_uint x) (to_uint y))
@@ -551,7 +582,7 @@ let no_check_les x y =
 
 let les accu x y =
   if is_int x && is_int y then no_check_les x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_compare x y =
   match Uint63.compare (to_uint x) (to_uint y) with
@@ -561,7 +592,7 @@ let no_check_compare x y =
 
 let compare accu x y =
   if is_int x && is_int y then no_check_compare x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_compares x y =
   match Uint63.compares (to_uint x) (to_uint y) with
@@ -571,7 +602,7 @@ let no_check_compares x y =
 
 let compares accu x y =
   if is_int x && is_int y then no_check_compares x y
-  else accu x y
+  else app ar_2 accu x y
 
 let print x =
   Printf.fprintf stderr "%s" (Uint63.to_string (to_uint x));
@@ -592,7 +623,7 @@ let no_check_fopp x =
 
 let fopp accu x =
   if is_float x then no_check_fopp x
-  else accu x
+  else app ar_1 accu x
 
 let no_check_fabs x =
   mk_float (Float64.abs (to_float x))
@@ -600,28 +631,28 @@ let no_check_fabs x =
 
 let fabs accu x =
   if is_float x then no_check_fabs x
-  else accu x
+  else app ar_1 accu x
 
 let no_check_feq x y =
   mk_bool (Float64.eq (to_float x) (to_float y))
 
 let feq accu x y =
   if is_float x && is_float y then no_check_feq x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_flt x y =
   mk_bool (Float64.lt (to_float x) (to_float y))
 
 let flt accu x y =
   if is_float x && is_float y then no_check_flt x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_fle x y =
   mk_bool (Float64.le (to_float x) (to_float y))
 
 let fle accu x y =
   if is_float x && is_float y then no_check_fle x y
-  else accu x y
+  else app ar_2 accu x y
 
 type coq_fcmp =
   | CFcmpAccu of t
@@ -637,14 +668,14 @@ let no_check_fcompare x y =
 
 let fcompare accu x y =
   if is_float x && is_float y then no_check_fcompare x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_fequal x y =
   mk_bool (Float64.equal (to_float x) (to_float y))
 
 let fequal accu x y =
   if is_float x && is_float y then no_check_fequal x y
-  else accu x y
+  else app ar_2 accu x y
 
 type coq_fclass =
   | CFclassAccu of t
@@ -665,7 +696,7 @@ let no_check_fclassify x =
 
 let fclassify accu x =
   if is_float x then no_check_fclassify x
-  else accu x
+  else app ar_1 accu x
 
 let no_check_fadd x y =
   mk_float (Float64.add (to_float x) (to_float y))
@@ -673,7 +704,7 @@ let no_check_fadd x y =
 
 let fadd accu x y =
   if is_float x && is_float y then no_check_fadd x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_fsub x y =
   mk_float (Float64.sub (to_float x) (to_float y))
@@ -681,7 +712,7 @@ let no_check_fsub x y =
 
 let fsub accu x y =
   if is_float x && is_float y then no_check_fsub x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_fmul x y =
   mk_float (Float64.mul (to_float x) (to_float y))
@@ -689,7 +720,7 @@ let no_check_fmul x y =
 
 let fmul accu x y =
   if is_float x && is_float y then no_check_fmul x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_fdiv x y =
   mk_float (Float64.div (to_float x) (to_float y))
@@ -697,7 +728,7 @@ let no_check_fdiv x y =
 
 let fdiv accu x y =
   if is_float x && is_float y then no_check_fdiv x y
-  else accu x y
+  else app ar_2 accu x y
 
 let no_check_fsqrt x =
   mk_float (Float64.sqrt (to_float x))
@@ -705,7 +736,7 @@ let no_check_fsqrt x =
 
 let fsqrt accu x =
   if is_float x then no_check_fsqrt x
-  else accu x
+  else app ar_1 accu x
 
 let no_check_float_of_int x =
   mk_float (Float64.of_uint63 (to_uint x))
@@ -713,7 +744,7 @@ let no_check_float_of_int x =
 
 let float_of_int accu x =
   if is_int x then no_check_float_of_int x
-  else accu x
+  else app ar_1 accu x
 
 let no_check_normfr_mantissa x =
   mk_uint (Float64.normfr_mantissa (to_float x))
@@ -721,7 +752,7 @@ let no_check_normfr_mantissa x =
 
 let normfr_mantissa accu x =
   if is_float x then no_check_normfr_mantissa x
-  else accu x
+  else app ar_1 accu x
 
 let no_check_frshiftexp x =
   let f, e = Float64.frshiftexp (to_float x) in
@@ -730,7 +761,7 @@ let no_check_frshiftexp x =
 
 let frshiftexp accu x =
   if is_float x then no_check_frshiftexp x
-  else accu x
+  else app ar_1 accu x
 
 let no_check_ldshiftexp x e =
   mk_float (Float64.ldshiftexp (to_float x) (to_uint e))
@@ -738,7 +769,7 @@ let no_check_ldshiftexp x e =
 
 let ldshiftexp accu x e =
   if is_float x && is_int e then no_check_ldshiftexp x e
-  else accu x e
+  else app ar_2 accu x e
 
 let no_check_next_up x =
   mk_float (Float64.next_up (to_float x))
@@ -746,7 +777,7 @@ let no_check_next_up x =
 
 let next_up accu x =
   if is_float x then no_check_next_up x
-  else accu x
+  else app ar_1 accu x
 
 let no_check_next_down x =
   mk_float (Float64.next_down (to_float x))
@@ -754,14 +785,14 @@ let no_check_next_down x =
 
 let next_down accu x =
   if is_float x then no_check_next_down x
-  else accu x
+  else app ar_1 accu x
 
 let is_parray t =
   let t = Obj.magic t in
   Obj.is_block t && Obj.size t = 1
 
-let to_parray t = Obj.magic t
-let of_parray t = Obj.magic t
+let to_parray (t : t) : t Parray.t = Obj.magic t
+let of_parray (t : t Parray.t) : t = Obj.magic t
 
 let no_check_arraymake n def =
   of_parray (Parray.make (to_uint n) def)
@@ -769,7 +800,7 @@ let no_check_arraymake n def =
 let arraymake accu vA n def =
   if is_int n then
     no_check_arraymake n def
-  else accu vA n def
+  else app ar_3 accu vA n def
 
 let no_check_arrayget t n =
    Parray.get (to_parray t) (to_uint n)
@@ -778,7 +809,7 @@ let no_check_arrayget t n =
 let arrayget accu vA t n =
   if is_parray t && is_int n then
     no_check_arrayget t n
-  else accu vA t n
+  else app ar_3 accu vA t n
 
 let no_check_arraydefault t =
   Parray.default (to_parray t)
@@ -787,7 +818,7 @@ let no_check_arraydefault t =
 let arraydefault accu vA t =
   if is_parray t then
     no_check_arraydefault t
-  else accu vA t
+  else app ar_2 accu vA t
 
 let no_check_arrayset t n v =
   of_parray (Parray.set (to_parray t) (to_uint n) v)
@@ -796,7 +827,7 @@ let no_check_arrayset t n v =
 let arrayset accu vA t n v =
   if is_parray t && is_int n then
     no_check_arrayset t n v
-  else accu vA t n v
+  else app ar_4 accu vA t n v
 
 let no_check_arraycopy t =
   of_parray (Parray.copy (to_parray t))
@@ -805,7 +836,7 @@ let no_check_arraycopy t =
 let arraycopy accu vA t =
   if is_parray t then
     no_check_arraycopy t
-  else accu vA t
+  else app ar_2 accu vA t
 
 let no_check_arraylength t =
   mk_uint (Parray.length (to_parray t))
@@ -814,16 +845,16 @@ let no_check_arraylength t =
 let arraylength accu vA t =
   if is_parray t then
     no_check_arraylength t
-  else accu vA t
+  else app ar_2 accu vA t
 
 let parray_of_array t def =
   (Obj.magic (Parray.unsafe_of_obj (Obj.repr t) def) : t)
 
-let arrayinit n (f:t->t) def =
-  of_parray (Parray.init (to_uint n) (Obj.magic f) def)
+let arrayinit n (f:t) def =
+  of_parray (Parray.init (to_uint n) (fun i -> app ar_1 f (mk_int i)) def)
 
 let arraymap f t =
-  of_parray (Parray.map f (to_parray t))
+  of_parray (Parray.map (app ar_1 f) (to_parray t))
 
 let hobcnv = Array.init 256 (fun i -> Printf.sprintf "%02x" i)
 let bohcnv = Array.init 256 (fun i -> i -

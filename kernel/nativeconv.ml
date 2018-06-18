@@ -17,6 +17,8 @@ open Environ
 
 (** This module implements the conversion test by compiling to OCaml code *)
 
+let eta_fun v = abs ar_1 (fun x -> app ar_1 v x)
+
 let rec conv_val env pb lvl v1 v2 cu =
   if v1 == v2 then cu
   else
@@ -25,9 +27,9 @@ let rec conv_val env pb lvl v1 v2 cu =
         let v = mk_rel_accu lvl in
         conv_val env CONV (lvl+1) (f1 v) (f2 v) cu
     | Vfun _f1, _ ->
-        conv_val env CONV lvl v1 (fun x -> v2 x) cu
+      conv_val env CONV lvl v1 (eta_fun v2) cu
     | _, Vfun _f2 ->
-        conv_val env CONV lvl (fun x -> v1 x) v2 cu
+      conv_val env CONV lvl (eta_fun v1) v2 cu
     | Vaccu k1, Vaccu k2 ->
         conv_accu env pb lvl k1 k2 cu
     | Vconst i1, Vconst i2 ->
@@ -121,7 +123,7 @@ and conv_atom env pb lvl a1 a2 cu =
     | Aprod(_,d1,_c1), Aprod(_,d2,_c2) ->
        let cu = conv_val env CONV lvl d1 d2 cu in
        let v = mk_rel_accu lvl in
-       conv_val env pb (lvl + 1) (d1 v) (d2 v) cu
+       conv_val env pb (lvl + 1) (app ar_1 d1 v) (app ar_1 d2 v) cu
     | Aproj((ind1, i1), ac1), Aproj((ind2, i2), ac2) ->
        if not (Ind.CanOrd.equal ind1 ind2 && Int.equal i1 i2) then raise NotConvertible
        else conv_accu env CONV lvl ac1 ac2 cu

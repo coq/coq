@@ -31,6 +31,19 @@ type annot_sw = {
     asw_prefix : string
   }
 
+(** Typed arities *)
+
+type 'a ty_arity
+(** Irrelevant type marker for function application *)
+
+val ar_0 : t ty_arity
+val ar_1 : (t -> t) ty_arity
+val ar_2 : (t -> t -> t) ty_arity
+val ar_3 : (t -> t -> t -> t) ty_arity
+val ar_4 : (t -> t -> t -> t -> t) ty_arity
+
+val ar_S : 'a ty_arity -> (t -> 'a) ty_arity
+
 val eq_annot_sw : annot_sw -> annot_sw -> bool
 
 val hash_annot_sw : annot_sw -> int
@@ -104,6 +117,9 @@ val mk_uint : Uint63.t -> t
 
 val mk_float : Float64.t -> t
 [@@ocaml.inline always]
+
+val app : 'a ty_arity -> t -> 'a
+val abs : 'a ty_arity -> 'a -> t
 
 val napply : t -> t array -> t
 (* Functions over accumulators *)
@@ -368,17 +384,17 @@ val is_parray : t -> bool
 
 val arraymake : t -> t -> t -> t -> t (* accu A n def *)
 val arrayget : t -> t -> t -> t -> t (* accu A t n *)
-val arraydefault : t -> t -> t (* accu A t *)
+val arraydefault : t -> t -> t -> t (* accu A t *)
 val arrayset : t -> t -> t -> t -> t -> t (* accu A t n v *)
 val arraycopy : t -> t -> t -> t (* accu A t *)
 val arraylength : t -> t -> t -> t (* accu A t *)
-val arrayinit : t -> t -> t -> t (* accu A n f def *)
+val arrayinit : t -> t -> t -> t (* n f def *)
 val arraymap : t -> t -> t (* accu A B f t *)
 
 val no_check_arraymake : t -> t -> t
 [@@ocaml.inline always]
 
-val no_check_arrayget : t -> t -> t -> t
+val no_check_arrayget : t -> t -> t
 [@@ocaml.inline always]
 
 val no_check_arraydefault : t -> t
