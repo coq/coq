@@ -1925,74 +1925,75 @@ applied to an unknown structure instance (an implicit argument) and a
 value. The complete documentation of canonical structures can be found
 in :ref:`canonicalstructures`; here only a simple example is given.
 
-Assume that `qualid` denotes an object ``(Build_struc`` |c_1| … |c_n| ``)`` in the
-structure *struct* of which the fields are |x_1|, …, |x_n|. Assume that
-`qualid` is declared as a canonical structure using the command
-
 .. cmd:: Canonical Structure @qualid
 
-Then, each time an equation of the form ``(``\ |x_i| ``_)`` |eq_beta_delta_iota_zeta| |c_i| has to be
-solved during the type-checking process, `qualid` is used as a solution.
-Otherwise said, `qualid` is canonically used to extend the field |c_i|
-into a complete structure built on |c_i|.
+   This command declares :token:`qualid` as a canonical structure.
 
-Canonical structures are particularly useful when mixed with coercions
-and strict implicit arguments. Here is an example.
+   Assume that :token:`qualid` denotes an object ``(Build_struct`` |c_1| … |c_n| ``)`` in the
+   structure :g:`struct` of which the fields are |x_1|, …, |x_n|.
+   Then, each time an equation of the form ``(``\ |x_i| ``_)`` |eq_beta_delta_iota_zeta| |c_i| has to be
+   solved during the type-checking process, :token:`qualid` is used as a solution.
+   Otherwise said, :token:`qualid` is canonically used to extend the field |c_i|
+   into a complete structure built on |c_i|.
 
-.. coqtop:: all
+   Canonical structures are particularly useful when mixed with coercions
+   and strict implicit arguments.
 
-   Require Import Relations.
+   .. example::
 
-   Require Import EqNat.
+      Here is an example.
 
-   Set Implicit Arguments.
+      .. coqtop:: all
 
-   Unset Strict Implicit.
+         Require Import Relations.
 
-   Structure Setoid : Type := {Carrier :> Set; Equal : relation Carrier;
-                               Prf_equiv : equivalence Carrier Equal}.
+         Require Import EqNat.
 
-   Definition is_law (A B:Setoid) (f:A -> B) := forall x y:A, Equal x y -> Equal (f x) (f y).
+         Set Implicit Arguments.
 
-   Axiom eq_nat_equiv : equivalence nat eq_nat.
+         Unset Strict Implicit.
 
-   Definition nat_setoid : Setoid := Build_Setoid eq_nat_equiv.
+         Structure Setoid : Type := {Carrier :> Set; Equal : relation Carrier;
+                                     Prf_equiv : equivalence Carrier Equal}.
 
-   Canonical Structure nat_setoid.
+         Definition is_law (A B:Setoid) (f:A -> B) := forall x y:A, Equal x y -> Equal (f x) (f y).
 
-Thanks to ``nat_setoid`` declared as canonical, the implicit arguments ``A``
-and ``B`` can be synthesized in the next statement.
+         Axiom eq_nat_equiv : equivalence nat eq_nat.
 
-.. coqtop:: all
+         Definition nat_setoid : Setoid := Build_Setoid eq_nat_equiv.
 
-   Lemma is_law_S : is_law S.
+         Canonical Structure nat_setoid.
 
-Remark: If a same field occurs in several canonical structure, then
-only the structure declared first as canonical is considered.
+      Thanks to :g:`nat_setoid` declared as canonical, the implicit arguments :g:`A`
+      and :g:`B` can be synthesized in the next statement.
 
-.. cmdv:: Canonical Structure @ident := @term : @type
+      .. coqtop:: all
 
-.. cmdv:: Canonical Structure @ident := @term
+         Lemma is_law_S : is_law S.
 
-.. cmdv:: Canonical Structure @ident : @type := @term
+   .. note::
+      If a same field occurs in several canonical structures, then
+      only the structure declared first as canonical is considered.
 
-These are equivalent to a regular definition of `ident` followed by the declaration
-``Canonical Structure`` `ident`.
+   .. cmdv:: Canonical Structure @ident {? : @type } := @term
 
-See also: more examples in user contribution category (Rocq/ALGEBRA).
+      This is equivalent to a regular definition of :token:`ident` followed by the
+      declaration :n:`Canonical Structure @ident`.
 
 
-Print Canonical Projections.
-++++++++++++++++++++++++++++
+.. cmd:: Print Canonical Projections
 
-This displays the list of global names that are components of some
-canonical structure. For each of them, the canonical structure of
-which it is a projection is indicated. For instance, the above example
-gives the following output:
+   This displays the list of global names that are components of some
+   canonical structure. For each of them, the canonical structure of
+   which it is a projection is indicated.
 
-.. coqtop:: all
+   .. example::
 
-   Print Canonical Projections.
+      For instance, the above example gives the following output:
+
+      .. coqtop:: all
+
+         Print Canonical Projections.
 
 
 Implicit types of variables
