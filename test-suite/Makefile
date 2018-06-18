@@ -519,6 +519,7 @@ $(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
+	  export BIN="$(BIN)"; \
 	  export coqc="$(coqc)"; \
 	  export coqtop="$(coqtop)"; \
 	  export coqdep="$(coqdep)"; \
