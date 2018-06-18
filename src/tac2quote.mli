@@ -90,9 +90,6 @@ val wit_pattern : (Constrexpr.constr_expr, Pattern.constr_pattern) Arg.tag
 val wit_ident : (Id.t, Id.t) Arg.tag
 
 val wit_reference : (reference, GlobRef.t) Arg.tag
-(** Beware, at the raw level, [Qualid [id]] has not the same meaning as
-    [Ident id]. The first is an unqualified global reference, the second is
-    the dynamic reference to id. *)
 
 val wit_constr : (Constrexpr.constr_expr, Glob_term.glob_constr) Arg.tag
 

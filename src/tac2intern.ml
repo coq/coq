@@ -208,9 +208,9 @@ let rec intern_type env ({loc;v=t} : raw_typexpr) : UF.elt glb_typexpr = match t
 | CTypVar Anonymous -> GTypVar (fresh_id env)
 | CTypRef (rel, args) ->
   let (kn, nparams) = match rel with
-  | RelId {loc;v=qid} ->
-    let (dp, id) = repr_qualid qid in
-    if DirPath.is_empty dp && Id.Map.mem id env.env_rec then
+  | RelId qid ->
+    let id = qualid_basename qid in
+    if qualid_is_ident qid && Id.Map.mem id env.env_rec then
       let (kn, n) = Id.Map.find id env.env_rec in
       (Other kn, n)
     else
@@ -230,9 +230,9 @@ let rec intern_type env ({loc;v=t} : raw_typexpr) : UF.elt glb_typexpr = match t
   let nargs = List.length args in
   let () =
     if not (Int.equal nparams nargs) then
-      let {loc;v=qid} = match rel with
+      let qid = match rel with
       | RelId lid -> lid
-      | AbsKn (Other kn) -> CAst.make ?loc @@ shortest_qualid_of_type kn
+      | AbsKn (Other kn) -> shortest_qualid_of_type ?loc kn
       | AbsKn (Tuple _) -> assert false
       in
       user_err ?loc (strbrk "The type constructor " ++ pr_qualid qid ++
@@ -500,14 +500,14 @@ let check_redundant_clause = function
 | (p, _) :: _ -> warn_redundant_clause ?loc:p.loc ()
 
 let get_variable0 mem var = match var with
-| RelId {loc;v=qid} ->
-  let (dp, id) = repr_qualid qid in
-  if DirPath.is_empty dp && mem id then ArgVar CAst.(make ?loc id)
+| RelId qid ->
+  let id = qualid_basename qid in
+  if qualid_is_ident qid && mem id then ArgVar CAst.(make ?loc:qid.CAst.loc id)
   else
     let kn =
       try Tac2env.locate_ltac qid
       with Not_found ->
-        CErrors.user_err ?loc (str "Unbound value " ++ pr_qualid qid)
+        CErrors.user_err ?loc:qid.CAst.loc (str "Unbound value " ++ pr_qualid qid)
     in
     ArgArg kn
 | AbsKn kn -> ArgArg kn
@@ -517,19 +517,19 @@ let get_variable env var =
   get_variable0 mem var
 
 let get_constructor env var = match var with
-| RelId {loc;v=qid} ->
+| RelId qid ->
   let c = try Some (Tac2env.locate_constructor qid) with Not_found -> None in
   begin match c with
   | Some knc -> Other knc
   | None ->
-    CErrors.user_err ?loc (str "Unbound constructor " ++ pr_qualid qid)
+    CErrors.user_err ?loc:qid.CAst.loc (str "Unbound constructor " ++ pr_qualid qid)
   end
 | AbsKn knc -> knc
 
 let get_projection var = match var with
-| RelId {loc;v=qid} ->
+| RelId qid ->
   let kn = try Tac2env.locate_projection qid with Not_found ->
-    user_err ?loc (pr_qualid qid ++ str " is not a projection")
+    user_err ?loc:qid.CAst.loc (pr_qualid qid ++ str " is not a projection")
   in
   Tac2env.interp_projection kn
 | AbsKn kn ->
@@ -622,7 +622,7 @@ let expand_pattern avoid bnd =
       na, None
     | _ ->
       let id = fresh_var avoid in
-      let qid = RelId (CAst.make ?loc:pat.loc (qualid_of_ident id)) in
+      let qid = RelId (qualid_of_ident ?loc:pat.loc id) in
       Name id, Some qid
     in
     let avoid = ids_of_pattern avoid pat in
@@ -1206,9 +1206,9 @@ let check_subtype t1 t2 =
 (** Globalization *)
 
 let get_projection0 var = match var with
-| RelId {CAst.loc;v=qid} ->
+| RelId qid ->
   let kn = try Tac2env.locate_projection qid with Not_found ->
-    user_err ?loc (pr_qualid qid ++ str " is not a projection")
+    user_err ?loc:qid.CAst.loc (pr_qualid qid ++ str " is not a projection")
   in
   kn
 | AbsKn kn -> kn

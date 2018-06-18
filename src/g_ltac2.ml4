@@ -98,25 +98,25 @@ let inj_pattern loc c = inj_wit Tac2quote.wit_pattern loc c
 let inj_reference loc c = inj_wit Tac2quote.wit_reference loc c
 let inj_ltac1 loc e = inj_wit Tac2quote.wit_ltac1 loc e
 
-let pattern_of_qualid ?loc id =
-  if Tac2env.is_constructor id.CAst.v then CAst.make ?loc @@ CPatRef (RelId id, [])
+let pattern_of_qualid qid =
+  if Tac2env.is_constructor qid then CAst.make ?loc:qid.CAst.loc @@ CPatRef (RelId qid, [])
   else
-    let (dp, id) = Libnames.repr_qualid id.CAst.v in
-    if DirPath.is_empty dp then CAst.make ?loc @@ CPatVar (Name id)
+    let open Libnames in
+    if qualid_is_ident qid then CAst.make ?loc:qid.CAst.loc @@ CPatVar (Name (qualid_basename qid))
     else
-      CErrors.user_err ?loc (Pp.str "Syntax error")
+      CErrors.user_err ?loc:qid.CAst.loc (Pp.str "Syntax error")
 
 GEXTEND Gram
   GLOBAL: tac2expr tac2type tac2def_val tac2def_typ tac2def_ext tac2def_syn
           tac2def_mut tac2def_run;
   tac2pat:
     [ "1" LEFTA
-      [ id = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" ->
-        if Tac2env.is_constructor (id.CAst.v) then
-          CAst.make ~loc:!@loc @@ CPatRef (RelId id, pl)
+      [ qid = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" ->
+        if Tac2env.is_constructor qid then
+          CAst.make ~loc:!@loc @@ CPatRef (RelId qid, pl)
         else
           CErrors.user_err ~loc:!@loc (Pp.str "Syntax error")
-      | id = Prim.qualid -> pattern_of_qualid ~loc:!@loc id
+      | qid = Prim.qualid -> pattern_of_qualid qid
       | "["; "]" -> CAst.make ~loc:!@loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_nil), [])
       | p1 = tac2pat; "::"; p2 = tac2pat ->
         CAst.make ~loc:!@loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_cons), [p1; p2])
@@ -124,7 +124,7 @@ GEXTEND Gram
     | "0"
       [ "_" -> CAst.make ~loc:!@loc @@ CPatVar Anonymous
       | "()" -> CAst.make ~loc:!@loc @@ CPatRef (AbsKn (Tuple 0), [])
-      | id = Prim.qualid -> pattern_of_qualid ~loc:!@loc id
+      | qid = Prim.qualid -> pattern_of_qualid qid
       | "("; p = atomic_tac2pat; ")" -> p
     ] ]
   ;
@@ -205,11 +205,11 @@ GEXTEND Gram
   tactic_atom:
     [ [ n = Prim.integer -> CAst.make ~loc:!@loc @@ CTacAtm (AtmInt n)
       | s = Prim.string -> CAst.make ~loc:!@loc @@ CTacAtm (AtmStr s)
-      | id = Prim.qualid ->
-        if Tac2env.is_constructor id.CAst.v then
-          CAst.make ~loc:!@loc @@ CTacCst (RelId id)
+      | qid = Prim.qualid ->
+        if Tac2env.is_constructor qid then
+          CAst.make ~loc:!@loc @@ CTacCst (RelId qid)
         else
-          CAst.make ~loc:!@loc @@ CTacRef (RelId id)
+          CAst.make ~loc:!@loc @@ CTacRef (RelId qid)
       | "@"; id = Prim.ident -> Tac2quote.of_ident (CAst.make ~loc:!@loc id)
       | "&"; id = lident -> Tac2quote.of_hyp ~loc:!@loc id
       | "'"; c = Constr.constr -> inj_open_constr !@loc c
@@ -372,7 +372,7 @@ GEXTEND Gram
   ;
   globref:
     [ [ "&"; id = Prim.ident -> CAst.make ~loc:!@loc (QHypothesis id)
-      | qid = Prim.qualid -> CAst.map (fun qid -> QReference qid) qid
+      | qid = Prim.qualid -> CAst.make ~loc:!@loc @@ QReference qid
     ] ]
   ;
 END
@@ -667,7 +667,7 @@ GEXTEND Gram
   ;
   refglobal:
     [ [ "&"; id = Prim.ident -> QExpr (CAst.make ~loc:!@loc @@ QHypothesis id)
-      | qid = Prim.qualid -> QExpr (CAst.make ~loc:!@loc @@ QReference qid.CAst.v)
+      | qid = Prim.qualid -> QExpr (CAst.make ~loc:!@loc @@ QReference qid)
       | "$"; id = Prim.ident -> QAnti (CAst.make ~loc:!@loc id)
     ] ]
   ;

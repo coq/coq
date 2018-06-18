@@ -917,8 +917,7 @@ let () =
     let gr =
       try Nametab.locate qid
       with Not_found ->
-        let loc = ref.CAst.loc in
-        Nametab.error_global_not_found (CAst.make ?loc qid)
+        Nametab.error_global_not_found qid
     in
     GlbVal gr, gtypref t_reference
   in

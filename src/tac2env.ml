@@ -208,10 +208,10 @@ let locate_extended_all_type qid =
   let tab = !nametab in
   KnTab.find_prefixes qid tab.tab_type
 
-let shortest_qualid_of_type kn =
+let shortest_qualid_of_type ?loc kn =
   let tab = !nametab in
   let sp = KNmap.find kn tab.tab_type_rev in
-  KnTab.shortest_qualid Id.Set.empty sp tab.tab_type
+  KnTab.shortest_qualid ?loc Id.Set.empty sp tab.tab_type
 
 let push_projection vis sp kn =
   let tab = !nametab in

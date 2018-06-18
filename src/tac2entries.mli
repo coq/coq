@@ -16,7 +16,7 @@ val register_ltac : ?local:bool -> ?mut:bool -> rec_flag ->
   (Names.lname * raw_tacexpr) list -> unit
 
 val register_type : ?local:bool -> rec_flag ->
-  (qualid CAst.t * redef_flag * raw_quant_typedef) list -> unit
+  (qualid * redef_flag * raw_quant_typedef) list -> unit
 
 val register_primitive : ?local:bool ->
   Names.lident -> raw_typexpr -> ml_tactic_name -> unit
@@ -41,7 +41,7 @@ val parse_scope : sexpr -> scope_rule
 
 (** {5 Inspecting} *)
 
-val print_ltac : Libnames.reference -> unit
+val print_ltac : Libnames.qualid -> unit
 
 (** {5 Eval loop} *)
 

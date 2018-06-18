@@ -303,7 +303,7 @@ let inline_rec_tactic tactics =
     let bnd = List.map map_body tactics in
     let pat_of_id {loc;v=id} = CAst.make ?loc @@ CPatVar (Name id) in
     let var_of_id {loc;v=id} =
-      let qid = CAst.make ?loc @@ qualid_of_ident id in
+      let qid = qualid_of_ident ?loc id in
       CAst.make ?loc @@ CTacRef (RelId qid)
     in
     let loc0 = e.loc in
@@ -360,10 +360,9 @@ let register_ltac ?(local = false) ?(mut = false) isrec tactics =
   in
   List.iter iter defs
 
-let qualid_to_ident {loc;v=qid} =
-  let (dp, id) = Libnames.repr_qualid qid in
-  if DirPath.is_empty dp then CAst.make ?loc id
-  else user_err ?loc (str "Identifier expected")
+let qualid_to_ident qid =
+  if qualid_is_ident qid then CAst.make ?loc:qid.CAst.loc @@ qualid_basename qid
+  else user_err ?loc:qid.CAst.loc (str "Identifier expected")
 
 let register_typedef ?(local = false) isrec types =
   let same_name ({v=id1}, _) ({v=id2}, _) = Id.equal id1 id2 in
@@ -453,21 +452,21 @@ let register_primitive ?(local = false) {loc;v=id} t ml =
   } in
   ignore (Lib.add_leaf id (inTacDef def))
 
-let register_open ?(local = false) {loc;v=qid} (params, def) =
+let register_open ?(local = false) qid (params, def) =
   let kn =
     try Tac2env.locate_type qid
     with Not_found ->
-      user_err ?loc (str "Unbound type " ++ pr_qualid qid)
+      user_err ?loc:qid.CAst.loc (str "Unbound type " ++ pr_qualid qid)
   in
   let (tparams, t) = Tac2env.interp_type kn in
   let () = match t with
   | GTydOpn -> ()
   | GTydAlg _ | GTydRec _ | GTydDef _ ->
-    user_err ?loc (str "Type " ++ pr_qualid qid ++ str " is not an open type")
+    user_err ?loc:qid.CAst.loc (str "Type " ++ pr_qualid qid ++ str " is not an open type")
   in
   let () =
     if not (Int.equal (List.length params) tparams) then
-      Tac2intern.error_nparams_mismatch ?loc (List.length params) tparams
+      Tac2intern.error_nparams_mismatch ?loc:qid.CAst.loc (List.length params) tparams
   in
   match def with
   | CTydOpn -> ()
@@ -492,12 +491,11 @@ let register_open ?(local = false) {loc;v=qid} (params, def) =
     } in
     Lib.add_anonymous_leaf (inTypExt def)
   | CTydRec _ | CTydDef _ ->
-    user_err ?loc (str "Extensions only accept inductive constructors")
+    user_err ?loc:qid.CAst.loc (str "Extensions only accept inductive constructors")
 
 let register_type ?local isrec types = match types with
 | [qid, true, def] ->
-  let {loc} = qid in
-  let () = if isrec then user_err ?loc (str "Extensions cannot be recursive") in
+  let () = if isrec then user_err ?loc:qid.CAst.loc (str "Extensions cannot be recursive") in
   register_open ?local qid def
 | _ ->
   let map (qid, redef, def) =
@@ -709,30 +707,30 @@ let inTac2Redefinition : redefinition -> obj =
      subst_function = subst_redefinition;
      classify_function = classify_redefinition }
 
-let register_redefinition ?(local = false) (loc, qid) e =
+let register_redefinition ?(local = false) qid e =
   let kn =
     try Tac2env.locate_ltac qid
-    with Not_found -> user_err ?loc (str "Unknown tactic " ++ pr_qualid qid)
+    with Not_found -> user_err ?loc:qid.CAst.loc (str "Unknown tactic " ++ pr_qualid qid)
   in
   let kn = match kn with
   | TacConstant kn -> kn
   | TacAlias _ ->
-    user_err ?loc (str "Cannot redefine syntactic abbreviations")
+    user_err ?loc:qid.CAst.loc (str "Cannot redefine syntactic abbreviations")
   in
   let data = Tac2env.interp_global kn in
   let () =
     if not (data.Tac2env.gdata_mutable) then
-      user_err ?loc (str "The tactic " ++ pr_qualid qid ++ str " is not declared as mutable")
+      user_err ?loc:qid.CAst.loc (str "The tactic " ++ pr_qualid qid ++ str " is not declared as mutable")
   in
   let (e, t) = intern ~strict:true e in
   let () =
     if not (is_value e) then
-      user_err ?loc (str "Tactic definition must be a syntactical value")
+      user_err ?loc:qid.CAst.loc (str "Tactic definition must be a syntactical value")
   in
   let () =
     if not (Tac2intern.check_subtype t data.Tac2env.gdata_type) then
       let name = int_name () in
-      user_err ?loc (str "Type " ++ pr_glbtype name (snd t) ++
+      user_err ?loc:qid.CAst.loc (str "Type " ++ pr_glbtype name (snd t) ++
         str " is not a subtype of " ++ pr_glbtype name (snd data.Tac2env.gdata_type))
   in
   let def = {
@@ -779,7 +777,7 @@ let register_struct ?local str = match str with
 | StrTyp (isrec, t) -> register_type ?local isrec t
 | StrPrm (id, t, ml) -> register_primitive ?local id t ml
 | StrSyn (tok, lev, e) -> register_notation ?local tok lev e
-| StrMut (qid, e) -> register_redefinition ?local CAst.(qid.loc, qid.v) e
+| StrMut (qid, e) -> register_redefinition ?local qid e
 | StrRun e -> perform_eval e
 
 (** Toplevel exception *)
@@ -831,19 +829,18 @@ end
 
 (** Printing *)
 
-let print_ltac ref =
-  let {loc;v=qid} = qualid_of_reference ref in
+let print_ltac qid =
   if Tac2env.is_constructor qid then
     let kn =
       try Tac2env.locate_constructor qid
-      with Not_found -> user_err ?loc (str "Unknown constructor " ++ pr_qualid qid)
+      with Not_found -> user_err ?loc:qid.CAst.loc (str "Unknown constructor " ++ pr_qualid qid)
     in
     let _ = Tac2env.interp_constructor kn in
     Feedback.msg_notice (hov 2 (str "Constructor" ++ spc () ++ str ":" ++ spc () ++ pr_qualid qid))
   else
     let kn =
       try Tac2env.locate_ltac qid
-      with Not_found -> user_err ?loc (str "Unknown tactic " ++ pr_qualid qid)
+      with Not_found -> user_err ?loc:qid.CAst.loc (str "Unknown tactic " ++ pr_qualid qid)
     in
     match kn with
     | TacConstant kn ->

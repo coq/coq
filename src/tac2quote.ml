@@ -82,10 +82,10 @@ let inj_wit ?loc wit x =
   CAst.make ?loc @@ CTacExt (wit, x)
 
 let of_variable {loc;v=id} =
-  let qid = Libnames.qualid_of_ident id in
+  let qid = Libnames.qualid_of_ident ?loc id in
   if Tac2env.is_constructor qid then
     CErrors.user_err ?loc (str "Invalid identifier")
-  else CAst.make ?loc @@ CTacRef (RelId (CAst.make ?loc qid))
+  else CAst.make ?loc @@ CTacRef (RelId qid)
 
 let of_anti f = function
 | QExpr x -> f x
