@@ -370,7 +370,7 @@ requested
 	| InductionScheme (x,y,z) -> names "_ind" "_rec" x y z
 	| EqualityScheme  x -> l1,((None,smart_global_inductive x)::l2)
 
-let do_mutual_induction_scheme lnamedepindsort =
+let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
   let lrecnames = List.map (fun ({CAst.v},_,_,_) -> v) lnamedepindsort
   and env0 = Global.env() in
   let sigma, lrecspec, _ =
@@ -388,7 +388,7 @@ let do_mutual_induction_scheme lnamedepindsort =
           (evd, (indu,dep,sort) :: l, inst))
     lnamedepindsort (Evd.from_env env0,[],None)
   in
-  let sigma, listdecl = Indrec.build_mutual_induction_scheme env0 sigma lrecspec in
+  let sigma, listdecl = Indrec.build_mutual_induction_scheme env0 sigma ~force_mutual lrecspec in
   let declare decl fi lrecref =
     let decltype = Retyping.get_type_of env0 sigma (EConstr.of_constr decl) in
     let decltype = EConstr.to_constr sigma decltype in
