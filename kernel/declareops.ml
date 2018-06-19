@@ -86,7 +86,7 @@ let subst_const_def sub def = match def with
 let subst_const_proj sub pb =
   { pb with proj_ind = subst_mind sub pb.proj_ind;
     proj_type = subst_mps sub pb.proj_type;
-    proj_body = subst_const_type sub pb.proj_body }
+  }
 
 let subst_const_body sub cb =
   assert (List.is_empty cb.const_hyps); (* we're outside sections *)
@@ -100,7 +100,6 @@ let subst_const_body sub cb =
       { const_hyps = [];
         const_body = body';
         const_type = type';
-        const_proj = cb.const_proj;
         const_body_code =
           Option.map (Cemitcodes.subst_to_patch_subst sub) cb.const_body_code;
         const_universes = cb.const_universes;

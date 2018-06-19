@@ -454,6 +454,110 @@ let build_branch_type env sigma dep p cs =
 
 (**************************************************)
 
+(** From a rel context describing the constructor arguments,
+    build an expansion function.
+    The term built is expecting to be substituted first by
+    a substitution of the form [params, x : ind params] *)
+let compute_projections env (kn, _ as ind) =
+  let open Term in
+  let mib = Environ.lookup_mind kn env in
+  let indu = match mib.mind_universes with
+  | Monomorphic_ind _ -> mkInd ind
+  | Polymorphic_ind ctx -> mkIndU (ind, make_abstract_instance ctx)
+  | Cumulative_ind ctx ->
+    mkIndU (ind, make_abstract_instance (ACumulativityInfo.univ_context ctx))
+  in
+  let x = match mib.mind_record with
+  | None | Some None ->
+    anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
+  | Some (Some (id, _, _)) -> Name id
+  in
+  (** FIXME: handle mutual records *)
+  let pkt = mib.mind_packets.(0) in
+  let { mind_consnrealargs; mind_consnrealdecls } = pkt in
+  let { mind_nparams = nparamargs; mind_params_ctxt = params } = mib in
+  let rctx, _ = decompose_prod_assum (subst1 indu pkt.mind_nf_lc.(0)) in
+  let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
+  let mp, dp, l = MutInd.repr3 kn in
+  (** We build a substitution smashing the lets in the record parameters so
+      that typechecking projections requires just a substitution and not
+      matching with a parameter context. *)
+  let indty =
+    (* [ty] = [Ind inst] is typed in context [params] *)
+    let inst = Context.Rel.to_extended_vect mkRel 0 paramslet in
+    let ty = mkApp (indu, inst) in
+    (* [Ind inst] is typed in context [params-wo-let] *)
+    ty
+  in
+  let ci =
+    let print_info =
+      { ind_tags = []; cstr_tags = [|Context.Rel.to_tags ctx|]; style = LetStyle } in
+      { ci_ind     = ind;
+        ci_npar    = nparamargs;
+        ci_cstr_ndecls = mind_consnrealdecls;
+        ci_cstr_nargs = mind_consnrealargs;
+        ci_pp_info = print_info }
+  in
+  let len = List.length ctx in
+  let compat_body ccl i =
+    (* [ccl] is defined in context [params;x:indty] *)
+    (* [ccl'] is defined in context [params;x:indty;x:indty] *)
+    let ccl' = liftn 1 2 ccl in
+    let p = mkLambda (x, lift 1 indty, ccl') in
+    let branch = it_mkLambda_or_LetIn (mkRel (len - i)) ctx in
+    let body = mkCase (ci, p, mkRel 1, [|lift 1 branch|]) in
+      it_mkLambda_or_LetIn (mkLambda (x,indty,body)) params
+  in
+  let projections decl (j, pbs, subst) =
+    match decl with
+    | LocalDef (na,c,t) ->
+        (* From [params, field1,..,fieldj |- c(params,field1,..,fieldj)]
+           to [params, x:I, field1,..,fieldj |- c(params,field1,..,fieldj)] *)
+        let c = liftn 1 j c in
+        (* From [params, x:I, field1,..,fieldj |- c(params,field1,..,fieldj)]
+           to [params, x:I |- c(params,proj1 x,..,projj x)] *)
+        let c1 = substl subst c in
+        (* From [params, x:I |- subst:field1,..,fieldj]
+           to [params, x:I |- subst:field1,..,fieldj+1] where [subst]
+           is represented with instance of field1 last *)
+        let subst = c1 :: subst in
+        (j+1, pbs, subst)
+    | LocalAssum (na,t) ->
+      match na with
+      | Name id ->
+        let kn = Constant.make1 (KerName.make mp dp (Label.of_id id)) in
+        (* from [params, field1,..,fieldj |- t(params,field1,..,fieldj)]
+           to [params, x:I, field1,..,fieldj |- t(params,field1,..,fieldj] *)
+        let t = liftn 1 j t in
+        (* from [params, x:I, field1,..,fieldj |- t(params,field1,..,fieldj)]
+           to [params-wo-let, x:I |- t(params,proj1 x,..,projj x)] *)
+        (* from [params, x:I, field1,..,fieldj |- t(field1,..,fieldj)]
+           to [params, x:I |- t(proj1 x,..,projj x)] *)
+        let ty = substl subst t in
+        let term = mkProj (Projection.make kn true, mkRel 1) in
+        let fterm = mkProj (Projection.make kn false, mkRel 1) in
+        let compat = compat_body ty (j - 1) in
+        let etab = it_mkLambda_or_LetIn (mkLambda (x, indty, term)) params in
+        let etat = it_mkProd_or_LetIn (mkProd (x, indty, ty)) params in
+        let body = (etab, etat, compat) in
+        (j + 1, body :: pbs, fterm :: subst)
+      | Anonymous ->
+        anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
+  in
+  let (_, pbs, subst) =
+    List.fold_right projections ctx (1, [], [])
+  in
+  Array.rev_of_list pbs
+
+let legacy_match_projection env ind =
+  Array.map pi3 (compute_projections env ind)
+
+let compute_projections ind mib =
+  let ans = compute_projections ind mib in
+  Array.map (fun (prj, ty, _) -> (prj, ty)) ans
+
+(**************************************************)
+
 let extract_mrectype sigma t =
   let open EConstr in
   let (t, l) = decompose_app sigma t in

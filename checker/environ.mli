@@ -58,7 +58,6 @@ exception NotEvaluableConst of const_evaluation_result
 val constant_value : env -> Constant.t puniverses -> constr
 val evaluable_constant : Constant.t -> env -> bool
 
-val is_projection : Constant.t -> env -> bool
 val lookup_projection : Projection.t -> env -> projection_body
 
 (* Inductives *)

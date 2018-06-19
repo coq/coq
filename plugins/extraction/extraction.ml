@@ -1065,11 +1065,15 @@ let extract_constant env kn cb =
         (match cb.const_body with
 	  | Undef _ -> warn_info (); mk_typ_ax ()
 	  | Def c ->
-	     (match cb.const_proj with
+             (match Environ.is_projection kn env with
               | false -> mk_typ (get_body c)
               | true ->
                 let pb = lookup_projection (Projection.make kn false) env in
-                mk_typ (EConstr.of_constr pb.proj_body))
+                (** FIXME: handle mutual records *)
+                let ind = (pb.Declarations.proj_ind, 0) in
+                let bodies = Inductiveops.legacy_match_projection env ind in
+                let body = bodies.(pb.Declarations.proj_arg) in
+                mk_typ (EConstr.of_constr body))
 	  | OpaqueDef c ->
 	    add_opaque r;
             if access_opaque () then mk_typ (get_opaque env c)
@@ -1078,11 +1082,15 @@ let extract_constant env kn cb =
         (match cb.const_body with
 	  | Undef _ -> warn_info (); mk_ax ()
 	  | Def c ->
-	     (match cb.const_proj with
+             (match Environ.is_projection kn env with
               | false -> mk_def (get_body c)
               | true ->
                 let pb = lookup_projection (Projection.make kn false) env in
-                mk_def (EConstr.of_constr pb.proj_body))
+                (** FIXME: handle mutual records *)
+                let ind = (pb.Declarations.proj_ind, 0) in
+                let bodies = Inductiveops.legacy_match_projection env ind in
+                let body = bodies.(pb.Declarations.proj_arg) in
+                mk_def (EConstr.of_constr body))
 	  | OpaqueDef c ->
 	    add_opaque r;
             if access_opaque () then mk_def (get_opaque env c)

@@ -130,9 +130,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
     check (==) (fun x -> x.proj_npars);
     check (==) (fun x -> x.proj_arg);
     check (eq_constr) (fun x -> x.proj_type);
-    check (eq_constr) (fun x -> fst x.proj_eta);
-    check (eq_constr) (fun x -> snd x.proj_eta);
-    check (eq_constr) (fun x -> x.proj_body); true
+    true
   in
   let check_inductive_type t1 t2 =
 

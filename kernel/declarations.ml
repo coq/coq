@@ -54,8 +54,6 @@ type projection_body = {
   proj_npars : int;
   proj_arg : int; (** Projection index, starting from 0 *)
   proj_type : types; (* Type under params *)
-  proj_eta : constr * types; (* Eta-expanded term and type *)
-  proj_body : constr; (* For compatibility with VMs only, the match version *)
 }
 
 (* Global declarations (i.e. constants) can be either: *)
@@ -87,7 +85,6 @@ type constant_body = {
     const_type : types;
     const_body_code : Cemitcodes.to_patch_substituted option;
     const_universes : constant_universes;
-    const_proj : bool;
     const_inline_code : bool;
     const_typing_flags : typing_flags; (** The typing options which
                                            were used for
