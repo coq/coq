@@ -3949,9 +3949,20 @@ succeeds, and results in an error otherwise.
    :name: constr_eq
 
    This tactic checks whether its arguments are equal modulo alpha
-   conversion and casts.
+   conversion, casts and universe constraints. It may unify universes.
 
 .. exn:: Not equal.
+.. exn:: Not equal (due to universes).
+
+.. tacn:: constr_eq_strict @term @term
+   :name: constr_eq_strict
+
+   This tactic checks whether its arguments are equal modulo alpha
+   conversion, casts and universe constraints. It does not add new
+   constraints.
+
+.. exn:: Not equal.
+.. exn:: Not equal (due to universes).
 
 .. tacn:: unify @term @term
    :name: unify

@@ -894,6 +894,9 @@ let check_eq evd s s' =
 let check_leq evd s s' =
   UGraph.check_leq (UState.ugraph evd.universes) s s'
 
+let check_constraints evd csts =
+  UGraph.check_constraints csts (UState.ugraph evd.universes)
+
 let fix_undefined_variables evd =
   { evd with universes = UState.fix_undefined_variables evd.universes }
 

@@ -793,17 +793,12 @@ END
 
 (* ********************************************************************* *)
 
-let eq_constr x y = 
-  Proofview.Goal.enter begin fun gl ->
-    let env = Tacmach.New.pf_env gl in
-    let evd = Tacmach.New.project gl in
-      match EConstr.eq_constr_universes env evd x y with
-      | Some _ -> Proofview.tclUNIT () 
-      | None -> Tacticals.New.tclFAIL 0 (str "Not equal")
-  end
-
 TACTIC EXTEND constr_eq
-| [ "constr_eq" constr(x) constr(y) ] -> [ eq_constr x y ]
+| [ "constr_eq" constr(x) constr(y) ] -> [ Tactics.constr_eq ~strict:false x y ]
+END
+
+TACTIC EXTEND constr_eq_strict
+| [ "constr_eq_strict" constr(x) constr(y) ] -> [ Tactics.constr_eq ~strict:true x y ]
 END
 
 TACTIC EXTEND constr_eq_nounivs

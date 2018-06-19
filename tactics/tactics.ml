@@ -5034,6 +5034,26 @@ let tclABSTRACT ?(opaque=true) name_op tac =
     else name_op_to_name name_op (DefinitionBody Definition) "_subterm" in
   abstract_subproof ~opaque s gk tac
 
+let constr_eq ~strict x y =
+  let fail = Tacticals.New.tclFAIL 0 (str "Not equal") in
+  let fail_universes = Tacticals.New.tclFAIL 0 (str "Not equal (due to universes)") in
+  Proofview.Goal.enter begin fun gl ->
+    let env = Tacmach.New.pf_env gl in
+    let evd = Tacmach.New.project gl in
+      match EConstr.eq_constr_universes env evd x y with
+      | Some csts ->
+        let csts = UnivProblem.to_constraints ~force_weak:false (Evd.universes evd) csts in
+        if strict then
+          if Evd.check_constraints evd csts then Proofview.tclUNIT ()
+          else fail_universes
+        else
+          (match Evd.add_constraints evd csts with
+           | evd -> Proofview.Unsafe.tclEVARS evd
+           | exception Univ.UniverseInconsistency _ ->
+             fail_universes)
+      | None -> fail
+  end
+
 let unify ?(state=full_transparent_state) x y =
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
