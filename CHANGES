@@ -1,6 +1,10 @@
 Changes from 8.8.2 to 8.9+beta1
 ===============================
 
+Kernel
+
+- Mutually defined records are now supported.
+
 Tactics
 
 - Added toplevel goal selector ! which expects a single focused goal.
