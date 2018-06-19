@@ -674,12 +674,7 @@ let check_univ_leq u v =
   Universe.for_all (fun u -> check_univ_leq_one u v) u
 
 let enforce_leq u v c =
-  let rec aux acc v =
-  match v with
-  | v :: l ->
-    aux (List.fold_right (fun u -> constraint_add_leq u v) u c) l
-  | [] -> acc
-  in aux c v
+  List.fold_left (fun c v -> (List.fold_left (fun c u -> constraint_add_leq u v c) c u)) c v
 
 let enforce_leq u v c =
   if check_univ_leq u v then c
