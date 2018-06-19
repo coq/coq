@@ -7,3 +7,5 @@ Definition test (A : Type) (f : Foo A) :=
 
 Scheme foo_case := Case for Foo Sort Type.
 
+Definition test' (A : Type) (f : Foo A) :=
+  let 'Build_Foo _ x y := f in x.
