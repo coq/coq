@@ -51,4 +51,4 @@ val get : 'a key -> 'a
 val default : 'a key -> 'a -> 'a
 val iter_opt : 'a key -> ('a -> unit) -> unit
 
-val clear : unit -> unit
+val clean : unit -> unit

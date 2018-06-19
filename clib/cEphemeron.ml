@@ -107,5 +107,4 @@ let iter_opt (typ, boxkey) f =
   try f ((EHashtbl.find values boxkey).get typ)
   with Not_found -> ()
 
-(* NB: clear only removes dead bindings, so it uses Ephemeron.S.clean *)
-let clear () = EHashtbl.clean values
+let clean () = EHashtbl.clean values
