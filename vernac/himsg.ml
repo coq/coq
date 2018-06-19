@@ -1,6 +1,6 @@
 (************************************************************************)
 (*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1997-2018       *)
 (* <O___,, *       (see CREDITS file for the list of authors)           *)
 (*   \VV/  **************************************************************)
 (*    //   *    This file is distributed under the terms of the         *)
@@ -568,7 +568,10 @@ let rec explain_evar_kind env sigma evk ty = function
       str " in the partial instance " ++ pc ++
       str " found for ") ++
       explain_evar_kind env sigma evk'
-      (pr_leconstr_env env sigma ty') (snd evi.evar_source)
+        (pr_leconstr_env env sigma ty') (snd evi.evar_source)
+  | Evar_kinds.RecordFieldEvar (field, constructor) ->
+     str "field " ++ Printer.pr_constant env field ++ str " of record " ++
+     Printer.pr_constructor env constructor
 
 let explain_typeclass_resolution env sigma evi k =
   match Typeclasses.class_of_constr sigma evi.evar_concl with

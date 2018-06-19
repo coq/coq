@@ -35,3 +35,4 @@ type t =
   | MatchingVar of matching_var_kind
   | VarInstance of Id.t
   | SubEvar of subevar_kind option * Evar.t
+  | RecordFieldEvar of Constant.t * Names.constructor
