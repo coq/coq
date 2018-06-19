@@ -3,7 +3,6 @@ Coq_config
 Analyze
 Hook
 Terminal
-Canary
 Hashset
 Hashcons
 CSet

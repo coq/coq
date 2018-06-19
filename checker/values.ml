@@ -91,7 +91,7 @@ let rec v_mp = Sum("module_path",0,
   [|[|v_dp|];
     [|v_uid|];
     [|v_mp;v_id|]|])
-let v_kn = v_tuple "kernel_name" [|Any;v_mp;v_dp;v_id;Int|]
+let v_kn = v_tuple "kernel_name" [|v_mp;v_dp;v_id;Int|]
 let v_cst = v_sum "cst|mind" 0 [|[|v_kn|];[|v_kn;v_kn|]|]
 let v_ind = v_tuple "inductive" [|v_cst;Int|]
 let v_cons = v_tuple "constructor" [|v_ind;Int|]
