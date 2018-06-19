@@ -31,9 +31,7 @@ let id_of_name = function
     Name id -> id
   | _ -> raise Not_found
 
-let locate  ref =
-    let {CAst.v=qid} = qualid_of_reference ref in
-    Nametab.locate qid
+let locate qid = Nametab.locate qid
 
 let locate_ind ref =
   match locate ref with

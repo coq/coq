@@ -141,10 +141,10 @@ val intern_constr_pattern :
     constr_pattern_expr -> patvar list * constr_pattern
 
 (** Raise Not_found if syndef not bound to a name and error if unexisting ref *)
-val intern_reference : reference -> GlobRef.t
+val intern_reference : qualid -> GlobRef.t
 
 (** Expands abbreviations (syndef); raise an error if not existing *)
-val interp_reference : ltac_sign -> reference -> glob_constr
+val interp_reference : ltac_sign -> qualid -> glob_constr
 
 (** Interpret binders *)
 

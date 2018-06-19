@@ -213,11 +213,11 @@ module Prim :
     val integer : int Gram.entry
     val string : string Gram.entry
     val lstring : lstring Gram.entry
-    val qualid : qualid CAst.t Gram.entry
+    val reference : qualid Gram.entry
+    val qualid : qualid Gram.entry
     val fullyqualid : Id.t list CAst.t Gram.entry
-    val reference : reference Gram.entry
     val by_notation : (string * string option) Gram.entry
-    val smart_global : reference or_by_notation Gram.entry
+    val smart_global : qualid or_by_notation Gram.entry
     val dirpath : DirPath.t Gram.entry
     val ne_string : string Gram.entry
     val ne_lstring : lstring Gram.entry
@@ -232,7 +232,7 @@ module Constr :
     val binder_constr : constr_expr Gram.entry
     val operconstr : constr_expr Gram.entry
     val ident : Id.t Gram.entry
-    val global : reference Gram.entry
+    val global : qualid Gram.entry
     val universe_level : Glob_term.glob_level Gram.entry
     val sort : Glob_term.glob_sort Gram.entry
     val sort_family : Sorts.family Gram.entry

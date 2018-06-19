@@ -28,7 +28,6 @@ open Globnames
 open Stdarg
 open Genarg
 open Decl_kinds
-open Libnames
 open Pp
 open Ppconstr
 open Printer
@@ -143,21 +142,21 @@ END
 let declare_one_prenex_implicit locality f =
   let fref =
     try Smartlocate.global_with_alias f 
-    with _ -> errorstrm (pr_reference f ++ str " is not declared") in
+    with _ -> errorstrm (pr_qualid f ++ str " is not declared") in
   let rec loop = function
   | a :: args' when Impargs.is_status_implicit a ->
     (ExplByName (Impargs.name_of_implicit a), (true, true, true)) :: loop args'
   | args' when List.exists Impargs.is_status_implicit args' ->
-      errorstrm (str "Expected prenex implicits for " ++ pr_reference f)
+      errorstrm (str "Expected prenex implicits for " ++ pr_qualid f)
   | _ -> [] in
   let impls =
     match Impargs.implicits_of_global fref  with
     | [cond,impls] -> impls
-    | [] -> errorstrm (str "Expected some implicits for " ++ pr_reference f)
+    | [] -> errorstrm (str "Expected some implicits for " ++ pr_qualid f)
     | _ -> errorstrm (str "Multiple implicits not supported") in
   match loop impls  with
   | [] ->
-    errorstrm (str "Expected some implicits for " ++ pr_reference f)
+    errorstrm (str "Expected some implicits for " ++ pr_qualid f)
   | impls ->
     Impargs.declare_manual_implicits locality fref ~enriching:false [impls]
 
@@ -415,7 +414,7 @@ let interp_search_arg arg =
 
 (* Module path postfilter *)
 
-let pr_modloc (b, m) = if b then str "-" ++ pr_reference m else pr_reference m
+let pr_modloc (b, m) = if b then str "-" ++ pr_qualid m else pr_qualid m
 
 let wit_ssrmodloc = add_genarg "ssrmodloc" pr_modloc
 
@@ -433,10 +432,9 @@ GEXTEND Gram
 END
 
 let interp_modloc mr =
-  let interp_mod (_, mr) =
-    let {CAst.loc=loc; v=qid} = qualid_of_reference mr in
+  let interp_mod (_, qid) =
     try Nametab.full_name_module qid with Not_found ->
-    CErrors.user_err ?loc (str "No Module " ++ pr_qualid qid) in
+    CErrors.user_err ?loc:qid.CAst.loc (str "No Module " ++ pr_qualid qid) in
   let mr_out, mr_in = List.partition fst mr in
   let interp_bmod b = function
   | [] -> fun _ _ _ -> true

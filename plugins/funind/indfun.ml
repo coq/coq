@@ -362,17 +362,17 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 	(*i The next call to mk_rel_id is valid since we have just construct the graph
 	   Ensures by : do_built
 	i*)
-        let f_R_mut = CAst.make @@ Ident (mk_rel_id (List.nth names 0)) in
+        let f_R_mut = qualid_of_ident @@ mk_rel_id (List.nth names 0) in
 	let ind_kn =
 	  fst (locate_with_msg
-		 (pr_reference f_R_mut++str ": Not an inductive type!")
+                 (pr_qualid f_R_mut++str ": Not an inductive type!")
 		 locate_ind
 		 f_R_mut)
 	in
 	let fname_kn (((fname,_),_,_,_,_),_) =
-          let f_ref = CAst.map (fun n -> Ident n) fname in
-	  locate_with_msg
-	    (pr_reference f_ref++str ": Not an inductive type!")
+   let f_ref = qualid_of_ident ?loc:fname.CAst.loc fname.CAst.v in
+          locate_with_msg
+            (pr_qualid f_ref++str ": Not an inductive type!")
 	    locate_constant
 	    f_ref
 	in
@@ -477,7 +477,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
   let unbounded_eq =
     let f_app_args =
       CAst.make @@ Constrexpr.CAppExpl(
-         (None,CAst.make @@ Ident fname,None) ,
+         (None,qualid_of_ident fname,None) ,
 	 (List.map
 	    (function
                | {CAst.v=Anonymous} -> assert false
@@ -487,7 +487,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	 )
 	)
     in
-    CAst.make @@ Constrexpr.CApp ((None,Constrexpr_ops.mkRefC (CAst.make @@ Qualid (qualid_of_string "Logic.eq"))),
+    CAst.make @@ Constrexpr.CApp ((None,Constrexpr_ops.mkRefC (qualid_of_string "Logic.eq")),
 		    [(f_app_args,None);(body,None)])
   in
   let eq = Constrexpr_ops.mkCProdN args unbounded_eq in
@@ -544,9 +544,9 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
       | None ->
 	  let ltof =
 	    let make_dir l = DirPath.make (List.rev_map Id.of_string l) in
-            CAst.make @@ Libnames.Qualid (Libnames.qualid_of_path
-			       (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (Id.of_string "ltof")))
-	  in
+            Libnames.qualid_of_path
+              (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (Id.of_string "ltof"))
+          in
 	  let fun_from_mes =
 	    let applied_mes =
 	      Constrexpr_ops.mkAppC(wf_mes_expr,[Constrexpr_ops.mkIdentC wf_arg])    in
@@ -727,12 +727,10 @@ let do_generate_principle pconstants on_error register_built interactive_proof
   ()
 
 let rec add_args id new_args = CAst.map (function
-  | CRef (r,_) as b ->
-      begin match r with
-        | {CAst.v=Libnames.Ident fname} when Id.equal fname id ->
-	    CAppExpl((None,r,None),new_args)
-	| _ -> b
-      end
+  | CRef (qid,_) as b ->
+    if qualid_is_ident qid && Id.equal (qualid_basename qid) id then
+      CAppExpl((None,qid,None),new_args)
+    else b
   | CFix  _  | CCoFix _ -> anomaly ~label:"add_args " (Pp.str "todo.")
   | CProdN(nal,b1) ->
         CProdN(List.map (function  CLocalAssum (nal,k,b2) -> CLocalAssum (nal,k,add_args id new_args b2)
@@ -746,13 +744,10 @@ let rec add_args id new_args = CAst.map (function
 	       add_args id new_args  b1)
   | CLetIn(na,b1,t,b2) ->
       CLetIn(na,add_args id new_args b1,Option.map (add_args id new_args) t,add_args id new_args b2)
-  | CAppExpl((pf,r,us),exprl) ->
-      begin
-	match r with
-        | {CAst.v=Libnames.Ident fname} when Id.equal fname id ->
-	    CAppExpl((pf,r,us),new_args@(List.map (add_args id new_args) exprl))
-	| _ -> CAppExpl((pf,r,us),List.map (add_args id new_args) exprl)
-      end
+  | CAppExpl((pf,qid,us),exprl) ->
+    if qualid_is_ident qid && Id.equal (qualid_basename qid) id then
+      CAppExpl((pf,qid,us),new_args@(List.map (add_args id new_args) exprl))
+    else CAppExpl((pf,qid,us),List.map (add_args id new_args) exprl)
   | CApp((pf,b),bl) ->
       CApp((pf,add_args id new_args b),
 	   List.map (fun (e,o) -> add_args id new_args e,o) bl)
@@ -888,7 +883,7 @@ let make_graph (f_ref : GlobRef.t) =
 				  | Constrexpr.CLocalAssum (nal,_,_) ->
 				      List.map
                                         (fun {CAst.loc;v=n} -> CAst.make ?loc @@
-                                           CRef(CAst.make ?loc @@ Libnames.Ident(Nameops.Name.get_id n),None))
+                                           CRef(Libnames.qualid_of_ident ?loc @@ Nameops.Name.get_id n,None))
 					nal
                                   | Constrexpr.CLocalPattern _ -> assert false
 			       )

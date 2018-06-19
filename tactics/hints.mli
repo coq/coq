@@ -73,7 +73,7 @@ type search_entry
 type hint_entry
 
 type reference_or_constr =
-  | HintsReference of Libnames.reference
+  | HintsReference of Libnames.qualid
   | HintsConstr of Constrexpr.constr_expr
 
 type hint_mode =
@@ -83,12 +83,12 @@ type hint_mode =
 
 type hints_expr =
   | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
-  | HintsResolveIFF of bool * Libnames.reference list * int option
+  | HintsResolveIFF of bool * Libnames.qualid list * int option
   | HintsImmediate of reference_or_constr list
-  | HintsUnfold of Libnames.reference list
-  | HintsTransparency of Libnames.reference list * bool
-  | HintsMode of Libnames.reference * hint_mode list
-  | HintsConstructors of Libnames.reference list
+  | HintsUnfold of Libnames.qualid list
+  | HintsTransparency of Libnames.qualid list * bool
+  | HintsMode of Libnames.qualid * hint_mode list
+  | HintsConstructors of Libnames.qualid list
   | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
 
 type 'a hints_path_gen =
@@ -99,7 +99,7 @@ type 'a hints_path_gen =
   | PathEmpty
   | PathEpsilon
 
-type pre_hints_path = Libnames.reference hints_path_gen
+type pre_hints_path = Libnames.qualid hints_path_gen
 type hints_path = GlobRef.t hints_path_gen
     
 val normalize_path : hints_path -> hints_path
@@ -110,9 +110,9 @@ val pp_hints_path_atom : ('a -> Pp.t) -> 'a hints_path_atom_gen -> Pp.t
 val pp_hints_path : hints_path -> Pp.t
 val pp_hint_mode : hint_mode -> Pp.t
 val glob_hints_path_atom :
-  Libnames.reference hints_path_atom_gen -> GlobRef.t hints_path_atom_gen
+  Libnames.qualid hints_path_atom_gen -> GlobRef.t hints_path_atom_gen
 val glob_hints_path :
-  Libnames.reference hints_path_gen -> GlobRef.t hints_path_gen
+  Libnames.qualid hints_path_gen -> GlobRef.t hints_path_gen
 
 module Hint_db :
   sig

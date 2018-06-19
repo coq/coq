@@ -171,6 +171,6 @@ val update_sigma_env : t -> Environ.env -> t
 (** {5 Pretty-printing} *)
 
 val pr_uctx_level : t -> Univ.Level.t -> Pp.t
-val reference_of_level : t -> Univ.Level.t -> Libnames.reference
+val qualid_of_level : t -> Univ.Level.t -> Libnames.qualid
 
 val pr_weak : (Univ.Level.t -> Pp.t) -> t -> Pp.t

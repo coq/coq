@@ -38,7 +38,7 @@ val extern_closed_glob : ?lax:bool -> bool -> env -> Evd.evar_map -> closed_glob
 
 val extern_constr : ?lax:bool -> bool -> env -> Evd.evar_map -> constr -> constr_expr
 val extern_constr_in_scope : bool -> scope_name -> env -> Evd.evar_map -> constr -> constr_expr
-val extern_reference : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> reference
+val extern_reference : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
 val extern_type : bool -> env -> Evd.evar_map -> types -> constr_expr
 val extern_sort : Evd.evar_map -> Sorts.t -> glob_sort
 val extern_rel_context : constr option -> env -> Evd.evar_map ->
@@ -56,9 +56,9 @@ val print_projections : bool ref
 
 (** Customization of the global_reference printer *)
 val set_extern_reference :
-  (?loc:Loc.t -> Id.Set.t -> GlobRef.t -> reference) -> unit
+  (?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid) -> unit
 val get_extern_reference :
-  unit -> (?loc:Loc.t -> Id.Set.t -> GlobRef.t -> reference)
+  unit -> (?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid)
 
 (** WARNING: The following functions are evil due to
     side-effects. Think of the following case as used in the printer:

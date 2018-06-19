@@ -16,8 +16,8 @@ open Libnames
 val declare_generalizable : local:bool -> lident list option -> unit
 
 val ids_of_list : Id.t list -> Id.Set.t
-val destClassApp : constr_expr -> (reference * constr_expr list * instance_expr option) CAst.t
-val destClassAppExpl : constr_expr -> (reference * (constr_expr * explicitation CAst.t option) list * instance_expr option) CAst.t
+val destClassApp : constr_expr -> (qualid * constr_expr list * instance_expr option) CAst.t
+val destClassAppExpl : constr_expr -> (qualid * (constr_expr * explicitation CAst.t option) list * instance_expr option) CAst.t
 
 (** Fragile, should be used only for construction a set of identifiers to avoid *)
 

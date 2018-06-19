@@ -156,7 +156,7 @@ let mkTacCase with_evar = function
   (* Reinterpret ident as notations for variables in the context *)
   (* because we don't know if they are quantified or not *)
   | [(clear,ElimOnIdent id),(None,None),None],None ->
-      TacCase (with_evar,(clear,(CAst.make @@ CRef (CAst.make ?loc:id.CAst.loc @@ Ident id.CAst.v,None),NoBindings)))
+      TacCase (with_evar,(clear,(CAst.make @@ CRef (qualid_of_ident ?loc:id.CAst.loc id.CAst.v,None),NoBindings)))
   | ic ->
       if List.exists (function ((_, ElimOnAnonHyp _),_,_) -> true | _ -> false) (fst ic)
       then

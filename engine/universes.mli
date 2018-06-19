@@ -22,8 +22,8 @@ open Univ
 
 val pr_with_global_universes : Level.t -> Pp.t
 [@@ocaml.deprecated "Use [UnivNames.pr_with_global_universes]"]
-val reference_of_level : Level.t -> Libnames.reference
-[@@ocaml.deprecated "Use [UnivNames.reference_of_level]"]
+val reference_of_level : Level.t -> Libnames.qualid
+[@@ocaml.deprecated "Use [UnivNames.qualid_of_level]"]
 
 val add_global_universe : Level.t -> Decl_kinds.polymorphic -> unit
 [@@ocaml.deprecated "Use [UnivNames.add_global_universe]"]

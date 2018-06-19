@@ -41,7 +41,7 @@ val local_binders_loc : local_binder_expr list -> Loc.t option
 (** {6 Constructors}*)
 
 val mkIdentC : Id.t -> constr_expr
-val mkRefC : reference -> constr_expr
+val mkRefC : qualid -> constr_expr
 val mkAppC : constr_expr * constr_expr list -> constr_expr
 val mkCastC : constr_expr * constr_expr Glob_term.cast_type -> constr_expr
 val mkLambdaC : lname list * binder_kind * constr_expr * constr_expr -> constr_expr
@@ -61,7 +61,7 @@ val mkAppPattern : ?loc:Loc.t -> cases_pattern_expr -> cases_pattern_expr list -
 
 (** {6 Destructors}*)
 
-val coerce_reference_to_id : reference -> Id.t
+val coerce_reference_to_id : qualid -> Id.t
 (** FIXME: nothing to do here *)
 
 val coerce_to_id : constr_expr -> lident

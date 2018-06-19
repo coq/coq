@@ -36,7 +36,7 @@ type seg_proofs = Constr.constr Future.computation array
 
 (** Open a module (or a library); if the boolean is true then it's also
    an export otherwise just a simple import *)
-val import_module : bool -> qualid CAst.t list -> unit
+val import_module : bool -> qualid list -> unit
 
 (** Start the compilation of a file as a library. The first argument must be
     output file, and the 

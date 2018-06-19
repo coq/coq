@@ -67,13 +67,13 @@ let subst_strategy s str = str
 
 let pr_strategy _ _ _ (s : strategy) = Pp.str "<strategy>"
 let pr_raw_strategy prc prlc _ (s : raw_strategy) =
-  let prr = Pptactic.pr_red_expr (prc, prlc, Pputils.pr_or_by_notation Libnames.pr_reference, prc) in
+  let prr = Pptactic.pr_red_expr (prc, prlc, Pputils.pr_or_by_notation Libnames.pr_qualid, prc) in
   Rewrite.pr_strategy prc prr s
 let pr_glob_strategy prc prlc _ (s : glob_strategy) =
   let prr = Pptactic.pr_red_expr
     (Ppconstr.pr_constr_expr,
     Ppconstr.pr_lconstr_expr,
-    Pputils.pr_or_by_notation Libnames.pr_reference,
+    Pputils.pr_or_by_notation Libnames.pr_qualid,
     Ppconstr.pr_constr_expr)
   in
   Rewrite.pr_strategy prc prr s

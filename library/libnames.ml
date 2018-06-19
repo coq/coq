@@ -134,23 +134,33 @@ let restrict_path n sp =
   make_path (DirPath.make dir') s
 
 (*s qualified names *)
-type qualid = full_path
+type qualid_r = full_path
+type qualid = qualid_r CAst.t
 
-let make_qualid = make_path
-let repr_qualid = repr_path
+let make_qualid ?loc pa id = CAst.make ?loc (make_path pa id)
+let repr_qualid {CAst.v=qid} = repr_path qid
 
-let qualid_eq = eq_full_path
+let qualid_eq qid1 qid2 = eq_full_path qid1.CAst.v qid2.CAst.v
 
-let string_of_qualid = string_of_path
-let pr_qualid = pr_path
+let string_of_qualid qid = string_of_path qid.CAst.v
+let pr_qualid qid = pr_path qid.CAst.v
 
-let qualid_of_string = path_of_string
+let qualid_of_string ?loc s = CAst.make ?loc @@ path_of_string s
 
-let qualid_of_path sp = sp
-let qualid_of_ident id = make_qualid DirPath.empty id
-let qualid_of_dirpath dir =
+let qualid_of_path ?loc sp = CAst.make ?loc sp
+let qualid_of_ident ?loc id = make_qualid ?loc DirPath.empty id
+let qualid_of_dirpath ?loc dir =
   let (l,a) = split_dirpath dir in
-  make_qualid l a
+  make_qualid ?loc l a
+
+let qualid_is_ident qid =
+  DirPath.is_empty qid.CAst.v.dirpath
+
+let qualid_basename qid =
+  qid.CAst.v.basename
+
+let qualid_path qid =
+  qid.CAst.v.dirpath
 
 type object_name = full_path * KerName.t
 
@@ -182,52 +192,6 @@ let eq_global_dir_reference r1 r2 = match r1, r2 with
 | DirOpenSection op1, DirOpenSection op2 -> eq_op op1 op2
 | DirModule op1, DirModule op2 -> eq_op op1 op2
 | _ -> false
-
-type reference_r =
-  | Qualid of qualid
-  | Ident of Id.t
-type reference = reference_r CAst.t
-
-let qualid_of_reference = CAst.map (function
-  | Qualid qid -> qid
-  | Ident id -> qualid_of_ident id)
-
-let string_of_reference = CAst.with_val (function
-  | Qualid qid -> string_of_qualid qid
-  | Ident id -> Id.to_string id)
-
-let pr_reference = CAst.with_val (function
-  | Qualid qid -> pr_qualid qid
-  | Ident id -> Id.print id)
-
-let eq_reference {CAst.v=r1} {CAst.v=r2} = match r1, r2 with
-| Qualid q1, Qualid q2 -> qualid_eq q1 q2
-| Ident id1, Ident id2 -> Id.equal id1 id2
-| _ -> false
-
-let join_reference {CAst.loc=l1;v=ns} {CAst.loc=l2;v=r} =
-  CAst.make ?loc:(Loc.merge_opt l1 l2) (
-  match ns , r with
-    Qualid q1, Qualid q2 ->
-      let (dp1,id1) = repr_qualid q1 in
-      let (dp2,id2) = repr_qualid q2 in
-      Qualid (make_qualid
-		(append_dirpath (append_dirpath dp1 (dirpath_of_string (Names.Id.to_string id1))) dp2)
-		id2)
-  | Qualid q1, Ident id2 ->
-    let (dp1,id1) = repr_qualid q1 in
-    Qualid (make_qualid
-	      (append_dirpath dp1 (dirpath_of_string (Names.Id.to_string id1)))
-	      id2)
-  | Ident id1, Qualid q2 ->
-    let (dp2,id2) = repr_qualid q2 in
-    Qualid (make_qualid
-      (append_dirpath (dirpath_of_string (Names.Id.to_string id1)) dp2)
-      id2)
-  | Ident id1, Ident id2 ->
-    Qualid (make_qualid
-      (dirpath_of_string (Names.Id.to_string id1)) id2)
-  )
 
 (* Default paths *)
 let default_library = Names.DirPath.initial (* = ["Top"] *)

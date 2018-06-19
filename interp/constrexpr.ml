@@ -61,17 +61,17 @@ type instance_expr = Glob_term.glob_level list
 
 type cases_pattern_expr_r =
   | CPatAlias of cases_pattern_expr * lname
-  | CPatCstr  of reference
+  | CPatCstr  of qualid
     * cases_pattern_expr list option * cases_pattern_expr list
   (** [CPatCstr (_, c, Some l1, l2)] represents [(@ c l1) l2] *)
-  | CPatAtom of reference option
+  | CPatAtom of qualid option
   | CPatOr   of cases_pattern_expr list
   | CPatNotation of notation * cases_pattern_notation_substitution
     * cases_pattern_expr list (** CPatNotation (_, n, l1 ,l2) represents
 				  (notation n applied with substitution l1)
 				  applied to arguments l2 *)
   | CPatPrim   of prim_token
-  | CPatRecord of (reference * cases_pattern_expr) list
+  | CPatRecord of (qualid * cases_pattern_expr) list
   | CPatDelimiters of string * cases_pattern_expr
   | CPatCast   of cases_pattern_expr * constr_expr
 and cases_pattern_expr = cases_pattern_expr_r CAst.t
@@ -81,16 +81,16 @@ and cases_pattern_notation_substitution =
     cases_pattern_expr list list  (** for recursive notations *)
 
 and constr_expr_r =
-  | CRef     of reference * instance_expr option
+  | CRef     of qualid * instance_expr option
   | CFix     of lident * fix_expr list
   | CCoFix   of lident * cofix_expr list
   | CProdN   of local_binder_expr list * constr_expr
   | CLambdaN of local_binder_expr list * constr_expr
   | CLetIn   of lname * constr_expr * constr_expr option * constr_expr
-  | CAppExpl of (proj_flag * reference * instance_expr option) * constr_expr list
+  | CAppExpl of (proj_flag * qualid * instance_expr option) * constr_expr list
   | CApp     of (proj_flag * constr_expr) *
                 (constr_expr * explicitation CAst.t option) list
-  | CRecord  of (reference * constr_expr) list
+  | CRecord  of (qualid * constr_expr) list
 
   (* representation of the "let" and "match" constructs *)
   | CCases of Constr.case_style   (* determines whether this value represents "let" or "match" construct *)
@@ -111,7 +111,7 @@ and constr_expr_r =
   | CGeneralization of binding_kind * abstraction_kind option * constr_expr
   | CPrim of prim_token
   | CDelimiters of string * constr_expr
-  | CProj of reference * constr_expr
+  | CProj of qualid * constr_expr
 and constr_expr = constr_expr_r CAst.t
 
 and case_expr = constr_expr                 (* expression that is being matched *)
@@ -150,7 +150,7 @@ type constr_pattern_expr = constr_expr
 (** Concrete syntax for modules and module types *)
 
 type with_declaration_ast =
-  | CWith_Module of Id.t list CAst.t * qualid CAst.t
+  | CWith_Module of Id.t list CAst.t * qualid
   | CWith_Definition of Id.t list CAst.t * universe_decl_expr option * constr_expr
 
 type module_ast_r =

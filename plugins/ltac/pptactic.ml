@@ -17,7 +17,6 @@ open Constrexpr
 open Genarg
 open Geninterp
 open Stdarg
-open Libnames
 open Notation_gram
 open Tactypes
 open Locus
@@ -1109,8 +1108,8 @@ let pr_goal_selector ~toplevel s =
       pr_lconstr = pr_lconstr_expr;
       pr_pattern = pr_constr_pattern_expr;
       pr_lpattern = pr_lconstr_pattern_expr;
-      pr_constant = pr_or_by_notation pr_reference;
-      pr_reference = pr_reference;
+      pr_constant = pr_or_by_notation pr_qualid;
+      pr_reference = pr_qualid;
       pr_name = pr_lident;
       pr_generic = (fun arg -> Pputils.pr_raw_generic (Global.env ()) arg);
       pr_extend = pr_raw_extend_rec pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
@@ -1323,7 +1322,7 @@ let () =
   let open Genprint in
   register_basic_print0 wit_int_or_var (pr_or_var int) (pr_or_var int) int;
   register_basic_print0 wit_ref
-    pr_reference (pr_or_var (pr_located pr_global)) pr_global;
+    pr_qualid (pr_or_var (pr_located pr_global)) pr_global;
   register_basic_print0 wit_ident pr_id pr_id pr_id;
   register_basic_print0 wit_var pr_lident pr_lident pr_id;
   register_print0
@@ -1357,7 +1356,7 @@ let () =
   ;
   Genprint.register_print0
     wit_red_expr
-    (lift (pr_red_expr (pr_constr_expr, pr_lconstr_expr, pr_or_by_notation pr_reference, pr_constr_pattern_expr)))
+    (lift (pr_red_expr (pr_constr_expr, pr_lconstr_expr, pr_or_by_notation pr_qualid, pr_constr_pattern_expr)))
     (lift (pr_red_expr (pr_and_constr_expr pr_glob_constr_pptac, pr_and_constr_expr pr_lglob_constr_pptac, pr_or_var (pr_and_short_name pr_evaluable_reference), pr_pat_and_constr_expr pr_glob_constr_pptac)))
     pr_red_expr_env
   ;

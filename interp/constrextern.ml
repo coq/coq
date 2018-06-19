@@ -270,7 +270,7 @@ let extern_evar n l = CEvar (n,l)
     may be inaccurate *)
 
 let default_extern_reference ?loc vars r =
-  make @@ Qualid (shortest_qualid_of_global vars r)
+  shortest_qualid_of_global ?loc vars r
 
 let my_extern_reference = ref default_extern_reference
 
@@ -388,7 +388,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
         (uninterp_cases_pattern_notations pat)
     with No_match ->
       lift (fun ?loc -> function
-        | PatVar (Name id) -> CPatAtom (Some (make ?loc @@ Ident id))
+        | PatVar (Name id) -> CPatAtom (Some (qualid_of_ident ?loc id))
 	| PatVar (Anonymous) -> CPatAtom None
 	| PatCstr(cstrsp,args,na) ->
 	  let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
@@ -457,7 +457,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
 	      (make_pat_notation ?loc ntn (l,ll) l2') key
       end
     | SynDefRule kn ->
-      let qid = make ?loc @@ Qualid (shortest_qualid_of_syndef vars kn) in
+      let qid = shortest_qualid_of_syndef ?loc vars kn in
       let l1 =
 	List.rev_map (fun (c,(scopt,scl)) ->
           extern_cases_pattern_in_scope (scopt,scl@scopes) vars c)
@@ -484,7 +484,7 @@ and extern_notation_pattern (tmp_scope,scopes as allscopes) vars t = function
 	    (match_notation_constr_cases_pattern t pat) allscopes vars keyrule in
 	  insert_pat_alias ?loc p na
 	| PatVar Anonymous -> CAst.make ?loc @@ CPatAtom None
-        | PatVar (Name id) -> CAst.make ?loc @@ CPatAtom (Some (make ?loc @@ Ident id))
+        | PatVar (Name id) -> CAst.make ?loc @@ CPatAtom (Some (qualid_of_ident ?loc id))
     with
 	No_match -> extern_notation_pattern allscopes vars t rules
 
@@ -753,7 +753,7 @@ let rec extern inctx scopes vars r =
       extern_global (select_stronger_impargs (implicits_of_global ref))
         (extern_reference vars ref) (extern_universes us)
 
-  | GVar id -> CRef (make ?loc @@ Ident id,None)
+  | GVar id -> CRef (qualid_of_ident ?loc id,None)
 
   | GEvar (n,[]) when !print_meta_as_hole -> CHole (None, IntroAnonymous, None)
 
@@ -1095,7 +1095,7 @@ and extern_notation (tmp_scope,scopes as allscopes) vars t = function
 		List.map (fun (c,(scopt,scl)) ->
 		  extern true (scopt,scl@scopes) vars c, None)
 		  terms in
-              let a = CRef (make ?loc @@ Qualid (shortest_qualid_of_syndef vars kn),None) in
+              let a = CRef (shortest_qualid_of_syndef ?loc vars kn,None) in
 	      CAst.make ?loc @@ if List.is_empty l then a else CApp ((None, CAst.make a),l) in
  	if List.is_empty args then e
 	else

@@ -229,7 +229,7 @@ type prod_info = production_level * production_position
 
 type (_, _) entry =
 | TTName : ('self, lname) entry
-| TTReference : ('self, reference) entry
+| TTReference : ('self, qualid) entry
 | TTBigint : ('self, Constrexpr.raw_natural_number) entry
 | TTConstr : prod_info * 'r target -> ('r, 'r) entry
 | TTConstrList : prod_info * Tok.t list * 'r target -> ('r, 'r list) entry
@@ -312,7 +312,7 @@ let interp_entry forpat e = match e with
 
 let cases_pattern_expr_of_name { CAst.loc; v = na } = CAst.make ?loc @@ match na with
   | Anonymous -> CPatAtom None
-  | Name id   -> CPatAtom (Some (CAst.make ?loc @@ Ident id))
+  | Name id   -> CPatAtom (Some (qualid_of_ident ?loc id))
 
 type 'r env = {
   constrs : 'r list;

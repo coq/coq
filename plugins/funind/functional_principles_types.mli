@@ -36,5 +36,5 @@ exception No_graph_found
 val make_scheme :   Evd.evar_map ref ->
  (pconstant*Sorts.family) list -> Safe_typing.private_constants Entries.definition_entry list
 
-val build_scheme : (Id.t*Libnames.reference*Sorts.family) list ->  unit
-val build_case_scheme : (Id.t*Libnames.reference*Sorts.family)  ->  unit
+val build_scheme : (Id.t*Libnames.qualid*Sorts.family) list ->  unit
+val build_case_scheme : (Id.t*Libnames.qualid*Sorts.family)  ->  unit

@@ -17,7 +17,7 @@ type universe_binders = UnivNames.universe_binders
 type univ_name_list = UnivNames.univ_name_list
 
 let pr_with_global_universes = UnivNames.pr_with_global_universes
-let reference_of_level = UnivNames.reference_of_level
+let reference_of_level = UnivNames.qualid_of_level
 
 let add_global_universe = UnivNames.add_global_universe
 

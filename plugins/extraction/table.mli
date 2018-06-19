@@ -194,17 +194,17 @@ val find_custom_match : ml_branch array -> string
 (*s Extraction commands. *)
 
 val extraction_language : lang -> unit
-val extraction_inline : bool -> reference list -> unit
+val extraction_inline : bool -> qualid list -> unit
 val print_extraction_inline : unit -> Pp.t
 val reset_extraction_inline : unit -> unit
 val extract_constant_inline :
-  bool -> reference -> string list -> string -> unit
+  bool -> qualid -> string list -> string -> unit
 val extract_inductive :
-  reference -> string -> string list -> string option -> unit
+  qualid -> string -> string list -> string option -> unit
 
 
 type int_or_id = ArgInt of int | ArgId of Id.t
-val extraction_implicit : reference -> int_or_id list -> unit
+val extraction_implicit : qualid -> int_or_id list -> unit
 
 (*s Table of blacklisted filenames *)
 

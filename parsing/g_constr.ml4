@@ -202,11 +202,11 @@ GEXTEND Gram
       | "@"; f=global; i = instance; args=LIST0 NEXT -> CAst.make ~loc:!@loc @@ CAppExpl((None,f,i),args)
       | "@"; lid = pattern_identref; args=LIST1 identref ->
           let { CAst.loc = locid; v = id } = lid in
-          let args = List.map (fun x -> CAst.make @@ CRef (CAst.make ?loc:x.CAst.loc @@ Ident x.CAst.v, None), None) args in
+          let args = List.map (fun x -> CAst.make @@ CRef (qualid_of_ident ?loc:x.CAst.loc x.CAst.v, None), None) args in
           CAst.make ~loc:(!@loc) @@ CApp((None, CAst.make ?loc:locid @@ CPatVar id),args) ]
     | "9"
         [ ".."; c = operconstr LEVEL "0"; ".." ->
-          CAst.make ~loc:!@loc @@ CAppExpl ((None, CAst.make ~loc:!@loc @@ Ident ldots_var, None),[c]) ]
+          CAst.make ~loc:!@loc @@ CAppExpl ((None, (qualid_of_ident ~loc:!@loc ldots_var), None),[c]) ]
     | "8" [ ]
     | "1" LEFTA
       [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->

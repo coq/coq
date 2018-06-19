@@ -45,8 +45,9 @@ let error_application_to_module_type loc =
     or both are searched. The returned kind is never ModAny, and
     it is equal to the input kind when this one isn't ModAny. *)
 
-let lookup_module_or_modtype kind {CAst.loc;v=qid} =
+let lookup_module_or_modtype kind qid =
   let open Declaremods in
+  let loc = qid.CAst.loc in
   try
     if kind == ModType then raise Not_found;
     let mp = Nametab.locate_module qid in
@@ -84,7 +85,7 @@ let loc_of_module l = l.CAst.loc
 
 let rec interp_module_ast env kind m cst = match m with
   | {CAst.loc;v=CMident qid} ->
-      let (mp,kind) = lookup_module_or_modtype kind CAst.(make ?loc qid) in
+      let (mp,kind) = lookup_module_or_modtype kind qid in
       (MEident mp, kind, cst)
   | {CAst.loc;v=CMapply (me1,me2)} ->
       let me1',kind1, cst = interp_module_ast env kind me1 cst in

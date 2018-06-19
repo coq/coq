@@ -344,8 +344,7 @@ let register_locatable name f =
 
 exception ObjFound of logical_name
 
-let locate_any_name ref =
-  let {v=qid} = qualid_of_reference ref in
+let locate_any_name qid =
   try Term (Nametab.locate qid)
   with Not_found ->
   try Syntactic (Nametab.locate_syndef qid)
@@ -452,8 +451,7 @@ type locatable_kind =
 | LocOther of string
 | LocAny
 
-let print_located_qualid name flags ref =
-  let {v=qid} = qualid_of_reference ref in
+let print_located_qualid name flags qid =
   let located = match flags with
   | LocTerm -> locate_term qid
   | LocModule -> locate_modtype qid @ locate_module qid
@@ -787,10 +785,9 @@ let print_full_pure_context env sigma =
    follows the definition of the inductive type *)
 
 (* This is designed to print the contents of an opened section *)
-let read_sec_context r =
-  let qid = qualid_of_reference r in
+let read_sec_context qid =
   let dir =
-    try Nametab.locate_section qid.v
+    try Nametab.locate_section qid
     with Not_found ->
       user_err ?loc:qid.loc ~hdr:"read_sec_context" (str "Unknown section.") in
   let rec get_cxt in_cxt = function

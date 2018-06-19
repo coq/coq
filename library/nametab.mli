@@ -61,7 +61,7 @@ open Globnames
 exception GlobalizationError of qualid
 
 (** Raises a globalization error *)
-val error_global_not_found : qualid CAst.t -> 'a
+val error_global_not_found : qualid -> 'a
 
 (** {6 Register visibility of things } *)
 
@@ -105,8 +105,8 @@ val locate_universe : qualid -> universe_id
    references, like [locate] and co, but raise a nice error message
    in case of failure *)
 
-val global : reference -> GlobRef.t
-val global_inductive : reference -> inductive
+val global : qualid -> GlobRef.t
+val global_inductive : qualid -> inductive
 
 (** These functions locate all global references with a given suffix;
    if [qualid] is valid as such, it comes first in the list *)
@@ -168,11 +168,11 @@ val pr_global_env : Id.Set.t -> GlobRef.t -> Pp.t
    Coq.A.B.x that denotes the same object.
    @raise Not_found for unknown objects. *)
 
-val shortest_qualid_of_global : Id.Set.t -> GlobRef.t -> qualid
-val shortest_qualid_of_syndef : Id.Set.t -> syndef_name -> qualid
-val shortest_qualid_of_modtype : ModPath.t -> qualid
-val shortest_qualid_of_module : ModPath.t -> qualid
-val shortest_qualid_of_universe : universe_id -> qualid
+val shortest_qualid_of_global : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
+val shortest_qualid_of_syndef : ?loc:Loc.t -> Id.Set.t -> syndef_name -> qualid
+val shortest_qualid_of_modtype : ?loc:Loc.t -> ModPath.t -> qualid
+val shortest_qualid_of_module : ?loc:Loc.t -> ModPath.t -> qualid
+val shortest_qualid_of_universe : ?loc:Loc.t -> universe_id -> qualid
 
 (** Deprecated synonyms *)
 
@@ -207,7 +207,7 @@ module type NAMETREE = sig
   val find : user_name -> t -> elt
   val exists : user_name -> t -> bool
   val user_name : qualid -> t -> user_name
-  val shortest_qualid : Id.Set.t -> user_name -> t -> qualid
+  val shortest_qualid : ?loc:Loc.t -> Id.Set.t -> user_name -> t -> qualid
   val find_prefixes : qualid -> t -> elt list
 end
 

@@ -11,7 +11,7 @@
 open Univ
 
 val pr_with_global_universes : Level.t -> Pp.t
-val reference_of_level : Level.t -> Libnames.reference
+val qualid_of_level : Level.t -> Libnames.qualid
 
 (** Global universe information outside the kernel, to handle
     polymorphic universes in sections that have to be discharged. *)

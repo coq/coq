@@ -173,7 +173,7 @@ TACTIC EXTEND convert_concl_no_check
 | ["convert_concl_no_check" constr(x) ] -> [ Tactics.convert_concl_no_check x DEFAULTcast ]
 END
 
-let pr_pre_hints_path_atom _ _ _ = Hints.pp_hints_path_atom Libnames.pr_reference
+let pr_pre_hints_path_atom _ _ _ = Hints.pp_hints_path_atom Libnames.pr_qualid
 let pr_hints_path_atom _ _ _ = Hints.pp_hints_path_atom Printer.pr_global
 let glob_hints_path_atom ist = Hints.glob_hints_path_atom
 
@@ -189,7 +189,7 @@ ARGUMENT EXTEND hints_path_atom
 END
 
 let pr_hints_path prc prx pry c = Hints.pp_hints_path c
-let pr_pre_hints_path prc prx pry c = Hints.pp_hints_path_gen Libnames.pr_reference c
+let pr_pre_hints_path prc prx pry c = Hints.pp_hints_path_gen Libnames.pr_qualid c
 let glob_hints_path ist = Hints.glob_hints_path
 
 ARGUMENT EXTEND hints_path

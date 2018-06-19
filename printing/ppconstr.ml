@@ -159,7 +159,7 @@ let tag_var = tag Tag.variable
 
   let pr_univ_expr = function
     | Some (x,n) ->
-       pr_reference x ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
+       pr_qualid x ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
     | None -> str"_"
 
   let pr_univ l =
@@ -180,7 +180,7 @@ let tag_var = tag Tag.variable
     | GSet -> tag_type (str "Set")
     | GType UUnknown -> tag_type (str "Type")
     | GType UAnonymous -> tag_type (str "_")
-    | GType (UNamed u) -> tag_type (pr_reference u)
+    | GType (UNamed u) -> tag_type (pr_qualid u)
 
   let pr_qualid sp =
     let (sl, id) = repr_qualid sp in
@@ -205,16 +205,16 @@ let tag_var = tag Tag.variable
       tag_type (str "Set")
     | GType u ->
       (match u with
-        | UNamed u -> pr_reference u
+        | UNamed u -> pr_qualid u
         | UAnonymous -> tag_type (str "Type")
         | UUnknown -> tag_type (str "_"))
 
   let pr_universe_instance l =
     pr_opt_no_spc (pr_univ_annot (prlist_with_sep spc pr_glob_sort_instance)) l
 
-  let pr_reference = CAst.with_val (function
-  | Qualid qid -> pr_qualid qid
-  | Ident id -> tag_var (pr_id id))
+  let pr_reference qid =
+    if qualid_is_ident qid then tag_var (pr_id @@ qualid_basename qid)
+    else pr_qualid qid
 
   let pr_cref ref us =
     pr_reference ref ++ pr_universe_instance us
@@ -564,9 +564,9 @@ let tag_var = tag Tag.variable
           return (p ++ prlist (pr spc (lapp,L)) l2, lapp)
         else
           return (p, lproj)
-      | CAppExpl ((None,{v=Ident var},us),[t])
-      | CApp ((_, {v = CRef({v=Ident var},us)}),[t,None])
-          when Id.equal var Notation_ops.ldots_var ->
+      | CAppExpl ((None,qid,us),[t])
+      | CApp ((_, {v = CRef(qid,us)}),[t,None])
+          when qualid_is_ident qid && Id.equal (qualid_basename qid) Notation_ops.ldots_var ->
         return (
           hov 0 (str ".." ++ pr spc (latom,E) t ++ spc () ++ str ".."),
           larg
