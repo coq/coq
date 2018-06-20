@@ -53,6 +53,9 @@
 /doc/             @maximedenes
 # Secondary maintainer @silene @Zimmi48
 
+/doc/tools/coqrst/ @maximedenes
+# Secondary maintainer @cpitclaudel
+
 /man/             @silene
 # Secondary maintainer @maximedenes
 
