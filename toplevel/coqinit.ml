@@ -92,6 +92,14 @@ let libs_init_load_path ~load_init =
   let coqpath = Envars.coqpath in
   let coq_path = Names.DirPath.make [Libnames.coq_root] in
 
+  (* current directory (not recursively!) *)
+  [ { recursive = false;
+      path_spec = VoPath { unix_path = ".";
+                           coq_path = Libnames.default_root_prefix;
+                           implicit = false;
+                           has_ml = AddTopML }
+    } ] @
+
   (* then standard library and plugins *)
   [build_stdlib_path ~load_init ~unix_path:(coqlib/"theories") ~coq_path ~with_ml:false;
    build_stdlib_path ~load_init ~unix_path:(coqlib/"plugins")  ~coq_path ~with_ml:true ] @
@@ -102,15 +110,7 @@ let libs_init_load_path ~load_init =
   ) @
 
   (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME and COQPATH *)
-  List.map (fun s -> build_userlib_path ~unix_path:s) (xdg_dirs @ coqpath) @
-
-  (* then current directory (not recursively!) *)
-  [ { recursive = false;
-      path_spec = VoPath { unix_path = ".";
-                           coq_path = Libnames.default_root_prefix;
-                           implicit = false;
-                           has_ml = AddTopML }
-    } ]
+  List.map (fun s -> build_userlib_path ~unix_path:s) (xdg_dirs @ coqpath)
 
 (* Initialises the Ocaml toplevel before launching it, so that it can
    find the "include" file in the *source* directory *)
