@@ -36,7 +36,7 @@ are processed from a file.
    step, and query the system for available theorems and definitions. The
    interactive mode is generally run with the help of an IDE, such
    as CoqIDE, documented in :ref:`coqintegrateddevelopmentenvironment`,
-   Emacs with Proof-General (available at https://proofgeneral.github.io/),
+   Emacs with Proof-General :cite:`Asp00` (available at https://proofgeneral.github.io/),
    or jsCoq to run Coq in your browser (see https://github.com/ejgallego/jscoq).
    The `coqtop` read-eval-print-loop can also be used directly, for debugging
    purposes.
