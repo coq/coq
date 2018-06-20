@@ -45,7 +45,15 @@ Tools
   COQFLAGS is now entirely separate from COQLIBS, so in custom Makefiles
   $(COQFLAGS) should be replaced by $(COQFLAGS) $(COQLIBS).
 
-- Remove the gallina utility (extracts specification from Coq vernacular files).
+- Removed the gallina utility (extracts specification from Coq vernacular files).
+  If you would like to maintain this tool externally, please contact us.
+
+- Removed the Emacs modes distributed with Coq. You are advised to
+  use Proof-General <https://proofgeneral.github.io/> (and optionally
+  Company-Coq <https://github.com/cpitclaudel/company-coq>) instead.
+  If your use case is not covered by these alternative Emacs modes,
+  please open an issue. We can help set up external maintenance as part
+  of Proof-General, or independently as part of coq-community.
 
 Vernacular Commands
 
