@@ -9,7 +9,7 @@ stages:
 variables:
   # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
   # for reference]
-  CACHEKEY: "bionic_coq-v8.8-V2018-07-06"
+  CACHEKEY: "bionic_coq-v8.8-V2018-07-14"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -39,7 +39,7 @@ before_script:
   - ls -a # figure out if artifacts are around
   - printenv | sort
   - declare -A switch_table
-  - switch_table=( ["base"]="$COMPILER" ["edge"]="$COMPILER_BE" )
+  - switch_table=( ["base"]="$COMPILER" ["edge"]="$COMPILER_EDGE" )
   - opam switch -y "${switch_table[$OPAM_SWITCH]}$OPAM_VARIANT"
   - eval $(opam config env)
   - opam list
