@@ -15,7 +15,7 @@
 Require Import Bvector.
 Require Import ZArith.
 Require Export Zpower.
-Require Import Omega.
+Require Import Lia.
 
 (** The evaluation of boolean vector is done both in binary and
     two's complement. The computed number belongs to Z.
@@ -155,7 +155,7 @@ Section Z_BRIC_A_BRAC.
     forall (n:nat) (bv:Bvector n), (binary_value n bv >= 0)%Z.
   Proof.
     induction bv as [| a n v IHbv]; cbn.
-    omega.
+    lia.
 
     destruct a; destruct (binary_value n v); simpl; auto.
     auto with zarith.
@@ -203,7 +203,7 @@ Section Z_BRIC_A_BRAC.
     auto.
 
     destruct p; auto.
-    simpl; intros; omega.
+    simpl; intros; lia.
 
     intro H; elim H; trivial.
   Qed.
@@ -214,11 +214,11 @@ Section Z_BRIC_A_BRAC.
       (z < two_power_nat (S n))%Z -> (Z.div2 z < two_power_nat n)%Z.
   Proof.
     intros.
-    enough (2 * Z.div2 z < 2 * two_power_nat n)%Z by omega.
+    enough (2 * Z.div2 z < 2 * two_power_nat n)%Z by lia.
     rewrite <- two_power_nat_S.
     destruct (Zeven.Zeven_odd_dec z) as [Heven|Hodd]; intros.
     rewrite <- Zeven.Zeven_div2; auto.
-    generalize (Zeven.Zodd_div2 z Hodd); omega.
+    generalize (Zeven.Zodd_div2 z Hodd); lia.
   Qed.
 
   Lemma Z_to_two_compl_Sn_z :
@@ -253,9 +253,9 @@ Section Z_BRIC_A_BRAC.
     intros n z; rewrite (two_power_nat_S n).
     generalize (Zmod2_twice z).
     destruct (Zeven.Zeven_odd_dec z) as [H| H].
-    rewrite (Zeven_bit_value z H); intros; omega.
+    rewrite (Zeven_bit_value z H); intros; lia.
 
-    rewrite (Zodd_bit_value z H); intros; omega.
+    rewrite (Zodd_bit_value z H); intros; lia.
   Qed.
 
   Lemma Zlt_two_power_nat_S :
@@ -265,9 +265,9 @@ Section Z_BRIC_A_BRAC.
     intros n z; rewrite (two_power_nat_S n).
     generalize (Zmod2_twice z).
     destruct (Zeven.Zeven_odd_dec z) as [H| H].
-    rewrite (Zeven_bit_value z H); intros; omega.
+    rewrite (Zeven_bit_value z H); intros; lia.
 
-    rewrite (Zodd_bit_value z H); intros; omega.
+    rewrite (Zodd_bit_value z H); intros; lia.
   Qed.
 
 End Z_BRIC_A_BRAC.
@@ -309,7 +309,7 @@ Section COHERENT_VALUE.
       (z < two_power_nat n)%Z -> binary_value n (Z_to_binary n z) = z.
   Proof.
     induction n as [| n IHn].
-    unfold two_power_nat, shift_nat; simpl; intros; omega.
+    unfold two_power_nat, shift_nat; simpl; intros; lia.
 
     intros; rewrite Z_to_binary_Sn_z.
     rewrite binary_value_Sn.
@@ -328,13 +328,13 @@ Section COHERENT_VALUE.
   Proof.
     induction n as [| n IHn].
     unfold two_power_nat, shift_nat; simpl; intros.
-    assert (z = (-1)%Z \/ z = 0%Z). omega.
+    assert (z = (-1)%Z \/ z = 0%Z). lia.
     intuition; subst z; trivial.
 
     intros; rewrite Z_to_two_compl_Sn_z.
     rewrite two_compl_value_Sn.
     rewrite IHn.
-    generalize (Zmod2_twice z); omega.
+    generalize (Zmod2_twice z); lia.
 
     apply Zge_minus_two_power_nat_S; auto.
 

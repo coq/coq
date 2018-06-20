@@ -11,6 +11,7 @@
 (** * FMapPositive : an implementation of FMapInterface for [positive] keys. *)
 
 Require Import Bool OrderedType ZArith OrderedType OrderedTypeEx FMapInterface.
+Require Import Lia.
 
 Set Implicit Arguments.
 Local Open Scope positive_scope.
@@ -476,7 +477,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
    intros m; set (p:=1); clearbody p; revert m p.
    induction m; simpl; auto; intros.
    rewrite (IHm1 (append p 2)), (IHm2 (append p 3)); auto.
-   destruct o; rewrite app_length; simpl; omega.
+   destruct o; rewrite app_length; simpl; lia.
   Qed.
 
   End CompcertSpec.

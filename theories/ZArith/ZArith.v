@@ -24,3 +24,5 @@ Require Export Zdiv.
 Require Export Zlogarithm.
 
 Export ZArithRing.
+Require Export Zify.
+Require Export Lia.

@@ -12,7 +12,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import SeqSeries.
 Require Import Rtrigo_def.
-Require Import OmegaTactic.
+Require Import Lia.
 Local Open Scope R_scope.
 
 Definition A1 (x:R) (N:nat) : R :=
@@ -149,13 +149,13 @@ unfold Wn.
 apply Rmult_eq_compat_l.
 replace (2 * S i - S (2 * i0))%nat with (S (2 * (i - i0))).
 reflexivity.
-omega.
+lia.
 apply sum_eq; intros.
 unfold Wn.
 apply Rmult_eq_compat_l.
 replace (2 * S i - 2 * i0)%nat with (2 * (S i - i0))%nat.
 reflexivity.
-omega.
+lia.
 replace
  (-
   sum_f_R0
@@ -211,7 +211,7 @@ replace (S (2 * i0)) with (2 * i0 + 1)%nat;
  [ apply Rmult_eq_compat_l | ring ].
 replace (2 * S i - (2 * i0 + 1))%nat with (2 * (i - i0) + 1)%nat.
 reflexivity.
-omega.
+lia.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
@@ -240,7 +240,7 @@ rewrite Rmult_1_l.
 rewrite Rinv_mult_distr.
 replace (2 * i - 2 * i0)%nat with (2 * (i - i0))%nat.
 reflexivity.
-omega.
+lia.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.

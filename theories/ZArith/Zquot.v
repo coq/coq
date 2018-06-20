@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Nnat ZArith_base ROmega ZArithRing Zdiv Morphisms.
+Require Import Nnat ZArith_base Lia ZArithRing Zdiv Morphisms.
 
 Local Open Scope Z_scope.
 
@@ -129,33 +129,33 @@ Qed.
 Theorem Zrem_lt_pos a b : 0<=a -> b<>0 -> 0 <= Z.rem a b < Z.abs b.
 Proof.
   intros; generalize (Z.rem_nonneg a b) (Z.rem_bound_abs a b);
-   romega with *.
+    lia.
 Qed.
 
 Theorem Zrem_lt_neg a b : a<=0 -> b<>0 -> -Z.abs b < Z.rem a b <= 0.
 Proof.
   intros; generalize (Z.rem_nonpos a b) (Z.rem_bound_abs a b);
-   romega with *.
+   lia.
 Qed.
 
 Theorem Zrem_lt_pos_pos a b : 0<=a -> 0<b -> 0 <= Z.rem a b < b.
 Proof.
-  intros; generalize (Zrem_lt_pos a b); romega with *.
+  intros; generalize (Zrem_lt_pos a b); lia.
 Qed.
 
 Theorem Zrem_lt_pos_neg a b : 0<=a -> b<0 -> 0 <= Z.rem a b < -b.
 Proof.
-  intros; generalize (Zrem_lt_pos a b); romega with *.
+  intros; generalize (Zrem_lt_pos a b); lia.
 Qed.
 
 Theorem Zrem_lt_neg_pos a b : a<=0 -> 0<b -> -b < Z.rem a b <= 0.
 Proof.
-  intros; generalize (Zrem_lt_neg a b); romega with *.
+  intros; generalize (Zrem_lt_neg a b); lia.
 Qed.
 
 Theorem Zrem_lt_neg_neg a b : a<=0 -> b<0 -> b < Z.rem a b <= 0.
 Proof.
-  intros; generalize (Zrem_lt_neg a b); romega with *.
+  intros; generalize (Zrem_lt_neg a b); lia.
 Qed.
 
 
@@ -171,12 +171,8 @@ Lemma Remainder_equiv : forall a b r,
  Remainder a b r <-> Remainder_alt a b r.
 Proof.
   unfold Remainder, Remainder_alt; intuition.
-  - romega with *.
-  - romega with *.
-  - rewrite <-(Z.mul_opp_opp). apply Z.mul_nonneg_nonneg; romega.
-  - assert (0 <= Z.sgn r * Z.sgn a).
-    { rewrite <-Z.sgn_mul, Z.sgn_nonneg; auto. }
-    destruct r; simpl Z.sgn in *; romega with *.
+  - nia.
+  - nia.
 Qed.
 
 Theorem Zquot_mod_unique_full a b q r :
@@ -185,7 +181,7 @@ Proof.
   destruct 1 as [(H,H0)|(H,H0)]; intros.
   apply Zdiv_mod_unique with b; auto.
   apply Zrem_lt_pos; auto.
-  romega with *.
+  lia.
   rewrite <- H1; apply Z.quot_rem'.
 
   rewrite <- (Z.opp_involutive a).
@@ -193,7 +189,7 @@ Proof.
   generalize (Zdiv_mod_unique b (-q) (-a÷b) (-r) (Z.rem (-a) b)).
   generalize (Zrem_lt_pos (-a) b).
   rewrite <-Z.quot_rem', Z.mul_opp_r, <-Z.opp_add_distr, <-H1.
-  romega with *.
+  lia.
 Qed.
 
 Theorem Zquot_unique_full a b q r :

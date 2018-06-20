@@ -298,7 +298,6 @@ Module ZnZ.
  rewrite Hp1.
  apply Z.add_le_mono.
  apply Z.mul_le_mono_nonneg; auto with zarith.
- case p1; simpl; intros; red; simpl; intros; discriminate.
  unfold base; auto with zarith.
  case (spec_to_Z w1); auto with zarith.
  Qed.

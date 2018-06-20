@@ -25,7 +25,7 @@ Require Export R_sqr.
 Require Export SplitAbsolu.
 Require Export SplitRmult.
 Require Export ArithProp.
-Require Import Omega.
+Require Import Lia.
 Require Import Zpower.
 Local Open Scope nat_scope.
 Local Open Scope R_scope.
@@ -122,7 +122,7 @@ Hint Resolve pow_lt: real.
 Lemma Rlt_pow_R1 : forall (x:R) (n:nat), 1 < x -> (0 < n)%nat -> 1 < x ^ n.
 Proof.
   intros x n; elim n; simpl; auto with real.
-  intros H' H'0; exfalso; omega.
+  intros H' H'0; exfalso; lia.
   intros n0; case n0.
   simpl; rewrite Rmult_1_r; auto.
   intros n1 H' H'0 H'1.
@@ -262,14 +262,14 @@ Proof.
   elim (IZN (up (b * / (Rabs x - 1))) H2); intros; exists x0;
     apply
       (Rge_trans (INR x0) (IZR (up (b * / (Rabs x - 1)))) (b * / (Rabs x - 1))).
-  rewrite INR_IZR_INZ; apply IZR_ge; omega.
+  rewrite INR_IZR_INZ; apply IZR_ge; lia.
   unfold Rge; left; assumption.
   exists 0%nat;
     apply
       (Rge_trans (INR 0) (IZR (up (b * / (Rabs x - 1)))) (b * / (Rabs x - 1))).
-  rewrite INR_IZR_INZ; apply IZR_ge; simpl; omega.
+  rewrite INR_IZR_INZ; apply IZR_ge; simpl; lia.
   unfold Rge; left; assumption.
-  omega.
+  lia.
 Qed.
 
 Lemma pow_ne_zero : forall n:nat, n <> 0%nat -> 0 ^ n = 0.
@@ -745,7 +745,7 @@ Proof.
   - now simpl; rewrite Rmult_1_l.
   - now rewrite <- !pow_powerRZ, Rpow_mult_distr.
   - destruct Hmxy as [H|H].
-    + assert(m = 0) as -> by now omega.
+    + assert(m = 0) as -> by now lia.
       now rewrite <- Hm, Rmult_1_l.
     + assert(x0 <> 0)%R by now intros ->; apply H; rewrite Rmult_0_l.
       assert(y0 <> 0)%R by now intros ->; apply H; rewrite Rmult_0_r.
@@ -808,7 +808,7 @@ Proof.
   ring.
   rewrite Rmult_plus_distr_r; rewrite Hrecn; cut ((n + 1)%nat = S n).
   intro H; rewrite H; simpl; ring.
-  omega.
+  lia.
 Qed.
 
 Lemma sum_f_R0_triangle :

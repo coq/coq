@@ -17,7 +17,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Rlimit.
 Require Import Lra.
-Require Import Omega.
+Require Import Lia.
 Local Open Scope R_scope.
 
 (*********)
@@ -341,7 +341,7 @@ Proof.
   rewrite cond in H2; rewrite cond; simpl in H2; simpl;
     cut (1 + x0 * 1 * 0 = 1 * 1);
       [ intro A; rewrite A in H2; assumption | ring ].
-  cut (n0 <> 0%nat -> S (n0 - 1) = n0); [ intro | omega ];
+  cut (n0 <> 0%nat -> S (n0 - 1) = n0); [ intro | lia ];
     rewrite (H3 cond) in H2; rewrite (Rmult_comm (x0 ^ n0) (INR n0)) in H2;
       rewrite (tech_pow_Rplus x0 n0 n0) in H2; assumption.
 Qed.

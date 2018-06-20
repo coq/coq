@@ -31,6 +31,7 @@ Require Export Ncring_tac.
 Require Export Integral_domain.
 Require Import DiscrR.
 Require Import ZArith.
+Require Import Lia.
 
 Declare ML Module "nsatz_plugin".
 
@@ -413,7 +414,7 @@ Ltac nsatz_generic radicalmax info lparam lvar :=
             try exact integral_domain_minus_one_zero
           || (solve [simpl; unfold R2, equality, eq_notation, addition, add_notation,
                      one, one_notation, multiplication, mul_notation, zero, zero_notation;
-                     discrR || omega]) 
+                     discrR || lia])
           || ((*simpl*) idtac) || idtac "could not prove discrimination result"
         ]
       ]
@@ -510,7 +511,7 @@ exact Qmult_integral. exact Q_one_zero. Defined.
 
 (* Integers *)
 Lemma Z_one_zero: 1%Z <> 0%Z.
-omega. 
+lia.
 Qed.
 
 Instance Zcri: (Cring (Rr:=Zr)).

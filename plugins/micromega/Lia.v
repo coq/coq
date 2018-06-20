@@ -15,12 +15,18 @@
 (************************************************************************)
 
 Require Import ZMicromega.
-Require Import ZArith.
+Require Import ZArith_base.
 Require Import RingMicromega.
 Require Import VarMap.
+Require Import Zify.
 Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin".
 
+Hint Resolve Z.le_refl Z.add_comm Z.add_assoc Z.mul_comm Z.mul_assoc Z.add_0_l
+  Z.add_0_r Z.mul_1_l Z.add_opp_diag_l Z.add_opp_diag_r Z.mul_add_distr_r
+  Z.mul_add_distr_l: zarith.
+
+Require Export Zhints.
 
 Ltac preprocess :=
   zify ; unfold Z.succ in * ; unfold Z.pred in *.
@@ -39,6 +45,34 @@ Ltac zchecker := zchecker_no_abstract.
 Ltac lia := preprocess; xlia zchecker.
                
 Ltac nia := preprocess; xnlia zchecker.
+
+Hint Extern 10 (_ = _ :>nat) => abstract lia: zarith.
+Hint Extern 10 (_ <= _) => abstract lia: zarith.
+Hint Extern 10 (_ < _) => abstract lia: zarith.
+Hint Extern 10 (_ >= _) => abstract lia: zarith.
+Hint Extern 10 (_ > _) => abstract lia: zarith.
+
+Hint Extern 10 (_ <> _ :>nat) => abstract lia: zarith.
+Hint Extern 10 (~ _ <= _) => abstract lia: zarith.
+Hint Extern 10 (~ _ < _) => abstract lia: zarith.
+Hint Extern 10 (~ _ >= _) => abstract lia: zarith.
+Hint Extern 10 (~ _ > _) => abstract lia: zarith.
+
+Hint Extern 10 (_ = _ :>Z) => abstract lia: zarith.
+Hint Extern 10 (_ <= _)%Z => abstract lia: zarith.
+Hint Extern 10 (_ < _)%Z => abstract lia: zarith.
+Hint Extern 10 (_ >= _)%Z => abstract lia: zarith.
+Hint Extern 10 (_ > _)%Z => abstract lia: zarith.
+
+Hint Extern 10 (_ <> _ :>Z) => abstract lia: zarith.
+Hint Extern 10 (~ (_ <= _)%Z) => abstract lia: zarith.
+Hint Extern 10 (~ (_ < _)%Z) => abstract lia: zarith.
+Hint Extern 10 (~ (_ >= _)%Z) => abstract lia: zarith.
+Hint Extern 10 (~ (_ > _)%Z) => abstract lia: zarith.
+
+Hint Extern 10 False => abstract lia: zarith.
+
+Ltac omega := lia.
 
 
 (* Local Variables: *)

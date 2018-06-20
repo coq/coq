@@ -12,7 +12,8 @@
 
 Require Import OrderedRing.
 Require Import RingMicromega.
-Require Import ZArith.
+Require Import ZArith_base.
+Require Import ZArithRing.
 Require Import InitialRing.
 Require Import Setoid.
 

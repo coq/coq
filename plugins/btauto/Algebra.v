@@ -1,4 +1,4 @@
-Require Import Bool PArith DecidableClass Omega ROmega.
+Require Import Bool PArith DecidableClass Lia.
 
 Ltac bool :=
 repeat match goal with
@@ -84,9 +84,9 @@ Ltac case_decide := match goal with
   let H := fresh "H" in
   define (@decide P D) b H; destruct b; try_decide
 | [ |- context [Pos.compare ?x ?y] ] =>
-  destruct (Pos.compare_spec x y); try (exfalso; zify; romega)
+  destruct (Pos.compare_spec x y); try (exfalso; lia)
 | [ X : context [Pos.compare ?x ?y] |- _ ] =>
-  destruct (Pos.compare_spec x y); try (exfalso; zify; romega)
+  destruct (Pos.compare_spec x y); try (exfalso; lia)
 end.
 
 Section Definitions.
@@ -325,13 +325,13 @@ Qed.
 
 Lemma linear_le_compat : forall k l p, linear k p -> (k <= l)%positive -> linear l p.
 Proof.
-intros k l p H; revert l; induction H; constructor; eauto; zify; romega.
+intros k l p H; revert l; induction H; constructor; eauto; lia.
 Qed.
 
 Lemma linear_valid_incl : forall k p, linear k p -> valid k p.
 Proof.
 intros k p H; induction H; constructor; auto.
-eapply valid_le_compat; eauto; zify; romega.
+eapply valid_le_compat; eauto; lia.
 Qed.
 
 End Validity.
@@ -359,8 +359,8 @@ intros k p var1 var2 Hvar Hv; revert var1 var2 Hvar.
 induction Hv; intros var1 var2 Hvar; simpl; [now auto|].
 rewrite Hvar; [|now auto]; erewrite (IHHv1 var1 var2).
   + erewrite (IHHv2 var1 var2); [ring|].
-    intros; apply Hvar; zify; omega.
-  + intros; apply Hvar; zify; omega.
+    intros; apply Hvar; lia.
+  + intros; apply Hvar; lia.
 Qed.
 
 End Evaluation.
@@ -417,14 +417,14 @@ Qed.
 Hint Extern 5 =>
 match goal with
 | [ |- (Pos.max ?x ?y <= ?z)%positive ] =>
-  apply Pos.max_case_strong; intros; zify; romega
+  apply Pos.max_case_strong; intros; lia
 | [ |- (?z <= Pos.max ?x ?y)%positive ] =>
-  apply Pos.max_case_strong; intros; zify; romega
+  apply Pos.max_case_strong; intros; lia
 | [ |- (Pos.max ?x ?y < ?z)%positive ] =>
-  apply Pos.max_case_strong; intros; zify; romega
+  apply Pos.max_case_strong; intros; lia
 | [ |- (?z < Pos.max ?x ?y)%positive ] =>
-  apply Pos.max_case_strong; intros; zify; romega
-| _ => zify; omega
+  apply Pos.max_case_strong; intros; lia
+| _ => lia
 end.
 Hint Resolve Pos.le_max_r Pos.le_max_l.
 
@@ -445,8 +445,8 @@ intros kl kr pl pr Hl Hr; revert kr pr Hr; induction Hl; intros kr pr Hr; simpl.
       now rewrite <- (Pos.max_id i); intuition.
     destruct (Pos.compare_spec i i0); subst; try case_decide; repeat (constructor; intuition).
       + apply (valid_le_compat (Pos.max i0 i0)); [now auto|]; rewrite Pos.max_id; auto.
-      + apply (valid_le_compat (Pos.max i0 i0)); [now auto|]; rewrite Pos.max_id; zify; romega.
-      + apply (valid_le_compat (Pos.max (Pos.succ i0) (Pos.succ i0))); [now auto|]; rewrite Pos.max_id; zify; romega.
+      + apply (valid_le_compat (Pos.max i0 i0)); [now auto|]; rewrite Pos.max_id; lia.
+      + apply (valid_le_compat (Pos.max (Pos.succ i0) (Pos.succ i0))); [now auto|]; rewrite Pos.max_id; lia.
       + apply (valid_le_compat (Pos.max (Pos.succ i) i0)); intuition.
       + apply (valid_le_compat (Pos.max i (Pos.succ i0))); intuition.
 }
@@ -456,7 +456,7 @@ Lemma poly_mul_cst_valid_compat : forall k v p, valid k p -> valid k (poly_mul_c
 Proof.
 intros k v p H; induction H; simpl; [now auto|].
 case_decide; [|now auto].
-eapply (valid_le_compat i); [now auto|zify; romega].
+eapply (valid_le_compat i); [now auto|lia].
 Qed.
 
 Lemma poly_mul_mon_null_compat : forall i p, null (poly_mul_mon i p) -> null p.
@@ -488,7 +488,7 @@ induction Hl; intros kr pr Hr; simpl.
     { apply (valid_le_compat (Pos.max i kr)); auto. }
     { apply poly_add_valid_compat; auto.
       now apply poly_mul_mon_valid_compat; intuition. }
-  - repeat apply Pos.max_case_strong; zify; omega.
+  - repeat apply Pos.max_case_strong; lia.
 Qed.
 
 (* Compatibility of linearity wrt to linear operations *)
@@ -497,7 +497,7 @@ Lemma poly_add_linear_compat : forall kl kr pl pr, linear kl pl -> linear kr pr 
   linear (Pos.max kl kr) (poly_add pl pr).
 Proof.
 intros kl kr pl pr Hl; revert kr pr; induction Hl; intros kr pr Hr; simpl.
-+ apply (linear_le_compat kr); [|apply Pos.max_case_strong; zify; omega].
++ apply (linear_le_compat kr); [|apply Pos.max_case_strong; lia].
   now induction Hr; constructor; auto.
 + apply (linear_le_compat (Pos.max kr (Pos.succ i))); [|now auto].
   induction Hr; simpl.
@@ -527,17 +527,17 @@ inversion Hv; case_decide; subst.
   destruct (list_nth k var false); ring_simplify; [|now auto].
   rewrite <- (andb_true_l (eval var p1)), <- (andb_true_l (eval var p3)).
   rewrite <- IHp2; auto; rewrite <- IHp1; [ring|].
-  apply (valid_le_compat k); [now auto|zify; omega].
+  apply (valid_le_compat k); [now auto|lia].
 + remember (list_nth k var false) as b; destruct b; ring_simplify; [|now auto].
   case_decide; simpl.
   - rewrite <- (IHp2 p2); [inversion H|now auto]; simpl.
     replace (eval var p1) with (list_nth k var false && eval var p1) by (rewrite <- Heqb; ring); rewrite <- (IHp1 k).
     { rewrite <- Heqb; ring. }
-    { apply (valid_le_compat p2); [auto|zify; omega]. }
+    { apply (valid_le_compat p2); [auto|lia]. }
   - rewrite (IHp2 p2); [|now auto].
     replace (eval var p1) with (list_nth k var false && eval var p1) by (rewrite <- Heqb; ring).
     rewrite <- (IHp1 k); [rewrite <- Heqb; ring|].
-    apply (valid_le_compat p2); [auto|zify; omega].
+    apply (valid_le_compat p2); [auto|lia].
 Qed.
 
 (* Reduction preserves evaluation by boolean assignations *)
@@ -555,10 +555,10 @@ Lemma reduce_aux_le_compat : forall k l p, valid k p -> (k <= l)%positive ->
   reduce_aux l p = reduce_aux k p.
 Proof.
 intros k l p; revert k l; induction p; intros k l H Hle; simpl; auto.
-inversion H; subst; repeat case_decide; subst; try (exfalso; zify; omega).
-+ apply IHp1; [|now auto]; eapply valid_le_compat; [eauto|zify; omega].
+inversion H; subst; repeat case_decide; subst; try (exfalso; lia).
++ apply IHp1; [|now auto]; eapply valid_le_compat; [eauto|lia].
 + f_equal; apply IHp1; auto.
-  now eapply valid_le_compat; [eauto|zify; omega].
+  now eapply valid_le_compat; [eauto|lia].
 Qed.
 
 (* Reduce projects valid polynomials into linear ones *)
@@ -569,13 +569,13 @@ intros i p; revert i; induction p; intros i Hp; simpl.
 + constructor.
 + inversion Hp; subst; case_decide; subst.
   - rewrite <- (Pos.max_id i) at 1; apply poly_add_linear_compat.
-    { apply IHp1; eapply valid_le_compat; [eassumption|zify; omega]. }
+    { apply IHp1; eapply valid_le_compat; [eassumption|lia]. }
     { intuition. }
   - case_decide.
-  { apply IHp1; eapply valid_le_compat; [eauto|zify; omega]. }
-  { constructor; try (zify; omega); auto.
-    erewrite (reduce_aux_le_compat p2); [|assumption|zify; omega].
-    apply IHp1; eapply valid_le_compat; [eauto|]; zify; omega. }
+  { apply IHp1; eapply valid_le_compat; [eauto|lia]. }
+  { constructor; try (lia); auto.
+    erewrite (reduce_aux_le_compat p2); [|assumption|lia].
+    apply IHp1; eapply valid_le_compat; [eauto|]; lia. }
 Qed.
 
 Lemma linear_reduce : forall k p, valid k p -> linear k (reduce p).
@@ -583,7 +583,7 @@ Proof.
 intros k p H; induction H; simpl.
 + now constructor.
 + case_decide.
-  - eapply linear_le_compat; [eauto|zify; omega].
+  - eapply linear_le_compat; [eauto|lia].
   - constructor; auto.
     apply linear_reduce_aux; auto.
 Qed.

@@ -16,7 +16,7 @@ Require Import Lra.
 Require Import RiemannInt.
 Require Import SeqProp.
 Require Import Max.
-Require Import Omega.
+Require Import Lia.
 Require Import Lra.
 Local Open Scope R_scope.
 
@@ -1095,11 +1095,11 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
    apply Rlt_trans with (Rabs h * eps / 4 + Rabs (f x - fn N x) + Rabs h * Rabs (fn' N c - g x)).
     apply Rplus_lt_compat_r ; apply Rplus_lt_compat_r ; unfold R_dist in fnxh_CV_fxh ;
  rewrite Rabs_minus_sym ; apply fnxh_CV_fxh.
-   unfold N; omega.
+   unfold N; lia.
    apply Rlt_trans with (Rabs h * eps / 4 + Rabs h * eps / 4 + Rabs h * Rabs (fn' N c - g x)).
     apply Rplus_lt_compat_r ; apply Rplus_lt_compat_l.
     unfold R_dist in fnx_CV_fx ; rewrite Rabs_minus_sym ; apply fnx_CV_fx.
-    unfold N ; omega.
+    unfold N ; lia.
    replace (fn' N c - g x)  with ((fn' N c - g c) +  (g c - g x)) by field.
    apply Rle_lt_trans with (Rabs h * eps / 4 + Rabs h * eps / 4 +
           Rabs h * Rabs (fn' N c - g c) + Rabs h * Rabs (g c - g x)).
@@ -1113,7 +1113,7 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
     apply Rplus_lt_compat_r; apply Rplus_lt_compat_l; apply Rmult_lt_compat_l.
      apply Rabs_pos_lt ; assumption.
     rewrite Rabs_minus_sym ; apply fn'c_CVU_gc.
-     unfold N ; omega.
+     unfold N ; lia.
     assert (t : Boule x delta c).
      destruct P.
      apply Rabs_def2 in xhinbxdelta; destruct xhinbxdelta.
@@ -1201,11 +1201,11 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
    apply Rlt_trans with (Rabs h * eps / 4 + Rabs (f x - fn N x) + Rabs h * Rabs (fn' N c - g x)).
     apply Rplus_lt_compat_r ; apply Rplus_lt_compat_r ; unfold R_dist in fnxh_CV_fxh ;
  rewrite Rabs_minus_sym ; apply fnxh_CV_fxh.
-   unfold N; omega.
+   unfold N; lia.
    apply Rlt_trans with (Rabs h * eps / 4 + Rabs h * eps / 4 + Rabs h * Rabs (fn' N c - g x)).
     apply Rplus_lt_compat_r ; apply Rplus_lt_compat_l.
     unfold R_dist in fnx_CV_fx ; rewrite Rabs_minus_sym ; apply fnx_CV_fx.
-    unfold N ; omega.
+    unfold N ; lia.
    replace (fn' N c - g x)  with ((fn' N c - g c) +  (g c - g x)) by field.
    apply Rle_lt_trans with (Rabs h * eps / 4 + Rabs h * eps / 4 +
           Rabs h * Rabs (fn' N c - g c) + Rabs h * Rabs (g c - g x)).
@@ -1219,7 +1219,7 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
     apply Rplus_lt_compat_r; apply Rplus_lt_compat_l; apply Rmult_lt_compat_l.
      apply Rabs_pos_lt ; assumption.
     rewrite Rabs_minus_sym ; apply fn'c_CVU_gc.
-     unfold N ; omega.
+     unfold N ; lia.
     assert (t : Boule x delta c).
      destruct P.
     apply Rabs_def2 in xhinbxdelta; destruct xhinbxdelta.

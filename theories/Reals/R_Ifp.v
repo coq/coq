@@ -14,7 +14,7 @@
 (**********************************************************)
 
 Require Import Rbase.
-Require Import Omega.
+Require Import Lia.
 Local Open Scope R_scope.
 
 (*********************************************************)
@@ -60,7 +60,7 @@ Proof.
   apply lt_IZR in H1.
   rewrite <- minus_IZR in H2.
   apply le_IZR in H2.
-  omega.
+  lia.
 Qed.
 
 (**********)
@@ -230,7 +230,7 @@ Proof.
     rewrite <- (plus_IZR (Int_part r1 - Int_part r2) 1) in H;
       generalize (up_tech (r1 - r2) (Int_part r1 - Int_part r2) H0 H);
         intros; clear H H0; unfold Int_part at 1;
-          omega.
+          lia.
 Qed.
 
 (**********)
@@ -323,7 +323,7 @@ Proof.
             intro; clear H;
               generalize (up_tech (r1 - r2) (Int_part r1 - Int_part r2 - 1) H1 H0);
                 intros; clear H0 H1; unfold Int_part at 1;
-                  omega.
+                  lia.
 Qed.
 
 (**********)
@@ -437,7 +437,7 @@ Proof.
           rewrite <- (plus_IZR (Int_part r1 + Int_part r2) 1) in H0;
             rewrite <- (plus_IZR (Int_part r1 + Int_part r2 + 1) 1) in H0;
               generalize (up_tech (r1 + r2) (Int_part r1 + Int_part r2 + 1) H H0);
-                intro; clear H H0; unfold Int_part at 1; omega.
+                intro; clear H H0; unfold Int_part at 1; lia.
 Qed.
 
 (**********)
@@ -499,7 +499,7 @@ Proof.
         rewrite <- (plus_IZR (Int_part r1 + Int_part r2) 1) in H1;
           generalize (up_tech (r1 + r2) (Int_part r1 + Int_part r2) H0 H1);
             intro; clear H0 H1; unfold Int_part at 1;
-              omega.
+              lia.
 Qed.
 
 (**********)

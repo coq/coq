@@ -18,7 +18,7 @@ Require Import Rseries.
 Require Import SeqProp.
 Require Import PartSum.
 Require Import Ratan.
-Require Import Omega.
+Require Import Lia.
 
 Local Open Scope R_scope.
 
@@ -163,8 +163,8 @@ assert (cv : Un_cv PI_2_3_7_tg 0).
   rewrite <- (Rmult_0_r 2), <- Ropp_mult_distr_r_reverse.
   rewrite <- Rmult_plus_distr_l, Rabs_mult, (Rabs_pos_eq 2);[|lra].
   rewrite Rmult_assoc; apply Rmult_lt_compat_l;[lra | ].
-   apply (Pn1 n); omega.
-  apply (Pn2 n); omega.
+   apply (Pn1 n); lia.
+  apply (Pn2 n); lia.
 rewrite Machin_2_3_7.
 rewrite !atan_eq_ps_atan; try (split; lra).
 unfold ps_atan; destruct (in_int (/3)); destruct (in_int (/7));

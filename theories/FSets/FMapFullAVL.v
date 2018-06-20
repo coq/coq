@@ -27,7 +27,7 @@
 
 *)
 
-Require Import FunInd Recdef FMapInterface FMapList ZArith Int FMapAVL ROmega.
+Require Import FunInd Recdef FMapInterface FMapList ZArith Int FMapAVL Lia.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -39,7 +39,7 @@ Import Raw.Proofs.
 Local Open Scope pair_scope.
 Local Open Scope Int_scope.
 
-Ltac omega_max := i2z_refl; romega with Z.
+Ltac omega_max := i2z_refl; lia.
 
 Section Elt.
 Variable elt : Type.
@@ -697,7 +697,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
   end.
   Proof.
   intros; unfold cardinal_e_2; simpl;
-  abstract (do 2 rewrite cons_cardinal_e; romega with * ).
+  abstract (do 2 rewrite cons_cardinal_e; lia ).
   Defined.
 
   Definition Cmp c :=

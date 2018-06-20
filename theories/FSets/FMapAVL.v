@@ -18,7 +18,7 @@
     See the comments at the beginning of FSetAVL for more details.
 *)
 
-Require Import FunInd FMapInterface FMapList ZArith Int.
+Require Import FunInd FMapInterface FMapList ZArith Int Lia.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -1355,7 +1355,7 @@ Lemma elements_aux_cardinal :
 Proof.
  simple induction m; simpl; intuition.
  rewrite <- H; simpl.
- rewrite <- H0; omega.
+ rewrite <- H0; lia.
 Qed.
 
 Lemma elements_cardinal : forall (m:t elt), cardinal m = length (elements m).

@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import ZArithRing.
-Require Import Omega.
+Require Import Lia.
 Require Export ZArith_base.
 Local Open Scope Z_scope.
 
@@ -97,7 +97,7 @@ Definition sqrtrempos : forall p:positive, sqrt_data (Zpos p).
             end
         end
     end); clear sqrtrempos; repeat compute_POS;
- try (try rewrite Heq; ring); try omega.
+ try (try rewrite Heq; ring); try lia.
 Defined.
 
 (** Define with integer input, but with a strong (readable) specification. *)
@@ -142,8 +142,7 @@ Definition Zsqrt :
             (exist
                (fun r:Z => 0 = 0 * 0 + r /\ 0 * 0 <= 0 < (0 + 1) * (0 + 1)) 0
                _)
-    end); try omega.
- split; [ omega | rewrite Heq; ring_simplify (s*s) ((s + 1) * (s + 1)); omega ].
+    end); lia.
 Defined.
 
 (** Define a function of type Z->Z that computes the integer square root,
@@ -178,13 +177,6 @@ Qed.
 Theorem Zsqrt_plain_is_pos: forall n, 0 <= n ->  0 <= Zsqrt_plain n.
 Proof.
   intros n m; case (Zsqrt_interval n); auto with zarith.
-  intros H1 H2; case (Z.le_gt_cases 0 (Zsqrt_plain n)); auto.
-  intros H3; contradict H2; auto; apply Z.le_ngt.
-  apply Z.le_trans with ( 2 := H1 ).
-  replace ((Zsqrt_plain n + 1) * (Zsqrt_plain n + 1))
-     with (Zsqrt_plain n * Zsqrt_plain n + (2 * Zsqrt_plain n + 1));
-  auto with zarith.
-  ring.
 Qed.
 
 (** Direct correctness on squares. *)

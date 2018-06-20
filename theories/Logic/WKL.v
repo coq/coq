@@ -22,10 +22,8 @@
     predicate. Original Weak Konig's Lemma is the instantiation of
     the lemma to a tree *)
 
-Require Import WeakFan List.
+Require Import Arith WeakFan List.
 Import ListNotations.
-
-Require Import Omega.
 
 (** [is_path_from P n l] means that there exists a path of length [n]
     from [l] on which [P] does not hold *)

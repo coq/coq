@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Omega Relations Multiset SetoidList.
+Require Import Arith Lia Relations Multiset SetoidList.
 
 (** This file is deprecated, use [Permutation.v] instead.
 
@@ -342,9 +342,9 @@ Proof.
   rewrite multiplicity_InA.
   specialize (H a).
   rewrite if_eqA_refl in H.
-  clear IHl; omega.
+  clear IHl; lia.
   rewrite IHl; intros.
-  specialize (H a0). omega.
+  specialize (H a0). lia.
 Qed.
 
 (** Permutation is compatible with InA. *)
@@ -395,14 +395,14 @@ Proof.
   apply permut_length_1.
   red; red; intros.
   specialize (P a). simpl in *.
-  rewrite (@if_eqA_rewrite_l a1 a2 a) in P by auto. omega.
+  rewrite (@if_eqA_rewrite_l a1 a2 a) in P by auto. lia.
   right.
   inversion_clear H0; [|inversion H].
   split; auto.
   apply permut_length_1.
   red; red; intros.
   specialize (P a); simpl in *.
-  rewrite (@if_eqA_rewrite_l a1 b2 a) in P by auto. omega.
+  rewrite (@if_eqA_rewrite_l a1 b2 a) in P by auto. lia.
 Qed.
 
 (** Permutation is compatible with length. *)
@@ -434,7 +434,7 @@ Proof.
   rewrite multiplicity_NoDupA in H, H0.
   generalize (H a) (H0 a) (H1 a); clear H H0 H1.
   do 2 rewrite multiplicity_InA.
-  destruct 3; omega.
+  destruct 3; lia.
 Qed.
 
 End Permut.

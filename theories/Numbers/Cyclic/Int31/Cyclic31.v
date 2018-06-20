@@ -21,7 +21,7 @@ Require Import Znumtheory.
 Require Import Zgcd_alt.
 Require Import Zpow_facts.
 Require Import CyclicAxioms.
-Require Import ROmega.
+Require Import Lia.
 
 Declare ML Module "int31_syntax_plugin".
 
@@ -110,7 +110,7 @@ Section Basics.
   nshiftr x k = 0.
  Proof.
  intros.
- replace k with ((k-size)+size)%nat by omega.
+ replace k with ((k-size)+size)%nat by lia.
  induction (k-size)%nat; auto.
   rewrite nshiftr_size; auto.
   simpl; rewrite IHn; auto.
@@ -147,7 +147,7 @@ Section Basics.
   nshiftl x k = 0.
  Proof.
  intros.
- replace k with ((k-size)+size)%nat by omega.
+ replace k with ((k-size)+size)%nat by lia.
  induction (k-size)%nat; auto.
   rewrite nshiftl_size; auto.
   simpl; rewrite IHn; auto.
@@ -177,7 +177,7 @@ Section Basics.
   nshiftr x n = 0 -> nshiftr x p = 0.
  Proof.
  intros.
- replace p with ((p-n)+n)%nat by omega.
+ replace p with ((p-n)+n)%nat by lia.
  induction (p-n)%nat.
  simpl; auto.
  simpl; rewrite IHn0; auto.
@@ -188,7 +188,7 @@ Section Basics.
  Proof.
  intros.
  apply nshiftr_predsize_0_firstl.
- apply nshiftr_0_propagates with n; auto; omega.
+ apply nshiftr_0_propagates with n; auto; lia.
  Qed.
 
  (** * Some induction principles over [int31] *)
@@ -207,8 +207,8 @@ Section Basics.
  rewrite sneakl_shiftr.
  apply H0.
  change (P (nshiftr x (S (size - S n)))).
- replace (S (size - S n))%nat with (size - n)%nat by omega.
- apply IHn; omega.
+ replace (S (size - S n))%nat with (size - n)%nat by lia.
+ apply IHn; lia.
  change x with (nshiftr x (size-size)); auto.
  Qed.
 
@@ -253,7 +253,7 @@ Section Basics.
  destruct (iszero (nshiftr x (size - S n))); auto.
  f_equal.
  change (shiftr (nshiftr x (size - S n))) with (nshiftr x (S (size - S n))).
- replace (S (size - S n))%nat with (size - n)%nat by omega.
+ replace (S (size - S n))%nat with (size - n)%nat by lia.
  apply IHn; auto with arith.
  Qed.
 
@@ -434,8 +434,8 @@ Section Basics.
  unfold phibis_aux, recrbis_aux; fold recrbis_aux;
   fold (phibis_aux n (shiftr x)).
  destruct (firstr x).
- specialize IHn with (shiftr x); rewrite Z.double_spec; omega.
- specialize IHn with (shiftr x); rewrite Z.succ_double_spec; omega.
+ specialize IHn with (shiftr x); rewrite Z.double_spec; lia.
+ specialize IHn with (shiftr x); rewrite Z.succ_double_spec; lia.
  Qed.
 
  Lemma phibis_aux_bounded :
@@ -448,10 +448,10 @@ Section Basics.
  unfold phibis_aux, recrbis_aux; fold recrbis_aux;
   fold (phibis_aux n (shiftr (nshiftr x (size - S n)))).
  assert (shiftr (nshiftr x (size - S n)) =  nshiftr x (size-n)).
-  replace (size - n)%nat with (S (size - (S n))) by omega.
+  replace (size - n)%nat with (S (size - (S n))) by lia.
   simpl; auto.
  rewrite H0.
- assert (H1 : n <= size) by omega.
+ assert (H1 : n <= size) by lia.
  specialize (IHn x H1).
  set (y:=phibis_aux n (nshiftr x (size - n))) in *.
  rewrite Nat2Z.inj_succ, Z.pow_succ_r; auto with zarith.
@@ -485,7 +485,7 @@ Section Basics.
  intros.
  unfold nshiftr in H; simpl in *.
  unfold phibis_aux, recrbis_aux.
- rewrite H, Z.succ_double_spec; omega.
+ rewrite H, Z.succ_double_spec; lia.
 
  intros.
  remember (S n) as m.
@@ -499,8 +499,8 @@ Section Basics.
  destruct (firstr x).
  change (Z.double (phibis_aux (S n) (shiftr x))) with
         (2*(phibis_aux (S n) (shiftr x)))%Z.
- omega.
- rewrite Z.succ_double_spec; omega.
+ lia.
+ rewrite Z.succ_double_spec; lia.
  Qed.
 
  Lemma phi_lowerbound :
@@ -536,7 +536,7 @@ Section Basics.
    EqShiftL k x y -> EqShiftL k' x y.
  Proof.
  unfold EqShiftL; intros.
- replace k' with ((k'-k)+k)%nat by omega.
+ replace k' with ((k'-k)+k)%nat by lia.
  remember (k'-k)%nat as n.
  clear Heqn H k'.
  induction n; simpl; auto.
@@ -627,18 +627,18 @@ Section Basics.
  unfold shiftl; rewrite i2l_sneakl.
  simpl cstlist.
  rewrite <- app_comm_cons; f_equal.
- rewrite IHn; [ | omega].
+ rewrite IHn; [ | lia].
  rewrite removelast_app.
  apply f_equal.
- replace (size-n)%nat with (S (size - S n))%nat by omega.
+ replace (size-n)%nat with (S (size - S n))%nat by lia.
  rewrite removelast_firstn; auto.
- rewrite i2l_length; omega.
+ rewrite i2l_length; lia.
  generalize (firstn_length (size-n) (i2l x)).
  rewrite i2l_length.
  intros H0 H1. rewrite H1 in H0.
- rewrite min_l in H0 by omega.
+ rewrite min_l in H0 by lia.
  simpl length in H0.
- omega.
+ lia.
  Qed.
 
  (** [i2l] can be used to define a relation equivalent to [EqShiftL] *)
@@ -649,12 +649,12 @@ Section Basics.
  intros.
  destruct (le_lt_dec size k) as [Hle|Hlt].
  split; intros.
- replace (size-k)%nat with O by omega.
+ replace (size-k)%nat with O by lia.
  unfold firstn; auto.
  apply EqShiftL_size; auto.
 
  unfold EqShiftL.
- assert (k <= size) by omega.
+ assert (k <= size) by lia.
  split; intros.
  assert (i2l (nshiftl x k) = i2l (nshiftl y k)) by (f_equal; auto).
  rewrite 2 i2l_nshiftl in H1; auto.
@@ -679,7 +679,7 @@ Section Basics.
  rewrite 2 EqShiftL_i2l.
  unfold twice_plus_one.
  rewrite 2 i2l_sneakl.
- replace (size-k)%nat with (S (size - S k))%nat by omega.
+ replace (size-k)%nat with (S (size - S k))%nat by lia.
  remember (size - S k)%nat as n.
  remember (i2l x) as lx.
  remember (i2l y) as ly.
@@ -688,8 +688,8 @@ Section Basics.
  split; intros.
  injection H; auto.
  f_equal; auto.
- subst ly n; rewrite i2l_length; omega.
- subst lx n; rewrite i2l_length; omega.
+ subst ly n; rewrite i2l_length; lia.
+ subst lx n; rewrite i2l_length; lia.
  Qed.
 
  Lemma EqShiftL_shiftr : forall k x y, EqShiftL k x y ->
@@ -704,13 +704,13 @@ Section Basics.
  rewrite <- sneakl_shiftr.
  rewrite (EqShiftL_firstr k x y); auto.
  rewrite <- sneakl_shiftr; auto.
- omega.
+ lia.
  rewrite <- EqShiftL_twice_plus_one.
  unfold twice_plus_one; rewrite <- H0.
  rewrite <- sneakl_shiftr.
  rewrite (EqShiftL_firstr k x y); auto.
  rewrite <- sneakl_shiftr; auto.
- omega.
+ lia.
  Qed.
 
  Lemma EqShiftL_incrbis : forall n k x y, n<=size ->
@@ -725,13 +725,13 @@ Section Basics.
  unfold incrbis_aux; simpl;
   fold (incrbis_aux n (shiftr x)); fold (incrbis_aux n (shiftr y)).
 
- rewrite (EqShiftL_firstr k x y); auto; try omega.
+ rewrite (EqShiftL_firstr k x y); auto; try lia.
  case_eq (firstr y); intros.
  rewrite EqShiftL_twice_plus_one.
  apply EqShiftL_shiftr; auto.
 
  rewrite EqShiftL_twice.
- apply IHn; try omega.
+ apply IHn; try lia.
  apply EqShiftL_shiftr; auto.
  Qed.
 
@@ -840,18 +840,18 @@ Section Basics.
  unfold phibis_aux, recrbis_aux; fold recrbis_aux;
   fold (phibis_aux n (shiftr (nshiftr x (size-S n)))).
  assert (shiftr (nshiftr x (size - S n)) = nshiftr x (size-n)).
-  replace (size - n)%nat with (S (size - (S n))); auto; omega.
+  replace (size - n)%nat with (S (size - (S n))); auto; lia.
  rewrite H0.
  case_eq (firstr (nshiftr x (size - S n))); intros.
 
  rewrite phi_inv_double.
- rewrite IHn by omega.
+ rewrite IHn by lia.
  rewrite <- H0.
  remember (nshiftr x (size - S n)) as y.
  destruct y; simpl in H1; rewrite H1; auto.
 
  rewrite phi_inv_double_plus_one.
- rewrite IHn by omega.
+ rewrite IHn by lia.
  rewrite <- H0.
  remember (nshiftr x (size - S n)) as y.
  destruct y; simpl in H1; rewrite H1; auto.
@@ -928,7 +928,7 @@ Section Basics.
   (rewrite <- Z.pow_succ_r, <- Zpos_P_of_succ_nat;
    auto with zarith).
  rewrite (Z.mul_comm 2).
- assert (n<=size)%nat by omega.
+ assert (n<=size)%nat by lia.
  destruct p; simpl; [ | | auto];
   specialize (IHn p H0);
   generalize (p2ibis_bounded n p);
@@ -937,13 +937,13 @@ Section Basics.
  change (Zpos p~1) with (2*Zpos p + 1)%Z.
  rewrite phi_twice_plus_one_firstl, Z.succ_double_spec.
  rewrite IHn; ring.
- apply (nshiftr_0_firstl n); auto; try omega.
+ apply (nshiftr_0_firstl n); auto; try lia.
 
  change (Zpos p~0) with (2*Zpos p)%Z.
  rewrite phi_twice_firstl.
  change (Z.double (phi i)) with (2*(phi i))%Z.
  rewrite IHn; ring.
- apply (nshiftr_0_firstl n); auto; try omega.
+ apply (nshiftr_0_firstl n); auto; try lia.
  Qed.
 
  (** We now prove that this [p2ibis] is related to [phi_inv_positive] *)
@@ -959,8 +959,8 @@ Section Basics.
   specialize IHn with p;
   destruct (p2ibis n p); simpl @snd in *; simpl phi_inv_positive;
   rewrite ?EqShiftL_twice_plus_one, ?EqShiftL_twice;
-  replace (S (size - S n))%nat with (size - n)%nat by omega;
-  apply IHn; omega.
+  replace (S (size - S n))%nat with (size - n)%nat by lia;
+  apply IHn; lia.
  Qed.
 
  (** This gives the expected result about [phi o phi_inv], at least
@@ -1008,12 +1008,12 @@ Section Basics.
  induction n; simpl; auto; intros.
  destruct p; auto; specialize IHn with p;
   generalize (p2ibis_bounded n p);
-  rewrite IHn; try omega; destruct (p2ibis n p); simpl; intros;
+  rewrite IHn; try lia; destruct (p2ibis n p); simpl; intros;
   f_equal; auto.
  apply double_twice_plus_one_firstl.
- apply (nshiftr_0_firstl n); auto; omega.
+ apply (nshiftr_0_firstl n); auto; lia.
  apply double_twice_firstl.
- apply (nshiftr_0_firstl n); auto; omega.
+ apply (nshiftr_0_firstl n); auto; lia.
  Qed.
 
  Lemma positive_to_int31_phi_inv_positive : forall p,
@@ -1046,7 +1046,7 @@ Section Basics.
  pattern x at 1; rewrite <- (phi_inv_phi x).
  rewrite <- phi_inv_double.
  assert (0 <= Z.double (phi x)).
-  rewrite Z.double_spec; generalize (phi_bounded x); omega.
+  rewrite Z.double_spec; generalize (phi_bounded x); lia.
  destruct (Z.double (phi x)).
  simpl; auto.
  apply phi_phi_inv_positive.
@@ -1060,7 +1060,7 @@ Section Basics.
  pattern x at 1; rewrite <- (phi_inv_phi x).
  rewrite <- phi_inv_double_plus_one.
  assert (0 <= Z.succ_double (phi x)).
-  rewrite Z.succ_double_spec; generalize (phi_bounded x); omega.
+  rewrite Z.succ_double_spec; generalize (phi_bounded x); lia.
  destruct (Z.succ_double (phi x)).
  simpl; auto.
  apply phi_phi_inv_positive.
@@ -1075,7 +1075,7 @@ Section Basics.
  rewrite <- phi_inv_incr.
  assert (0 <= Z.succ (phi x)).
   change (Z.succ (phi x)) with ((phi x)+1)%Z;
-   generalize (phi_bounded x); omega.
+   generalize (phi_bounded x); lia.
  destruct (Z.succ (phi x)).
  simpl; auto.
  apply phi_phi_inv_positive.
@@ -1095,7 +1095,7 @@ Section Basics.
  rewrite incr_twice, phi_twice_plus_one.
  remember (phi (complement_negative p)) as q.
  rewrite Z.succ_double_spec.
- replace (2*q+1) with (2*(Z.succ q)-1) by omega.
+ replace (2*q+1) with (2*(Z.succ q)-1) by lia.
  rewrite <- Zminus_mod_idemp_l, <- Zmult_mod_idemp_r, IHp.
  rewrite Zmult_mod_idemp_r, Zminus_mod_idemp_l; auto with zarith.
 
@@ -1239,7 +1239,7 @@ Section Int31_Specs.
   destruct (Z_lt_le_dec (X+Y) wB).
   contradict H1; auto using Zmod_small with zarith.
   rewrite <- (Z_mod_plus_full (X+Y) (-1) wB).
-  rewrite Zmod_small; romega.
+  rewrite Zmod_small; lia.
 
  generalize (Z.compare_eq ((X+Y) mod wB) (X+Y)); intros Heq.
  destruct Z.compare; intros;
@@ -1263,7 +1263,7 @@ Section Int31_Specs.
   destruct (Z_lt_le_dec (X+Y+1) wB).
   contradict H1; auto using Zmod_small with zarith.
   rewrite <- (Z_mod_plus_full (X+Y+1) (-1) wB).
-  rewrite Zmod_small; romega.
+  rewrite Zmod_small; lia.
 
  generalize (Z.compare_eq ((X+Y+1) mod wB) (X+Y+1)); intros Heq.
  destruct Z.compare; intros;
@@ -1301,8 +1301,8 @@ Section Int31_Specs.
   unfold interp_carry; rewrite phi_phi_inv, Z.compare_eq_iff; intros.
   destruct (Z_lt_le_dec (X-Y) 0).
   rewrite <- (Z_mod_plus_full (X-Y) 1 wB).
-  rewrite Zmod_small; romega.
-  contradict H1; apply Zmod_small; romega.
+  rewrite Zmod_small; lia.
+  contradict H1; apply Zmod_small; lia.
 
  generalize (Z.compare_eq ((X-Y) mod wB) (X-Y)); intros Heq.
  destruct Z.compare; intros;
@@ -1320,8 +1320,8 @@ Section Int31_Specs.
   unfold interp_carry; rewrite phi_phi_inv, Z.compare_eq_iff; intros.
   destruct (Z_lt_le_dec (X-Y-1) 0).
   rewrite <- (Z_mod_plus_full (X-Y-1) 1 wB).
-  rewrite Zmod_small; romega.
-  contradict H1; apply Zmod_small; romega.
+  rewrite Zmod_small; lia.
+  contradict H1; apply Zmod_small; lia.
 
  generalize (Z.compare_eq ((X-Y-1) mod wB) (X-Y-1)); intros Heq.
  destruct Z.compare; intros;
@@ -1358,7 +1358,7 @@ Section Int31_Specs.
  change [|1|] with 1; change [|0|] with 0.
  rewrite <- (Z_mod_plus_full (0-[|x|]) 1 wB).
  rewrite Zminus_mod_idemp_l.
- rewrite Zmod_small; generalize (phi_bounded x); romega.
+ rewrite Zmod_small; generalize (phi_bounded x); lia.
  Qed.
 
  Lemma spec_pred_c : forall x, [-|sub31c x 1|] = [|x|] - 1.
@@ -1433,19 +1433,19 @@ Section Int31_Specs.
  change base with wB; change base with wB in H5.
  change (Z.pow_pos 2 31) with wB; change (Z.pow_pos 2 31) with wB in H.
  rewrite H5, Z.mul_comm.
- replace (z0 mod wB) with z0 by (symmetry; apply Zmod_small; omega).
+ replace (z0 mod wB) with z0 by (symmetry; apply Zmod_small; lia).
  replace (z mod wB) with z; auto with zarith.
   symmetry; apply Zmod_small.
   split.
   apply H7; change base with wB; auto with zarith.
-  apply Z.mul_lt_mono_pos_r with [|b|]; [omega| ].
+  apply Z.mul_lt_mono_pos_r with [|b|]; [lia| ].
   rewrite Z.mul_comm.
-  apply Z.le_lt_trans with ([|b|]*z+z0); [omega| ].
+  apply Z.le_lt_trans with ([|b|]*z+z0); [lia| ].
   rewrite <- H5.
-  apply Z.le_lt_trans with ([|a1|]*wB+(wB-1)); [omega | ].
+  apply Z.le_lt_trans with ([|a1|]*wB+(wB-1)); [lia | ].
   replace ([|a1|]*wB+(wB-1)) with (wB*([|a1|]+1)-1) by ring.
-  assert (wB*([|a1|]+1) <= wB*[|b|]); try omega.
-  apply Z.mul_le_mono_nonneg; omega.
+  assert (wB*([|a1|]+1) <= wB*[|b|]); try lia.
+  apply Z.mul_le_mono_nonneg; lia.
  Qed.
 
  Lemma spec_div : forall a b, 0 < [|b|] ->
@@ -1461,13 +1461,13 @@ Section Int31_Specs.
  destruct 1; intros.
  rewrite H1, Z.mul_comm.
  generalize (phi_bounded a)(phi_bounded b); intros.
- replace (z0 mod wB) with z0 by (symmetry; apply Zmod_small; omega).
+ replace (z0 mod wB) with z0 by (symmetry; apply Zmod_small; lia).
  replace (z mod wB) with z; auto with zarith.
   symmetry; apply Zmod_small.
   split; auto with zarith.
   apply Z.le_lt_trans with [|a|]; auto with zarith.
   rewrite H1.
-  apply Z.le_trans with ([|b|]*z); try omega.
+  apply Z.le_trans with ([|b|]*z); try lia.
   rewrite <- (Z.mul_1_l z) at 1.
   apply Z.mul_le_mono_nonneg; auto with zarith.
  Qed.
@@ -1483,7 +1483,7 @@ Section Int31_Specs.
  rewrite ?phi_phi_inv.
  destruct 1; intros.
  generalize (phi_bounded b); intros.
- apply Zmod_small; omega.
+ apply Zmod_small; lia.
  Qed.
 
  Lemma phi_gcd : forall i j,
@@ -1498,7 +1498,7 @@ Section Int31_Specs.
   generalize (phi_bounded j)(phi_bounded i); intros.
   case_eq [|j|]; intros.
   simpl; intros.
-  generalize (Zabs_spec [|i|]); omega.
+  generalize (Zabs_spec [|i|]); lia.
   simpl. rewrite IHn, H1; f_equal.
   rewrite spec_mod, H1; auto.
   rewrite H1; compute; auto.
@@ -1516,7 +1516,7 @@ Section Int31_Specs.
  destruct [|b|].
  unfold size; auto with zarith.
  intros (_,H).
- cut (Pos.size_nat p <= size)%nat; [ omega | rewrite <- Zpower2_Psize; auto].
+ cut (Pos.size_nat p <= size)%nat; [ lia | rewrite <- Zpower2_Psize; auto].
  intros (H,_); compute in H; elim H; auto.
  Qed.
 
@@ -1545,8 +1545,6 @@ Section Int31_Specs.
     iter_nat (Z.abs_nat (Z.succ_double z)) A f a); f_equal.
  rewrite Z.succ_double_spec, <- Z.add_diag.
  rewrite Zabs2Nat.inj_add; auto with zarith.
- rewrite Zabs2Nat.inj_add; auto with zarith.
- change (Z.abs_nat 1) with 1%nat; omega.
  Qed.
 
  Fixpoint addmuldiv31_alt n i j :=
@@ -1594,7 +1592,7 @@ Section Int31_Specs.
  symmetry; apply Zdiv_small; apply phi_bounded.
 
  simpl addmuldiv31_alt; intros.
- rewrite IHn; [ | omega ].
+ rewrite IHn; [ | lia ].
  case_eq (firstl y); intros.
 
  rewrite phi_twice, Z.double_spec.
@@ -1622,7 +1620,7 @@ Section Int31_Specs.
   clear - H. symmetry. apply Zmod_unique with 1; [ | ring ].
   generalize (phi_lowerbound  _ H) (phi_bounded y).
   set (wB' := 2^Z.of_nat (pred size)).
-  replace wB with (2*wB'); [ omega | ].
+  replace wB with (2*wB'); [ lia | ].
   unfold wB'. rewrite <- Z.pow_succ_r, <- Nat2Z.inj_succ by (auto with zarith).
   f_equal.
  rewrite H1.
@@ -1744,20 +1742,20 @@ Section Int31_Specs.
   rewrite phi_phi_inv.
   apply Zmod_small.
   split.
-  change 0 with (Z.of_nat O); apply inj_le; omega.
+  change 0 with (Z.of_nat O); apply inj_le; lia.
   apply Z.le_lt_trans with (Z.of_nat 31).
-  apply inj_le; omega.
+  apply inj_le; lia.
   compute; auto.
  case_eq (firstl x); intros; auto.
  rewrite plus_Sn_m, plus_n_Sm.
- replace (S (31 - S n)) with (31 - n)%nat by omega.
- rewrite <- IHn; [ | omega | ].
+ replace (S (31 - S n)) with (31 - n)%nat by lia.
+ rewrite <- IHn; [ | lia | ].
  f_equal; f_equal.
  unfold add31.
  rewrite H1.
  f_equal.
  change [|In|] with 1.
- replace (31-n)%nat with (S (31 - S n))%nat by omega.
+ replace (31-n)%nat with (S (31 - S n))%nat by lia.
  rewrite Nat2Z.inj_succ; ring.
 
  clear - H H2.
@@ -1852,20 +1850,20 @@ Section Int31_Specs.
   rewrite phi_phi_inv.
   apply Zmod_small.
   split.
-  change 0 with (Z.of_nat O); apply inj_le; omega.
+  change 0 with (Z.of_nat O); apply inj_le; lia.
   apply Z.le_lt_trans with (Z.of_nat 31).
-  apply inj_le; omega.
+  apply inj_le; lia.
   compute; auto.
  case_eq (firstr x); intros; auto.
  rewrite plus_Sn_m, plus_n_Sm.
- replace (S (31 - S n)) with (31 - n)%nat by omega.
- rewrite <- IHn; [ | omega | ].
+ replace (S (31 - S n)) with (31 - n)%nat by lia.
+ rewrite <- IHn; [ | lia | ].
  f_equal; f_equal.
  unfold add31.
  rewrite H1.
  f_equal.
  change [|In|] with 1.
- replace (31-n)%nat with (S (31 - S n))%nat by omega.
+ replace (31-n)%nat with (S (31 - S n))%nat by lia.
  rewrite Nat2Z.inj_succ; ring.
 
  clear - H H2.
@@ -2002,7 +2000,6 @@ Section Int31_Specs.
  intros Hj; generalize (spec_div i j Hj).
  case div31; intros q r; simpl @fst.
  intros (H1,H2); apply Zdiv_unique with [|r|]; auto with zarith.
- rewrite H1; ring.
  Qed.
 
  Lemma sqrt31_step_correct rec i j:
@@ -2045,8 +2042,6 @@ Section Int31_Specs.
  Proof.
  revert rec i j; elim n; unfold iter31_sqrt; fold iter31_sqrt; clear n.
  intros rec i j Hi Hj Hij H31 Hrec; apply sqrt31_step_correct; auto with zarith.
- intros; apply Hrec; auto with zarith.
- rewrite Z.pow_0_r; auto with zarith.
  intros n Hrec rec i j Hi Hj Hij H31 HHrec.
  apply sqrt31_step_correct; auto.
  intros j1 Hj1  Hjp1; apply Hrec; auto with zarith.
@@ -2064,7 +2059,6 @@ Section Int31_Specs.
  intros i; unfold sqrt31.
  rewrite spec_compare. case Z.compare_spec; change [|1|] with 1;
    intros Hi; auto with zarith.
- repeat rewrite Z.pow_2_r; auto with zarith.
  apply iter31_sqrt_correct; auto with zarith.
   rewrite div31_phi; change ([|2|]) with 2;  auto with zarith.
   replace ([|i|]) with (1 * 2 + ([|i|] - 2))%Z; try ring.
@@ -2146,8 +2140,7 @@ Section Int31_Specs.
  case (phi_bounded j); intros _ Hj1.
  assert (Hp3: (0 < phi2 ih il)).
  { unfold phi2; apply Z.lt_le_trans with ([|ih|] * base); auto with zarith.
-   apply Z.mul_pos_pos; auto with zarith.
-   apply Z.lt_le_trans with (2:= Hih); auto with zarith. }
+   apply Z.mul_pos_pos; auto with zarith. }
  rewrite spec_compare. case Z.compare_spec; intros Hc1.
  - split; auto.
    apply sqrt_test_true; auto.
@@ -2235,8 +2228,6 @@ Section Int31_Specs.
  Proof.
  revert rec ih il j; elim n; unfold iter312_sqrt; fold iter312_sqrt; clear n.
  intros rec ih il j Hi Hj Hij Hrec; apply sqrt312_step_correct; auto with zarith.
- intros; apply Hrec; auto with zarith.
- rewrite Z.pow_0_r; auto with zarith.
  intros n Hrec rec ih il j Hi Hj Hij HHrec.
  apply sqrt312_step_correct; auto.
  intros j1 Hj1  Hjp1; apply Hrec; auto with zarith.
@@ -2326,8 +2317,6 @@ Section Int31_Specs.
  case (phi_bounded s);  change (2 ^ Z.of_nat size) with base; intros _ Hps.
  case (phi_bounded ih1); intros Hpih1 _; auto with zarith.
  apply Z.le_trans with (([|ih1|] + 2) * base); auto with zarith.
- rewrite Z.mul_add_distr_r.
- assert (2 * [|s|] + 1 <= 2 * base); auto with zarith.
  rewrite Hihl1, Hbin; auto.
  split.
  unfold phi2; rewrite <- H1; ring.
@@ -2395,7 +2384,6 @@ Section Int31_Specs.
  assert (2 * [|s|] + 1 <= 2 * base); auto with zarith.
  apply Z.le_trans with ([|ih1|] * base + 2 * base); auto with zarith.
  assert (Hi: ([|ih1|] + 3) * base <= [|ih|] * base); auto with zarith.
- rewrite Z.mul_add_distr_r in Hi; auto with zarith.
  rewrite Hihl1, Hbin; auto.
  unfold phi2; rewrite <-H2.
  split.

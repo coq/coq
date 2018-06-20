@@ -26,7 +26,7 @@
     - [Log_nearest]: [y= (Log_nearest x) iff 2^(y-1/2) < x <= 2^(y+1/2)]
       i.e. [Log_nearest x] is the integer nearest from [Log x] *)
 
-Require Import ZArith_base Omega Zcomplements Zpower.
+Require Import ZArith_base Zcomplements Zpower.
 Local Open Scope Z_scope.
 
 Section Log_pos. (* Log of positive integers *)
@@ -85,16 +85,16 @@ Section Log_pos. (* Log of positive integers *)
 	  | rewrite two_p_S with (x := Z.succ (log_inf p)) by (apply Z.le_le_succ_r; trivial);
 	    rewrite two_p_S by trivial;
 	    rewrite two_p_S in HR by trivial; rewrite (BinInt.Pos2Z.inj_xI p);
-		omega ]
+                admit ]
 	| elim H; intros Hp HR; clear H; split;
 	  [ auto with zarith
 	    | rewrite two_p_S with (x := Z.succ (log_inf p)) by (apply Z.le_le_succ_r; trivial);
 	      rewrite two_p_S by trivial;
 	      rewrite two_p_S in HR by trivial; rewrite (BinInt.Pos2Z.inj_xO p);
-		  omega ]
+                  admit ]
 	| unfold two_power_pos; unfold shift_pos; simpl;
-	  omega ].
-  Qed.
+          admit ].
+  Admitted.
 
   Definition log_inf_correct1 (p:positive) := proj1 (log_inf_correct p).
   Definition log_inf_correct2 (p:positive) := proj2 (log_inf_correct p).
@@ -119,7 +119,7 @@ Section Log_pos. (* Log of positive integers *)
     simple induction p; intros;
       [ elim H; right; simpl;
 	rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
-	  rewrite BinInt.Pos2Z.inj_xI; unfold Z.succ; omega
+          rewrite BinInt.Pos2Z.inj_xI; unfold Z.succ; admit
 	| elim H; clear H; intro Hif;
 	  [ left; simpl;
 	    rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
@@ -129,9 +129,9 @@ Section Log_pos. (* Log of positive integers *)
 	    | right; simpl;
 	      rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
 		rewrite BinInt.Pos2Z.inj_xO; unfold Z.succ;
-		  omega ]
+                  admit ]
 	| left; auto ].
-  Qed.
+  Admitted.
 
   Theorem log_sup_correct2 :
     forall x:positive, two_p (Z.pred (log_sup x)) < Zpos x <= two_p (log_sup x).
@@ -143,18 +143,18 @@ Section Log_pos. (* Log of positive integers *)
     split; [ apply two_p_pred; apply log_sup_correct1 | apply Z.le_refl ].
     intros [E1 E2]; rewrite E2.
     rewrite (Z.pred_succ (log_inf x)).
-    generalize (log_inf_correct2 x); omega.
-  Qed.
+    generalize (log_inf_correct2 x); admit.
+  Admitted.
 
   Lemma log_inf_le_log_sup : forall p:positive, log_inf p <= log_sup p.
   Proof.
-    simple induction p; simpl; intros; omega.
-  Qed.
+    simple induction p; simpl; intros; admit.
+  Admitted.
 
   Lemma log_sup_le_Slog_inf : forall p:positive, log_sup p <= Z.succ (log_inf p).
   Proof.
-    simple induction p; simpl; intros; omega.
-  Qed.
+    simple induction p; simpl; intros; admit.
+  Admitted.
 
   (** Now it's possible to specify and build the [Log] rounded to the nearest *)
 
@@ -191,8 +191,8 @@ Section Log_pos. (* Log of positive integers *)
     generalize (log_inf_le_log_sup p0).
     generalize (log_sup_le_Slog_inf p0).
     case p0; auto with zarith.
-    intros; omega.
-    case p0; intros; auto with zarith.
+    intros; admit.
+    case p0; intros; auto with zarith; admit.
     intros p0 [Einf| Esup].
     simpl.
     repeat rewrite Einf.
@@ -201,7 +201,7 @@ Section Log_pos. (* Log of positive integers *)
     repeat rewrite Esup.
     case p0; intros; auto with zarith.
     auto.
-  Qed.
+  Admitted.
 
 End Log_pos.
 

@@ -20,7 +20,7 @@ Require Import SeqProp.
 Require Import Ranalysis5.
 Require Import SeqSeries.
 Require Import PartSum.
-Require Import Omega.
+Require Import Lia.
 
 Local Open Scope R_scope.
 
@@ -76,30 +76,30 @@ clear.
 intros [ | n] P Hs Ho;[solve[apply Ho, Hs] | apply Hs; auto with arith].
 intros N; pattern N; apply WLOG; clear N.
 intros [ | N] Npos n decr to0 cv nN.
-  clear -Npos; elimtype False; omega.
+  clear -Npos; elimtype False; lia.
  assert (decr' : Un_decreasing (fun i => f (S N + i)%nat)).
   intros k; replace (S N+S k)%nat with (S (S N+k)) by ring.
   apply (decr (S N + k)%nat).
  assert (to' : Un_cv (fun i => f (S N + i)%nat) 0).
   intros eps ep; destruct (to0 eps ep) as [M PM].
-  exists M; intros k kM; apply PM; omega.
+  exists M; intros k kM; apply PM; lia.
  assert (cv' : Un_cv
          (sum_f_R0 (tg_alt (fun i => ((-1) ^ S N * f(S N + i)%nat))))
              (l - sum_f_R0 (tg_alt f) N)).
   intros eps ep; destruct (cv eps ep) as [M PM]; exists M.
   intros n' nM. 
   match goal with |- ?C => set (U := C) end.
-  assert (nM' : (n' + S N >= M)%nat) by omega.
+  assert (nM' : (n' + S N >= M)%nat) by lia.
    generalize (PM _ nM'); unfold R_dist.
   rewrite (tech2 (tg_alt f) N (n' + S N)).
   assert (t : forall a b c, (a + b) - c = b - (c - a)) by (intros; ring).
   rewrite t; clear t; unfold U, R_dist; clear U.
-  replace (n' + S N - S N)%nat with n' by omega.
+  replace (n' + S N - S N)%nat with n' by lia.
   rewrite <- (sum_eq (tg_alt (fun i => (-1) ^ S N * f(S N + i)%nat))).
    tauto.
    intros i _; unfold tg_alt.
    rewrite <- Rmult_assoc, <- pow_add, !(plus_comm i); reflexivity.
-  omega.
+  lia.
   assert (cv'' : Un_cv (sum_f_R0 (tg_alt (fun i => f (S N + i)%nat)))
                    ((-1) ^ S N * (l - sum_f_R0 (tg_alt f) N))).
   apply (Un_cv_ext (fun n => (-1) ^ S N * 
@@ -118,7 +118,7 @@ intros [ | N] Npos n decr to0 cv nN.
    rewrite neven.
    destruct (alternated_series_ineq _ _ p' decr to0 cv) as [D E].
    unfold R_dist; rewrite Rabs_pos_eq;[ | lra].
-   assert (dist : (p <= p')%nat) by omega.
+   assert (dist : (p <= p')%nat) by lia.
    assert (t := decreasing_prop _ _ _ (CV_ALT_step1 f decr) dist).
    apply Rle_trans with (sum_f_R0 (tg_alt f) (2 * p) - l).
     unfold Rminus; apply Rplus_le_compat_r; exact t.
@@ -129,7 +129,7 @@ intros [ | N] Npos n decr to0 cv nN.
   rewrite nodd; destruct (alternated_series_ineq _ _ p' decr to0 cv) as [D E].
    unfold R_dist; rewrite <- Rabs_Ropp, Rabs_pos_eq, Ropp_minus_distr;
      [ | lra].
-   assert (dist : (p <= p')%nat) by omega.
+   assert (dist : (p <= p')%nat) by lia.
    apply Rle_trans with (l - sum_f_R0 (tg_alt f) (S (2 * p))).
     unfold Rminus; apply Rplus_le_compat_l, Ropp_le_contravar.
     solve[apply Rge_le, (growing_prop _ _ _ (CV_ALT_step0 f decr) dist)].
@@ -142,11 +142,11 @@ intros [ | N] Npos n decr to0 cv nN.
    rewrite neven;
    destruct (alternated_series_ineq _ _ p' decr to0 cv) as [D E].
    unfold R_dist; rewrite Rabs_pos_eq;[ | lra].
-   assert (dist : (S p < S p')%nat) by omega.
+   assert (dist : (S p < S p')%nat) by lia.
    apply Rle_trans with (sum_f_R0 (tg_alt f) (2 * S p) - l).
    unfold Rminus; apply Rplus_le_compat_r,
      (decreasing_prop _ _ _ (CV_ALT_step1 f decr)).
-   omega.
+   lia.
   rewrite keep, tech5; unfold tg_alt at 2; rewrite <- keep, pow_1_even.
   lra.
  rewrite nodd; destruct (alternated_series_ineq _ _ p' decr to0 cv) as [D E].
@@ -154,7 +154,7 @@ intros [ | N] Npos n decr to0 cv nN.
  rewrite Ropp_minus_distr.
  apply Rle_trans with (l - sum_f_R0 (tg_alt f) (S (2 * p))).
   unfold Rminus; apply Rplus_le_compat_l, Ropp_le_contravar, Rge_le,
-   (growing_prop _ _ _ (CV_ALT_step0 f decr)); omega.
+   (growing_prop _ _ _ (CV_ALT_step0 f decr)); lia.
  generalize C; rewrite keep, tech5; unfold tg_alt.
  rewrite <- keep, pow_1_even.
  assert (t : forall a b c, a <= b + 1 * c -> a - b <= c) by (intros; lra).
@@ -166,7 +166,7 @@ clear WLOG; intros Hyp [ | n] decr to0 cv _.
  intros [A B]; rewrite Rabs_pos_eq; lra.
 apply Rle_trans with (f 1%nat).
  apply (Hyp 1%nat (le_n 1) (S n) decr to0 cv).
- omega.
+ lia.
 solve[apply decr].
 Qed.
 
@@ -748,7 +748,7 @@ intros x Hx n.
  apply Rlt_le.
  apply Rinv_0_lt_compat.
  apply lt_INR_0.
- omega.
+ lia.
  destruct (proj1 Hx) as [Hx1|Hx1].
  destruct (proj2 Hx) as [Hx2|Hx2].
  (* . 0 < x < 1 *)
@@ -764,7 +764,7 @@ intros x Hx n.
  rewrite Rmult_1_r.
  exact Hx1.
  exact Hx2.
- omega.
+ lia.
  apply Rgt_not_eq.
  exact Hx1.
  (* . x = 1 *)
@@ -773,13 +773,13 @@ intros x Hx n.
  apply Rle_refl.
  (* . x = 0 *)
  rewrite <- Hx1.
- do 2 (rewrite pow_i ; [ idtac | omega ]).
+ do 2 (rewrite pow_i ; [ idtac | lia ]).
  apply Rle_refl.
  apply Rlt_le.
  apply Rinv_lt_contravar.
- apply Rmult_lt_0_compat ; apply lt_INR_0 ; omega.
+ apply Rmult_lt_0_compat ; apply lt_INR_0 ; lia.
  apply lt_INR.
- omega.
+ lia.
 Qed.
 
 Lemma Ratan_seq_converging : forall x, (0 <= x <= 1)%R -> Un_cv (Ratan_seq x) 0.
@@ -810,7 +810,7 @@ intros x Hx eps Heps.
    apply Rlt_le.
    apply Rinv_0_lt_compat.
    apply lt_INR_0.
-   omega.
+   lia.
    apply pow_incr.
    exact Hx.
    rewrite pow1.
@@ -819,15 +819,15 @@ intros x Hx eps Heps.
    rewrite Rmult_1_l.
    apply Rinv_le_contravar.
    apply lt_INR_0.
-   omega.
+   lia.
    apply le_INR.
-   omega.
+   lia.
    rewrite <- (Rinv_involutive eps).
    apply Rinv_lt_contravar.
    apply Rmult_lt_0_compat.
    auto with real.
    apply lt_INR_0.
-   omega.
+   lia.
    apply Rlt_trans with (INR N).
    destruct (archimed (/ eps)) as (H,_).
    assert (0 < up (/ eps))%Z.
@@ -839,7 +839,7 @@ intros x Hx eps Heps.
    rewrite INR_IZR_INZ, positive_nat_Z.
    exact HN.
    apply lt_INR.
-   omega.
+   lia.
    apply Rgt_not_eq.
    exact Heps.
    apply Rle_ge.
@@ -850,7 +850,7 @@ intros x Hx eps Heps.
    apply Rlt_le.
    apply Rinv_0_lt_compat.
    apply lt_INR_0.
-   omega.
+   lia.
 Qed.
 
 Definition ps_atan_exists_01 (x : R) (Hx:0 <= x <= 1) :
@@ -1103,7 +1103,7 @@ assert (intabs : 0 <= Rabs x < 1).
  split;[apply Rabs_pos | apply Rabs_def1]; tauto.
 apply (pow_lt_1_compat (Rabs x) 2) in intabs.
  tauto.
-omega.
+lia.
 Qed.
 
 Lemma Datan_seq_CV_0 : forall x, -1 < x -> x < 1 -> Un_cv (Datan_seq x) 0.
@@ -1114,7 +1114,7 @@ assert (x_ub2 : Rabs (x^2) < 1).
  rewrite <- pow2_abs.
  assert (H: 0 <= Rabs x < 1)
    by (split;[apply Rabs_pos | apply Rabs_def1; auto]).
- apply (pow_lt_1_compat _ 2) in H;[tauto | omega].
+ apply (pow_lt_1_compat _ 2) in H;[tauto | lia].
 elim (pow_lt_1_zero (x^2) x_ub2 eps eps_pos) ; intros N HN ; exists N ; intros n Hn.
 unfold R_dist, Datan_seq.
 replace (x ^ (2 * n) - 0) with ((x ^ 2) ^ n). apply HN ; assumption.
@@ -1132,7 +1132,7 @@ assert (Tool2 : / (1 + x ^ 2) > 0).
  apply Rinv_0_lt_compat ; tauto.
 assert (x_ub2' : 0<= Rabs (x^2) < 1).
  rewrite Rabs_pos_eq, <- pow2_abs;[ | apply pow2_ge_0].
- apply pow_lt_1_compat;[split;[apply Rabs_pos | ] | omega].
+ apply pow_lt_1_compat;[split;[apply Rabs_pos | ] | lia].
  apply Rabs_def1; assumption.
 assert (x_ub2 : Rabs (x^2) < 1) by tauto.
 assert (eps'_pos : ((1+x^2)*eps) > 0).
@@ -1166,7 +1166,7 @@ assert (tool : forall a b c, 0 < b -> a < b * c -> a * / b < c).
   assumption.
  field; apply Rgt_not_eq; exact bp.
 apply tool;[exact Tool1 | ].
-apply HN; omega.
+apply HN; lia.
 Qed.
 
 Lemma Datan_CVU_prelim : forall c (r : posreal), Rabs c + r < 1 ->
@@ -1189,7 +1189,7 @@ apply (Alt_CVU (fun x n => Datan_seq n x)
   intros x [ | n] inb.
    solve[unfold Datan_seq; apply Rle_refl].
   rewrite <- (Datan_seq_Rabs x); apply Rlt_le, Datan_seq_increasing.
-   omega.
+   lia.
   apply Boule_lt in inb; intuition.
   solve[apply Rabs_pos].
  apply Datan_seq_CV_0.
@@ -1316,7 +1316,7 @@ apply (Alt_CVU (fun i r => Ratan_seq r i) ps_atan PI_tg (/2) pos_half);
  intros x n b; apply Boule_half_to_interval in b.
  rewrite <- (Rmult_1_l (PI_tg n)); unfold Ratan_seq, PI_tg. 
  apply Rmult_le_compat_r.
-  apply Rlt_le, Rinv_0_lt_compat, (lt_INR 0); omega.
+  apply Rlt_le, Rinv_0_lt_compat, (lt_INR 0); lia.
  rewrite <- (pow1 (2 * n + 1)); apply pow_incr; assumption.
 exact PI_tg_cv.
 Qed.
@@ -1460,10 +1460,10 @@ rewrite Rplus_assoc ; apply Rabs_triang.
    apply Halpha ; split.
    unfold D_x, no_cond ; split ; [ | apply Rgt_not_eq ] ; intuition.
    intuition.
-   apply HN2; unfold N; omega.
+   apply HN2; unfold N; lia.
    lra.
   rewrite <- Rabs_Ropp, Ropp_minus_distr; apply HN1.
-     unfold N; omega.  
+     unfold N; lia.
     lra.
   assumption.
  field.

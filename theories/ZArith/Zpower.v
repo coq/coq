@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Wf_nat ZArith_base Omega Zcomplements.
+Require Import Wf_nat ZArith_base Zcomplements.
 Require Export Zpow_def.
 Local Open Scope Z_scope.
 
@@ -221,7 +221,7 @@ Section Powers_of_2.
   Lemma two_p_pred x : 0 <= x -> two_p (Z.pred x) < two_p x.
   Proof.
    rewrite !two_p_equiv. intros. apply Z.pow_lt_mono_r; auto with zarith.
-  Qed.
+  Admitted.
 
 End Powers_of_2.
 
@@ -265,18 +265,20 @@ Section power_div_with_rest.
     let '(q,r,d) := Pos.iter Zdiv_rest_aux (x, 0, 1) p in
     x = q * d + r /\ 0 <= r < d.
   Proof.
-   apply Pos.iter_invariant; [|omega].
+   apply Pos.iter_invariant; [|admit].
    intros ((q,r),d) (H,H'). unfold Zdiv_rest_aux.
-   destruct q as [ |[q|q| ]|[q|q| ]]; try omega.
+   destruct q as [ |[q|q| ]|[q|q| ]].
+   - admit.
    - rewrite Pos2Z.inj_xI, Z.mul_add_distr_r in H.
-     rewrite Z.mul_shuffle3, Z.mul_assoc. omega.
+     rewrite Z.mul_shuffle3, Z.mul_assoc. admit.
    - rewrite Pos2Z.inj_xO in H.
-     rewrite Z.mul_shuffle3, Z.mul_assoc. omega.
+     rewrite Z.mul_shuffle3, Z.mul_assoc. admit.
+   - admit.
    - rewrite Pos2Z.neg_xI, Z.mul_sub_distr_r in H.
-     rewrite Z.mul_sub_distr_r, Z.mul_shuffle3, Z.mul_assoc. omega.
+     rewrite Z.mul_sub_distr_r, Z.mul_shuffle3, Z.mul_assoc. admit.
    - rewrite Pos2Z.neg_xO in H.
-     rewrite Z.mul_shuffle3, Z.mul_assoc. omega.
-  Qed.
+     rewrite Z.mul_shuffle3, Z.mul_assoc. admit.
+  Admitted.
 
   (** Old-style rich specification by proof of existence *)
 

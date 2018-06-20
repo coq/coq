@@ -8,12 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import QArith.
+Require Import QArith Lia.
 
 Lemma Qopp_lt_compat: forall p q : Q, p < q -> - q < - p.
 Proof.
 intros (a1,a2) (b1,b2); unfold Qle, Qlt; simpl.
-rewrite !Z.mul_opp_l; omega.
+rewrite !Z.mul_opp_l; lia.
 Qed.
 
 Hint Resolve Qopp_lt_compat : qarith.

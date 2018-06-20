@@ -10,7 +10,7 @@
 
 Require Import OrderedType.
 Require Import ZArith.
-Require Import Omega.
+Require Import Lia.
 Require Import NArith Ndec.
 Require Import Compare_dec.
 
@@ -53,7 +53,7 @@ Module Nat_as_OT <: UsualOrderedType.
   Proof. unfold lt; intros; apply lt_trans with y; auto. Qed.
 
   Lemma lt_not_eq : forall x y : t, lt x y -> ~ eq x y.
-  Proof. unfold lt, eq; intros; omega. Qed.
+  Proof. unfold lt, eq; intros; lia. Qed.
 
   Definition compare x y : Compare lt eq x y.
   Proof.
@@ -83,10 +83,10 @@ Module Z_as_OT <: UsualOrderedType.
   Definition lt (x y:Z) := (x<y).
 
   Lemma lt_trans : forall x y z, x<y -> y<z -> x<z.
-  Proof. intros; omega. Qed.
+  Proof. intros; lia. Qed.
 
   Lemma lt_not_eq : forall x y, x<y -> ~ x=y.
-  Proof. intros; omega. Qed.
+  Proof. intros; lia. Qed.
 
   Definition compare x y : Compare lt eq x y.
   Proof.

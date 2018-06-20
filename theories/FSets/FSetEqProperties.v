@@ -17,7 +17,7 @@
     [mem x s=true] instead of [In x s],
     [equal s s'=true] instead of [Equal s s'], etc. *)
 
-Require Import FSetProperties Zerob Sumbool Omega DecidableTypeEx.
+Require Import FSetProperties Zerob Sumbool Lia DecidableTypeEx.
 
 Module WEqProperties_fun (Import E:DecidableType)(M:WSfun E).
 Module Import MP := WProperties_fun E M.
@@ -847,11 +847,11 @@ Proof.
 unfold sum.
 intros f g Hf Hg.
 assert (fc : compat_opL (fun x:elt =>plus (f x))).  red; auto.
-assert (ft : transposeL (fun x:elt =>plus (f x))). red; intros; omega.
+assert (ft : transposeL (fun x:elt =>plus (f x))). red; intros; lia.
 assert (gc : compat_opL (fun x:elt => plus (g x))). red; auto.
-assert (gt : transposeL (fun x:elt =>plus (g x))). red; intros; omega.
+assert (gt : transposeL (fun x:elt =>plus (g x))). red; intros; lia.
 assert (fgc : compat_opL (fun x:elt =>plus ((f x)+(g x)))). repeat red; auto.
-assert (fgt : transposeL (fun x:elt=>plus ((f x)+(g x)))). red; intros; omega.
+assert (fgt : transposeL (fun x:elt=>plus ((f x)+(g x)))). red; intros; lia.
 assert (st : Equivalence (@Logic.eq nat)) by (split; congruence).
 intros s;pattern s; apply set_rec.
 intros.
@@ -859,7 +859,7 @@ rewrite <- (fold_equal _ _ st _ fc ft 0 _ _ H).
 rewrite <- (fold_equal _ _ st _ gc gt 0 _ _ H).
 rewrite <- (fold_equal _ _ st _ fgc fgt 0 _ _ H); auto.
 intros; do 3 (rewrite (fold_add _ _ st);auto).
-rewrite H0;simpl;omega.
+rewrite H0;simpl;lia.
 do 3 rewrite fold_empty;auto.
 Qed.
 
@@ -872,7 +872,7 @@ assert (cc : compat_opL (fun x => plus (if f x then 1 else 0))).
  repeat red; intros.
  rewrite (Hf _ _ H); auto.
 assert (ct : transposeL (fun x => plus (if f x then 1 else 0))).
- red; intros; omega.
+ red; intros; lia.
 intros s;pattern s; apply set_rec.
 intros.
 change elt with E.t.

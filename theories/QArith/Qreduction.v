@@ -12,6 +12,7 @@
 
 Require Export QArith_base.
 Require Import Znumtheory.
+Require Import Lia.
 
 Notation Z2P := Z.to_pos (only parsing).
 Notation Z2P_correct := Z2Pos.id (only parsing).
@@ -35,7 +36,7 @@ Proof.
   rewrite <- Hg in LE; clear Hg.
   assert (0 <> g) by (intro; subst; discriminate).
   rewrite Z2Pos.id. ring.
-  rewrite <- (Z.mul_pos_cancel_l g); [now rewrite <- Hd | omega].
+  rewrite <- (Z.mul_pos_cancel_l g); [now rewrite <- Hd | lia].
   Close Scope Z_scope.
 Qed.
 
@@ -85,9 +86,9 @@ Proof.
       exists x'.
       apply Z.mul_reg_l with g'; auto. rewrite Hx at 1; ring.
   - apply Z.lt_gt.
-    rewrite <- (Z.mul_pos_cancel_l g); [now rewrite <- Hg4 | omega].
+    rewrite <- (Z.mul_pos_cancel_l g); [now rewrite <- Hg4 | lia].
   - apply Z.lt_gt.
-    rewrite <- (Z.mul_pos_cancel_l g'); [now rewrite <- Hg'4 | omega].
+    rewrite <- (Z.mul_pos_cancel_l g'); [now rewrite <- Hg'4 | lia].
   - apply Z.mul_reg_l with (g*g').
     * rewrite Z.mul_eq_0. now destruct 1.
     * rewrite Z.mul_shuffle1, <- Hg3, <- Hg'4.

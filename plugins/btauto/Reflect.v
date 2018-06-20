@@ -1,4 +1,4 @@
-Require Import Bool DecidableClass Algebra Ring PArith ROmega Omega.
+Require Import Bool DecidableClass Algebra Ring PArith Lia.
 
 Section Bool.
 
@@ -80,7 +80,7 @@ Qed.
 Hint Extern 5 => change 0 with (min 0 0).
 Local Hint Resolve poly_add_valid_compat poly_mul_valid_compat.
 Local Hint Constructors valid.
-Hint Extern 5 => zify; omega.
+Hint Extern 5 => lia.
 
 (* Compatibility with validity *)
 
@@ -203,7 +203,7 @@ intros A n; induction n using Pos.peano_rect; intros i x def Hd;
 + unfold make_last; rewrite Pos.peano_rect_succ; fold (make_last n x def).
   induction i using Pos.peano_case.
   - rewrite list_nth_base; reflexivity.
-  - rewrite list_nth_succ; apply IHn; zify; omega.
+  - rewrite list_nth_succ; apply IHn; lia.
 Qed.
 
 Lemma make_last_nth_2 : forall A n x def, list_nth n (@make_last A n x def) def = x.
@@ -226,7 +226,7 @@ intros var; induction var; intros i j x Hd; simpl.
   - rewrite Pos.peano_rect_succ.
     induction i using Pos.peano_rect.
     { rewrite 2list_nth_base; reflexivity. }
-    { rewrite 2list_nth_succ; apply IHvar; zify; omega. }
+    { rewrite 2list_nth_succ; apply IHvar; lia. }
 Qed.
 
 Lemma list_replace_nth_2 : forall var i x, list_nth i (list_replace var i x) false = x.
@@ -251,10 +251,10 @@ intros k p Hl Hp; induction Hl; simpl.
       assert (Hrw : b = true); [|rewrite Hrw; reflexivity]
     end.
     erewrite eval_suffix_compat; [now eauto| |now apply linear_valid_incl; eauto].
-    now intros j Hd; apply list_replace_nth_1; zify; omega.
+    now intros j Hd; apply list_replace_nth_1; lia.
     rewrite list_replace_nth_2, xorb_false_r.
     erewrite eval_suffix_compat; [now eauto| |now apply linear_valid_incl; eauto].
-    now intros j Hd; apply list_replace_nth_1; zify; omega.
+    now intros j Hd; apply list_replace_nth_1; lia.
 Qed.
 
 (* This should be better when using the [vm_compute] tactic instead of plain reflexivity. *)

@@ -11,6 +11,7 @@
 Require Export ZArith.
 Require Export ZArithRing.
 Require Export Morphisms Setoid Bool.
+Require Import Lia.
 
 (** * Definition of [Q] and basic properties *)
 
@@ -52,7 +53,7 @@ Notation "x <= y <= z" := (x<=y/\y<=z) : Q_scope.
 
 Lemma inject_Z_injective (a b: Z): inject_Z a == inject_Z b <-> a = b.
 Proof.
- unfold Qeq. simpl. omega.
+ unfold Qeq. simpl. lia.
 Qed.
 
 (** Another approach : using Qcompare for defining order relations. *)
@@ -694,7 +695,7 @@ Defined.
 Lemma Qopp_le_compat : forall p q, p<=q -> -q <= -p.
 Proof.
   intros (a1,a2) (b1,b2); unfold Qle, Qlt; simpl.
-  rewrite !Z.mul_opp_l. omega.
+  rewrite !Z.mul_opp_l. lia.
 Qed.
 
 Hint Resolve Qopp_le_compat : qarith.
@@ -702,13 +703,13 @@ Hint Resolve Qopp_le_compat : qarith.
 Lemma Qle_minus_iff : forall p q, p <= q <-> 0 <= q+-p.
 Proof.
   intros (x1,x2) (y1,y2); unfold Qle; simpl.
-  rewrite Z.mul_opp_l. omega.
+  rewrite Z.mul_opp_l. lia.
 Qed.
 
 Lemma Qlt_minus_iff : forall p q, p < q <-> 0 < q+-p.
 Proof.
   intros (x1,x2) (y1,y2); unfold Qlt; simpl.
-  rewrite Z.mul_opp_l. omega.
+  rewrite Z.mul_opp_l. lia.
 Qed.
 
 Lemma Qplus_le_compat :
@@ -793,7 +794,7 @@ Proof.
   rewrite Z.mul_shuffle1, (Z.mul_shuffle1 b1).
   intros LT LE.
   apply Z.mul_le_mono_pos_r in LE; trivial.
-  apply Z.mul_pos_pos; [omega|easy].
+  apply Z.mul_pos_pos; [lia|easy].
   Close Scope Z_scope.
 Qed.
 
@@ -817,7 +818,7 @@ Proof.
   intros; simpl_mult.
   rewrite Z.mul_shuffle1, (Z.mul_shuffle1 b1).
   apply Z.mul_lt_mono_pos_r; auto with zarith.
-  apply Z.mul_pos_pos; [omega|reflexivity].
+  apply Z.mul_pos_pos; [lia|reflexivity].
   Close Scope Z_scope.
 Qed.
 
@@ -829,7 +830,7 @@ Proof.
  simpl_mult.
  rewrite Z.mul_shuffle1, (Z.mul_shuffle1 b1).
  intro LT. rewrite <- Z.mul_lt_mono_pos_r. reflexivity.
- apply Z.mul_pos_pos; [omega|reflexivity].
+ apply Z.mul_pos_pos; [lia|reflexivity].
  Close Scope Z_scope.
 Qed.
 

@@ -25,7 +25,7 @@ Require Import ZArith_base.
 Require Import ZArithRing.
 Require Import Zdiv.
 Require Import Znumtheory.
-Require Import Omega.
+Require Import Lia.
 
 Open Scope Z_scope.
 
@@ -77,7 +77,7 @@ Open Scope Z_scope.
  Proof.
    induction n.
    simpl; intros.
-   exfalso; generalize (Z.abs_nonneg a); omega.
+   exfalso; generalize (Z.abs_nonneg a); lia.
    destruct a; intros; simpl;
      [ generalize (Zis_gcd_0_abs b); intuition | | ];
    unfold Z.modulo;
@@ -116,7 +116,7 @@ Open Scope Z_scope.
    destruct n.
    simpl; auto with zarith.
    change (0 <= fibonacci (S n) + fibonacci n).
-   generalize (IHN n) (IHN (S n)); omega.
+   generalize (IHN n) (IHN (S n)); lia.
  Qed.
 
  Lemma fibonacci_incr :
@@ -129,7 +129,7 @@ Open Scope Z_scope.
    destruct m.
    simpl; auto with zarith.
    change (fibonacci (S m) <= fibonacci (S m)+fibonacci m).
-   generalize (fibonacci_pos m); omega.
+   generalize (fibonacci_pos m); lia.
  Qed.
 
  (** 3) We prove that fibonacci numbers are indeed worst-case:
@@ -144,8 +144,8 @@ Open Scope Z_scope.
    fibonacci (S (S n)) <= b.
  Proof.
    induction n.
-   intros [|a|a]; intros; simpl; omega.
-   intros [|a|a] b (Ha,Ha'); [simpl; omega | | easy ].
+   intros [|a|a]; intros; simpl; lia.
+   intros [|a|a] b (Ha,Ha'); [simpl; lia | | easy ].
    remember (S n) as m.
    rewrite Heqm at 2. simpl Zgcdn.
    unfold Z.modulo; generalize (Z_div_mod b (Zpos a) eq_refl).
@@ -169,12 +169,12 @@ Open Scope Z_scope.
        apply Z.mul_le_mono_nonneg_l; auto with zarith.
        change 1 with (Z.succ 0). apply Z.le_succ_l.
        destruct q; auto with zarith.
-       assert (Zpos a * Zneg p < 0) by now compute. omega.
+       assert (Zpos a * Zneg p < 0) by now compute. lia.
    - (* r = 0 *)
      clear IHn EQ Hr'; intros _.
      subst r; simpl; rewrite Heqm.
      destruct n.
-     + simpl. omega.
+     + simpl. lia.
      + now destruct 1.
  Qed.
 
@@ -184,7 +184,7 @@ Open Scope Z_scope.
    0 < a < b -> a < fibonacci (S n) ->
    Zis_gcd a b (Zgcdn n a b).
  Proof.
-   destruct a; [ destruct 1; exfalso; omega | | destruct 1; discriminate].
+   destruct a; [ destruct 1; exfalso; lia | | destruct 1; discriminate].
    cut (forall k n b,
      k = (S (Pos.to_nat p) - n)%nat ->
      0 < Zpos p < b -> Zpos p < fibonacci (S n) ->
@@ -192,22 +192,22 @@ Open Scope Z_scope.
    destruct 2; eauto.
    clear n; induction k.
    intros.
-   assert (Pos.to_nat p < n)%nat by omega.
+   assert (Pos.to_nat p < n)%nat by lia.
    apply Zgcdn_linear_bound.
    simpl.
    generalize (inj_le _ _ H2).
    rewrite Nat2Z.inj_succ.
    rewrite positive_nat_Z; auto.
-   omega.
+   lia.
    intros.
    generalize (Zgcdn_worst_is_fibonacci n (Zpos p) b H0); intros.
    assert (Zis_gcd (Zpos p) b (Zgcdn (S n) (Zpos p) b)).
    apply IHk; auto.
-   omega.
+   lia.
    replace (fibonacci (S (S n))) with (fibonacci (S n)+fibonacci n) by auto.
-   generalize (fibonacci_pos n); omega.
+   generalize (fibonacci_pos n); lia.
    replace (Zgcdn n (Zpos p) b) with (Zgcdn (S n) (Zpos p) b); auto.
-   generalize (H2 H3); clear H2 H3; omega.
+   generalize (H2 H3); clear H2 H3; lia.
  Qed.
 
  (** 4) The proposed bound leads to a fibonacci number that is big enough. *)
@@ -215,7 +215,7 @@ Open Scope Z_scope.
  Lemma Zgcd_bound_fibonacci :
    forall a, 0 < a -> a < fibonacci (Zgcd_bound a).
  Proof.
-   destruct a; [omega| | intro H; discriminate].
+   destruct a; [lia| | intro H; discriminate].
    intros _.
    induction p; [ | | compute; auto ];
     simpl Zgcd_bound in *;
@@ -224,10 +224,10 @@ Open Scope Z_scope.
     assert (n <> O) by (unfold n; destruct p; simpl; auto).
 
    destruct n as [ |m]; [elim H; auto| ].
-   generalize (fibonacci_pos m); rewrite Pos2Z.inj_xI; omega.
+   generalize (fibonacci_pos m); rewrite Pos2Z.inj_xI; lia.
 
    destruct n as [ |m]; [elim H; auto| ].
-   generalize (fibonacci_pos m); rewrite Pos2Z.inj_xO; omega.
+   generalize (fibonacci_pos m); rewrite Pos2Z.inj_xO; lia.
  Qed.
 
  (* 5) the end: we glue everything together and take care of
@@ -265,10 +265,10 @@ Open Scope Z_scope.
   Z.le_elim H1.
   + apply Zgcdn_ok_before_fibonacci; auto.
     apply Z.lt_le_trans with (fibonacci (S m));
-    [ omega | apply fibonacci_incr; auto].
+    [ lia | apply fibonacci_incr; auto].
   + subst r; simpl.
-    destruct m as [ |m]; [exfalso; omega| ].
-    destruct n as [ |n]; [exfalso; omega| ].
+    destruct m as [ |m]; [exfalso; lia| ].
+    destruct n as [ |n]; [exfalso; lia| ].
     simpl; apply Zis_gcd_sym; apply Zis_gcd_0.
  Qed.
 
@@ -277,7 +277,7 @@ Open Scope Z_scope.
  Proof.
    destruct a.
    - simpl; intros.
-     destruct n; [exfalso; omega | ].
+     destruct n; [exfalso; lia | ].
      simpl; generalize (Zis_gcd_0_abs b); intuition.
    - apply Zgcdn_is_gcd_pos.
    - rewrite <- Zgcd_bound_opp, <- Zgcdn_opp.

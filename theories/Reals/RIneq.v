@@ -17,7 +17,7 @@ Require Export Raxioms.
 Require Import Rpow_def.
 Require Import Zpower.
 Require Export ZArithRing.
-Require Import Omega.
+Require Import Lia.
 Require Export RealField.
 
 Local Open Scope Z_scope.
@@ -1876,7 +1876,7 @@ Lemma eq_IZR : forall n m:Z, IZR n = IZR m -> n = m.
 Proof.
   intros z1 z2 H; generalize (Rminus_diag_eq (IZR z1) (IZR z2) H);
     rewrite (Z_R_minus z1 z2); intro; generalize (eq_IZR_R0 (z1 - z2) H0);
-      intro; omega.
+      intro; lia.
 Qed.
 
 (**********)
@@ -1914,21 +1914,21 @@ Qed.
 Lemma IZR_ge : forall n m:Z, (n >= m)%Z -> IZR n >= IZR m.
 Proof.
   intros m n H; apply Rnot_lt_ge; red; intro.
-  generalize (lt_IZR m n H0); intro; omega.
+  generalize (lt_IZR m n H0); intro; lia.
 Qed.
 
 Lemma IZR_le : forall n m:Z, (n <= m)%Z -> IZR n <= IZR m.
 Proof.
   intros m n H; apply Rnot_gt_le; red; intro.
-  unfold Rgt in H0; generalize (lt_IZR n m H0); intro; omega.
+  unfold Rgt in H0; generalize (lt_IZR n m H0); intro; lia.
 Qed.
 
 Lemma IZR_lt : forall n m:Z, (n < m)%Z -> IZR n < IZR m.
 Proof.
   intros m n H; cut (m <= n)%Z.
   intro H0; elim (IZR_le m n H0); intro; auto.
-  generalize (eq_IZR m n H1); intro; exfalso; omega.
-  omega.
+  generalize (eq_IZR m n H1); intro; exfalso; lia.
+  lia.
 Qed.
 
 Lemma IZR_neq : forall z1 z2:Z, z1 <> z2 -> IZR z1 <> IZR z2.

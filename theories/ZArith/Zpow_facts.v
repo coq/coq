@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import ZArith_base ZArithRing Zcomplements Zdiv Znumtheory.
-Require Export Zpower.
+Require Export Zpower Lia.
 Local Open Scope Z_scope.
 
 (** Properties of the power function over [Z] *)
@@ -87,9 +87,9 @@ Proof.
   assert (Hn := Nat2Z.is_nonneg n).
   destruct p; simpl Pos.size_nat.
   - specialize IHn with p.
-    rewrite Pos2Z.inj_xI, Nat2Z.inj_succ, Z.pow_succ_r; omega.
+    rewrite Pos2Z.inj_xI, Nat2Z.inj_succ, Z.pow_succ_r; lia.
   - specialize IHn with p.
-    rewrite Pos2Z.inj_xO, Nat2Z.inj_succ, Z.pow_succ_r; omega.
+    rewrite Pos2Z.inj_xO, Nat2Z.inj_succ, Z.pow_succ_r; lia.
   - split; auto with zarith.
     intros _. apply Z.pow_gt_1. easy.
     now rewrite Nat2Z.inj_succ, Z.lt_succ_r.
@@ -190,7 +190,7 @@ Proof.
   - simpl; intros.
     assert (2<=p) by (apply prime_ge_2; auto).
     assert (p<=1) by (apply Z.divide_pos_le; auto with zarith).
-    omega.
+    lia.
   - intros n Hn Rec.
     rewrite Z.pow_succ_r by trivial. intros.
     assert (2<=p) by (apply prime_ge_2; auto).
