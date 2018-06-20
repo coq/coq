@@ -7,7 +7,7 @@ Assuming one is running Ubuntu (if not, replace `apt` with the package manager o
 ```
 $ sudo apt-get install make opam git
 
-# At the time of writing, <latest-ocaml-version> is 4.06.1.
+# At the time of writing, <latest-ocaml-version> is 4.07.0.
 # The latest version number is available at: https://ocaml.org/releases/
 
 $ opam init --comp <latest-ocaml-version>

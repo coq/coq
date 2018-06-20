@@ -793,7 +793,7 @@ function make_ln {
 
 function make_ocaml {
   get_flex_dll_link_bin
-  if build_prep http://caml.inria.fr/pub/distrib/ocaml-4.06 ocaml-4.06.1 tar.gz 1 ; then
+  if build_prep http://caml.inria.fr/pub/distrib/ocaml-4.07 ocaml-4.07.0 tar.gz 1 ; then
     # See README.win32.adoc
     cp config/m-nt.h byterun/caml/m.h
     cp config/s-nt.h byterun/caml/s.h
@@ -933,7 +933,7 @@ function make_camlp5 {
   make_ocaml
   make_findlib
 
-  if build_prep https://github.com/camlp5/camlp5/archive rel705 tar.gz 1 camlp5-rel705; then
+  if build_prep https://github.com/camlp5/camlp5/archive rel706 tar.gz 1 camlp5-rel706; then
     logn configure ./configure
     # Somehow my virus scanner has the boot.new/SAVED directory locked after the move for a second => repeat until success
     sed -i 's/mv boot.new boot/until mv boot.new boot; do sleep 1; done/' Makefile
