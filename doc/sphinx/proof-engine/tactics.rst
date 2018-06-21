@@ -1407,7 +1407,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
      dependent in the goal after application of :n:`destruct`, it is erased
      (to avoid erasure, use parentheses, as in :n:`destruct (@ident)`).
 
-     + If term is a num, then destruct num behaves asintros until num
+     + If term is a num, then destruct num behaves as intros until num
        followed by destruct applied to the last introduced hypothesis.
 
      .. note::
