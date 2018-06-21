@@ -326,15 +326,15 @@ let rule_id = mk_internal_id "rewrite rule"
 
 exception PRtype_error of (Environ.env * Evd.evar_map * Pretype_errors.pretype_error) option
 
-let pirrel_rewrite ?(under=false) pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
+let id_map_redex _ sigma ~before:_ ~after = sigma, after
+
+let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
 (*   ppdebug(lazy(str"sigma@pirrel_rewrite=" ++ pr_evar_map None sigma)); *)
   let env = pf_env gl in
   let beta = Reductionops.clos_norm_flags CClosure.beta env sigma in
-  let sigma, p = 
-    let sigma = Evd.create_evar_defs sigma in
-    let (sigma, ev) = Evarutil.new_evar env sigma (beta (EConstr.Vars.subst1 new_rdx pred)) in
-    (sigma, ev)
-  in
+  let sigma, new_rdx = map_redex env sigma ~before:rdx ~after:new_rdx in
+  let sigma, p = (* The resulting goal *)
+    Evarutil.new_evar env sigma (beta (EConstr.Vars.subst1 new_rdx pred)) in
   let pred = EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdx_ty pred in
   let elim, gl = 
     let ((kn, i) as ind, _), unfolded_c_ty = pf_reduce_to_quantified_ind gl c_ty in
@@ -354,7 +354,8 @@ let pirrel_rewrite ?(under=false) pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl
     | Pretype_errors.PretypeError (env, sigma, te) -> raise (PRtype_error (Some (env, sigma, te)))
     | e when CErrors.noncritical e -> raise (PRtype_error None)
   in
-  ppdebug(lazy Pp.(str"pirrel_rewrite proof term of type: " ++ pr_econstr_env env sigma proof_ty));
+  ppdebug(lazy Pp.(str"pirrel_rewrite: proof term: " ++ pr_econstr_env env sigma proof));
+  ppdebug(lazy Pp.(str"pirrel_rewrite of type: " ++ pr_econstr_env env sigma proof_ty));
   try refine_with 
     ~first_goes_last:(not !ssroldreworder) ~with_evars:under (sigma, proof) gl
   with _ -> 
@@ -380,7 +381,7 @@ let pirrel_rewrite ?(under=false) pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl
       (Pp.fnl()++str"Rule's type:" ++ spc() ++ pr_econstr_env env sigma hd_ty))
 ;;
 
-let rwcltac ?under cl rdx dir sr gl =
+let rwcltac ?under ?map_redex cl rdx dir sr gl =
   let sr =
     let sigma, r = sr in
     let sigma = resolve_typeclasses ~where:r ~fail:false (pf_env gl) sigma in
@@ -400,7 +401,7 @@ let rwcltac ?under cl rdx dir sr gl =
       match EConstr.kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
       | AtomicType(e, a) when Ssrcommon.is_ind_ref sigma e c_eq ->
           let new_rdx = if dir = L2R then a.(2) else a.(1) in
-          pirrel_rewrite ?under cl rdx rdxt new_rdx dir (sigma,c) c_ty, tclIDTAC, gl
+          pirrel_rewrite ?under ?map_redex cl rdx rdxt new_rdx dir (sigma,c) c_ty, tclIDTAC, gl
       | _ -> 
           let cl' = EConstr.mkApp (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl, [|rdx|]) in
           let sigma, _ = Typing.type_of env sigma cl' in
@@ -433,7 +434,6 @@ let rwcltac ?under cl rdx dir sr gl =
         ++ error)
   in
   tclTHEN cvtac' rwtac gl
-
 
 [@@@ocaml.warning "-3"]
 let lz_coq_prod =
@@ -542,7 +542,7 @@ let rwprocess_rule dir rule gl =
   in
     r_sigma, rules
 
-let rwrxtac ?under occ rdx_pat dir rule gl =
+let rwrxtac ?under ?map_redex occ rdx_pat dir rule gl =
   let env = pf_env gl in
   let r_sigma, rules = rwprocess_rule dir rule gl in
   let find_rule rdx =
@@ -580,7 +580,7 @@ let rwrxtac ?under occ rdx_pat dir rule gl =
   let concl = eval_pattern env0 sigma0 concl0 rdx_pat occ find_R in
   let (d, r), rdx = conclude concl in
   let r = Evd.merge_universe_context (pi1 r) (pi2 r), EConstr.of_constr (pi3 r) in
-  rwcltac ?under (EConstr.of_constr concl) (EConstr.of_constr rdx) d r gl
+  rwcltac ?under ?map_redex (EConstr.of_constr concl) (EConstr.of_constr rdx) d r gl
 ;;
 
 let ssrinstancesofrule ist dir arg gl =
@@ -609,7 +609,7 @@ let ssrinstancesofrule ist dir arg gl =
 
 let ipat_rewrite occ dir c gl = rwrxtac occ None dir (project gl, c) gl
 
-let rwargtac ?under ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) gl =
+let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) gl =
   let fail = ref false in
   let interp_rpattern gl gc =
     try interp_rpattern gl gc
@@ -623,7 +623,7 @@ let rwargtac ?under ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) gl =
     (match kind with
     | RWred sim -> simplintac occ rx sim
     | RWdef -> if dir = R2L then foldtac occ rx t else unfoldintac occ rx t gt
-    | RWeq -> rwrxtac ?under occ rx dir t) gl in
+    | RWeq -> rwrxtac ?under ?map_redex occ rx dir t) gl in
   let ctac = old_cleartac (interp_clr (project gl) (oclr, (fst gt, snd (interp gt gl)))) in
   if !fail then ctac gl else tclTHEN (tclMULT mult rwtac) ctac gl
 
@@ -633,8 +633,8 @@ let rwargtac ?under ist ((dir, mult), (((oclr, occ), grx), (kind, gt))) gl =
 
 (** The "rewrite" tactic *)
 
-let ssrrewritetac ?under ist rwargs =
-  tclTHENLIST (List.map (rwargtac ?under ist) rwargs)
+let ssrrewritetac ?under ?map_redex ist rwargs =
+  tclTHENLIST (List.map (rwargtac ?under ?map_redex ist) rwargs)
 
 (** The "unlock" tactic *)
 
