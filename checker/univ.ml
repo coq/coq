@@ -190,13 +190,6 @@ struct
       (let (u,n) = x and (v,n') = y in
 	 Int.equal n n' && Level.equal u v)
 
-    let leq (u,n) (v,n') =
-      let cmp = Level.compare u v in
-	if Int.equal cmp 0 then n <= n'
-	else if n <= n' then 
-	  (Level.is_prop u && Level.is_small v)
-	else false
-
     let successor (u,n) =
       if Level.is_prop u then type1
       else (u, n + 1)
@@ -832,41 +825,6 @@ type 'a constrained = 'a * constraints
 (** Constraint functions. *)
 
 type 'a constraint_function = 'a -> 'a -> constraints -> constraints
-
-let constraint_add_leq v u c =
-  (* We just discard trivial constraints like u<=u *)
-  if Expr.equal v u then c
-  else 
-    match v, u with
-    | (x,n), (y,m) -> 
-    let j = m - n in
-      if j = -1 (* n = m+1, v+1 <= u <-> v < u *) then
-	Constraint.add (x,Lt,y) c
-      else if j <= -1 (* n = m+k, v+k <= u <-> v+(k-1) < u *) then
-	if Level.equal x y then (* u+(k+1) <= u *)
-	  raise (UniverseInconsistency (Le, Universe.tip v, Universe.tip u))
-	else anomaly (Pp.str"Unable to handle arbitrary u+k <= v constraints.")
-      else if j = 0 then
-	Constraint.add (x,Le,y) c
-      else (* j >= 1 *) (* m = n + k, u <= v+k *)
-	if Level.equal x y then c (* u <= u+k, trivial *)
-	else if Level.is_small x then c (* Prop,Set <= u+S k, trivial *)
-	else anomaly (Pp.str"Unable to handle arbitrary u <= v+k constraints.")
-	  
-let check_univ_leq_one u v = Universe.exists (Expr.leq u) v
-
-let check_univ_leq u v = 
-  Universe.for_all (fun u -> check_univ_leq_one u v) u
-
-let enforce_leq u v c =
-  match v with
-  | [v] ->
-    List.fold_right (fun u -> constraint_add_leq u v) u c
-  | _ -> anomaly (Pp.str"A universe bound can only be a variable.")
-
-let enforce_leq u v c =
-  if check_univ_leq u v then c
-  else enforce_leq u v c
 
 let check_constraint g (l,d,r) =
   match d with

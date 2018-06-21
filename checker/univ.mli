@@ -109,8 +109,6 @@ type 'a constrained = 'a * constraints
 
 type 'a constraint_function = 'a -> 'a -> constraints -> constraints
 
-val enforce_leq : universe constraint_function
-
 (** {6 ... } *)
 (** Merge of constraints in a universes graph.
   The function [merge_constraints] merges a set of constraints in a given
