@@ -7,7 +7,7 @@ want to profile time or memory consumption. AFAIK, this only works for Linux.
 
 In Coq source folder:
 
-opam switch 4.02.1+fp
+opam switch 4.02.3+fp
 ./configure -local -debug
 make
 perf record -g bin/coqtop -compile file.v
