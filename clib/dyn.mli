@@ -10,7 +10,7 @@
 
 (** Dynamically typed values *)
 
-module type TParam =
+module type ValueS =
 sig
   type 'a t
 end
@@ -18,18 +18,18 @@ end
 module type MapS =
 sig
   type t
-  type 'a obj
   type 'a key
+  type 'a value
   val empty : t
-  val add : 'a key -> 'a obj -> t -> t
+  val add : 'a key -> 'a value -> t -> t
   val remove : 'a key -> t -> t
-  val find : 'a key -> t -> 'a obj
+  val find : 'a key -> t -> 'a value
   val mem : 'a key -> t -> bool
 
-  type map = { map : 'a. 'a key -> 'a obj -> 'a obj }
+  type map = { map : 'a. 'a key -> 'a value -> 'a value }
   val map : map -> t -> t
 
-  type any = Any : 'a key * 'a obj -> any
+  type any = Any : 'a key * 'a value -> any
   val iter : (any -> unit) -> t -> unit
   val fold : (any -> 'r -> 'r) -> t -> 'r -> 'r
 end
@@ -47,7 +47,8 @@ sig
   type any = Any : 'a tag -> any
   val name : string -> any option
 
-  module Map(M : TParam) : MapS with type 'a obj = 'a M.t with type 'a key = 'a tag
+  module Map(Value : ValueS) :
+    MapS with type 'a key = 'a tag and type 'a value = 'a Value.t
 
   module Easy : sig
     (* To create a dynamic type on the fly *)

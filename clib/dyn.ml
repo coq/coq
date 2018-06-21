@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module type TParam =
+module type ValueS =
 sig
   type 'a t
 end
@@ -16,18 +16,18 @@ end
 module type MapS =
 sig
   type t
-  type 'a obj
   type 'a key
+  type 'a value
   val empty : t
-  val add : 'a key -> 'a obj -> t -> t
+  val add : 'a key -> 'a value -> t -> t
   val remove : 'a key -> t -> t
-  val find : 'a key -> t -> 'a obj
+  val find : 'a key -> t -> 'a value
   val mem : 'a key -> t -> bool
 
-  type map = { map : 'a. 'a key -> 'a obj -> 'a obj }
+  type map = { map : 'a. 'a key -> 'a value -> 'a value }
   val map : map -> t -> t
 
-  type any = Any : 'a key * 'a obj -> any
+  type any = Any : 'a key * 'a value -> any
   val iter : (any -> unit) -> t -> unit
   val fold : (any -> 'r -> 'r) -> t -> 'r -> 'r
 end
@@ -46,7 +46,8 @@ sig
   type any = Any : 'a tag -> any
   val name : string -> any option
 
-  module Map(M : TParam) : MapS with type 'a obj = 'a M.t with type 'a key = 'a tag
+  module Map(Value : ValueS) :
+    MapS with type 'a key = 'a tag and type 'a value = 'a Value.t
 end
 
 module type S =
@@ -104,22 +105,22 @@ module Self : PreS = struct
 
   let dump () = Int.Map.bindings !dyntab
 
-  module Map(M : TParam) =
+  module Map(Value: ValueS) =
   struct
-    type t = Obj.t M.t Int.Map.t
-    type 'a obj = 'a M.t
+    type t = Obj.t Value.t Int.Map.t
     type 'a key = 'a tag
-    let cast : 'a M.t -> 'b M.t = Obj.magic
+    type 'a value = 'a Value.t
+    let cast : 'a value -> 'b value = Obj.magic
     let empty = Int.Map.empty
     let add tag v m = Int.Map.add tag (cast v) m
     let remove tag m = Int.Map.remove tag m
     let find tag m = cast (Int.Map.find tag m)
     let mem = Int.Map.mem
 
-    type map = { map : 'a. 'a tag -> 'a M.t -> 'a M.t }
+    type map = { map : 'a. 'a tag -> 'a value -> 'a value }
     let map f m = Int.Map.mapi f.map m
 
-    type any = Any : 'a tag * 'a M.t -> any
+    type any = Any : 'a tag * 'a value -> any
     let iter f m = Int.Map.iter (fun k v -> f (Any (k, v))) m
     let fold f m accu = Int.Map.fold (fun k v accu -> f (Any (k, v)) accu) m accu
   end
