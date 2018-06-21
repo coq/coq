@@ -37,18 +37,37 @@ end
 module type S =
 sig
   type 'a tag
+  (** Type of dynamic tags *)
+
   type t = Dyn : 'a tag * 'a -> t
+  (** Type of dynamic values *)
+
   val create : string -> 'a tag
+  (** [create n] returns a tag describing a type called [n].
+      [create] raises an exception if [n] is already registered.
+      Type names are hashed, so [create] may raise even if no type with
+      the exact same name was registered due to a collision. *)
+
   val eq : 'a tag -> 'b tag -> ('a, 'b) CSig.eq option
+  (** [eq t1 t2] returns [Some witness] if [t1] is the same as [t2], [None] otherwise. *)
+
   val repr : 'a tag -> string
+  (** [repr tag] returns the name of the type represented by [tag]. *)
 
   val dump : unit -> (int * string) list
+  (** [dump ()] returns a list of (tag, name) pairs for every type tag registered
+      in this [Dyn.Make] instance. *)
 
   type any = Any : 'a tag -> any
+  (** Type of boxed dynamic tags *)
+
   val name : string -> any option
+  (** [name n] returns [Some t] where t is a boxed tag previously registered
+      with [create n], or [None] if there is no such tag. *)
 
   module Map(Value : ValueS) :
     MapS with type 'a key = 'a tag and type 'a value = 'a Value.t
+  (** Map from type tags to values parameterized by the tag type *)
 
   module Easy : sig
     (* To create a dynamic type on the fly *)
