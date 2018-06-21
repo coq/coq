@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Util
-open Names
 open Constr
 open Termops
 open Evd
@@ -102,11 +101,11 @@ let res_pf ?with_evars ?(with_classes=true) ?(flags=dft ()) clenv =
    provenant de w_Unify. (Utilisé seulement dans prolog.ml) *)
 
 let fail_quick_core_unif_flags = {
-  modulo_conv_on_closed_terms = Some full_transparent_state;
+  modulo_conv_on_closed_terms = Some TranspState.full;
   use_metas_eagerly_in_conv_on_closed_terms = false;
   use_evars_eagerly_in_conv_on_closed_terms = false;
-  modulo_delta = empty_transparent_state;
-  modulo_delta_types = full_transparent_state;
+  modulo_delta = TranspState.empty;
+  modulo_delta_types = TranspState.full;
   check_applied_meta_types = false;
   use_pattern_unification = false;
   use_meta_bound_pattern_unification = true; (* ? *)

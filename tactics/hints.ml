@@ -497,7 +497,7 @@ type hint_db_name = string
 module Hint_db :
 sig
 type t
-val empty : ?name:hint_db_name -> transparent_state -> bool -> t
+val empty : ?name:hint_db_name -> TranspState.t -> bool -> t
 val find : GlobRef.t -> t -> search_entry
 val map_none : secvars:Id.Pred.t -> t -> full_hint list
 val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
@@ -513,8 +513,8 @@ val remove_one : GlobRef.t -> t -> t
 val remove_list : GlobRef.t list -> t -> t
 val iter : (GlobRef.t option -> hint_mode array list -> full_hint list -> unit) -> t -> unit
 val use_dn : t -> bool
-val transparent_state : t -> transparent_state
-val set_transparent_state : t -> transparent_state -> t
+val transparent_state : t -> TranspState.t
+val set_transparent_state : t -> TranspState.t -> t
 val add_cut : hints_path -> t -> t
 val add_mode : GlobRef.t -> hint_mode array -> t -> t
 val cut : t -> hints_path
@@ -526,7 +526,7 @@ end =
 struct
 
   type t = {
-    hintdb_state : Names.transparent_state;
+    hintdb_state : TranspState.t;
     hintdb_cut : hints_path;
     hintdb_unfolds : Id.Set.t * Cset.t;
     hintdb_max_id : int;
@@ -740,8 +740,8 @@ let typeclasses_db = "typeclass_instances"
 let rewrite_db = "rewrite"
 
 let auto_init_db =
-  Hintdbmap.add typeclasses_db (Hint_db.empty full_transparent_state true)
-    (Hintdbmap.add rewrite_db (Hint_db.empty cst_full_transparent_state true)
+  Hintdbmap.add typeclasses_db (Hint_db.empty TranspState.full true)
+    (Hintdbmap.add rewrite_db (Hint_db.empty TranspState.cst_full true)
        Hintdbmap.empty)
 
 let searchtable = Summary.ref ~name:"searchtable" auto_init_db
@@ -977,7 +977,7 @@ let make_trivial env sigma poly ?(name=PathAny) r =
 
 let get_db dbname =
   try searchtable_map dbname
-  with Not_found -> Hint_db.empty ~name:dbname empty_transparent_state false
+  with Not_found -> Hint_db.empty ~name:dbname TranspState.empty false
 
 let add_hint dbname hintlist =
   let check (_, h) =
@@ -1015,7 +1015,7 @@ let remove_hint dbname grs =
     searchtable_add (dbname, db')
 
 type hint_action =
-  | CreateDB of bool * transparent_state
+  | CreateDB of bool * TranspState.t
   | AddTransparency of evaluable_global_reference hints_transparency_target * bool
   | AddHints of hint_entry list
   | RemoveHints of GlobRef.t list

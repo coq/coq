@@ -1096,7 +1096,7 @@ let vernac_restore_state file =
 (* Commands *)
 
 let vernac_create_hintdb ~module_local id b =
-  Hints.create_hint_db module_local id full_transparent_state b
+  Hints.create_hint_db module_local id TranspState.full b
 
 let vernac_remove_hints ~module_local dbs ids =
   Hints.remove_hints module_local dbs (List.map Smartlocate.global_with_alias ids)

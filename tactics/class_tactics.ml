@@ -585,9 +585,9 @@ module Search = struct
   (** Local hints *)
   let autogoal_cache = Summary.ref ~name:"autogoal_cache"
       (DirPath.empty, true, Context.Named.empty,
-       Hint_db.empty full_transparent_state true)
+       Hint_db.empty TranspState.full true)
 
-  let make_autogoal_hints only_classes ?(st=full_transparent_state) g =
+  let make_autogoal_hints only_classes ?(st=TranspState.full) g =
     let open Proofview in
     let open Tacmach.New in
     let sign = Goal.hyps g in
@@ -605,7 +605,7 @@ module Search = struct
       in
       autogoal_cache := (cwd, only_classes, sign, hints); hints
 
-  let make_autogoal ?(st=full_transparent_state) only_classes dep cut i g =
+  let make_autogoal ?(st=TranspState.full) only_classes dep cut i g =
     let hints = make_autogoal_hints only_classes ~st g in
     { search_hints = hints;
       search_depth = [i]; last_tac = lazy (str"none");
@@ -843,7 +843,7 @@ module Search = struct
     let info = make_autogoal ?st only_classes dep (cut_of_hints hints) i gl in
     search_tac hints depth 1 info
 
-  let search_tac ?(st=full_transparent_state) only_classes dep hints depth =
+  let search_tac ?(st=TranspState.full) only_classes dep hints depth =
     let open Proofview in
     let tac sigma gls i =
       Goal.enter
@@ -873,7 +873,7 @@ module Search = struct
                                    | (e,ie) -> Proofview.tclZERO ~info:ie e)
     in aux 1
 
-  let eauto_tac ?(st=full_transparent_state) ?(unique=false)
+  let eauto_tac ?(st=TranspState.full) ?(unique=false)
                 ~only_classes ?strategy ~depth ~dep hints =
     let open Proofview in
     let tac =
@@ -985,7 +985,7 @@ end
 
 (** Binding to either V85 or Search implementations. *)
 
-let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state)
+let typeclasses_eauto ?(only_classes=false) ?(st=TranspState.full)
                       ?strategy ~depth dbs =
   let dbs = List.map_filter
               (fun db -> try Some (searchtable_map db)

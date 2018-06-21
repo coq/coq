@@ -26,11 +26,11 @@ val with_stats: 'a Lazy.t -> 'a
 
 
 
-val all_opaque      : transparent_state
-val all_transparent : transparent_state
+val all_opaque      : TranspState.t
+val all_transparent : TranspState.t
 
-val is_transparent_variable : transparent_state -> variable -> bool
-val is_transparent_constant : transparent_state -> Constant.t -> bool
+val is_transparent_variable : TranspState.t -> variable -> bool
+val is_transparent_constant : TranspState.t -> Constant.t -> bool
 
 (** Sets of reduction kinds. *)
 module type RedFlagsSig = sig
@@ -60,10 +60,10 @@ module type RedFlagsSig = sig
   val red_sub : reds -> red_kind -> reds
 
   (** Adds a reduction kind to a set *)
-  val red_add_transparent : reds -> transparent_state -> reds
+  val red_add_transparent : reds -> TranspState.t -> reds
 
   (** Retrieve the transparent state of the reduction flags *)
-  val red_transparent : reds -> transparent_state
+  val red_transparent : reds -> TranspState.t
 
   (** Build a reduction set from scratch = iter [red_add] on [no_red] *)
   val mkflags : red_kind list -> reds

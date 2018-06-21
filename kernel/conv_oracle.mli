@@ -41,5 +41,5 @@ val set_strategy : oracle -> Constant.t tableKey -> level -> oracle
 (** Fold over the non-transparent levels of the oracle. Order unspecified. *)
 val fold_strategy : (Constant.t tableKey -> level -> 'a -> 'a) -> oracle -> 'a -> 'a
 
-val get_transp_state : oracle -> transparent_state
+val get_transp_state : oracle -> TranspState.t
 

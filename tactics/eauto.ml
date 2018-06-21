@@ -29,7 +29,7 @@ open Locusops
 open Hints
 open Proofview.Notations
 
-let eauto_unif_flags = auto_flags_of_state full_transparent_state
+let eauto_unif_flags = auto_flags_of_state TranspState.full
 
 let e_give_exact ?(flags=eauto_unif_flags) c =
   Proofview.Goal.enter begin fun gl ->
@@ -307,7 +307,7 @@ module SearchProblem = struct
 		     let gls = {Evd.it = gl; sigma = lgls.Evd.sigma } in
 		     let hyps' = pf_hyps gls in
 		       if hyps' == hyps then List.hd s.localdb
-		       else make_local_hint_db (pf_env gls) (project gls) ~ts:full_transparent_state true s.local_lemmas)
+                       else make_local_hint_db (pf_env gls) (project gls) ~ts:TranspState.full true s.local_lemmas)
 		     (List.firstn ((nbgl'-nbgl) + 1) (sig_it lgls))
 	       in
 		 { depth = pred s.depth; priority = cost; tacres = lgls;
@@ -388,7 +388,7 @@ let make_initial_state dbg n gl dblist localdb lems =
   }
 
 let e_search_auto debug (in_depth,p) lems db_list gl =
-  let local_db = make_local_hint_db (pf_env gl) (project gl) ~ts:full_transparent_state true lems in
+  let local_db = make_local_hint_db (pf_env gl) (project gl) ~ts:TranspState.full true lems in
   let d = mk_eauto_dbg debug in
   let tac = match in_depth,d with
     | (true,Debug) -> Search.debug_depth_first

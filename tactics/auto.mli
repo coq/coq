@@ -22,7 +22,7 @@ val compute_secvars : Proofview.Goal.t -> Id.Pred.t
 
 val default_search_depth : int ref
 
-val auto_flags_of_state : transparent_state -> Unification.unify_flags
+val auto_flags_of_state : TranspState.t -> Unification.unify_flags
 
 val connect_hint_clenv : polymorphic -> raw_hint -> clausenv ->
   Proofview.Goal.t -> clausenv * constr

@@ -149,7 +149,7 @@ let abstract_list_all_with_dependencies env evd typ c l =
   let n = List.length l in
   let argoccs = set_occurrences_of_last_arg (Array.sub (snd ev') 0 n) in
   let evd,b =
-    Evarconv.second_order_matching empty_transparent_state
+    Evarconv.second_order_matching TranspState.empty
       env evd ev' argoccs c in
   if b then
     let p = nf_evar evd ev in
@@ -247,7 +247,7 @@ let sort_eqns = unify_r2l
 *)
 
 type core_unify_flags = {
-  modulo_conv_on_closed_terms : Names.transparent_state option;
+  modulo_conv_on_closed_terms : TranspState.t option;
     (* What this flag controls was activated with all constants transparent, *)
     (* even for auto, since Coq V5.10 *)
 
@@ -257,11 +257,11 @@ type core_unify_flags = {
 
   use_evars_eagerly_in_conv_on_closed_terms : bool;
 
-  modulo_delta : Names.transparent_state;
+  modulo_delta : TranspState.t;
     (* This controls which constants are unfoldable; this is on for apply *)
     (* (but not simple apply) since Feb 2008 for 8.2 *)
 
-  modulo_delta_types : Names.transparent_state;
+  modulo_delta_types : TranspState.t;
 
   check_applied_meta_types : bool;
     (* This controls whether meta's applied to arguments have their *)
@@ -322,7 +322,7 @@ type unify_flags = {
 (* Default flag for unifying a type against a type (e.g. apply) *)
 (* We set all conversion flags (no flag should be modified anymore) *)
 let default_core_unify_flags () =
-  let ts = Names.full_transparent_state in {
+  let ts = TranspState.full in {
   modulo_conv_on_closed_terms = Some ts;
   use_metas_eagerly_in_conv_on_closed_terms = true;
   use_evars_eagerly_in_conv_on_closed_terms = false;
@@ -344,14 +344,14 @@ let default_unify_flags () =
   let flags = default_core_unify_flags () in {
   core_unify_flags = flags;
   merge_unify_flags = flags;
-  subterm_unify_flags = { flags with modulo_delta = var_full_transparent_state };
+  subterm_unify_flags = { flags with modulo_delta = TranspState.var_full };
   allow_K_in_toplevel_higher_order_unification = false; (* Why not? *)
   resolve_evars = false
 }
 
 let set_no_delta_core_flags flags = { flags with
   modulo_conv_on_closed_terms = None;
-  modulo_delta = empty_transparent_state;
+  modulo_delta = TranspState.empty;
   check_applied_meta_types = false;
   use_pattern_unification = false;
   use_meta_bound_pattern_unification = true;
@@ -370,7 +370,7 @@ let set_no_delta_flags flags = {
 (* For the first phase of keyed unification, restrict
   to conversion (including beta-iota) only on closed terms *)
 let set_no_delta_open_core_flags flags = { flags with
-  modulo_delta = empty_transparent_state;
+  modulo_delta = TranspState.empty;
   modulo_betaiota = false;
 }
 
@@ -388,7 +388,7 @@ let set_no_delta_open_flags flags = {
 (* We set only the flags available at the time the new "apply" extended *)
 (* out of "simple apply" *)
 let default_no_delta_core_unify_flags () = { (default_core_unify_flags ()) with
-  modulo_delta = empty_transparent_state;
+  modulo_delta = TranspState.empty;
   check_applied_meta_types = false;
   use_pattern_unification = false;
   use_meta_bound_pattern_unification = true;
@@ -425,7 +425,7 @@ let elim_flags_evars sigma =
   let flags = elim_core_flags sigma in {
   core_unify_flags = flags;
   merge_unify_flags = flags;
-  subterm_unify_flags = { flags with modulo_delta = empty_transparent_state };
+  subterm_unify_flags = { flags with modulo_delta = TranspState.empty };
   allow_K_in_toplevel_higher_order_unification = true;
   resolve_evars = false
 }
@@ -433,7 +433,7 @@ let elim_flags_evars sigma =
 let elim_flags () = elim_flags_evars Evd.empty
 
 let elim_no_delta_core_flags () = { (elim_core_flags Evd.empty) with
-  modulo_delta = empty_transparent_state;
+  modulo_delta = TranspState.empty;
   check_applied_meta_types = false;
   use_pattern_unification = false;
   modulo_betaiota = false;
@@ -935,8 +935,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	let ty1 = get_type_of curenv ~lax:true sigma c1 in
 	let ty2 = get_type_of curenv ~lax:true sigma c2 in
 	  unify_0_with_initial_metas substn true curenv cv_pb
-	    { flags with modulo_conv_on_closed_terms = Some full_transparent_state;
-	      modulo_delta = full_transparent_state;
+            { flags with modulo_conv_on_closed_terms = Some TranspState.full;
+              modulo_delta = TranspState.full;
 	      modulo_eta = true;
 	      modulo_betaiota = true }
 	    ty1 ty2
@@ -1534,11 +1534,11 @@ let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sig
   (sigma, nf_evar sigma c)
 
 let default_matching_core_flags sigma =
-  let ts = Names.full_transparent_state in {
-  modulo_conv_on_closed_terms = Some empty_transparent_state;
+  let ts = TranspState.full in {
+  modulo_conv_on_closed_terms = Some TranspState.empty;
   use_metas_eagerly_in_conv_on_closed_terms = false;
   use_evars_eagerly_in_conv_on_closed_terms = false;
-  modulo_delta = empty_transparent_state;
+  modulo_delta = TranspState.empty;
   modulo_delta_types = ts;
   check_applied_meta_types = true;
   use_pattern_unification = false;
@@ -1550,7 +1550,7 @@ let default_matching_core_flags sigma =
 }
 
 let default_matching_merge_flags sigma =
-  let ts = Names.full_transparent_state in
+  let ts = TranspState.full in
   let flags = default_matching_core_flags sigma in {
   flags with
     modulo_conv_on_closed_terms = Some ts;
@@ -1580,7 +1580,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
     if from_prefix_of_ind then
       let flags = default_matching_flags pending in
       { flags with core_unify_flags = { flags.core_unify_flags with
-        modulo_conv_on_closed_terms = Some Names.full_transparent_state;
+        modulo_conv_on_closed_terms = Some TranspState.full;
         restrict_conv_on_strict_subterms = true } }
     else default_matching_flags pending in
   let n = Array.length (snd (decompose_app_vect sigma c)) in

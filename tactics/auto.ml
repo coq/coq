@@ -45,7 +45,7 @@ let auto_core_unif_flags_of st1 st2 = {
   use_metas_eagerly_in_conv_on_closed_terms = false;
   use_evars_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = st2;
-  modulo_delta_types = full_transparent_state;
+  modulo_delta_types = TranspState.full;
   check_applied_meta_types = false;
   use_pattern_unification = false;
   use_meta_bound_pattern_unification = true;
@@ -59,13 +59,13 @@ let auto_unif_flags_of st1 st2 =
   let flags = auto_core_unif_flags_of st1 st2 in {
   core_unify_flags = flags;
   merge_unify_flags = flags;
-  subterm_unify_flags = { flags with modulo_delta = empty_transparent_state };
+  subterm_unify_flags = { flags with modulo_delta = TranspState.empty };
   allow_K_in_toplevel_higher_order_unification = false;
   resolve_evars = true
 }
 
 let auto_unif_flags =
-  auto_unif_flags_of full_transparent_state empty_transparent_state
+  auto_unif_flags_of TranspState.full TranspState.empty
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 
@@ -291,7 +291,7 @@ let flags_of_state st =
   auto_unif_flags_of st st
 
 let auto_flags_of_state st =
-  auto_unif_flags_of full_transparent_state st
+  auto_unif_flags_of TranspState.full st
 
 let hintmap_of sigma secvars hdc concl =
   match hdc with

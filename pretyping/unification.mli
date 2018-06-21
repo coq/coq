@@ -8,18 +8,17 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
 open Constr
 open EConstr
 open Environ
 open Evd
 
 type core_unify_flags = {
-  modulo_conv_on_closed_terms : Names.transparent_state option;
+  modulo_conv_on_closed_terms : TranspState.t option;
   use_metas_eagerly_in_conv_on_closed_terms : bool;
   use_evars_eagerly_in_conv_on_closed_terms : bool;
-  modulo_delta : Names.transparent_state;
-  modulo_delta_types : Names.transparent_state;
+  modulo_delta : TranspState.t;
+  modulo_delta_types : TranspState.t;
   check_applied_meta_types : bool;
   use_pattern_unification : bool;
   use_meta_bound_pattern_unification : bool;
@@ -41,7 +40,7 @@ val default_core_unify_flags : unit -> core_unify_flags
 val default_no_delta_core_unify_flags : unit -> core_unify_flags
 
 val default_unify_flags : unit -> unify_flags
-val default_no_delta_unify_flags : transparent_state -> unify_flags
+val default_no_delta_unify_flags : TranspState.t -> unify_flags
 
 val elim_flags : unit -> unify_flags
 val elim_no_delta_flags : unit -> unify_flags

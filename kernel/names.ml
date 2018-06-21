@@ -715,13 +715,6 @@ let hcons_construct = Hashcons.simple_hcons Hconstruct.generate Hconstruct.hcons
 
 (*****************)
 
-type transparent_state = Id.Pred.t * Cpred.t
-
-let empty_transparent_state = (Id.Pred.empty, Cpred.empty)
-let full_transparent_state = (Id.Pred.full, Cpred.full)
-let var_full_transparent_state = (Id.Pred.full, Cpred.empty)
-let cst_full_transparent_state = (Id.Pred.empty, Cpred.full)
-
 type 'a tableKey =
   | ConstKey of 'a
   | VarKey of Id.t

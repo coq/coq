@@ -638,7 +638,7 @@ let whd_nothing_for_iota env sigma s =
       | Meta ev ->
         (try whrec (Evd.meta_value sigma ev, stack)
 	with Not_found -> s)
-      | Const (const, u) when is_transparent_constant full_transparent_state const ->
+      | Const (const, u) when is_transparent_constant TranspState.full const ->
           let u = EInstance.kind sigma u in
 	  (match constant_opt_value_in env (const, u) with
 	     | Some  body -> whrec (EConstr.of_constr body, stack)
