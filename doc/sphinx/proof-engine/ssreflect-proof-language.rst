@@ -1484,7 +1484,7 @@ The abstract tactic
 ```````````````````
 
 .. tacn:: abstract: {+ d_item}
-   :name abstract (ssreflect)
+   :name: abstract (ssreflect)
 
 This tactic assigns an abstract constant previously introduced with the ``[:
 name ]`` intro pattern (see section :ref:`introduction_ssr`).
@@ -2402,7 +2402,7 @@ tactic:
 The behavior of the defective have tactic makes it possible to
 generalize it in the following general construction:
 
-.. tacn:: have {* @i_item } {? @i_pattern } {? @s_item | {+ @binder } } {? : @term } {? := @term | by @tactic }
+.. tacn:: have {* @i_item } {? @i_pattern } {? @s_item | {+ @ssr_binder } } {? : @term } {? := @term | by @tactic }
 
 Open syntax is supported for both :token:`term`. For the description
 of :token:`i_item` and :token:`s_item` see section
@@ -5242,7 +5242,7 @@ Notation scope
 
 Module name
 
-.. prodn:: name ::= @qualid
+.. prodn:: modname ::= @qualid
 
 Natural number
 
@@ -5252,14 +5252,10 @@ where :token:`ident` is an Ltac variable denoting a standard |Coq| numeral
 (should not be the name of a tactic which can be followed by a
 bracket ``[``, like ``do``, ``have``,…)
 
-Pattern
-
-.. prodn:: pattern ::= @term
-
 Items and switches
 ~~~~~~~~~~~~~~~~~~
 
-.. prodn:: binder ::= @ident %| ( @ident {? : @term } )
+.. prodn:: ssr_binder ::= @ident %| ( @ident {? : @term } )
 
 binder see :ref:`abbreviations_ssr`.
 
@@ -5354,8 +5350,8 @@ case analysis see :ref:`the_defective_tactics_ssr`
 
 rewrite  see :ref:`rewriting_ssr`
 
-.. tacn:: have {* @i_item } {? @i_pattern } {? @s_item %| {+ @binder } } {? : @term } := @term
-.. tacv:: have {* @i_item } {? @i_pattern } {? @s_item %| {+ @binder } } : @term {? by @tactic }
+.. tacn:: have {* @i_item } {? @i_pattern } {? @s_item %| {+ @ssr_binder } } {? : @term } := @term
+.. tacv:: have {* @i_item } {? @i_pattern } {? @s_item %| {+ @ssr_binder } } : @term {? by @tactic }
 .. tacn:: have suff {? @clear_switch } {? @i_pattern } {? : @term } := @term
 .. tacv:: have suff {? @clear_switch } {? @i_pattern } : @term {? by @tactic }
 .. tacv:: gen have {? @ident , } {? @i_pattern } : {+ @gen_item } / @term {? by @tactic }
@@ -5369,9 +5365,9 @@ forward  chaining see :ref:`structure_ssr`
 
 specializing see :ref:`structure_ssr`
 
-.. tacn:: suff {* @i_item } {? @i_pattern } {+ @binder } : @term {? by @tactic }
+.. tacn:: suff {* @i_item } {? @i_pattern } {+ @ssr_binder } : @term {? by @tactic }
    :name: suff
-.. tacv:: suffices {* @i_item } {? @i_pattern } {+ @binder } : @term {? by @tactic }
+.. tacv:: suffices {* @i_item } {? @i_pattern } {+ @ssr_binder } : @term {? by @tactic }
    :name: suffices
 .. tacv:: suff {? have } {? @clear_switch } {? @i_pattern } : @term {? by @tactic }
 .. tacv:: suffices {? have } {? @clear_switch } {? @i_pattern } : @term {? by @tactic }
@@ -5382,7 +5378,7 @@ backchaining see :ref:`structure_ssr`
 
 local definition :ref:`definitions_ssr`
 
-.. tacv:: pose @ident {+ @binder } := @term
+.. tacv:: pose @ident {+ @ssr_binder } := @term
 
 local function definition
 

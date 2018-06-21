@@ -28,6 +28,7 @@ from docutils.parsers.rst.directives.admonitions import BaseAdmonition
 
 from sphinx import addnodes
 from sphinx.roles import XRefRole
+from sphinx.errors import ExtensionError
 from sphinx.util.nodes import set_source_info, set_role_source_info, make_refnode
 from sphinx.util.logging import getLogger
 from sphinx.directives import ObjectDescription
@@ -103,10 +104,16 @@ class CoqObject(ObjectDescription):
         'undocumented': directives.flag
     }
 
-    def _subdomain(self):
+    def subdomain_data(self):
         if self.subdomain is None:
             raise ValueError()
-        return self.subdomain
+        return self.env.domaindata['coq']['objects'][self.subdomain]
+
+    def _render_annotation(self, signode):
+        if self.annotation:
+            annot_node = nodes.inline(self.annotation, self.annotation, classes=['sigannot'])
+            signode += addnodes.desc_annotation(self.annotation, '', annot_node)
+            signode += nodes.Text(' ')
 
     def handle_signature(self, signature, signode):
         """Prefix signature with the proper annotation, then render it using
@@ -114,29 +121,32 @@ class CoqObject(ObjectDescription):
 
         :returns: the name given to the resulting node, if any
         """
-        if self.annotation:
-            annotation = self.annotation + ' '
-            signode += addnodes.desc_annotation(annotation, annotation)
+        self._render_annotation(signode)
         self._render_signature(signature, signode)
         return self._names.get(signature) or self._name_from_signature(signature)
+
+    def _warn_if_duplicate_name(self, objects, name):
+        """Check that two objects in the same domain don't have the same name."""
+        if name in objects:
+            MSG = 'Duplicate object: {}; other is at {}'
+            msg = MSG.format(name, self.env.doc2path(objects[name][0]))
+            self.state_machine.reporter.warning(msg, line=self.lineno)
 
     def _record_name(self, name, target_id):
         """Record a name, mapping it to target_id
 
         Warns if another object of the same name already exists.
         """
-        names_in_subdomain = self.env.domaindata['coq']['objects'][self._subdomain()]
-        # Check that two objects in the same domain don't have the same name
-        if name in names_in_subdomain:
-            self.state_machine.reporter.warning(
-                'Duplicate Coq object: {}; other is at {}'.format(
-                    name, self.env.doc2path(names_in_subdomain[name][0])),
-                line=self.lineno)
+        names_in_subdomain = self.subdomain_data()
+        self._warn_if_duplicate_name(names_in_subdomain, name)
         names_in_subdomain[name] = (self.env.docname, self.objtype, target_id)
+
+    def _target_id(self, name):
+        return make_target(self.objtype, nodes.make_id(name))
 
     def _add_target(self, signode, name):
         """Register a link target ‘name’, pointing to signode."""
-        targetid = make_target(self.objtype, nodes.make_id(name))
+        targetid = self._target_id(name)
         if targetid not in self.state.document.ids:
             signode['ids'].append(targetid)
             signode['names'].append(name)
@@ -314,50 +324,71 @@ class OptionObject(NotationObject):
     def _name_from_signature(self, signature):
         return stringify_with_ellipses(signature)
 
-class ProductionObject(NotationObject):
-    """Grammar productions.
+class ProductionObject(CoqObject):
+    r"""A grammar production.
 
     This is useful if you intend to document individual grammar productions.
     Otherwise, use Sphinx's `production lists
     <http://www.sphinx-doc.org/en/stable/markup/para.html#directive-productionlist>`_.
-    """
-    # FIXME (CPC): I have no idea what this does :/  Someone should add an example.
-    subdomain = "prodn"
-    index_suffix = None
-    annotation = None
 
-    # override to create link targets for production left-hand sides
-    def run(self):
+    Unlike ``.. productionlist``\ s, this directive accepts notation syntax.
+
+
+    Usage::
+
+       .. prodn:: token += production
+       .. prodn:: token ::= production
+
+    Example::
+
+        .. prodn:: term += let: @pattern := @term in @term
+        .. prodn:: occ_switch ::= { {? + %| - } {* @num } }
+
+    """
+    subdomain = "prodn"
+    #annotation = "Grammar production"
+
+    def _render_signature(self, signature, signode):
+        raise NotImplementedError(self)
+
+    SIG_ERROR = ("Invalid syntax in ``.. prodn::`` directive"
+                 + "\nExpected ``name ::= ...`` or ``name += ...``"
+                 + " (e.g. ``pattern += constr:(@ident)``)")
+
+    def handle_signature(self, signature, signode):
+        nsplits = 2
+        parts = signature.split(maxsplit=nsplits)
+        if len(parts) != 3:
+            raise ExtensionError(ProductionObject.SIG_ERROR)
+
+        lhs, op, rhs = (part.strip() for part in parts)
+        if op not in ["::=", "+="]:
+            raise ExtensionError(ProductionObject.SIG_ERROR)
+
+        self._render_annotation(signode)
+
+        lhs_op = '{} {} '.format(lhs, op)
+        lhs_node = nodes.literal(lhs_op, lhs_op)
+
+        position = self.state_machine.get_source_and_line(self.lineno)
+        rhs_node = parse_notation(rhs, *position)
+        signode += addnodes.desc_name(signature, '', lhs_node, rhs_node)
+
+        return ('token', lhs) if op == '::=' else None
+
+    def _add_index_entry(self, name, target):
+        pass
+
+    def _target_id(self, name):
+        # Use `name[1]` instead of ``nodes.make_id(name[1])`` to work around
+        # https://github.com/sphinx-doc/sphinx/issues/4983
+        return 'grammar-token-{}'.format(name[1])
+
+    def _record_name(self, name, targetid):
         env = self.state.document.settings.env
         objects = env.domaindata['std']['objects']
-
-        class ProdnError(Exception):
-            """Exception for ill-formed prodn"""
-            pass
-
-        [idx, node] = super().run()
-        try:
-            # find LHS of production
-            inline_lhs = node[0][0][0][0]  # may be fragile !!!
-            lhs_str = str(inline_lhs)
-            if lhs_str[0:7] != "<inline":
-                raise ProdnError("Expected atom on LHS")
-            lhs = inline_lhs[0]
-            # register link target
-            subnode = addnodes.production()
-            subnode['tokenname'] = lhs
-            idname = 'grammar-token-%s' % subnode['tokenname']
-            if idname not in self.state.document.ids:
-                subnode['ids'].append(idname)
-            self.state.document.note_implicit_target(subnode, subnode)
-            objects['token', subnode['tokenname']] = env.docname, idname
-            subnode.extend(token_xrefs(lhs))
-            # patch in link target
-            inline_lhs['ids'].append(idname)
-        except ProdnError as err:
-            getLogger(__name__).warning("Could not create link target for prodn: " + str(err) +
-                                        "\nSphinx represents the prodn as: " + str(node) + "\n")
-        return [idx, node]
+        self._warn_if_duplicate_name(objects, name)
+        objects[name] = env.docname, targetid
 
 class ExceptionObject(NotationObject):
     """An error raised by a Coq command or tactic.
@@ -841,11 +872,6 @@ class CoqOptionIndex(CoqSubdomainsIndex):
 class CoqGallinaIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "thmindex", "Gallina Index", "theorems", ["thm"]
 
-# we specify an index to make productions fit into the framework of notations
-# but not likely to include a link to this index
-class CoqProductionIndex(CoqSubdomainsIndex):
-    name, localname, shortname, subdomains = "prodnindex", "Production Index", "productions", ["prodn"]
-
 class CoqExceptionIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "exnindex", "Errors and Warnings Index", "errors", ["exn", "warn"]
 
@@ -952,7 +978,7 @@ class CoqDomain(Domain):
         'g': CoqCodeRole
     }
 
-    indices = [CoqVernacIndex, CoqTacticIndex, CoqOptionIndex, CoqGallinaIndex, CoqProductionIndex, CoqExceptionIndex]
+    indices = [CoqVernacIndex, CoqTacticIndex, CoqOptionIndex, CoqGallinaIndex, CoqExceptionIndex]
 
     data_version = 1
     initial_data = {
@@ -1047,7 +1073,7 @@ def setup(app):
 
     # A few sanity checks:
     subdomains = set(obj.subdomain for obj in CoqDomain.directives.values())
-    assert subdomains == set(chain(*(idx.subdomains for idx in CoqDomain.indices)))
+    assert subdomains.issuperset(chain(*(idx.subdomains for idx in CoqDomain.indices)))
     assert subdomains.issubset(CoqDomain.roles.keys())
 
     # Add domain, directives, and roles
