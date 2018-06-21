@@ -48,8 +48,13 @@ val ssrinstancesofrule :
   Ssrast.ssrterm ->
   Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
+(* map_redex (by default the identity on after) is called on the
+ * redex (before) and its replacement (after). It is used to
+ * "rename" binders by the under tactic *)
 val ssrrewritetac :
   ?under:bool ->
+  ?map_redex:(Environ.env -> Evd.evar_map ->
+                 before:EConstr.t -> after:EConstr.t -> Evd.evar_map * EConstr.t) ->
   Ltac_plugin.Tacinterp.interp_sign ->
    ssrrwarg list -> Tacmach.tactic
 
