@@ -42,8 +42,8 @@ sig
 
 end
 
-module ValTMap (M : Dyn.TParam) :
-  Dyn.MapS with type 'a obj = 'a M.t with type 'a key = 'a Val.typ
+module ValTMap (Value : Dyn.ValueS) :
+  Dyn.MapS with type 'a key = 'a Val.typ and type 'a value = 'a Value.t
 
 (** Dynamic types for toplevel values. While the generic types permit to relate
     objects at various levels of interpretation, toplevel values are wearing
