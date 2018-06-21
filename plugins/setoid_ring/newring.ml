@@ -96,25 +96,21 @@ let protect_tac_in map id =
 
 (****************************************************************************)
 
+let rec closed_under sigma cset t =
+  try
+    let (gr, _) = Termops.global_of_constr sigma t in
+    Refset_env.mem gr cset
+  with Not_found ->
+    match EConstr.kind sigma t with
+    | Cast(c,_,_) -> closed_under sigma cset c
+    | App(f,l) -> closed_under sigma cset f && Array.for_all (closed_under sigma cset) l
+    | _ -> false
+
 let closed_term t l =
-  let open Quote_plugin in
   Proofview.tclEVARMAP >>= fun sigma ->
-  let l = List.map UnivGen.constr_of_global l in
-  let cs = List.fold_right Quote.ConstrSet.add l Quote.ConstrSet.empty in
-  if Quote.closed_under sigma cs t then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (mt())
+  let cs = List.fold_right Refset_env.add l Refset_env.empty in
+  if closed_under sigma cs t then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (mt())
 
-(* TACTIC EXTEND echo
-| [ "echo" constr(t) ] ->
-  [ Pp.msg (Termops.print_constr t);  Tacinterp.eval_tactic (TacId []) ]
-END;;*)
-
-(*
-let closed_term_ast l =
-  TacFun([Some(Id.of_string"t")],
-  TacAtom(Loc.ghost,TacExtend(Loc.ghost,"closed_term",
-  [Genarg.in_gen Constrarg.wit_constr (mkVar(Id.of_string"t"));
-   Genarg.in_gen (Genarg.wit_list Constrarg.wit_ref) l])))
-*)
 let closed_term_ast l =
   let tacname = {
     mltac_plugin = "newring_plugin";
