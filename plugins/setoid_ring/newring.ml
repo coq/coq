@@ -106,20 +106,26 @@ let rec closed_under sigma cset t =
     | App(f,l) -> closed_under sigma cset f && Array.for_all (closed_under sigma cset) l
     | _ -> false
 
-let closed_term t l =
+let closed_term args _ = match args with
+| [t; l] ->
+  let t = Option.get (Value.to_constr t) in
+  let l = List.map (fun c -> Value.cast (Genarg.topwit Stdarg.wit_ref) c) (Option.get (Value.to_list l)) in
   Proofview.tclEVARMAP >>= fun sigma ->
   let cs = List.fold_right Refset_env.add l Refset_env.empty in
   if closed_under sigma cs t then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (mt())
+| _ -> assert false
 
-let closed_term_ast l =
+let closed_term_ast =
   let tacname = {
     mltac_plugin = "newring_plugin";
     mltac_tactic = "closed_term";
   } in
+  let () = Tacenv.register_ml_tactic tacname [|closed_term|] in
   let tacname = {
     mltac_name = tacname;
     mltac_index = 0;
   } in
+  fun l ->
   let l = List.map (fun gr -> ArgArg(Loc.tag gr)) l in
   TacFun([Name(Id.of_string"t")],
   TacML(Loc.tag (tacname,

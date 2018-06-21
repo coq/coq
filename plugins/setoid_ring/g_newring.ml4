@@ -29,11 +29,6 @@ TACTIC EXTEND protect_fv
     [ protect_tac map ]
 END
 
-TACTIC EXTEND closed_term
-  [ "closed_term" constr(t) "[" ne_reference_list(l) "]" ] ->
-    [ closed_term t l ]
-END
-
 open Pptactic
 open Ppconstr
 
