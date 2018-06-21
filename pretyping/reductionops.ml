@@ -47,29 +47,28 @@ open Libobject
 type effect_name = string
 
 (** create a persistent set to store effect functions *)
-module ConstrMap = Map.Make (Constr)
 
 (* Table bindings a constant to an effect *)
-let constant_effect_table = Summary.ref ~name:"reduction-side-effect" ConstrMap.empty
+let constant_effect_table = Summary.ref ~name:"reduction-side-effect" Cmap.empty
 
 (* Table bindings function key to effective functions *)
 let effect_table = Summary.ref ~name:"reduction-function-effect" String.Map.empty
 
 (** a test to know whether a constant is actually the effect function *)
-let reduction_effect_hook env sigma termkey c =
+let reduction_effect_hook env sigma con c =
   try
-    let funkey = ConstrMap.find termkey !constant_effect_table in
+    let funkey = Cmap.find con !constant_effect_table in
     let effect = String.Map.find funkey !effect_table in
     effect env sigma (Lazy.force c)
   with Not_found -> ()
 
-let cache_reduction_effect (_,(termkey,funkey)) =
-  constant_effect_table := ConstrMap.add termkey funkey !constant_effect_table
+let cache_reduction_effect (_,(con,funkey)) =
+  constant_effect_table := Cmap.add con funkey !constant_effect_table
 
-let subst_reduction_effect (subst,(termkey,funkey)) =
-  (subst_mps subst termkey,funkey)
+let subst_reduction_effect (subst,(con,funkey)) =
+  (subst_constant subst con,funkey)
 
-let inReductionEffect : Constr.constr * string -> obj =
+let inReductionEffect : Constant.t * string -> obj =
   declare_object {(default_object "REDUCTION-EFFECT") with
     cache_function = cache_reduction_effect;
     open_function = (fun i o -> if Int.equal i 1 then cache_reduction_effect o);
@@ -83,8 +82,7 @@ let declare_reduction_effect funkey f =
 
 (** A function to set the value of the print function *)
 let set_reduction_effect x funkey =
-  let termkey = UnivGen.constr_of_global x in
-  Lib.add_anonymous_leaf (inReductionEffect (termkey,funkey))
+  Lib.add_anonymous_leaf (inReductionEffect (x,funkey))
 
 
 (** Machinery to custom the behavior of the reduction *)
@@ -874,7 +872,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       | Some body -> whrec cst_l (body, stack)
       | None -> fold ())
     | Const (c,u as const) ->
-      reduction_effect_hook env sigma (EConstr.to_constr sigma x)
+      reduction_effect_hook env sigma c
          (lazy (EConstr.to_constr sigma (Stack.zip sigma (x,stack))));
       if CClosure.RedFlags.red_set flags (CClosure.RedFlags.fCONST c) then
        let u' = EInstance.kind sigma u in

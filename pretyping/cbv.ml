@@ -281,8 +281,9 @@ let rec norm_head info env t stack =
   | Var id -> norm_head_ref 0 info env stack (VarKey id)
 
   | Const sp ->
-      Reductionops.reduction_effect_hook (env_of_infos info.infos) info.sigma t (lazy (reify_stack t stack));
-      norm_head_ref 0 info env stack (ConstKey sp)
+    Reductionops.reduction_effect_hook (env_of_infos info.infos) info.sigma
+      (fst sp) (lazy (reify_stack t stack));
+    norm_head_ref 0 info env stack (ConstKey sp)
 
   | LetIn (_, b, _, c) ->
       (* zeta means letin are contracted; delta without zeta means we *)

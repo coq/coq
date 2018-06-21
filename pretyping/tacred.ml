@@ -539,7 +539,7 @@ let reduce_mind_case_use_function func env sigma mia =
 let match_eval_ref env sigma constr stack =
   match EConstr.kind sigma constr with
   | Const (sp, u) ->
-     reduction_effect_hook env sigma (EConstr.to_constr sigma constr)
+     reduction_effect_hook env sigma sp
         (lazy (EConstr.to_constr sigma (applist (constr,stack))));
      if is_evaluable env (EvalConstRef sp) then Some (EvalConst sp, u) else None
   | Var id when is_evaluable env (EvalVarRef id) -> Some (EvalVar id, EInstance.empty)
@@ -550,7 +550,7 @@ let match_eval_ref env sigma constr stack =
 let match_eval_ref_value env sigma constr stack =
   match EConstr.kind sigma constr with
   | Const (sp, u) ->
-     reduction_effect_hook env sigma (EConstr.to_constr sigma constr)
+     reduction_effect_hook env sigma sp
         (lazy (EConstr.to_constr sigma (applist (constr,stack))));
     if is_evaluable env (EvalConstRef sp) then
       let u = EInstance.kind sigma u in
@@ -558,8 +558,6 @@ let match_eval_ref_value env sigma constr stack =
     else
       None
   | Proj (p, c) when not (Projection.unfolded p) ->
-     reduction_effect_hook env sigma (EConstr.to_constr ~abort_on_undefined_evars:false sigma constr)
-        (lazy (EConstr.to_constr sigma (applist (constr,stack))));
      if is_evaluable env (EvalConstRef (Projection.constant p)) then
        Some (mkProj (Projection.unfold p, c))
      else None
