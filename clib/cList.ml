@@ -122,6 +122,7 @@ sig
   val duplicates : 'a eq -> 'a list -> 'a list
   val uniquize : 'a list -> 'a list
   val sort_uniquize : 'a cmp -> 'a list -> 'a list
+  val min : 'a cmp -> 'a list -> 'a
   val cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
   val cartesians : ('a -> 'b -> 'b) -> 'b -> 'a list list -> 'b list
   val combinations : 'a list list -> 'a list list
@@ -970,6 +971,15 @@ let rec uniquize_sorted cmp = function
 
 let sort_uniquize cmp l =
   uniquize_sorted cmp (List.sort cmp l)
+
+let min cmp l =
+  let rec aux cur = function
+    | [] -> cur
+    | x :: l -> if cmp x cur < 0 then aux x l else aux cur l
+  in
+  match l with
+  | x :: l -> aux x l
+  | [] -> raise Not_found
 
 let rec duplicates cmp = function
   | [] -> []

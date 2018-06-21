@@ -376,6 +376,11 @@ sig
   (** Return a sorted version of a list without duplicates
       according to some comparison function. *)
 
+  val min : 'a cmp -> 'a list -> 'a
+  (** Return minimum element according to some comparison function.
+
+      @raise Not_found on an empty list. *)
+
   (** {6 Cartesian product} *)
 
   val cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
