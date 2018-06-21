@@ -836,8 +836,10 @@ let leq_constr_univs_infer univs m n =
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
 	if UGraph.check_leq univs u1 u2 then true
 	else
-	  (cstrs := Univ.enforce_leq u1 u2 !cstrs; 
-	   true)
+          (try let c, _ = UGraph.enforce_leq_alg u1 u2 univs in
+            cstrs := Univ.Constraint.union c !cstrs;
+            true
+          with Univ.UniverseInconsistency _ -> false)
     in
     let rec eq_constr' nargs m n =
       m == n || compare_head_gen eq_universes eq_sorts eq_constr' nargs m n

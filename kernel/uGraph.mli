@@ -42,6 +42,9 @@ val merge_constraints : Constraint.t -> t -> t
 val check_constraint  : t -> univ_constraint -> bool
 val check_constraints : Constraint.t -> t -> bool
 
+(** Picks an arbitrary set of constraints sufficient to ensure [u <= v]. *)
+val enforce_leq_alg : Universe.t -> Universe.t -> t -> Constraint.t * t
+
 (** Adds a universe to the graph, ensuring it is >= or > Set.
    @raise AlreadyDeclared if the level is already declared in the graph. *)
 

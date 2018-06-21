@@ -693,8 +693,8 @@ let infer_eq (univs, cstrs as cuniv) u u' =
 let infer_leq (univs, cstrs as cuniv) u u' =
   if UGraph.check_leq univs u u' then cuniv
   else
-    let cstrs' = Univ.enforce_leq u u' cstrs in
-      univs, cstrs'
+    let cstrs', _ = UGraph.enforce_leq_alg u u' univs in
+      univs, Univ.Constraint.union cstrs cstrs'
 
 let infer_cmp_universes env pb s0 s1 univs =
   let open Sorts in
