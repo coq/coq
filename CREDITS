@@ -50,8 +50,6 @@ plugins/nsatz
   developed by Loïc Pottier (INRIA-Marelle, 2009-2011)
 plugins/omega
   developed by Pierre Crégut (France Telecom R&D, 1996)
-plugins/quote
-  developed by Patrick Loiseleur (LRI, 1997-1999)
 plugins/romega
   developed by Pierre Crégut (France Telecom R&D, 2001-2004)
 plugins/rtauto

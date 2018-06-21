@@ -4217,26 +4217,6 @@ available after a ``Require Import FunInd``.
   functional inversion, this variant allows choosing which :n:`@qualid` is
   inverted.
 
-.. tacn:: quote @ident
-   :name: quote
-
-This kind of inversion has nothing to do with the tactic :tacn:`inversion`
-above. This tactic does :g:`change (@ident t)`, where `t` is a term built in
-order to ensure the convertibility. In other words, it does inversion of the
-function :n:`@ident`. This function must be a fixpoint on a simple recursive
-datatype: see :ref:`quote` for the full details.
-
-
-.. exn:: quote: not a simple fixpoint.
-
-  Happens when quote is not able to perform inversion properly.
-
-
-.. tacv::  quote @ident {* @ident}
-
-  All terms that are built only with :n:`{* @ident}` will be considered by quote
-  as constants rather than variables.
-
 Classical tactics
 -----------------
 

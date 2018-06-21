@@ -95,7 +95,7 @@ CORESRCDIRS:=\
   tactics 	vernac		stm		toplevel
 
 PLUGINDIRS:=\
-  omega		romega 		micromega 	quote \
+  omega		romega 		micromega \
   setoid_ring 	extraction \
   cc 		funind 		firstorder 	derive \
   rtauto 	nsatz           syntax          btauto \
@@ -131,7 +131,6 @@ GRAMMARCMA:=grammar/grammar.cma
 OMEGACMO:=plugins/omega/omega_plugin.cmo
 ROMEGACMO:=plugins/romega/romega_plugin.cmo
 MICROMEGACMO:=plugins/micromega/micromega_plugin.cmo
-QUOTECMO:=plugins/quote/quote_plugin.cmo
 RINGCMO:=plugins/setoid_ring/newring_plugin.cmo
 NSATZCMO:=plugins/nsatz/nsatz_plugin.cmo
 EXTRACTIONCMO:=plugins/extraction/extraction_plugin.cmo
@@ -152,7 +151,7 @@ SSRMATCHINGCMO:=plugins/ssrmatching/ssrmatching_plugin.cmo
 SSRCMO:=plugins/ssr/ssreflect_plugin.cmo
 
 PLUGINSCMO:=$(LTACCMO) $(OMEGACMO) $(ROMEGACMO) $(MICROMEGACMO) \
-        $(QUOTECMO) $(RINGCMO) \
+        $(RINGCMO) \
         $(EXTRACTIONCMO) \
         $(CCCMO)  $(FOCMO) $(RTAUTOCMO) $(BTAUTOCMO) \
         $(FUNINDCMO) $(NSATZCMO) $(SYNTAXCMO) \
