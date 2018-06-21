@@ -19,6 +19,9 @@ sig
   type 'a field
   (** Type of field of such stores *)
 
+  val field : unit -> 'a field
+  (** Create a new field *)
+
   val empty : t
   (** Empty store *)
 
@@ -33,11 +36,7 @@ sig
 
   val merge : t -> t -> t
   (** [merge s1 s2] adds all the fields of [s1] into [s2]. *)
-
-  val field : unit -> 'a field
-  (** Create a new field *)
-
 end
 
-module Make () : S
+module Make() : S
 (** Create a new store type. *)
