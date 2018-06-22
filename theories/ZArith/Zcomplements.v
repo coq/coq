@@ -39,11 +39,20 @@ Proof. reflexivity. Qed.
 
 Lemma floor_ok : forall p:positive, floor p <= Zpos p < 2 * floor p.
 Proof.
- unfold floor. induction p; simpl.
- - rewrite !Pos2Z.inj_xI, (Pos2Z.inj_xO (xO _)), Pos2Z.inj_xO. admit.
- - rewrite (Pos2Z.inj_xO (xO _)), (Pos2Z.inj_xO p), Pos2Z.inj_xO. admit.
- - admit.
-Admitted.
+ unfold floor. induction p as [p [IH1p IH2p]|p [IH1p IH2]|]; simpl.
+ - rewrite !Pos2Z.inj_xI, (Pos2Z.inj_xO (xO _)), Pos2Z.inj_xO.
+   split.
+   + apply Z.le_trans with (2 * Z.pos p); auto with zarith.
+     rewrite <- (Z.add_0_r (2 * Z.pos p)) at 1; auto with zarith.
+   + apply Z.lt_le_trans with (2 * (Z.pos p + 1)).
+     * rewrite Z.mul_add_distr_l, Z.mul_1_r.
+       apply Zplus_lt_compat_l; red; auto with zarith.
+     * apply Z.mul_le_mono_nonneg_l; auto with zarith.
+       rewrite Z.add_1_r; apply Zlt_le_succ; auto.
+ - rewrite (Pos2Z.inj_xO (xO _)), (Pos2Z.inj_xO p), Pos2Z.inj_xO.
+   split; auto with zarith.
+ - split; auto with zarith; red; auto.
+Qed.
 
 (**********************************************************************)
 (** Two more induction principles over [Z]. *)
@@ -128,9 +137,9 @@ Section Zlength_properties.
     clear l. induction l.
     auto with zarith.
     intros. simpl length; simpl Zlength_aux.
-     rewrite IHl, Nat2Z.inj_succ; auto with zarith; admit.
+     rewrite IHl, Nat2Z.inj_succ, Z.add_succ_comm; auto.
     unfold Zlength. now rewrite H.
-  Admitted.
+  Qed.
 
   Lemma Zlength_nil : Zlength (A:=A) nil = 0.
   Proof. reflexivity. Qed.
