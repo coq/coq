@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+{
 open Pcoq
 open Pcoq.Prim
 open Vernacexpr
@@ -28,20 +29,26 @@ end
 
 open Toplevel_
 
-GEXTEND Gram
+}
+
+GRAMMAR EXTEND Gram
   GLOBAL: vernac_toplevel;
   vernac_toplevel: FIRST
-    [ [ IDENT "Drop"; "." -> CAst.make VernacDrop
-      | IDENT "Quit"; "." -> CAst.make VernacQuit
+    [ [ IDENT "Drop"; "." -> { CAst.make VernacDrop }
+      | IDENT "Quit"; "." -> { CAst.make VernacQuit }
       | IDENT "Backtrack"; n = natural ; m = natural ; p = natural; "." ->
-        CAst.make (VernacBacktrack (n,m,p))
+        { CAst.make (VernacBacktrack (n,m,p)) }
       | cmd = Pvernac.main_entry ->
-              match cmd with
+              { match cmd with
               | None -> raise Stm.End_of_input
-              | Some (loc,c) -> CAst.make ~loc (VernacControl c)
+              | Some (loc,c) -> CAst.make ~loc (VernacControl c) }
       ]
     ]
   ;
 END
 
+{
+
 let parse_toplevel pa = Pcoq.Gram.entry_parse vernac_toplevel pa
+
+}
