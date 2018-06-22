@@ -178,7 +178,7 @@ let suggest_variable env id =
 let value = ref None
 
 let using_to_string us = Pp.string_of_ppcmds (Ppvernac.pr_using us)
-let using_from_string us = Pcoq.Gram.(entry_parse G_vernac.section_subset_expr (parsable (Stream.of_string us)))
+let using_from_string us = Pcoq.Entry.parse G_vernac.section_subset_expr (Pcoq.Parsable.make (Stream.of_string us))
 
 let _ =
   Goptions.declare_stringopt_option

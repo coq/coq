@@ -49,7 +49,7 @@ let entry_buf = Buffer.create 64
 let pr_entry e =
   let () = Buffer.clear entry_buf in
   let ft = Format.formatter_of_buffer entry_buf in
-  let () = Pcoq.Gram.entry_print ft e in
+  let () = Pcoq.Entry.print ft e in
   str (Buffer.contents entry_buf)
 
 let pr_registered_grammar name =

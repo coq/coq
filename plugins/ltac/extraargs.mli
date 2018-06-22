@@ -14,12 +14,12 @@ open Constrexpr
 open Glob_term
 
 val wit_orient : bool Genarg.uniform_genarg_type
-val orient : bool Pcoq.Gram.entry
+val orient : bool Pcoq.Entry.t
 val pr_orient : bool -> Pp.t
 
 val wit_rename : (Id.t * Id.t) Genarg.uniform_genarg_type
 
-val occurrences : (int list Locus.or_var) Pcoq.Gram.entry
+val occurrences : (int list Locus.or_var) Pcoq.Entry.t
 val wit_occurrences : (int list Locus.or_var, int list Locus.or_var, int list) Genarg.genarg_type
 val pr_occurrences : int list Locus.or_var -> Pp.t
 val occurrences_of : int list -> Locus.occurrences
@@ -46,8 +46,8 @@ val wit_casted_constr :
   Tacexpr.glob_constr_and_expr,
   EConstr.t) Genarg.genarg_type
 
-val glob : constr_expr Pcoq.Gram.entry
-val lglob : constr_expr Pcoq.Gram.entry
+val glob : constr_expr Pcoq.Entry.t
+val lglob : constr_expr Pcoq.Entry.t
 
 type 'id gen_place= ('id * Locus.hyp_location_flag,unit) location
 
@@ -55,10 +55,10 @@ type loc_place = lident gen_place
 type place = Id.t gen_place
 
 val wit_hloc : (loc_place, loc_place, place) Genarg.genarg_type
-val hloc : loc_place Pcoq.Gram.entry
+val hloc : loc_place Pcoq.Entry.t
 val pr_hloc : loc_place -> Pp.t
 
-val by_arg_tac : Tacexpr.raw_tactic_expr option Pcoq.Gram.entry
+val by_arg_tac : Tacexpr.raw_tactic_expr option Pcoq.Entry.t
 val wit_by_arg_tac :
   (raw_tactic_expr option,
   glob_tactic_expr option,
@@ -68,13 +68,13 @@ val pr_by_arg_tac :
   (int * Notation_gram.parenRelation -> raw_tactic_expr -> Pp.t) ->
   raw_tactic_expr option -> Pp.t
 
-val test_lpar_id_colon : unit Pcoq.Gram.entry
+val test_lpar_id_colon : unit Pcoq.Entry.t
 
 val wit_test_lpar_id_colon : (unit, unit, unit) Genarg.genarg_type
 
 (** Spiwack: Primitive for retroknowledge registration *)
 
-val retroknowledge_field : Retroknowledge.field Pcoq.Gram.entry
+val retroknowledge_field : Retroknowledge.field Pcoq.Entry.t
 val wit_retroknowledge_field : (Retroknowledge.field, unit, unit) Genarg.genarg_type
 
 val wit_in_clause :

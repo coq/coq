@@ -22,7 +22,7 @@ open Pvernac.Vernac_
 
 let thm_token = G_vernac.thm_token
 
-let hint = Gram.entry_create "hint"
+let hint = Entry.create "hint"
 
 let warn_deprecated_focus =
   CWarnings.create ~name:"deprecated-focus" ~category:"deprecated"

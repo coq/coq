@@ -24,20 +24,33 @@ module Gram : sig
   include Grammar.S with type te = Tok.t
 
   type 'a entry = 'a Entry.e
+  [@@ocaml.deprecated "Use [Pcoq.Entry.t]"]
 
-  type coq_parsable
+  [@@@ocaml.warning "-3"]
 
-  val parsable : ?file:Loc.source -> char Stream.t -> coq_parsable
   val entry_create : string -> 'a entry
-  val entry_parse : 'a entry -> coq_parsable -> 'a
-  val entry_print : Format.formatter -> 'a entry -> unit
-
-  (* Get comment parsing information from the Lexer *)
-  val comment_state : coq_parsable -> ((int * int) * string) list
+  [@@ocaml.deprecated "Use [Pcoq.Entry.create]"]
 
   val gram_extend : 'a entry -> 'a Extend.extend_statement -> unit
 
+  [@@@ocaml.warning "+3"]
+
 end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e
+
+module Parsable :
+sig
+  type t
+  val make : ?file:Loc.source -> char Stream.t -> t
+  (* Get comment parsing information from the Lexer *)
+  val comment_state : t -> ((int * int) * string) list
+end
+
+module Entry : sig
+  type 'a t = 'a Grammar.GMake(CLexer).Entry.e
+  val create : string -> 'a t
+  val parse : 'a t -> Parsable.t -> 'a
+  val print : Format.formatter -> 'a t -> unit
+end
 
 (** The parser of Coq is built from three kinds of rule declarations:
 
@@ -120,86 +133,86 @@ val camlp5_verbosity : bool -> ('a -> unit) -> 'a -> unit
 
 (** Parse a string *)
 
-val parse_string : 'a Gram.entry -> string -> 'a
-val eoi_entry : 'a Gram.entry -> 'a Gram.entry
-val map_entry : ('a -> 'b) -> 'a Gram.entry -> 'b Gram.entry
+val parse_string : 'a Entry.t -> string -> 'a
+val eoi_entry : 'a Entry.t -> 'a Entry.t
+val map_entry : ('a -> 'b) -> 'a Entry.t -> 'b Entry.t
 
 type gram_universe
 
 val get_univ : string -> gram_universe
 val create_universe : string -> gram_universe
 
-val new_entry : gram_universe -> string -> 'a Gram.entry
+val new_entry : gram_universe -> string -> 'a Entry.t
 
 val uprim : gram_universe
 val uconstr : gram_universe
 val utactic : gram_universe
 
 
-val register_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry -> unit
-val genarg_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry
+val register_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Entry.t -> unit
+val genarg_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Entry.t
 
 val create_generic_entry : gram_universe -> string ->
-  ('a, rlevel) abstract_argument_type -> 'a Gram.entry
+  ('a, rlevel) abstract_argument_type -> 'a Entry.t
 
 module Prim :
   sig
     open Names
     open Libnames
-    val preident : string Gram.entry
-    val ident : Id.t Gram.entry
-    val name : lname Gram.entry
-    val identref : lident Gram.entry
-    val univ_decl : universe_decl_expr Gram.entry
-    val ident_decl : ident_decl Gram.entry
-    val pattern_ident : Id.t Gram.entry
-    val pattern_identref : lident Gram.entry
-    val base_ident : Id.t Gram.entry
-    val natural : int Gram.entry
-    val bigint : Constrexpr.raw_natural_number Gram.entry
-    val integer : int Gram.entry
-    val string : string Gram.entry
-    val lstring : lstring Gram.entry
-    val reference : qualid Gram.entry
-    val qualid : qualid Gram.entry
-    val fullyqualid : Id.t list CAst.t Gram.entry
-    val by_notation : (string * string option) Gram.entry
-    val smart_global : qualid or_by_notation Gram.entry
-    val dirpath : DirPath.t Gram.entry
-    val ne_string : string Gram.entry
-    val ne_lstring : lstring Gram.entry
-    val var : lident Gram.entry
+    val preident : string Entry.t
+    val ident : Id.t Entry.t
+    val name : lname Entry.t
+    val identref : lident Entry.t
+    val univ_decl : universe_decl_expr Entry.t
+    val ident_decl : ident_decl Entry.t
+    val pattern_ident : Id.t Entry.t
+    val pattern_identref : lident Entry.t
+    val base_ident : Id.t Entry.t
+    val natural : int Entry.t
+    val bigint : Constrexpr.raw_natural_number Entry.t
+    val integer : int Entry.t
+    val string : string Entry.t
+    val lstring : lstring Entry.t
+    val reference : qualid Entry.t
+    val qualid : qualid Entry.t
+    val fullyqualid : Id.t list CAst.t Entry.t
+    val by_notation : (string * string option) Entry.t
+    val smart_global : qualid or_by_notation Entry.t
+    val dirpath : DirPath.t Entry.t
+    val ne_string : string Entry.t
+    val ne_lstring : lstring Entry.t
+    val var : lident Entry.t
   end
 
 module Constr :
   sig
-    val constr : constr_expr Gram.entry
-    val constr_eoi : constr_expr Gram.entry
-    val lconstr : constr_expr Gram.entry
-    val binder_constr : constr_expr Gram.entry
-    val operconstr : constr_expr Gram.entry
-    val ident : Id.t Gram.entry
-    val global : qualid Gram.entry
-    val universe_level : Glob_term.glob_level Gram.entry
-    val sort : Glob_term.glob_sort Gram.entry
-    val sort_family : Sorts.family Gram.entry
-    val pattern : cases_pattern_expr Gram.entry
-    val constr_pattern : constr_expr Gram.entry
-    val lconstr_pattern : constr_expr Gram.entry
-    val closed_binder : local_binder_expr list Gram.entry
-    val binder : local_binder_expr list Gram.entry (* closed_binder or variable *)
-    val binders : local_binder_expr list Gram.entry (* list of binder *)
-    val open_binders : local_binder_expr list Gram.entry
-    val binders_fixannot : (local_binder_expr list * (lident option * recursion_order_expr)) Gram.entry
-    val typeclass_constraint : (lname * bool * constr_expr) Gram.entry
-    val record_declaration : constr_expr Gram.entry
-    val appl_arg : (constr_expr * explicitation CAst.t option) Gram.entry
+    val constr : constr_expr Entry.t
+    val constr_eoi : constr_expr Entry.t
+    val lconstr : constr_expr Entry.t
+    val binder_constr : constr_expr Entry.t
+    val operconstr : constr_expr Entry.t
+    val ident : Id.t Entry.t
+    val global : qualid Entry.t
+    val universe_level : Glob_term.glob_level Entry.t
+    val sort : Glob_term.glob_sort Entry.t
+    val sort_family : Sorts.family Entry.t
+    val pattern : cases_pattern_expr Entry.t
+    val constr_pattern : constr_expr Entry.t
+    val lconstr_pattern : constr_expr Entry.t
+    val closed_binder : local_binder_expr list Entry.t
+    val binder : local_binder_expr list Entry.t (* closed_binder or variable *)
+    val binders : local_binder_expr list Entry.t (* list of binder *)
+    val open_binders : local_binder_expr list Entry.t
+    val binders_fixannot : (local_binder_expr list * (lident option * recursion_order_expr)) Entry.t
+    val typeclass_constraint : (lname * bool * constr_expr) Entry.t
+    val record_declaration : constr_expr Entry.t
+    val appl_arg : (constr_expr * explicitation CAst.t option) Entry.t
   end
 
 module Module :
   sig
-    val module_expr : module_ast Gram.entry
-    val module_type : module_ast Gram.entry
+    val module_expr : module_ast Entry.t
+    val module_type : module_ast Entry.t
   end
 
 val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
@@ -209,7 +222,7 @@ val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
 type gram_reinit = gram_assoc * gram_position
 (** Type of reinitialization data *)
 
-val grammar_extend : 'a Gram.entry -> gram_reinit option ->
+val grammar_extend : 'a Entry.t -> gram_reinit option ->
   'a Extend.extend_statement -> unit
 (** Extend the grammar of Coq, without synchronizing it with the backtracking
     mechanism. This means that grammar extensions defined this way will survive
@@ -225,7 +238,7 @@ type 'a grammar_command
     marshallable. *)
 
 type extend_rule =
-| ExtendRule : 'a Gram.entry * gram_reinit option * 'a extend_statement -> extend_rule
+| ExtendRule : 'a Entry.t * gram_reinit option * 'a extend_statement -> extend_rule
 
 type 'a grammar_extension = 'a -> GramState.t -> extend_rule list * GramState.t
 (** Grammar extension entry point. Given some ['a] and a current grammar state,
@@ -255,7 +268,7 @@ val parser_summary_tag : frozen_t Summary.Dyn.tag
 
 (** Registering grammars by name *)
 
-type any_entry = AnyEntry : 'a Gram.entry -> any_entry
+type any_entry = AnyEntry : 'a Entry.t -> any_entry
 
 val register_grammars_by_name : string -> any_entry list -> unit
 val find_grammars_by_name : string -> any_entry list

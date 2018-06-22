@@ -11,11 +11,10 @@
 open Pcoq
 
 (* Main entry for extensions *)
-let simple_tactic = Gram.entry_create "tactic:simple_tactic"
+let simple_tactic = Entry.create "tactic:simple_tactic"
 
-let make_gen_entry _ name = Gram.entry_create ("tactic:" ^ name)
+let make_gen_entry _ name = Entry.create ("tactic:" ^ name)
 
-(* Entries that can be referred via the string -> Gram.entry table *)
 (* Typically for tactic user extensions *)
 let open_constr =
   make_gen_entry utactic "open_constr"
@@ -23,7 +22,7 @@ let constr_with_bindings =
   make_gen_entry utactic "constr_with_bindings"
 let bindings =
   make_gen_entry utactic "bindings"
-let hypident = Gram.entry_create "hypident"
+let hypident = Entry.create "hypident"
 let constr_may_eval = make_gen_entry utactic "constr_may_eval"
 let constr_eval = make_gen_entry utactic "constr_eval"
 let uconstr =
@@ -40,7 +39,7 @@ let clause_dft_concl =
 
 
 (* Main entries for ltac *)
-let tactic_arg = Gram.entry_create "tactic:tactic_arg"
+let tactic_arg = Entry.create "tactic:tactic_arg"
 let tactic_expr = make_gen_entry utactic "tactic_expr"
 let binder_tactic = make_gen_entry utactic "binder_tactic"
 

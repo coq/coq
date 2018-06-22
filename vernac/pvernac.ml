@@ -14,7 +14,7 @@ let uvernac = create_universe "vernac"
 
 module Vernac_ =
   struct
-    let gec_vernac s = Gram.entry_create ("vernac:" ^ s)
+    let gec_vernac s = Entry.create ("vernac:" ^ s)
 
     (* The different kinds of vernacular commands *)
     let gallina = gec_vernac "gallina"
@@ -26,7 +26,7 @@ module Vernac_ =
     let red_expr = new_entry utactic "red_expr"
     let hint_info = gec_vernac "hint_info"
     (* Main vernac entry *)
-    let main_entry = Gram.entry_create "vernac"
+    let main_entry = Entry.create "vernac"
     let noedit_mode = gec_vernac "noedit_command"
 
     let () =

@@ -80,7 +80,7 @@ let set_doc doc = ide_doc := Some doc
 
 let add ((s,eid),(sid,verbose)) =
   let doc = get_doc () in
-  let pa = Pcoq.Gram.parsable (Stream.of_string s) in
+  let pa = Pcoq.Parsable.make (Stream.of_string s) in
   let loc_ast = Stm.parse_sentence ~doc sid pa in
   let doc, newid, rc = Stm.add ~doc ~ontop:sid verbose loc_ast in
   set_doc doc;
@@ -113,14 +113,14 @@ let edit_at id =
  * be removed in the next version of the protocol.
  *)
 let query (route, (s,id)) =
-  let pa = Pcoq.Gram.parsable (Stream.of_string s) in
+  let pa = Pcoq.Parsable.make (Stream.of_string s) in
   let doc = get_doc () in
   Stm.query ~at:id ~doc ~route pa
 
 let annotate phrase =
   let doc = get_doc () in
   let {CAst.loc;v=ast} =
-    let pa = Pcoq.Gram.parsable (Stream.of_string phrase) in
+    let pa = Pcoq.Parsable.make (Stream.of_string phrase) in
     Stm.parse_sentence ~doc (Stm.get_current_state ~doc) pa
   in
   (* XXX: Width should be a parameter of annotate... *)

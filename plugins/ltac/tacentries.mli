@@ -55,7 +55,7 @@ val add_ml_tactic_notation : ml_tactic_name -> level:int ->
 (** {5 Tactic Quotations} *)
 
 val create_ltac_quotation : string ->
-  ('grm Loc.located -> raw_tactic_arg) -> ('grm Pcoq.Gram.entry * int option) -> unit
+  ('grm Loc.located -> raw_tactic_arg) -> ('grm Pcoq.Entry.t * int option) -> unit
 (** [create_ltac_quotation name f e] adds a quotation rule to Ltac, that is,
     Ltac grammar now accepts arguments of the form ["name" ":" "(" <e> ")"], and
     generates an argument using [f] on the entry parsed by [e]. *)

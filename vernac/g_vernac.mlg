@@ -37,18 +37,18 @@ let _ = List.iter CLexer.add_keyword vernac_kw
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)
 
-let query_command = Gram.entry_create "vernac:query_command"
+let query_command = Entry.create "vernac:query_command"
 
-let subprf = Gram.entry_create "vernac:subprf"
+let subprf = Entry.create "vernac:subprf"
 
-let class_rawexpr = Gram.entry_create "vernac:class_rawexpr"
-let thm_token = Gram.entry_create "vernac:thm_token"
-let def_body = Gram.entry_create "vernac:def_body"
-let decl_notation = Gram.entry_create "vernac:decl_notation"
-let record_field = Gram.entry_create "vernac:record_field"
-let of_type_with_opt_coercion = Gram.entry_create "vernac:of_type_with_opt_coercion"
-let instance_name = Gram.entry_create "vernac:instance_name"
-let section_subset_expr = Gram.entry_create "vernac:section_subset_expr"
+let class_rawexpr = Entry.create "vernac:class_rawexpr"
+let thm_token = Entry.create "vernac:thm_token"
+let def_body = Entry.create "vernac:def_body"
+let decl_notation = Entry.create "vernac:decl_notation"
+let record_field = Entry.create "vernac:record_field"
+let of_type_with_opt_coercion = Entry.create "vernac:of_type_with_opt_coercion"
+let instance_name = Entry.create "vernac:instance_name"
+let section_subset_expr = Entry.create "vernac:section_subset_expr"
 
 let make_bullet s =
   let open Proof_bullet in

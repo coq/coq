@@ -1408,7 +1408,7 @@ let check_seqtacarg dir arg = match snd arg, dir with
     CErrors.user_err ?loc (str "expected \"first\"")
   | _, _ -> arg
 
-let ssrorelse = Gram.entry_create "ssrorelse"
+let ssrorelse = Entry.create "ssrorelse"
 GEXTEND Gram
   GLOBAL: ssrorelse ssrseqarg;
   ssrseqidx: [

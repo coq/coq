@@ -16,21 +16,21 @@ val uvernac : gram_universe
 
 module Vernac_ :
   sig
-    val gallina : vernac_expr Gram.entry
-    val gallina_ext : vernac_expr Gram.entry
-    val command : vernac_expr Gram.entry
-    val syntax : vernac_expr Gram.entry
-    val vernac_control : vernac_control Gram.entry
-    val rec_definition : (fixpoint_expr * decl_notation list) Gram.entry
-    val noedit_mode : vernac_expr Gram.entry
-    val command_entry : vernac_expr Gram.entry
-    val red_expr : raw_red_expr Gram.entry
-    val hint_info : Hints.hint_info_expr Gram.entry
+    val gallina : vernac_expr Entry.t
+    val gallina_ext : vernac_expr Entry.t
+    val command : vernac_expr Entry.t
+    val syntax : vernac_expr Entry.t
+    val vernac_control : vernac_control Entry.t
+    val rec_definition : (fixpoint_expr * decl_notation list) Entry.t
+    val noedit_mode : vernac_expr Entry.t
+    val command_entry : vernac_expr Entry.t
+    val red_expr : raw_red_expr Entry.t
+    val hint_info : Hints.hint_info_expr Entry.t
   end
 
 (** The main entry: reads an optional vernac command *)
-val main_entry : (Loc.t * vernac_control) option Gram.entry
+val main_entry : (Loc.t * vernac_control) option Entry.t
 
 (** Handling of the proof mode entry *)
-val get_command_entry : unit -> vernac_expr Gram.entry
-val set_command_entry : vernac_expr Gram.entry -> unit
+val get_command_entry : unit -> vernac_expr Entry.t
+val set_command_entry : vernac_expr Entry.t -> unit

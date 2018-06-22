@@ -88,6 +88,11 @@ Primitive number parsers
   have been split over three files (plugins/syntax/positive_syntax.ml,
   plugins/syntax/n_syntax.ml, plugins/syntax/z_syntax.ml).
 
+Parsing
+
+- Manual uses of the Pcoq.Gram module have been deprecated. Wrapper modules
+  Pcoq.Entry and Pcoq.Parsable were introduced to replace it.
+
 ### Unit testing
 
   The test suite now allows writing unit tests against OCaml code in the Coq
