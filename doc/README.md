@@ -62,7 +62,7 @@ To produce all documentation about Coq, just run:
 Alternatively, you can use some specific targets:
 
    make doc-ps
-   	to produce all PostScript documents
+        to produce all PostScript documents
 
    make doc-pdf
         to produce all PDF documents
