@@ -587,78 +587,95 @@ let mk_clos_deep clos_fun env t =
 let mk_clos2 = mk_clos_deep mk_clos
 
 (* The inverse of mk_clos_deep: move back to constr *)
-let rec to_constr constr_fun lfts v =
+let rec to_constr lfts v =
   match v.term with
     | FRel i -> mkRel (reloc_rel i lfts)
     | FFlex (RelKey p) -> mkRel (reloc_rel p lfts)
     | FFlex (VarKey x) -> mkVar x
     | FAtom c -> exliftn lfts c
     | FCast (a,k,b) ->
-        mkCast (constr_fun lfts a, k, constr_fun lfts b)
+      mkCast (to_constr lfts a, k, to_constr lfts b)
     | FFlex (ConstKey op) -> mkConstU op
     | FInd op -> mkIndU op
     | FConstruct op -> mkConstructU op
     | FCaseT (ci,p,c,ve,env) ->
-	mkCase (ci, constr_fun lfts (mk_clos env p),
-                constr_fun lfts c,
-		Array.map (fun b -> constr_fun lfts (mk_clos env b)) ve)
-    | FFix ((op,(lna,tys,bds)),e) ->
+      if is_subs_id env && is_lift_id lfts then
+        mkCase (ci, p, to_constr lfts c, ve)
+      else
+        let subs = comp_subs lfts env in
+        mkCase (ci, subst_constr subs p,
+            to_constr lfts c,
+            Array.map (fun b -> subst_constr subs b) ve)
+    | FFix ((op,(lna,tys,bds)) as fx, e) ->
+      if is_subs_id e && is_lift_id lfts then
+        mkFix fx
+      else
         let n = Array.length bds in
-        let ftys = Array.Fun1.map mk_clos e tys in
-        let fbds = Array.Fun1.map mk_clos (subs_liftn n e) bds in
-	let lfts' = el_liftn n lfts in
-        mkFix (op, (lna, Array.Fun1.map constr_fun lfts ftys,
-                         Array.Fun1.map constr_fun lfts' fbds))
-    | FCoFix ((op,(lna,tys,bds)),e) ->
+        let subs_ty = comp_subs lfts e in
+        let subs_bd = comp_subs (el_liftn n lfts) (subs_liftn n e) in
+        let tys = Array.Fun1.map subst_constr subs_ty tys in
+        let bds = Array.Fun1.map subst_constr subs_bd bds in
+        mkFix (op, (lna, tys, bds))
+    | FCoFix ((op,(lna,tys,bds)) as cfx, e) ->
+      if is_subs_id e && is_lift_id lfts then
+        mkCoFix cfx
+      else
         let n = Array.length bds in
-        let ftys = Array.Fun1.map mk_clos e tys in
-        let fbds = Array.Fun1.map mk_clos (subs_liftn n e) bds in
-	let lfts' = el_liftn (Array.length bds) lfts in
-        mkCoFix (op, (lna, Array.Fun1.map constr_fun lfts ftys,
-                           Array.Fun1.map constr_fun lfts' fbds))
+        let subs_ty = comp_subs lfts e in
+        let subs_bd = comp_subs (el_liftn n lfts) (subs_liftn n e) in
+        let tys = Array.Fun1.map subst_constr subs_ty tys in
+        let bds = Array.Fun1.map subst_constr subs_bd bds in
+        mkCoFix (op, (lna, tys, bds))
     | FApp (f,ve) ->
-	mkApp (constr_fun lfts f,
-               Array.Fun1.map constr_fun lfts ve)
+        mkApp (to_constr lfts f,
+               Array.Fun1.map to_constr lfts ve)
     | FProj (p,c) ->
-        mkProj (p,constr_fun lfts c)
+        mkProj (p,to_constr lfts c)
 
-    | FLambda _ ->
-        let (na,ty,bd) = destFLambda mk_clos2 v in
-	mkLambda (na, constr_fun lfts ty,
-	              constr_fun (el_lift lfts) bd)
+    | FLambda (len, tys, f, e) ->
+      if is_subs_id e && is_lift_id lfts then
+        Term.compose_lam (List.rev tys) f
+      else
+        let subs = comp_subs lfts e in
+        let tys = List.mapi (fun i (na, c) -> na, subst_constr (subs_liftn i subs) c) tys in
+        let f = subst_constr (subs_liftn len subs) f in
+        Term.compose_lam (List.rev tys) f
     | FProd (n,t,c)   ->
-	mkProd (n, constr_fun lfts t,
-	           constr_fun (el_lift lfts) c)
+        mkProd (n, to_constr lfts t,
+                   to_constr (el_lift lfts) c)
     | FLetIn (n,b,t,f,e) ->
-        let fc = mk_clos2 (subs_lift e) f in
-	mkLetIn (n, constr_fun lfts b,
-	            constr_fun lfts t,
-	            constr_fun (el_lift lfts) fc)
+      let subs = comp_subs (el_lift lfts) (subs_lift e) in
+        mkLetIn (n, to_constr lfts b,
+                    to_constr lfts t,
+                    subst_constr subs f)
     | FEvar ((ev,args),env) ->
-        mkEvar(ev,Array.map (fun a -> constr_fun lfts (mk_clos2 env a)) args)
-    | FLIFT (k,a) -> to_constr constr_fun (el_shft k lfts) a
+      let subs = comp_subs lfts env in
+        mkEvar(ev,Array.map (fun a -> subst_constr subs a) args)
+    | FLIFT (k,a) -> to_constr (el_shft k lfts) a
     | FCLOS (t,env) ->
-        let fr = mk_clos2 env t in
-        let unfv = update v fr.norm fr.term in
-        to_constr constr_fun lfts unfv
+      if is_subs_id env && is_lift_id lfts then t
+      else
+        let subs = comp_subs lfts env in
+        subst_constr subs t
     | FLOCKED -> assert false (*mkVar(Id.of_string"_LOCK_")*)
+
+and subst_constr subst c = match Constr.kind c with
+| Rel i ->
+  begin match expand_rel i subst with
+  | Inl (k, lazy v) -> Vars.lift k v
+  | Inr (m, _) -> mkRel m
+  end
+| _ ->
+  Constr.map_with_binders Esubst.subs_lift subst_constr subst c
+
+and comp_subs el s =
+  Esubst.lift_subst (fun el c -> lazy (to_constr el c)) el s
 
 (* This function defines the correspondance between constr and
    fconstr. When we find a closure whose substitution is the identity,
    then we directly return the constr to avoid possibly huge
    reallocation. *)
-let term_of_fconstr =
-  let rec term_of_fconstr_lift lfts v =
-    match v.term with
-      | FCLOS(t,env) when is_subs_id env && is_lift_id lfts -> t
-      | FLambda(_,tys,f,e) when is_subs_id e && is_lift_id lfts ->
-          Term.compose_lam (List.rev tys) f
-      | FFix(fx,e) when is_subs_id e && is_lift_id lfts -> mkFix fx
-      | FCoFix(cfx,e) when is_subs_id e && is_lift_id lfts -> mkCoFix cfx
-      | _ -> to_constr term_of_fconstr_lift lfts v in
-  term_of_fconstr_lift el_id
-
-
+let term_of_fconstr c = to_constr el_id c
 
 (* fstrong applies unfreeze_fun recursively on the (freeze) term and
  * yields a term.  Assumes that the unfreeze_fun never returns a

@@ -72,3 +72,10 @@ val el_liftn : int -> lift -> lift
 val el_lift : lift -> lift
 val reloc_rel : int -> lift -> int
 val is_lift_id : lift -> bool
+
+(** Lift applied to substitution: [lift_subst mk_clos el s] computes a
+    substitution equivalent to applying el then s. Argument
+    mk_clos is used when a closure has to be created, i.e. when
+    el is applied on an element of s.
+*)
+val lift_subst : (lift -> 'a -> 'b) -> lift -> 'a subs -> 'b subs
