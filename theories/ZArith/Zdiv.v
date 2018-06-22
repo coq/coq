@@ -730,15 +730,15 @@ Theorem Zdiv_eucl_extended :
 Proof.
   intros b Hb a.
   destruct (Z_le_gt_dec 0 b) as [Hb'|Hb'].
-  - assert (Hb'' : b > 0) by (apply Zlt_gt, Z.le_neq; auto).
+  - assert (Hb'' : b > 0) by (apply Z.lt_gt, Z.le_neq; auto).
     rewrite Z.abs_eq; [ apply Zdiv_eucl_exist; assumption | assumption ].
   - assert (Hb'' : - b > 0).
-     now apply Zlt_gt, Z.opp_lt_mono; rewrite Z.opp_involutive; apply Zgt_lt.
+     now apply Z.lt_gt, Z.opp_lt_mono; rewrite Z.opp_involutive; apply Z.gt_lt.
     destruct (Zdiv_eucl_exist Hb'' a) as ((q,r),[]).
     exists (- q, r).
     split.
     + rewrite <- Z.mul_opp_comm; assumption.
-    + rewrite Z.abs_neq; [ assumption | apply Z.lt_le_incl, Zgt_lt; auto ].
+    + rewrite Z.abs_neq; [ assumption | apply Z.lt_le_incl, Z.gt_lt; auto ].
 Qed.
 
 Arguments Zdiv_eucl_extended : default implicits.

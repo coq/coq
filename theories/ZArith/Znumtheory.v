@@ -471,8 +471,8 @@ Proof.
     apply Z.mul_reg_l with d; auto with zarith.
     contradict H2; rewrite H2; discriminate.
   - intros H4; contradict H1; rewrite H4.
-    apply Zgt_asym, Zlt_gt, Z.opp_lt_mono.
-    now rewrite Z.opp_involutive; apply Zgt_lt.
+    apply Zgt_asym, Z.lt_gt, Z.opp_lt_mono.
+    now rewrite Z.opp_involutive; apply Z.gt_lt.
   - apply Gauss with a.
     + rewrite H3; auto with zarith.
     + now apply Zis_gcd_sym.
@@ -565,7 +565,7 @@ Proof.
   apply Bezout_intro with q1  (r1 + q1 * (p / q)).
   rewrite <- H2.
   pattern p at 3; rewrite (Z_div_mod_eq p q); try ring; auto with zarith.
-  now apply Zlt_gt.
+  now apply Z.lt_gt.
 Qed.
 
 Theorem rel_prime_mod_rev: forall p q, 0 < q ->
@@ -574,7 +574,7 @@ Proof.
   intros p q H H0.
   rewrite (Z_div_mod_eq p q); auto with zarith.
   - apply Zis_gcd_sym; apply Zis_gcd_for_euclid2; auto with zarith.
-  - now apply Zlt_gt.
+  - now apply Z.lt_gt.
 Qed.
 
 Theorem Zrel_prime_neq_mod_0: forall a b, 1 < b -> rel_prime a b -> a mod b <> 0.
@@ -610,10 +610,10 @@ Proof.
     - destruct (Zle_lt_or_eq _ _ H4) as [H5 | H5]; try intuition.
       destruct (Zle_lt_or_eq _ _ (Z.ge_le _ _ H3)) as [H6 | H6]; try intuition.
       destruct (Zle_lt_or_eq _ _ (Zlt_le_succ _ _ H6)) as [H7 | H7]; intuition.
-    - contradict H2; apply Zlt_not_le; apply Zlt_trans with (2 := H); red; auto.
+    - contradict H2; apply Zlt_not_le; apply Z.lt_trans with (2 := H); red; auto.
     - destruct (Zle_lt_or_eq _ _ H4) as [H5 | H5].
       + destruct (Zle_lt_or_eq _ _  H3) as [H6 | H6]; try intuition.
-        assert (H7 : a <= Zpred 0) by (apply Z.lt_le_pred; auto).
+        assert (H7 : a <= Z.pred 0) by (apply Z.lt_le_pred; auto).
         destruct (Zle_lt_or_eq _ _ H7) as [H8 | H8]; intuition.
         assert (- p < a < -1); try intuition.
         now apply Z.opp_lt_mono; rewrite Z.opp_involutive.
