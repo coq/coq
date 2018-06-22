@@ -11,8 +11,8 @@
 open Constr
 open Univ
 
-(** The universes of monomorphic constants appear. *)
-val universes_of_constr : Environ.env -> constr -> LSet.t
+(** Return the set of all universes appearing in [constr]. *)
+val universes_of_constr : constr -> LSet.t
 
 (** [restrict_universe_context (univs,csts) keep] restricts [univs] to
    the universes in [keep]. The constraints [csts] are adjusted so

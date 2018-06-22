@@ -232,7 +232,7 @@ val fold : Evd.evar_map -> ('a -> t -> 'a) -> 'a -> t -> 'a
 
 (** Gather the universes transitively used in the term, including in the
    type of evars appearing in it. *)
-val universes_of_constr : Environ.env -> Evd.evar_map -> t -> Univ.LSet.t
+val universes_of_constr : Evd.evar_map -> t -> Univ.LSet.t
 
 (** {6 Substitutions} *)
 

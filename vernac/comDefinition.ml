@@ -93,7 +93,7 @@ let interp_definition pl bl poly red_option c ctypopt =
   let tyopt = Option.map (fun ty -> Term.it_mkProd_or_LetIn (EConstr.to_constr ~abort_on_undefined_evars:false evd ty) ctx) tyopt in
   (* Keep only useful universes. *)
   let uvars_fold uvars c =
-    Univ.LSet.union uvars (universes_of_constr env evd (of_constr c))
+    Univ.LSet.union uvars (universes_of_constr evd (of_constr c))
   in
   let uvars = List.fold_left uvars_fold Univ.LSet.empty (Option.List.cons tyopt [c]) in
   let evd = Evd.restrict_universe_context evd uvars in
