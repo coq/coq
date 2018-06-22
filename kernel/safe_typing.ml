@@ -897,9 +897,11 @@ let typing senv = Typeops.infer (env_of_senv senv)
 
 (** {6 Retroknowledge / native compiler } *)
 
+[@@@ocaml.warning "-3"]
 (** universal lifting, used for the "get" operations mostly *)
 let retroknowledge f senv =
   Environ.retroknowledge f (env_of_senv senv)
+[@@@ocaml.warning "+3"]
 
 let register field value by_clause senv =
   (* todo : value closed, by_clause safe, by_clause of the proper type*)

@@ -123,7 +123,7 @@ let construct_of_constr_notnative const env tag (mind, _ as ind) u allargs =
   try
     if const then
       let ctyp = type_constructor mind mib u (mip.mind_nf_lc.(0)) params in
-      retroknowledge Retroknowledge.get_vm_decompile_constant_info env (mkInd ind) tag, ctyp
+      Retroknowledge.get_vm_decompile_constant_info env.retroknowledge (mkInd ind) tag, ctyp
     else
       raise Not_found
   with Not_found ->

@@ -318,6 +318,7 @@ open Retroknowledge
 (** functions manipulating the retroknowledge 
     @author spiwack *)
 val retroknowledge : (retroknowledge->'a) -> env -> 'a
+[@@ocaml.deprecated "Use the record projection."]
 
 val registered : env -> field -> bool
 
