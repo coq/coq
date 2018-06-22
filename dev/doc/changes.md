@@ -87,6 +87,50 @@ Vernacular commands
   The test suite now allows writing unit tests against OCaml code in the Coq
   code base. Those unit tests create a dependency on the OUnit test framework.
 
+### Transitioning away from Camlp5
+
+In an effort to reduce dependency on Camlp5, the use of Camlp5 GEXTEND macro
+is discouraged. Most plugin writers do not need this low-level interface, but
+for those who do, the transition path is somewhat straightforward. To convert
+a ml4 file containing only standard OCaml with GEXTEND statements, the following
+should be enough:
+- replace its "ml4" extension with "mlg"
+- replace GEXTEND with GRAMMAR EXTEND
+- wrap every occurrence of OCaml code into braces { }
+
+For instance, code of the form
+```
+let myval = 0
+
+GEXTEND Gram
+   GLOBAL: my_entry;
+
+my_entry:
+[ [ x = bar; y = qux -> do_something x y
+  | "("; z = LIST0 my_entry; ")" -> do_other_thing z
+] ];
+END
+```
+should be turned into
+```
+{
+let myval = 0
+}
+
+GRAMMAR EXTEND Gram
+   GLOBAL: my_entry;
+
+my_entry:
+[ [ x = bar; y = qux -> { do_something x y }
+  | "("; z = LIST0 my_entry; ")" -> { do_other_thing z }
+] ];
+END
+```
+
+Currently mlg files can only contain GRAMMAR EXTEND statements. They do not
+support TACTIC, VERNAC nor ARGUMENT EXTEND. In case you have a file containing
+both kinds at the same time, it is recommended splitting it in two.
+
 ## Changes between Coq 8.7 and Coq 8.8
 
 ### Bug tracker
