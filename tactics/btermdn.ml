@@ -69,13 +69,13 @@ let constr_pat_discr t =
     | PRef ((VarRef v) as ref), args -> Some(GRLabel ref,args)
     | _ -> None
 
-let constr_val_discr_st sigma (idpred,cpred) t =
+let constr_val_discr_st sigma ts t =
   let c, l = decomp sigma t in
     match EConstr.kind sigma c with
-    | Const (c,u) -> if Cpred.mem c cpred then Everything else Label(GRLabel (ConstRef c),l)
+    | Const (c,u) -> if TranspState.is_transparent_constant ts c then Everything else Label(GRLabel (ConstRef c),l)
     | Ind (ind_sp,u) -> Label(GRLabel (IndRef ind_sp),l)
     | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
-    | Var id when not (Id.Pred.mem id idpred) -> Label(GRLabel (VarRef id),l)
+    | Var id when not (TranspState.is_transparent_variable ts id) -> Label(GRLabel (VarRef id),l)
     | Prod (n, d, c) -> Label(ProdLabel, [d; c])
     | Lambda (n, d, c) -> 
       if List.is_empty l then 
@@ -85,15 +85,15 @@ let constr_val_discr_st sigma (idpred,cpred) t =
     | Evar _ -> Everything
     | _ -> Nothing
 
-let constr_pat_discr_st (idpred,cpred) t =
+let constr_pat_discr_st ts t =
   match decomp_pat t with
   | PRef ((IndRef _) as ref), args
   | PRef ((ConstructRef _ ) as ref), args -> Some (GRLabel ref,args)
-  | PRef ((VarRef v) as ref), args when not (Id.Pred.mem v idpred) ->
+  | PRef ((VarRef v) as ref), args when not (TranspState.is_transparent_variable ts v) ->
       Some(GRLabel ref,args)
-  | PVar v, args when not (Id.Pred.mem v idpred) ->
+  | PVar v, args when not (TranspState.is_transparent_variable ts v) ->
       Some(GRLabel (VarRef v),args)
-  | PRef ((ConstRef c) as ref), args when not (Cpred.mem c cpred) ->
+  | PRef ((ConstRef c) as ref), args when not (TranspState.is_transparent_constant ts c) ->
       Some (GRLabel ref, args)
   | PProd (_, d, c), [] -> Some (ProdLabel, [d ; c])
   | PLambda (_, d, c), [] -> Some (LambdaLabel, [d ; c])

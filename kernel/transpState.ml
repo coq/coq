@@ -10,9 +10,36 @@
 
 open Names
 
-type t = Id.Pred.t * Cpred.t
+type t = {
+  tr_var : Id.Pred.t;
+  tr_cst : Cpred.t;
+}
 
-let empty = (Id.Pred.empty, Cpred.empty)
-let full = (Id.Pred.full, Cpred.full)
-let var_full = (Id.Pred.full, Cpred.empty)
-let cst_full = (Id.Pred.empty, Cpred.full)
+let empty = {
+  tr_var = Id.Pred.empty;
+  tr_cst = Cpred.empty;
+}
+
+let full = {
+  tr_var = Id.Pred.full;
+  tr_cst = Cpred.full;
+}
+
+let var_full = {
+  tr_var = Id.Pred.full;
+  tr_cst = Cpred.empty;
+}
+
+let cst_full = {
+  tr_var = Id.Pred.empty;
+  tr_cst = Cpred.full;
+}
+
+let is_empty ts =
+  Id.Pred.is_empty ts.tr_var && Cpred.is_empty ts.tr_cst
+
+let is_transparent_variable ts id =
+  Id.Pred.mem id ts.tr_var
+
+let is_transparent_constant ts cst =
+  Cpred.mem cst ts.tr_cst

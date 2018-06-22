@@ -11,7 +11,10 @@
 open Names
 
 (** Sets of names *)
-type t = Id.Pred.t * Cpred.t
+type t = {
+  tr_var : Id.Pred.t;
+  tr_cst : Cpred.t;
+}
 
 val empty : t
 (** Everything opaque *)
@@ -24,3 +27,8 @@ val var_full : t
 
 val cst_full : t
 (** All constant transparent *)
+
+val is_empty : t -> bool
+
+val is_transparent_variable : t -> Id.t -> bool
+val is_transparent_constant : t -> Constant.t -> bool

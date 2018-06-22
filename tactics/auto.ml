@@ -358,12 +358,12 @@ and my_find_search_delta sigma db_list local_db secvars hdc concl =
 	  let flags = flags_of_state (Hint_db.transparent_state db) in
 	    List.map (fun x -> (Some flags, x)) (f db)
 	else
-	  let (ids, csts as st) = Hint_db.transparent_state db in
+          let st = Hint_db.transparent_state db in
 	  let flags, l =
 	    let l =
 	      match hdc with None -> Hint_db.map_none ~secvars db
 	      | Some hdc ->
-		  if (Id.Pred.is_empty ids && Cpred.is_empty csts)
+                  if TranspState.is_empty st
 		  then Hint_db.map_auto sigma ~secvars hdc concl db
 		  else Hint_db.map_existential sigma ~secvars hdc concl db
 	    in auto_flags_of_state st, l

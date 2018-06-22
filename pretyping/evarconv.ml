@@ -16,7 +16,6 @@ open Termops
 open Environ
 open EConstr
 open Vars
-open CClosure
 open Reduction
 open Reductionops
 open Recordops
@@ -74,14 +73,14 @@ let coq_unit_judge =
 
 let unfold_projection env evd ts p c =
   let cst = Projection.constant p in
-    if is_transparent_constant ts cst then
+    if TranspState.is_transparent_constant ts cst then
       Some (mkProj (Projection.unfold p, c))
     else None
       
 let eval_flexible_term ts env evd c =
   match EConstr.kind evd c with
   | Const (c, u) ->
-      if is_transparent_constant ts c
+      if TranspState.is_transparent_constant ts c
       then Option.map EConstr.of_constr (constant_opt_value_in env (c, EInstance.kind evd u))
       else None
   | Rel n ->
@@ -91,7 +90,7 @@ let eval_flexible_term ts env evd c =
        with Not_found -> None)
   | Var id ->
       (try
-	 if is_transparent_variable ts id then
+         if TranspState.is_transparent_variable ts id then
 	   env |> lookup_named id |> NamedDecl.get_value
 	 else None
        with Not_found -> None)

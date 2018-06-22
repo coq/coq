@@ -24,14 +24,6 @@ val with_stats: 'a Lazy.t -> 'a
   Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of
   a LetIn expression is Letin reduction *)
 
-
-
-val all_opaque      : TranspState.t
-val all_transparent : TranspState.t
-
-val is_transparent_variable : TranspState.t -> variable -> bool
-val is_transparent_constant : TranspState.t -> Constant.t -> bool
-
 (** Sets of reduction kinds. *)
 module type RedFlagsSig = sig
   type reds

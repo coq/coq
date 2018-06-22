@@ -302,7 +302,6 @@ val infer_conv_gen : (conv_pb -> l2r:bool -> evar_map -> TranspState.t ->
 val whd_meta : local_reduction_function
 val plain_instance : evar_map -> constr Metamap.t -> constr -> constr
 val instance : evar_map -> constr Metamap.t -> constr -> constr
-val head_unfold_under_prod : TranspState.t -> reduction_function
 val betazetaevar_applist : evar_map -> int -> constr -> constr list -> constr
 
 (** {6 Heuristic for Conversion with Evar } *)

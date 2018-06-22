@@ -528,7 +528,7 @@ let decompose_applied_relation env sigma (c,l) =
 
 let rewrite_db = "rewrite"
 
-let conv_transparent_state = (Id.Pred.empty, Cpred.full)
+let conv_transparent_state = TranspState.cst_full
 
 let rewrite_transparent_state () =
   Hints.Hint_db.transparent_state (Hints.searchtable_map rewrite_db)

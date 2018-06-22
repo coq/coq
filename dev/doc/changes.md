@@ -19,6 +19,10 @@ Names
   Constant.make3 has been removed, use Constant.make2
   Constant.repr3 has been removed, use Constant.repr2
 
+- `Names.transparent_state` has been moved to its own module `TranspState`.
+  This module gathers utility functions that used to be defined in several
+  places.
+
 Coqlib:
 
 - Most functions from the `Coqlib` module have been deprecated in favor of

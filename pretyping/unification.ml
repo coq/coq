@@ -504,16 +504,16 @@ let key_of env sigma b flags f =
   if subterm_restriction b flags then None else
   match EConstr.kind sigma f with
   | Const (cst, u) when is_transparent env (ConstKey cst) &&
-      (Cpred.mem cst (snd flags.modulo_delta)
+      (TranspState.is_transparent_constant flags.modulo_delta cst
        || Recordops.is_primitive_projection cst) ->
       let u = EInstance.kind sigma u in
       Some (IsKey (ConstKey (cst, u)))
   | Var id when is_transparent env (VarKey id) && 
-      Id.Pred.mem id (fst flags.modulo_delta) ->
+      TranspState.is_transparent_variable flags.modulo_delta id ->
     Some (IsKey (VarKey id))
   | Proj (p, c) when Projection.unfolded p
     || (is_transparent env (ConstKey (Projection.constant p)) &&
-       (Cpred.mem (Projection.constant p) (snd flags.modulo_delta))) ->
+       (TranspState.is_transparent_constant flags.modulo_delta (Projection.constant p))) ->
     Some (IsProj (p, c))
   | _ -> None
   
@@ -550,7 +550,7 @@ let oracle_order env cf1 cf2 =
 
 let is_rigid_head sigma flags t =
   match EConstr.kind sigma t with
-  | Const (cst,u) -> not (Cpred.mem cst (snd flags.modulo_delta))
+  | Const (cst,u) -> not (TranspState.is_transparent_constant flags.modulo_delta cst)
   | Ind (i,u) -> true
   | Construct _ -> true
   | Fix _ | CoFix _ -> true
@@ -633,11 +633,11 @@ let rec is_neutral env sigma ts t =
     | Const (c, u) ->
       not (Environ.evaluable_constant c env) ||
       not (is_transparent env (ConstKey c)) ||
-      not (Cpred.mem c (snd ts))
+      not (TranspState.is_transparent_constant ts c)
     | Var id -> 
       not (Environ.evaluable_named id env) ||
       not (is_transparent env (VarKey id)) ||
-      not (Id.Pred.mem id (fst ts))
+      not (TranspState.is_transparent_variable ts id)
     | Rel n -> true
     | Evar _ | Meta _ -> true
     | Case (_, p, c, cl) -> is_neutral env sigma ts c
@@ -1120,10 +1120,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       | Some sigma -> ans
       | None ->
         if (match flags.modulo_conv_on_closed_terms, flags.modulo_delta with
-        | Some (cv_id, cv_k), (dl_id, dl_k) ->
-          Id.Pred.subset dl_id cv_id && Cpred.subset dl_k cv_k
-        | None,(dl_id, dl_k) ->
-          Id.Pred.is_empty dl_id && Cpred.is_empty dl_k)
+        | Some cv, dl ->
+          let open TranspState in
+          Id.Pred.subset dl.tr_var cv.tr_var && Cpred.subset dl.tr_cst cv.tr_cst
+        | None, dl -> TranspState.is_empty dl)
 	then error_cannot_unify env sigma (m, n) else None
   in 
     let a = match res with 
@@ -1263,8 +1263,8 @@ let applyHead env evd n c  =
 
 let is_mimick_head sigma ts f =
   match EConstr.kind sigma f with
-  | Const (c,u) -> not (CClosure.is_transparent_constant ts c)
-  | Var id -> not (CClosure.is_transparent_variable ts id)
+  | Const (c,u) -> not (TranspState.is_transparent_constant ts c)
+  | Var id -> not (TranspState.is_transparent_variable ts id)
   | (Rel _|Construct _|Ind _) -> true
   | _ -> false
 

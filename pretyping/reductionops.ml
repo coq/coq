@@ -675,10 +675,6 @@ let apply_subst recfun env sigma refold cst_l t stack =
 let stacklam recfun env sigma t stack =
   apply_subst (fun _ _ s -> recfun s) env sigma false Cst_stack.empty t stack
 
-let beta_app sigma (c,l) =
-  let zip s = Stack.zip sigma s in
-  stacklam zip [] sigma c (Stack.append_app l Stack.empty)
-
 let beta_applist sigma (c,l) =
   let zip s = Stack.zip sigma s in
   stacklam zip [] sigma c (Stack.append_app_list l Stack.empty)
@@ -1680,25 +1676,6 @@ let meta_reducible_instance evd b =
   in
   if Metaset.is_empty fm then (* nf_betaiota? *) b.rebus
   else irec b.rebus
-
-
-let head_unfold_under_prod ts env sigma c =
-  let unfold (cst,u) =
-    let cstu = (cst, EInstance.kind sigma u) in
-    if Cpred.mem cst (snd ts) then
-      match constant_opt_value_in env cstu with
-	| Some c -> EConstr.of_constr c
-	| None -> mkConstU (cst, u)
-    else mkConstU (cst, u) in
-  let rec aux c =
-    match EConstr.kind sigma c with
-      | Prod (n,t,c) -> mkProd (n,aux t, aux c)
-      | _ ->
-	  let (h,l) = decompose_app_vect sigma c in
-	  match EConstr.kind sigma h with
-	    | Const cst -> beta_app sigma (unfold cst, l)
-	    | _ -> c in
-  aux c
 
 let betazetaevar_applist sigma n c l =
   let rec stacklam n env t stack =

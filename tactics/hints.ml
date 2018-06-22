@@ -290,9 +290,9 @@ let lookup_tacs sigma concl st se =
 
 module Constr_map = Map.Make(GlobRef.Ordered)
 
-let is_transparent_gr (ids, csts) = function
-  | VarRef id -> Id.Pred.mem id ids
-  | ConstRef cst -> Cpred.mem cst csts
+let is_transparent_gr ts = function
+  | VarRef id -> TranspState.is_transparent_variable ts id
+  | ConstRef cst -> TranspState.is_transparent_constant ts cst
   | IndRef _ | ConstructRef _ -> false
 
 let strip_params env sigma c = 
@@ -663,10 +663,13 @@ struct
     let st',db,rebuild =
       match v.code.obj with
       | Unfold_nth egr ->
-	  let addunf (ids,csts) (ids',csts') =
+          let addunf ts (ids, csts) =
+            let open TranspState in
 	    match egr with
-	    | EvalVarRef id -> (Id.Pred.add id ids, csts), (Id.Set.add id ids', csts')
-	    | EvalConstRef cst -> (ids, Cpred.add cst csts), (ids', Cset.add cst csts')
+            | EvalVarRef id ->
+              { ts with tr_var = Id.Pred.add id ts.tr_var }, (Id.Set.add id ids, csts)
+            | EvalConstRef cst ->
+              { ts with tr_cst = Cpred.add cst ts.tr_cst }, (ids, Cset.add cst csts)
 	  in 
 	  let state, unfs = addunf db.hintdb_state db.hintdb_unfolds in
 	    state, { db with hintdb_unfolds = unfs }, true
@@ -995,18 +998,19 @@ let add_hint dbname hintlist =
     searchtable_add (dbname,db')
 
 let add_transparency dbname target b =
+  let open TranspState in
   let db = get_db dbname in
-  let (ids, csts as st) = Hint_db.transparent_state db in
+  let st = Hint_db.transparent_state db in
   let st' =
     match target with
-    | HintsVariables -> (if b then Id.Pred.full else Id.Pred.empty), csts
-    | HintsConstants -> ids, if b then Cpred.full else Cpred.empty
+    | HintsVariables -> { st with tr_var = (if b then Id.Pred.full else Id.Pred.empty) }
+    | HintsConstants -> { st with tr_cst = (if b then Cpred.full else Cpred.empty) }
     | HintsReferences grs ->
-       List.fold_left (fun (ids, csts) gr ->
-       match gr with
-       | EvalConstRef c -> (ids, (if b then Cpred.add else Cpred.remove) c csts)
-       | EvalVarRef v -> (if b then Id.Pred.add else Id.Pred.remove) v ids, csts)
-                      st grs
+      List.fold_left (fun st gr ->
+        match gr with
+        | EvalConstRef c -> { st with tr_cst = (if b then Cpred.add else Cpred.remove) c st.tr_cst }
+        | EvalVarRef v -> { st with tr_var = (if b then Id.Pred.add else Id.Pred.remove) v st.tr_var })
+        st grs
   in searchtable_add (dbname, Hint_db.set_transparent_state db st')
 
 let remove_hint dbname grs =
@@ -1543,7 +1547,7 @@ let pr_hint_db_env env sigma db =
     in
     Hint_db.fold fold db (mt ())
   in
-  let (ids, csts) = Hint_db.transparent_state db in
+  let { TranspState.tr_var = ids; tr_cst = csts } = Hint_db.transparent_state db in
   hov 0
     ((if Hint_db.use_dn db then str"Discriminated database"
       else str"Non-discriminated database")) ++ fnl () ++
