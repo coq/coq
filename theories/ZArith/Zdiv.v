@@ -70,8 +70,20 @@ Definition Remainder_alt r b :=  Z.abs r < Z.abs b /\ Z.sgn r <> - Z.sgn b.
 
 Lemma Remainder_equiv : forall r b, Remainder r b <-> Remainder_alt r b.
 Proof.
- intros; unfold Remainder, Remainder_alt; admit.
-Admitted.
+destruct r; destruct b;
+   unfold Remainder, Remainder_alt; simpl; intuition;
+   auto with zarith; try discriminate; auto with zarith.
+- match goal with  [ H : _ <= 0 |- _ ]=> contradict H; auto with zarith end.
+- match goal with  [ H : _ <= 0 |- _ ]=> contradict H; auto with zarith end.
+- match goal with  [ H : _ <= 0 |- _ ]=> contradict H; auto with zarith end.
+- match goal with  [ H : _ < 0 |- _ ]=> contradict H; auto with zarith end.
+- match goal with  [ H : 0 <= _ |- _ ]=> contradict H; auto with zarith end.
+- match goal with  [ H : 0 <= _ |- _ ]=> contradict H; auto with zarith end.
+- apply Z.opp_lt_mono; auto.
+- right; split.
+  + apply Z.opp_lt_mono; auto.
+  + apply Z.lt_le_incl; red; auto.
+Qed.
 
 Hint Unfold Remainder.
 
@@ -108,7 +120,8 @@ Proof (Z.mod_neg_bound a b).
 Lemma Z_div_mod_eq a b : b > 0 -> a = b*(a/b) + (a mod b).
 Proof.
   intros Hb; apply Z.div_mod; auto with zarith.
-Admitted.
+  contradict Hb; rewrite Hb; discriminate.
+Qed.
 
 Lemma Zmod_eq_full a b : b<>0 -> a mod b = a - (a/b)*b.
 Proof. intros. rewrite Z.mul_comm. now apply Z.mod_eq. Qed.
@@ -227,18 +240,26 @@ Proof Z.div_mul.
 (* Division of positive numbers is positive. *)
 
 Lemma Z_div_pos: forall a b, b > 0 -> 0 <= a -> 0 <= a/b.
-Proof. intros. apply Z.div_pos; auto with zarith. Admitted.
+Proof.
+intros. apply Z.div_pos; auto with zarith.
+apply Z.gt_lt; auto.
+Qed.
 
 Lemma Z_div_ge0: forall a b, b > 0 -> a >= 0 -> a/b >=0.
 Proof.
-  intros; generalize (Z_div_pos a b H); auto with zarith.
-Admitted.
+intros a b H H1.
+apply Z.le_ge, Z_div_pos; auto.
+apply Z.ge_le; auto.
+Qed.
 
 (** As soon as the divisor is greater or equal than 2,
     the division is strictly decreasing. *)
 
 Lemma Z_div_lt : forall a b:Z, b >= 2 -> a > 0 -> a/b < a.
-Proof. intros. apply Z.div_lt; auto with zarith. Admitted.
+Proof.
+intros; apply Z.div_lt; apply Z.gt_lt; auto.
+apply Zle_succ_gt, Z.ge_le; auto.
+Qed.
 
 (** A division of a small number by a bigger one yields zero. *)
 
@@ -253,17 +274,24 @@ Proof Z.mod_small.
 (** [Z.ge] is compatible with a positive division. *)
 
 Lemma Z_div_ge : forall a b c:Z, c > 0 -> a >= b -> a/c >= b/c.
-Proof. intros. apply Z.le_ge. apply Z.div_le_mono; auto with zarith. Admitted.
+Proof.
+intros; apply Z.le_ge; apply Z.div_le_mono.
++ apply Z.gt_lt; auto.
++ apply Z.ge_le; auto.
+Qed.
 
 (** Same, with [Z.le]. *)
 
 Lemma Z_div_le : forall a b c:Z, c > 0 -> a <= b -> a/c <= b/c.
-Proof. intros. apply Z.div_le_mono; auto with zarith. Admitted.
+Proof.
+intros; apply Z.div_le_mono; auto.
+apply Z.gt_lt; auto.
+Qed.
 
 (** With our choice of division, rounding of (a/b) is always done toward bottom: *)
 
 Lemma Z_mult_div_ge : forall a b:Z, b > 0 -> b*(a/b) <= a.
-Proof. intros. apply Z.mul_div_le; auto with zarith. Admitted.
+Proof. intros. apply Z.mul_div_le; auto; apply Z.gt_lt; auto. Qed.
 
 Lemma Z_mult_div_ge_neg : forall a b:Z, b < 0 -> b*(a/b) >= a.
 Proof. intros. apply Z.le_ge. apply Z.mul_div_ge; auto with zarith. Qed.
@@ -299,15 +327,22 @@ Proof. intros a b q; rewrite Z.mul_comm; apply Z.div_le_lower_bound. Qed.
 
 Lemma Zdiv_le_compat_l: forall p q r, 0 <= p -> 0 < q < r ->
     p / r <= p / q.
-Proof. intros; apply Z.div_le_compat_l; auto with zarith. Admitted.
+Proof.
+intros p q r H [H1 H2]; apply Z.div_le_compat_l; auto; split; auto.
+apply Z.lt_le_incl; auto.
+Qed.
 
 Theorem Zdiv_sgn: forall a b,
   0 <= Z.sgn (a/b) * Z.sgn a * Z.sgn b.
 Proof.
   destruct a as [ |a|a]; destruct b as [ |b|b]; simpl; auto with zarith;
   generalize (Z.div_pos (Zpos a) (Zpos b)); unfold Z.div, Z.div_eucl;
-  destruct Z.pos_div_eucl as (q,r); destruct r; admit.
-Admitted.
+  destruct Z.pos_div_eucl as (q,r); destruct r;
+  rewrite ?Z.mul_1_r, <-?Z.opp_eq_mul_m1, ?Z.sgn_opp, ?Z.opp_involutive;
+  match goal with [|- (_ -> _ -> ?P) -> _] =>
+     intros HH; assert (HH1 : P); auto with zarith
+  end; apply Z.sgn_nonneg; auto with zarith.
+Qed.
 
 (** * Relations between usual operations and Z.modulo and Z.div *)
 
@@ -349,20 +384,22 @@ Proof. intros. zero_or_not b. apply Z.div_opp_l_z; auto. Qed.
 
 Lemma Z_div_nz_opp_full : forall a b:Z, a mod b <> 0 ->
  (-a)/b = -(a/b)-1.
-Admitted.
-(*
-Proof. intros a b. zero_or_not b. intros; rewrite Z.div_opp_l_nz; auto. Qed.
-*)
+Proof.
+intros a b; zero_or_not b.
+- intro H; case H; auto.
+- intro H; rewrite Z.div_opp_l_nz; auto.
+Qed.
 
 Lemma Z_div_zero_opp_r : forall a b:Z, a mod b = 0 -> a/(-b) = -(a/b).
 Proof. intros. zero_or_not b. apply Z.div_opp_r_z; auto. Qed.
 
 Lemma Z_div_nz_opp_r : forall a b:Z, a mod b <> 0 ->
  a/(-b) = -(a/b)-1.
-Admitted.
-(*
-Proof. intros a b. zero_or_not b. intros; rewrite Z.div_opp_r_nz; auto. Qed.
-*)
+Proof.
+intros a b. zero_or_not b.
+- intro H; case H; auto.
+- intro H; rewrite Z.div_opp_r_nz; auto.
+Qed.
 
 (** Cancellations. *)
 
@@ -379,23 +416,19 @@ Qed.
 
 Lemma Zmult_mod_distr_l: forall a b c,
   (c*a) mod (c*b) = c * (a mod b).
-Admitted.
-(*
 Proof.
  intros. zero_or_not c. rewrite (Z.mul_comm c b); zero_or_not b.
- rewrite (Z.mul_comm b c). apply Z.mul_mod_distr_l; auto.
+ - rewrite Z.mul_0_r; auto.
+ - rewrite (Z.mul_comm b c). apply Z.mul_mod_distr_l; auto.
 Qed.
-*)
 
 Lemma Zmult_mod_distr_r: forall a b c,
   (a*c) mod (b*c) = (a mod b) * c.
-Admitted.
-(*
 Proof.
  intros. zero_or_not b. rewrite (Z.mul_comm b c); zero_or_not c.
- rewrite (Z.mul_comm c b). apply Z.mul_mod_distr_r; auto.
+ - rewrite Z.mul_0_r; auto.
+ - rewrite (Z.mul_comm c b). apply Z.mul_mod_distr_r; auto.
 Qed.
-*)
 
 (** Operations modulo. *)
 
@@ -471,7 +504,8 @@ Proof. unfold eqm; auto. Qed.
 
 Lemma eqm_trans : forall a b c,
   a == b -> b == c -> a == c.
-Proof. unfold eqm; eauto with *. Admitted.
+Proof.
+intros a b c; unfold eqm; intros H1 H2. rewrite <- H2. auto. Qed.
 
 Instance eqm_setoid : Equivalence eqm.
 Proof.
@@ -517,7 +551,8 @@ Lemma Zdiv_Zdiv : forall a b c, 0<=b -> 0<=c -> (a/b)/c = a/(b*c).
 Proof.
  intros. zero_or_not b. rewrite Z.mul_comm. zero_or_not c.
  rewrite Z.mul_comm. apply Z.div_div; auto with zarith.
-Admitted.
+ apply Z.le_neq; auto.
+Qed.
 
 (** Unfortunately, the previous result isn't always true on negative numbers.
     For instance: 3/(-2)/(-2) = 1 <> 0 = 3 / (-2*-2) *)
@@ -533,11 +568,11 @@ Qed.
 
 Theorem Zdiv_mult_le:
  forall a b c, 0<=a -> 0<=b -> 0<=c -> c*(a/b) <= (c*a)/b.
-Admitted.
-(*
 Proof.
- intros. zero_or_not b. apply Z.div_mul_le; auto with zarith. Qed.
-*)
+ intros. zero_or_not b.
+ - rewrite Z.mul_0_r; auto.
+ - apply Z.div_mul_le; auto; apply Z.le_neq; auto.
+Qed.
 
 (** Z.modulo is related to divisibility (see more in Znumtheory) *)
 
@@ -584,18 +619,21 @@ Qed.
 
 Lemma Z_div_same : forall a, a > 0 -> a/a = 1.
 Proof.
-  intros; apply Z_div_same_full; auto with zarith.
-Admitted.
+  intros a H; apply Z_div_same_full; auto with zarith.
+  contradict H; rewrite H; discriminate.
+Qed.
 
 Lemma Z_div_plus : forall a b c:Z, c > 0 -> (a + b * c) / c = a / c + b.
 Proof.
-  intros; apply Z_div_plus_full; auto with zarith.
-Admitted.
+  intros a b c H; apply Z_div_plus_full; auto with zarith.
+  contradict H; rewrite H; discriminate.
+Qed.
 
 Lemma Z_div_mult : forall a b:Z, b > 0 -> (a*b)/b = a.
 Proof.
-  intros; apply Z_div_mult_full; auto with zarith.
-Admitted.
+  intros a b H; apply Z_div_mult_full; auto with zarith.
+  contradict H; rewrite H; discriminate.
+Qed.
 
 Lemma Z_mod_plus : forall a b c:Z, c > 0 -> (a + b * c) mod c = a mod c.
 Proof.
@@ -609,8 +647,9 @@ Qed.
 
 Lemma Z_div_exact_2 : forall a b:Z, b > 0 -> a mod b = 0 -> a = b*(a/b).
 Proof.
-  intros; apply Z_div_exact_full_2; auto with zarith.
-Admitted.
+  intros a b H H1; apply Z_div_exact_full_2; auto with zarith.
+  contradict H; rewrite H; discriminate.
+Qed.
 
 Lemma Z_mod_zero_opp : forall a b:Z, b > 0 -> a mod b = 0 -> (-a) mod b = 0.
 Proof.
@@ -691,15 +730,16 @@ Theorem Zdiv_eucl_extended :
 Proof.
   intros b Hb a.
   destruct (Z_le_gt_dec 0 b) as [Hb'|Hb'].
-  - assert (Hb'' : b > 0) by admit.
+  - assert (Hb'' : b > 0) by (apply Zlt_gt, Z.le_neq; auto).
     rewrite Z.abs_eq; [ apply Zdiv_eucl_exist; assumption | assumption ].
-  - assert (Hb'' : - b > 0) by admit.
+  - assert (Hb'' : - b > 0).
+     now apply Zlt_gt, Z.opp_lt_mono; rewrite Z.opp_involutive; apply Zgt_lt.
     destruct (Zdiv_eucl_exist Hb'' a) as ((q,r),[]).
     exists (- q, r).
     split.
     + rewrite <- Z.mul_opp_comm; assumption.
-    + rewrite Z.abs_neq; [ assumption | admit ].
-Admitted.
+    + rewrite Z.abs_neq; [ assumption | apply Z.lt_le_incl, Zgt_lt; auto ].
+Qed.
 
 Arguments Zdiv_eucl_extended : default implicits.
 
