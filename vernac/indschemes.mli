@@ -29,9 +29,13 @@ val declare_congr_scheme : inductive -> unit
 
 val declare_rewriting_schemes : inductive -> unit
 
-(** Mutual Minimality/Induction scheme *)
+(** Mutual Minimality/Induction scheme.
+    [force_mutual] forces the construction of eliminators having the same predicates and
+    methods even if some of the inductives are not recursive.
+    By default it is [false] and some of the eliminators are defined as simple case analysis.
+ *)
 
-val do_mutual_induction_scheme :
+val do_mutual_induction_scheme : ?force_mutual:bool ->
   (Misctypes.lident * bool * inductive * Sorts.family) list -> unit
 
 (** Main calls to interpret the Scheme command *)

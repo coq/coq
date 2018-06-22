@@ -304,7 +304,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
   process_constr env 0 f (List.rev cstr.cs_args, recargs)
 
 (* Main function *)
-let mis_make_indrec env sigma listdepkind mib u =
+let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   let evdref = ref sigma in
@@ -469,7 +469,7 @@ let mis_make_indrec env sigma listdepkind mib u =
     (* Body on make_one_rec *)
     let ((indi,u),mibi,mipi,dep,kind) = List.nth listdepkind p in
 
-      if (mis_is_recursive_subset
+      if force_mutual || (mis_is_recursive_subset
 	(List.map (fun ((indi,u),_,_,_,_) -> snd indi) listdepkind)
 	mipi.mind_recargs)
       then
@@ -558,7 +558,7 @@ let check_arities env listdepkind =
 	    [] listdepkind
   in true
 
-let build_mutual_induction_scheme env sigma = function
+let build_mutual_induction_scheme env sigma ?(force_mutual=false) = function
   | ((mind,u),dep,s)::lrecspec ->
       let (mib,mip) = lookup_mind_specif env mind in
       if dep && not (Inductiveops.has_dependent_elim mib) then
@@ -577,7 +577,7 @@ let build_mutual_induction_scheme env sigma = function
 	   lrecspec)
       in
       let _ = check_arities env listdepkind in
-      mis_make_indrec env sigma listdepkind mib u
+      mis_make_indrec env sigma ~force_mutual listdepkind mib u
   | _ -> anomaly (Pp.str "build_induction_scheme expects a non empty list of inductive types.")
 
 let build_induction_scheme env sigma pind dep kind =
