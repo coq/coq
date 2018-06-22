@@ -10,8 +10,6 @@
 
 open Pcoq
 
-let uncurry f (x,y) = f x y
-
 let uvernac = create_universe "vernac"
 
 module Vernac_ =
@@ -32,18 +30,19 @@ module Vernac_ =
     let noedit_mode = gec_vernac "noedit_command"
 
     let () =
-      let act_vernac = Gram.action (fun v loc -> Some (to_coqloc loc, v)) in
-      let act_eoi = Gram.action (fun _ loc -> None) in
+      let open Extend in
+      let act_vernac v loc = Some (loc, v) in
+      let act_eoi _ loc = None in
       let rule = [
-        ([ Symbols.stoken Tok.EOI ], act_eoi);
-        ([ Symbols.snterm (Gram.Entry.obj vernac_control) ], act_vernac );
+        Rule (Next (Stop, Atoken Tok.EOI), act_eoi);
+        Rule (Next (Stop, Aentry vernac_control), act_vernac);
       ] in
-      uncurry (Gram.extend main_entry) (None, [None, None, rule])
+      Pcoq.grammar_extend main_entry None (None, [None, None, rule])
 
     let command_entry_ref = ref noedit_mode
     let command_entry =
       Gram.Entry.of_parser "command_entry"
-        (fun strm -> Gram.parse_tokens_after_filter !command_entry_ref strm)
+        (fun strm -> Gram.Entry.parse_token !command_entry_ref strm)
 
   end
 

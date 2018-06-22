@@ -86,11 +86,6 @@ module type S =
   type internal_entry = Tok.t Gramext.g_entry
   type symbol = Tok.t Gramext.g_symbol
   type action = Gramext.g_action
-  type production_rule = symbol list * action
-  type single_extend_statement =
-      string option * Gramext.g_assoc option * production_rule list
-  type extend_statement =
-      Gramext.position option * single_extend_statement list
   type coq_parsable
 
   val parsable : ?file:Loc.source -> char Stream.t -> coq_parsable
@@ -101,9 +96,6 @@ module type S =
 
   val comment_state : coq_parsable -> ((int * int) * string) list
 
-  val srules' : production_rule list -> symbol
-  val parse_tokens_after_filter : 'a entry -> Tok.t Stream.t -> 'a
-
 end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
 
   include Grammar.GMake(CLexer)
@@ -112,11 +104,6 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
   type internal_entry = Tok.t Gramext.g_entry
   type symbol = Tok.t Gramext.g_symbol
   type action = Gramext.g_action
-  type production_rule = symbol list * action
-  type single_extend_statement =
-      string option * Gramext.g_assoc option * production_rule list
-  type extend_statement =
-      Gramext.position option * single_extend_statement list
 
   type coq_parsable = parsable * CLexer.lexer_state ref
 
@@ -146,10 +133,6 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
     CLexer.get_comment_state !state
 
   let entry_print ft x = Entry.print ft x
-
-  (* Not used *)
-  let srules' = Gramext.srules
-  let parse_tokens_after_filter = Entry.parse_token
 
 end
 
@@ -246,7 +229,7 @@ let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> _ = function
   | Aentryl (e, n) ->
     Symbols.snterml (G.Entry.obj e, n)
   | Arules rs ->
-    G.srules' (List.map symbol_of_rules rs)
+    Gramext.srules (List.map symbol_of_rules rs)
 
 and symbol_of_rule : type s a r. (s, a, r) Extend.rule -> _ = function
 | Stop -> fun accu -> accu
