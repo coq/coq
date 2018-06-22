@@ -126,16 +126,15 @@ let expmod_constr cache modlist c =
 	    | Not_found -> Constr.map substrec c)
 
       | Proj (p, c') ->
-          (try 
-	     let p' = share_univs (ConstRef (Projection.constant p)) Univ.Instance.empty modlist in
-	     let make c = Projection.make c (Projection.unfolded p) in
-	     match kind p' with
-	     | Const (p',_) -> mkProj (make p', substrec c')
-	     | App (f, args) -> 
-	       (match kind f with 
-	       | Const (p', _) -> mkProj (make p', substrec c')
-	       | _ -> assert false)
-	     | _ -> assert false
+          (try
+            (** No need to expand parameters or universes for projections *)
+            let map cst =
+              let _ = Cmap.find cst (fst modlist) in
+              pop_con cst
+            in
+            let p = Projection.map map p in
+            let c' = substrec c' in
+            mkProj (p, c')
 	   with Not_found -> Constr.map substrec c)
 
   | _ -> Constr.map substrec c
