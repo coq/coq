@@ -221,7 +221,8 @@ Section Powers_of_2.
   Lemma two_p_pred x : 0 <= x -> two_p (Z.pred x) < two_p x.
   Proof.
    rewrite !two_p_equiv. intros. apply Z.pow_lt_mono_r; auto with zarith.
-  Admitted.
+   red; auto.
+  Qed.
 
 End Powers_of_2.
 
@@ -265,20 +266,46 @@ Section power_div_with_rest.
     let '(q,r,d) := Pos.iter Zdiv_rest_aux (x, 0, 1) p in
     x = q * d + r /\ 0 <= r < d.
   Proof.
-   apply Pos.iter_invariant; [|admit].
-   intros ((q,r),d) (H,H'). unfold Zdiv_rest_aux.
-   destruct q as [ |[q|q| ]|[q|q| ]].
-   - admit.
+   apply Pos.iter_invariant; [|rewrite Z.mul_1_r, Z.add_0_r; repeat split; auto; discriminate].
+   intros ((q,r),d) (H,(H1',H2')). unfold Zdiv_rest_aux.
+   assert (H1 : 0 < d) by now apply Z.le_lt_trans with (1 := H1').
+   assert (H2 : 0 <= d + r) by now apply Z.add_nonneg_nonneg; auto; apply Z.lt_le_incl.
+   assert (H3 : d + r < 2 * d)
+     by now rewrite <-Z.add_diag; apply Zplus_lt_compat_l.
+   assert (H4 : r < 2 * d) by now
+     apply Z.lt_le_trans with (1 * d); [
+       rewrite Z.mul_1_l; auto |
+       apply Zmult_le_compat_r; try discriminate;
+       now apply Z.lt_le_incl].
+  destruct q as [ |[q|q| ]|[q|q| ]].
+   - repeat split; auto.
    - rewrite Pos2Z.inj_xI, Z.mul_add_distr_r in H.
-     rewrite Z.mul_shuffle3, Z.mul_assoc. admit.
+     rewrite Z.mul_shuffle3, Z.mul_assoc.
+     rewrite Z.mul_1_l in H; rewrite Z.add_assoc.
+     repeat split; auto with zarith.
    - rewrite Pos2Z.inj_xO in H.
-     rewrite Z.mul_shuffle3, Z.mul_assoc. admit.
-   - admit.
+     rewrite Z.mul_shuffle3, Z.mul_assoc.
+     repeat split; auto.
+   - rewrite Z.mul_1_l in H; repeat split; auto.
    - rewrite Pos2Z.neg_xI, Z.mul_sub_distr_r in H.
-     rewrite Z.mul_sub_distr_r, Z.mul_shuffle3, Z.mul_assoc. admit.
+     rewrite Z.mul_sub_distr_r, Z.mul_shuffle3, Z.mul_assoc.
+     repeat split; auto.
+     rewrite !Z.mul_1_l, H, Z.add_assoc.
+     apply f_equal2 with (f := Z.add); auto.
+     rewrite <- Z.sub_sub_distr, <- !Z.add_diag, Z.add_simpl_r.
+     now rewrite Z.mul_1_l.
    - rewrite Pos2Z.neg_xO in H.
-     rewrite Z.mul_shuffle3, Z.mul_assoc. admit.
-  Admitted.
+     rewrite Z.mul_shuffle3, Z.mul_assoc.
+     repeat split; auto.
+   - repeat split; auto.
+     rewrite H, (Z.mul_opp_l 1), Z.mul_1_l, Z.add_assoc.
+     apply f_equal2 with (f := Z.add); auto.
+     rewrite Z.add_comm, <- Z.add_diag.
+     rewrite Z.mul_add_distr_l.
+     replace (-1 * d) with (-d).
+     + now rewrite Z.add_assoc, Z.add_opp_diag_r .
+     + now rewrite (Z.mul_opp_l 1), <-(Z.mul_opp_l 1).
+Qed.
 
   (** Old-style rich specification by proof of existence *)
 
