@@ -85,16 +85,32 @@ Section Log_pos. (* Log of positive integers *)
 	  | rewrite two_p_S with (x := Z.succ (log_inf p)) by (apply Z.le_le_succ_r; trivial);
 	    rewrite two_p_S by trivial;
 	    rewrite two_p_S in HR by trivial; rewrite (BinInt.Pos2Z.inj_xI p);
-                admit ]
+      destruct HR as [H1R H2R];
+      split; [
+        apply Z.le_trans with (2 * Z.pos p); auto with zarith;
+        rewrite <- (Z.add_0_r (2 * Z.pos p)) at 1; auto with zarith
+      |
+        apply Z.lt_le_trans with (2 * (Z.pos p + 1));
+        [
+          rewrite Z.mul_add_distr_l, Z.mul_1_r;
+          apply Zplus_lt_compat_l; red; auto with zarith
+        |
+          apply Z.mul_le_mono_nonneg_l; auto with zarith;
+          rewrite Z.add_1_r; apply Zlt_le_succ; auto
+        ]
+      ]]
 	| elim H; intros Hp HR; clear H; split;
 	  [ auto with zarith
 	    | rewrite two_p_S with (x := Z.succ (log_inf p)) by (apply Z.le_le_succ_r; trivial);
 	      rewrite two_p_S by trivial;
 	      rewrite two_p_S in HR by trivial; rewrite (BinInt.Pos2Z.inj_xO p);
-                  admit ]
-	| unfold two_power_pos; unfold shift_pos; simpl;
-          admit ].
-  Admitted.
+    destruct HR as [H1R H2R];
+    split; auto with zarith;
+    apply Zmult_lt_compat_l;  auto with zarith]
+        | unfold two_power_pos; unfold shift_pos;
+    split; auto with zarith; split; red; auto; discriminate].
+  Qed.
+
 
   Definition log_inf_correct1 (p:positive) := proj1 (log_inf_correct p).
   Definition log_inf_correct2 (p:positive) := proj2 (log_inf_correct p).
@@ -116,10 +132,10 @@ Section Log_pos. (* Log of positive integers *)
       IF Zpos p = two_p (log_inf p) then Zpos p = two_p (log_sup p)
     else log_sup p = Z.succ (log_inf p).
   Proof.
-    simple induction p; intros;
-      [ elim H; right; simpl;
+simple induction p; intros;
+      [ elim H; intros [H1 H2]; right; simpl;
 	rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
-          rewrite BinInt.Pos2Z.inj_xI; unfold Z.succ; admit
+          rewrite BinInt.Pos2Z.inj_xI; unfold Z.succ; auto
 	| elim H; clear H; intro Hif;
 	  [ left; simpl;
 	    rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
@@ -129,9 +145,23 @@ Section Log_pos. (* Log of positive integers *)
 	    | right; simpl;
 	      rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
 		rewrite BinInt.Pos2Z.inj_xO; unfold Z.succ;
-                  admit ]
+                  idtac ]
 	| left; auto ].
-  Admitted.
+- split; auto.
+  apply not_eq_sym, Z.lt_neq.
+  rewrite H1, Z.add_1_r.
+  apply Zle_lt_succ; auto with zarith.
+- split; auto.
+  intros HH.
+  assert (HH1 : Z.even (2 * two_p (log_inf p0)) = true).
+    rewrite Z.even_mul; auto.
+  contradict HH1.
+  rewrite <- HH, Z.even_add, Z.even_mul; simpl; auto.
+- destruct Hif as [H1 H2].
+  split; auto with zarith.
+  contradict H1.
+  now apply Z.mul_reg_l with (2 := H1).
+Qed.
 
   Theorem log_sup_correct2 :
     forall x:positive, two_p (Z.pred (log_sup x)) < Zpos x <= two_p (log_sup x).
@@ -143,18 +173,20 @@ Section Log_pos. (* Log of positive integers *)
     split; [ apply two_p_pred; apply log_sup_correct1 | apply Z.le_refl ].
     intros [E1 E2]; rewrite E2.
     rewrite (Z.pred_succ (log_inf x)).
-    generalize (log_inf_correct2 x); admit.
-  Admitted.
+    generalize (log_inf_correct2 x); intros [H1 H2]; split.
+    - apply Z.le_neq; auto.
+    - apply Z.lt_le_incl; auto.
+  Qed.
 
   Lemma log_inf_le_log_sup : forall p:positive, log_inf p <= log_sup p.
   Proof.
-    simple induction p; simpl; intros; admit.
-  Admitted.
+    simple induction p; simpl; intros; auto with zarith.
+  Qed.
 
   Lemma log_sup_le_Slog_inf : forall p:positive, log_sup p <= Z.succ (log_inf p).
   Proof.
-    simple induction p; simpl; intros; admit.
-  Admitted.
+    simple induction p; simpl; intros; auto with zarith.
+  Qed.
 
   (** Now it's possible to specify and build the [Log] rounded to the nearest *)
 
@@ -190,18 +222,28 @@ Section Log_pos. (* Log of positive integers *)
     elim (log_sup_log_inf p0).
     generalize (log_inf_le_log_sup p0).
     generalize (log_sup_le_Slog_inf p0).
-    case p0; auto with zarith.
-    intros; admit.
-    case p0; intros; auto with zarith; admit.
-    intros p0 [Einf| Esup].
-    simpl.
-    repeat rewrite Einf.
-    case p0; intros; auto with zarith.
-    simpl.
-    repeat rewrite Esup.
-    case p0; intros; auto with zarith.
-    auto.
-  Admitted.
+    case p0; simpl; auto with zarith.
+    - intros p1 H1 H2 [H3 H4].
+      left.
+      apply f_equal with (f := Zsucc).
+      apply Z.pow_inj_r with 2.
+      + red; auto.
+      + apply Z.le_trans with (2 := Z.le_succ_diag_r _).
+        apply log_sup_correct1.
+      + apply Z.le_trans with (2 := Z.le_succ_diag_r _).
+        apply log_inf_correct1.
+      + rewrite <- !two_p_correct, <- H3; auto.
+    - case p0; auto; intros p1 [H1 H2].
+      right; rewrite <- H2; auto.
+    - intros p0 [Einf| Esup].
+      simpl.
+      repeat rewrite Einf.
+      case p0; intros; auto with zarith.
+      simpl.
+      repeat rewrite Esup.
+      case p0; intros; auto with zarith.
+    - left; auto.
+  Qed.
 
 End Log_pos.
 
