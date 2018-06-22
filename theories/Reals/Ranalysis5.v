@@ -12,7 +12,7 @@ Require Import Rbase.
 Require Import Ranalysis_reg.
 Require Import Rfunctions.
 Require Import Rseries.
-Require Import Fourier.
+Require Import Lra.
 Require Import RiemannInt.
 Require Import SeqProp.
 Require Import Max.
@@ -56,7 +56,7 @@ Proof.
   }
   rewrite f_eq_g in Htemp by easy.
   unfold id in Htemp.
-  fourier.
+  lra.
 Qed.
 
 Lemma derivable_pt_id_interv : forall (lb ub x:R),
@@ -99,7 +99,7 @@ assert (forall x l, lb < x < ub -> (derivable_pt_abs f x l <-> derivable_pt_abs 
    apply Req_le ; apply Rabs_right ; apply Rgt_ge ; assumption.
  split.
  assert (Sublemma : forall x y z, -z < y - x -> x < y + z).
-  intros ; fourier.
+  intros ; lra.
  apply Sublemma.
  apply Sublemma2. rewrite Rabs_Ropp.
  apply Rlt_le_trans with (r2:=a-lb) ; [| apply RRle_abs] ;
@@ -108,7 +108,7 @@ assert (forall x l, lb < x < ub -> (derivable_pt_abs f x l <-> derivable_pt_abs 
  apply Rlt_le_trans with (r2:=Rmin (ub - a) (a - lb)) ; [| apply Rmin_r] ;
  apply Rlt_le_trans with (r2:=Rmin delta (Rmin (ub - a) (a - lb))) ; [| apply Rmin_r] ; assumption.
  assert (Sublemma : forall x y z, y < z - x -> x + y < z).
-  intros ; fourier.
+  intros ; lra.
  apply Sublemma.
  apply Sublemma2.
  apply Rlt_le_trans with (r2:=ub-a) ; [| apply RRle_abs] ;
@@ -137,7 +137,7 @@ assert (forall x l, lb < x < ub -> (derivable_pt_abs f x l <-> derivable_pt_abs 
    apply Req_le ; apply Rabs_right ; apply Rgt_ge ; assumption.
  split.
  assert (Sublemma : forall x y z, -z < y - x -> x < y + z).
-  intros ; fourier.
+  intros ; lra.
  apply Sublemma.
  apply Sublemma2. rewrite Rabs_Ropp.
  apply Rlt_le_trans with (r2:=a-lb) ; [| apply RRle_abs] ;
@@ -146,7 +146,7 @@ assert (forall x l, lb < x < ub -> (derivable_pt_abs f x l <-> derivable_pt_abs 
  apply Rlt_le_trans with (r2:=Rmin (ub - a) (a - lb)) ; [| apply Rmin_r] ;
  apply Rlt_le_trans with (r2:=Rmin delta (Rmin (ub - a) (a - lb))) ; [| apply Rmin_r] ; assumption.
  assert (Sublemma : forall x y z, y < z - x -> x + y < z).
-  intros ; fourier.
+  intros ; lra.
  apply Sublemma.
  apply Sublemma2.
  apply Rlt_le_trans with (r2:=ub-a) ; [| apply RRle_abs] ;
@@ -415,7 +415,7 @@ Ltac case_le H :=
    let h' := fresh in 
       match t with ?x <= ?y => case (total_order_T x y);
          [intros h'; case h'; clear h' | 
-          intros h'; clear -H h'; elimtype False; fourier ] end.
+          intros h'; clear -H h'; elimtype False; lra ] end.
 (* end hide *)
 
 
@@ -539,37 +539,37 @@ intros f g lb ub lb_lt_ub f_incr_interv f_eq_g f_cont_interv b b_encad.
  assert (x1_encad : lb <= x1 <= ub).
   split. apply RmaxLess2.
   apply Rlt_le. rewrite Hx1. rewrite Sublemma.
-  split. apply Rlt_trans with (r2:=x) ; fourier.
+  split. apply Rlt_trans with (r2:=x) ; lra.
   assumption.
  assert (x2_encad : lb <= x2 <= ub).
   split. apply Rlt_le ; rewrite Hx2 ; apply Rgt_lt ; rewrite Sublemma2.
-  split. apply Rgt_trans with (r2:=x) ; fourier.
+  split. apply Rgt_trans with (r2:=x) ; lra.
   assumption.
   apply Rmin_r.
  assert (x_lt_x2 : x < x2).
   rewrite Hx2.
   apply Rgt_lt. rewrite Sublemma2.
-  split ; fourier.
+  split ; lra.
  assert (x1_lt_x : x1 < x).
   rewrite Hx1.
   rewrite Sublemma.
-  split ; fourier.
+  split ; lra.
  exists (Rmin (f x - f x1) (f x2 - f x)).
- split. apply Rmin_pos ; apply Rgt_minus. apply f_incr_interv ; [apply RmaxLess2 | | ] ; fourier.
+ split. apply Rmin_pos ; apply Rgt_minus. apply f_incr_interv ; [apply RmaxLess2 | | ] ; lra.
  apply f_incr_interv ; intuition.
  intros y Temp.
  destruct Temp as (_,y_cond).
   rewrite <- f_x_b in y_cond.
   assert (Temp : forall x y d1 d2, d1 > 0 -> d2 > 0 -> Rabs (y - x) < Rmin d1 d2 -> x - d1 <= y <= x + d2).
    intros.
-    split. assert (H10 : forall x y z, x - y <= z -> x - z <= y). intuition. fourier.
+    split. assert (H10 : forall x y z, x - y <= z -> x - z <= y). intuition. lra.
     apply H10. apply Rle_trans with (r2:=Rabs (y0 - x0)).
     replace (Rabs (y0 - x0)) with (Rabs (x0 - y0)). apply RRle_abs.
     rewrite <- Rabs_Ropp. unfold Rminus ; rewrite Ropp_plus_distr. rewrite Ropp_involutive.
     intuition.
     apply Rle_trans with (r2:= Rmin d1 d2). apply Rlt_le ; assumption.
     apply Rmin_l.
-    assert (H10 : forall x y z, x - y <= z -> x <= y + z). intuition. fourier.
+    assert (H10 : forall x y z, x - y <= z -> x <= y + z). intuition. lra.
     apply H10. apply Rle_trans with (r2:=Rabs (y0 - x0)). apply RRle_abs.
     apply Rle_trans with (r2:= Rmin d1 d2). apply Rlt_le ; assumption.
     apply Rmin_r.
@@ -602,12 +602,12 @@ intros f g lb ub lb_lt_ub f_incr_interv f_eq_g f_cont_interv b b_encad.
      assert (x1_neq_x' : x1 <> x').
       intro Hfalse. rewrite Hfalse, f_x'_y in y_cond.
       assert (Hf : Rabs (y - f x) < f x - y).
-       apply Rlt_le_trans with (r2:=Rmin (f x - y) (f x2 - f x)). fourier.
+       apply Rlt_le_trans with (r2:=Rmin (f x - y) (f x2 - f x)). lra.
        apply Rmin_l.
       assert(Hfin : f x - y < f x - y).
        apply Rle_lt_trans with (r2:=Rabs (y - f x)).
        replace (Rabs (y - f x)) with (Rabs (f x - y)). apply RRle_abs.
-       rewrite <- Rabs_Ropp. replace (- (f x - y)) with (y - f x) by field ; reflexivity. fourier.
+       rewrite <- Rabs_Ropp. replace (- (f x - y)) with (y - f x) by field ; reflexivity. lra.
       apply (Rlt_irrefl (f x - y)) ; assumption.
       split ; intuition.
      assert (x'_lb : x - eps < x').
@@ -619,17 +619,17 @@ intros f g lb ub lb_lt_ub f_incr_interv f_eq_g f_cont_interv b b_encad.
      assert (x1_neq_x' : x' <> x2).
       intro Hfalse. rewrite <- Hfalse, f_x'_y in y_cond.
       assert (Hf : Rabs (y - f x) < y - f x).
-       apply Rlt_le_trans with (r2:=Rmin (f x - f x1) (y - f x)). fourier.
+       apply Rlt_le_trans with (r2:=Rmin (f x - f x1) (y - f x)). lra.
        apply Rmin_r.
       assert(Hfin : y - f x < y - f x).
-       apply Rle_lt_trans with (r2:=Rabs (y - f x)). apply RRle_abs. fourier.
+       apply Rle_lt_trans with (r2:=Rabs (y - f x)). apply RRle_abs. lra.
       apply (Rlt_irrefl (y - f x)) ; assumption.
       split ; intuition.
      assert (x'_ub : x' < x + eps).
       apply Sublemma3.
       split. intuition. apply Rlt_not_eq.
       apply Rlt_le_trans with (r2:=x2) ; [ |rewrite Hx2 ; apply Rmin_l] ; intuition.
-    apply Rabs_def1 ; fourier.
+    apply Rabs_def1 ; lra.
     assumption.
     split. apply Rle_trans with (r2:=x1) ; intuition.
     apply Rle_trans with (r2:=x2) ; intuition.
@@ -742,7 +742,7 @@ intros f g lb ub x Prf g_cont_pur lb_lt_ub x_encad Prg_incr f_eq_g df_neq.
  assert (lb <= x + h <= ub).
  split.
  assert (Sublemma : forall x y z, -z <= y - x -> x <= y + z).
-  intros ; fourier.
+  intros ; lra.
  apply Sublemma.
  apply Rlt_le ; apply Sublemma2. rewrite Rabs_Ropp.
  apply Rlt_le_trans with (r2:=x-lb) ; [| apply RRle_abs] ;
@@ -751,7 +751,7 @@ intros f g lb ub x Prf g_cont_pur lb_lt_ub x_encad Prg_incr f_eq_g df_neq.
  apply Rlt_le_trans with (r2:=delta''). assumption. intuition. apply Rmin_r.
  apply Rgt_minus. intuition.
  assert (Sublemma : forall x y z, y <= z - x -> x + y <= z).
-  intros ; fourier.
+  intros ; lra.
  apply Sublemma.
  apply Rlt_le ; apply Sublemma2.
  apply Rlt_le_trans with (r2:=ub-x) ; [| apply RRle_abs] ;
@@ -767,7 +767,7 @@ intros f g lb ub x Prf g_cont_pur lb_lt_ub x_encad Prg_incr f_eq_g df_neq.
  assumption.
          split ; [|intuition].
          assert (Sublemma : forall x y z, - z <= y - x -> x <= y + z).
-          intros ; fourier.
+          intros ; lra.
          apply Sublemma ; apply Rlt_le ; apply Sublemma2. rewrite Rabs_Ropp.
  apply Rlt_le_trans with (r2:=x-lb) ; [| apply RRle_abs] ;
  apply Rlt_le_trans with (r2:=Rmin (x - lb) (ub - x)) ; [| apply Rmin_l] ;
@@ -1031,7 +1031,7 @@ Lemma derivable_pt_lim_CVU : forall (fn fn':nat -> R -> R) (f g:R->R)
       derivable_pt_lim f x (g x).
 Proof.
 intros fn fn' f g x c' r xinb Dfn_eq_fn' fn_CV_f fn'_CVU_g g_cont eps eps_pos.
-assert (eps_8_pos : 0 < eps / 8) by fourier.
+assert (eps_8_pos : 0 < eps / 8) by lra.
 elim (g_cont x xinb _ eps_8_pos) ; clear g_cont ;
 intros delta1 (delta1_pos, g_cont).
 destruct (Ball_in_inter _ _ _ _ _ xinb
@@ -1041,11 +1041,11 @@ exists delta; intros h hpos hinbdelta.
 assert (eps'_pos : 0 < (Rabs h) * eps / 4).
  unfold Rdiv ; rewrite Rmult_assoc ; apply Rmult_lt_0_compat.
  apply Rabs_pos_lt ; assumption.
-fourier.
+lra.
 destruct (fn_CV_f x xinb ((Rabs h) * eps / 4) eps'_pos) as [N2 fnx_CV_fx].
 assert (xhinbxdelta : Boule x delta (x + h)).
  clear -hinbdelta; apply Rabs_def2 in hinbdelta; unfold Boule; simpl.
- destruct hinbdelta; apply Rabs_def1; fourier.
+ destruct hinbdelta; apply Rabs_def1; lra.
 assert (t : Boule c' r (x + h)).
  apply Pdelta in xhinbxdelta; tauto.
 destruct (fn_CV_f (x+h) t ((Rabs h) * eps / 4) eps'_pos) as [N1 fnxh_CV_fxh].
@@ -1064,17 +1064,17 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
    exists (fn' N c) ; apply Dfn_eq_fn'.
    assert (t : Boule x delta c).
     apply Rabs_def2 in xhinbxdelta; destruct xhinbxdelta; destruct c_encad.
-    apply Rabs_def2 in xinb; apply Rabs_def1; fourier.
+    apply Rabs_def2 in xinb; apply Rabs_def1; lra.
    apply Pdelta in t; tauto.
   assert (pr2 : forall c : R, x + h < c < x -> derivable_pt id c).
    solve[intros; apply derivable_id].
-  assert (xh_x : x+h < x) by fourier.
+  assert (xh_x : x+h < x) by lra.
   assert (pr3 : forall c : R, x + h <= c <= x -> continuity_pt (fn N) c).
    intros c c_encad ; apply derivable_continuous_pt.
    exists (fn' N c) ; apply Dfn_eq_fn' ; intuition.
    assert (t : Boule x delta c).
     apply Rabs_def2 in xhinbxdelta; destruct xhinbxdelta.
-    apply Rabs_def2 in xinb; apply Rabs_def1; fourier.
+    apply Rabs_def2 in xinb; apply Rabs_def1; lra.
    apply Pdelta in t; tauto.
   assert (pr4 : forall c : R, x + h <= c <= x -> continuity_pt id c).
    solve[intros; apply derivable_continuous ; apply derivable_id].
@@ -1117,7 +1117,7 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
     assert (t : Boule x delta c).
      destruct P.
      apply Rabs_def2 in xhinbxdelta; destruct xhinbxdelta.
-     apply Rabs_def2 in xinb; apply Rabs_def1; fourier.
+     apply Rabs_def2 in xinb; apply Rabs_def1; lra.
     apply Pdelta in t; tauto.
    apply Rlt_trans with (Rabs h * eps / 4 + Rabs h * eps / 4 + Rabs h * (eps / 8) +
          Rabs h * (eps / 8)).
@@ -1131,27 +1131,27 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
     apply Rlt_trans with (Rabs h).
      apply Rabs_def1. 
       apply Rlt_trans with 0.
-       destruct P; fourier.
+       destruct P; lra.
       apply Rabs_pos_lt ; assumption.
-     rewrite <- Rabs_Ropp, Rabs_pos_eq, Ropp_involutive;[ | fourier]. 
-     destruct P; fourier.
+     rewrite <- Rabs_Ropp, Rabs_pos_eq, Ropp_involutive;[ | lra].
+     destruct P; lra.
     clear -Pdelta xhinbxdelta.
     apply Pdelta in xhinbxdelta; destruct xhinbxdelta as [_ P'].
     apply Rabs_def2 in P'; simpl in P'; destruct P';
-    apply Rabs_def1; fourier.
+    apply Rabs_def1; lra.
    rewrite Rplus_assoc ; rewrite Rplus_assoc ; rewrite <- Rmult_plus_distr_l.
    replace (Rabs h * eps / 4 + (Rabs h * eps / 4 + Rabs h * (eps / 8 + eps / 8))) with
       (Rabs h * (eps / 4 + eps / 4 + eps / 8 + eps / 8)) by field.
    apply Rmult_lt_compat_l. 
     apply Rabs_pos_lt ; assumption.
-   fourier.
+   lra.
   assert (H := pr1 c P) ; elim H ; clear H ; intros l Hl.
   assert (Temp : l = fn' N c).
    assert (bc'rc : Boule c' r c).
     assert (t : Boule x delta c).
      clear - xhinbxdelta P.
      destruct P; apply Rabs_def2 in xhinbxdelta; destruct xhinbxdelta.
-     apply Rabs_def1; fourier.
+     apply Rabs_def1; lra.
     apply Pdelta in t; tauto.
    assert (Hl' := Dfn_eq_fn' c N bc'rc).
    unfold derivable_pt_abs in Hl; clear -Hl Hl'.
@@ -1175,17 +1175,17 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
   exists (fn' N c) ; apply Dfn_eq_fn'.
   assert (t : Boule x delta c).
    apply Rabs_def2 in xhinbxdelta; destruct xhinbxdelta; destruct c_encad.
-   apply Rabs_def2 in xinb; apply Rabs_def1; fourier.
+   apply Rabs_def2 in xinb; apply Rabs_def1; lra.
   apply Pdelta in t; tauto.
   assert (pr2 : forall c : R, x < c < x + h -> derivable_pt id c).
    solve[intros; apply derivable_id].
-  assert (xh_x : x < x + h) by fourier.
+  assert (xh_x : x < x + h) by lra.
   assert (pr3 : forall c : R, x <= c <= x + h -> continuity_pt (fn N) c).
    intros c c_encad ; apply derivable_continuous_pt.
    exists (fn' N c) ; apply Dfn_eq_fn' ; intuition.
    assert (t : Boule x delta c).
     apply Rabs_def2 in xhinbxdelta; destruct xhinbxdelta.
-    apply Rabs_def2 in xinb; apply Rabs_def1; fourier.
+    apply Rabs_def2 in xinb; apply Rabs_def1; lra.
    apply Pdelta in t; tauto.
   assert (pr4 : forall c : R, x <= c <= x + h -> continuity_pt id c).
    solve[intros; apply derivable_continuous ; apply derivable_id].
@@ -1223,7 +1223,7 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
     assert (t : Boule x delta c).
      destruct P.
     apply Rabs_def2 in xhinbxdelta; destruct xhinbxdelta.
-    apply Rabs_def2 in xinb; apply Rabs_def1; fourier.
+    apply Rabs_def2 in xinb; apply Rabs_def1; lra.
    apply Pdelta in t; tauto.
   apply Rlt_trans with (Rabs h * eps / 4 + Rabs h * eps / 4 + Rabs h * (eps / 8) +
          Rabs h * (eps / 8)).
@@ -1236,27 +1236,27 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
     apply Rlt_not_eq ; exact (proj1 P).
    apply Rlt_trans with (Rabs h).
     apply Rabs_def1.
-     destruct P; rewrite Rabs_pos_eq;fourier.
+     destruct P; rewrite Rabs_pos_eq;lra.
     apply Rle_lt_trans with 0.
-     assert (t := Rabs_pos h); clear -t; fourier.
-    clear -P; destruct P; fourier.
+     assert (t := Rabs_pos h); clear -t; lra.
+    clear -P; destruct P; lra.
    clear -Pdelta xhinbxdelta.
    apply Pdelta in xhinbxdelta; destruct xhinbxdelta as [_ P'].
    apply Rabs_def2 in P'; simpl in P'; destruct P';
-    apply Rabs_def1; fourier.
+    apply Rabs_def1; lra.
   rewrite Rplus_assoc ; rewrite Rplus_assoc ; rewrite <- Rmult_plus_distr_l.
   replace (Rabs h * eps / 4 + (Rabs h * eps / 4 + Rabs h * (eps / 8 + eps / 8))) with
       (Rabs h * (eps / 4 + eps / 4 + eps / 8 + eps / 8)) by field.
   apply Rmult_lt_compat_l. 
    apply Rabs_pos_lt ; assumption.
-  fourier.
+  lra.
  assert (H := pr1 c P) ; elim H ; clear H ; intros l Hl.
  assert (Temp : l = fn' N c).
   assert (bc'rc : Boule c' r c).
    assert (t : Boule x delta c).
     clear - xhinbxdelta P.
     destruct P; apply Rabs_def2 in xhinbxdelta; destruct xhinbxdelta.
-    apply Rabs_def1; fourier.
+    apply Rabs_def1; lra.
    apply Pdelta in t; tauto.
   assert (Hl' := Dfn_eq_fn' c N bc'rc).
   unfold derivable_pt_abs in Hl; clear -Hl Hl'.

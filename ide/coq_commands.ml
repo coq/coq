@@ -311,7 +311,6 @@ let tactics =
      "fix __ with";
      "fold";
      "fold __ in";
-     "fourier";
      "functional induction";
    ];
 

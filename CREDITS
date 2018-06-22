@@ -37,8 +37,6 @@ plugins/extraction
   developed by Pierre Letouzey (LRI, 2000-2004, PPS, 2005-now)
 plugins/firstorder
   developed by Pierre Corbineau (LRI, 2003-2008)
-plugins/fourier
-  developed by Loïc Pottier (INRIA-Lemme, 2001)
 plugins/funind
   developed by Pierre Courtieu (INRIA-Lemme, 2003-2004, CNAM, 2006-now),
   Julien Forest (INRIA-Everest, 2006, CNAM, 2007-2008, ENSIIE, 2008-now)

@@ -4319,21 +4319,6 @@ printed with the Print Fields command.
 See also: file plugins/setoid_ring/RealField.v for an example of instantiation,
 theory theories/Reals for many examples of use of field.
 
-.. tacn:: fourier
-   :name: fourier
-
-This tactic written by Loïc Pottier solves linear inequalities on real
-numbers using Fourier’s method :cite:`Fourier`. This tactic must be loaded by
-``Require Import Fourier``.
-
-.. example::
-   .. coqtop:: reset all
-
-      Require Import Reals.
-      Require Import Fourier.
-      Goal forall x y:R, (x < y)%R -> (y + 1 >= x - 1)%R.
-      intros; fourier.
-
 Non-logical tactics
 ------------------------
 

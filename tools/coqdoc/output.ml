@@ -76,7 +76,7 @@ let is_tactic =
     [ "intro"; "intros"; "apply"; "rewrite"; "refine"; "case"; "clear"; "injection";
       "elimtype"; "progress"; "setoid_rewrite"; "left"; "right"; "constructor"; 
       "econstructor"; "decide equality"; "abstract"; "exists"; "cbv"; "simple destruct";
-      "info"; "fourier"; "field"; "specialize"; "evar"; "solve"; "instanciate"; "info_auto"; "info_eauto";
+      "info"; "field"; "specialize"; "evar"; "solve"; "instanciate"; "info_auto"; "info_eauto";
       "quote"; "eexact"; "autorewrite";
       "destruct"; "destruction"; "destruct_call"; "dependent"; "elim"; "extensionality";
       "f_equal"; "generalize"; "generalize_eqs"; "generalize_eqs_vars"; "induction"; "rename"; "move"; "omega";

@@ -18,7 +18,7 @@ Require Export Cos_rel.
 Require Export Cos_plus.
 Require Import ZArith_base.
 Require Import Zcomplements.
-Require Import Fourier.
+Require Import Lra.
 Require Import Ranalysis1.
 Require Import Rsqrt_def. 
 Require Import PSeries_reg.

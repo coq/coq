@@ -15,7 +15,7 @@
 
 Require Import Rbase.
 Require Import Rfunctions.
-Require Import Fourier.
+Require Import Lra.
 Local Open Scope R_scope.
 
 (*******************************)
@@ -24,7 +24,7 @@ Local Open Scope R_scope.
 (*********)
 Lemma eps2_Rgt_R0 : forall eps:R, eps > 0 -> eps * / 2 > 0.
 Proof.
-  intros; fourier.
+  intros; lra.
 Qed.
 
 (*********)
@@ -45,14 +45,14 @@ Qed.
 Lemma Rlt_eps2_eps : forall eps:R, eps > 0 -> eps * / 2 < eps.
 Proof.
   intros.
-  fourier.
+  lra.
 Qed.
 
 (*********)
 Lemma Rlt_eps4_eps : forall eps:R, eps > 0 -> eps * / (2 + 2) < eps.
 Proof.
   intros.
-  fourier.
+  lra.
 Qed.
 
 (*********)

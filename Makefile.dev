@@ -174,7 +174,6 @@ MICROMEGAVO:=$(filter plugins/micromega/%, $(PLUGINSVO))
 QUOTEVO:=$(filter plugins/quote/%, $(PLUGINSVO))
 RINGVO:=$(filter plugins/setoid_ring/%, $(PLUGINSVO))
 NSATZVO:=$(filter plugins/nsatz/%, $(PLUGINSVO))
-FOURIERVO:=$(filter plugins/fourier/%, $(PLUGINSVO))
 FUNINDVO:=$(filter plugins/funind/%, $(PLUGINSVO))
 BTAUTOVO:=$(filter plugins/btauto/%, $(PLUGINSVO))
 RTAUTOVO:=$(filter plugins/rtauto/%, $(PLUGINSVO))
@@ -188,7 +187,6 @@ micromega: $(MICROMEGAVO) $(MICROMEGACMO) $(CSDPCERT)
 setoid_ring: $(RINGVO) $(RINGCMO)
 nsatz: $(NSATZVO) $(NSATZCMO)
 extraction: $(EXTRACTIONCMO) $(EXTRACTIONVO)
-fourier: $(FOURIERVO) $(FOURIERCMO)
 funind: $(FUNINDCMO) $(FUNINDVO)
 cc: $(CCVO) $(CCCMO)
 rtauto: $(RTAUTOVO) $(RTAUTOCMO)
@@ -196,7 +194,7 @@ btauto: $(BTAUTOVO) $(BTAUTOCMO)
 ltac: $(LTACVO) $(LTACCMO)
 
 .PHONY: omega micromega setoid_ring nsatz extraction
-.PHONY: fourier funind cc rtauto btauto ltac
+.PHONY: funind cc rtauto btauto ltac
 
 # For emacs:
 # Local Variables:
