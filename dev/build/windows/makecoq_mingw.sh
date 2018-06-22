@@ -1128,14 +1128,12 @@ function copy_coq_license {
     install -D doc/LICENSE                    "$PREFIXCOQ/license_readme/coq/LicenseDoc.txt"
     install -D LICENSE                        "$PREFIXCOQ/license_readme/coq/License.txt"
     install -D plugins/micromega/LICENSE.sos  "$PREFIXCOQ/license_readme/coq/LicenseMicromega.txt"
-    install -D README                         "$PREFIXCOQ/license_readme/coq/ReadMe.txt" || true
-    install -D README.md                      "$PREFIXCOQ/license_readme/coq/ReadMe.md" || true
-    install -D README.win                     "$PREFIXCOQ/license_readme/coq/ReadMeWindows.txt" || true
-    install -D README.doc                     "$PREFIXCOQ/license_readme/coq/ReadMeDoc.txt" || true
+    # FIXME: this is not the micromega license
+    # It only applies to code that was copied into one single file!
+    install -D README.md                      "$PREFIXCOQ/license_readme/coq/ReadMe.md"
     install -D CHANGES                        "$PREFIXCOQ/license_readme/coq/Changes.txt"
     install -D INSTALL                        "$PREFIXCOQ/license_readme/coq/Install.txt"
-    install -D INSTALL.doc                    "$PREFIXCOQ/license_readme/coq/InstallDoc.txt"
-    install -D INSTALL.ide                    "$PREFIXCOQ/license_readme/coq/InstallIde.txt"
+    install -D doc/README.md                  "$PREFIXCOQ/license_readme/coq/ReadMeDoc.md"
   fi
 }
 
