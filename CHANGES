@@ -38,6 +38,8 @@ Tactics
   without adding new ones. Preexisting tactic `constr_eq_nounivs` can
   still be used if you really want to ignore universe constraints.
 
+- Tactics and tactic notations now understand the `deprecated` attribute.
+
 Tools
 
 - Coq_makefile lets one override or extend the following variables from

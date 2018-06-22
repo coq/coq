@@ -1430,6 +1430,12 @@ the following attributes names are recognized:
     Takes as value the optional attributes ``since`` and ``note``;
     both have a string value.
 
+    This attribute can trigger the following warnings:
+
+    .. warn:: Tactic @qualid is deprecated since @string. @string.
+
+    .. warn:: Tactic Notation @qualid is deprecated since @string. @string.
+
 Here are a few examples:
 
 .. coqtop:: all reset
@@ -1440,7 +1446,7 @@ Here are a few examples:
           exact O.
         Defined.
 
-        #[deprecated(since="8.9.0", note="use idtac instead")]
+        #[deprecated(since="8.9.0", note="Use idtac instead.")]
         Ltac foo := idtac.
 
         Goal True.
