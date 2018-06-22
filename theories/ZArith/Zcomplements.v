@@ -75,7 +75,8 @@ Proof.
   - rewrite Z.abs_neq, Z.opp_involutive; auto with zarith; intros.
     destruct (H (Z.abs m)); auto with zarith.
     destruct (Zabs_dec m) as [-> | ->]; trivial.
-Admitted.
+    apply Z.opp_le_mono; rewrite Z.opp_involutive; auto.
+Qed.
 
 Theorem Z_lt_abs_induction :
   forall P:Z -> Prop,
@@ -95,7 +96,8 @@ Proof.
   - rewrite Z.abs_neq, Z.opp_involutive; auto with zarith; intros.
     destruct (H (Z.abs m)); auto with zarith.
     destruct (Zabs_dec m) as [-> | ->]; trivial.
-Admitted.
+    apply Z.opp_le_mono; rewrite Z.opp_involutive; auto.
+Qed.
 
 (** To do case analysis over the sign of [z] *)
 
