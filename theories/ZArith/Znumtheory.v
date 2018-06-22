@@ -140,13 +140,15 @@ Proof.
  intros Ha H.
  rewrite (Z.div_mod b a) at 1; auto with zarith.
  rewrite Zdivide_mod; auto with zarith.
-Admitted.
+ contradict Ha; rewrite Ha; discriminate.
+Qed.
 
 Theorem Zdivide_Zdiv_eq_2 a b c :
  0 < a -> (a | b) -> (c * b) / a = c * (b / a).
 Proof.
- intros. apply Z.divide_div_mul_exact; auto with zarith.
-Admitted.
+ intros Ha Hb; apply Z.divide_div_mul_exact; auto with zarith.
+ contradict Ha; rewrite Ha; discriminate.
+Qed.
 
 Theorem Zdivide_le: forall a b : Z,
  0 <= a -> 0 < b -> (a | b) ->  a <= b.
@@ -158,46 +160,48 @@ Theorem Zdivide_Zdiv_lt_pos a b :
  1 < a -> 0 < b -> (a | b) ->  0 < b / a < b .
 Proof.
   intros H1 H2 H3; split.
-  apply Z.mul_pos_cancel_l with a; auto with zarith.
-  admit.
-  (*
-  rewrite <- Zdivide_Zdiv_eq; auto with zarith.
-  now apply Z.div_lt.
-  *)
-Admitted.
+  - apply Z.mul_pos_cancel_l with a; auto with zarith.
+    + apply Z.lt_trans with (2 := H1); auto with zarith.
+    + rewrite <- Zdivide_Zdiv_eq; auto with zarith.
+      apply Z.lt_trans with (2 := H1); auto with zarith.
+  - now apply Z.div_lt.
+Qed.
 
 Lemma Zmod_div_mod n m a:
  0 < n -> 0 < m -> (n | m) -> a mod n = (a mod m) mod n.
 Proof.
   intros H1 H2 (p,Hp).
   rewrite (Z.div_mod a m) at 1; auto with zarith.
-  rewrite Hp at 1.
-  rewrite Z.mul_shuffle0, Z.add_comm, Z.mod_add; auto with zarith.
-Admitted.
+  - rewrite Hp at 1.
+    rewrite Z.mul_shuffle0, Z.add_comm, Z.mod_add; auto with zarith.
+    contradict H1; rewrite H1; discriminate.
+  - contradict H2; rewrite H2; discriminate.
+Qed.
 
 Lemma Zmod_divide_minus a b c:
  0 < b -> a mod b = c -> (b | a - c).
-Admitted.
-(*
 Proof.
   intros H H1. apply Z.mod_divide; auto with zarith.
-  rewrite Zminus_mod; auto with zarith.
-  rewrite H1. rewrite <- (Z.mod_small c b) at 1.
-  rewrite Z.sub_diag, Z.mod_0_l; auto with zarith.
-  subst. now apply Z.mod_pos_bound.
+  - contradict H; rewrite H; discriminate.
+  - rewrite Zminus_mod; auto with zarith.
+    rewrite H1; rewrite <- (Z.mod_small c b) at 1.
+    + rewrite Z.sub_diag, Z.mod_0_l; auto with zarith.
+      contradict H; rewrite H; discriminate.
+    + rewrite <- H1; now apply Z.mod_pos_bound.
 Qed.
-*)
 
 Lemma Zdivide_mod_minus a b c:
  0 <= c < b -> (b | a - c) -> a mod b = c.
 Proof.
   intros (H1, H2) H3.
-  assert (0 < b) by Z.order.
+  assert (H : 0 < b) by Z.order.
+  assert (HH : b <> 0) by (contradict H; rewrite H; discriminate).
   replace a with ((a - c) + c); auto with zarith.
-  rewrite Z.add_mod; auto with zarith.
-  rewrite (Zdivide_mod (a-c) b); try rewrite Z.add_0_l; auto with zarith.
-  rewrite Z.mod_mod; try apply Zmod_small; auto with zarith.
-Admitted.
+  - rewrite Z.add_mod; auto with zarith.
+    rewrite (Zdivide_mod (a-c) b); try rewrite Z.add_0_l; auto with zarith.
+    rewrite Z.mod_mod; try apply Zmod_small; auto with zarith.
+  - ring.
+Qed.
 
 (** * Greatest common divisor (gcd). *)
 
@@ -324,8 +328,9 @@ Section extended_euclid_algorithm.
     set (q := u3 / x) in *.
     assert (Hq : 0 <= u3 - q * x < x).
     replace (u3 - q * x) with (u3 mod x).
-    apply Z_mod_lt; admit.
-    assert (xpos : x > 0). admit.
+    apply Z_mod_lt.
+    apply Z.lt_gt, Z.le_neq; auto.
+    assert (xpos : x > 0) by (apply Z.lt_gt, Z.le_neq; auto).
     generalize (Z_div_mod_eq u3 x xpos).
     unfold q.
     intro eq; pattern u3 at 2; rewrite eq; ring.
@@ -338,7 +343,7 @@ Section extended_euclid_algorithm.
     intros; apply H3.
     apply Zis_gcd_for_euclid with q; assumption.
     assumption.
-  Admitted.
+  Qed.
 
   (** We get Euclid's algorithm by applying [euclid_rec] on
       [1,0,a,0,1,b] when [b>=0] and [1,0,a,0,-1,-b] when [b<0]. *)
@@ -354,7 +359,8 @@ Section extended_euclid_algorithm.
       apply euclid_rec with
 	(u1 := 1) (u2 := 0) (u3 := a) (v1 := 0) (v2 := -1) (v3 := - b);
 	auto with zarith; try ring.
-  Admitted.
+  now apply Z.opp_nonneg_nonpos, Z.lt_le_incl, Z.gt_lt.
+  Qed.
 
 End extended_euclid_algorithm.
 
@@ -457,63 +463,62 @@ Lemma rel_prime_cross_prod :
     rel_prime a b ->
     rel_prime c d -> b > 0 -> d > 0 -> a * d = b * c -> a = c /\ b = d.
 Proof.
-  intros a b c d; intros.
+  intros a b c d; intros H H0 H1 H2 H3.
   elim (Z.divide_antisym b d).
-  split; auto with zarith.
-  rewrite H4 in H3.
-  rewrite Z.mul_comm in H3.
-  apply Z.mul_reg_l with d; auto with zarith.
-  intros; admit.
-Admitted.
-(*
-  apply Gauss with a.
-  rewrite H3.
-  auto with zarith.
-  red; auto with zarith.
-  apply Gauss with c.
-  rewrite Z.mul_comm.
-  rewrite <- H3.
-  auto with zarith.
-  red; auto with zarith.
+  - split; auto with zarith.
+    rewrite H4 in H3.
+    rewrite Z.mul_comm in H3.
+    apply Z.mul_reg_l with d; auto with zarith.
+    contradict H2; rewrite H2; discriminate.
+  - intros H4; contradict H1; rewrite H4.
+    apply Zgt_asym, Zlt_gt, Z.opp_lt_mono.
+    now rewrite Z.opp_involutive; apply Zgt_lt.
+  - apply Gauss with a.
+    + rewrite H3; auto with zarith.
+    + now apply Zis_gcd_sym.
+  - apply Gauss with c.
+    + rewrite Z.mul_comm.
+      rewrite <- H3.
+      auto with zarith.
+    + now apply Zis_gcd_sym.
 Qed.
-*)
 
 (** After factorization by a gcd, the original numbers are relatively prime. *)
 
 Lemma Zis_gcd_rel_prime :
   forall a b g:Z,
     b > 0 -> g >= 0 -> Zis_gcd a b g -> rel_prime (a / g) (b / g).
-Admitted.
-(*
 Proof.
-  intros a b g; intros.
-  assert (g <> 0).
-  intro.
-  elim H1; intros.
-  elim H4; intros.
-  rewrite H2 in H6; subst b; omega.
+  intros a b g; intros H H0 H1.
+  assert (H2 : g <> 0) by
+    (intro;
+    elim H1; intros;
+    elim H4; intros;
+    rewrite H2 in H6; subst b;
+    contradict H; rewrite Z.mul_0_r; discriminate).
+  assert (H3 : g > 0) by
+    (apply Z.lt_gt, Z.le_neq; split; try apply Z.ge_le; auto).
   unfold rel_prime.
-  destruct H1.
-  destruct H1 as (a',H1).
-  destruct H3 as (b',H3).
+  destruct H1 as [Ha  Hb Hab].
+  destruct Ha as [a' Ha'].
+  destruct Hb as [b' Hb'].
   replace (a/g) with a';
-    [|rewrite H1; rewrite Z_div_mult; auto with zarith].
+    [|rewrite Ha'; rewrite Z_div_mult; auto with zarith].
   replace (b/g) with b';
-    [|rewrite H3; rewrite Z_div_mult; auto with zarith].
+      [|rewrite Hb'; rewrite Z_div_mult; auto with zarith].
   constructor.
-  exists a'; auto with zarith.
-  exists b'; auto with zarith.
-  intros x (xa,H5) (xb,H6).
-  destruct (H4 (x*g)) as (x',Hx').
-  exists xa; rewrite Z.mul_assoc; rewrite <- H5; auto.
-  exists xb; rewrite Z.mul_assoc; rewrite <- H6; auto.
-  replace g with (1*g) in Hx'; auto with zarith.
-  do 2 rewrite Z.mul_assoc in Hx'.
-  apply Z.mul_reg_r in Hx'; trivial.
-  rewrite Z.mul_1_r in Hx'.
-  exists x'; auto with zarith.
+  - exists a'; rewrite ?Z.mul_1_r; auto with zarith.
+  - exists b'; rewrite ?Z.mul_1_r; auto with zarith.
+  - intros x (xa,H5) (xb,H6).
+    destruct (Hab (x*g)) as (x',Hx').
+    exists xa; rewrite Z.mul_assoc; rewrite <- H5; auto.
+    exists xb; rewrite Z.mul_assoc; rewrite <- H6; auto.
+    replace g with (1*g) in Hx'; auto with zarith.
+    do 2 rewrite Z.mul_assoc in Hx'.
+    apply Z.mul_reg_r in Hx'; trivial.
+    rewrite Z.mul_1_r in Hx'.
+    exists x'; auto with zarith.
 Qed.
-*)
 
 Theorem rel_prime_sym: forall a b, rel_prime a b -> rel_prime b a.
 Proof.
@@ -536,20 +541,18 @@ Proof.
   intros n; red; apply Zis_gcd_intro; auto.
   exists 1; auto with zarith.
   exists n; auto with zarith.
-Admitted.
+  now rewrite Z.mul_1_r.
+Qed.
 
 Theorem not_rel_prime_0: forall n, 1 < n -> ~ rel_prime 0 n.
-Admitted.
-(*
 Proof.
   intros n H H1; absurd (n = 1 \/ n = -1).
-  intros [H2 | H2]; subst; contradict H; auto with zarith.
-  case (Zis_gcd_unique  0 n n 1); auto.
-  apply Zis_gcd_intro; auto.
-  exists 0; auto with zarith.
-  exists 1; auto with zarith.
+  - intros [H2 | H2]; subst; discriminate.
+  - case (Zis_gcd_unique  0 n n 1); auto.
+    apply Zis_gcd_intro; auto.
+    exists 0; auto with zarith.
+    exists 1; auto with zarith.
 Qed.
-*)
 
 Theorem rel_prime_mod: forall p q, 0 < q ->
  rel_prime p q -> rel_prime (p mod q) q.
@@ -562,15 +565,17 @@ Proof.
   apply Bezout_intro with q1  (r1 + q1 * (p / q)).
   rewrite <- H2.
   pattern p at 3; rewrite (Z_div_mod_eq p q); try ring; auto with zarith.
-Admitted.
+  now apply Zlt_gt.
+Qed.
 
 Theorem rel_prime_mod_rev: forall p q, 0 < q ->
  rel_prime (p mod q) q -> rel_prime p q.
 Proof.
   intros p q H H0.
-  rewrite (Z_div_mod_eq p q); auto with zarith; red.
-  apply Zis_gcd_sym; apply Zis_gcd_for_euclid2; auto with zarith.
-Admitted.
+  rewrite (Z_div_mod_eq p q); auto with zarith.
+  - apply Zis_gcd_sym; apply Zis_gcd_for_euclid2; auto with zarith.
+  - now apply Zlt_gt.
+Qed.
 
 Theorem Zrel_prime_neq_mod_0: forall a b, 1 < b -> rel_prime a b -> a mod b <> 0.
 Proof.
@@ -578,7 +583,8 @@ Proof.
   case (not_rel_prime_0 _ H).
   rewrite <- H2.
   apply rel_prime_mod; auto with zarith.
-Admitted.
+  apply Z.lt_trans with (2 := H); red; auto.
+Qed.
 
 (** * Primality *)
 
@@ -592,33 +598,62 @@ Lemma prime_divisors :
   forall p:Z,
     prime p -> forall a:Z, (a | p) -> a = -1 \/ a = 1 \/ a = p \/ a = - p.
 Proof.
-  destruct 1; intros.
+  intros p [H H0] a H1.
   assert
     (a = - p \/ - p < a < -1 \/ a = -1 \/ a = 0 \/ a = 1 \/ 1 < a < p \/ a = p).
   { assert (Z.abs a <= Z.abs p) as H2.
-      apply Zdivide_bounds; [ assumption | admit ].
+      apply Zdivide_bounds; [ assumption |
+                              contradict H; rewrite H; discriminate].
     revert H2.
     pattern (Z.abs a); apply Zabs_ind; pattern (Z.abs p); apply Zabs_ind;
-    intros; admit. }
+    intros H2 H3 H4.
+    - destruct (Zle_lt_or_eq _ _ H4) as [H5 | H5]; try intuition.
+      destruct (Zle_lt_or_eq _ _ (Z.ge_le _ _ H3)) as [H6 | H6]; try intuition.
+      destruct (Zle_lt_or_eq _ _ (Zlt_le_succ _ _ H6)) as [H7 | H7]; intuition.
+    - contradict H2; apply Zlt_not_le; apply Zlt_trans with (2 := H); red; auto.
+    - destruct (Zle_lt_or_eq _ _ H4) as [H5 | H5].
+      + destruct (Zle_lt_or_eq _ _  H3) as [H6 | H6]; try intuition.
+        assert (H7 : a <= Zpred 0) by (apply Z.lt_le_pred; auto).
+        destruct (Zle_lt_or_eq _ _ H7) as [H8 | H8]; intuition.
+        assert (- p < a < -1); try intuition.
+        now apply Z.opp_lt_mono; rewrite Z.opp_involutive.
+      + now left; rewrite <- H5, Z.opp_involutive.
+    - contradict H2.
+      apply Zlt_not_le; apply Z.lt_trans with (2 := H); red; auto.
+    }
   intuition idtac.
   (* -p < a < -1 *)
-  - absurd (rel_prime (- a) p); intuition.
-    inversion H2.
-    assert (- a | - a) by auto with zarith.
-    assert (- a | p) by auto with zarith.
-    apply H7, Z.divide_1_r in H8; intuition.
+  - absurd (rel_prime (- a) p).
+    + intros [H1p H2p H3p].
+      assert (- a | - a) by auto with zarith.
+      assert (- a | p) by auto with zarith.
+      apply H3p, Z.divide_1_r in H5; auto with zarith.
+      destruct H5.
+      * contradict H4; rewrite <- (Z.opp_involutive a), H5 .
+        apply Z.lt_irrefl.
+      * contradict H4; rewrite <- (Z.opp_involutive a), H5 .
+        discriminate.
+    + apply H0; split.
+      * now apply Z.opp_le_mono; rewrite Z.opp_involutive; apply Z.lt_le_incl.
+      * now apply Z.opp_lt_mono; rewrite Z.opp_involutive.
   (* a = 0 *)
-    admit.
-    admit.
-    admit.
-  - inversion H1. subst a; admit.
+  - contradict H.
+    replace p with 0; try discriminate.
+    now apply sym_equal, Z.divide_0_l; rewrite <-H2.
   (* 1 < a < p *)
-  - absurd (rel_prime a p); intuition.
-    inversion H2.
-    assert (a | a) by auto with zarith.
-    assert (a | p) by auto with zarith.
-    apply H7, Z.divide_1_r in H8; intuition.
-Admitted.
+  - absurd (rel_prime a p).
+    + intros [H1p H2p H3p].
+      assert (a | a) by auto with zarith.
+      assert (a | p) by auto with zarith.
+      apply H3p, Z.divide_1_r in H5; auto with zarith.
+      destruct H5.
+      * contradict H3; rewrite <- (Z.opp_involutive a), H5 .
+        apply Z.lt_irrefl.
+      * contradict H3; rewrite <- (Z.opp_involutive a), H5 .
+        discriminate.
+    + apply H0; split; auto.
+      now apply Z.lt_le_incl.
+Qed.
 
 (** A prime number is relatively prime with any number it does not divide *)
 
@@ -641,11 +676,16 @@ Proof.
   intros a p Hp [H1 H2].
   apply rel_prime_sym; apply prime_rel_prime; auto.
   intros [q Hq]; subst a.
-  case (Z.le_gt_cases q 0); intros Hl.
-  absurd (q * p <= 0 * p); auto with zarith.
-  absurd (1 * p <= q * p); auto with zarith.
-Admitted.
-
+  destruct Hp as [H3 H4].
+  contradict H2; apply Zle_not_lt.
+  rewrite <- (Z.mul_1_l p) at 1.
+  apply Zmult_le_compat_r.
+  - apply (Zlt_le_succ 0).
+    apply Zmult_lt_0_reg_r with p.
+    + apply Z.le_succ_l, Z.lt_le_incl; auto.
+    + now apply Z.le_succ_l.
+  - apply Z.lt_le_incl, Z.le_succ_l, Z.lt_le_incl; auto.
+Qed.
 
 (** If a prime [p] divides [ab] then it divides either [a] or [b] *)
 
@@ -659,40 +699,46 @@ Qed.
 
 Lemma not_prime_0: ~ prime 0.
 Proof.
-  intros H1; case (prime_divisors _ H1 2); auto with zarith.
-Admitted.
+  intros H1; case (prime_divisors _ H1 2); auto with zarith; intuition; discriminate.
+Qed.
 
 Lemma not_prime_1: ~ prime 1.
 Proof.
   intros H1; absurd (1 < 1); auto with zarith.
-  inversion H1; auto.
-Admitted.
+  - inversion H1; discriminate.
+  - inversion H1; discriminate.
+Qed.
 
 Lemma prime_2: prime 2.
 Proof.
-  apply prime_intro; auto with zarith.
-  admit.
-  intros n (H,H'); Z.le_elim H; auto with zarith.
-  - contradict H'; auto with zarith. admit.
-  - subst n. constructor; auto with zarith.
-Admitted.
+  apply prime_intro.
+  - red; auto.
+  - intros n (H,H'); Z.le_elim H; auto with zarith.
+    + contradict H'; auto with zarith.
+      now apply Zle_not_lt, (Zlt_le_succ 1).
+    + subst n. constructor; auto with zarith.
+Qed.
 
 Theorem prime_3: prime 3.
 Proof.
-  apply prime_intro; auto with zarith. admit.
-  intros n (H,H'); Z.le_elim H; auto with zarith.
-  - replace n with 2 by admit.
-    constructor; auto with zarith.
-    intros x (q,Hq) (q',Hq').
-    exists (q' - q). ring_simplify. now rewrite <- Hq, <- Hq'.
-  - replace n with 1 by trivial.
-    constructor; auto with zarith.
-Admitted.
+  apply prime_intro; auto with zarith.
+  - red; auto.
+  - intros n (H,H'); Z.le_elim H; auto with zarith.
+    + replace n with 2.
+      * constructor; auto with zarith.
+        intros x (q,Hq) (q',Hq').
+        exists (q' - q). ring_simplify. now rewrite <- Hq, <- Hq'.
+      * apply Z.le_antisymm.
+        ++ now apply (Zlt_le_succ 1).
+        ++ now apply (Z.lt_le_pred _ 3).
+     + replace n with 1 by trivial.
+       constructor; auto with zarith.
+Qed.
 
 Theorem prime_ge_2 p : prime p ->  2 <= p.
 Proof.
-  intros (Hp,_); auto with zarith.
-Admitted.
+  now intros (Hp,_); apply (Zlt_le_succ 1).
+Qed.
 
 Definition prime' p := 1<p /\ (forall n, 1<n<p -> ~ (n|p)).
 
@@ -712,18 +758,25 @@ Proof.
     assert (Hx := Z.abs_nonneg x).
     set (y:=Z.abs x) in *; clearbody y; clear x; rename y into x.
     destruct (Z_0_1_more x Hx) as [->|[->|Hx']].
-    + exfalso. apply Z.divide_0_l in Hxn. admit.
+    + exfalso. apply Z.divide_0_l in Hxn.
+      absurd (1 <= n).
+      * rewrite Hxn; red; auto.
+      * intuition.
     + now exists 1.
     + elim (H x); auto.
       split; trivial.
-      apply Z.le_lt_trans with n; auto with zarith.
-      apply Z.divide_pos_le; auto with zarith. admit. admit.
+      apply Z.le_lt_trans with n; try intuition.
+      apply Z.divide_pos_le; auto with zarith.
+      apply Z.lt_le_trans with (2 := H0); red; auto.
   - (* prime' -> prime *)
     constructor; trivial. intros n Hn Hnp.
-    case (Zis_gcd_unique n p n 1); auto with zarith.
-    constructor; auto with zarith.
-    apply H; auto with zarith.
-Admitted.
+    case (Zis_gcd_unique n p n 1).
+    + constructor; auto with zarith.
+    + apply H; auto with zarith.
+      now intuition; apply Z.lt_le_incl.
+    + intros H1; intuition; subst n; discriminate.
+    + intros H1; intuition; subst n; discriminate.
+Qed.
 
 Theorem square_not_prime: forall a, ~ prime (a * a).
 Proof.
@@ -735,9 +788,11 @@ Proof.
   assert (H' : 1 < a) by now apply (Z.square_lt_simpl_nonneg 1).
   apply (Ha' a).
   + split; trivial.
-    rewrite <- (Z.mul_1_l a) at 1. apply Z.mul_lt_mono_pos_r; admit.
+    rewrite <- (Z.mul_1_l a) at 1.
+    apply Z.mul_lt_mono_pos_r; auto.
+    apply Z.lt_trans with (2 := H'); red; auto.
   + exists a; auto.
-Admitted.
+Qed.
 
 Theorem prime_div_prime: forall p q,
  prime p -> prime q -> (p | q) -> p = q.
@@ -746,11 +801,12 @@ Proof.
   assert (Hp: 0 < p); try apply Z.lt_le_trans with 2; try apply prime_ge_2; auto with zarith.
   assert (Hq: 0 < q); try apply Z.lt_le_trans with 2; try apply prime_ge_2; auto with zarith.
   case prime_divisors with (2 := H2); auto.
-  intros H4; contradict Hp; subst; auto with zarith. admit.
-  intros [H4| [H4 | H4]]; subst; auto.
-  contradict H; auto; apply not_prime_1.
-  contradict Hp; auto with zarith.
-Admitted.
+  - intros H4; contradict Hp; subst; discriminate.
+  - intros [H4| [H4 | H4]]; subst; auto.
+    + contradict H; auto; apply not_prime_1.
+    + contradict Hp; apply Zle_not_lt, (Z.opp_le_mono _ 0).
+      now rewrite Z.opp_involutive; apply Z.lt_le_incl.
+Qed.
 
 (** we now prove that [Z.gcd] is indeed a gcd in
    the sense of [Zis_gcd]. *)
@@ -784,9 +840,12 @@ Proof.
   case (Zis_gcd_uniqueness_apart_sign a b c (Z.gcd a b)); auto.
   apply Zgcd_is_gcd; auto.
   Z.le_elim H1.
-  - generalize (Z.gcd_nonneg a b); auto with zarith. admit.
+  - generalize (Z.gcd_nonneg a b); auto with zarith.
+    intros H3 H4; contradict H3.
+    rewrite <- (Z.opp_involutive (Z.gcd a b)), <- H4.
+    now apply Zlt_not_le, Z.opp_lt_mono; rewrite Z.opp_involutive.
   - subst. now case (Z.gcd a b).
-Admitted.
+Qed.
 
 Notation Zgcd_inv_0_l := Z.gcd_eq_0_l (only parsing).
 Notation Zgcd_inv_0_r := Z.gcd_eq_0_r (only parsing).
@@ -840,8 +899,9 @@ Proof.
   case (Zis_gcd_unique a b (Z.gcd a b) 1); auto.
   apply Zgcd_is_gcd.
   intros H2; absurd (0 <= Z.gcd a b); auto with zarith.
-  generalize (Z.gcd_nonneg a b); auto with zarith.
-Admitted.
+  - rewrite H2; red; auto.
+  - generalize (Z.gcd_nonneg a b); auto with zarith.
+Qed.
 
 Definition rel_prime_dec: forall a b,
  { rel_prime a b }+{ ~ rel_prime a b }.
@@ -851,8 +911,6 @@ Proof.
   right; contradict H1; apply <- Zgcd_1_rel_prime; auto.
 Defined.
 
-Axiom admit : forall P : Prop, P.
-
 Definition prime_dec_aux:
  forall p m,
   { forall n, 1 < n < m -> rel_prime n p } +
@@ -860,19 +918,25 @@ Definition prime_dec_aux:
 Proof.
   intros p m.
   case (Z_lt_dec 1 m); intros H1;
-   [ | left; intros; exfalso; apply admit ].
+   [ | left; intros; exfalso;
+       contradict H1; apply Z.lt_trans with n; intuition].
   pattern m; apply natlike_rec; auto with zarith.
-  left; intros; exfalso; apply admit.
-  intros x Hx IH; destruct IH as [F|E].
-  destruct (rel_prime_dec x p) as [Y|N].
-  left; intros n [HH1 HH2].
-  rewrite Z.lt_succ_r in HH2.
-  Z.le_elim HH2; subst; auto with zarith.
-  - case (Z_lt_dec 1 x); intros HH1.
-    * right; exists x; split; auto with zarith.
-    * left; intros n [HHH1 HHH2]; contradict HHH1; auto with zarith. apply admit.
-  - right; destruct E as (n,((H0,H2),H3)); exists n; auto with zarith.
-    - apply admit.
+  - left; intros; exfalso.
+    absurd (1 < 0); try discriminate.
+    apply Z.lt_trans with  n; intuition.
+  - intros x Hx IH; destruct IH as [F|E].
+    + destruct (rel_prime_dec x p) as [Y|N].
+      * left; intros n [HH1 HH2].
+        rewrite Z.lt_succ_r in HH2.
+        Z.le_elim HH2; subst; auto with zarith.
+      * case (Z_lt_dec 1 x); intros HH1.
+        -- right; exists x; split; auto with zarith.
+        -- left; intros n [HHH1 HHH2]; contradict HHH1; auto with zarith.
+           apply Zle_not_lt; apply Z.le_trans with x.
+           ++ now apply Zlt_succ_le.
+           ++ now apply Znot_gt_le; contradict HH1; apply Z.gt_lt.
+     + right; destruct E as (n,((H0,H2),H3)); exists n; auto with zarith.
+  - apply Z.le_trans with (2 := Z.lt_le_incl _ _ H1); discriminate.
 Defined.
 
 Definition prime_dec: forall p, { prime p }+{ ~ prime p }.
@@ -883,7 +947,8 @@ Proof.
       intros n (Hn1,Hn2). Z.le_elim Hn1; auto; subst n.
       constructor; auto with zarith.
     * right; intros H3; inversion_clear H3 as [Hp1 Hp2].
-      case H2; intros n [Hn1 Hn2]; case Hn2; auto with zarith. apply admit.
+      case H2; intros n [Hn1 Hn2]; case Hn2; auto with zarith.
+      now apply Hp2; intuition; apply Z.lt_le_incl.
   + right; intros H3; inversion_clear H3 as [Hp1 Hp2]; case H1; auto.
 Defined.
 
@@ -898,10 +963,15 @@ Proof.
     subst n; constructor; auto with zarith.
   - case H1; intros n (Hn1,Hn2).
     destruct (Z_0_1_more _ (Z.gcd_nonneg n p)) as [H|[H|H]].
-    + exfalso. apply Z.gcd_eq_0_l in H. admit.
+    + exfalso. apply Z.gcd_eq_0_l in H.
+      absurd (1 < n).
+      * rewrite H; discriminate.
+      * now intuition.
     + elim Hn2. red. rewrite <- H. apply Zgcd_is_gcd.
     + exists (Z.gcd n p); split; [ split; auto | apply Z.gcd_divide_r ].
       apply Z.le_lt_trans with n; auto with zarith.
-      apply Z.divide_pos_le; auto with zarith. admit.
-      apply Z.gcd_divide_l.
-Admitted.
+      * apply Z.divide_pos_le; auto with zarith.
+        -- apply Z.lt_trans with 1; intuition.
+        -- apply Z.gcd_divide_l.
+      * intuition.
+Qed.
