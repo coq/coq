@@ -217,6 +217,14 @@ val compare_cumulative_instances : Reduction.conv_pb -> Univ.Variance.t array ->
 val compare_constructor_instances : evar_map ->
   Univ.Instance.t -> Univ.Instance.t -> evar_map
 
+(** {6 Unification problems} *)
+type unification_pb = conv_pb * env * constr * constr
+
+(** [add_unification_pb ?tail pb sigma]
+    Add a unification problem [pb] to [sigma], if not already present.
+    Put it at the end of the list if [tail] is true, by default it is false. *)
+val add_unification_pb : ?tail:bool -> unification_pb -> evar_map -> evar_map
+
 (** {6 Removing hyps in evars'context}
 raise OccurHypInSimpleClause if the removal breaks dependencies *)
 
