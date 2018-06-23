@@ -15,7 +15,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 07651f61f86d91b22ff7056c6a8d86bc checker/cic.mli
+MD5 42fb0781dc5f7f2cbe3ca127f8249264 checker/cic.mli
 
 *)
 
@@ -225,7 +225,7 @@ let v_cst_def =
 
 let v_projbody =
   v_tuple "projection_body"
-    [|v_cst;Int;Int;v_constr|]
+    [|v_ind;Int;Int;v_constr|]
 
 let v_typing_flags =
   v_tuple "typing_flags" [|v_bool; v_bool; v_oracle|]
@@ -274,8 +274,10 @@ let v_one_ind = v_tuple "one_inductive_body"
     Any|]
 
 let v_finite = v_enum "recursivity_kind" 3
-let v_mind_record = Annot ("mind_record", 
-			   Opt (Opt (v_tuple "record" [| v_id; Array v_cst; Array v_projbody |])))
+
+let v_record_info =
+  v_sum "record_info" 2
+    [| [| Array (v_tuple "record" [| v_id; Array v_cst; Array v_projbody |]) |] |]
 
 let v_ind_pack_univs = 
   v_sum "abstract_inductive_universes" 0
@@ -283,7 +285,7 @@ let v_ind_pack_univs =
 
 let v_ind_pack = v_tuple "mutual_inductive_body"
   [|Array v_one_ind;
-    v_mind_record;
+    v_record_info;
     v_finite;
     Int;
     v_section_ctxt;

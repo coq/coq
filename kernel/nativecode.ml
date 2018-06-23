@@ -1965,6 +1965,7 @@ let compile_mind prefix ~interactive mb mind stack =
     in
     let constructors = Array.fold_left_i add_construct [] ob.mind_reloc_tbl in
     let add_proj j acc pb =
+      let () = assert (eq_ind ind pb.proj_ind) in
       let tbl = ob.mind_reloc_tbl in
       (* Building info *)
       let ci = { ci_ind = ind; ci_npar = nparams;
@@ -1985,12 +1986,14 @@ let compile_mind prefix ~interactive mb mind stack =
       let accu_br = MLapp (MLprimitive Mk_proj, [|get_proj_code i;accu|]) in
       let code = MLmatch(asw,MLlocal cf_uid,accu_br,[|[((ind,1),cargs)],MLlocal ci_uid|]) in
       let code = MLlet(cf_uid, MLapp (MLprimitive Force_cofix, [|MLlocal c_uid|]), code) in
-      let gn = Gproj ("", (pb.proj_ind, j), pb.proj_arg) in
+      let gn = Gproj ("", ind, pb.proj_arg) in
       Glet (gn, mkMLlam [|c_uid|] code) :: acc
     in
     let projs = match mb.mind_record with
-    | None | Some None -> []
-    | Some (Some (id, kns, pbs)) -> Array.fold_left_i add_proj [] pbs
+    | NotRecord | FakeRecord -> []
+    | PrimRecord info ->
+      let _, _, pbs = info.(i) in
+      Array.fold_left_i add_proj [] pbs
     in
     projs @ constructors @ gtype :: accu :: stack
   in
@@ -2052,7 +2055,7 @@ let compile_deps env sigma prefix ~interactive init t =
   | Construct (((mind,_),_),u) -> compile_mind_deps env prefix ~interactive init mind
   | Proj (p,c) ->
     let pb = lookup_projection p env in
-    let init = compile_mind_deps env prefix ~interactive init pb.proj_ind in
+    let init = compile_mind_deps env prefix ~interactive init (fst pb.proj_ind) in
     aux env lvl init c
   | Case (ci, p, c, ac) ->
       let mind = fst ci.ci_ind in

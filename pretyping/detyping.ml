@@ -690,8 +690,7 @@ and detype_r d flags avoid env sigma t =
 	  let c' = 
 	    try 
 	      let pb = Environ.lookup_projection p (snd env) in
-              (** FIXME: handle mutual records *)
-              let ind = (pb.Declarations.proj_ind, 0) in
+              let ind = pb.Declarations.proj_ind in
               let bodies = Inductiveops.legacy_match_projection (snd env) ind in
               let body = bodies.(pb.Declarations.proj_arg) in
 	      let ty = Retyping.get_type_of (snd env) sigma c in

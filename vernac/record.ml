@@ -292,8 +292,8 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
     if !primitive_flag then 
       let is_primitive = 
 	match mib.mind_record with
-	| Some (Some _) -> true
-	| Some None | None -> false
+        | PrimRecord _ -> true
+        | FakeRecord | NotRecord -> false
       in
 	if not is_primitive then 
 	  warn_non_primitive_record (env,indsp);
@@ -403,7 +403,7 @@ let declare_structure finite ubinders univs id idbuild paramimpls params arity t
   in
   let mie =
     { mind_entry_params = List.map degenerate_decl params;
-      mind_entry_record = Some (if !primitive_flag then Some binder_name else None);
+      mind_entry_record = Some (if !primitive_flag then Some [|binder_name|] else None);
       mind_entry_finite = finite;
       mind_entry_inds = [mie_ind];
       mind_entry_private = None;

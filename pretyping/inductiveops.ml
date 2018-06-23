@@ -277,8 +277,8 @@ let projection_nparams p = projection_nparams_env (Global.env ()) p
 
 let has_dependent_elim mib =
   match mib.mind_record with
-  | Some (Some _) -> mib.mind_finite == BiFinite
-  | _ -> true
+  | PrimRecord _ -> mib.mind_finite == BiFinite
+  | NotRecord | FakeRecord -> true
 
 (* Annotation for cases *)
 let make_case_info env ind style =
@@ -346,8 +346,10 @@ let get_constructors env (ind,params) =
 let get_projections env (ind,params) =
   let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
     match mib.mind_record with
-    | Some (Some (id, projs, pbs)) -> Some projs
-    | _ -> None
+    | PrimRecord infos ->
+      let (_, projs, _) = infos.(snd (fst ind)) in
+      Some projs
+    | NotRecord | FakeRecord -> None
 
 let make_case_or_project env sigma indf ci pred c branches =
   let open EConstr in
@@ -460,7 +462,7 @@ let build_branch_type env sigma dep p cs =
     build an expansion function.
     The term built is expecting to be substituted first by
     a substitution of the form [params, x : ind params] *)
-let compute_projections env (kn, _ as ind) =
+let compute_projections env (kn, i as ind) =
   let open Term in
   let mib = Environ.lookup_mind kn env in
   let indu = match mib.mind_universes with
@@ -470,9 +472,9 @@ let compute_projections env (kn, _ as ind) =
     mkIndU (ind, make_abstract_instance (ACumulativityInfo.univ_context ctx))
   in
   let x = match mib.mind_record with
-  | None | Some None ->
+  | NotRecord | FakeRecord ->
     anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
-  | Some (Some (id, _, _)) -> Name id
+  | PrimRecord info-> Name (pi1 (info.(i)))
   in
   (** FIXME: handle mutual records *)
   let pkt = mib.mind_packets.(0) in

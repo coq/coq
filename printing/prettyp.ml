@@ -246,13 +246,13 @@ let print_type_in_type ref =
   else []
 
 let print_primitive_record recflag mipv = function
-  | Some (Some (_, ps,_)) ->
+  | PrimRecord _ ->
     let eta = match recflag with
     | CoFinite | Finite -> str" without eta conversion"
     | BiFinite -> str " with eta conversion"
     in
     [Id.print mipv.(0).mind_typename ++ str" has primitive projections" ++ eta ++ str"."]
-  | _ -> []
+  | FakeRecord | NotRecord -> []
 
 let print_primitive ref =
   match ref with 

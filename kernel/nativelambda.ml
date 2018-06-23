@@ -520,8 +520,7 @@ let rec lambda_of_constr env sigma c =
 
   | Proj (p, c) ->
     let pb = lookup_projection p !global_env in
-    (** FIXME: handle mutual records *)
-    let ind = (pb.proj_ind, 0) in
+    let ind = pb.proj_ind in
     let prefix = get_mind_prefix !global_env (fst ind) in
     mkLapp (Lproj (prefix, ind, pb.proj_arg)) [|lambda_of_constr env sigma c|]
 

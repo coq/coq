@@ -84,7 +84,7 @@ let subst_const_def sub def = match def with
   | OpaqueDef o -> OpaqueDef (Opaqueproof.subst_opaque sub o)
 
 let subst_const_proj sub pb =
-  { pb with proj_ind = subst_mind sub pb.proj_ind;
+  { pb with proj_ind = subst_ind sub pb.proj_ind;
     proj_type = subst_mps sub pb.proj_type;
   }
 
@@ -208,14 +208,21 @@ let subst_mind_packet sub mbp =
     mind_nb_args = mbp.mind_nb_args;
     mind_reloc_tbl = mbp.mind_reloc_tbl }
 
-let subst_mind_record sub (id, ps, pb as r) =
-  let ps' = Array.Smart.map (subst_constant sub) ps in
-  let pb' = Array.Smart.map (subst_const_proj sub) pb in
-    if ps' == ps && pb' == pb then r
+let subst_mind_record sub r = match r with
+| NotRecord -> NotRecord
+| FakeRecord -> FakeRecord
+| PrimRecord infos ->
+  let map (id, ps, pb as info) =
+    let ps' = Array.Smart.map (subst_constant sub) ps in
+    let pb' = Array.Smart.map (subst_const_proj sub) pb in
+    if ps' == ps && pb' == pb then info
     else (id, ps', pb')
+  in
+  let infos' = Array.Smart.map map infos in
+  if infos' == infos then r else PrimRecord infos'
 
 let subst_mind_body sub mib =
-  { mind_record = Option.Smart.map (Option.Smart.map (subst_mind_record sub)) mib.mind_record ;
+  { mind_record = subst_mind_record sub mib.mind_record ;
     mind_finite = mib.mind_finite ;
     mind_ntypes = mib.mind_ntypes ;
     mind_hyps = (match mib.mind_hyps with [] -> [] | _ -> assert false);

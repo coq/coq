@@ -488,7 +488,7 @@ and extract_really_ind env kn mib =
 	    Int.equal (List.length l) 1 && not (type_mem_kn kn (List.hd l))
 	then raise (I Singleton);
 	if List.is_empty l then raise (I Standard);
-	if Option.is_empty mib.mind_record then raise (I Standard);
+        if mib.mind_record == Declarations.NotRecord then raise (I Standard);
 	(* Now we're sure it's a record. *)
 	(* First, we find its field names. *)
 	let rec names_prod t = match Constr.kind t with
@@ -1069,8 +1069,7 @@ let extract_constant env kn cb =
               | false -> mk_typ (get_body c)
               | true ->
                 let pb = lookup_projection (Projection.make kn false) env in
-                (** FIXME: handle mutual records *)
-                let ind = (pb.Declarations.proj_ind, 0) in
+                let ind = pb.Declarations.proj_ind in
                 let bodies = Inductiveops.legacy_match_projection env ind in
                 let body = bodies.(pb.Declarations.proj_arg) in
                 mk_typ (EConstr.of_constr body))
@@ -1086,8 +1085,7 @@ let extract_constant env kn cb =
               | false -> mk_def (get_body c)
               | true ->
                 let pb = lookup_projection (Projection.make kn false) env in
-                (** FIXME: handle mutual records *)
-                let ind = (pb.Declarations.proj_ind, 0) in
+                let ind = pb.Declarations.proj_ind in
                 let bodies = Inductiveops.legacy_match_projection env ind in
                 let body = bodies.(pb.Declarations.proj_arg) in
                 mk_def (EConstr.of_constr body))

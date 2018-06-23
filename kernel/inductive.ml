@@ -293,8 +293,8 @@ let elim_sorts (_,mip) = mip.mind_kelim
 let is_private (mib,_) = mib.mind_private = Some true
 let is_primitive_record (mib,_) = 
   match mib.mind_record with
-  | Some (Some _) -> true
-  | _ -> false
+  | PrimRecord _ -> true
+  | NotRecord | FakeRecord -> false
 
 let build_dependent_inductive ind (_,mip) params =
   let realargs,_ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in

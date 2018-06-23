@@ -207,7 +207,7 @@ type inline = int option
     always transparent. *)
 
 type projection_body = {
-  proj_ind : MutInd.t;
+  proj_ind : inductive;
   proj_npars : int;
   proj_arg : int;
   proj_type : constr; (* Type under params *)
@@ -252,9 +252,10 @@ type recarg =
 
 type wf_paths = recarg Rtree.t
 
-type record_body = (Id.t * Constant.t array * projection_body array) option
-    (* The body is empty for non-primitive records, otherwise we get its
-       binder name in projections and list of projections if it is primitive. *)
+type record_info =
+| NotRecord
+| FakeRecord
+| PrimRecord of (Id.t * Constant.t array * projection_body array) array
 
 type regular_inductive_arity = {
   mind_user_arity : constr;
@@ -322,7 +323,7 @@ type mutual_inductive_body = {
 
     mind_packets : one_inductive_body array;  (** The component of the mutual inductive block *)
 
-    mind_record : record_body option; (** Whether the inductive type has been declared as a record. *)
+    mind_record : record_info; (** Whether the inductive type has been declared as a record. *)
 
     mind_finite : recursivity_kind;  (** Whether the type is inductive or coinductive *)
 
