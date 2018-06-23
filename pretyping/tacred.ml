@@ -49,7 +49,7 @@ let error_not_evaluable r =
 
 let is_evaluable_const env cst =
   is_transparent env (ConstKey cst) && 
-    (evaluable_constant cst env || is_projection cst env)
+  evaluable_constant cst env
 
 let is_evaluable_var env id =
   is_transparent env (VarKey id) && evaluable_named id env
