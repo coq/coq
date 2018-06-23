@@ -88,7 +88,7 @@ type ssripat =
   | IPatCase of (* ipats_mod option * *) ssripatss (* this is not equivalent to /case /[..|..] if there are already multiple goals *)
   | IPatInj of ssripatss
   | IPatRewrite of (*occurrence option * rewrite_pattern **) ssrocc * ssrdir
-  | IPatView of ssrview (* /view *)
+  | IPatView of bool * ssrview (* {}/view (true if the clear is present) *)
   | IPatClear of ssrclear (* {H1 H2} *)
   | IPatSimpl of ssrsimpl
   | IPatAbstractVars of Id.t list

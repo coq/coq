@@ -107,7 +107,8 @@ let rec pr_ipat p =
   | IPatAnon All -> str "*"
   | IPatAnon Drop -> str "_"
   | IPatAnon One -> str "?"
-  | IPatView v -> pr_view2 v
+  | IPatView (false,v) -> pr_view2 v
+  | IPatView (true,v) -> str"{}" ++ pr_view2 v
   | IPatNoop -> str "-"
   | IPatAbstractVars l -> str "[:" ++ pr_list spc Id.print l ++ str "]"
   | IPatTac _ -> str "<tac>"

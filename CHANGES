@@ -61,6 +61,26 @@ Coq binaries and process model
   `coq{proof,tactic,query}worker` are in charge of task-specific and
   parallel proof checking.
 
+SSReflect
+
+- The implementation of delayed clear switches in intro patterns
+  is now simpler to explain:
+  1. The immediate effect of a clear switch like {x} is to rename the
+     variable x to _x_ (i.e. a reserved identifier that cannot be mentioned
+     explicitly)
+  2. The delayed effect of {x} is that _x_ is cleared at the end of the intro
+     pattern
+  3. A clear switch immediately before a view application like {x}/v is
+     translated to /v{x}.
+  In particular rule 3 lets one write {x}/v even if v uses the variable x:
+  indeed the view is executed before the renaming.
+
+- An empty clear switch is now accepted in intro patterns before a 
+  view application whenever the view is a variable.
+  One can now write {}/v to mean {v}/v.  Remark that {}/x is very similar
+  to the idiom {}e for the rewrite tactic (the equation e is used for
+  rewriting and then discarded).
+
 Changes from 8.8.0 to 8.8.1
 ===========================
 

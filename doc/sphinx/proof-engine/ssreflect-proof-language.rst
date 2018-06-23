@@ -623,7 +623,9 @@ where:
 + In the occurrence switch :token:`occ_switch`, if the first element of the
   list is a natural, this element should be a number, and not an Ltac
   variable. The empty list ``{}`` is not interpreted as a valid occurrence
-  switch.
+  switch, it is rather used as a flag to signal the intent of the user to
+  clear the name following it (see :ref:`ssr_rewrite_occ_switch` and
+  :ref:`introduction_ssr`)
 
 The tactic:
 
@@ -1539,7 +1541,7 @@ whose general syntax is
    :name: =>
 
 .. prodn::
-   i_item ::= @i_pattern %| @s_item %| @clear_switch %| /@term
+   i_item ::= @i_pattern %| @s_item %| @clear_switch %| {? %{%} } /@term
 
 .. prodn::
    s_item ::= /= %| // %| //=
@@ -1641,6 +1643,11 @@ The view is applied to the top assumption.
   While it is good style to use the :token:`i_item` i * to pop the variables
   and assumptions corresponding to each constructor, this is not enforced by
   |SSR|.
+``/`` :token:`term`
+  Interprets the top of the stack with the view :token:`term`.
+  It is equivalent to ``move/term``. The optional flag ``{}`` can
+  be used to signal that the :token:`term`, when it is a context entry,
+  has to be cleared.
 ``-``
   does nothing, but counts as an intro pattern. It can also be used to
   force the interpretation of ``[`` :token:`i_item` * ``| … |``
@@ -3236,6 +3243,7 @@ the equality.
   Indeed the left hand side of ``H`` does not match
   the redex identified by the pattern ``x + y * 4``.
 
+.. _ssr_rewrite_occ_switch:
 
 Occurrence switches and redex switches
 ``````````````````````````````````````
@@ -3260,6 +3268,9 @@ the rewrite tactic. The effect of the tactic on the initial goal is to
 rewrite this lemma at the second occurrence of the first matching
 ``x + y + 0`` of the explicit rewrite redex ``_ + y + 0``.
 
+An empty occurrence switch ``{}`` is not interpreted as a valid occurrence
+switch. It has the effect of clearing the :token:`r_item` (when it is the name
+of a context entry).
 
 Occurrence selection and repetition
 ```````````````````````````````````
@@ -5279,7 +5290,7 @@ generalization item see :ref:`structure_ssr`
 
 intro pattern :ref:`introduction_ssr`
 
-.. prodn:: i_item ::= @clear_switch %| @s_item %| @i_pattern %| / @term
+.. prodn:: i_item ::= @clear_switch %| @s_item %| @i_pattern %| {? %{%} } / @term
 
 intro item  see :ref:`introduction_ssr`
 
