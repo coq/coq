@@ -565,9 +565,8 @@ let compare_head_gen_proj env sigma equ eqs eqc' nargs m n =
   | App (f, args), Proj (p, c) -> 
       (match kind_upto sigma f with
       | Const (p', u) when Constant.equal (Projection.constant p) p' -> 
-          let pb = Environ.lookup_projection p env in
-          let npars = pb.Declarations.proj_npars in
-	  if Array.length args == npars + 1 then
+          let npars = Projection.npars p in
+          if Array.length args == npars + 1 then
             eqc' 0 c args.(npars)
 	  else false
       | _ -> false)

@@ -83,11 +83,6 @@ let subst_const_def sub def = match def with
   | Def c -> Def (subst_constr sub c)
   | OpaqueDef o -> OpaqueDef (Opaqueproof.subst_opaque sub o)
 
-let subst_const_proj sub pb =
-  { pb with proj_ind = subst_ind sub pb.proj_ind;
-    proj_type = subst_mps sub pb.proj_type;
-  }
-
 let subst_const_body sub cb =
   assert (List.is_empty cb.const_hyps); (* we're outside sections *)
   if is_empty_subst sub then cb
@@ -213,10 +208,9 @@ let subst_mind_record sub r = match r with
 | FakeRecord -> FakeRecord
 | PrimRecord infos ->
   let map (id, ps, pb as info) =
-    let ps' = Array.Smart.map (subst_constant sub) ps in
-    let pb' = Array.Smart.map (subst_const_proj sub) pb in
-    if ps' == ps && pb' == pb then info
-    else (id, ps', pb')
+    let pb' = Array.Smart.map (subst_mps sub) pb in
+    if pb' == pb then info
+    else (id, ps, pb')
   in
   let infos' = Array.Smart.map map infos in
   if infos' == infos then r else PrimRecord infos'
@@ -253,6 +247,25 @@ let inductive_is_cumulative mib =
   | Monomorphic_ind _ -> false
   | Polymorphic_ind ctx -> false
   | Cumulative_ind cumi -> true
+
+let inductive_make_projection ind mib ~proj_arg =
+  match mib.mind_record with
+  | NotRecord | FakeRecord -> None
+  | PrimRecord infos ->
+    Some (Names.Projection.Repr.make ind
+            ~proj_npars:mib.mind_nparams
+            ~proj_arg
+            (pi2 infos.(snd ind)).(proj_arg))
+
+let inductive_make_projections ind mib =
+  match mib.mind_record with
+  | NotRecord | FakeRecord -> None
+  | PrimRecord infos ->
+    let projs = Array.mapi (fun proj_arg lab ->
+        Names.Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg lab)
+        (pi2 infos.(snd ind))
+    in
+    Some projs
 
 (** {6 Hash-consing of inductive declarations } *)
 

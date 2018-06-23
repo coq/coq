@@ -689,10 +689,9 @@ and detype_r d flags avoid env sigma t =
 	  (** Print the compatibility match version *)
 	  let c' = 
 	    try 
-	      let pb = Environ.lookup_projection p (snd env) in
-              let ind = pb.Declarations.proj_ind in
+              let ind = Projection.inductive p in
               let bodies = Inductiveops.legacy_match_projection (snd env) ind in
-              let body = bodies.(pb.Declarations.proj_arg) in
+              let body = bodies.(Projection.arg p) in
 	      let ty = Retyping.get_type_of (snd env) sigma c in
 	      let ((ind,u), args) = Inductiveops.find_mrectype (snd env) sigma ty in
 	      let body' = strip_lam_assum body in
@@ -1032,11 +1031,9 @@ let rec subst_glob_constr subst = DAst.map (function
       if r1' == r1 && k' == k then raw else GCast (r1',k')
 
   | GProj (p,c) as raw ->
-    let kn = Projection.constant p in
-    let b = Projection.unfolded p in
-    let kn' = subst_constant subst kn in
+    let p' = subst_proj subst p in
     let c' = subst_glob_constr subst c in
-    if kn' == kn && c' == c then raw else GProj(Projection.make kn' b, c')
+    if p' == p && c' == c then raw else GProj(p', c')
   )
 
 (* Utilities to transform kernel cases to simple pattern-matching problem *)

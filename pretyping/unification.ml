@@ -478,12 +478,8 @@ let expand_table_key env = function
   | RelKey _ -> None
 
 let unfold_projection env p stk =
-  (match try Some (lookup_projection p env) with Not_found -> None with
-  | Some pb -> 
-    let s = Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, 
-			p, Cst_stack.empty) in
-      s :: stk
-  | None -> assert false)
+  let s = Stack.Proj (p, Cst_stack.empty) in
+  s :: stk
 
 let expand_key ts env sigma = function
   | Some (IsKey k) -> Option.map EConstr.of_constr (expand_table_key env k)
@@ -512,7 +508,7 @@ let key_of env sigma b flags f =
   match EConstr.kind sigma f with
   | Const (cst, u) when is_transparent env (ConstKey cst) &&
       (Cpred.mem cst (snd flags.modulo_delta)
-       || Environ.is_projection cst env) ->
+       || Recordops.is_primitive_projection cst) ->
       let u = EInstance.kind sigma u in
       Some (IsKey (ConstKey (cst, u)))
   | Var id when is_transparent env (VarKey id) && 
@@ -669,17 +665,15 @@ let is_eta_constructor_app env sigma ts f l1 term =
   | _ -> false
 
 let eta_constructor_app env sigma f l1 term =
-  let open Declarations in
   match EConstr.kind sigma f with
   | Construct (((_, i as ind), j), u) ->
     let mib = lookup_mind (fst ind) env in
-      (match mib.Declarations.mind_record with
-      | PrimRecord info ->
-        let (_, projs, _) = info.(i) in
+      (match get_projections env ind with
+      | Some projs ->
         let npars = mib.Declarations.mind_nparams in
 	let pars, l1' = Array.chop npars l1 in
 	let arg = Array.append pars [|term|] in
-	let l2 = Array.map (fun p -> mkApp (mkConstU (p,u), arg)) projs in
+        let l2 = Array.map (fun p -> mkApp (mkConstU (Projection.Repr.constant p,u), arg)) projs in
 	  l1', l2
       | _ -> assert false)
   | _ -> assert false

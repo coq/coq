@@ -15,7 +15,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 c395aa2dbfc18794b3b7192f3dc5b2e5 checker/cic.mli
+MD5 064cd8d9651d37aebf77fb638b889cad checker/cic.mli
 
 *)
 
@@ -135,7 +135,9 @@ let v_caseinfo =
   v_tuple "case_info" [|v_ind;Int;Array Int;Array Int;v_cprint|]
 
 let v_cast = v_enum "cast_kind" 4
-let v_proj = v_tuple "projection" [|v_cst; v_bool|]
+
+let v_proj_repr = v_tuple "projection_repr" [|v_ind;Int;Int;v_id|]
+let v_proj = v_tuple "projection" [|v_proj_repr; v_bool|]
 
 let rec v_constr =
   Sum ("constr",0,[|
@@ -223,10 +225,6 @@ let v_cst_def =
   v_sum "constant_def" 0
     [|[|Opt Int|]; [|v_cstr_subst|]; [|v_lazy_constr|]|]
 
-let v_projbody =
-  v_tuple "projection_body"
-    [|v_ind;Int;Int;v_constr|]
-
 let v_typing_flags =
   v_tuple "typing_flags" [|v_bool; v_bool; v_oracle|]
 
@@ -277,7 +275,7 @@ let v_finite = v_enum "recursivity_kind" 3
 
 let v_record_info =
   v_sum "record_info" 2
-    [| [| Array (v_tuple "record" [| v_id; Array v_cst; Array v_projbody |]) |] |]
+    [| [| Array (v_tuple "record" [| v_id; Array v_id; Array v_constr |]) |] |]
 
 let v_ind_pack_univs = 
   v_sum "abstract_inductive_universes" 0

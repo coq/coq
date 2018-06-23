@@ -198,14 +198,13 @@ let judge_of_case env ci pj (c,cj) lfj =
 (* Projection. *)
 
 let judge_of_projection env p c ct =
-  let pb = lookup_projection p env in
+  let pty = lookup_projection p env in
   let (ind,u), args =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (c, ct)
   in
-    assert(eq_ind pb.proj_ind ind);
-    let ty = subst_instance_constr u pb.proj_type in
-      substl (c :: List.rev args) ty
+  let ty = subst_instance_constr u pty in
+  substl (c :: List.rev args) ty
 
 (* Fixpoints. *)
 

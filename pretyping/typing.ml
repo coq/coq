@@ -253,16 +253,16 @@ let judge_of_variable env id =
   Termops.on_judgment EConstr.of_constr (judge_of_variable env id)
 
 let judge_of_projection env sigma p cj =
-  let pb = lookup_projection p env in
+  let pty = lookup_projection p env in
   let (ind,u), args =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj
   in
   let u = EInstance.kind sigma u in
-    let ty = EConstr.of_constr (CVars.subst_instance_constr u pb.Declarations.proj_type) in
-    let ty = substl (cj.uj_val :: List.rev args) ty in
-      {uj_val = EConstr.mkProj (p,cj.uj_val);
-       uj_type = ty}
+  let ty = EConstr.of_constr (CVars.subst_instance_constr u pty) in
+  let ty = substl (cj.uj_val :: List.rev args) ty in
+  {uj_val = EConstr.mkProj (p,cj.uj_val);
+   uj_type = ty}
 
 let judge_of_abstraction env name var j =
   { uj_val = mkLambda (name, var.utj_val, j.uj_val);

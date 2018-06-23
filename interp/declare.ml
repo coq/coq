@@ -382,40 +382,44 @@ let inInductive : inductive_obj -> obj =
     discharge_function = discharge_inductive;
     rebuild_function = infer_inductive_subtyping }
 
+let declare_one_projection univs (mind,_ as ind) ~proj_npars proj_arg label (term,types) =
+  let id = Label.to_id label in
+  let p = Projection.Repr.make ind ~proj_npars ~proj_arg label in
+  Recordops.declare_primitive_projection p;
+  (* ^ needs to happen before declaring the constant, otherwise
+     Heads gets confused. *)
+  let univs = match univs with
+    | Monomorphic_ind_entry _ ->
+      (** Global constraints already defined through the inductive *)
+      Monomorphic_const_entry Univ.ContextSet.empty
+    | Polymorphic_ind_entry ctx ->
+      Polymorphic_const_entry ctx
+    | Cumulative_ind_entry ctx ->
+      Polymorphic_const_entry (Univ.CumulativityInfo.univ_context ctx)
+  in
+  let term, types = match univs with
+    | Monomorphic_const_entry _ -> term, types
+    | Polymorphic_const_entry ctx ->
+      let u = Univ.UContext.instance ctx in
+      Vars.subst_instance_constr u term, Vars.subst_instance_constr u types
+  in
+  let entry = definition_entry ~types ~univs term in
+  ignore(declare_constant id (DefinitionEntry entry, IsDefinition StructureComponent))
+
 let declare_projections univs mind =
   let env = Global.env () in
   let mib = Environ.lookup_mind mind env in
   match mib.mind_record with
   | PrimRecord info ->
-    let iter i (_, kns, _) =
-      let mind = (mind, i) in
-      let projs = Inductiveops.compute_projections env mind in
-      Array.iter2 (fun kn (term, types) ->
-	let id = Label.to_id (Constant.label kn) in
-        let univs = match univs with
-        | Monomorphic_ind_entry _ ->
-          (** Global constraints already defined through the inductive *)
-          Monomorphic_const_entry Univ.ContextSet.empty
-        | Polymorphic_ind_entry ctx ->
-          Polymorphic_const_entry ctx
-        | Cumulative_ind_entry ctx ->
-          Polymorphic_const_entry (Univ.CumulativityInfo.univ_context ctx)
-        in
-        let term, types = match univs with
-        | Monomorphic_const_entry _ -> term, types
-        | Polymorphic_const_entry ctx ->
-          let u = Univ.UContext.instance ctx in
-          Vars.subst_instance_constr u term, Vars.subst_instance_constr u types
-        in
-        let entry = definition_entry ~types ~univs term in
-        let kn' = declare_constant id (DefinitionEntry entry, IsDefinition StructureComponent) in
-        assert (Constant.equal kn kn')
-      ) kns projs
+    let iter_ind i (_, labs, _) =
+      let ind = (mind, i) in
+      let projs = Inductiveops.compute_projections env ind in
+      Array.iter2_i (declare_one_projection univs ind ~proj_npars:mib.mind_nparams) labs projs
     in
-    let () = Array.iteri iter info in
-    true, true
-  | FakeRecord -> true, false
-  | NotRecord -> false, false
+    let () = Array.iteri iter_ind info in
+    true
+  | FakeRecord -> false
+  | NotRecord -> false
 
 (* for initial declaration *)
 let declare_mind mie =
@@ -424,7 +428,7 @@ let declare_mind mie =
     | [] -> anomaly (Pp.str "cannot declare an empty list of inductives.") in
   let (sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
   let mind = Global.mind_of_delta_kn kn in
-  let isrecord,isprim = declare_projections mie.mind_entry_universes mind in
+  let isprim = declare_projections mie.mind_entry_universes mind in
   declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
   oname, isprim

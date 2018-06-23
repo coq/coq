@@ -1065,13 +1065,13 @@ let extract_constant env kn cb =
         (match cb.const_body with
 	  | Undef _ -> warn_info (); mk_typ_ax ()
 	  | Def c ->
-             (match Environ.is_projection kn env with
-              | false -> mk_typ (get_body c)
-              | true ->
-                let pb = lookup_projection (Projection.make kn false) env in
-                let ind = pb.Declarations.proj_ind in
+             (match Recordops.find_primitive_projection kn with
+              | None -> mk_typ (get_body c)
+              | Some p ->
+                let p = Projection.make p false in
+                let ind = Projection.inductive p in
                 let bodies = Inductiveops.legacy_match_projection env ind in
-                let body = bodies.(pb.Declarations.proj_arg) in
+                let body = bodies.(Projection.arg p) in
                 mk_typ (EConstr.of_constr body))
 	  | OpaqueDef c ->
 	    add_opaque r;
@@ -1081,13 +1081,13 @@ let extract_constant env kn cb =
         (match cb.const_body with
 	  | Undef _ -> warn_info (); mk_ax ()
 	  | Def c ->
-             (match Environ.is_projection kn env with
-              | false -> mk_def (get_body c)
-              | true ->
-                let pb = lookup_projection (Projection.make kn false) env in
-                let ind = pb.Declarations.proj_ind in
+             (match Recordops.find_primitive_projection kn with
+              | None -> mk_def (get_body c)
+              | Some p ->
+                let p = Projection.make p false in
+                let ind = Projection.inductive p in
                 let bodies = Inductiveops.legacy_match_projection env ind in
-                let body = bodies.(pb.Declarations.proj_arg) in
+                let body = bodies.(Projection.arg p) in
                 mk_def (EConstr.of_constr body))
 	  | OpaqueDef c ->
 	    add_opaque r;

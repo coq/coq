@@ -796,7 +796,6 @@ let compute_projections (kn, i as ind) mib =
   let subst = List.init mib.mind_ntypes (fun i -> mkIndU ((kn, mib.mind_ntypes - i - 1), u)) in
   let rctx, _ = decompose_prod_assum (substl subst pkt.mind_nf_lc.(0)) in
   let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
-  let mp, dp, l = MutInd.repr3 kn in
   (** We build a substitution smashing the lets in the record parameters so
       that typechecking projections requires just a substitution and not
       matching with a parameter context. *)
@@ -810,7 +809,7 @@ let compute_projections (kn, i as ind) mib =
       mkRel 1 :: List.map (lift 1) subst in
     subst
   in
-  let projections decl (i, j, kns, pbs, letsubst) =
+  let projections decl (i, j, labs, pbs, letsubst) =
     match decl with
     | LocalDef (na,c,t) ->
         (* From [params, field1,..,fieldj |- c(params,field1,..,fieldj)]
@@ -822,11 +821,12 @@ let compute_projections (kn, i as ind) mib =
         (* From [params-wo-let, x:I |- subst:(params, x:I, field1,..,fieldj)]
            to [params-wo-let, x:I |- subst:(params, x:I, field1,..,fieldj+1)] *)
         let letsubst = c2 :: letsubst in
-        (i, j+1, kns, pbs, letsubst)
+        (i, j+1, labs, pbs, letsubst)
     | LocalAssum (na,t) ->
       match na with
       | Name id ->
-	let kn = Constant.make1 (KerName.make mp dp (Label.of_id id)) in
+        let lab = Label.of_id id in
+        let kn = Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg:i lab in
         (* from [params, field1,..,fieldj |- t(params,field1,..,fieldj)]
            to [params, x:I, field1,..,fieldj |- t(params,field1,..,fieldj] *)
         let t = liftn 1 j t in
@@ -836,15 +836,13 @@ let compute_projections (kn, i as ind) mib =
         (* from [params, x:I, field1,..,fieldj |- t(field1,..,fieldj)]
            to [params, x:I |- t(proj1 x,..,projj x)] *)
 	let fterm = mkProj (Projection.make kn false, mkRel 1) in
-        let body = { proj_ind = ind; proj_npars = mib.mind_nparams;
-                      proj_arg = i; proj_type = projty; } in
-        (i + 1, j + 1, kn :: kns, body :: pbs, fterm :: letsubst)
+        (i + 1, j + 1, lab :: labs, projty :: pbs, fterm :: letsubst)
       | Anonymous -> raise UndefinableExpansion
   in
-  let (_, _, kns, pbs, letsubst) =
+  let (_, _, labs, pbs, letsubst) =
     List.fold_right projections ctx (0, 1, [], [], paramsletsubst)
   in
-    Array.of_list (List.rev kns),
+    Array.of_list (List.rev labs),
     Array.of_list (List.rev pbs)
 
 let abstract_inductive_universes iu =
@@ -954,8 +952,8 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
     (** The elimination criterion ensures that all projections can be defined. *)
     if Array.for_all is_record packets then
       let map i id =
-        let kn, projs = compute_projections (kn, i) mib in
-        (id, kn, projs)
+        let labs, projs = compute_projections (kn, i) mib in
+        (id, labs, projs)
       in
       try PrimRecord (Array.mapi map rid)
       with UndefinableExpansion -> FakeRecord

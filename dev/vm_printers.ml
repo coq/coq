@@ -17,7 +17,7 @@ let ppripos (ri,pos) =
   | Reloc_getglobal kn ->
     print_string ("getglob "^(Constant.to_string kn)^"\n")
   | Reloc_proj_name p ->
-    print_string ("proj "^(Constant.to_string p)^"\n")
+    print_string ("proj "^(Projection.Repr.to_string p)^"\n")
   );
    print_flush ()
 

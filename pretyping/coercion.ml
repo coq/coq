@@ -52,17 +52,17 @@ exception NoCoercionNoUnifier of evar_map * unification_error
 let apply_coercion_args env sigma check isproj argl funj =
   let rec apply_rec sigma acc typ = function
     | [] ->
-      if isproj then
-        let cst = fst (destConst sigma (j_val funj)) in
-	let p = Projection.make cst false in
-	let pb = lookup_projection p env in
-	let args = List.skipn pb.Declarations.proj_npars argl in
-	let hd, tl = match args with hd :: tl -> hd, tl | [] -> assert false in
-        sigma, { uj_val = applist (mkProj (p, hd), tl);
-                 uj_type = typ }
-      else
-        sigma, { uj_val = applist (j_val funj,argl);
-                 uj_type = typ }
+      (match isproj with
+       | Some p ->
+         let npars = Projection.Repr.npars p in
+         let p = Projection.make p false in
+         let args = List.skipn npars argl in
+         let hd, tl = match args with hd :: tl -> hd, tl | [] -> assert false in
+         sigma, { uj_val = applist (mkProj (p, hd), tl);
+                  uj_type = typ }
+       | None ->
+         sigma, { uj_val = applist (j_val funj,argl);
+                  uj_type = typ })
     | h::restl -> (* On devrait pouvoir s'arranger pour qu'on n'ait pas a faire hnf_constr *)
       match EConstr.kind sigma (whd_all env sigma typ) with
       | Prod (_,c1,c2) ->

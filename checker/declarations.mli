@@ -25,6 +25,9 @@ val dest_subterms : wf_paths -> wf_paths list array
 val eq_recarg : recarg -> recarg -> bool
 val eq_wf_paths : wf_paths -> wf_paths -> bool
 
+val inductive_make_projections : Names.inductive -> mutual_inductive_body ->
+  Names.Projection.Repr.t array option
+
 (* Modules *)
 
 val empty_delta_resolver : delta_resolver

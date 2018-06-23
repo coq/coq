@@ -66,6 +66,11 @@ val inductive_is_polymorphic : mutual_inductive_body -> bool
 (** Is the inductive cumulative? *)
 val inductive_is_cumulative : mutual_inductive_body -> bool
 
+val inductive_make_projection : Names.inductive -> mutual_inductive_body -> proj_arg:int ->
+  Names.Projection.Repr.t option
+val inductive_make_projections : Names.inductive -> mutual_inductive_body ->
+  Names.Projection.Repr.t array option
+
 (** {6 Kernel flags} *)
 
 (** A default, safe set of flags for kernel type-checking *)

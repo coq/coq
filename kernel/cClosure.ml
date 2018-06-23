@@ -397,7 +397,7 @@ let update v1 no t =
 type stack_member =
   | Zapp of fconstr array
   | ZcaseT of case_info * constr * constr array * fconstr subs
-  | Zproj of int * int * Constant.t
+  | Zproj of Projection.Repr.t
   | Zfix of fconstr * stack
   | Zshift of int
   | Zupdate of fconstr
@@ -691,8 +691,8 @@ let rec zip m stk =
     | ZcaseT(ci,p,br,e)::s ->
         let t = FCaseT(ci, p, m, br, e) in
         zip {norm=neutr m.norm; term=t} s
-    | Zproj (i,j,cst) :: s ->
-        zip {norm=neutr m.norm; term=FProj(Projection.make cst true,m)} s
+    | Zproj p :: s ->
+        zip {norm=neutr m.norm; term=FProj(Projection.make p true,m)} s
     | Zfix(fx,par)::s ->
         zip fx (par @ append_stack [|m|] s)
     | Zshift(n)::s ->
@@ -822,21 +822,24 @@ let drop_parameters depth n argstk =
 let eta_expand_ind_stack env ind m s (f, s') =
   let open Declarations in
   let mib = lookup_mind (fst ind) env in
-    match mib.Declarations.mind_record with
-    | PrimRecord infos when
-        mib.Declarations.mind_finite == Declarations.BiFinite ->
-      let (_, projs, _) = infos.(snd ind) in
-	(* (Construct, pars1 .. parsm :: arg1...argn :: []) ~= (f, s') ->
+  (* disallow eta-exp for non-primitive records *)
+  if not (mib.mind_finite == BiFinite) then raise Not_found;
+  match Declareops.inductive_make_projections ind mib with
+  | Some projs ->
+    (* (Construct, pars1 .. parsm :: arg1...argn :: []) ~= (f, s') ->
 	   arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
-      let pars = mib.Declarations.mind_nparams in
-      let right = fapp_stack (f, s') in
-      let (depth, args, s) = strip_update_shift_app m s in
-      (** Try to drop the params, might fail on partially applied constructors. *)
-      let argss = try_drop_parameters depth pars args in
-      let hstack = Array.map (fun p -> { norm = Red; (* right can't be a constructor though *)
-					 term = FProj (Projection.make p true, right) }) projs in
-	argss, [Zapp hstack]
-    | PrimRecord _ | NotRecord | FakeRecord -> raise Not_found (* disallow eta-exp for non-primitive records *)
+    let pars = mib.Declarations.mind_nparams in
+    let right = fapp_stack (f, s') in
+    let (depth, args, s) = strip_update_shift_app m s in
+    (** Try to drop the params, might fail on partially applied constructors. *)
+    let argss = try_drop_parameters depth pars args in
+    let hstack = Array.map (fun p ->
+        { norm = Red; (* right can't be a constructor though *)
+          term = FProj (Projection.make p true, right) })
+        projs
+    in
+    argss, [Zapp hstack]
+  | None -> raise Not_found (* disallow eta-exp for non-primitive records *)
 
 let rec project_nth_arg n argstk =
   match argstk with
@@ -875,9 +878,7 @@ let contract_fix_vect fix =
 let unfold_projection info p =
   if red_projection info.i_flags p
   then
-    let open Declarations in
-    let pb = lookup_projection p (info_env info) in
-    Some (Zproj (pb.proj_npars, pb.proj_arg, Projection.constant p))
+    Some (Zproj (Projection.repr p))
   else None
 
 (*********************************************************************)
@@ -958,9 +959,9 @@ let rec knr info tab m stk =
             let stk' = par @ append_stack [|rarg|] s in
             let (fxe,fxbd) = contract_fix_vect fx.term in
             knit info tab fxe fxbd stk'
-	| (depth, args, Zproj (n, m, cst)::s) when use_match ->
-	    let rargs = drop_parameters depth n args in
-	    let rarg = project_nth_arg m rargs in
+        | (depth, args, Zproj p::s) when use_match ->
+            let rargs = drop_parameters depth (Projection.Repr.npars p) args in
+            let rarg = project_nth_arg (Projection.Repr.arg p) rargs in
             kni info tab rarg s
         | (_,args,s) -> (m,args@s))
      else (m,stk)
@@ -1002,7 +1003,7 @@ let rec zip_term zfun m stk =
         let t = mkCase(ci, zfun (mk_clos e p), m,
 		       Array.map (fun b -> zfun (mk_clos e b)) br) in
         zip_term zfun t s
-    | Zproj(_,_,p)::s ->
+    | Zproj p::s ->
         let t = mkProj (Projection.make p true, m) in
 	zip_term zfun t s
     | Zfix(fx,par)::s ->

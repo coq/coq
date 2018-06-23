@@ -21,7 +21,7 @@ type cl_typ =
   | CL_SECVAR of variable
   | CL_CONST of Constant.t
   | CL_IND of inductive
-  | CL_PROJ of Constant.t
+  | CL_PROJ of Projection.Repr.t
 
 (** Equality over [cl_typ] *)
 val cl_typ_eq : cl_typ -> cl_typ -> bool
@@ -79,7 +79,7 @@ val declare_coercion :
 (** {6 Access to coercions infos } *)
 val coercion_exists : coe_typ -> bool
 
-val coercion_value : coe_index -> (unsafe_judgment * bool * bool) Univ.in_universe_context_set
+val coercion_value : coe_index -> (unsafe_judgment * bool * Projection.Repr.t option) Univ.in_universe_context_set
 
 (** {6 Lookup functions for coercion paths } *)
 

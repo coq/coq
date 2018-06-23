@@ -46,16 +46,6 @@ type inline = int option
 (** A constant can have no body (axiom/parameter), or a
     transparent body, or an opaque one *)
 
-(** Projections are a particular kind of constant: 
-    always transparent. *)
-
-type projection_body = {
-  proj_ind : inductive;
-  proj_npars : int;
-  proj_arg : int; (** Projection index, starting from 0 *)
-  proj_type : types; (* Type under params *)
-}
-
 (* Global declarations (i.e. constants) can be either: *)
 type constant_def =
   | Undef of inline                       (** a global assumption *)
@@ -114,7 +104,7 @@ v}
     If it is a primitive record, for every type in the block, we get:
     - The identifier for the binder name of the record in primitive projections.
     - The constants associated to each projection.
-    - The checked projection bodies.
+    - The projection types (under parameters).
 
     The kernel does not exploit the difference between [NotRecord] and
     [FakeRecord]. It is mostly used by extraction, and should be extruded from
@@ -124,7 +114,7 @@ v}
 type record_info =
 | NotRecord
 | FakeRecord
-| PrimRecord of (Id.t * Constant.t array * projection_body array) array
+| PrimRecord of (Id.t * Label.t array * types array) array
 
 type regular_inductive_arity = {
   mind_user_arity : types;

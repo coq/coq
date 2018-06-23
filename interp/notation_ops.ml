@@ -641,11 +641,9 @@ let rec subst_notation_constr subst bound raw =
       if r1' == r1 && k' == k then raw else NCast(r1',k')
 
   | NProj (p, c) ->
-    let kn = Projection.constant p in
-    let b = Projection.unfolded p in
-    let kn' = subst_constant subst kn in
+    let p' = subst_proj subst p in
     let c' = subst_notation_constr subst bound c in
-    if kn' == kn && c' == c then raw else NProj(Projection.make kn' b, c')
+    if p' == p && c' == c then raw else NProj(p', c')
 
 
 let subst_interpretation subst (metas,pat) =

@@ -126,16 +126,13 @@ let expmod_constr cache modlist c =
 	    | Not_found -> Constr.map substrec c)
 
       | Proj (p, c') ->
-          (try
-            (** No need to expand parameters or universes for projections *)
-            let map cst =
-              let _ = Cmap.find cst (fst modlist) in
-              pop_con cst
-            in
-            let p = Projection.map map p in
-            let c' = substrec c' in
-            mkProj (p, c')
-	   with Not_found -> Constr.map substrec c)
+        let map cst npars =
+          let _, newpars = Mindmap.find cst (snd modlist) in
+          pop_mind cst, npars + Array.length newpars
+        in
+        let p' = try Projection.map_npars map p with Not_found -> p in
+        let c'' = substrec c' in
+        if p == p' && c' == c'' then c else mkProj (p', c'')
 
   | _ -> Constr.map substrec c
 

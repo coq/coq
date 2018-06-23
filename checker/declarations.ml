@@ -214,11 +214,7 @@ let rec map_kn f f' c =
     match c with
       | Const (kn, u) -> (try snd (f' kn u) with No_subst -> c)
       | Proj (p,t) -> 
-          let p' = 
-	    Projection.map (fun kn ->
-			    try fst (f' kn Univ.Instance.empty)
-			    with No_subst -> kn) p
-	  in
+          let p' = Projection.map f p in
 	  let t' = func t in
 	    if p' == p && t' == t then c
 	    else Proj (p', t')
@@ -494,6 +490,16 @@ let eq_recarg r1 r2 = match r1, r2 with
   | _ -> false
 
 let eq_wf_paths = Rtree.equal eq_recarg
+
+let inductive_make_projections ind mib =
+  match mib.mind_record with
+  | NotRecord | FakeRecord -> None
+  | PrimRecord infos ->
+    let projs = Array.mapi (fun proj_arg lab ->
+        Names.Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg lab)
+        (pi2 infos.(snd ind))
+    in
+    Some projs
 
 (**********************************************************************)
 (* Representation of mutual inductive types in the kernel             *)

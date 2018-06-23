@@ -113,7 +113,7 @@ let rec pp_lam lam =
        str")")
   | Lproj(i,kn,arg) ->
     hov 1
-      (str "(proj#" ++ int i ++ spc() ++ pr_con kn ++ str "(" ++ pp_lam arg
+      (str "(proj#" ++ int i ++ spc() ++ Projection.Repr.print kn ++ str "(" ++ pp_lam arg
        ++ str ")")
   | Luint _ ->
     str "(uint)"
@@ -708,10 +708,9 @@ let rec lambda_of_constr env c =
     Lcofix(init, (names, ltypes, lbodies))
 
   | Proj (p,c) ->
-    let pb = lookup_projection p env.global_env in
-    let n = pb.proj_arg in
+    let n = Projection.arg p in
     let lc = lambda_of_constr env c in
-    Lproj (n,Projection.constant p,lc)
+    Lproj (n,Projection.repr p,lc)
 
 and lambda_of_app env f args =
   match Constr.kind f with

@@ -27,7 +27,7 @@ type reloc_info =
   | Reloc_annot of annot_switch
   | Reloc_const of structured_constant
   | Reloc_getglobal of Names.Constant.t
-  | Reloc_proj_name of Constant.t
+  | Reloc_proj_name of Projection.Repr.t
 
 let eq_reloc_info r1 r2 = match r1, r2 with
 | Reloc_annot sw1, Reloc_annot sw2 -> eq_annot_switch sw1 sw2
@@ -36,7 +36,7 @@ let eq_reloc_info r1 r2 = match r1, r2 with
 | Reloc_const _, _ -> false
 | Reloc_getglobal c1, Reloc_getglobal c2 -> Constant.equal c1 c2
 | Reloc_getglobal _, _ -> false
-| Reloc_proj_name p1, Reloc_proj_name p2 -> Constant.equal p1 p2
+| Reloc_proj_name p1, Reloc_proj_name p2 -> Projection.Repr.equal p1 p2
 | Reloc_proj_name _, _ -> false
 
 let hash_reloc_info r =
@@ -45,7 +45,7 @@ let hash_reloc_info r =
   | Reloc_annot sw -> combinesmall 1 (hash_annot_switch sw)
   | Reloc_const c -> combinesmall 2 (hash_structured_constant c)
   | Reloc_getglobal c -> combinesmall 3 (Constant.hash c)
-  | Reloc_proj_name p -> combinesmall 4 (Constant.hash p)
+  | Reloc_proj_name p -> combinesmall 4 (Projection.Repr.hash p)
 
 module RelocTable = Hashtbl.Make(struct
   type t = reloc_info
@@ -371,7 +371,7 @@ let subst_reloc s ri =
       Reloc_annot {a with ci = ci}
   | Reloc_const sc -> Reloc_const (subst_strcst s sc)
   | Reloc_getglobal kn -> Reloc_getglobal (subst_constant s kn)
-  | Reloc_proj_name p -> Reloc_proj_name (subst_constant s p)
+  | Reloc_proj_name p -> Reloc_proj_name (subst_proj_repr s p)
 
 let subst_patches subst p =
   let infos = CArray.map (fun (r, pos) -> (subst_reloc subst r, pos)) p.reloc_infos in

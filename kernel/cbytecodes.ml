@@ -128,7 +128,7 @@ type instruction =
   | Ksetfield of int
   | Kstop
   | Ksequence of bytecodes * bytecodes
-  | Kproj of int * Constant.t  (* index of the projected argument,
+  | Kproj of int * Projection.Repr.t  (* index of the projected argument,
                                            name of projection *)
   | Kensurestackcapacity of int
 (* spiwack: instructions concerning integers *)
@@ -311,7 +311,7 @@ let rec pp_instr i =
 
   | Kbranch lbl -> str "branch " ++ pp_lbl lbl
 
-  | Kproj(n,p) -> str "proj " ++ int n ++ str " " ++ Constant.print p
+  | Kproj(n,p) -> str "proj " ++ int n ++ str " " ++ Projection.Repr.print p
 
   | Kensurestackcapacity size -> str "growstack " ++ int size
 

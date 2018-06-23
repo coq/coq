@@ -202,16 +202,6 @@ type inline = int option
 (** A constant can have no body (axiom/parameter), or a
     transparent body, or an opaque one *)
 
-(** Projections are a particular kind of constant: 
-    always transparent. *)
-
-type projection_body = {
-  proj_ind : inductive;
-  proj_npars : int;
-  proj_arg : int;
-  proj_type : constr; (* Type under params *)
-}
-
 type constant_def =
   | Undef of inline
   | Def of constr_substituted
@@ -254,7 +244,7 @@ type wf_paths = recarg Rtree.t
 type record_info =
 | NotRecord
 | FakeRecord
-| PrimRecord of (Id.t * Constant.t array * projection_body array) array
+| PrimRecord of (Id.t * Label.t array * constr array) array
 
 type regular_inductive_arity = {
   mind_user_arity : constr;

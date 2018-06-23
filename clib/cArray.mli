@@ -101,6 +101,9 @@ sig
   val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
   (** Iter on two arrays. Raise [Invalid_argument "Array.iter2"] if sizes differ. *)
 
+  val iter2_i : (int -> 'a -> 'b -> unit) -> 'a array -> 'b array -> unit
+  (** Iter on two arrays. Raise [Invalid_argument "Array.iter2_i"] if sizes differ. *)
+
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
   (** [fold_left_map f e_0 [|l_1...l_n|] = e_n,[|k_1...k_n|]]
     where [(e_i,k_i)=f e_{i-1} l_i]; see also [Smart.fold_left_map] *)

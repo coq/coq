@@ -656,6 +656,14 @@ let discharge_kn kn =
 let discharge_con cst =
   if con_defined_in_sec cst then Globnames.pop_con cst else cst
 
+let discharge_proj_repr =
+  Projection.Repr.map_npars (fun mind npars ->
+      if not (defined_in_sec mind) then mind, npars
+      else
+        let modlist = replacement_context () in
+        let _, newpars = Mindmap.find mind (snd modlist) in
+        Globnames.pop_kn mind, npars + Array.length newpars)
+
 let discharge_inductive (kn,i) =
   (discharge_kn kn,i)
 
