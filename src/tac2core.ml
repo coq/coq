@@ -1127,12 +1127,12 @@ end
 let () = add_scope "tactic" begin function
 | [] ->
   (** Default to level 5 parsing *)
-  let scope = Extend.Aentryl (tac2expr, 5) in
+  let scope = Extend.Aentryl (tac2expr, "5") in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | [SexprInt {loc;v=n}] as arg ->
   let () = if n < 0 || n > 6 then scope_fail "tactic" arg in
-  let scope = Extend.Aentryl (tac2expr, n) in
+  let scope = Extend.Aentryl (tac2expr, string_of_int n) in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | arg -> scope_fail "tactic" arg
