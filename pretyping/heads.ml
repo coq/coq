@@ -128,7 +128,7 @@ let compute_head = function
    let env = Global.env() in
    let cb = Environ.lookup_constant cst env in
    let is_Def = function Declarations.Def _ -> true | _ -> false in
-   let body = 
+   let body =
      if not (Environ.is_projection cst env) && is_Def cb.Declarations.const_body
      then Global.body_of_constant cst else None
    in
