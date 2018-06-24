@@ -1,0 +1,226 @@
+Preliminary compilation of critical bugs in stable releases of Coq
+==================================================================
+  WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
+
+
+To add: #7723 (vm_compute universe polymorphism), #7695 (modules and algebraic universes), #7615 (lost functor substitutions)
+
+Typing constructions
+
+  component: "match"
+  summary: substitution missing in the body of a let
+  introduced: ?
+  impacted released versions: V8.3-V8.3pl2, V8.4-V8.4pl4
+  impacted development branches: none
+  impacted coqchk versions: ?
+  fixed in: master/trunk/v8.5 (e583a79b5, 22 Nov 2015, Herbelin), v8.4 (525056f1, 22 Nov 2015, Herbelin), v8.3 (4bed0289, 22 Nov 2015, Herbelin)
+  found by: Herbelin
+  exploit: test-suite/success/Case22.v
+  GH issue number: ?
+  risk: ?
+
+  component: fixpoint, guard
+  summary: missing lift in checking guard
+  introduced: probably from V5.10
+  impacted released versions: probably V5-V7, V8.0-V8.0pl4, V8.1-V8.1pl4
+  impacted development branches: v8.0 ?
+  impacted coqchk versions: ?
+  fixed in: master/trunk/v8.2 (ff45afa8, r11646, 2 Dec 2008, Barras), v8.1 (f8e7f273, r11648, 2 Dec 2008, Barras)
+  found by: Barras
+  exploit: test-suite/failure/guard.v
+  GH issue number: none
+  risk: unprobable by chance
+
+  component: cofixpoint, guard
+  summary: de Bruijn indice bug in checking guard of nested cofixpoints
+  introduced: after V6.3.1, before V7.0
+  impacted released versions: V8.0-V8.0pl4, V8.1-V8.1pl4, V8.2-V8.2pl2, V8.3-V8.3pl2, V8.4-V8.4pl4
+  impacted development branches: none
+  impacted coqchk versions: ?
+  fixed in: master (9f81e2c36, 10 Apr 2014, Dénès), v8.4 (f50ec9e7d, 11 Apr 2014, Dénès), v8.3 (40c0fe7f4, 11 Apr 2014, Dénès), v8.2 (06d66df8c, 11 Apr 2014, Dénès), v8.1 (977afae90, 11 Apr 2014, Dénès), v8.0 (f1d632992, 29 Nov 2015, Herbelin, backport)
+  found by: Dénès
+  exploit: ?
+  GH issue number: none ?
+  risk: ?
+
+  component: inductive types, elimination principle
+  summary: de Bruijn indice bug in computing allowed elimination principle
+  introduced: 23 May 2006, 9c2d70b, r8845, Herbelin (part of universe polymorphism)
+  impacted released versions: V8.1-V8.1pl4, V8.2-V8.2pl2, V8.3-V8.3pl2, V8.4-V8.4pl4
+  impacted development branches: none
+  impacted coqchk versions: ?
+  fixed in: master (8a01c3685, 24 Jan 2014, Dénès), v8.4 (8a01c3685, 25 Feb 2014, Dénès), v8.3 (2b3cc4f85, 25 Feb 2014, Dénès), v8.2 (459888488, 25 Feb 2014, Dénès), v8.1 (79aa20872, 25 Feb 2014, Dénès)
+  found by: Dénès
+  exploit: see GH#3211
+  GH issue number: #3211
+  risk: ?
+
+  component: universe subtyping
+  summary: bug in Prop<=Set conversion which made Set identifiable with Prop, preventing a proof-irrelevant interpretation of Prop
+  introduced: V8.2 (bba897d5f, 12 May 2008, Herbelin)
+  impacted released versions: V8.2-V8.2pl2
+  impacted development branches: none
+  impacted coqchk versions: ?
+  fixed in: master/trunk (679801, r13450, 23 Sep 2010, Glondu), v8.3 (309a53f2, r13449, 22 Sep 2010, Glondu), v8.2 (41ea5f08, r14263, 6 Jul 2011, Herbelin, backport)
+  found by: Georgi Guninski
+  exploit: test-suite/bugs/closed/4294.v
+  GH issue number: #4294
+  risk: ?
+
+Module system
+
+  component: modules, universes
+  summary: missing universe constraints in typing "with" clause of a module type
+  introduced: ?
+  impacted released versions: V8.3-V8.3pl2, V8.4-V8.4pl6; unclear for V8.2 and previous versions
+  impacted development branches: none
+  impacted coqchk versions: ?
+  fixed in: master/trunk (d4869e059, 2 Oct 2015, Sozeau), v8.4 (40350ef3b, 9 Sep 2015, Sozeau)
+  found by: Dénès
+  exploit: test-suite/bugs/closed/4294.v
+  GH issue number: #4294
+  risk: ?
+
+Universes
+
+  component: template polymorphism
+  summary: issue with two parameters in the same universe level
+  introduced: 23 May 2006, 9c2d70b, r8845, Herbelin
+  impacted released versions: V8.1-V8.1pl4, V8.2-V8.2pl2, V8.3-V8.3pl2
+  impacted development branches: none
+  impacted coqchk versions: ?
+  fixed in: trunk/master/v8.4 (8082d1faf, 5 Oct 2011, Herbelin), V8.3pl3 (bb582bca2, 5 Oct 2011, Herbelin), v8.2 branch (3333e8d3, 5 Oct 2011, Herbelin), v8.1 branch (a8fc2027, 5 Oct 2011, Herbelin), 
+  found by: Barras
+  exploit: test-suite/failure/inductive4.v
+  GH issue number: none
+  risk: unlikely to be activated by chance
+
+Primitive projections
+
+  component: primitive projections, guard condition
+  summary: check of guardedness of extra arguments of primitive projections missing
+  introduced: 6 May 2014, a4043608f, Sozeau
+  impacted released versions: V8.5-V8.5pl2, 
+  impacted development branches: none
+  impacted coqchk versions: ?
+  fixed in: trunk/master/v8.5 (ba00867d5, 25 Jul 2016, Sozeau)
+  found by: Sozeau, by analyzing bug report #4876
+  exploit: to be done (?)
+  GH issue number: #4876
+  risk: consequence of bug found by chance, unlikely to be exploited by chance (MS?)
+
+  component: primitive projections, guard condition
+  summary: records based on primitive projections became possibly recursive without the guard condition being updated
+  introduced: 10 Sep 2014, 6624459e4, Sozeau (?)
+  impacted released versions: V8.5
+  impacted development branches: none
+  impacted coqchk versions: ?
+  fixed in: trunk/master/v8.5 (120053a50, 4 Mar 2016, Dénès)
+  found by: Dénès exploiting bug #4588
+  exploit: test-suite/bugs/closed/4588.v
+  GH issue number: #4588
+  risk: ?
+
+Conversion machines
+
+  component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
+  summary: collision between constructors when more than 256 constructors in a type
+  introduced: V8.1
+  impacted released versions: V8.1-V8.5pl3, V8.2-V8.2pl2, V8.3-V8.3pl3, V8.4-V8.4pl5
+  impacted development branches: none
+  impacted coqchk versions: none (no virtual machine in coqchk)
+  fixed in: master/trunk/v8.5 (00894adf6/596a4a525, 26-39 Mar 2015, Grégoire), v8.4 (cd2101a39, 1 Apr 2015, Grégoire), v8.3 (a0c7fc05b, 1 Apr 2015, Grégoire), v8.2 (2c6189f61, 1 Apr 2015, Grégoire), v8.1 (bb877e5b5, 29 Nov 2015, Herbelin, backport)
+  found by: Dénès, Pédrot
+  exploit: test-suite/failure/vm-bug4157.v
+  GH issue number: #4157
+  risk: 
+
+  component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
+  summary: wrong universe constraints
+  introduced: possibly exploitable from V8.1; exploitable at least from V8.5
+  impacted released versions: V8.1-V8.4pl5 unknown, V8.5-V8.5pl3, V8.6-V8.6.1, V8.7.0-V8.7.1
+  impacted development branches: unknown for v8.1-v8.4, none from v8.5
+  impacted coqchk versions: none (no virtual machine in coqchk)
+  fixed in: master (c9f3a6cbe, 12 Feb 2018, PR#6713, Dénès), v8.7 (c058a4182, 15 Feb 2018, Zimmermann, backport), v8.6 (a2cc54c64, 21 Feb 2018, Herbelin, backport), v8.5 (d4d550d0f, 21 Feb 2018, Herbelin, backport)
+  found by: Dénès
+  exploit: test-suite/bugs/closed/6677.v
+  GH issue number: #6677
+  risk: 
+
+  component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
+  summary: missing pops in executing 31bit arithmetic
+  introduced: V8.5
+  impacted released versions: V8.1-V8.4pl5
+  impacted development branches: v8.1 (probably)
+  impacted coqchk versions: none (no virtual machine in coqchk)
+  fixed in: master/trunk/v8.5 (a5e04d9dd, 6 Sep 2015, Dénès), v8.4 (d5aa3bf6, 9 Sep 2015, Dénès), v8.3 (5da5d751, 9 Sep 2015, Dénès), v8.2 (369e82d2, 9 Sep 2015, Dénès), 
+  found by: Catalin Hritcu
+  exploit: lost?
+  GH issue number: ?
+  risk: 
+
+  component: "native" conversion machine (translation to OCaml which compiles to native code)
+  summary: translation of identifier from Coq to OCaml was not bijective, leading to identify True and False
+  introduced: V8.5
+  impacted released versions: V8.5-V8.5pl1
+  impacted development branches: none
+  impacted coqchk versions: none (no native computation in coqchk)
+  fixed in: master/trunk/v8.6 (244d7a9aa, 19 May 2016, letouzey), v8.5 (088b3161c, 19 May 2016, letouzey), 
+  found by: Letouzey, Dénès
+  exploit: lost?
+  GH issue number: ?
+  risk: 
+
+Conflicts with axioms in library
+
+  component: library of real numbers
+  summary: axiom of description and decidability of equality on real numbers in library Reals was inconsistent with impredicative Set
+  introduced: 67c75fa01, 20 Jun 2002
+  impacted released versions: 7.3.1, 7.4
+  impacted coqchk versions: 
+  fixed by deciding to drop impredicativity of Set: bac707973, 28 Oct 2004
+  found by: Herbelin & Werner
+  exploit: need to find the example again
+  GH issue number: no
+  risk: unlikely to be exploited by chance
+
+  component: library of extensional sets, guard condition
+  summary: guard condition was unknown to be inconsistent with propositional extensionality in library Sets
+  introduced: not a bug per se but an incompatibility discovered late
+  impacted released versions: technically speaking from V6.1 with the introduction of the Sets library which was then inconsistent from the very beginning without we knew it
+  impacted coqchk versions: ?
+  fixed by constraining the guard condition: (9b272a8, ccd7546c 28 Oct 2014, Barras, Dénès)
+  found by: Schepler, Dénès, Azevedo de Amorim
+  exploit: ?
+  GH issue number: none
+  risk: unlikely to be exploited by chance (?)
+
+  component: library for axiom of choice and excluded-middle
+  summary: incompatibility axiom of choice and excluded-middle with elimination of large singletons to Set
+  introduced: not a bug but a change of intended "model"
+  impacted released versions: strictly before 8.1
+  impacted coqchk versions: ?
+  fixed by constraining singleton elimination: b19397ed8, r9633, 9 Feb 2007, Herbelin
+  found by: Benjamin Werner
+  exploit:
+  GH issue number: none
+  risk:
+
+There were otherwise several bugs in beta-releases, from memory, bugs with beta versions of primitive projections or template polymorphism or native compilation or guard (e7fc96366, 2a4d714a1).
+
+There were otherwise maybe unexploitable kernel bugs, e.g. 2df88d83 (Require overloading), 0adf0838 ("Univs: uncovered bug in strengthening of opaque polymorphic definitions."), 5122a398 (#3746 about functors), #4346 (casts in VM), a14bef4 (guard condition in 8.1), 6ed40a8 ("Georges' bug" with ill-typed lazy machine), and various other bugs in 8.0 or 8.1 w/o knowing if they are critical.
+
+Another non exploitable bug?
+
+  component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
+  summary: bug in 31bit arithmetic
+  introduced: V8.1
+  impacted released versions: none
+  impacted development branches: 
+  impacted coqchk versions: none (no virtual machine in coqchk)
+  fixed in: master/trunk/v8.5 (0f8d1b92c, 6 Sep 2015, Dénès)
+  found by: Dénès, from a bug report by Tahina Ramananandro
+  exploit: ?
+  GH issue number: ?
+  risk: 
+
