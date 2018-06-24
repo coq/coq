@@ -432,7 +432,6 @@ module Renv =
 	r
   end
 
-(* What about pattern matching ?*)
 let is_lazy prefix t =
   match kind t with
   | App (f,args) ->
@@ -448,7 +447,7 @@ let is_lazy prefix t =
 	  with Not_found -> true)
      | _ -> true
      end
-  | LetIn _ -> true
+  | LetIn _ | Case _ | Proj _ -> true
   | _ -> false
 
 let evar_value sigma ev = sigma.evars_val ev
