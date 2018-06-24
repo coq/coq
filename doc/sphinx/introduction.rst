@@ -103,13 +103,6 @@ List of additional documentation
 This manual does not contain all the documentation the user may need
 about |Coq|. Various informations can be found in the following documents:
 
-Tutorial
-    A companion volume to this reference manual, the |Coq| Tutorial, is
-    aimed at gently introducing new users to developing proofs in |Coq|
-    without assuming prior knowledge of type theory. In a second step,
-    the user can read also the tutorial on recursive types (document
-    `RecTutorial.ps`).
-
 Installation
     A text file `INSTALL` that comes with the sources explains how to
     install |Coq|.
