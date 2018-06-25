@@ -1193,14 +1193,24 @@ open Pputils
       | VernacEndSubproof ->
         return (str "}")
 
+let rec pr_vernac_flag_data (k, v) =
+  let k = keyword k in
+  match v with
+  | `Empty -> k
+  | `Leaf v -> k ++ str " = " ++ qs v
+  | `Node m -> k ++ str "( " ++ prlist_with_sep (fun () -> str ", ") pr_vernac_flag_data m ++ str " )"
+
 let pr_vernac_flag f =
-  keyword (match f with
-  | VernacPolymorphic true -> "polymorphic"
-  | VernacPolymorphic false -> "monomorphic"
-  | VernacProgram -> "program"
-  | VernacLocal true -> "local"
-  | VernacLocal false -> "global"
-  )
+  match f with
+  | VernacPolymorphic true -> keyword "polymorphic"
+  | VernacPolymorphic false -> keyword "monomorphic"
+  | VernacProgram -> keyword "program"
+  | VernacLocal true -> keyword "local"
+  | VernacLocal false -> keyword "global"
+  | VernacDeprecated (since, note) ->
+    pr_vernac_flag_data ("deprecated", `Node [
+        "since", `Leaf since; "note", `Leaf note
+      ])
 
 let pr_vernac_flag_list =
   function

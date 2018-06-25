@@ -19,10 +19,11 @@ type atts = {
   locality : bool option;
   polymorphic : bool;
   program : bool;
+  deprecated : (string * string) option;
 }
 
-let mk_atts ?(loc=None) ?(locality=None) ?(polymorphic=false) ?(program=false) () : atts =
-  { loc ; locality ; polymorphic ; program }
+let mk_atts ?(loc=None) ?(locality=None) ?(polymorphic=false) ?(program=false) ?(deprecated=None) () : atts =
+  { loc ; locality ; polymorphic ; program ; deprecated }
 
 type 'a vernac_command = 'a -> atts:atts -> st:Vernacstate.t -> Vernacstate.t
 

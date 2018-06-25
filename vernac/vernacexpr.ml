@@ -463,6 +463,7 @@ type nonrec vernac_flag =
   | VernacProgram
   | VernacPolymorphic of bool
   | VernacLocal of bool
+  | VernacDeprecated of string * string (* Since, Note *)
 
 type vernac_control =
   | VernacExpr of vernac_flag list * vernac_expr
