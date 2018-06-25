@@ -97,6 +97,20 @@ GRAMMAR EXTEND Gram
   | IDENT "local" -> VernacLocal true
   | IDENT "global" -> VernacLocal false
   | IDENT "coercion" -> VernacCoercion
+  | IDENT "deprecated" ; v = attribute_value ->
+    match v with
+    | `List [ k1, `Leaf since ; k2, `Leaf note ] when Names.Id.equal k1 (Names.Id.of_string "since") && Names.Id.equal k2 (Names.Id.of_string "note") -> VernacDeprecated (since, note)
+    |  _ -> CErrors.user_err (Pp.str "Ill formed “deprecated” attribute")
+  ]]
+  ;
+  attribute_value:
+  [[ "=" ; v = string -> `Leaf v
+   | "(" ; m = LIST0 attribute_pair SEP "," ; ")" -> `List m
+   | -> `Empty
+  ]]
+  ;
+  attribute_pair:
+  [[ k = ident ; v = attribute_value -> (k, v)
   ]]
   ;
   vernac:
