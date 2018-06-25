@@ -2320,25 +2320,45 @@ let with_fail st b f =
   end
 
 let attributes_of_flags f atts =
+  let assert_empty k v =
+    if v <> VernacFlagEmpty
+    then user_err Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
+  in
   List.fold_left
-    (fun (polymorphism, atts) f ->
-       match f with
-       | VernacProgram when not atts.program ->
+    (fun (polymorphism, atts) (k, v) ->
+       let k = Names.Id.to_string k in
+       match k with
+       | "program" when not atts.program ->
+         assert_empty k v;
          (polymorphism, { atts with program = true })
-       | VernacProgram ->
+       | "program" ->
          user_err Pp.(str "Program mode specified twice")
-       | VernacPolymorphic b when polymorphism = None ->
-         (Some b, atts)
-       | VernacPolymorphic _ ->
+       | "polymorphic" when polymorphism = None ->
+         assert_empty k v;
+         (Some true, atts)
+       | "monomorphic" when polymorphism = None ->
+         assert_empty k v;
+         (Some false, atts)
+       | ("polymorphic" | "monomorphic") ->
          user_err Pp.(str "Polymorphism specified twice")
-       | VernacLocal b when Option.is_empty atts.locality ->
-         (polymorphism, { atts with locality = Some b })
-       | VernacLocal _ ->
+       | "local" when Option.is_empty atts.locality ->
+         assert_empty k v;
+         (polymorphism, { atts with locality = Some true })
+       | "global" when Option.is_empty atts.locality ->
+         assert_empty k v;
+         (polymorphism, { atts with locality = Some false })
+       | ("local" | "global") ->
          user_err Pp.(str "Locality specified twice")
-       | VernacDeprecated (since, note) when Option.is_empty atts.deprecated ->
-         (polymorphism, { atts with deprecated = Some (since, note) })
-       | VernacDeprecated _ ->
+       | "deprecated" when Option.is_empty atts.deprecated ->
+           begin match v with
+             | VernacFlagList [ k1, VernacFlagLeaf since ; k2, VernacFlagLeaf note ]
+               when Names.Id.(equal k1 (of_string "since") && equal k2 (of_string "note")) ->
+               (polymorphism, { atts with deprecated = Some (since, note) })
+             |  _ -> CErrors.user_err (Pp.str "Ill formed “deprecated” attribute")
+           end
+       | "deprecated" ->
          user_err Pp.(str "Deprecation specified twice")
+       | _ -> user_err Pp.(str "Unknown attribute " ++ str k)
     )
     (None, atts)
     f

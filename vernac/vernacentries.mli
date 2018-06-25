@@ -41,4 +41,4 @@ val universe_polymorphism_option_name : string list
 
 (** Elaborate a [atts] record out of a list of flags.
     Also returns whether polymorphism is explicitly (un)set. *)
-val attributes_of_flags : Vernacexpr.vernac_flag list -> Vernacinterp.atts -> bool option * Vernacinterp.atts
+val attributes_of_flags : Vernacexpr.vernac_flags -> Vernacinterp.atts -> bool option * Vernacinterp.atts

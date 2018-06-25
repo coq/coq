@@ -1193,34 +1193,24 @@ open Pputils
       | VernacEndSubproof ->
         return (str "}")
 
-let rec pr_vernac_flag_data (k, v) =
-  let k = keyword k in
+let rec pr_vernac_flag (k, v) =
+  let k = keyword (Names.Id.to_string k) in
   match v with
-  | `Empty -> k
-  | `Leaf v -> k ++ str " = " ++ qs v
-  | `Node m -> k ++ str "( " ++ prlist_with_sep (fun () -> str ", ") pr_vernac_flag_data m ++ str " )"
+  | VernacFlagEmpty -> k
+  | VernacFlagLeaf v -> k ++ str " = " ++ qs v
+  | VernacFlagList m -> k ++ str "( " ++ pr_vernac_flags m ++ str " )"
+and pr_vernac_flags m =
+  prlist_with_sep (fun () -> str ", ") pr_vernac_flag m
 
-let pr_vernac_flag f =
-  match f with
-  | VernacPolymorphic true -> keyword "polymorphic"
-  | VernacPolymorphic false -> keyword "monomorphic"
-  | VernacProgram -> keyword "program"
-  | VernacLocal true -> keyword "local"
-  | VernacLocal false -> keyword "global"
-  | VernacDeprecated (since, note) ->
-    pr_vernac_flag_data ("deprecated", `Node [
-        "since", `Leaf since; "note", `Leaf note
-      ])
-
-let pr_vernac_flag_list =
+let pr_vernac_attributes =
   function
   | [] -> mt ()
-  | flags ->  str "#[" ++ prlist_with_sep (fun () -> str ", ") pr_vernac_flag flags ++ str "]" ++ cut ()
+  | flags ->  str "#[" ++ pr_vernac_flags flags ++ str "]" ++ cut ()
 
   let rec pr_vernac_control v =
     let return = tag_vernac v in
     match v with
-    | VernacExpr (f, v') -> pr_vernac_flag_list f ++ pr_vernac_expr v' ++ sep_end v'
+    | VernacExpr (f, v') -> pr_vernac_attributes f ++ pr_vernac_expr v' ++ sep_end v'
     | VernacTime (_,{v}) ->
       return (keyword "Time" ++ spc() ++ pr_vernac_control v)
     | VernacRedirect (s, {v}) ->
