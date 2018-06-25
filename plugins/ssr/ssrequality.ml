@@ -417,8 +417,6 @@ let rwcltac cl rdx dir sr gl =
       then errorstrm Pp.(str "Rewriting impacts evars")
       else errorstrm Pp.(str "Dependent type error in rewrite of "
         ++ pr_constr_env (pf_env gl) (project gl) (Term.mkNamedLambda pattern_id (EConstr.Unsafe.to_constr rdxt) (EConstr.Unsafe.to_constr cl)))
-    | CErrors.UserError _ as e -> raise e
-    | e -> anomaly ("cvtac's exception: " ^ Printexc.to_string e);
   in
   tclTHEN cvtac' rwtac gl
 
