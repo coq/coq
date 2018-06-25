@@ -296,6 +296,10 @@ Variants:
    This variant declares a class a posteriori from a constant or
    inductive definition. No methods or instances are defined.
 
+   .. warn:: @ident is already declared as a typeclass
+
+      This command has no effect when used on a typeclass.
+
 .. cmd:: Instance @ident {? @binders} : Class t1 … tn [| priority] := { field1 := b1 ; …; fieldi := bi }
 
 The :cmd:`Instance` command is used to declare a type class instance named
