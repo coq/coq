@@ -1194,7 +1194,7 @@ open Pputils
         return (str "}")
 
 let rec pr_vernac_flag (k, v) =
-  let k = keyword (Names.Id.to_string k) in
+  let k = keyword k in
   match v with
   | VernacFlagEmpty -> k
   | VernacFlagLeaf v -> k ++ str " = " ++ qs v

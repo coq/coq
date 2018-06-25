@@ -459,7 +459,7 @@ type nonrec vernac_expr =
   (* For extension *)
   | VernacExtend of extend_name * Genarg.raw_generic_argument list
 
-type vernac_flags = (Names.Id.t * vernac_flag_value) list
+type vernac_flags = (string * vernac_flag_value) list
 and vernac_flag_value =
   | VernacFlagEmpty
   | VernacFlagLeaf of string

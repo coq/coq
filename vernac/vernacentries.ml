@@ -2326,7 +2326,6 @@ let attributes_of_flags f atts =
   in
   List.fold_left
     (fun (polymorphism, atts) (k, v) ->
-       let k = Names.Id.to_string k in
        match k with
        | "program" when not atts.program ->
          assert_empty k v;
@@ -2351,8 +2350,8 @@ let attributes_of_flags f atts =
          user_err Pp.(str "Locality specified twice")
        | "deprecated" when Option.is_empty atts.deprecated ->
            begin match v with
-             | VernacFlagList [ k1, VernacFlagLeaf since ; k2, VernacFlagLeaf note ]
-               when Names.Id.(equal k1 (of_string "since") && equal k2 (of_string "note")) ->
+             | VernacFlagList [ "since", VernacFlagLeaf since ; "note", VernacFlagLeaf note ]
+             | VernacFlagList [ "note", VernacFlagLeaf note ; "since", VernacFlagLeaf since ] ->
                (polymorphism, { atts with deprecated = Some (since, note) })
              |  _ -> CErrors.user_err (Pp.str "Ill formed “deprecated” attribute")
            end
