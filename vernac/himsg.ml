@@ -871,9 +871,6 @@ let explain_not_match_error = function
     pr_enum (function Name id -> Id.print id | _ -> str "_") nal
   | NotEqualInductiveAliases ->
     str "Aliases to inductive types do not match"
-  | NoTypeConstraintExpected ->
-    strbrk "a definition whose type is constrained can only be subtype " ++
-    strbrk "of a definition whose type is itself constrained"
   | CumulativeStatusExpected b ->
     let status b = if b then str"cumulative" else str"non-cumulative" in
       str "a " ++ status b ++ str" declaration was expected, but a " ++ 

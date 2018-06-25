@@ -2,7 +2,6 @@ open Pp
 open Util
 open Names
 open Cic
-open Term
 open Reduction
 open Typeops
 open Indtypes
@@ -12,17 +11,6 @@ open Declarations
 open Environ
 
 (** {6 Checking constants } *)
-
-let refresh_arity ar =
-  let ctxt, hd = decompose_prod_assum ar in
-  match hd with
-      Sort (Type u) when not (Univ.is_univ_variable u) ->
-      let ul = Univ.Level.make DirPath.empty 1 in
-      let u' = Univ.Universe.make ul in
-      let cst = Univ.enforce_leq u u' Univ.empty_constraint in
-      let ctx = Univ.ContextSet.make (Univ.LSet.singleton ul) cst in
-        mkArity (ctxt,Prop Null), ctx
-    | _ -> ar, Univ.ContextSet.empty
 
 let check_constant_declaration env kn cb =
   Flags.if_verbose Feedback.msg_notice (str "  checking cst:" ++ prcon kn);
@@ -37,18 +25,13 @@ let check_constant_declaration env kn cb =
       let ctx = Univ.AUContext.repr auctx in
       push_context ~strict:false ctx env
   in
-  let envty, ty = 
-    let ty = cb.const_type in
-    let ty', cu = refresh_arity ty in
-    let envty = push_context_set cu env' in
-    let _ = infer_type envty ty' in
-    envty, ty
-  in
-  let () = 
+  let ty = cb.const_type in
+  let _ = infer_type env' ty in
+  let () =
     match body_of_constant cb with
     | Some bd ->
-      let j = infer envty bd in
-      conv_leq envty j ty
+      let j = infer env' bd in
+      conv_leq env' j ty
     | None -> ()
   in
   let env =

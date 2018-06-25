@@ -17,7 +17,6 @@
 open Names
 open Univ
 open Util
-open Term
 open Constr
 open Declarations
 open Declareops
@@ -138,39 +137,8 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   in
   let mib2 =  Declareops.subst_mind_body subst2 mib2 in
   let check_inductive_type cst name t1 t2 =
-
-    (* Due to template polymorphism, the conclusions of
-       t1 and t2, if in Type, are generated as the least upper bounds
-       of the types of the constructors.
-
-       By monotonicity of the infered l.u.b.  wrt subtyping (i.e.  if X:U
-       |- T(X):s and |- M:U' and U'<=U then infer_type(T(M))<=s), each
-       universe in the conclusion of t1 has an bounding universe in
-       the conclusion of t2, so that we don't need to check the
-       subtyping of the conclusions of t1 and t2.
-
-       Even if we'd like to recheck it, the inference of constraints
-       is not designed to deal with algebraic constraints of the form
-       max-univ(u1..un) <= max-univ(u'1..u'n), so that it is not easy
-       to recheck it (in short, we would need the actual graph of
-       constraints as input while type checking is currently designed
-       to output a set of constraints instead) *)
-
-    (* So we cheat and replace the subtyping problem on algebraic
-       constraints of the form max-univ(u1..un) <= max-univ(u'1..u'n)
-       (that we know are necessary true) by trivial constraints that
-       the constraint generator knows how to deal with *)
-
-    let (ctx1,s1) = dest_arity env t1 in
-    let (ctx2,s2) = dest_arity env t2 in
-    let s1,s2 =
-      match s1, s2 with
-      | Type _, Type _ -> (* shortcut here *) Sorts.prop, Sorts.prop
-      | (Prop _, Type _) | (Type _,Prop _) ->
-	error (NotConvertibleInductiveField name)
-      | _ -> (s1, s2) in
     check_conv (NotConvertibleInductiveField name)
-      cst (inductive_is_polymorphic mib1) infer_conv_leq env (mkArity (ctx1,s1)) (mkArity (ctx2,s2))
+      cst (inductive_is_polymorphic mib1) infer_conv_leq env t1 t2
   in
 
   let check_packet cst p1 p2 =
@@ -260,53 +228,8 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
   let error why = error_signature_mismatch l spec2 why in
   let check_conv cst poly f = check_conv_error error cst poly f in
   let check_type poly cst env t1 t2 =
-
     let err = NotConvertibleTypeField (env, t1, t2) in
-
-    (* If the type of a constant is generated, it may mention
-       non-variable algebraic universes that the general conversion
-       algorithm is not ready to handle. Anyway, generated types of
-       constants are functions of the body of the constant. If the
-       bodies are the same in environments that are subtypes one of
-       the other, the types are subtypes too (i.e. if Gamma <= Gamma',
-       Gamma |- A |> T, Gamma |- A' |> T' and Gamma |- A=A' then T <= T').
-       Hence they don't have to be checked again *)
-
-    let t1,t2 =
-      if isArity t2 then
-        let (ctx2,s2) = destArity t2 in
-        match s2 with
-        | Type v when not (is_univ_variable v) ->
-          (* The type in the interface is inferred and is made of algebraic
-             universes *)
-          begin try
-            let (ctx1,s1) = dest_arity env t1 in
-            match s1 with
-            | Type u when not (is_univ_variable u) ->
-              (* Both types are inferred, no need to recheck them. We
-                 cheat and collapse the types to Prop *)
-                mkArity (ctx1,Sorts.prop), mkArity (ctx2,Sorts.prop)
-            | Prop _ ->
-              (* The type in the interface is inferred, it may be the case
-                 that the type in the implementation is smaller because
-                 the body is more reduced. We safely collapse the upper
-                 type to Prop *)
-                mkArity (ctx1,Sorts.prop), mkArity (ctx2,Sorts.prop)
-            | Type _ ->
-              (* The type in the interface is inferred and the type in the
-                 implementation is not inferred or is inferred but from a
-                 more reduced body so that it is just a variable. Since
-                 constraints of the form "univ <= max(...)" are not
-                 expressible in the system of algebraic universes: we fail
-                 (the user has to use an explicit type in the interface *)
-                error NoTypeConstraintExpected
-          with NotArity ->
-            error err end
-        | _ ->
-	  t1,t2
-      else
-        (t1,t2) in
-      check_conv err cst poly infer_conv_leq env t1 t2
+    check_conv err cst poly infer_conv_leq env t1 t2
   in
   match info1 with
     | Constant cb1 ->
