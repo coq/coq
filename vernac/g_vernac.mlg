@@ -83,27 +83,27 @@ GRAMMAR EXTEND Gram
     ]
   ;
   decorated_vernac:
-  [[ a = attributes ; fv = vernac -> let (f, v) = fv in (List.append a f, v)
-  | fv = vernac -> fv
-  ]]
+    [ [ a = attributes ; fv = vernac -> let (f, v) = fv in (List.append a f, v)
+      | fv = vernac -> fv ]
+    ]
   ;
   attributes:
-  [[ "#[" ; a = attribute_list ; "]" -> a
-  ]]
+    [ [ "#[" ; a = attribute_list ; "]" -> a ]
+    ]
   ;
   attribute_list:
-  [[ a = LIST0 attribute SEP "," -> a
-  ]]
+    [ [ a = LIST0 attribute SEP "," -> a ]
+    ]
   ;
   attribute:
-  [[ k = ident ; v = attribute_value -> (k, v)
-  ]]
+    [ [ k = ident ; v = attribute_value -> (k, v) ]
+    ]
   ;
   attribute_value:
-  [[ "=" ; v = string -> VernacFlagLeaf v
-   | "(" ; a = attribute_list ; ")" -> VernacFlagList a
-   | -> VernacFlagEmpty
-  ]]
+    [ [ "=" ; v = string -> VernacFlagLeaf v
+      | "(" ; a = attribute_list ; ")" -> VernacFlagList a
+      | -> VernacFlagEmpty ]
+    ]
   ;
   vernac:
     [ [ IDENT "Local"; v = vernac_poly -> { let (f, v) = v in ((Names.Id.of_string "local", VernacFlagEmpty) :: f, v) }
