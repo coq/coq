@@ -171,6 +171,8 @@ let evar_context evi = named_context_of_val evi.evar_hyps
 let evar_filtered_context evi =
   Filter.filter_list (evar_filter evi) (evar_context evi)
 
+let evar_candidates evi = evi.evar_candidates
+
 let evar_hyps evi = evi.evar_hyps
 
 let evar_filtered_hyps evi = match Filter.repr (evar_filter evi) with
@@ -620,6 +622,7 @@ let merge_universe_context evd uctx' =
 let set_universe_context evd uctx' =
   { evd with universes = uctx' }
 
+(* TODO: make unique *)
 let add_conv_pb ?(tail=false) pb d =
   if tail then {d with conv_pbs = d.conv_pbs @ [pb]}
   else {d with conv_pbs = pb::d.conv_pbs}
