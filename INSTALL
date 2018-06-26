@@ -1,6 +1,6 @@
 
-            INSTALLATION PROCEDURES FOR THE COQ V8.8 SYSTEM
-            -----------------------------------------------
+            INSTALLATION PROCEDURE
+            ----------------------
 
 
 WHAT DO YOU NEED ?
@@ -27,10 +27,13 @@ WHAT DO YOU NEED ?
 
      port install coq
 
-   To compile Coq V8.8 yourself, you need:
+   To compile Coq yourself, you need:
 
    - OCaml version 4.02.3 or later
      (available at https://ocaml.org/)
+
+   - The Num package, which used to be part of the OCaml standard library,
+     if you are using an OCaml version >= 4.06.0
 
    - Findlib (version >= 1.4.1)
      (available at http://projects.camlcity.org/projects/findlib.html)
@@ -42,19 +45,23 @@ WHAT DO YOU NEED ?
 
    - a C compiler
 
-   - for Coqide, the Lablgtk development files, and the GTK libraries
-     including gtksourceview, see INSTALL.ide for more details
+   - for CoqIDE, the lablgtk development files (version >= 2.18.3),
+     and the GTK 2.x libraries including gtksourceview2.
 
-   Note that camlp5 and lablgtk should be properly registered with
+   Note that num, camlp5 and lablgtk should be properly registered with
    findlib/ocamlfind as Coq's makefile will use it to locate the
    libraries during the build.
 
-   Opam (https://opam.ocaml.org/) is recommended to install ocaml and
+   Opam (https://opam.ocaml.org/) is recommended to install OCaml and
    the corresponding packages.
 
-   $ opam install ocamlfind camlp5 lablgtk-extras
+   $ opam install num ocamlfind camlp5 lablgtk conf-gtksourceview
 
    should get you a reasonable OCaml environment to compile Coq.
+
+   Nix users can also get all the required dependencies by running:
+
+   $ nix-shell
 
    Advanced users may want to experiment with the OCaml Flambda
    compiler as way to improve the performance of Coq. In order to
@@ -76,7 +83,7 @@ QUICK INSTALLATION PROCEDURE.
 INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 =================================================
 
-1- Check that you have the Objective Caml compiler installed on your
+1- Check that you have the OCaml compiler installed on your
    computer and that "ocamlc" (or, better, its native code version
    "ocamlc.opt") lies in a directory which is present in your $PATH
    environment variable. At the time of writing this sentence, all
@@ -183,11 +190,6 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
        	make install
 
    Of course, you may need superuser rights to do that.
-   To use the Coq emacs mode you also need to put the following lines
-   in you .emacs file:
-
-        (setq auto-mode-alist (cons '("\\.v$" . coq-mode) auto-mode-alist))
-        (autoload 'coq-mode "gallina" "Major mode for editing Coq vernacular." t)
 
 7- Optionally, you could build the bytecode version of Coq via:
 
@@ -257,8 +259,6 @@ THE AVAILABLE COMMANDS.
    in the Reference Manual (which you can get in the doc/
    directory, or read online on http://coq.inria.fr/doc/)
    and in the corresponding manual pages.
-
-   There is also a tutorial and a FAQ; see http://coq.inria.fr/getting-started
 
 
 COMPILING FOR DIFFERENT ARCHITECTURES.
