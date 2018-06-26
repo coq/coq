@@ -56,3 +56,11 @@ used, and include a complete source example leading to the bug.
 ## Contributing
 
 Guidelines for contributing to Coq in various ways are listed in the [contributor's guide](CONTRIBUTING.md).
+
+## Supporting Coq
+
+Help the Coq community grow and prosper by becoming a sponsor! The [Coq
+Consortium](https://coq.inria.fr/consortium) can establish sponsorship contracts
+or receive donations. If you want to take an active role in shaping Coq's
+future, you can also become a Consortium member. If you are interested, please
+get in touch!
