@@ -1437,12 +1437,16 @@ function make_addon_equations {
 }
 
 function make_addons {
-  if [ -n "${GITLAB_CI}" ]; then
+  if [ -n "$GITLAB_CI" ]; then
     export CI_BRANCH="$CI_COMMIT_REF_NAME"
-    if [[ ${CI_BRANCH#pr-} =~ ^[0-9]*$ ]]
-    then
+    if [[ ${CI_BRANCH#pr-} =~ ^[0-9]*$ ]]; then
       export CI_PULL_REQUEST="${CI_BRANCH#pr-}"
+    else
+      export CI_PULL_REQUEST=""
     fi
+  else
+    export CI_BRANCH=""
+    export CI_PULL_REQUEST=""
   fi
   . /build/ci-basic-overlay.sh
   for overlay in /build/user-overlays/*.sh; do
