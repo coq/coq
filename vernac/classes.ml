@@ -116,9 +116,8 @@ let instance_hook k info global imps ?hook cst =
 let declare_instance_constant k info global imps ?hook id decl poly sigma term termtype =
   let kind = IsDefinition Instance in
   let sigma =
-    let env = Global.env () in
-    let levels = Univ.LSet.union (Univops.universes_of_constr env termtype)
-                                 (Univops.universes_of_constr env term) in
+    let levels = Univ.LSet.union (Univops.universes_of_constr termtype)
+                                 (Univops.universes_of_constr term) in
     Evd.restrict_universe_context sigma levels
   in
   let uctx = Evd.check_univ_decl ~poly sigma decl in

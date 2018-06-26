@@ -592,25 +592,14 @@ let eq_constr_universes_proj env sigma m n =
     let res = eq_constr' 0 (unsafe_to_constr m) (unsafe_to_constr n) in
     if res then Some !cstrs else None
 
-let universes_of_constr env sigma c =
+let universes_of_constr sigma c =
   let open Univ in
-  let open Declarations in
   let rec aux s c =
     match kind sigma c with
     | Const (c, u) ->
-      begin match (Environ.lookup_constant c env).const_universes with
-        | Polymorphic_const _ ->
           LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s
-        | Monomorphic_const (univs, _) ->
-          LSet.union s univs
-      end
     | Ind ((mind,_), u) | Construct (((mind,_),_), u) ->
-      begin match (Environ.lookup_mind mind env).mind_universes with
-        | Cumulative_ind _ | Polymorphic_ind _ ->
           LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s
-        | Monomorphic_ind (univs,_) ->
-          LSet.union s univs
-      end
     | Sort u ->
        let sort = ESorts.kind sigma u in
        if Sorts.is_small sort then s
