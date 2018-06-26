@@ -18,7 +18,9 @@ or refer to the [`INSTALL` file](INSTALL) for the procedure to install from sour
 
 ## Documentation
 
-The sources of the documentation can be found in directory [`doc`](doc). The
+The sources of the documentation can be found in directory [`doc`](doc).
+See [`doc/README.md`](/doc/README.md) to learn more about the documentation,
+in particular how to build it. The
 documentation of the last released version is available on the Coq
 web site at [coq.inria.fr/documentation](http://coq.inria.fr/documentation).
 See also [Cocorico](https://github.com/coq/coq/wiki) (the Coq wiki),
