@@ -962,6 +962,7 @@ END
 (* the default simpl and unfold tactics would erase blindly.               *)
 
 open Ssrmatching_plugin.Ssrmatching
+open Ssrmatching_plugin.G_ssrmatching
 
 let pr_wgen = function 
   | (clr, Some((id,k),None)) -> spc() ++ pr_clear mt clr ++ str k ++ pr_hoi id
