@@ -112,8 +112,9 @@ let push_fv d e = {
 
 let fv r = !(r.in_env)
 
-let empty_comp_env ?(univs=0) ()=
-  { nb_uni_stack = univs;
+let empty_comp_env ()=
+  { arity = 0;
+    nb_uni_stack = 0;
     nb_stack = 0;
     in_stack = [];
     nb_rec = 0;
@@ -148,7 +149,8 @@ let rec add_param n sz l =
   if Int.equal n 0 then l else add_param (n - 1) sz (n+sz::l)
 
 let comp_env_fun ?(univs=0) arity =
-  { nb_uni_stack = univs ;
+  { arity;
+    nb_uni_stack = univs ;
     nb_stack = arity;
     in_stack = add_param arity 0 [];
     nb_rec = 0;
@@ -159,7 +161,8 @@ let comp_env_fun ?(univs=0) arity =
 
 
 let comp_env_fix_type  rfv =
-  { nb_uni_stack = 0;
+  { arity = 0;
+    nb_uni_stack = 0;
     nb_stack = 0;
     in_stack = [];
     nb_rec = 0;
@@ -173,7 +176,8 @@ let comp_env_fix ndef curr_pos arity rfv =
    for i = ndef downto 1 do
      prec := Koffsetclosure (2 * (ndef - curr_pos - i)) :: !prec
    done;
-   { nb_uni_stack = 0;
+   { arity;
+     nb_uni_stack = 0;
      nb_stack = arity;
      in_stack = add_param arity 0 [];
      nb_rec = ndef;
@@ -183,7 +187,8 @@ let comp_env_fix ndef curr_pos arity rfv =
    }
 
 let comp_env_cofix_type ndef rfv =
-  { nb_uni_stack = 0;
+  { arity = 0;
+    nb_uni_stack = 0;
     nb_stack = 0;
     in_stack = [];
     nb_rec = 0;
@@ -197,7 +202,8 @@ let comp_env_cofix ndef arity rfv =
    for i = 1 to ndef do
      prec := Kenvacc i :: !prec
    done;
-   { nb_uni_stack = 0;
+   { arity;
+     nb_uni_stack = 0;
      nb_stack = arity;
      in_stack = add_param arity 0 [];
      nb_rec = ndef;
@@ -249,8 +255,15 @@ let pos_rel i r sz =
 	Kenvacc(r.offset + pos)
 
 let pos_universe_var i r sz =
-  if i < r.nb_uni_stack then
-    Kacc (sz - r.nb_stack - (r.nb_uni_stack - i))
+  (* Compilation of a universe variable can happen either at toplevel (the
+  current closure correspond to a constant and has local universes) or in a
+  local closure (which has no local universes). *)
+  if r.nb_uni_stack != 0 then
+    (* Universe variables are represented by De Bruijn levels (not indices),
+    starting at 0. The shape of the stack will be [v1|..|vn|u1..up|arg1..argq]
+    with size = n + p + q, and q = r.arity. So Kacc (sz - r.arity - 1) will access
+    the last universe. *)
+    Kacc (sz - r.arity - (r.nb_uni_stack - i))
   else
     let env = !(r.in_env) in
     let db = FVuniv_var i in
