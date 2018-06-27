@@ -210,29 +210,26 @@ let convert_constructors
 
 let sort_cmp env univ pb s0 s1 =
   match (s0,s1) with
-    | (Prop c1, Prop c2) when pb = CUMUL -> if c1 = Pos && c2 = Null then raise NotConvertible
-    | (Prop c1, Prop c2) -> if c1 <> c2 then raise NotConvertible
-    | (Prop c1, Type u)  ->
+  | Prop, Prop | Set, Set -> ()
+  | Prop, (Set | Type _) | Set, Type _ ->
+    if not (pb = CUMUL) then raise NotConvertible
+  | Type u1, Type u2 ->
+    (** FIXME: handle type-in-type option here *)
+    if (* snd (engagement env) == StratifiedType && *)
+      not
         (match pb with
-            CUMUL -> ()
-          | _ -> raise NotConvertible)
-    | (Type u1, Type u2) ->
-        (** FIXME: handle type-in-type option here *)
-        if (* snd (engagement env) == StratifiedType && *)
-          not
-	  (match pb with
-            | CONV -> Univ.check_eq univ u1 u2
-	    | CUMUL -> Univ.check_leq univ u1 u2)
-        then begin
-          if !Flags.debug then begin
-            let op = match pb with CONV -> "=" | CUMUL -> "<=" in
-            Format.eprintf "sort_cmp: @[%a@]\n%!" Pp.pp_with Pp.(
-               str"Error: " ++ Univ.pr_uni u1 ++ str op ++ Univ.pr_uni u2 ++ str ":" ++ cut()
-               ++ Univ.pr_universes univ)
-          end;
-          raise NotConvertible
-        end
-    | (_, _) -> raise NotConvertible
+         | CONV -> Univ.check_eq univ u1 u2
+         | CUMUL -> Univ.check_leq univ u1 u2)
+    then begin
+      if !Flags.debug then begin
+        let op = match pb with CONV -> "=" | CUMUL -> "<=" in
+        Format.eprintf "sort_cmp: @[%a@]\n%!" Pp.pp_with Pp.(
+            str"Error: " ++ Univ.pr_uni u1 ++ str op ++ Univ.pr_uni u2 ++ str ":" ++ cut()
+            ++ Univ.pr_universes univ)
+      end;
+      raise NotConvertible
+    end
+  | Set, Prop | Type _, (Prop | Set) -> raise NotConvertible
 
 let rec no_arg_available = function
   | [] -> true

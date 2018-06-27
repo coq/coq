@@ -149,18 +149,13 @@ let retype ?(polyprop=true) sigma =
     | Cast (c,_, s) when isSort sigma s -> destSort sigma s
     | Sort s ->
       begin match ESorts.kind sigma s with
-      | Prop _ -> Sorts.type1
+      | Prop | Set -> Sorts.type1
       | Type u -> Type (Univ.super u)
       end
     | Prod (name,t,c2) ->
-        (match (sort_of env t, sort_of (push_rel (LocalAssum (name,t)) env) c2) with
-	  | _, (Prop Null as s) -> s
-          | Prop _, (Prop Pos as s) -> s
-          | Type _, (Prop Pos as s) when is_impredicative_set env -> s
-          | Type u1, Prop Pos -> Type (Univ.sup u1 Univ.type0_univ)
-	  | Prop Pos, (Type u2) -> Type (Univ.sup Univ.type0_univ u2)
-	  | Prop Null, (Type _ as s) -> s
-	  | Type u1, Type u2 -> Type (Univ.sup u1 u2))
+      let dom = sort_of env t in
+      let rang = sort_of (push_rel (LocalAssum (name,t)) env) c2 in
+      Typeops.sort_of_product env dom rang
     | App(f,args) when is_template_polymorphic env sigma f ->
       let t = type_of_global_reference_knowing_parameters env f args in
         sort_of_atomic_type env sigma t args

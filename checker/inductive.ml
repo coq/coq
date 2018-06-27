@@ -101,7 +101,7 @@ let instantiate_params full t u args sign =
   substl subs ty
 
 let full_inductive_instantiate mib u params sign =
-  let dummy = Prop Null in
+  let dummy = Prop in
   let t = mkArity (Term.subst_instance_context u sign,dummy) in
     fst (destArity (instantiate_params true t u params mib.mind_params_ctxt))
 
@@ -137,8 +137,8 @@ Remark: Set (predicative) is encoded as Type(0)
 
 let sort_as_univ = function
 | Type u -> u
-| Prop Null -> Univ.type0m_univ
-| Prop Pos -> Univ.type0_univ
+| Prop -> Univ.type0m_univ
+| Set -> Univ.type0_univ
 
 (* cons_subst add the mapping [u |-> su] in subst if [u] is not *)
 (* in the domain or add [u |-> sup x su] if [u] is already mapped *)
@@ -195,9 +195,9 @@ let instantiate_universes env ctx ar argsorts =
   let level = Univ.subst_univs_universe (Univ.make_subst subst) ar.template_level in
   let ty =
     (* Singleton type not containing types are interpretable in Prop *)
-    if Univ.is_type0m_univ level then Prop Null
+    if Univ.is_type0m_univ level then Prop
     (* Non singleton type not containing types are interpretable in Set *)
-    else if Univ.is_type0_univ level then Prop Pos
+    else if Univ.is_type0_univ level then Set
     (* This is a Type with constraints *)
     else Type level
   in
@@ -226,8 +226,8 @@ let type_of_inductive env mip =
 (* The max of an array of universes *)
 
 let cumulate_constructor_univ u = function
-  | Prop Null -> u
-  | Prop Pos -> Univ.sup Univ.type0_univ u
+  | Prop -> u
+  | Set -> Univ.sup Univ.type0_univ u
   | Type u' -> Univ.sup u u'
 
 let max_inductive_sort =

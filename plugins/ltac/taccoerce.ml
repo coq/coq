@@ -199,11 +199,12 @@ let id_of_name = function
 	  let basename = Nametab.basename_of_global ref in
 	  basename
        | Sort s ->
-	  begin
+          begin
 	    match ESorts.kind sigma s with
-	    | Sorts.Prop _ -> Label.to_id (Label.make "Prop")
-	    | Sorts.Type _ -> Label.to_id (Label.make "Type")
-	  end
+            | Sorts.Prop -> Label.to_id (Label.make "Prop")
+            | Sorts.Set -> Label.to_id (Label.make "Set")
+            | Sorts.Type _ -> Label.to_id (Label.make "Type")
+          end
        | _ -> fail()
 
 

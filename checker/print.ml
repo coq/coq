@@ -57,8 +57,8 @@ let print_pure_constr fmt csr =
     fprintf fmt "Proj(%a,@,@[%a@])" sp_con_display (Projection.constant p) pp_term c
 
   and pp_sort fmt = function
-    | Prop(Pos) -> pp_print_string fmt  "Set"
-    | Prop(Null) -> pp_print_string fmt "Prop"
+    | Set -> pp_print_string fmt  "Set"
+    | Prop -> pp_print_string fmt "Prop"
     | Type u -> fprintf fmt "Type(%a)" chk_pp (Univ.pr_uni u)
 
   and pp_name fmt = function

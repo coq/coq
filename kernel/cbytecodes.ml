@@ -235,8 +235,8 @@ open Util
 let pp_sort s =
   let open Sorts in
   match s with
-  | Prop Null -> str "Prop"
-  | Prop Pos -> str "Set"
+  | Prop -> str "Prop"
+  | Set -> str "Set"
   | Type u -> str "Type@{" ++ Univ.pr_uni u ++ str "}"
 
 let rec pp_struct_const = function

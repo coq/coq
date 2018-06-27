@@ -20,15 +20,15 @@ open Cic
 (* Sorts. *)
 
 let family_of_sort = function
-  | Prop Null -> InProp
-  | Prop Pos -> InSet
+  | Prop -> InProp
+  | Set -> InSet
   | Type _ -> InType
 
 let family_equal = (==)
 
 let sort_of_univ u =
-  if Univ.is_type0m_univ u then Prop Null
-  else if Univ.is_type0_univ u then Prop Pos
+  if Univ.is_type0m_univ u then Prop
+  else if Univ.is_type0_univ u then Set
   else Type u
 
 (********************************************************************)
@@ -356,15 +356,11 @@ let rec isArity c =
 (* alpha conversion : ignore print names and casts *)
 
 let compare_sorts s1 s2 = match s1, s2 with
-| Prop c1, Prop c2 ->
-  begin match c1, c2 with
-  | Pos, Pos | Null, Null -> true
-  | Pos, Null -> false
-  | Null, Pos -> false
-  end
+| Prop, Prop | Set, Set -> true
 | Type u1, Type u2 -> Univ.Universe.equal u1 u2
-| Prop _, Type _ -> false
-| Type _, Prop _ -> false
+| Prop, Set | Set, Prop -> false
+| (Prop | Set), Type _ -> false
+| Type _, (Prop | Set) -> false
 
 let eq_puniverses f (c1,u1) (c2,u2) =
   Univ.Instance.equal u1 u2 && f c1 c2
