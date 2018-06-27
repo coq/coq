@@ -548,12 +548,27 @@ let recover_grammar_command (type a) (tag : a grammar_command) : a list =
 
 let extend_dyn_grammar (GrammarCommand.Dyn (tag, g)) = extend_grammar_command tag g
 
-(* Summary functions: the state of the lexer is included in that of the parser.
+(** Registering extra grammar *)
+
+type any_entry = AnyEntry : 'a Gram.entry -> any_entry
+
+let grammar_names : any_entry list String.Map.t ref = ref String.Map.empty
+
+let register_grammars_by_name name grams =
+  grammar_names := String.Map.add name grams !grammar_names
+
+let find_grammars_by_name name =
+  String.Map.find name !grammar_names
+
+(** Summary functions: the state of the lexer is included in that of the parser.
    Because the grammar affects the set of keywords when adding or removing
    grammar rules. *)
-type frozen_t = (int * GrammarCommand.t * GramState.t) list * CLexer.keyword_state
+type frozen_t =
+  (int * GrammarCommand.t * GramState.t) list *
+  CLexer.keyword_state *
+  any_entry list String.Map.t
 
-let freeze _ : frozen_t = (!grammar_stack, CLexer.get_keyword_state ())
+let freeze _ : frozen_t = (!grammar_stack, CLexer.get_keyword_state (), !grammar_names)
 
 (* We compare the current state of the grammar and the state to unfreeze,
    by computing the longest common suffixes *)
@@ -563,13 +578,14 @@ let factorize_grams l1 l2 =
 let number_of_entries gcl =
   List.fold_left (fun n (p,_,_) -> n + p) 0 gcl
 
-let unfreeze (grams, lex) =
+let unfreeze (grams, lex, names) =
   let (undo, redo, common) = factorize_grams !grammar_stack grams in
   let n = number_of_entries undo in
   remove_grammars n;
   grammar_stack := common;
   CLexer.set_keyword_state lex;
-  List.iter extend_dyn_grammar (List.rev_map pi2 redo)
+  List.iter extend_dyn_grammar (List.rev_map pi2 redo);
+  grammar_names := names
 
 (** No need to provide an init function : the grammar state is
     statically available, and already empty initially, while
@@ -603,15 +619,3 @@ let () =
   Grammar.register0 wit_sort_family (Constr.sort_family);
   Grammar.register0 wit_constr (Constr.constr);
   ()
-
-(** Registering extra grammar *)
-
-type any_entry = AnyEntry : 'a Entry.t -> any_entry
-
-let grammar_names : any_entry list String.Map.t ref = ref String.Map.empty
-
-let register_grammars_by_name name grams =
-  grammar_names := String.Map.add name grams !grammar_names
-
-let find_grammars_by_name name =
-  String.Map.find name !grammar_names
