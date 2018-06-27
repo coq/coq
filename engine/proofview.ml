@@ -754,7 +754,7 @@ let mark_in_evm ~goal evd content =
                - GoalEvar (morally not dependent)
                - VarInstance (morally dependent of some name).
                This is a heuristic for naming these evars. *)
-            | loc, (Evar_kinds.QuestionMark (_,Names.Name id) |
+  | loc, (Evar_kinds.QuestionMark { Evar_kinds.qm_name=Names.Name id} |
                     Evar_kinds.ImplicitArg (_,(_,Some id),_)) -> loc, Evar_kinds.VarInstance id
             | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
             | loc,_ -> loc,Evar_kinds.GoalEvar }

@@ -520,11 +520,15 @@ let pr_trailing_ne_context_of env sigma =
   then str "."
   else (str " in environment:"++ pr_context_unlimited env sigma)
 
-let rec explain_evar_kind env sigma evk ty = function
+let rec explain_evar_kind env sigma evk ty =
+    let open Evar_kinds in
+    function
   | Evar_kinds.NamedHole id ->
       strbrk "the existential variable named " ++ Id.print id
-  | Evar_kinds.QuestionMark _ ->
+  | Evar_kinds.QuestionMark {qm_record_field=None} ->
       strbrk "this placeholder of type " ++ ty
+  | Evar_kinds.QuestionMark {qm_record_field=Some {fieldname; recordname}} ->
+          str "field " ++ (Printer.pr_constant env fieldname) ++ str " of record " ++ (Printer.pr_inductive env recordname)
   | Evar_kinds.CasesType false ->
       strbrk "the type of this pattern-matching problem"
   | Evar_kinds.CasesType true ->

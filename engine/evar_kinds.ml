@@ -21,12 +21,21 @@ type matching_var_kind = FirstOrderPatVar of Id.t | SecondOrderPatVar of Id.t
 
 type subevar_kind = Domain | Codomain | Body
 
+(* maybe this should be a Projection.t *)
+type record_field = { fieldname : Constant.t; recordname : Names.inductive }
+
+type question_mark = {
+     qm_obligation: obligation_definition_status;
+     qm_name: Name.t;
+     qm_record_field: record_field option;
+}
+
 type t =
   | ImplicitArg of GlobRef.t * (int * Id.t option)
      * bool (** Force inference *)
   | BinderType of Name.t
   | NamedHole of Id.t (* coming from some ?[id] syntax *)
-  | QuestionMark of obligation_definition_status * Name.t
+  | QuestionMark of question_mark
   | CasesType of bool (* true = a subterm of the type *)
   | InternalHole
   | TomatchTypeParameter of inductive * int

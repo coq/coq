@@ -220,7 +220,7 @@ let eterm_obligations env name evm fs ?status t ty =
 	 in
 	 let loc, k = evar_source id evm in
 	 let status = match k with
-           | Evar_kinds.QuestionMark (o,_) -> o
+           | Evar_kinds.QuestionMark { Evar_kinds.qm_obligation=o } -> o
            | _ -> match status with
                  | Some o -> o
                  | None -> Evar_kinds.Define (not (Program.get_proofs_transparency ()))

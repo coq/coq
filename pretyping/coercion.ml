@@ -98,7 +98,11 @@ let inh_pattern_coerce_to ?loc env pat ind1 ind2 =
 open Program
 
 let make_existential ?loc ?(opaque = not (get_proofs_transparency ())) na env evdref c =
-  let src = Loc.tag ?loc (Evar_kinds.QuestionMark (Evar_kinds.Define opaque,na)) in
+  let src = Loc.tag ?loc (Evar_kinds.QuestionMark {
+      Evar_kinds.qm_obligation=Evar_kinds.Define opaque;
+      Evar_kinds.qm_name=na;
+      Evar_kinds.qm_record_field=None;
+  }) in
   let evd, v = Evarutil.new_evar env !evdref ~src c in
   evdref := evd;
   v

@@ -381,8 +381,16 @@ let adjust_evar_source evdref na c =
   | Name id, Evar (evk,args) ->
      let evi = Evd.find !evdref evk in
      begin match evi.evar_source with
-     | loc, Evar_kinds.QuestionMark (b,Anonymous) ->
-        let src = (loc,Evar_kinds.QuestionMark (b,na)) in
+     | loc, Evar_kinds.QuestionMark {
+         Evar_kinds.qm_obligation=b;
+         Evar_kinds.qm_name=Anonymous;
+         Evar_kinds.qm_record_field=recfieldname;
+        } ->
+        let src = (loc,Evar_kinds.QuestionMark {
+            Evar_kinds.qm_obligation=b;
+            Evar_kinds.qm_name=na;
+            Evar_kinds.qm_record_field=recfieldname;
+        }) in
         let (evd, evk') = restrict_evar !evdref evk (evar_filter evi) ~src None in
         evdref := evd;
         mkEvar (evk',args)
