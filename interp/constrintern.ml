@@ -710,10 +710,12 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
       let arg = match arg with
       | None -> None
       | Some arg ->
-        let mk_env (c, (tmp_scope, subscopes)) =
+        let mk_env id (c, (tmp_scope, subscopes)) map =
           let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
-          let gc = intern nenv c in
-          (gc, Some c)
+          try
+            let gc = intern nenv c in
+            Id.Map.add id (gc, Some c) map
+          with GlobalizationError _ -> map
         in
         let mk_env' (c, (onlyident,(tmp_scope,subscopes))) =
           let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
@@ -725,7 +727,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
             | [pat] -> (glob_constr_of_cases_pattern pat, None)
             | _ -> error_cannot_coerce_disjunctive_pattern_term ?loc:c.loc ()
         in
-        let terms = Id.Map.map mk_env terms in
+        let terms = Id.Map.fold mk_env terms Id.Map.empty in
         let binders = Id.Map.map mk_env' binders in
         let bindings = Id.Map.fold Id.Map.add terms binders in
         Some (Genintern.generic_substitute_notation bindings arg)
