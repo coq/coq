@@ -2352,7 +2352,14 @@ let attributes_of_flags f atts =
            begin match v with
              | VernacFlagList [ "since", VernacFlagLeaf since ; "note", VernacFlagLeaf note ]
              | VernacFlagList [ "note", VernacFlagLeaf note ; "since", VernacFlagLeaf since ] ->
-               (polymorphism, { atts with deprecated = Some (since, note) })
+               let since = Some since and note = Some note in
+               (polymorphism, { atts with deprecated = Some (mk_deprecation ~since ~note ()) })
+             | VernacFlagList [ "since", VernacFlagLeaf since ] ->
+               let since = Some since in
+               (polymorphism, { atts with deprecated = Some (mk_deprecation ~since ()) })
+             | VernacFlagList [ "note", VernacFlagLeaf note ] ->
+               let note = Some note in
+               (polymorphism, { atts with deprecated = Some (mk_deprecation ~note ()) })
              |  _ -> CErrors.user_err (Pp.str "Ill formed “deprecated” attribute")
            end
        | "deprecated" ->
