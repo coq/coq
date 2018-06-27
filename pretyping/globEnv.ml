@@ -52,6 +52,9 @@ let make env sigma lvar =
 
 let env env = env.static_env
 
+let vars_of_env env =
+  Id.Set.union (Id.Map.domain env.lvar.ltac_genargs) (vars_of_env env.static_env)
+
 let ltac_interp_name { ltac_idents ; ltac_genargs } = function
   | Anonymous -> Anonymous
   | Name id as na ->

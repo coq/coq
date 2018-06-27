@@ -358,3 +358,22 @@ Goal True.
 g 1.
 Abort.
 End ToMatchNames.
+
+(* An example where internal names used to build the return predicate
+   (here "n" because "a" is bound to "nil" and "n" is the first letter
+   of "nil") by small inversion should be taken distinct from Ltac names. *)
+
+Module LtacNames.
+Inductive t (A : Type) : nat -> Type :=
+    nil : t A 0 | cons : A -> forall n : nat, t A n -> t A (S n).
+
+Ltac f a n :=
+  let x := constr:(match a with nil _ => true | cons _ _ _ _ => I end) in
+  assert (x=x/\n=n).
+
+Goal forall (y:t nat 0), True.
+intros.
+f y true.
+Abort.
+
+End LtacNames.

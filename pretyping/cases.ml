@@ -739,7 +739,7 @@ let merge_name get_name obj = function
 
 let merge_names get_name = List.map2 (merge_name get_name)
 
-let get_names env sigma sign eqns =
+let get_names avoid env sigma sign eqns =
   let names1 = List.make (Context.Rel.length sign) Anonymous in
   (* If any, we prefer names used in pats, from top to bottom *)
   let names2,aliasname =
@@ -752,7 +752,7 @@ let get_names env sigma sign eqns =
      avoiding conflicts with user ids *)
   let allvars =
     List.fold_left (fun l (_,_,eqn) -> Id.Set.union l eqn.rhs.avoid_ids)
-      Id.Set.empty eqns in
+      avoid eqns in
   let names3,_ =
     List.fold_left2
       (fun (l,avoid) d na ->
@@ -774,7 +774,7 @@ let get_names env sigma sign eqns =
 
 let recover_initial_subpattern_names = List.map2 RelDecl.set_name
 
-let recover_and_adjust_alias_names names sign =
+let recover_and_adjust_alias_names (_,avoid) names sign =
   let rec aux = function
   | [],[] ->
       []
@@ -1271,7 +1271,7 @@ let build_branch initial current realargs deps (realnames,curname) pb arsign eqn
   (* that had matched constructor C *)
   let cs_args = const_info.cs_args in
   let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cs_args in
-  let names,aliasname = get_names !!(pb.env) !(pb.evdref) cs_args eqns in
+  let names,aliasname = get_names (GlobEnv.vars_of_env pb.env) !!(pb.env) !(pb.evdref) cs_args eqns in
   let typs = List.map2 RelDecl.set_name names cs_args
   in
 
@@ -1782,7 +1782,7 @@ let build_inversion_problem loc env sigma tms t =
 	let indf' = lift_inductive_family n indf in
         let sign = make_arity_signature !!env sigma true indf' in
         let patl = pat :: List.rev patl in
-	let patl,sign = recover_and_adjust_alias_names patl sign in
+        let patl,sign = recover_and_adjust_alias_names acc patl sign in
 	let p = List.length patl in
         let _,env' = push_rel_context sigma sign env in
 	let patl',acc_sign,acc = aux (n+p) env' (sign@acc_sign) tms acc in
@@ -1792,7 +1792,7 @@ let build_inversion_problem loc env sigma tms t =
       let d = LocalAssum (alias_of_pat pat,typ) in
       let patl,acc_sign,acc = aux (n+1) (snd (push_rel sigma d env)) (d::acc_sign) tms acc in
       pat::patl,acc_sign,acc in
-  let avoid0 = vars_of_env !!env in
+  let avoid0 = GlobEnv.vars_of_env env in
   (* [patl] is a list of patterns revealing the substructure of
      constructors present in the constraints on the type of the
      multiple terms t1..tn that are matched in the original problem;
