@@ -90,24 +90,31 @@ let rec post_canonize f =
 
 exception Parsing_error of string
 
-let rec parse_string = parser
-  | [< '' ' | '\n' | '\t' >] -> ""
-  | [< 'c; s >] -> (String.make 1 c)^(parse_string s)
-  | [< >] -> ""
-and parse_string2 = parser
-  | [< ''"' >] -> ""
-  | [< 'c; s >] -> (String.make 1 c)^(parse_string2 s)
-  | [< >] -> raise (Parsing_error "unterminated string")
-and parse_skip_comment = parser
-  | [< ''\n'; s >] -> s
-  | [< 'c; s >] -> parse_skip_comment s
-  | [< >] -> [< >]
-and parse_args = parser
-  | [< '' ' | '\n' | '\t'; s >] -> parse_args s
-  | [< ''#'; s >] -> parse_args (parse_skip_comment s)
-  | [< ''"'; str = parse_string2; s >] -> ("" ^ str) :: parse_args s
-  | [< 'c; str = parse_string; s >] -> ((String.make 1 c) ^ str) :: (parse_args s)
-  | [< >] -> []
+let rec parse_string s = match Stream.next s with
+| ' ' | '\n' | '\t' -> ""
+| c -> (String.make 1 c)^(parse_string s)
+| exception Stream.Failure -> ""
+
+and parse_string2 s = match Stream.next s with
+| '"' -> ""
+| c -> (String.make 1 c)^(parse_string2 s)
+| exception Stream.Failure -> raise (Parsing_error "unterminated string")
+
+and parse_skip_comment s = match Stream.next s with
+| '\n' -> s
+| _ -> parse_skip_comment s
+| exception Stream.Failure -> Stream.of_list []
+
+and parse_args s = match Stream.next s with
+| ' ' | '\n' | '\t' -> parse_args s
+| '#' -> parse_args (parse_skip_comment s)
+| '"' ->
+  let str = parse_string2 s in
+  ("" ^ str) :: parse_args s
+| c ->
+  let str = parse_string s in
+  ((String.make 1 c) ^ str) :: (parse_args s)
+| exception Stream.Failure -> []
 
 let parse f =
   let c = open_in f in
@@ -143,7 +150,7 @@ let process_cmd_line orig_dir proj args =
     error "Use \"-install none\" instead of \"-no-install\""
   | "-custom" :: _ ->
     error "Use \"-extra[-phony] target deps command\" instead of \"-custom command deps target\""
-  
+
   | ("-no-opt"|"-byte") :: r -> aux { proj with use_ocamlopt =  false } r
   | ("-full"|"-opt") :: r -> aux { proj with use_ocamlopt =  true } r
   | "-install" :: d :: r ->
@@ -189,7 +196,7 @@ let process_cmd_line orig_dir proj args =
       error "Output file must be in the current directory";
     if proj.makefile <> None then
       error "Option -o given more than once";
-    aux { proj with makefile = Some file } r  
+    aux { proj with makefile = Some file } r
   | v :: "=" :: def :: r ->
     aux { proj with defs = proj.defs @ [sourced (v,def)] } r
   | "-arg" :: a :: r ->
