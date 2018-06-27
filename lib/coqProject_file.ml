@@ -90,30 +90,50 @@ let rec post_canonize f =
 
 exception Parsing_error of string
 
-let rec parse_string = parser
-  | [< '' ' | '\n' | '\t' >] -> ""
-  | [< 'c; s >] -> (String.make 1 c)^(parse_string s)
-  | [< >] -> ""
-and parse_string2 = parser
-  | [< ''"' >] -> ""
-  | [< 'c; s >] -> (String.make 1 c)^(parse_string2 s)
-  | [< >] -> raise (Parsing_error "unterminated string")
-and parse_skip_comment = parser
-  | [< ''\n'; s >] -> s
-  | [< 'c; s >] -> parse_skip_comment s
-  | [< >] -> [< >]
-and parse_args = parser
-  | [< '' ' | '\n' | '\t'; s >] -> parse_args s
-  | [< ''#'; s >] -> parse_args (parse_skip_comment s)
-  | [< ''"'; str = parse_string2; s >] -> ("" ^ str) :: parse_args s
-  | [< 'c; str = parse_string; s >] -> ((String.make 1 c) ^ str) :: (parse_args s)
-  | [< >] -> []
+let buffer buf =
+  let ans = Buffer.contents buf in
+  let () = Buffer.clear buf in
+  ans
+
+let rec parse_string buf s = match Stream.next s with
+| ' ' | '\n' | '\t' -> buffer buf
+| c ->
+  let () = Buffer.add_char buf c in
+  parse_string buf s
+| exception Stream.Failure -> buffer buf
+
+and parse_string2 buf s = match Stream.next s with
+| '"' -> buffer buf
+| c ->
+  let () = Buffer.add_char buf c in
+  parse_string2 buf s
+| exception Stream.Failure -> raise (Parsing_error "unterminated string")
+
+and parse_skip_comment s = match Stream.next s with
+| '\n' -> ()
+| _ -> parse_skip_comment s
+| exception Stream.Failure -> ()
+
+and parse_args buf accu s = match Stream.next s with
+| ' ' | '\n' | '\t' -> parse_args buf accu s
+| '#' ->
+  let () = parse_skip_comment s in
+  parse_args buf accu s
+| '"' ->
+  let str = parse_string2 buf s in
+  parse_args buf (str :: accu) s
+| c ->
+  let () = Buffer.add_char buf c in
+  let str = parse_string buf s in
+  parse_args buf (str :: accu) s
+| exception Stream.Failure -> accu
 
 let parse f =
   let c = open_in f in
-  let res = parse_args (Stream.of_channel c) in
+  let buf = Buffer.create 64 in
+  let res = parse_args buf [] (Stream.of_channel c) in
   close_in c;
-  res
+  List.rev res
 ;;
 
 (* Copy from minisys.ml, since we don't see that file here *)
@@ -143,7 +163,7 @@ let process_cmd_line orig_dir proj args =
     error "Use \"-install none\" instead of \"-no-install\""
   | "-custom" :: _ ->
     error "Use \"-extra[-phony] target deps command\" instead of \"-custom command deps target\""
-  
+
   | ("-no-opt"|"-byte") :: r -> aux { proj with use_ocamlopt =  false } r
   | ("-full"|"-opt") :: r -> aux { proj with use_ocamlopt =  true } r
   | "-install" :: d :: r ->
@@ -189,7 +209,7 @@ let process_cmd_line orig_dir proj args =
       error "Output file must be in the current directory";
     if proj.makefile <> None then
       error "Option -o given more than once";
-    aux { proj with makefile = Some file } r  
+    aux { proj with makefile = Some file } r
   | v :: "=" :: def :: r ->
     aux { proj with defs = proj.defs @ [sourced (v,def)] } r
   | "-arg" :: a :: r ->
