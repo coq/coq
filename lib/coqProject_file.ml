@@ -90,37 +90,50 @@ let rec post_canonize f =
 
 exception Parsing_error of string
 
-let rec parse_string s = match Stream.next s with
-| ' ' | '\n' | '\t' -> ""
-| c -> (String.make 1 c)^(parse_string s)
-| exception Stream.Failure -> ""
+let buffer buf =
+  let ans = Buffer.contents buf in
+  let () = Buffer.clear buf in
+  ans
 
-and parse_string2 s = match Stream.next s with
-| '"' -> ""
-| c -> (String.make 1 c)^(parse_string2 s)
+let rec parse_string buf s = match Stream.next s with
+| ' ' | '\n' | '\t' -> buffer buf
+| c ->
+  let () = Buffer.add_char buf c in
+  parse_string buf s
+| exception Stream.Failure -> buffer buf
+
+and parse_string2 buf s = match Stream.next s with
+| '"' -> buffer buf
+| c ->
+  let () = Buffer.add_char buf c in
+  parse_string2 buf s
 | exception Stream.Failure -> raise (Parsing_error "unterminated string")
 
 and parse_skip_comment s = match Stream.next s with
-| '\n' -> s
+| '\n' -> ()
 | _ -> parse_skip_comment s
-| exception Stream.Failure -> Stream.of_list []
+| exception Stream.Failure -> ()
 
-and parse_args s = match Stream.next s with
-| ' ' | '\n' | '\t' -> parse_args s
-| '#' -> parse_args (parse_skip_comment s)
+and parse_args buf accu s = match Stream.next s with
+| ' ' | '\n' | '\t' -> parse_args buf accu s
+| '#' ->
+  let () = parse_skip_comment s in
+  parse_args buf accu s
 | '"' ->
-  let str = parse_string2 s in
-  ("" ^ str) :: parse_args s
+  let str = parse_string2 buf s in
+  parse_args buf (str :: accu) s
 | c ->
-  let str = parse_string s in
-  ((String.make 1 c) ^ str) :: (parse_args s)
-| exception Stream.Failure -> []
+  let () = Buffer.add_char buf c in
+  let str = parse_string buf s in
+  parse_args buf (str :: accu) s
+| exception Stream.Failure -> accu
 
 let parse f =
   let c = open_in f in
-  let res = parse_args (Stream.of_channel c) in
+  let buf = Buffer.create 64 in
+  let res = parse_args buf [] (Stream.of_channel c) in
   close_in c;
-  res
+  List.rev res
 ;;
 
 (* Copy from minisys.ml, since we don't see that file here *)
