@@ -64,5 +64,5 @@ type ltac_var_map = {
   ltac_idents: Id.t Id.Map.t;
   (** Ltac variables bound to identifiers *)
   ltac_genargs : unbound_ltac_var_map;
-  (** Ltac variables bound to other kinds of arguments *)
+  (** All Ltac variables (to pass on ltac subterms, and for error reporting) *)
 }
