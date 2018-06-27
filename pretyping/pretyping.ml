@@ -902,9 +902,13 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       user_err ?loc  (str "Destructing let is only for inductive types" ++
 	str " with one constructor.");
     let cs = cstrs.(0) in
+    let valname = Names.Name.print na in
+    let indtype = (fst (dest_ind_family indf)) in
+    let typename = Printer.pr_pinductive env.ExtraEnv.env indtype  in
+    let varnames = str "VARNAMES" in
     if not (Int.equal (List.length nal) cs.cs_nargs) then
-      user_err ?loc:loc (str "Destructing let on this type expects " ++ 
-	int cs.cs_nargs ++ str " variables.");
+      user_err ?loc:loc (str "Destructing let on value " ++ valname ++ str "(of type " ++ typename ++ str ") expects " ++
+        int cs.cs_nargs ++ str " variables:" ++ varnames ++ str ".");
     let fsign, record = 
       let set_name na d = set_name na (map_rel_decl EConstr.of_constr d) in
       match get_projections env.ExtraEnv.env indf with
