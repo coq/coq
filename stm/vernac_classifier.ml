@@ -155,6 +155,7 @@ let classify_vernac e =
     | VernacDeclareClass _ | VernacDeclareInstances _
     | VernacRegister _
     | VernacNameSectionHypSet _
+    | VernacDeclareCustomEntry _
     | VernacComments _ -> VtSideff [], VtLater
     (* Who knows *)
     | VernacLoad _ -> VtSideff [], VtNow
@@ -169,7 +170,7 @@ let classify_vernac e =
     (* These commands alter the parser *)
     | VernacOpenCloseScope _ | VernacDelimiters _ | VernacBindScope _
     | VernacInfix _ | VernacNotation _ | VernacNotationAddFormat _
-    | VernacSyntaxExtension _ | VernacDeclareCustomEntry _
+    | VernacSyntaxExtension _
     | VernacSyntacticDefinition _
     | VernacRequire _ | VernacImport _ | VernacInclude _
     | VernacDeclareMLModule _
