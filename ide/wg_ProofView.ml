@@ -103,7 +103,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
           else []
         in
         proof#buffer#insert (goal_str ~shownum:true 1 goals_cnt);
-        insert_xml proof#buffer (Richpp.richpp_of_pp width cur_goal);
+        insert_xml ~tags:[Tags.Proof.goal] proof#buffer (Richpp.richpp_of_pp width cur_goal);
         proof#buffer#insert "\n"
       in
       (* Insert remaining goals (no hypotheses) *)
@@ -128,7 +128,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
       ignore(proof#buffer#place_cursor
                ~where:(proof#buffer#end_iter#backward_to_tag_toggle
                          (Some Tags.Proof.goal)));
-      ignore(proof#scroll_to_mark ~use_align:true ~yalign:0.95 `INSERT)
+      ignore(proof#scroll_to_mark `INSERT)
 
 let rec flatten = function
 | [] -> []
