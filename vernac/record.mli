@@ -26,9 +26,14 @@ val declare_projections :
     (Name.t * bool) list * Constant.t option list
 
 val definition_structure :
-  inductive_kind * Decl_kinds.cumulative_inductive_flag * Decl_kinds.polymorphic *
-  Declarations.recursivity_kind * ident_decl with_coercion * local_binder_expr list *
+  inductive_kind -> Decl_kinds.cumulative_inductive_flag -> Decl_kinds.polymorphic ->
+  Declarations.recursivity_kind ->
+  (coercion_flag *
+  Names.lident *
+  universe_decl_expr option *
+  local_binder_expr list *
   (local_decl_expr with_instance with_priority with_notation) list *
-  Id.t * constr_expr option -> GlobRef.t
+  Id.t * constr_expr option) list ->
+  GlobRef.t list
 
 val declare_existing_class : GlobRef.t -> unit

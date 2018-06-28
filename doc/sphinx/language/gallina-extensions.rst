@@ -23,8 +23,9 @@ expressions. In this sense, the :cmd:`Record` construction allows defining
 .. _record_grammar:
 
   .. productionlist:: `sentence`
-     record         : `record_keyword` `ident` [ `binders` ] [: `sort` ] := [ `ident` ] { [ `field` ; … ; `field` ] }.
+     record         : `record_keyword` `record_body` with … with `record_body`
      record_keyword : Record | Inductive | CoInductive
+     record_body    : `ident` [ `binders` ] [: `sort` ] := [ `ident` ] { [ `field` ; … ; `field` ] }.
      field          : `ident` [ `binders` ] : `type` [ where `notation` ]
                     : | `ident` [ `binders` ] [: `type` ] := `term`
 
@@ -167,12 +168,13 @@ and the syntax `term.(@qualid` |term_1| |term_n| `)` to `@qualid` |term_1| `…`
 In each case, `term` is the object projected and the
 other arguments are the parameters of the inductive type.
 
+
 .. note:: Records defined with the ``Record`` keyword are not allowed to be
    recursive (references to the record's name in the type of its field
    raises an  error). To define recursive records, one can use the ``Inductive``
    and ``CoInductive`` keywords, resulting in an inductive or co-inductive record.
-   A *caveat*, however, is that records cannot appear in mutually inductive
-   (or co-inductive) definitions.
+   Definition of mutal inductive or co-inductive records are also allowed, as long
+   as all of the types in the block are records.
 
 .. note:: Induction schemes are automatically generated for inductive records.
    Automatic generation of induction schemes for non-recursive records
