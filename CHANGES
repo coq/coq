@@ -3,7 +3,8 @@ Changes from 8.8.0 to 8.8.1
 
 Kernel
 
-- Fix a soundness bug with CoFixpoints and VM/native_compute (see #7333).
+- Fix a critical bug with cofixpoints and vm_compute/native_compute (#7333).
+- Fix a critical bug with modules and algebraic universes (#7695)
 - Fix a critical bug with inlining of polymorphic constants (#7615).
 - Fix a critical bug with universe polymorphism and vm_compute (#7723). Was
   present since 8.5.
@@ -12,6 +13,16 @@ Notations
 
 - Fixed unexpected collision between only-parsing and only-printing
   notations (issue #7462).
+
+Windows installer
+
+- The Windows installer now includes external packages Ltac2 and Equations
+  (it included the Bignums package since 8.8+beta1).
+
+Many other bug fixes, documentation improvements (including fixes of
+regressions due to the Sphinx migration), and user message improvements
+(for details, see the 8.8.1 milestone at
+https://github.com/coq/coq/milestone/13?closed=1).
 
 Changes from 8.8+beta1 to 8.8.0
 ===============================
