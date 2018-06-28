@@ -750,8 +750,11 @@ let type_of_projection_knowing_arg env sigma p c ty =
    syntactic conditions *)
 
 let control_only_guard env sigma c =
+  let c = Evarutil.nf_evar sigma c in
   let check_fix_cofix e c =
-    match kind (EConstr.to_constr sigma c) with
+    (** [c] has already been normalized upfront *)
+    let c = EConstr.Unsafe.to_constr c in
+    match kind c with
     | CoFix (_,(_,_,_) as cofix) ->
       Inductive.check_cofix e cofix
     | Fix (_,(_,_,_) as fix) ->
