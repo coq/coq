@@ -742,6 +742,45 @@ let check_constraint g (l,d,r) =
 let check_constraints c g =
   Constraint.for_all (check_constraint g) c
 
+let leq_expr (u,m) (v,n) =
+  let d = match m - n with
+    | 1 -> Lt
+    | diff -> assert (diff <= 0); Le
+  in
+  (u,d,v)
+
+let enforce_leq_alg u v g =
+  let enforce_one (u,v) = function
+    | Inr _ as orig -> orig
+    | Inl (cstrs,g) as orig ->
+      if check_smaller_expr g u v then orig
+      else
+        (let c = leq_expr u v in
+         match enforce_constraint c g with
+         | g -> Inl (Constraint.add c cstrs,g)
+         | exception (UniverseInconsistency _ as e) -> Inr e)
+  in
+  (* max(us) <= max(vs) <-> forall u in us, exists v in vs, u <= v *)
+  let c = Universe.map (fun u -> Universe.map (fun v -> (u,v)) v) u in
+  let c = List.cartesians enforce_one (Inl (Constraint.empty,g)) c in
+  (* We pick a best constraint: smallest number of constraints, not an error if possible. *)
+  let order x y = match x, y with
+    | Inr _, Inr _ -> 0
+    | Inl _, Inr _ -> -1
+    | Inr _, Inl _ -> 1
+    | Inl (c,_), Inl (c',_) ->
+      Int.compare (Constraint.cardinal c) (Constraint.cardinal c')
+  in
+  match List.min order c with
+  | Inl x -> x
+  | Inr e -> raise e
+
+(* sanity check wrapper *)
+let enforce_leq_alg u v g =
+  let _,g as cg = enforce_leq_alg u v g in
+  assert (check_leq g u v);
+  cg
+
 (* Normalization *)
 
 (** [normalize_universes g] returns a graph where all edges point

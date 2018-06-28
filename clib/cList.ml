@@ -109,6 +109,7 @@ sig
   val assoc_f : 'a eq -> 'a -> ('a * 'b) list -> 'b
   val remove_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> ('a * 'b) list
   val mem_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> bool
+  val min : 'a cmp -> 'a list -> 'a
   val cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
   val cartesians : ('a -> 'b -> 'b) -> 'b -> 'a list list -> 'b list
   val combinations : 'a list list -> 'a list list
@@ -587,6 +588,15 @@ let rec uniquize_sorted cmp = function
   | [] -> []
 
 let sort_uniquize cmp l = uniquize_sorted cmp (List.sort cmp l)
+
+let min cmp l =
+  let rec aux cur = function
+    | [] -> cur
+    | x :: l -> if cmp x cur < 0 then aux x l else aux cur l
+  in
+  match l with
+  | x :: l -> aux x l
+  | [] -> raise Not_found
 
 (* FIXME: again, generic hash function *)
 

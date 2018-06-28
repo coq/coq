@@ -238,6 +238,11 @@ sig
   val remove_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> ('a * 'b) list
   val mem_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> bool
 
+  val min : 'a cmp -> 'a list -> 'a
+  (** Return minimum element according to some comparison function.
+
+      @raise Not_found on an empty list. *)
+
   val cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
   (** A generic cartesian product: for any operator (**),
     [cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]],
