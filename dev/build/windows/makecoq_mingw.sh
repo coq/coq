@@ -118,6 +118,9 @@ mkdir -p "$PREFIX/bin"
 mkdir -p "$PREFIXCOQ/bin"
 mkdir -p "$PREFIXOCAML/bin"
 
+# This is required for building addons and plugins
+export COQBIN=$RESULT_INSTALLDIR_CFMT/bin/
+
 ###################### Copy Cygwin Setup Info #####################
 
 # Copy Cygwin repo ini file and installed files db to tarballs folder.
@@ -1211,6 +1214,10 @@ function make_coq {
     # 2.) clean of test suites fails with "cannot run complexity tests (no bogomips found)"
     # make clean
 
+    # Copy these files somewhere the plugin builds can find them
+    cp dev/ci/ci-basic-overlay.sh /build/
+    cp -r dev/ci/user-overlays /build/
+
     build_post
   fi
 }
@@ -1378,8 +1385,16 @@ function make_coq_installer {
 
 ###################### ADDONS #####################
 
+# The bignums library
+# Provides BigN, BigZ, BigQ that used to be part of Coq standard library
+
 function make_addon_bignums {
-  if build_prep https://github.com/coq/bignums/archive/ V8.8.0 zip 1 bignums-8.8.0; then
+  bignums_SHA=$(git ls-remote "$bignums_CI_GITURL" "refs/heads/$bignums_CI_BRANCH" | cut -f 1)
+  if [[ "$bignums_SHA" == "" ]]; then
+      # $bignums_CI_BRANCH must have been a tag and not a branch
+      bignums_SHA="$bignums_CI_BRANCH"
+  fi
+  if build_prep "${bignums_CI_GITURL}/archive" "$bignums_SHA" zip 1 "bignums-$bignums_SHA"; then
     # To make command lines shorter :-(
     echo 'COQ_SRC_SUBDIRS:=$(filter-out plugins/%,$(COQ_SRC_SUBDIRS)) plugins/syntax' >> Makefile.coq.local
     log1 make all
@@ -1388,7 +1403,54 @@ function make_addon_bignums {
   fi
 }
 
+# Ltac-2 plugin
+# A new (experimental) tactic language
+
+function make_addon_ltac2 {
+  ltac2_SHA=$(git ls-remote "$ltac2_CI_GITURL" "refs/heads/$ltac2_CI_BRANCH" | cut -f 1)
+  if [[ "$ltac2_SHA" == "" ]]; then
+      # $ltac2_CI_BRANCH must have been a tag and not a branch
+      ltac2_SHA="$ltac2_CI_BRANCH"
+  fi
+  if build_prep "${ltac2_CI_GITURL}/archive" "$ltac2_SHA" zip 1 "ltac2-$ltac2_SHA"; then
+    log1 make all
+    log2 make install
+    build_post
+  fi
+}
+
+# Equations plugin
+# A function definition plugin
+
+function make_addon_equations {
+  Equations_SHA=$(git ls-remote "$Equations_CI_GITURL" "refs/heads/$Equations_CI_BRANCH" | cut -f 1)
+  if [[ "$Equations_SHA" == "" ]]; then
+      # $Equations_CI_BRANCH must have been a tag and not a branch
+      Equations_SHA="$Equations_CI_BRANCH"
+  fi
+  if build_prep "${Equations_CI_GITURL}/archive" "$Equations_SHA" zip 1 "Equations-$Equations_SHA"; then
+    # Note: PATH is autmatically saved/restored by build_prep / build_post
+    PATH=$COQBIN:$PATH
+    logn coq_makefile ${COQBIN}coq_makefile -f _CoqProject -o Makefile
+    log1 make
+    log2 make install
+    build_post
+  fi
+}
+
 function make_addons {
+  if [ -n "${GITLAB_CI}" ]; then
+    export CI_BRANCH="$CI_COMMIT_REF_NAME"
+    if [[ ${CI_BRANCH#pr-} =~ ^[0-9]*$ ]]
+    then
+      export CI_PULL_REQUEST="${CI_BRANCH#pr-}"
+    fi
+  fi
+  . /build/ci-basic-overlay.sh
+  for overlay in /build/user-overlays/*.sh; do
+    . "$overlay"
+  done
+
   for addon in $COQ_ADDONS; do
     "make_addon_$addon"
   done

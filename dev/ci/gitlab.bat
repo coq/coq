@@ -28,7 +28,7 @@ if exist %DESTCOQ%\ rd /s /q %DESTCOQ%
 call %CI_PROJECT_DIR%\dev\build\windows\MakeCoq_MinGW.bat -threads=1 ^
   -arch=%ARCH% -installer=Y -coqver=%CI_PROJECT_DIR_CFMT% ^
   -destcyg=%CYGROOT% -destcoq=%DESTCOQ% -cygcache=%CYGCACHE% ^
-  -addon=bignums -make=N ^
+  -addon="bignums ltac2 equations" -make=N ^
   -setup %CI_PROJECT_DIR%\%SETUP% || GOTO ErrorExit
 
 copy "%CYGROOT%\build\coq-local\dev\nsis\*.exe" dev\nsis || GOTO ErrorExit
