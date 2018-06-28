@@ -809,38 +809,48 @@ let make_exact_entry env sigma info poly ?(name=PathAny) (c, cty, ctx) =
 
 let make_apply_entry env sigma (eapply,hnf,verbose) info poly ?(name=PathAny) (c, cty, ctx) =
   let cty = if hnf then hnf_constr env sigma cty else cty in
-    match EConstr.kind sigma cty with
-    | Prod _ ->
-        let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
-        let ce = mk_clenv_from_env env sigma' None (c,cty) in
-	let c' = clenv_type (* ~reduce:false *) ce in
-	let pat = Patternops.pattern_of_constr env ce.evd (EConstr.to_constr sigma c') in
-        let hd =
-	  try head_pattern_bound pat
-          with BoundPattern -> failwith "make_apply_entry" in
-        let nmiss = List.length (clenv_missing ce) in
-        let secvars = secvars_of_constr env sigma c in
-	let pri = match info.hint_priority with None -> nb_hyp sigma' cty + nmiss | Some p -> p in
-	let pat = match info.hint_pattern with
-	| Some p -> snd p | None -> pat
-	in
-	if Int.equal nmiss 0 then
-	  (Some hd,
-          { pri; poly; pat = Some pat; name;
-            db = None;
-            secvars;
-            code = with_uid (Res_pf(c,cty,ctx)); })
-	else begin
-	  if not eapply then failwith "make_apply_entry";
-          if verbose then
-	    Feedback.msg_info (str "the hint: eapply " ++ pr_leconstr_env env sigma' c ++
-	    str " will only be used by eauto");
-          (Some hd,
-           { pri; poly; pat = Some pat; name;
-	     db = None; secvars;
-             code = with_uid (ERes_pf(c,cty,ctx)); })
-        end
-    | _ -> failwith "make_apply_entry"
+  match EConstr.kind sigma cty with
+  | Prod _ ->
+    let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
+    let ce = mk_clenv_from_env env sigma' None (c,cty) in
+    let c' = clenv_type (* ~reduce:false *) ce in
+    let pat = Patternops.pattern_of_constr env ce.evd (EConstr.to_constr sigma c') in
+    let hd =
+      try head_pattern_bound pat
+      with BoundPattern -> failwith "make_apply_entry" in
+    let miss = clenv_missing ce in
+    let nmiss = List.length (clenv_missing ce) in
+    let secvars = secvars_of_constr env sigma c in
+    let pri = match info.hint_priority with None -> nb_hyp sigma' cty + nmiss | Some p -> p in
+    let pat = match info.hint_pattern with
+      | Some p -> snd p | None -> pat
+    in
+    if Int.equal nmiss 0 then
+      (Some hd,
+       { pri; poly; pat = Some pat; name;
+         db = None;
+         secvars;
+         code = with_uid (Res_pf(c,cty,ctx)); })
+    else begin
+      if not eapply then failwith "make_apply_entry";
+      if verbose then begin
+        let variables = str (CString.plural nmiss "variable") in
+        Feedback.msg_info (
+          strbrk "The hint " ++
+          pr_leconstr_env env sigma' c ++
+          strbrk " will only be used by eauto, because applying " ++
+          pr_leconstr_env env sigma' c ++
+          strbrk " would leave " ++ variables ++ Pp.spc () ++
+          Pp.prlist_with_sep Pp.pr_comma Name.print (List.map (Evd.meta_name ce.evd) miss) ++
+          strbrk " as unresolved existential " ++ variables ++ str "."
+        )
+      end;
+      (Some hd,
+       { pri; poly; pat = Some pat; name;
+         db = None; secvars;
+         code = with_uid (ERes_pf(c,cty,ctx)); })
+    end
+  | _ -> failwith "make_apply_entry"
 
 (* flags is (e,h,v) with e=true if eapply and h=true if hnf and v=true if verbose
    c is a constr
