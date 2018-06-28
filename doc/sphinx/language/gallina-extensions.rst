@@ -2226,7 +2226,7 @@ existential variable used in the same context as its context of definition is wr
    Check (fun x y => _) 0 1.
 
 Existential variables can be named by the user upon creation using
-the syntax ``?``\ [`ident`]. This is useful when the existential
+the syntax :n:`?[@ident]`. This is useful when the existential
 variable needs to be explicitly handled later in the script (e.g.
 with a named-goal selector, see :ref:`goal-selectors`).
 
