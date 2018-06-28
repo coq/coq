@@ -306,6 +306,9 @@ validate:edge+flambda:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
 
+ci-bedrock2:
+  <<: *ci-template
+
 ci-bignums:
   <<: *ci-template
 

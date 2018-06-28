@@ -8,7 +8,8 @@
 ##         #     (see LICENSE file for the text of the license)         ##
 ##########################################################################
 
-CI_TARGETS=ci-bignums \
+CI_TARGETS=ci-bedrock2 \
+    ci-bignums \
     ci-color \
     ci-compcert \
     ci-coq-dpdgraph \
