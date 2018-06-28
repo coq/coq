@@ -71,6 +71,8 @@ let eq_gname gn1 gn2 =
       String.equal s1 s2 && eq_constructor c1 c2
   | Gconstant (s1, c1), Gconstant (s2, c2) ->
       String.equal s1 s2 && Constant.equal c1 c2
+  | Gproj (s1, c1), Gproj (s2, c2) ->
+    String.equal s1 s2 && Constant.equal c1 c2
   | Gcase (None, i1), Gcase (None, i2) -> Int.equal i1 i2
   | Gcase (Some l1, i1), Gcase (Some l2, i2) -> Int.equal i1 i2 && Label.equal l1 l2
   | Gpred (None, i1), Gpred (None, i2) -> Int.equal i1 i2
@@ -86,7 +88,9 @@ let eq_gname gn1 gn2 =
   | Ginternal s1, Ginternal s2 -> String.equal s1 s2
   | Grel i1, Grel i2 -> Int.equal i1 i2
   | Gnamed id1, Gnamed id2 -> Id.equal id1 id2
-  | _ -> false
+  | (Gind _| Gconstruct _ | Gconstant _ | Gproj _ | Gcase _ | Gpred _
+    | Gfixtype _ | Gnorm _ | Gnormtbl _ | Ginternal _ | Grel _ | Gnamed _), _ ->
+      false
 
 let dummy_gname =
   Grel 0
