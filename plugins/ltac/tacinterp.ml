@@ -117,9 +117,14 @@ let combine_appl appl1 appl2 =
 let of_tacvalue v = in_gen (topwit wit_tacvalue) v
 let to_tacvalue v = out_gen (topwit wit_tacvalue) v
 
+let log_trace = ref true
+
+let is_traced () =
+  !log_trace || !Flags.profile_ltac
+
 (** More naming applications *)
 let name_vfun appl vle =
-  if has_type vle (topwit wit_tacvalue) then
+  if is_traced () && has_type vle (topwit wit_tacvalue) then
     match to_tacvalue vle with
     | VFun (appl0,trace,lfun,vars,t) -> of_tacvalue (VFun (combine_appl appl0 appl,trace,lfun,vars,t))
     | _ -> vle
@@ -137,9 +142,11 @@ type interp_sign = Geninterp.interp_sign = {
   lfun : value Id.Map.t;
   extra : TacStore.t }
 
-let extract_trace ist = match TacStore.get ist.extra f_trace with
-| None -> []
-| Some l -> l
+let extract_trace ist =
+  if is_traced () then match TacStore.get ist.extra f_trace with
+  | None -> []
+  | Some l -> l
+  else []
 
 let print_top_val env v = Pptactic.pr_value Pptactic.ltop v
 
@@ -161,8 +168,11 @@ let catch_error call_trace f x =
     let e = CErrors.push e in
     catching_error call_trace iraise e
 
+let wrap_error tac k =
+  if is_traced () then Proofview.tclORELSE tac k else tac
+
 let catch_error_tac call_trace tac =
-  Proofview.tclORELSE
+  wrap_error
     tac
     (catching_error call_trace (fun (e, info) -> Proofview.tclZERO ~info e))
 
@@ -203,9 +213,11 @@ let constr_of_id env id =
 (** Generic arguments : table of interpretation functions *)
 
 (* Some of the code further down depends on the fact that push_trace does not modify sigma (the evar map) *)
-let push_trace call ist = match TacStore.get ist.extra f_trace with
-| None -> Proofview.tclUNIT [call]
-| Some trace -> Proofview.tclUNIT (call :: trace)
+let push_trace call ist =
+  if is_traced () then match TacStore.get ist.extra f_trace with
+  | None -> Proofview.tclUNIT [call]
+  | Some trace -> Proofview.tclUNIT (call :: trace)
+  else Proofview.tclUNIT []
 
 let propagate_trace ist loc id v =
   if has_type v (topwit wit_tacvalue) then
@@ -1247,7 +1259,7 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
         let fold accu (id, v) = Id.Map.add id v accu in
 	let newlfun = List.fold_left fold olfun extfun in
       if List.is_empty lvar then
-        begin Proofview.tclORELSE
+        begin wrap_error
             begin
               let ist = {
                 lfun = newlfun;
@@ -1407,7 +1419,7 @@ and interp_match_successes lz ist s =
 (* Interprets the Match expressions *)
 and interp_match ist lz constr lmr =
   let (>>=) = Ftactic.bind in
-  begin Proofview.tclORELSE
+  begin wrap_error
     (interp_ltac_constr ist constr)
     begin function
       | (e, info) ->
@@ -1493,7 +1505,7 @@ and interp_genarg_var_list ist x =
 (* Interprets tactic expressions : returns a "constr" *)
 and interp_ltac_constr ist e : EConstr.t Ftactic.t =
   let (>>=) = Ftactic.bind in
-  begin Proofview.tclORELSE
+  begin wrap_error
       (val_interp ist e)
       begin function (err, info) -> match err with
         | Not_found ->
@@ -2050,5 +2062,14 @@ let () =
       optkey   = ["Ltac";"Debug"];
       optread  = (fun () -> get_debug () != Tactic_debug.DebugOff);
       optwrite = vernac_debug }
+
+let () =
+  let open Goptions in
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "Ltac Backtrace";
+      optkey   = ["Ltac"; "Backtrace"];
+      optread  = (fun () -> !log_trace);
+      optwrite = (fun b -> log_trace := b) }
 
 let () = Hook.set Vernacentries.interp_redexp_hook interp_redexp

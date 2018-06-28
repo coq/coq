@@ -95,6 +95,8 @@ Tactics
   by posing the specifying equation for `Z.div` and `Z.modulo` before
   replacing them with atoms.
 
+- Ltac backtraces can be turned off using the "Ltac Backtrace" option.
+
 Vernacular commands
 
 - `Combined Scheme` can now work when inductive schemes are generated in sort
