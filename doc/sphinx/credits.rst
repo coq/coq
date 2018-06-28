@@ -1393,7 +1393,7 @@ Version 8.8 is the third release of |Coq| developed on a time-based
 development cycle. Its development spanned 6 months from the release of
 |Coq| 8.7 and was based on a public roadmap. The development process
 was coordinated by Matthieu Sozeau. Maxime Dénès was in charge of the
-release process.
+release process. Théo Zimmermann is the maintainer of this release.
 
 Many power users helped to improve the design of the new features via
 the bug tracker, the pull request system, the |Coq| development mailing
