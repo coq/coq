@@ -81,6 +81,20 @@ Module system
   GH issue number: #4294
   risk: ?
 
+Module system
+
+  component: modules, universes
+  summary: universe constraints for module subtyping not stored in vo files
+  introduced: presumably 8.2 (b3d3b56)
+  impacted released versions: 8.2, 8.3, 8.4
+  impacted development branches: v8.5
+  impacted coqchk versions: none
+  fixed in: v8.2 (c1d9889), v8.3 (8056d02), v8.4 (a07deb4), trunk (0cd0a3e) Mar 5, 2014, Tassi
+  found by: Tassi by running coqchk on the mathematical components library
+  exploit: requires multiple files, no test provided
+  GH issue number: #3243
+  risk: could be exploited by mistake
+
 Universes
 
   component: template polymorphism
@@ -122,6 +136,18 @@ Primitive projections
   risk: ?
 
 Conversion machines
+
+  component: "lazy machine" (lazy krivine abstract machine)
+  summary: the invariant justifying some optimization was wrong for some combination of sharing side effects
+  introduced: prior to V7.0
+  impacted released versions: V8.0-V8.0pl4, V8.1-V8.1pl3
+  impacted development branches: none
+  impacted coqchk versions: (eefe63d52, Barras, 20 May 2008), was in beta-development for 8.2 at this time
+  fixed in: master/trunk/8.2 (f13aaec57/a8b034513, 15 May 2008, Barras), v8.1 (e7611477a, 15 May 2008, Barras), v8.0 (6ed40a8bc, 29 Nov 2016, Herbelin, backport)
+  found by: Gonthier
+  exploit: by Gonthier
+  GH issue number: none
+  risk: unrealistic to be exploited by chance
 
   component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
   summary: collision between constructors when more than 256 constructors in a type
