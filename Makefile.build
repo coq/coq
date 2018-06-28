@@ -387,12 +387,12 @@ grammar/%.cmi: grammar/%.mli
 
 .PHONY: coqbinaries coqbyte
 
-coqbinaries: $(TOPBIN) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
+coqbinaries: $(TOPBINOPT) $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
 coqbyte: $(TOPBYTE) $(CHICKENBYTE)
 
 # Special rule for coqtop, we imitate `ocamlopt` can delete the target
 # to avoid #7666
-$(COQTOPEXE): $(TOPBIN:.opt=.$(BEST))
+$(COQTOPEXE): $(TOPBINOPT:.opt=.$(BEST))
 	rm -f $@ && cp $< $@
 
 bin/%.opt$(EXE): topbin/%_bin.ml $(LINKCMX) $(LIBCOQRUN)

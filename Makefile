@@ -211,7 +211,7 @@ archclean: clean-ide optclean voclean
 	rm -f $(ALLSTDLIB).*
 
 optclean:
-	rm -f $(COQTOPEXE) $(CHICKEN) $(TOPBIN)
+	rm -f $(COQTOPEXE) $(CHICKEN) $(TOPBINOPT)
 	rm -f $(TOOLS) $(PRIVATEBINARIES) $(CSDPCERT)
 	find . -name '*.cmx' -o -name '*.cmx[as]' -o -name '*.[soa]' -o -name '*.so' | xargs rm -f
 
