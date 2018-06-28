@@ -186,6 +186,10 @@
 /pretyping/       @mattam82
 # Secondary maintainer @gares
 
+/pretyping/vnorm.*     @maximedenes
+/pretyping/nativenorm.* @maximedenes
+# Secondary maintainer @ppedrot
+
 ########## Pretty printer ##########
 
 /printing/        @herbelin
