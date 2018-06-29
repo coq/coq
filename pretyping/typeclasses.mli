@@ -35,10 +35,10 @@ type typeclass = {
 
   (** Context in which the definitions are typed. Includes both typeclass parameters and superclasses.
       The global reference gives a direct link to the class itself. *)
-  cl_context : GlobRef.t option list * Context.Rel.t;
+  cl_context : GlobRef.t option list * Constr.rel_context;
 
   (** Context of definitions and properties on defs, will not be shared *)
-  cl_props : Context.Rel.t;
+  cl_props : Constr.rel_context;
 
   (** The methods implementations of the typeclass as projections. 
       Some may be undefinable due to sorting restrictions or simply undefined if 

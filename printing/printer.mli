@@ -152,13 +152,13 @@ val get_compact_context : unit -> bool
 val pr_context_unlimited   : env -> evar_map -> Pp.t
 val pr_ne_context_of       : Pp.t -> env -> evar_map -> Pp.t
 
-val pr_named_decl          : env -> evar_map -> Context.Named.Declaration.t -> Pp.t
-val pr_compacted_decl      : env -> evar_map -> Context.Compacted.Declaration.t -> Pp.t
-val pr_rel_decl            : env -> evar_map -> Context.Rel.Declaration.t -> Pp.t
+val pr_named_decl          : env -> evar_map -> Constr.named_declaration -> Pp.t
+val pr_compacted_decl      : env -> evar_map -> Constr.compacted_declaration -> Pp.t
+val pr_rel_decl            : env -> evar_map -> Constr.rel_declaration -> Pp.t
 
-val pr_named_context       : env -> evar_map -> Context.Named.t -> Pp.t
+val pr_named_context       : env -> evar_map -> Constr.named_context -> Pp.t
 val pr_named_context_of    : env -> evar_map -> Pp.t
-val pr_rel_context         : env -> evar_map -> Context.Rel.t -> Pp.t
+val pr_rel_context         : env -> evar_map -> Constr.rel_context -> Pp.t
 val pr_rel_context_of      : env -> evar_map -> Pp.t
 val pr_context_of          : env -> evar_map -> Pp.t
 
@@ -210,7 +210,7 @@ type axiom =
 
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
-  | Axiom of axiom * (Label.t * Context.Rel.t * types) list
+  | Axiom of axiom * (Label.t * Constr.rel_context * types) list
   | Opaque of Constant.t     (* An opaque constant. *)
   | Transparent of Constant.t
 

@@ -1209,3 +1209,10 @@ let hcons =
      Id.hcons)
 
 (* let hcons_types = hcons_constr *)
+
+type rel_declaration = (constr, types) Context.Rel.Declaration.pt
+type named_declaration = (constr, types) Context.Named.Declaration.pt
+type compacted_declaration = (constr, types) Context.Compacted.Declaration.pt
+type rel_context = rel_declaration list
+type named_context = named_declaration list
+type compacted_context = compacted_declaration list

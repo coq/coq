@@ -53,6 +53,16 @@ Printer.ml API
   pr_subgoal and pr_goal was removed to simplify the code.  It was
   earlierly used by PCoq.
 
+Kernel
+
+  The following renamings happened:
+  - `Context.Rel.t` into `Constr.rel_context`
+  - `Context.Named.t` into `Constr.named_context`
+  - `Context.Compacted.t` into `Constr.compacted_context`
+  - `Context.Rel.Declaration.t` into `Constr.rel_declaration`
+  - `Context.Named.Declaration.t` into `Constr.named_declaration`
+  - `Context.Compacted.Declaration.t` into `Constr.compacted_declaration`
+
 Source code organization
 
 - We have eliminated / fused some redundant modules and relocated a

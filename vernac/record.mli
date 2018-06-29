@@ -22,7 +22,7 @@ val declare_projections :
   bool list ->
   UnivNames.universe_binders ->
   Impargs.manual_implicits list ->
-  Context.Rel.t ->
+  Constr.rel_context ->
     (Name.t * bool) list * Constant.t option list
 
 val definition_structure :

@@ -23,7 +23,7 @@ val env_is_initial : unit -> bool
 
 val universes : unit -> UGraph.t
 val named_context_val : unit -> Environ.named_context_val
-val named_context : unit -> Context.Named.t
+val named_context : unit -> Constr.named_context
 
 (** {6 Enriching the global environment } *)
 
@@ -79,7 +79,7 @@ val add_module_parameter :
 
 (** {6 Queries in the global environment } *)
 
-val lookup_named     : variable -> Context.Named.Declaration.t
+val lookup_named     : variable -> Constr.named_declaration
 val lookup_constant  : Constant.t -> Declarations.constant_body
 val lookup_inductive : inductive ->
   Declarations.mutual_inductive_body * Declarations.one_inductive_body

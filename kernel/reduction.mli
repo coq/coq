@@ -116,10 +116,10 @@ val betazeta_appvect : int -> constr -> constr array -> constr
 (***********************************************************************
   s Recognizing products and arities modulo reduction *)
 
-val dest_prod       : env -> types -> Context.Rel.t * types
-val dest_prod_assum : env -> types -> Context.Rel.t * types
-val dest_lam        : env -> types -> Context.Rel.t * constr
-val dest_lam_assum  : env -> types -> Context.Rel.t * types
+val dest_prod       : env -> types -> Constr.rel_context * types
+val dest_prod_assum : env -> types -> Constr.rel_context * types
+val dest_lam        : env -> constr -> Constr.rel_context * constr
+val dest_lam_assum  : env -> constr -> Constr.rel_context * constr
 
 exception NotArity
 

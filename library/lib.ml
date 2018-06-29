@@ -405,7 +405,7 @@ let find_opening_node id =
    - the list of substitution to do at section closing
 *)
 
-type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
+type variable_info = Constr.named_declaration * Decl_kinds.binding_kind
 
 type variable_context = variable_info list
 type abstr_info = {

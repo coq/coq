@@ -372,6 +372,15 @@ val eq_constr_nounivs : constr -> constr -> bool
 (** Total ordering compatible with [equal] *)
 val compare : constr -> constr -> int
 
+(** {6 Extension of Context with declarations on constr} *)
+
+type rel_declaration = (constr, types) Context.Rel.Declaration.pt
+type named_declaration = (constr, types) Context.Named.Declaration.pt
+type compacted_declaration = (constr, types) Context.Compacted.Declaration.pt
+type rel_context = rel_declaration list
+type named_context = named_declaration list
+type compacted_context = compacted_declaration list
+
 (** {6 Functionals working on the immediate subterm of a construction } *)
 
 (** [fold f acc c] folds [f] on the immediate subterms of [c]

@@ -43,8 +43,6 @@ struct
       | LocalAssum of Name.t * 'types            (** name, type *)
       | LocalDef of Name.t * 'constr * 'types   (** name, value, type *)
 
-    type t = (Constr.constr, Constr.types) pt
-
     (** Return the name bound by a given declaration. *)
     let get_name = function
       | LocalAssum (na,_)
@@ -157,7 +155,6 @@ struct
       Inner-most declarations are at the beginning of the list.
       Outer-most declarations are at the end of the list. *)
   type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
-  type t = Declaration.t list
 
   (** empty rel-context *)
   let empty = []
@@ -240,8 +237,6 @@ struct
     type ('constr, 'types) pt =
       | LocalAssum of Id.t * 'types             (** identifier, type *)
       | LocalDef of Id.t * 'constr * 'types    (** identifier, value, type *)
-
-    type t = (Constr.constr, Constr.types) pt
 
     (** Return the identifier bound by a given declaration. *)
     let get_id = function
@@ -370,7 +365,6 @@ struct
       Inner-most declarations are at the beginning of the list.
       Outer-most declarations are at the end of the list. *)
   type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
-  type t = Declaration.t list
 
   (** empty named-context *)
   let empty = []
@@ -429,8 +423,6 @@ module Compacted =
           | LocalAssum of Id.t list * 'types
           | LocalDef of Id.t list * 'constr * 'types
 
-        type t = (Constr.constr, Constr.types) pt
-
         let map_constr f = function
           | LocalAssum (ids, ty) as decl ->
              let ty' = f ty in
@@ -454,7 +446,6 @@ module Compacted =
       end
 
     type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
-    type t = Declaration.t list
 
     let fold f l ~init = List.fold_right f l init
   end

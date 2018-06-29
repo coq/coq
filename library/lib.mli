@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Names
+
 (** Lib: record of operations, backtrack, low-level sections *)
 
 (** This module provides a general mechanism to keep a trace of all operations
@@ -153,7 +154,7 @@ val unfreeze : frozen -> unit
 val init : unit -> unit
 
 (** {6 Section management for discharge } *)
-type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
+type variable_info = Constr.named_declaration * Decl_kinds.binding_kind
 type variable_context = variable_info list 
 type abstr_info = private {
   abstr_ctx : variable_context;
@@ -165,7 +166,7 @@ type abstr_info = private {
 }
 
 val instance_from_variable_context : variable_context -> Id.t array
-val named_of_variable_context : variable_context -> Context.Named.t
+val named_of_variable_context : variable_context -> Constr.named_context
 
 val section_segment_of_constant : Constant.t -> abstr_info
 val section_segment_of_mutual_inductive: MutInd.t -> abstr_info
@@ -179,9 +180,9 @@ val is_in_section : GlobRef.t -> bool
 val add_section_variable : Id.t -> Decl_kinds.binding_kind -> Decl_kinds.polymorphic -> Univ.ContextSet.t -> unit
 val add_section_context : Univ.ContextSet.t -> unit
 val add_section_constant : Decl_kinds.polymorphic ->
-  Constant.t -> Context.Named.t -> unit
+  Constant.t -> Constr.named_context -> unit
 val add_section_kn : Decl_kinds.polymorphic ->
-  MutInd.t -> Context.Named.t -> unit
+  MutInd.t -> Constr.named_context -> unit
 val replacement_context : unit -> Opaqueproof.work_list
 
 (** {6 Discharge: decrease the section level if in the current section } *)

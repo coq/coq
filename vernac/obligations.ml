@@ -40,7 +40,7 @@ let check_evars env evm =
 
 type oblinfo =
   { ev_name: int * Id.t;
-    ev_hyps: Context.Named.t;
+    ev_hyps: Constr.named_context;
     ev_status: bool * Evar_kinds.obligation_definition_status;
     ev_chop: int option;
     ev_src: Evar_kinds.t Loc.located;

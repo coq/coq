@@ -425,7 +425,7 @@ let typecheck_inductive env mie =
 type ill_formed_ind =
   | LocalNonPos of int
   | LocalNotEnoughArgs of int
-  | LocalNotConstructor of Context.Rel.t * int
+  | LocalNotConstructor of Constr.rel_context * int
   | LocalNonPar of int * int * int
 
 exception IllFormedInd of ill_formed_ind

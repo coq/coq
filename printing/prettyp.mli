@@ -89,7 +89,7 @@ type object_pr = {
   print_syntactic_def       : env -> KerName.t -> Pp.t;
   print_module              : bool -> ModPath.t -> Pp.t;
   print_modtype             : ModPath.t -> Pp.t;
-  print_named_decl          : env -> Evd.evar_map -> Context.Named.Declaration.t -> Pp.t;
+  print_named_decl          : env -> Evd.evar_map -> Constr.named_declaration -> Pp.t;
   print_library_entry       : env -> Evd.evar_map -> bool -> (object_name * Lib.node) -> Pp.t option;
   print_context             : env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t;
   print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;

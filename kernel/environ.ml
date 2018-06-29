@@ -77,13 +77,13 @@ let dummy_lazy_val () = ref VKnone
 let build_lazy_val vk key = vk := VKvalue (CEphemeron.create key)
 
 type named_context_val = {
-  env_named_ctx : Context.Named.t;
-  env_named_map : (Context.Named.Declaration.t * lazy_val) Id.Map.t;
+  env_named_ctx : Constr.named_context;
+  env_named_map : (Constr.named_declaration * lazy_val) Id.Map.t;
 }
 
 type rel_context_val = {
-  env_rel_ctx : Context.Rel.t;
-  env_rel_map : (Context.Rel.Declaration.t * lazy_val) Range.t;
+  env_rel_ctx : Constr.rel_context;
+  env_rel_map : (Constr.rel_declaration * lazy_val) Range.t;
 }
 
 type env = {

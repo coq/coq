@@ -82,12 +82,12 @@ val interp_fixpoint :
 val declare_fixpoint :
   locality -> polymorphic ->
   recursive_preentry * UState.universe_decl * UState.t *
-  (Context.Rel.t * Impargs.manual_implicits * int option) list ->
+  (Constr.rel_context * Impargs.manual_implicits * int option) list ->
   Proof_global.lemma_possible_guards -> decl_notation list -> unit
 
 val declare_cofixpoint : locality -> polymorphic ->
   recursive_preentry * UState.universe_decl * UState.t *
-  (Context.Rel.t * Impargs.manual_implicits * int option) list ->
+  (Constr.rel_context * Impargs.manual_implicits * int option) list ->
   decl_notation list -> unit
 
 (** Very private function, do not use *)

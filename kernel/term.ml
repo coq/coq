@@ -336,7 +336,7 @@ let strip_lam_n n t = snd (decompose_lam_n n t)
    Such a term can canonically be seen as the pair of a context of types
    and of a sort *)
 
-type arity = Context.Rel.t * Sorts.t
+type arity = Constr.rel_context * Sorts.t
 
 let destArity =
   let open Context.Rel.Declaration in

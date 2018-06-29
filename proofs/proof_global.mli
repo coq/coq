@@ -126,8 +126,8 @@ val set_endline_tactic : Genarg.glob_generic_argument -> unit
  * (w.r.t. type dependencies and let-ins covered by it) + a list of
  * ids to be cleared *)
 val set_used_variables :
-  Names.Id.t list -> Context.Named.t * Names.lident list
-val get_used_variables : unit -> Context.Named.t option
+  Names.Id.t list -> Constr.named_context * Names.lident list
+val get_used_variables : unit -> Constr.named_context option
 
 (** Get the universe declaration associated to the current proof. *)
 val get_universe_decl : unit -> UState.universe_decl

@@ -303,7 +303,7 @@ type constructor_summary = {
   cs_cstr : pconstructor;
   cs_params : constr list;
   cs_nargs : int;
-  cs_args : Context.Rel.t;
+  cs_args : Constr.rel_context;
   cs_concl_realargs : constr array
 }
 

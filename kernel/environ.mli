@@ -55,13 +55,13 @@ type stratification = {
 }
 
 type named_context_val = private {
-  env_named_ctx : Context.Named.t;
-  env_named_map : (Context.Named.Declaration.t * lazy_val) Id.Map.t;
+  env_named_ctx : Constr.named_context;
+  env_named_map : (Constr.named_declaration * lazy_val) Id.Map.t;
 }
 
 type rel_context_val = private {
-  env_rel_ctx : Context.Rel.t;
-  env_rel_map : (Context.Rel.Declaration.t * lazy_val) Range.t;
+  env_rel_ctx : Constr.rel_context;
+  env_rel_map : (Constr.rel_declaration * lazy_val) Range.t;
 }
 
 type env = private {
@@ -83,8 +83,8 @@ val eq_named_context_val : named_context_val -> named_context_val -> bool
 val empty_env : env
 
 val universes     : env -> UGraph.t
-val rel_context   : env -> Context.Rel.t
-val named_context : env -> Context.Named.t
+val rel_context   : env -> Constr.rel_context
+val named_context : env -> Constr.named_context
 val named_context_val : env -> named_context_val
 
 val opaque_tables : env -> Opaqueproof.opaquetab
@@ -103,13 +103,13 @@ val empty_context : env -> bool
 (** {5 Context of de Bruijn variables ([rel_context]) } *)
 
 val nb_rel           : env -> int
-val push_rel         : Context.Rel.Declaration.t -> env -> env
-val push_rel_context : Context.Rel.t -> env -> env
+val push_rel         : Constr.rel_declaration -> env -> env
+val push_rel_context : Constr.rel_context -> env -> env
 val push_rec_types   : rec_declaration -> env -> env
 
 (** Looks up in the context of local vars referred by indice ([rel_context]) 
    raises [Not_found] if the index points out of the context *)
-val lookup_rel    : int -> env -> Context.Rel.Declaration.t
+val lookup_rel    : int -> env -> Constr.rel_declaration
 val lookup_rel_val : int -> env -> lazy_val
 val evaluable_rel : int -> env -> bool
 val env_of_rel     : int -> env -> env
@@ -117,12 +117,12 @@ val env_of_rel     : int -> env -> env
 (** {6 Recurrence on [rel_context] } *)
 
 val fold_rel_context :
-  (env -> Context.Rel.Declaration.t -> 'a -> 'a) -> env -> init:'a -> 'a
+  (env -> Constr.rel_declaration -> 'a -> 'a) -> env -> init:'a -> 'a
 
 (** {5 Context of variables (section variables and goal assumptions) } *)
 
-val named_context_of_val : named_context_val -> Context.Named.t
-val val_of_named_context : Context.Named.t -> named_context_val
+val named_context_of_val : named_context_val -> Constr.named_context
+val val_of_named_context : Constr.named_context -> named_context_val
 val empty_named_context_val : named_context_val
 val ids_of_named_context_val : named_context_val -> Id.Set.t
 
@@ -133,19 +133,19 @@ val ids_of_named_context_val : named_context_val -> Id.Set.t
 val map_named_val :
    (constr -> constr) -> named_context_val -> named_context_val
 
-val push_named : Context.Named.Declaration.t -> env -> env
-val push_named_context : Context.Named.t -> env -> env
+val push_named : Constr.named_declaration -> env -> env
+val push_named_context : Constr.named_context -> env -> env
 val push_named_context_val  :
-    Context.Named.Declaration.t -> named_context_val -> named_context_val
+    Constr.named_declaration -> named_context_val -> named_context_val
 
 
 
 (** Looks up in the context of local vars referred by names ([named_context]) 
    raises [Not_found] if the Id.t is not found *)
 
-val lookup_named     : variable -> env -> Context.Named.Declaration.t
+val lookup_named     : variable -> env -> Constr.named_declaration
 val lookup_named_val : variable -> env -> lazy_val
-val lookup_named_ctxt : variable -> named_context_val -> Context.Named.Declaration.t
+val lookup_named_ctxt : variable -> named_context_val -> Constr.named_declaration
 val evaluable_named  : variable -> env -> bool
 val named_type : variable -> env -> types
 val named_body : variable -> env -> constr option
@@ -153,13 +153,13 @@ val named_body : variable -> env -> constr option
 (** {6 Recurrence on [named_context]: older declarations processed first } *)
 
 val fold_named_context :
-  (env -> Context.Named.Declaration.t -> 'a -> 'a) -> env -> init:'a -> 'a
+  (env -> Constr.named_declaration -> 'a -> 'a) -> env -> init:'a -> 'a
 
 val set_universes : env -> UGraph.t -> env
 
 (** Recurrence on [named_context] starting from younger decl *)
 val fold_named_context_reverse :
-  ('a -> Context.Named.Declaration.t -> 'a) -> init:'a -> env -> 'a
+  ('a -> Constr.named_declaration -> 'a) -> init:'a -> env -> 'a
 
 (** This forgets named and rel contexts *)
 val reset_context : env -> env
@@ -278,7 +278,7 @@ val vars_of_global : env -> constr -> Id.Set.t
 val really_needed : env -> Id.Set.t -> Id.Set.t
 
 (** like [really_needed] but computes a well ordered named context *)
-val keep_hyps : env -> Id.Set.t -> Context.Named.t
+val keep_hyps : env -> Id.Set.t -> Constr.named_context
 
 (** {5 Unsafe judgments. }
     We introduce here the pre-type of judgments, which is
@@ -307,10 +307,10 @@ exception Hyp_not_found
    return [tail::(f head (id,_,_) (rev tail))::head].
    the value associated to id should not change *)
 val apply_to_hyp : named_context_val -> variable ->
-  (Context.Named.t -> Context.Named.Declaration.t -> Context.Named.t -> Context.Named.Declaration.t) ->
+  (Constr.named_context -> Constr.named_declaration -> Constr.named_context -> Constr.named_declaration) ->
     named_context_val
 
-val remove_hyps : Id.Set.t -> (Context.Named.Declaration.t -> Context.Named.Declaration.t) -> (lazy_val -> lazy_val) -> named_context_val -> named_context_val
+val remove_hyps : Id.Set.t -> (Constr.named_declaration -> Constr.named_declaration) -> (lazy_val -> lazy_val) -> named_context_val -> named_context_val
 
 
 

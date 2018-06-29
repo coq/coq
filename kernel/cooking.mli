@@ -23,7 +23,7 @@ type result = {
   cook_type : types;
   cook_universes : constant_universes;
   cook_inline : inline;
-  cook_context : Context.Named.t option;
+  cook_context : Constr.named_context option;
 }
 
 val cook_constant : hcons:bool -> env -> recipe -> result
