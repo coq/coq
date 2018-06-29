@@ -89,6 +89,7 @@ open State
 (** [=> *] ****************************************************************)
 (** [nb_assums] returns the number of dependent premises *)
 (** Warning: unlike [nb_deps_assums], it does not perform reduction *)
+
 let rec nb_assums cur env sigma t =
   match EConstr.kind sigma t with
   | Prod(name,ty,body) ->
@@ -110,16 +111,17 @@ end
 
 (** [intro_drop] behaves like [intro_anon] but registers the id of the
     introduced assumption for a delayed clear. *)
-let intro_drop =
-  Ssrcommon.tclINTRO ~id:None
-    ~conclusion:(fun ~orig_name:_ ~new_name -> isCLR_PUSH new_name)
+let intro_drop = let open Ssrdispatch in register_overloaded "intro_drop" Nil
+  (Ssrcommon.tclINTRO ~id:None
+    ~conclusion:(fun ~orig_name:_ ~new_name -> isCLR_PUSH new_name))
 
 (** [intro_end] performs the actions that have been delayed. *)
 let intro_end =
   Ssrcommon.tcl0G (isCLR_CONSUME)
 
-(** [=> _] *****************************************************************)
-let intro_clear ids =
+(** [=> {..}] ****************************************************************)
+
+let intro_rename_for_clear ids =
   Goal.enter begin fun gl ->
     let _, clear_ids, ren =
       List.fold_left (fun (used_ids, clear_ids, ren) id ->
@@ -131,24 +133,58 @@ let intro_clear ids =
     isCLR_PUSHL clear_ids
 end
 
-let tacCHECK_HYPS_EXIST hyps = Goal.enter begin fun gl ->
-  let ctx = Goal.hyps gl in
-  List.iter (Ssrcommon.check_hyp_exists ctx) hyps;
-  tclUNIT ()
-end
+let intro_clear = let open Ssrdispatch in
+  let loc = ref None in (* The Ltac FFI does not support the loc *)
+  let tac =
+    register_overloaded "intro_delayed_clear"
+      (Arg(Stdarg.wit_ident,Nil))
+    (fun id -> Goal.enter begin fun gl ->
+      let ctx = Goal.hyps gl in
+      Ssrcommon.check_hyp_exists ctx (SsrHyp(!loc,id)) <*>
+      intro_rename_for_clear [id]
+    end) in
+  function (SsrHyp(l,id)) -> loc := l; tac id
 
 (** [=> []] *****************************************************************)
-let tac_case t =
-  Goal.enter begin fun _ ->
+
+let tac_case = let open Ssrdispatch in
+  register_overloaded "intro_case"
+    (Arg(Stdarg.wit_open_constr,Nil))
+  (fun t -> Goal.enter begin fun _ ->
     Ssrcommon.tacTYPEOF t >>= fun ty ->
     Ssrcommon.tacIS_INJECTION_CASE ~ty t >>= fun is_inj ->
     if is_inj then
       V82.tactic ~nf_evars:false (Ssrelim.perform_injection t)
     else
       Ssrelim.ssrscasetac t
-end
+  end)
+
+(** [=> [=]] *****************************************************************)
+
+let tac_inj = let open Ssrdispatch in
+  register_overloaded "intro_injection"
+    (Arg(Stdarg.wit_open_constr,Nil))
+  (fun t -> V82.tactic  ~nf_evars:false (Ssrelim.perform_injection t))
+
+(** [=> ->] ****************************************************************)
+
+let intro_subst = let open Ssrdispatch in
+  let of_dir = function L2R -> true | R2L -> false in
+  let to_dir = function true -> L2R | false -> R2L in
+  let tac =
+    register_overloaded "intro_subst"
+      (Arg(Genarg.wit_opt
+            (Genarg.wit_pair Stdarg.wit_bool (Genarg.wit_list Stdarg.wit_int)),
+       Arg(Stdarg.wit_bool,
+       Arg(Stdarg.wit_open_constr,
+       Nil))))
+    (fun occ dir x ->
+       V82.tactic ~nf_evars:false
+         (Ssrequality.ipat_rewrite occ (to_dir dir) x)) in
+  fun occ dir x -> tac occ (of_dir dir) x
 
 (** [=> [: id]] ************************************************************)
+
 let mk_abstract_id =
   let open Coqlib in
   let ssr_abstract_id = Summary.ref ~name:"SSR:abstractid" 0 in
@@ -214,7 +250,7 @@ let rec ipat_tac1 ipat : unit tactic =
   match ipat with
   | IPatView (clear_if_id,l) ->
       Ssrview.tclIPAT_VIEWS ~views:l ~clear_if_id
-        ~conclusion:(fun ~to_clear:clr -> intro_clear clr)
+        ~conclusion:(fun ~to_clear:clr -> intro_rename_for_clear clr)
   | IPatDispatch ipatss ->
       tclEXTEND (List.map ipat_tac ipatss) (tclUNIT ()) []
 
@@ -223,9 +259,7 @@ let rec ipat_tac1 ipat : unit tactic =
   | IPatCase ipatss ->
      tclIORPAT (Ssrcommon.tclWITHTOP tac_case) ipatss
   | IPatInj ipatss ->
-     tclIORPAT (Ssrcommon.tclWITHTOP
-       (fun t -> V82.tactic  ~nf_evars:false (Ssrelim.perform_injection t)))
-       ipatss
+     tclIORPAT (Ssrcommon.tclWITHTOP tac_inj) ipatss
 
   | IPatAnon Drop -> intro_drop
   | IPatAnon One -> Ssrcommon.tclINTRO_ANON
@@ -235,8 +269,7 @@ let rec ipat_tac1 ipat : unit tactic =
   | IPatSimpl Nop -> tclUNIT ()
 
   | IPatClear ids ->
-      tacCHECK_HYPS_EXIST ids <*>
-      intro_clear (List.map Ssrcommon.hyp_id ids)
+      Tacticals.New.tclTHENLIST (List.map intro_clear ids)
 
   | IPatSimpl (Simpl n) ->
        V82.tactic ~nf_evars:false (Ssrequality.simpltac (Simpl n))
@@ -246,8 +279,7 @@ let rec ipat_tac1 ipat : unit tactic =
        V82.tactic ~nf_evars:false (Ssrequality.simpltac (SimplCut (n,m)))
 
   | IPatRewrite (occ,dir) ->
-     Ssrcommon.tclWITHTOP
-       (fun x -> V82.tactic  ~nf_evars:false (Ssrequality.ipat_rewrite occ dir x))
+     Ssrcommon.tclWITHTOP (intro_subst occ dir)
 
   | IPatAbstractVars ids -> tclMK_ABSTRACT_VARS ids
 

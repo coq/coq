@@ -339,6 +339,15 @@ Lemma lock A x : x = locked x :> A. Proof. unlock; reflexivity. Qed.
 Lemma not_locked_false_eq_true : locked false <> true.
 Proof. unlock; discriminate. Qed.
 
+(* Basic tactic overloading                                                   *)
+Hint Extern id    10 => ssr_intro_id id             : ssr_intro_id.
+Hint Extern       10 => ssr_intro_anon              : ssr_intro_anon.
+Hint Extern       10 => ssr_intro_drop              : ssr_intro_drop.
+Hint Extern id    10 => ssr_intro_delayed_clear id  : ssr_intro_delayed_clear.
+Hint Extern t     10 => ssr_intro_case t            : ssr_intro_case.
+Hint Extern o d t 10 => ssr_intro_subst o d t       : ssr_intro_subst.
+Hint Extern t     10 => ssr_intro_injection t       : ssr_intro_injection.
+
 (* The basic closing tactic "done".                                           *)
 Ltac done :=
   trivial; hnf; intros; solve

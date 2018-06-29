@@ -27,6 +27,7 @@ open Ssrmatching_plugin
 open Ssrmatching
 open Ssrast
 open Ssrprinters
+open Ssrdispatch
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
@@ -63,8 +64,11 @@ let rec check_hyps_uniq ids = function
   | [] -> ()
 
 let check_hyp_exists hyps (SsrHyp(_, id)) =
-  try ignore(Context.Named.lookup id hyps)
-  with Not_found -> errorstrm Pp.(str"No assumption is named " ++ Id.print id)
+  try ignore(Context.Named.lookup id hyps); Proofview.tclUNIT ()
+  with Not_found ->
+   Proofview.(tclLIFT (NonLogical.raise
+     CErrors.(UserError (Some "ssreflect",
+       Pp.(str"No assumption is named " ++ Id.print id)))))
 
 let test_hypname_exists hyps id =
   try ignore(Context.Named.lookup id hyps); true
@@ -151,7 +155,6 @@ open Genarg
 open Stdarg
 open Pp
 
-let errorstrm x = CErrors.user_err ~hdr:"ssreflect" x
 let anomaly s = CErrors.anomaly (str s)
 
 (* Tentative patch from util.ml *)
@@ -1438,8 +1441,11 @@ end
 
 let return ~orig_name:_ ~new_name:_ = tclUNIT ()
 
-let tclINTRO_ID id = tclINTRO ~id:(Some id) ~conclusion:return
-let tclINTRO_ANON = tclINTRO ~id:None ~conclusion:return
+let tclINTRO_ID = register_overloaded "intro_id" (Arg(Stdarg.wit_ident, Nil))
+  (fun id -> tclINTRO ~id:(Some id) ~conclusion:return)
+
+let tclINTRO_ANON = register_overloaded "intro_anon" Nil
+   (tclINTRO ~id:None ~conclusion:return)
 
 let tclRENAME_HD_PROD name = Goal.enter begin fun gl ->
   let convert_concl_no_check t =
