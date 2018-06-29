@@ -126,3 +126,23 @@ Notation "'myexists' x , p" := (ex (fun x => p))
   (at level 200, x ident, p at level 200, right associativity) : type_scope.
 Check myexists I, I = 0. (* Should not be seen as a constructor *)
 End M14.
+
+(* 15. Some test about custom entries *)
+Module M15.
+  (* Test locality *)
+  Local Declare Custom Entry foo.
+  Fail Notation "#" := 0 (in custom foo). (* Should be local *)
+  Local Notation "#" := 0 (in custom foo).
+
+  (* Test import *)
+  Module A.
+  Declare Custom Entry foo2.
+  End A.
+  Fail Notation "##" := 0 (in custom foo2).
+  Import A.
+  Local Notation "##" := 0 (in custom foo2).
+
+  (* Test Print Grammar *)
+  Print Grammar foo.
+  Print Grammar foo2.
+End M15.

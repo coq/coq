@@ -255,7 +255,7 @@ let interp_constr_entry_key : type r. _ -> r target -> int -> r Entry.t * int op
   fun custom forpat level ->
   match custom with
   | InCustomEntry s ->
-     (let (entry_for_constr, entry_for_patttern) = find_custom_entries s in
+     (let (entry_for_constr, entry_for_patttern) = find_custom_entry s in
      match forpat with
      | ForConstr -> entry_for_constr, Some level
      | ForPattern -> entry_for_patttern, Some level)
@@ -272,7 +272,7 @@ let target_entry : type s. notation_entry -> s target -> s Entry.t = function
    | ForConstr -> Constr.operconstr
    | ForPattern -> Constr.pattern)
 | InCustomEntry s ->
-   let (entry_for_constr, entry_for_patttern) = find_custom_entries s in
+   let (entry_for_constr, entry_for_patttern) = find_custom_entry s in
    function
    | ForConstr -> entry_for_constr
    | ForPattern -> entry_for_patttern

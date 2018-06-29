@@ -564,17 +564,22 @@ let find_grammars_by_name name =
 
 let custom_entries = ref String.Map.empty
 
-let create_custom_entries s =
+let create_custom_entry local s =
+  if List.mem s ["constr";"pattern";"ident";"global";"binder";"bigint"] then
+    user_err Pp.(quote (str s) ++ str " is a reserved entry name.");
   let sc = "constr:"^s in
   let sp = "pattern:"^s in
   let c = (Gram.entry_create sc : Constrexpr.constr_expr Gram.entry) in
   let p = (Gram.entry_create sp : Constrexpr.cases_pattern_expr Gram.entry) in
   register_grammars_by_name s [AnyEntry c; AnyEntry p];
-  custom_entries := String.Map.add s (c,p) !custom_entries
+  custom_entries := String.Map.add s (local,(c,p)) !custom_entries
 
-let find_custom_entries s =
+let lookup_custom_entry s =
   try String.Map.find s !custom_entries
   with Not_found -> user_err Pp.(str "Undeclared custom entry: " ++ str s ++ str ".")
+
+let find_custom_entry s = snd (lookup_custom_entry s)
+let locality_of_custom_entry s = fst (lookup_custom_entry s)
 
 (** Summary functions: the state of the lexer is included in that of the parser.
    Because the grammar affects the set of keywords when adding or removing
@@ -583,7 +588,7 @@ type frozen_t =
   (int * GrammarCommand.t * GramState.t) list *
   CLexer.keyword_state *
   any_entry list String.Map.t *
-  (Constrexpr.constr_expr Gram.entry * Constrexpr.cases_pattern_expr Gram.entry) Util.String.Map.t
+  (bool * (Constrexpr.constr_expr Gram.entry * Constrexpr.cases_pattern_expr Gram.entry)) Util.String.Map.t
 
 let freeze _ : frozen_t =
   (!grammar_stack, CLexer.get_keyword_state (),
