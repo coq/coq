@@ -99,7 +99,7 @@ $(COQIDE): $(LINKIDEOPT)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
 	       -linkpkg -package str,unix,dynlink,threads,lablgtk2.sourceview2 $(IDEFLAGS:.cma=.cmxa) $^
-	$(STRIP) $@
+	$(STRIP_HIDE) $@
 else
 $(COQIDE): $(COQIDEBYTE)
 	cp $< $@
@@ -149,8 +149,8 @@ $(IDETOP): ide/idetop.ml $(LINKCMX) $(LIBCOQRUN) $(IDETOPCMX)
 	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) -I ide -I ide/protocol/ \
 			   $(SYSMOD) -package camlp5.gramlib \
 			   $(LINKCMX) $(IDETOPCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
-	$(STRIP) $@
-	$(CODESIGN) $@
+	$(STRIP_HIDE) $@
+	$(CODESIGN_HIDE) $@
 
 $(IDETOPBYTE): ide/idetop.ml $(LINKCMO) $(LIBCOQRUN) $(IDETOPCMA)
 	$(SHOW)'COQMKTOP -o $@'
@@ -229,7 +229,7 @@ $(COQIDEINAPP): ide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
 	        -linkpkg -package str,unix,dynlink,threads,lablgtk2.sourceview2 $(IDEFLAGS:.cma=.cmxa) $^
-	$(STRIP) $@
+	$(STRIP_HIDE) $@
 
 $(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents
 	$(MKDIR) $@/coq/
@@ -275,7 +275,7 @@ $(COQIDEAPP)/Contents/Resources:$(COQIDEAPP)/Contents/Resources/etc $(COQIDEAPP)
 	$(INSTALLLIB) ide/MacOS/*.icns $@
 
 $(COQIDEAPP):$(COQIDEAPP)/Contents/Resources
-	$(CODESIGN) $@
+	$(CODESIGN_HIDE) $@
 
 ###########################################################################
 # CoqIde for Windows special targets

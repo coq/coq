@@ -52,8 +52,8 @@ ifeq ($(BEST),opt)
 $(CHICKEN): checker/check.cmxa checker/main.mli checker/main.ml
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) -linkpkg $(SYSMOD) $(CHKLIBS) $(OPTFLAGS) $(LINKMETADATA) -o $@ $^
-	$(STRIP) $@
-	$(CODESIGN) $@
+	$(STRIP_HIDE) $@
+	$(CODESIGN_HIDE) $@
 else
 $(CHICKEN): $(CHICKENBYTE)
 	cp $< $@
