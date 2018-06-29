@@ -46,13 +46,8 @@ type constant_key = constant_body * (link_info ref * key)
 
 type mind_key = mutual_inductive_body * link_info ref
 
-type globals = {
-  env_constants : constant_key Cmap_env.t;
-  env_projections : projection_body Cmap_env.t;
-  env_inductives : mind_key Mindmap_env.t;
-  env_modules : module_body MPmap.t;
-  env_modtypes : module_type_body MPmap.t
-}
+type globals
+(** globals = constants + projections + inductive types + modules + module-types *)
 
 type stratification = {
   env_universes : UGraph.t;
@@ -70,7 +65,7 @@ type rel_context_val = private {
 }
 
 type env = private {
-  env_globals       : globals;           (* globals = constants + inductive types + modules + module-types *)
+  env_globals       : globals;
   env_named_context : named_context_val; (* section variables *)
   env_rel_context   : rel_context_val;
   env_nb_rel        : int;
@@ -174,6 +169,9 @@ val reset_with_named_context : named_context_val -> env -> env
 
 (** This removes the [n] last declarations from the rel context *)
 val pop_rel_context : int -> env -> env
+
+(** Useful for printing *)
+val fold_constants : (Constant.t -> constant_body -> 'a -> 'a) -> env -> 'a -> 'a
 
 (** {5 Global constants }
   {6 Add entries to global environment } *)
@@ -320,6 +318,7 @@ open Retroknowledge
 (** functions manipulating the retroknowledge 
     @author spiwack *)
 val retroknowledge : (retroknowledge->'a) -> env -> 'a
+[@@ocaml.deprecated "Use the record projection."]
 
 val registered : env -> field -> bool
 
