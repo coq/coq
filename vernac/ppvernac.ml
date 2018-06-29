@@ -113,8 +113,8 @@ open Pputils
   let pr_strict b = if b then str "strict " else mt ()
 
   let pr_set_entry_type pr = function
-    | ETName -> str"ident"
-    | ETReference -> str"global"
+    | ETIdent -> str"ident"
+    | ETGlobal -> str"global"
     | ETPattern (b,None) -> pr_strict b ++ str"pattern"
     | ETPattern (b,Some n) -> pr_strict b ++ str"pattern" ++ spc () ++ pr_at_level (NumLevel n)
     | ETConstr (s,bko,lev) -> pr_notation_entry s ++ pr lev ++ pr_opt pr_constr_as_binder_kind bko

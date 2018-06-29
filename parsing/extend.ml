@@ -34,8 +34,8 @@ type production_level =
 (** User-level types used to tell how to parse or interpret of the non-terminal *)
 
 type 'a constr_entry_key_gen =
-  | ETName
-  | ETReference
+  | ETIdent
+  | ETGlobal
   | ETBigint
   | ETBinder of bool  (* open list of binders if true, closed list of binders otherwise *)
   | ETConstr of Constrexpr.notation_entry * Notation_term.constr_as_binder_kind option * 'a
