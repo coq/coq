@@ -134,3 +134,23 @@ Module M15.
   Fail Local Notation "###### x" := (S x) (right associativity, at level 79).
   Local Notation "###### x" := (S x) (at level 79).
 End M15.
+
+(* 16. Some test about custom entries *)
+Module M16.
+  (* Test locality *)
+  Local Declare Custom Entry foo.
+  Fail Notation "#" := 0 (in custom foo). (* Should be local *)
+  Local Notation "#" := 0 (in custom foo).
+
+  (* Test import *)
+  Module A.
+  Declare Custom Entry foo2.
+  End A.
+  Fail Notation "##" := 0 (in custom foo2).
+  Import A.
+  Local Notation "##" := 0 (in custom foo2).
+
+  (* Test Print Grammar *)
+  Print Grammar foo.
+  Print Grammar foo2.
+End M16.
