@@ -1347,7 +1347,7 @@ folder ``path/fOO/Bar`` maps to ``Lib.fOO.Bar``. Subdirectories corresponding
 to invalid |Coq| identifiers are skipped, and, by convention,
 subdirectories named ``CVS`` or ``_darcs`` are skipped too.
 
-Thanks to this mechanism, .vo files are made available through the
+Thanks to this mechanism, ``.vo`` files are made available through the
 logical name of the folder they are in, extended with their own
 basename. For example, the name associated to the file
 ``path/fOO/Bar/File.vo`` is ``Lib.fOO.Bar.File``. The same caveat applies for
@@ -1358,17 +1358,17 @@ wrong loadpath afterwards.
 Some folders have a special status and are automatically put in the
 path. |Coq| commands associate automatically a logical path to files in
 the repository trees rooted at the directory from where the command is
-launched, coqlib/user-contrib/, the directories listed in the
-`$COQPATH`, `${XDG_DATA_HOME}/coq/` and `${XDG_DATA_DIRS}/coq/`
-environment variables (see`http://standards.freedesktop.org/basedir-
-spec/basedir-spec-latest.html`_) with the same physical-to-logical
-translation and with an empty logical prefix.
+launched, ``coqlib/user-contrib/``, the directories listed in the
+``$COQPATH``, ``${XDG_DATA_HOME}/coq/`` and ``${XDG_DATA_DIRS}/coq/``
+environment variables (see `XDG base directory specification
+<http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_)
+with the same physical-to-logical translation and with an empty logical prefix.
 
 The command line option ``-R`` is a variant of ``-Q`` which has the strictly
 same behavior regarding loadpaths, but which also makes the
 corresponding ``.vo`` files available through their short names in a way
 not unlike the ``Import`` command (see :ref:`here <import_qualid>`). For instance, ``-R`` `path` ``Lib``
-associates to the ``filepath/fOO/Bar/File.vo`` the logical name
+associates to the file path `path`\ ``/path/fOO/Bar/File.vo`` the logical name
 ``Lib.fOO.Bar.File``, but allows this file to be accessed through the
 short names ``fOO.Bar.File,Bar.File`` and ``File``. If several files with
 identical base name are present in different subdirectories of a
