@@ -1190,7 +1190,20 @@ let find_subentry_types from n assoc etyps symbols =
   let prec = List.map (assoc_of_type from n) sy_typs in
   sy_typs, prec
 
-let compute_syntax_data df modifiers =
+let check_locality_compatibility local custom i_typs =
+  if not local then
+    let subcustom = List.map_filter (function
+      | _,ETConstr (InCustomEntry s,_)
+      | _,ETConstrAsBinder (InCustomEntry s,_,_) -> Some s
+      | _ -> None) i_typs in
+    let allcustoms = match custom with InCustomEntry s -> s::subcustom | _ -> subcustom in
+    List.iter (fun s ->
+        if Pcoq.locality_of_custom_entry s then
+          user_err (strbrk "Notation has to be declared local as it depends on custom entry " ++ str s ++
+                    strbrk " which is local."))
+      (List.uniquize allcustoms)
+
+let compute_syntax_data local df modifiers =
   let open SynData in
   let open NotationMods in
   let mods = interp_modifiers modifiers in
@@ -1219,6 +1232,7 @@ let compute_syntax_data df modifiers =
     else
       sy_typs, prec in
   let i_typs = set_internalization_type sy_typs in
+  check_locality_compatibility local mods.custom sy_typs;
   let pa_sy_data = (sy_typs_for_grammar,symbols_for_grammar) in
   let pp_sy_data = (sy_typs,symbols) in
   let sy_fulldata = (ntn_for_grammar,(mods.custom,n,prec_for_grammar,List.map snd sy_typs_for_grammar),need_squash) in
@@ -1246,9 +1260,9 @@ let compute_syntax_data df modifiers =
     not_data    = sy_fulldata;
   }
 
-let compute_pure_syntax_data df mods =
+let compute_pure_syntax_data local df mods =
   let open SynData in
-  let sd = compute_syntax_data df mods in
+  let sd = compute_syntax_data local df mods in
   let msgs =
     if sd.only_parsing then
       (Feedback.msg_warning ?loc:None,
@@ -1402,7 +1416,7 @@ let to_map l =
 
 let add_notation_in_scope local df env c mods scope =
   let open SynData in
-  let sd = compute_syntax_data df mods in
+  let sd = compute_syntax_data local df mods in
   (* Prepare the interpretation *)
   (* Prepare the parsing and printing rules *)
   let sy_rules = make_syntax_rules sd in
@@ -1472,7 +1486,7 @@ let add_notation_interpretation_core local df env ?(impls=empty_internalization_
 (* Notations without interpretation (Reserved Notation) *)
 
 let add_syntax_extension local ({CAst.loc;v=df},mods) = let open SynData in
-  let psd = compute_pure_syntax_data df mods in
+  let psd = compute_pure_syntax_data local df mods in
   let sy_rules = make_syntax_rules {psd with compat = None} in
   Flags.if_verbose (List.iter (fun (f,x) -> f x)) psd.msgs;
   Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules))
@@ -1604,4 +1618,27 @@ let add_syntactic_definition env ident (vars,c) local onlyparse =
 (**********************************************************************)
 (* Declaration of custom entry                                        *)
 
-let declare_custom_entry = Pcoq.create_custom_entries
+let load_custom_entry _ _ = ()
+
+let open_custom_entry _ (_,(local,s)) =
+  Pcoq.create_custom_entry local s
+
+let cache_custom_entry o =
+  load_custom_entry 1 o;
+  open_custom_entry 1 o
+
+let subst_custom_entry (subst,x) = x
+
+let classify_custom_entry (local,s as o) =
+  if local then Dispose else Substitute o
+
+let inCustomEntry : locality_flag * string -> obj =
+  declare_object {(default_object "CUSTOM-ENTRIES") with
+      cache_function = cache_custom_entry;
+      open_function = open_custom_entry;
+      load_function = load_custom_entry;
+      subst_function = subst_custom_entry;
+      classify_function = classify_custom_entry}
+
+let declare_custom_entry local s =
+  Lib.add_anonymous_leaf (inCustomEntry (local,s))

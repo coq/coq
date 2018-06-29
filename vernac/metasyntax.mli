@@ -61,4 +61,4 @@ val check_infix_modifiers : syntax_modifier list -> unit
 
 val with_syntax_protection : ('a -> 'b) -> 'a -> 'b
 
-val declare_custom_entry : string -> unit
+val declare_custom_entry : locality_flag -> string -> unit
