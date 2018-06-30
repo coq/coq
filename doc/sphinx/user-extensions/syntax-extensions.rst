@@ -10,15 +10,14 @@ parses and prints objects, i.e. the translations between the concrete
 and internal representations of terms and commands.
 
 The main commands to provide custom symbolic notations for terms are
-``Notation`` and ``Infix``. They are described in section :ref:`Notations`. There is also a
-variant of ``Notation`` which does not modify the parser. This provides with a
-form of abbreviation and it is described in Section :ref:`Abbreviations`. It is
+:cmd:`Notation` and :cmd:`Infix`; they will be described in the
+:ref:`next section <Notations>`. There is also a
+variant of :cmd:`Notation` which does not modify the parser; this provides a
+form of :ref:`abbreviation <Abbreviations>`. It is
 sometimes expected that the same symbolic notation has different meanings in
-different contexts. To achieve this form of overloading, |Coq| offers a notion
-of interpretation scope. This is described in Section :ref:`Scopes`.
-
-The main command to provide custom notations for tactics is ``Tactic Notation``.
-It is described in Section :ref:`TacticNotation`.
+different contexts; to achieve this form of overloading, |Coq| offers a notion
+of :ref:`interpretation scopes <Scopes>`.
+The main command to provide custom notations for tactics is :cmd:`Tactic Notation`.
 
 .. coqtop:: none
 
@@ -44,7 +43,7 @@ logical conjunction (and). Such a notation is declared by
 
    Notation "A /\ B" := (and A B).
 
-The expression :g:`(and A B)` is the abbreviated term and the string ``"A /\ B"``
+The expression :g:`(and A B)` is the abbreviated term and the string :g:`"A /\ B"`
 (called a *notation*) tells how it is symbolically written.
 
 A notation is always surrounded by double quotes (except when the
@@ -66,15 +65,15 @@ example.
 
 A notation binds a syntactic expression to a term. Unless the parser
 and pretty-printer of Coq already know how to deal with the syntactic
-expression (see 12.1.7), explicit precedences and associativity rules
-have to be given.
+expression (see :ref:`ReservingNotations`), explicit precedences and
+associativity rules have to be given.
 
 .. note::
 
    The right-hand side of a notation is interpreted at the time the notation is
-   given. In particular, disambiguation of constants, implicit arguments (see
-   Section :ref:`ImplicitArguments`), coercions (see Section :ref:`Coercions`),
-   etc. are resolved at the time of the declaration of the notation.
+   given. In particular, disambiguation of constants, :ref:`implicit arguments
+   <ImplicitArguments>`, :ref:`coercions <Coercions>`, etc. are resolved at the
+   time of the declaration of the notation.
 
 Precedences and associativity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,13 +105,13 @@ is 100, for example 85 for disjunction and 80 for conjunction [#and_or_levels]_.
 Similarly, an associativity is needed to decide whether :g:`True /\ False /\ False`
 defaults to :g:`True /\ (False /\ False)` (right associativity) or to
 :g:`(True /\ False) /\ False` (left associativity). We may even consider that the
-expression is not well- formed and that parentheses are mandatory (this is a “no
+expression is not well-formed and that parentheses are mandatory (this is a “no
 associativity”) [#no_associativity]_. We do not know of a special convention of
 the associativity of disjunction and conjunction, so let us apply for instance a
 right associativity (which is the choice of Coq).
 
 Precedence levels and associativity rules of notations have to be
-given between parentheses in a list of modifiers that the ``Notation``
+given between parentheses in a list of modifiers that the :cmd:`Notation`
 command understands. Here is how the previous examples refine.
 
 .. coqtop:: in
@@ -122,9 +121,10 @@ command understands. Here is how the previous examples refine.
 
 By default, a notation is considered non associative, but the
 precedence level is mandatory (except for special cases whose level is
-canonical). The level is either a number or the phrase `next level`
-whose meaning is obvious. The list of levels already assigned is on
-Figure 3.1.
+canonical). The level is either a number or the phrase ``next level``
+whose meaning is obvious.
+Some :ref:`associativities are predefined <init-notations>` in the
+``Notations`` module.
 
 .. TODO I don't find it obvious -- CPC
 
@@ -162,7 +162,7 @@ One can also define notations for binders.
 In the last case though, there is a conflict with the notation for
 type casts. The notation for types casts, as shown by the command :cmd:`Print
 Grammar constr` is at level 100. To avoid ``x : A`` being parsed as a type cast,
-it is necessary to put x at a level below 100, typically 99. Hence, a correct
+it is necessary to put ``x`` at a level below 100, typically 99. Hence, a correct
 definition is the following:
 
 .. coqtop:: all
@@ -176,7 +176,7 @@ Simple factorization rules
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Coq extensible parsing is performed by *Camlp5* which is essentially a LL1
-parser: it decides which notation to parse by looking tokens from left to right.
+parser: it decides which notation to parse by looking at tokens from left to right.
 Hence, some care has to be taken not to hide already existing rules by new
 rules. Some simple left factorization work has to be done. Here is an example.
 
@@ -186,11 +186,11 @@ rules. Some simple left factorization work has to be done. Here is an example.
    Notation "x < y < z" := (x < y /\ y < z) (at level 70).
 
 In order to factorize the left part of the rules, the subexpression
-referred by y has to be at the same level in both rules. However the
-default behavior puts y at the next level below 70 in the first rule
-(no associativity is the default), and at the level 200 in the second
-rule (level 200 is the default for inner expressions). To fix this, we
-need to force the parsing level of y, as follows.
+referred by ``y`` has to be at the same level in both rules. However the
+default behavior puts ``y`` at the next level below 70 in the first rule
+(``no associativity`` is the default), and at the level 200 in the second
+rule (``level 200`` is the default for inner expressions). To fix this, we
+need to force the parsing level of ``y``, as follows.
 
 .. coqtop:: all
 
@@ -198,9 +198,9 @@ need to force the parsing level of y, as follows.
    Notation "x < y < z" := (x < y /\ y < z) (at level 70, y at next level).
 
 For the sake of factorization with Coq predefined rules, simple rules
-have to be observed for notations starting with a symbol: e.g. rules
-starting with “{” or “(” should be put at level 0. The list of Coq
-predefined notations can be found in Chapter :ref:`thecoqlibrary`.
+have to be observed for notations starting with a symbol, e.g., rules
+starting with “\ ``{``\ ” or “\ ``(``\ ” should be put at level 0. The list
+of Coq predefined notations can be found in the chapter on :ref:`thecoqlibrary`.
 
 .. cmd:: Print Grammar constr.
 
@@ -215,7 +215,7 @@ predefined notations can be found in Chapter :ref:`thecoqlibrary`.
 Displaying symbolic notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The command ``Notation`` has an effect both on the Coq parser and on the
+The command :cmd:`Notation` has an effect both on the Coq parser and on the
 Coq printer. For example:
 
 .. coqtop:: all
@@ -301,7 +301,7 @@ at the time of use of the notation.
 
 .. note:: Sometimes, a notation is expected only for the parser. To do
           so, the option ``only parsing`` is allowed in the list of modifiers
-          of ``Notation``. Conversely, the ``only printing`` modifier can be
+          of :cmd:`Notation`. Conversely, the ``only printing`` modifier can be
           used to declare that a notation should only be used for printing and
           should not declare a parsing rule. In particular, such notations do
           not modify the parser.
@@ -309,7 +309,7 @@ at the time of use of the notation.
 The Infix command
 ~~~~~~~~~~~~~~~~~~
 
-The ``Infix`` command is a shortening for declaring notations of infix
+The :cmd:`Infix` command is a shortening for declaring notations of infix
 symbols.
 
 .. cmd:: Infix "@symbol" := @term ({+, @modifier}).
@@ -323,6 +323,8 @@ symbols.
    .. coqtop:: in
 
       Infix "/\" := and (at level 80, right associativity).
+
+.. _ReservingNotations:
 
 Reserving notations
 ~~~~~~~~~~~~~~~~~~~
@@ -341,7 +343,7 @@ state of Coq.
 Reserving a notation is also useful for simultaneously defining an
 inductive type or a recursive constant and a notation for it.
 
-.. note:: The notations mentioned on Figure 3.1 are reserved. Hence
+.. note:: The notations mentioned in the module :ref:`init-notations` are reserved. Hence
           their precedence and associativity cannot be changed.
 
 Simultaneous definition of terms and notations
@@ -391,7 +393,7 @@ Locating notations
 To know to which notations a given symbol belongs to, use the :cmd:`Locate`
 command. You can call it on any (composite) symbol surrounded by double quotes.
 To locate a particular notation, use a string where the variables of the
-notation are replaced by “_” and where possible single quotes inserted around
+notation are replaced by “``_``” and where possible single quotes inserted around
 identifiers or tokens starting with a single quote are dropped.
 
 .. coqtop:: all
@@ -404,7 +406,7 @@ Notations and binders
 
 Notations can include binders. This section lists
 different ways to deal with binders. For further examples, see also
-Section :ref:`RecursiveNotationsWithBinders`.
+:ref:`RecursiveNotationsWithBinders`.
 
 Binders bound in the notation and parsed as identifiers
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -490,7 +492,7 @@ the following:
 
 This is so because the grammar also contains rules starting with :g:`{}` and
 followed by a term, such as the rule for the notation :g:`{ A } + { B }` for the
-constant :g:`sumbool` (see Section :ref:`specification`).
+constant :g:`sumbool` (see :ref:`specification`).
 
 Then, in the rule, ``x ident`` is replaced by ``x at level 99 as ident`` meaning
 that ``x`` is parsed as a term at level 99 (as done in the notation for
@@ -545,7 +547,7 @@ the next command fails because p does not bind in the instance of n.
    Notation "[> a , .. , b <]" :=
      (cons a .. (cons b nil) .., cons b .. (cons a nil) ..).
 
-.. _RecursiveNotationsWithBinders:
+.. _RecursiveNotations:
 
 Notations with recursive patterns
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -563,7 +565,7 @@ confused with the three-dots notation “``…``” used in this manual to denot
 a sequence of arbitrary size.
 
 On the left-hand side, the part “``x s .. s y``” of the notation parses
-any number of time (but at least one time) a sequence of expressions
+any number of times (but at least one time) a sequence of expressions
 separated by the sequence of tokens ``s`` (in the example, ``s`` is just “``;``”).
 
 The right-hand side must contain a subterm of the form either
@@ -572,7 +574,7 @@ called the *iterator* of the recursive notation is an arbitrary expression with
 distinguished placeholders and where :math:`t` is called the *terminating
 expression* of the recursive notation. In the example, we choose the names
 :math:`x` and :math:`y` but in practice they can of course be chosen
-arbitrarily. Not atht the placeholder :math:`[~]_I` has to occur only once but
+arbitrarily. Note that the placeholder :math:`[~]_I` has to occur only once but
 :math:`[~]_E` can occur several times.
 
 Parsing the notation produces a list of expressions which are used to
@@ -595,9 +597,10 @@ and the terminating expression is ``nil``. Here are other examples:
      (t at level 39).
 
 Notations with recursive patterns can be reserved like standard
-notations, they can also be declared within interpretation scopes (see
-section 12.2).
+notations, they can also be declared within
+:ref:`interpretation scopes <Scopes>`.
 
+.. _RecursiveNotationsWithBinders:
 
 Notations with recursive patterns involving binders
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -611,7 +614,8 @@ is:
      (ex (fun x => .. (ex (fun y => p)) ..))
      (at level 200, x binder, y binder, right associativity).
 
-The principle is the same as in Section 12.1.12 except that in the iterator
+The principle is the same as in :ref:`RecursiveNotations`
+except that in the iterator
 :math:`φ([~]_E , [~]_I)`, the placeholder :math:`[~]_E` can also occur in
 position of the binding variable of a ``fun`` or a ``forall``.
 
@@ -620,8 +624,8 @@ binders, ``x`` and ``y`` must be marked as ``binder`` in the list of modifiers
 of the notation. The binders of the parsed sequence are used to fill the
 occurrences of the first placeholder of the iterating pattern which is
 repeatedly nested as many times as the number of binders generated. If ever the
-generalization operator ``'`` (see Section 2.7.19) is used in the binding list,
-the added binders are taken into account too.
+generalization operator ``'`` (see :ref:`implicit-generalization`) is
+used in the binding list, the added binders are taken into account too.
 
 Binders parsing exist in two flavors. If ``x`` and ``y`` are marked as binder,
 then a sequence such as :g:`a b c : T` will be accepted and interpreted as
@@ -678,7 +682,7 @@ position of :g:`x`:
 
 In addition to ``global``, one can restrict the syntax of a
 sub-expression by using the entry names ``ident`` or ``pattern``
-already seen in Section :ref:`NotationsWithBinders`, even when the
+already seen in :ref:`NotationsWithBinders`, even when the
 corresponding expression is not used as a binder in the right-hand
 side. E.g.:
 
@@ -690,10 +694,14 @@ side. E.g.:
 Summary
 ~~~~~~~
 
-**Syntax of notations**
+.. _NotationSyntax:
+
+Syntax of notations
++++++++++++++++++++
 
 The different syntactic variants of the command Notation are given on the
-following figure. The optional :token:`scope` is described in the Section 12.2.
+following figure. The optional :production:`scope` is described in
+:ref:`Scopes`.
 
 .. productionlist:: coq
    notation      : [Local] Notation `string` := `term` [`modifiers`] [: `scope`].
@@ -743,14 +751,15 @@ following figure. The optional :token:`scope` is described in the Section 12.2.
           given to some notation, say ``"{ y } & { z }"`` in fact applies to the
           underlying ``"{ x }"``\-free rule which is ``"y & z"``).
 
-**Persistence of notations**
+Persistence of notations
+++++++++++++++++++++++++
 
 Notations do not survive the end of sections.
 
 .. cmd:: Local Notation @notation
 
    Notations survive modules unless the command ``Local Notation`` is used instead
-   of ``Notation``.
+   of :cmd:`Notation`.
 
 .. _Scopes:
 
@@ -762,13 +771,13 @@ interpretation. Interpretation scopes provide a weak, purely
 syntactical form of notations overloading: the same notation, for
 instance the infix symbol ``+`` can be used to denote distinct
 definitions of the additive operator. Depending on which interpretation
-scopes is currently open, the interpretation is different.
+scopes are currently open, the interpretation is different.
 Interpretation scopes can include an interpretation for numerals and
 strings. However, this is only made possible at the Objective Caml
 level.
 
-See Figure 12.1 for the syntax of notations including the possibility
-to declare them in a given scope. Here is a typical example which
+See :ref:`above <NotationSyntax>` for the syntax of notations including the
+possibility to declare them in a given scope. Here is a typical example which
 declares the notation for conjunction in the scope ``type_scope``.
 
 .. coqdoc::
@@ -892,27 +901,27 @@ Binding arguments of a constant to an interpretation scope
    turn to be themselves arguments of a reference are interpreted
    accordingly to the arguments scopes bound to this reference.
 
-.. cmdv:: Arguments @qualid : clear scopes
+   .. cmdv:: Arguments @qualid : clear scopes
 
-   Arguments scopes can be cleared with :n:`Arguments @qualid : clear scopes`.
+      Arguments scopes can be cleared with :n:`Arguments @qualid : clear scopes`.
 
-.. cmdv:: Arguments @qualid {+ @name%scope} : extra scopes
+   .. cmdv:: Arguments @qualid {+ @name%scope} : extra scopes
 
-   Defines extra argument scopes, to be used in case of coercion to Funclass
-   (see Chapter :ref:`implicitcoercions`) or with a computed type.
+      Defines extra argument scopes, to be used in case of coercion to ``Funclass``
+      (see the :ref:`implicitcoercions` chapter) or with a computed type.
 
-.. cmdv:: Global Arguments @qualid {+ @name%@scope}
+   .. cmdv:: Global Arguments @qualid {+ @name%@scope}
 
-   This behaves like :n:`Arguments qualid {+ @name%@scope}` but survives when a
-   section is closed instead of stopping working at section closing. Without the
-   ``Global`` modifier, the effect of the command stops when the section it belongs
-   to ends.
+      This behaves like :n:`Arguments qualid {+ @name%@scope}` but survives when a
+      section is closed instead of stopping working at section closing. Without the
+      ``Global`` modifier, the effect of the command stops when the section it belongs
+      to ends.
 
-.. cmdv:: Local Arguments @qualid {+ @name%@scope}
+   .. cmdv:: Local Arguments @qualid {+ @name%@scope}
 
-   This behaves like :n:`Arguments @qualid {+ @name%@scope}` but does not
-   survive modules and files. Without the ``Local`` modifier, the effect of the
-   command is visible from within other modules or files.
+      This behaves like :n:`Arguments @qualid {+ @name%@scope}` but does not
+      survive modules and files. Without the ``Local`` modifier, the effect of the
+      command is visible from within other modules or files.
 
 .. seealso::
 
@@ -947,18 +956,18 @@ Binding types of arguments to an interpretation scope
 
    When an interpretation scope is naturally associated to a type (e.g.  the
    scope of operations on the natural numbers), it may be convenient to bind it
-   to this type. When a scope ``scope`` is bound to a type type, any new function
-   defined later on gets its arguments of type type interpreted by default in
+   to this type. When a scope ``scope`` is bound to a type ``type``, any new function
+   defined later on gets its arguments of type ``type`` interpreted by default in
    scope scope (this default behavior can however be overwritten by explicitly
-   using the command ``Arguments``).
+   using the command :cmd:`Arguments`).
 
    Whether the argument of a function has some type ``type`` is determined
-   statically. For instance, if f is a polymorphic function of type :g:`forall
-   X:Type, X -> X` and type :g:`t` is bound to a scope ``scope``, then :g:`a` of
-   type :g:`t` in :g:`f t a` is not recognized as an argument to be interpreted
-   in scope ``scope``.
+   statically. For instance, if ``f`` is a polymorphic function of type
+   :g:`forall X:Type, X -> X` and type :g:`t` is bound to a scope ``scope``,
+   then :g:`a` of type :g:`t` in :g:`f t a` is not recognized as an argument to
+   be interpreted in scope ``scope``.
 
-   More generally, any coercion :n:`@class` (see Chapter :ref:`implicitcoercions`)
+   More generally, any coercion :n:`@class` (see the :ref:`implicitcoercions` chapter)
    can be bound to an interpretation scope. The command to do it is
    :n:`Bind Scope @scope with @class`
 
@@ -980,12 +989,6 @@ Binding types of arguments to an interpretation scope
    .. note:: The scopes ``type_scope`` and ``function_scope`` also have a local
              effect on interpretation. See the next section.
 
-.. seealso::
-
-   :cmd:`About`
-     The command to show the scopes bound to the arguments of a
-     function is described in Section 2.
-
 The ``type_scope`` interpretation scope
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -996,7 +999,7 @@ scope which is temporarily activated each time a subterm of an expression is
 expected to be a type. It is delimited by the key ``type``, and bound to the
 coercion class ``Sortclass``. It is also used in certain situations where an
 expression is statically known to be a type, including the conclusion and the
-type of hypotheses within an Ltac goal match (see Section
+type of hypotheses within an Ltac goal match (see
 :ref:`ltac-match-goal`), the statement of a theorem, the type of a definition,
 the type of a binder, the domain and codomain of implication, the codomain of
 products, and more generally any type argument of a declared or defined
@@ -1017,8 +1020,8 @@ Interpretation scopes used in the standard library of Coq
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We give an overview of the scopes used in the standard library of Coq.
-For a complete list of notations in each scope, use the commands Print
-Scopes or Print Scope scope.
+For a complete list of notations in each scope, use the commands :cmd:`Print
+Scopes` or :cmd:`Print Scope`.
 
 ``type_scope``
   This scope includes infix * for product types and infix + for sum types. It
@@ -1084,7 +1087,7 @@ Scopes or Print Scope scope.
 ``string_scope``
   This scope includes notation for strings as elements of the type string.
   Special characters and escaping follow Coq conventions on strings (see
-  Section 1.1). Especially, there is no convention to visualize non
+  :ref:`lexical-conventions`). Especially, there is no convention to visualize non
   printable characters of a string. The file :file:`String.v` shows an example
   that contains quotes, a newline and a beep (i.e. the ASCII character
   of code 7).
@@ -1093,8 +1096,8 @@ Scopes or Print Scope scope.
   This scope includes interpretation for all strings of the form ``"c"``
   where :g:`c` is an ASCII character, or of the form ``"nnn"`` where nnn is
   a three-digits number (possibly with leading 0's), or of the form
-  ``""""``. Their respective denotations are the ASCII code of c, the
-  decimal ASCII code nnn, or the ascii code of the character ``"`` (i.e.
+  ``""""``. Their respective denotations are the ASCII code of :g:`c`, the
+  decimal ASCII code ``nnn``, or the ascii code of the character ``"`` (i.e.
   the ASCII code 34), all of them being represented in the type :g:`ascii`.
 
 
@@ -1109,24 +1112,25 @@ Displaying informations about scopes
    by the same notation in a more recently open scope are not displayed.
    Hence each notation is displayed only once.
 
-.. cmdv:: Print Visibility scope
+   .. cmdv:: Print Visibility @scope
 
-   This displays the current stack of notations in scopes and lonely
-   notations assuming that scope is pushed on top of the stack. This is
-   useful to know how a subterm locally occurring in the scope ofscope is
-   interpreted.
+      This displays the current stack of notations in scopes and lonely
+      notations assuming that :token:`scope` is pushed on top of the stack. This is
+      useful to know how a subterm locally occurring in the scope :token:`scope` is
+      interpreted.
 
-.. cmdv:: Print Scope scope
-
-   This displays all the notations defined in interpretation scopescope.
-   It also displays the delimiting key if any and the class to which the
-   scope is bound, if any.
-
-.. cmdv:: Print Scopes
+.. cmd:: Print Scopes
 
    This displays all the notations, delimiting keys and corresponding
    class of all the existing interpretation scopes. It also displays the
    lonely notations.
+
+   .. cmdv:: Print Scope @scope
+      :name: Print Scope
+
+      This displays all the notations defined in interpretation scope :token:`scope`.
+      It also displays the delimiting key if any and the class to which the
+      scope is bound, if any.
 
 .. _Abbreviations:
 
@@ -1324,7 +1328,7 @@ tactic language. Tactic notations obey the following syntax:
 .. [#and_or_levels] which are the levels effectively chosen in the current
    implementation of Coq
 
-.. [#no_associativity] Coq accepts notations declared as no associative but the parser on
+.. [#no_associativity] Coq accepts notations declared as ``no associative`` but the parser on
    which Coq is built, namely Camlp4, currently does not implement the
-   no-associativity and replaces it by a left associativity; hence it is
-   the same for Coq: no-associativity is in fact left associativity
+   ``no associativity`` and replaces it by a ``left associativity``; hence it is
+   the same for Coq: ``no associativity`` is in fact ``left associativity``.
