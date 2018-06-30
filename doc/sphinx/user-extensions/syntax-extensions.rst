@@ -146,7 +146,7 @@ expected to be inferred at typing time.
    Notation "x = y" := (@eq _ x y) (at level 70, no associativity).
 
 One can define *closed* notations whose both sides are symbols. In this case,
-the default precedence level for the inner subexpression is 200, and the default
+the default precedence level for the inner sub-expression is 200, and the default
 level for the notation itself is 0.
 
 .. coqtop:: in
@@ -185,7 +185,7 @@ rules. Some simple left factorization work has to be done. Here is an example.
    Notation "x < y" := (lt x y) (at level 70).
    Notation "x < y < z" := (x < y /\ y < z) (at level 70).
 
-In order to factorize the left part of the rules, the subexpression
+In order to factorize the left part of the rules, the sub-expression
 referred by ``y`` has to be at the same level in both rules. However the
 default behavior puts ``y`` at the next level below 70 in the first rule
 (``no associativity`` is the default), and at the level 200 in the second
@@ -209,7 +209,7 @@ of Coq predefined notations can be found in the chapter on :ref:`thecoqlibrary`.
 .. cmd:: Print Grammar pattern.
 
    This displays the state of the subparser of patterns (the parser used in the
-   grammar of the match with constructions).
+   grammar of the ``match with`` constructions).
 
 
 Displaying symbolic notations
@@ -519,7 +519,7 @@ is just an identifier, one could have said
 ``p at level 99 as strict pattern``.
 
 Note also that in the absence of a ``as ident``, ``as strict pattern`` or
-``as pattern`` modifiers, the default is to consider subexpressions occurring
+``as pattern`` modifiers, the default is to consider sub-expressions occurring
 in binding position and parsed as terms to be ``as ident``.
 
 .. _NotationsWithBinders:
@@ -824,10 +824,10 @@ notations are given below. The optional :production:`scope` is described in
                  : | CoFixpoint `cofix_body` [`decl_notation`] with … with `cofix_body` [`decl_notation`].
                  : | [Local] Declare Custom Entry `ident`.
    decl_notation : [where `string` := `term` [: `scope`] and … and `string` := `term` [: `scope`]].
-   modifiers     : at level `natural`
+   modifiers     : at level `num`
                  : in custom `ident`
-                 : in custom `ident` at level `natural`
-                 : | `ident` , … , `ident` at level `natural` [`binderinterp`]
+                 : in custom `ident` at level `num`
+                 : | `ident` , … , `ident` at level `num` [`binderinterp`]
                  : | `ident` , … , `ident` at next level [`binderinterp`]
                  : | `ident` `explicit_subentry`
                  : | left associativity
@@ -839,14 +839,14 @@ notations are given below. The optional :production:`scope` is described in
    explicit_subentry : ident
                  : | global
                  : | bigint
-                 : | [strict] pattern [at level `natural`]
+                 : | [strict] pattern [at level `num`]
                  : | binder
                  : | closed binder
                  : | constr [`binderinterp`]
-                 : | constr at level `natural` [`binderinterp`]
+                 : | constr at level `num` [`binderinterp`]
                  : | constr at next level [`binderinterp`]
                  : | custom [`binderinterp`]
-                 : | custom at level `natural` [`binderinterp`]
+                 : | custom at level `num` [`binderinterp`]
                  : | custom at next level [`binderinterp`]
    binderinterp  : as ident
                  : | as pattern
@@ -1334,7 +1334,7 @@ tactic language. Tactic notations obey the following syntax:
 .. productionlist:: coq
    tacn                 : Tactic Notation [`tactic_level`] [`prod_item` … `prod_item`] := `tactic`.
    prod_item            : `string` | `tactic_argument_type`(`ident`)
-   tactic_level         : (at level `natural`)
+   tactic_level         : (at level `num`)
    tactic_argument_type : ident | simple_intropattern | reference
                         : | hyp | hyp_list | ne_hyp_list
                         : | constr | uconstr | constr_list | ne_constr_list
