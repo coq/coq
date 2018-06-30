@@ -2,7 +2,6 @@
 (* Distributed under the terms of CeCILL-B.                                  *)
 
 open Goal
-open Genarg
 open Environ
 open Evd
 open Constr
@@ -19,23 +18,11 @@ open Tacexpr
 type cpattern
 val pr_cpattern : cpattern -> Pp.t
 
-(** CS cpattern: (f _), (X in t), (t in X in t), (t as X in t) *)
-val cpattern         : cpattern Pcoq.Gram.entry
-val wit_cpattern     : cpattern uniform_genarg_type
-
-(** OS cpattern: f _, (X in t), (t in X in t), (t as X in t) *)
-val lcpattern         : cpattern Pcoq.Gram.entry
-val wit_lcpattern     : cpattern uniform_genarg_type
-
 (** The type of rewrite patterns, the patterns of the [rewrite] tactic.
     These patterns also include patterns that identify all the subterms
     of a context (i.e. "in" prefix) *)
 type rpattern
 val pr_rpattern : rpattern -> Pp.t
-
-(** OS rpattern: f _, in t, X in t, in X in t, t in X in t, t as X in t *)
-val rpattern         : rpattern Pcoq.Gram.entry
-val wit_rpattern     : rpattern uniform_genarg_type
 
 (** Pattern interpretation and matching *)
 
@@ -237,5 +224,26 @@ val debug : bool -> unit
 (* One should delimit a snippet with "Set SsrMatchingProfiling" and
  * "Unset SsrMatchingProfiling" to get timings *)
 val profile : bool -> unit
+
+val ssrinstancesof : cpattern -> Tacmach.tactic
+
+(** Functions used for grammar extensions. Do not use. *)
+
+module Internal :
+sig
+  val wit_rpatternty : (rpattern, rpattern, rpattern) Genarg.genarg_type
+  val glob_rpattern : Genintern.glob_sign -> rpattern -> rpattern
+  val subst_rpattern : Mod_subst.substitution -> rpattern -> rpattern
+  val interp_rpattern : Geninterp.interp_sign -> Proof_type.goal Evd.sigma -> rpattern -> Evd.evar_map * rpattern
+  val pr_rpattern : rpattern -> Pp.t
+  val mk_rpattern : (cpattern, cpattern) ssrpattern -> rpattern
+  val mk_lterm : Constrexpr.constr_expr -> Geninterp.interp_sign option -> cpattern
+  val mk_term : char -> Constrexpr.constr_expr -> Geninterp.interp_sign option -> cpattern
+
+  val glob_cpattern : Genintern.glob_sign -> cpattern -> cpattern
+  val subst_ssrterm : Mod_subst.substitution -> cpattern -> cpattern
+  val interp_ssrterm : Geninterp.interp_sign -> Proof_type.goal Evd.sigma -> cpattern -> Evd.evar_map * cpattern
+  val pr_ssrterm : cpattern -> Pp.t
+end
 
 (* eof *)
