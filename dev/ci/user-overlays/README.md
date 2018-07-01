@@ -9,6 +9,8 @@ testing is possible. It redefines some variables from
 [`ci-basic-overlay.sh`](../ci-basic-overlay.sh):
 give the name of your branch using a `_CI_BRANCH` variable and the location of
 your fork using a `_CI_GITURL` variable.
+The `_CI_GITURL` variable should be the URL of the repository without a
+trailing `.git`.
 
 Moreover, the file contains very simple logic to test the pull request number
 or branch name and apply it only in this case.
