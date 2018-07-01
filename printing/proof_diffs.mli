@@ -43,6 +43,9 @@ the first argument set to None, which will skip the diff.
 *)
 val diff_goals : ?prev_gs:(goal sigma) -> goal sigma option -> Pp.t
 
+(** Convert a string to a list of token strings using the lexer *)
+val tokenize_string : string -> string list
+
 (* Exposed for unit test, don't use these otherwise *)
 (* output channel for the test log file *)
 val log_out_ch : out_channel ref

@@ -3,7 +3,9 @@ open Utest
 open Pp_diff
 open Proof_diffs
 
-let tokenize_string = !Pp_diff.tokenize_string
+let tokenize_string = Proof_diffs.tokenize_string
+let diff_pp = diff_pp ~tokenize_string
+let diff_str = diff_str ~tokenize_string
 
 let tests = ref []
 let add_test name test = tests := (mk_test name (TestCase test)) :: !tests

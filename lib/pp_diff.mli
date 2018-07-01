@@ -33,18 +33,15 @@ Limitations/Possible enhancements:
 
 (** Compute the diff between two Pp.t structures and return
 versions of each with diffs highlighted as (old, new) *)
-val diff_pp : Pp.t -> Pp.t -> Pp.t * Pp.t
+val diff_pp : ?tokenize_string:(string -> string list) -> Pp.t -> Pp.t -> Pp.t * Pp.t
 
 (** Compute the diff between two Pp.t structures and return
 a highlighted Pp.t.  If [show_removed] is true, show separate lines for
 removals and additions, otherwise only show additions *)
-val diff_pp_combined : ?show_removed:bool -> Pp.t -> Pp.t -> Pp.t
+val diff_pp_combined : ?tokenize_string:(string -> string list) -> ?show_removed:bool -> Pp.t -> Pp.t -> Pp.t
 
 (** Raised if the diff fails *)
 exception Diff_Failure of string
-
-(* for dependency injection to allow calling the lexer *)
-val tokenize_string : (string -> string list) ref
 
 module StringDiff :
 sig
@@ -69,7 +66,7 @@ If the strings are not lexable, this routine will raise Diff_Failure.
 Therefore you should catch any exceptions.  The workaround for now is for the
 caller to tokenize the strings itself and then call diff_strs.
 *)
-val diff_str : string -> string -> StringDiff.elem Diff2.edit list
+val diff_str : ?tokenize_string:(string -> string list) -> string -> string -> StringDiff.elem Diff2.edit list
 
 (** Compute the differences between 2 lists of strings, treating the strings
 in the lists as indivisible units.

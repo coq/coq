@@ -125,13 +125,20 @@ let diff_strs old_strs new_strs =
   let diffs = List.rev (StringDiff.diff old_strs new_strs) in
   shorten_diff_span `Removed (shorten_diff_span `Added diffs);;
 
-(* to be set to Proof_diffs.tokenize_string to allow a forward reference to the lexer *)
-let tokenize_string = ref (fun (s : string) -> [s])
+(* Default string tokenizer.  Makes each character a separate strin.
+Whitespace is not ignored.  Doesn't handle UTF-8 differences well. *)
+let def_tokenize_string s =
+  let limit = (String.length s) - 1 in
+  let strs : string list ref = ref [] in
+  for i = 0 to limit do
+    strs := (String.make 1 s.[i]) :: !strs
+  done;
+  List.rev !strs
 
 (* get the Myers diff of 2 strings *)
-let diff_str old_str new_str =
-  let old_toks = Array.of_list (!tokenize_string old_str)
-  and new_toks = Array.of_list (!tokenize_string new_str) in
+let diff_str ?(tokenize_string=def_tokenize_string) old_str new_str =
+  let old_toks = Array.of_list (tokenize_string old_str)
+  and new_toks = Array.of_list (tokenize_string new_str) in
   diff_strs old_toks new_toks;;
 
 let get_dinfo = function
@@ -276,18 +283,18 @@ let add_diff_tags which pp diffs  =
     raise (Diff_Failure "left-over diff info at end of Pp.t, should be impossible");
   if has_added || has_removed then wrap_in_bg diff_tag rv else rv;;
 
-let diff_pp o_pp n_pp =
+let diff_pp ?(tokenize_string=def_tokenize_string) o_pp n_pp =
   let open Pp in
   let o_str = string_of_ppcmds o_pp in
   let n_str = string_of_ppcmds n_pp in
-  let diffs = diff_str o_str n_str in
+  let diffs = diff_str ~tokenize_string o_str n_str in
   (add_diff_tags `Removed o_pp diffs, add_diff_tags `Added n_pp diffs);;
 
-let diff_pp_combined ?(show_removed=false) o_pp n_pp =
+let diff_pp_combined ?(tokenize_string=def_tokenize_string) ?(show_removed=false) o_pp n_pp =
   let open Pp in
   let o_str = string_of_ppcmds o_pp in
   let n_str = string_of_ppcmds n_pp in
-  let diffs = diff_str o_str n_str in
+  let diffs = diff_str ~tokenize_string o_str n_str in
   let (_, has_removed) = has_changes diffs in
   let added = add_diff_tags `Added n_pp diffs in
   if show_removed && has_removed then

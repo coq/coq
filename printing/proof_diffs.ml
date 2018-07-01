@@ -89,7 +89,6 @@ let cprintf s = cfprintf !log_out_ch s
 
 module StringMap = Map.Make(String);;
 
-(* placed here so that pp_diff.ml can access the lexer through dependency injection *)
 let tokenize_string s =
   (* todo: cLexer changes buff as it proceeds.  Seems like that should be saved, too.
   But I don't understand how it's used--it looks like things get appended to it but
@@ -111,8 +110,6 @@ let tokenize_string s =
   with exn ->
     CLexer.set_lexer_state st;
     raise (Diff_Failure "Input string is not lexable");;
-
-let _ = Pp_diff.tokenize_string := tokenize_string
 
 
 type hyp_info = {
@@ -152,7 +149,7 @@ let diff_hyps o_line_idents o_map n_line_idents n_map =
     let (o_line, o_pp) = setup old_ids o_map in
     let (n_line, n_pp) = setup new_ids n_map in
 
-    let hyp_diffs = diff_str o_line n_line in
+    let hyp_diffs = diff_str ~tokenize_string o_line n_line in
     let (has_added, has_removed) = has_changes hyp_diffs in
     if show_removed () && has_removed then begin
       let o_entry = StringMap.find (List.hd old_ids) o_map in
