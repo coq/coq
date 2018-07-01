@@ -143,8 +143,8 @@ BTAUTOCMO:=plugins/btauto/btauto_plugin.cmo
 RTAUTOCMO:=plugins/rtauto/rtauto_plugin.cmo
 NATSYNTAXCMO:=plugins/syntax/nat_syntax_plugin.cmo
 OTHERSYNTAXCMO:=$(addprefix plugins/syntax/, \
-        z_syntax_plugin.cmo \
-        r_syntax_plugin.cmo \
+        positive_syntax_plugin.cmo n_syntax_plugin.cmo \
+        z_syntax_plugin.cmo r_syntax_plugin.cmo \
 	int31_syntax_plugin.cmo \
 	ascii_syntax_plugin.cmo \
         string_syntax_plugin.cmo )

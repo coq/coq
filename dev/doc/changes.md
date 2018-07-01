@@ -82,6 +82,12 @@ Vernacular commands
   `tactics/`. In all cases adapting is a matter of changing the module
   name.
 
+Primitive number parsers
+
+- For better modularity, the primitive parsers for positive, N and Z
+  have been split over three files (plugins/syntax/positive_syntax.ml,
+  plugins/syntax/n_syntax.ml, plugins/syntax/z_syntax.ml).
+
 ### Unit testing
 
   The test suite now allows writing unit tests against OCaml code in the Coq

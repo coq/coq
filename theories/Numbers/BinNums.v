@@ -12,6 +12,8 @@
 
 Set Implicit Arguments.
 
+Declare ML Module "positive_syntax_plugin".
+Declare ML Module "n_syntax_plugin".
 Declare ML Module "z_syntax_plugin".
 
 (** [positive] is a datatype representing the strictly positive integers
