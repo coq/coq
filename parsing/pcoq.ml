@@ -271,13 +271,20 @@ type gram_reinit = gram_assoc * gram_position
 type extend_rule =
 | ExtendRule : 'a G.entry * gram_reinit option * 'a extend_statement -> extend_rule
 
+module EntryCommand = Dyn.Make ()
+module EntryData = struct type _ t = Ex : 'b G.entry String.Map.t -> ('a * 'b) t end
+module EntryDataMap = EntryCommand.Map(EntryData)
+
 type ext_kind =
   | ByGrammar of extend_rule
   | ByEXTEND of (unit -> unit) * (unit -> unit)
+  | ByEntry : ('a * 'b) EntryCommand.tag * string * 'b G.entry -> ext_kind
 
 (** The list of extensions *)
 
 let camlp5_state = ref []
+
+let camlp5_entries = ref EntryDataMap.empty
 
 (** Deletion *)
 
@@ -344,7 +351,7 @@ module Gram =
 
 let rec remove_grammars n =
   if n>0 then
-    (match !camlp5_state with
+    match !camlp5_state with
        | [] -> anomaly ~label:"Pcoq.remove_grammars" (Pp.str "too many rules to remove.")
        | ByGrammar (ExtendRule (g, reinit, ext)) :: t ->
            grammar_delete g reinit (of_coq_extend_statement ext);
@@ -355,7 +362,17 @@ let rec remove_grammars n =
            camlp5_state := t;
            remove_grammars n;
            redo();
-           camlp5_state := ByEXTEND (undo,redo) :: !camlp5_state)
+           camlp5_state := ByEXTEND (undo,redo) :: !camlp5_state
+       | ByEntry (tag, name, e) :: t ->
+           G.Unsafe.clear_entry e;
+           camlp5_state := t;
+           let EntryData.Ex entries =
+             try EntryDataMap.find tag !camlp5_entries
+             with Not_found -> EntryData.Ex String.Map.empty
+           in
+           let entries = String.Map.remove name entries in
+           camlp5_entries := EntryDataMap.add tag (EntryData.Ex entries) !camlp5_entries;
+           remove_grammars (n - 1)
 
 let make_rule r = [None, None, r]
 
@@ -517,36 +534,73 @@ module GrammarInterpMap = GrammarCommand.Map(GrammarInterp)
 
 let grammar_interp = ref GrammarInterpMap.empty
 
-let (grammar_stack : (int * GrammarCommand.t * GramState.t) list ref) = ref []
+type ('a, 'b) entry_extension = 'a -> GramState.t -> string list * GramState.t
+
+module EntryInterp = struct type _ t = Ex : ('a, 'b) entry_extension -> ('a * 'b) t end
+module EntryInterpMap = EntryCommand.Map(EntryInterp)
+
+let entry_interp = ref EntryInterpMap.empty
+
+type grammar_entry =
+| GramExt of int * GrammarCommand.t
+| EntryExt : int * ('a * 'b) EntryCommand.tag * 'a -> grammar_entry
+
+let (grammar_stack : (grammar_entry * GramState.t) list ref) = ref []
 
 type 'a grammar_command = 'a GrammarCommand.tag
+type ('a, 'b) entry_command = ('a * 'b) EntryCommand.tag
 
 let create_grammar_command name interp : _ grammar_command =
   let obj = GrammarCommand.create name in
   let () = grammar_interp := GrammarInterpMap.add obj interp !grammar_interp in
   obj
 
+let create_entry_command name (interp : ('a, 'b) entry_extension) : ('a, 'b) entry_command =
+  let obj = EntryCommand.create name in
+  let () = entry_interp := EntryInterpMap.add obj (EntryInterp.Ex interp) !entry_interp in
+  obj
+
 let extend_grammar_command tag g =
   let modify = GrammarInterpMap.find tag !grammar_interp in
   let grammar_state = match !grammar_stack with
   | [] -> GramState.empty
-  | (_, _, st) :: _ -> st
+  | (_, st) :: _ -> st
   in
   let (rules, st) = modify g grammar_state in
   let iter (ExtendRule (e, reinit, ext)) = grammar_extend_sync e reinit ext in
   let () = List.iter iter rules in
   let nb = List.length rules in
-  grammar_stack := (nb, GrammarCommand.Dyn (tag, g), st) :: !grammar_stack
+  grammar_stack := (GramExt (nb, GrammarCommand.Dyn (tag, g)), st) :: !grammar_stack
 
-let recover_grammar_command (type a) (tag : a grammar_command) : a list =
-  let filter : _ -> a option = fun (_, GrammarCommand.Dyn (tag', v), _) ->
-    match GrammarCommand.eq tag tag' with
-    | None -> None
-    | Some Refl -> Some v
+let extend_entry_command (type a) (type b) (tag : (a, b) entry_command) (g : a) : b Gram.entry list =
+  let EntryInterp.Ex modify = EntryInterpMap.find tag !entry_interp in
+  let grammar_state = match !grammar_stack with
+  | [] -> GramState.empty
+  | (_, st) :: _ -> st
   in
-  List.map_filter filter !grammar_stack
+  let (names, st) = modify g grammar_state in
+  let entries = List.map (fun name -> Gram.entry_create name) names in
+  let iter name e =
+    camlp5_state := ByEntry (tag, name, e) :: !camlp5_state;
+    let EntryData.Ex old =
+      try EntryDataMap.find tag !camlp5_entries
+      with Not_found -> EntryData.Ex String.Map.empty
+    in
+    let entries = String.Map.add name e old in
+    camlp5_entries := EntryDataMap.add tag (EntryData.Ex entries) !camlp5_entries
+  in
+  let () = List.iter2 iter names entries in
+  let nb = List.length entries in
+  let () = grammar_stack := (EntryExt (nb, tag, g), st) :: !grammar_stack in
+  entries
 
-let extend_dyn_grammar (GrammarCommand.Dyn (tag, g)) = extend_grammar_command tag g
+let find_custom_entry tag name =
+  let EntryData.Ex map = EntryDataMap.find tag !camlp5_entries in
+  String.Map.find name map
+
+let extend_dyn_grammar (e, _) = match e with
+| GramExt (_, (GrammarCommand.Dyn (tag, g))) -> extend_grammar_command tag g
+| EntryExt (_, tag, g) -> ignore (extend_entry_command tag g)
 
 (** Registering extra grammar *)
 
@@ -558,59 +612,41 @@ let register_grammars_by_name name grams =
   grammar_names := String.Map.add name grams !grammar_names
 
 let find_grammars_by_name name =
-  String.Map.find name !grammar_names
-
-(** Custom entries *)
-
-let custom_entries = ref String.Map.empty
-
-let create_custom_entry local s =
-  if List.mem s ["constr";"pattern";"ident";"global";"binder";"bigint"] then
-    user_err Pp.(quote (str s) ++ str " is a reserved entry name.");
-  let sc = "constr:"^s in
-  let sp = "pattern:"^s in
-  let c = (Gram.entry_create sc : Constrexpr.constr_expr Gram.entry) in
-  let p = (Gram.entry_create sp : Constrexpr.cases_pattern_expr Gram.entry) in
-  register_grammars_by_name s [AnyEntry c; AnyEntry p];
-  custom_entries := String.Map.add s (local,(c,p)) !custom_entries
-
-let lookup_custom_entry s =
-  try String.Map.find s !custom_entries
-  with Not_found -> user_err Pp.(str "Undeclared custom entry: " ++ str s ++ str ".")
-
-let find_custom_entry s = snd (lookup_custom_entry s)
-let locality_of_custom_entry s = fst (lookup_custom_entry s)
+  try String.Map.find name !grammar_names
+  with Not_found ->
+    let fold (EntryDataMap.Any (tag, EntryData.Ex map)) accu =
+      try AnyEntry (String.Map.find name map) :: accu
+      with Not_found -> accu
+    in
+    EntryDataMap.fold fold !camlp5_entries []
 
 (** Summary functions: the state of the lexer is included in that of the parser.
    Because the grammar affects the set of keywords when adding or removing
    grammar rules. *)
 type frozen_t =
-  (int * GrammarCommand.t * GramState.t) list *
-  CLexer.keyword_state *
-  any_entry list String.Map.t *
-  (bool * (Constrexpr.constr_expr Gram.entry * Constrexpr.cases_pattern_expr Gram.entry)) Util.String.Map.t
+  (grammar_entry * GramState.t) list *
+  CLexer.keyword_state
 
 let freeze _ : frozen_t =
-  (!grammar_stack, CLexer.get_keyword_state (),
-   !grammar_names, !custom_entries)
+  (!grammar_stack, CLexer.get_keyword_state ())
 
 (* We compare the current state of the grammar and the state to unfreeze,
    by computing the longest common suffixes *)
 let factorize_grams l1 l2 =
   if l1 == l2 then ([], [], l1) else List.share_tails l1 l2
 
-let number_of_entries gcl =
-  List.fold_left (fun n (p,_,_) -> n + p) 0 gcl
+let rec number_of_entries accu = function
+| [] -> accu
+| ((GramExt (p, _) | EntryExt (p, _, _)), _) :: rem ->
+  number_of_entries (p + accu) rem
 
-let unfreeze (grams, lex, names, custom) =
+let unfreeze (grams, lex) =
   let (undo, redo, common) = factorize_grams !grammar_stack grams in
-  let n = number_of_entries undo in
+  let n = number_of_entries 0 undo in
   remove_grammars n;
   grammar_stack := common;
   CLexer.set_keyword_state lex;
-  List.iter extend_dyn_grammar (List.rev_map pi2 redo);
-  grammar_names := names;
-  custom_entries := custom
+  List.iter extend_dyn_grammar (List.rev redo)
 
 (** No need to provide an init function : the grammar state is
     statically available, and already empty initially, while
