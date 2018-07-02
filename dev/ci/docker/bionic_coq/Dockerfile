@@ -1,12 +1,17 @@
+# CACHEKEY: "bionic_coq-v8.8-V2018-07-06"
+# ^^ Update when modifying this file.
+
 FROM ubuntu:bionic
 LABEL maintainer="e@x80.org"
 
 ENV DEBIAN_FRONTEND="noninteractive"
 
-RUN apt-get update -qq && apt-get install -y -qq m4 wget time gcc-multilib opam \
+RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
+        m4 automake autoconf time wget rsync git gcc-multilib opam \
         libgtk2.0-dev libgtksourceview2.0-dev \
-        texlive-latex-extra texlive-fonts-recommended hevea \
-        python3-sphinx python3-pexpect python3-sphinx-rtd-theme python3-bs4 python3-sphinxcontrib.bibtex python3-pip
+        texlive-latex-extra texlive-fonts-recommended texlive-science tipa hevea \
+        python3-sphinx python3-pexpect python3-sphinx-rtd-theme python3-bs4 python3-sphinxcontrib.bibtex \
+        python3-setuptools python3-wheel python3-pip
 
 RUN pip3 install antlr4-python3-runtime
 
