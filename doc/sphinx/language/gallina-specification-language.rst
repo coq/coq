@@ -103,7 +103,7 @@ Special tokens
     ! % & && ( () ) * + ++ , - -> . .( ..
     / /\ : :: :< := :> ; < <- <-> <: <= <> =
     => =_D > >-> >= ? ?= @ [ \/ ] ^ { | |-
-    || } ~
+    || } ~ #[
 
   Lexical ambiguities are resolved according to the “longest match”
   rule: when a sequence of non alphanumerical characters can be
@@ -495,6 +495,7 @@ The Vernacular
 ==============
 
 .. productionlist:: coq
+   decorated-sentence : [`decoration`] `sentence`
    sentence           : `assumption`
                       : | `definition`
                       : | `inductive`
@@ -523,6 +524,11 @@ The Vernacular
    proof              : Proof . … Qed .
                       : | Proof . … Defined .
                       : | Proof . … Admitted .
+   decoration : #[ `attributes` ]
+   attributes : [`attribute`, … , `attribute`]
+   attribute :  `ident`
+   :| `ident` = `string`
+   :| `ident` ( `attributes` )
 
 .. todo:: This use of … in this grammar is inconsistent
           What about removing the proof part of this grammar from this chapter
@@ -533,6 +539,9 @@ This grammar describes *The Vernacular* which is the language of
 commands of Gallina. A sentence of the vernacular language, like in
 many natural languages, begins with a capital letter and ends with a
 dot.
+
+Sentences may be *decorated* with so-called *attributes*,
+which are described in the corresponding section (:ref:`gallina-attributes`).
 
 The different kinds of command are described hereafter. They all suppose
 that the terms occurring in the sentences are well-typed.
@@ -1388,3 +1397,53 @@ using the keyword :cmd:`Qed`.
 .. [2]
    Except if the inductive type is empty in which case there is no
    equation that can be used to infer the return type.
+
+.. _gallina-attributes:
+
+Attributes
+-----------
+
+Any vernacular command can be decorated with a list of attributes, enclosed
+between ``#[`` (hash and opening square bracket) and ``]`` (closing square bracket)
+and separated by commas ``,``.
+
+Each attribute has a name (an identifier) and may have a value.
+A value is either a :token:`string` (in which case it is specified with an equal ``=`` sign),
+or a list of attributes, enclosed within brackets.
+
+Currently,
+the following attributes names are recognized:
+
+``monomorphic``, ``polymorphic``
+    Take no value, analogous to the ``Monomorphic`` and ``Polymorphic`` flags
+    (see :ref:`polymorphicuniverses`).
+
+``program``
+    Takes no value, analogous to the ``Program`` flag
+    (see :ref:`programs`).
+
+``global``, ``local``
+    Take no value, analogous to the ``Global`` and ``Local`` flags
+    (see :ref:`controlling-locality-of-commands`).
+
+``deprecated``
+    Takes as value the optional attributes ``since`` and ``note``;
+    both have a string value.
+
+Here are a few examples:
+
+.. coqtop:: all reset
+
+        From Coq Require Program.
+        #[program] Definition one : nat := S _.
+        Next Obligation.
+          exact O.
+        Defined.
+
+        #[deprecated(since="8.9.0", note="use idtac instead")]
+        Ltac foo := idtac.
+
+        Goal True.
+        Proof.
+          now foo.
+        Abort.
