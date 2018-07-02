@@ -906,6 +906,32 @@ Parametrized inductive types
      sort for the inductive definition and will produce a less convenient
      rule for case elimination.
 
+.. opt:: Uniform Inductive Parameters
+
+     When this option is set (it is off by default),
+     inductive definitions are abstracted over their parameters
+     before typechecking constructors, allowing to write:
+
+     .. coqtop:: all undo
+
+        Set Uniform Inductive Parameters.
+        Inductive list3 (A:Set) : Set :=
+        | nil3 : list3
+        | cons3 : A -> list3 -> list3.
+
+     This behavior is essentially equivalent to starting a new section
+     and using :cmd:`Context` to give the uniform parameters, like so
+     (cf. :ref:`section-mechanism`):
+
+     .. coqtop:: all undo
+
+        Section list3.
+        Context (A:Set).
+        Inductive list3 : Set :=
+        | nil3 : list3
+        | cons3 : A -> list3 -> list3.
+        End list3.
+
 .. seealso::
    Section :ref:`inductive-definitions` and the :tacn:`induction` tactic.
 

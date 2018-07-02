@@ -19,9 +19,14 @@ open Decl_kinds
 
 (** Entry points for the vernacular commands Inductive and CoInductive *)
 
+type uniform_inductive_flag =
+  | UniformParameters
+  | NonUniformParameters
+
 val do_mutual_inductive :
   (one_inductive_expr * decl_notation list) list -> cumulative_inductive_flag ->
-  polymorphic -> private_flag -> Declarations.recursivity_kind -> unit
+  polymorphic -> private_flag -> uniform:uniform_inductive_flag ->
+  Declarations.recursivity_kind -> unit
 
 (************************************************************************)
 (** Internal API  *)
