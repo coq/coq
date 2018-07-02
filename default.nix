@@ -72,6 +72,7 @@ stdenv.mkDerivation rec {
   ] else []) ++ (if lib.inNixShell then [
     ocamlPackages.merlin
     ocamlPackages.ocp-indent
+    ocamlPackages.ocp-index
 
     # Dependencies of the merging script
     jq
