@@ -250,6 +250,31 @@ type (_, _) entry =
 
 type _ any_entry = TTAny : ('s, 'r) entry -> 's any_entry
 
+let constr_custom_entry : (string, Constrexpr.constr_expr) entry_command =
+  create_entry_command "constr" (fun s st -> [s], st)
+let pattern_custom_entry : (string, Constrexpr.cases_pattern_expr) entry_command =
+  create_entry_command "pattern" (fun s st -> [s], st)
+
+let custom_entry_locality = Summary.ref ~name:"LOCAL-CUSTOM-ENTRY" String.Set.empty
+(** If the entry is present then local *)
+
+let create_custom_entry ~local s =
+  if List.mem s ["constr";"pattern";"ident";"global";"binder";"bigint"] then
+    user_err Pp.(quote (str s) ++ str " is a reserved entry name.");
+  let sc = "constr:"^s in
+  let sp = "pattern:"^s in
+  let _ = extend_entry_command constr_custom_entry sc in
+  let _ = extend_entry_command pattern_custom_entry sp in
+  let () = if local then custom_entry_locality := String.Set.add s !custom_entry_locality in
+  ()
+
+let find_custom_entry s =
+  let sc = "constr:"^s in
+  let sp = "pattern:"^s in
+  (find_custom_entry constr_custom_entry sc, find_custom_entry pattern_custom_entry sp)
+
+let locality_of_custom_entry s = String.Set.mem s !custom_entry_locality
+
 (* This computes the name of the level where to add a new rule *)
 let interp_constr_entry_key : type r. _ -> r target -> int -> r Entry.t * int option =
   fun custom forpat level ->

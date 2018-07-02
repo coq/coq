@@ -1181,7 +1181,7 @@ let check_locality_compatibility local custom i_typs =
       | _ -> None) i_typs in
     let allcustoms = match custom with InCustomEntry s -> s::subcustom | _ -> subcustom in
     List.iter (fun s ->
-        if Pcoq.locality_of_custom_entry s then
+        if Egramcoq.locality_of_custom_entry s then
           user_err (strbrk "Notation has to be declared local as it depends on custom entry " ++ str s ++
                     strbrk " which is local."))
       (List.uniquize allcustoms)
@@ -1604,7 +1604,7 @@ let add_syntactic_definition env ident (vars,c) local onlyparse =
 let load_custom_entry _ _ = ()
 
 let open_custom_entry _ (_,(local,s)) =
-  Pcoq.create_custom_entry local s
+  Egramcoq.create_custom_entry ~local s
 
 let cache_custom_entry o =
   load_custom_entry 1 o;
