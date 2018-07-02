@@ -9,14 +9,14 @@
 
 # nix-shell supports the --arg option (see Nix doc) that allows you for
 # instance to do this:
-# $ nix-shell --arg ocamlPackages "(import <nixpkgs> {}).ocamlPackages_latest" --arg buildIde false
+# $ nix-shell --arg ocamlPackages "(import <nixpkgs> {}).ocaml-ng.ocamlPackages_4_05" --arg buildIde false
 
 # You can also compile Coq and "install" it by running:
 # $ make clean # (only needed if you have left-over compilation files)
 # $ nix-build
 # at the root of the Coq repository.
 # nix-build also supports the --arg option, so you will be able to do:
-# $ nix-build --arg doCheck false
+# $ nix-build --arg doInstallCheck false
 # if you want to speed up things by not running the test-suite.
 # Once the build is finished, you will find, in the current directory,
 # a symlink to where Coq was installed.
@@ -28,7 +28,7 @@
 , ocamlPackages ? pkgs.ocamlPackages
 , buildIde ? true
 , buildDoc ? true
-, doCheck ? true
+, doInstallCheck ? true
 }:
 
 with pkgs;
@@ -59,13 +59,13 @@ stdenv.mkDerivation rec {
              ps.antlr4-python3-runtime ps.sphinxcontrib-bibtex ]))
      antlr4
 
-  ] else []) ++ (if doCheck then
+  ] else []) ++ (if doInstallCheck then
 
     # Test-suite dependencies
     # ncurses is required to build an OCaml REPL
     optional (!versionAtLeast ocaml.version "4.07") ncurses
     ++ [
-    python
+    python2
     rsync
     which
 
@@ -83,10 +83,18 @@ stdenv.mkDerivation rec {
 
   prefixKey = "-prefix ";
 
-  buildFlags = optionals buildDoc [ "world" "sphinx" ];
+  buildFlags = [ "world" "byte" ] ++ optional buildDoc "sphinx";
 
-  installTargets = [ "install" ] ++ optional buildDoc "install-doc-sphinx";
+  installTargets =
+    [ "install" "install-byte" ] ++ optional buildDoc "install-doc-sphinx";
 
-  inherit doCheck;
+  inherit doInstallCheck;
+
+  preInstallCheck = ''
+    patchShebangs tools/
+    patchShebangs test-suite/
+  '';
+
+  installCheckTarget = [ "check" ];
 
 }
