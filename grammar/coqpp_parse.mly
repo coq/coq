@@ -42,7 +42,6 @@ let parse_user_entry s sep =
   let rec parse s sep = function
   | [] ->
     let () = without_sep ignore sep () in
-    let s = match s with "hyp" -> "var" | _ -> s in
     begin match starts s "tactic" with
     | Some ("0"|"1"|"2"|"3"|"4"|"5") -> Uentryl ("tactic", int_of_string s)
     | Some _ | None -> Uentry s

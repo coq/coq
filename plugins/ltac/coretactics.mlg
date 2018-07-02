@@ -20,6 +20,8 @@ open Tacarg
 open Names
 open Logic
 
+let wit_hyp = wit_var
+
 }
 
 DECLARE PLUGIN "ltac_plugin"
