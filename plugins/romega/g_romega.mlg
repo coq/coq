@@ -9,6 +9,8 @@
 
 DECLARE PLUGIN "romega_plugin"
 
+{
+
 open Ltac_plugin
 open Names
 open Refl_omega
@@ -39,13 +41,15 @@ let romega_tactic unsafe l =
        (Tactics.intros)
        (total_reflexive_omega_tactic unsafe))
 
+}
+
 TACTIC EXTEND romega
-|  [ "romega" ] -> [ romega_tactic false [] ]
-|  [ "unsafe_romega" ] -> [ romega_tactic true [] ]
+|  [ "romega" ] -> { romega_tactic false [] }
+|  [ "unsafe_romega" ] -> { romega_tactic true [] }
 END
 
 TACTIC EXTEND romega'
 | [ "romega" "with" ne_ident_list(l) ] ->
-    [ romega_tactic false (List.map Names.Id.to_string l) ]
-| [ "romega" "with" "*" ] -> [ romega_tactic false ["nat";"positive";"N";"Z"] ]
+    { romega_tactic false (List.map Names.Id.to_string l) }
+| [ "romega" "with" "*" ] -> { romega_tactic false ["nat";"positive";"N";"Z"] }
 END

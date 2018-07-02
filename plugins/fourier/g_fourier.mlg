@@ -8,11 +8,15 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+{
+
 open Ltac_plugin
-open Stdarg
+open FourierR
 
-DECLARE PLUGIN "nsatz_plugin"
+}
 
-TACTIC EXTEND nsatz_compute
-| [ "nsatz_compute"  constr(lt) ] -> [ Nsatz.nsatz_compute (EConstr.Unsafe.to_constr lt) ]
+DECLARE PLUGIN "fourier_plugin"
+
+TACTIC EXTEND fourier
+| [ "fourierz" ] -> { fourier () }
 END

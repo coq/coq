@@ -8,12 +8,15 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+{
 
 open Ltac_plugin
+
+}
 
 DECLARE PLUGIN "rtauto_plugin"
 
 TACTIC EXTEND rtauto
-  [ "rtauto" ] -> [ Proofview.V82.tactic (Refl_tauto.rtauto_tac) ]
+| [ "rtauto" ] -> { Proofview.V82.tactic (Refl_tauto.rtauto_tac) }
 END
 

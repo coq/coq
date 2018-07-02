@@ -8,21 +8,15 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(************************************************************************)
-(*                              EqDecide                               *)
-(*   A tactic for deciding propositional equality on inductive types   *)
-(*                           by Eduardo Gimenez                        *)
-(************************************************************************)
+{
 
-open Eqdecide
+open Ltac_plugin
 open Stdarg
 
-DECLARE PLUGIN "ltac_plugin"
+}
 
-TACTIC EXTEND decide_equality
-| [ "decide" "equality" ] -> [ decideEqualityGoal ]
-END
+DECLARE PLUGIN "nsatz_plugin"
 
-TACTIC EXTEND compare
-| [ "compare" constr(c1) constr(c2) ] -> [ compare c1 c2 ]
+TACTIC EXTEND nsatz_compute
+| [ "nsatz_compute"  constr(lt) ] -> { Nsatz.nsatz_compute (EConstr.Unsafe.to_constr lt) }
 END
