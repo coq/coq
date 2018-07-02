@@ -270,10 +270,6 @@ val print_ast : Format.formatter -> tactic_ext -> unit
 end =
 struct
 
-let print_ident chan id =
-  (** Workaround for badly-designed generic arguments lacking a closure *)
-  fprintf chan "Names.Id.of_string_soft \"$%s\"" id
-
 let rec print_symbol chan = function
 | Ulist1 s ->
   fprintf chan "@[Extend.TUlist1 (%a)@]" print_symbol s
@@ -295,11 +291,11 @@ let rec print_clause chan = function
 | [] -> fprintf chan "@[TyNil@]"
 | ExtTerminal s :: cl -> fprintf chan "@[TyIdent (\"%s\", %a)@]" s print_clause cl
 | ExtNonTerminal (g, TokNone) :: cl ->
-  fprintf chan "@[TyAnonArg (Loc.tag (%a), %a)@]"
+  fprintf chan "@[TyAnonArg (%a, %a)@]"
     print_symbol g print_clause cl
 | ExtNonTerminal (g, TokName id) :: cl ->
-  fprintf chan "@[TyArg (Loc.tag (%a, %a), %a)@]"
-    print_symbol g print_ident id print_clause cl
+  fprintf chan "@[TyArg (%a, \"%s\", %a)@]"
+    print_symbol g id print_clause cl
 
 let rec print_binders chan = function
 | [] -> fprintf chan "ist@ "

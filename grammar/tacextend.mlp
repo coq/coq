@@ -15,11 +15,6 @@ open Argextend
 
 let plugin_name = <:expr< __coq_plugin_name >>
 
-let mlexpr_of_ident id =
-  (** Workaround for badly-designed generic arguments lacking a closure *)
-  let id = "$" ^ id in
-  <:expr< Names.Id.of_string_soft $str:id$ >>
-
 let rec mlexpr_of_symbol = function
 | Ulist1 s -> <:expr< Extend.TUlist1 $mlexpr_of_symbol s$ >>
 | Ulist1sep (s,sep) -> <:expr< Extend.TUlist1sep $mlexpr_of_symbol s$ $str:sep$ >>
@@ -38,9 +33,9 @@ let rec mlexpr_of_clause = function
 | [] -> <:expr< TyNil >>
 | ExtTerminal s :: cl -> <:expr< TyIdent($str:s$, $mlexpr_of_clause cl$) >>
 | ExtNonTerminal(g,None) :: cl ->
-  <:expr< TyAnonArg(Loc.tag($mlexpr_of_symbol g$), $mlexpr_of_clause cl$) >>
+  <:expr< TyAnonArg($mlexpr_of_symbol g$, $mlexpr_of_clause cl$) >>
 | ExtNonTerminal(g,Some id) :: cl ->
-  <:expr< TyArg(Loc.tag($mlexpr_of_symbol g$, $mlexpr_of_ident id$), $mlexpr_of_clause cl$) >>
+  <:expr< TyArg($mlexpr_of_symbol g$, $mlexpr_of_string id$, $mlexpr_of_clause cl$) >>
 
 let rec binders_of_clause e = function
 | [] -> <:expr< fun ist -> $e$ >>
