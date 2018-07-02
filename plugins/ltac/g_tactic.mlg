@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+{
+
 open Pp
 open CErrors
 open Util
@@ -215,486 +217,488 @@ let warn_deprecated_eqn_syntax =
 
 open Pvernac.Vernac_
 
-GEXTEND Gram
+}
+
+GRAMMAR EXTEND Gram
   GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis
   bindings red_expr int_or_var open_constr uconstr
   simple_intropattern in_clause clause_dft_concl hypident destruction_arg;
 
   int_or_var:
-    [ [ n = integer  -> ArgArg n
-      | id = identref -> ArgVar id ] ]
+    [ [ n = integer  -> { ArgArg n }
+      | id = identref -> { ArgVar id } ] ]
   ;
   nat_or_var:
-    [ [ n = natural  -> ArgArg n
-      | id = identref -> ArgVar id ] ]
+    [ [ n = natural  -> { ArgArg n }
+      | id = identref -> { ArgVar id } ] ]
   ;
   (* An identifier or a quotation meta-variable *)
   id_or_meta:
-    [ [ id = identref -> id ] ]
+    [ [ id = identref -> { id } ] ]
   ;
   open_constr:
-    [ [ c = constr -> c ] ]
+    [ [ c = constr -> { c } ] ]
   ;
   uconstr:
-    [ [ c = constr -> c ] ]
+    [ [ c = constr -> { c } ] ]
   ;
   destruction_arg:
-    [ [ n = natural -> (None,ElimOnAnonHyp n)
+    [ [ n = natural -> { (None,ElimOnAnonHyp n) }
       | test_lpar_id_rpar; c = constr_with_bindings ->
-        (Some false,destruction_arg_of_constr c)
-      | c = constr_with_bindings_arg -> on_snd destruction_arg_of_constr c
+        { (Some false,destruction_arg_of_constr c) }
+      | c = constr_with_bindings_arg -> { on_snd destruction_arg_of_constr c }
     ] ]
   ;
   constr_with_bindings_arg:
-    [ [ ">"; c = constr_with_bindings -> (Some true,c)
-      | c = constr_with_bindings -> (None,c) ] ]
+    [ [ ">"; c = constr_with_bindings -> { (Some true,c) }
+      | c = constr_with_bindings -> { (None,c) } ] ]
   ;
   quantified_hypothesis:
-    [ [ id = ident -> NamedHyp id
-      | n = natural -> AnonHyp n ] ]
+    [ [ id = ident -> { NamedHyp id }
+      | n = natural -> { AnonHyp n } ] ]
   ;
   conversion:
-    [ [ c = constr -> (None, c)
-      | c1 = constr; "with"; c2 = constr -> (Some (AllOccurrences,c1),c2)
+    [ [ c = constr -> { (None, c) }
+      | c1 = constr; "with"; c2 = constr -> { (Some (AllOccurrences,c1),c2) }
       | c1 = constr; "at"; occs = occs_nums; "with"; c2 = constr ->
-          (Some (occs,c1), c2) ] ]
+          { (Some (occs,c1), c2) } ] ]
   ;
   occs_nums:
-    [ [ nl = LIST1 nat_or_var -> OnlyOccurrences nl
+    [ [ nl = LIST1 nat_or_var -> { OnlyOccurrences nl }
       | "-"; n = nat_or_var; nl = LIST0 int_or_var ->
 	  (* have used int_or_var instead of nat_or_var for compatibility *)
-	   AllOccurrencesBut (List.map (map_int_or_var abs) (n::nl)) ] ]
+	   { AllOccurrencesBut (List.map (map_int_or_var abs) (n::nl)) } ] ]
   ;
   occs:
-    [ [ "at"; occs = occs_nums -> occs | -> AllOccurrences ] ]
+    [ [ "at"; occs = occs_nums -> { occs } | -> { AllOccurrences } ] ]
   ;
   pattern_occ:
-    [ [ c = constr; nl = occs -> (nl,c) ] ]
+    [ [ c = constr; nl = occs -> { (nl,c) } ] ]
   ;
   ref_or_pattern_occ:
     (* If a string, it is interpreted as a ref
        (anyway a Coq string does not reduce) *)
-    [ [ c = smart_global; nl = occs -> nl,Inl c
-      | c = constr; nl = occs -> nl,Inr c ] ]
+    [ [ c = smart_global; nl = occs -> { nl,Inl c }
+      | c = constr; nl = occs -> { nl,Inr c } ] ]
   ;
   unfold_occ:
-    [ [ c = smart_global; nl = occs -> (nl,c) ] ]
+    [ [ c = smart_global; nl = occs -> { (nl,c) } ] ]
   ;
   intropatterns:
-    [ [ l = LIST0 nonsimple_intropattern -> l ]]
+    [ [ l = LIST0 nonsimple_intropattern -> { l } ] ]
   ;
   ne_intropatterns:
-    [ [ l = LIST1 nonsimple_intropattern -> l ]]
+    [ [ l = LIST1 nonsimple_intropattern -> { l } ] ]
   ;
   or_and_intropattern:
-    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> IntroOrPattern tc
-      | "()" -> IntroAndPattern []
-      | "("; si = simple_intropattern; ")" -> IntroAndPattern [si]
+    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> { IntroOrPattern tc }
+      | "()" -> { IntroAndPattern [] }
+      | "("; si = simple_intropattern; ")" -> { IntroAndPattern [si] }
       | "("; si = simple_intropattern; ",";
              tc = LIST1 simple_intropattern SEP "," ; ")" ->
-             IntroAndPattern (si::tc)
+             { IntroAndPattern (si::tc) }
       | "("; si = simple_intropattern; "&";
 	     tc = LIST1 simple_intropattern SEP "&" ; ")" ->
 	  (* (A & B & C) is translated into (A,(B,C)) *)
-	  let rec pairify = function
+	  { let rec pairify = function
 	    | ([]|[_]|[_;_]) as l -> l
             | t::q -> [t; CAst.make ?loc:(loc_of_ne_list q) (IntroAction (IntroOrAndPattern (IntroAndPattern (pairify q))))]
-	  in IntroAndPattern (pairify (si::tc)) ] ]
+	  in IntroAndPattern (pairify (si::tc)) } ] ]
   ;
   equality_intropattern:
-    [ [ "->" -> IntroRewrite true
-      | "<-" -> IntroRewrite false
-      | "[="; tc = intropatterns; "]" -> IntroInjection tc ] ]
+    [ [ "->" -> { IntroRewrite true }
+      | "<-" -> { IntroRewrite false }
+      | "[="; tc = intropatterns; "]" -> { IntroInjection tc } ] ]
   ;
   naming_intropattern:
-    [ [ prefix = pattern_ident -> IntroFresh prefix
-      | "?" -> IntroAnonymous
-      | id = ident -> IntroIdentifier id ] ]
+    [ [ prefix = pattern_ident -> { IntroFresh prefix }
+      | "?" -> { IntroAnonymous }
+      | id = ident -> { IntroIdentifier id } ] ]
   ;
   nonsimple_intropattern:
-    [ [ l = simple_intropattern -> l
-      | "*"  -> CAst.make ~loc:!@loc @@ IntroForthcoming true
-      | "**" -> CAst.make ~loc:!@loc @@ IntroForthcoming false ]]
+    [ [ l = simple_intropattern -> { l }
+      | "*"  -> { CAst.make ~loc @@ IntroForthcoming true }
+      | "**" -> { CAst.make ~loc @@ IntroForthcoming false } ] ]
   ;
   simple_intropattern:
     [ [ pat = simple_intropattern_closed;
-        l = LIST0 ["%"; c = operconstr LEVEL "0" -> c] ->
-          let {CAst.loc=loc0;v=pat} = pat in
+        l = LIST0 ["%"; c = operconstr LEVEL "0" -> { c } ] ->
+          { let {CAst.loc=loc0;v=pat} = pat in
           let f c pat =
             let loc1 = Constrexpr_ops.constr_loc c in
             let loc = Loc.merge_opt loc0 loc1 in
             IntroAction (IntroApplyOn (CAst.(make ?loc:loc1 c),CAst.(make ?loc pat))) in
-          CAst.make ~loc:!@loc @@ List.fold_right f l pat ] ]
+          CAst.make ~loc @@ List.fold_right f l pat } ] ]
   ;
   simple_intropattern_closed:
-    [ [ pat = or_and_intropattern   -> CAst.make ~loc:!@loc @@ IntroAction (IntroOrAndPattern pat)
-      | pat = equality_intropattern -> CAst.make ~loc:!@loc @@ IntroAction pat
-      | "_" -> CAst.make ~loc:!@loc @@ IntroAction IntroWildcard
-      | pat = naming_intropattern -> CAst.make ~loc:!@loc @@ IntroNaming pat ] ]
+    [ [ pat = or_and_intropattern   -> { CAst.make ~loc @@ IntroAction (IntroOrAndPattern pat) }
+      | pat = equality_intropattern -> { CAst.make ~loc @@ IntroAction pat }
+      | "_" -> { CAst.make ~loc @@ IntroAction IntroWildcard }
+      | pat = naming_intropattern -> { CAst.make ~loc @@ IntroNaming pat } ] ]
   ;
   simple_binding:
-    [ [ "("; id = ident; ":="; c = lconstr; ")" -> CAst.make ~loc:!@loc (NamedHyp id, c)
-      | "("; n = natural; ":="; c = lconstr; ")" -> CAst.make ~loc:!@loc (AnonHyp n, c) ] ]
+    [ [ "("; id = ident; ":="; c = lconstr; ")" -> { CAst.make ~loc (NamedHyp id, c) }
+      | "("; n = natural; ":="; c = lconstr; ")" -> { CAst.make ~loc (AnonHyp n, c) } ] ]
   ;
   bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->
-          ExplicitBindings bl
-      | bl = LIST1 constr -> ImplicitBindings bl ] ]
+          { ExplicitBindings bl }
+      | bl = LIST1 constr -> { ImplicitBindings bl } ] ]
   ;
   constr_with_bindings:
-    [ [ c = constr; l = with_bindings -> (c, l) ] ]
+    [ [ c = constr; l = with_bindings -> { (c, l) } ] ]
   ;
   with_bindings:
-    [ [ "with"; bl = bindings -> bl | -> NoBindings ] ]
+    [ [ "with"; bl = bindings -> { bl } | -> { NoBindings } ] ]
   ;
   red_flags:
-    [ [ IDENT "beta" -> [FBeta]
-      | IDENT "iota" -> [FMatch;FFix;FCofix]
-      | IDENT "match" -> [FMatch]
-      | IDENT "fix" -> [FFix]
-      | IDENT "cofix" -> [FCofix]
-      | IDENT "zeta" -> [FZeta]
-      | IDENT "delta"; d = delta_flag -> [d]
+    [ [ IDENT "beta" -> { [FBeta] }
+      | IDENT "iota" -> { [FMatch;FFix;FCofix] }
+      | IDENT "match" -> { [FMatch] }
+      | IDENT "fix" -> { [FFix] }
+      | IDENT "cofix" -> { [FCofix] }
+      | IDENT "zeta" -> { [FZeta] }
+      | IDENT "delta"; d = delta_flag -> { [d] }
     ] ]
   ;
   delta_flag:
-    [ [ "-"; "["; idl = LIST1 smart_global; "]" -> FDeltaBut idl
-      | "["; idl = LIST1 smart_global; "]" -> FConst idl
-      | -> FDeltaBut []
+    [ [ "-"; "["; idl = LIST1 smart_global; "]" -> { FDeltaBut idl }
+      | "["; idl = LIST1 smart_global; "]" -> { FConst idl }
+      | -> { FDeltaBut [] }
     ] ]
   ;
   strategy_flag:
-    [ [ s = LIST1 red_flags -> Redops.make_red_flag (List.flatten s)
-      | d = delta_flag -> all_with d
+    [ [ s = LIST1 red_flags -> { Redops.make_red_flag (List.flatten s) }
+      | d = delta_flag -> { all_with d }
     ] ]
   ;
   red_expr:
-    [ [ IDENT "red" -> Red false
-      | IDENT "hnf" -> Hnf
-      | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ -> Simpl (all_with d,po)
-      | IDENT "cbv"; s = strategy_flag -> Cbv s
-      | IDENT "cbn"; s = strategy_flag -> Cbn s
-      | IDENT "lazy"; s = strategy_flag -> Lazy s
-      | IDENT "compute"; delta = delta_flag -> Cbv (all_with delta)
-      | IDENT "vm_compute"; po = OPT ref_or_pattern_occ -> CbvVm po
-      | IDENT "native_compute"; po = OPT ref_or_pattern_occ -> CbvNative po
-      | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> Unfold ul
-      | IDENT "fold"; cl = LIST1 constr -> Fold cl
-      | IDENT "pattern"; pl = LIST1 pattern_occ SEP"," -> Pattern pl
-      | s = IDENT -> ExtraRedExpr s ] ]
+    [ [ IDENT "red" -> { Red false }
+      | IDENT "hnf" -> { Hnf }
+      | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ -> { Simpl (all_with d,po) }
+      | IDENT "cbv"; s = strategy_flag -> { Cbv s }
+      | IDENT "cbn"; s = strategy_flag -> { Cbn s }
+      | IDENT "lazy"; s = strategy_flag -> { Lazy s }
+      | IDENT "compute"; delta = delta_flag -> { Cbv (all_with delta) }
+      | IDENT "vm_compute"; po = OPT ref_or_pattern_occ -> { CbvVm po }
+      | IDENT "native_compute"; po = OPT ref_or_pattern_occ -> { CbvNative po }
+      | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> { Unfold ul }
+      | IDENT "fold"; cl = LIST1 constr -> { Fold cl }
+      | IDENT "pattern"; pl = LIST1 pattern_occ SEP"," -> { Pattern pl }
+      | s = IDENT -> { ExtraRedExpr s } ] ]
   ;
   hypident:
     [ [ id = id_or_meta ->
-        let id : lident = id in
-        id,InHyp
+        { let id : lident = id in
+        id,InHyp }
       | "("; IDENT "type"; IDENT "of"; id = id_or_meta; ")" ->
-        let id : lident = id in
-        id,InHypTypeOnly
+        { let id : lident = id in
+        id,InHypTypeOnly }
       | "("; IDENT "value"; IDENT "of"; id = id_or_meta; ")" ->
-        let id : lident = id in
-        id,InHypValueOnly
+        { let id : lident = id in
+        id,InHypValueOnly }
     ] ]
   ;
   hypident_occ:
-    [ [ (id,l)=hypident; occs=occs ->
+    [ [ h=hypident; occs=occs ->
+        { let (id,l) = h in
         let id : lident = id in
-        ((occs,id),l) ] ]
+        ((occs,id),l) } ] ]
   ;
   in_clause:
     [ [ "*"; occs=occs ->
-          {onhyps=None; concl_occs=occs}
+          { {onhyps=None; concl_occs=occs} }
       | "*"; "|-"; occs=concl_occ ->
-          {onhyps=None; concl_occs=occs}
+          { {onhyps=None; concl_occs=occs} }
       | hl=LIST0 hypident_occ SEP","; "|-"; occs=concl_occ ->
-          {onhyps=Some hl; concl_occs=occs}
+          { {onhyps=Some hl; concl_occs=occs} }
       | hl=LIST0 hypident_occ SEP"," ->
-          {onhyps=Some hl; concl_occs=NoOccurrences} ] ]
+          { {onhyps=Some hl; concl_occs=NoOccurrences} } ] ]
   ;
   clause_dft_concl:
-    [ [ "in"; cl = in_clause -> cl
-      | occs=occs -> {onhyps=Some[]; concl_occs=occs}
-      | -> all_concl_occs_clause ] ]
+    [ [ "in"; cl = in_clause -> { cl }
+      | occs=occs -> { {onhyps=Some[]; concl_occs=occs} }
+      | -> { all_concl_occs_clause } ] ]
   ;
   clause_dft_all:
-    [ [ "in"; cl = in_clause -> cl
-      | -> {onhyps=None; concl_occs=AllOccurrences} ] ]
+    [ [ "in"; cl = in_clause -> { cl }
+      | -> { {onhyps=None; concl_occs=AllOccurrences} } ] ]
   ;
   opt_clause:
-    [ [ "in"; cl = in_clause -> Some cl
-      | "at"; occs = occs_nums -> Some {onhyps=Some[]; concl_occs=occs}
-      | -> None ] ]
+    [ [ "in"; cl = in_clause -> { Some cl }
+      | "at"; occs = occs_nums -> { Some {onhyps=Some[]; concl_occs=occs} }
+      | -> { None } ] ]
   ;
   concl_occ:
-    [ [ "*"; occs = occs -> occs
-      | -> NoOccurrences ] ]
+    [ [ "*"; occs = occs -> { occs }
+      | -> { NoOccurrences } ] ]
   ;
   in_hyp_list:
-    [ [ "in"; idl = LIST1 id_or_meta -> idl
-      | -> [] ] ]
+    [ [ "in"; idl = LIST1 id_or_meta -> { idl }
+      | -> { [] } ] ]
   ;
   in_hyp_as:
-    [ [ "in"; id = id_or_meta; ipat = as_ipat -> Some (id,ipat)
-      | -> None ] ]
+    [ [ "in"; id = id_or_meta; ipat = as_ipat -> { Some (id,ipat) }
+      | -> { None } ] ]
   ;
   orient:
-    [ [ "->" -> true
-      | "<-" -> false
-      | -> true ]]
+    [ [ "->" -> { true }
+      | "<-" -> { false }
+      | -> { true } ] ]
   ;
   simple_binder:
-    [ [ na=name -> ([na],Default Explicit, CAst.make ~loc:!@loc @@
-                    CHole (Some (Evar_kinds.BinderType na.CAst.v), IntroAnonymous, None))
-      | "("; nal=LIST1 name; ":"; c=lconstr; ")" -> (nal,Default Explicit,c)
+    [ [ na=name -> { ([na],Default Explicit, CAst.make ~loc @@
+                    CHole (Some (Evar_kinds.BinderType na.CAst.v), IntroAnonymous, None)) }
+      | "("; nal=LIST1 name; ":"; c=lconstr; ")" -> { (nal,Default Explicit,c) }
     ] ]
   ;
   fixdecl:
     [ [ "("; id = ident; bl=LIST0 simple_binder; ann=fixannot;
-        ":"; ty=lconstr; ")" -> (!@loc, id, bl, ann, ty) ] ]
+        ":"; ty=lconstr; ")" -> { (loc, id, bl, ann, ty) } ] ]
   ;
   fixannot:
-    [ [ "{"; IDENT "struct"; id=name; "}" -> Some id
-      | -> None ] ]
+    [ [ "{"; IDENT "struct"; id=name; "}" -> { Some id }
+      | -> { None } ] ]
   ;
   cofixdecl:
     [ [ "("; id = ident; bl=LIST0 simple_binder; ":"; ty=lconstr; ")" ->
-        (!@loc, id, bl, None, ty) ] ]
+        { (loc, id, bl, None, ty) } ] ]
   ;
   bindings_with_parameters:
     [ [ check_for_coloneq; "(";  id = ident; bl = LIST0 simple_binder;
-        ":="; c = lconstr; ")" -> (id, mkCLambdaN_simple bl c) ] ]
+        ":="; c = lconstr; ")" -> { (id, mkCLambdaN_simple bl c) } ] ]
   ;
   eliminator:
-    [ [ "using"; el = constr_with_bindings -> el ] ]
+    [ [ "using"; el = constr_with_bindings -> { el } ] ]
   ;
   as_ipat:
-    [ [ "as"; ipat = simple_intropattern -> Some ipat
-      | -> None ] ]
+    [ [ "as"; ipat = simple_intropattern -> { Some ipat }
+      | -> { None } ] ]
   ;
   or_and_intropattern_loc:
-    [ [ ipat = or_and_intropattern -> ArgArg (CAst.make ~loc:!@loc ipat)
-      | locid = identref -> ArgVar locid ] ]
+    [ [ ipat = or_and_intropattern -> { ArgArg (CAst.make ~loc ipat) }
+      | locid = identref -> { ArgVar locid } ] ]
   ;
   as_or_and_ipat:
-    [ [ "as"; ipat = or_and_intropattern_loc -> Some ipat
-      | -> None ] ]
+    [ [ "as"; ipat = or_and_intropattern_loc -> { Some ipat }
+      | -> { None } ] ]
   ;
   eqn_ipat:
-    [ [ IDENT "eqn"; ":"; pat = naming_intropattern -> Some (CAst.make ~loc:!@loc pat)
+    [ [ IDENT "eqn"; ":"; pat = naming_intropattern -> { Some (CAst.make ~loc pat) }
       | IDENT "_eqn"; ":"; pat = naming_intropattern ->
-         let loc = !@loc in
-         warn_deprecated_eqn_syntax ~loc "H"; Some (CAst.make ~loc pat)
+         { warn_deprecated_eqn_syntax ~loc "H"; Some (CAst.make ~loc pat) }
       | IDENT "_eqn" ->
-         let loc = !@loc in
-         warn_deprecated_eqn_syntax ~loc "?"; Some (CAst.make ~loc IntroAnonymous)
-      | -> None ] ]
+         { warn_deprecated_eqn_syntax ~loc "?"; Some (CAst.make ~loc IntroAnonymous) }
+      | -> { None } ] ]
   ;
   as_name:
-    [ [ "as"; id = ident ->Names.Name.Name id | -> Names.Name.Anonymous ] ]
+    [ [ "as"; id = ident -> { Names.Name.Name id } | -> { Names.Name.Anonymous } ] ]
   ;
   by_tactic:
-    [ [ "by"; tac = tactic_expr LEVEL "3" -> Some tac
-    | -> None ] ]
+    [ [ "by"; tac = tactic_expr LEVEL "3" -> { Some tac }
+    | -> { None } ] ]
   ;
   rewriter :
-    [ [ "!"; c = constr_with_bindings_arg -> (Equality.RepeatPlus,c)
-      | ["?"| LEFTQMARK]; c = constr_with_bindings_arg -> (Equality.RepeatStar,c)
-      | n = natural; "!"; c = constr_with_bindings_arg -> (Equality.Precisely n,c)
-      |	n = natural; ["?" | LEFTQMARK]; c = constr_with_bindings_arg -> (Equality.UpTo n,c)
-      | n = natural; c = constr_with_bindings_arg -> (Equality.Precisely n,c)
-      | c = constr_with_bindings_arg -> (Equality.Precisely 1, c)
+    [ [ "!"; c = constr_with_bindings_arg -> { (Equality.RepeatPlus,c) }
+      | ["?" -> { () } | LEFTQMARK -> { () } ]; c = constr_with_bindings_arg -> { (Equality.RepeatStar,c) }
+      | n = natural; "!"; c = constr_with_bindings_arg -> { (Equality.Precisely n,c) }
+      |	n = natural; ["?" -> { () } | LEFTQMARK -> { () } ]; c = constr_with_bindings_arg -> { (Equality.UpTo n,c) }
+      | n = natural; c = constr_with_bindings_arg -> { (Equality.Precisely n,c) }
+      | c = constr_with_bindings_arg -> { (Equality.Precisely 1, c) }
       ] ]
   ;
   oriented_rewriter :
-    [ [ b = orient; p = rewriter -> let (m,c) = p in (b,m,c) ] ]
+    [ [ b = orient; p = rewriter -> { let (m,c) = p in (b,m,c) } ] ]
   ;
   induction_clause:
     [ [ c = destruction_arg; pat = as_or_and_ipat; eq = eqn_ipat;
-        cl = opt_clause -> (c,(eq,pat),cl) ] ]
+        cl = opt_clause -> { (c,(eq,pat),cl) } ] ]
   ;
   induction_clause_list:
     [ [ ic = LIST1 induction_clause SEP ","; el = OPT eliminator;
         cl_tolerance = opt_clause ->
         (* Condition for accepting "in" at the end by compatibility *)
-        match ic,el,cl_tolerance with
+        { match ic,el,cl_tolerance with
         | [c,pat,None],Some _,Some _ -> ([c,pat,cl_tolerance],el)
         | _,_,Some _ -> err ()
-        | _,_,None -> (ic,el) ]]
+        | _,_,None -> (ic,el) } ] ]
   ;
   simple_tactic:
     [ [
       (* Basic tactics *)
         IDENT "intros"; pl = ne_intropatterns ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacIntroPattern (false,pl))
+          { TacAtom (Loc.tag ~loc @@ TacIntroPattern (false,pl)) }
       | IDENT "intros" ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacIntroPattern (false,[CAst.make ~loc:!@loc @@IntroForthcoming false]))
+          { TacAtom (Loc.tag ~loc @@ TacIntroPattern (false,[CAst.make ~loc @@IntroForthcoming false])) }
       | IDENT "eintros"; pl = ne_intropatterns ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacIntroPattern (true,pl))
+          { TacAtom (Loc.tag ~loc @@ TacIntroPattern (true,pl)) }
 
       | IDENT "apply"; cl = LIST1 constr_with_bindings_arg SEP ",";
-          inhyp = in_hyp_as -> TacAtom (Loc.tag ~loc:!@loc @@ TacApply (true,false,cl,inhyp))
+          inhyp = in_hyp_as -> { TacAtom (Loc.tag ~loc @@ TacApply (true,false,cl,inhyp)) }
       | IDENT "eapply"; cl = LIST1 constr_with_bindings_arg SEP ",";
-          inhyp = in_hyp_as -> TacAtom (Loc.tag ~loc:!@loc @@ TacApply (true,true,cl,inhyp))
+          inhyp = in_hyp_as -> { TacAtom (Loc.tag ~loc @@ TacApply (true,true,cl,inhyp)) }
       | IDENT "simple"; IDENT "apply";
           cl = LIST1 constr_with_bindings_arg SEP ",";
-          inhyp = in_hyp_as -> TacAtom (Loc.tag ~loc:!@loc @@ TacApply (false,false,cl,inhyp))
+          inhyp = in_hyp_as -> { TacAtom (Loc.tag ~loc @@ TacApply (false,false,cl,inhyp)) }
       | IDENT "simple"; IDENT "eapply";
           cl = LIST1 constr_with_bindings_arg SEP",";
-          inhyp = in_hyp_as -> TacAtom (Loc.tag ~loc:!@loc @@ TacApply (false,true,cl,inhyp))
+          inhyp = in_hyp_as -> { TacAtom (Loc.tag ~loc @@ TacApply (false,true,cl,inhyp)) }
       | IDENT "elim"; cl = constr_with_bindings_arg; el = OPT eliminator ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacElim (false,cl,el))
+          { TacAtom (Loc.tag ~loc @@ TacElim (false,cl,el)) }
       | IDENT "eelim"; cl = constr_with_bindings_arg; el = OPT eliminator ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacElim (true,cl,el))
-      | IDENT "case"; icl = induction_clause_list -> TacAtom (Loc.tag ~loc:!@loc @@ mkTacCase false icl)
-      | IDENT "ecase"; icl = induction_clause_list -> TacAtom (Loc.tag ~loc:!@loc @@ mkTacCase true icl)
+          { TacAtom (Loc.tag ~loc @@ TacElim (true,cl,el)) }
+      | IDENT "case"; icl = induction_clause_list -> { TacAtom (Loc.tag ~loc @@ mkTacCase false icl) }
+      | IDENT "ecase"; icl = induction_clause_list -> { TacAtom (Loc.tag ~loc @@ mkTacCase true icl) }
       | "fix"; id = ident; n = natural; "with"; fd = LIST1 fixdecl ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacMutualFix (id,n,List.map mk_fix_tac fd))
+	  { TacAtom (Loc.tag ~loc @@ TacMutualFix (id,n,List.map mk_fix_tac fd)) }
       | "cofix"; id = ident; "with"; fd = LIST1 cofixdecl ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacMutualCofix (id,List.map mk_cofix_tac fd))
+	  { TacAtom (Loc.tag ~loc @@ TacMutualCofix (id,List.map mk_cofix_tac fd)) }
 
-      | IDENT "pose"; (id,b) = bindings_with_parameters ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,Names.Name.Name id,b,Locusops.nowhere,true,None))
+      | IDENT "pose"; bl = bindings_with_parameters ->
+	  { let (id,b) = bl in TacAtom (Loc.tag ~loc @@ TacLetTac (false,Names.Name.Name id,b,Locusops.nowhere,true,None)) }
       | IDENT "pose"; b = constr; na = as_name ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,na,b,Locusops.nowhere,true,None))
-      | IDENT "epose"; (id,b) = bindings_with_parameters ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,Names.Name id,b,Locusops.nowhere,true,None))
+	  { TacAtom (Loc.tag ~loc @@ TacLetTac (false,na,b,Locusops.nowhere,true,None)) }
+      | IDENT "epose"; bl = bindings_with_parameters ->
+	  { let (id,b) = bl in TacAtom (Loc.tag ~loc @@ TacLetTac (true,Names.Name id,b,Locusops.nowhere,true,None)) }
       | IDENT "epose"; b = constr; na = as_name ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,na,b,Locusops.nowhere,true,None))
-      | IDENT "set"; (id,c) = bindings_with_parameters; p = clause_dft_concl ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,Names.Name.Name id,c,p,true,None))
+	  { TacAtom (Loc.tag ~loc @@ TacLetTac (true,na,b,Locusops.nowhere,true,None)) }
+      | IDENT "set"; bl = bindings_with_parameters; p = clause_dft_concl ->
+	  { let (id,c) = bl in TacAtom (Loc.tag ~loc @@ TacLetTac (false,Names.Name.Name id,c,p,true,None)) }
       | IDENT "set"; c = constr; na = as_name; p = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,na,c,p,true,None))
-      | IDENT "eset"; (id,c) = bindings_with_parameters; p = clause_dft_concl ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,Names.Name id,c,p,true,None))
+          { TacAtom (Loc.tag ~loc @@ TacLetTac (false,na,c,p,true,None)) }
+      | IDENT "eset"; bl = bindings_with_parameters; p = clause_dft_concl ->
+	  { let (id,c) = bl in TacAtom (Loc.tag ~loc @@ TacLetTac (true,Names.Name id,c,p,true,None)) }
       | IDENT "eset"; c = constr; na = as_name; p = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,na,c,p,true,None))
+          { TacAtom (Loc.tag ~loc @@ TacLetTac (true,na,c,p,true,None)) }
       | IDENT "remember"; c = constr; na = as_name; e = eqn_ipat;
           p = clause_dft_all ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,na,c,p,false,e))
+          { TacAtom (Loc.tag ~loc @@ TacLetTac (false,na,c,p,false,e)) }
       | IDENT "eremember"; c = constr; na = as_name; e = eqn_ipat;
           p = clause_dft_all ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,na,c,p,false,e))
+          { TacAtom (Loc.tag ~loc @@ TacLetTac (true,na,c,p,false,e)) }
 
       (* Alternative syntax for "pose proof c as id" *)
       | IDENT "assert"; test_lpar_id_coloneq; "("; lid = identref; ":=";
 	  c = lconstr; ")" ->
-          let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (false,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c))
+          { let { CAst.loc = loc; v = id } = lid in
+          TacAtom (Loc.tag ?loc @@ TacAssert (false,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
       | IDENT "eassert"; test_lpar_id_coloneq; "("; lid = identref; ":=";
 	  c = lconstr; ")" ->
-          let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (true,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c))
+          { let { CAst.loc = loc; v = id } = lid in
+          TacAtom (Loc.tag ?loc @@ TacAssert (true,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
 
       (* Alternative syntax for "assert c as id by tac" *)
       | IDENT "assert"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-          let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (false,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c))
+          { let { CAst.loc = loc; v = id } = lid in
+          TacAtom (Loc.tag ?loc @@ TacAssert (false,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
       | IDENT "eassert"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-          let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (true,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c))
+          { let { CAst.loc = loc; v = id } = lid in
+          TacAtom (Loc.tag ?loc @@ TacAssert (true,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
 
       (* Alternative syntax for "enough c as id by tac" *)
       | IDENT "enough"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-          let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (false,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c))
+          { let { CAst.loc = loc; v = id } = lid in
+          TacAtom (Loc.tag ?loc @@ TacAssert (false,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
       | IDENT "eenough"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-          let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (true,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c))
+          { let { CAst.loc = loc; v = id } = lid in
+          TacAtom (Loc.tag ?loc @@ TacAssert (true,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
 
       | IDENT "assert"; c = constr; ipat = as_ipat; tac = by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,Some tac,ipat,c))
+	  { TacAtom (Loc.tag ~loc @@ TacAssert (false,true,Some tac,ipat,c)) }
       | IDENT "eassert"; c = constr; ipat = as_ipat; tac = by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,true,Some tac,ipat,c))
+	  { TacAtom (Loc.tag ~loc @@ TacAssert (true,true,Some tac,ipat,c)) }
       | IDENT "pose"; IDENT "proof"; c = lconstr; ipat = as_ipat ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,None,ipat,c))
+	  { TacAtom (Loc.tag ~loc @@ TacAssert (false,true,None,ipat,c)) }
       | IDENT "epose"; IDENT "proof"; c = lconstr; ipat = as_ipat ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,true,None,ipat,c))
+	  { TacAtom (Loc.tag ~loc @@ TacAssert (true,true,None,ipat,c)) }
       | IDENT "enough"; c = constr; ipat = as_ipat; tac = by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,false,Some tac,ipat,c))
+	  { TacAtom (Loc.tag ~loc @@ TacAssert (false,false,Some tac,ipat,c)) }
       | IDENT "eenough"; c = constr; ipat = as_ipat; tac = by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,false,Some tac,ipat,c))
+	  { TacAtom (Loc.tag ~loc @@ TacAssert (true,false,Some tac,ipat,c)) }
 
       | IDENT "generalize"; c = constr ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacGeneralize [((AllOccurrences,c),Names.Name.Anonymous)])
+	  { TacAtom (Loc.tag ~loc @@ TacGeneralize [((AllOccurrences,c),Names.Name.Anonymous)]) }
       | IDENT "generalize"; c = constr; l = LIST1 constr ->
-	  let gen_everywhere c = ((AllOccurrences,c),Names.Name.Anonymous) in
-          TacAtom (Loc.tag ~loc:!@loc @@ TacGeneralize (List.map gen_everywhere (c::l)))
+	  { let gen_everywhere c = ((AllOccurrences,c),Names.Name.Anonymous) in
+          TacAtom (Loc.tag ~loc @@ TacGeneralize (List.map gen_everywhere (c::l))) }
       | IDENT "generalize"; c = constr; lookup_at_as_comma; nl = occs;
           na = as_name;
-          l = LIST0 [","; c = pattern_occ; na = as_name -> (c,na)] ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacGeneralize (((nl,c),na)::l))
+          l = LIST0 [","; c = pattern_occ; na = as_name -> { (c,na) } ] ->
+          { TacAtom (Loc.tag ~loc @@ TacGeneralize (((nl,c),na)::l)) }
 
       (* Derived basic tactics *)
       | IDENT "induction"; ic = induction_clause_list ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacInductionDestruct (true,false,ic))
+	  { TacAtom (Loc.tag ~loc @@ TacInductionDestruct (true,false,ic)) }
       | IDENT "einduction"; ic = induction_clause_list ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacInductionDestruct(true,true,ic))
+	  { TacAtom (Loc.tag ~loc @@ TacInductionDestruct(true,true,ic)) }
       | IDENT "destruct"; icl = induction_clause_list ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacInductionDestruct(false,false,icl))
+	  { TacAtom (Loc.tag ~loc @@ TacInductionDestruct(false,false,icl)) }
       | IDENT "edestruct";  icl = induction_clause_list ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacInductionDestruct(false,true,icl))
+	  { TacAtom (Loc.tag ~loc @@ TacInductionDestruct(false,true,icl)) }
 
       (* Equality and inversion *)
       | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ",";
-	  cl = clause_dft_concl; t=by_tactic -> TacAtom (Loc.tag ~loc:!@loc @@ TacRewrite (false,l,cl,t))
+	  cl = clause_dft_concl; t=by_tactic -> { TacAtom (Loc.tag ~loc @@ TacRewrite (false,l,cl,t)) }
       | IDENT "erewrite"; l = LIST1 oriented_rewriter SEP ",";
-	  cl = clause_dft_concl; t=by_tactic -> TacAtom (Loc.tag ~loc:!@loc @@ TacRewrite (true,l,cl,t))
+	  cl = clause_dft_concl; t=by_tactic -> { TacAtom (Loc.tag ~loc @@ TacRewrite (true,l,cl,t)) }
       | IDENT "dependent"; k =
-	  [ IDENT "simple"; IDENT "inversion" -> SimpleInversion
-	  | IDENT "inversion" -> FullInversion
-	  | IDENT "inversion_clear" -> FullInversionClear ];
+	  [ IDENT "simple"; IDENT "inversion" -> { SimpleInversion }
+	  | IDENT "inversion" -> { FullInversion }
+	  | IDENT "inversion_clear" -> { FullInversionClear } ];
 	  hyp = quantified_hypothesis;
-	  ids = as_or_and_ipat; co = OPT ["with"; c = constr -> c] ->
-	    TacAtom (Loc.tag ~loc:!@loc @@ TacInversion (DepInversion (k,co,ids),hyp))
+	  ids = as_or_and_ipat; co = OPT ["with"; c = constr -> { c } ] ->
+	    { TacAtom (Loc.tag ~loc @@ TacInversion (DepInversion (k,co,ids),hyp)) }
       | IDENT "simple"; IDENT "inversion";
 	  hyp = quantified_hypothesis; ids = as_or_and_ipat;
 	  cl = in_hyp_list ->
-	    TacAtom (Loc.tag ~loc:!@loc @@ TacInversion (NonDepInversion (SimpleInversion, cl, ids), hyp))
+	    { TacAtom (Loc.tag ~loc @@ TacInversion (NonDepInversion (SimpleInversion, cl, ids), hyp)) }
       | IDENT "inversion";
 	  hyp = quantified_hypothesis; ids = as_or_and_ipat;
 	  cl = in_hyp_list ->
-	    TacAtom (Loc.tag ~loc:!@loc @@ TacInversion (NonDepInversion (FullInversion, cl, ids), hyp))
+	    { TacAtom (Loc.tag ~loc @@ TacInversion (NonDepInversion (FullInversion, cl, ids), hyp)) }
       | IDENT "inversion_clear";
 	  hyp = quantified_hypothesis; ids = as_or_and_ipat;
 	  cl = in_hyp_list ->
-	    TacAtom (Loc.tag ~loc:!@loc @@ TacInversion (NonDepInversion (FullInversionClear, cl, ids), hyp))
+	    { TacAtom (Loc.tag ~loc @@ TacInversion (NonDepInversion (FullInversionClear, cl, ids), hyp)) }
       | IDENT "inversion"; hyp = quantified_hypothesis;
 	  "using"; c = constr; cl = in_hyp_list ->
-	    TacAtom (Loc.tag ~loc:!@loc @@ TacInversion (InversionUsing (c,cl), hyp))
+	    { TacAtom (Loc.tag ~loc @@ TacInversion (InversionUsing (c,cl), hyp)) }
 
       (* Conversion *)
       | IDENT "red"; cl = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacReduce (Red false, cl))
+          { TacAtom (Loc.tag ~loc @@ TacReduce (Red false, cl)) }
       | IDENT "hnf"; cl = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacReduce (Hnf, cl))
+          { TacAtom (Loc.tag ~loc @@ TacReduce (Hnf, cl)) }
       | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacReduce (Simpl (all_with d, po), cl))
+          { TacAtom (Loc.tag ~loc @@ TacReduce (Simpl (all_with d, po), cl)) }
       | IDENT "cbv"; s = strategy_flag; cl = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacReduce (Cbv s, cl))
+          { TacAtom (Loc.tag ~loc @@ TacReduce (Cbv s, cl)) }
       | IDENT "cbn"; s = strategy_flag; cl = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacReduce (Cbn s, cl))
+          { TacAtom (Loc.tag ~loc @@ TacReduce (Cbn s, cl)) }
       | IDENT "lazy"; s = strategy_flag; cl = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacReduce (Lazy s, cl))
+          { TacAtom (Loc.tag ~loc @@ TacReduce (Lazy s, cl)) }
       | IDENT "compute"; delta = delta_flag; cl = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacReduce (Cbv (all_with delta), cl))
+          { TacAtom (Loc.tag ~loc @@ TacReduce (Cbv (all_with delta), cl)) }
       | IDENT "vm_compute"; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacReduce (CbvVm po, cl))
+          { TacAtom (Loc.tag ~loc @@ TacReduce (CbvVm po, cl)) }
       | IDENT "native_compute"; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacReduce (CbvNative po, cl))
+          { TacAtom (Loc.tag ~loc @@ TacReduce (CbvNative po, cl)) }
       | IDENT "unfold"; ul = LIST1 unfold_occ SEP ","; cl = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacReduce (Unfold ul, cl))
+          { TacAtom (Loc.tag ~loc @@ TacReduce (Unfold ul, cl)) }
       | IDENT "fold"; l = LIST1 constr; cl = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacReduce (Fold l, cl))
+          { TacAtom (Loc.tag ~loc @@ TacReduce (Fold l, cl)) }
       | IDENT "pattern"; pl = LIST1 pattern_occ SEP","; cl = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacReduce (Pattern pl, cl))
+          { TacAtom (Loc.tag ~loc @@ TacReduce (Pattern pl, cl)) }
 
       (* Change ne doit pas s'appliquer dans un Definition t := Eval ... *)
-      | IDENT "change"; (oc,c) = conversion; cl = clause_dft_concl ->
-	  let p,cl = merge_occurrences (!@loc) cl oc in
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacChange (p,c,cl))
+      | IDENT "change"; c = conversion; cl = clause_dft_concl ->
+	  { let (oc, c) = c in
+	  let p,cl = merge_occurrences loc cl oc in
+	  TacAtom (Loc.tag ~loc @@ TacChange (p,c,cl)) }
     ] ]
   ;
-END;;
+END

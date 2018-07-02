@@ -461,14 +461,19 @@ let _ = parse_args ()
 type camlexec =
  { mutable find : string;
    mutable top : string;
-   mutable lex : string; }
+   mutable lex : string;
+   mutable yacc : string;
+  }
 
 let camlexec =
   { find = "ocamlfind";
     top = "ocaml";
-    lex = "ocamllex"; }
+    lex = "ocamllex";
+    yacc = "ocamlyacc";
+  }
 
 let reset_caml_lex c o = c.lex <- o
+let reset_caml_yacc c o = c.yacc <- o
 let reset_caml_top c o = c.top <- o
 let reset_caml_find c o = c.find <- o
 
@@ -579,6 +584,9 @@ let camlbin, caml_version, camllib, findlib_version =
     let () =
       if is_executable (camlbin / "ocamllex")
       then reset_caml_lex camlexec (camlbin / "ocamllex") in
+    let () =
+      if is_executable (camlbin / "ocamlyacc")
+      then reset_caml_yacc camlexec (camlbin / "ocamlyacc") in
     let () =
       if is_executable (camlbin / "ocaml")
       then reset_caml_top camlexec (camlbin / "ocaml") in
@@ -1280,6 +1288,7 @@ let write_makefile f =
   pr "OCAML=%S\n" camlexec.top;
   pr "OCAMLFIND=%S\n" camlexec.find;
   pr "OCAMLLEX=%S\n" camlexec.lex;
+  pr "OCAMLYACC=%S\n" camlexec.yacc;
   pr "# The best compiler: native (=opt) or bytecode (=byte)\n";
   pr "BEST=%s\n\n" best_compiler;
   pr "# Ocaml version number\n";

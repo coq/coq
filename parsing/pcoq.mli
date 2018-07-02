@@ -80,6 +80,8 @@ module type S =
   (* Get comment parsing information from the Lexer *)
   val comment_state : coq_parsable -> ((int * int) * string) list
 
+  val safe_extend : 'a entry -> 'a Extend.extend_statement -> unit
+
   (* Apparently not used *)
   val srules' : production_rule list -> symbol
   val parse_tokens_after_filter : 'a entry -> Tok.t Stream.t -> 'a
@@ -299,6 +301,7 @@ val recover_grammar_command : 'a grammar_command -> 'a list
 val with_grammar_rule_protection : ('a -> 'b) -> 'a -> 'b
 
 (** Location Utils  *)
+val of_coqloc : Loc.t -> Ploc.t
 val to_coqloc : Ploc.t -> Loc.t
 val (!@) : Ploc.t -> Loc.t
 

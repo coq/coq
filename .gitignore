@@ -115,6 +115,7 @@ dev/ocamldoc/*.css
 
 # .mll files
 
+grammar/coqpp_lex.ml
 dev/ocamlweb-doc/lex.ml
 ide/coq_lex.ml
 ide/config_lexer.ml
@@ -125,6 +126,11 @@ tools/coqdep_lexer.ml
 tools/ocamllibdep.ml
 tools/coqdoc/cpretty.ml
 ide/protocol/xml_lexer.ml
+
+# .mly files
+
+grammar/coqpp_parse.ml
+grammar/coqpp_parse.mli
 
 # .ml4 / .mlp files
 

@@ -45,7 +45,7 @@ let coincide s pat off =
 
 let atactic n =
   if n = 5 then Aentry Pltac.binder_tactic
-  else Aentryl (Pltac.tactic_expr, n)
+  else Aentryl (Pltac.tactic_expr, string_of_int n)
 
 type entry_name = EntryName :
   'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, 'a) Extend.symbol -> entry_name
@@ -398,7 +398,7 @@ let create_ltac_quotation name cast (e, l) =
   let () = ltac_quotations := String.Set.add name !ltac_quotations in
   let entry = match l with
   | None -> Aentry e
-  | Some l -> Aentryl (e, l)
+  | Some l -> Aentryl (e, string_of_int l)
   in
 (*   let level = Some "1" in *)
   let level = None in
