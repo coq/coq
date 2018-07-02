@@ -55,6 +55,8 @@ let string_split s =
   in
   if len == 0 then [] else split 0
 
+let plugin_name = "__coq_plugin_name"
+
 module GramExt :
 sig
 
@@ -255,7 +257,75 @@ let print_ast chan ext =
   let () = fprintf chan "let _ = @[" in
   let () = fprintf chan "@[<v>%a@]" print_local ext in
   let () = List.iter (fun e -> print_entry chan ext.gramext_name e) ext.gramext_entries in
-  let () = fprintf chan "()@]\n" in
+  let () = fprintf chan "()@]@\n" in
+  ()
+
+end
+
+module TacticExt :
+sig
+
+val print_ast : Format.formatter -> tactic_ext -> unit
+
+end =
+struct
+
+let print_ident chan id =
+  (** Workaround for badly-designed generic arguments lacking a closure *)
+  fprintf chan "Names.Id.of_string_soft \"$%s\"" id
+
+let rec print_symbol chan = function
+| Ulist1 s ->
+  fprintf chan "@[Extend.TUlist1 (%a)@]" print_symbol s
+| Ulist1sep (s, sep) ->
+  fprintf chan "@[Extend.TUlist1sep (%a, \"%s\")@]" print_symbol s sep
+| Ulist0 s ->
+  fprintf chan "@[Extend.TUlist0 (%a)@]" print_symbol s
+| Ulist0sep (s, sep) ->
+  fprintf chan "@[Extend.TUlist0sep (%a, \"%s\")@]" print_symbol s sep
+| Uopt s ->
+  fprintf chan "@[Extend.TUopt (%a)@]" print_symbol s
+| Uentry e ->
+  fprintf chan "@[Extend.TUentry (Genarg.get_arg_tag wit_%s)@]" e
+| Uentryl (e, l) ->
+  assert (e = "tactic");
+  fprintf chan "@[Extend.TUentryl (Genarg.get_arg_tag wit_%s, %i)@]" e l
+
+let rec print_clause chan = function
+| [] -> fprintf chan "@[TyNil@]"
+| ExtTerminal s :: cl -> fprintf chan "@[TyIdent (\"%s\", %a)@]" s print_clause cl
+| ExtNonTerminal (g, TokNone) :: cl ->
+  fprintf chan "@[TyAnonArg (Loc.tag (%a), %a)@]"
+    print_symbol g print_clause cl
+| ExtNonTerminal (g, TokName id) :: cl ->
+  fprintf chan "@[TyArg (Loc.tag (%a, %a), %a)@]"
+    print_symbol g print_ident id print_clause cl
+
+let rec print_binders chan = function
+| [] -> fprintf chan "ist@ "
+| (ExtTerminal _ | ExtNonTerminal (_, TokNone)) :: rem -> print_binders chan rem
+| (ExtNonTerminal (_, TokName id)) :: rem ->
+  fprintf chan "%s@ %a" id print_binders rem
+
+let print_rule chan r =
+  fprintf chan "@[TyML (%a, @[fun %a -> %s@])@]"
+    print_clause r.tac_toks print_binders r.tac_toks r.tac_body.code
+
+let rec print_rules chan = function
+| [] -> ()
+| [r] -> fprintf chan "(%a)@\n" print_rule r
+| r :: rem -> fprintf chan "(%a);@\n%a" print_rule r print_rules rem
+
+let print_rules chan rules =
+  fprintf chan "Tacentries.([@[<v>%a@]])" print_rules rules
+
+let print_ast chan ext =
+  let pr chan () =
+    let level = match ext.tacext_level with None -> 0 | Some i -> i in
+    fprintf chan "Tacentries.tactic_extend %s \"%s\" ~level:%i %a"
+      plugin_name ext.tacext_name level print_rules ext.tacext_rules
+  in
+  let () = fprintf chan "let () = @[%a@]\n" pr () in
   ()
 
 end
@@ -263,19 +333,10 @@ end
 let pr_ast chan = function
 | Code s -> fprintf chan "%s@\n" s.code
 | Comment s -> fprintf chan "%s@\n" s
+| DeclarePlugin name -> fprintf chan "let %s = \"%s\"@\n" plugin_name name
 | GramExt gram -> fprintf chan "%a@\n" GramExt.print_ast gram
 | VernacExt -> fprintf chan "VERNACEXT@\n"
-| TacticExt (id, rules) ->
-  let pr_tok = function
-  | ExtTerminal s -> Printf.sprintf "%s" s
-  | ExtNonTerminal (s, _) -> Printf.sprintf "%s" s
-  in
-  let pr_tacrule r =
-    let toks = String.concat " " (List.map pr_tok r.tac_toks) in
-    Printf.sprintf "[%s] -> {%s}" toks r.tac_body.code
-  in
-  let rules = String.concat ", " (List.map pr_tacrule rules) in
-  fprintf chan "TACTICEXT (%s, [%s])@\n" id rules
+| TacticExt tac -> fprintf chan "%a@\n" TacticExt.print_ast tac
 
 let () =
   let () =

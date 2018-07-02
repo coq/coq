@@ -10,13 +10,60 @@
 
 open Coqpp_ast
 
+let starts s pat =
+  let len = String.length s in
+  let patlen = String.length pat in
+  if patlen <= len && String.sub s 0 patlen = pat then
+    Some (String.sub s patlen (len - patlen))
+  else None
+
+let ends s pat =
+  let len = String.length s in
+  let patlen = String.length pat in
+  if patlen <= len && String.sub s (len - patlen) patlen = pat then
+    Some (String.sub s 0 (len - patlen))
+  else None
+
+let between s pat1 pat2 = match starts s pat1 with
+| None -> None
+| Some s -> ends s pat2  
+
+let without_sep k sep r =
+  if sep <> "" then raise Parsing.Parse_error else k r
+
+let parse_user_entry s sep =
+  let table = [
+    "ne_", "_list", without_sep (fun r -> Ulist1 r);
+    "ne_", "_list_sep", (fun sep r -> Ulist1sep (r, sep));
+    "", "_list", without_sep (fun r -> Ulist0 r);
+    "", "_list_sep", (fun sep r -> Ulist0sep (r, sep));
+    "", "_opt", without_sep (fun r -> Uopt r);
+  ] in
+  let rec parse s sep = function
+  | [] ->
+    let () = without_sep ignore sep () in
+    let s = match s with "hyp" -> "var" | _ -> s in
+    begin match starts s "tactic" with
+    | Some ("0"|"1"|"2"|"3"|"4"|"5") -> Uentryl ("tactic", int_of_string s)
+    | Some _ | None -> Uentry s
+    end
+  | (pat1, pat2, k) :: rem ->
+    match between s pat1 pat2 with
+    | None -> parse s sep rem
+    | Some s ->
+      let r = parse s "" table in
+      k sep r      
+  in
+  parse s sep table
+
 %}
 
 %token <Coqpp_ast.code> CODE
 %token <string> COMMENT
 %token <string> IDENT QUALID
 %token <string> STRING
-%token VERNAC TACTIC GRAMMAR EXTEND END
+%token <int> INT
+%token VERNAC TACTIC GRAMMAR EXTEND END DECLARE PLUGIN
 %token LBRACKET RBRACKET PIPE ARROW COMMA EQUAL
 %token LPAREN RPAREN COLON SEMICOLON
 %token GLOBAL FIRST LAST BEFORE AFTER LEVEL LEFTA RIGHTA NONA
@@ -42,9 +89,14 @@ nodes:
 node:
 | CODE { Code $1 }
 | COMMENT { Comment $1 }
+| declare_plugin { $1 }
 | grammar_extend { $1 }
 | vernac_extend { $1 }
 | tactic_extend { $1 }
+;
+
+declare_plugin:
+| DECLARE PLUGIN STRING { DeclarePlugin $3 }
 ;
 
 grammar_extend:
@@ -57,7 +109,13 @@ vernac_extend:
 ;
 
 tactic_extend:
-| TACTIC EXTEND IDENT tactic_rules END { TacticExt ($3, $4)  }
+| TACTIC EXTEND IDENT tactic_level tactic_rules END
+  { TacticExt { tacext_name = $3; tacext_level = $4; tacext_rules = $5 } }
+;
+
+tactic_level:
+| { None }
+| LEVEL INT { Some $2 }
 ;
 
 tactic_rules:
@@ -77,9 +135,18 @@ ext_tokens:
 
 ext_token:
 | STRING { ExtTerminal $1 }
-| IDENT { ExtNonTerminal ($1, TokNone) }
-| IDENT LPAREN IDENT RPAREN { ExtNonTerminal ($1, TokName $3) }
-| IDENT LPAREN IDENT COMMA STRING RPAREN { ExtNonTerminal ($1, TokNameSep ($3, $5)) }
+| IDENT {
+  let e = parse_user_entry $1 "" in
+  ExtNonTerminal (e, TokNone) 
+  }
+| IDENT LPAREN IDENT RPAREN {
+  let e = parse_user_entry $1 "" in
+  ExtNonTerminal (e, TokName $3)
+  }
+| IDENT LPAREN IDENT COMMA STRING RPAREN {
+  let e = parse_user_entry $1 $5 in
+  ExtNonTerminal (e, TokName $3)
+}
 ;
 
 qualid_or_ident:
