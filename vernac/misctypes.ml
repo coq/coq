@@ -17,10 +17,10 @@ type 'a or_by_notation = 'a Constrexpr.or_by_notation
 [@@ocaml.deprecated "use [Constrexpr.or_by_notation]"]
 
 type intro_pattern_naming_expr = Namegen.intro_pattern_naming_expr =
-  | IntroIdentifier of Id.t [@ocaml.deprecated "Use version in [Evarutil]"]
-  | IntroFresh of Id.t [@ocaml.deprecated "Use version in [Evarutil]"]
-  | IntroAnonymous [@ocaml.deprecated "Use version in [Evarutil]"]
-[@@ocaml.deprecated "use [Evarutil.intro_pattern_naming_expr]"]
+  | IntroIdentifier of Id.t [@ocaml.deprecated "Use version in [Namegen]"]
+  | IntroFresh of Id.t [@ocaml.deprecated "Use version in [Namegen]"]
+  | IntroAnonymous [@ocaml.deprecated "Use version in [Namegen]"]
+[@@ocaml.deprecated "use [Namegen.intro_pattern_naming_expr]"]
 
 type 'a or_var = 'a Locus.or_var =
   | ArgArg of 'a [@ocaml.deprecated "Use version in [Locus]"]
