@@ -55,6 +55,9 @@ Vernacular Commands
 - Added option Uniform Inductive Parameters which abstracts over parameters
   before typechecking constructors, allowing to write for example
   `Inductive list (A : Type) := nil : list | cons : A -> list -> list.`
+- New Set Hint Variables/Constants Opaque/Transparent commands for setting
+  globally the opacity flag of variables and constants in hint databases,
+  overwritting the opacity set of the hint database.
 
 Coq binaries and process model
 

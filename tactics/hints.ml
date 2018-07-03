@@ -165,12 +165,17 @@ type hint_mode =
   | ModeNoHeadEvar (* No evar at the head *)
   | ModeOutput (* Anything *)
 
+type 'a hints_transparency_target =
+  | HintsVariables
+  | HintsConstants
+  | HintsReferences of 'a list
+
 type hints_expr =
   | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
   | HintsResolveIFF of bool * qualid list * int option
   | HintsImmediate of reference_or_constr list
   | HintsUnfold of qualid list
-  | HintsTransparency of qualid list * bool
+  | HintsTransparency of qualid hints_transparency_target * bool
   | HintsMode of qualid * hint_mode list
   | HintsConstructors of qualid list
   | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
@@ -1024,15 +1029,19 @@ let add_hint dbname hintlist =
   let db' = Hint_db.add_list env sigma hintlist db in
     searchtable_add (dbname,db')
 
-let add_transparency dbname grs b =
+let add_transparency dbname target b =
   let db = get_db dbname in
-  let st = Hint_db.transparent_state db in
+  let (ids, csts as st) = Hint_db.transparent_state db in
   let st' =
-    List.fold_left (fun (ids, csts) gr ->
-      match gr with
-      | EvalConstRef c -> (ids, (if b then Cpred.add else Cpred.remove) c csts)
-      | EvalVarRef v -> (if b then Id.Pred.add else Id.Pred.remove) v ids, csts)
-      st grs
+    match target with
+    | HintsVariables -> (if b then Id.Pred.full else Id.Pred.empty), csts
+    | HintsConstants -> ids, if b then Cpred.full else Cpred.empty
+    | HintsReferences grs ->
+       List.fold_left (fun (ids, csts) gr ->
+       match gr with
+       | EvalConstRef c -> (ids, (if b then Cpred.add else Cpred.remove) c csts)
+       | EvalVarRef v -> (if b then Id.Pred.add else Id.Pred.remove) v ids, csts)
+                      st grs
   in searchtable_add (dbname, Hint_db.set_transparent_state db st')
 
 let remove_hint dbname grs =
@@ -1042,7 +1051,7 @@ let remove_hint dbname grs =
 
 type hint_action =
   | CreateDB of bool * transparent_state
-  | AddTransparency of evaluable_global_reference list * bool
+  | AddTransparency of evaluable_global_reference hints_transparency_target * bool
   | AddHints of hint_entry list
   | RemoveHints of GlobRef.t list
   | AddCut of hints_path
@@ -1132,9 +1141,17 @@ let subst_autohint (subst, obj) =
   in
   let action = match obj.hint_action with
     | CreateDB _ -> obj.hint_action
-    | AddTransparency (grs, b) ->
-      let grs' = List.Smart.map (subst_evaluable_reference subst) grs in
-      if grs == grs' then obj.hint_action else AddTransparency (grs', b)
+    | AddTransparency (target, b) ->
+      let target' =
+        match target with
+        | HintsVariables -> target
+        | HintsConstants -> target
+        | HintsReferences grs ->
+          let grs' = List.Smart.map (subst_evaluable_reference subst) grs in
+          if grs == grs' then target
+          else HintsReferences grs'
+      in
+      if target' == target then obj.hint_action else AddTransparency (target', b)
     | AddHints hintlist ->
       let hintlist' = List.Smart.map subst_hint hintlist in
       if hintlist' == hintlist then obj.hint_action else AddHints hintlist'
@@ -1254,7 +1271,7 @@ type hints_entry =
   | HintsImmediateEntry of (hints_path_atom * polymorphic * hint_term) list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
-  | HintsTransparencyEntry of evaluable_global_reference list * bool
+  | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
   | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 
@@ -1357,14 +1374,19 @@ let interp_hints poly =
     let info = { info with hint_pattern = Option.map fp info.hint_pattern } in
       (info, poly, b, path, gr)
   in
+  let ft = function
+    | HintsVariables -> HintsVariables
+    | HintsConstants -> HintsConstants
+    | HintsReferences lhints -> HintsReferences (List.map fr lhints)
+  in
+  let fp = Constrintern.intern_constr_pattern (Global.env()) in
   match h with
   | HintsResolve lhints -> HintsResolveEntry (List.map fres lhints)
   | HintsResolveIFF (l2r, lc, n) ->
     HintsResolveEntry (List.map (project_hint ~poly n l2r) lc)
   | HintsImmediate lhints -> HintsImmediateEntry (List.map fi lhints)
   | HintsUnfold lhints -> HintsUnfoldEntry (List.map fr lhints)
-  | HintsTransparency (lhints, b) ->
-      HintsTransparencyEntry (List.map fr lhints, b)
+  | HintsTransparency (t, b) -> HintsTransparencyEntry (ft t, b)
   | HintsMode (r, l) -> HintsModeEntry (fref r, l)
   | HintsConstructors lqid ->
       let constr_hints_of_ind qid =
@@ -1379,7 +1401,7 @@ let interp_hints poly =
 			PathHints [gr], IsGlobRef gr)
       in HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
   | HintsExtern (pri, patcom, tacexp) ->
-      let pat =	Option.map fp patcom in
+      let pat =	Option.map (fp sigma) patcom in
       let l = match pat with None -> [] | Some (l, _) -> l in
       let ltacvars = List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l in
       let env = Genintern.({ (empty_glob_sign env) with ltacvars }) in

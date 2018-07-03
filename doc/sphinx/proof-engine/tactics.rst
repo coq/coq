@@ -3422,18 +3422,24 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
 
       Adds each :n:`Hint Unfold @ident`.
 
-   .. cmdv:: Hint %( Transparent %| Opaque %) @qualid
-      :name: Hint ( Transparent | Opaque )
+   .. cmdv:: Hint Transparent {+ @qualid}
+             Hint Opaque {+ @qualid}
+      :name: Hint Transparent; Hint Opaque
 
-      This adds a transparency hint to the database, making :n:`@qualid` a
-      transparent or opaque constant during resolution. This information is used
+      This adds transparency hints to the database, making :n:`@qualid`
+      transparent or opaque constants during resolution. This information is used
       during unification of the goal with any lemma in the database and inside the
       discrimination network to relax or constrain it in the case of discriminated
       databases.
 
-   .. cmdv:: Hint %( Transparent %| Opaque %) {+ @ident}
+   .. cmdv:: Hint Variables %( Transparent %| Opaque %)
+             Hint Constants %( Transparent %| Opaque %)
+      :name: Hint Variables; Hint Constants
 
-      Declares each :n:`@ident` as a transparent or opaque constant.
+      This sets the transparency flag used during unification of
+      hints in the database for all constants or all variables,
+      overwritting the existing settings of opacity. It is advised
+      to use this just after a :cmd:`Create HintDb` command.
 
    .. cmdv:: Hint Extern @num {? @pattern} => @tactic
       :name: Hint Extern
