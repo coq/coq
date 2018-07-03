@@ -156,7 +156,10 @@ endif
 
 MAKE_OPTS := --warn-undefined-variable --no-builtin-rules
 
-submake: alienclean
+bin:
+	mkdir bin
+
+submake: alienclean | bin
 	$(MAKE) $(MAKE_OPTS) -f Makefile.build $(MAKECMDGOALS)
 
 noconfig:

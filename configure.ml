@@ -235,12 +235,6 @@ let get_date () =
 
 let short_date, full_date = get_date ()
 
-
-(** Create the bin/ directory if non-existent *)
-
-let _ = if not (dir_exists "bin") then Unix.mkdir "bin" 0o755
-
-
 (** * Command-line parsing *)
 
 type ide = Opt | Byte | No
