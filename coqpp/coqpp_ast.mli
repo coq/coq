@@ -85,12 +85,31 @@ type tactic_ext = {
   tacext_rules : tactic_rule list;
 }
 
+type classification =
+| ClassifDefault
+| ClassifCode of code
+| ClassifName of string
+
+type vernac_rule = {
+  vernac_toks : ext_token list;
+  vernac_class : code option;
+  vernac_depr : bool;
+  vernac_body : code;
+}
+
+type vernac_ext = {
+  vernacext_name : string;
+  vernacext_entry : code option;
+  vernacext_class : classification;
+  vernacext_rules : vernac_rule list;
+}
+
 type node =
 | Code of code
 | Comment of string
 | DeclarePlugin of string
 | GramExt of grammar_ext
-| VernacExt
+| VernacExt of vernac_ext
 | TacticExt of tactic_ext
 
 type t = node list

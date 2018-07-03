@@ -64,6 +64,39 @@ let string_split s =
 
 let plugin_name = "__coq_plugin_name"
 
+let print_list fmt pr l =
+  let rec prl fmt = function
+  | [] -> ()
+  | [x] -> fprintf fmt "%a" pr x
+  | x :: l -> fprintf fmt "%a;@ %a" pr x prl l
+  in
+  fprintf fmt "@[<hv>[%a]@]" prl l
+
+let rec print_binders fmt = function
+| [] -> ()
+| ExtTerminal _ :: rem -> print_binders fmt rem
+| ExtNonTerminal (_, TokNone) :: rem ->
+  fprintf fmt "_@ %a" print_binders rem
+| ExtNonTerminal (_, TokName id) :: rem ->
+  fprintf fmt "%s@ %a" id print_binders rem
+
+let rec print_symbol fmt = function
+| Ulist1 s ->
+  fprintf fmt "@[Extend.TUlist1 (%a)@]" print_symbol s
+| Ulist1sep (s, sep) ->
+  fprintf fmt "@[Extend.TUlist1sep (%a, \"%s\")@]" print_symbol s sep
+| Ulist0 s ->
+  fprintf fmt "@[Extend.TUlist0 (%a)@]" print_symbol s
+| Ulist0sep (s, sep) ->
+  fprintf fmt "@[Extend.TUlist0sep (%a, \"%s\")@]" print_symbol s sep
+| Uopt s ->
+  fprintf fmt "@[Extend.TUopt (%a)@]" print_symbol s
+| Uentry e ->
+  fprintf fmt "@[Extend.TUentry (Genarg.get_arg_tag wit_%s)@]" e
+| Uentryl (e, l) ->
+  assert (e = "tactic");
+  fprintf fmt "@[Extend.TUentryl (Genarg.get_arg_tag wit_%s, %i)@]" e l
+
 module GramExt :
 sig
 
@@ -103,14 +136,6 @@ let print_local fmt ext =
     fprintf fmt "in@ "
 
 let print_string fmt s = fprintf fmt "\"%s\"" s
-
-let print_list fmt pr l =
-  let rec prl fmt = function
-  | [] -> ()
-  | [x] -> fprintf fmt "%a" pr x
-  | x :: l -> fprintf fmt "%a;@ %a" pr x prl l
-  in
-  fprintf fmt "@[<hv>[%a]@]" prl l
 
 let print_opt fmt pr = function
 | None -> fprintf fmt "None"
@@ -268,6 +293,61 @@ let print_ast fmt ext =
 
 end
 
+module VernacExt :
+sig
+
+val print_ast : Format.formatter -> vernac_ext -> unit
+
+end =
+struct
+
+let print_rule_classifier fmt r = match r.vernac_class with
+| None -> fprintf fmt "None"
+| Some f -> fprintf fmt "Some @[(fun %a-> %s)@]" print_binders r.vernac_toks f.code
+
+let print_body fmt r =
+  fprintf fmt "@[(fun %a~atts@ ~st@ -> %s)@]"
+    print_binders r.vernac_toks r.vernac_body.code
+
+let rec print_sig fmt = function
+| [] -> fprintf fmt "@[Vernacentries.TyNil@]"
+| ExtTerminal s :: rem ->
+  fprintf fmt "@[Vernacentries.TyTerminal (\"%s\", %a)@]" s print_sig rem
+| ExtNonTerminal (symb, _) :: rem ->
+  fprintf fmt "@[Vernacentries.TyNonTerminal (%a, %a)@]"
+    print_symbol symb print_sig rem
+
+let print_rule fmt r =
+  fprintf fmt "Vernacentries.TyML (%b, %a, %a, %a)"
+    r.vernac_depr print_sig r.vernac_toks print_body r print_rule_classifier r
+
+let print_rules fmt rules =
+  print_list fmt (fun fmt r -> fprintf fmt "(%a)" print_rule r) rules
+
+let print_classifier fmt = function
+| ClassifDefault -> fprintf fmt ""
+| ClassifName "QUERY" ->
+  fprintf fmt "~classifier:(fun _ -> Vernac_classifier.classify_as_query)"
+| ClassifName "SIDEFF" ->
+  fprintf fmt "~classifier:(fun _ -> Vernac_classifier.classify_as_sideeff)"
+| ClassifName s -> fatal (Printf.sprintf "Unknown classifier %s" s)
+| ClassifCode c -> fprintf fmt "~classifier:(%s)" c.code
+
+let print_entry fmt = function
+| None -> fprintf fmt "None"
+| Some e -> fprintf fmt "Some (%s)" e.code
+
+let print_ast fmt ext =
+  let pr fmt () =
+    fprintf fmt "Vernacentries.vernac_extend ~command:\"%s\" %a ?entry:%a %a"
+      ext.vernacext_name print_classifier ext.vernacext_class
+      print_entry ext.vernacext_entry print_rules ext.vernacext_rules
+  in
+  let () = fprintf fmt "let () = @[%a@]@\n" pr () in
+  ()
+
+end
+
 module TacticExt :
 sig
 
@@ -276,49 +356,19 @@ val print_ast : Format.formatter -> tactic_ext -> unit
 end =
 struct
 
-let rec print_symbol fmt = function
-| Ulist1 s ->
-  fprintf fmt "@[Extend.TUlist1 (%a)@]" print_symbol s
-| Ulist1sep (s, sep) ->
-  fprintf fmt "@[Extend.TUlist1sep (%a, \"%s\")@]" print_symbol s sep
-| Ulist0 s ->
-  fprintf fmt "@[Extend.TUlist0 (%a)@]" print_symbol s
-| Ulist0sep (s, sep) ->
-  fprintf fmt "@[Extend.TUlist0sep (%a, \"%s\")@]" print_symbol s sep
-| Uopt s ->
-  fprintf fmt "@[Extend.TUopt (%a)@]" print_symbol s
-| Uentry e ->
-  fprintf fmt "@[Extend.TUentry (Genarg.get_arg_tag wit_%s)@]" e
-| Uentryl (e, l) ->
-  assert (e = "tactic");
-  fprintf fmt "@[Extend.TUentryl (Genarg.get_arg_tag wit_%s, %i)@]" e l
-
 let rec print_clause fmt = function
-| [] -> fprintf fmt "@[TyNil@]"
-| ExtTerminal s :: cl -> fprintf fmt "@[TyIdent (\"%s\", %a)@]" s print_clause cl
+| [] -> fprintf fmt "@[Tacentries.TyNil@]"
+| ExtTerminal s :: cl -> fprintf fmt "@[Tacentries.TyIdent (\"%s\", %a)@]" s print_clause cl
 | ExtNonTerminal (g, _) :: cl ->
-  fprintf fmt "@[TyArg (%a, %a)@]"
+  fprintf fmt "@[Tacentries.TyArg (%a, %a)@]"
     print_symbol g print_clause cl
 
-let rec print_binders fmt = function
-| [] -> fprintf fmt "ist@ "
-| ExtTerminal _ :: rem -> print_binders fmt rem
-| ExtNonTerminal (_, TokNone) :: rem ->
-  fprintf fmt "_@ %a" print_binders rem
-| ExtNonTerminal (_, TokName id) :: rem ->
-  fprintf fmt "%s@ %a" id print_binders rem
-
 let print_rule fmt r =
-  fprintf fmt "@[TyML (%a, @[fun %a -> %a@])@]"
+  fprintf fmt "@[Tacentries.TyML (%a, @[fun %aist@ -> %a@])@]"
     print_clause r.tac_toks print_binders r.tac_toks print_code r.tac_body
 
-let rec print_rules fmt = function
-| [] -> ()
-| [r] -> fprintf fmt "(%a)@\n" print_rule r
-| r :: rem -> fprintf fmt "(%a);@\n%a" print_rule r print_rules rem
-
 let print_rules fmt rules =
-  fprintf fmt "Tacentries.([@[<v>%a@]])" print_rules rules
+  print_list fmt (fun fmt r -> fprintf fmt "(%a)" print_rule r) rules
 
 let print_ast fmt ext =
   let deprecation fmt =
@@ -347,7 +397,7 @@ let pr_ast fmt = function
 | Comment s -> fprintf fmt "%s@\n" s
 | DeclarePlugin name -> declare_plugin fmt name
 | GramExt gram -> fprintf fmt "%a@\n" GramExt.print_ast gram
-| VernacExt -> fprintf fmt "VERNACEXT@\n"
+| VernacExt vernac -> fprintf fmt "%a@\n" VernacExt.print_ast vernac
 | TacticExt tac -> fprintf fmt "%a@\n" TacticExt.print_ast tac
 
 let () =

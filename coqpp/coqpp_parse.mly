@@ -63,7 +63,8 @@ let parse_user_entry s sep =
 %token <string> STRING
 %token <int> INT
 %token VERNAC TACTIC GRAMMAR EXTEND END DECLARE PLUGIN DEPRECATED
-%token LBRACKET RBRACKET PIPE ARROW COMMA EQUAL
+%token COMMAND CLASSIFIED BY AS
+%token LBRACKET RBRACKET PIPE ARROW FUN COMMA EQUAL
 %token LPAREN RPAREN COLON SEMICOLON
 %token GLOBAL FIRST LAST BEFORE AFTER LEVEL LEFTA RIGHTA NONA
 %token EOF
@@ -104,7 +105,49 @@ grammar_extend:
 ;
 
 vernac_extend:
-| VERNAC EXTEND IDENT END { VernacExt }
+| VERNAC vernac_entry EXTEND IDENT vernac_classifier vernac_rules END
+  { VernacExt {
+    vernacext_name = $4;
+    vernacext_entry = $2;
+    vernacext_class = $5;
+    vernacext_rules = $6;
+  } }
+;
+
+vernac_entry:
+| COMMAND { None }
+| CODE { Some $1 }
+;
+
+vernac_classifier:
+| { ClassifDefault }
+| CLASSIFIED BY CODE { ClassifCode $3 }
+| CLASSIFIED AS IDENT { ClassifName $3 }
+;
+
+vernac_rules:
+| vernac_rule { [$1] }
+| vernac_rule vernac_rules { $1 :: $2 }
+;
+
+vernac_rule:
+| PIPE LBRACKET ext_tokens RBRACKET rule_deprecation rule_classifier ARROW CODE
+  { {
+      vernac_toks = $3;
+      vernac_depr = $5;
+      vernac_class= $6;
+      vernac_body = $8;
+  } }
+;
+
+rule_deprecation:
+| { false }
+| DEPRECATED { true }
+;
+
+rule_classifier:
+| { None }
+| FUN CODE { Some $2 }
 ;
 
 tactic_extend:
