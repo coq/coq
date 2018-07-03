@@ -377,7 +377,7 @@ grammar/grammar.cma : $(GRAMCMO)
 	$(SHOW)'OCAMLC -a $@'
 	$(HIDE)$(GRAMC) $^ -linkall -a -o $@
 
-grammar/coqpp: $(COQPPCMO) grammar/coqpp_main.ml
+$(COQPP): $(COQPPCMO) grammar/coqpp_main.ml
 	$(SHOW)'OCAMLC -a $@'
 	$(HIDE)$(GRAMC) $^ -linkall -o $@
 
@@ -764,14 +764,14 @@ plugins/%.cmx: plugins/%.ml
 	$(SHOW)'OCAMLYACC  $<'
 	$(HIDE)$(OCAMLYACC) --strict "$*.mly"
 
-%.ml: %.ml4 $(CAMLP5DEPS) grammar/coqpp
+%.ml: %.ml4 $(CAMLP5DEPS) $(COQPP)
 	$(SHOW)'CAMLP5O   $<'
 	$(HIDE)$(CAMLP5O) -I $(MYCAMLP5LIB) $(PR_O) \
 	  $(CAMLP5DEPS) $(CAMLP5USE) $(CAMLP5COMPAT) -impl $< -o $@
 
-%.ml: %.mlg grammar/coqpp
+%.ml: %.mlg $(COQPP)
 	$(SHOW)'COQPP   $<'
-	$(HIDE)grammar/coqpp $<
+	$(HIDE)$(COQPP) $<
 
 ###########################################################################
 # Dependencies of ML code
