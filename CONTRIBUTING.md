@@ -20,6 +20,9 @@ If you want to minimize your bug (or help minimize someone else's) for more extr
 
 ## Pull requests
 
+**Beginner's guide to hacking Coq: [`dev/doc/README.md`](dev/doc/README.md)** \
+**Development information and tools: [`dev/README.md`](dev/README.md)**
+
 If you want to contribute a bug fix or feature yourself, pull requests on the [GitHub repository](https://github.com/coq/coq) are the way to contribute directly to the Coq implementation. We recommend you create a fork of the repository on GitHub and push your changes to a new "topic branch" in that fork. From there you can follow the [GitHub pull request documentation](https://help.github.com/articles/about-pull-requests/) to get your changes reviewed and pulled into the Coq source repository.
 
 Documentation for getting started with the Coq sources is located in various
