@@ -39,9 +39,11 @@ stdenv.mkDerivation rec {
 
   name = "coq";
 
-  buildInputs = (with ocamlPackages; [
+  buildInputs = [
+    hostname
+    python2 time # coq-makefile timing tools
 
-    # Coq dependencies
+  ] ++ (with ocamlPackages; [
     ocaml
     findlib
     camlp5_strict
@@ -65,12 +67,9 @@ stdenv.mkDerivation rec {
     # Test-suite dependencies
     # ncurses is required to build an OCaml REPL
     optional (!versionAtLeast ocaml.version "4.07") ncurses
-    ++ [
-    python2
-    rsync
-    which
+    ++ [ ocamlPackages.ounit rsync which ]
 
-  ] else []) ++ (if lib.inNixShell then [
+  else []) ++ (if lib.inNixShell then [
     ocamlPackages.merlin
     ocamlPackages.ocp-indent
     ocamlPackages.ocp-index
