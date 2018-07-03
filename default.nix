@@ -42,44 +42,32 @@ stdenv.mkDerivation rec {
   buildInputs = [
     hostname
     python2 time # coq-makefile timing tools
-
-  ] ++ (with ocamlPackages; [
-    ocaml
-    findlib
-    camlp5_strict
-    num
-
-  ]) ++ (if buildIde then [
-
-    # CoqIDE dependencies
-    ocamlPackages.lablgtk
-
-  ] else []) ++ (if buildDoc then [
-
+  ]
+  ++ (with ocamlPackages; [ ocaml findlib camlp5_strict num ])
+  ++ optional buildIde ocamlPackages.lablgtk
+  ++ optionals buildDoc [
     # Sphinx doc dependencies
     pkgconfig (python3.withPackages
       (ps: [ ps.sphinx ps.sphinx_rtd_theme ps.pexpect ps.beautifulsoup4
              ps.antlr4-python3-runtime ps.sphinxcontrib-bibtex ]))
-     antlr4
-
-  ] else []) ++ (if doInstallCheck then
-
+    antlr4
+  ]
+  ++ optionals doInstallCheck (
     # Test-suite dependencies
     # ncurses is required to build an OCaml REPL
     optional (!versionAtLeast ocaml.version "4.07") ncurses
     ++ [ ocamlPackages.ounit rsync which ]
-
-  else []) ++ (if lib.inNixShell then [
-    ocamlPackages.merlin
-    ocamlPackages.ocp-indent
-    ocamlPackages.ocp-index
-  ] else []);
+  )
+  ++ optionals lib.inNixShell (with ocamlPackages;
+    [ merlin ocp-indent ocp-index ] # Dev tools
+  );
 
   src =
     if lib.inNixShell then null
     else
       with builtins; filterSource
-        (path: _: !elem (baseNameOf path) [".git" "result" "bin"]) ./.;
+        (path: _:
+           !elem (baseNameOf path) [".git" "result" "bin" "_build_ci"]) ./.;
 
   prefixKey = "-prefix ";
 
