@@ -253,7 +253,6 @@ type wf_paths = recarg Rtree.t
 
 type record_info =
 | NotRecord
-| FakeRecord
 | PrimRecord of (Id.t * Constant.t array * projection_body array) array
 
 type regular_inductive_arity = {

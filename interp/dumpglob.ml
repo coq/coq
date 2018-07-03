@@ -113,18 +113,20 @@ let type_of_global_ref gr =
 	"var" ^ type_of_logical_kind (Decls.variable_kind v)
     | Globnames.IndRef ind ->
 	let (mib,oib) = Inductive.lookup_mind_specif (Global.env ()) ind in
-          if mib.Declarations.mind_record <> Declarations.NotRecord then
-            begin match mib.Declarations.mind_finite with
-            | Finite -> "indrec"
-            | BiFinite -> "rec"
-	    | CoFinite -> "corec"
-            end
-	  else
-            begin match mib.Declarations.mind_finite with
-            | Finite -> "ind"
-            | BiFinite -> "variant"
-	    | CoFinite -> "coind"
-            end
+        begin match mib.Declarations.mind_record with
+        | Declarations.NotRecord when not (Recordops.emulates_record (fst ind)) ->
+          begin match mib.Declarations.mind_finite with
+          | Finite -> "ind"
+          | BiFinite -> "variant"
+          | CoFinite -> "coind"
+          end
+        | Declarations.NotRecord | Declarations.PrimRecord _ ->
+          begin match mib.Declarations.mind_finite with
+          | Finite -> "indrec"
+          | BiFinite -> "rec"
+          | CoFinite -> "corec"
+          end
+        end
     | Globnames.ConstructRef _ -> "constr"
 
 let remove_sections dir =

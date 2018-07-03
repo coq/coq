@@ -15,7 +15,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 c395aa2dbfc18794b3b7192f3dc5b2e5 checker/cic.mli
+MD5 0d47bebd301772a371c82c72f2a1ff6f checker/cic.mli
 
 *)
 
@@ -276,7 +276,7 @@ let v_one_ind = v_tuple "one_inductive_body"
 let v_finite = v_enum "recursivity_kind" 3
 
 let v_record_info =
-  v_sum "record_info" 2
+  v_sum "record_info" 1
     [| [| Array (v_tuple "record" [| v_id; Array v_cst; Array v_projbody |]) |] |]
 
 let v_ind_pack_univs = 

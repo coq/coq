@@ -188,7 +188,7 @@ let branch_of_switch lvl ans bs =
 let get_proj env ((mind, n), i) =
   let mib = Environ.lookup_mind mind env in
   match mib.mind_record with
-  | NotRecord | FakeRecord ->
+  | NotRecord ->
     CErrors.anomaly (Pp.strbrk "Return type is not a primitive record")
   | PrimRecord info ->
     let _, projs, _ = info.(n) in

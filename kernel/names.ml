@@ -606,6 +606,7 @@ module MutInd = KerPair
 module Mindmap = HMap.Make(MutInd.CanOrd)
 module Mindset = Mindmap.Set
 module Mindmap_env = HMap.Make(MutInd.UserOrd)
+module Mindset_env = Mindmap_env.Set
 
 (** Designation of a (particular) inductive type. *)
 type inductive = MutInd.t      (* the name of the inductive type *)

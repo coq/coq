@@ -216,8 +216,10 @@ let print_record env mind mib udecl =
         sigma (instantiate_cumulativity_info cumi)
   )
 
-let pr_mutual_inductive_body env mind mib udecl =
-  if mib.mind_record != NotRecord && not !Flags.raw_print then
+let pr_mutual_inductive_body env mind mib udecl = match mib.mind_record with
+| PrimRecord _ -> print_record env mind mib udecl
+| NotRecord ->
+  if Recordops.emulates_record mind && not !Flags.raw_print then
     print_record env mind mib udecl
   else
     print_mutual_inductive env mind mib udecl

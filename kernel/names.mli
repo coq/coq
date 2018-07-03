@@ -456,7 +456,8 @@ end
 
 module Mindset : CSig.SetS with type elt = MutInd.t
 module Mindmap : Map.ExtS with type key = MutInd.t and module Set := Mindset
-module Mindmap_env : CSig.MapS with type key = MutInd.t
+module Mindset_env : CSig.SetS with type elt = MutInd.t
+module Mindmap_env : Map.ExtS with type key = MutInd.t and module Set := Mindset_env
 
 (** Designation of a (particular) inductive type. *)
 type inductive = MutInd.t      (* the name of the inductive type *)

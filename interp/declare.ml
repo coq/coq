@@ -413,9 +413,8 @@ let declare_projections univs mind =
       ) kns projs
     in
     let () = Array.iteri iter info in
-    true, true
-  | FakeRecord -> true, false
-  | NotRecord -> false, false
+    true
+  | NotRecord -> false
 
 (* for initial declaration *)
 let declare_mind mie =
@@ -424,7 +423,7 @@ let declare_mind mie =
     | [] -> anomaly (Pp.str "cannot declare an empty list of inductives.") in
   let (sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
   let mind = Global.mind_of_delta_kn kn in
-  let isrecord,isprim = declare_projections mie.mind_entry_universes mind in
+  let isprim = declare_projections mie.mind_entry_universes mind in
   declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
   oname, isprim

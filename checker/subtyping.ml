@@ -185,7 +185,6 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
   let record_equal x y =
     match x, y with
     | NotRecord, NotRecord -> true
-    | FakeRecord, FakeRecord -> true
     | PrimRecord info1, PrimRecord info2 ->
       let check (id1, p1, pb1) (id2, p2, pb2) =
         Id.equal id1 id2 &&
