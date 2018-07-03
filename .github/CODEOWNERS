@@ -137,8 +137,7 @@
 /plugins/derive/        @aspiwack
 # Secondary maintainer @ppedrot
 
-/plugins/extraction/    @letouzey
-# Secondary maintainer @maximedenes
+/plugins/extraction/    @maximedenes
 
 /plugins/firstorder/   @PierreCorbineau
 # Secondary maintainer @herbelin
@@ -158,10 +157,6 @@
 
 /plugins/nsatz/         @thery
 # Secondary maintainer @ppedrot
-
-/plugins/omega/         @letouzey
-
-/plugins/romega/        @letouzey
 
 /plugins/setoid_ring/   @amahboubi
 # Secondary maintainer @bgregoir
@@ -219,44 +214,34 @@
 
 ########## Standard library ##########
 
-/theories/Arith/          @letouzey
-# Secondary maintainer @herbelin
+/theories/Arith/          @herbelin
 
-/theories/Bool/           @letouzey
-# Secondary maintainer @herbelin
+/theories/Bool/           @herbelin
 
 /theories/Classes/        @mattam82
 # Secondary maintainer @herbelin
 
-/theories/FSets/          @letouzey
-# Secondary maintainer @herbelin
+/theories/FSets/          @herbelin
 
-/theories/Init/           @letouzey
-# Secondary maintainer @ppedrot
+/theories/Init/           @ppedrot
 
-/theories/Lists/          @letouzey
-# Secondary maintainer @ppedrot
+/theories/Lists/          @ppedrot
 
 /theories/Logic/          @herbelin
 # Secondary maintainer @ppedrot
 
-/theories/MSets/          @letouzey
-# Secondary maintainer @herbelin
+/theories/MSets/          @herbelin
 
-/theories/NArith/         @letouzey
-# Secondary maintainer @herbelin
+/theories/NArith/         @herbelin
 
-/theories/Numbers/        @letouzey
-# Secondary maintainer @herbelin
+/theories/Numbers/        @herbelin
 
-/theories/PArith/         @letouzey
-# Secondary maintainer @herbelin
+/theories/PArith/         @herbelin
 
 /theories/Program/        @mattam82
 # Secondary maintainer @herbelin
 
-/theories/QArith/         @letouzey
-# Secondary maintainer @herbelin
+/theories/QArith/         @herbelin
 
 /theories/Reals/          @silene
 # Secondary maintainer @ppedrot
@@ -267,26 +252,19 @@
 /theories/Setoids/        @mattam82
 # Secondary maintainer @ppedrot
 
-/theories/Sets/           @letouzey
-# Secondary maintainer @herbelin
+/theories/Sets/           @herbelin
 
-/theories/Sorting/        @letouzey
-# Secondary maintainer @herbelin
+/theories/Sorting/        @herbelin
 
-/theories/Strings/        @letouzey
-# Secondary maintainer @herbelin
+/theories/Strings/        @herbelin
 
-/theories/Structures/     @letouzey
-# Secondary maintainer @herbelin
+/theories/Structures/     @herbelin
 
-/theories/Unicode/        @letouzey
-# Secondary maintainer @herbelin
+/theories/Unicode/        @herbelin
 
-/theories/Wellfounded/    @letouzey
-# Secondary maintainer @mattam82
+/theories/Wellfounded/    @mattam82
 
-/theories/ZArith/         @letouzey
-# Secondary maintainer @herbelin
+/theories/ZArith/         @herbelin
 
 /theories/Compat/         @JasonGross
 # Secondary maintainer @Zimmi48
@@ -331,14 +309,11 @@
 
 ########## Build system ##########
 
-/Makefile*        @letouzey
-# Secondary maintainer @gares
+/Makefile*        @gares
 
-/configure*       @letouzey
-# Secondary maintainer @ejgallego
+/configure*       @ejgallego
 
 /META.coq         @ejgallego
-# Secondary maintainer @letouzey
 
 /dev/build/windows @MSoegtropIMC
 # Secondary maintainer @maximedenes
