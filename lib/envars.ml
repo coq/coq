@@ -110,6 +110,7 @@ let check_file_else ~dir ~file oth =
   if Sys.file_exists (path / file) then path else oth ()
 
 let guess_coqlib fail =
+  getenv_else "COQLIB" (fun () ->
   let prelude = "theories/Init/Prelude.vo" in
   check_file_else ~dir:Coq_config.coqlibsuffix ~file:prelude
     (fun () ->
@@ -117,6 +118,7 @@ let guess_coqlib fail =
       then Coq_config.coqlib
       else
         fail "cannot guess a path for Coq libraries; please use -coqlib option")
+  )
 
 (** coqlib is now computed once during coqtop initialization *)
 
