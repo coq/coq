@@ -220,7 +220,8 @@ pkg:nix:
   before_script: [] # We don't want to use the shared 'before_script'
   script:
     - export TMPDIR=$PWD
-    - nix-build "$CI_PROJECT_URL/-/archive/$CI_COMMIT_SHA.tar.gz" -K
+    - nix-env -if https://github.com/cachix/cachix/tarball/master --substituters https://cachix.cachix.org --trusted-public-keys cachix.cachix.org-1:eWNHQldwUO7G2VkjpnjDbWwy4KQ/HNxht7H4SSoMckM=
+    - nix-build "$CI_PROJECT_URL/-/archive/$CI_COMMIT_SHA.tar.gz" -K --extra-substituters https://coq.cachix.org --trusted-public-keys "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= coq.cachix.org-1:Jgt0DwGAUo+wpxCM52k2V+E0hLoOzFPzvg94F65agtI=" | if [ ! -z "$CACHIX_SIGNING_KEY" ]; then cachix push coq; fi
   artifacts:
     name: "$CI_JOB_NAME.logs"
     when: on_failure
