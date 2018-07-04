@@ -45,6 +45,9 @@ before_script:
   - opam list
   - opam config list
 
+after_script:
+  - echo "The build completed normally (not a runner failure)."
+
 ################ GITLAB CACHING ######################
 # - use artifacts between jobs                       #
 ######################################################
