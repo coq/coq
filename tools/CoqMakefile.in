@@ -65,20 +65,20 @@ VERBOSE ?=
 # Time the Coq process (set to non empty), and how (see default value)
 TIMED?=
 TIMECMD?=
-# Use /usr/bin/env time on linux, gtime on Mac OS
+# Use command time on linux, gtime on Mac OS
 TIMEFMT?="$* (real: %e, user: %U, sys: %S, mem: %M ko)"
 ifneq (,$(TIMED))
-ifeq (0,$(shell /usr/bin/env time -f $(TIMEFMT) true >/dev/null 2>/dev/null; echo $$?))
-STDTIME?=/usr/bin/env time -f $(TIMEFMT)
+ifeq (0,$(shell command time -f $(TIMEFMT) true >/dev/null 2>/dev/null; echo $$?))
+STDTIME?=command time -f $(TIMEFMT)
 else
 ifeq (0,$(shell gtime -f $(TIMEFMT) true >/dev/null 2>/dev/null; echo $$?))
 STDTIME?=gtime -f $(TIMEFMT)
 else
-STDTIME?=time
+STDTIME?=command time
 endif
 endif
 else
-STDTIME?=/usr/bin/env time -f $(TIMEFMT)
+STDTIME?=command time -f $(TIMEFMT)
 endif
 
 # Coq binaries
