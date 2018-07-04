@@ -89,6 +89,7 @@ INSTALLSH:=./install.sh
 MKDIR:=install -d
 
 CORESRCDIRS:=\
+  coqpp                                                                                 \
   config 	clib 		lib		kernel		kernel/byterun	library \
   engine 	pretyping	interp	proofs	parsing 	printing \
   tactics 	vernac		stm		toplevel
