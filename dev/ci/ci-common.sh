@@ -69,7 +69,7 @@ git_checkout()
     if [ ! -d .git ] ; then git clone "${_DEPTH[@]}" "${_URL}" . ; fi && \
     echo "Checking out ${_DEST}"                                      && \
     git fetch "${_URL}" "${_BRANCH}"                                  && \
-    git checkout "${_COMMIT}"                                         && \
+    git -c advice.detachedHead=false checkout "${_COMMIT}"            && \
     echo "${_DEST}: $(git log -1 --format='%s | %H | %cd | %aN')" )
 }
 
