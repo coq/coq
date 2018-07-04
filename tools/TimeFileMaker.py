@@ -1,6 +1,8 @@
-#!/usr/bin/env python
 from __future__ import with_statement
+from __future__ import division
+from __future__ import unicode_literals
 import os, sys, re
+from io import open
 
 # This script parses the output of `make TIMED=1` into a dictionary
 # mapping names of compiled files to the number of minutes and seconds
@@ -8,7 +10,7 @@ import os, sys, re
 
 STRIP_REG = re.compile('^(coq/|contrib/|)(?:theories/|src/)?')
 STRIP_REP = r'\1'
-INFINITY  = '\xe2\x88\x9e'
+INFINITY  = '\u221e'
 
 def parse_args(argv, USAGE, HELP_STRING):
     sort_by = 'auto'
@@ -27,7 +29,7 @@ def parse_args(argv, USAGE, HELP_STRING):
 def reformat_time_string(time):
     seconds, milliseconds = time.split('.')
     seconds = int(seconds)
-    minutes, seconds = int(seconds / 60), seconds % 60
+    minutes, seconds = divmod(seconds, 60)
     return '%dm%02d.%ss' % (minutes, seconds, milliseconds)
 
 def get_times(file_name):
@@ -40,7 +42,7 @@ def get_times(file_name):
     if file_name == '-':
         lines = sys.stdin.read()
     else:
-        with open(file_name, 'r') as f:
+        with open(file_name, 'r', encoding="utf-8") as f:
             lines = f.read()
     reg = re.compile(r'^([^\s]+) \([^\)]*?user: ([0-9\.]+)[^\)]*?\)\s*$', re.MULTILINE)
     times = reg.findall(lines)
@@ -60,7 +62,7 @@ def get_single_file_times(file_name):
     if file_name == '-':
         lines = sys.stdin.read()
     else:
-        with open(file_name, 'r') as f:
+        with open(file_name, 'r', encoding="utf-8") as f:
             lines = f.read()
     reg = re.compile(r'^Chars ([0-9]+) - ([0-9]+) ([^ ]+) ([0-9\.]+) secs (.*)$', re.MULTILINE)
     times = reg.findall(lines)
@@ -101,7 +103,7 @@ def from_seconds(seconds, signed=False):
     '''
     sign = ('-' if seconds < 0 else '+') if signed else ''
     seconds = abs(seconds)
-    minutes = int(seconds) / 60
+    minutes = int(seconds) // 60
     seconds -= minutes * 60
     full_seconds = int(seconds)
     partial_seconds = int(100 * (seconds - full_seconds))
@@ -112,7 +114,8 @@ def sum_times(times, signed=False):
     Takes the values of an output from get_times, parses the time
     strings, and returns their sum, in the same string format.
     '''
-    return from_seconds(sum(map(to_seconds, times)), signed=signed)
+    # sort the times before summing because floating point addition is not associative
+    return from_seconds(sum(sorted(map(to_seconds, times))), signed=signed)
 
 def format_percentage(num, signed=True):
     sign = ('-' if num < 0 else '+') if signed else ''
@@ -153,8 +156,8 @@ def make_diff_table_string(left_times_dict, right_times_dict,
     # set the widths of each of the columns by the longest thing to go in that column
     left_sum = sum_times(left_times_dict.values())
     right_sum = sum_times(right_times_dict.values())
-    left_sum_float = sum(map(to_seconds, left_times_dict.values()))
-    right_sum_float = sum(map(to_seconds, right_times_dict.values()))
+    left_sum_float = sum(sorted(map(to_seconds, left_times_dict.values())))
+    right_sum_float = sum(sorted(map(to_seconds, right_times_dict.values())))
     diff_sum = from_seconds(left_sum_float - right_sum_float, signed=True)
     percent_diff_sum = (format_percentage((left_sum_float - right_sum_float) / right_sum_float)
                         if right_sum_float > 0 else 'N/A')
@@ -206,5 +209,5 @@ def print_or_write_table(table, files):
         print(table)
     for file_name in files:
         if file_name != '-':
-            with open(file_name, 'w') as f:
+            with open(file_name, 'w', encoding="utf-8") as f:
                 f.write(table)
