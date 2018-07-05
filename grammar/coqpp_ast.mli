@@ -13,14 +13,22 @@ type loc = {
 
 type code = { code : string }
 
+type user_symbol =
+| Ulist1 of user_symbol
+| Ulist1sep of user_symbol * string
+| Ulist0 of user_symbol
+| Ulist0sep of user_symbol * string
+| Uopt of user_symbol
+| Uentry of string
+| Uentryl of string * int
+
 type token_data =
 | TokNone
 | TokName of string
-| TokNameSep of string * string
 
 type ext_token =
 | ExtTerminal of string
-| ExtNonTerminal of string * token_data
+| ExtNonTerminal of user_symbol * token_data
 
 type tactic_rule = {
   tac_toks : ext_token list;
@@ -70,11 +78,18 @@ type grammar_ext = {
   gramext_entries : grammar_entry list;
 }
 
+type tactic_ext = {
+  tacext_name : string;
+  tacext_level : int option;
+  tacext_rules : tactic_rule list;
+}
+
 type node =
 | Code of code
 | Comment of string
+| DeclarePlugin of string
 | GramExt of grammar_ext
 | VernacExt
-| TacticExt of string * tactic_rule list
+| TacticExt of tactic_ext
 
 type t = node list

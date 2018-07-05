@@ -55,6 +55,8 @@ let string_split s =
   in
   if len == 0 then [] else split 0
 
+let plugin_name = "__coq_plugin_name"
+
 module GramExt :
 sig
 
@@ -82,42 +84,42 @@ let get_local_entries ext =
   in
   uniquize StringSet.empty local
 
-let print_local chan ext =
+let print_local fmt ext =
   let locals = get_local_entries ext in
   match locals with
   | [] -> ()
   | e :: locals ->
-    let mk_e chan e = fprintf chan "%s.Entry.create \"%s\"" ext.gramext_name e in
-    let () = fprintf chan "@[<hv 2>let %s =@ @[%a@]@]@ " e mk_e e in
-    let iter e = fprintf chan "@[<hv 2>and %s =@ @[%a@]@]@ " e mk_e e in
+    let mk_e fmt e = fprintf fmt "%s.Entry.create \"%s\"" ext.gramext_name e in
+    let () = fprintf fmt "@[<hv 2>let %s =@ @[%a@]@]@ " e mk_e e in
+    let iter e = fprintf fmt "@[<hv 2>and %s =@ @[%a@]@]@ " e mk_e e in
     let () = List.iter iter locals in
-    fprintf chan "in@ "
+    fprintf fmt "in@ "
 
-let print_string chan s = fprintf chan "\"%s\"" s
+let print_string fmt s = fprintf fmt "\"%s\"" s
 
-let print_list chan pr l =
-  let rec prl chan = function
+let print_list fmt pr l =
+  let rec prl fmt = function
   | [] -> ()
-  | [x] -> fprintf chan "%a" pr x
-  | x :: l -> fprintf chan "%a;@ %a" pr x prl l
+  | [x] -> fprintf fmt "%a" pr x
+  | x :: l -> fprintf fmt "%a;@ %a" pr x prl l
   in
-  fprintf chan "@[<hv>[%a]@]" prl l
+  fprintf fmt "@[<hv>[%a]@]" prl l
 
-let print_opt chan pr = function
-| None -> fprintf chan "None"
-| Some x -> fprintf chan "Some@ (%a)" pr x
+let print_opt fmt pr = function
+| None -> fprintf fmt "None"
+| Some x -> fprintf fmt "Some@ (%a)" pr x
 
-let print_position chan pos = match pos with
-| First -> fprintf chan "Extend.First"
-| Last -> fprintf chan "Extend.Last"
-| Before s -> fprintf chan "Extend.Before@ \"%s\"" s
-| After s -> fprintf chan "Extend.After@ \"%s\"" s
-| Level s -> fprintf chan "Extend.Level@ \"%s\"" s
+let print_position fmt pos = match pos with
+| First -> fprintf fmt "Extend.First"
+| Last -> fprintf fmt "Extend.Last"
+| Before s -> fprintf fmt "Extend.Before@ \"%s\"" s
+| After s -> fprintf fmt "Extend.After@ \"%s\"" s
+| Level s -> fprintf fmt "Extend.Level@ \"%s\"" s
 
-let print_assoc chan = function
-| LeftA -> fprintf chan "Extend.LeftA"
-| RightA -> fprintf chan "Extend.RightA"
-| NonA -> fprintf chan "Extend.NonA"
+let print_assoc fmt = function
+| LeftA -> fprintf fmt "Extend.LeftA"
+| RightA -> fprintf fmt "Extend.RightA"
+| NonA -> fprintf fmt "Extend.NonA"
 
 type symb =
 | SymbToken of string * string option
@@ -171,111 +173,166 @@ let rec parse_tokens = function
 
 and parse_token tkn = parse_tokens [tkn]
 
-let print_fun chan (vars, body) =
+let print_fun fmt (vars, body) =
   let vars = List.rev vars in
   let iter = function
-  | None -> fprintf chan "_@ "
-  | Some id -> fprintf chan "%s@ " id
+  | None -> fprintf fmt "_@ "
+  | Some id -> fprintf fmt "%s@ " id
   in
-  let () = fprintf chan "fun@ " in
+  let () = fprintf fmt "fun@ " in
   let () = List.iter iter vars in
   (** FIXME: use Coq locations in the macros *)
-  let () = fprintf chan "loc ->@ @[%s@]" body.code in
+  let () = fprintf fmt "loc ->@ @[%s@]" body.code in
   ()
 
 (** Meta-program instead of calling Tok.of_pattern here because otherwise
     violates value restriction *)
-let print_tok chan = function
-| "", s -> fprintf chan "Tok.KEYWORD %a" print_string s
-| "IDENT", s -> fprintf chan "Tok.IDENT %a" print_string s
-| "PATTERNIDENT", s -> fprintf chan "Tok.PATTERNIDENT %a" print_string s
-| "FIELD", s -> fprintf chan "Tok.FIELD %a" print_string s
-| "INT", s -> fprintf chan "Tok.INT %a" print_string s
-| "STRING", s -> fprintf chan "Tok.STRING %a" print_string s
-| "LEFTQMARK", _ -> fprintf chan "Tok.LEFTQMARK"
-| "BULLET", s -> fprintf chan "Tok.BULLET %a" print_string s
-| "EOI", _ -> fprintf chan "Tok.EOI"
+let print_tok fmt = function
+| "", s -> fprintf fmt "Tok.KEYWORD %a" print_string s
+| "IDENT", s -> fprintf fmt "Tok.IDENT %a" print_string s
+| "PATTERNIDENT", s -> fprintf fmt "Tok.PATTERNIDENT %a" print_string s
+| "FIELD", s -> fprintf fmt "Tok.FIELD %a" print_string s
+| "INT", s -> fprintf fmt "Tok.INT %a" print_string s
+| "STRING", s -> fprintf fmt "Tok.STRING %a" print_string s
+| "LEFTQMARK", _ -> fprintf fmt "Tok.LEFTQMARK"
+| "BULLET", s -> fprintf fmt "Tok.BULLET %a" print_string s
+| "EOI", _ -> fprintf fmt "Tok.EOI"
 | _ -> failwith "Tok.of_pattern: not a constructor"
 
-let rec print_prod chan p =
+let rec print_prod fmt p =
   let (vars, tkns) = List.split p.gprod_symbs in
   let f = (vars, p.gprod_body) in
   let tkn = List.rev_map parse_tokens tkns in
-  fprintf chan "@[Extend.Rule@ (@[%a@],@ @[(%a)@])@]" print_symbols tkn print_fun f
+  fprintf fmt "@[Extend.Rule@ (@[%a@],@ @[(%a)@])@]" print_symbols tkn print_fun f
 
-and print_symbols chan = function
-| [] -> fprintf chan "Extend.Stop"
+and print_symbols fmt = function
+| [] -> fprintf fmt "Extend.Stop"
 | tkn :: tkns ->
-  fprintf chan "Extend.Next @[(%a,@ %a)@]" print_symbols tkns print_symbol tkn
+  fprintf fmt "Extend.Next @[(%a,@ %a)@]" print_symbols tkns print_symbol tkn
 
-and print_symbol chan tkn = match tkn with
+and print_symbol fmt tkn = match tkn with
 | SymbToken (t, s) ->
   let s = match s with None -> "" | Some s -> s in
-  fprintf chan "(Extend.Atoken (%a))" print_tok (t, s)
+  fprintf fmt "(Extend.Atoken (%a))" print_tok (t, s)
 | SymbEntry (e, None) ->
-  fprintf chan "(Extend.Aentry %s)" e
+  fprintf fmt "(Extend.Aentry %s)" e
 | SymbEntry (e, Some l) ->
-  fprintf chan "(Extend.Aentryl (%s, %a))" e print_string l
+  fprintf fmt "(Extend.Aentryl (%s, %a))" e print_string l
 | SymbSelf ->
-  fprintf chan "Extend.Aself"
+  fprintf fmt "Extend.Aself"
 | SymbNext ->
-  fprintf chan "Extend.Anext"
+  fprintf fmt "Extend.Anext"
 | SymbList0 (s, None) ->
-  fprintf chan "(Extend.Alist0 %a)" print_symbol s
+  fprintf fmt "(Extend.Alist0 %a)" print_symbol s
 | SymbList0 (s, Some sep) ->
-  fprintf chan "(Extend.Alist0sep (%a, %a))" print_symbol s print_symbol sep
+  fprintf fmt "(Extend.Alist0sep (%a, %a))" print_symbol s print_symbol sep
 | SymbList1 (s, None) ->
-  fprintf chan "(Extend.Alist1 %a)" print_symbol s
+  fprintf fmt "(Extend.Alist1 %a)" print_symbol s
 | SymbList1 (s, Some sep) ->
-  fprintf chan "(Extend.Alist1sep (%a, %a))" print_symbol s print_symbol sep
+  fprintf fmt "(Extend.Alist1sep (%a, %a))" print_symbol s print_symbol sep
 | SymbOpt s ->
-  fprintf chan "(Extend.Aopt %a)" print_symbol s
+  fprintf fmt "(Extend.Aopt %a)" print_symbol s
 | SymbRules rules ->
-  let pr chan (r, body) =
+  let pr fmt (r, body) =
     let (vars, tkn) = List.split r in
     let tkn = List.rev tkn in
-    fprintf chan "Extend.Rules @[({ Extend.norec_rule = %a },@ (%a))@]" print_symbols tkn print_fun (vars, body)
+    fprintf fmt "Extend.Rules @[({ Extend.norec_rule = %a },@ (%a))@]" print_symbols tkn print_fun (vars, body)
   in
-  let pr chan rules = print_list chan pr rules in
-  fprintf chan "(Extend.Arules %a)" pr (List.rev rules)
+  let pr fmt rules = print_list fmt pr rules in
+  fprintf fmt "(Extend.Arules %a)" pr (List.rev rules)
 
-let print_rule chan r =
-  let pr_lvl chan lvl = print_opt chan print_string lvl in
-  let pr_asc chan asc = print_opt chan print_assoc asc in
-  let pr_prd chan prd = print_list chan print_prod prd in
-  fprintf chan "@[(%a,@ %a,@ %a)@]" pr_lvl r.grule_label pr_asc r.grule_assoc pr_prd (List.rev r.grule_prods)
+let print_rule fmt r =
+  let pr_lvl fmt lvl = print_opt fmt print_string lvl in
+  let pr_asc fmt asc = print_opt fmt print_assoc asc in
+  let pr_prd fmt prd = print_list fmt print_prod prd in
+  fprintf fmt "@[(%a,@ %a,@ %a)@]" pr_lvl r.grule_label pr_asc r.grule_assoc pr_prd (List.rev r.grule_prods)
 
-let print_entry chan gram e =
-  let print_position_opt chan pos = print_opt chan print_position pos in
-  let print_rules chan rules = print_list chan print_rule rules in
-  fprintf chan "let () =@ @[%s.safe_extend@ %s@ @[(%a, %a)@]@]@ in@ "
+let print_entry fmt gram e =
+  let print_position_opt fmt pos = print_opt fmt print_position pos in
+  let print_rules fmt rules = print_list fmt print_rule rules in
+  fprintf fmt "let () =@ @[%s.safe_extend@ %s@ @[(%a, %a)@]@]@ in@ "
     gram e.gentry_name print_position_opt e.gentry_pos print_rules e.gentry_rules
 
-let print_ast chan ext =
-  let () = fprintf chan "let _ = @[" in
-  let () = fprintf chan "@[<v>%a@]" print_local ext in
-  let () = List.iter (fun e -> print_entry chan ext.gramext_name e) ext.gramext_entries in
-  let () = fprintf chan "()@]\n" in
+let print_ast fmt ext =
+  let () = fprintf fmt "let _ = @[" in
+  let () = fprintf fmt "@[<v>%a@]" print_local ext in
+  let () = List.iter (fun e -> print_entry fmt ext.gramext_name e) ext.gramext_entries in
+  let () = fprintf fmt "()@]@\n" in
   ()
 
 end
 
-let pr_ast chan = function
-| Code s -> fprintf chan "%s@\n" s.code
-| Comment s -> fprintf chan "%s@\n" s
-| GramExt gram -> fprintf chan "%a@\n" GramExt.print_ast gram
-| VernacExt -> fprintf chan "VERNACEXT@\n"
-| TacticExt (id, rules) ->
-  let pr_tok = function
-  | ExtTerminal s -> Printf.sprintf "%s" s
-  | ExtNonTerminal (s, _) -> Printf.sprintf "%s" s
+module TacticExt :
+sig
+
+val print_ast : Format.formatter -> tactic_ext -> unit
+
+end =
+struct
+
+let rec print_symbol fmt = function
+| Ulist1 s ->
+  fprintf fmt "@[Extend.TUlist1 (%a)@]" print_symbol s
+| Ulist1sep (s, sep) ->
+  fprintf fmt "@[Extend.TUlist1sep (%a, \"%s\")@]" print_symbol s sep
+| Ulist0 s ->
+  fprintf fmt "@[Extend.TUlist0 (%a)@]" print_symbol s
+| Ulist0sep (s, sep) ->
+  fprintf fmt "@[Extend.TUlist0sep (%a, \"%s\")@]" print_symbol s sep
+| Uopt s ->
+  fprintf fmt "@[Extend.TUopt (%a)@]" print_symbol s
+| Uentry e ->
+  fprintf fmt "@[Extend.TUentry (Genarg.get_arg_tag wit_%s)@]" e
+| Uentryl (e, l) ->
+  assert (e = "tactic");
+  fprintf fmt "@[Extend.TUentryl (Genarg.get_arg_tag wit_%s, %i)@]" e l
+
+let rec print_clause fmt = function
+| [] -> fprintf fmt "@[TyNil@]"
+| ExtTerminal s :: cl -> fprintf fmt "@[TyIdent (\"%s\", %a)@]" s print_clause cl
+| ExtNonTerminal (g, TokNone) :: cl ->
+  fprintf fmt "@[TyAnonArg (%a, %a)@]"
+    print_symbol g print_clause cl
+| ExtNonTerminal (g, TokName id) :: cl ->
+  fprintf fmt "@[TyArg (%a, \"%s\", %a)@]"
+    print_symbol g id print_clause cl
+
+let rec print_binders fmt = function
+| [] -> fprintf fmt "ist@ "
+| (ExtTerminal _ | ExtNonTerminal (_, TokNone)) :: rem -> print_binders fmt rem
+| (ExtNonTerminal (_, TokName id)) :: rem ->
+  fprintf fmt "%s@ %a" id print_binders rem
+
+let print_rule fmt r =
+  fprintf fmt "@[TyML (%a, @[fun %a -> %s@])@]"
+    print_clause r.tac_toks print_binders r.tac_toks r.tac_body.code
+
+let rec print_rules fmt = function
+| [] -> ()
+| [r] -> fprintf fmt "(%a)@\n" print_rule r
+| r :: rem -> fprintf fmt "(%a);@\n%a" print_rule r print_rules rem
+
+let print_rules fmt rules =
+  fprintf fmt "Tacentries.([@[<v>%a@]])" print_rules rules
+
+let print_ast fmt ext =
+  let pr fmt () =
+    let level = match ext.tacext_level with None -> 0 | Some i -> i in
+    fprintf fmt "Tacentries.tactic_extend %s \"%s\" ~level:%i %a"
+      plugin_name ext.tacext_name level print_rules ext.tacext_rules
   in
-  let pr_tacrule r =
-    let toks = String.concat " " (List.map pr_tok r.tac_toks) in
-    Printf.sprintf "[%s] -> {%s}" toks r.tac_body.code
-  in
-  let rules = String.concat ", " (List.map pr_tacrule rules) in
-  fprintf chan "TACTICEXT (%s, [%s])@\n" id rules
+  let () = fprintf fmt "let () = @[%a@]\n" pr () in
+  ()
+
+end
+
+let pr_ast fmt = function
+| Code s -> fprintf fmt "%s@\n" s.code
+| Comment s -> fprintf fmt "%s@\n" s
+| DeclarePlugin name -> fprintf fmt "let %s = \"%s\"@\n" plugin_name name
+| GramExt gram -> fprintf fmt "%a@\n" GramExt.print_ast gram
+| VernacExt -> fprintf fmt "VERNACEXT@\n"
+| TacticExt tac -> fprintf fmt "%a@\n" TacticExt.print_ast tac
 
 let () =
   let () =

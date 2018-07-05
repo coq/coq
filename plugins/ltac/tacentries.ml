@@ -554,13 +554,18 @@ let () =
   ] in
   register_grammars_by_name "tactic" entries
 
+let get_identifier id =
+  (** Workaround for badly-designed generic arguments lacking a closure *)
+  Names.Id.of_string_soft ("$" ^ id)
+
+
 type _ ty_sig =
 | TyNil : (Geninterp.interp_sign -> unit Proofview.tactic) ty_sig
 | TyIdent : string * 'r ty_sig -> 'r ty_sig
 | TyArg :
-  (('a, 'b, 'c) Extend.ty_user_symbol * Id.t) Loc.located * 'r ty_sig -> ('c -> 'r) ty_sig
+  ('a, 'b, 'c) Extend.ty_user_symbol * string * 'r ty_sig -> ('c -> 'r) ty_sig
 | TyAnonArg :
-  ('a, 'b, 'c) Extend.ty_user_symbol Loc.located * 'r ty_sig -> 'r ty_sig
+  ('a, 'b, 'c) Extend.ty_user_symbol * 'r ty_sig -> 'r ty_sig
 
 type ty_ml = TyML : 'r ty_sig * 'r -> ty_ml
 
@@ -578,10 +583,11 @@ let rec clause_of_sign : type a. a ty_sig -> Genarg.ArgT.any Extend.user_symbol 
   fun sign -> match sign with
   | TyNil -> []
   | TyIdent (s, sig') -> TacTerm s :: clause_of_sign sig'
-  | TyArg ((loc,(a,id)),sig') ->
-    TacNonTerm (loc,(untype_user_symbol a,Some id)) :: clause_of_sign sig'
-  | TyAnonArg ((loc,a),sig') ->
-    TacNonTerm (loc,(untype_user_symbol a,None)) :: clause_of_sign sig'
+  | TyArg (a, id, sig') ->
+    let id = get_identifier id in
+    TacNonTerm (None,(untype_user_symbol a,Some id)) :: clause_of_sign sig'
+  | TyAnonArg (a, sig') ->
+    TacNonTerm (None,(untype_user_symbol a,None)) :: clause_of_sign sig'
 
 let clause_of_ty_ml = function
   | TyML (t,_) -> clause_of_sign t
@@ -604,7 +610,7 @@ let rec eval_sign : type a. a ty_sig -> a -> Geninterp.Val.t list -> Geninterp.i
       | _ :: _ -> assert false
       end
     | TyIdent (s, sig') -> eval_sign sig' tac
-    | TyArg ((_loc,(a,id)), sig') ->
+    | TyArg (a, _, sig') ->
       let f = eval_sign sig' in
       begin fun tac vals ist -> match vals with
       | [] -> assert false
@@ -612,7 +618,7 @@ let rec eval_sign : type a. a ty_sig -> a -> Geninterp.Val.t list -> Geninterp.i
         let v' = Taccoerce.Value.cast (topwit (prj a)) v in
         f (tac v') vals ist
       end tac
-    | TyAnonArg ((_loc,a), sig') -> eval_sign sig' tac
+    | TyAnonArg (a, sig') -> eval_sign sig' tac
 
 let eval : ty_ml -> Geninterp.Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic = function
   | TyML (t,tac) -> eval_sign t tac
@@ -624,14 +630,14 @@ let is_constr_entry = function
 let rec only_constr : type a. a ty_sig -> bool = function
 | TyNil -> true
 | TyIdent(_,_) -> false
-| TyArg((_,(u,_)),s) -> if is_constr_entry u then only_constr s else false
-| TyAnonArg((_,u),s) -> if is_constr_entry u then only_constr s else false
+| TyArg (u, _, s) -> if is_constr_entry u then only_constr s else false
+| TyAnonArg (u, s) -> if is_constr_entry u then only_constr s else false
 
 let rec mk_sign_vars : type a. a ty_sig -> Name.t list = function
 | TyNil -> []
 | TyIdent (_,s) -> mk_sign_vars s
-| TyArg((_,(_,name)),s) -> Name name :: mk_sign_vars s
-| TyAnonArg((_,_),s) -> Anonymous :: mk_sign_vars s
+| TyArg (_, name, s) -> Name (get_identifier name) :: mk_sign_vars s
+| TyAnonArg (_, s) -> Anonymous :: mk_sign_vars s
 
 let dummy_id = Id.of_string "_"
 

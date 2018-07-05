@@ -8,22 +8,25 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Ltac_plugin
-open Cctac
+(************************************************************************)
+(*                              EqDecide                               *)
+(*   A tactic for deciding propositional equality on inductive types   *)
+(*                           by Eduardo Gimenez                        *)
+(************************************************************************)
+
+{
+
+open Eqdecide
 open Stdarg
 
-DECLARE PLUGIN "cc_plugin"
+}
 
-(* Tactic registration *)
+DECLARE PLUGIN "ltac_plugin"
 
-TACTIC EXTEND cc
- [ "congruence" ] -> [ congruence_tac 1000 [] ]
- |[ "congruence" integer(n) ] -> [ congruence_tac n [] ]
- |[ "congruence" "with" ne_constr_list(l) ] -> [ congruence_tac 1000 l ]
- |[ "congruence" integer(n) "with" ne_constr_list(l) ] ->
-   [ congruence_tac n l ]
+TACTIC EXTEND decide_equality
+| [ "decide" "equality" ] -> { decideEqualityGoal }
 END
 
-TACTIC EXTEND f_equal
- [ "f_equal" ] -> [ f_equal ]
+TACTIC EXTEND compare
+| [ "compare" constr(c1) constr(c2) ] -> { compare c1 c2 }
 END

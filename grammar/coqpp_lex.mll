@@ -83,6 +83,7 @@ let alphanum = ['_' 'a'-'z' 'A'-'Z' '0'-'9' '\'']
 let ident = letterlike alphanum*
 let qualid = ident ('.' ident)*
 let space = [' ' '\t' '\r']
+let number = [ '0'-'9' ]
 
 rule extend = parse
 | "(*" { start_comment (); comment lexbuf }
@@ -92,6 +93,8 @@ rule extend = parse
 | "TACTIC" { TACTIC }
 | "EXTEND" { EXTEND }
 | "END" { END }
+| "DECLARE" { DECLARE }
+| "PLUGIN" { PLUGIN }
 (** Camlp5 specific keywords *)
 | "GLOBAL" { GLOBAL }
 | "FIRST" { FIRST }
@@ -105,6 +108,7 @@ rule extend = parse
 (** Standard *)
 | ident { IDENT (Lexing.lexeme lexbuf) }
 | qualid { QUALID (Lexing.lexeme lexbuf) }
+| number { INT (int_of_string (Lexing.lexeme lexbuf)) }
 | space { extend lexbuf }
 | '\"' { string lexbuf }
 | '\n' { newline lexbuf; extend lexbuf }

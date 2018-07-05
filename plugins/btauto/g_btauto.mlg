@@ -8,11 +8,15 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+{
+
 open Ltac_plugin
+
+}
 
 DECLARE PLUGIN "btauto_plugin"
 
 TACTIC EXTEND btauto
-| [ "btauto" ] -> [ Refl_btauto.Btauto.tac ]
+| [ "btauto" ] -> { Refl_btauto.Btauto.tac }
 END
 

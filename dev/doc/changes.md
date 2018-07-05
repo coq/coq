@@ -95,19 +95,73 @@ Primitive number parsers
 
 ### Transitioning away from Camlp5
 
-In an effort to reduce dependency on Camlp5, the use of Camlp5 GEXTEND macro
-is discouraged. Most plugin writers do not need this low-level interface, but
-for those who do, the transition path is somewhat straightforward. To convert
-a ml4 file containing only standard OCaml with GEXTEND statements, the following
-should be enough:
-- replace its "ml4" extension with "mlg"
-- replace GEXTEND with GRAMMAR EXTEND
-- wrap every occurrence of OCaml code into braces { }
+In an effort to reduce dependency on camlp5, the use of several grammar macros
+is discouraged. Coq is now shipped with its own preprocessor, called coqpp,
+which serves the same purpose as camlp5.
+
+To perform the transition to coqpp macros, one first needs to change the
+extension of a macro file from `.ml4` to `.mlg`. Not all camlp5 macros are
+handled yet.
+
+Due to parsing constraints, the syntax of the macros is slightly different, but
+updating the source code is mostly a matter of straightforward
+search-and-replace. The main differences are summarized below.
+
+#### OCaml code
+
+Every piece of toplevel OCaml code needs to be wrapped into braces.
 
 For instance, code of the form
 ```
 let myval = 0
+```
+should be turned into
+```
+{
+let myval = 0
+}
+```
 
+#### TACTIC EXTEND
+
+Steps to perform:
+- replace the brackets enclosing OCaml code in actions with braces
+- if not there yet, add a leading `|̀  to the first rule
+
+For instance, code of the form:
+```
+TACTIC EXTEND my_tac
+  [ "tac1" int_or_var(i) tactic(t) ] -> [ mytac1 ist i t ]
+| [ "tac2" tactic(t) ] -> [ mytac2 t ]
+END
+```
+should be turned into
+```
+TACTIC EXTEND my_tac
+| [ "tac1" int_or_var(i) tactic(t) ] -> { mytac1 ist i t }
+| [ "tac2" tactic(t) ] -> { mytac2 t }
+END
+```
+
+#### VERNAC EXTEND
+
+Not handled yet.
+
+#### ARGUMENT EXTEND
+
+Not handled yet.
+
+#### GEXTEND
+
+Most plugin writers do not need this low-level interface, but for the sake of
+completeness we document it.
+
+Steps to perform are:
+- replace GEXTEND with GRAMMAR EXTEND
+- wrap every occurrence of OCaml code in actions into braces { }
+
+For instance, code of the form
+```
 GEXTEND Gram
    GLOBAL: my_entry;
 
@@ -119,10 +173,6 @@ END
 ```
 should be turned into
 ```
-{
-let myval = 0
-}
-
 GRAMMAR EXTEND Gram
    GLOBAL: my_entry;
 
@@ -133,9 +183,12 @@ my_entry:
 END
 ```
 
-Currently mlg files can only contain GRAMMAR EXTEND statements. They do not
-support TACTIC, VERNAC nor ARGUMENT EXTEND. In case you have a file containing
-both kinds at the same time, it is recommended splitting it in two.
+Caveats:
+- No `GLOBAL` entries mean that they are all local, while camlp5 special-cases
+  this as a shorthand for all global entries. Solution: always define a `GLOBAL`
+  section.
+- No complex patterns allowed in token naming. Solution: match on it inside the
+  OCaml quotation.
 
 ## Changes between Coq 8.7 and Coq 8.8
 

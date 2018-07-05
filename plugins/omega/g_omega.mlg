@@ -18,6 +18,8 @@
 
 DECLARE PLUGIN "omega_plugin"
 
+{
+
 open Ltac_plugin
 open Names
 open Coq_omega
@@ -43,14 +45,15 @@ let omega_tactic l =
     (Tacticals.New.tclREPEAT (Tacticals.New.tclTHENLIST tacs))
     (omega_solver)
 
+}
 
 TACTIC EXTEND omega
-|  [ "omega" ] -> [ omega_tactic [] ]
+|  [ "omega" ] -> { omega_tactic [] }
 END
 
 TACTIC EXTEND omega'
 | [ "omega" "with" ne_ident_list(l) ] ->
-    [ omega_tactic (List.map Names.Id.to_string l) ]
-| [ "omega" "with" "*" ] -> [ omega_tactic ["nat";"positive";"N";"Z"] ]
+    { omega_tactic (List.map Names.Id.to_string l) }
+| [ "omega" "with" "*" ] -> { omega_tactic ["nat";"positive";"N";"Z"] }
 END
 
