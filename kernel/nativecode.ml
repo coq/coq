@@ -1683,6 +1683,10 @@ let string_of_accu_construct prefix ind =
 let pp_int fmt i =
   if i < 0 then Format.fprintf fmt "(%i)" i else Format.fprintf fmt "%i" i
 
+let rec pp_arity fmt n =
+  if Int.equal n 0 then Format.fprintf fmt "Nativevalues.t"
+  else Format.fprintf fmt "_ -> %a" pp_arity (n - 1)
+
 let pp_mllam fmt l =
 
   let rec pp_mllam fmt l =
@@ -1692,7 +1696,7 @@ let pp_mllam fmt l =
     | MLprimitive (p, args) ->
       Format.fprintf fmt "@[%a@ %a@]" pp_primitive p (pp_args true) args
     | MLlam(ids,body) ->
-        Format.fprintf fmt "@[(fun%a@ ->@\n %a)@]"
+        Format.fprintf fmt "@[(Obj.magic (fun%a@ ->@\n %a) : Nativevalues.t)@]"
           pp_ldecls ids pp_mllam body
     | MLletrec(defs, body) ->
         Format.fprintf fmt "@[(%a@ in@\n%a)@]" pp_letrec defs
@@ -1701,7 +1705,7 @@ let pp_mllam fmt l =
         Format.fprintf fmt "@[(let@ %a@ =@\n %a@ in@\n%a)@]"
           pp_lname id pp_mllam def pp_mllam body
     | MLapp(f, args) ->
-        Format.fprintf fmt "@[%a@ %a@]" pp_mllam f (pp_args true) args
+        Format.fprintf fmt "@[(Obj.magic %a : %a) %a@]" pp_mllam f pp_arity (Array.length args) (pp_args true) args
     | MLif(t,l1,l2) ->
         Format.fprintf fmt "@[(if %a then@\n  %a@\nelse@\n  %a)@]"
           pp_mllam t pp_mllam l1 pp_mllam l2
