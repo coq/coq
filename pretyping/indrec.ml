@@ -86,7 +86,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
     if not (Sorts.List.mem kind (elim_sorts specif)) then
       raise
 	(RecursionSchemeError
-           (NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family env kind), pind)))
+           (NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
   in
   let ndepar = mip.mind_nrealdecls + 1 in
 
@@ -136,7 +136,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
       mkLambda_string "f" t
 	(add_branch (push_rel (LocalAssum (Anonymous, t)) env) (k+1))
   in
-  let (sigma, s) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg env sigma kind in
+  let (sigma, s) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma kind in
   let typP = make_arity env' sigma dep indf s in
   let typP = EConstr.Unsafe.to_constr typP in
   let c = 
@@ -455,7 +455,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
       | ((indi,u),_,_,dep,kinds)::rest ->
 	  let indf = make_ind_family ((indi,u), Context.Rel.to_extended_list mkRel i lnamesparrec) in
 	  let s = 
-	    Evarutil.evd_comb1 (Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg env) 
+            Evarutil.evd_comb1 (Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg)
 	      evdref kinds 
 	  in
 	  let typP = make_arity env !evdref dep indf s in
@@ -550,8 +550,7 @@ let check_arities env listdepkind =
        let kelim = elim_sorts (mibi,mipi) in
        if not (Sorts.List.mem kind kelim) then raise
 	 (RecursionSchemeError
-          (NotAllowedCaseAnalysis (true, fst (UnivGen.fresh_sort_in_family env
-					      kind),(mind,u))))
+          (NotAllowedCaseAnalysis (true, fst (UnivGen.fresh_sort_in_family kind),(mind,u))))
        else if Int.List.mem ni ln then raise
 	 (RecursionSchemeError (NotMutualInScheme (mind,mind)))
        else ni::ln)

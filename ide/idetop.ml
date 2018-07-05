@@ -151,7 +151,7 @@ let hyp_next_tac sigma env decl =
     ("inversion clear "^id_s), ("inversion_clear "^id_s^".")
   ]
 
-let concl_next_tac sigma concl =
+let concl_next_tac =
   let expand s = (s,s^".") in
   List.map expand ([
     "intro";
@@ -230,10 +230,9 @@ let hints () =
     | [] -> None
     | g :: _ ->
       let env = Goal.V82.env sigma g in
-      let hint_goal = concl_next_tac sigma g in
       let get_hint_hyp env d accu = hyp_next_tac sigma env d :: accu in
       let hint_hyps = List.rev (Environ.fold_named_context get_hint_hyp env ~init: []) in
-      Some (hint_hyps, hint_goal)
+      Some (hint_hyps, concl_next_tac)
   with Proof_global.NoCurrentProof -> None
 
 

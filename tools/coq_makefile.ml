@@ -218,7 +218,7 @@ let windrive s =
   else ""
 ;;
 
-let generate_conf_coq_config oc args =
+let generate_conf_coq_config oc =
   section oc "Coq configuration.";
   let src_dirs = Coq_config.all_src_dirs in
   Envars.print_config ~prefix_var_name:"COQMF_" oc src_dirs;
@@ -282,7 +282,7 @@ let generate_conf oc project args  =
   fprintf oc "# %s\n\n" (String.concat " " (List.map quote args));
   generate_conf_files oc project;
   generate_conf_includes oc project;
-  generate_conf_coq_config oc args;
+  generate_conf_coq_config oc;
   generate_conf_defs oc project;
   generate_conf_doc oc project;
   generate_conf_extra_target oc project.extra_targets;

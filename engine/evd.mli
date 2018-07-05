@@ -340,8 +340,6 @@ val shelve_on_future_goals : Evar.t list -> future_goals -> future_goals
     Evar maps also keep track of the universe constraints defined at a given
     point. This section defines the relevant manipulation functions. *)
 
-val whd_sort_variable : evar_map -> econstr -> econstr
-
 exception UniversesDiffer
 
 val add_universe_constraints : evar_map -> UnivProblem.Set.t -> evar_map
@@ -598,7 +596,7 @@ val update_sigma_env : evar_map -> env -> evar_map
 
 (** Polymorphic universes *)
 
-val fresh_sort_in_family : ?loc:Loc.t -> ?rigid:rigid -> env -> evar_map -> Sorts.family -> evar_map * Sorts.t
+val fresh_sort_in_family : ?loc:Loc.t -> ?rigid:rigid -> evar_map -> Sorts.family -> evar_map * Sorts.t
 val fresh_constant_instance : ?loc:Loc.t -> env -> evar_map -> Constant.t -> evar_map * pconstant
 val fresh_inductive_instance : ?loc:Loc.t -> env -> evar_map -> inductive -> evar_map * pinductive
 val fresh_constructor_instance : ?loc:Loc.t -> env -> evar_map -> constructor -> evar_map * pconstructor

@@ -23,7 +23,7 @@ val make_opt_subst : universe_opt_subst -> universe_subst_fn
 val subst_opt_univs_constr : universe_opt_subst -> constr -> constr
 
 val normalize_univ_variables : universe_opt_subst ->
-  universe_opt_subst * LSet.t * LSet.t * universe_subst
+  universe_opt_subst * LSet.t * universe_subst
 
 val normalize_univ_variable :
   find:(Level.t -> Universe.t) ->

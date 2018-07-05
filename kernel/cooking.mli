@@ -10,7 +10,6 @@
 
 open Constr
 open Declarations
-open Environ
 
 (** {6 Cooking the constants. } *)
 
@@ -26,7 +25,7 @@ type result = {
   cook_context : Constr.named_context option;
 }
 
-val cook_constant : hcons:bool -> env -> recipe -> result
+val cook_constant : hcons:bool -> recipe -> result
 val cook_constr : Opaqueproof.cooking_info -> constr -> constr
 
 (** {6 Utility functions used in module [Discharge]. } *)

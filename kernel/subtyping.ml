@@ -224,7 +224,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
     cst
 
     
-let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 = 
+let check_constant cst env l info1 cb2 spec2 subst1 subst2 =
   let error why = error_signature_mismatch l spec2 why in
   let check_conv cst poly f = check_conv_error error cst poly f in
   let check_type poly cst env t1 t2 =
@@ -292,7 +292,7 @@ and check_signatures cst env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2=
   let check_one_body cst (l,spec2) =
     match spec2 with
 	| SFBconst cb2 ->
-	    check_constant cst env mp1 l (get_obj mp1 map1 l)
+            check_constant cst env l (get_obj mp1 map1 l)
 	      cb2 spec2 subst1 subst2
 	| SFBmind mib2 ->
 	    check_inductive cst env mp1 l (get_obj mp1 map1 l)

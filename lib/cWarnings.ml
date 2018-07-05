@@ -120,7 +120,7 @@ let uniquize_flags_rev flags =
 
 (** [normalize_flags] removes redundant warnings. Unknown warnings are kept
     because they may be declared in a plugin that will be linked later. *)
-let normalize_flags ~silent warnings =
+let normalize_flags warnings =
   let warnings = cut_before_all_rev warnings in
   uniquize_flags_rev warnings
 
@@ -130,7 +130,7 @@ let normalize_flags_string s =
   if is_none_keyword s then s
   else
     let flags = flags_of_string s in
-    let flags = normalize_flags ~silent:false flags in
+    let flags = normalize_flags flags in
     string_of_flags flags
 
 let parse_warnings items =
@@ -146,7 +146,7 @@ let parse_flags s =
   else begin
       Flags.make_warn true;
       let flags = flags_of_string s in
-      let flags = normalize_flags ~silent:true flags in
+      let flags = normalize_flags flags in
       parse_warnings flags;
       string_of_flags flags
     end

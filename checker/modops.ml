@@ -80,7 +80,7 @@ and add_module mb env =
 
 let add_module_type mp mtb env = add_module (module_body_of_type mp mtb) env
 
-let strengthen_const mp_from l cb resolver =
+let strengthen_const mp_from l cb =
   match cb.const_body with
     | Def _ -> cb
     | _ ->
@@ -104,34 +104,34 @@ and strengthen_body : 'a. (_ -> 'a) -> _ -> _ -> 'a generic_module_body -> 'a ge
   match mb.mod_type with
   | MoreFunctor _ -> mb
   | NoFunctor sign ->
-    let resolve_out,sign_out = strengthen_sig mp_from sign mp_to mb.mod_delta
+    let resolve_out,sign_out = strengthen_sig mp_from sign mp_to
     in
     { mb with
       mod_expr = mk_expr mp_to;
       mod_type = NoFunctor sign_out;
       mod_delta = resolve_out }
 
-and strengthen_sig mp_from sign mp_to resolver =
+and strengthen_sig mp_from sign mp_to =
   match sign with
     | [] -> empty_delta_resolver,[]
     | (l,SFBconst cb) :: rest ->
-	let item' = l,SFBconst (strengthen_const mp_from l cb resolver) in
-	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
+        let item' = l,SFBconst (strengthen_const mp_from l cb) in
+        let resolve_out,rest' = strengthen_sig mp_from rest mp_to in
 	resolve_out,item'::rest'
     | (_,SFBmind _ as item):: rest ->
-	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
+        let resolve_out,rest' = strengthen_sig mp_from rest mp_to in
 	  resolve_out,item::rest'
     | (l,SFBmodule mb) :: rest ->
 	let mp_from' = MPdot (mp_from,l) in
 	let mp_to' = MPdot(mp_to,l) in
 	let mb_out = strengthen_mod mp_from' mp_to' mb in
 	let item' = l,SFBmodule (mb_out) in
-	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
+        let resolve_out,rest' = strengthen_sig mp_from rest mp_to in
 	resolve_out (*add_delta_resolver resolve_out mb.mod_delta*),
-	item':: rest'
-    | (l,SFBmodtype mty as item) :: rest ->
-	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
-	resolve_out,item::rest'
+        item':: rest'
+    | (_,SFBmodtype _ as item) :: rest ->
+        let resolve_out,rest' = strengthen_sig mp_from rest mp_to in
+        resolve_out,item::rest'
 
 let strengthen mtb mp =
   strengthen_body ignore mtb.mod_mp mp mtb

@@ -583,7 +583,7 @@ let refresh_constraints univs (ctx, cstrs) =
   in ((ctx, cstrs'), univs')
 
 let normalize_variables uctx =
-  let normalized_variables, undef, def, subst = 
+  let normalized_variables, def, subst =
     UnivSubst.normalize_univ_variables uctx.uctx_univ_variables
   in
   let ctx_local = subst_univs_context_with_def def (Univ.make_subst subst) uctx.uctx_local in

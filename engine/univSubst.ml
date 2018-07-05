@@ -162,13 +162,13 @@ let subst_opt_univs_constr s =
 
 let normalize_univ_variables ctx =
   let ctx = normalize_opt_subst ctx in
-  let undef, def, subst =
-    Univ.LMap.fold (fun u v (undef, def, subst) ->
+  let def, subst =
+    Univ.LMap.fold (fun u v (def, subst) ->
       match v with
-      | None -> (Univ.LSet.add u undef, def, subst)
-      | Some b -> (undef, Univ.LSet.add u def, Univ.LMap.add u b subst))
-    ctx (Univ.LSet.empty, Univ.LSet.empty, Univ.LMap.empty)
-  in ctx, undef, def, subst
+      | None -> (def, subst)
+      | Some b -> (Univ.LSet.add u def, Univ.LMap.add u b subst))
+    ctx (Univ.LSet.empty, Univ.LMap.empty)
+  in ctx, def, subst
 
 let pr_universe_body = function
   | None -> mt ()

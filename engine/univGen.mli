@@ -39,7 +39,7 @@ val fresh_instance_from_context : AUContext.t ->
 val fresh_instance_from : AUContext.t -> Instance.t option ->
   Instance.t in_universe_context_set
 
-val fresh_sort_in_family : env -> Sorts.family ->
+val fresh_sort_in_family : Sorts.family ->
   Sorts.t in_universe_context_set
 val fresh_constant_instance : env -> Constant.t ->
   pconstant in_universe_context_set

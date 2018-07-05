@@ -138,7 +138,7 @@ let is_correct_arity env sigma c pj ind specif params =
         then error ()
         else sigma
     | Evar (ev,_), [] ->
-        let sigma, s = Evd.fresh_sort_in_family env sigma (max_sort allowed_sorts) in
+        let sigma, s = Evd.fresh_sort_in_family sigma (max_sort allowed_sorts) in
         let sigma = Evd.define ev (mkSort s) sigma in
         sigma
     | _, (LocalDef _ as d)::ar' ->

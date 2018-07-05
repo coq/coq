@@ -51,12 +51,12 @@ val coerce_to_constr_context : Value.t -> constr
 
 val coerce_var_to_ident : bool -> Environ.env -> Evd.evar_map -> Value.t -> Id.t
 
-val coerce_to_ident_not_fresh : Environ.env -> Evd.evar_map -> Value.t -> Id.t
+val coerce_to_ident_not_fresh : Evd.evar_map -> Value.t -> Id.t
 
-val coerce_to_intro_pattern : Environ.env -> Evd.evar_map -> Value.t -> Tacexpr.delayed_open_constr intro_pattern_expr
+val coerce_to_intro_pattern : Evd.evar_map -> Value.t -> Tacexpr.delayed_open_constr intro_pattern_expr
 
 val coerce_to_intro_pattern_naming :
-  Environ.env -> Evd.evar_map -> Value.t -> Namegen.intro_pattern_naming_expr
+  Evd.evar_map -> Value.t -> Namegen.intro_pattern_naming_expr
 
 val coerce_to_hint_base : Value.t -> string
 
@@ -64,7 +64,7 @@ val coerce_to_int : Value.t -> int
 
 val coerce_to_constr : Environ.env -> Value.t -> Ltac_pretype.constr_under_binders
 
-val coerce_to_uconstr : Environ.env -> Value.t -> Ltac_pretype.closed_glob_constr
+val coerce_to_uconstr : Value.t -> Ltac_pretype.closed_glob_constr
 
 val coerce_to_closed_constr : Environ.env -> Value.t -> constr
 
@@ -74,17 +74,17 @@ val coerce_to_evaluable_ref :
 val coerce_to_constr_list : Environ.env -> Value.t -> constr list
 
 val coerce_to_intro_pattern_list :
-  ?loc:Loc.t -> Environ.env -> Evd.evar_map -> Value.t -> Tacexpr.intro_patterns
+  ?loc:Loc.t -> Evd.evar_map -> Value.t -> Tacexpr.intro_patterns
 
 val coerce_to_hyp : Environ.env -> Evd.evar_map -> Value.t -> Id.t
 
 val coerce_to_hyp_list : Environ.env -> Evd.evar_map -> Value.t -> Id.t list
 
-val coerce_to_reference : Environ.env -> Evd.evar_map -> Value.t -> GlobRef.t
+val coerce_to_reference : Evd.evar_map -> Value.t -> GlobRef.t
 
 val coerce_to_quantified_hypothesis : Evd.evar_map -> Value.t -> quantified_hypothesis
 
-val coerce_to_decl_or_quant_hyp : Environ.env -> Evd.evar_map -> Value.t -> quantified_hypothesis
+val coerce_to_decl_or_quant_hyp : Evd.evar_map -> Value.t -> quantified_hypothesis
 
 val coerce_to_int_or_var_list : Value.t -> int Locus.or_var list
 

@@ -312,11 +312,11 @@ let interp_name ist env sigma = function
   | Name id -> Name (interp_ident ist env sigma id)
 
 let interp_intro_pattern_var loc ist env sigma id =
-  try try_interp_ltac_var (coerce_to_intro_pattern env sigma) ist (Some (env,sigma)) (make ?loc id)
+  try try_interp_ltac_var (coerce_to_intro_pattern sigma) ist (Some (env,sigma)) (make ?loc id)
   with Not_found -> IntroNaming (IntroIdentifier id)
 
 let interp_intro_pattern_naming_var loc ist env sigma id =
-  try try_interp_ltac_var (coerce_to_intro_pattern_naming env sigma) ist (Some (env,sigma)) (make ?loc id)
+  try try_interp_ltac_var (coerce_to_intro_pattern_naming sigma) ist (Some (env,sigma)) (make ?loc id)
   with Not_found -> IntroIdentifier id
 
 let interp_int ist ({loc;v=id} as locid) =
@@ -357,7 +357,7 @@ let interp_hyp_list ist env sigma l =
 let interp_reference ist env sigma = function
   | ArgArg (_,r) -> r
   | ArgVar {loc;v=id} ->
-    try try_interp_ltac_var (coerce_to_reference env sigma) ist (Some (env,sigma)) (make ?loc id)
+    try try_interp_ltac_var (coerce_to_reference sigma) ist (Some (env,sigma)) (make ?loc id)
     with Not_found ->
       try
         VarRef (get_id (Environ.lookup_named id env))
@@ -451,7 +451,7 @@ let default_fresh_id = Id.of_string "H"
 
 let interp_fresh_id ist env sigma l =
   let extract_ident ist env sigma id =
-    try try_interp_ltac_var (coerce_to_ident_not_fresh env sigma)
+    try try_interp_ltac_var (coerce_to_ident_not_fresh sigma)
                             ist (Some (env,sigma)) (make id)
     with Not_found -> id in
   let ids = List.map_filter (function ArgVar {v=id} -> Some id | _ -> None) l in
@@ -474,7 +474,7 @@ let interp_fresh_id ist env sigma l =
 (* Extract the uconstr list from lfun *)
 let extract_ltac_constr_context ist env sigma =
   let add_uconstr id v map =
-    try Id.Map.add id (coerce_to_uconstr env v) map
+    try Id.Map.add id (coerce_to_uconstr v) map
     with CannotCoerceTo _ -> map
   in
   let add_constr id v map =
@@ -799,7 +799,7 @@ and interp_or_and_intro_pattern ist env sigma = function
 
 and interp_intro_pattern_list_as_list ist env sigma = function
   | [{loc;v=IntroNaming (IntroIdentifier id)}] as l ->
-      (try sigma, coerce_to_intro_pattern_list ?loc env sigma (Id.Map.find id ist.lfun)
+      (try sigma, coerce_to_intro_pattern_list ?loc sigma (Id.Map.find id ist.lfun)
        with Not_found | CannotCoerceTo _ ->
          List.fold_left_map (interp_intro_pattern ist env) sigma l)
   | l -> List.fold_left_map (interp_intro_pattern ist env) sigma l
@@ -842,7 +842,7 @@ let interp_declared_or_quantified_hypothesis ist env sigma = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id ->
       try try_interp_ltac_var
-            (coerce_to_decl_or_quant_hyp env sigma) ist (Some (env,sigma)) (make id)
+            (coerce_to_decl_or_quant_hyp sigma) ist (Some (env,sigma)) (make id)
       with Not_found -> NamedHyp id
 
 let interp_binding ist env sigma {loc;v=(b,c)} =

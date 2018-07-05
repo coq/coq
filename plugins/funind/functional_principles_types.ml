@@ -322,8 +322,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
   try
 
   let f = funs.(i) in
-  let env = Global.env () in    
-  let type_sort = Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd InType in
+  let type_sort = Evarutil.evd_comb1 Evd.fresh_sort_in_family evd InType in
   let new_sorts =
     match sorts with
       | None -> Array.make (Array.length funs) (type_sort)
@@ -344,7 +343,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
       (*     let id_of_f = Label.to_id (con_label f) in *)
       let register_with_sort fam_sort =
         let evd' = Evd.from_env (Global.env ()) in
-        let evd',s = Evd.fresh_sort_in_family env evd' fam_sort in
+        let evd',s = Evd.fresh_sort_in_family evd' fam_sort in
         let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
         let evd',value = change_property_sort evd' s new_principle_type new_princ_name in
         let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' (EConstr.of_constr value)) in
@@ -354,7 +353,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
           Evd.const_univ_entry ~poly evd'
         in
         let ce = Declare.definition_entry ~univs value in
-	ignore(
+        ignore(
 	  Declare.declare_constant
 	    name
 	    (DefinitionEntry ce,
@@ -508,8 +507,8 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
   let i = ref (-1) in
   let sorts =
     List.rev_map (fun (_,x) ->
-		  Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd x
-	     )
+                  Evarutil.evd_comb1 Evd.fresh_sort_in_family evd x
+             )
       fas
   in
   (* We create the first priciple by tactic *)

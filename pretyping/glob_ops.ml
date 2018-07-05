@@ -112,7 +112,7 @@ let fix_kind_eq f k1 k2 = match k1, k2 with
     let eq (i1, o1) (i2, o2) =
       Option.equal Int.equal i1 i2 && fix_recursion_order_eq f o1 o2
     in
-    Int.equal i1 i2 && Array.equal eq a1 a1
+    Int.equal i1 i2 && Array.equal eq a1 a2
   | GCoFix i1, GCoFix i2 -> Int.equal i1 i2
   | (GFix _ | GCoFix _), _ -> false
 
@@ -452,7 +452,7 @@ let rec rename_glob_vars l c = force @@ DAst.map_with_loc (fun ?loc -> function
       else r
   | GProd (na,bk,t,c) ->
       let na',l' = update_subst na l in
-      GProd (na,bk,rename_glob_vars l t,rename_glob_vars l' c)
+      GProd (na',bk,rename_glob_vars l t,rename_glob_vars l' c)
   | GLambda (na,bk,t,c) ->
       let na',l' = update_subst na l in
       GLambda (na',bk,rename_glob_vars l t,rename_glob_vars l' c)

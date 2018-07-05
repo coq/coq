@@ -204,7 +204,7 @@ let lift_univs cb subst auctx0 =
       let auctx' = Univ.subst_univs_level_abstract_universe_context (Univ.make_instance_subst subst) auctx in
       subst, (Polymorphic_const (AUContext.union auctx0 auctx'))
 
-let cook_constant ~hcons env { from = cb; info } =
+let cook_constant ~hcons { from = cb; info } =
   let { Opaqueproof.modlist; abstract } = info in
   let cache = RefTable.create 13 in
   let abstract, usubst, abs_ctx = abstract in

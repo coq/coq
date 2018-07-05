@@ -378,7 +378,7 @@ let build_constant_declaration kn env result =
          str "Proof using " ++ declared_vars ++ fnl () ++
          str "to" ++ fnl () ++
          str "Proof using " ++ inferred_vars) in
-  let sort evn l =
+  let sort l =
     List.filter (fun decl ->
       let id = NamedDecl.get_id decl in
       List.exists (NamedDecl.get_id %> Names.Id.equal id) l)
@@ -411,7 +411,7 @@ let build_constant_declaration kn env result =
         [], def (* Empty section context: no need to check *)
     | Some declared ->
         (* We use the declared set and chain a check of correctness *)
-        sort env declared,
+        sort declared,
         match def with
         | Undef _ as x -> x (* nothing to check *)
         | Def cs as x ->
@@ -554,7 +554,7 @@ let translate_recipe env kn r =
       be useless. It is detected by the dirpath of the constant being empty. *)
   let (_, dir, _) = Constant.repr3 kn in
   let hcons = DirPath.is_empty dir in
-  build_constant_declaration kn env (Cooking.cook_constant ~hcons env r)
+  build_constant_declaration kn env (Cooking.cook_constant ~hcons r)
 
 let translate_local_def env id centry =
   let open Cooking in

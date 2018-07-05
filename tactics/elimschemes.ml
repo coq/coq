@@ -44,7 +44,7 @@ let optimize_non_type_induction_scheme kind dep sort _ ind =
 	mib.mind_nparams_rec
       else
 	mib.mind_nparams in
-    let sigma, sort = Evd.fresh_sort_in_family env sigma sort in
+    let sigma, sort = Evd.fresh_sort_in_family sigma sort in
     let sigma, t', c' = weaken_sort_scheme env sigma false sort npars c t in
     let sigma = Evd.minimize_universes sigma in
     (Evarutil.nf_evars_universes sigma c', Evd.evar_universe_context sigma), eff

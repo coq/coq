@@ -495,12 +495,12 @@ let e_new_type_evar env evdref ?src ?filter ?naming ?principal ?hypnaming rigid 
     evdref := evd;
     c
 
-let new_Type ?(rigid=Evd.univ_flexible) env evd = 
+let new_Type ?(rigid=Evd.univ_flexible) evd =
   let open EConstr in
   let (evd, s) = new_sort_variable rigid evd in
   (evd, mkSort s)
 
-let e_new_Type ?(rigid=Evd.univ_flexible) env evdref =
+let e_new_Type ?(rigid=Evd.univ_flexible) evdref =
   let evd', s = new_sort_variable rigid !evdref in
     evdref := evd'; EConstr.mkSort s
 
