@@ -67,9 +67,6 @@ matrix:
       - TEST_TARGET="validate"   COMPILER="${COMPILER_BE}+flambda" CAMLP5_VER="${CAMLP5_VER_BE}" NATIVE_COMP="no" EXTRA_CONF="-flambda-opts -O3" FINDLIB_VER="${FINDLIB_VER_BE}"
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="ci-bignums"
-    - if: NOT (type = pull_request)
-      env:
       - TEST_TARGET="ci-color"
     - if: NOT (type = pull_request)
       env:
@@ -85,9 +82,6 @@ matrix:
       - TEST_TARGET="ci-equations"
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="ci-fcsl-pcm"
-    - if: NOT (type = pull_request)
-      env:
       - TEST_TARGET="ci-fiat-parsers"
     - if: NOT (type = pull_request)
       env:
@@ -98,9 +92,6 @@ matrix:
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-ltac2"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-math-classes"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-sf"
