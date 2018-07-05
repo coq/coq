@@ -30,6 +30,9 @@
 , buildIde ? true
 , buildDoc ? true
 , doInstallCheck ? true
+, shell ? false
+  # We don't use lib.inNixShell because that would also apply
+  # when in a nix-shell of some package depending on this one.
 }:
 
 with pkgs;
@@ -58,13 +61,13 @@ stdenv.mkDerivation rec {
     optional (!versionAtLeast ocaml.version "4.07") ncurses
     ++ [ ocamlPackages.ounit rsync which ]
   )
-  ++ optionals lib.inNixShell (
+  ++ optionals shell (
     [ jq curl git gnupg ] # Dependencies of the merging script
     ++ (with ocamlPackages; [ merlin ocp-indent ocp-index ]) # Dev tools
   );
 
   src =
-    if lib.inNixShell then null
+    if shell then null
     else
       with builtins; filterSource
         (path: _:
