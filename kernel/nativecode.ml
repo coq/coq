@@ -1683,6 +1683,20 @@ let string_of_accu_construct prefix ind =
 let pp_int fmt i =
   if i < 0 then Format.fprintf fmt "(%i)" i else Format.fprintf fmt "%i" i
 
+let pp_letcast fmt casts =
+  let len = Array.length casts in
+  let pp_one_cast (id, _) =
+    Format.fprintf fmt "%a = (Obj.magic %a : Nativevalues.t)"
+      pp_lname id pp_lname id
+  in
+  Format.fprintf fmt "@[let@ ";
+  pp_one_cast casts.(0);
+  for i = 1 to len - 1 do
+    Format.fprintf fmt "@\nand ";
+    pp_one_cast casts.(i)
+  done;
+  Format.fprintf fmt "@ in@\n@]"
+
 let rec pp_arity fmt n =
   if Int.equal n 0 then Format.fprintf fmt "Nativevalues.t"
   else Format.fprintf fmt "_ -> %a" pp_arity (n - 1)
@@ -1699,7 +1713,8 @@ let pp_mllam fmt l =
         Format.fprintf fmt "@[(Obj.magic (fun%a@ ->@\n %a) : Nativevalues.t)@]"
           pp_ldecls ids pp_mllam body
     | MLletrec(defs, body) ->
-        Format.fprintf fmt "@[(%a@ in@\n%a)@]" pp_letrec defs
+        let casts = Array.map (fun (id, args, _) -> id, args) defs in
+        Format.fprintf fmt "@[(%a@ in@\n%a@\n%a)@]" pp_letrec defs pp_letcast casts
           pp_mllam body
     | MLlet(id,def,body) ->
         Format.fprintf fmt "@[(let@ %a@ =@\n %a@ in@\n%a)@]"
@@ -1752,10 +1767,11 @@ let pp_mllam fmt l =
 
   and pp_letrec fmt defs =
     let len = Array.length defs in
+    let cast = Array.map (fun (id, args, _) -> id, args) defs in
     let pp_one_rec (fn, argsn, body) =
-      Format.fprintf fmt "%a%a =@\n  %a"
+      Format.fprintf fmt "%a%a =@\n  %a%a"
         pp_lname fn
-        pp_ldecls argsn pp_mllam body in
+        pp_ldecls argsn pp_letcast cast pp_mllam body in
     Format.fprintf fmt "@[let rec ";
     pp_one_rec defs.(0);
     for i = 1 to len - 1 do
@@ -1936,10 +1952,14 @@ let pp_global fmt g =
       Format.fprintf fmt "@[let %a %a =@\n  %a@]@\n@." pp_gname g
         pp_ldecls params pp_array t
   | Gletcase(gn,params,annot,a,accu,bs) ->
-      Format.fprintf fmt "@[(* Hash = %i *)@\nlet rec %a %a =@\n  %a@]@\n@."
+      Format.fprintf fmt
+        "@[(* Hash = %i *)@\nlet rec %a %a =@\n  let %a = (Obj.magic %a : Nativevalues.t)@ in@\n%a@]@\n\
+        @[let %a = (Obj.magic %a : Nativevalues.t)@]@\n@."
       (hash_global g)
         pp_gname gn pp_ldecls params
+        pp_gname gn pp_gname gn
         pp_mllam (MLmatch(annot,a,accu,bs))
+        pp_gname gn pp_gname gn
   | Gcomment s ->
       Format.fprintf fmt "@[(* %s *)@]@." s
 
