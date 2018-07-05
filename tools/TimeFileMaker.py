@@ -144,13 +144,14 @@ def make_diff_table_string(left_times_dict, right_times_dict,
                                    for name, lseconds, rseconds in prediff_times)
     # update to sort by approximate difference, first
     get_key_abs = make_sorting_key(all_names_dict, descending=descending)
-    get_key_diff = (lambda name: fix_sign_for_sorting(int(abs(to_seconds(diff_times_dict[name]))), descending=descending))
+    get_key_diff_float = (lambda name: fix_sign_for_sorting(abs(to_seconds(diff_times_dict[name])), descending=descending))
+    get_key_diff_int = (lambda name: fix_sign_for_sorting(int(abs(to_seconds(diff_times_dict[name]))), descending=descending))
     if sort_by == 'absolute':
         get_key = get_key_abs
     elif sort_by == 'diff':
-        get_key = get_key_diff
+        get_key = get_key_diff_float
     else: # sort_by == 'auto'
-        get_key = (lambda name: (get_key_diff(name), get_key_abs(name)))
+        get_key = (lambda name: (get_key_diff_int(name), get_key_abs(name)))
     names = sorted(all_names_dict.keys(), key=get_key)
     #names = get_sorted_file_list_from_times_dict(all_names_dict, descending=descending)
     # set the widths of each of the columns by the longest thing to go in that column
