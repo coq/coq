@@ -86,4 +86,18 @@ stdenv.mkDerivation rec {
 
   installCheckTarget = [ "check" ];
 
+  passthru = { inherit ocamlPackages; };
+
+  meta = {
+    description = "Coq proof assistant";
+    longDescription = ''
+      Coq is a formal proof management system.  It provides a formal language
+      to write mathematical definitions, executable algorithms and theorems
+      together with an environment for semi-interactive development of
+      machine-checked proofs.
+    '';
+    homepage = http://coq.inria.fr;
+    license = licenses.lgpl21;
+  };
+
 }
