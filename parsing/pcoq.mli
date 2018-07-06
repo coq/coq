@@ -80,7 +80,7 @@ module type S =
   (* Get comment parsing information from the Lexer *)
   val comment_state : coq_parsable -> ((int * int) * string) list
 
-  val safe_extend : 'a entry -> 'a Extend.extend_statement -> unit
+  val gram_extend : 'a entry -> 'a Extend.extend_statement -> unit
 
   (* Apparently not used *)
   val srules' : production_rule list -> symbol
