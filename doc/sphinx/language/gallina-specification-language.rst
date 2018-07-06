@@ -38,6 +38,7 @@ At the end, the notation “``[entry sep … sep entry]``” stands for a
 possibly empty sequence of expressions parsed by the “``entry``” entry,
 separated by the literal “``sep``”.
 
+.. _lexical-conventions:
 
 Lexical conventions
 ===================
