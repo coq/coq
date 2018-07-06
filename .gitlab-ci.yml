@@ -211,6 +211,22 @@ windows32:
   variables:
     ARCH: "32"
 
+pkg:nix:
+  image: nixorg/nix:latest # Minimal NixOS image which doesn't even contain git
+  stage: test
+  variables:
+    GIT_STRATEGY: none
+  dependencies: [] # We don't need to download build artifacts
+  before_script: [] # We don't want to use the shared 'before_script'
+  script:
+    - export TMPDIR=$PWD
+    - nix-build "$CI_PROJECT_URL/-/archive/$CI_COMMIT_SHA.tar.gz" -K
+  artifacts:
+    name: "$CI_JOB_NAME.logs"
+    when: on_failure
+    paths:
+      - nix-build-coq.drv-0/*/test-suite/logs
+
 warnings:base:
   <<: *warnings-template
 
