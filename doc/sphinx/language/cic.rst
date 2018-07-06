@@ -721,67 +721,68 @@ called the *context of parameters*. Furthermore, we must have that
 each :math:`T` in :math:`(t:T)∈Γ_I` can be written as: :math:`∀Γ_P,∀Γ_{\mathit{Arr}(t)}, S` where
 :math:`Γ_{\mathit{Arr}(t)}` is called the *Arity* of the inductive type t and :math:`S` is called
 the sort of the inductive type t (not to be confused with :math:`\Sort` which is the set of sorts).
-** Examples** The declaration for parameterized lists is:
-
-.. math::
-   \ind{1}{[\List:\Set→\Set]}{\left[\begin{array}{rcl}
-   \Nil & : & \forall A:\Set,\List~A \\
-   \cons & : & \forall A:\Set, A→ \List~A→ \List~A
-   \end{array}
-   \right]}
-
-which corresponds to the result of the |Coq| declaration:
 
 .. example::
-  .. coqtop:: in
-   
-     Inductive list (A:Set) : Set :=
-     | nil : list A
-     | cons : A -> list A -> list A.
+   The declaration for parameterized lists is:
 
-The declaration for a mutual inductive definition of tree and forest
-is:
+   .. math::
+      \ind{1}{[\List:\Set→\Set]}{\left[\begin{array}{rcl}
+      \Nil & : & \forall A:\Set,\List~A \\
+      \cons & : & \forall A:\Set, A→ \List~A→ \List~A
+      \end{array}
+      \right]}
 
-.. math::
-   \ind{~}{\left[\begin{array}{rcl}\tree&:&\Set\\\forest&:&\Set\end{array}\right]}
-    {\left[\begin{array}{rcl}
-             \node &:& \forest → \tree\\
-             \emptyf &:& \forest\\
-             \consf &:& \tree → \forest → \forest\\
-                       \end{array}\right]}
+   which corresponds to the result of the |Coq| declaration:
 
-which corresponds to the result of the |Coq| declaration:
+   .. coqtop:: in
+
+      Inductive list (A:Set) : Set :=
+      | nil : list A
+      | cons : A -> list A -> list A.
 
 .. example::
-  .. coqtop:: in
+   The declaration for a mutual inductive definition of tree and forest
+   is:
 
-     Inductive tree : Set :=
-     | node : forest -> tree
-     with forest : Set :=
-     | emptyf : forest
-     | consf : tree -> forest -> forest.
+   .. math::
+      \ind{~}{\left[\begin{array}{rcl}\tree&:&\Set\\\forest&:&\Set\end{array}\right]}
+       {\left[\begin{array}{rcl}
+                \node &:& \forest → \tree\\
+                \emptyf &:& \forest\\
+                \consf &:& \tree → \forest → \forest\\
+                          \end{array}\right]}
 
-The declaration for a mutual inductive definition of even and odd is:
+   which corresponds to the result of the |Coq| declaration:
 
-.. math::
-   \ind{1}{\left[\begin{array}{rcl}\even&:&\nat → \Prop \\
-                                   \odd&:&\nat → \Prop \end{array}\right]}
-    {\left[\begin{array}{rcl}
-             \evenO &:& \even~0\\
-	     \evenS &:& \forall n, \odd~n -> \even~(\kw{S}~n)\\
-	     \oddS &:& \forall n, \even~n -> \odd~(\kw{S}~n)
-                       \end{array}\right]}
+   .. coqtop:: in
 
-which corresponds to the result of the |Coq| declaration:
+      Inductive tree : Set :=
+      | node : forest -> tree
+      with forest : Set :=
+      | emptyf : forest
+      | consf : tree -> forest -> forest.
 
 .. example::
-  .. coqtop:: in
+   The declaration for a mutual inductive definition of even and odd is:
 
-     Inductive even : nat -> prop :=
-     | even_O : even 0
-     | even_S : forall n, odd n -> even (S n)
-     with odd : nat -> prop :=
-     | odd_S : forall n, even n -> odd (S n).
+   .. math::
+      \ind{1}{\left[\begin{array}{rcl}\even&:&\nat → \Prop \\
+                                      \odd&:&\nat → \Prop \end{array}\right]}
+       {\left[\begin{array}{rcl}
+                \evenO &:& \even~0\\
+                \evenS &:& \forall n, \odd~n -> \even~(\kw{S}~n)\\
+                \oddS &:& \forall n, \even~n -> \odd~(\kw{S}~n)
+                          \end{array}\right]}
+
+   which corresponds to the result of the |Coq| declaration:
+
+   .. coqtop:: in
+
+      Inductive even : nat -> prop :=
+      | even_O : even 0
+      | even_S : forall n, odd n -> even (S n)
+      with odd : nat -> prop :=
+      | odd_S : forall n, even n -> odd (S n).
 
 
 
@@ -838,8 +839,8 @@ rules, we need a few definitions:
 Arity of a given sort
 +++++++++++++++++++++
 
-A type :math:`T` is an *arity of sort s* if it converts to the sort s or to a
-product :math:`∀ x:T,U` with :math:`U` an arity of sort s.
+A type :math:`T` is an *arity of sort* :math:`s` if it converts to the sort :math:`s` or to a
+product :math:`∀ x:T,U` with :math:`U` an arity of sort :math:`s`.
 
 .. example::
 
@@ -850,7 +851,7 @@ product :math:`∀ x:T,U` with :math:`U` an arity of sort s.
 Arity
 +++++
 A type :math:`T` is an *arity* if there is a :math:`s∈ \Sort` such that :math:`T` is an arity of
-sort s.
+sort :math:`s`.
 
 
 .. example::
@@ -921,29 +922,29 @@ condition* for a constant :math:`X` in the following cases:
    For instance, if one considers the following variant of a tree type
    branching over the natural numbers:
 
-  .. coqtop:: in
+   .. coqtop:: in
 
-     Inductive nattree (A:Type) : Type :=
-     | leaf : nattree A
-     | node : A -> (nat -> nattree A) -> nattree A.
-     End TreeExample.
-     
-    Then every instantiated constructor of ``nattree A`` satisfies the nested positivity
-    condition for ``nattree``:
+      Inductive nattree (A:Type) : Type :=
+      | leaf : nattree A
+      | node : A -> (nat -> nattree A) -> nattree A.
+      End TreeExample.
 
-    + Type ``nattree A`` of constructor ``leaf`` satisfies the positivity condition for
-      ``nattree`` because ``nattree`` does not appear in any (real) arguments of the
-      type of that constructor (primarily because ``nattree`` does not have any (real)
-      arguments) ... (bullet 1)
+   Then every instantiated constructor of ``nattree A`` satisfies the nested positivity
+   condition for ``nattree``:
 
-    + Type ``A → (nat → nattree A) → nattree A`` of constructor ``node`` satisfies the
-      positivity condition for ``nattree`` because:
+   + Type ``nattree A`` of constructor ``leaf`` satisfies the positivity condition for
+     ``nattree`` because ``nattree`` does not appear in any (real) arguments of the
+     type of that constructor (primarily because ``nattree`` does not have any (real)
+     arguments) ... (bullet 1)
 
-      - ``nattree`` occurs only strictly positively in ``A`` ... (bullet 3)
+   + Type ``A → (nat → nattree A) → nattree A`` of constructor ``node`` satisfies the
+     positivity condition for ``nattree`` because:
 
-      - ``nattree`` occurs only strictly positively in ``nat → nattree A`` ... (bullet 3 + 2)
+     - ``nattree`` occurs only strictly positively in ``A`` ... (bullet 3)
 
-      - ``nattree`` satisfies the positivity condition for ``nattree A`` ... (bullet 1)
+     - ``nattree`` occurs only strictly positively in ``nat → nattree A`` ... (bullet 3 + 2)
+
+     - ``nattree`` satisfies the positivity condition for ``nattree A`` ... (bullet 1)
 
 .. _Correctness-rules:
 
@@ -978,35 +979,33 @@ provided that the following side conditions hold:
 One can remark that there is a constraint between the sort of the
 arity of the inductive type and the sort of the type of its
 constructors which will always be satisfied for the impredicative
-sortProp but may fail to define inductive definition on sort Set and
+sort :math:`\Prop` but may fail to define inductive definition on sort :math:`\Set` and
 generate constraints between universes for inductive definitions in
 the Type hierarchy.
 
 
-**Examples**.  It is well known that the existential quantifier can be encoded as an
-inductive definition. The following declaration introduces the second-
-order existential quantifier :math:`∃ X.P(X)`.
-
 .. example::
+   It is well known that the existential quantifier can be encoded as an
+   inductive definition. The following declaration introduces the second-
+   order existential quantifier :math:`∃ X.P(X)`.
+
    .. coqtop:: in
-	       
+
       Inductive exProp (P:Prop->Prop) : Prop :=
       | exP_intro : forall X:Prop, P X -> exProp P.
 
-The same definition on Set is not allowed and fails:
+   The same definition on :math:`\Set` is not allowed and fails:
 
-.. example::
    .. coqtop:: all
 
       Fail Inductive exSet (P:Set->Prop) : Set :=
       exS_intro : forall X:Set, P X -> exSet P.
 
-It is possible to declare the same inductive definition in the
-universe Type. The exType inductive definition has type
-:math:`(\Type(i)→\Prop)→\Type(j)` with the constraint that the parameter :math:`X` of :math:`\kw{exT_intro}`
-has type :math:`\Type(k)` with :math:`k<j` and :math:`k≤ i`.
+   It is possible to declare the same inductive definition in the
+   universe :math:`\Type`. The :g:`exType` inductive definition has type
+   :math:`(\Type(i)→\Prop)→\Type(j)` with the constraint that the parameter :math:`X` of :math:`\kw{exT_intro}`
+   has type :math:`\Type(k)` with :math:`k<j` and :math:`k≤ i`.
 
-.. example::
    .. coqtop:: all
 
       Inductive exType (P:Type->Prop) : Type :=
@@ -1019,9 +1018,9 @@ has type :math:`\Type(k)` with :math:`k<j` and :math:`k≤ i`.
 Template polymorphism
 +++++++++++++++++++++
 
-Inductive types declared in Type are polymorphic over their arguments
-in Type. If :math:`A` is an arity of some sort and s is a sort, we write :math:`A_{/s}`
-for the arity obtained from :math:`A` by replacing its sort with s.
+Inductive types declared in :math:`\Type` are polymorphic over their arguments
+in :math:`\Type`. If :math:`A` is an arity of some sort and math:`s` is a sort, we write :math:`A_{/s}`
+for the arity obtained from :math:`A` by replacing its sort with :math:`s`.
 Especially, if :math:`A` is well-typed in some global environment and local
 context, then :math:`A_{/s}` is typable by typability of all products in the
 Calculus of Inductive Constructions. The following typing rule is
@@ -1382,7 +1381,7 @@ this type.
    [I:Prop|I→ s]
 
 A *singleton definition* has only one constructor and all the
-arguments of this constructor have type Prop. In that case, there is a
+arguments of this constructor have type :math:`\Prop`. In that case, there is a
 canonical way to interpret the informative extraction on an object in
 that type, such that the elimination on any sort :math:`s` is legal. Typical
 examples are the conjunction of non-informative propositions and the
@@ -1421,45 +1420,45 @@ corresponding to the :math:`c:C` constructor.
 We write :math:`\{c\}^P` for :math:`\{c:C\}^P` with :math:`C` the type of :math:`c`.
 
 
-**Example.**
-The following term in concrete syntax::
+.. example::
+   The following term in concrete syntax::
 
-    match t as l return P' with
-    | nil _ => t1
-    | cons _ hd tl => t2
-    end
+       match t as l return P' with
+       | nil _ => t1
+       | cons _ hd tl => t2
+       end
 
 
-can be represented in abstract syntax as
+   can be represented in abstract syntax as
 
-.. math::
-   \case(t,P,f 1 | f 2 )
+   .. math::
+      \case(t,P,f 1 | f 2 )
 
-where
+   where
 
-.. math::
-   \begin{eqnarray*}
-     P & = & \lambda~l~.~P^\prime\\
-     f_1 & = & t_1\\
-     f_2 & = & \lambda~(hd:\nat)~.~\lambda~(tl:\List~\nat)~.~t_2
-   \end{eqnarray*}
+   .. math::
+      \begin{eqnarray*}
+        P & = & \lambda~l~.~P^\prime\\
+        f_1 & = & t_1\\
+        f_2 & = & \lambda~(hd:\nat)~.~\lambda~(tl:\List~\nat)~.~t_2
+      \end{eqnarray*}
 
-According to the definition:
+   According to the definition:
 
-.. math::
-   \{(\kw{nil}~\nat)\}^P ≡ \{(\kw{nil}~\nat) : (\List~\nat)\}^P ≡ (P~(\kw{nil}~\nat))
+   .. math::
+      \{(\kw{nil}~\nat)\}^P ≡ \{(\kw{nil}~\nat) : (\List~\nat)\}^P ≡ (P~(\kw{nil}~\nat))
 
-.. math::
-   
-   \begin{array}{rl}
-   \{(\kw{cons}~\nat)\}^P & ≡\{(\kw{cons}~\nat) : (\nat→\List~\nat→\List~\nat)\}^P \\
-   & ≡∀ n:\nat, \{(\kw{cons}~\nat~n) : \List~\nat→\List~\nat)\}^P \\
-   & ≡∀ n:\nat, ∀ l:\List~\nat, \{(\kw{cons}~\nat~n~l) : \List~\nat)\}^P \\
-   & ≡∀ n:\nat, ∀ l:\List~\nat,(P~(\kw{cons}~\nat~n~l)).
-   \end{array}
+   .. math::
 
-Given some :math:`P` then :math:`\{(\kw{nil}~\nat)\}^P` represents the expected type of :math:`f_1` ,
-and :math:`\{(\kw{cons}~\nat)\}^P` represents the expected type of :math:`f_2`.
+      \begin{array}{rl}
+      \{(\kw{cons}~\nat)\}^P & ≡\{(\kw{cons}~\nat) : (\nat→\List~\nat→\List~\nat)\}^P \\
+      & ≡∀ n:\nat, \{(\kw{cons}~\nat~n) : \List~\nat→\List~\nat)\}^P \\
+      & ≡∀ n:\nat, ∀ l:\List~\nat, \{(\kw{cons}~\nat~n~l) : \List~\nat)\}^P \\
+      & ≡∀ n:\nat, ∀ l:\List~\nat,(P~(\kw{cons}~\nat~n~l)).
+      \end{array}
+
+   Given some :math:`P` then :math:`\{(\kw{nil}~\nat)\}^P` represents the expected type of :math:`f_1` ,
+   and :math:`\{(\kw{cons}~\nat)\}^P` represents the expected type of :math:`f_2`.
 
 
 .. _Typing-rule:
@@ -1819,7 +1818,7 @@ while it will type-check, if one uses instead the `coqtop`
 ``-impredicative-set`` option..
 
 The major change in the theory concerns the rule for product formation
-in the sort Set, which is extended to a domain in any sort:
+in the sort :math:`\Set`, which is extended to a domain in any sort:
 
 .. inference:: ProdImp
 
@@ -1832,11 +1831,11 @@ in the sort Set, which is extended to a domain in any sort:
 This extension has consequences on the inductive definitions which are
 allowed. In the impredicative system, one can build so-called *large
 inductive definitions* like the example of second-order existential
-quantifier (exSet).
+quantifier (:g:`exSet`).
 
 There should be restrictions on the eliminations which can be
 performed on such definitions. The eliminations rules in the
-impredicative system for sort Set become:
+impredicative system for sort :math:`\Set` become:
 
 
 
