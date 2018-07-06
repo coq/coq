@@ -240,12 +240,25 @@ pkg:nix:
   image: nixorg/nix:latest # Minimal NixOS image which doesn't even contain git
   stage: test
   variables:
+    # By default we use coq.cachix.org as an extra substituter but this can be overridden
+    EXTRA_SUBSTITUTERS: https://coq.cachix.org
+    EXTRA_PUBLIC_KEYS: coq.cachix.org-1:Jgt0DwGAUo+wpxCM52k2V+E0hLoOzFPzvg94F65agtI=
+    # The following variables should not be overridden
     GIT_STRATEGY: none
+    CACHIX_PUBLIC_KEY: cachix.cachix.org-1:eWNHQldwUO7G2VkjpnjDbWwy4KQ/HNxht7H4SSoMckM=
+    NIXOS_PUBLIC_KEY: cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+
   dependencies: [] # We don't need to download build artifacts
   before_script: [] # We don't want to use the shared 'before_script'
   script:
+    # Use current worktree as tmpdir to allow exporting artifacts in case of failure
     - export TMPDIR=$PWD
-    - nix-build "$CI_PROJECT_URL/-/archive/$CI_COMMIT_SHA.tar.gz" -K
+    # Install Cachix as documented at https://github.com/cachix/cachix
+    - nix-env -if https://github.com/cachix/cachix/tarball/master --substituters https://cachix.cachix.org --trusted-public-keys "$CACHIX_PUBLIC_KEY"
+    # We build an expression rather than a direct URL to not be dependent on
+    # the URL location; we are forced to put the public key of cache.nixos.org
+    # because there is no --extra-trusted-public-key option.
+    - nix-build -E "import (fetchTarball $CI_PROJECT_URL/-/archive/$CI_COMMIT_SHA.tar.gz) {}" -K --extra-substituters "$EXTRA_SUBSTITUTERS" --trusted-public-keys "$NIXOS_PUBLIC_KEY $EXTRA_PUBLIC_KEYS" | if [ ! -z "$CACHIX_SIGNING_KEY" ]; then cachix push coq; fi
   artifacts:
     name: "$CI_JOB_NAME.logs"
     when: on_failure
