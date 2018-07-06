@@ -241,3 +241,8 @@ Notation
 Notation
 "( x , y , .. , z )" := pair .. (pair x y) .. z : core_scope
 (default interpretation)
+1 subgoal
+  
+  ============================
+  ##@%
+   ^^^
