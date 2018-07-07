@@ -212,9 +212,17 @@ DEPFLAGS=$(LOCALINCLUDES)$(if $(filter plugins/%,$@),, -I ide -I ide/protocol)
 ifeq ($(shell which codesign > /dev/null 2>&1 && echo $(ARCH)),Darwin)
 LINKMETADATA=$(if $(filter $(PRIVATEBINARIES),$@),,-ccopt "-sectcreate __TEXT __info_plist config/Info-$(notdir $@).plist")
 CODESIGN=$(if $(filter $(PRIVATEBINARIES),$@),true,codesign -s -)
+CODESIGN_HIDE=$(CODESIGN)
 else
 LINKMETADATA=
 CODESIGN=true
+CODESIGN_HIDE=$(HIDE)true
+endif
+
+ifeq ($(STRIP),true)
+STRIP_HIDE=$(HIDE)true
+else
+STRIP_HIDE=$(STRIP)
 endif
 
 # Best OCaml compiler, used in a generic way
@@ -400,12 +408,12 @@ grammar/%.cmi: grammar/%.mli
 
 .PHONY: coqbinaries coqbyte
 
-coqbinaries: $(TOPBIN) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
+coqbinaries: $(TOPBINOPT) $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
 coqbyte: $(TOPBYTE) $(CHICKENBYTE)
 
 # Special rule for coqtop, we imitate `ocamlopt` can delete the target
 # to avoid #7666
-$(COQTOPEXE): $(TOPBIN:.opt=.$(BEST))
+$(COQTOPEXE): $(TOPBINOPT:.opt=.$(BEST))
 	rm -f $@ && cp $< $@
 
 bin/%.opt$(EXE): topbin/%_bin.ml $(LINKCMX) $(LIBCOQRUN)
@@ -413,8 +421,8 @@ bin/%.opt$(EXE): topbin/%_bin.ml $(LINKCMX) $(LIBCOQRUN)
 	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) \
 			   $(SYSMOD) -package camlp5.gramlib \
 			   $(LINKCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
-	$(STRIP) $@
-	$(CODESIGN) $@
+	$(STRIP_HIDE) $@
+	$(CODESIGN_HIDE) $@
 
 bin/%.byte$(EXE): topbin/%_bin.ml $(LINKCMO) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'

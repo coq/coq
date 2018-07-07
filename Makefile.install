@@ -70,7 +70,7 @@ endif
 
 install-binaries: install-tools
 	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQC) $(CHICKEN) $(COQTOPEXE) $(TOPBIN) $(FULLBINDIR)
+	$(INSTALLBIN) $(COQC) $(CHICKEN) $(COQTOPEXE) $(TOPBINOPT) $(FULLBINDIR)
 
 install-byte: install-coqide-byte
 	$(MKDIR) $(FULLBINDIR)

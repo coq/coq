@@ -14,8 +14,8 @@
 # Executables
 ###########################################################################
 
-TOPBIN:=$(addsuffix .opt$(EXE), $(addprefix bin/, coqtop coqproofworker coqtacticworker coqqueryworker))
-TOPBYTE:=$(TOPBIN:.opt$(EXE)=.byte$(EXE))
+TOPBINOPT:=$(addsuffix .opt$(EXE), $(addprefix bin/, coqtop coqproofworker coqtacticworker coqqueryworker))
+TOPBYTE:=$(TOPBINOPT:.opt$(EXE)=.byte$(EXE))
 
 COQTOPEXE:=bin/coqtop$(EXE)
 COQTOPBYTE:=bin/coqtop.byte$(EXE)
