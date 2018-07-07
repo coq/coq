@@ -1,6 +1,7 @@
 from __future__ import with_statement
 from __future__ import division
 from __future__ import unicode_literals
+from __future__ import print_function
 import os, sys, re
 from io import open
 
@@ -206,7 +207,11 @@ def make_table_string(times_dict,
 
 def print_or_write_table(table, files):
     if len(files) == 0 or '-' in files:
-        print(table)
+        try:
+            binary_stdout = sys.stdout.buffer
+        except AttributeError:
+            binary_stdout = sys.stdout
+        print(table.encode("utf-8"), file=binary_stdout)
     for file_name in files:
         if file_name != '-':
             with open(file_name, 'w', encoding="utf-8") as f:
