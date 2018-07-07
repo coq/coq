@@ -515,14 +515,6 @@ $(COQDEPBYTE): $(COQDEPCMO)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(call ocamlbyte, $(SYSMOD))
 
-$(GALLINA): $(call bestobj, tools/gallina_lexer.cmo tools/gallina.cmo)
-	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,)
-
-$(GALLINABYTE): tools/gallina_lexer.cmo tools/gallina.cmo
-	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(call ocamlbyte,)
-
 COQMAKEFILECMO:=clib/clib.cma lib/lib.cma tools/coq_makefile.cmo
 
 $(COQMAKEFILE): $(call bestobj,$(COQMAKEFILECMO))

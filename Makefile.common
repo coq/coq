@@ -24,8 +24,6 @@ COQDEP:=bin/coqdep$(EXE)
 COQDEPBYTE:=bin/coqdep.byte$(EXE)
 COQMAKEFILE:=bin/coq_makefile$(EXE)
 COQMAKEFILEBYTE:=bin/coq_makefile.byte$(EXE)
-GALLINA:=bin/gallina$(EXE)
-GALLINABYTE:=bin/gallina.byte$(EXE)
 COQTEX:=bin/coq-tex$(EXE)
 COQTEXBYTE:=bin/coq-tex.byte$(EXE)
 COQWC:=bin/coqwc$(EXE)
@@ -41,7 +39,7 @@ COQTIME_FILE_MAKER:=tools/TimeFileMaker.py
 COQMAKE_BOTH_TIME_FILES:=tools/make-both-time-files.py
 COQMAKE_BOTH_SINGLE_TIMING_FILES:=tools/make-both-single-timing-files.py
 
-TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQWC) $(COQDOC) $(COQC)\
+TOOLS:=$(COQDEP) $(COQMAKEFILE) $(COQTEX) $(COQWC) $(COQDOC) $(COQC)\
 	$(COQWORKMGR)
 TOOLS_HELPERS:=tools/CoqMakefile.in $(COQMAKE_ONE_TIME_FILE) $(COQTIME_FILE_MAKER)\
 	$(COQMAKE_BOTH_TIME_FILES) $(COQMAKE_BOTH_SINGLE_TIMING_FILES)

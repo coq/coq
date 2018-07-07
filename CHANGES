@@ -45,6 +45,8 @@ Tools
   COQFLAGS is now entirely separate from COQLIBS, so in custom Makefiles
   $(COQFLAGS) should be replaced by $(COQFLAGS) $(COQLIBS).
 
+- Remove the gallina utility (extracts specification from Coq vernacular files).
+
 Vernacular Commands
 
 - Removed deprecated commands Arguments Scope and Implicit Arguments

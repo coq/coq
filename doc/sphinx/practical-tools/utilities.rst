@@ -1000,21 +1000,9 @@ Proof-General is developed and distributed independently of the system
 |Coq|. It is freely available at `<https://proofgeneral.github.io/>`_.
 
 
-Module specification
---------------------
-
-Given a |Coq| vernacular file, the gallina filter extracts its
-specification (inductive types declarations, definitions, type of
-lemmas and theorems), removing the proofs parts of the file. The |Coq|
-file ``file.v`` gives birth to the specification file ``file.g`` (where
-the suffix ``.g`` stands for |Gallina|).
-
-See the man page of ``gallina`` for more details and options.
-
-
 Man pages
 ---------
 
-There are man pages for the commands ``coqdep``, ``gallina`` and ``coq-tex``. Man
+There are man pages for the commands ``coqdep`` and ``coq-tex``. Man
 pages are installed at installation time (see installation
 instructions in file ``INSTALL``, step 6).
