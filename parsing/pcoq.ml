@@ -336,7 +336,7 @@ module Gram =
       I'm not entirely sure it makes sense, but at least it would be more correct.
           *)
       G.delete_rule e pil
-    let safe_extend e ext = grammar_extend e None ext
+    let gram_extend e ext = grammar_extend e None ext
   end
 
 (** Remove extensions
