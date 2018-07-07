@@ -132,12 +132,31 @@ let hide_variable env expansion id =
   else
     env
 
+let get_ltac_constr_full_typing =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~name:""
+    ~key:["Ltac"; "Constr"; "Full"; "Typing"]
+    ~value:true
+
+let check_variable_inclusion env sigma c =
+  Id.Set.subset (Termops.global_vars_set env sigma c) (Termops.vars_of_env env)
+
 let protected_get_type_of env sigma c =
-  try Retyping.get_type_of ~lax:true env sigma c
-  with Retyping.RetypeError _ ->
-    user_err
-      (str "Cannot reinterpret " ++ quote (Termops.Internal.print_constr_env env sigma c) ++
-       str " in the current environment.")
+  if get_ltac_constr_full_typing () then
+    try Typing.type_of env sigma c
+    with Type_errors.TypeError _ ->
+      user_err
+        (str "Cannot type " ++ quote (Termops.Internal.print_constr_env env sigma c) ++
+         str " in the current environment.")
+  else
+    try
+      let _ = check_variable_inclusion env sigma c in
+      (sigma, Retyping.get_type_of ~lax:true env sigma c)
+    with Retyping.RetypeError _  ->
+      user_err
+        (str "Cannot reinterpret " ++ quote (Termops.Internal.print_constr_env env sigma c) ++
+         str " in the current environment.")
 
 let invert_ltac_bound_name env id0 id =
   try mkRel (pi1 (lookup_rel_id id (rel_context env.static_env)))
@@ -152,7 +171,8 @@ let interp_ltac_variable ?loc typing_fun env sigma id : Evd.evar_map * unsafe_ju
     let (ids,c) = Id.Map.find id env.lvar.ltac_constrs in
     let subst = List.map (invert_ltac_bound_name env id) ids in
     let c = substl subst c in
-    sigma, { uj_val = c; uj_type = protected_get_type_of env.renamed_env sigma c }
+    let sigma, t = protected_get_type_of env.renamed_env sigma c in
+    sigma, { uj_val = c; uj_type = t }
   with Not_found ->
   try
     let {closure;term} = Id.Map.find id env.lvar.ltac_uconstrs in
