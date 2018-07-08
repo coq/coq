@@ -43,7 +43,6 @@ FULLCOQLIB=$(COQLIBINSTALL:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLCONFIGDIR=$(CONFIGDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLDATADIR=$(DATADIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLMANDIR=$(MANDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-FULLEMACSLIB=$(EMACSLIB:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLCOQDOCDIR=$(COQDOCDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLDOCDIR=$(DOCDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 else
@@ -52,14 +51,13 @@ FULLCOQLIB=$(COQLIBINSTALL)
 FULLCONFIGDIR=$(CONFIGDIR)
 FULLDATADIR=$(DATADIR)
 FULLMANDIR=$(MANDIR)
-FULLEMACSLIB=$(EMACSLIB)
 FULLCOQDOCDIR=$(COQDOCDIR)
 FULLDOCDIR=$(DOCDIR)
 endif
 
 .PHONY: install-coq install-binaries install-byte install-opt
 .PHONY: install-tools install-library install-devfiles install-merlin
-.PHONY: install-coq-info install-coq-manpages install-emacs install-latex
+.PHONY: install-coq-info install-coq-manpages install-latex
 .PHONY: install-meta
 
 install-coq: install-binaries install-library install-coq-info install-devfiles
@@ -136,7 +134,7 @@ endif
 	rm -f $(FULLCOQLIB)/revision
 	-$(INSTALLLIB) revision $(FULLCOQLIB)
 
-install-coq-info: install-coq-manpages install-emacs install-latex
+install-coq-info: install-coq-manpages install-latex
 
 MANPAGES:=man/coq-tex.1 man/coqdep.1 \
 	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1 \
@@ -146,10 +144,6 @@ MANPAGES:=man/coq-tex.1 man/coqdep.1 \
 install-coq-manpages:
 	$(MKDIR) $(FULLMANDIR)/man1
 	$(INSTALLLIB) $(MANPAGES) $(FULLMANDIR)/man1
-
-install-emacs:
-	$(MKDIR) $(FULLEMACSLIB)
-	$(INSTALLLIB) tools/gallina-db.el tools/coq-font-lock.el tools/gallina-syntax.el tools/gallina.el tools/inferior-coq.el $(FULLEMACSLIB)
 
 # command to update TeX' kpathsea database
 #UPDATETEX = $(MKTEXLSR) /usr/share/texmf /var/spool/texmf $(BASETEXDIR) > /dev/null
