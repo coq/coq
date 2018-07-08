@@ -376,7 +376,8 @@ let rec vernac_loop ~state =
       else (Feedback.msg_warning (str "There is no ML toplevel."); vernac_loop ~state)
     | {v=VernacControl c; loc} ->
       let nstate = Vernac.process_expr ~state (make ?loc c) in
-      top_goal_print state.proof nstate.proof;
+      let dproof = Stm.get_prev_proof ~doc:state.doc (Stm.get_current_state ~doc:state.doc) in
+      top_goal_print dproof nstate.proof;
       vernac_loop ~state:nstate
   with
   | Stm.End_of_input ->

@@ -1103,7 +1103,8 @@ module Backtrack : sig
   val branches_of : Stateid.t -> backup
 
   (* Returns the state that the command should backtract to *)
-  val undo_vernac_classifier : vernac_control -> Stateid.t * vernac_when
+  val undo_vernac_classifier : vernac_control -> doc:doc -> Stateid.t * vernac_when
+  val get_prev_proof : doc:doc -> Stateid.t -> Proof.t option
 
 end = struct (* {{{ *)
 
@@ -1161,7 +1162,17 @@ end = struct (* {{{ *)
              " If your use is intentional, you may want to disable this warning and pass" ^
              " the \"-async-proofs-cache force\" option to Coq."))
 
-  let undo_vernac_classifier v =
+  let back_tactic n (id,_,_,tactic,undo) =
+    let value = (if tactic then 1 else 0) - undo in
+    if Int.equal n 0 then `Stop id else `Cont (n-value)
+
+  let get_proof ~doc id =
+    let open Vernacstate in
+    match state_of_id ~doc id with
+    | `Valid (Some vstate) -> Some (Proof_global.proof_of_state vstate.proof)
+    | _ -> None
+
+  let undo_vernac_classifier v ~doc =
     if VCS.is_interactive () = `No && !cur_opt.async_proofs_cache <> Some Force
     then undo_costly_in_batch_mode v;
     try
@@ -1185,9 +1196,7 @@ end = struct (* {{{ *)
           oid, VtNow
       | VernacUndo n ->
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
-          let oid = fold_until (fun n (id,_,_,tactic,undo) ->
-            let value = (if tactic then 1 else 0) - undo in
-            if Int.equal n 0 then `Stop id else `Cont (n-value)) n id in
+          let oid = fold_until back_tactic n id in
           oid, VtLater
       | VernacUndoTo _
       | VernacRestart as e ->
@@ -1220,7 +1229,15 @@ end = struct (* {{{ *)
        CErrors.user_err ~hdr:"undo_vernac_classifier"
         Pp.(str "Cannot undo")
 
+  let get_prev_proof ~doc id =
+    try
+      let did = fold_until back_tactic 1 id in
+      get_proof ~doc did
+    with Not_found -> None
+
 end (* }}} *)
+
+let get_prev_proof = Backtrack.get_prev_proof
 
 let hints = ref Aux_file.empty_aux_file
 let set_compilation_hints file =
@@ -2785,7 +2802,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
       match c with
       (* Meta *)
       | VtMeta, _ ->
-        let id, w = Backtrack.undo_vernac_classifier expr in
+        let id, w = Backtrack.undo_vernac_classifier expr ~doc in
         process_back_meta_command ~newtip ~head id x w
 
       (* Query *)

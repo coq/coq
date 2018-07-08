@@ -110,6 +110,10 @@ val add : doc:doc -> ontop:Stateid.t -> ?newtip:Stateid.t ->
   bool -> Vernacexpr.vernac_control CAst.t ->
   doc * Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
 
+(* Returns the proof state before the last tactic that was applied at or before
+the specified state.  Used to compute proof diffs. *)
+val get_prev_proof : doc:doc -> Stateid.t -> Proof.t option
+
 (* [query at ?report_with cmd] Executes [cmd] at a given state [at],
    throwing away side effects except messages. Feedback will
    be sent with [report_with], which defaults to the dummy state id *)
