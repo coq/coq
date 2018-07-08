@@ -10,9 +10,9 @@ versions of Proof General.
 
 A somewhat out-of-date description of the async state machine is
 [documented here](https://github.com/ejgallego/jscoq/blob/master/etc/notes/coq-notes.md).
-OCaml types for the protocol can be found in the [`ide/interface.mli` file](/ide/interface.mli).
+OCaml types for the protocol can be found in the [`ide/interface.mli` file](/ide/protocol/interface.ml).
 
-Changes to the XML protocol are documented as part of [`dev/doc/changes.txt`](/dev/doc/changes.txt).
+Changes to the XML protocol are documented as part of [`dev/doc/changes.txt`](/dev/doc/changes.md).
 
 * [Commands](#commands)
   - [About](#command-about)
