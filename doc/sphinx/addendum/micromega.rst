@@ -145,7 +145,7 @@ weakness, the :tacn:`lia` tactic is using recursively a combination of:
 + linear *positivstellensatz* refutations;
 + cutting plane proofs;
 + case split.
-  
+
 Cutting plane proofs
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -250,6 +250,8 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
 
 .. [#] Support for :g:`nat` and :g:`N` is obtained by pre-processing the goal with
   the ``zify`` tactic.
+.. [#] Support for :g:`Z.div` and :g:`Z.modulo` is obtained by pre-processing the goal with
+  the `Z.div_mod_to_quot_rem` tactic, which is called by `zify`.
 .. [#] Sources and binaries can be found at https://projects.coin-or.org/Csdp
 .. [#] Variants deal with equalities and strict inequalities.
 .. [#] In practice, the oracle might fail to produce such a refutation.

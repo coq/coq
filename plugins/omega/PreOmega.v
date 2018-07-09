@@ -12,6 +12,38 @@ Require Import Arith Max Min BinInt BinNat Znat Nnat.
 
 Local Open Scope Z_scope.
 
+(** * [Z.div_mod_to_quot_rem]: the tactic for preprocessing [Z.div] and [Z.modulo] *)
+
+(** This tactic uses the complete specification of [Z.div] and
+    [Z.modulo] to remove these functions from the goal without losing
+    information. *)
+
+Module Z.
+  Lemma div_mod_cases x y
+  : ((x = y * (x/y) + x mod y /\ (0 <= x mod y < y \/ y < x mod y <= 0))
+     \/ (y = 0 /\ x / y = 0 /\ x mod y = 0)).
+  Proof.
+    destruct (Z.eq_dec y 0); subst;
+      [ right | left; auto using Z.div_mod, Z.mod_bound_or ].
+    destruct x; cbv; repeat esplit.
+  Qed.
+
+  Ltac div_mod_to_quot_rem_generalize x y :=
+    pose proof (div_mod_cases x y);
+    let q := fresh "q" in
+    let r := fresh "r" in
+    set (q := x / y) in *;
+    set (r := x mod y) in *;
+    clearbody q r.
+  Ltac div_mod_to_quot_rem_step :=
+    match goal with
+    | [ |- context[?x / ?y] ] => div_mod_to_quot_rem_generalize x y
+    | [ |- context[?x mod ?y] ] => div_mod_to_quot_rem_generalize x y
+    | [ H : context[?x / ?y] |- _ ] => div_mod_to_quot_rem_generalize x y
+    | [ H : context[?x mod ?y] |- _ ] => div_mod_to_quot_rem_generalize x y
+    end.
+  Ltac div_mod_to_quot_rem := repeat div_mod_to_quot_rem_step.
+End Z.
 
 (** * zify: the Z-ification tactic *)
 
@@ -423,4 +455,4 @@ Ltac zify_N := repeat zify_N_rel; repeat zify_N_op; unfold Z_of_N' in *.
 
 (** The complete Z-ification tactic *)
 
-Ltac zify := repeat (zify_nat; zify_positive; zify_N); zify_op.
+Ltac zify := repeat (zify_nat; zify_positive; zify_N); zify_op; Z.div_mod_to_quot_rem.

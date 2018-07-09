@@ -288,6 +288,11 @@ Standard Library
   impacts users running Coq without the init library (`-nois` or
   `-noinit`) and also issuing `Require Import Coq.Init.Datatypes`.
 
+- Tactic `zify` (and therefore `lia`, `nia`, `romega`, etc) now
+  supports `Z.div` and `Z.modulo` via the `Z.div_mod_to_quot_rem`
+  tactic in `PreOmega.v`, which poses the specifying equation for
+  `Z.div` and `Z.modulo` before replacing them with atoms.
+
 Tools
 
 - Coq_makefile lets one override or extend the following variables from
