@@ -4190,7 +4190,7 @@ datatype: see :ref:`quote` for the full details.
   Happens when quote is not able to perform inversion properly.
 
 
-.. tacv::  quote ident {* @ident}
+.. tacv::  quote @ident {* @ident}
 
   All terms that are built only with :n:`{* @ident}` will be considered by quote
   as constants rather than variables.
