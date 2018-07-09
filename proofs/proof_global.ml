@@ -163,7 +163,7 @@ let with_current_proof f =
         | None -> Proofview.tclUNIT ()
         | Some tac ->
           let open Geninterp in
-          let ist = { lfun = Id.Map.empty; extra = TacStore.empty } in
+          let ist = empty_interp_sign in
           let Genarg.GenArg (Genarg.Glbwit tag, tac) = tac in
           let tac = Geninterp.interp tag ist tac in
           Ftactic.run tac (fun _ -> Proofview.tclUNIT ())

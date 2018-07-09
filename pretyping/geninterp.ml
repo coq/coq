@@ -88,6 +88,8 @@ type interp_sign = {
 
 type ('glb, 'top) interp_fun = interp_sign -> 'glb -> 'top Ftactic.t
 
+let empty_interp_sign = { lfun = Id.Map.empty; extra = TacStore.empty }
+
 module InterpObj =
 struct
   type ('raw, 'glb, 'top) obj = ('glb, Val.t) interp_fun

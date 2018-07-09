@@ -1237,9 +1237,7 @@ let gentac gen gl =
 let genstac (gens, clr) =
   tclTHENLIST (old_cleartac clr :: List.rev_map gentac gens)
 
-let gen_tmp_ids
-  ?(ist=Geninterp.({ lfun = Id.Map.empty; extra = Tacinterp.TacStore.empty })) gl
-=
+let gen_tmp_ids ?(ist=Geninterp.empty_interp_sign) gl =
   let gl, ctx = pull_ctx gl in
   push_ctxs ctx
     (tclTHENLIST
