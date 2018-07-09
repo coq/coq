@@ -1699,7 +1699,8 @@ let abstract_tycon ?loc env evdref subst tycon extenv t =
 	let ty = get_type_of env !evdref t in
 	  Evarutil.evd_comb1 (refresh_universes (Some false) env) evdref ty
       in
-      let ty = lift (-k) (aux x ty) in
+      let dummy_subst = List.init k (fun _ -> mkProp) in
+      let ty = substl dummy_subst (aux x ty) in
       let depvl = free_rels !evdref ty in
       let inst =
 	List.map_i
