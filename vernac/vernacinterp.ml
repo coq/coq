@@ -12,14 +12,21 @@ open Util
 open Pp
 open CErrors
 
-type deprecation = bool
+type deprecation = { since : string option ; note : string option }
+
+let mk_deprecation ?(since=None) ?(note=None) () =
+  { since ; note }
 
 type atts = {
   loc : Loc.t option;
   locality : bool option;
   polymorphic : bool;
   program : bool;
+  deprecated : deprecation option;
 }
+
+let mk_atts ?(loc=None) ?(locality=None) ?(polymorphic=false) ?(program=false) ?(deprecated=None) () : atts =
+  { loc ; locality ; polymorphic ; program ; deprecated }
 
 type 'a vernac_command = 'a -> atts:atts -> st:Vernacstate.t -> Vernacstate.t
 
@@ -28,7 +35,7 @@ type plugin_args = Genarg.raw_generic_argument list
 (* Table of vernac entries *)
 let vernac_tab =
   (Hashtbl.create 211 :
-    (Vernacexpr.extend_name, deprecation * plugin_args vernac_command) Hashtbl.t)
+    (Vernacexpr.extend_name, bool * plugin_args vernac_command) Hashtbl.t)
 
 let vinterp_add depr s f =
   try

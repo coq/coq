@@ -153,8 +153,6 @@ open Pputils
       | SearchAbout sl ->
          keyword "Search" ++ spc() ++ prlist_with_sep spc pr_search_about sl ++ pr_in_out_modules b
 
-  let pr_locality local = if local then keyword "Local" else keyword "Global"
-
   let pr_option_ref_value = function
     | QualidRefValue id -> pr_qualid id
     | StringRefValue s -> qs s
@@ -1195,21 +1193,24 @@ open Pputils
       | VernacEndSubproof ->
         return (str "}")
 
-let pr_vernac_flag =
+let rec pr_vernac_flag (k, v) =
+  let k = keyword k in
+  match v with
+  | VernacFlagEmpty -> k
+  | VernacFlagLeaf v -> k ++ str " = " ++ qs v
+  | VernacFlagList m -> k ++ str "( " ++ pr_vernac_flags m ++ str " )"
+and pr_vernac_flags m =
+  prlist_with_sep (fun () -> str ", ") pr_vernac_flag m
+
+let pr_vernac_attributes =
   function
-  | VernacPolymorphic true -> keyword "Polymorphic"
-  | VernacPolymorphic false -> keyword "Monomorphic"
-  | VernacProgram -> keyword "Program"
-  | VernacLocal local -> pr_locality local
+  | [] -> mt ()
+  | flags ->  str "#[" ++ pr_vernac_flags flags ++ str "]" ++ cut ()
 
   let rec pr_vernac_control v =
     let return = tag_vernac v in
     match v with
-    | VernacExpr (f, v') ->
-      List.fold_right
-        (fun f a -> pr_vernac_flag f ++ spc() ++ a)
-        f
-        (pr_vernac_expr v' ++ sep_end v')
+    | VernacExpr (f, v') -> pr_vernac_attributes f ++ pr_vernac_expr v' ++ sep_end v'
     | VernacTime (_,{v}) ->
       return (keyword "Time" ++ spc() ++ pr_vernac_control v)
     | VernacRedirect (s, {v}) ->

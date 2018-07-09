@@ -459,13 +459,14 @@ type nonrec vernac_expr =
   (* For extension *)
   | VernacExtend of extend_name * Genarg.raw_generic_argument list
 
-type nonrec vernac_flag =
-  | VernacProgram
-  | VernacPolymorphic of bool
-  | VernacLocal of bool
+type vernac_flags = (string * vernac_flag_value) list
+and vernac_flag_value =
+  | VernacFlagEmpty
+  | VernacFlagLeaf of string
+  | VernacFlagList of vernac_flags
 
 type vernac_control =
-  | VernacExpr of vernac_flag list * vernac_expr
+  | VernacExpr of vernac_flags * vernac_expr
   (* boolean is true when the `-time` batch-mode command line flag was set.
      the flag is used to print differently in `-time` vs `Time foo` *)
   | VernacTime of bool * vernac_control CAst.t

@@ -68,6 +68,8 @@ Vernacular Commands
 - New Set Hint Variables/Constants Opaque/Transparent commands for setting
   globally the opacity flag of variables and constants in hint databases,
   overwritting the opacity set of the hint database.
+- Added generic syntax for “attributes”, as in:
+  `#[local] Lemma foo : bar.`
 
 Coq binaries and process model
 

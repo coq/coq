@@ -199,11 +199,8 @@ let classify_vernac e =
   in
   let rec static_control_classifier ~poly = function
     | VernacExpr (f, e) ->
-      let poly = List.fold_left (fun poly f ->
-          match f with
-          | VernacPolymorphic b -> b
-          | (VernacProgram | VernacLocal _) -> poly
-        ) poly f in
+      let _, atts = Vernacentries.attributes_of_flags f Vernacinterp.(mk_atts ~polymorphic:poly ()) in
+      let poly = atts.Vernacinterp.polymorphic in
       static_classifier ~poly e
     | VernacTimeout (_,e) -> static_control_classifier ~poly e
     | VernacTime (_,{v=e}) | VernacRedirect (_, {v=e}) ->

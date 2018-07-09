@@ -79,27 +79,50 @@ GRAMMAR EXTEND Gram
       | IDENT "Redirect"; s = ne_string; c = located_vernac -> { VernacRedirect (s, c) }
       | IDENT "Timeout"; n = natural; v = vernac_control -> { VernacTimeout(n,v) }
       | IDENT "Fail"; v = vernac_control -> { VernacFail v }
-      | v = vernac -> { let (f, v) = v in VernacExpr(f, v) } ]
+      | v = decorated_vernac -> { let (f, v) = v in VernacExpr(f, v) } ]
+    ]
+  ;
+  decorated_vernac:
+    [ [ a = attributes ; fv = vernac -> { let (f, v) = fv in (List.append a f, v) }
+      | fv = vernac -> { fv } ]
+    ]
+  ;
+  attributes:
+    [ [ "#[" ; a = attribute_list ; "]" -> { a } ]
+    ]
+  ;
+  attribute_list:
+    [ [ a = LIST0 attribute SEP "," -> { a } ]
+    ]
+  ;
+  attribute:
+    [ [ k = ident ; v = attribute_value -> { Names.Id.to_string k, v } ]
+    ]
+  ;
+  attribute_value:
+    [ [ "=" ; v = string -> { VernacFlagLeaf v }
+      | "(" ; a = attribute_list ; ")" -> { VernacFlagList a }
+      | -> { VernacFlagEmpty } ]
     ]
   ;
   vernac:
-    [ [ IDENT "Local"; v = vernac_poly -> { let (f, v) = v in (VernacLocal true :: f, v) }
-      | IDENT "Global"; v = vernac_poly -> { let (f, v) = v in (VernacLocal false :: f, v) }
+    [ [ IDENT "Local"; v = vernac_poly -> { let (f, v) = v in (("local", VernacFlagEmpty) :: f, v) }
+      | IDENT "Global"; v = vernac_poly -> { let (f, v) = v in (("global", VernacFlagEmpty) :: f, v) }
 
       | v = vernac_poly -> { v } ]
     ]
   ;
   vernac_poly:
-    [ [ IDENT "Polymorphic"; v = vernac_aux -> { let (f, v) = v in (VernacPolymorphic true :: f, v) }
-      | IDENT "Monomorphic"; v = vernac_aux -> { let (f, v) = v in (VernacPolymorphic false :: f, v) }
+    [ [ IDENT "Polymorphic"; v = vernac_aux -> { let (f, v) = v in (("polymorphic", VernacFlagEmpty) :: f, v) }
+      | IDENT "Monomorphic"; v = vernac_aux -> { let (f, v) = v in (("monomorphic", VernacFlagEmpty) :: f, v) }
       | v = vernac_aux -> { v } ]
     ]
   ;
   vernac_aux:
     (* Better to parse "." here: in case of failure (e.g. in coerce_to_var), *)
     (* "." is still in the stream and discard_to_dot works correctly         *)
-    [ [ IDENT "Program"; g = gallina; "." -> { ([VernacProgram], g) }
-      | IDENT "Program"; g = gallina_ext; "." -> { ([VernacProgram], g) }
+    [ [ IDENT "Program"; g = gallina; "." -> { (["program", VernacFlagEmpty], g) }
+      | IDENT "Program"; g = gallina_ext; "." -> { (["program", VernacFlagEmpty], g) }
       | g = gallina; "." -> { ([], g) }
       | g = gallina_ext; "." -> { ([], g) }
       | c = command; "." -> { ([], c) }
