@@ -284,7 +284,7 @@ let emit_instr env = function
       if n <= 1 then out env (opSETFIELD0+n)
       else (out env opSETFIELD;out_int env n)
   | Ksequence _ -> invalid_arg "Cemitcodes.emit_instr"
-  | Kproj (n,p) -> out env opPROJ; out_int env n; slot_for_proj_name env p
+  | Kproj p -> out env opPROJ; out_int env (Projection.Repr.arg p); slot_for_proj_name env p
   | Kensurestackcapacity size -> out env opENSURESTACKCAPACITY; out_int env size
   (* spiwack *)
   | Kbranch lbl -> out env opBRANCH; out_label env lbl
