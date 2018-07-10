@@ -161,21 +161,6 @@ let decl_constant na univs c =
 let ltac_call tac (args:glob_tactic_arg list) =
   TacArg(Loc.tag @@ TacCall (Loc.tag (ArgArg(Loc.tag @@ Lazy.force tac),args)))
 
-(* Calling a locally bound tactic *)
-let ltac_lcall tac args =
-  TacArg(Loc.tag @@ TacCall (Loc.tag (ArgVar CAst.(make @@ Id.of_string tac),args)))
-
-let ltac_apply (f : Value.t) (args: Tacinterp.Value.t list) =
-  let fold arg (i, vars, lfun) =
-    let id = Id.of_string ("x" ^ string_of_int i) in
-    let x = Reference (ArgVar CAst.(make id)) in
-    (succ i, x :: vars, Id.Map.add id arg lfun)
-  in
-  let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
-  let lfun = Id.Map.add (Id.of_string "F") f lfun in
-  let ist = { (Tacinterp.default_ist ()) with Tacinterp.lfun = lfun; } in
-  Tacinterp.eval_tactic_ist ist (ltac_lcall "F" args)
-
 let dummy_goal env sigma =
   let (gl,_,sigma) = 
     Goal.V82.mk_goal sigma (named_context_val env) EConstr.mkProp Evd.Store.empty in
@@ -765,7 +750,7 @@ let ring_lookup (f : Value.t) lH rl t =
       let rl = Value.of_constr (make_term_list env evdref (EConstr.of_constr e.ring_carrier) rl) in
       let lH = carg (make_hyp_list env evdref lH) in
       let ring = ltac_ring_structure e in
-      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (ltac_apply f (ring@[lH;rl]))
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (Value.apply f (ring@[lH;rl]))
     with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end
 
@@ -1051,6 +1036,6 @@ let field_lookup (f : Value.t) lH rl t =
       let rl = Value.of_constr (make_term_list env evdref (EConstr.of_constr e.field_carrier) rl) in
       let lH = carg (make_hyp_list env evdref lH) in
       let field = ltac_field_structure e in
-      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (ltac_apply f (field@[lH;rl]))
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (Value.apply f (field@[lH;rl]))
     with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end

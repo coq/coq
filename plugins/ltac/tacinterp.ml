@@ -141,16 +141,6 @@ let extract_trace ist = match TacStore.get ist.extra f_trace with
 | None -> []
 | Some l -> l
 
-module Value = struct
-
-  include Taccoerce.Value
-
-  let of_closure ist tac =
-    let closure = VFun (UnnamedAppl,extract_trace ist, ist.lfun, [], tac) in
-    of_tacvalue closure
-
-end
-
 let print_top_val env v = Pptactic.pr_value Pptactic.ltop v
 
 let catching_error call_trace fail (e, info) =
@@ -1859,6 +1849,31 @@ let eval_tactic t =
 let eval_tactic_ist ist t =
   Proofview.tclLIFT db_initialize <*>
   interp_tactic ist t
+
+(** FFI *)
+
+module Value = struct
+
+  include Taccoerce.Value
+
+  let of_closure ist tac =
+    let closure = VFun (UnnamedAppl,extract_trace ist, ist.lfun, [], tac) in
+    of_tacvalue closure
+
+  (** Apply toplevel tactic values *)
+  let apply (f : value) (args: value list) =
+    let fold arg (i, vars, lfun) =
+      let id = Id.of_string ("x" ^ string_of_int i) in
+      let x = Reference (ArgVar CAst.(make id)) in
+      (succ i, x :: vars, Id.Map.add id arg lfun)
+    in
+    let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
+    let lfun = Id.Map.add (Id.of_string "F") f lfun in
+    let ist = { (default_ist ()) with lfun = lfun; } in
+    let tac = TacArg(Loc.tag @@ TacCall (Loc.tag (ArgVar CAst.(make @@ Id.of_string "F"),args))) in
+    eval_tactic_ist ist tac
+
+end
 
 (* globalization + interpretation *)
 
