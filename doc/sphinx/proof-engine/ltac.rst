@@ -117,7 +117,7 @@ mode but it can also be used in toplevel definitions as shown below.
                      : | numgoals
                      : | guard `test`
                      : | assert_fails `tacexpr3`
-                     : | assert_suceeds `tacexpr3`
+                     : | assert_succeeds `tacexpr3`
                      : | `atomic_tactic`
                      : | `qualid` `tacarg` ... `tacarg`
                      : | `atom`
@@ -500,7 +500,7 @@ Coq provides a derived tactic to check that a tactic has *at least one*
 success:
 
 .. tacn:: assert_succeeds @expr
-   :name: assert_suceeds
+   :name: assert_succeeds
 
    This behaves like
    :n:`tryif (assert_fails tac) then fail 0 tac "fails" else idtac`.
