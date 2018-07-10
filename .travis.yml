@@ -253,7 +253,7 @@ before_install:
 
 install:
 - if [ "${TRAVIS_OS_NAME}" == "linux" ]; then travis_retry ./dev/tools/sudo-apt-get-update.sh -q; fi
-- if [ "${TRAVIS_OS_NAME}" == "linux" ]; then sudo apt-get install -y opam aspcud gcc-multilib; fi
+- if [ "${TRAVIS_OS_NAME}" == "linux" ]; then sudo apt-get install -y opam aspcud gcc-multilib --allow-unauthenticated; fi
 - opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
 - opam switch "$COMPILER" && opam update
 - eval $(opam config env)
