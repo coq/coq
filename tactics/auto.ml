@@ -400,11 +400,7 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=
 
 and trivial_resolve sigma dbg mod_delta db_list local_db secvars cl =
   try
-    let head =
-      try let hdconstr = decompose_app_bound sigma cl in
-	    Some hdconstr
-      with Bound -> None
-    in
+    let head = decompose_app_bound sigma cl in
       List.map (tac_of_hint dbg db_list local_db cl)
 	(priority
 	    (my_find_search mod_delta sigma db_list local_db secvars head cl))
@@ -447,11 +443,7 @@ let h_trivial ?(debug=Off) lems l = gen_trivial ~debug lems l
 
 let possible_resolve sigma dbg mod_delta db_list local_db secvars cl =
   try
-    let head =
-      try let hdconstr = decompose_app_bound sigma cl in
-	    Some hdconstr
-      with Bound -> None
-    in
+    let head = decompose_app_bound sigma cl in
       List.map (tac_of_hint dbg db_list local_db cl)
 	(my_find_search mod_delta sigma db_list local_db secvars head cl)
   with Not_found -> []

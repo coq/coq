@@ -21,8 +21,6 @@ open Typeclasses
 
 (** {6 General functions. } *)
 
-exception Bound
-
 val decompose_app_bound :
   evar_map -> constr -> (GlobRef.t * constr array) option
 

@@ -188,12 +188,12 @@ and e_my_find_search env sigma db_list local_db secvars hdc concl =
   List.map tac_of_hint hintl
 
 and e_trivial_resolve env sigma db_list local_db secvars gl =
-  let hd = try Some (decompose_app_bound sigma gl) with Bound -> None in
+  let hd = decompose_app_bound sigma gl in
   try priority (e_my_find_search env sigma db_list local_db secvars hd gl)
   with Not_found -> []
 
 let e_possible_resolve env sigma db_list local_db secvars gl =
-  let hd = try Some (decompose_app_bound sigma gl) with Bound -> None in
+  let hd = decompose_app_bound sigma gl in
   try List.map (fun (b, (tac, pp)) -> (tac, b, pp))
                (e_my_find_search env sigma db_list local_db secvars hd gl)
   with Not_found -> []

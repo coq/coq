@@ -448,13 +448,13 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
   in List.map tac_of_hint hintl
 
 and e_trivial_resolve db_list local_db secvars only_classes env sigma concl =
-  let hd = try Some (decompose_app_bound sigma concl) with Bound -> None in
+  let hd = decompose_app_bound sigma concl in
   try
     e_my_find_search db_list local_db secvars hd true only_classes env sigma concl
   with Not_found -> []
 
 let e_possible_resolve db_list local_db secvars only_classes env sigma concl =
-  let hd = try Some (decompose_app_bound sigma concl) with Bound -> None in
+  let hd = decompose_app_bound sigma concl in
   try
     e_my_find_search db_list local_db secvars hd false only_classes env sigma concl
   with Not_found -> []

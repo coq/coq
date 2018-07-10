@@ -66,12 +66,12 @@ let decompose_app_bound sigma t =
   let _,ccl = decompose_prod_assum sigma t in
   let hd,args = decompose_app_vect sigma ccl in
   match EConstr.kind sigma hd with
-    | Const (c,u) -> ConstRef c, args
-    | Ind (i,u) -> IndRef i, args
-    | Construct (c,u) -> ConstructRef c, args
-    | Var id -> VarRef id, args
-    | Proj (p, c) -> ConstRef (Projection.constant p), Array.cons c args
-    | _ -> raise Bound
+  | Const (c,u) -> Some (ConstRef c, args)
+  | Ind (i,u) -> Some (IndRef i, args)
+  | Construct (c,u) -> Some (ConstructRef c, args)
+  | Var id -> Some (VarRef id, args)
+  | Proj (p, c) -> Some (ConstRef (Projection.constant p), Array.cons c args)
+  | _ -> None
 
 (** Compute the set of section variables that remain in the named context.
     Starts from the top to the bottom of the context, stops at the first
@@ -1533,12 +1533,13 @@ let pr_hint_term env sigma cl =
   try
     let dbs = current_db () in
     let valid_dbs =
-      let fn = try
-	  let hdc = decompose_app_bound sigma cl in
+      let fn =
+        match decompose_app_bound sigma cl with
+        | Some hdc ->
 	    if occur_existential sigma cl then
 	      Hint_db.map_existential sigma ~secvars:Id.Pred.full hdc cl
 	    else Hint_db.map_auto sigma ~secvars:Id.Pred.full hdc cl
-	with Bound -> Hint_db.map_none ~secvars:Id.Pred.full
+        | None -> Hint_db.map_none ~secvars:Id.Pred.full
       in
       let fn db = List.map (fun x -> 0, x) (fn db) in
       List.map (fun (name, db) -> (name, db, fn db)) dbs
