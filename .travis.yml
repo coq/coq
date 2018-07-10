@@ -67,12 +67,6 @@ matrix:
       - TEST_TARGET="validate"   COMPILER="${COMPILER_BE}+flambda" CAMLP5_VER="${CAMLP5_VER_BE}" NATIVE_COMP="no" EXTRA_CONF="-flambda-opts -O3" FINDLIB_VER="${FINDLIB_VER_BE}"
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="ci-color"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-compcert" EXTRA_OPAM="menhir"
-    - if: NOT (type = pull_request)
-      env:
       - TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
     - if: NOT (type = pull_request)
       env:
@@ -80,9 +74,6 @@ matrix:
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-equations"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-fiat-parsers"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-flocq"
@@ -98,9 +89,6 @@ matrix:
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-pidetop"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-sf"
 
     - env:
       - TEST_TARGET="lint"
