@@ -116,21 +116,8 @@ let exact poly (c,clenv) =
     (exact_check c)
   end
 
-(* Util *)
 
-(* Serait-ce possible de compiler d'abord la tactique puis de faire la
-   substitution sans passer par bdize dont l'objectif est de préparer un
-   terme pour l'affichage ? (HH) *)
-
-(* Si on enlève le dernier argument (gl) conclPattern est calculé une
-fois pour toutes : en particulier si Pattern.somatch produit une UserError
-Ce qui fait que si la conclusion ne matche pas le pattern, Auto échoue, même
-si après Intros la conclusion matche le pattern.
-*)
-
-(* conclPattern doit échouer avec error car il est rattraper par tclFIRST *)
-
-let conclPattern concl pat tac =
+let conclPattern argsmap concl pat { Hints.arg_names ; code } =
   let constr_bindings env sigma =
     match pat with
     | None -> Proofview.tclUNIT Id.Map.empty
@@ -140,6 +127,16 @@ let conclPattern concl pat tac =
 	with Constr_matching.PatternMatchingFailure ->
           Tacticals.New.tclZEROMSG (str "pattern-matching failed")
   in
+  (* Check argument passing is OK *)
+  let missing_arg_name = ref (Id.of_string "dummy") in
+  let not_passed x =
+    if not (Id.Map.mem x argsmap) then begin
+      missing_arg_name := x;
+      true
+    end else false in
+  if List.exists not_passed arg_names then
+    CErrors.user_err ~hdr:"Hint Extern"
+      Pp.(str "argument " ++ Id.print !missing_arg_name ++ str " is missing");
   Proofview.Goal.enter begin fun gl ->
      let env = Proofview.Goal.env gl in
      let sigma = Tacmach.New.project gl in
@@ -151,9 +148,9 @@ let conclPattern concl pat tac =
      | _ -> assert false
      in
      let fold id c accu = Id.Map.add id (inj c) accu in
-     let lfun = Id.Map.fold fold constr_bindings Id.Map.empty in
-     let ist = { lfun; extra = TacStore.empty } in
-     match tac with
+     let lfun = Id.Map.fold fold constr_bindings argsmap in
+     let ist = { Geninterp.empty_interp_sign with lfun } in
+     match code with
      | GenArg (Glbwit wit, tac) ->
       Ftactic.run (Geninterp.interp wit ist tac) (fun _ -> Proofview.tclUNIT ())
   end
@@ -387,8 +384,9 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=
 	 Tacticals.New.tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)
        else Tacticals.New.tclFAIL 0 (str"Unbound reference")
        end
-    | Extern tacast ->
-      conclPattern concl p tacast
+    | Extern ({ arg_names = [] } as h) ->
+      conclPattern Id.Map.empty concl p h
+    | Extern _ -> CErrors.user_err ~hdr:"auto" (str "external hints with arguments are not supported")
   in
   let pr_hint () =
     let origin = match dbname with

@@ -134,7 +134,7 @@ type hints_expr = Hints.hints_expr =
   | HintsTransparency of qualid hints_transparency_target * bool
   | HintsMode of qualid * Hints.hint_mode list
   | HintsConstructors of qualid list
-  | HintsExtern of int * constr_expr option * Genarg.raw_generic_argument
+  | HintsExtern of Id.t list * int * constr_expr option * Genarg.raw_generic_argument
 [@@ocaml.deprecated "Please use [Hints.hints_expr]"]
 
 type search_restriction =

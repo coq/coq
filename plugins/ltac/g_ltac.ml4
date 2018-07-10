@@ -342,9 +342,11 @@ GEXTEND Gram
           Vernacexpr.VernacProof (ta,Some l) ] ]
   ;
   hint:
-    [ [ IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern ; "=>";
+    [ [ IDENT "Extern";
+        args = LIST0 [ v = IDENT -> Id.of_string v ];
+        n = natural; c = OPT Constr.constr_pattern ; "=>";
         tac = Pltac.tactic ->
-          Vernacexpr.HintsExtern (n,c, in_tac tac) ] ]
+          Vernacexpr.HintsExtern (args,n,c, in_tac tac) ] ]
   ;
   operconstr: LEVEL "0"
     [ [ IDENT "ltac"; ":"; "("; tac = Pltac.tactic_expr; ")" ->

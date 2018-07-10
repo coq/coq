@@ -33,9 +33,10 @@ val unify_resolve : polymorphic -> Unification.unify_flags -> (raw_hint * clause
 (** [ConclPattern concl pat tacast]:
    if the term concl matches the pattern pat, (in sense of
    [Pattern.somatches], then replace [?1] [?2] metavars in tacast by the
-   right values to build a tactic *)
+   right values to build a tactic.
+   [ist] can contain pre-existing bindings (empty by default) *)
 
-val conclPattern : constr -> constr_pattern option -> Genarg.glob_generic_argument -> unit Proofview.tactic
+val conclPattern : Geninterp.Val.t Names.Id.Map.t -> constr -> constr_pattern option -> Hints.extern_hint_tac -> unit Proofview.tactic
 
 (** The Auto tactic *)
 

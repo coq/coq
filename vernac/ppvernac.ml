@@ -220,9 +220,11 @@ open Pputils
         | HintsConstructors c ->
           keyword "Constructors"
           ++ spc() ++ prlist_with_sep spc pr_qualid c
-        | HintsExtern (n,c,tac) ->
+        | HintsExtern (names,n,c,tac) ->
           let pat = match c with None -> mt () | Some pat -> pr_pat pat in
-          keyword "Extern" ++ spc() ++ int n ++ spc() ++ pat ++ str" =>" ++
+          keyword "Extern" ++ spc () ++
+            prlist_with_sep spc Id.print names ++
+            spc() ++ int n ++ spc() ++ pat ++ str" =>" ++
             spc() ++ Pputils.pr_raw_generic (Global.env ()) tac
     in
     hov 2 (keyword "Hint "++ pph ++ opth)

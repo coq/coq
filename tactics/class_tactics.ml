@@ -428,7 +428,11 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
          Tacticals.New.tclTHEN fst snd
       | Unfold_nth c ->
          Proofview.tclPROGRESS (unfold_in_concl [AllOccurrences,c])
-      | Extern tacast -> conclPattern concl p tacast
+      | Extern ({ Hints.arg_names = [] } as h) ->
+          conclPattern Id.Map.empty concl p h
+      | Extern _ ->
+          CErrors.user_err ~hdr:"typeclasses_eauto"
+            (str "external hints with arguments are not supported")
       in
       let tac = run_hint t tac in
       let tac = if complete then Tacticals.New.tclCOMPLETE tac else tac in

@@ -176,7 +176,11 @@ and e_my_find_search env sigma db_list local_db secvars hdc concl =
           Tacticals.New.tclTHEN (unify_e_resolve poly st (term,cl))
             (e_trivial_fail_db db_list local_db)
         | Unfold_nth c -> reduce (Unfold [AllOccurrences,c]) onConcl
-        | Extern tacast -> conclPattern concl p tacast
+        | Extern ({ Hints.arg_names = [] } as h) ->
+            conclPattern Id.Map.empty concl p h
+        | Extern _ ->
+            CErrors.user_err ~hdr:"eauto"
+               (str "external hints with arguments are not supported")
        in
        let tac = run_hint t tac in
        (tac, lazy (pr_hint env sigma t)))

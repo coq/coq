@@ -101,13 +101,18 @@ let empty_hint_info =
 
 type hint_info_expr = Constrexpr.constr_pattern_expr hint_info_gen
 
+type extern_hint_tac = {
+  arg_names : Id.t list;
+  code : Genarg.glob_generic_argument;
+}
+
 type 'a hint_ast =
   | Res_pf     of 'a (* Hint Apply *)
   | ERes_pf    of 'a (* Hint EApply *)
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
-  | Extern     of Genarg.glob_generic_argument (* Hint Extern *)
+  | Extern     of extern_hint_tac (* Hint Extern *)
 
 
 type 'a hints_path_atom_gen =
@@ -178,7 +183,7 @@ type hints_expr =
   | HintsTransparency of qualid hints_transparency_target * bool
   | HintsMode of qualid * hint_mode list
   | HintsConstructors of qualid list
-  | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
+  | HintsExtern of Id.t list * int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
 
 type import_level = [ `LAX | `WARN | `STRICT ]
 
@@ -327,7 +332,7 @@ let instantiate_hint env sigma p =
       Res_pf_THEN_trivial_fail (c, mk_clenv c)
     | Give_exact c -> Give_exact (c, mk_clenv c)
     | Unfold_nth e -> Unfold_nth e
-    | Extern t -> Extern t
+    | Extern _ as x -> x
   in
   { p with code = { p.code with obj = code } }
 
@@ -964,7 +969,7 @@ let make_unfold eref =
      secvars = secvars_of_global (Global.env ()) g;
      code = with_uid (Unfold_nth eref) })
 
-let make_extern pri pat tacast =
+let make_extern pri pat arg_names code =
   let hdconstr = Option.map try_head_pattern pat in
   (hdconstr,
    { pri = pri;
@@ -973,7 +978,7 @@ let make_extern pri pat tacast =
      name = PathAny;
      db = None;
      secvars = Id.Pred.empty; (* Approximation *)
-     code = with_uid (Extern tacast) })  
+     code = with_uid (Extern { arg_names ; code }) })
 
 let make_mode ref m = 
   let open Term in
@@ -1126,9 +1131,9 @@ let subst_autohint (subst, obj) =
       | Unfold_nth ref ->
           let ref' = subst_evaluable_reference subst ref in
           if ref==ref' then data.code.obj else Unfold_nth ref'
-      | Extern tac ->
+      | Extern ({ code = tac } as h) ->
 	  let tac' = Genintern.generic_substitute subst tac in
-	  if tac==tac' then data.code.obj else Extern tac'
+          if tac==tac' then data.code.obj else Extern { h with code = tac' }
     in
     let name' = subst_path_atom subst data.name in
     let uid' = subst_kn subst data.code.uid in
@@ -1242,17 +1247,17 @@ let add_transparency l b local dbnames =
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_extern info tacast local dbname =
+let add_extern info args tacast local dbname =
   let pat = match info.hint_pattern with
   | None -> None
   | Some (_, pat) -> Some pat
   in
   let hint = make_hint ~local dbname
-		       (AddHints [make_extern (Option.get info.hint_priority) pat tacast]) in
+                       (AddHints [make_extern (Option.get info.hint_priority) pat args tacast]) in
   Lib.add_anonymous_leaf (inAutoHint hint)
 
-let add_externs info tacast local dbnames =
-  List.iter (add_extern info tacast local) dbnames
+let add_externs info args tacast local dbnames =
+  List.iter (add_extern info args tacast local) dbnames
 
 let add_trivials env sigma l local dbnames =
   List.iter
@@ -1273,7 +1278,7 @@ type hints_entry =
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
-  | HintsExternEntry of hint_info * Genarg.glob_generic_argument
+  | HintsExternEntry of hint_info * Id.t list * Genarg.glob_generic_argument
 
 let default_prepare_hint_ident = Id.of_string "H"
 
@@ -1400,13 +1405,13 @@ let interp_hints poly =
                         (Declareops.inductive_is_polymorphic mib), true,
 			PathHints [gr], IsGlobRef gr)
       in HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
-  | HintsExtern (pri, patcom, tacexp) ->
+  | HintsExtern (args, pri, patcom, tacexp) ->
       let pat =	Option.map (fp sigma) patcom in
-      let l = match pat with None -> [] | Some (l, _) -> l in
+      let l = args @ match pat with None -> [] | Some (l, _) -> l in
       let ltacvars = List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l in
       let env = Genintern.({ (empty_glob_sign env) with ltacvars }) in
       let _, tacexp = Genintern.generic_intern env tacexp in
-      HintsExternEntry ({ hint_priority = Some pri; hint_pattern = pat }, tacexp)
+      HintsExternEntry ({ hint_priority = Some pri; hint_pattern = pat }, args, tacexp)
 
 let add_hints ~local dbnames0 h =
   if String.List.mem "nocore" dbnames0 then
@@ -1422,8 +1427,8 @@ let add_hints ~local dbnames0 h =
   | HintsUnfoldEntry lhints -> add_unfolds lhints local dbnames
   | HintsTransparencyEntry (lhints, b) ->
       add_transparency lhints b local dbnames
-  | HintsExternEntry (info, tacexp) ->
-      add_externs info tacexp local dbnames
+  | HintsExternEntry (info, args, tacexp) ->
+      add_externs info args tacexp local dbnames
 
 let expand_constructor_hints env sigma lems =
   List.map_append (fun (evd,lem) ->
@@ -1487,8 +1492,10 @@ let pr_hint env sigma h = match h.obj with
       (str"simple apply " ++ pr_hint_elt env sigma c ++ str" ; trivial")
   | Unfold_nth c ->
     str"unfold " ++  pr_evaluable_reference c
-  | Extern tac ->
+  | Extern { arg_names = []; code = tac } ->
     str "(*external*) " ++ Pputils.pr_glb_generic env tac
+  | Extern { arg_names = names; code = tac } ->
+    str "(*external*) (fun " ++ prlist_with_sep spc Id.print names ++ str " => " ++ Pputils.pr_glb_generic env tac ++ str ")"
 
 let pr_id_hint env sigma (id, v) =
   let pr_pat p = str", pattern " ++ pr_lconstr_pattern_env env sigma p in

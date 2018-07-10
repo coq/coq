@@ -23,7 +23,8 @@ open Typeclasses
 
 exception Bound
 
-val decompose_app_bound : evar_map -> constr -> GlobRef.t * constr array
+val decompose_app_bound :
+  evar_map -> constr -> (GlobRef.t * constr array) option
 
 type debug = Debug | Info | Off
 
@@ -35,13 +36,18 @@ val empty_hint_info : 'a Typeclasses.hint_info_gen
 
 type hint_info_expr = Constrexpr.constr_pattern_expr hint_info_gen
 
+type extern_hint_tac = {
+  arg_names : Id.t list;
+  code : Genarg.glob_generic_argument;
+}
+
 type 'a hint_ast =
   | Res_pf     of 'a (* Hint Apply *)
   | ERes_pf    of 'a (* Hint EApply *)
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
-  | Extern     of Genarg.glob_generic_argument       (* Hint Extern *)
+  | Extern     of extern_hint_tac       (* Hint Extern *)
 
 type hint
 type raw_hint = constr * types * Univ.ContextSet.t
@@ -94,7 +100,7 @@ type hints_expr =
   | HintsTransparency of Libnames.qualid hints_transparency_target * bool
   | HintsMode of Libnames.qualid * hint_mode list
   | HintsConstructors of Libnames.qualid list
-  | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
+  | HintsExtern of Id.t list * int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
 
 type 'a hints_path_gen =
   | PathAtom of 'a hints_path_atom_gen
@@ -180,7 +186,7 @@ type hints_entry =
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
-  | HintsExternEntry of hint_info * Genarg.glob_generic_argument
+  | HintsExternEntry of hint_info * Id.t list * Genarg.glob_generic_argument
 
 val searchtable_map : hint_db_name -> hint_db
 
@@ -256,10 +262,10 @@ val make_resolves :
 val make_resolve_hyp :
   env -> evar_map -> named_declaration -> hint_entry list
 
-(** [make_extern pri pattern tactic_expr] *)
+(** [make_extern pri pattern arguments tactic_expr] *)
 
 val make_extern :
-  int -> constr_pattern option -> Genarg.glob_generic_argument
+  int -> constr_pattern option -> Id.t list -> Genarg.glob_generic_argument
       -> hint_entry
 
 val run_hint : hint ->
