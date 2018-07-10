@@ -55,7 +55,6 @@ after_script:
 # TODO figure out how to build doc for installed Coq
 .build-template: &build-template
   stage: build
-  retry: 1
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
