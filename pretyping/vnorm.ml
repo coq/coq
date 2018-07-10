@@ -311,7 +311,7 @@ and nf_predicate env sigma ind mip params v pT =
       let dom = mkApp(mkIndU ind,Array.append params rargs) in
       let body = nf_vtype (push_rel (LocalAssum (name,dom)) env) sigma vb in
       mkLambda(name,dom,body)
-    | _ -> nf_val env sigma v crazy_type
+    | _ -> assert false
 
 and nf_args env sigma vargs ?from:(f=0) t =
   let t = ref t in
