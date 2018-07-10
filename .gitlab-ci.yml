@@ -200,7 +200,7 @@ build:edge+flambda:
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
-    COQ_EXTRA_CONF: "-native-compiler no -coqide opt -flambda-opts "
+    COQ_EXTRA_CONF: "-native-compiler yes -coqide opt -flambda-opts "
     COQ_EXTRA_CONF_QUOTE: "-O3 -unbox-closures"
 
 windows64:

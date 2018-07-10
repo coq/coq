@@ -65,7 +65,7 @@ matrix:
       - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="validate"   COMPILER="${COMPILER_BE}+flambda" CAMLP5_VER="${CAMLP5_VER_BE}" NATIVE_COMP="no" EXTRA_CONF="-flambda-opts -O3" FINDLIB_VER="${FINDLIB_VER_BE}"
+      - TEST_TARGET="validate"   COMPILER="${COMPILER_BE}+flambda" CAMLP5_VER="${CAMLP5_VER_BE}" EXTRA_CONF="-flambda-opts -O3" FINDLIB_VER="${FINDLIB_VER_BE}"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
@@ -154,7 +154,6 @@ matrix:
       - COMPILER="${COMPILER_BE}+flambda"
       - FINDLIB_VER="${FINDLIB_VER_BE}"
       - CAMLP5_VER="${CAMLP5_VER_BE}"
-      - NATIVE_COMP="no"
       - EXTRA_CONF="-coqide opt -with-doc yes -flambda-opts -O3"
       - EXTRA_OPAM="${LABLGTK_BE} ounit"
       before_install: *sphinx-install
