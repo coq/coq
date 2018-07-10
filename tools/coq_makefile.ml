@@ -309,8 +309,8 @@ let ensure_root_dir
     let source x = {thing=x; source=CmdLine} in
     let here_path = { path = "."; canonical_path = here } in
     { project with
-        ml_includes = source here_path :: ml_includes;
-        r_includes = source (here_path, "Top") :: r_includes }
+        ml_includes = ml_includes @ [source here_path];
+        r_includes = r_includes @ [source (here_path, "Top")] }
 ;;
 
 let warn_install_at_root_directory 
