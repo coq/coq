@@ -121,7 +121,7 @@ let load_vernac_core ~echo ~check ~interactive ~state file =
   let in_echo = if echo then Some (open_utf8_file_in file) else None in
   let input_cleanup () = close_in in_chan; Option.iter close_in in_echo in
 
-  let in_pa   = Pcoq.Gram.parsable ~file:(Loc.InFile file) (Stream.of_channel in_chan) in
+  let in_pa   = Pcoq.Parsable.make ~file:(Loc.InFile file) (Stream.of_channel in_chan) in
   let rstate  = ref state in
   (* For beautify, list of parsed sids *)
   let rids    = ref [] in
@@ -159,12 +159,12 @@ let load_vernac_core ~echo ~check ~interactive ~state file =
       rstate := state;
     done;
     input_cleanup ();
-    !rstate, !rids, Pcoq.Gram.comment_state in_pa
+    !rstate, !rids, Pcoq.Parsable.comment_state in_pa
   with any ->   (* whatever the exception *)
     let (e, info) = CErrors.push any in
     input_cleanup ();
     match e with
-    | Stm.End_of_input -> !rstate, !rids, Pcoq.Gram.comment_state in_pa
+    | Stm.End_of_input -> !rstate, !rids, Pcoq.Parsable.comment_state in_pa
     | reraise -> iraise (e, info)
 
 let process_expr ~state loc_ast =

@@ -92,11 +92,11 @@ val new_doc  : stm_init_options -> doc * Stateid.t
 
 (** [parse_sentence sid pa] Reads a sentence from [pa] with parsing
    state [sid] Returns [End_of_input] if the stream ends *)
-val parse_sentence : doc:doc -> Stateid.t -> Pcoq.Gram.coq_parsable ->
+val parse_sentence : doc:doc -> Stateid.t -> Pcoq.Parsable.t ->
   Vernacexpr.vernac_control CAst.t
 
 (* Reminder: A parsable [pa] is constructed using
-   [Pcoq.Gram.coq_parsable stream], where [stream : char Stream.t]. *)
+   [Pcoq.Parsable.t stream], where [stream : char Stream.t]. *)
 
 exception End_of_input
 
@@ -114,7 +114,7 @@ val add : doc:doc -> ontop:Stateid.t -> ?newtip:Stateid.t ->
    throwing away side effects except messages. Feedback will
    be sent with [report_with], which defaults to the dummy state id *)
 val query : doc:doc ->
-  at:Stateid.t -> route:Feedback.route_id -> Pcoq.Gram.coq_parsable -> unit
+  at:Stateid.t -> route:Feedback.route_id -> Pcoq.Parsable.t -> unit
 
 (* [edit_at id] is issued to change the editing zone.  [`NewTip] is returned if
    the requested id is the new document tip hence the document portion following

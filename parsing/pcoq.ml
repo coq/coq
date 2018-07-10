@@ -86,23 +86,14 @@ module type S =
   type internal_entry = Tok.t Gramext.g_entry
   type symbol = Tok.t Gramext.g_symbol
   type action = Gramext.g_action
-  type production_rule = symbol list * action
-  type single_extend_statement =
-      string option * Gramext.g_assoc option * production_rule list
-  type extend_statement =
-      Gramext.position option * single_extend_statement list
   type coq_parsable
 
-  val parsable : ?file:Loc.source -> char Stream.t -> coq_parsable
+  val coq_parsable : ?file:Loc.source -> char Stream.t -> coq_parsable
   val action : 'a -> action
   val entry_create : string -> 'a entry
   val entry_parse : 'a entry -> coq_parsable -> 'a
-  val entry_print : Format.formatter -> 'a entry -> unit
 
   val comment_state : coq_parsable -> ((int * int) * string) list
-
-  val srules' : production_rule list -> symbol
-  val parse_tokens_after_filter : 'a entry -> Tok.t Stream.t -> 'a
 
 end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
 
@@ -112,15 +103,10 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
   type internal_entry = Tok.t Gramext.g_entry
   type symbol = Tok.t Gramext.g_symbol
   type action = Gramext.g_action
-  type production_rule = symbol list * action
-  type single_extend_statement =
-      string option * Gramext.g_assoc option * production_rule list
-  type extend_statement =
-      Gramext.position option * single_extend_statement list
 
   type coq_parsable = parsable * CLexer.lexer_state ref
 
-  let parsable ?(file=Loc.ToplevelInput) c =
+  let coq_parsable ?(file=Loc.ToplevelInput) c =
     let state = ref (CLexer.init_lexer_state file) in
     CLexer.set_lexer_state !state;
     let a = parsable c in
@@ -145,11 +131,23 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
   let comment_state (p,state) =
     CLexer.get_comment_state !state
 
-  let entry_print ft x = Entry.print ft x
+end
 
-  (* Not used *)
-  let srules' = Gramext.srules
-  let parse_tokens_after_filter = Entry.parse_token
+module Parsable =
+struct
+  type t = G.coq_parsable
+  let make = G.coq_parsable
+  let comment_state = G.comment_state
+end
+
+module Entry =
+struct
+
+  type 'a t = 'a Grammar.GMake(CLexer).Entry.e
+
+  let create = G.Entry.create
+  let parse = G.entry_parse
+  let print = G.Entry.print
 
 end
 
@@ -246,7 +244,7 @@ let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> _ = function
   | Aentryl (e, n) ->
     Symbols.snterml (G.Entry.obj e, n)
   | Arules rs ->
-    G.srules' (List.map symbol_of_rules rs)
+    Gramext.srules (List.map symbol_of_rules rs)
 
 and symbol_of_rule : type s a r. (s, a, r) Extend.rule -> _ = function
 | Stop -> fun accu -> accu
@@ -364,14 +362,14 @@ let make_rule r = [None, None, r]
 (** An entry that checks we reached the end of the input. *)
 
 let eoi_entry en =
-  let e = Gram.entry_create ((Gram.Entry.name en) ^ "_eoi") in
+  let e = Entry.create ((Gram.Entry.name en) ^ "_eoi") in
   let symbs = [Symbols.snterm (Gram.Entry.obj en); Symbols.stoken Tok.EOI] in
   let act = Gram.action (fun _ x loc -> x) in
   uncurry (Gram.extend e) (None, make_rule [symbs, act]);
   e
 
 let map_entry f en =
-  let e = Gram.entry_create ((Gram.Entry.name en) ^ "_map") in
+  let e = Entry.create ((Gram.Entry.name en) ^ "_map") in
   let symbs = [Symbols.snterm (Gram.Entry.obj en)] in
   let act = Gram.action (fun x loc -> f x) in
   uncurry (Gram.extend e) (None, make_rule [symbs, act]);
@@ -381,7 +379,7 @@ let map_entry f en =
    (use eoi_entry) *)
 
 let parse_string f x =
-  let strm = Stream.of_string x in Gram.entry_parse f (Gram.parsable strm)
+  let strm = Stream.of_string x in Gram.entry_parse f (Gram.coq_parsable strm)
 
 type gram_universe = string
 
@@ -402,14 +400,14 @@ let get_univ u =
 
 let new_entry u s =
   let ename = u ^ ":" ^ s in
-  let e = Gram.entry_create ename in
+  let e = Entry.create ename in
   e
 
 let make_gen_entry u s = new_entry u s
 
 module GrammarObj =
 struct
-  type ('r, _, _) obj = 'r Gram.entry
+  type ('r, _, _) obj = 'r Entry.t
   let name = "grammar"
   let default _ = None
 end
@@ -419,7 +417,7 @@ module Grammar = Register(GrammarObj)
 let register_grammar = Grammar.register0
 let genarg_grammar = Grammar.obj
 
-let create_generic_entry (type a) u s (etyp : a raw_abstract_argument_type) : a Gram.entry =
+let create_generic_entry (type a) u s (etyp : a raw_abstract_argument_type) : a Entry.t =
   let e = new_entry u s in
   let Rawwit t = etyp in
   let () = Grammar.register0 t e in
@@ -431,38 +429,38 @@ module Prim =
   struct
     let gec_gen n = make_gen_entry uprim n
 
-    (* Entries that can be referred via the string -> Gram.entry table *)
+    (* Entries that can be referred via the string -> Entry.t table *)
     (* Typically for tactic or vernac extensions *)
     let preident = gec_gen "preident"
     let ident = gec_gen "ident"
     let natural = gec_gen "natural"
     let integer = gec_gen "integer"
-    let bigint = Gram.entry_create "Prim.bigint"
+    let bigint = Entry.create "Prim.bigint"
     let string = gec_gen "string"
-    let lstring = Gram.entry_create "Prim.lstring"
+    let lstring = Entry.create "Prim.lstring"
     let reference = make_gen_entry uprim "reference"
-    let by_notation = Gram.entry_create "by_notation"
-    let smart_global = Gram.entry_create "smart_global"
+    let by_notation = Entry.create "by_notation"
+    let smart_global = Entry.create "smart_global"
 
     (* parsed like ident but interpreted as a term *)
     let var = gec_gen "var"
 
-    let name = Gram.entry_create "Prim.name"
-    let identref = Gram.entry_create "Prim.identref"
-    let univ_decl = Gram.entry_create "Prim.univ_decl"
-    let ident_decl = Gram.entry_create "Prim.ident_decl"
-    let pattern_ident = Gram.entry_create "pattern_ident"
-    let pattern_identref = Gram.entry_create "pattern_identref"
+    let name = Entry.create "Prim.name"
+    let identref = Entry.create "Prim.identref"
+    let univ_decl = Entry.create "Prim.univ_decl"
+    let ident_decl = Entry.create "Prim.ident_decl"
+    let pattern_ident = Entry.create "pattern_ident"
+    let pattern_identref = Entry.create "pattern_identref"
 
     (* A synonym of ident - maybe ident will be located one day *)
-    let base_ident = Gram.entry_create "Prim.base_ident"
+    let base_ident = Entry.create "Prim.base_ident"
 
-    let qualid = Gram.entry_create "Prim.qualid"
-    let fullyqualid = Gram.entry_create "Prim.fullyqualid"
-    let dirpath = Gram.entry_create "Prim.dirpath"
+    let qualid = Entry.create "Prim.qualid"
+    let fullyqualid = Entry.create "Prim.fullyqualid"
+    let dirpath = Entry.create "Prim.dirpath"
 
-    let ne_string = Gram.entry_create "Prim.ne_string"
-    let ne_lstring = Gram.entry_create "Prim.ne_lstring"
+    let ne_string = Entry.create "Prim.ne_string"
+    let ne_lstring = Entry.create "Prim.ne_lstring"
 
   end
 
@@ -470,7 +468,7 @@ module Constr =
   struct
     let gec_constr = make_gen_entry uconstr
 
-    (* Entries that can be referred via the string -> Gram.entry table *)
+    (* Entries that can be referred via the string -> Entry.t table *)
     let constr = gec_constr "constr"
     let operconstr = gec_constr "operconstr"
     let constr_eoi = eoi_entry constr
@@ -481,29 +479,29 @@ module Constr =
     let universe_level = make_gen_entry uconstr "universe_level"
     let sort = make_gen_entry uconstr "sort"
     let sort_family = make_gen_entry uconstr "sort_family"
-    let pattern = Gram.entry_create "constr:pattern"
+    let pattern = Entry.create "constr:pattern"
     let constr_pattern = gec_constr "constr_pattern"
     let lconstr_pattern = gec_constr "lconstr_pattern"
-    let closed_binder = Gram.entry_create "constr:closed_binder"
-    let binder = Gram.entry_create "constr:binder"
-    let binders = Gram.entry_create "constr:binders"
-    let open_binders = Gram.entry_create "constr:open_binders"
-    let binders_fixannot = Gram.entry_create "constr:binders_fixannot"
-    let typeclass_constraint = Gram.entry_create "constr:typeclass_constraint"
-    let record_declaration = Gram.entry_create "constr:record_declaration"
-    let appl_arg = Gram.entry_create "constr:appl_arg"
+    let closed_binder = Entry.create "constr:closed_binder"
+    let binder = Entry.create "constr:binder"
+    let binders = Entry.create "constr:binders"
+    let open_binders = Entry.create "constr:open_binders"
+    let binders_fixannot = Entry.create "constr:binders_fixannot"
+    let typeclass_constraint = Entry.create "constr:typeclass_constraint"
+    let record_declaration = Entry.create "constr:record_declaration"
+    let appl_arg = Entry.create "constr:appl_arg"
   end
 
 module Module =
   struct
-    let module_expr = Gram.entry_create "module_expr"
-    let module_type = Gram.entry_create "module_type"
+    let module_expr = Entry.create "module_expr"
+    let module_type = Entry.create "module_type"
   end
 
 let epsilon_value f e =
   let r = Rule (Next (Stop, e), fun x _ -> f x) in
   let ext = of_coq_extend_statement (None, [None, None, [r]]) in
-  let entry = G.entry_create "epsilon" in
+  let entry = Gram.entry_create "epsilon" in
   let () = uncurry (G.extend entry) ext in
   try Some (parse_string entry "") with _ -> None
 
@@ -608,7 +606,7 @@ let () =
 
 (** Registering extra grammar *)
 
-type any_entry = AnyEntry : 'a Gram.entry -> any_entry
+type any_entry = AnyEntry : 'a Entry.t -> any_entry
 
 let grammar_names : any_entry list String.Map.t ref = ref String.Map.empty
 

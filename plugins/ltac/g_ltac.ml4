@@ -46,10 +46,10 @@ let reference_to_id qid =
     CErrors.user_err ?loc:qid.CAst.loc
       (str "This expression should be a simple identifier.")
 
-let tactic_mode = Gram.entry_create "vernac:tactic_command"
+let tactic_mode = Entry.create "vernac:tactic_command"
 
 let new_entry name =
-  let e = Gram.entry_create name in
+  let e = Entry.create name in
   e
 
 let toplevel_selector = new_entry "vernac:toplevel_selector"

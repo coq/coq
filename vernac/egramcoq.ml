@@ -240,14 +240,14 @@ type (_, _) entry =
 type _ any_entry = TTAny : ('s, 'r) entry -> 's any_entry
 
 (* This computes the name of the level where to add a new rule *)
-let interp_constr_entry_key : type r. r target -> int -> r Gram.entry * int option =
+let interp_constr_entry_key : type r. r target -> int -> r Entry.t * int option =
   fun forpat level -> match forpat with
   | ForConstr ->
     if level = 200 then Constr.binder_constr, None
     else Constr.operconstr, Some level
   | ForPattern -> Constr.pattern, Some level
 
-let target_entry : type s. s target -> s Gram.entry = function
+let target_entry : type s. s target -> s Entry.t = function
 | ForConstr -> Constr.operconstr
 | ForPattern -> Constr.pattern
 

@@ -2040,7 +2040,7 @@ let vernac_load interp fname =
     interp x in
   let parse_sentence = Flags.with_option Flags.we_are_parsing
     (fun po ->
-    match Pcoq.Gram.entry_parse Pvernac.main_entry po with
+    match Pcoq.Entry.parse Pvernac.main_entry po with
       | Some x -> x
       | None -> raise End_of_input) in
   let fname =
@@ -2049,7 +2049,7 @@ let vernac_load interp fname =
   let input =
     let longfname = Loadpath.locate_file fname in
     let in_chan = open_utf8_file_in longfname in
-    Pcoq.Gram.parsable ~file:(Loc.InFile longfname) (Stream.of_channel in_chan) in
+    Pcoq.Parsable.make ~file:(Loc.InFile longfname) (Stream.of_channel in_chan) in
   begin
     try while true do interp (snd (parse_sentence input)) done
     with End_of_input -> ()
