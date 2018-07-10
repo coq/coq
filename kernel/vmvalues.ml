@@ -150,7 +150,7 @@ type zipper =
   | Zapp of arguments
   | Zfix of vfix*arguments  (* Possibly empty *)
   | Zswitch of vswitch
-  | Zproj of Constant.t (* name of the projection *)
+  | Zproj of (inductive * int) (* projection by index, starting at 0 *)
 
 type stack = zipper list
 
@@ -313,7 +313,7 @@ let val_of_str_const str = val_of_obj (obj_of_str_const str)
 
 let val_of_atom a = val_of_obj (obj_of_atom a)
 
-let atom_of_proj kn v =
+let atom_of_proj (kn : inductive * int) v =
   let r = Obj.new_block proj_tag 2 in
   Obj.set_field r 0 (Obj.repr kn);
   Obj.set_field r 1 (Obj.repr v);
@@ -354,7 +354,7 @@ let val_of_constant c = val_of_idkey (ConstKey c)
 let val_of_evar evk = val_of_idkey (EvarKey evk)
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
-external val_of_proj_name : Constant.t -> values = "%identity"
+external val_of_proj_name : (inductive * int) -> values = "%identity"
 
 (*************************************************)
 (** Operations manipulating data types ***********)
@@ -553,4 +553,5 @@ and pr_zipper z =
   | Zapp args -> str "Zapp(len = " ++ int (nargs args) ++ str ")"
   | Zfix (f,args) -> str "Zfix(..., len=" ++ int (nargs args) ++ str ")"
   | Zswitch s -> str "Zswitch(...)"
-  | Zproj c -> str "Zproj(" ++ Constant.print c ++ str ")")
+  | Zproj ((mind, n), i) ->
+    str "Zproj(" ++ MutInd.print mind ++ str "," ++ int n ++ str "," ++ int i ++ str ")")

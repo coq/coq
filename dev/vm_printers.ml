@@ -16,8 +16,8 @@ let ppripos (ri,pos) =
       print_string "structured constant\n"
   | Reloc_getglobal kn ->
     print_string ("getglob "^(Constant.to_string kn)^"\n")
-  | Reloc_proj_name p ->
-    print_string ("proj "^(Constant.to_string p)^"\n")
+  | Reloc_proj_name ((mind, n), i) ->
+    print_string ("proj "^(MutInd.to_string mind)^","^(string_of_int n)^","^(string_of_int i)^"\n")
   );
    print_flush ()
 

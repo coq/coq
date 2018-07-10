@@ -492,8 +492,8 @@ let rec compile_lam env cenv lam sz cont =
 
   | Lval v -> compile_structured_constant cenv v sz cont
 
-  | Lproj (n,kn,arg) ->
-     compile_lam env cenv arg sz (Kproj (n,kn) :: cont)
+  | Lproj (p, arg) ->
+     compile_lam env cenv arg sz (Kproj p :: cont)
 
   | Lvar id -> pos_named id cenv :: cont
 

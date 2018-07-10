@@ -81,7 +81,7 @@ type zipper =
   | Zapp of arguments
   | Zfix of vfix * arguments  (** might be empty *)
   | Zswitch of vswitch
-  | Zproj of Constant.t (* name of the projection *)
+  | Zproj of (inductive * int) (* projection by index, starting at 0 *)
 
 type stack = zipper list
 
@@ -108,11 +108,11 @@ val val_of_rel : int -> values
 val val_of_named : Id.t -> values
 val val_of_constant : Constant.t -> values
 val val_of_evar : Evar.t -> values
-val val_of_proj : Constant.t -> values -> values
+val val_of_proj : (inductive * int) -> values -> values
 val val_of_atom : atom -> values
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
-external val_of_proj_name : Constant.t -> values = "%identity"
+external val_of_proj_name : (inductive * int) -> values = "%identity"
 
 (** Destructors *)
 

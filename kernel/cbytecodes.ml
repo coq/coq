@@ -128,7 +128,7 @@ type instruction =
   | Ksetfield of int
   | Kstop
   | Ksequence of bytecodes * bytecodes
-  | Kproj of int * Constant.t  (* index of the projected argument,
+  | Kproj of (inductive * int)  (* index of the projected argument,
                                            name of projection *)
   | Kensurestackcapacity of int
 (* spiwack: instructions concerning integers *)
@@ -240,6 +240,9 @@ let pp_sort s =
   | Set -> str "Set"
   | Type u -> str "Type@{" ++ Univ.pr_uni u ++ str "}"
 
+let pp_proj ((mind, n), i) =
+  MutInd.print mind ++ str"#" ++ int n ++ str "." ++ int i
+
 let rec pp_struct_const = function
   | Const_sort s -> pp_sort s
   | Const_ind (mind, i) -> MutInd.print mind ++ str"#" ++ int i
@@ -311,7 +314,7 @@ let rec pp_instr i =
 
   | Kbranch lbl -> str "branch " ++ pp_lbl lbl
 
-  | Kproj(n,p) -> str "proj " ++ int n ++ str " " ++ Constant.print p
+  | Kproj p -> str "proj " ++ pp_proj p
 
   | Kensurestackcapacity size -> str "growstack " ++ int size
 
