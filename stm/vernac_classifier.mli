@@ -9,16 +9,11 @@
 (************************************************************************)
 
 open Vernacexpr
-open Genarg
 
 val string_of_vernac_classification : vernac_classification -> string
 
 (** What does a vernacular do *)
 val classify_vernac : vernac_control -> vernac_classification
-
-(** Install a vernacular classifier for VernacExtend *)
-val declare_vernac_classifier :
-  Vernacexpr.extend_name -> (raw_generic_argument list -> unit -> vernac_classification) -> unit
 
 (** Standard constant classifiers *)
 val classify_as_query : vernac_classification

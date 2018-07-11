@@ -66,54 +66,13 @@ let mk_ignore c pt =
   let names = List.fold_left fold <:expr< () >> names in
   <:expr< do { let _ = $names$ in $c$ } >>
 
-let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
-  match c ,cg with
-  | Some c, _ ->
-     (make_patt pt,
-      ploc_vala None,
-      make_let (mk_ignore c pt) pt)
-  | None, Some cg ->
-     (make_patt pt,
-      ploc_vala None,
-      <:expr< fun loc -> $cg$ $str:s$ >>)
-  | None, None -> prerr_endline
-      (("Vernac entry \""^s^"\" misses a classifier. "^
-         "A classifier is a function that returns an expression "^
-         "of type vernac_classification (see Vernacexpr). You can: ") ^
-       "- " ^ (
-        ("Use '... EXTEND "^s^" CLASSIFIED AS QUERY ...' if the "^
-          "new vernacular command does not alter the system state;"))^ "\n" ^
-       "- " ^ (
-        ("Use '... EXTEND "^s^" CLASSIFIED AS SIDEFF ...' if the "^
-          "new vernacular command alters the system state but not the "^
-          "parser nor it starts a proof or ends one;"))^ "\n" ^
-       "- " ^ (
-        ("Use '... EXTEND "^s^" CLASSIFIED BY f ...' to specify "^
-          "a global function f.  The function f will be called passing "^
-          "\""^s^"\" as the only argument;")) ^ "\n" ^
-       "- " ^ (
-        "Add a specific classifier in each clause using the syntax:"
-        ^ "\n" ^("'[...] => [ f ] -> [...]'. "))^ "\n" ^
-       ("Specific classifiers have precedence over global "^
-         "classifiers. Only one classifier is called.") ^ "\n");
-    (make_patt pt,
-      ploc_vala None,
-      <:expr< fun () -> ( CErrors.anomaly (Pp.str "No classification given for command " ^ s ) ) >>)
-
-let make_fun_clauses loc s l =
+let make_clause_classifier { r_patt = pt; r_class = c; } =
   let map c =
-    let depr = match c.r_depr with
-    | None -> false
-    | Some () -> true
-    in
-    let cl = make_fun loc [make_clause c] in
-    <:expr< ($mlexpr_of_bool depr$, $cl$)>>
+    make_fun loc [(make_patt pt,
+      ploc_vala None,
+      make_let (mk_ignore c pt) pt)]
   in
-  mlexpr_of_list map l
-
-let make_fun_classifiers loc s c l =
-  let cl = List.map (fun x -> make_fun loc [make_clause_classifier c s x]) l in
-  mlexpr_of_list (fun x -> x) cl
+  mlexpr_of_option map c
 
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
@@ -124,23 +83,28 @@ let make_prod_item = function
       <:expr< Egramml.GramNonTerminal ( Loc.tag ( $mlexpr_of_option (make_rawwit loc) typ$ ,
       $mlexpr_of_prod_entry_key base g$ ) ) >>
 
-let mlexpr_of_clause cl =
-  let mkexpr { r_head = a; r_patt = b; } = match a with
-  | None -> mlexpr_of_list make_prod_item b
-  | Some a -> mlexpr_of_list make_prod_item (ExtTerminal a :: b)
+let mlexpr_of_clause { r_head = a; r_patt = b; } = match a with
+| None -> mlexpr_of_list make_prod_item b
+| Some a -> mlexpr_of_list make_prod_item (ExtTerminal a :: b)
+
+let make_rule r =
+  let depr = match r.r_depr with
+  | None -> false
+  | Some () -> true
   in
-  mlexpr_of_list mkexpr cl
+  let gram = mlexpr_of_clause r in
+  let cmd = make_fun loc [make_clause r] in
+  let classif = make_clause_classifier r in
+  <:expr< ($mlexpr_of_bool depr$, $cmd$, $classif$, $gram$) >>
 
 let declare_command loc s c nt cl =
   let se = mlexpr_of_string s in
-  let gl = mlexpr_of_clause cl in
-  let funcl = make_fun_clauses loc s cl in
-  let classl = make_fun_classifiers loc s c cl in
+  let c = mlexpr_of_option (fun x -> x) c in
+  let rules = mlexpr_of_list make_rule cl in
   declare_str_items loc
     [ <:str_item< do {
-        CList.iteri (fun i (depr, f) -> Vernacinterp.vinterp_add depr ($se$, i) f) $funcl$;
-        CList.iteri (fun i f -> Vernac_classifier.declare_vernac_classifier ($se$, i) f) $classl$;
-	CList.iteri (fun i r -> Egramml.extend_vernac_command_grammar ($se$, i) $nt$ r) $gl$;
+        Vernacentries.vernac_extend ?{ classifier = $c$ }
+          ~{ command = $se$ } ?{ entry = $nt$ } $rules$;
       } >> ]
 
 open Pcaml
@@ -207,7 +171,7 @@ EXTEND
     ] ]
   ;
   classifier:
-    [ [ "=>"; "["; c = Pcaml.expr; "]" -> <:expr< fun loc -> $c$>> ] ]
+    [ [ "=>"; "["; c = Pcaml.expr; "]" -> <:expr< $c$>> ] ]
   ;
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->

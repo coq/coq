@@ -2436,3 +2436,52 @@ let interp ?verbosely ?proof ~st cmd =
     let exn = CErrors.push exn in
     Vernacstate.invalidate_cache ();
     iraise exn
+
+type classifier = Genarg.raw_generic_argument list -> vernac_classification
+
+let classifiers : classifier array String.Map.t ref = ref String.Map.empty
+
+let get_vernac_classifier (name, i) args =
+  (String.Map.find name !classifiers).(i) args
+
+let declare_vernac_classifier name f =
+  classifiers := String.Map.add name f !classifiers
+
+let vernac_extend ~command ?classifier ?entry ext =
+  let get_classifier = function
+  | Some cl -> cl
+  | None ->
+    match classifier with
+    | Some cl -> fun _ -> cl command
+    | None ->
+      let e = match entry with
+      | None -> "COMMAND"
+      | Some e -> Pcoq.Gram.Entry.name e
+      in
+      let msg = Printf.sprintf "\
+        Vernac entry \"%s\" misses a classifier. \
+        A classifier is a function that returns an expression \
+        of type vernac_classification (see Vernacexpr). You can: \n\
+        - Use '... EXTEND %s CLASSIFIED AS QUERY ...' if the \
+          new vernacular command does not alter the system state;\n\
+        - Use '... EXTEND %s CLASSIFIED AS SIDEFF ...' if the \
+          new vernacular command alters the system state but not the \
+          parser nor it starts a proof or ends one;\n\
+        - Use '... EXTEND %s CLASSIFIED BY f ...' to specify \
+          a global function f.  The function f will be called passing\
+          \"%s\" as the only argument;\n\
+        - Add a specific classifier in each clause using the syntax:\n\
+          '[...] => [ f ] -> [...]'.\n\
+        Specific classifiers have precedence over global \
+        classifiers. Only one classifier is called."
+          command e e e command
+      in
+      CErrors.user_err (Pp.strbrk msg)
+  in
+  let cl = Array.map_of_list (fun (_, _, cl, _) -> get_classifier cl) ext in
+  let iter i (depr, f, cl, r) =
+    let () = Vernacinterp.vinterp_add depr (command, i) f in
+    Egramml.extend_vernac_command_grammar (command, i) entry r
+  in
+  let () = declare_vernac_classifier command cl in
+  List.iteri iter ext

@@ -42,3 +42,26 @@ val universe_polymorphism_option_name : string list
 (** Elaborate a [atts] record out of a list of flags.
     Also returns whether polymorphism is explicitly (un)set. *)
 val attributes_of_flags : Vernacexpr.vernac_flags -> Vernacinterp.atts -> bool option * Vernacinterp.atts
+
+(** {5 VERNAC EXTEND} *)
+
+type classifier = Genarg.raw_generic_argument list -> Vernacexpr.vernac_classification
+
+(** Wrapper to dynamically extend vernacular commands. *)
+val vernac_extend :
+  command:string ->
+  ?classifier:(string -> Vernacexpr.vernac_classification) ->
+  ?entry:Vernacexpr.vernac_expr Pcoq.Entry.t ->
+  (bool *
+    Vernacinterp.plugin_args Vernacinterp.vernac_command *
+    classifier option *
+    Vernacexpr.vernac_expr Egramml.grammar_prod_item list) list -> unit
+
+(** {5 STM classifiers} *)
+
+val get_vernac_classifier :
+  Vernacexpr.extend_name -> classifier
+
+(** Low-level API, not for casual user. *)
+val declare_vernac_classifier :
+  string -> classifier array -> unit
