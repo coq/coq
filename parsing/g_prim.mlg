@@ -24,13 +24,9 @@ let local_make_qualid loc l id = make_qualid ~loc (DirPath.make l) id
 
 let my_int_of_string loc s =
   try
-    let n = int_of_string s in
-    (* To avoid Array.make errors (that e.g. Undo uses), we set a *)
-    (* more restricted limit than int_of_string does *)
-    if n > 1024 * 2048 then raise Exit;
-    n
-  with Failure _ | Exit ->
-    CErrors.user_err ~loc  (Pp.str "Cannot support a so large number.")
+    int_of_string s
+  with Failure _ ->
+    CErrors.user_err ~loc (Pp.str "This number is too large.")
 
 }
 
