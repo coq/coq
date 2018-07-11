@@ -2437,7 +2437,74 @@ let interp ?verbosely ?proof ~st cmd =
     Vernacstate.invalidate_cache ();
     iraise exn
 
+(** VERNAC EXTEND registering *)
+
+open Genarg
+open Extend
+
 type classifier = Genarg.raw_generic_argument list -> vernac_classification
+
+type (_, _) ty_sig =
+| TyNil : (atts:atts -> st:Vernacstate.t -> Vernacstate.t, Vernacexpr.vernac_classification) ty_sig
+| TyTerminal : string * ('r, 's) ty_sig -> ('r, 's) ty_sig
+| TyNonTerminal :
+  string option * ('a, 'b, 'c) Extend.ty_user_symbol * ('r, 's) ty_sig -> ('a -> 'r, 'a -> 's) ty_sig
+
+type ty_ml = TyML : bool * ('r, 's) ty_sig * 'r * 's option -> ty_ml
+
+let type_error () = CErrors.anomaly (Pp.str "Ill-typed VERNAC EXTEND")
+
+let rec untype_classifier : type r s. (r, s) ty_sig -> s -> classifier = function
+| TyNil -> fun f args ->
+  begin match args with
+  | [] -> f
+  | _ :: _ -> type_error ()
+  end
+| TyTerminal (_, ty) -> fun f args -> untype_classifier ty f args
+| TyNonTerminal (_, tu, ty) -> fun f args ->
+  begin match args with
+  | [] -> type_error ()
+  | Genarg.GenArg (Rawwit tag, v) :: args ->
+    match Genarg.genarg_type_eq tag (Egramml.proj_symbol tu) with
+    | None -> type_error ()
+    | Some Refl -> untype_classifier ty (f v) args
+  end
+
+(** Stupid GADTs forces us to duplicate the definition just for typing *)
+let rec untype_command : type r s. (r, s) ty_sig -> r -> plugin_args vernac_command = function
+| TyNil -> fun f args ->
+  begin match args with
+  | [] -> f
+  | _ :: _ -> type_error ()
+  end
+| TyTerminal (_, ty) -> fun f args -> untype_command ty f args
+| TyNonTerminal (_, tu, ty) -> fun f args ->
+  begin match args with
+  | [] -> type_error ()
+  | Genarg.GenArg (Rawwit tag, v) :: args ->
+    match Genarg.genarg_type_eq tag (Egramml.proj_symbol tu) with
+    | None -> type_error ()
+    | Some Refl -> untype_command ty (f v) args
+  end
+
+let rec untype_user_symbol : type s a b c. (a, b, c) Extend.ty_user_symbol -> (s, a) Extend.symbol = function
+| TUlist1 l -> Alist1 (untype_user_symbol l)
+| TUlist1sep (l, s) -> Alist1sep (untype_user_symbol l, Atoken (CLexer.terminal s))
+| TUlist0 l -> Alist0 (untype_user_symbol l)
+| TUlist0sep (l, s) -> Alist0sep (untype_user_symbol l, Atoken (CLexer.terminal s))
+| TUopt o -> Aopt (untype_user_symbol o)
+| TUentry a -> Aentry (Pcoq.genarg_grammar (ExtraArg a))
+| TUentryl (a, i) -> Aentryl (Pcoq.genarg_grammar (ExtraArg a), string_of_int i)
+
+let rec untype_grammar : type r s. (r, s) ty_sig -> vernac_expr Egramml.grammar_prod_item list = function
+| TyNil -> []
+| TyTerminal (tok, ty) -> Egramml.GramTerminal tok :: untype_grammar ty
+| TyNonTerminal (id, tu, ty) ->
+  let t = Option.map (fun _ -> rawwit (Egramml.proj_symbol tu)) id in
+  let symb = untype_user_symbol tu in
+  Egramml.GramNonTerminal (Loc.tag (t, symb)) :: untype_grammar ty
+
+let _ = untype_classifier, untype_command, untype_grammar, untype_user_symbol
 
 let classifiers : classifier array String.Map.t ref = ref String.Map.empty
 
@@ -2448,8 +2515,8 @@ let declare_vernac_classifier name f =
   classifiers := String.Map.add name f !classifiers
 
 let vernac_extend ~command ?classifier ?entry ext =
-  let get_classifier = function
-  | Some cl -> cl
+  let get_classifier (TyML (_, ty, _, cl)) = match cl with
+  | Some cl -> untype_classifier ty cl
   | None ->
     match classifier with
     | Some cl -> fun _ -> cl command
@@ -2478,9 +2545,11 @@ let vernac_extend ~command ?classifier ?entry ext =
       in
       CErrors.user_err (Pp.strbrk msg)
   in
-  let cl = Array.map_of_list (fun (_, _, cl, _) -> get_classifier cl) ext in
-  let iter i (depr, f, cl, r) =
-    let () = Vernacinterp.vinterp_add depr (command, i) f in
+  let cl = Array.map_of_list get_classifier ext in
+  let iter i (TyML (depr, ty, f, _)) =
+    let f = untype_command ty f in
+    let r = untype_grammar ty in
+    let () = vinterp_add depr (command, i) f in
     Egramml.extend_vernac_command_grammar (command, i) entry r
   in
   let () = declare_vernac_classifier command cl in

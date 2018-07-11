@@ -47,15 +47,22 @@ val attributes_of_flags : Vernacexpr.vernac_flags -> Vernacinterp.atts -> bool o
 
 type classifier = Genarg.raw_generic_argument list -> Vernacexpr.vernac_classification
 
+type (_, _) ty_sig =
+| TyNil : (atts:Vernacinterp.atts -> st:Vernacstate.t -> Vernacstate.t, Vernacexpr.vernac_classification) ty_sig
+| TyTerminal : string * ('r, 's) ty_sig -> ('r, 's) ty_sig
+| TyNonTerminal :
+  string option *
+  ('a, 'b, 'c) Extend.ty_user_symbol * ('r, 's) ty_sig ->
+    ('a -> 'r, 'a -> 's) ty_sig
+
+type ty_ml = TyML : bool (** deprecated *) * ('r, 's) ty_sig * 'r * 's option -> ty_ml
+
 (** Wrapper to dynamically extend vernacular commands. *)
 val vernac_extend :
   command:string ->
   ?classifier:(string -> Vernacexpr.vernac_classification) ->
   ?entry:Vernacexpr.vernac_expr Pcoq.Entry.t ->
-  (bool *
-    Vernacinterp.plugin_args Vernacinterp.vernac_command *
-    classifier option *
-    Vernacexpr.vernac_expr Egramml.grammar_prod_item list) list -> unit
+  ty_ml list -> unit
 
 (** {5 STM classifiers} *)
 

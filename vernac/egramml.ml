@@ -64,6 +64,15 @@ let make_rule f prod =
   let act = ty_eval ty_rule f in
   Extend.Rule (symb, act)
 
+let rec proj_symbol : type a b c. (a, b, c) ty_user_symbol -> (a, b, c) genarg_type = function
+| TUentry a -> ExtraArg a
+| TUentryl (a,l) -> ExtraArg a
+| TUopt(o) -> OptArg (proj_symbol o)
+| TUlist1 l -> ListArg (proj_symbol l)
+| TUlist1sep (l,_) -> ListArg (proj_symbol l)
+| TUlist0 l -> ListArg (proj_symbol l)
+| TUlist0sep (l,_) -> ListArg (proj_symbol l)
+
 (** Vernac grammar extensions *)
 
 let vernac_exts = ref []

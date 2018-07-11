@@ -592,15 +592,6 @@ let rec clause_of_sign : type a. a ty_sig -> Genarg.ArgT.any Extend.user_symbol 
 let clause_of_ty_ml = function
   | TyML (t,_) -> clause_of_sign t
 
-let rec prj : type a b c. (a,b,c) Extend.ty_user_symbol -> (a,b,c) genarg_type = function
-  | TUentry a -> ExtraArg a
-  | TUentryl (a,l) -> ExtraArg a
-  | TUopt(o) -> OptArg (prj o)
-  | TUlist1 l -> ListArg (prj l)
-  | TUlist1sep (l,_) -> ListArg (prj l)
-  | TUlist0 l -> ListArg (prj l)
-  | TUlist0sep (l,_) -> ListArg (prj l)
-
 let rec eval_sign : type a. a ty_sig -> a -> Geninterp.Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic =
   fun sign tac ->
     match sign with
@@ -615,7 +606,7 @@ let rec eval_sign : type a. a ty_sig -> a -> Geninterp.Val.t list -> Geninterp.i
       begin fun tac vals ist -> match vals with
       | [] -> assert false
       | v :: vals ->
-        let v' = Taccoerce.Value.cast (topwit (prj a)) v in
+        let v' = Taccoerce.Value.cast (topwit (Egramml.proj_symbol a)) v in
         f (tac v') vals ist
       end tac
     | TyAnonArg (a, sig') -> eval_sign sig' tac

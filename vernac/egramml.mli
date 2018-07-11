@@ -26,6 +26,8 @@ val extend_vernac_command_grammar :
 
 val get_extend_vernac_rule : Vernacexpr.extend_name -> vernac_expr grammar_prod_item list
 
+val proj_symbol : ('a, 'b, 'c) Extend.ty_user_symbol -> ('a, 'b, 'c) Genarg.genarg_type
+
 (** Utility function reused in Egramcoq : *)
 
 val make_rule :

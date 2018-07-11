@@ -15,20 +15,6 @@ open Argextend
 
 let plugin_name = <:expr< __coq_plugin_name >>
 
-let rec mlexpr_of_symbol = function
-| Ulist1 s -> <:expr< Extend.TUlist1 $mlexpr_of_symbol s$ >>
-| Ulist1sep (s,sep) -> <:expr< Extend.TUlist1sep $mlexpr_of_symbol s$ $str:sep$ >>
-| Ulist0 s -> <:expr< Extend.TUlist0 $mlexpr_of_symbol s$ >>
-| Ulist0sep (s,sep) -> <:expr< Extend.TUlist0sep $mlexpr_of_symbol s$ $str:sep$ >>
-| Uopt s -> <:expr< Extend.TUopt $mlexpr_of_symbol s$ >>
-| Uentry e ->
-  let wit = <:expr< $lid:"wit_"^e$ >> in
-  <:expr< Extend.TUentry (Genarg.get_arg_tag $wit$) >>
-| Uentryl (e, l) ->
-  assert (e = "tactic");
-  let wit = <:expr< $lid:"wit_"^e$ >> in
-  <:expr< Extend.TUentryl (Genarg.get_arg_tag $wit$) $mlexpr_of_int l$>>
-
 let rec mlexpr_of_clause = function
 | [] -> <:expr< TyNil >>
 | ExtTerminal s :: cl -> <:expr< TyIdent($str:s$, $mlexpr_of_clause cl$) >>
