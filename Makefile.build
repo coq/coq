@@ -350,7 +350,7 @@ kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 GRAMBASEDEPS := grammar/q_util.cmi
 GRAMCMO := grammar/q_util.cmo \
  grammar/argextend.cmo grammar/tacextend.cmo grammar/vernacextend.cmo
-COQPPCMO := grammar/coqpp_parse.cmo grammar/coqpp_lex.cmo
+COQPPCMO := $(addsuffix .cmo, $(addprefix coqpp/, coqpp_parse coqpp_lex))
 
 grammar/argextend.cmo : $(GRAMBASEDEPS)
 grammar/q_util.cmo : $(GRAMBASEDEPS)
@@ -358,9 +358,9 @@ grammar/tacextend.cmo : $(GRAMBASEDEPS) grammar/argextend.cmo
 grammar/vernacextend.cmo : $(GRAMBASEDEPS) grammar/tacextend.cmo \
  grammar/argextend.cmo
 
-grammar/coqpp_parse.cmi: grammar/coqpp_ast.cmi
-grammar/coqpp_parse.cmo: grammar/coqpp_ast.cmi grammar/coqpp_parse.cmi
-grammar/coqpp_lex.cmo: grammar/coqpp_ast.cmi grammar/coqpp_parse.cmo
+coqpp/coqpp_parse.cmi: coqpp/coqpp_ast.cmi
+coqpp/coqpp_parse.cmo: coqpp/coqpp_ast.cmi coqpp/coqpp_parse.cmi
+coqpp/coqpp_lex.cmo: coqpp/coqpp_ast.cmi coqpp/coqpp_parse.cmo
 
 ## Ocaml compiler with the right options and -I for grammar
 
@@ -377,9 +377,9 @@ grammar/grammar.cma : $(GRAMCMO)
 	$(SHOW)'OCAMLC -a $@'
 	$(HIDE)$(GRAMC) $^ -linkall -a -o $@
 
-$(COQPP): $(COQPPCMO) grammar/coqpp_main.ml
+$(COQPP): $(COQPPCMO) coqpp/coqpp_main.ml
 	$(SHOW)'OCAMLC -a $@'
-	$(HIDE)$(GRAMC) $^ -linkall -o $@
+	$(HIDE)$(GRAMC) -I coqpp $^ -linkall -o $@
 
 ## Support of Camlp5 and Camlp5
 
