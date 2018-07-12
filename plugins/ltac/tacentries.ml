@@ -187,7 +187,7 @@ let add_tactic_entry (kn, ml, tg) state =
   | TacTerm s -> GramTerminal s
   | TacNonTerm (loc, (s, ido)) ->
     let EntryName (typ, e) = prod_item_of_symbol tg.tacgram_level s in
-    GramNonTerminal (Loc.tag ?loc @@ (Option.map (fun _ -> typ) ido, e))
+    GramNonTerminal (Loc.tag ?loc @@ (typ, e))
   in
   let prods = List.map map tg.tacgram_prods in
   let rules = make_rule mkact prods in
@@ -556,18 +556,14 @@ let () =
   ] in
   register_grammars_by_name "tactic" entries
 
-let get_identifier id =
+let get_identifier i =
   (** Workaround for badly-designed generic arguments lacking a closure *)
-  Names.Id.of_string_soft ("$" ^ id)
-
+  Names.Id.of_string_soft (Printf.sprintf "$%i" i)
 
 type _ ty_sig =
 | TyNil : (Geninterp.interp_sign -> unit Proofview.tactic) ty_sig
 | TyIdent : string * 'r ty_sig -> 'r ty_sig
-| TyArg :
-  ('a, 'b, 'c) Extend.ty_user_symbol * string * 'r ty_sig -> ('c -> 'r) ty_sig
-| TyAnonArg :
-  ('a, 'b, 'c) Extend.ty_user_symbol * 'r ty_sig -> 'r ty_sig
+| TyArg : ('a, 'b, 'c) Extend.ty_user_symbol * 'r ty_sig -> ('c -> 'r) ty_sig
 
 type ty_ml = TyML : 'r ty_sig * 'r -> ty_ml
 
@@ -581,18 +577,16 @@ let rec untype_user_symbol : type a b c. (a,b,c) ty_user_symbol -> Genarg.ArgT.a
   | TUentry a -> Uentry (Genarg.ArgT.Any a)
   | TUentryl (a,i) -> Uentryl (Genarg.ArgT.Any a,i)
 
-let rec clause_of_sign : type a. a ty_sig -> Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list =
-  fun sign -> match sign with
+let rec clause_of_sign : type a. int -> a ty_sig -> Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list =
+  fun i sign -> match sign with
   | TyNil -> []
-  | TyIdent (s, sig') -> TacTerm s :: clause_of_sign sig'
-  | TyArg (a, id, sig') ->
-    let id = get_identifier id in
-    TacNonTerm (None,(untype_user_symbol a,Some id)) :: clause_of_sign sig'
-  | TyAnonArg (a, sig') ->
-    TacNonTerm (None,(untype_user_symbol a,None)) :: clause_of_sign sig'
+  | TyIdent (s, sig') -> TacTerm s :: clause_of_sign i sig'
+  | TyArg (a, sig') ->
+    let id = Some (get_identifier i) in
+    TacNonTerm (None, (untype_user_symbol a, id)) :: clause_of_sign (i + 1) sig'
 
 let clause_of_ty_ml = function
-  | TyML (t,_) -> clause_of_sign t
+  | TyML (t,_) -> clause_of_sign 1 t
 
 let rec eval_sign : type a. a ty_sig -> a -> Geninterp.Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic =
   fun sign tac ->
@@ -603,7 +597,7 @@ let rec eval_sign : type a. a ty_sig -> a -> Geninterp.Val.t list -> Geninterp.i
       | _ :: _ -> assert false
       end
     | TyIdent (s, sig') -> eval_sign sig' tac
-    | TyArg (a, _, sig') ->
+    | TyArg (a, sig') ->
       let f = eval_sign sig' in
       begin fun tac vals ist -> match vals with
       | [] -> assert false
@@ -611,7 +605,6 @@ let rec eval_sign : type a. a ty_sig -> a -> Geninterp.Val.t list -> Geninterp.i
         let v' = Taccoerce.Value.cast (topwit (Egramml.proj_symbol a)) v in
         f (tac v') vals ist
       end tac
-    | TyAnonArg (a, sig') -> eval_sign sig' tac
 
 let eval : ty_ml -> Geninterp.Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic = function
   | TyML (t,tac) -> eval_sign t tac
@@ -623,14 +616,12 @@ let is_constr_entry = function
 let rec only_constr : type a. a ty_sig -> bool = function
 | TyNil -> true
 | TyIdent(_,_) -> false
-| TyArg (u, _, s) -> if is_constr_entry u then only_constr s else false
-| TyAnonArg (u, s) -> if is_constr_entry u then only_constr s else false
+| TyArg (u, s) -> if is_constr_entry u then only_constr s else false
 
-let rec mk_sign_vars : type a. a ty_sig -> Name.t list = function
+let rec mk_sign_vars : type a. int -> a ty_sig -> Name.t list = fun i tu -> match tu with
 | TyNil -> []
-| TyIdent (_,s) -> mk_sign_vars s
-| TyArg (_, name, s) -> Name (get_identifier name) :: mk_sign_vars s
-| TyAnonArg (_, s) -> Anonymous :: mk_sign_vars s
+| TyIdent (_,s) -> mk_sign_vars i s
+| TyArg (_, s) -> Name (get_identifier i) :: mk_sign_vars (i + 1) s
 
 let dummy_id = Id.of_string "_"
 
@@ -661,12 +652,7 @@ let tactic_extend plugin_name tacname ~level ?deprecation sign =
   | [TyML (TyIdent (name, s),tac) as ml_tac] when only_constr s ->
   (** The extension is only made of a name followed by constr entries: we do not
       add any grammar nor printing rule and add it as a true Ltac definition. *)
-    (*
-    let patt = make_patt rem in
-    let vars = List.map make_var rem in
-    let vars = mlexpr_of_list (mlexpr_of_name mlexpr_of_ident) vars in
-       *)
-    let vars = mk_sign_vars s in
+    let vars = mk_sign_vars 1 s in
     let ml = { Tacexpr.mltac_name = ml_tactic_name; Tacexpr.mltac_index = 0 } in
     let tac = match s with
     | TyNil -> eval ml_tac

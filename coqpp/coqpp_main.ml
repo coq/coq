@@ -296,17 +296,16 @@ let rec print_symbol fmt = function
 let rec print_clause fmt = function
 | [] -> fprintf fmt "@[TyNil@]"
 | ExtTerminal s :: cl -> fprintf fmt "@[TyIdent (\"%s\", %a)@]" s print_clause cl
-| ExtNonTerminal (g, TokNone) :: cl ->
-  fprintf fmt "@[TyAnonArg (%a, %a)@]"
+| ExtNonTerminal (g, _) :: cl ->
+  fprintf fmt "@[TyArg (%a, %a)@]"
     print_symbol g print_clause cl
-| ExtNonTerminal (g, TokName id) :: cl ->
-  fprintf fmt "@[TyArg (%a, \"%s\", %a)@]"
-    print_symbol g id print_clause cl
 
 let rec print_binders fmt = function
 | [] -> fprintf fmt "ist@ "
-| (ExtTerminal _ | ExtNonTerminal (_, TokNone)) :: rem -> print_binders fmt rem
-| (ExtNonTerminal (_, TokName id)) :: rem ->
+| ExtTerminal _ :: rem -> print_binders fmt rem
+| ExtNonTerminal (_, TokNone) :: rem ->
+  fprintf fmt "_@ %a" print_binders rem
+| ExtNonTerminal (_, TokName id) :: rem ->
   fprintf fmt "%s@ %a" id print_binders rem
 
 let print_rule fmt r =

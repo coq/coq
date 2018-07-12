@@ -24,23 +24,16 @@ type rule = {
   (** Whether this entry is deprecated *)
 }
 
-let rec make_patt r = function
-| [] -> r
-| ExtNonTerminal (_, Some p) :: l -> <:expr< fun $lid:p$ -> $make_patt r l$ >>
-| ExtNonTerminal (_, None) :: l -> <:expr< fun _ -> $make_patt r l$ >>
-| ExtTerminal _ :: l -> make_patt r l
-
 let rec mlexpr_of_clause = function
 | [] -> <:expr< Vernacentries.TyNil >>
 | ExtTerminal s :: cl -> <:expr< Vernacentries.TyTerminal ($str:s$, $mlexpr_of_clause cl$) >>
 | ExtNonTerminal (g, id) :: cl ->
-  let id = mlexpr_of_option mlexpr_of_string id in
-  <:expr< Vernacentries.TyNonTerminal ($id$, $mlexpr_of_symbol g$, $mlexpr_of_clause cl$) >>
+  <:expr< Vernacentries.TyNonTerminal ($mlexpr_of_symbol g$, $mlexpr_of_clause cl$) >>
 
 let make_rule r =
   let ty = mlexpr_of_clause r.r_patt in
-  let cmd = make_patt r.r_branch r.r_patt in
-  let make_classifier c = make_patt c r.r_patt in
+  let cmd = binders_of_tokens r.r_branch r.r_patt in
+  let make_classifier c = binders_of_tokens c r.r_patt in
   let classif = mlexpr_of_option make_classifier r.r_class in
   <:expr< Vernacentries.TyML ($mlexpr_of_bool r.r_depr$, $ty$, $cmd$, $classif$) >>
 
