@@ -80,7 +80,9 @@ export MLPACKFILES := $(call find, '*.mlpack')
 export ML4FILES := $(call find, '*.ml4')
 export MLGFILES := $(call find, '*.mlg')
 export CFILES := $(call findindir, 'kernel/byterun', '*.c')
-export MERLINFILES := $(call find, '.merlin')
+
+export MERLININFILES := $(call find, '.merlin.in')
+export MERLINFILES := $(MERLININFILES:.in=)
 
 # NB: The lists of currently existing .ml and .mli files will change
 # before and after a build or a make clean. Hence we do not export
@@ -175,7 +177,7 @@ Makefile $(wildcard Makefile.*) config/Makefile : ;
 
 .PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean depclean cleanconfig distclean voclean timingclean devdocclean alienclean
 
-clean: objclean cruftclean depclean docclean devdocclean
+clean: objclean cruftclean depclean docclean devdocclean camldevfilesclean
 
 cleankeepvo: indepclean clean-ide optclean cruftclean depclean docclean devdocclean
 
@@ -184,6 +186,9 @@ objclean: archclean indepclean
 cruftclean: ml4clean
 	find . -name '*~' -o -name '*.annot' | xargs rm -f
 	rm -f gmon.out core
+
+camldevfilesclean:
+	rm -f $(MERLINFILES) META.coq
 
 indepclean:
 	rm -f $(GENFILES)

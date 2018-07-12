@@ -313,7 +313,7 @@
 
 /configure*       @ejgallego
 
-/META.coq         @ejgallego
+/META.coq.in      @ejgallego
 
 /dev/build/windows @MSoegtropIMC
 # Secondary maintainer @maximedenes
