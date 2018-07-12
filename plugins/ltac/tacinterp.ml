@@ -1125,17 +1125,17 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacSelect (sel, tac) -> Tacticals.New.tclSELECT sel (interp_tactic ist tac)
   (* For extensions *)
   | TacAlias (loc,(s,l)) ->
-      let (ids, body) = Tacenv.interp_alias s in
+      let alias = Tacenv.interp_alias s in
       let (>>=) = Ftactic.bind in
       let interp_vars = Ftactic.List.map (fun v -> interp_tacarg ist v) l in
       let tac l =
         let addvar x v accu = Id.Map.add x v accu in
-        let lfun = List.fold_right2 addvar ids l ist.lfun in
+        let lfun = List.fold_right2 addvar alias.Tacenv.alias_args l ist.lfun in
         Ftactic.lift (push_trace (loc,LtacNotationCall s) ist) >>= fun trace ->
         let ist = {
           lfun = lfun;
           extra = TacStore.set ist.extra f_trace trace; } in
-        val_interp ist body >>= fun v ->
+        val_interp ist alias.Tacenv.alias_body >>= fun v ->
         Ftactic.lift (tactic_of_value ist v)
       in
       let tac =
@@ -1147,7 +1147,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
          some more elaborate solution will have to be used. *)
       in
       let tac =
-        let len1 = List.length ids in
+        let len1 = List.length alias.Tacenv.alias_args in
         let len2 = List.length l in
         if len1 = len2 then tac
         else Tacticals.New.tclZEROMSG (str "Arguments length mismatch: \

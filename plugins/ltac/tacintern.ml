@@ -117,9 +117,26 @@ let intern_constr_reference strict ist qid =
 
 (* Internalize an isolated reference in position of tactic *)
 
+let warn_deprecated_tactic =
+  CWarnings.create ~name:"deprecated-tactic" ~category:"deprecated"
+    (fun (qid,depr) -> str "Tactic " ++ pr_qualid qid ++
+      strbrk " is deprecated" ++
+      pr_opt (fun since -> str "since " ++ str since) depr.Vernacinterp.since ++
+      str "." ++ pr_opt (fun note -> str note) depr.Vernacinterp.note)
+
+let warn_deprecated_alias =
+  CWarnings.create ~name:"deprecated-tactic-notation" ~category:"deprecated"
+    (fun (kn,depr) -> str "Tactic Notation " ++ Pptactic.pr_alias_key kn ++
+      strbrk " is deprecated since" ++
+      pr_opt (fun since -> str "since " ++ str since) depr.Vernacinterp.since ++
+      str "." ++ pr_opt (fun note -> str note) depr.Vernacinterp.note)
+
 let intern_isolated_global_tactic_reference qid =
   let loc = qid.CAst.loc in
-  TacCall (Loc.tag ?loc (ArgArg (loc,Tacenv.locate_tactic qid),[]))
+  let kn = Tacenv.locate_tactic qid in
+  Option.iter (fun depr -> warn_deprecated_tactic ?loc (qid,depr)) @@
+    Tacenv.tac_deprecation kn;
+  TacCall (Loc.tag ?loc (ArgArg (loc,kn),[]))
 
 let intern_isolated_tactic_reference strict ist qid =
   (* An ltac reference *)
@@ -137,7 +154,11 @@ let intern_isolated_tactic_reference strict ist qid =
 (* Internalize an applied tactic reference *)
 
 let intern_applied_global_tactic_reference qid =
-  ArgArg (qid.CAst.loc,Tacenv.locate_tactic qid)
+  let loc = qid.CAst.loc in
+  let kn = Tacenv.locate_tactic qid in
+  Option.iter (fun depr -> warn_deprecated_tactic ?loc (qid,depr)) @@
+    Tacenv.tac_deprecation kn;
+  ArgArg (loc,kn)
 
 let intern_applied_tactic_reference ist qid =
   (* An ltac reference *)
@@ -643,6 +664,8 @@ and intern_tactic_seq onlytac ist = function
 
   (* For extensions *)
   | TacAlias (loc,(s,l)) ->
+      let alias = Tacenv.interp_alias s in
+      Option.iter (fun o -> warn_deprecated_alias ?loc (s,o)) @@ alias.Tacenv.alias_deprecation;
       let l = List.map (intern_tacarg !strict_check false ist) l in
       ist.ltacvars, TacAlias (Loc.tag ?loc (s,l))
   | TacML (loc,(opn,l)) ->

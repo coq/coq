@@ -287,12 +287,14 @@ GEXTEND Gram
 
   (* Definitions for tactics *)
   tacdef_body:
-    [ [ name = Constr.global; it=LIST1 input_fun; redef = ltac_def_kind; body = tactic_expr ->
+    [ [ name = Constr.global; it=LIST1 input_fun;
+        redef = ltac_def_kind; body = tactic_expr ->
           if redef then Tacexpr.TacticRedefinition (name, TacFun (it, body))
           else
             let id = reference_to_id name in
             Tacexpr.TacticDefinition (id, TacFun (it, body))
-      | name = Constr.global; redef = ltac_def_kind; body = tactic_expr ->
+      | name = Constr.global; redef = ltac_def_kind;
+        body = tactic_expr ->
           if redef then Tacexpr.TacticRedefinition (name, body)
           else
             let id = reference_to_id name in
@@ -468,7 +470,8 @@ VERNAC COMMAND FUNCTIONAL EXTEND VernacTacticNotation
   [ VtSideff [], VtNow ] ->
   [ fun ~atts ~st -> let open Vernacinterp in
       let n = Option.default 0 n in
-      Tacentries.add_tactic_notation (Locality.make_module_locality atts.locality) n r e;
+      let deprecation = atts.deprecated in
+      Tacentries.add_tactic_notation (Locality.make_module_locality atts.locality) n ?deprecation r e;
       st
   ]
 END
@@ -512,7 +515,8 @@ VERNAC COMMAND FUNCTIONAL EXTEND VernacDeclareTacticDefinition
       | TacticDefinition ({CAst.v=r},_) -> r
       | TacticRedefinition (qid,_) -> qualid_basename qid) l), VtLater
   ] -> [ fun ~atts ~st -> let open Vernacinterp in
-           Tacentries.register_ltac (Locality.make_module_locality atts.locality) l;
+           let deprecation = atts.deprecated in
+           Tacentries.register_ltac (Locality.make_module_locality atts.locality) ?deprecation l;
            st
   ]
 END

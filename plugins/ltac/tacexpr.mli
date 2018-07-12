@@ -398,5 +398,5 @@ type ltac_call_kind =
 type ltac_trace = ltac_call_kind Loc.located list
 
 type tacdef_body =
-  | TacticDefinition of lident * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)
-  | TacticRedefinition of qualid * raw_tactic_expr       (* indicates that user employed '::=' in Ltac body *)
+  | TacticDefinition of lident * raw_tactic_expr (* indicates that user employed ':=' in Ltac body *)
+  | TacticRedefinition of qualid * raw_tactic_expr (* indicates that user employed '::=' in Ltac body *)

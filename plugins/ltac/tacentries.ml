@@ -252,7 +252,7 @@ type tactic_grammar_obj = {
   tacobj_key : KerName.t;
   tacobj_local : locality_flag;
   tacobj_tacgram : tactic_grammar;
-  tacobj_body : Id.t list * Tacexpr.glob_tactic_expr;
+  tacobj_body : Tacenv.alias_tactic;
   tacobj_forml : bool;
 }
 
@@ -288,10 +288,11 @@ let load_tactic_notation i (_, tobj) =
     extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram
 
 let subst_tactic_notation (subst, tobj) =
-  let (ids, body) = tobj.tacobj_body in
+  let open Tacenv in
+  let alias = tobj.tacobj_body in
   { tobj with
     tacobj_key = Mod_subst.subst_kn subst tobj.tacobj_key;
-    tacobj_body = (ids, Tacsubst.subst_tactic subst body);
+    tacobj_body = { alias with alias_body = Tacsubst.subst_tactic subst alias.alias_body };
   }
 
 let classify_tactic_notation tacobj = Substitute tacobj
@@ -308,25 +309,26 @@ let cons_production_parameter = function
 | TacTerm _ -> None
 | TacNonTerm (_, (_, ido)) -> ido
 
-let add_glob_tactic_notation local ~level prods forml ids tac =
+let add_glob_tactic_notation local ~level ?deprecation prods forml ids tac =
   let parule = {
     tacgram_level = level;
     tacgram_prods = prods;
   } in
+  let open Tacenv in
   let tacobj = {
     tacobj_key = make_fresh_key prods;
     tacobj_local = local;
     tacobj_tacgram = parule;
-    tacobj_body = (ids, tac);
+    tacobj_body = { alias_args = ids; alias_body = tac; alias_deprecation = deprecation };
     tacobj_forml = forml;
   } in
   Lib.add_anonymous_leaf (inTacticGrammar tacobj)
 
-let add_tactic_notation local n prods e =
+let add_tactic_notation local n ?deprecation prods e =
   let ids = List.map_filter cons_production_parameter prods in
   let prods = List.map interp_prod_item prods in
   let tac = Tacintern.glob_tactic_env ids (Global.env()) e in
-  add_glob_tactic_notation local ~level:n prods false ids tac
+  add_glob_tactic_notation local ~level:n ?deprecation prods false ids tac
 
 (**********************************************************************)
 (* ML Tactic entries                                                  *)
@@ -366,7 +368,7 @@ let extend_atomic_tactic name entries =
   in
   List.iteri add_atomic entries
 
-let add_ml_tactic_notation name ~level prods =
+let add_ml_tactic_notation name ~level ?deprecation prods =
   let len = List.length prods in
   let iter i prods =
     let open Tacexpr in
@@ -378,7 +380,7 @@ let add_ml_tactic_notation name ~level prods =
     let entry = { mltac_name = name; mltac_index = len - i - 1 } in
     let map id = Reference (Locus.ArgVar (CAst.make id)) in
     let tac = TacML (Loc.tag (entry, List.map map ids)) in
-    add_glob_tactic_notation false ~level prods true ids tac
+    add_glob_tactic_notation false ~level ?deprecation prods true ids tac
   in
   List.iteri iter (List.rev prods);
   (** We call [extend_atomic_tactic] only for "basic tactics" (the ones at
@@ -430,7 +432,7 @@ let warn_unusable_identifier =
       (fun id -> strbrk "The Ltac name" ++ spc () ++ Id.print id ++ spc () ++
         strbrk "may be unusable because of a conflict with a notation.")
 
-let register_ltac local tacl =
+let register_ltac local ?deprecation tacl =
   let map tactic_body =
     match tactic_body with
     | Tacexpr.TacticDefinition ({CAst.loc;v=id}, body) ->
@@ -483,10 +485,10 @@ let register_ltac local tacl =
   let defs = States.with_state_protection defs () in
   let iter (def, tac) = match def with
   | NewTac id ->
-    Tacenv.register_ltac false local id tac;
+    Tacenv.register_ltac false local id tac ?deprecation;
     Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is defined")
   | UpdateTac kn ->
-    Tacenv.redefine_ltac local kn tac;
+    Tacenv.redefine_ltac local kn tac ?deprecation;
     let name = Tacenv.shortest_qualid_of_tactic kn in
     Flags.if_verbose Feedback.msg_info (Libnames.pr_qualid name ++ str " is redefined")
   in
@@ -658,7 +660,7 @@ let lift_constr_tac_to_ml_tac vars tac =
   end in
   tac
 
-let tactic_extend plugin_name tacname ~level sign =
+let tactic_extend plugin_name tacname ~level ?deprecation sign =
   let open Tacexpr in
   let ml_tactic_name =
     { mltac_tactic = tacname;
@@ -687,10 +689,10 @@ let tactic_extend plugin_name tacname ~level sign =
       This is the rôle of the [lift_constr_tac_to_ml_tac] function. *)
     let body = Tacexpr.TacFun (vars, Tacexpr.TacML (Loc.tag (ml, [])))in
     let id = Names.Id.of_string name in
-    let obj () = Tacenv.register_ltac true false id body in
+    let obj () = Tacenv.register_ltac true false id body ?deprecation in
     let () = Tacenv.register_ml_tactic ml_tactic_name [|tac|] in
     Mltop.declare_cache_obj obj plugin_name
   | _ ->
-  let obj () = add_ml_tactic_notation ml_tactic_name ~level (List.map clause_of_ty_ml sign) in
+  let obj () = add_ml_tactic_notation ml_tactic_name ~level ?deprecation (List.map clause_of_ty_ml sign) in
   Tacenv.register_ml_tactic ml_tactic_name @@ Array.of_list (List.map eval sign);
   Mltop.declare_cache_obj obj plugin_name

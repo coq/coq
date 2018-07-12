@@ -49,13 +49,17 @@ EXTEND
   GLOBAL: str_item;
   str_item:
     [ [ "TACTIC"; "EXTEND"; s = tac_name;
+        depr = OPT [ "DEPRECATED"; depr = LIDENT -> depr ];
         level = OPT [ "AT"; UIDENT "LEVEL"; level = INT -> level ];
         OPT "|"; l = LIST1 tacrule SEP "|";
         "END" ->
         let level = match level with Some i -> int_of_string i | None -> 0 in
         let level = mlexpr_of_int level in
+        let depr = mlexpr_of_option (fun l -> <:expr< $lid:l$ >>) depr in
         let l = <:expr< Tacentries.($mlexpr_of_list (fun x -> x) l$) >> in
-        declare_str_items loc [ <:str_item< Tacentries.tactic_extend $plugin_name$ $str:s$ ~{ level = $level$ } $l$ >> ] ] ]
+        declare_str_items loc [ <:str_item< Tacentries.tactic_extend
+          $plugin_name$ $str:s$ ~{ level = $level$ } ?{ deprecation =
+          $depr$ } $l$ >> ] ] ]
   ;
   tacrule:
     [ [ "["; l = LIST1 tacargs; "]";

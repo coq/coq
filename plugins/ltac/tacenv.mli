@@ -12,6 +12,7 @@ open Names
 open Libnames
 open Tacexpr
 open Geninterp
+open Vernacinterp
 
 (** This module centralizes the various ways of registering tactics. *)
 
@@ -29,7 +30,11 @@ val shortest_qualid_of_tactic : ltac_constant -> qualid
 type alias = KerName.t
 (** Type of tactic alias, used in the [TacAlias] node. *)
 
-type alias_tactic = Id.t list * glob_tactic_expr
+type alias_tactic =
+  { alias_args: Id.t list;
+    alias_body: glob_tactic_expr;
+    alias_deprecation: Vernacinterp.deprecation option;
+  }
 (** Contents of a tactic notation *)
 
 val register_alias : alias -> alias_tactic -> unit
@@ -43,7 +48,8 @@ val check_alias : alias -> bool
 
 (** {5 Coq tactic definitions} *)
 
-val register_ltac : bool -> bool -> Id.t -> glob_tactic_expr -> unit
+val register_ltac : bool -> bool -> ?deprecation:deprecation -> Id.t ->
+  glob_tactic_expr -> unit
 (** Register a new Ltac with the given name and body.
 
     The first boolean indicates whether this is done from ML side, rather than
@@ -51,7 +57,8 @@ val register_ltac : bool -> bool -> Id.t -> glob_tactic_expr -> unit
     definition. It also puts the Ltac name in the nametab, so that it can be
     used unqualified. *)
 
-val redefine_ltac : bool -> KerName.t -> glob_tactic_expr -> unit
+val redefine_ltac : bool -> ?deprecation:deprecation -> KerName.t ->
+  glob_tactic_expr -> unit
 (** Replace a Ltac with the given name and body. If the boolean flag is set
     to true, then this is a local redefinition. *)
 
@@ -61,6 +68,9 @@ val interp_ltac : KerName.t -> glob_tactic_expr
 val is_ltac_for_ml_tactic : KerName.t -> bool
 (** Whether the tactic is defined from ML-side *)
 
+val tac_deprecation : KerName.t -> deprecation option
+(** The tactic deprecation notice, if any *)
+
 type ltac_entry = {
   tac_for_ml : bool;
   (** Whether the tactic is defined from ML-side *)
@@ -68,6 +78,8 @@ type ltac_entry = {
   (** The current body of the tactic *)
   tac_redef : ModPath.t list;
   (** List of modules redefining the tactic in reverse chronological order *)
+  tac_deprecation : deprecation option;
+  (** Deprecation notice to be printed when the tactic is used *)
 }
 
 val ltac_entries : unit -> ltac_entry KNmap.t
