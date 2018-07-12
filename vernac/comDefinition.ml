@@ -62,7 +62,6 @@ let check_imps ~impsty ~impsbody =
   if not b then warn_implicits_in_term ()
 
 let interp_definition pl bl poly red_option c ctypopt =
-  let open EConstr in
   let env = Global.env() in
   (* Explicitly bound universes and constraints *)
   let evd, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
@@ -85,18 +84,13 @@ let interp_definition pl bl poly red_option c ctypopt =
       evd, c, imps1@Impargs.lift_implicits (Context.Rel.nhyps ctx) impsty, Some ty
   in
   (* universe minimization *)
-  let evd = Evd.minimize_universes evd in
-  (* Substitute evars and universes, and add parameters.
-     Note: in program mode some evars may remain. *)
-  let ctx = List.map Termops.(map_rel_decl (to_constr ~abort_on_undefined_evars:false evd)) ctx in
-  let c = Term.it_mkLambda_or_LetIn (EConstr.to_constr ~abort_on_undefined_evars:false evd c) ctx in
-  let tyopt = Option.map (fun ty -> Term.it_mkProd_or_LetIn (EConstr.to_constr ~abort_on_undefined_evars:false evd ty) ctx) tyopt in
-  (* Keep only useful universes. *)
-  let uvars_fold uvars c =
-    Univ.LSet.union uvars (universes_of_constr evd (of_constr c))
+  let evd, (ctx, c, tyopt) =
+    (* NB: in program mode evars may remain *)
+    Evarutil.finalize ~abort_on_undefined_evars:false env evd
+      (fun nf -> List.map Termops.(map_rel_decl nf) ctx, nf c, Option.map nf tyopt)
   in
-  let uvars = List.fold_left uvars_fold Univ.LSet.empty (Option.List.cons tyopt [c]) in
-  let evd = Evd.restrict_universe_context evd uvars in
+  let c = Term.it_mkLambda_or_LetIn c ctx in
+  let tyopt = Option.map (fun ty -> Term.it_mkProd_or_LetIn ty ctx) tyopt in
   (* Check we conform to declared universes *)
   let uctx = Evd.check_univ_decl ~poly evd decl in
   (* We're done! *)

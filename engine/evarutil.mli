@@ -185,6 +185,19 @@ val nf_evar_map_universes : evar_map -> evar_map * (Constr.constr -> Constr.cons
 exception Uninstantiated_evar of Evar.t
 val flush_and_check_evars :  evar_map -> constr -> Constr.constr
 
+(** [finalize env sigma f] combines universe minimisation,
+   evar-and-universe normalisation and universe restriction.
+
+    It minimizes universes in [sigma], calls [f] a normalisation
+   function with respect to the updated [sigma] and restricts the
+   local universes of [sigma] to those encountered while running [f].
+
+    Note that the normalizer passed to [f] holds some imperative state
+   in its closure. *)
+val finalize : ?abort_on_undefined_evars:bool -> ?skip_restrict:bool -> env -> evar_map ->
+  ((EConstr.t -> Constr.t) -> 'a) ->
+  evar_map * 'a
+
 (** {6 Term manipulation up to instantiation} *)
 
 (** Like {!Constr.kind} except that [kind_of_term sigma t] exposes [t]
