@@ -189,6 +189,7 @@ indepclean:
 	rm -f $(GENFILES)
 	rm -f $(COQTOPBYTE) $(CHICKENBYTE) $(TOPBYTE)
 	find . \( -name '*~' -o -name '*.cm[ioat]' -o -name '*.cmti' \) -delete
+	find . -name 'g_*.ml' -delete
 	rm -f */*.pp[iox] plugins/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
