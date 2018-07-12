@@ -164,36 +164,6 @@ matrix:
           - avsm
           packages: *extra-packages
 
-    # Ocaml warnings with two compilers
-    - if: NOT (type = pull_request)
-      env:
-      - MAIN_TARGET="coqocaml"
-      - EXTRA_CONF="-byte-only -coqide byte -warn-error yes"
-      - EXTRA_OPAM="${LABLGTK}"
-      addons:
-        apt:
-          sources:
-          - avsm
-          packages: &coqide-packages
-          - opam
-          - aspcud
-          - libgtk2.0-dev
-          - libgtksourceview2.0-dev
-
-    - if: NOT (type = pull_request)
-      env:
-      - MAIN_TARGET="coqocaml"
-      - COMPILER="${COMPILER_BE}"
-      - FINDLIB_VER="${FINDLIB_VER_BE}"
-      - CAMLP5_VER="${CAMLP5_VER_BE}"
-      - EXTRA_CONF="-byte-only -coqide byte -warn-error yes"
-      - EXTRA_OPAM="${LABLGTK_BE}"
-      addons:
-        apt:
-          sources:
-          - avsm
-          packages: *coqide-packages
-
     - os: osx
       env:
       - TEST_TARGET="test-suite"
@@ -260,7 +230,7 @@ script:
 - echo -en 'travis_fold:end:coq.clean\\r'
 
 - echo 'Configuring Coq...' && echo -en 'travis_fold:start:coq.config\\r'
-- ./configure ${COQ_DEST} -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
+- ./configure ${COQ_DEST} -warn-error yes -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
 - echo -en 'travis_fold:end:coq.config\\r'
 
 - echo 'Building Coq...' && echo -en 'travis_fold:start:coq.build\\r'

@@ -71,7 +71,7 @@ after_script:
     - echo 'end:coq.clean'
 
     - echo 'start:coq.config'
-    - ./configure -prefix "$(pwd)/_install_ci" ${COQ_EXTRA_CONF}"$COQ_EXTRA_CONF_QUOTE"
+    - ./configure -warn-error yes -prefix "$(pwd)/_install_ci" ${COQ_EXTRA_CONF}"$COQ_EXTRA_CONF_QUOTE"
     - echo 'end:coq.config'
 
     - echo 'start:coq.build'
@@ -87,28 +87,6 @@ after_script:
     - echo 'end:coq.install'
 
     - set +e
-
-.warnings-template: &warnings-template
-  # keep warnings in test stage so we can test things even when warnings occur
-  stage: test
-  script:
-    - set -e
-
-    - echo 'start:coq.clean'
-    - make clean # ensure that `make clean` works on a fresh clone
-    - echo 'end:coq.clean'
-
-    - echo 'start:coq.config'
-    - ./configure -local ${COQ_EXTRA_CONF}
-    - echo 'end:coq.config'
-
-    - echo 'start:coq.build'
-    - make -j "$NJOBS" coqocaml
-    - echo 'end:coq:build'
-
-    - set +e
-  variables: &warnings-variables
-    COQ_EXTRA_CONF: "-native-compiler yes -coqide byte -byte-only -warn-error yes"
 
 # every non build job must set dependencies otherwise all build
 # artifacts are used together and we may get some random Coq. To that
@@ -263,20 +241,6 @@ pkg:nix:
     when: on_failure
     paths:
       - nix-build-coq.drv-0/*/test-suite/logs
-
-warnings:base:
-  <<: *warnings-template
-
-# warnings:32bit:
-#   <<: *warnings-template
-#   variables:
-#     <<: *warnings-variables
-
-warnings:edge:
-  <<: *warnings-template
-  variables:
-    <<: *warnings-variables
-    OPAM_SWITCH: edge
 
 documentation:
   <<: *doc-template
