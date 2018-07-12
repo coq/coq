@@ -1884,7 +1884,7 @@ let compile_constant env sigma prefix ~interactive con cb =
       let t = Mod_subst.force_constr t in
       let code = lambda_of_constr env sigma t in
       if !Flags.debug then Feedback.msg_debug (Pp.str "Generated lambda code");
-      let is_lazy = is_lazy prefix t in
+      let is_lazy = is_lazy env prefix t in
       let code = if is_lazy then mk_lazy code else code in
       let name =
         if interactive then LinkedInteractive prefix

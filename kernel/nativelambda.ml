@@ -333,54 +333,13 @@ let rec get_alias env (kn, u as p) =
 
 (*i Global environment *)
 
-let global_env = ref empty_env 
-
-let set_global_env env = global_env := env
-
 let get_names decl = 
   let decl = Array.of_list decl in
   Array.map fst decl
 
-(* Rel Environment *)
-module Vect = 
-  struct
-    type 'a t = {
-	mutable elems : 'a array;
-	mutable size : int;
-      }
-
-    let make n a = {
-      elems = Array.make n a;
-      size = 0;
-    }
-
-    let extend v =
-      if Int.equal v.size (Array.length v.elems) then 
-	let new_size = min (2*v.size) Sys.max_array_length in
-	if new_size <= v.size then invalid_arg "Vect.extend";
-	let new_elems = Array.make new_size v.elems.(0) in
-	Array.blit v.elems 0 new_elems 0 (v.size);
-	v.elems <- new_elems
-
-    let push v a = 
-      extend v;
-      v.elems.(v.size) <- a;
-      v.size <- v.size + 1
-
-    let popn v n =
-      v.size <- max 0 (v.size - n)
-
-    let pop v = popn v 1
-	
-    let get_last v n =
-      if v.size <= n then invalid_arg "Vect.get:index out of bounds";
-      v.elems.(v.size - n - 1)
-
-  end
-
 let empty_args = [||]
 
-module Renv = 
+module Cache =
   struct
 
     module ConstrHash =
@@ -394,45 +353,20 @@ module Renv =
 
     type constructor_info = tag * int * int (* nparam nrealargs *)
 
-    type t = {
-	name_rel : Name.t Vect.t;
-	construct_tbl : constructor_info ConstrTable.t;
-
-       }
-
-
-    let make () = {
-      name_rel = Vect.make 16 Anonymous;
-      construct_tbl = ConstrTable.create 111
-    }
-
-    let push_rel env id = Vect.push env.name_rel id
-
-    let push_rels env ids = 
-      Array.iter (push_rel env) ids
-
-    let pop env = Vect.pop env.name_rel
-	    
-    let popn env n =
-      for _i = 1 to n do pop env done
-
-    let get env n =
-      Lrel (Vect.get_last env.name_rel (n-1), n)
-
-    let get_construct_info env c =
-      try ConstrTable.find env.construct_tbl c
+    let get_construct_info cache env c : constructor_info =
+      try ConstrTable.find cache c
       with Not_found -> 
 	let ((mind,j), i) = c in
-	let oib = lookup_mind mind !global_env in
+        let oib = lookup_mind mind env in
 	let oip = oib.mind_packets.(j) in
 	let tag,arity = oip.mind_reloc_tbl.(i-1) in
 	let nparams = oib.mind_nparams in
 	let r = (tag, nparams, arity) in
-	ConstrTable.add env.construct_tbl c r;
+        ConstrTable.add cache c r;
 	r
   end
 
-let is_lazy prefix t =
+let is_lazy env prefix t =
   match kind t with
   | App (f,args) ->
      begin match kind f with
@@ -440,7 +374,7 @@ let is_lazy prefix t =
 	let entry = mkInd (fst c) in
 	(try
 	    let _ =
-	      Retroknowledge.get_native_before_match_info (!global_env).retroknowledge
+              Retroknowledge.get_native_before_match_info env.retroknowledge
 							  entry prefix c Llazy;
 	    in
 	    false
@@ -463,73 +397,71 @@ let empty_evars =
 
 let empty_ids = [||]
 
-let rec lambda_of_constr env sigma c =
+let rec lambda_of_constr cache env sigma c =
   match kind c with
   | Meta mv ->
      let ty = meta_type sigma mv in
-     Lmeta (mv, lambda_of_constr env sigma ty)
+     Lmeta (mv, lambda_of_constr cache env sigma ty)
 
   | Evar (evk,args as ev) ->
      (match evar_value sigma ev with
      | None ->
 	let ty = evar_type sigma ev in
-        let args = Array.map (lambda_of_constr env sigma) args in
-        Levar(evk, lambda_of_constr env sigma ty, args)
-     | Some t -> lambda_of_constr env sigma t)
+        let args = Array.map (lambda_of_constr cache env sigma) args in
+        Levar(evk, lambda_of_constr cache env sigma ty, args)
+     | Some t -> lambda_of_constr cache env sigma t)
 
-  | Cast (c, _, _) -> lambda_of_constr env sigma c
+  | Cast (c, _, _) -> lambda_of_constr cache env sigma c
 
-  | Rel i -> Renv.get env i
+  | Rel i -> Lrel (RelDecl.get_name (Environ.lookup_rel i env), i)
 
   | Var id -> Lvar id
 
   | Sort s -> Lsort s
 
   | Ind (ind,u as pind) ->
-      let prefix = get_mind_prefix !global_env (fst ind) in
+      let prefix = get_mind_prefix env (fst ind) in
       Lind (prefix, pind)
 
   | Prod(id, dom, codom) ->
-      let ld = lambda_of_constr env sigma dom in
-      Renv.push_rel env id;
-      let lc = lambda_of_constr env sigma codom in
-      Renv.pop env;
+      let ld = lambda_of_constr cache env sigma dom in
+      let env = Environ.push_rel (RelDecl.LocalAssum (id, dom)) env in
+      let lc = lambda_of_constr cache env sigma codom in
       Lprod(ld,  Llam([|id|], lc))
 
   | Lambda _ ->
       let params, body = Term.decompose_lam c in
+      let fold (na, t) env = Environ.push_rel (RelDecl.LocalAssum (na, t)) env in
+      let env = List.fold_right fold params env in
+      let lb = lambda_of_constr cache env sigma body in
       let ids = get_names (List.rev params) in
-      Renv.push_rels env ids;
-      let lb = lambda_of_constr env sigma body in
-      Renv.popn env (Array.length ids);
       mkLlam ids lb
 
-  | LetIn(id, def, _, body) ->
-      let ld = lambda_of_constr env sigma def in
-      Renv.push_rel env id;
-      let lb = lambda_of_constr env sigma body in
-      Renv.pop env;
+  | LetIn(id, def, t, body) ->
+      let ld = lambda_of_constr cache env sigma def in
+      let env = Environ.push_rel (RelDecl.LocalDef (id, def, t)) env in
+      let lb = lambda_of_constr cache env sigma body in
       Llet(id, ld, lb)
 
-  | App(f, args) -> lambda_of_app env sigma f args
+  | App(f, args) -> lambda_of_app cache env sigma f args
 
-  | Const _ -> lambda_of_app env sigma c empty_args
+  | Const _ -> lambda_of_app cache env sigma c empty_args
 
-  | Construct _ ->  lambda_of_app env sigma c empty_args
+  | Construct _ ->  lambda_of_app cache env sigma c empty_args
 
   | Proj (p, c) ->
-    let pb = lookup_projection p !global_env in
+    let pb = lookup_projection p env in
     let ind = pb.proj_ind in
-    let prefix = get_mind_prefix !global_env (fst ind) in
-    mkLapp (Lproj (prefix, ind, pb.proj_arg)) [|lambda_of_constr env sigma c|]
+    let prefix = get_mind_prefix env (fst ind) in
+    mkLapp (Lproj (prefix, ind, pb.proj_arg)) [|lambda_of_constr cache env sigma c|]
 
   | Case(ci,t,a,branches) ->  
       let (mind,i as ind) = ci.ci_ind in
-      let mib = lookup_mind mind !global_env in
+      let mib = lookup_mind mind env in
       let oib = mib.mind_packets.(i) in
       let tbl = oib.mind_reloc_tbl in 
       (* Building info *)
-      let prefix = get_mind_prefix !global_env mind in
+      let prefix = get_mind_prefix env mind in
       let annot_sw = 
 	    { asw_ind = ind;
           asw_ci = ci;
@@ -538,21 +470,21 @@ let rec lambda_of_constr env sigma c =
           asw_prefix = prefix}
       in
       (* translation of the argument *)
-      let la = lambda_of_constr env sigma a in
+      let la = lambda_of_constr cache env sigma a in
       let entry = mkInd ind in
       let la =
 	try
-	  Retroknowledge.get_native_before_match_info (!global_env).retroknowledge
+          Retroknowledge.get_native_before_match_info (env).retroknowledge
 						      entry prefix (ind,1) la
 	with Not_found -> la
       in
       (* translation of the type *)
-      let lt = lambda_of_constr env sigma t in
+      let lt = lambda_of_constr cache env sigma t in
       (* translation of branches *)
       let mk_branch i b =
 	let cn = (ind,i+1) in
 	let _, arity = tbl.(i) in
-	let b = lambda_of_constr env sigma b in
+        let b = lambda_of_constr cache env sigma b in
 	if Int.equal arity 0 then (cn, empty_ids, b)
 	else 
 	  match b with
@@ -566,85 +498,83 @@ let rec lambda_of_constr env sigma c =
       Lcase(annot_sw, lt, la, bs)
 	
   | Fix(rec_init,(names,type_bodies,rec_bodies)) ->
-      let ltypes = lambda_of_args env sigma 0 type_bodies in
-      Renv.push_rels env names;
-      let lbodies = lambda_of_args env sigma 0 rec_bodies in
-      Renv.popn env (Array.length names);
+      let ltypes = lambda_of_args cache env sigma 0 type_bodies in
+      let env = Environ.push_rec_types (names, type_bodies, rec_bodies) env in
+      let lbodies = lambda_of_args cache env sigma 0 rec_bodies in
       Lfix(rec_init, (names, ltypes, lbodies))
 	
   | CoFix(init,(names,type_bodies,rec_bodies)) ->
-      let rec_bodies = Array.map2 (Reduction.eta_expand !global_env) rec_bodies type_bodies in
-      let ltypes = lambda_of_args env sigma 0 type_bodies in 
-      Renv.push_rels env names;
-      let lbodies = lambda_of_args env sigma 0 rec_bodies in
-      Renv.popn env (Array.length names);
+      let rec_bodies = Array.map2 (Reduction.eta_expand env) rec_bodies type_bodies in
+      let ltypes = lambda_of_args cache env sigma 0 type_bodies in
+      let env = Environ.push_rec_types (names, type_bodies, rec_bodies) env in
+      let lbodies = lambda_of_args cache env sigma 0 rec_bodies in
       Lcofix(init, (names, ltypes, lbodies))
 
-and lambda_of_app env sigma f args =
+and lambda_of_app cache env sigma f args =
   match kind f with
   | Const (kn,u as c) ->
-      let kn,u = get_alias !global_env c in
-      let cb = lookup_constant kn !global_env in
+      let kn,u = get_alias env c in
+      let cb = lookup_constant kn env in
       (try
-          let prefix = get_const_prefix !global_env kn in
+          let prefix = get_const_prefix env kn in
 	  (* We delay the compilation of arguments to avoid an exponential behavior *)
 	  let f = Retroknowledge.get_native_compiling_info
-		    (!global_env).retroknowledge (mkConst kn) prefix in
-	  let args = lambda_of_args env sigma 0 args in
+                    (env).retroknowledge (mkConst kn) prefix in
+          let args = lambda_of_args cache env sigma 0 args in
 	  f args
       with Not_found ->
       begin match cb.const_body with
       | Def csubst -> (* TODO optimize if f is a proj and argument is known *)
           if cb.const_inline_code then
-            lambda_of_app env sigma (Mod_subst.force_constr csubst) args
+            lambda_of_app cache env sigma (Mod_subst.force_constr csubst) args
           else
-          let prefix = get_const_prefix !global_env kn in
+          let prefix = get_const_prefix env kn in
           let t =
-            if is_lazy prefix (Mod_subst.force_constr csubst) then
+            if is_lazy env prefix (Mod_subst.force_constr csubst) then
               mkLapp Lforce [|Lconst (prefix, (kn,u))|]
             else Lconst (prefix, (kn,u))
           in
-        mkLapp t (lambda_of_args env sigma 0 args)
+        mkLapp t (lambda_of_args cache env sigma 0 args)
       | OpaqueDef _ | Undef _ ->
-          let prefix = get_const_prefix !global_env kn in
-          mkLapp (Lconst (prefix, (kn,u))) (lambda_of_args env sigma 0 args)
+          let prefix = get_const_prefix env kn in
+          mkLapp (Lconst (prefix, (kn,u))) (lambda_of_args cache env sigma 0 args)
       end)
   | Construct (c,u) ->
-      let tag, nparams, arity = Renv.get_construct_info env c in
+      let tag, nparams, arity = Cache.get_construct_info cache env c in
       let expected = nparams + arity in
       let nargs = Array.length args in
-      let prefix = get_mind_prefix !global_env (fst (fst c)) in
+      let prefix = get_mind_prefix env (fst (fst c)) in
       if Int.equal nargs expected then 
       try
 	try
 	  Retroknowledge.get_native_constant_static_info
-                         (!global_env).retroknowledge
+                         (env).retroknowledge
                          f args
           with NotClosed ->
 	    assert (Int.equal nparams 0); (* should be fine for int31 *)
-	    let args = lambda_of_args env sigma nparams args in
+            let args = lambda_of_args cache env sigma nparams args in
 	    Retroknowledge.get_native_constant_dynamic_info
-                           (!global_env).retroknowledge f prefix c args
+                           (env).retroknowledge f prefix c args
         with Not_found ->
-	  let args = lambda_of_args env sigma nparams args in
-	  makeblock !global_env c u tag args
+          let args = lambda_of_args cache env sigma nparams args in
+          makeblock env c u tag args
       else
-	let args = lambda_of_args env sigma 0 args in
+        let args = lambda_of_args cache env sigma 0 args in
 	(try
 	    Retroknowledge.get_native_constant_dynamic_info
-              (!global_env).retroknowledge f prefix c args
+              (env).retroknowledge f prefix c args
 	  with Not_found ->
             mkLapp (Lconstruct (prefix, (c,u))) args)
   | _ -> 
-      let f = lambda_of_constr env sigma f in
-      let args = lambda_of_args env sigma 0 args in
+      let f = lambda_of_constr cache env sigma f in
+      let args = lambda_of_args cache env sigma 0 args in
       mkLapp f args
 	
-and lambda_of_args env sigma start args =
+and lambda_of_args cache env sigma start args =
   let nargs = Array.length args in
   if start < nargs then
     Array.init (nargs - start) 
-      (fun i -> lambda_of_constr env sigma args.(start + i))
+      (fun i -> lambda_of_constr cache env sigma args.(start + i))
   else empty_args
 
 let optimize lam =
@@ -657,11 +587,8 @@ let optimize lam =
   lam
 
 let lambda_of_constr env sigma c =
-  set_global_env env;
-  let env = Renv.make () in
-  let ids = List.rev_map RelDecl.get_name (rel_context !global_env) in
-  Renv.push_rels env (Array.of_list ids);
-  let lam = lambda_of_constr env sigma c in
+  let cache = Cache.ConstrTable.create 91 in
+  let lam = lambda_of_constr cache env sigma c in
 (*  if Flags.vm_draw_opt () then begin
     (msgerrnl (str "Constr = \n" ++ pr_constr c);flush_all()); 
     (msgerrnl (str "Lambda = \n" ++ pp_lam lam);flush_all()); 

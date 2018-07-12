@@ -23,7 +23,7 @@ val empty_evars : evars
 val decompose_Llam : lambda -> Name.t array * lambda
 val decompose_Llam_Llet : lambda -> (Name.t * lambda option) array * lambda
 
-val is_lazy : prefix -> constr -> bool
+val is_lazy : env -> prefix -> constr -> bool
 val mk_lazy : lambda -> lambda
 
 val get_mind_prefix : env -> MutInd.t -> string
