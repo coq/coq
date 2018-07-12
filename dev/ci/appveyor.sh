@@ -2,7 +2,7 @@
 
 set -e -x
 
-APPVEYOR_OPAM_SWITCH=4.06.1+mingw64c
+APPVEYOR_OPAM_SWITCH=4.07.0+mingw64c
 
 wget https://github.com/fdopen/opam-repository-mingw/releases/download/0.0.0.1/opam64.tar.xz
 tar -xf opam64.tar.xz
