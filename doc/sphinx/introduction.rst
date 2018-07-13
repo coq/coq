@@ -12,7 +12,7 @@ https://github.com/coq/coq/wiki#coq-tutorials).
 
 The |Coq| system is designed to develop mathematical proofs, and
 especially to write formal specifications, programs and to verify that
-programs are correct with respect to their specification. It provides a
+programs are correct with respect to their specifications. It provides a
 specification language named |Gallina|. Terms of |Gallina| can represent
 programs as well as properties of these programs and proofs of these
 properties. Using the so-called *Curry-Howard isomorphism*, programs,
@@ -52,7 +52,7 @@ are processed from a file.
 How to read this book
 =====================
 
-This is a Reference Manual, so it is not made for a continuous reading.
+This is a Reference Manual, so it is not intended for continuous reading.
 We recommend using the various indexes to quickly locate the documentation
 you are looking for. There is a global index, and a number of specific indexes
 for tactics, vernacular commands, and error messages and warnings.

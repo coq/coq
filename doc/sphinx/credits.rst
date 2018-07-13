@@ -40,7 +40,7 @@ foundation of mathematics on constructive principles. The second one,
 Girard’s polymorphic :math:`\lambda`-calculus :math:`F_\omega`, is a
 very strong functional system in which we may represent higher-order
 logic proof structures. Combining both systems in a higher-order
-extension of the Automath languages, T. Coquand presented in 1985 the
+extension of the Automath language, T. Coquand presented in 1985 the
 first version of the *Calculus of Constructions*, CoC. This strong
 logical system allowed powerful axiomatizations, but direct inductive
 definitions were not possible, and inductive notions had to be defined
@@ -246,14 +246,14 @@ pretty-printing rules has also changed.
 Eduardo Giménez redesigned the internal tactic libraries, giving uniform
 names to Caml functions corresponding to |Coq| tactic names.
 
-Bruno Barras wrote new more efficient reductions functions.
+Bruno Barras wrote new, more efficient reduction functions.
 
 Hugo Herbelin introduced more uniform notations in the |Coq| specification
 language: the definitions by fixpoints and pattern-matching have a more
 readable syntax. Patrick Loiseleur introduced user-friendly notations
 for arithmetic expressions.
 
-New tactics were introduced: Eduardo Giménez improved a mechanism to
+New tactics were introduced: Eduardo Giménez improved the mechanism to
 introduce macros for tactics, and designed special tactics for
 (co)inductive definitions; Patrick Loiseleur designed a tactic to
 simplify polynomial expressions in an arbitrary commutative ring which
@@ -279,12 +279,12 @@ Loiseleur.
 Credits: addendum for version 6.3
 =================================
 
-The main changes in version V6.3 was the introduction of a few new
+The main changes in version V6.3 were the introduction of a few new
 tactics and the extension of the guard condition for fixpoint
 definitions.
 
 B. Barras extended the unification algorithm to complete partial terms
-and solved various tricky bugs related to universes.
+and fixed various tricky bugs related to universes.
 
 D. Delahaye developed the ``AutoRewrite`` tactic. He also designed the
 new behavior of ``Intro`` and provided the tacticals ``First`` and
@@ -318,8 +318,8 @@ internal architecture of the system. The |Coq| version 7.0 was distributed
 in March 2001, version 7.1 in September 2001, version 7.2 in January
 2002, version 7.3 in May 2002 and version 7.4 in February 2003.
 
-Jean-Christophe Filliâtre designed the architecture of the new system,
-he introduced a new representation for environments and wrote a new
+Jean-Christophe Filliâtre designed the architecture of the new system.
+He introduced a new representation for environments and wrote a new
 kernel for type-checking terms. His approach was to use functional
 data-structures in order to get more sharing, to prepare the addition of
 modules and also to get closer to a certified kernel.
@@ -351,7 +351,7 @@ Letouzey adapted user contributions to extract ML programs when it was
 sensible. Jean-Christophe Filliâtre wrote ``coqdoc``, a documentation
 tool for |Coq| libraries usable from version 7.2.
 
-Bruno Barras improved the reduction algorithms efficiency and the
+Bruno Barras improved the efficiency of the reduction algorithm and the
 confidence level in the correctness of |Coq| critical type-checking
 algorithm.
 
@@ -368,8 +368,8 @@ propositional inductive types.
 Loïc Pottier developed Fourier, a tactic solving linear inequalities on
 real numbers.
 
-Pierre Crégut developed a new version based on reflexion of the Omega
-decision tactic.
+Pierre Crégut developed a new, reflection-based version of the Omega
+decision procedure.
 
 Claudio Sacerdoti Coen designed an XML output for the |Coq| modules to be
 used in the Hypertextual Electronic Library of Mathematics (HELM cf
@@ -419,7 +419,7 @@ main motivations were
    with a functional programming perfume (e.g. abstraction is now
    written fun), and more directly accessible to the novice (e.g.
    dependent product is now written forall and allows omission of
-   types). Also, parentheses and are no longer mandatory for function
+   types). Also, parentheses are no longer mandatory for function
    application.
 
 -  extensibility: some standard notations (e.g. “<” and “>”) were
@@ -438,8 +438,8 @@ language and of the language of commands has been carried out. The
 purpose here is a better uniformity making the tactics and commands
 easier to use and to remember.
 
-Thirdly, a restructuration and uniformisation of the standard library of
-Coq has been performed. There is now just one Leibniz’ equality usable
+Thirdly, a restructuring and uniformization of the standard library of
+Coq has been performed. There is now just one Leibniz equality usable
 for all the different kinds of |Coq| objects. Also, the set of real
 numbers now lies at the same level as the sets of natural and integer
 numbers. Finally, the names of the standard properties of numbers now
@@ -447,7 +447,7 @@ follow a standard pattern and the symbolic notations for the standard
 definitions as well.
 
 The fourth point is the release of |CoqIDE|, a new graphical gtk2-based
-interface fully integrated to |Coq|. Close in style from the Proof General
+interface fully integrated with |Coq|. Close in style to the Proof General
 Emacs interface, it is faster and its integration with |Coq| makes
 interactive developments more friendly. All mathematical Unicode symbols
 are usable within |CoqIDE|.
@@ -461,18 +461,17 @@ improved tactics (including a new tactic for solving first-order
 statements), new management commands, extended libraries.
 
 Bruno Barras and Hugo Herbelin have been the main contributors of the
-reflexion and the implementation of the new syntax. The smart automatic
+reflection and the implementation of the new syntax. The smart automatic
 translator from old to new syntax released with |Coq| is also their work
 with contributions by Olivier Desmettre.
 
-Hugo Herbelin is the main designer and implementor of the notion of
+Hugo Herbelin is the main designer and implementer of the notion of
 interpretation scopes and of the commands for easily adding new
 notations.
 
-Hugo Herbelin is the main implementor of the restructuration of the
-standard library.
+Hugo Herbelin is the main implementer of the restructured standard library.
 
-Pierre Corbineau is the main designer and implementor of the new tactic
+Pierre Corbineau is the main designer and implementer of the new tactic
 for solving first-order statements in presence of inductive types. He is
 also the maintainer of the non-domain specific automation tactics.
 
@@ -487,14 +486,14 @@ Pierre Letouzey and Jacek Chrząszcz respectively maintained the
 extraction tool and module system of |Coq|.
 
 Jean-Christophe Filliâtre, Pierre Letouzey, Hugo Herbelin and other
-contributors from Sophia-Antipolis and Nijmegen participated to the
-extension of the library.
+contributors from Sophia-Antipolis and Nijmegen participated in
+extending the library.
 
 Julien Narboux built a NSIS-based automatic |Coq| installation tool for
 the Windows platform.
 
 Hugo Herbelin and Christine Paulin coordinated the development which was
-under the responsability of Christine Paulin.
+under the responsibility of Christine Paulin.
 
 | Palaiseau & Orsay, Apr. 2004
 | Hugo Herbelin & Christine Paulin
@@ -525,12 +524,12 @@ arbitrary transition systems.
 
 Claudio Sacerdoti Coen added new features to the module system.
 
-Benjamin Grégoire, Assia Mahboubi and Bruno Barras developed a new more
-efficient and more general simplification algorithm on rings and
+Benjamin Grégoire, Assia Mahboubi and Bruno Barras developed a new, more
+efficient and more general simplification algorithm for rings and
 semi-rings.
 
-Laurent Théry and Bruno Barras developed a new significantly more
-efficient simplification algorithm on fields.
+Laurent Théry and Bruno Barras developed a new, significantly more
+efficient simplification algorithm for fields.
 
 Hugo Herbelin, Pierre Letouzey, Julien Forest, Julien Narboux and
 Claudio Sacerdoti Coen added new tactic features.
@@ -554,7 +553,7 @@ Jean-Christophe Filliâtre’s contribution on finite maps have been
 integrated to the |Coq| standard library. Pierre Letouzey developed a
 library about finite sets “à la Objective Caml”. With Jean-Marc Notin,
 he extended the library on lists. Pierre Letouzey’s contribution on
-rational numbers has been integrated and extended..
+rational numbers has been integrated and extended.
 
 Pierre Corbineau extended his tactic for solving first-order statements.
 He wrote a reflection-based intuitionistic tautology solver.
@@ -589,8 +588,8 @@ various aspects.
 Regarding the language of |Coq|, the main novelty is the introduction by
 Matthieu Sozeau of a package of commands providing Haskell-style type
 classes. Type classes, that come with a few convenient features such as
-type-based resolution of implicit arguments, plays a new role of
-landmark in the architecture of |Coq| with respect to automatization. For
+type-based resolution of implicit arguments, play a new landmark role
+in the architecture of |Coq| with respect to automation. For
 instance, thanks to type classes support, Matthieu Sozeau could
 implement a new resolution-based version of the tactics dedicated to
 rewriting on arbitrary transitive relations.
@@ -599,13 +598,13 @@ Another major improvement of |Coq| 8.2 is the evolution of the arithmetic
 libraries and of the tools associated to them. Benjamin Grégoire and
 Laurent Théry contributed a modular library for building arbitrarily
 large integers from bounded integers while Evgeny Makarov contributed a
-modular library of abstract natural and integer arithmetics together
+modular library of abstract natural and integer arithmetic together
 with a few convenient tactics. On his side, Pierre Letouzey made
 numerous extensions to the arithmetic libraries on :math:`\mathbb{Z}`
-and :math:`\mathbb{Q}`, including extra support for automatization in
+and :math:`\mathbb{Q}`, including extra support for automation in
 presence of various number-theory concepts.
 
-Frédéric Besson contributed a reflexive tactic based on Krivine-Stengle
+Frédéric Besson contributed a reflective tactic based on Krivine-Stengle
 Positivstellensatz (the easy way) for validating provability of systems
 of inequalities. The platform is flexible enough to support the
 validation of any algorithm able to produce a “certificate” for the
@@ -620,10 +619,10 @@ relying on Benjamin Grégoire and Laurent Théry’s library, delivered a
 library of unbounded integers in base :math:`2^{31}`. As importantly, he
 developed a notion of “retro-knowledge” so as to safely extend the
 kernel-located bytecode-based efficient evaluation algorithm of |Coq|
-version 8.1 to use 31-bits machine arithmetics for efficiently computing
+version 8.1 to use 31-bits machine arithmetic for efficiently computing
 with the library of integers he developed.
 
-Beside the libraries, various improvements contributed to provide a more
+Beside the libraries, various improvements were contributed to provide a more
 comfortable end-user language and more expressive tactic language. Hugo
 Herbelin and Matthieu Sozeau improved the pattern-matching compilation
 algorithm (detection of impossible clauses in pattern-matching,
@@ -632,7 +631,7 @@ and Matthieu Sozeau contributed various new convenient syntactic
 constructs and new tactics or tactic features: more inference of
 redundant information, better unification, better support for proof or
 definition by fixpoint, more expressive rewriting tactics, better
-support for meta-variables, more convenient notations, ...
+support for meta-variables, more convenient notations...
 
 Élie Soubiran improved the module system, adding new features (such as
 an “include” command) and making it more flexible and more general. He
@@ -641,7 +640,7 @@ mechanism.
 
 Matthieu Sozeau extended the Russell language, ending in an convenient
 way to write programs of given specifications, Pierre Corbineau extended
-the Mathematical Proof Language and the automatization tools that
+the Mathematical Proof Language and the automation tools that
 accompany it, Pierre Letouzey supervised and extended various parts of the
 standard library, Stéphane Glondu contributed a few tactics and
 improvements, Jean-Marc Notin provided help in debugging, general
@@ -662,7 +661,7 @@ adaptation of the interface of the old “setoid rewrite” tactic to the
 new version. Lionel Mamane worked on the interaction between |Coq| and its
 external interfaces. With Samuel Mimram, he also helped making |Coq|
 compatible with recent software tools. Russell O’Connor, Cezary
-Kaliscyk, Milad Niqui contributed to improve the libraries of integers,
+Kaliszyk, Milad Niqui contributed to improve the libraries of integers,
 rational, and real numbers. We also thank many users and partners for
 suggestions and feedback, in particular Pierre Castéran and Arthur
 Charguéraud, the INRIA Marelle team, Georges Gonthier and the
@@ -704,8 +703,8 @@ The module system evolved significantly. Besides the resolution of some
 efficiency issues and a more flexible construction of module types, Élie
 Soubiran brought a new model of name equivalence, the
 :math:`\Delta`-equivalence, which respects as much as possible the names
-given by the users. He also designed with Pierre Letouzey a new
-convenient operator ``<+`` for nesting functor application, that
+given by the users. He also designed with Pierre Letouzey a new,
+convenient operator ``<+`` for nesting functor application that
 provides a light notation for inheriting the properties of cascading
 modules.
 
@@ -719,7 +718,7 @@ the extraction mechanism. Bruno Barras and Élie Soubiran maintained the
 Coq checker, Julien Forest maintained the Function mechanism for
 reasoning over recursively defined functions. Matthieu Sozeau, Hugo
 Herbelin and Jean-Marc Notin maintained coqdoc. Frédéric Besson
-maintained the Micromega plateform for deciding systems of inequalities.
+maintained the Micromega platform for deciding systems of inequalities.
 Pierre Courtieu maintained the support for the Proof General Emacs
 interface. Claude Marché maintained the plugin for calling external
 provers (dp). Yves Bertot made some improvements to the libraries of
@@ -736,7 +735,7 @@ support for benchmarking and archiving.
 
 Many users helped by reporting problems, providing patches, suggesting
 improvements or making useful comments, either on the bug tracker or on
-the Coq-club mailing list. This includes but not exhaustively Cédric
+the Coq-Club mailing list. This includes but not exhaustively Cédric
 Auger, Arthur Charguéraud, François Garillot, Georges Gonthier, Robin
 Green, Stéphane Lescuyer, Eelis van der Weegen, ...
 
@@ -772,8 +771,8 @@ structured scripts (bullets and proof brackets) but, even if yet not
 user-available, the new engine also provides the basis for refining
 existential variables using tactics, for applying tactics to several
 goals simultaneously, for reordering goals, all features which are
-planned for the next release. The new proof engine forced to reimplement
-info and Show Script differently, what was done by Pierre Letouzey.
+planned for the next release. The new proof engine forced Pierre Letouzey
+to reimplement info and Show Script differently.
 
 Before version 8.4, |CoqIDE| was linked to |Coq| with the graphical
 interface living in a separate thread. From version 8.4, |CoqIDE| is a
@@ -784,7 +783,7 @@ sessions in parallel. Relying on the infrastructure work made by Vincent
 Gross, Pierre Letouzey, Pierre Boutillier and Pierre-Marie Pédrot
 contributed many various refinements of |CoqIDE|.
 
-Coq 8.4 also comes with a bunch of many various smaller-scale changes
+Coq 8.4 also comes with a bunch of various smaller-scale changes
 and improvements regarding the different components of the system.
 
 The underlying logic has been extended with :math:`\eta`-conversion
@@ -831,7 +830,7 @@ Pierre Letouzey added a tactic timeout and the interruptibility of
 vm\_compute. Bug fixes and miscellaneous improvements of the tactic
 language came from Hugo Herbelin, Pierre Letouzey and Matthieu Sozeau.
 
-Regarding decision tactics, Loïc Pottier maintained Nsatz, moving in
+Regarding decision tactics, Loïc Pottier maintained nsatz, moving in
 particular to a type-class based reification of goals while Frédéric
 Besson maintained Micromega, adding in particular support for division.
 
@@ -894,7 +893,7 @@ Boutillier (MacOS), Stéphane Glondu (Debian). Releasing, testing and
 benchmarking support was provided by Jean-Marc Notin.
 
 Many suggestions for improvements were motivated by feedback from users,
-on either the bug tracker or the coq-club mailing list. Special thanks
+on either the bug tracker or the Coq-Club mailing list. Special thanks
 are going to the users who contributed patches, starting with Tom
 Prince. Other patch contributors include Cédric Auger, David Baelde, Dan
 Grayson, Paolo Herms, Robbert Krebbers, Marc Lasson, Hendrik Tews and
@@ -1036,7 +1035,7 @@ X). Maxime Dénès improved significantly the testing and benchmarking
 support.
 
 Many power users helped to improve the design of the new features via
-the bug tracker, the coq development mailing list or the coq-club
+the bug tracker, the coq development mailing list or the Coq-Club
 mailing list. Special thanks are going to the users who contributed
 patches and intensive brain-storming, starting with Jason Gross,
 Jonathan Leivent, Greg Malecha, Clément Pit-Claudel, Marc Lasson, Lionel
@@ -1154,13 +1153,13 @@ Gregory Malecha, and Matthieu Sozeau.
 
 Matej Košík maintained and greatly improved the continuous integration
 setup and the testing of |Coq| contributions. He also contributed many API
-improvement and code cleanups throughout the system.
+improvements and code cleanups throughout the system.
 
 The contributors for this version are Bruno Barras, C.J. Bell, Yves
 Bertot, Frédéric Besson, Pierre Boutillier, Tej Chajed, Guillaume
 Claret, Xavier Clerc, Pierre Corbineau, Pierre Courtieu, Maxime Dénès,
 Ricky Elrod, Emilio Jesús Gallego Arias, Jason Gross, Hugo Herbelin,
-Sébastien Hinderer, Jacques-Henri Jourdan, Matej Kosik, Xavier Leroy,
+Sébastien Hinderer, Jacques-Henri Jourdan, Matej Košík, Xavier Leroy,
 Pierre Letouzey, Gregory Malecha, Cyprien Mangin, Erik Martin-Dorel,
 Guillaume Melquiond, Clément Pit–Claudel, Pierre-Marie Pédrot, Daniel de
 Rauglaudre, Lionel Rieg, Gabriel Scherer, Thomas Sibut-Pinote, Matthieu
@@ -1171,7 +1170,7 @@ Dénès, who was also in charge of the release process.
 
 Many power users helped to improve the design of the new features via
 the bug tracker, the pull request system, the |Coq| development mailing
-list or the coq-club mailing list. Special thanks to the users who
+list or the Coq-Club mailing list. Special thanks to the users who
 contributed patches and intensive brain-storming and code reviews,
 starting with Cyril Cohen, Jason Gross, Robbert Krebbers, Jonathan
 Leivent, Xavier Leroy, Gregory Malecha, Clément Pit–Claudel, Gabriel
@@ -1279,7 +1278,7 @@ the maintainer of this release.
 
 Many power users helped to improve the design of the new features via the bug
 tracker, the pull request system, the |Coq| development mailing list or the
-coq-club mailing list. Special thanks to the users who contributed patches and
+Coq-Club mailing list. Special thanks to the users who contributed patches and
 intensive brain-storming and code reviews, starting with Jason Gross, Ralf Jung,
 Robbert Krebbers, Xavier Leroy, Clément Pit–Claudel and Gabriel Scherer. It
 would however be impossible to mention exhaustively the names of everybody who
