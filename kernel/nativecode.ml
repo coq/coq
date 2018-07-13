@@ -278,7 +278,6 @@ type primitive =
   | Mk_rel of int
   | Mk_var of Id.t
   | Mk_proj
-  | Is_accu
   | Is_int
   | Cast_accu
   | Upd_cofix
@@ -319,7 +318,6 @@ let eq_primitive p1 p2 =
   | Mk_cofix i1, Mk_cofix i2 -> Int.equal i1 i2
   | Mk_rel i1, Mk_rel i2 -> Int.equal i1 i2
   | Mk_var id1, Mk_var id2 -> Id.equal id1 id2
-  | Is_accu, Is_accu -> true
   | Cast_accu, Cast_accu -> true
   | Upd_cofix, Upd_cofix -> true
   | Force_cofix, Force_cofix -> true
@@ -345,7 +343,6 @@ let primitive_hash = function
      combinesmall 8 (Int.hash i)
   | Mk_var id ->
      combinesmall 9 (Id.hash id)
-  | Is_accu -> 10
   | Is_int -> 11
   | Cast_accu -> 12
   | Upd_cofix -> 13
@@ -396,6 +393,7 @@ type mllambda =
   | MLsetref       of string * mllambda
   | MLsequence     of mllambda * mllambda
   | MLarray        of mllambda array
+  | MLisaccu       of string * inductive * mllambda
 
 and mllam_branches = ((constructor * lname option array) list * mllambda) array
 
@@ -467,7 +465,12 @@ let rec eq_mllambda gn1 gn2 n env1 env2 t1 t2 =
   | MLarray arr1, MLarray arr2 ->
       Array.equal (eq_mllambda gn1 gn2 n env1 env2) arr1 arr2
 
-  | _, _ -> false
+  | MLisaccu (s1, ind1, ml1), MLisaccu (s2, ind2, ml2) ->
+    String.equal s1 s2 && eq_ind ind1 ind2 &&
+    eq_mllambda gn1 gn2 n env1 env2 ml1 ml2
+  | (MLlocal _ | MLglobal _ | MLprimitive _ | MLlam _ | MLletrec _ | MLlet _ |
+    MLapp _ | MLif _ | MLmatch _ | MLconstruct _ | MLint _ | MLuint _ |
+    MLsetref _ | MLsequence _ | MLarray _ | MLisaccu _), _ -> false
 
 and eq_letrec gn1 gn2 n env1 env2 defs1 defs2 =
   let eq_def (_,args1,ml1) (_,args2,ml2) =
@@ -542,6 +545,8 @@ let rec hash_mllambda gn n env t =
       combinesmall 14 (combine hml hml')
   | MLarray arr ->
       combinesmall 15 (hash_mllambda_array gn n env 1 arr)
+  | MLisaccu (s, ind, c) ->
+      combinesmall 16 (combine (String.hash s) (combine (ind_hash ind) (hash_mllambda gn n env c)))
 
 and hash_mllambda_letrec gn n env init defs =
   let hash_def (_,args,ml) =
@@ -608,6 +613,7 @@ let fv_lam l =
     | MLsetref(_,l) -> aux l bind fv
     | MLsequence(l1,l2) -> aux l1 bind (aux l2 bind fv)
     | MLarray arr -> Array.fold_right (fun a fv -> aux a bind fv) arr fv
+    | MLisaccu (_, _, body) -> aux body bind fv
   in
   aux l LNset.empty LNset.empty
 
@@ -1211,8 +1217,9 @@ let ml_of_instance instance u =
 	let paramsi = t_params.(i) in
 	let reci = MLlocal (paramsi.(rec_pos.(i))) in
 	let pargsi = Array.map (fun id -> MLlocal id) paramsi in
+        let (prefix, ind) = inds.(i) in
 	let body = 
-	  MLif(MLapp(MLprimitive Is_accu,[|reci|]),
+          MLif(MLisaccu (prefix, ind, reci),
 	       mkMLapp 
 		 (MLapp(MLprimitive (Mk_fix(rec_pos,i)), 
 			[|mk_type; mk_norm|]))
@@ -1374,6 +1381,7 @@ let subst s l =
       | MLsetref(s,l1) -> MLsetref(s,aux l1) 
       | MLsequence(l1,l2) -> MLsequence(aux l1, aux l2)
       | MLarray arr -> MLarray (Array.map aux arr)
+      | MLisaccu (s, ind, l) -> MLisaccu (s, ind, aux l)
     in
     aux l
 
@@ -1471,7 +1479,7 @@ let optimize gdef l =
 	let b1 = optimize s b1 in
 	let b2 = optimize s b2 in
 	begin match t, b2 with
-	| MLapp(MLprimitive Is_accu,[| l1 |]), MLmatch(annot, l2, _, bs)
+        | MLisaccu (_, _, l1), MLmatch(annot, l2, _, bs)
 	    when eq_mllambda l1 l2 -> MLmatch(annot, l1, b1, bs)
         | _, _ -> MLif(t, b1, b2)
 	end
@@ -1483,6 +1491,7 @@ let optimize gdef l =
     | MLsetref(r,l) -> MLsetref(r, optimize s l) 
     | MLsequence(l1,l2) -> MLsequence(optimize s l1, optimize s l2)
     | MLarray arr -> MLarray (Array.map (optimize s) arr)
+    | MLisaccu (pf, ind, l) -> MLisaccu (pf, ind, optimize s l)
   in
   optimize LNmap.empty l
 
@@ -1645,7 +1654,11 @@ let pp_mllam fmt l =
          pp_mllam fmt arr.(len-1)
        end;
        Format.fprintf fmt "|]@]"
-
+    | MLisaccu (prefix, (mind, i), c) ->
+        let accu = Format.sprintf "%sAccu_%s_%i" prefix (string_of_mind mind) i in
+        Format.fprintf fmt
+          "@[begin match Obj.magic (%a) with@\n| %s _ ->@\n  true@\n| _ ->@\n  false@\nend@]"
+        pp_mllam c accu
 
   and pp_letrec fmt defs =
     let len = Array.length defs in
@@ -1738,7 +1751,6 @@ let pp_mllam fmt l =
     | Mk_var id ->
         Format.fprintf fmt "mk_var_accu (Names.id_of_string \"%s\")" (string_of_id id)
     | Mk_proj -> Format.fprintf fmt "mk_proj_accu"
-    | Is_accu -> Format.fprintf fmt "is_accu"
     | Is_int -> Format.fprintf fmt "is_int"
     | Cast_accu -> Format.fprintf fmt "cast_accu"
     | Upd_cofix -> Format.fprintf fmt "upd_cofix"

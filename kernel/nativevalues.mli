@@ -110,9 +110,6 @@ type kind_of_value =
 
 val kind_of_value : t -> kind_of_value
 
-(* *)
-val is_accu : t -> bool
-
 val str_encode : 'a -> string
 val str_decode : string -> 'a
 
