@@ -1339,6 +1339,7 @@ let write_makefile f =
   pr "WITHDOC=%s\n\n" (if !prefs.withdoc then "all" else "no");
   pr "# Option to produce precompiled files for native_compute\n";
   pr "NATIVECOMPUTE=%s\n" (if !prefs.nativecompiler then "-native-compiler" else "");
+  pr "COQWARNERROR=%s\n" (if !prefs.warn_error then "-w +default" else "");
   close_out o;
   Unix.chmod f 0o444
 
