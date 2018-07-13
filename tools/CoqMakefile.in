@@ -91,9 +91,9 @@ COQDOC   ?= "$(COQBIN)coqdoc"
 COQMKFILE ?= "$(COQBIN)coq_makefile"
 
 # Timing scripts
-COQMAKE_ONE_TIME_FILE ?= PYTHONIOENCODING=UTF-8 "$(COQLIB)/tools/make-one-time-file.py"
-COQMAKE_BOTH_TIME_FILES ?= PYTHONIOENCODING=UTF-8 "$(COQLIB)/tools/make-both-time-files.py"
-COQMAKE_BOTH_SINGLE_TIMING_FILES ?= PYTHONIOENCODING=UTF-8 "$(COQLIB)/tools/make-both-single-timing-files.py"
+COQMAKE_ONE_TIME_FILE ?= "$(COQLIB)/tools/make-one-time-file.py"
+COQMAKE_BOTH_TIME_FILES ?= "$(COQLIB)/tools/make-both-time-files.py"
+COQMAKE_BOTH_SINGLE_TIMING_FILES ?= "$(COQLIB)/tools/make-both-single-timing-files.py"
 BEFORE ?=
 AFTER ?=
 
