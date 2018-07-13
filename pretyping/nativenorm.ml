@@ -132,15 +132,15 @@ let construct_of_constr_notnative const env tag (mind, _ as ind) u allargs =
   (mkApp(mkConstructU((ind,i),u), params), ctyp)
  
 
-let construct_of_constr const env tag typ =
+let construct_of_constr const env sigma tag typ =
   let t, l = app_type env typ in
-  match kind t with
+  match EConstr.kind_upto sigma t with
   | Ind (ind,u) -> 
       construct_of_constr_notnative const env tag ind u l
   | _ -> assert false
 
-let construct_of_constr_const env tag typ = 
-  fst (construct_of_constr true env tag typ)
+let construct_of_constr_const env sigma tag typ =
+  fst (construct_of_constr true env sigma tag typ)
 
 let construct_of_constr_block = construct_of_constr false
 
@@ -207,9 +207,9 @@ let rec nf_val env sigma v typ =
       let env = push_rel (LocalAssum (name,dom)) env in
       let body = nf_val env sigma (f (mk_rel_accu lvl)) codom in
       mkLambda(name,dom,body)
-  | Vconst n -> construct_of_constr_const env n typ
+  | Vconst n -> construct_of_constr_const env sigma n typ
   | Vblock b ->
-      let capp,ctyp = construct_of_constr_block env (block_tag b) typ in
+      let capp,ctyp = construct_of_constr_block env sigma (block_tag b) typ in
       let args = nf_bargs env sigma b ctyp in
       mkApp(capp,args)
 
