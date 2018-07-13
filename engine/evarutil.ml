@@ -54,6 +54,20 @@ let new_global evd x =
 (* Expanding/testing/exposing existential variables *)
 (****************************************************)
 
+let finalize ?abort_on_undefined_evars ?(skip_restrict=false) env sigma f =
+  let sigma = minimize_universes sigma in
+  if skip_restrict then sigma, f (fun c -> EConstr.to_constr ?abort_on_undefined_evars sigma c)
+  else
+    let uvars = ref Univ.LSet.empty in
+    let v = f (fun c ->
+        let varsc = EConstr.universes_of_constr sigma c in
+        let c = EConstr.to_constr ?abort_on_undefined_evars sigma c in
+        uvars := Univ.LSet.union !uvars varsc;
+        c)
+    in
+    let sigma = restrict_universe_context sigma !uvars in
+    sigma, v
+
 (* flush_and_check_evars fails if an existential is undefined *)
 
 exception Uninstantiated_evar of Evar.t

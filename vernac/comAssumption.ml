@@ -159,15 +159,9 @@ let do_assumptions kind nl l =
   in
   let sigma = solve_remaining_evars all_and_fail_flags env sigma (Evd.from_env env) in
   (* The universe constraints come from the whole telescope. *)
-  let sigma = Evd.minimize_universes sigma in
-  let nf_evar c = EConstr.to_constr sigma c in
-  let uvars, l = List.fold_left_map (fun uvars (coe,t,imps) ->
-      let t = nf_evar t in
-      let uvars = Univ.LSet.union uvars (Univops.universes_of_constr t) in
-      uvars, (coe,t,imps))
-      Univ.LSet.empty l
+  let sigma, l = Evarutil.finalize env sigma
+      (fun nf -> List.map (fun (coe,t,imps) -> coe,nf t,imps) l)
   in
-  let sigma = Evd.restrict_universe_context sigma uvars in
   let uctx = Evd.check_univ_decl ~poly:(pi2 kind) sigma udecl in
   let ubinders = Evd.universe_binders sigma in
   pi2 (List.fold_left (fun (subst,status,uctx) ((is_coe,idl),t,imps) ->
