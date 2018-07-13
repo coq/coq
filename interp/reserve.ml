@@ -15,8 +15,6 @@ open Util
 open Pp
 open Names
 open Nameops
-open Libobject
-open Lib
 open Notation_term
 open Notation_ops
 open Globnames
@@ -77,14 +75,10 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
   | NRef ref -> RefKey(canonical_gr ref), None
   | _ -> Oth, None
 
-let cache_reserved_type (_,(id,t)) =
+let set_reserved_type (id,t) =
   let key = fst (notation_constr_key t) in
   reserve_table := Id.Map.add id t !reserve_table;
   reserve_revtable := keymap_add key (id, t) !reserve_revtable
-
-let in_reserved : Id.t * notation_constr -> obj =
-  declare_object {(default_object "RESERVED-TYPE") with
-    cache_function = cache_reserved_type }
 
 let declare_reserved_type_binding {CAst.loc;v=id} t =
   if not (Id.equal id (root_of_id id)) then
@@ -96,7 +90,7 @@ let declare_reserved_type_binding {CAst.loc;v=id} t =
     user_err ?loc ~hdr:"declare_reserved_type"
     ((Id.print id++str" is already bound to a type"))
   with Not_found -> () end;
-  add_anonymous_leaf (in_reserved (id,t))
+  set_reserved_type (id,t)
 
 let declare_reserved_type idl t =
   List.iter (fun id -> declare_reserved_type_binding id t) (List.rev idl)
