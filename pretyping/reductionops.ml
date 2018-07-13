@@ -848,8 +848,16 @@ struct
     | Int i -> i
     | _ -> raise Primred.NativeDestKO
 
+  let get_float evd e =
+    match EConstr.kind evd e with
+    | Float f -> f
+    | _ -> raise Primred.NativeDestKO
+
   let mkInt env i =
     mkInt i
+
+  let mkFloat env f =
+    mkFloat f
 
   let mkBool env b =
     let (ct,cf) = get_bool_constructors env in
@@ -865,6 +873,12 @@ struct
     let c = get_pair_constructor env in
     mkApp(mkConstruct c, [|int_ty;int_ty;e1;e2|])
 
+  let mkFloatIntPair env f i =
+    let float_ty = mkConst @@ get_float_type env in
+    let int_ty = mkConst @@ get_int_type env in
+    let c = get_pair_constructor env in
+    mkApp(mkConstruct c, [|float_ty;int_ty;f;i|])
+
   let mkLt env =
     let (_eq, lt, _gt) = get_cmp_constructors env in
     mkConstruct lt
@@ -877,6 +891,15 @@ struct
     let (_eq, _lt, gt) = get_cmp_constructors env in
     mkConstruct gt
 
+  let mkSomeCmp env v =
+    let cmp_ty = mkConst @@ get_cmp_type env in
+    let (some, _none) = get_option_constructors env in
+    mkApp(mkConstruct some, [|cmp_ty;v|])
+
+  let mkNoneCmp env =
+    let cmp_ty = mkConst @@ get_cmp_type env in
+    let (_some, none) = get_option_constructors env in
+    mkApp(mkConstruct none, [|cmp_ty|])
 end
 
 module CredNative = RedNative(CNativeEntries)
@@ -1135,7 +1158,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
 	|_ -> fold ()
       else fold ()
 
-    | Int i ->
+    | Int _ | Float _ ->
       begin match Stack.strip_app stack with
        | (_, Stack.Primitive(p,kn,rargs,kargs,cst_l')::s) ->
          let more_to_reduce = List.exists (fun k -> CPrimitives.Kwhnf = k) kargs in
@@ -1238,7 +1261,7 @@ let local_whd_state_gen flags sigma =
       else s
 
     | Rel _ | Var _ | Sort _ | Prod _ | LetIn _ | Const _  | Ind _ | Proj _
-      | Int _ -> s
+      | Int _ | Float _ -> s
 
   in
   whrec

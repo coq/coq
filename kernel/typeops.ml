@@ -215,14 +215,22 @@ let type_of_apply env func funt argsv argstv =
 (* Type of primitive constructs *)
 let type_of_prim_type _env = function
   | CPrimitives.PT_int63 -> Constr.mkSet
+  | CPrimitives.PT_float64 -> Constr.mkSet
 
 let type_of_int env =
   match env.retroknowledge.Retroknowledge.retro_int63 with
   | Some c -> mkConst c
   | None -> CErrors.user_err Pp.(str"The type int must be registered before this construction can be typechecked.")
 
+let type_of_float env =
+  match env.retroknowledge.Retroknowledge.retro_float64 with
+  | Some c -> mkConst c
+  | None -> raise
+        (Invalid_argument "Typeops.type_of_float: float64 not_defined")
+
 let type_of_prim env t =
-  let int_ty = type_of_int env in
+  let int_ty () = type_of_int env in
+  let float_ty () = type_of_float env in
   let bool_ty () =
     match env.retroknowledge.Retroknowledge.retro_bool with
     | Some ((ind,_),_) -> Constr.mkInd ind
@@ -238,6 +246,11 @@ let type_of_prim env t =
     | Some (ind,_) -> Constr.mkApp(Constr.mkInd ind, [|fst_ty;snd_ty|])
     | None -> CErrors.user_err Pp.(str"The type pair must be registered before this primitive.")
   in
+  let option_ty ty =
+    match env.retroknowledge.Retroknowledge.retro_option with
+    | Some ((ind,_),_) -> Constr.mkApp(Constr.mkInd ind, [|ty|])
+    | None -> CErrors.user_err Pp.(str"The type option must be registered before this primitive.")
+  in
   let carry_ty int_ty =
     match env.retroknowledge.Retroknowledge.retro_carry with
     | Some ((ind,_),_) -> Constr.mkApp(Constr.mkInd ind, [|int_ty|])
@@ -245,12 +258,14 @@ let type_of_prim env t =
   in
   let open CPrimitives in
   let tr_prim_type = function
-    | PT_int63 -> int_ty in
+    | PT_int63 -> int_ty ()
+    | PT_float64 -> float_ty () in
   let tr_ind (type t) (i : t prim_ind) (a : t) = match i, a with
     | PIT_bool, () -> bool_ty ()
     | PIT_carry, t -> carry_ty (tr_prim_type t)
     | PIT_pair, (t1, t2) -> pair_ty (tr_prim_type t1) (tr_prim_type t2)
-    | PIT_cmp, () -> compare_ty () in
+    | PIT_cmp, () -> compare_ty ()
+    | PIT_option, () -> option_ty (compare_ty ()) in
   let tr_type = function
     | PITT_ind (i, a) -> tr_ind i a
     | PITT_type t -> tr_prim_type t in
@@ -269,6 +284,9 @@ let type_of_prim_or_type env = let open CPrimitives in
 
 let judge_of_int env i =
   make_judge (Constr.mkInt i) (type_of_int env)
+
+let judge_of_float env f =
+  make_judge (Constr.mkFloat f) (type_of_float env)
 
 (* Type of product *)
 
@@ -568,6 +586,7 @@ let rec execute env cstr =
 
     (* Primitive types *)
     | Int _ -> cstr, type_of_int env
+    | Float _ -> cstr, type_of_float env
 
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->

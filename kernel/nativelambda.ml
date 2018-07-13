@@ -580,6 +580,8 @@ let rec lambda_of_constr cache env sigma c =
 
   | Int i -> Luint i
 
+  | Float _ -> assert false  (* native computed for primitive float not yet implemented *)
+
 and lambda_of_app cache env sigma f args =
   match kind f with
   | Const (_kn,_u as c) ->

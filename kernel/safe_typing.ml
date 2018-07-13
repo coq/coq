@@ -1403,6 +1403,27 @@ let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) env =
     check_type_cte 1;
     check_name 2 "Gt";
     check_type_cte 2
+  | CPrimitives.PIT_option ->
+    check_nconstr 2;
+    check_name 0 "Some";
+    let cSome = ob.mind_user_lc.(0) in
+    let s = Pp.str "the first option constructor (Some) has a wrong type" in
+    begin match Term.decompose_prod cSome with
+      | ([_,v;_,_V], codom) ->
+        check_if (is_Type _V) s;
+        check_if (Constr.equal v (mkRel 1)) s;
+        check_if (Constr.equal codom (mkApp (mkRel 3, [|mkRel 2|]))) s
+      | _ -> check_if false s
+    end;
+    check_name 1 "None";
+    let cNone = ob.mind_user_lc.(1) in
+    let s = Pp.str "the second option constructor (None) has a wrong type" in
+    begin match Term.decompose_prod cNone with
+      | ([_,_V], codom) ->
+        check_if (is_Type _V) s;
+        check_if (Constr.equal codom (mkApp (mkRel 2, [|mkRel 1|]))) s
+      | _ -> check_if false s
+    end
 
 let register_inductive ind prim senv =
   check_register_ind ind prim senv.env;

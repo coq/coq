@@ -972,6 +972,9 @@ let rec extern inctx scopes vars r =
        (Numeral (SPlus, NumTok.int (Uint63.to_string i)))
        "int63" "int63_scope" (snd scopes)
 
+  | GFloat f ->
+     CPrim(String (Float64.to_string f))
+
   in insert_coercion coercion (CAst.make ?loc c)
 
 and extern_typ (subentry,(_,scopes)) =
@@ -1314,6 +1317,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PSort Sorts.InSet -> GSort (UNamed [GSet,0])
   | PSort Sorts.InType -> GSort (UAnonymous {rigid=true})
   | PInt i -> GInt i
+  | PFloat f -> GFloat f
 
 let extern_constr_pattern env sigma pat =
   extern true (InConstrEntrySomeLevel,(None,[])) Id.Set.empty (glob_of_pat Id.Set.empty env sigma pat)

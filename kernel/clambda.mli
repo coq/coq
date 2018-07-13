@@ -21,6 +21,7 @@ type lambda =
   | Lint          of int
   | Lmakeblock    of int * lambda array
   | Luint         of Uint63.t
+  | Lfloat        of Float64.t
   | Lval          of structured_values
   | Lsort         of Sorts.t
   | Lind          of pinductive

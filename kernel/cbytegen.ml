@@ -528,6 +528,8 @@ let rec compile_lam env cenv lam sz cont =
 
   | Luint i -> compile_structured_constant cenv (Const_uint i) sz cont
 
+  | Lfloat f -> compile_structured_constant cenv (Const_float f) sz cont
+
   | Lproj (p,arg) ->
      compile_lam env cenv arg sz (Kproj p :: cont)
 

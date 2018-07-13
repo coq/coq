@@ -244,7 +244,8 @@ GRAMMAR EXTEND Gram
    ;
 
    register_type_token:
-     [ [ "#int63_type" -> { CPrimitives.PT_int63 } ] ]
+     [ [ "#int63_type" -> { CPrimitives.PT_int63 }
+       | "#float64_type" -> { CPrimitives.PT_float64 } ] ]
    ;
 
    register_prim_token:
@@ -272,6 +273,18 @@ GRAMMAR EXTEND Gram
        | "#int63_lt" -> { CPrimitives.Int63lt }
        | "#int63_le" -> { CPrimitives.Int63le }
        | "#int63_compare" -> { CPrimitives.Int63compare }
+       | "#float64_opp" -> { CPrimitives.Float64opp }
+       | "#float64_abs" -> { CPrimitives.Float64abs }
+       | "#float64_compare" -> { CPrimitives.Float64compare }
+       | "#float64_add" -> { CPrimitives.Float64add }
+       | "#float64_sub" -> { CPrimitives.Float64sub }
+       | "#float64_mul" -> { CPrimitives.Float64mul }
+       | "#float64_div" -> { CPrimitives.Float64div }
+       | "#float64_sqrt" -> { CPrimitives.Float64sqrt }
+       | "#float64_of_int63" -> { CPrimitives.Float64ofInt63 }
+       | "#float64_normfr_mantissa" -> { CPrimitives.Float64normfr_mantissa }
+       | "#float64_frshiftexp" -> { CPrimitives.Float64frshiftexp }
+       | "#float64_ldshiftexp" -> { CPrimitives.Float64ldshiftexp }
        ] ]
     ;
 

@@ -27,6 +27,9 @@ let to_int2 i = (0,i)
 
 let of_int64 _i = assert false
 
+let of_float = int_of_float
+let to_float i = Int64.to_float (to_uint64 i)
+
 let hash i = i
 [@@ocaml.inline always]
 

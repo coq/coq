@@ -33,6 +33,18 @@ type t =
   | Int63lt
   | Int63le
   | Int63compare
+  | Float64opp
+  | Float64abs
+  | Float64compare
+  | Float64add
+  | Float64sub
+  | Float64mul
+  | Float64div
+  | Float64sqrt
+  | Float64ofInt63
+  | Float64normfr_mantissa
+  | Float64frshiftexp
+  | Float64ldshiftexp
 
 let equal (p1 : t) (p2 : t) =
   p1 == p2
@@ -62,6 +74,18 @@ let hash = function
   | Int63lt -> 22
   | Int63le -> 23
   | Int63compare -> 24
+  | Float64opp -> 25
+  | Float64abs -> 26
+  | Float64compare -> 27
+  | Float64add -> 28
+  | Float64sub -> 29
+  | Float64mul -> 30
+  | Float64div -> 31
+  | Float64sqrt -> 32
+  | Float64ofInt63 -> 33
+  | Float64normfr_mantissa -> 34
+  | Float64frshiftexp -> 35
+  | Float64ldshiftexp -> 36
 
 (* Should match names in nativevalues.ml *)
 let to_string = function
@@ -89,15 +113,29 @@ let to_string = function
   | Int63lt -> "lt"
   | Int63le -> "le"
   | Int63compare -> "compare"
+  | Float64opp -> "fopp"
+  | Float64abs -> "fabs"
+  | Float64compare -> "fcompare"
+  | Float64add -> "fadd"
+  | Float64sub -> "fsub"
+  | Float64mul -> "fmul"
+  | Float64div -> "fdiv"
+  | Float64sqrt -> "fsqrt"
+  | Float64ofInt63 -> "float_of_int"
+  | Float64normfr_mantissa -> "normfr_mantissa"
+  | Float64frshiftexp -> "frshiftexp"
+  | Float64ldshiftexp -> "ldshiftexp"
 
 type prim_type =
   | PT_int63
+  | PT_float64
 
 type 'a prim_ind =
   | PIT_bool : unit prim_ind
   | PIT_carry : prim_type prim_ind
   | PIT_pair : (prim_type * prim_type) prim_ind
   | PIT_cmp : unit prim_ind
+  | PIT_option : unit prim_ind
 
 type prim_ind_ex = PIE : 'a prim_ind -> prim_ind_ex
 
@@ -107,6 +145,7 @@ type ind_or_type =
 
 let types =
   let int_ty = PITT_type PT_int63 in
+  let float_ty = PITT_type PT_float64 in
   function
   | Int63head0 | Int63tail0 -> [int_ty; int_ty]
   | Int63add | Int63sub | Int63mul
@@ -122,6 +161,14 @@ let types =
   | Int63div21 ->
      [int_ty; int_ty; int_ty; PITT_ind (PIT_pair, (PT_int63, PT_int63))]
   | Int63addMulDiv -> [int_ty; int_ty; int_ty; int_ty]
+  | Float64opp | Float64abs | Float64sqrt -> [float_ty; float_ty]
+  | Float64ofInt63 -> [int_ty; float_ty]
+  | Float64normfr_mantissa -> [float_ty; int_ty]
+  | Float64frshiftexp -> [float_ty; PITT_ind (PIT_pair, (PT_float64, PT_int63))]
+  | Float64compare -> [float_ty; float_ty; PITT_ind (PIT_option, ())]
+  | Float64add | Float64sub | Float64mul
+  | Float64div -> [float_ty; float_ty; float_ty]
+  | Float64ldshiftexp -> [float_ty; int_ty; float_ty]
 
 type arg_kind =
   | Kparam (* not needed for the evaluation of the primitive when it reduces *)
@@ -130,7 +177,7 @@ type arg_kind =
 
 type args_red = arg_kind list
 
-(* Invariant only argument of type int63 or an inductive can
+(* Invariant only argument of type int63, float or an inductive can
    have kind Kwhnf *)
 
 let arity t = List.length (types t) - 1
@@ -150,9 +197,11 @@ let prim_ind_to_string (type a) (p : a prim_ind) = match p with
   | PIT_carry -> "carry"
   | PIT_pair -> "pair"
   | PIT_cmp -> "cmp"
+  | PIT_option -> "option"
 
 let prim_type_to_string = function
   | PT_int63 -> "int63_type"
+  | PT_float64 -> "float64_type"
 
 let op_or_type_to_string = function
   | OT_op op -> to_string op

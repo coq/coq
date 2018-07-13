@@ -21,6 +21,10 @@ val of_int64 : Int64.t -> t
 val of_uint : int -> t
 *)
 
+      (* conversion to float *)
+val of_float : float -> t
+val to_float : t -> float
+
 val hash : t -> int
 
      (* conversion to a string *)

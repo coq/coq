@@ -234,6 +234,7 @@ let check_prim_op = function
   | Int63lt        -> opCHECKLTINT63
   | Int63le        -> opCHECKLEINT63
   | Int63compare   -> opCHECKCOMPAREINT63
+  | _ -> 0 (* TODO: BERTHOLON add float64 operations *)
 
 let emit_instr env = function
   | Klabel lbl -> define_label env lbl
@@ -384,7 +385,8 @@ type to_patch = emitcodes * patches * fv
 (* Substitution *)
 let subst_strcst s sc =
   match sc with
-  | Const_sort _ | Const_b0 _ | Const_univ_level _ | Const_val _ | Const_uint _ -> sc
+  | Const_sort _ | Const_b0 _ | Const_univ_level _ | Const_val _ | Const_uint _
+  | Const_float _ -> sc
   | Const_ind ind -> let kn,i = ind in Const_ind (subst_mind s kn, i)
 
 let subst_reloc s ri =

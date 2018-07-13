@@ -33,6 +33,18 @@ type t =
   | Int63lt
   | Int63le
   | Int63compare
+  | Float64opp
+  | Float64abs
+  | Float64compare
+  | Float64add
+  | Float64sub
+  | Float64mul
+  | Float64div
+  | Float64sqrt
+  | Float64ofInt63
+  | Float64normfr_mantissa
+  | Float64frshiftexp
+  | Float64ldshiftexp
 
 val equal : t -> t -> bool
 
@@ -55,12 +67,14 @@ val kind : t -> args_red
 
 type prim_type =
   | PT_int63
+  | PT_float64
 
 type 'a prim_ind =
   | PIT_bool : unit prim_ind
   | PIT_carry : prim_type prim_ind
   | PIT_pair : (prim_type * prim_type) prim_ind
   | PIT_cmp : unit prim_ind
+  | PIT_option : unit prim_ind
 
 type prim_ind_ex = PIE : 'a prim_ind -> prim_ind_ex
 

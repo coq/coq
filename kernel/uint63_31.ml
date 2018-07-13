@@ -26,6 +26,10 @@ let mask63 i = Int64.logand i maxuint63
 let of_int i = Int64.of_int i
 let to_int2 i = (Int64.to_int (Int64.shift_right_logical i 31), Int64.to_int i)
 let of_int64 i = i
+
+let of_float f = mask63 (Int64.of_float f)
+let to_float = Int64.to_float
+
 let hash i =
   let (h,l) = to_int2 i in
   (*Hashset.combine h l*)

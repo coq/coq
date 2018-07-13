@@ -18,20 +18,24 @@ open Names
 
 type retroknowledge = {
     retro_int63 : Constant.t option;
+    retro_float64 : Constant.t option;
     retro_bool : (constructor * constructor) option; (* true, false *)
     retro_carry : (constructor * constructor) option; (* C0, C1 *)
     retro_pair : constructor option;
     retro_cmp : (constructor * constructor * constructor) option;
                     (* Eq, Lt, Gt *)
+    retro_option : (constructor * constructor) option; (* Some, None *)
     retro_refl : constructor option;
 }
 
 let empty = {
     retro_int63 = None;
+    retro_float64 = None;
     retro_bool = None;
     retro_carry = None;
     retro_pair = None;
     retro_cmp = None;
+    retro_option = None;
     retro_refl = None;
 }
 

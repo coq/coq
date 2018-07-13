@@ -307,6 +307,8 @@ let constr_display csr =
       ^(array_display bl)^")"
   | Int i ->
       "Int("^(Uint63.to_string i)^")"
+  | Float f ->
+      "Float("^(Float64.to_string f)^")"
 
   and array_display v =
     "[|"^
@@ -439,6 +441,8 @@ let print_pure_constr csr =
       in print_string"{"; print_fix (); print_string"}"
   | Int i ->
      print_string ("Int("^(Uint63.to_string i)^")")
+  | Float f ->
+      print_string ("Float("^(Float64.to_string f)^")")
 
   and box_display c = open_hovbox 1; term_display c; close_box()
 

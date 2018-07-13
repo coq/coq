@@ -319,6 +319,9 @@ let type_of_constructor env sigma ((ind,_ as ctor),u) =
 let judge_of_int env v =
   Environ.on_judgment EConstr.of_constr (judge_of_int env v)
 
+let judge_of_float env v =
+  Environ.on_judgment EConstr.of_constr (judge_of_float env v)
+
 (* cstr must be in n.f. w.r.t. evars and execute returns a judgement
    where both the term and type are in n.f. *)
 let rec execute env sigma cstr =
@@ -429,6 +432,9 @@ let rec execute env sigma cstr =
 
     | Int i ->
         sigma, judge_of_int env i
+
+    | Float f ->
+        sigma, judge_of_float env f
 
 and execute_recdef env sigma (names,lar,vdef) =
   let sigma, larj = execute_array env sigma lar in

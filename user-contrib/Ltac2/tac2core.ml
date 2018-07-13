@@ -450,6 +450,7 @@ let () = define1 "constr_kind" constr begin fun c ->
     |]
   | Int n ->
     v_blk 17 [|Value.of_uint63 n|]
+  | Float _ -> assert false
   end
 end
 
