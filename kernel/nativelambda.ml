@@ -397,6 +397,20 @@ let empty_evars =
 
 let empty_ids = [||]
 
+(** Extract the inductive type over which a fixpoint is decreasing *)
+let rec get_fix_struct env i t = match kind (Reduction.whd_all env t) with
+| Prod (na, dom, t) ->
+  if Int.equal i 0 then
+    let dom = Reduction.whd_all env dom in
+    let (dom, _) = decompose_appvect dom in
+    match kind dom with
+    | Ind (ind, _) -> ind
+    | _ -> assert false
+  else
+    let env = Environ.push_rel (RelDecl.LocalAssum (na, dom)) env in
+    get_fix_struct env (i - 1) t
+| _ -> assert false
+
 let rec lambda_of_constr cache env sigma c =
   match kind c with
   | Meta mv ->
@@ -497,11 +511,17 @@ let rec lambda_of_constr cache env sigma c =
       let bs = Array.mapi mk_branch branches in
       Lcase(annot_sw, lt, la, bs)
 	
-  | Fix(rec_init,(names,type_bodies,rec_bodies)) ->
+  | Fix((pos, i), (names,type_bodies,rec_bodies)) ->
       let ltypes = lambda_of_args cache env sigma 0 type_bodies in
+      let map i t =
+        let ind = get_fix_struct env i t in
+        let prefix = get_mind_prefix env (fst ind) in
+        (prefix, ind)
+      in
+      let inds = Array.map2 map pos type_bodies in
       let env = Environ.push_rec_types (names, type_bodies, rec_bodies) env in
       let lbodies = lambda_of_args cache env sigma 0 rec_bodies in
-      Lfix(rec_init, (names, ltypes, lbodies))
+      Lfix((pos, inds, i), (names, ltypes, lbodies))
 	
   | CoFix(init,(names,type_bodies,rec_bodies)) ->
       let rec_bodies = Array.map2 (Reduction.eta_expand env) rec_bodies type_bodies in

@@ -1142,7 +1142,7 @@ let ml_of_instance instance u =
       mkMLapp (MLapp (MLglobal cn, fv_args env fvn fvr)) [|force|]
   | Lif(t,bt,bf) -> 
       MLif(ml_of_lam env l t, ml_of_lam env l bt, ml_of_lam env l bf)
-  | Lfix ((rec_pos,start), (ids, tt, tb)) ->
+  | Lfix ((rec_pos, inds, start), (ids, tt, tb)) ->
       (* let type_f fvt = [| type fix |] 
          let norm_f1 fv f1 .. fn params1 = body1
 	 ..
