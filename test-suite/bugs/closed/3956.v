@@ -129,13 +129,13 @@ Module Comodality_Theory (F : Comodality).
       := IdmapM FPM.
     Module cip_FPM := FPM.coindpathsM FPM cmpinv_o_cmp_M idmap_FPM.
     Module cip_FPHM <: HomotopyM FPM cmpM.PM cip_FPM.fhM cip_FPM.fkM.
-      Definition m : forall x, cip_FPM.fhM.m@{i j} x = cip_FPM.fkM.m@{i j} x.
+      Definition m : forall x, cip_FPM.fhM.m x = cip_FPM.fkM.m x.
       Proof.
         intros x.
-        refine (concat (cmpinvM.m_beta@{i j} (cmpM.m@{i j} x)) _).
+        refine (concat (cmpinvM.m_beta (cmpM.m x)) _).
         apply path_prod@{i i i}; simpl.
-        - exact (cmpM.FfstM.mM.m_beta@{i j} x).
-        - exact (cmpM.FsndM.mM.m_beta@{i j} x).
+        - exact (cmpM.FfstM.mM.m_beta x).
+        - exact (cmpM.FsndM.mM.m_beta x).
       Defined.
     End cip_FPHM.
   End isequiv_F_prod_cmp_M.
