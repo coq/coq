@@ -10,39 +10,19 @@
 
 open Pp
 open Util
-open Constr
-open Environ
 open Entries
 open Redexpr
 open Declare
 open Constrintern
 open Pretyping
 
-open Context.Rel.Declaration
-
 (* Commands of the interface: Constant definitions *)
 
-let rec under_binders env sigma f n c =
-  if Int.equal n 0 then f env sigma (EConstr.of_constr c) else
-    match Constr.kind c with
-      | Lambda (x,t,c) ->
-          mkLambda (x,t,under_binders (push_rel (LocalAssum (x,t)) env) sigma f (n-1) c)
-      | LetIn (x,b,t,c) ->
-          mkLetIn (x,b,t,under_binders (push_rel (LocalDef (x,b,t)) env) sigma f (n-1) c)
-      | _ -> assert false
-
-let red_constant_entry n ce sigma = function
-  | None -> ce
+let red_constant_body red_opt env sigma body = match red_opt with
+  | None -> sigma, body
   | Some red ->
-      let proof_out = ce.const_entry_body in
-      let env = Global.env () in
-      let (redfun, _) = reduction_of_red_expr env red in
-      let redfun env sigma c =
-        let (_, c) = redfun env sigma c in
-        EConstr.Unsafe.to_constr c
-      in
-      { ce with const_entry_body = Future.chain proof_out
-        (fun ((body,ctx),eff) -> (under_binders env sigma redfun n body,ctx),eff) }
+    let red, _ = reduction_of_red_expr env red in
+    red env sigma body
 
 let warn_implicits_in_term =
   CWarnings.create ~name:"implicits-in-term" ~category:"implicits"
@@ -84,6 +64,8 @@ let interp_definition pl bl poly red_option c ctypopt =
       check_imps ~impsty ~impsbody;
       evd, c, imps1@Impargs.lift_implicits (Context.Rel.nhyps ctx) impsty, Some ty
   in
+  (* Do the reduction *)
+  let evd, c = red_constant_body red_option env_bl evd c in
   (* universe minimization *)
   let evd = Evd.minimize_universes evd in
   (* Substitute evars and universes, and add parameters.
@@ -101,7 +83,7 @@ let interp_definition pl bl poly red_option c ctypopt =
   let uctx = Evd.check_univ_decl ~poly evd decl in
   (* We're done! *)
   let ce = definition_entry ?types:tyopt ~univs:uctx c in
-  (red_constant_entry (Context.Rel.length ctx) ce evd red_option, evd, decl, imps)
+  (ce, evd, decl, imps)
 
 let check_definition (ce, evd, _, imps) =
   let env = Global.env () in

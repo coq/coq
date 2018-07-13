@@ -41,8 +41,5 @@ Type@{Top.34} -> Type@{Top.37}
                                   Top.36 < Top.34
                                   Top.37 < Top.36
                                    *) *)
-Fail Check @qux@{Set Set}.
-Check @qux@{Type Type Type Type}.
-(* [qux] should only need two universes *)
-Check @qux@{i j k l}.  (* Error: The command has not failed!, but I think this is suboptimal *)
-Fail Check @qux@{i j}.
+Check @qux@{Type Type}.
+(* used to have 4 universes *)
