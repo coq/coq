@@ -452,7 +452,7 @@ Proof.
   destruct e. reflexivity.
 Defined.
 
-(** The goupoid structure of equality *)
+(** The groupoid structure of equality *)
 
 Theorem eq_trans_refl_l : forall A (x y:A) (e:x=y), eq_trans eq_refl e = e.
 Proof.
