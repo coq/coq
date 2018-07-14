@@ -88,8 +88,7 @@ If you have questions, feel free to write to <coq-conduct@inria.fr>.
 
 ## Attribution ##
 
-This text is adapted from the
-[Django Code of Conduct](https://www.djangoproject.com/conduct/)
+This text is adapted from the [Django Code of Conduct][django-code-of-conduct]
 which itself was adapted from the Speak Up! Community Code of Conduct.
 
 ## License ##
@@ -101,3 +100,5 @@ This work is licensed under a
 <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">
 Creative Commons Attribution 4.0 International License
 </a>.
+
+[django-code-of-conduct]: https://web.archive.org/web/20180714161115/https://www.djangoproject.com/conduct/
