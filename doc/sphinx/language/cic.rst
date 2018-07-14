@@ -1175,7 +1175,7 @@ ourselves to primitive recursive functions and functionals.
 
 For instance, assuming a parameter :g:`A:Set` exists in the local context,
 we want to build a function length of type :g:`list A -> nat` which computes
-the length of the list, so such that :g:`(length (nil A)) = O` and :g:`(length
+the length of the list, such that :g:`(length (nil A)) = O` and :g:`(length
 (cons A a l)) = (S (length l))`. We want these equalities to be
 recognized implicitly and taken into account in the conversion rule.
 
@@ -1364,7 +1364,7 @@ irrelevance property which is sometimes a useful axiom:
 The elimination of an inductive definition of type :math:`\Prop` on a predicate
 :math:`P` of type :math:`I→ Type` leads to a paradox when applied to impredicative
 inductive definition like the second-order existential quantifier
-:g:`exProp` defined above, because it give access to the two projections on
+:g:`exProp` defined above, because it gives access to the two projections on
 this type.
 
 
@@ -1613,7 +1613,7 @@ then the recursive
 arguments will correspond to :math:`T_i` in which one of the :math:`I_l` occurs.
 
 The main rules for being structurally smaller are the following.
-Given a variable :math:`y` of type an inductive definition in a declaration
+Given a variable :math:`y` of an inductively defined type in a declaration
 :math:`\ind{r}{Γ_I}{Γ_C}` where :math:`Γ_I` is :math:`[I_1 :A_1 ;…;I_k :A_k]`, and :math:`Γ_C` is
 :math:`[c_1 :C_1 ;…;c_n :C_n ]`, the terms structurally smaller than :math:`y` are:
 
@@ -1625,7 +1625,7 @@ Given a variable :math:`y` of type an inductive definition in a declaration
   Each :math:`f_i` corresponds to a type of constructor
   :math:`C_q ≡ ∀ p_1 :P_1 ,…,∀ p_r :P_r , ∀ y_1 :B_1 , … ∀ y_k :B_k , (I~a_1 … a_k )`
   and can consequently be written :math:`λ y_1 :B_1' . … λ y_k :B_k'. g_i`. (:math:`B_i'` is
-  obtained from :math:`B_i` by substituting parameters variables) the variables
+  obtained from :math:`B_i` by substituting parameters for variables) the variables
   :math:`y_j` occurring in :math:`g_i` corresponding to recursive arguments :math:`B_i` (the
   ones in which one of the :math:`I_l` occurs) are structurally smaller than y.
 
@@ -1801,7 +1801,7 @@ definitions can be found in :cite:`Gimenez95b,Gim98,GimCas05`.
 
 .. _The-Calculus-of-Inductive-Construction-with-impredicative-Set:
 
-The Calculus of Inductive Construction with impredicative Set
+The Calculus of Inductive Constructions with impredicative Set
 -----------------------------------------------------------------
 
 |Coq| can be used as a type-checker for the Calculus of Inductive
@@ -1834,7 +1834,7 @@ inductive definitions* like the example of second-order existential
 quantifier (:g:`exSet`).
 
 There should be restrictions on the eliminations which can be
-performed on such definitions. The eliminations rules in the
+performed on such definitions. The elimination rules in the
 impredicative system for sort :math:`\Set` become:
 
 
