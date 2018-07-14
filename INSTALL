@@ -29,8 +29,9 @@ WHAT DO YOU NEED ?
 
    To compile Coq yourself, you need:
 
-   - OCaml version 4.02.3 or later
+   - OCaml (version >= 4.02.3)
      (available at https://ocaml.org/)
+     (This version of Coq has been tested up to OCaml 4.07.0)
 
    - The Num package, which used to be part of the OCaml standard library,
      if you are using an OCaml version >= 4.06.0
@@ -68,7 +69,7 @@ WHAT DO YOU NEED ?
    profit from Flambda, a special build of the OCaml compiler that has
    the Flambda optimizer enabled must be installed. For OPAM users,
    this amounts to installing a compiler switch ending in `+flambda`,
-   such as `4.06.1+flambda`. For other users, YMMV. Once `ocamlopt
+   such as `4.07.0+flambda`. For other users, YMMV. Once `ocamlopt
    -config` reports that Flambda is available, some further
    optimization options can be used; see the entry about -flambda-opts
    below for more details.
