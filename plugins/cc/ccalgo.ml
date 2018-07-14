@@ -9,7 +9,7 @@
 (************************************************************************)
 
 (* This file implements the basic congruence-closure algorithm by *)
-(* Downey,Sethi and Tarjan. *)
+(* Downey, Sethi and Tarjan. *)
 (* Plus some e-matching and constructor handling by P. Corbineau *)
 
 open CErrors
@@ -18,7 +18,6 @@ open Names
 open Sorts
 open Constr
 open Vars
-open Evd
 open Goptions
 open Tacmach
 open Util
@@ -272,7 +271,8 @@ type state =
      mutable rew_depth:int;
      mutable changed:bool;
      by_type: Int.Set.t Typehash.t;
-     mutable gls:Goal.goal Evd.sigma}
+     mutable env:Environ.env;
+     sigma:Evd.evar_map}
 
 let dummy_node =
   {
@@ -307,7 +307,8 @@ let empty depth gls:state =
     rew_depth=depth;
     by_type=Constrhash.create init_size;
     changed=false;
-    gls=gls
+    env=pf_env gls;
+    sigma=project gls
   }
     
 let forest state = state.uf
@@ -426,7 +427,7 @@ let cc_product s1 s2 =
 	   mkLambda(_B_,mkSort(s2),_body_))
 
 let rec constr_of_term = function
-    Symb s-> applist_projection s []
+    Symb s-> s
   | Product(s1,s2) -> cc_product s1 s2
   | Eps id -> mkVar id
   | Constructor cinfo -> mkConstructU cinfo.ci_constr
@@ -434,25 +435,7 @@ let rec constr_of_term = function
       make_app [(constr_of_term s2)] s1
 and make_app l=function
     Appli (s1,s2)->make_app ((constr_of_term s2)::l) s1
-  | other -> 
-    applist_proj other l
-and applist_proj c l =
-  match c with
-  | Symb s -> applist_projection s l
-  | _ -> Term.applistc (constr_of_term c) l
-and applist_projection c l =
-  match Constr.kind c with
-  | Const c when Environ.is_projection (fst c) (Global.env()) ->
-    let p = Projection.make (fst c) false in
-    (match l with 
-    | [] -> (* Expand the projection *)
-      let ty = Typeops.type_of_constant_in (Global.env ()) c in (* FIXME constraints *)
-      let pb = Environ.lookup_projection p (Global.env()) in
-      let ctx,_ = Term.decompose_prod_n_assum (pb.Declarations.proj_npars + 1) ty in
-      Term.it_mkLambda_or_LetIn (mkProj(p,mkRel 1)) ctx
-    | hd :: tl ->
-      Term.applistc (mkProj (p, hd)) tl)
-  | _ -> Term.applistc c l
+  | other -> Term.applist (constr_of_term other,l)
 
 let rec canonize_name sigma c =
   let c = EConstr.Unsafe.to_constr c in
@@ -511,8 +494,8 @@ let rec add_term state t=
 	Not_found ->
 	  let b=next uf in
           let trm = constr_of_term t in
-	  let typ = pf_unsafe_type_of state.gls (EConstr.of_constr trm) in
-	  let typ = canonize_name (project state.gls) typ in
+          let typ = Typing.unsafe_type_of state.env state.sigma (EConstr.of_constr trm) in
+          let typ = canonize_name state.sigma typ in
 	  let new_node=
 	    match t with
 		Symb _ | Product (_,_) ->
@@ -820,11 +803,10 @@ let one_step state =
 let __eps__ = Id.of_string "_eps_"
 
 let new_state_var typ state =
-  let id = pf_get_new_id __eps__ state.gls in
-  let {it=gl ; sigma=sigma} = state.gls in
-  let gls = Goal.V82.new_goal_with sigma gl [Context.Named.Declaration.LocalAssum (id,typ)] in
-    state.gls<- gls;
-    id
+  let ids = Environ.ids_of_named_context_val (Environ.named_context_val state.env) in
+  let id = Namegen.next_ident_away __eps__ ids in
+  state.env<- EConstr.push_named (Context.Named.Declaration.LocalAssum (id,typ)) state.env;
+  id
 
 let complete_one_class state i=
   match (get_representative state.uf i).inductive_status with
@@ -832,9 +814,9 @@ let complete_one_class state i=
 	let rec app t typ n =
 	  if n<=0 then t else
 	    let _,etyp,rest= destProd typ in
-	    let id = new_state_var etyp state in
+            let id = new_state_var (EConstr.of_constr etyp) state in
 		app (Appli(t,Eps id)) (substl [mkVar id] rest) (n-1) in
-	let _c = pf_unsafe_type_of state.gls
+        let _c = Typing.unsafe_type_of state.env state.sigma
 	  (EConstr.of_constr (constr_of_term (term state.uf pac.cnode))) in
         let _c = EConstr.Unsafe.to_constr _c in
 	let _args =
