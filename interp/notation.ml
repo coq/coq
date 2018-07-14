@@ -378,38 +378,39 @@ let prim_token_interp_infos =
 let prim_token_uninterp_infos =
   ref (Refmap.empty : (scope_name * prim_token_uid * bool) Refmap.t)
 
-let hashtbl_check_and_set uid f h eq =
+let hashtbl_check_and_set allow_overwrite uid f h eq =
   match Hashtbl.find h uid with
    | exception Not_found -> Hashtbl.add h uid f
+   | _ when allow_overwrite -> Hashtbl.add h uid f
    | g when eq f g -> ()
    | _ ->
       user_err ~hdr:"prim_token_interpreter"
        (str "Unique identifier " ++ str uid ++
         str " already used to register a numeral or string (un)interpreter.")
 
-let register_gen_interpretation uid (interp, uninterp) =
+let register_gen_interpretation allow_overwrite uid (interp, uninterp) =
   hashtbl_check_and_set
-    uid interp prim_token_interpreters InnerPrimToken.interp_eq;
+    allow_overwrite uid interp prim_token_interpreters InnerPrimToken.interp_eq;
   hashtbl_check_and_set
-    uid uninterp prim_token_uninterpreters InnerPrimToken.uninterp_eq
+    allow_overwrite uid uninterp prim_token_uninterpreters InnerPrimToken.uninterp_eq
 
-let register_rawnumeral_interpretation uid (interp, uninterp) =
-  register_gen_interpretation uid
+let register_rawnumeral_interpretation ?(allow_overwrite=false) uid (interp, uninterp) =
+  register_gen_interpretation allow_overwrite uid
     (InnerPrimToken.RawNumInterp interp, InnerPrimToken.RawNumUninterp uninterp)
 
-let register_bignumeral_interpretation uid (interp, uninterp) =
-  register_gen_interpretation uid
+let register_bignumeral_interpretation ?(allow_overwrite=false) uid (interp, uninterp) =
+  register_gen_interpretation allow_overwrite uid
     (InnerPrimToken.BigNumInterp interp, InnerPrimToken.BigNumUninterp uninterp)
 
-let register_string_interpretation uid (interp, uninterp) =
-  register_gen_interpretation uid
+let register_string_interpretation ?(allow_overwrite=false) uid (interp, uninterp) =
+  register_gen_interpretation allow_overwrite uid
     (InnerPrimToken.StringInterp interp, InnerPrimToken.StringUninterp uninterp)
 
 type prim_token_infos = {
   pt_scope : scope_name; (** Concerned scope *)
   pt_uid : prim_token_uid; (** Unique id "pointing" to (un)interp functions *)
   pt_required : required_module; (** Module that should be loaded first *)
-  pt_refs : global_reference list; (** Entry points during uninterpretation *)
+  pt_refs : GlobRef.t list; (** Entry points during uninterpretation *)
   pt_in_match : bool (** Is this prim token legal in match patterns ? *)
 }
 
@@ -445,19 +446,25 @@ let enable_prim_token_interpretation infos =
     (the latter inside a [Mltop.declare_cache_obj]).
 *)
 
+let fresh_string_of =
+  let count = ref 0 in
+  fun root -> count := !count+1; (string_of_int !count)^"_"^root
+
 let declare_numeral_interpreter sc dir interp (patl,uninterp,b) =
-  register_bignumeral_interpretation sc (interp,uninterp);
+  let uid = fresh_string_of sc in
+  register_bignumeral_interpretation uid (interp,uninterp);
   enable_prim_token_interpretation
     { pt_scope = sc;
-      pt_uid = sc;
+      pt_uid = uid;
       pt_required = dir;
       pt_refs = List.map_filter glob_prim_constr_key patl;
       pt_in_match = b }
 let declare_string_interpreter sc dir interp (patl,uninterp,b) =
-  register_string_interpretation sc (interp,uninterp);
+  let uid = fresh_string_of sc in
+  register_string_interpretation uid (interp,uninterp);
   enable_prim_token_interpretation
     { pt_scope = sc;
-      pt_uid = sc;
+      pt_uid = uid;
       pt_required = dir;
       pt_refs = List.map_filter glob_prim_constr_key patl;
       pt_in_match = b }

@@ -1,9 +1,11 @@
 (************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
+(* <O___,, *       (see CREDITS file for the list of authors)           *)
 (*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
 DECLARE PLUGIN "numeral_notation_plugin"
@@ -16,7 +18,6 @@ open Globnames
 open Constrexpr
 open Constrexpr_ops
 open Constr
-open Misctypes
 
 (** * Numeral notation *)
 
@@ -24,7 +25,7 @@ open Misctypes
 
     The constr [c] below isn't necessarily well-typed, since we
     built it via an [mkApp] of a conversion function on a term
-    that starts with the right constructor, but might be partially
+    that starts with the right constructor but might be partially
     applied.
 
     At least [c] is known to be evar-free, since it comes from
@@ -55,7 +56,7 @@ let warn_large_num =
   CWarnings.create ~name:"large-number" ~category:"numbers"
     (fun ty ->
       strbrk "Stack overflow or segmentation fault happens when " ++
-      strbrk "working with large numbers in " ++ pr_reference ty ++
+      strbrk "working with large numbers in " ++ pr_qualid ty ++
       strbrk " (threshold may vary depending" ++
       strbrk " on your system limits and on the command executed).")
 
@@ -64,11 +65,11 @@ let warn_abstract_large_num =
     (fun (ty,f) ->
       let (sigma, env) = Pfedit.get_current_context () in
       strbrk "To avoid stack overflow, large numbers in " ++
-      pr_reference ty ++ strbrk " are interpreted as applications of " ++
+      pr_qualid ty ++ strbrk " are interpreted as applications of " ++
       Printer.pr_constr_env env sigma f ++ strbrk ".")
 
 (** Comparing two raw numbers (base 10, big-endian, non-negative).
-    A bit nasty, but not critical : only used to decide when a
+    A bit nasty, but not critical: only used to decide when a
     number is considered as large (see warnings above). *)
 
 exception Comp of int
@@ -233,18 +234,24 @@ let rec glob_of_constr ?loc c = match Constr.kind c with
   | Const (c, _) -> DAst.make ?loc (Glob_term.GRef (ConstRef c, None))
   | Ind (ind, _) -> DAst.make ?loc (Glob_term.GRef (IndRef ind, None))
   | Var id -> DAst.make ?loc (Glob_term.GRef (VarRef id, None))
-  | _ -> CErrors.anomaly (str "Numeral.interp: unexpected constr")
+  | _ -> let (sigma, env) = Pfedit.get_current_context () in
+         CErrors.user_err ?loc
+          (str "Unexpected term while parsing a numeral notation:" ++ fnl () ++
+           Printer.pr_constr_env env sigma c)
 
 let no_such_number ?loc ty =
   CErrors.user_err ?loc
    (str "Cannot interpret this number as a value of type " ++
-    pr_reference ty)
+    pr_qualid ty)
 
 let interp_option ty ?loc c =
   match Constr.kind c with
   | App (_Some, [| _; c |]) -> glob_of_constr ?loc c
   | App (_None, [| _ |]) -> no_such_number ?loc ty
-  | x -> CErrors.anomaly (str "Numeral.interp: option expected")
+  | x -> let (sigma, env) = Pfedit.get_current_context () in
+         CErrors.user_err ?loc
+          (str "Unexpected non-option term while parsing a numeral notation:" ++ fnl () ++
+           Printer.pr_constr_env env sigma c)
 
 let uninterp_option c =
   match Constr.kind c with
@@ -276,7 +283,7 @@ type numeral_notation_obj =
     to_ty : constr;
     of_kind : conversion_kind;
     of_ty : constr;
-    num_ty : Libnames.reference; (* for warnings / error messages *)
+    num_ty : Libnames.qualid; (* for warnings / error messages *)
     warning : numnot_option }
 
 let interp o ?loc n =
@@ -322,7 +329,7 @@ let uninterp o (Glob_term.AnyGlobConstr n) =
 
 let load_numeral_notation _ (_, (uid,opts)) =
   Notation.register_rawnumeral_interpretation
-    uid (interp opts, uninterp opts)
+    ~allow_overwrite:true uid (interp opts, uninterp opts)
 
 let cache_numeral_notation x = load_numeral_notation 1 x
 
@@ -355,7 +362,7 @@ let unsafe_locate_ind q =
 
 let locate_ind q =
   try unsafe_locate_ind q
-  with Not_found -> Nametab.error_global_not_found (CAst.make q)
+  with Not_found -> Nametab.error_global_not_found q
 
 let locate_z () =
   try
@@ -367,35 +374,33 @@ let locate_int () =
   { uint = locate_ind q_uint;
     int = locate_ind q_int }
 
-let locate_globref r =
-  let q = qualid_of_reference r in
-  try Nametab.locate CAst.(q.v)
+let locate_globref q =
+  try Nametab.locate q
   with Not_found -> Nametab.error_global_not_found q
 
-let locate_constant r =
-  let q = qualid_of_reference r in
-  try Nametab.locate_constant CAst.(q.v)
+let locate_constant q =
+  try Nametab.locate_constant q
   with Not_found -> Nametab.error_global_not_found q
 
 let has_type f ty =
   let (sigma, env) = Pfedit.get_current_context () in
-  let c = mkCastC (mkRefC f, CastConv ty) in
+  let c = mkCastC (mkRefC f, Glob_term.CastConv ty) in
   try let _ = Constrintern.interp_constr env sigma c in true
   with Pretype_errors.PretypeError _ -> false
 
 let type_error_to f ty loadZ =
   CErrors.user_err
-    (pr_reference f ++ str " should go from Decimal.int to " ++
-     pr_reference ty ++ str " or (option " ++ pr_reference ty ++ str ")." ++
-     fnl () ++ str "Instead of int, the types uint or Z could be used" ++
-     (if loadZ then str " (load Z first)." else str "."))
+    (pr_qualid f ++ str " should go from Decimal.int to " ++
+     pr_qualid ty ++ str " or (option " ++ pr_qualid ty ++ str ")." ++
+     fnl () ++ str "Instead of Decimal.int, the types Decimal.uint or Z could be used" ++
+     (if loadZ then str " (require BinNums first)." else str "."))
 
 let type_error_of g ty loadZ =
   CErrors.user_err
-    (pr_reference g ++ str " should go from " ++ pr_reference ty ++
-     str " to Decimal.int or (option int)." ++ fnl () ++
-     str "Instead of int, the types uint or Z could be used" ++
-     (if loadZ then str " (load Z first)." else str "."))
+    (pr_qualid g ++ str " should go from " ++ pr_qualid ty ++
+     str " to Decimal.int or (option Decimal.int)." ++ fnl () ++
+     str "Instead of Decimal.int, the types Decimal.uint or Z could be used" ++
+     (if loadZ then str " (require BinNums first)." else str "."))
 
 let vernac_numeral_notation ty f g scope opts =
   let int_ty = locate_int () in
@@ -405,7 +410,7 @@ let vernac_numeral_notation ty f g scope opts =
   let of_ty = mkConst (locate_constant g) in
   let cty = mkRefC ty in
   let app x y = mkAppC (x,[y]) in
-  let cref q = mkRefC (CAst.make (Qualid q)) in
+  let cref q = mkRefC q in
   let arrow x y =
     mkProdC ([CAst.make Anonymous],Default Decl_kinds.Explicit, x, y)
   in
@@ -420,17 +425,20 @@ let vernac_numeral_notation ty f g scope opts =
        get_constructors ind
     | IndRef _ ->
        CErrors.user_err
-         (str "The inductive type " ++ pr_reference ty ++
-          str " cannot be polymorphic here for the moment")
+         (str "The inductive type " ++ pr_qualid ty ++
+          str " cannot be used in numeral notations because" ++
+          str " support for polymorphic inductive types is not yet implemented")
     | ConstRef _ | ConstructRef _ | VarRef _ ->
        CErrors.user_err
-        (pr_reference ty ++ str " is not an inductive type")
+        (pr_qualid ty ++ str " is not an inductive type")
   in
   (* Check the type of f *)
   let to_kind =
     if Global.is_polymorphic (Nametab.global f) then
       CErrors.user_err
-        (pr_reference f ++ str " cannot be polymorphic for the moment")
+        (str "The function " ++ pr_qualid f ++ str " cannot be used" ++
+         str " in numeral notations because support for polymorphic" ++
+         str " printing and parsing functions is not yet implemented.")
     else if has_type f (arrow cint cty) then Int int_ty, Direct
     else if has_type f (arrow cint (opt cty)) then Int int_ty, Option
     else if has_type f (arrow cuint cty) then UInt int_ty.uint, Direct
@@ -447,7 +455,7 @@ let vernac_numeral_notation ty f g scope opts =
   let of_kind =
     if Global.is_polymorphic (Nametab.global g) then
       CErrors.user_err
-        (pr_reference g ++ str " cannot be polymorphic for the moment")
+        (pr_qualid g ++ str " cannot be polymorphic for the moment")
     else if has_type g (arrow cty cint) then Int int_ty, Direct
     else if has_type g (arrow cty (opt cint)) then Int int_ty, Option
     else if has_type g (arrow cty cuint) then UInt int_ty.uint, Direct
