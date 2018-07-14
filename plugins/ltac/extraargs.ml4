@@ -297,25 +297,6 @@ END
 
 (* spiwack: the print functions are incomplete, but I don't know what they are
 	used for *)
-let pr_r_nat_field natf =
-  str "nat " ++
-  match natf with
-    | Retroknowledge.NatType -> str "type"
-    | Retroknowledge.NatPlus -> str "plus"
-    | Retroknowledge.NatTimes -> str "times"
-
-let pr_r_n_field  nf =
-  str "binary N " ++
-  match nf with
-    | Retroknowledge.NPositive -> str "positive"
-    | Retroknowledge.NType -> str "type"
-    | Retroknowledge.NTwice -> str "twice"
-    | Retroknowledge.NTwicePlusOne -> str "twice plus one"
-    | Retroknowledge.NPhi -> str "phi"
-    | Retroknowledge.NPhiInv -> str "phi inv"
-    | Retroknowledge.NPlus -> str "plus"
-    | Retroknowledge.NTimes -> str "times"
-
 let pr_r_int31_field i31f =
   str "int31 " ++
   match i31f with
@@ -352,26 +333,6 @@ let pr_retroknowledge_field f =
   | Retroknowledge.KN nf -> pr_r_n_field () () () nf *)
   | Retroknowledge.KInt31 (group, i31f) -> (pr_r_int31_field i31f) ++
                                            spc () ++ str "in " ++ qs group
-
-VERNAC ARGUMENT EXTEND retroknowledge_nat
-PRINTED BY pr_r_nat_field
-| [ "nat" "type" ] -> [ Retroknowledge.NatType ]
-| [ "nat" "plus" ] -> [ Retroknowledge.NatPlus ]
-| [ "nat" "times" ] -> [ Retroknowledge.NatTimes ]
-END
-
-
-VERNAC ARGUMENT EXTEND retroknowledge_binary_n
-PRINTED BY pr_r_n_field
-| [ "binary" "N" "positive" ] -> [ Retroknowledge.NPositive ]
-| [ "binary" "N" "type" ] -> [ Retroknowledge.NType ]
-| [ "binary" "N" "twice" ] -> [ Retroknowledge.NTwice ]
-| [ "binary" "N" "twice" "plus" "one" ] -> [ Retroknowledge.NTwicePlusOne ]
-| [ "binary" "N" "phi" ] -> [ Retroknowledge.NPhi ]
-| [ "binary" "N" "phi" "inv" ] -> [ Retroknowledge.NPhiInv ]
-| [ "binary" "N" "plus" ] -> [ Retroknowledge.NPlus ]
-| [ "binary" "N" "times" ] -> [ Retroknowledge.NTimes ]
-END
 
 VERNAC ARGUMENT EXTEND retroknowledge_int31
 PRINTED BY pr_r_int31_field
