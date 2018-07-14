@@ -1374,42 +1374,130 @@ Numeral notations
 Starting with version 8.9, the following command allows the user to customize
 the way numeral literals are parsed and printed:
 
-.. cmd:: Numeral Notation @ty @pa @pr : @scope.
+.. cmd:: Numeral Notation @ident__1 @ident__2 @ident__3 : @scope.
 
-In the previous line, `ty` should be the name of an inductive type,
-while `pa` and `pr` should be the names of two parsing and printing
-functions.
-The parsing function `pa` should have one of the following types:
+  In the previous line, :n:`@ident__1` should be the name of an
+  inductive type, while :n:`@ident__2` and :n:`@ident__3` should be
+  the names of the parsing and printing functions, respectively.  The
+  parsing function :n:`@ident__2` should have one of the following
+  types:
 
-  * :g:`Decimal.int -> ty`
-  * :g:`Decimal.int -> option ty`
-  * :g:`Decimal.uint -> ty`
-  * :g:`Decimal.uint -> option ty`
-  * :g:`Z -> ty`
-  * :g:`Z -> option ty`
+    * :n:`Decimal.int -> @ident__1`
+    * :n:`Decimal.int -> option @ident__1`
+    * :n:`Decimal.uint -> @ident__1`
+    * :n:`Decimal.uint -> option @ident__1`
+    * :n:`Z -> @ident__1`
+    * :n:`Z -> option @ident__1`
 
-And the printing function `pr` should have one of the following types:
+  And the printing function :n:`@ident__3` should have one of the
+  following types:
 
-  * :g:`ty -> Decimal.int`
-  * :g:`ty -> option Decimal.int`
-  * :g:`ty -> Decimal.uint`
-  * :g:`ty -> option Decimal.uint`
-  * :g:`ty -> Z`
-  * :g:`ty -> option Z`
+    * :n:`@ident__1 -> Decimal.int`
+    * :n:`@ident__1 -> option Decimal.int`
+    * :n:`@ident__1 -> Decimal.uint`
+    * :n:`@ident__1 -> option Decimal.uint`
+    * :n:`@ident__1 -> Z`
+    * :n:`@ident__1 -> option Z`
 
-.. cmdv:: Numeral Notation @ty @pa @pr : @scope (warning after @n).
+  .. cmdv:: Numeral Notation @ident__1 @ident__2 @ident__3 : @scope (warning after @num).
 
-When a literal larger than `n` is parsed, a warning message about
-possible stack overflow will be displayed.
+    When a literal larger than :token:`num` is parsed, a warning
+    message about possible stack overflow, resulting from evaluating
+    :n:`@ident__2`, will be displayed.
 
-.. cmdv:: Numeral Notation @ty @pa @pr : @scope (abstract after @n).
+  .. cmdv:: Numeral Notation @ident__1 @ident__2 @ident__3 : @scope (abstract after @num).
 
-When a literal `m` larger than `n` is parsed, the result will be
-:g:`(pa m)`, without reduction of this application to a normal form.
-Here `m` will be a ``Decimal.int`` or ``Decimal.uint`` or ``Z``,
-depending on the type of the parsing function `pa`. This allows a more
-compact representation of literals in types such as ``nat``, and
-limits parse failures due to stack overflow.
+    When a literal :g:`m` larger than :token:`num` is parsed, the
+    result will be :n:`(@ident__2 m)`, without reduction of this
+    application to a normal form.  Here :g:`m` will be a
+    :g:`Decimal.int` or :g:`Decimal.uint` or :g:`Z`, depending on the
+    type of the parsing function :n:`@ident__2`. This allows for a
+    more compact representation of literals in types such as :g:`nat`,
+    and limits parse failures due to stack overflow.  Note that a
+    warning will be emitted when an integer larger than :token:`num`
+    is parsed.
+
+  .. exn:: Cannot interpret this number as a value of type @type
+
+    The numeral notation registered for :g:`ty` does not support the
+    given numeral.  This error is given when the interpretation
+    function returns :g:`None`, or if the interpretation is registered
+    for only non-negative integers, and the given numeral is negative.
+
+  .. exn:: @ident should go from Decimal.int to @type or (option @type). Instead of Decimal.int, the types Decimal.uint or Z could be used{? (require BinNums first)}.
+
+    The parsing function given to the :cmd:`Numeral Notation`
+    vernacular is not of the right type.
+
+  .. exn:: @ident should go from @type to Decimal.int or (option Decimal.int).  Instead of Decimal.int, the the types Decimal.uint or Z could be used{? (require BinNums first)}.
+
+    The printing function given to the :cmd:`Numeral Notation`
+    vernacular is not of the right type.
+
+  .. exn:: @type is not an inductive type
+
+    Numeral notations can only be declared for inductive types with no
+    arguments.
+
+  .. exn:: The inductive type @type cannot be used in numeral notations because support for polymorphic inductive types is not yet implemented.
+
+    Numeral notations do not currently support polymorphic inductive
+    types.  Ensure that all types involved in numeral notations are
+    declared with :g:`Unset Universe Polymorphism`, or with the
+    :g:`Monomorphic` attribute.
+
+  .. exn:: The function @ident cannot be used in numeral notations because support for polymorphic printing and parsing functions is not yet implemented.
+
+    Numeral notations do not currently support polymorphic functions
+    for printing and parsing.  Ensure that both functions passed to
+    :cmd:`Numeral Notation` are defined with :g:`Unset Universe
+    Polymorphism`, or with the :g:`Monomorphic` attribute.
+
+  .. exn:: Unexpected term while parsing a numeral notation
+
+    Parsing functions must always return ground terms, made up of
+    applications of constructors and inductive types.  Parsing
+    functions may not return terms containing axioms, bare
+    (co)fixpoints, lambdas, etc.
+
+  .. exn:: Unexpected non-option term while parsing a numeral notation
+
+    Parsing functions expected to return an :g:`option` must always
+    return a concrete :g:`Some` or :g:`None` when applied to a
+    concrete numeral expressed as a decimal.  They may not return
+    opaque constants.
+
+  .. exn:: Syntax error: [prim:reference] expected after 'Notation' (in [vernac:command]).
+
+    The type passed to :cmd:`Numeral Notation` must be a single
+    identifier.
+
+  .. exn:: Syntax error: [prim:reference] expected after [prim:reference] (in [vernac:command]).
+
+    Both functions passed to :cmd:`Numeral Notation` must be single
+    identifiers.
+
+  .. warn:: Stack overflow or segmentation fault happens when working with large numbers in @type (threshold may vary depending on your system limits and on the command executed).
+
+    When a :cmd:`Numeral Notation` is registered in the current scope
+    with :n:`(warning after @num)`, this warning is emitted when
+    parsing a numeral greater than or equal to :token:`num`.
+
+  .. warn:: To avoid stack overflow, large numbers in @type are interpreted as applications of @ident__2.
+
+    When a :cmd:`Numeral Notation` is registered in the current scope
+    with :n:`(abstract after @num)`, this warning is emitted when
+    parsing a numeral greater than or equal to :token:`num`.
+    Typically, this indicates that the fully computed representation
+    of numerals can be so large that non-tail-recursive OCaml
+    functions run out of stack space when trying to walk them.
+
+    For example
+
+    .. coqtop:: all
+
+       Check 90000.
+
 
 .. _TacticNotation:
 

@@ -91,19 +91,19 @@ type 'a prim_token_interpretation =
   'a prim_token_interpreter * 'a prim_token_uninterpreter
 
 val register_rawnumeral_interpretation :
-  prim_token_uid -> rawnum prim_token_interpretation -> unit
+  ?allow_overwrite:bool -> prim_token_uid -> rawnum prim_token_interpretation -> unit
 
 val register_bignumeral_interpretation :
-  prim_token_uid -> Bigint.bigint prim_token_interpretation -> unit
+  ?allow_overwrite:bool -> prim_token_uid -> Bigint.bigint prim_token_interpretation -> unit
 
 val register_string_interpretation :
-  prim_token_uid -> string prim_token_interpretation -> unit
+  ?allow_overwrite:bool -> prim_token_uid -> string prim_token_interpretation -> unit
 
 type prim_token_infos = {
   pt_scope : scope_name; (** Concerned scope *)
   pt_uid : prim_token_uid; (** Unique id "pointing" to (un)interp functions *)
   pt_required : required_module; (** Module that should be loaded first *)
-  pt_refs : global_reference list; (** Entry points during uninterpretation *)
+  pt_refs : GlobRef.t list; (** Entry points during uninterpretation *)
   pt_in_match : bool (** Is this prim token legal in match patterns ? *)
 }
 

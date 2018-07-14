@@ -1,34 +1,35 @@
 (************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
+(* <O___,, *       (see CREDITS file for the list of authors)           *)
 (*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
 (** * Alternative Binary Numeral Notations *)
 
 (** Faster but less safe parsers and printers of [positive], [N], [Z]. *)
 
-(** Nowadays, literals in types [positive], [N], [Z] are parsed and
+(** By default, literals in types [positive], [N], [Z] are parsed and
     printed via the [Numeral Notation] command, by conversion from/to
-    the [Decimal.int] representation. This way, we do not need any
-    ML library of arbitrary precision integers (bigint.ml), hence
-    reducing the amount of ML code to trust during parsing and printing.
-    But this new method is slower than the older code, by a margin that
-    may become significant for literals of thousands of digits and more.
-    If that becomes a problem for your development, this file provides
-    some alternative [Numeral Notation] commmands that use [Z] as
-    bridge type : it hence relies on the bigint.ml library, the efficiency
-    should be almost the one of the legacy code, at the expense of a
-    larger ML trust base. To enable these commands, just be sure to
-    [Require] this file after the other files of
+    the [Decimal.int] representation. When working with numbers with
+    thousands of digits and more, conversion from/to [Decimal.int] can
+    become significantly slow. If that becomes a problem for your
+    development, this file provides some alternative [Numeral
+    Notation] commmands that use [Z] as bridge type. To enable these
+    commands, just be sure to [Require] this file after other files
+    defining numeral notations.
 
-    Please note anyway that literals above 10000 digits in [positive],
-    [N], [Z] will end up triggering Stack Overlow in various parts of
-    the Coq engine (type-checker, reduction, etc). So consider using
-    [BigN] or [BigZ] instead...
-*)
+    Note: up to Coq 8.8, literals in types [positive], [N], [Z] were
+    parsed and printed using a native ML library of arbitrary
+    precision integers named bigint.ml. From 8.9, the default is to
+    parse and print using a Coq library converting sequences of
+    digits, hence reducing the amount of ML code to trust. But this
+    method is slower. This file then gives access to the legacy
+    method, trading efficiency against a larger ML trust base relying
+    on bigint.ml. *)
 
 Require Import BinNums.
 
