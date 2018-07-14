@@ -35,8 +35,11 @@ let find_word_start (it:GText.iter) =
       (Minilib.log "find_word_start: cannot backward"; it)
     else if is_word_char it#char
     then step_to_start it
-    else (it#nocopy#forward_char;
-	Minilib.log ("Word start at: "^(string_of_int it#offset));it)
+    else begin
+      ignore(it#nocopy#forward_char);
+      Minilib.log ("Word start at: "^(string_of_int it#offset));
+      it
+    end
   in
     step_to_start it#copy
 

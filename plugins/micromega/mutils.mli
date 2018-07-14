@@ -30,7 +30,7 @@ end
 
 module TagSet : CSig.SetS with type elt = Tag.t
 
-val pp_list : (out_channel -> 'a -> 'b) -> out_channel -> 'a list -> unit
+val pp_list : (out_channel -> 'a -> unit) -> out_channel -> 'a list -> unit
 
 module CamlToCoq : sig
 

@@ -552,7 +552,7 @@ let find_fresh_name renaming (terms,termlists,binders,binderlists) avoid id =
 
 let is_var store pat =
   match DAst.get pat with
-  | PatVar na -> store na; true
+  | PatVar na -> ignore(store na); true
   | _ -> false
 
 let out_var pat =

@@ -14,6 +14,6 @@ bool ->
            int -> Constrexpr.constr_expr -> (pconstant ->
             Indfun_common.tcc_lemma_value ref ->
             pconstant ->
-            pconstant -> int -> EConstr.types -> int -> EConstr.constr -> 'a) -> Constrexpr.constr_expr list -> unit
+            pconstant -> int -> EConstr.types -> int -> EConstr.constr -> unit) -> Constrexpr.constr_expr list -> unit
 
 
