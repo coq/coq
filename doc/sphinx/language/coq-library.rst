@@ -706,18 +706,15 @@ Accessing the Type level
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 The basic library includes the definitions of the counterparts of some data-types and logical
-quantifiers at the ``Type``: level: negation, pair, and properties
+quantifiers at the ``Type``: level: negation and properties
 of ``identity``. This is the module ``Logic_Type.v``.
 
 .. index::
   single: notT (term)
-  single: prodT (term)
-  single: pairT (term)
 
 .. coqtop:: in
 
   Definition notT (A:Type) := A -> False.
-  Inductive prodT (A B:Type) : Type := pairT (_:A) (_:B).
 
 At the end, it defines data-types at the ``Type`` level.
 
