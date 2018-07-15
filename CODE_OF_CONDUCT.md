@@ -6,7 +6,9 @@ professionals and volunteers from all over the world.
 Diversity is a strength, but it can also lead to communication issues and
 unhappiness. To that end, we have a few ground rules that we ask people to
 adhere to. This code applies equally to core developers (who should lead by
-example), occasional contributors and those seeking help and guidance.
+example), occasional contributors and those seeking help and guidance. The
+goal of these rules is that everyone feels safe when contributing to Coq or
+interacting with others in Coq related forums.
 
 This isn't an exhaustive list of things that you can't do. Rather, take it in
 the spirit in which it's intended - a guide to make it easier to enrich all of
