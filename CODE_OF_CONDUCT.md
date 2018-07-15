@@ -41,18 +41,18 @@ affect a person's ability to participate within them.
 - **Be careful in the words that you choose.**
   We are a community of professionals, and we conduct ourselves professionally.
   Be kind to others. Do not insult or put down other participants. Harassment
-  and other exclusionary behavior aren't acceptable. This includes, but is not
-  limited to:
-  * Violent threats or language directed against another person.
-  * Discriminatory jokes and language.
-  * Posting sexually explicit or violent material.
-  * Posting (or threatening to post) other people's personally identifying
-    information ("doxing").
-  * Personal insults, especially those using racist or sexist terms.
-  * Unwelcome sexual attention.
-  * Advocating for, or encouraging, any of the above behavior.
-  * Repeated harassment of others. In general, if someone asks you to stop,
-    then stop.
+  and other exclusionary behavior aren't acceptable.
+  * Violent language or threats or personal insults have no chance to
+    resolve a dispute or to let a discussion florish. Worse, they can
+    hurt durably, or generate durable fears. They are thus unwelcome.
+  * Not everyone is comfortable with sexually explicit or violent
+    material, even as a joke. In an online open multicultural world, you
+    don't know who might be listening. So be cautious and responsible
+    with your words.
+  * Discussions are online and recorded for posterity; we all have our
+    right for privacy and online gossiping as well as posting or
+    threatening to post other people's personally identifying
+    information is unwelcome.
 - **Remember that what you write in a public online forum might be read by
   many people you don't know.**
   Consider what image your words will give to outsiders of the development
@@ -67,6 +67,9 @@ affect a person's ability to participate within them.
   holds a viewpoint doesn't mean that they're wrong. Don't forget that it is
   human to err and blaming each other doesn't get us anywhere. Instead, focus
   on helping to resolve issues and learning from mistakes.
+- **Coq online forums are only to discuss Coq-related subjects.**
+  Unrelated policitical discussions or long disgressions are unwelcome,
+  even for illustration or comparison purposes.
 
 ## Enforcement ##
 
