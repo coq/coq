@@ -1097,7 +1097,7 @@ described first.
       The scope of :cmd:`Opaque` is limited to the current section, or current
       file, unless the variant :cmd:`Global Opaque` is used.
 
-   See also: sections :ref:`performingcomputations`, :ref:`tactics-automatizing`,
+   See also: sections :ref:`performingcomputations`, :ref:`tactics-automating`,
    :ref:`proof-editing-mode`
 
    .. exn:: The reference @qualid was not found in the current environment.
@@ -1131,7 +1131,7 @@ described first.
       There is no constant referred by :n:`@qualid` in the environment.
 
    See also: sections :ref:`performingcomputations`,
-   :ref:`tactics-automatizing`, :ref:`proof-editing-mode`
+   :ref:`tactics-automating`, :ref:`proof-editing-mode`
 
 .. _vernac-strategy:
 
@@ -1217,19 +1217,19 @@ scope of their effect. There are four kinds of commands:
   current section or module it occurs in.  As an example, the :cmd:`Coercion`
   and :cmd:`Strategy` commands belong to this category.
 + Commands whose default behavior is to stop their effect at the end
-  of the section they occur in but to extent their effect outside the module or
+  of the section they occur in but to extend their effect outside the module or
   library file they occur in. For these commands, the Local modifier limits the
   effect of the command to the current module if the command does not occur in a
   section and the Global modifier extends the effect outside the current
   sections and current module if the command occurs in a section. As an example,
   the :cmd:`Arguments`, :cmd:`Ltac` or :cmd:`Notation` commands belong
   to this category. Notice that a subclass of these commands do not support
-  extension of their scope outside sections at all and the Global is not
+  extension of their scope outside sections at all and the Global modifier is not
   applicable to them.
 + Commands whose default behavior is to stop their effect at the end
   of the section or module they occur in.  For these commands, the ``Global``
   modifier extends their effect outside the sections and modules they
-  occurs in.  The :cmd:`Transparent` and :cmd:`Opaque`
+  occur in.  The :cmd:`Transparent` and :cmd:`Opaque`
   (see Section :ref:`vernac-controlling-the-reduction-strategies`) commands
   belong to this category.
 + Commands whose default behavior is to extend their effect outside
