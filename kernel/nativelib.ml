@@ -134,10 +134,13 @@ let call_compiler ?profile:(profile=false) ml_filename =
       []
   in
   let flambda_args = if Sys.(backend_type = Native) then ["-Oclassic"] else [] in
+  (* Use a linear-time register allocation algorithm *)
+  let optim_args = if Sys.(backend_type = Native) then ["-linscan"] else [] in
   let args =
     initial_args @
       profile_args @
         flambda_args @
+          optim_args @
       ("-o"::link_filename
        ::"-rectypes"
        ::"-w"::"a"
