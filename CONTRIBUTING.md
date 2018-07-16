@@ -56,9 +56,16 @@ Whitespace discipline (do not indent using tabs, no trailing spaces, text files 
 
 Here are a few tags Coq developers may add to your PR and what they mean. In general feedback and requests for you as the pull request author will be in the comments and tags are only used to organize pull requests.
 
-- [needs: rebase](https://github.com/coq/coq/pulls?utf8=%E2%9C%93&q=is%3Aopen%20is%3Apr%20label%3A%22needs%3A%20rebase%22) indicates the PR should be rebased on top of the latest `master` branch. See the [GitHub documentation](https://help.github.com/articles/about-git-rebase/) for a brief introduction to using `git rebase`.
-- [needs: fixing](https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+fixing%22) indicates the PR needs a fix, as discussed in the comments.
-- [needs: benchmarking](https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+benchmarking%22) and [needs: testing](https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+testing%22) indicate the PR needs testing beyond what the test suite can handle. For example, performance benchmarking is currently performed with a different infrastructure. Unless some followup is specifically requested you aren't expected to do this additional testing.
+- [needs: rebase][rebase-label] indicates the PR should be rebased on top of
+  the latest base branch (usually `master`). See the
+  [GitHub documentation](https://help.github.com/articles/about-git-rebase/)
+  for a brief introduction to using `git rebase`.
+- [needs: fixing][fixing-label] indicates the PR needs a fix, as discussed in the comments.
+- [needs: benchmarking][benchmarking-label] and [needs: testing][testing-label]
+  indicate the PR needs testing beyond what the test suite can handle.
+  For example, performance benchmarking is currently performed with a different
+  infrastructure ([documented in the wiki][jenkins-doc]). Unless some followup
+  is specifically requested you aren't expected to do this additional testing.
 
 To learn more about the merging process, you can read the
 [merging documentation for Coq maintainers](dev/doc/MERGING.md).
@@ -98,3 +105,10 @@ External plugins / libraries contribute to create a successful ecosystem around 
 Ask and answer questions on [Stack Exchange](https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites) which has a helpful community of Coq users.
 
 Hang out on the Coq IRC channel, `irc://irc.freenode.net/#coq`, and help answer questions.
+
+[rebase-label]: https://github.com/coq/coq/pulls?utf8=%E2%9C%93&q=is%3Aopen%20is%3Apr%20label%3A%22needs%3A%20rebase%22
+[fixing-label]: https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+fixing%22
+[benchmarking-label]: https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+benchmarking%22
+[testing-label]: https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+testing%22
+
+[jenkins-doc]: https://github.com/coq/coq/wiki/Jenkins-(automated-benchmarking)
