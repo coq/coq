@@ -8,21 +8,14 @@
 
 ########## CI infrastructure ##########
 
-/dev/ci/               @ejgallego
-# Secondary maintainer @SkySkimmer
+/dev/ci/          @coq/ci-maintainers
+/.circleci/       @coq/ci-maintainers
+/.travis.yml      @coq/ci-maintainers
+/.gitlab-ci.yml   @coq/ci-maintainers
 
 /dev/ci/user-overlays/*.sh @ghost
 # Trick to avoid getting review requests
 # each time someone adds an overlay
-
-/.circleci/       @SkySkimmer
-# Secondary maintainer @ejgallego
-
-/.travis.yml      @ejgallego
-# Secondary maintainer @SkySkimmer
-
-/.gitlab-ci.yml   @SkySkimmer
-# Secondary maintainer @ejgallego
 
 /appveyor.yml          @maximedenes
 /dev/ci/appveyor.*     @maximedenes
