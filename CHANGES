@@ -78,6 +78,7 @@ Vernacular Commands
 - The `Set SsrHave NoTCResolution` command no longer has special global
   scope. If you want the previous behavior, use `Global Set SsrHave
   NoTCResolution`.
+- Multiple sections with the same name are allowed.
 
 Coq binaries and process model
 
