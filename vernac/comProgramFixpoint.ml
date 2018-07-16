@@ -188,9 +188,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
     let sigma, h_a_term = Evarutil.new_global sigma (delayed_force fix_sub_ref) in
     let sigma, h_e_term = Evarutil.new_evar env sigma
         ~src:(Loc.tag @@ Evar_kinds.QuestionMark {
-            Evar_kinds.qm_obligation=Evar_kinds.Define false;
-            Evar_kinds.qm_name=Anonymous;
-            Evar_kinds.qm_record_field=None;
+            Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=Evar_kinds.Define false;
         }) wf_proof in
     sigma, mkApp (h_a_term, [| argtyp ; wf_rel ; h_e_term; prop |])
   in

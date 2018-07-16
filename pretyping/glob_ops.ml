@@ -563,9 +563,7 @@ let rec glob_constr_of_cases_pattern_aux isclosed x = DAst.map_with_loc (fun ?lo
       GVar id
   | PatVar Anonymous when not isclosed ->
       GHole (Evar_kinds.QuestionMark {
-          Evar_kinds.qm_obligation=Define false;
-          Evar_kinds.qm_name=Anonymous;
-          Evar_kinds.qm_record_field=None;
+        Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=Define false;
       },Namegen.IntroAnonymous,None)
   | _ -> raise Not_found
   ) x

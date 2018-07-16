@@ -566,11 +566,7 @@ let term_of_name = function
   | Name id -> DAst.make (GVar id)
   | Anonymous ->
        let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
-       DAst.make (GHole (Evar_kinds.QuestionMark {
-           Evar_kinds.qm_obligation=st;
-           Evar_kinds.qm_name=Anonymous;
-           Evar_kinds.qm_record_field=None;
-      }, IntroAnonymous, None))
+    DAst.make (GHole (Evar_kinds.QuestionMark { Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=st }, IntroAnonymous, None))
 
 let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renaming,env) = function
  | Anonymous -> (renaming,env), None, Anonymous
@@ -1929,11 +1925,10 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                              {fieldname=fieldname; recordname=inductive_of_constructor constructorname}
                              in
                          CAst.make ?loc @@ CHole (Some
-                 (Evar_kinds.QuestionMark {
+                 (Evar_kinds.QuestionMark { Evar_kinds.default_question_mark with
                      Evar_kinds.qm_obligation=st;
-                     Evar_kinds.qm_name=Anonymous;
                      Evar_kinds.qm_record_field=Some fieldinfo
-                             }) , IntroAnonymous, None))
+                }) , IntroAnonymous, None))
        in
        begin
 	  match fields with
@@ -2016,12 +2011,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
            let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
            (match naming with
            | IntroIdentifier id -> Evar_kinds.NamedHole id
-           | _ -> Evar_kinds.QuestionMark
-           {
-               Evar_kinds.qm_obligation=st;
-           Evar_kinds.qm_name=Anonymous;
-           Evar_kinds.qm_record_field=None;
-        })
+           | _ -> Evar_kinds.QuestionMark { Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=st; })
         | Some k -> k
         in
         let solve = match solve with
