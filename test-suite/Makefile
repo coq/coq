@@ -102,7 +102,7 @@ INTERACTIVE := interactive
 UNIT_TESTS := unit-tests
 VSUBSYSTEMS := prerequisite success failure $(BUGS) output output-coqtop \
   output-modulo-time $(INTERACTIVE) micromega $(COMPLEXITY) modules stm \
-  coqdoc ssr arithmetic ltac2
+  coqdoc ssr primitive/uint63 primitive/float ltac2
 
 # All subsystems
 SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile tools $(UNIT_TESTS)
@@ -174,6 +174,7 @@ summary:
 	  $(call summary_dir, "Miscellaneous tests", misc); \
 	  $(call summary_dir, "Complexity tests", complexity); \
 	  $(call summary_dir, "Module tests", modules); \
+	  $(call summary_dir, "Primitive tests", primitive); \
 	  $(call summary_dir, "STM tests", stm); \
 	  $(call summary_dir, "SSR tests", ssr); \
 	  $(call summary_dir, "IDE tests", ide); \
@@ -329,7 +330,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	} > "$@"
 
 ssr: $(wildcard ssr/*.v:%.v=%.v.log)
-$(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v arithmetic/*.v ltac2/*.v)): %.v.log: %.v $(PREREQUISITELOG)
+$(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v primitive/*/*.v ltac2/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  opts="$(if $(findstring modules/,$<),-R modules Mods)"; \
