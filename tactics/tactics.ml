@@ -5009,6 +5009,7 @@ let tclABSTRACT ?(opaque=true) name_op tac =
 
 let unify ?(state=full_transparent_state) x y =
   Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   try
     let core_flags =
@@ -5024,7 +5025,7 @@ let unify ?(state=full_transparent_state) x y =
     let sigma = w_unify (Tacmach.New.pf_env gl) sigma Reduction.CONV ~flags x y in
     Proofview.Unsafe.tclEVARS sigma
   with e when CErrors.noncritical e ->
-    Tacticals.New.tclFAIL 0 (str"Not unifiable")
+    Proofview.tclZERO (PretypeError (env, sigma, CannotUnify (x, y, None)))
   end
 
 module Simple = struct
