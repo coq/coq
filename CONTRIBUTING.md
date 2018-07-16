@@ -60,6 +60,9 @@ Here are a few tags Coq developers may add to your PR and what they mean. In gen
   the latest base branch (usually `master`). See the
   [GitHub documentation](https://help.github.com/articles/about-git-rebase/)
   for a brief introduction to using `git rebase`.
+  This label will be automatically added if you open or synchronize your PR and
+  it is not up-to-date with the base branch. So please, do not forget to rebase
+  your branch every time you update it.
 - [needs: fixing][fixing-label] indicates the PR needs a fix, as discussed in the comments.
 - [needs: benchmarking][benchmarking-label] and [needs: testing][testing-label]
   indicate the PR needs testing beyond what the test suite can handle.
