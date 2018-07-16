@@ -18,21 +18,6 @@ type entry = Constr.t
 
 (** the following types correspond to the different "things"
    the kernel can learn about.*)
-type nat_field =
-  | NatType
-  | NatPlus
-  | NatTimes
-
-type n_field =
-  | NPositive
-  | NType
-  | NTwice
-  | NTwicePlusOne
-  | NPhi
-  | NPhiInv
-  | NPlus
-  | NTimes
-
 type int31_field =
   | Int31Bits
   | Int31Type
@@ -61,12 +46,7 @@ type int31_field =
   | Int31Lxor
 
 type field =
-
-(**  | KEq
-  | KNat of nat_field
-  | KN of n_field *)
   | KInt31 of string*int31_field
-
 
 (** This type represent an atomic action of the retroknowledge. It
    is stored in the compiled libraries 

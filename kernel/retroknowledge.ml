@@ -25,22 +25,6 @@ open Constr
 (* aliased type for clarity purpose*)
 type entry = Constr.t
 
-(* [field]-s are the roles the kernel can learn of. *)
-type nat_field =
-  | NatType
-  | NatPlus
-  | NatTimes
-
-type n_field =
-  | NPositive
-  | NType
-  | NTwice
-  | NTwicePlusOne
-  | NPhi
-  | NPhiInv
-  | NPlus
-  | NTimes
-
 type int31_field =
   | Int31Bits
   | Int31Type
@@ -69,9 +53,6 @@ type int31_field =
   | Int31Lxor
 
 type field =
-  (* | KEq
-     | KNat of nat_field
-     | KN of n_field *)
   | KInt31 of string*int31_field
 
 
