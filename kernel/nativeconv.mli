@@ -18,3 +18,7 @@ val native_conv : conv_pb -> evars -> types kernel_conversion_function
 (** A conversion function parametrized by a universe comparator. Used outside of
     the kernel. *)
 val native_conv_gen : conv_pb -> evars -> (types, 'a) generic_conversion_function
+
+type vm_conv_gen = { vm_conv_gen : 'a. conv_pb -> (Constr.types, 'a) generic_conversion_function }
+
+val set_vm_conv_gen : vm_conv_gen -> unit

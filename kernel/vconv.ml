@@ -206,3 +206,5 @@ let vm_conv cv_pb env t1 t2 =
     let _ = vm_conv_gen cv_pb env univs t1 t2 in ()
 
 let _ = if Coq_config.bytecode_compiler then Reduction.set_vm_conv vm_conv
+let _ = if Coq_config.bytecode_compiler then
+  Nativeconv.set_vm_conv_gen { Nativeconv.vm_conv_gen = vm_conv_gen }

@@ -135,7 +135,26 @@ and conv_fix env lvl t1 f1 t2 f2 cu =
     else aux (i+1) (conv_val env CONV flvl fi1 fi2 cu) in
   aux 0 cu
 
+let warn_no_native_compiler =
+  let open Pp in
+  CWarnings.create ~name:"native-compiler-disabled" ~category:"native-compiler"
+         (fun () -> strbrk "Native compiler is disabled," ++
+                      strbrk " falling back to VM conversion test.")
+
+type vm_conv_gen = { vm_conv_gen : 'a. conv_pb -> (Constr.types, 'a) generic_conversion_function }
+
+let vm_conv_gen =
+  ref { vm_conv_gen = fun cv_pb env univs t1 t2 ->
+    generic_conv cv_pb ~l2r:false (fun _ -> None) full_transparent_state env univs t1 t2 }
+
+let set_vm_conv_gen f = vm_conv_gen := f
+
 let native_conv_gen pb sigma env univs t1 t2 =
+  if not Coq_config.native_compiler then begin
+    warn_no_native_compiler ();
+    vm_conv_gen.contents.vm_conv_gen pb env univs t1 t2
+  end
+  else
   let penv = Environ.pre_env env in 
   let ml_filename, prefix = get_ml_filename () in
   let code, upds = mk_conv_code penv sigma prefix t1 t2 in
@@ -153,19 +172,8 @@ let native_conv_gen pb sigma env univs t1 t2 =
       end
   | _ -> anomaly (Pp.str "Compilation failure.") 
 
-let warn_no_native_compiler =
-  let open Pp in
-  CWarnings.create ~name:"native-compiler-disabled" ~category:"native-compiler"
-         (fun () -> strbrk "Native compiler is disabled," ++
-                      strbrk " falling back to VM conversion test.")
-
 (* Wrapper for [native_conv] above *)
 let native_conv cv_pb sigma env t1 t2 =
-  if not Coq_config.native_compiler then begin
-    warn_no_native_compiler ();
-    vm_conv cv_pb env t1 t2
-  end
-  else
   let univs = Environ.universes env in
   let b =
     if cv_pb = CUMUL then Constr.leq_constr_univs univs t1 t2

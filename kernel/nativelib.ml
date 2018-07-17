@@ -67,6 +67,7 @@ let warn_native_compiler_failed =
   CWarnings.create ~name:"native-compiler-failed" ~category:"native-compiler" print
 
 let call_compiler ?profile:(profile=false) ml_filename =
+  let () = assert Coq_config.native_compiler in
   let load_path = !get_load_paths () in
   let load_path = List.map (fun dn -> dn / output_dir) load_path in
   let include_dirs = List.flatten (List.map (fun x -> ["-I"; x]) (include_dirs () @ load_path)) in
