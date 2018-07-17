@@ -192,7 +192,7 @@ let add_mind kn mib env =
       (MutInd.to_string kn);
   let new_inds = Mindmap_env.add kn mib env.env_globals.env_inductives in
   let new_projections = match mib.mind_record with
-    | NotRecord | FakeRecord -> env.env_globals.env_projections
+    | NotRecord -> env.env_globals.env_projections
     | PrimRecord projs ->
       Array.fold_left (fun accu (id, kns, pbs) ->
       Array.fold_left2 (fun accu kn pb ->

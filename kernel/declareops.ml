@@ -210,7 +210,6 @@ let subst_mind_packet sub mbp =
 
 let subst_mind_record sub r = match r with
 | NotRecord -> NotRecord
-| FakeRecord -> FakeRecord
 | PrimRecord infos ->
   let map (id, ps, pb as info) =
     let ps' = Array.Smart.map (subst_constant sub) ps in

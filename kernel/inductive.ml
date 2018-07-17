@@ -289,7 +289,7 @@ let is_private (mib,_) = mib.mind_private = Some true
 let is_primitive_record (mib,_) = 
   match mib.mind_record with
   | PrimRecord _ -> true
-  | NotRecord | FakeRecord -> false
+  | NotRecord -> false
 
 let build_dependent_inductive ind (_,mip) params =
   let realargs,_ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in

@@ -367,3 +367,52 @@ let is_open_canonical_projection env sigma (c,args) =
       not (isConstruct sigma hd)
     with Failure _ -> false
   with Not_found -> false
+
+(** Global data for record encodings *)
+
+let record_table =
+  Summary.ref ~name:"RECORD-EMULATION-TABLE" Mindset_env.empty
+
+(** In order to properly handle functors, we need to implement a libobject which
+    is at the same time `Keep` and substitutive. We emulate that by using a set
+    of MutInd.t that we duplicate at each substitution. The first instance
+    stands for the kept objects, and we apply the substitution to the second
+    instance to treat them as substitutive. *)
+
+let cache_record (_, minds) =
+  let fold mind accu = Mindset_env.add mind accu in
+  record_table := Mindset_env.fold fold minds !record_table
+
+let load_record _ mind = cache_record mind
+
+let subst_record (subs, minds) =
+  let fold mind accu = Mindset_env.add (Mod_subst.subst_mind subs mind) accu in
+  Mindset_env.fold fold minds minds
+
+let discharge_record (_, minds) =
+  let fold mind accu =
+    let (mp, dir, l) = MutInd.repr3 mind in
+    let dir = DirPath.make (List.tl (DirPath.repr dir)) in
+    Mindset_env.add (MutInd.make3 mp dir l) accu
+  in
+  Some (Mindset_env.fold fold minds Mindset_env.empty)
+
+let inRecord : Mindset_env.t -> obj =
+  declare_object {(default_object "RECORD-EMULATION") with
+    cache_function = cache_record;
+    load_function = load_record;
+    subst_function = subst_record;
+    classify_function = (fun x -> Substitute x);
+    discharge_function = discharge_record }
+
+let mark_as_record ind =
+  (** Only non primitive records should be marked as emulated *)
+  let open Declarations in
+  let () = match Global.lookup_mind ind with
+  | { mind_record = NotRecord } -> ()
+  | _ -> assert false
+  | exception Not_found -> assert false
+  in
+  Lib.add_anonymous_leaf (inRecord (Mindset_env.singleton ind))
+
+let emulates_record ind = Mindset_env.mem ind !record_table

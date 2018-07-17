@@ -305,7 +305,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
       let is_primitive = 
 	match mib.mind_record with
         | PrimRecord _ -> true
-        | FakeRecord | NotRecord -> false
+        | NotRecord -> false
       in
 	if not is_primitive then 
 	  warn_non_primitive_record (env,indsp);
@@ -422,7 +422,7 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
   let blocks = List.mapi mk_block record_data in
   let mie =
     { mind_entry_params = List.map degenerate_decl params;
-      mind_entry_record = Some (if !primitive_flag then Some binder_name else None);
+      mind_entry_record = (if !primitive_flag then Some binder_name else None);
       mind_entry_finite = finite;
       mind_entry_inds = blocks;
       mind_entry_private = None;
@@ -432,6 +432,10 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
   let mie = InferCumulativity.infer_inductive (Global.env ()) mie in
   let impls = List.map (fun _ -> paramimpls, []) record_data in
   let kn = ComInductive.declare_mutual_inductive_with_eliminations mie ubinders impls in
+  let () = match (Global.lookup_mind kn).mind_record with
+  | PrimRecord _ -> () (** No need to declare already primitive records *)
+  | NotRecord -> Recordops.mark_as_record kn
+  in
   let map i (_, _, _, fieldimpls, fields, is_coe, coers) =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
     let cstr = (rsp, 1) in

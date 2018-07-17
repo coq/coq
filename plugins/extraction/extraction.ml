@@ -488,7 +488,11 @@ and extract_really_ind env kn mib =
 	    Int.equal (List.length l) 1 && not (type_mem_kn kn (List.hd l))
 	then raise (I Singleton);
 	if List.is_empty l then raise (I Standard);
-        if mib.mind_record == Declarations.NotRecord then raise (I Standard);
+        let () = match mib.mind_record with
+        | Declarations.NotRecord when not (Recordops.emulates_record kn) ->
+          raise (I Standard)
+        | Declarations.NotRecord | Declarations.PrimRecord _ -> ()
+        in
 	(* Now we're sure it's a record. *)
 	(* First, we find its field names. *)
 	let rec names_prod t = match Constr.kind t with

@@ -519,7 +519,7 @@ let template_polymorphic_pind (ind,u) env =
 let add_mind_key kn (mind, _ as mind_key) env =
   let new_inds = Mindmap_env.add kn mind_key env.env_globals.env_inductives in
   let new_projections = match mind.mind_record with
-    | NotRecord | FakeRecord -> env.env_globals.env_projections
+    | NotRecord -> env.env_globals.env_projections
     | PrimRecord projs ->
       Array.fold_left (fun accu (id, kns, pbs) ->
       Array.fold_left2 (fun accu kn pb ->

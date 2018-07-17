@@ -111,9 +111,7 @@ let process_inductive info modlist mib =
   let section_decls' = Context.Named.map discharge section_decls in
   let (params',inds') = abstract_inductive section_decls' nparamdecls inds in
   let record = match mib.mind_record with
-    | PrimRecord info ->
-      Some (Some (Array.map pi1 info))
-    | FakeRecord -> Some None
+    | PrimRecord info -> Some (Array.map pi1 info)
     | NotRecord -> None
   in
   { mind_entry_record = record;

@@ -519,7 +519,7 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
                     (ConstructRef (ind, succ j)) impls)
                 constrimpls)
       impls;
-  let warn_prim = match mie.mind_entry_record with Some (Some _) -> not prim | _ -> false in
+  let warn_prim = match mie.mind_entry_record with Some _ -> not prim | _ -> false in
   Flags.if_verbose Feedback.msg_info (minductive_message warn_prim names);
   if mie.mind_entry_private == None
   then declare_default_schemes mind;

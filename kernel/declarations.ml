@@ -110,20 +110,16 @@ v}
 
 (** Record information:
     If the type is not a record, then NotRecord
-    If the type is a non-primitive record, then FakeRecord
+
     If it is a primitive record, for every type in the block, we get:
     - The identifier for the binder name of the record in primitive projections.
     - The constants associated to each projection.
     - The checked projection bodies.
 
-    The kernel does not exploit the difference between [NotRecord] and
-    [FakeRecord]. It is mostly used by extraction, and should be extruded from
-    the kernel at some point.
 *)
 
 type record_info =
 | NotRecord
-| FakeRecord
 | PrimRecord of (Id.t * Constant.t array * projection_body array) array
 
 type regular_inductive_arity = {

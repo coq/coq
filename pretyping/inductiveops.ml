@@ -278,7 +278,7 @@ let projection_nparams p = projection_nparams_env (Global.env ()) p
 let has_dependent_elim mib =
   match mib.mind_record with
   | PrimRecord _ -> mib.mind_finite == BiFinite
-  | NotRecord | FakeRecord -> true
+  | NotRecord -> true
 
 (* Annotation for cases *)
 let make_case_info env ind style =
@@ -349,7 +349,7 @@ let get_projections env (ind,params) =
     | PrimRecord infos ->
       let (_, projs, _) = infos.(snd (fst ind)) in
       Some projs
-    | NotRecord | FakeRecord -> None
+    | NotRecord -> None
 
 let make_case_or_project env sigma indf ci pred c branches =
   let open EConstr in
@@ -472,7 +472,7 @@ let compute_projections env (kn, i as ind) =
     make_abstract_instance (ACumulativityInfo.univ_context acumi)
   in
   let x = match mib.mind_record with
-  | NotRecord | FakeRecord ->
+  | NotRecord ->
     anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
   | PrimRecord info-> Name (pi1 (info.(i)))
   in

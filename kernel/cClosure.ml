@@ -836,7 +836,7 @@ let eta_expand_ind_stack env ind m s (f, s') =
       let hstack = Array.map (fun p -> { norm = Red; (* right can't be a constructor though *)
 					 term = FProj (Projection.make p true, right) }) projs in
 	argss, [Zapp hstack]
-    | PrimRecord _ | NotRecord | FakeRecord -> raise Not_found (* disallow eta-exp for non-primitive records *)
+    | PrimRecord _ | NotRecord -> raise Not_found (* disallow eta-exp for non-primitive records *)
 
 let rec project_nth_arg n argstk =
   match argstk with

@@ -76,3 +76,13 @@ val is_open_canonical_projection :
   Environ.env -> Evd.evar_map -> Reductionops.state -> bool
 val canonical_projections : unit ->
   ((GlobRef.t * cs_pattern) * obj_typ) list
+
+(** {5 Non-primitive record encodings} *)
+
+val mark_as_record : MutInd.t -> unit
+(** Given a non-primitive record, i.e. mind_record = NotRecord, mark it as a
+    record encoding. This is chiefly used for printing and extraction
+    purposes. *)
+
+val emulates_record : MutInd.t -> bool
+(** Retrieve the record emulation status *)

@@ -945,7 +945,7 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
     }
   in
   let record_info = match isrecord with
-  | Some (Some rid) ->
+  | Some rid ->
     let is_record pkt =
       pkt.mind_kelim == all_sorts
       && Array.length pkt.mind_consnames == 1
@@ -958,9 +958,8 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
         (id, kn, projs)
       in
       try PrimRecord (Array.mapi map rid)
-      with UndefinableExpansion -> FakeRecord
-    else FakeRecord
-  | Some None -> FakeRecord
+      with UndefinableExpansion -> NotRecord
+    else NotRecord
   | None -> NotRecord
   in
   { mib with mind_record = record_info }
