@@ -36,7 +36,7 @@ and lambda =
   | Lcase         of annot_sw * lambda * lambda * lam_branches 
                   (* annotations, term being matched, accu, branches *)
   | Lif           of lambda * lambda * lambda
-  | Lfix          of (int array * int) * fix_decl 
+  | Lfix          of (int array * (string * inductive) array * int) * fix_decl
   | Lcofix        of int * fix_decl (* must be in eta-expanded form *)
   | Lmakeblock    of prefix * pconstructor * int * lambda array
                   (* prefix, constructor name, constructor tag, arguments *)
