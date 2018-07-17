@@ -19,17 +19,17 @@ Local Open Scope Z_scope.
     information. *)
 
 Module Z.
-  Lemma div_mod_cases x y
-  : ((x = y * (x/y) + x mod y /\ (0 <= x mod y < y \/ y < x mod y <= 0))
-     \/ (y = 0 /\ x / y = 0 /\ x mod y = 0)).
-  Proof.
-    destruct (Z.eq_dec y 0); subst;
-      [ right | left; auto using Z.div_mod, Z.mod_bound_or ].
-    destruct x; cbv; repeat esplit.
-  Qed.
+  Lemma mod_0_r_ext x y : y = 0 -> x mod y = 0.
+  Proof. intro; subst; destruct x; reflexivity. Qed.
+  Lemma div_0_r_ext x y : y = 0 -> x / y = 0.
+  Proof. intro; subst; destruct x; reflexivity. Qed.
 
   Ltac div_mod_to_quot_rem_generalize x y :=
-    pose proof (div_mod_cases x y);
+    pose proof (Z.div_mod x y);
+    pose proof (Z.mod_pos_bound x y);
+    pose proof (Z.mod_neg_bound x y);
+    pose proof (div_0_r_ext x y);
+    pose proof (mod_0_r_ext x y);
     let q := fresh "q" in
     let r := fresh "r" in
     set (q := x / y) in *;
