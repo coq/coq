@@ -120,9 +120,6 @@ let class_tab =
 let coercion_tab =
   Summary.ref ~name:"coercion_tab" (CoeTypMap.empty : coe_info_typ CoeTypMap.t)
 
-let coercions_in_scope =
-  Summary.ref ~name:"coercions_in_scope" GlobRef.Set_env.empty
-
 module ClPairOrd =
 struct
   type t = cl_index * cl_index
@@ -400,13 +397,6 @@ let class_params = function
 let add_class cl =
   add_new_class cl { cl_param = class_params cl }
 
-let get_automatically_import_coercions =
-  Goptions.declare_bool_option_and_ref
-    ~depr:true (* Remove in 8.8 *)
-    ~name:"automatic import of coercions"
-    ~key:["Automatic";"Coercions";"Import"]
-    ~value:false
-
 let cache_coercion (_, c) =
   let () = add_class c.coercion_source in
   let () = add_class c.coercion_target in
@@ -422,20 +412,9 @@ let cache_coercion (_, c) =
   let () = add_new_coercion c.coercion_type xf in
   add_coercion_in_graph (xf,is,it)
 
-let load_coercion _ o =
-  if get_automatically_import_coercions () then
-    cache_coercion o
-
-let set_coercion_in_scope (_, c) =
-  let r = c.coercion_type in
-  coercions_in_scope := GlobRef.Set_env.add r !coercions_in_scope
-
 let open_coercion i o =
-  if Int.equal i 1 then begin
-    set_coercion_in_scope o;
-    if not (get_automatically_import_coercions ()) then
-      cache_coercion o
-  end
+  if Int.equal i 1 then
+    cache_coercion o
 
 let subst_coercion (subst, c) =
   let coe = subst_coe_typ subst c.coercion_type in
@@ -469,10 +448,7 @@ let classify_coercion obj =
 let inCoercion : coercion -> obj =
   declare_object {(default_object "COERCION") with
     open_function = open_coercion;
-    load_function = load_coercion;
-    cache_function = (fun objn ->
-        set_coercion_in_scope objn;
-        cache_coercion objn);
+    cache_function = cache_coercion;
     subst_function = subst_coercion;
     classify_function = classify_coercion;
     discharge_function = discharge_coercion }
@@ -532,6 +508,3 @@ let hide_coercion coe =
     let coe_info = coercion_info coe in
     Some coe_info.coe_param
   else None
-
-let is_coercion_in_scope r =
-  GlobRef.Set_env.mem r !coercions_in_scope

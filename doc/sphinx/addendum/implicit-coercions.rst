@@ -322,21 +322,8 @@ are also forgotten.
 Coercions and Modules
 ---------------------
 
-.. flag:: Automatic Coercions Import
-
-   Since |Coq| version 8.3, the coercions present in a module are activated
-   only when the module is explicitly imported. Formerly, the coercions
-   were activated as soon as the module was required, whether it was
-   imported or not.
-
-   This option makes it possible to recover the behavior of the versions of
-   |Coq| prior to 8.3.
-
-.. warn:: Coercion used but not in scope: @qualid. If you want to use this coercion, please Import the module that contains it.
-
-   This warning is emitted when typechecking relies on a coercion
-   contained in a module that has not been explicitely imported. It helps
-   migrating code and stop relying on the option above.
+The coercions present in a module are activated only when the module is
+explicitly imported.
 
 Examples
 --------
