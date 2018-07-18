@@ -80,7 +80,7 @@ to recover the needed equalities. Also, some subgoals should be
 directly solved because of inconsistent contexts arising from the
 constraints on indexes. The nice thing is that we can make a tactic
 based on discriminate, injection and variants of substitution to
-automatically do such simplifications (which may involve the K axiom).
+automatically do such simplifications (which may involve the axiom K).
 This is what the ``simplify_dep_elim`` tactic from ``Coq.Program.Equality``
 does. For example, we might simplify the previous goals considerably:
 
@@ -594,7 +594,7 @@ Example:
 
    quote interp_f [ B C iff ].
 
-Warning: Since function inversion is undecidable in general case,
+Warning: since functional inversion is undecidable in the general case,
 don’t expect miracles from it!
 
 .. tacv:: quote @ident in @term using @tactic
@@ -612,14 +612,14 @@ See also: comments of source file ``plugins/quote/quote.ml``
 See also: the :tacn:`ring` tactic.
 
 
-Using the tactical language
+Using the tactic language
 ---------------------------
 
 
 About the cardinality of the set of natural numbers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A first example which shows how to use pattern matching over the
+The first example which shows how to use pattern matching over the
 proof contexts is the proof that natural numbers have more than two
 elements. The proof of such a lemma can be done as follows:
 
@@ -651,14 +651,12 @@ solved by a match goal structure and, in particular, with only one
 pattern (use of non-linear matching).
 
 
-Permutation on closed lists
+Permutations of lists
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Another more complex example is the problem of permutation on closed
-lists. The aim is to show that a closed list is a permutation of
-another one.
-
-First, we define the permutation predicate as shown here:
+A more complex example is the problem of permutations of
+lists. The aim is to show that a list is a permutation of
+another list.
 
 .. coqtop:: in
 
@@ -680,10 +678,7 @@ First, we define the permutation predicate as shown here:
 
    End Sort.
 
-A more complex example is the problem of permutation on closed lists.
-The aim is to show that a closed list is a permutation of another one.
 First, we define the permutation predicate as shown above.
-
 
 .. coqtop:: none
 
@@ -708,6 +703,23 @@ First, we define the permutation predicate as shown above.
                 end
             end.
 
+Next we define an auxiliary tactic ``Permut`` which takes an argument
+used to control the recursion depth. This tactic behaves as follows. If
+the lists are identical (i.e. convertible), it concludes. Otherwise, if
+the lists have identical heads, it proceeds to look at their tails.
+Finally, if the lists have different heads, it rotates the first list by
+putting its head at the end if that is possible, i.e. if the new head
+hasn't been the head previously. To check this, we keep track of the
+number of performed rotations using the argument ``n``. We do this by
+decrementing ``n`` each time we perform a rotation. It works because
+for a list of length ``n`` we can make exactly ``n - 1`` rotations
+to generate at most ``n`` distinct lists. Notice that we use the natural
+numbers of Coq for the rotation counter. From :ref:`ltac-syntax` we know
+that it is possible to use the usual natural numbers, but they are only
+used as arguments for primitive tactics and they cannot be handled, so,
+in particular, we cannot make computations with them. Thus the natural
+choice is to use Coq data structures so that Coq makes the computations
+(reductions) by ``Eval compute in`` and we can get the terms back by match.
 
 .. coqtop:: all
 
@@ -719,32 +731,10 @@ First, we define the permutation predicate as shown above.
                 end
             end.
 
-Next, we can write naturally the tactic and the result can be seen
-above. We can notice that we use two top level definitions
-``PermutProve`` and ``Permut``. The function to be called is
-``PermutProve`` which computes the lengths of the two lists and calls
-``Permut`` with the length if the two lists have the same
-length. ``Permut`` works as expected. If the two lists are equal, it
-concludes. Otherwise, if the lists have identical first elements, it
-applies ``Permut`` on the tail of the lists.  Finally, if the lists
-have different first elements, it puts the first element of one of the
-lists (here the second one which appears in the permut predicate) at
-the end if that is possible, i.e., if the new first element has been
-at this place previously. To verify that all rotations have been done
-for a list, we use the length of the list as an argument for Permut
-and this length is decremented for each rotation down to, but not
-including, 1 because for a list of length ``n``, we can make exactly
-``n−1`` rotations to generate at most ``n`` distinct lists. Here, it
-must be noticed that we use the natural numbers of Coq for the
-rotation counter. In :ref:`ltac-syntax`, we can
-see that it is possible to use usual natural numbers but they are only
-used as arguments for primitive tactics and they cannot be handled, in
-particular, we cannot make computations with them. So, a natural
-choice is to use Coq data structures so that Coq makes the
-computations (reductions) by eval compute in and we can get the terms
-back by match.
-
-With ``PermutProve``, we can now prove lemmas as follows:
+The main tactic is ``PermutProve``. It computes the lengths of the two lists
+and uses them as arguments to call ``Permut`` if the lengths are equal (if they
+aren't, the lists cannot be permutations of each other). Using this tactic we
+can now prove lemmas as follows:
 
 .. coqtop:: in
 
@@ -762,12 +752,8 @@ With ``PermutProve``, we can now prove lemmas as follows:
 
    Proof. PermutProve. Qed.
 
-
-
 Deciding intuitionistic propositional logic
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. _decidingintuitionistic1:
 
 .. coqtop:: all
 
@@ -777,10 +763,6 @@ Deciding intuitionistic propositional logic
             | _:False |- _ => elimtype False; assumption
             | _:?A |- ?A => auto
             end.
-
-.. _decidingintuitionistic2:
-
-.. coqtop:: all
 
    Ltac DSimplif :=
             repeat
@@ -806,8 +788,6 @@ Deciding intuitionistic propositional logic
             | |- (~ _) => red
             end).
 
-.. coqtop:: all
-
    Ltac TautoProp :=
             DSimplif;
             Axioms ||
@@ -829,21 +809,17 @@ Deciding intuitionistic propositional logic
             | |- (_ \/ _) => (left; TautoProp) || (right; TautoProp)
             end.
 
-The pattern matching on goals allows a complete and so a powerful
-backtracking when returning tactic values. An interesting application
-is the problem of deciding intuitionistic propositional logic.
-Considering the contraction-free sequent calculi LJT* of Roy Dyckhoff
-:cite:`Dyc92`, it is quite natural to code such a tactic
-using the tactic language as shown on figures: :ref:`Deciding
-intuitionistic propositions (1) <decidingintuitionistic1>` and
-:ref:`Deciding intuitionistic propositions (2)
-<decidingintuitionistic2>`. The tactic ``Axioms`` tries to conclude
-using usual axioms. The tactic ``DSimplif`` applies all the reversible
-rules of Dyckhoff’s system. Finally, the tactic ``TautoProp`` (the
-main tactic to be called) simplifies with ``DSimplif``, tries to
-conclude with ``Axioms`` and tries several paths using the
-backtracking rules (one of the four Dyckhoff’s rules for the left
-implication to get rid of the contraction and the right or).
+An interesting application is the problem of deciding intuitionistic
+propositional logic. Considering the contraction-free sequent calculi
+LJT* of Roy Dyckhoff :cite:`Dyc92`, it is quite natural to code such a
+tactic using the tactic language as shown above. The tactic ``Axioms``
+tries to reason using simple rules involving truth, falsity and using
+available assumptions. The tactic ``DSimplif`` applies all the reversible
+rules of Dyckhoff’s system. Finally, the tactic ``TautoProp`` (the main
+tactic to be called) simplifies with ``DSimplif``, tries to conclude with
+``Axioms`` and tries several paths using the backtracking rules (one of the
+four Dyckhoff’s rules for the left implication to get rid of the contraction
+and the right or).
 
 For example, with ``TautoProp``, we can prove tautologies like those:
 
@@ -868,7 +844,7 @@ For example, with ``TautoProp``, we can prove tautologies like those:
 Deciding type isomorphisms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A more tricky problem is to decide equalities between types and modulo
+A more tricky problem is to decide equalities between types modulo
 isomorphisms. Here, we choose to use the isomorphisms of the simply
 typed λ-calculus with Cartesian product and unit type (see, for
 example, :cite:`RC95`). The axioms of this λ-calculus are given below.
@@ -915,10 +891,6 @@ example, :cite:`RC95`). The axioms of this λ-calculus are given below.
 
    End Iso_axioms.
 
-
-
-.. _typeisomorphism1:
-
 .. coqtop:: all
 
    Ltac DSimplif trm :=
@@ -959,9 +931,6 @@ example, :cite:`RC95`). The axioms of this λ-calculus are given below.
 
    Ltac assoc := repeat rewrite <- Ass.
 
-
-.. _typeisomorphism2:
-
 .. coqtop:: all
 
    Ltac DoCompare n :=
@@ -994,17 +963,14 @@ example, :cite:`RC95`). The axioms of this λ-calculus are given below.
 
    Ltac IsoProve := MainSimplif; CompareStruct.
 
-
 The tactic to judge equalities modulo this axiomatization can be
-written as shown on these figures: :ref:`type isomorphism tactic (1)
-<typeisomorphism1>` and :ref:`type isomorphism tactic (2)
-<typeisomorphism2>`.  The algorithm is quite simple. Types are reduced
+written as shown above. The algorithm is quite simple. Types are reduced
 using axioms that can be oriented (this done by ``MainSimplif``). The
 normal forms are sequences of Cartesian products without Cartesian
 product in the left component. These normal forms are then compared
 modulo permutation of the components (this is done by
-``CompareStruct``). The main tactic to be called and realizing this
-algorithm isIsoProve.
+``CompareStruct``). The main tactic that puts these components together
+is ``IsoProve``.
 
 Here are examples of what can be solved by ``IsoProve``.
 
