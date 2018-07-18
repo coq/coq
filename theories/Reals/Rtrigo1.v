@@ -18,7 +18,7 @@ Require Export Cos_rel.
 Require Export Cos_plus.
 Require Import ZArith_base.
 Require Import Zcomplements.
-Require Import Fourier.
+Require Import Lra.
 Require Import Ranalysis1.
 Require Import Rsqrt_def. 
 Require Import PSeries_reg.
@@ -175,10 +175,10 @@ Qed.
 
 Lemma sin_gt_cos_7_8 : sin (7 / 8) > cos (7 / 8).
 Proof. 
-assert (lo1 : 0 <= 7/8) by fourier.
-assert (up1 : 7/8 <= 4) by fourier.
-assert (lo : -2 <= 7/8) by fourier.
-assert (up : 7/8 <= 2) by fourier.
+assert (lo1 : 0 <= 7/8) by lra.
+assert (up1 : 7/8 <= 4) by lra.
+assert (lo : -2 <= 7/8) by lra.
+assert (up : 7/8 <= 2) by lra.
 destruct (pre_sin_bound _ 0 lo1 up1) as [lower _ ].
 destruct (pre_cos_bound _ 0 lo up) as [_ upper].
 apply Rle_lt_trans with (1 := upper).
@@ -205,12 +205,12 @@ Definition PI_2_aux : {z | 7/8 <= z <= 7/4 /\ -cos z = 0}.
 assert (cc : continuity (fun r =>- cos r)).
  apply continuity_opp, continuity_cos.
 assert (cvp : 0 < cos (7/8)).
- assert (int78 : -2 <= 7/8 <= 2) by (split; fourier).
+ assert (int78 : -2 <= 7/8 <= 2) by (split; lra).
  destruct int78 as [lower upper].
  case (pre_cos_bound _ 0 lower upper).
  unfold cos_approx; simpl sum_f_R0; unfold cos_term.
  intros cl _; apply Rlt_le_trans with (2 := cl); simpl.
- fourier.
+ lra.
 assert (cun : cos (7/4) < 0).
  replace (7/4) with (7/8 + 7/8) by field.
  rewrite cos_plus.
@@ -218,7 +218,7 @@ assert (cun : cos (7/4) < 0).
    exact sin_gt_cos_7_8.
   apply Rlt_le; assumption.
  apply Rlt_le; apply Rlt_trans with (1 := cvp); exact sin_gt_cos_7_8.
-apply IVT; auto; fourier.
+apply IVT; auto; lra.
 Qed.
 
 Definition PI2 := proj1_sig PI_2_aux.
@@ -270,7 +270,7 @@ Qed.
 Lemma sin_pos_tech : forall x, 0 < x < 2 -> 0 < sin x. 
 intros x [int1 int2].
 assert (lo : 0 <= x) by (apply Rlt_le; assumption).
-assert (up : x <= 4) by (apply Rlt_le, Rlt_trans with (1:=int2); fourier).
+assert (up : x <= 4) by (apply Rlt_le, Rlt_trans with (1:=int2); lra).
 destruct (pre_sin_bound _ 0 lo up) as [t _]; clear lo up.
 apply Rlt_le_trans with (2:= t); clear t.
 unfold sin_approx; simpl sum_f_R0; unfold sin_term; simpl.
@@ -280,13 +280,13 @@ end.
 assert (t' : x ^ 2 <= 4).
  replace 4 with (2 ^ 2) by field.
  apply (pow_incr x 2); split; apply Rlt_le; assumption.
-apply Rmult_lt_0_compat;[assumption | fourier ].
+apply Rmult_lt_0_compat;[assumption | lra ].
 Qed.
 
 Lemma sin_PI2 : sin (PI / 2) = 1.
 replace (PI / 2) with PI2 by (unfold PI; field).
 assert (int' : 0 < PI2 < 2).
- destruct pi2_int; split; fourier.
+ destruct pi2_int; split; lra.
 assert (lo2 := sin_pos_tech PI2 int').
 assert (t2 : Rabs (sin PI2) = 1).
  rewrite <- Rabs_R1; apply Rsqr_eq_abs_0.
@@ -295,10 +295,10 @@ revert t2; rewrite Rabs_pos_eq;[| apply Rlt_le]; tauto.
 Qed.
 
 Lemma PI_RGT_0 : PI > 0.
-Proof. unfold PI; destruct pi2_int; fourier. Qed.
+Proof. unfold PI; destruct pi2_int; lra. Qed.
 
 Lemma PI_4 : PI <= 4.
-Proof. unfold PI; destruct pi2_int; fourier. Qed.
+Proof. unfold PI; destruct pi2_int; lra. Qed.
 
 (**********)
 Lemma PI_neq0 : PI <> 0.
@@ -344,13 +344,13 @@ Lemma cos_bound : forall (a : R) (n : nat), - PI / 2 <= a -> a <= PI / 2 ->
 Proof.
 intros a n lower upper; apply pre_cos_bound.
  apply Rle_trans with (2 := lower).
- apply Rmult_le_reg_r with 2; [fourier |].
+ apply Rmult_le_reg_r with 2; [lra |].
  replace ((-PI/2) * 2) with (-PI) by field.
- assert (t := PI_4); fourier.
+ assert (t := PI_4); lra.
 apply Rle_trans with (1 := upper).
-apply Rmult_le_reg_r with 2; [fourier | ].
+apply Rmult_le_reg_r with 2; [lra | ].
 replace ((PI/2) * 2) with PI by field.
-generalize PI_4; intros; fourier.
+generalize PI_4; intros; lra.
 Qed.
 (**********)
 Lemma neg_cos : forall x:R, cos (x + PI) = - cos x.
@@ -749,19 +749,19 @@ Qed.
 Lemma _PI2_RLT_0 : - (PI / 2) < 0.
 Proof.
   assert (H := PI_RGT_0).
-  fourier.
+  lra.
 Qed.
 
 Lemma PI4_RLT_PI2 : PI / 4 < PI / 2.
 Proof.
   assert (H := PI_RGT_0).
-  fourier.
+  lra.
 Qed.
 
 Lemma PI2_Rlt_PI : PI / 2 < PI.
 Proof.
   assert (H := PI_RGT_0).
-  fourier.
+  lra.
 Qed.
 
 (***************************************************)

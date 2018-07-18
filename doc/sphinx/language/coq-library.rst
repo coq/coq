@@ -889,7 +889,7 @@ Notation          Interpretation
 Some tactics for real numbers
 +++++++++++++++++++++++++++++
 
-In addition to the powerful ``ring``, ``field`` and ``fourier``
+In addition to the powerful ``ring``, ``field`` and ``lra``
 tactics (see Chapter :ref:`tactics`), there are also:
 
 .. tacn:: discrR

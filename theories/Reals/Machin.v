@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Fourier.
+Require Import Lra.
 Require Import Rbase.
 Require Import Rtrigo1.
 Require Import Ranalysis_reg.
@@ -67,7 +67,7 @@ assert (atan x <= PI/4).
 assert (atan y < PI/4).
   rewrite <- atan_1; apply atan_increasing.
   assumption.
-rewrite Ropp_div; split; fourier.
+rewrite Ropp_div; split; lra.
 Qed.
 
 (* A simple formula, reasonably efficient. *)
@@ -77,8 +77,8 @@ assert (utility : 0 < PI/2) by (apply PI2_RGT_0).
 rewrite <- atan_1.
 rewrite (atan_sub_correct 1 (/2)).
    apply f_equal, f_equal; unfold atan_sub; field.
-  apply Rgt_not_eq; fourier.
- apply tech; try split; try fourier.
+  apply Rgt_not_eq; lra.
+ apply tech; try split; try lra.
 apply atan_bound.
 Qed.
 
@@ -86,7 +86,7 @@ Lemma Machin_4_5_239 : PI/4 = 4 * atan (/5) - atan(/239).
 Proof.
 rewrite <- atan_1.
 rewrite (atan_sub_correct 1 (/5));
- [ | apply Rgt_not_eq; fourier | apply tech; try split; fourier |
+ [ | apply Rgt_not_eq; lra | apply tech; try split; lra |
      apply atan_bound ].
 replace (4 * atan (/5) - atan (/239)) with
   (atan (/5) + (atan (/5) + (atan (/5) + (atan (/5) + -
@@ -95,17 +95,17 @@ apply f_equal.
 replace (atan_sub 1 (/5)) with (2/3) by
   (unfold atan_sub; field).
 rewrite (atan_sub_correct (2/3) (/5));
- [apply f_equal | apply Rgt_not_eq; fourier | apply tech; try split; fourier |
+ [apply f_equal | apply Rgt_not_eq; lra | apply tech; try split; lra |
      apply atan_bound ].
 replace (atan_sub (2/3) (/5)) with (7/17)  by
   (unfold atan_sub; field).
 rewrite (atan_sub_correct (7/17) (/5));
- [apply f_equal | apply Rgt_not_eq; fourier | apply tech; try split; fourier |
+ [apply f_equal | apply Rgt_not_eq; lra | apply tech; try split; lra |
      apply atan_bound ].
 replace (atan_sub (7/17) (/5)) with (9/46) by
   (unfold atan_sub; field).
 rewrite (atan_sub_correct (9/46) (/5));
- [apply f_equal | apply Rgt_not_eq; fourier | apply tech; try split; fourier |
+ [apply f_equal | apply Rgt_not_eq; lra | apply tech; try split; lra |
      apply atan_bound ].
 rewrite <- atan_opp; apply f_equal.
 unfold atan_sub; field.
@@ -115,7 +115,7 @@ Lemma Machin_2_3_7 : PI/4 = 2 * atan(/3) + (atan (/7)).
 Proof.
 rewrite <- atan_1.
 rewrite (atan_sub_correct 1 (/3));
- [ | apply Rgt_not_eq; fourier | apply tech; try split; fourier |
+ [ | apply Rgt_not_eq; lra | apply tech; try split; lra |
      apply atan_bound ].
 replace (2 * atan (/3) + atan (/7)) with
   (atan (/3) + (atan (/3) + atan (/7))) by ring.
@@ -123,7 +123,7 @@ apply f_equal.
 replace (atan_sub 1 (/3)) with (/2) by
   (unfold atan_sub; field).
 rewrite (atan_sub_correct (/2) (/3));
- [apply f_equal | apply Rgt_not_eq; fourier | apply tech; try split; fourier |
+ [apply f_equal | apply Rgt_not_eq; lra | apply tech; try split; lra |
      apply atan_bound ].
 apply f_equal; unfold atan_sub; field.
 Qed.
@@ -138,19 +138,19 @@ Lemma PI_2_3_7_ineq :
     sum_f_R0 (tg_alt PI_2_3_7_tg) (S (2 * N)) <= PI / 4 <=
     sum_f_R0 (tg_alt PI_2_3_7_tg) (2 * N).
 Proof.
-assert (dec3 : 0 <= /3 <= 1) by (split; fourier).
-assert (dec7 : 0 <= /7 <= 1) by (split; fourier).
+assert (dec3 : 0 <= /3 <= 1) by (split; lra).
+assert (dec7 : 0 <= /7 <= 1) by (split; lra).
 assert (decr : Un_decreasing PI_2_3_7_tg).
  apply Ratan_seq_decreasing in dec3.
  apply Ratan_seq_decreasing in dec7.
  intros n; apply Rplus_le_compat.
-  apply Rmult_le_compat_l; [ fourier | exact (dec3 n)].
+  apply Rmult_le_compat_l; [ lra | exact (dec3 n)].
  exact (dec7 n).
 assert (cv : Un_cv PI_2_3_7_tg 0).
  apply Ratan_seq_converging in dec3.
  apply Ratan_seq_converging in dec7.
  intros eps ep.
- assert (ep' : 0 < eps /3) by fourier.
+ assert (ep' : 0 < eps /3) by lra.
  destruct (dec3 _ ep') as [N1 Pn1]; destruct (dec7 _ ep') as [N2 Pn2].
  exists (N1 + N2)%nat; intros n Nn.
  unfold PI_2_3_7_tg.
@@ -161,14 +161,14 @@ assert (cv : Un_cv PI_2_3_7_tg 0).
  apply Rplus_lt_compat.
   unfold R_dist, Rminus, Rdiv.
   rewrite <- (Rmult_0_r 2), <- Ropp_mult_distr_r_reverse.
-  rewrite <- Rmult_plus_distr_l, Rabs_mult, (Rabs_pos_eq 2);[|fourier].
-  rewrite Rmult_assoc; apply Rmult_lt_compat_l;[fourier | ].
+  rewrite <- Rmult_plus_distr_l, Rabs_mult, (Rabs_pos_eq 2);[|lra].
+  rewrite Rmult_assoc; apply Rmult_lt_compat_l;[lra | ].
    apply (Pn1 n); omega.
   apply (Pn2 n); omega.
 rewrite Machin_2_3_7.
-rewrite !atan_eq_ps_atan; try (split; fourier).
+rewrite !atan_eq_ps_atan; try (split; lra).
 unfold ps_atan; destruct (in_int (/3)); destruct (in_int (/7));
-  try match goal with id : ~ _ |- _ => case id; split; fourier end.
+  try match goal with id : ~ _ |- _ => case id; split; lra end.
 destruct (ps_atan_exists_1 (/3)) as [v3 Pv3].
 destruct (ps_atan_exists_1 (/7)) as [v7 Pv7].
 assert (main : Un_cv (sum_f_R0 (tg_alt PI_2_3_7_tg)) (2 * v3 + v7)).

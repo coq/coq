@@ -30,3 +30,4 @@ Require Export SeqSeries.
 Require Export Rtrigo.
 Require Export Ranalysis.
 Require Export Integration.
+Require Import Fourier.

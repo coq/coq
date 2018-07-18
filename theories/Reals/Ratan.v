@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Fourier.
+Require Import Lra.
 Require Import Rbase.
 Require Import PSeries_reg.
 Require Import Rtrigo1.
@@ -32,7 +32,7 @@ intros x y; unfold Rdiv; rewrite <-Ropp_mult_distr_l_reverse; reflexivity.
 Qed.
 
 Definition pos_half_prf : 0 < /2.
-Proof. fourier. Qed.
+Proof. lra. Qed.
 
 Definition pos_half := mkposreal (/2) pos_half_prf.
 
@@ -40,15 +40,15 @@ Lemma Boule_half_to_interval :
   forall x , Boule (/2) pos_half x -> 0 <= x <= 1.
 Proof.
 unfold Boule, pos_half; simpl.
-intros x b; apply Rabs_def2 in b; destruct b; split; fourier.
+intros x b; apply Rabs_def2 in b; destruct b; split; lra.
 Qed.
 
 Lemma Boule_lt : forall c r x, Boule c r x -> Rabs x < Rabs c + r.
 Proof.
 unfold Boule; intros c r x h.
 apply Rabs_def2 in h; destruct h; apply Rabs_def1;
- (destruct (Rle_lt_dec 0 c);[rewrite Rabs_pos_eq; fourier | 
-    rewrite <- Rabs_Ropp, Rabs_pos_eq; fourier]).
+ (destruct (Rle_lt_dec 0 c);[rewrite Rabs_pos_eq; lra |
+    rewrite <- Rabs_Ropp, Rabs_pos_eq; lra]).
 Qed.
 
 (* The following lemma does not belong here. *)
@@ -117,53 +117,53 @@ intros [ | N] Npos n decr to0 cv nN.
   case (even_odd_cor n) as [p' [neven | nodd]].
    rewrite neven.
    destruct (alternated_series_ineq _ _ p' decr to0 cv) as [D E].
-   unfold R_dist; rewrite Rabs_pos_eq;[ | fourier].
+   unfold R_dist; rewrite Rabs_pos_eq;[ | lra].
    assert (dist : (p <= p')%nat) by omega.
    assert (t := decreasing_prop _ _ _ (CV_ALT_step1 f decr) dist).
    apply Rle_trans with (sum_f_R0 (tg_alt f) (2 * p) - l).
     unfold Rminus; apply Rplus_le_compat_r; exact t.
    match goal with _ : ?a <= l, _ : l <= ?b |- _ => 
     replace (f (S (2 * p))) with (b - a) by
-     (rewrite tech5; unfold tg_alt; rewrite pow_1_odd; ring); fourier
+     (rewrite tech5; unfold tg_alt; rewrite pow_1_odd; ring); lra
    end.
   rewrite nodd; destruct (alternated_series_ineq _ _ p' decr to0 cv) as [D E].
    unfold R_dist; rewrite <- Rabs_Ropp, Rabs_pos_eq, Ropp_minus_distr;
-     [ | fourier].
+     [ | lra].
    assert (dist : (p <= p')%nat) by omega.
    apply Rle_trans with (l - sum_f_R0 (tg_alt f) (S (2 * p))).
     unfold Rminus; apply Rplus_le_compat_l, Ropp_le_contravar.
     solve[apply Rge_le, (growing_prop _ _ _ (CV_ALT_step0 f decr) dist)].
    unfold Rminus; rewrite tech5, Ropp_plus_distr, <- Rplus_assoc.
-   unfold tg_alt at 2; rewrite pow_1_odd; fourier.
+   unfold tg_alt at 2; rewrite pow_1_odd; lra.
  rewrite Nodd; destruct (alternated_series_ineq _ _ p decr to0 cv) as [B _].
  destruct (alternated_series_ineq _ _ (S p) decr to0 cv) as [_ C].
  assert (keep : (2 * S p = S (S ( 2 * p)))%nat) by ring.
  case (even_odd_cor n) as [p' [neven | nodd]].
    rewrite neven;
    destruct (alternated_series_ineq _ _ p' decr to0 cv) as [D E].
-   unfold R_dist; rewrite Rabs_pos_eq;[ | fourier].
+   unfold R_dist; rewrite Rabs_pos_eq;[ | lra].
    assert (dist : (S p < S p')%nat) by omega.
    apply Rle_trans with (sum_f_R0 (tg_alt f) (2 * S p) - l).
    unfold Rminus; apply Rplus_le_compat_r,
      (decreasing_prop _ _ _ (CV_ALT_step1 f decr)).
    omega.
   rewrite keep, tech5; unfold tg_alt at 2; rewrite <- keep, pow_1_even.
-  fourier.
+  lra.
  rewrite nodd; destruct (alternated_series_ineq _ _ p' decr to0 cv) as [D E].
- unfold R_dist; rewrite <- Rabs_Ropp, Rabs_pos_eq;[ | fourier].
+ unfold R_dist; rewrite <- Rabs_Ropp, Rabs_pos_eq;[ | lra].
  rewrite Ropp_minus_distr.
  apply Rle_trans with (l - sum_f_R0 (tg_alt f) (S (2 * p))).
   unfold Rminus; apply Rplus_le_compat_l, Ropp_le_contravar, Rge_le,
    (growing_prop _ _ _ (CV_ALT_step0 f decr)); omega.
  generalize C; rewrite keep, tech5; unfold tg_alt.
  rewrite <- keep, pow_1_even.
- assert (t : forall a b c, a <= b + 1 * c -> a - b <= c) by (intros; fourier).
+ assert (t : forall a b c, a <= b + 1 * c -> a - b <= c) by (intros; lra).
  solve[apply t].
 clear WLOG; intros Hyp [ | n] decr to0 cv _.
  generalize (alternated_series_ineq f l 0 decr to0 cv).
  unfold R_dist, tg_alt; simpl; rewrite !Rmult_1_l, !Rmult_1_r.
  assert (f 1%nat <= f 0%nat) by apply decr.
- intros [A B]; rewrite Rabs_pos_eq; fourier.
+ intros [A B]; rewrite Rabs_pos_eq; lra.
 apply Rle_trans with (f 1%nat).
  apply (Hyp 1%nat (le_n 1) (S n) decr to0 cv).
  omega.
@@ -180,7 +180,7 @@ Lemma Alt_CVU : forall (f : nat -> R -> R) g h c r,
    CVU (fun N x => sum_f_R0 (tg_alt (fun i => f i x)) N) g c r.
 Proof.
 intros f g h c r decr to0 to_g bound bound0 eps ep.  
-assert (ep' : 0 <eps/2) by fourier.
+assert (ep' : 0 <eps/2) by lra.
 destruct (bound0 _ ep) as [N Pn]; exists N.
 intros n y nN dy.
 rewrite <- Rabs_Ropp, Ropp_minus_distr; apply Rle_lt_trans with (f n y).
@@ -201,14 +201,14 @@ intros x; destruct (Rle_lt_dec 0 x).
  replace (x ^ 2) with (x * x) by field.
  apply Rmult_le_pos; assumption.
  replace (x ^ 2) with ((-x) * (-x)) by field.
-apply Rmult_le_pos; fourier.
+apply Rmult_le_pos; lra.
 Qed.
 
 Lemma pow2_abs : forall x,  Rabs x ^ 2 = x ^ 2.
 Proof.
 intros x; destruct (Rle_lt_dec 0 x).
  rewrite Rabs_pos_eq;[field | assumption].
-rewrite <- Rabs_Ropp, Rabs_pos_eq;[field | fourier].
+rewrite <- Rabs_Ropp, Rabs_pos_eq;[field | lra].
 Qed.
 
 (** * Properties of tangent *)
@@ -307,18 +307,18 @@ destruct (MVT_cor1 cos (PI/2) x derivable_cos xgtpi2) as
    [c [Pc [cint1 cint2]]].
 revert Pc; rewrite cos_PI2, Rminus_0_r. 
 rewrite <- (pr_nu cos c (derivable_pt_cos c)), derive_pt_cos.
-assert (0 < c < 2) by (split; assert (t := PI2_RGT_0); fourier).
+assert (0 < c < 2) by (split; assert (t := PI2_RGT_0); lra).
 assert (0 < sin c) by now apply sin_pos_tech.
 intros Pc.
 case (Rlt_not_le _ _ cx).
 rewrite <- (Rplus_0_l (cos x)), Pc, Ropp_mult_distr_l_reverse.
-apply Rle_minus, Rmult_le_pos;[apply Rlt_le; assumption | fourier ].
+apply Rle_minus, Rmult_le_pos;[apply Rlt_le; assumption | lra ].
 Qed.
 
 Lemma PI2_3_2 : 3/2 < PI/2.
 Proof.
-apply PI2_lower_bound;[split; fourier | ].
-destruct (pre_cos_bound (3/2) 1) as [t _]; [fourier | fourier | ].
+apply PI2_lower_bound;[split; lra | ].
+destruct (pre_cos_bound (3/2) 1) as [t _]; [lra | lra | ].
 apply Rlt_le_trans with (2 := t); clear t.
 unfold cos_approx; simpl; unfold cos_term.
 rewrite !INR_IZR_INZ.
@@ -330,7 +330,7 @@ apply Rdiv_lt_0_compat ; now apply IZR_lt.
 Qed.
 
 Lemma PI2_1 : 1 < PI/2.
-Proof. assert (t := PI2_3_2); fourier. Qed.
+Proof. assert (t := PI2_3_2); lra. Qed.
 
 Lemma tan_increasing :
   forall x y:R,
@@ -347,7 +347,7 @@ intros x y Z_le_x x_lt_y y_le_1.
           derivable_pt tan x).
   intros ; apply derivable_pt_tan ; intuition.
  apply derive_increasing_interv with (a:=-PI/2) (b:=PI/2) (pr:=local_derivable_pt_tan) ; intuition.
- fourier.
+ lra.
  assert (Temp := pr_nu tan t (derivable_pt_tan t t_encad) (local_derivable_pt_tan t t_encad)) ;
  rewrite <- Temp ; clear Temp.
  assert (Temp := derive_pt_tan t t_encad) ; rewrite Temp ; clear Temp.
@@ -414,49 +414,49 @@ Qed.
 (** * Definition of arctangent as the reciprocal function of tangent and proof of this status *)
 Lemma tan_1_gt_1 : tan 1 > 1.
 Proof.
-assert (0 < cos 1) by (apply cos_gt_0; assert (t:=PI2_1); fourier).
+assert (0 < cos 1) by (apply cos_gt_0; assert (t:=PI2_1); lra).
 assert (t1 : cos 1 <= 1 - 1/2 + 1/24).
- destruct (pre_cos_bound 1 0) as [_ t]; try fourier; revert t.
+ destruct (pre_cos_bound 1 0) as [_ t]; try lra; revert t.
  unfold cos_approx, cos_term; simpl; intros t; apply Rle_trans with (1:=t).
  clear t; apply Req_le; field.
 assert (t2 : 1 - 1/6 <= sin 1).
- destruct (pre_sin_bound 1 0) as [t _]; try fourier; revert t.
+ destruct (pre_sin_bound 1 0) as [t _]; try lra; revert t.
  unfold sin_approx, sin_term; simpl; intros t; apply Rle_trans with (2:=t).
  clear t; apply Req_le; field.
 pattern 1 at 2; replace 1 with
-  (cos 1 / cos 1) by (field; apply Rgt_not_eq; fourier).
+  (cos 1 / cos 1) by (field; apply Rgt_not_eq; lra).
 apply Rlt_gt; apply (Rmult_lt_compat_r (/ cos 1) (cos 1) (sin 1)).
  apply Rinv_0_lt_compat; assumption.
 apply Rle_lt_trans with (1 := t1); apply Rlt_le_trans with (2 := t2).
-fourier.
+lra.
 Qed.
 
 Definition frame_tan y : {x | 0 < x < PI/2 /\ Rabs y < tan x}.
 Proof.
 destruct (total_order_T (Rabs y) 1) as [Hs|Hgt].
- assert (yle1 : Rabs y <= 1) by (destruct Hs; fourier).
+ assert (yle1 : Rabs y <= 1) by (destruct Hs; lra).
  clear Hs; exists 1; split;[split; [exact Rlt_0_1 | exact PI2_1] | ].
  apply Rle_lt_trans with (1 := yle1); exact tan_1_gt_1.
 assert (0 < / (Rabs y + 1)).
- apply Rinv_0_lt_compat; fourier.
+ apply Rinv_0_lt_compat; lra.
 set (u := /2 * / (Rabs y + 1)).
 assert (0 < u).
- apply Rmult_lt_0_compat; [fourier | assumption].
+ apply Rmult_lt_0_compat; [lra | assumption].
 assert (vlt1 : / (Rabs y + 1) < 1).
  apply Rmult_lt_reg_r with (Rabs y + 1).
-  assert (t := Rabs_pos y); fourier.
- rewrite Rinv_l; [rewrite Rmult_1_l | apply Rgt_not_eq]; fourier.
+  assert (t := Rabs_pos y); lra.
+ rewrite Rinv_l; [rewrite Rmult_1_l | apply Rgt_not_eq]; lra.
 assert (vlt2 : u < 1).
  apply Rlt_trans with (/ (Rabs y + 1)).
   rewrite double_var.
-  assert (t : forall x, 0 < x -> x < x + x) by (clear; intros; fourier).
+  assert (t : forall x, 0 < x -> x < x + x) by (clear; intros; lra).
   unfold u; rewrite Rmult_comm; apply t.
   unfold Rdiv; rewrite Rmult_comm; assumption.
  assumption.
 assert(int : 0 < PI / 2 - u < PI / 2).
  split.
   assert (t := PI2_1); apply Rlt_Rminus, Rlt_trans with (2 := t); assumption.
- assert (dumb : forall x y, 0 < y -> x - y < x) by (clear; intros; fourier).
+ assert (dumb : forall x y, 0 < y -> x - y < x) by (clear; intros; lra).
  apply dumb; clear dumb; assumption.
 exists (PI/2 - u).
 assert (tmp : forall x y, 0 < x -> y < 1 -> x * y < x).
@@ -473,7 +473,7 @@ split.
  assert (sin u < u).
   assert (t1 : 0 <= u) by (apply Rlt_le; assumption).
   assert (t2 : u <= 4) by
-   (apply Rle_trans with 1;[apply Rlt_le | fourier]; assumption).
+   (apply Rle_trans with 1;[apply Rlt_le | lra]; assumption).
   destruct (pre_sin_bound u 0 t1 t2) as [_ t].
   apply Rle_lt_trans with (1 := t); clear t1 t2 t.
   unfold sin_approx; simpl; unfold sin_term; simpl ((-1) ^ 0);
@@ -503,17 +503,17 @@ split.
    solve[apply Rinv_0_lt_compat, INR_fact_lt_0].
   apply Rlt_trans with (2 := vlt2).
   simpl; unfold u; apply tmp; auto; rewrite Rmult_1_r; assumption.
- apply Rlt_trans with (Rabs y + 1);[fourier | ]. 
+ apply Rlt_trans with (Rabs y + 1);[lra | ].
  pattern (Rabs y + 1) at 1; rewrite <- (Rinv_involutive (Rabs y + 1));
-  [ | apply Rgt_not_eq; fourier].
+  [ | apply Rgt_not_eq; lra].
  rewrite <- Rinv_mult_distr.
    apply Rinv_lt_contravar.
     apply Rmult_lt_0_compat.
-     apply Rmult_lt_0_compat;[fourier | assumption].
+     apply Rmult_lt_0_compat;[lra | assumption].
     assumption.
    replace (/(Rabs y + 1)) with (2 * u).
-    fourier.
-   unfold u; field; apply Rgt_not_eq; clear -Hgt; fourier.
+    lra.
+   unfold u; field; apply Rgt_not_eq; clear -Hgt; lra.
   solve[discrR].
  apply Rgt_not_eq; assumption.
 unfold tan.
@@ -522,22 +522,22 @@ set (u' := PI / 2); unfold Rdiv; apply Rmult_lt_compat_r; unfold u'.
  rewrite cos_shift; assumption.
 assert (vlt3 : u < /4).
  replace (/4) with (/2 * /2) by field.
- unfold u; apply Rmult_lt_compat_l;[fourier | ].
+ unfold u; apply Rmult_lt_compat_l;[lra | ].
  apply Rinv_lt_contravar.
-  apply Rmult_lt_0_compat; fourier.
- fourier.
-assert (1 < PI / 2 - u) by (assert (t := PI2_3_2); fourier).
+  apply Rmult_lt_0_compat; lra.
+ lra.
+assert (1 < PI / 2 - u) by (assert (t := PI2_3_2); lra).
 apply Rlt_trans with (sin 1).
- assert (t' : 1 <= 4) by fourier.
+ assert (t' : 1 <= 4) by lra.
  destruct (pre_sin_bound 1 0 (Rlt_le _ _ Rlt_0_1) t') as [t _].
  apply Rlt_le_trans with (2 := t); clear t.
- simpl plus; replace (sin_approx 1 1) with (5/6);[fourier | ].
+ simpl plus; replace (sin_approx 1 1) with (5/6);[lra | ].
  unfold sin_approx, sin_term; simpl; field.
 apply sin_increasing_1.
-    assert (t := PI2_1); fourier.
+    assert (t := PI2_1); lra.
    apply Rlt_le, PI2_1.
-  assert (t := PI2_1); fourier.
- fourier.
+  assert (t := PI2_1); lra.
+ lra.
 assumption.
 Qed.
 
@@ -547,7 +547,7 @@ intros x h; rewrite Ropp_div; apply Ropp_lt_contravar; assumption.
 Qed.
 
 Lemma pos_opp_lt : forall x, 0 < x -> -x < x.
-Proof. intros; fourier. Qed.
+Proof. intros; lra. Qed.
 
 Lemma tech_opp_tan : forall x y, -tan x < y -> tan (-x) < y.
 Proof.
@@ -562,7 +562,7 @@ set (pr := (conj (tech_opp_tan _ _ (proj2 (Rabs_def2 _ _ Ptan_ub)))
 destruct (exists_atan_in_frame (-ub) ub y (pos_opp_lt _ ub0) (ub_opp _ ubpi2)
              ubpi2 pr) as [v [[vl vu] vq]].
 exists v; clear pr.
-split;[rewrite Ropp_div; split; fourier | assumption].
+split;[rewrite Ropp_div; split; lra | assumption].
 Qed.
 
 Definition atan x := let (v, _) := pre_atan x in v.
@@ -581,7 +581,7 @@ Lemma atan_opp : forall x, atan (- x) = - atan x.
 Proof.
 intros x; generalize (atan_bound (-x)); rewrite Ropp_div;intros [a b].
 generalize (atan_bound x); rewrite Ropp_div; intros [c d].
-apply tan_is_inj; try rewrite Ropp_div; try split; try fourier.
+apply tan_is_inj; try rewrite Ropp_div; try split; try lra.
 rewrite tan_neg, !atan_right_inv; reflexivity.
 Qed.
 
@@ -604,23 +604,23 @@ assert (int_tan : forall y, tan (- ub) <= y -> y <= tan ub ->
    rewrite <- (atan_right_inv y); apply tan_increasing.
      destruct (atan_bound y); assumption.
     assumption.
-   fourier.
-  fourier.
+   lra.
+  lra.
  destruct (Rle_lt_dec (atan y) ub) as [h | abs]; auto.
   assert (tan ub < y).
    rewrite <- (atan_right_inv y); apply tan_increasing.
-    rewrite Ropp_div; fourier.
+    rewrite Ropp_div; lra.
    assumption.
   destruct (atan_bound y); assumption.
- fourier.
+ lra.
 assert (incr : forall x y, -ub <= x -> x < y -> y <= ub -> tan x < tan y).
  intros y z l yz u; apply tan_increasing.
-   rewrite Ropp_div; fourier.
+   rewrite Ropp_div; lra.
   assumption.
- fourier.
+ lra.
 assert (der : forall a, -ub <= a <= ub -> derivable_pt tan a).
  intros a [la ua]; apply derivable_pt_tan.
- rewrite Ropp_div; split; fourier.
+ rewrite Ropp_div; split; lra.
 assert (df_neq : derive_pt tan (atan x)
      (derivable_pt_recip_interv_prelim1 tan atan 
         (- ub) ub x lb_lt_ub xint inv_p int_tan incr der) <> 0).
@@ -651,7 +651,7 @@ Qed.
 Lemma atan_0 : atan 0 = 0.
 Proof.
 apply tan_is_inj; try (apply atan_bound).
- assert (t := PI_RGT_0); rewrite Ropp_div; split; fourier.
+ assert (t := PI_RGT_0); rewrite Ropp_div; split; lra.
 rewrite atan_right_inv, tan_0.
 reflexivity.
 Qed.
@@ -659,7 +659,7 @@ Qed.
 Lemma atan_1 : atan 1 = PI/4.
 Proof.
 assert (ut := PI_RGT_0).
-assert (-PI/2 < PI/4 < PI/2) by (rewrite Ropp_div; split; fourier).
+assert (-PI/2 < PI/4 < PI/2) by (rewrite Ropp_div; split; lra).
 assert (t := atan_bound 1).
 apply tan_is_inj; auto.
 rewrite tan_PI4, atan_right_inv; reflexivity.
@@ -688,23 +688,23 @@ assert (int_tan : forall y, tan (- ub) <= y -> y <= tan ub ->
    rewrite <- (atan_right_inv y); apply tan_increasing.
      destruct (atan_bound y); assumption.
     assumption.
-   fourier.
-  fourier.
+   lra.
+  lra.
  destruct (Rle_lt_dec (atan y) ub) as [h | abs]; auto.
   assert (tan ub < y).
    rewrite <- (atan_right_inv y); apply tan_increasing.
-    rewrite Ropp_div; fourier.
+    rewrite Ropp_div; lra.
    assumption.
   destruct (atan_bound y); assumption.
- fourier.
+ lra.
 assert (incr : forall x y, -ub <= x -> x < y -> y <= ub -> tan x < tan y).
  intros y z l yz u; apply tan_increasing.
-   rewrite Ropp_div; fourier.
+   rewrite Ropp_div; lra.
   assumption.
- fourier.
+ lra.
 assert (der : forall a, -ub <= a <= ub -> derivable_pt tan a).
  intros a [la ua]; apply derivable_pt_tan.
- rewrite Ropp_div; split; fourier.
+ rewrite Ropp_div; split; lra.
 assert (df_neq : derive_pt tan (atan x)
      (derivable_pt_recip_interv_prelim1 tan atan 
         (- ub) ub x lb_lt_ub xint inv_p int_tan incr der) <> 0).
@@ -883,7 +883,7 @@ Proof.
 destruct (Rle_lt_dec 0 x).
  assert (pr : 0 <= x <= 1) by tauto.
  exact (ps_atan_exists_01 x pr).
-assert (pr : 0 <= -x <= 1) by (destruct Hx; split; fourier).
+assert (pr : 0 <= -x <= 1) by (destruct Hx; split; lra).
 destruct (ps_atan_exists_01 _ pr) as [v Pv].
 exists (-v).
  apply (Un_cv_ext (fun n => (- 1) * sum_f_R0 (tg_alt (Ratan_seq (- x))) n)).
@@ -898,8 +898,8 @@ Proof.
 destruct (Rle_lt_dec x 1).
  destruct (Rle_lt_dec (-1) x).
   left;split; auto.
- right;intros [a1 a2]; fourier.
-right;intros [a1 a2]; fourier.
+ right;intros [a1 a2]; lra.
+right;intros [a1 a2]; lra.
 Qed.
 
 Definition ps_atan (x : R) : R :=
@@ -922,7 +922,7 @@ unfold ps_atan.
   unfold Rdiv; rewrite !Rmult_0_l, Rmult_0_r; reflexivity.
  intros eps ep; exists 0%nat; intros n _; unfold R_dist.
  rewrite Rminus_0_r, Rabs_pos_eq; auto with real.
-case h2; split; fourier.
+case h2; split; lra.
 Qed.
 
 Lemma ps_atan_exists_1_opp :
@@ -948,9 +948,9 @@ destruct (in_int (- x)) as [inside | outside].
  destruct (in_int x) as [ins' | outs'].
  generalize (ps_atan_exists_1_opp x inside ins').
   intros h; exact h.
- destruct inside; case outs'; split; fourier.   
+ destruct inside; case outs'; split; lra.
 destruct (in_int x) as [ins' | outs'].
- destruct outside; case ins'; split; fourier.   
+ destruct outside; case ins'; split; lra.
 apply atan_opp.
 Qed.
 
@@ -1057,7 +1057,7 @@ Proof.
 intros x n.
 assert (dif : - x ^ 2 <> 1).
 apply Rlt_not_eq; apply Rle_lt_trans with 0;[ | apply Rlt_0_1].
-assert (t := pow2_ge_0 x); fourier.
+assert (t := pow2_ge_0 x); lra.
 replace (1 + x ^ 2) with (1 - - (x ^ 2)) by ring; rewrite <- (tech3 _ n dif).
 apply sum_eq; unfold tg_alt, Datan_seq; intros i _.
 rewrite pow_mult, <- Rpow_mult_distr.
@@ -1073,7 +1073,7 @@ intros x y n n_lb x_encad ; assert (x_pos : x >= 0) by intuition.
  apply False_ind ; intuition.
  clear -x_encad x_pos y_pos ; induction n ; unfold Datan_seq.
  case x_pos ; clear x_pos ; intro x_pos.
- simpl ; apply Rmult_gt_0_lt_compat ; intuition. fourier.
+ simpl ; apply Rmult_gt_0_lt_compat ; intuition. lra.
  rewrite x_pos ; rewrite pow_i. replace (y ^ (2*1)) with (y*y).
  apply Rmult_gt_0_compat ; assumption.
  simpl ; field.
@@ -1084,7 +1084,7 @@ intros x y n n_lb x_encad ; assert (x_pos : x >= 0) by intuition.
  case x_pos ; clear x_pos ; intro x_pos.
  rewrite Hrew ; rewrite Hrew.
  apply Rmult_gt_0_lt_compat ; intuition.
- apply Rmult_gt_0_lt_compat ; intuition ; fourier.
+ apply Rmult_gt_0_lt_compat ; intuition ; lra.
  rewrite x_pos.
  rewrite pow_i ; intuition.
 Qed.
@@ -1141,7 +1141,7 @@ elim (pow_lt_1_zero _ x_ub2 _ eps'_pos) ; intros N HN ; exists N.
 intros n Hn.
 assert (H1 : - x^2 <> 1).
  apply Rlt_not_eq; apply Rle_lt_trans with (2 := Rlt_0_1).
-assert (t := pow2_ge_0 x); fourier.
+assert (t := pow2_ge_0 x); lra.
 rewrite Datan_sum_eq. 
 unfold R_dist.
 assert (tool : forall a b, a / b - /b = (-1 + a) /b).
@@ -1179,13 +1179,13 @@ apply (Alt_CVU (fun x n => Datan_seq n x)
          (Datan_seq (Rabs c + r)) c r).
      intros x inb; apply Datan_seq_decreasing;
       try (apply Boule_lt in inb; apply Rabs_def2 in inb;
-         destruct inb; fourier).
+         destruct inb; lra).
     intros x inb; apply Datan_seq_CV_0;
       try (apply Boule_lt in inb; apply Rabs_def2 in inb;
-         destruct inb; fourier).
+         destruct inb; lra).
    intros x inb; apply (Datan_lim x);
       try (apply Boule_lt in inb; apply Rabs_def2 in inb;
-         destruct inb; fourier).
+         destruct inb; lra).
   intros x [ | n] inb.
    solve[unfold Datan_seq; apply Rle_refl].
   rewrite <- (Datan_seq_Rabs x); apply Rlt_le, Datan_seq_increasing.
@@ -1193,7 +1193,7 @@ apply (Alt_CVU (fun x n => Datan_seq n x)
   apply Boule_lt in inb; intuition.
   solve[apply Rabs_pos].
  apply Datan_seq_CV_0.
-  apply Rlt_trans with 0;[fourier | ].
+  apply Rlt_trans with 0;[lra | ].
   apply Rplus_le_lt_0_compat.
    solve[apply Rabs_pos].
   destruct r; assumption.
@@ -1226,7 +1226,7 @@ intros N x x_lb x_ub.
     apply Hdelta ; assumption.
     unfold id ; field ; assumption.
   intros eps eps_pos.
-  assert (eps_3_pos : (eps/3) > 0) by fourier.
+  assert (eps_3_pos : (eps/3) > 0) by lra.
   elim (IHN (eps/3) eps_3_pos) ; intros delta1 Hdelta1.
   assert (Main : derivable_pt_lim (fun x : R =>tg_alt (Ratan_seq x) (S N)) x ((tg_alt (Datan_seq x)) (S N))).
    clear -Tool ; intros eps' eps'_pos.
@@ -1297,7 +1297,7 @@ intros N x x_lb x_ub.
    intuition ; apply Rlt_le_trans with (r2:=delta) ; intuition unfold delta, mydelta.
    apply Rmin_l.
    apply Rmin_r.
-   fourier.
+   lra.
 Qed.
 
 Lemma Ratan_CVU' :
@@ -1310,7 +1310,7 @@ apply (Alt_CVU (fun i r => Ratan_seq r i) ps_atan PI_tg (/2) pos_half);
    now intros; apply Ratan_seq_converging, Boule_half_to_interval.
   intros x b; apply Boule_half_to_interval in b.
   unfold ps_atan; destruct (in_int x) as [inside | outside];
-   [ | destruct b; case outside; split; fourier].
+   [ | destruct b; case outside; split; lra].
   destruct (ps_atan_exists_1 x inside) as [v Pv].
   apply Un_cv_ext with (2 := Pv);[reflexivity].
  intros x n b; apply Boule_half_to_interval in b.
@@ -1330,7 +1330,7 @@ exists N; intros n x nN b_y.
 case (Rtotal_order 0 x) as [xgt0 | [x0 | x0]].
   assert (Boule (/2) {| pos := / 2; cond_pos := pos_half_prf|} x).
    revert b_y; unfold Boule; simpl; intros b_y; apply Rabs_def2 in b_y.
-   destruct b_y; unfold Boule; simpl; apply Rabs_def1; fourier.
+   destruct b_y; unfold Boule; simpl; apply Rabs_def1; lra.
   apply Pn; assumption.
  rewrite <- x0, ps_atan0_0.
  rewrite <- (sum_eq (fun _ => 0)), sum_cte, Rmult_0_l, Rminus_0_r, Rabs_pos_eq.
@@ -1343,7 +1343,7 @@ replace (ps_atan x - sum_f_R0 (tg_alt (Ratan_seq x)) n) with
  rewrite Rabs_Ropp.
  assert (Boule (/2) {| pos := / 2; cond_pos := pos_half_prf|} (-x)).
   revert b_y; unfold Boule; simpl; intros b_y; apply Rabs_def2 in b_y.
-  destruct b_y; unfold Boule; simpl; apply Rabs_def1; fourier.
+  destruct b_y; unfold Boule; simpl; apply Rabs_def1; lra.
  apply Pn; assumption.
 unfold Rminus; rewrite ps_atan_opp, Ropp_plus_distr, sum_Ratan_seq_opp.
 rewrite !Ropp_involutive; reflexivity.
@@ -1372,7 +1372,7 @@ apply continuity_inv.
 apply continuity_plus.
 apply continuity_const ; unfold constant ; intuition.
 apply derivable_continuous ; apply derivable_pow.
-intro x ; apply Rgt_not_eq ; apply Rge_gt_trans with (1+0) ; [|fourier] ;
+intro x ; apply Rgt_not_eq ; apply Rge_gt_trans with (1+0) ; [|lra] ;
  apply Rplus_ge_compat_l.
  replace (x^2) with (x²).
  apply Rle_ge ; apply Rle_0_sqr.
@@ -1393,11 +1393,11 @@ apply derivable_pt_lim_CVU with
     assumption.
    intros y N inb; apply Rabs_def2 in inb; destruct inb.
    apply Datan_is_datan.
-    fourier.
-   fourier.
+    lra.
+   lra.
   intros y inb; apply Rabs_def2 in inb; destruct inb.
-  assert (y_gt_0 : -1 < y) by fourier.
-  assert (y_lt_1 : y < 1) by fourier.
+  assert (y_gt_0 : -1 < y) by lra.
+  assert (y_lt_1 : y < 1) by lra.
   intros eps eps_pos ; elim (Ratan_is_ps_atan eps eps_pos).
   intros N HN ; exists N; intros n n_lb ; apply HN ; tauto.
  apply Datan_CVU_prelim.
@@ -1406,8 +1406,8 @@ apply derivable_pt_lim_CVU with
  replace ((c + r - (c - r)) / 2) with (r :R) by field.
  assert (Rabs c < 1 - r).
   unfold Boule in Pcr1; destruct r; simpl in *; apply Rabs_def1;
-  apply Rabs_def2 in Pcr1; destruct Pcr1; fourier.
- fourier.
+  apply Rabs_def2 in Pcr1; destruct Pcr1; lra.
+ lra.
 intros; apply Datan_continuity.
 Qed.
 
@@ -1426,7 +1426,7 @@ Lemma ps_atan_continuity_pt_1 : forall eps : R,
        dist R_met (ps_atan x) (Alt_PI/4) < eps).
 Proof.
 intros eps eps_pos.
-assert (eps_3_pos : eps / 3 > 0) by fourier.
+assert (eps_3_pos : eps / 3 > 0) by lra.
 elim (Ratan_is_ps_atan (eps / 3) eps_3_pos) ; intros N1 HN1.
 unfold Alt_PI.
 destruct exist_PI as [v Pv]; replace ((4 * v)/4) with v by field.
@@ -1461,10 +1461,10 @@ rewrite Rplus_assoc ; apply Rabs_triang.
    unfold D_x, no_cond ; split ; [ | apply Rgt_not_eq ] ; intuition.
    intuition.
    apply HN2; unfold N; omega.
-   fourier.
+   lra.
   rewrite <- Rabs_Ropp, Ropp_minus_distr; apply HN1.
      unfold N; omega.  
-    fourier.
+    lra.
   assumption.
  field.
 ring.
@@ -1486,11 +1486,11 @@ intros x x_encad Pratan Prmymeta.
   rewrite Hrew1.
   replace (Rsqr x) with (x ^ 2) by (unfold Rsqr; ring).
   unfold Rdiv; rewrite Rmult_1_l; reflexivity.
-     fourier.
+     lra.
     assumption.
    intros; reflexivity.
-  fourier.
- assert (t := tan_1_gt_1); split;destruct x_encad; fourier.
+  lra.
+ assert (t := tan_1_gt_1); split;destruct x_encad; lra.
 intros; reflexivity.
 Qed.
 
@@ -1503,46 +1503,46 @@ assert (pr1 : forall c : R, 0 < c < x -> derivable_pt (atan - ps_atan) c).
  apply derivable_pt_minus.
   exact (derivable_pt_atan c).
  apply derivable_pt_ps_atan.
-  destruct x_encad; destruct c_encad; split; fourier.
+  destruct x_encad; destruct c_encad; split; lra.
 assert (pr2 : forall c : R, 0 < c < x -> derivable_pt id c).
- intros ; apply derivable_pt_id; fourier.
+ intros ; apply derivable_pt_id; lra.
 assert (delta_cont : forall c : R, 0 <= c <= x -> continuity_pt (atan - ps_atan) c).
  intros c [[c_encad1 | c_encad1 ] [c_encad2 | c_encad2]];
         apply continuity_pt_minus.
         apply derivable_continuous_pt ; apply derivable_pt_atan. 
        apply derivable_continuous_pt ; apply derivable_pt_ps_atan.
-       split; destruct x_encad; fourier.
+       split; destruct x_encad; lra.
       apply derivable_continuous_pt, derivable_pt_atan.
      apply derivable_continuous_pt, derivable_pt_ps_atan.
-     subst c; destruct x_encad; split; fourier.
+     subst c; destruct x_encad; split; lra.
     apply derivable_continuous_pt, derivable_pt_atan.
    apply derivable_continuous_pt, derivable_pt_ps_atan.
-   subst c; split; fourier.
+   subst c; split; lra.
   apply derivable_continuous_pt, derivable_pt_atan.
  apply derivable_continuous_pt, derivable_pt_ps_atan.
- subst c; destruct x_encad; split; fourier.
+ subst c; destruct x_encad; split; lra.
 assert (id_cont : forall c : R, 0 <= c <= x -> continuity_pt id c).
     intros ; apply derivable_continuous ; apply derivable_id.
-assert (x_lb : 0 < x) by (destruct x_encad; fourier).
+assert (x_lb : 0 < x) by (destruct x_encad; lra).
 elim (MVT (atan - ps_atan)%F id 0 x pr1 pr2 x_lb delta_cont id_cont) ; intros d Temp ; elim Temp ; intros d_encad Main.
 clear - Main x_encad.
 assert (Temp : forall (pr: derivable_pt (atan - ps_atan) d), derive_pt (atan - ps_atan) d pr = 0).
  intro pr.
  assert (d_encad3 : -1 < d < 1).
-  destruct d_encad; destruct x_encad; split; fourier.
+  destruct d_encad; destruct x_encad; split; lra.
  pose (pr3 := derivable_pt_minus atan ps_atan d (derivable_pt_atan d) (derivable_pt_ps_atan d d_encad3)).
  rewrite <- pr_nu_var2_interv with (f:=(atan - ps_atan)%F) (g:=(atan - ps_atan)%F) (lb:=0) (ub:=x) (pr1:=pr3) (pr2:=pr).
     unfold pr3. rewrite derive_pt_minus.
     rewrite Datan_eq_DatanSeq_interv with (Prmymeta := derivable_pt_atan d).
      intuition.
     assumption. 
-   destruct d_encad; fourier.
+   destruct d_encad; lra.
   assumption.
  reflexivity.
 assert (iatan0 : atan 0 = 0).
  apply tan_is_inj.
    apply atan_bound.
-  rewrite Ropp_div; assert (t := PI2_RGT_0); split; fourier.
+  rewrite Ropp_div; assert (t := PI2_RGT_0); split; lra.
  rewrite tan_0, atan_right_inv; reflexivity.
 generalize Main; rewrite Temp, Rmult_0_r.
 replace ((atan - ps_atan)%F x) with (atan x - ps_atan x) by intuition.
@@ -1560,19 +1560,19 @@ Qed.
 Theorem Alt_PI_eq : Alt_PI = PI.
 Proof.
 apply Rmult_eq_reg_r with (/4); fold (Alt_PI/4); fold (PI/4);
-  [ | apply Rgt_not_eq; fourier].
+  [ | apply Rgt_not_eq; lra].
 assert (0 < PI/6) by (apply PI6_RGT_0).
 assert (t1:= PI2_1).
 assert (t2 := PI_4).
 assert (m := Alt_PI_RGT_0).
-assert (-PI/2 < 1 < PI/2) by (rewrite Ropp_div; split; fourier).
+assert (-PI/2 < 1 < PI/2) by (rewrite Ropp_div; split; lra).
 apply cond_eq; intros eps ep.
 change (R_dist (Alt_PI/4) (PI/4) < eps).
 assert (ca : continuity_pt atan 1).
   apply derivable_continuous_pt, derivable_pt_atan.
 assert (Xe : exists eps', exists eps'',
   eps' + eps'' <= eps /\ 0 < eps' /\ 0 < eps'').
- exists (eps/2); exists (eps/2); repeat apply conj; fourier.
+ exists (eps/2); exists (eps/2); repeat apply conj; lra.
 destruct Xe as [eps' [eps'' [eps_ineq [ep' ep'']]]].
 destruct (ps_atan_continuity_pt_1 _ ep') as [alpha [a0 Palpha]].
 destruct (ca _ ep'') as [beta [b0 Pbeta]].
@@ -1585,14 +1585,14 @@ assert (Xa : exists a, 0 < a < 1 /\ R_dist a 1 < alpha /\
  assert ((1 - alpha /2) <= Rmax (1 - alpha /2) (1 - beta /2)) by apply Rmax_l.
  assert ((1 - beta /2) <= Rmax (1 - alpha /2) (1 - beta /2)) by apply Rmax_r.
  assert (Rmax (1 - alpha /2) (1 - beta /2) < 1)
-   by (apply Rmax_lub_lt; fourier).
- split;[split;[ | apply Rmax_lub_lt]; fourier | ].
+   by (apply Rmax_lub_lt; lra).
+ split;[split;[ | apply Rmax_lub_lt]; lra | ].
  assert (0 <= 1 - Rmax (/ 2) (Rmax (1 - alpha / 2) (1 - beta / 2))).
   assert (Rmax (/2) (Rmax (1 - alpha / 2) 
-            (1 - beta /2)) <= 1) by (apply Rmax_lub; fourier).
-  fourier.
+            (1 - beta /2)) <= 1) by (apply Rmax_lub; lra).
+  lra.
  split; unfold R_dist; rewrite <-Rabs_Ropp, Ropp_minus_distr,
-   Rabs_pos_eq;fourier.
+   Rabs_pos_eq;lra.
 destruct Xa as [a [[Pa0 Pa1] [P1 P2]]].
 apply Rle_lt_trans with (1 := R_dist_tri _ _ (ps_atan a)).
 apply Rlt_le_trans with (2 := eps_ineq).

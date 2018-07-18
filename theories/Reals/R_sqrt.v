@@ -155,6 +155,22 @@ Proof.
       | apply (sqrt_positivity x (Rlt_le 0 x H1)) ].
 Qed.
 
+Lemma Rlt_mult_inv_pos : forall x y:R, 0 < x -> 0 < y -> 0 < x * / y.
+intros x y H H0; try assumption.
+replace 0 with (x * 0).
+apply Rmult_lt_compat_l; auto with real.
+ring.
+Qed.
+
+Lemma Rle_mult_inv_pos : forall x y:R, 0 <= x -> 0 < y -> 0 <= x * / y.
+intros x y H H0; try assumption.
+case H; intros.
+red; left.
+apply Rlt_mult_inv_pos; auto with real.
+rewrite <- H1.
+red; right; ring.
+Qed.
+
 Lemma sqrt_div_alt :
   forall x y : R, 0 < y -> sqrt (x / y) = sqrt x / sqrt y.
 Proof.
@@ -176,14 +192,14 @@ Proof.
   clearbody Hx'. clear Hx.
   apply Rsqr_inj.
   apply sqrt_pos.
-  apply Fourier_util.Rle_mult_inv_pos.
+  apply Rle_mult_inv_pos.
   apply Rsqrt_positivity.
   now apply sqrt_lt_R0.
   rewrite Rsqr_div, 2!Rsqr_sqrt.
   unfold Rsqr.
   now rewrite Rsqrt_Rsqrt.
   now apply Rlt_le.
-  now apply Fourier_util.Rle_mult_inv_pos.
+  now apply Rle_mult_inv_pos.
   apply Rgt_not_eq.
   now apply sqrt_lt_R0.
 Qed.

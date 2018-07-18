@@ -15,7 +15,7 @@ Require Import Ranalysis1.
 Require Import MVT.
 Require Import Max.
 Require Import Even.
-Require Import Fourier.
+Require Import Lra.
 Local Open Scope R_scope.
 
 (* Boule is French for Ball *)
@@ -431,7 +431,7 @@ assert (ctrho : forall n z, Boule c d z -> continuity_pt (rho_ n) z).
   intros y dyz; unfold rho_; destruct (Req_EM_T y x) as [xy | xny].
    rewrite xy in dyz.
    destruct (Rle_dec  delta (Rabs (z - x))).
-    rewrite Rmin_left, R_dist_sym in dyz; unfold R_dist in dyz; fourier.
+    rewrite Rmin_left, R_dist_sym in dyz; unfold R_dist in dyz; lra.
    rewrite Rmin_right, R_dist_sym in dyz; unfold R_dist in dyz;
       [case (Rlt_irrefl _ dyz) |apply Rlt_le, Rnot_le_gt; assumption].
   reflexivity.
@@ -449,7 +449,7 @@ assert (ctrho : forall n z, Boule c d z -> continuity_pt (rho_ n) z).
 assert (CVU rho_ rho c d ).
  intros eps ep.
  assert (ep8 : 0 < eps/8).
-  fourier.
+  lra.
  destruct (cvu _ ep8) as [N Pn1].
  assert (cauchy1 : forall n p, (N <= n)%nat -> (N <= p)%nat ->
            forall z, Boule c d z -> Rabs (f' n z - f' p z) < eps/4).
@@ -537,7 +537,7 @@ assert (CVU rho_ rho c d ).
     simpl; unfold R_dist.
     unfold Rminus; rewrite (Rplus_comm y), Rplus_assoc, Rplus_opp_r, Rplus_0_r.
     rewrite Rabs_pos_eq;[ |apply Rlt_le; assumption ].
-    apply Rlt_le_trans with (Rmin (Rmin d' d2) delta);[fourier | ].
+    apply Rlt_le_trans with (Rmin (Rmin d' d2) delta);[lra | ].
     apply Rle_trans with (Rmin d' d2); apply Rmin_l.
    apply Rle_trans with (1 := R_dist_tri _ _ (rho_ p (y + Rmin (Rmin d' d2) delta/2))).
    apply Rplus_le_compat.
@@ -548,33 +548,32 @@ assert (CVU rho_ rho c d ).
      replace (rho_ p (y + Rmin (Rmin d' d2) delta / 2)) with
           ((f p (y + Rmin (Rmin d' d2) delta / 2) - f p x)/
              ((y + Rmin (Rmin d' d2) delta / 2) - x)).
-      apply step_2; auto; try fourier.
+      apply step_2; auto; try lra.
       assert (0 < pos delta) by (apply cond_pos).
       apply Boule_convex with y (y + delta/2).
         assumption.
        destruct (Pdelta (y + delta/2)); auto.
-       rewrite xy; unfold Boule; rewrite Rabs_pos_eq; try fourier; auto.
-      split; try fourier.
+       rewrite xy; unfold Boule; rewrite Rabs_pos_eq; try lra; auto.
+      split; try lra.
       apply Rplus_le_compat_l, Rmult_le_compat_r;[ | apply Rmin_r].
        now apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
-      apply Rminus_not_eq_right; rewrite xy; apply Rgt_not_eq; fourier.
      unfold rho_.
      destruct (Req_EM_T (y + Rmin (Rmin d' d2) delta/2) x) as [ymx | ymnx].
-      case (RIneq.Rle_not_lt _ _ (Req_le _ _ ymx)); fourier.
+      case (RIneq.Rle_not_lt _ _ (Req_le _ _ ymx)); lra.
      reflexivity.
     unfold rho_.
     destruct (Req_EM_T (y + Rmin (Rmin d' d2) delta / 2) x) as [ymx | ymnx].
-     case (RIneq.Rle_not_lt _ _ (Req_le _ _ ymx)); fourier.
+     case (RIneq.Rle_not_lt _ _ (Req_le _ _ ymx)); lra.
     reflexivity.
-   apply Rlt_le, Pd2; split;[split;[exact I | apply Rlt_not_eq; fourier] | ].
+   apply Rlt_le, Pd2; split;[split;[exact I | apply Rlt_not_eq; lra] | ].
    simpl; unfold R_dist.
    unfold Rminus; rewrite (Rplus_comm y), Rplus_assoc, Rplus_opp_r, Rplus_0_r.
-   rewrite Rabs_pos_eq;[ | fourier].
-   apply Rlt_le_trans with (Rmin (Rmin d' d2) delta); [fourier |].
+   rewrite Rabs_pos_eq;[ | lra].
+   apply Rlt_le_trans with (Rmin (Rmin d' d2) delta); [lra |].
    apply Rle_trans with (Rmin d' d2).
     solve[apply Rmin_l].
    solve[apply Rmin_r].
-  apply Rlt_le, Rlt_le_trans with (eps/4);[ | fourier].
+  apply Rlt_le, Rlt_le_trans with (eps/4);[ | lra].
   unfold rho_; destruct (Req_EM_T y x); solve[auto].
  assert (unif_ac' : forall p, (N <= p)%nat ->
            forall y, Boule c d y -> Rabs (rho y - rho_ p y) < eps).
@@ -589,7 +588,7 @@ assert (CVU rho_ rho c d ).
    intros eps' ep'; simpl; exists 0%nat; intros; rewrite R_dist_eq; assumption.
   intros p pN y b_y.
   replace eps with (eps/2 + eps/2) by field.
-  assert (ep2 : 0 < eps/2) by fourier.
+  assert (ep2 : 0 < eps/2) by lra.
   destruct (cvrho y b_y _ ep2) as [N2 Pn2].
   apply Rle_lt_trans with (1 := R_dist_tri _ _ (rho_ (max N N2) y)).
   apply Rplus_lt_le_compat.

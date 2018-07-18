@@ -96,15 +96,14 @@ and checked to be :math:`-1`.
 .. tacn:: lra
    :name: lra
 
-This tactic is searching for *linear* refutations using Fourier
-elimination [#]_. As a result, this tactic explores a subset of the *Cone*
-defined as
+   This tactic is searching for *linear* refutations using Fourier
+   elimination [#]_. As a result, this tactic explores a subset of the *Cone*
+   defined as
 
-  :math:`\mathit{LinCone}(S) =\left\{ \left. \sum_{p \in S} \alpha_p \times p~\right|~\alpha_p \mbox{ are positive constants} \right\}`
+   :math:`\mathit{LinCone}(S) =\left\{ \left. \sum_{p \in S} \alpha_p \times p~\right|~\alpha_p \mbox{ are positive constants} \right\}`
 
-The deductive power of `lra` is the combined deductive power of
-`ring_simplify` and `fourier`. There is also an overlap with the field
-tactic *e.g.*, :math:`x = 10 * x / 10` is solved by `lra`.
+   The deductive power of :tacn:`lra` overlaps with the one of :tacn:`field`
+   tactic *e.g.*, :math:`x = 10 * x / 10` is solved by :tacn:`lra`.
 
 
 `lia`: a tactic for linear integer arithmetic

@@ -16,7 +16,7 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import Rlimit.
-Require Import Fourier.
+Require Import Lra.
 Require Import Omega.
 Local Open Scope R_scope.
 
@@ -77,7 +77,7 @@ Proof.
   elim (Rmin_Rgt (/ 2) x 0); intros a b; cut (0 < 2).
   intro; generalize (Rinv_0_lt_compat 2 H3); intro; fold (/ 2 > 0) in H4;
     apply (b (conj H4 H)).
-  fourier.
+  lra.
   intros; elim H3; clear H3; intros;
     generalize
       (let (H1, H2) :=
@@ -167,7 +167,7 @@ Proof.
   unfold Rabs; destruct (Rcase_abs 2) as [Hlt|Hge]; auto.
   cut (0 < 2).
   intro H7; elim (Rlt_asym 0 2 H7 Hlt).
-  fourier.
+  lra.
   apply Rabs_no_R0.
   discrR.
 Qed.

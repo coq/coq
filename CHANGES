@@ -39,6 +39,9 @@ Tactics
   still be used if you really want to ignore universe constraints.
 
 - Tactics and tactic notations now understand the `deprecated` attribute.
+- The `fourier` tactic has been removed. Please now use `lra` instead. You
+  may need to add `Require Import Lra` to your developments. For compatibility,
+  we now define `fourier` as a deprecated alias of `lra`.
 
 Tools
 

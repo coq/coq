@@ -135,9 +135,6 @@
 /plugins/firstorder/   @PierreCorbineau
 # Secondary maintainer @herbelin
 
-/plugins/fourier/       @herbelin
-# Secondary maintainer @gares
-
 /plugins/funind/        @forestjulien
 # Secondary maintainer @Matafou
 

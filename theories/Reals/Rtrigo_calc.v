@@ -205,7 +205,6 @@ Proof with trivial.
   rewrite cos2; unfold Rsqr; rewrite sin_PI6; rewrite sqrt_def...
   field.
   left ; prove_sup0.
-  discrR.
 Qed.
 
 Lemma tan_PI6 : tan (PI / 6) = 1 / sqrt 3.

@@ -217,7 +217,6 @@
 ; (gtk_accel_path "<Actions>/Tactics/Tactic casetype" "")
 ; (gtk_accel_path "<Actions>/Tactics/Tactic cbv in" "")
 ; (gtk_accel_path "<Actions>/Templates/Template Load" "")
-; (gtk_accel_path "<Actions>/Tactics/Tactic fourier" "")
 ; (gtk_accel_path "<Actions>/Templates/Template Goal" "")
 ; (gtk_accel_path "<Actions>/Tactics/Tactic exists" "")
 ; (gtk_accel_path "<Actions>/Tactics/Tactic decompose record" "")

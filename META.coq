@@ -349,18 +349,6 @@ package "plugins" (
     archive(native)  = "newring_plugin.cmx"
   )
 
-  package "fourier" (
-
-    description = "Coq fourier plugin"
-    version     = "8.9"
-
-    requires    = "coq.plugins.ltac"
-    directory   = "fourier"
-
-    archive(byte)    = "fourier_plugin.cmo"
-    archive(native)  = "fourier_plugin.cmx"
-  )
-
   package "extraction" (
 
     description = "Coq extraction plugin"

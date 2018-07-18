@@ -33,7 +33,7 @@ if [ -z "$GUESS_CHECKER" ]; then
 	-I $COQTOP/toplevel -I $COQTOP/dev -I $COQTOP/config -I $COQTOP/ltac \
         -I $COQTOP/plugins/cc         -I $COQTOP/plugins/dp \
         -I $COQTOP/plugins/extraction -I $COQTOP/plugins/field \
-        -I $COQTOP/plugins/firstorder -I $COQTOP/plugins/fourier \
+        -I $COQTOP/plugins/firstorder \
         -I $COQTOP/plugins/funind     -I $COQTOP/plugins/groebner \
         -I $COQTOP/plugins/interface  -I $COQTOP/plugins/micromega \
         -I $COQTOP/plugins/omega      -I $COQTOP/plugins/quote \
