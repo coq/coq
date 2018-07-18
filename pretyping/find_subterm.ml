@@ -161,9 +161,13 @@ let make_eq_univs_test env evd c =
     match EConstr.eq_constr_universes_proj env evd c c' with
     | None -> raise (NotUnifiable None)
     | Some cst ->
-	try Evd.add_universe_constraints evd cst
-	with Evd.UniversesDiffer -> raise (NotUnifiable None)
-    );
+       try Evd.add_universe_constraints evd cst
+       with Evd.UniversesDiffer ->
+         (try
+           let cstrs = UnivProblem.to_constraints ~force_weak:false (Evd.universes evd) cst in
+           Evd.add_constraints evd cstrs
+         with Univ.UniverseInconsistency _ -> raise (NotUnifiable None)
+            | Invalid_argument _ -> raise (NotUnifiable None)));
   merge_fun = (fun evd _ -> evd);
   testing_state = evd;
   last_found = None

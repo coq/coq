@@ -571,7 +571,7 @@ struct
       else Level.compare v v'
 end
 
-module Constraint = 
+module Constraint =
 struct 
   module S = Set.Make(UConstraintOrd)
   include S
