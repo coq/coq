@@ -18,14 +18,6 @@ module NamedDecl = Context.Named.Declaration
 
 let known_names = Summary.ref [] ~name:"proofusing-nameset"
 
-let in_nameset =
-  let open Libobject in
-  declare_object { (default_object "proofusing-nameset") with
-    cache_function = (fun (_,x) -> known_names := x :: !known_names);
-    classify_function = (fun _ -> Dispose);
-    discharge_function = (fun _ -> None)
-  }
-
 let rec close_fwd e s =
   let s' =
     List.fold_left (fun s decl ->
@@ -73,7 +65,7 @@ let process_expr env e ty =
   let s = Id.Set.union v_ty (process_expr env e ty) in
   Id.Set.elements s
 
-let name_set id expr = Lib.add_anonymous_leaf (in_nameset (id,expr))
+let name_set id expr = known_names := (id,expr) :: !known_names
 
 let minimize_hyps env ids =
   let rec aux ids =
