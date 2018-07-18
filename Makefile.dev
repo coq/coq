@@ -15,7 +15,7 @@
 # Debug printers in dev/
 #########################
 
-.PHONY: devel printers
+.PHONY: devel printers camldevfiles
 
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/checker_printers.cmo
 
@@ -85,13 +85,27 @@ endif
 # But these partial targets could be quite handy for quick builds
 # of specific components of Coq.
 
+###########################################################################
+# OCaml dev files
+###########################################################################
+camldevfiles: $(MERLINFILES) META.coq
+
+.merlin: .merlin.in
+	cp -a "$<" "$@"
+
+%/.merlin: %/.merlin.in
+	cp -a "$<" "$@"
+
+META.coq: META.coq.in
+	cp -a "$<" "$@"
+
 ###############################
 ### 1) general-purpose targets
 ###############################
 
 coqlight: theories-light tools coqbinaries
 
-states: theories/Init/Prelude.vo
+states: camldevfiles theories/Init/Prelude.vo
 
 miniopt: $(COQTOPEXE) pluginsopt
 minibyte: $(COQTOPBYTE) pluginsbyte

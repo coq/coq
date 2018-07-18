@@ -179,3 +179,7 @@ test-suite/.nra.cache
 
 plugins/ssr/ssrparser.ml
 plugins/ssr/ssrvernac.ml
+
+# ocaml dev files
+.merlin
+META.coq
