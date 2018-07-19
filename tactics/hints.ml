@@ -886,20 +886,6 @@ let pr_hint_term env sigma ctx = function
      let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
      pr_econstr_env env sigma c
 
-(** We need an object to record the side-effect of registering
-  global universes associated with a hint. *)
-let cache_context_set (_,c) =
-  Global.push_context_set false c
-
-let input_context_set : Univ.ContextSet.t -> Libobject.obj =
-  let open Libobject in
-    declare_object
-    { (default_object "Global universe context") with
-      cache_function = cache_context_set;
-      load_function = (fun _ -> cache_context_set);
-      discharge_function = (fun (_,a) -> Some a);
-      classify_function = (fun a -> Keep a) }
-
 let warn_polymorphic_hint =
   CWarnings.create ~name:"polymorphic-hint" ~category:"automation"
          (fun hint -> strbrk"Using polymorphic hint " ++ hint ++
@@ -919,7 +905,7 @@ let fresh_global_or_constr env sigma poly cr =
     else begin
       if isgr then
         warn_polymorphic_hint (pr_hint_term env sigma ctx cr);
-      Lib.add_anonymous_leaf (input_context_set ctx);
+      Declare.declare_universe_context false ctx;
       (c, Univ.ContextSet.empty)
     end
 
@@ -1315,7 +1301,7 @@ let prepare_hint check (poly,local) env init (sigma,c) =
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
     if poly then IsConstr (c', diff)
     else if local then IsConstr (c', diff)
-    else (Lib.add_anonymous_leaf (input_context_set diff);
+    else (Declare.declare_universe_context false diff;
 	  IsConstr (c', Univ.ContextSet.empty))
 
 let project_hint ~poly pri l2r r =
