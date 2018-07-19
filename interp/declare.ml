@@ -597,27 +597,8 @@ let do_universe poly l =
       ignore(Lib.add_leaf id (input_universe (src, lev))))
     l
 
-type constraint_decl = polymorphic * Univ.Constraint.t
-
-let cache_constraints (na, (p, c)) =
-  let ctx =
-    Univ.ContextSet.add_constraints c
-      Univ.ContextSet.empty (* No declared universes here, just constraints *)
-  in cache_universe_context (p,ctx)
-
-let discharge_constraints (_, (p, c as a)) =
-  if p then None else Some a
-
-let input_constraints : constraint_decl -> Libobject.obj =
-  let open Libobject in
-    declare_object
-    { (default_object "Global universe constraints") with
-      cache_function = cache_constraints;
-      load_function = (fun _ -> cache_constraints);
-      discharge_function = discharge_constraints;
-      classify_function = (fun a -> Keep a) }
-
 let do_constraint poly l =
+  let open Univ in
   let u_of_id x =
     let level = Pretyping.interp_known_glob_level (Evd.from_env (Global.env ())) x in
     UnivNames.is_polymorphic level, level
@@ -639,7 +620,8 @@ let do_constraint poly l =
   let constraints = List.fold_left (fun acc (l, d, r) ->
      let p, lu = u_of_id l and p', ru = u_of_id r in
      check_poly p p';
-     Univ.Constraint.add (lu, d, ru) acc)
-    Univ.Constraint.empty l
+     Constraint.add (lu, d, ru) acc)
+    Constraint.empty l
   in
-    Lib.add_anonymous_leaf (input_constraints (poly, constraints))
+  let uctx = ContextSet.add_constraints constraints ContextSet.empty in
+  declare_universe_context poly uctx
