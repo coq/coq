@@ -621,10 +621,9 @@ let lang_ref = Summary.ref Ocaml ~name:"ExtrLang"
 let lang () = !lang_ref
 
 let extr_lang : lang -> obj =
-  declare_object
-    {(default_object "Extraction Lang") with
-       cache_function = (fun (_,l) -> lang_ref := l);
-       load_function = (fun _ (_,l) -> lang_ref := l)}
+  declare_object @@ superglobal_object_nodischarge "Extraction Lang"
+    ~cache:(fun (_,l) -> lang_ref := l)
+    ~subst:None
 
 let extraction_language x = Lib.add_anonymous_leaf (extr_lang x)
 
@@ -648,15 +647,10 @@ let add_inline_entries b l =
 (* Registration of operations for rollback. *)
 
 let inline_extraction : bool * GlobRef.t list -> obj =
-  declare_object
-    {(default_object "Extraction Inline") with
-       cache_function = (fun (_,(b,l)) -> add_inline_entries b l);
-       load_function = (fun _ (_,(b,l)) -> add_inline_entries b l);
-       classify_function = (fun o -> Substitute o);
-       discharge_function = (fun (_,x) -> Some x);
-       subst_function =
-        (fun (s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l)))
-    }
+  declare_object @@ superglobal_object "Extraction Inline"
+    ~cache:(fun (_,(b,l)) -> add_inline_entries b l)
+    ~subst:(Some (fun (s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l))))
+    ~discharge:(fun (_,x) -> Some x)
 
 (* Grammar entries. *)
 
@@ -685,10 +679,9 @@ let print_extraction_inline () =
 (* Reset part *)
 
 let reset_inline : unit -> obj =
-  declare_object
-    {(default_object "Reset Extraction Inline") with
-       cache_function = (fun (_,_)-> inline_table :=  empty_inline_table);
-       load_function = (fun _ (_,_)-> inline_table :=  empty_inline_table)}
+  declare_object @@ superglobal_object_nodischarge "Reset Extraction Inline"
+    ~cache:(fun (_,_)-> inline_table :=  empty_inline_table)
+    ~subst:None
 
 let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
 
@@ -731,13 +724,9 @@ let add_implicits r l =
 (* Registration of operations for rollback. *)
 
 let implicit_extraction : GlobRef.t * int_or_id list -> obj =
-  declare_object
-    {(default_object "Extraction Implicit") with
-       cache_function = (fun (_,(r,l)) -> add_implicits r l);
-       load_function = (fun _ (_,(r,l)) -> add_implicits r l);
-       classify_function = (fun o -> Substitute o);
-       subst_function = (fun (s,(r,l)) -> (fst (subst_global s r), l))
-    }
+  declare_object @@ superglobal_object_nodischarge "Extraction Implicit"
+    ~cache:(fun (_,(r,l)) -> add_implicits r l)
+    ~subst:(Some (fun (s,(r,l)) -> (fst (subst_global s r), l)))
 
 (* Grammar entries. *)
 
@@ -784,12 +773,9 @@ let add_blacklist_entries l =
 (* Registration of operations for rollback. *)
 
 let blacklist_extraction : string list -> obj =
-  declare_object
-    {(default_object "Extraction Blacklist") with
-       cache_function = (fun (_,l) -> add_blacklist_entries l);
-       load_function = (fun _ (_,l) -> add_blacklist_entries l);
-       subst_function = (fun (_,x) -> x)
-    }
+  declare_object @@ superglobal_object_nodischarge "Extraction Blacklist"
+    ~cache:(fun (_,l) -> add_blacklist_entries l)
+    ~subst:None
 
 (* Grammar entries. *)
 
@@ -805,10 +791,9 @@ let print_extraction_blacklist () =
 (* Reset part *)
 
 let reset_blacklist : unit -> obj =
-  declare_object
-    {(default_object "Reset Extraction Blacklist") with
-       cache_function = (fun (_,_)-> blacklist_table := Id.Set.empty);
-       load_function = (fun _ (_,_)-> blacklist_table := Id.Set.empty)}
+  declare_object @@ superglobal_object_nodischarge "Reset Extraction Blacklist"
+    ~cache:(fun (_,_)-> blacklist_table := Id.Set.empty)
+    ~subst:None
 
 let reset_extraction_blacklist () = Lib.add_anonymous_leaf (reset_blacklist ())
 
@@ -852,23 +837,14 @@ let find_custom_match pv =
 (* Registration of operations for rollback. *)
 
 let in_customs : GlobRef.t * string list * string -> obj =
-  declare_object
-    {(default_object "ML extractions") with
-       cache_function = (fun (_,(r,ids,s)) -> add_custom r ids s);
-       load_function = (fun _ (_,(r,ids,s)) -> add_custom r ids s);
-       classify_function = (fun o -> Substitute o);
-       subst_function =
-        (fun (s,(r,ids,str)) -> (fst (subst_global s r), ids, str))
-    }
+  declare_object @@ superglobal_object_nodischarge "ML extractions"
+    ~cache:(fun (_,(r,ids,s)) -> add_custom r ids s)
+    ~subst:(Some (fun (s,(r,ids,str)) -> (fst (subst_global s r), ids, str)))
 
 let in_custom_matchs : GlobRef.t * string -> obj =
-  declare_object
-    {(default_object "ML extractions custom matchs") with
-       cache_function = (fun (_,(r,s)) -> add_custom_match r s);
-       load_function = (fun _ (_,(r,s)) -> add_custom_match r s);
-       classify_function = (fun o -> Substitute o);
-       subst_function = (fun (subs,(r,s)) -> (fst (subst_global subs r), s))
-    }
+  declare_object @@ superglobal_object_nodischarge "ML extractions custom matchs"
+    ~cache:(fun (_,(r,s)) -> add_custom_match r s)
+    ~subst:(Some (fun (subs,(r,s)) -> (fst (subst_global subs r), s)))
 
 (* Grammar entries. *)
 

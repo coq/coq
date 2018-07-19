@@ -237,7 +237,6 @@ let cache_Function (_,finfos) =
   from_graph := Indmap.add finfos.graph_ind finfos !from_graph
 
 
-let load_Function _  = cache_Function
 let subst_Function (subst,finfos) =
   let do_subst_con c = Mod_subst.subst_constant subst c
   and do_subst_ind i = Mod_subst.subst_ind subst i
@@ -271,9 +270,6 @@ let subst_Function (subst,finfos) =
       is_general = finfos.is_general
     }
 
-let classify_Function infos = Libobject.Substitute infos
-
-
 let discharge_Function (_,finfos) = Some finfos
 
 let pr_ocst c =
@@ -302,15 +298,11 @@ let pr_table tb =
   Pp.prlist_with_sep fnl pr_info l
 
 let in_Function : function_info -> Libobject.obj =
-  Libobject.declare_object
-    {(Libobject.default_object "FUNCTIONS_DB") with
-       Libobject.cache_function = cache_Function;
-       Libobject.load_function  = load_Function;
-       Libobject.classify_function  = classify_Function;
-       Libobject.subst_function = subst_Function;
-       Libobject.discharge_function = discharge_Function
-(*        Libobject.open_function = open_Function; *)
-    }
+  let open Libobject in
+  declare_object @@ superglobal_object "FUNCTIONS_DB"
+    ~cache:cache_Function
+    ~subst:(Some subst_Function)
+    ~discharge:discharge_Function
 
 
 let find_or_none id =

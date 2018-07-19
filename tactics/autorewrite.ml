@@ -196,17 +196,12 @@ let subst_hintrewrite (subst,(rbase,list as node)) =
     if list' == list then node else
       (rbase,list')
 
-let classify_hintrewrite x = Libobject.Substitute x
-
-
 (* Declaration of the Hint Rewrite library object *)
 let inHintRewrite : string * HintDN.t -> Libobject.obj =
-  Libobject.declare_object {(Libobject.default_object "HINT_REWRITE") with
-    Libobject.cache_function = cache_hintrewrite;
-    Libobject.load_function = (fun _ -> cache_hintrewrite);
-    Libobject.subst_function = subst_hintrewrite;
-    Libobject.classify_function = classify_hintrewrite }
-
+  let open Libobject in
+  declare_object @@ superglobal_object_nodischarge "HINT_REWRITE"
+    ~cache:cache_hintrewrite
+    ~subst:(Some subst_hintrewrite)
 
 open Clenv
 

@@ -531,11 +531,9 @@ let cache_transitivity_lemma (_,(left,lem)) =
 let subst_transitivity_lemma (subst,(b,ref)) = (b,subst_mps subst ref)
 
 let inTransitivity : bool * Constr.t -> obj =
-  declare_object {(default_object "TRANSITIVITY-STEPS") with
-    cache_function = cache_transitivity_lemma;
-    open_function = (fun i o -> if Int.equal i 1 then cache_transitivity_lemma o);
-    subst_function = subst_transitivity_lemma;
-    classify_function = (fun o -> Substitute o) }
+  declare_object @@ global_object_nodischarge "TRANSITIVITY-STEPS"
+    ~cache:cache_transitivity_lemma
+    ~subst:(Some subst_transitivity_lemma)
 
 (* Main entry points *)
 

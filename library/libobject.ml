@@ -129,3 +129,46 @@ let rebuild_object lobj =
   apply_dyn_fun (fun d -> d.dyn_rebuild_function lobj) lobj
 
 let dump = Dyn.dump
+
+let local_object_nodischarge s ~cache =
+  { (default_object s) with
+    cache_function = cache;
+    classify_function = (fun _ -> Dispose);
+  }
+
+let local_object s ~cache ~discharge =
+  { (local_object_nodischarge s ~cache) with
+    discharge_function = discharge }
+
+let global_object_nodischarge s ~cache ~subst =
+  let import i o = if Int.equal i 1 then cache o in
+  { (default_object s) with
+    cache_function = cache;
+    open_function = import;
+    subst_function = (match subst with
+        | None -> fun _ -> CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!")
+        | Some subst -> subst;
+      );
+    classify_function =
+      if Option.has_some subst then (fun o -> Substitute o) else (fun o -> Keep o);
+  }
+
+let global_object s ~cache ~subst ~discharge =
+  { (global_object_nodischarge s ~cache ~subst) with
+    discharge_function = discharge }
+
+let superglobal_object_nodischarge s ~cache ~subst =
+  { (default_object s) with
+    load_function = (fun _ x -> cache x);
+    cache_function = cache;
+    subst_function = (match subst with
+        | None -> fun _ -> CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!")
+        | Some subst -> subst;
+      );
+    classify_function =
+      if Option.has_some subst then (fun o -> Substitute o) else (fun o -> Keep o);
+  }
+
+let superglobal_object s ~cache ~subst ~discharge =
+  { (superglobal_object_nodischarge s ~cache ~subst) with
+    discharge_function = discharge }

@@ -445,11 +445,9 @@ let assumption_message id =
 (** Monomorphic universes need to survive sections. *)
 
 let input_universe_context : Univ.ContextSet.t -> Libobject.obj =
-  declare_object
-    { (default_object "Monomorphic section universes") with
-      cache_function = (fun (na, uctx) -> Global.push_context_set false uctx);
-      discharge_function = (fun (_, x) -> Some x);
-      classify_function = (fun a -> Dispose) }
+  declare_object @@ local_object "Monomorphic section universes"
+    ~cache:(fun (na, uctx) -> Global.push_context_set false uctx)
+    ~discharge:(fun (_, x) -> Some x)
 
 let declare_universe_context poly ctx =
   if poly then

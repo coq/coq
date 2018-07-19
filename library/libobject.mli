@@ -119,6 +119,51 @@ val classify_object : obj -> obj substitutivity
 val discharge_object : object_name * obj -> obj option
 val rebuild_object : obj -> obj
 
+(** Higher-level API for objects with fixed scope.
+
+- Local means that the object cannot be imported from outside.
+- Global means that it can be imported (by importing the module that contains the
+object).
+- Superglobal means that the object survives to closing a module, and is imported
+when the file which contains it is Required (even without Import).
+- With the nodischarge variants, the object does not survive section closing.
+  With the normal variants, it does.
+
+We recommend to avoid declaring superglobal objects and using the nodischarge
+variants.
+*)
+
+val local_object : string ->
+  cache:(object_name * 'a -> unit) ->
+  discharge:(object_name * 'a -> 'a option) ->
+  'a object_declaration
+
+val local_object_nodischarge : string ->
+  cache:(object_name * 'a -> unit) ->
+  'a object_declaration
+
+val global_object : string ->
+  cache:(object_name * 'a -> unit) ->
+  subst:(Mod_subst.substitution * 'a -> 'a) option ->
+  discharge:(object_name * 'a -> 'a option) ->
+  'a object_declaration
+
+val global_object_nodischarge : string ->
+  cache:(object_name * 'a -> unit) ->
+  subst:(Mod_subst.substitution * 'a -> 'a) option ->
+  'a object_declaration
+
+val superglobal_object : string ->
+  cache:(object_name * 'a -> unit) ->
+  subst:(Mod_subst.substitution * 'a -> 'a) option ->
+  discharge:(object_name * 'a -> 'a option) ->
+  'a object_declaration
+
+val superglobal_object_nodischarge : string ->
+  cache:(object_name * 'a -> unit) ->
+  subst:(Mod_subst.substitution * 'a -> 'a) option ->
+  'a object_declaration
+
 (** {6 Debug} *)
 
 val dump : unit -> (int * string) list

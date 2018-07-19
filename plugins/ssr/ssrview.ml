@@ -45,16 +45,11 @@ module AdaptorDb = struct
     let t' = Detyping.subst_glob_constr subst t in
     if t' == t then a else k, t'
 
-  let classify_adaptor x = Libobject.Substitute x
-
   let in_db =
-    Libobject.declare_object {
-       (Libobject.default_object "VIEW_ADAPTOR_DB")
-    with
-       Libobject.open_function = (fun i o -> if i = 1 then cache_adaptor o);
-       Libobject.cache_function = cache_adaptor;
-       Libobject.subst_function = subst_adaptor;
-       Libobject.classify_function = classify_adaptor }
+    let open Libobject in
+    declare_object @@ global_object_nodischarge "VIEW_ADAPTOR_DB"
+      ~cache:cache_adaptor
+      ~subst:(Some subst_adaptor)
 
   let declare kind terms =
     List.iter (fun term -> Lib.add_anonymous_leaf (in_db (kind,term)))
