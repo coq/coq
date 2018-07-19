@@ -24,9 +24,8 @@ type node =
   | CompilingLibrary of Libnames.object_prefix
   | OpenedModule of is_type * export * Libnames.object_prefix * Summary.frozen
   | OpenedSection of Libnames.object_prefix * Summary.frozen
-  | ClosedSection of library_segment
 
-and library_segment = (Libnames.object_name * node) list
+type library_segment = (Libnames.object_name * node) list
 
 type lib_objects = (Id.t * Libobject.obj) list
 
