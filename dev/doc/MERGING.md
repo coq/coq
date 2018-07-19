@@ -6,19 +6,21 @@ This document describes how patches, submitted as pull requests (PRs) on the
 
 ## Code owners
 
-The [CODEOWNERS](../../.github/CODEOWNERS) file describes, for each part of the
-system, two owners. One is the principal maintainer of the component, the other
-is the secondary maintainer.
+The [CODEOWNERS](../../.github/CODEOWNERS) file defines owners for each part of
+the code. Sometime there is one principal maintainer and one or several
+secondary maintainer(s). Sometimes, it is a team of code owners and all of its
+members act as principal maintainers for the component.
 
 When a PR is submitted, GitHub will automatically ask the principal
-maintainer for a review. If the PR touches several parts, all the
-corresponding principal maintainers will be asked for a review.
+maintainer (or the code owner team) for a review. If the PR touches several
+parts, all the corresponding owners will be asked for a review.
 
 Maintainers are never assigned as reviewer on their own PRs.
 
-If a principal maintainer submits a PR that changes the component they own, they
-must assign the secondary maintainer as reviewer. They should also do it if they
-know they are not available to do the review.
+If a principal maintainer submits a PR or is a co-author of a PR that is
+submitted and this PR changes the component they own, they must request a
+review from a secondary maintainer. They can also delegate the review if they
+know they are not available to do it.
 
 ## Reviewing
 
@@ -35,17 +37,29 @@ When maintainers receive a review request, they are expected to:
   REVIEWERS(*) have approved the PR, the assignee is expected to follow the merging
   process described below.
 
-In all cases, maintainers can delegate reviews to the other maintainer of the
-same component, except if it would lead to a maintainer reviewing their own
-patch.
+When a PR received lots of comments or if the PR has not been opened for long
+and the assignee thinks that some other developers might want to comment,
+it is recommended that they announce their intention to merge and wait a full
+working day (or more if deemed useful) before the actual merge, as a sort of
+last call for comments.
+
+In all cases, maintainers can delegate reviews to the other maintainers,
+except if it would lead to a maintainer reviewing their own patch.
 
 A maintainer is expected to be reasonably reactive, but no specific timeframe is
 given for reviewing.
 
+When none of the maintainers have commented nor self-assigned a PR in a delay
+of five working days, any maintainer of another component who feels comfortable
+reviewing the PR can assign it to themselves. To prevent misunderstandings,
+maintainers should not hesitate to announce in advance when they shall be
+unavailable for more than five working days.
+
 (*) In case a component is touched in a trivial way (adding/removing one file in
 a `Makefile`, etc), or by applying a systematic refactoring process (global
 renaming for instance) that has been reviewed globally, the assignee can
-say in a comment they think a review is not required and proceed with the merge.
+say in a comment they think a review is not required from every code owner and
+proceed with the merge.
 
 ### Breaking changes
 
@@ -54,7 +68,8 @@ those external projects should have been prepared (cf. the relevant sub-section
 in the [CI README](../ci/README.md#Breaking-changes) and the PR can be tested
 with these fixes thanks to ["overlays"](../ci/user-overlays/README.md).
 
-Moreover the PR must absolutely update the [`CHANGES.md`](../../CHANGES.md) file.
+Moreover the PR must absolutely update the [`CHANGES.md`](../../CHANGES.md) or
+the [`dev/doc/changes.md`](changes.md) file.
 
 If overlays are missing, ask the author to prepare them and label the PR with
 the [needs: overlay](https://github.com/coq/coq/labels/needs%3A%20overlay) label.
@@ -78,9 +93,9 @@ put the approriate label. Otherwise, they are expected to merge the PR using the
 
 When CI has a few failures which look spurious, restarting the corresponding
 jobs is a good way of ensuring this was indeed the case.
-To restart a job on Travis, you should connect using your GitHub account;
-being part of the Coq organization on GitHub should give you the permission
-to do so.
+To restart a job on Travis or on AppVeyor, you should connect using your GitHub
+account; being part of the Coq organization on GitHub should give you the
+permission to do so.
 To restart a job on GitLab CI, you should sign into GitLab (this can be done
 using a GitHub account); if you are part of the
 [Coq organization on GitLab](https://gitlab.com/coq), you should see a "Retry"
@@ -93,9 +108,10 @@ When the PR has conflicts, the assignee can either:
 
 In both cases, CI should be run again.
 
-In some rare cases (e.g. the conflicts are in the `CHANGES.md` file), it is ok to fix
+In some rare cases (e.g. the conflicts are in the `CHANGES.md` file and the PR
+is not a candidate for backporting), it is ok to fix
 the conflicts in the merge commit (following the same steps as below), and push
-to `master` directly. Don't use the GitHub interface to fix these conflicts.
+to `master` directly. DON'T USE the GitHub interface to fix these conflicts.
 
 To merge the PR proceed in the following way
 ```
