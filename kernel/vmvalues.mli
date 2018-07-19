@@ -128,6 +128,7 @@ type whd =
   | Vconstr_const of int
   | Vconstr_block of vblock
   | Vint64 of int64
+  | Vfloat64 of float
   | Vatom_stk of atom * stack
   | Vuniv_level of Univ.Level.t
 

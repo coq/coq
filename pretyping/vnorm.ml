@@ -169,6 +169,7 @@ and nf_whd env sigma whd typ =
       let args = nf_bargs env sigma b ofs ctyp in
       mkApp(capp,args)
   | Vint64 i -> i |> Uint63.of_int64 |> mkInt
+  | Vfloat64 f -> f |> Float64.of_float |> mkFloat
   | Vatom_stk(Aid idkey, stk) ->
       constr_type_of_idkey env sigma idkey stk
   | Vatom_stk(Aind ((mi,i) as ind), stk) ->

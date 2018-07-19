@@ -19,6 +19,8 @@ let is_nan f = f <> f
 let to_string f = if is_nan f then "nan" else string_of_float f
 let of_string = float_of_string
 
+let of_float f = f
+
 let opp = ( ~-. )
 let abs = abs_float
 

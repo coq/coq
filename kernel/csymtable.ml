@@ -184,7 +184,16 @@ and eval_to_patch env (buff,pl,fv) =
     | Reloc_proj_name p -> slot_for_proj_name p
   in
   let tc = patch buff pl slots in
-  let vm_env = Array.map (slot_for_fv env) fv in
+  let vm_env =
+    (* Beware, this may look like a call to [Array.map], but it's not.
+       Calling [Array.map f] when the first argument returned by [f]
+       is a float would lead to [vm_env] being an unboxed Double_array
+       (Tag_val = Double_array_tag) whereas eval_tcode expects a
+       regular array (Tag_val = 0).
+       See test-suite/primitive/float/coq_env_double_array.v
+       for an actual instance. *)
+    let a = Array.make (Array.length fv) crazy_val in
+    Array.iteri (fun i v -> a.(i) <- slot_for_fv env v) fv; a in
   eval_tcode tc (get_atom_rel ()) (vm_global global_data.glob_val) vm_env
 
 and val_of_constr env c =

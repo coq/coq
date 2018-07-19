@@ -19,6 +19,8 @@ val is_nan : t -> bool
 val to_string : t -> string
 val of_string : string -> t
 
+val of_float : float -> t
+
 val opp : t -> t
 val abs : t -> t
 

@@ -234,7 +234,18 @@ let check_prim_op = function
   | Int63lt        -> opCHECKLTINT63
   | Int63le        -> opCHECKLEINT63
   | Int63compare   -> opCHECKCOMPAREINT63
-  | _ -> 0 (* TODO: BERTHOLON add float64 operations *)
+  | Float64opp     -> opCHECKOPPFLOAT
+  | Float64abs     -> opCHECKABSFLOAT
+  | Float64compare -> opCHECKCOMPAREFLOAT
+  | Float64add     -> opCHECKADDFLOAT
+  | Float64sub     -> opCHECKSUBFLOAT
+  | Float64mul     -> opCHECKMULFLOAT
+  | Float64div     -> opCHECKDIVFLOAT
+  | Float64sqrt    -> opCHECKSQRTFLOAT
+  | Float64ofInt63 -> opCHECKFLOATOFINT63
+  | Float64normfr_mantissa -> opCHECKFLOATNORMFRMANTISSA
+  | Float64frshiftexp -> opCHECKFRSHIFTEXP
+  | Float64ldshiftexp -> opCHECKLDSHIFTEXP
 
 let emit_instr env = function
   | Klabel lbl -> define_label env lbl

@@ -138,3 +138,6 @@ value uint63_div21(value xh, value xl, value y, value* ql) {
   }
 }
 #define Uint63_div21(xh, xl, y, q) (accu = uint63_div21(xh, xl, y, q))
+
+#define uint63_to_double(val) ((double) uint63_of_value(val))
+#define uint63_of_double(f) (Val_long((long int) f))
