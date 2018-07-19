@@ -663,8 +663,6 @@ let gallina_print_library_entry env sigma with_values ent =
         Some (str " >>>>>>> Library " ++ DirPath.print obj_dir)
     | (oname,Lib.OpenedModule _) ->
 	Some (str " >>>>>>> Module " ++ pr_name oname)
-    | (oname,Lib.ClosedModule _) ->
-        Some (str " >>>>>>> Closed Module " ++ pr_name oname)
 
 let gallina_print_context env sigma with_values =
   let rec prec n = function

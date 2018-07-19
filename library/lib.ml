@@ -26,7 +26,6 @@ type node =
   | Leaf of obj
   | CompilingLibrary of object_prefix
   | OpenedModule of is_type * export * object_prefix * Summary.frozen
-  | ClosedModule  of library_segment
   | OpenedSection of object_prefix * Summary.frozen
   | ClosedSection of library_segment
 
@@ -74,9 +73,6 @@ let classify_segment seg =
 	     | Anticipate o' ->
 		 clean (substl, keepl, o'::anticipl) stk)
     | (_,ClosedSection _) :: stk -> clean acc stk
-    (* LEM; TODO: Understand what this does and see if what I do is the
-                  correct thing for ClosedMod(ule|type) *)
-    | (_,ClosedModule _) :: stk -> clean acc stk
     | (_,OpenedSection _) :: _ -> user_err Pp.(str "there are still opened sections")
     | (_,OpenedModule (ty,_,_,_)) :: _ ->
       user_err ~hdr:"Lib.classify_segment"
@@ -307,7 +303,6 @@ let end_mod is_type =
   in
   let (after,mark,before) = split_lib_at_opening oname in
   lib_state := { !lib_state with lib_stk = before };
-  add_entry oname (ClosedModule (List.rev (mark::after)));
   let prefix = !lib_state.path_prefix in
   recalc_path_prefix ();
   (oname, prefix, fs, after)
@@ -555,7 +550,7 @@ let discharge_item ((sp,_ as oname),e) =
   match e with
   | Leaf lobj ->
       Option.map (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
-  | ClosedSection _ | ClosedModule _ -> None
+  | ClosedSection _ -> None
   | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
       anomaly (Pp.str "discharge_item.")
 
@@ -589,7 +584,6 @@ let freeze ~marshallable =
         | n, (CompilingLibrary _ as x) -> Some (n,x)
         | n, OpenedModule (it,e,op,_) ->
                Some(n,OpenedModule(it,e,op,Summary.empty_frozen))
-        | n, ClosedModule _ -> Some (n,ClosedModule [])
         | n, OpenedSection (op, _) ->
                Some(n,OpenedSection(op,Summary.empty_frozen))
         | n, ClosedSection _ -> Some (n,ClosedSection []))

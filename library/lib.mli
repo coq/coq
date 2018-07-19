@@ -23,7 +23,6 @@ type node =
   | Leaf of Libobject.obj
   | CompilingLibrary of Libnames.object_prefix
   | OpenedModule of is_type * export * Libnames.object_prefix * Summary.frozen
-  | ClosedModule  of library_segment
   | OpenedSection of Libnames.object_prefix * Summary.frozen
   | ClosedSection of library_segment
 
