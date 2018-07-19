@@ -632,6 +632,14 @@ let mkMLapp f args =
     | MLapp(f,args') -> MLapp(f,Array.append args' args)
     | _ -> MLapp(f,args)
 
+let mkForceCofix prefix ind arg =
+  let name = fresh_lname Anonymous in
+  MLlet (name, arg,
+    MLif (
+      MLisaccu (prefix, ind, MLlocal name),
+      MLapp (MLprimitive Force_cofix, [|MLlocal name|]),
+      MLlocal name))
+
 let empty_params = [||]
 
 let decompose_MLlam c =
@@ -1143,7 +1151,7 @@ let ml_of_instance instance u =
       let arg = ml_of_lam env l a in
       let force =
 	if annot.asw_finite then arg
-	else MLapp(MLprimitive Force_cofix, [|arg|]) in
+        else mkForceCofix annot.asw_prefix annot.asw_ind arg in
       mkMLapp (MLapp (MLglobal cn, fv_args env fvn fvr)) [|force|]
   | Lif(t,bt,bf) -> 
       MLif(ml_of_lam env l t, ml_of_lam env l bt, ml_of_lam env l bf)
@@ -1999,7 +2007,7 @@ let compile_mind mb mind stack =
       let accu = MLapp (MLprimitive Cast_accu, [|MLlocal cf_uid|]) in
       let accu_br = MLapp (MLprimitive Mk_proj, [|get_proj_code i;accu|]) in
       let code = MLmatch(asw,MLlocal cf_uid,accu_br,[|[((ind,1),cargs)],MLlocal ci_uid|]) in
-      let code = MLlet(cf_uid, MLapp (MLprimitive Force_cofix, [|MLlocal c_uid|]), code) in
+      let code = MLlet(cf_uid, mkForceCofix "" ind (MLlocal c_uid), code) in
       let gn = Gproj ("", ind, proj_arg) in
       Glet (gn, mkMLlam [|c_uid|] code) :: acc
     in
