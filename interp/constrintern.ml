@@ -566,7 +566,7 @@ let term_of_name = function
   | Name id -> DAst.make (GVar id)
   | Anonymous ->
        let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
-       DAst.make (GHole (Evar_kinds.QuestionMark (st,Anonymous), IntroAnonymous, None))
+    DAst.make (GHole (Evar_kinds.QuestionMark { Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=st }, IntroAnonymous, None))
 
 let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renaming,env) = function
  | Anonymous -> (renaming,env), None, Anonymous
@@ -1370,7 +1370,8 @@ let sort_fields ~complete loc fields completer =
                (* the order does not matter as we sort them next,
                   List.rev_* is just for efficiency *)
                let remaining_fields =
-                 let complete_field (idx, _field_ref) = (idx, completer idx) in
+                 let complete_field (idx, field_ref) = (idx,
+                 completer idx field_ref record.Recordops.s_CONST) in
                  List.rev_map complete_field remaining_projs in
                List.rev_append remaining_fields acc
         in
@@ -1524,7 +1525,7 @@ let drop_notations_pattern looked_for genv =
     | CPatAlias (p, id) -> DAst.make ?loc @@ RCPatAlias (in_pat top scopes p, id)
     | CPatRecord l ->
       let sorted_fields =
-	sort_fields ~complete:false loc l (fun _idx -> CAst.make ?loc @@ CPatAtom None) in
+        sort_fields ~complete:false loc l (fun _idx fieldname constructor -> CAst.make ?loc @@ CPatAtom None) in
       begin match sorted_fields with
 	| None -> DAst.make ?loc @@ RCPatAtom None
 	| Some (n, head, pl) ->
@@ -1918,8 +1919,16 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
        let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
        let fields =
 	 sort_fields ~complete:true loc fs
-	             (fun _idx -> CAst.make ?loc @@ CHole (Some (Evar_kinds.QuestionMark (st,Anonymous)),
-                                                           IntroAnonymous, None))
+                     (fun _idx fieldname constructorname ->
+                         let open Evar_kinds in
+                         let fieldinfo : Evar_kinds.record_field =
+                             {fieldname=fieldname; recordname=inductive_of_constructor constructorname}
+                             in
+                         CAst.make ?loc @@ CHole (Some
+                 (Evar_kinds.QuestionMark { Evar_kinds.default_question_mark with
+                     Evar_kinds.qm_obligation=st;
+                     Evar_kinds.qm_record_field=Some fieldinfo
+                }) , IntroAnonymous, None))
        in
        begin
 	  match fields with
@@ -2002,7 +2011,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
            let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
            (match naming with
            | IntroIdentifier id -> Evar_kinds.NamedHole id
-           | _ -> Evar_kinds.QuestionMark (st,Anonymous))
+           | _ -> Evar_kinds.QuestionMark { Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=st; })
         | Some k -> k
         in
         let solve = match solve with

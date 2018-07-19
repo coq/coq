@@ -2104,7 +2104,10 @@ let mk_JMeq_refl evdref typ x =
   papp evdref coq_JMeq_refl [| typ; x |]
 
 let hole na = DAst.make @@
-  GHole (Evar_kinds.QuestionMark (Evar_kinds.Define false,na),
+  GHole (Evar_kinds.QuestionMark {
+      Evar_kinds.qm_obligation= Evar_kinds.Define false;
+      Evar_kinds.qm_name=na;
+      Evar_kinds.qm_record_field=None},
          IntroAnonymous, None)
 
 let constr_of_pat env evdref arsign pat avoid =

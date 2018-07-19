@@ -1,0 +1,4 @@
+File "stdin", line 8, characters 5-22:
+Error: Cannot infer field y2p of record point2d in environment:
+p : point2d
+

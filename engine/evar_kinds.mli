@@ -22,19 +22,18 @@ type matching_var_kind = FirstOrderPatVar of Id.t | SecondOrderPatVar of Id.t
 type subevar_kind = Domain | Codomain | Body
 
 (* maybe this should be a Projection.t *)
+(* Represents missing record field *)
 type record_field = { fieldname : Constant.t; recordname : Names.inductive }
 
 type question_mark = {
      qm_obligation: obligation_definition_status;
      qm_name: Name.t;
+     (* Tracks if the evar represents a missing record field *)
      qm_record_field: record_field option;
 }
 
-let default_question_mark = {
-  qm_obligation=Define true;
-  qm_name=Anonymous;
-  qm_record_field=None;
-}
+(* Default value of question_mark which is used most often *)
+val default_question_mark : question_mark
 
 type t =
   | ImplicitArg of GlobRef.t * (int * Id.t option)
