@@ -10,3 +10,11 @@ Check (eq_refl : normfr_mantissa (-one) = 0%int63).
 Check (eq_refl : normfr_mantissa zero = 0%int63).
 Check (eq_refl : normfr_mantissa nan = 0%int63).
 Check (eq_refl : normfr_mantissa three_quarters = (3 << 51)%int63).
+
+Check (eq_refl 0%int63 <: normfr_mantissa one = 0%int63).
+Check (eq_refl (1 << 52)%int63 <: normfr_mantissa half = (1 << 52)%int63).
+Check (eq_refl (1 << 52)%int63 <: normfr_mantissa (-half) = (1 << 52)%int63).
+Check (eq_refl 0%int63 <: normfr_mantissa (-one) = 0%int63).
+Check (eq_refl 0%int63 <: normfr_mantissa zero = 0%int63).
+Check (eq_refl 0%int63 <: normfr_mantissa nan = 0%int63).
+Check (eq_refl (3 << 51)%int63 <: normfr_mantissa three_quarters = (3 << 51)%int63).
