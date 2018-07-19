@@ -479,13 +479,13 @@ let cache_universe_context (p, ctx) =
   Global.push_context_set p ctx;
   if p then Lib.add_section_context ctx
 
+(* Universes are Dispose because they are included in the kernel module structure. *)
 let input_universe_context : universe_context_decl -> Libobject.obj =
   declare_object
     { (default_object "Global universe context state") with
       cache_function = (fun (na, pi) -> cache_universe_context pi);
-      load_function = (fun _ (_, pi) -> cache_universe_context pi);
       discharge_function = (fun (_, (p, _ as x)) -> if p then None else Some x);
-      classify_function = (fun a -> Keep a) }
+      classify_function = (fun a -> Dispose) }
 
 let declare_universe_context poly ctx =
   Lib.add_anonymous_leaf (input_universe_context (poly, ctx))
