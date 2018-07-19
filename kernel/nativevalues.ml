@@ -154,10 +154,6 @@ let args_of_accu (k:accumulator) =
   let acc = (get_accu k).acc_arg in
   (Obj.magic (Array.of_list acc) : t array)
 
-let is_accu x =
-  let o = Obj.repr x in
-  Obj.is_block o && Int.equal (Obj.tag o) accumulate_tag
-
 let mk_fix_accu rec_pos pos types bodies =
   mk_accu (Afix(types,bodies,rec_pos, pos))
 
@@ -172,19 +168,17 @@ let upd_cofix (cofix :t) (cofix_fun : t) =
   | _ -> assert false
   
 let force_cofix (cofix : t) = 
-  if is_accu cofix then
-    let accu = (Obj.magic cofix : accumulator) in
-    let atom = atom_of_accu accu in
-    match atom with
-    | Acofix(typ,norm,pos,f) ->
-      let args = args_of_accu accu in
-      let f = Array.fold_right (fun arg f -> f arg) args f in
-      let v = f (Obj.magic ()) in
-      set_atom_of_accu accu (Acofixe(typ,norm,pos,v));
-	v
-    | Acofixe(_,_,_,v) -> v 
-    | _ -> cofix
-  else cofix
+  let accu = (Obj.magic cofix : accumulator) in
+  let atom = atom_of_accu accu in
+  match atom with
+  | Acofix(typ,norm,pos,f) ->
+    let args = args_of_accu accu in
+    let f = Array.fold_right (fun arg f -> f arg) args f in
+    let v = f (Obj.magic ()) in
+    set_atom_of_accu accu (Acofixe(typ,norm,pos,v));
+      v
+  | Acofixe(_,_,_,v) -> v
+  | _ -> cofix
 
 let mk_const tag = Obj.magic tag
 
