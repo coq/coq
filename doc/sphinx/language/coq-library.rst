@@ -705,21 +705,29 @@ fixpoint equation can be proved.
 Accessing the Type level
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The basic library includes the definitions of the counterparts of some data-types and logical
-quantifiers at the ``Type``: level: negation, pair, and properties
-of ``identity``. This is the module ``Logic_Type.v``.
+The standard library includes ``Type`` level definitions of counterparts of some
+logic concepts and basic lemmas about them.
+
+The module ``Datatypes`` defines ``identity``, which is the ``Type`` level counterpart
+of equality:
+
+.. index::
+   single: identity (term)
+
+.. coqtop:: in
+
+   Inductive identity (A:Type) (a:A) : A -> Type :=
+     identity_refl : identity a a.
+
+Some properties of ``identity`` are proved in the module ``Logic_Type``, which also
+provides the definition of ``Type`` level negation:
 
 .. index::
   single: notT (term)
-  single: prodT (term)
-  single: pairT (term)
 
 .. coqtop:: in
 
   Definition notT (A:Type) := A -> False.
-  Inductive prodT (A B:Type) : Type := pairT (_:A) (_:B).
-
-At the end, it defines data-types at the ``Type`` level.
 
 Tactics
 ~~~~~~~

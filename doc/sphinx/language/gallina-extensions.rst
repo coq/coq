@@ -1077,7 +1077,7 @@ The definition of ``N`` using the module type expression ``SIG`` with
 
    Module N : SIG' := M.
 
-If we just want to be sure that the our implementation satisfies a
+If we just want to be sure that our implementation satisfies a
 given module type without restricting the interface, we can use a
 transparent constraint
 
