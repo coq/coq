@@ -572,7 +572,9 @@ Failing
    .. tacv:: gfail
       :name: gfail
 
-      This variant fails when used after :n:`;` even if there are no goals left (see the example).
+      This variant fails even when used after :n:`;` and there are no goals left.
+      Similarly, ``gfail`` fails even when used after ``all:`` and there are no
+      goals left. See the example for clarification.
 
    .. tacv:: gfail {* message_token}
 
@@ -603,6 +605,9 @@ Failing
          Proof. trivial. fail. Abort.
 
          Goal True.
+         Proof. trivial. all: fail. Qed.
+
+         Goal True.
          Proof. gfail. Abort.
 
          Goal True.
@@ -610,6 +615,9 @@ Failing
 
          Goal True.
          Proof. trivial. gfail. Abort.
+
+         Goal True.
+         Proof. trivial. all: gfail. Abort.
 
 Timeout
 ~~~~~~~
@@ -921,7 +929,10 @@ produce subgoals but generates a term to be used in tactic expressions:
    value of :n:`@ident` by the value of :n:`@expr`.
 
    .. exn:: Not a context variable.
+      :undocumented:
+
    .. exn:: Unbound context identifier @ident.
+      :undocumented:
 
 Generating fresh hypothesis names
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1212,6 +1223,7 @@ following:
 +-----------------+-----------------------------------------------+
 
 .. exn:: Debug mode not available in the IDE
+   :undocumented:
 
 A non-interactive mode for the debugger is available via the option:
 
