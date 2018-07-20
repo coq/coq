@@ -19,8 +19,10 @@ open Notation_gram
 let notation_level_map = Summary.ref ~name:"notation_level_map" NotationMap.empty
 
 let declare_notation_level ?(onlyprint=false) ntn level =
-  if NotationMap.mem ntn !notation_level_map then
-    anomaly (str "Notation " ++ pr_notation ntn ++ str " is already assigned a level.");
+  try
+    let (level,onlyprint) = NotationMap.find ntn !notation_level_map in
+    if not onlyprint then anomaly (str "Notation " ++ pr_notation ntn ++ str " is already assigned a level.")
+  with Not_found ->
   notation_level_map := NotationMap.add ntn (level,onlyprint) !notation_level_map
 
 let level_of_notation ?(onlyprint=false) ntn =
