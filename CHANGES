@@ -75,6 +75,9 @@ Vernacular Commands
   overwritting the opacity set of the hint database.
 - Added generic syntax for “attributes”, as in:
   `#[local] Lemma foo : bar.`
+- The `Set SsrHave NoTCResolution` command no longer has special global
+  scope. If you want the previous behavior, use `Global Set SsrHave
+  NoTCResolution`.
 
 Coq binaries and process model
 

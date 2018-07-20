@@ -68,20 +68,14 @@ open Ssripats
 
 let ssrhaveNOtcresolution = Summary.ref ~name:"SSR:havenotcresolution" false
 
-let inHaveTCResolution = Libobject.declare_object {
-  (Libobject.default_object "SSRHAVETCRESOLUTION") with
-  Libobject.cache_function = (fun (_,v) -> ssrhaveNOtcresolution := v);
-  Libobject.load_function = (fun _ (_,v) -> ssrhaveNOtcresolution := v);
-  Libobject.classify_function = (fun v -> Libobject.Keep v);
-}
 let _ =
   Goptions.declare_bool_option
     { Goptions.optname  = "have type classes";
       Goptions.optkey   = ["SsrHave";"NoTCResolution"];
       Goptions.optread  = (fun _ -> !ssrhaveNOtcresolution);
       Goptions.optdepr  = false;
-      Goptions.optwrite = (fun b ->
-        Lib.add_anonymous_leaf (inHaveTCResolution b)) }
+      Goptions.optwrite = (fun b -> ssrhaveNOtcresolution := b);
+    }
 
 
 open Constrexpr 
