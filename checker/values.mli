@@ -20,6 +20,7 @@ type value =
   | String
   | Annot of string * value
   | Dyn
+  | Proxy of value ref
 
 val v_univopaques : value
 val v_libsum : value

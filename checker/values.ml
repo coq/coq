@@ -45,6 +45,13 @@ type value =
   | String
   | Annot of string * value
   | Dyn
+  | Proxy of value ref
+
+let fix (f : value -> value) : value =
+  let self = ref Any in
+  let ans = f (Proxy self) in
+  let () = self := ans in
+  ans
 
 (** Some pseudo-constructors *)
 
@@ -352,18 +359,16 @@ let v_states = v_pair Any v_frozen
 let v_state = Tuple ("state", [|v_states; Any; v_bool|])
 
 let v_vcs =
-  let data = Opt Any in
-  let vcs =
+  let vcs self =
     Tuple ("vcs",
       [|Any; Any;
         Tuple ("dag",
           [|Any; Any; v_map Any (Tuple ("state_info",
-            [|Any; Any; Opt v_state; v_pair data Any|]))
+            [|Any; Any; Opt v_state; v_pair (Opt self) Any|]))
           |])
       |])
   in
-  let () = Obj.set_field (Obj.magic data) 0 (Obj.magic vcs) in
-  vcs
+  fix vcs
 
 let v_uuid = Any
 let v_request id doc =
