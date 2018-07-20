@@ -318,7 +318,8 @@ explicit proof terms:
 
 This concludes our example.
 
-See also: The :tacn:`induction`, :tacn:`case`, and :tacn:`inversion` tactics.
+.. seealso::
+   The :tacn:`induction`, :tacn:`case`, and :tacn:`inversion` tactics.
 
 
 autorewrite
@@ -594,8 +595,9 @@ Example:
 
    quote interp_f [ B C iff ].
 
-Warning: since functional inversion is undecidable in the general case,
-don’t expect miracles from it!
+.. warning::
+   Since functional inversion is undecidable in the general case,
+   don’t expect miracles from it!
 
 .. tacv:: quote @ident in @term using @tactic
 
@@ -607,9 +609,11 @@ don’t expect miracles from it!
    Same as above, but will use the additional ``ident`` list to chose
    which subterms are constants (see above).
 
-See also: comments of source file ``plugins/quote/quote.ml``
+.. seealso::
+   Comments from the source file ``plugins/quote/quote.ml``
 
-See also: the :tacn:`ring` tactic.
+.. seealso::
+   The :tacn:`ring` tactic.
 
 
 Using the tactic language
@@ -658,7 +662,7 @@ A more complex example is the problem of permutations of
 lists. The aim is to show that a list is a permutation of
 another list.
 
-.. coqtop:: in
+.. coqtop:: in reset
 
    Section Sort.
 
@@ -668,11 +672,11 @@ another list.
 
 .. coqtop:: in
 
-   Inductive permut : list A -> list A -> Prop :=
-            | permut_refl : forall l, permut l l
-            | permut_cons : forall a l0 l1, permut l0 l1 -> permut (a :: l0) (a :: l1)
-            | permut_append : forall a l, permut (a :: l) (l ++ a :: nil)
-            | permut_trans : forall l0 l1 l2, permut l0 l1 -> permut l1 l2 -> permut l0 l2.
+   Inductive perm : list A -> list A -> Prop :=
+       | perm_refl : forall l, perm l l
+       | perm_cons : forall a l0 l1, perm l0 l1 -> perm (a :: l0) (a :: l1)
+       | perm_append : forall a l, perm (a :: l) (l ++ a :: nil)
+       | perm_trans : forall l0 l1 l2, perm l0 l1 -> perm l1 l2 -> perm l0 l2.
 
 .. coqtop:: in
 
@@ -685,31 +689,30 @@ First, we define the permutation predicate as shown above.
    Require Import List.
 
 
-.. coqtop:: all
+.. coqtop:: in
 
-   Ltac Permut n :=
-            match goal with
-            | |- (permut _ ?l ?l) => apply permut_refl
-            | |- (permut _ (?a :: ?l1) (?a :: ?l2)) =>
-                let newn := eval compute in (length l1) in
-                (apply permut_cons; Permut newn)
-            | |- (permut ?A (?a :: ?l1) ?l2) =>
-                match eval compute in n with
-                | 1 => fail
-                | _ =>
-                    let l1' := constr:(l1 ++ a :: nil) in
-                    (apply (permut_trans A (a :: l1) l1' l2);
-                    [ apply permut_append | compute; Permut (pred n) ])
-                end
-            end.
+   Ltac perm_aux n :=
+   match goal with
+       | |- (perm _ ?l ?l) => apply perm_refl
+       | |- (perm _ (?a :: ?l1) (?a :: ?l2)) =>
+           let newn := eval compute in (length l1) in
+               (apply perm_cons; perm_aux newn)
+       | |- (perm ?A (?a :: ?l1) ?l2) =>
+           match eval compute in n with
+               | 1 => fail
+               | _ =>
+                   let l1' := constr:(l1 ++ a :: nil) in
+                       (apply (perm_trans A (a :: l1) l1' l2);
+                       [ apply perm_append | compute; perm_aux (pred n) ])
+           end
+   end.
 
-Next we define an auxiliary tactic ``Permut`` which takes an argument
+Next we define an auxiliary tactic ``perm_aux`` which takes an argument
 used to control the recursion depth. This tactic behaves as follows. If
 the lists are identical (i.e. convertible), it concludes. Otherwise, if
 the lists have identical heads, it proceeds to look at their tails.
 Finally, if the lists have different heads, it rotates the first list by
-putting its head at the end if that is possible, i.e. if the new head
-hasn't been the head previously. To check this, we keep track of the
+putting its head at the end if the new head hasn't been the head previously. To check this, we keep track of the
 number of performed rotations using the argument ``n``. We do this by
 decrementing ``n`` each time we perform a rotation. It works because
 for a list of length ``n`` we can make exactly ``n - 1`` rotations
@@ -719,126 +722,123 @@ that it is possible to use the usual natural numbers, but they are only
 used as arguments for primitive tactics and they cannot be handled, so,
 in particular, we cannot make computations with them. Thus the natural
 choice is to use Coq data structures so that Coq makes the computations
-(reductions) by ``Eval compute in`` and we can get the terms back by match.
+(reductions) by ``eval compute in`` and we can get the terms back by match.
 
-.. coqtop:: all
+.. coqtop:: in
 
-   Ltac PermutProve :=
-            match goal with
-            | |- (permut _ ?l1 ?l2) =>
-                match eval compute in (length l1 = length l2) with
-                | (?n = ?n) => Permut n
-                end
-            end.
+   Ltac solve_perm :=
+   match goal with
+       | |- (perm _ ?l1 ?l2) =>
+           match eval compute in (length l1 = length l2) with
+               | (?n = ?n) => perm_aux n
+           end
+   end.
 
-The main tactic is ``PermutProve``. It computes the lengths of the two lists
-and uses them as arguments to call ``Permut`` if the lengths are equal (if they
+The main tactic is ``solve_perm``. It computes the lengths of the two lists
+and uses them as arguments to call ``perm_aux`` if the lengths are equal (if they
 aren't, the lists cannot be permutations of each other). Using this tactic we
 can now prove lemmas as follows:
 
 .. coqtop:: in
 
-   Lemma permut_ex1 : permut nat (1 :: 2 :: 3 :: nil) (3 :: 2 :: 1 :: nil).
+   Lemma solve_perm_ex1 :
+     perm nat (1 :: 2 :: 3 :: nil) (3 :: 2 :: 1 :: nil).
+   Proof. solve_perm. Qed.
 
 .. coqtop:: in
 
-   Proof. PermutProve. Qed.
-
-.. coqtop:: in
-
-   Lemma permut_ex2 : permut nat
-            (0 :: 1 :: 2 :: 3 :: 4 :: 5 :: 6 :: 7 :: 8 :: 9 :: nil)
-            (0 :: 2 :: 4 :: 6 :: 8 :: 9 :: 7 :: 5 :: 3 :: 1 :: nil).
-
-   Proof. PermutProve. Qed.
+   Lemma solve_perm_ex2 :
+     perm nat
+       (0 :: 1 :: 2 :: 3 :: 4 :: 5 :: 6 :: 7 :: 8 :: 9 :: nil)
+         (0 :: 2 :: 4 :: 6 :: 8 :: 9 :: 7 :: 5 :: 3 :: 1 :: nil).
+   Proof. solve_perm. Qed.
 
 Deciding intuitionistic propositional logic
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. coqtop:: all
+Pattern matching on goals allows a powerful backtracking when returning tactic
+values. An interesting application is the problem of deciding intuitionistic
+propositional logic. Considering the contraction-free sequent calculi LJT* of
+Roy Dyckhoff :cite:`Dyc92`, it is quite natural to code such a tactic using the
+tactic language as shown below.
 
-   Ltac Axioms :=
-            match goal with
-            | |- True => trivial
-            | _:False |- _ => elimtype False; assumption
-            | _:?A |- ?A => auto
-            end.
+.. coqtop:: in reset
 
-   Ltac DSimplif :=
-            repeat
-            (intros;
-            match goal with
-            | id:(~ _) |- _ => red in id
-            | id:(_ /\ _) |- _ =>
-            elim id; do 2 intro; clear id
-            | id:(_ \/ _) |- _ =>
-                elim id; intro; clear id
-            | id:(?A /\ ?B -> ?C) |- _ =>
-                cut (A -> B -> C);
-                [ intro | intros; apply id; split; assumption ]
-            | id:(?A \/ ?B -> ?C) |- _ =>
-                cut (B -> C);
-                [ cut (A -> C);
-                [ intros; clear id
-            | intro; apply id; left; assumption ]
-            | intro; apply id; right; assumption ]
-            | id0:(?A -> ?B),id1:?A |- _ =>
-                cut B; [ intro; clear id0 | apply id0; assumption ]
-            | |- (_ /\ _) => split
-            | |- (~ _) => red
-            end).
+   Ltac basic :=
+   match goal with
+       | |- True => trivial
+       | _ : False |- _ => contradiction
+       | _ : ?A |- ?A => assumption
+   end.
 
-   Ltac TautoProp :=
-            DSimplif;
-            Axioms ||
-            match goal with
-            | id:((?A -> ?B) -> ?C) |- _ =>
-                cut (B -> C);
-                [ intro; cut (A -> B);
-                [ intro; cut C;
-                [ intro; clear id | apply id; assumption ]
-            | clear id ]
-            | intro; apply id; intro; assumption ]; TautoProp
-            | id:(~ ?A -> ?B) |- _ =>
-                cut (False -> B);
-                [ intro; cut (A -> False);
-                [ intro; cut B;
-                [ intro; clear id | apply id; assumption ]
-            | clear id ]
-            | intro; apply id; red; intro; assumption ]; TautoProp
-            | |- (_ \/ _) => (left; TautoProp) || (right; TautoProp)
-            end.
+.. coqtop:: in
 
-An interesting application is the problem of deciding intuitionistic
-propositional logic. Considering the contraction-free sequent calculi
-LJT* of Roy Dyckhoff :cite:`Dyc92`, it is quite natural to code such a
-tactic using the tactic language as shown above. The tactic ``Axioms``
-tries to reason using simple rules involving truth, falsity and using
-available assumptions. The tactic ``DSimplif`` applies all the reversible
-rules of Dyckhoff’s system. Finally, the tactic ``TautoProp`` (the main
-tactic to be called) simplifies with ``DSimplif``, tries to conclude with
-``Axioms`` and tries several paths using the backtracking rules (one of the
+   Ltac simplify :=
+   repeat (intros;
+       match goal with
+           | H : ~ _ |- _ => red in H
+           | H : _ /\ _ |- _ =>
+               elim H; do 2 intro; clear H
+           | H : _ \/ _ |- _ =>
+               elim H; intro; clear H
+           | H : ?A /\ ?B -> ?C |- _ =>
+               cut (A -> B -> C);
+                   [ intro | intros; apply H; split; assumption ]
+           | H: ?A \/ ?B -> ?C |- _ =>
+               cut (B -> C);
+                   [ cut (A -> C);
+                       [ intros; clear H
+                       | intro; apply H; left; assumption ]
+                   | intro; apply H; right; assumption ]
+           | H0 : ?A -> ?B, H1 : ?A |- _ =>
+               cut B; [ intro; clear H0 | apply H0; assumption ]
+           | |- _ /\ _ => split
+           | |- ~ _ => red
+       end).
+
+.. coqtop:: in
+
+   Ltac my_tauto :=
+     simplify; basic ||
+     match goal with
+         | H : (?A -> ?B) -> ?C |- _ =>
+             cut (B -> C);
+                 [ intro; cut (A -> B);
+                     [ intro; cut C;
+                         [ intro; clear H | apply H; assumption ]
+                     | clear H ]
+                 | intro; apply H; intro; assumption ]; my_tauto
+         | H : ~ ?A -> ?B |- _ =>
+             cut (False -> B);
+                 [ intro; cut (A -> False);
+                     [ intro; cut B;
+                         [ intro; clear H | apply H; assumption ]
+                     | clear H ]
+                 | intro; apply H; red; intro; assumption ]; my_tauto
+         | |- _ \/ _ => (left; my_tauto) || (right; my_tauto)
+     end.
+
+The tactic ``basic`` tries to reason using simple rules involving truth, falsity
+and available assumptions. The tactic ``simplify`` applies all the reversible
+rules of Dyckhoff’s system. Finally, the tactic ``my_tauto`` (the main
+tactic to be called) simplifies with ``simplify``, tries to conclude with
+``basic`` and tries several paths using the backtracking rules (one of the
 four Dyckhoff’s rules for the left implication to get rid of the contraction
-and the right or).
+and the right ``or``).
 
-For example, with ``TautoProp``, we can prove tautologies like those:
-
-.. coqtop:: in
-
-   Lemma tauto_ex1 : forall A B:Prop, A /\ B -> A \/ B.
+Having defined ``my_tauto``, we can prove tautologies like these:
 
 .. coqtop:: in
 
-   Proof. TautoProp. Qed.
+   Lemma my_tauto_ex1 :
+     forall A B : Prop, A /\ B -> A \/ B.
+   Proof. my_tauto. Qed.
 
 .. coqtop:: in
 
-   Lemma tauto_ex2 :
-            forall A B:Prop, (~ ~ B -> B) -> (A -> B) -> ~ ~ A -> B.
-
-.. coqtop:: in
-
-   Proof. TautoProp. Qed.
+   Lemma my_tauto_ex2 :
+     forall A B : Prop, (~ ~ B -> B) -> (A -> B) -> ~ ~ A -> B.
+   Proof. my_tauto. Qed.
 
 
 Deciding type isomorphisms
@@ -891,102 +891,104 @@ example, :cite:`RC95`). The axioms of this λ-calculus are given below.
 
    End Iso_axioms.
 
-.. coqtop:: all
+.. coqtop:: in
 
-   Ltac DSimplif trm :=
-            match trm with
-            | (?A * ?B * ?C) =>
-                rewrite <- (Ass A B C); try MainSimplif
-            | (?A * ?B -> ?C) =>
-                rewrite (Cur A B C); try MainSimplif
-            | (?A -> ?B * ?C) =>
-                rewrite (Dis A B C); try MainSimplif
-            | (?A * unit) =>
-                rewrite (P_unit A); try MainSimplif
-            | (unit * ?B) =>
-                rewrite (Com unit B); try MainSimplif
-            | (?A -> unit) =>
-                rewrite (AR_unit A); try MainSimplif
-            | (unit -> ?B) =>
-                rewrite (AL_unit B); try MainSimplif
-            | (?A * ?B) =>
-                (DSimplif A; try MainSimplif) || (DSimplif B; try MainSimplif)
-            | (?A -> ?B) =>
-                (DSimplif A; try MainSimplif) || (DSimplif B; try MainSimplif)
-            end
-            with MainSimplif :=
-                match goal with
-                | |- (?A = ?B) => try DSimplif A; try DSimplif B
-                end.
-
-.. coqtop:: all
-
-   Ltac Length trm :=
-            match trm with
-            | (_ * ?B) => let succ := Length B in constr:(S succ)
-            | _ => constr:(1)
-            end.
-
-.. coqtop:: all
-
-   Ltac assoc := repeat rewrite <- Ass.
-
-.. coqtop:: all
-
-   Ltac DoCompare n :=
-            match goal with
-            | [ |- (?A = ?A) ] => reflexivity
-            | [ |- (?A * ?B = ?A * ?C) ] =>
-                apply Cons; let newn := Length B in
-                DoCompare newn
-            | [ |- (?A * ?B = ?C) ] =>
-                match eval compute in n with
-                | 1 => fail
-                | _ =>
-                    pattern (A * B) at 1; rewrite Com; assoc; DoCompare (pred n)
-                end
-            end.
-
-.. coqtop:: all
-
-   Ltac CompareStruct :=
-            match goal with
-            | [ |- (?A = ?B) ] =>
-                let l1 := Length A
-                with l2 := Length B in
-                match eval compute in (l1 = l2) with
-                | (?n = ?n) => DoCompare n
-                end
-            end.
-
-.. coqtop:: all
-
-   Ltac IsoProve := MainSimplif; CompareStruct.
-
-The tactic to judge equalities modulo this axiomatization can be
-written as shown above. The algorithm is quite simple. Types are reduced
-using axioms that can be oriented (this done by ``MainSimplif``). The
-normal forms are sequences of Cartesian products without Cartesian
-product in the left component. These normal forms are then compared
-modulo permutation of the components (this is done by
-``CompareStruct``). The main tactic that puts these components together
-is ``IsoProve``.
-
-Here are examples of what can be solved by ``IsoProve``.
+   Ltac simplify_type ty :=
+   match ty with
+       | ?A * ?B * ?C =>
+           rewrite <- (Ass A B C); try simplify_type_eq
+       | ?A * ?B -> ?C =>
+           rewrite (Cur A B C); try simplify_type_eq
+       | ?A -> ?B * ?C =>
+           rewrite (Dis A B C); try simplify_type_eq
+       | ?A * unit =>
+           rewrite (P_unit A); try simplify_type_eq
+       | unit * ?B =>
+           rewrite (Com unit B); try simplify_type_eq
+       | ?A -> unit =>
+           rewrite (AR_unit A); try simplify_type_eq
+       | unit -> ?B =>
+           rewrite (AL_unit B); try simplify_type_eq
+       | ?A * ?B =>
+           (simplify_type A; try simplify_type_eq) ||
+           (simplify_type B; try simplify_type_eq)
+       | ?A -> ?B =>
+           (simplify_type A; try simplify_type_eq) ||
+           (simplify_type B; try simplify_type_eq)
+   end
+   with simplify_type_eq :=
+   match goal with
+       | |- ?A = ?B => try simplify_type A; try simplify_type B
+   end.
 
 .. coqtop:: in
 
-   Lemma isos_ex1 :
-       forall A B:Set, A * unit * B = B * (unit * A).
+   Ltac len trm :=
+   match trm with
+       | _ * ?B => let succ := len B in constr:(S succ)
+       | _ => constr:(1)
+   end.
+
+.. coqtop:: in
+
+   Ltac assoc := repeat rewrite <- Ass.
+
+.. coqtop:: in
+
+   Ltac solve_type_eq n :=
+   match goal with
+       | |- ?A = ?A => reflexivity
+       | |- ?A * ?B = ?A * ?C =>
+           apply Cons; let newn := len B in solve_type_eq newn
+       | |- ?A * ?B = ?C =>
+           match eval compute in n with
+               | 1 => fail
+               | _ =>
+                   pattern (A * B) at 1; rewrite Com; assoc; solve_type_eq (pred n)
+           end
+   end.
+
+.. coqtop:: in
+
+   Ltac compare_structure :=
+   match goal with
+       | |- ?A = ?B =>
+           let l1 := len A
+           with l2 := len B in
+               match eval compute in (l1 = l2) with
+                   | ?n = ?n => solve_type_eq n
+               end
+   end.
+
+.. coqtop:: in
+
+   Ltac solve_iso := simplify_type_eq; compare_structure.
+
+The tactic to judge equalities modulo this axiomatization is shown above.
+The algorithm is quite simple. First types are simplified using axioms that
+can be oriented (this is done by ``simplify_type`` and ``simplify_type_eq``).
+The normal forms are sequences of Cartesian products without Cartesian product
+in the left component. These normal forms are then compared modulo permutation
+of the components by the tactic ``compare_structure``. If they have the same
+lengths, the tactic ``solve_type_eq`` attempts to prove that the types are equal.
+The main tactic that puts all these components together is called ``solve_iso``.
+
+Here are examples of what can be solved by ``solve_iso``.
+
+.. coqtop:: in
+
+   Lemma solve_iso_ex1 :
+     forall A B : Set, A * unit * B = B * (unit * A).
    Proof.
-   intros; IsoProve.
+     intros; solve_iso.
    Qed.
 
 .. coqtop:: in
 
-   Lemma isos_ex2 :
-       forall A B C:Set,
-         (A * unit -> B * (C * unit)) = (A * unit -> (C -> unit) * C) * (unit -> A -> B).
+   Lemma solve_iso_ex2 :
+     forall A B C : Set,
+       (A * unit -> B * (C * unit)) =
+       (A * unit -> (C -> unit) * C) * (unit -> A -> B).
    Proof.
-   intros; IsoProve.
+     intros; solve_iso.
    Qed.
