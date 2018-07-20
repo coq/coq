@@ -118,6 +118,9 @@ let class_tab =
 let coercion_tab =
   ref (CoeTypMap.empty : coe_info_typ CoeTypMap.t)
 
+let coercions_in_scope =
+  ref Refset_env.empty
+
 module ClPairOrd =
 struct
   type t = cl_index * cl_index
@@ -131,12 +134,13 @@ module ClPairMap = Map.Make(ClPairOrd)
 let inheritance_graph =
   ref (ClPairMap.empty : inheritance_path ClPairMap.t)
 
-let freeze _ = (!class_tab, !coercion_tab, !inheritance_graph)
+let freeze _ = (!class_tab, !coercion_tab, !inheritance_graph, !coercions_in_scope)
 
-let unfreeze (fcl,fco,fig) =
+let unfreeze (fcl,fco,fig,in_scope) =
   class_tab:=fcl;
   coercion_tab:=fco;
-  inheritance_graph:=fig
+  inheritance_graph:=fig;
+  coercions_in_scope:=in_scope
 
 (* ajout de nouveaux "objets" *)
 
@@ -445,9 +449,16 @@ let load_coercion _ o =
   if !automatically_import_coercions then
     cache_coercion (Global.env ()) Evd.empty o
 
+let set_coercion_in_scope (_, c) =
+  let r = c.coercion_type in
+  coercions_in_scope := Refset_env.add r !coercions_in_scope
+
 let open_coercion i o =
-  if Int.equal i 1 && not !automatically_import_coercions then
-    cache_coercion (Global.env ()) Evd.empty o
+  if Int.equal i 1 then begin
+    set_coercion_in_scope o;
+    if not !automatically_import_coercions then
+      cache_coercion (Global.env ()) Evd.empty o
+  end
 
 let subst_coercion (subst, c) =
   let coe = subst_coe_typ subst c.coercion_type in
@@ -492,7 +503,9 @@ let inCoercion : coercion -> obj =
     open_function = open_coercion;
     load_function = load_coercion;
     cache_function = (fun objn ->
-        let env = Global.env () in cache_coercion env Evd.empty objn
+        let env = Global.env () in
+        set_coercion_in_scope objn;
+        cache_coercion env Evd.empty objn
       );
     subst_function = subst_coercion;
     classify_function = classify_coercion;
@@ -553,3 +566,6 @@ let hide_coercion coe =
     let coe_info = coercion_info coe in
     Some coe_info.coe_param
   else None
+
+let is_coercion_in_scope r =
+  Refset_env.mem r !coercions_in_scope
