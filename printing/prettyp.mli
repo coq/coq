@@ -12,7 +12,6 @@ open Names
 open Environ
 open Reductionops
 open Libnames
-open Evd
 
 (** A Pretty-Printer for the Calculus of Inductive Constructions. *)
 
@@ -40,10 +39,10 @@ val print_about : env -> Evd.evar_map -> qualid Constrexpr.or_by_notation ->
 val print_impargs : qualid Constrexpr.or_by_notation -> Pp.t
 
 (** Pretty-printing functions for classes and coercions *)
-val print_graph : env -> evar_map -> Pp.t
+val print_graph : unit -> Pp.t
 val print_classes : unit -> Pp.t
-val print_coercions : env -> Evd.evar_map -> Pp.t
-val print_path_between : env -> evar_map -> Classops.cl_typ -> Classops.cl_typ -> Pp.t
+val print_coercions : unit -> Pp.t
+val print_path_between : Classops.cl_typ -> Classops.cl_typ -> Pp.t
 val print_canonical_projections : env -> Evd.evar_map -> Pp.t
 
 (** Pretty-printing functions for type classes and instances *)
