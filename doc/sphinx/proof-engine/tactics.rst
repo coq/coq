@@ -2812,7 +2812,10 @@ the conversion in hypotheses :n:`{+ @ident}`.
    :g:`(t t`:sub:`1` :g:`... t`:sub:`n` :g:`)` according to :math:`\beta`:math:`\iota`:math:`\zeta`-reduction rules.
 
 .. exn:: Not reducible.
+   :undocumented:
+
 .. exn:: No head constant to reduce.
+   :undocumented:
 
 .. tacn:: hnf
    :name: hnf
@@ -2862,7 +2865,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
    + A constant can be marked to be unfolded only if applied to enough
      arguments. The number of arguments required can be specified using the
-     ``/`` symbol in the argument list of the ``Arguments`` vernacular command.
+     ``/`` symbol in the argument list of the :cmd:`Arguments` vernacular command.
 
      .. example::
         .. coqtop:: all
