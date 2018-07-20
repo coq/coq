@@ -39,16 +39,19 @@ type cl_info_typ = {
 type coe_typ = GlobRef.t
 
 (** This is the type of infos for declared coercions *)
-type coe_info_typ
+type coe_info_typ = {
+  coe_value : GlobRef.t;
+  coe_local : bool;
+  coe_is_identity : bool;
+  coe_is_projection : Projection.Repr.t option;
+  coe_param : int;
+}
 
 (** [cl_index] is the type of class keys *)
 type cl_index
 
-(** [coe_index] is the type of coercion keys *)
-type coe_index
-
 (** This is the type of paths from a class to another *)
-type inheritance_path = coe_index list
+type inheritance_path = coe_info_typ list
 
 (** {6 Access to classes infos } *)
 
@@ -79,8 +82,6 @@ val declare_coercion :
 (** {6 Access to coercions infos } *)
 val coercion_exists : coe_typ -> bool
 
-val coercion_value : coe_index -> (unsafe_judgment * bool * Projection.Repr.t option) Univ.in_universe_context_set
-
 (** {6 Lookup functions for coercion paths } *)
 
 (** @raise Not_found in the following functions when no path exists *)
@@ -105,10 +106,9 @@ val install_path_printer :
 val string_of_class : cl_typ -> string
 val pr_class : cl_typ -> Pp.t
 val pr_cl_index : cl_index -> Pp.t
-val get_coercion_value : coe_index -> Constr.t
 val inheritance_graph : unit -> ((cl_index * cl_index) * inheritance_path) list
 val classes : unit -> cl_typ list
-val coercions : unit -> coe_index list
+val coercions : unit -> coe_info_typ list
 
 (** [hide_coercion] returns the number of params to skip if the coercion must
    be hidden, [None] otherwise; it raises [Not_found] if not a coercion *)

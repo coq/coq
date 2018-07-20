@@ -909,7 +909,7 @@ let inspect env sigma depth =
 
 open Classops
 
-let print_coercion_value env sigma v = pr_lconstr_env env sigma (get_coercion_value v)
+let print_coercion_value env sigma v = Printer.pr_global v.coe_value
 
 let print_class i =
   let cl,_ = class_info_from_index i in

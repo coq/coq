@@ -369,8 +369,11 @@ let apply_coercion env sigma p hj typ_cl =
     let j,t,evd = 
       List.fold_left
         (fun (ja,typ_cl,sigma) i ->
-	  let ((fv,isid,isproj),ctx) = coercion_value i in
-	  let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
+           let isid = i.coe_is_identity in
+           let isproj = i.coe_is_projection in
+           let sigma, c = new_global sigma i.coe_value in
+           let typ = Retyping.get_type_of env sigma c in
+           let fv = make_judge c typ in
 	  let argl = (class_args_of env sigma typ_cl)@[ja.uj_val] in
 	  let sigma, jres = 
 	    apply_coercion_args env sigma true isproj argl fv 

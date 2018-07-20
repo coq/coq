@@ -13,17 +13,16 @@ open Formula
 open Sequent
 open Rules
 open Instances
-open Constr
 open Tacmach.New
 open Tacticals.New
+open Globnames
 
 let update_flags ()=
   let predref=ref Names.Cpred.empty in
-  let f coe=
-    try
-      let kn= fst (destConst (Classops.get_coercion_value coe)) in
-	predref:=Names.Cpred.add kn !predref
-    with DestKO -> ()
+  let f coe =
+    match coe.Classops.coe_value with
+    | ConstRef c -> predref := Names.Cpred.add c !predref
+    | _ -> ()
   in
     List.iter f (Classops.coercions ());
     red_flags:=

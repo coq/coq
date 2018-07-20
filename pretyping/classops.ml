@@ -42,18 +42,15 @@ type coe_typ = GlobRef.t
 module CoeTypMap = Refmap_env
 
 type coe_info_typ = {
-  coe_value : constr;
-  coe_type : types;
+  coe_value : GlobRef.t;
   coe_local : bool;
-  coe_context : Univ.ContextSet.t;
   coe_is_identity : bool;
   coe_is_projection : Projection.Repr.t option;
-  coe_param : int }
+  coe_param : int;
+}
 
 let coe_info_typ_equal c1 c2 =
-  let eq_constr c1 c2 = Termops.eq_constr Evd.empty (EConstr.of_constr c1) (EConstr.of_constr c2) in
-  eq_constr c1.coe_value c2.coe_value &&
-    eq_constr c1.coe_type c2.coe_type &&
+  GlobRef.equal c1.coe_value c2.coe_value &&
     c1.coe_local == c2.coe_local &&
     c1.coe_is_identity == c2.coe_is_identity &&
     c1.coe_is_projection == c2.coe_is_projection &&
@@ -77,9 +74,7 @@ module IntMap = Map.Make(Int)
 
 let cl_typ_eq t1 t2 = Int.equal (cl_typ_ord t1 t2) 0
 
-type coe_index = coe_info_typ
-
-type inheritance_path = coe_index list
+type inheritance_path = coe_info_typ list
 
 (* table des classes, des coercions et graphe d'heritage *)
 
@@ -301,12 +296,9 @@ let lookup_path_to_sort_from env sigma s =
   apply_on_class_of env sigma s lookup_path_to_sort_from_class
 
 let get_coercion_constructor env coe =
-  let c, _ =
-    Reductionops.whd_all_stack env Evd.empty (EConstr.of_constr coe.coe_value)
-  in
-  match EConstr.kind Evd.empty (** FIXME *) c with
-  | Construct (cstr,u) ->
-      (cstr, Inductiveops.constructor_nrealargs cstr -1)
+  match coe.coe_value with
+  | ConstructRef c ->
+      (c, Inductiveops.constructor_nrealargs c -1)
   | _ ->
       raise Not_found
 
@@ -315,16 +307,6 @@ let lookup_pattern_path_between env (s,t) =
   let j = inductive_class_of t in
   List.map (get_coercion_constructor env) (ClPairMap.find (i,j) !inheritance_graph)
 
-(* coercion_value : coe_index -> unsafe_judgment * bool *)
-
-let coercion_value { coe_value = c; coe_type = t; coe_context = ctx; 
-		     coe_is_identity = b; coe_is_projection = b' } =
-  let subst, ctx = UnivGen.fresh_universe_context_set_instance ctx in
-  let c' = Vars.subst_univs_level_constr subst c 
-  and t' = Vars.subst_univs_level_constr subst t in
-    (make_judge (EConstr.of_constr c') (EConstr.of_constr t'), b, b'), ctx
-
-(* pretty-print functions are now in Pretty *)
 (* rajouter une coercion dans le graphe *)
 
 let path_printer : (env -> Evd.evar_map -> (Bijint.Index.t * Bijint.Index.t) * inheritance_path -> Pp.t) ref =
@@ -442,17 +424,13 @@ let cache_coercion env sigma (_, c) =
   let () = add_class c.coercion_target in
   let is, _ = class_info c.coercion_source in
   let it, _ = class_info c.coercion_target in
-  let value, ctx = UnivGen.fresh_global_instance env c.coercion_type in
-  let typ = Retyping.get_type_of env sigma (EConstr.of_constr value) in
-  let typ = EConstr.Unsafe.to_constr typ in
   let xf =
-    { coe_value = value;
-      coe_type = typ;
-      coe_context = ctx;
+    { coe_value = c.coercion_type;
       coe_local = c.coercion_local;
       coe_is_identity = c.coercion_is_id;
       coe_is_projection = c.coercion_is_proj;
-      coe_param = c.coercion_params } in
+      coe_param = c.coercion_params;
+    } in
   let () = add_new_coercion c.coercion_type xf in
   add_coercion_in_graph env sigma (xf,is,it)
 
@@ -531,8 +509,6 @@ let declare_coercion coef ?(local = false) ~isid ~src:cls ~target:clt ~params:ps
   Lib.add_anonymous_leaf (inCoercion c)
 
 (* For printing purpose *)
-let get_coercion_value v = v.coe_value
-
 let pr_cl_index = Bijint.Index.print
 
 let classes () = Bijint.dom !class_tab
