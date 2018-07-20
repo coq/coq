@@ -176,19 +176,22 @@ let typecheck_params_and_fields finite def poly pl ps records =
         else sigma, typ
   in
   let (sigma, typs) = List.fold_left2_map fold sigma typs data in
-  let sigma = Evd.minimize_universes sigma in
-  let newps = List.map (EConstr.to_rel_decl sigma) newps in
+  let ce t = Pretyping.check_evars env0 (Evd.from_env env0) sigma t in
+  let () = List.iter (iter_constr ce) (List.rev newps) in
+  let () = List.iter (fun (_, newfs) -> List.iter (iter_constr ce) (List.rev newfs)) data in
+  let sigma, (newps, ans) =
+    Evarutil.finalize sigma (fun nf ->
+        let newps = EConstr.map_rel_context_gen nf newps in
+        let map (impls, newfs) typ =
+          let newfs = EConstr.map_rel_context_gen nf newfs in
+          let typ = nf typ in
+          (typ, impls, newfs)
+        in
+        let ans = List.map2 map data typs in
+        newps, ans)
+  in
   let univs = Evd.check_univ_decl ~poly sigma decl in
   let ubinders = Evd.universe_binders sigma in
-  let ce t = Pretyping.check_evars env0 (Evd.from_env env0) sigma (EConstr.of_constr t) in
-  let () = List.iter (iter_constr ce) (List.rev newps) in
-  let map (impls, newfs) typ =
-    let newfs = List.map (EConstr.to_rel_decl sigma) newfs in
-    let typ = EConstr.to_constr sigma typ in
-    List.iter (iter_constr ce) (List.rev newfs);
-    (typ, impls, newfs)
-  in
-  let ans = List.map2 map data typs in
   ubinders, univs, template, newps, imps, ans
 
 type record_error =
