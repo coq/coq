@@ -745,7 +745,7 @@ the sort of the inductive type t (not to be confused with :math:`\Sort` which is
    is:
 
    .. math::
-      \ind{~}{\left[\begin{array}{rcl}\tree&:&\Set\\\forest&:&\Set\end{array}\right]}
+      \ind{0}{\left[\begin{array}{rcl}\tree&:&\Set\\\forest&:&\Set\end{array}\right]}
        {\left[\begin{array}{rcl}
                 \node &:& \forest → \tree\\
                 \emptyf &:& \forest\\
@@ -766,7 +766,7 @@ the sort of the inductive type t (not to be confused with :math:`\Sort` which is
    The declaration for a mutual inductive definition of even and odd is:
 
    .. math::
-      \ind{1}{\left[\begin{array}{rcl}\even&:&\nat → \Prop \\
+      \ind{0}{\left[\begin{array}{rcl}\even&:&\nat → \Prop \\
                                       \odd&:&\nat → \Prop \end{array}\right]}
        {\left[\begin{array}{rcl}
                 \evenO &:& \even~0\\
