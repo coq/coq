@@ -321,7 +321,7 @@ Navigation in the proof tree
    goal, much like :cmd:`Focus` does, however, the subproof can only be
    unfocused when it has been fully solved ( *i.e.* when there is no
    focused goal left). Unfocusing is then handled by ``}`` (again, without a
-   terminating period). See also example in next section.
+   terminating period). See also an example in the next section.
 
    Note that when a focused goal is proved a message is displayed
    together with a suggestion about the right bullet or ``}`` to unfocus it
@@ -403,7 +403,7 @@ The following example script illustrates all these features:
 
 .. exn:: No such goal. Focus next goal with bullet @bullet.
 
-   You tried to apply a tactic but no goal where under focus. Using :n:`@bullet` is  mandatory here.
+   You tried to apply a tactic but no goals were under focus. Using :n:`@bullet` is  mandatory here.
 
 .. exn:: No such goal. Try unfocusing with %{.
 
@@ -470,7 +470,7 @@ Requesting information
       constructed. These holes appear as a question mark indexed by an
       integer, and applied to the list of variables in the context, since it
       may depend on them. The types obtained by abstracting away the context
-      from the type of each hole-placer are also printed.
+      from the type of each placeholder are also printed.
 
    .. cmdv:: Show Conjectures
       :name: Show Conjectures
