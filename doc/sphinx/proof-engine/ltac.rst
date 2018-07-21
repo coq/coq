@@ -10,8 +10,8 @@ This chapter gives a compact documentation of |Ltac|, the tactic language
 available in |Coq|. We start by giving the syntax, and next, we present the
 informal semantics. If you want to know more regarding this language and
 especially about its foundations, you can refer to :cite:`Del00`. Chapter
-:ref:`detailedexamplesoftactics` is devoted to giving examples of use of this
-language on small but also with non-trivial problems.
+:ref:`detailedexamplesoftactics` is devoted to giving small but nontrivial
+use examples of this language.
 
 .. _ltac-syntax:
 
@@ -33,7 +33,7 @@ notation :g:`_` can also be used to denote metavariable whose instance is
 irrelevant. In the notation :g:`?id`, the identifier allows us to keep
 instantiations and to make constraints whereas :g:`_` shows that we are not
 interested in what will be matched. On the right hand side of pattern-matching
-clauses, the named metavariable are used without the question mark prefix. There
+clauses, the named metavariables are used without the question mark prefix. There
 is also a special notation for second-order pattern-matching problems: in an
 applicative pattern of the form :g:`@?id id1 … idn`, the variable id matches any
 complex expression with (possible) dependencies in the variables :g:`id1 … idn`
@@ -160,13 +160,13 @@ Semantics
 ---------
 
 Tactic expressions can only be applied in the context of a proof. The
-evaluation yields either a term, an integer or a tactic. Intermediary
+evaluation yields either a term, an integer or a tactic. Intermediate
 results can be terms or integers but the final result must be a tactic
 which is then applied to the focused goals.
 
 There is a special case for ``match goal`` expressions of which the clauses
 evaluate to tactics. Such expressions can only be used as end result of
-a tactic expression (never as argument of a non recursive local
+a tactic expression (never as argument of a non-recursive local
 definition or of an application).
 
 The rest of this section explains the semantics of every construction of
@@ -197,8 +197,8 @@ following form:
    :name: [> ... | ... | ... ] (dispatch)
 
    The expressions :n:`@expr__i` are evaluated to :n:`v__i`, for
-   i=0,...,n and all have to be tactics. The :n:`v__i` is applied to the
-   i-th goal, for =1,...,n. It fails if the number of focused goals is not
+   i = 0, ..., n and all have to be tactics. The :n:`v__i` is applied to the
+   i-th goal, for i = 1, ..., n. It fails if the number of focused goals is not
    exactly n.
 
    .. note::
@@ -221,7 +221,7 @@ following form:
    .. tacv:: [> @expr .. ]
 
       In this variant, the tactic :n:`@expr` is applied independently to each of
-      the goals, rather than globally. In particular, if there are no goal, the
+      the goals, rather than globally. In particular, if there are no goals, the
       tactic is not run at all. A tactic which expects multiple goals, such as
       ``swap``, would act as if a single goal is focused.
 
@@ -385,11 +385,12 @@ tactic to work (i.e. which does not fail) among a panel of tactics:
    :name: first
 
    The :n:`@expr__i` are evaluated to :n:`v__i` and :n:`v__i` must be
-   tactic values, for i=1,...,n. Supposing n>1, it applies, in each focused
-   goal independently, :n:`v__1`, if it works, it stops otherwise it
+   tactic values for i = 1, ..., n. Supposing n > 1,
+   :n:`first [@expr__1 | ... | @expr__n]` applies :n:`v__1` in each
+   focused goal independently and stops if it succeeds; otherwise it
    tries to apply :n:`v__2` and so on. It fails when there is no
    applicable tactic. In other words,
-   :n:`first [:@expr__1 | ... | @expr__n]` behaves, in each goal, as the the first
+   :n:`first [@expr__1 | ... | @expr__n]` behaves, in each goal, as the the first
    :n:`v__i` to have *at least* one success.
 
    .. exn:: No applicable tactic.
@@ -397,7 +398,7 @@ tactic to work (i.e. which does not fail) among a panel of tactics:
    .. tacv:: first @expr
 
       This is an |Ltac| alias that gives a primitive access to the first
-      tactical as a |Ltac| definition without going through a parsing rule. It
+      tactical as an |Ltac| definition without going through a parsing rule. It
       expects to be given a list of tactics through a ``Tactic Notation``,
       allowing to write notations of the following form:
 
@@ -454,7 +455,7 @@ single success *a posteriori*:
 
    :n:`@expr` is evaluated to ``v`` which must be a tactic value. The tactic value
    ``v`` is applied but only its first success is used. If ``v`` fails,
-   :n:`once @expr` fails like ``v``. If ``v`` has a least one success,
+   :n:`once @expr` fails like ``v``. If ``v`` has at least one success,
    :n:`once @expr` succeeds once, but cannot produce more successes.
 
 Checking the successes
@@ -475,7 +476,7 @@ one* success:
    .. warning::
 
       The experimental status of this tactic pertains to the fact if ``v``
-      performs side effects, they may occur in a unpredictable way. Indeed,
+      performs side effects, they may occur in an unpredictable way. Indeed,
       normally ``v`` would only be executed up to the first success until
       backtracking is needed, however exactly_once needs to look ahead to see
       whether a second success exists, and may run further effects
@@ -515,8 +516,9 @@ among a panel of tactics:
    :name: solve
 
    The :n:`@expr__i` are evaluated to :n:`v__i` and :n:`v__i` must be
-   tactic values, for i=1,...,n. Supposing n>1, it applies :n:`v__1` to
-   each goal independently, if it doesn’t solve the goal then it tries to
+   tactic values, for i = 1, ..., n. Supposing n > 1,
+   :n:`solve [@expr__1 | ... | @expr__n]` applies :n:`v__1` to
+   each goal independently and stops if it succeeds; otherwise it tries to
    apply :n:`v__2` and so on. It fails if there is no solving tactic.
 
    .. exn:: Cannot solve the goal.
@@ -546,15 +548,13 @@ Failing
 
    This is the always-failing tactic: it does not solve any
    goal. It is useful for defining other tacticals since it can be caught by
-   :tacn:`try`, :tacn:`repeat`, :tacn:`match goal`, or the branching tacticals. The
-   :tacn:`fail` tactic will, however, succeed if all the goals have already been
-   solved.
+   :tacn:`try`, :tacn:`repeat`, :tacn:`match goal`, or the branching tacticals.
 
    .. tacv:: fail @num
 
       The number is the failure level. If no level is specified, it defaults to 0.
       The level is used by :tacn:`try`, :tacn:`repeat`, :tacn:`match goal` and the branching
-      tacticals. If 0, it makes :tacn:`match goal` considering the next clause
+      tacticals. If 0, it makes :tacn:`match goal` consider the next clause
       (backtracking). If non zero, the current :tacn:`match goal` block, :tacn:`try`,
       :tacn:`repeat`, or branching command is aborted and the level is decremented. In
       the case of :n:`+`, a non-zero level skips the first backtrack point, even if
@@ -572,7 +572,9 @@ Failing
    .. tacv:: gfail
       :name: gfail
 
-      This variant fails even if there are no goals left.
+      This variant fails even when used after :n:`;` and there are no goals left.
+      Similarly, ``gfail`` fails even when used after ``all:`` and there are no
+      goals left. See the example for clarification.
 
    .. tacv:: gfail {* message_token}
 
@@ -582,9 +584,40 @@ Failing
       there are no goals left. Be careful however if Coq terms have to be
       printed as part of the failure: term construction always forces the
       tactic into the goals, meaning that if there are no goals when it is
-      evaluated, a tactic call like :n:`let x:=H in fail 0 x` will succeed.
+      evaluated, a tactic call like :n:`let x := H in fail 0 x` will succeed.
 
    .. exn:: Tactic Failure message (level @num).
+
+   .. exn:: No such goal.
+      :name: No such goal. (fail)
+
+   .. example::
+
+      .. coqtop:: all
+
+         Goal True.
+         Proof. fail. Abort.
+
+         Goal True.
+         Proof. trivial; fail. Qed.
+
+         Goal True.
+         Proof. trivial. fail. Abort.
+
+         Goal True.
+         Proof. trivial. all: fail. Qed.
+
+         Goal True.
+         Proof. gfail. Abort.
+
+         Goal True.
+         Proof. trivial; gfail. Abort.
+
+         Goal True.
+         Proof. trivial. gfail. Abort.
+
+         Goal True.
+         Proof. trivial. all: gfail. Abort.
 
 Timeout
 ~~~~~~~
@@ -605,7 +638,7 @@ amount of time:
       which is very machine-dependent: a script that works on a quick machine
       may fail on a slow one. The converse is even possible if you combine a
       timeout with some other tacticals. This tactical is hence proposed only
-      for convenience during debug or other development phases, we strongly
+      for convenience during debugging or other development phases, we strongly
       advise you to not leave any timeout in final scripts. Note also that
       this tactical isn’t available on the native Windows port of Coq.
 
@@ -617,9 +650,9 @@ A tactic execution can be timed:
 .. tacn:: time @string @expr
    :name: time
 
-   evaluates :n:`@expr` and displays the time the tactic expression ran, whether it
-   fails or successes. In case of several successes, the time for each successive
-   runs is displayed. Time is in seconds and is machine-dependent. The :n:`@string`
+   evaluates :n:`@expr` and displays the running time of the tactic expression, whether it
+   fails or succeeds. In case of several successes, the time for each successive
+   run is displayed. Time is in seconds and is machine-dependent. The :n:`@string`
    argument is optional. When provided, it is used to identify this particular
    occurrence of time.
 
@@ -685,12 +718,12 @@ Local definitions can be done as follows:
 
    each :n:`@expr__i` is evaluated to :n:`v__i`, then, :n:`@expr` is evaluated
    by substituting :n:`v__i` to each occurrence of :n:`@ident__i`, for
-   i=1,...,n. There is no dependencies between the :n:`@expr__i` and the
+   i = 1, ..., n. There are no dependencies between the :n:`@expr__i` and the
    :n:`@ident__i`.
 
-   Local definitions can be recursive by using :n:`let rec` instead of :n:`let`.
+   Local definitions can be made recursive by using :n:`let rec` instead of :n:`let`.
    In this latter case, the definitions are evaluated lazily so that the rec
-   keyword can be used also in non recursive cases so as to avoid the eager
+   keyword can be used also in non-recursive cases so as to avoid the eager
    evaluation of local definitions.
 
    .. but rec changes the binding!!
@@ -704,7 +737,7 @@ An application is an expression of the following form:
 
    The reference :n:`@qualid` must be bound to some defined tactic definition
    expecting at least as many arguments as the provided :n:`tacarg`. The
-   expressions :n:`@expr__i` are evaluated to :n:`v__i`, for i=1,...,n.
+   expressions :n:`@expr__i` are evaluated to :n:`v__i`, for i = 1, ..., n.
 
    .. what expressions ??
 
@@ -755,7 +788,7 @@ We can carry out pattern matching on terms with:
    evaluation of :n:`@expr__1` fails, or if the evaluation of
    :n:`@expr__1` succeeds but returns a tactic in execution position whose
    execution fails, then :n:`cpattern__2` is used and so on. The pattern
-   :n:`_` matches any term and shunts all remaining patterns if any. If all
+   :n:`_` matches any term and shadows all remaining patterns if any. If all
    clauses fail (in particular, there is no pattern :n:`_`) then a
    no-matching-clause error is raised.
 
@@ -821,14 +854,14 @@ We can carry out pattern matching on terms with:
 Pattern matching on goals
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We can make pattern matching on goals using the following expression:
+We can perform pattern matching on goals using the following expression:
 
 .. we should provide the full grammar here
 
 .. tacn:: match goal with {+| {+ hyp} |- @cpattern => @expr } | _ => @expr end
    :name: match goal
 
-   If each hypothesis pattern :n:`hyp`\ :sub:`1,i`, with i=1,...,m\ :sub:`1` is
+   If each hypothesis pattern :n:`hyp`\ :sub:`1,i`, with i = 1, ..., m\ :sub:`1` is
    matched (non-linear first-order unification) by an hypothesis of the
    goal and if :n:`cpattern_1` is matched by the conclusion of the goal,
    then :n:`@expr__1` is evaluated to :n:`v__1` by substituting the
@@ -857,10 +890,10 @@ We can make pattern matching on goals using the following expression:
 
       It is important to know that each hypothesis of the goal can be matched
       by at most one hypothesis pattern. The order of matching is the
-      following: hypothesis patterns are examined from the right to the left
+      following: hypothesis patterns are examined from right to left
       (i.e. hyp\ :sub:`i,m`\ :sub:`i`` before hyp\ :sub:`i,1`). For each
-      hypothesis pattern, the goal hypothesis are matched in order (fresher
-      hypothesis first), but it possible to reverse this order (older first)
+      hypothesis pattern, the goal hypotheses are matched in order (newest
+      first), but it possible to reverse this order (oldest first)
       with the :n:`match reverse goal with` variant.
 
    .. tacv:: multimatch goal with {+| {+ hyp} |- @cpattern => @expr } | _ => @expr end
@@ -896,6 +929,10 @@ produce subgoals but generates a term to be used in tactic expressions:
    value of :n:`@ident` by the value of :n:`@expr`.
 
    .. exn:: Not a context variable.
+      :undocumented:
+
+   .. exn:: Unbound context identifier @ident.
+      :undocumented:
 
 Generating fresh hypothesis names
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1167,7 +1204,7 @@ Interactive debugger
    This option governs the step-by-step debugger that comes with the |Ltac| interpreter
 
 When the debugger is activated, it stops at every step of the evaluation of
-the current |Ltac| expression and it prints information on what it is doing.
+the current |Ltac| expression and prints information on what it is doing.
 The debugger stops, prompting for a command which can be one of the
 following:
 
@@ -1184,6 +1221,9 @@ following:
 +-----------------+-----------------------------------------------+
 | r string:       | advance up to the next call to “idtac string” |
 +-----------------+-----------------------------------------------+
+
+.. exn:: Debug mode not available in the IDE
+   :undocumented:
 
 A non-interactive mode for the debugger is available via the option:
 
@@ -1204,9 +1244,9 @@ which can sometimes be so slow as to impede interactive usage. The
 reasons for the performence degradation can be intricate, like a slowly
 performing |Ltac| match or a sub-tactic whose performance only
 degrades in certain situations. The profiler generates a call tree and
-indicates the time spent in a tactic depending its calling context. Thus
+indicates the time spent in a tactic depending on its calling context. Thus
 it allows to locate the part of a tactic definition that contains the
-performance bug.
+performance issue.
 
 .. opt:: Ltac Profiling
 
@@ -1240,8 +1280,12 @@ performance bug.
 
    Goal forall x y z A B C D E F G H I J K L M N O P Q R S T U V W X Y Z,
        max x (max y z) = max (max x y) z /\ max x (max y z) = max (max x y) z
-       /\ (A /\ B /\ C /\ D /\ E /\ F /\ G /\ H /\ I /\ J /\ K /\ L /\ M /\ N /\ O /\ P /\ Q /\ R /\ S /\ T /\ U /\ V /\ W /\ X /\ Y /\ Z
-           -> Z /\ Y /\ X /\ W /\ V /\ U /\ T /\ S /\ R /\ Q /\ P /\ O /\ N /\ M /\ L /\ K /\ J /\ I /\ H /\ G /\ F /\ E /\ D /\ C /\ B /\ A).
+       /\
+       (A /\ B /\ C /\ D /\ E /\ F /\ G /\ H /\ I /\ J /\ K /\ L /\ M /\
+        N /\ O /\ P /\ Q /\ R /\ S /\ T /\ U /\ V /\ W /\ X /\ Y /\ Z
+        ->
+        Z /\ Y /\ X /\ W /\ V /\ U /\ T /\ S /\ R /\ Q /\ P /\ O /\ N /\
+        M /\ L /\ K /\ J /\ I /\ H /\ G /\ F /\ E /\ D /\ C /\ B /\ A).
    Proof.
 
 .. coqtop:: all
