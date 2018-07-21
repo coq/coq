@@ -1987,8 +1987,9 @@ let vernac_subproof gln =
     match gln with
     | None -> Proof.focus subproof_cond () 1 p
     | Some (Goal_select.SelectNth n) -> Proof.focus subproof_cond () n p
+    | Some (Goal_select.SelectId id) -> Proof.focus_id subproof_cond () id p
     | _ -> user_err ~hdr:"bracket_selector"
-             (str "Brackets only support the single numbered goal selector."))
+             (str "Brackets do not support multi-goal selectors."))
 
 let vernac_end_subproof () =
   Proof_global.simple_with_current_proof (fun _ p ->

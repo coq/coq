@@ -23,7 +23,11 @@ let number = [ '0'-'9' ]+
 
 let string = "\"" _+ "\""
 
-let undotted_sep = (number space* ':' space*)? '{' | '}' | '-'+ | '+'+ | '*'+
+let alpha = ['a'-'z' 'A'-'Z']
+
+let ident = alpha (alpha | number | '_' | "'")*
+
+let undotted_sep = ((number | '[' ident ']') space* ':' space*)? '{' | '}' | '-'+ | '+'+ | '*'+
 
 let vernac_control = "Fail" | "Time" | "Redirect" space+ string | "Timeout" space+ number
 
