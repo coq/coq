@@ -25,7 +25,7 @@ argument an hypothesis to generalize. It uses the JMeq datatype
 defined in Coq.Logic.JMeq, hence we need to require it before. For
 example, revisiting the first example of the inversion documentation:
 
-.. coqtop:: in
+.. coqtop:: in reset
 
    Require Import Coq.Logic.JMeq.
 
@@ -62,6 +62,10 @@ As the hypothesis itself did not appear in the goal, we did not need
 to use an heterogeneous equality to relate the new hypothesis to the
 old one (which just disappeared here). However, the tactic works just
 as well in this case, e.g.:
+
+.. coqtop:: none
+
+   Abort.
 
 .. coqtop:: in
 
@@ -101,9 +105,9 @@ are ``dependent induction`` and ``dependent destruction`` that do induction or
 simply case analysis on the generalized hypothesis. For example we can
 redo what we’ve done manually with dependent destruction:
 
-.. coqtop:: in
+.. coqtop:: none
 
-   Require Import Coq.Program.Equality.
+   Abort.
 
 .. coqtop:: in
 
@@ -122,9 +126,9 @@ destructed hypothesis actually appeared in the goal, the tactic would
 still be able to invert it, contrary to dependent inversion. Consider
 the following example on vectors:
 
-.. coqtop:: in
+.. coqtop:: none
 
-   Require Import Coq.Program.Equality.
+   Abort.
 
 .. coqtop:: in
 
@@ -167,7 +171,7 @@ predicates on a real example. We will develop an example application
 to the theory of simply-typed lambda-calculus formalized in a
 dependently-typed style:
 
-.. coqtop:: in
+.. coqtop:: in reset
 
    Inductive type : Type :=
             | base : type
@@ -226,10 +230,14 @@ name. A term is either an application of:
 
 Once we have this datatype we want to do proofs on it, like weakening:
 
-.. coqtop:: in undo
+.. coqtop:: in
 
    Lemma weakening : forall G D tau, term (G ; D) tau -> 
                      forall tau', term (G , tau' ; D) tau.
+
+.. coqtop:: none
+
+   Abort.
 
 The problem here is that we can’t just use induction on the typing
 derivation because it will forget about the ``G ; D`` constraint appearing
@@ -240,6 +248,10 @@ in the instance. A solution would be to rewrite the goal as:
    Lemma weakening' : forall G' tau, term G' tau ->
                       forall G D, (G ; D) = G' ->
                       forall tau', term (G, tau' ; D) tau.
+
+.. coqtop:: none
+
+   Abort.
 
 With this proper separation of the index from the instance and the
 right induction loading (putting ``G`` and ``D`` after the inducted-on
@@ -252,6 +264,7 @@ back automatically. Indeed we can simply write:
 .. coqtop:: in
 
    Require Import Coq.Program.Tactics.
+   Require Import Coq.Program.Equality.
 
 .. coqtop:: in
 
@@ -308,15 +321,11 @@ it can be used directly.
 
    apply weak, IHterm.
 
-If there is an easy first-order solution to these equations as in this
-subgoal, the ``specialize_eqs`` tactic can be used instead of giving
-explicit proof terms:
+Now concluding this subgoal is easy.
 
-.. coqtop:: all
+.. coqtop:: in
 
-   specialize_eqs IHterm.
-
-This concludes our example.
+   constructor; apply IHterm; reflexivity.
 
 .. seealso::
    The :tacn:`induction`, :tacn:`case`, and :tacn:`inversion` tactics.
@@ -332,79 +341,83 @@ involves conditional rewritings and shows how to deal with them using
 the optional tactic of the ``Hint Rewrite`` command.
 
 
-Example 1: Ackermann function
+.. example::
+   Ackermann function
 
-.. coqtop:: in
+   .. coqtop:: in reset
 
-   Reset Initial.
+      Require Import Arith.
 
-.. coqtop:: in
+   .. coqtop:: in
 
-   Require Import Arith.
+      Variable Ack : nat -> nat -> nat.
 
-.. coqtop:: in
+   .. coqtop:: in
 
-   Variable Ack : nat -> nat -> nat.
+      Axiom Ack0 : forall m:nat, Ack 0 m = S m.
+      Axiom Ack1 : forall n:nat, Ack (S n) 0 = Ack n 1.
+      Axiom Ack2 : forall n m:nat, Ack (S n) (S m) = Ack n (Ack (S n) m).
 
-.. coqtop:: in
+   .. coqtop:: in
 
-   Axiom Ack0 : forall m:nat, Ack 0 m = S m.
-   Axiom Ack1 : forall n:nat, Ack (S n) 0 = Ack n 1.
-   Axiom Ack2 : forall n m:nat, Ack (S n) (S m) = Ack n (Ack (S n) m).
+      Hint Rewrite Ack0 Ack1 Ack2 : base0.
 
-.. coqtop:: in
+   .. coqtop:: all
 
-   Hint Rewrite Ack0 Ack1 Ack2 : base0.
+      Lemma ResAck0 : Ack 3 2 = 29.
 
-.. coqtop:: all
+   .. coqtop:: all
 
-   Lemma ResAck0 : Ack 3 2 = 29.
+      autorewrite with base0 using try reflexivity.
 
-.. coqtop:: all
+.. example::
+   MacCarthy function
 
-   autorewrite with base0 using try reflexivity.
+   .. coqtop:: in reset
 
-Example 2: Mac Carthy function
+      Require Import Omega.
 
-.. coqtop:: in
+   .. coqtop:: in
 
-   Require Import Omega.
+      Variable g : nat -> nat -> nat.
 
-.. coqtop:: in
+   .. coqtop:: in
 
-   Variable g : nat -> nat -> nat.
+      Axiom g0 : forall m:nat, g 0 m = m.
+      Axiom g1 : forall n m:nat, (n > 0) -> (m > 100) -> g n m = g (pred n) (m - 10).
+      Axiom g2 : forall n m:nat, (n > 0) -> (m <= 100) -> g n m = g (S n) (m + 11).
 
-.. coqtop:: in
+   .. coqtop:: in
 
-   Axiom g0 : forall m:nat, g 0 m = m.
-   Axiom g1 : forall n m:nat, (n > 0) -> (m > 100) -> g n m = g (pred n) (m - 10).
-   Axiom g2 : forall n m:nat, (n > 0) -> (m <= 100) -> g n m = g (S n) (m + 11).
+      Hint Rewrite g0 g1 g2 using omega : base1.
 
+   .. coqtop:: in
 
-.. coqtop:: in
+      Lemma Resg0 : g 1 110 = 100.
 
-   Hint Rewrite g0 g1 g2 using omega : base1.
+   .. coqtop:: out
 
-.. coqtop:: in
+      Show.
 
-   Lemma Resg0 : g 1 110 = 100.
+   .. coqtop:: all
 
-.. coqtop:: out
+      autorewrite with base1 using reflexivity || simpl.
 
-   Show.
+   .. coqtop:: none
 
-.. coqtop:: all
+      Qed.
 
-   autorewrite with base1 using reflexivity || simpl.
+   .. coqtop:: all
 
-.. coqtop:: all
+      Lemma Resg1 : g 1 95 = 91.
 
-   Lemma Resg1 : g 1 95 = 91.
+   .. coqtop:: all
 
-.. coqtop:: all
+      autorewrite with base1 using reflexivity || simpl.
 
-   autorewrite with base1 using reflexivity || simpl.
+   .. coqtop:: none
 
+      Qed.
 
 .. _quote:
 
@@ -420,7 +433,7 @@ the form ``(f t)``. ``L`` must have a constructor of type: ``A -> L``.
 
 Here is an example:
 
-.. coqtop:: in
+.. coqtop:: in reset
 
    Require Import Quote.
 
@@ -462,14 +475,9 @@ corresponding left-hand side and call yourself recursively on sub-
 terms. If there is no match, we are at a leaf: return the
 corresponding constructor (here ``f_const``) applied to the term.
 
-
-Error messages:
-
-
-#. quote: not a simple fixpoint
+.. exn:: quote: not a simple fixpoint
 
    Happens when ``quote`` is not able to perform inversion properly.
-
 
 
 Introducing variables map
@@ -554,7 +562,13 @@ example, this is the case for the :tacn:`ring` tactic. Then one must provide to
 is ``[O S]`` then closed natural numbers will be considered as constants
 and other terms as variables.
 
-Example:
+.. coqtop:: in reset
+
+   Require Import Quote.
+
+.. coqtop:: in
+
+   Parameters A B C : Prop.
 
 .. coqtop:: in
 
@@ -624,12 +638,13 @@ About the cardinality of the set of natural numbers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The first example which shows how to use pattern matching over the
-proof contexts is the proof that natural numbers have more than two
-elements. The proof of such a lemma can be done as follows:
+proof context is a proof of the fact that natural numbers have more
+than two elements. This can be done as follows:
 
-.. coqtop:: in
+.. coqtop:: in reset
 
-   Lemma card_nat : ~ (exists x : nat, exists y : nat, forall z:nat, x = z \/ y = z).
+   Lemma card_nat :
+     ~ exists x : nat, exists y : nat, forall z:nat, x = z \/ y = z.
    Proof.
 
 .. coqtop:: in
@@ -641,8 +656,8 @@ elements. The proof of such a lemma can be done as follows:
    elim (Hy 0); elim (Hy 1); elim (Hy 2); intros;
 
    match goal with
-   | [_:(?a = ?b),_:(?a = ?c) |- _ ] =>
-            cut (b = c); [ discriminate | transitivity a; auto ]
+       | _ : ?a = ?b, _ : ?a = ?c |- _ =>
+           cut (b = c); [ discriminate | transitivity a; auto ]
    end.
 
 .. coqtop:: in
