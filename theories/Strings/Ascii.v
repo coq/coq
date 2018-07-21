@@ -40,6 +40,25 @@ Proof.
   decide equality; apply bool_dec.
 Defined.
 
+Local Open Scope lazy_bool_scope.
+
+Definition eqb (a b : ascii) : bool :=
+ match a, b with
+ | Ascii a0 a1 a2 a3 a4 a5 a6 a7,
+   Ascii b0 b1 b2 b3 b4 b5 b6 b7 =>
+    Bool.eqb a0 b0 &&& Bool.eqb a1 b1 &&& Bool.eqb a2 b2 &&& Bool.eqb a3 b3
+    &&& Bool.eqb a4 b4 &&& Bool.eqb a5 b5 &&& Bool.eqb a6 b6 &&& Bool.eqb a7 b7
+ end.
+
+Infix "=?" := eqb : char_scope.
+
+Lemma eqb_spec (a b : ascii) : reflect (a = b) (a =? b)%char.
+Proof.
+ destruct a, b; simpl.
+ do 8 (case Bool.eqb_spec; [ intros -> | constructor; now intros [= ] ]).
+ now constructor.
+Qed.
+
 (** * Conversion between natural numbers modulo 256 and ascii characters *)
 
 (** Auxiliary function that turns a positive into an ascii by
