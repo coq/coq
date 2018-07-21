@@ -196,9 +196,9 @@ let pr_gen_place pr_id = function
     ConclLocation () -> Pp.mt ()
   | HypLocation (id,InHyp) -> str "in " ++ pr_id id
   | HypLocation (id,InHypTypeOnly) ->
-      str "in (Type of " ++ pr_id id ++ str ")"
+      str "in (type of " ++ pr_id id ++ str ")"
   | HypLocation (id,InHypValueOnly) ->
-      str "in (Value of " ++ pr_id id ++ str ")"
+      str "in (value of " ++ pr_id id ++ str ")"
 
 let pr_loc_place _ _ _ = pr_gen_place (fun { CAst.v = id } -> Id.print id)
 let pr_place _ _ _ = pr_gen_place Id.print
@@ -217,6 +217,14 @@ let interp_place ist gl p =
 
 let subst_place subst pl = pl
 
+let warn_deprecated_instantiate_syntax =
+  CWarnings.create ~name:"deprecated-instantiate-syntax" ~category:"deprecated"
+         (fun (v,v',id) ->
+           let s = Id.to_string id in
+           Pp.strbrk
+             ("Syntax \"in (" ^ v ^ " of " ^ s ^ ")\" is deprecated; use \"in (" ^ v' ^ " of " ^ s ^ ")\".")
+         )
+
 ARGUMENT EXTEND hloc
     PRINTED BY pr_place
     INTERPRETED BY interp_place
@@ -231,8 +239,14 @@ ARGUMENT EXTEND hloc
 | [ "in" ident(id) ] ->
     [ HypLocation ((CAst.make id),InHyp) ]
 | [ "in" "(" "Type" "of" ident(id) ")" ] ->
-    [ HypLocation ((CAst.make id),InHypTypeOnly) ]
+    [ warn_deprecated_instantiate_syntax ("Type","type",id);
+      HypLocation ((CAst.make id),InHypTypeOnly) ]
 | [ "in" "(" "Value" "of" ident(id) ")" ] ->
+    [ warn_deprecated_instantiate_syntax ("Value","value",id);
+      HypLocation ((CAst.make id),InHypValueOnly) ]
+| [ "in" "(" "type" "of" ident(id) ")" ] ->
+    [ HypLocation ((CAst.make id),InHypTypeOnly) ]
+| [ "in" "(" "value" "of" ident(id) ")" ] ->
     [ HypLocation ((CAst.make id),InHypValueOnly) ]
 
  END

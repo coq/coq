@@ -1323,8 +1323,8 @@ name of the variable (here :g:`n`) is chosen based on :g:`T`.
    changes in the goal, its use is strongly discouraged.
 
 .. tacv:: instantiate ( @num := @term ) in @ident
-.. tacv:: instantiate ( @num := @term ) in ( Value of @ident )
-.. tacv:: instantiate ( @num := @term ) in ( Type of @ident )
+.. tacv:: instantiate ( @num := @term ) in ( value of @ident )
+.. tacv:: instantiate ( @num := @term ) in ( type of @ident )
 
    These allow to refer respectively to existential variables occurring in a
    hypothesis or in the body or the type of a local definition.
