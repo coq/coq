@@ -966,7 +966,7 @@ such that :math:`Γ_I` is :math:`[I_1 :∀ Γ_P ,A_1 ;…;I_k :∀ Γ_P ,A_k]`, 
 .. inference:: W-Ind
 
    \WFE{Γ_P}
-   (E[Γ_P ] ⊢ A_j : s_j' )_{j=1… k}
+   (E[Γ_P ] ⊢ A_j : s_j )_{j=1… k}
    (E[Γ_I ;Γ_P ] ⊢ C_i : s_{q_i} )_{i=1… n}
    ------------------------------------------
    \WF{E;\ind{p}{Γ_I}{Γ_C}}{Γ}
