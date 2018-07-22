@@ -1019,7 +1019,7 @@ Template polymorphism
 +++++++++++++++++++++
 
 Inductive types declared in :math:`\Type` are polymorphic over their arguments
-in :math:`\Type`. If :math:`A` is an arity of some sort and math:`s` is a sort, we write :math:`A_{/s}`
+in :math:`\Type`. If :math:`A` is an arity of some sort and :math:`s` is a sort, we write :math:`A_{/s}`
 for the arity obtained from :math:`A` by replacing its sort with :math:`s`.
 Especially, if :math:`A` is well-typed in some global environment and local
 context, then :math:`A_{/s}` is typable by typability of all products in the
