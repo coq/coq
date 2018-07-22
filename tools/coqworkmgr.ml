@@ -169,7 +169,7 @@ let main () =
     "-j",Arg.Set_int max_tokens, "max number of concurrent jobs";
     "-d",Arg.Set debug, "do not detach (debug)"] in
   let usage =
-    "Prints on stdout an env variable assignement to be picked up by coq\n"^
+    "Prints on stdout an env variable assignment to be picked up by coq\n"^
     "instances in order to limit the maximum number of concurrent workers.\n"^
     "The default value is 2.\n"^
     "Usage:" in

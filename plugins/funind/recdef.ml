@@ -1318,7 +1318,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
     | None   ->
 	try add_suffix current_proof_name "_subproof"
 	with e when CErrors.noncritical e ->
-          anomaly (Pp.str "open_new_goal with an unamed theorem.")
+          anomaly (Pp.str "open_new_goal with an unnamed theorem.")
   in
   let na = next_global_ident_away name Id.Set.empty in
   if Termops.occur_existential sigma gls_type then

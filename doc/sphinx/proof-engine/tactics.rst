@@ -103,7 +103,7 @@ bindings_list`` where ``bindings_list`` may be of two different forms:
 
   .. exn:: Not the right number of missing arguments.
 
-.. _occurencessets:
+.. _occurrencessets:
 
 Occurrence sets and occurrence clauses
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1024,7 +1024,7 @@ Managing the local context
       This notation allows specifying which occurrences of :token:`term` have
       to be substituted in the context. The :n:`in @goal_occurrences` clause
       is an occurrence clause whose syntax and behavior are described in
-      :ref:`goal occurences <occurencessets>`.
+      :ref:`goal occurrences <occurrencessets>`.
 
    .. tacv:: set (@ident @binders := @term) {? in @goal_occurrences }
 
@@ -1509,7 +1509,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       This syntax is used for selecting which occurrences of :token:`term`
       the case analysis has to be done on. The :n:`in @goal_occurrences`
       clause is an occurrence clause whose syntax and behavior is described
-      in :ref:`occurences sets <occurencessets>`.
+      in :ref:`occurrences sets <occurrencessets>`.
 
    .. tacv:: destruct @term {? with @bindings_list } {? as @disj_conj_intro_pattern } {? eqn:@naming_intro_pattern } {? using @term {? with @bindings_list } } {? in @goal_occurrences }
              edestruct @term {? with @bindings_list } {? as @disj_conj_intro_pattern } {? eqn:@naming_intro_pattern } {? using @term {? with @bindings_list } } {? in @goal_occurrences }
@@ -1659,7 +1659,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    This syntax is used for selecting which occurrences of :n:`@term` the
    induction has to be carried on. The :n:`in @goal_occurrences` clause is an
    occurrence clause whose syntax and behavior is described in
-   :ref:`occurences sets <occurencessets>`. If variables or hypotheses not
+   :ref:`occurrences sets <occurrencessets>`. If variables or hypotheses not
    mentioning :n:`@term` in their type are listed in :n:`@goal_occurrences`,
    those are generalized as well in the statement to prove.
 

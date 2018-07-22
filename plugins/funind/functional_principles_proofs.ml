@@ -638,11 +638,11 @@ let my_orelse tac1 tac2 g =
 (*     observe (str "using snd tac since : " ++ CErrors.print e); *)
     tac2 g
 
-let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
+let instantiate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
   let args = Array.of_list (List.map mkVar  args_id) in
-  let instanciate_one_hyp hid =
+  let instantiate_one_hyp hid =
     my_orelse
-      ( (* we instanciate the hyp if possible  *)
+      ( (* we instantiate the hyp if possible  *)
 	fun g ->
 	  let prov_hid = pf_get_new_id hid g in
 	  let c = mkApp(mkVar hid,args) in
@@ -678,7 +678,7 @@ let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
     tclTHENLIST
       [
 	tclMAP (fun hyp_id -> h_reduce_with_zeta (Locusops.onHyp hyp_id)) hyps;
-	tclMAP instanciate_one_hyp hyps;
+        tclMAP instantiate_one_hyp hyps;
 	(fun g ->
 	   let all_g_hyps_id =
 	     List.fold_right Id.Set.add (pf_ids_of_hyps g) Id.Set.empty
@@ -722,11 +722,11 @@ let build_proof
 			 tclTHENLIST [Proofview.V82.of_tactic (Simple.case t);
 				     (fun g' ->
 					let g'_nb_prod = nb_prod (project g') (pf_concl g') in
-					let nb_instanciate_partial = g'_nb_prod - g_nb_prod in
+                                        let nb_instantiate_partial = g'_nb_prod - g_nb_prod in
 			 		observe_tac "treat_new_case"
 					  (treat_new_case
 					     ptes_infos
-					     nb_instanciate_partial
+                                             nb_instantiate_partial
 					     (build_proof do_finalize)
 					     t
 					     dyn_infos)
@@ -760,7 +760,7 @@ let build_proof
 				  nb_rec_hyps  = List.length new_hyps
 			       }
 			   in
-(* 			   observe_tac "Lambda" *) (instanciate_hyps_with_args do_prove new_infos.rec_hyps [id]) g'
+(* 			   observe_tac "Lambda" *) (instantiate_hyps_with_args do_prove new_infos.rec_hyps [id]) g'
 			     (* 			   build_proof do_finalize new_infos g' *)
 			) g
 		  | _ ->
@@ -1120,7 +1120,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	in
 	(full_params, (* real params *)
 	 princ_params, (* the params of the principle which are not params of the function *)
-	 substl (* function instanciated with real params *)
+         substl (* function instantiated with real params *)
 	   (List.map var_of_decl full_params)
 	   f_body
 	)
@@ -1130,7 +1130,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	let f_body = compose_lam f_ctxt_other f_body in
 	(princ_info.params, (* real params *)
 	 [],(* all params are full params *)
-	 substl (* function instanciated with real params *)
+         substl (* function instantiated with real params *)
 	   (List.map var_of_decl princ_info.params)
 	   f_body
 	)
@@ -1321,7 +1321,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 (* 			   str "args := " ++ prlist_with_sep spc Ppconstr.pr_id  args_id *)
 
 (* 			   ); *)
-		     (* observe_tac "instancing" *) (instanciate_hyps_with_args prove_tac
+                     (* observe_tac "instancing" *) (instantiate_hyps_with_args prove_tac
 		       (List.rev_map id_of_decl princ_info.branches)
 		       (List.rev args_id))
 		   ]
@@ -1371,7 +1371,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 			 do_prove
 			 dyn_infos
 		    in
-		    instanciate_hyps_with_args prove_tac
+                    instantiate_hyps_with_args prove_tac
 		       (List.rev_map id_of_decl princ_info.branches)
 		      (List.rev args_id)
 		   ]
@@ -1728,8 +1728,8 @@ let prove_principle_for_gen
 	     ptes_info
 	     (body_info rec_hyps)
 	 in
-	 (* observe_tac "instanciate_hyps_with_args"  *)
-	   (instanciate_hyps_with_args
+         (* observe_tac "instantiate_hyps_with_args"  *)
+           (instantiate_hyps_with_args
 	      make_proof
 	      (List.map (get_name %> Nameops.Name.get_id) princ_info.branches)
 	      (List.rev args_ids)
