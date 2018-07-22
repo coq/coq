@@ -1334,7 +1334,7 @@ module rec ProofTask : sig
     t_stop     : Stateid.t;
     t_drop     : bool;
     t_states   : competence;
-    t_assign   : Proof_global.closed_proof_output Future.assignement -> unit;
+    t_assign   : Proof_global.closed_proof_output Future.assignment -> unit;
     t_loc      : Loc.t option;
     t_uuid     : Future.UUID.t;
     t_name     : string }
@@ -1373,7 +1373,7 @@ end = struct (* {{{ *)
     t_stop     : Stateid.t;
     t_drop     : bool;
     t_states   : competence;
-    t_assign   : Proof_global.closed_proof_output Future.assignement -> unit;
+    t_assign   : Proof_global.closed_proof_output Future.assignment -> unit;
     t_loc      : Loc.t option;
     t_uuid     : Future.UUID.t;
     t_name     : string }
@@ -1813,7 +1813,7 @@ and TacTask : sig
   type task = {
     t_state    : Stateid.t;
     t_state_fb : Stateid.t;
-    t_assign   : output Future.assignement -> unit;
+    t_assign   : output Future.assignment -> unit;
     t_ast      : int * aast;
     t_goal     : Goal.goal;
     t_kill     : unit -> unit;
@@ -1830,7 +1830,7 @@ end = struct (* {{{ *)
   type task = {
     t_state    : Stateid.t;
     t_state_fb : Stateid.t;
-    t_assign   : output Future.assignement -> unit;
+    t_assign   : output Future.assignment -> unit;
     t_ast      : int * aast;
     t_goal     : Goal.goal;
     t_kill     : unit -> unit;

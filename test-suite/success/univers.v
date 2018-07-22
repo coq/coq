@@ -60,7 +60,7 @@ Qed.
 
 Record U : Type := { A:=Type; a:A }.
 
-(** Check assignement of sorts to inductives and records. *)
+(** Check assignment of sorts to inductives and records. *)
 
 Variable sh : list nat.
 

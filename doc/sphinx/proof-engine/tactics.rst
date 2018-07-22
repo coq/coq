@@ -113,15 +113,15 @@ Occurrence sets and occurrence clauses
 An occurrence clause is a modifier to some tactics that obeys the
 following syntax:
 
-.. _tactic_occurence_grammar:
+.. _tactic_occurrence_grammar:
 
   .. productionlist:: `sentence`
-     occurence_clause : in `goal_occurences`
-     goal_occurences : [ident [`at_occurences`], ... , ident [`at_occurences`] [|- [* [`at_occurences`]]]]
-                      :| * |- [* [`at_occurences`]]
-                      :| *
+     occurrence_clause : in `goal_occurrences`
+     goal_occurrences : [ident [`at_occurrences`], ... , ident [`at_occurrences`] [|- [* [`at_occurrences`]]]]
+                       :| * |- [* [`at_occurrences`]]
+                       :| *
      at_occurrences : at `occurrences`
-     occurences     : [-] `num` ... `num`
+     occurrences     : [-] `num` ... `num`
 
 The role of an occurrence clause is to select a set of occurrences of a term in
 a goal. In the first case, the :n:`@ident {? at {* num}}` parts indicate that
@@ -1002,7 +1002,7 @@ The name of the hypothesis in the proof-term, however, is left unchanged.
    This notation allows  specifying which occurrences of :n:`@term` have to be
    substituted in the context. The :n:`in @goal_occurrences` clause is an
    occurrence clause whose syntax and behavior are described in
-   :ref:`goal occurences <occurencessets>`.
+   :ref:`goal occurrences <occurencessets>`.
 
 .. tacv:: set (@ident {+ @binder} := @term )
 
@@ -1483,7 +1483,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    This syntax is used for selecting which occurrences of :n:`@term` the case
    analysis has to be done on. The :n:`in @goal_occurrences` clause is an
    occurrence clause whose syntax and behavior is described in
-   :ref:`occurences sets <occurencessets>`.
+   :ref:`occurrences sets <occurencessets>`.
 
 .. tacv:: destruct @term with @bindings_list as @disj_conj_intro_pattern eqn:@naming_intro_pattern using @term with @bindings_list in @goal_occurrences
 .. tacv:: edestruct @term with @bindings_list as @disj_conj_intro_pattern eqn:@naming_intro_pattern using @term with @bindings_list in @goal_occurrences
@@ -1631,7 +1631,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    This syntax is used for selecting which occurrences of :n:`@term` the
    induction has to be carried on. The :n:`in @goal_occurrences` clause is an
    occurrence clause whose syntax and behavior is described in
-   :ref:`occurences sets <occurencessets>`. If variables or hypotheses not
+   :ref:`occurrences sets <occurencessets>`. If variables or hypotheses not
    mentioning :n:`@term` in their type are listed in :n:`@goal_occurrences`,
    those are generalized as well in the statement to prove.
 

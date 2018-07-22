@@ -1866,7 +1866,7 @@ Qed.
 
 End IntOmega.
 
-(** For now, the above modular construction is instanciated on Z,
+(** For now, the above modular construction is instantiated on Z,
     in order to retrieve the initial ROmega. *)
 
 Module ZOmega := IntOmega(Z_as_Int).

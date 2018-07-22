@@ -342,7 +342,7 @@ open Goptions
 let _ =
   declare_bool_option
     { optdepr  = false;
-      optname  = "Hidding of Program obligations";
+      optname  = "Hiding of Program obligations";
       optkey   = ["Hide";"Obligations"];
       optread  = get_hide_obligations;
       optwrite = set_hide_obligations; }

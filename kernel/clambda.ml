@@ -763,7 +763,7 @@ and lambda_of_app env f args =
                               and such, which can't be done at this time.
                               for instance, for int31: if one of the digit is
                                   not closed, it's not impossible that the number
-                                  gets fully instanciated at run-time, thus to ensure
+                                  gets fully instantiated at run-time, thus to ensure
                                   uniqueness of the representation in the vm
                                   it is necessary to try and build a caml integer
                                   during the execution *)
