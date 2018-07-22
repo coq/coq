@@ -178,7 +178,7 @@ let rec display_action print_var = function
       | DIVIDE_AND_APPROX (e1,e2,k,d) ->
           Printf.printf
             "Inequation E%d is divided by %s and the constant coefficient is \
-            rounded by substracting %s.\n" e1.id (sbi k) (sbi d)
+            rounded by subtracting %s.\n" e1.id (sbi k) (sbi d)
       | NOT_EXACT_DIVIDE (e,k) ->
           Printf.printf
             "Constant in equation E%d is not divisible by the pgcd \

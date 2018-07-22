@@ -244,7 +244,7 @@ let do_program_recursive local poly fixkind fixl ntns =
     interp_recursive ~cofix ~program_mode:true fixl ntns
   in
     (* Program-specific code *)
-    (* Get the interesting evars, those that were not instanciated *)
+    (* Get the interesting evars, those that were not instantiated *)
   let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env evd in
     (* Solve remaining evars *)
   let evd = nf_evar_map_undefined evd in
