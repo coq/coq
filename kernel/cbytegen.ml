@@ -500,6 +500,9 @@ let rec compile_lam env reloc lam sz cont =
       if Array.is_empty args then
         compile_fv_elem reloc (FVevar evk) sz cont
       else
+        (** Arguments are reversed in evar instances *)
+        let args = Array.copy args in
+        let () = Array.rev args in
         comp_app compile_fv_elem (compile_lam env) reloc (FVevar evk) args sz cont
 
   | Lconst (kn,u) -> compile_constant env reloc kn u [||] sz cont
