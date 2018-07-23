@@ -494,6 +494,26 @@ let () = define3 "constr_closenl" (list ident) int constr begin fun ids k c ->
   return (Value.of_constr ans)
 end
 
+let () = define1 "constr_case" (repr_ext val_inductive) begin fun ind ->
+  Proofview.tclENV >>= fun env ->
+  try
+    let ans = Inductiveops.make_case_info env ind Constr.RegularStyle in
+    return (Value.of_ext Value.val_case ans)
+  with e when CErrors.noncritical e ->
+    throw err_notfound
+end
+
+let () = define2 "constr_constructor" (repr_ext val_inductive) int begin fun (ind, i) k ->
+  Proofview.tclENV >>= fun env ->
+  try
+    let open Declarations in
+    let ans = Environ.lookup_mind ind env in
+    let _ = ans.mind_packets.(i).mind_consnames.(k) in
+    return (Value.of_ext val_constructor ((ind, i), (k + 1)))
+  with e when CErrors.noncritical e ->
+    throw err_notfound
+end
+
 let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
   Proofview.Goal.goals >>= function
   | [gl] ->
@@ -799,6 +819,42 @@ end
 let () = define2 "fresh_fresh" (repr_ext val_free) ident begin fun avoid id ->
   let nid = Namegen.next_ident_away_from id (fun id -> Id.Set.mem id avoid) in
   return (Value.of_ident nid)
+end
+
+(** Env *)
+
+let () = define1 "env_get" (list ident) begin fun ids ->
+  let r = match ids with
+  | [] -> None
+  | _ :: _ as ids ->
+    let (id, path) = List.sep_last ids in
+    let path = DirPath.make (List.rev path) in
+    let fp = Libnames.make_path path id in
+    try Some (Nametab.global_of_path fp) with Not_found -> None
+  in
+  return (Value.of_option Value.of_reference r)
+end
+
+let () = define1 "env_expand" (list ident) begin fun ids ->
+  let r = match ids with
+  | [] -> []
+  | _ :: _ as ids ->
+    let (id, path) = List.sep_last ids in
+    let path = DirPath.make (List.rev path) in
+    let qid = Libnames.make_qualid path id in
+    Nametab.locate_all qid
+  in
+  return (Value.of_list Value.of_reference r)
+end
+
+let () = define1 "env_path" reference begin fun r ->
+  match Nametab.path_of_global r with
+  | fp ->
+    let (path, id) = Libnames.repr_path fp in
+    let path = DirPath.repr path in
+    return (Value.of_list Value.of_ident (List.rev_append path [id]))
+  | exception Not_found ->
+    throw err_notfound
 end
 
 (** ML types *)

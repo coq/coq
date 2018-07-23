@@ -57,6 +57,13 @@ Ltac2 @ external closenl : ident list -> int -> constr -> constr := "ltac2" "con
 (** [closenl [x₁;...;xₙ] k c] abstracts over variables [x₁;...;xₙ] and replaces them with
     [Rel(k); ...; Rel(k+n-1)] in [c]. If two names are identical, the one of least index is kept. *)
 
+Ltac2 @ external case : inductive -> case := "ltac2" "constr_case".
+(** Generate the case information for a given inductive type. *)
+
+Ltac2 @ external constructor : inductive -> int -> constructor := "ltac2" "constr_constructor".
+(** Generate the i-th constructor for a given inductive type. Indexing starts
+    at 0. Panics if there is no such constructor. *)
+
 End Unsafe.
 
 Ltac2 @ external in_context : ident -> constr -> (unit -> unit) -> constr := "ltac2" "constr_in_context".

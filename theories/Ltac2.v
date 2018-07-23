@@ -18,4 +18,5 @@ Require Ltac2.Control.
 Require Ltac2.Fresh.
 Require Ltac2.Pattern.
 Require Ltac2.Std.
+Require Ltac2.Env.
 Require Export Ltac2.Notations.

@@ -44,5 +44,6 @@ theories/Constr.v
 theories/Pattern.v
 theories/Fresh.v
 theories/Std.v
+theories/Env.v
 theories/Notations.v
 theories/Ltac2.v
