@@ -501,6 +501,9 @@ let rec compile_lam env cenv lam sz cont =
       if Array.is_empty args then
         compile_fv_elem cenv (FVevar evk) sz cont
       else
+        (** Arguments are reversed in evar instances *)
+        let args = Array.copy args in
+        let () = Array.rev args in
         comp_app compile_fv_elem (compile_lam env) cenv (FVevar evk) args sz cont
 
   | Lconst (kn,u) -> compile_constant env cenv kn u [||] sz cont
