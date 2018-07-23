@@ -35,7 +35,7 @@ Theorem memo_get_correct: forall n, memo_get n memo_list = f n.
 Proof.
 assert (F1: forall n m, memo_get n (memo_make m) = f (n + m)).
 { induction n as [| n Hrec]; try (intros m; reflexivity).
-  intros m; cbn; rewrite Hrec.
+  intros m; simpl; rewrite Hrec.
   rewrite plus_n_Sm; auto. }
 intros n; transitivity (f (n + 0)); try exact (F1 n 0).
 rewrite <- plus_n_O; auto.
@@ -61,7 +61,7 @@ Theorem imemo_get_correct: forall n, memo_get n imemo_list = f n.
 Proof.
 assert (F1: forall n m, memo_get n (imemo_make (f m)) = f (S (n + m))).
 { induction n as [| n Hrec]; try (intros m; exact (eq_sym (Hg_correct m))).
-  cbn; intros m; rewrite <- Hg_correct, Hrec, <- plus_n_Sm; auto. }
+  simpl; intros m; rewrite <- Hg_correct, Hrec, <- plus_n_Sm; auto. }
 destruct n as [| n]; try reflexivity.
 unfold imemo_list; simpl; rewrite F1.
 rewrite <- plus_n_O; auto.
