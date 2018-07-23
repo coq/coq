@@ -17,7 +17,7 @@ Local Open Scope Z_scope.
 
 (* This tactic searches for nat and N and positive elements in the goal and
    translates everything into Z. It is meant as a pre-processor for
-   (r)omega; for instance a positivity hypothesis is added whenever
+   lia; for instance a positivity hypothesis is added whenever
      - a multiplication is encountered
      - an atom is encountered (that is a variable or an unknown construct)
 
@@ -85,6 +85,7 @@ Ltac zify_binop t thm a b:=
 
 Ltac zify_op_1 :=
   match goal with
+   | x := ?t : Z |- _ => pose proof (eq_refl : x = t); clearbody x
    | |- context [ Z.max ?a ?b ] => zify_binop Z.max Z.max_spec a b
    | H : context [ Z.max ?a ?b ] |- _ => zify_binop Z.max Z.max_spec a b
    | |- context [ Z.min ?a ?b ] => zify_binop Z.min Z.min_spec a b
@@ -111,60 +112,71 @@ Ltac hide_Z_of_nat t :=
   change Z.of_nat with Z_of_nat' in z;
   unfold z in *; clear z.
 
+Ltac rewrite_clear t H :=
+  rewrite t in H || let x := fresh "H" in generalize H;
+    intros x; clear dependent H; rewrite t in x.
+
+Ltac rewrite_clear_rev t H :=
+  rewrite <- t in H || let x := fresh "H" in
+    generalize H; intros x; clear dependent H; rewrite <- t in x.
+
 Ltac zify_nat_rel :=
  match goal with
   (* I: equalities *)
+  | x := ?t : nat |- _ => pose proof (eq_refl : x = t); clearbody x
   | |- (@eq nat ?a ?b) => apply (Nat2Z.inj a b) (* shortcut *)
-  | H : context [ @eq nat ?a ?b ] |- _ => rewrite <- (Nat2Z.inj_iff a b) in H
+  | H : context [ @eq nat ?a ?b ] |- _ => rewrite_clear_rev (Nat2Z.inj_iff a b) H
   | |- context [ @eq nat ?a ?b ] =>       rewrite <- (Nat2Z.inj_iff a b)
   (* II: less than *)
-  | H : context [ lt ?a ?b ] |- _ => rewrite (Nat2Z.inj_lt a b) in H
+  | H : context [ lt ?a ?b ] |- _ => rewrite_clear (Nat2Z.inj_lt a b) H
   | |- context [ lt ?a ?b ] =>       rewrite (Nat2Z.inj_lt a b)
   (* III: less or equal *)
-  | H : context [ le ?a ?b ] |- _ => rewrite (Nat2Z.inj_le a b) in H
+  | H : context [ le ?a ?b ] |- _ => rewrite_clear (Nat2Z.inj_le a b) H
   | |- context [ le ?a ?b ] =>       rewrite (Nat2Z.inj_le a b)
   (* IV: greater than *)
-  | H : context [ gt ?a ?b ] |- _ => rewrite (Nat2Z.inj_gt a b) in H
+  | H : context [ gt ?a ?b ] |- _ => rewrite_clear (Nat2Z.inj_gt a b) H
   | |- context [ gt ?a ?b ] =>       rewrite (Nat2Z.inj_gt a b)
   (* V: greater or equal *)
-  | H : context [ ge ?a ?b ] |- _ => rewrite (Nat2Z.inj_ge a b) in H
+  | H : context [ ge ?a ?b ] |- _ => rewrite_clear (Nat2Z.inj_ge a b) H
   | |- context [ ge ?a ?b ] =>       rewrite (Nat2Z.inj_ge a b)
  end.
 
 Ltac zify_nat_op :=
  match goal with
   (* misc type conversions: positive/N/Z to nat *)
-  | H : context [ Z.of_nat (Pos.to_nat ?a) ] |- _ => rewrite (positive_nat_Z a) in H
+  | H : context [ Z.of_nat (Pos.to_nat ?a) ] |- _ => rewrite_clear (positive_nat_Z a) H
   | |- context [ Z.of_nat (Pos.to_nat ?a) ] => rewrite (positive_nat_Z a)
-  | H : context [ Z.of_nat (N.to_nat ?a) ] |- _ => rewrite (N_nat_Z a) in H
+  | H : context [ Z.of_nat (N.to_nat ?a) ] |- _ => rewrite_clear (N_nat_Z a) H
   | |- context [ Z.of_nat (N.to_nat ?a) ] => rewrite (N_nat_Z a)
-  | H : context [ Z.of_nat (Z.abs_nat ?a) ] |- _ => rewrite (Zabs2Nat.id_abs a) in H
+  | H : context [ Z.of_nat (Z.abs_nat ?a) ] |- _ => rewrite_clear (Zabs2Nat.id_abs a) H
   | |- context [ Z.of_nat (Z.abs_nat ?a) ] => rewrite (Zabs2Nat.id_abs a)
 
   (* plus -> Z.add *)
-  | H : context [ Z.of_nat (plus ?a ?b) ] |- _ => rewrite (Nat2Z.inj_add a b) in H
+  | H : context [ Z.of_nat (plus ?a ?b) ] |- _ => rewrite_clear (Nat2Z.inj_add a b) H
   | |- context [ Z.of_nat (plus ?a ?b) ] => rewrite (Nat2Z.inj_add a b)
 
   (* min -> Z.min *)
-  | H : context [ Z.of_nat (min ?a ?b) ] |- _ => rewrite (Nat2Z.inj_min a b) in H
+  | H : context [ Z.of_nat (min ?a ?b) ] |- _ => rewrite_clear (Nat2Z.inj_min a b) H
   | |- context [ Z.of_nat (min ?a ?b) ] => rewrite (Nat2Z.inj_min a b)
 
   (* max -> Z.max *)
-  | H : context [ Z.of_nat (max ?a ?b) ] |- _ => rewrite (Nat2Z.inj_max a b) in H
+  | H : context [ Z.of_nat (max ?a ?b) ] |- _ => rewrite_clear (Nat2Z.inj_max a b) H
   | |- context [ Z.of_nat (max ?a ?b) ] => rewrite (Nat2Z.inj_max a b)
 
   (* minus -> Z.max (Z.sub ... ...) 0 *)
-  | H : context [ Z.of_nat (minus ?a ?b) ] |- _ => rewrite (Nat2Z.inj_sub_max a b) in H
+  | H : context [ Z.of_nat (minus ?a ?b) ] |- _ => rewrite_clear (Nat2Z.inj_sub_max a b) H
   | |- context [ Z.of_nat (minus ?a ?b) ] => rewrite (Nat2Z.inj_sub_max a b)
 
   (* pred -> minus ... -1 -> Z.max (Z.sub ... -1) 0 *)
-  | H : context [ Z.of_nat (pred ?a) ] |- _ => rewrite (pred_of_minus a) in H
+  | H : context [ Z.of_nat (pred ?a) ] |- _ => rewrite_clear (pred_of_minus a) H
   | |- context [ Z.of_nat (pred ?a) ] => rewrite (pred_of_minus a)
 
   (* mult -> Z.mul and a positivity hypothesis *)
   | H : context [ Z.of_nat (mult ?a ?b) ] |- _ =>
-        pose proof (Nat2Z.is_nonneg (mult a b));
-        rewrite (Nat2Z.inj_mul a b) in *
+        let p := fresh "p" in
+        pose proof (Nat2Z.is_nonneg (mult a b)) as p;
+        rewrite_clear (Nat2Z.inj_mul a b) H;
+        rewrite (Nat2Z.inj_mul a b) in p
   | |- context [ Z.of_nat (mult ?a ?b) ] =>
         pose proof (Nat2Z.is_nonneg (mult a b));
         rewrite (Nat2Z.inj_mul a b) in *
@@ -222,9 +234,10 @@ Ltac hide_Zpos t :=
 
 Ltac zify_positive_rel :=
  match goal with
+  | x := ?t : positive |- _ => pose proof (eq_refl : x = t); clearbody x
   (* I: equalities *)
   | |- (@eq positive ?a ?b) => apply Pos2Z.inj
-  | H : context [ @eq positive ?a ?b ] |- _ => rewrite <- (Pos2Z.inj_iff a b) in H
+  | H : context [ @eq positive ?a ?b ] |- _ => rewrite_clear_rev (Pos2Z.inj_iff a b) H
   | |- context [ @eq positive ?a ?b ] =>       rewrite <- (Pos2Z.inj_iff a b)
   (* II: less than *)
   | H : context [ (?a < ?b)%positive ] |- _ => change (a<b)%positive with (Zpos a<Zpos b) in H
@@ -257,7 +270,7 @@ Ltac zify_positive_op :=
      end
 
   (* misc type conversions: nat to positive *)
-  | H : context [ Zpos (Pos.of_succ_nat ?a) ] |- _ => rewrite (Zpos_P_of_succ_nat a) in H
+  | H : context [ Zpos (Pos.of_succ_nat ?a) ] |- _ => rewrite_clear (Zpos_P_of_succ_nat a) H
   | |- context [ Zpos (Pos.of_succ_nat ?a) ] => rewrite (Zpos_P_of_succ_nat a)
 
   (* Pos.add -> Z.add *)
@@ -265,23 +278,23 @@ Ltac zify_positive_op :=
   | |- context [ Zpos (?a + ?b) ] => change (Zpos (a+b)) with (Zpos a + Zpos b)
 
   (* Pos.min -> Z.min *)
-  | H : context [ Zpos (Pos.min ?a ?b) ] |- _ => rewrite (Pos2Z.inj_min a b) in H
+  | H : context [ Zpos (Pos.min ?a ?b) ] |- _ => rewrite_clear (Pos2Z.inj_min a b) H
   | |- context [ Zpos (Pos.min ?a ?b) ] => rewrite (Pos2Z.inj_min a b)
 
   (* Pos.max -> Z.max *)
-  | H : context [ Zpos (Pos.max ?a ?b) ] |- _ => rewrite (Pos2Z.inj_max a b) in H
+  | H : context [ Zpos (Pos.max ?a ?b) ] |- _ => rewrite_clear (Pos2Z.inj_max a b) H
   | |- context [ Zpos (Pos.max ?a ?b) ] => rewrite (Pos2Z.inj_max a b)
 
   (* Pos.sub -> Z.max 1 (Z.sub ... ...) *)
-  | H : context [ Zpos (Pos.sub ?a ?b) ] |- _ => rewrite (Pos2Z.inj_sub_max a b) in H
+  | H : context [ Zpos (Pos.sub ?a ?b) ] |- _ => rewrite_clear (Pos2Z.inj_sub_max a b) H
   | |- context [ Zpos (Pos.sub ?a ?b) ] => rewrite (Pos2Z.inj_sub_max a b)
 
   (* Pos.succ -> Z.succ *)
-  | H : context [ Zpos (Pos.succ ?a) ] |- _ => rewrite (Pos2Z.inj_succ a) in H
+  | H : context [ Zpos (Pos.succ ?a) ] |- _ => rewrite_clear (Pos2Z.inj_succ a) H
   | |- context [ Zpos (Pos.succ ?a) ] => rewrite (Pos2Z.inj_succ a)
 
   (* Pos.pred -> Pos.sub ... -1 -> Z.max 1 (Z.sub ... - 1) *)
-  | H : context [ Zpos (Pos.pred ?a) ] |- _ => rewrite <- (Pos.sub_1_r a) in H
+  | H : context [ Zpos (Pos.pred ?a) ] |- _ => rewrite_clear_rev (Pos.sub_1_r a) H
   | |- context [ Zpos (Pos.pred ?a) ] => rewrite <- (Pos.sub_1_r a)
 
   (* Pos.mul -> Z.mul and a positivity hypothesis *)
@@ -297,7 +310,7 @@ Ltac zify_positive_op :=
      let isp := isPcst a in
      match isp with
       | true => change (Zpos (xO a)) with (Zpos' (xO a)) in H
-      | _ => rewrite (Pos2Z.inj_xO a) in H
+      | _ => rewrite_clear (Pos2Z.inj_xO a) H
      end
   | |- context [ Zpos (xO ?a) ] =>
      let isp := isPcst a in
@@ -310,7 +323,7 @@ Ltac zify_positive_op :=
      let isp := isPcst a in
      match isp with
       | true => change (Zpos (xI a)) with (Zpos' (xI a)) in H
-      | _ => rewrite (Pos2Z.inj_xI a) in H
+      | _ => rewrite_clear (Pos2Z.inj_xI a) H
      end
   | |- context [ Zpos (xI ?a) ] =>
      let isp := isPcst a in
@@ -348,64 +361,68 @@ Ltac hide_Z_of_N t :=
 Ltac zify_N_rel :=
  match goal with
   (* I: equalities *)
+  | x := ?t : N |- _ => pose proof (eq_refl : x = t); clearbody x
   | |- (@eq N ?a ?b) => apply (N2Z.inj a b) (* shortcut *)
-  | H : context [ @eq N ?a ?b ] |- _ => rewrite <- (N2Z.inj_iff a b) in H
+  | H : context [ @eq N ?a ?b ] |- _ => rewrite_clear_rev (N2Z.inj_iff a b) H
   | |- context [ @eq N ?a ?b ] =>       rewrite <- (N2Z.inj_iff a b)
   (* II: less than *)
-  | H : context [ (?a < ?b)%N ] |- _ => rewrite (N2Z.inj_lt a b) in H
+  | H : context [ (?a < ?b)%N ] |- _ => rewrite_clear (N2Z.inj_lt a b) H
   | |- context [ (?a < ?b)%N ] =>       rewrite (N2Z.inj_lt a b)
   (* III: less or equal *)
-  | H : context [ (?a <= ?b)%N ] |- _ => rewrite (N2Z.inj_le a b) in H
+  | H : context [ (?a <= ?b)%N ] |- _ => rewrite_clear (N2Z.inj_le a b) H
   | |- context [ (?a <= ?b)%N ] =>       rewrite (N2Z.inj_le a b)
   (* IV: greater than *)
-  | H : context [ (?a > ?b)%N ] |- _ => rewrite (N2Z.inj_gt a b) in H
+  | H : context [ (?a > ?b)%N ] |- _ => rewrite_clear (N2Z.inj_gt a b) H
   | |- context [ (?a > ?b)%N ] =>       rewrite (N2Z.inj_gt a b)
   (* V: greater or equal *)
-  | H : context [ (?a >= ?b)%N ] |- _ => rewrite (N2Z.inj_ge a b) in H
+  | H : context [ (?a >= ?b)%N ] |- _ => rewrite_clear (N2Z.inj_ge a b) H
   | |- context [ (?a >= ?b)%N ] =>       rewrite (N2Z.inj_ge a b)
  end.
 
 Ltac zify_N_op :=
  match goal with
   (* misc type conversions: nat to positive *)
-  | H : context [ Z.of_N (N.of_nat ?a) ] |- _ => rewrite (nat_N_Z a) in H
+  | H : context [ Z.of_N (N.of_nat ?a) ] |- _ => rewrite_clear (nat_N_Z a) H
   | |- context [ Z.of_N (N.of_nat ?a) ] => rewrite (nat_N_Z a)
-  | H : context [ Z.of_N (Z.abs_N ?a) ] |- _ => rewrite (N2Z.inj_abs_N a) in H
+  | H : context [ Z.of_N (Z.abs_N ?a) ] |- _ => rewrite_clear (N2Z.inj_abs_N a) H
   | |- context [ Z.of_N (Z.abs_N ?a) ] => rewrite (N2Z.inj_abs_N a)
-  | H : context [ Z.of_N (Npos ?a) ] |- _ => rewrite (N2Z.inj_pos a) in H
+  | H : context [ Z.of_N (Npos ?a) ] |- _ => rewrite_clear (N2Z.inj_pos a) H
   | |- context [ Z.of_N (Npos ?a) ] => rewrite (N2Z.inj_pos a)
   | H : context [ Z.of_N N0 ] |- _ => change (Z.of_N N0) with Z0 in H
   | |- context [ Z.of_N N0 ] => change (Z.of_N N0) with Z0
 
   (* N.add -> Z.add *)
-  | H : context [ Z.of_N (N.add ?a ?b) ] |- _ => rewrite (N2Z.inj_add a b) in H
+  | H : context [ Z.of_N (N.add ?a ?b) ] |- _ => rewrite_clear (N2Z.inj_add a b) H
   | |- context [ Z.of_N (N.add ?a ?b) ] => rewrite (N2Z.inj_add a b)
 
   (* N.min -> Z.min *)
-  | H : context [ Z.of_N (N.min ?a ?b) ] |- _ => rewrite (N2Z.inj_min a b) in H
+  | H : context [ Z.of_N (N.min ?a ?b) ] |- _ => rewrite_clear (N2Z.inj_min a b) H
   | |- context [ Z.of_N (N.min ?a ?b) ] => rewrite (N2Z.inj_min a b)
 
   (* N.max -> Z.max *)
-  | H : context [ Z.of_N (N.max ?a ?b) ] |- _ => rewrite (N2Z.inj_max a b) in H
+  | H : context [ Z.of_N (N.max ?a ?b) ] |- _ => rewrite_clear (N2Z.inj_max a b) H
   | |- context [ Z.of_N (N.max ?a ?b) ] => rewrite (N2Z.inj_max a b)
 
   (* N.sub -> Z.max 0 (Z.sub ... ...) *)
-  | H : context [ Z.of_N (N.sub ?a ?b) ] |- _ => rewrite (N2Z.inj_sub_max a b) in H
+  | H : context [ Z.of_N (N.sub ?a ?b) ] |- _ => rewrite_clear (N2Z.inj_sub_max a b) H
   | |- context [ Z.of_N (N.sub ?a ?b) ] => rewrite (N2Z.inj_sub_max a b)
 
   (* pred -> minus ... -1 -> Z.max (Z.sub ... -1) 0 *)
-  | H : context [ Z.of_N (N.pred ?a) ] |- _ => rewrite (N.pred_sub a) in H
+  | H : context [ Z.of_N (N.pred ?a) ] |- _ => rewrite_clear (N.pred_sub a) H
   | |- context [ Z.of_N (N.pred ?a) ] => rewrite (N.pred_sub a)
 
   (* N.succ -> Z.succ *)
-  | H : context [ Z.of_N (N.succ ?a) ] |- _ => rewrite (N2Z.inj_succ a) in H
+  | H : context [ Z.of_N (N.succ ?a) ] |- _ => rewrite_clear (N2Z.inj_succ a) H
   | |- context [ Z.of_N (N.succ ?a) ] => rewrite (N2Z.inj_succ a)
 
   (* N.mul -> Z.mul and a positivity hypothesis *)
   | H : context [ Z.of_N (N.mul ?a ?b) ] |- _ =>
-        pose proof (N2Z.is_nonneg (N.mul a b)); rewrite (N2Z.inj_mul a b) in *
+    let p := fresh "p" in
+    pose proof (N2Z.is_nonneg (N.mul a b)) as p;
+    rewrite_clear (N2Z.inj_mul a b) H; rewrite (N2Z.inj_mul a b) in p
   | |- context [ Z.of_N  (N.mul ?a ?b) ] =>
-        pose proof (N2Z.is_nonneg (N.mul a b)); rewrite (N2Z.inj_mul a b) in *
+    pose proof (N2Z.is_nonneg (N.mul a b));
+    rewrite (N2Z.inj_mul a b) in *
 
   (* atoms of type N : we add a positivity condition (if not already there) *)
   | _ : 0 <= Z.of_N ?a |- _ => hide_Z_of_N a
