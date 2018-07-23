@@ -81,14 +81,14 @@ let test_dollar_ident =
   end
 
 let tac2expr = Tac2entries.Pltac.tac2expr
-let tac2type = Gram.entry_create "tactic:tac2type"
-let tac2def_val = Gram.entry_create "tactic:tac2def_val"
-let tac2def_typ = Gram.entry_create "tactic:tac2def_typ"
-let tac2def_ext = Gram.entry_create "tactic:tac2def_ext"
-let tac2def_syn = Gram.entry_create "tactic:tac2def_syn"
-let tac2def_mut = Gram.entry_create "tactic:tac2def_mut"
-let tac2def_run = Gram.entry_create "tactic:tac2def_run"
-let tac2mode = Gram.entry_create "vernac:ltac2_command"
+let tac2type = Entry.create "tactic:tac2type"
+let tac2def_val = Entry.create "tactic:tac2def_val"
+let tac2def_typ = Entry.create "tactic:tac2def_typ"
+let tac2def_ext = Entry.create "tactic:tac2def_ext"
+let tac2def_syn = Entry.create "tactic:tac2def_syn"
+let tac2def_mut = Entry.create "tactic:tac2def_mut"
+let tac2def_run = Entry.create "tactic:tac2def_run"
+let tac2mode = Entry.create "vernac:ltac2_command"
 
 let ltac1_expr = Pltac.tactic_expr
 

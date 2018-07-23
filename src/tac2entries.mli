@@ -56,32 +56,32 @@ val backtrace : backtrace Exninfo.t
 
 module Pltac :
 sig
-val tac2expr : raw_tacexpr Pcoq.Gram.entry
+val tac2expr : raw_tacexpr Pcoq.Entry.t
 
 (** Quoted entries. To be used for complex notations. *)
 
 open Tac2qexpr
 
-val q_ident : Id.t CAst.t or_anti Pcoq.Gram.entry
-val q_bindings : bindings Pcoq.Gram.entry
-val q_with_bindings : bindings Pcoq.Gram.entry
-val q_intropattern : intro_pattern Pcoq.Gram.entry
-val q_intropatterns : intro_pattern list CAst.t Pcoq.Gram.entry
-val q_destruction_arg : destruction_arg Pcoq.Gram.entry
-val q_induction_clause : induction_clause Pcoq.Gram.entry
-val q_conversion : conversion Pcoq.Gram.entry
-val q_rewriting : rewriting Pcoq.Gram.entry
-val q_clause : clause Pcoq.Gram.entry
-val q_dispatch : dispatch Pcoq.Gram.entry
-val q_occurrences : occurrences Pcoq.Gram.entry
-val q_reference : reference or_anti Pcoq.Gram.entry
-val q_strategy_flag : strategy_flag Pcoq.Gram.entry
-val q_constr_matching : constr_matching Pcoq.Gram.entry
-val q_goal_matching : goal_matching Pcoq.Gram.entry
-val q_hintdb : hintdb Pcoq.Gram.entry
-val q_move_location : move_location Pcoq.Gram.entry
-val q_pose : pose Pcoq.Gram.entry
-val q_assert : assertion Pcoq.Gram.entry
+val q_ident : Id.t CAst.t or_anti Pcoq.Entry.t
+val q_bindings : bindings Pcoq.Entry.t
+val q_with_bindings : bindings Pcoq.Entry.t
+val q_intropattern : intro_pattern Pcoq.Entry.t
+val q_intropatterns : intro_pattern list CAst.t Pcoq.Entry.t
+val q_destruction_arg : destruction_arg Pcoq.Entry.t
+val q_induction_clause : induction_clause Pcoq.Entry.t
+val q_conversion : conversion Pcoq.Entry.t
+val q_rewriting : rewriting Pcoq.Entry.t
+val q_clause : clause Pcoq.Entry.t
+val q_dispatch : dispatch Pcoq.Entry.t
+val q_occurrences : occurrences Pcoq.Entry.t
+val q_reference : reference or_anti Pcoq.Entry.t
+val q_strategy_flag : strategy_flag Pcoq.Entry.t
+val q_constr_matching : constr_matching Pcoq.Entry.t
+val q_goal_matching : goal_matching Pcoq.Entry.t
+val q_hintdb : hintdb Pcoq.Entry.t
+val q_move_location : move_location Pcoq.Entry.t
+val q_pose : pose Pcoq.Entry.t
+val q_assert : assertion Pcoq.Entry.t
 end
 
 (** {5 Hooks} *)
