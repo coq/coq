@@ -21,6 +21,8 @@ open Nativecode
 open Nativevalues
 open Context.Rel.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 (** This module implements normalization by evaluation to OCaml code *)
 
 exception Find_at of int
@@ -348,9 +350,8 @@ and nf_atom_type env sigma atom =
       let env = push_rel (LocalAssum (n,dom)) env in
       let codom,s2 = nf_type_sort env sigma (codom vn) in
       mkProd(n,dom,codom), Typeops.type_of_product env n s1 s2
-  | Aevar(evk,ty,args) ->
-    let ty = nf_type env sigma ty in
-    nf_evar env sigma evk ty args
+  | Aevar(evk, _, args) ->
+    nf_evar env sigma evk args
   | Ameta(mv,ty) ->
      let ty = nf_type env sigma ty in
      mkMeta mv, ty
@@ -387,18 +388,28 @@ and  nf_predicate env sigma ind mip params v pT =
       true, mkLambda(name,dom,body)
   | _, _ -> false, nf_type env sigma v
 
-and nf_evar env sigma evk ty args =
+and nf_evar env sigma evk args =
   let evi = try Evd.find sigma evk with Not_found -> assert false in
   let hyps = Environ.named_context_of_val (Evd.evar_filtered_hyps evi) in
+  let ty = Evd.evar_concl evi in
   if List.is_empty hyps then begin
     assert (Int.equal (Array.length args) 0);
     mkEvar (evk, [||]), ty
   end
   else
+    (** Let-bound arguments are present in the evar arguments but not in the
+        type, so we turn the let into a product. *)
+    let drop_body = function
+    | NamedDecl.LocalAssum _ as d -> d
+    | NamedDecl.LocalDef (na, _, t) -> NamedDecl.LocalAssum (na, t)
+    in
+    let hyps = List.map drop_body hyps in
     let fold accu d = Term.mkNamedProd_or_LetIn d accu in
     let t = List.fold_left fold ty hyps in
     let ty, args = nf_args env sigma args t in
-    mkEvar (evk, Array.of_list args), ty
+    (** nf_args takes arguments in the reverse order but produces them in the
+        correct one, so we have to reverse them again for the evar node *)
+    mkEvar (evk, Array.rev_of_list args), ty
 
 let evars_of_evar_map sigma =
   { Nativelambda.evars_val = Evd.existential_opt_value sigma;

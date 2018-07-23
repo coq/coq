@@ -1724,7 +1724,7 @@ let pp_mllam fmt l =
     | Mk_cofix(start) -> Format.fprintf fmt "mk_cofix_accu %i" start
     | Mk_rel i -> Format.fprintf fmt "mk_rel_accu %i" i
     | Mk_var id ->
-        Format.fprintf fmt "mk_var_accu (Names.id_of_string \"%s\")" (string_of_id id)
+        Format.fprintf fmt "mk_var_accu (Names.Id.of_string \"%s\")" (string_of_id id)
     | Mk_proj -> Format.fprintf fmt "mk_proj_accu"
     | Is_accu -> Format.fprintf fmt "is_accu"
     | Is_int -> Format.fprintf fmt "is_int"
