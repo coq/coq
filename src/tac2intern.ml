@@ -356,8 +356,8 @@ let rec unify0 env t1 t2 = match kind env t1, kind env t2 with
 let unify ?loc env t1 t2 =
   try unify0 env t1 t2
   with CannotUnify (u1, u2) ->
-    user_err ?loc (str "This expression has type " ++ pr_glbtype env t1 ++
-      str " but an expression was expected of type " ++ pr_glbtype env t2)
+    user_err ?loc (str "This expression has type" ++ spc () ++ pr_glbtype env t1 ++
+      spc () ++ str "but an expression was expected of type" ++ spc () ++ pr_glbtype env t2)
 
 let unify_arrow ?loc env ft args =
   let ft0 = ft in
@@ -372,11 +372,11 @@ let unify_arrow ?loc env ft args =
     iter ft args true
   | GTypRef _, _ :: _ ->
     if is_fun then
-      user_err ?loc (str "This function has type " ++ pr_glbtype env ft0 ++
-        str " and is applied to too many arguments")
+      user_err ?loc (str "This function has type" ++ spc () ++ pr_glbtype env ft0 ++
+        spc () ++ str "and is applied to too many arguments")
     else
-      user_err ?loc (str "This expression has type " ++ pr_glbtype env ft0 ++
-        str " and is not a function")
+      user_err ?loc (str "This expression has type" ++ spc () ++ pr_glbtype env ft0 ++
+        spc () ++ str "and is not a function")
   in
   iter ft args false
 
@@ -475,13 +475,13 @@ let check_elt_empty loc env t = match kind env t with
 | GTypVar _ ->
   user_err ?loc (str "Cannot infer an empty type for this expression")
 | GTypArrow _ | GTypRef (Tuple _, _) ->
-  user_err ?loc (str "Type " ++ pr_glbtype env t ++ str " is not an empty type")
+  user_err ?loc (str "Type" ++ spc () ++ pr_glbtype env t ++ spc () ++ str "is not an empty type")
 | GTypRef (Other kn, _) ->
   let def = Tac2env.interp_type kn in
   match def with
   | _, GTydAlg { galg_constructors = [] } -> kn
   | _ ->
-    user_err ?loc (str "Type " ++ pr_glbtype env t ++ str " is not an empty type")
+    user_err ?loc (str "Type" ++ spc () ++ pr_glbtype env t ++ spc () ++ str "is not an empty type")
 
 let check_unit ?loc t =
   let env = empty_env () in
