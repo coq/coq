@@ -1067,12 +1067,11 @@ let ml_of_instance instance u =
      let tyn = fresh_lname Anonymous in
      let i = push_symbol (SymbMeta mv) in
      MLapp(MLprimitive Mk_meta, [|get_meta_code i; MLlocal tyn|])
-  | Levar(evk,ty,args) ->
-     let tyn = fresh_lname Anonymous in
+  | Levar(evk, args) ->
      let i = push_symbol (SymbEvar evk) in
+     (** Arguments are *not* reversed in evar instances in native compilation *)
      let args = MLarray(Array.map (ml_of_lam env l) args) in
-     MLlet(tyn, ml_of_lam env l ty,
-       MLapp(MLprimitive Mk_evar, [|get_evar_code i;MLlocal tyn; args|]))
+     MLapp(MLprimitive Mk_evar, [|get_evar_code i; args|])
   | Lprod(dom,codom) ->
       let dom = ml_of_lam env l dom in
       let codom = ml_of_lam env l codom in
@@ -1749,7 +1748,7 @@ let pp_mllam fmt l =
     | Mk_cofix(start) -> Format.fprintf fmt "mk_cofix_accu %i" start
     | Mk_rel i -> Format.fprintf fmt "mk_rel_accu %i" i
     | Mk_var id ->
-        Format.fprintf fmt "mk_var_accu (Names.id_of_string \"%s\")" (string_of_id id)
+        Format.fprintf fmt "mk_var_accu (Names.Id.of_string \"%s\")" (string_of_id id)
     | Mk_proj -> Format.fprintf fmt "mk_proj_accu"
     | Is_int -> Format.fprintf fmt "is_int"
     | Cast_accu -> Format.fprintf fmt "cast_accu"

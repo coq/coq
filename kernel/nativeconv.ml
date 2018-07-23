@@ -64,7 +64,7 @@ and conv_atom env pb lvl a1 a2 cu =
     match a1, a2 with
     | Ameta (m1,_), Ameta (m2,_) ->
       if Int.equal m1 m2 then cu else raise NotConvertible
-    | Aevar (ev1,_,args1), Aevar (ev2,_,args2) ->
+    | Aevar (ev1, args1), Aevar (ev2, args2) ->
       if Evar.equal ev1 ev2 then
         Array.fold_right2 (conv_val env CONV lvl) args1 args2 cu
       else raise NotConvertible
