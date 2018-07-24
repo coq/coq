@@ -5,7 +5,7 @@ Local Open Scope Z_scope.
 Definition t := { n: Z | n > 1 }.
 
 Program Definition two : t := 2.
-Next Obligation. omega. Qed.
+Next Obligation. lia. Qed.
 
 Program Definition t_eq (x y: t) : {x=y} + {x<>y} :=
   if Z.eq_dec (proj1_sig x) (proj1_sig y) then left _ else right _.

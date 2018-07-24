@@ -61,7 +61,7 @@ Qed.
 
 (* Check mutually inductive statements *)
 
-Require Import ZArith_base Omega.
+Require Import ZArith_base Lia.
 Open Scope Z_scope.
 
 Inductive even: Z -> Prop :=
@@ -75,13 +75,13 @@ with odd_pos_even_pos : forall n, odd n -> n >= 1.
 Proof.
  intros.
  destruct H.
-   omega.
+   lia.
    apply odd_pos_even_pos in H.
-   omega.
+   lia.
  intros.
  destruct H.
   apply even_pos_odd_pos in H.
-  omega.
+  lia.
 Qed.
 
 CoInductive a : Prop := acons : b -> a

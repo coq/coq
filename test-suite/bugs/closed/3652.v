@@ -87,12 +87,12 @@ Proof.
     unfold zotval.
     unfold mp2a1s.
     ring_simplify'.
-    replace 2 with (2*1) at 2 7 by omega.
+    replace 2 with (2*1) at 2 7 by lia.
     rewrite <-?Z.mul_assoc.
     rewrite <-?Z.mul_add_distr_l.
     rewrite <-Z.mul_sub_distr_l.
-    rewrite Z.mul_cancel_l by omega.
-    replace 1 with (2-1) at 1 by omega.
+    rewrite Z.mul_cancel_l by lia.
+    replace 1 with (2-1) at 1 by lia.
     rewrite Z.add_sub_assoc.
     rewrite Z.sub_cancel_r.
     Unshelve.

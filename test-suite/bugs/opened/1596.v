@@ -1,7 +1,7 @@
 Require Import Relations.
 Require Import FSets.
 Require Import Arith.
-Require Import Omega.
+Require Import Lia.
 
 Set Keyed Unification.
 
@@ -148,14 +148,14 @@ Module MessageSpi.
     Lemma lt_trans : forall (x y z:t),(lt x y)->(lt y z)->(lt x z).
       unfold lt.
       induction x;destruct y;simpl;try tauto;destruct z;try tauto;intros.
-      omega.
+      lia.
     Qed.
 
     Lemma lt_not_eq : forall (x y:t),(lt x y)->~(eq x y).
       unfold eq;unfold lt.
       induction x;destruct y;simpl;try tauto;intro;red;intro;try (discriminate
 H0);injection H0;intros.
-      elim (lt_irrefl n);try omega.
+      elim (lt_irrefl n);try lia.
     Qed.
 
     Definition compare : forall (x y:t),(Compare lt eq x y).

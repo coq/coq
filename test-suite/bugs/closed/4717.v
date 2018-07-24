@@ -1,6 +1,6 @@
-(* Omega being smarter on recognizing nat and Z *)
+(* Lia being smarter on recognizing nat and Z *)
 
-Require Import Omega.
+Require Import Lia Zify.
 
 Definition nat' := nat.
 
@@ -10,16 +10,16 @@ Theorem le_not_eq_lt : forall (n m:nat),
     n < m.
 Proof.
   intros.
-  omega.
+  lia.
 Qed.
 
 Goal forall (x n : nat'), x = x + n - n.
 Proof.
   intros.
-  omega.
+  lia.
 Qed.
 
-Require Import ZArith ROmega.
+Require Import ZArith Lia.
 
 Open Scope Z_scope.
 
@@ -31,7 +31,7 @@ Theorem Zle_not_eq_lt : forall n m,
     n < m.
 Proof.
   intros.
-  omega.
+  lia.
   Undo.
-  romega.
+  lia.
 Qed.

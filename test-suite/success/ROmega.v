@@ -1,5 +1,5 @@
 
-Require Import ZArith ROmega.
+Require Import ZArith Lia.
 
 (* Submitted by Xavier Urbain 18 Jan 2002 *)
 
@@ -7,14 +7,14 @@ Lemma lem1 :
  forall x y : Z, (-5 < x < 5)%Z -> (-5 < y)%Z -> (-5 < x + y + 5)%Z.
 Proof.
 intros x y.
-romega.
+lia.
 Qed.
 
 (* Proposed by Pierre Crégut *)
 
 Lemma lem2 : forall x : Z, (x < 4)%Z -> (x > 2)%Z -> x = 3%Z.
 intro.
- romega.
+ lia.
 Qed.
 
 (* Proposed by Jean-Christophe Filliâtre *)
@@ -22,7 +22,7 @@ Qed.
 Lemma lem3 : forall x y : Z, x = y -> (x + x)%Z = (y + y)%Z.
 Proof.
 intros.
-romega.
+lia.
 Qed.
 
 (* Proposed by Jean-Christophe Filliâtre: confusion between an Omega *)
@@ -32,7 +32,7 @@ Section A.
 Variable x y : Z.
 Hypothesis H : (x > y)%Z.
 Lemma lem4 : (x > y)%Z.
- romega.
+ lia.
 Qed.
 End A.
 
@@ -48,7 +48,7 @@ Hypothesis L : (R1 >= 0)%Z -> S2 = S1.
 Hypothesis M : (H <= 2 * S)%Z.
 Hypothesis N : (S < H)%Z.
 Lemma lem5 : (H > 0)%Z.
- romega.
+ lia.
 Qed.
 End B.
 
@@ -56,11 +56,10 @@ End B.
 Lemma lem6 :
  forall (A : Set) (i : Z), (i <= 0)%Z -> ((i <= 0)%Z -> A) -> (i <= 0)%Z.
 intros.
- romega.
+ lia.
 Qed.
 
 (* Adapted from an example in Nijmegen/FTA/ftc/RefSeparating (Oct 2002) *)
-Require Import Omega.
 Section C.
 Parameter g : forall m : nat, m <> 0 -> Prop.
 Parameter f : forall (m : nat) (H : m <> 0), g m H.
@@ -68,23 +67,21 @@ Variable n : nat.
 Variable ap_n : n <> 0.
 Let delta := f n ap_n.
 Lemma lem7 : n = n.
- romega with nat.
+ lia.
 Qed.
 End C.
 
 (* Problem of dependencies *)
-Require Import Omega.
 Lemma lem8 : forall H : 0 = 0 -> 0 = 0, H = H -> 0 = 0.
 intros.
-romega with nat.
+lia.
 Qed.
 
 (* Bug that what caused by the use of intro_using in Omega *)
-Require Import Omega.
 Lemma lem9 :
  forall p q : nat, ~ (p <= q /\ p < q \/ q <= p /\ p < q) -> p < p \/ p <= p.
 intros.
-romega with nat.
+lia.
 Qed.
 
 (* Check that the interpretation of mult on nat enforces its positivity *)
@@ -92,5 +89,5 @@ Qed.
 (* Postponed... problem with goals of the form "(n*m=0)%nat -> (n*m=0)%Z" *)
 Lemma lem10 : forall n m : nat, le n (plus n (mult n m)).
 Proof.
-intros; romega with nat.
+intros; lia.
 Qed.

@@ -1,8 +1,8 @@
-Require Import Arith Omega.
+Require Import Arith Lia.
 
 Lemma test : forall p:nat, p<>0 -> p-1+1=p.
 Proof.
- intros; omega.
+ intros; lia.
 Qed.
 
 (** Test of new syntax for rewrite : ! ? and so on... *)

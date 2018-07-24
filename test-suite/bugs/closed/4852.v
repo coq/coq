@@ -2,7 +2,7 @@
 
 Require Import Coq.Lists.List.
 Import ListNotations.
-Require Import Omega.
+Require Import Lia.
 
 Definition wfi_lt := well_founded_induction_type Wf_nat.lt_wf.
 
@@ -16,7 +16,7 @@ Tactic Notation "wfinduction" constr(term) "on" ne_hyp_list(Hs) "as" ident(H) :=
 
 Hint Rewrite @app_comm_cons @app_assoc @app_length : app_rws.
 
-Ltac solve_nat := autorewrite with app_rws in *; cbn in *; omega.
+Ltac solve_nat := autorewrite with app_rws in *; cbn in *; lia.
 
 Notation "| x |" := (length x) (at level 11, no associativity, format "'|' x '|'").
 

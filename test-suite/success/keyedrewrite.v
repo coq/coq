@@ -23,7 +23,7 @@ Qed.
 Print Equivalent Keys.
 End foo.
 
-Require Import Arith List Omega.
+Require Import Arith List Lia.
 
 Definition G {A} (f : A -> A -> A) (x : A) := f x x.
 

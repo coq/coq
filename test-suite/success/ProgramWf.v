@@ -85,19 +85,22 @@ Time Program Fixpoint check_n  (n : nat) (P : { i | i < n } -> bool) (p : nat)
         error
   end.
 
-Require Import Omega Setoid.
+Require Import Lia Setoid.
+
+Ltac clear_if_dep H :=
+  (clear H; fail 1) || let x := fresh "H" in generalize H; intros x; clear dependent H.
 
 Next Obligation.
   intros ; simpl in *. apply H.
-  simpl in * ; omega.
+  simpl in *; lia.
 Qed.
 
 Next Obligation. simpl in *; intros.
   revert H0 ; clear_subset_proofs. intros.
-  case (le_gt_dec p i) ; intro. simpl in *. assert(p = i) by omega. subst.
+  case (le_gt_dec p i) ; intro. simpl in *. assert(p = i) by lia. subst.
   revert H0 ; clear_subset_proofs ; tauto.
 
-  apply H. simpl. omega.
+  apply H. simpl. lia.
 Qed.
 
 Program Fixpoint check_n'  (n : nat) (m : {m:nat | m = n}) (p : nat) (q:{q : nat | q = p})

@@ -1,17 +1,15 @@
-Require Import Omega.
+Require Import NArith Lia.
 
 Lemma test_nat:
   forall n, (5 + pred n <= 5 + n).
 Proof.
   intros.
-  zify.
-  omega.
+  lia.
 Qed.
 
 Lemma test_N:
   forall n, (5 + N.pred n <= 5 + n)%N.
 Proof.
   intros.
-  zify.
-  omega.
+  lia.
 Qed.

@@ -1,5 +1,5 @@
 
-Require Import ZArith ROmega.
+Require Import ZArith Lia.
 Local Open Scope Z_scope.
 
 (** Benchmark provided by Chantal Keller, that romega used to
@@ -27,5 +27,5 @@ Lemma lemma_5833 :
       (-4096 * o5 + (-2048 * s6 + (2 * v1 + (-2048 * o6 +
          (-1024 * s7 + (v0 + -1024 * o7)))))))))) >= 1024.
 Proof.
-Timeout 1 romega. (* should take a few milliseconds, not seconds *)
+Timeout 1 lia. (* should take a few milliseconds, not seconds *)
 Timeout 1 Qed. (* ditto *)

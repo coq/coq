@@ -1,25 +1,25 @@
-Require Import ZArith Omega.
+Require Import ZArith Lia.
 Open Scope Z_scope.
 
-(* Pierre L: examples gathered while debugging romega. *)
+(* Pierre L: examples gathered while debugging rlia. *)
 
-Lemma test_romega_0 :
+Lemma test_rlia_0 :
  forall m m',
   0<= m <= 1 -> 0<= m' <= 1 -> (0 < m <-> 0 < m') -> m = m'.
 Proof.
 intros.
-omega.
+lia.
 Qed.
 
-Lemma test_romega_0b :
+Lemma test_rlia_0b :
  forall m m',
   0<= m <= 1 -> 0<= m' <= 1 -> (0 < m <-> 0 < m') -> m = m'.
 Proof.
 intros m m'.
-omega.
+lia.
 Qed.
 
-Lemma test_romega_1 :
+Lemma test_rlia_1 :
  forall (z z1 z2 : Z),
     z2 <= z1 ->
     z1 <= z2 ->
@@ -29,10 +29,10 @@ Lemma test_romega_1 :
     z >= 0.
 Proof.
 intros.
-omega.
+lia.
 Qed.
 
-Lemma test_romega_1b :
+Lemma test_rlia_1b :
  forall (z z1 z2 : Z),
     z2 <= z1 ->
     z1 <= z2 ->
@@ -42,24 +42,24 @@ Lemma test_romega_1b :
     z >= 0.
 Proof.
 intros z z1 z2.
-omega.
+lia.
 Qed.
 
-Lemma test_romega_2 : forall a b c:Z,
+Lemma test_rlia_2 : forall a b c:Z,
  0<=a-b<=1 -> b-c<=2 -> a-c<=3.
 Proof.
 intros.
-omega.
+lia.
 Qed.
 
-Lemma test_romega_2b : forall a b c:Z,
+Lemma test_rlia_2b : forall a b c:Z,
  0<=a-b<=1 -> b-c<=2 -> a-c<=3.
 Proof.
 intros a b c.
-omega.
+lia.
 Qed.
 
-Lemma test_romega_3 : forall a b h hl hr ha hb,
+Lemma test_rlia_3 : forall a b h hl hr ha hb,
  0 <= ha - hl <= 1 ->
  -2 <= hl - hr <= 2 ->
  h =b+1 ->
@@ -70,10 +70,10 @@ Lemma test_romega_3 : forall a b h hl hr ha hb,
  0 <= hb - h <= 1.
 Proof.
 intros.
-omega.
+lia.
 Qed.
 
-Lemma test_romega_3b : forall a b h hl hr ha hb,
+Lemma test_rlia_3b : forall a b h hl hr ha hb,
  0 <= ha - hl <= 1 ->
  -2 <= hl - hr <= 2 ->
  h =b+1 ->
@@ -84,64 +84,64 @@ Lemma test_romega_3b : forall a b h hl hr ha hb,
  0 <= hb - h <= 1.
 Proof.
 intros a b h hl hr ha hb.
-omega.
+lia.
 Qed.
 
 
-Lemma test_romega_4 : forall hr ha,
+Lemma test_rlia_4 : forall hr ha,
  ha = 0 ->
  (ha = 0 -> hr =0) ->
  hr = 0.
 Proof.
 intros hr ha.
-omega.
+lia.
 Qed.
 
-Lemma test_romega_5 : forall hr ha,
+Lemma test_rlia_5 : forall hr ha,
  ha = 0 ->
  (~ha = 0 \/ hr =0) ->
  hr = 0.
 Proof.
 intros hr ha.
-omega.
+lia.
 Qed.
 
-Lemma test_romega_6 : forall z, z>=0 -> 0>z+2 -> False.
+Lemma test_rlia_6 : forall z, z>=0 -> 0>z+2 -> False.
 Proof.
 intros.
-omega.
+lia.
 Qed.
 
-Lemma test_romega_6b : forall z, z>=0 -> 0>z+2 -> False.
+Lemma test_rlia_6b : forall z, z>=0 -> 0>z+2 -> False.
 Proof.
 intros z.
-omega.
+lia.
 Qed.
 
-Lemma test_romega_7 : forall z,
+Lemma test_rlia_7 : forall z,
   0>=0 /\ z=0 \/ 0<=0 /\ z =0 -> 1 = z+1.
 Proof.
 intros.
-omega.
+lia.
 Qed.
 
-Lemma test_romega_7b : forall z,
+Lemma test_rlia_7b : forall z,
   0>=0 /\ z=0 \/ 0<=0 /\ z =0 -> 1 = z+1.
 Proof.
 intros.
-omega.
+lia.
 Qed.
 
 (* Magaud BZ#240 *)
 
-Lemma test_romega_8 : forall x y:Z, x*x<y*y-> ~ y*y <= x*x.
+Lemma test_rlia_8 : forall x y:Z, x*x<y*y-> ~ y*y <= x*x.
 intros.
-omega.
+lia.
 Qed.
 
-Lemma test_romega_8b : forall x y:Z, x*x<y*y-> ~ y*y <= x*x.
+Lemma test_rlia_8b : forall x y:Z, x*x<y*y-> ~ y*y <= x*x.
 intros x y.
-omega.
+lia.
 Qed.
 
 

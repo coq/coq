@@ -13,15 +13,15 @@ Program Fixpoint check_n  (n : nat) (P : { i | i < n } -> bool) (p : nat)
         error
   end.
 
-Require Import Omega.
+Require Import Lia Zify.
 
-Solve Obligations with program_simpl ; auto with *; try omega.
+Solve Obligations with program_simpl ; auto with *; try lia.
 
 Next Obligation.
-  apply H. simpl. omega.
+  apply H. simpl. lia.
 Defined.
 
 Next Obligation. 
-  case (le_lt_dec p i) ; intros. assert(i = p) by omega. subst.
+  case (le_lt_dec p i) ; intros. assert(i = p) by lia. subst.
   revert H0. clear_subset_proofs. auto.
   apply H. simpl. assumption. Defined.

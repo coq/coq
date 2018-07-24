@@ -1,6 +1,6 @@
 (* Cf BZ#546 *)
 
-Require Import Omega.
+Require Import Lia.
 
 Section S.
 
@@ -19,7 +19,7 @@ induction n.
  replace (2 * S n0) with (2*n0 + 2) ; auto with arith.
   apply DummyApp.
    2:exact Dummy2.
-   apply IHn0 ; abstract omega.
+   apply IHn0 ; abstract lia.
 Defined.
 
 End S.

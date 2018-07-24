@@ -1,7 +1,7 @@
 Require Import List.
 Require Import Arith.
 Require Import Recdef. 
-Require Import Omega.
+Require Import Lia.
 
 Function foo (xys : (list nat * list nat)) {measure (fun xys => length (fst xys) + length (snd xys))} : list nat :=
   match xys with
@@ -14,9 +14,9 @@ Function foo (xys : (list nat * list nat)) {measure (fun xys => length (fst xys)
                               end
   end.
 Proof.
-  intros; simpl; omega.
-  intros; simpl; omega.
-  intros; simpl; omega.
+  intros; simpl; lia.
+  intros; simpl; lia.
+  intros; simpl; lia.
 Qed.
 
 Function bar (xys : (list nat * list nat)) {measure (fun xys => length (fst xys) + length (snd xys))} : list nat :=
