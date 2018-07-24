@@ -85,6 +85,9 @@ sig
     val fold_constr : ('c -> 'a -> 'a) -> ('c, 'c) pt -> 'a -> 'a
 
     val to_tuple : ('c, 't) pt -> Name.t * 'c option * 't
+
+    (** Turn [LocalDef] into [LocalAssum], identity otherwise. *)
+    val drop_body : ('c, 't) pt -> ('c, 't) pt
   end
 
   (** Rel-context is represented as a list of declarations.
@@ -128,6 +131,9 @@ sig
   (** Map a given rel-context to a list where each {e local assumption} is mapped to [true]
       and each {e local definition} is mapped to [false]. *)
   val to_tags : ('c, 't) pt -> bool list
+
+  (** Turn all [LocalDef] into [LocalAssum], leave [LocalAssum] unchanged. *)
+  val drop_bodies : ('c, 't) pt -> ('c, 't) pt
 
   (** [extended_list mk n Γ] builds an instance [args] such that [Γ,Δ ⊢ args:Γ]
       with n = |Δ| and with the {e local definitions} of [Γ] skipped in
@@ -202,6 +208,9 @@ sig
     val to_tuple : ('c, 't) pt -> Id.t * 'c option * 't
     val of_tuple : Id.t * 'c option * 't -> ('c, 't) pt
 
+    (** Turn [LocalDef] into [LocalAssum], identity otherwise. *)
+    val drop_body : ('c, 't) pt -> ('c, 't) pt
+
     (** Convert [Rel.Declaration.t] value to the corresponding [Named.Declaration.t] value.
         The function provided as the first parameter determines how to translate "names" to "ids". *)
     val of_rel_decl : (Name.t -> Id.t) -> ('c, 't) Rel.Declaration.pt -> ('c, 't) pt
@@ -248,6 +257,9 @@ sig
 
   (** Return the set of all identifiers bound in a given named-context. *)
   val to_vars : ('c, 't) pt -> Id.Set.t
+
+  (** Turn all [LocalDef] into [LocalAssum], leave [LocalAssum] unchanged. *)
+  val drop_bodies : ('c, 't) pt -> ('c, 't) pt
 
   (** [to_instance Ω] builds an instance [args] such
       that [Ω ⊢ args:Ω] where [Ω] is a named-context and with the local
