@@ -68,28 +68,29 @@ type atom =
 
 let accumulate_tag = 0
 
-let accumulate_code (k:accumulator) (x:t) =
-  let o = Obj.repr k in
-  let osize = Obj.size o in
-  let r = Obj.new_block accumulate_tag (osize + 1) in
-  for i = 0 to osize - 1 do
-    Obj.set_field r i (Obj.field o i)
-  done;
-  Obj.set_field r osize (Obj.repr x);
-  (Obj.obj r:t)
+(** Unique pointer used to drive the accumulator function *)
+let ret_accu = Obj.repr (ref ())
 
-let rec accumulate (x:t) =
-  accumulate_code (Obj.magic accumulate) x
+type accu_val = { mutable acc_atm : atom; acc_arg : Obj.t list }
 
-let mk_accu_gen rcode (a:atom) =
-(*  Format.eprintf "size rcode =%i\n" (Obj.size (Obj.magic rcode)); *)
-  let r = Obj.new_block 0 3 in
-  Obj.set_field r 0 (Obj.field (Obj.magic rcode) 0);
-  Obj.set_field r 1 (Obj.field (Obj.magic rcode) 1);
-  Obj.set_field r 2 (Obj.magic a);
-  (Obj.magic r:t);;
+let mk_accu (a : atom) : t =
+  let rec accumulate data x =
+    if x == ret_accu then Obj.repr data
+    else
+      let data = { data with acc_arg = x :: data.acc_arg } in
+      let ans = Obj.repr (accumulate data) in
+      let () = Obj.set_tag ans accumulate_tag in
+      ans
+  in
+  let acc = { acc_atm = a; acc_arg = [] } in
+  let ans = Obj.repr (accumulate acc) in
+  (** FIXME: use another representation for accumulators, this causes naked
+      pointers. *)
+  let () = Obj.set_tag ans accumulate_tag in
+  (Obj.obj ans : t)
 
-let mk_accu (a:atom) = mk_accu_gen accumulate a
+let get_accu (k : accumulator) =
+  (Obj.magic k : Obj.t -> accu_val) ret_accu
 
 let mk_rel_accu i = 
   mk_accu (Arel i)
@@ -141,31 +142,27 @@ let mk_proj_accu kn c =
   mk_accu (Aproj (kn,c))
 
 let atom_of_accu (k:accumulator) =
-  (Obj.magic (Obj.field (Obj.magic k) 2) : atom)
+  (get_accu k).acc_atm
 
 let set_atom_of_accu (k:accumulator) (a:atom) =
-  Obj.set_field (Obj.magic k) 2 (Obj.magic a)
+  (get_accu k).acc_atm <- a
 
 let accu_nargs (k:accumulator) =
-  let nargs = Obj.size (Obj.magic k) - 3 in
-(*  if nargs < 0 then Format.eprintf "nargs = %i\n" nargs; *)
-  assert (nargs >= 0);
-  nargs
+  List.length (get_accu k).acc_arg
 
 let args_of_accu (k:accumulator) =
-  let nargs = accu_nargs k in
-  let f i = (Obj.magic (Obj.field (Obj.magic k) (nargs-i+2)) : t) in
-  Array.init nargs f
+  let acc = (get_accu k).acc_arg in
+  (Obj.magic (Array.of_list acc) : t array)
 
 let is_accu x =
   let o = Obj.repr x in
   Obj.is_block o && Int.equal (Obj.tag o) accumulate_tag
 
 let mk_fix_accu rec_pos pos types bodies =
-  mk_accu_gen accumulate (Afix(types,bodies,rec_pos, pos))
+  mk_accu (Afix(types,bodies,rec_pos, pos))
 
 let mk_cofix_accu pos types norm =
-  mk_accu_gen accumulate (Acofix(types,norm,pos,(Obj.magic 0 : t)))
+  mk_accu (Acofix(types,norm,pos,(Obj.magic 0 : t)))
 
 let upd_cofix (cofix :t) (cofix_fun : t) =
   let atom = atom_of_accu (Obj.magic cofix) in
