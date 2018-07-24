@@ -120,13 +120,25 @@ Ltac rewrite_clear_rev t H :=
   rewrite <- t in H || let x := fresh "H" in
     generalize H; intros x; clear dependent H; rewrite <- t in x.
 
+Ltac eq_red_l t u :=
+  let t' := eval hnf in t in
+  constr_eq t' u.
+
 Ltac zify_nat_rel :=
  match goal with
   (* I: equalities *)
-  | x := ?t : nat |- _ => pose proof (eq_refl : x = t); clearbody x
-  | |- (@eq nat ?a ?b) => apply (Nat2Z.inj a b) (* shortcut *)
-  | H : context [ @eq nat ?a ?b ] |- _ => rewrite_clear_rev (Nat2Z.inj_iff a b) H
-  | |- context [ @eq nat ?a ?b ] =>       rewrite <- (Nat2Z.inj_iff a b)
+  | x := ?t : ?T |- _ =>
+    eq_red_l T nat;
+    pose proof (eq_refl : x = t); clearbody x
+  | |- (@eq ?T ?a ?b) =>
+    eq_red_l T nat;
+    apply (Nat2Z.inj a b) (* shortcut *)
+  | H : context [ @eq ?T ?a ?b ] |- _ =>
+    eq_red_l T nat;
+    rewrite_clear_rev (Nat2Z.inj_iff a b) H
+  | |- context [ @eq ?T ?a ?b ] =>
+    eq_red_l T nat;
+    rewrite <- (Nat2Z.inj_iff a b)
   (* II: less than *)
   | H : context [ lt ?a ?b ] |- _ => rewrite_clear (Nat2Z.inj_lt a b) H
   | |- context [ lt ?a ?b ] =>       rewrite (Nat2Z.inj_lt a b)
@@ -234,11 +246,19 @@ Ltac hide_Zpos t :=
 
 Ltac zify_positive_rel :=
  match goal with
-  | x := ?t : positive |- _ => pose proof (eq_refl : x = t); clearbody x
+  | x := ?t : ?T |- _ =>
+    eq_red_l T positive;
+    pose proof (eq_refl : x = t); clearbody x
   (* I: equalities *)
-  | |- (@eq positive ?a ?b) => apply Pos2Z.inj
-  | H : context [ @eq positive ?a ?b ] |- _ => rewrite_clear_rev (Pos2Z.inj_iff a b) H
-  | |- context [ @eq positive ?a ?b ] =>       rewrite <- (Pos2Z.inj_iff a b)
+  | |- (@eq ?T ?a ?b) =>
+    eq_red_l T positive;
+    apply Pos2Z.inj
+  | H : context [ @eq ?T ?a ?b ] |- _ =>
+    eq_red_l T positive;
+    rewrite_clear_rev (Pos2Z.inj_iff a b) H
+  | |- context [ @eq ?T ?a ?b ] =>
+    eq_red_l T positive;
+    rewrite <- (Pos2Z.inj_iff a b)
   (* II: less than *)
   | H : context [ (?a < ?b)%positive ] |- _ => change (a<b)%positive with (Zpos a<Zpos b) in H
   | |- context [ (?a < ?b)%positive ] => change (a<b)%positive with (Zpos a<Zpos b)
@@ -361,10 +381,18 @@ Ltac hide_Z_of_N t :=
 Ltac zify_N_rel :=
  match goal with
   (* I: equalities *)
-  | x := ?t : N |- _ => pose proof (eq_refl : x = t); clearbody x
-  | |- (@eq N ?a ?b) => apply (N2Z.inj a b) (* shortcut *)
-  | H : context [ @eq N ?a ?b ] |- _ => rewrite_clear_rev (N2Z.inj_iff a b) H
-  | |- context [ @eq N ?a ?b ] =>       rewrite <- (N2Z.inj_iff a b)
+  | x := ?t : ?T |- _ =>
+    eq_red_l T N;
+    pose proof (eq_refl : x = t); clearbody x
+  | |- (@eq ?T ?a ?b) =>
+    eq_red_l T N;
+    apply (N2Z.inj a b) (* shortcut *)
+  | H : context [ @eq ?T ?a ?b ] |- _ =>
+    eq_red_l T N;
+    rewrite_clear_rev (N2Z.inj_iff a b) H
+  | |- context [ @eq ?T ?a ?b ] =>
+    eq_red_l T N;
+    rewrite <- (N2Z.inj_iff a b)
   (* II: less than *)
   | H : context [ (?a < ?b)%N ] |- _ => rewrite_clear (N2Z.inj_lt a b) H
   | |- context [ (?a < ?b)%N ] =>       rewrite (N2Z.inj_lt a b)
