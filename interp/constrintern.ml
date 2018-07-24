@@ -1891,9 +1891,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	  intern_applied_reference intern env (Environ.named_context globalenv) 
 	    lvar us args ref 
 	in
-	  (* Rem: GApp(_,f,[]) stands for @f *)
-	DAst.make ?loc @@
-	  GApp (f, intern_args env args_scopes (List.map fst args))
+        (* Rem: GApp(_,f,[]) stands for @f *)
+        if args = [] then DAst.make ?loc @@ GApp (f,[]) else
+          smart_gapp f loc (intern_args env args_scopes (List.map fst args))
 
     | CApp ((isproj,f), args) ->
         let f,args = match f.CAst.v with
