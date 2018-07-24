@@ -130,7 +130,7 @@ Display diffs between proof steps
 
 - coqtop and coqide can now highlight the differences between proof steps
   in color. This can be enabled from the command line or the
-  "Set Diffs on|off|removed" command. Please see the documentation for
+  `Set Diffs "on"|"off"|"removed"` command. Please see the documentation for
   details.  Showing diffs in Proof General requires small changes to PG
   (under discussion).
 

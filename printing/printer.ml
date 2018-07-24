@@ -82,11 +82,10 @@ let pr_econstr_n_core goal_concl_style env sigma n t =
   pr_constr_expr_n n (extern_constr goal_concl_style env sigma t)
 let pr_econstr_core goal_concl_style env sigma t =
   pr_constr_expr (extern_constr goal_concl_style env sigma t)
-let pr_leconstr_core goal_concl_style env sigma t =
-  pr_lconstr_expr (extern_constr goal_concl_style env sigma t)
+let pr_leconstr_core = Proof_diffs.pr_leconstr_core
 
 let pr_constr_n_env env sigma n c = pr_econstr_n_core false env sigma n (EConstr.of_constr c)
-let pr_lconstr_env env sigma c = pr_leconstr_core false env sigma (EConstr.of_constr c)
+let pr_lconstr_env = Proof_diffs.pr_lconstr_env
 let pr_constr_env env sigma c = pr_econstr_core false env sigma (EConstr.of_constr c)
 let _ = Hook.set Refine.pr_constr pr_constr_env
 
@@ -133,8 +132,7 @@ let pr_lconstr_under_binders c =
 
 let pr_etype_core goal_concl_style env sigma t =
   pr_constr_expr (extern_type goal_concl_style env sigma t)
-let pr_letype_core goal_concl_style env sigma t =
-  pr_lconstr_expr (extern_type goal_concl_style env sigma t)
+let pr_letype_core = Proof_diffs.pr_letype_core
 
 let pr_ltype_env env sigma c = pr_letype_core false env sigma (EConstr.of_constr c)
 let pr_type_env env sigma c = pr_etype_core false env sigma (EConstr.of_constr c)

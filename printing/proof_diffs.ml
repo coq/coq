@@ -251,6 +251,11 @@ let pr_letype_core goal_concl_style env sigma t =
 let pp_of_type env sigma ty =
   pr_letype_core true env sigma EConstr.(of_constr ty)
 
+let pr_leconstr_core goal_concl_style env sigma t =
+  Ppconstr.pr_lconstr_expr (Constrextern.extern_constr goal_concl_style env sigma t)
+
+let pr_lconstr_env env sigma c = pr_leconstr_core false env sigma (EConstr.of_constr c)
+
 (* fetch info from a goal, returning (idents, map, concl_pp) where
 idents is a list with one entry for each hypothesis, each entry is the list of
 idents on the lhs of the hypothesis.  map is a map from ident to hyp_info
@@ -278,10 +283,13 @@ let goal_info goal sigma =
 
     line_idents := idents :: !line_idents;
     let mid = match body with
-    | Some x -> str " := " ++ pp_of_type env sigma ty ++ str " : "
-    | None -> str " : " in
+    | Some c ->
+      let pb = pr_lconstr_env env sigma c in
+      let pb = if Constr.isCast c then surround pb else pb in
+      str " := " ++ pb
+    | None -> mt() in
     let ts = pp_of_type env sigma ty in
-    let rhs_pp = mid ++ ts in
+    let rhs_pp = mid ++ str " : " ++ ts in
 
     let make_entry () = { idents; rhs_pp; done_ = false } in
     List.iter (fun ident -> map := (StringMap.add ident (make_entry ()) !map); ()) idents

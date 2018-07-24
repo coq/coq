@@ -30,6 +30,8 @@ val diff_first_goal : Proof.t option -> Proof.t option -> Pp.t list * Pp.t
 
 open Evd
 open Proof_type
+open Environ
+open Constr
 
 (** Computes the diff between two goals
 
@@ -45,6 +47,10 @@ val diff_goals : ?prev_gs:(goal sigma) -> goal sigma option -> Pp.t
 
 (** Convert a string to a list of token strings using the lexer *)
 val tokenize_string : string -> string list
+
+val pr_letype_core         : bool -> Environ.env -> Evd.evar_map -> EConstr.types -> Pp.t
+val pr_leconstr_core       : bool -> Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t
+val pr_lconstr_env         : env -> evar_map -> constr -> Pp.t
 
 (* Exposed for unit test, don't use these otherwise *)
 (* output channel for the test log file *)
