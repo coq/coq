@@ -27,7 +27,7 @@ is shown in the figure :ref:`CoqIDE main screen <coqide_mainscreen>`.
 At the top is a menu bar, and a tool bar
 below it. The large window on the left is displaying the various
 *script buffers*. The upper right window is the *goal window*, where
-goals to prove are displayed. The lower right window is the *message
+goals to be proven are displayed. The lower right window is the *message
 window*, where various messages resulting from commands are displayed.
 At the bottom is the status bar.
 
@@ -62,8 +62,8 @@ In the figure :ref:`CoqIDE main screen <coqide_mainscreen>`,
 the running buffer is `Fermat.v`, all commands until
 the ``Theorem`` have been already executed, and the user tried to go
 forward executing ``Induction n``. That command failed because no such
-tactic exists (tactics are now in lowercase…), and the wrong word is
-underlined.
+tactic exists (names of standard tactics are written in lowercase),
+and the failing command is underlined.
 
 Notice that the processed part of the running buffer is not editable. If
 you ever want to modify something you have to go backward using the up
@@ -82,8 +82,8 @@ background in the error background color (pink by default). The same
 characterization of error-handling applies when running several commands using
 the "goto" button.
 
-If you ever try to execute a command which happens to run during a
-long time, and would like to abort it before its termination, you may
+If you ever try to execute a command that runs for a long time
+and would like to abort it before it terminates, you may
 use the interrupt button (the white cross on a red circle).
 
 There are other buttons on the |CoqIDE| toolbar: a button to save the running
@@ -141,11 +141,10 @@ Vernacular commands, templates
 
 The Templates menu allows using shortcuts to insert vernacular
 commands. This is a nice way to proceed if you are not sure of the
-spelling of the command you want.
+syntax of the command you want.
 
-Moreover, this menu offers some *templates* which will automatic
-insert a complex command like ``Fixpoint`` with a convenient shape for its
-arguments.
+Moreover, from this menu you can automatically insert templates of complex
+commands like ``Fixpoint`` that you can conveniently fill afterwards.
 
 Queries
 ------------
@@ -177,7 +176,7 @@ The `Compile` menu offers direct commands to:
 Customizations
 -------------------
 
-You may customize your environment using menu Edit/Preferences. A new
+You may customize your environment using the menu Edit/Preferences. A new
 window will be displayed, with several customization sections
 presented as a notebook.
 
@@ -189,7 +188,7 @@ automatic saving of files, by periodically saving the contents into
 files named `#f#` for each opened file `f`. You may also activate the
 *revert* feature: in case a opened file is modified on the disk by a
 third party, |CoqIDE| may read it again for you. Note that in the case
-you edited that same file, you will be prompt to choose to either
+you edited that same file, you will be prompted to choose to either
 discard your changes or not. The File charset encoding choice is
 described below in :ref:`character-encoding-saved-files`.
 
@@ -209,7 +208,7 @@ Notice that these settings are saved in the file `.coqiderc` of your
 home directory.
 
 A Gtk2 accelerator keymap is saved under the name `.coqide.keys`. It
-is not recommanded to edit this file manually: to modify a given menu
+is not recommended to edit this file manually: to modify a given menu
 shortcut, go to the corresponding menu item without releasing the
 mouse button, press the key you want for the new shortcut, and release
 the mouse button afterwards. If your system does not allow it, you may
@@ -240,14 +239,14 @@ mathematical symbols ∀ and ∃, you may define:
 
 There exists a small set of such notations already defined, in the
 file `utf8.v` of Coq library, so you may enable them just by
-``Require utf8`` inside |CoqIDE|, or equivalently, by starting |CoqIDE| with
-``coqide -l utf8``.
+``Require Import Unicode.Utf8`` inside |CoqIDE|, or equivalently,
+by starting |CoqIDE| with ``coqide -l utf8``.
 
 However, there are some issues when using such Unicode symbols: you of
 course need to use a character font which supports them. In the Fonts
 section of the preferences, the Preview line displays some Unicode
 symbols, so you could figure out if the selected font is OK. Related
-to this, one thing you may need to do is choose whether GTK+ should
+to this, one thing you may need to do is choosing whether GTK+ should
 use antialiased fonts or not, by setting the environment variable
 `GDK_USE_XFT` to 1 or 0 respectively.
 
