@@ -431,6 +431,10 @@ let vernac_notation ~atts =
   let local = enforce_module_locality atts.locality in
   Metasyntax.add_notation local (Global.env())
 
+let vernac_custom_entry ~atts s =
+  let local = enforce_module_locality atts.locality in
+  Metasyntax.declare_custom_entry local s
+
 (***********)
 (* Gallina *)
 
@@ -2096,6 +2100,8 @@ let interp ?proof ~atts ~st c =
       vernac_notation ~atts c infpl sc
   | VernacNotationAddFormat(n,k,v) ->
       Metasyntax.add_notation_extra_printing_rule n k v
+  | VernacDeclareCustomEntry s ->
+      vernac_custom_entry ~atts s
 
   (* Gallina *)
   | VernacDefinition ((discharge,kind),lid,d) ->
@@ -2224,6 +2230,7 @@ let check_vernac_supports_locality c l =
   | Some _, (
       VernacOpenCloseScope _
     | VernacSyntaxExtension _ | VernacInfix _ | VernacNotation _
+    | VernacDeclareCustomEntry _
     | VernacDefinition _ | VernacFixpoint _ | VernacCoFixpoint _
     | VernacAssumption _ | VernacStartTheoremProof _
     | VernacCoercion _ | VernacIdentityCoercion _

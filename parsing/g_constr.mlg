@@ -225,11 +225,11 @@ GRAMMAR EXTEND Gram
       | "("; c = operconstr LEVEL "200"; ")" ->
         { (match c.CAst.v with
             | CPrim (Numeral (n,true)) ->
-                CAst.make ~loc @@ CNotation("( _ )",([c],[],[],[]))
+                CAst.make ~loc @@ CNotation((InConstrEntry,"( _ )"),([c],[],[],[]))
             | _ -> c) }
       | "{|"; c = record_declaration; "|}" -> { c }
       | "{"; c = binder_constr ; "}" ->
-          { CAst.make ~loc @@ CNotation(("{ _ }"),([c],[],[],[])) }
+          { CAst.make ~loc @@ CNotation((InConstrEntry,"{ _ }"),([c],[],[],[])) }
       | "`{"; c = operconstr LEVEL "200"; "}" ->
 	  { CAst.make ~loc @@ CGeneralization (Implicit, None, c) }
       | "`("; c = operconstr LEVEL "200"; ")" ->
@@ -411,13 +411,13 @@ GRAMMAR EXTEND Gram
       | "("; p = pattern LEVEL "200"; ")" ->
           { (match p.CAst.v with
             | CPatPrim (Numeral (n,true)) ->
-                 CAst.make ~loc @@ CPatNotation("( _ )",([p],[]),[])
+                 CAst.make ~loc @@ CPatNotation((InConstrEntry,"( _ )"),([p],[]),[])
             | _ -> p) }
       | "("; p = pattern LEVEL "200"; ":"; ty = lconstr; ")" ->
           { let p =
             match p with
             | { CAst.v = CPatPrim (Numeral (n,true)) } ->
-                 CAst.make ~loc @@ CPatNotation("( _ )",([p],[]),[])
+                 CAst.make ~loc @@ CPatNotation((InConstrEntry,"( _ )"),([p],[]),[])
             | _ -> p
           in
 	  CAst.make ~loc @@ CPatCast (p, ty) }

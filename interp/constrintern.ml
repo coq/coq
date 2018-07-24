@@ -218,30 +218,36 @@ let expand_notation_string ntn n =
 (* This contracts the special case of "{ _ }" for sumbool, sumor notations *)
 (* Remark: expansion of squash at definition is done in metasyntax.ml *)
 let contract_curly_brackets ntn (l,ll,bl,bll) =
+  match ntn with
+  | InCustomEntry _,_ -> ntn,(l,ll,bl,bll)
+  | InConstrEntry, ntn ->
   let ntn' = ref ntn in
   let rec contract_squash n = function
     | [] -> []
-    | { CAst.v = CNotation ("{ _ }",([a],[],[],[])) } :: l ->
+    | { CAst.v = CNotation ((InConstrEntry,"{ _ }"),([a],[],[],[])) } :: l ->
         ntn' := expand_notation_string !ntn' n;
         contract_squash n (a::l)
     | a :: l ->
         a::contract_squash (n+1) l in
   let l = contract_squash 0 l in
   (* side effect; don't inline *)
-  !ntn',(l,ll,bl,bll)
+  (InConstrEntry,!ntn'),(l,ll,bl,bll)
 
 let contract_curly_brackets_pat ntn (l,ll) =
+  match ntn with
+  | InCustomEntry _,_ -> ntn,(l,ll)
+  | InConstrEntry, ntn ->
   let ntn' = ref ntn in
   let rec contract_squash n = function
     | [] -> []
-    | { CAst.v = CPatNotation ("{ _ }",([a],[]),[]) } :: l ->
+    | { CAst.v = CPatNotation ((InConstrEntry,"{ _ }"),([a],[]),[]) } :: l ->
         ntn' := expand_notation_string !ntn' n;
         contract_squash n (a::l)
     | a :: l ->
         a::contract_squash (n+1) l in
   let l = contract_squash 0 l in
   (* side effect; don't inline *)
-  !ntn',(l,ll)
+  (InConstrEntry,!ntn'),(l,ll)
 
 type intern_env = {
   ids: Names.Id.Set.t;
@@ -819,7 +825,7 @@ let split_by_type ids subst =
     | [] -> assert false
     | a::l -> l, Id.Map.add id (a,scl) s in
   let (terms,termlists,binders,binderlists),subst =
-    List.fold_left (fun ((terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')) (id,(scl,typ)) ->
+    List.fold_left (fun ((terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')) (id,((_,scl),typ)) ->
     match typ with
     | NtnTypeConstr ->
        let terms,terms' = bind id scl terms terms' in
@@ -847,10 +853,10 @@ let split_by_type ids subst =
   subst
 
 let split_by_type_pat ?loc ids subst =
-  let bind id scl l s =
+  let bind id (_,scopes) l s =
     match l with
     | [] -> assert false
-    | a::l -> l, Id.Map.add id (a,scl) s in
+    | a::l -> l, Id.Map.add id (a,scopes) s in
   let (terms,termlists),subst =
     List.fold_left (fun ((terms,termlists),(terms',termlists')) (id,(scl,typ)) ->
     match typ with
@@ -866,7 +872,7 @@ let split_by_type_pat ?loc ids subst =
   subst
 
 let make_subst ids l =
-  let fold accu (id, scl) a = Id.Map.add id (a, scl) accu in
+  let fold accu (id, scopes) a = Id.Map.add id (a, scopes) accu in
   List.fold_left2 fold Id.Map.empty ids l
 
 let intern_notation intern env ntnvars loc ntn fullargs =
@@ -1555,11 +1561,11 @@ let drop_notations_pattern looked_for genv =
         (* but not scopes in expl_pl *)
         let (argscs1,_) = find_remaining_scopes expl_pl pl g in
         DAst.make ?loc @@ RCPatCstr (g, List.map2 (in_pat_sc scopes) argscs1 expl_pl @ List.map (in_pat false scopes) pl, [])
-    | CPatNotation ("- _",([a],[]),[]) when is_non_zero_pat a ->
+    | CPatNotation ((InConstrEntry,"- _"),([a],[]),[]) when is_non_zero_pat a ->
       let p = match a.CAst.v with CPatPrim (Numeral (p, _)) -> p | _ -> assert false in
       let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc (ensure_kind false loc) (Numeral (p,false)) scopes in
       rcp_of_glob scopes pat
-    | CPatNotation ("( _ )",([a],[]),[]) ->
+    | CPatNotation ((InConstrEntry,"( _ )"),([a],[]),[]) ->
       in_pat top scopes a
     | CPatNotation (ntn,fullargs,extrargs) ->
       let ntn,(terms,termlists) = contract_curly_brackets_pat ntn fullargs in
@@ -1872,10 +1878,10 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	DAst.make ?loc @@
         GLetIn (na.CAst.v, inc1, int,
           intern (push_name_env ntnvars (impls_term_list inc1) env na) c2)
-    | CNotation ("- _", ([a],[],[],[])) when is_non_zero a ->
+    | CNotation ((InConstrEntry,"- _"), ([a],[],[],[])) when is_non_zero a ->
       let p = match a.CAst.v with CPrim (Numeral (p, _)) -> p | _ -> assert false in
        intern env (CAst.make ?loc @@ CPrim (Numeral (p,false)))
-    | CNotation ("( _ )",([a],[],[],[])) -> intern env a
+    | CNotation ((InConstrEntry,"( _ )"),([a],[],[],[])) -> intern env a
     | CNotation (ntn,args) ->
         intern_notation intern env ntnvars loc ntn args
     | CGeneralization (b,a,c) ->
