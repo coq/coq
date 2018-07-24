@@ -3946,7 +3946,7 @@ succeeds, and results in an error otherwise.
    This tactic checks whether its arguments are unifiable, potentially
    instantiating existential variables.
 
-.. exn:: Not unifiable.
+.. exn:: Unable to unify @term with @term.
 
 .. tacv:: unify @term @term with @ident
 
