@@ -498,6 +498,9 @@ through the <tt>Require Import</tt> command.</p>
   <dd>
     theories/Strings/Ascii.v
     theories/Strings/String.v
+    theories/Strings/BinaryString.v
+    theories/Strings/HexString.v
+    theories/Strings/OctalString.v
   </dd>
 
   <dt> <b>Reals</b>:

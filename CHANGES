@@ -111,6 +111,11 @@ SSReflect
   to the idiom {}e for the rewrite tactic (the equation e is used for
   rewriting and then discarded).
 
+Standard Library
+
+- There are now conversions between [string] and [positive], [Z],
+  [nat], and [N] in binary, octal, and hex.
+
 Changes from 8.8.0 to 8.8.1
 ===========================
 
