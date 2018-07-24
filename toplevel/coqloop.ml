@@ -318,12 +318,6 @@ let loop_flush_all () =
   Format.pp_print_flush !Topfmt.std_ft ();
   Format.pp_print_flush !Topfmt.err_ft ()
 
-let pr_open_cur_subgoals () =
-  try
-    let proof = Proof_global.give_me_the_proof () in
-    Printer.pr_open_subgoals ~proof
-  with Proof_global.NoCurrentProof -> Pp.str ""
-
 (* Goal equality heuristic. *)
 let pequal cmp1 cmp2 (a1,a2) (b1,b2) = cmp1 a1 b1 && cmp2 a2 b2
 let evleq e1 e2 = CList.equal Evar.equal e1 e2
@@ -346,7 +340,7 @@ let top_goal_print oldp newp =
     let proof_changed = not (Option.equal cproof oldp newp) in
     let print_goals = not !Flags.quiet &&
                       proof_changed && Proof_global.there_are_pending_proofs () in
-    if print_goals then Feedback.msg_notice (pr_open_cur_subgoals ())
+    if print_goals then Printer.print_and_diff oldp newp;
   with
   | exn ->
     let (e, info) = CErrors.push exn in

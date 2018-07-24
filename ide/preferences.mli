@@ -21,6 +21,7 @@ type tag = {
   tag_bold : bool;
   tag_italic : bool;
   tag_underline : bool;
+  tag_strikethrough : bool;
 }
 
 class type ['a] repr =

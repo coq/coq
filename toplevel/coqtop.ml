@@ -339,8 +339,8 @@ let do_vio opts =
 (******************************************************************************)
 (* Color Options                                                              *)
 (******************************************************************************)
-let init_color color_mode =
-  let has_color = match color_mode with
+let init_color opts =
+  let has_color = match opts.color with
   | `OFF -> false
   | `ON -> true
   | `AUTO ->
@@ -350,26 +350,23 @@ let init_color color_mode =
        its TERM variable is set to "dumb". *)
     try Sys.getenv "TERM" <> "dumb" with Not_found -> false
   in
-  if has_color then begin
-    let colors = try Some (Sys.getenv "COQ_COLORS") with Not_found -> None in
-    match colors with
-    | None ->
-      (** Default colors *)
-      Topfmt.default_styles ();
-      Topfmt.init_terminal_output ~color:true
-    | Some "" ->
-      (** No color output *)
-      Topfmt.init_terminal_output ~color:false
-    | Some s ->
-      (** Overwrite all colors *)
-      Topfmt.parse_color_config s;
-      Topfmt.init_terminal_output ~color:true
-  end
-  else
-    Topfmt.init_terminal_output ~color:false
+  let term_color =
+    if has_color then begin
+      let colors = try Some (Sys.getenv "COQ_COLORS") with Not_found -> None in
+      match colors with
+      | None -> Topfmt.default_styles (); true        (** Default colors *)
+      | Some "" -> false                              (** No color output *)
+      | Some s -> Topfmt.parse_color_config s; true   (** Overwrite all colors *)
+    end
+    else
+      false
+  in
+  if Proof_diffs.show_diffs () && not term_color && not opts.batch_mode then
+    CErrors.user_err Pp.(str "Error: -diffs requires enabling -color");
+  Topfmt.init_terminal_output ~color:term_color
 
 let print_style_tags opts =
-  let () = init_color opts.color in
+  let () = init_color opts in
   let tags = Topfmt.dump_tags () in
   let iter (t, st) =
     let opt = Terminal.eval st ^ t ^ Terminal.reset ^ "\n" in
@@ -520,7 +517,7 @@ type custom_toplevel = {
 }
 
 let coqtop_init ~opts extra =
-  init_color opts.color;
+  init_color opts;
   CoqworkmgrApi.(init !async_proofs_worker_priority);
   opts, extra
 

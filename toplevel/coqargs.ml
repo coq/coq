@@ -68,6 +68,7 @@ type coq_cmdopts = {
   impredicative_set : Declarations.set_predicativity;
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
+  diffs_set   : bool;
   time        : bool;
 
   filter_opts : bool;
@@ -117,6 +118,7 @@ let init_args = {
   impredicative_set = Declarations.PredicativeSet;
   stm_flags    = Stm.AsyncOpts.default_opts;
   debug        = false;
+  diffs_set    = false;
   time         = false;
 
   filter_opts  = false;
@@ -526,6 +528,12 @@ let parse_args arglist : coq_cmdopts * string list =
     |"-color" -> set_color oval (next ())
     |"-config"|"--config" -> { oval with print_config = true }
     |"-debug" -> Coqinit.set_debug (); oval
+    |"-diffs" -> let opt = next () in
+                  if List.exists (fun x -> opt = x) ["off"; "on"; "removed"] then
+                    Proof_diffs.write_diffs_option opt
+                  else
+                    (prerr_endline ("Error: on|off|removed expected after -diffs"); exit 1);
+                  { oval with diffs_set = true }
     |"-stm-debug" -> Stm.stm_debug := true; oval
     |"-emacs" -> set_emacs oval
     |"-filteropts" -> { oval with filter_opts = true }

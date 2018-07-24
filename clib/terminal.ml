@@ -59,6 +59,19 @@ let default = {
   suffix = None;
 }
 
+let reset = "\027[0m"
+
+let reset_style = {
+  fg_color = Some `DEFAULT;
+  bg_color = Some `DEFAULT;
+  bold = Some false;
+  italic = Some false;
+  underline = Some false;
+  negative = Some false;
+  prefix = None;
+  suffix = None;
+}
+
 let make ?fg_color ?bg_color ?bold ?italic ?underline ?negative ?style ?prefix ?suffix () =
   let st = match style with
   | None -> default
@@ -85,6 +98,25 @@ let merge s1 s2 =
     negative = set s1.negative s2.negative;
     prefix = set s1.prefix s2.prefix;
     suffix = set s1.suffix s2.suffix;
+  }
+
+let diff s1 s2 =
+  let diff_op o1 o2 reset_val = match o1 with
+  | None -> o2
+  | Some _ ->
+    match o2 with
+    | None -> reset_val
+    | Some _ -> if o1 = o2 then None else o2 in
+
+  {
+    fg_color = diff_op s1.fg_color s2.fg_color reset_style.fg_color;
+    bg_color = diff_op s1.bg_color s2.bg_color reset_style.bg_color;
+    bold = diff_op s1.bold s2.bold reset_style.bold;
+    italic = diff_op s1.italic s2.italic reset_style.italic;
+    underline = diff_op s1.underline s2.underline reset_style.underline;
+    negative = diff_op s1.negative s2.negative reset_style.negative;
+    prefix = diff_op s1.prefix s2.prefix reset_style.prefix;
+    suffix = diff_op s1.suffix s2.suffix reset_style.suffix;
   }
 
 let base_color = function
@@ -167,20 +199,8 @@ let repr st =
 let eval st =
   let tags = repr st in
   let tags = List.map string_of_int tags in
-  Printf.sprintf "\027[%sm" (String.concat ";" tags)
-
-let reset = "\027[0m"
-
-let reset_style = {
-  fg_color = Some `DEFAULT;
-  bg_color = Some `DEFAULT;
-  bold = Some false;
-  italic = Some false;
-  underline = Some false;
-  negative = Some false;
-  prefix = None;
-  suffix = None;
-}
+  if List.length tags = 0 then "" else
+    Printf.sprintf "\027[%sm" (String.concat ";" tags)
 
 let has_style t =
   Unix.isatty t && Sys.os_type = "Unix"
