@@ -1371,16 +1371,15 @@ Abbreviations
 Numeral notations
 -----------------
 
-Starting with version 8.9, the following command allows the user to customize
-the way numeral literals are parsed and printed:
-
 .. cmd:: Numeral Notation @ident__1 @ident__2 @ident__3 : @scope.
 
-  In the previous line, :n:`@ident__1` should be the name of an
-  inductive type, while :n:`@ident__2` and :n:`@ident__3` should be
-  the names of the parsing and printing functions, respectively.  The
-  parsing function :n:`@ident__2` should have one of the following
-  types:
+  This command allows the user to customize the way numeral literals
+  are parsed and printed.
+
+  The token :n:`@ident__1` should be the name of an inductive type,
+  while :n:`@ident__2` and :n:`@ident__3` should be the names of the
+  parsing and printing functions, respectively.  The parsing function
+  :n:`@ident__2` should have one of the following types:
 
     * :n:`Decimal.int -> @ident__1`
     * :n:`Decimal.int -> option @ident__1`
@@ -1399,6 +1398,10 @@ the way numeral literals are parsed and printed:
     * :n:`@ident__1 -> Z`
     * :n:`@ident__1 -> option Z`
 
+    When parsing, the application of the parsing function
+    :n:`@ident__2` to the number will be fully reduced, and universes
+    of the resulting term will be refreshed.
+
   .. cmdv:: Numeral Notation @ident__1 @ident__2 @ident__3 : @scope (warning after @num).
 
     When a literal larger than :token:`num` is parsed, a warning
@@ -1415,12 +1418,13 @@ the way numeral literals are parsed and printed:
     more compact representation of literals in types such as :g:`nat`,
     and limits parse failures due to stack overflow.  Note that a
     warning will be emitted when an integer larger than :token:`num`
-    is parsed.
+    is parsed.  Note that :n:`(abstract after @num)` has no effect
+    when :n:`@ident__2` lands in an :g:`option` type.
 
   .. exn:: Cannot interpret this number as a value of type @type
 
-    The numeral notation registered for :g:`ty` does not support the
-    given numeral.  This error is given when the interpretation
+    The numeral notation registered for :token:`type` does not support
+    the given numeral.  This error is given when the interpretation
     function returns :g:`None`, or if the interpretation is registered
     for only non-negative integers, and the given numeral is negative.
 
@@ -1429,7 +1433,7 @@ the way numeral literals are parsed and printed:
     The parsing function given to the :cmd:`Numeral Notation`
     vernacular is not of the right type.
 
-  .. exn:: @ident should go from @type to Decimal.int or (option Decimal.int).  Instead of Decimal.int, the the types Decimal.uint or Z could be used{? (require BinNums first)}.
+  .. exn:: @ident should go from @type to Decimal.int or (option Decimal.int).  Instead of Decimal.int, the types Decimal.uint or Z could be used{? (require BinNums first)}.
 
     The printing function given to the :cmd:`Numeral Notation`
     vernacular is not of the right type.
@@ -1438,20 +1442,6 @@ the way numeral literals are parsed and printed:
 
     Numeral notations can only be declared for inductive types with no
     arguments.
-
-  .. exn:: The inductive type @type cannot be used in numeral notations because support for polymorphic inductive types is not yet implemented.
-
-    Numeral notations do not currently support polymorphic inductive
-    types.  Ensure that all types involved in numeral notations are
-    declared with :g:`Unset Universe Polymorphism`, or with the
-    :g:`Monomorphic` attribute.
-
-  .. exn:: The function @ident cannot be used in numeral notations because support for polymorphic printing and parsing functions is not yet implemented.
-
-    Numeral notations do not currently support polymorphic functions
-    for printing and parsing.  Ensure that both functions passed to
-    :cmd:`Numeral Notation` are defined with :g:`Unset Universe
-    Polymorphism`, or with the :g:`Monomorphic` attribute.
 
   .. exn:: Unexpected term while parsing a numeral notation
 
@@ -1476,6 +1466,12 @@ the way numeral literals are parsed and printed:
 
     Both functions passed to :cmd:`Numeral Notation` must be single
     identifiers.
+
+  .. exn:: The reference @ident was not found in the current environment.
+
+    Identifiers passed to :cmd:`Numeral Notation` must be global
+    definitions, not notations, section variables, section-local
+    :g:`Let` bound identifiers, etc.
 
   .. warn:: Stack overflow or segmentation fault happens when working with large numbers in @type (threshold may vary depending on your system limits and on the command executed).
 
