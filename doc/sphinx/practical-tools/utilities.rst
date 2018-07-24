@@ -426,7 +426,7 @@ To build, say, two targets foo.vo and bar.vo in parallel one can use
 
   For users of coq_makefile with version < 8.7
 
-  + Support for “sub-directory” is deprecated. To perform actions before
+  + Support for "subdirectory" is deprecated. To perform actions before
     or after the build (like invoking ``make`` on a subdirectory) one can hook
     in pre-all and post-all extension points.
   + ``-extra-phony`` and ``-extra`` are deprecated. To provide additional target
@@ -434,10 +434,10 @@ To build, say, two targets foo.vo and bar.vo in parallel one can use
 
 
 
-Modules dependencies
+Module dependencies
 --------------------
 
-In order to compute modules dependencies (so to use ``make``), |Coq| comes
+In order to compute module dependencies (so to use ``make``), |Coq| comes
 with an appropriate tool, ``coqdep``.
 
 ``coqdep`` computes inter-module dependencies for |Coq| and |OCaml|
@@ -452,7 +452,7 @@ command ``Declare ML Module``.
 Dependencies of |OCaml| modules are computed by looking at
 `open` commands and the dot notation *module.value*. However, this is
 done approximately and you are advised to use ``ocamldep`` instead for the
-|OCaml| modules dependencies.
+|OCaml| module dependencies.
 
 See the man page of ``coqdep`` for more details and options.
 
@@ -470,9 +470,9 @@ coqdoc is a documentation tool for the proof assistant |Coq|, similar to
 ``javadoc`` or ``ocamldoc``. The task of coqdoc is
 
 
-#. to produce a nice |Latex| and/or HTML document from the |Coq|
-   sources, readable for a human and not only for the proof assistant;
-#. to help the user navigating in his own (or third-party) sources.
+#. to produce a nice |Latex| and/or HTML document from |Coq| source files,
+   readable for a human and not only for the proof assistant;
+#. to help the user navigate his own (or third-party) sources.
 
 
 
@@ -483,7 +483,7 @@ Documentation is inserted into |Coq| files as *special comments*. Thus
 your files will compile as usual, whether you use coqdoc or not. coqdoc
 presupposes that the given |Coq| files are well-formed (at least
 lexically). Documentation starts with ``(**``, followed by a space, and
-ends with the pending ``*)``. The documentation format is inspired by Todd
+ends with ``*)``. The documentation format is inspired by Todd
 A. Coram’s *Almost Free Text (AFT)* tool: it is mainly ``ASCII`` text with
 some syntax-light controls, described below. coqdoc is robust: it
 shouldn’t fail, whatever the input is. But remember: “garbage in,
@@ -499,7 +499,7 @@ quoted code (thus you can quote a term like ``fun x => u`` by writing  ``[fun
 x => u]``). Inside quotations, the code is pretty-printed in the same
 way as it is in code parts.
 
-Pre-formatted vernacular is enclosed by ``[[`` and ``]]``. The former must be
+Preformatted vernacular is enclosed by ``[[`` and ``]]``. The former must be
 followed by a newline and the latter must follow a newline.
 
 
@@ -525,7 +525,7 @@ or
 
 
 It gives the |Latex| and HTML texts to be produced for the given |Coq|
-token. One of the |Latex| or HTML text may be omitted, causing the
+token. Either the |Latex| or the HTML rule may be omitted, causing the
 default pretty-printing to be used for this token.
 
 The printing for one token can be removed with
@@ -565,10 +565,9 @@ commands.
 Sections
 ++++++++
 
-Sections are introduced by 1 to 4 leading stars (i.e. at the beginning
-of the line) followed by a space. One star is a section, two stars a
-sub-section, etc. The section title is given on the remaining of the
-line.
+Sections are introduced by 1 to 4 asterisks at the beginning of a line
+followed by a space and the title of the section. One asterisk is a section,
+two a subsection, etc.
 
 .. example::
 
@@ -616,7 +615,7 @@ More than 4 leading dashes produce a horizontal rule.
 Emphasis.
 +++++++++
 
-Text can be italicized by placing it in underscores. A non-identifier
+Text can be italicized by enclosing it in underscores. A non-identifier
 character must precede the leading underscore and follow the trailing
 underscore, so that uses of underscores in names aren’t mistaken for
 emphasis. Usually, these are spaces or punctuation.
@@ -671,16 +670,16 @@ Hyperlinks can be inserted into the HTML output, so that any
 identifier is linked to the place of its definition.
 
 ``coqc file.v`` automatically dumps localization information in
-``file.glob`` or appends it to a file specified using option ``--dump-glob
+``file.glob`` or appends it to a file specified using the option ``--dump-glob
 file``. Take care of erasing this global file, if any, when starting
 the whole compilation process.
 
 Then invoke coqdoc or ``coqdoc --glob-from file`` to tell coqdoc to look
-for name resolutions into the file ``file`` (it will look in ``file.glob``
+for name resolutions in the file ``file`` (it will look in ``file.glob``
 by default).
 
-Identifiers from the |Coq| standard library are linked to the Coq web
-site at `<http://coq.inria.fr/library/>`_. This behavior can be changed
+Identifiers from the |Coq| standard library are linked to the Coq website
+`<http://coq.inria.fr/library/>`_. This behavior can be changed
 using command line options ``--no-externals`` and ``--coqlib``; see below.
 
 
@@ -723,12 +722,12 @@ file (even if it starts with a ``-``). |Coq| files are identified by the
 suffixes ``.v`` and ``.g`` and |Latex| files by the suffix ``.tex``.
 
 
-:HTML output: This is the default output. One HTML file is created for
+:HTML output: This is the default output format. One HTML file is created for
   each |Coq| file given on the command line, together with a file
   ``index.html`` (unless ``option-no-index is passed``). The HTML pages use a
   style sheet named ``style.css``. Such a file is distributed with coqdoc.
 :|Latex| output: A single |Latex| file is created, on standard
-  output. It can be redirected to a file with option ``-o``. The order of
+  output. It can be redirected to a file using the option ``-o``. The order of
   files on the command line is kept in the final document. |Latex|
   files given on the command line are copied ‘as is’ in the final
   document . DVI and PostScript can be produced directly with the
@@ -754,15 +753,15 @@ Command line options
   :-o file, --output file: Redirect the output into the file ‘file’
     (meaningless with ``-html``).
   :-d dir, --directory dir: Output files into directory ‘dir’ instead of
-    current directory (option ``-d`` does not change the filename specified
-    with option ``-o``, if any).
+    the current directory (option ``-d`` does not change the filename specified
+    with the option ``-o``, if any).
   :--body-only: Suppress the header and trailer of the final document.
     Thus, you can insert the resulting document into a larger one.
   :-p string, --preamble string: Insert some material in the |Latex|
     preamble, right before ``\begin{document}`` (meaningless with ``-html``).
   :--vernac-file file,--tex-file file: Considers the file ‘file’
     respectively as a ``.v`` (or ``.g``) file or a ``.tex`` file.
-  :--files-from file: Read file names to process in file ‘file’ as if
+  :--files-from file: Read file names to be processed from the file ‘file’ as if
     they were given on the command line. Useful for program sources split
     up into several directories.
   :-q, --quiet: Be quiet. Do not print anything except errors.
@@ -773,7 +772,7 @@ Command line options
 
 **Index options**
 
-  Default behavior is to build an index, for the HTML output only,
+  The default behavior is to build an index, for the HTML output only,
   into ``index.html``.
 
   :--no-index: Do not output the index.
@@ -794,7 +793,7 @@ Command line options
     contents.
 
 
-**Hyperlinks options**
+**Hyperlink options**
 
   :--glob-from file: Make references using |Coq| globalizations from file
     file. (Such globalizations are obtained with Coq option ``-dump-glob``).
@@ -850,9 +849,9 @@ Command line options
     The behavior of options ``-g`` and ``-l`` can be locally overridden using the
     ``(* begin show *) … (* end show *)`` environment (see above).
 
-    There are a few options to drive the parsing of comments:
+    There are a few options that control the parsing of comments:
 
-  :--parse-comments: Parses regular comments delimited by ``(*`` and ``*)`` as
+  :--parse-comments: Parse regular comments delimited by ``(*`` and ``*)`` as
     well. They are typeset inline.
   :--plain-comments: Do not interpret comments, simply copy them as
     plain-text.
@@ -862,7 +861,7 @@ Command line options
 **Language options**
 
 
-  Default behavior is to assume ASCII 7 bits input files.
+  The default behavior is to assume ASCII 7 bit input files.
 
   :-latin1, --latin1: Select ISO-8859-1 input files. It is equivalent to
     --inputenc latin1 --charset iso-8859-1.
@@ -927,7 +926,7 @@ macros:
 Embedded Coq phrases inside |Latex| documents
 ---------------------------------------------
 
-When writing a documentation about a proof development, one may want
+When writing documentation about a proof development, one may want
 to insert |Coq| phrases inside a |Latex| document, possibly together
 with the corresponding answers of the system. We provide a mechanical
 way to process such |Coq| phrases embedded in |Latex| files: the ``coq-tex``
