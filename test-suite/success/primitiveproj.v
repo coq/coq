@@ -193,12 +193,13 @@ Set Primitive Projections.
 Record s (x:nat) (y:=S x) := {c:=x; d:x=c}.
 Lemma f : 0=1.
 Proof.
-Fail apply d.
+  Fail apply d.
 (*
 split.
 reflexivity.
 Qed.
 *)
+Abort.
 
 (* Primitive projection match compilation *)
 Require Import List.
@@ -220,3 +221,9 @@ Fixpoint split_at {A} (l : list A) (n : nat) : prod (list A) (list A) :=
 Time Eval vm_compute in split_at (repeat 0 20) 10. (* Takes 0s *)
 Time Eval vm_compute in split_at (repeat 0 40) 20. (* Takes 0.001s *)
 Timeout 1 Time Eval vm_compute in split_at (repeat 0 60) 30. (* Used to take 60s, now takes 0.001s *)
+
+Check (@eq_refl _ 0 <: 0 = fst (pair 0 1)).
+Fail Check (@eq_refl _ 0 <: 0 = snd (pair 0 1)).
+
+Check (@eq_refl _ 0 <<: 0 = fst (pair 0 1)).
+Fail Check (@eq_refl _ 0 <<: 0 = snd (pair 0 1)).

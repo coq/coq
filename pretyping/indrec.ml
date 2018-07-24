@@ -79,7 +79,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
   let indf = make_ind_family(pind, Context.Rel.to_extended_list mkRel 0 lnamespar) in
   let constrs = get_constructors env indf in
-  let projs = get_projections env indf in
+  let projs = get_projections env ind in
 
   let () = if Option.is_empty projs then check_privacy_block mib in
   let () = 

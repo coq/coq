@@ -689,8 +689,8 @@ let check_rigidity isrigid =
     user_err  (strbrk "Multiple sequences of implicit arguments available only for references that cannot be applied to an arbitrarily large number of arguments.")
 
 let projection_implicits env p impls = 
-  let pb = Environ.lookup_projection p env in
-    CList.skipn_at_least pb.Declarations.proj_npars impls
+  let npars = Projection.npars p in
+  CList.skipn_at_least npars impls
 
 let declare_manual_implicits local ref ?enriching l =
   let flags = !implicit_args in

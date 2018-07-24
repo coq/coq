@@ -52,7 +52,6 @@ type mind_key = mutual_inductive_body * link_info ref
 
 type globals = {
   env_constants : constant_key Cmap_env.t;
-  env_projections : projection_body Cmap_env.t;
   env_inductives : mind_key Mindmap_env.t;
   env_modules : module_body MPmap.t;
   env_modtypes : module_type_body MPmap.t;
@@ -110,7 +109,6 @@ let empty_rel_context_val = {
 let empty_env = {
   env_globals = {
     env_constants = Cmap_env.empty;
-    env_projections = Cmap_env.empty;
     env_inductives = Mindmap_env.empty;
     env_modules = MPmap.empty;
     env_modtypes = MPmap.empty};
@@ -490,11 +488,24 @@ let polymorphic_pconstant (cst,u) env =
 let type_in_type_constant cst env =
   not (lookup_constant cst env).const_typing_flags.check_universes
 
-let lookup_projection cst env =
-  Cmap_env.find (Projection.constant cst) env.env_globals.env_projections
+let lookup_projection p env =
+  let mind,i = Projection.inductive p in
+  let mib = lookup_mind mind env in
+  (if not (Int.equal mib.mind_nparams (Projection.npars p))
+   then anomaly ~label:"lookup_projection" Pp.(str "Bad number of parameters on projection."));
+  match mib.mind_record with
+  | NotRecord | FakeRecord -> anomaly ~label:"lookup_projection" Pp.(str "not a projection")
+  | PrimRecord infos ->
+    let _,_,typs = infos.(i) in
+    typs.(Projection.arg p)
 
-let is_projection cst env =
-  Cmap_env.mem cst env.env_globals.env_projections
+let get_projection env ind ~proj_arg =
+  let mib = lookup_mind (fst ind) env in
+  Declareops.inductive_make_projection ind mib ~proj_arg
+
+let get_projections env ind =
+  let mib = lookup_mind (fst ind) env in
+  Declareops.inductive_make_projections ind mib
 
 (* Mutual Inductives *)
 let polymorphic_ind (mind,i) env =
@@ -518,17 +529,9 @@ let template_polymorphic_pind (ind,u) env =
   
 let add_mind_key kn (mind, _ as mind_key) env =
   let new_inds = Mindmap_env.add kn mind_key env.env_globals.env_inductives in
-  let new_projections = match mind.mind_record with
-    | NotRecord | FakeRecord -> env.env_globals.env_projections
-    | PrimRecord projs ->
-      Array.fold_left (fun accu (id, kns, pbs) ->
-      Array.fold_left2 (fun accu kn pb ->
-          Cmap_env.add kn pb accu) accu kns pbs)
-        env.env_globals.env_projections projs
-  in
   let new_globals =
     { env.env_globals with
-        env_inductives = new_inds; env_projections = new_projections; } in
+        env_inductives = new_inds; } in
   { env with env_globals = new_globals }
 
 let add_mind kn mib env =

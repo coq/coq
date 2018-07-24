@@ -273,7 +273,7 @@ let update v1 (no,t) =
 type stack_member =
   | Zapp of fconstr array
   | ZcaseT of case_info * constr * constr array * fconstr subs
-  | Zproj of int * int * Projection.t
+  | Zproj of Projection.Repr.t
   | Zfix of fconstr * stack
   | Zshift of int
   | Zupdate of fconstr
@@ -497,8 +497,8 @@ let rec zip m stk =
     | ZcaseT(ci,p,br,e)::s ->
         let t = FCaseT(ci, p, m, br, e) in
         zip {norm=neutr m.norm; term=t} s
-    | Zproj (i,j,cst) :: s -> 
-        zip {norm=neutr m.norm; term=FProj (cst,m)} s
+    | Zproj p :: s ->
+        zip {norm=neutr m.norm; term=FProj (Projection.make p true,m)} s
     | Zfix(fx,par)::s ->
         zip fx (par @ append_stack [|m|] s)
     | Zshift(n)::s ->
@@ -618,21 +618,25 @@ let drop_parameters depth n argstk =
 
 let eta_expand_ind_stack env ind m s (f, s') =
   let mib = lookup_mind (fst ind) env in
-    match mib.mind_record with
-    | PrimRecord info when mib.mind_finite <> CoFinite ->
-      let (_, projs, pbs) = info.(snd ind) in
-	(* (Construct, pars1 .. parsm :: arg1...argn :: []) ~= (f, s') ->
-	   arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
-      let pars = mib.mind_nparams in
-      let right = fapp_stack (f, s') in
-      let (depth, args, s) = strip_update_shift_app m s in
-      (** Try to drop the params, might fail on partially applied constructors. *)
-      let argss = try_drop_parameters depth pars args in
-	let hstack =
-	  Array.map (fun p -> { norm = Red; (* right can't be a constructor though *)
-			     term = FProj (Projection.make p false, right) }) projs in
-	argss, [Zapp hstack]	
-    | _ -> raise Not_found (* disallow eta-exp for non-primitive records *)
+  (* disallow eta-exp for non-primitive records *)
+  if not (mib.mind_finite == BiFinite) then raise Not_found;
+  match Declarations.inductive_make_projections ind mib with
+  | Some projs ->
+    (* (Construct, pars1 .. parsm :: arg1...argn :: []) ~= (f, s') ->
+       arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
+    let pars = mib.mind_nparams in
+    let right = fapp_stack (f, s') in
+    let (depth, args, s) = strip_update_shift_app m s in
+    (** Try to drop the params, might fail on partially applied constructors. *)
+    let argss = try_drop_parameters depth pars args in
+    let hstack =
+      Array.map (fun p ->
+          { norm = Red; (* right can't be a constructor though *)
+            term = FProj (Projection.make p false, right) })
+        projs
+    in
+    argss, [Zapp hstack]
+  | None -> raise Not_found (* disallow eta-exp for non-primitive records *)
 
 let rec project_nth_arg n argstk =
   match argstk with
@@ -669,8 +673,7 @@ let contract_fix_vect fix =
   (subs_cons(Array.init nfix make_body, env), thisbody)
 
 let unfold_projection env p =
-  let pb = lookup_projection p env in
-  Zproj (pb.proj_npars, pb.proj_arg, p)
+  Zproj (Projection.repr p)
 
 (*********************************************************************)
 (* A machine that inspects the head of a term until it finds an
@@ -748,9 +751,9 @@ let rec knr info m stk =
             let stk' = par @ append_stack [|rarg|] s in
             let (fxe,fxbd) = contract_fix_vect fx.term in
             knit info fxe fxbd stk'
-       | (depth, args, Zproj (n, m, cst)::s) ->
-	    let rargs = drop_parameters depth n args in
-	    let rarg = project_nth_arg m rargs in
+       | (depth, args, Zproj p::s) ->
+            let rargs = drop_parameters depth (Projection.Repr.npars p) args in
+            let rarg = project_nth_arg (Projection.Repr.arg p) rargs in
 	    kni info rarg s
        | (_,args,s) -> (m,args@s))
   | FCoFix _ when red_set info.i_flags fIOTA ->

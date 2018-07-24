@@ -7,7 +7,6 @@ open Declarations
 
 type globals = {
   env_constants : constant_body Cmap_env.t;
-  env_projections : projection_body Cmap_env.t;
   env_inductives : mutual_inductive_body Mindmap_env.t;
   env_inductives_eq : KerName.t KNmap.t;
   env_modules : module_body MPmap.t;
@@ -35,7 +34,6 @@ let empty_oracle = {
 let empty_env = {
   env_globals =
   { env_constants = Cmap_env.empty;
-    env_projections = Cmap_env.empty;
     env_inductives = Mindmap_env.empty;
     env_inductives_eq = KNmap.empty;
     env_modules = MPmap.empty;
@@ -166,9 +164,6 @@ let evaluable_constant cst env =
   try let _  = constant_value env (cst, Univ.Instance.empty) in true
   with Not_found | NotEvaluableConst _ -> false
 
-let lookup_projection p env =
-  Cmap_env.find (Projection.constant p) env.env_globals.env_projections
-
 (* Mutual Inductives *)
 let scrape_mind env kn=
   try
@@ -191,14 +186,6 @@ let add_mind kn mib env =
     Printf.ksprintf anomaly ("Inductive %s is already defined.")
       (MutInd.to_string kn);
   let new_inds = Mindmap_env.add kn mib env.env_globals.env_inductives in
-  let new_projections = match mib.mind_record with
-    | NotRecord | FakeRecord -> env.env_globals.env_projections
-    | PrimRecord projs ->
-      Array.fold_left (fun accu (id, kns, pbs) ->
-      Array.fold_left2 (fun accu kn pb ->
-          Cmap_env.add kn pb accu) accu kns pbs)
-        env.env_globals.env_projections projs
-  in
   let kn1,kn2 =  MutInd.user kn, MutInd.canonical kn in
   let new_inds_eq = if KerName.equal kn1 kn2 then
     env.env_globals.env_inductives_eq
@@ -207,10 +194,22 @@ let add_mind kn mib env =
   let new_globals =
     { env.env_globals with
       env_inductives = new_inds;
-      env_projections = new_projections;
       env_inductives_eq = new_inds_eq} in
   { env with env_globals = new_globals }
 
+let lookup_projection p env =
+  let mind,i = Projection.inductive p in
+  let mib = lookup_mind mind env in
+  match mib.mind_record with
+  | NotRecord | FakeRecord -> CErrors.anomaly ~label:"lookup_projection" Pp.(str "not a projection")
+  | PrimRecord infos ->
+    let _,labs,typs = infos.(i) in
+    let parg = Projection.arg p in
+    if not (Label.equal labs.(parg) (Projection.label p))
+    then CErrors.anomaly ~label:"lookup_projection" Pp.(str "incorrect label on projection")
+    else if not (Int.equal mib.mind_nparams (Projection.npars p))
+    then CErrors.anomaly ~label:"lookup_projection" Pp.(str "incorrect param number on projection")
+    else typs.(parg)
 
 (* Modules *)
 

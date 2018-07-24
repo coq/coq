@@ -43,7 +43,7 @@ let compare_stack_shape stk1 stk2 =
     | (_, (Zupdate _|Zshift _)::s2) -> compare_rec bal stk1 s2
     | (Zapp l1::s1, _) -> compare_rec (bal+Array.length l1) s1 stk2
     | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
-    | (Zproj (n1,m1,p1)::s1, Zproj (n2,m2,p2)::s2) ->
+    | (Zproj p1::s1, Zproj p2::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
     | ((ZcaseT(c1,_,_,_))::s1,
        (ZcaseT(c2,_,_,_))::s2) ->
@@ -55,7 +55,7 @@ let compare_stack_shape stk1 stk2 =
 
 type lft_constr_stack_elt =
     Zlapp of (lift * fconstr) array
-  | Zlproj of Names.Projection.t * lift
+  | Zlproj of Names.Projection.Repr.t * lift
   | Zlfix of (lift * fconstr) * lft_constr_stack
   | Zlcase of case_info * lift * fconstr * fconstr array
 and lft_constr_stack = lft_constr_stack_elt list
@@ -74,8 +74,8 @@ let pure_stack lfts stk =
             | (Zshift n,(l,pstk)) -> (el_shft n l, pstk)
             | (Zapp a, (l,pstk)) ->
                 (l,zlapp (Array.map (fun t -> (l,t)) a) pstk)
-	    | (Zproj (n,m,c), (l,pstk)) ->
-		(l, Zlproj (c,l)::pstk)
+            | (Zproj p, (l,pstk)) ->
+                (l, Zlproj (p,l)::pstk)
             | (Zfix(fx,a),(l,pstk)) ->
                 let (lfx,pa) = pure_rec l a in
                 (l, Zlfix((lfx,fx),pa)::pstk)
@@ -133,7 +133,7 @@ let convert_universes univ u u' =
   if Univ.Instance.check_eq univ u u' then ()
   else raise NotConvertible
 
-let compare_stacks f fmind lft1 stk1 lft2 stk2 =
+let compare_stacks f fmind fproj lft1 stk1 lft2 stk2 =
   let rec cmp_rec pstk1 pstk2 =
     match (pstk1,pstk2) with
       | (z1::s1, z2::s2) ->
@@ -143,10 +143,8 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 =
             | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
                 f fx1 fx2; cmp_rec a1 a2
 	    | (Zlproj (c1,l1),Zlproj (c2,l2)) -> 
-               if not (Names.Constant.UserOrd.equal
-		       (Names.Projection.constant c1)
-		       (Names.Projection.constant c2)) then 
-		raise NotConvertible
+               if not (fproj c1 c2) then
+                raise NotConvertible
             | (Zlcase(ci1,l1,p1,br1),Zlcase(ci2,l2,p2,br2)) ->
                 if not (fmind ci1.ci_ind ci2.ci_ind) then
 		  raise NotConvertible;
@@ -257,7 +255,7 @@ let rec no_case_available = function
   | Zupdate _ :: stk -> no_case_available stk
   | Zshift _ :: stk -> no_case_available stk
   | Zapp _ :: stk -> no_case_available stk
-  | Zproj (_,_,_) :: _ -> false
+  | Zproj _ :: _ -> false
   | ZcaseT _ :: _ -> false
   | Zfix _ :: _ -> true
 
@@ -299,6 +297,10 @@ let eq_table_key univ =
   Names.eq_table_key (fun (c1,u1) (c2,u2) ->
       Constant.UserOrd.equal c1 c2 &&
       Univ.Instance.check_eq univ u1 u2)
+
+let proj_equiv_infos infos p1 p2 =
+  Int.equal (Projection.Repr.arg p1) (Projection.Repr.arg p2) &&
+  mind_equiv (infos_env infos) (Projection.Repr.inductive p1) (Projection.Repr.inductive p2)
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv univ cv_pb infos lft1 lft2 term1 term2 =
@@ -523,7 +525,7 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
 and convert_stacks univ infos lft1 lft2 stk1 stk2 =
   compare_stacks
     (fun (l1,t1) (l2,t2) -> ccnv univ CONV infos l1 l2 t1 t2)
-    (mind_equiv_infos infos)
+    (mind_equiv_infos infos) (proj_equiv_infos infos)
     lft1 stk1 lft2 stk2
 
 and convert_vect univ infos lft1 lft2 v1 v2 =

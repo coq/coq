@@ -88,8 +88,7 @@ type instruction =
   | Ksetfield of int                    (** accu[n] = sp[0] ; sp = pop sp *)
   | Kstop
   | Ksequence of bytecodes * bytecodes
-  | Kproj of int * Constant.t  (** index of the projected argument,
-                                            name of projection *)
+  | Kproj of Projection.Repr.t
   | Kensurestackcapacity of int
 
 (** spiwack: instructions concerning integers *)

@@ -77,11 +77,7 @@ module AnnotTable = Hashtbl.Make (struct
   let hash = hash_annot_switch
 end)
 
-module ProjNameTable = Hashtbl.Make (struct
-  type t = Constant.t
-  let equal = Constant.equal
-  let hash = Constant.hash
-end)
+module ProjNameTable = Hashtbl.Make (Projection.Repr)
 
 let str_cst_tbl : int SConstTable.t = SConstTable.create 31
 

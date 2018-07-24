@@ -12,7 +12,6 @@
 open Util
 open Names
 open Cic
-open Term
 open Declarations
 open Environ
 open Reduction
@@ -123,14 +122,6 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
       env, Univ.make_abstract_instance auctx'
     | _ -> error ()
   in
-  let eq_projection_body p1 p2 =
-    let check eq f = if not (eq (f p1) (f p2)) then error () in
-    check eq_ind (fun x -> x.proj_ind);
-    check (==) (fun x -> x.proj_npars);
-    check (==) (fun x -> x.proj_arg);
-    check (eq_constr) (fun x -> x.proj_type);
-    true
-  in
   let check_inductive_type t1 t2 = check_conv conv_leq env t1 t2 in
 
   let check_packet p1 p2 =
@@ -188,9 +179,9 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
     | FakeRecord, FakeRecord -> true
     | PrimRecord info1, PrimRecord info2 ->
       let check (id1, p1, pb1) (id2, p2, pb2) =
-        Id.equal id1 id2 &&
-        Array.for_all2 Constant.UserOrd.equal p1 p2 &&
-        Array.for_all2 eq_projection_body pb1 pb2
+        (* we don't care about the id, the types are inferred from the inductive
+           (ie checked before now) *)
+        Array.for_all2 Label.equal p1 p2
       in
       Array.equal check info1 info2
     | _, _ -> false

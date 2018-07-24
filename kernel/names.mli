@@ -549,17 +549,68 @@ type module_path = ModPath.t =
 [@@ocaml.deprecated "Alias type"]
 
 module Projection : sig
-  type t
+  module Repr : sig
+    type t
 
-  val make : Constant.t -> bool -> t
+    val make : inductive -> proj_npars:int -> proj_arg:int -> Label.t -> t
+
+    module SyntacticOrd : sig
+      val compare : t -> t -> int
+      val equal : t -> t -> bool
+      val hash : t -> int
+    end
+    module CanOrd : sig
+      val compare : t -> t -> int
+      val equal : t -> t -> bool
+      val hash : t -> int
+    end
+    module UserOrd : sig
+      val compare : t -> t -> int
+      val equal : t -> t -> bool
+      val hash : t -> int
+    end
+
+    val constant : t -> Constant.t
+    (** Don't use this if you don't have to. *)
+
+    val inductive : t -> inductive
+    val mind : t -> MutInd.t
+    val npars : t -> int
+    val arg : t -> int
+    val label : t -> Label.t
+
+    val equal : t -> t -> bool
+    val hash : t -> int
+    val compare : t -> t -> int
+
+    val map : (MutInd.t -> MutInd.t) -> t -> t
+    val map_npars : (MutInd.t -> int -> MutInd.t * int) -> t -> t
+
+    val print : t -> Pp.t
+    val to_string : t -> string
+  end
+  type t (* = Repr.t * bool *)
+
+  val make : Repr.t -> bool -> t
+  val repr : t -> Repr.t
 
   module SyntacticOrd : sig
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val hash : t -> int
   end
+  module CanOrd : sig
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
 
   val constant : t -> Constant.t
+  val mind : t -> MutInd.t
+  val inductive : t -> inductive
+  val npars : t -> int
+  val arg : t -> int
+  val label : t -> Label.t
   val unfolded : t -> bool
   val unfold : t -> t
 
@@ -570,7 +621,8 @@ module Projection : sig
 
   val compare : t -> t -> int
 
-  val map : (Constant.t -> Constant.t) -> t -> t
+  val map : (MutInd.t -> MutInd.t) -> t -> t
+  val map_npars : (MutInd.t -> int -> MutInd.t * int) -> t -> t
 
   val to_string : t -> string
   val print : t -> Pp.t

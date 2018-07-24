@@ -299,16 +299,16 @@ let strip_params env sigma c =
   match EConstr.kind sigma c with
   | App (f, args) -> 
     (match EConstr.kind sigma f with
-    | Const (p,_) ->
-      let p = Projection.make p false in
-      (match lookup_projection p env with
-       | pb ->
-         let n = pb.Declarations.proj_npars in
-         if Array.length args > n then
-           mkApp (mkProj (p, args.(n)),
-                  Array.sub args (n+1) (Array.length args - (n + 1)))
+    | Const (cst,_) ->
+      (match Recordops.find_primitive_projection cst with
+       | Some p ->
+         let p = Projection.make p false in
+         let npars = Projection.npars p in
+         if Array.length args > npars then
+           mkApp (mkProj (p, args.(npars)),
+                  Array.sub args (npars+1) (Array.length args - (npars + 1)))
          else c
-       | exception Not_found -> c)
+       | None -> c)
     | _ -> c)
   | _ -> c
 

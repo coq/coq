@@ -51,7 +51,7 @@ let arities_of_constructors env (ind,u as indu) =
 type inductive_family = pinductive * constr list
 
 let make_ind_family (mis, params) = (mis,params)
-let dest_ind_family (mis,params) = (mis,params)
+let dest_ind_family (mis,params) : inductive_family = (mis,params)
 
 let map_ind_family f (mis,params) = (mis, List.map f params)
 
@@ -269,11 +269,9 @@ let allowed_sorts env (kn,i as ind) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_kelim
 
-let projection_nparams_env env p = 
-  let pb = lookup_projection p env in
-    pb.proj_npars
+let projection_nparams_env _ p = Projection.npars p
 
-let projection_nparams p = projection_nparams_env (Global.env ()) p
+let projection_nparams p = Projection.npars p
 
 let has_dependent_elim mib =
   match mib.mind_record with
@@ -343,17 +341,11 @@ let get_constructors env (ind,params) =
   Array.init (Array.length mip.mind_consnames)
     (fun j -> get_constructor (ind,mib,mip,params) (j+1))
 
-let get_projections env (ind,params) =
-  let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
-    match mib.mind_record with
-    | PrimRecord infos ->
-      let (_, projs, _) = infos.(snd (fst ind)) in
-      Some projs
-    | NotRecord | FakeRecord -> None
+let get_projections = Environ.get_projections
 
 let make_case_or_project env sigma indf ci pred c branches =
   let open EConstr in
-  let projs = get_projections env indf in
+  let projs = get_projections env (fst (fst indf)) in
   match projs with
   | None -> (mkCase (ci, pred, c, branches))
   | Some ps ->
@@ -481,7 +473,6 @@ let compute_projections env (kn, i as ind) =
   let subst = List.init mib.mind_ntypes (fun i -> mkIndU ((kn, mib.mind_ntypes - i - 1), u)) in
   let rctx, _ = decompose_prod_assum (substl subst pkt.mind_nf_lc.(0)) in
   let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
-  let mp, dp, l = MutInd.repr3 kn in
   (** We build a substitution smashing the lets in the record parameters so
       that typechecking projections requires just a substitution and not
       matching with a parameter context. *)
@@ -512,7 +503,7 @@ let compute_projections env (kn, i as ind) =
     let body = mkCase (ci, p, mkRel 1, [|lift 1 branch|]) in
       it_mkLambda_or_LetIn (mkLambda (x,indty,body)) params
   in
-  let projections decl (j, pbs, subst) =
+  let projections decl (proj_arg, j, pbs, subst) =
     match decl with
     | LocalDef (na,c,t) ->
         (* From [params, field1,..,fieldj |- c(params,field1,..,fieldj)]
@@ -525,11 +516,12 @@ let compute_projections env (kn, i as ind) =
            to [params, x:I |- subst:field1,..,fieldj+1] where [subst]
            is represented with instance of field1 last *)
         let subst = c1 :: subst in
-        (j+1, pbs, subst)
+        (proj_arg, j+1, pbs, subst)
     | LocalAssum (na,t) ->
       match na with
       | Name id ->
-        let kn = Constant.make1 (KerName.make mp dp (Label.of_id id)) in
+        let lab = Label.of_id id in
+        let kn = Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg lab in
         (* from [params, field1,..,fieldj |- t(params,field1,..,fieldj)]
            to [params, x:I, field1,..,fieldj |- t(params,field1,..,fieldj] *)
         let t = liftn 1 j t in
@@ -544,12 +536,12 @@ let compute_projections env (kn, i as ind) =
         let etab = it_mkLambda_or_LetIn (mkLambda (x, indty, term)) params in
         let etat = it_mkProd_or_LetIn (mkProd (x, indty, ty)) params in
         let body = (etab, etat, compat) in
-        (j + 1, body :: pbs, fterm :: subst)
+        (proj_arg + 1, j + 1, body :: pbs, fterm :: subst)
       | Anonymous ->
         anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
   in
-  let (_, pbs, subst) =
-    List.fold_right projections ctx (1, [], [])
+  let (_, _, pbs, subst) =
+    List.fold_right projections ctx (0, 1, [], [])
   in
   Array.rev_of_list pbs
 
@@ -738,8 +730,8 @@ let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
       !evdref, EConstr.of_constr (mkArity (List.rev ctx,scl))
 
 let type_of_projection_constant env (p,u) =
-  let pb = lookup_projection p env in
-  Vars.subst_instance_constr u pb.proj_type
+  let pty = lookup_projection p env in
+  Vars.subst_instance_constr u pty
 
 let type_of_projection_knowing_arg env sigma p c ty =
   let c = EConstr.Unsafe.to_constr c in

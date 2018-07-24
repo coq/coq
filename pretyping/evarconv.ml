@@ -71,7 +71,7 @@ let coq_unit_judge =
 let unfold_projection env evd ts p c =
   let cst = Projection.constant p in
     if is_transparent_constant ts cst then
-      Some (mkProj (Projection.make cst true, c))
+      Some (mkProj (Projection.unfold p, c))
     else None
       
 let eval_flexible_term ts env evd c =
@@ -292,8 +292,8 @@ let ise_stack2 no_app env evd f sk1 sk2 =
 	| Success i'' -> ise_stack2 true i'' q1 q2
         | UnifFailure _ as x -> fail x)
       | UnifFailure _ as x -> fail x)
-    | Stack.Proj (n1,a1,p1,_)::q1, Stack.Proj (n2,a2,p2,_)::q2 ->
-       if Constant.equal (Projection.constant p1) (Projection.constant p2)
+    | Stack.Proj (p1,_)::q1, Stack.Proj (p2,_)::q2 ->
+       if Projection.Repr.equal (Projection.repr p1) (Projection.repr p2)
        then ise_stack2 true i q1 q2
        else fail (UnifFailure (i, NotSameHead))
     | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1,_)::q1,
@@ -334,8 +334,8 @@ let exact_ise_stack2 env evd f sk1 sk2 =
 	  (fun i -> ise_array2 i (fun ii -> f (push_rec_types recdef1 env) ii CONV) bds1 bds2);
 	  (fun i -> ise_stack2 i a1 a2)]
       else UnifFailure (i,NotSameHead)
-    | Stack.Proj (n1,a1,p1,_)::q1, Stack.Proj (n2,a2,p2,_)::q2 ->
-       if Constant.equal (Projection.constant p1) (Projection.constant p2)
+    | Stack.Proj (p1,_)::q1, Stack.Proj (p2,_)::q2 ->
+       if Projection.Repr.equal (Projection.repr p1) (Projection.repr p2)
        then ise_stack2 i q1 q2
        else (UnifFailure (i, NotSameHead))
     | Stack.App _ :: _, Stack.App _ :: _ ->
@@ -986,10 +986,9 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
 and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =
   let open Declarations in
   let mib = lookup_mind (fst ind) env in
-    match mib.Declarations.mind_record with
-    | PrimRecord info when mib.Declarations.mind_finite == Declarations.BiFinite ->
-      let (_, projs, _) = info.(snd ind) in
-      let pars = mib.Declarations.mind_nparams in
+    match get_projections env ind with
+    | Some projs when mib.mind_finite == BiFinite ->
+      let pars = mib.mind_nparams in
 	(try 
 	   let l1' = Stack.tail pars sk1 in
 	   let l2' = 

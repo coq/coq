@@ -324,12 +324,16 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
 	  | Name fid -> try
 	    let kn, term = 
 	      if is_local_assum decl && primitive then
-		(** Already defined in the kernel silently *)
-                let gr = Nametab.locate (Libnames.qualid_of_ident fid) in
-                let kn = destConstRef gr in
+                let p = Projection.Repr.make indsp
+                    ~proj_npars:mib.mind_nparams
+                    ~proj_arg:i
+                    (Label.of_id fid)
+                in
+                (** Already defined by declare_mind silently *)
+                let kn = Projection.Repr.constant p in
                 Declare.definition_message fid;
-                UnivNames.register_universe_binders gr ubinders;
-                kn, mkProj (Projection.make kn false,mkRel 1)
+                UnivNames.register_universe_binders (ConstRef kn) ubinders;
+                kn, mkProj (Projection.make p false,mkRel 1)
 	      else
 		let ccl = subst_projection fid subst ti in
 		let body = match decl with

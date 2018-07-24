@@ -189,6 +189,7 @@ val replacement_context : unit -> Opaqueproof.work_list
 
 val discharge_kn :  MutInd.t -> MutInd.t
 val discharge_con : Constant.t -> Constant.t
+val discharge_proj_repr : Projection.Repr.t -> Projection.Repr.t
 val discharge_global : GlobRef.t -> GlobRef.t
 val discharge_inductive : inductive -> inductive
 val discharge_abstract_universe_context :

@@ -49,7 +49,7 @@ let error_not_evaluable r =
 
 let is_evaluable_const env cst =
   is_transparent env (ConstKey cst) && 
-    (evaluable_constant cst env || is_projection cst env)
+  evaluable_constant cst env
 
 let is_evaluable_var env id =
   is_transparent env (VarKey id) && evaluable_named id env
@@ -597,12 +597,11 @@ let recargs = function
   | EvalVar _ | EvalRel _ | EvalEvar _ -> None
   | EvalConst c -> ReductionBehaviour.get (ConstRef c)
 
-let reduce_projection env sigma pb (recarg'hd,stack') stack =
+let reduce_projection env sigma p ~npars (recarg'hd,stack') stack =
   (match EConstr.kind sigma recarg'hd with
   | Construct _ -> 
-    let proj_narg = 
-      pb.Declarations.proj_npars + pb.Declarations.proj_arg
-    in Reduced (List.nth stack' proj_narg, stack)
+    let proj_narg = npars + Projection.arg p in
+    Reduced (List.nth stack' proj_narg, stack)
   | _ -> NotReducible)
 
 let reduce_proj env sigma whfun whfun' c =
@@ -613,10 +612,8 @@ let reduce_proj env sigma whfun whfun' c =
       let constr, cargs = whfun c' in
 	(match EConstr.kind sigma constr with
 	| Construct _ -> 
-	  let proj_narg = 
-	    let pb = lookup_projection proj env in
-	      pb.Declarations.proj_npars + pb.Declarations.proj_arg
-	  in List.nth cargs proj_narg
+          let proj_narg = Projection.npars proj + Projection.arg proj in
+          List.nth cargs proj_narg
 	| _ -> raise Redelimination)
     | Case (n,p,c,brs) -> 
       let c' = redrec c in
@@ -765,22 +762,22 @@ and whd_simpl_stack env sigma =
         (try 
 	   let unf = Projection.unfolded p in
 	     if unf || is_evaluable env (EvalConstRef (Projection.constant p)) then
-	       let pb = lookup_projection p env in
+               let npars = Projection.npars p in
  		 (match unf, ReductionBehaviour.get (ConstRef (Projection.constant p)) with
  		 | false, Some (l, n, f) when List.mem `ReductionNeverUnfold f -> 
                    (* simpl never *) s'
 		 | false, Some (l, n, f) when not (List.is_empty l) ->
 		   let l' = List.map_filter (fun i -> 
-		     let idx = (i - (pb.Declarations.proj_npars + 1)) in
+                     let idx = (i - (npars + 1)) in
 		       if idx < 0 then None else Some idx) l in
 		   let stack = reduce_params env sigma stack l' in
-		     (match reduce_projection env sigma pb 
+                     (match reduce_projection env sigma p ~npars
 		       (whd_construct_stack env sigma c) stack 
 		      with
 		      | Reduced s' -> redrec (applist s')
 		      | NotReducible -> s')
  		 | _ ->
-		   match reduce_projection env sigma pb (whd_construct_stack env sigma c) stack with
+                   match reduce_projection env sigma p ~npars (whd_construct_stack env sigma c) stack with
 		   | Reduced s' -> redrec (applist s')
 		   | NotReducible -> s')
 	   else s'
@@ -852,8 +849,8 @@ let try_red_product env sigma c =
 	  | Construct _ -> c
 	  | _ -> redrec env c
 	in
-	let pb = lookup_projection p env in
-          (match reduce_projection env sigma pb (whd_betaiotazeta_stack sigma c') [] with
+        let npars = Projection.npars p in
+          (match reduce_projection env sigma p ~npars (whd_betaiotazeta_stack sigma c') [] with
 	  | Reduced s -> simpfun (applist s)
 	  | NotReducible -> raise Redelimination)
       | _ -> 
@@ -946,8 +943,8 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
 	  (match EConstr.kind sigma constr with
 	  | Const (c', _) -> Constant.equal (Projection.constant p) c'
 	  | _ -> false) ->
-	let pb = Environ.lookup_projection p env in
-	  if List.length stack <= pb.Declarations.proj_npars then
+        let npars = Projection.npars p in
+          if List.length stack <= npars then
 	    (** Do not show the eta-expanded form *)
 	    s'
 	  else redrec (applist (c, stack))

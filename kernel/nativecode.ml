@@ -1980,8 +1980,7 @@ let compile_mind mb mind stack =
 	       (MLconstruct("", c, Array.map (fun id -> MLlocal id) args)))::acc
     in
     let constructors = Array.fold_left_i add_construct [] ob.mind_reloc_tbl in
-    let add_proj j acc pb =
-      let () = assert (eq_ind ind pb.proj_ind) in
+    let add_proj proj_arg acc pb =
       let tbl = ob.mind_reloc_tbl in
       (* Building info *)
       let ci = { ci_ind = ind; ci_npar = nparams;
@@ -1995,14 +1994,14 @@ let compile_mind mb mind stack =
       let _, arity = tbl.(0) in
       let ci_uid = fresh_lname Anonymous in
       let cargs = Array.init arity
-        (fun i -> if Int.equal i pb.proj_arg then Some ci_uid else None)
+        (fun i -> if Int.equal i proj_arg then Some ci_uid else None)
       in
       let i = push_symbol (SymbProj (ind, j)) in
       let accu = MLapp (MLprimitive Cast_accu, [|MLlocal cf_uid|]) in
       let accu_br = MLapp (MLprimitive Mk_proj, [|get_proj_code i;accu|]) in
       let code = MLmatch(asw,MLlocal cf_uid,accu_br,[|[((ind,1),cargs)],MLlocal ci_uid|]) in
       let code = MLlet(cf_uid, MLapp (MLprimitive Force_cofix, [|MLlocal c_uid|]), code) in
-      let gn = Gproj ("", ind, pb.proj_arg) in
+      let gn = Gproj ("", ind, proj_arg) in
       Glet (gn, mkMLlam [|c_uid|] code) :: acc
     in
     let projs = match mb.mind_record with
@@ -2070,8 +2069,7 @@ let compile_deps env sigma prefix ~interactive init t =
       comp_stack, (mind_updates, const_updates)
   | Construct (((mind,_),_),u) -> compile_mind_deps env prefix ~interactive init mind
   | Proj (p,c) ->
-    let pb = lookup_projection p env in
-    let init = compile_mind_deps env prefix ~interactive init (fst pb.proj_ind) in
+    let init = compile_mind_deps env prefix ~interactive init (Projection.mind p) in
     aux env lvl init c
   | Case (ci, p, c, ac) ->
       let mind = fst ci.ci_ind in

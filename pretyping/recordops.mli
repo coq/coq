@@ -44,6 +44,13 @@ val find_projection_nparams : GlobRef.t -> int
 (** raise [Not_found] if not a projection *)
 val find_projection : GlobRef.t -> struc_typ
 
+(** Sets up the mapping from constants to primitive projections *)
+val declare_primitive_projection : Projection.Repr.t -> unit
+
+val is_primitive_projection : Constant.t -> bool
+
+val find_primitive_projection : Constant.t -> Projection.Repr.t option
+
 (** {6 Canonical structures } *)
 (** A canonical structure declares "canonical" conversion hints between 
     the effective components of a structure and the projections of the  

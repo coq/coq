@@ -5,7 +5,6 @@ open Cic
 
 type globals = {
   env_constants : constant_body Cmap_env.t;
-  env_projections : projection_body Cmap_env.t;
   env_inductives : mutual_inductive_body Mindmap_env.t;
   env_inductives_eq : KerName.t KNmap.t;
   env_modules : module_body MPmap.t;
@@ -58,7 +57,8 @@ exception NotEvaluableConst of const_evaluation_result
 val constant_value : env -> Constant.t puniverses -> constr
 val evaluable_constant : Constant.t -> env -> bool
 
-val lookup_projection : Projection.t -> env -> projection_body
+(** NB: here in the checker we check the inferred info (npars, label) *)
+val lookup_projection : Projection.t -> env -> constr
 
 (* Inductives *)
 val mind_equiv : env -> inductive -> inductive -> bool

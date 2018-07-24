@@ -31,7 +31,7 @@ type cl_typ =
   | CL_SECVAR of variable
   | CL_CONST of Constant.t
   | CL_IND of inductive
-  | CL_PROJ of Constant.t
+  | CL_PROJ of Projection.Repr.t
 
 type cl_info_typ = {
   cl_param : int
@@ -47,7 +47,7 @@ type coe_info_typ = {
   coe_local : bool;
   coe_context : Univ.ContextSet.t;
   coe_is_identity : bool;
-  coe_is_projection : bool;
+  coe_is_projection : Projection.Repr.t option;
   coe_param : int }
 
 let coe_info_typ_equal c1 c2 =
@@ -62,7 +62,7 @@ let coe_info_typ_equal c1 c2 =
 let cl_typ_ord t1 t2 = match t1, t2 with
   | CL_SECVAR v1, CL_SECVAR v2 -> Id.compare v1 v2
   | CL_CONST c1, CL_CONST c2 -> Constant.CanOrd.compare c1 c2
-  | CL_PROJ c1, CL_PROJ c2 -> Constant.CanOrd.compare c1 c2
+  | CL_PROJ c1, CL_PROJ c2 -> Projection.Repr.CanOrd.compare c1 c2
   | CL_IND i1, CL_IND i2 -> ind_ord i1 i2
   | _ -> Pervasives.compare t1 t2 (** OK *)
 
@@ -199,7 +199,7 @@ let find_class_type sigma t =
     | Var id -> CL_SECVAR id, EInstance.empty, args
     | Const (sp,u) -> CL_CONST sp, u, args
     | Proj (p, c) when not (Projection.unfolded p) ->
-      CL_PROJ (Projection.constant p), EInstance.empty, (c :: args)
+      CL_PROJ (Projection.repr p), EInstance.empty, (c :: args)
     | Ind (ind_sp,u) -> CL_IND ind_sp, u, args
     | Prod (_,_,_) -> CL_FUN, EInstance.empty, []
     | Sort _ -> CL_SORT, EInstance.empty, []
@@ -211,7 +211,7 @@ let subst_cl_typ subst ct = match ct with
   | CL_FUN
   | CL_SECVAR _ -> ct
   | CL_PROJ c ->
-    let c',t = subst_con_kn subst c in
+    let c' = subst_proj_repr subst c in
       if c' == c then ct else CL_PROJ c'
   | CL_CONST c ->
       let c',t = subst_con_kn subst c in
@@ -248,8 +248,11 @@ let class_args_of env sigma c = pi3 (find_class_type sigma c)
 let string_of_class = function
   | CL_FUN -> "Funclass"
   | CL_SORT -> "Sortclass"
-  | CL_CONST sp | CL_PROJ sp ->
-      string_of_qualid (shortest_qualid_of_global Id.Set.empty (ConstRef sp))
+  | CL_CONST sp ->
+    string_of_qualid (shortest_qualid_of_global Id.Set.empty (ConstRef sp))
+  | CL_PROJ sp ->
+    let sp = Projection.Repr.constant sp in
+    string_of_qualid (shortest_qualid_of_global Id.Set.empty (ConstRef sp))
   | CL_IND sp ->
       string_of_qualid (shortest_qualid_of_global Id.Set.empty (IndRef sp))
   | CL_SECVAR sp ->
@@ -395,7 +398,7 @@ type coercion = {
   coercion_type   : coe_typ;
   coercion_local  : bool;
   coercion_is_id  : bool;
-  coercion_is_proj  : bool;
+  coercion_is_proj  : Projection.Repr.t option;
   coercion_source : cl_typ;
   coercion_target : cl_typ;
   coercion_params : int;
@@ -408,9 +411,8 @@ let reference_arity_length ref =
   List.length (fst (Reductionops.splay_arity (Global.env()) Evd.empty (EConstr.of_constr t))) (** FIXME *)
 
 let projection_arity_length p =
-  let len = reference_arity_length (ConstRef p) in
-  let pb = Environ.lookup_projection (Projection.make p false) (Global.env ()) in 
-    len - pb.Declarations.proj_npars
+  let len = reference_arity_length (ConstRef (Projection.Repr.constant p)) in
+  len - Projection.Repr.npars p
 
 let class_params = function
   | CL_FUN | CL_SORT -> 0
@@ -466,13 +468,17 @@ let subst_coercion (subst, c) =
   let coe = subst_coe_typ subst c.coercion_type in
   let cls = subst_cl_typ subst c.coercion_source in
   let clt = subst_cl_typ subst c.coercion_target in
-  if c.coercion_type == coe && c.coercion_source == cls && c.coercion_target == clt then c
-  else { c with coercion_type = coe; coercion_source = cls; coercion_target = clt }
+  let clp = Option.Smart.map (subst_proj_repr subst) c.coercion_is_proj in
+  if c.coercion_type == coe && c.coercion_source == cls &&
+     c.coercion_target == clt && c.coercion_is_proj == clp
+  then c
+  else { c with coercion_type = coe; coercion_source = cls;
+                coercion_target = clt; coercion_is_proj = clp; }
 
 let discharge_cl = function
   | CL_CONST kn -> CL_CONST (Lib.discharge_con kn)
   | CL_IND ind -> CL_IND (Lib.discharge_inductive ind)
-  | CL_PROJ p -> CL_PROJ (Lib.discharge_con p)
+  | CL_PROJ p -> CL_PROJ (Lib.discharge_proj_repr p)
   | cl -> cl
 
 let discharge_coercion (_, c) =
@@ -489,6 +495,7 @@ let discharge_coercion (_, c) =
       coercion_source = discharge_cl c.coercion_source;
       coercion_target = discharge_cl c.coercion_target;
       coercion_params = n + c.coercion_params;
+      coercion_is_proj = Option.map Lib.discharge_proj_repr c.coercion_is_proj;
     } in
     Some nc
 
@@ -509,8 +516,8 @@ let inCoercion : coercion -> obj =
 let declare_coercion coef ?(local = false) ~isid ~src:cls ~target:clt ~params:ps =
   let isproj = 
     match coef with
-    | ConstRef c -> Environ.is_projection c (Global.env ())
-    | _ -> false
+    | ConstRef c -> Recordops.find_primitive_projection c
+    | _ -> None
   in
   let c = {
     coercion_type = coef;

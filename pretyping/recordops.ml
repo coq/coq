@@ -44,7 +44,7 @@ type struc_typ = {
 let structure_table =
   Summary.ref (Indmap.empty : struc_typ Indmap.t) ~name:"record-structs"
 let projection_table =
-  Summary.ref Cmap.empty ~name:"record-projs"
+  Summary.ref (Cmap.empty : struc_typ Cmap.t) ~name:"record-projs"
 
 (* TODO: could be unify struc_typ and struc_tuple ? in particular,
    is the inductive always (fst constructor) ? It seems so... *)
@@ -53,7 +53,9 @@ type struc_tuple =
     inductive * constructor * (Name.t * bool) list * Constant.t option list
 
 let load_structure i (_,(ind,id,kl,projs)) =
-  let n = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
+  let open Declarations in
+  let mib, mip = Global.lookup_inductive ind in
+  let n = mib.mind_nparams in
   let struc =
     { s_CONST = id; s_EXPECTEDPARAM = n; s_PROJ = projs; s_PROJKIND = kl } in
   structure_table := Indmap.add ind struc !structure_table;
@@ -106,6 +108,34 @@ let find_projection_nparams = function
 let find_projection = function
   | ConstRef cst -> Cmap.find cst !projection_table
   | _ -> raise Not_found
+
+let prim_table =
+  Summary.ref (Cmap_env.empty : Projection.Repr.t Cmap_env.t) ~name:"record-prim-projs"
+
+let load_prim i (_,p) =
+  prim_table := Cmap_env.add (Projection.Repr.constant p) p !prim_table
+
+let cache_prim p = load_prim 1 p
+
+let subst_prim (subst,p) = subst_proj_repr subst p
+
+let discharge_prim (_,p) = Some (Lib.discharge_proj_repr p)
+
+let inPrim : Projection.Repr.t -> obj =
+  declare_object {
+    (default_object "PRIMPROJS") with
+    cache_function = cache_prim ;
+    load_function = load_prim;
+    subst_function = subst_prim;
+    classify_function = (fun x -> Substitute x);
+    discharge_function = discharge_prim }
+
+let declare_primitive_projection p = Lib.add_anonymous_leaf (inPrim p)
+
+let is_primitive_projection c = Cmap_env.mem c !prim_table
+
+let find_primitive_projection c =
+  try Some (Cmap_env.find c !prim_table) with Not_found -> None
 
 (************************************************************************)
 (*s A canonical structure declares "canonical" conversion hints between *)

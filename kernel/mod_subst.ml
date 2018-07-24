@@ -332,6 +332,12 @@ let subst_constant sub con =
   try fst (subst_con0 sub (con,Univ.Instance.empty))
   with No_subst -> con
 
+let subst_proj_repr sub p =
+  Projection.Repr.map (subst_mind sub) p
+
+let subst_proj sub p =
+  Projection.map (subst_mind sub) p
+
 (* Here the semantics is completely unclear.
    What does "Hint Unfold t" means when "t" is a parameter?
    Does the user mean "Unfold X.t" or does she mean "Unfold y"
@@ -346,11 +352,7 @@ let rec map_kn f f' c =
     match kind c with
       | Const kn -> (try snd (f' kn) with No_subst -> c)
       | Proj (p,t) -> 
-          let p' = 
-	    try
-	      Projection.map (fun kn -> fst (f' (kn,Univ.Instance.empty))) p
-	    with No_subst -> p
-	  in
+          let p' = Projection.map f p in
 	  let t' = func t in
 	    if p' == p && t' == t then c
 	    else mkProj (p', t')

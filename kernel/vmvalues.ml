@@ -150,7 +150,7 @@ type zipper =
   | Zapp of arguments
   | Zfix of vfix*arguments  (* Possibly empty *)
   | Zswitch of vswitch
-  | Zproj of Constant.t (* name of the projection *)
+  | Zproj of Projection.Repr.t (* name of the projection *)
 
 type stack = zipper list
 
@@ -354,7 +354,7 @@ let val_of_constant c = val_of_idkey (ConstKey c)
 let val_of_evar evk = val_of_idkey (EvarKey evk)
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
-external val_of_proj_name : Constant.t -> values = "%identity"
+external val_of_proj_name : Projection.Repr.t -> values = "%identity"
 
 (*************************************************)
 (** Operations manipulating data types ***********)
@@ -553,4 +553,4 @@ and pr_zipper z =
   | Zapp args -> str "Zapp(len = " ++ int (nargs args) ++ str ")"
   | Zfix (f,args) -> str "Zfix(..., len=" ++ int (nargs args) ++ str ")"
   | Zswitch s -> str "Zswitch(...)"
-  | Zproj c -> str "Zproj(" ++ Constant.print c ++ str ")")
+  | Zproj c -> str "Zproj(" ++ Projection.Repr.print c ++ str ")")
