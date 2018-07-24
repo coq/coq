@@ -36,13 +36,14 @@ open Constr
 let eval_constr env sigma (c : Constr.t) =
   let c = EConstr.of_constr c in
   let sigma,t = Typing.type_of env sigma c in
-  let c'= Vnorm.cbv_vm env sigma c t in
+  let c' = Vnorm.cbv_vm env sigma c t in
   EConstr.Unsafe.to_constr c'
 
 (* For testing with "compute" instead of "vm_compute" :
-let eval_constr (c : constr) =
- let (sigma, env) = Lemmas.get_current_context () in
- Tacred.compute env sigma c
+let eval_constr env sigma (c : Constr.t) =
+  let c = EConstr.of_constr c in
+  let c' = Tacred.compute env sigma c in
+  EConstr.Unsafe.to_constr c'
 *)
 
 let eval_constr_app env sigma c1 c2 =
@@ -325,7 +326,7 @@ let uninterp o (Glob_term.AnyGlobConstr n) =
     | UInt _ -> Some (rawnum_of_coquint c, true)
     | Z _ -> Some (big2raw (bigint_of_z c))
   with
-  | Type_errors.TypeError _ -> None (* cf. eval_constr_app *)
+  | Type_errors.TypeError _ | Pretype_errors.PretypeError _ -> None (* cf. eval_constr_app *)
   | NotANumber -> None (* all other functions except big2raw *)
 
 (* Here we only register the interp and uninterp functions
