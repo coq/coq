@@ -33,14 +33,11 @@ open Constr
     as [coqint_of_rawnum].
 *)
 
-let eval_constr (c : Constr.t) =
-  let env = Global.env () in
-  let j = Typeops.infer env c in
-  let c'=
-    Vnorm.cbv_vm env (Evd.from_env env)
-                 (EConstr.of_constr j.Environ.uj_val)
-                 (EConstr.of_constr j.Environ.uj_type)
-  in EConstr.Unsafe.to_constr c'
+let eval_constr env sigma (c : Constr.t) =
+  let c = EConstr.of_constr c in
+  let sigma,t = Typing.type_of env sigma c in
+  let c'= Vnorm.cbv_vm env sigma c t in
+  EConstr.Unsafe.to_constr c'
 
 (* For testing with "compute" instead of "vm_compute" :
 let eval_constr (c : constr) =
@@ -48,7 +45,8 @@ let eval_constr (c : constr) =
  Tacred.compute env sigma c
 *)
 
-let eval_constr_app c1 c2 = eval_constr (mkApp (c1,[| c2 |]))
+let eval_constr_app env sigma c1 c2 =
+  eval_constr env sigma (mkApp (c1,[| c2 |]))
 
 exception NotANumber
 
@@ -63,10 +61,9 @@ let warn_large_num =
 let warn_abstract_large_num =
   CWarnings.create ~name:"abstract-large-number" ~category:"numbers"
     (fun (ty,f) ->
-      let (sigma, env) = Pfedit.get_current_context () in
       strbrk "To avoid stack overflow, large numbers in " ++
       pr_qualid ty ++ strbrk " are interpreted as applications of " ++
-      Printer.pr_constr_env env sigma f ++ strbrk ".")
+      Printer.pr_constant (Global.env ()) f ++ strbrk ".")
 
 (** Comparing two raw numbers (base 10, big-endian, non-negative).
     A bit nasty, but not critical: only used to decide when a
@@ -216,12 +213,14 @@ let bigint_of_z z = match Constr.kind z with
     which is too low for us here. So here's a crude conversion back
     to [constr] for the subset that concerns us. *)
 
-let rec constr_of_glob g = match DAst.get g with
-  | Glob_term.GRef (ConstructRef c, _) -> mkConstruct c
+let rec constr_of_glob env sigma g = match DAst.get g with
+  | Glob_term.GRef (ConstructRef c, _) ->
+      let sigma,c = Evd.fresh_constructor_instance env sigma c in
+      sigma,mkConstructU c
   | Glob_term.GApp (gc, gcl) ->
-      let c = constr_of_glob gc in
-      let cl = List.map constr_of_glob gcl in
-      mkApp (c, Array.of_list cl)
+      let sigma,c = constr_of_glob env sigma gc in
+      let sigma,cl = List.fold_left_map (constr_of_glob env) sigma gcl in
+      sigma,mkApp (c, Array.of_list cl)
   | _ ->
       raise NotANumber
 
@@ -280,9 +279,9 @@ type numnot_option =
 
 type numeral_notation_obj =
   { to_kind : conversion_kind;
-    to_ty : constr;
+    to_ty : Constant.t;
     of_kind : conversion_kind;
-    of_ty : constr;
+    of_ty : Constant.t;
     num_ty : Libnames.qualid; (* for warnings / error messages *)
     warning : numnot_option }
 
@@ -298,19 +297,28 @@ let interp o ?loc n =
     | UInt _ (* n <= 0 *) -> no_such_number ?loc o.num_ty
     | Z z_pos_ty -> z_of_bigint z_pos_ty (raw2big n)
   in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let sigma,to_ty = Evd.fresh_constant_instance env sigma o.to_ty in
+  let to_ty = mkConstU to_ty in
   match o.warning, snd o.to_kind with
   | Abstract threshold, Direct when rawnum_compare (fst n) threshold >= 0 ->
      warn_abstract_large_num (o.num_ty,o.to_ty);
-     glob_of_constr ?loc (mkApp (o.to_ty,[|c|]))
+     glob_of_constr ?loc (mkApp (to_ty,[|c|]))
   | _ ->
-     let res = eval_constr_app o.to_ty c in
+     let res = eval_constr_app env sigma to_ty c in
      match snd o.to_kind with
      | Direct -> glob_of_constr ?loc res
      | Option -> interp_option o.num_ty ?loc res
 
 let uninterp o (Glob_term.AnyGlobConstr n) =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let sigma,of_ty = Evd.fresh_constant_instance env sigma o.of_ty in
+  let of_ty = mkConstU of_ty in
   try
-    let c = eval_constr_app o.of_ty (constr_of_glob n) in
+    let sigma,n = constr_of_glob env sigma n in
+    let c = eval_constr_app env sigma of_ty n in
     let c = if snd o.of_kind == Direct then c else uninterp_option c in
     match fst o.of_kind with
     | Int _ -> Some (rawnum_of_coqint c)
@@ -406,8 +414,8 @@ let vernac_numeral_notation ty f g scope opts =
   let int_ty = locate_int () in
   let z_pos_ty = locate_z () in
   let tyc = locate_globref ty in
-  let to_ty = mkConst (locate_constant f) in
-  let of_ty = mkConst (locate_constant g) in
+  let to_ty = locate_constant f in
+  let of_ty = locate_constant g in
   let cty = mkRefC ty in
   let app x y = mkAppC (x,[y]) in
   let cref q = mkRefC q in
@@ -421,25 +429,15 @@ let vernac_numeral_notation ty f g scope opts =
   let opt r = app coption r in
   (* Check that [ty] is an inductive type *)
   let constructors = match tyc with
-    | IndRef ind when not (Global.is_polymorphic tyc) ->
+    | IndRef ind ->
        get_constructors ind
-    | IndRef _ ->
-       CErrors.user_err
-         (str "The inductive type " ++ pr_qualid ty ++
-          str " cannot be used in numeral notations because" ++
-          str " support for polymorphic inductive types is not yet implemented")
     | ConstRef _ | ConstructRef _ | VarRef _ ->
        CErrors.user_err
         (pr_qualid ty ++ str " is not an inductive type")
   in
   (* Check the type of f *)
   let to_kind =
-    if Global.is_polymorphic (Nametab.global f) then
-      CErrors.user_err
-        (str "The function " ++ pr_qualid f ++ str " cannot be used" ++
-         str " in numeral notations because support for polymorphic" ++
-         str " printing and parsing functions is not yet implemented.")
-    else if has_type f (arrow cint cty) then Int int_ty, Direct
+    if has_type f (arrow cint cty) then Int int_ty, Direct
     else if has_type f (arrow cint (opt cty)) then Int int_ty, Option
     else if has_type f (arrow cuint cty) then UInt int_ty.uint, Direct
     else if has_type f (arrow cuint (opt cty)) then UInt int_ty.uint, Option
@@ -453,10 +451,7 @@ let vernac_numeral_notation ty f g scope opts =
   in
   (* Check the type of g *)
   let of_kind =
-    if Global.is_polymorphic (Nametab.global g) then
-      CErrors.user_err
-        (pr_qualid g ++ str " cannot be polymorphic for the moment")
-    else if has_type g (arrow cty cint) then Int int_ty, Direct
+    if has_type g (arrow cty cint) then Int int_ty, Direct
     else if has_type g (arrow cty (opt cint)) then Int int_ty, Option
     else if has_type g (arrow cty cuint) then UInt int_ty.uint, Direct
     else if has_type g (arrow cty (opt cuint)) then UInt int_ty.uint, Option
