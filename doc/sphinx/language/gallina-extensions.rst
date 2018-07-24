@@ -781,7 +781,8 @@ Section :ref:`gallina-definitions`).
 
 .. cmd:: Section @ident
 
-   This command is used to open a section named `ident`.
+   This command is used to open a section named :token:`ident`.
+   Section names do not need to be unique.
 
 
 .. cmd:: End @ident
