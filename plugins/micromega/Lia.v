@@ -23,7 +23,12 @@ Declare ML Module "micromega_plugin".
 
 
 Ltac preprocess :=
-  zify ; unfold Z.succ in * ; unfold Z.pred in *.
+  intros;
+  let T := match goal with |- ?P => P end in let s := type of T in
+  match s with
+  | Prop => zify ; unfold Z.succ in * ; unfold Z.pred in *
+  | _ => exfalso; zify ; unfold Z.succ in * ; unfold Z.pred in *
+  end.
 
 Ltac zchange := 
   intros __wit __varmap __ff ;
