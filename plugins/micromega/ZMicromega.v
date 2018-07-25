@@ -530,13 +530,13 @@ Proof.
     generalize (Z.gcd_nonneg (Z.max (Z.gcd z1 z2) 1) z).
     generalize (Zmax_spec (Z.gcd (Z.max (Z.gcd z1 z2) 1) z) 1).
     intuition.
-    + apply Zle_ge, Z.le_trans with 1; try discriminate.
+    + apply Z.le_ge, Z.le_trans with 1; try discriminate.
       now apply Z.le_max_r.
-    + apply Zle_ge, Z.le_trans with 1; try discriminate.
+    + apply Z.le_ge, Z.le_trans with 1; try discriminate.
       now apply Z.le_max_r.
-    + apply Zle_ge, Z.le_trans with 1; try discriminate.
+    + apply Z.le_ge, Z.le_trans with 1; try discriminate.
       now apply Z.le_max_r.
-    + apply Zle_ge, Z.le_trans with 1; try discriminate.
+    + apply Z.le_ge, Z.le_trans with 1; try discriminate.
       now apply Z.le_max_r.
 Qed.
 
@@ -831,7 +831,7 @@ Proof.
   apply Zle_minus_le_0, Z.ge_le.
   apply H2, Z.le_ge, Zle_0_minus_le.
   now rewrite Z.sub_opp_r, <- H1.
-  now apply Zgt_lt.
+  now apply Z.gt_lt.
   (* g <= 0 *)
   intros. inv H2. auto with zarith.
 Qed.
@@ -945,7 +945,7 @@ Proof.
   set (x:=eval_pol env (Zdiv_pol (PsubC Z.sub p c) g)) in *; clearbody x.
   contradict H5.
   apply Zis_gcd_gcd; auto with zarith.
-  now apply Z.lt_le_incl, Zgt_lt.
+  now apply Z.lt_le_incl, Z.gt_lt.
   constructor; auto with zarith.
   exists (-x).
   rewrite Z.mul_opp_l, Z.mul_comm; auto with zarith.

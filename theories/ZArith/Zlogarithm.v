@@ -225,7 +225,7 @@ Qed.
     case p0; simpl; auto with zarith.
     - intros p1 H1 H2 [H3 H4].
       left.
-      apply f_equal with (f := Zsucc).
+      apply f_equal with (f := Z.succ).
       apply Z.pow_inj_r with 2.
       + red; auto.
       + apply Z.le_trans with (2 := Z.le_succ_diag_r _).
