@@ -139,6 +139,10 @@ Display diffs between proof steps
   details.  Showing diffs in Proof General requires small changes to PG
   (under discussion).
 
+Notations
+
+- Added [++] infix for [VectorDef.append].
+
 Changes from 8.8.0 to 8.8.1
 ===========================
 
