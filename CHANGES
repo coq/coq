@@ -43,6 +43,15 @@ Tactics
   may need to add `Require Import Lra` to your developments. For compatibility,
   we now define `fourier` as a deprecated alias of `lra`.
 
+Standard Library
+
+- Added `Ascii.eqb` and `String.eqb` and the `=?` notation for them,
+  and proved some lemmas about them.  Note that this might cause
+  incompatibilities if you have, e.g., string_scope and Z_scope both
+  open with string_scope on top, and expect `=?` to refer to `Z.eqb`.
+  Solution: wrap `_ =? _` in `(_ =? _)%Z` (or whichever scope you
+  want).
+
 Tools
 
 - Coq_makefile lets one override or extend the following variables from

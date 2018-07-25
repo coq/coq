@@ -14,6 +14,7 @@
 
 Require Import Arith.
 Require Import Ascii.
+Require Import Bool.
 Declare ML Module "string_syntax_plugin".
 
 (** *** Definition of strings *)
@@ -34,6 +35,39 @@ Definition string_dec : forall s1 s2 : string, {s1 = s2} + {s1 <> s2}.
 Proof.
  decide equality; apply ascii_dec.
 Defined.
+
+Local Open Scope lazy_bool_scope.
+
+Fixpoint eqb s1 s2 : bool :=
+ match s1, s2 with
+ | EmptyString, EmptyString => true
+ | String c1 s1', String c2 s2' => Ascii.eqb c1 c2 &&& eqb s1' s2'
+ | _,_ => false
+ end.
+
+Infix "=?" := eqb : string_scope.
+
+Lemma eqb_spec s1 s2 : Bool.reflect (s1 = s2) (s1 =? s2)%string.
+Proof.
+ revert s2. induction s1; destruct s2; try (constructor; easy); simpl.
+ case Ascii.eqb_spec; simpl; [intros -> | constructor; now intros [= ]].
+ case IHs1; [intros ->; now constructor | constructor; now intros [= ]].
+Qed.
+
+Local Ltac t_eqb :=
+  repeat first [ congruence
+               | progress subst
+               | apply conj
+               | match goal with
+                 | [ |- context[eqb ?x ?y] ] => destruct (eqb_spec x y)
+                 end
+               | intro ].
+Lemma eqb_refl x : (x =? x)%string = true. Proof. t_eqb. Qed.
+Lemma eqb_sym x y : (x =? y)%string = (y =? x)%string. Proof. t_eqb. Qed.
+Lemma eqb_eq n m : (n =? m)%string = true <-> n = m. Proof. t_eqb. Qed.
+Lemma eqb_neq x y : (x =? y)%string = false <-> x <> y. Proof. t_eqb. Qed.
+Lemma eqb_compat: Morphisms.Proper (Morphisms.respectful eq (Morphisms.respectful eq eq)) eqb.
+Proof. t_eqb. Qed.
 
 (** *** Concatenation of strings *)
 

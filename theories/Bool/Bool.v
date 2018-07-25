@@ -814,3 +814,10 @@ Defined.
 
 (** Reciprocally, from a decidability, we could state a
     [reflect] as soon as we have a [bool_of_sumbool]. *)
+
+(** For instance, we could state the correctness of [Bool.eqb] via [reflect]: *)
+
+Lemma eqb_spec (b b' : bool) : reflect (b = b') (eqb b b').
+Proof.
+ destruct b, b'; now constructor.
+Qed.
