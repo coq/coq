@@ -29,7 +29,12 @@ Hint Resolve Z.le_refl Z.add_comm Z.add_assoc Z.mul_comm Z.mul_assoc Z.add_0_l
 Require Export Zhints.
 
 Ltac preprocess :=
-  zify ; unfold Z.succ in * ; unfold Z.pred in *.
+  intros;
+  let T := match goal with |- ?P => P end in let s := type of T in
+  match s with
+  | Prop => zify ; unfold Z.succ in * ; unfold Z.pred in *
+  | _ => exfalso; zify ; unfold Z.succ in * ; unfold Z.pred in *
+  end.
 
 Ltac zchange := 
   intros __wit __varmap __ff ;
