@@ -112,13 +112,18 @@ Ltac hide_Z_of_nat t :=
   change Z.of_nat with Z_of_nat' in z;
   unfold z in *; clear z.
 
+Definition mark {T} (x : T) := x.
+
 Ltac rewrite_clear t H :=
-  rewrite t in H || let x := fresh "H" in generalize H;
-    intros x; clear dependent H; rewrite t in x.
+  rewrite t in H || (let x := fresh "H" in pose proof H as x;
+    let typ := type of H in change typ with (mark typ) in H;
+    rewrite t in x).
 
 Ltac rewrite_clear_rev t H :=
-  rewrite <- t in H || let x := fresh "H" in
-    generalize H; intros x; clear dependent H; rewrite <- t in x.
+  rewrite <- t in H || (let x := fresh "H" in
+    pose proof H as x;
+    let typ := type of H in change typ with (mark typ) in H;
+    rewrite <- t in x).
 
 Ltac eq_red_l t u :=
   let t' := eval hnf in t in
