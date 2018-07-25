@@ -32,7 +32,7 @@ Names (link targets) are auto-generated for most simple objects, though they can
 - Vernacs (commands) have their name set to the first word of their signature.  For example, the auto-generated name of ``Axiom @ident : @term`` is ``Axiom``, and a link to it would take the form ``:cmd:`Axiom```.
 - Vernac variants, tactic notations, and tactic variants do not have a default name.
 
-Most objects should have a body (i.e. a block of indented text following the signature, called “contents” in Sphinx terms).  Undocumented objects should have the `:undocumented:` flag instead, as shown above.  When multiple objects have a single description, they can be grouped into a single object, like this (semicolons can be used to separate the names of the objects)::
+Most objects should have a body (i.e. a block of indented text following the signature, called “contents” in Sphinx terms).  Undocumented objects should have the `:undocumented:` flag instead, as shown above.  When multiple objects have a single description, they can be grouped into a single object, like this (semicolons can be used to separate the names of the objects; names starting with ``_`` will be omitted from the indexes)::
 
    .. cmdv:: Lemma @ident {? @binders} : @type
              Remark @ident {? @binders} : @type
