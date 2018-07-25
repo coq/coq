@@ -41,10 +41,10 @@ val declare_reduction_effect : effect_name ->
   (Environ.env -> Evd.evar_map -> Constr.constr -> unit) -> unit
 
 (* [set_reduction_effect cst name] declares effect [name] to be called when [cst] is found *)
-val set_reduction_effect : GlobRef.t -> effect_name -> unit
+val set_reduction_effect : Constant.t -> effect_name -> unit
 
 (* [effect_hook env sigma key term] apply effect associated to [key] on [term] *)
-val reduction_effect_hook : Environ.env -> Evd.evar_map -> Constr.constr ->
+val reduction_effect_hook : Environ.env -> Evd.evar_map -> Constant.t ->
   Constr.constr Lazy.t -> unit
 
 (** {6 Machinery about a stack of unfolded constant }
