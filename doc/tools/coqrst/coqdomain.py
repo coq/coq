@@ -158,7 +158,7 @@ class CoqObject(ObjectDescription):
     def _add_index_entry(self, name, target):
         """Add `name` (pointing to `target`) to the main index."""
         index_text = name
-        if self.index_suffix:
+        if self.index_suffix and not name.startswith("_"):
             index_text += " " + self.index_suffix
         self.indexnode['entries'].append(('single', index_text, target, '', None))
 
