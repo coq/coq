@@ -971,7 +971,6 @@ Section Map.
   Lemma in_flat_map : forall (f:A->list B)(l:list A)(y:B),
     In y (flat_map f l) <-> exists x, In x l /\ In y (f x).
   Proof using A B.
-    clear Hfinjective.
     induction l; simpl; split; intros.
     contradiction.
     destruct H as (x,(H,_)); contradiction.
