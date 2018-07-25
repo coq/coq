@@ -120,7 +120,7 @@ val pr_sort                : evar_map -> Sorts.t -> Pp.t
 
 val pr_polymorphic         : bool -> Pp.t
 val pr_cumulative          : bool -> bool -> Pp.t
-val pr_universe_instance   : evar_map -> Univ.UContext.t -> Pp.t
+val pr_universe_instance   : evar_map -> Univ.Instance.t -> Pp.t
 val pr_universe_ctx        : evar_map -> ?variance:Univ.Variance.t array ->
   Univ.UContext.t -> Pp.t
 val pr_universe_ctx_set    : evar_map -> Univ.ContextSet.t -> Pp.t
@@ -139,9 +139,9 @@ val pr_constructor         : env -> constructor -> Pp.t
 val pr_inductive           : env -> inductive -> Pp.t
 val pr_evaluable_reference : evaluable_global_reference -> Pp.t
 
-val pr_pconstant           : env -> pconstant -> Pp.t
-val pr_pinductive          : env -> pinductive -> Pp.t
-val pr_pconstructor        : env -> pconstructor -> Pp.t
+val pr_pconstant : env -> evar_map -> pconstant -> Pp.t
+val pr_pinductive : env -> evar_map -> pinductive -> Pp.t
+val pr_pconstructor : env -> evar_map -> pconstructor -> Pp.t
 
 
 (** Contexts *)

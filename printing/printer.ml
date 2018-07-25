@@ -290,11 +290,13 @@ let pr_cumulativity_info sigma cumi =
 let pr_global_env = pr_global_env
 let pr_global = pr_global_env Id.Set.empty
 
-let pr_puniverses f env (c,u) =
-  f env c ++ 
-  (if !Constrextern.print_universes then
-    str"(*" ++ Univ.Instance.pr UnivNames.pr_with_global_universes u ++ str"*)"
-   else mt ())
+let pr_universe_instance evd inst =
+  str"@{" ++ Univ.Instance.pr (Termops.pr_evd_level evd) inst ++ str"}"
+
+let pr_puniverses f env sigma (c,u) =
+  if !Constrextern.print_universes
+  then f env c ++ pr_universe_instance sigma u
+  else f env c
 
 let pr_constant env cst = pr_global_env (Termops.vars_of_env env) (ConstRef cst)
 let pr_existential_key = Termops.pr_existential_key
@@ -1015,10 +1017,6 @@ let pr_polymorphic b =
   if print then
     if b then str"Polymorphic " else str"Monomorphic "
   else mt ()
-
-let pr_universe_instance evd ctx =
-  let inst = Univ.UContext.instance ctx in
-    str"@{" ++ Univ.Instance.pr (Termops.pr_evd_level evd) inst ++ str"}"
 
 (* print the proof step, possibly with diffs highlighted, *)
 let print_and_diff oldp newp =
