@@ -184,7 +184,7 @@ Inductive external_view : Type := tactic_view of Type.
 
 Module TheCanonical.
 
-CoInductive put vT sT (v1 v2 : vT) (s : sT) := Put.
+Variant put vT sT (v1 v2 : vT) (s : sT) := Put.
 
 Definition get vT sT v s (p : @put vT sT v v s) := let: Put _ _ _ := p in s.
 
@@ -275,10 +275,10 @@ Notation "{ 'type' 'of' c 'for' s }" := (dependentReturnType c s)
 (*   We also define a simpler version ("phant" / "Phant") of phantom for the  *)
 (* common case where p_type is Type.                                          *)
 
-CoInductive phantom T (p : T) := Phantom.
+Variant phantom T (p : T) := Phantom.
 Arguments phantom : clear implicits.
 Arguments Phantom : clear implicits.
-CoInductive phant (p : Type) := Phant.
+Variant phant (p : Type) := Phant.
 
 (* Internal tagging used by the implementation of the ssreflect elim.         *)
 
