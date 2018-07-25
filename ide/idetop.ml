@@ -530,9 +530,6 @@ let () = Usage.add_to_usage "coqidetop"
 let islave_init ~opts extra_args =
   let args = parse extra_args in
   CoqworkmgrApi.(init High);
-  let open Coqargs in
-    if not opts.diffs_set then
-      Proof_diffs.write_diffs_option "on";
   opts, args
 
 let () =
