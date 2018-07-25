@@ -326,7 +326,7 @@ Section SimplFun.
 
 Variables aT rT : Type.
 
-CoInductive simpl_fun := SimplFun of aT -> rT.
+Variant simpl_fun := SimplFun of aT -> rT.
 
 Definition fun_of_simpl f := fun x => let: SimplFun lam := f in lam x.
 
@@ -684,7 +684,7 @@ Section Bijections.
 
 Variables (A B : Type) (f : B -> A).
 
-CoInductive bijective : Prop := Bijective g of cancel f g & cancel g f.
+Variant bijective : Prop := Bijective g of cancel f g & cancel g f.
 
 Hypothesis bijf : bijective.
 
