@@ -134,13 +134,15 @@ val stop_worker: Interface.stop_worker_sty-> Interface.stop_worker_rty query
 
 module PrintOpt :
 sig
-  type t (** Representation of an option *)
+  type 'a t (** Representation of an option *)
 
-  type bool_descr = { opts : t list; init : bool; label : string }
+  type 'a descr = { opts : 'a t list; init : 'a; label : string }
 
-  val bool_items : bool_descr list
+  val bool_items : bool descr list
 
-  val set : t -> bool -> unit
+  val diff_item : string descr
+
+  val set : 'a t -> 'a -> unit
 
   val printing_unfocused: unit -> bool
 
