@@ -103,7 +103,7 @@ val univ_rigid : rigid
 val univ_flexible : rigid
 val univ_flexible_alg : rigid
 
-val merge : ?loc:Loc.t -> bool -> rigid -> t -> Univ.ContextSet.t -> t
+val merge : ?loc:Loc.t -> sideff:bool -> extend:bool -> rigid -> t -> Univ.ContextSet.t -> t
 val merge_subst : t -> UnivSubst.universe_opt_subst -> t
 val emit_side_effects : Safe_typing.private_constants -> t -> t
 
