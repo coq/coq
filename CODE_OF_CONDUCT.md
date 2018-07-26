@@ -70,7 +70,7 @@ affect a person's ability to participate within them.
   human to err and blaming each other doesn't get us anywhere. Instead, focus
   on helping to resolve issues and learning from mistakes.
 - **Coq online forums are only to discuss Coq-related subjects.**
-  Unrelated policitical discussions or long disgressions are unwelcome,
+  Unrelated political discussions or long digressions are unwelcome,
   even for illustration or comparison purposes.
 
 ## Enforcement ##
@@ -81,11 +81,19 @@ it by emailing the Coq Code of Conduct enforcement team at
 incident will be maintained while dealing with it.
 
 In particular, you should seek support from the team instead of dealing by
-yourself with a behavior that you consider hurtful.
+yourself with a behavior that you consider hurtful. This applies to members of
+the enforcement team as well, who shouldn't deal by themselves with violations
+in discussions in which they are a participant.
 
 Depending on the violation, the team can choose to address a private or public
 warning to the offender, request an apology, or ban them for a short or a long
-period of time from interacting on one or all of our forums.
+period from interacting on one or all of our forums.
+
+Except in case of serious violations, the team will always try a pedagogical
+approach first (the offender does not necessarily realize immediately why their
+behavior is wrong). We consider short bans to form part of the pedagogical
+approach, especially when they come with explanatory comments, as this can give
+some time to the offender to calm down and think about their actions.
 
 ## Questions? ##
 
