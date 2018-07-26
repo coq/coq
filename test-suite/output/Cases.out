@@ -169,3 +169,5 @@ fun x : K => match x with
              | _ => 2
              end
      : K -> nat
+The command has indeed failed with message:
+Pattern "S _, _" is redundant in this clause.
