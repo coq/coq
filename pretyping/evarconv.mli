@@ -47,6 +47,7 @@ val unify_with_heuristics : unify_flags -> with_ho:bool ->
 val conv : env -> ?ts:TransparentState.t -> evar_map -> constr -> constr -> evar_map option
 val cumul : env -> ?ts:TransparentState.t -> evar_map -> constr -> constr -> evar_map option
 
+
 (** {6 Unification heuristics. } *)
 
 (** Try heuristics to solve pending unification problems and to solve
@@ -73,8 +74,34 @@ val check_conv_record : env -> evar_map ->
 (** Try to solve problems of the form ?x[args] = c by second-order
     matching, using typing to select occurrences *)
 
-val second_order_matching : TransparentState.t -> env -> evar_map ->
-  EConstr.existential -> occurrences option list -> constr -> evar_map * bool
+type occurrence_match_test =
+  env -> evar_map -> constr -> (* Used to precompute the local tests *)
+  env -> evar_map -> int -> constr -> constr -> bool * evar_map
+
+(** When given the choice of abstracting an occurrence or leaving it,
+    force abstration. *)
+type prefer_abstraction = bool
+
+type occurrence_selection =
+  | AtOccurrences of occurrences
+  | Unspecified of prefer_abstraction
+
+(** By default, unspecified, not preferring abstraction.
+    This provides the most general solutions. *)
+val default_occurrence_selection : occurrence_selection
+
+type occurrences_selection =
+  occurrence_match_test * occurrence_selection list
+
+val default_occurrence_test : frozen_evars:Evar.Set.t -> TransparentState.t -> occurrence_match_test
+
+(** [default_occurrence_selection n]
+    Gives the default test and occurrences for [n] arguments *)
+val default_occurrences_selection : ?frozen_evars:Evar.Set.t (* By default, none *) ->
+  TransparentState.t -> int -> occurrences_selection
+
+val second_order_matching : unify_flags -> env -> evar_map ->
+  EConstr.existential -> occurrences_selection -> constr -> evar_map * bool
 
 (** Declare function to enforce evars resolution by using typing constraints *)
 
