@@ -65,6 +65,15 @@ Standard Library
 
 - Added `Ndigits.N2Bv_sized`, and proved some lemmas about it.
 
+- The scopes `int_scope` and `uint_scope` have been renamed to
+  `dec_int_scope` and `dec_uint_scope`, to clash less with ssreflect
+  and other packages.  They are still delimited by `%int` and `%uint`.
+
+- Numeral syntax for `nat` is no longer available without loading the
+  entire prelude (`Require Import Coq.Init.Prelude`).  This only
+  impacts users running Coq without the init library (`-nois` or
+  `-noinit`) and also issuing `Require Import Coq.Init.Datatypes`.
+
 Tools
 
 - Coq_makefile lets one override or extend the following variables from
@@ -98,6 +107,8 @@ Vernacular Commands
   overwritting the opacity set of the hint database.
 - Added generic syntax for “attributes”, as in:
   `#[local] Lemma foo : bar.`
+- Added the `Numeral Notation` command for registering decimal numeral
+  notations for custom types
 - The `Set SsrHave NoTCResolution` command no longer has special global
   scope. If you want the previous behavior, use `Global Set SsrHave
   NoTCResolution`.
