@@ -16,6 +16,21 @@ match k,l with
  |B,l' => Bcons true (Ncons 0 l')
 end.
 
+(* At some time, the success of trullynul was dependent on the name of
+   the variables! *)
+
+Definition trullynul2 k {a} (l : alt_list k a) :=
+match k,l with
+ |N,l' => Ncons 0 (Bcons true l')
+ |B,l' => Bcons true (Ncons 0 l')
+end.
+
+Definition trullynul3 k {z} (l : alt_list k z) :=
+match k,l with
+ |N,l' => Ncons 0 (Bcons true l')
+ |B,l' => Bcons true (Ncons 0 l')
+end.
+
 Fixpoint app (P : forall {k k'}, alt_list k k' -> alt_list k k') {t1 t2} (l : alt_list t1 t2) {struct l}: forall {t3}, alt_list t2 t3 ->
 alt_list t1 t3 :=
   match l with
