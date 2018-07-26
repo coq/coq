@@ -18,17 +18,16 @@ open Tacticals.New
 open Globnames
 
 let update_flags ()=
-  let predref=ref Names.Cpred.empty in
-  let f coe =
+  let f acc coe =
     match coe.Classops.coe_value with
-    | ConstRef c -> predref := Names.Cpred.add c !predref
-    | _ -> ()
+    | ConstRef c -> Names.Cpred.add c acc
+    | _ -> acc
   in
-    List.iter f (Classops.coercions ());
+    let pred = List.fold_left f Names.Cpred.empty (Classops.coercions ()) in
     red_flags:=
     CClosure.RedFlags.red_add_transparent
       CClosure.betaiotazeta
-      (Names.Id.Pred.full,Names.Cpred.complement !predref)
+      (Names.Id.Pred.full,Names.Cpred.complement pred)
 
 let ground_tac solver startseq =
   Proofview.Goal.enter begin fun gl ->
