@@ -295,12 +295,19 @@ let lookup_path_to_fun_from env sigma s =
 let lookup_path_to_sort_from env sigma s =
   apply_on_class_of env sigma s lookup_path_to_sort_from_class
 
+let mkNamed = function
+  | GlobRef.ConstRef c -> EConstr.mkConst c
+  | VarRef v -> EConstr.mkVar v
+  | ConstructRef c -> EConstr.mkConstruct c
+  | IndRef i -> EConstr.mkInd i
+
 let get_coercion_constructor env coe =
-  match coe.coe_value with
-  | ConstructRef c ->
-      (c, Inductiveops.constructor_nrealargs c -1)
-  | _ ->
-      raise Not_found
+  let evd = Evd.from_env env in
+  let red x = fst (Reductionops.whd_all_stack env evd x) in
+  match EConstr.kind evd (red (mkNamed coe.coe_value)) with
+  | Constr.Construct (c, _) ->
+      c, Inductiveops.constructor_nrealargs c -1
+  | _ -> raise Not_found
 
 let lookup_pattern_path_between env (s,t) =
   let i = inductive_class_of s in
