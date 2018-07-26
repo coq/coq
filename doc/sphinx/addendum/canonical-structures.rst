@@ -6,14 +6,14 @@ Canonical Structures
 
 :Authors: Assia Mahboubi and Enrico Tassi
 
-This chapter explains the basics of Canonical Structure and how they can be used
+This chapter explains the basics of canonical structures and how they can be used
 to overload notations and build a hierarchy of algebraic structures. The
 examples are taken from :cite:`CSwcu`. We invite the interested reader to refer
 to this paper for all the details that are omitted here for brevity. The
 interested reader shall also find in :cite:`CSlessadhoc` a detailed description
-of another, complementary, use of Canonical Structures: advanced proof search.
+of another, complementary, use of canonical structures: advanced proof search.
 This latter papers also presents many techniques one can employ to tune the
-inference of Canonical Structures.
+inference of canonical structures.
 
 
 Notation overloading
@@ -38,21 +38,21 @@ of the terms that are compared.
     End theory.
   End EQ.
 
-We use Coq modules as name spaces. This allows us to follow the same
+We use Coq modules as namespaces. This allows us to follow the same
 pattern and naming convention for the rest of the chapter. The base
-name space contains the definitions of the algebraic structure. To
+namespace contains the definitions of the algebraic structure. To
 keep the example small, the algebraic structure ``EQ.type`` we are
 defining is very simplistic, and characterizes terms on which a binary
 relation is defined, without requiring such relation to validate any
 property. The inner theory module contains the overloaded notation ``==``
-and will eventually contain lemmas holding on all the instances of the
+and will eventually contain lemmas holding all the instances of the
 algebraic structure (in this case there are no lemmas).
 
 Note that in practice the user may want to declare ``EQ.obj`` as a
 coercion, but we will not do that here.
 
 The following line tests that, when we assume a type ``e`` that is in
-theEQ class, then we can relates two of its objects with ``==``.
+theEQ class, we can relate two of its objects with ``==``.
 
 .. coqtop:: all
   
@@ -312,7 +312,7 @@ The following script registers an ``LEQ`` class for ``nat`` and for the type
 constructor ``*``. It also tests that they work as expected.
 
 Unfortunately, these declarations are very verbose. In the following
-subsection we show how to make these declaration more compact.
+subsection we show how to make them more compact.
 
 .. coqtop:: all
 
@@ -385,7 +385,7 @@ with message "T is not an EQ.type"”.
 
 The other utilities are used to ask |Coq| to solve a specific unification
 problem, that will in turn require the inference of some canonical structures.
-They are explained in mode details in :cite:`CSwcu`.
+They are explained in more details in :cite:`CSwcu`.
 
 We now have all we need to create a compact “packager” to declare
 instances of the ``LEQ`` class.
