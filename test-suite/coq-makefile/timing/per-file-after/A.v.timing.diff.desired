@@ -1,9 +1,9 @@
-After     | Code                                                | Before    || Change    | % Change
----------------------------------------------------------------------------------------------------
-0m00.50s  | Total                                               | 0m04.17s  || -0m03.66s | -87.96% 
----------------------------------------------------------------------------------------------------
-0m00.145s | Chars 069 - 162 [Definition~foo0~:=~Eval~comp~i...] | 0m00.192s || -0m00.04s | -24.47% 
-0m00.126s | Chars 000 - 026 [Require~Coq.ZArith.BinInt.]        | 0m00.143s || -0m00.01s | -11.88% 
-   N/A    | Chars 027 - 068 [Declare~Reduction~comp~:=~nati...] | 0m00.s    || +0m00.00s | N/A     
-0m00.s    | Chars 027 - 068 [Declare~Reduction~comp~:=~vm_c...] |    N/A    || +0m00.00s | N/A     
-0m00.231s | Chars 163 - 208 [Definition~foo1~:=~Eval~comp~i...] | 0m03.836s || -0m03.60s | -93.97% 
+After     | Code                                                | Before    || Change    | % Change 
+----------------------------------------------------------------------------------------------------
+0m04.35s  | Total                                               | 0m00.58s  || +0m03.77s | +649.05% 
+----------------------------------------------------------------------------------------------------
+0m03.87s  | Chars 163 - 208 [Definition~foo1~:=~Eval~comp~i...] | 0m00.246s || +0m03.62s | +1473.17%
+0m00.322s | Chars 069 - 162 [Definition~foo0~:=~Eval~comp~i...] | 0m00.189s || +0m00.13s | +70.37%  
+0m00.16s  | Chars 000 - 026 [Require~Coq.ZArith.BinInt.]        | 0m00.146s || +0m00.01s | +9.58%   
+0m00.s    | Chars 027 - 068 [Declare~Reduction~comp~:=~nati...] |    N/A    || +0m00.00s | N/A      
+   N/A    | Chars 027 - 068 [Declare~Reduction~comp~:=~vm_c...] | 0m00.s    || +0m00.00s | N/A      
