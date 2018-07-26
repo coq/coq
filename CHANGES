@@ -1,3 +1,12 @@
+Changes from 8.8.1 to 8.8.2
+===========================
+
+Tools
+
+- The coq-makefile targets `print-pretty-timed`, `print-pretty-timed-diff`,
+  and `print-pretty-single-time-diff` now correctly label the "before" and
+  "after" columns, rather than swapping them.
+
 Changes from 8.8.0 to 8.8.1
 ===========================
 
