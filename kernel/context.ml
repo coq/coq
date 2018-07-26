@@ -149,6 +149,10 @@ struct
       | LocalAssum (na, ty) -> na, None, ty
       | LocalDef (na, v, ty) -> na, Some v, ty
 
+    let drop_body = function
+      | LocalAssum _ as d -> d
+      | LocalDef (na, v, ty) -> LocalAssum (na, ty)
+
   end
 
   (** Rel-context is represented as a list of declarations.
@@ -210,6 +214,8 @@ struct
       | Declaration.LocalDef _ :: ctx -> aux (true::l) ctx
       | Declaration.LocalAssum _ :: ctx -> aux (false::l) ctx
     in aux [] l
+
+  let drop_bodies l = List.Smart.map Declaration.drop_body l
 
   (** [extended_list n Γ] builds an instance [args] such that [Γ,Δ ⊢ args:Γ]
       with n = |Δ| and with the {e local definitions} of [Γ] skipped in
@@ -348,6 +354,10 @@ struct
       | id, None, ty -> LocalAssum (id, ty)
       | id, Some v, ty -> LocalDef (id, v, ty)
 
+    let drop_body = function
+      | LocalAssum _ as d -> d
+      | LocalDef (id, v, ty) -> LocalAssum (id, ty)
+
     let of_rel_decl f = function
       | Rel.Declaration.LocalAssum (na,t) ->
           LocalAssum (f na, t)
@@ -402,6 +412,8 @@ struct
   (** Return the set of all identifiers bound in a given named-context. *)
   let to_vars l =
     List.fold_left (fun accu decl -> Id.Set.add (Declaration.get_id decl) accu) Id.Set.empty l
+
+  let drop_bodies l = List.Smart.map Declaration.drop_body l
 
   (** [instance_from_named_context Ω] builds an instance [args] such
       that [Ω ⊢ args:Ω] where [Ω] is a named context and with the local

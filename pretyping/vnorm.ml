@@ -209,6 +209,9 @@ and nf_evar env sigma evk stk =
   | Zapp args :: stk ->
     (** We assume that there is no consecutive Zapp nodes in a VM stack. Is that
         really an invariant? *)
+    (** Let-bound arguments are present in the evar arguments but not in the
+        type, so we turn the let into a product. *)
+    let hyps = Context.Named.drop_bodies hyps in
     let fold accu d = Term.mkNamedProd_or_LetIn d accu in
     let t = List.fold_left fold concl hyps in
     let t, args = nf_args env sigma args t in
