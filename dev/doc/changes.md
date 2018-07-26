@@ -159,7 +159,33 @@ END
 
 #### VERNAC EXTEND
 
-Not handled yet.
+Steps to perform:
+- replace the brackets enclosing OCaml code in actions and rule classifiers with
+  braces
+- if not there yet, add a leading `|̀  to the first rule
+
+Handwritten classifiers declared through the `CLASSIFIED BY` statement are
+considered OCaml code, so they also need to be wrapped in braces.
+
+All extension macros are now behaving as if they were declared `FUNCTIONAL`,
+which means that they must return an interpretation state. This should
+currently be done by merely returning the `st` variable that is implicitly
+passed to the rule code.
+
+For instance, code of the form:
+```
+VERNAC COMMAND EXTEND my_command CLASSIFIED BY classifier
+  [ "foo" int(i) ] => [ classif' ] -> [ cmd1 i ]
+| [ "bar" ] -> [ cmd2 ]
+END
+```
+should be turned into
+```
+VERNAC COMMAND EXTEND my_command CLASSIFIED BY { classifier }
+  [ "foo" int(i) ] => { classif' } -> { let () = cmd1 i in st }
+| [ "bar" ] -> { let () = cmd2 in st  }
+END
+```
 
 #### ARGUMENT EXTEND
 
