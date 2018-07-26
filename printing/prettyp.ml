@@ -657,14 +657,10 @@ let gallina_print_library_entry env sigma with_values ent =
         gallina_print_leaf_entry env sigma with_values (oname,lobj)
     | (oname,Lib.OpenedSection (dir,_)) ->
         Some (str " >>>>>>> Section " ++ pr_name oname)
-    | (oname,Lib.ClosedSection _) ->
-        Some (str " >>>>>>> Closed Section " ++ pr_name oname)
     | (_,Lib.CompilingLibrary { obj_dir; _ }) ->
         Some (str " >>>>>>> Library " ++ DirPath.print obj_dir)
     | (oname,Lib.OpenedModule _) ->
 	Some (str " >>>>>>> Module " ++ pr_name oname)
-    | (oname,Lib.ClosedModule _) ->
-        Some (str " >>>>>>> Closed Module " ++ pr_name oname)
 
 let gallina_print_context env sigma with_values =
   let rec prec n = function
@@ -793,9 +789,6 @@ let read_sec_context qid =
   let rec get_cxt in_cxt = function
     | (_,Lib.OpenedSection ({obj_dir;_},_) as hd)::rest ->
         if DirPath.equal dir obj_dir then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
-    | (_,Lib.ClosedSection _)::rest ->
-        user_err Pp.(str "Cannot print the contents of a closed section.")
-	(* LEM: Actually, we could if we wanted to. *)
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest
   in
