@@ -260,7 +260,7 @@ let apply_inference_hook hook env sigma frozen = match frozen with
 let apply_heuristics env sigma fail_evar =
   (* Resolve eagerly, potentially making wrong choices *)
   try solve_unif_constraints_with_heuristics
-        ~ts:(Typeclasses.classes_transparent_state ()) env sigma
+        ~flags:(default_flags_of (Typeclasses.classes_transparent_state ())) env sigma
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in
     if fail_evar then iraise e else sigma

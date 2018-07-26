@@ -16,6 +16,16 @@ open Locus
 
 (** {4 Unification for type inference. } *)
 
+type unify_flags = Evarsolve.unify_flags
+
+(** The default subterm transparent state is no unfoldings *)
+val default_flags_of : ?subterm_ts:transparent_state -> transparent_state -> unify_flags
+
+type unify_fun = unify_flags ->
+  env -> evar_map -> conv_pb -> constr -> constr -> Evarsolve.unification_result
+
+val conv_fun : unify_fun -> unify_flags -> Evarsolve.conv_fun
+
 exception UnableToUnify of evar_map * Pretype_errors.unification_error
 
 (** {6 Main unification algorithm for type inference. } *)
@@ -23,6 +33,14 @@ exception UnableToUnify of evar_map * Pretype_errors.unification_error
 (** returns exception NotUnifiable with best known evar_map if not unifiable *)
 val the_conv_x     : env -> ?ts:TransparentState.t -> constr -> constr -> evar_map -> evar_map
 val the_conv_x_leq : env -> ?ts:TransparentState.t -> constr -> constr -> evar_map -> evar_map
+
+(** Allows to pass arbitrary flags to the unifier *)
+val unify : unify_flags -> env -> evar_map -> constr -> constr -> evar_map
+val unify_leq : unify_flags -> env -> evar_map -> constr -> constr -> evar_map
+
+(** @raises a PretypeError if it cannot unify *)
+val unify_with_heuristics : unify_flags -> with_ho:bool ->
+                            env -> evar_map -> conv_pb -> constr -> constr -> evar_map
 
 (** The same function resolving evars by side-effect and
    catching the exception *)
@@ -34,7 +52,8 @@ val cumul : env -> ?ts:TransparentState.t -> evar_map -> constr -> constr -> eva
 (** Try heuristics to solve pending unification problems and to solve
     evars with candidates *)
 
-val solve_unif_constraints_with_heuristics : env -> ?ts:TransparentState.t -> evar_map -> evar_map
+val solve_unif_constraints_with_heuristics :
+  env -> ?flags:unify_flags -> ?with_ho:bool -> evar_map -> evar_map
 
 (** Check all pending unification problems are solved and raise an
     error otherwise *)
@@ -61,9 +80,6 @@ val second_order_matching : TransparentState.t -> env -> evar_map ->
 
 val set_solve_evars : (env -> evar_map -> constr -> evar_map * constr) -> unit
 
-type unify_fun = TransparentState.t ->
-  env -> evar_map -> conv_pb -> constr -> constr -> Evarsolve.unification_result
-
 (** Override default [evar_conv_x] algorithm. *)
 val set_evar_conv : unify_fun -> unit
 
@@ -72,7 +88,7 @@ val evar_conv_x : unify_fun
 
 (**/**)
 (* For debugging *)
-val evar_eqappr_x : ?rhs_is_already_stuck:bool -> TransparentState.t * bool ->
+val evar_eqappr_x : ?rhs_is_already_stuck:bool -> unify_flags ->
   env -> evar_map ->
     conv_pb -> state * Cst_stack.t -> state * Cst_stack.t ->
       Evarsolve.unification_result

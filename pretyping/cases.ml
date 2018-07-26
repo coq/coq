@@ -1707,9 +1707,12 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context !!env) in
         let sigma, ev' = Evarutil.new_evar ~src ~typeclass_candidate:false !!env sigma ty in
-        begin match solve_simple_eqn (evar_conv_x TransparentState.full) !!env sigma (None,ev,substl inst ev') with
-        | Success evd -> evdref := evd
-        | UnifFailure _ -> assert false
+        begin
+          let flags = (default_flags_of TransparentState.full) in
+          let conv = conv_fun evar_conv_x flags in
+          match solve_simple_eqn conv !!env sigma (None,ev,substl inst ev') with
+          | Success evd -> evdref := evd
+          | UnifFailure _ -> assert false
         end;
         ev'
     | _ ->
@@ -1945,7 +1948,8 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 
 let inh_conv_coerce_to_tycon ?loc ~program_mode env sigma j tycon =
   match tycon with
-    | Some p -> Coercion.inh_conv_coerce_to ?loc ~program_mode true env sigma j p
+    | Some p -> Coercion.inh_conv_coerce_to ?loc ~program_mode true env sigma
+                ~flags:(default_flags_of TransparentState.full) j p
     | None -> sigma, j
 
 (* We put the tycon inside the arity signature, possibly discovering dependencies. *)
