@@ -326,10 +326,14 @@ let print_ast fmt ext =
 
 end
 
+let declare_plugin fmt name =
+  fprintf fmt "let %s = \"%s\"@\n" plugin_name name;
+  fprintf fmt "let _ = Mltop.add_known_module %s@\n" plugin_name
+
 let pr_ast fmt = function
 | Code s -> fprintf fmt "%s@\n" s.code
 | Comment s -> fprintf fmt "%s@\n" s
-| DeclarePlugin name -> fprintf fmt "let %s = \"%s\"@\n" plugin_name name
+| DeclarePlugin name -> declare_plugin fmt name
 | GramExt gram -> fprintf fmt "%a@\n" GramExt.print_ast gram
 | VernacExt -> fprintf fmt "VERNACEXT@\n"
 | TacticExt tac -> fprintf fmt "%a@\n" TacticExt.print_ast tac
