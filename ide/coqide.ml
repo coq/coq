@@ -1106,15 +1106,15 @@ let build_ui () =
   ];
   alpha_items templates_menu "Template" Coq_commands.commands;
 
-  let qitem s sc ?(dots = true) =
-    let query = if dots then s ^ "..." else s in
+  let qitem s sc =
+    let query = s ^ "..." in
     item s ~label:("_"^s)
       ~accel:(modifier_for_queries#get^sc)
       ~callback:(Query.query query)
   in
   menu queries_menu [
     item "Queries" ~label:"_Queries";
-    qitem "Search" "K" ~dots:false;
+    qitem "Search" "K";
     qitem "Check" "C";
     qitem "Print" "P";
     qitem "About" "A";
