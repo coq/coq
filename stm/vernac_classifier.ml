@@ -42,13 +42,6 @@ let string_of_vernac_when = function
 let string_of_vernac_classification (t,w) =
   string_of_vernac_type t ^ " " ^ string_of_vernac_when w
 
-let classifiers = ref []
-let declare_vernac_classifier
-  (s : Vernacexpr.extend_name)
-  (f : Genarg.raw_generic_argument list -> unit -> vernac_classification)
-=
-  classifiers := !classifiers @ [s,f]
-
 let idents_of_name : Names.Name.t -> Names.Id.t list =
   function
   | Names.Anonymous -> []
@@ -194,7 +187,7 @@ let classify_vernac e =
     | VernacWriteState _ -> VtSideff [], VtNow
     (* Plugins should classify their commands *)
     | VernacExtend (s,l) ->
-        try List.assoc s !classifiers l ()
+        try Vernacentries.get_vernac_classifier s l
         with Not_found -> anomaly(str"No classifier for"++spc()++str (fst s)++str".")
   in
   let rec static_control_classifier ~poly = function

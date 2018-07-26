@@ -14,134 +14,42 @@ open Q_util
 open Argextend
 
 type rule = {
-  r_head : string option;
-  (** The first terminal grammar token *)
   r_patt : extend_token list;
   (** The remaining tokens of the parsing rule *)
   r_class : MLast.expr option;
   (** An optional classifier for the STM *)
   r_branch : MLast.expr;
   (** The action performed by this rule. *)
-  r_depr : unit option;
+  r_depr : bool;
   (** Whether this entry is deprecated *)
 }
 
-(** Quotation difference for match clauses *)
+let rec make_patt r = function
+| [] -> r
+| ExtNonTerminal (_, Some p) :: l -> <:expr< fun $lid:p$ -> $make_patt r l$ >>
+| ExtNonTerminal (_, None) :: l -> <:expr< fun _ -> $make_patt r l$ >>
+| ExtTerminal _ :: l -> make_patt r l
 
-let default_patt loc =
-  (<:patt< _ >>, ploc_vala None, <:expr< failwith "Extension: cannot occur" >>)
+let rec mlexpr_of_clause = function
+| [] -> <:expr< Vernacentries.TyNil >>
+| ExtTerminal s :: cl -> <:expr< Vernacentries.TyTerminal ($str:s$, $mlexpr_of_clause cl$) >>
+| ExtNonTerminal (g, id) :: cl ->
+  let id = mlexpr_of_option mlexpr_of_string id in
+  <:expr< Vernacentries.TyNonTerminal ($id$, $mlexpr_of_symbol g$, $mlexpr_of_clause cl$) >>
 
-let make_fun loc cl =
-  let l = cl @ [default_patt loc] in
-  MLast.ExFun (loc, ploc_vala l)  (* correspond to <:expr< fun [ $list:l$ ] >> *)
-
-let rec make_patt = function
-  | [] -> <:patt< [] >>
-  | ExtNonTerminal (_, Some p) :: l ->
-      <:patt< [ $lid:p$ :: $make_patt l$ ] >>
-  | _::l -> make_patt l
-
-let rec make_let e = function
-  | [] -> e
-  | ExtNonTerminal (g, Some p) :: l ->
-      let t = type_of_user_symbol g in
-      let loc = MLast.loc_of_expr e in
-      let e = make_let e l in
-      <:expr< let $lid:p$ = Genarg.out_gen $make_rawwit loc t$ $lid:p$ in $e$ >>
-  | _::l -> make_let e l
-
-let make_clause { r_patt = pt; r_branch = e; } =
-  (make_patt pt,
-   ploc_vala None,
-   make_let e pt)
-
-(* To avoid warnings *)
-let mk_ignore c pt =
-  let fold accu = function
-  | ExtNonTerminal (_, Some p) -> p :: accu
-  | _ -> accu
-  in
-  let names = List.fold_left fold [] pt in
-  let fold accu id = <:expr< let _ = $lid:id$ in $accu$ >> in
-  let names = List.fold_left fold <:expr< () >> names in
-  <:expr< do { let _ = $names$ in $c$ } >>
-
-let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
-  match c ,cg with
-  | Some c, _ ->
-     (make_patt pt,
-      ploc_vala None,
-      make_let (mk_ignore c pt) pt)
-  | None, Some cg ->
-     (make_patt pt,
-      ploc_vala None,
-      <:expr< fun loc -> $cg$ $str:s$ >>)
-  | None, None -> prerr_endline
-      (("Vernac entry \""^s^"\" misses a classifier. "^
-         "A classifier is a function that returns an expression "^
-         "of type vernac_classification (see Vernacexpr). You can: ") ^
-       "- " ^ (
-        ("Use '... EXTEND "^s^" CLASSIFIED AS QUERY ...' if the "^
-          "new vernacular command does not alter the system state;"))^ "\n" ^
-       "- " ^ (
-        ("Use '... EXTEND "^s^" CLASSIFIED AS SIDEFF ...' if the "^
-          "new vernacular command alters the system state but not the "^
-          "parser nor it starts a proof or ends one;"))^ "\n" ^
-       "- " ^ (
-        ("Use '... EXTEND "^s^" CLASSIFIED BY f ...' to specify "^
-          "a global function f.  The function f will be called passing "^
-          "\""^s^"\" as the only argument;")) ^ "\n" ^
-       "- " ^ (
-        "Add a specific classifier in each clause using the syntax:"
-        ^ "\n" ^("'[...] => [ f ] -> [...]'. "))^ "\n" ^
-       ("Specific classifiers have precedence over global "^
-         "classifiers. Only one classifier is called.") ^ "\n");
-    (make_patt pt,
-      ploc_vala None,
-      <:expr< fun () -> ( CErrors.anomaly (Pp.str "No classification given for command " ^ s ) ) >>)
-
-let make_fun_clauses loc s l =
-  let map c =
-    let depr = match c.r_depr with
-    | None -> false
-    | Some () -> true
-    in
-    let cl = make_fun loc [make_clause c] in
-    <:expr< ($mlexpr_of_bool depr$, $cl$)>>
-  in
-  mlexpr_of_list map l
-
-let make_fun_classifiers loc s c l =
-  let cl = List.map (fun x -> make_fun loc [make_clause_classifier c s x]) l in
-  mlexpr_of_list (fun x -> x) cl
-
-let make_prod_item = function
-  | ExtTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
-  | ExtNonTerminal (g, ido) ->
-    let nt = type_of_user_symbol g in
-    let base s = <:expr< Pcoq.genarg_grammar ($mk_extraarg loc s$) >> in
-    let typ = match ido with None -> None | Some _ -> Some nt in
-      <:expr< Egramml.GramNonTerminal ( Loc.tag ( $mlexpr_of_option (make_rawwit loc) typ$ ,
-      $mlexpr_of_prod_entry_key base g$ ) ) >>
-
-let mlexpr_of_clause cl =
-  let mkexpr { r_head = a; r_patt = b; } = match a with
-  | None -> mlexpr_of_list make_prod_item b
-  | Some a -> mlexpr_of_list make_prod_item (ExtTerminal a :: b)
-  in
-  mlexpr_of_list mkexpr cl
+let make_rule r =
+  let ty = mlexpr_of_clause r.r_patt in
+  let cmd = make_patt r.r_branch r.r_patt in
+  let make_classifier c = make_patt c r.r_patt in
+  let classif = mlexpr_of_option make_classifier r.r_class in
+  <:expr< Vernacentries.TyML ($mlexpr_of_bool r.r_depr$, $ty$, $cmd$, $classif$) >>
 
 let declare_command loc s c nt cl =
   let se = mlexpr_of_string s in
-  let gl = mlexpr_of_clause cl in
-  let funcl = make_fun_clauses loc s cl in
-  let classl = make_fun_classifiers loc s c cl in
+  let c = mlexpr_of_option (fun x -> x) c in
+  let rules = mlexpr_of_list make_rule cl in
   declare_str_items loc
-    [ <:str_item< do {
-        CList.iteri (fun i (depr, f) -> Vernacinterp.vinterp_add depr ($se$, i) f) $funcl$;
-        CList.iteri (fun i f -> Vernac_classifier.declare_vernac_classifier ($se$, i) f) $classl$;
-	CList.iteri (fun i r -> Egramml.extend_vernac_command_grammar ($se$, i) $nt$ r) $gl$;
-      } >> ]
+  [ <:str_item< Vernacentries.vernac_extend ?{ classifier = $c$ } ~{ command = $se$ } ?{ entry = $nt$ } $rules$ >> ]
 
 open Pcaml
 
@@ -176,38 +84,25 @@ EXTEND
     ] ]
   ;
   deprecation:
-    [ [ "DEPRECATED" -> () ] ]
+    [ [ -> false | "DEPRECATED" -> true ] ]
   ;
-  (* spiwack: comment-by-guessing: it seems that the isolated string
-      (which otherwise could have been another argument) is not passed
-      to the VernacExtend interpreter function to discriminate between
-      the clauses. *)
   rule:
-    [ [ "["; s = STRING; l = LIST0 args; "]";
-        d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
-      let () = if s = "" then failwith "Command name is empty." in
+    [ [ "["; OPT "-"; l = LIST1 args; "]";
+        d = deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
       let b = <:expr< fun ~{atts} ~{st} -> ( let () = $e$ in st ) >> in
-      { r_head = Some s; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
-      | "[" ; "-" ; l = LIST1 args ; "]" ;
-        d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
-      let b = <:expr< fun ~{atts} ~{st} -> ( let () = $e$ in st ) >> in
-      { r_head = None; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
+      { r_patt = l; r_class = c; r_branch = b; r_depr = d; }
     ] ]
   ;
+  (** The [OPT "-"] argument serves no purpose nowadays, it is left here for
+      backward compatibility. *)
   fun_rule:
-    [ [ "["; s = STRING; l = LIST0 args; "]";
-        d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
-      let () = if s = "" then failwith "Command name is empty." in
-      let b = <:expr< $e$ >> in
-      { r_head = Some s; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
-      | "[" ; "-" ; l = LIST1 args ; "]" ;
-        d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
-      let b = <:expr< $e$ >> in
-      { r_head = None; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
+    [ [ "["; OPT "-"; l = LIST1 args; "]";
+        d = deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
+      { r_patt = l; r_class = c; r_branch = e; r_depr = d; }
     ] ]
   ;
   classifier:
-    [ [ "=>"; "["; c = Pcaml.expr; "]" -> <:expr< fun loc -> $c$>> ] ]
+    [ [ "=>"; "["; c = Pcaml.expr; "]" -> <:expr< $c$>> ] ]
   ;
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
