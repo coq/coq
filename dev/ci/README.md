@@ -75,9 +75,6 @@ We are currently running tests on the following platforms:
   camlp5, and with warnings as errors; it runs the test-suite and tests the
   compilation of several external developments.
 
-- Circle CI runs tests that are redundant with GitLab CI and may be removed
-  eventually.
-
 - Travis CI is used to test the compilation of Coq and run the test-suite on
   macOS. It also runs a linter that checks whitespace discipline. A
   [pre-commit hook](../tools/pre-commit) is automatically installed by
@@ -165,8 +162,7 @@ automatically built and uploaded to your GitLab registry, and is
 loaded by subsequent jobs.
 
 **IMPORTANT**: When updating Coq's CI docker image, you must modify
-the `CACHEKEY` variable in [`.gitlab-ci.yml`](../../.gitlab-ci.yml),
-[`.circleci/config.yml`](../../.circleci/config.yml),
+the `CACHEKEY` variable in [`.gitlab-ci.yml`](../../.gitlab-ci.yml)
 and [`Dockerfile`](docker/bionic_coq/Dockerfile)
 
 The Docker building job reuses the uploaded image if it is available,
