@@ -546,12 +546,12 @@ The printing for one token can be removed with
 
 Initially, the pretty-printing table contains the following mapping:
 
-==== === ==== ===== === ==== ==== ===
-`->`  →       `<-`   ←       `*`   ×
-`<=`  ≤       `>=`   ≥       `=>`  ⇒
-`<>`  ≠       `<->`  ↔       `|-`  ⊢
-`\/`  ∨       `/\\`   ∧       `~`   ¬
-==== === ==== ===== === ==== ==== ===
+===== === ==== ===== === ==== ==== ===
+`->`   →       `<-`   ←       `*`   ×
+`<=`   ≤       `>=`   ≥       `=>`  ⇒
+`<>`   ≠       `<->`  ↔       `|-`  ⊢
+`\\/`  ∨       `/\\`  ∧       `~`   ¬
+===== === ==== ===== === ==== ==== ===
 
 Any of these can be overwritten or suppressed using the printing
 commands.
