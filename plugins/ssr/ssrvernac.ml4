@@ -24,7 +24,6 @@ open Ltac_plugin
 open Notation_ops
 open Notation_term
 open Glob_term
-open Globnames
 open Stdarg
 open Genarg
 open Decl_kinds
@@ -359,13 +358,12 @@ let coerce_search_pattern_to_sort hpat =
       true, cp
     with _ -> false, [] in
   let coerce hp coe_index =
-    let coe = Classops.get_coercion_value coe_index in
+    let coe_ref = coe_index.Classops.coe_value in
     try
-      let coe_ref = global_of_constr coe in
       let n_imps = Option.get (Classops.hide_coercion coe_ref) in
       mkPApp (Pattern.PRef coe_ref) n_imps [|hp|]
-    with _ ->
-    errorstrm (str "need explicit coercion " ++ pr_constr_env env sigma coe ++ spc ()
+    with Not_found | Option.IsNone ->
+    errorstrm (str "need explicit coercion " ++ pr_global coe_ref ++ spc ()
             ++ str "to interpret head search pattern as type") in
   filter_head, List.fold_left coerce hpat' coe_path
 

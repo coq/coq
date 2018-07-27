@@ -13,23 +13,21 @@ open Formula
 open Sequent
 open Rules
 open Instances
-open Constr
 open Tacmach.New
 open Tacticals.New
+open Globnames
 
 let update_flags ()=
-  let predref=ref Names.Cpred.empty in
-  let f coe=
-    try
-      let kn= fst (destConst (Classops.get_coercion_value coe)) in
-	predref:=Names.Cpred.add kn !predref
-    with DestKO -> ()
+  let f acc coe =
+    match coe.Classops.coe_value with
+    | ConstRef c -> Names.Cpred.add c acc
+    | _ -> acc
   in
-    List.iter f (Classops.coercions ());
+    let pred = List.fold_left f Names.Cpred.empty (Classops.coercions ()) in
     red_flags:=
     CClosure.RedFlags.red_add_transparent
       CClosure.betaiotazeta
-      (Names.Id.Pred.full,Names.Cpred.complement !predref)
+      (Names.Id.Pred.full,Names.Cpred.complement pred)
 
 let ground_tac solver startseq =
   Proofview.Goal.enter begin fun gl ->
