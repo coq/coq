@@ -934,6 +934,9 @@ module Search = struct
                                             | Some i -> str ", with depth limit " ++ int i));
     tac
 
+  let eauto_tac ?st ?unique ~only_classes ?strategy ~depth ~dep hints =
+    Hints.wrap_hint_warning @@ eauto_tac ?st ?unique ~only_classes ?strategy ~depth ~dep hints
+
   let run_on_evars env evm p tac =
     match evars_to_goals p evm with
     | None -> None (* This happens only because there's no evar having p *)
@@ -1143,15 +1146,19 @@ let resolve_typeclass_evars debug depth unique env evd filter split fail =
                       (initial_select_evars filter) evd split fail
 
 let solve_inst env evd filter unique split fail =
-  resolve_typeclass_evars
+  let ((), sigma) = Hints.wrap_hint_warning_fun env evd begin fun evd ->
+    (), resolve_typeclass_evars
     (get_typeclasses_debug ())
     (get_typeclasses_depth ())
     unique env evd filter split fail
+  end in
+  sigma
 
 let _ =
   Hook.set Typeclasses.solve_all_instances_hook solve_inst
 
 let resolve_one_typeclass env ?(sigma=Evd.from_env env) gl unique =
+  let (term, sigma) = Hints.wrap_hint_warning_fun env sigma begin fun sigma ->
   let nc, gl, subst, _ = Evarutil.push_rel_context_to_named_context env sigma gl in
   let (gl,t,sigma) =
     Goal.V82.mk_goal sigma nc gl Store.empty in
@@ -1169,7 +1176,9 @@ let resolve_one_typeclass env ?(sigma=Evd.from_env env) gl unique =
   let evd = sig_sig gls' in
   let t' = mkEvar (ev, Array.of_list subst) in
   let term = Evarutil.nf_evar evd t' in
-    evd, term
+  term, evd
+  end in
+  (sigma, term)
 
 let _ =
   Hook.set Typeclasses.solve_one_instance_hook
@@ -1205,6 +1214,7 @@ let is_ground c =
 
 let autoapply c i =
   let open Proofview.Notations in
+  Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let hintdb = try Hints.searchtable_map i with Not_found ->
     CErrors.user_err (Pp.str ("Unknown hint database " ^ i ^ "."))

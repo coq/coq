@@ -1579,25 +1579,76 @@ let print_mp mp =
 
 let is_imported h = try KNmap.find h.uid !statustable with Not_found -> true
 
+let hint_trace = Evd.Store.field ()
+
+let log_hint h =
+  let open Proofview.Notations in
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let store = get_extra_data sigma in
+  match Store.get store hint_trace with
+  | None ->
+    (** All calls to hint logging should be well-scoped *)
+    assert false
+  | Some trace ->
+    let trace = KNmap.add h.uid h trace in
+    let store = Store.set store hint_trace trace in
+    Proofview.Unsafe.tclEVARS (set_extra_data store sigma)
+
 let warn_non_imported_hint =
   CWarnings.create ~name:"non-imported-hint" ~category:"automation"
          (fun (hint,mp) ->
           strbrk "Hint used but not imported: " ++ hint ++ print_mp mp)
 
-let warn h x =
-  let open Proofview in
-  tclBIND tclENV     (fun env   ->
-  tclBIND tclEVARMAP (fun sigma ->
-          let hint = pr_hint env sigma h in
-          let (mp, _, _) = KerName.repr h.uid in
-          warn_non_imported_hint (hint,mp);
-          Proofview.tclUNIT x))
+let warn env sigma h =
+  let hint = pr_hint env sigma h in
+  let (mp, _, _) = KerName.repr h.uid in
+  warn_non_imported_hint (hint,mp)
+
+let wrap_hint_warning t =
+  let open Proofview.Notations in
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let store = get_extra_data sigma in
+  let old = Store.get store hint_trace in
+  let store = Store.set store hint_trace KNmap.empty in
+  Proofview.Unsafe.tclEVARS (set_extra_data store sigma) >>= fun () ->
+  t >>= fun ans ->
+  Proofview.tclENV >>= fun env ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let store = get_extra_data sigma in
+  let hints = match Store.get store hint_trace with
+  | None -> assert false
+  | Some hints -> hints
+  in
+  let () = KNmap.iter (fun _ h -> warn env sigma h) hints in
+  let store = match old with
+  | None -> Store.remove store hint_trace
+  | Some v -> Store.set store hint_trace v
+  in
+  Proofview.Unsafe.tclEVARS (set_extra_data store sigma) >>= fun () ->
+  Proofview.tclUNIT ans
+
+let wrap_hint_warning_fun env sigma t =
+  let store = get_extra_data sigma in
+  let old = Store.get store hint_trace in
+  let store = Store.set store hint_trace KNmap.empty in
+  let (ans, sigma) = t (set_extra_data store sigma) in
+  let store = get_extra_data sigma in
+  let hints = match Store.get store hint_trace with
+  | None -> assert false
+  | Some hints -> hints
+  in
+  let () = KNmap.iter (fun _ h -> warn env sigma h) hints in
+  let store = match old with
+  | None -> Store.remove store hint_trace
+  | Some v -> Store.set store hint_trace v
+  in
+  (ans, set_extra_data store sigma)
 
 let run_hint tac k = match !warn_hint with
 | `LAX -> k tac.obj
 | `WARN ->
   if is_imported tac then k tac.obj
-  else Proofview.tclBIND (k tac.obj) (fun x -> warn tac x)
+  else Proofview.tclTHEN (log_hint tac) (k tac.obj)
 | `STRICT ->
   if is_imported tac then k tac.obj
   else Proofview.tclZERO (UserError (None, (str "Tactic failure.")))
