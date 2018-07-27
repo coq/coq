@@ -88,10 +88,10 @@ Local Ltac tauto_gen flags := tauto_intuitionistic flags || tauto_classical flag
 Ltac tauto := with_uniform_flags ltac:(fun flags => tauto_gen flags).
 Ltac dtauto := with_power_flags ltac:(fun flags => tauto_gen flags).
 
-Ltac intuition := with_uniform_flags ltac:(fun flags => intuition_gen flags ltac:(auto with *)).
+Ltac intuition := with_uniform_flags ltac:(fun flags => intuition_gen flags ltac:(auto)).
 Local Ltac intuition_then tac := with_uniform_flags ltac:(fun flags => intuition_gen flags tac).
 
-Ltac dintuition := with_power_flags ltac:(fun flags => intuition_gen flags ltac:(auto with *)).
+Ltac dintuition := with_power_flags ltac:(fun flags => intuition_gen flags ltac:(auto)).
 Local Ltac dintuition_then tac := with_power_flags ltac:(fun flags => intuition_gen flags tac).
 
 Tactic Notation "intuition" := intuition.
