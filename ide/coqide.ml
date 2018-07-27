@@ -826,6 +826,7 @@ let refresh_notebook_pos () =
 
 let menu = GAction.add_actions
 let item = GAction.add_action
+let radio = GAction.add_radio_action
 
 (** Toggle items in menus for printing options *)
 
@@ -1043,7 +1044,19 @@ let build_ui () =
       ~callback:(fun _ -> show_toolbar#set (not show_toolbar#get));
     item "Query Pane" ~label:"_Query Pane"
       ~accel:"F1"
-      ~callback:(cb_on_current_term MiscMenu.show_hide_query_pane)
+      ~callback:(cb_on_current_term MiscMenu.show_hide_query_pane);
+    GAction.group_radio_actions
+      ~callback:begin function
+        | 0 -> List.iter (fun o -> Opt.set o "off") Opt.diff_item.Opt.opts
+        | 1 -> List.iter (fun o -> Opt.set o "on") Opt.diff_item.Opt.opts
+        | 2 -> List.iter (fun o -> Opt.set o "removed") Opt.diff_item.Opt.opts
+        | _ -> assert false
+        end
+      [
+        radio "Unset diff" 0 ~label:"Unset _Diff";
+        radio "Set diff" 1 ~label:"Set Di_ff";
+        radio "Set removed diff" 2 ~label:"Set _Removed Diff";
+      ];
   ];
   toggle_items view_menu Coq.PrintOpt.bool_items;
 

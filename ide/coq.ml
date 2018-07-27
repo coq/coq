@@ -530,20 +530,31 @@ let break_coqtop coqtop workers =
 
 module PrintOpt =
 struct
-  type t = string list
+  type _ t =
+  | BoolOpt : string list -> bool t
+  | StringOpt : string list -> string t
+
+  let opt_name (type a) : a t -> string list = function
+  | BoolOpt l -> l
+  | StringOpt l -> l
+
+  let opt_data (type a) (key : a t) (v : a) = match key with
+  | BoolOpt l -> Interface.BoolValue v
+  | StringOpt l -> Interface.StringValue v
 
   (* Boolean options *)
 
-  let implicit = ["Printing"; "Implicit"]
-  let coercions = ["Printing"; "Coercions"]
-  let raw_matching = ["Printing"; "Matching"]
-  let notations = ["Printing"; "Notations"]
-  let all_basic = ["Printing"; "All"]
-  let existential = ["Printing"; "Existential"; "Instances"]
-  let universes = ["Printing"; "Universes"]
-  let unfocused = ["Printing"; "Unfocused"]
+  let implicit = BoolOpt ["Printing"; "Implicit"]
+  let coercions = BoolOpt ["Printing"; "Coercions"]
+  let raw_matching = BoolOpt ["Printing"; "Matching"]
+  let notations = BoolOpt ["Printing"; "Notations"]
+  let all_basic = BoolOpt ["Printing"; "All"]
+  let existential = BoolOpt ["Printing"; "Existential"; "Instances"]
+  let universes = BoolOpt ["Printing"; "Universes"]
+  let unfocused = BoolOpt ["Printing"; "Unfocused"]
+  let diff = StringOpt ["Diffs"]
 
-  type bool_descr = { opts : t list; init : bool; label : string }
+  type 'a descr = { opts : 'a t list; init : 'a; label : string }
 
   let bool_items = [
     { opts = [implicit]; init = false; label = "Display _implicit arguments" };
@@ -561,24 +572,32 @@ struct
     { opts = [unfocused]; init = false; label = "Display _unfocused goals" }
   ]
 
+  let diff_item = { opts = [diff]; init = "off"; label = "Display _proof diffs" }
+
   (** The current status of the boolean options *)
 
   let current_state = Hashtbl.create 11
 
-  let set opt v = Hashtbl.replace current_state opt v
+  let set (type a) (opt : a t) (v : a) =
+    Hashtbl.replace current_state (opt_name opt) (opt_data opt v)
 
   let reset () =
     let init_descr d = List.iter (fun o -> set o d.init) d.opts in
-    List.iter init_descr bool_items
+    List.iter init_descr bool_items;
+    List.iter (fun o -> set o diff_item.init) diff_item.opts
 
   let _ = reset ()
 
-  let printing_unfocused () = Hashtbl.find current_state unfocused
+  let printing_unfocused () =
+  let BoolOpt unfocused = unfocused in
+  match Hashtbl.find current_state unfocused with
+  | Interface.BoolValue b -> b
+  | _ -> assert false
 
   (** Transmitting options to coqtop *)
 
   let enforce h k =
-    let mkopt o v acc = (o, Interface.BoolValue v) :: acc in
+    let mkopt o v acc = (o, v) :: acc in
     let opts = Hashtbl.fold mkopt current_state [] in
     eval_call (Xmlprotocol.set_options opts) h
       (function
