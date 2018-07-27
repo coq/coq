@@ -9,7 +9,6 @@
 ########## CI infrastructure ##########
 
 /dev/ci/          @coq/ci-maintainers
-/.circleci/       @coq/ci-maintainers
 /.travis.yml      @coq/ci-maintainers
 /.gitlab-ci.yml   @coq/ci-maintainers
 
