@@ -1,0 +1,8 @@
+The command has indeed failed with message:
+Bad type of value for this option: expected int, got string.
+The command has indeed failed with message:
+Bad type of value for this option: expected bool, got string.
+The command has indeed failed with message:
+Bad type of value for this option: expected bool, got int.
+The command has indeed failed with message:
+Bad type of value for this option: expected bool, got int.

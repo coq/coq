@@ -318,26 +318,35 @@ let set_option_value ?(locality = OptDefault) check_and_cast key v =
   | Some (name, depr, (read,write,append)) ->
     write locality (check_and_cast v (read ()))
 
-let bad_type_error () = user_err Pp.(str "Bad type of value for this option.")
+let show_value_type = function
+  | BoolValue _ -> "bool"
+  | IntValue _ -> "int"
+  | StringValue _ -> "string"
+  | StringOptValue _ -> "string"
+
+let bad_type_error opt_value actual_type =
+  user_err Pp.(str "Bad type of value for this option:" ++ spc() ++
+               str "expected " ++ str (show_value_type opt_value) ++
+               str ", got " ++ str actual_type ++ str ".")
 
 let check_int_value v = function
   | IntValue _ -> IntValue v
-  | _ -> bad_type_error ()
+  | optv -> bad_type_error optv "int"
 
 let check_bool_value v = function
   | BoolValue _ -> BoolValue v
-  | _ -> bad_type_error ()
+  | optv -> bad_type_error optv "bool"
 
 let check_string_value v = function
   | StringValue _ -> StringValue v
   | StringOptValue _ -> StringOptValue (Some v)
-  | _ -> bad_type_error ()
+  | optv -> bad_type_error optv "string"
 
 let check_unset_value v = function
   | BoolValue _ -> BoolValue false
   | IntValue _ -> IntValue None
   | StringOptValue _ -> StringOptValue None
-  | _ -> bad_type_error ()
+  | optv -> bad_type_error optv "nothing"
 
 (* Nota: For compatibility reasons, some errors are treated as
    warning. This allows a script to refer to an option that doesn't
