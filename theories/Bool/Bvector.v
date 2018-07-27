@@ -70,6 +70,8 @@ Definition BVor := @Vector.map2 _ _ _ orb.
 
 Definition BVxor := @Vector.map2 _ _ _ xorb.
 
+Definition BVeq m n := @Vector.eqb bool eqb m n.
+
 Definition BshiftL (n:nat) (bv:Bvector (S n)) (carry:bool) :=
   Bcons carry n (Vector.shiftout bv).
 
@@ -99,3 +101,12 @@ Fixpoint BshiftRa_iter (n:nat) (bv:Bvector (S n)) (p:nat) : Bvector (S n) :=
 
 End BOOLEAN_VECTORS.
 
+Module BvectorNotations.
+Delimit Scope Bvector_scope with Bvector.
+Notation "^~ x" := (Bneg _ x) (at level 35, right associativity) : Bvector_scope.
+Infix    "^&"   := (BVand  _) (at level 40, left  associativity) : Bvector_scope.
+Infix    "^⊕"   := (BVxor  _) (at level 45, left  associativity) : Bvector_scope.
+Infix    "^|"   := (BVor   _) (at level 50, left  associativity) : Bvector_scope.
+Infix    "=?"   := (BVeq _ _) (at level 70, no    associativity) : Bvector_scope.
+Open Scope Bvector_scope.
+End BvectorNotations.
