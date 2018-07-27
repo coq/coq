@@ -181,10 +181,6 @@ PRINT_LOGS?=
 TRAVIS?= # special because we want to print travis_fold directives
 ifdef APPVEYOR
 PRINT_LOGS:=APPVEYOR
-else
-ifdef CIRCLECI
-PRINT_LOGS:=CIRCLECI
-endif #CIRCLECI
 endif #APPVEYOR
 
 report: summary.log
