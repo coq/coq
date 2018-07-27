@@ -120,7 +120,7 @@ Following the previous example, one can write:
 
    Generalizable Variables A B C.
 
-   Definition neqb_impl `{eqa : EqDec A} (x y : A) := negb (eqb x y).
+   Definition neqb_implicit `{eqa : EqDec A} (x y : A) := negb (eqb x y).
 
 Here ``A`` is implicitly generalized, and the resulting function is
 equivalent to the one above.
@@ -193,7 +193,7 @@ superclasses as a binding context:
    Class Ord `(E : EqDec A) := { le : A -> A -> bool }.
 
 Contrary to Haskell, we have no special syntax for superclasses, but
-this declaration is morally equivalent to:
+this declaration is equivalent to:
 
 ::
 
@@ -248,7 +248,7 @@ properties, e.g.:
 
 This declares singleton classes for reflexive and transitive relations,
 (see the :ref:`singleton class <singleton-class>` variant for an
-explanation). These may be used as part of other classes:
+explanation). These may be used as parts of other classes:
 
 .. coqtop:: all
 
@@ -342,7 +342,7 @@ few other commands related to type classes.
 
 .. cmd:: Existing Instance {+ @ident} [| priority]
 
-   This commands adds an arbitrary list of constants whose type ends with
+   This command adds an arbitrary list of constants whose type ends with
    an applied type class to the instance database with an optional
    priority.  It can be used for redeclaring instances at the end of
    sections, or declaring structure projections as instances. This is
@@ -383,14 +383,14 @@ few other commands related to type classes.
 
    + When called with specific databases (e.g. with), typeclasses eauto
      allows shelved goals to remain at any point during search and treat
-     typeclasses goals like any other.
+     typeclass goals like any other.
 
    + The transparency information of databases is used consistently for
      all hints declared in them. It is always used when calling the
-     unifier. When considering the local hypotheses, we use the transparent
+     unifier. When considering local hypotheses, we use the transparent
      state of the first hint database given. Using an empty database
      (created with :cmd:`Create HintDb` for example) with unfoldable variables and
-     constants as the first argument of typeclasses eauto hence makes
+     constants as the first argument of ``typeclasses eauto`` hence makes
      resolution with the local hypotheses use full conversion during
      unification.
 
@@ -457,8 +457,8 @@ Options
 .. opt:: Typeclasses Dependency Order
 
    This option (on by default since 8.6) respects the dependency order
-   between subgoals, meaning that subgoals which are depended on by other
-   subgoals come first, while the non-dependent subgoals were put before
+   between subgoals, meaning that subgoals on which other subgoals depend
+   come first, while the non-dependent subgoals were put before
    the dependent ones previously (Coq 8.5 and below). This can result in
    quite different performance behaviors of proof search.
 
