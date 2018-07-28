@@ -31,7 +31,7 @@ A class with `n` parameters is any defined name with a type
 :g:`forall (x₁:A₁)..(xₙ:Aₙ),s` where ``s`` is a sort.  Thus a class with
 parameters is considered as a single class and not as a family of
 classes.  An object of a class ``C`` is any term of type :g:`C t₁ .. tₙ`.
-In addition to these user-classes, we have two abstract classes:
+In addition to these user-defined classes, we have two built-in classes:
 
 
   * ``Sortclass``, the class of sorts; its objects are the terms whose type is a
@@ -50,11 +50,11 @@ Formally, the syntax of a classes is defined as:
 Coercions
 ---------
 
-A name ``f`` can be declared as a coercion between a source user-class
+A name ``f`` can be declared as a coercion between a source user-defined class
 ``C`` with `n` parameters and a target class ``D`` if one of these
 conditions holds:
 
- * ``D`` is a user-class, then the type of ``f`` must have the form
+ * ``D`` is a user-defined class, then the type of ``f`` must have the form
    :g:`forall (x₁:A₁)..(xₙ:Aₙ)(y:C x₁..xₙ), D u₁..uₘ` where `m`
    is the number of parameters of ``D``.
  * ``D`` is ``Funclass``, then the type of ``f`` must have the form
@@ -65,8 +65,8 @@ conditions holds:
 We then write :g:`f : C >-> D`. The restriction on the type
 of coercions is called *the uniform inheritance condition*.
 
-.. note:: The abstract class ``Sortclass`` can be used as a source class, but
-          the abstract class ``Funclass`` cannot.
+.. note:: The built-in class ``Sortclass`` can be used as a source class, but
+          the built-in class ``Funclass`` cannot.
 
 To coerce an object :g:`t:C t₁..tₙ` of ``C`` towards ``D``, we have to
 apply the coercion ``f`` to it; the obtained term :g:`f t₁..tₙ t` is
@@ -95,7 +95,7 @@ We can now declare ``f`` as coercion from ``C'`` to ``D``, since we can
 
 The identity coercions have a special status: to coerce an object
 :g:`t:C' t₁..tₖ`
-of ``C'`` towards ``C``, we does not have to insert explicitly ``Id_C'_C``
+of ``C'`` towards ``C``, we do not have to insert explicitly ``Id_C'_C``
 since :g:`Id_C'_C t₁..tₖ t` is convertible with ``t``.  However we
 "rewrite" the type of ``t`` to become an object of ``C``; in this case,
 it becomes :g:`C uₙ'..uₖ'` where each ``uᵢ'`` is the result of the
@@ -121,7 +121,7 @@ by the coercions ``f₁..fₖ``.  The application of a coercion path to a
 term consists of the successive application of its coercions.
 
 
-Declaration of Coercions
+Declaring Coercions
 -------------------------
 
 .. cmd:: Coercion @qualid : @class >-> @class
@@ -140,8 +140,8 @@ Declaration of Coercions
 
   .. warn:: Ambiguous path.
 
-     When the coercion :token:`qualid` is added to the inheritance graph, non
-     valid coercion paths are ignored; they are signaled by a warning
+     When the coercion :token:`qualid` is added to the inheritance graph,
+     invalid coercion paths are ignored; they are signaled by a warning
      displaying these paths of the form :g:`[f₁;..;fₙ] : C >-> D`.
 
   .. cmdv:: Local Coercion @qualid : @class >-> @class
@@ -215,7 +215,7 @@ declaration, this constructor is declared as a coercion.
 
   .. cmdv:: Local Identity Coercion @ident : @ident >-> @ident
 
-    Idem but locally to the current section.
+    Same as ``Identity Coercion`` but locally to the current section.
 
   .. cmdv:: SubClass @ident := @type
      :name: SubClass
@@ -319,7 +319,7 @@ Coercions and Modules
 
    Since |Coq| version 8.3, the coercions present in a module are activated
    only when the module is explicitly imported. Formerly, the coercions
-   were activated as soon as the module was required, whatever it was
+   were activated as soon as the module was required, whether it was
    imported or not.
 
    This option makes it possible to recover the behavior of the versions of
@@ -387,8 +387,8 @@ We give now an example using identity coercions.
 
 
 In the case of functional arguments, we use the monotonic rule of
-sub-typing.  Approximatively, to coerce :g:`t:forall x:A,B` towards
-:g:`forall x:A',B'`, one have to coerce ``A'`` towards ``A`` and ``B``
+sub-typing. To coerce :g:`t : forall x : A, B` towards
+:g:`forall x : A', B'`, we have to coerce ``A'`` towards ``A`` and ``B``
 towards ``B'``. An example is given below:
 
 .. coqtop:: all
@@ -424,8 +424,8 @@ replaced by ``x:A'`` where ``A'`` is the result of the application to
 ``Sortclass`` if it exists.  This case occurs in the abstraction
 :g:`fun x:A => t`, universal quantification :g:`forall x:A,B`, global
 variables and parameters of (co-)inductive definitions and
-functions. In :g:`forall x:A,B`, such a coercion path may be applied
-to ``B`` also if necessary.
+functions. In :g:`forall x:A,B`, such a coercion path may also be applied
+to ``B`` if necessary.
 
 .. coqtop:: all
 
