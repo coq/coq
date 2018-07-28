@@ -274,7 +274,7 @@ Applying theorems
    :g:`t`:sub:`n` in the goal. See :tacn:`pattern` to transform the goal so that it
    gets the form :g:`(fun x => Q) u`:sub:`1` :g:`...`  :g:`u`:sub:`n`.
 
-   .. exn:: Unable to unify ... with ... .
+   .. exn:: Unable to unify @term with @term.
 
       The apply tactic failed to match the conclusion of :token:`term` and the
       current goal. You can help the apply tactic by transforming your goal with
@@ -3913,7 +3913,7 @@ match against it.
   discriminable equality but this proof could not be built in Coq because of
   dependently-typed functions.
 
-.. exn:: Goal is solvable by congruence but some arguments are missing. Try congruence with ..., replacing metavariables by arbitrary terms.
+.. exn:: Goal is solvable by congruence but some arguments are missing. Try congruence with {+ @term}, replacing metavariables by arbitrary terms.
 
   The decision procedure could solve the goal with the provision that additional
   arguments are supplied for some partially applied constructors. Any term of an
