@@ -146,7 +146,7 @@ expected to be inferred at typing time.
    Notation "x = y" := (@eq _ x y) (at level 70, no associativity).
 
 One can define *closed* notations whose both sides are symbols. In this case,
-the default precedence level for the inner subexpression is 200, and the default
+the default precedence level for the inner sub-expression is 200, and the default
 level for the notation itself is 0.
 
 .. coqtop:: in
@@ -185,7 +185,7 @@ rules. Some simple left factorization work has to be done. Here is an example.
    Notation "x < y" := (lt x y) (at level 70).
    Notation "x < y < z" := (x < y /\ y < z) (at level 70).
 
-In order to factorize the left part of the rules, the subexpression
+In order to factorize the left part of the rules, the sub-expression
 referred by ``y`` has to be at the same level in both rules. However the
 default behavior puts ``y`` at the next level below 70 in the first rule
 (``no associativity`` is the default), and at the level 200 in the second
@@ -209,7 +209,7 @@ of Coq predefined notations can be found in the chapter on :ref:`thecoqlibrary`.
 .. cmd:: Print Grammar pattern.
 
    This displays the state of the subparser of patterns (the parser used in the
-   grammar of the match with constructions).
+   grammar of the ``match with`` constructions).
 
 
 Displaying symbolic notations
@@ -519,7 +519,7 @@ is just an identifier, one could have said
 ``p at level 99 as strict pattern``.
 
 Note also that in the absence of a ``as ident``, ``as strict pattern`` or
-``as pattern`` modifiers, the default is to consider subexpressions occurring
+``as pattern`` modifiers, the default is to consider sub-expressions occurring
 in binding position and parsed as terms to be ``as ident``.
 
 .. _NotationsWithBinders:
@@ -691,6 +691,117 @@ side. E.g.:
    Notation "'apply_id' f a1 .. an" := (.. (f a1) .. an)
      (at level 10, f ident, a1, an at level 9).
 
+Custom entries
+~~~~~~~~~~~~~~
+
+.. cmd:: Declare Custom Entry @ident
+
+   This command allows to define new grammar entries, called *custom
+   entries*, that can later be referred to using the entry name
+   :n:`custom @ident`. For instance, we may want to define an ad hoc
+   parser for arithmetical operations and proceed as follows:
+
+.. coqtop:: all
+
+   Inductive Expr :=
+   | One : Expr
+   | Mul : Expr -> Expr -> Expr
+   | Add : Expr -> Expr -> Expr.
+
+   Declare Custom Entry expr.
+   Notation "[ e ]" := e (e custom expr at level 2).
+   Notation "1" := One (in custom expr at level 0).
+   Notation "x y" := (Mul x y) (in custom expr at level 1, left associativity).
+   Notation "x + y" := (Add x y) (in custom expr at level 2, left associativity).
+   Notation "( x )" := x (in custom expr, x at level 2).
+   Notation "{ x }" := x (in custom expr, x constr).
+   Notation "x" := x (in custom expr at level 0, x ident).
+
+   Axiom f : nat -> Expr.
+   Check fun x y z => [1 + y z + {f x}].
+   Unset Printing Notations.
+   Check fun x y z => [1 + y z + {f x}].
+   Set Printing Notations.
+   Check fun e => match e with
+   | [1 + 1] => [1]
+   | [x y + z] => [x + y z]
+   | y => [y + e]
+   end.
+
+Custom entries have levels, like the main grammar of terms and grammar
+of patterns have. The lower level is 0 and this is the level used by
+default to put rules delimited with tokens on both ends. The level is
+left to be inferred by Coq when using :n:`in custom @ident``. The
+level is otherwise given explicitly by using the syntax :n:`in custom
+@ident at level @num`, where :n:`@num` refers to the level.
+
+Levels are cumulative: a notation at level ``n`` of which the left end
+is a term shall use rules at level less than ``n`` to parse this
+sub-term. More precisely, it shall use rules at level strictly less
+than ``n`` if the rule is declared with ``right associativity`` and
+rules at level less or equal than ``n`` if the rule is declared with
+``left associativity``. Similarly, a notation at level ``n`` of which
+the right end is a term shall use by default rules at level strictly
+less than ``n`` to parse this sub-term if the rule is declared left
+associative and rules at level less or equal than ``n`` if the rule is
+declared right associative. This is what happens for instance in the
+rule ``Notation "x + y" := (Add x y) (in custom expr at level 2, left
+associativity)`` where ``x`` is any expression parsed in entry
+``expr`` at level less or equal than ``2`` (including, recursively,
+the given rule) and ``y`` is any expression parsed in entry ``expr``
+at level strictly less than ``2``.
+
+Rules associated to an entry can refer different sub-entries. The
+grammar entry name ``constr`` can be used to refer to the main grammar
+of term as in the rule ``Notation "{ x }" := x (in custom expr at
+level 0, x constr)`` which indicates that the subterm ``x`` should be
+parsed using the main grammar. If not indicated, the level is computed
+as for notations in ``constr``, e.g. using 200 as default level for
+inner sub-expressions. The level can otherwise be indicated explicitly
+by using ``constr at level n`` for some ``n``, or ``constr at next
+level``.
+
+Conversely, custom entries can be used to parse sub-expressions of the
+main grammar, or from another custom entry as is the case in
+:g:`Notation "[ e ]" := e (e custom expr at level 2)` to indicate that
+``e`` has to be parsed at level ``2`` of the grammar associated to the
+custom entry ``expr``. The level can be omitted, as in :g:`Notation "[ e
+]" := e (e custom expr)`, in which case Coq tries to infer it.
+
+In the absence of an explicit entry for parsing or printing a
+sub-expression of a notation in a custom entry, the default is to
+consider that this sub-expression is parsed or printed in the same
+custom entry where the notation is defined. In particular, if ``x at
+level n`` is used for a sub-expression of a notation defined in custom
+entry ``foo``, it shall be understood the same as ``x custom foo at
+level n``.
+
+In general, rules are required to be *productive* on the right-hand
+side, i.e. that they are bound to an expression which is not
+reduced to a single variable. If the rule is not productive on the
+right-hand side, as it is the case above for :g:`Notation "( x )" := x
+(in custom expr at level 0, x at level 2)` and :g:`Notation "{ x }" :=
+x (in custom expr at level 0, x constr)`, it is used as a *grammar
+coercion* which means that it is used to parse or print an expression
+which is not available in the current grammar at the current level of
+parsing or printing for this grammar but which is available in another
+grammar or in another level of the current grammar. For instance,
+:g:`Notation "( x )" := x (in custom expr at level 0, x at level 2)`
+tells that parentheses can be inserted to parse or print an expression
+declared at level ``2`` of ``expr`` whenever this expression is
+expected to be used as a subterm at level 0 or 1.  This allows for
+instance to parse and print :g:`Add x y` as a subterm of :g:`Mul (Add
+x y) z` using the syntax ``(x + y) z``. Similarly, :g:`Notation "{ x }"
+:= x (in custom expr at level 0, x constr)` gives a way to let any
+arbitrary expression which is not in handled by the custom entry
+``expr`` be parsed or printed by the main grammar of term up to the
+insertion of a pair of curly brackets.
+
+.. cmd:: Print Grammar @ident.
+
+   This displays the state of the grammar for terms and grammar for
+   patterns associated to the custom entry :token:`ident`.
+
 Summary
 ~~~~~~~
 
@@ -699,8 +810,8 @@ Summary
 Syntax of notations
 +++++++++++++++++++
 
-The different syntactic variants of the command Notation are given on the
-following figure. The optional :production:`scope` is described in
+The different syntactic forms taken by the commands declaring
+notations are given below. The optional :production:`scope` is described in
 :ref:`Scopes`.
 
 .. productionlist:: coq
@@ -711,22 +822,32 @@ following figure. The optional :production:`scope` is described in
                  : | CoInductive `ind_body` [`decl_notation`] with … with `ind_body` [`decl_notation`].
                  : | Fixpoint `fix_body` [`decl_notation`] with … with `fix_body` [`decl_notation`].
                  : | CoFixpoint `cofix_body` [`decl_notation`] with … with `cofix_body` [`decl_notation`].
+                 : | [Local] Declare Custom Entry `ident`.
    decl_notation : [where `string` := `term` [: `scope`] and … and `string` := `term` [: `scope`]].
-   modifiers     : at level `natural`
-                 : | `ident` , … , `ident` at level `natural` [`binderinterp`]
+   modifiers     : at level `num`
+                 : in custom `ident`
+                 : in custom `ident` at level `num`
+                 : | `ident` , … , `ident` at level `num` [`binderinterp`]
                  : | `ident` , … , `ident` at next level [`binderinterp`]
-                 : | `ident` ident
-                 : | `ident` global
-                 : | `ident` bigint
-                 : | `ident` [strict] pattern [at level `natural`]
-                 : | `ident` binder
-                 : | `ident` closed binder
+                 : | `ident` `explicit_subentry`
                  : | left associativity
                  : | right associativity
                  : | no associativity
                  : | only parsing
                  : | only printing
                  : | format `string`
+   explicit_subentry : ident
+                 : | global
+                 : | bigint
+                 : | [strict] pattern [at level `num`]
+                 : | binder
+                 : | closed binder
+                 : | constr [`binderinterp`]
+                 : | constr at level `num` [`binderinterp`]
+                 : | constr at next level [`binderinterp`]
+                 : | custom [`binderinterp`]
+                 : | custom at level `num` [`binderinterp`]
+                 : | custom at next level [`binderinterp`]
    binderinterp  : as ident
                  : | as pattern
                  : | as strict pattern
@@ -734,10 +855,11 @@ following figure. The optional :production:`scope` is described in
 .. note:: No typing of the denoted expression is performed at definition
           time. Type-checking is done only at the time of use of the notation.
 
-.. note:: Many examples of Notation may be found in the files composing
+.. note:: Some examples of Notation may be found in the files composing
           the initial state of Coq (see directory :file:`$COQLIB/theories/Init`).
 
-.. note:: The notation ``"{ x }"`` has a special status in such a way that
+.. note:: The notation ``"{ x }"`` has a special status in the main grammars of
+          terms and patterns so that
           complex notations of the form ``"x + { y }"`` or ``"x * { y }"`` can be
           nested with correct precedences. Especially, every notation involving
           a pattern of the form ``"{ x }"`` is parsed as a notation where the
@@ -754,12 +876,17 @@ following figure. The optional :production:`scope` is described in
 Persistence of notations
 ++++++++++++++++++++++++
 
-Notations do not survive the end of sections.
+Neither notations nor custom entries survive the end of sections.
 
 .. cmd:: Local Notation @notation
 
    Notations survive modules unless the command ``Local Notation`` is used instead
    of :cmd:`Notation`.
+
+.. cmd:: Local Declare Custom Entry @ident
+
+   Custom entries survive modules unless the command ``Local Declare
+   Custom Entry`` is used instead of :cmd:`Declare Custom Entry`.
 
 .. _Scopes:
 
@@ -1207,7 +1334,7 @@ tactic language. Tactic notations obey the following syntax:
 .. productionlist:: coq
    tacn                 : Tactic Notation [`tactic_level`] [`prod_item` … `prod_item`] := `tactic`.
    prod_item            : `string` | `tactic_argument_type`(`ident`)
-   tactic_level         : (at level `natural`)
+   tactic_level         : (at level `num`)
    tactic_argument_type : ident | simple_intropattern | reference
                         : | hyp | hyp_list | ne_hyp_list
                         : | constr | uconstr | constr_list | ne_constr_list
