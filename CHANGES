@@ -5,6 +5,11 @@ Kernel
 
 - Mutually defined records are now supported.
 
+Notations
+
+- New support for autonomous grammars of terms, called "custom
+  entries" (see chapter "Syntax extensions" of the reference manual).
+
 Tactics
 
 - Added toplevel goal selector ! which expects a single focused goal.

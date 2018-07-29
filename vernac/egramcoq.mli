@@ -17,3 +17,6 @@
 
 val extend_constr_grammar : Notation_gram.one_notation_grammar -> unit
 (** Add a term notation rule to the parsing system. *)
+
+val create_custom_entry : local:bool -> string -> unit
+val locality_of_custom_entry : string -> bool

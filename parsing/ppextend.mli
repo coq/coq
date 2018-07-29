@@ -41,7 +41,6 @@ type unparsing =
 
 type unparsing_rule = unparsing list * precedence
 type extra_unparsing_rules = (string * string) list
-
 val declare_notation_rule : notation -> extra:extra_unparsing_rules -> unparsing_rule -> notation_grammar -> unit
 val find_notation_printing_rule : notation -> unparsing_rule
 val find_notation_extra_printing_rules : notation -> extra_unparsing_rules
