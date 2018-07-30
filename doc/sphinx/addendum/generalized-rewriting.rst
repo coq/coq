@@ -26,12 +26,12 @@ on the type class infrastructure. It also improves on and generalizes
 the previous implementation in several ways:
 
 
-+ User-extensible algorithm. The algorithm is separated in two parts:
-  generations of the rewriting constraints (done in ML) and solving of
++ User-extensible algorithm. The algorithm is separated into two parts:
+  generation of the rewriting constraints (written in ML) and solving
   these constraints using type class resolution. As type class
   resolution is extensible using tactics, this allows users to define
   general ways to solve morphism constraints.
-+ Sub-relations. An example extension to the base algorithm is the
++ Subrelations. An example extension to the base algorithm is the
   ability to define one relation as a subrelation of another so that
   morphism declarations on one relation can be used automatically for
   the other. This is done purely using tactics and type class search.
@@ -58,7 +58,7 @@ Relations and morphisms
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 A parametric *relation* ``R`` is any term of type
-``forall (x1 :T1 ) ... (xn :Tn ), relation A``.
+``forall (x1 : T1) ... (xn : Tn), relation A``.
 The expression ``A``, which depends on ``x1 ... xn`` , is called the *carrier*
 of the relation and ``R`` is said to be a relation over ``A``; the list
 ``x1,...,xn`` is the (possibly empty) list of parameters of the relation.
@@ -66,25 +66,25 @@ of the relation and ``R`` is said to be a relation over ``A``; the list
 **Example 1 (Parametric relation):**
 
 It is possible to implement finite sets of elements of type ``A`` as
-unordered list of elements of type ``A``.
-The function ``set_eq: forall (A: Type), relation (list A)``
+unordered lists of elements of type ``A``.
+The function ``set_eq: forall (A : Type), relation (list A)``
 satisfied by two lists with the same elements is a parametric relation
 over ``(list A)`` with one parameter ``A``. The type of ``set_eq``
-is convertible with ``forall (A: Type), list A -> list A -> Prop.``
+is convertible with ``forall (A : Type), list A -> list A -> Prop.``
 
 An *instance* of a parametric relation ``R`` with n parameters is any term
-``(R t1 ... tn )``.
+``(R t1 ... tn)``.
 
 Let ``R`` be a relation over ``A`` with ``n`` parameters. A term is a parametric
 proof of reflexivity for ``R`` if it has type
-``forall (x1 :T1 ) ... (xn :Tn), reflexive (R x1 ... xn )``.
+``forall (x1 : T1) ... (xn : Tn), reflexive (R x1 ... xn)``.
 Similar definitions are given for parametric proofs of symmetry and transitivity.
 
 **Example 2 (Parametric relation (cont.)):**
 
 The ``set_eq`` relation of the previous example can be proved to be
 reflexive, symmetric and transitive. A parametric unary function ``f`` of type
-``forall (x1 :T1 ) ... (xn :Tn ), A1 -> A2`` covariantly respects two parametric relation instances
+``forall (x1 : T1) ... (xn : Tn), A1 -> A2`` covariantly respects two parametric relation instances
 ``R1`` and ``R2`` if, whenever ``x``, ``y`` satisfy ``R1 x y``, their images (``f x``) and (``f y``)
 satisfy ``R2 (f x) (f y)``. An ``f`` that respects its input and output
 relations will be called a unary covariant *morphism*. We can also say
@@ -92,7 +92,7 @@ that ``f`` is a monotone function with respect to ``R1`` and ``R2`` . The
 sequence ``x1 ... xn`` represents the parameters of the morphism.
 
 Let ``R1`` and ``R2`` be two parametric relations. The *signature* of a
-parametric morphism of type ``forall (x1 :T1 ) ... (xn :Tn ), A1 -> A2``
+parametric morphism of type ``forall (x1 : T1) ... (xn : Tn), A1 -> A2``
 that covariantly respects two instances :math:`I_{R_1}` and :math:`I_{R_2}` of ``R1`` and ``R2``
 is written :math:`I_{R_1} ++> I_{R_2}`. Notice that the special arrow ++>, which
 reminds the reader of covariance, is placed between the two relation
@@ -120,14 +120,14 @@ parameters is any term :math:`f \, t_1 \ldots t_n`.
 
 **Example 3 (Morphisms):**
 
-Continuing the previous example, let ``union: forall (A: Type), list A -> list A -> list A``
+Continuing the previous example, let ``union: forall (A : Type), list A -> list A -> list A``
 perform the union of two sets by appending one list to the other. ``union` is a binary
 morphism parametric over ``A`` that respects the relation instance
 ``(set_eq A)``. The latter condition is proved by showing:
 
 .. coqtop:: in
 
-  forall (A: Type) (S1 S1’ S2 S2’: list A),
+  forall (A : Type) (S1 S1’ S2 S2’ : list A),
     set_eq A S1 S1’ ->
     set_eq A S2 S2’ ->
     set_eq A (union A S1 S2) (union A S1’ S2’).
@@ -137,7 +137,7 @@ for all ``A``.
 
 **Example 4 (Contravariant morphism):**
 
-The division function ``Rdiv: R -> R -> R`` is a morphism of signature
+The division function ``Rdiv : R -> R -> R`` is a morphism of signature
 ``le ++> le --> le`` where ``le`` is the usual order relation over
 real numbers. Notice that division is covariant in its first argument
 and contravariant in its second argument.
@@ -149,12 +149,12 @@ always the intended equality for a given structure.
 In the next section we will describe the commands to register terms as
 parametric relations and morphisms. Several tactics that deal with
 equality in Coq can also work with the registered relations. The exact
-list of tactic will be given :ref:`in this section <tactics-enabled-on-user-provided-relations>`.
-For instance, the tactic reflexivity can be used to close a goal ``R n n`` whenever ``R``
+list of tactics will be given :ref:`in this section <tactics-enabled-on-user-provided-relations>`.
+For instance, the tactic reflexivity can be used to solve a goal ``R n n`` whenever ``R``
 is an instance of a registered reflexive relation. However, the
 tactics that replace in a context ``C[]`` one term with another one
 related by ``R`` must verify that ``C[]`` is a morphism that respects the
-intended relation. Currently the verification consists in checking
+intended relation. Currently the verification consists of checking
 whether ``C[]`` is a syntactic composition of morphism instances that respects some obvious
 compatibility constraints.
 
@@ -163,7 +163,7 @@ compatibility constraints.
 
 Continuing the previous examples, suppose that the user must prove
 ``set_eq int (union int (union int S1 S2) S2) (f S1 S2)`` under the
-hypothesis ``H: set_eq int S2 (@nil int)``. It
+hypothesis ``H : set_eq int S2 (@nil int)``. It
 is possible to use the ``rewrite`` tactic to replace the first two
 occurrences of ``S2`` with ``@nil int`` in the goal since the
 context ``set_eq int (union int (union int S1 nil) nil) (f S1 S2)``,
@@ -175,11 +175,11 @@ has also been declared as a morphism.
 Adding new relations and morphisms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A parametric relation :g:`Aeq: forall (y1 : β1 ... ym : βm )`,
+A parametric relation :g:`Aeq: forall (y1 : β1 ... ym : βm)`,
 :g:`relation (A t1 ... tn)` over :g:`(A : αi -> ... αn -> Type)` can be
 declared with the following command:
 
-.. cmd::  Add Parametric Relation (x1 : T1) ... (xn : Tk) : (A t1 ... tn) (Aeq t′1 ... t′m ) {? reflexivity proved by refl} {? symmetry proved by sym} {? transitivity proved by trans} as @ident
+.. cmd::  Add Parametric Relation (x1 : T1) ... (xn : Tk) : (A t1 ... tn) (Aeq t′1 ... t′m) {? reflexivity proved by refl} {? symmetry proved by sym} {? transitivity proved by trans} as @ident
 
 after having required the ``Setoid`` module with the ``Require Setoid``
 command.
@@ -205,7 +205,7 @@ The proofs of reflexivity, symmetry and transitivity can be omitted if
 the relation is not an equivalence relation. The proofs must be
 instances of the corresponding relation definitions: e.g. the proof of
 reflexivity must have a type convertible to
-:g:`reflexive (A t1 ... tn) (Aeq t′ 1 …t′ n )`.
+:g:`reflexive (A t1 ... tn) (Aeq t′ 1 …t′ n)`.
 Each proof may refer to the introduced variables as well.
 
 **Example 6 (Parametric relation):**
@@ -226,7 +226,7 @@ replace terms with related ones only in contexts that are syntactic
 compositions of parametric morphism instances declared with the
 following command.
 
-.. cmd:: Add Parametric Morphism (x1 : T1 ) ... (xk : Tk ) : (f t1 ... tn ) with signature sig as @ident
+.. cmd:: Add Parametric Morphism (x1 : T1) ... (xk : Tk) : (f t1 ... tn) with signature sig as @ident
 
 The command declares ``f`` as a parametric morphism of signature ``sig``. The
 identifier ``id`` gives a unique name to the morphism and it is used as
@@ -249,17 +249,17 @@ equivalence relation and union of two sets as a parametric morphism.
 
    Set Implicit Arguments.
 
-   Parameter set: Type -> Type.
-   Parameter empty: forall A, set A.
-   Parameter eq_set: forall A, set A -> set A -> Prop.
-   Parameter union: forall A, set A -> set A -> set A.
+   Parameter set : Type -> Type.
+   Parameter empty : forall A, set A.
+   Parameter eq_set : forall A, set A -> set A -> Prop.
+   Parameter union : forall A, set A -> set A -> set A.
 
-   Axiom eq_set_refl: forall A, reflexive _ (eq_set (A:=A)).
-   Axiom eq_set_sym: forall A, symmetric _ (eq_set (A:=A)).
-   Axiom eq_set_trans: forall A, transitive _ (eq_set (A:=A)).
-   Axiom empty_neutral: forall A (S: set A), eq_set (union S (empty A)) S.
+   Axiom eq_set_refl : forall A, reflexive _ (eq_set (A:=A)).
+   Axiom eq_set_sym : forall A, symmetric _ (eq_set (A:=A)).
+   Axiom eq_set_trans : forall A, transitive _ (eq_set (A:=A)).
+   Axiom empty_neutral : forall A (S : set A), eq_set (union S (empty A)) S.
 
-   Axiom union_compat: forall (A : Type),
+   Axiom union_compat : forall (A : Type),
             forall x x' : set A, eq_set x x' ->
             forall y y' : set A, eq_set y y' ->
               eq_set (union x y) (union x' y').
@@ -305,7 +305,7 @@ declarations above.
 
 .. coqtop:: in
 
-   Goal forall (S: set nat),
+   Goal forall (S : set nat),
      eq_set (union (union S empty) S) (union S S).
 
 .. coqtop:: in
@@ -343,20 +343,20 @@ When the relations associated to some arguments are not reflexive, the
 tactic cannot automatically prove the reflexivity goals, that are left
 to the user.
 
-Setoids whose relation are partial equivalence relations (PER) are
-useful to deal with partial functions. Let ``R`` be a PER. We say that an
+Setoids whose relations are partial equivalence relations (PER) are
+useful for dealing with partial functions. Let ``R`` be a PER. We say that an
 element ``x`` is defined if ``R x x``. A partial function whose domain
-comprises all the defined elements only is declared as a morphism that
+comprises all the defined elements is declared as a morphism that
 respects ``R``. Every time a rewriting step is performed the user must
 prove that the argument of the morphism is defined.
 
 **Example 9:**
 
 Let ``eqO`` be ``fun x y => x = y /\ x <> 0`` (the
-smaller PER over non zero elements). Division can be declared as a
-morphism of signature ``eq ==> eq0 ==> eq``. Replace ``x`` with
-``y`` in ``div x n = div y n`` opens the additional goal ``eq0 n n``
-that is equivalent to ``n = n /\ n <> 0``.
+smallest PER over non zero elements). Division can be declared as a
+morphism of signature ``eq ==> eq0 ==> eq``. Replacing ``x`` with
+``y`` in ``div x n = div y n`` opens an additional goal ``eq0 n n``
+which is equivalent to ``n = n /\ n <> 0``.
 
 
 Rewriting and non symmetric relations
@@ -374,9 +374,9 @@ covariant position.
 **Example 10 (Covariance and contravariance):**
 
 Suppose that division over real numbers has been defined as a morphism of signature
-``Z.div: Z.lt ++> Z.lt --> Z.lt`` (i.e. ``Z.div`` is increasing in
+``Z.div : Z.lt ++> Z.lt --> Z.lt`` (i.e. ``Z.div`` is increasing in
 its first argument, but decreasing on the second one). Let ``<``
-denotes ``Z.lt``. Under the hypothesis ``H: x < y`` we have
+denote ``Z.lt``. Under the hypothesis ``H : x < y`` we have
 ``k < x / y -> k < x / x``, but not ``k < y / x -> k < x / x``. Dually,
 under the same hypothesis ``k < x / y -> k < y / y`` holds, but
 ``k < y / x -> k < y / y`` does not. Thus, if the current goal is
@@ -435,7 +435,7 @@ rewrite request is ambiguous, since it is unclear what relations
 should be used to perform the rewriting. Contrary to the previous
 implementation, the tactic will always choose the first possible
 solution to the set of constraints generated by a rewrite and will not
-try to find *all* possible solutions to warn the user about.
+try to find *all* the possible solutions to warn the user about them.
 
 
 Commands and tactics
@@ -457,7 +457,7 @@ hint database. For example, the declaration:
 
 .. coqtop:: in
 
-   Add Parametric Relation (x1 : T1) ... (xn : Tk) : (A t1 ... tn) (Aeq t′1 ... t′m)
+   Add Parametric Relation (x1 : T1) ... (xn : Tn) : (A t1 ... tn) (Aeq t′1 ... t′m)
      [reflexivity proved by refl]
      [symmetry proved by sym]
      [transitivity proved by trans]
@@ -468,7 +468,7 @@ is equivalent to an instance declaration:
 
 .. coqtop:: in
 
-   Instance (x1 : T1) ... (xn : Tk) => id : @Equivalence (A t1 ... tn) (Aeq t′1 ... t′m) :=
+   Instance (x1 : T1) ... (xn : Tn) => id : @Equivalence (A t1 ... tn) (Aeq t′1 ... t′m) :=
      [Equivalence_Reflexive := refl]
      [Equivalence_Symmetric := sym]
      [Equivalence_Transitive := trans].
@@ -497,7 +497,7 @@ registered as parametric relations and morphisms.
 
    Require Import Relation_Definitions Setoid.
 
-   Record Setoid: Type :=
+   Record Setoid : Type :=
    { car: Type;
      eq: car -> car -> Prop;
      refl: reflexive _ eq;
@@ -510,17 +510,17 @@ registered as parametric relations and morphisms.
      symmetry proved by (sym s)
      transitivity proved by (trans s) as eq_rel.
 
-   Record Morphism (S1 S2:Setoid): Type :=
+   Record Morphism (S1 S2 : Setoid) : Type :=
    { f: car S1 -> car S2;
-     compat: forall (x1 x2: car S1), eq S1 x1 x2 -> eq S2 (f x1) (f x2)
+     compat: forall (x1 x2 : car S1), eq S1 x1 x2 -> eq S2 (f x1) (f x2)
    }.
 
    Add Parametric Morphism (S1 S2 : Setoid) (M : Morphism S1 S2) :
      (@f S1 S2 M) with signature (@eq S1 ==> @eq S2) as apply_mor.
    Proof. apply (compat S1 S2 M). Qed.
 
-   Lemma test: forall (S1 S2:Setoid) (m: Morphism S1 S2)
-     (x y: car S1), eq S1 x y -> eq S2 (f _ _ m x) (f _ _ m y).
+   Lemma test : forall (S1 S2 : Setoid) (m : Morphism S1 S2)
+     (x y : car S1), eq S1 x y -> eq S2 (f _ _ m x) (f _ _ m y).
    Proof. intros. rewrite H. reflexivity. Qed.
 
 .. _tactics-enabled-on-user-provided-relations:
@@ -565,7 +565,7 @@ on a given type.
 Every derived tactic that is based on the unprefixed forms of the
 tactics considered above will also work up to user defined relations.
 For instance, it is possible to register hints for :tacn:`autorewrite` that
-are not proof of Leibniz equalities. In particular it is possible to
+are not proofs of Leibniz equalities. In particular it is possible to
 exploit :tacn:`autorewrite` to simulate normalization in a term rewriting
 system up to user defined equalities.
 
@@ -657,9 +657,8 @@ in ``Prop`` are implicitly translated to such applications).
 Indeed, when rewriting under a lambda, binding variable ``x``, say from ``P x``
 to ``Q x`` using the relation iff, the tactic will generate a proof of
 ``pointwise_relation A iff (fun x => P x) (fun x => Q x)`` from the proof
-of ``iff (P x) (Q x)`` and a constraint of the form Proper
-``(pointwise_relation A iff ==> ?) m`` will be generated for the
-surrounding morphism ``m``.
+of ``iff (P x) (Q x)`` and a constraint of the form ``Proper (pointwise_relation A iff ==> ?) m``
+will be generated for the surrounding morphism ``m``.
 
 Hence, one can add higher-order combinators as morphisms by providing
 signatures using pointwise extension for the relations on the
@@ -685,11 +684,11 @@ default. The semantics of the previous :tacn:`setoid_rewrite` implementation
 can almost be recovered using the ``at 1`` modifier.
 
 
-Sub-relations
+Subrelations
 ~~~~~~~~~~~~~
 
-Sub-relations can be used to specify that one relation is included in
-another, so that morphisms signatures for one can be used for the
+Subrelations can be used to specify that one relation is included in
+another, so that morphism signatures for one can be used for the
 other. If a signature mentions a relation ``R`` on the left of an
 arrow ``==>``, then the signature also applies for any relation ``S`` that is
 smaller than ``R``, and the inverse applies on the right of an arrow. One
@@ -702,7 +701,7 @@ two morphisms for conjunction: ``Proper (impl ==> impl ==> impl) and`` and
 rewriting constraints arising from a rewrite using ``iff``, ``impl`` or
 ``inverse impl`` through ``and``.
 
-Sub-relations are implemented in ``Classes.Morphisms`` and are a prime
+Subrelations are implemented in ``Classes.Morphisms`` and are a prime
 example of a mostly user-space extension of the algorithm.
 
 
