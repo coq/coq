@@ -38,12 +38,12 @@ obligations which need to be resolved to create the final term.
 Elaborating programs
 ---------------------
 
-The main difference from |Coq| is that an object in a type T : Set can
-be considered as an object of type { x : T | P} for any wellformed P :
-Prop. If we go from T to the subset of T verifying property P, we must
-prove that the object under consideration verifies it. Russell will
-generate an obligation for every such coercion. In the other
-direction, Russell will automatically insert a projection.
+The main difference from |Coq| is that an object in a type :g:`T : Set` can
+be considered as an object of type :g:`{x : T | P}` for any well-formed
+:g:`P : Prop`. If we go from :g:`T` to the subset of :g:`T` verifying property
+:g:`P`, we must prove that the object under consideration verifies it. Russell
+will generate an obligation for every such coercion. In the other direction,
+Russell will automatically insert a projection.
 
 Another distinction is the treatment of pattern-matching. Apart from
 the following differences, it is equivalent to the standard match
@@ -67,7 +67,7 @@ operation (see :ref:`extendedpatternmatching`).
    (match x as y return (x = y -> _) with
    | 0 => fun H : x = 0 -> t
    | S n => fun H : x = S n -> u
-   end) (eq_refl n).
+   end) (eq_refl x).
 
   This permits to get the proper equalities in the context of proof
   obligations inside clauses, without which reasoning is very limited.
@@ -75,7 +75,7 @@ operation (see :ref:`extendedpatternmatching`).
 + Generation of inequalities. If a pattern intersects with a previous
   one, an inequality is added in the context of the second branch. See
   for example the definition of div2 below, where the second branch is
-  typed in a context where ∀ p, _ <> S (S p).
+  typed in a context where :g:`∀ p, _ <> S (S p)`.
 + Coercion. If the object being matched is coercible to an inductive
   type, the corresponding coercion will be automatically inserted. This
   also works with the previous mechanism.
@@ -88,7 +88,7 @@ coercions.
 
    This controls the special treatment of pattern-matching generating equalities
    and inequalities when using |Program| (it is on by default). All
-   pattern-matchings and let-patterns are handled using the standard algorithm
+   pattern-matches and let-patterns are handled using the standard algorithm
    of |Coq| (see :ref:`extendedpatternmatching`) when this option is
    deactivated.
 
@@ -108,7 +108,7 @@ typechecker will fall back directly to |Coq|’s usual typing of dependent
 pattern-matching if a return or in clause is specified. Likewise, the
 if construct is not treated specially by |Program| so boolean tests in
 the code are not automatically reflected in the obligations. One can
-use the dec combinator to get the correct hypotheses as in:
+use the :g:`dec` combinator to get the correct hypotheses as in:
 
 .. coqtop:: none
 
@@ -120,7 +120,7 @@ use the dec combinator to get the correct hypotheses as in:
      if dec (leb n 0) then 0
      else S (pred n).
 
-The let tupling construct :g:`let (x1, ..., xn) := t in b` does not
+The :g:`let` tupling construct :g:`let (x1, ..., xn) := t in b` does not
 produce an equality, contrary to the let pattern construct :g:`let ’(x1,
 ..., xn) := t in b`. Also, :g:`term :>` explicitly asks the system to
 coerce term to its support type. It can be useful in notations, for
