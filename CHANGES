@@ -141,7 +141,7 @@ Display diffs between proof steps
 
 Notations
 
-- Added [++] infix for [VectorDef.append].
+- Added `++` infix for `VectorDef.append`.
   Note that this might cause incompatibilities if you have, e.g., list_scope
   and vector_scope both open with vector_scope on top, and expect `++` to
   refer to `app`.
