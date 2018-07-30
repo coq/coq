@@ -29,10 +29,10 @@ val add_notation_extra_printing_rule : string -> string -> string -> unit
 
 (** Declaring scopes, delimiter keys and default scopes *)
 
-val declare_scope : scope_name -> unit
-val add_delimiters : scope_name -> string -> unit
-val remove_delimiters : scope_name -> unit
-val add_class_scope : scope_name -> scope_class list -> unit
+val declare_scope : locality_flag -> scope_name -> unit
+val add_delimiters : locality_flag -> scope_name -> string -> unit
+val remove_delimiters : locality_flag -> scope_name -> unit
+val add_class_scope : locality_flag -> scope_name -> scope_class list -> unit
 
 (** Add only the interpretation of a notation that already has pa/pp rules *)
 

@@ -1584,7 +1584,7 @@ type scope_command =
   | ScopeDelimRemove
   | ScopeClasses of scope_class list
 
-let load_scope_command_common silently_define_scope_if_undefined _ (_,(scope,o)) =
+let load_scope_command_common silently_define_scope_if_undefined _ (_,(local,scope,o)) =
   let declare_scope_if_needed =
     if silently_define_scope_if_undefined then Notation.declare_scope
     else Notation.ensure_scope in
@@ -1599,7 +1599,7 @@ let load_scope_command_common silently_define_scope_if_undefined _ (_,(scope,o))
 let load_scope_command =
   load_scope_command_common true
 
-let open_scope_command i (_,(scope,o)) =
+let open_scope_command i (_,(local,scope,o)) =
   if Int.equal i 1 then
     match o with
     | ScopeDeclare -> ()
@@ -1611,34 +1611,37 @@ let cache_scope_command o =
   load_scope_command_common false 1 o;
   open_scope_command 1 o
 
-let subst_scope_command (subst,(scope,o as x)) = match o with
+let subst_scope_command (subst,(local,scope,o as x)) = match o with
   | ScopeClasses cl ->
       let cl' = List.map_filter (subst_scope_class subst) cl in
       let cl' =
         if List.for_all2eq (==) cl cl' then cl
         else cl' in
-      scope, ScopeClasses cl'
+      local, scope, ScopeClasses cl'
   | _ -> x
 
-let inScopeCommand : scope_name * scope_command -> obj =
+let classify_scope_command (local, _, _ as o) =
+  if local then Dispose else Substitute o
+
+let inScopeCommand : locality_flag * scope_name * scope_command -> obj =
   declare_object {(default_object "DELIMITERS") with
       cache_function = cache_scope_command;
       open_function = open_scope_command;
       load_function = load_scope_command;
       subst_function = subst_scope_command;
-      classify_function = (fun obj -> Substitute obj)}
+      classify_function = classify_scope_command}
 
-let declare_scope scope =
-  Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeDeclare))
+let declare_scope local scope =
+  Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeDeclare))
 
-let add_delimiters scope key =
-  Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeDelimAdd key))
+let add_delimiters local scope key =
+  Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeDelimAdd key))
 
-let remove_delimiters scope =
-  Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeDelimRemove))
+let remove_delimiters local scope =
+  Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeDelimRemove))
 
-let add_class_scope scope cl =
-  Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeClasses cl))
+let add_class_scope local scope cl =
+  Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeClasses cl))
 
 (* Check if abbreviation to a name and avoid early insertion of
    maximal implicit arguments *)
