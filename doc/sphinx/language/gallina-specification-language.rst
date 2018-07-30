@@ -749,6 +749,7 @@ Simple inductive types
       the case of annotated inductive types — cf. next section).
 
    .. example::
+
       The set of natural numbers is defined as:
 
       .. coqtop:: all
@@ -941,6 +942,7 @@ Mutually defined inductive types
       reason, the parameters must be strictly the same for each inductive types.
 
 .. example::
+
    The typical example of a mutual inductive data type is the one for trees and
    forests. We assume given two types :g:`A` and :g:`B` as variables. It can
    be declared the following way.
@@ -1013,6 +1015,7 @@ of the type.
    For co-inductive types, the only elimination principle is case analysis.
 
 .. example::
+
    An example of a co-inductive type is the type of infinite sequences of
    natural numbers, usually called streams.
 
@@ -1032,6 +1035,7 @@ Definition of co-inductive predicates and blocks of mutually
 co-inductive definitions are also allowed.
 
 .. example::
+
    An example of a co-inductive predicate is the extensional equality on
    streams:
 
@@ -1094,6 +1098,7 @@ constructions.
 
 
    .. example::
+
       One can define the addition function as :
 
       .. coqtop:: all
@@ -1166,6 +1171,7 @@ constructions.
       inductive types.
 
       .. example::
+
          The size of trees and forests can be defined the following way:
 
          .. coqtop:: all
