@@ -375,6 +375,7 @@ or focus the next one.
 The following example script illustrates all these features:
 
 .. example::
+
   .. coqtop:: all
 
     Goal (((True /\ True) /\ True) /\ True) /\ True.
@@ -511,6 +512,7 @@ Requesting information
       :token:`ident`
 
       .. example::
+
          .. coqtop:: all
 
             Show Match nat.

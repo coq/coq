@@ -218,6 +218,7 @@ file timing data:
       On ``Mac OS``, this works best if you’ve installed ``gnu-time``.
 
     .. example::
+
        For example, the output of ``make TIMED=1`` may look like
        this:
 
@@ -295,6 +296,7 @@ file timing data:
        files which take effectively no time to compile.
 
     .. example::
+
         For example, the output table from
         ``make print-pretty-timed-diff`` may look like this:
 
@@ -318,6 +320,7 @@ line timing data:
     line-by-line timing information.
 
     .. example::
+
        For example, running ``make all TIMING=1`` may result in a file like this:
 
        ::
@@ -345,6 +348,7 @@ line timing data:
        This target requires python to build the table.
 
     .. example::
+
        For example, running  ``print-pretty-single-time-diff`` might give a table like this:
 
        ::

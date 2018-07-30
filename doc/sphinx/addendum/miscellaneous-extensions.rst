@@ -32,6 +32,7 @@ When the proof ends two constants are defined:
   ends with ``Qed``, and transparent if the proof ends with ``Defined``.
 
 .. example::
+
   .. coqtop:: all
 
      Require Coq.derive.Derive.
