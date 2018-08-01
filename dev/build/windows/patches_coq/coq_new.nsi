@@ -9,6 +9,7 @@
 ; ARCH         The target architecture, either x86_64 or i686
 ; COQ_SRC_PATH path of Coq installation in Windows or MinGW format (either \\ or /, but with drive letter)
 ; COQ_ICON     path of Coq icon file in Windows or MinGW format
+; COQ_ADDONS   list of addons that are shipped
 
 ; Enable compression after debugging.
 ; SetCompress off
@@ -69,7 +70,8 @@ Var INSTDIR_DBS       ; INSTDIR with \\ instead of \
 
   ;Description
   LangString DESC_1 ${LANG_ENGLISH} "This package contains Coq and CoqIDE."
-  LangString DESC_2 ${LANG_ENGLISH} "This package contains an OCaml compiler for Coq native compute and plugin development."
+  LangString DESC_2 ${LANG_ENGLISH} "This package contains the following extra Coq packages: ${COQ_ADDONS}"
+  ;LangString DESC_2 ${LANG_ENGLISH} "This package contains an OCaml compiler for Coq native compute and plugin development."
   LangString DESC_3 ${LANG_ENGLISH} "This package contains the development files needed in order to build a plugin for Coq."
   LangString DESC_4 ${LANG_ENGLISH} "Set the OCAMLLIB environment variable for the current user."
   LangString DESC_5 ${LANG_ENGLISH} "Set the OCAMLLIB environment variable for all users."
@@ -150,6 +152,11 @@ SectionEnd
 ;OCAML   !insertmacro ReplaceInFile "$INSTDIR\etc\findlib.conf" "$COQ_SRC_PATH_DBS" "$INSTDIR_DBS"
 ;OCAML SectionEnd
  
+Section "Coq packages" Sec2
+  SetOutPath "$INSTDIR\"
+  !include "..\..\..\filelists\coq_addons.nsh"
+SectionEnd
+
 Section "Coq files for plugin developers" Sec3
   SetOutPath "$INSTDIR\"
   !include "..\..\..\filelists\coq_plugindev.nsh"
@@ -176,7 +183,7 @@ SectionEnd
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
   !insertmacro MUI_DESCRIPTION_TEXT ${Sec1} $(DESC_1)
-  ;OCAML !insertmacro MUI_DESCRIPTION_TEXT ${Sec2} $(DESC_2)
+  !insertmacro MUI_DESCRIPTION_TEXT ${Sec2} $(DESC_2)
   !insertmacro MUI_DESCRIPTION_TEXT ${Sec3} $(DESC_3)
   ;OCAML !insertmacro MUI_DESCRIPTION_TEXT ${Sec4} $(DESC_4)
   ;OCAML !insertmacro MUI_DESCRIPTION_TEXT ${Sec5} $(DESC_5)

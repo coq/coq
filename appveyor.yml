@@ -12,20 +12,8 @@ environment:
   matrix:
   - USEOPAM: true
     ARCH: 64
-  - USEOPAM: false
-    ARCH: 32
-  - USEOPAM: false
-    ARCH: 64
 
 build_script:
 - cmd: 'call %APPVEYOR_BUILD_FOLDER%\dev\ci\appveyor.bat'
 
 test: off
-
-artifacts:
-  - path: 'dev\nsis\*.exe'
-    name: installer
-
-  - path: 'coq-opensource-archive-*.zip'
-    name: opensource-archive
-
