@@ -110,7 +110,7 @@ if construct is not treated specially by |Program| so boolean tests in
 the code are not automatically reflected in the obligations. One can
 use the dec combinator to get the correct hypotheses as in:
 
-.. coqtop:: none
+.. coqtop:: in
 
    Require Import Program Arith.
 
@@ -200,7 +200,7 @@ The structural fixpoint operator behaves just like the one of |Coq| (see
 :cmd:`Fixpoint`), except it may also generate obligations. It works
 with mutually recursive definitions too.
 
-.. coqtop:: reset none
+.. coqtop:: reset in
 
    Require Import Program Arith.
 
@@ -264,7 +264,7 @@ Program Lemma
    Definition` and use it as the goal afterwards. Otherwise the proof
    will be started with the elaborated version as a goal. The
    :g:`Program` prefix can similarly be used as a prefix for
-   :g:`Variable`, :g:`Hypothesis`, :g:`Axiom` etc...
+   :g:`Variable`, :g:`Hypothesis`, :g:`Axiom` etc.
 
 .. _solving_obligations:
 
@@ -300,7 +300,7 @@ optional tactic is replaced by the default one if not specified.
 
    Start the proof of the next unsolved obligation.
 
-.. cmd:: Solve Obligations {? of @ident} {? with @tactic}
+.. cmd:: Solve Obligations {? {? of @ident} with @tactic}
 
    Tries to solve each obligation of ``ident`` using the given ``tactic`` or the default one.
 
@@ -322,13 +322,13 @@ optional tactic is replaced by the default one if not specified.
 
 .. opt:: Transparent Obligations
 
-   Control whether all obligations should be declared as transparent
+   Controls whether all obligations should be declared as transparent
    (the default), or if the system should infer which obligations can be
    declared opaque.
 
 .. opt:: Hide Obligations
 
-   Control whether obligations appearing in the
+   Controls whether obligations appearing in the
    term should be hidden as implicit arguments of the special
    constantProgram.Tactics.obligation.
 

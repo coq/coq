@@ -116,13 +116,13 @@ be optimized in order to be efficient (for instance, when using
 induction principles we do not want to compute all the recursive calls
 but only the needed ones). So the extraction mechanism provides an
 automatic optimization routine that will be called each time the user
-want to generate |OCaml| programs. The optimizations can be split in two
+wants to generate an |OCaml| program. The optimizations can be split in two
 groups: the type-preserving ones (essentially constant inlining and
 reductions) and the non type-preserving ones (some function
 abstractions of dummy types are removed when it is deemed safe in order
 to have more elegant types). Therefore some constants may not appear in the
 resulting monolithic |OCaml| program. In the case of modular extraction,
-even if some inlining is done, the inlined constant are nevertheless
+even if some inlining is done, the inlined constants are nevertheless
 printed, to ensure session-independent programs.
 
 Concerning Haskell, type-preserving optimizations are less useful
@@ -185,7 +185,7 @@ The type-preserving optimizations are controlled by the following |Coq| options:
 
 **Inlining and printing of a constant declaration:**
 
-A user can explicitly ask for a constant to be extracted by two means:
+The user can explicitly ask for a constant to be extracted by two means:
 
   * by mentioning it on the extraction command line
 
@@ -224,19 +224,18 @@ principles of extraction (logical parts and types).
 
 When an actual extraction takes place, an error is normally raised if the
 :cmd:`Extraction Implicit` declarations cannot be honored, that is
-if any of the implicited variables still occurs in the final code.
+if any of the implicit arguments still occurs in the final code.
 This behavior can be relaxed via the following option:
 
 .. opt:: Extraction SafeImplicits
 
    Default is on. When this option is off, a warning is emitted
-   instead of an error if some implicited variables still occur in the
+   instead of an error if some implicit arguments still occur in the
    final code of an extraction. This way, the extracted code may be
    obtained nonetheless and reviewed manually to locate the source of the issue
-   (in the code, some comments mark the location of these remaining
-   implicited variables).
+   (in the code, some comments mark the location of these remaining implicit arguments).
    Note that this extracted code might not compile or run properly,
-   depending of the use of these remaining implicited variables.
+   depending of the use of these remaining implicit arguments.
 
 Realizing axioms
 ~~~~~~~~~~~~~~~~
@@ -296,7 +295,7 @@ The number of type variables is checked by the system. For example:
 
 Realizing an axiom via :cmd:`Extract Constant` is only useful in the
 case of an informative axiom (of sort ``Type`` or ``Set``). A logical axiom
-have no computational content and hence will not appears in extracted
+has no computational content and hence will not appear in extracted
 terms. But a warning is nonetheless issued if extraction encounters a
 logical axiom. This warning reminds user that inconsistent logical
 axioms may lead to incorrect or non-terminating extracted terms.
@@ -312,7 +311,7 @@ Realizing inductive types
 
 The system also provides a mechanism to specify ML terms for inductive
 types and constructors. For instance, the user may want to use the ML
-native boolean type instead of |Coq| one. The syntax is the following:
+native boolean type instead of the |Coq| one. The syntax is the following:
 
 .. cmd:: Extract Inductive @qualid => @string [ {+ @string } ]
 
@@ -332,10 +331,10 @@ native boolean type instead of |Coq| one. The syntax is the following:
    branches in functional form, and then the inductive element to
    destruct. For instance, the match branch ``| S n => foo`` gives the
    functional form ``(fun n -> foo)``. Note that a constructor with no
-   argument is considered to have one unit argument, in order to block
+   arguments is considered to have one unit argument, in order to block
    early evaluation of the branch: ``| O => bar`` leads to the functional
    form ``(fun () -> bar)``. For instance, when extracting ``nat``
-   into |OCaml| ``int``, the code to provide has type:
+   into |OCaml| ``int``, the code to be provided has type:
    ``(unit->'a)->(int->'a)->int->'a``.
 
 .. caution:: As for :cmd:`Extract Constant`, this command should be used with care:
@@ -371,7 +370,7 @@ Typical examples are the following:
    When extracting to |OCaml|, if an inductive constructor or type has arity 2 and
    the corresponding string is enclosed by parentheses, and the string meets
    |OCaml|'s lexical criteria for an infix symbol, then the rest of the string is
-   used as infix constructor or type.
+   used as an infix constructor or type.
 
 .. coqtop:: in
    
@@ -389,7 +388,7 @@ Avoiding conflicts with existing filenames
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When using :cmd:`Extraction Library`, the names of the extracted files
-directly depends from the names of the |Coq| files. It may happen that
+directly depend on the names of the |Coq| files. It may happen that
 these filenames are in conflict with already existing files, 
 either in the standard library of the target language or in other
 code that is meant to be linked with the extracted code. 
@@ -475,17 +474,18 @@ type-checker without any ``Obj.magic`` (see examples below).
 Some examples
 -------------
 
-We present here two examples of extractions, taken from the 
-|Coq| Standard Library. We choose |OCaml| as target language,
-but all can be done in the other dialects with slight modifications.
+We present here two examples of extraction, taken from the
+|Coq| Standard Library. We choose |OCaml| as the target language,
+but everything, with slight modifications, can also be done in the
+other languages supported by extraction.
 We then indicate where to find other examples and tests of extraction.
 
 A detailed example: Euclidean division
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The file ``Euclid`` contains the proof of Euclidean division.
-The natural numbers used there are unary integers of type ``nat``,
-defined by two constructors ``O`` and ``S``.
+The natural numbers used here are unary, represented by the type``nat``,
+which is defined by two constructors ``O`` and ``S``.
 This module contains a theorem ``eucl_dev``, whose type is::
 
    forall b:nat, b > 0 -> forall a:nat, diveucl a b
@@ -579,7 +579,7 @@ extraction test:
  * ``stalmarck`` : https://github.com/coq-contribs/stalmarck
 
 Note that ``continuations`` and ``multiplier`` are a bit particular. They are
-examples of developments where ``Obj.magic`` are needed. This is
-probably due to an heavy use of impredicativity. After compilation, those
+examples of developments where ``Obj.magic`` is needed. This is
+probably due to a heavy use of impredicativity. After compilation, those
 two examples run nonetheless, thanks to the correction of the
 extraction :cite:`Let02`.

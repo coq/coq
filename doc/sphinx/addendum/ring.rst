@@ -13,7 +13,7 @@ The ring and field tactic families
 
 :Author: Bruno Barras, Benjamin Grégoire, Assia Mahboubi, Laurent Théry [#f1]_
 
-This chapter presents the tactics dedicated to deal with ring and
+This chapter presents the tactics dedicated to dealing with ring and
 field equations.
 
 What does this tactic do?
@@ -36,7 +36,7 @@ is strictly less than the following monomial according to the lexicographic
 order. It is an easy theorem to show that every polynomial is equivalent (modulo
 the ring properties) to exactly one canonical sum. This canonical sum is called
 the normal form of the polynomial. In fact, the actual representation shares
-monomials with same prefixes. So what does ring? It normalizes polynomials over
+monomials with same prefixes. So what does the ``ring`` tactic do? It normalizes polynomials over
 any ring or semi-ring structure. The basic use of ``ring`` is to simplify ring
 expressions, so that the user does not have to deal manually with the theorems
 of associativity and commutativity.
@@ -59,9 +59,8 @@ The variables map
 
 It is frequent to have an expression built with :math:`+` and :math:`\times`,
 but rarely on variables only. Let us associate a number to each subterm of a
-ring expression in the Gallina language. For example in the ring |nat|, consider
-the expression:
-
+ring expression in the Gallina language. For example, consider this expression
+in the semiring ``nat``:
 
 ::
 
@@ -104,7 +103,7 @@ Concrete usage in Coq
 .. tacn:: ring
 
 The ``ring`` tactic solves equations upon polynomial expressions of a ring
-(or semi-ring) structure. It proceeds by normalizing both hand sides
+(or semi-ring) structure. It proceeds by normalizing both sides
 of the equation (w.r.t. associativity, commutativity and
 distributivity, constant propagation, rewriting of monomials) and
 comparing syntactically the results.
@@ -112,9 +111,9 @@ comparing syntactically the results.
 .. tacn:: ring_simplify
 
 ``ring_simplify`` applies the normalization procedure described above to
-the terms given. The tactic then replaces all occurrences of the terms
+the given terms. The tactic then replaces all occurrences of the terms
 given in the conclusion of the goal by their normal forms. If no term
-is given, then the conclusion should be an equation and both hand
+is given, then the conclusion should be an equation and both
 sides are normalized. The tactic can also be applied in a hypothesis.
 
 The tactic must be loaded by ``Require Import Ring``. The ring structures
@@ -187,7 +186,7 @@ Error messages:
 
 .. exn:: Cannot find a declared ring structure for equality @term.
 
-  Same as above is the case of the ``ring`` tactic.
+  Same as above in the case of the ``ring`` tactic.
 
 
 Adding a ring structure
@@ -198,8 +197,8 @@ carrier set, an equality, and ring operations: ``Ring_theory.ring_theory``
 and ``Ring_theory.semi_ring_theory``) satisfies the ring axioms. Semi-
 rings (rings without + inverse) are also supported. The equality can
 be either Leibniz equality, or any relation declared as a setoid (see
-:ref:`tactics-enabled-on-user-provided-relations`). The definition of ring and semi-rings (see module
-``Ring_theory``) is:
+:ref:`tactics-enabled-on-user-provided-relations`).
+The definitions of ring and semiring (see module ``Ring_theory``) are:
 
 .. coqtop:: in
 
@@ -305,7 +304,7 @@ The syntax for adding a new ring is
 
 .. cmd:: Add Ring @ident : @term {? ( @ring_mod {* , @ring_mod } )}
 
-The :n:`@ident` is not relevant. It is just used for error messages. The
+The :n:`@ident` is not relevant. It is used just for error messages. The
 :n:`@term` is a proof that the ring signature satisfies the (semi-)ring
 axioms. The optional list of modifiers is used to tailor the behavior
 of the tactic. The following list describes their syntax and effects:
@@ -386,7 +385,7 @@ sign :n:`@term`
 
 div :n:`@term`
   allows ``ring`` and ``ring_simplify`` to use monomials with
-  coefficient other than 1 in the rewriting. The term :n:`@term` is a proof
+  coefficients other than 1 in the rewriting. The term :n:`@term` is a proof
   that a given division function satisfies the specification of an
   euclidean division function (:n:`@term` has to be a proof of
   ``Ring_theory.div_theory``). For example, this function is called when
@@ -414,13 +413,13 @@ Error messages:
 How does it work?
 ----------------------
 
-The code of ring is a good example of tactic written using *reflection*.
-What is reflection? Basically, it is writing |Coq| tactics in |Coq|, rather
-than in |OCaml|. From the philosophical point of view, it is
-using the ability of the Calculus of Constructions to speak and reason
-about itself. For the ring tactic we used Coq as a programming
-language and also as a proof environment to build a tactic and to
-prove it correctness.
+The code of ``ring`` is a good example of a tactic written using *reflection*.
+What is reflection? Basically, using it means that a part of a tactic is written
+in Gallina, Coq's language of terms, rather than |Ltac| or |OCaml|. From the
+philosophical point of view, reflection is using the ability of the Calculus of
+Constructions to speak and reason about itself. For the ``ring`` tactic we used
+Coq as a programming language and also as a proof environment to build a tactic
+and to prove its correctness.
 
 The interested reader is strongly advised to have a look at the
 file ``Ring_polynom.v``. Here a type for polynomials is defined:
@@ -452,7 +451,7 @@ Polynomials in normal form are defined as:
 where ``Pinj n P`` denotes ``P`` in which :math:`V_i` is replaced by :math:`V_{i+n}` , 
 and ``PX P n Q`` denotes :math:`P \otimes V_1^n \oplus Q'`, `Q'` being `Q` where :math:`V_i` is replaced by :math:`V_{i+1}`.
 
-Variables maps are represented by list of ring elements, and two
+Variable maps are represented by lists of ring elements, and two
 interpretation functions, one that maps a variables map and a
 polynomial to an element of the concrete ring, and the second one that
 does the same for normal forms:
@@ -490,18 +489,18 @@ concrete expression `p’`, which is the concrete normal form of `p`. This is su
 `p’`       |la|   |le|
 ========= ======  ====
 
-The user do not see the right part of the diagram. From outside, the
-tactic behaves like a |bdi| simplification extended with AC rewriting
-rules. Basically, the proof is only the application of the main
-correctness theorem to well-chosen arguments.
+The user does not see the right part of the diagram. From outside, the
+tactic behaves like a |bdi| simplification extended with rewriting rules
+for associativity and commutativity. Basically, the proof is only the
+application of the main correctness theorem to well-chosen arguments.
 
 Dealing with fields
 ------------------------
 
 .. tacn:: field
 
-The ``field`` tactic is an extension of the ``ring`` to deal with rational
-expression. Given a rational expression :math:`F = 0`. It first reduces the
+The ``field`` tactic is an extension of the ``ring`` tactic that deals with rational
+expressions. Given a rational expression :math:`F = 0`. It first reduces the
 expression `F` to a common denominator :math:`N/D = 0` where `N` and `D`
 are two ring expressions. For example, if we take :math:`F = (1 − 1/x) x − x + 1`, this
 gives :math:`N = (x − 1) x − x^2 + x` and :math:`D = x`. It then calls ring to solve 
@@ -523,7 +522,7 @@ structures can be declared to the system with the ``Add Field`` command
 (in ``plugins/setoid_ring``). It is exported by module ``Rbase``, so
 that requiring ``Rbase`` or ``Reals`` is enough to use the field tactics on
 real numbers. Rational numbers in canonical form are also declared as
-a field in module ``Qcanon``.
+a field in the module ``Qcanon``.
 
 
 .. example::
@@ -559,8 +558,8 @@ a field in module ``Qcanon``.
    performs the simplification in the conclusion of the
    goal, :math:`F_1 = F_2` becomes :math:`N_1 / D_1 = N_2 / D_2`. A normalization step
    (the same as the one for rings) is then applied to :math:`N_1`, :math:`D_1`, 
-   :math:`N_2` and :math:`D_2`. This way, polynomials remain in factorized form during the
-   fraction simplifications. This yields smaller expressions when
+   :math:`N_2` and :math:`D_2`. This way, polynomials remain in factorized form during
+   fraction simplification. This yields smaller expressions when
    reducing to the same denominator since common factors can be canceled.
 
 .. tacv:: field_simplify [{* @term }] 
@@ -657,7 +656,7 @@ The syntax for adding a new field is
 
 .. cmd:: Add Field @ident : @term {? ( @field_mod {* , @field_mod } )}
 
-The :n:`@ident` is not relevant. It is just used for error
+The :n:`@ident` is not relevant. It is used just for error
 messages. :n:`@term` is a proof that the field signature satisfies the
 (semi-)field axioms. The optional list of modifiers is used to tailor
 the behavior of the tactic.
@@ -704,9 +703,8 @@ it using reflection (see :cite:`Bou97`). Later, it
 was rewritten by Patrick Loiseleur: the new tactic does not any
 more require ``ACDSimpl`` to compile and it makes use of |bdi|-reduction not
 only to replace the rewriting steps, but also to achieve the
-interleaving of computation and reasoning (see :ref:`discussion_reflection`). He also wrote a
-few |ML| code for the ``Add Ring`` command, that allow to register new rings
-dynamically.
+interleaving of computation and reasoning (see :ref:`discussion_reflection`). He also wrote
+some |ML| code for the ``Add Ring`` command that allows registering new rings dynamically.
 
 Proofs terms generated by ring are quite small, they are linear in the
 number of :math:`\oplus` and :math:`\otimes` operations in the normalized terms. Type-checking
@@ -733,15 +731,15 @@ Then it is rewritten to ``34 − x + 2 * x + 12``, very far from the expected re
 Here rewriting is not sufficient: you have to do some kind of reduction
 (some kind of computation) to achieve the normalization.
 
-The tactic ``ring`` is not only faster than a classical one: using
-reflection, we get for free integration of computation and reasoning
-that would be very complex to implement in the classic fashion.
+The tactic ``ring`` is not only faster than the old one: by using
+reflection, we get for free the integration of computation and reasoning
+that would be very difficult to implement without it.
 
 Is it the ultimate way to write tactics? The answer is: yes and no.
-The ``ring`` tactic uses intensively the conversion rule of |Cic|, that is
-replaces proof by computation the most as it is possible. It can be
-useful in all situations where a classical tactic generates huge proof
-terms. Symbolic Processing and Tautologies are in that case. But there
+The ``ring`` tactic intensively uses the conversion rules of the Calculus of
+Inductive Constructions, i.e. it replaces proofs by computations as much as possible.
+It can be useful in all situations where a classical tactic generates huge proof
+terms, like symbolic processing and tautologies. But there
 are also tactics like ``auto`` or ``linear`` that do many complex computations,
 using side-effects and backtracking, and generate a small proof term.
 Clearly, it would be significantly less efficient to replace them by
@@ -750,12 +748,12 @@ tactics using reflection.
 Another idea suggested by Benjamin Werner: reflection could be used to
 couple an external tool (a rewriting program or a model checker)
 with |Coq|. We define (in |Coq|) a type of terms, a type of *traces*, and
-prove a correction theorem that states that *replaying traces* is safe
-w.r.t some interpretation. Then we let the external tool do every
+prove a correctness theorem that states that *replaying traces* is safe
+with respect to some interpretation. Then we let the external tool do every
 computation (using side-effects, backtracking, exception, or others
 features that are not available in pure lambda calculus) to produce
-the trace: now we can check in |Coq| that the trace has the expected
-semantic by applying the correction lemma.
+the trace. Now we can check in |Coq| that the trace has the expected
+semantics by applying the correctness theorem.
 
 
 
