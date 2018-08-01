@@ -650,7 +650,7 @@ example of recursive notation with closed binders:
 A recursive pattern for binders can be used in position of a recursive
 pattern for terms. Here is an example:
 
-.. coqtop:: in 
+.. coqtop:: in
 
    Notation "'FUNAPP' x .. y , f" :=
      (fun x => .. (fun y => (.. (f x) ..) y ) ..)
@@ -1137,7 +1137,7 @@ The ``function_scope`` interpretation scope
 
 .. index:: function_scope
 
-The scope ``function_scope`` also has a special status. 
+The scope ``function_scope`` also has a special status.
 It is temporarily activated each time the argument of a global reference is
 recognized to be a ``Funclass`` istance, i.e., of type :g:`forall x:A, B` or
 :g:`A -> B`.
@@ -1152,11 +1152,11 @@ Scopes` or :cmd:`Print Scope`.
 
 ``type_scope``
   This scope includes infix * for product types and infix + for sum types. It
-  is delimited by key ``type``, and bound to the coercion class 
+  is delimited by key ``type``, and bound to the coercion class
   ``Sortclass``, as described above.
 
 ``function_scope``
-  This scope is delimited by key ``function``, and bound to the coercion class 
+  This scope is delimited by key ``function``, and bound to the coercion class
   ``Funclass``, as described above.
 
 ``nat_scope``
@@ -1455,7 +1455,9 @@ tactic language. Tactic notations obey the following syntax:
 .. [#and_or_levels] which are the levels effectively chosen in the current
    implementation of Coq
 
-.. [#no_associativity] Coq accepts notations declared as ``no associative`` but the parser on
-   which Coq is built, namely Camlp4, currently does not implement the
-   ``no associativity`` and replaces it by a ``left associativity``; hence it is
-   the same for Coq: ``no associativity`` is in fact ``left associativity``.
+.. [#no_associativity] Coq accepts notations declared as ``no
+   associativity`` but the parser on which Coq is built, namely
+   Camlp5, currently does not implement ``no associativity`` and
+   replaces it with ``left associativity``; hence it is the same for
+   Coq: ``no associativity`` is in fact ``left associativity``, for
+   the purposes of parsing
