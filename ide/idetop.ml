@@ -211,15 +211,13 @@ let add_diffs oldp newp intf =
     { intf with fg_goals = { first_goal with goal_hyp = hyps_pp_list; goal_ccl = concl_pp } :: tl }
 
 let goals () =
-  let oldp =
-    try Some (Proof_global.give_me_the_proof ())
-    with Proof_global.NoCurrentProof -> None in
   let doc = get_doc () in
   set_doc @@ Stm.finish ~doc;
   try
     let newp = Proof_global.give_me_the_proof () in
     let intf = export_pre_goals (Proof.map_structured_proof newp process_goal) in
     if Proof_diffs.show_diffs () then
+      let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
       try
         Some (add_diffs oldp (Some newp) intf)
       with Pp_diff.Diff_Failure _ -> Some intf
