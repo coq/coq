@@ -138,13 +138,10 @@ persists to and is used by the next jobs.
 
 Artifacts can also be downloaded from the GitLab repository.
 Currently, available artifacts are:
-- the Coq executables and stdlib, in three copies varying in
+- the Coq executables and stdlib, in four copies varying in
   architecture and OCaml version used to build Coq.
-- the Coq documentation, built only in the `build:base` job. When submitting
+- the Coq documentation, built in the `documentation` job. When submitting
   a documentation PR, this can help reviewers checking the rendered result.
-
-As an exception to the above, jobs testing that compilation triggers
-no OCaml warnings build Coq in parallel with other tests.
 
 ### GitLab and Windows
 
