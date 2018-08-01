@@ -1,37 +1,40 @@
 .. include:: ../preamble.rst
 
-.. _nsatz:
+.. _nsatz_chapter:
 
 Nsatz: tactics for proving equalities in integral domains
 ===========================================================
 
 :Author: Loïc Pottier
 
-The tactic `nsatz` proves goals of the form
+.. tacn:: nsatz
+   :name: nsatz
 
-:math:`\begin{array}{l}
-\forall X_1, \ldots, X_n \in A, \\
-P_1(X_1, \ldots, X_n) = Q_1(X_1, \ldots, X_n), \ldots, P_s(X_1, \ldots, X_n) = Q_s(X_1, \ldots, X_n) \\
-\vdash P(X_1, \ldots, X_n) = Q(X_1, \ldots, X_n) \\
-\end{array}`
+   This tactic is for solving goals of the form
 
-where :math:`P, Q, P_1, Q_1, \ldots, P_s, Q_s` are polynomials and :math:`A` is an integral
-domain, i.e. a commutative ring with no zero divisors. For example, :math:`A`
-can be :math:`\mathbb{R}`, :math:`\mathbb{Z}`, or :math:`\mathbb{Q}`.
-Note that the equality :math:`=` used in these goals can be
-any setoid equality (see :ref:`tactics-enabled-on-user-provided-relations`) , not only Leibnitz equality.
+   :math:`\begin{array}{l}
+   \forall X_1, \ldots, X_n \in A, \\
+   P_1(X_1, \ldots, X_n) = Q_1(X_1, \ldots, X_n), \ldots, P_s(X_1, \ldots, X_n) = Q_s(X_1, \ldots, X_n) \\
+   \vdash P(X_1, \ldots, X_n) = Q(X_1, \ldots, X_n) \\
+   \end{array}`
 
-It also proves formulas
+   where :math:`P, Q, P_1, Q_1, \ldots, P_s, Q_s` are polynomials and :math:`A` is an integral
+   domain, i.e. a commutative ring with no zero divisors. For example, :math:`A`
+   can be :math:`\mathbb{R}`, :math:`\mathbb{Z}`, or :math:`\mathbb{Q}`.
+   Note that the equality :math:`=` used in these goals can be
+   any setoid equality (see :ref:`tactics-enabled-on-user-provided-relations`) , not only Leibniz equality.
 
-:math:`\begin{array}{l}
-\forall X_1, \ldots, X_n \in A, \\
-P_1(X_1, \ldots, X_n) = Q_1(X_1, \ldots, X_n) \wedge \ldots \wedge P_s(X_1, \ldots, X_n) = Q_s(X_1, \ldots, X_n) \\
-\rightarrow P(X_1, \ldots, X_n) = Q(X_1, \ldots, X_n) \\
-\end{array}`
+   It also proves formulas
 
-doing automatic introductions.
+   :math:`\begin{array}{l}
+   \forall X_1, \ldots, X_n \in A, \\
+   P_1(X_1, \ldots, X_n) = Q_1(X_1, \ldots, X_n) \wedge \ldots \wedge P_s(X_1, \ldots, X_n) = Q_s(X_1, \ldots, X_n) \\
+   \rightarrow P(X_1, \ldots, X_n) = Q(X_1, \ldots, X_n) \\
+   \end{array}`
 
-You can load the ``Nsatz`` module with the command ``Require Import Nsatz``.
+   doing automatic introductions.
+
+   You can load the ``Nsatz`` module with the command ``Require Import Nsatz``.
 
 More about `nsatz`
 ---------------------
@@ -57,34 +60,31 @@ Buchberger algorithm.
 This computation is done after a step of *reification*, which is
 performed using :ref:`typeclasses`.
 
-The ``Nsatz`` module defines the tactic `nsatz`, which can be used without
-arguments, or with the syntax:
+.. tacv:: nsatz with radicalmax:=@num%N strategy:=@num%Z parameters:=[{*, @ident}] variables:=[{*, @ident}]
 
-| nsatz with radicalmax:=num%N strategy:=num%Z parameters:= :n:`{* var}` variables:= :n:`{* var}`
+   Most complete syntax for `nsatz`.
 
-where:
+   * `radicalmax` is a bound when searching for r such that
+     :math:`c (P−Q) r = \sum_{i=1..s} S_i (P i − Q i)`
 
-* `radicalmax` is a bound when searching for r such that
-  :math:`c (P−Q) r = \sum_{i=1..s} S_i (P i − Q i)`
+   * `strategy` gives the order on variables :math:`X_1,\ldots,X_n` and the strategy
+     used in Buchberger algorithm (see :cite:`sugar` for details):
 
-* `strategy` gives the order on variables :math:`X_1,\ldots,X_n` and the strategy
-  used in Buchberger algorithm (see :cite:`sugar` for details):
+       * strategy = 0: reverse lexicographic order and newest s-polynomial.
+       * strategy = 1: reverse lexicographic order and sugar strategy.
+       * strategy = 2: pure lexicographic order and newest s-polynomial.
+       * strategy = 3: pure lexicographic order and sugar strategy.
 
-    * strategy = 0: reverse lexicographic order and newest s-polynomial.
-    * strategy = 1: reverse lexicographic order and sugar strategy.
-    * strategy = 2: pure lexicographic order and newest s-polynomial.
-    * strategy = 3: pure lexicographic order and sugar strategy.
+   * `parameters` is the list of variables :math:`X_{i_1},\ldots,X_{i_k}` among
+     :math:`X_1,\ldots,X_n` which are considered as parameters: computation will be performed with
+     rational fractions in these variables, i.e. polynomials are considered
+     with coefficients in :math:`R(X_{i_1},\ldots,X_{i_k})`. In this case, the coefficient
+     :math:`c` can be a non constant polynomial in :math:`X_{i_1},\ldots,X_{i_k}`, and the tactic
+     produces a goal which states that :math:`c` is not zero.
 
-* `parameters` is the list of variables :math:`X_{i_1},\ldots,X_{i_k}` among
-  :math:`X_1,\ldots,X_n` which are considered as parameters: computation will be performed with
-  rational fractions in these variables, i.e. polynomials are considered
-  with coefficients in :math:`R(X_{i_1},\ldots,X_{i_k})`. In this case, the coefficient
-  :math:`c` can be a non constant polynomial in :math:`X_{i_1},\ldots,X_{i_k}`, and the tactic
-  produces a goal which states that :math:`c` is not zero.
+   * `variables` is the list of the variables in the decreasing order in
+     which they will be used in the Buchberger algorithm. If `variables` = `(@nil R)`,
+     then `lvar` is replaced by all the variables which are not in
+     `parameters`.
 
-* `variables` is the list of the variables in the decreasing order in
-  which they will be used in the Buchberger algorithm. If `variables` = `(@nil R)`,
-  then `lvar` is replaced by all the variables which are not in
-  `parameters`.
-
-See file `Nsatz.v` for many examples, especially in geometry.
+See the file `Nsatz.v` for many examples, especially in geometry.

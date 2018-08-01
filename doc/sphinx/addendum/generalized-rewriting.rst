@@ -25,7 +25,6 @@ The work is a complete rewrite of the previous implementation, based
 on the type class infrastructure. It also improves on and generalizes
 the previous implementation in several ways:
 
-
 + User-extensible algorithm. The algorithm is separated into two parts:
   generation of the rewriting constraints (written in ML) and solving
   these constraints using type class resolution. As type class
@@ -63,14 +62,14 @@ The expression ``A``, which depends on ``x1 ... xn`` , is called the *carrier*
 of the relation and ``R`` is said to be a relation over ``A``; the list
 ``x1,...,xn`` is the (possibly empty) list of parameters of the relation.
 
-**Example 1 (Parametric relation):**
+.. example:: Parametric relation
 
-It is possible to implement finite sets of elements of type ``A`` as
-unordered lists of elements of type ``A``.
-The function ``set_eq: forall (A : Type), relation (list A)``
-satisfied by two lists with the same elements is a parametric relation
-over ``(list A)`` with one parameter ``A``. The type of ``set_eq``
-is convertible with ``forall (A : Type), list A -> list A -> Prop.``
+   It is possible to implement finite sets of elements of type ``A`` as
+   unordered lists of elements of type ``A``.
+   The function ``set_eq: forall (A : Type), relation (list A)``
+   satisfied by two lists with the same elements is a parametric relation
+   over ``(list A)`` with one parameter ``A``. The type of ``set_eq``
+   is convertible with ``forall (A : Type), list A -> list A -> Prop.``
 
 An *instance* of a parametric relation ``R`` with n parameters is any term
 ``(R t1 ... tn)``.
@@ -80,16 +79,16 @@ proof of reflexivity for ``R`` if it has type
 ``forall (x1 : T1) ... (xn : Tn), reflexive (R x1 ... xn)``.
 Similar definitions are given for parametric proofs of symmetry and transitivity.
 
-**Example 2 (Parametric relation (cont.)):**
+.. example:: Parametric relation (continued)
 
-The ``set_eq`` relation of the previous example can be proved to be
-reflexive, symmetric and transitive. A parametric unary function ``f`` of type
-``forall (x1 : T1) ... (xn : Tn), A1 -> A2`` covariantly respects two parametric relation instances
-``R1`` and ``R2`` if, whenever ``x``, ``y`` satisfy ``R1 x y``, their images (``f x``) and (``f y``)
-satisfy ``R2 (f x) (f y)``. An ``f`` that respects its input and output
-relations will be called a unary covariant *morphism*. We can also say
-that ``f`` is a monotone function with respect to ``R1`` and ``R2`` . The
-sequence ``x1 ... xn`` represents the parameters of the morphism.
+   The ``set_eq`` relation of the previous example can be proved to be
+   reflexive, symmetric and transitive. A parametric unary function ``f`` of type
+   ``forall (x1 : T1) ... (xn : Tn), A1 -> A2`` covariantly respects two parametric relation instances
+   ``R1`` and ``R2`` if, whenever ``x``, ``y`` satisfy ``R1 x y``, their images (``f x``) and (``f y``)
+   satisfy ``R2 (f x) (f y)``. An ``f`` that respects its input and output
+   relations will be called a unary covariant *morphism*. We can also say
+   that ``f`` is a monotone function with respect to ``R1`` and ``R2`` . The
+   sequence ``x1 ... xn`` represents the parameters of the morphism.
 
 Let ``R1`` and ``R2`` be two parametric relations. The *signature* of a
 parametric morphism of type ``forall (x1 : T1) ... (xn : Tn), A1 -> A2``
@@ -118,29 +117,29 @@ covariant and contravariant.
 An instance of a parametric morphism :math:`f` with :math:`n`
 parameters is any term :math:`f \, t_1 \ldots t_n`.
 
-**Example 3 (Morphisms):**
+.. example:: Morphisms
 
-Continuing the previous example, let ``union: forall (A : Type), list A -> list A -> list A``
-perform the union of two sets by appending one list to the other. ``union` is a binary
-morphism parametric over ``A`` that respects the relation instance
-``(set_eq A)``. The latter condition is proved by showing:
+   Continuing the previous example, let ``union: forall (A : Type), list A -> list A -> list A``
+   perform the union of two sets by appending one list to the other. ``union` is a binary
+   morphism parametric over ``A`` that respects the relation instance
+   ``(set_eq A)``. The latter condition is proved by showing:
 
-.. coqtop:: in
+   .. coqtop:: in
 
-  forall (A : Type) (S1 S1’ S2 S2’ : list A),
-    set_eq A S1 S1’ ->
-    set_eq A S2 S2’ ->
-    set_eq A (union A S1 S2) (union A S1’ S2’).
+     forall (A : Type) (S1 S1’ S2 S2’ : list A),
+       set_eq A S1 S1’ ->
+       set_eq A S2 S2’ ->
+       set_eq A (union A S1 S2) (union A S1’ S2’).
 
-The signature of the function ``union A`` is ``set_eq A ==> set_eq A ==> set_eq A``
-for all ``A``.
+   The signature of the function ``union A`` is ``set_eq A ==> set_eq A ==> set_eq A``
+   for all ``A``.
 
-**Example 4 (Contravariant morphism):**
+.. example:: Contravariant morphisms
 
-The division function ``Rdiv : R -> R -> R`` is a morphism of signature
-``le ++> le --> le`` where ``le`` is the usual order relation over
-real numbers. Notice that division is covariant in its first argument
-and contravariant in its second argument.
+   The division function ``Rdiv : R -> R -> R`` is a morphism of signature
+   ``le ++> le --> le`` where ``le`` is the usual order relation over
+   real numbers. Notice that division is covariant in its first argument
+   and contravariant in its second argument.
 
 Leibniz equality is a relation and every function is a morphism that
 respects Leibniz equality. Unfortunately, Leibniz equality is not
@@ -158,69 +157,66 @@ intended relation. Currently the verification consists of checking
 whether ``C[]`` is a syntactic composition of morphism instances that respects some obvious
 compatibility constraints.
 
+.. example:: Rewriting
 
-**Example 5 (Rewriting):**
-
-Continuing the previous examples, suppose that the user must prove
-``set_eq int (union int (union int S1 S2) S2) (f S1 S2)`` under the
-hypothesis ``H : set_eq int S2 (@nil int)``. It
-is possible to use the ``rewrite`` tactic to replace the first two
-occurrences of ``S2`` with ``@nil int`` in the goal since the
-context ``set_eq int (union int (union int S1 nil) nil) (f S1 S2)``,
-being a composition of morphisms instances, is a morphism. However the
-tactic will fail replacing the third occurrence of ``S2``  unless ``f``
-has also been declared as a morphism.
+   Continuing the previous examples, suppose that the user must prove
+   ``set_eq int (union int (union int S1 S2) S2) (f S1 S2)`` under the
+   hypothesis ``H : set_eq int S2 (@nil int)``. It
+   is possible to use the ``rewrite`` tactic to replace the first two
+   occurrences of ``S2`` with ``@nil int`` in the goal since the
+   context ``set_eq int (union int (union int S1 nil) nil) (f S1 S2)``,
+   being a composition of morphisms instances, is a morphism. However the
+   tactic will fail replacing the third occurrence of ``S2``  unless ``f``
+   has also been declared as a morphism.
 
 
 Adding new relations and morphisms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A parametric relation :g:`Aeq: forall (y1 : β1 ... ym : βm)`,
-:g:`relation (A t1 ... tn)` over :g:`(A : αi -> ... αn -> Type)` can be
-declared with the following command:
-
 .. cmd::  Add Parametric Relation (x1 : T1) ... (xn : Tk) : (A t1 ... tn) (Aeq t′1 ... t′m) {? reflexivity proved by refl} {? symmetry proved by sym} {? transitivity proved by trans} as @ident
 
-after having required the ``Setoid`` module with the ``Require Setoid``
-command.
+   This command declares a parametric relation :g:`Aeq: forall (y1 : β1 ... ym : βm)`,
+   :g:`relation (A t1 ... tn)` over :g:`(A : αi -> ... αn -> Type)`.
 
-The :g:`@ident` gives a unique name to the morphism and it is used
-by the command to generate fresh names for automatically provided
-lemmas used internally.
+   The :token:`ident` gives a unique name to the morphism and it is used
+   by the command to generate fresh names for automatically provided
+   lemmas used internally.
 
-Notice that the carrier and relation parameters may refer to the
-context of variables introduced at the beginning of the declaration,
-but the instances need not be made only of variables. Also notice that
-``A`` is *not* required to be a term having the same parameters as ``Aeq``,
-although that is often the case in practice (this departs from the
-previous implementation).
+   Notice that the carrier and relation parameters may refer to the
+   context of variables introduced at the beginning of the declaration,
+   but the instances need not be made only of variables. Also notice that
+   ``A`` is *not* required to be a term having the same parameters as ``Aeq``,
+   although that is often the case in practice (this departs from the
+   previous implementation).
 
+   To use this command, you need to first import the module ``Setoid`` using
+   the command ``Require Import Setoid``.
 
 .. cmd:: Add Relation
 
-In case the carrier and relations are not parametric, one can use this command
-instead, whose syntax is the same except there is no local context.
+   In case the carrier and relations are not parametric, one can use this command
+   instead, whose syntax is the same except there is no local context.
 
-The proofs of reflexivity, symmetry and transitivity can be omitted if
-the relation is not an equivalence relation. The proofs must be
-instances of the corresponding relation definitions: e.g. the proof of
-reflexivity must have a type convertible to
-:g:`reflexive (A t1 ... tn) (Aeq t′ 1 …t′ n)`.
-Each proof may refer to the introduced variables as well.
+   The proofs of reflexivity, symmetry and transitivity can be omitted if
+   the relation is not an equivalence relation. The proofs must be
+   instances of the corresponding relation definitions: e.g. the proof of
+   reflexivity must have a type convertible to
+   :g:`reflexive (A t1 ... tn) (Aeq t′ 1 …t′ n)`.
+   Each proof may refer to the introduced variables as well.
 
-**Example 6 (Parametric relation):**
+.. example:: Parametric relation
 
-For Leibniz equality, we may declare:
+   For Leibniz equality, we may declare:
 
-.. coqtop:: in
+   .. coqtop:: in
 
-  Add Parametric Relation (A : Type) : A (@eq A)
-    [reflexivity proved by @refl_equal A]
-  ...
+     Add Parametric Relation (A : Type) : A (@eq A)
+       [reflexivity proved by @refl_equal A]
+     ...
 
 Some tactics (:tacn:`reflexivity`, :tacn:`symmetry`, :tacn:`transitivity`) work only on
 relations that respect the expected properties. The remaining tactics
-(`replace`, :tacn:`rewrite` and derived tactics such as :tacn:`autorewrite`) do not
+(:tacn:`replace`, :tacn:`rewrite` and derived tactics such as :tacn:`autorewrite`) do not
 require any properties over the relation. However, they are able to
 replace terms with related ones only in contexts that are syntactic
 compositions of parametric morphism instances declared with the
@@ -228,101 +224,102 @@ following command.
 
 .. cmd:: Add Parametric Morphism (x1 : T1) ... (xk : Tk) : (f t1 ... tn) with signature sig as @ident
 
-The command declares ``f`` as a parametric morphism of signature ``sig``. The
-identifier ``id`` gives a unique name to the morphism and it is used as
-the base name of the type class instance definition and as the name of
-the lemma that proves the well-definedness of the morphism. The
-parameters of the morphism as well as the signature may refer to the
-context of variables. The command asks the user to prove interactively
-that ``f`` respects the relations identified from the signature.
+   This command declares ``f`` as a parametric morphism of signature ``sig``. The
+   identifier :token:`ident` gives a unique name to the morphism and it is used as
+   the base name of the type class instance definition and as the name of
+   the lemma that proves the well-definedness of the morphism. The
+   parameters of the morphism as well as the signature may refer to the
+   context of variables. The command asks the user to prove interactively
+   that ``f`` respects the relations identified from the signature.
 
-**Example 7:**
+.. example::
 
-We start the example by assuming a small theory over
-homogeneous sets and we declare set equality as a parametric
-equivalence relation and union of two sets as a parametric morphism.
+   We start the example by assuming a small theory over
+   homogeneous sets and we declare set equality as a parametric
+   equivalence relation and union of two sets as a parametric morphism.
 
-.. coqtop:: in
+   .. coqtop:: in
 
-   Require Export Setoid.
-   Require Export Relation_Definitions.
+      Require Export Setoid.
+      Require Export Relation_Definitions.
 
-   Set Implicit Arguments.
+      Set Implicit Arguments.
 
-   Parameter set : Type -> Type.
-   Parameter empty : forall A, set A.
-   Parameter eq_set : forall A, set A -> set A -> Prop.
-   Parameter union : forall A, set A -> set A -> set A.
+      Parameter set : Type -> Type.
+      Parameter empty : forall A, set A.
+      Parameter eq_set : forall A, set A -> set A -> Prop.
+      Parameter union : forall A, set A -> set A -> set A.
 
-   Axiom eq_set_refl : forall A, reflexive _ (eq_set (A:=A)).
-   Axiom eq_set_sym : forall A, symmetric _ (eq_set (A:=A)).
-   Axiom eq_set_trans : forall A, transitive _ (eq_set (A:=A)).
-   Axiom empty_neutral : forall A (S : set A), eq_set (union S (empty A)) S.
+      Axiom eq_set_refl : forall A, reflexive _ (eq_set (A:=A)).
+      Axiom eq_set_sym : forall A, symmetric _ (eq_set (A:=A)).
+      Axiom eq_set_trans : forall A, transitive _ (eq_set (A:=A)).
+      Axiom empty_neutral : forall A (S : set A), eq_set (union S (empty A)) S.
 
-   Axiom union_compat : forall (A : Type),
-            forall x x' : set A, eq_set x x' ->
-            forall y y' : set A, eq_set y y' ->
-              eq_set (union x y) (union x' y').
+      Axiom union_compat :
+        forall (A : Type),
+          forall x x' : set A, eq_set x x' ->
+          forall y y' : set A, eq_set y y' ->
+            eq_set (union x y) (union x' y').
 
-   Add Parametric Relation A : (set A) (@eq_set A)
-            reflexivity proved by (eq_set_refl (A:=A))
-            symmetry proved by (eq_set_sym (A:=A))
-            transitivity proved by (eq_set_trans (A:=A))
-            as eq_set_rel.
+      Add Parametric Relation A : (set A) (@eq_set A)
+        reflexivity proved by (eq_set_refl (A:=A))
+        symmetry proved by (eq_set_sym (A:=A))
+        transitivity proved by (eq_set_trans (A:=A))
+        as eq_set_rel.
 
-   Add Parametric Morphism A : (@union A) with
-            signature (@eq_set A) ==> (@eq_set A) ==> (@eq_set A) as union_mor.
-   Proof.
-     exact (@union_compat A).
-   Qed.
+      Add Parametric Morphism A : (@union A)
+        with signature (@eq_set A) ==> (@eq_set A) ==> (@eq_set A) as union_mor.
+      Proof.
+        exact (@union_compat A).
+      Qed.
 
-It is possible to reduce the burden of specifying parameters using
-(maximally inserted) implicit arguments. If ``A`` is always set as
-maximally implicit in the previous example, one can write:
+   It is possible to reduce the burden of specifying parameters using
+   (maximally inserted) implicit arguments. If ``A`` is always set as
+   maximally implicit in the previous example, one can write:
 
-.. coqtop:: in
+   .. coqtop:: in
 
-   Add Parametric Relation A : (set A) eq_set
-     reflexivity proved by eq_set_refl
-     symmetry proved by eq_set_sym
-     transitivity proved by eq_set_trans
-     as eq_set_rel.
+      Add Parametric Relation A : (set A) eq_set
+        reflexivity proved by eq_set_refl
+        symmetry proved by eq_set_sym
+        transitivity proved by eq_set_trans
+        as eq_set_rel.
 
-.. coqtop:: in
+   .. coqtop:: in
 
-   Add Parametric Morphism A : (@union A) with
-     signature eq_set ==> eq_set ==> eq_set as union_mor.
+      Add Parametric Morphism A : (@union A) with
+        signature eq_set ==> eq_set ==> eq_set as union_mor.
 
-.. coqtop:: in
+   .. coqtop:: in
 
-   Proof. exact (@union_compat A). Qed.
+      Proof. exact (@union_compat A). Qed.
 
-We proceed now by proving a simple lemma performing a rewrite step and
-then applying reflexivity, as we would do working with Leibniz
-equality. Both tactic applications are accepted since the required
-properties over ``eq_set`` and ``union`` can be established from the two
-declarations above.
+   We proceed now by proving a simple lemma performing a rewrite step and
+   then applying reflexivity, as we would do working with Leibniz
+   equality. Both tactic applications are accepted since the required
+   properties over ``eq_set`` and ``union`` can be established from the two
+   declarations above.
 
-.. coqtop:: in
+   .. coqtop:: in
 
-   Goal forall (S : set nat),
-     eq_set (union (union S empty) S) (union S S).
+      Goal forall (S : set nat),
+        eq_set (union (union S empty) S) (union S S).
 
-.. coqtop:: in
+   .. coqtop:: in
 
-   Proof. intros. rewrite empty_neutral. reflexivity. Qed.
+      Proof. intros. rewrite empty_neutral. reflexivity. Qed.
 
-The tables of relations and morphisms are managed by the type class
-instance mechanism. The behavior on section close is to generalize the
-instances by the variables of the section (and possibly hypotheses
-used in the proofs of instance declarations) but not to export them in
-the rest of the development for proof search. One can use the
-cmd:`Existing Instance` command to do so outside the section, using the name of the
-declared morphism suffixed by ``_Morphism``, or use the ``Global`` modifier
-for the corresponding class instance declaration
-(see :ref:`First Class Setoids and Morphisms <first-class-setoids-and-morphisms>`) at
-definition time. When loading a compiled file or importing a module,
-all the declarations of this module will be loaded.
+   The tables of relations and morphisms are managed by the type class
+   instance mechanism. The behavior on section close is to generalize the
+   instances by the variables of the section (and possibly hypotheses
+   used in the proofs of instance declarations) but not to export them in
+   the rest of the development for proof search. One can use the
+   cmd:`Existing Instance` command to do so outside the section, using the name of the
+   declared morphism suffixed by ``_Morphism``, or use the ``Global`` modifier
+   for the corresponding class instance declaration
+   (see :ref:`First Class Setoids and Morphisms <first-class-setoids-and-morphisms>`) at
+   definition time. When loading a compiled file or importing a module,
+   all the declarations of this module will be loaded.
 
 
 Rewriting and non reflexive relations
@@ -332,12 +329,12 @@ To replace only one argument of an n-ary morphism it is necessary to
 prove that all the other arguments are related to themselves by the
 respective relation instances.
 
-**Example 8:**
+.. example::
 
-To replace ``(union S empty)`` with ``S`` in ``(union (union S empty) S) (union S S)``
-the rewrite tactic must exploit the monotony of ``union`` (axiom ``union_compat``
-in the previous example). Applying ``union_compat`` by hand we are left with the
-goal ``eq_set (union S S) (union S S)``.
+   To replace ``(union S empty)`` with ``S`` in ``(union (union S empty) S) (union S S)``
+   the rewrite tactic must exploit the monotony of ``union`` (axiom ``union_compat``
+   in the previous example). Applying ``union_compat`` by hand we are left with the
+   goal ``eq_set (union S S) (union S S)``.
 
 When the relations associated to some arguments are not reflexive, the
 tactic cannot automatically prove the reflexivity goals, that are left
@@ -350,13 +347,13 @@ comprises all the defined elements is declared as a morphism that
 respects ``R``. Every time a rewriting step is performed the user must
 prove that the argument of the morphism is defined.
 
-**Example 9:**
+.. example::
 
-Let ``eqO`` be ``fun x y => x = y /\ x <> 0`` (the
-smallest PER over non zero elements). Division can be declared as a
-morphism of signature ``eq ==> eq0 ==> eq``. Replacing ``x`` with
-``y`` in ``div x n = div y n`` opens an additional goal ``eq0 n n``
-which is equivalent to ``n = n /\ n <> 0``.
+   Let ``eqO`` be ``fun x y => x = y /\ x <> 0`` (the
+   smallest PER over non zero elements). Division can be declared as a
+   morphism of signature ``eq ==> eq0 ==> eq``. Replacing ``x`` with
+   ``y`` in ``div x n = div y n`` opens an additional goal ``eq0 n n``
+   which is equivalent to ``n = n /\ n <> 0``.
 
 
 Rewriting and non symmetric relations
@@ -371,44 +368,44 @@ a contravariant position. In a similar way, replacement in an
 hypothesis can be performed only if the replaced term occurs in a
 covariant position.
 
-**Example 10 (Covariance and contravariance):**
+.. example:: Covariance and contravariance
 
-Suppose that division over real numbers has been defined as a morphism of signature
-``Z.div : Z.lt ++> Z.lt --> Z.lt`` (i.e. ``Z.div`` is increasing in
-its first argument, but decreasing on the second one). Let ``<``
-denote ``Z.lt``. Under the hypothesis ``H : x < y`` we have
-``k < x / y -> k < x / x``, but not ``k < y / x -> k < x / x``. Dually,
-under the same hypothesis ``k < x / y -> k < y / y`` holds, but
-``k < y / x -> k < y / y`` does not. Thus, if the current goal is
-``k < x / x``, it is possible to replace only the second occurrence of
-``x`` (in contravariant position) with ``y`` since the obtained goal
-must imply the current one. On the contrary, if ``k < x / x`` is an
-hypothesis, it is possible to replace only the first occurrence of
-``x`` (in covariant position) with ``y`` since the current
-hypothesis must imply the obtained one.
+   Suppose that division over real numbers has been defined as a morphism of signature
+   ``Z.div : Z.lt ++> Z.lt --> Z.lt`` (i.e. ``Z.div`` is increasing in
+   its first argument, but decreasing on the second one). Let ``<``
+   denote ``Z.lt``. Under the hypothesis ``H : x < y`` we have
+   ``k < x / y -> k < x / x``, but not ``k < y / x -> k < x / x``. Dually,
+   under the same hypothesis ``k < x / y -> k < y / y`` holds, but
+   ``k < y / x -> k < y / y`` does not. Thus, if the current goal is
+   ``k < x / x``, it is possible to replace only the second occurrence of
+   ``x`` (in contravariant position) with ``y`` since the obtained goal
+   must imply the current one. On the contrary, if ``k < x / x`` is an
+   hypothesis, it is possible to replace only the first occurrence of
+   ``x`` (in covariant position) with ``y`` since the current
+   hypothesis must imply the obtained one.
 
-Contrary to the previous implementation, no specific error message
-will be raised when trying to replace a term that occurs in the wrong
-position. It will only fail because the rewriting constraints are not
-satisfiable. However it is possible to use the at modifier to specify
-which occurrences should be rewritten.
+   Contrary to the previous implementation, no specific error message
+   will be raised when trying to replace a term that occurs in the wrong
+   position. It will only fail because the rewriting constraints are not
+   satisfiable. However it is possible to use the at modifier to specify
+   which occurrences should be rewritten.
 
-As expected, composing morphisms together propagates the variance
-annotations by switching the variance every time a contravariant
-position is traversed.
+   As expected, composing morphisms together propagates the variance
+   annotations by switching the variance every time a contravariant
+   position is traversed.
 
-**Example 11:**
+.. example::
 
-Let us continue the previous example and let us consider
-the goal ``x / (x / x) < k``. The first and third occurrences of
-``x`` are in a contravariant position, while the second one is in
-covariant position. More in detail, the second occurrence of ``x``
-occurs covariantly in ``(x / x)`` (since division is covariant in
-its first argument), and thus contravariantly in ``x / (x / x)``
-(since division is contravariant in its second argument), and finally
-covariantly in ``x / (x / x) < k`` (since ``<``, as every
-transitive relation, is contravariant in its first argument with
-respect to the relation itself).
+   Let us continue the previous example and let us consider
+   the goal ``x / (x / x) < k``. The first and third occurrences of
+   ``x`` are in a contravariant position, while the second one is in
+   covariant position. More in detail, the second occurrence of ``x``
+   occurs covariantly in ``(x / x)`` (since division is covariant in
+   its first argument), and thus contravariantly in ``x / (x / x)``
+   (since division is contravariant in its second argument), and finally
+   covariantly in ``x / (x / x) < k`` (since ``<``, as every
+   transitive relation, is contravariant in its first argument with
+   respect to the relation itself).
 
 
 Rewriting in ambiguous setoid contexts
@@ -417,15 +414,14 @@ Rewriting in ambiguous setoid contexts
 One function can respect several different relations and thus it can
 be declared as a morphism having multiple signatures.
 
-**Example 12:**
+.. example::
 
-
-Union over homogeneous lists can be given all the
-following signatures: ``eq ==> eq ==> eq`` (``eq`` being the
-equality over ordered lists) ``set_eq ==> set_eq ==> set_eq``
-(``set_eq`` being the equality over unordered lists up to duplicates),
-``multiset_eq ==> multiset_eq ==> multiset_eq`` (``multiset_eq``
-being the equality over unordered lists).
+   Union over homogeneous lists can be given all the
+   following signatures: ``eq ==> eq ==> eq`` (``eq`` being the
+   equality over ordered lists) ``set_eq ==> set_eq ==> set_eq``
+   (``set_eq`` being the equality over unordered lists up to duplicates),
+   ``multiset_eq ==> multiset_eq ==> multiset_eq`` (``multiset_eq``
+   being the equality over unordered lists).
 
 To declare multiple signatures for a morphism, repeat the :cmd:`Add Morphism`
 command.
@@ -491,37 +487,37 @@ handled by encoding them as records. In the following example, the
 projections of the setoid relation and of the morphism function can be
 registered as parametric relations and morphisms.
 
-**Example 13 (First class setoids):**
+.. example:: First class setoids
 
-.. coqtop:: in
+   .. coqtop:: in
 
-   Require Import Relation_Definitions Setoid.
+      Require Import Relation_Definitions Setoid.
 
-   Record Setoid : Type :=
-   { car: Type;
-     eq: car -> car -> Prop;
-     refl: reflexive _ eq;
-     sym: symmetric _ eq;
-     trans: transitive _ eq
-   }.
+      Record Setoid : Type :=
+      { car: Type;
+        eq: car -> car -> Prop;
+        refl: reflexive _ eq;
+        sym: symmetric _ eq;
+        trans: transitive _ eq
+      }.
 
-   Add Parametric Relation (s : Setoid) : (@car s) (@eq s)
-     reflexivity proved by (refl s)
-     symmetry proved by (sym s)
-     transitivity proved by (trans s) as eq_rel.
+      Add Parametric Relation (s : Setoid) : (@car s) (@eq s)
+        reflexivity proved by (refl s)
+        symmetry proved by (sym s)
+        transitivity proved by (trans s) as eq_rel.
 
-   Record Morphism (S1 S2 : Setoid) : Type :=
-   { f: car S1 -> car S2;
-     compat: forall (x1 x2 : car S1), eq S1 x1 x2 -> eq S2 (f x1) (f x2)
-   }.
+      Record Morphism (S1 S2 : Setoid) : Type :=
+      { f: car S1 -> car S2;
+        compat: forall (x1 x2 : car S1), eq S1 x1 x2 -> eq S2 (f x1) (f x2)
+      }.
 
-   Add Parametric Morphism (S1 S2 : Setoid) (M : Morphism S1 S2) :
-     (@f S1 S2 M) with signature (@eq S1 ==> @eq S2) as apply_mor.
-   Proof. apply (compat S1 S2 M). Qed.
+      Add Parametric Morphism (S1 S2 : Setoid) (M : Morphism S1 S2) :
+        (@f S1 S2 M) with signature (@eq S1 ==> @eq S2) as apply_mor.
+      Proof. apply (compat S1 S2 M). Qed.
 
-   Lemma test : forall (S1 S2 : Setoid) (m : Morphism S1 S2)
-     (x y : car S1), eq S1 x y -> eq S2 (f _ _ m x) (f _ _ m y).
-   Proof. intros. rewrite H. reflexivity. Qed.
+      Lemma test : forall (S1 S2 : Setoid) (m : Morphism S1 S2)
+        (x y : car S1), eq S1 x y -> eq S2 (f _ _ m x) (f _ _ m y).
+      Proof. intros. rewrite H. reflexivity. Qed.
 
 .. _tactics-enabled-on-user-provided-relations:
 
@@ -539,28 +535,27 @@ pass additional arguments such as ``using relation``.
 .. tacv:: setoid_reflexivity
    :name: setoid_reflexivity
 
-.. tacv:: setoid_symmetry [in @ident]
+.. tacv:: setoid_symmetry {? in @ident}
    :name: setoid_symmetry
 
 .. tacv:: setoid_transitivity
    :name: setoid_transitivity
 
-.. tacv:: setoid_rewrite [@orientation] @term [at @occs] [in @ident]
+.. tacv:: setoid_rewrite {? @orientation} @term {? at @occs} {? in @ident}
    :name: setoid_rewrite
 
-.. tacv:: setoid_replace @term with @term [in @ident] [using relation @term] [by @tactic]
+.. tacv:: setoid_replace @term with @term {? in @ident} {? using relation @term} {? by @tactic}
    :name: setoid_replace
 
-
-The ``using relation`` arguments cannot be passed to the unprefixed form.
-The latter argument tells the tactic what parametric relation should
-be used to replace the first tactic argument with the second one. If
-omitted, it defaults to the ``DefaultRelation`` instance on the type of
-the objects. By default, it means the most recent ``Equivalence`` instance
-in the environment, but it can be customized by declaring
-new ``DefaultRelation`` instances. As Leibniz equality is a declared
-equivalence, it will fall back to it if no other relation is declared
-on a given type.
+   The ``using relation`` arguments cannot be passed to the unprefixed form.
+   The latter argument tells the tactic what parametric relation should
+   be used to replace the first tactic argument with the second one. If
+   omitted, it defaults to the ``DefaultRelation`` instance on the type of
+   the objects. By default, it means the most recent ``Equivalence`` instance
+   in the environment, but it can be customized by declaring
+   new ``DefaultRelation`` instances. As Leibniz equality is a declared
+   equivalence, it will fall back to it if no other relation is declared
+   on a given type.
 
 Every derived tactic that is based on the unprefixed forms of the
 tactics considered above will also work up to user defined relations.
@@ -575,39 +570,39 @@ Printing relations and morphisms
 
 .. cmd:: Print Instances
 
-This command can be used to show the list of currently
-registered ``Reflexive`` (using ``Print Instances Reflexive``), ``Symmetric``
-or ``Transitive`` relations, Equivalences, PreOrders, PERs, and Morphisms
-(implemented as ``Proper`` instances). When the rewriting tactics refuse
-to replace a term in a context because the latter is not a composition
-of morphisms, the :cmd:`Print Instances` command can be useful to understand
-what additional morphisms should be registered.
+   This command can be used to show the list of currently
+   registered ``Reflexive`` (using ``Print Instances Reflexive``), ``Symmetric``
+   or ``Transitive`` relations, Equivalences, PreOrders, PERs, and Morphisms
+   (implemented as ``Proper`` instances). When the rewriting tactics refuse
+   to replace a term in a context because the latter is not a composition
+   of morphisms, the :cmd:`Print Instances` command can be useful to understand
+   what additional morphisms should be registered.
 
 
 Deprecated syntax and backward incompatibilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Due to backward compatibility reasons, the following syntax for the
-declaration of setoids and morphisms is also accepted.
-
 .. cmd:: Add Setoid @A @Aeq @ST as @ident
 
-where ``Aeq`` is a congruence relation without parameters, ``A`` is its carrier
-and ``ST`` is an object of type (``Setoid_Theory A Aeq``) (i.e. a record
-packing together the reflexivity, symmetry and transitivity lemmas).
-Notice that the syntax is not completely backward compatible since the
-identifier was not required.
+   This command for declaring setoids and morphisms is also accepted due
+   to backward compatibility reasons.
+
+   Here ``Aeq`` is a congruence relation without parameters, ``A`` is its carrier
+   and ``ST`` is an object of type (``Setoid_Theory A Aeq``) (i.e. a record
+   packing together the reflexivity, symmetry and transitivity lemmas).
+   Notice that the syntax is not completely backward compatible since the
+   identifier was not required.
 
 .. cmd:: Add Morphism f : @ident
    :name: Add Morphism
 
-The latter command also is restricted to the declaration of morphisms
-without parameters. It is not fully backward compatible since the
-property the user is asked to prove is slightly different: for n-ary
-morphisms the hypotheses of the property are permuted; moreover, when
-the morphism returns a proposition, the property is now stated using a
-bi-implication in place of a simple implication. In practice, porting
-an old development to the new semantics is usually quite simple.
+   This command is restricted to the declaration of morphisms
+   without parameters. It is not fully backward compatible since the
+   property the user is asked to prove is slightly different: for n-ary
+   morphisms the hypotheses of the property are permuted; moreover, when
+   the morphism returns a proposition, the property is now stated using a
+   bi-implication in place of a simple implication. In practice, porting
+   an old development to the new semantics is usually quite simple.
 
 Notice that several limitations of the old implementation have been
 lifted. In particular, it is now possible to declare several relations
