@@ -4,11 +4,7 @@ Module a.
 
   Notation foo x := (let x' := x in ltac:(exact x')).
 
-  Fail Check foo _. (* Error:
-Cannot infer an internal placeholder of type "Type" in environment:
-
-x' := ?42 : ?41
-. *)
+  Check foo _.
 End a.
 
 Module b.
@@ -17,9 +13,5 @@ Module b.
 
   Check let x' := _ in ltac:(exact I). (* let x' := ?5 in I *)
   Check bar _. (* let x' := ?9 in let y := I in I *)
-  Fail Check foo _. (* Error:
-Cannot infer an internal placeholder of type "Type" in environment:
-
-x' := ?42 : ?41
-. *)
+  Check foo _.
 End b.

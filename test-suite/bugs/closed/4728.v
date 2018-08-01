@@ -69,4 +69,4 @@ Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope.
 Notation "{ old 'with' new }" := (ltac:({ old with new })) (only parsing).
 
 Check ltac:({ (1, 1) with {| snd := 2 |} }).
-Fail Check { (1, 1) with {| snd := 2 |} }. (* Error: Cannot infer this placeholder of type "Type"; should succeed *)
+Check { (1, 1) with {| snd := 2 |} }.

@@ -1,4 +1,4 @@
-Changes from 8.8.2 to 8.9+beta1
+Changes from 8.8.1 to 8.9+beta1
 ===============================
 
 Kernel
@@ -148,6 +148,9 @@ Notations
   and vector_scope both open with vector_scope on top, and expect `++` to
   refer to `app`.
   Solution: wrap `_ ++ _` in `(_ ++ _)%list` (or whichever scope you want). 
+
+- Notations expanding to expressions containing calls to `ltac:(tac)` now
+  accept that their arguments contain unresolved existential variables.
 
 Changes from 8.8.0 to 8.8.1
 ===========================
