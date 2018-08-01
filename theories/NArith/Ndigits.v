@@ -517,6 +517,23 @@ Definition N2Bv (n:N) : Bvector (N.size_nat n) :=
     | Npos p => P2Bv p
   end.
 
+Fixpoint P2Bv_sized (m : nat) (p : positive) : Bvector m :=
+  match m with
+  | O => []
+  | S m =>
+    match p with
+    | xI p => true  :: P2Bv_sized  m p
+    | xO p => false :: P2Bv_sized  m p
+    | xH   => true  :: Bvect_false m
+    end
+  end.
+
+Definition N2Bv_sized (m : nat) (n : N) : Bvector m :=
+  match n with
+  | N0     => Bvect_false m
+  | Npos p => P2Bv_sized  m p
+  end.
+
 Fixpoint Bv2N (n:nat)(bv:Bvector n) : N :=
   match bv with
     | Vector.nil _ => N0
@@ -669,4 +686,22 @@ refine (@Vector.rect2 _ _ _ _ _); simpl; intros; auto.
 rewrite H.
 destruct a, b, (Bv2N n v1), (Bv2N n v2);
  simpl; auto.
+Qed.
+
+Lemma N2Bv_sized_Nsize (n : N) :
+  N2Bv_sized (N.size_nat n) n = N2Bv n.
+Proof with simpl; auto.
+  destruct n...
+  induction p...
+  all: rewrite IHp...
+Qed.
+
+Lemma N2Bv_sized_Bv2N (n : nat) (v : Bvector n) :
+  N2Bv_sized n (Bv2N n v) = v.
+Proof with simpl; auto.
+  induction v...
+  destruct h;
+  unfold N2Bv_sized;
+  destruct (Bv2N n v) as [|[]];
+  rewrite <- IHv...
 Qed.

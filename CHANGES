@@ -57,6 +57,8 @@ Standard Library
   Solution: wrap `_ =? _` in `(_ =? _)%Z` (or whichever scope you
   want).
 
+- Added `Ndigits.N2Bv_sized`, and proved some lemmas about it.
+
 Tools
 
 - Coq_makefile lets one override or extend the following variables from
