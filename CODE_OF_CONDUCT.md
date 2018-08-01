@@ -60,6 +60,9 @@ affect a person's ability to participate within them.
   Consider what image your words will give to outsiders of the development
   team / the user community as a whole. Try to avoid references to private
   knowledge to be understandable by anyone.
+- **Coq online forums are only to discuss Coq-related subjects.**
+  Unrelated political discussions or long digressions are unwelcome,
+  even for illustration or comparison purposes.
 - **When we disagree, try to understand why.**
   Disagreements, both social and technical, happen all the time and Coq is no
   exception. It is important that we resolve disagreements and differing views
@@ -69,9 +72,6 @@ affect a person's ability to participate within them.
   holds a viewpoint doesn't mean that they're wrong. Don't forget that it is
   human to err and blaming each other doesn't get us anywhere. Instead, focus
   on helping to resolve issues and learning from mistakes.
-- **Coq online forums are only to discuss Coq-related subjects.**
-  Unrelated political discussions or long digressions are unwelcome,
-  even for illustration or comparison purposes.
 - **It is human to make errors, and please try not to take things personally.**
   Please do not answer aggressively to problematic behavior and simply
   signal the issue. If actions have been taken with you (e.g. bans or simple
