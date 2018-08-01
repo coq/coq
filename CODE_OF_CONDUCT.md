@@ -72,6 +72,17 @@ affect a person's ability to participate within them.
 - **Coq online forums are only to discuss Coq-related subjects.**
   Unrelated political discussions or long digressions are unwelcome,
   even for illustration or comparison purposes.
+- **It is human to make errors, and please try not to take things personally.**
+  Please do not answer aggressively to problematic behavior and simply
+  signal the issue. If actions have been taken with you (e.g. bans or simple
+  demands of apology, of rephrasing or keeping personal beliefs or troubles
+  private), please understand that they are not intended as aggression or
+  punishment ― even if you they feel harsh to you ― but as ways to enforce a
+  calm communication for the other participants and to give you the opportunity
+  to change your behavior. We understand you may feel hurt, or maybe you had a
+  bad day, so please take this opportunity to question yourself, cool down if
+  necessary and do not persist in the exact same behavior you have been
+  reported for.
 
 ## Enforcement ##
 
