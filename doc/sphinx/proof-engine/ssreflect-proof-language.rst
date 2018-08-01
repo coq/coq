@@ -4620,6 +4620,7 @@ bookkeeping steps.
 
 
 .. example::
+
    The following example use the ``~~`` prenex notation for boolean negation:
 
 
