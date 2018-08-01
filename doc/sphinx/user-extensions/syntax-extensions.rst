@@ -1457,7 +1457,7 @@ tactic language. Tactic notations obey the following syntax:
 
 .. [#no_associativity] Coq accepts notations declared as ``no
    associativity`` but the parser on which Coq is built, namely
-   Camlp4, currently does not implement ``no associativity`` and
+   Camlp5, currently does not implement ``no associativity`` and
    replaces it with ``left associativity``; hence it is the same for
    Coq: ``no associativity`` is in fact ``left associativity``, for
    the purposes of parsing
