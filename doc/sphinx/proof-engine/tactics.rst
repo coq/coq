@@ -106,26 +106,26 @@ Occurrence sets and occurrence clauses
 An occurrence clause is a modifier to some tactics that obeys the
 following syntax:
 
-.. _tactic_occurence_grammar:
-
   .. productionlist:: `sentence`
-     occurence_clause : in `goal_occurences`
-     goal_occurences : [ident [`at_occurences`], ... , ident [`at_occurences`] [|- [* [`at_occurences`]]]]
-                      :| * |- [* [`at_occurences`]]
+     occurrence_clause : in `goal_occurrences`
+     goal_occurrences : [`ident` [`at_occurrences`], ... , ident [`at_occurrences`] [|- [* [`at_occurrences`]]]]
+                      :| * |- [* [`at_occurrences`]]
                       :| *
      at_occurrences : at `occurrences`
-     occurences     : [-] `num` ... `num`
+     occurrences     : [-] `num` ... `num`
 
-The role of an occurrence clause is to select a set of occurrences of a term in
-a goal. In the first case, the :n:`@ident {? at {* num}}` parts indicate that
-occurrences have to be selected in the hypotheses named :n:`@ident`. If no
-numbers are given for hypothesis :n:`@ident`, then all the occurrences of `term`
-in the hypothesis are selected. If numbers are given, they refer to occurrences
-of `term` when the term is printed using option :opt:`Printing All`, counting
-from left to right. In particular, occurrences of `term` in implicit arguments
-(see :ref:`ImplicitArguments`) or coercions (see :ref:`Coercions`) are counted.
+The role of an occurrence clause is to select a set of occurrences of a term
+in a goal. In the first case, the :n:`@ident {? at {* num}}` parts indicate
+that occurrences have to be selected in the hypotheses named :token:`ident`.
+If no numbers are given for hypothesis :token:`ident`, then all the
+occurrences of :token:`term` in the hypothesis are selected. If numbers are
+given, they refer to occurrences of :token:`term` when the term is printed
+using option :opt:`Printing All`, counting from left to right. In particular,
+occurrences of :token:`term` in implicit arguments
+(see :ref:`ImplicitArguments`) or coercions (see :ref:`Coercions`) are
+counted.
 
-If a minus sign is given between at and the list of occurrences, it
+If a minus sign is given between ``at`` and the list of occurrences, it
 negates the condition so that the clause denotes all the occurrences
 except the ones explicitly mentioned after the minus sign.
 
@@ -139,18 +139,20 @@ of term are selected in every hypothesis.
 In the first and second case, if ``*`` is mentioned on the right of ``|-``, the
 occurrences of the conclusion of the goal have to be selected. If some numbers
 are given, then only the occurrences denoted by these numbers are selected. If
-no numbers are given, all occurrences of :n:`@term` in the goal are selected.
+no numbers are given, all occurrences of :token:`term` in the goal are selected.
 
 Finally, the last notation is an abbreviation for ``* |- *``. Note also
 that ``|-`` is optional in the first case when no ``*`` is given.
 
-Here are some tactics that understand occurrence clauses: :tacn:`set`, :tacn:`remember`
-, :tacn:`induction`, :tacn:`destruct`.
+Here are some tactics that understand occurrence clauses: :tacn:`set`,
+:tacn:`remember`, :tacn:`induction`, :tacn:`destruct`.
 
 
-See also: :ref:`Managingthelocalcontext`,
-:ref:`caseanalysisandinduction`,
-:ref:`printing_constructions_full`.
+.. seealso::
+
+   :ref:`Managingthelocalcontext`, :ref:`caseanalysisandinduction`,
+   :ref:`printing_constructions_full`.
+
 
 .. _applyingtheorems:
 
@@ -166,35 +168,39 @@ Applying theorems
    :ref:`Conversion-rules`).
 
    .. exn:: Not an exact proof.
+      :undocumented:
 
    .. tacv:: eexact @term.
       :name: eexact
 
-      This tactic behaves like exact but is able to handle terms and goals with
-      meta-variables.
+      This tactic behaves like :tacn:`exact` but is able to handle terms and
+      goals with existential variables.
 
 .. tacn:: assumption
    :name: assumption
 
-   This tactic looks in the local context for an hypothesis which type is equal to
-   the goal. If it is the case, the subgoal is proved. Otherwise, it fails.
+   This tactic looks in the local context for an hypothesis whose type is
+   convertible to the goal. If it is the case, the subgoal is proved.
+   Otherwise, it fails.
 
    .. exn:: No such assumption.
+      :undocumented:
 
    .. tacv:: eassumption
       :name: eassumption
 
-      This tactic behaves like assumption but is able to handle goals with
-      meta-variables.
+      This tactic behaves like :tacn:`assumption` but is able to handle
+      goals with existential variables.
 
 .. tacn:: refine @term
    :name: refine
 
    This tactic applies to any goal. It behaves like :tacn:`exact` with a big
-   difference: the user can leave some holes (denoted by ``_`` or ``(_:type)``) in
-   the term. :tacn:`refine` will generate as many subgoals as there are holes in
-   the term. The type of holes must be either synthesized by the system
-   or declared by an explicit cast like ``(_:nat->Prop)``. Any subgoal that
+   difference: the user can leave some holes (denoted by ``_``
+   or :n:`(_ : @type)`) in the term. :tacn:`refine` will generate as many
+   subgoals as there are holes in the term. The type of holes must be either
+   synthesized by the system or declared by an explicit cast
+   like ``(_ : nat->Prop)``. Any subgoal that
    occurs in other subgoals is automatically shelved, as if calling
    :tacn:`shelve_unifiable`. This low-level tactic can be
    useful to advanced users.
@@ -208,16 +214,13 @@ Applying theorems
          | Ok : bool -> Option.
 
          Definition get : forall x:Option, x <> Fail -> bool.
-
-         refine
-           (fun x:Option =>
-           match x return x <> Fail -> bool with
-           | Fail => _
-           | Ok b => fun _ => b
-           end).
-
-         intros; absurd (Fail = Fail); trivial.
-
+           refine
+             (fun x:Option =>
+               match x return x <> Fail -> bool with
+               | Fail => _
+               | Ok b => fun _ => b
+               end).
+           intros; absurd (Fail = Fail); trivial.
          Defined.
 
    .. exn:: Invalid argument.
@@ -257,29 +260,31 @@ Applying theorems
 .. tacn:: apply @term
    :name: apply
 
-   This tactic applies to any goal. The argument term is a term well-formed in the
-   local context. The tactic apply tries to match the current goal against the
-   conclusion of the type of term. If it succeeds, then the tactic returns as many
-   subgoals as the number of non-dependent premises of the type of term. If the
-   conclusion of the type of term does not match the goal *and* the conclusion is
-   an inductive type isomorphic to a tuple type, then each component of the tuple
-   is recursively matched to the goal in the left-to-right order.
+   This tactic applies to any goal. The argument term is a term well-formed in
+   the local context. The tactic :tacn:`apply` tries to match the current goal
+   against the conclusion of the type of :token:`term`. If it succeeds, then
+   the tactic returns as many subgoals as the number of non-dependent premises
+   of the type of term. If the conclusion of the type of :token:`term` does
+   not match the goal *and* the conclusion is an inductive type isomorphic to
+   a tuple type, then each component of the tuple is recursively matched to
+   the goal in the left-to-right order.
 
-   The tactic :tacn:`apply` relies on first-order unification with dependent types
-   unless the conclusion of the type of :token:`term` is of the form :g:`P (t`:sub:`1`
-   :g:`...` :g:`t`:sub:`n` :g:`)` with `P` to be instantiated. In the latter case, the behavior
-   depends on the form of the goal. If the goal is of the form
-   :g:`(fun x => Q) u`:sub:`1` :g:`...` :g:`u`:sub:`n` and the :g:`t`:sub:`i` and
-   :g:`u`:sub:`i` unifies, then :g:`P` is taken to be :g:`(fun x => Q)`. Otherwise,
-   :tacn:`apply` tries to define :g:`P` by abstracting over :g:`t`:sub:`1`  :g:`...`
-   :g:`t`:sub:`n` in the goal. See :tacn:`pattern` to transform the goal so that it
-   gets the form :g:`(fun x => Q) u`:sub:`1` :g:`...`  :g:`u`:sub:`n`.
+   The tactic :tacn:`apply` relies on first-order unification with dependent
+   types unless the conclusion of the type of :token:`term` is of the form
+   :n:`P (t__1 ... t__n)` with ``P`` to be instantiated. In the latter case,
+   the behavior depends on the form of the goal. If the goal is of the form
+   :n:`(fun x => Q) u__1 ... u__n` and the :n:`t__i` and :n:`u__i` unify,
+   then :g:`P` is taken to be :g:`(fun x => Q)`. Otherwise, :tacn:`apply`
+   tries to define :g:`P` by abstracting over :g:`t_1 ... t__n` in the goal.
+   See :tacn:`pattern` to transform the goal so that it
+   gets the form :n:`(fun x => Q) u__1 ... u__n`.
 
    .. exn:: Unable to unify @term with @term.
 
-      The apply tactic failed to match the conclusion of :token:`term` and the
-      current goal. You can help the apply tactic by transforming your goal with
-      the :tacn:`change` or :tacn:`pattern` tactics.
+      The :tacn:`apply` tactic failed to match the conclusion of :token:`term`
+      and the current goal. You can help the :tacn:`apply` tactic by
+      transforming your goal with the :tacn:`change` or :tacn:`pattern`
+      tactics.
 
    .. exn:: Unable to find an instance for the variables {+ @ident}.
 
@@ -295,6 +300,7 @@ Applying theorems
       according to the order of these dependent premises of the type of term.
 
       .. exn:: Not the right number of missing arguments.
+         :undocumented:
 
    .. tacv:: apply @term with @bindings_list
 
@@ -304,11 +310,9 @@ Applying theorems
 
    .. tacv:: apply {+, @term}
 
-      This is a shortcut for :n:`apply @term`:sub:`1`
-      :n:`; [.. | ... ; [ .. | apply @term`:sub:`n` :n:`] ... ]`,
-      i.e. for the successive applications of :token:`term`:sub:`i+1` on the last subgoal
-      generated by :n:`apply @term`:sub:`i` , starting from the application of
-      :token:`term`:sub:`1`.
+      This is a shortcut for :n:`apply @term__1; [.. | ... ; [ .. | apply @term__n] ... ]`,
+      i.e. for the successive applications of :n:`@term`:sub:`i+1` on the last subgoal
+      generated by :n:`apply @term__i` , starting from the application of :n:`@term__1`.
 
    .. tacv:: eapply @term
       :name: eapply
@@ -320,7 +324,6 @@ Applying theorems
       intended to be found later in the proof.
 
    .. tacv:: simple apply @term.
-      :name: simple apply
 
       This behaves like :tacn:`apply` but it reasons modulo conversion only on subterms
       that contain no variables to instantiate. For instance, the following example
@@ -342,8 +345,8 @@ Applying theorems
       does.
 
    .. tacv:: {? simple} apply {+, @term {? with @bindings_list}}
-   .. tacv:: {? simple} eapply {+, @term {? with @bindings_list}}
-      :name: simple eapply
+             {? simple} eapply {+, @term {? with @bindings_list}}
+      :name: simple apply; simple eapply
 
       This summarizes the different syntaxes for :tacn:`apply` and :tacn:`eapply`.
 
@@ -358,6 +361,7 @@ Applying theorems
       sequence ``cut B. 2:apply H.`` where ``cut`` is described below.
 
       .. warn:: When @term contains more than one non dependent product the tactic lapply only takes into account the first product.
+         :undocumented:
 
 .. example::
 
@@ -448,164 +452,151 @@ Applying theorems
 .. tacn:: apply @term in @ident
    :name: apply ... in
 
-   This tactic applies to any goal. The argument ``term`` is a term well-formed in
-   the local context and the argument :n:`@ident` is an hypothesis of the context.
-   The tactic ``apply term in ident`` tries to match the conclusion of the type
-   of :n:`@ident` against a non-dependent premise of the type of ``term``, trying
-   them from right to left. If it succeeds, the statement of hypothesis
-   :n:`@ident` is replaced by the conclusion of the type of ``term``. The tactic
-   also returns as many subgoals as the number of other non-dependent premises
-   in the type of ``term`` and of the non-dependent premises of the type of
-   :n:`@ident`. If the conclusion of the type of ``term`` does not match the goal
-   *and* the conclusion is an inductive type isomorphic to a tuple type, then
+   This tactic applies to any goal. The argument :token:`term` is a term
+   well-formed in the local context and the argument :token:`ident` is an
+   hypothesis of the context.
+   The tactic :n:`apply @term in @ident` tries to match the conclusion of the
+   type of :token:`ident` against a non-dependent premise of the type
+   of :token:`term`, trying them from right to left. If it succeeds, the
+   statement of hypothesis :token:`ident` is replaced by the conclusion of
+   the type of :token:`term`. The tactic also returns as many subgoals as the
+   number of other non-dependent premises in the type of :token:`term` and of
+   the non-dependent premises of the type of :token:`ident`. If the conclusion
+   of the type of :token:`term` does not match the goal *and* the conclusion
+   is an inductive type isomorphic to a tuple type, then
    the tuple is (recursively) decomposed and the first component of the tuple
    of which a non-dependent premise matches the conclusion of the type of
-   :n:`@ident`. Tuples are decomposed in a width-first left-to-right order (for
-   instance if the type of :g:`H1` is :g:`A <-> B` and the type of
-   :g:`H2` is :g:`A` then ``apply H1 in H2`` transforms the type of :g:`H2`
-   into :g:`B`). The tactic ``apply`` relies on first-order pattern-matching
+   :token:`ident`. Tuples are decomposed in a width-first left-to-right order
+   (for instance if the type of :g:`H1` is :g:`A <-> B` and the type of
+   :g:`H2` is :g:`A` then :g:`apply H1 in H2` transforms the type of :g:`H2`
+   into :g:`B`). The tactic :tacn:`apply` relies on first-order pattern-matching
    with dependent types.
 
-.. exn:: Statement without assumptions.
+   .. exn:: Statement without assumptions.
 
-   This happens if the type of ``term`` has no non dependent premise.
+      This happens if the type of :token:`term` has no non-dependent premise.
 
-.. exn:: Unable to apply.
+   .. exn:: Unable to apply.
 
-   This happens if the conclusion of :n:`@ident` does not match any of the non
-   dependent premises of the type of ``term``.
+      This happens if the conclusion of :token:`ident` does not match any of
+      the non-dependent premises of the type of :token:`term`.
 
-.. tacv:: apply {+, @term} in @ident
+   .. tacv:: apply {+, @term} in @ident
 
-   This applies each of ``term`` in sequence in :n:`@ident`.
+      This applies each :token:`term` in sequence in :token:`ident`.
 
-.. tacv:: apply {+, @term with @bindings_list} in @ident
+   .. tacv:: apply {+, @term with @bindings_list} in @ident
 
-   This does the same but uses the bindings in each :n:`(@id := @ val)` to
-   instantiate the parameters of the corresponding type of ``term`` (see
-   :ref:`bindings list <bindingslist>`).
+      This does the same but uses the bindings in each :n:`(@ident := @term)` to
+      instantiate the parameters of the corresponding type of :token:`term`
+      (see :ref:`bindings list <bindingslist>`).
 
-.. tacv:: eapply {+, @term with @bindings_list} in @ident
+   .. tacv:: eapply {+, @term {? with @bindings_list } } in @ident
 
-   This works as :tacn:`apply ... in` but turns unresolved bindings into
-   existential variables, if any, instead of failing.
+      This works as :tacn:`apply ... in` but turns unresolved bindings into
+      existential variables, if any, instead of failing.
 
-.. tacv:: apply {+, @term with @bindings_list} in @ident as @intro_pattern
-   :name: apply ... in ... as
+   .. tacv:: apply {+, @term {? with @bindings_list } } in @ident as @intro_pattern
+      :name: apply ... in ... as
 
-   This works as :tacn:`apply ... in` then applies the
-   :n:`@intro_pattern` to the hypothesis :n:`@ident`.
+      This works as :tacn:`apply ... in` then applies the :token:`intro_pattern`
+      to the hypothesis :token:`ident`.
 
-.. tacv:: eapply {+, @term with @bindings_list} in @ident as @intro_pattern.
+   .. tacv:: simple apply @term in @ident
 
-   This works as :tacn:`apply ... in ... as`  but using ``eapply``.
+      This behaves like :tacn:`apply ... in` but it reasons modulo conversion
+      only on subterms that contain no variables to instantiate. For instance,
+      if :g:`id := fun x:nat => x` and :g:`H: forall y, id y = y -> True` and
+      :g:`H0 : O = O` then :g:`simple apply H in H0` does not succeed because it
+      would require the conversion of :g:`id ?x` and :g:`O` where :g:`?x` is
+      an existential variable to instantiate.
+      Tactic :n:`simple apply @term in @ident` does not
+      either traverse tuples as :n:`apply @term in @ident` does.
 
-.. tacv:: simple apply @term in @ident
+   .. tacv:: {? simple} apply {+, @term {? with @bindings_list}} in @ident {? as @intro_pattern}
+             {? simple} eapply {+, @term {? with @bindings_list}} in @ident {? as @intro_pattern}
 
-   This behaves like :tacn:`apply ... in` but it reasons modulo conversion only
-   on subterms that contain no variables to instantiate. For instance, if
-   :g:`id := fun x:nat => x` and :g:`H: forall y, id y = y -> True` and
-   :g:`H0 : O = O` then ``simple apply H in H0`` does not succeed because it
-   would require the conversion of :g:`id ?1234` and :g:`O` where :g:`?1234` is
-   a variable to instantiate. Tactic :n:`simple apply @term in @ident` does not
-   either traverse tuples as :n:`apply @term in @ident` does.
-
-.. tacv:: {? simple} apply {+, @term {? with @bindings_list}} in @ident {? as @intro_pattern}
-.. tacv:: {? simple} eapply {+, @term {? with @bindings_list}} in @ident {? as @intro_pattern}
-
-   This summarizes the different syntactic variants of :n:`apply @term in @ident`
-   and :n:`eapply @term in @ident`.
+      This summarizes the different syntactic variants of :n:`apply @term in @ident`
+      and :n:`eapply @term in @ident`.
 
 .. tacn:: constructor @num
    :name: constructor
 
    This tactic applies to a goal such that its conclusion is an inductive
-   type (say :g:`I`). The argument :n:`@num` must be less or equal to the
-   numbers of constructor(s) of :g:`I`. Let :g:`c`:sub:`i` be the i-th
-   constructor of :g:`I`, then ``constructor i`` is equivalent to
-   ``intros; apply c``:sub:`i`.
+   type (say :g:`I`). The argument :token:`num` must be less or equal to the
+   numbers of constructor(s) of :g:`I`. Let :n:`c__i` be the i-th
+   constructor of :g:`I`, then :g:`constructor i` is equivalent to
+   :n:`intros; apply c__i`.
 
-.. exn:: Not an inductive product.
-.. exn:: Not enough constructors.
+   .. exn:: Not an inductive product.
+      :undocumented:
 
-.. tacv:: constructor
+   .. exn:: Not enough constructors.
+      :undocumented:
 
-   This tries :g:`constructor`:sub:`1` then :g:`constructor`:sub:`2`, ..., then
-   :g:`constructor`:sub:`n` where `n` is the number of constructors of the head
-   of the goal.
+   .. tacv:: constructor
 
-.. tacv:: constructor @num with @bindings_list
+      This tries :g:`constructor 1` then :g:`constructor 2`, ..., then
+      :g:`constructor n` where ``n`` is the number of constructors of the head
+      of the goal.
 
-   Let ``c`` be the i-th constructor of :g:`I`, then
-   :n:`constructor i with @bindings_list` is equivalent to
-   :n:`intros; apply c with @bindings_list`.
+   .. tacv:: constructor @num with @bindings_list
 
- .. warn::
-    The terms in the @bindings_list are checked in the context where constructor is executed and not in the context where @apply is executed (the introductions are not taken into account).
+      Let ``c`` be the i-th constructor of :g:`I`, then
+      :n:`constructor i with @bindings_list` is equivalent to
+      :n:`intros; apply c with @bindings_list`.
 
-.. tacv:: split
-   :name: split
+      .. warning::
 
-   This applies only if :g:`I` has a single constructor. It is then
-   equivalent to :n:`constructor 1.`. It is typically used in the case of a
-   conjunction :g:`A` :math:`\wedge` :g:`B`.
+         The terms in the :token:`bindings_list` are checked in the context
+         where constructor is executed and not in the context where :tacn:`apply`
+         is executed (the introductions are not taken into account).
 
-.. exn:: Not an inductive goal with 1 constructor
+   .. tacv:: split {? with @bindings_list }
+      :name: split
 
-.. tacv:: exists @val
-   :name: exists
+      This applies only if :g:`I` has a single constructor. It is then
+      equivalent to :n:`constructor 1 {? with @bindings_list }`. It is
+      typically used in the case of a conjunction :math:`A \wedge B`.
 
-   This applies only if :g:`I` has a single constructor. It is then equivalent
-   to :n:`intros; constructor 1 with @bindings_list.` It is typically used in
-   the case of an existential quantification :math:`\exists`:g:`x, P(x).`
+      .. tacv:: exists @bindings_list
+         :name: exists
 
-.. exn:: Not an inductive goal with 1 constructor.
+         This applies only if :g:`I` has a single constructor. It is then equivalent
+         to :n:`intros; constructor 1 with @bindings_list.` It is typically used in
+         the case of an existential quantification :math:`\exists x, P(x).`
 
-.. tacv:: exists @bindings_list
+      .. tacv:: exists {+, @bindings_list }
 
-   This iteratively applies :n:`exists @bindings_list`.
+         This iteratively applies :n:`exists @bindings_list`.
 
-.. tacv:: left
-   :name: left
+      .. exn:: Not an inductive goal with 1 constructor.
+         :undocumented:
 
-.. tacv:: right
-   :name: right
+   .. tacv:: left {? with @bindings_list }
+             right {? with @bindings_list }
+      :name: left; right
 
-   These tactics apply only if :g:`I` has two constructors, for
-   instance in the case of a disjunction :g:`A` :math:`\vee` :g:`B`.
-   Then, they are respectively equivalent to ``constructor 1`` and
-   ``constructor 2``.
+      These tactics apply only if :g:`I` has two constructors, for
+      instance in the case of a disjunction :math:`A \vee B`.
+      Then, they are respectively equivalent to
+      :n:`constructor 1 {? with @bindings_list }` and
+      :n:`constructor 2 {? with @bindings_list }`.
 
-.. exn:: Not an inductive goal with 2 constructors.
+      .. exn:: Not an inductive goal with 2 constructors.
 
-.. tacv:: left with @bindings_list
-.. tacv:: right with @bindings_list
-.. tacv:: split with @bindings_list
+   .. tacv:: econstructor
+             eexists
+             esplit
+             eleft
+             eright
+      :name: econstructor; eexists; esplit; eleft; eright
 
-   As soon as the inductive type has the right number of constructors, these
-   expressions are equivalent to calling :n:`constructor i with @bindings_list`
-   for the appropriate ``i``.
-
-.. tacv:: econstructor
-   :name: econstructor
-
-.. tacv:: eexists
-   :name: eexists
-
-.. tacv:: esplit
-   :name: esplit
-
-.. tacv:: eleft
-   :name: eleft
-
-.. tacv:: eright
-   :name: eright
-
-   These tactics and their variants behave like :tacn:`constructor`,
-   :tacn:`exists`, :tacn:`split`, :tacn:`left`, :tacn:`right` and their variants
-   but they introduce existential variables instead of failing when the
-   instantiation of a variable cannot be found (cf. :tacn:`eapply` and
-   :tacn:`apply`).
+      These tactics and their variants behave like :tacn:`constructor`,
+      :tacn:`exists`, :tacn:`split`, :tacn:`left`, :tacn:`right` and their
+      variants but they introduce existential variables instead of failing
+      when the instantiation of a variable cannot be found
+      (cf. :tacn:`eapply` and :tacn:`apply`).
 
 
 .. _managingthelocalcontext:
@@ -616,97 +607,103 @@ Managing the local context
 .. tacn:: intro
    :name: intro
 
-This tactic applies to a goal that is either a product or starts with a let
-binder. If the goal is a product, the tactic implements the "Lam" rule given in
-:ref:`Typing-rules` [1]_. If the goal starts with a let binder, then the
-tactic implements a mix of the "Let" and "Conv".
+   This tactic applies to a goal that is either a product or starts with a
+   let-binder. If the goal is a product, the tactic implements the "Lam" rule
+   given in :ref:`Typing-rules` [1]_. If the goal starts with a let-binder,
+   then the tactic implements a mix of the "Let" and "Conv".
 
-If the current goal is a dependent product :math:`\forall` :g:`x:T, U` (resp
-:g:`let x:=t in U`) then ``intro`` puts :g:`x:T` (resp :g:`x:=t`) in the local
-context. The new subgoal is :g:`U`.
+   If the current goal is a dependent product :g:`forall x:T, U`
+   (resp :g:`let x:=t in U`) then :tacn:`intro` puts :g:`x:T` (resp :g:`x:=t`)
+   in the local context. The new subgoal is :g:`U`.
 
-If the goal is a non-dependent product :g:`T`:math:`\rightarrow`:g:`U`, then it
-puts in the local context either :g:`Hn:T` (if :g:`T` is of type :g:`Set` or
-:g:`Prop`) or Xn:T (if the type of :g:`T` is :g:`Type`). The optional index
-``n`` is such that ``Hn`` or ``Xn`` is a fresh identifier. In both cases, the
-new subgoal is :g:`U`.
+   If the goal is a non-dependent product :math:`T \rightarrow U`, then it
+   puts in the local context either :g:`Hn:T` (if :g:`T` is of type :g:`Set`
+   or :g:`Prop`) or :g:`Xn:T` (if the type of :g:`T` is :g:`Type`).
+   The optional index ``n`` is such that ``Hn`` or ``Xn`` is a fresh
+   identifier. In both cases, the new subgoal is :g:`U`.
 
-If the goal is neither a product nor starting with a let definition,
-the tactic ``intro`` applies the tactic ``hnf`` until the tactic ``intro`` can
-be applied or the goal is not head-reducible.
+   If the goal is neither a product nor starting with a let definition,
+   the tactic :tacn:`intro` applies the tactic :tacn:`hnf` until the
+   tactic :tacn:`intro` can be applied or the goal is not head-reducible.
 
-.. exn:: No product even after head-reduction.
-.. exn:: @ident is already used.
+   .. exn:: No product even after head-reduction.
+      :undocumented:
 
-.. tacv:: intros
-   :name: intros
+   .. tacv:: intro @ident
 
-   This repeats ``intro`` until it meets the head-constant. It never
-   reduces head-constants and it never fails.
+      This applies :tacn:`intro` but forces :token:`ident` to be the name of
+      the introduced hypothesis.
 
-.. tacn:: intro @ident
+      .. exn:: @ident is already used.
+         :undocumented:
 
-   This applies ``intro`` but forces :n:`@ident` to be the name of the
-   introduced hypothesis.
+   .. note::
 
-.. exn:: Name @ident is already used.
+      If a name used by intro hides the base name of a global constant then
+      the latter can still be referred to by a qualified name
+      (see :ref:`Qualified-names`).
 
-.. note:: If a name used by intro hides the base name of a global
-   constant then the latter can still be referred to by a qualified name
-   (see :ref:`Qualified-names`).
-.. tacv:: intros {+ @ident}.
+   .. tacv:: intros
+      :name: intros
 
-   This is equivalent to the composed tactic
-   :n:`intro @ident; ... ; intro @ident`. More generally, the ``intros`` tactic
-   takes a pattern as argument in order to introduce names for components
-   of an inductive definition or to clear introduced hypotheses. This is
-   explained in :ref:`Managingthelocalcontext`.
+      This repeats :tacn:`intro` until it meets the head-constant. It never
+      reduces head-constants and it never fails.
 
-.. tacv:: intros until @ident
+   .. tacv:: intros {+ @ident}.
 
-   This repeats intro until it meets a premise of the goal having form
-   `(@ident:term)` and discharges the variable named `ident` of the current
-   goal.
+      This is equivalent to the composed tactic :n:`intro @ident; ... ; intro @ident`.
 
-.. exn:: No such hypothesis in current goal.
+   .. tacv:: intros until @ident
 
-.. tacv:: intros until @num
+      This repeats intro until it meets a premise of the goal having the
+      form :n:`(@ident : @type)` and discharges the variable
+      named :token:`ident` of the current goal.
 
-   This repeats intro until the `num`-th non-dependent product. For instance,
-   on the subgoal :g:`forall x y:nat, x=y -> y=x` the tactic
-   :n:`intros until 1` is equivalent to :n:`intros x y H`, as :g:`x=y -> y=x`
-   is the first non-dependent product. And on the subgoal :g:`forall x y
-   z:nat, x=y -> y=x` the tactic :n:`intros until 1` is equivalent to
-   :n:`intros x y z` as the product on :g:`z` can be rewritten as a
-   non-dependent product: :g:`forall x y:nat, nat -> x=y -> y=x`
+      .. exn:: No such hypothesis in current goal.
+         :undocumented:
 
-.. exn:: No such hypothesis in current goal.
+   .. tacv:: intros until @num
 
-   This happens when `num` is 0 or is greater than the number of non-dependent
-   products of the goal.
+      This repeats :tacn:`intro` until the :token:`num`\-th non-dependent
+      product.
 
-.. tacv:: intro after @ident
-.. tacv:: intro before @ident
-.. tacv:: intro at top
-.. tacv:: intro at bottom
+      .. example::
 
-   These tactics apply :n:`intro` and move the freshly introduced hypothesis
-   respectively after the hypothesis :n:`@ident`, before the hypothesis
-   :n:`@ident`, at the top of the local context, or at the bottom of the local
-   context. All hypotheses on which the new hypothesis depends are moved
-   too so as to respect the order of dependencies between hypotheses.
-   Note that :n:`intro at bottom` is a synonym for :n:`intro` with no argument.
+         On the subgoal :g:`forall x y : nat, x=y -> y=x` the
+         tactic :n:`intros until 1` is equivalent to :n:`intros x y H`,
+         as :g:`x=y -> y=x` is the first non-dependent product.
 
-.. exn:: No such hypothesis: @ident.
+         On the subgoal :g:`forall x y z:nat, x=y -> y=x` the
+         tactic :n:`intros until 1` is equivalent to :n:`intros x y z`
+         as the product on :g:`z` can be rewritten as a non-dependent
+         product: :g:`forall x y:nat, nat -> x=y -> y=x`.
 
-.. tacv:: intro @ident after @ident
-.. tacv:: intro @ident before @ident
-.. tacv:: intro @ident at top
-.. tacv:: intro @ident at bottom
+      .. exn:: No such hypothesis in current goal.
 
-   These tactics behave as previously but naming the introduced hypothesis
-   :n:`@ident`. It is equivalent to :n:`intro @ident` followed by the
-   appropriate call to ``move`` (see :tacn:`move ... after ...`).
+         This happens when :token:`num` is 0 or is greater than the number of
+         non-dependent products of the goal.
+
+   .. tacv:: intro {? @ident__1 } after @ident__2
+             intro {? @ident__1 } before @ident__2
+             intro {? @ident__1 } at top
+             intro {? @ident__1 } at bottom
+
+      These tactics apply :n:`intro {? @ident__1}` and move the freshly
+      introduced hypothesis respectively after the hypothesis :n:`@ident__2`,
+      before the hypothesis :n:`@ident__2`, at the top of the local context,
+      or at the bottom of the local context. All hypotheses on which the new
+      hypothesis depends are moved too so as to respect the order of
+      dependencies between hypotheses. It is equivalent to :n:`intro {? @ident__1 }`
+      followed by the appropriate call to :tacn:`move ... after ...`,
+      :tacn:`move ... before ...`, :tacn:`move ... at top`,
+      or :tacn:`move ... at bottom`.
+
+      .. note::
+
+         :n:`intro at bottom` is a synonym for :n:`intro` with no argument.
+
+      .. exn:: No such hypothesis: @ident.
+         :undocumented:
 
 .. tacn:: intros @intro_pattern_list
    :name: intros ...
@@ -755,24 +752,22 @@ be applied or the goal is not head-reducible.
    :n:`intros p` is defined inductively over the structure of the introduction
    pattern :n:`p`:
 
-Introduction on :n:`?` performs the introduction, and lets Coq choose a fresh
-name for the variable;
+   Introduction on :n:`?` performs the introduction, and lets Coq choose a fresh
+   name for the variable;
 
-Introduction on :n:`?ident` performs the introduction, and lets Coq choose a
-fresh name for the variable based on :n:`@ident`;
+   Introduction on :n:`?@ident` performs the introduction, and lets Coq choose a
+   fresh name for the variable based on :n:`@ident`;
 
-Introduction on :n:`@ident` behaves as described in :tacn:`intro`
+   Introduction on :n:`@ident` behaves as described in :tacn:`intro`
 
-Introduction over a disjunction of list of patterns
-:n:`[@intro_pattern_list | ... | @intro_pattern_list ]` expects the product
-to be over an inductive type whose number of constructors is `n` (or more
-generally over a type of conclusion an inductive type built from `n`
-constructors, e.g. :g:`C -> A\/B` with `n=2` since :g:`A\/B` has `2`
-constructors): it destructs the introduced hypothesis as :n:`destruct` (see
-:tacn:`destruct`) would and applies on each generated subgoal the
-corresponding tactic;
-
-.. tacv:: intros @intro_pattern_list
+   Introduction over a disjunction of list of patterns
+   :n:`[@intro_pattern_list | ... | @intro_pattern_list ]` expects the product
+   to be over an inductive type whose number of constructors is `n` (or more
+   generally over a type of conclusion an inductive type built from `n`
+   constructors, e.g. :g:`C -> A\/B` with `n=2` since :g:`A\/B` has `2`
+   constructors): it destructs the introduced hypothesis as :n:`destruct` (see
+   :tacn:`destruct`) would and applies on each generated subgoal the
+   corresponding tactic;
 
    The introduction patterns in :n:`@intro_pattern_list` are expected to consume
    no more than the number of arguments of the `i`-th constructor. If it
@@ -781,60 +776,59 @@ corresponding tactic;
    list of patterns :n:`[ | ] H` applied on goal :g:`forall x:nat, x=0 -> 0=x`
    behaves the same as the list of patterns :n:`[ | ? ] H`);
 
-Introduction over a conjunction of patterns :n:`({+, p})` expects
-the goal to be a product over an inductive type :g:`I` with a single
-constructor that itself has at least `n` arguments: It performs a case
-analysis over the hypothesis, as :n:`destruct` would, and applies the
-patterns :n:`{+ p}` to the arguments of the constructor of :g:`I` (observe
-that :n:`({+ p})` is an alternative notation for :n:`[{+ p}]`);
+   Introduction over a conjunction of patterns :n:`({+, p})` expects
+   the goal to be a product over an inductive type :g:`I` with a single
+   constructor that itself has at least `n` arguments: It performs a case
+   analysis over the hypothesis, as :n:`destruct` would, and applies the
+   patterns :n:`{+ p}` to the arguments of the constructor of :g:`I` (observe
+   that :n:`({+ p})` is an alternative notation for :n:`[{+ p}]`);
 
-Introduction via :n:`({+& p})` is a shortcut for introduction via
-:n:`(p,( ... ,( ..., p ) ... ))`; it expects the hypothesis to be a sequence of
-right-associative binary inductive constructors such as :g:`conj` or
-:g:`ex_intro`; for instance, an hypothesis with type
-:g:`A /\(exists x, B /\ C /\ D)` can be introduced via pattern
-:n:`(a & x & b & c & d)`;
+   Introduction via :n:`({+& p})` is a shortcut for introduction via
+   :n:`(p,( ... ,( ..., p ) ... ))`; it expects the hypothesis to be a sequence of
+   right-associative binary inductive constructors such as :g:`conj` or
+   :g:`ex_intro`; for instance, an hypothesis with type
+   :g:`A /\(exists x, B /\ C /\ D)` can be introduced via pattern
+   :n:`(a & x & b & c & d)`;
 
-If the product is over an equality type, then a pattern of the form
-:n:`[= {+ p}]` applies either :tacn:`injection` or :tacn:`discriminate`
-instead of :tacn:`destruct`; if :tacn:`injection` is applicable, the patterns
-:n:`{+, p}` are used on the hypotheses generated by :tacn:`injection`; if the
-number of patterns is smaller than the number of hypotheses generated, the
-pattern :n:`?` is used to complete the list;
+   If the product is over an equality type, then a pattern of the form
+   :n:`[= {+ p}]` applies either :tacn:`injection` or :tacn:`discriminate`
+   instead of :tacn:`destruct`; if :tacn:`injection` is applicable, the patterns
+   :n:`{+, p}` are used on the hypotheses generated by :tacn:`injection`; if the
+   number of patterns is smaller than the number of hypotheses generated, the
+   pattern :n:`?` is used to complete the list.
 
-.. tacv:: introduction over ->
-.. tacv:: introduction over <-
-
+   Introduction over ``->`` (respectively over ``<-``)
    expects the hypothesis to be an equality and the right-hand-side
    (respectively the left-hand-side) is replaced by the left-hand-side
    (respectively the right-hand-side) in the conclusion of the goal;
    the hypothesis itself is erased; if the term to substitute is a variable, it
-   is substituted also in the context of goal and the variable is removed too;
+   is substituted also in the context of goal and the variable is removed too.
 
-Introduction over a pattern :n:`p{+ %term}` first applies :n:`{+ term}`
-on the hypothesis to be introduced (as in :n:`apply {+, term}`) prior to the
-application of the introduction pattern :n:`p`;
+   Introduction over a pattern :n:`p{+ %term}` first applies :n:`{+ term}`
+   on the hypothesis to be introduced (as in :n:`apply {+, term}`) prior to the
+   application of the introduction pattern :n:`p`;
 
-Introduction on the wildcard depends on whether the product is dependent or not:
-in the non-dependent case, it erases the corresponding hypothesis (i.e. it
-behaves as an :tacn:`intro` followed by a :tacn:`clear`) while in the
-dependent case, it succeeds and erases the variable only if the wildcard is part
-of a more complex list of introduction patterns that also erases the hypotheses
-depending on this variable;
+   Introduction on the wildcard depends on whether the product is dependent or not:
+   in the non-dependent case, it erases the corresponding hypothesis (i.e. it
+   behaves as an :tacn:`intro` followed by a :tacn:`clear`) while in the
+   dependent case, it succeeds and erases the variable only if the wildcard is part
+   of a more complex list of introduction patterns that also erases the hypotheses
+   depending on this variable;
 
-Introduction over :n:`*` introduces all forthcoming quantified variables
-appearing in a row; introduction over :n:`**` introduces all forthcoming
-quantified variables or hypotheses until the goal is not any more a
-quantification or an implication.
+   Introduction over :n:`*` introduces all forthcoming quantified variables
+   appearing in a row; introduction over :n:`**` introduces all forthcoming
+   quantified variables or hypotheses until the goal is not any more a
+   quantification or an implication.
 
-.. example::
+   .. example::
 
-   .. coqtop:: all
+      .. coqtop:: reset all
 
-      Goal forall A B C:Prop, A \/ B /\ C -> (A -> C) -> C.
-      intros * [a | (_,c)] f.
+         Goal forall A B C:Prop, A \/ B /\ C -> (A -> C) -> C.
+           intros * [a | (_,c)] f.
 
 .. note::
+
    :n:`intros {+ p}` is not equivalent to :n:`intros p; ... ; intros p`
    for the following reason: If one of the :n:`p` is a wildcard pattern, it
    might succeed in the first case because the further hypotheses it
@@ -843,6 +837,7 @@ quantification or an implication.
    introduced (and a fortiori not yet erased).
 
 .. note::
+
    In :n:`intros @intro_pattern_list`, if the last introduction pattern
    is a disjunctive or conjunctive pattern
    :n:`[{+| @intro_pattern_list}]`, the completion of :n:`@intro_pattern_list`
@@ -861,38 +856,42 @@ quantification or an implication.
    the current goal. As a consequence, :n:`@ident` is no more displayed and no
    more usable in the proof development.
 
-.. exn:: No such hypothesis.
+   .. exn:: No such hypothesis.
+      :undocumented:
 
-.. exn:: @ident is used in the conclusion.
+   .. exn:: @ident is used in the conclusion.
+      :undocumented:
 
-.. exn:: @ident is used in the hypothesis @ident.
+   .. exn:: @ident is used in the hypothesis @ident.
+      :undocumented:
 
-.. tacv:: clear {+ @ident}
+   .. tacv:: clear {+ @ident}
 
-   This is equivalent to :n:`clear @ident. ... clear @ident.`
+      This is equivalent to :n:`clear @ident. ... clear @ident.`
 
-.. tacv:: clear - {+ @ident}
+   .. tacv:: clear - {+ @ident}
 
-   This tactic clears all the hypotheses except the ones depending in the
-   hypotheses named :n:`{+ @ident}` and in the goal.
+      This variant clears all the hypotheses except the ones depending in the
+      hypotheses named :n:`{+ @ident}` and in the goal.
 
-.. tacv:: clear
+   .. tacv:: clear
 
-   This tactic clears all the hypotheses except the ones the goal depends on.
+      This variants clears all the hypotheses except the ones the goal depends on.
 
-.. tacv:: clear dependent @ident
+   .. tacv:: clear dependent @ident
 
-   This clears the hypothesis :n:`@ident` and all the hypotheses that depend on
-   it.
+      This clears the hypothesis :token:`ident` and all the hypotheses that
+      depend on it.
 
-.. tacv:: clearbody {+ @ident}
-   :name: clearbody
+   .. tacv:: clearbody {+ @ident}
+      :name: clearbody
 
-   This tactic expects :n:`{+ @ident}` to be local definitions and clears their
-   respective bodies.
-   In other words, it turns the given definitions into assumptions.
+      This tactic expects :n:`{+ @ident}` to be local definitions and clears
+      their respective bodies.
+      In other words, it turns the given definitions into assumptions.
 
-.. exn:: @ident is not a local definition.
+      .. exn:: @ident is not a local definition.
+         :undocumented:
 
 .. tacn:: revert {+ @ident}
    :name: revert
@@ -901,172 +900,184 @@ quantification or an implication.
    (possibly defined) to the goal, if this respects dependencies. This tactic is
    the inverse of :tacn:`intro`.
 
-.. exn:: No such hypothesis.
+   .. exn:: No such hypothesis.
+      :undocumented:
 
-.. exn:: @ident is used in the hypothesis @ident.
+   .. exn:: @ident__1 is used in the hypothesis @ident__2.
+      :undocumented:
 
-.. tacn:: revert dependent @ident
+   .. tacv:: revert dependent @ident
+      :name: revert dependent
 
-   This moves to the goal the hypothesis :n:`@ident` and all the hypotheses that
-   depend on it.
+      This moves to the goal the hypothesis :token:`ident` and all the
+      hypotheses that depend on it.
 
-.. tacn:: move @ident after @ident
+.. tacn:: move @ident__1 after @ident__2
    :name: move ... after ...
 
-   This moves the hypothesis named :n:`@ident` in the local context after the
-   hypothesis named :n:`@ident`, where “after” is in reference to the
+   This moves the hypothesis named :n:`@ident__1` in the local context after
+   the hypothesis named :n:`@ident__2`, where “after” is in reference to the
    direction of the move. The proof term is not changed.
 
-   If :n:`@ident` comes before :n:`@ident` in the order of dependencies, then
-   all the hypotheses between :n:`@ident` and :n:`ident@` that (possibly
-   indirectly) depend on :n:`@ident` are moved too, and all of them are thus
-   moved after :n:`@ident` in the order of dependencies.
+   If :n:`@ident__1` comes before :n:`@ident__2` in the order of dependencies,
+   then all the hypotheses between :n:`@ident__1` and :n:`@ident__2` that
+   (possibly indirectly) depend on :n:`@ident__1` are moved too, and all of
+   them are thus moved after :n:`@ident__2` in the order of dependencies.
 
-   If :n:`@ident` comes after :n:`@ident` in the order of dependencies, then all
-   the hypotheses between :n:`@ident` and :n:`@ident` that (possibly indirectly)
-   occur in the type of :n:`@ident` are moved too, and all of them are thus
-   moved before :n:`@ident` in the order of dependencies.
+   If :n:`@ident__1` comes after :n:`@ident__2` in the order of dependencies,
+   then all the hypotheses between :n:`@ident__1` and :n:`@ident__2` that
+   (possibly indirectly) occur in the type of :n:`@ident__1` are moved too,
+   and all of them are thus moved before :n:`@ident__2` in the order of
+   dependencies.
 
-.. tacv:: move @ident before @ident
+   .. tacv:: move @ident__1 before @ident__2
+      :name: move ... before ...
 
-   This moves :n:`@ident` towards and just before the hypothesis named
-   :n:`@ident`.  As for :tacn:`move ... after ...`, dependencies over
-   :n:`@ident` (when :n:`@ident` comes before :n:`@ident` in the order of
-   dependencies) or in the type of :n:`@ident` (when :n:`@ident` comes after
-   :n:`@ident` in the order of dependencies) are moved too.
+      This moves :n:`@ident__1` towards and just before the hypothesis
+      named :n:`@ident__2`.  As for :tacn:`move ... after ...`, dependencies
+      over :n:`@ident__1` (when :n:`@ident__1` comes before :n:`@ident__2` in
+      the order of dependencies) or in the type of :n:`@ident__1`
+      (when :n:`@ident__1` comes after :n:`@ident__2` in the order of
+      dependencies) are moved too.
 
-.. tacv:: move @ident at top
+   .. tacv:: move @ident at top
+      :name: move ... at top
 
-   This moves :n:`@ident` at the top of the local context (at the beginning of
-   the context).
+      This moves :token:`ident` at the top of the local context (at the beginning
+      of the context).
 
-.. tacv:: move @ident at bottom
+   .. tacv:: move @ident at bottom
+      :name: move ... at bottom
 
-   This moves ident at the bottom of the local context (at the end of the
-   context).
+      This moves :token:`ident` at the bottom of the local context (at the end of
+      the context).
 
-.. exn:: No such hypothesis.
-.. exn:: Cannot move @ident after @ident : it occurs in the type of @ident.
-.. exn:: Cannot move @ident after @ident : it depends on @ident.
+   .. exn:: No such hypothesis.
+      :undocumented:
 
-.. example::
+   .. exn:: Cannot move @ident__1 after @ident__2: it occurs in the type of @ident__2.
+      :undocumented:
 
-   .. coqtop:: all
+   .. exn:: Cannot move @ident__1 after @ident__2: it depends on @ident__2.
+      :undocumented:
 
-      Goal forall x :nat, x = 0 -> forall z y:nat, y=y-> 0=x.
-      intros x H z y H0.
-      move x after H0.
-      Undo.
-      move x before H0.
-      Undo.
-      move H0 after H.
-      Undo.
-      move H0 before H.
+   .. example::
 
-.. tacn:: rename @ident into @ident
+      .. coqtop:: all
+
+         Goal forall x :nat, x = 0 -> forall z y:nat, y=y-> 0=x.
+           intros x H z y H0.
+           move x after H0.
+           Undo.
+           move x before H0.
+           Undo.
+           move H0 after H.
+           Undo.
+           move H0 before H.
+
+.. tacn:: rename @ident__1 into @ident__2
    :name: rename
 
-This renames hypothesis :n:`@ident` into :n:`@ident` in the current context.
-The name of the hypothesis in the proof-term, however, is left unchanged.
+   This renames hypothesis :n:`@ident__1` into :n:`@ident__2` in the current
+   context. The name of the hypothesis in the proof-term, however, is left
+   unchanged.
 
-.. tacv:: rename {+, @ident into  @ident}
+   .. tacv:: rename {+, @ident__i into @ident__j}
 
-   This renames the variables :n:`@ident` into :n:`@ident` in parallel. In
-   particular, the target identifiers may contain identifiers that exist in the
-   source context, as long as the latter are also renamed by the same tactic.
+      This renames the variables :n:`@ident__i` into :n:`@ident__j` in parallel.
+      In particular, the target identifiers may contain identifiers that exist in
+      the source context, as long as the latter are also renamed by the same
+      tactic.
 
-.. exn:: No such hypothesis.
-.. exn:: @ident is already used.
+   .. exn:: No such hypothesis.
+      :undocumented:
+
+   .. exn:: @ident is already used.
+      :undocumented:
 
 .. tacn:: set (@ident := @term)
    :name: set
 
-   This replaces :n:`@term` by :n:`@ident` in the conclusion of the current goal
-   and adds the new definition :g:`ident := term` to the local context.
+   This replaces :token:`term` by :token:`ident` in the conclusion of the
+   current goal and adds the new definition :n:`@ident := @term` to the
+   local context.
 
-   If :n:`@term` has holes (i.e. subexpressions of the form “`_`”), the tactic
-   first checks that all subterms matching the pattern are compatible before
-   doing the replacement using the leftmost subterm matching the pattern.
+   If :token:`term` has holes (i.e. subexpressions of the form “`_`”), the
+   tactic first checks that all subterms matching the pattern are compatible
+   before doing the replacement using the leftmost subterm matching the
+   pattern.
 
-.. exn:: The variable @ident is already defined.
+   .. exn:: The variable @ident is already defined.
+      :undocumented:
 
-.. tacv:: set (@ident := @term ) in @goal_occurrences
+   .. tacv:: set (@ident := @term) in @goal_occurrences
 
-   This notation allows  specifying which occurrences of :n:`@term` have to be
-   substituted in the context. The :n:`in @goal_occurrences` clause is an
-   occurrence clause whose syntax and behavior are described in
-   :ref:`goal occurences <occurencessets>`.
+      This notation allows specifying which occurrences of :token:`term` have
+      to be substituted in the context. The :n:`in @goal_occurrences` clause
+      is an occurrence clause whose syntax and behavior are described in
+      :ref:`goal occurences <occurencessets>`.
 
-.. tacv:: set (@ident {+ @binder} := @term )
+   .. tacv:: set (@ident @binders := @term) {? in @goal_occurrences }
 
-   This is equivalent to :n:`set (@ident := funbinder {+ binder} => @term )`.
+      This is equivalent to :n:`set (@ident := fun @binders => @term) {? in @goal_occurrences }`.
 
-.. tacv:: set term
-   This behaves as :n:`set(@ident := @term)` but :n:`@ident` is generated by
-   Coq. This variant also supports an occurrence clause.
+   .. tacv:: set @term {? in @goal_occurrences }
 
-.. tacv:: set (@ident {+ @binder} := @term) in @goal_occurrences
-.. tacv:: set @term in @goal_occurrences
+      This behaves as :n:`set (@ident := @term) {? in @goal_occurrences }`
+      but :token:`ident` is generated by Coq.
 
-   These are the general forms that combine the previous possibilities.
+   .. tacv:: eset (@ident {? @binders } := @term) {? in @goal_occurrences }
+             eset @term {? in @goal_occurrences }
+      :name: eset; _
 
-.. tacv:: eset (@ident {+ @binder} := @term ) in @goal_occurrences
-.. tacv:: eset @term in @goal_occurrences
-   :name: eset
+      While the different variants of :tacn:`set` expect that no existential
+      variables are generated by the tactic, :tacn:`eset` removes this
+      constraint. In practice, this is relevant only when :tacn:`eset` is
+      used as a synonym of :tacn:`epose`, i.e. when the :token:`term` does
+      not occur in the goal.
 
-   While the different variants of :tacn:`set` expect that no existential
-   variables are generated by the tactic, :n:`eset` removes this constraint. In
-   practice, this is relevant only when :n:`eset` is used as a synonym of
-   :tacn:`epose`, i.e. when the :`@term` does not occur in the goal.
-
-.. tacv:: remember @term as @ident
+.. tacn:: remember @term as @ident__1 {? eqn:@ident__2 }
    :name: remember
 
-   This behaves as :n:`set (@ident:= @term ) in *` and using a logical
+   This behaves as :n:`set (@ident__1 := @term) in *`, using a logical
    (Leibniz’s) equality instead of a local definition.
+   If :n:`@ident__2` is provided, it will be the name of the new equation.
 
-.. tacv:: remember @term as @ident eqn:@ident
+   .. tacv:: remember @term as @ident__1 {? eqn:@ident__2 } in @goal_occurrences
 
-   This behaves as :n:`remember @term as @ident`, except that the name of the
-   generated equality is also given.
+      This is a more general form of :tacn:`remember` that remembers the
+      occurrences of :token:`term` specified by an occurrence set.
 
-.. tacv:: remember @term as @ident in @goal_occurrences
+   .. tacv:: eremember @term as @ident__1 {? eqn:@ident__2 } {? in @goal_occurrences }
+      :name: eremember
 
-   This is a more general form of :n:`remember` that remembers the occurrences
-   of term specified by an occurrence set.
+      While the different variants of :tacn:`remember` expect that no
+      existential variables are generated by the tactic, :tacn:`eremember`
+      removes this constraint.
 
-.. tacv:: eremember @term as @ident
-.. tacv:: eremember @term as @ident in @goal_occurrences
-.. tacv:: eremember @term as @ident eqn:@ident
-   :name: eremember
-
-   While the different variants of :n:`remember` expect that no existential
-   variables are generated by the tactic, :n:`eremember` removes this constraint.
-
-.. tacv:: pose ( @ident := @term )
+.. tacn:: pose (@ident := @term)
    :name: pose
 
    This adds the local definition :n:`@ident := @term` to the current context
    without performing any replacement in the goal or in the hypotheses. It is
-   equivalent to :n:`set ( @ident := @term ) in |-`.
+   equivalent to :n:`set (@ident := @term) in |-`.
 
-.. tacv:: pose ( @ident {+ @binder} := @term )
+   .. tacv:: pose (@ident @binders := @term)
 
-   This is equivalent to :n:`pose (@ident := funbinder {+ binder} => @term)`.
+      This is equivalent to :n:`pose (@ident := fun @binders => @term)`.
 
-.. tacv:: pose @term
+   .. tacv:: pose @term
 
-   This behaves as :n:`pose (@ident := @term )` but :n:`@ident` is generated by
-   Coq.
+      This behaves as :n:`pose (@ident := @term)` but :token:`ident` is
+      generated by Coq.
 
-.. tacv:: epose (@ident := @term )
-.. tacv:: epose (@ident {+ @binder} := @term )
-.. tacv:: epose term
-   :name: epose
+   .. tacv:: epose (@ident {? @binders} := @term)
+   .. tacv:: epose term
+      :name: epose
 
-   While the different variants of :tacn:`pose` expect that no
-   existential variables are generated by the tactic, epose removes this
-   constraint.
+      While the different variants of :tacn:`pose` expect that no
+      existential variables are generated by the tactic, :tacn:`epose`
+      removes this constraint.
 
 .. tacn:: decompose [{+ @qualid}] @term
    :name: decompose
@@ -1074,25 +1085,30 @@ The name of the hypothesis in the proof-term, however, is left unchanged.
    This tactic recursively decomposes a complex proposition in order to
    obtain atomic ones.
 
-.. example::
+   .. example::
 
-   .. coqtop:: all
+      .. coqtop:: all
 
-      Goal forall A B C:Prop, A /\ B /\ C \/ B /\ C \/ C /\ A -> C.
-      intros A B C H; decompose [and or] H; assumption.
-      Qed.
+         Goal forall A B C:Prop, A /\ B /\ C \/ B /\ C \/ C /\ A -> C.
+           intros A B C H; decompose [and or] H.
+           all: assumption.
+         Qed.
 
-:n:`decompose` does not work on right-hand sides of implications or products.
+   .. note::
 
-.. tacv:: decompose sum @term
+      :tacn:`decompose` does not work on right-hand sides of implications or
+      products.
 
-   This decomposes sum types (like or).
+   .. tacv:: decompose sum @term
 
-.. tacv:: decompose record @term
+      This decomposes sum types (like :g:`or`).
 
-   This decomposes record types (inductive types with one constructor, like
-   "and" and "exists" and those defined with the Record macro, see
-   :ref:`record-types`).
+   .. tacv:: decompose record @term
+
+      This decomposes record types (inductive types with one constructor,
+      like :g:`and` and :g:`exists` and those defined with the :cmd:`Record`
+      command.
+
 
 .. _controllingtheproofflow:
 
