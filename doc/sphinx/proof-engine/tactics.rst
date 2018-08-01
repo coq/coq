@@ -974,7 +974,7 @@ Managing the local context
 
    .. example::
 
-      .. coqtop:: all
+      .. coqtop:: reset all
 
          Goal forall x :nat, x = 0 -> forall z y:nat, y=y-> 0=x.
            intros x H z y H0.
@@ -1098,7 +1098,7 @@ Managing the local context
 
    .. example::
 
-      .. coqtop:: all
+      .. coqtop:: reset all
 
          Goal forall A B C:Prop, A /\ B /\ C \/ B /\ C \/ C /\ A -> C.
            intros A B C H; decompose [and or] H.
