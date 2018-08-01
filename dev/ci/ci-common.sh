@@ -20,10 +20,6 @@ else
     then
         export CI_PULL_REQUEST="$TRAVIS_PULL_REQUEST"
         export CI_BRANCH="$TRAVIS_BRANCH"
-    elif [ -n "${CIRCLECI}" ];
-    then
-        export CI_PULL_REQUEST="$CIRCLE_PR_NUMBER"
-        export CI_BRANCH="$CIRCLE_BRANCH"
     else # assume local
         CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
         export CI_BRANCH
