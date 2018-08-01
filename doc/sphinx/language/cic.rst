@@ -723,6 +723,7 @@ each :math:`T` in :math:`(t:T)∈Γ_I` can be written as: :math:`∀Γ_P,∀Γ_{
 the sort of the inductive type t (not to be confused with :math:`\Sort` which is the set of sorts).
 
 .. example::
+
    The declaration for parameterized lists is:
 
    .. math::
@@ -741,6 +742,7 @@ the sort of the inductive type t (not to be confused with :math:`\Sort` which is
       | cons : A -> list A -> list A.
 
 .. example::
+
    The declaration for a mutual inductive definition of tree and forest
    is:
 
@@ -763,6 +765,7 @@ the sort of the inductive type t (not to be confused with :math:`\Sort` which is
       | consf : tree -> forest -> forest.
 
 .. example::
+
    The declaration for a mutual inductive definition of even and odd is:
 
    .. math::
@@ -811,6 +814,7 @@ contains an inductive declaration.
    E[Γ] ⊢ c : C
 
 .. example::
+
    Provided that our environment :math:`E` contains inductive definitions we showed before,
    these two inference rules above enable us to conclude that:
 
@@ -919,6 +923,7 @@ condition* for a constant :math:`X` in the following cases:
 
 
 .. example::
+
    For instance, if one considers the following variant of a tree type
    branching over the natural numbers:
 
@@ -985,6 +990,7 @@ the Type hierarchy.
 
 
 .. example::
+
    It is well known that the existential quantifier can be encoded as an
    inductive definition. The following declaration introduces the second-
    order existential quantifier :math:`∃ X.P(X)`.
@@ -1102,6 +1108,7 @@ sorts at each instance of a pattern-matching (see Section :ref:`Destructors`). A
 an example, let us consider the following definition:
 
 .. example::
+
    .. coqtop:: in
 
       Inductive option (A:Type) : Type :=
@@ -1118,6 +1125,7 @@ if :g:`option` is applied to a type in :math:`\Prop`, then, the result is not se
 if set in :math:`\Prop`.
 
 .. example::
+
    .. coqtop:: all
 
       Check (fun A:Set => option A).
@@ -1126,6 +1134,7 @@ if set in :math:`\Prop`.
 Here is another example.
 
 .. example::
+
    .. coqtop:: in
 
       Inductive prod (A B:Type) : Type := pair : A -> B -> prod A B.
@@ -1136,6 +1145,7 @@ none in :math:`\Type`, and in :math:`\Type` otherwise. In all cases, the three k
 eliminations schemes are allowed.
 
 .. example::
+
    .. coqtop:: all
 
       Check (fun A:Set => prod A).
@@ -1324,6 +1334,7 @@ the extraction mechanism. Assume :math:`A` and :math:`B` are two propositions, a
 logical disjunction :math:`A ∨ B` is defined inductively by:
 
 .. example::
+
    .. coqtop:: in
 
       Inductive or (A B:Prop) : Prop :=
@@ -1334,6 +1345,7 @@ The following definition which computes a boolean value by case over
 the proof of :g:`or A B` is not accepted:
 
 .. example::
+
    .. coqtop:: all
 
       Fail Definition choice (A B: Prop) (x:or A B) :=
@@ -1357,6 +1369,7 @@ property which are provably different, contradicting the proof-
 irrelevance property which is sometimes a useful axiom:
 
 .. example::
+
    .. coqtop:: all
 
       Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
@@ -1390,6 +1403,7 @@ be used for rewriting not only in logical propositions but also in any
 type.
 
 .. example::
+
    .. coqtop:: all
 
       Print eq_rec.
@@ -1421,6 +1435,7 @@ We write :math:`\{c\}^P` for :math:`\{c:C\}^P` with :math:`C` the type of :math:
 
 
 .. example::
+
    The following term in concrete syntax::
 
        match t as l return P' with
@@ -1485,6 +1500,7 @@ definition :math:`\ind{r}{Γ_I}{Γ_C}` with :math:`Γ_C = [c_1 :C_1 ;…;c_n :C_
 
 
 .. example::
+
    Below is a typing rule for the term shown in the previous example:
 
    .. inference:: list example
@@ -1634,6 +1650,7 @@ The following definitions are correct, we enter them using the :cmd:`Fixpoint`
 command and show the internal representation.
 
 .. example::
+
    .. coqtop:: all
 
       Fixpoint plus (n m:nat) {struct n} : nat :=
@@ -1810,6 +1827,7 @@ option ``-impredicative-set``. For example, using the ordinary `coqtop`
 command, the following is rejected,
 
 .. example::
+
    .. coqtop:: all
 
       Fail Definition id: Set := forall X:Set,X->X.

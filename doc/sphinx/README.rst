@@ -239,6 +239,9 @@ In addition to the objects above, the ``coqrst`` Sphinx plugin defines the follo
     http://docutils.sourceforge.net/docs/ref/rst/directives.html#generic-admonition
     for more details.
 
+    Optionally, any text immediately following the ``.. example::`` header is
+    used as the example's title.
+
     Example::
 
        .. example:: Adding a hint to a database

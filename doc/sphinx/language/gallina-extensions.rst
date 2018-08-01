@@ -70,7 +70,9 @@ generates a variant type definition with just one constructor:
 To build an object of type :n:`@ident`, one should provide the constructor
 :n:`@ident₀` with the appropriate number of terms filling the fields of the record.
 
-.. example:: Let us define the rational :math:`1/2`:
+.. example::
+
+   Let us define the rational :math:`1/2`:
 
     .. coqtop:: in
 
@@ -1849,15 +1851,15 @@ are named as expected.
 
 .. example:: (continued)
 
-.. coqtop:: all
+   .. coqtop:: all
 
-   Arguments p [s t] _ [u] _: rename.
+      Arguments p [s t] _ [u] _: rename.
 
-   Check (p r1 (u:=c)).
+      Check (p r1 (u:=c)).
 
-   Check (p (s:=a) (t:=b) r1 (u:=c) r2).
+      Check (p (s:=a) (t:=b) r1 (u:=c) r2).
 
-   Fail Arguments p [s t] _ [w] _ : assert.
+      Fail Arguments p [s t] _ [w] _ : assert.
 
 .. _displaying-implicit-args:
 

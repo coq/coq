@@ -571,6 +571,9 @@ class ExampleDirective(BaseAdmonition):
     http://docutils.sourceforge.net/docs/ref/rst/directives.html#generic-admonition
     for more details.
 
+    Optionally, any text immediately following the ``.. example::`` header is
+    used as the example's title.
+
     Example::
 
        .. example:: Adding a hint to a database
@@ -583,13 +586,14 @@ class ExampleDirective(BaseAdmonition):
     """
     node_class = nodes.admonition
     directive_name = "example"
+    optional_arguments = 1
 
     def run(self):
         # ‘BaseAdmonition’ checks whether ‘node_class’ is ‘nodes.admonition’,
         # and uses arguments[0] as the title in that case (in other cases, the
         # title is unset, and it is instead set in the HTML visitor).
-        assert not self.arguments # Arguments have been parsed as content
-        self.arguments = ['Example']
+        assert len(self.arguments) <= 1
+        self.arguments = [": ".join(['Example'] + self.arguments)]
         self.options['classes'] = ['admonition', 'note']
         return super().run()
 

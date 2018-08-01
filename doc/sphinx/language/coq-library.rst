@@ -848,6 +848,7 @@ Notation          Interpretation        Precedence  Associativity
 
 
 .. example::
+
   .. coqtop:: all reset
 
     Require Import ZArith.
@@ -887,6 +888,7 @@ Notation          Interpretation
 ===============   ===================
 
 .. example::
+
   .. coqtop:: all reset
 
     Require Import Reals.
@@ -906,6 +908,7 @@ tactics (see Chapter :ref:`tactics`), there are also:
   Proves that two real integer constants are different.
 
 .. example::
+
   .. coqtop:: all reset
 
     Require Import DiscrR.
@@ -919,6 +922,7 @@ tactics (see Chapter :ref:`tactics`), there are also:
   Allows unfolding the ``Rabs`` constant and splits corresponding conjunctions.
 
 .. example::
+
   .. coqtop:: all reset
 
     Require Import Reals.
@@ -933,6 +937,7 @@ tactics (see Chapter :ref:`tactics`), there are also:
   corresponding to the condition on each operand of the product.
 
 .. example::
+
   .. coqtop:: all reset
 
     Require Import Reals.

@@ -341,8 +341,7 @@ involves conditional rewritings and shows how to deal with them using
 the optional tactic of the ``Hint Rewrite`` command.
 
 
-.. example::
-   Ackermann function
+.. example:: Ackermann function
 
    .. coqtop:: in reset
 
@@ -370,8 +369,7 @@ the optional tactic of the ``Hint Rewrite`` command.
 
       autorewrite with base0 using try reflexivity.
 
-.. example::
-   MacCarthy function
+.. example:: MacCarthy function
 
    .. coqtop:: in reset
 

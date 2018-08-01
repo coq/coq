@@ -207,6 +207,7 @@ Applying theorems
    useful to advanced users.
 
    .. example::
+
       .. coqtop:: reset all
 
          Inductive Option : Set :=
@@ -366,6 +367,7 @@ Applying theorems
       .. warn:: When @term contains more than one non dependent product the tactic lapply only takes into account the first product.
 
 .. example::
+
    Assume we have a transitive relation ``R`` on ``nat``:
 
    .. coqtop:: reset in
@@ -837,6 +839,7 @@ quantified variables or hypotheses until the goal is not any more a
 quantification or an implication.
 
 .. example::
+
    .. coqtop:: all
 
       Goal forall A B C:Prop, A \/ B /\ C -> (A -> C) -> C.
@@ -958,6 +961,7 @@ quantification or an implication.
 .. exn:: Cannot move @ident after @ident : it depends on @ident.
 
 .. example::
+
    .. coqtop:: all
 
       Goal forall x :nat, x = 0 -> forall z y:nat, y=y-> 0=x.
@@ -1082,6 +1086,7 @@ The name of the hypothesis in the proof-term, however, is left unchanged.
    obtain atomic ones.
 
 .. example::
+
    .. coqtop:: all
 
       Goal forall A B C:Prop, A /\ B /\ C \/ B /\ C \/ C /\ A -> C.
@@ -1252,6 +1257,7 @@ Controlling the proof flow
    respect to some term.
 
 .. example::
+
    .. coqtop:: reset none
 
       Goal forall x y:nat, 0 <= x + y + y.
@@ -1567,6 +1573,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
      performs induction using this subterm.
 
 .. example::
+
    .. coqtop:: reset all
 
       Lemma induction_test : forall n:nat, n = n -> n <= n.
@@ -1636,6 +1643,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    those are generalized as well in the statement to prove.
 
    .. example::
+
       .. coqtop:: reset all
 
          Lemma comm x y : x + y = y + x.
@@ -1744,6 +1752,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    still get enough information in the proofs.
 
 .. example::
+
    .. coqtop:: reset all
 
       Lemma le_minus : forall n:nat, n < 1 -> n = 0.
@@ -1809,6 +1818,7 @@ and an explanation of the underlying technique.
    Note that this tactic is only available after a ``Require Import FunInd``.
 
 .. example::
+
    .. coqtop:: reset all
 
       Require Import FunInd.
@@ -2856,6 +2866,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
    + A constant can be marked to be never unfolded by ``cbn`` or ``simpl``:
 
      .. example::
+
         .. coqtop:: all
 
            Arguments minus n m : simpl never.
@@ -2868,6 +2879,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
      ``/`` symbol in the argument list of the :cmd:`Arguments` vernacular command.
 
      .. example::
+
         .. coqtop:: all
 
            Definition fcomp A B C f (g : A -> B) (x : A) : C := f (g x).
@@ -2880,6 +2892,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
      always unfolded.
 
      .. example::
+
         .. coqtop:: all
 
            Definition volatile := fun x : nat => x.
@@ -2890,6 +2903,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
      such arguments.
 
      .. example::
+
         .. coqtop:: all
 
            Arguments minus !n !m.
@@ -3180,6 +3194,7 @@ where :tacn:`auto` uses simple :tacn:`apply`). As a consequence, :tacn:`eauto`
 can solve such a goal:
 
 .. example::
+
    .. coqtop:: all
 
       Hint Resolve ex_intro.
@@ -3748,6 +3763,7 @@ The following goal can be proved by :tacn:`tauto` whereas :tacn:`auto` would
 fail:
 
 .. example::
+
    .. coqtop:: reset all
 
       Goal forall (x:nat) (P:nat -> Prop), x = 0 \/ P x -> x <> 0 -> P x.
@@ -3904,6 +3920,7 @@ equality must contain all the quantified variables in order for congruence to
 match against it.
 
 .. example::
+
    .. coqtop:: reset all
 
       Theorem T (A:Type) (f:A -> A) (g: A -> A -> A) a b: a=(f a) -> (g b (f a))=(f (f a)) -> (g a b)=(f (g b a)) -> (g a b)=a.
@@ -4315,6 +4332,7 @@ declare new field structures. All declared field structures can be
 printed with the Print Fields command.
 
 .. example::
+
    .. coqtop:: reset all
 
       Require Import Reals.
@@ -4426,6 +4444,7 @@ Simple tactic macros
 A simple example has more value than a long explanation:
 
 .. example::
+
    .. coqtop:: reset all
 
       Ltac Solve := simpl; intros; auto.
