@@ -312,5 +312,6 @@ Notation "h :: t" := (h :: t) (at level 60, right associativity)
 Notation "[ x ]" := (x :: []) : vector_scope.
 Notation "[ x ; y ; .. ; z ]" := (cons _ x _ (cons _ y _ .. (cons _ z _ (nil _)) ..)) : vector_scope.
 Notation "v [@ p ]" := (nth v p) (at level 1, format "v [@ p ]") : vector_scope.
+Infix "++" := append : vector_scope.
 Open Scope vector_scope.
 End VectorNotations.
