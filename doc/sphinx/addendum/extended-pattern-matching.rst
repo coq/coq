@@ -11,7 +11,7 @@ Extended pattern-matching
 
 This section describes the full form of pattern-matching in |Coq| terms.
 
-.. |rhs| replace:: right hand side
+.. |rhs| replace:: right hand sides
 
 Patterns
 --------
@@ -39,12 +39,12 @@ value. A pattern of the form :n:`pattern | pattern` is called disjunctive. A
 list of patterns separated with commas is also considered as a pattern
 and is called *multiple pattern*. However multiple patterns can only
 occur at the root of pattern-matching equations. Disjunctions of
-*multiple pattern* are allowed though.
+*multiple patterns* are allowed though.
 
 Since extended ``match`` expressions are compiled into the primitive ones,
-the expressiveness of the theory remains the same. Once the stage of
-parsing has finished only simple patterns remain. Re-nesting of
-pattern is performed at printing time. An easy way to see the result
+the expressiveness of the theory remains the same. Once parsing has finished
+only simple patterns remain. The original nesting of the ``match`` expressions
+is recovered at printing time. An easy way to see the result
 of the expansion is to toggle off the nesting performed at printing
 (use here :opt:`Printing Matching`), then by printing the term with :cmd:`Print`
 if the term is a constant, or using the command :cmd:`Check`.
@@ -150,12 +150,12 @@ second one and :g:`false` otherwise. We can write it as follows:
      | S n, S m => lef n m
      end.
 
-Note that the first and the second multiple pattern superpose because
+Note that the first and the second multiple pattern overlap because
 the couple of values ``O O`` matches both. Thus, what is the result of the
 function on those values? To eliminate ambiguity we use the *textual
-priority rule*: we consider patterns ordered from top to bottom, then
-a value is matched by the pattern at the ith row if and only if it is
-not matched by some pattern of a previous row. Thus in the example,O O
+priority rule:* we consider patterns to be ordered from top to bottom. A
+value is matched by the pattern at the ith row if and only if it is
+not matched by some pattern from a previous row. Thus in the example, ``O O``
 is matched by the first pattern, and so :g:`(lef O O)` yields true.
 
 Another way to write this function is:
@@ -201,7 +201,7 @@ instance, :g:`max` can be rewritten as follows:
      | 0, p | p, 0 => p
      end.
 
-Similarly, factorization of (non necessary multiple) patterns that
+Similarly, factorization of (not necessarily multiple) patterns that
 share the same variables is possible by using the notation :n:`{+| @pattern}`.
 Here is an example:
 
@@ -312,7 +312,7 @@ Matching objects of dependent types
 
 The previous examples illustrate pattern matching on objects of non-
 dependent types, but we can also use the expansion strategy to
-destructure objects of dependent type. Consider the type :g:`listn` of
+destructure objects of dependent types. Consider the type :g:`listn` of
 lists of a certain length:
 
 .. coqtop:: in reset
@@ -353,12 +353,12 @@ Dependent pattern matching
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The examples given so far do not need an explicit elimination
-predicate because all the |rhs| have the same type and the strategy
+predicate because all the |rhs| have the same type and Coq
 succeeds to synthesize it. Unfortunately when dealing with dependent
-patterns it often happens that we need to write cases where the type
+patterns it often happens that we need to write cases where the types
 of the |rhs| are different instances of the elimination predicate. The
-function concat for listn is an example where the branches have
-different type and we need to provide the elimination predicate:
+function :g:`concat` for :g:`listn` is an example where the branches have
+different types and we need to provide the elimination predicate:
 
 .. coqtop:: in
 
@@ -374,7 +374,7 @@ In general if :g:`m` has type :g:`(I q1 … qr t1 … ts)` where :g:`q1, …, qr
 are parameters, the elimination predicate should be of the form :g:`fun y1 … ys x : (I q1 … qr y1 … ys ) => Q`.
 
 In the concrete syntax, it should be written :
-``match m as x in (I _ … _ y1 … ys) return Q with … end``
+``match m as x in (I _ … _ y1 … ys) return Q with … end``.
 The variables which appear in the ``in`` and ``as`` clause are new and bounded
 in the property :g:`Q` in the return clause. The parameters of the
 inductive definitions should not be mentioned and are replaced by ``_``.
@@ -385,9 +385,9 @@ Multiple dependent pattern matching
 Recall that a list of patterns is also a pattern. So, when we
 destructure several terms at the same time and the branches have
 different types we need to provide the elimination predicate for this
-multiple pattern. It is done using the same scheme, each term may be
-associated to an as and in clause in order to introduce a dependent
-product.
+multiple pattern. It is done using the same scheme: each term may be
+associated to an ``as`` clause and an ``in`` clause in order to introduce
+a dependent product.
 
 For example, an equivalent definition for :g:`concat` (even though the
 matching on the second term is trivial) would have been:
@@ -414,7 +414,7 @@ length, by writing
      | consn n' a y, x => consn (n' + m) a (concat n' y m x)
      end.
 
-I have a copy of :g:`b` in type :g:`listn 0` resp :g:`listn (S n')`.
+we have a copy of :g:`b` in type :g:`listn 0` resp. :g:`listn (S n')`.
 
 .. _match-in-patterns:
 
@@ -425,7 +425,7 @@ If the type of the matched term is more precise than an inductive
 applied to variables, arguments of the inductive in the ``in`` branch can
 be more complicated patterns than a variable.
 
-Moreover, constructors whose type do not follow the same pattern will
+Moreover, constructors whose types do not follow the same pattern will
 become impossible branches. In an impossible branch, you can answer
 anything but False_rect unit has the advantage to be subterm of
 anything.
@@ -448,8 +448,8 @@ Using pattern matching to write proofs
 In all the previous examples the elimination predicate does not depend
 on the object(s) matched. But it may depend and the typical case is
 when we write a proof by induction or a function that yields an object
-of dependent type. An example of proof using match in given in Section
-8.2.3.
+of a dependent type. An example of a proof written using ``match`` is given
+in the description of the tactic :tacn:`refine`.
 
 For example, we can write the function :g:`buildlist` that given a natural
 number :g:`n` builds a list of length :g:`n` containing zeros as follows:
@@ -572,7 +572,7 @@ When does the expansion strategy fail?
 --------------------------------------
 
 The strategy works very like in ML languages when treating patterns of
-non-dependent type. But there are new cases of failure that are due to
+non-dependent types. But there are new cases of failure that are due to
 the presence of dependencies.
 
 The error messages of the current implementation may be sometimes
