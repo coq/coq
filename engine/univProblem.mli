@@ -53,3 +53,9 @@ val eq_constr_univs_infer_with :
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   UGraph.t -> 'a accumulator -> constr -> constr -> 'a -> 'a option
+
+(** Similar to {!eq_constr_univs_infer_with} but matches up to existential evar names *)
+val eq_constr_univs_evars_infer_with :
+  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
+  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
+  UGraph.t -> 'a accumulator -> constr -> constr -> 'a -> 'a option

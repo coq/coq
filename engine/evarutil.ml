@@ -910,3 +910,19 @@ let eq_constr_univs_test sigma1 sigma2 t u =
       (universes sigma2) fold t u sigma2
   in
   match ans with None -> false | Some _ -> true
+
+(** Like {!eq_constr_univs_test} but matches up to existential evar names *)
+let eq_constr_univs_evars_test sigma1 sigma2 t u =
+  (* code duplication with  eq_constr_univs_test sigma1 *)
+  let open Evd in
+  let fold cstr sigma =
+    try Some (add_universe_constraints sigma cstr)
+    with Univ.UniverseInconsistency _ | UniversesDiffer -> None
+  in
+  let ans =
+    UnivProblem.eq_constr_univs_evars_infer_with
+      (fun t -> kind_of_term_upto sigma1 t)
+      (fun u -> kind_of_term_upto sigma2 u)
+      (universes sigma2) fold t u sigma2
+  in
+  match ans with None -> false | Some _ -> true

@@ -200,6 +200,9 @@ val kind_of_term_upto : evar_map -> Constr.constr ->
     assumed to be an extention of those in [sigma1]. *)
 val eq_constr_univs_test : evar_map -> evar_map -> constr -> constr -> bool
 
+(** Like {!eq_constr_univs_test} but matches up to existential evar names *)
+val eq_constr_univs_evars_test : evar_map -> evar_map -> Constr.t -> Constr.t -> bool
+
 (** [compare_cumulative_instances cv_pb variance u1 u2 sigma] Returns
    [Inl sigma'] where [sigma'] is [sigma] augmented with universe
    constraints such that [u1 cv_pb? u2] according to [variance].

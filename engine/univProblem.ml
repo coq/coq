@@ -164,3 +164,38 @@ let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
   in
   let res = Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' 0 m n in
   if res then Some !cstrs else None
+
+
+(** Similar to {!eq_constr_univs_infer_with} but matches up to existential evar names *)
+let eq_constr_univs_evars_infer_with kind1 kind2 univs fold m n accu =
+  (* code duplication with [eq_constr_univs_infer_with] *)
+  let cstrs = ref accu in
+  let eq_universes _ _ = UGraph.check_eq_instances univs in
+  let eq_sorts s1 s2 =
+    if Sorts.equal s1 s2 then true
+    else
+      let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
+      match fold (Set.singleton (UEq (u1, u2))) !cstrs with
+      | None -> false
+      | Some accu -> cstrs := accu; true
+  in
+  let evarmatch = ref (Evar.Map.empty, Evar.Map.empty) in
+  let rec eq_constr' nargs m n =
+    let open Util in
+    match kind1 m, kind2 n with
+    | Constr.Evar (e1,l1), Constr.Evar (e2, l2) ->
+       (if Evar.equal e1 e2 then true
+        else
+          let (fm,rm) = !evarmatch in
+          let oe1' = try Some (Evar.Map.find e1 fm) with Not_found -> None in
+          let oe2' = try Some (Evar.Map.find e2 rm) with Not_found -> None in
+          match oe1', oe2' with
+          | None, None -> evarmatch := (Evar.Map.add e1 e2 fm, Evar.Map.add e2 e1 rm) ;  true
+          | Some e1', Some e2' -> Evar.equal e1' e2 && Evar.equal e2' e1
+          | _-> false
+       ) && Array.equal (eq_constr' nargs) l1 l2
+    | _,_  ->
+       Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' nargs m n
+  in
+  let res = eq_constr' 0 m n in
+  if res then Some !cstrs else None

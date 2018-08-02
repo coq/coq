@@ -162,6 +162,7 @@ module Hint_db :
     val cut : t -> hints_path
 
     val unfolds : t -> Id.Set.t * Cset.t
+    val compare: t -> t -> int
   end
 
 type hint_db = Hint_db.t
