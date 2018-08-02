@@ -25,7 +25,7 @@ In the interactive mode, also known as the |Coq| toplevel, the user can
 develop his theories and proofs step by step. The |Coq| toplevel is run
 by the command ``coqtop``.
 
-They are two different binary images of |Coq|: the byte-code one and the
+There are two different binary images of |Coq|: the byte-code one and the
 native-code one (if OCaml provides a native-code compiler for
 your platform, which is supposed in the following). By default,
 ``coqtop`` executes the native-code version; run ``coqtop.byte`` to get
@@ -43,10 +43,11 @@ The ``coqc`` command takes a name *file* as argument. Then it looks for a
 vernacular file named *file*.v, and tries to compile it into a
 *file*.vo file (See :ref:`compiled-files`).
 
-.. caution:: The name *file* should be a
-   regular |Coq| identifier, as defined in Section :ref:'TODO-1.1'. It should contain
-   only letters, digits or underscores (_). For instance, ``/bar/foo/toto.v`` is valid, but
-   ``/bar/foo/to-to.v`` is invalid.
+.. caution::
+
+   The name *file* should be a regular |Coq| identifier as defined in Section :ref:`lexical-conventions`.
+   It should contain only letters, digits or underscores (_). For example ``/bar/foo/toto.v`` is valid,
+   but ``/bar/foo/to-to.v`` is not.
 
 
 Customization at launch time
@@ -59,8 +60,8 @@ When |Coq| is launched, with either ``coqtop`` or ``coqc``, the
 resource file ``$XDG_CONFIG_HOME/coq/coqrc.xxx``, if it exists, will
 be implicitly prepended to any document read by Coq, whether it is an
 interactive session or a file to compile. Here, ``$XDG_CONFIG_HOME``
-is the configuration directory of the user (by default its home
-directory ``~/.config``) and ``xxx`` is the version number (e.g. 8.8). If
+is the configuration directory of the user (by default it's ``~/.config``)
+and ``xxx`` is the version number (e.g. 8.8). If
 this file is not found, then the file ``$XDG_CONFIG_HOME/coqrc`` is
 searched. If not found, it is the file ``~/.coqrc.xxx`` which is searched,
 and, if still not found, the file ``~/.coqrc``. If the latter is also
@@ -140,15 +141,15 @@ and ``coqtop``, unless stated otherwise:
 :-l *file*, -load-vernac-source *file*: Load and execute the |Coq|
   script from *file.v*.
 :-lv *file*, -load-vernac-source-verbose *file*: Load and execute the
-  |Coq| script from *file.v*. Output its content on the standard input as
+  |Coq| script from *file.v*. Write its contents to the standard output as
   it is executed.
 :-load-vernac-object dirpath: Load |Coq| compiled library dirpath. This
   is equivalent to runningRequire dirpath.
 :-require dirpath: Load |Coq| compiled library dirpath and import it.
   This is equivalent to running Require Import dirpath.
 :-batch: Exit just after argument parsing. Available for `coqtop` only.
-:-compile *file.v*: Compile file *file.v* into *file.vo*. This options
-  imply -batch (exit just after argument parsing). It is available only
+:-compile *file.v*: Compile file *file.v* into *file.vo*. This option
+  implies -batch (exit just after argument parsing). It is available only
   for `coqtop`, as this behavior is the purpose of `coqc`.
 :-compile-verbose *file.v*: Same as -compile but also output the
   content of *file.v* as it is compiled.
@@ -237,7 +238,7 @@ relative paths in object files ``-Q`` and ``-R`` have exactly the same meaning.
   unless explicitly required.
 :-o: At exit, print a summary about the context. List the names of all
   assumptions and variables (constants without body).
-:-silent: Do not write progress information in standard output.
+:-silent: Do not write progress information to the standard output.
 
 Environment variable ``$COQLIB`` can be set to override the location of
 the standard library.
@@ -253,7 +254,7 @@ set of reflexive transitive dependencies of set :math:`S`. Then:
   context without type-checking. Basic integrity checks (checksums) are
   nonetheless performed.
 
-As a rule of thumb, the -admit can be used to tell that some libraries
+As a rule of thumb, -admit can be used to tell Coq that some libraries
 have already been checked. So ``coqchk A B`` can be split in ``coqchk A`` &&
 ``coqchk B -admit A`` without type-checking any definition twice. Of
 course, the latter is slightly slower since it makes more disk access.
