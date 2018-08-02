@@ -20,7 +20,7 @@ rationals ``Require Import Lqa`` and reals ``Require Import Lra``.
 + :tacn:`nra` is an incomplete proof procedure for non-linear (real or
   rational) arithmetic;
 + :tacn:`psatz` ``D n`` where ``D`` is :math:`\mathbb{Z}` or :math:`\mathbb{Q}` or :math:`\mathbb{R}`, and
-  ``n`` is an optional integer limiting the proof search depth
+  ``n`` is an optional integer limiting the proof search depth,
   is an incomplete proof procedure for non-linear arithmetic.
   It is based on John Harrison’s HOL Light
   driver to the external prover `csdp` [#]_. Note that the `csdp` driver is
@@ -32,10 +32,10 @@ arithmetic expressions interpreted over a domain :math:`D` ∈ {ℤ, ℚ, ℝ}.
 The syntax of the formulas is the following:
 
  .. productionlist:: `F`
-   F : A ∣ P ∣ True ∣ False ∣ F 1 ∧ F 2 ∣ F 1 ∨ F 2 ∣ F 1 ↔ F 2 ∣ F 1 → F 2 ∣ ¬ F
-   A : p 1 = p 2 ∣ p 1 > p 2 ∣ p 1 < p 2 ∣ p 1 ≥ p 2 ∣ p 1 ≤ p 2
-   p : c ∣ x ∣ −p ∣ p 1 − p 2 ∣ p 1 + p 2 ∣ p 1 × p 2 ∣ p ^ n
-		     
+   F : A ∣ P ∣ True ∣ False ∣ F ∧ F ∣ F ∨ F ∣ F ↔ F ∣ F → F ∣ ¬ F
+   A : p = p ∣ p > p ∣ p < p ∣ p ≥ p ∣ p ≤ p
+   p : c ∣ x ∣ −p ∣ p − p ∣ p + p ∣ p × p ∣ p ^ n
+
 where :math:`c` is a numeric constant, :math:`x \in D` is a numeric variable, the
 operators :math:`−, +, ×` are respectively subtraction, addition, and product;
 :math:`p ^ n` is exponentiation by a constant :math:`n`, :math:`P` is an arbitrary proposition.
@@ -81,11 +81,11 @@ If :math:`-1` belongs to :math:`\mathit{Cone}(S)`, then the conjunction
 A proof based on this theorem is called a *positivstellensatz*
 refutation. The tactics work as follows. Formulas are normalized into
 conjunctive normal form :math:`\bigwedge_i C_i` where :math:`C_i` has the
-general form :math:`(\bigwedge_{j\in S_i} p_j \Join 0) \to \mathit{False})` and
+general form :math:`(\bigwedge_{j\in S_i} p_j \Join 0) \to \mathit{False}` and
 :math:`\Join \in \{>,\ge,=\}` for :math:`D\in \{\mathbb{Q},\mathbb{R}\}` and
 :math:`\Join \in \{\ge, =\}` for :math:`\mathbb{Z}`.
 
-For each conjunct :math:`C_i`, the tactic calls a oracle which searches for
+For each conjunct :math:`C_i`, the tactic calls an oracle which searches for
 :math:`-1` within the cone. Upon success, the oracle returns a *cone
 expression* that is normalized by the ring tactic (see :ref:`theringandfieldtacticfamilies`)
 and checked to be :math:`-1`.
