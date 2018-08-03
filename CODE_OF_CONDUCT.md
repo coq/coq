@@ -2,32 +2,27 @@
 
 The Coq development team and the user community are made up of a mixture of
 professionals and volunteers from all over the world.
-
-Diversity is a strength, but it can also lead to communication issues and
-unhappiness. To that end, we have a few ground rules that we ask people to
-adhere to. This code applies equally to core developers (who should lead by
-example), occasional contributors and those seeking help and guidance. The
-goal of these rules is that everyone feels safe when contributing to Coq or
+Diversity brings variety of perspectives that can be very valuable, but it can
+also lead to communication issues and unhappiness. Therefore, we have a few
+ground rules that we ask people to adhere to.
+These rules apply equally to core developers (who should lead by example),
+occasional contributors and those seeking help and guidance.
+Their goal is that everyone feels safe and welcome when contributing to Coq or
 interacting with others in Coq related forums.
 
-This isn't an exhaustive list of things that you can't do. Rather, take it in
-the spirit in which it's intended - a guide to make it easier to enrich all of
-us and the technical communities in which we participate.
-
-This code of conduct applies to all spaces managed by the Coq development team.
+These rules apply to all spaces managed by the Coq development team.
 This includes the GitHub repository, the mailing lists, the Gitter channel,
 physical events like Coq working groups and workshops, and any other forums
 created or managed by the development team which the community uses for
-communication. In addition, violations of this code outside these spaces may
+communication. In addition, violations of these rules outside these spaces may
 affect a person's ability to participate within them.
 
 - **Be friendly and patient.**
 - **Be welcoming.**
   We strive to be a community that welcomes and supports people of all
-  backgrounds and identities. This includes, but is not limited to members of
-  any origin, colour, status, educational level, sex, sexual orientation,
-  gender identity, age, political belief, religion, and mental and physical
-  ability.
+  backgrounds and identities. This includes, but is not limited to people of
+  any origin, color, status, educational level, gender identity, sexual
+  orientation, age, culture and beliefs, and mental and physical ability.
 - **Be considerate.**
   Your work will be used by other people, and you in turn will depend on the
   work of others. Any decision you take will affect users and colleagues, and
@@ -41,7 +36,6 @@ affect a person's ability to participate within them.
   and user community should be respectful when dealing with other members as
   well as with people outside the community.
 - **Be careful in the words that you choose.**
-  We are a community of professionals, and we conduct ourselves professionally.
   Be kind to others. Do not insult or put down other participants. Harassment
   and other exclusionary behavior aren't acceptable.
   * Violent language or threats or personal insults have no chance to
@@ -52,9 +46,8 @@ affect a person's ability to participate within them.
     don't know who might be listening. So be cautious and responsible
     with your words.
   * Discussions are online and recorded for posterity; we all have our
-    right for privacy and online gossiping as well as posting or
-    threatening to post other people's personally identifying
-    information is unwelcome.
+    right for privacy and online gossiping as well as posting or threatening to
+    post other people's personally identifying information is prohibited.
 - **Remember that what you write in a public online forum might be read by
   many people you don't know.**
   Consider what image your words will give to outsiders of the development
@@ -66,12 +59,9 @@ affect a person's ability to participate within them.
 - **When we disagree, try to understand why.**
   Disagreements, both social and technical, happen all the time and Coq is no
   exception. It is important that we resolve disagreements and differing views
-  constructively. Remember that we're different. There is strength in a varied
-  community, with people from a wide range of backgrounds. Different people
+  constructively. Remember that we are different. Different people
   have different perspectives on issues. Being unable to understand why someone
-  holds a viewpoint doesn't mean that they're wrong. Don't forget that it is
-  human to err and blaming each other doesn't get us anywhere. Instead, focus
-  on helping to resolve issues and learning from mistakes.
+  holds a viewpoint doesn't mean that they're wrong.
 - **It is human to make errors, and please try not to take things personally.**
   Please do not answer aggressively to problematic behavior and simply
   signal the issue. If actions have been taken with you (e.g. bans or simple
