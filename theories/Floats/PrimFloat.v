@@ -1,4 +1,3 @@
-Require Import ZArith.
 Require Import Int63.
 
 Primitive float := #float64_type.
@@ -41,15 +40,9 @@ Primitive of_int63 := #float64_of_int63.
 Primitive normfr_mantissa := #float64_normfr_mantissa.
 
 (* Exponent manipulation functions *)
-Definition shift := (1022 + 52)%int63.
+Definition shift := (2101)%int63. (* = 2*emax + prec *)
 Primitive frshiftexp := #float64_frshiftexp.
 Primitive ldshiftexp := #float64_ldshiftexp.
-
-Definition frexp f :=
-  let (m, se) := frshiftexp f in
-  (m, ([| se |] - [| shift |])%Z%int63).
-
-Definition ldexp f e := ldshiftexp f (of_Z e + shift).
 
 Local Open Scope float_scope.
 

@@ -332,6 +332,6 @@ Section FloatOps.
       else
         let d := (prec - Z.pos (digits2_pos mx))%Z in
         (S754_finite sx (shift_pos (Z.to_pos d) mx) (-prec), (ex+prec-d)%Z)
-    | _ => (f, emin%Z)
+    | _ => (f, (-2*emax-prec)%Z)
     end.
 End FloatOps.

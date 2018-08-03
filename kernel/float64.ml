@@ -51,7 +51,7 @@ let normfr_mantissa f =
   if f >= 0.5 && f < 1. then Uint63.of_float (ldexp f prec)
   else Uint63.zero
 
-let eshift = 1022 + 52 (* minimum negative exponent + binary precision *)
+let eshift = 2101 (* 2*emax + prec *)
 
 (* When calling frexp on a nan or an infinity, the returned value inside
    the exponent is undefined.
