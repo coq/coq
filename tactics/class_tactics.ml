@@ -78,7 +78,7 @@ let get_typeclasses_verbose () =
 let set_typeclasses_depth d = (:=) typeclasses_depth d
 let get_typeclasses_depth () = !typeclasses_depth
 
-let typeclasses_caching = ref false
+let typeclasses_caching = ref true
 let set_typeclasses_caching d = (:=) typeclasses_caching d
 let get_typeclasses_caching () = !typeclasses_caching
 
