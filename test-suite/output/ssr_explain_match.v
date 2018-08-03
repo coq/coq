@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Set Warnings "-ambiguous-paths".
+
 Require Import ssrmatching.
 Require Import ssreflect ssrbool TestSuite.ssr_mini_mathcomp.
 

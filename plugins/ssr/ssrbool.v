@@ -1196,7 +1196,11 @@ Definition in_mem T x mp := nosimpl pred_of_mem T mp x.
 
 Prenex Implicits mem.
 
+(* This coercion, together with [sort_of_simpl_pred], is ambiguous. However,
+[pred_of_mem] will be used as the coercion [mem_pred >-> pred_sort]. *)
+Set Warnings "-ambiguous-paths".
 Coercion pred_of_mem_pred T mp := [pred x : T | in_mem x mp].
+Set Warnings "ambiguous-paths".
 
 Definition eq_mem T p1 p2 := forall x : T, in_mem x p1 = in_mem x p2.
 Definition sub_mem T p1 p2 := forall x : T, in_mem x p1 -> in_mem x p2.

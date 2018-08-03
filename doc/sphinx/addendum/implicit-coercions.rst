@@ -138,7 +138,7 @@ Declaring Coercions
   .. exn:: @qualid does not respect the uniform inheritance condition.
   .. exn:: Found target class ... instead of ...
 
-  .. warn:: Ambiguous path.
+  .. warn:: Ambiguous paths: ...
 
      When the coercion :token:`qualid` is added to the inheritance graph,
      invalid coercion paths are ignored; they are signaled by a warning

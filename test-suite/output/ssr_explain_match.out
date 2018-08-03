@@ -1,34 +1,34 @@
-File "stdin", line 12, characters 0-61:
+File "stdin", line 14, characters 0-61:
 Warning: Notation "_ - _" was already used in scope nat_scope.
 [notation-overridden,parsing]
-File "stdin", line 12, characters 0-61:
+File "stdin", line 14, characters 0-61:
 Warning: Notation "_ <= _" was already used in scope nat_scope.
 [notation-overridden,parsing]
-File "stdin", line 12, characters 0-61:
+File "stdin", line 14, characters 0-61:
 Warning: Notation "_ < _" was already used in scope nat_scope.
 [notation-overridden,parsing]
-File "stdin", line 12, characters 0-61:
+File "stdin", line 14, characters 0-61:
 Warning: Notation "_ >= _" was already used in scope nat_scope.
 [notation-overridden,parsing]
-File "stdin", line 12, characters 0-61:
+File "stdin", line 14, characters 0-61:
 Warning: Notation "_ > _" was already used in scope nat_scope.
 [notation-overridden,parsing]
-File "stdin", line 12, characters 0-61:
+File "stdin", line 14, characters 0-61:
 Warning: Notation "_ <= _ <= _" was already used in scope nat_scope.
 [notation-overridden,parsing]
-File "stdin", line 12, characters 0-61:
+File "stdin", line 14, characters 0-61:
 Warning: Notation "_ < _ <= _" was already used in scope nat_scope.
 [notation-overridden,parsing]
-File "stdin", line 12, characters 0-61:
+File "stdin", line 14, characters 0-61:
 Warning: Notation "_ <= _ < _" was already used in scope nat_scope.
 [notation-overridden,parsing]
-File "stdin", line 12, characters 0-61:
+File "stdin", line 14, characters 0-61:
 Warning: Notation "_ < _ < _" was already used in scope nat_scope.
 [notation-overridden,parsing]
-File "stdin", line 12, characters 0-61:
+File "stdin", line 14, characters 0-61:
 Warning: Notation "_ + _" was already used in scope nat_scope.
 [notation-overridden,parsing]
-File "stdin", line 12, characters 0-61:
+File "stdin", line 14, characters 0-61:
 Warning: Notation "_ * _" was already used in scope nat_scope.
 [notation-overridden,parsing]
 BEGIN INSTANCES

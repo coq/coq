@@ -327,6 +327,9 @@ let message_ambig env sigma l =
   str"Ambiguous paths:" ++ spc () ++
   prlist_with_sep fnl (fun ijp -> print_path env sigma ijp) l
 
+let warn_ambiguous_paths env sigma =
+  CWarnings.create ~name:"ambiguous-paths" ~category:"typechecker" (message_ambig env sigma)
+
 (* add_coercion_in_graph : coe_index * cl_index * cl_index -> unit
                          coercion,source,target *)
 
@@ -380,8 +383,8 @@ let add_coercion_in_graph env sigma (ic,source,target) =
       old_inheritance_graph
   end;
   let is_ambig = match !ambig_paths with [] -> false | _ -> true in
-  if is_ambig && not !Flags.quiet then
-    Feedback.msg_info (message_ambig env sigma !ambig_paths)
+  if is_ambig then
+    warn_ambiguous_paths env sigma !ambig_paths
 
 type coercion = {
   coercion_type   : coe_typ;
