@@ -11,6 +11,7 @@
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
 Require Bool.
+
 Require Import ssreflect ssrfun.
 
 (******************************************************************************)
@@ -344,7 +345,8 @@ Reserved Notation "[ 'rel' x y => E ]" (at level 0, x, y at level 8, format
 Reserved Notation "[ 'rel' x y : T => E ]" (at level 0, x, y at level 8, format
   "'[hv' [ 'rel'  x  y :  T  => '/ '  E ] ']'").
 
-(* Shorter delimiter *)
+(* Shorter delimiter (overrides the standard library's delimiter, "bool"). *)
+Undelimit Scope bool_scope.
 Delimit Scope bool_scope with B.
 Open Scope bool_scope.
 

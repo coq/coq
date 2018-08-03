@@ -987,6 +987,8 @@ interpreted in the scope stack extended with the scope bound tokey.
    To bind a delimiting key to a scope, use the command
    :n:`Delimit Scope @scope with @ident`
 
+   .. warn:: Overwriting previous delimiting key @ident in scope @scope
+
 .. cmd:: Undelimit Scope @scope
 
    To remove a delimiting key of a scope, use the command

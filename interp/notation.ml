@@ -191,6 +191,11 @@ let make_current_scopes (tmp_scope,scopes) =
 (**********************************************************************)
 (* Delimiters *)
 
+let warn_overwrite_scope scope =
+  CWarnings.create ~name:"overwrite-delimit-key" ~category:"parsing"
+    (fun oldkey -> str "Overwriting previous delimiting key " ++ str oldkey ++
+                   str " in scope " ++ str scope)
+
 let declare_delimiters scope key =
   let sc = find_scope scope in
   let newsc = { sc with delimiters = Some key } in
@@ -199,9 +204,8 @@ let declare_delimiters scope key =
     | Some oldkey when String.equal oldkey key -> ()
     | Some oldkey ->
         (** FIXME: implement multikey scopes? *)
-	Flags.if_verbose Feedback.msg_info
-	  (str "Overwriting previous delimiting key " ++ str oldkey ++ str " in scope " ++ str scope);
-	scope_map := String.Map.add scope newsc !scope_map
+      warn_overwrite_scope scope oldkey;
+      scope_map := String.Map.add scope newsc !scope_map
   end;
   try
     let oldscope = String.Map.find key !delimiters_map in
