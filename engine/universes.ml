@@ -90,7 +90,6 @@ let subst_univs_universe_constraints = UnivProblem.Set.subst_univs
 let enforce_eq_instances_univs = UnivProblem.enforce_eq_instances_univs
 let to_constraints = UnivProblem.to_constraints
 let eq_constr_univs_infer_with = UnivProblem.eq_constr_univs_infer_with
-let eq_constr_univs_evars_infer_with = UnivProblem.eq_constr_univs_evars_infer_with
 
 (** UnivMinim *)
 module UPairSet = UnivMinim.UPairSet
