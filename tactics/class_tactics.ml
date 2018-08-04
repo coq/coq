@@ -657,8 +657,7 @@ module Search = struct
                               let compare = tc_cache_entry_cmp
                             end)
 
-  let typeclass_cache = Summary.ref ~name:"typeclass_cache"
-                          TypeclassCache.empty
+  let typeclass_cache = Summary.ref ~name:"typeclass_cache" TypeclassCache.empty
 
   (** Local hints *)
   let autogoal_cache = Summary.ref ~name:"autogoal_cache"
