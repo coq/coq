@@ -1089,7 +1089,7 @@ constructions.
         arguments, and this choice influences the reduction of the fixpoint.
         Hence an explicit annotation must be used if the leftmost decreasing
         argument is not the desired one. Writing explicit annotations can also
-        speed up type-checking of large mutual fixpoints.
+        speed up type checking of large mutual fixpoints.
 
       + In order to keep the strong normalization property, the fixed point
         reduction will only be performed when the argument in position of the

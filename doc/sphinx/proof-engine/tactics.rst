@@ -179,7 +179,7 @@ Applying theorems
 .. tacn:: assumption
    :name: assumption
 
-   This tactic looks in the local context for an hypothesis whose type is
+   This tactic looks in the local context for a hypothesis whose type is
    convertible to the goal. If it is the case, the subgoal is proved.
    Otherwise, it fails.
 
@@ -248,13 +248,13 @@ Applying theorems
    .. tacv:: notypeclasses refine @term
       :name: notypeclasses refine
 
-      This tactic behaves like :tacn:`refine` except it performs typechecking without
+      This tactic behaves like :tacn:`refine` except it performs type checking without
       resolution of typeclasses.
 
    .. tacv:: simple notypeclasses refine @term
       :name: simple notypeclasses refine
 
-      This tactic behaves like :tacn:`simple refine` except it performs typechecking
+      This tactic behaves like :tacn:`simple refine` except it performs type checking
       without resolution of typeclasses.
 
 .. tacn:: apply @term
@@ -786,7 +786,7 @@ Managing the local context
    Introduction via :n:`({+& p})` is a shortcut for introduction via
    :n:`(p,( ... ,( ..., p ) ... ))`; it expects the hypothesis to be a sequence of
    right-associative binary inductive constructors such as :g:`conj` or
-   :g:`ex_intro`; for instance, an hypothesis with type
+   :g:`ex_intro`; for instance, a hypothesis with type
    :g:`A /\(exists x, B /\ C /\ D)` can be introduced via pattern
    :n:`(a & x & b & c & d)`;
 
@@ -1373,7 +1373,7 @@ goals cannot be closed with :g:`Qed` but only with :g:`Admitted`.
    :name: contradiction
 
    This tactic applies to any goal. The contradiction tactic attempts to
-   find in the current context (after all intros) an hypothesis that is
+   find in the current context (after all intros) a hypothesis that is
    equivalent to an empty inductive type (e.g. :g:`False`), to the negation of
    a singleton inductive type (e.g. :g:`True` or :g:`x=x`), or two contradictory
    hypotheses.
@@ -1429,7 +1429,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       anymore dependent in the goal after application of :tacn:`destruct`, it
       is erased (to avoid erasure, use parentheses, as in :n:`destruct (@ident)`).
 
-      If :token:`ident` is an hypothesis of the context, and :token:`ident`
+      If :token:`ident` is a hypothesis of the context, and :token:`ident`
       is not anymore dependent in the goal after application
       of :tacn:`destruct`, it is erased (to avoid erasure, use parentheses, as
       in :n:`destruct (@ident)`).
@@ -1466,7 +1466,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       enough names, :tacn:`destruct` invents names for the remaining variables
       to introduce. More generally, the :n:`pij` can be any introduction
       pattern (see :tacn:`intros`). This provides a concise notation for
-      chaining destruction of an hypothesis.
+      chaining destruction of a hypothesis.
 
    .. tacv:: destruct @term eqn:@naming_intro_pattern
       :name: destruct ... eqn:
@@ -1575,7 +1575,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
         For simple induction on a numeral, use syntax induction (num)
         (not very interesting anyway).
 
-   + In case term is an hypothesis :n:`@ident` of the context, and :n:`@ident`
+   + In case term is a hypothesis :n:`@ident` of the context, and :n:`@ident`
      is not anymore dependent in the goal after application of :n:`induction`,
      it is erased (to avoid erasure, use parentheses, as in
      :n:`induction (@ident)`).
@@ -1867,9 +1867,7 @@ and an explanation of the underlying technique.
    :g:`Fixpoint` or :g:`Definition`. See :ref:`advanced-recursive-functions`
    for details.
 
-See also: :ref:`advanced-recursive-functions`
-  :ref:`functional-scheme`
-  :tacn:`inversion`
+.. seealso:: :ref:`advanced-recursive-functions`, :ref:`functional-scheme` and :tacn:`inversion`
 
 .. exn:: Cannot find induction information on @qualid.
 .. exn:: Not the right number of induction arguments.
@@ -2030,7 +2028,7 @@ See also: :ref:`advanced-recursive-functions`
    the number of equalities newly generated. If it is smaller, fresh
    names are automatically generated to adjust the list of :n:`@intro_pattern`
    to the number of new equalities. The original equality is erased if it
-   corresponds to an hypothesis.
+   corresponds to a hypothesis.
 
    .. opt:: Structural Injection
 
@@ -2301,8 +2299,8 @@ See also: :ref:`advanced-recursive-functions`
 
    As H occurs in the goal, we may want to reason by cases on its
    structure and so, we would like inversion tactics to substitute H by
-   the corresponding @term in constructor form. Neither Inversion nor
-   Inversion_clear make such a substitution. To have such a behavior we
+   the corresponding @term in constructor form. Neither :tacn:`inversion` nor
+   :n:`inversion_clear` do such a substitution. To have such a behavior we
    use the dependent inversion tactics:
 
    .. coqtop:: all
@@ -3194,7 +3192,7 @@ the :tacn:`auto` and :tacn:`trivial` tactics:
 .. opt:: Info Trivial
 .. opt:: Debug Trivial
 
-See also: :ref:`The Hints Databases for auto and eauto <thehintsdatabasesforautoandeauto>`
+.. seealso:: :ref:`The Hints Databases for auto and eauto <thehintsdatabasesforautoandeauto>`
 
 .. tacn:: eauto
    :name: eauto
@@ -3225,7 +3223,7 @@ Note that ``ex_intro`` should be declared as a hint.
 .. opt:: Info Eauto
 .. opt:: Debug Eauto
 
-See also: :ref:`The Hints Databases for auto and eauto <thehintsdatabasesforautoandeauto>`
+.. seealso:: :ref:`The Hints Databases for auto and eauto <thehintsdatabasesforautoandeauto>`
 
 
 .. tacn:: autounfold with {+ @ident}
@@ -3282,10 +3280,10 @@ command.
   Performs all the rewriting in the clause :n:`@clause`. The clause argument
   must not contain any ``type of`` nor ``value of``.
 
-See also: :ref:`Hint-Rewrite <hintrewrite>` for feeding the database of lemmas used by
-:tacn:`autorewrite`.
+.. seealso:
 
-See also: :tacn:`autorewrite` for examples showing the use of this tactic.
+   :ref:`Hint-Rewrite <hintrewrite>` for feeding the database of lemmas used by
+   :tacn:`autorewrite` and :tacn:`autorewrite` for examples showing the use of this tactic.
 
 .. tacn:: easy
    :name: easy
@@ -3575,7 +3573,7 @@ At Coq startup, only the core database is nonempty and can be used.
 :zarith: contains lemmas about binary signed integers from the directories
          theories/ZArith. When required, the module Omega also extends the
          database zarith with a high-cost hint that calls ``omega`` on equations
-         and inequalities in nat or Z.
+         and inequalities in ``nat`` or ``Z``.
 
 :bool: contains lemmas about booleans, mostly from directory theories/Bool.
 
@@ -3585,7 +3583,7 @@ At Coq startup, only the core database is nonempty and can be used.
 :sets: contains lemmas about sets and relations from the directories Sets and
        Relations.
 
-:typeclass_instances: contains all the type class instances declared in the
+:typeclass_instances: contains all the typeclass instances declared in the
                       environment, including those used for ``setoid_rewrite``,
                       from the Classes directory.
 
@@ -3714,7 +3712,7 @@ Setting implicit automation tactics
    In this case the tactic command typed by the user is equivalent to
    ``tactic``:sub:`1` ``;tactic``.
 
-   See also: ``Proof.`` in :ref:`proof-editing-mode`.
+   .. seealso:: ``Proof`` in :ref:`proof-editing-mode`.
 
 
    .. cmdv:: Proof with tactic using {+ @ident}
@@ -4172,8 +4170,9 @@ available after a ``Require Import FunInd``.
 
 .. tacv:: functional inversion @num
 
-  This does the same thing as intros until num thenfunctional inversion ident
-  where ident is the identifier for the last introduced hypothesis.
+  This does the same thing as :n:`intros until @num` folowed by
+  :n:`functional inversion @ident` where :token:`ident` is the
+  identifier for the last introduced hypothesis.
 
 .. tacv:: functional inversion ident qualid
 .. tacv:: functional inversion num qualid
@@ -4280,7 +4279,7 @@ and :g:`Z` of binary integers. This tactic must be loaded by the command
    :name: ring_simplify
 
 The :n:`ring` tactic solves equations upon polynomial expressions of a ring
-(or semi-ring) structure. It proceeds by normalizing both hand sides
+(or semiring) structure. It proceeds by normalizing both hand sides
 of the equation (w.r.t. associativity, commutativity and
 distributivity, constant propagation) and comparing syntactically the
 results.
@@ -4333,8 +4332,10 @@ printed with the Print Fields command.
 
       intros; field.
 
-See also: file plugins/setoid_ring/RealField.v for an example of instantiation,
-theory theories/Reals for many examples of use of field.
+.. seealso::
+
+   File plugins/setoid_ring/RealField.v for an example of instantiation,
+   theory theories/Reals for many examples of use of field.
 
 .. tacn:: fourier
    :name: fourier
@@ -4470,7 +4471,7 @@ user-defined tactics.
   other one can be automatically checked.
 .. [2] This corresponds to the cut rule of sequent calculus.
 .. [3] Reminder: opaque constants will not be expanded by δ reductions.
-.. [4] The behavior of this tactic has much changed compared to the
+.. [4] The behavior of this tactic has changed a lot compared to the
   versions available in the previous distributions (V6). This may cause
   significant changes in your theories to obtain the same result. As a
   drawback of the re-engineering of the code, this tactic has also been

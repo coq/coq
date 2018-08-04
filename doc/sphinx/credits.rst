@@ -60,7 +60,7 @@ the language ML.
 
 Automated theorem-proving was pioneered in the 1960’s by Davis and
 Putnam in propositional calculus. A complete mechanization (in the sense
-of a semi-decision procedure) of classical first-order logic was
+of a semidecision procedure) of classical first-order logic was
 proposed in 1965 by J.A. Robinson, with a single uniform inference rule
 called *resolution*. Resolution relies on solving equations in free
 algebras (i.e. term structures), using the *unification algorithm*. Many
@@ -320,7 +320,7 @@ in March 2001, version 7.1 in September 2001, version 7.2 in January
 
 Jean-Christophe Filliâtre designed the architecture of the new system.
 He introduced a new representation for environments and wrote a new
-kernel for type-checking terms. His approach was to use functional
+kernel for type checking terms. His approach was to use functional
 data-structures in order to get more sharing, to prepare the addition of
 modules and also to get closer to a certified kernel.
 
@@ -352,7 +352,7 @@ sensible. Jean-Christophe Filliâtre wrote ``coqdoc``, a documentation
 tool for |Coq| libraries usable from version 7.2.
 
 Bruno Barras improved the efficiency of the reduction algorithm and the
-confidence level in the correctness of |Coq| critical type-checking
+confidence level in the correctness of |Coq| critical type checking
 algorithm.
 
 Yves Bertot designed the ``SearchPattern`` and ``SearchRewrite`` tools
@@ -506,7 +506,7 @@ Credits: version 8.1
 Coq version 8.1 adds various new functionalities.
 
 Benjamin Grégoire implemented an alternative algorithm to check the
-convertibility of terms in the |Coq| type-checker. This alternative
+convertibility of terms in the |Coq| type checker. This alternative
 algorithm works by compilation to an efficient bytecode that is
 interpreted in an abstract machine similar to Xavier Leroy’s ZINC
 machine. Convertibility is performed by comparing the normal forms. This
@@ -526,7 +526,7 @@ Claudio Sacerdoti Coen added new features to the module system.
 
 Benjamin Grégoire, Assia Mahboubi and Bruno Barras developed a new, more
 efficient and more general simplification algorithm for rings and
-semi-rings.
+semirings.
 
 Laurent Théry and Bruno Barras developed a new, significantly more
 efficient simplification algorithm for fields.
@@ -586,11 +586,11 @@ Coq version 8.2 adds new features, new libraries and improves on many
 various aspects.
 
 Regarding the language of |Coq|, the main novelty is the introduction by
-Matthieu Sozeau of a package of commands providing Haskell-style type
-classes. Type classes, that come with a few convenient features such as
+Matthieu Sozeau of a package of commands providing Haskell-style typeclasses.
+Typeclasses, which come with a few convenient features such as
 type-based resolution of implicit arguments, play a new landmark role
 in the architecture of |Coq| with respect to automation. For
-instance, thanks to type classes support, Matthieu Sozeau could
+instance, thanks to typeclass support, Matthieu Sozeau could
 implement a new resolution-based version of the tactics dedicated to
 rewriting on arbitrary transitive relations.
 
@@ -648,7 +648,7 @@ maintenance and coqdoc support, Vincent Siles contributed extensions of
 the Scheme command and of injection.
 
 Bruno Barras implemented the `coqchk` tool: this is a stand-alone
-type-checker that can be used to certify .vo files. Especially, as this
+type checker that can be used to certify .vo files. Especially, as this
 verifier runs in a separate process, it is granted not to be “hijacked”
 by virtually malicious extensions added to |Coq|.
 
@@ -712,7 +712,7 @@ The new tactic nsatz is due to Loïc Pottier. It works by computing
 Gröbner bases. Regarding the existing tactics, various improvements have
 been done by Matthieu Sozeau, Hugo Herbelin and Pierre Letouzey.
 
-Matthieu Sozeau extended and refined the type classes and Program
+Matthieu Sozeau extended and refined the typeclasses and Program
 features (the Russell language). Pierre Letouzey maintained and improved
 the extraction mechanism. Bruno Barras and Élie Soubiran maintained the
 Coq checker, Julien Forest maintained the Function mechanism for
@@ -810,7 +810,7 @@ Regarding the high-level specification language, Pierre Boutillier
 introduced the ability to give implicit arguments to anonymous
 functions, Hugo Herbelin introduced the ability to define notations with
 several binders (e.g. ``exists x y z, P``), Matthieu Sozeau made the
-type classes inference mechanism more robust and predictable, Enrico
+typeclass inference mechanism more robust and predictable, Enrico
 Tassi introduced a command Arguments that generalizes Implicit Arguments
 and Arguments Scope for assigning various properties to arguments of
 constants. Various improvements in the type inference algorithm were
@@ -831,7 +831,7 @@ vm\_compute. Bug fixes and miscellaneous improvements of the tactic
 language came from Hugo Herbelin, Pierre Letouzey and Matthieu Sozeau.
 
 Regarding decision tactics, Loïc Pottier maintained nsatz, moving in
-particular to a type-class based reification of goals while Frédéric
+particular to a typeclass based reification of goals while Frédéric
 Besson maintained Micromega, adding in particular support for division.
 
 Regarding vernacular commands, Stéphane Glondu provided new commands to
@@ -1074,7 +1074,7 @@ over 100 contributions integrated. The main user visible changes are:
    document.
 
 -  More access to the proof engine features from Ltac: goal management
-   primitives, range selectors and a typeclasses eauto engine handling
+   primitives, range selectors and a ``typeclasses eauto`` engine handling
    multiple goals and multiple successes, by Cyprien Mangin, Matthieu
    Sozeau and Arnaud Spiwack.
 
@@ -1234,7 +1234,7 @@ The efficiency of the whole system has been significantly improved thanks to
 contributions from Pierre-Marie Pédrot, Maxime Dénès and Matthieu Sozeau and
 performance issue tracking by Jason Gross and Paul Steckler.
 
-Thomas Sibut-Pinote and Hugo Herbelin added support for side effects hooks in
+Thomas Sibut-Pinote and Hugo Herbelin added support for side effect hooks in
 cbv, cbn and simpl. The side effects are provided via a plugin available at
 https://github.com/herbelin/reduction-effects/.
 
@@ -1292,7 +1292,7 @@ integration of new features, with an important focus given to compatibility and
 performance issues, resulting in a hopefully more robust release than |Coq| 8.6
 while maintaining compatibility.
 
-|Coq| Enhancement Proposals (CEPs for short) and open pull-requests discussions
+|Coq| Enhancement Proposals (CEPs for short) and open pull request discussions
 were used to discuss publicly the new features.
 
 The |Coq| consortium, an organization directed towards users and supporters of the

@@ -549,9 +549,9 @@ Failing
       The number is the failure level. If no level is specified, it defaults to 0.
       The level is used by :tacn:`try`, :tacn:`repeat`, :tacn:`match goal` and the branching
       tacticals. If 0, it makes :tacn:`match goal` consider the next clause
-      (backtracking). If non zero, the current :tacn:`match goal` block, :tacn:`try`,
+      (backtracking). If nonzero, the current :tacn:`match goal` block, :tacn:`try`,
       :tacn:`repeat`, or branching command is aborted and the level is decremented. In
-      the case of :n:`+`, a non-zero level skips the first backtrack point, even if
+      the case of :n:`+`, a nonzero level skips the first backtrack point, even if
       the call to :n:`fail @num` is not enclosed in a :n:`+` command,
       respecting the algebraic identity.
 
@@ -856,7 +856,7 @@ We can perform pattern matching on goals using the following expression:
    :name: match goal
 
    If each hypothesis pattern :n:`hyp`\ :sub:`1,i`, with i = 1, ..., m\ :sub:`1` is
-   matched (non-linear first-order unification) by an hypothesis of the
+   matched (non-linear first-order unification) by a hypothesis of the
    goal and if :n:`cpattern_1` is matched by the conclusion of the goal,
    then :n:`@expr__1` is evaluated to :n:`v__1` by substituting the
    pattern matching to the metavariables and the real hypothesis names
@@ -982,7 +982,7 @@ Manipulating untyped terms
 
    An untyped term, in |Ltac|, can contain references to hypotheses or to
    |Ltac| variables containing typed or untyped terms. An untyped term can be
-   type-checked using the function type_term whose argument is parsed as an
+   type checked using the function type_term whose argument is parsed as an
    untyped term and returns a well-typed term which can be used in tactics.
 
 Untyped terms built using :n:`uconstr :` can also be used as arguments to the

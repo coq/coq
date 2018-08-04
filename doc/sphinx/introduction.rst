@@ -7,8 +7,8 @@ Introduction
 This document is the Reference Manual of the |Coq| proof assistant.
 To start using Coq, it is advised to first read a tutorial.
 Links to several tutorials can be found at
-https://coq.inria.fr/documentation (see also
-https://github.com/coq/coq/wiki#coq-tutorials).
+https://coq.inria.fr/documentation and
+https://github.com/coq/coq/wiki#coq-tutorials
 
 The |Coq| system is designed to develop mathematical proofs, and
 especially to write formal specifications, programs and to verify that
@@ -20,7 +20,7 @@ properties and proofs are formalized in the same language called
 *Calculus of Inductive Constructions*, that is a
 :math:`\lambda`-calculus with a rich type system. All logical judgments
 in |Coq| are typing judgments. The very heart of the |Coq| system is the
-type-checking algorithm that checks the correctness of proofs, in other
+type checking algorithm that checks the correctness of proofs, in other
 words that checks that a program complies to its specification. |Coq| also
 provides an interactive proof assistant to build proofs using specific
 programs called *tactics*.

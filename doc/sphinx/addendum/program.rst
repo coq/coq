@@ -18,7 +18,7 @@ program as in a regular functional programming language whilst using
 as rich a specification as desired and proving that the code meets the
 specification using the whole |Coq| proof apparatus. This is done using
 a technique originating from the “Predicate subtyping” mechanism of
-PVS :cite:`Rushby98`, which generates type-checking conditions while typing a
+PVS :cite:`Rushby98`, which generates type checking conditions while typing a
 term constrained to a particular type. Here we insert existential
 variables in the term, which must be filled with proofs to get a
 complete |Coq| term. |Program| replaces the |Program| tactic by Catherine
@@ -72,8 +72,8 @@ operation (see :ref:`extendedpatternmatching`).
   This permits to get the proper equalities in the context of proof
   obligations inside clauses, without which reasoning is very limited.
 
-+ Generation of inequalities. If a pattern intersects with a previous
-  one, an inequality is added in the context of the second branch. See
++ Generation of disequalities. If a pattern intersects with a previous
+  one, a disequality is added in the context of the second branch. See
   for example the definition of div2 below, where the second branch is
   typed in a context where :g:`∀ p, _ <> S (S p)`.
 + Coercion. If the object being matched is coercible to an inductive
@@ -87,7 +87,7 @@ coercions.
 .. opt:: Program Cases
 
    This controls the special treatment of pattern-matching generating equalities
-   and inequalities when using |Program| (it is on by default). All
+   and disequalities when using |Program| (it is on by default). All
    pattern-matches and let-patterns are handled using the standard algorithm
    of |Coq| (see :ref:`extendedpatternmatching`) when this option is
    deactivated.
@@ -104,7 +104,7 @@ Syntactic control over equalities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To give more control over the generation of equalities, the
-typechecker will fall back directly to |Coq|’s usual typing of dependent
+type checker will fall back directly to |Coq|’s usual typing of dependent
 pattern-matching if a return or in clause is specified. Likewise, the
 if construct is not treated specially by |Program| so boolean tests in
 the code are not automatically reflected in the obligations. One can
@@ -175,7 +175,7 @@ Program Definition
 
       .. TODO refer to production in alias
 
-See also: Sections :ref:`vernac-controlling-the-reduction-strategies`, :tacn:`unfold`
+.. seealso:: Sections :ref:`vernac-controlling-the-reduction-strategies`, :tacn:`unfold`
 
 .. _program_fixpoint:
 

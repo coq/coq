@@ -75,7 +75,7 @@ We amend that by equipping ``nat`` with a comparison relation.
    Check 3 == 3.
    Eval compute in 3 == 4.
 
-This last test shows that |Coq| is now not only able to typecheck ``3 == 3``,
+This last test shows that |Coq| is now not only able to type check ``3 == 3``,
 but also that the infix relation was bound to the ``nat_eq`` relation.
 This relation is selected whenever ``==`` is used on terms of type nat.
 This can be read in the line declaring the canonical structure
