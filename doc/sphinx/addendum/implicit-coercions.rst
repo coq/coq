@@ -352,7 +352,7 @@ We first give an example of coercion between atomic inductive types
 
 .. warning::
 
-  Note that ``Check true=O`` would fail. This is "normal" behaviour of
+  Note that ``Check true=O`` would fail. This is "normal" behavior of
   coercions. To validate ``true=O``, the coercion is searched from
   ``nat`` to ``bool``. There is none.
 

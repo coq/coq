@@ -96,8 +96,9 @@ constraints between the universe variables is maintained globally. To
 ensure the existence of a mapping of the universes to the positive
 integers, the graph of constraints must remain acyclic. Typing
 expressions that violate the acyclicity of the graph of constraints
-results in a Universe inconsistency error (see also Section
-:ref:`printing-universes`).
+results in a Universe inconsistency error.
+
+.. seealso:: Section :ref:`printing-universes`.
 
 
 .. _Terms:
@@ -1252,7 +1253,7 @@ In this expression, if :math:`m` eventually happens to evaluate to
 and it will reduce to :math:`f_i` where the :math:`x_{i1} …x_{ip_i}` are replaced by the
 :math:`u_1 … u_{p_i}` according to the ι-reduction.
 
-Actually, for type-checking a :math:`\Match…\with…\endkw` expression we also need
+Actually, for type checking a :math:`\Match…\with…\endkw` expression we also need
 to know the predicate P to be proved by case analysis. In the general
 case where :math:`I` is an inductively defined :math:`n`-ary relation, :math:`P` is a predicate
 over :math:`n+1` arguments: the :math:`n` first ones correspond to the arguments of :math:`I`
@@ -1398,7 +1399,7 @@ arguments of this constructor have type :math:`\Prop`. In that case, there is a
 canonical way to interpret the informative extraction on an object in
 that type, such that the elimination on any sort :math:`s` is legal. Typical
 examples are the conjunction of non-informative propositions and the
-equality. If there is an hypothesis :math:`h:a=b` in the local context, it can
+equality. If there is a hypothesis :math:`h:a=b` in the local context, it can
 be used for rewriting not only in logical propositions but also in any
 type.
 
@@ -1821,7 +1822,7 @@ definitions can be found in :cite:`Gimenez95b,Gim98,GimCas05`.
 The Calculus of Inductive Constructions with impredicative Set
 -----------------------------------------------------------------
 
-|Coq| can be used as a type-checker for the Calculus of Inductive
+|Coq| can be used as a type checker for the Calculus of Inductive
 Constructions with an impredicative sort :math:`\Set` by using the compiler
 option ``-impredicative-set``. For example, using the ordinary `coqtop`
 command, the following is rejected,
@@ -1832,7 +1833,7 @@ command, the following is rejected,
 
       Fail Definition id: Set := forall X:Set,X->X.
 
-while it will type-check, if one uses instead the `coqtop`
+while it will type check, if one uses instead the `coqtop`
 ``-impredicative-set`` option..
 
 The major change in the theory concerns the rule for product formation

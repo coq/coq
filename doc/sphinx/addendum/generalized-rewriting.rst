@@ -22,18 +22,18 @@ The new implementation is a drop-in replacement for the old one
 [#tabareau]_, hence most of the documentation still applies.
 
 The work is a complete rewrite of the previous implementation, based
-on the type class infrastructure. It also improves on and generalizes
+on the typeclass infrastructure. It also improves on and generalizes
 the previous implementation in several ways:
 
 + User-extensible algorithm. The algorithm is separated into two parts:
   generation of the rewriting constraints (written in ML) and solving
-  these constraints using type class resolution. As type class
+  these constraints using typeclass resolution. As typeclass
   resolution is extensible using tactics, this allows users to define
   general ways to solve morphism constraints.
 + Subrelations. An example extension to the base algorithm is the
   ability to define one relation as a subrelation of another so that
   morphism declarations on one relation can be used automatically for
-  the other. This is done purely using tactics and type class search.
+  the other. This is done purely using tactics and typeclass search.
 + Rewriting under binders. It is possible to rewrite under binders in
   the new implementation, if one provides the proper morphisms. Again,
   most of the work is handled in the tactics.
@@ -226,7 +226,7 @@ following command.
 
    This command declares ``f`` as a parametric morphism of signature ``sig``. The
    identifier :token:`ident` gives a unique name to the morphism and it is used as
-   the base name of the type class instance definition and as the name of
+   the base name of the typeclass instance definition and as the name of
    the lemma that proves the well-definedness of the morphism. The
    parameters of the morphism as well as the signature may refer to the
    context of variables. The command asks the user to prove interactively
@@ -309,7 +309,7 @@ following command.
 
       Proof. intros. rewrite empty_neutral. reflexivity. Qed.
 
-   The tables of relations and morphisms are managed by the type class
+   The tables of relations and morphisms are managed by the typeclass
    instance mechanism. The behavior on section close is to generalize the
    instances by the variables of the section (and possibly hypotheses
    used in the proofs of instance declarations) but not to export them in
@@ -350,7 +350,7 @@ prove that the argument of the morphism is defined.
 .. example::
 
    Let ``eqO`` be ``fun x y => x = y /\ x <> 0`` (the
-   smallest PER over non zero elements). Division can be declared as a
+   smallest PER over nonzero elements). Division can be declared as a
    morphism of signature ``eq ==> eq0 ==> eq``. Replacing ``x`` with
    ``y`` in ``div x n = div y n`` opens an additional goal ``eq0 n n``
    which is equivalent to ``n = n /\ n <> 0``.
@@ -446,7 +446,7 @@ First class setoids and morphisms
 
 
 The implementation is based on a first-class representation of
-properties of relations and morphisms as type classes. That is, the
+properties of relations and morphisms as typeclasses. That is, the
 various combinations of properties on relations and morphisms are
 represented as records and instances of theses classes are put in a
 hint database. For example, the declaration:
@@ -472,9 +472,9 @@ is equivalent to an instance declaration:
 The declaration itself amounts to the definition of an object of the
 record type ``Coq.Classes.RelationClasses.Equivalence`` and a hint added
 to the ``typeclass_instances`` hint database. Morphism declarations are
-also instances of a type class defined in ``Classes.Morphisms``. See the
-documentation on type classes :ref:`typeclasses`
-and the theories files in Classes for further explanations.
+also instances of a typeclass defined in ``Classes.Morphisms``. See the
+documentation on :ref:`typeclasses` and the theories files in Classes
+for further explanations.
 
 One can inform the rewrite tactic about morphisms and relations just
 by using the typeclass mechanism to declare them using Instance and
@@ -703,7 +703,7 @@ example of a mostly user-space extension of the algorithm.
 Constant unfolding
 ~~~~~~~~~~~~~~~~~~
 
-The resolution tactic is based on type classes and hence regards user-
+The resolution tactic is based on typeclasses and hence regards user-
 defined constants as transparent by default. This may slow down the
 resolution due to a lot of unifications (all the declared ``Proper``
 instances are tried at each node of the search tree). To speed it up,

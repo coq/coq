@@ -212,7 +212,7 @@ During the definition of the one-constructor inductive definition, all
 the errors of inductive definitions, as described in Section
 :ref:`gallina-inductive-definitions`, may also occur.
 
-**See also** Coercions and records in Section :ref:`coercions-classes-as-records` of the chapter devoted to coercions.
+.. seealso:: Coercions and records in section :ref:`coercions-classes-as-records` of the chapter devoted to coercions.
 
 .. _primitive_projections:
 
@@ -229,7 +229,7 @@ term constructor `r.(p)` representing a primitive projection `p` applied
 to a record object `r` (i.e., primitive projections are always applied).
 Even if the record type has parameters, these do not appear at
 applications of the projection, considerably reducing the sizes of
-terms when manipulating parameterized records and typechecking time.
+terms when manipulating parameterized records and type checking time.
 On the user level, primitive projections can be used as a replacement
 for the usual defined ones, although there are a few notable differences.
 
@@ -328,7 +328,7 @@ into a sequence of match on simple patterns. Especially, a
 construction defined using the extended match is generally printed
 under its expanded form (see :opt:`Printing Matching`).
 
-See also: :ref:`extendedpatternmatching`.
+.. seealso:: :ref:`extendedpatternmatching`.
 
 .. _if-then-else:
 
@@ -711,7 +711,7 @@ terminating functions.
 
      `functional inversion` will not be available for the function.
 
-See also: :ref:`functional-scheme` and :tacn:`function induction`
+.. seealso:: :ref:`functional-scheme` and :tacn:`function induction`
 
 Depending on the ``{…}`` annotation, different definition mechanisms are
 used by ``Function``. A more precise description is given below.
@@ -1260,7 +1260,7 @@ identifiers qualid, i.e. as list of identifiers separated by dots (see
 |Coq| library ``Arith`` is named ``Coq.Arith.Mult``. The identifier that starts
 the name of a library is called a *library root*. All library files of
 the standard library of |Coq| have the reserved root |Coq| but library
-file names based on other roots can be obtained by using |Coq| commands
+filenames based on other roots can be obtained by using |Coq| commands
 (coqc, coqtop, coqdep, …) options ``-Q`` or ``-R`` (see :ref:`command-line-options`).
 Also, when an interactive |Coq| session starts, a library of root ``Top`` is
 started, unless option ``-top`` or ``-notop`` is set (see :ref:`command-line-options`).
@@ -1294,7 +1294,7 @@ short name (or even same partially qualified names as soon as the full
 names are different).
 
 Notice that the notion of absolute, partially qualified and short
-names also applies to library file names.
+names also applies to library filenames.
 
 **Visibility**
 
@@ -1328,7 +1328,7 @@ accessible, absolute names can never be hidden.
 
        Locate nat.
 
-See also: Commands :cmd:`Locate` and :cmd:`Locate Library`.
+.. seealso:: Commands :cmd:`Locate` and :cmd:`Locate Library`.
 
 .. _libraries-and-filesystem:
 
@@ -1514,7 +1514,8 @@ says that the implicit argument is maximally inserted.
 Each implicit argument can be declared to have to be inserted maximally or non
 maximally. This can be governed argument per argument by the command
 :cmd:`Arguments (implicits)` or globally by the :opt:`Maximal Implicit Insertion` option.
-See also :ref:`displaying-implicit-args`.
+
+.. seealso:: :ref:`displaying-implicit-args`.
 
 
 Casual use of implicit arguments
@@ -1887,7 +1888,7 @@ arguments that are not detected as strict implicit arguments. This
 “defensive” mode can quickly make the display cumbersome so this can
 be deactivated by turning this option off.
 
-See also: :opt:`Printing All`.
+.. seealso:: :opt:`Printing All`.
 
 Interaction with subtyping
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1937,7 +1938,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    Assume that :token:`qualid` denotes an object ``(Build_struct`` |c_1| … |c_n| ``)`` in the
    structure :g:`struct` of which the fields are |x_1|, …, |x_n|.
    Then, each time an equation of the form ``(``\ |x_i| ``_)`` |eq_beta_delta_iota_zeta| |c_i| has to be
-   solved during the type-checking process, :token:`qualid` is used as a solution.
+   solved during the type checking process, :token:`qualid` is used as a solution.
    Otherwise said, :token:`qualid` is canonically used to extend the field |c_i|
    into a complete structure built on |c_i|.
 

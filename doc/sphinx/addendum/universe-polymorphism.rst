@@ -36,7 +36,7 @@ error:
    Fail Definition selfid := identity (@identity).
 
 Indeed, the global level ``Top.1`` would have to be strictly smaller than
-itself for this self-application to typecheck, as the type of
+itself for this self-application to type check, as the type of
 :g:`(@identity)` is :g:`forall (A : Type@{Top.1}), A -> A` whose type is itself
 :g:`Type@{Top.1+1}`.
 

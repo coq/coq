@@ -12,7 +12,7 @@ file, executing corresponding commands or undoing them respectively.
 
 |CoqIDE| is run by typing the command `coqide` on the command line.
 Without argument, the main screen is displayed with an “unnamed
-buffer”, and with a file name as argument, another buffer displaying
+buffer”, and with a filename as argument, another buffer displaying
 the contents of that file. Additionally, `coqide` accepts the same
 options as `coqtop`, given in :ref:`thecoqcommands`, the ones having obviously
 no meaning for |CoqIDE| being ignored.
@@ -92,7 +92,7 @@ buffers (left and right arrows); an "information" button; and a "gears" button.
 
 The "information" button is described in Section :ref:`try-tactics-automatically`.
 
-The "gears" button submits proof terms to the |Coq| kernel for type-checking.
+The "gears" button submits proof terms to the |Coq| kernel for type checking.
 When |Coq| uses asynchronous processing (see Chapter :ref:`asynchronousandparallelproofprocessing`),
 proofs may have been completed without kernel-checking of generated proof terms.
 The presence of unchecked proof terms is indicated by ``Qed`` statements that

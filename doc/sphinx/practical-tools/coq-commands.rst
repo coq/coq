@@ -104,8 +104,12 @@ The following command-line options are recognized by the commands ``coqc``
 and ``coqtop``, unless stated otherwise:
 
 :-I *directory*, -include *directory*: Add physical path *directory*
-  to the OCaml loadpath. See also: :ref:`names-of-libraries` and the
-  command Declare ML Module Section :ref:`compiled-files`.
+  to the OCaml loadpath.
+
+  .. seealso::
+
+     :ref:`names-of-libraries` and the
+     command Declare ML Module Section :ref:`compiled-files`.
 :-Q *directory* dirpath: Add physical path *directory* to the list of
   directories where |Coq| looks for a file and bind it to the logical
   directory *dirpath*. The subdirectory structure of *directory* is
@@ -115,14 +119,17 @@ and ``coqtop``, unless stated otherwise:
   an :n:`@ident` are taken into account. Conversely, the
   underlying file systems or operating systems may be more restrictive
   than |Coq|. While Linux’s ext4 file system supports any |Coq| recursive
-  layout (within the limit of 255 bytes per file name), the default on
+  layout (within the limit of 255 bytes per filename), the default on
   NTFS (Windows) or HFS+ (MacOS X) file systems is on the contrary to
   disallow two files differing only in the case in the same directory.
-  See also: Section :ref:`names-of-libraries`.
+
+  .. seealso:: Section :ref:`names-of-libraries`.
 :-R *directory* dirpath: Do as -Q *directory* dirpath but make the
   subdirectory structure of *directory* recursively visible so that the
   recursive contents of physical *directory* is available from |Coq| using
-  short or partially qualified names. See also: Section :ref:`names-of-libraries`.
+  short or partially qualified names.
+
+  .. seealso:: Section :ref:`names-of-libraries`.
 :-top dirpath: Set the toplevel module name to dirpath instead of Top.
   Not valid for `coqc` as the toplevel module name is inferred from the
   name of the output file.
@@ -168,11 +175,16 @@ and ``coqtop``, unless stated otherwise:
 :-emacs, -ide-slave: Start a special toplevel to communicate with a
   specific IDE.
 :-impredicative-set: Change the logical theory of |Coq| by declaring the
-   sort Set impredicative. Warning: This is known to be inconsistent with some
-   standard axioms of classical mathematics such as the functional
-   axiom of choice or the principle of description.
-:-type-in-type: Collapse the universe hierarchy of |Coq|. Warning: This makes the logic
-   inconsistent.
+   sort Set impredicative.
+
+   .. warning::
+
+      This is known to be inconsistent with some
+      standard axioms of classical mathematics such as the functional
+      axiom of choice or the principle of description.
+:-type-in-type: Collapse the universe hierarchy of |Coq|.
+
+  .. warning:: This makes the logic inconsistent.
 :-mangle-names *ident*: Experimental: Do not depend on this option. Replace
   Coq's auto-generated name scheme with names of the form *ident0*, *ident1*,
   etc. The command ``Set Mangle Names`` turns the behavior on in a document,
@@ -208,7 +220,7 @@ The ``coqchk`` command takes a list of library paths as argument, described eith
 by their logical name or by their physical filename, hich must end in ``.vo``. The
 corresponding compiled libraries (``.vo`` files) are searched in the path,
 recursively processing the libraries they depend on. The content of all these
-libraries is then type-checked. The effect of ``coqchk`` is only to return with
+libraries is then type checked. The effect of ``coqchk`` is only to return with
 normal exit code in case of success, and with positive exit code if an error has
 been found. Error messages are not deemed to help the user understand what is
 wrong. In the current version, it does not modify the compiled libraries to mark
@@ -248,15 +260,15 @@ the following: assuming that ``coqchk`` is called with argument ``M``, option
 ``-norec N``, and ``-admit A``. Let us write :math:`\overline{S}` for the
 set of reflexive transitive dependencies of set :math:`S`. Then:
 
-+ Modules :math:`C = \overline{M} \backslash \overline{A} \cup M \cup N` are loaded and type-checked before being added
++ Modules :math:`C = \overline{M} \backslash \overline{A} \cup M \cup N` are loaded and type checked before being added
   to the context.
 + And :math:`M \cup N \backslash C` is the set of modules that are loaded and added to the
-  context without type-checking. Basic integrity checks (checksums) are
+  context without type checking. Basic integrity checks (checksums) are
   nonetheless performed.
 
 As a rule of thumb, -admit can be used to tell Coq that some libraries
 have already been checked. So ``coqchk A B`` can be split in ``coqchk A`` &&
-``coqchk B -admit A`` without type-checking any definition twice. Of
+``coqchk B -admit A`` without type checking any definition twice. Of
 course, the latter is slightly slower since it makes more disk access.
 It is also less secure since an attacker might have replaced the
 compiled library ``A`` after it has been read by the first command, but

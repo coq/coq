@@ -37,7 +37,7 @@ bookkeeping is performed on the conclusion of the goal, using for that
 purpose a couple of syntactic constructions behaving similar to tacticals
 (and often named as such in this chapter). The ``:`` tactical moves hypotheses
 from the context to the conclusion, while ``=>`` moves hypotheses from the
-conclusion to the context, and ``in`` moves back and forth an hypothesis from the
+conclusion to the context, and ``in`` moves back and forth a hypothesis from the
 context to the conclusion for the time of applying an action to it.
 
 While naming hypotheses is commonly done by means of an ``as`` clause in the
@@ -303,7 +303,7 @@ the ``if`` construct to all binary data types; compare
 
 The latter appears to be marginally shorter, but it is quite
 ambiguous, and indeed often requires an explicit annotation
-``(term : {_} + {_})`` to type-check, which evens the character count.
+``(term : {_} + {_})`` to type check, which evens the character count.
 
 Therefore, |SSR| restricts by default the condition of a plain if
 construct to the standard ``bool`` type; this avoids spurious type
@@ -385,7 +385,7 @@ expressions such as
 
 Unfortunately, such higher-order expressions are quite frequent in
 representation functions, especially those which use |Coq|'s
-``Structures`` to emulate Haskell type classes.
+``Structures`` to emulate Haskell typeclasses.
 
 Therefore, |SSR| provides a variant of |Coq|’s implicit argument
 declaration, which causes |Coq| to fill in some implicit parameters at
@@ -1285,7 +1285,7 @@ catch the appropriate number of wildcards to be inserted. Note that
 this use of the refine tactic implies that the tactic tries to match
 the goal up to expansion of constants and evaluation of subterms.
 
-|SSR|’s apply has a special behaviour on goals containing
+|SSR|’s apply has a special behavior on goals containing
 existential metavariables of sort Prop.
 
 .. example::
@@ -2064,26 +2064,27 @@ is equivalent to:
 
 (see section :ref:`discharge_ssr` for the documentation of the apply: combination).
 
-Warning The list of tactics, possibly chained by semicolons, that
-follows a by keyword is considered as a parenthesized block applied to
-the current goal. Hence for example if the tactic:
+.. warning::
 
-.. coqtop:: in
+   The list of tactics (possibly chained by semicolons) that
+   follows the ``by`` keyword is considered to be a parenthesized block applied to
+   the current goal. Hence for example if the tactic:
 
-   by rewrite my_lemma1.
+   .. coqtop:: in
 
-succeeds, then the tactic:
+      by rewrite my_lemma1.
 
-.. coqtop:: in
+   succeeds, then the tactic:
 
-   by rewrite my_lemma1; apply my_lemma2.
+   .. coqtop:: in
 
-usually fails since it is equivalent to:
+      by rewrite my_lemma1; apply my_lemma2.
 
-.. coqtop:: in
+   usually fails since it is equivalent to:
 
-   by (rewrite my_lemma1; apply my_lemma2).
+   .. coqtop:: in
 
+      by (rewrite my_lemma1; apply my_lemma2).
 
 
 .. _selectors_ssr:
@@ -2653,11 +2654,11 @@ Last, notice that the use of intro patterns for abstract constants is
 orthogonal to the transparent flag ``@`` for have.
 
 
-The have tactic and type classes resolution
+The have tactic and typeclass resolution
 ```````````````````````````````````````````
 
-Since |SSR| 1.5 the have tactic behaves as follows with respect to
-type classes inference.
+Since |SSR| 1.5 the ``have`` tactic behaves as follows with respect to
+typeclass inference.
 
   .. coqtop:: none
 
@@ -2699,7 +2700,7 @@ type classes inference.
 
 .. opt:: SsrHave NoTCResolution
 
-   This option restores the behavior of |SSR| 1.4 and below (never resolve type classes).
+   This option restores the behavior of |SSR| 1.4 and below (never resolve typeclasses).
 
 Variants: the suff and wlog tactics
 ```````````````````````````````````
@@ -3009,6 +3010,15 @@ An :token:`r_item` can be:
   is equivalent to: ``change term1 with term2.`` If ``term2`` is a
   single constant and ``term1`` head symbol is not ``term2``, then the head
   symbol of ``term1`` is repeatedly unfolded until ``term2`` appears.
++ A :token:`term`, which can be:
+    + A term whose type has the form:
+      ``forall (x1 : A1 )…(xn : An ), eq term1 term2`` where
+      ``eq`` is the Leibniz equality or a registered setoid
+      equality.
+    + A list of terms ``(t1 ,…,tn)``, each ``ti`` having a type above.
+      The tactic: ``rewrite r_prefix (t1 ,…,tn ).``
+      is equivalent to: ``do [rewrite r_prefix t1 | … | rewrite r_prefix tn ].``
+    + An anonymous rewrite lemma ``(_ : term)``, where term has a type as above.  tactic: ``rewrite (_ : term)`` is in fact synonym of: ``cutrewrite (term).``.
 
   .. example::
 
@@ -3026,9 +3036,10 @@ An :token:`r_item` can be:
         Lemma test x : ddouble x = 4 * x.
         rewrite [ddouble _]/double.
 
-     *Warning* The |SSR|
-     terms containing holes are *not* typed as abstractions in this
-     context. Hence the following script fails.
+  .. warning::
+
+     The |SSR| terms containing holes are *not* typed as
+     abstractions in this context. Hence the following script fails.
 
      .. coqtop:: none
 
@@ -3049,17 +3060,6 @@ An :token:`r_item` can be:
      .. coqtop:: all
 
         rewrite -[f y x]/(y + _).
-
-+ A :token:`term`, which can be:
-
-    + A term whose type has the form:
-      ``forall (x1 : A1 )…(xn : An ), eq term1 term2`` where
-      ``eq`` is the Leibniz equality or a registered setoid
-      equality.
-    + A list of terms ``(t1 ,…,tn)``, each ``ti`` having a type above.
-      The tactic: ``rewrite r_prefix (t1 ,…,tn ).``
-      is equivalent to: ``do [rewrite r_prefix t1 | … | rewrite r_prefix tn ].``
-    + An anonymous rewrite lemma ``(_ : term)``, where term has a type as above.  tactic: ``rewrite (_ : term)`` is in fact synonym of: ``cutrewrite (term).``.
 
 
 Remarks and examples
@@ -3701,20 +3701,22 @@ Note that ``nosimpl bar`` is simply notation for a term that reduces to
 ``bar``; hence ``unfold foo`` will replace ``foo`` by ``bar``, and
 ``fold foo`` will replace ``bar`` by ``foo``.
 
-*Warning* The ``nosimpl`` trick only works if no reduction is apparent in
-``t``; in particular, the declaration:
+.. warning::
 
-.. coqtop:: in
+   The ``nosimpl`` trick only works if no reduction is apparent in
+   ``t``; in particular, the declaration:
 
-   Definition foo x := nosimpl (bar x).
+   .. coqtop:: in
 
-will usually not work. Anyway, the common practice is to tag only the
-function, and to use the following definition, which blocks the
-reduction as expected:
+      Definition foo x := nosimpl (bar x).
 
-.. coqtop:: in
+   will usually not work. Anyway, the common practice is to tag only the
+   function, and to use the following definition, which blocks the
+   reduction as expected:
 
-   Definition foo x := nosimpl bar x.
+   .. coqtop:: in
+
+      Definition foo x := nosimpl bar x.
 
 A standard example making this technique shine is the case of
 arithmetic operations. We define for instance:
@@ -4757,7 +4759,7 @@ equivalence property has been defined.
 
    Lemma andE (b1 b2 : bool) : (b1 /\ b2) <-> (b1 && b2).
 
-Let us compare the respective behaviours of ``andE`` and ``andP``.
+Let us compare the respective behaviors of ``andE`` and ``andP``.
 
 
 .. example::
@@ -4870,7 +4872,7 @@ The term , called the *view lemma* can be:
 
 Let ``top`` be the top assumption in the goal.
 
-There are three steps in the behaviour of an assumption view tactic:
+There are three steps in the behavior of an assumption view tactic:
 
 + It first introduces ``top``.
 + If the type of :token:`term` is neither a double implication nor an

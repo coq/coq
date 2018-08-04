@@ -119,7 +119,7 @@ command understands. Here is how the previous examples refine.
    Notation "A /\ B" := (and A B) (at level 80, right associativity).
    Notation "A \/ B" := (or A B) (at level 85, right associativity).
 
-By default, a notation is considered non-associative, but the
+By default, a notation is considered nonassociative, but the
 precedence level is mandatory (except for special cases whose level is
 canonical). The level is either a number or the phrase ``next level``
 whose meaning is obvious.
@@ -139,7 +139,7 @@ instance define prefix notations.
    Notation "~ x" := (not x) (at level 75, right associativity).
 
 One can also define notations for incomplete terms, with the hole
-expected to be inferred during typechecking.
+expected to be inferred during type checking.
 
 .. coqtop:: in
 
@@ -296,7 +296,7 @@ the possible following elements delimited by single quotes:
   after the “``[``” is applied at the beginning of each newline
 
 Notations disappear when a section is closed. No typing of the denoted
-expression is performed at definition time. Type-checking is done only
+expression is performed at definition time. Type checking is done only
 at the time of use of the notation.
 
 .. note:: Sometimes, a notation is expected only for the parser. To do
@@ -899,7 +899,7 @@ notations are given below. The optional :production:`scope` is described in
                  : | as strict pattern
 
 .. note:: No typing of the denoted expression is performed at definition
-          time. Type-checking is done only at the time of use of the notation.
+          time. Type checking is done only at the time of use of the notation.
 
 .. note:: Some examples of Notation may be found in the files composing
           the initial state of Coq (see directory :file:`$COQLIB/theories/Init`).
@@ -1369,7 +1369,7 @@ Abbreviations
       Check (id 0).
 
    Abbreviations disappear when a section is closed. No typing of the
-   denoted expression is performed at definition time. Type-checking is
+   denoted expression is performed at definition time. Type checking is
    done only at the time of use of the abbreviation.
 
 .. _TacticNotation:
@@ -1431,7 +1431,7 @@ Tactic notations allow to customize the syntax of tactics. They have the followi
 
       * - ``hyp``
         - identifier
-        - an hypothesis defined in context
+        - a hypothesis defined in context
         - clear
 
       * - ``reference``
@@ -1503,7 +1503,7 @@ Tactic notations allow to customize the syntax of tactics. They have the followi
 .. [#and_or_levels] which are the levels effectively chosen in the current
    implementation of Coq
 
-.. [#no_associativity] Coq accepts notations declared as non-associative but the parser on
+.. [#no_associativity] Coq accepts notations declared as nonassociative but the parser on
    which Coq is built, namely Camlp5, currently does not implement ``no associativity`` and
    replaces it with ``left associativity``; hence it is the same for Coq: ``no associativity``
    is in fact ``left associativity`` for the purposes of parsing
