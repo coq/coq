@@ -37,7 +37,7 @@ module NamedDecl = Context.Named.Declaration
 
 (** Options handling *)
 
-let typeclasses_debug = ref 1
+let typeclasses_debug = ref 0
 let typeclasses_depth = ref None
 
 (** When this flag is enabled, the resolution of type classes tries to avoid
