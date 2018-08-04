@@ -525,6 +525,22 @@ Options
    solution to the typeclass goal of this class is found, we never
    backtrack on it, assuming that it is canonical.
 
+.. opt:: Typeclasses Caching
+
+   This option (on by default) controls whenever the typeclass
+   resolution mechanism should use a cache to speed-up repeated
+   lookups.
+
+
+.. opt:: Set Typeclasses Caching Mingoals @num
+
+   This option which controls how many dependent goals a failed goal
+   must have to be included in the cache. The value ``0`` will cause
+   caching all failed resolutions. Increasing the value of this the
+   parameter will decrease cache size, making lookups faster at cost
+   of the smaller number of potential cache hits.
+
+
 .. opt:: Typeclasses Debug {? Verbosity @num}
 
    These options allow to see the resolution steps of typeclasses that are

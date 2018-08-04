@@ -52,16 +52,6 @@ Coq-8.9 (master):
  | min_goals=4    | 3:34 |  5.4% |           1155 |
 ```
 
-# Documentation #
-
-Added vernacular commands:
-
-* `Set Typeclasses Caching`
-* `Unset Typeclasses Caching`
-* `Test Typeclasses Caching`
-* `Set Typeclasses Caching Mingoals n`
-* `Test Typeclasses Caching Mingoals`
-
 # TODO #
 * Can try to optimize further the performance of `tc_cache_compare` function
 * Try to figure out why switching from 8.7 to 8.9 increased number of cache hits
