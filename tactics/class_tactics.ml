@@ -82,7 +82,10 @@ let typeclasses_caching = ref true
 let set_typeclasses_caching d = (:=) typeclasses_caching d
 let get_typeclasses_caching () = !typeclasses_caching
 
-(** [typeclasses_caching_min_subgoals] controls how much subgoals had to be checked before failed goal be cached. It is performance optimzation to avoid caching 'easy' goals, where overhad of the cache overcomes it's potential benefits. *)
+(** [typeclasses_caching_min_subgoals] controls how many subgoals have
+   to be checked before the failed goal is cached. It is performance
+   optimization to avoid caching 'easy' goals, where the overhead of
+   the cache overcomes its potential benefits.  *)
 let typeclasses_caching_min_subgoals = ref 4
 let set_typeclasses_caching_min_subgoals n =
   (:=) typeclasses_caching_min_subgoals (match n with | Some n -> n | None -> 0)
