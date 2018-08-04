@@ -68,7 +68,7 @@ to modify the proof script accordingly.
 Proof blocks and error resilience
 --------------------------------------
 
-|Coq| 8.6 introduced a mechanism for error resiliency: in interactive
+|Coq| 8.6 introduced a mechanism for error resilience: in interactive
 mode |Coq| is able to completely check a document containing errors
 instead of bailing out at the first failure.
 
@@ -92,14 +92,14 @@ Caveats
 ````````
 
 When a vernacular command fails the subsequent error messages may be
-bogus, i.e. caused by the first error. Error resiliency for vernacular
+bogus, i.e. caused by the first error. Error resilience for vernacular
 commands can be switched off by passing ``-async-proofs-command-error-resilience off``
 to |CoqIDE|.
 
 An incorrect proof block detection can result into an incorrect error
 recovery and hence in bogus errors. Proof block detection cannot be
 precise for bullets or any other non well parenthesized proof
-structure. Error resiliency can be turned off or selectively activated
+structure. Error resilience can be turned off or selectively activated
 for any set of block kind passing to |CoqIDE| one of the following
 options:
 
@@ -127,13 +127,14 @@ the very same button, that can also be used to see the list of errors
 and jump to the corresponding line.
 
 If a proof is processed asynchronously the corresponding Qed command
-is colored using a lighter color that usual. This signals that the
+is colored using a lighter color than usual. This signals that the
 proof has been delegated to a worker process (or will be processed
 lazily if the ``-async-proofs lazy`` option is used). Once finished, the
 worker process will provide the proof object, but this will not be
 automatically checked by the kernel of the main process. To force the
 kernel to check all the proof objects, one has to click the button
-with the gears. Only then are all the universe constraints checked.
+with the gears (Fully check the document) on the top bar.
+Only then all the universe constraints are checked.
 
 Caveats
 ```````
@@ -149,7 +150,7 @@ To disable this feature, one can pass the ``-async-proofs off`` flag to
 default, pass the ``-async-proofs on`` flag to enable it.
 
 Proofs that are known to take little time to process are not delegated
-to a worker process. The threshold can be configure with
+to a worker process. The threshold can be configured with
 ``-async-proofs-delegation-threshold``. Default is 0.03 seconds.
 
 Batch mode
@@ -157,7 +158,7 @@ Batch mode
 
 When |Coq| is used as a batch compiler by running `coqc` or `coqtop`
 -compile, it produces a `.vo` file for each `.v` file. A `.vo` file contains,
-among other things, theorems statements and proofs. Hence to produce a
+among other things, theorem statements and proofs. Hence to produce a
 .vo |Coq| need to process all the proofs of the `.v` file.
 
 The asynchronous processing of proofs can decouple the generation of a
@@ -225,5 +226,5 @@ in all the shells from which |Coq| processes will be started. If one
 uses just one terminal running the bash shell, then
 ``export ‘coqworkmgr -j 4‘`` will do the job.
 
-After that, all |Coq| processes, e.g. `coqide` and `coqc`, will honor the
+After that, all |Coq| processes, e.g. `coqide` and `coqc`, will respect the
 limit, globally.

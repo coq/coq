@@ -72,7 +72,7 @@ different. This can be seen when the :opt:`Printing Universes` option is on:
 Now :g:`pidentity` is used at two different levels: at the head of the
 application it is instantiated at ``Top.3`` while in the argument position
 it is instantiated at ``Top.4``. This definition is only valid as long as
-``Top.4`` is strictly smaller than ``Top.3``, as show by the constraints. Note
+``Top.4`` is strictly smaller than ``Top.3``, as shown by the constraints. Note
 that this definition is monomorphic (not universe polymorphic), so the
 two universes (in this case ``Top.3`` and ``Top.4``) are actually global
 levels.
