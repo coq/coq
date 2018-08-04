@@ -2,33 +2,27 @@
 
 # Status #
 
-Caching works and on our tests (compiling math-classes) shows 27%
+Caching works and in our tests (compiling math-classes) shows 27%
 speed up.
 
 # Discussion #
 
-We are caching failures of typeclass resolution. The cache is
-basically a set and we check for the membership. It is invalidated by
-changes in hints databases or other variables affecting typeclass
-resolution mechanims.
+We are caching failures of typeclass resolution. The cache is a set
+and we check for the membership. It is invalidated by changes in hints
+databases or other variables affecting typeclass resolution mechanism.
 
-Comparing goals is computationally heavy. Due to the nature of
-comparison we could not only define equality predicate on goals, not
-orderding. Additionally it is not possible to define a hash function
-to use a hash set.
-
-We need to strike a ballance between the cost of cache lookups and
-number of cache hits. Both addition and lookup of the new goals to
-cache are heavy operation (`O(n)`). Our initial naive implementation
-("Strict match") gave us 2.49% hit rate with max cache size ~24000
-entries.
+Comparing goals is computationally heavy, so we need to strike a
+balance between the cost of cache lookups and the number of cache
+hits. Both addition and lookup of the new goals to the cache are heavy
+operations (`O(n)`). Our initial naive implementation ("Strict match")
+gave us 2.49% hit rate with max cache size ~24000 entries.
 
 Implementing more intelligent match up to unresolved evars ("Evar
 match") increased the hit ratio to 14% and max cache size become more
 manageable: 3995.
 
 Our final observation was that due to the cost of cache lookup it does
-not make sense to check it for goals which are the leafs in the proof
+not make sense to check it for goals which are the leaves in the proof
 search tree. We introduced a `min_goals` parameter which controls how
 many dependent goals a goal must have to be included in caching. This
 slightly decreased cache size and marginally improved performance.
@@ -50,7 +44,7 @@ Coq-8.7:
 Switching to Coq-8.8 master branch significantly improved cache
 performance:
 
-Coq-8.8 (master):
+Coq-8.9 (master):
 ```
  | Experiment     | Time | Hits  | Max cache size |
  | -------------- | ---- | -- -- | -------------- |
@@ -68,17 +62,10 @@ Added vernacular commands:
 * `Set Typeclasses Caching Mingoals n`
 * `Test Typeclasses Caching Mingoals`
 
-# Links #
-
-* Experimental implementation for Coq-8.7
-  https://github.com/vzaliva/coq/tree/typeclass-cache
-* Ticket https://github.com/coq/coq/issues/6213
-
-
 # TODO #
-* Can try to optimize further performance of `tc_cache_compare` function
-* Try to figure out why switching from 8.7 to 8.8 increased number of cache hits
+* Can try to optimize further the performance of `tc_cache_compare` function
+* Try to figure out why switching from 8.7 to 8.9 increased number of cache hits
 * Persistently save and load the cache
-* Do not cache failures due to hint cut.
-* Debug command to examine the cache?
+* Do not cache failures due to hint cut
+* Debug command to examine the cache contents?
 * Add test cases for caching to testsuite/output
