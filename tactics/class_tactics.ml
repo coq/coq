@@ -620,10 +620,15 @@ module Search = struct
   (** This is caching-specific compare, not geneal-purpose *)
   let compare_autoinfo a b =
     let (>>==) f c = if f != 0 then f else Lazy.force c in
-    let open Pervasives in
-    compare a.search_dep b.search_dep >>==
-      lazy (compare a.search_only_classes b.search_only_classes) >>==
-      lazy (compare a.search_hints b.search_hints)
+    let bool_compare a b =
+      match a,b with
+      | true, true | false, false -> 0
+      | true, false -> 1
+      | false, true -> -1
+    in
+    bool_compare a.search_dep b.search_dep >>==
+      lazy (bool_compare a.search_only_classes b.search_only_classes) >>==
+      lazy (Hint_db.compare a.search_hints b.search_hints)
 
   type tc_cache_entry =
     {
