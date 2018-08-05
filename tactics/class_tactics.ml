@@ -738,14 +738,13 @@ module Search = struct
     let unique = not info.search_dep || is_unique env sigma concl in
     let backtrack = needs_backtrack env sigma unique concl in
     if !typeclasses_caching &&
-         TypeclassCache.exists
-           (fun x -> tc_cache_entry_cmp
+         TypeclassCache.mem
                        {
                          tc_cache_goal_sigma  = sigma ;
                          tc_cache_goal_concl   = EConstr.Unsafe.to_constr concl  ;
                          tc_cache_info              = info ;
                          tc_cache_global_hints = hints
-                       } x = 0) !typeclass_cache
+                       } !typeclass_cache
     then
       begin
         if !typeclasses_debug > 0 then
