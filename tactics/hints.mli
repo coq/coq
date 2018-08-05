@@ -162,6 +162,13 @@ module Hint_db :
     val cut : t -> hints_path
 
     val unfolds : t -> Id.Set.t * Cset.t
+
+    (** [compare x y] returns [0] if [x] is equal to [y], a negative
+       integer if [x] is less than [y], and a positive integer if [x]
+       is greater than [y]. The compare function can be used as the
+       comparison function required by the [Set.Make] and [Map.Make]
+       functors, as well as the [List.sort] and [Array.sort]
+       functions. *)
     val compare: t -> t -> int
   end
 
