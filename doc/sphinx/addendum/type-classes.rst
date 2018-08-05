@@ -532,11 +532,11 @@ Options
    lookups.
 
 
-.. opt:: Set Typeclasses Caching Mingoals @num
+.. opt:: Typeclasses Caching Mingoals @num
 
-   This option which controls how many dependent goals a failed goal
-   must have to be included in the cache. The value ``0`` will cause
-   caching all failed resolutions. Increasing the value of this the
+   This option controls how many dependent goals a failed goal must
+   have to be included in the cache. The value ``0`` will cause
+   caching all failed resolutions. Increasing the value of this
    parameter will decrease cache size, making lookups faster at cost
    of the smaller number of potential cache hits.
 
