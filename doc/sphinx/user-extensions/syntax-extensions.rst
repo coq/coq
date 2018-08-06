@@ -704,42 +704,46 @@ Custom entries
 
    This command allows to define new grammar entries, called *custom
    entries*, that can later be referred to using the entry name
-   :n:`custom @ident`. For instance, we may want to define an ad hoc
+   :n:`custom @ident`.
+
+.. example::
+
+   For instance, we may want to define an ad hoc
    parser for arithmetical operations and proceed as follows:
 
-.. coqtop:: all
+   .. coqtop:: all
 
-   Inductive Expr :=
-   | One : Expr
-   | Mul : Expr -> Expr -> Expr
-   | Add : Expr -> Expr -> Expr.
+      Inductive Expr :=
+      | One : Expr
+      | Mul : Expr -> Expr -> Expr
+      | Add : Expr -> Expr -> Expr.
 
-   Declare Custom Entry expr.
-   Notation "[ e ]" := e (e custom expr at level 2).
-   Notation "1" := One (in custom expr at level 0).
-   Notation "x y" := (Mul x y) (in custom expr at level 1, left associativity).
-   Notation "x + y" := (Add x y) (in custom expr at level 2, left associativity).
-   Notation "( x )" := x (in custom expr, x at level 2).
-   Notation "{ x }" := x (in custom expr, x constr).
-   Notation "x" := x (in custom expr at level 0, x ident).
+      Declare Custom Entry expr.
+      Notation "[ e ]" := e (e custom expr at level 2).
+      Notation "1" := One (in custom expr at level 0).
+      Notation "x y" := (Mul x y) (in custom expr at level 1, left associativity).
+      Notation "x + y" := (Add x y) (in custom expr at level 2, left associativity).
+      Notation "( x )" := x (in custom expr, x at level 2).
+      Notation "{ x }" := x (in custom expr, x constr).
+      Notation "x" := x (in custom expr at level 0, x ident).
 
-   Axiom f : nat -> Expr.
-   Check fun x y z => [1 + y z + {f x}].
-   Unset Printing Notations.
-   Check fun x y z => [1 + y z + {f x}].
-   Set Printing Notations.
-   Check fun e => match e with
-   | [1 + 1] => [1]
-   | [x y + z] => [x + y z]
-   | y => [y + e]
-   end.
+      Axiom f : nat -> Expr.
+      Check fun x y z => [1 + y z + {f x}].
+      Unset Printing Notations.
+      Check fun x y z => [1 + y z + {f x}].
+      Set Printing Notations.
+      Check fun e => match e with
+      | [1 + 1] => [1]
+      | [x y + z] => [x + y z]
+      | y => [y + e]
+      end.
 
 Custom entries have levels, like the main grammar of terms and grammar
 of patterns have. The lower level is 0 and this is the level used by
 default to put rules delimited with tokens on both ends. The level is
-left to be inferred by Coq when using :n:`in custom @ident``. The
-level is otherwise given explicitly by using the syntax :n:`in custom
-@ident at level @num`, where :n:`@num` refers to the level.
+left to be inferred by Coq when using :n:`in custom @ident`. The
+level is otherwise given explicitly by using the syntax
+:n:`in custom @ident at level @num`, where :n:`@num` refers to the level.
 
 Levels are cumulative: a notation at level ``n`` of which the left end
 is a term shall use rules at level less than ``n`` to parse this
@@ -751,16 +755,26 @@ the right end is a term shall use by default rules at level strictly
 less than ``n`` to parse this sub-term if the rule is declared left
 associative and rules at level less or equal than ``n`` if the rule is
 declared right associative. This is what happens for instance in the
-rule ``Notation "x + y" := (Add x y) (in custom expr at level 2, left
-associativity)`` where ``x`` is any expression parsed in entry
+rule
+
+.. coqtop:: in
+
+   Notation "x + y" := (Add x y) (in custom expr at level 2, left associativity).
+
+where ``x`` is any expression parsed in entry
 ``expr`` at level less or equal than ``2`` (including, recursively,
 the given rule) and ``y`` is any expression parsed in entry ``expr``
 at level strictly less than ``2``.
 
 Rules associated to an entry can refer different sub-entries. The
 grammar entry name ``constr`` can be used to refer to the main grammar
-of term as in the rule ``Notation "{ x }" := x (in custom expr at
-level 0, x constr)`` which indicates that the subterm ``x`` should be
+of term as in the rule
+
+.. coqtop:: in
+
+   Notation "{ x }" := x (in custom expr at level 0, x constr).
+
+which indicates that the subterm ``x`` should be
 parsed using the main grammar. If not indicated, the level is computed
 as for notations in ``constr``, e.g. using 200 as default level for
 inner sub-expressions. The level can otherwise be indicated explicitly
@@ -769,10 +783,19 @@ level``.
 
 Conversely, custom entries can be used to parse sub-expressions of the
 main grammar, or from another custom entry as is the case in
-:g:`Notation "[ e ]" := e (e custom expr at level 2)` to indicate that
-``e`` has to be parsed at level ``2`` of the grammar associated to the
-custom entry ``expr``. The level can be omitted, as in :g:`Notation "[ e
-]" := e (e custom expr)`, in which case Coq tries to infer it.
+
+.. coqtop:: in
+
+   Notation "[ e ]" := e (e custom expr at level 2).
+
+to indicate that ``e`` has to be parsed at level ``2`` of the grammar
+associated to the custom entry ``expr``. The level can be omitted, as in
+
+.. coqtop:: in
+
+   Notation "[ e ]" := e (e custom expr)`.
+
+in which case Coq tries to infer it.
 
 In the absence of an explicit entry for parsing or printing a
 sub-expression of a notation in a custom entry, the default is to
@@ -785,23 +808,40 @@ level n``.
 In general, rules are required to be *productive* on the right-hand
 side, i.e. that they are bound to an expression which is not
 reduced to a single variable. If the rule is not productive on the
-right-hand side, as it is the case above for :g:`Notation "( x )" := x
-(in custom expr at level 0, x at level 2)` and :g:`Notation "{ x }" :=
-x (in custom expr at level 0, x constr)`, it is used as a *grammar
-coercion* which means that it is used to parse or print an expression
-which is not available in the current grammar at the current level of
-parsing or printing for this grammar but which is available in another
-grammar or in another level of the current grammar. For instance,
-:g:`Notation "( x )" := x (in custom expr at level 0, x at level 2)`
+right-hand side, as it is the case above for
+
+.. coqtop:: in
+
+   Notation "( x )" := x (in custom expr at level 0, x at level 2).
+
+and
+
+.. coqtop:: in
+
+   Notation "{ x }" := x (in custom expr at level 0, x constr).
+
+it is used as a *grammar coercion* which means that it is used to parse or
+print an expression which is not available in the current grammar at the
+current level of parsing or printing for this grammar but which is available
+in another grammar or in another level of the current grammar. For instance,
+
+.. coqtop:: in
+
+   Notation "( x )" := x (in custom expr at level 0, x at level 2).
+
 tells that parentheses can be inserted to parse or print an expression
 declared at level ``2`` of ``expr`` whenever this expression is
 expected to be used as a subterm at level 0 or 1.  This allows for
 instance to parse and print :g:`Add x y` as a subterm of :g:`Mul (Add
-x y) z` using the syntax ``(x + y) z``. Similarly, :g:`Notation "{ x }"
-:= x (in custom expr at level 0, x constr)` gives a way to let any
-arbitrary expression which is not in handled by the custom entry
-``expr`` be parsed or printed by the main grammar of term up to the
-insertion of a pair of curly brackets.
+x y) z` using the syntax ``(x + y) z``. Similarly,
+
+.. coqtop:: in
+
+   Notation "{ x }" := x (in custom expr at level 0, x constr).
+
+gives a way to let any arbitrary expression which is not handled by the
+custom entry ``expr`` be parsed or printed by the main grammar of term
+up to the insertion of a pair of curly brackets.
 
 .. cmd:: Print Grammar @ident.
 
