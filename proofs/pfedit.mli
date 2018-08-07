@@ -60,7 +60,7 @@ val get_current_goal_context : unit -> Evd.evar_map * env
   If there is no pending proof then it returns the current global
   environment and empty evar_map. *)
 
-val get_current_context : unit -> Evd.evar_map * env
+val get_current_context : ?p:Proof.t -> unit -> Evd.evar_map * env
 
 (** [current_proof_statement] *)
 
