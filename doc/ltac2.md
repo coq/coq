@@ -24,6 +24,61 @@ that features at least the following:
 This document describes the implementation of such a language. The
 implementation of Ltac as of Coq 8.7 will be referred to as Ltac1.
 
+# Contents
+
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
+
+- [Summary](#summary)
+- [Contents](#contents)
+- [General design](#general-design)
+- [ML component](#ml-component)
+    - [Overview](#overview)
+    - [Type Syntax](#type-syntax)
+    - [Type declarations](#type-declarations)
+    - [Term Syntax](#term-syntax)
+    - [Ltac Definitions](#ltac-definitions)
+    - [Reduction](#reduction)
+    - [Typing](#typing)
+    - [Effects](#effects)
+        - [Standard IO](#standard-io)
+        - [Fatal errors](#fatal-errors)
+        - [Backtrack](#backtrack)
+        - [Goals](#goals)
+- [Meta-programming](#meta-programming)
+    - [Overview](#overview-1)
+    - [Generic Syntax for Quotations](#generic-syntax-for-quotations)
+        - [Built-in quotations](#built-in-quotations)
+        - [Strict vs. non-strict mode](#strict-vs-non-strict-mode)
+    - [Term Antiquotations](#term-antiquotations)
+        - [Syntax](#syntax)
+        - [Semantics](#semantics)
+            - [Static semantics](#static-semantics)
+            - [Dynamic semantics](#dynamic-semantics)
+    - [Trivial Term Antiquotations](#trivial-term-antiquotations)
+    - [Match over terms](#match-over-terms)
+    - [Match over goals](#match-over-goals)
+- [Notations](#notations)
+    - [Scopes](#scopes)
+    - [Notations](#notations-1)
+    - [Abbreviations](#abbreviations)
+- [Evaluation](#evaluation)
+- [Debug](#debug)
+- [Compatibility layer with Ltac1](#compatibility-layer-with-ltac1)
+    - [Ltac1 from Ltac2](#ltac1-from-ltac2)
+    - [Ltac2 from Ltac1](#ltac2-from-ltac1)
+- [Transition from Ltac1](#transition-from-ltac1)
+    - [Syntax changes](#syntax-changes)
+    - [Tactic delay](#tactic-delay)
+    - [Variable binding](#variable-binding)
+        - [In Ltac expressions](#in-ltac-expressions)
+        - [In quotations](#in-quotations)
+    - [Exception catching](#exception-catching)
+- [TODO](#todo)
+
+<!-- markdown-toc end -->
+
+
 # General design
 
 There are various alternatives to Ltac1, such that Mtac or Rtac for instance.
