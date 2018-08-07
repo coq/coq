@@ -51,23 +51,22 @@ let _ = CErrors.register_handler begin function
   | _ -> raise CErrors.Unhandled
 end
 
-let get_nth_V82_goal i =
-  let p = Proof_global.give_me_the_proof () in
+let get_nth_V82_goal p i =
   let goals,_,_,_,sigma = Proof.proof p in
   try { it = List.nth goals (i-1) ; sigma }
   with Failure _ -> raise NoSuchGoal
 
-let get_goal_context_gen i =
-  let { it=goal ; sigma=sigma; } =  get_nth_V82_goal i in
+let get_goal_context_gen p i =
+  let { it=goal ; sigma=sigma; } = get_nth_V82_goal p i in
   (sigma, Refiner.pf_env { it=goal ; sigma=sigma; })
 
 let get_goal_context i =
-  try get_goal_context_gen i
+  try get_goal_context_gen (Proof_global.give_me_the_proof ()) i
   with Proof_global.NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof.")
      | NoSuchGoal -> CErrors.user_err Pp.(str "No such goal.")
 
 let get_current_goal_context () =
-  try get_goal_context_gen 1
+  try get_goal_context_gen (Proof_global.give_me_the_proof ()) 1
   with Proof_global.NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof.")
      | NoSuchGoal -> 
     (* spiwack: returning empty evar_map, since if there is no goal, under focus,
@@ -75,14 +74,18 @@ let get_current_goal_context () =
     let env = Global.env () in
     (Evd.from_env env, env)
 
-let get_current_context () =
-  try get_goal_context_gen 1
+let get_current_context ?p () =
+  let current_proof_by_default = function
+    | Some p -> p
+    | None -> Proof_global.give_me_the_proof ()
+  in
+  try get_goal_context_gen (current_proof_by_default p) 1
   with Proof_global.NoCurrentProof ->
     let env = Global.env () in
     (Evd.from_env env, env)
      | NoSuchGoal ->
         (* No more focused goals ? *)
-        let p = Proof_global.give_me_the_proof () in
+        let p = (current_proof_by_default p) in
         let evd = Proof.in_proof p (fun x -> x) in
         (evd, Global.env ())
 
