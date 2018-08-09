@@ -143,3 +143,5 @@ module V82 = struct
 				       ) ~init:(concl sigma gl) env
 
 end
+
+module Set = Set.Make(struct type t = goal let compare = Evar.compare end)
