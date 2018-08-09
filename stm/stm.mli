@@ -111,7 +111,8 @@ val add : doc:doc -> ontop:Stateid.t -> ?newtip:Stateid.t ->
   doc * Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
 
 (* Returns the proof state before the last tactic that was applied at or before
-the specified state.  Used to compute proof diffs. *)
+the specified state AND that has differences in the underlying proof (i.e.,
+ignoring proofview-only changes).  Used to compute proof diffs. *)
 val get_prev_proof : doc:doc -> Stateid.t -> Proof.t option
 
 (* [query at ?report_with cmd] Executes [cmd] at a given state [at],

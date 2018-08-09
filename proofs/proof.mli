@@ -210,3 +210,6 @@ module V82 : sig
   (* Implements the Existential command *)
   val instantiate_evar : int -> Constrexpr.constr_expr -> t -> t
 end
+
+(* returns the set of all goals in the proof *)
+val all_goals : t -> Goal.Set.t
