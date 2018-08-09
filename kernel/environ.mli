@@ -46,8 +46,18 @@ type constant_key = Opaqueproof.opaque constant_body * (link_info ref * key)
 
 type mind_key = mutual_inductive_body * link_info ref
 
-type globals
-(** globals = constants + projections + inductive types + modules + module-types *)
+module Globals : sig
+  type t
+
+  type view =
+    { constants : constant_key Cmap_env.t
+    ; inductives : mind_key Mindmap_env.t
+    ; modules : module_body MPmap.t
+    ; modtypes : module_type_body MPmap.t
+    }
+
+  val view : t -> view
+end
 
 type stratification = {
   env_universes : UGraph.t;
@@ -67,7 +77,7 @@ type rel_context_val = private {
 }
 
 type env = private {
-  env_globals       : globals;
+  env_globals       : Globals.t;
   env_named_context : named_context_val; (* section variables *)
   env_rel_context   : rel_context_val;
   env_nb_rel        : int;
