@@ -71,3 +71,5 @@ module V82 : sig
   val abstract_type : Evd.evar_map -> goal -> EConstr.types 
 
 end
+
+module Set : sig include Set.S with type elt = goal end
