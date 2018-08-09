@@ -13,7 +13,7 @@ Require Import ZAxioms ZMulOrder ZSgnAbs NZDiv.
 (** * Euclidean Division for integers, Euclid convention
 
     We use here the "usual" formulation of the Euclid Theorem
-    [forall a b, b<>0 -> exists b q, a = b*q+r /\ 0 < r < |b| ]
+    [forall a b, b<>0 -> exists r q, a = b*q+r /\ 0 < r < |b| ]
 
     The outcome of the modulo function is hence always positive.
     This corresponds to convention "E" in the following paper:
