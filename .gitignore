@@ -98,6 +98,7 @@ doc/faq/axioms.eps_t
 doc/faq/axioms.pdf_t
 doc/faq/axioms.png
 doc/sphinx/index.rst
+doc/sphinx/zebibliography.rst
 doc/stdlib/Library.out
 doc/stdlib/Library.ps
 doc/stdlib/Library.coqdoc.tex

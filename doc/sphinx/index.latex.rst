@@ -77,5 +77,5 @@ Addendum
    addendum/miscellaneous-extensions
    addendum/universe-polymorphism
 
-..  No need for an explicit bibliography entry in the toc: it gets picked up
-    from ``zebibliography.rst``.
+.. toctree::
+   zebibliography
