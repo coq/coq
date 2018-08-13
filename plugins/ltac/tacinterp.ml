@@ -1664,16 +1664,18 @@ and interp_atomic ist tac : unit Proofview.tactic =
         (* We try to fully-typecheck the term *)
           let flags = open_constr_use_classes_flags () in
           let (sigma,c_interp) = interp_open_constr ~flags ist env sigma c in
-          let let_tac b na c cl eqpat =
-            let id = Option.default (make IntroAnonymous) eqpat in
-            let with_eq = if b then None else Some (true,id) in
-            Tactics.letin_tac with_eq na c None cl
-          in
           let na = interp_name ist env sigma na in
+          let let_tac =
+            if b then Tactics.pose_tac na c_interp
+            else
+              let id = Option.default (make IntroAnonymous) eqpat in
+              let with_eq = Some (true, id) in
+              Tactics.letin_tac with_eq na c_interp None Locusops.nowhere
+          in
           Tacticals.New.tclWITHHOLES ev
           (name_atomic ~env
             (TacLetTac(ev,na,c_interp,clp,b,eqpat))
-            (let_tac b na c_interp clp eqpat)) sigma
+            let_tac) sigma
         else
         (* We try to keep the pattern structure as much as possible *)
           let let_pat_tac b na c cl eqpat =
