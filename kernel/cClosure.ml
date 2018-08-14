@@ -551,45 +551,7 @@ let mk_clos_vect env v = match v with
   [|mk_clos env v0; mk_clos env v1; mk_clos env v2; mk_clos env v3|]
 | v -> Array.Fun1.map mk_clos env v
 
-(* Translate the head constructor of t from constr to fconstr. This
-   function is parameterized by the function to apply on the direct
-   subterms.
-   Could be used insted of mk_clos. *)
-let mk_clos_deep clos_fun env t =
-  match kind t with
-    | (Rel _|Ind _|Const _|Construct _|Var _|Meta _ | Sort _) ->
-        mk_clos env t
-    | Cast (a,k,b) ->
-        { norm = Red;
-          term = FCast (clos_fun env a, k, clos_fun env b)}
-    | App (f,v) ->
-        { norm = Red;
-          term = FApp (clos_fun env f, Array.Fun1.map clos_fun env v) }
-    | Proj (p,c) ->
-	{ norm = Red;
-	  term = FProj (p, clos_fun env c) }
-    | Case (ci,p,c,v) ->
-        { norm = Red;
-	  term = FCaseT (ci, p, clos_fun env c, v, env) }
-    | Fix fx ->
-        { norm = Cstr; term = FFix (fx, env) }
-    | CoFix cfx ->
-        { norm = Cstr; term = FCoFix(cfx,env) }
-    | Lambda _ ->
-        { norm = Cstr; term = mk_lambda env t }
-    | Prod (n,t,c)   ->
-        { norm = Whnf;
-	  term = FProd (n, clos_fun env t, clos_fun (subs_lift env) c) }
-    | LetIn (n,b,t,c) ->
-        { norm = Red;
-	  term = FLetIn (n, clos_fun env b, clos_fun env t, c, env) }
-    | Evar ev ->
-	{ norm = Red; term = FEvar(ev,env) }
-
-(* A better mk_clos? *)
-let mk_clos2 = mk_clos_deep mk_clos
-
-(* The inverse of mk_clos_deep: move back to constr *)
+(* The inverse of mk_clos: move back to constr *)
 let rec to_constr lfts v =
   match v.term with
     | FRel i -> mkRel (reloc_rel i lfts)
@@ -922,13 +884,18 @@ and knht info e t stk =
         knht info e a (append_stack (mk_clos_vect e b) stk)
     | Case(ci,p,t,br) ->
         knht info e t (ZcaseT(ci, p, br, e)::stk)
-    | Fix _ -> knh info (mk_clos2 e t) stk
+    | Fix fx -> knh info { norm = Cstr; term = FFix (fx, e) } stk
     | Cast(a,_,_) -> knht info e a stk
     | Rel n -> knh info (clos_rel e n) stk
-    | Proj (_p,_c) -> knh info (mk_clos2 e t) stk
-    | (Lambda _|Prod _|Construct _|CoFix _|Ind _|
-       LetIn _|Const _|Var _|Evar _|Meta _|Sort _) ->
-        (mk_clos2 e t, stk)
+    | Proj (p, c) -> knh info { norm = Red; term = FProj (p, mk_clos e c) } stk
+    | (Ind _|Const _|Construct _|Var _|Meta _ | Sort _) -> (mk_clos e t, stk)
+    | CoFix cfx -> { norm = Cstr; term = FCoFix (cfx,e) }, stk
+    | Lambda _ -> { norm = Cstr; term = mk_lambda e t }, stk
+    | Prod (n, t, c) ->
+      { norm = Whnf; term = FProd (n, mk_clos e t, mk_clos (subs_lift e) c) }, stk
+    | LetIn (n,b,t,c) ->
+      { norm = Red; term = FLetIn (n, mk_clos e b, mk_clos e t, c, e) }, stk
+    | Evar ev -> { norm = Red; term = FEvar (ev, e) }, stk
 
 
 (************************************************************************)
