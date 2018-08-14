@@ -160,3 +160,18 @@ Module Test9.
     Fail Numeral Notation wuint wrap'' unwrap'' : wuint_scope.
   End with_let.
 End Test9.
+
+Module Test10.
+  (* Test that it is only a warning to add abstract after to an optional parsing function *)
+  Definition to_uint (v : unit) := Nat.to_uint 0.
+  Definition of_uint (v : Decimal.uint) := match Nat.of_uint v with O => Some tt | _ => None end.
+  Definition of_any_uint (v : Decimal.uint) := tt.
+  Delimit Scope unit_scope with unit.
+  Delimit Scope unit2_scope with unit2.
+  Numeral Notation unit of_uint to_uint : unit_scope (abstract after 1).
+  Local Set Warnings Append "+abstract-large-number-no-op".
+  (* Check that there is actually a warning here *)
+  Fail Numeral Notation unit of_uint to_uint : unit2_scope (abstract after 1).
+  (* Check that there is no warning here *)
+  Numeral Notation unit of_any_uint to_uint : unit2_scope (abstract after 1).
+End Test10.
