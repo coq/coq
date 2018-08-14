@@ -66,6 +66,14 @@ let warn_abstract_large_num =
       pr_qualid ty ++ strbrk " are interpreted as applications of " ++
       Printer.pr_constant (Global.env ()) f ++ strbrk ".")
 
+let warn_abstract_large_num_no_op =
+  CWarnings.create ~name:"abstract-large-number-no-op" ~category:"numbers"
+    (fun f ->
+      strbrk "The 'abstract after' directive has no effect when " ++
+      strbrk "the parsing function (" ++
+      Printer.pr_constant (Global.env ()) f ++ strbrk ") targets an " ++
+      strbrk "option type.")
+
 (** Comparing two raw numbers (base 10, big-endian, non-negative).
     A bit nasty, but not critical: only used to decide when a
     number is considered as large (see warnings above). *)
@@ -468,6 +476,9 @@ let vernac_numeral_notation ty f g scope opts =
             num_ty = ty;
             warning = opts }
   in
+  (match opts, to_kind with
+   | Abstract _, (_, Option) -> warn_abstract_large_num_no_op o.to_ty
+   | _ -> ());
   (* TODO: un hash suffit-il ? *)
   let uid = Marshal.to_string o [] in
   let i = Notation.(

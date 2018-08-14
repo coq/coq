@@ -1499,6 +1499,10 @@ Numeral notations
 
        Check 90000.
 
+  .. warn:: The 'abstract after' directive has no effect when the parsing function (@ident__2) targets an option type.
+
+    As noted above, the :n:`(abstract after @num)` directive has no
+    effect when :n:`@ident__2` lands in an :g:`option` type.
 
 .. _TacticNotation:
 
