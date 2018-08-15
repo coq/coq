@@ -59,6 +59,17 @@ type unifier = unify_flags -> unification_kind ->
 type conversion_check = unify_flags -> unification_kind ->
   env -> evar_map -> conv_pb -> constr -> constr -> bool
 
+(** [instantiate_evar unify flags env sigma ev c] defines the evar [ev] with [c],
+    checking that the type of [c] is unifiable with [ev]'s declared type first.
+
+    Preconditions:
+    - [ev] does not occur in [c].
+    - [c] does not contain any Meta(_)
+ *)
+
+val instantiate_evar : unifier -> unify_flags -> evar_map ->
+  Evar.t -> constr -> evar_map
+
 (** [evar_define choose env ev c] try to instantiate [ev] with [c] (typed in [env]),
    possibly solving related unification problems, possibly leaving open
    some problems that cannot be solved in a unique way (except if choose is
@@ -66,6 +77,7 @@ type conversion_check = unify_flags -> unification_kind ->
 
 val evar_define : unifier -> unify_flags -> ?choose:bool -> ?imitate_defs:bool ->
   env -> evar_map -> bool option -> existential -> constr -> evar_map
+
 
 val refresh_universes :
   ?status:Evd.rigid ->

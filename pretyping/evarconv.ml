@@ -420,7 +420,10 @@ let compare_cumulative_instances evd variances u u' =
 
 let conv_fun f flags on_types =
   let typefn env evd pbty term1 term2 =
-    f { (default_flags env) with with_cs = flags.with_cs } env evd pbty term1 term2
+    let flags = { (default_flags env) with
+      with_cs = flags.with_cs;
+      frozen_evars = flags.frozen_evars }
+    in f flags env evd pbty term1 term2
   in
   let termfn env evd pbty term1 term2 =
     f flags env evd pbty term1 term2
@@ -1397,50 +1400,45 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
        Feedback.msg_debug Pp.(str"abstracting: " ++
                                 prc env_rhs (mkVar id) ++ spc () ++
                                 prc env_rhs c);
-      let rec force_instantiation evd = function
-      | (evk,evty,inst,abstract)::evs ->
-         let evk = Option.default evk (Evarutil.advance evd evk) in
-         let evd =
-            if is_undefined evd evk then
-              (* We try abstraction or concretisation for *)
-              (* this unconstrained occurrence *)
-              (* and we use typing to propagate this instantiation *)
-              (* We avoid making an arbitrary choice by leaving candidates *)
-              (* if both can work *)
-              let evi = Evd.find_undefined evd evk in
-              let vid = mkVar id in
-              let candidates = [inst; vid] in
-              try
-                let evd, ev = Evarutil.restrict_evar evd evk (Evd.evar_filter evi) (Some candidates) in
-                let evi = Evd.find evd ev in
-                (match evar_candidates evi with
-                 | Some [t] ->
-                    if not (noccur_evar env_rhs evd ev (EConstr.of_constr t)) then
-                      raise (TypingFailed evd);
-                    let evd = Evd.define ev (EConstr.of_constr t) evd in
-                    check_evar_instance evar_unify flags evd ev (EConstr.of_constr t)
-                 | Some l when abstract = Abstraction.Abstract &&
-                     List.exists (fun c -> isVarId evd id (EConstr.of_constr c)) l ->
-                    let evd = Evd.define ev vid evd in
-                    check_evar_instance evar_unify flags evd ev vid
-                 | _ -> evd)
-              with e -> user_err (Pp.str "Cannot find an instance")
-            else
-              ((if !debug_ho_unification then
-                  let evi = Evd.find evd evk in
-                  let env = Evd.evar_env evi in
-                  Feedback.msg_debug Pp.(str"evar is defined: " ++
-                     int (Evar.repr evk) ++ spc () ++
-                     prc env (match evar_body evi with Evar_defined c -> c
-                                                     | Evar_empty -> assert false)));
-               evd)
-          in
-          force_instantiation evd evs
-      | [] ->
-          abstract_free_holes evd l
-      in
-      force_instantiation evd !evsref
-  | [] ->
+     let rec force_instantiation evd = function
+     | (evk,evty,inst,abstract)::evs ->
+       let evk = Option.default evk (Evarutil.advance evd evk) in
+       let evd =
+         if is_undefined evd evk then
+         (* We try abstraction or concretisation for *)
+         (* this unconstrained occurrence *)
+         (* and we use typing to propagate this instantiation *)
+         (* We avoid making an arbitrary choice by leaving candidates *)
+         (* if both can work *)
+         let evi = Evd.find_undefined evd evk in
+         let vid = mkVar id in
+         let candidates = [inst; vid] in
+           try
+             let evd, ev = Evarutil.restrict_evar evd evk (Evd.evar_filter evi) (Some candidates) in
+             let evi = Evd.find evd ev in
+               (match evar_candidates evi with
+               | Some [t] ->
+                 if not (noccur_evar env_rhs evd ev (EConstr.of_constr t)) then
+                   raise (TypingFailed evd);
+                 instantiate_evar evar_unify flags evd ev (EConstr.of_constr t)
+               | Some l when abstract = Abstraction.Abstract &&
+                          List.exists (fun c -> isVarId evd id (EConstr.of_constr c)) l ->
+                 instantiate_evar evar_unify flags evd ev vid
+               | _ -> evd)
+           with e -> user_err (Pp.str "Cannot find an instance")
+         else
+           ((if !debug_ho_unification then
+               let evi = Evd.find evd evk in
+               let env = Evd.evar_env evi in
+               Feedback.msg_debug Pp.(str"evar is defined: " ++
+                 int (Evar.repr evk) ++ spc () ++
+                 prc env (match evar_body evi with Evar_defined c -> c
+                   | Evar_empty -> assert false)));
+            evd)
+       in force_instantiation evd evs
+     | [] -> abstract_free_holes evd l
+     in force_instantiation evd !evsref
+   | [] ->
      if Evd.is_defined evd evk then
        (** Can happen due to dependencies: instantiating evars in the arguments of evk might
            instantiate evk itself. *)
@@ -1453,25 +1451,23 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
           end;
         evd)
      else
-       let evd =
-         try
-           let evi = Evd.find_undefined evd evk in
-           let evenv = evar_env evi in
-           let evdref = ref evd in
-           let rhs' = nf_evar !evdref rhs' in
+       try
+         let evi = Evd.find_undefined evd evk in
+         let evenv = evar_env evi in
+         let evdref = ref evd in
+         let rhs' = nf_evar !evdref rhs' in
            if !debug_ho_unification then
              Feedback.msg_debug Pp.(str"abstracted type before second solve_evars: " ++
                                       prc evenv rhs');
-           (** solve_evars is not commuting with nf_evar, because restricting
-               an evar might provide a more specific type. *)
-           let evd, _ = !solve_evars evenv evd rhs' in
-           evdref := evd;
-           if !debug_ho_unification then
-             Feedback.msg_debug Pp.(str"abstracted type: " ++ prc evenv (nf_evar !evdref rhs'));
-           let flags = default_flags_of TransparentState.full in
-           Evarsolve.check_evar_instance evar_unify flags !evdref evk rhs'
+         (** solve_evars is not commuting with nf_evar, because restricting
+             an evar might provide a more specific type. *)
+          let evd, _ = !solve_evars evenv evd rhs' in
+          evdref := evd;
+          if !debug_ho_unification then
+            Feedback.msg_debug Pp.(str"abstracted type: " ++ prc evenv (nf_evar !evdref rhs'));
+          let flags = default_flags_of TransparentState.full in
+            Evarsolve.instantiate_evar evar_unify flags !evdref evk rhs'
          with IllTypedInstance _ -> raise (TypingFailed evd)
-       in Evd.define evk rhs' evd
   in
   let evd = abstract_free_holes evd subst in
   evd, true
@@ -1484,6 +1480,8 @@ let default_evar_selection flags evd (ev,args) =
     | _ :: args, a :: abs ->
       let spec =
         if not flags.allow_K_at_toplevel then
+          (* [evar_absorb_arguments] puts an Abstract flag for the
+             toplevel binders that were absorbed. *)
           let occs =
             if a == Abstraction.Abstract then Locus.AtLeastOneOccurrence
             else Locus.AllOccurrences
@@ -1624,8 +1622,7 @@ let rec solve_unconstrained_evars_with_candidates flags evd =
       | a::l ->
           (* In case of variables, most recent ones come first *)
           try
-            let evd = check_evar_instance evar_unify flags evd evk a in
-            let evd = Evd.define evk a evd in
+            let evd = instantiate_evar evar_unify flags evd evk a in
             match reconsider_unif_constraints evar_unify flags evd with
             | Success evd -> solve_unconstrained_evars_with_candidates flags evd
             | UnifFailure _ -> aux l
@@ -1645,8 +1642,7 @@ let solve_unconstrained_impossible_cases env evd =
       let evd' = Evd.merge_context_set Evd.univ_flexible_alg ?loc evd' ctx in
       let ty = j_type j in
       let flags = default_flags env in
-      let evd' = check_evar_instance evar_unify flags evd' evk ty in
-        Evd.define evk ty evd'
+      instantiate_evar evar_unify flags evd' evk ty
     | _ -> evd') evd evd
 
 let solve_unif_constraints_with_heuristics env

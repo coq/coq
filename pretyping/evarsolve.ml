@@ -1428,6 +1428,13 @@ let occur_evar_upto_types sigma n c =
   in
   try occur_rec c; false with Occur -> true
 
+let instantiate_evar unify flags evd evk body =
+  (** Check instance freezing the evar to be defined, as
+      checking could involve the same evar definition problem again otherwise *)
+  let flags = { flags with frozen_evars = Evar.Set.add evk flags.frozen_evars } in
+  let evd' = check_evar_instance unify flags evd evk body in
+  Evd.define evk body evd'
+
 (* We try to instantiate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times
  * (i.e. we tackle a generalization of Miller-Pfenning patterns unification)
@@ -1649,11 +1656,7 @@ and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (e
     if occur_evar_upto_types evd' evk body then raise (OccurCheckIn (evd',body));
     (* needed only if an inferred type *)
     let evd', body = refresh_universes pbty env evd' body in
-    (** Check instance freezing the evar to be defined, as
-        checking could involve the same evar definition problem again otherwise *)
-    let flags = { flags with frozen_evars = Evar.Set.add evk flags.frozen_evars } in
-    let evd' = check_evar_instance unify flags evd' evk body in
-    Evd.define evk body evd'
+    instantiate_evar unify flags evd' evk body
   with
     | NotEnoughInformationToProgress sols ->
         postpone_non_unique_projection env evd pbty ev sols rhs
