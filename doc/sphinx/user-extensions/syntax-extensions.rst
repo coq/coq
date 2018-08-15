@@ -1438,19 +1438,19 @@ Numeral notations
     The printing function given to the :cmd:`Numeral Notation`
     vernacular is not of the right type.
 
-  .. exn:: @type is not an inductive type
+  .. exn:: @type is not an inductive type.
 
     Numeral notations can only be declared for inductive types with no
     arguments.
 
-  .. exn:: Unexpected term while parsing a numeral notation
+  .. exn:: Unexpected term @term while parsing a numeral notation.
 
     Parsing functions must always return ground terms, made up of
     applications of constructors and inductive types.  Parsing
     functions may not return terms containing axioms, bare
     (co)fixpoints, lambdas, etc.
 
-  .. exn:: Unexpected non-option term while parsing a numeral notation
+  .. exn:: Unexpected non-option term @term while parsing a numeral notation.
 
     Parsing functions expected to return an :g:`option` must always
     return a concrete :g:`Some` or :g:`None` when applied to a
