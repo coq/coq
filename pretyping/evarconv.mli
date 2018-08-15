@@ -80,11 +80,10 @@ type occurrence_match_test =
 
 (** When given the choice of abstracting an occurrence or leaving it,
     force abstration. *)
-type prefer_abstraction = bool
 
 type occurrence_selection =
   | AtOccurrences of occurrences
-  | Unspecified of prefer_abstraction
+  | Unspecified of Abstraction.abstraction
 
 (** By default, unspecified, not preferring abstraction.
     This provides the most general solutions. *)

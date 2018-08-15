@@ -1127,16 +1127,14 @@ type occurrence_match_test =
   env -> evar_map -> constr ->
   env -> evar_map -> int -> constr -> constr -> bool * evar_map
 
-type prefer_abstraction = bool
-
 type occurrence_selection =
   | AtOccurrences of Locus.occurrences
-  | Unspecified of prefer_abstraction
+  | Unspecified of Abstraction.abstraction
 
 type occurrences_selection =
   occurrence_match_test * occurrence_selection list
 
-let default_occurrence_selection = Unspecified false
+let default_occurrence_selection = Unspecified Abstraction.Imitate
 
 let default_occurrence_test ~frozen_evars ts _ origsigma _ env sigma _ c pat =
   let flags = { (default_flags_of ~subterm_ts:ts ts) with frozen_evars } in
@@ -1406,7 +1404,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                       raise (TypingFailed evd);
                     let evd = Evd.define ev (EConstr.of_constr t) evd in
                     check_evar_instance evd ev (EConstr.of_constr t) (conv_fun evar_conv_x flags)
-                 | Some l when abstract && List.exists (fun c -> isVarId evd id (EConstr.of_constr c)) l ->
+                 | Some l when abstract = Abstraction.Abstract &&
+                     List.exists (fun c -> isVarId evd id (EConstr.of_constr c)) l ->
                     let evd = Evd.define ev vid evd in
                     check_evar_instance evd ev vid (conv_fun evar_conv_x flags)
                  | _ -> evd)
@@ -1468,10 +1467,14 @@ let default_evar_selection flags evd (ev,args) =
   let rec aux args abs =
     match args, abs with
     | _ :: args, a :: abs ->
-       let spec = if not flags.allow_K_at_toplevel then
-                    AtOccurrences (if a then Locus.AtLeastOneOccurrence else Locus.AllOccurrences)
-                  else Unspecified a in
-       spec :: aux args abs
+      let spec =
+        if not flags.allow_K_at_toplevel then
+          let occs =
+            if a == Abstraction.Abstract then Locus.AtLeastOneOccurrence
+            else Locus.AllOccurrences
+          in AtOccurrences occs
+        else Unspecified a
+      in spec :: aux args abs
     | l, [] -> List.map (fun _ -> default_occurrence_selection) l
     | [], _ :: _ -> assert false
   in aux (Array.to_list args) evi.evar_abstract_arguments

@@ -128,11 +128,15 @@ end
 
 module Abstraction = struct
 
-  type t = bool list
+  type abstraction =
+    | Abstract
+    | Imitate
+
+  type t = abstraction list
 
   let identity = []
 
-  let abstract_last l = true :: l
+  let abstract_last l = Abstract :: l
 end
 
 (* The kinds of existential variables are now defined in [Evar_kinds] *)

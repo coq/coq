@@ -142,7 +142,7 @@ let abstract_list_all env evd typ c l =
 
 let set_occurrences_of_last_arg args =
   Evarconv.AtOccurrences AllOccurrences ::
-    List.tl (Array.map_to_list (fun _ -> Evarconv.Unspecified true) args)
+    List.tl (Array.map_to_list (fun _ -> Evarconv.Unspecified Abstraction.Abstract) args)
 
 let occurrence_test _ _ _ env sigma _ c1 c2 =
   match EConstr.eq_constr_universes env sigma c1 c2 with

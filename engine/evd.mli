@@ -78,7 +78,11 @@ sig
 end
 
 module Abstraction : sig
-  type t = bool list
+  type abstraction =
+    | Abstract
+    | Imitate
+
+  type t = abstraction list
 
   val identity : t
 
