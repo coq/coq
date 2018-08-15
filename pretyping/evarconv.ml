@@ -154,31 +154,41 @@ let position_problem l2r = function
   | CUMUL -> Some l2r
 
 (* [occur_rigidly ev evd t] tests if the evar ev occurs in a rigid
-   context in t
+   context in t. Precondition: t has a rigid head.
 
-  That function should be an over approximation of occur-check, it can
-  return true even if the occur-check would fail on the normal form, as
-  otherwise we will postpone unsolvable constraints while maybe a
-  reduction would have allowed unification (see bug 3539 for example).
+   That function is an under approximation of occur-check, it can return
+   false even if the occur-check would succeed on the normal form.  This
+   means we might postpone unsolvable constraints which will ultimately
+   result in an occur-check after reductions. If it returns true, we
+   know that the occur-check would also return true on the normal form.
 
-  The boolean indicates if the term is a rigid head. For applications,
-  this means than an occurrence of the evar in arguments should be looked
-  at to find an occur-check. *)
+   The boolean indicates if the term is a rigid head. For applications,
+   this means than an occurrence of the evar in arguments should be looked
+   at to find an occur-check. *)
 
-let occur_rigidly (evk,_ as ev) evd t =
+let occur_rigidly flags env evd (evk,_) t =
   let rec aux t =
     match EConstr.kind evd t with
-    | App (f, c) -> if aux f then Array.exists aux c else false
-    | Construct _ | Ind _ | Sort _ | Meta _ | Fix _ | CoFix _ | Int _ -> true
-    | Proj (p, c) -> not (aux c)
-    | Evar (evk',_) -> if Evar.equal evk evk' then raise Occur else false
+    | App (f, c) -> if aux f then (Array.iter (fun x -> ignore (aux x)) c; true) else false
+    | Construct _ | Ind _ | Sort _ -> true
+    | Proj (p, c) ->
+      let cst = Projection.constant p in
+        if not (is_transparent_constant flags.open_ts cst) then
+          (ignore (aux c); true)
+        else false
+    | Evar (evk',l as ev) ->
+      if Evar.equal evk evk' then raise Occur
+      else if is_frozen flags ev then
+        (Array.iter (fun x -> ignore (aux x)) l; true)
+      else false
     | Cast (p, _, _) -> aux p
     | Lambda (na, t, b) -> aux b
     | LetIn (na, _, _, b) -> aux b
-    | Const _ -> false
+    | Const (c,_) -> not (is_transparent_constant flags.open_ts c)
     | Prod (_, b, t) -> ignore(aux b || aux t); true
     | Rel _ | Var _ -> false
-    | Case (_,_,c,_) -> if eq_constr evd (mkEvar ev) c then raise Occur else false
+    | Case (_,_,c,_) -> if isEvar evd c && occur_evar evd evk c then raise Occur else false
+    | Meta _ | Fix _ | CoFix _ | Int _ -> false
   in try ignore(aux t); false with Occur -> true
 
 (* [check_conv_record env sigma (t1,stack1) (t2,stack2)] tries to decompose 
@@ -633,7 +643,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
               ise_try evd
                 [eta;(* Postpone the use of an heuristic *)
                  (fun i ->
-                   if not (occur_rigidly ev i tR) then
+                   if not (occur_rigidly flags env i ev tR) then
                      let i,tF =
                        if isRel i tR || isVar i tR then
                          (* Optimization so as to generate candidates *)
