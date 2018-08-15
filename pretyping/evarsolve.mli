@@ -35,11 +35,6 @@ val is_success : unification_result -> bool
    their representative that is most ancient in the context *)
 val expand_vars_in_term : env -> evar_map -> constr -> constr
 
-(** [evar_define choose env ev c] try to instantiate [ev] with [c] (typed in [env]),
-   possibly solving related unification problems, possibly leaving open
-   some problems that cannot be solved in a unique way (except if choose is
-   true); fails if the instance is not valid for the given [ev] *)
-
 (** One might want to use different conversion strategies for types and terms:
     e.g. preventing delta reductions when doing term unifications but allowing
     arbitrary delta conversion when checking the types of evar instances. *)
@@ -48,18 +43,28 @@ type unification_kind =
   | TypeUnification
   | TermUnification
 
-(** A unification function: parameterized by the kind of unification,
-    environment, sigma, conversion problem and the two terms to unify. *)
-type unifier = unification_kind ->
+(** A unification function parameterized by:
+    - unification flags
+    - the kind of unification
+    - environment
+    - sigma
+    - conversion problem
+    - the two terms to unify. *)
+type unifier = unify_flags -> unification_kind ->
   env -> evar_map -> conv_pb -> constr -> constr -> unification_result
 
 (** A conversion function: parameterized by the kind of unification,
     environment, sigma, conversion problem and the two terms to convert.
     Conversion is not allowed to instantiate evars contrary to unification. *)
-type conversion_check = unification_kind ->
-  env ->  evar_map -> conv_pb -> constr -> constr -> bool
+type conversion_check = unify_flags -> unification_kind ->
+  env -> evar_map -> conv_pb -> constr -> constr -> bool
 
-val evar_define : unify_flags -> unifier -> ?choose:bool -> ?imitate_defs:bool ->
+(** [evar_define choose env ev c] try to instantiate [ev] with [c] (typed in [env]),
+   possibly solving related unification problems, possibly leaving open
+   some problems that cannot be solved in a unique way (except if choose is
+   true); fails if the instance is not valid for the given [ev] *)
+
+val evar_define : unifier -> unify_flags -> ?choose:bool -> ?imitate_defs:bool ->
   env -> evar_map -> bool option -> existential -> constr -> evar_map
 
 val refresh_universes :
@@ -71,18 +76,18 @@ val refresh_universes :
   bool option (* direction: true for levels lower than the existing levels *) ->
   env -> evar_map -> types -> evar_map * types
 
-val solve_refl : ?can_drop:bool -> unify_flags -> conversion_check -> env ->  evar_map ->
+val solve_refl : ?can_drop:bool -> conversion_check -> unify_flags -> env ->  evar_map ->
   bool option -> Evar.t -> constr array -> constr array -> evar_map
 
-val solve_evar_evar : ?force:bool -> unify_flags ->
+val solve_evar_evar : ?force:bool ->
   (env -> evar_map -> bool option -> existential -> constr -> evar_map) ->
-  unifier ->
+  unifier -> unify_flags ->
   env ->  evar_map -> bool option -> existential -> existential -> evar_map
 
-val solve_simple_eqn : unify_flags -> unifier -> ?choose:bool -> ?imitate_defs:bool -> env ->  evar_map ->
+val solve_simple_eqn : unifier -> unify_flags -> ?choose:bool -> ?imitate_defs:bool -> env ->  evar_map ->
   bool option * existential * constr -> unification_result
 
-val reconsider_unif_constraints : unifier -> evar_map -> unification_result
+val reconsider_unif_constraints : unifier -> unify_flags -> evar_map -> unification_result
 
 val is_unification_pattern_evar : env -> evar_map -> existential -> constr list ->
   constr -> alias list option
@@ -97,8 +102,8 @@ val noccur_evar : env -> evar_map -> Evar.t -> constr -> bool
 exception IllTypedInstance of env * types * types
 
 (* May raise IllTypedInstance if types are not convertible *)
-val check_evar_instance :
-  evar_map -> Evar.t -> constr -> unifier -> evar_map
+val check_evar_instance : unifier -> unify_flags ->
+  evar_map -> Evar.t -> constr -> evar_map
 
 val remove_instance_local_defs :
   evar_map -> Evar.t -> 'a array -> 'a list

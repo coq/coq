@@ -1709,8 +1709,7 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
         let sigma, ev' = Evarutil.new_evar ~src ~typeclass_candidate:false !!env sigma ty in
         begin
           let flags = (default_flags_of TransparentState.full) in
-          let conv = conv_fun evar_conv_x flags in
-          match solve_simple_eqn conv !!env sigma (None,ev,substl inst ev') with
+          match solve_simple_eqn evar_unify flags !!env sigma (None,ev,substl inst ev') with
           | Success evd -> evdref := evd
           | UnifFailure _ -> assert false
         end;

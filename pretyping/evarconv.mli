@@ -24,7 +24,7 @@ val default_flags_of : ?subterm_ts:transparent_state -> transparent_state -> uni
 type unify_fun = unify_flags ->
   env -> evar_map -> conv_pb -> constr -> constr -> Evarsolve.unification_result
 
-val conv_fun : unify_fun -> unify_flags -> Evarsolve.unifier
+val conv_fun : unify_fun -> Evarsolve.unifier
 
 exception UnableToUnify of evar_map * Pretype_errors.unification_error
 
@@ -111,6 +111,8 @@ val set_evar_conv : unify_fun -> unit
 
 (** The default unification algorithm with evars and universes. *)
 val evar_conv_x : unify_fun
+
+val evar_unify : Evarsolve.unifier
 
 (**/**)
 (* For debugging *)
