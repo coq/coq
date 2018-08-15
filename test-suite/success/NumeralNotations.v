@@ -123,42 +123,52 @@ End Test6_2.
 
 Module Test7.
   Local Set Primitive Projections.
-  Record > wuint := wrap { unwrap : Decimal.uint }.
+  Record wuint := wrap { unwrap : Decimal.uint }.
   Delimit Scope wuint_scope with wuint.
-  Fail Numeral Notation wuint wrap unwrap : wuint_scope.
+  Numeral Notation wuint wrap unwrap : wuint_scope.
+  Check let v := 0%wuint in v : wuint.
+  Check let v := 1%wuint in v : wuint.
 End Test7.
 
 Module Test8.
   Local Set Primitive Projections.
-  Record > wuint := wrap { unwrap : Decimal.uint }.
-  Delimit Scope wuint_scope with wuint.
+  Record wuint := wrap { unwrap : Decimal.uint }.
+  Delimit Scope wuint8_scope with wuint8.
+  Delimit Scope wuint8'_scope with wuint8'.
   Section with_var.
     Context (dummy : unit).
     Definition wrap' := let __ := dummy in wrap.
     Definition unwrap' := let __ := dummy in unwrap.
-    Global Numeral Notation wuint wrap' unwrap' : wuint_scope.
-    Check let v := 0%wuint in v : wuint.
+    Global Numeral Notation wuint wrap' unwrap' : wuint8_scope.
+    Check let v := 0%wuint8 in v : wuint.
   End with_var.
-  Fail Check let v := 0%wuint in v : wuint.
+  Check let v := 0%wuint8 in v : nat.
+  Fail Check let v := 0%wuint8 in v : wuint.
   Compute wrap (Nat.to_uint 0).
 
   Notation wrap'' := wrap.
   Notation unwrap'' := unwrap.
-  Fail Numeral Notation wuint wrap'' unwrap'' : wuint_scope.
+  Fail Numeral Notation wuint wrap'' unwrap'' : wuint8'_scope.
+  Fail Check let v := 0%wuint8' in v : wuint.
 End Test8.
 
 Module Test9.
+  Delimit Scope wuint9_scope with wuint9.
+  Delimit Scope wuint9'_scope with wuint9'.
   Section with_let.
     Local Set Primitive Projections.
-    Record > wuint := wrap { unwrap : Decimal.uint }.
+    Record wuint := wrap { unwrap : Decimal.uint }.
     Let wrap' := wrap.
     Let unwrap' := unwrap.
     Local Notation wrap'' := wrap.
     Local Notation unwrap'' := unwrap.
-    Delimit Scope wuint_scope with wuint.
-    Fail Numeral Notation wuint wrap' unwrap' : wuint_scope.
-    Fail Numeral Notation wuint wrap'' unwrap'' : wuint_scope.
+    Numeral Notation wuint wrap' unwrap' : wuint9_scope.
+    Check let v := 0%wuint9 in v : wuint.
+    Fail Numeral Notation wuint wrap'' unwrap'' : wuint9'_scope.
+    Fail Check let v := 0%wuint9' in v : wuint.
   End with_let.
+  Check let v := 0%wuint9 in v : nat.
+  Fail Check let v := 0%wuint9 in v : wuint.
 End Test9.
 
 Module Test10.
@@ -175,3 +185,17 @@ Module Test10.
   (* Check that there is no warning here *)
   Numeral Notation unit of_any_uint to_uint : unit2_scope (abstract after 1).
 End Test10.
+
+Module Test11.
+  (* Test that numeral notations don't work on proof-local variables, especially not ones containing evars *)
+  Inductive unit11 := tt11.
+  Delimit Scope unit11_scope with unit11.
+  Goal True.
+    evar (to_uint : unit11 -> Decimal.uint).
+    evar (of_uint : Decimal.uint -> unit11).
+    Fail Numeral Notation unit11 of_uint to_uint : uint11_scope.
+    exact I.
+    Unshelve.
+    all: solve [ constructor ].
+  Qed.
+End Test11.
