@@ -102,6 +102,7 @@ val tab_length : int preference
 val highlight_current_line : bool preference
 val nanoPG : bool preference
 val user_queries : (string * string) list preference
+val diffs : string preference
 
 val save_pref : unit -> unit
 val load_pref : unit -> unit
