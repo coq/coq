@@ -242,8 +242,9 @@ let rec glob_of_constr ?loc c = match Constr.kind c with
   | Var id -> DAst.make ?loc (Glob_term.GRef (VarRef id, None))
   | _ -> let (sigma, env) = Pfedit.get_current_context () in
          CErrors.user_err ?loc
-          (str "Unexpected term while parsing a numeral notation:" ++ fnl () ++
-           Printer.pr_constr_env env sigma c)
+           (strbrk "Unexpected term " ++
+              Printer.pr_constr_env env sigma c ++
+              strbrk " while parsing a numeral notation.")
 
 let no_such_number ?loc ty =
   CErrors.user_err ?loc
@@ -256,8 +257,9 @@ let interp_option ty ?loc c =
   | App (_None, [| _ |]) -> no_such_number ?loc ty
   | x -> let (sigma, env) = Pfedit.get_current_context () in
          CErrors.user_err ?loc
-          (str "Unexpected non-option term while parsing a numeral notation:" ++ fnl () ++
-           Printer.pr_constr_env env sigma c)
+          (strbrk "Unexpected non-option term " ++
+             Printer.pr_constr_env env sigma c ++
+             strbrk " while parsing a numeral notation.")
 
 let uninterp_option c =
   match Constr.kind c with
@@ -440,7 +442,7 @@ let vernac_numeral_notation ty f g scope opts =
        get_constructors ind
     | ConstRef _ | ConstructRef _ | VarRef _ ->
        CErrors.user_err
-        (pr_qualid ty ++ str " is not an inductive type")
+        (pr_qualid ty ++ str " is not an inductive type.")
   in
   (* Check the type of f *)
   let to_kind =
