@@ -58,11 +58,11 @@ module V82 = struct
        created. *)
     let prev_future_goals = Evd.save_future_goals evars in
     let evi = { Evd.evar_hyps = hyps;
-		Evd.evar_concl = concl;
-		Evd.evar_filter = Evd.Filter.identity;
+                Evd.evar_concl = concl;
+                Evd.evar_filter = Evd.Filter.identity;
                 Evd.evar_abstract_arguments = Evd.Abstraction.identity;
-		Evd.evar_body = Evd.Evar_empty;
-		Evd.evar_source = (Loc.tag Evar_kinds.GoalEvar);
+                Evd.evar_body = Evd.Evar_empty;
+                Evd.evar_source = (Loc.tag Evar_kinds.GoalEvar);
                 Evd.evar_candidates = None }
     in
     let (evars, evk) = Evarutil.new_pure_evar_full evars ~typeclass_candidate:false evi in
