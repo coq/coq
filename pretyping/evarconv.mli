@@ -120,6 +120,9 @@ val evar_eqappr_x : ?rhs_is_already_stuck:bool -> unify_flags ->
   env -> evar_map ->
     conv_pb -> state * Cst_stack.t -> state * Cst_stack.t ->
       Evarsolve.unification_result
+
+val occur_rigidly : Evarsolve.unify_flags ->
+  'a -> Evd.evar_map -> Evar.t * 'b -> EConstr.t -> bool
 (**/**)
 
 (** {6 Functions to deal with impossible cases } *)

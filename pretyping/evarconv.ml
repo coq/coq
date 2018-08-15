@@ -154,7 +154,7 @@ let position_problem l2r = function
   | CUMUL -> Some l2r
 
 (* [occur_rigidly ev evd t] tests if the evar ev occurs in a rigid
-   context in t. Precondition: t has a rigid head.
+   context in t. Precondition: t has a rigid head and is not reducible.
 
    That function is an under approximation of occur-check, it can return
    false even if the occur-check would succeed on the normal form.  This
@@ -162,34 +162,69 @@ let position_problem l2r = function
    result in an occur-check after reductions. If it returns true, we
    know that the occur-check would also return true on the normal form.
 
-   The boolean indicates if the term is a rigid head. For applications,
-   this means than an occurrence of the evar in arguments should be looked
-   at to find an occur-check. *)
+   [t] is assumed to have a rigid head, which can
+   appear under a elimination context (e.g. application, match or projection).
+
+   In the inner recursive function, the result indicates if the term is
+   rigid (irreducible), normal (succession of constructors) or
+   potentially reducible. For applications, this means than an
+   occurrence of the evar in arguments should be looked at to find an
+   occur-check if the head is rigid or normal. For inductive
+   eliminations, only an occurrence in a rigid context of the
+   discriminee counts as a rigid occurrence overall, not a normal
+   occurrence which might disappear after reduction. *)
+
+type result = Rigid of bool | Normal of bool | Reducible
+
+let rigid_normal_occ = function Rigid b -> b | Normal b -> b | _ -> false
 
 let occur_rigidly flags env evd (evk,_) t =
   let rec aux t =
     match EConstr.kind evd t with
-    | App (f, c) -> if aux f then (Array.iter (fun x -> ignore (aux x)) c; true) else false
-    | Construct _ | Ind _ | Sort _ -> true
+    | App (f, c) ->
+      (match aux f with
+      | Rigid b -> Rigid (b || Array.exists (fun x -> rigid_normal_occ (aux x)) c)
+      | Normal b -> Normal (b || Array.exists (fun x -> rigid_normal_occ (aux x)) c)
+      | Reducible -> Reducible)
+    | Construct _ -> Normal false
+    | Ind _ | Sort _ -> Rigid false
     | Proj (p, c) ->
       let cst = Projection.constant p in
-        if not (is_transparent_constant flags.open_ts cst) then
-          (ignore (aux c); true)
-        else false
+      let rigid = not (is_transparent_constant flags.open_ts cst) in
+        if rigid then aux c
+        else (* if the evar appears rigidly in c then this elimination
+                cannot reduce and we have a rigid occurrence, otherwise
+                we don't know. *)
+          (match aux c with
+          | Rigid _ as res -> res
+          | Normal b -> Reducible
+          | Reducible -> Reducible)
     | Evar (evk',l as ev) ->
-      if Evar.equal evk evk' then raise Occur
+      if Evar.equal evk evk' then Rigid true
       else if is_frozen flags ev then
-        (Array.iter (fun x -> ignore (aux x)) l; true)
-      else false
+        Rigid (Array.exists (fun x -> rigid_normal_occ (aux x)) l)
+      else Reducible
     | Cast (p, _, _) -> aux p
     | Lambda (na, t, b) -> aux b
     | LetIn (na, _, _, b) -> aux b
-    | Const (c,_) -> not (is_transparent_constant flags.open_ts c)
-    | Prod (_, b, t) -> ignore(aux b || aux t); true
-    | Rel _ | Var _ -> false
-    | Case (_,_,c,_) -> if isEvar evd c && occur_evar evd evk c then raise Occur else false
-    | Meta _ | Fix _ | CoFix _ | Int _ -> false
-  in try ignore(aux t); false with Occur -> true
+    | Const (c,_) ->
+      if is_transparent_constant flags.open_ts c then Reducible
+      else Rigid false
+    | Prod (_, b, t) ->
+      let b' = aux b and t' = aux t in
+      if rigid_normal_occ b' || rigid_normal_occ t' then Rigid true
+      else Reducible
+    | Rel _ | Var _ -> Reducible
+    | Case (_,_,c,_) ->
+      (match aux c with
+      | Rigid b -> Rigid b
+      | _ -> Reducible)
+    | Meta _ | Fix _ | CoFix _ | Int _ -> Reducible
+  in
+    match aux t with
+    | Rigid b -> b
+    | Normal b -> b
+    | Reducible -> false
 
 (* [check_conv_record env sigma (t1,stack1) (t2,stack2)] tries to decompose 
    the problem (t1 stack1) = (t2 stack2) into a problem
