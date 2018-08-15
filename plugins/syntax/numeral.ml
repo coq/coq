@@ -62,14 +62,14 @@ let warn_abstract_large_num =
     (fun (ty,f) ->
       strbrk "To avoid stack overflow, large numbers in " ++
       pr_qualid ty ++ strbrk " are interpreted as applications of " ++
-      Printer.pr_constant (Global.env ()) f ++ strbrk ".")
+      Printer.pr_global_env (Termops.vars_of_env (Global.env ())) f ++ strbrk ".")
 
 let warn_abstract_large_num_no_op =
   CWarnings.create ~name:"abstract-large-number-no-op" ~category:"numbers"
     (fun f ->
       strbrk "The 'abstract after' directive has no effect when " ++
       strbrk "the parsing function (" ++
-      Printer.pr_constant (Global.env ()) f ++ strbrk ") targets an " ++
+      Printer.pr_global_env (Termops.vars_of_env (Global.env ())) f ++ strbrk ") targets an " ++
       strbrk "option type.")
 
 (** Comparing two raw numbers (base 10, big-endian, non-negative).
@@ -288,9 +288,9 @@ type numnot_option =
 
 type numeral_notation_obj =
   { to_kind : conversion_kind;
-    to_ty : Constant.t;
+    to_ty : GlobRef.t;
     of_kind : conversion_kind;
-    of_ty : Constant.t;
+    of_ty : GlobRef.t;
     num_ty : Libnames.qualid; (* for warnings / error messages *)
     warning : numnot_option }
 
@@ -308,8 +308,8 @@ let interp o ?loc n =
   in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let sigma,to_ty = Evd.fresh_constant_instance env sigma o.to_ty in
-  let to_ty = mkConstU to_ty in
+  let sigma,to_ty = Evd.fresh_global env sigma o.to_ty in
+  let to_ty = EConstr.Unsafe.to_constr to_ty in
   match o.warning, snd o.to_kind with
   | Abstract threshold, Direct when rawnum_compare (fst n) threshold >= 0 ->
      warn_abstract_large_num (o.num_ty,o.to_ty);
@@ -323,8 +323,8 @@ let interp o ?loc n =
 let uninterp o (Glob_term.AnyGlobConstr n) =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let sigma,of_ty = Evd.fresh_constant_instance env sigma o.of_ty in
-  let of_ty = mkConstU of_ty in
+  let sigma,of_ty = Evd.fresh_global env sigma o.of_ty in
+  let of_ty = EConstr.Unsafe.to_constr of_ty in
   try
     let sigma,n = constr_of_glob env sigma n in
     let c = eval_constr_app env sigma of_ty n in
@@ -395,10 +395,6 @@ let locate_globref q =
   try Nametab.locate q
   with Not_found -> Nametab.error_global_not_found q
 
-let locate_constant q =
-  try Nametab.locate_constant q
-  with Not_found -> Nametab.error_global_not_found q
-
 let has_type f ty =
   let (sigma, env) = Pfedit.get_current_context () in
   let c = mkCastC (mkRefC f, Glob_term.CastConv ty) in
@@ -423,8 +419,8 @@ let vernac_numeral_notation ty f g scope opts =
   let int_ty = locate_int () in
   let z_pos_ty = locate_z () in
   let tyc = locate_globref ty in
-  let to_ty = locate_constant f in
-  let of_ty = locate_constant g in
+  let to_ty = locate_globref f in
+  let of_ty = locate_globref g in
   let cty = mkRefC ty in
   let app x y = mkAppC (x,[y]) in
   let cref q = mkRefC q in
