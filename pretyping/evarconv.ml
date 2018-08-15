@@ -424,7 +424,10 @@ let conv_fun f flags on_types =
   in
   let termfn env evd pbty term1 term2 =
     f flags env evd pbty term1 term2
-  in if on_types then typefn else termfn
+  in
+    match on_types with
+    | TypeUnification -> typefn
+    | TermUnification -> termfn
 
 let rec evar_conv_x flags env evd pbty term1 term2 =
   let term1 = whd_head_evar evd term1 in
@@ -735,7 +738,11 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             match ise_stack2 false env i (evar_conv_x flags) sk1 sk2 with
 	    |None, Success i' ->
               Success (solve_refl flags (fun p env i pbty a1 a2 ->
-                let flags = if p then default_flags env else flags in
+                let flags =
+                  match p with
+                  | TypeUnification -> default_flags env
+                  | TermUnification -> flags
+                in
                 is_success (evar_conv_x flags env i pbty a1 a2))
                 env i' (position_problem true pbty) sp1 al1 al2)
 	    |_, (UnifFailure _ as x) -> x
@@ -967,7 +974,11 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             |None, Success i' ->
               (** FIXME: solve_refl can restrict the evar, do we want to allow that? *)
               Success (solve_refl flags (fun p env i pbty a1 a2 ->
-                let flags = if p then default_flags env else flags in
+                let flags =
+                  match p with
+                  | TypeUnification -> default_flags env
+                  | TermUnification -> flags
+                in
                 is_success (evar_conv_x flags env i pbty a1 a2))
                 env i' (position_problem true pbty) sp1 al1 al2)
             |_, (UnifFailure _ as x) -> x
@@ -1544,8 +1555,12 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
          UnifFailure (evd, CannotSolveConstraint ((pbty,env,t1,t2),reason)))
   | Evar (evk1,args1), Evar (evk2,args2) when Evar.equal evk1 evk2 ->
      let f ontype env evd pbty x y =
-       let reds = if ontype then full_transparent_state else flags.open_ts in
-       is_fconv ~reds pbty env evd x y in
+       let reds =
+         match ontype with
+         | TypeUnification -> full_transparent_state
+         | TermUnification -> flags.open_ts
+       in is_fconv ~reds pbty env evd x y
+     in
       Success (solve_refl ~can_drop:true flags f env evd
                  (position_problem true pbty) evk1 args1 args2)
   | Evar ev1, Evar ev2 when app_empty ->

@@ -24,7 +24,7 @@ val default_flags_of : ?subterm_ts:transparent_state -> transparent_state -> uni
 type unify_fun = unify_flags ->
   env -> evar_map -> conv_pb -> constr -> constr -> Evarsolve.unification_result
 
-val conv_fun : unify_fun -> unify_flags -> Evarsolve.conv_fun
+val conv_fun : unify_fun -> unify_flags -> Evarsolve.unifier
 
 exception UnableToUnify of evar_map * Pretype_errors.unification_error
 
