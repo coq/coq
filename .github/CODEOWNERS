@@ -42,11 +42,7 @@
 # Trick to avoid getting review requests
 # each time someone modifies the dev changelog
 
-/doc/             @maximedenes
-# Secondary maintainer @silene @Zimmi48
-
-/doc/tools/coqrst/ @maximedenes
-# Secondary maintainer @cpitclaudel
+/doc/             @coq/doc-maintainers
 
 /man/             @silene
 # Secondary maintainer @maximedenes
