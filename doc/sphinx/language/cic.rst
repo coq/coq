@@ -747,7 +747,7 @@ the sort of the inductive type t (not to be confused with :math:`\Sort` which is
    is:
 
    .. math::
-      \ind{~}{\left[\begin{array}{rcl}\tree&:&\Set\\\forest&:&\Set\end{array}\right]}
+      \ind{0}{\left[\begin{array}{rcl}\tree&:&\Set\\\forest&:&\Set\end{array}\right]}
        {\left[\begin{array}{rcl}
                 \node &:& \forest → \tree\\
                 \emptyf &:& \forest\\
@@ -769,7 +769,7 @@ the sort of the inductive type t (not to be confused with :math:`\Sort` which is
    The declaration for a mutual inductive definition of even and odd is:
 
    .. math::
-      \ind{1}{\left[\begin{array}{rcl}\even&:&\nat → \Prop \\
+      \ind{0}{\left[\begin{array}{rcl}\even&:&\nat → \Prop \\
                                       \odd&:&\nat → \Prop \end{array}\right]}
        {\left[\begin{array}{rcl}
                 \evenO &:& \even~0\\
@@ -966,7 +966,7 @@ such that :math:`Γ_I` is :math:`[I_1 :∀ Γ_P ,A_1 ;…;I_k :∀ Γ_P ,A_k]`, 
 .. inference:: W-Ind
 
    \WFE{Γ_P}
-   (E[Γ_P ] ⊢ A_j : s_j' )_{j=1… k}
+   (E[Γ_P ] ⊢ A_j : s_j )_{j=1… k}
    (E[Γ_I ;Γ_P ] ⊢ C_i : s_{q_i} )_{i=1… n}
    ------------------------------------------
    \WF{E;\ind{p}{Γ_I}{Γ_C}}{Γ}
@@ -1025,7 +1025,7 @@ Template polymorphism
 +++++++++++++++++++++
 
 Inductive types declared in :math:`\Type` are polymorphic over their arguments
-in :math:`\Type`. If :math:`A` is an arity of some sort and math:`s` is a sort, we write :math:`A_{/s}`
+in :math:`\Type`. If :math:`A` is an arity of some sort and :math:`s` is a sort, we write :math:`A_{/s}`
 for the arity obtained from :math:`A` by replacing its sort with :math:`s`.
 Especially, if :math:`A` is well-typed in some global environment and local
 context, then :math:`A_{/s}` is typable by typability of all products in the
