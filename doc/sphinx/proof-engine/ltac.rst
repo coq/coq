@@ -177,7 +177,7 @@ Sequence
 
 A sequence is an expression of the following form:
 
-.. tacn:: @expr ; @expr
+.. tacn:: @expr__1 ; @expr__2
    :name: ltac-seq
 
    The expression :n:`@expr__1` is evaluated to :n:`v__1`, which must be
@@ -207,11 +207,11 @@ following form:
       were given. For instance, ``[> | auto]`` is a shortcut for ``[> idtac | auto
       ]``.
 
-   .. tacv:: [> {*| @expr} | @expr .. | {*| @expr}]
+   .. tacv:: [> {*| @expr__i} | @expr .. | {*| @expr__j}]
 
-      In this variant, token:`expr` is used for each goal coming after those
-      covered by the first list of :n:`@expr` but before those coevered by the
-      last list of :n:`@expr`.
+      In this variant, :n:`@expr` is used for each goal coming after those
+      covered by the list of :n:`@expr__i` but before those covered by the
+      list of :n:`@expr__j`.
 
    .. tacv:: [> {*| @expr} | .. | {*| @expr}]
 
@@ -225,11 +225,11 @@ following form:
       tactic is not run at all. A tactic which expects multiple goals, such as
       ``swap``, would act as if a single goal is focused.
 
-   .. tacv:: expr ; [{*| @expr}]
+   .. tacv:: @expr__0 ; [{*| @expr__i}]
 
       This variant of local tactic application is paired with a sequence. In this
-      variant, there must be as many :n:`@expr` in the list as goals generated
-      by the application of the first :n:`@expr` to each of the individual goals
+      variant, there must be as many :n:`@expr__i` as goals generated
+      by the application of :n:`@expr__0` to each of the individual goals
       independently. All the above variants work in this form too.
       Formally, :n:`@expr ; [ ... ]` is equivalent to :n:`[> @expr ; [> ... ] .. ]`.
 
@@ -247,20 +247,20 @@ focused goals with:
    We can also use selectors as a tactical, which allows to use them nested
    in a tactic expression, by using the keyword ``only``:
 
-   .. tacv:: only selector : expr
+   .. tacv:: only @selector : @expr
       :name: only ... : ...
 
-      When selecting several goals, the tactic expr is applied globally to all
+      When selecting several goals, the tactic :token:`expr` is applied globally to all
       selected goals.
 
    .. tacv:: [@ident] : @expr
 
-      In this variant, :n:`@expr` is applied locally to a goal previously named
+      In this variant, :token:`expr` is applied locally to a goal previously named
       by the user (see :ref:`existential-variables`).
 
    .. tacv:: @num : @expr
 
-      In this variant, :n:`@expr` is applied locally to the :token:`num`-th goal.
+      In this variant, :token:`expr` is applied locally to the :token:`num`-th goal.
 
    .. tacv:: {+, @num-@num} : @expr
 
@@ -271,7 +271,7 @@ focused goals with:
    .. tacv:: all: @expr
       :name: all: ...
 
-      In this variant, :n:`@expr` is applied to all focused goals. ``all:`` can only
+      In this variant, :token:`expr` is applied to all focused goals. ``all:`` can only
       be used at the toplevel of a tactic expression.
 
    .. tacv:: par: @expr
