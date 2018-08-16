@@ -391,10 +391,6 @@ let locate_int () =
   { uint = locate_ind q_uint;
     int = locate_ind q_int }
 
-let locate_globref q =
-  try Nametab.locate q
-  with Not_found -> Nametab.error_global_not_found q
-
 let has_type f ty =
   let (sigma, env) = Pfedit.get_current_context () in
   let c = mkCastC (mkRefC f, Glob_term.CastConv ty) in
@@ -418,9 +414,9 @@ let type_error_of g ty loadZ =
 let vernac_numeral_notation ty f g scope opts =
   let int_ty = locate_int () in
   let z_pos_ty = locate_z () in
-  let tyc = locate_globref ty in
-  let to_ty = locate_globref f in
-  let of_ty = locate_globref g in
+  let tyc = Smartlocate.global_inductive_with_alias ty in
+  let to_ty = Smartlocate.global_with_alias f in
+  let of_ty = Smartlocate.global_with_alias g in
   let cty = mkRefC ty in
   let app x y = mkAppC (x,[y]) in
   let cref q = mkRefC q in
@@ -432,14 +428,7 @@ let vernac_numeral_notation ty f g scope opts =
   let cuint = cref q_uint in
   let coption = cref q_option in
   let opt r = app coption r in
-  (* Check that [ty] is an inductive type *)
-  let constructors = match tyc with
-    | IndRef ind ->
-       get_constructors ind
-    | ConstRef _ | ConstructRef _ | VarRef _ ->
-       CErrors.user_err
-        (pr_qualid ty ++ str " is not an inductive type.")
-  in
+  let constructors = get_constructors tyc in
   (* Check the type of f *)
   let to_kind =
     if has_type f (arrow cint cty) then Int int_ty, Direct
@@ -480,7 +469,7 @@ let vernac_numeral_notation ty f g scope opts =
   let i = Notation.(
        { pt_scope = scope;
          pt_uid = uid;
-         pt_required = Nametab.path_of_global tyc,[];
+         pt_required = Nametab.path_of_global (IndRef tyc),[];
          pt_refs = constructors;
          pt_in_match = true })
   in
