@@ -144,10 +144,11 @@ mode but it can also be used in toplevel definitions as shown below.
                      : | `integer` (< | <= | > | >=) `integer`
    selector          : [`ident`]
                      : | `integer`
-                     : (`integer` | `integer` - `integer`), ..., (`integer` | `integer` - `integer`)
+                     : | (`integer` | `integer` - `integer`), ..., (`integer` | `integer` - `integer`)
    toplevel_selector : `selector`
-                     : | `all`
-                     : | `par`
+                     : | all
+                     : | par
+                     : | !
 
 .. productionlist:: coq
    top              : [Local] Ltac `ltac_def` with ... with `ltac_def`
