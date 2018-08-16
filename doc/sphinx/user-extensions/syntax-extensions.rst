@@ -1474,9 +1474,13 @@ Numeral notations
 
   .. exn:: The reference @ident was not found in the current environment.
 
+    Identifiers passed to :cmd:`Numeral Notation` must exist in the
+    global environment.
+
+  .. exn:: @ident is bound to a notation that does not denote a reference.
+
     Identifiers passed to :cmd:`Numeral Notation` must be global
-    definitions, not notations, section variables, section-local
-    :g:`Let` bound identifiers, etc.
+    references, or notations which denote to single identifiers.
 
   .. warn:: Stack overflow or segmentation fault happens when working with large numbers in @type (threshold may vary depending on your system limits and on the command executed).
 

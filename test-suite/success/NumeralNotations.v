@@ -148,8 +148,8 @@ Module Test8.
 
   Notation wrap'' := wrap.
   Notation unwrap'' := unwrap.
-  Fail Numeral Notation wuint wrap'' unwrap'' : wuint8'_scope.
-  Fail Check let v := 0%wuint8' in v : wuint.
+  Numeral Notation wuint wrap'' unwrap'' : wuint8'_scope.
+  Check let v := 0%wuint8' in v : wuint.
 End Test8.
 
 Module Test9.
@@ -164,8 +164,8 @@ Module Test9.
     Local Notation unwrap'' := unwrap.
     Numeral Notation wuint wrap' unwrap' : wuint9_scope.
     Check let v := 0%wuint9 in v : wuint.
-    Fail Numeral Notation wuint wrap'' unwrap'' : wuint9'_scope.
-    Fail Check let v := 0%wuint9' in v : wuint.
+    Numeral Notation wuint wrap'' unwrap'' : wuint9'_scope.
+    Check let v := 0%wuint9' in v : wuint.
   End with_let.
   Check let v := 0%wuint9 in v : nat.
   Fail Check let v := 0%wuint9 in v : wuint.
@@ -199,3 +199,32 @@ Module Test11.
     all: solve [ constructor ].
   Qed.
 End Test11.
+
+Module Test12.
+  (* Test for numeral notations on context variables *)
+  Delimit Scope test12_scope with test12.
+  Section test12.
+    Context (to_uint : unit -> Decimal.uint) (of_uint : Decimal.uint -> unit).
+
+    Numeral Notation unit of_uint to_uint : test12_scope.
+    Check let v := 1%test12 in v : unit.
+  End test12.
+End Test12.
+
+Module Test13.
+  (* Test for numeral notations on notations which do not denote references *)
+  Delimit Scope test13_scope with test13.
+  Delimit Scope test13'_scope with test13'.
+  Delimit Scope test13''_scope with test13''.
+  Definition to_uint (x y : unit) : Decimal.uint := Nat.to_uint O.
+  Definition of_uint (x : Decimal.uint) : unit := tt.
+  Definition to_uint_good := to_uint tt.
+  Notation to_uint' := (to_uint tt).
+  Notation to_uint'' := (to_uint _).
+  Numeral Notation unit of_uint to_uint_good : test13_scope.
+  Check let v := 0%test13 in v : unit.
+  Fail Numeral Notation unit of_uint to_uint' : test13'_scope.
+  Fail Check let v := 0%test13' in v : unit.
+  Fail Numeral Notation unit of_uint to_uint'' : test13''_scope.
+  Fail Check let v := 0%test13'' in v : unit.
+End Test13.
