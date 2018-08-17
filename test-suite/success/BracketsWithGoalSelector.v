@@ -14,3 +14,12 @@ Proof.
 Fail Qed.
   }
 Qed.
+
+Lemma foo (n: nat) (P : nat -> Prop):
+  P n.
+Proof.
+  intros.
+  refine (nat_ind _ ?[Base] ?[Step] _).
+  [Base]: { admit. }
+  [Step]: { admit. }
+Abort.
