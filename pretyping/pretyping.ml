@@ -68,9 +68,7 @@ type t = {
 }
 
 let get_extra env sigma =
-  let open Context.Named.Declaration in
-  let ids = List.map get_id (named_context env) in
-  let avoid = List.fold_right Id.Set.add ids Id.Set.empty in
+  let avoid = Environ.ids_of_named_context_val (Environ.named_context_val env) in
   Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context sigma d acc)
     (rel_context env) ~init:(empty_csubst, avoid, named_context env)
 
