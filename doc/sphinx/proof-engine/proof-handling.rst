@@ -329,20 +329,47 @@ Navigation in the proof tree
 
    .. cmdv:: @num: %{
 
-      This focuses on the :token:`num` th subgoal to prove.
+      This focuses on the :token:`num`\-th subgoal to prove.
 
-   Error messages:
+   .. cmdv:: [@ident]: %{
+
+      This focuses on the named goal :token:`ident`.
+
+      .. note::
+
+         Goals are just existential variables and existential variables do not
+         get a name by default. You can give a name to a goal by using :n:`refine ?[@ident]`.
+
+      .. seealso:: :ref:`existential-variables`
+
+      .. example::
+
+         This can also be a way of focusing on a shelved goal, for instance:
+
+         .. coqtop:: all
+
+            Goal exists n : nat, n = n.
+            eexists ?[x].
+            reflexivity.
+            [x]: exact 0.
+            Qed.
 
    .. exn:: This proof is focused, but cannot be unfocused this way.
 
       You are trying to use ``}`` but the current subproof has not been fully solved.
 
-   .. exn:: No such goal.
-      :name: No such goal. (Focusing)
+   .. exn:: No such goal (@num).
+      :undocumented:
 
-   .. exn:: Brackets only support the single numbered goal selector.
+   .. exn:: No such goal (@ident).
+      :undocumented:
 
-      See also error messages about bullets below.
+   .. exn:: Brackets do not support multi-goal selectors.
+
+      Brackets are used to focus on a single goal given either by its position
+      or by its name if it has one.
+
+    .. seealso:: The error messages about bullets below.
 
 .. _bullets:
 
