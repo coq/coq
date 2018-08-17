@@ -392,19 +392,23 @@ The following example script illustrates all these features:
     - assert True.
     { trivial. }
     assumption.
+    Qed.
 
+.. exn:: Wrong bullet @bullet__1: Current bullet @bullet__2 is not finished.
 
-.. exn:: Wrong bullet @bullet1: Current bullet @bullet2 is not finished.
+   Before using bullet :n:`@bullet__1` again, you should first finish proving
+   the current focused goal.
+   Note that :n:`@bullet__1` and :n:`@bullet__2` may be the same.
 
-   Before using bullet :n:`@bullet1` again, you should first finish proving the current focused goal. Note that :n:`@bullet1` and :n:`@bullet2` may be the same.
+.. exn:: Wrong bullet @bullet__1: Bullet @bullet__2 is mandatory here.
 
-.. exn:: Wrong bullet @bullet1: Bullet @bullet2 is mandatory here.
-
-   You must put :n:`@bullet2` to focus next goal. No other bullet is allowed here.
+   You must put :n:`@bullet__2` to focus on the next goal. No other bullet is
+   allowed here.
 
 .. exn:: No such goal. Focus next goal with bullet @bullet.
 
-   You tried to apply a tactic but no goals were under focus. Using :n:`@bullet` is  mandatory here.
+   You tried to apply a tactic but no goals were under focus.
+   Using :n:`@bullet` is  mandatory here.
 
 .. exn:: No such goal. Try unfocusing with %{.
 
@@ -433,7 +437,7 @@ Requesting information
 
    .. cmdv:: Show @num
 
-      Displays only the :token:`num` th subgoal.
+      Displays only the :token:`num`\-th subgoal.
 
       .. exn:: No such goal.
 
