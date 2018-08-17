@@ -358,8 +358,10 @@ same bullet ``b``. See the example below.
 
 Different bullets can be used to nest levels. The scope of bullet does
 not go beyond enclosing ``{`` and ``}``, so bullets can be reused as further
-nesting levels provided they are delimited by these. Available bullets
-are ``-``, ``+``, ``*``, ``--``, ``++``, ``**``, ``---``, ``+++``, ``***``, ... (without a terminating period).
+nesting levels provided they are delimited by these. Bullets are made of
+repeated ``-``, ``+`` or ``*`` symbols:
+
+.. prodn:: bullet ::= {+ - } %| {+ + } %| {+ * }
 
 Note again that when a focused goal is proved a message is displayed
 together with a suggestion about the right bullet or ``}`` to unfocus it
