@@ -171,6 +171,13 @@ let lname_of_lident : lident -> lname =
 let name_of_ident_decl : ident_decl -> name_decl =
   on_fst lname_of_lident
 
+let warn_deprecated_thm_with =
+  CWarnings.create
+    ~name:"theorem-with" ~category:"deprecated"
+    (fun thm ->
+      str ("[" ^ Kindops.string_of_theorem_kind thm ^ " ... with] is deprecated. Use [Fixpoint ... with] instead.")
+    )
+
 }
 
 (* Gallina declarations *)
@@ -184,7 +191,8 @@ GRAMMAR EXTEND Gram
         l = LIST0
           [ "with"; id = ident_decl; bl = binders; ":"; c = lconstr ->
           { (id,(bl,c)) } ] ->
-          { VernacStartTheoremProof (thm, (id,(bl,c))::l) }
+          { if not (List.is_empty l) then warn_deprecated_thm_with ~loc thm;
+            VernacStartTheoremProof (thm, (id,(bl,c))::l) }
       | stre = assumption_token; nl = inline; bl = assum_list ->
 	  { VernacAssumption (stre, nl, bl) }
       | tk = assumptions_token; nl = inline; bl = assum_list ->

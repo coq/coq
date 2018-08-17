@@ -1756,7 +1756,7 @@ Qed.
 
 (** A third approach : Lemma ... with ... *)
 
-Lemma del_arb s x n : rbt (S n) s -> isblack s -> arbt n (del x s)
+Fixpoint del_arb s x n : rbt (S n) s -> isblack s -> arbt n (del x s)
 with del_rb s x n : rbt n s -> notblack s -> rbt n (del x s).
 Proof.
 { revert n.
