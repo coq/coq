@@ -1,4 +1,14 @@
-CI_TARGETS=ci-all \
+##########################################################################
+##         #   The Coq Proof Assistant / The Coq Development Team       ##
+##  v      #   INRIA, CNRS and contributors - Copyright 1999-2018       ##
+## <O___,, #       (see CREDITS file for the list of authors)           ##
+##   \VV/  ###############################################################
+##    //   #    This file is distributed under the terms of the         ##
+##         #     GNU Lesser General Public License Version 2.1          ##
+##         #     (see LICENSE file for the text of the license)         ##
+##########################################################################
+
+CI_TARGETS=ci-bedrock2 \
     ci-bignums \
     ci-color \
     ci-compcert \
@@ -6,6 +16,8 @@ CI_TARGETS=ci-all \
     ci-coquelicot \
     ci-corn \
     ci-cpdt \
+    ci-equations \
+    ci-fcsl-pcm \
     ci-fiat-crypto \
     ci-fiat-parsers \
     ci-flocq \
@@ -13,15 +25,21 @@ CI_TARGETS=ci-all \
     ci-geocoq \
     ci-hott \
     ci-iris-lambda-rust \
+    ci-ltac2 \
     ci-math-classes \
     ci-math-comp \
-    ci-metacoq \
     ci-sf \
     ci-tlc \
     ci-unimath \
     ci-vst
 
-.PHONY: $(CI_TARGETS)
+.PHONY: ci-all $(CI_TARGETS)
+
+ci-help:
+	echo '*** Coq CI system, please specify a target to build.'
+	false
+
+ci-all: $(CI_TARGETS)
 
 ci-color: ci-bignums
 

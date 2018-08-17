@@ -34,7 +34,7 @@ REM see -ocaml in ReadMe.txt
 SET INSTALLOCAML=N
 
 REM see -make in ReadMe.txt
-SET INSTALLMAKE=Y
+SET INSTALLMAKE=N
 
 REM see -destcyg in ReadMe.txt
 SET DESTCYG=C:\bin\cygwin_coq
@@ -77,6 +77,9 @@ SET GTK_FROM_SOURCES=N
 
 REM see -threads in ReadMe.txt
 SET MAKE_THREADS=8
+
+REM see -addon in ReadMe.txt
+SET "COQ_ADDONS= "
 
 REM ========== PARSE COMMAND LINE PARAMETERS ==========
 
@@ -233,6 +236,14 @@ IF "%~0" == "-threads" (
   GOTO Parse
 )
 
+IF "%~0" == "-addon" (
+  SET "COQ_ADDONS=%COQ_ADDONS% %~1"
+  SHIFT
+  SHIFT
+  GOTO Parse
+)
+
+
 IF NOT "%~0" == "" (
   ECHO Install cygwin and download, compile and install OCaml and Coq for MinGW
   ECHO !!! Illegal parameter %~0
@@ -244,6 +255,7 @@ IF NOT "%~0" == "" (
 
 IF NOT EXIST %SETUP% (
   ECHO The cygwin setup program %SETUP% doesn't exist. You must download it from https://cygwin.com/install.html.
+  ECHO If the setup is in a different folder, set the full path to %SETUP% using the -setup option.
   GOTO :EOF
 )
 
@@ -256,7 +268,6 @@ IF "%INSTALLMODE%" == "mingwincygwin" (
 IF "%MAKEINSTALLER%" == "Y" (
   SET INSTALLMODE=relocatable
   SET INSTALLOCAML=Y
-  SET INSTALLMAKE=Y
 )
 
 REM ========== CONFIRM PARAMETERS ==========
@@ -375,7 +386,6 @@ IF "%RUNSETUP%"=="Y" (
   MKDIR "%CYGWIN_INSTALLDIR_WFMT%\build\buildlogs"
 )
 
-
 IF NOT "%CYGWIN_QUIET%" == "Y" (
   REM Like most setup programs, cygwin setup starts the real setup as a separate process, so wait for it.
   REM This is not required with the -cygquiet=Y and the resulting --no-admin option.
@@ -385,6 +395,12 @@ IF NOT "%CYGWIN_QUIET%" == "Y" (
 )
 
 ECHO ========== CONFIGURE CYGWIN USER ACCOUNT ==========
+
+REM In case this batch file is called from a cygwin bash (e.g. a git repo) we need to clear
+REM HOME (otherwise we get to the home directory of the other installation)
+REM PROFILEREAD (this is set to true if the /etc/profile has been read, which creates user)
+SET "HOME="
+SET "PROFILEREAD="
 
 copy "%BATCHDIR%\configure_profile.sh" "%CYGWIN_INSTALLDIR_WFMT%\var\tmp" || GOTO ErrorExit
 %BASH% --login "%CYGWIN_INSTALLDIR_CFMT%\var\tmp\configure_profile.sh" "%PROXY%" || GOTO ErrorExit
@@ -426,6 +442,7 @@ ECHO ========== BATCH FUNCTIONS ==========
   ECHO -coqver   ^<Coq version to install^> 
   ECHO -gtksrc   ^<Y or N^> build GTK ^(90 min^) or use cygwin version
   ECHO -threads  ^<1..N^> Number of make threads
+  ECHO -addon    ^<name^>  Enable building selected addon (can be repeated)
   ECHO(
   ECHO See ReadMe.txt for a detailed description of all parameters
   ECHO(
@@ -447,6 +464,7 @@ ECHO ========== BATCH FUNCTIONS ==========
   ECHO -coqver   = %COQ_VERSION%
   ECHO -gtksrc   = %GTK_FROM_SOURCES%
   ECHO -threads  = %MAKE_THREADS%
+  ECHO -addon    = %COQ_ADDONS%
   GOTO :EOF
 
 :CheckYN
