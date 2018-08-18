@@ -362,7 +362,7 @@ let init_color opts =
       false
   in
   if Proof_diffs.show_diffs () && not term_color && not opts.batch_mode then
-    CErrors.user_err Pp.(str "Error: -diffs requires enabling -color");
+    (prerr_endline "Error: -diffs requires enabling -color"; exit 1);
   Topfmt.init_terminal_output ~color:term_color
 
 let print_style_tags opts =
