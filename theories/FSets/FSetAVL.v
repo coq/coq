@@ -13,7 +13,7 @@
     It follows the implementation from Ocaml's standard library,
 
     All operations given here expect and produce well-balanced trees
-    (in the ocaml sense: heigths of subtrees shouldn't differ by more
+    (in the ocaml sense: heights of subtrees shouldn't differ by more
     than 2), and hence has low complexities (e.g. add is logarithmic
     in the size of the set). But proving these balancing preservations
     is in fact not necessary for ensuring correct operational behavior

@@ -11,7 +11,7 @@
     This module factorizes common parts in implementations
     of finite sets as AVL trees and as Red-Black trees. The nodes
     of the trees defined here include an generic information
-    parameter, that will be the heigth in AVL trees and the color
+    parameter, that will be the height in AVL trees and the color
     in Red-Black trees. Without more details here about these
     information parameters, trees here are not known to be
     well-balanced, but simply binary-search-trees.
