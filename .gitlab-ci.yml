@@ -192,6 +192,9 @@ windows32:
   <<: *windows-template
   variables:
     ARCH: "32"
+  except:
+    - /^pr-.*$/
+
 
 pkg:nix:
   image: nixorg/nix:latest # Minimal NixOS image which doesn't even contain git
