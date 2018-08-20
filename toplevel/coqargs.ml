@@ -425,7 +425,7 @@ let parse_args arglist : coq_cmdopts * string list =
     |"-worker-id" -> set_worker_id opt (next ()); oval
 
     |"-compat" ->
-      let v = G_vernac.parse_compat_version ~allow_old:false (next ()) in
+      let v = G_vernac.parse_compat_version (next ()) in
       Flags.compat_version := v;
       add_compat_require oval v
 

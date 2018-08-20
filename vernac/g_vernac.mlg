@@ -59,7 +59,7 @@ let make_bullet s =
   | '*' -> Star n
   | _ -> assert false
 
-let parse_compat_version ?(allow_old = true) = let open Flags in function
+let parse_compat_version = let open Flags in function
   | "8.8" -> Current
   | "8.7" -> V8_7
   | "8.6" -> V8_6
