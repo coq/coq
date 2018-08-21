@@ -225,7 +225,6 @@ pkg:nix:
     EXTRA_PUBLIC_KEYS: coq.cachix.org-1:Jgt0DwGAUo+wpxCM52k2V+E0hLoOzFPzvg94F65agtI=
     # The following variables should not be overridden
     GIT_STRATEGY: none
-    CACHIX_PUBLIC_KEY: cachix.cachix.org-1:eWNHQldwUO7G2VkjpnjDbWwy4KQ/HNxht7H4SSoMckM=
     NIXOS_PUBLIC_KEY: cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
   dependencies: [] # We don't need to download build artifacts
@@ -233,8 +232,9 @@ pkg:nix:
   script:
     # Use current worktree as tmpdir to allow exporting artifacts in case of failure
     - export TMPDIR=$PWD
-    # Install Cachix as documented at https://github.com/cachix/cachix
-    - nix-env -if https://github.com/cachix/cachix/tarball/master --substituters https://cachix.cachix.org --trusted-public-keys "$CACHIX_PUBLIC_KEY"
+    # Fetch the pinned version of nixpkgs
+    - wget $CI_PROJECT_URL/raw/$CI_COMMIT_SHA/dev/pin.nix
+    - nix-env -iA cachix -f pin.nix
     # We build an expression rather than a direct URL to not be dependent on
     # the URL location; we are forced to put the public key of cache.nixos.org
     # because there is no --extra-trusted-public-key option.
