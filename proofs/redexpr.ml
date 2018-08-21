@@ -52,7 +52,7 @@ let whd_cbn flags env sigma t =
   Reductionops.Stack.zip ~refold:true sigma state
 
 let strong_cbn flags =
-  strong (whd_cbn flags)
+  strong_with_flags whd_cbn flags
 
 let simplIsCbn = ref (false)
 let _ = Goptions.declare_bool_option {
