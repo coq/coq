@@ -9,7 +9,7 @@ The Coq documentation includes
 The documentation of the latest released version is available on the Coq
 web site at [coq.inria.fr/documentation](http://coq.inria.fr/documentation).
 
-Additionnally, you can view the documentation for the current master version at
+Additionally, you can view the documentation for the current master version at
 <https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_install_ci/share/doc/coq/sphinx/html/index.html?job=documentation>.
 
 The reference manual is written is reStructuredText and compiled
@@ -89,6 +89,18 @@ Alternatively, you can use some specific targets:
 Also note the `-with-doc yes` option of `./configure` to enable the
 build of the documentation as part of the default make target.
 
+If you're editing Sphinx documentation, set SPHINXWARNERROR to 0
+to avoid treating Sphinx warnings as errors.  Otherwise, Sphinx quits
+upon detecting the first warning.  You can set this on the Sphinx `make`
+command line or as an environment variable:
+
+- `make sphinx SPINXWARNERROR=0`
+
+- ~~~
+  export SPHINXWARNERROR=0
+    ⋮
+  make sphinx
+  ~~~
 
 Installation
 ------------
