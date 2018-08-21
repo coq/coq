@@ -144,6 +144,9 @@ val pr_state : state -> Pp.t
 
 (** {6 Reduction Function Operators } *)
 
+val strong_with_flags :
+  (CClosure.RedFlags.reds -> reduction_function) ->
+  (CClosure.RedFlags.reds -> reduction_function)
 val strong : reduction_function -> reduction_function
 val local_strong : local_reduction_function -> local_reduction_function
 val strong_prodspine : local_reduction_function -> local_reduction_function

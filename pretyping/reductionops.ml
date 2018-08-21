@@ -628,6 +628,18 @@ let safe_meta_value sigma ev =
   try Some (Evd.meta_value sigma ev)
   with Not_found -> None
 
+let strong_with_flags whdfun flags env sigma t =
+  let push_rel_check_zeta d env =
+    let open CClosure.RedFlags in
+    let d = match d with
+      | LocalDef (na,c,t) when not (red_set flags fZETA) -> LocalAssum (na,t)
+      | d -> d in
+    push_rel d env in
+  let rec strongrec env t =
+    map_constr_with_full_binders sigma
+      push_rel_check_zeta strongrec env (whdfun flags env sigma t) in
+  strongrec env t
+
 let strong whdfun env sigma t =
   let rec strongrec env t =
     map_constr_with_full_binders sigma push_rel strongrec env (whdfun env sigma t) in
