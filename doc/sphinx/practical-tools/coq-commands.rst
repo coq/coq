@@ -90,8 +90,8 @@ not set, they look for the commands in the executable path.
 The ``$COQ_COLORS`` environment variable can be used to specify the set
 of colors used by ``coqtop`` to highlight its output. It uses the same
 syntax as the ``$LS_COLORS`` variable from GNU’s ls, that is, a colon-separated
-list of assignments of the form ``name=``:n:``{*; attr}`` where
-``name`` is the name of the corresponding highlight tag and each ``attrᵢ`` is an
+list of assignments of the form :n:`name={*; attr}` where
+``name`` is the name of the corresponding highlight tag and each ``attr`` is an
 ANSI escape code. The list of highlight tags can be retrieved with the
 ``-list-tags`` command-line option of ``coqtop``.
 
