@@ -303,7 +303,7 @@ In addition to the objects and directives above, the ``coqrst`` Sphinx plugin de
        it names the introduced hypothesis :token:`ident`.
 
     Note that this example also uses ``:token:``.  That's because ``ident`` is
-    defined in the the Coq manual as a grammar production, and ``:token:``
+    defined in the Coq manual as a grammar production, and ``:token:``
     creates a link to that.  When referring to a placeholder that happens to be
     a grammar production, ``:token:`…``` is typically preferable to ``:n:`@…```.
 

@@ -352,7 +352,7 @@ let prove_fun_correct evd funs_constr graphs_constr schemes lemmas_types_infos i
 	      Locusops.onConcl);
 	    observe_tac ("toto ") tclIDTAC;
     
-	    (* introducing the the result of the graph and the equality hypothesis *)
+            (* introducing the result of the graph and the equality hypothesis *)
 	    observe_tac "introducing" (tclMAP (fun x -> Proofview.V82.of_tactic (Simple.intro x)) [res;hres]);
 	    (* replacing [res] with its value *)
 	    observe_tac "rewriting res value" (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar hres)));

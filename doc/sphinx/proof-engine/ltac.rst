@@ -384,7 +384,7 @@ tactic to work (i.e. which does not fail) among a panel of tactics:
    focused goal independently and stops if it succeeds; otherwise it
    tries to apply :n:`v__2` and so on. It fails when there is no
    applicable tactic. In other words,
-   :n:`first [@expr__1 | ... | @expr__n]` behaves, in each goal, as the the first
+   :n:`first [@expr__1 | ... | @expr__n]` behaves, in each goal, as the first
    :n:`v__i` to have *at least* one success.
 
    .. exn:: No applicable tactic.

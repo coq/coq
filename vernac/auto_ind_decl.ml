@@ -355,7 +355,7 @@ let destruct_ind sigma c =
   then avoid should be
  [| lb_An ... lb _A1  (resp. bl_An ... bl_A1)
     eq_An .... eq_A1 An ... A1 |]
-so from Ai we can find the the correct eq_Ai bl_ai or lb_ai
+so from Ai we can find the correct eq_Ai bl_ai or lb_ai
 *)
 (* used in the leib -> bool side*)
 let do_replace_lb mode lb_scheme_key aavoid narg p q =

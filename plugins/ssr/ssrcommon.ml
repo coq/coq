@@ -470,7 +470,7 @@ let ssrevaltac ist gtac = Tacinterp.tactic_of_value ist gtac
 (* term mkApp (t', args) is convertible to t.                        *)
 (* This makes a useful shorthand for local definitions in proofs,    *)
 (* i.e., pose succ := _ + 1 means pose succ := fun n : nat => n + 1, *)
-(* and, in context of the the 4CT library, pose mid := maps id means *)
+(* and, in context of the 4CT library, pose mid := maps id means *)
 (*    pose mid := fun d : detaSet => @maps d d (@id (datum d))       *)
 (* Note that this facility does not extend to set, which tries       *)
 (* instead to fill holes by matching a goal subterm.                 *)
