@@ -333,7 +333,7 @@ Proof.
 auto with set.
 Qed.
 
-(* caracterisation of [union] via [subset] *)
+(* characterisation of [union] via [subset] *)
 
 Lemma union_subset_1: subset s (union s s')=true.
 Proof.
@@ -408,7 +408,7 @@ intros; apply equal_1; apply inter_add_2.
 rewrite not_mem_iff; auto.
 Qed.
 
-(* caracterisation of [union] via [subset] *)
+(* characterisation of [union] via [subset] *)
 
 Lemma inter_subset_1: subset (inter s s') s=true.
 Proof.

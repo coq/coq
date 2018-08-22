@@ -83,7 +83,7 @@ End GenericMinMax.
 Module MinMaxLogicalProperties (Import O:TotalOrder')(Import M:HasMinMax O).
  Module Import Private_Tac := !MakeOrderTac O O.
 
-(** An alternative caracterisation of [max], equivalent to
+(** An alternative characterisation of [max], equivalent to
     [max_l /\ max_r] *)
 
 Lemma max_spec n m :

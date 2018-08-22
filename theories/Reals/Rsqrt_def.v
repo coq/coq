@@ -392,7 +392,7 @@ Definition cond_positivity (x:R) : bool :=
     | right _ => false
   end.
 
-(** Sequential caracterisation of continuity *)
+(** Sequential characterisation of continuity *)
 Lemma continuity_seq :
   forall (f:R -> R) (Un:nat -> R) (l:R),
     continuity_pt f l -> Un_cv Un l -> Un_cv (fun i:nat => f (Un i)) (f l).
