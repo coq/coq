@@ -1706,14 +1706,13 @@ let vernac_check_may_eval ~atts redexp glopt rc =
       (* OK to call kernel which does not support evars *)
       Termops.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
   in
-  match redexp with
+  let pp = match redexp with
     | None ->
         let evars_of_term c = Evarutil.undefined_evars_of_term sigma c in
         let l = Evar.Set.union (evars_of_term j.Environ.uj_val) (evars_of_term j.Environ.uj_type) in
         let j = { j with Environ.uj_type = Reductionops.nf_betaiota env sigma j.Environ.uj_type } in
         print_judgment env sigma j ++
-        pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l ++
-        Printer.pr_universe_ctx_set sigma uctx
+        pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l
     | Some r ->
         let (sigma,r_interp) = Hook.get f_interp_redexp env sigma r in
 	let redfun env evm c =
@@ -1722,6 +1721,8 @@ let vernac_check_may_eval ~atts redexp glopt rc =
           c
         in
         print_eval redfun env sigma rc j
+  in
+  pp ++ Printer.pr_universe_ctx_set sigma uctx
 
 let vernac_declare_reduction ~atts s r =
   let local = make_locality atts.locality in
