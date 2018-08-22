@@ -48,6 +48,9 @@ Type@{Top.17} -> Type@{v} -> Type@{u}
 (* u Top.17 v |=  *)
 
 foo is universe polymorphic
+Type@{i} -> Type@{j}
+     : Type@{max(i+1,j+1)}
+(* {j i} |=  *)
 Monomorphic mono = Type@{mono.u}
      : Type@{mono.u+1}
 (* {mono.u} |=  *)
@@ -149,24 +152,24 @@ inmod@{u} -> Type@{v}
 (* u v |=  *)
 
 Applied.infunct is universe polymorphic
-axfoo@{i Top.44 Top.45} : Type@{Top.44} -> Type@{i}
-(* i Top.44 Top.45 |=  *)
+axfoo@{i Top.46 Top.47} : Type@{Top.46} -> Type@{i}
+(* i Top.46 Top.47 |=  *)
 
 axfoo is universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant Top.axfoo
-axbar@{i Top.44 Top.45} : Type@{Top.45} -> Type@{i}
-(* i Top.44 Top.45 |=  *)
+axbar@{i Top.46 Top.47} : Type@{Top.47} -> Type@{i}
+(* i Top.46 Top.47 |=  *)
 
 axbar is universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant Top.axbar
-axfoo' : Type@{Top.47} -> Type@{axbar'.i}
+axfoo' : Type@{Top.49} -> Type@{axbar'.i}
 
 axfoo' is not universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant Top.axfoo'
-axbar' : Type@{Top.47} -> Type@{axbar'.i}
+axbar' : Type@{Top.49} -> Type@{axbar'.i}
 
 axbar' is not universe polymorphic
 Argument scope is [type_scope]
