@@ -207,7 +207,7 @@ Applying theorems
    or :n:`(_ : @type)`) in the term. :tacn:`refine` will generate as many
    subgoals as there are holes in the term. The type of holes must be either
    synthesized by the system or declared by an explicit cast
-   like ``(_ : nat->Prop)``. Any subgoal that
+   like ``(_ : nat -> Prop)``. Any subgoal that
    occurs in other subgoals is automatically shelved, as if calling
    :tacn:`shelve_unifiable`. This low-level tactic can be
    useful to advanced users.
@@ -680,14 +680,14 @@ Managing the local context
 
       .. example::
 
-         On the subgoal :g:`forall x y : nat, x=y -> y=x` the
+         On the subgoal :g:`forall x y : nat, x = y -> y = x` the
          tactic :n:`intros until 1` is equivalent to :n:`intros x y H`,
-         as :g:`x=y -> y=x` is the first non-dependent product.
+         as :g:`x = y -> y = x` is the first non-dependent product.
 
-         On the subgoal :g:`forall x y z:nat, x=y -> y=x` the
+         On the subgoal :g:`forall x y z : nat, x = y -> y = x` the
          tactic :n:`intros until 1` is equivalent to :n:`intros x y z`
          as the product on :g:`z` can be rewritten as a non-dependent
-         product: :g:`forall x y:nat, nat -> x=y -> y=x`.
+         product: :g:`forall x y : nat, nat -> x = y -> y = x`.
 
       .. exn:: No such hypothesis in current goal.
 
