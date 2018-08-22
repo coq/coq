@@ -41,7 +41,7 @@ val register_alias : alias -> alias_tactic -> unit
 (** Register a tactic alias. *)
 
 val interp_alias : alias -> alias_tactic
-(** Recover the the body of an alias. Raises an anomaly if it does not exist. *)
+(** Recover the body of an alias. Raises an anomaly if it does not exist. *)
 
 val check_alias : alias -> bool
 (** Returns [true] if an alias is defined, false otherwise. *)

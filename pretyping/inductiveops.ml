@@ -633,7 +633,7 @@ let is_predicate_explicitly_dep env sigma pred arsign =
           dependency status (of course, Anonymous implies non
           dependent, but not conversely).
 
-          From Coq > 8.2, using or not the the effective dependency of
+          From Coq > 8.2, using or not the effective dependency of
           the predicate is parametrable! *)
 
           begin match na with
