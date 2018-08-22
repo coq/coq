@@ -793,7 +793,7 @@ function make_ln {
 
 function make_ocaml {
   get_flex_dll_link_bin
-  if build_prep https://github.com/ocaml/ocaml/archive/4.07.0 ocaml-4.07.0 tar.gz 1 ; then
+  if build_prep https://github.com/ocaml/ocaml/archive 4.07.0 tar.gz 1 ocaml-4.07.0 ; then
     # See README.win32.adoc
     cp config/m-nt.h byterun/caml/m.h
     cp config/s-nt.h byterun/caml/s.h
