@@ -33,6 +33,8 @@ Print foo.
 
 Check Type@{i} -> Type@{j}.
 
+Eval cbv in Type@{i} -> Type@{j}.
+
 Set Strict Universe Declaration.
 
 (* Binders even work with monomorphic definitions! *)
