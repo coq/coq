@@ -67,7 +67,6 @@ let push_types env idl tl =
 
 type structured_one_inductive_expr = {
   ind_name : Id.t;
-  ind_univs : universe_decl_expr option;
   ind_arity : constr_expr;
   ind_lc : (Id.t * constr_expr) list
 }
@@ -348,13 +347,12 @@ let restrict_inductive_universes sigma ctx_params arities constructors =
   let uvars = List.fold_right (fun (_,ctypes,_) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
   Evd.restrict_universe_context sigma uvars
 
-let interp_mutual_inductive_gen env0 ~template (uparamsl,paramsl,indl) notations cum poly prv finite =
+let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) notations cum poly prv finite =
   check_all_names_different indl;
   List.iter check_param paramsl;
   if not (List.is_empty uparamsl) && not (List.is_empty notations)
   then user_err (str "Inductives with uniform parameters may not have attached notations.");
-  let pl = (List.hd indl).ind_univs in
-  let sigma, decl = interp_univ_decl_opt env0 pl in
+  let sigma, udecl = interp_univ_decl_opt env0 udecl in
   let sigma, (uimpls, ((env_uparams, ctx_uparams), useruimpls)) =
     interp_context_evars env0 sigma uparamsl in
   let sigma, (impls, ((env_params, ctx_params), userimpls)) =
@@ -424,7 +422,7 @@ let interp_mutual_inductive_gen env0 ~template (uparamsl,paramsl,indl) notations
   let ctx_params = List.map Termops.(map_rel_decl (EConstr.to_constr sigma)) ctx_params in
   let arityconcl = List.map (Option.map (EConstr.ESorts.kind sigma)) arityconcl in
   let sigma = restrict_inductive_universes sigma ctx_params arities constructors in
-  let uctx = Evd.check_univ_decl ~poly sigma decl in
+  let uctx = Evd.check_univ_decl ~poly sigma udecl in
   List.iter (fun c -> check_evars env_params (Evd.from_env env_params) sigma (EConstr.of_constr c)) arities;
   Context.Rel.iter (fun c -> check_evars env0 (Evd.from_env env0) sigma (EConstr.of_constr c)) ctx_params;
   List.iter (fun (_,ctyps,_) ->
@@ -478,8 +476,8 @@ let interp_mutual_inductive_gen env0 ~template (uparamsl,paramsl,indl) notations
       InferCumulativity.infer_inductive env_ar mind_ent
    else mind_ent), Evd.universe_binders sigma, impls
 
-let interp_mutual_inductive ~template (paramsl,indl) notations cum poly prv finite =
-  interp_mutual_inductive_gen (Global.env()) ~template ([],paramsl,indl) notations cum poly prv finite
+let interp_mutual_inductive ~template udecl (paramsl,indl) notations cum poly prv finite =
+  interp_mutual_inductive_gen (Global.env()) ~template udecl ([],paramsl,indl) notations cum poly prv finite
 
 (* Very syntactical equality *)
 let eq_local_binders bl1 bl2 =
@@ -500,8 +498,8 @@ let extract_params indl =
       params
 
 let extract_inductive indl =
-  List.map (fun (({CAst.v=indname},pl),_,ar,lc) -> {
-    ind_name = indname; ind_univs = pl;
+  List.map (fun ({CAst.v=indname},_,ar,lc) -> {
+    ind_name = indname;
     ind_arity = Option.cata (fun x -> x) (CAst.make @@ CSort (Glob_term.GType [])) ar;
     ind_lc = List.map (fun (_,({CAst.v=id},t)) -> (id,t)) lc
   }) indl
@@ -567,11 +565,11 @@ type uniform_inductive_flag =
   | UniformParameters
   | NonUniformParameters
 
-let do_mutual_inductive ~template indl cum poly prv ~uniform finite =
+let do_mutual_inductive ~template udecl indl cum poly prv ~uniform finite =
   let (params,indl),coes,ntns = extract_mutual_inductive_declaration_components indl in
   (* Interpret the types *)
   let indl = match uniform with UniformParameters -> (params, [], indl) | NonUniformParameters -> ([], params, indl) in
-  let mie,pl,impls = interp_mutual_inductive_gen (Global.env()) ~template indl ntns cum poly prv finite in
+  let mie,pl,impls = interp_mutual_inductive_gen (Global.env()) ~template udecl indl ntns cum poly prv finite in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (declare_mutual_inductive_with_eliminations mie pl impls);
   (* Declare the possible notations of inductive types *)

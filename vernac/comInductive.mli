@@ -24,7 +24,8 @@ type uniform_inductive_flag =
   | NonUniformParameters
 
 val do_mutual_inductive :
-  template:bool option -> (one_inductive_expr * decl_notation list) list -> cumulative_inductive_flag ->
+  template:bool option -> universe_decl_expr option ->
+  (one_inductive_expr * decl_notation list) list -> cumulative_inductive_flag ->
   polymorphic -> private_flag -> uniform:uniform_inductive_flag ->
   Declarations.recursivity_kind -> unit
 
@@ -54,7 +55,6 @@ val should_auto_template : unit -> bool
 
 type structured_one_inductive_expr = {
   ind_name : Id.t;
-  ind_univs : universe_decl_expr option;
   ind_arity : constr_expr;
   ind_lc : (Id.t * constr_expr) list
 }
@@ -69,6 +69,7 @@ val extract_mutual_inductive_declaration_components :
 (** Typing mutual inductive definitions *)
 
 val interp_mutual_inductive :
-  template:bool option -> structured_inductive_expr -> decl_notation list -> cumulative_inductive_flag ->
+  template:bool option -> universe_decl_expr option -> structured_inductive_expr ->
+  decl_notation list -> cumulative_inductive_flag ->
   polymorphic -> private_flag -> Declarations.recursivity_kind ->
   mutual_inductive_entry * UnivNames.universe_binders * one_inductive_impls list
