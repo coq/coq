@@ -85,6 +85,8 @@ Some |Coq| commands call other |Coq| commands. In this case, they look for
 the commands in directory specified by ``$COQBIN``. If this variable is
 not set, they look for the commands in the executable path.
 
+.. _COQ_COLORS:
+
 The ``$COQ_COLORS`` environment variable can be used to specify the set
 of colors used by ``coqtop`` to highlight its output. It uses the same
 syntax as the ``$LS_COLORS`` variable from GNU’s ls, that is, a colon-separated
@@ -92,6 +94,15 @@ list of assignments of the form :n:`name={*; attr}` where
 ``name`` is the name of the corresponding highlight tag and each ``attr`` is an
 ANSI escape code. The list of highlight tags can be retrieved with the
 ``-list-tags`` command-line option of ``coqtop``.
+
+The string uses ANSI escape codes to represent attributes.  For example:
+
+        ``export COQ_COLORS=”diff.added=4;48;2;0;0;240:diff.removed=41”``
+
+sets the highlights for added text in diffs to underlined (the 4) with a background RGB
+color (0, 0, 240) and for removed text in diffs to a red background.
+Note that if you specify ``COQ_COLORS``, the predefined attributes are ignored.
+
 
 .. _command-line-options:
 
@@ -164,9 +175,13 @@ and ``coqtop``, unless stated otherwise:
 :-w (all|none|w₁,…,wₙ): Configure the display of warnings. This
   option expects all, none or a comma-separated list of warning names or
   categories (see Section :ref:`controlling-display`).
-:-color (on|off|auto): Enable or not the coloring of output of `coqtop`.
-  Default is auto, meaning that `coqtop` dynamically decides, depending on
-  whether the output channel supports ANSI escape sequences.
+:-color (on|off|auto): *Coqtop only*.  Enable or disable color output.
+  Default is auto, meaning color is shown only if
+  the output channel supports ANSI escape sequences.
+:-diffs (on|off|removed): *Coqtop only*.  Controls highlighting of differences
+  between proof steps.  ``on`` highlights added tokens, ``removed`` highlights both added and
+  removed tokens.  Requires that ``–color`` is enabled.  (see Section
+  :ref:`showing_diffs`).
 :-beautify: Pretty-print each command to *file.beautified* when
   compiling *file.v*, in order to get old-fashioned
   syntax/definitions/notations.
