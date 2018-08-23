@@ -107,7 +107,7 @@ and ``coqtop``, unless stated otherwise:
   to the OCaml loadpath. See also: :ref:`names-of-libraries` and the
   command Declare ML Module Section :ref:`compiled-files`.
 :-Q *directory* dirpath: Add physical path *directory* to the list of
-  directories where |Coq| looks for a file and bind it to the the logical
+  directories where |Coq| looks for a file and bind it to the logical
   directory *dirpath*. The subdirectory structure of *directory* is
   recursively available from |Coq| using absolute names (extending the
   dirpath prefix) (see Section :ref:`qualified-names`).Note that only those
