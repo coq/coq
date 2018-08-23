@@ -1436,6 +1436,25 @@ function make_addon_equations {
   fi
 }
 
+# Mtac2 plugin
+# An alternative typed tactic language
+
+function make_addon_mtac2 {
+  mtac2_SHA=$(git ls-remote "$mtac2_CI_GITURL" "refs/heads/$mtac2_CI_BRANCH" | cut -f 1)
+  if [[ "$mtac2_SHA" == "" ]]; then
+      # $mtac2_CI_BRANCH must have been a tag and not a branch
+      mtac2_SHA="$mtac2_CI_BRANCH"
+  fi
+  if build_prep "${mtac2_CI_GITURL}/archive" "$mtac2_SHA" zip 1 "mtac2-$mtac2_SHA"; then
+    # Note: PATH is autmatically saved/restored by build_prep / build_post
+    PATH=$COQBIN:$PATH
+    logn coq_makefile ${COQBIN}coq_makefile -f _CoqProject -o Makefile
+    log1 make
+    log2 make install
+    build_post
+  fi
+}
+
 function make_addons {
   if [ -n "$GITLAB_CI" ]; then
     export CI_BRANCH="$CI_COMMIT_REF_NAME"

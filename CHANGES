@@ -149,6 +149,12 @@ Notations
   refer to `app`.
   Solution: wrap `_ ++ _` in `(_ ++ _)%list` (or whichever scope you want). 
 
+Changes from 8.8.1 to 8.8.2
+===========================
+
+The Windows installer now includes external package Mtac2
+(in addition of Ltac2, Equations and Bignums).
+
 Changes from 8.8.0 to 8.8.1
 ===========================
 
