@@ -431,8 +431,8 @@ let subst_prim_token_interpretation (subs,infos) =
 
 let inPrimTokenInterp : prim_token_infos -> obj =
   declare_object {(default_object "PRIM-TOKEN-INTERP") with
+     open_function  = (fun i o -> if Int.equal i 1 then cache_prim_token_interpretation o);
      cache_function = cache_prim_token_interpretation;
-     load_function  = (fun _ -> cache_prim_token_interpretation);
      subst_function = subst_prim_token_interpretation;
      classify_function = (fun o -> Substitute o)}
 

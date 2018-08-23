@@ -616,6 +616,9 @@ Definition to_uint p := Decimal.rev (to_little_uint p).
 
 Definition to_int n := Decimal.Pos (to_uint n).
 
+Numeral Notation positive of_int to_uint : positive_scope.
+
 End Pos.
 
+(** Re-export the notation for those who just [Import BinPosDef] *)
 Numeral Notation positive Pos.of_int Pos.to_uint : positive_scope.

@@ -15,6 +15,8 @@ Require Import Wf_nat.
 Require Export ZArith.
 Require Export DoubleType.
 
+Declare ML Module "int31_syntax_plugin".
+
 (** * 31-bit integers *)
 
 (** This file contains basic definitions of a 31-bit integer
