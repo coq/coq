@@ -24,7 +24,7 @@ type uniform_inductive_flag =
   | NonUniformParameters
 
 val do_mutual_inductive :
-  (one_inductive_expr * decl_notation list) list -> cumulative_inductive_flag ->
+  template:bool option -> (one_inductive_expr * decl_notation list) list -> cumulative_inductive_flag ->
   polymorphic -> private_flag -> uniform:uniform_inductive_flag ->
   Declarations.recursivity_kind -> unit
 
@@ -67,6 +67,6 @@ val extract_mutual_inductive_declaration_components :
 (** Typing mutual inductive definitions *)
 
 val interp_mutual_inductive :
-  structured_inductive_expr -> decl_notation list -> cumulative_inductive_flag ->
+  template:bool option -> structured_inductive_expr -> decl_notation list -> cumulative_inductive_flag ->
   polymorphic -> private_flag -> Declarations.recursivity_kind ->
   mutual_inductive_entry * UnivNames.universe_binders * one_inductive_impls list

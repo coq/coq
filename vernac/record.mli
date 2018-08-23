@@ -26,7 +26,8 @@ val declare_projections :
     (Name.t * bool) list * Constant.t option list
 
 val definition_structure :
-  inductive_kind -> Decl_kinds.cumulative_inductive_flag -> Decl_kinds.polymorphic ->
+  inductive_kind -> template:bool option ->
+  Decl_kinds.cumulative_inductive_flag -> Decl_kinds.polymorphic ->
   Declarations.recursivity_kind ->
   (coercion_flag *
   Names.lident *

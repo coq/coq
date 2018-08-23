@@ -336,7 +336,7 @@ let restrict_inductive_universes sigma ctx_params arities constructors =
   let uvars = List.fold_right (fun (_,ctypes,_) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
   Evd.restrict_universe_context sigma uvars
 
-let interp_mutual_inductive_gen env0 (uparamsl,paramsl,indl) notations cum poly prv finite =
+let interp_mutual_inductive_gen env0 ~template (uparamsl,paramsl,indl) notations cum poly prv finite =
   check_all_names_different indl;
   List.iter check_param paramsl;
   if not (List.is_empty uparamsl) && not (List.is_empty notations)
@@ -420,13 +420,21 @@ let interp_mutual_inductive_gen env0 (uparamsl,paramsl,indl) notations cum poly 
     constructors;
 
   (* Build the inductive entries *)
-  let entries = List.map4 (fun ind arity concl (cnames,ctypes,cimpls) -> {
-    mind_entry_typename = ind.ind_name;
-    mind_entry_arity = arity;
-    mind_entry_template = not poly && Option.cata (fun s -> not (Sorts.is_small s)) false concl;
-    mind_entry_consnames = cnames;
-    mind_entry_lc = ctypes
-  }) indl arities arityconcl constructors in
+  let entries = List.map4 (fun ind arity concl (cnames,ctypes,cimpls) ->
+      let template = match template with
+        | Some template ->
+          if poly && template then user_err Pp.(strbrk "template and polymorphism not compatible");
+          template
+        | None -> not poly && Option.cata (fun s -> not (Sorts.is_small s)) false concl
+      in
+      { mind_entry_typename = ind.ind_name;
+        mind_entry_arity = arity;
+        mind_entry_template = template;
+        mind_entry_consnames = cnames;
+        mind_entry_lc = ctypes
+      })
+      indl arities arityconcl constructors
+  in
   let impls =
     let len = Context.Rel.nhyps ctx_params in
       List.map2 (fun indimpls (_,_,cimpls) ->
@@ -456,8 +464,8 @@ let interp_mutual_inductive_gen env0 (uparamsl,paramsl,indl) notations cum poly 
       InferCumulativity.infer_inductive env_ar mind_ent
    else mind_ent), Evd.universe_binders sigma, impls
 
-let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
-  interp_mutual_inductive_gen (Global.env()) ([],paramsl,indl) notations cum poly prv finite
+let interp_mutual_inductive ~template (paramsl,indl) notations cum poly prv finite =
+  interp_mutual_inductive_gen (Global.env()) ~template ([],paramsl,indl) notations cum poly prv finite
 
 (* Very syntactical equality *)
 let eq_local_binders bl1 bl2 =
@@ -545,11 +553,11 @@ type uniform_inductive_flag =
   | UniformParameters
   | NonUniformParameters
 
-let do_mutual_inductive indl cum poly prv ~uniform finite =
+let do_mutual_inductive ~template indl cum poly prv ~uniform finite =
   let (params,indl),coes,ntns = extract_mutual_inductive_declaration_components indl in
   (* Interpret the types *)
   let indl = match uniform with UniformParameters -> (params, [], indl) | NonUniformParameters -> ([], params, indl) in
-  let mie,pl,impls = interp_mutual_inductive_gen (Global.env()) indl ntns cum poly prv finite in
+  let mie,pl,impls = interp_mutual_inductive_gen (Global.env()) ~template indl ntns cum poly prv finite in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (declare_mutual_inductive_with_eliminations mie pl impls);
   (* Declare the possible notations of inductive types *)

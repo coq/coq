@@ -1499,7 +1499,7 @@ let do_build_inductive
   let _time2 = System.get_time () in
   try
     with_full_print
-      (Flags.silently (ComInductive.do_mutual_inductive rel_inds (Flags.is_universe_polymorphism ()) false false ~uniform:ComInductive.NonUniformParameters))
+      (Flags.silently (ComInductive.do_mutual_inductive ~template:None rel_inds (Flags.is_universe_polymorphism ()) false false ~uniform:ComInductive.NonUniformParameters))
       Declarations.Finite
   with
     | UserError(s,msg) as e ->
