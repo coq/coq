@@ -402,6 +402,9 @@ Definition to_uint n :=
 
 Definition to_int n := Decimal.Pos (to_uint n).
 
+Numeral Notation N of_uint to_uint : N_scope.
+
 End N.
 
+(** Re-export the notation for those who just [Import NatIntDef] *)
 Numeral Notation N N.of_uint N.to_uint : N_scope.

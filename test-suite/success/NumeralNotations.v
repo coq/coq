@@ -228,3 +228,22 @@ Module Test13.
   Fail Numeral Notation unit of_uint to_uint'' : test13''_scope.
   Fail Check let v := 0%test13'' in v : unit.
 End Test13.
+
+Module Test14.
+  (* Test that numeral notations follow [Import], not [Require], and
+     also test for current (INCORRECT!!) behavior that [Local] has no
+     effect in modules. *)
+  Delimit Scope test14_scope with test14.
+  Delimit Scope test14'_scope with test14'.
+  Module Inner.
+    Definition to_uint (x : unit) : Decimal.uint := Nat.to_uint O.
+    Definition of_uint (x : Decimal.uint) : unit := tt.
+    Local Numeral Notation unit of_uint to_uint : test14_scope.
+    Global Numeral Notation unit of_uint to_uint : test14'_scope.
+  End Inner.
+  Fail Check let v := 0%test14 in v : unit.
+  Fail Check let v := 0%test14' in v : unit.
+  Import Inner.
+  Check let v := 0%test14 in v : unit. (* THIS SHOULD FAIL!! *)
+  Check let v := 0%test14' in v : unit.
+End Test14.
