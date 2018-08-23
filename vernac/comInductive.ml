@@ -113,17 +113,16 @@ let rec check_anonymous_type ind =
     | GCast (e, _) -> check_anonymous_type e
     | _ -> false
 
-let make_conclusion_flexible sigma ty poly =
-  if poly && Term.isArity ty then
-    let _, concl = Term.destArity ty in
-      match concl with
-      | Type u ->
-        (match Univ.universe_level u with
+let make_conclusion_flexible sigma = function
+  | None -> sigma
+  | Some s ->
+    (match EConstr.ESorts.kind sigma s with
+     | Type u ->
+       (match Univ.universe_level u with
         | Some u ->
           Evd.make_flexible_variable sigma ~algebraic:true u
         | None -> sigma)
-      | _ -> sigma
-  else sigma
+     | _ -> sigma)
 
 let is_impredicative env u =
   u = Prop || (is_impredicative_set env && u = Set)
@@ -133,10 +132,12 @@ let interp_ind_arity env sigma ind =
   let impls = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
   let sigma,t = understand_tcc env sigma ~expected_type:IsType c in
   let pseudo_poly = check_anonymous_type c in
-  let () = if not (Reductionops.is_arity env sigma t) then
+  match Reductionops.sort_of_arity env sigma t with
+  | exception Invalid_argument _ ->
     user_err ?loc:(constr_loc ind.ind_arity) (str "Not an arity")
-  in
-  sigma, (t, pseudo_poly, impls)
+  | s ->
+    let concl = if pseudo_poly then Some s else None in
+    sigma, (t, concl, impls)
 
 let interp_cstrs env sigma impls mldata arity ind =
   let cnames,ctyps = List.split ind.ind_lc in
@@ -363,7 +364,7 @@ let interp_mutual_inductive_gen env0 (uparamsl,paramsl,indl) notations cum poly 
   (* Compute interpretation metadatas *)
   let indimpls = List.map (fun (_, _, impls) -> userimpls @
     lift_implicits (Context.Rel.nhyps ctx_params) impls) arities in
-  let arities = List.map pi1 arities and aritypoly = List.map pi2 arities in
+  let arities = List.map pi1 arities and arityconcl = List.map pi2 arities in
   let impls = compute_internalization_env env_uparams sigma ~impls (Inductive (params,true)) indnames fullarities indimpls in
   let ntn_impls = compute_internalization_env env_uparams sigma (Inductive (params,true)) indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data sigma env_params params) arities indnames in
@@ -402,7 +403,7 @@ let interp_mutual_inductive_gen env0 (uparamsl,paramsl,indl) notations cum poly 
   let nf = Evarutil.nf_evars_universes sigma in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf cl,impsl)) constructors in
   let arities = List.map EConstr.(to_constr sigma) arities in
-  let sigma = List.fold_left2 (fun sigma ty poly -> make_conclusion_flexible sigma ty poly) sigma arities aritypoly in
+  let sigma = List.fold_left make_conclusion_flexible sigma arityconcl in
   let sigma, arities = inductive_levels env_ar_params sigma poly arities constructors in
   let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in
@@ -418,13 +419,13 @@ let interp_mutual_inductive_gen env0 (uparamsl,paramsl,indl) notations cum poly 
     constructors;
 
   (* Build the inductive entries *)
-  let entries = List.map4 (fun ind arity template (cnames,ctypes,cimpls) -> {
+  let entries = List.map4 (fun ind arity concl (cnames,ctypes,cimpls) -> {
     mind_entry_typename = ind.ind_name;
     mind_entry_arity = arity;
-    mind_entry_template = template;
+    mind_entry_template = Option.has_some concl;
     mind_entry_consnames = cnames;
     mind_entry_lc = ctypes
-  }) indl arities aritypoly constructors in
+  }) indl arities arityconcl constructors in
   let impls =
     let len = Context.Rel.nhyps ctx_params in
       List.map2 (fun indimpls (_,_,cimpls) ->
