@@ -45,6 +45,8 @@ val declare_mutual_inductive_with_eliminations :
   mutual_inductive_entry -> UnivNames.universe_binders -> one_inductive_impls list ->
   MutInd.t
 
+val should_auto_template : unit -> bool
+
 (** Exported for Funind *)
 
 (** Extracting the semantical components out of the raw syntax of mutual

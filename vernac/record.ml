@@ -425,7 +425,7 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
         template
       | None, template ->
         (* auto detect template *)
-        template && not poly &&
+        ComInductive.should_auto_template () && template && not poly &&
         let _, s = Reduction.dest_arity (Global.env()) arity in
         not (Sorts.is_small s)
     in

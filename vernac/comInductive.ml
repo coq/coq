@@ -35,6 +35,18 @@ module RelDecl = Context.Rel.Declaration
 
 (* 3b| Mutual inductive definitions *)
 
+let should_auto_template =
+  let open Goptions in
+  let auto = ref true in
+  let _ = declare_bool_option
+      { optdepr  = false;
+        optname  = "Automatically make some inductive types template polymorphic";
+        optkey   = ["Auto";"Template";"Polymorphism"];
+        optread  = (fun () -> !auto);
+        optwrite = (fun b -> auto := b); }
+  in
+  fun () -> !auto
+
 let rec complete_conclusion a cs = CAst.map_with_loc (fun ?loc -> function
   | CProdN (bl,c) -> CProdN (bl,complete_conclusion a cs c)
   | CLetIn (na,b,t,c) -> CLetIn (na,b,t,complete_conclusion a cs c)
@@ -425,7 +437,9 @@ let interp_mutual_inductive_gen env0 ~template (uparamsl,paramsl,indl) notations
         | Some template ->
           if poly && template then user_err Pp.(strbrk "template and polymorphism not compatible");
           template
-        | None -> not poly && Option.cata (fun s -> not (Sorts.is_small s)) false concl
+        | None ->
+          should_auto_template () && not poly &&
+          Option.cata (fun s -> not (Sorts.is_small s)) false concl
       in
       { mind_entry_typename = ind.ind_name;
         mind_entry_arity = arity;
