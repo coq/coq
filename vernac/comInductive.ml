@@ -410,6 +410,7 @@ let interp_mutual_inductive_gen env0 (uparamsl,paramsl,indl) notations cum poly 
   let arities = List.map nf arities in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf cl,impsl)) constructors in
   let ctx_params = List.map Termops.(map_rel_decl (EConstr.to_constr sigma)) ctx_params in
+  let arityconcl = List.map (Option.map (EConstr.ESorts.kind sigma)) arityconcl in
   let sigma = restrict_inductive_universes sigma ctx_params arities constructors in
   let uctx = Evd.check_univ_decl ~poly sigma decl in
   List.iter (fun c -> check_evars env_params (Evd.from_env env_params) sigma (EConstr.of_constr c)) arities;
@@ -422,7 +423,7 @@ let interp_mutual_inductive_gen env0 (uparamsl,paramsl,indl) notations cum poly 
   let entries = List.map4 (fun ind arity concl (cnames,ctypes,cimpls) -> {
     mind_entry_typename = ind.ind_name;
     mind_entry_arity = arity;
-    mind_entry_template = Option.has_some concl;
+    mind_entry_template = Option.cata (fun s -> not (Sorts.is_small s)) false concl;
     mind_entry_consnames = cnames;
     mind_entry_lc = ctypes
   }) indl arities arityconcl constructors in
