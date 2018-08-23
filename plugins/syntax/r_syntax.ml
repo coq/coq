@@ -141,7 +141,8 @@ let r_scope = "R_scope"
 let _ =
   register_bignumeral_interpretation r_scope (r_of_int,uninterp_r);
   at_declare_ml_module enable_prim_token_interpretation
-    { pt_scope = r_scope;
+    { pt_local = false;
+      pt_scope = r_scope;
       pt_uid = r_scope;
       pt_required = (r_path,["Coq";"Reals";"Rdefinitions"]);
       pt_refs = [glob_IZR];

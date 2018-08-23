@@ -411,7 +411,7 @@ let type_error_of g ty loadZ =
      str "Instead of Decimal.int, the types Decimal.uint or Z could be used" ++
      (if loadZ then str " (require BinNums first)." else str "."))
 
-let vernac_numeral_notation ty f g scope opts =
+let vernac_numeral_notation local ty f g scope opts =
   let int_ty = locate_int () in
   let z_pos_ty = locate_z () in
   let tyc = Smartlocate.global_inductive_with_alias ty in
@@ -467,7 +467,8 @@ let vernac_numeral_notation ty f g scope opts =
   (* TODO: un hash suffit-il ? *)
   let uid = Marshal.to_string o [] in
   let i = Notation.(
-       { pt_scope = scope;
+       { pt_local = local;
+         pt_scope = scope;
          pt_uid = uid;
          pt_required = Nametab.path_of_global (IndRef tyc),[];
          pt_refs = constructors;

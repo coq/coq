@@ -100,6 +100,7 @@ val register_string_interpretation :
   ?allow_overwrite:bool -> prim_token_uid -> string prim_token_interpretation -> unit
 
 type prim_token_infos = {
+  pt_local : bool; (** Is this interpretation local? *)
   pt_scope : scope_name; (** Concerned scope *)
   pt_uid : prim_token_uid; (** Unique id "pointing" to (un)interp functions *)
   pt_required : required_module; (** Module that should be loaded first *)
@@ -123,10 +124,10 @@ val enable_prim_token_interpretation : prim_token_infos -> unit
     (the latter inside a [Mltop.declare_cache_obj]).
 *)
 
-val declare_numeral_interpreter : scope_name -> required_module ->
+val declare_numeral_interpreter : ?local:bool -> scope_name -> required_module ->
   Bigint.bigint prim_token_interpreter ->
   glob_constr list * Bigint.bigint prim_token_uninterpreter * bool -> unit
-val declare_string_interpreter : scope_name -> required_module ->
+val declare_string_interpreter : ?local:bool -> scope_name -> required_module ->
   string prim_token_interpreter ->
   glob_constr list * string prim_token_uninterpreter * bool -> unit
 

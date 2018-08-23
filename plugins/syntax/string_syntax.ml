@@ -73,7 +73,8 @@ let _ =
   let sc = "string_scope" in
   register_string_interpretation sc (interp_string,uninterp_string);
   at_declare_ml_module enable_prim_token_interpretation
-    { pt_scope = sc;
+    { pt_local = false;
+      pt_scope = sc;
       pt_uid = sc;
       pt_required = (string_path,["Coq";"Strings";"String"]);
       pt_refs = [static_glob_String; static_glob_EmptyString];

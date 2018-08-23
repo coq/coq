@@ -139,7 +139,7 @@ Module Test8.
     Context (dummy : unit).
     Definition wrap' := let __ := dummy in wrap.
     Definition unwrap' := let __ := dummy in unwrap.
-    Global Numeral Notation wuint wrap' unwrap' : wuint8_scope.
+    Numeral Notation wuint wrap' unwrap' : wuint8_scope.
     Check let v := 0%wuint8 in v : wuint.
   End with_var.
   Check let v := 0%wuint8 in v : nat.
@@ -231,19 +231,33 @@ End Test13.
 
 Module Test14.
   (* Test that numeral notations follow [Import], not [Require], and
-     also test for current (INCORRECT!!) behavior that [Local] has no
-     effect in modules. *)
+     also test that [Local Numeral Notation]s do not escape modules
+     nor sections. *)
   Delimit Scope test14_scope with test14.
   Delimit Scope test14'_scope with test14'.
+  Delimit Scope test14''_scope with test14''.
+  Delimit Scope test14'''_scope with test14'''.
   Module Inner.
     Definition to_uint (x : unit) : Decimal.uint := Nat.to_uint O.
     Definition of_uint (x : Decimal.uint) : unit := tt.
     Local Numeral Notation unit of_uint to_uint : test14_scope.
     Global Numeral Notation unit of_uint to_uint : test14'_scope.
+    Check let v := 0%test14 in v : unit.
+    Check let v := 0%test14' in v : unit.
   End Inner.
   Fail Check let v := 0%test14 in v : unit.
   Fail Check let v := 0%test14' in v : unit.
   Import Inner.
-  Check let v := 0%test14 in v : unit. (* THIS SHOULD FAIL!! *)
+  Fail Check let v := 0%test14 in v : unit.
   Check let v := 0%test14' in v : unit.
+  Section InnerSection.
+    Definition to_uint (x : unit) : Decimal.uint := Nat.to_uint O.
+    Definition of_uint (x : Decimal.uint) : unit := tt.
+    Local Numeral Notation unit of_uint to_uint : test14''_scope.
+    Fail Global Numeral Notation unit of_uint to_uint : test14'''_scope.
+    Check let v := 0%test14'' in v : unit.
+    Fail Check let v := 0%test14''' in v : unit.
+  End InnerSection.
+  Fail Check let v := 0%test14'' in v : unit.
+  Fail Check let v := 0%test14''' in v : unit.
 End Test14.
