@@ -417,6 +417,11 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
     let args = Context.Rel.to_extended_list mkRel nfields params in
     let ind = applist (mkRel (ntypes - i + nparams + nfields), args) in
     let type_constructor = it_mkProd_or_LetIn ind fields in
+    let template =
+      template &&
+      let _, s = Reduction.dest_arity (Global.env()) arity in
+      not (Sorts.is_small s)
+    in
     { mind_entry_typename = id;
       mind_entry_arity = arity;
       mind_entry_template = template;
