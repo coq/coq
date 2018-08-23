@@ -189,7 +189,7 @@ let emacs = insert emacs "Emacs" [] [
       run "Edit" "Cut";
       { s with kill = Some(txt,false); sel = false }
     else s));
-  mkE _k "k" "Kill untill the end of line" (Edit(fun s b i _ ->
+  mkE _k "k" "Kill until the end of line" (Edit(fun s b i _ ->
     let already_killed = match s.kill with Some (k,true) -> k | _ -> "" in
     let k =
       if i#ends_line then begin

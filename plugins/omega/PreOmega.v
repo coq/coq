@@ -181,7 +181,7 @@ Ltac zify_nat_op :=
         let t := eval compute in (Z.of_nat (S a)) in
         change (Z.of_nat (S a)) with t in H
       | _ => rewrite (Nat2Z.inj_succ a) in H
-      | _ => (* if the [rewrite] fails (most likely a dependent occurence of [Z.of_nat (S a)]),
+      | _ => (* if the [rewrite] fails (most likely a dependent occurrence of [Z.of_nat (S a)]),
                 hide [Z.of_nat (S a)] in this one hypothesis *)
         change (Z.of_nat (S a)) with (Z_of_nat' (S a)) in H
      end
@@ -192,7 +192,7 @@ Ltac zify_nat_op :=
         let t := eval compute in (Z.of_nat (S a)) in
         change (Z.of_nat (S a)) with t
       | _ => rewrite (Nat2Z.inj_succ a)
-      | _ => (* if the [rewrite] fails (most likely a dependent occurence of [Z.of_nat (S a)]),
+      | _ => (* if the [rewrite] fails (most likely a dependent occurrence of [Z.of_nat (S a)]),
                 hide [Z.of_nat (S a)] in the goal *)
         change (Z.of_nat (S a)) with (Z_of_nat' (S a))
      end

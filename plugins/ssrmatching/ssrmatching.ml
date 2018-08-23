@@ -853,7 +853,7 @@ let rec uniquize = function
   let p' = mkApp (pf, pa) in
   if max_occ <= !nocc then p', u.up_dir, (sigma, uc, u.up_t)
   else errorstrm (str"Only " ++ int !nocc ++ str" < " ++ int max_occ ++
-        str(String.plural !nocc " occurence") ++ match upats_origin with
+        str(String.plural !nocc " occurrence") ++ match upats_origin with
         | None -> str" of" ++ spc() ++ pr_constr_pat p'
         | Some (dir,rule) -> str" of the " ++ pr_dir_side dir ++ fnl() ++
             ws 4 ++ pr_constr_pat p' ++ fnl () ++ 

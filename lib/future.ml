@@ -49,7 +49,7 @@ end
 module UUIDMap = Map.Make(UUID)
 module UUIDSet = Set.Make(UUID)
 
-type 'a assignement = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of 'a computation]
+type 'a assignment = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of 'a computation]
 
 (* Val is not necessarily a final state, so the
    computation restarts from the state stocked into Val *)
@@ -103,7 +103,7 @@ let from_here ?(fix_exn=id) v = create fix_exn (Val v)
 let fix_exn_of ck = let _, _, fix_exn, _ = get ck in fix_exn
 
 let create_delegate ?(blocking=true) ~name fix_exn =
-  let assignement signal ck = fun v ->
+  let assignment signal ck = fun v ->
     let _, _, fix_exn, c = get ck in
     assert (match !c with Delegated _ -> true | _ -> false);
     begin match v with
@@ -118,7 +118,7 @@ let create_delegate ?(blocking=true) ~name fix_exn =
     (fun () -> Mutex.lock lock; Condition.wait cond lock; Mutex.unlock lock),
     (fun () -> Mutex.lock lock; Condition.broadcast cond; Mutex.unlock lock) in
   let ck = create ~name fix_exn (Delegated wait) in
-  ck, assignement signal ck
+  ck, assignment signal ck
 
 (* TODO: get rid of try/catch to be stackless *)
 let rec compute ck : 'a value =
