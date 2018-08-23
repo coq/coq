@@ -407,6 +407,7 @@ let register_string_interpretation ?(allow_overwrite=false) uid (interp, uninter
     (InnerPrimToken.StringInterp interp, InnerPrimToken.StringUninterp uninterp)
 
 type prim_token_infos = {
+  pt_local : bool; (** Is this interpretation local? *)
   pt_scope : scope_name; (** Concerned scope *)
   pt_uid : prim_token_uid; (** Unique id "pointing" to (un)interp functions *)
   pt_required : required_module; (** Module that should be loaded first *)
@@ -429,12 +430,15 @@ let subst_prim_token_interpretation (subs,infos) =
   { infos with
     pt_refs = List.map (subst_global_reference subs) infos.pt_refs }
 
+let classify_prim_token_interpretation infos =
+    if infos.pt_local then Dispose else Substitute infos
+
 let inPrimTokenInterp : prim_token_infos -> obj =
   declare_object {(default_object "PRIM-TOKEN-INTERP") with
      open_function  = (fun i o -> if Int.equal i 1 then cache_prim_token_interpretation o);
      cache_function = cache_prim_token_interpretation;
      subst_function = subst_prim_token_interpretation;
-     classify_function = (fun o -> Substitute o)}
+     classify_function = classify_prim_token_interpretation}
 
 let enable_prim_token_interpretation infos =
   Lib.add_anonymous_leaf (inPrimTokenInterp infos)
@@ -450,20 +454,22 @@ let fresh_string_of =
   let count = ref 0 in
   fun root -> count := !count+1; (string_of_int !count)^"_"^root
 
-let declare_numeral_interpreter sc dir interp (patl,uninterp,b) =
+let declare_numeral_interpreter ?(local=false) sc dir interp (patl,uninterp,b) =
   let uid = fresh_string_of sc in
   register_bignumeral_interpretation uid (interp,uninterp);
   enable_prim_token_interpretation
-    { pt_scope = sc;
+    { pt_local = local;
+      pt_scope = sc;
       pt_uid = uid;
       pt_required = dir;
       pt_refs = List.map_filter glob_prim_constr_key patl;
       pt_in_match = b }
-let declare_string_interpreter sc dir interp (patl,uninterp,b) =
+let declare_string_interpreter ?(local=false) sc dir interp (patl,uninterp,b) =
   let uid = fresh_string_of sc in
   register_string_interpretation uid (interp,uninterp);
   enable_prim_token_interpretation
-    { pt_scope = sc;
+    { pt_local = local;
+      pt_scope = sc;
       pt_uid = uid;
       pt_required = dir;
       pt_refs = List.map_filter glob_prim_constr_key patl;

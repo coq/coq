@@ -92,7 +92,8 @@ let _ =
   let sc = "char_scope" in
   register_string_interpretation sc (interp_ascii_string,uninterp_ascii_string);
   at_declare_ml_module enable_prim_token_interpretation
-    { pt_scope = sc;
+    { pt_local = false;
+      pt_scope = sc;
       pt_uid = sc;
       pt_required = (ascii_path,ascii_module);
       pt_refs = [static_glob_Ascii];

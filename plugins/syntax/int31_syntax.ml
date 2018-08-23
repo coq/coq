@@ -106,7 +106,8 @@ let at_declare_ml_module f x =
 let _ =
   register_bignumeral_interpretation int31_scope (interp_int31,uninterp_int31);
   at_declare_ml_module enable_prim_token_interpretation
-    { pt_scope = int31_scope;
+    { pt_local = false;
+      pt_scope = int31_scope;
       pt_uid = int31_scope;
       pt_required = (int31_path,int31_module);
       pt_refs = [int31_construct];
