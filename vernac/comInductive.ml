@@ -423,7 +423,7 @@ let interp_mutual_inductive_gen env0 (uparamsl,paramsl,indl) notations cum poly 
   let entries = List.map4 (fun ind arity concl (cnames,ctypes,cimpls) -> {
     mind_entry_typename = ind.ind_name;
     mind_entry_arity = arity;
-    mind_entry_template = Option.cata (fun s -> not (Sorts.is_small s)) false concl;
+    mind_entry_template = not poly && Option.cata (fun s -> not (Sorts.is_small s)) false concl;
     mind_entry_consnames = cnames;
     mind_entry_lc = ctypes
   }) indl arities arityconcl constructors in
