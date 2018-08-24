@@ -21,6 +21,7 @@ CI_TARGETS=ci-bedrock2 \
     ci-equations \
     ci-fcsl-pcm \
     ci-fiat-crypto \
+    ci-fiat-crypto-legacy \
     ci-fiat-parsers \
     ci-flocq \
     ci-formal-topology \
