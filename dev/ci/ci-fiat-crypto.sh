@@ -9,4 +9,7 @@ git_checkout "${fiat_crypto_CI_BRANCH}" "${fiat_crypto_CI_GITURL}" "${fiat_crypt
 
 ( cd "${fiat_crypto_CI_DIR}" && git submodule update --init --recursive )
 
-( cd "${fiat_crypto_CI_DIR}" && make new-pipeline )
+# We need a larger stack size to not overflow ocamlopt+flambda when
+# building the executables.
+# c.f. https://github.com/coq/coq/pull/8313#issuecomment-416650241
+( cd "${fiat_crypto_CI_DIR}" && ulimit -s 32768 && make new-pipeline c-files )
