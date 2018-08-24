@@ -98,3 +98,10 @@ Repeat the generic process documented above for all releases.
 
 We generally do not update the magic numbers at this point (see
 [`2881a18`](https://github.com/coq/coq/commit/2881a18)).
+
+## Note for the OPAM package maintainers ##
+
+In addition to updating the OPAM package, the using instructions at
+<https://coq.inria.fr/opam/www/using.html> must be updated.
+To do so, edit the `COQV` and `OCAMLV` variables at
+<https://github.com/coq/opam-coq-archive/blob/master/Makefile>.
