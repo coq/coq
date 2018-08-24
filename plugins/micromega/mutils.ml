@@ -19,11 +19,31 @@
 (*                                                                      *)
 (************************************************************************)
 
-let rec pp_list f o l =
+
+module ISet = Set.Make(Int)
+
+module IMap =
+  struct
+    include Map.Make(Int)
+
+    let from k m =
+      let (_,_,r) = split (k-1) m in
+      r
+  end
+
+(*let output_int o i = output_string o (string_of_int i)*)
+
+let iset_pp o s =
+  Printf.fprintf o "{ %a }"
+    (fun o s ->  ISet.iter (fun i -> Printf.fprintf o "%i " i) s) s
+
+let rec pp_list s f o l =
   match l with
     | [] -> ()
-    | e::l -> f o e ; output_string o ";" ; pp_list f o l
+    | [e] -> f o e
+    | e::l -> f o e ; output_string o s ; pp_list s f o l
 
+let output_bigint o bi = output_string o (Big_int.string_of_big_int bi)
 
 let finally f rst =
   try
@@ -79,6 +99,12 @@ let extract pred l =
 		    |  _   -> (fd, e::sys)
 		 ) (None,[]) l
 
+let extract_all pred l  =
+  List.fold_left (fun (s1,s2) e ->
+      match pred e with
+      | None -> s1,e::s2
+      | Some v -> (v,e)::s1 , s2) ([],[]) l
+
 open Num
 open Big_int
 
@@ -117,7 +143,22 @@ let rats_to_ints l =
   List.map (fun x ->  (div_big_int (mult_big_int (numerator x) c)
 			(denominator x))) l
 
-(* assoc_pos j [a0...an] = [j,a0....an,j+n],j+n+1 *)
+let iterate_until_stable f x =
+ let rec iter x =
+  match f x with
+  | None -> x
+  | Some x' -> iter x' in
+ iter x
+
+let rec app_funs l x =
+ match l with
+ | [] -> None
+ | f::fl ->
+  match f x with
+  | None    -> app_funs fl x
+  | Some x' -> Some x'
+
+
 (**
   * MODULE: Coq to Caml data-structure mappings
   *)

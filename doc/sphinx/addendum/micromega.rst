@@ -27,6 +27,13 @@ rationals ``Require Import Lqa`` and reals ``Require Import Lra``.
   generating a *proof cache* which makes it possible to rerun scripts
   even without `csdp`.
 
+.. flag:: Simplex
+
+   This option (set by default) instructs the decision procedures to
+   use the Simplex method for solving linear goals. If it is not set,
+   the decision procedures are using Fourier elimination.
+
+
 The tactics solve propositional formulas parameterized by atomic
 arithmetic expressions interpreted over a domain :math:`D` ∈ {ℤ, ℚ, ℝ}.
 The syntax of the formulas is the following:
@@ -96,8 +103,7 @@ and checked to be :math:`-1`.
 .. tacn:: lra
    :name: lra
 
-   This tactic is searching for *linear* refutations using Fourier
-   elimination [#]_. As a result, this tactic explores a subset of the *Cone*
+   This tactic is searching for *linear* refutations. As a result, this tactic explores a subset of the *Cone*
    defined as
 
    :math:`\mathit{LinCone}(S) =\left\{ \left. \sum_{p \in S} \alpha_p \times p~\right|~\alpha_p \mbox{ are positive constants} \right\}`
@@ -134,7 +140,7 @@ principle [#]_. However, this is not the case over :math:`\mathbb{Z}`. Actually,
 *positivstellensatz* refutations are not even sufficient to decide
 linear *integer* arithmetic. The canonical example is :math:`2 * x = 1 -> \mathtt{False}`
 which is a theorem of :math:`\mathbb{Z}` but not a theorem of :math:`{\mathbb{R}}`. To remedy this
-weakness, the `lia` tactic is using recursively a combination of:
+weakness, the :tacn:`lia` tactic is using recursively a combination of:
 
 + linear *positivstellensatz* refutations;
 + cutting plane proofs;
@@ -188,10 +194,10 @@ a proof.
 .. tacn:: nra
    :name: nra
 
-This tactic is an *experimental* proof procedure for non-linear
-arithmetic. The tactic performs a limited amount of non-linear
-reasoning before running the linear prover of `lra`. This pre-processing
-does the following:
+   This tactic is an *experimental* proof procedure for non-linear
+   arithmetic. The tactic performs a limited amount of non-linear
+   reasoning before running the linear prover of :tacn:`lra`. This pre-processing
+   does the following:
 
 
 + If the context contains an arithmetic expression of the form
@@ -200,7 +206,7 @@ does the following:
 + For all pairs of hypotheses :math:`e_1 \ge 0`, :math:`e_2 \ge 0`, the context is
   enriched with :math:`e_1 \times e_2 \ge 0`.
 
-After this pre-processing, the linear prover of `lra` searches for a
+After this pre-processing, the linear prover of :tacn:`lra` searches for a
 proof by abstracting monomials by variables.
 
 `nia`: a proof procedure for non-linear integer arithmetic
@@ -209,9 +215,9 @@ proof by abstracting monomials by variables.
 .. tacn:: nia
    :name: nia
 
-This tactic is a proof procedure for non-linear integer arithmetic.
-It performs a pre-processing similar to `nra`. The obtained goal is
-solved using the linear integer prover `lia`.
+   This tactic is a proof procedure for non-linear integer arithmetic.
+   It performs a pre-processing similar to :tacn:`nra`. The obtained goal is
+   solved using the linear integer prover :tacn:`lia`.
 
 `psatz`: a proof procedure for non-linear arithmetic
 ----------------------------------------------------
@@ -219,22 +225,22 @@ solved using the linear integer prover `lia`.
 .. tacn:: psatz
    :name: psatz
 
-This tactic explores the :math:`\mathit{Cone}` by increasing degrees – hence the
-depth parameter :math:`n`. In theory, such a proof search is complete – if the
-goal is provable the search eventually stops. Unfortunately, the
-external oracle is using numeric (approximate) optimization techniques
-that might miss a refutation.
+   This tactic explores the *Cone* by increasing degrees – hence the
+   depth parameter *n*. In theory, such a proof search is complete – if the
+   goal is provable the search eventually stops. Unfortunately, the
+   external oracle is using numeric (approximate) optimization techniques
+   that might miss a refutation.
 
-To illustrate the working of the tactic, consider we wish to prove the
-following Coq goal:
+   To illustrate the working of the tactic, consider we wish to prove the
+   following Coq goal:
 
 .. coqtop:: all
 
-  Require Import ZArith Psatz.
-  Open Scope Z_scope.
-  Goal forall x, -x^2 >= 0 -> x - 1 >= 0 -> False.
-  intro x.
-  psatz Z 2.
+   Require Import ZArith Psatz.
+   Open Scope Z_scope.
+   Goal forall x, -x^2 >= 0 -> x - 1 >= 0 -> False.
+   intro x.
+   psatz Z 2.
 
 As shown, such a goal is solved by ``intro x. psatz Z 2.``. The oracle returns the
 cone expression :math:`2 \times (x-1) + (\mathbf{x-1}) \times (\mathbf{x−1}) + -x^2`
@@ -246,7 +252,6 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
   the `zify` tactic.
 .. [#] Sources and binaries can be found at https://projects.coin-or.org/Csdp
 .. [#] Variants deal with equalities and strict inequalities.
-.. [#] More efficient linear programming techniques could equally be employed.
 .. [#] In practice, the oracle might fail to produce such a refutation.
 
 .. comment in original TeX:

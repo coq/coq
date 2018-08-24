@@ -7,6 +7,6 @@ Require Import QMicromega.
 Require Import RMicromega.
 
 Recursive Extraction
-  List.map RingMicromega.simpl_cone (*map_cone  indexes*)
-  denorm Qpower vm_add
-  n_of_Z N.of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find.
+   List.map simpl_cone (*map_cone  indexes*)
+   denorm Qpower vm_add
+   normZ normQ normQ n_of_Z N.of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find.

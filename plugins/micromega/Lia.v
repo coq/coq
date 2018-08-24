@@ -32,7 +32,7 @@ Ltac zchange :=
 
 Ltac zchecker_no_abstract := zchange ; vm_compute ; reflexivity.
 
-Ltac zchecker_abstract := zchange ; vm_cast_no_check (eq_refl true).
+Ltac zchecker_abstract := abstract (zchange ; vm_cast_no_check (eq_refl true)).
 
 Ltac zchecker := zchecker_no_abstract.
 

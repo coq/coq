@@ -162,8 +162,8 @@ Declare Equivalent Keys psub RingMicromega.psub.
 Definition padd  := padd Z0  Z.add Zeq_bool.
 Declare Equivalent Keys padd RingMicromega.padd.
 
-Definition norm  := norm 0 1 Z.add Z.mul Z.sub Z.opp Zeq_bool.
-Declare Equivalent Keys norm RingMicromega.norm.
+Definition normZ  := norm 0 1 Z.add Z.mul Z.sub Z.opp Zeq_bool.
+Declare Equivalent Keys normZ RingMicromega.norm.
 
 Definition eval_pol := eval_pol Z.add Z.mul (fun x => x).
 Declare Equivalent Keys eval_pol RingMicromega.eval_pol.
@@ -180,7 +180,7 @@ Proof.
   apply (eval_pol_add Zsor ZSORaddon).
 Qed.
 
-Lemma eval_pol_norm : forall env e, eval_expr env e = eval_pol env (norm e) .
+Lemma eval_pol_norm : forall env e, eval_expr env e = eval_pol env (normZ e) .
 Proof.
   intros.
   apply (eval_pol_norm Zsor ZSORaddon).
@@ -188,8 +188,8 @@ Qed.
 
 Definition xnormalise (t:Formula Z) : list (NFormula Z)  :=
   let (lhs,o,rhs) := t in
-    let lhs := norm lhs in
-      let rhs := norm rhs in
+    let lhs := normZ lhs in
+      let rhs := normZ rhs in
     match o with
       | OpEq =>
         ((psub lhs (padd  rhs (Pc 1))),NonStrict)::((psub rhs (padd lhs (Pc 1))),NonStrict)::nil
@@ -225,8 +225,8 @@ Qed.
 
 Definition xnegate (t:RingMicromega.Formula Z) : list (NFormula Z)  :=
   let (lhs,o,rhs) := t in
-    let lhs := norm lhs in
-      let rhs := norm rhs in
+    let lhs := normZ lhs in
+      let rhs := normZ rhs in
     match o with
       | OpEq  => (psub lhs rhs,Equal) :: nil
       | OpNEq => ((psub lhs (padd rhs (Pc 1))),NonStrict)::((psub rhs (padd lhs (Pc 1))),NonStrict)::nil

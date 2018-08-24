@@ -53,12 +53,11 @@ Extract Constant Rinv   => "fun x -> 1 / x".
 
 (** In order to avoid annoying build dependencies the actual
     extraction is only performed as a test in the test suite. *)
-(* Extraction "plugins/micromega/micromega.ml" *)
-(* Recursive Extraction *)
-(*   List.map simpl_cone (*map_cone  indexes*) *)
-(*   denorm Qpower vm_add *)
-(*   n_of_Z N.of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find. *)
-
+(*Extraction "micromega.ml"
+(*Recursive Extraction*)   List.map simpl_cone (*map_cone  indexes*)
+   denorm Qpower vm_add
+   normZ normQ normQ n_of_Z N.of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find.
+*)
 (* Local Variables: *)
 (* coding: utf-8 *)
 (* End: *)

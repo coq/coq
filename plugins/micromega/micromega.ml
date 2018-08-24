@@ -1484,17 +1484,17 @@ let psub1 =
 let padd1 =
   padd0 Z0 Z.add zeq_bool
 
-(** val norm0 : z pExpr -> z pol **)
+(** val normZ : z pExpr -> z pol **)
 
-let norm0 =
+let normZ =
   norm Z0 (Zpos XH) Z.add Z.mul Z.sub Z.opp zeq_bool
 
 (** val xnormalise0 : z formula -> z nFormula list **)
 
 let xnormalise0 t0 =
   let { flhs = lhs; fop = o; frhs = rhs } = t0 in
-  let lhs0 = norm0 lhs in
-  let rhs0 = norm0 rhs in
+  let lhs0 = normZ lhs in
+  let rhs0 = normZ rhs in
   (match o with
    | OpEq ->
      ((psub1 lhs0 (padd1 rhs0 (Pc (Zpos XH)))),NonStrict)::(((psub1 rhs0
@@ -1516,8 +1516,8 @@ let normalise t0 =
 
 let xnegate0 t0 =
   let { flhs = lhs; fop = o; frhs = rhs } = t0 in
-  let lhs0 = norm0 lhs in
-  let rhs0 = norm0 rhs in
+  let lhs0 = normZ lhs in
+  let rhs0 = normZ rhs in
   (match o with
    | OpEq -> ((psub1 lhs0 rhs0),Equal)::[]
    | OpNEq ->
@@ -1706,6 +1706,12 @@ let qunsat =
 
 let qdeduce =
   nformula_plus_nformula { qnum = Z0; qden = XH } qplus qeq_bool
+
+(** val normQ : q pExpr -> q pol **)
+
+let normQ =
+  norm { qnum = Z0; qden = XH } { qnum = (Zpos XH); qden = XH } qplus qmult
+    qminus qopp qeq_bool
 
 (** val qTautoChecker : q formula bFormula -> qWitness list -> bool **)
 

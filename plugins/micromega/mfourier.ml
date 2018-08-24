@@ -1,3 +1,13 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
+(* <O___,, *       (see CREDITS file for the list of authors)           *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
 open Util
 open Num
 open Polynomial
@@ -8,66 +18,6 @@ let debug = false
 let compare_float (p : float) q = Pervasives.compare p q
 
 (** Implementation of intervals *)
-module Itv =
-struct
-
-  (** The type of intervals is *)
-  type interval = num option * num option
-      (** None models the absence of bound i.e. infinity *)
-      (** As a result,
-	  - None , None   -> \]-oo,+oo\[
-	  - None , Some v -> \]-oo,v\]
-	  - Some v, None  -> \[v,+oo\[
-	  - Some v, Some v' -> \[v,v'\]
-      Intervals needs to be explicitly normalised.
-      *)
-
-  (** if then interval [itv] is empty, [norm_itv itv] returns [None]
-      otherwise, it returns [Some itv] *)
-
-  let norm_itv itv =
-    match itv with
-      | Some a , Some b -> if a <=/ b then Some itv else None
-      |   _             -> Some itv
-
-(** [inter i1 i2 = None] if the intersection of intervals is empty
-    [inter i1 i2 = Some i] if [i] is the intersection of the intervals [i1] and [i2] *)
-  let inter i1 i2 =
-    let (l1,r1) = i1
-    and (l2,r2) = i2 in
-
-    let inter f o1 o2 =
-      match o1 , o2 with
-	| None , None -> None
-	| Some _ , None -> o1
-	| None  , Some _ -> o2
-	| Some n1 , Some n2 -> Some (f n1 n2) in
-
-    norm_itv (inter max_num l1 l2 , inter min_num r1 r2)
-
-  let range = function
-    | None,_ | _,None -> None
-    | Some i,Some j -> Some (floor_num j -/ceiling_num i +/ (Int 1))
-
-
-  let smaller_itv i1 i2 =
-    match  range i1 ,  range i2  with
-      | None , _ -> false
-      |  _   , None -> true
-      | Some i , Some j -> i <=/ j
-
-
-(** [in_bound bnd v] checks whether [v] is within the bounds [bnd] *)
-let in_bound bnd v =
-  let (l,r) = bnd in
-  match l , r with
-    | None , None -> true
-    | None , Some a -> v <=/ a
-    | Some a , None -> a <=/ v
-    | Some a , Some b -> a <=/ v && v <=/ b
-
-
-end
 open Itv
 type vector = Vect.t
 
@@ -83,8 +33,6 @@ type proof =
 | Assum of int
 | Elim of  var * proof * proof
 | And of proof * proof
-
-let max_nb_cstr = ref max_int
 
 type system = {
   sys : cstr_info ref System.t ;
@@ -126,7 +74,7 @@ let pp_cstr o (vect,bnd) =
 	| None -> ()
 	| Some n -> Printf.fprintf o "%s <= " (string_of_num n))
       ;
-      pp_vect o vect ;
+        Vect.pp o vect ;
       (match r with
 	      | None -> output_string o"\n"
 	      | Some n -> Printf.fprintf o "<=%s\n" (string_of_num n))
@@ -185,30 +133,23 @@ let normalise_cstr vect cinfo =
   match norm_itv cinfo.bound with
     | None -> Contradiction
     | Some (l,r) ->
-	match vect with
-	  | [] -> if Itv.in_bound (l,r) (Int 0) then Redundant else Contradiction
-	  | (_,n)::_ ->  Cstr(
-	      (if n <>/ Int 1 then List.map (fun (x,nx) -> (x,nx // n)) vect else vect),
+       match Vect.choose vect with
+       | None -> if Itv.in_bound (l,r) (Int 0) then Redundant else Contradiction
+       | Some (_,n,_) -> Cstr(Vect.div n vect,
 			     let divn x = x // n in
 			       if Int.equal (sign_num n) 1
                                then{cinfo with bound = (Option.map divn l , Option.map  divn r) }
                                else {cinfo with pos = cinfo.neg ; neg = cinfo.pos ; bound = (Option.map divn r , Option.map divn l)})
 
+
 (** For compatibility, there is an external representation of constraints *)
 
 
-let eval_op = function
-  | Eq -> (=/)
-  | Ge ->  (>=/)
-
 let count v =
-  let rec count n p v =
-    match v with
-      | [] -> (n,p)
-      | (_,vl)::v -> let sg = sign_num vl in
-		       assert (sg <> 0) ;
-	  if Int.equal sg 1 then count n (p+1) v else count (n+1) p v in
-    count 0 0 v
+  Vect.fold (fun (n,p) _ vl ->
+      let sg = sign_num vl in
+      assert (sg <> 0) ;
+      if Int.equal sg 1 then (n,p+1)else (n+1, p)) (0,0) v
 
 
 let norm_cstr {coeffs = v ; op = o ; cst = c} idx =
@@ -217,7 +158,9 @@ let norm_cstr {coeffs = v ; op = o ; cst = c} idx =
   normalise_cstr v {pos = p ; neg = n ; bound =
   (match o with
 	| Eq -> Some c , Some c
-	| Ge -> Some c , None) ;
+        | Ge -> Some c , None
+        | Gt -> raise Polynomial.Strict
+  ) ;
 	    prf = Assum idx }
 
 
@@ -237,7 +180,7 @@ let load_system l =
       | Redundant      -> vrs
       | Cstr(vect,info) ->
 	  xadd_cstr  vect info sys ;
-	  List.fold_left (fun s (v,_) -> ISet.add v s) vrs cstr.coeffs) ISet.empty li   in
+          Vect.fold (fun s v _ -> ISet.add v s) vrs cstr.coeffs) ISet.empty li   in
 
     {sys = sys ;vars = vars}
 
@@ -255,27 +198,7 @@ let system_list sys =
 
 let add (v1,c1)  (v2,c2)  =
     assert (c1 <>/ Int 0 && c2 <>/ Int 0) ;
-
-  let rec xadd v1 v2  =
-    match v1 , v2 with
-      | (x1,n1)::v1' , (x2,n2)::v2' ->
-	  if Int.equal x1 x2
-	  then
-	    let n' = (n1 // c1) +/ (n2 // c2) in
-	      if n' =/ Int 0 then xadd v1' v2'
-	      else
-		let res = xadd v1' v2'  in
-		  (x1,n') ::res
-	  else if x1 < x2
-	  then let res = xadd v1' v2   in
-		 (x1, n1 // c1)::res
-	  else let res = xadd v1 v2'  in
-		 (x2, n2 // c2)::res
-      |  [] , [] -> []
-      |  [] ,  _ -> List.map (fun (x,vl) -> (x,vl // c2)) v2
-      |  _  , [] -> List.map (fun (x,vl) -> (x,vl // c1)) v1 in
-
-  let res = xadd v1 v2 in
+    let res = mul_add (Int 1 // c1) v1 (Int 1 // c2)  v2 in
     (res, count res)
 
 let add (v1,c1)   (v2,c2)  =
@@ -294,9 +217,9 @@ let add (v1,c1)   (v2,c2)  =
 
 let split x (vect: vector) info (l,m,r) =
     match get x vect with
-      | None -> (* The constraint does not mention [x], store it in m *)
+      | Int 0 -> (* The constraint does not mention [x], store it in m *)
 	  (l,(vect,info)::m,r)
-      | Some vl -> (* otherwise *)
+      |  vl -> (* otherwise *)
 
           let cons_bound lst bd =
             match  bd with
@@ -352,7 +275,8 @@ let project vr sys =
 
 let project_using_eq vr c vect bound  prf (vect',info') =
     match get vr vect' with
-    | Some c2 ->
+    | Int 0 -> (vect',info')
+    | c2    ->
 	let c1 = if c2 >=/ Int 0 then minus_num c else c in
 
 	let c2 = abs_num c2 in
@@ -367,10 +291,10 @@ let project_using_eq vr c vect bound  prf (vect',info') =
             (Option.map f l , Option.map f r) in
 
 	  (vres,{neg = n ; pos = p ; bound = bndres ; prf = Elim(vr,prf,info'.prf)})
-    | None -> (vect',info')
+
 
 let elim_var_using_eq vr vect cst  prf sys =
-  let c = Option.get (get vr vect) in
+  let c = get vr vect in
 
   let elim_var = project_using_eq vr c vect cst prf  in
 
@@ -397,16 +321,13 @@ module IMap = CMap.Make(Int)
     The function returns as second argument, a sub-vector consisting in the variables that are not in [map]. *)
 
 let  eval_vect map vect =
-  let rec xeval_vect vect sum rst =
-    match vect with
-      | [] -> (sum,rst)
-      | (v,vl)::vect ->
-	  try
-	    let val_v = IMap.find v map in
-	      xeval_vect vect (sum +/ (val_v */ vl)) rst
-	  with
-	      Not_found -> xeval_vect vect sum ((v,vl)::rst) in
-    xeval_vect vect (Int 0) []
+  Vect.fold (fun (sum,rst) v vl ->
+      try
+        let val_v = IMap.find v map in
+        (sum +/ (val_v */ vl), rst)
+      with
+        Not_found -> (sum, Vect.set v vl rst)) (Int 0,Vect.null) vect
+
 
 
 (** [restrict_bound n sum itv] returns the interval of [x]
@@ -427,11 +348,13 @@ let restrict_bound n sum (itv:interval) =
 let bound_of_variable map v sys =
   System.fold (fun vect iref bnd  ->
     let sum,rst = eval_vect  map vect in
-    let vl = match get v rst with
-      | None -> Int 0
-      | Some v -> v in
+    let vl =  Vect.get v rst in
       match inter bnd (restrict_bound vl sum (!iref).bound) with
-	| None -> failwith "bound_of_variable: impossible"
+      | None ->
+         Printf.fprintf stdout "bound_of_variable: eval_vecr %a = %s,%a\n"
+           Vect.pp vect (Num.string_of_num sum) Vect.pp rst ;
+         Printf.fprintf stdout "current interval:  %a\n" Itv.pp (!iref).bound;
+         failwith "bound_of_variable: impossible"
 	| Some itv -> itv) sys  (None,None)
 
 
@@ -458,12 +381,13 @@ let solve_sys black_v choose_eq choose_variable sys sys_l =
 
   let rec solve_sys sys sys_l =
     if debug then Printf.printf "S #%i size %i\n" (System.length sys.sys) (size sys.sys);
+    if debug then Printf.printf "solve_sys :\n %a" pp_system sys.sys ;
 
     let eqs = choose_eq sys in
       try
 	let (v,vect,cst,ln) =  fst (List.find (fun ((v,_,_,_),_) -> v <> black_v) eqs) in
 	  if debug then
-	    (Printf.printf "\nE %a = %s variable %i\n" pp_vect vect (string_of_num cst) v ;
+            (Printf.printf "\nE %a = %s variable %i\n" Vect.pp vect (string_of_num cst) v ;
 	     flush stdout);
 	  let sys' = elim_var_using_eq v vect cst ln sys in
 	    solve_sys sys' ((v,sys)::sys_l)
@@ -503,9 +427,9 @@ struct
       match l with
         | [] -> (ltl, n,z,p)
         | (l1,info) ::rl ->
-            match  l1 with
-            | [] -> xpart rl (([],info)::ltl) n (info.neg+info.pos+z) p
-            | (vr,vl)::rl1 ->
+            match  Vect.choose l1 with
+            | None -> xpart rl ((Vect.null,info)::ltl) n (info.neg+info.pos+z) p
+            | Some(vr, vl, rl1) ->
 		if Int.equal v vr
 		then
 		  let cons_bound lst bd =
@@ -557,24 +481,26 @@ struct
       | _   -> false
 
   let rec unroll_until v l =
-    match l with
-      | [] -> (false,[])
-      | (i,_)::rl -> if Int.equal i v
+    match Vect.choose l with
+      | None -> (false,Vect.null)
+      | Some(i,_,rl) -> if Int.equal i v
 	then (true,rl)
 	else if i < v then unroll_until v rl else (false,l)
+
 
 
   let rec choose_simple_equation eqs = 
     match eqs with
       | [] -> None
       | (vect,a,prf,ln)::eqs -> 
-	  match vect with 
-	    | [i,_] -> Some (i,vect,a,prf,ln)
-	    |   _   -> choose_simple_equation eqs 
+          match Vect.choose vect with
+          | Some(i,v,rst) -> if Vect.is_null rst
+                             then Some (i,vect,a,prf,ln)
+                             else choose_simple_equation eqs
+          |  _   -> choose_simple_equation eqs
 
 
-
-  let choose_primal_equation eqs sys_l =
+  let choose_primal_equation eqs (sys_l: (Vect.t *cstr_info) list) =
 
     (* Counts the number of equations referring to variable [v] --
        It looks like nb_cst is dead...
@@ -586,9 +512,9 @@ struct
 	else nb_eq) 0 sys_l in
 
     let rec find_var vect =
-      match vect with
-	| [] -> None
-	| (i,_)::vect ->
+      match Vect.choose vect with
+        | None -> None
+        | Some(i,_,vect) ->
 	    let nb_eq = is_primal_equation_var i in
 	      if Int.equal nb_eq 2 
 	      then Some i else find_var vect in
@@ -638,9 +564,9 @@ struct
 	    let cost_eq eq const prf ln acc_costs =
 
 	      let rec cost_eq eqr sysl costs =
-		match eqr with
-		  | [] -> costs
-		  | (v,_) ::eqr -> let (cst,tlsys) = estimate_cost v (ln-1) sysl 0 [] in
+                match Vect.choose eqr with
+                  | None -> costs
+                  | Some(v,_,eqr) -> let (cst,tlsys) = estimate_cost v (ln-1) sysl 0 [] in
 				     cost_eq eqr tlsys (((v,eq,const,prf),cst)::costs) in
 		cost_eq eq sys_l acc_costs     in
 
@@ -692,10 +618,10 @@ struct
 	in
 
 	let map = rebuild_solution l IMap.empty in
-	  let vect = List.rev (IMap.fold (fun v i vect -> (v,i)::vect) map []) in
-(*	    Printf.printf "SOLUTION %a" pp_vect vect ; *)
-	  let res = Inl vect in
-	    res
+        let vect = IMap.fold (fun v i vect -> Vect.set v i vect) map Vect.null in
+        if debug then    Printf.printf "SOLUTION %a" Vect.pp vect ;
+        let res = Inl vect in
+        res
 
 
 end
@@ -735,8 +661,8 @@ struct
     and {coeffs = v2 ; op = op2 ; cst = n2} = c2 in
 
       match Vect.get v v1 , Vect.get v v2 with
-        | None , _ | _ , None -> None
-        | Some a   , Some b   ->
+        | Int 0 , _ | _ , Int 0 -> None
+        |  a   ,  b   ->
             if Int.equal ((sign_num a) * (sign_num b)) (-1)
             then 
 	      Some (add (p1,abs_num a) (p2,abs_num b) ,
@@ -768,7 +694,7 @@ struct
               | Cstr(v,info)  -> Inl ((prf,cstr,v,info)::acc)) (Inl []) l
 
 
-  type oproof = (vector * cstr_compat * num) option
+  type oproof = (vector * cstr * num) option
 
   let merge_proof (oleft:oproof) (prf,cstr,v,info) (oright:oproof) =
     let (l,r) = info.bound in
@@ -789,9 +715,9 @@ struct
             if l <=/ r
             then Inl (oleft,oright)
             else (* There is a contradiction - it should show up by scaling up the vectors - any pivot should do*)
-              match cstrr.coeffs with
-                | [] -> Inr (add (prfl,Int 1) (prfr,Int 1), cstrr) (* this is wrong *)
-                | (v,_)::_ ->
+              match Vect.choose cstrr.coeffs with
+                | None -> Inr (add (prfl,Int 1) (prfr,Int 1), cstrr) (* this is wrong *)
+                | Some(v,_,_) ->
                     match pivot v (prfl,cstrl) (prfr,cstrr) with
                       | None -> failwith "merge_proof : pivot is not possible"
                       | Some x -> Inr x
@@ -804,7 +730,7 @@ let  mk_proof hyps prf =
 
   let rec mk_proof prf =
     match prf with
-      | Assum i -> [ ([i, Int 1] , List.nth hyps i) ]
+      | Assum i -> [ (Vect.set i (Int 1) Vect.null , List.nth hyps i) ]
 
       | Elim(v,prf1,prf2) ->
           let prfsl = mk_proof prf1
