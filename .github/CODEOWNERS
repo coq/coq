@@ -6,11 +6,23 @@
 /.github/         @maximedenes
 # Secondary maintainer @Zimmi48
 
+########## Build system ##########
+
+/Makefile*        @gares
+
+/configure*       @ejgallego
+
+/META.coq.in      @ejgallego
+
+/dev/build/windows @MSoegtropIMC
+# Secondary maintainer @maximedenes
+
 ########## CI infrastructure ##########
 
 /dev/ci/          @coq/ci-maintainers
 /.travis.yml      @coq/ci-maintainers
 /.gitlab-ci.yml   @coq/ci-maintainers
+/Makefile.ci      @coq/ci-maintainers
 
 /dev/ci/user-overlays/*.sh @ghost
 # Trick to avoid getting review requests
@@ -43,6 +55,7 @@
 # each time someone modifies the dev changelog
 
 /doc/             @coq/doc-maintainers
+/Makefile.doc     @coq/doc-maintainers
 
 /man/             @silene
 # Secondary maintainer @maximedenes
@@ -291,25 +304,6 @@
 
 /vernac/          @mattam82
 # Secondary maintainer @maximedenes
-
-########## Build system ##########
-
-/Makefile*        @gares
-
-/configure*       @ejgallego
-
-/META.coq.in      @ejgallego
-
-/dev/build/windows @MSoegtropIMC
-# Secondary maintainer @maximedenes
-
-# This file belongs to CI
-/Makefile.ci       @ejgallego
-# Secondary maintainer @SkySkimmer
-
-# This file belongs to the doc
-/Makefile.doc        @maximedenes
-# Secondary maintainer @silene
 
 ########## Test suite ##########
 
