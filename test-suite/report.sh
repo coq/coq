@@ -45,6 +45,11 @@ fi
 if grep -q -F 'Error!' summary.log ; then
     echo FAILURES;
     grep -F 'Error!' summary.log;
+    if [ -z "$TRAVIS" ] && [ -z "$PRINT_LOGS" ]; then
+        echo 'To print details of failed tests, rerun with environment variable PRINT_LOGS=1'
+        echo 'eg "make report PRINT_LOGS=1" from the test suite directory"'
+        echo 'See README.md in the test suite directory for more information.'
+    fi
     false
 else echo NO FAILURES;
 fi
