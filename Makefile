@@ -199,7 +199,7 @@ cleankeepvo: indepclean clean-ide optclean cruftclean depclean docclean devdoccl
 objclean: archclean indepclean
 
 cruftclean: ml4clean
-	find . -name '*~' -o -name '*.annot' | xargs rm -f
+	find . \( -name '*~' -o -name '*.annot' \) -exec rm -f {} +
 	rm -f gmon.out core
 
 camldevfilesclean:
@@ -208,7 +208,7 @@ camldevfilesclean:
 indepclean:
 	rm -f $(GENFILES)
 	rm -f $(COQTOPBYTE) $(CHICKENBYTE) $(TOPBYTE)
-	find . \( -name '*~' -o -name '*.cm[ioat]' -o -name '*.cmti' \) -delete
+	find . \( -name '*~' -o -name '*.cm[ioat]' -o -name '*.cmti' \) -exec rm -f {} +
 	rm -f */*.pp[iox] plugins/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
@@ -239,7 +239,7 @@ archclean: clean-ide optclean voclean
 optclean:
 	rm -f $(COQTOPEXE) $(CHICKEN) $(TOPBINOPT)
 	rm -f $(TOOLS) $(PRIVATEBINARIES) $(CSDPCERT)
-	find . -name '*.cmx' -o -name '*.cmx[as]' -o -name '*.[soa]' -o -name '*.so' | xargs rm -f
+	find . \( -name '*.cmx' -o -name '*.cmx[as]' -o -name '*.[soa]' -o -name '*.so' \) -exec rm -f {} +
 
 clean-ide:
 	rm -f $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDE)
@@ -252,10 +252,10 @@ ml4clean:
 	rm -f $(GENML4FILES) $(GENMLGFILES)
 
 depclean:
-	find . $(FIND_SKIP_DIRS) '(' -name '*.d' ')' -print | xargs rm -f
+	find . $(FIND_SKIP_DIRS) '(' -name '*.d' ')' -exec rm -f {} +
 
 cacheclean:
-	find theories plugins test-suite -name '.*.aux' -delete
+	find theories plugins test-suite -name '.*.aux' -exec rm -f {} +
 
 cleanconfig:
 	rm -f config/Makefile config/coq_config.ml myocamlbuild_config.ml dev/ocamldebug-coq dev/camlp5.dbg config/Info-*.plist
@@ -263,14 +263,18 @@ cleanconfig:
 distclean: clean cleanconfig cacheclean timingclean
 
 voclean:
-	find theories plugins test-suite \( -name '*.vo' -o -name '*.glob' -o -name "*.cmxs" -o -name "*.native" -o -name "*.cmx" -o -name "*.cmi" -o -name "*.o" \) -delete
-	find theories plugins test-suite -name .coq-native -empty -delete
+	find theories plugins test-suite \( -name '*.vo' -o -name '*.glob' -o -name "*.cmxs" \
+	-o -name "*.native" -o -name "*.cmx" -o -name "*.cmi" -o -name "*.o" \) -exec rm -f {} +
+	find theories plugins test-suite -name .coq-native -empty -exec rm -f {} +
 
 timingclean:
-	find theories plugins test-suite \( -name '*.v.timing' -o -name '*.v.before-timing' -o -name "*.v.after-timing" -o -name "*.v.timing.diff" -o -name "time-of-build.log" -o -name "time-of-build-before.log" -o -name "time-of-build-after.log" -o -name "time-of-build-pretty.log" -o -name "time-of-build-both.log" \) -delete
+	find theories plugins test-suite \( -name '*.v.timing' -o -name '*.v.before-timing' \
+	  -o -name "*.v.after-timing" -o -name "*.v.timing.diff" -o -name "time-of-build.log" \
+	  -o -name "time-of-build-before.log" -o -name "time-of-build-after.log" \
+	  -o -name "time-of-build-pretty.log" -o -name "time-of-build-both.log" \) -exec rm -f {} +
 
 devdocclean:
-	find . -name '*.dep.ps' -o -name '*.dot' | xargs rm -f
+	find . \( -name '*.dep.ps' -o -name '*.dot' \) -exec rm -f {} +
 	rm -f $(OCAMLDOCDIR)/*.log $(OCAMLDOCDIR)/*.aux $(OCAMLDOCDIR)/*.toc
 	rm -f $(OCAMLDOCDIR)/ocamldoc.sty $(OCAMLDOCDIR)/coq.tex
 	rm -f $(OCAMLDOCDIR)/html/*.html
