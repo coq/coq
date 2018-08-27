@@ -1,9 +1,11 @@
 (************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
+(* <O___,, *       (see CREDITS file for the list of authors)           *)
 (*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
 
@@ -14,7 +16,9 @@ Require Import Coq.Reals.RIneq.
 Require Import Coq.Logic.ConstructiveEpsilon.
 
 (* Well-order for decidable nat -> Prop. They have minimums.
-   This should probably go into Coq.Logic.ConstructiveEpsilon. *)
+   This should probably go into Coq.Logic.ConstructiveEpsilon,
+   but this module does not have le_lt_trans or le_lt_or_eq
+   at the moment. *)
 
 Fixpoint linear_search_smallest (P : nat -> Prop) (dec : forall k : nat, {P k} + {~P k})
       (start : nat) (pr : before_witness P start) :
@@ -38,11 +42,10 @@ Definition epsilon_smallest (P : nat -> Prop) :
   -> (exists n : nat, P n)
   -> { n : nat | P n /\ forall k : nat, k < n -> ~P k }.
 Proof.
-  intros. destruct (constructive_indefinite_ground_description_nat P H H0) eqn:ci.
-  exists x. destruct H0. split. assumption. intros.
-  apply (linear_search_smallest P H 0 (O_witness P x0 (stop P x0 p0))).
-  split. apply le_0_n. unfold constructive_indefinite_ground_description_nat in ci.
-  rewrite -> ci. assumption.
+  intros. pose (wit := (let (n, p) := H0 in O_witness P n (stop P n p))).
+  destruct (linear_search P H 0 wit) as [n pr] eqn:ls. exists n. split. assumption. intros.
+  apply (linear_search_smallest P H 0 wit). split. apply le_0_n.
+  rewrite -> ls. assumption.
 Qed.
 
 
@@ -51,10 +54,10 @@ Qed.
 Definition enumeration (A : Type) (u : nat -> A) (v : A -> nat) : Prop :=
   (forall x : A, u (v x) = x) /\ (forall n : nat, v (u n) = n).
 
-Definition in_holed_interval (a b h : R) (u : nat -> R) (n : nat) : Prop :=
-  Rlt a (u n) /\ Rlt (u n) b /\ u n <> h.
+Definition in_holed_interval (a b hole : R) (u : nat -> R) (n : nat) : Prop :=
+  Rlt a (u n) /\ Rlt (u n) b /\ u n <> hole.
 
-(* Here we use axiom total_order_T *)
+(* Here we use axiom total_order_T, which is not constructive *)
 Lemma in_holed_interval_dec (a b h : R) (u : nat -> R) (n : nat)
   : {in_holed_interval a b h u n} + {~in_holed_interval a b h u n}.
 Proof.
@@ -100,7 +103,7 @@ Qed.
 
 Lemma point_in_holed_interval_works (a b h : R) :
   Rlt a b -> let p := point_in_holed_interval a b h in
-            Rlt a p /\ Rlt p b /\ p <> h.
+             Rlt a p /\ Rlt p b /\ p <> h.
 Proof.
   intros. unfold point_in_holed_interval in p.
   pose proof (middle_in_interval a b H). destruct H0.
@@ -405,7 +408,7 @@ Proof.
   - intro abs. subst. apply Rlt_irrefl in H7. contradiction.
 Qed.
 
-Theorem r_uncountable : forall (u : nat -> R) (v : R -> nat), ~enumeration R u v.
+Theorem R_uncountable : forall (u : nat -> R) (v : R -> nat), ~enumeration R u v.
 Proof.
   intros u v H.
   assert (forall n : nat, n + v (fst (proj1_sig (tearing_sequences u v H 1)))

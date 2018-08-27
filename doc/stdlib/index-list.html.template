@@ -569,6 +569,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/Sqrt_reg.v
     theories/Reals/Rlogic.v
     (theories/Reals/Reals.v)
+    theories/Reals/Runcountable.v
   </dd>
 
   <dt> <b>Program</b>:
