@@ -1206,8 +1206,8 @@ let write_configml f =
   pr_s "browser" browser;
   pr_s "wwwcoq" !prefs.coqwebsite;
   pr_s "wwwbugtracker" (!prefs.coqwebsite ^ "bugs/");
-  pr_s "wwwrefman" (!prefs.coqwebsite ^ "distrib/" ^ coq_version ^ "/refman/");
-  pr_s "wwwstdlib" (!prefs.coqwebsite ^ "distrib/" ^ coq_version ^ "/stdlib/");
+  pr_s "wwwrefman" (!prefs.coqwebsite ^ "distrib/V" ^ coq_version ^ "/refman/");
+  pr_s "wwwstdlib" (!prefs.coqwebsite ^ "distrib/V" ^ coq_version ^ "/stdlib/");
   pr_s "localwwwrefman"  ("file:/" ^ docdir ^ "/html/refman");
   pr_b "bytecode_compiler" !prefs.bytecodecompiler;
   pr_b "native_compiler" !prefs.nativecompiler;
