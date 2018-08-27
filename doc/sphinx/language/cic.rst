@@ -781,7 +781,7 @@ the sort of the inductive type t (not to be confused with :math:`\Sort` which is
 
    .. coqtop:: in
 
-      Inductive even : nat -> prop :=
+      Inductive even : nat -> Prop :=
       | even_O : even 0
       | even_S : forall n, odd n -> even (S n)
       with odd : nat -> prop :=
