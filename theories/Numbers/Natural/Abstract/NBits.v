@@ -78,7 +78,7 @@ Proof.
  apply testbit_even_succ, le_0_l.
 Qed.
 
-(** Alternative caracterisations of [testbit] *)
+(** Alternative characterisations of [testbit] *)
 
 (** This concise equation could have been taken as specification
    for testbit in the interface, but it would have been hard to
@@ -99,10 +99,10 @@ Proof.
  destruct b; order'.
 Qed.
 
-(** This caracterisation that uses only basic operations and
+(** This characterisation that uses only basic operations and
    power was initially taken as specification for testbit.
    We describe [a] as having a low part and a high part, with
-   the corresponding bit in the middle. This caracterisation
+   the corresponding bit in the middle. This characterisation
    is moderatly complex to implement, but also moderately
    usable... *)
 
