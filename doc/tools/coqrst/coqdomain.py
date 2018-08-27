@@ -449,7 +449,7 @@ def NotationRole(role, rawtext, text, lineno, inliner, options={}, content=[]):
        it names the introduced hypothesis :token:`ident`.
 
     Note that this example also uses ``:token:``.  That's because ``ident`` is
-    defined in the the Coq manual as a grammar production, and ``:token:``
+    defined in the Coq manual as a grammar production, and ``:token:``
     creates a link to that.  When referring to a placeholder that happens to be
     a grammar production, ``:token:`…``` is typically preferable to ``:n:`@…```.
     """
