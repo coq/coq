@@ -1046,16 +1046,24 @@ let build_ui () =
       ~accel:"F1"
       ~callback:(cb_on_current_term MiscMenu.show_hide_query_pane);
     GAction.group_radio_actions
-      ~callback:begin function
-        | 0 -> List.iter (fun o -> Opt.set o "off") Opt.diff_item.Opt.opts
-        | 1 -> List.iter (fun o -> Opt.set o "on") Opt.diff_item.Opt.opts
-        | 2 -> List.iter (fun o -> Opt.set o "removed") Opt.diff_item.Opt.opts
-        | _ -> assert false
+      ~init_value:(
+        let v = diffs#get in
+        List.iter (fun o -> Opt.set o v) Opt.diff_item.Opt.opts;
+        if v = "on" then 1
+        else if v = "removed" then 2
+        else 0)
+      ~callback:begin fun n ->
+        (match n with
+        | 0 -> List.iter (fun o -> Opt.set o "off"; diffs#set "off") Opt.diff_item.Opt.opts
+        | 1 -> List.iter (fun o -> Opt.set o "on"; diffs#set "on") Opt.diff_item.Opt.opts
+        | 2 -> List.iter (fun o -> Opt.set o "removed"; diffs#set "removed") Opt.diff_item.Opt.opts
+        | _ -> assert false);
+        send_to_coq (fun sn -> sn.coqops#show_goals)
         end
       [
-        radio "Unset diff" 0 ~label:"Unset _Diff";
-        radio "Set diff" 1 ~label:"Set Di_ff";
-        radio "Set removed diff" 2 ~label:"Set _Removed Diff";
+        radio "Unset diff" 0 ~label:"_Don't show diffs";
+        radio "Set diff" 1 ~label:"Show diffs: only _added";
+        radio "Set removed diff" 2 ~label:"Show diffs: added and _removed";
       ];
   ];
   toggle_items view_menu Coq.PrintOpt.bool_items;

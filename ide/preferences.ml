@@ -565,6 +565,9 @@ let nanoPG =
 let user_queries =
   new preference ~name:["user_queries"] ~init:[] ~repr:Repr.(string_pair_list '$')
 
+let diffs =
+  new preference ~name:["diffs"] ~init:"off" ~repr:Repr.(string)
+
 class tag_button (box : Gtk.box Gtk.obj) =
 object (self)
 
