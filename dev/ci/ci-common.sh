@@ -34,7 +34,7 @@ export COQBIN="$COQBIN/"
 
 ls "$COQBIN"
 
-# Where we clone and build external developments
+# Where we download and build external developments
 CI_BUILD_DIR="$PWD/_build_ci"
 
 # shellcheck source=ci-basic-overlay.sh
@@ -44,29 +44,38 @@ for overlay in "${ci_dir}"/user-overlays/*.sh; do
     . "${overlay}"
 done
 
-mathcomp_CI_DIR="${CI_BUILD_DIR}/math-comp"
-
-# git_checkout branch url dest will create a git repository
-# in <dest> (if it does not exist already) and checkout the
-# remote branch <branch> from <url>
-git_checkout()
+# [git_download project] will download [project] and unpack it
+# in [$CI_BUILD_DIR/project] if the folder does not exist already;
+# if it does, it will do nothing except print a warning (this can be
+# useful when building locally).
+# Note: when $FORCE_GIT is set to 1 or when $CI is unset or empty
+# (local build), it uses git clone to perform the download.
+git_download()
 {
-  local _BRANCH=${1}
-  local _URL=${2}
-  local _DEST=${3}
+  local PROJECT=$1
+  local DEST="$CI_BUILD_DIR/$PROJECT"
 
-  # Allow an optional 4th argument for the commit
-  local _COMMIT=${4:-FETCH_HEAD}
-  local _DEPTH=()
-  if [ -z "${4}" ]; then _DEPTH=(--depth 1); fi
-
-  mkdir -p "${_DEST}"
-  ( cd "${_DEST}"                                                     && \
-    if [ ! -d .git ] ; then git clone "${_DEPTH[@]}" "${_URL}" . ; fi && \
-    echo "Checking out ${_DEST}"                                      && \
-    git fetch "${_URL}" "${_BRANCH}"                                  && \
-    git -c advice.detachedHead=false checkout "${_COMMIT}"            && \
-    echo "${_DEST}: $(git log -1 --format='%s | %H | %cd | %aN')" )
+  if [ -d "$DEST" ]; then
+    echo "Warning: download and unpacking of $PROJECT skipped because $DEST already exists."
+  elif [ "$FORCE_GIT" = "1" ] || [ "$CI" = "" ]; then
+    local GITURL_VAR="${PROJECT}_CI_GITURL"
+    local GITURL="${!GITURL_VAR}"
+    local REF_VAR="${PROJECT}_CI_REF"
+    local REF="${!REF_VAR}"
+    git clone "$GITURL" "$DEST"
+    cd "$DEST"
+    git checkout "$REF"
+  else # When possible, we download tarballs to reduce bandwidth and latency
+    local ARCHIVEURL_VAR="${PROJECT}_CI_ARCHIVEURL"
+    local ARCHIVEURL="${!ARCHIVEURL_VAR}"
+    local REF_VAR="${PROJECT}_CI_REF"
+    local REF="${!REF_VAR}"
+    mkdir -p "$DEST"
+    cd "$DEST"
+    wget "$ARCHIVEURL/$REF.tar.gz"
+    tar xvfz "$REF.tar.gz" --strip-components=1
+    rm -f "$REF.tar.gz"
+  fi
 }
 
 make()
@@ -86,9 +95,9 @@ install_ssreflect()
 {
   echo 'Installing ssreflect' && echo -en 'travis_fold:start:ssr.install\\r'
 
-  git_checkout "${mathcomp_CI_BRANCH}" "${mathcomp_CI_GITURL}" "${mathcomp_CI_DIR}"
+  git_download mathcomp
 
-  ( cd "${mathcomp_CI_DIR}/mathcomp" && \
+  ( cd "${CI_BUILD_DIR}/mathcomp/mathcomp" && \
     make Makefile.coq && \
     make -f Makefile.coq ssreflect/all_ssreflect.vo && \
     make -f Makefile.coq install )
@@ -102,9 +111,9 @@ install_ssralg()
 {
   echo 'Installing ssralg' && echo -en 'travis_fold:start:ssralg.install\\r'
 
-  git_checkout "${mathcomp_CI_BRANCH}" "${mathcomp_CI_GITURL}" "${mathcomp_CI_DIR}"
+  git_download mathcomp
 
-  ( cd "${mathcomp_CI_DIR}/mathcomp" && \
+  ( cd "${CI_BUILD_DIR}/mathcomp/mathcomp" && \
     make Makefile.coq && \
     make -f Makefile.coq algebra/all_algebra.vo && \
     make -f Makefile.coq install )

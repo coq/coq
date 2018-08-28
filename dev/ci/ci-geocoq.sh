@@ -3,10 +3,8 @@
 ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
-GeoCoq_CI_DIR="${CI_BUILD_DIR}/GeoCoq"
-
-git_checkout "${GeoCoq_CI_BRANCH}" "${GeoCoq_CI_GITURL}" "${GeoCoq_CI_DIR}"
-
 install_ssralg
 
-( cd "${GeoCoq_CI_DIR}" && ./configure.sh && make )
+git_download GeoCoq
+
+( cd "${CI_BUILD_DIR}/GeoCoq" && ./configure.sh && make )
