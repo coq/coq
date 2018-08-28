@@ -76,6 +76,24 @@ let frshiftexp f =
 
 let ldshiftexp f e = ldexp f (snd (Uint63.to_int2 e) - eshift)
 
+let eta_float = ldexp 1. (-1074) (* smallest positive float (subnormal) *)
+
+let next_up f =
+  match classify_float f with
+  | FP_nan -> f
+  | FP_infinite -> if 0. < f then f else -.max_float
+  | FP_zero | FP_subnormal ->
+     let f = f +. eta_float in
+     if f = 0. then -0. else f (* or next_down may return -0. *)
+  | FP_normal ->
+     let f, e = frexp f in
+     if 0. < f || f <> -0.5 || e = -1021 then
+       ldexp (f +. epsilon_float /. 2.) e
+     else
+       ldexp (-0.5 +. epsilon_float /. 4.) e
+
+let next_down f = -.(next_up (-.f))
+
 let equal f1 f2 =
   match classify_float f1 with
   | FP_normal | FP_subnormal | FP_infinite -> (f1 = f2)

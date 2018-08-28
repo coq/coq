@@ -69,7 +69,8 @@ void init_arity () {
     arity[CHECKADDFLOAT]=arity[CHECKSUBFLOAT]=arity[CHECKMULFLOAT]=
     arity[CHECKDIVFLOAT]=arity[CHECKSQRTFLOAT]=
     arity[CHECKFLOATOFINT63]=arity[CHECKFLOATNORMFRMANTISSA]=
-    arity[CHECKFRSHIFTEXP]=arity[CHECKLDSHIFTEXP]=1;
+    arity[CHECKFRSHIFTEXP]=arity[CHECKLDSHIFTEXP]=
+    arity[CHECKNEXTUPFLOAT]=arity[CHECKNEXTDOWNFLOAT]=1;
   /* instruction with two operands */
   arity[APPTERM]=arity[MAKEBLOCK]=arity[CLOSURE]=
   arity[PROJ]=2;

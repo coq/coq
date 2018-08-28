@@ -46,6 +46,8 @@ type t =
   | Float64normfr_mantissa
   | Float64frshiftexp
   | Float64ldshiftexp
+  | Float64next_up
+  | Float64next_down
 
 val equal : t -> t -> bool
 

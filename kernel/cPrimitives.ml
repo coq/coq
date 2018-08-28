@@ -46,6 +46,8 @@ type t =
   | Float64normfr_mantissa
   | Float64frshiftexp
   | Float64ldshiftexp
+  | Float64next_up
+  | Float64next_down
 
 let equal (p1 : t) (p2 : t) =
   p1 == p2
@@ -88,6 +90,8 @@ let hash = function
   | Float64normfr_mantissa -> 35
   | Float64frshiftexp -> 36
   | Float64ldshiftexp -> 37
+  | Float64next_up -> 38
+  | Float64next_down -> 39
 
 (* Should match names in nativevalues.ml *)
 let to_string = function
@@ -128,6 +132,8 @@ let to_string = function
   | Float64normfr_mantissa -> "normfr_mantissa"
   | Float64frshiftexp -> "frshiftexp"
   | Float64ldshiftexp -> "ldshiftexp"
+  | Float64next_up    -> "next_up"
+  | Float64next_down  -> "next_down"
 
 type prim_type =
   | PT_int63
@@ -165,7 +171,8 @@ let types =
   | Int63div21 ->
      [int_ty; int_ty; int_ty; PITT_ind (PIT_pair, (PT_int63, PT_int63))]
   | Int63addMulDiv -> [int_ty; int_ty; int_ty; int_ty]
-  | Float64opp | Float64abs | Float64sqrt -> [float_ty; float_ty]
+  | Float64opp | Float64abs | Float64sqrt
+  | Float64next_up | Float64next_down -> [float_ty; float_ty]
   | Float64ofInt63 -> [int_ty; float_ty]
   | Float64normfr_mantissa -> [float_ty; int_ty]
   | Float64frshiftexp -> [float_ty; PITT_ind (PIT_pair, (PT_float64, PT_int63))]

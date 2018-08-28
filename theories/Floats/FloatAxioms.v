@@ -8,6 +8,8 @@ Definition SF64add := SFadd prec emax.
 Definition SF64sub := SFsub prec emax.
 Definition SF64div := SFdiv prec emax.
 Definition SF64sqrt := SFsqrt prec emax.
+Definition SF64succ := SFsucc prec emax.
+Definition SF64pred := SFpred prec emax.
 
 Axiom Prim2SF_valid : forall x, valid_binary (Prim2SF x) = true.
 Axiom SF2Prim_Prim2SF : forall x, SF2Prim (Prim2SF x) = x.
@@ -45,3 +47,6 @@ Axiom normfr_mantissa_spec : forall f, to_Z (normfr_mantissa f) = Z.of_N (SFnorm
 
 Axiom frshiftexp_spec : forall f, let (m,e) := frshiftexp f in (Prim2SF m, ((to_Z e) - (to_Z shift))%Z) = SFfrexp prec emax (Prim2SF f).
 Axiom ldshiftexp_spec : forall f e, Prim2SF (ldshiftexp f e) = SFldexp prec emax (Prim2SF f) ((to_Z e) - (to_Z shift)).
+
+Axiom next_up_spec : forall x, Prim2SF (next_up x) = SF64succ (Prim2SF x).
+Axiom next_down_spec : forall x, Prim2SF (next_down x) = SF64pred (Prim2SF x).

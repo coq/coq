@@ -286,6 +286,8 @@ GRAMMAR EXTEND Gram
        | "#float64_normfr_mantissa" -> { CPrimitives.Float64normfr_mantissa }
        | "#float64_frshiftexp" -> { CPrimitives.Float64frshiftexp }
        | "#float64_ldshiftexp" -> { CPrimitives.Float64ldshiftexp }
+       | "#float64_next_up" -> { CPrimitives.Float64next_up }
+       | "#float64_next_down" -> { CPrimitives.Float64next_down }
        ] ]
     ;
 

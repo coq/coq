@@ -349,4 +349,35 @@ Section FloatOps.
         (S754_finite sx (shift_pos (Z.to_pos d) mx) (-prec), (ex+prec-d)%Z)
     | _ => (f, (-2*emax-prec)%Z)
     end.
+
+  Definition SFone := binary_round false 1 0.
+
+  Definition SFulp x := SFldexp SFone (fexp (snd (SFfrexp x))).
+
+  Definition SFpred_pos x :=
+    match x with
+    | S754_finite _ mx _ =>
+      let d :=
+        if (mx~0 =? shift_pos (Z.to_pos prec) 1)%positive then
+          SFldexp SFone (fexp (snd (SFfrexp x) - 1))
+        else
+          SFulp x in
+      SFsub x d
+    | _ => x
+    end.
+
+  Definition SFmax_float :=
+    S754_finite false (shift_pos (Z.to_pos prec) 1 - 1) (emax - prec).
+
+  Definition SFsucc x :=
+    match x with
+    | S754_zero _ => SFldexp SFone emin
+    | S754_infinity false => x
+    | S754_infinity true => SFopp SFmax_float
+    | S754_nan => x
+    | S754_finite false _ _ => SFadd x (SFulp x)
+    | S754_finite true _ _ => SFopp (SFpred_pos (SFopp x))
+    end.
+
+  Definition SFpred f := SFopp (SFsucc (SFopp f)).
 End FloatOps.

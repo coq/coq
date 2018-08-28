@@ -247,6 +247,8 @@ let check_prim_op = function
   | Float64normfr_mantissa -> opCHECKFLOATNORMFRMANTISSA
   | Float64frshiftexp -> opCHECKFRSHIFTEXP
   | Float64ldshiftexp -> opCHECKLDSHIFTEXP
+  | Float64next_up    -> opCHECKNEXTUPFLOAT
+  | Float64next_down  -> opCHECKNEXTDOWNFLOAT
 
 let emit_instr env = function
   | Klabel lbl -> define_label env lbl

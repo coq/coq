@@ -1674,6 +1674,20 @@ value coq_interprete
         Next;
       }
 
+      Instruct (CHECKNEXTUPFLOAT) {
+        print_instr("CHECKNEXTUPFLOAT");
+        CheckFloat1();
+        Coq_copy_double(nextafter(Double_val(accu), INFINITY));
+        Next;
+      }
+
+      Instruct (CHECKNEXTDOWNFLOAT) {
+        print_instr("CHECKNEXTDOWNFLOAT");
+        CheckFloat1();
+        Coq_copy_double(nextafter(Double_val(accu), -INFINITY));
+        Next;
+      }
+
 /* Debugging and machine control */
 
       Instruct(STOP){

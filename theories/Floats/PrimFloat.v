@@ -50,6 +50,9 @@ Definition shift := (2101)%int63. (* = 2*emax + prec *)
 Primitive frshiftexp := #float64_frshiftexp.
 Primitive ldshiftexp := #float64_ldshiftexp.
 
+Primitive next_up := #float64_next_up.
+Primitive next_down := #float64_next_down.
+
 Local Open Scope float_scope.
 
 (* Special values *)

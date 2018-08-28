@@ -302,6 +302,10 @@ struct
       let f = get_float evd args 0 in
       let e = get_int evd args 1 in
       E.mkFloat env (Float64.ldshiftexp f e)
+    | Float64next_up ->
+      let f = get_float1 evd args in E.mkFloat env (Float64.next_up f)
+    | Float64next_down ->
+      let f = get_float1 evd args in E.mkFloat env (Float64.next_down f)
 
   let red_prim env evd p args =
     try

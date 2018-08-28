@@ -49,6 +49,9 @@ val normfr_mantissa : t -> Uint63.t
 val frshiftexp : t -> t * Uint63.t (* float remainder, shifted exponent *)
 val ldshiftexp : t -> Uint63.t -> t
 
+val next_up : t -> t
+val next_down : t -> t
+
 (** Return true if two floats are equal.
  * All NaN values are considered equal. *)
 val equal : t -> t -> bool

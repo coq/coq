@@ -13,6 +13,8 @@ Definition ldexp f e :=
   let e' := Z.max (Z.min e (emax - emin)) (emin - emax - 1) in
   ldshiftexp f (of_Z e' + shift).
 
+Definition ulp f := ldexp one (fexp prec emax (snd (frexp f))).
+
 Definition Prim2SF f :=
   if is_nan f then S754_nan
   else if is_zero f then S754_zero (get_sign f)
