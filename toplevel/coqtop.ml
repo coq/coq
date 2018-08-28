@@ -384,7 +384,7 @@ let print_style_tags opts =
 (** GC tweaking *)
 
 (** Coq is a heavy user of persistent data structures and symbolic ASTs, so the
-    minor heap is heavily sollicited. Unfortunately, the default size is far too
+    minor heap is heavily solicited. Unfortunately, the default size is far too
     small, so we enlarge it a lot (128 times larger).
 
     To better handle huge memory consumers, we also augment the default major
