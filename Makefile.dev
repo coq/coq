@@ -15,7 +15,7 @@
 # Debug printers in dev/
 #########################
 
-.PHONY: devel printers camldevfiles
+.PHONY: devel printers
 
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/checker_printers.cmo
 
@@ -84,20 +84,6 @@ endif
 # for a complete build of coq, see instead 'make world' for that.
 # But these partial targets could be quite handy for quick builds
 # of specific components of Coq.
-
-###########################################################################
-# OCaml dev files
-###########################################################################
-camldevfiles: $(MERLINFILES) META.coq
-
-.merlin: .merlin.in
-	cp -a "$<" "$@"
-
-%/.merlin: %/.merlin.in
-	cp -a "$<" "$@"
-
-META.coq: META.coq.in
-	cp -a "$<" "$@"
 
 ###############################
 ### 1) general-purpose targets

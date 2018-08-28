@@ -81,7 +81,7 @@ export ML4FILES := $(call find, '*.ml4')
 export MLGFILES := $(call find, '*.mlg')
 export CFILES := $(call findindir, 'kernel/byterun', '*.c')
 
-export MERLININFILES := $(call find, '.merlin.in')
+MERLININFILES := $(call find, '.merlin.in')
 export MERLINFILES := $(MERLININFILES:.in=)
 
 # NB: The lists of currently existing .ml and .mli files will change
@@ -116,7 +116,7 @@ include Makefile.common
 
 NOARG: world
 
-.PHONY: NOARG help noconfig submake
+.PHONY: NOARG help noconfig submake camldevfiles
 
 help:
 	@echo "Please use either:"
@@ -143,12 +143,13 @@ Then, you may want to consider whether you want to restore the autosaves)
 #run.
 endif
 
-# Apart from clean and tags, everything will be done in a sub-call to make
-# on Makefile.build. This way, we avoid doing here the -include of .d :
-# since they trigger some compilations, we do not want them for a mere clean.
-# Moreover, we regroup this sub-call in a common target named 'submake'.
-# This way, multiple user-given goals (cf the MAKECMDGOALS variable) won't
-# trigger multiple (possibly parallel) make sub-calls
+# Apart from clean and a few misc files, everything will be done in a
+# sub-call to make on Makefile.build. This way, we avoid doing here
+# the -include of .d : since they trigger some compilations, we do not
+# want them for a mere clean. Moreover, we regroup this sub-call in a
+# common target named 'submake'. This way, multiple user-given goals
+# (cf the MAKECMDGOALS variable) won't trigger multiple (possibly
+# parallel) make sub-calls
 
 ifdef COQ_CONFIGURED
 %:: submake ;
@@ -161,7 +162,7 @@ MAKE_OPTS := --warn-undefined-variable --no-builtin-rules
 bin:
 	mkdir bin
 
-submake: alienclean | bin
+submake: alienclean camldevfiles | bin
 	$(MAKE) $(MAKE_OPTS) -f Makefile.build $(MAKECMDGOALS)
 
 noconfig:
@@ -170,6 +171,20 @@ noconfig:
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 
 Makefile $(wildcard Makefile.*) config/Makefile : ;
+
+###########################################################################
+# OCaml dev files
+###########################################################################
+camldevfiles: $(MERLINFILES) META.coq
+
+.merlin: .merlin.in
+	cp -a "$<" "$@"
+
+%/.merlin: %/.merlin.in
+	cp -a "$<" "$@"
+
+META.coq: META.coq.in
+	cp -a "$<" "$@"
 
 ###########################################################################
 # Cleaning
