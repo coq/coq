@@ -38,6 +38,17 @@ let compare x y =
     )
   )
 
+type float_class =
+  | PNormal | NNormal | PSubn | NSubn | PZero | NZero | PInf | NInf | NaN
+
+let classify x =
+  match classify_float x with
+  | FP_normal -> if 0. < x then PNormal else NNormal
+  | FP_subnormal -> if 0. < x then PSubn else NSubn
+  | FP_zero -> if 0. < 1. /. x then PZero else NZero
+  | FP_infinite -> if 0. < x then PInf else NInf
+  | FP_nan -> NaN
+
 let mul = ( *. )
 let add = ( +. )
 let sub = ( -. )

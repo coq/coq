@@ -36,6 +36,7 @@ type t =
   | Float64opp
   | Float64abs
   | Float64compare
+  | Float64classify
   | Float64add
   | Float64sub
   | Float64mul
@@ -77,15 +78,16 @@ let hash = function
   | Float64opp -> 25
   | Float64abs -> 26
   | Float64compare -> 27
-  | Float64add -> 28
-  | Float64sub -> 29
-  | Float64mul -> 30
-  | Float64div -> 31
-  | Float64sqrt -> 32
-  | Float64ofInt63 -> 33
-  | Float64normfr_mantissa -> 34
-  | Float64frshiftexp -> 35
-  | Float64ldshiftexp -> 36
+  | Float64classify -> 28
+  | Float64add -> 29
+  | Float64sub -> 30
+  | Float64mul -> 31
+  | Float64div -> 32
+  | Float64sqrt -> 33
+  | Float64ofInt63 -> 34
+  | Float64normfr_mantissa -> 35
+  | Float64frshiftexp -> 36
+  | Float64ldshiftexp -> 37
 
 (* Should match names in nativevalues.ml *)
 let to_string = function
@@ -116,6 +118,7 @@ let to_string = function
   | Float64opp -> "fopp"
   | Float64abs -> "fabs"
   | Float64compare -> "fcompare"
+  | Float64classify -> "fclassify"
   | Float64add -> "fadd"
   | Float64sub -> "fsub"
   | Float64mul -> "fmul"
@@ -136,6 +139,7 @@ type 'a prim_ind =
   | PIT_pair : (prim_type * prim_type) prim_ind
   | PIT_cmp : unit prim_ind
   | PIT_f_cmp : unit prim_ind
+  | PIT_f_class : unit prim_ind
 
 type prim_ind_ex = PIE : 'a prim_ind -> prim_ind_ex
 
@@ -166,6 +170,7 @@ let types =
   | Float64normfr_mantissa -> [float_ty; int_ty]
   | Float64frshiftexp -> [float_ty; PITT_ind (PIT_pair, (PT_float64, PT_int63))]
   | Float64compare -> [float_ty; float_ty; PITT_ind (PIT_f_cmp, ())]
+  | Float64classify -> [float_ty; PITT_ind (PIT_f_class, ())]
   | Float64add | Float64sub | Float64mul
   | Float64div -> [float_ty; float_ty; float_ty]
   | Float64ldshiftexp -> [float_ty; int_ty; float_ty]
@@ -198,6 +203,7 @@ let prim_ind_to_string (type a) (p : a prim_ind) = match p with
   | PIT_pair -> "pair"
   | PIT_cmp -> "cmp"
   | PIT_f_cmp -> "f_cmp"
+  | PIT_f_class -> "f_class"
 
 let prim_type_to_string = function
   | PT_int63 -> "int63_type"

@@ -906,6 +906,51 @@ struct
   let mkFNotComparable env =
     let (_eq, _lt, _gt, nc) = get_f_cmp_constructors env in
     mkConstruct nc
+
+  let mkPNormal env =
+    let (pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct pNormal
+
+  let mkNNormal env =
+    let (_pNormal,nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct nNormal
+
+  let mkPSubn env =
+    let (_pNormal,_nNormal,pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct pSubn
+
+  let mkNSubn env =
+    let (_pNormal,_nNormal,_pSubn,nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct nSubn
+
+  let mkPZero env =
+    let (_pNormal,_nNormal,_pSubn,_nSubn,pZero,_nZero,_pInf,_nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct pZero
+
+  let mkNZero env =
+    let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,nZero,_pInf,_nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct nZero
+
+  let mkPInf env =
+    let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,pInf,_nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct pInf
+
+  let mkNInf env =
+    let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct nInf
+
+  let mkNaN env =
+    let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,nan) =
+      get_f_class_constructors env in
+    mkConstruct nan
 end
 
 module CredNative = RedNative(CNativeEntries)

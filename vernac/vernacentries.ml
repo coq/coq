@@ -1848,6 +1848,7 @@ let vernac_register qid r =
         | "ind_pair" -> CPrimitives.(PIE PIT_pair)
         | "ind_cmp" -> CPrimitives.(PIE PIT_cmp)
         | "ind_f_cmp" -> CPrimitives.(PIE PIT_f_cmp)
+        | "ind_f_class" -> CPrimitives.(PIE PIT_f_class)
         | k -> CErrors.user_err Pp.(str "Register: unknown identifier “" ++ str k ++ str "” in the “kernel” namespace")
       in
       match gr with

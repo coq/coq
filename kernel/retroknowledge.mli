@@ -21,7 +21,14 @@ type retroknowledge = {
     retro_f_cmp : (constructor * constructor * constructor * constructor)
                   option;
                     (* FEq, FLt, FGt, FNotComparable *)
-    retro_refl : constructor option;
+    retro_f_class : (constructor * constructor * constructor * constructor
+                     * constructor * constructor * constructor * constructor
+                     * constructor)
+                      option;
+                    (* PNormal, NNormal, PSubn, NSubn,
+                       PZero, NZero, PInf, NInf,
+                       NaN *)
+    retro_refl : constructor option
 }
 
 val empty : retroknowledge

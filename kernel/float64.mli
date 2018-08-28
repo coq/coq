@@ -30,6 +30,11 @@ type float_comparison = FEq | FLt | FGt | FNotComparable
  * NotComparable is returned if there is a NaN in the arguments *)
 val compare : t -> t -> float_comparison
 
+type float_class =
+  | PNormal | NNormal | PSubn | NSubn | PZero | NZero | PInf | NInf | NaN
+
+val classify : t -> float_class
+
 val mul : t -> t -> t
 val add : t -> t -> t
 val sub : t -> t -> t

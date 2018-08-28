@@ -1,4 +1,4 @@
-Require Import ZArith.
+Require Import ZArith FloatClass.
 
 Variant spec_float :=
   | S754_zero (s : bool)
@@ -181,6 +181,21 @@ Section FloatOps.
         | Eq => CompOpp (Pcompare m1 m2 Eq)
         end
       end
+    end.
+
+  Definition SFclassify f :=
+    match f with
+    | S754_nan => NaN
+    | S754_infinity false => PInf
+    | S754_infinity true => NInf
+    | S754_zero false => NZero
+    | S754_zero true => PZero
+    | S754_finite false m _ =>
+      if (digits2_pos m =? Z.to_pos prec)%positive then PNormal
+      else PSubn
+    | S754_finite true m _ =>
+      if (digits2_pos m =? Z.to_pos prec)%positive then NNormal
+      else NSubn
     end.
 
   Definition SFmul x y :=

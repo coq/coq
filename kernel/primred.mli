@@ -12,6 +12,10 @@ val get_carry_constructors : env -> constructor * constructor
 val get_pair_constructor : env -> constructor
 val get_cmp_constructors : env -> constructor * constructor * constructor
 val get_f_cmp_constructors : env -> constructor * constructor * constructor * constructor
+val get_f_class_constructors :
+  env -> constructor * constructor * constructor * constructor
+         * constructor * constructor * constructor * constructor
+         * constructor
 
 exception NativeDestKO (* Should be raised by get_* functions on failure *)
 
@@ -37,6 +41,15 @@ module type RedNativeEntries =
     val mkFEq : env -> elem
     val mkFGt : env -> elem
     val mkFNotComparable : env -> elem
+    val mkPNormal : env -> elem
+    val mkNNormal : env -> elem
+    val mkPSubn : env -> elem
+    val mkNSubn : env -> elem
+    val mkPZero : env -> elem
+    val mkNZero : env -> elem
+    val mkPInf : env -> elem
+    val mkNInf : env -> elem
+    val mkNaN : env -> elem
   end
 
 module type RedNative =

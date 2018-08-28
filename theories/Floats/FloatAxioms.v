@@ -2,6 +2,7 @@ Require Import ZArith Int63 SpecFloat PrimFloat FloatOps.
 
 Notation valid_binary := (valid_binary prec emax).
 
+Definition SF64classify := SFclassify prec.
 Definition SF64mul := SFmul prec emax.
 Definition SF64add := SFadd prec emax.
 Definition SF64sub := SFsub prec emax.
@@ -32,6 +33,7 @@ Definition flatten_cmp_opt c :=
   end.
 Axiom compare_spec : forall x y, (x ?= y)%float = flatten_cmp_opt (SFcompare (Prim2SF x) (Prim2SF y)).
 
+Axiom classify_spec : forall x, classify x = SF64classify (Prim2SF x).
 Axiom mul_spec : forall x y, Prim2SF (x * y)%float = SF64mul (Prim2SF x) (Prim2SF y).
 Axiom add_spec : forall x y, Prim2SF (x + y)%float = SF64add (Prim2SF x) (Prim2SF y).
 Axiom sub_spec : forall x y, Prim2SF (x - y)%float = SF64sub (Prim2SF x) (Prim2SF y).

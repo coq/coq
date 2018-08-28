@@ -55,6 +55,15 @@ let add_retroknowledge env action =
           | None -> ((ind,1), (ind,2), (ind,3), (ind,4))
           | Some (((ind',_),_,_,_) as t) -> assert (eq_ind ind ind'); t in
         { retro with retro_f_cmp = Some r }
+      | PIT_f_class ->
+        let r =
+          match retro.retro_f_class with
+          | None -> ((ind,1), (ind,2), (ind,3), (ind,4),
+                     (ind,5), (ind,6), (ind,7), (ind,8),
+                     (ind,9))
+          | Some (((ind',_),_,_,_,_,_,_,_,_) as t) ->
+             assert (eq_ind ind ind'); t in
+        { retro with retro_f_class = Some r }
     in
     set_retroknowledge env retro
 
@@ -99,6 +108,11 @@ let get_f_cmp_constructors env =
   | Some r -> r
   | None -> anomaly Pp.(str"Reduction of primitive: fcmp not registered")
 
+let get_f_class_constructors env =
+  match env.retroknowledge.retro_f_class with
+  | Some r -> r
+  | None -> anomaly Pp.(str"Reduction of primitive: fclass not registered")
+
 exception NativeDestKO
 
 module type RedNativeEntries =
@@ -123,6 +137,15 @@ module type RedNativeEntries =
     val mkFEq : env -> elem
     val mkFGt : env -> elem
     val mkFNotComparable : env -> elem
+    val mkPNormal : env -> elem
+    val mkNNormal : env -> elem
+    val mkPSubn : env -> elem
+    val mkNSubn : env -> elem
+    val mkPZero : env -> elem
+    val mkNZero : env -> elem
+    val mkPInf : env -> elem
+    val mkNInf : env -> elem
+    val mkNaN : env -> elem
   end
 
 module type RedNative =
@@ -245,6 +268,18 @@ struct
       | Float64.FLt -> E.mkFLt env
       | Float64.FGt -> E.mkFGt env
       | Float64.FNotComparable -> E.mkFNotComparable env)
+    | Float64classify ->
+      let f = get_float1 evd args in
+      (match Float64.classify f with
+      | Float64.PNormal -> E.mkPNormal env
+      | Float64.NNormal -> E.mkNNormal env
+      | Float64.PSubn -> E.mkPSubn env
+      | Float64.NSubn -> E.mkNSubn env
+      | Float64.PZero -> E.mkPZero env
+      | Float64.NZero -> E.mkNZero env
+      | Float64.PInf -> E.mkPInf env
+      | Float64.NInf -> E.mkNInf env
+      | Float64.NaN -> E.mkNaN env)
     | Float64add ->
       let f1, f2 = get_float2 evd args in E.mkFloat env (Float64.add f1 f2)
     | Float64sub ->

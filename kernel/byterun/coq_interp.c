@@ -1565,6 +1565,31 @@ value coq_interprete
         Next;
       }
 
+      Instruct (CHECKCLASSIFYFLOAT) {
+        double x;
+        print_instr("CHECKCLASSIFYFLOAT");
+        CheckFloat1();
+        x = Double_val(accu);
+        switch (fpclassify(x)) {
+        case FP_NORMAL:
+          accu = signbit(x) ? coq_NNormal : coq_PNormal;
+          break;
+        case FP_SUBNORMAL:
+          accu = signbit(x) ? coq_NSubn : coq_PSubn;
+          break;
+        case FP_ZERO:
+          accu = signbit(x) ? coq_NZero : coq_PZero;
+          break;
+        case FP_INFINITE:
+          accu = signbit(x) ? coq_NInf : coq_PInf;
+          break;
+        default:  /* FP_NAN */
+          accu = coq_NaN;
+          break;
+        }
+        Next;
+      }
+
       Instruct (CHECKADDFLOAT) {
         print_instr("CHECKADDFLOAT");
         CheckFloat2();

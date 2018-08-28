@@ -46,6 +46,15 @@
 #define coq_FLt Val_int(1)
 #define coq_FGt Val_int(2)
 #define coq_FNotComparable Val_int(3)
+#define coq_PNormal Val_int(0)
+#define coq_NNormal Val_int(1)
+#define coq_PSubn Val_int(2)
+#define coq_NSubn Val_int(3)
+#define coq_PZero Val_int(4)
+#define coq_NZero Val_int(5)
+#define coq_PInf Val_int(6)
+#define coq_NInf Val_int(7)
+#define coq_NaN Val_int(8)
 
 #define FLOAT_EXP_SHIFT (2101) /* 2*emax + prec */
 

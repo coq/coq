@@ -228,7 +228,6 @@ module VNativeEntries =
         | _ -> raise Primred.NativeDestKO)
       | _ -> raise Primred.NativeDestKO
 
-
     let mkInt env i = VAL(0, mkInt i)
 
     let mkFloat env f = VAL(0, mkFloat f)
@@ -283,6 +282,51 @@ module VNativeEntries =
     let mkFNotComparable env =
       let (_eq,_lt,_gt,nc) = get_f_cmp_constructors env in
       CONSTR(Univ.in_punivs nc, [||])
+
+    let mkPNormal env =
+      let (pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs pNormal, [||])
+
+    let mkNNormal env =
+      let (_pNormal,nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs nNormal, [||])
+
+    let mkPSubn env =
+      let (_pNormal,_nNormal,pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs pSubn, [||])
+
+    let mkNSubn env =
+      let (_pNormal,_nNormal,_pSubn,nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs nSubn, [||])
+
+    let mkPZero env =
+      let (_pNormal,_nNormal,_pSubn,_nSubn,pZero,_nZero,_pInf,_nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs pZero, [||])
+
+    let mkNZero env =
+      let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,nZero,_pInf,_nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs nZero, [||])
+
+    let mkPInf env =
+      let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,pInf,_nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs pInf, [||])
+
+    let mkNInf env =
+      let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs nInf, [||])
+
+    let mkNaN env =
+      let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs nan, [||])
   end
 
 module VredNative = RedNative(VNativeEntries)

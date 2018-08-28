@@ -1069,6 +1069,32 @@ module FNativeEntries =
           { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cFNotComparable) };
       | None -> defined_f_cmp := false
 
+    let defined_f_class = ref false
+    let fPNormal = ref dummy
+    let fNNormal = ref dummy
+    let fPSubn = ref dummy
+    let fNSubn = ref dummy
+    let fPZero = ref dummy
+    let fNZero = ref dummy
+    let fPInf = ref dummy
+    let fNInf = ref dummy
+    let fNaN = ref dummy
+
+    let init_f_class retro =
+      match retro.Retroknowledge.retro_f_class with
+      | Some (cPNormal, cNNormal, cPSubn, cNSubn, cPZero, cNZero,
+              cPInf, cNInf, cNaN) ->
+        defined_f_class := true;
+        fPNormal := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cPNormal) };
+        fNNormal := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNNormal) };
+        fPSubn := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cPSubn) };
+        fNSubn := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNSubn) };
+        fPZero := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cPZero) };
+        fNZero := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNZero) };
+        fPInf := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cPInf) };
+        fNInf := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNInf) };
+        fNaN := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNaN) };
+      | None -> defined_f_class := false
     let defined_refl = ref false
 
     let frefl = ref dummy
@@ -1089,6 +1115,7 @@ module FNativeEntries =
       init_pair !current_retro;
       init_cmp !current_retro;
       init_f_cmp !current_retro;
+      init_f_class !current_retro;
       init_refl !current_retro
 
     let check_env env =
@@ -1121,6 +1148,10 @@ module FNativeEntries =
     let check_f_cmp env =
       check_env env;
       assert (!defined_f_cmp)
+
+    let check_f_class env =
+      check_env env;
+      assert (!defined_f_class)
 
     let mkInt env i =
       check_int env;
@@ -1175,6 +1206,42 @@ module FNativeEntries =
     let mkFNotComparable env =
       check_f_cmp env;
       !fFNotComparable
+
+    let mkPNormal env =
+      check_f_class env;
+      !fPNormal
+
+    let mkNNormal env =
+      check_f_class env;
+      !fNNormal
+
+    let mkPSubn env =
+      check_f_class env;
+      !fPSubn
+
+    let mkNSubn env =
+      check_f_class env;
+      !fNSubn
+
+    let mkPZero env =
+      check_f_class env;
+      !fPZero
+
+    let mkNZero env =
+      check_f_class env;
+      !fNZero
+
+    let mkPInf env =
+      check_f_class env;
+      !fPInf
+
+    let mkNInf env =
+      check_f_class env;
+      !fNInf
+
+    let mkNaN env =
+      check_f_class env;
+      !fNaN
   end
 
 module FredNative = RedNative(FNativeEntries)
