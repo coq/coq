@@ -17,3 +17,6 @@ Fixes / closes #????
 <!-- (Otherwise, remove these lines.) -->
 - [ ] Corresponding documentation was added / updated (including any warning and error messages added / removed / modified).
 - [ ] Entry added in CHANGES.
+<!-- If this closes a critical bug (a proof of False): -->
+<!-- (Otherwise, remove this line.) -->
+- [ ] Corresponding entry in `dev/doc/critical-bugs` was added / updated
