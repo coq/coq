@@ -60,6 +60,7 @@ sig
   val extend : bool list -> 'a -> 'a list -> 'a list
   val count : ('a -> bool) -> 'a list -> int
   val index : 'a eq -> 'a -> 'a list -> int
+  val safe_index : 'a eq -> 'a -> 'a list -> int option
   val index0 : 'a eq -> 'a -> 'a list -> int
   val fold_left_until : ('c -> 'a -> 'c CSig.until) -> 'c -> 'a list -> 'c
   val fold_right_i :  (int -> 'a -> 'b -> 'b) -> int -> 'a list -> 'b -> 'b
@@ -537,6 +538,8 @@ let rec index_f f x l n = match l with
   | y :: l -> if f x y then n else index_f f x l (succ n)
 
 let index f x l = index_f f x l 1
+
+let safe_index f x l = try Some (index f x l) with Not_found -> None
 
 let index0 f x l = index_f f x l 0
 

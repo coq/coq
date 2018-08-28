@@ -63,6 +63,7 @@ exception CannotUnfocusThisWay
 (* Cannot focus on non-existing subgoals *)
 exception NoSuchGoals of int * int
 
+exception NoSuchGoal of Names.Id.t
 
 exception FullyUnfocused
 
@@ -75,6 +76,10 @@ let _ = CErrors.register_handler begin function
       CErrors.user_err ~hdr:"Focus" Pp.(
         str"Not every goal in range ["++ int i ++ str","++int j++str"] exist."
       )
+  | NoSuchGoal id ->
+      CErrors.user_err
+        ~hdr:"Focus"
+        Pp.(str "No such goal: " ++ str (Names.Id.to_string id) ++ str ".")
   | FullyUnfocused -> CErrors.user_err Pp.(str "The proof is not focused")
   | _ -> raise CErrors.Unhandled
 end
@@ -229,6 +234,37 @@ let _unfocus pr =
 let focus cond inf i pr =
   try _focus cond (Obj.repr inf) i i pr
   with CList.IndexOutOfRange -> raise (NoSuchGoals (i,i))
+
+(* Focus on the goal named id *)
+let focus_id cond inf id pr =
+  let (focused_goals, evar_map) = Proofview.proofview pr.proofview in
+  begin match try Some (Evd.evar_key id evar_map) with Not_found -> None with
+  | Some ev ->
+     begin match CList.safe_index Evar.equal ev focused_goals with
+     | Some i ->
+        (* goal is already under focus *)
+        _focus cond (Obj.repr inf) i i pr
+     | None ->
+        if CList.mem_f Evar.equal ev pr.shelf then
+          (* goal is on the shelf, put it in focus *)
+          let proofview = Proofview.unshelve [ev] pr.proofview in
+          let shelf =
+            CList.filter (fun ev' -> Evar.equal ev ev' |> not) pr.shelf
+          in
+          let pr = { pr with proofview; shelf } in
+          let (focused_goals, _) = Proofview.proofview pr.proofview in
+          let i =
+            (* Now we know that this will succeed *)
+            try CList.index Evar.equal ev focused_goals
+            with Not_found -> assert false
+          in
+          _focus cond (Obj.repr inf) i i pr
+        else
+          raise CannotUnfocusThisWay
+     end
+  | None ->
+     raise (NoSuchGoal id)
+  end
 
 let rec unfocus kind pr () =
   let cond = cond_of_focus pr in
