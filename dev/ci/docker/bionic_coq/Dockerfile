@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2018-07-11-V2"
+# CACHEKEY: "bionic_coq-V2018-08-27-V2"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -28,8 +28,8 @@ RUN opam init -a -y -j $NJOBS --compiler="$COMPILER" default https://opam.ocaml.
 # Common OPAM packages.
 # `num` does not have a version number as the right version to install varies
 # with the compiler version.
-ENV BASE_OPAM="num ocamlfind.1.8.0 dune.1.0.0 ounit.2.0.8" \
-    CI_OPAM="menhir.20180530 elpi.1.0.4 ocamlgraph.1.8.8"
+ENV BASE_OPAM="num ocamlfind.1.8.0 dune.1.1.1 ounit.2.0.8" \
+    CI_OPAM="menhir.20180530 elpi.1.0.5 ocamlgraph.1.8.8"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
 ENV CAMLP5_VER="6.14" \
