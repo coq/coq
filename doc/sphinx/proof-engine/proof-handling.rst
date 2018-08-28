@@ -315,6 +315,9 @@ Navigation in the proof tree
 
 .. _curly-braces:
 
+.. index:: {
+           }
+
 .. cmd:: %{ %| %}
 
    The command ``{`` (without a terminating period) focuses on the first
@@ -369,7 +372,7 @@ Navigation in the proof tree
       Brackets are used to focus on a single goal given either by its position
       or by its name if it has one.
 
-    .. seealso:: The error messages about bullets below.
+  .. seealso:: The error messages about bullets below.
 
 .. _bullets:
 
