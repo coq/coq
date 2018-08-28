@@ -22,7 +22,16 @@ Qed.
 
 Axiom opp_spec : forall x, Prim2SF (-x)%float = SFopp (Prim2SF x).
 Axiom abs_spec : forall x, Prim2SF (abs x) = SFabs (Prim2SF x).
-Axiom compare_spec : forall x y, (x ?= y)%float = SFcompare (Prim2SF x) (Prim2SF y).
+
+Definition flatten_cmp_opt c :=
+  match c with
+  | None => FNotComparable
+  | Some Eq => FEq
+  | Some Lt => FLt
+  | Some Gt => FGt
+  end.
+Axiom compare_spec : forall x y, (x ?= y)%float = flatten_cmp_opt (SFcompare (Prim2SF x) (Prim2SF y)).
+
 Axiom mul_spec : forall x y, Prim2SF (x * y)%float = SF64mul (Prim2SF x) (Prim2SF y).
 Axiom add_spec : forall x y, Prim2SF (x + y)%float = SF64add (Prim2SF x) (Prim2SF y).
 Axiom sub_spec : forall x y, Prim2SF (x - y)%float = SF64sub (Prim2SF x) (Prim2SF y).

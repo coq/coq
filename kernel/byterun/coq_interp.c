@@ -1551,19 +1551,16 @@ value coq_interprete
         x = Double_val(accu);
         y = Double_val(*sp++);
         if(x < y) {
-          Alloc_small(accu, 1, coq_tag_Some);
-          Field(accu, 0) = coq_Lt;
+          accu = coq_FLt;
         }
         else if(x > y) {
-          Alloc_small(accu, 1, coq_tag_Some);
-          Field(accu, 0) = coq_Gt;
+          accu = coq_FGt;
         }
         else if(x == y) {
-          Alloc_small(accu, 1, coq_tag_Some);
-          Field(accu, 0) = coq_Eq;
+          accu = coq_FEq;
         }
         else { // nan value
-          accu = coq_None;
+          accu = coq_FNotComparable;
         }
         Next;
       }

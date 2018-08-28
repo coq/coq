@@ -1052,17 +1052,22 @@ module FNativeEntries =
         fcmp := { mark = mark Norm KnownR; term = FInd (Univ.in_punivs icmp) }
       | None -> defined_cmp := false
 
-    let defined_option = ref false
-    let fSome = ref dummy
-    let fNone = ref dummy
+    let defined_f_cmp = ref false
+    let fFEq = ref dummy
+    let fFLt = ref dummy
+    let fFGt = ref dummy
+    let fFNotComparable = ref dummy
 
-    let init_option retro =
-      match retro.Retroknowledge.retro_option with
-      | Some (cSome, cNone) ->
-        defined_option := true;
-        fSome := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cSome) };
-        fNone := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cNone) }
-      | None -> defined_option := false
+    let init_f_cmp retro =
+      match retro.Retroknowledge.retro_f_cmp with
+      | Some (cFEq, cFLt, cFGt, cFNotComparable) ->
+        defined_f_cmp := true;
+        fFEq := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cFEq) };
+        fFLt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cFLt) };
+        fFGt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cFGt) };
+        fFNotComparable :=
+          { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cFNotComparable) };
+      | None -> defined_f_cmp := false
 
     let defined_refl = ref false
 
@@ -1083,7 +1088,7 @@ module FNativeEntries =
       init_carry !current_retro;
       init_pair !current_retro;
       init_cmp !current_retro;
-      init_option !current_retro;
+      init_f_cmp !current_retro;
       init_refl !current_retro
 
     let check_env env =
@@ -1113,9 +1118,9 @@ module FNativeEntries =
       check_env env;
       assert (!defined_cmp)
 
-    let check_option env =
+    let check_f_cmp env =
       check_env env;
-      assert (!defined_option)
+      assert (!defined_f_cmp)
 
     let mkInt env i =
       check_int env;
@@ -1155,15 +1160,21 @@ module FNativeEntries =
       check_cmp env;
       !fGt
 
-    let mkSomeCmp env v =
-      check_cmp env;
-      check_option env;
-      { mark = mark Cstr KnownR; term = FApp(!fSome, [|!fcmp;v|]) }
+    let mkFLt env =
+      check_f_cmp env;
+      !fFLt
 
-    let mkNoneCmp env =
-      check_cmp env;
-      check_option env;
-      { mark = mark Cstr KnownR; term = FApp(!fNone, [|!fcmp|]) }
+    let mkFEq env =
+      check_f_cmp env;
+      !fFEq
+
+    let mkFGt env =
+      check_f_cmp env;
+      !fFGt
+
+    let mkFNotComparable env =
+      check_f_cmp env;
+      !fFNotComparable
   end
 
 module FredNative = RedNative(FNativeEntries)

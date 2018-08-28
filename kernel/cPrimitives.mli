@@ -74,7 +74,7 @@ type 'a prim_ind =
   | PIT_carry : prim_type prim_ind
   | PIT_pair : (prim_type * prim_type) prim_ind
   | PIT_cmp : unit prim_ind
-  | PIT_option : unit prim_ind
+  | PIT_f_cmp : unit prim_ind
 
 type prim_ind_ex = PIE : 'a prim_ind -> prim_ind_ex
 

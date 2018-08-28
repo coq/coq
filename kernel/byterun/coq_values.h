@@ -42,8 +42,10 @@
 #define coq_Eq Val_int(0)
 #define coq_Lt Val_int(1)
 #define coq_Gt Val_int(2)
-#define coq_tag_Some 1
-#define coq_None Val_int(0)
+#define coq_FEq Val_int(0)
+#define coq_FLt Val_int(1)
+#define coq_FGt Val_int(2)
+#define coq_FNotComparable Val_int(3)
 
 #define FLOAT_EXP_SHIFT (2101) /* 2*emax + prec */
 

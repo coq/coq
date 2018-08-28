@@ -18,7 +18,9 @@ type retroknowledge = {
     retro_pair : constructor option;
     retro_cmp : (constructor * constructor * constructor) option;
                     (* Eq, Lt, Gt *)
-    retro_option : (constructor * constructor) option; (* Some, None *)
+    retro_f_cmp : (constructor * constructor * constructor * constructor)
+                  option;
+                    (* FEq, FLt, FGt, FNotComparable *)
     retro_refl : constructor option;
 }
 

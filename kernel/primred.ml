@@ -49,12 +49,12 @@ let add_retroknowledge env action =
           | None -> ((ind,1), (ind,2), (ind,3))
           | Some (((ind',_),_,_) as t) -> assert (eq_ind ind ind'); t in
         { retro with retro_cmp = Some r }
-      | PIT_option ->
+      | PIT_f_cmp ->
         let r =
-          match retro.retro_option with
-          | None -> ((ind,1), (ind,2))
-          | Some (((ind',_),_) as t) -> assert (eq_ind ind ind'); t in
-        { retro with retro_option = Some r }
+          match retro.retro_f_cmp with
+          | None -> ((ind,1), (ind,2), (ind,3), (ind,4))
+          | Some (((ind',_),_,_,_) as t) -> assert (eq_ind ind ind'); t in
+        { retro with retro_f_cmp = Some r }
     in
     set_retroknowledge env retro
 
@@ -94,10 +94,10 @@ let get_cmp_constructors env =
   | Some r -> r
   | None -> anomaly Pp.(str"Reduction of primitive: cmp not registered")
 
-let get_option_constructors env =
-  match env.retroknowledge.retro_option with
+let get_f_cmp_constructors env =
+  match env.retroknowledge.retro_f_cmp with
   | Some r -> r
-  | None -> anomaly Pp.(str"Reduction of primitive: option not registered")
+  | None -> anomaly Pp.(str"Reduction of primitive: fcmp not registered")
 
 exception NativeDestKO
 
@@ -119,8 +119,10 @@ module type RedNativeEntries =
     val mkLt : env -> elem
     val mkEq : env -> elem
     val mkGt : env -> elem
-    val mkSomeCmp : env -> elem -> elem
-    val mkNoneCmp : env -> elem
+    val mkFLt : env -> elem
+    val mkFEq : env -> elem
+    val mkFGt : env -> elem
+    val mkFNotComparable : env -> elem
   end
 
 module type RedNative =
@@ -239,10 +241,10 @@ struct
     | Float64compare ->
       let f1, f2 = get_float2 evd args in
       (match Float64.compare f1 f2 with
-      | Float64.Eq -> E.mkSomeCmp env (E.mkEq env)
-      | Float64.Lt -> E.mkSomeCmp env (E.mkLt env)
-      | Float64.Gt -> E.mkSomeCmp env (E.mkGt env)
-      | Float64.NotComparable -> E.mkNoneCmp env)
+      | Float64.FEq -> E.mkFEq env
+      | Float64.FLt -> E.mkFLt env
+      | Float64.FGt -> E.mkFGt env
+      | Float64.FNotComparable -> E.mkFNotComparable env)
     | Float64add ->
       let f1, f2 = get_float2 evd args in E.mkFloat env (Float64.add f1 f2)
     | Float64sub ->

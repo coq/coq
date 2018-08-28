@@ -135,7 +135,7 @@ type 'a prim_ind =
   | PIT_carry : prim_type prim_ind
   | PIT_pair : (prim_type * prim_type) prim_ind
   | PIT_cmp : unit prim_ind
-  | PIT_option : unit prim_ind
+  | PIT_f_cmp : unit prim_ind
 
 type prim_ind_ex = PIE : 'a prim_ind -> prim_ind_ex
 
@@ -165,7 +165,7 @@ let types =
   | Float64ofInt63 -> [int_ty; float_ty]
   | Float64normfr_mantissa -> [float_ty; int_ty]
   | Float64frshiftexp -> [float_ty; PITT_ind (PIT_pair, (PT_float64, PT_int63))]
-  | Float64compare -> [float_ty; float_ty; PITT_ind (PIT_option, ())]
+  | Float64compare -> [float_ty; float_ty; PITT_ind (PIT_f_cmp, ())]
   | Float64add | Float64sub | Float64mul
   | Float64div -> [float_ty; float_ty; float_ty]
   | Float64ldshiftexp -> [float_ty; int_ty; float_ty]
@@ -197,7 +197,7 @@ let prim_ind_to_string (type a) (p : a prim_ind) = match p with
   | PIT_carry -> "carry"
   | PIT_pair -> "pair"
   | PIT_cmp -> "cmp"
-  | PIT_option -> "option"
+  | PIT_f_cmp -> "f_cmp"
 
 let prim_type_to_string = function
   | PT_int63 -> "int63_type"

@@ -24,7 +24,7 @@ val of_float : float -> t
 val opp : t -> t
 val abs : t -> t
 
-type float_comparison = Eq | Lt | Gt | NotComparable
+type float_comparison = FEq | FLt | FGt | FNotComparable
 
 (** The IEEE 754 float comparison.
  * NotComparable is returned if there is a NaN in the arguments *)

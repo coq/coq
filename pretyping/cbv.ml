@@ -241,8 +241,6 @@ module VNativeEntries =
 
     let float_ty env = VAL(0, mkConst @@ get_float_type env)
 
-    let cmp_ty env = VAL(0, mkConst @@ get_cmp_type env)
-
     let mkCarry env b e =
       let (c0,c1) = get_carry_constructors env in
       CONSTR(Univ.in_punivs (if b then c1 else c0), [|int_ty env;e|])
@@ -270,15 +268,21 @@ module VNativeEntries =
       let (_eq,_lt,gt) = get_cmp_constructors env in
       CONSTR(Univ.in_punivs gt, [||])
 
-    let mkSomeCmp env v =
-      let cmp_ty = cmp_ty env in
-      let (some,_none) = get_option_constructors env in
-      CONSTR(Univ.in_punivs some, [|cmp_ty;v|])
+    let mkFLt env =
+      let (_eq,lt,_gt,_nc) = get_f_cmp_constructors env in
+      CONSTR(Univ.in_punivs lt, [||])
 
-    let mkNoneCmp env =
-      let cmp_ty = cmp_ty env in
-      let (_some,none) = get_option_constructors env in
-      CONSTR(Univ.in_punivs none, [|cmp_ty|])
+    let mkFEq env =
+      let (eq,_lt,_gt,_nc) = get_f_cmp_constructors env in
+      CONSTR(Univ.in_punivs eq, [||])
+
+    let mkFGt env =
+      let (_eq,_lt,gt,_nc) = get_f_cmp_constructors env in
+      CONSTR(Univ.in_punivs gt, [||])
+
+    let mkFNotComparable env =
+      let (_eq,_lt,_gt,nc) = get_f_cmp_constructors env in
+      CONSTR(Univ.in_punivs nc, [||])
   end
 
 module VredNative = RedNative(VNativeEntries)

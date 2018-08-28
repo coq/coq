@@ -1,5 +1,9 @@
 Require Import Int63.
 
+Inductive float_comparison : Set := FEq | FLt | FGt | FNotComparable.
+
+Register float_comparison as kernel.ind_f_cmp.
+
 Primitive float := #float64_type.
 
 Declare Scope float_scope.
@@ -11,7 +15,6 @@ Notation "- x" := (opp x) : float_scope.
 
 Primitive abs := #float64_abs.
 
-Register option as kernel.ind_option.
 Primitive compare := #float64_compare.
 Notation "x ?= y" := (compare x y) (at level 70, no associativity) : float_scope.
 
@@ -58,21 +61,21 @@ Definition two := Eval compute in (of_int63 2).
 
 Definition is_nan f :=
   match f ?= f with
-  | None => true
+  | FNotComparable => true
   | _ => false
   end.
 
 Definition is_zero f :=
   match f ?= zero with
-  | Some Eq => true (* note: 0 == -0 with floats *)
+  | FEq => true (* note: 0 == -0 with floats *)
   | _ => false
   end.
 
 Definition is_infinity f :=
   match f ?= infinity with
-  | Some Eq => true
-  | Some Lt => match f ?= neg_infinity with
-           | Some Eq => true
+  | FEq => true
+  | FLt => match f ?= neg_infinity with
+           | FEq => true
            | _ => false
            end
   | _ => false
@@ -81,7 +84,7 @@ Definition is_infinity f :=
 Definition get_sign f := (* + => false, - => true *)
   let f := if is_zero f then one / f else f in
   match f ?= zero with
-  | Some Gt => false
+  | FGt => false
   | _ => true
   end.
 

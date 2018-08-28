@@ -891,15 +891,21 @@ struct
     let (_eq, _lt, gt) = get_cmp_constructors env in
     mkConstruct gt
 
-  let mkSomeCmp env v =
-    let cmp_ty = mkConst @@ get_cmp_type env in
-    let (some, _none) = get_option_constructors env in
-    mkApp(mkConstruct some, [|cmp_ty;v|])
+  let mkFLt env =
+    let (_eq, lt, _gt, _nc) = get_f_cmp_constructors env in
+    mkConstruct lt
 
-  let mkNoneCmp env =
-    let cmp_ty = mkConst @@ get_cmp_type env in
-    let (_some, none) = get_option_constructors env in
-    mkApp(mkConstruct none, [|cmp_ty|])
+  let mkFEq env =
+    let (eq, _lt, _gt, _nc) = get_f_cmp_constructors env in
+    mkConstruct eq
+
+  let mkFGt env =
+    let (_eq, _lt, gt, _nc) = get_f_cmp_constructors env in
+    mkConstruct gt
+
+  let mkFNotComparable env =
+    let (_eq, _lt, _gt, nc) = get_f_cmp_constructors env in
+    mkConstruct nc
 end
 
 module CredNative = RedNative(CNativeEntries)
