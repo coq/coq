@@ -82,10 +82,6 @@ Tools
   please open an issue. We can help set up external maintenance as part
   of Proof-General, or independently as part of coq-community.
 
-- The targets `print-pretty-timed`, `print-pretty-timed-diff`, and
-  `print-pretty-single-time-diff` now correctly label the "before" and
-  "after" columns, rather than swapping them.
-
 
 Vernacular Commands
 
@@ -158,7 +154,16 @@ Notations
   Note that this might cause incompatibilities if you have, e.g., list_scope
   and vector_scope both open with vector_scope on top, and expect `++` to
   refer to `app`.
-  Solution: wrap `_ ++ _` in `(_ ++ _)%list` (or whichever scope you want). 
+  Solution: wrap `_ ++ _` in `(_ ++ _)%list` (or whichever scope you want).
+
+Changes from 8.8.1 to 8.8.2
+===========================
+
+Tools
+
+- The coq-makefile targets `print-pretty-timed`, `print-pretty-timed-diff`,
+  and `print-pretty-single-time-diff` now correctly label the "before" and
+  "after" columns, rather than swapping them.
 
 Changes from 8.8.0 to 8.8.1
 ===========================
