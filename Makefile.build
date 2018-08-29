@@ -64,7 +64,7 @@ AFTER ?=
 
 # build the different subsystems:
 
-world: camldevfiles coq coqide documentation revision
+world: coq coqide documentation revision
 
 coq: coqlib coqbinaries tools
 
