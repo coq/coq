@@ -82,6 +82,11 @@ Tools
   please open an issue. We can help set up external maintenance as part
   of Proof-General, or independently as part of coq-community.
 
+- The targets `print-pretty-timed`, `print-pretty-timed-diff`, and
+  `print-pretty-single-time-diff` now correctly label the "before" and
+  "after" columns, rather than swapping them.
+
+
 Vernacular Commands
 
 - Removed deprecated commands Arguments Scope and Implicit Arguments
