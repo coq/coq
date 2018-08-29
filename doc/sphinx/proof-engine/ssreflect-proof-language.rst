@@ -2522,7 +2522,8 @@ After the :token:`i_pattern`, a list of binders is allowed.
 
   .. coqtop:: reset
 
-     From Coq Require Import ssreflect Omega.
+     From Coq Require Import ssreflect.
+     From Coq Require Import Omega.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -2552,12 +2553,9 @@ copying the goal itself.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: none
 
-     From Coq Require Import ssreflect.
-     Set Implicit Arguments.
-     Unset Strict Implicit.
-     Unset Printing Implicit Defensive.
+     Abort All.
 
   .. coqtop:: all
 
@@ -2581,12 +2579,9 @@ context entry name.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: none
 
-     From Coq Require Import ssreflect Omega.
-     Set Implicit Arguments.
-     Unset Strict Implicit.
-     Unset Printing Implicit Defensive.
+     Abort All.
      Set Printing Depth 15.
 
   .. coqtop:: all
@@ -2601,20 +2596,13 @@ context entry name.
 Note that the sub-term produced by ``omega`` is in general huge and
 uninteresting, and hence one may want to hide it.
 For this purpose the ``[: name ]`` intro pattern and the tactic
-``abstract`` (see page :ref:`abstract_ssr`) are provided.
+``abstract`` (see :ref:`abstract_ssr`) are provided.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: none
 
-     From Coq Require Import ssreflect Omega.
-     Set Implicit Arguments.
-     Unset Strict Implicit.
-     Unset Printing Implicit Defensive.
-
-     Inductive Ord n := Sub x of x < n.
-     Notation "'I_ n" := (Ord n) (at level 8, n at level 2, format "''I_' n").
-     Arguments Sub {_} _ _.
+     Abort All.
 
   .. coqtop:: all
 
@@ -2629,16 +2617,9 @@ with have and an explicit term, they must be used as follows:
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: none
 
-     From Coq Require Import ssreflect Omega.
-     Set Implicit Arguments.
-     Unset Strict Implicit.
-     Unset Printing Implicit Defensive.
-
-     Inductive Ord n := Sub x of x < n.
-     Notation "'I_ n" := (Ord n) (at level 8, n at level 2, format "''I_' n").
-     Arguments Sub {_} _ _.
+     Abort All.
 
   .. coqtop:: all
 
@@ -2659,16 +2640,9 @@ makes use of it).
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: none
 
-     From Coq Require Import ssreflect Omega.
-     Set Implicit Arguments.
-     Unset Strict Implicit.
-     Unset Printing Implicit Defensive.
-
-     Inductive Ord n := Sub x of x < n.
-     Notation "'I_ n" := (Ord n) (at level 8, n at level 2, format "''I_' n").
-     Arguments Sub {_} _ _.
+     Abort All.
 
   .. coqtop:: all
 
@@ -2685,12 +2659,9 @@ The have tactic and type classes resolution
 Since |SSR| 1.5 the have tactic behaves as follows with respect to
 type classes inference.
 
-  .. coqtop:: reset
+  .. coqtop:: none
 
-     From Coq Require Import ssreflect Omega.
-     Set Implicit Arguments.
-     Unset Strict Implicit.
-     Unset Printing Implicit Defensive.
+     Abort All.
 
      Axiom ty : Type.
      Axiom t : ty.
@@ -2766,12 +2737,9 @@ The ``have`` modifier can follow the ``suff`` tactic.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: none
 
-     From Coq Require Import ssreflect Omega.
-     Set Implicit Arguments.
-     Unset Strict Implicit.
-     Unset Printing Implicit Defensive.
+     Abort All.
      Axioms G P : Prop.
 
   .. coqtop:: all
@@ -2839,12 +2807,9 @@ are unique.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: none
 
-     From Coq Require Import ssreflect Omega.
-     Set Implicit Arguments.
-     Unset Strict Implicit.
-     Unset Printing Implicit Defensive.
+     Abort All.
 
   .. coqtop:: all
 
@@ -2935,12 +2900,10 @@ illustrated in the following example.
   the pattern ``id (addx x)``, that would produce the following first
   subgoal
 
-  .. coqtop:: reset
+  .. coqtop:: none
 
-     From Coq Require Import ssreflect Omega.
-     Set Implicit Arguments.
-     Unset Strict Implicit.
-     Unset Printing Implicit Defensive.
+     Abort All.
+     From Coq Require Import Omega.
      Section Test.
      Variable x : nat.
      Definition addx z := z + x.
