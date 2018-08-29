@@ -330,17 +330,33 @@ let cproof p1 p2 =
 
 let drop_last_doc = ref None
 
+(* todo: could add other Set/Unset commands, such as "Printing Universes" *)
+let print_anyway_opts = [
+  [ "Diffs" ];
+  ]
+
+let print_anyway c =
+  let open Vernacexpr in
+  match c with
+  | VernacExpr (_, VernacSetOption (_, opt, _))
+  | VernacExpr (_, VernacUnsetOption (_, opt)) ->
+    List.mem opt print_anyway_opts
+  | _ -> false
+
 (* We try to behave better when goal printing raises an exception
    [usually Ctrl-C]
 
    This is mostly a hack as we should protect printing in a more
    generic way, but that'll do for now *)
-let top_goal_print oldp newp =
+let top_goal_print ~doc c oldp newp =
   try
     let proof_changed = not (Option.equal cproof oldp newp) in
-    let print_goals = not !Flags.quiet &&
-                      proof_changed && Proof_global.there_are_pending_proofs () in
-    if print_goals then Printer.print_and_diff oldp newp;
+    let print_goals = proof_changed && Proof_global.there_are_pending_proofs () ||
+                      print_anyway c in
+    if not !Flags.quiet && print_goals then begin
+      let dproof = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
+      Printer.print_and_diff dproof newp
+    end
   with
   | exn ->
     let (e, info) = CErrors.push exn in
@@ -376,8 +392,7 @@ let rec vernac_loop ~state =
       else (Feedback.msg_warning (str "There is no ML toplevel."); vernac_loop ~state)
     | {v=VernacControl c; loc} ->
       let nstate = Vernac.process_expr ~state (make ?loc c) in
-      let dproof = Stm.get_prev_proof ~doc:state.doc (Stm.get_current_state ~doc:state.doc) in
-      top_goal_print dproof nstate.proof;
+      top_goal_print ~doc:state.doc c state.proof nstate.proof;
       vernac_loop ~state:nstate
   with
   | Stm.End_of_input ->
