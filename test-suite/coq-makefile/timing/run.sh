@@ -5,6 +5,10 @@ set -e
 
 . ../template/path-init.sh
 
+# reset MAKEFLAGS so that, e.g., `make -C test-suite -B coq-makefile` doesn't give us issues
+
+MAKEFLAGS=
+
 cd precomputed-time-tests
 ./run.sh || exit $?
 
