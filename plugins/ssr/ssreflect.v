@@ -86,10 +86,16 @@ Export SsrMatchingSyntax.
 Export SsrSyntax.
 
 (**
+ To define notations for tactic in intro patterns.
+ When "=> /t" is parsed, "t:%ssripat" is actually interpreted. **)
+Declare Scope ssripat_scope.
+Delimit Scope ssripat_scope with ssripat.
+
+(**
  Make the general "if" into a notation, so that we can override it below.
  The notations are "only parsing" because the Coq decompiler will not
  recognize the expansion of the boolean if; using the default printer
- avoids a spurrious trailing %%GEN_IF.                                        **)
+ avoids a spurrious trailing %%GEN_IF. **)
 
 Declare Scope general_if_scope.
 Delimit Scope general_if_scope with GEN_IF.

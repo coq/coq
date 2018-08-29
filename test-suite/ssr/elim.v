@@ -33,7 +33,7 @@ Qed.
 (* The same but without names for variables involved in the generated eq *)
 Lemma testL3 : forall A (s : seq A), s = s.
 Proof.
-move=> A s; elim branch: s; move: (s) => _.
+move=> A s; elim branch: s.
 match goal with _ : _ = [::] |- [::] = [::] => move: branch => // | _ => fail end.
 move=> _; match goal with _ : _ =  _ :: _ |- _ :: _ = _ :: _ => move: branch => // | _ => fail end.
 Qed.

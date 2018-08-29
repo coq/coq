@@ -359,24 +359,17 @@ val genstac :
   Tacmach.tactic
 
 val pf_interp_gen :
-  Goal.goal Evd.sigma ->
   bool ->
   (Ssrast.ssrhyp list option * Ssrmatching.occ) *
     Ssrmatching.cpattern ->
-  EConstr.t * EConstr.t * Ssrast.ssrhyp list *
+  Goal.goal Evd.sigma ->
+  (EConstr.t * EConstr.t * Ssrast.ssrhyp list) *
     Goal.goal Evd.sigma
 
-val pf_interp_gen_aux :
-  Goal.goal Evd.sigma ->
-  bool ->
-  (Ssrast.ssrhyp list option * Ssrmatching.occ) *
-    Ssrmatching.cpattern ->
-  bool * Ssrmatching.pattern * EConstr.t *
-    EConstr.t * Ssrast.ssrhyp list * UState.t *
-      Goal.goal Evd.sigma
-
-val is_name_in_ipats :
-           Id.t -> ssripats -> bool
+(* HACK: use to put old pf_code in the tactic monad *)
+val pfLIFT
+  :  (Goal.goal Evd.sigma -> 'a * Goal.goal Evd.sigma)
+  -> 'a Proofview.tactic
 
 (** Basic tactics *)
 
@@ -431,18 +424,23 @@ val tacREDUCE_TO_QUANTIFIED_IND :
 val tacTYPEOF : EConstr.t -> EConstr.types Proofview.tactic
 
 val tclINTRO_ID : Id.t -> unit Proofview.tactic
-val tclINTRO_ANON : unit Proofview.tactic
+val tclINTRO_ANON : ?seed:string -> unit -> unit Proofview.tactic
 
 (* Lower level API, calls conclusion with the name taken from the prod *)
+type intro_id =
+  | Anon
+  | Id of Id.t
+  | Seed of string
+
 val tclINTRO :
-  id:Id.t option ->
+  id:intro_id ->
   conclusion:(orig_name:Name.t -> new_name:Id.t -> unit Proofview.tactic) ->
   unit Proofview.tactic
 
 val tclRENAME_HD_PROD : Name.t -> unit Proofview.tactic
 
 (* calls the tactic only if there are more than 0 goals *)
-val tcl0G : unit Proofview.tactic -> unit Proofview.tactic
+val tcl0G : default:'a -> 'a Proofview.tactic -> 'a Proofview.tactic
 
 (* like tclFIRST but with 'a tactic *)
 val tclFIRSTa : 'a Proofview.tactic list -> 'a Proofview.tactic
@@ -474,6 +472,7 @@ end
 module MakeState(S : StateType) : sig
 
   val tclGET : (S.state -> unit Proofview.tactic) -> unit Proofview.tactic
+  val tclGET1 : (S.state -> 'a Proofview.tactic) -> 'a Proofview.tactic
   val tclSET : S.state -> unit Proofview.tactic
   val tacUPDATE : (S.state -> S.state Proofview.tactic) -> unit Proofview.tactic
 

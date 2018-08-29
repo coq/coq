@@ -102,20 +102,28 @@ let get_eq_type gl =
   let eq, gl = pf_fresh_global Coqlib.(lib_ref "core.eq.type") gl in
   gl, EConstr.of_constr eq
 
-let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac gl =
+let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
+  let open Proofview.Notations in
+  Proofview.tclEVARMAP >>= begin fun sigma ->
   (* some sanity checks *)
-  let oc, orig_clr, occ, c_gen, gl = match what with
-  | `EConstr(_,_,t) when EConstr.isEvar (project gl) t ->
-    anomaly "elim called on a constr evar"
+  match what with
+  | `EConstr(_,_,t) when EConstr.isEvar sigma t ->
+       anomaly "elim called on a constr evar"
   | `EGen (_, g) when elim = None && is_wildcard g ->
        errorstrm Pp.(str"Indeterminate pattern and no eliminator")
   | `EGen ((Some clr,occ), g) when is_wildcard g ->
-       None, clr, occ, None, gl
-  | `EGen ((None, occ), g) when is_wildcard g -> None,[],occ,None,gl
+       Proofview.tclUNIT (None, clr, occ, None)
+  | `EGen ((None, occ), g) when is_wildcard g ->
+       Proofview.tclUNIT (None,[],occ,None)
   | `EGen ((_, occ), p as gen) ->
-       let _, c, clr,gl = pf_interp_gen gl true gen in
-       Some c, clr, occ, Some p,gl
-  | `EConstr (clr, occ, c) -> Some c, clr, occ, None,gl in
+       pfLIFT (pf_interp_gen true gen) >>= fun (_,c,clr) ->
+       Proofview.tclUNIT (Some c, clr, occ, Some p)
+  | `EConstr (clr, occ, c) ->
+       Proofview.tclUNIT (Some c, clr, occ, None)
+  end >>=
+
+  fun (oc, orig_clr, occ, c_gen) -> pfLIFT begin fun gl ->
+
   let orig_gl, concl, env = gl, pf_concl gl, pf_env gl in
   ppdebug(lazy(Pp.str(if is_case then "==CASE==" else "==ELIM==")));
   let fire_subst gl t = Reductionops.nf_evar (project gl) t in
@@ -145,13 +153,26 @@ let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac
   (* finds the eliminator applies it to evars and c saturated as needed  *)
   (* obtaining "elim ??? (c ???)". pred is the higher order evar         *)
   (* cty is None when the user writes _ (hence we can't make a pattern *)
-  let cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl =
+  (* `seed` represents the array of types from which we derive the name seeds
+     for the block intro patterns *)
+  let seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl =
     match elim with
     | Some elim ->
       let gl, elimty = pf_e_type_of gl elim in
+      let elimty =
+        let rename_elimty r =
+          EConstr.of_constr
+            (Arguments_renaming.rename_type
+              (EConstr.to_constr ~abort_on_undefined_evars:false (project gl)
+                elimty) r) in
+        match EConstr.kind (project gl) elim with
+        | Constr.Var kn -> rename_elimty (GlobRef.VarRef kn)
+        | Constr.Const (kn,_) -> rename_elimty (GlobRef.ConstRef kn)
+        | _ -> elimty
+      in
       let pred_id, n_elim_args, is_rec, elim_is_dep, n_pred_args,ctx_concl =
         analyze_eliminator elimty env (project gl) in
-      ind := Some (0, subgoals_tys (project gl) ctx_concl);
+      let seed = subgoals_tys (project gl) ctx_concl in
       let elim, elimty, elim_args, gl =
         pf_saturate ~beta:is_case gl elim ~ty:elimty n_elim_args in
       let pred = List.assoc pred_id elim_args in
@@ -164,7 +185,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac
             | Some p -> interp_cpattern orig_gl p None
             | _ -> mkTpat gl c in
           Some(c, c_ty, pc), gl in
-      cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl
+      seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl
     | None ->
       let c = Option.get oc in let gl, c_ty = pfe_type_of gl c in
       let ((kn, i),_ as indu), unfolded_c_ty =
@@ -183,11 +204,26 @@ let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac
       let gl, elimty = pfe_type_of gl elim in
       let pred_id,n_elim_args,is_rec,elim_is_dep,n_pred_args,ctx_concl =
         analyze_eliminator elimty env (project gl) in
-      if is_case then
-       let mind,indb = Inductive.lookup_mind_specif env (kn,i) in
-       ind := Some(mind.Declarations.mind_nparams,Array.map EConstr.of_constr indb.Declarations.mind_nf_lc);
-      else
-       ind := Some (0, subgoals_tys (project gl) ctx_concl);
+      let seed =
+        if is_case then
+          let mind,indb = Inductive.lookup_mind_specif env (kn,i) in
+          let tys = indb.Declarations.mind_nf_lc in
+          let renamed_tys =
+            Array.mapi (fun j t ->
+                    ppdebug(lazy Pp.(str "Search" ++ Printer.pr_constr_env env (project gl) t));
+              let t = Arguments_renaming.rename_type t
+                (GlobRef.ConstructRef((kn,i),j+1)) in
+              ppdebug(lazy Pp.(str"Done Search " ++ Printer.pr_constr_env env (project gl) t));
+                t)
+            tys
+          in
+          let drop_params x =
+            snd @@ EConstr.decompose_prod_n_assum (project gl)
+              mind.Declarations.mind_nparams (EConstr.of_constr x) in
+          Array.map drop_params renamed_tys
+        else
+          subgoals_tys (project gl) ctx_concl
+      in
       let rctx = fst (EConstr.decompose_prod_assum (project gl) unfolded_c_ty) in
       let n_c_args = Context.Rel.length rctx in
       let c, c_ty, t_args, gl = pf_saturate gl c ~ty:c_ty n_c_args in
@@ -199,7 +235,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac
         | _ -> mkTpat gl c in
       let cty = Some (c, c_ty, pc) in
       let elimty = Reductionops.whd_all env (project gl) elimty in
-      cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl
+      seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl
   in
   ppdebug(lazy Pp.(str"elim= "++ pr_constr_pat (EConstr.Unsafe.to_constr elim)));
   ppdebug(lazy Pp.(str"elimty= "++ pr_constr_pat (EConstr.Unsafe.to_constr elimty)));
@@ -377,16 +413,29 @@ let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac
   in
   (* the elim tactic, with the eliminator and the predicated we computed *)
   let elim = project gl, elim in 
-  let elim_tac gl =
-    Tacticals.tclTHENLIST [refine_with ~with_evars:false elim; old_cleartac clr] gl in
-  Tacticals.tclTHENLIST [gen_eq_tac; elim_intro_tac what eqid elim_tac is_rec clr] orig_gl
+  let seed =
+    Array.map (fun ty ->
+    let ctx,_ = EConstr.decompose_prod_assum (project gl) ty in
+    CList.rev_map Context.Rel.Declaration.get_name ctx) seed in
+  (elim,seed,clr,is_rec,gen_eq_tac), orig_gl
 
-let no_intro ?ist what eqid elim_tac is_rec clr = elim_tac
+  end >>= fun (elim, seed,clr,is_rec,gen_eq_tac) ->
+
+  let elim_tac =
+    Tacticals.New.tclTHENLIST [
+      Proofview.V82.tactic (refine_with ~with_evars:false elim);
+      cleartac clr] in
+  let gen_eq_tac = Proofview.V82.tactic gen_eq_tac in
+  Tacticals.New.tclTHENLIST [gen_eq_tac; elim_intro_tac ?seed:(Some seed) what eqid elim_tac is_rec clr]
+;;
 
 let elimtac x =
-  Proofview.V82.tactic ~nf_evars:false
-    (ssrelim ~is_case:false [] (`EConstr ([],None,x)) None no_intro)
-let casetac x = ssrelim ~is_case:true [] (`EConstr ([],None,x)) None no_intro
+  let k ?seed:_ _what _eqid elim_tac _is_rec _clr = elim_tac in
+  ssrelim ~is_case:false [] (`EConstr ([],None,x)) None k
+
+let casetac x k =
+  let k ?seed _what _eqid elim_tac _is_rec _clr = k ?seed elim_tac in
+  ssrelim ~is_case:true [] (`EConstr ([],None,x)) None k
 
 let pf_nb_prod gl = nb_prod (project gl) (pf_concl gl)
 
@@ -444,7 +493,4 @@ let perform_injection c gl =
 
 let ssrscase_or_inj_tac c = Proofview.V82.tactic ~nf_evars:false (fun gl ->
   if is_injection_case c gl then perform_injection c gl
-  else casetac c gl)
-
-let ssrscasetac c =
-  Proofview.V82.tactic ~nf_evars:false (fun gl -> casetac c gl)
+  else Proofview.V82.of_tactic (casetac c (fun ?seed:_ k -> k)) gl)

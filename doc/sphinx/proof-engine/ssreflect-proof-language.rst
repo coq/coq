@@ -1550,20 +1550,26 @@ whose general syntax is
    :undocumented:
 
 .. prodn::
-   i_item ::= @i_pattern %| @s_item %| @clear_switch %| {? %{%} } /@term
+   i_item ::= @i_pattern %| @s_item %| @clear_switch %| @i_view %| @i_block
 
 .. prodn::
    s_item ::= /= %| // %| //=
 
 .. prodn::
-   i_pattern ::= @ident %| _ %| ? %| * %| {? @occ_switch } -> %| {? @occ_switch }<- %| [ {?| @i_item } ] %| - %| [: {+ @ident } ]
+   i_view ::= {? %{%} } /@term %| /ltac:( @tactic )
 
-The ``=>`` tactical first executes tactic, then the :token:`i_item` s,
+.. prodn::
+   i_pattern ::= @ident %| > @ident %| _ %| ? %| * %| + %| {? @occ_switch } -> %| {? @occ_switch }<- %| [ {?| @i_item } ] %| - %| [: {+ @ident } ]
+
+.. prodn::
+   i_block ::= [^ @ident ] %| [^~ @ident ] %| [^~ @num ]
+
+The ``=>`` tactical first executes :token:`tactic`, then the :token:`i_item`\s,
 left to right. An :token:`s_item` specifies a
 simplification operation; a :token:`clear_switch`
-h specifies context pruning as in :ref:`discharge_ssr`.
-The :token:`i_pattern` s can be seen as a variant of *intro patterns*
-:ref:`tactics`: each performs an introduction operation, i.e., pops some
+specifies context pruning as in :ref:`discharge_ssr`.
+The :token:`i_pattern`\s can be seen as a variant of *intro patterns*
+(see :tacn:`intros`:) each performs an introduction operation, i.e., pops some
 variables or assumptions from the goal.
 
 An :token:`s_item` can simplify the set of subgoals or the subgoals themselves:
@@ -1572,7 +1578,7 @@ An :token:`s_item` can simplify the set of subgoals or the subgoals themselves:
   |SSR| tactic :tacn:`done` described in :ref:`terminators_ssr`, i.e.,
   it executes ``try done``.
 + ``/=`` simplifies the goal by performing partial evaluation, as per the
-  tactic ``simpl`` [#5]_.
+  tactic :tacn:`simpl` [#5]_.
 + ``//=`` combines both kinds of simplification; it is equivalent to
   ``/= //``, i.e., ``simpl; try done``.
 
@@ -1583,21 +1589,42 @@ When an :token:`s_item` bears a :token:`clear_switch`, then the
 possibly using the fact ``IHn``, and will erase ``IHn`` from the context
 of the remaining subgoals.
 
-The last entry in the :token:`i_item` grammar rule, ``/``:token:`term`,
+The first entry in the :token:`i_view` grammar rule, :n:`/@term`,
 represents a view (see section :ref:`views_and_reflection_ssr`).
+It interprets the top of the stack with the view :token:`term`.
+It is equivalent to ``move/term``. The optional flag ``{}`` can
+be used to signal that the :token:`term`, when it is a context entry,
+has to be cleared.
 If the next :token:`i_item` is a view, then the view is
 applied to the assumption in top position once all the
 previous :token:`i_item` have been performed.
 
-The view is applied to the top assumption.
+The second entry in the :token:`i_view` grammar rule,
+``/ltac:(`` :token:`tactic` ``)``, executes :token:`tactic`.
+Notations can be used to name tactics,  for example::
 
-|SSR| supports the following :token:`i_pattern` s:
+    Notation myop := (ltac:(some ltac code)) : ssripat_scope.
+
+lets one write just ``/myop`` in the intro pattern. Note the scope
+annotation: views are interpreted opening the ``ssripat`` scope.
+
+|SSR| supports the following :token:`i_pattern`\s:
 
 :token:`ident`
   pops the top variable, assumption, or local definition into
   a new constant, fact, or defined constant :token:`ident`, respectively.
   Note that defined constants cannot be introduced when δ-expansion is
   required to expose the top variable or assumption.
+``>``:token:`ident`
+  pops the first assumption. Type class instances are not considered
+  as assumptions.
+  The tactic ``move=> >H`` is equivalent to
+  ``move=> ? ? H`` with enough ``?`` to name ``H`` the first assumption.
+  On a goal::
+
+    forall x y, x < y -> G
+
+  it names ``H`` the assumption ``x < y``.
 ``?``
   pops the top variable into an anonymous constant or fact, whose name
   is picked by the tactic interpreter. |SSR| only generates names that cannot
@@ -1620,7 +1647,17 @@ The view is applied to the top assumption.
 
   a first ``move=> *`` adds only ``_a_ : bool`` and ``_b_ : bool``
   to the context; it takes a second ``move=> *`` to add ``_Hyp_ : _a_ = _b_``.
-:token:`occ_switch` ``->``
+``+``
+  temporarily introduces the top variable. It is discharged at the end
+  of the intro pattern. For example ``move=> + y`` on a goal::
+
+    forall x y, P
+
+  is equivalent to ``move=> _x_ y; move: _x_`` that results in the goal::
+
+    forall x, P
+
+:n:`{? occ_switch } ->`
   (resp. :token:`occ_switch` ``<-``)
   pops the top assumption (which should be a rewritable proposition) into an
   anonymous fact, rewrites (resp. rewrites right to left) the goal with this
@@ -1645,18 +1682,13 @@ The view is applied to the top assumption.
   variable, using the |SSR| ``case`` tactic described in
   :ref:`the_defective_tactics_ssr`. It then behaves as the corresponding
   branching :token:`i_pattern`, executing the
-  sequence:token:`i_item`:math:`_i`  in the i-th subgoal generated by the
+  sequence :n:`@i_item__i`  in the i-th subgoal generated by the
   case analysis; unless we have the trivial destructing :token:`i_pattern`
   ``[]``, the latter should generate exactly m subgoals, i.e., the top
   variable should have an inductive type with exactly m constructors [#7]_.
   While it is good style to use the :token:`i_item` i * to pop the variables
   and assumptions corresponding to each constructor, this is not enforced by
   |SSR|.
-``/`` :token:`term`
-  Interprets the top of the stack with the view :token:`term`.
-  It is equivalent to ``move/term``. The optional flag ``{}`` can
-  be used to signal that the :token:`term`, when it is a context entry,
-  has to be cleared.
 ``-``
   does nothing, but counts as an intro pattern. It can also be used to
   force the interpretation of ``[`` :token:`i_item` * ``| … |``
@@ -1721,6 +1753,40 @@ interpretation, e.g.:
 
 are all equivalent.
 
+|SSR| supports the following :token:`i_block`\s:
+
+:n:`[^ @ident ]`
+  *block destructing* :token:`i_pattern`. It performs a case analysis
+  on the top variable and introduces, in one go, all the variables coming
+  from the case analysis. The names of these variables are obtained by
+  taking the names used in the inductive type declaration and prefixing them
+  with :token:`ident`. If the intro pattern immediately follows a call
+  to ``elim`` with a custom eliminator (see :ref:`custom_elim_ssr`) then
+  the names are taken from the ones used in the type of the eliminator.
+
+  .. example::
+
+     .. coqtop:: reset
+
+        From Coq Require Import ssreflect.
+        Set Implicit Arguments.
+        Unset Strict Implicit.
+        Unset Printing Implicit Defensive.
+
+     .. coqtop:: all
+
+        Record r := { a : nat; b := (a, 3); _ : bool; }.
+
+        Lemma test : r -> True.
+        Proof. move => [^ x ].
+
+:n:`[^~ @ident ]`
+  *block destructing* using :token:`ident` as a suffix.
+:n:`[^~ @num ]`
+  *block destructing* using :token:`num` as a suffix.
+
+  Only a :token:`s_item` is allowed between the elimination tactic and
+  the block destructing.
 
 .. _generation_of_equations_ssr:
 
@@ -4160,6 +4226,7 @@ interpretation operations with the proof stack operations. This *view
 mechanism* relies on the combination of the ``/`` view switch with
 bookkeeping tactics and tacticals.
 
+.. _custom_elim_ssr:
 
 Interpreting eliminations
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5238,11 +5305,21 @@ discharge item see :ref:`discharge_ssr`
 
 generalization item see :ref:`structure_ssr`
 
-.. prodn:: i_pattern ::= @ident %| _ %| ? %| * %| {? @occ_switch } -> %| {? @occ_switch } <- %| [ {*| {* @i_item } } %| - %| [: {+ @ident } ]
+.. prodn:: i_pattern ::= @ident %| > @ident %| _ %| ? %| * %| + %| {? @occ_switch } -> %| {? @occ_switch } <- %| [ {?|  @i_item } ] %| - %| [: {+ @ident } ]
 
 intro pattern :ref:`introduction_ssr`
 
-.. prodn:: i_item ::= @clear_switch %| @s_item %| @i_pattern %| {? %{%} } / @term
+.. prodn:: i_item ::= @clear_switch %| @s_item %| @i_pattern %| @i_view %| @i_block
+
+view :ref:`introduction_ssr`
+
+.. prodn::
+   i_view ::= {? %{%} } /@term %| /ltac:( @tactic )
+
+intro block :ref:`introduction_ssr`
+
+.. prodn::
+   i_block ::= [^ @ident ] %| [^~ @ident ] %| [^~ @num ]
 
 intro item  see :ref:`introduction_ssr`
 

@@ -139,6 +139,15 @@ Misc
 
 - Option "Typeclasses Axioms Are Instances" is deprecated. Use Declare Instance for axioms which should be instances.
 
+SSReflect
+
+- New intro patterns:
+  - temporary introduction: => +
+  - block introduction: => [^ prefix ] [^~ suffix ]
+  - fast introduction: => >H
+  - tactics as views: => /ltac:mytac
+  See the reference manual for the actual documentation.
+
 Changes from 8.8.2 to 8.9+beta1
 ===============================
 

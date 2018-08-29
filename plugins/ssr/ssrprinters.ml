@@ -97,24 +97,30 @@ let pr_view2 = pr_list mt (fun c -> str "/" ++ pr_ast_closure_term c)
 
 let rec pr_ipat p =
   match p with
-  | IPatId id -> Id.print id
+  | IPatId (None,id) -> Id.print id
+  | IPatId (Some Dependent,id) -> str">" ++ Id.print id
   | IPatSimpl sim -> pr_simpl sim
   | IPatClear clr -> pr_clear mt clr
-  | IPatCase iorpat -> hov 1 (str "[" ++ pr_iorpat iorpat ++ str "]")
-  | IPatDispatch(_,iorpat) -> hov 1 (str "/[" ++ pr_iorpat iorpat ++ str "]")
+  | IPatCase (Regular iorpat) -> hov 1 (str "[" ++ pr_iorpat iorpat ++ str "]")
+  | IPatCase (Block m) -> hov 1 (str"[" ++ pr_block m ++ str"]")
+  | IPatDispatch(_,Regular iorpat) -> hov 1 (str "(" ++ pr_iorpat iorpat ++ str ")")
+  | IPatDispatch (_,Block m) -> hov 1 (str"(" ++ pr_block m ++ str")")
   | IPatInj iorpat -> hov 1 (str "[=" ++ pr_iorpat iorpat ++ str "]")
   | IPatRewrite (occ, dir) -> pr_occ occ ++ pr_dir dir
   | IPatAnon All -> str "*"
   | IPatAnon Drop -> str "_"
-  | IPatAnon One -> str "?"
+  | IPatAnon (One _) -> str "?"
   | IPatView (false,v) -> pr_view2 v
   | IPatView (true,v) -> str"{}" ++ pr_view2 v
+  | IPatAnon Temporary -> str "+"
   | IPatNoop -> str "-"
   | IPatAbstractVars l -> str "[:" ++ pr_list spc Id.print l ++ str "]"
-  | IPatTac _ -> str "<tac>"
-(* TODO  | IPatAnon Temporary -> str "+" *)
+  | IPatEqGen _ -> str "<tac>"
 and pr_ipats ipats = pr_list spc pr_ipat ipats
 and pr_iorpat iorpat = pr_list pr_bar pr_ipats iorpat
+and pr_block = function (Prefix id) -> str"^" ++ Id.print id
+                      | (SuffixId id) -> str"^~" ++ Id.print id
+                      | (SuffixNum n) -> str"^~" ++ int n
 
 (* 0 cost pp function. Active only if Debug Ssreflect is Set *)
 let ppdebug_ref = ref (fun _ -> ())
