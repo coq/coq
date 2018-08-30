@@ -165,6 +165,12 @@ Tools
   and `print-pretty-single-time-diff` now correctly label the "before" and
   "after" columns, rather than swapping them.
 
+Kernel
+
+- The kernel does not tolerate capture of global universes by
+  polymorphic universe binders, fixing a soundness break (triggered
+  only through custom plugins)
+
 Changes from 8.8.0 to 8.8.1
 ===========================
 
