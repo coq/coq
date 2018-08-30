@@ -313,6 +313,9 @@ Navigation in the proof tree
 
 .. _curly-braces:
 
+.. index:: {
+           }
+
 .. cmd:: %{ %| %}
 
    The command ``{`` (without a terminating period) focuses on the first
@@ -339,8 +342,9 @@ Navigation in the proof tree
       :name: No such goal. (Focusing)
 
    .. exn:: Brackets only support the single numbered goal selector.
+      :undocumented:
 
-      See also error messages about bullets below.
+   .. seealso:: The error messages about bullets below.
 
 .. _bullets:
 
