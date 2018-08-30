@@ -23,7 +23,6 @@ open EConstr
 open Vars
 open Reduction
 open Reductionops
-open Tacred
 open Pretype_errors
 open Evarutil
 open Unification
@@ -56,8 +55,6 @@ let refresh_undefined_univs clenv =
     let map_freelisted f = { f with rebus = subst_univs_level_constr subst f.rebus } in
       { clenv with evd = evd'; templval = map_freelisted clenv.templval;
 	templtyp = map_freelisted clenv.templtyp }, subst
-
-let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
 let clenv_get_type_of ce c = Retyping.get_type_of (cl_env ce) (cl_sigma ce) c
 
@@ -496,7 +493,7 @@ let clenv_unify_binding_type clenv c t u =
 	  TypeNotProcessed, clenv, c
 
 let clenv_assign_binding clenv k c =
-  let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
+  let k_typ = clenv_meta_type clenv k in
   let c_typ = nf_betaiota clenv.env clenv.evd (clenv_get_type_of clenv c) in
   let status,clenv',c = clenv_unify_binding_type clenv c c_typ k_typ in
   { clenv' with evd = meta_assign k (c,(Conv,status)) clenv'.evd }
