@@ -132,6 +132,9 @@ replace v (Fin.of_nat_lt H).
 Definition tl {A} := @caseS _ (fun n v => t A n) (fun h n t => t).
 Global Arguments tl {A} {n} v.
 
+(** Destruct a non empty vector *)
+Definition uncons {A} {n : nat} (v : t A (S n)) : A * t A n := (hd v, tl v).
+
 (** Remove last element of a non-empty vector *)
 Definition shiftout {A} := @rectS _ (fun n _ => t A n) (fun a => [])
   (fun h _ _ H => h :: H).
