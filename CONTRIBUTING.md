@@ -50,6 +50,9 @@ information on CI tests, including how to run them on your private branches.
 If your pull request fixes a bug, please consider adding a regression test as
 well. See [`test-suite/README.md`](test-suite/README.md) for how to do so.
 
+If your pull request fixes a critical bug (a bug allowing a proof of `False`),
+please add an entry to [`dev/doc/critical-bugs`](/dev/doc/critical-bugs).
+
 Don't be alarmed if the pull request process takes some time. It can take a few days to get feedback, approval on the final changes, and then a merge. Coq doesn't release new versions very frequently so it can take a few months for your change to land in a released version. That said, you can start using the latest Coq `master` branch to take advantage of all the new features, improvements, and fixes.
 
 Whitespace discipline (do not indent using tabs, no trailing spaces, text files end with newlines) is checked by Travis (using `git diff --check`). We ship a [`dev/tools/pre-commit`](/dev/tools/pre-commit) git hook which fixes these errors at commit time. `configure` automatically sets you up to use it, unless you already have a hook at `.git/hooks/pre-commit`.
