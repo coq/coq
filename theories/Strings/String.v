@@ -84,6 +84,15 @@ Fixpoint append (s1 s2 : string) : string :=
   end
 where "s1 ++ s2" := (append s1 s2) : string_scope.
 
+Theorem append_EmptyString_l : forall s : string, EmptyString ++ s = s.
+Proof. reflexivity. Qed.
+
+Theorem append_EmptyString_r : forall s : string, s ++ EmptyString = s.
+Proof. induction s; simpl; f_equal; auto. Qed.
+
+Theorem append_assoc : forall s1 s2 s3, s1 ++ s2 ++ s3 = (s1 ++ s2) ++ s3.
+Proof. induction s1; simpl; intros; f_equal; auto. Qed.
+
 (******************************)
 (** Length                    *)
 (******************************)
@@ -152,6 +161,74 @@ intros s2 n; rewrite plus_comm; simpl; auto.
 intros a s1' Rec s2 n; case n; simpl; auto.
 generalize (Rec s2 O); simpl; auto. intros.
 rewrite <- Plus.plus_Snm_nSm; auto.
+Qed.
+
+(** Appending strings sum their lengths *)
+
+Theorem append_length : forall s1 s2 : string,
+    length (s1 ++ s2) = length s1 + length s2.
+Proof. induction s1; simpl; auto. Qed.
+
+(** *** Reverting strings  *)
+
+Fixpoint rev (s : string) : string :=
+  match s with
+  | EmptyString => EmptyString
+  | String c s' => rev s' ++ String c EmptyString
+  end.
+
+Lemma rev_app_distr : forall s1 s2 : string,
+    rev (s1 ++ s2) = rev s2 ++ rev s1.
+Proof with simpl; auto.
+  induction s1 as [| c s IHs1]; intros...
+  - rewrite append_EmptyString_r...
+  - rewrite IHs1.
+    rewrite append_assoc...
+Qed.
+
+Remark rev_unit : forall (s : string) (c : ascii),
+    rev (s ++ String c EmptyString) = String c (rev s).
+Proof. intros; rewrite rev_app_distr; auto. Qed.
+
+Lemma rev_involutive : forall s : string, rev (rev s) = s.
+Proof with simpl; auto.
+  induction s as [| c s IHs]...
+  rewrite rev_unit.
+  rewrite IHs...
+Qed.
+
+(** Compatibility with other operations *)
+
+Lemma rev_length : forall s : string, length (rev s) = length s.
+Proof with simpl; auto.
+  induction s...
+  rewrite append_length.
+  rewrite IHs.
+  elim (length s)...
+Qed.
+
+Fixpoint rev_append (s acc : string) : string :=
+  match s with
+  | EmptyString => acc
+  | String c s' => rev_append s' (String c acc)
+  end.
+
+Definition rev' (s : string) : string :=
+  rev_append s EmptyString.
+
+Lemma rev_append_rev : forall s1 s2 : string,
+    rev_append s1 s2 = rev s1 ++ s2.
+Proof with simpl; auto.
+  induction s1...
+  intros; rewrite <- append_assoc...
+Qed.
+
+Lemma rev_alt : forall s : string, rev s = rev' s.
+Proof.
+  intros; unfold rev'.
+  rewrite rev_append_rev.
+  rewrite append_EmptyString_r.
+  reflexivity.
 Qed.
 
 (** *** Substrings *)
