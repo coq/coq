@@ -43,7 +43,7 @@ Building a |Coq| project with coq_makefile
 The majority of |Coq| projects are very similar: a collection of ``.v``
 files and eventually some ``.ml`` ones (a |Coq| plugin). The main piece of
 metadata needed in order to build the project are the command line
-options to ``coqc`` (e.g. ``-R``, ``-I``, see also: Section
+options to ``coqc`` (e.g. ``-R``, ``-I``, see also: section
 :ref:`command-line-options`). Collecting the list of files and options is the job
 of the ``_CoqProject`` file.
 
@@ -107,7 +107,7 @@ decide how to build them. In particular:
 
 The use of ``.mlpack`` files has to be preferred over ``.mllib`` files,
 since it results in a “packed” plugin: All auxiliary modules (as
-``Baz`` and ``Bazaux``) are hidden inside the plugin’s “name space”
+``Baz`` and ``Bazaux``) are hidden inside the plugin’s "namespace"
 (``Qux_plugin``). This reduces the chances of begin unable to load two
 distinct plugins because of a clash in their auxiliary module names.
 
@@ -761,7 +761,7 @@ Command line options
     preamble, right before ``\begin{document}`` (meaningless with ``-html``).
   :--vernac-file file,--tex-file file: Considers the file ‘file’
     respectively as a ``.v`` (or ``.g``) file or a ``.tex`` file.
-  :--files-from file: Read file names to be processed from the file ‘file’ as if
+  :--files-from file: Read filenames to be processed from the file ‘file’ as if
     they were given on the command line. Useful for program sources split
     up into several directories.
   :-q, --quiet: Be quiet. Do not print anything except errors.

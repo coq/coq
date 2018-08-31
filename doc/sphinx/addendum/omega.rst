@@ -11,7 +11,7 @@ Description of ``omega``
 .. tacn:: omega
 
    :tacn:`omega` is a tactic for solving goals in Presburger arithmetic,
-   i.e. for proving formulas made of equations and inequations over the
+   i.e. for proving formulas made of equations and inequalities over the
    type ``nat`` of natural numbers or the type ``Z`` of binary-encoded integers.
    Formulas on ``nat`` are automatically injected into ``Z``. The procedure
    may use any hypothesis of the current proof session to solve the goal.
@@ -140,12 +140,12 @@ Technical data
 Overview of the tactic
 ~~~~~~~~~~~~~~~~~~~~~~
 
- * The goal is negated twice and the first negation is introduced as an hypothesis.
- * Hypotheses are decomposed in simple equations or inequations. Multiple
+ * The goal is negated twice and the first negation is introduced as a hypothesis.
+ * Hypotheses are decomposed in simple equations or inequalities. Multiple
    goals may result from this phase.
- * Equations and inequations over ``nat`` are translated over
+ * Equations and inequalities over ``nat`` are translated over
    ``Z``, multiple goals may result from the translation of subtraction.
- * Equations and inequations are normalized.
+ * Equations and inequalities are normalized.
  * Goals are solved by the OMEGA decision procedure.
  * The script of the solution is replayed.
 
@@ -156,17 +156,17 @@ The OMEGA decision procedure involved in the :tacn:`omega` tactic uses
 a small subset of the decision procedure presented in :cite:`TheOmegaPaper`
 Here is an overview, refer to the original paper for more information.
 
- * Equations and inequations are normalized by division by the GCD of their
+ * Equations and inequalities are normalized by division by the GCD of their
    coefficients.
  * Equations are eliminated, using the Banerjee test to get a coefficient
    equal to one.
- * Note that each inequation cuts the Euclidean space in half.
- * Inequations are solved by projecting on the hyperspace
+ * Note that each inequality cuts the Euclidean space in half.
+ * Inequalities are solved by projecting on the hyperspace
    defined by cancelling one of the variables. They are partitioned
    according to the sign of the coefficient of the eliminated
-   variable. Pairs of inequations from different classes define a
+   variable. Pairs of inequalities from different classes define a
    new edge in the projection.
- * Redundant inequations are eliminated or merged in new
+ * Redundant inequalities are eliminated or merged in new
    equations that can be eliminated by the Banerjee test.
  * The last two steps are iterated until a contradiction is reached
    (success) or there is no more variable to eliminate (failure).

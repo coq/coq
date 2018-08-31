@@ -6,7 +6,7 @@ Type Classes
 ============
 
 This chapter presents a quick reference of the commands related to type
-classes. For an actual introduction to type classes, there is a
+classes. For an actual introduction to typeclasses, there is a
 description of the system :cite:`sozeau08` and the literature on type
 classes in Haskell which also applies.
 
@@ -76,7 +76,7 @@ for dealing with obligations.
 Binding classes
 ---------------
 
-Once a type class is declared, one can use it in class binders:
+Once a typeclass is declared, one can use it in class binders:
 
 .. coqtop:: all
 
@@ -92,7 +92,7 @@ found, an error is raised:
 
    Fail Definition neqb' (A : Type) (x y : A) := negb (eqb x y).
 
-The algorithm used to solve constraints is a variant of the eauto
+The algorithm used to solve constraints is a variant of the :tacn:`eauto`
 tactic that does proof search with a set of lemmas (the instances). It
 will use local hypotheses as well as declared lemmas in
 the ``typeclass_instances`` database. Hence the example can also be
@@ -103,13 +103,13 @@ written:
    Definition neqb' A (eqa : EqDec A) (x y : A) := negb (eqb x y).
 
 However, the generalizing binders should be used instead as they have
-particular support for type classes:
+particular support for typeclasses:
 
-+ They automatically set the maximally implicit status for type class
++ They automatically set the maximally implicit status for typeclass
   arguments, making derived functions as easy to use as class methods.
   In the example above, ``A`` and ``eqa`` should be set maximally implicit.
 + They support implicit quantification on partially applied type
-  classes (:ref:`implicit-generalization`). Any argument not given as part of a type class
+  classes (:ref:`implicit-generalization`). Any argument not given as part of a typeclass
   binder will be automatically generalized.
 + They also support implicit quantification on :ref:`superclasses`.
 
@@ -148,7 +148,7 @@ database.
 Sections and contexts
 ---------------------
 
-To ease the parametrization of developments by type classes, we provide a new
+To ease the parametrization of developments by typeclasses, we provide a new
 way to introduce variables into section contexts, compatible with the implicit
 argument mechanism. The new command works similarly to the :cmd:`Variables`
 vernacular, except it accepts any binding context as argument. For example:
@@ -271,7 +271,7 @@ Summary of the commands
 
 .. cmd:: Class @ident {? @binders} : {? @sort} := {? @ident} { {+; @ident :{? >} @term } }
 
-   The :cmd:`Class` command is used to declare a type class with parameters
+   The :cmd:`Class` command is used to declare a typeclass with parameters
    ``binders`` and fields the declared record fields.
 
 Variants:
@@ -298,7 +298,7 @@ Variants:
 
 .. cmd:: Instance @ident {? @binders} : Class t1 … tn [| priority] := { field1 := b1 ; …; fieldi := bi }
 
-The :cmd:`Instance` command is used to declare a type class instance named
+The :cmd:`Instance` command is used to declare a typeclass instance named
 ``ident`` of the class :cmd:`Class` with parameters ``t1`` to ``tn`` and
 fields ``b1`` to ``bi``, where each field must be a declared field of
 the class.  Missing fields must be filled in interactive proof mode.
@@ -306,7 +306,7 @@ the class.  Missing fields must be filled in interactive proof mode.
 An arbitrary context of ``binders`` can be put after the name of the
 instance and before the colon to declare a parameterized instance. An
 optional priority can be declared, 0 being the highest priority as for
-auto hints. If the priority is not specified, it defaults to the number
+:tacn:`auto` hints. If the priority is not specified, it defaults to the number
 of non-dependent binders of the instance.
 
 .. cmdv:: Instance @ident {? @binders} : forall {? @binders}, Class t1 … tn [| priority] := @term
@@ -325,7 +325,7 @@ of non-dependent binders of the instance.
 .. cmdv:: Program Instance
    :name: Program Instance
 
-   Switches the type-checking to Program (chapter :ref:`programs`) and
+   Switches the type checking to Program (chapter :ref:`programs`) and
    uses the obligation mechanism to manage missing fields.
 
 .. cmdv:: Declare Instance
@@ -338,12 +338,12 @@ of non-dependent binders of the instance.
 
 
 Besides the :cmd:`Class` and :cmd:`Instance` vernacular commands, there are a
-few other commands related to type classes.
+few other commands related to typeclasses.
 
 .. cmd:: Existing Instance {+ @ident} [| priority]
 
    This command adds an arbitrary list of constants whose type ends with
-   an applied type class to the instance database with an optional
+   an applied typeclass to the instance database with an optional
    priority.  It can be used for redeclaring instances at the end of
    sections, or declaring structure projections as instances. This is
    equivalent to ``Hint Resolve ident : typeclass_instances``, except it
@@ -363,11 +363,11 @@ few other commands related to type classes.
    + Contrary to :tacn:`eauto` and :tacn:`auto`, the resolution is done entirely in
      the new proof engine (as of Coq 8.6), meaning that backtracking is
      available among dependent subgoals, and shelving goals is supported.
-     typeclasses eauto is a multi-goal tactic. It analyses the dependencies
+     ``typeclasses eauto`` is a multi-goal tactic. It analyses the dependencies
      between subgoals to avoid backtracking on subgoals that are entirely
      independent.
 
-   + When called with no arguments, typeclasses eauto uses
+   + When called with no arguments, ``typeclasses eauto`` uses
      the ``typeclass_instances`` database by default (instead of core).
      Dependent subgoals are automatically shelved, and shelved goals can
      remain after resolution ends (following the behavior of Coq 8.5).
@@ -375,13 +375,13 @@ few other commands related to type classes.
      .. note::
         As of Coq 8.6, ``all:once (typeclasses eauto)`` faithfully
         mimicks what happens during typeclass resolution when it is called
-        during refinement/type-inference, except that *only* declared class
+        during refinement/type inference, except that *only* declared class
         subgoals are considered at the start of resolution during type
         inference, while ``all`` can select non-class subgoals as well. It might
         move to ``all:typeclasses eauto`` in future versions when the
         refinement engine will be able to backtrack.
 
-   + When called with specific databases (e.g. with), typeclasses eauto
+   + When called with specific databases (e.g. with), ``typeclasses eauto``
      allows shelved goals to remain at any point during search and treat
      typeclass goals like any other.
 
@@ -399,10 +399,10 @@ few other commands related to type classes.
 
       .. warning::
          The semantics for the limit :n:`@num`
-         is different than for auto. By default, if no limit is given the
-         search is unbounded. Contrary to auto, introduction steps (intro) are
+         is different than for auto. By default, if no limit is given, the
+         search is unbounded. Contrary to :tacn:`auto`, introduction steps are
          counted, which might result in larger limits being necessary when
-         searching with typeclasses eauto than auto.
+         searching with ``typeclasses eauto`` than with :tacn:`auto`.
 
    .. cmdv:: typeclasses eauto with {+ @ident}
 
@@ -413,11 +413,11 @@ few other commands related to type classes.
 .. tacn:: autoapply @term with @ident
    :name: autoapply
 
-   The tactic autoapply applies a term using the transparency information
+   The tactic ``autoapply`` applies a term using the transparency information
    of the hint database ident, and does *no* typeclass resolution. This can
    be used in :cmd:`Hint Extern`’s for typeclass instances (in the hint
    database ``typeclass_instances``) to allow backtracking on the typeclass
-   subgoals created by the lemma application, rather than doing type class
+   subgoals created by the lemma application, rather than doing typeclass
    resolution locally at the hint application time.
 
 .. _TypeclassesTransparent:
@@ -427,7 +427,7 @@ Typeclasses Transparent, Typclasses Opaque
 
 .. cmd:: Typeclasses Transparent {+ @ident}
 
-   This command defines makes the identifiers transparent during type class
+   This command makes the identifiers transparent during typeclass
    resolution.
 
 .. cmd:: Typeclasses Opaque {+ @ident}
@@ -483,16 +483,18 @@ Options
    avoiding (functional) eta-expansions in the generated proof term. It
    does so by allowing hints that conclude in a product to apply to a
    goal with a matching product directly, avoiding an introduction.
-   *Warning:* this can be expensive as it requires rebuilding hint
-   clauses dynamically, and does not benefit from the invertibility
-   status of the product introduction rule, resulting in potentially more
-   expensive proof-search (i.e. more useless backtracking).
 
+   .. warning::
+
+      This can be expensive as it requires rebuilding hint
+      clauses dynamically, and does not benefit from the invertibility
+      status of the product introduction rule, resulting in potentially more
+      expensive proof-search (i.e. more useless backtracking).
 
 .. opt:: Typeclass Resolution For Conversion
 
    This option (on by default) controls the use of typeclass resolution
-   when a unification problem cannot be solved during elaboration/type-
+   when a unification problem cannot be solved during elaboration/type
    inference. With this option on, when a unification fails, typeclass
    resolution is tried before launching unification once again.
 
@@ -544,7 +546,7 @@ Typeclasses eauto `:=`
 
 .. cmd:: Typeclasses eauto := {? debug} {? {dfs | bfs}} depth
 
-   This command allows more global customization of the type class
+   This command allows more global customization of the typeclass
    resolution tactic. The semantics of the options are:
 
    + ``debug`` In debug mode, the trace of successfully applied tactics is

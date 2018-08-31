@@ -423,7 +423,7 @@ a generic type ``'a`` to any term.
 First, if some part of the program is *very* polymorphic, there
 may be no ML type for it. In that case the extraction to ML works
 alright but the generated code may be refused by the ML
-type-checker. A very well known example is the ``distr-pair``
+type checker. A very well known example is the ``distr-pair``
 function:
 
 .. coqtop:: in
@@ -458,7 +458,7 @@ In |OCaml|, we must cast any argument of the constructor dummy
 
 Even with those unsafe castings, you should never get error like
 ``segmentation fault``. In fact even if your program may seem
-ill-typed to the |OCaml| type-checker, it can't go wrong : it comes
+ill-typed to the |OCaml| type checker, it can't go wrong : it comes
 from a Coq well-typed terms, so for example inductive types will always 
 have the correct number of arguments, etc. Of course, when launching
 manually some extracted function, you should apply it to arguments
@@ -469,7 +469,7 @@ found in :cite:`Let02`.
 
 We have to say, though, that in most "realistic" programs, these problems do not
 occur. For example all the programs of Coq library are accepted by the |OCaml|
-type-checker without any ``Obj.magic`` (see examples below).
+type checker without any ``Obj.magic`` (see examples below).
 
 Some examples
 -------------
