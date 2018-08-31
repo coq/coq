@@ -431,7 +431,7 @@ Typeclasses Transparent, Typclasses Opaque
 
 .. cmd:: Typeclasses Transparent {+ @ident}
 
-   This command defines makes the identifiers transparent during typeclass
+   This command makes the identifiers transparent during typeclass
    resolution.
 
 .. cmd:: Typeclasses Opaque {+ @ident}
