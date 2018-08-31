@@ -3280,7 +3280,7 @@ command.
   Performs all the rewriting in the clause :n:`@clause`. The clause argument
   must not contain any ``type of`` nor ``value of``.
 
-.. seealso:
+.. seealso::
 
    :ref:`Hint-Rewrite <hintrewrite>` for feeding the database of lemmas used by
    :tacn:`autorewrite` and :tacn:`autorewrite` for examples showing the use of this tactic.
@@ -3712,7 +3712,7 @@ Setting implicit automation tactics
    In this case the tactic command typed by the user is equivalent to
    ``tactic``:sub:`1` ``;tactic``.
 
-   .. seealso:: ``Proof`` in :ref:`proof-editing-mode`.
+   .. seealso:: :cmd:`Proof` in :ref:`proof-editing-mode`.
 
 
    .. cmdv:: Proof with tactic using {+ @ident}

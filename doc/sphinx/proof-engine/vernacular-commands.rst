@@ -1131,7 +1131,7 @@ described first.
 
       There is no constant referred by :n:`@qualid` in the environment.
 
-      .. seealso:
+      .. seealso::
 
          Sections :ref:`performingcomputations`,
          :ref:`tactics-automating`, :ref:`proof-editing-mode`
@@ -1198,7 +1198,7 @@ described first.
    nothing prevents the user to also perform a
    ``Ltac`` `ident` ``:=`` `convtactic`.
 
-   .. seealso: :ref:`performingcomputations`
+   .. seealso:: :ref:`performingcomputations`
 
 
 .. _controlling-locality-of-commands:
