@@ -21,11 +21,7 @@
 # Once the build is finished, you will find, in the current directory,
 # a symlink to where Coq was installed.
 
-{ pkgs ?
-    (import (fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/060a98e9f4ad879492e48d63e887b0b6db26299e.tar.gz";
-      sha256 = "1lzvp3md0hf6kp2bvc6dbzh40navlyd51qlns9wbkz6lqk3lgf6j";
-    }) {})
+{ pkgs ? import dev/pin.nix
 , ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_06
 , buildIde ? true
 , buildDoc ? true
