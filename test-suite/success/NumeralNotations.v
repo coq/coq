@@ -261,3 +261,44 @@ Module Test14.
   Fail Check let v := 0%test14'' in v : unit.
   Fail Check let v := 0%test14''' in v : unit.
 End Test14.
+
+Module Test15.
+  (** Test module include *)
+  Delimit Scope test15_scope with test15.
+  Module Inner.
+    Definition to_uint (x : unit) : Decimal.uint := Nat.to_uint O.
+    Definition of_uint (x : Decimal.uint) : unit := tt.
+    Numeral Notation unit of_uint to_uint : test15_scope.
+    Check let v := 0%test15 in v : unit.
+  End Inner.
+  Module Inner2.
+    Include Inner.
+    Check let v := 0%test15 in v : unit.
+  End Inner2.
+  Import Inner Inner2.
+  Check let v := 0%test15 in v : unit.
+End Test15.
+
+Module Test16.
+  (** Test functors *)
+  Delimit Scope test16_scope with test16.
+  Module Type A.
+    Axiom T : Set.
+    Axiom t : T.
+  End A.
+  Module F (a : A).
+    Inductive Foo := foo (_ : a.T).
+    Definition to_uint (x : Foo) : Decimal.uint := Nat.to_uint O.
+    Definition of_uint (x : Decimal.uint) : Foo := foo a.t.
+    Numeral Notation Foo of_uint to_uint : test16_scope.
+    Check let v := 0%test16 in v : Foo. (* Prints wrong: let v := foo a.t in v : Foo *)
+  End F.
+  Module a <: A.
+    Definition T : Set := unit.
+    Definition t : T := tt.
+  End a.
+  Module Import f := F a.
+  (* Check let v := 0%test16 in v : Foo. *)
+  (* Error: Anomaly "Uncaught exception Failure("List.last")."
+Please report at http://coq.inria.fr/bugs/. *)
+End Test16.
