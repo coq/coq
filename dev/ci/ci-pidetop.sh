@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
 
-# $0 is not the safest way, but...
 ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
-pidetop_CI_DIR="${CI_BUILD_DIR}/pidetop"
-
-git_checkout "${pidetop_CI_BRANCH}" "${pidetop_CI_GITURL}" "${pidetop_CI_DIR}"
+git_download pidetop
 
 # Travis / Gitlab have different filesystem layout due to use of
 # `-local`. We need to improve this divergence but if we use Dune this
@@ -17,6 +14,6 @@ else
    COQLIB="$COQBIN/../"
 fi
 
-( cd "${pidetop_CI_DIR}" && jbuilder build @install )
+( cd "${CI_BUILD_DIR}/pidetop" && jbuilder build @install )
 
-echo -en '4\nexit' | "$pidetop_CI_DIR/_build/install/default/bin/pidetop" -coqlib "$COQLIB" -main-channel stdfds
+echo -en '4\nexit' | "${CI_BUILD_DIR}/pidetop/_build/install/default/bin/pidetop" -coqlib "$COQLIB" -main-channel stdfds

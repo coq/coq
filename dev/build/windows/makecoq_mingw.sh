@@ -1387,12 +1387,12 @@ function make_coq_installer {
 # Provides BigN, BigZ, BigQ that used to be part of Coq standard library
 
 function make_addon_bignums {
-  bignums_SHA=$(git ls-remote "$bignums_CI_GITURL" "refs/heads/$bignums_CI_BRANCH" | cut -f 1)
+  bignums_SHA=$(git ls-remote "$bignums_CI_GITURL" "refs/heads/$bignums_CI_REF" | cut -f 1)
   if [[ "$bignums_SHA" == "" ]]; then
-      # $bignums_CI_BRANCH must have been a tag and not a branch
-      bignums_SHA="$bignums_CI_BRANCH"
+      # $bignums_CI_REF must have been a tag / commit and not a branch
+      bignums_SHA="$bignums_CI_REF"
   fi
-  if build_prep "${bignums_CI_GITURL}/archive" "$bignums_SHA" zip 1 "bignums-$bignums_SHA"; then
+  if build_prep "$bignums_CI_ARCHIVEURL" "$bignums_SHA" zip 1 "bignums-$bignums_SHA"; then
     # To make command lines shorter :-(
     echo 'COQ_SRC_SUBDIRS:=$(filter-out plugins/%,$(COQ_SRC_SUBDIRS)) plugins/syntax' >> Makefile.coq.local
     log1 make all
@@ -1405,12 +1405,12 @@ function make_addon_bignums {
 # A new (experimental) tactic language
 
 function make_addon_ltac2 {
-  ltac2_SHA=$(git ls-remote "$ltac2_CI_GITURL" "refs/heads/$ltac2_CI_BRANCH" | cut -f 1)
+  ltac2_SHA=$(git ls-remote "$ltac2_CI_GITURL" "refs/heads/$ltac2_CI_REF" | cut -f 1)
   if [[ "$ltac2_SHA" == "" ]]; then
-      # $ltac2_CI_BRANCH must have been a tag and not a branch
-      ltac2_SHA="$ltac2_CI_BRANCH"
+      # $ltac2_CI_REF must have been a tag / commit and not a branch
+      ltac2_SHA="$ltac2_CI_REF"
   fi
-  if build_prep "${ltac2_CI_GITURL}/archive" "$ltac2_SHA" zip 1 "ltac2-$ltac2_SHA"; then
+  if build_prep "$ltac2_CI_ARCHIVEURL" "$ltac2_SHA" zip 1 "ltac2-$ltac2_SHA"; then
     log1 make all
     log2 make install
     build_post
@@ -1421,12 +1421,12 @@ function make_addon_ltac2 {
 # A function definition plugin
 
 function make_addon_equations {
-  Equations_SHA=$(git ls-remote "$Equations_CI_GITURL" "refs/heads/$Equations_CI_BRANCH" | cut -f 1)
+  Equations_SHA=$(git ls-remote "$Equations_CI_GITURL" "refs/heads/$Equations_CI_REF" | cut -f 1)
   if [[ "$Equations_SHA" == "" ]]; then
-      # $Equations_CI_BRANCH must have been a tag and not a branch
-      Equations_SHA="$Equations_CI_BRANCH"
+      # $Equations_CI_REF must have been a tag / commit and not a branch
+      Equations_SHA="$Equations_CI_REF"
   fi
-  if build_prep "${Equations_CI_GITURL}/archive" "$Equations_SHA" zip 1 "Equations-$Equations_SHA"; then
+  if build_prep "$Equations_CI_ARCHIVEURL" "$Equations_SHA" zip 1 "Equations-$Equations_SHA"; then
     # Note: PATH is autmatically saved/restored by build_prep / build_post
     PATH=$COQBIN:$PATH
     logn coq_makefile ${COQBIN}coq_makefile -f _CoqProject -o Makefile

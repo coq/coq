@@ -3,8 +3,6 @@
 ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
-CoLoR_CI_DIR=${CI_BUILD_DIR}/color
+git_download CoLoR
 
-# Compile CoLoR
-git_checkout "${CoLoR_CI_BRANCH}" "${CoLoR_CI_GITURL}" "${CoLoR_CI_DIR}"
-( cd "${CoLoR_CI_DIR}" && make )
+( cd "${CI_BUILD_DIR}/CoLoR" && make )
