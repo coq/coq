@@ -1457,6 +1457,18 @@ Numeral notations
     concrete numeral expressed as a decimal.  They may not return
     opaque constants.
 
+  .. exn:: Cannot interpret in @scope because @ident could not be found in the current environment.
+
+    The inductive type used to register the numeral notation is no
+    longer available in the environment.  Most likely, this is because
+    the numeral notation was declared inside a functor for an
+    inductive type inside the functor.  This use case is not currently
+    supported.
+
+    Alternatively, you might be trying to use a primitive token
+    notation from a plugin which forgot to specify which module you
+    must :g:`Require` for access to that notation.
+
   .. exn:: Syntax error: [prim:reference] expected after 'Notation' (in [vernac:command]).
 
     The type passed to :cmd:`Numeral Notation` must be a single
