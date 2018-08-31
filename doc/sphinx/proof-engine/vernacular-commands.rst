@@ -246,7 +246,7 @@ Requests to the environment
    hypothesis introduced in the first subgoal (if a proof is in
    progress).
 
-   See also: Section :ref:`performingcomputations`.
+   .. seealso:: Section :ref:`performingcomputations`.
 
 
 .. cmd:: Compute @term
@@ -255,7 +255,7 @@ Requests to the environment
    bytecode-based virtual machine. It is a shortcut for ``Eval vm_compute in``
    :n:`@term`.
 
-   See also: Section :ref:`performingcomputations`.
+   .. seealso:: Section :ref:`performingcomputations`.
 
 
 .. cmd:: Print Assumptions @qualid
@@ -521,7 +521,7 @@ Requests to the environment
    This command displays the full name of objects whose name is a prefix
    of the qualified identifier :n:`@qualid`, and consequently the |Coq| module in
    which they are defined. It searches for objects from the different
-   qualified name spaces of |Coq|: terms, modules, Ltac, etc.
+   qualified namespaces of |Coq|: terms, modules, Ltac, etc.
 
    .. example::
 
@@ -549,7 +549,7 @@ Requests to the environment
 
       As Locate but restricted to tactics.
 
-See also: Section :ref:`locating-notations`
+.. seealso:: Section :ref:`locating-notations`
 
 
 .. _loading-files:
@@ -587,7 +587,9 @@ toplevel. This kind of file is called a *script* for |Coq|. The standard
 
       Display, while loading,
       the answers of |Coq| to each command (including tactics) contained in
-      the loaded file See also: Section :ref:`controlling-display`.
+      the loaded file.
+
+      .. seealso:: Section :ref:`controlling-display`.
 
    .. exn:: Can’t find file @ident on loadpath.
 
@@ -699,10 +701,7 @@ file is a particular case of module called *library file*.
       that the commands ``Import`` and ``Export`` alone can be used inside modules
       (see Section :ref:`Import <import_qualid>`).
 
-
-
-See also: Chapter :ref:`thecoqcommands`
-
+      .. seealso:: Chapter :ref:`thecoqcommands`
 
 .. cmd:: Print Libraries
 
@@ -930,7 +929,7 @@ Quitting and debugging
 
 .. cmd:: Drop
 
-   This is used mostly as a debug facility by |Coq|’s implementors and does
+   This is used mostly as a debug facility by |Coq|’s implementers and does
    not concern the casual user. This command permits to leave |Coq|
    temporarily and enter the OCaml toplevel. The OCaml
    command:
@@ -1097,8 +1096,10 @@ described first.
       The scope of :cmd:`Opaque` is limited to the current section, or current
       file, unless the variant :cmd:`Global Opaque` is used.
 
-   See also: sections :ref:`performingcomputations`, :ref:`tactics-automating`,
-   :ref:`proof-editing-mode`
+   .. seealso::
+
+      Sections :ref:`performingcomputations`, :ref:`tactics-automating`,
+      :ref:`proof-editing-mode`
 
    .. exn:: The reference @qualid was not found in the current environment.
 
@@ -1130,8 +1131,10 @@ described first.
 
       There is no constant referred by :n:`@qualid` in the environment.
 
-   See also: sections :ref:`performingcomputations`,
-   :ref:`tactics-automating`, :ref:`proof-editing-mode`
+      .. seealso::
+
+         Sections :ref:`performingcomputations`,
+         :ref:`tactics-automating`, :ref:`proof-editing-mode`
 
 .. _vernac-strategy:
 
@@ -1195,7 +1198,7 @@ described first.
    nothing prevents the user to also perform a
    ``Ltac`` `ident` ``:=`` `convtactic`.
 
-   See also: sections :ref:`performingcomputations`
+   .. seealso:: :ref:`performingcomputations`
 
 
 .. _controlling-locality-of-commands:

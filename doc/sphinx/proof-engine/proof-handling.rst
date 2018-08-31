@@ -84,7 +84,7 @@ list of assertion commands is given in :ref:`Assertions`. The command
       :name: Defined
 
       Same as :cmd:`Qed` but the proof is then declared transparent, which means
-      that its content can be explicitly used for type-checking and that it can be
+      that its content can be explicitly used for type checking and that it can be
       unfolded in conversion tactics (see :ref:`performingcomputations`,
       :cmd:`Opaque`, :cmd:`Transparent`).
 

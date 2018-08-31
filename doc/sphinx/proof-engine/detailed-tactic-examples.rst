@@ -21,7 +21,7 @@ applied to the abstracted instance and after simplification of the
 equalities we get the expected goals.
 
 The abstracting tactic is called generalize_eqs and it takes as
-argument an hypothesis to generalize. It uses the JMeq datatype
+argument a hypothesis to generalize. It uses the JMeq datatype
 defined in Coq.Logic.JMeq, hence we need to require it before. For
 example, revisiting the first example of the inversion documentation:
 
