@@ -123,7 +123,13 @@ class CoqObject(ObjectDescription):
         """
         self._render_annotation(signode)
         self._render_signature(signature, signode)
-        return self._names.get(signature) or self._name_from_signature(signature)
+        name = self._names.get(signature)
+        if name is None:
+            name = self._name_from_signature(signature)
+            # remove trailing ‘.’ found in commands, but not ‘...’ (ellipsis)
+            if name is not None and name.endswith(".") and not name.endswith("..."):
+                name = name[:-1]
+        return name
 
     def _warn_if_duplicate_name(self, objects, name):
         """Check that two objects in the same domain don't have the same name."""
@@ -157,18 +163,17 @@ class CoqObject(ObjectDescription):
 
     def _add_index_entry(self, name, target):
         """Add `name` (pointing to `target`) to the main index."""
-        index_text = name
-        if self.index_suffix:
-            index_text += " " + self.index_suffix
-        self.indexnode['entries'].append(('single', index_text, target, '', None))
+        assert isinstance(name, str)
+        if not name.startswith("_"):
+            index_text = name
+            if self.index_suffix:
+                index_text += " " + self.index_suffix
+            self.indexnode['entries'].append(('single', index_text, target, '', None))
 
     def add_target_and_index(self, name, _, signode):
         """Attach a link target to `signode` and an index entry for `name`."""
         if name:
             target = self._add_target(signode, name)
-            # remove trailing . , found in commands, but not ... (ellipsis)
-            if name[-1] == "." and not name[-3:] == "..." :
-                name = name[0:-1]
             self._add_index_entry(name, target)
             return target
 

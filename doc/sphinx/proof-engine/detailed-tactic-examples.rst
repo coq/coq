@@ -473,9 +473,8 @@ corresponding left-hand side and call yourself recursively on sub-
 terms. If there is no match, we are at a leaf: return the
 corresponding constructor (here ``f_const``) applied to the term.
 
-.. exn:: quote: not a simple fixpoint
-
-   Happens when ``quote`` is not able to perform inversion properly.
+When ``quote`` is not able to perform inversion properly, it will error out with
+:exn:`quote: not a simple fixpoint`.
 
 
 Introducing variables map
