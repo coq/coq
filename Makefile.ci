@@ -36,6 +36,7 @@ CI_TARGETS=ci-bedrock2 \
     ci-pidetop \
     ci-quickchick \
     ci-sf \
+    ci-simple-io \
     ci-tlc \
     ci-unimath \
     ci-vst
@@ -54,7 +55,7 @@ ci-math-classes: ci-bignums
 
 ci-corn: ci-math-classes
 
-ci-quickchick: ci-ext-lib
+ci-quickchick: ci-ext-lib ci-simple-io
 
 ci-formal-topology: ci-corn
 
