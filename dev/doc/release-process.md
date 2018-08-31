@@ -57,7 +57,35 @@
 ## Before the beta release date ##
 
 - [ ] Ensure the Credits chapter has been updated.
-- [ ] Ensure an empty `CompatXX.v` file has been created.
+- [ ] Ensure the compatibility infrastructure has been updated, which consists
+      of the following steps.  Note that all but the final step can be
+      performed automatically by
+      [`dev/tools/update-compat.py`](/dev/tools/update-compat.py) so long as
+      you have already updated `coq_version` in
+      [`configure.ml`](/configure.ml).
+  + [ ] Add a file `theories/Compat/CoqXX.v` which contains just the header
+        from [`dev/header.ml`](/dev/header.ml)
+  + [ ] Add the line `Require Export Coq.Compat.CoqXX.` at the top of
+        `theories/Compat/CoqYY.v`, where Y.Y is the version prior to X.X.
+  + [ ] Delete the file `theories/Compat/CoqWW.v`, where W.W is three versions
+        prior to X.X.
+  + [ ] Update
+        [`doc/stdlib/index-list.html.template`](/doc/stdlib/index-list.html.template)
+        with the deleted/added files.
+  + [ ] Remove any notations in the standard library which have `compat "W.W"`.
+  + [ ] Update the type `compat_version` in [`lib/flags.ml`](/lib/flags.ml) by
+        bumping all the version numbers by one, and update the interpretations
+        of those flags in [`toplevel/coqargs.ml`](/toplevel/coqargs.ml) and
+        [`vernac/g_vernac.mlg`](/vernac/g_vernac.mlg).
+  + [ ] Update the files
+        [`test-suite/success/CompatCurrentFlag.v`](/test-suite/success/CompatCurrentFlag.v),
+        [`test-suite/success/CompatPreviousFlag.v`](/test-suite/success/CompatPreviousFlag.v),
+        and
+        [`test-suite/success/CompatOldFlag.v`](/test-suite/success/CompatOldFlag.v)
+        by bumping all version numbers by 1.
+  + [ ] Decide what to do about all test-suite files which mention `-compat
+        W.W` or `Coq.Comapt.CoqWW` (which is no longer valid, since we only
+        keep compatibility against the two previous versions)
 - [ ] Ensure that an appropriate version of the plugins we will distribute with
   Coq has been tagged.
 - [ ] Have some people test the recently auto-generated Windows and MacOS
