@@ -1,4 +1,3 @@
-
 (* Test that we fail, rather than raising anomalies, on opaque terms during interpretation *)
 
 (* https://github.com/coq/coq/pull/8064#discussion_r202497516 *)
@@ -290,15 +289,14 @@ Module Test16.
     Inductive Foo := foo (_ : a.T).
     Definition to_uint (x : Foo) : Decimal.uint := Nat.to_uint O.
     Definition of_uint (x : Decimal.uint) : Foo := foo a.t.
-    Numeral Notation Foo of_uint to_uint : test16_scope.
-    Check let v := 0%test16 in v : Foo. (* Prints wrong: let v := foo a.t in v : Foo *)
+    Global Numeral Notation Foo of_uint to_uint : test16_scope.
+    Check let v := 0%test16 in v : Foo.
   End F.
   Module a <: A.
     Definition T : Set := unit.
     Definition t : T := tt.
   End a.
   Module Import f := F a.
-  (* Check let v := 0%test16 in v : Foo. *)
-  (* Error: Anomaly "Uncaught exception Failure("List.last")."
-Please report at http://coq.inria.fr/bugs/. *)
+  (** Ideally this should work, but it should definitely not anomaly *)
+  Fail Check let v := 0%test16 in v : Foo.
 End Test16.

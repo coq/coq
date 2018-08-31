@@ -479,8 +479,11 @@ let declare_string_interpreter ?(local=false) sc dir interp (patl,uninterp,b) =
 let check_required_module ?loc sc (sp,d) =
   try let _ = Nametab.global_of_path sp in ()
   with Not_found ->
-    user_err ?loc ~hdr:"prim_token_interpreter"
-    (str "Cannot interpret in " ++ str sc ++ str " without requiring first module " ++ str (List.last d) ++ str ".")
+    match d with
+    | [] -> user_err ?loc ~hdr:"prim_token_interpreter"
+       (str "Cannot interpret in " ++ str sc ++ str " because " ++ pr_path sp ++ str " could not be found in the current environment.")
+    | _ -> user_err ?loc ~hdr:"prim_token_interpreter"
+       (str "Cannot interpret in " ++ str sc ++ str " without requiring first module " ++ str (List.last d) ++ str ".")
 
 (* Look if some notation or numeral printer in [scope] can be used in
    the scope stack [scopes], and if yes, using delimiters or not *)
