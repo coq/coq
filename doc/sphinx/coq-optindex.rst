@@ -2,6 +2,6 @@
 
 .. hack to get index in TOC
 
------------------
-Option index
------------------
+-------------------------------
+Flags, options and tables index
+-------------------------------
