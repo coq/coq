@@ -84,7 +84,7 @@ operation (see :ref:`extendedpatternmatching`).
 There are options to control the generation of equalities and
 coercions.
 
-.. opt:: Program Cases
+.. flag:: Program Cases
 
    This controls the special treatment of pattern-matching generating equalities
    and disequalities when using |Program| (it is on by default). All
@@ -92,7 +92,7 @@ coercions.
    of |Coq| (see :ref:`extendedpatternmatching`) when this option is
    deactivated.
 
-.. opt:: Program Generalized Coercion
+.. flag:: Program Generalized Coercion
 
    This controls the coercion of general inductive types when using |Program|
    (the option is on by default). Coercion of subset types and pairs is still
@@ -320,19 +320,19 @@ optional tactic is replaced by the default one if not specified.
    Shows the term that will be fed to the kernel once the obligations
    are solved. Useful for debugging.
 
-.. opt:: Transparent Obligations
+.. flag:: Transparent Obligations
 
    Controls whether all obligations should be declared as transparent
    (the default), or if the system should infer which obligations can be
    declared opaque.
 
-.. opt:: Hide Obligations
+.. flag:: Hide Obligations
 
    Controls whether obligations appearing in the
    term should be hidden as implicit arguments of the special
    constantProgram.Tactics.obligation.
 
-.. opt:: Shrink Obligations
+.. flag:: Shrink Obligations
 
    *Deprecated since 8.7*
 

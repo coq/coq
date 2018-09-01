@@ -916,7 +916,7 @@ Parametrized inductive types
      sort for the inductive definition and will produce a less convenient
      rule for case elimination.
 
-.. opt:: Uniform Inductive Parameters
+.. flag:: Uniform Inductive Parameters
 
      When this option is set (it is off by default),
      inductive definitions are abstracted over their parameters
@@ -953,7 +953,7 @@ Variants
    The :cmd:`Variant` command is identical to the :cmd:`Inductive` command, except
    that it disallows recursive definition of types (for instance, lists cannot
    be defined using :cmd:`Variant`). No induction scheme is generated for
-   this variant, unless option :opt:`Nonrecursive Elimination Schemes` is on.
+   this variant, unless option :flag:`Nonrecursive Elimination Schemes` is on.
 
    .. exn:: The @num th argument of @ident must be @ident in @type.
       :undocumented:
@@ -1302,7 +1302,7 @@ Chapter :ref:`Tactics`. The basic assertion command is:
 
       You are asserting a new statement while already being in proof editing mode.
       This feature, called nested proofs, is disabled by default.
-      To activate it, turn option :opt:`Nested Proofs Allowed` on.
+      To activate it, turn option :flag:`Nested Proofs Allowed` on.
 
    .. cmdv:: Lemma @ident {? @binders } : @type
              Remark @ident {? @binders } : @type
@@ -1376,7 +1376,7 @@ using the keyword :cmd:`Qed`.
 .. note::
 
    #. Several statements can be simultaneously asserted provided option
-      :opt:`Nested Proofs Allowed` was turned on.
+      :flag:`Nested Proofs Allowed` was turned on.
 
    #. Not only other assertions but any vernacular command can be given
       while in the process of proving a given assertion. In this case, the

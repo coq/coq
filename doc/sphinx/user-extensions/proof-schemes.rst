@@ -103,26 +103,26 @@ induction for objects in type `identᵢ`.
 Automatic declaration of schemes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Elimination Schemes
+.. flag:: Elimination Schemes
 
    It is possible to deactivate the automatic declaration of the
    induction principles when defining a new inductive type with the
    ``Unset Elimination Schemes`` command. It may be reactivated at any time with
    ``Set Elimination Schemes``.
 
-.. opt:: Nonrecursive Elimination Schemes
+.. flag:: Nonrecursive Elimination Schemes
 
    This option controls whether types declared with the keywords :cmd:`Variant` and
    :cmd:`Record` get an automatic declaration of the induction principles.
 
-.. opt:: Case Analysis Schemes
+.. flag:: Case Analysis Schemes
 
    This flag governs the generation of case analysis lemmas for inductive types,
    i.e. corresponding to the pattern-matching term alone and without fixpoint.
 
-.. opt:: Boolean Equality Schemes
+.. flag:: Boolean Equality Schemes
 
-.. opt:: Decidable Equality Schemes
+.. flag:: Decidable Equality Schemes
 
    These flags control the automatic declaration of those Boolean equalities (see
    the second variant of ``Scheme``).
@@ -132,7 +132,7 @@ Automatic declaration of schemes
    You have to be careful with this option since Coq may now reject well-defined
    inductive types because it cannot compute a Boolean equality for them.
 
-.. opt:: Rewriting Schemes
+.. flag:: Rewriting Schemes
 
    This flag governs generation of equality-related schemes such as congruence.
 

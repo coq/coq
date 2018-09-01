@@ -458,7 +458,7 @@ This is equivalent to ``Hint Transparent, Opaque ident : typeclass_instances``.
 Options
 ~~~~~~~
 
-.. opt:: Typeclasses Dependency Order
+.. flag:: Typeclasses Dependency Order
 
    This option (on by default since 8.6) respects the dependency order
    between subgoals, meaning that subgoals on which other subgoals depend
@@ -467,7 +467,7 @@ Options
    quite different performance behaviors of proof search.
 
 
-.. opt:: Typeclasses Filtered Unification
+.. flag:: Typeclasses Filtered Unification
 
    This option, available since Coq 8.6 and off by default, switches the
    hint application procedure to a filter-then-unify strategy. To apply a
@@ -481,7 +481,7 @@ Options
    where there is a hole in that place.
 
 
-.. opt:: Typeclasses Limit Intros
+.. flag:: Typeclasses Limit Intros
 
    This option (on by default) controls the ability to apply hints while
    avoiding (functional) eta-expansions in the generated proof term. It
@@ -495,7 +495,7 @@ Options
       status of the product introduction rule, resulting in potentially more
       expensive proof-search (i.e. more useless backtracking).
 
-.. opt:: Typeclass Resolution For Conversion
+.. flag:: Typeclass Resolution For Conversion
 
    This option (on by default) controls the use of typeclass resolution
    when a unification problem cannot be solved during elaboration/type
@@ -503,7 +503,7 @@ Options
    resolution is tried before launching unification once again.
 
 
-.. opt:: Typeclasses Strict Resolution
+.. flag:: Typeclasses Strict Resolution
 
    Typeclass declarations introduced when this option is set have a
    stricter resolution behavior (the option is off by default). When
@@ -513,28 +513,28 @@ Options
    instantiated.
 
 
-.. opt:: Typeclasses Unique Solutions
+.. flag:: Typeclasses Unique Solutions
 
    When a typeclass resolution is launched we ensure that it has a single
    solution or fail. This ensures that the resolution is canonical, but
    can make proof search much more expensive.
 
 
-.. opt:: Typeclasses Unique Instances
+.. flag:: Typeclasses Unique Instances
 
    Typeclass declarations introduced when this option is set have a more
    efficient resolution behavior (the option is off by default). When a
    solution to the typeclass goal of this class is found, we never
    backtrack on it, assuming that it is canonical.
 
-.. opt:: Typeclasses Debug {? Verbosity @num}
+.. flag:: Typeclasses Debug {? Verbosity @num}
 
    These options allow to see the resolution steps of typeclasses that are
    performed during search. The ``Debug`` option is synonymous to ``Debug
    Verbosity 1``, and ``Debug Verbosity 2`` provides more information
    (tried tactics, shelving of goals, etc…).
 
-.. opt:: Refine Instance Mode
+.. flag:: Refine Instance Mode
 
    This option allows to switch the behavior of instance declarations made through
    the Instance command.

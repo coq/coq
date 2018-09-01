@@ -78,7 +78,7 @@ Displaying
 Flags, Options and Tables
 -----------------------------
 
-|Coq| configurability is based on flags (e.g. :opt:`Printing All`), options
+|Coq| configurability is based on flags (e.g. :flag:`Printing All`), options
 (e.g. :opt:`Printing Width`), or tables (e.g. :cmd:`Add Printing Record`). The
 names of flags, options and tables are made of non-empty sequences of
 identifiers (conventionally with capital initial letter). The general commands
@@ -1003,7 +1003,7 @@ Quitting and debugging
 Controlling display
 -----------------------
 
-.. opt:: Silent
+.. flag:: Silent
 
    This option controls the normal displaying.
 
@@ -1017,7 +1017,7 @@ Controlling display
    interpreted from left to right, so in case of an overlap, the flags on the
    right have higher priority, meaning that `A,-A` is equivalent to `-A`.
 
-.. opt:: Search Output Name Only
+.. flag:: Search Output Name Only
 
    This option restricts the output of search commands to identifier names;
    turning it on causes invocations of :cmd:`Search`, :cmd:`SearchHead`,
@@ -1038,7 +1038,7 @@ Controlling display
    printing. Beyond this depth, display of subterms is replaced by dots. At the
    time of writing this documentation, the default value is 50.
 
-.. opt:: Printing Compact Contexts
+.. flag:: Printing Compact Contexts
 
    This option controls the compact display mode for goals contexts. When on,
    the printer tries to reduce the vertical size of goals contexts by putting
@@ -1046,13 +1046,13 @@ Controlling display
    does not exceed the printing width (see :opt:`Printing Width`). At the time
    of writing this documentation, it is off by default.
 
-.. opt:: Printing Unfocused
+.. flag:: Printing Unfocused
 
    This option controls whether unfocused goals are displayed. Such goals are
    created by focusing other goals with bullets (see :ref:`bullets` or
    :ref:`curly braces <curly-braces>`). It is off by default.
 
-.. opt:: Printing Dependent Evars Line
+.. flag:: Printing Dependent Evars Line
 
    This option controls the printing of the “(dependent evars: …)” line when
    ``-emacs`` is passed.

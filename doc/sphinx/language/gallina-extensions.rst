@@ -145,7 +145,7 @@ available:
 
 It can be activated for printing with
 
-.. opt:: Printing Projections
+.. flag:: Printing Projections
 
 .. example::
 
@@ -219,7 +219,7 @@ the errors of inductive definitions, as described in Section
 Primitive Projections
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Primitive Projections
+.. flag:: Primitive Projections
 
 Turns on the use of primitive
 projections when defining subsequent records (even through the ``Inductive``
@@ -233,13 +233,13 @@ terms when manipulating parameterized records and type checking time.
 On the user level, primitive projections can be used as a replacement
 for the usual defined ones, although there are a few notable differences.
 
-.. opt:: Printing Primitive Projection Parameters
+.. flag:: Printing Primitive Projection Parameters
 
 This compatibility option reconstructs internally omitted parameters at
 printing time (even though they are absent in the actual AST manipulated
 by the kernel).
 
-.. opt:: Printing Primitive Projection Compatibility
+.. flag:: Printing Primitive Projection Compatibility
 
 This compatibility option (on by default) governs the
 printing of pattern-matching over primitive records.
@@ -247,7 +247,7 @@ printing of pattern-matching over primitive records.
 Primitive Record Types
 ++++++++++++++++++++++
 
-When the :opt:`Primitive Projections` option is on, definitions of
+When the :flag:`Primitive Projections` option is on, definitions of
 record types change meaning. When a type is declared with primitive
 projections, its :g:`match` construct is disabled (see :ref:`primitive_projections` though).
 To eliminate the (co-)inductive type, one must use its defined primitive projections.
@@ -257,7 +257,7 @@ To eliminate the (co-)inductive type, one must use its defined primitive project
 For compatibility, the parameters still appear to the user when
 printing terms even though they are absent in the actual AST
 manipulated by the kernel. This can be changed by unsetting the
-``Printing Primitive Projection Parameters`` flag. Further compatibility
+:flag:`Printing Primitive Projection Parameters` flag. Further compatibility
 printing can be deactivated thanks to the ``Printing Primitive Projection
 Compatibility`` option which governs the printing of pattern-matching
 over primitive records.
@@ -289,7 +289,7 @@ the folded version delta-reduces to the unfolded version. This allows to
 precisely mimic the usual unfolding rules of constants. Projections
 obey the usual ``simpl`` flags of the ``Arguments`` command in particular.
 There is currently no way to input unfolded primitive projections at the
-user-level, and one must use the ``Printing Primitive Projection Compatibility``
+user-level, and one must use the :flag:`Printing Primitive Projection Compatibility`
 to display unfolded primitive projections as matches and distinguish them from folded ones.
 
 
@@ -302,7 +302,7 @@ an object of the record type as arguments, and whose body is an
 application of the unfolded primitive projection of the same name. These
 constants are used when elaborating partial applications of the
 projection. One can distinguish them from applications of the primitive
-projection if the ``Printing Primitive Projection Parameters`` option
+projection if the :flag`Printing Primitive Projection Parameters` option
 is off: For a primitive projection application, parameters are printed
 as underscores while for the compatibility projections they are printed
 as usual.
@@ -326,7 +326,7 @@ patterns are allowed, as in ML-like languages.
 The extension just acts as a macro that is expanded during parsing
 into a sequence of match on simple patterns. Especially, a
 construction defined using the extended match is generally printed
-under its expanded form (see :opt:`Printing Matching`).
+under its expanded form (see :flag:`Printing Matching`).
 
 .. seealso:: :ref:`extendedpatternmatching`.
 
@@ -474,7 +474,7 @@ of :g:`match` expressions.
 Printing nested patterns
 +++++++++++++++++++++++++
 
-.. opt:: Printing Matching
+.. flag:: Printing Matching
 
 The Calculus of Inductive Constructions knows pattern-matching only
 over simple patterns. It is however convenient to re-factorize nested
@@ -490,7 +490,7 @@ in the same way as the |Coq| kernel handles them.
 Factorization of clauses with same right-hand side
 ++++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. opt:: Printing Factorizable Match Patterns
+.. flag:: Printing Factorizable Match Patterns
 
 When several patterns share the same right-hand side, it is additionally
 possible to share the clauses using disjunctive patterns. Assuming that the
@@ -511,7 +511,7 @@ default) tells |Coq|'s printer to use a default clause when relevant.
 Printing of wildcard patterns
 ++++++++++++++++++++++++++++++
 
-.. opt:: Printing Wildcard
+.. flag:: Printing Wildcard
 
 Some variables in a pattern may not occur in the right-hand side of
 the pattern-matching clause. When this option is on (default), the
@@ -523,7 +523,7 @@ pattern-matching clause are just printed using the wildcard symbol
 Printing of the elimination predicate
 +++++++++++++++++++++++++++++++++++++
 
-.. opt:: Printing Synth
+.. flag:: Printing Synth
 
 In most of the cases, the type of the result of a matched term is
 mechanically synthesizable. Especially, if the result type does not
@@ -1238,7 +1238,7 @@ component is equal ``nat`` and hence ``M1.T`` as specified.
 
    Prints the module type corresponding to :n:`@ident`.
 
-.. opt:: Short Module Printing
+.. flag:: Short Module Printing
 
    This option (off by default) disables the printing of the types of fields,
    leaving only their names, for the commands :cmd:`Print Module` and
@@ -1513,7 +1513,7 @@ says that the implicit argument is maximally inserted.
 
 Each implicit argument can be declared to have to be inserted maximally or non
 maximally. This can be governed argument per argument by the command
-:cmd:`Arguments (implicits)` or globally by the :opt:`Maximal Implicit Insertion` option.
+:cmd:`Arguments (implicits)` or globally by the :flag:`Maximal Implicit Insertion` option.
 
 .. seealso:: :ref:`displaying-implicit-args`.
 
@@ -1745,7 +1745,7 @@ appear strictly in the body of the type, they are implicit.
 Mode for automatic declaration of implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Implicit Arguments
+.. flag:: Implicit Arguments
 
 This option (off by default) allows to systematically declare implicit
 the arguments detectable as such. Auto-detection of implicit arguments is
@@ -1757,7 +1757,7 @@ arguments have to be considered or not.
 Controlling strict implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Strict Implicit
+.. flag:: Strict Implicit
 
 When the mode for automatic declaration of implicit arguments is on,
 the default is to automatically set implicit only the strict implicit
@@ -1766,7 +1766,7 @@ implicit arguments. To relax this constraint and to set
 implicit all non strict implicit arguments by default, you can turn this
 option off.
 
-.. opt:: Strongly Strict Implicit
+.. flag:: Strongly Strict Implicit
 
 Use this option (off by default) to capture exactly the strict implicit
 arguments and no more than the strict implicit arguments.
@@ -1776,7 +1776,7 @@ arguments and no more than the strict implicit arguments.
 Controlling contextual implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Contextual Implicit
+.. flag:: Contextual Implicit
 
 By default, |Coq| does not automatically set implicit the contextual
 implicit arguments. You can turn this option on to tell |Coq| to also
@@ -1787,7 +1787,7 @@ infer contextual implicit argument.
 Controlling reversible-pattern implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Reversible Pattern Implicit
+.. flag:: Reversible Pattern Implicit
 
 By default, |Coq| does not automatically set implicit the reversible-pattern
 implicit arguments. You can turn this option on to tell |Coq| to also infer
@@ -1798,7 +1798,7 @@ reversible-pattern implicit argument.
 Controlling the insertion of implicit arguments not followed by explicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Maximal Implicit Insertion
+.. flag:: Maximal Implicit Insertion
 
 Assuming the implicit argument mode is on, this option (off by default)
 declares implicit arguments to be automatically inserted when a
@@ -1875,20 +1875,20 @@ if each of them is to be used maximally or not, use the command
 Explicit displaying of implicit arguments for pretty-printing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Printing Implicit
+.. flag:: Printing Implicit
 
 By default, the basic pretty-printing rules hide the inferable implicit
 arguments of an application. Turn this option on to force printing all
 implicit arguments.
 
-.. opt:: Printing Implicit Defensive
+.. flag:: Printing Implicit Defensive
 
 By default, the basic pretty-printing rules display the implicit
 arguments that are not detected as strict implicit arguments. This
 “defensive” mode can quickly make the display cumbersome so this can
 be deactivated by turning this option off.
 
-.. seealso:: :opt:`Printing All`.
+.. seealso:: :flag:`Printing All`.
 
 Interaction with subtyping
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1913,7 +1913,7 @@ but succeeds in
 Deactivation of implicit arguments for parsing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Parsing Explicit
+.. flag:: Parsing Explicit
 
 Turning this option on (it is off by default) deactivates the use of implicit arguments.
 
@@ -2132,7 +2132,7 @@ to coercions are provided in :ref:`implicitcoercions`.
 Printing constructions in full
 ------------------------------
 
-.. opt:: Printing All
+.. flag:: Printing All
 
 Coercions, implicit arguments, the type of pattern-matching, but also
 notations (see :ref:`syntaxextensionsandinterpretationscopes`) can obfuscate the behavior of some
@@ -2141,9 +2141,9 @@ sensitive to the implicit arguments). Turning this option on
 deactivates all high-level printing features such as coercions,
 implicit arguments, returned type of pattern-matching, notations and
 various syntactic sugar for pattern-matching or record projections.
-Otherwise said, :opt:`Printing All` includes the effects of the options
-:opt:`Printing Implicit`, :opt:`Printing Coercions`, :opt:`Printing Synth`,
-:opt:`Printing Projections`, and :opt:`Printing Notations`. To reactivate
+Otherwise said, :flag:`Printing All` includes the effects of the options
+:flag:`Printing Implicit`, :flag:`Printing Coercions`, :flag:`Printing Synth`,
+:flag:`Printing Projections`, and :flag:`Printing Notations`. To reactivate
 the high-level printing features, use the command ``Unset Printing All``.
 
 .. _printing-universes:
@@ -2151,11 +2151,11 @@ the high-level printing features, use the command ``Unset Printing All``.
 Printing universes
 ------------------
 
-.. opt:: Printing Universes
+.. flag:: Printing Universes
 
 Turn this option on to activate the display of the actual level of each
 occurrence of :g:`Type`. See :ref:`Sorts` for details. This wizard option, in
-combination with :opt:`Printing All` can help to diagnose failures to unify
+combination with :flag:`Printing All` can help to diagnose failures to unify
 terms apparently identical but internally different in the Calculus of Inductive
 Constructions.
 
@@ -2219,7 +2219,7 @@ form
 
 is appending to its name, indicating how the variables of its defining context are instantiated.
 The variables of the context of the existential variables which are
-instantiated by themselves are not written, unless the flag ``Printing Existential Instances``
+instantiated by themselves are not written, unless the flag :flag:`Printing Existential Instances`
 is on (see Section :ref:`explicit-display-existentials`), and this is why an
 existential variable used in the same context as its context of definition is written with no instance.
 
@@ -2241,7 +2241,7 @@ with a named-goal selector, see :ref:`goal-selectors`).
 Explicit displaying of existential instances for pretty-printing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Printing Existential Instances
+.. flag:: Printing Existential Instances
 
 This option (off by default) activates the full display of how the
 context of an existential variable is instantiated at each of the
