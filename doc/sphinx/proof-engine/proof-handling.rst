@@ -113,7 +113,7 @@ list of assertion commands is given in :ref:`Assertions`. The command
       Aborts the editing of the proof named :token:`ident` (in case you have
       nested proofs).
 
-      .. seealso:: :opt:`Nested Proofs Allowed`
+      .. seealso:: :flag:`Nested Proofs Allowed`
 
    .. cmdv:: Abort All
 
@@ -201,13 +201,14 @@ The following options modify the behavior of ``Proof using``.
 
 
 .. opt:: Default Proof Using "@expression"
+   :name: Default Proof Using
 
    Use :n:`@expression` as the default ``Proof using`` value. E.g. ``Set Default
    Proof Using "a b"`` will complete all ``Proof`` commands not followed by a
    ``using`` part with ``using a b``.
 
 
-.. opt:: Suggest Proof Using
+.. flag:: Suggest Proof Using
 
    When :cmd:`Qed` is performed, suggest a ``using`` annotation if the user did not
    provide one.
@@ -449,6 +450,7 @@ The following example script illustrates all these features:
 Set Bullet Behavior
 ```````````````````
 .. opt:: Bullet Behavior  %( "None" %| "Strict Subproofs" %)
+   :name: Bullet Behavior
 
    This option controls the bullet behavior and can take two possible values:
 
@@ -581,6 +583,7 @@ Controlling the effect of proof editing commands
 
 
 .. opt:: Hyps Limit @num
+   :name: Hyps Limit
 
    This option controls the maximum number of hypotheses displayed in goals
    after the application of a tactic. All the hypotheses remain usable
@@ -589,7 +592,7 @@ Controlling the effect of proof editing commands
    available hypotheses.
 
 
-.. opt:: Automatic Introduction
+.. flag:: Automatic Introduction
 
    This option controls the way binders are handled
    in assertion commands such as :n:`Theorem @ident {? @binders} : @term`. When the
@@ -601,7 +604,7 @@ Controlling the effect of proof editing commands
    has to be used to move the assumptions to the local context.
 
 
-.. opt:: Nested Proofs Allowed
+.. flag:: Nested Proofs Allowed
 
    When turned on (it is off by default), this option enables support for nested
    proofs: a new assertion command can be inserted before the current proof is

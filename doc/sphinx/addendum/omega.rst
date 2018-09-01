@@ -114,23 +114,23 @@ loaded by
 Options
 -------
 
-.. opt:: Stable Omega
+.. flag:: Stable Omega
 
    .. deprecated:: 8.5
 
    This deprecated option (on by default) is for compatibility with Coq pre 8.5. It
    resets internal name counters to make executions of :tacn:`omega` independent.
 
-.. opt:: Omega UseLocalDefs
+.. flag:: Omega UseLocalDefs
 
    This option (on by default) allows :tacn:`omega` to use the bodies of local
    variables.
 
-.. opt:: Omega System
+.. flag:: Omega System
 
    This option (off by default) activate the printing of debug information
 
-.. opt:: Omega Action
+.. flag:: Omega Action
 
    This option (off by default) activate the printing of debug information
 

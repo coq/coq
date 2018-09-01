@@ -2,14 +2,14 @@
 
 .. _extendedpatternmatching:
 
-Extended pattern-matching
+Extended pattern matching
 =========================
 
 :Authors: Cristina Cornes and Hugo Herbelin
 
 .. TODO links to figures
 
-This section describes the full form of pattern-matching in |Coq| terms.
+This section describes the full form of pattern matching in |Coq| terms.
 
 .. |rhs| replace:: right hand sides
 
@@ -38,7 +38,7 @@ same values as ``pattern`` does and ``identifier`` is bound to the matched
 value. A pattern of the form :n:`pattern | pattern` is called disjunctive. A
 list of patterns separated with commas is also considered as a pattern
 and is called *multiple pattern*. However multiple patterns can only
-occur at the root of pattern-matching equations. Disjunctions of
+occur at the root of pattern matching equations. Disjunctions of
 *multiple patterns* are allowed though.
 
 Since extended ``match`` expressions are compiled into the primitive ones,
@@ -46,7 +46,7 @@ the expressiveness of the theory remains the same. Once parsing has finished
 only simple patterns remain. The original nesting of the ``match`` expressions
 is recovered at printing time. An easy way to see the result
 of the expansion is to toggle off the nesting performed at printing
-(use here :opt:`Printing Matching`), then by printing the term with :cmd:`Print`
+(use here :flag:`Printing Matching`), then by printing the term with :cmd:`Print`
 if the term is a constant, or using the command :cmd:`Check`.
 
 The extended ``match`` still accepts an optional *elimination predicate*
@@ -88,7 +88,7 @@ Using multiple patterns in the definition of ``max`` lets us write:
 
 which will be compiled into the previous form.
 
-The pattern-matching compilation strategy examines patterns from left
+The pattern matching compilation strategy examines patterns from left
 to right. A match expression is generated **only** when there is at least
 one constructor in the column of patterns. E.g. the following example
 does not build a match expression.
@@ -262,9 +262,9 @@ When we use parameters in patterns there is an error message:
         | cons A _ l' => l'
         end).
 
-.. opt:: Asymmetric Patterns
+.. flag:: Asymmetric Patterns
 
-This option (off by default) removes parameters from constructors in patterns:
+   This flag (off by default) removes parameters from constructors in patterns:
 
 .. coqtop:: all
 
@@ -597,7 +597,7 @@ situation:
    incorrect (because constructors are not applied to the correct number of the
    arguments, because they are not linear or they are wrongly typed).
 
-.. exn:: Non exhaustive pattern-matching.
+.. exn:: Non exhaustive pattern matching.
 
    The pattern matching is not exhaustive.
 

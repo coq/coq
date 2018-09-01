@@ -378,17 +378,14 @@ for records. Here are examples:
 Displaying information about notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Printing Notations
+.. flag:: Printing Notations
 
-   To deactivate the printing of all notations, use the command
-   ``Unset Printing Notations``. To reactivate it, use the command
-   ``Set Printing Notations``.
-
-   The default is to use notations for printing terms wherever possible.
+   Controls whether to use notations for printing terms wherever possible.
+   Default is on.
 
 .. seealso::
 
-   :opt:`Printing All`
+   :flag:`Printing All`
       To disable other elements in addition to notations.
 
 .. _locating-notations:
