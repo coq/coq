@@ -316,15 +316,33 @@ class OptionObject(NotationObject):
 
     Example::
 
-       .. opt:: Nonrecursive Elimination Schemes
+       .. opt:: Hyps Limit @num
 
-          This option controls whether types declared with the keywords
-          :cmd:`Variant` and :cmd:`Record` get an automatic declaration of the
-          induction principles.
+          This option controls the maximum number of hypotheses displayed in goals after
+          the application of a tactic.
     """
     subdomain = "opt"
     index_suffix = "(opt)"
     annotation = "Option"
+
+    def _name_from_signature(self, signature):
+        return stringify_with_ellipses(signature)
+
+
+class FlagObject(NotationObject):
+    """A Coq flag, i.e. a boolean Option.
+
+    Example::
+
+       .. flag:: Nonrecursive Elimination Schemes
+
+          This flag controls whether types declared with the keywords
+          :cmd:`Variant` and :cmd:`Record` get an automatic declaration of the
+          induction principles.
+    """
+    subdomain = "flag"
+    index_suffix = "(flag)"
+    annotation = "Flag"
 
     def _name_from_signature(self, signature):
         return stringify_with_ellipses(signature)
@@ -876,7 +894,7 @@ class CoqTacticIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "tacindex", "Tactic Index", "tactics", ["tacn"]
 
 class CoqOptionIndex(CoqSubdomainsIndex):
-    name, localname, shortname, subdomains = "optindex", "Option Index", "options", ["opt"]
+    name, localname, shortname, subdomains = "optindex", "Option and Flag Index", "options", ["opt", "flag"]
 
 class CoqGallinaIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "thmindex", "Gallina Index", "theorems", ["thm"]
@@ -949,6 +967,7 @@ class CoqDomain(Domain):
         'tacn': ObjType('tacn', 'tacn'),
         'tacv': ObjType('tacv', 'tacn'),
         'opt': ObjType('opt', 'opt'),
+        'flag': ObjType('flag', 'flag'),
         'thm': ObjType('thm', 'thm'),
         'prodn': ObjType('prodn', 'prodn'),
         'exn': ObjType('exn', 'exn'),
@@ -965,6 +984,7 @@ class CoqDomain(Domain):
         'tacn': TacticNotationObject,
         'tacv': TacticNotationVariantObject,
         'opt': OptionObject,
+        'flag': FlagObject,
         'thm': GallinaObject,
         'prodn' : ProductionObject,
         'exn': ExceptionObject,
@@ -976,6 +996,7 @@ class CoqDomain(Domain):
         'cmd': XRefRole(warn_dangling=True),
         'tacn': XRefRole(warn_dangling=True),
         'opt': XRefRole(warn_dangling=True),
+        'flag': XRefRole(warn_dangling=True),
         'thm': XRefRole(warn_dangling=True),
         'prodn' : XRefRole(warn_dangling=True),
         'exn': XRefRole(warn_dangling=True),
@@ -997,6 +1018,7 @@ class CoqDomain(Domain):
             'cmd': {},
             'tacn': {},
             'opt': {},
+            'flag': {},
             'thm': {},
             'prodn' : {},
             'exn': {},
