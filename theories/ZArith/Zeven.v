@@ -141,9 +141,6 @@ Notation Zodd_bool_pred := Z.odd_pred (only parsing).
 (** * Definition of [Z.quot2], [Z.div2] and properties wrt [Zeven]
   and [Zodd] *)
 
-Notation Zdiv2 := Z.div2 (compat "8.6").
-Notation Zquot2 := Z.quot2 (compat "8.6").
-
 (** Properties of [Z.div2] *)
 
 Lemma Zdiv2_odd_eqn n : n = 2*(Z.div2 n) + if Z.odd n then 1 else 0.
