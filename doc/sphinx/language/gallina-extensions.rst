@@ -99,19 +99,25 @@ to be all present if the missing ones can be inferred or prompted for
        Rat_bottom_cond := O_S 1;
        Rat_irred_cond := one_two_irred |}.
 
-This syntax can be disabled globally for printing by
+The following settings let you control the display format for types:
 
-.. cmd:: Unset Printing Records
+.. flag:: Printing Records
 
-For a given type, one can override this using either
+   If set, use the record syntax (shown above) as the default display format.
 
-.. cmd:: Add Printing Record @ident
+You can override the display format for specified types by adding entries to these tables:
 
-to get record syntax or
+.. table:: Printing Record @qualid
+   :name: Printing Record
 
-.. cmd:: Add Printing Constructor @ident
+   Specifies a set of qualids which are displayed as records.  Use the
+   :cmd:`Add @table` and :cmd:`Remove @table` commands to update the set of qualids.
 
-to get constructor syntax.
+.. table:: Printing Constructor @qualid
+   :name: Printing Constructor
+
+   Specifies a set of qualids which are displayed as constructors.  Use the
+   :cmd:`Add @table` and :cmd:`Remove @table` commands to update the set of qualids.
 
 This syntax can also be used for pattern matching.
 
@@ -144,7 +150,7 @@ available:
 
 It can be activated for printing with
 
-.. opt:: Printing Projections
+.. flag:: Printing Projections
 
 .. example::
 
@@ -217,35 +223,35 @@ the errors of inductive definitions, as described in Section
 Primitive Projections
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Primitive Projections
+.. flag:: Primitive Projections
 
-Turns on the use of primitive
-projections when defining subsequent records (even through the ``Inductive``
-and ``CoInductive`` commands). Primitive projections
-extended the Calculus of Inductive Constructions with a new binary
-term constructor `r.(p)` representing a primitive projection `p` applied
-to a record object `r` (i.e., primitive projections are always applied).
-Even if the record type has parameters, these do not appear at
-applications of the projection, considerably reducing the sizes of
-terms when manipulating parameterized records and type checking time.
-On the user level, primitive projections can be used as a replacement
-for the usual defined ones, although there are a few notable differences.
+   Turns on the use of primitive
+   projections when defining subsequent records (even through the ``Inductive``
+   and ``CoInductive`` commands). Primitive projections
+   extended the Calculus of Inductive Constructions with a new binary
+   term constructor `r.(p)` representing a primitive projection `p` applied
+   to a record object `r` (i.e., primitive projections are always applied).
+   Even if the record type has parameters, these do not appear at
+   applications of the projection, considerably reducing the sizes of
+   terms when manipulating parameterized records and type checking time.
+   On the user level, primitive projections can be used as a replacement
+   for the usual defined ones, although there are a few notable differences.
 
-.. opt:: Printing Primitive Projection Parameters
+.. flag:: Printing Primitive Projection Parameters
 
-This compatibility option reconstructs internally omitted parameters at
-printing time (even though they are absent in the actual AST manipulated
-by the kernel).
+   This compatibility option reconstructs internally omitted parameters at
+   printing time (even though they are absent in the actual AST manipulated
+   by the kernel).
 
-.. opt:: Printing Primitive Projection Compatibility
+.. flag:: Printing Primitive Projection Compatibility
 
-This compatibility option (on by default) governs the
-printing of pattern-matching over primitive records.
+   This compatibility option (on by default) governs the
+   printing of pattern matching over primitive records.
 
 Primitive Record Types
 ++++++++++++++++++++++
 
-When the :opt:`Primitive Projections` option is on, definitions of
+When the :flag:`Primitive Projections` option is on, definitions of
 record types change meaning. When a type is declared with primitive
 projections, its :g:`match` construct is disabled (see :ref:`primitive_projections` though).
 To eliminate the (co-)inductive type, one must use its defined primitive projections.
@@ -255,9 +261,9 @@ To eliminate the (co-)inductive type, one must use its defined primitive project
 For compatibility, the parameters still appear to the user when
 printing terms even though they are absent in the actual AST
 manipulated by the kernel. This can be changed by unsetting the
-``Printing Primitive Projection Parameters`` flag. Further compatibility
+:flag:`Printing Primitive Projection Parameters` flag. Further compatibility
 printing can be deactivated thanks to the ``Printing Primitive Projection
-Compatibility`` option which governs the printing of pattern-matching
+Compatibility`` option which governs the printing of pattern matching
 over primitive records.
 
 There are currently two ways to introduce primitive records types:
@@ -287,7 +293,7 @@ the folded version delta-reduces to the unfolded version. This allows to
 precisely mimic the usual unfolding rules of constants. Projections
 obey the usual ``simpl`` flags of the ``Arguments`` command in particular.
 There is currently no way to input unfolded primitive projections at the
-user-level, and one must use the ``Printing Primitive Projection Compatibility``
+user-level, and one must use the :flag:`Printing Primitive Projection Compatibility`
 to display unfolded primitive projections as matches and distinguish them from folded ones.
 
 
@@ -300,7 +306,7 @@ an object of the record type as arguments, and whose body is an
 application of the unfolded primitive projection of the same name. These
 constants are used when elaborating partial applications of the
 projection. One can distinguish them from applications of the primitive
-projection if the ``Printing Primitive Projection Parameters`` option
+projection if the :flag`Printing Primitive Projection Parameters` option
 is off: For a primitive projection application, parameters are printed
 as underscores while for the compatibility projections they are printed
 as usual.
@@ -314,17 +320,17 @@ Variants and extensions of :g:`match`
 
 .. _mult-match:
 
-Multiple and nested pattern-matching
+Multiple and nested pattern matching
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The basic version of :g:`match` allows pattern-matching on simple
+The basic version of :g:`match` allows pattern matching on simple
 patterns. As an extension, multiple nested patterns or disjunction of
 patterns are allowed, as in ML-like languages.
 
 The extension just acts as a macro that is expanded during parsing
 into a sequence of match on simple patterns. Especially, a
 construction defined using the extended match is generally printed
-under its expanded form (see :opt:`Printing Matching`).
+under its expanded form (see :flag:`Printing Matching`).
 
 .. seealso:: :ref:`extendedpatternmatching`.
 
@@ -333,7 +339,7 @@ under its expanded form (see :opt:`Printing Matching`).
 Pattern-matching on boolean values: the if expression
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For inductive types with exactly two constructors and for pattern-matching
+For inductive types with exactly two constructors and for pattern matching
 expressions that do not depend on the arguments of the constructors, it is possible
 to use a ``if … then … else`` notation. For instance, the definition
 
@@ -472,123 +478,93 @@ of :g:`match` expressions.
 Printing nested patterns
 +++++++++++++++++++++++++
 
-.. opt:: Printing Matching
+.. flag:: Printing Matching
 
-The Calculus of Inductive Constructions knows pattern-matching only
-over simple patterns. It is however convenient to re-factorize nested
-pattern-matching into a single pattern-matching over a nested
-pattern.
+   The Calculus of Inductive Constructions knows pattern matching only
+   over simple patterns. It is however convenient to re-factorize nested
+   pattern matching into a single pattern matching over a nested
+   pattern.
 
-When this option is on (default), |Coq|’s printer tries to do such
-limited re-factorization.
-Turning it off tells |Coq| to print only simple pattern-matching problems
-in the same way as the |Coq| kernel handles them.
+   When this option is on (default), |Coq|’s printer tries to do such
+   limited re-factorization.
+   Turning it off tells |Coq| to print only simple pattern matching problems
+   in the same way as the |Coq| kernel handles them.
 
 
 Factorization of clauses with same right-hand side
 ++++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. opt:: Printing Factorizable Match Patterns
+.. flag:: Printing Factorizable Match Patterns
 
-When several patterns share the same right-hand side, it is additionally
-possible to share the clauses using disjunctive patterns. Assuming that the
-printing matching mode is on, this option (on by default) tells |Coq|'s
-printer to try to do this kind of factorization.
+   When several patterns share the same right-hand side, it is additionally
+   possible to share the clauses using disjunctive patterns. Assuming that the
+   printing matching mode is on, this option (on by default) tells |Coq|'s
+   printer to try to do this kind of factorization.
 
 Use of a default clause
 +++++++++++++++++++++++
 
-.. opt:: Printing Allow Default Clause
+.. flag:: Printing Allow Match Default Clause
 
-When several patterns share the same right-hand side which do not depend on the
-arguments of the patterns, yet an extra factorization is possible: the
-disjunction of patterns can be replaced with a `_` default clause. Assuming that
-the printing matching mode and the factorization mode are on, this option (on by
-default) tells |Coq|'s printer to use a default clause when relevant.
+   When several patterns share the same right-hand side which do not depend on the
+   arguments of the patterns, yet an extra factorization is possible: the
+   disjunction of patterns can be replaced with a `_` default clause. Assuming that
+   the printing matching mode and the factorization mode are on, this option (on by
+   default) tells |Coq|'s printer to use a default clause when relevant.
 
 Printing of wildcard patterns
 ++++++++++++++++++++++++++++++
 
-.. opt:: Printing Wildcard
+.. flag:: Printing Wildcard
 
-Some variables in a pattern may not occur in the right-hand side of
-the pattern-matching clause. When this option is on (default), the
-variables having no occurrences in the right-hand side of the
-pattern-matching clause are just printed using the wildcard symbol
-“_”.
+   Some variables in a pattern may not occur in the right-hand side of
+   the pattern matching clause. When this option is on (default), the
+   variables having no occurrences in the right-hand side of the
+   pattern matching clause are just printed using the wildcard symbol
+   “_”.
 
 
 Printing of the elimination predicate
 +++++++++++++++++++++++++++++++++++++
 
-.. opt:: Printing Synth
+.. flag:: Printing Synth
 
-In most of the cases, the type of the result of a matched term is
-mechanically synthesizable. Especially, if the result type does not
-depend of the matched term. When this option is on (default),
-the result type is not printed when |Coq| knows that it can re-
-synthesize it.
+   In most of the cases, the type of the result of a matched term is
+   mechanically synthesizable. Especially, if the result type does not
+   depend of the matched term. When this option is on (default),
+   the result type is not printed when |Coq| knows that it can re-
+   synthesize it.
 
 
 Printing matching on irrefutable patterns
 ++++++++++++++++++++++++++++++++++++++++++
 
-If an inductive type has just one constructor, pattern-matching can be
+If an inductive type has just one constructor, pattern matching can be
 written using the first destructuring let syntax.
 
-.. cmd:: Add Printing Let @ident
+.. table:: Printing Let @qualid
+   :name: Printing Let
 
-   This adds `ident` to the list of inductive types for which pattern-matching
-   is written using a let expression.
-
-.. cmd:: Remove Printing Let @ident
-
-   This removes ident from this list. Note that removing an inductive
-   type from this list has an impact only for pattern-matching written
-   using :g:`match`. Pattern-matching explicitly written using a destructuring
-   :g:`let` are not impacted.
-
-.. cmd:: Test Printing Let for @ident
-
-   This tells if `ident` belongs to the list.
-
-.. cmd:: Print Table Printing Let
-
-   This prints the list of inductive types for which pattern-matching is
-   written using a let expression.
-
-   The list of inductive types for which pattern-matching is written
-   using a :g:`let` expression is managed synchronously. This means that it is
-   sensitive to the command ``Reset``.
+   Specifies a set of qualids for which pattern matching is displayed using a let expression.
+   Note that this only applies to pattern matching instances entered with :g:`match`.
+   It doesn't affect pattern matching explicitly entered with a destructuring
+   :g:`let`.
+   Use the :cmd:`Add @table` and :cmd:`Remove @table` commands to update this set.
 
 
 Printing matching on booleans
 +++++++++++++++++++++++++++++
 
-If an inductive type is isomorphic to the boolean type, pattern-matching
-can be written using ``if`` … ``then`` … ``else`` …:
+If an inductive type is isomorphic to the boolean type, pattern matching
+can be written using ``if`` … ``then`` … ``else`` ….  This table controls
+which types are written this way:
 
-.. cmd:: Add Printing If @ident
+.. table:: Printing If @qualid
+   :name: Printing If
 
-   This adds ident to the list of inductive types for which pattern-matching is
-   written using an if expression.
-
-.. cmd:: Remove Printing If @ident
-
-   This removes ident from this list.
-
-.. cmd:: Test Printing If for @ident
-
-   This tells if ident belongs to the list.
-
-.. cmd:: Print Table Printing If
-
-   This prints the list of inductive types for which pattern-matching is
-   written using an if expression.
-
-The list of inductive types for which pattern-matching is written
-using an ``if`` expression is managed synchronously. This means that it is
-sensitive to the command ``Reset``.
+   Specifies a set of qualids for which pattern matching is displayed using
+   ``if`` … ``then`` … ``else`` ….  Use the :cmd:`Add @table` and :cmd:`Remove @table`
+   commands to update this set.
 
 This example emphasizes what the printing options offer.
 
@@ -670,7 +646,7 @@ than like this:
 
 *Limitations*
 
-|term_0| must be built as a *pure pattern-matching tree* (:g:`match … with`)
+|term_0| must be built as a *pure pattern matching tree* (:g:`match … with`)
 with applications only *at the end* of each branch.
 
 Function does not support partial application of the function being
@@ -698,7 +674,7 @@ terminating functions.
 
     - the definition uses pattern matching on dependent types,
       which ``Function`` cannot deal with yet.
-    - the definition is not a *pattern-matching tree* as explained above.
+    - the definition is not a *pattern matching tree* as explained above.
 
 .. warn:: Cannot define principle(s) for @ident.
 
@@ -1235,7 +1211,7 @@ component is equal ``nat`` and hence ``M1.T`` as specified.
 
    Prints the module type corresponding to :n:`@ident`.
 
-.. opt:: Short Module Printing
+.. flag:: Short Module Printing
 
    This option (off by default) disables the printing of the types of fields,
    leaving only their names, for the commands :cmd:`Print Module` and
@@ -1510,7 +1486,7 @@ says that the implicit argument is maximally inserted.
 
 Each implicit argument can be declared to have to be inserted maximally or non
 maximally. This can be governed argument per argument by the command
-:cmd:`Arguments (implicits)` or globally by the :opt:`Maximal Implicit Insertion` option.
+:cmd:`Arguments (implicits)` or globally by the :flag:`Maximal Implicit Insertion` option.
 
 .. seealso:: :ref:`displaying-implicit-args`.
 
@@ -1742,65 +1718,65 @@ appear strictly in the body of the type, they are implicit.
 Mode for automatic declaration of implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Implicit Arguments
+.. flag:: Implicit Arguments
 
-This option (off by default) allows to systematically declare implicit
-the arguments detectable as such. Auto-detection of implicit arguments is
-governed by options controlling whether strict and contextual implicit
-arguments have to be considered or not.
+   This option (off by default) allows to systematically declare implicit
+   the arguments detectable as such. Auto-detection of implicit arguments is
+   governed by options controlling whether strict and contextual implicit
+   arguments have to be considered or not.
 
 .. _controlling-strict-implicit-args:
 
 Controlling strict implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Strict Implicit
+.. flag:: Strict Implicit
 
-When the mode for automatic declaration of implicit arguments is on,
-the default is to automatically set implicit only the strict implicit
-arguments plus, for historical reasons, a small subset of the non-strict
-implicit arguments. To relax this constraint and to set
-implicit all non strict implicit arguments by default, you can turn this
-option off.
+   When the mode for automatic declaration of implicit arguments is on,
+   the default is to automatically set implicit only the strict implicit
+   arguments plus, for historical reasons, a small subset of the non-strict
+   implicit arguments. To relax this constraint and to set
+   implicit all non strict implicit arguments by default, you can turn this
+   option off.
 
-.. opt:: Strongly Strict Implicit
+.. flag:: Strongly Strict Implicit
 
-Use this option (off by default) to capture exactly the strict implicit
-arguments and no more than the strict implicit arguments.
+   Use this option (off by default) to capture exactly the strict implicit
+   arguments and no more than the strict implicit arguments.
 
 .. _controlling-contextual-implicit-args:
 
 Controlling contextual implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Contextual Implicit
+.. flag:: Contextual Implicit
 
-By default, |Coq| does not automatically set implicit the contextual
-implicit arguments. You can turn this option on to tell |Coq| to also
-infer contextual implicit argument.
+   By default, |Coq| does not automatically set implicit the contextual
+   implicit arguments. You can turn this option on to tell |Coq| to also
+   infer contextual implicit argument.
 
 .. _controlling-rev-pattern-implicit-args:
 
 Controlling reversible-pattern implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Reversible Pattern Implicit
+.. flag:: Reversible Pattern Implicit
 
-By default, |Coq| does not automatically set implicit the reversible-pattern
-implicit arguments. You can turn this option on to tell |Coq| to also infer
-reversible-pattern implicit argument.
+   By default, |Coq| does not automatically set implicit the reversible-pattern
+   implicit arguments. You can turn this option on to tell |Coq| to also infer
+   reversible-pattern implicit argument.
 
 .. _controlling-insertion-implicit-args:
 
 Controlling the insertion of implicit arguments not followed by explicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Maximal Implicit Insertion
+.. flag:: Maximal Implicit Insertion
 
-Assuming the implicit argument mode is on, this option (off by default)
-declares implicit arguments to be automatically inserted when a
-function is partially applied and the next argument of the function is
-an implicit one.
+   Assuming the implicit argument mode is on, this option (off by default)
+   declares implicit arguments to be automatically inserted when a
+   function is partially applied and the next argument of the function is
+   an implicit one.
 
 .. _explicit-applications:
 
@@ -1872,20 +1848,20 @@ if each of them is to be used maximally or not, use the command
 Explicit displaying of implicit arguments for pretty-printing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Printing Implicit
+.. flag:: Printing Implicit
 
-By default, the basic pretty-printing rules hide the inferable implicit
-arguments of an application. Turn this option on to force printing all
-implicit arguments.
+   By default, the basic pretty-printing rules hide the inferable implicit
+   arguments of an application. Turn this option on to force printing all
+   implicit arguments.
 
-.. opt:: Printing Implicit Defensive
+.. flag:: Printing Implicit Defensive
 
-By default, the basic pretty-printing rules display the implicit
-arguments that are not detected as strict implicit arguments. This
-“defensive” mode can quickly make the display cumbersome so this can
-be deactivated by turning this option off.
+   By default, the basic pretty-printing rules display the implicit
+   arguments that are not detected as strict implicit arguments. This
+   “defensive” mode can quickly make the display cumbersome so this can
+   be deactivated by turning this option off.
 
-.. seealso:: :opt:`Printing All`.
+.. seealso:: :flag:`Printing All`.
 
 Interaction with subtyping
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1910,14 +1886,14 @@ but succeeds in
 Deactivation of implicit arguments for parsing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Parsing Explicit
+.. flag:: Parsing Explicit
 
-Turning this option on (it is off by default) deactivates the use of implicit arguments.
+   Turning this option on (it is off by default) deactivates the use of implicit arguments.
 
-In this case, all arguments of constants, inductive types,
-constructors, etc, including the arguments declared as implicit, have
-to be given as if no arguments were implicit. By symmetry, this also
-affects printing.
+   In this case, all arguments of constants, inductive types,
+   constructors, etc, including the arguments declared as implicit, have
+   to be given as if no arguments were implicit. By symmetry, this also
+   affects printing.
 
 Canonical structures
 ~~~~~~~~~~~~~~~~~~~~
@@ -2129,32 +2105,32 @@ to coercions are provided in :ref:`implicitcoercions`.
 Printing constructions in full
 ------------------------------
 
-.. opt:: Printing All
+.. flag:: Printing All
 
-Coercions, implicit arguments, the type of pattern-matching, but also
-notations (see :ref:`syntaxextensionsandinterpretationscopes`) can obfuscate the behavior of some
-tactics (typically the tactics applying to occurrences of subterms are
-sensitive to the implicit arguments). Turning this option on
-deactivates all high-level printing features such as coercions,
-implicit arguments, returned type of pattern-matching, notations and
-various syntactic sugar for pattern-matching or record projections.
-Otherwise said, :opt:`Printing All` includes the effects of the options
-:opt:`Printing Implicit`, :opt:`Printing Coercions`, :opt:`Printing Synth`,
-:opt:`Printing Projections`, and :opt:`Printing Notations`. To reactivate
-the high-level printing features, use the command ``Unset Printing All``.
+   Coercions, implicit arguments, the type of pattern matching, but also
+   notations (see :ref:`syntaxextensionsandinterpretationscopes`) can obfuscate the behavior of some
+   tactics (typically the tactics applying to occurrences of subterms are
+   sensitive to the implicit arguments). Turning this option on
+   deactivates all high-level printing features such as coercions,
+   implicit arguments, returned type of pattern matching, notations and
+   various syntactic sugar for pattern matching or record projections.
+   Otherwise said, :flag:`Printing All` includes the effects of the options
+   :flag:`Printing Implicit`, :flag:`Printing Coercions`, :flag:`Printing Synth`,
+   :flag:`Printing Projections`, and :flag:`Printing Notations`. To reactivate
+   the high-level printing features, use the command ``Unset Printing All``.
 
 .. _printing-universes:
 
 Printing universes
 ------------------
 
-.. opt:: Printing Universes
+.. flag:: Printing Universes
 
-Turn this option on to activate the display of the actual level of each
-occurrence of :g:`Type`. See :ref:`Sorts` for details. This wizard option, in
-combination with :opt:`Printing All` can help to diagnose failures to unify
-terms apparently identical but internally different in the Calculus of Inductive
-Constructions.
+   Turn this option on to activate the display of the actual level of each
+   occurrence of :g:`Type`. See :ref:`Sorts` for details. This wizard option, in
+   combination with :flag:`Printing All` can help to diagnose failures to unify
+   terms apparently identical but internally different in the Calculus of Inductive
+   Constructions.
 
 The constraints on the internal level of the occurrences of Type
 (see :ref:`Sorts`) can be printed using the command
@@ -2216,7 +2192,7 @@ form
 
 is appending to its name, indicating how the variables of its defining context are instantiated.
 The variables of the context of the existential variables which are
-instantiated by themselves are not written, unless the flag ``Printing Existential Instances``
+instantiated by themselves are not written, unless the flag :flag:`Printing Existential Instances`
 is on (see Section :ref:`explicit-display-existentials`), and this is why an
 existential variable used in the same context as its context of definition is written with no instance.
 
@@ -2238,11 +2214,11 @@ with a named-goal selector, see :ref:`goal-selectors`).
 Explicit displaying of existential instances for pretty-printing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Printing Existential Instances
+.. flag:: Printing Existential Instances
 
-This option (off by default) activates the full display of how the
-context of an existential variable is instantiated at each of the
-occurrences of the existential variable.
+   This option (off by default) activates the full display of how the
+   context of an existential variable is instantiated at each of the
+   occurrences of the existential variable.
 
 
 Solving existential variables using tactics

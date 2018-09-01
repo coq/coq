@@ -205,7 +205,7 @@ between sorts.
 The new version provides powerful tools for easier developments.
 
 Cristina Cornes designed an extension of the |Coq| syntax to allow
-definition of terms using a powerful pattern-matching analysis in the
+definition of terms using a powerful pattern matching analysis in the
 style of ML programs.
 
 Amokrane Saïbi wrote a mechanism to simulate inheritance between types
@@ -249,7 +249,7 @@ names to Caml functions corresponding to |Coq| tactic names.
 Bruno Barras wrote new, more efficient reduction functions.
 
 Hugo Herbelin introduced more uniform notations in the |Coq| specification
-language: the definitions by fixpoints and pattern-matching have a more
+language: the definitions by fixpoints and pattern matching have a more
 readable syntax. Patrick Loiseleur introduced user-friendly notations
 for arithmetic expressions.
 
@@ -326,14 +326,14 @@ modules and also to get closer to a certified kernel.
 
 Hugo Herbelin introduced a new structure of terms with local
 definitions. He introduced “qualified” names, wrote a new
-pattern-matching compilation algorithm and designed a more compact
+pattern matching compilation algorithm and designed a more compact
 algorithm for checking the logical consistency of universes. He
 contributed to the simplification of |Coq| internal structures and the
 optimisation of the system. He added basic tactics for forward reasoning
 and coercions in patterns.
 
 David Delahaye introduced a new language for tactics. General tactics
-using pattern-matching on goals and context can directly be written from
+using pattern matching on goals and context can directly be written from
 the |Coq| toplevel. He also provided primitives for the design of
 user-defined tactics in Caml.
 
@@ -624,8 +624,8 @@ with the library of integers he developed.
 
 Beside the libraries, various improvements were contributed to provide a more
 comfortable end-user language and more expressive tactic language. Hugo
-Herbelin and Matthieu Sozeau improved the pattern-matching compilation
-algorithm (detection of impossible clauses in pattern-matching,
+Herbelin and Matthieu Sozeau improved the pattern matching compilation
+algorithm (detection of impossible clauses in pattern matching,
 automatic inference of the return type). Hugo Herbelin, Pierre Letouzey
 and Matthieu Sozeau contributed various new convenient syntactic
 constructs and new tactics or tactic features: more inference of
@@ -801,7 +801,7 @@ through :math:`\beta`-redexes that are blocked by the “match”
 construction (blocked commutative cuts).
 
 Relying on the added permissiveness of the guard condition, Hugo
-Herbelin could extend the pattern-matching compilation algorithm so that
+Herbelin could extend the pattern matching compilation algorithm so that
 matching over a sequence of terms involving dependencies of a term or of
 the indices of the type of a term in the type of other terms is
 systematically supported.
@@ -979,7 +979,7 @@ principle than the previously added :math:`\eta`-conversion for function
 types, based on formulations of the Calculus of Inductive Constructions
 with typed equality. Primitive projections, which do not carry the
 parameters of the record and are rigid names (not defined as a
-pattern-matching construct), make working with nested records more
+pattern matching construct), make working with nested records more
 manageable in terms of time and space consumption. This extension and
 universe polymorphism were carried out partly while Matthieu Sozeau was
 working at the IAS in Princeton.

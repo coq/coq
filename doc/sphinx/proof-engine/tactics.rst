@@ -51,7 +51,8 @@ specified, the default selector is used.
      tactic_invocation : toplevel_selector : tactic.
                        : |tactic .
 
-.. opt:: Default Goal Selector @toplevel_selector
+.. opt:: Default Goal Selector "@toplevel_selector"
+   :name: Default Goal Selector
 
    This option controls the default selector – used when no selector is
    specified when applying a tactic – is set to the chosen value. The initial
@@ -120,7 +121,7 @@ that occurrences have to be selected in the hypotheses named :token:`ident`.
 If no numbers are given for hypothesis :token:`ident`, then all the
 occurrences of :token:`term` in the hypothesis are selected. If numbers are
 given, they refer to occurrences of :token:`term` when the term is printed
-using option :opt:`Printing All`, counting from left to right. In particular,
+using option :flag:`Printing All`, counting from left to right. In particular,
 occurrences of :token:`term` in implicit arguments
 (see :ref:`ImplicitArguments`) or coercions (see :ref:`Coercions`) are
 counted.
@@ -444,7 +445,7 @@ Applying theorems
    ``forall A, ... -> A``. Excluding this kind of lemma can be avoided by
    setting the following option:
 
-.. opt:: Universal Lemma Under Conjunction
+.. flag:: Universal Lemma Under Conjunction
 
    This option, which preserves compatibility with versions of Coq prior to
    8.4 is also available for :n:`apply @term in @ident` (see :tacn:`apply ... in`).
@@ -469,7 +470,7 @@ Applying theorems
    :token:`ident`. Tuples are decomposed in a width-first left-to-right order
    (for instance if the type of :g:`H1` is :g:`A <-> B` and the type of
    :g:`H2` is :g:`A` then :g:`apply H1 in H2` transforms the type of :g:`H2`
-   into :g:`B`). The tactic :tacn:`apply` relies on first-order pattern-matching
+   into :g:`B`). The tactic :tacn:`apply` relies on first-order pattern matching
    with dependent types.
 
    .. exn:: Statement without assumptions.
@@ -844,7 +845,7 @@ Managing the local context
    so that all the arguments of the i-th constructors of the corresponding
    inductive type are introduced can be controlled with the following option:
 
-   .. opt:: Bracketing Last Introduction Pattern
+   .. flag:: Bracketing Last Introduction Pattern
 
       Force completion, if needed, when the last introduction pattern is a
       disjunctive or conjunctive pattern (on by default).
@@ -1287,7 +1288,7 @@ name of the variable (here :g:`n`) is chosen based on :g:`T`.
 
    This is equivalent to :n:`generalize @term` but it generalizes only over the
    specified occurrences of :n:`@term` (counting from left to right on the
-   expression printed using option :opt:`Printing All`).
+   expression printed using option :flag:`Printing All`).
 
 .. tacv:: generalize @term as @ident
 
@@ -2030,14 +2031,14 @@ and an explanation of the underlying technique.
    to the number of new equalities. The original equality is erased if it
    corresponds to a hypothesis.
 
-   .. opt:: Structural Injection
+   .. flag:: Structural Injection
 
       This option ensure that :n:`injection @term` erases the original hypothesis
       and leaves the generated equalities in the context rather than putting them
       as antecedents of the current goal, as if giving :n:`injection @term as`
       (with an empty list of names). This option is off by default.
 
-   .. opt:: Keep Proof Equalities
+   .. flag:: Keep Proof Equalities
 
       By default, :tacn:`injection` only creates new equalities between :n:`@terms`
       whose type is in sort :g:`Type` or :g:`Set`, thus implementing a special
@@ -2069,7 +2070,7 @@ and an explanation of the underlying technique.
    being processed. By default, no equalities are generated if they
    relate two proofs (i.e. equalities between :n:`@terms` whose type is in sort
    :g:`Prop`). This behavior can be turned off by using the option
-   :opt`Keep Proof Equalities`.
+   :flag`Keep Proof Equalities`.
 
 .. tacv:: inversion @num
 
@@ -2579,7 +2580,7 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
       context for which an equality of the form :n:`@ident = t` or :n:`t = @ident`
       or :n:`@ident := t` exists, with :n:`@ident` not occurring in ``t``.
 
-   .. opt:: Regular Subst Tactic
+   .. flag:: Regular Subst Tactic
 
       This option controls the behavior of :tacn:`subst`. When it is
       activated (it is by default), :tacn:`subst` also deals with the following corner cases:
@@ -2714,7 +2715,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
    :math:`\beta` (reduction of functional application), :math:`\delta`
    (unfolding of transparent constants, see :ref:`vernac-controlling-the-reduction-strategies`),
    :math:`\iota` (reduction of
-   pattern-matching over a constructed term, and unfolding of :g:`fix` and
+   pattern matching over a constructed term, and unfolding of :g:`fix` and
    :g:`cofix` expressions) and :math:`\zeta` (contraction of local definitions), the
    flags are either ``beta``, ``delta``, ``match``, ``fix``, ``cofix``,
    ``iota`` or ``zeta``. The ``iota`` flag is a shorthand for ``match``, ``fix``
@@ -2797,12 +2798,13 @@ the conversion in hypotheses :n:`{+ @ident}`.
    compilation cost is higher, so it is worth using only for intensive
    computations.
 
-   .. opt:: NativeCompute Profiling
+   .. flag:: NativeCompute Profiling
 
       On Linux, if you have the ``perf`` profiler installed, this option makes
       it possible to profile ``native_compute`` evaluations.
 
-   .. opt:: NativeCompute Profile Filename
+   .. opt:: NativeCompute Profile Filename @string
+      :name: NativeCompute Profile Filename
 
       This option specifies the profile output; the default is
       ``native_compute_profile.data``. The actual filename used
@@ -2813,7 +2815,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
       on the profile file to see the results. Consult the ``perf`` documentation
       for more details.
 
-.. opt:: Debug Cbv
+.. flag:: Debug Cbv
 
    This option makes :tacn:`cbv` (and its derivative :tacn:`compute`) print
    information about the constants it encounters and the unfolding decisions it
@@ -2980,7 +2982,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
    This applies ``simpl`` only to the :n:`{+ @num}` applicative subterms whose
    head occurrence is :n:`@qualid` (or :n:`@string`).
 
-.. opt:: Debug RAKAM
+.. flag:: Debug RAKAM
 
    This option makes :tacn:`cbn` print various debugging information.
    ``RAKAM`` is the Refolding Algebraic Krivine Abstract Machine.
@@ -3187,10 +3189,11 @@ hints of the database named core.
 The following options enable printing of informative or debug information for
 the :tacn:`auto` and :tacn:`trivial` tactics:
 
-.. opt:: Info Auto
-.. opt:: Debug Auto
-.. opt:: Info Trivial
-.. opt:: Debug Trivial
+.. flag:: Info Auto
+          Debug Auto
+          Info Trivial
+          Debug Trivial
+   :undocumented:
 
 .. seealso:: :ref:`The Hints Databases for auto and eauto <thehintsdatabasesforautoandeauto>`
 
@@ -3220,8 +3223,9 @@ Note that ``ex_intro`` should be declared as a hint.
 
 :tacn:`eauto` also obeys the following options:
 
-.. opt:: Info Eauto
-.. opt:: Debug Eauto
+.. flag:: Info Eauto
+          Debug Eauto
+          :undocumented:
 
 .. seealso:: :ref:`The Hints Databases for auto and eauto <thehintsdatabasesforautoandeauto>`
 
@@ -3549,7 +3553,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
 
    .. note::
 
-      One can use an ``Extern`` hint with no pattern to do pattern-matching on
+      One can use an ``Extern`` hint with no pattern to do pattern matching on
       hypotheses using ``match goal`` with inside the tactic.
 
 
@@ -3840,7 +3844,7 @@ some incompatibilities.
    ``Empty_set``, ``unit``, ``True``, :tacn:`dintuition` also recognizes all inductive
    types with one constructor and no indices, i.e. record-style connectives.
 
-.. opt:: Intuition Negation Unfolding
+.. flag:: Intuition Negation Unfolding
 
    Controls whether :tacn:`intuition` unfolds inner negations which do not need
    to be unfolded. This option is on by default.
@@ -3869,6 +3873,7 @@ usual logical connectives but instead may reason about any first-order class
 inductive definition.
 
 .. opt:: Firstorder Solver @tactic
+   :name: Firstorder Solver
 
    The default tactic used by :tacn:`firstorder` when no rule applies is
    :g:`auto with *`, it can be reset locally or globally using this option.
@@ -3897,6 +3902,7 @@ inductive definition.
   This combines the effects of the different variants of :tacn:`firstorder`.
 
 .. opt:: Firstorder Depth @num
+   :name: Firstorder Depth
 
    This option controls the proof-search depth bound.
 
@@ -3959,7 +3965,7 @@ match against it.
   additional arguments can be given to congruence by filling in the holes in the
   terms given in the error message, using the :tacn:`congruence with` variant described above.
 
-.. opt:: Congruence Verbose
+.. flag:: Congruence Verbose
 
   This option makes :tacn:`congruence` print debug information.
 

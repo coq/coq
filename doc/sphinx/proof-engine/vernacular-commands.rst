@@ -78,145 +78,106 @@ Displaying
 Flags, Options and Tables
 -----------------------------
 
-|Coq| configurability is based on flags (e.g. :opt:`Printing All`), options
-(e.g. :opt:`Printing Width`), or tables (e.g. :cmd:`Add Printing Record`). The
-names of flags, options and tables are made of non-empty sequences of
-identifiers (conventionally with capital initial letter). The general commands
-handling flags, options and tables are given below.
+Coq has many settings to control its behavior.  Setting types include flags, options
+and tables:
 
-.. TODO : flag is not a syntax entry
+* A :production:`flag` has a boolean value, such as :flag:`Asymmetric Patterns`.
+* An :production:`option` generally has a numeric or string value, such as :opt:`Firstorder Depth`.
+* A :production:`table` contains a set of strings or qualids.
+* In addition, some commands provide settings, such as :cmd:`Extraction Language OCaml`.
 
-.. cmd:: Set @flag
+.. FIXME Convert `Extraction Language OCaml` to an option.
 
-   This command switches :n:`@flag` on. The original state of :n:`@flag`
-   is restored when the current module ends.
+Flags, options and tables are identified by a series of identifiers, each with an initial
+capital letter.
 
-   .. cmdv:: Local Set @flag
+.. cmd::  {? Local | Global | Export } Set @flag
+   :name: Set
 
-      This command switches :n:`@flag` on. The original state
-      of :n:`@flag` is restored when the current *section* ends.
+   Sets :token:`flag` on. Scoping qualifiers are
+   described :ref:`here <set_unset_scope_qualifiers>`.
 
-   .. cmdv:: Global Set @flag
+.. cmd:: {? Local | Global | Export } Unset @flag
+   :name: Unset
 
-      This command switches :n:`@flag` on. The original state
-      of :n:`@flag` is *not* restored at the end of the module. Additionally, if
-      set in a file, :n:`@flag` is switched on when the file is `Require`-d.
-
-   .. cmdv:: Export Set @flag
-
-      This command switches :n:`@flag` on. The original state
-      of :n:`@flag` is restored at the end of the current module, but :n:`@flag`
-      is switched on when this module is imported.
-
-
-.. cmd:: Unset @flag
-
-   This command switches :n:`@flag` off. The original state of
-   :n:`@flag` is restored when the current module ends.
-
-   .. cmdv:: Local Unset @flag
-
-      This command switches :n:`@flag` off. The original
-      state of :n:`@flag` is restored when the current *section* ends.
-
-   .. cmdv:: Global Unset @flag
-
-      This command switches :n:`@flag` off. The original
-      state of :n:`@flag` is *not* restored at the end of the module. Additionally,
-      if set in a file, :n:`@flag` is switched off when the file is `Require`-d.
-
-   .. cmdv:: Export Unset @flag
-
-      This command switches :n:`@flag` off. The original state
-      of :n:`@flag` is restored at the end of the current module, but :n:`@flag`
-      is switched off when this module is imported.
-
+   Sets :token:`flag` off. Scoping qualifiers are
+   described :ref:`here <set_unset_scope_qualifiers>`.
 
 .. cmd:: Test @flag
 
-   This command prints whether :n:`@flag` is on or off.
+   Prints the current value of :token:`flag`.
 
 
-.. cmd:: Set @option @value
+.. cmd:: {? Local | Global | Export } Set @option ( @num | @string )
+   :name: Set @option
 
-   This command sets :n:`@option` to :n:`@value`. The original value of ` option` is
-   restored when the current module ends.
+   Sets :token:`option` to the specified value.  Scoping qualifiers are
+   described :ref:`here <set_unset_scope_qualifiers>`.
 
-   .. TODO : option and value are not syntax entries
+.. cmd:: {? Local | Global | Export } Unset @option
+   :name: Unset @option
 
-   .. cmdv:: Local Set @option @value
-
-      This command sets :n:`@option` to :n:`@value`. The
-      original value of :n:`@option` is restored at the end of the module.
-
-   .. cmdv:: Global Set @option @value
-
-      This command sets :n:`@option` to :n:`@value`. The
-      original value of :n:`@option` is *not* restored at the end of the module.
-      Additionally, if set in a file, :n:`@option` is set to value when the file
-      is `Require`-d.
-
-   .. cmdv:: Export Set @option
-
-      This command set :n:`@option` to :n:`@value`. The original state
-      of :n:`@option` is restored at the end of the current module, but :n:`@option`
-      is set to :n:`@value` when this module is imported.
-
-
-.. cmd:: Unset @option
-
-   This command turns off :n:`@option`.
-
-   .. cmdv:: Local Unset @option
-
-      This command turns off :n:`@option`. The original state of :n:`@option`
-      is restored when the current *section* ends.
-
-   .. cmdv:: Global Unset @option
-
-      This command turns off :n:`@option`. The original state of :n:`@option`
-      is *not* restored at the end of the module. Additionally, if unset in a file,
-      :n:`@option` is reset to its default value when the file is `Require`-d.
-
-   .. cmdv:: Export Unset @option
-
-      This command turns off :n:`@option`. The original state of :n:`@option`
-      is restored at the end of the current module, but :n:`@option` is set to
-      its default value when this module is imported.
-
+   Sets :token:`option` to its default value.  Scoping qualifiers are
+   described :ref:`here <set_unset_scope_qualifiers>`.
 
 .. cmd:: Test @option
 
-   This command prints the current value of :n:`@option`.
-
-
-.. TODO : table is not a syntax entry
-
-.. cmd:: Add @table @value
-   :name: Add `table` `value`
-
-.. cmd:: Remove @table @value
-   :name: Remove `table` `value`
-
-.. cmd:: Test @table @value
-   :name: Test `table` `value`
-
-.. cmd:: Test @table for @value
-   :name: Test `table` for `value`
-
-.. cmd:: Print Table @table
-
-These are general commands for tables.
-
+   Prints the current value of :token:`option`.
 
 .. cmd:: Print Options
 
-   This command lists all available flags, options and tables.
+   Prints the current value of all flags and options, and the names of all tables.
 
-   .. cmdv:: Print Tables
 
-      This is a synonymous of :cmd:`Print Options`.
+.. cmd:: Add @table ( @string | @qualid )
+   :name: Add @table
 
+   Adds the specified value to :token:`table`.
+
+.. cmd:: Remove @table ( @string | @qualid )
+   :name: Remove @table
+
+   Removes the specified value from :token:`table`.
+
+.. cmd:: Test @table for ( @string | @qualid )
+   :name: Test @table for
+
+   Reports whether :token:`table` contains the specified value.
+
+.. cmd:: Print Table @table
+   :name: Print Table @table
+
+   Prints the values in :token:`table`.
+
+.. cmd:: Test @table
+
+   A synonym for :cmd:`Print Table @table`.
+
+.. cmd:: Print Tables
+
+   A synonym for :cmd:`Print Options`.
+
+.. _set_unset_scope_qualifiers:
+
+Scope qualifiers for :cmd:`Set` and :cmd:`Unset`
+`````````````````````````````````````````````````
+
+:n:`{? Local | Global | Export }`
+
+Flag and option settings can be global in scope or local to nested scopes created by
+:cmd:`Module` and :cmd:`Section` commands.  There are four alternatives:
+
+* no qualifier: the original setting is *not* restored at the end of the current module or section.
+* **Local**: the setting is applied within the current scope.  The original value of the option
+  or flag is restored at the end of the current module or section.
+* **Global**: similar to no qualifier, the original setting is *not* restored at the end of the current
+  module or section.  In addition, if the value is set in a file, then :cmd:`Require`-ing
+  the file sets the option.
+* **Export**: similar to **Local**, the original value of the option or flag is restored at the
+  end of the current module or section.  In addition, if the value is set in a file, then :cmd:`Import`-ing
+  the file sets the option.
+
+Newly opened scopes inherit the current settings.
 
 .. _requests-to-the-environment:
 
@@ -502,19 +463,16 @@ Requests to the environment
 
 .. note::
 
-   .. cmd:: Add Search Blacklist @string
+   .. table:: Search Blacklist @string
 
-      For the ``Search``, ``SearchHead``, ``SearchPattern`` and ``SearchRewrite``
-      queries, it is possible to globally filter the search results using this
-      command. A lemma whose fully-qualified name
-      contains any of the declared strings will be removed from the
-      search results. The default blacklisted substrings are ``_subproof`` and
+      Specifies a set of strings used to exclude lemmas from the results of :cmd:`Search`,
+      :cmd:`SearchHead`, :cmd:`SearchPattern` and :cmd:`SearchRewrite` queries.  A lemma whose
+      fully-qualified name contains any of the strings will be excluded from the
+      search results.  The default blacklisted substrings are ``_subterm``, ``_subproof`` and
       ``Private_``.
 
-   .. cmd:: Remove Search Blacklist @string
-
-      This command allows expunging this blacklist.
-
+      Use the :cmd:`Add @table` and :cmd:`Remove @table` commands to update the set of
+      blacklisted strings.
 
 .. cmd:: Locate @qualid
 
@@ -979,6 +937,7 @@ Quitting and debugging
    displayed.
 
    .. opt:: Default Timeout @num
+      :name: Default Timeout
 
       This option controls a default timeout for subsequent commands, as if they
       were passed to a :cmd:`Timeout` command. Commands already starting by a
@@ -1003,11 +962,12 @@ Quitting and debugging
 Controlling display
 -----------------------
 
-.. opt:: Silent
+.. flag:: Silent
 
    This option controls the normal displaying.
 
 .. opt:: Warnings "{+, {? %( - %| + %) } @ident }"
+   :name: Warnings
 
    This option configures the display of warnings. It is experimental, and
    expects, between quotes, a comma-separated list of warning names or
@@ -1017,7 +977,7 @@ Controlling display
    interpreted from left to right, so in case of an overlap, the flags on the
    right have higher priority, meaning that `A,-A` is equivalent to `-A`.
 
-.. opt:: Search Output Name Only
+.. flag:: Search Output Name Only
 
    This option restricts the output of search commands to identifier names;
    turning it on causes invocations of :cmd:`Search`, :cmd:`SearchHead`,
@@ -1038,7 +998,7 @@ Controlling display
    printing. Beyond this depth, display of subterms is replaced by dots. At the
    time of writing this documentation, the default value is 50.
 
-.. opt:: Printing Compact Contexts
+.. flag:: Printing Compact Contexts
 
    This option controls the compact display mode for goals contexts. When on,
    the printer tries to reduce the vertical size of goals contexts by putting
@@ -1046,13 +1006,13 @@ Controlling display
    does not exceed the printing width (see :opt:`Printing Width`). At the time
    of writing this documentation, it is off by default.
 
-.. opt:: Printing Unfocused
+.. flag:: Printing Unfocused
 
    This option controls whether unfocused goals are displayed. Such goals are
    created by focusing other goals with bullets (see :ref:`bullets` or
    :ref:`curly braces <curly-braces>`). It is off by default.
 
-.. opt:: Printing Dependent Evars Line
+.. flag:: Printing Dependent Evars Line
 
    This option controls the printing of the “(dependent evars: …)” line when
    ``-emacs`` is passed.

@@ -59,7 +59,7 @@ so:
    Definition selfpid := pidentity (@pidentity).
 
 Of course, the two instances of :g:`pidentity` in this definition are
-different. This can be seen when the :opt:`Printing Universes` option is on:
+different. This can be seen when the :flag:`Printing Universes` flag is on:
 
 .. coqtop:: none
 
@@ -79,7 +79,7 @@ levels.
 
 When printing :g:`pidentity`, we can see the universes it binds in
 the annotation :g:`@{Top.2}`. Additionally, when
-:opt:`Printing Universes` is on we print the "universe context" of
+:flag:`Printing Universes` is on we print the "universe context" of
 :g:`pidentity` consisting of the bound universes and the
 constraints they must verify (for :g:`pidentity` there are no constraints).
 
@@ -129,14 +129,14 @@ Polymorphic, Monomorphic
    As shown in the examples, polymorphic definitions and inductives can be
    declared using the ``Polymorphic`` prefix.
 
-.. opt:: Universe Polymorphism
+.. flag:: Universe Polymorphism
 
    Once enabled, this option will implicitly prepend ``Polymorphic`` to any
    definition of the user.
 
 .. cmd:: Monomorphic @definition
 
-   When the :opt:`Universe Polymorphism` option is set, to make a definition
+   When the :flag:`Universe Polymorphism` option is set, to make a definition
    producing global universe constraints, one can use the ``Monomorphic`` prefix.
 
 Many other commands support the ``Polymorphic`` flag, including:
@@ -169,7 +169,7 @@ declared cumulative using the :g:`Cumulative` prefix.
 
    Declares the inductive as cumulative
 
-Alternatively, there is an option :opt:`Polymorphic Inductive
+Alternatively, there is a flag :flag:`Polymorphic Inductive
 Cumulativity` which when set, makes all subsequent *polymorphic*
 inductive definitions cumulative.  When set, inductive types and the
 like can be enforced to be non-cumulative using the :g:`NonCumulative`
@@ -179,7 +179,7 @@ prefix.
 
    Declares the inductive as non-cumulative
 
-.. opt:: Polymorphic Inductive Cumulativity
+.. flag:: Polymorphic Inductive Cumulativity
 
    When this option is on, it sets all following polymorphic inductive
    types as cumulative (it is off by default).
@@ -229,7 +229,7 @@ Cumulative inductive types, coninductive types, variants and records
 only make sense when they are universe polymorphic. Therefore, an
 error is issued whenever the user uses the :g:`Cumulative` or
 :g:`NonCumulative` prefix in a monomorphic context.
-Notice that this is not the case for the option :opt:`Polymorphic Inductive Cumulativity`.
+Notice that this is not the case for the option :flag:`Polymorphic Inductive Cumulativity`.
 That is, this option, when set, makes all subsequent *polymorphic*
 inductive declarations cumulative (unless, of course the :g:`NonCumulative` prefix is used)
 but has no effect on *monomorphic* inductive declarations.
@@ -277,18 +277,18 @@ An example of a proof using cumulativity
 Cumulativity Weak Constraints
 -----------------------------
 
-.. opt:: Cumulativity Weak Constraints
+.. flag:: Cumulativity Weak Constraints
 
-This option, on by default, causes "weak" constraints to be produced
-when comparing universes in an irrelevant position. Processing weak
-constraints is delayed until minimization time. A weak constraint
-between `u` and `v` when neither is smaller than the other and
-one is flexible causes them to be unified. Otherwise the constraint is
-silently discarded.
+   When set, which is the default, causes "weak" constraints to be produced
+   when comparing universes in an irrelevant position. Processing weak
+   constraints is delayed until minimization time. A weak constraint
+   between `u` and `v` when neither is smaller than the other and
+   one is flexible causes them to be unified. Otherwise the constraint is
+   silently discarded.
 
-This heuristic is experimental and may change in future versions.
-Disabling weak constraints is more predictable but may produce
-arbitrary numbers of universes.
+   This heuristic is experimental and may change in future versions.
+   Disabling weak constraints is more predictable but may produce
+   arbitrary numbers of universes.
 
 
 Global and local universes
@@ -354,9 +354,9 @@ This minimization process is applied only to fresh universe variables.
 It simply adds an equation between the variable and its lower bound if
 it is an atomic universe (i.e. not an algebraic max() universe).
 
-.. opt:: Universe Minimization ToSet
+.. flag:: Universe Minimization ToSet
 
-   Turning this option off (it is on by default) disallows minimization
+   Turning this flag off (it is on by default) disallows minimization
    to the sort :g:`Set` and only collapses floating universes between
    themselves.
 
@@ -436,7 +436,7 @@ underscore or by omitting the annotation to a polymorphic definition.
    Check le@{k _}.
    Check le.
 
-.. opt:: Strict Universe Declaration.
+.. flag:: Strict Universe Declaration
 
    Turning this option off allows one to freely use
    identifiers for universes without declaring them first, with the

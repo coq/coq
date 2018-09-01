@@ -1105,7 +1105,7 @@ and otherwise in the Type hierarchy.
 
 Note that the side-condition about allowed elimination sorts in the
 rule **Ind-Family** is just to avoid to recompute the allowed elimination
-sorts at each instance of a pattern-matching (see Section :ref:`Destructors`). As
+sorts at each instance of a pattern matching (see Section :ref:`Destructors`). As
 an example, let us consider the following definition:
 
 .. example::
@@ -1229,7 +1229,7 @@ primitive recursion over the structure.
 But this operator is rather tedious to implement and use. We choose in
 this version of |Coq| to factorize the operator for primitive recursion
 into two more primitive operations as was first suggested by Th.
-Coquand in :cite:`Coq92`. One is the definition by pattern-matching. The
+Coquand in :cite:`Coq92`. One is the definition by pattern matching. The
 second one is a definition by guarded fixpoints.
 
 
