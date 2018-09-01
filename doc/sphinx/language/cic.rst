@@ -1025,21 +1025,21 @@ Template polymorphism
 Inductive types can be made polymorphic over their arguments
 in :math:`\Type`.
 
-.. opt:: Auto Template Polymorphism
+.. flag:: Auto Template Polymorphism
 
-  This option, enabled by default, makes every inductive type declared
-  at level :math:`Type` (without annotations or hiding it behind a
-  definition) template polymorphic.
+   This option, enabled by default, makes every inductive type declared
+   at level :math:`Type` (without annotations or hiding it behind a
+   definition) template polymorphic.
 
-  This can be prevented using the ``notemplate`` attribute.
+   This can be prevented using the ``notemplate`` attribute.
 
-  An inductive type can be forced to be template polymorphic using the
-  ``template`` attribute.
+   An inductive type can be forced to be template polymorphic using the
+   ``template`` attribute.
 
-  Template polymorphism and universe polymorphism (see Chapter
-  :ref:`polymorphicuniverses`) are incompatible, so if the later is
-  enabled it will prevail over automatic template polymorphism and
-  cause an error when using the ``template`` attribute.
+   Template polymorphism and universe polymorphism (see Chapter
+   :ref:`polymorphicuniverses`) are incompatible, so if the later is
+   enabled it will prevail over automatic template polymorphism and
+   cause an error when using the ``template`` attribute.
 
 If :math:`A` is an arity of some sort and :math:`s` is a sort, we write :math:`A_{/s}`
 for the arity obtained from :math:`A` by replacing its sort with :math:`s`.
@@ -1120,7 +1120,7 @@ and otherwise in the Type hierarchy.
 
 Note that the side-condition about allowed elimination sorts in the
 rule **Ind-Family** is just to avoid to recompute the allowed elimination
-sorts at each instance of a pattern-matching (see Section :ref:`Destructors`). As
+sorts at each instance of a pattern matching (see Section :ref:`Destructors`). As
 an example, let us consider the following definition:
 
 .. example::
@@ -1244,7 +1244,7 @@ primitive recursion over the structure.
 But this operator is rather tedious to implement and use. We choose in
 this version of |Coq| to factorize the operator for primitive recursion
 into two more primitive operations as was first suggested by Th.
-Coquand in :cite:`Coq92`. One is the definition by pattern-matching. The
+Coquand in :cite:`Coq92`. One is the definition by pattern matching. The
 second one is a definition by guarded fixpoints.
 
 

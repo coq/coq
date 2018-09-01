@@ -24,14 +24,14 @@ represent respectively the natural and integer numbers, the authorized
 identificators and qualified names, Coq terms and patterns and all the atomic
 tactics described in Chapter :ref:`tactics`. The syntax of :token:`cpattern` is
 the same as that of terms, but it is extended with pattern matching
-metavariables. In :token:`cpattern`, a pattern-matching metavariable is
+metavariables. In :token:`cpattern`, a pattern matching metavariable is
 represented with the syntax :g:`?id` where :g:`id` is an :token:`ident`. The
 notation :g:`_` can also be used to denote metavariable whose instance is
 irrelevant. In the notation :g:`?id`, the identifier allows us to keep
 instantiations and to make constraints whereas :g:`_` shows that we are not
-interested in what will be matched. On the right hand side of pattern-matching
+interested in what will be matched. On the right hand side of pattern matching
 clauses, the named metavariables are used without the question mark prefix. There
-is also a special notation for second-order pattern-matching problems: in an
+is also a special notation for second-order pattern matching problems: in an
 applicative pattern of the form :g:`@?id id1 … idn`, the variable id matches any
 complex expression with (possible) dependencies in the variables :g:`id1 … idn`
 and returns a functional term of the form :g:`fun id1 … idn => term`.
@@ -833,7 +833,7 @@ We can carry out pattern matching on terms with:
       matching subterm is tried. If no further subterm matches, the next clause
       is tried. Matching subterms are considered top-bottom and from left to
       right (with respect to the raw printing obtained by setting option
-      :opt:`Printing All`).
+      :flag:`Printing All`).
 
    .. example::
 
@@ -1187,6 +1187,7 @@ Info trace
    not printed.
 
    .. opt:: Info Level @num
+      :name: Info Level
 
       This option is an alternative to the :cmd:`Info` command.
 
@@ -1197,7 +1198,7 @@ Info trace
 Interactive debugger
 ~~~~~~~~~~~~~~~~~~~~
 
-.. opt:: Ltac Debug
+.. flag:: Ltac Debug
 
    This option governs the step-by-step debugger that comes with the |Ltac| interpreter
 
@@ -1225,7 +1226,7 @@ following:
 
 A non-interactive mode for the debugger is available via the option:
 
-.. opt:: Ltac Batch Debug
+.. flag:: Ltac Batch Debug
 
    This option has the effect of presenting a newline at every prompt, when
    the debugger is on. The debug log thus created, which does not require
@@ -1246,7 +1247,7 @@ indicates the time spent in a tactic depending on its calling context. Thus
 it allows to locate the part of a tactic definition that contains the
 performance issue.
 
-.. opt:: Ltac Profiling
+.. flag:: Ltac Profiling
 
    This option enables and disables the profiler.
 
@@ -1332,7 +1333,7 @@ performance issue.
    benchmarking purposes.
 
 You can also pass the ``-profile-ltac`` command line option to ``coqc``, which
-turns the :opt:`Ltac Profiling` option on at the beginning of each document,
+turns the :flag:`Ltac Profiling` option on at the beginning of each document,
 and performs a :cmd:`Show Ltac Profile` at the end.
 
 .. warning::
