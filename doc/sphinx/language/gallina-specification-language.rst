@@ -1422,15 +1422,6 @@ using the keyword :cmd:`Qed`.
    #. One can also use :cmd:`Admitted` in place of :cmd:`Qed` to turn the
       current asserted statement into an axiom and exit the proof editing mode.
 
-.. [1]
-   This is similar to the expression “*entry* :math:`\{` sep *entry*
-   :math:`\}`” in standard BNF, or “*entry* :math:`(` sep *entry*
-   :math:`)`\ \*” in the syntax of regular expressions.
-
-.. [2]
-   Except if the inductive type is empty in which case there is no
-   equation that can be used to infer the return type.
-
 .. _gallina-attributes:
 
 Attributes
@@ -1466,12 +1457,14 @@ the following attributes names are recognized:
     This attribute can trigger the following warnings:
 
     .. warn:: Tactic @qualid is deprecated since @string. @string.
+       :undocumented:
 
     .. warn:: Tactic Notation @qualid is deprecated since @string. @string.
+       :undocumented:
 
-Here are a few examples:
+.. example::
 
-.. coqtop:: all reset
+   .. coqtop:: all reset
 
         From Coq Require Program.
         #[program] Definition one : nat := S _.
@@ -1486,3 +1479,12 @@ Here are a few examples:
         Proof.
           now foo.
         Abort.
+
+.. [1]
+   This is similar to the expression “*entry* :math:`\{` sep *entry*
+   :math:`\}`” in standard BNF, or “*entry* :math:`(` sep *entry*
+   :math:`)`\ \*” in the syntax of regular expressions.
+
+.. [2]
+   Except if the inductive type is empty in which case there is no
+   equation that can be used to infer the return type.
