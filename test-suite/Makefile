@@ -102,7 +102,7 @@ VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
   coqdoc ssr
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile unit-tests
+SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile tools unit-tests
 
 PREREQUISITELOG = prerequisite/admit.v.log			\
   prerequisite/make_local.v.log prerequisite/make_notation.v.log \
@@ -174,6 +174,7 @@ summary:
 	  $(call summary_dir, "Coqwc tests", coqwc); \
 	  $(call summary_dir, "Coq makefile", coq-makefile); \
 	  $(call summary_dir, "Coqdoc tests", coqdoc); \
+	  $(call summary_dir, "tools/ tests", tools); \
 	  $(call summary_dir, "Unit tests", unit-tests); \
 	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
 	  nb_failure=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_failure) | wc -l`; \
@@ -652,3 +653,23 @@ $(addsuffix .log,$(wildcard coqdoc/*.v)): %.v.log: %.v %.html.out %.tex.out $(PR
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
+
+# tools/
+
+tools: $(patsubst %/run.sh,%.log,$(wildcard tools/*/run.sh))
+
+tools/%.log : tools/%/run.sh
+	@echo "TEST      tools/$*"
+	$(HIDE)(\
+	  export COQBIN=$(BIN);\
+	  cd tools/$* && \
+	  bash run.sh 2>&1; \
+	if [ $$? = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error!"; \
+	    $(FAIL); \
+	  fi; \
+	) > "$@"
