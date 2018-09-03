@@ -91,7 +91,7 @@ endif
 
 coqlight: theories-light tools coqbinaries
 
-states: camldevfiles theories/Init/Prelude.vo
+states: theories/Init/Prelude.vo
 
 miniopt: $(COQTOPEXE) pluginsopt
 minibyte: $(COQTOPBYTE) pluginsbyte
