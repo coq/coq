@@ -243,7 +243,7 @@ GEXTEND Gram
 
   record_field_declaration:
     [ [ id = global; bl = binders; ":="; c = lconstr ->
-      (id, mkCLambdaN ~loc:!@loc bl c) ] ]
+      (id, if bl = [] then c else mkCLambdaN ~loc:!@loc bl c) ] ]
   ;
   binder_constr:
     [ [ "forall"; bl = open_binders; ","; c = operconstr LEVEL "200" ->
