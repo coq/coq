@@ -1372,6 +1372,154 @@ Abbreviations
    denoted expression is performed at definition time. Type checking is
    done only at the time of use of the abbreviation.
 
+
+Numeral notations
+-----------------
+
+.. cmd:: Numeral Notation @ident__1 @ident__2 @ident__3 : @scope.
+
+  This command allows the user to customize the way numeral literals
+  are parsed and printed.
+
+  The token :n:`@ident__1` should be the name of an inductive type,
+  while :n:`@ident__2` and :n:`@ident__3` should be the names of the
+  parsing and printing functions, respectively.  The parsing function
+  :n:`@ident__2` should have one of the following types:
+
+    * :n:`Decimal.int -> @ident__1`
+    * :n:`Decimal.int -> option @ident__1`
+    * :n:`Decimal.uint -> @ident__1`
+    * :n:`Decimal.uint -> option @ident__1`
+    * :n:`Z -> @ident__1`
+    * :n:`Z -> option @ident__1`
+
+  And the printing function :n:`@ident__3` should have one of the
+  following types:
+
+    * :n:`@ident__1 -> Decimal.int`
+    * :n:`@ident__1 -> option Decimal.int`
+    * :n:`@ident__1 -> Decimal.uint`
+    * :n:`@ident__1 -> option Decimal.uint`
+    * :n:`@ident__1 -> Z`
+    * :n:`@ident__1 -> option Z`
+
+    When parsing, the application of the parsing function
+    :n:`@ident__2` to the number will be fully reduced, and universes
+    of the resulting term will be refreshed.
+
+  .. cmdv:: Numeral Notation @ident__1 @ident__2 @ident__3 : @scope (warning after @num).
+
+    When a literal larger than :token:`num` is parsed, a warning
+    message about possible stack overflow, resulting from evaluating
+    :n:`@ident__2`, will be displayed.
+
+  .. cmdv:: Numeral Notation @ident__1 @ident__2 @ident__3 : @scope (abstract after @num).
+
+    When a literal :g:`m` larger than :token:`num` is parsed, the
+    result will be :n:`(@ident__2 m)`, without reduction of this
+    application to a normal form.  Here :g:`m` will be a
+    :g:`Decimal.int` or :g:`Decimal.uint` or :g:`Z`, depending on the
+    type of the parsing function :n:`@ident__2`. This allows for a
+    more compact representation of literals in types such as :g:`nat`,
+    and limits parse failures due to stack overflow.  Note that a
+    warning will be emitted when an integer larger than :token:`num`
+    is parsed.  Note that :n:`(abstract after @num)` has no effect
+    when :n:`@ident__2` lands in an :g:`option` type.
+
+  .. exn:: Cannot interpret this number as a value of type @type
+
+    The numeral notation registered for :token:`type` does not support
+    the given numeral.  This error is given when the interpretation
+    function returns :g:`None`, or if the interpretation is registered
+    for only non-negative integers, and the given numeral is negative.
+
+  .. exn:: @ident should go from Decimal.int to @type or (option @type). Instead of Decimal.int, the types Decimal.uint or Z could be used{? (require BinNums first)}.
+
+    The parsing function given to the :cmd:`Numeral Notation`
+    vernacular is not of the right type.
+
+  .. exn:: @ident should go from @type to Decimal.int or (option Decimal.int).  Instead of Decimal.int, the types Decimal.uint or Z could be used{? (require BinNums first)}.
+
+    The printing function given to the :cmd:`Numeral Notation`
+    vernacular is not of the right type.
+
+  .. exn:: @type is not an inductive type.
+
+    Numeral notations can only be declared for inductive types with no
+    arguments.
+
+  .. exn:: Unexpected term @term while parsing a numeral notation.
+
+    Parsing functions must always return ground terms, made up of
+    applications of constructors and inductive types.  Parsing
+    functions may not return terms containing axioms, bare
+    (co)fixpoints, lambdas, etc.
+
+  .. exn:: Unexpected non-option term @term while parsing a numeral notation.
+
+    Parsing functions expected to return an :g:`option` must always
+    return a concrete :g:`Some` or :g:`None` when applied to a
+    concrete numeral expressed as a decimal.  They may not return
+    opaque constants.
+
+  .. exn:: Cannot interpret in @scope because @ident could not be found in the current environment.
+
+    The inductive type used to register the numeral notation is no
+    longer available in the environment.  Most likely, this is because
+    the numeral notation was declared inside a functor for an
+    inductive type inside the functor.  This use case is not currently
+    supported.
+
+    Alternatively, you might be trying to use a primitive token
+    notation from a plugin which forgot to specify which module you
+    must :g:`Require` for access to that notation.
+
+  .. exn:: Syntax error: [prim:reference] expected after 'Notation' (in [vernac:command]).
+
+    The type passed to :cmd:`Numeral Notation` must be a single
+    identifier.
+
+  .. exn:: Syntax error: [prim:reference] expected after [prim:reference] (in [vernac:command]).
+
+    Both functions passed to :cmd:`Numeral Notation` must be single
+    identifiers.
+
+  .. exn:: The reference @ident was not found in the current environment.
+
+    Identifiers passed to :cmd:`Numeral Notation` must exist in the
+    global environment.
+
+  .. exn:: @ident is bound to a notation that does not denote a reference.
+
+    Identifiers passed to :cmd:`Numeral Notation` must be global
+    references, or notations which denote to single identifiers.
+
+  .. warn:: Stack overflow or segmentation fault happens when working with large numbers in @type (threshold may vary depending on your system limits and on the command executed).
+
+    When a :cmd:`Numeral Notation` is registered in the current scope
+    with :n:`(warning after @num)`, this warning is emitted when
+    parsing a numeral greater than or equal to :token:`num`.
+
+  .. warn:: To avoid stack overflow, large numbers in @type are interpreted as applications of @ident__2.
+
+    When a :cmd:`Numeral Notation` is registered in the current scope
+    with :n:`(abstract after @num)`, this warning is emitted when
+    parsing a numeral greater than or equal to :token:`num`.
+    Typically, this indicates that the fully computed representation
+    of numerals can be so large that non-tail-recursive OCaml
+    functions run out of stack space when trying to walk them.
+
+    For example
+
+    .. coqtop:: all
+
+       Check 90000.
+
+  .. warn:: The 'abstract after' directive has no effect when the parsing function (@ident__2) targets an option type.
+
+    As noted above, the :n:`(abstract after @num)` directive has no
+    effect when :n:`@ident__2` lands in an :g:`option` type.
+
 .. _TacticNotation:
 
 Tactic Notations

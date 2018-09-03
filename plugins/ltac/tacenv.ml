@@ -144,7 +144,7 @@ let add ~deprecation kn b t =
   mactab := KNmap.add kn entry !mactab
 
 let replace kn path t =
-  let (path, _, _) = KerName.repr path in
+  let path = KerName.modpath path in
   let entry _ e = { e with tac_body = t; tac_redef = path :: e.tac_redef } in
   mactab := KNmap.modify kn entry !mactab
 

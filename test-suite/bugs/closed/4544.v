@@ -19,6 +19,7 @@ Inductive sum (A B : Type) : Type :=
   | inl : A -> sum A B
   | inr : B -> sum A B.
 Notation nat := Coq.Init.Datatypes.nat.
+Notation O := Coq.Init.Datatypes.O.
 Notation S := Coq.Init.Datatypes.S.
 Notation "x + y" := (sum x y) : type_scope.
 
@@ -449,7 +450,7 @@ Section Extensions.
            (n : nat) {A : Type@{i}} {B : Type@{j}}
            (f : A -> B) (C : B -> Type@{k}) : Type@{l}
     := match n with
-         | 0 => Unit@{l}
+         | O => Unit@{l}
          | S n => (forall (g : forall a, C (f a)),
                      ExtensionAlong@{i j k l l} f C g) *
                   forall (h k : forall b, C b),

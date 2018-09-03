@@ -13,6 +13,10 @@ Require Import BinPos.
 
 Local Open Scope N_scope.
 
+Local Notation "0" := N0.
+Local Notation "1" := (Npos 1).
+Local Notation "2" := (Npos 2).
+
 (**********************************************************************)
 (** * Binary natural numbers, definitions of operations *)
 (**********************************************************************)
@@ -398,4 +402,9 @@ Definition to_uint n :=
 
 Definition to_int n := Decimal.Pos (to_uint n).
 
+Numeral Notation N of_uint to_uint : N_scope.
+
 End N.
+
+(** Re-export the notation for those who just [Import NatIntDef] *)
+Numeral Notation N N.of_uint N.to_uint : N_scope.

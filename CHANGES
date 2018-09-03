@@ -65,6 +65,33 @@ Standard Library
 
 - Added `Ndigits.N2Bv_sized`, and proved some lemmas about it.
 
+- The scopes `int_scope` and `uint_scope` have been renamed to
+  `dec_int_scope` and `dec_uint_scope`, to clash less with ssreflect
+  and other packages.  They are still delimited by `%int` and `%uint`.
+
+- Syntax notations for `string`, `ascii`, `Z`, `positive`, `N`, `R`,
+  and `int31` are no longer available merely by `Require`ing the files
+  that define the inductives.  You must `Import` `Coq.Strings.String`,
+  `Coq.Strings.Ascii`, `Coq.ZArith.BinIntDef`, `Coq.PArith.BinPosDef`,
+  `Coq.NArith.BinNatDef`, `Coq.Reals.Rdefinitions`, and
+  `Coq.Numbers.Cyclic.Int31.Int31`, respectively, to be able to use
+  these notations.  Note that passing `-compat 8.8` or issuing
+  `Require Import Coq.Compat.Coq88` will make these notations
+  available.  Users wishing to port their developments automatically
+  may download `fix.py` from
+  <https://gist.github.com/JasonGross/5d4558edf8f5c2c548a3d96c17820169>
+  and run a command like `while true; do make -Okj 2>&1 |
+  /path/to/fix.py; done` and get a cup of coffee.  (This command must
+  be manually interrupted once the build finishes all the way though.
+  Note also that this method is not fail-proof; you may have to adjust
+  some scopes if you were relying on string notations not being
+  available even when `string_scope` was open.)
+
+- Numeral syntax for `nat` is no longer available without loading the
+  entire prelude (`Require Import Coq.Init.Prelude`).  This only
+  impacts users running Coq without the init library (`-nois` or
+  `-noinit`) and also issuing `Require Import Coq.Init.Datatypes`.
+
 Tools
 
 - Coq_makefile lets one override or extend the following variables from
@@ -98,6 +125,8 @@ Vernacular Commands
   overwritting the opacity set of the hint database.
 - Added generic syntax for “attributes”, as in:
   `#[local] Lemma foo : bar.`
+- Added the `Numeral Notation` command for registering decimal numeral
+  notations for custom types
 - The `Set SsrHave NoTCResolution` command no longer has special global
   scope. If you want the previous behavior, use `Global Set SsrHave
   NoTCResolution`.

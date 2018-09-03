@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Bigint
 open Names
 open Libnames
 open Constrexpr
@@ -75,24 +74,62 @@ val find_delimiters_scope : ?loc:Loc.t -> delimiters -> scope_name
 
 type notation_location = (DirPath.t * DirPath.t) * string
 type required_module = full_path * string list
-type cases_pattern_status = bool (** true = use prim token in patterns *)
-
-type 'a prim_token_interpreter =
-    ?loc:Loc.t -> 'a -> glob_constr
-
-type 'a prim_token_uninterpreter =
-    glob_constr list * (any_glob_constr -> 'a option) * cases_pattern_status
-
 type rawnum = Constrexpr.raw_natural_number * Constrexpr.sign
 
-val declare_rawnumeral_interpreter : scope_name -> required_module ->
-  rawnum prim_token_interpreter -> rawnum prim_token_uninterpreter -> unit
+(** The unique id string below will be used to refer to a particular
+    registered interpreter/uninterpreter of numeral or string notation.
+    Using the same uid for different (un)interpreters will fail.
+    If at most one interpretation of prim token is used per scope,
+    then the scope name could be used as unique id. *)
 
-val declare_numeral_interpreter : scope_name -> required_module ->
-  bigint prim_token_interpreter -> bigint prim_token_uninterpreter -> unit
+type prim_token_uid = string
 
-val declare_string_interpreter : scope_name -> required_module ->
-  string prim_token_interpreter -> string prim_token_uninterpreter -> unit
+type 'a prim_token_interpreter = ?loc:Loc.t -> 'a -> glob_constr
+type 'a prim_token_uninterpreter = any_glob_constr -> 'a option
+
+type 'a prim_token_interpretation =
+  'a prim_token_interpreter * 'a prim_token_uninterpreter
+
+val register_rawnumeral_interpretation :
+  ?allow_overwrite:bool -> prim_token_uid -> rawnum prim_token_interpretation -> unit
+
+val register_bignumeral_interpretation :
+  ?allow_overwrite:bool -> prim_token_uid -> Bigint.bigint prim_token_interpretation -> unit
+
+val register_string_interpretation :
+  ?allow_overwrite:bool -> prim_token_uid -> string prim_token_interpretation -> unit
+
+type prim_token_infos = {
+  pt_local : bool; (** Is this interpretation local? *)
+  pt_scope : scope_name; (** Concerned scope *)
+  pt_uid : prim_token_uid; (** Unique id "pointing" to (un)interp functions *)
+  pt_required : required_module; (** Module that should be loaded first *)
+  pt_refs : GlobRef.t list; (** Entry points during uninterpretation *)
+  pt_in_match : bool (** Is this prim token legal in match patterns ? *)
+}
+
+(** Note: most of the time, the [pt_refs] field above will contain
+    inductive constructors (e.g. O and S for nat). But it could also be
+    injection functions such as IZR for reals. *)
+
+(** Activate a prim token interpretation whose unique id and functions
+    have already been registered. *)
+
+val enable_prim_token_interpretation : prim_token_infos -> unit
+
+(** Compatibility.
+    Avoid the next two functions, they will now store unnecessary
+    objects in the library segment. Instead, combine
+    [register_*_interpretation] and [enable_prim_token_interpretation]
+    (the latter inside a [Mltop.declare_cache_obj]).
+*)
+
+val declare_numeral_interpreter : ?local:bool -> scope_name -> required_module ->
+  Bigint.bigint prim_token_interpreter ->
+  glob_constr list * Bigint.bigint prim_token_uninterpreter * bool -> unit
+val declare_string_interpreter : ?local:bool -> scope_name -> required_module ->
+  string prim_token_interpreter ->
+  glob_constr list * string prim_token_uninterpreter * bool -> unit
 
 (** Return the [term]/[cases_pattern] bound to a primitive token in a
    given scope context*)
@@ -110,8 +147,6 @@ val uninterp_prim_token :
   'a glob_constr_g -> scope_name * prim_token
 val uninterp_prim_token_cases_pattern :
   'a cases_pattern_g -> Name.t * scope_name * prim_token
-val uninterp_prim_token_ind_pattern :
- inductive -> cases_pattern list -> scope_name * prim_token
 
 val availability_of_prim_token :
   prim_token -> scope_name -> subscopes -> delimiters option option
