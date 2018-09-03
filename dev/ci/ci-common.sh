@@ -37,12 +37,12 @@ ls "$COQBIN"
 # Where we download and build external developments
 CI_BUILD_DIR="$PWD/_build_ci"
 
-# shellcheck source=ci-basic-overlay.sh
-. "${ci_dir}/ci-basic-overlay.sh"
 for overlay in "${ci_dir}"/user-overlays/*.sh; do
     # shellcheck source=/dev/null
     . "${overlay}"
 done
+# shellcheck source=ci-basic-overlay.sh
+. "${ci_dir}/ci-basic-overlay.sh"
 
 # [git_download project] will download [project] and unpack it
 # in [$CI_BUILD_DIR/project] if the folder does not exist already;
