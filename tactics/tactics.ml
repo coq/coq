@@ -125,7 +125,7 @@ let unsafe_intro env store decl b =
     let ninst = mkRel 1 :: inst in
     let nb = subst1 (mkVar (NamedDecl.get_id decl)) b in
     let (sigma, ev) = new_evar_instance nctx sigma nb ~principal:true ~store ninst in
-    (sigma, mkNamedLambda_or_LetIn decl ev)
+    (sigma, mkLambda_or_LetIn (NamedDecl.to_rel_decl decl) ev)
   end
 
 let introduction id =
