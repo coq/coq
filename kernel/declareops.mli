@@ -11,7 +11,6 @@
 open Declarations
 open Mod_subst
 open Univ
-open Entries
 
 (** Operations concerning types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
@@ -38,10 +37,6 @@ val constant_is_polymorphic : constant_body -> bool
     the context is empty. *)
 
 val is_opaque : constant_body -> bool
-
-(** Side effects *)
-
-val string_of_side_effect : side_effect -> string
 
 (** {6 Inductive types} *)
 

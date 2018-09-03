@@ -210,12 +210,7 @@ let get_opaque_body env cbo =
         (Opaqueproof.force_proof (Environ.opaque_tables env) opaque,
          Opaqueproof.force_constraints (Environ.opaque_tables env) opaque)
 
-type private_constant = Entries.side_effect
 type private_constants = Term_typing.side_effects
-
-type private_constant_role = Term_typing.side_effect_role =
-  | Subproof
-  | Schema of inductive * string
 
 let empty_private_constants = Term_typing.empty_seff
 let add_private = Term_typing.add_seff
@@ -225,44 +220,38 @@ let inline_private_constants_in_constr = Term_typing.inline_side_effects
 let inline_private_constants_in_definition_entry = Term_typing.inline_entry_side_effects
 let side_effects_of_private_constants = Term_typing.uniq_seff
 
+let make_eff env cst r =
+  let open Entries in
+  let cbo = Environ.lookup_constant cst env.env in
+  {
+    seff_constant = cst;
+    seff_body = cbo;
+    seff_env = get_opaque_body env.env cbo;
+    seff_role = r;
+  }
+
 let private_con_of_con env c =
-  let cbo = Environ.lookup_constant c env.env in
-  { Entries.from_env = CEphemeron.create env.revstruct;
-    Entries.eff      = Entries.SEsubproof (c,cbo,get_opaque_body env.env cbo) }
+  let open Entries in
+  let eff = [make_eff env c Subproof] in
+  add_private env.revstruct eff empty_private_constants
 
 let private_con_of_scheme ~kind env cl =
-  { Entries.from_env = CEphemeron.create env.revstruct;
-    Entries.eff      = Entries.SEscheme(
-      List.map (fun (i,c) ->
-        let cbo = Environ.lookup_constant c env.env in
-        i, c, cbo, get_opaque_body env.env cbo) cl,
-      kind) }
+  let open Entries in
+  let eff = List.map (fun (i, c) -> make_eff env c (Schema (i, kind))) cl in
+  add_private env.revstruct eff empty_private_constants
 
 let universes_of_private eff =
-  let open Declarations in
-  List.fold_left
-    (fun acc { Entries.eff } ->
-       match eff with
-       | Entries.SEscheme (l,s) ->
-         List.fold_left
-           (fun acc (_,_,cb,c) ->
-              let acc = match c with
-                | `Nothing -> acc
-                | `Opaque (_, ctx) -> ctx :: acc
-              in
-              match cb.const_universes with
-              | Monomorphic_const ctx ->
-                ctx :: acc
-              | Polymorphic_const _ -> acc
-           )
-           acc l
-       | Entries.SEsubproof (c, cb, e) ->
-         match cb.const_universes with
-              | Monomorphic_const ctx ->
-                ctx :: acc
-              | Polymorphic_const _ -> acc
-    )
-    [] (Term_typing.uniq_seff eff)
+  let open Entries in
+  let fold acc eff =
+    let acc = match eff.seff_env with
+    | `Nothing -> acc
+    | `Opaque (_, ctx) -> ctx :: acc
+    in
+    match eff.seff_body.const_universes with
+    | Monomorphic_const ctx -> ctx :: acc
+    | Polymorphic_const _ -> acc
+  in
+  List.fold_left fold [] (Term_typing.uniq_seff eff)
 
 let env_of_safe_env senv = senv.env
 let env_of_senv = env_of_safe_env
@@ -489,7 +478,7 @@ type global_declaration =
   | GlobalRecipe of Cooking.recipe
 
 type exported_private_constant = 
-  Constant.t * private_constant_role
+  Constant.t * Entries.side_effect_role
 
 let add_constant_aux no_section senv (kn, cb) =
   let l = pi3 (Constant.repr3 kn) in

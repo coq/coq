@@ -150,8 +150,8 @@ let register_side_effect (c, role) =
   ignore(add_leaf id o);
   update_tables c;
   match role with
-  | Safe_typing.Subproof -> ()
-  | Safe_typing.Schema (ind, kind) -> !declare_scheme kind [|ind,c|]
+  | Subproof -> ()
+  | Schema (ind, kind) -> !declare_scheme kind [|ind,c|]
 
 let declare_constant_common id cst =
   let o = inConstant cst in
