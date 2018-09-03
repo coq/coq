@@ -53,7 +53,7 @@ type atom =
   | Acofixe of t array * t array * int * t
   | Aprod of Name.t * t * (t -> t)
   | Ameta of metavariable * t
-  | Aevar of Evar.t * t (* type *) * t array (* arguments *)
+  | Aevar of Evar.t * t array (* arguments *)
   | Aproj of (inductive * int) * accumulator
 
 (* Constructors *)
@@ -70,7 +70,7 @@ val mk_prod_accu : Name.t -> t -> t -> t
 val mk_fix_accu : rec_pos  -> int -> t array -> t array -> t
 val mk_cofix_accu : int -> t array -> t array -> t
 val mk_meta_accu : metavariable -> t
-val mk_evar_accu : Evar.t -> t -> t array -> t
+val mk_evar_accu : Evar.t -> t array -> t
 val mk_proj_accu : (inductive * int) -> accumulator -> t
 val upd_cofix : t -> t -> unit
 val force_cofix : t -> t 

@@ -15,7 +15,6 @@ open Nativeinstr
 (** This file defines the lambda code generation phase of the native compiler *)
 type evars =
     { evars_val : existential -> constr option;
-      evars_typ : existential -> types;
       evars_metas : metavariable -> types }
 
 val empty_evars : evars

@@ -23,7 +23,6 @@ exception NotClosed
 
 type evars =
     { evars_val : existential -> constr option;
-      evars_typ : existential -> types;
       evars_metas : metavariable -> types }
 
 (*s Constructors *)
@@ -88,7 +87,7 @@ let get_const_prefix env c =
 let rec map_lam_with_binders g f n lam =
   match lam with
   | Lrel _ | Lvar _  | Lconst _ | Lproj _ | Lval _ | Lsort _ | Lind _
-  | Lconstruct _ | Llazy | Lforce | Lmeta _ | Levar _ -> lam
+  | Lconstruct _ | Llazy | Lforce | Lmeta _ -> lam
   | Lprod(dom,codom) -> 
       let dom' = f n dom in
       let codom' = f n codom in
@@ -139,6 +138,9 @@ let rec map_lam_with_binders g f n lam =
   | Luint u ->
     let u' = map_uint g f n u in
     if u == u' then lam else Luint u'
+  | Levar (evk, args) ->
+    let args' = Array.Smart.map (f n) args in
+    if args == args' then lam else Levar (evk, args')
 
 and map_uint g f n u =
   match u with
@@ -386,13 +388,10 @@ let is_lazy env prefix t =
 
 let evar_value sigma ev = sigma.evars_val ev
 
-let evar_type sigma ev = sigma.evars_typ ev
-
 let meta_type sigma mv = sigma.evars_metas mv
 
 let empty_evars =
   { evars_val = (fun _ -> None);
-    evars_typ = (fun _ -> assert false);
     evars_metas = (fun _ -> assert false) }
 
 let empty_ids = [||]
@@ -420,9 +419,8 @@ let rec lambda_of_constr cache env sigma c =
   | Evar (evk,args as ev) ->
      (match evar_value sigma ev with
      | None ->
-	let ty = evar_type sigma ev in
         let args = Array.map (lambda_of_constr cache env sigma) args in
-        Levar(evk, lambda_of_constr cache env sigma ty, args)
+        Levar(evk, args)
      | Some t -> lambda_of_constr cache env sigma t)
 
   | Cast (c, _, _) -> lambda_of_constr cache env sigma c
