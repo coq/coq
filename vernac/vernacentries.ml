@@ -1505,8 +1505,8 @@ let _ =
     { optdepr  = false;
       optname  = "kernel term sharing";
       optkey   = ["Kernel"; "Term"; "Sharing"];
-      optread  = (fun () -> !CClosure.share);
-      optwrite = (fun b -> CClosure.share := b) }
+      optread  = (fun () -> (Global.typing_flags ()).Declarations.share_reduction);
+      optwrite = (fun b -> Global.set_reduction_sharing b) }
 
 let _ =
   declare_bool_option

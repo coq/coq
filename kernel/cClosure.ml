@@ -31,7 +31,6 @@ open Environ
 open Esubst
 
 let stats = ref false
-let share = ref true
 
 (* Profiling *)
 let beta = ref 0
@@ -266,6 +265,7 @@ type 'a infos_cache = {
   i_env : env;
   i_sigma : existential -> constr option;
   i_rels : (Constr.rel_declaration * lazy_val) Range.t;
+  i_share : bool;
 }
 
 and 'a infos = {
@@ -313,12 +313,13 @@ let ref_value_cache ({i_cache = cache} as infos) tab ref =
 let evar_value cache ev =
   cache.i_sigma ev
 
-let create mk_cl flgs env evars =
+let create ~repr ~share flgs env evars =
   let cache =
-    { i_repr = mk_cl;
+    { i_repr = repr;
       i_env = env;
       i_sigma = evars;
       i_rels = env.env_rel_context.env_rel_map;
+      i_share = share;
     }
   in { i_flags = flgs; i_cache = cache }
 
@@ -384,8 +385,8 @@ let mk_red f = {norm=Red;term=f}
 
 (* Could issue a warning if no is still Red, pointing out that we loose
    sharing. *)
-let update v1 no t =
-  if !share then
+let update ~share v1 no t =
+  if share then
     (v1.norm <- no;
      v1.term <- t;
      v1)
@@ -498,14 +499,16 @@ let compact_stack head stk =
         (* Be sure to create a new cell otherwise sharing would be
            lost by the update operation *)
         let h' = lft_fconstr depth head in
-        let _ = update m h'.norm h'.term in
+        (** The stack contains [Zupdate] marks only if in sharing mode *)
+        let _ = update ~share:true m h'.norm h'.term in
         strip_rec depth s
     | stk -> zshift depth stk in
   strip_rec 0 stk
 
 (* Put an update mark in the stack, only if needed *)
-let zupdate m s =
-  if !share && begin match m.norm with Red -> true | _ -> false end
+let zupdate info m s =
+  let share = info.i_cache.i_share in
+  if share && begin match m.norm with Red -> true | _ -> false end
   then
     let s' = compact_stack m s in
     let _ = m.term <- FLOCKED in
@@ -698,7 +701,8 @@ let rec zip m stk =
     | Zshift(n)::s ->
         zip (lift_fconstr n m) s
     | Zupdate(rf)::s ->
-        zip (update rf m.norm m.term) s
+      (** The stack contains [Zupdate] marks only if in sharing mode *)
+        zip (update ~share:true rf m.norm m.term) s
 
 let fapp_stack (m,stk) = zip m stk
 
@@ -718,7 +722,8 @@ let strip_update_shift_app_red head stk =
         strip_rec (Zapp args :: rstk)
           {norm=h.norm;term=FApp(h,args)} depth s
     | Zupdate(m)::s ->
-        strip_rec rstk (update m h.norm h.term) depth s
+      (** The stack contains [Zupdate] marks only if in sharing mode *)
+        strip_rec rstk (update ~share:true m h.norm h.term) depth s
     | stk -> (depth,List.rev rstk, stk) in
   strip_rec [] head 0 stk
 
@@ -743,7 +748,8 @@ let get_nth_arg head n stk =
             List.rev (if Int.equal n 0 then rstk else (Zapp bef :: rstk)) in
           (Some (stk', args.(n)), append_stack aft s')
     | Zupdate(m)::s ->
-        strip_rec rstk (update m h.norm h.term) n s
+        (** The stack contains [Zupdate] mark only if in sharing mode *)
+        strip_rec rstk (update ~share:true m h.norm h.term) n s
     | s -> (None, List.rev rstk @ s) in
   strip_rec [] head n stk
 
@@ -752,7 +758,8 @@ let get_nth_arg head n stk =
 let rec get_args n tys f e stk =
   match stk with
       Zupdate r :: s ->
-        let _hd = update r Cstr (FLambda(n,tys,f,e)) in
+        (** The stack contains [Zupdate] mark only if in sharing mode *)
+        let _hd = update ~share:true r Cstr (FLambda(n,tys,f,e)) in
         get_args n tys f e s
     | Zshift k :: s ->
         get_args n tys f (subs_shft (k,e)) s
@@ -889,10 +896,10 @@ let unfold_projection info p =
 let rec knh info m stk =
   match m.term with
     | FLIFT(k,a) -> knh info a (zshift k stk)
-    | FCLOS(t,e) -> knht info e t (zupdate m stk)
+    | FCLOS(t,e) -> knht info e t (zupdate info m stk)
     | FLOCKED -> assert false
-    | FApp(a,b) -> knh info a (append_stack b (zupdate m stk))
-    | FCaseT(ci,p,t,br,e) -> knh info t (ZcaseT(ci,p,br,e)::zupdate m stk)
+    | FApp(a,b) -> knh info a (append_stack b (zupdate info m stk))
+    | FCaseT(ci,p,t,br,e) -> knh info t (ZcaseT(ci,p,br,e)::zupdate info m stk)
     | FFix(((ri,n),(_,_,_)),_) ->
         (match get_nth_arg m ri.(n) stk with
              (Some(pars,arg),stk') -> knh info arg (Zfix(m,pars)::stk')
@@ -901,7 +908,7 @@ let rec knh info m stk =
     | FProj (p,c) ->
       (match unfold_projection info p with
        | None -> (m, stk)
-       | Some s -> knh info c (s :: zupdate m stk))
+       | Some s -> knh info c (s :: zupdate info m stk))
 
 (* cases where knh stops *)
     | (FFlex _|FLetIn _|FConstruct _|FEvar _|
@@ -1019,10 +1026,11 @@ let rec zip_term zfun m stk =
    2- tries to rebuild the term. If a closure still has to be computed,
       calls itself recursively. *)
 let rec kl info tab m =
+  let share = info.i_cache.i_share in
   if is_val m then (incr prune; term_of_fconstr m)
   else
     let (nm,s) = kni info tab m [] in
-    let () = if !share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
+    let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
     zip_term (kl info tab) (norm_head info tab nm) s
 
 (* no redex: go up for atoms and already normalized terms, go down
@@ -1078,14 +1086,15 @@ let whd_stack infos tab m stk = match m.norm with
   knh infos m stk
 | Red | Cstr ->
   let k = kni infos tab m stk in
-  let () = if !share then ignore (fapp_stack k) in (* to unlock Zupdates! *)
+  let () = if infos.i_cache.i_share then ignore (fapp_stack k) in (* to unlock Zupdates! *)
   k
 
 (* cache of constants: the body is computed only when needed. *)
 type clos_infos = fconstr infos
 
 let create_clos_infos ?(evars=fun _ -> None) flgs env =
-  create (fun _ _ c -> inject c) flgs env evars
+  let share = (Environ.typing_flags env).Declarations.share_reduction in
+  create ~share ~repr:(fun _ _ c -> inject c) flgs env evars
 
 let create_tab () = KeyTable.create 17
 

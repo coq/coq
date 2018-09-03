@@ -15,7 +15,6 @@ open Esubst
 
 (** Flags for profiling reductions. *)
 val stats : bool ref
-val share : bool ref
 
 val with_stats: 'a Lazy.t -> 'a
 
@@ -106,8 +105,13 @@ type 'a infos = {
   i_cache : 'a infos_cache }
 
 val ref_value_cache: 'a infos -> 'a infos_tab -> table_key -> 'a option
-val create: ('a infos -> 'a infos_tab -> constr -> 'a) -> reds -> env ->
-  (existential -> constr option) -> 'a infos
+val create:
+  repr:('a infos -> 'a infos_tab -> constr -> 'a) ->
+  share:bool ->
+  reds ->
+  env ->
+  (existential -> constr option) ->
+  'a infos
 val create_tab : unit -> 'a infos_tab
 val evar_value : 'a infos_cache -> existential -> constr option
 

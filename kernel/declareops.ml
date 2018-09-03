@@ -21,6 +21,7 @@ let safe_flags oracle = {
   check_guarded = true;
   check_universes = true;
   conv_oracle = oracle;
+  share_reduction = true;
 }
 
 (** {6 Arities } *)
