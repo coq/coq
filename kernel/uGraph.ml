@@ -529,6 +529,11 @@ let add_universe vlev strict g =
 let add_universe_unconstrained vlev g =
   fst (add_universe_gen vlev g)
 
+exception UndeclaredLevel of Univ.Level.t
+let check_declared_universes g us =
+  let check l = if not (UMap.mem l g.entries) then raise (UndeclaredLevel l) in
+  Univ.LSet.iter check us
+
 exception Found_explanation of explanation
 
 let get_explanation strict u v g =

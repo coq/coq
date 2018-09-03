@@ -774,7 +774,7 @@ let universe_subst evd =
   UState.subst evd.universes
 
 let merge_context_set ?loc ?(sideff=false) rigid evd ctx' =
-  {evd with universes = UState.merge ?loc sideff rigid evd.universes ctx'}
+  {evd with universes = UState.merge ?loc ~sideff ~extend:true rigid evd.universes ctx'}
 
 let merge_universe_subst evd subst = 
   {evd with universes = UState.merge_subst evd.universes subst }

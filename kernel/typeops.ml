@@ -431,7 +431,28 @@ and execute_recdef env (names,lar,vdef) i =
 and execute_array env = Array.map (execute env)
 
 (* Derived functions *)
+
+let universe_levels_of_constr env c =
+  let rec aux s c =
+    match kind c with
+    | Const (c, u) ->
+       LSet.fold LSet.add (Instance.levels u) s
+    | Ind ((mind,_), u) | Construct (((mind,_),_), u) ->
+       LSet.fold LSet.add (Instance.levels u) s
+    | Sort u when not (Sorts.is_small u) ->
+      let u = Sorts.univ_of_sort u in
+      LSet.fold LSet.add (Universe.levels u) s
+    | _ -> Constr.fold aux s c
+  in aux LSet.empty c
+
+let check_wellformed_universes env c =
+  let univs = universe_levels_of_constr env c in
+  try UGraph.check_declared_universes (universes env) univs
+  with UGraph.UndeclaredLevel u ->
+    error_undeclared_universe env u
+
 let infer env constr =
+  let () = check_wellformed_universes env constr in
   let t = execute env constr in
     make_judge constr t
 
@@ -449,11 +470,13 @@ let type_judgment env {uj_val=c; uj_type=t} =
   {utj_val = c; utj_type = s }
 
 let infer_type env constr =
+  let () = check_wellformed_universes env constr in
   let t = execute env constr in
   let s = check_type env constr t in
   {utj_val = constr; utj_type = s}
 
 let infer_v env cv =
+  let () = Array.iter (check_wellformed_universes env) cv in
   let jv = execute_array env cv in
     make_judgev cv jv
 
@@ -461,9 +484,11 @@ let infer_v env cv =
 
 let infer_local_decl env id = function
   | Entries.LocalDefEntry c ->
+      let () = check_wellformed_universes env c in
       let t = execute env c in
       RelDecl.LocalDef (Name id, c, t)
   | Entries.LocalAssumEntry c ->
+      let () = check_wellformed_universes env c in
       let t = execute env c in
       RelDecl.LocalAssum (Name id, check_assumption env c t)
 

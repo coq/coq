@@ -430,10 +430,17 @@ let univ_rigid = UnivRigid
 let univ_flexible = UnivFlexible false
 let univ_flexible_alg = UnivFlexible true
 
-let merge ?loc sideff rigid uctx ctx' =
+(** ~sideff indicates that it is ok to redeclare a universe.
+    ~extend also merges the universe context in the local constraint structures
+    and not only in the graph. This depends if the
+    context we merge comes from a side effect that is already inlined
+    or defined separately. In the later case, there is no extension,
+    see [emit_side_effects] for example. *)
+let merge ?loc ~sideff ~extend rigid uctx ctx' =
   let open Univ in
   let levels = ContextSet.levels ctx' in
-  let uctx = if sideff then uctx else
+  let uctx =
+    if not extend then uctx else
     match rigid with
     | UnivRigid -> uctx
     | UnivFlexible b ->
@@ -448,9 +455,8 @@ let merge ?loc sideff rigid uctx ctx' =
         else { uctx with uctx_univ_variables = uvars' }
   in
   let uctx_local =
-    if sideff then uctx.uctx_local
-    else ContextSet.append ctx' uctx.uctx_local
-  in
+    if not extend then uctx.uctx_local
+    else ContextSet.append ctx' uctx.uctx_local in
   let declare g =
     LSet.fold (fun u g ->
                try UGraph.add_universe u false g
@@ -479,7 +485,7 @@ let merge_subst uctx s =
 
 let emit_side_effects eff u =
   let uctxs = Safe_typing.universes_of_private eff in
-  List.fold_left (merge true univ_rigid) u uctxs
+  List.fold_left (merge ~sideff:true ~extend:false univ_rigid) u uctxs
 
 let new_univ_variable ?loc rigid name
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =
@@ -668,7 +674,7 @@ let update_sigma_env uctx env =
     { uctx with uctx_initial_universes = univs;
                          uctx_universes = univs }
   in
-  merge true univ_rigid eunivs eunivs.uctx_local
+  merge ~sideff:true ~extend:false univ_rigid eunivs eunivs.uctx_local
 
 let pr_weak prl {uctx_weak_constraints=weak} =
   let open Pp in

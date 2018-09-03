@@ -62,6 +62,7 @@ type ('constr, 'types) ptype_error =
   | IllTypedRecBody of
       int * Name.t array * ('constr, 'types) punsafe_judgment array * 'types array
   | UnsatisfiedConstraints of Univ.Constraint.t
+  | UndeclaredUniverse of Univ.Level.t
 
 type type_error = (constr, types) ptype_error
 
@@ -125,3 +126,6 @@ let error_elim_explain kp ki =
 
 let error_unsatisfied_constraints env c =
   raise (TypeError (env, UnsatisfiedConstraints c))
+
+let error_undeclared_universe env l =
+  raise (TypeError (env, UndeclaredUniverse l))

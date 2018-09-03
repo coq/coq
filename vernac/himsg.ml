@@ -679,6 +679,11 @@ let explain_unsatisfied_constraints env sigma cst =
     Univ.pr_constraints (Termops.pr_evd_level sigma) cst ++ 
     spc () ++ str "(maybe a bugged tactic)."
 
+let explain_undeclared_universe env sigma l =
+  strbrk "Undeclared universe: " ++
+    Termops.pr_evd_level sigma l ++
+    spc () ++ str "(maybe a bugged tactic)."
+
 let explain_type_error env sigma err =
   let env = make_all_name_different env sigma in
   match err with
@@ -716,6 +721,8 @@ let explain_type_error env sigma err =
       explain_wrong_case_info env ind ci
   | UnsatisfiedConstraints cst ->
       explain_unsatisfied_constraints env sigma cst
+  | UndeclaredUniverse l ->
+     explain_undeclared_universe env sigma l
 
 let pr_position (cl,pos) =
   let clpos = match cl with
@@ -1299,6 +1306,7 @@ let map_ptype_error f = function
 | IllTypedRecBody (n, na, jv, t) ->
   IllTypedRecBody (n, na, Array.map (on_judgment f) jv, Array.map f t)
 | UnsatisfiedConstraints g -> UnsatisfiedConstraints g
+| UndeclaredUniverse l -> UndeclaredUniverse l
 
 let explain_reduction_tactic_error = function
   | Tacred.InvalidAbstraction (env,sigma,c,(env',e)) ->
