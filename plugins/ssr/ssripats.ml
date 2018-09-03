@@ -379,8 +379,9 @@ let elim_intro_tac ipats ?ist what eqid ssrelim is_rec clr =
          let ctx, last = EConstr.decompose_prod_assum sigma concl in
          let args = match EConstr.kind_of_type sigma last with
            | Term.AtomicType (hd, args) ->
-               assert(Ssrcommon.is_protect hd env sigma);
-               args
+               if Ssrcommon.is_protect hd env sigma then args
+               else Ssrcommon.errorstrm
+                  (Pp.str "Too many names in intro pattern")
            | _ -> assert false in
          let case = args.(Array.length args-1) in
          if not(EConstr.Vars.closed0 sigma case)
