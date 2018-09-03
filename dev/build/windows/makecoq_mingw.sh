@@ -1450,10 +1450,10 @@ function make_addons {
     export CI_BRANCH=""
     export CI_PULL_REQUEST=""
   fi
-  . /build/ci-basic-overlay.sh
   for overlay in /build/user-overlays/*.sh; do
     . "$overlay"
   done
+  . /build/ci-basic-overlay.sh
 
   for addon in $COQ_ADDONS; do
     "make_addon_$addon"
