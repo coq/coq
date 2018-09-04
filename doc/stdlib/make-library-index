@@ -8,35 +8,32 @@ HIDDEN=$2
 cp -f $FILE.template tmp
 echo -n "Building file index-list.prehtml... "
 
-#LIBDIRS="Init Logic Structures Bool Arith PArith NArith ZArith QArith Relations Sets Classes Setoids Lists Vectors Sorting Wellfounded MSets FSets Reals Program Numbers Numbers/Natural/Abstract Numbers/Natural/Peano Numbers/Natural/Binary Numbers/Natural/BigN Numbers/Natural/SpecViaZ Numbers/Integer/Abstract Numbers/Integer/NatPairs Numbers/Integer/Binary Numbers/Integer/SpecViaZ Numbers/Integer/BigZ Numbers/NatInt Numbers/Cyclic/Abstract Numbers/Cyclic/Int31 Numbers/Cyclic/ZModulo Numbers/Cyclic/DoubleCyclic Numbers/Rational/BigQ Numbers/Rational/SpecViaQ Strings"
-LIBDIRS=`find theories/* -type d ! -name .coq-native | sed -e "s:^theories/::"`
+LIBDIRS=`find theories/* plugins/* -type d ! -name .coq-native`
 
 for k in $LIBDIRS; do
-    i=theories/$k
-    d=`basename $i`
-      ls $i | grep -q \.v'$'
+    d=`basename $k`
+      ls $k | grep -q \.v'$'
       if [ $? = 0 ]; then
-	for j in $i/*.v; do
+	for j in $k/*.v; do
 	    b=`basename $j .v`
 	    rm -f tmp2
-	    grep -q theories/$k/$b.v tmp
+	    grep -q $k/$b.v tmp
 	    a=$?
-	    grep -q theories/$k/$b.v $HIDDEN
+	    grep -q $k/$b.v $HIDDEN
 	    h=$?
 	    if [ $a = 0 ]; then
 	        if [ $h = 0 ]; then
-                    echo Error: $FILE and $HIDDEN both mention theories/$k/$b.v; exit 1
+                    echo Error: $FILE and $HIDDEN both mention $k/$b.v; exit 1
                 else
-		    p=`echo $k | sed 's:/:.:g'`
-		    sed -e "s:theories/$k/$b.v:<a href=\"Coq.$p.$b.html\">$b</a>:g" tmp > tmp2
+		    p=`echo $k | sed 's:^[^/]*/::' | sed 's:/:.:g'`
+		    sed -e "s:$k/$b.v:<a href=\"Coq.$p.$b.html\">$b</a>:g" tmp > tmp2
 		    mv -f tmp2 tmp
                 fi
 	    else
 	        if [ $h = 0 ]; then
-		    echo Error: theories/$k/$b.v is missing in the template file
-                    exit 1
+		    echo Warning: $k/$b.v will be hidden from the index
                 else
-                    echo Error: none of $FILE and $HIDDEN mention theories/$k/$b.v
+                    echo Error: none of $FILE and $HIDDEN mention $k/$b.v
                     exit 1
 	        fi
 
