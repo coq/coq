@@ -136,12 +136,35 @@ rebuilding Coq. In one job, Coq is built with `./configure -prefix _install_ci`
 and `make install` is run, then the `_install_ci` directory
 persists to and is used by the next jobs.
 
-Artifacts can also be downloaded from the GitLab repository.
-Currently, available artifacts are:
+### Artifacts
+
+Build artifacts from GitLab can be linked / downloaded in a systematic
+way, see [GitLab's documentation](https://docs.gitlab.com/ce/user/project/pipelines/job_artifacts.html#downloading-the-latest-job-artifacts)
+for more information. For example, to access the documentation of the
+`master` branch, you can do:
+
+https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_install_ci/share/doc/coq/sphinx/html/index.html?job=doc:refman
+
+Browsing artifacts is also possible:
+https://gitlab.com/coq/coq/-/jobs/artifacts/master/browse/_install_ci/?job=build:base
+
+Above, you can replace `master` and `job` by the desired GitLab branch and job name.
+
+Currently available artifacts are:
+
 - the Coq executables and stdlib, in four copies varying in
-  architecture and OCaml version used to build Coq.
-- the Coq documentation, built in the `documentation` job. When submitting
-  a documentation PR, this can help reviewers checking the rendered result.
+  architecture and OCaml version used to build Coq:
+  https://gitlab.com/coq/coq/-/jobs/artifacts/master/browse/_install_ci/?job=build:base
+
+- the Coq documentation, built in the `doc:*` jobs. When submitting
+  a documentation PR, this can help reviewers checking the rendered result:
+
+  + Coq's Reference Manual [master branch]
+    https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_install_ci/share/doc/coq/sphinx/html/index.html?job=doc:refman
+  + Coq's Standard Library Documentation [master branch]
+    https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_install_ci/share/doc/coq/html/stdlib/index.html?job=doc:refman
+  + Coq's ML API Documentation [master branch]
+    https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/dev/ocamldoc/html/index.html?job=doc:ml-api
 
 ### GitLab and Windows
 
@@ -168,6 +191,6 @@ but if you wish to save more time you can skip the job by setting
 
 This means you will need to change its value when the Docker image
 needs to be updated. You can do so for a single pipeline by starting
-it through the web interface..
+it through the web interface.
 
 See also [`docker/README.md`](docker/README.md).
