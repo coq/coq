@@ -13,7 +13,8 @@
 Require Import ssreflect.
 
 
-(**  This file contains the basic definitions and notations for working with
+(**
+ This file contains the basic definitions and notations for working with
  functions. The definitions provide for:
 
  - Pair projections:
@@ -241,7 +242,8 @@ Coercion pair_of_and P Q (PandQ : P /\ Q) := (proj1 PandQ, proj2 PandQ).
 Definition all_pair I T U (w : forall i : I, T i * U i) :=
   (fun i => (w i).1, fun i => (w i).2).
 
-(**  Complements on the option type constructor, used below to
+(**
+ Complements on the option type constructor, used below to
  encode partial functions.                                   **)
 
 Module Option.
@@ -274,7 +276,7 @@ Definition congr2 := f_equal2.
 (**  Force at least one implicit when used as a view.  **)
 Prenex Implicits esym nesym.
 
-(**  A predicate for singleton types.                                            **)
+(**  A predicate for singleton types.  **)
 Definition all_equal_to T (x0 : T) := forall x, unkeyed x = x0.
 
 Lemma unitE : all_equal_to tt. Proof. by case. Qed.
@@ -286,7 +288,8 @@ Canonical wrap T x := @Wrap T x.
 
 Prenex Implicits unwrap wrap Wrap.
 
-(**  Syntax for defining auxiliary recursive function.
+(**
+ Syntax for defining auxiliary recursive function.
   Usage:
  Section FooDefinition.
  Variables (g1 : T1) (g2 : T2).  (globals)
@@ -321,7 +324,8 @@ Reserved Notation "[ 'rec' a0 , a1 , a2 , a3 , a4 , a5 , a6 , a7 , a8 , a9 ]"
   (at level 0,
   format "[ 'rec'  a0 ,  a1 ,  a2 ,  a3 ,  a4 ,  a5 ,  a6 ,  a7 ,  a8 ,  a9 ]").
 
-(**  Definitions and notation for explicit functions with simplification,
+(**
+ Definitions and notation for explicit functions with simplification,
  i.e., which simpl and /= beta expand (this is complementary to nosimpl).  **)
 
 Section SimplFun.
@@ -367,7 +371,8 @@ Notation "[ 'fun' ( x : xT ) ( y : yT ) => E ]" :=
 (**  For delta functions in eqtype.v.  **)
 Definition SimplFunDelta aT rT (f : aT -> aT -> rT) := [fun z => f z z].
 
-(**  Extensional equality, for unary and binary functions, including syntactic
+(**
+ Extensional equality, for unary and binary functions, including syntactic
  sugar.                                                                      **)
 
 Section ExtensionalEquality.
@@ -602,7 +607,8 @@ Notation "{ 'mono' f : x y /~ a }" :=
   (at level 0, f at level 99, x ident, y ident,
    format "{ 'mono'  f  :  x  y  /~  a }") : type_scope.
 
-(**  In an intuitionistic setting, we have two degrees of injectivity. The
+(**
+ In an intuitionistic setting, we have two degrees of injectivity. The
  weaker one gives only simplification, and the strong one provides a left
  inverse (we show in `fintype' that they coincide for finite types).
  We also define an intermediate version where the left inverse is only a
@@ -610,7 +616,8 @@ Notation "{ 'mono' f : x y /~ a }" :=
 
 Section Injections.
 
-(**  rT must come first so we can use @ to mitigate the Coq 1st order
+(**
+ rT must come first so we can use @ to mitigate the Coq 1st order
  unification bug (e..g., Coq can't infer rT from a "cancel" lemma).  **)
 Variables (rT aT : Type) (f : aT -> rT).
 
@@ -644,7 +651,7 @@ Lemma Some_inj {T} : injective (@Some T). Proof. by move=> x y []. Qed.
 (**  Force implicits to use as a view.  **)
 Prenex Implicits Some_inj.
 
-(**  cancellation lemmas for dependent type casts.                              **)
+(**  cancellation lemmas for dependent type casts. **)
 Lemma esymK T x y : cancel (@esym T x y) (@esym T y x).
 Proof. by case: y /. Qed.
 
