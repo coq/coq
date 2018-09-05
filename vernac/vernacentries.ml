@@ -2262,6 +2262,12 @@ let check_vernac_supports_polymorphism c p =
     | VernacExtend _ | VernacUniverse _ | VernacConstraint _) -> ()
   | Some _, _ -> user_err Pp.(str "This command does not support Polymorphism")
 
+(* Vernaculars that may handle a deprecation flag *)
+let check_vernac_supports_deprecation c d =
+  if d <> None then match c with
+  | VernacExtend _ -> ()
+  | _ -> user_err (Pp.str "This command does not support deprecation")
+
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
 
@@ -2401,6 +2407,7 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
     | c ->
       check_vernac_supports_locality c atts.locality;
       check_vernac_supports_polymorphism c polymorphism;
+      check_vernac_supports_deprecation c atts.deprecated;
       let polymorphic = Option.default (Flags.is_universe_polymorphism ()) polymorphism in
       Flags.make_universe_polymorphism polymorphic;
       Obligations.set_program_mode atts.program;

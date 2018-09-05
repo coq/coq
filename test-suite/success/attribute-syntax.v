@@ -21,3 +21,6 @@ Fixpoint f (n: nat) {wf lt n} : nat := _.
 
 #[deprecated(since="8.9.0")]
 Ltac foo := foo.
+
+Fail
+  #[deprecated(since="8.9.0", note="Use True instead.")] Set Universe Polymorphism.
