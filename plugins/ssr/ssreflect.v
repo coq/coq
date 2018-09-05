@@ -14,46 +14,46 @@ Require Import Bool. (* For bool_scope delimiter 'bool'. *)
 Require Import ssrmatching.
 Declare ML Module "ssreflect_plugin".
 
-(******************************************************************************)
-(* This file is the Gallina part of the ssreflect plugin implementation.      *)
-(* Files that use the ssreflect plugin should always Require ssreflect and    *)
-(* either Import ssreflect or Import ssreflect.SsrSyntax.                     *)
-(*   Part of the contents of this file is technical and will only interest    *)
-(* advanced developers; in addition the following are defined:                *)
-(*   [the str of v by f] == the Canonical s : str such that f s = v.          *)
-(*        [the str of v] == the Canonical s : str that coerces to v.          *)
-(*        argumentType c == the T such that c : forall x : T, P x.            *)
-(*          returnType c == the R such that c : T -> R.                       *)
-(*     {type of c for s} == P s where c : forall x : T, P x.                  *)
-(*           phantom T v == singleton type with inhabitant Phantom T v.       *)
-(*               phant T == singleton type with inhabitant Phant v.           *)
-(*                 =^~ r == the converse of rewriting rule r (e.g., in a      *)
-(*                          rewrite multirule).                               *)
-(*             unkeyed t == t, but treated as an unkeyed matching pattern by  *)
-(*                          the ssreflect matching algorithm.                 *)
-(*             nosimpl t == t, but on the right-hand side of Definition C :=  *)
-(*                          nosimpl disables expansion of C by /=.            *)
-(*              locked t == t, but locked t is not convertible to t.          *)
-(*       locked_with k t == t, but not convertible to t or locked_with k' t   *)
-(*                          unless k = k' (with k : unit). Coq type-checking  *)
-(*                          will be much more efficient if locked_with with a *)
-(*                          bespoke k is used for sealed definitions.         *)
-(*          unlockable v == interface for sealed constant definitions of v.   *)
-(*        Unlockable def == the unlockable that registers def : C = v.        *)
-(*     [unlockable of C] == a clone for C of the canonical unlockable for the *)
-(*                          definition of C (e.g., if it uses locked_with).   *)
-(*    [unlockable fun C] == [unlockable of C] with the expansion forced to be *)
-(*                          an explicit lambda expression.                    *)
-(*  -> The usage pattern for ADT operations is:                               *)
-(*       Definition foo_def x1 .. xn := big_foo_expression.                   *)
-(*       Fact foo_key : unit. Proof. by []. Qed.                              *)
-(*       Definition foo := locked_with foo_key foo_def.                       *)
-(*       Canonical foo_unlockable := [unlockable fun foo].                    *)
-(*     This minimizes the comparison overhead for foo, while still allowing   *)
-(*     rewrite unlock to expose big_foo_expression.                           *)
-(* More information about these definitions and their use can be found in the *)
-(* ssreflect manual, and in specific comments below.                          *)
-(******************************************************************************)
+
+(**  This file is the Gallina part of the ssreflect plugin implementation.
+ Files that use the ssreflect plugin should always Require ssreflect and
+ either Import ssreflect or Import ssreflect.SsrSyntax.
+   Part of the contents of this file is technical and will only interest
+ advanced developers; in addition the following are defined:
+   #[#the str of v by f#]# == the Canonical s : str such that f s = v.
+        #[#the str of v#]# == the Canonical s : str that coerces to v.
+        argumentType c == the T such that c : forall x : T, P x.
+          returnType c == the R such that c : T -> R.
+     {type of c for s} == P s where c : forall x : T, P x.
+           phantom T v == singleton type with inhabitant Phantom T v.
+               phant T == singleton type with inhabitant Phant v.
+                 =^~ r == the converse of rewriting rule r (e.g., in a
+                          rewrite multirule).
+             unkeyed t == t, but treated as an unkeyed matching pattern by
+                          the ssreflect matching algorithm.
+             nosimpl t == t, but on the right-hand side of Definition C :=
+                          nosimpl disables expansion of C by /=.
+              locked t == t, but locked t is not convertible to t.
+       locked_with k t == t, but not convertible to t or locked_with k' t
+                          unless k = k' (with k : unit). Coq type-checking
+                          will be much more efficient if locked_with with a
+                          bespoke k is used for sealed definitions.
+          unlockable v == interface for sealed constant definitions of v.
+        Unlockable def == the unlockable that registers def : C = v.
+     #[#unlockable of C#]# == a clone for C of the canonical unlockable for the
+                          definition of C (e.g., if it uses locked_with).
+    #[#unlockable fun C#]# == #[#unlockable of C#]# with the expansion forced to be
+                          an explicit lambda expression.
+  -> The usage pattern for ADT operations is:
+       Definition foo_def x1 .. xn := big_foo_expression.
+       Fact foo_key : unit. Proof. by #[# #]#. Qed.
+       Definition foo := locked_with foo_key foo_def.
+       Canonical foo_unlockable := #[#unlockable fun foo#]#.
+     This minimizes the comparison overhead for foo, while still allowing
+     rewrite unlock to expose big_foo_expression.
+ More information about these definitions and their use can be found in the
+ ssreflect manual, and in specific comments below.                           **)
+
 
 
 Set Implicit Arguments.
@@ -62,15 +62,15 @@ Unset Printing Implicit Defensive.
 
 Module SsrSyntax.
 
-(* Declare Ssr keywords: 'is' 'of' '//' '/=' and '//='. We also declare the   *)
-(* parsing level 8, as a workaround for a notation grammar factoring problem. *)
-(* Arguments of application-style notations (at level 10) should be declared  *)
-(* at level 8 rather than 9 or the camlp5 grammar will not factor properly.   *)
+(**  Declare Ssr keywords: 'is' 'of' '//' '/=' and '//='. We also declare the
+ parsing level 8, as a workaround for a notation grammar factoring problem.
+ Arguments of application-style notations (at level 10) should be declared
+ at level 8 rather than 9 or the camlp5 grammar will not factor properly.    **)
 
 Reserved Notation "(* x 'is' y 'of' z 'isn't' // /= //= *)" (at level 8).
 Reserved Notation "(* 69 *)" (at level 69).
 
-(* Non ambiguous keyword to check if the SsrSyntax module is imported *)
+(**  Non ambiguous keyword to check if the SsrSyntax module is imported  **)
 Reserved Notation "(* Use to test if 'SsrSyntax_is_Imported' *)" (at level 8).
 
 Reserved Notation "<hidden n >" (at level 200).
@@ -81,10 +81,10 @@ End SsrSyntax.
 Export SsrMatchingSyntax.
 Export SsrSyntax.
 
-(* Make the general "if" into a notation, so that we can override it below.   *)
-(* The notations are "only parsing" because the Coq decompiler will not       *)
-(* recognize the expansion of the boolean if; using the default printer       *)
-(* avoids a spurrious trailing %GEN_IF.                                       *)
+(**  Make the general "if" into a notation, so that we can override it below.
+ The notations are "only parsing" because the Coq decompiler will not
+ recognize the expansion of the boolean if; using the default printer
+ avoids a spurrious trailing %%GEN_IF.                                        **)
 
 Declare Scope general_if_scope.
 Delimit Scope general_if_scope with GEN_IF.
@@ -102,7 +102,7 @@ Notation "'if' c 'as' x 'return' t 'then' v1 'else' v2" :=
   (at level 200, c, t, v1, v2 at level 200, x ident, only parsing)
      : general_if_scope.
 
-(* Force boolean interpretation of simple if expressions.                     *)
+(**  Force boolean interpretation of simple if expressions.                      **)
 
 Declare Scope boolean_if_scope.
 Delimit Scope boolean_if_scope with BOOL_IF.
@@ -118,38 +118,38 @@ Notation "'if' c 'as' x 'return' t 'then' v1 'else' v2" :=
 
 Open Scope boolean_if_scope.
 
-(* To allow a wider variety of notations without reserving a large number of  *)
-(* of identifiers, the ssreflect library systematically uses "forms" to       *)
-(* enclose complex mixfix syntax. A "form" is simply a mixfix expression      *)
-(* enclosed in square brackets and introduced by a keyword:                   *)
-(*      [keyword ... ]                                                        *)
-(* Because the keyword follows a bracket it does not need to be reserved.     *)
-(* Non-ssreflect libraries that do not respect the form syntax (e.g., the Coq *)
-(* Lists library) should be loaded before ssreflect so that their notations   *)
-(* do not mask all ssreflect forms.                                           *)
+(**  To allow a wider variety of notations without reserving a large number of
+ of identifiers, the ssreflect library systematically uses "forms" to
+ enclose complex mixfix syntax. A "form" is simply a mixfix expression
+ enclosed in square brackets and introduced by a keyword:
+      #[#keyword ... #]#
+ Because the keyword follows a bracket it does not need to be reserved.
+ Non-ssreflect libraries that do not respect the form syntax (e.g., the Coq
+ Lists library) should be loaded before ssreflect so that their notations
+ do not mask all ssreflect forms.                                            **)
 Declare Scope form_scope.
 Delimit Scope form_scope with FORM.
 Open Scope form_scope.
 
-(* Allow overloading of the cast (x : T) syntax, put whitespace around the    *)
-(* ":" symbol to avoid lexical clashes (and for consistency with the parsing  *)
-(* precedence of the notation, which binds less tightly than application),    *)
-(* and put printing boxes that print the type of a long definition on a       *)
-(* separate line rather than force-fit it at the right margin.                *)
+(**  Allow overloading of the cast (x : T) syntax, put whitespace around the
+ ":" symbol to avoid lexical clashes (and for consistency with the parsing
+ precedence of the notation, which binds less tightly than application),
+ and put printing boxes that print the type of a long definition on a
+ separate line rather than force-fit it at the right margin.                 **)
 Notation "x : T" := (x : T)
   (at level 100, right associativity,
    format "'[hv' x '/ '  :  T ']'") : core_scope.
 
-(* Allow the casual use of notations like nat * nat for explicit Type         *)
-(* declarations. Note that (nat * nat : Type) is NOT equivalent to            *)
-(* (nat * nat)%type, whose inferred type is legacy type "Set".                *)
+(**  Allow the casual use of notations like nat * nat for explicit Type
+ declarations. Note that (nat * nat : Type) is NOT equivalent to
+ (nat * nat)%%type, whose inferred type is legacy type "Set".                 **)
 Notation "T : 'Type'" := (T%type : Type)
   (at level 100, only parsing) : core_scope.
-(* Allow similarly Prop annotation for, e.g., rewrite multirules.             *)
+(**  Allow similarly Prop annotation for, e.g., rewrite multirules.              **)
 Notation "P : 'Prop'" := (P%type : Prop)
   (at level 100, only parsing) : core_scope.
 
-(* Constants for abstract: and [: name ] intro pattern *)
+(**  Constants for abstract: and #[#: name #]# intro pattern  **)
 Definition abstract_lock := unit.
 Definition abstract_key := tt.
 
@@ -163,31 +163,31 @@ Register abstract_lock as plugins.ssreflect.abstract_lock.
 Register abstract_key as plugins.ssreflect.abstract_key.
 Register abstract as plugins.ssreflect.abstract.
 
-(* Constants for tactic-views *)
+(**  Constants for tactic-views  **)
 Inductive external_view : Type := tactic_view of Type.
 
-(* Syntax for referring to canonical structures:                              *)
-(*      [the struct_type of proj_val by proj_fun]                             *)
-(* This form denotes the Canonical instance s of the Structure type           *)
-(* struct_type whose proj_fun projection is proj_val, i.e., such that         *)
-(*      proj_fun s = proj_val.                                                *)
-(* Typically proj_fun will be A record field accessors of struct_type, but    *)
-(* this need not be the case; it can be, for instance, a field of a record    *)
-(* type to which struct_type coerces; proj_val will likewise be coerced to    *)
-(* the return type of proj_fun. In all but the simplest cases, proj_fun       *)
-(* should be eta-expanded to allow for the insertion of implicit arguments.   *)
-(*   In the common case where proj_fun itself is a coercion, the "by" part    *)
-(* can be omitted entirely; in this case it is inferred by casting s to the   *)
-(* inferred type of proj_val. Obviously the latter can be fixed by using an   *)
-(* explicit cast on proj_val, and it is highly recommended to do so when the  *)
-(* return type intended for proj_fun is "Type", as the type inferred for      *)
-(* proj_val may vary because of sort polymorphism (it could be Set or Prop).  *)
-(*   Note when using the [the _ of _] form to generate a substructure from a  *)
-(* telescopes-style canonical hierarchy (implementing inheritance with        *)
-(* coercions), one should always project or coerce the value to the BASE      *)
-(* structure, because Coq will only find a Canonical derived structure for    *)
-(* the Canonical base structure -- not for a base structure that is specific  *)
-(* to proj_value.                                                             *)
+(**  Syntax for referring to canonical structures:
+      #[#the struct_type of proj_val by proj_fun#]#
+ This form denotes the Canonical instance s of the Structure type
+ struct_type whose proj_fun projection is proj_val, i.e., such that
+      proj_fun s = proj_val.
+ Typically proj_fun will be A record field accessors of struct_type, but
+ this need not be the case; it can be, for instance, a field of a record
+ type to which struct_type coerces; proj_val will likewise be coerced to
+ the return type of proj_fun. In all but the simplest cases, proj_fun
+ should be eta-expanded to allow for the insertion of implicit arguments.
+   In the common case where proj_fun itself is a coercion, the "by" part
+ can be omitted entirely; in this case it is inferred by casting s to the
+ inferred type of proj_val. Obviously the latter can be fixed by using an
+ explicit cast on proj_val, and it is highly recommended to do so when the
+ return type intended for proj_fun is "Type", as the type inferred for
+ proj_val may vary because of sort polymorphism (it could be Set or Prop).
+   Note when using the #[#the _ of _ #]# form to generate a substructure from a
+ telescopes-style canonical hierarchy (implementing inheritance with
+ coercions), one should always project or coerce the value to the BASE
+ structure, because Coq will only find a Canonical derived structure for
+ the Canonical base structure -- not for a base structure that is specific
+ to proj_value.                                                              **)
 
 Module TheCanonical.
 
@@ -210,11 +210,11 @@ Notation "[ 'the' sT 'of' v 'by' f ]" :=
 Notation "[ 'the' sT 'of' v ]" := (get ((fun s : sT => Put v (*coerce*)s s) _))
   (at level 0, only parsing) : form_scope.
 
-(* The following are "format only" versions of the above notations. Since Coq *)
-(* doesn't provide this facility, we fake it by splitting the "the" keyword.  *)
-(* We need to do this to prevent the formatter from being be thrown off by    *)
-(* application collapsing, coercion insertion and beta reduction in the right *)
-(* hand side of the notations above.                                          *)
+(**  The following are "format only" versions of the above notations. Since Coq
+ doesn't provide this facility, we fake it by splitting the "the" keyword.
+ We need to do this to prevent the formatter from being be thrown off by
+ application collapsing, coercion insertion and beta reduction in the right
+ hand side of the notations above.                                           **)
 
 Notation "[ 'th' 'e' sT 'of' v 'by' f ]" := (@get_by _ sT f v _ _)
   (at level 0,  format "[ 'th' 'e'  sT  'of'  v  'by'  f ]") : form_scope.
@@ -222,37 +222,37 @@ Notation "[ 'th' 'e' sT 'of' v 'by' f ]" := (@get_by _ sT f v _ _)
 Notation "[ 'th' 'e' sT 'of' v ]" := (@get _ sT v _ _)
   (at level 0, format "[ 'th' 'e'  sT  'of'  v ]") : form_scope.
 
-(* We would like to recognize
-Notation "[ 'th' 'e' sT 'of' v : 'Type' ]" := (@get Type sT v _ _)
-  (at level 0, format "[ 'th' 'e'  sT   'of'  v  :  'Type' ]") : form_scope.
-*)
+(**  We would like to recognize
+Notation " #[# 'th' 'e' sT 'of' v : 'Type' #]#" := (@get Type sT v _ _)
+  (at level 0, format " #[# 'th' 'e'  sT   'of'  v  :  'Type' #]#") : form_scope.
+ **)
 
-(* Helper notation for canonical structure inheritance support.               *)
-(* This is a workaround for the poor interaction between delta reduction and  *)
-(* canonical projections in Coq's unification algorithm, by which transparent *)
-(* definitions hide canonical instances, i.e., in                             *)
-(*   Canonical a_type_struct := @Struct a_type ...                            *)
-(*   Definition my_type := a_type.                                            *)
-(* my_type doesn't effectively inherit the struct structure from a_type. Our  *)
-(* solution is to redeclare the instance as follows                           *)
-(*   Canonical my_type_struct := Eval hnf in [struct of my_type].             *)
-(* The special notation [str of _] must be defined for each Strucure "str"    *)
-(* with constructor "Str", typically as follows                               *)
-(*   Definition clone_str s :=                                                *)
-(*      let: Str _ x y ... z := s return {type of Str for s} -> str in        *)
-(*      fun k => k _ x y ... z.                                               *)
-(*    Notation "[ 'str' 'of' T 'for' s ]" := (@clone_str s (@Str T))          *)
-(*      (at level 0, format "[ 'str'  'of'  T  'for'  s ]") : form_scope.     *)
-(*    Notation "[ 'str' 'of' T ]" := (repack_str (fun x => @Str T x))         *)
-(*      (at level 0, format "[ 'str'  'of'  T ]") : form_scope.               *)
-(* The notation for the match return predicate is defined below; the eta      *)
-(* expansion in the second form serves both to distinguish it from the first  *)
-(* and to avoid the delta reduction problem.                                  *)
-(*   There are several variations on the notation and the definition of the   *)
-(* the "clone" function, for telescopes, mixin classes, and join (multiple    *)
-(* inheritance) classes. We describe a different idiom for clones in ssrfun;  *)
-(* it uses phantom types (see below) and static unification; see fintype and  *)
-(* ssralg for examples.                                                       *)
+(**  Helper notation for canonical structure inheritance support.
+ This is a workaround for the poor interaction between delta reduction and
+ canonical projections in Coq's unification algorithm, by which transparent
+ definitions hide canonical instances, i.e., in
+   Canonical a_type_struct := @Struct a_type ...
+   Definition my_type := a_type.
+ my_type doesn't effectively inherit the struct structure from a_type. Our
+ solution is to redeclare the instance as follows
+   Canonical my_type_struct := Eval hnf in #[#struct of my_type#]#.
+ The special notation #[#str of _ #]# must be defined for each Strucure "str"
+ with constructor "Str", typically as follows
+   Definition clone_str s :=
+      let: Str _ x y ... z := s return {type of Str for s} -> str in
+      fun k => k _ x y ... z.
+    Notation " #[# 'str' 'of' T 'for' s #]#" := (@clone_str s (@Str T))
+      (at level 0, format " #[# 'str'  'of'  T  'for'  s #]#") : form_scope.
+    Notation " #[# 'str' 'of' T #]#" := (repack_str (fun x => @Str T x))
+      (at level 0, format " #[# 'str'  'of'  T #]#") : form_scope.
+ The notation for the match return predicate is defined below; the eta
+ expansion in the second form serves both to distinguish it from the first
+ and to avoid the delta reduction problem.
+   There are several variations on the notation and the definition of the
+ the "clone" function, for telescopes, mixin classes, and join (multiple
+ inheritance) classes. We describe a different idiom for clones in ssrfun;
+ it uses phantom types (see below) and static unification; see fintype and
+ ssralg for examples.                                                        **)
 
 Definition argumentType T P & forall x : T, P x := T.
 Definition dependentReturnType T P & forall x : T, P x := P.
@@ -261,81 +261,81 @@ Definition returnType aT rT & aT -> rT := rT.
 Notation "{ 'type' 'of' c 'for' s }" := (dependentReturnType c s)
   (at level 0, format "{ 'type'  'of'  c  'for'  s }") : type_scope.
 
-(* A generic "phantom" type (actually, a unit type with a phantom parameter). *)
-(* This type can be used for type definitions that require some Structure     *)
-(* on one of their parameters, to allow Coq to infer said structure so it     *)
-(* does not have to be supplied explicitly or via the "[the _ of _]" notation *)
-(* (the latter interacts poorly with other Notation).                         *)
-(*   The definition of a (co)inductive type with a parameter p : p_type, that *)
-(* needs to use the operations of a structure                                 *)
-(*  Structure p_str : Type := p_Str {p_repr :> p_type; p_op : p_repr -> ...}  *)
-(* should be given as                                                         *)
-(*  Inductive indt_type (p : p_str) := Indt ... .                             *)
-(*  Definition indt_of (p : p_str) & phantom p_type p := indt_type p.         *)
-(*  Notation "{ 'indt' p }" := (indt_of (Phantom p)).                         *)
-(*  Definition indt p x y ... z : {indt p} := @Indt p x y ... z.              *)
-(*  Notation "[ 'indt' x y ... z ]" := (indt x y ... z).                      *)
-(* That is, the concrete type and its constructor should be shadowed by       *)
-(* definitions that use a phantom argument to infer and display the true      *)
-(* value of p (in practice, the "indt" constructor often performs additional  *)
-(* functions, like "locking" the representation -- see below).                *)
-(*   We also define a simpler version ("phant" / "Phant") of phantom for the  *)
-(* common case where p_type is Type.                                          *)
+(**  A generic "phantom" type (actually, a unit type with a phantom parameter).
+ This type can be used for type definitions that require some Structure
+ on one of their parameters, to allow Coq to infer said structure so it
+ does not have to be supplied explicitly or via the " #[#the _ of _ #]#" notation
+ (the latter interacts poorly with other Notation).
+   The definition of a (co)inductive type with a parameter p : p_type, that
+ needs to use the operations of a structure
+  Structure p_str : Type := p_Str {p_repr :> p_type; p_op : p_repr -> ...}
+ should be given as
+  Inductive indt_type (p : p_str) := Indt ... .
+  Definition indt_of (p : p_str) & phantom p_type p := indt_type p.
+  Notation "{ 'indt' p }" := (indt_of (Phantom p)).
+  Definition indt p x y ... z : {indt p} := @Indt p x y ... z.
+  Notation " #[# 'indt' x y ... z #]#" := (indt x y ... z).
+ That is, the concrete type and its constructor should be shadowed by
+ definitions that use a phantom argument to infer and display the true
+ value of p (in practice, the "indt" constructor often performs additional
+ functions, like "locking" the representation -- see below).
+   We also define a simpler version ("phant" / "Phant") of phantom for the
+ common case where p_type is Type.                                           **)
 
 Variant phantom T (p : T) := Phantom.
 Arguments phantom : clear implicits.
 Arguments Phantom : clear implicits.
 Variant phant (p : Type) := Phant.
 
-(* Internal tagging used by the implementation of the ssreflect elim.         *)
+(**  Internal tagging used by the implementation of the ssreflect elim.          **)
 
 Definition protect_term (A : Type) (x : A) : A := x.
 
 Register protect_term as plugins.ssreflect.protect_term.
 
-(* The ssreflect idiom for a non-keyed pattern:                               *)
-(*  - unkeyed t wiil match any subterm that unifies with t, regardless of     *)
-(*    whether it displays the same head symbol as t.                          *)
-(*  - unkeyed t a b will match any application of a term f unifying with t,   *)
-(*    to two arguments unifying with with a and b, repectively, regardless of *)
-(*    apparent head symbols.                                                  *)
-(*  - unkeyed x where x is a variable will match any subterm with the same    *)
-(*    type as x (when x would raise the 'indeterminate pattern' error).       *)
+(**  The ssreflect idiom for a non-keyed pattern:
+  - unkeyed t wiil match any subterm that unifies with t, regardless of
+    whether it displays the same head symbol as t.
+  - unkeyed t a b will match any application of a term f unifying with t,
+    to two arguments unifying with with a and b, repectively, regardless of
+    apparent head symbols.
+  - unkeyed x where x is a variable will match any subterm with the same
+    type as x (when x would raise the 'indeterminate pattern' error).        **)
 
 Notation unkeyed x := (let flex := x in flex).
 
-(* Ssreflect converse rewrite rule rule idiom. *)
+(**  Ssreflect converse rewrite rule rule idiom.  **)
 Definition ssr_converse R (r : R) := (Logic.I, r).
 Notation "=^~ r" := (ssr_converse r) (at level 100) : form_scope.
 
-(* Term tagging (user-level).                                                 *)
-(* The ssreflect library uses four strengths of term tagging to restrict      *)
-(* convertibility during type checking:                                       *)
-(*  nosimpl t simplifies to t EXCEPT in a definition; more precisely, given   *)
-(*    Definition foo := nosimpl bar, foo (or foo t') will NOT be expanded by  *)
-(*    the /= and //= switches unless it is in a forcing context (e.g., in     *)
-(*    match foo t' with ... end, foo t' will be reduced if this allows the    *)
-(*    match to be reduced). Note that nosimpl bar is simply notation for a    *)
-(*    a term that beta-iota reduces to bar; hence rewrite /foo will replace   *)
-(*    foo by bar, and rewrite -/foo will replace bar by foo.                  *)
-(*    CAVEAT: nosimpl should not be used inside a Section, because the end of *)
-(*    section "cooking" removes the iota redex.                               *)
-(*  locked t is provably equal to t, but is not convertible to t; 'locked'    *)
-(*    provides support for selective rewriting, via the lock t : t = locked t *)
-(*    Lemma, and the ssreflect unlock tactic.                                 *)
-(*  locked_with k t is equal but not convertible to t, much like locked t,    *)
-(*    but supports explicit tagging with a value k : unit. This is used to    *)
-(*    mitigate a flaw in the term comparison heuristic of the Coq kernel,     *)
-(*    which treats all terms of the form locked t as equal and conpares their *)
-(*    arguments recursively, leading to an exponential blowup of comparison.  *)
-(*    For this reason locked_with should be used rather than locked when      *)
-(*    defining ADT operations. The unlock tactic does not support locked_with *)
-(*    but the unlock rewrite rule does, via the unlockable interface.         *)
-(*  we also use Module Type ascription to create truly opaque constants,      *)
-(*    because simple expansion of constants to reveal an unreducible term     *)
-(*    doubles the time complexity of a negative comparison. Such opaque       *)
-(*    constants can be expanded generically with the unlock rewrite rule.     *)
-(*    See the definition of card and subset in fintype for examples of this.  *)
+(**  Term tagging (user-level).
+ The ssreflect library uses four strengths of term tagging to restrict
+ convertibility during type checking:
+  nosimpl t simplifies to t EXCEPT in a definition; more precisely, given
+    Definition foo := nosimpl bar, foo (or foo t') will NOT be expanded by
+    the /= and //= switches unless it is in a forcing context (e.g., in
+    match foo t' with ... end, foo t' will be reduced if this allows the
+    match to be reduced). Note that nosimpl bar is simply notation for a
+    a term that beta-iota reduces to bar; hence rewrite /foo will replace
+    foo by bar, and rewrite -/foo will replace bar by foo.
+    CAVEAT: nosimpl should not be used inside a Section, because the end of
+    section "cooking" removes the iota redex.
+  locked t is provably equal to t, but is not convertible to t; 'locked'
+    provides support for selective rewriting, via the lock t : t = locked t
+    Lemma, and the ssreflect unlock tactic.
+  locked_with k t is equal but not convertible to t, much like locked t,
+    but supports explicit tagging with a value k : unit. This is used to
+    mitigate a flaw in the term comparison heuristic of the Coq kernel,
+    which treats all terms of the form locked t as equal and conpares their
+    arguments recursively, leading to an exponential blowup of comparison.
+    For this reason locked_with should be used rather than locked when
+    defining ADT operations. The unlock tactic does not support locked_with
+    but the unlock rewrite rule does, via the unlockable interface.
+  we also use Module Type ascription to create truly opaque constants,
+    because simple expansion of constants to reveal an unreducible term
+    doubles the time complexity of a negative comparison. Such opaque
+    constants can be expanded generically with the unlock rewrite rule.
+    See the definition of card and subset in fintype for examples of this.   **)
 
 Notation nosimpl t := (let: tt := tt in t).
 
@@ -347,11 +347,11 @@ Register locked as plugins.ssreflect.locked.
 
 Lemma lock A x : x = locked x :> A. Proof. unlock; reflexivity. Qed.
 
-(* Needed for locked predicates, in particular for eqType's.                  *)
+(**  Needed for locked predicates, in particular for eqType's.                   **)
 Lemma not_locked_false_eq_true : locked false <> true.
 Proof. unlock; discriminate. Qed.
 
-(* The basic closing tactic "done".                                           *)
+(**  The basic closing tactic "done".                                            **)
 Ltac done :=
   trivial; hnf; intros; solve
    [ do ![solve [trivial | apply: sym_equal; trivial]
@@ -359,7 +359,7 @@ Ltac done :=
    | case not_locked_false_eq_true; assumption
    | match goal with H : ~ _ |- _ => solve [case H; trivial] end ].
 
-(* Quicker done tactic not including split, syntax: /0/ *)
+(**  Quicker done tactic not including split, syntax: /0/  **)
 Ltac ssrdone0 :=
   trivial; hnf; intros; solve
    [ do ![solve [trivial | apply: sym_equal; trivial]
@@ -367,7 +367,7 @@ Ltac ssrdone0 :=
    | case not_locked_false_eq_true; assumption
    | match goal with H : ~ _ |- _ => solve [case H; trivial] end ].
 
-(* To unlock opaque constants. *)
+(**  To unlock opaque constants.  **)
 Structure unlockable T v := Unlockable {unlocked : T; _ : unlocked = v}.
 Lemma unlock T x C : @unlocked T x C = x. Proof. by case: C. Qed.
 
@@ -377,25 +377,25 @@ Notation "[ 'unlockable' 'of' C ]" := (@Unlockable _ _ C (unlock _))
 Notation "[ 'unlockable' 'fun' C ]" := (@Unlockable _ (fun _ => _) C (unlock _))
   (at level 0, format "[ 'unlockable'  'fun'  C ]") : form_scope.
 
-(* Generic keyed constant locking. *)
+(**  Generic keyed constant locking.  **)
 
-(* The argument order ensures that k is always compared before T. *)
+(**  The argument order ensures that k is always compared before T.  **)
 Definition locked_with k := let: tt := k in fun T x => x : T.
 
-(* This can be used as a cheap alternative to cloning the unlockable instance *)
-(* below, but with caution as unkeyed matching can be expensive.              *)
+(**  This can be used as a cheap alternative to cloning the unlockable instance
+ below, but with caution as unkeyed matching can be expensive.               **)
 Lemma locked_withE T k x : unkeyed (locked_with k x) = x :> T.
 Proof. by case: k. Qed.
 
-(* Intensionaly, this instance will not apply to locked u. *)
+(**  Intensionaly, this instance will not apply to locked u.  **)
 Canonical locked_with_unlockable T k x :=
   @Unlockable T x (locked_with k x) (locked_withE k x).
 
-(* More accurate variant of unlock, and safer alternative to locked_withE. *)
+(**  More accurate variant of unlock, and safer alternative to locked_withE.  **)
 Lemma unlock_with T k x : unlocked (locked_with_unlockable k x) = x :> T.
 Proof. exact: unlock. Qed.
 
-(* The internal lemmas for the have tactics.                                  *)
+(**  The internal lemmas for the have tactics.                                   **)
 
 Definition ssr_have Plemma Pgoal (step : Plemma) rest : Pgoal := rest step.
 Arguments ssr_have Plemma [Pgoal].
@@ -416,7 +416,7 @@ Arguments ssr_wlog Plemma [Pgoal].
 Register ssr_suff as plugins.ssreflect.ssr_suff.
 Register ssr_wlog as plugins.ssreflect.ssr_wlog.
 
-(* Internal N-ary congruence lemmas for the congr tactic.                     *)
+(**  Internal N-ary congruence lemmas for the congr tactic.                      **)
 
 Fixpoint nary_congruence_statement (n : nat)
          : (forall B, (B -> B -> Prop) -> Prop) -> Prop :=
@@ -443,7 +443,7 @@ Arguments ssr_congr_arrow : clear implicits.
 Register nary_congruence as plugins.ssreflect.nary_congruence.
 Register ssr_congr_arrow as plugins.ssreflect.ssr_congr_arrow.
 
-(* View lemmas that don't use reflection.                                     *)
+(**  View lemmas that don't use reflection.                                      **)
 
 Section ApplyIff.
 
@@ -461,14 +461,14 @@ End ApplyIff.
 Hint View for move/ iffLRn|2 iffRLn|2 iffLR|2 iffRL|2.
 Hint View for apply/ iffRLn|2 iffLRn|2 iffRL|2 iffLR|2.
 
-(* To focus non-ssreflect tactics on a subterm, eg vm_compute. *)
-(* Usage:                                                      *)
-(*   elim/abstract_context: (pattern) => G defG.               *)
-(*   vm_compute; rewrite {}defG {G}.                           *)
-(* Note that vm_cast are not stored in the proof term          *)
-(* for reductions occuring in the context, hence               *)
-(*   set here := pattern; vm_compute in (value of here)        *)
-(* blows up at Qed time.                                       *)
+(**  To focus non-ssreflect tactics on a subterm, eg vm_compute.
+ Usage:
+   elim/abstract_context: (pattern) => G defG.
+   vm_compute; rewrite {}defG {G}.
+ Note that vm_cast are not stored in the proof term
+ for reductions occuring in the context, hence
+   set here := pattern; vm_compute in (value of here)
+ blows up at Qed time.                                        **)
 Lemma abstract_context T (P : T -> Type) x :
   (forall Q, Q = P -> Q x) -> P x.
 Proof. by move=> /(_ P); apply. Qed.
