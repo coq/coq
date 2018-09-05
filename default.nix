@@ -23,8 +23,8 @@
 
 { pkgs ?
     (import (fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/060a98e9f4ad879492e48d63e887b0b6db26299e.tar.gz";
-      sha256 = "1lzvp3md0hf6kp2bvc6dbzh40navlyd51qlns9wbkz6lqk3lgf6j";
+      url = "https://github.com/NixOS/nixpkgs/archive/4477cf04b6779a537cdb5f0bd3dd30e75aeb4a3b.tar.gz";
+      sha256 = "1i39wsfwkvj9yryj8di3jibpdg3b3j86ych7s9rb6z79k08yaaxc";
     }) {})
 , ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_06
 , buildIde ? true
@@ -45,6 +45,7 @@ stdenv.mkDerivation rec {
   buildInputs = [
     hostname
     python2 time # coq-makefile timing tools
+    jbuilder
   ]
   ++ (with ocamlPackages; [ ocaml findlib camlp5_strict num ])
   ++ optional buildIde ocamlPackages.lablgtk
@@ -71,7 +72,7 @@ stdenv.mkDerivation rec {
     else
       with builtins; filterSource
         (path: _:
-           !elem (baseNameOf path) [".git" "result" "bin" "_build_ci"]) ./.;
+           !elem (baseNameOf path) [".git" "result" "bin" "_build" "_build_ci"]) ./.;
 
   prefixKey = "-prefix ";
 
