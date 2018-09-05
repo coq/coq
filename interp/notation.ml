@@ -363,25 +363,25 @@ end
 (* The following two tables of (un)interpreters will *not* be synchronized.
    But their indexes will be checked to be unique *)
 let prim_token_interpreters =
-  (Hashtbl.create 7 : (prim_token_uid, InnerPrimToken.interpreter) Hashtbl.t)
+  Summary.ref ~name:"prim_token_interpreters" String.Map.empty
 
 let prim_token_uninterpreters =
-  (Hashtbl.create 7 : (prim_token_uid, InnerPrimToken.uninterpreter) Hashtbl.t)
+  Summary.ref ~name:"prim_token_uninterpreters" String.Map.empty
 
 (* Table from scope_name to backtrack-able informations about interpreters
    (in particular interpreter unique id). *)
 let prim_token_interp_infos =
-  ref (String.Map.empty : (required_module * prim_token_uid) String.Map.t)
+  Summary.ref ~name:"prim_token_interp_infos" (String.Map.empty : (required_module * prim_token_uid) String.Map.t)
 
 (* Table from global_reference to backtrack-able informations about
    prim_token uninterpretation (in particular uninterpreter unique id). *)
 let prim_token_uninterp_infos =
-  ref (Refmap.empty : (scope_name * prim_token_uid * bool) Refmap.t)
+  Summary.ref ~name:"prim_token_uninterp_infos" (Refmap.empty : (scope_name * prim_token_uid * bool) Refmap.t)
 
 let hashtbl_check_and_set allow_overwrite uid f h eq =
-  match Hashtbl.find h uid with
-   | exception Not_found -> Hashtbl.add h uid f
-   | _ when allow_overwrite -> Hashtbl.add h uid f
+  match String.Map.find uid !h with
+   | exception Not_found -> h := String.Map.add uid f !h
+   | _ when allow_overwrite -> h := String.Map.add uid f !h
    | g when eq f g -> ()
    | _ ->
       user_err ~hdr:"prim_token_interpreter"
@@ -588,7 +588,7 @@ let find_prim_token check_allowed ?loc p sc =
   (* Try for a primitive numerical notation *)
   let (spdir,uid) = String.Map.find sc !prim_token_interp_infos in
   check_required_module ?loc sc spdir;
-  let interp = Hashtbl.find prim_token_interpreters uid in
+  let interp = String.Map.find uid !prim_token_interpreters in
   let pat = InnerPrimToken.do_interp ?loc interp p in
   check_allowed pat;
   pat, ((dirpath (fst spdir),DirPath.empty),"")
@@ -765,7 +765,7 @@ let uninterp_prim_token c =
   | Some r ->
      try
        let (sc,uid,_) = Refmap.find r !prim_token_uninterp_infos in
-       let uninterp = Hashtbl.find prim_token_uninterpreters uid in
+       let uninterp = String.Map.find uid !prim_token_uninterpreters in
        match InnerPrimToken.do_uninterp uninterp (AnyGlobConstr c) with
        | None -> raise Notation_ops.No_match
        | Some n -> (sc,n)
@@ -780,7 +780,7 @@ let availability_of_prim_token n printer_scope local_scopes =
   let f scope =
     try
       let uid = snd (String.Map.find scope !prim_token_interp_infos) in
-      let interp = Hashtbl.find prim_token_interpreters uid in
+      let interp = String.Map.find uid !prim_token_interpreters in
       let open InnerPrimToken in
       match n, interp with
       | Numeral _, (RawNumInterp _ | BigNumInterp _) -> true
