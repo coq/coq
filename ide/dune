@@ -1,0 +1,21 @@
+(executable
+ (name idetop)
+ (public_name coqidetop.opt)
+ (package coqide)
+ (modules idetop)
+ (libraries coq.toplevel coqide.protocol)
+ (link_flags -linkall))
+
+(rule
+ (targets coqide_main.ml)
+ (deps (:ml4-file coqide_main.ml4))
+ (action (run coqmlp5 -loc loc -impl %{ml4-file} -o %{targets})))
+
+(executable
+ (name coqide_main)
+ (public_name coqide)
+ (package coqide)
+ (modules (:standard \ idetop))
+ (libraries threads str lablgtk2.sourceview2 coq.lib coqide.protocol))
+
+(ocamllex utf8_convert config_lexer coq_lex)

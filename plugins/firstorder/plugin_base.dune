@@ -1,0 +1,5 @@
+(library
+ (name ground_plugin)
+ (public_name coq.plugins.ground)
+ (synopsis "Coq's first order logic solver plugin")
+ (libraries coq.plugins.ltac))

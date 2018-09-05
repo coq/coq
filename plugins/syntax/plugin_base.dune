@@ -1,0 +1,35 @@
+(library
+ (name numeral_notation_plugin)
+ (public_name coq.plugins.numeral_notation)
+ (synopsis "Coq numeral notation plugin")
+ (modules g_numeral numeral)
+ (libraries coq.plugins.ltac))
+
+(library
+ (name r_syntax_plugin)
+ (public_name coq.plugins.r_syntax)
+ (synopsis "Coq syntax plugin: reals")
+ (modules r_syntax)
+ (libraries coq.vernac))
+
+(library
+ (name ascii_syntax_plugin)
+ (public_name coq.plugins.ascii_syntax)
+ (synopsis "Coq syntax plugin: ASCII")
+ (modules ascii_syntax)
+ (libraries coq.vernac))
+
+(library
+ (name string_syntax_plugin)
+ (public_name coq.plugins.string_syntax)
+ (synopsis "Coq syntax plugin: strings")
+ (modules string_syntax)
+ (libraries coq.plugins.ascii_syntax))
+
+(library
+ (name int31_syntax_plugin)
+ (public_name coq.plugins.int31_syntax)
+ (synopsis "Coq syntax plugin: int31")
+ (modules int31_syntax)
+ (libraries coq.vernac))
+

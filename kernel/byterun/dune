@@ -1,0 +1,10 @@
+(library
+ (name byterun)
+ (synopsis "Coq's Kernel Abstract Reduction Machine [C implementation]")
+ (public_name coq.vm)
+ (c_names coq_fix_code coq_memory coq_values coq_interp))
+
+(rule
+ (targets coq_jumptbl.h)
+ (deps (:h-file coq_instruct.h))
+ (action (run ./make_jumptbl.sh %{h-file} %{targets})))

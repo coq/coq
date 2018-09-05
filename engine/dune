@@ -1,0 +1,6 @@
+(library
+ (name engine)
+ (synopsis "Coq's Tactic Engine")
+ (public_name coq.engine)
+ (wrapped false)
+ (libraries library))

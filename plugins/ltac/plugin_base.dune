@@ -1,0 +1,13 @@
+(library
+ (name ltac_plugin)
+ (public_name coq.plugins.ltac)
+ (synopsis "Coq's LTAC tactic language")
+ (modules :standard \ tauto)
+ (libraries coq.stm))
+
+(library
+ (name tauto_plugin)
+ (public_name coq.plugins.tauto)
+ (synopsis "Coq's tauto tactic")
+ (modules tauto)
+ (libraries coq.plugins.ltac))

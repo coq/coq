@@ -1,0 +1,7 @@
+(library
+ (name micromega_plugin)
+ (public_name coq.plugins.micromega)
+ ; be careful not to link the executable to the plugin!
+ (modules (:standard \ csdpcert))
+ (synopsis "Coq's micromega plugin")
+ (libraries num coq.plugins.ltac))

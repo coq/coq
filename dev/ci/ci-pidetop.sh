@@ -14,6 +14,6 @@ else
    COQLIB="$COQBIN/../"
 fi
 
-( cd "${CI_BUILD_DIR}/pidetop" && jbuilder build @install )
+( cd "${CI_BUILD_DIR}/pidetop" && dune build -p pidetop @install )
 
 echo -en '4\nexit' | "${CI_BUILD_DIR}/pidetop/_build/install/default/bin/pidetop" -coqlib "$COQLIB" -main-channel stdfds

@@ -532,7 +532,7 @@ module Goal : sig
 
   (** Compatibility: avoid if possible *)
   val goal : t -> Evar.t
-  val print : t -> Goal.goal Evd.sigma
+  val print : t -> Evar.t Evd.sigma
 
 end
 

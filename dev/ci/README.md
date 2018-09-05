@@ -156,6 +156,9 @@ Currently available artifacts are:
   architecture and OCaml version used to build Coq:
   https://gitlab.com/coq/coq/-/jobs/artifacts/master/browse/_install_ci/?job=build:base
 
+  Additionally, an experimental Dune build is provided:
+  https://gitlab.com/coq/coq/-/jobs/artifacts/master/browse/_build/?job=build:edge:dune
+
 - the Coq documentation, built in the `doc:*` jobs. When submitting
   a documentation PR, this can help reviewers checking the rendered result:
 

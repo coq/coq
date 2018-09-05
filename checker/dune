@@ -1,0 +1,26 @@
+(rule (copy %{project_root}/kernel/names.ml names.ml))
+(rule (copy %{project_root}/kernel/names.mli names.mli))
+(rule (copy %{project_root}/kernel/esubst.ml esubst.ml))
+(rule (copy %{project_root}/kernel/esubst.mli esubst.mli))
+
+(library
+ (name checker)
+ (public_name coq.checker)
+ (synopsis "Coq's Standalone Proof Checker")
+ (modules values analyze names esubst)
+ (wrapped false)
+ (libraries coq.lib))
+
+(executable
+ (name main)
+ (public_name coqchk)
+ (modules :standard \ votour values analyze names esubst)
+ (modules_without_implementation cic)
+ (libraries coq.checker))
+
+(executable
+ (name votour)
+ (public_name votour)
+ (modules votour)
+ (libraries coq.checker))
+

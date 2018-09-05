@@ -1,0 +1,6 @@
+(library
+ (name ssreflect_plugin)
+ (public_name coq.plugins.ssreflect)
+ (synopsis "Coq's ssreflect plugin")
+ (modules_without_implementation ssrast)
+ (libraries coq.plugins.ssrmatching))

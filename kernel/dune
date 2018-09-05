@@ -1,0 +1,15 @@
+(library
+ (name kernel)
+ (synopsis "The Coq Kernel")
+ (public_name coq.kernel)
+ (wrapped false)
+ (modules_without_implementation cinstr nativeinstr)
+ (libraries clib config lib byterun))
+
+(rule
+ (targets copcodes.ml)
+ (deps (:h-file byterun/coq_instruct.h) make-opcodes)
+ (action (run ./make_opcodes.sh %{h-file} %{targets})))
+
+(documentation
+ (package coq))

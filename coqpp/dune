@@ -1,0 +1,8 @@
+(ocamllex coqpp_lex)
+(ocamlyacc coqpp_parse)
+
+(executable
+ (name coqpp_main)
+ (public_name coqpp)
+ (modules coqpp_ast coqpp_lex coqpp_parse coqpp_main)
+ (modules_without_implementation coqpp_ast))

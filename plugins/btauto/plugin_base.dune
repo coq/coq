@@ -1,0 +1,5 @@
+(library
+ (name btauto_plugin)
+ (public_name coq.plugins.btauto)
+ (synopsis "Coq's btauto plugin")
+ (libraries coq.plugins.ltac))

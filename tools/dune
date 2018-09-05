@@ -1,0 +1,31 @@
+(executable
+ (name coqc)
+ (public_name coqc)
+ (modules coqc)
+ (libraries coq.toplevel))
+
+(executable
+ (name coq_makefile)
+ (public_name coq_makefile)
+ (modules coq_makefile)
+ (libraries coq.lib))
+
+(executable
+ (name coqdep)
+ (public_name coqdep)
+ (modules coqdep_lexer coqdep_common coqdep)
+ (libraries coq.lib))
+
+(ocamllex coqdep_lexer)
+
+(executable
+ (name coq_tex)
+ (public_name coq_tex)
+ (modules coq_tex)
+ (libraries str))
+
+(executable
+ (name coq_dune)
+ (public_name coq_dune)
+ (modules coq_dune)
+ (libraries str))

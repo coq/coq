@@ -1,0 +1,5 @@
+(library
+ (name extraction_plugin)
+ (public_name coq.plugins.extraction)
+ (synopsis "Coq's extraction plugin")
+ (libraries num coq.plugins.ltac))

@@ -1,0 +1,25 @@
+(executable
+ (name coqtop_bin)
+ (public_name coqtop)
+ (package coq)
+ (modules coqtop_bin)
+ (libraries coq.toplevel)
+ (link_flags -linkall))
+
+(executable
+ (name coqtop_byte_bin)
+ (public_name coqtop.byte)
+ (package coq)
+ (modules coqtop_byte_bin)
+ (libraries compiler-libs.toplevel coq.toplevel)
+ (modes byte)
+ (link_flags -linkall))
+
+; Workers
+(executables
+ (names coqqueryworker_bin coqtacticworker_bin coqproofworker_bin)
+ (public_names coqqueryworker.opt coqtacticworker.opt coqproofworker.opt)
+ (package coq)
+ (modules :standard \ coqtop_byte_bin coqtop_bin)
+ (libraries coq.toplevel)
+ (link_flags -linkall))

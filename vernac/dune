@@ -1,0 +1,16 @@
+(library
+ (name vernac)
+ (synopsis "Coq's Vernacular Language")
+ (public_name coq.vernac)
+ (wrapped false)
+ (libraries tactics parsing))
+
+(rule
+ (targets g_proofs.ml)
+ (deps (:mlg-file g_proofs.mlg))
+ (action (run coqpp %{mlg-file})))
+
+(rule
+ (targets g_vernac.ml)
+ (deps (:mlg-file g_vernac.mlg))
+ (action (run coqpp %{mlg-file})))
