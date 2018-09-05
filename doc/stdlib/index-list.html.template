@@ -587,6 +587,17 @@ through the <tt>Require Import</tt> command.</p>
     theories/Program/Combinators.v
   </dd>
 
+  <dt> <b>SSReflect</b>:
+    Base libraries for the SSReflect proof language and the
+    small scale reflection formalization technique
+  </dt>
+  <dd>
+    plugins/ssrmatching/ssrmatching.v
+    plugins/ssr/ssreflect.v
+    plugins/ssr/ssrbool.v
+    plugins/ssr/ssrfun.v
+  </dd>
+
   <dt> <b>Unicode</b>:
     Unicode-based notations
   </dt>
