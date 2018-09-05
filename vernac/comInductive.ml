@@ -326,6 +326,15 @@ let check_param = function
 | CLocalPattern {CAst.loc} ->
     Loc.raise ?loc (Stream.Error "pattern with quote not allowed here")
 
+let restrict_inductive_universes sigma ctx_params arities constructors =
+  let merge_universes_of_constr c =
+    Univ.LSet.union (EConstr.universes_of_constr sigma (EConstr.of_constr c)) in
+  let uvars = Univ.LSet.empty in
+  let uvars = Context.Rel.(fold_outside (Declaration.fold_constr merge_universes_of_constr) ctx_params ~init:uvars) in
+  let uvars = List.fold_right merge_universes_of_constr arities uvars in
+  let uvars = List.fold_right (fun (_,ctypes,_) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
+  Evd.restrict_universe_context sigma uvars
+
 let interp_mutual_inductive_gen env0 (uparamsl,paramsl,indl) notations cum poly prv finite =
   check_all_names_different indl;
   List.iter check_param paramsl;
@@ -400,6 +409,7 @@ let interp_mutual_inductive_gen env0 (uparamsl,paramsl,indl) notations cum poly 
   let arities = List.map nf arities in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf cl,impsl)) constructors in
   let ctx_params = List.map Termops.(map_rel_decl (EConstr.to_constr sigma)) ctx_params in
+  let sigma = restrict_inductive_universes sigma ctx_params arities constructors in
   let uctx = Evd.check_univ_decl ~poly sigma decl in
   List.iter (fun c -> check_evars env_params (Evd.from_env env_params) sigma (EConstr.of_constr c)) arities;
   Context.Rel.iter (fun c -> check_evars env0 (Evd.from_env env0) sigma (EConstr.of_constr c)) ctx_params;
