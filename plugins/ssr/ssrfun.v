@@ -10,6 +10,8 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+(** #<style> .doc { font-family: monospace; white-space: pre; } </style># **)
+
 Require Import ssreflect.
 
 
