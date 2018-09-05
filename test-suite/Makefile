@@ -106,7 +106,8 @@ SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile unit-te
 
 PREREQUISITELOG = prerequisite/admit.v.log			\
   prerequisite/make_local.v.log prerequisite/make_notation.v.log \
-  prerequisite/bind_univs.v.log
+  prerequisite/bind_univs.v.log prerequisite/module_bug8416.v.log \
+  prerequisite/module_bug7192.v.log
 
 #######################################################################
 # Phony targets
