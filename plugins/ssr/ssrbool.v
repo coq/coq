@@ -13,8 +13,8 @@
 Require Bool.
 Require Import ssreflect ssrfun.
 
-
-(**  A theory of boolean predicates and operators. A large part of this file is
+(**
+ A theory of boolean predicates and operators. A large part of this file is
  concerned with boolean reflection.
  Definitions and notations:
                is_true b == the coercion of b : bool to Prop (:= b = true).
@@ -288,7 +288,8 @@ Reserved Notation "x \notin A"
 Reserved Notation "p1 =i p2"
   (at level 70, format "'[hv' p1 '/ '  =i  p2 ']'", no associativity).
 
-(**  We introduce a number of n-ary "list-style" notations that share a common
+(**
+ We introduce a number of n-ary "list-style" notations that share a common
  format, namely
     #[#op arg1, arg2, ... last_separator last_arg#]#
  This usually denotes a right-associative applications of op, e.g.,
@@ -348,7 +349,7 @@ Reserved Notation "[ 'rel' x y : T => E ]" (at level 0, x, y at level 8, format
 Delimit Scope bool_scope with B.
 Open Scope bool_scope.
 
-(**  An alternative to xorb that behaves somewhat better wrt simplification.     **)
+(**  An alternative to xorb that behaves somewhat better wrt simplification. **)
 Definition addb b := if b then negb else id.
 
 (**  Notation for && and || is declared in Init.Datatypes.  **)
@@ -376,7 +377,8 @@ Definition notF := not_false_is_true.
 
 (**  Negation lemmas.  **)
 
-(**  We generally take NEGATION as the standard form of a false condition:
+(**
+ We generally take NEGATION as the standard form of a false condition:
  negative boolean hypotheses should be of the form ~~ b, rather than ~ b or
  b = false, as much as possible.                                             **)
 
@@ -426,7 +428,8 @@ Proof. by move/contra=> notb_notc /notb_notc/negbTE. Qed.
 Lemma contraFF (c b : bool) : (c -> b) -> b = false -> c = false.
 Proof. by move/contraFN=> bF_notc /bF_notc/negbTE. Qed.
 
-(**  Coercion of sum-style datatypes into bool, which makes it possible
+(**
+ Coercion of sum-style datatypes into bool, which makes it possible
  to use ssr's boolean if rather than Coq's "generic" if.             **)
 
 Coercion isSome T (u : option T) := if u is Some _ then true else false.
@@ -441,7 +444,8 @@ Prenex Implicits  isSome is_inl is_left is_inleft.
 
 Definition decidable P := {P} + {~ P}.
 
-(**  Lemmas for ifs with large conditions, which allow reasoning about the
+(**
+ Lemmas for ifs with large conditions, which allow reasoning about the
  condition without repeating it inside the proof (the latter IS
  preferable when the condition is short).
  Usage :
@@ -483,7 +487,7 @@ Lemma if_arg (fT fF : A -> B) :
   (if b then fT else fF) x = if b then fT x else fF x.
 Proof. by case b. Qed.
 
-(**  Turning a boolean "if" form into an application.                            **)
+(**  Turning a boolean "if" form into an application.  **)
 Definition if_expr := if b then vT else vF.
 Lemma ifE : (if b then vT else vF) = if_expr. Proof. by []. Qed.
 
@@ -584,7 +588,7 @@ Lemma rwP : P <-> b. Proof. by split; [apply: introT | apply: elimT]. Qed.
 Lemma rwP2 : reflect Q b -> (P <-> Q).
 Proof. by move=> Qb; split=> ?; [apply: appP | apply: elimT; case: Qb]. Qed.
 
-(**   Predicate family to reflect excluded middle in bool.                       **)
+(**   Predicate family to reflect excluded middle in bool.  **)
 Variant alt_spec : bool -> Type :=
   | AltTrue of     P : alt_spec true
   | AltFalse of ~~ b : alt_spec false.
@@ -637,7 +641,8 @@ Proof. by split; apply=> [hC|hP]; [apply/unlessL/unlessL | apply/unlessR]. Qed.
 Lemma unless_contra b C : implies (~~ b -> C) (\unless C, b).
 Proof. by split; case: b => [_ | hC]; [apply/unlessR | apply/unlessL/hC]. Qed.
 
-(**  Classical reasoning becomes directly accessible for any bool subgoal.
+(**
+ Classical reasoning becomes directly accessible for any bool subgoal.
  Note that we cannot use "unless" here for lack of universe polymorphism.    **)
 Definition classically P : Prop := forall b : bool, (P -> b) -> b.
 
@@ -669,7 +674,8 @@ move=> iPQ []// notPQ; apply/notPQ=> /iPQ-cQ.
 by case: notF; apply: cQ => hQ; apply: notPQ.
 Qed.
 
-(**  List notations for wider connectives; the Prop connectives have a fixed
+(**
+ List notations for wider connectives; the Prop connectives have a fixed
  width so as to avoid iterated destruction (we go up to width 5 for /\, and
  width 4 for or). The bool connectives have arbitrary widths, but denote
  expressions that associate to the RIGHT. This is consistent with the right
@@ -946,7 +952,8 @@ Lemma addbP a b : reflect (~~ a = b) (a (+) b).
 Proof. by case: a; case: b; constructor. Qed.
 Arguments addbP [a b].
 
-(**  Resolution tactic for blindly weeding out common terms from boolean
+(**
+ Resolution tactic for blindly weeding out common terms from boolean
  equalities. When faced with a goal of the form (andb/orb/addb b1 b2) = b3
  they will try to locate b1 in b3 and remove it. This can fail!             **)
 
@@ -964,7 +971,8 @@ Ltac bool_congr :=
   end.
 
 
-(**  Predicates, i.e., packaged functions to bool.
+(**
+ Predicates, i.e., packaged functions to bool.
  - pred T, the basic type for predicates over a type T, is simply an alias
  for T -> bool.
  We actually distinguish two kinds of predicates, which we call applicative
@@ -1094,7 +1102,8 @@ Coercion applicative_pred_of_simpl (p : simpl_pred) : applicative_pred :=
   fun_of_simpl p.
 Coercion collective_pred_of_simpl (p : simpl_pred) : collective_pred :=
   fun x => (let: SimplFun f := p in fun _ => f x) x.
-(**  Note: applicative_of_simpl is convertible to pred_of_simpl, while
+(**
+ Note: applicative_of_simpl is convertible to pred_of_simpl, while
  collective_of_simpl is not.  **)
 
 Definition pred0 := SimplPred xpred0.
@@ -1166,7 +1175,8 @@ Notation "[ 'rel' x y : T | E ]" := (SimplRel (fun x y : T => E%B))
 Notation "[ 'predType' 'of' T ]" := (@clone_pred _ T _ id _ _ id)
   (at level 0, format "[ 'predType'  'of'  T ]") : form_scope.
 
-(**  This redundant coercion lets us "inherit" the simpl_predType canonical
+(**
+ This redundant coercion lets us "inherit" the simpl_predType canonical
  instance by declaring a coercion to simpl_pred. This hack is the only way
  to put a predType structure on a predArgType. We use simpl_pred rather
  than pred to ensure that /= removes the identity coercion. Note that the
@@ -1176,7 +1186,8 @@ Notation "[ 'predType' 'of' T ]" := (@clone_pred _ T _ id _ _ id)
 Notation pred_class := (pred_sort (predPredType _)).
 Coercion sort_of_simpl_pred T (p : simpl_pred T) : pred_class := p : pred T.
 
-(**  This lets us use some types as a synonym for their universal predicate.
+(**
+ This lets us use some types as a synonym for their universal predicate.
  Unfortunately, this won't work for existing types like bool, unless we
  redefine bool, true, false and all bool ops.                                **)
 Definition predArgType := Type.
@@ -1187,7 +1198,8 @@ Coercion pred_of_argType (T : predArgType) : simpl_pred T := predT.
 Notation "{ : T }" := (T%type : predArgType)
   (at level 0, format "{ :  T }") : type_scope.
 
-(**  These must be defined outside a Section because "cooking" kills the
+(**
+ These must be defined outside a Section because "cooking" kills the
  nosimpl tag.                                                                **)
 
 Definition mem T (pT : predType T) : pT -> mem_pred T :=
@@ -1254,7 +1266,8 @@ Section simpl_mem.
 Variables (T : Type) (pT : predType T).
 Implicit Types (x : T) (p : pred T) (sp : simpl_pred T) (pp : pT).
 
-(**  Bespoke structures that provide fine-grained control over matching the
+(**
+ Bespoke structures that provide fine-grained control over matching the
  various forms of the \in predicate; note in particular the different forms
  of hoisting that are used. We had to work around several bugs in the
  implementation of unification, notably improper expansion of telescope
@@ -1305,7 +1318,8 @@ Lemma in_simpl x p (msp : manifest_simpl_pred p) :
   in_mem x (Mem [eta fun_of_simpl (msp : simpl_pred T)]) = p x.
 Proof. by case: msp => _ /= ->. Qed.
 
-(**  Because of the explicit eta expansion in the left-hand side, this lemma
+(**
+ Because of the explicit eta expansion in the left-hand side, this lemma
  should only be used in a right-to-left direction. The 8.3 hack allowing
  partial right-to-left use does not work with the improved expansion
  heuristics in 8.4.                                                          **)
@@ -1388,7 +1402,8 @@ Definition KeyedPred := @PackKeyedPred k p (frefl _).
 Variable k_p : keyed_pred k.
 Lemma keyed_predE : k_p =i p. Proof. by case: k_p. Qed.
 
-(**  Instances that strip the mem cast; the first one has "pred_of_mem" as its
+(**
+ Instances that strip the mem cast; the first one has "pred_of_mem" as its
  projection head value, while the second has "pred_of_simpl". The latter
  has the side benefit of preempting accidental misdeclarations.
  Note: pred_of_mem is the registered mem >-> pred_class coercion, while
@@ -1461,7 +1476,8 @@ Proof. by move=> y0; apply: all_sig_cond_dep. Qed.
 
 Section RelationProperties.
 
-(**  Caveat: reflexive should not be used to state lemmas, as auto and trivial
+(**
+ Caveat: reflexive should not be used to state lemmas, as auto and trivial
  will not expand the constant.                                               **)
 
 Variable T : Type.
@@ -1496,7 +1512,8 @@ Proof. by move=> x y /sym_left_transitive Rxy z; rewrite !(symR z) Rxy. Qed.
 
 End PER.
 
-(**  We define the equivalence property with prenex quantification so that it
+(**
+ We define the equivalence property with prenex quantification so that it
  can be localized using the {in ..., ..} form defined below.                 **)
 
 Definition equivalence_rel := forall x y z, R z z * (R x y -> R x z = R y z).
@@ -1626,7 +1643,8 @@ Notation "{ 'on' cd , 'bijective' f }" := (bijective_on (mem cd) f)
   (at level 0, f at level 8,
    format "{ 'on'  cd ,  'bijective'  f }") : type_scope.
 
-(**  Weakening and monotonicity lemmas for localized predicates.
+(**
+ Weakening and monotonicity lemmas for localized predicates.
  Note that using these lemmas in backward reasoning will force expansion of
  the predicate definition, as Coq needs to expose the quantifier to apply
  these lemmas. We define a few specialized variants to avoid this for some

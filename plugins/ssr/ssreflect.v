@@ -15,7 +15,8 @@ Require Import ssrmatching.
 Declare ML Module "ssreflect_plugin".
 
 
-(**  This file is the Gallina part of the ssreflect plugin implementation.
+(**
+ This file is the Gallina part of the ssreflect plugin implementation.
  Files that use the ssreflect plugin should always Require ssreflect and
  either Import ssreflect or Import ssreflect.SsrSyntax.
    Part of the contents of this file is technical and will only interest
@@ -62,7 +63,8 @@ Unset Printing Implicit Defensive.
 
 Module SsrSyntax.
 
-(**  Declare Ssr keywords: 'is' 'of' '//' '/=' and '//='. We also declare the
+(**
+ Declare Ssr keywords: 'is' 'of' '//' '/=' and '//='. We also declare the
  parsing level 8, as a workaround for a notation grammar factoring problem.
  Arguments of application-style notations (at level 10) should be declared
  at level 8 rather than 9 or the camlp5 grammar will not factor properly.    **)
@@ -81,7 +83,8 @@ End SsrSyntax.
 Export SsrMatchingSyntax.
 Export SsrSyntax.
 
-(**  Make the general "if" into a notation, so that we can override it below.
+(**
+ Make the general "if" into a notation, so that we can override it below.
  The notations are "only parsing" because the Coq decompiler will not
  recognize the expansion of the boolean if; using the default printer
  avoids a spurrious trailing %%GEN_IF.                                        **)
@@ -101,7 +104,7 @@ Notation "'if' c 'as' x 'return' t 'then' v1 'else' v2" :=
   (at level 200, c, t, v1, v2 at level 200, x ident, only parsing)
      : general_if_scope.
 
-(**  Force boolean interpretation of simple if expressions.                      **)
+(**  Force boolean interpretation of simple if expressions.  **)
 
 Delimit Scope boolean_if_scope with BOOL_IF.
 
@@ -116,7 +119,8 @@ Notation "'if' c 'as' x 'return' t 'then' v1 'else' v2" :=
 
 Open Scope boolean_if_scope.
 
-(**  To allow a wider variety of notations without reserving a large number of
+(**
+ To allow a wider variety of notations without reserving a large number of
  of identifiers, the ssreflect library systematically uses "forms" to
  enclose complex mixfix syntax. A "form" is simply a mixfix expression
  enclosed in square brackets and introduced by a keyword:
@@ -128,7 +132,8 @@ Open Scope boolean_if_scope.
 Delimit Scope form_scope with FORM.
 Open Scope form_scope.
 
-(**  Allow overloading of the cast (x : T) syntax, put whitespace around the
+(**
+ Allow overloading of the cast (x : T) syntax, put whitespace around the
  ":" symbol to avoid lexical clashes (and for consistency with the parsing
  precedence of the notation, which binds less tightly than application),
  and put printing boxes that print the type of a long definition on a
@@ -137,12 +142,13 @@ Notation "x : T" := (x : T)
   (at level 100, right associativity,
    format "'[hv' x '/ '  :  T ']'") : core_scope.
 
-(**  Allow the casual use of notations like nat * nat for explicit Type
+(**
+ Allow the casual use of notations like nat * nat for explicit Type
  declarations. Note that (nat * nat : Type) is NOT equivalent to
- (nat * nat)%%type, whose inferred type is legacy type "Set".                 **)
+ (nat * nat)%%type, whose inferred type is legacy type "Set".                **)
 Notation "T : 'Type'" := (T%type : Type)
   (at level 100, only parsing) : core_scope.
-(**  Allow similarly Prop annotation for, e.g., rewrite multirules.              **)
+(**  Allow similarly Prop annotation for, e.g., rewrite multirules. **)
 Notation "P : 'Prop'" := (P%type : Prop)
   (at level 100, only parsing) : core_scope.
 
@@ -159,7 +165,8 @@ Notation "T (* n *)" := (abstract T n abstract_key).
 (**  Constants for tactic-views  **)
 Inductive external_view : Type := tactic_view of Type.
 
-(**  Syntax for referring to canonical structures:
+(**
+ Syntax for referring to canonical structures:
       #[#the struct_type of proj_val by proj_fun#]#
  This form denotes the Canonical instance s of the Structure type
  struct_type whose proj_fun projection is proj_val, i.e., such that
@@ -203,7 +210,8 @@ Notation "[ 'the' sT 'of' v 'by' f ]" :=
 Notation "[ 'the' sT 'of' v ]" := (get ((fun s : sT => Put v (*coerce*)s s) _))
   (at level 0, only parsing) : form_scope.
 
-(**  The following are "format only" versions of the above notations. Since Coq
+(**
+ The following are "format only" versions of the above notations. Since Coq
  doesn't provide this facility, we fake it by splitting the "the" keyword.
  We need to do this to prevent the formatter from being be thrown off by
  application collapsing, coercion insertion and beta reduction in the right
@@ -215,12 +223,14 @@ Notation "[ 'th' 'e' sT 'of' v 'by' f ]" := (@get_by _ sT f v _ _)
 Notation "[ 'th' 'e' sT 'of' v ]" := (@get _ sT v _ _)
   (at level 0, format "[ 'th' 'e'  sT  'of'  v ]") : form_scope.
 
-(**  We would like to recognize
+(**
+ We would like to recognize
 Notation " #[# 'th' 'e' sT 'of' v : 'Type' #]#" := (@get Type sT v _ _)
   (at level 0, format " #[# 'th' 'e'  sT   'of'  v  :  'Type' #]#") : form_scope.
  **)
 
-(**  Helper notation for canonical structure inheritance support.
+(**
+ Helper notation for canonical structure inheritance support.
  This is a workaround for the poor interaction between delta reduction and
  canonical projections in Coq's unification algorithm, by which transparent
  definitions hide canonical instances, i.e., in
@@ -254,7 +264,8 @@ Definition returnType aT rT & aT -> rT := rT.
 Notation "{ 'type' 'of' c 'for' s }" := (dependentReturnType c s)
   (at level 0, format "{ 'type'  'of'  c  'for'  s }") : type_scope.
 
-(**  A generic "phantom" type (actually, a unit type with a phantom parameter).
+(**
+ A generic "phantom" type (actually, a unit type with a phantom parameter).
  This type can be used for type definitions that require some Structure
  on one of their parameters, to allow Coq to infer said structure so it
  does not have to be supplied explicitly or via the " #[#the _ of _ #]#" notation
@@ -280,11 +291,12 @@ Arguments phantom : clear implicits.
 Arguments Phantom : clear implicits.
 Variant phant (p : Type) := Phant.
 
-(**  Internal tagging used by the implementation of the ssreflect elim.          **)
+(**  Internal tagging used by the implementation of the ssreflect elim.  **)
 
 Definition protect_term (A : Type) (x : A) : A := x.
 
-(**  The ssreflect idiom for a non-keyed pattern:
+(**
+ The ssreflect idiom for a non-keyed pattern:
   - unkeyed t wiil match any subterm that unifies with t, regardless of
     whether it displays the same head symbol as t.
   - unkeyed t a b will match any application of a term f unifying with t,
@@ -299,7 +311,8 @@ Notation unkeyed x := (let flex := x in flex).
 Definition ssr_converse R (r : R) := (Logic.I, r).
 Notation "=^~ r" := (ssr_converse r) (at level 100) : form_scope.
 
-(**  Term tagging (user-level).
+(**
+ Term tagging (user-level).
  The ssreflect library uses four strengths of term tagging to restrict
  convertibility during type checking:
   nosimpl t simplifies to t EXCEPT in a definition; more precisely, given
@@ -335,11 +348,11 @@ Definition locked A := let: tt := master_key in fun x : A => x.
 
 Lemma lock A x : x = locked x :> A. Proof. unlock; reflexivity. Qed.
 
-(**  Needed for locked predicates, in particular for eqType's.                   **)
+(**  Needed for locked predicates, in particular for eqType's.  **)
 Lemma not_locked_false_eq_true : locked false <> true.
 Proof. unlock; discriminate. Qed.
 
-(**  The basic closing tactic "done".                                            **)
+(**  The basic closing tactic "done".  **)
 Ltac done :=
   trivial; hnf; intros; solve
    [ do ![solve [trivial | apply: sym_equal; trivial]
@@ -370,7 +383,8 @@ Notation "[ 'unlockable' 'fun' C ]" := (@Unlockable _ (fun _ => _) C (unlock _))
 (**  The argument order ensures that k is always compared before T.  **)
 Definition locked_with k := let: tt := k in fun T x => x : T.
 
-(**  This can be used as a cheap alternative to cloning the unlockable instance
+(**
+ This can be used as a cheap alternative to cloning the unlockable instance
  below, but with caution as unkeyed matching can be expensive.               **)
 Lemma locked_withE T k x : unkeyed (locked_with k x) = x :> T.
 Proof. by case: k. Qed.
@@ -383,7 +397,7 @@ Canonical locked_with_unlockable T k x :=
 Lemma unlock_with T k x : unlocked (locked_with_unlockable k x) = x :> T.
 Proof. exact: unlock. Qed.
 
-(**  The internal lemmas for the have tactics.                                   **)
+(**  The internal lemmas for the have tactics.  **)
 
 Definition ssr_have Plemma Pgoal (step : Plemma) rest : Pgoal := rest step.
 Arguments ssr_have Plemma [Pgoal].
@@ -398,7 +412,7 @@ Arguments ssr_suff Plemma [Pgoal].
 Definition ssr_wlog := ssr_suff.
 Arguments ssr_wlog Plemma [Pgoal].
 
-(**  Internal N-ary congruence lemmas for the congr tactic.                      **)
+(**  Internal N-ary congruence lemmas for the congr tactic.  **)
 
 Fixpoint nary_congruence_statement (n : nat)
          : (forall B, (B -> B -> Prop) -> Prop) -> Prop :=
@@ -422,7 +436,7 @@ Lemma ssr_congr_arrow Plemma Pgoal : Plemma = Pgoal -> Plemma -> Pgoal.
 Proof. by move->. Qed.
 Arguments ssr_congr_arrow : clear implicits.
 
-(**  View lemmas that don't use reflection.                                      **)
+(**  View lemmas that don't use reflection.  **)
 
 Section ApplyIff.
 
@@ -440,7 +454,8 @@ End ApplyIff.
 Hint View for move/ iffLRn|2 iffRLn|2 iffLR|2 iffRL|2.
 Hint View for apply/ iffRLn|2 iffLRn|2 iffRL|2 iffLR|2.
 
-(**  To focus non-ssreflect tactics on a subterm, eg vm_compute.
+(**
+ To focus non-ssreflect tactics on a subterm, eg vm_compute.
  Usage:
    elim/abstract_context: (pattern) => G defG.
    vm_compute; rewrite {}defG {G}.
