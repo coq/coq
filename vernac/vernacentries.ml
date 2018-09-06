@@ -1692,36 +1692,37 @@ let query_command_selector ?loc = function
 let vernac_check_may_eval ~atts redexp glopt rc =
   let glopt = query_command_selector ?loc:atts.loc glopt in
   let (sigma, env) = get_current_context_of_args glopt in
-  let sigma', c = interp_open_constr env sigma rc in
-  let sigma' = Evarconv.solve_unif_constraints_with_heuristics env sigma' in
-  Evarconv.check_problems_are_solved env sigma';
-  let sigma' = Evd.minimize_universes sigma' in
-  let uctx = Evd.universe_context_set sigma' in
-  let env = Environ.push_context_set uctx (Evarutil.nf_env_evar sigma' env) in
+  let sigma, c = interp_open_constr env sigma rc in
+  let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
+  Evarconv.check_problems_are_solved env sigma;
+  let sigma = Evd.minimize_universes sigma in
+  let uctx = Evd.universe_context_set sigma in
+  let env = Environ.push_context_set uctx (Evarutil.nf_env_evar sigma env) in
   let j =
-    if Evarutil.has_undefined_evars sigma' c then
-      Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c)
+    if Evarutil.has_undefined_evars sigma c then
+      Evarutil.j_nf_evar sigma (Retyping.get_judgment_of env sigma c)
     else
-      let c = EConstr.to_constr sigma' c in
+      let c = EConstr.to_constr sigma c in
       (* OK to call kernel which does not support evars *)
       Termops.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
   in
-  match redexp with
+  let pp = match redexp with
     | None ->
-        let evars_of_term c = Evarutil.undefined_evars_of_term sigma' c in
+        let evars_of_term c = Evarutil.undefined_evars_of_term sigma c in
         let l = Evar.Set.union (evars_of_term j.Environ.uj_val) (evars_of_term j.Environ.uj_type) in
-        let j = { j with Environ.uj_type = Reductionops.nf_betaiota env sigma' j.Environ.uj_type } in
-        print_judgment env sigma' j ++
-        pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma' l ++
-        Printer.pr_universe_ctx_set sigma uctx
+        let j = { j with Environ.uj_type = Reductionops.nf_betaiota env sigma j.Environ.uj_type } in
+        print_judgment env sigma j ++
+        pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l
     | Some r ->
-        let (sigma',r_interp) = Hook.get f_interp_redexp env sigma' r in
+        let (sigma,r_interp) = Hook.get f_interp_redexp env sigma r in
 	let redfun env evm c =
           let (redfun, _) = reduction_of_red_expr env r_interp in
           let (_, c) = redfun env evm c in
           c
         in
-        print_eval redfun env sigma' rc j
+        print_eval redfun env sigma rc j
+  in
+  pp ++ Printer.pr_universe_ctx_set sigma uctx
 
 let vernac_declare_reduction ~atts s r =
   let local = make_locality atts.locality in
