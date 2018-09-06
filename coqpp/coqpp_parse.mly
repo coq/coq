@@ -62,7 +62,7 @@ let parse_user_entry s sep =
 %token <string> IDENT QUALID
 %token <string> STRING
 %token <int> INT
-%token VERNAC TACTIC GRAMMAR EXTEND END DECLARE PLUGIN
+%token VERNAC TACTIC GRAMMAR EXTEND END DECLARE PLUGIN DEPRECATED
 %token LBRACKET RBRACKET PIPE ARROW COMMA EQUAL
 %token LPAREN RPAREN COLON SEMICOLON
 %token GLOBAL FIRST LAST BEFORE AFTER LEVEL LEFTA RIGHTA NONA
@@ -108,8 +108,13 @@ vernac_extend:
 ;
 
 tactic_extend:
-| TACTIC EXTEND IDENT tactic_level tactic_rules END
-  { TacticExt { tacext_name = $3; tacext_level = $4; tacext_rules = $5 } }
+| TACTIC EXTEND IDENT tactic_deprecated tactic_level tactic_rules END
+  { TacticExt { tacext_name = $3; tacext_deprecated = $4; tacext_level = $5; tacext_rules = $6 } }
+;
+
+tactic_deprecated:
+| { None }
+| DEPRECATED IDENT { Some $2 }
 ;
 
 tactic_level:
