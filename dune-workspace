@@ -1,0 +1,6 @@
+(lang dune 1.1)
+
+; Add custom flags here. Default developer profile is `dev`
+(env
+ (dev     (flags :standard -rectypes -w -9-27-50))
+ (release (flags :standard -rectypes)))

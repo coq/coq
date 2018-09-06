@@ -9,7 +9,3 @@
  (name vodeps)
  (deps tools/coq_dune.exe .vfiles.d))
   ; (action (run coq_dune .vfiles.d))))
-
-; Add custom flags here. Default developer profile is `dev`
-(env
- (dev (flags :standard -rectypes -w -9-27-50)))
