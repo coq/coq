@@ -328,15 +328,18 @@ let coqtop_path () =
       | None ->
         try
           let new_prog = System.get_toplevel_path "coqidetop" in
-            if Sys.file_exists new_prog then new_prog
+            (* The file exists or it is to be found by path *)
+            if Sys.file_exists new_prog ||
+               CString.equal Filename.(basename new_prog) new_prog
+            then new_prog
 	    else
 	      let in_macos_bundle =
 		Filename.concat
 		  (Filename.dirname new_prog)
 		  (Filename.concat "../Resources/bin" (Filename.basename new_prog))
 	      in if Sys.file_exists in_macos_bundle then in_macos_bundle
-                 else "coqidetop"
-        with Not_found -> "coqidetop"
+                 else "coqidetop.opt"
+        with Not_found -> "coqidetop.opt"
   in file
 
 (* In win32, when a command-line is to be executed via cmd.exe
