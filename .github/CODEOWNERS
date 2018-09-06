@@ -258,6 +258,7 @@
 
 ########## Dune  ##########
 
+/.ocamlinit            @ejgallego
 /Makefile.dune         @ejgallego
 /tools/coq_dune*       @ejgallego
 /dune*                 @ejgallego
