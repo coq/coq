@@ -8,11 +8,11 @@ Module foo.
   Defined. 
 End foo.
 
-Inductive foo (A : Type) : Prop := I. (*Top.1*)
-Lemma bar : foo Type. (*Top.3*)
+Inductive qux (A : Type) : Prop := I. (*Top.1*)
+Lemma bar : qux Type. (*Top.3*)
 Proof.
   Set Printing Universes.
-change foo with (fun x : Type => foo x). (*Top.4*)
+change qux with (fun x : Type => qux x). (*Top.4*)
 cbv beta.
 apply I. (* I Type@{Top.3} : (fun x : Type@{Top.4} => foo x) Type@{Top.3} *)
 Defined.

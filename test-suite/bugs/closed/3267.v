@@ -36,7 +36,7 @@ Module d.
 End d.
 
 (* An other variant which was still failing in 8.5 beta2 *)
-
+Module e.
 Parameter A B : Prop.
 Axiom a:B.
 
@@ -45,3 +45,4 @@ Goal (B -> id A) -> A.
 intros.
 eauto using a.
 Abort.
+End e.

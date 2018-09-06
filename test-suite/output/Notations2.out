@@ -63,7 +63,7 @@ end
 # x : nat => # H : x <= 0 => exist (le x) 0 H
      : ∀ x : nat, x <= 0 -> {x0 : nat | x <= x0}
 exist (Q x) y conj
-     : {x0 : A | Q x x0}
+     : {x0 : A' | Q x x0}
 % i
      : nat -> nat
 % j

@@ -4,6 +4,9 @@ Changes from 8.8.2 to 8.9+beta1
 Kernel
 
 - Mutually defined records are now supported.
+- Modules and definitions now share the same namespace, which means that there
+  cannot be two objects from both classes with the same name. This is a revert
+  of a feature introduced in 8.4.
 
 Notations
 

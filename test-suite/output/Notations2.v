@@ -112,7 +112,7 @@ Check # _ : nat => 2.
 (* Check bug 4677 *)
 Check fun x (H:le x 0) => exist (le x) 0 H.
 
-Parameters (A : Set) (x y : A) (Q : A -> A -> Prop) (conj : Q x y).
+Parameters (A' : Set) (x y : A') (Q : A' -> A' -> Prop) (conj : Q x y).
 Check (exist (Q x) y conj).
 
 (* Check bug #4854 *)

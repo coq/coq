@@ -43,8 +43,12 @@ Print mono.
 Check mono.
 Check Type@{mono.u}.
 
-Module mono.
-  Fail Monomorphic Universe u.
+Module Mono.
+(* It used to be possible to have a module and a definition with the same name.
+  This lead to strange situations, and the line below tested that this was not
+  too dire. *)
+
+(*  Fail Monomorphic Universe u. *)
   Monomorphic Universe MONOU.
 
   Monomorphic Definition monomono := Type@{MONOU}.
@@ -52,9 +56,9 @@ Module mono.
 
   Monomorphic Inductive monoind@{i} : Type@{i} := .
   Monomorphic Record monorecord@{i} : Type@{i} := mkmonorecord {}.
-End mono.
-Check mono.monomono. (* qualified MONOU *)
-Import mono.
+End Mono.
+Check Mono.monomono. (* qualified MONOU *)
+Import Mono.
 Check monomono. (* unqualified MONOU *)
 Check mono. (* still qualified mono.u *)
 

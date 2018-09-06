@@ -16,9 +16,9 @@ Check a 0.
 
 (* Check that casts activate scopes if ever possible *)
 
-Inductive U := A.
+Inductive U := AU.
 Bind Scope u with U.
-Notation "'ε'" := A : u.
+Notation "'ε'" := AU : u.
 Definition c := ε : U.
 
 (* Check activation of type scope for tactics such as assert *)
