@@ -114,7 +114,7 @@ tactic_extend:
 
 tactic_deprecated:
 | { None }
-| DEPRECATED IDENT { Some $2 }
+| DEPRECATED CODE { Some $2 }
 ;
 
 tactic_level:
