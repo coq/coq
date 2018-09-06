@@ -1049,7 +1049,7 @@ let resolution unsafe sigma env (reified_concl,reified_hyps) systems_list =
   Tactics.apply (Lazy.force coq_I)
 
 let total_reflexive_omega_tactic unsafe =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   Coqlib.check_required_library ["Coq";"romega";"ROmega"];
   rst_omega_eq ();
   rst_omega_var ();

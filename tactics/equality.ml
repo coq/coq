@@ -249,7 +249,7 @@ let rewrite_elim with_evars frzevars cls c e =
 
 let tclNOTSAMEGOAL tac =
   let goal gl = Proofview.Goal.goal gl in
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let sigma = project gl in
     let ev = goal gl in
     tac >>= fun () ->

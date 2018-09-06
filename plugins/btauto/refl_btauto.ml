@@ -224,7 +224,7 @@ module Btauto = struct
     Tacticals.tclFAIL 0 msg gl
 
   let try_unification env =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.enter begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let eq = Lazy.force eq in
       let concl = EConstr.Unsafe.to_constr concl in
@@ -240,7 +240,7 @@ module Btauto = struct
     end
 
   let tac =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.enter begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let concl = EConstr.Unsafe.to_constr concl in
       let sigma = Tacmach.New.project gl in

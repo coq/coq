@@ -1949,7 +1949,7 @@ ARGUMENT EXTEND ssrexactarg TYPED AS ssrapplyarg PRINTED BY pr_ssraarg
 END
 
 let vmexacttac pf =
-  Goal.nf_enter begin fun gl ->
+  Goal.enter begin fun gl ->
   exact_no_check (EConstr.mkCast (pf, _vmcast, Tacmach.New.pf_concl gl))
   end
 

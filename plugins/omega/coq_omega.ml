@@ -588,7 +588,7 @@ let abstract_path sigma typ path t =
 
 let focused_simpl path =
   let open Tacmach.New in
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let newc = context (project gl) (fun i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
   convert_concl_no_check newc DEFAULTcast
   end
@@ -656,7 +656,7 @@ let new_hole env sigma c =
 
 let clever_rewrite_base_poly typ p result theorem =
   let open Tacmach.New in
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let full = pf_concl gl in
   let env = pf_env gl in
   let (abstracted,occ) = abstract_path (project gl) typ (List.rev p) full in
@@ -708,7 +708,7 @@ let refine_app gl t =
 
 let clever_rewrite p vpath t =
   let open Tacmach.New in
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let full = pf_concl gl in
   let (abstracted,occ) = abstract_path (project gl) (Lazy.force coq_Z) (List.rev p) full in
   let vargs = List.map (fun p -> occurrence (project gl) p occ) vpath in
@@ -1763,7 +1763,7 @@ let onClearedName id tac =
   (* so renaming may be necessary *)
   tclTHEN
     (tclTRY (clear [id]))
-    (Proofview.Goal.nf_enter begin fun gl ->
+    (Proofview.Goal.enter begin fun gl ->
      let id = fresh_id Id.Set.empty id gl in
      tclTHEN (introduction id) (tac id)
     end)
@@ -1771,7 +1771,7 @@ let onClearedName id tac =
 let onClearedName2 id tac =
   tclTHEN
     (tclTRY (clear [id]))
-    (Proofview.Goal.nf_enter begin fun gl ->
+    (Proofview.Goal.enter begin fun gl ->
      let id1 = fresh_id Id.Set.empty (add_suffix id "_left") gl in
      let id2 = fresh_id Id.Set.empty (add_suffix id "_right") gl in
       tclTHENLIST [ introduction id1; introduction id2; tac id1 id2 ]
@@ -1956,7 +1956,7 @@ let destructure_goal =
 	    try
 	      let dec = decidability t in
 	      tclTHEN
-                (Proofview.Goal.nf_enter begin fun gl ->
+                (Proofview.Goal.enter begin fun gl ->
 		                         refine_app gl (mkApp (Lazy.force coq_dec_not_not, [| t; dec |]))
 		                         end)
 	        intro

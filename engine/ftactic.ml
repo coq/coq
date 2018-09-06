@@ -61,7 +61,7 @@ let nf_enter f =
     (fun gl ->
       gl >>= fun gl ->
       Proofview.Goal.normalize gl >>= fun nfgl ->
-      Proofview.V82.wrap_exceptions (fun () -> f nfgl))
+      Proofview.V82.wrap_exceptions (fun () -> f nfgl)) [@warning "-3"]
 
 let enter f =
   bind goals

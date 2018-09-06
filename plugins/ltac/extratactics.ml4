@@ -781,9 +781,9 @@ END
 (**********************************************************************)
 
 TACTIC EXTEND transparent_abstract
-| [ "transparent_abstract" tactic3(t) ] -> [ Proofview.Goal.nf_enter begin fun gl ->
+| [ "transparent_abstract" tactic3(t) ] -> [ Proofview.Goal.enter begin fun gl ->
       Tactics.tclABSTRACT ~opaque:false None (Tacinterp.tactic_of_value ist t) end ]
-| [ "transparent_abstract" tactic3(t) "using" ident(id) ] -> [ Proofview.Goal.nf_enter begin fun gl ->
+| [ "transparent_abstract" tactic3(t) "using" ident(id) ] -> [ Proofview.Goal.enter begin fun gl ->
       Tactics.tclABSTRACT ~opaque:false (Some id) (Tacinterp.tactic_of_value ist t) end ]
 END
 

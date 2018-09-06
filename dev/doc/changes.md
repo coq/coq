@@ -219,7 +219,7 @@ General deprecation
 
 Proof engine
 
-  Due to the introduction of `EConstr` in 8.7, it is not necessary to
+- Due to the introduction of `EConstr` in 8.7, it is not necessary to
   track "goal evar normal form status" anymore, thus the type `'a
   Proofview.Goal.t` loses its ghost argument. This may introduce some
   minor incompatibilities at the typing level. Code-wise, things

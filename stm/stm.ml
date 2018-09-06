@@ -2009,7 +2009,7 @@ end = struct (* {{{ *)
         1 goals in
       TaskQueue.join queue;
       let assign_tac : unit Proofview.tactic =
-        Proofview.(Goal.nf_enter begin fun g ->
+        Proofview.(Goal.enter begin fun g ->
         let gid = Goal.goal g in
         let f =
           try List.assoc gid res
@@ -2301,7 +2301,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
         | `Leaks -> Exninfo.iraise exn
         | `ValidBlock { base_state; goals_to_admit; recovery_command } -> begin
            let tac =
-             Proofview.Goal.nf_enter begin fun gl ->
+             Proofview.Goal.enter begin fun gl ->
                if CList.mem_f Evar.equal
                  (Proofview.Goal.goal gl) goals_to_admit then
              Proofview.give_up else Proofview.tclUNIT ()

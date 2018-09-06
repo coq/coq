@@ -34,7 +34,7 @@ type lseqtac= GlobRef.t -> seqtac
 type 'a with_backtracking = tactic -> 'a
 
 let wrap n b continue seq =
-  Proofview.Goal.nf_enter begin fun gls ->
+  Proofview.Goal.enter begin fun gls ->
   Control.check_for_interrupt ();
   let nc = Proofview.Goal.hyps gls in
   let env=pf_env gls in

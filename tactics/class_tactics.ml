@@ -416,7 +416,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
            if get_typeclasses_filtered_unification () then
              let tac =
                matches_pattern concl p <*>
-                 Proofview.Goal.nf_enter
+                 Proofview.Goal.enter
                    (fun gl -> unify_resolve_refine poly flags gl (c,None,clenv)) in
              Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
            else
