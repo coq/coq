@@ -1,4 +1,4 @@
-Require Import Bool PArith DecidableClass Omega ROmega.
+Require Import Bool PArith DecidableClass Omega Lia.
 
 Ltac bool :=
 repeat match goal with
@@ -84,9 +84,9 @@ Ltac case_decide := match goal with
   let H := fresh "H" in
   define (@decide P D) b H; destruct b; try_decide
 | [ |- context [Pos.compare ?x ?y] ] =>
-  destruct (Pos.compare_spec x y); try (exfalso; zify; romega)
+  destruct (Pos.compare_spec x y); try lia
 | [ X : context [Pos.compare ?x ?y] |- _ ] =>
-  destruct (Pos.compare_spec x y); try (exfalso; zify; romega)
+  destruct (Pos.compare_spec x y); try lia
 end.
 
 Section Definitions.
@@ -325,13 +325,13 @@ Qed.
 
 Lemma linear_le_compat : forall k l p, linear k p -> (k <= l)%positive -> linear l p.
 Proof.
-intros k l p H; revert l; induction H; constructor; eauto; zify; romega.
+intros k l p H; revert l; induction H; constructor; eauto; lia.
 Qed.
 
 Lemma linear_valid_incl : forall k p, linear k p -> valid k p.
 Proof.
 intros k p H; induction H; constructor; auto.
-eapply valid_le_compat; eauto; zify; romega.
+eapply valid_le_compat; eauto; lia.
 Qed.
 
 End Validity.
@@ -417,13 +417,13 @@ Qed.
 Hint Extern 5 =>
 match goal with
 | [ |- (Pos.max ?x ?y <= ?z)%positive ] =>
-  apply Pos.max_case_strong; intros; zify; romega
+  apply Pos.max_case_strong; intros; lia
 | [ |- (?z <= Pos.max ?x ?y)%positive ] =>
-  apply Pos.max_case_strong; intros; zify; romega
+  apply Pos.max_case_strong; intros; lia
 | [ |- (Pos.max ?x ?y < ?z)%positive ] =>
-  apply Pos.max_case_strong; intros; zify; romega
+  apply Pos.max_case_strong; intros; lia
 | [ |- (?z < Pos.max ?x ?y)%positive ] =>
-  apply Pos.max_case_strong; intros; zify; romega
+  apply Pos.max_case_strong; intros; lia
 | _ => zify; omega
 end.
 Hint Resolve Pos.le_max_r Pos.le_max_l.
@@ -445,8 +445,8 @@ intros kl kr pl pr Hl Hr; revert kr pr Hr; induction Hl; intros kr pr Hr; simpl.
       now rewrite <- (Pos.max_id i); intuition.
     destruct (Pos.compare_spec i i0); subst; try case_decide; repeat (constructor; intuition).
       + apply (valid_le_compat (Pos.max i0 i0)); [now auto|]; rewrite Pos.max_id; auto.
-      + apply (valid_le_compat (Pos.max i0 i0)); [now auto|]; rewrite Pos.max_id; zify; romega.
-      + apply (valid_le_compat (Pos.max (Pos.succ i0) (Pos.succ i0))); [now auto|]; rewrite Pos.max_id; zify; romega.
+      + apply (valid_le_compat (Pos.max i0 i0)); [now auto|]; rewrite Pos.max_id; lia.
+      + apply (valid_le_compat (Pos.max (Pos.succ i0) (Pos.succ i0))); [now auto|]; rewrite Pos.max_id; lia.
       + apply (valid_le_compat (Pos.max (Pos.succ i) i0)); intuition.
       + apply (valid_le_compat (Pos.max i (Pos.succ i0))); intuition.
 }
@@ -456,7 +456,7 @@ Lemma poly_mul_cst_valid_compat : forall k v p, valid k p -> valid k (poly_mul_c
 Proof.
 intros k v p H; induction H; simpl; [now auto|].
 case_decide; [|now auto].
-eapply (valid_le_compat i); [now auto|zify; romega].
+eapply (valid_le_compat i); [now auto|lia].
 Qed.
 
 Lemma poly_mul_mon_null_compat : forall i p, null (poly_mul_mon i p) -> null p.
