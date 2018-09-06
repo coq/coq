@@ -95,6 +95,7 @@ rule extend = parse
 | "END" { END }
 | "DECLARE" { DECLARE }
 | "PLUGIN" { PLUGIN }
+| "DEPRECATED" { DEPRECATED }
 (** Camlp5 specific keywords *)
 | "GLOBAL" { GLOBAL }
 | "FIRST" { FIRST }

@@ -316,10 +316,17 @@ let print_rules fmt rules =
   fprintf fmt "Tacentries.([@[<v>%a@]])" print_rules rules
 
 let print_ast fmt ext =
+  let deprecation fmt =
+    function
+    | None -> ()
+    | Some s -> fprintf fmt "~deprecation:%s " s
+  in
   let pr fmt () =
     let level = match ext.tacext_level with None -> 0 | Some i -> i in
-    fprintf fmt "Tacentries.tactic_extend %s \"%s\" ~level:%i %a"
-      plugin_name ext.tacext_name level print_rules ext.tacext_rules
+    fprintf fmt "Tacentries.tactic_extend %s \"%s\" ~level:%i %a%a"
+      plugin_name ext.tacext_name level
+      deprecation ext.tacext_deprecated
+      print_rules ext.tacext_rules
   in
   let () = fprintf fmt "let () = @[%a@]\n" pr () in
   ()
