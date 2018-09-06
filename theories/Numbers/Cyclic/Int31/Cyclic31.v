@@ -21,7 +21,7 @@ Require Import Znumtheory.
 Require Import Zgcd_alt.
 Require Import Zpow_facts.
 Require Import CyclicAxioms.
-Require Import ROmega.
+Require Import Lia.
 
 Local Open Scope nat_scope.
 Local Open Scope int31_scope.
@@ -1237,7 +1237,7 @@ Section Int31_Specs.
   destruct (Z_lt_le_dec (X+Y) wB).
   contradict H1; auto using Zmod_small with zarith.
   rewrite <- (Z_mod_plus_full (X+Y) (-1) wB).
-  rewrite Zmod_small; romega.
+  rewrite Zmod_small; lia.
 
  generalize (Z.compare_eq ((X+Y) mod wB) (X+Y)); intros Heq.
  destruct Z.compare; intros;
@@ -1261,7 +1261,7 @@ Section Int31_Specs.
   destruct (Z_lt_le_dec (X+Y+1) wB).
   contradict H1; auto using Zmod_small with zarith.
   rewrite <- (Z_mod_plus_full (X+Y+1) (-1) wB).
-  rewrite Zmod_small; romega.
+  rewrite Zmod_small; lia.
 
  generalize (Z.compare_eq ((X+Y+1) mod wB) (X+Y+1)); intros Heq.
  destruct Z.compare; intros;
@@ -1299,8 +1299,8 @@ Section Int31_Specs.
   unfold interp_carry; rewrite phi_phi_inv, Z.compare_eq_iff; intros.
   destruct (Z_lt_le_dec (X-Y) 0).
   rewrite <- (Z_mod_plus_full (X-Y) 1 wB).
-  rewrite Zmod_small; romega.
-  contradict H1; apply Zmod_small; romega.
+  rewrite Zmod_small; lia.
+  contradict H1; apply Zmod_small; lia.
 
  generalize (Z.compare_eq ((X-Y) mod wB) (X-Y)); intros Heq.
  destruct Z.compare; intros;
@@ -1318,8 +1318,8 @@ Section Int31_Specs.
   unfold interp_carry; rewrite phi_phi_inv, Z.compare_eq_iff; intros.
   destruct (Z_lt_le_dec (X-Y-1) 0).
   rewrite <- (Z_mod_plus_full (X-Y-1) 1 wB).
-  rewrite Zmod_small; romega.
-  contradict H1; apply Zmod_small; romega.
+  rewrite Zmod_small; lia.
+  contradict H1; apply Zmod_small; lia.
 
  generalize (Z.compare_eq ((X-Y-1) mod wB) (X-Y-1)); intros Heq.
  destruct Z.compare; intros;
@@ -1356,7 +1356,7 @@ Section Int31_Specs.
  change [|1|] with 1; change [|0|] with 0.
  rewrite <- (Z_mod_plus_full (0-[|x|]) 1 wB).
  rewrite Zminus_mod_idemp_l.
- rewrite Zmod_small; generalize (phi_bounded x); romega.
+ rewrite Zmod_small; generalize (phi_bounded x); lia.
  Qed.
 
  Lemma spec_pred_c : forall x, [-|sub31c x 1|] = [|x|] - 1.

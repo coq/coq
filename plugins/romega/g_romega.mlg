@@ -41,14 +41,22 @@ let romega_tactic unsafe l =
        (Tactics.intros)
        (total_reflexive_omega_tactic unsafe))
 
+let romega_depr =
+  Vernacinterp.mk_deprecation
+    ~since:(Some "8.9")
+    ~note:(Some "Use lia instead.")
+    ()
+
 }
 
 TACTIC EXTEND romega
+DEPRECATED { romega_depr }
 |  [ "romega" ] -> { romega_tactic false [] }
 |  [ "unsafe_romega" ] -> { romega_tactic true [] }
 END
 
 TACTIC EXTEND romega'
+DEPRECATED { romega_depr }
 | [ "romega" "with" ne_ident_list(l) ] ->
     { romega_tactic false (List.map Names.Id.to_string l) }
 | [ "romega" "with" "*" ] -> { romega_tactic false ["nat";"positive";"N";"Z"] }

@@ -48,6 +48,8 @@ Tactics
   may need to add `Require Import Lra` to your developments. For compatibility,
   we now define `fourier` as a deprecated alias of `lra`.
 
+- The `romega` tactics have been deprecated; please use `lia` instead.
+
 Focusing
 
 - Focusing bracket `{` now supports named goal selectors,
