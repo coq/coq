@@ -71,15 +71,15 @@ let insert_xml ?(mark = `INSERT) ?(tags = []) (buf : #GText.buffer_skel) msg =
   let rmark = `MARK (buf#create_mark buf#start_iter) in
   (* insert the string, but don't apply diff highlights to white space at the begin/end of line *)
   let rec insert_str tags s =
+    let etags = try List.hd !dtags :: tags with hd -> tags in
     try
-      let _ = Str.search_forward nl_white_regex s 0 in
+      let start = Str.search_forward nl_white_regex s 0 in
+      insert_with_tags buf mark rmark etags (String.sub s 0 start);
       insert_with_tags buf mark rmark tags (Str.matched_group 1 s);
       let mend = Str.match_end () in
       insert_str tags (String.sub s mend (String.length s - mend))
-    with Not_found -> begin
-      let etags = try List.hd !dtags :: tags with hd -> tags in
+    with Not_found ->
       insert_with_tags buf mark rmark etags s
-      end
   in
   let rec insert tags = function
   | PCData s -> insert_str tags s
