@@ -28,7 +28,7 @@ Table of contents
    :caption: Preamble
 
    self
-   credits
+   credits-wrapper
 
 .. toctree::
    :caption: The language
