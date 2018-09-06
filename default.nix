@@ -38,6 +38,18 @@
 with pkgs;
 with stdenv.lib;
 
+let dune =
+  overrideDerivation jbuilder (o: {
+    name = "dune-1.1.1";
+    src = fetchFromGitHub {
+      owner = "ocaml";
+      repo = "dune";
+      rev = "1.1.1";
+      sha256 = "0v2pnxpmqsvrvidpwxvbsypzhqfdnjs5crjp9y61qi8nyj8d75zw";
+    };
+  });
+in
+
 stdenv.mkDerivation rec {
 
   name = "coq";
@@ -45,7 +57,7 @@ stdenv.mkDerivation rec {
   buildInputs = [
     hostname
     python2 time # coq-makefile timing tools
-    jbuilder
+    dune
   ]
   ++ (with ocamlPackages; [ ocaml findlib camlp5_strict num ])
   ++ optional buildIde ocamlPackages.lablgtk
