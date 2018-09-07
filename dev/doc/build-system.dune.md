@@ -39,6 +39,17 @@ In order to build a single package, you can do `dune build
 $PACKAGE.install`. Dune also provides targets for documentation and
 testing, see below.
 
+## Developer shell
+
+You can create a developer shell with `dune utop $library`, where
+`$library` can be any directory in the current workspace. For example,
+`dune utop engine` or `dune utop plugins/ltac` will launch `utop` with
+the right libraries already loaded.
+
+Note that you must invoke the `#rectypes;;` toplevel flag in order to
+use Coq libraries. The provided `.ocamlinit` file does this
+automatically.
+
 ## Compositionality, developer and release modes.
 
 By default [in "developer mode"], Dune will compose all the packages
