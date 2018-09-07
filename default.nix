@@ -76,7 +76,7 @@ stdenv.mkDerivation rec {
   )
   ++ optionals shell (
     [ jq curl git gnupg ] # Dependencies of the merging script
-    ++ (with ocamlPackages; [ merlin ocp-indent ocp-index ]) # Dev tools
+    ++ (with ocamlPackages; [ merlin ocp-indent ocp-index utop ]) # Dev tools
   );
 
   src =
