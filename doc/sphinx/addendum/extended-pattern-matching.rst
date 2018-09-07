@@ -407,12 +407,11 @@ length, by writing
 
 .. coqtop:: in
 
-   Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
-    listn (n + m) :=
-     match l in listn n, l' return listn (n + m) with
-     | niln, x => x
-     | consn n' a y, x => consn (n' + m) a (concat n' y m x)
-     end.
+   Check (fun n (a b: listn n) =>
+    match a, b with
+    | niln, b0 => tt
+    | consn n' a y, bS => tt
+    end).
 
 we have a copy of :g:`b` in type :g:`listn 0` resp. :g:`listn (S n')`.
 
