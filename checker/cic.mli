@@ -132,7 +132,7 @@ type delta_hint =
 
 type delta_resolver = ModPath.t MPmap.t * delta_hint KNmap.t
 
-type 'a umap_t = 'a MPmap.t * 'a MBImap.t
+type 'a umap_t = 'a MPmap.t
 type substitution = (ModPath.t * delta_resolver) umap_t
 
 (** {6 Delayed constr} *)

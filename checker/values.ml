@@ -15,7 +15,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 f7b267579138eabf86a74d6f2a7ed794 checker/cic.mli
+MD5 a127e0c2322c7846914bbca9921309c7 checker/cic.mli
 
 *)
 
@@ -185,10 +185,7 @@ let v_resolver =
 let v_mp_resolver = v_tuple "" [|v_mp;v_resolver|]
 
 let v_subst =
-  v_tuple "substitution"
-    [|v_map v_mp v_mp_resolver;
-      v_map v_uid v_mp_resolver|]
-
+  Annot ("substitution", v_map v_mp v_mp_resolver)
 
 (** kernel/lazyconstr *)
 

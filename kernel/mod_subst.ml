@@ -53,17 +53,25 @@ type delta_resolver = Deltamap.t
 
 let empty_delta_resolver = Deltamap.empty
 
-module Umap = struct
-  type 'a t = 'a MPmap.t * 'a MBImap.t
-  let empty = MPmap.empty, MBImap.empty
-  let is_empty (m1,m2) = MPmap.is_empty m1 && MBImap.is_empty m2
-  let add_mbi mbi x (m1,m2) = (m1,MBImap.add mbi x m2)
-  let add_mp mp x (m1,m2) = (MPmap.add mp x m1, m2)
-  let find_mp mp map = MPmap.find mp (fst map)
-  let find_mbi mbi map = MBImap.find mbi (snd map)
-  let fold fmp fmbi (m1,m2) i =
-    MPmap.fold fmp m1 (MBImap.fold fmbi m2 i)
-  let join map1 map2 = fold add_mp add_mbi map1 map2
+module Umap :
+  sig
+    type 'a t
+    val empty : 'a t
+    val is_empty : 'a t -> bool
+    val add_mbi : MBId.t -> 'a -> 'a t -> 'a t
+    val add_mp : ModPath.t -> 'a -> 'a t -> 'a t
+    val find : ModPath.t -> 'a t -> 'a
+    val join : 'a t -> 'a t -> 'a t
+    val fold : (ModPath.t -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  end = struct
+  type 'a t = 'a MPmap.t
+  let empty = MPmap.empty
+  let is_empty m = MPmap.is_empty m
+  let add_mbi mbi x m = MPmap.add (MPbound mbi) x m
+  let add_mp mp x m = MPmap.add mp x m
+  let find = MPmap.find
+  let fold = MPmap.fold
+  let join map1 map2 = fold add_mp map1 map2
 end
 
 type substitution = (ModPath.t * delta_resolver) Umap.t
@@ -92,8 +100,7 @@ let debug_string_of_delta resolve =
 let list_contents sub =
   let one_pair (mp,reso) = (ModPath.to_string mp,debug_string_of_delta reso) in
   let mp_one_pair mp0 p l = (ModPath.to_string mp0, one_pair p)::l in
-  let mbi_one_pair mbi p l = (MBId.debug_to_string mbi, one_pair p)::l in
-  Umap.fold mp_one_pair mbi_one_pair sub []
+  Umap.fold mp_one_pair sub []
 
 let debug_string_of_subst sub =
   let l = List.map (fun (s1,(s2,s3)) -> s1^"|->"^s2^"["^s3^"]")
@@ -221,15 +228,10 @@ let search_delta_inline resolve kn1 kn2 =
 let subst_mp0 sub mp = (* 's like subst *)
  let rec aux mp =
   match mp with
-    | MPfile sid -> Umap.find_mp mp sub
-    | MPbound bid ->
-	begin
-	  try Umap.find_mbi bid sub
-	  with Not_found -> Umap.find_mp mp sub
-	end
+    | MPfile _ | MPbound _ -> Umap.find mp sub
     | MPdot (mp1,l) as mp2 ->
 	begin
-	  try Umap.find_mp mp2 sub
+          try Umap.find mp2 sub
 	  with Not_found ->
 	    let mp1',resolve = aux mp1 in
 	    MPdot (mp1',l),resolve
@@ -524,9 +526,7 @@ let substition_prefixed_by k mp subst =
       Umap.add_mp new_key (mp_to,reso) sub
     else sub
   in
-  let mbi_prefixmp mbi _ sub = sub
-  in
-  Umap.fold mp_prefixmp mbi_prefixmp subst empty_subst
+  Umap.fold mp_prefixmp subst empty_subst
 
 let join subst1 subst2 =
   let apply_subst mpk add (mp,resolve) res =
@@ -546,8 +546,7 @@ let join subst1 subst2 =
     Umap.join prefixed_subst (add (mp',resolve'') res)
   in
   let mp_apply_subst mp = apply_subst mp (Umap.add_mp mp) in
-  let mbi_apply_subst mbi = apply_subst (MPbound mbi) (Umap.add_mbi mbi) in
-  let subst = Umap.fold mp_apply_subst mbi_apply_subst subst1 empty_subst in
+  let subst = Umap.fold mp_apply_subst subst1 empty_subst in
   Umap.join subst2 subst
 
 type 'a substituted = {

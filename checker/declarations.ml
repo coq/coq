@@ -28,18 +28,13 @@ let empty_delta_resolver = Deltamap.empty
 module Umap = struct
   [@@@ocaml.warning "-32-34"]
   type 'a t = 'a umap_t
-  let empty = MPmap.empty, MBImap.empty
-  let is_empty (m1,m2) = MPmap.is_empty m1 && MBImap.is_empty m2
-  let add_mbi mbi x (m1,m2) = (m1,MBImap.add mbi x m2)
-  let add_mp mp x (m1,m2) = (MPmap.add mp x m1, m2)
-  let find_mp mp map = MPmap.find mp (fst map)
-  let find_mbi mbi map = MBImap.find mbi (snd map)
-  let mem_mp mp map = MPmap.mem mp (fst map)
-  let mem_mbi mbi map = MBImap.mem mbi (snd map)
-  let iter_mbi f map = MBImap.iter f (snd map)
-  let fold fmp fmbi (m1,m2) i =
-    MPmap.fold fmp m1 (MBImap.fold fmbi m2 i)
-  let join map1 map2 = fold add_mp add_mbi map1 map2
+  let empty = MPmap.empty
+  let is_empty m = MPmap.is_empty m
+  let add_mbi mbi x m = MPmap.add (MPbound mbi) x m
+  let add_mp mp x m = MPmap.add mp x m
+  let find = MPmap.find
+  let fold = MPmap.fold
+  let join map1 map2 = fold add_mp map1 map2
 end
 
 type 'a subst_fun = substitution -> 'a -> 'a
@@ -117,15 +112,10 @@ let constant_of_delta_with_inline resolve con =
 let subst_mp0 sub mp = (* 's like subst *)
  let rec aux mp =
   match mp with
-    | MPfile sid -> Umap.find_mp mp sub
-    | MPbound bid ->
-	begin
-	  try Umap.find_mbi bid sub
-	  with Not_found -> Umap.find_mp mp sub
-	end
+    | MPfile _ | MPbound _ -> Umap.find mp sub
     | MPdot (mp1,l) as mp2 ->
 	begin
-	  try Umap.find_mp mp2 sub
+          try Umap.find mp2 sub
 	  with Not_found ->
 	    let mp1',resolve = aux mp1 in
 	    MPdot (mp1',l),resolve
@@ -382,9 +372,7 @@ let substition_prefixed_by k mp subst =
       Umap.add_mp new_key (mp_to,reso) sub
     else sub
   in
-  let mbi_prefixmp mbi _ sub = sub
-  in
-  Umap.fold mp_prefixmp mbi_prefixmp subst empty_subst
+  Umap.fold mp_prefixmp subst empty_subst
 
 let join subst1 subst2 =
   let apply_subst mpk add (mp,resolve) res =
@@ -404,8 +392,7 @@ let join subst1 subst2 =
     Umap.join prefixed_subst (add (mp',resolve'') res)
   in
   let mp_apply_subst mp = apply_subst mp (Umap.add_mp mp) in
-  let mbi_apply_subst mbi = apply_subst (MPbound mbi) (Umap.add_mbi mbi) in
-  let subst = Umap.fold mp_apply_subst mbi_apply_subst subst1 empty_subst in
+  let subst = Umap.fold mp_apply_subst subst1 empty_subst in
   Umap.join subst2 subst
 
 let from_val x = { subst_value = x; subst_subst = []; }
