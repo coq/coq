@@ -30,6 +30,11 @@ Unset Strict Universe Declaration.
    order of appearance. *)
 Definition foo@{u +} := Type -> Type@{v} -> Type@{u}.
 Print foo.
+
+Check Type@{i} -> Type@{j}.
+
+Eval cbv in Type@{i} -> Type@{j}.
+
 Set Strict Universe Declaration.
 
 (* Binders even work with monomorphic definitions! *)
