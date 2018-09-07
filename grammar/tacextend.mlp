@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** WARNING: this file is deprecated; consider modifying coqpp instead. *)
+
 (** Implementation of the TACTIC EXTEND macro. *)
 
 open Q_util
