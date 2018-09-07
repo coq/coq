@@ -82,9 +82,9 @@ module NamedDecl = Context.Named.Declaration
   - [modresolver] : delta_resolver concerning the module content
   - [paramresolver] : delta_resolver concerning the module parameters
   - [revstruct] : current module content, most recent declarations first
-  - [labels] : names defined in the current module,
+  - [modlabels] and [objlabels] : names defined in the current module,
       either for modules/modtypes or for constants/inductives.
-      This field could be deduced from [revstruct], but it allows faster
+      These fields could be deduced from [revstruct], but they allow faster
       name freshness checks.
  - [univ] and [future_cst] : current and future universe constraints
  - [engagement] : are we Set-impredicative? does the universe hierarchy collapse?
@@ -122,7 +122,8 @@ type safe_environment =
     modresolver : Mod_subst.delta_resolver;
     paramresolver : Mod_subst.delta_resolver;
     revstruct : structure_body;
-    labels : Label.Set.t;
+    modlabels : Label.Set.t;
+    objlabels : Label.Set.t;
     univ : Univ.ContextSet.t;
     future_cst : Univ.ContextSet.t Future.computation list;
     engagement : engagement option;
@@ -150,7 +151,8 @@ let empty_environment =
     modresolver = Mod_subst.empty_delta_resolver;
     paramresolver = Mod_subst.empty_delta_resolver;
     revstruct = [];
-    labels = Label.Set.empty;
+    modlabels = Label.Set.empty;
+    objlabels = Label.Set.empty;
     future_cst = [];
     univ = Univ.ContextSet.empty;
     engagement = None;
@@ -288,14 +290,22 @@ let is_joined_environment e = List.is_empty e.future_cst
 
 (** {6 Various checks } *)
 
-let exists_modlabel l senv = Label.Set.mem l senv.labels
-let exists_objlabel l senv = Label.Set.mem l senv.labels
+let warn_deprecated_label_conflict =
+  let open Pp in
+  CWarnings.create ~name:"deprecated-label-conflict" ~category:"deprecated"
+         (fun lbl -> strbrk "A module and an entry have the same label " ++
+          Label.print lbl ++ strbrk ". This tolerance is deprecated.")
+
+let exists_modlabel l senv = Label.Set.mem l senv.modlabels
+let exists_objlabel l senv = Label.Set.mem l senv.objlabels
 
 let check_modlabel l senv =
   if exists_modlabel l senv then Modops.error_existing_label l
+  else if exists_objlabel l senv then warn_deprecated_label_conflict l
 
 let check_objlabel l senv =
   if exists_objlabel l senv then Modops.error_existing_label l
+  else if exists_modlabel l senv then warn_deprecated_label_conflict l
 
 let check_objlabels ls senv =
   Label.Set.iter (fun l -> check_objlabel l senv) ls
@@ -438,14 +448,14 @@ type generic_name =
   | MT (** name already known, cf the mod_mp field *)
 
 let add_field ((l,sfb) as field) gn senv =
-  let labs = match sfb with
+  let mlabs,olabs = match sfb with
     | SFBmind mib ->
       let l = labels_of_mib mib in
-      check_objlabels l senv; l
+      check_objlabels l senv; (Label.Set.empty,l)
     | SFBconst _ ->
-      check_objlabel l senv; Label.Set.singleton l
+      check_objlabel l senv; (Label.Set.empty, Label.Set.singleton l)
     | SFBmodule _ | SFBmodtype _ ->
-      check_modlabel l senv; Label.Set.singleton l
+      check_modlabel l senv; (Label.Set.singleton l, Label.Set.empty)
   in
   let cst = constraints_of_sfb senv.env sfb in
   let senv = add_constraints_list cst senv in
@@ -459,8 +469,8 @@ let add_field ((l,sfb) as field) gn senv =
   { senv with
     env = env';
     revstruct = field :: senv.revstruct;
-    labels = Label.Set.union labs senv.labels;
-  }
+    modlabels = Label.Set.union mlabs senv.modlabels;
+    objlabels = Label.Set.union olabs senv.objlabels }
 
 (** Applying a certain function to the resolver of a safe environment *)
 
@@ -670,7 +680,7 @@ let propagate_senv newdef newenv newresolver senv oldsenv =
     env = newenv;
     modresolver = newresolver;
     revstruct = newdef::oldsenv.revstruct;
-    labels = Label.Set.add (fst newdef) oldsenv.labels;
+    modlabels = Label.Set.add (fst newdef) oldsenv.modlabels;
     univ =
       List.fold_left (fun acc cst ->
         Univ.ContextSet.union acc (Future.force cst))

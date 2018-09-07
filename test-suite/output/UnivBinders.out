@@ -71,8 +71,11 @@ monomono
      : Type@{MONOU+1}
 mono
      : Type@{mono.u+1}
+File "stdin", line 71, characters 0-50:
+Warning: A module and an entry have the same label mono2. This tolerance is
+deprecated. [deprecated-label-conflict,deprecated]
 The command has indeed failed with message:
-mono2 already exists.
+Universe u already exists.
 bobmorane = 
 let tt := Type@{tt.v} in let ff := Type@{ff.v} in tt -> ff
      : Type@{max(tt.u,ff.u)}
