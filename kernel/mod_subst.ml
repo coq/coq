@@ -61,7 +61,6 @@ module Umap = struct
   let add_mp mp x (m1,m2) = (MPmap.add mp x m1, m2)
   let find_mp mp map = MPmap.find mp (fst map)
   let find_mbi mbi map = MBImap.find mbi (snd map)
-  let iter_mbi f map = MBImap.iter f (snd map)
   let fold fmp fmbi (m1,m2) i =
     MPmap.fold fmp m1 (MBImap.fold fmbi m2 i)
   let join map1 map2 = fold add_mp add_mbi map1 map2
@@ -550,20 +549,6 @@ let join subst1 subst2 =
   let mbi_apply_subst mbi = apply_subst (MPbound mbi) (Umap.add_mbi mbi) in
   let subst = Umap.fold mp_apply_subst mbi_apply_subst subst1 empty_subst in
   Umap.join subst2 subst
-
-let rec occur_in_path mbi = function
-  | MPbound bid' -> MBId.equal mbi bid'
-  | MPdot (mp1,_) -> occur_in_path mbi mp1
-  | _ -> false
-
-let occur_mbid mbi sub =
-  let check_one mbi' (mp,_) =
-    if MBId.equal mbi mbi' || occur_in_path mbi mp then raise Exit
-  in
-  try
-    Umap.iter_mbi check_one sub;
-    false
-  with Exit -> true
 
 type 'a substituted = {
   mutable subst_value : 'a;

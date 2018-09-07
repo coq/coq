@@ -165,11 +165,6 @@ val replace_mp_in_kn : ModPath.t -> ModPath.t -> KerName.t -> KerName.t
    names appearing in [c] *)
 val subst_mps : substitution -> constr -> constr
 
-(** [occur_*id id sub] returns true iff [id] occurs in [sub]
-   on either side *)
-
-val occur_mbid : MBId.t -> substitution -> bool
-
 (** [repr_substituted r] dumps the representation of a substituted:
     - [None, a] when r is a value
     - [Some s, a] when r is a delayed substitution [s] applied to [a] *)
