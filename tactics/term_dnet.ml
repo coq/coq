@@ -100,7 +100,7 @@ struct
   | DRel, _ -> -1 | _, DRel -> 1
   | DSort, DSort -> 0
   | DSort, _ -> -1 | _, DSort -> 1
-  | DRef gr1, DRef gr2 -> RefOrdered.compare gr1 gr2
+  | DRef gr1, DRef gr2 -> GlobRef.Ordered.compare gr1 gr2
   | DRef _, _ -> -1 | _, DRef _ -> 1
 
   | DCtx (tl1, tr1), DCtx (tl2, tr2)

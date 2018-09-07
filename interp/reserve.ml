@@ -28,7 +28,7 @@ type key =
 (** TODO: share code from Notation *)
 
 let key_compare k1 k2 = match k1, k2 with
-| RefKey gr1, RefKey gr2 -> RefOrdered.compare gr1 gr2
+| RefKey gr1, RefKey gr2 -> GlobRef.Ordered.compare gr1 gr2
 | RefKey _, Oth -> -1
 | Oth, RefKey _ -> 1
 | Oth, Oth -> 0

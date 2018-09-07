@@ -258,15 +258,15 @@ let restart_subscript id =
     forget_subscript id
 
 let visible_ids sigma (nenv, c) =
-  let accu = ref (Refset_env.empty, Int.Set.empty, Id.Set.empty) in
+  let accu = ref (GlobRef.Set_env.empty, Int.Set.empty, Id.Set.empty) in
   let rec visible_ids n c = match EConstr.kind sigma c with
   | Const _ | Ind _ | Construct _ | Var _ as c ->
     let (gseen, vseen, ids) = !accu in
     let g = global_of_constr c in
-    if not (Refset_env.mem g gseen) then
+    if not (GlobRef.Set_env.mem g gseen) then
       begin
       try
-      let gseen = Refset_env.add g gseen in
+      let gseen = GlobRef.Set_env.add g gseen in
       let short = shortest_qualid_of_global Id.Set.empty g in
       let dir, id = repr_qualid short in
       let ids = if DirPath.is_empty dir then Id.Set.add id ids else ids in

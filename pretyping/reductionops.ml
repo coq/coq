@@ -88,6 +88,7 @@ let set_reduction_effect x funkey =
 (** Machinery to custom the behavior of the reduction *)
 module ReductionBehaviour = struct
   open Globnames
+  open Names
   open Libobject
 
   type t = {
@@ -97,7 +98,7 @@ module ReductionBehaviour = struct
   }
 
   let table =
-    Summary.ref (Refmap.empty : t Refmap.t) ~name:"reductionbehaviour"
+    Summary.ref (GlobRef.Map.empty : t GlobRef.Map.t) ~name:"reductionbehaviour"
 
   type flag = [ `ReductionDontExposeCase | `ReductionNeverUnfold ]
   type req =
@@ -105,7 +106,7 @@ module ReductionBehaviour = struct
     | ReqGlobal of GlobRef.t * (int list * int * flag list)
 
   let load _ (_,(_,(r, b))) =
-    table := Refmap.add r b !table
+    table := GlobRef.Map.add r b !table
 
   let cache o = load 1 o
 
@@ -160,7 +161,7 @@ module ReductionBehaviour = struct
 
   let get r =
     try
-      let b = Refmap.find r !table in
+      let b = GlobRef.Map.find r !table in
       let flags =
 	if Int.equal b.b_nargs max_int then [`ReductionNeverUnfold]
 	else if b.b_dont_expose_case then [`ReductionDontExposeCase] else [] in
