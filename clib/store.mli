@@ -16,6 +16,14 @@ sig
   type t
   (** Type of stores *)
 
+  type 'a merge_arg =
+    | One of 'a
+    | Both of 'a * 'a
+
+  type 'a merge_field = 'a merge_arg -> 'a option
+  (** Type of merging function when merging two stores potentially
+      having values for the same field (used in [merge] only). *)
+
   type 'a field
   (** Type of field of such stores *)
 
@@ -32,10 +40,16 @@ sig
   (** Unset the value of the field *)
 
   val merge : t -> t -> t
-  (** [merge s1 s2] adds all the fields of [s1] into [s2]. *)
+  (** [merge s1 s2] merges the fields of [s1] into [s2].
+      It merges values for the same field according to the [merge] function
+      of the field, called with optional values of [s1] and [s2]. *)
 
-  val field : unit -> 'a field
-  (** Create a new field *)
+  val field : 'a merge_field -> 'a field
+  (** Create a new field with the associated merge function. *)
+
+  val default_merge_field : 'a merge_field
+  (** The default strategy for merge is to always favor the value from
+      [s1] in [merge s1 s2], if present. *)
 
 end
 

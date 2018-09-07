@@ -20,7 +20,7 @@ type info = Store.t
 
 type iexn = exn * info
 
-let make = Store.field
+let make () = Store.field Store.default_merge_field
 let add = Store.set
 let get = Store.get
 let null = Store.empty
