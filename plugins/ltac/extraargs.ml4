@@ -345,11 +345,7 @@ let pr_r_int31_field i31f =
 
 let pr_retroknowledge_field f =
   match f with
- (* | Retroknowledge.KEq -> str "equality"
-  | Retroknowledge.KNat natf -> pr_r_nat_field () () () natf
-  | Retroknowledge.KN nf -> pr_r_n_field () () () nf *)
-  | Retroknowledge.KInt31 (group, i31f) -> (pr_r_int31_field i31f) ++
-                                           spc () ++ str "in " ++ qs group
+  | Retroknowledge.KInt31 i31f -> pr_r_int31_field i31f
 
 VERNAC ARGUMENT EXTEND retroknowledge_int31
 PRINTED BY pr_r_int31_field
@@ -381,8 +377,5 @@ END
 
 VERNAC ARGUMENT EXTEND retroknowledge_field
 PRINTED BY pr_retroknowledge_field
-(*| [ "equality" ] -> [ Retroknowledge.KEq ]
-| [ retroknowledge_nat(n)] -> [ Retroknowledge.KNat n ]
-| [ retroknowledge_binary_n (n)] -> [ Retroknowledge.KN n ]*)
-| [ retroknowledge_int31 (i) "in" string(g)] -> [ Retroknowledge.KInt31(g,i) ]
+| [ retroknowledge_int31 (i) ] -> [ Retroknowledge.KInt31 i ]
 END

@@ -45,8 +45,8 @@ Inductive int31 : Type := I31 : digits31 int31.
 (* spiwack: Registration of the type of integers, so that the matchs in
    the functions below perform dynamic decompilation (otherwise some segfault
    occur when they are applied to one non-closed term and one closed term). *)
-Register digits as int31 bits in "coq_int31" by True.
-Register int31 as int31 type in "coq_int31" by True.
+Register digits as int31 bits by True.
+Register int31 as int31 type by True.
 
 Declare Scope int31_scope.
 Declare ML Module "int31_syntax_plugin".
@@ -345,21 +345,21 @@ Definition lor31 n m := phi_inv (Z.lor (phi n) (phi m)).
 Definition land31 n m := phi_inv (Z.land (phi n) (phi m)).
 Definition lxor31 n m := phi_inv (Z.lxor (phi n) (phi m)).
 
-Register add31 as int31 plus in "coq_int31" by True.
-Register add31c as int31 plusc in "coq_int31" by True.
-Register add31carryc as int31 pluscarryc in "coq_int31" by True.
-Register sub31 as int31 minus in "coq_int31" by True.
-Register sub31c as int31 minusc in "coq_int31" by True.
-Register sub31carryc as int31 minuscarryc in "coq_int31" by True.
-Register mul31 as int31 times in "coq_int31" by True.
-Register mul31c as int31 timesc in "coq_int31" by True.
-Register div3121 as int31 div21 in "coq_int31" by True.
-Register div31 as int31 diveucl in "coq_int31" by True.
-Register compare31 as int31 compare in "coq_int31" by True.
-Register addmuldiv31 as int31 addmuldiv in "coq_int31" by True.
-Register lor31 as int31 lor in "coq_int31" by True.
-Register land31 as int31 land in "coq_int31" by True.
-Register lxor31 as int31 lxor in "coq_int31" by True.
+Register add31 as int31 plus by True.
+Register add31c as int31 plusc by True.
+Register add31carryc as int31 pluscarryc by True.
+Register sub31 as int31 minus by True.
+Register sub31c as int31 minusc by True.
+Register sub31carryc as int31 minuscarryc by True.
+Register mul31 as int31 times by True.
+Register mul31c as int31 timesc by True.
+Register div3121 as int31 div21 by True.
+Register div31 as int31 diveucl by True.
+Register compare31 as int31 compare by True.
+Register addmuldiv31 as int31 addmuldiv by True.
+Register lor31 as int31 lor by True.
+Register land31 as int31 land by True.
+Register lxor31 as int31 lxor by True.
 
 Definition lnot31 n := lxor31 Tn n.
 Definition ldiff31 n m := land31 n (lnot31 m).
@@ -485,5 +485,5 @@ Definition tail031 (i:int31) :=
     end)
    i On.
 
-Register head031 as int31 head0 in "coq_int31" by True.
-Register tail031 as int31 tail0 in "coq_int31" by True.
+Register head031 as int31 head0 by True.
+Register tail031 as int31 tail0 by True.

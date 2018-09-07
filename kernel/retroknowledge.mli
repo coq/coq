@@ -46,7 +46,7 @@ type int31_field =
   | Int31Lxor
 
 type field =
-  | KInt31 of string*int31_field
+  | KInt31 of int31_field
 
 (** This type represent an atomic action of the retroknowledge. It
    is stored in the compiled libraries 

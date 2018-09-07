@@ -53,7 +53,7 @@ type int31_field =
   | Int31Lxor
 
 type field =
-  | KInt31 of string*int31_field
+  | KInt31 of int31_field
 
 
 (* record representing all the flags of the internal state of the kernel *)

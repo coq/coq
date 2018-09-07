@@ -695,10 +695,10 @@ let register_one env field entry =
 (* [register env field entry] may register several fields when needed *)
 let register env field entry =
   match field with
-    | KInt31 (grp, Int31Type) ->
+    | KInt31 Int31Type ->
         let i31c = match kind entry with
                      | Ind i31t -> mkConstructUi (i31t, 1)
 		     | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type.")
 	in
-        register_one (register_one env (KInt31 (grp,Int31Constructor)) i31c) field entry
+        register_one (register_one env (KInt31 Int31Constructor) i31c) field entry
     | field -> register_one env field entry

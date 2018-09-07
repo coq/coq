@@ -992,12 +992,12 @@ fun rk value field ->
   let int31_binop_from_const op prim = int31_op_from_const 2 op prim in
   let int31_unop_from_const op prim = int31_op_from_const 1 op prim in
   match field with
-    | KInt31 (grp, Int31Type) ->
+    | KInt31 Int31Type ->
         let int31bit =
           (* invariant : the type of bits is registered, otherwise the function
              would raise Not_found. The invariant is enforced in safe_typing.ml *)
           match field with
-          | KInt31 (grp, Int31Type) -> Retroknowledge.find rk (KInt31 (grp,Int31Bits))
+          | KInt31 Int31Type -> Retroknowledge.find rk (KInt31 Int31Bits)
           | _ -> anomaly ~label:"Environ.register"
               (Pp.str "add_int31_decompilation_from_type called with an abnormal field.")
         in
@@ -1019,46 +1019,46 @@ fun rk value field ->
           vm_before_match = Some Clambda.int31_escape_before_match;
           native_before_match = Some (Nativelambda.before_match_int31 i31bit_type);
         }
-    | KInt31 (_, Int31Constructor) ->
+    | KInt31 Int31Constructor ->
         { empty_reactive_info with
           vm_constant_static = Some Clambda.compile_structured_int31;
           vm_constant_dynamic = Some Clambda.dynamic_int31_compilation;
           native_constant_static = Some Nativelambda.compile_static_int31;
           native_constant_dynamic = Some Nativelambda.compile_dynamic_int31;
         }
-    | KInt31 (_, Int31Plus) -> int31_binop_from_const Cbytecodes.Kaddint31
+    | KInt31 Int31Plus -> int31_binop_from_const Cbytecodes.Kaddint31
                                                           CPrimitives.Int31add
-    | KInt31 (_, Int31PlusC) -> int31_binop_from_const Cbytecodes.Kaddcint31
+    | KInt31 Int31PlusC -> int31_binop_from_const Cbytecodes.Kaddcint31
                                                            CPrimitives.Int31addc
-    | KInt31 (_, Int31PlusCarryC) -> int31_binop_from_const Cbytecodes.Kaddcarrycint31
+    | KInt31 Int31PlusCarryC -> int31_binop_from_const Cbytecodes.Kaddcarrycint31
                                                                 CPrimitives.Int31addcarryc
-    | KInt31 (_, Int31Minus) -> int31_binop_from_const Cbytecodes.Ksubint31
+    | KInt31 Int31Minus -> int31_binop_from_const Cbytecodes.Ksubint31
                                                            CPrimitives.Int31sub
-    | KInt31 (_, Int31MinusC) -> int31_binop_from_const Cbytecodes.Ksubcint31
+    | KInt31 Int31MinusC -> int31_binop_from_const Cbytecodes.Ksubcint31
                                                             CPrimitives.Int31subc
-    | KInt31 (_, Int31MinusCarryC) -> int31_binop_from_const
+    | KInt31 Int31MinusCarryC -> int31_binop_from_const
                                         Cbytecodes.Ksubcarrycint31 CPrimitives.Int31subcarryc
-    | KInt31 (_, Int31Times) -> int31_binop_from_const Cbytecodes.Kmulint31
+    | KInt31 Int31Times -> int31_binop_from_const Cbytecodes.Kmulint31
                                                            CPrimitives.Int31mul
-    | KInt31 (_, Int31TimesC) -> int31_binop_from_const Cbytecodes.Kmulcint31
+    | KInt31 Int31TimesC -> int31_binop_from_const Cbytecodes.Kmulcint31
                                                            CPrimitives.Int31mulc
-    | KInt31 (_, Int31Div21) -> int31_op_from_const 3 Cbytecodes.Kdiv21int31
+    | KInt31 Int31Div21 -> int31_op_from_const 3 Cbytecodes.Kdiv21int31
                                                            CPrimitives.Int31div21
-    | KInt31 (_, Int31Diveucl) -> int31_binop_from_const Cbytecodes.Kdivint31
+    | KInt31 Int31Diveucl -> int31_binop_from_const Cbytecodes.Kdivint31
                                                          CPrimitives.Int31diveucl
-    | KInt31 (_, Int31AddMulDiv) -> int31_op_from_const 3 Cbytecodes.Kaddmuldivint31
+    | KInt31 Int31AddMulDiv -> int31_op_from_const 3 Cbytecodes.Kaddmuldivint31
                                                          CPrimitives.Int31addmuldiv
-    | KInt31 (_, Int31Compare) -> int31_binop_from_const Cbytecodes.Kcompareint31
+    | KInt31 Int31Compare -> int31_binop_from_const Cbytecodes.Kcompareint31
                                                              CPrimitives.Int31compare
-    | KInt31 (_, Int31Head0) -> int31_unop_from_const Cbytecodes.Khead0int31
+    | KInt31 Int31Head0 -> int31_unop_from_const Cbytecodes.Khead0int31
                                                           CPrimitives.Int31head0
-    | KInt31 (_, Int31Tail0) -> int31_unop_from_const Cbytecodes.Ktail0int31
+    | KInt31 Int31Tail0 -> int31_unop_from_const Cbytecodes.Ktail0int31
                                                           CPrimitives.Int31tail0
-    | KInt31 (_, Int31Lor) -> int31_binop_from_const Cbytecodes.Klorint31
+    | KInt31 Int31Lor -> int31_binop_from_const Cbytecodes.Klorint31
                                                          CPrimitives.Int31lor
-    | KInt31 (_, Int31Land) -> int31_binop_from_const Cbytecodes.Klandint31
+    | KInt31 Int31Land -> int31_binop_from_const Cbytecodes.Klandint31
                                                           CPrimitives.Int31land
-    | KInt31 (_, Int31Lxor) -> int31_binop_from_const Cbytecodes.Klxorint31
+    | KInt31 Int31Lxor -> int31_binop_from_const Cbytecodes.Klxorint31
                                                           CPrimitives.Int31lxor
     | _ -> empty_reactive_info
 
