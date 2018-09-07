@@ -528,6 +528,7 @@ Options
    backtrack on it, assuming that it is canonical.
 
 .. flag:: Typeclasses Debug {? Verbosity @num}
+   :name:Typeclasses Debug Verbosity
 
    These options allow to see the resolution steps of typeclasses that are
    performed during search. The ``Debug`` option is synonymous to ``Debug

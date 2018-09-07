@@ -943,6 +943,7 @@ Quitting and debugging
    displayed.
 
    .. opt:: Default Timeout @num
+      :name: Default Timeout
 
       This option controls a default timeout for subsequent commands, as if they
       were passed to a :cmd:`Timeout` command. Commands already starting by a
@@ -972,6 +973,7 @@ Controlling display
    This option controls the normal displaying.
 
 .. opt:: Warnings "{+, {? %( - %| + %) } @ident }"
+   :name: Warnings
 
    This option configures the display of warnings. It is experimental, and
    expects, between quotes, a comma-separated list of warning names or

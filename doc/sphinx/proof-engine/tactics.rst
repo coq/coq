@@ -52,6 +52,7 @@ specified, the default selector is used.
                        : |tactic .
 
 .. opt:: Default Goal Selector @toplevel_selector
+   :name: Default Goal Selector
 
    This option controls the default selector, used when no selector is
    specified when applying a tactic. The initial value is 1, hence the
@@ -3891,6 +3892,7 @@ usual logical connectives but instead may reason about any first-order class
 inductive definition.
 
 .. opt:: Firstorder Solver @tactic
+   :name: Firstorder Solver
 
    The default tactic used by :tacn:`firstorder` when no rule applies is
    :g:`auto with *`, it can be reset locally or globally using this option.
@@ -3919,6 +3921,7 @@ inductive definition.
   This combines the effects of the different variants of :tacn:`firstorder`.
 
 .. opt:: Firstorder Depth @num
+   :name: Firstorder Depth
 
    This option controls the proof-search depth bound.
 

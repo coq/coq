@@ -1190,6 +1190,7 @@ Info trace
    not printed.
 
    .. opt:: Info Level @num
+      :name: Info Level
 
       This option is an alternative to the :cmd:`Info` command.
 
