@@ -659,11 +659,11 @@ let rec lambda_of_constr env c =
 
     (* translation of the argument *)
     let la = lambda_of_constr env a in
-    let entry = mkInd ind in
+    let gr = GlobRef.IndRef ind in
     let la =
       try
         Retroknowledge.get_vm_before_match_info env.global_env.retroknowledge
-          entry la
+          gr la
       with Not_found -> la
     in
     (* translation of the type *)
@@ -721,7 +721,7 @@ and lambda_of_app env f args =
     (try
       (* We delay the compilation of arguments to avoid an exponential behavior *)
       let f = Retroknowledge.get_vm_compiling_info env.global_env.retroknowledge
-          (mkConstU (kn,u)) in
+          (GlobRef.ConstRef kn) in
       let args = lambda_of_args env 0 args in
       f args
     with Not_found ->
@@ -734,6 +734,7 @@ and lambda_of_app env f args =
   | Construct (c,_) ->
     let tag, nparams, arity = Renv.get_construct_info env c in
     let nargs = Array.length args in
+    let gr = GlobRef.ConstructRef c in
     if Int.equal (nparams + arity) nargs then (* fully applied *)
       (* spiwack: *)
       (* 1/ tries to compile the constructor in an optimal way,
@@ -748,7 +749,7 @@ and lambda_of_app env f args =
         try
           Retroknowledge.get_vm_constant_static_info
             env.global_env.retroknowledge
-            f args
+            gr args
         with NotClosed ->
           (* 2/ if the arguments are not all closed (this is
                               expectingly (and it is currently the case) the only
@@ -769,7 +770,7 @@ and lambda_of_app env f args =
           let args = lambda_of_args env nparams rargs in
           Retroknowledge.get_vm_constant_dynamic_info
             env.global_env.retroknowledge
-            f args
+            gr args
       with Not_found ->
         (* 3/ if no special behavior is available, then the compiler
            falls back to the normal behavior *)
@@ -782,7 +783,7 @@ and lambda_of_app env f args =
       (try
          (Retroknowledge.get_vm_constant_dynamic_info
             env.global_env.retroknowledge
-            f) args
+            gr) args
        with Not_found ->
          if nparams <= nargs then (* got all parameters *)
            makeblock tag 0 arity args

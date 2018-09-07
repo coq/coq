@@ -19,11 +19,8 @@ open Names
 open Constr
 
 (* The retroknowledge defines a bijective correspondance between some
-   [entry]-s (which are, in fact, merely terms) and [field]-s which
+   [entry]-s (which are, in fact, merely names) and [field]-s which
    are roles assigned to these entries. *)
-
-(* aliased type for clarity purpose*)
-type entry = Constr.t
 
 type int31_field =
   | Int31Bits
@@ -95,19 +92,13 @@ type flags = {fastcomputation : bool}
 module Proactive =
   Map.Make (struct type t = field let compare = Pervasives.compare end)
 
-type proactive = entry Proactive.t
+type proactive = GlobRef.t Proactive.t
 
 (* The [reactive] knowledge contains the mapping
    [entry->field]. Fields are later to be interpreted as a
    [reactive_info]. *)
 
-module EntryOrd =
-struct
-  type t = entry
-  let compare = Constr.compare
-end
-
-module Reactive = Map.Make (EntryOrd)
+module Reactive = GlobRef.Map
 
 type reactive_info = {(*information required by the compiler of the VM *)
   vm_compiling :
@@ -154,7 +145,7 @@ and retroknowledge = {flags : flags; proactive : proactive; reactive : reactive}
 (* As per now, there is only the possibility of registering things
    the possibility of unregistering or changing the flag is under study *)
 type action =
-    | RKRegister of field*entry
+    | RKRegister of field * GlobRef.t
 
 
 (*initialisation*)

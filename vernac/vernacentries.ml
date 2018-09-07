@@ -1950,14 +1950,18 @@ let vernac_locate = function
   | LocateOther (s, qid) -> print_located_other s qid
   | LocateFile f -> locate_file f
 
-let vernac_register id r =
+let vernac_register qid r =
+  let gr = Smartlocate.global_with_alias qid in
  if Proof_global.there_are_pending_proofs () then
     user_err Pp.(str "Cannot register a primitive while in proof editing mode.");
-  let kn = Constrintern.global_reference id.v in
-  if not (isConstRef kn) then
-    user_err Pp.(str "Register inline: a constant is expected");
   match r with
-  | RegisterInline -> Global.register_inline (destConstRef kn)
+  | RegisterInline ->
+    if not (isConstRef gr) then
+      user_err Pp.(str "Register inline: a constant is expected");
+    Global.register_inline (destConstRef gr)
+  | RegisterRetroknowledge n ->
+    let f = Retroknowledge.(KInt31 (int31_field_of_string (Libnames.string_of_qualid n))) in
+    Global.register f gr
 
 (********************)
 (* Proof management *)

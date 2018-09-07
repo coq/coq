@@ -325,7 +325,7 @@ val retroknowledge : (retroknowledge->'a) -> env -> 'a
 
 val registered : env -> field -> bool
 
-val register : env -> field -> Retroknowledge.entry -> env
+val register : env -> field -> GlobRef.t -> env
 
 (** Native compiler *)
 val no_link_info : link_info

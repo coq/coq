@@ -373,14 +373,14 @@ let is_lazy env prefix t =
   | App (f,args) ->
      begin match kind f with
      | Construct (c,_) ->
-	let entry = mkInd (fst c) in
-	(try
-	    let _ =
-              Retroknowledge.get_native_before_match_info env.retroknowledge
-							  entry prefix c Llazy;
-	    in
+       let gr = GlobRef.IndRef (fst c) in
+       (try
+          let _ =
+            Retroknowledge.get_native_before_match_info env.retroknowledge
+              gr prefix c Llazy;
+          in
 	    false
-	  with Not_found -> true)
+        with Not_found -> true)
      | _ -> true
      end
   | LetIn _ | Case _ | Proj _ -> true
@@ -482,12 +482,12 @@ let rec lambda_of_constr cache env sigma c =
       in
       (* translation of the argument *)
       let la = lambda_of_constr cache env sigma a in
-      let entry = mkInd ind in
+      let gr = GlobRef.IndRef ind in
       let la =
-	try
-          Retroknowledge.get_native_before_match_info (env).retroknowledge
-						      entry prefix (ind,1) la
-	with Not_found -> la
+        try
+         Retroknowledge.get_native_before_match_info (env).retroknowledge
+           gr prefix (ind,1) la
+        with Not_found -> la
       in
       (* translation of the type *)
       let lt = lambda_of_constr cache env sigma t in
@@ -536,7 +536,7 @@ and lambda_of_app cache env sigma f args =
           let prefix = get_const_prefix env kn in
 	  (* We delay the compilation of arguments to avoid an exponential behavior *)
 	  let f = Retroknowledge.get_native_compiling_info
-                    (env).retroknowledge (mkConst kn) prefix in
+                    (env).retroknowledge (GlobRef.ConstRef kn) prefix in
           let args = lambda_of_args cache env sigma 0 args in
 	  f args
       with Not_found ->
@@ -561,17 +561,18 @@ and lambda_of_app cache env sigma f args =
       let expected = nparams + arity in
       let nargs = Array.length args in
       let prefix = get_mind_prefix env (fst (fst c)) in
+      let gr = GlobRef.ConstructRef c in
       if Int.equal nargs expected then 
       try
 	try
 	  Retroknowledge.get_native_constant_static_info
                          (env).retroknowledge
-                         f args
+                         gr args
           with NotClosed ->
 	    assert (Int.equal nparams 0); (* should be fine for int31 *)
             let args = lambda_of_args cache env sigma nparams args in
 	    Retroknowledge.get_native_constant_dynamic_info
-                           (env).retroknowledge f prefix c args
+                           (env).retroknowledge gr prefix c args
         with Not_found ->
           let args = lambda_of_args cache env sigma nparams args in
           makeblock env c u tag args
@@ -579,7 +580,7 @@ and lambda_of_app cache env sigma f args =
         let args = lambda_of_args cache env sigma 0 args in
 	(try
 	    Retroknowledge.get_native_constant_dynamic_info
-              (env).retroknowledge f prefix c args
+              (env).retroknowledge gr prefix c args
 	  with Not_found ->
             mkLapp (Lconstruct (prefix, (c,u))) args)
   | _ -> 

@@ -977,16 +977,16 @@ let dispatch =
      it to the name of the coq definition in the reactive retroknowledge) *)
   let int31_op n op prim kn =
     { empty_reactive_info with
-      vm_compiling = Some (Clambda.compile_prim n op kn);
-      native_compiling = Some (Nativelambda.compile_prim prim (Univ.out_punivs kn));
+      vm_compiling = Some (Clambda.compile_prim n op (kn, Univ.Instance.empty)); (*XXX: FIXME universes? *)
+      native_compiling = Some (Nativelambda.compile_prim prim kn);
     }
   in
 
 fun rk value field ->
   (* subfunction which shortens the (very common) dispatch of operations *)
   let int31_op_from_const n op prim =
-    match Constr.kind value with
-      | Constr.Const kn ->  int31_op n op prim kn
+    match value with
+      | GlobRef.ConstRef kn -> int31_op n op prim kn
       | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant.")
   in
   let int31_binop_from_const op prim = int31_op_from_const 2 op prim in
@@ -1002,14 +1002,14 @@ fun rk value field ->
               (Pp.str "add_int31_decompilation_from_type called with an abnormal field.")
         in
         let i31bit_type =
-          match Constr.kind int31bit with
-          | Constr.Ind (i31bit_type,_) -> i31bit_type
+          match int31bit with
+          | GlobRef.IndRef i31bit_type -> i31bit_type
           |  _ -> anomaly ~label:"Environ.register"
               (Pp.str "Int31Bits should be an inductive type.")
         in
         let int31_decompilation =
-          match Constr.kind value with
-          | Constr.Ind (i31t,_) ->
+          match value with
+          | GlobRef.IndRef i31t ->
               constr_of_int31 i31t i31bit_type
           | _ -> anomaly ~label:"Environ.register"
               (Pp.str "should be an inductive type.")
