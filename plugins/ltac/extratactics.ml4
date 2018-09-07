@@ -548,11 +548,12 @@ END
 (*spiwack : Vernac commands for retroknowledge                        *)
 
 VERNAC COMMAND EXTEND RetroknowledgeRegister CLASSIFIED AS SIDEFF
- | [ "Register" constr(c) "as" retroknowledge_field(f) ] ->
+ | [ "Register" constr(c) "as" "int31" pre_ident(n) ] ->
            [ let env = Global.env () in
              let evd = Evd.from_env env in
              let tc,_ctx = Constrintern.interp_constr env evd c in
              let tc = EConstr.to_constr evd tc in
+             let f = Retroknowledge.(KInt31 (int31_field_of_string n)) in
              Global.register f tc ]
 END
 

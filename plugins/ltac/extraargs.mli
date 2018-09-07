@@ -72,11 +72,6 @@ val test_lpar_id_colon : unit Pcoq.Entry.t
 
 val wit_test_lpar_id_colon : (unit, unit, unit) Genarg.genarg_type
 
-(** Spiwack: Primitive for retroknowledge registration *)
-
-val retroknowledge_field : Retroknowledge.field Pcoq.Entry.t
-val wit_retroknowledge_field : (Retroknowledge.field, unit, unit) Genarg.genarg_type
-
 val wit_in_clause :
   (lident Locus.clause_expr,
    lident Locus.clause_expr,

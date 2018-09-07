@@ -55,6 +55,33 @@ type int31_field =
 type field =
   | KInt31 of int31_field
 
+let int31_field_of_string =
+  function
+  | "bits" -> Int31Bits
+  | "type" -> Int31Type
+  | "twice" -> Int31Twice
+  | "twice_plus_one" -> Int31TwicePlusOne
+  | "phi" -> Int31Phi
+  | "phi_inv" -> Int31PhiInv
+  | "plus" -> Int31Plus
+  | "plusc" -> Int31PlusC
+  | "pluscarryc" -> Int31PlusCarryC
+  | "minus" -> Int31Minus
+  | "minusc" -> Int31MinusC
+  | "minuscarryc" -> Int31MinusCarryC
+  | "times" -> Int31Times
+  | "timesc" -> Int31TimesC
+  | "div21" -> Int31Div21
+  | "div" -> Int31Div
+  | "diveucl" -> Int31Diveucl
+  | "addmuldiv" -> Int31AddMulDiv
+  | "compare" -> Int31Compare
+  | "head0" -> Int31Head0
+  | "tail0" -> Int31Tail0
+  | "lor" -> Int31Lor
+  | "land" -> Int31Land
+  | "lxor" -> Int31Lxor
+  | s -> CErrors.user_err Pp.(str "Registering unknown int31 operator " ++ str s)
 
 (* record representing all the flags of the internal state of the kernel *)
 type flags = {fastcomputation : bool}

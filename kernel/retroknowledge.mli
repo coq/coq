@@ -48,6 +48,8 @@ type int31_field =
 type field =
   | KInt31 of int31_field
 
+val int31_field_of_string : string -> int31_field
+
 (** This type represent an atomic action of the retroknowledge. It
    is stored in the compiled libraries 
    As per now, there is only the possibility of registering things
