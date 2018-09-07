@@ -148,7 +148,7 @@ val universes_of_global : GlobRef.t -> Univ.AUContext.t
 (** {6 Retroknowledge } *)
 
 val register :
-  Retroknowledge.field -> Constr.constr -> Constr.constr -> unit
+  Retroknowledge.field -> Constr.constr -> unit
 
 val register_inline : Constant.t -> unit
 

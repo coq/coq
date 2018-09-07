@@ -892,8 +892,8 @@ let retroknowledge f senv =
   Environ.retroknowledge f (env_of_senv senv)
 [@@@ocaml.warning "+3"]
 
-let register field value by_clause senv =
-  (* todo : value closed, by_clause safe, by_clause of the proper type*)
+let register field value senv =
+  (* todo : value closed *)
   (* spiwack : updates the safe_env with the information that the register
      action has to be performed (again) when the environment is imported *)
   { senv with

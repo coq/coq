@@ -271,8 +271,8 @@ let with_global f =
     push_context_set false ctx; a
 
 (* spiwack: register/unregister functions for retroknowledge *)
-let register field value by_clause =
-  globalize0 (Safe_typing.register field value by_clause)
+let register field value =
+  globalize0 (Safe_typing.register field value)
 
 let register_inline c = globalize0 (Safe_typing.register_inline c)
 

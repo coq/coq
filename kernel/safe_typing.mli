@@ -215,7 +215,7 @@ val retroknowledge : (retroknowledge-> 'a) -> safe_environment -> 'a
 [@@ocaml.deprecated "Use the projection of Environ.env"]
 
 val register :
-  field -> Retroknowledge.entry -> Constr.constr -> safe_transformer0
+  field -> Retroknowledge.entry -> safe_transformer0
 
 val register_inline : Constant.t -> safe_transformer0
 
