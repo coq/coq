@@ -21,8 +21,7 @@
 /dev/ci/*.bat          @maximedenes
 # Secondary maintainer @SkySkimmer
 
-/default.nix     @Zimmi48
-# Secondary maintainer @vbgl
+*.nix             @coq/nix-maintainers
 
 ########## Documentation ##########
 
