@@ -64,6 +64,7 @@ Standard Library
   want).
 
 - Added `Ndigits.N2Bv_sized`, and proved some lemmas about it.
+  Deprecated `Ndigits.N2Bv_gen`.
 
 - The scopes `int_scope` and `uint_scope` have been renamed to
   `dec_int_scope` and `dec_uint_scope`, to clash less with ssreflect
