@@ -104,8 +104,8 @@ this corresponds to working in the following context:
    Unset Printing Implicit Defensive.
 
 .. seealso::
-   :opt:`Implicit Arguments`, :opt:`Strict Implicit`,
-   :opt:`Printing Implicit Defensive`
+   :flag:`Implicit Arguments`, :flag:`Strict Implicit`,
+   :flag:`Printing Implicit Defensive`
 
 .. _compatibility_issues_ssr:
 
@@ -3862,7 +3862,7 @@ duplication of function arguments. These copies usually end up in
 types hidden by the implicit arguments machinery or by user-defined
 notations. In these situations computing the right occurrence numbers
 is very tedious because they must be counted on the goal as printed
-after setting the Printing All flag. Moreover the resulting script is
+after setting the :flag:`Printing All` flag. Moreover the resulting script is
 not really informative for the reader, since it refers to occurrence
 numbers he cannot easily see.
 

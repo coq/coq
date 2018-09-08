@@ -60,6 +60,9 @@ The signatures of most objects can be written using a succinct DSL for Coq notat
 ``{*, …}``, ``{+, …}``
   an optional or mandatory repeatable block, with repetitions separated by commas
 
+``{| opt1 | opt2 …}``
+  a block containing alternatives
+
 ``%|``, ``%{``, …
   an escaped character (rendered without the leading ``%``)
 
@@ -114,14 +117,24 @@ Here is the list of all objects of the Coq domain (The symbol :black_nib: indica
 
              Raised if :n:`@tactic` does not fully solve the goal.
 
-``.. opt::`` :black_nib: A Coq option.
+``.. flag::`` :black_nib: A Coq flag (aka a binary-valued option).
     Example::
 
-       .. opt:: Nonrecursive Elimination Schemes
+       .. flag:: Nonrecursive Elimination Schemes
 
           This option controls whether types declared with the keywords
           :cmd:`Variant` and :cmd:`Record` get an automatic declaration of the
           induction principles.
+
+``.. opt::`` :black_nib: A Coq option (with a string or numeric value; use "flag" for binary options)
+    Example::
+
+       .. opt:: Printing Width @num
+          :name: Printing Width
+
+       This command sets which left-aligned part of the width of the screen is used
+       for display. At the time of writing this documentation, the default value
+       is 78.
 
 ``.. prodn::`` A grammar production.
     This is useful if you intend to document individual grammar productions.

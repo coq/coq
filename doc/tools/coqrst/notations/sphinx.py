@@ -38,7 +38,8 @@ class TacticNotationsToSphinxVisitor(TacticNotationsVisitor):
         wrapper += nodes.inline('', '', *self.visitChildren(ctx), classes=["repeat"])
 
         repeat_marker = ctx.LGROUP().getText()[1]
-        wrapper += nodes.inline(repeat_marker, repeat_marker, classes=['notation-sup'])
+        if repeat_marker != '|':
+            wrapper += nodes.inline(repeat_marker, repeat_marker, classes=['notation-sup'])
 
         separator = ctx.ATOM()
         if separator:

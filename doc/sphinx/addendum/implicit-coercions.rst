@@ -256,7 +256,7 @@ Displaying Available Coercions
 Activating the Printing of Coercions
 -------------------------------------
 
-.. opt:: Printing Coercions
+.. flag:: Printing Coercions
 
    When on, this option forces all the coercions to be printed.
    By default, coercions are not printed.
@@ -315,7 +315,7 @@ are also forgotten.
 Coercions and Modules
 ---------------------
 
-.. opt:: Automatic Coercions Import
+.. flag:: Automatic Coercions Import
 
    Since |Coq| version 8.3, the coercions present in a module are activated
    only when the module is explicitly imported. Formerly, the coercions

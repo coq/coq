@@ -46,7 +46,7 @@ the expressiveness of the theory remains the same. Once parsing has finished
 only simple patterns remain. The original nesting of the ``match`` expressions
 is recovered at printing time. An easy way to see the result
 of the expansion is to toggle off the nesting performed at printing
-(use here :opt:`Printing Matching`), then by printing the term with :cmd:`Print`
+(use here :flag:`Printing Matching`), then by printing the term with :cmd:`Print`
 if the term is a constant, or using the command :cmd:`Check`.
 
 The extended ``match`` still accepts an optional *elimination predicate*
@@ -262,9 +262,9 @@ When we use parameters in patterns there is an error message:
         | cons A _ l' => l'
         end).
 
-.. opt:: Asymmetric Patterns
+.. flag:: Asymmetric Patterns
 
-This option (off by default) removes parameters from constructors in patterns:
+This flag (off by default) removes parameters from constructors in patterns:
 
 .. coqtop:: all
 
