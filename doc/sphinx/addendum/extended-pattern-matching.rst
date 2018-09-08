@@ -262,9 +262,9 @@ When we use parameters in patterns there is an error message:
         | cons A _ l' => l'
         end).
 
-.. opt:: Asymmetric Patterns
+.. flag:: Asymmetric Patterns
 
-This option (off by default) removes parameters from constructors in patterns:
+This flag (off by default) removes parameters from constructors in patterns:
 
 .. coqtop:: all
 

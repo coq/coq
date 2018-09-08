@@ -79,82 +79,81 @@ Flags, Options and Tables
 -----------------------------
 
 Coq has many settings to control its behavior.  Setting types include flags, options
-and tables.  Flags are boolean values, such as :flag:`Printing All`.  Options have numeric or
-string values, such as :opt:`Printing Width`.  Tables contain sets of strings.
-(In addition, some commands just provide settings, for example :cmd:`Extraction Language OCaml`.)
+and tables:
+
+* A :production:`flag` has a boolean value, such as :flag:`Asymmetric Patterns`.
+* An :production:`option` has a numeric or string value, such as :opt:`Firstorder Depth`.
+* A :production:`table` contains a set of strings.
+* In addition, some commands provide settings, such as :cmd:`Extraction Language OCaml`.
+
+.. FIXME Convert `Extraction Language OCaml` to an option.
 
 Flags, options and tables are identified by a series of identifiers, each with an initial
 capital letter.
 
-.. TODO : flag is not a syntax entry
-
 .. cmd::  {? Local | Global | Export } Set @flag
    :name: Set
 
-   Sets :n:`@flag` on. Scoping qualifiers are
+   Sets :token:`flag` on. Scoping qualifiers are
    described :ref:`here <set_unset_scope_qualifiers>`.
 
 .. cmd:: {? Local | Global | Export } Unset @flag
    :name: Unset
 
-   Sets :n:`@flag` off. Scoping qualifiers are
+   Sets :token:`flag` off. Scoping qualifiers are
    described :ref:`here <set_unset_scope_qualifiers>`.
 
 .. cmd:: Test @flag
 
-   Prints the current value of :n:`@flag`.
+   Prints the current value of :token:`flag`.
 
 
-.. cmd:: {? Local | Global | Export } Set @option @value
-   :name: Set (option)
+.. cmd:: {? Local | Global | Export } Set @option @num
+         {? Local | Global | Export } Set @option @string
+   :name: Set @option @num; Set @option @string
 
-   Sets :n:`@option` to :n:`@value`.  Scoping qualifiers are
+   Sets :token:`option` to the specified value.  Scoping qualifiers are
    described :ref:`here <set_unset_scope_qualifiers>`.
-
-   .. TODO : option and value are not syntax entries
 
 .. cmd:: {? Local | Global | Export } Unset @option
-   :name: Unset (option)
+   :name: Unset @option
 
-   Sets :n:`@option` to its default value.  Scoping qualifiers are
+   Sets :token:`option` to its default value.  Scoping qualifiers are
    described :ref:`here <set_unset_scope_qualifiers>`.
-
 
 .. cmd:: Test @option
 
-   Prints the current value of :n:`@option`.
+   Prints the current value of :token:`option`.
 
 .. cmd:: Print Options
 
    Prints the current value of all flags and options, and the names of all tables.
 
 
-.. TODO : table is not a syntax entry
-
-.. cmd:: Add @table @value
+.. cmd:: Add @table @string
    :name: Add `table` `value`
 
-   Adds :n:`@value` to :n:`@table`.
+   Adds :token:`string` to :token:`table`.
 
-.. cmd:: Remove @table @value
-   :name: Remove `table` `value`
+.. cmd:: Remove @table @string
+   :name: Remove @table @string
 
-   Removes :n:`@value` from :n:`@table`.
+   Removes :token:`string` from :token:`table`.
 
-.. cmd:: Test @table @value
-   :name: Test `table` `value`
+.. comment THIS DIDN'T WORK, e.g. for "Test Search Blacklist "foo"."
+   cmd:: Test @table @string
+   :name: Test @table @string
 
-   Reports whether :n:`@table` contains :n:`@value`.
-   THIS DIDN'T WORK, e.g. for "Test Search Blacklist "foo"."
+   Reports whether :token:`table` contains :token:`string`.
 
-.. cmd:: Test @table for "@value"
-   :name: Test `table` for `value`
+.. cmd:: Test @table for @string
+   :name: Test @table for @string
 
-   Reports whether :n:`@table` contains :n:`@value`
+   Reports whether :token:`table` contains :token:`string`
 
 .. cmd:: Print Table @table
 
-   Prints the values in :n:`@table`.
+   Prints the values in :token:`table`.
 
 .. cmdv:: Print Tables
 
@@ -170,11 +169,11 @@ Scope qualifiers for :cmd:`Set` and :cmd:`Unset`
 Flag and option settings can be global in scope or local to nested scopes created by
 :cmd:`Module` and :cmd:`Section` commands.  There are four alternatives:
 
-* no qualifier: the original setting is *not* restored when the current module or section ends.
+* no qualifier: the original setting is *not* restored at the end of the current module or section.
 * **Local**: the setting is applied within the current scope.  The original value of the option
   or flag is restored at the end of the current module or section.
 * **Global**: similar to no qualifier, the original setting is *not* restored at the end of the current
-  module or section ends.  In addition, if the value is set in a file, then :cmd:`Require`-ing
+  module or section.  In addition, if the value is set in a file, then :cmd:`Require`-ing
   the file sets the option.
 * **Export**: similar to **Local**, the original value of the option or flag is restored at the
   end of the current module or section.  In addition, if the value is set in a file, then :cmd:`Import`-ing

@@ -169,7 +169,7 @@ declared cumulative using the :g:`Cumulative` prefix.
 
    Declares the inductive as cumulative
 
-Alternatively, there is an option :opt:`Polymorphic Inductive
+Alternatively, there is a flag :flag:`Polymorphic Inductive
 Cumulativity` which when set, makes all subsequent *polymorphic*
 inductive definitions cumulative.  When set, inductive types and the
 like can be enforced to be non-cumulative using the :g:`NonCumulative`
