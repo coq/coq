@@ -60,6 +60,9 @@ The signatures of most objects can be written using a succinct DSL for Coq notat
 ``{*, …}``, ``{+, …}``
   an optional or mandatory repeatable block, with repetitions separated by commas
 
+``{| opt1 | opt2 …}``
+  a block containing alternatives
+
 ``%|``, ``%{``, …
   an escaped character (rendered without the leading ``%``)
 

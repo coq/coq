@@ -23,7 +23,7 @@ meta: METACHAR;
 atomic: ATOM (SUB)?;
 hole: ID (SUB)?;
 
-LGROUP: '{' [+*?];
+LGROUP: '{' [+*?|];
 LBRACE: '{';
 RBRACE: '}';
 METACHAR: '%' [|(){}];
