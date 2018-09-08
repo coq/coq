@@ -578,6 +578,7 @@ Qed.
 (** To state nonetheless a second result about composition of
  conversions, we define a conversion on a given number of bits : *)
 
+#[deprecated(since = "8.9.0", note = "Use N2Bv_sized instead.")]
 Fixpoint N2Bv_gen (n:nat)(a:N) : Bvector n :=
  match n return Bvector n with
    | 0 => Bnil
@@ -704,4 +705,11 @@ Proof with simpl; auto.
   unfold N2Bv_sized;
   destruct (Bv2N n v) as [|[]];
   rewrite <- IHv...
+Qed.
+
+Lemma N2Bv_N2Bv_sized_above (a : N) (k : nat) :
+  N2Bv_sized (N.size_nat a + k) a = N2Bv a ++ Bvect_false k.
+Proof with auto.
+  destruct a...
+  induction p; simpl; f_equal...
 Qed.
