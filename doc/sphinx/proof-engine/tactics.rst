@@ -51,7 +51,7 @@ specified, the default selector is used.
      tactic_invocation : toplevel_selector : tactic.
                        : |tactic .
 
-.. opt:: Default Goal Selector @toplevel_selector
+.. opt:: Default Goal Selector "@toplevel_selector"
    :name: Default Goal Selector
 
    This option controls the default selector, used when no selector is

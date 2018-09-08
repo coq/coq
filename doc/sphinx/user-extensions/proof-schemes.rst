@@ -105,15 +105,13 @@ Automatic declaration of schemes
 
 .. flag:: Elimination Schemes
 
-   It is possible to deactivate the automatic declaration of the
-   induction principles when defining a new inductive type with the
-   ``Unset Elimination Schemes`` command. It may be reactivated at any time with
-   ``Set Elimination Schemes``.
+   Enables automatic declaration of induction principles when defining a new
+   inductive type.  Defaults to on.
 
 .. flag:: Nonrecursive Elimination Schemes
 
-   This option controls whether types declared with the keywords :cmd:`Variant` and
-   :cmd:`Record` get an automatic declaration of the induction principles.
+   Enables automatic declaration of induction principles for types declared with the :cmd:`Variant` and
+   :cmd:`Record` commands.  Defaults to off.
 
 .. flag:: Case Analysis Schemes
 
@@ -121,8 +119,7 @@ Automatic declaration of schemes
    i.e. corresponding to the pattern-matching term alone and without fixpoint.
 
 .. flag:: Boolean Equality Schemes
-
-.. flag:: Decidable Equality Schemes
+          Decidable Equality Schemes
 
    These flags control the automatic declaration of those Boolean equalities (see
    the second variant of ``Scheme``).

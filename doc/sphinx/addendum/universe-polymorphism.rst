@@ -279,7 +279,7 @@ Cumulativity Weak Constraints
 
 .. flag:: Cumulativity Weak Constraints
 
-This option, on by default, causes "weak" constraints to be produced
+When set, which is the default, causes "weak" constraints to be produced
 when comparing universes in an irrelevant position. Processing weak
 constraints is delayed until minimization time. A weak constraint
 between `u` and `v` when neither is smaller than the other and
@@ -356,7 +356,7 @@ it is an atomic universe (i.e. not an algebraic max() universe).
 
 .. flag:: Universe Minimization ToSet
 
-   Turning this option off (it is on by default) disallows minimization
+   Turning this flag off (it is on by default) disallows minimization
    to the sort :g:`Set` and only collapses floating universes between
    themselves.
 

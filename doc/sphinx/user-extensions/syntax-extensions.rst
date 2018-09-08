@@ -380,11 +380,8 @@ Displaying information about notations
 
 .. flag:: Printing Notations
 
-   To deactivate the printing of all notations, use the command
-   ``Unset Printing Notations``. To reactivate it, use the command
-   ``Set Printing Notations``.
-
-   The default is to use notations for printing terms wherever possible.
+   Controls whether to use notations for printing terms wherever possible.
+   Default is on.
 
 .. seealso::
 

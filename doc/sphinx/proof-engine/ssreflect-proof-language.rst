@@ -104,7 +104,7 @@ this corresponds to working in the following context:
    Unset Printing Implicit Defensive.
 
 .. seealso::
-   :opt:`Implicit Arguments`, :flag:`Strict Implicit`,
+   :flag:`Implicit Arguments`, :flag:`Strict Implicit`,
    :flag:`Printing Implicit Defensive`
 
 .. _compatibility_issues_ssr:

@@ -527,13 +527,18 @@ Options
    solution to the typeclass goal of this class is found, we never
    backtrack on it, assuming that it is canonical.
 
-.. flag:: Typeclasses Debug {? Verbosity @num}
-   :name:Typeclasses Debug Verbosity
+.. flag:: Typeclasses Debug
+   :name: Typeclasses Debug
 
-   These options allow to see the resolution steps of typeclasses that are
-   performed during search. The ``Debug`` option is synonymous to ``Debug
-   Verbosity 1``, and ``Debug Verbosity 2`` provides more information
-   (tried tactics, shelving of goals, etc…).
+   Controls whether typeclass resolution steps are shown during search.  Setting this flag
+   also sets :opt:`Typeclasses Debug Verbosity` to 1.
+
+.. opt:: Typeclasses Debug Verbosity @num
+   :name: Typeclasses Debug Verbosity
+
+   Determines how much information is shown for typeclass resolution steps during search.
+   1 is the default level.  2 shows additional information such as tried tactics and shelving
+   of goals.  Setting this option also sets :flag:`Typeclasses Debug`.
 
 .. flag:: Refine Instance Mode
 
