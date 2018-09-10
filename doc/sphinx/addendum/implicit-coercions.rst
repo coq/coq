@@ -325,6 +325,12 @@ Coercions and Modules
    This option makes it possible to recover the behavior of the versions of
    |Coq| prior to 8.3.
 
+.. warn:: Coercion used but not in scope: @qualid. If you want to use this coercion, please Import the module that contains it.
+
+          This warning is emitted when typechecking relies on a coercion
+          contained in a module that has not been explicitely imported. It helps
+          migrating code and stop relying on the option above.
+
 Examples
 --------
 

@@ -363,12 +363,20 @@ let saturate_evd env evd =
   Typeclasses.resolve_typeclasses
     ~filter:Typeclasses.no_goals ~split:true ~fail:false env evd
 
+let warn_coercion_not_in_scope =
+  CWarnings.create ~name:"coercion-not-in-scope" ~category:"deprecated"
+    Pp.(fun r -> str "Coercion used but not in scope: " ++
+              Nametab.pr_global_env Id.Set.empty r ++ str ". If you want to use "
+              ++ str "this coercion, please Import the module that contains it.")
+
 (* Apply coercion path from p to hj; raise NoCoercion if not applicable *)
 let apply_coercion env sigma p hj typ_cl =
   try
     let j,t,evd = 
       List.fold_left
         (fun (ja,typ_cl,sigma) i ->
+           if not (is_coercion_in_scope i.coe_value) then
+             warn_coercion_not_in_scope i.coe_value;
            let isid = i.coe_is_identity in
            let isproj = i.coe_is_projection in
            let sigma, c = new_global sigma i.coe_value in
@@ -386,7 +394,6 @@ let apply_coercion env sigma p hj typ_cl =
       (hj,typ_cl,sigma) p
     in evd, j
   with NoCoercion as e -> raise e
-  | e when CErrors.noncritical e -> anomaly (Pp.str "apply_coercion.")
 
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
 let inh_app_fun_core env evd j =
