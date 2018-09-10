@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2018-08-27-V2"
+# CACHEKEY: "bionic_coq-V2018-09-05-V1"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -45,12 +45,13 @@ RUN opam switch -y -j $NJOBS "${COMPILER}+32bit" && eval $(opam config env) && \
 # EDGE switch
 ENV COMPILER_EDGE="4.07.0" \
     CAMLP5_VER_EDGE="7.06" \
-    COQIDE_OPAM_EDGE="lablgtk.2.18.6 conf-gtksourceview.2"
+    COQIDE_OPAM_EDGE="lablgtk.2.18.6 conf-gtksourceview.2" \
+    BASE_OPAM_EDGE="odoc.1.2.0 dune-release.0.3.0"
 
 RUN opam switch -y -j $NJOBS $COMPILER_EDGE && eval $(opam config env) && \
-    opam install -j $NJOBS $BASE_OPAM camlp5.$CAMLP5_VER_EDGE $COQIDE_OPAM_EDGE
+    opam install -j $NJOBS $BASE_OPAM $BASE_OPAM_EDGE camlp5.$CAMLP5_VER_EDGE $COQIDE_OPAM_EDGE
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
 # `ci-template-flambda` with everything.
 RUN opam switch -y -j $NJOBS "${COMPILER_EDGE}+flambda" && eval $(opam config env) && \
-    opam install -j $NJOBS $BASE_OPAM camlp5.$CAMLP5_VER_EDGE $COQIDE_OPAM_EDGE $CI_OPAM
+    opam install -j $NJOBS $BASE_OPAM $BASE_OPAM_EDGE camlp5.$CAMLP5_VER_EDGE $COQIDE_OPAM_EDGE $CI_OPAM
