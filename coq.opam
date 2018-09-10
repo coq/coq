@@ -18,5 +18,5 @@ depends: [
 build: [
   [ "dune" "build" "@vodeps" ]
   [ "dune" "exec" "coq_dune" "_build/default/.vfiles.d" ]
-  [ "dune" "build" "-p" package "-j" jobs ]
+  [ "dune" "build" "-p" name "-j" jobs ]
 ]

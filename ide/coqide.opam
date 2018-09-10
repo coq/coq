@@ -16,4 +16,4 @@ depends: [
   "coq"
 ]
 
-build: [ [ "dune" "build" "-p" package "-j" jobs ] ]
+build: [ [ "dune" "build" "-p" name "-j" jobs ] ]
