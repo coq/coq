@@ -1960,8 +1960,13 @@ let vernac_register qid r =
       user_err Pp.(str "Register inline: a constant is expected");
     Global.register_inline (destConstRef gr)
   | RegisterRetroknowledge n ->
-    let f = Retroknowledge.(KInt31 (int31_field_of_string (Libnames.string_of_qualid n))) in
-    Global.register f gr
+    let path, id = Libnames.repr_qualid n in
+    if DirPath.equal path Retroknowledge.int31_path
+    then
+      let f = Retroknowledge.(KInt31 (int31_field_of_string (Id.to_string id))) in
+      Global.register f gr
+    else
+      user_err Pp.(str "Register in unknown namespace: " ++ str (DirPath.to_string path))
 
 (********************)
 (* Proof management *)

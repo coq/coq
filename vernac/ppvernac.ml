@@ -1165,7 +1165,7 @@ open Pputils
         )
       | VernacRegister (id, RegisterRetroknowledge n) ->
         return (
-          hov 2 (keyword "Register" ++ spc () ++ pr_qualid id ++ spc () ++ keyword "as" ++ str "int31" ++ pr_qualid n)
+          hov 2 (keyword "Register" ++ spc () ++ pr_qualid id ++ spc () ++ keyword "as" ++ pr_qualid n)
         )
       | VernacComments l ->
         return (

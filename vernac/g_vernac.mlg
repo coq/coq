@@ -212,7 +212,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> { VernacScheme l }
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
 	      l = LIST1 identref SEP "," -> { VernacCombinedScheme (id, l) }
-      | IDENT "Register"; g = global; "as"; IDENT "int31"; quid = qualid ->
+      | IDENT "Register"; g = global; "as"; quid = qualid ->
           { VernacRegister(g, RegisterRetroknowledge quid) }
       | IDENT "Register"; IDENT "Inline"; g = global ->
           { VernacRegister(g, RegisterInline) }

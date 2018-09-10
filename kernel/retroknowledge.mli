@@ -47,6 +47,8 @@ type field =
 
 val int31_field_of_string : string -> int31_field
 
+val int31_path : DirPath.t
+
 (** This type represent an atomic action of the retroknowledge. It
    is stored in the compiled libraries 
    As per now, there is only the possibility of registering things

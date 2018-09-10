@@ -80,6 +80,8 @@ let int31_field_of_string =
   | "lxor" -> Int31Lxor
   | s -> CErrors.user_err Pp.(str "Registering unknown int31 operator " ++ str s)
 
+let int31_path = DirPath.make [ Id.of_string "int31" ]
+
 (* record representing all the flags of the internal state of the kernel *)
 type flags = {fastcomputation : bool}
 
