@@ -492,12 +492,13 @@ open Pputils
       keyword "Print Hint *"
     | PrintHintDbName s ->
       keyword "Print HintDb" ++ spc () ++ str s
-    | PrintUniverses (b, fopt) ->
+    | PrintUniverses (b, g, fopt) ->
       let cmd =
         if b then "Print Sorted Universes"
         else "Print Universes"
       in
-      keyword cmd ++ pr_opt str fopt
+      let pr_subgraph = prlist_with_sep spc pr_qualid in
+      keyword cmd ++ pr_opt pr_subgraph g ++ pr_opt str fopt
     | PrintName (qid,udecl) ->
       keyword "Print" ++ spc()  ++ pr_smart_global qid ++ pr_univ_name_list udecl
     | PrintModuleType qid ->
