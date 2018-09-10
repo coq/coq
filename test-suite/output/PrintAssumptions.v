@@ -137,3 +137,13 @@ Module F (X : T).
 End F.
 
 End SUBMODULES.
+
+(* Testing a variant of #7192 across files *)
+(* This was missing in the original fix to #7192 *)
+Require Import module_bug7192.
+Print Assumptions M7192.D.f.
+
+(* Testing reporting assumptions from modules in files *)
+(* A regression introduced in the original fix to #7192 was missing implementations *)
+Require Import module_bug8416.
+Print Assumptions M8416.f.
