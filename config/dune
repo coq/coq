@@ -9,5 +9,5 @@
 (rule
  (targets coq_config.ml)
  (mode fallback)
- (deps %{project_root}/configure.ml %{project_root}/dev/ocamldebug-coq.run)
- (action (chdir %{project_root} (run %{ocaml} configure.ml -local -warn-error yes -native-compiler yes))))
+ (deps %{project_root}/configure.ml %{project_root}/dev/ocamldebug-coq.run (env_var COQ_CONFIGURE_PREFIX))
+ (action (chdir %{project_root} (run %{ocaml} configure.ml -native-compiler no))))
