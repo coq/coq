@@ -99,7 +99,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
   | FEvar ((_,args),e) ->
     let variances = infer_stack infos variances stk in
     infer_vect infos variances (Array.map (mk_clos e) args)
-  | FRel _ -> variances
+  | FRel _ -> infer_stack infos variances stk
   | FFlex fl ->
     let variances = infer_table_key infos variances fl in
     infer_stack infos variances stk
