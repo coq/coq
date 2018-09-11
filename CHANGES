@@ -8,6 +8,10 @@ Plugins
   externally, the Coq development team can provide assistance for extracting
   the plugin and setting up a new repository.
 
+Tactics
+
+- Removed the deprecated `romega` tactics.
+
 Changes from 8.8.2 to 8.9+beta1
 ===============================
 

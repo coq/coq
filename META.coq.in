@@ -301,18 +301,6 @@ package "plugins" (
     archive(native)  = "omega_plugin.cmx"
   )
 
-  package "romega" (
-
-    description = "Coq romega plugin"
-    version     = "8.10"
-
-    requires    = "coq.plugins.omega"
-    directory   = "romega"
-
-    archive(byte)    = "romega_plugin.cmo"
-    archive(native)  = "romega_plugin.cmx"
-  )
-
   package "micromega" (
 
     description = "Coq micromega plugin"

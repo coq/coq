@@ -23,13 +23,6 @@ Description of ``omega``
    If the tactic cannot solve the goal, it fails with an error message.
    In any case, the computation eventually stops.
 
-.. tacv:: romega
-   :name: romega
-
-   .. deprecated:: 8.9
-
-      Use :tacn:`lia` instead.
-
 Arithmetical goals recognized by ``omega``
 ------------------------------------------
 

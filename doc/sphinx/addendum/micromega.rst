@@ -112,11 +112,11 @@ and checked to be :math:`-1`.
 .. tacn:: lia
    :name: lia
 
-This tactic offers an alternative to the :tacn:`omega` and :tacn:`romega`
-tactics. Roughly speaking, the deductive power of lia is the combined deductive
-power of :tacn:`ring_simplify` and :tacn:`omega`. However, it solves linear
-goals that :tacn:`omega` and :tacn:`romega` do not solve, such as the following
-so-called *omega nightmare* :cite:`TheOmegaPaper`.
+   This tactic offers an alternative to the :tacn:`omega` tactic. Roughly
+   speaking, the deductive power of lia is the combined deductive power of
+   :tacn:`ring_simplify` and :tacn:`omega`. However, it solves linear goals
+   that :tacn:`omega` does not solve, such as the following so-called *omega
+   nightmare* :cite:`TheOmegaPaper`.
 
 .. coqtop:: in
 
@@ -124,8 +124,7 @@ so-called *omega nightmare* :cite:`TheOmegaPaper`.
      27 <= 11 * x + 13 * y <= 45 ->
      -10 <= 7 * x - 9 * y <= 4 -> False.
 
-The estimation of the relative efficiency of :tacn:`lia` *vs* :tacn:`omega` and
-:tacn:`romega` is under evaluation.
+The estimation of the relative efficiency of :tacn:`lia` *vs* :tacn:`omega` is under evaluation.
 
 High level view of `lia`
 ~~~~~~~~~~~~~~~~~~~~~~~~
