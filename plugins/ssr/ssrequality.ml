@@ -115,7 +115,8 @@ let newssrcongrtac arg ist gl =
   (* utils *)
   let fs gl t = Reductionops.nf_evar (project gl) t in
   let tclMATCH_GOAL (c, gl_c) proj t_ok t_fail gl =
-    match try Some (pf_unify_HO gl_c (pf_concl gl) c) with _ -> None with  
+    match try Some (pf_unify_HO gl_c (pf_concl gl) c)
+          with exn when CErrors.noncritical exn -> None with
     | Some gl_c ->
         tclTHEN (Proofview.V82.of_tactic (convert_concl (fs gl_c c)))
           (t_ok (proj gl_c)) gl
