@@ -71,17 +71,18 @@ let int_or_no n = if Int.equal n 0 then str "no" else int n
 let print_basename sp = pr_global (ConstRef sp)
 
 let print_ref reduce ref udecl =
-  let typ, ctx = Global.type_of_global_in_context (Global.env ()) ref in
-  let typ = Vars.subst_instance_constr (Univ.AUContext.instance ctx) typ in
+  let typ, univs = Global.type_of_global_in_context (Global.env ()) ref in
+  let inst = Univ.make_abstract_instance univs in
+  let bl = UnivNames.universe_binders_with_opt_names ref
+      (Array.to_list (Univ.Instance.to_array inst)) udecl in
+  let sigma = Evd.from_ctx (UState.of_binders bl) in
   let typ = EConstr.of_constr typ in
   let typ =
     if reduce then
       let env = Global.env () in
-      let sigma = Evd.from_env env in
       let ctx,ccl = Reductionops.splay_prod_assum env sigma typ
       in EConstr.it_mkProd_or_LetIn ccl ctx
     else typ in
-  let univs = Global.universes_of_global ref in
   let variance = match ref with
     | VarRef _ | ConstRef _ -> None
     | IndRef (ind,_) | ConstructRef ((ind,_),_) ->
@@ -91,19 +92,14 @@ let print_ref reduce ref udecl =
         | Declarations.Cumulative_ind cumi -> Some (Univ.ACumulativityInfo.variance cumi)
       end
   in
-  let inst = Univ.AUContext.instance univs in
-  let univs = Univ.UContext.make (inst, Univ.AUContext.instantiate inst univs) in
   let env = Global.env () in
-  let bl = UnivNames.universe_binders_with_opt_names ref
-      (Array.to_list (Univ.Instance.to_array inst)) udecl in
-  let sigma = Evd.from_ctx (UState.of_binders bl) in
   let inst =
     if Global.is_polymorphic ref
-    then Printer.pr_universe_instance sigma (Univ.UContext.instance univs)
+    then Printer.pr_universe_instance sigma inst
     else mt ()
   in
   hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_letype_env env sigma typ ++ 
-           Printer.pr_universe_ctx sigma ?variance univs)
+           Printer.pr_abstract_universe_ctx sigma ?variance univs)
 
 (********************************)
 (** Printing implicit arguments *)
@@ -552,43 +548,36 @@ let print_typed_body env evd (val_0,typ) =
 let print_instance sigma cb =
   if Declareops.constant_is_polymorphic cb then
     let univs = Declareops.constant_polymorphic_context cb in
-    let inst = Univ.AUContext.instance univs in
+    let inst = Univ.make_abstract_instance univs in
     pr_universe_instance sigma inst
   else mt()
 				
 let print_constant with_values sep sp udecl =
   let cb = Global.lookup_constant sp in
   let val_0 = Global.body_of_constant_body cb in
-  let typ =
-    match cb.const_universes with
-    | Monomorphic_const _ -> cb.const_type
-    | Polymorphic_const univs ->
-      let inst = Univ.AUContext.instance univs in
-      Vars.subst_instance_constr inst cb.const_type
-  in
+  let typ = cb.const_type in
   let univs, ulist =
-    let open Entries in
     let open Univ in
     let otab = Global.opaque_tables () in
     match cb.const_body with
     | Undef _ | Def _ ->
       begin
         match cb.const_universes with
-        | Monomorphic_const ctx -> Monomorphic_const_entry ctx, []
+        | Monomorphic_const ctx -> Monomorphic_const ctx, []
         | Polymorphic_const ctx ->
-          let inst = AUContext.instance ctx in
-          Polymorphic_const_entry (UContext.make (inst, AUContext.instantiate inst ctx)),
+          let inst = make_abstract_instance ctx in
+          Polymorphic_const ctx,
           Array.to_list (Instance.to_array inst)
       end
     | OpaqueDef o ->
       let body_uctxs = Opaqueproof.force_constraints otab o in
       match cb.const_universes with
       | Monomorphic_const ctx ->
-        Monomorphic_const_entry (ContextSet.union body_uctxs ctx), []
+        Monomorphic_const (ContextSet.union body_uctxs ctx), []
       | Polymorphic_const ctx ->
         assert(ContextSet.is_empty body_uctxs);
-        let inst = AUContext.instance ctx in
-        Polymorphic_const_entry (UContext.make (inst, AUContext.instantiate inst ctx)),
+        let inst = make_abstract_instance ctx in
+        Polymorphic_const ctx,
         Array.to_list (Instance.to_array inst)
   in
   let ctx =
@@ -605,7 +594,6 @@ let print_constant with_values sep sp udecl =
 	str" ]" ++
         Printer.pr_constant_universes sigma univs
     | Some (c, ctx) ->
-        let c = Vars.subst_instance_constr (Univ.AUContext.instance ctx) c in
 	print_basename sp ++ print_instance sigma cb ++ str sep ++ cut () ++
 	(if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
         Printer.pr_constant_universes sigma univs)
@@ -711,11 +699,6 @@ let print_eval x = !object_pr.print_eval x
 (******************************************)
 (**** Printing declarations and judgments *)
 (****  Abstract layer                 *****)
-
-let print_typed_value x =
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
-  print_typed_value_in_env env sigma x
 
 let print_judgment env sigma {uj_val=trm;uj_type=typ} =
   print_typed_value_in_env env sigma (trm, typ)
@@ -852,11 +835,9 @@ let print_opaque_name env sigma qid =
         print_inductive sp None
     | ConstructRef cstr as gr ->
 	let ty, ctx = Global.type_of_global_in_context env gr in
-	let inst = Univ.AUContext.instance ctx in
-	let ty = Vars.subst_instance_constr inst ty in
 	let ty = EConstr.of_constr ty in
         let open EConstr in
-	print_typed_value (mkConstruct cstr, ty)
+        print_typed_value_in_env env sigma (mkConstruct cstr, ty)
     | VarRef id ->
         env |> lookup_named id |> print_named_decl env sigma
 

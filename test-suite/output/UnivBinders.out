@@ -42,10 +42,10 @@ bar@{u} = nat
          *)
 
 bar is universe polymorphic
-foo@{u Top.17 v} = 
-Type@{Top.17} -> Type@{v} -> Type@{u}
-     : Type@{max(u+1,Top.17+1,v+1)}
-(* u Top.17 v |=  *)
+foo@{u Var(1) v} = 
+Type@{Var(1)} -> Type@{v} -> Type@{u}
+     : Type@{max(u+1,Var(1)+1,v+1)}
+(* u Var(1) v |=  *)
 
 foo is universe polymorphic
 Type@{i} -> Type@{j}
@@ -86,10 +86,10 @@ Type@{M} -> Type@{N} -> Type@{E}
 (* E M N |=  *)
 
 foo is universe polymorphic
-foo@{Top.16 Top.17 Top.18} = 
-Type@{Top.17} -> Type@{Top.18} -> Type@{Top.16}
-     : Type@{max(Top.16+1,Top.17+1,Top.18+1)}
-(* Top.16 Top.17 Top.18 |=  *)
+foo@{Var(0) Var(1) Var(2)} = 
+Type@{Var(1)} -> Type@{Var(2)} -> Type@{Var(0)}
+     : Type@{max(Var(0)+1,Var(1)+1,Var(2)+1)}
+(* Var(0) Var(1) Var(2) |=  *)
 
 foo is universe polymorphic
 NonCumulative Inductive Empty@{E} : Type@{E} :=  
@@ -125,7 +125,7 @@ bind_univs.poly@{u} = Type@{u}
 
 bind_univs.poly is universe polymorphic
 insec@{v} = Type@{u} -> Type@{v}
-     : Type@{max(u+1,v+1)}
+     : Type@{max(v+1,u+1)}
 (* v |=  *)
 
 insec is universe polymorphic
@@ -155,14 +155,14 @@ inmod@{u} -> Type@{v}
 (* u v |=  *)
 
 Applied.infunct is universe polymorphic
-axfoo@{i Top.48 Top.49} : Type@{Top.48} -> Type@{i}
-(* i Top.48 Top.49 |=  *)
+axfoo@{i Var(1) Var(2)} : Type@{Var(1)} -> Type@{i}
+(* i Var(1) Var(2) |=  *)
 
 axfoo is universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant Top.axfoo
-axbar@{i Top.48 Top.49} : Type@{Top.49} -> Type@{i}
-(* i Top.48 Top.49 |=  *)
+axbar@{i Var(1) Var(2)} : Type@{Var(2)} -> Type@{i}
+(* i Var(1) Var(2) |=  *)
 
 axbar is universe polymorphic
 Argument scope is [type_scope]

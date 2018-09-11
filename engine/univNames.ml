@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Util
 open Names
 open Univ
 open Nametab
@@ -65,6 +66,24 @@ let subst_ubinder (subst,(ref,l as orig)) =
   if ref == ref' then orig else ref', l
 
 let discharge_ubinder (_,(ref,l)) =
+  (** Expand polymorphic binders with the section context *)
+  let info = Lib.section_segment_of_reference ref in
+  let sec_inst = info.Lib.abstr_subst in
+  let shift = Instance.length sec_inst in
+  let map lvl = match Level.var_index lvl with
+  | None -> lvl
+  | Some n -> Level.var (n + shift)
+  in
+  let l = Id.Map.map map l in
+  let fold i accu lvl = match Level.name lvl with
+  | None -> accu
+  | Some na ->
+    try
+      let qid = Nametab.shortest_qualid_of_universe na in
+      Id.Map.add (snd (Libnames.repr_qualid qid)) (Level.var i) accu
+    with Not_found -> accu
+  in
+  let l = Array.fold_left_i fold l (Instance.to_array sec_inst) in
   Some (Lib.discharge_global ref, l)
 
 let ubinder_obj : GlobRef.t * universe_binders -> Libobject.obj =
@@ -85,6 +104,20 @@ let register_universe_binders ref ubinders =
     if poly then Id.Map.add (snd (Libnames.repr_qualid qid)) level ubinders
     else ubinders)
     !universe_map ubinders
+  in
+  let ubinders =
+    if Global.is_polymorphic ref then
+      (** FIXME: little dance to make the named universes refer to bound
+          universe variables *)
+      let univs = AUContext.instance (Global.universes_of_global ref) in
+      let fold i accu l = LMap.add l i accu in
+      let univs = Array.fold_left_i fold LMap.empty (Instance.to_array univs) in
+      let fold id lvl accu =
+        try Id.Map.add id (Level.var (LMap.find lvl univs)) accu
+        with Not_found -> accu
+      in
+      Id.Map.fold fold ubinders Id.Map.empty
+    else ubinders
   in
   if not (Id.Map.is_empty ubinders)
   then Lib.add_anonymous_leaf (ubinder_obj (ref,ubinders))

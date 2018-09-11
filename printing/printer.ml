@@ -270,15 +270,30 @@ let pr_universe_ctx sigma ?variance c =
   else
     mt()
 
+let pr_abstract_universe_ctx sigma ?variance c =
+  if !Detyping.print_universes && not (Univ.AUContext.is_empty c) then
+    fnl()++pr_in_comment (fun c -> v 0
+      (Univ.pr_abstract_universe_context (Termops.pr_evd_level sigma) ?variance c)) c
+  else
+    mt()
+
 let pr_constant_universes sigma = function
-  | Entries.Monomorphic_const_entry ctx -> pr_universe_ctx_set sigma ctx
-  | Entries.Polymorphic_const_entry ctx -> pr_universe_ctx sigma ctx
+  | Declarations.Monomorphic_const ctx -> pr_universe_ctx_set sigma ctx
+  | Declarations.Polymorphic_const ctx -> pr_abstract_universe_ctx sigma ctx
 
 let pr_cumulativity_info sigma cumi =
   if !Detyping.print_universes 
   && not (Univ.UContext.is_empty (Univ.CumulativityInfo.univ_context cumi)) then
     fnl()++pr_in_comment (fun uii -> v 0 
       (Univ.pr_cumulativity_info (Termops.pr_evd_level sigma) uii)) cumi
+  else
+    mt()
+
+let pr_abstract_cumulativity_info sigma cumi =
+  if !Detyping.print_universes
+  && not (Univ.AUContext.is_empty (Univ.ACumulativityInfo.univ_context cumi)) then
+    fnl()++pr_in_comment (fun uii -> v 0
+      (Univ.pr_abstract_cumulativity_info (Termops.pr_evd_level sigma) uii)) cumi
   else
     mt()
 
