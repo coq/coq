@@ -26,7 +26,9 @@ Description of ``omega``
 .. tacv:: romega
    :name: romega
 
-   To be documented.
+   .. deprecated:: 8.9
+
+      Use :tacn:`lia` instead.
 
 Arithmetical goals recognized by ``omega``
 ------------------------------------------
