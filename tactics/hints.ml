@@ -765,13 +765,8 @@ let error_no_such_hint_database x =
 (*                       Definition of the summary                        *)
 (**************************************************************************)
 
-let hints_init : (unit -> unit) ref = ref (fun () -> ())
-let add_hints_init f =
-  let init = !hints_init in
-  hints_init := (fun () -> init (); f ())
-
 let init     () =
-  searchtable := auto_init_db; statustable := KNmap.empty; !hints_init ()
+  searchtable := auto_init_db; statustable := KNmap.empty
 let freeze   _ = (!searchtable, !statustable)
 let unfreeze (fs, st) = searchtable := fs; statustable := st
 

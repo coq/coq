@@ -520,11 +520,6 @@ let rewrite_db = "rewrite"
 
 let conv_transparent_state = (Id.Pred.empty, Cpred.full)
 
-let _ = 
-  Hints.add_hints_init
-    (fun () ->
-       Hints.create_hint_db false rewrite_db conv_transparent_state true)
-
 let rewrite_transparent_state () =
   Hints.Hint_db.transparent_state (Hints.searchtable_map rewrite_db)
 
