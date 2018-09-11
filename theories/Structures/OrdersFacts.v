@@ -132,6 +132,7 @@ Module OrderedTypeFacts (Import O: OrderedType').
   Module OrderTac := OT_to_OrderTac O.
   Ltac order := OrderTac.order.
 
+  Declare Scope order.
   Notation "x <= y" := (~lt y x) : order.
   Infix "?=" := compare (at level 70, no associativity) : order.
 

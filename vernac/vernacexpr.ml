@@ -325,6 +325,7 @@ type nonrec vernac_expr =
   (* Syntax *)
   | VernacSyntaxExtension of bool * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of bool * scope_name
+  | VernacDeclareScope of scope_name
   | VernacDelimiters of scope_name * string option
   | VernacBindScope of scope_name * class_rawexpr list
   | VernacInfix of (lstring * syntax_modifier list) *

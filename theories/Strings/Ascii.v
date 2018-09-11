@@ -13,7 +13,6 @@
     Adapted to Coq V8 by the Coq Development Team *)
 
 Require Import Bool BinPos BinNat PeanoNat Nnat.
-Declare ML Module "ascii_syntax_plugin".
 
 (** * Definition of ascii characters *)
 
@@ -21,6 +20,8 @@ Declare ML Module "ascii_syntax_plugin".
 
 Inductive ascii : Set := Ascii (_ _ _ _ _ _ _ _ : bool).
 
+Declare Scope char_scope.
+Declare ML Module "ascii_syntax_plugin".
 Delimit Scope char_scope with char.
 Bind Scope char_scope with ascii.
 

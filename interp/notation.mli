@@ -41,6 +41,9 @@ type scopes (** = [scope_name list] *)
 
 val declare_scope : scope_name -> unit
 
+(* To be removed after deprecation phase *)
+val ensure_scope : scope_name -> unit
+
 val current_scopes : unit -> scopes
 
 (** Check where a scope is opened or not in a scope list, or in

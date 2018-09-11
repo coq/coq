@@ -37,8 +37,8 @@ Inductive bool : Set :=
 
 Add Printing If bool.
 
+Declare Scope bool_scope.
 Delimit Scope bool_scope with bool.
-
 Bind Scope bool_scope with bool.
 
 (** Basic boolean operators *)
@@ -136,6 +136,7 @@ Inductive nat : Set :=
   | O : nat
   | S : nat -> nat.
 
+Declare Scope nat_scope.
 Delimit Scope nat_scope with nat.
 Bind Scope nat_scope with nat.
 Arguments S _%nat.
@@ -228,9 +229,12 @@ Inductive list (A : Type) : Type :=
 
 Arguments nil {A}.
 Arguments cons {A} a l.
-Infix "::" := cons (at level 60, right associativity) : list_scope.
+
+Declare Scope list_scope.
 Delimit Scope list_scope with list.
 Bind Scope list_scope with list.
+
+Infix "::" := cons (at level 60, right associativity) : list_scope.
 
 Local Open Scope list_scope.
 

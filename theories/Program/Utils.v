@@ -20,11 +20,12 @@ Notation "{ ( x , y )  :  A  |  P }" :=
   (sig (fun anonymous : A => let (x,y) := anonymous in P))
   (x ident, y ident, at level 10) : type_scope.
 
+Declare Scope program_scope.
+Delimit Scope program_scope with prg.
+
 (** Generates an obligation to prove False. *)
 
 Notation " ! " := (False_rect _ _) : program_scope.
-
-Delimit Scope program_scope with prg.
 
 (** Abbreviation for first projection and hiding of proofs of subset objects. *)
 

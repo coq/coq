@@ -340,6 +340,8 @@ Functional Scheme union_ind := Induction for union Sort Prop.
 
 (** Notations and helper lemma about pairs and triples *)
 
+Declare Scope pair_scope.
+
 Notation "s #1" := (fst s) (at level 9, format "s '#1'") : pair_scope.
 Notation "s #2" := (snd s) (at level 9, format "s '#2'") : pair_scope.
 Notation "t #l" := (t_left t) (at level 9, format "t '#l'") : pair_scope.

@@ -35,6 +35,8 @@ Definition equiv `{Equivalence A R} : crelation A := R.
 (** Overloaded notations for setoid equivalence and inequivalence.
     Not to be confused with [eq] and [=]. *)
 
+Declare Scope equiv_scope.
+
 Notation " x === y " := (equiv x y) (at level 70, no associativity) : equiv_scope.
 
 Notation " x =/= y " := (complement equiv x y) (at level 70, no associativity) : equiv_scope.

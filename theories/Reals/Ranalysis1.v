@@ -28,6 +28,7 @@ Definition div_real_fct (a:R) f (x:R) : R := a / f x.
 Definition comp f1 f2 (x:R) : R := f1 (f2 x).
 Definition inv_fct f (x:R) : R := / f x.
 
+Declare Scope Rfun_scope.
 Delimit Scope Rfun_scope with F.
 
 Arguments plus_fct (f1 f2)%F x%R.

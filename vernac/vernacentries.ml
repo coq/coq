@@ -403,17 +403,24 @@ let dump_global r =
 (**********)
 (* Syntax *)
 
-let vernac_syntax_extension atts infix l =
+let vernac_syntax_extension ~atts infix l =
   let local = enforce_module_locality atts.locality in
   if infix then Metasyntax.check_infix_modifiers (snd l);
   Metasyntax.add_syntax_extension local l
 
-let vernac_delimiters sc = function
-  | Some lr -> Metasyntax.add_delimiters sc lr
-  | None -> Metasyntax.remove_delimiters sc
+let vernac_declare_scope ~atts sc =
+  let local = enforce_module_locality atts.locality in
+  Metasyntax.declare_scope local sc
 
-let vernac_bind_scope sc cll =
-  Metasyntax.add_class_scope sc (List.map scope_class_of_qualid cll)
+let vernac_delimiters ~atts sc action =
+  let local = enforce_module_locality atts.locality in
+  match action with
+  | Some lr -> Metasyntax.add_delimiters local sc lr
+  | None -> Metasyntax.remove_delimiters local sc
+
+let vernac_bind_scope ~atts sc cll =
+  let local = enforce_module_locality atts.locality in
+  Metasyntax.add_class_scope local sc (List.map scope_class_of_qualid cll)
 
 let vernac_open_close_scope ~atts (b,s) =
   let local = enforce_section_locality atts.locality in
@@ -2093,9 +2100,10 @@ let interp ?proof ~atts ~st c =
 
   (* Syntax *)
   | VernacSyntaxExtension (infix, sl) ->
-      vernac_syntax_extension atts infix sl
-  | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
-  | VernacBindScope (sc,rl) -> vernac_bind_scope sc rl
+      vernac_syntax_extension ~atts infix sl
+  | VernacDeclareScope sc -> vernac_declare_scope ~atts sc
+  | VernacDelimiters (sc,lr) -> vernac_delimiters ~atts sc lr
+  | VernacBindScope (sc,rl) -> vernac_bind_scope ~atts sc rl
   | VernacOpenCloseScope (b, s) -> vernac_open_close_scope ~atts (b,s)
   | VernacInfix (mv,qid,sc) -> vernac_infix ~atts mv qid sc
   | VernacNotation (c,infpl,sc) ->
@@ -2232,6 +2240,7 @@ let check_vernac_supports_locality c l =
   | Some _, (
       VernacOpenCloseScope _
     | VernacSyntaxExtension _ | VernacInfix _ | VernacNotation _
+    | VernacDeclareScope _ | VernacDelimiters _ | VernacBindScope _
     | VernacDeclareCustomEntry _
     | VernacDefinition _ | VernacFixpoint _ | VernacCoFixpoint _
     | VernacAssumption _ | VernacStartTheoremProof _

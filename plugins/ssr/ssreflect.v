@@ -86,6 +86,7 @@ Export SsrSyntax.
 (* recognize the expansion of the boolean if; using the default printer       *)
 (* avoids a spurrious trailing %GEN_IF.                                       *)
 
+Declare Scope general_if_scope.
 Delimit Scope general_if_scope with GEN_IF.
 
 Notation "'if' c 'then' v1 'else' v2" :=
@@ -103,6 +104,7 @@ Notation "'if' c 'as' x 'return' t 'then' v1 'else' v2" :=
 
 (* Force boolean interpretation of simple if expressions.                     *)
 
+Declare Scope boolean_if_scope.
 Delimit Scope boolean_if_scope with BOOL_IF.
 
 Notation "'if' c 'return' t 'then' v1 'else' v2" :=
@@ -125,6 +127,7 @@ Open Scope boolean_if_scope.
 (* Non-ssreflect libraries that do not respect the form syntax (e.g., the Coq *)
 (* Lists library) should be loaded before ssreflect so that their notations   *)
 (* do not mask all ssreflect forms.                                           *)
+Declare Scope form_scope.
 Delimit Scope form_scope with FORM.
 Open Scope form_scope.
 

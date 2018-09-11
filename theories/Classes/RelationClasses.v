@@ -357,6 +357,8 @@ Definition predicate_implication {l : Tlist} :=
 
 (** Notations for pointwise equivalence and implication of predicates. *)
 
+Declare Scope predicate_scope.
+
 Infix "<∙>" := predicate_equivalence (at level 95, no associativity) : predicate_scope.
 Infix "-∙>" := predicate_implication (at level 70, right associativity) : predicate_scope.
 

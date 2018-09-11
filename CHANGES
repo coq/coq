@@ -10,6 +10,11 @@ Notations
 - New support for autonomous grammars of terms, called "custom
   entries" (see chapter "Syntax extensions" of the reference manual).
 
+- New command "Declare Scope" to explicitly declare a scope name
+  before any use of it. Implicit declaration of a scope at the time of
+  "Bind Scope", "Delimit Scope", "Undelimit Scope", or "Notation" is
+  deprecated.
+
 Tactics
 
 - Added toplevel goal selector ! which expects a single focused goal.

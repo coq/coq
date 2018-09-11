@@ -98,21 +98,40 @@ let init_scope_map () =
 (**********************************************************************)
 (* Operations on scopes *)
 
+let warn_undeclared_scope =
+  CWarnings.create ~name:"undeclared-scope" ~category:"deprecated"
+                   (fun (scope) ->
+                    strbrk "Declaring a scope implicitly is deprecated; use in advance an explicit "
+                    ++ str "\"Declare Scope " ++ str scope ++ str ".\".")
+
 let declare_scope scope =
   try let _ = String.Map.find scope !scope_map in ()
   with Not_found ->
-(*    Flags.if_warn message ("Creating scope "^scope);*)
     scope_map := String.Map.add scope empty_scope !scope_map
 
 let error_unknown_scope sc =
   user_err ~hdr:"Notation"
     (str "Scope " ++ str sc ++ str " is not declared.")
 
-let find_scope scope =
+let find_scope ?(tolerant=false) scope =
   try String.Map.find scope !scope_map
-  with Not_found -> error_unknown_scope scope
+  with Not_found ->
+    if tolerant then
+      (* tolerant mode to be turn off after deprecation phase *)
+      begin
+        warn_undeclared_scope scope;
+        scope_map := String.Map.add scope empty_scope !scope_map;
+        empty_scope
+      end
+    else
+      error_unknown_scope scope
 
-let check_scope sc = let _ = find_scope sc in ()
+let check_scope ?(tolerant=false) scope =
+  let _ = find_scope ~tolerant scope in ()
+
+let ensure_scope scope = check_scope ~tolerant:true scope
+
+let find_scope scope = find_scope scope
 
 (* [sc] might be here a [scope_name] or a [delimiter]
    (now allowed after Open Scope) *)
@@ -418,7 +437,7 @@ type prim_token_infos = {
 let cache_prim_token_interpretation (_,infos) =
   let sc = infos.pt_scope in
   let uid = infos.pt_uid in
-  declare_scope sc;
+  check_scope ~tolerant:true sc;
   prim_token_interp_infos :=
     String.Map.add sc (infos.pt_required,infos.pt_uid) !prim_token_interp_infos;
   List.iter (fun r -> prim_token_uninterp_infos :=

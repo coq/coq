@@ -18,6 +18,7 @@ Require Export Morphisms Setoid Bool.
 
 Record Q : Set := Qmake {Qnum : Z; Qden : positive}.
 
+Declare Scope Q_scope.
 Delimit Scope Q_scope with Q.
 Bind Scope Q_scope with Q.
 Arguments Qmake _%Z _%positive.

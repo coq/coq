@@ -697,7 +697,7 @@ End Choice_lemmas.
 
 Section Dependent_choice_lemmas.
 
-  Variables X : Set.
+  Variable X : Set.
   Variable R : X -> X -> Prop.
 
   Lemma dependent_choice :

@@ -14,6 +14,7 @@
 
 Require Export ZArith_base.
 Require Export Rdefinitions.
+Declare Scope R_scope.
 Local Open Scope R_scope.
 
 (*********************************************************)

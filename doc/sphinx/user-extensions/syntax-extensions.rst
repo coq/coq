@@ -949,16 +949,25 @@ Interpretation scopes can include an interpretation for numerals and
 strings. However, this is only made possible at the Objective Caml
 level.
 
-See :ref:`above <NotationSyntax>` for the syntax of notations including the
-possibility to declare them in a given scope. Here is a typical example which
-declares the notation for conjunction in the scope ``type_scope``.
+.. cmd:: Declare Scope @scope
+
+   This adds a new scope named :n:`@scope`. Note that the initial
+   state of Coq declares by default the following interpretation scopes:
+   ``core_scope``, ``type_scope``, ``function_scope``, ``nat_scope``,
+   ``bool_scope``, ``list_scope``, ``int_scope``, ``uint_scope``.
+
+The syntax to associate a notation to a scope is given
+:ref:`above <NotationSyntax>`. Here is a typical example which declares the
+notation for conjunction in the scope ``type_scope``.
 
 .. coqtop:: in
 
    Notation "A /\ B" := (and A B) : type_scope.
 
 .. note:: A notation not defined in a scope is called a *lonely*
-          notation.
+          notation. No example of lonely notations can be found in the
+          initial state of Coq though.
+
 
 Global interpretation rules for notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -976,10 +985,6 @@ interpretation of the notation in scope is given after the lonely
 interpretation: otherwise said, only the order of lonely
 interpretations and opening of scopes matters, and not the declaration
 of interpretations within a scope).
-
-The initial state of Coq declares three interpretation scopes and no
-lonely notations. These scopes, in opening order, are ``core_scope``,
-``type_scope`` and ``nat_scope``.
 
 .. cmd:: Open Scope @scope
 

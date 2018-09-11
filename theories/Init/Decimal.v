@@ -42,8 +42,11 @@ Notation zero := (D0 Nil).
 
 Inductive int := Pos (d:uint) | Neg (d:uint).
 
+Declare Scope dec_uint_scope.
 Delimit Scope dec_uint_scope with uint.
 Bind Scope dec_uint_scope with uint.
+
+Declare Scope dec_int_scope.
 Delimit Scope dec_int_scope with int.
 Bind Scope dec_int_scope with int.
 

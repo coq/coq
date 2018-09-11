@@ -220,8 +220,10 @@ End NZDomainProp.
 Module NZOfNat (Import NZ:NZDomainSig').
 
 Definition ofnat (n : nat) : t := (S^n) 0.
-Notation "[ n ]" := (ofnat n) (at level 7) : ofnat.
+
+Declare Scope ofnat.
 Local Open Scope ofnat.
+Notation "[ n ]" := (ofnat n) (at level 7) : ofnat.
 
 Lemma ofnat_zero : [O] == 0.
 Proof.
