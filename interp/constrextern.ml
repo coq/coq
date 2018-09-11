@@ -958,9 +958,6 @@ let rec extern inctx scopes vars r =
   | GCast (c, c') ->
       CCast (sub_extern true scopes vars c,
              map_cast_type (extern_typ scopes vars) c')
-  | GProj (p, c) ->
-    let pr = extern_reference ?loc Id.Set.empty (ConstRef (Projection.constant p)) in
-    CProj (pr, sub_extern inctx scopes vars c)
 
   in insert_coercion coercion (CAst.make ?loc c)
 

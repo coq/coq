@@ -523,8 +523,6 @@ let match_goals ot nt =
     | CPrim p, CPrim p2 -> ()
     | CDelimiters (key,e), CDelimiters (key2,e2) ->
       constr_expr ogname e e2
-    | CProj (pr,c), CProj (pr2,c2) ->
-      constr_expr ogname c c2
     | _, _ -> raise (Diff_Failure "Unable to match goals betwen old and new proof states (5)")
     end
   in
