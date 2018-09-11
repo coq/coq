@@ -114,7 +114,6 @@ and constr_expr_r =
   | CGeneralization of binding_kind * abstraction_kind option * constr_expr
   | CPrim of prim_token
   | CDelimiters of string * constr_expr
-  | CProj of qualid * constr_expr
 and constr_expr = constr_expr_r CAst.t
 
 and case_expr = constr_expr                 (* expression that is being matched *)

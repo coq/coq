@@ -675,8 +675,12 @@ and detype_r d flags avoid env sigma t =
         (Array.map_to_list (detype d flags avoid env sigma) args)
     | Const (sp,u) -> GRef (ConstRef sp, detype_instance sigma u)
     | Proj (p,c) ->
-      let noparams () = 
-    GProj (p, detype d flags avoid env sigma c)
+      let noparams () =
+        let pars = Projection.npars p in
+        let hole = DAst.make @@ GHole(Evar_kinds.InternalHole,Namegen.IntroAnonymous,None) in
+        let args = List.make pars hole in
+        GApp (DAst.make @@ GRef (ConstRef (Projection.constant p), None),
+              (args @ [detype d flags avoid env sigma c]))
       in
       if fst flags || !Flags.in_debugger || !Flags.in_toplevel then
 	try noparams ()
@@ -1030,10 +1034,6 @@ let rec subst_glob_constr subst = DAst.map (function
       let k' = smartmap_cast_type (subst_glob_constr subst) k in
       if r1' == r1 && k' == k then raw else GCast (r1',k')
 
-  | GProj (p,c) as raw ->
-    let p' = subst_proj subst p in
-    let c' = subst_glob_constr subst c in
-    if p' == p && c' == c then raw else GProj(p', c')
   )
 
 (* Utilities to transform kernel cases to simple pattern-matching problem *)
