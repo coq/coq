@@ -39,7 +39,6 @@ type constant_obj = {
   cst_decl : global_declaration option;
   (** [None] when the declaration is a side-effect and has already been defined
       in the global environment. *)
-  cst_hyps : Dischargedhypsmap.discharged_hyps;
   cst_kind : logical_kind;
   cst_locl : bool;
 }
@@ -94,28 +93,20 @@ let cache_constant ((sp,kn), obj) =
   Nametab.push (Nametab.Until 1) sp (ConstRef (Constant.make1 kn));
   let cst = Global.lookup_constant kn' in
   add_section_constant (Declareops.constant_is_polymorphic cst) kn' cst.const_hyps;
-  Dischargedhypsmap.set_discharged_hyps sp obj.cst_hyps;
   add_constant_kind (Constant.make1 kn) obj.cst_kind
-
-let discharged_hyps kn sechyps =
-  let (_,dir,_) = KerName.repr kn in
-  let args = Array.to_list (instance_from_variable_context sechyps) in
-  List.rev_map (Libnames.make_path dir) args
 
 let discharge_constant ((sp, kn), obj) =
   let con = Constant.make1 kn in
   let from = Global.lookup_constant con in
   let modlist = replacement_context () in
   let { abstr_ctx = hyps; abstr_subst = subst; abstr_uctx = uctx } = section_segment_of_constant con in
-  let new_hyps = (discharged_hyps kn hyps) @ obj.cst_hyps in
   let abstract = (named_of_variable_context hyps, subst, uctx) in
   let new_decl = GlobalRecipe{ from; info = { Opaqueproof.modlist; abstract}} in
-  Some { obj with cst_hyps = new_hyps; cst_decl = Some new_decl; }
+  Some { obj with cst_decl = Some new_decl; }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant cst = {
   cst_decl = None;
-  cst_hyps = [];
   cst_kind = cst.cst_kind;
   cst_locl = cst.cst_locl;
 }
@@ -142,7 +133,6 @@ let update_tables c =
 let register_side_effect (c, role) =
   let o = inConstant {
     cst_decl = None;
-    cst_hyps = [] ;
     cst_kind = IsProof Theorem;
     cst_locl = false;
   } in
@@ -194,7 +184,6 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(e
   let () = List.iter register_side_effect export in
   let cst = {
     cst_decl = Some decl;
-    cst_hyps = [] ;
     cst_kind = kind;
     cst_locl = local;
   } in
@@ -255,7 +244,6 @@ let cache_variable ((sp,_),o) =
       poly, univs in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   add_section_variable id impl poly ctx;
-  Dischargedhypsmap.set_discharged_hyps sp [];
   add_variable_data id (p,opaq,ctx,poly,mk)
 
 let discharge_variable (_,o) = match o with
@@ -311,15 +299,15 @@ let inductive_names sp kn mie =
       ([], 0) mie.mind_entry_inds
   in names
 
-let load_inductive i ((sp,kn),(_,mie)) =
+let load_inductive i ((sp,kn),mie) =
   let names = inductive_names sp kn mie in
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until i) sp ref ) names
 
-let open_inductive i ((sp,kn),(_,mie)) =
+let open_inductive i ((sp,kn),mie) =
   let names = inductive_names sp kn mie in
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Exactly i) sp ref) names
 
-let cache_inductive ((sp,kn),(dhyps,mie)) =
+let cache_inductive ((sp,kn),mie) =
   let names = inductive_names sp kn mie in
   List.iter check_exists (List.map fst names);
   let id = basename sp in
@@ -328,17 +316,14 @@ let cache_inductive ((sp,kn),(dhyps,mie)) =
   assert (MutInd.equal kn' (MutInd.make1 kn));
   let mind = Global.lookup_mind kn' in
   add_section_kn (Declareops.inductive_is_polymorphic mind) kn' mind.mind_hyps;
-  Dischargedhypsmap.set_discharged_hyps sp dhyps;
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names
 
-let discharge_inductive ((sp,kn),(dhyps,mie)) =
+let discharge_inductive ((sp,kn),mie) =
   let mind = Global.mind_of_delta_kn kn in
   let mie = Global.lookup_mind mind in
   let repl = replacement_context () in
   let info = section_segment_of_mutual_inductive mind in
-  let sechyps = info.Lib.abstr_ctx in
-  Some (discharged_hyps kn sechyps,
-        Discharge.process_inductive info repl mie)
+  Some (Discharge.process_inductive info repl mie)
 
 let dummy_one_inductive_entry mie = {
   mind_entry_typename = mie.mind_entry_typename;
@@ -349,30 +334,28 @@ let dummy_one_inductive_entry mie = {
 }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_inductive_entry (_,m) = ([],{
+let dummy_inductive_entry m = {
   mind_entry_params = [];
   mind_entry_record = None;
   mind_entry_finite = Declarations.BiFinite;
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds;
   mind_entry_universes = Monomorphic_ind_entry Univ.ContextSet.empty;
   mind_entry_private = None;
-})
+}
 
 (* reinfer subtyping constraints for inductive after section is dischared. *)
-let infer_inductive_subtyping (pth, mind_ent) =
+let infer_inductive_subtyping mind_ent =
   match mind_ent.mind_entry_universes with
   | Monomorphic_ind_entry _ | Polymorphic_ind_entry _ ->
-    (pth, mind_ent)
+    mind_ent
   | Cumulative_ind_entry cumi ->
     begin
       let env = Global.env () in
       (* let (env'', typed_params) = Typeops.infer_local_decls env' (mind_ent.mind_entry_params) in *)
-        (pth, InferCumulativity.infer_inductive env mind_ent)
+        InferCumulativity.infer_inductive env mind_ent
     end
 
-type inductive_obj = Dischargedhypsmap.discharged_hyps * mutual_inductive_entry
-
-let inInductive : inductive_obj -> obj =
+let inInductive : mutual_inductive_entry -> obj =
   declare_object {(default_object "INDUCTIVE") with
     cache_function = cache_inductive;
     load_function = load_inductive;
@@ -426,7 +409,7 @@ let declare_mind mie =
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
     | [] -> anomaly (Pp.str "cannot declare an empty list of inductives.") in
-  let (sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
+  let (sp,kn as oname) = add_leaf id (inInductive mie) in
   let mind = Global.mind_of_delta_kn kn in
   let isprim = declare_projections mie.mind_entry_universes mind in
   declare_mib_implicits mind;
