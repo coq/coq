@@ -1313,28 +1313,6 @@ Chapter :ref:`Tactics`. The basic assertion command is:
 
       These commands are all synonyms of :n:`Theorem @ident {? @binders } : type`.
 
-.. cmdv:: Theorem @ident {? @binders } : @type {* with @ident {? @binders } : @type}
-
-   This command is useful for theorems that are proved by simultaneous induction
-   over a mutually inductive assumption, or that assert mutually dependent
-   statements in some mutual co-inductive type. It is equivalent to
-   :cmd:`Fixpoint` or :cmd:`CoFixpoint` but using tactics to build the proof of
-   the statements (or the body of the specification, depending on the point of
-   view). The inductive or co-inductive types on which the induction or
-   coinduction has to be done is assumed to be non ambiguous and is guessed by
-   the system.
-
-   Like in a :cmd:`Fixpoint` or :cmd:`CoFixpoint` definition, the induction hypotheses
-   have to be used on *structurally smaller* arguments (for a :cmd:`Fixpoint`) or
-   be *guarded by a constructor* (for a :cmd:`CoFixpoint`). The verification that
-   recursive proof arguments are correct is done only at the time of registering
-   the lemma in the environment. To know if the use of induction hypotheses is
-   correct at some time of the interactive development of a proof, use the
-   command :cmd:`Guarded`.
-
-   The command can be used also with :cmd:`Lemma`, :cmd:`Remark`, etc. instead of
-   :cmd:`Theorem`.
-
 .. cmdv:: Definition @ident {? @binders } : @type
 
    This allows defining a term of type :token:`type` using the proof editing
@@ -1356,13 +1334,40 @@ Chapter :ref:`Tactics`. The basic assertion command is:
 
    This generalizes the syntax of :cmd:`Fixpoint` so that one or more bodies
    can be defined interactively using the proof editing mode (when a
-   body is omitted, its type is mandatory in the syntax). When the block
-   of proofs is completed, it is intended to be ended by :cmd:`Defined`.
+   body is omitted, its type is mandatory in the syntax).
+
+   It is useful in particular for theorems that are proved by simultaneous
+   induction over a mutually inductive assumption. The inductive type on
+   which the induction has to be done is assumed to be non-ambiguous and is
+   guessed by the system.
+
+   The induction hypotheses have to be used on *structurally smaller*
+   arguments. The verification that recursive proof arguments are correct
+   is done only at the time of registering the new lemmas / definitions in the
+   environment. To know if the use of induction hypotheses is correct at some
+   time of the interactive development of a proof, use the command :cmd:`Guarded`.
+
+   The command can be used also with ``Theorem``, ``Lemma``, ``Remark``,
+   etc. instead of ``Fixpoint`` but these forms are deprecated.
 
 .. cmdv:: CoFixpoint @ident {? @binders } : @type {* with @ident {? @binders } : @type}
 
    This generalizes the syntax of :cmd:`CoFixpoint` so that one or more bodies
    can be defined interactively using the proof editing mode.
+
+   It is useful in particular for theorems that are proved by simultaneous
+   co-induction over a mutually co-inductive assumption. The co-inductive type
+   on which the co-induction has to be done is assumed to be non-ambiguous and
+   is guessed by the system.
+
+   The co-induction hypotheses have to be *guarded by a constructor*.
+   The verification that recursive proof arguments are correct
+   is done only at the time of registering the new lemmas / definitions in the
+   environment. To know if the use of co-induction hypotheses is correct at some
+   time of the interactive development of a proof, use the command :cmd:`Guarded`.
+
+   The command can be used also with ``Theorem``, ``Lemma``, ``Remark``,
+   etc. instead of ``Fixpoint`` but these forms are deprecated.
 
 A proof starts by the keyword :cmd:`Proof`. Then Coq enters the proof editing mode
 until the proof is completed. The proof editing mode essentially contains
