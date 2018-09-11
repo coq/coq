@@ -75,7 +75,7 @@ stdenv.mkDerivation rec {
     ++ [ ocamlPackages.ounit rsync which ]
   )
   ++ optionals shell (
-    [ jq curl git gnupg ] # Dependencies of the merging script
+    [ jq curl gitFull gnupg ] # Dependencies of the merging script
     ++ (with ocamlPackages; [ merlin ocp-indent ocp-index utop ]) # Dev tools
   );
 
