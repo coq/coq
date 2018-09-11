@@ -1802,13 +1802,13 @@ let vernac_print ~atts env sigma =
   | PrintName (qid,udecl) ->
     dump_global qid;
     print_name env sigma qid udecl
-  | PrintGraph -> Prettyp.print_graph env sigma
+  | PrintGraph -> Prettyp.print_graph ()
   | PrintClasses -> Prettyp.print_classes()
   | PrintTypeClasses -> Prettyp.print_typeclasses()
   | PrintInstances c -> Prettyp.print_instances (smart_global c)
-  | PrintCoercions -> Prettyp.print_coercions env sigma
+  | PrintCoercions -> Prettyp.print_coercions ()
   | PrintCoercionPaths (cls,clt) ->
-    Prettyp.print_path_between env sigma (cl_of_qualid cls) (cl_of_qualid clt)
+    Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt)
   | PrintCanonicalConversions -> Prettyp.print_canonical_projections env sigma
   | PrintUniverses (b, dst) ->
      let univ = Global.universes () in

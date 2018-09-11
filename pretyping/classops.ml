@@ -16,7 +16,6 @@ open Constr
 open Libnames
 open Globnames
 open Nametab
-open Environ
 open Libobject
 open Mod_subst
 
@@ -320,16 +319,16 @@ let lookup_pattern_path_between env (s,t) =
 
 (* rajouter une coercion dans le graphe *)
 
-let path_printer : (env -> Evd.evar_map -> (Bijint.Index.t * Bijint.Index.t) * inheritance_path -> Pp.t) ref =
-  ref (fun _ _ _ -> str "<a class path>")
+let path_printer : ((Bijint.Index.t * Bijint.Index.t) * inheritance_path -> Pp.t) ref =
+  ref (fun _ -> str "<a class path>")
 
 let install_path_printer f = path_printer := f
 
-let print_path env sigma x = !path_printer env sigma x
+let print_path x = !path_printer x
 
-let message_ambig env sigma l =
+let message_ambig l =
   str"Ambiguous paths:" ++ spc () ++
-  prlist_with_sep fnl (fun ijp -> print_path env sigma ijp) l
+  prlist_with_sep fnl print_path l
 
 (* add_coercion_in_graph : coe_index * cl_index * cl_index -> unit
                          coercion,source,target *)
@@ -343,7 +342,7 @@ let different_class_params i =
       | CL_CONST c -> Global.is_polymorphic (ConstRef c)
       | _ -> false
 
-let add_coercion_in_graph env sigma (ic,source,target) =
+let add_coercion_in_graph (ic,source,target) =
   let old_inheritance_graph = !inheritance_graph in
   let ambig_paths =
     (ref [] : ((cl_index * cl_index) * inheritance_path) list ref) in
@@ -385,7 +384,7 @@ let add_coercion_in_graph env sigma (ic,source,target) =
   end;
   let is_ambig = match !ambig_paths with [] -> false | _ -> true in
   if is_ambig && not !Flags.quiet then
-    Feedback.msg_info (message_ambig env sigma !ambig_paths)
+    Feedback.msg_info (message_ambig !ambig_paths)
 
 type coercion = {
   coercion_type   : coe_typ;
@@ -430,7 +429,7 @@ let _ =
       optread  = (fun () -> !automatically_import_coercions);
       optwrite = (:=) automatically_import_coercions }
 
-let cache_coercion env sigma (_, c) =
+let cache_coercion (_, c) =
   let () = add_class c.coercion_source in
   let () = add_class c.coercion_target in
   let is, _ = class_info c.coercion_source in
@@ -443,11 +442,11 @@ let cache_coercion env sigma (_, c) =
       coe_param = c.coercion_params;
     } in
   let () = add_new_coercion c.coercion_type xf in
-  add_coercion_in_graph env sigma (xf,is,it)
+  add_coercion_in_graph (xf,is,it)
 
 let load_coercion _ o =
   if !automatically_import_coercions then
-    cache_coercion (Global.env ()) Evd.empty o
+    cache_coercion o
 
 let set_coercion_in_scope (_, c) =
   let r = c.coercion_type in
@@ -457,7 +456,7 @@ let open_coercion i o =
   if Int.equal i 1 then begin
     set_coercion_in_scope o;
     if not !automatically_import_coercions then
-      cache_coercion (Global.env ()) Evd.empty o
+      cache_coercion o
   end
 
 let subst_coercion (subst, c) =
@@ -503,10 +502,8 @@ let inCoercion : coercion -> obj =
     open_function = open_coercion;
     load_function = load_coercion;
     cache_function = (fun objn ->
-        let env = Global.env () in
         set_coercion_in_scope objn;
-        cache_coercion env Evd.empty objn
-      );
+        cache_coercion objn);
     subst_function = subst_coercion;
     classify_function = classify_coercion;
     discharge_function = discharge_coercion }
