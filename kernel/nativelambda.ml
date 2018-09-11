@@ -88,7 +88,7 @@ let get_const_prefix env c =
 let rec map_lam_with_binders g f n lam =
   match lam with
   | Lrel _ | Lvar _  | Lconst _ | Lproj _ | Lval _ | Lsort _ | Lind _
-  | Lconstruct _ | Llazy | Lforce | Lmeta _ | Levar _ -> lam
+  | Lconstruct _ | Llazy | Lforce | Lmeta _ -> lam
   | Lprod(dom,codom) -> 
       let dom' = f n dom in
       let codom' = f n codom in
@@ -139,6 +139,10 @@ let rec map_lam_with_binders g f n lam =
   | Luint u ->
     let u' = map_uint g f n u in
     if u == u' then lam else Luint u'
+  | Levar (evk, ty, args) ->
+    let ty' = f n ty in
+    let args' = Array.smartmap (f n) args in
+    if ty == ty' && args == args' then lam else Levar (evk, ty', args')
 
 and map_uint g f n u =
   match u with
@@ -473,7 +477,7 @@ let rec lambda_of_constr env sigma c =
   | Evar (evk,args as ev) ->
      (match evar_value sigma ev with
      | None ->
-	let ty = evar_type sigma ev in
+        let ty = evar_type sigma ev in
         let args = Array.map (lambda_of_constr env sigma) args in
         Levar(evk, lambda_of_constr env sigma ty, args)
      | Some t -> lambda_of_constr env sigma t)
