@@ -1825,7 +1825,7 @@ let vernac_print ~atts env sigma =
        else str"There may remain asynchronous universe constraints"
      in
      begin match dst with
-     | None -> UGraph.pr_universes UnivNames.pr_with_global_universes univ ++ pr_remaining
+     | None -> UGraph.pr_universes pr_global UnivNames.pr_with_global_universes univ ++ pr_remaining
      | Some s -> dump_universes_gen univ s
      end
   | PrintHint r -> Hints.pr_hint_ref env sigma (smart_global r)

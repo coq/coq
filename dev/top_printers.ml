@@ -130,14 +130,16 @@ let ppclosedglobconstridmap x = pp (pr_closed_glob_constr_idmap x)
 let pP s = pp (hov 0 s)
 
 let safe_pr_global = function
-  | ConstRef kn -> pp (str "CONSTREF(" ++ Constant.debug_print kn ++ str ")")
-  | IndRef (kn,i) -> pp (str "INDREF(" ++ MutInd.debug_print kn ++ str "," ++
-			  int i ++ str ")")
-  | ConstructRef ((kn,i),j) -> pp (str "INDREF(" ++ MutInd.debug_print kn ++ str "," ++
-				      int i ++ str "," ++ int j ++ str ")")
-  | VarRef id -> pp (str "VARREF(" ++ Id.print id ++ str ")")
+  | ConstRef kn -> str "CONSTREF(" ++ Constant.debug_print kn ++ str ")"
+  | IndRef (kn,i) -> str "INDREF(" ++ MutInd.debug_print kn ++ str "," ++
+                          int i ++ str ")"
+  | ConstructRef ((kn,i),j) -> str "INDREF(" ++ MutInd.debug_print kn ++ str "," ++
+                                      int i ++ str "," ++ int j ++ str ")"
+  | VarRef id -> str "VARREF(" ++ Id.print id ++ str ")"
 
-let ppglobal x = try pp(pr_global x) with _ -> safe_pr_global x
+let ppglobal x = try pp(pr_global x) with _ -> pp (safe_pr_global x)
+
+let ppuniverses u = pp (UGraph.pr_universes safe_pr_global Level.pr u)
 
 let ppconst (sp,j) =
     pp (str"#" ++ KerName.print sp ++ str"=" ++ envpp pr_lconstr_env j.uj_val)
@@ -219,7 +221,6 @@ let ppuniverse_context_future c =
     ppuniverse_context ctx
 let ppcumulativity_info c = pp (Univ.pr_cumulativity_info Univ.Level.pr c)
 let ppabstract_cumulativity_info c = pp (Univ.pr_abstract_cumulativity_info Univ.Level.pr c)
-let ppuniverses u = pp (UGraph.pr_universes Level.pr u)
 let ppnamedcontextval e =
   let env = Global.env () in
   let sigma = Evd.from_env env in

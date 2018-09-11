@@ -65,7 +65,7 @@ val check_declared_universes : t -> Univ.LSet.t -> unit
 
 (** {6 Pretty-printing of universes. } *)
 
-val pr_universes : (Level.t -> Pp.t) -> t -> Pp.t
+val pr_universes : (origin -> Pp.t) -> (Level.t -> Pp.t) -> t -> Pp.t
 
 (** The empty graph of universes *)
 val empty_universes : t

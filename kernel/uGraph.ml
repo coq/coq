@@ -945,22 +945,25 @@ let check_eq_instances g t1 t2 =
 
 (** Pretty-printing *)
 
-let pr_arc prl = function
+let pr_arc pro prl = function
   | _, Canonical {univ=u; ltle} ->
     if UMap.is_empty ltle then mt ()
     else
       prl u ++ str " " ++
       v 0
-        (pr_sequence (fun (v, (strict,_)) ->
-          (if strict then str "< " else str "<= ") ++ prl v)
+        (pr_sequence (fun (v, (strict,orig)) ->
+             (if strict then str "< " else str "<= ") ++ prl v ++
+             (match orig with
+              | None -> mt ()
+              | Some orig -> str " (from " ++ pro orig ++ str")" ))
            (UMap.bindings ltle)) ++
       fnl ()
   | u, Equiv v ->
       prl u  ++ str " = " ++ prl v ++ fnl ()
 
-let pr_universes prl g =
+let pr_universes pro prl g =
   let graph = UMap.fold (fun u a l -> (u,a)::l) g.entries [] in
-  prlist (pr_arc prl) graph
+  prlist (pr_arc pro prl) graph
 
 (* Dumping constraints to a file *)
 
