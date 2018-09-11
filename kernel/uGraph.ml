@@ -48,13 +48,17 @@ open Universe
 
 module UMap = LMap
 
+type origin = Names.GlobRef.t
+
 type status = NoMark | Visited | WeakVisited | ToMerge
 
 (* Comparison on this type is pointer equality *)
 type canonical_node =
-    { univ: Level.t;
-      ltle: bool UMap.t;  (* true: strict (lt) constraint.
-                             false: weak  (le) constraint. *)
+  { univ: Level.t;
+    (* true: strict (lt) constraint.
+       false: weak  (le) constraint.
+       The globref is the source of the constraint. *)
+      ltle: (bool * origin option) UMap.t;
       gtge: LSet.t;
       rank : int;
       klvl: int;
@@ -219,13 +223,13 @@ let check_universes_invariants g =
   assert (!n_nodes = g.n_nodes)
 
 let clean_ltle g ltle =
-  UMap.fold (fun u strict acc ->
+  UMap.fold (fun u strictsrc acc ->
       let uu = (repr g u).univ in
       if Level.equal uu u then acc
       else (
         let acc = UMap.remove u (fst acc) in
-        if not strict && UMap.mem uu acc then (acc, true)
-        else (UMap.add uu strict acc, true)))
+        if not (fst strictsrc) && UMap.mem uu acc then (acc, true)
+        else (UMap.add uu strictsrc acc, true)))
     ltle (ltle, false)
 
 let clean_gtge g gtge =
@@ -357,10 +361,9 @@ let get_new_edges g to_merge =
   in
   let ltle =
     let fold _ n acc =
-      let fold u strict acc =
-        if strict then UMap.add u strict acc
-        else if UMap.mem u acc then acc
-        else UMap.add u false acc
+      let fold u (strict, _ as orig) acc =
+        if not strict && UMap.mem u acc then acc
+        else UMap.add u orig acc
       in
       UMap.fold fold n.ltle acc
     in
@@ -370,11 +373,11 @@ let get_new_edges g to_merge =
   let ltle =
     UMap.merge (fun _ a strict ->
       match a, strict with
-      | Some _, Some true ->
+      | Some _, Some (true,_) ->
         (* There is a lt edge inside the new component. This is a
             "bad cycle". *)
         raise CycleDetected
-      | Some _, Some false -> None
+      | Some _, Some (false,_) -> None
       | _, _ -> strict
     ) to_merge_lvl ltle
   in
@@ -471,7 +474,7 @@ let reorder g u v =
 
 (* Assumes [u] and [v] are already in the graph. *)
 (* Does NOT assume that ucan != vcan. *)
-let insert_edge strict ucan vcan g =
+let insert_edge ~orig strict ucan vcan g =
   try
     let u = ucan.univ and v = vcan.univ in
     (* STEP 1: do we need to reorder nodes ? *)
@@ -484,12 +487,12 @@ let insert_edge strict ucan vcan g =
       if strict then raise CycleDetected else g
     else
       let g =
-        try let oldstrict = UMap.find v.univ u.ltle in
+        try let oldstrict, oldorig = UMap.find v.univ u.ltle in
             if strict && not oldstrict then
-              change_node g { u with ltle = UMap.add v.univ true u.ltle }
+              change_node g { u with ltle = UMap.add v.univ (true,orig) u.ltle }
             else g
         with Not_found ->
-          { (change_node g { u with ltle = UMap.add v.univ strict u.ltle })
+          { (change_node g { u with ltle = UMap.add v.univ (strict,orig) u.ltle })
             with n_edges = g.n_edges + 1 }
       in
       if u.klvl <> v.klvl || LSet.mem u.univ v.gtge then g
@@ -524,7 +527,7 @@ let add_universe_gen vlev g =
 
 let add_universe vlev strict g =
   let g, v = add_universe_gen vlev g in
-  insert_edge strict (get_set_arc g) v g
+  insert_edge ~orig:None strict (get_set_arc g) v g
 
 let add_universe_unconstrained vlev g =
   fst (add_universe_gen vlev g)
@@ -552,7 +555,7 @@ let get_explanation strict u v g =
       else begin
         visited_strict := UMap.add u.univ strict !visited_strict;
         try
-          UMap.iter (fun u' strictu' ->
+          UMap.iter (fun u' (strictu',_) ->
             match traverse (strict && not strictu') (repr g u') with
             | None -> ()
             | Some exp ->
@@ -590,13 +593,13 @@ let search_path strict u v g =
           if u.status = NoMark then u::to_revert else to_revert
         in
         u.status <- if strict then WeakVisited else Visited;
-        if try UMap.find v.univ u.ltle || not strict
+        if try fst (UMap.find v.univ u.ltle) || not strict
            with Not_found -> false
         then raise (Found to_revert)
         else
           begin
             let next_todo =
-              UMap.fold (fun u strictu next_todo ->
+              UMap.fold (fun u (strictu,_) next_todo ->
                 let strict = not strictu && strict in
                 let u = repr g u in
                 if u == v && not strict then raise (Found to_revert)
@@ -680,29 +683,29 @@ let check_eq g u v =
 
 (* enforce_univ_eq g u v will force u=v if possible, will fail otherwise *)
 
-let rec enforce_univ_eq u v g =
+let rec enforce_univ_eq ?orig u v g =
   let ucan = repr g u in
   let vcan = repr g v in
   if topo_compare ucan vcan = 1 then enforce_univ_eq v u g
   else
-    let g = insert_edge false ucan vcan g in  (* Cannot fail *)
-    try insert_edge false vcan ucan g
+    let g = insert_edge ~orig false ucan vcan g in  (* Cannot fail *)
+    try insert_edge ~orig false vcan ucan g
     with CycleDetected ->
       error_inconsistency Eq v u (get_explanation true u v g)
 
 (* enforce_univ_leq g u v will force u<=v if possible, will fail otherwise *)
-let enforce_univ_leq u v g =
+let enforce_univ_leq ?orig u v g =
   let ucan = repr g u in
   let vcan = repr g v in
-  try insert_edge false ucan vcan g
+  try insert_edge ~orig false ucan vcan g
   with CycleDetected ->
     error_inconsistency Le u v (get_explanation true v u g)
 
 (* enforce_univ_lt u v will force u<v if possible, will fail otherwise *)
-let enforce_univ_lt u v g =
+let enforce_univ_lt ?orig u v g =
   let ucan = repr g u in
   let vcan = repr g v in
-  try insert_edge true ucan vcan g
+  try insert_edge ~orig true ucan vcan g
   with CycleDetected ->
     error_inconsistency Lt u v (get_explanation false v u g)
 
@@ -734,14 +737,14 @@ let initial_universes =
 
 let is_initial_universes g = UMap.equal (==) g.entries initial_universes.entries
 
-let enforce_constraint cst g =
+let enforce_constraint ?orig cst g =
   match cst with
-    | (u,Lt,v) -> enforce_univ_lt u v g
-    | (u,Le,v) -> enforce_univ_leq u v g
-    | (u,Eq,v) -> enforce_univ_eq u v g
+    | (u,Lt,v) -> enforce_univ_lt ?orig u v g
+    | (u,Le,v) -> enforce_univ_leq ?orig u v g
+    | (u,Eq,v) -> enforce_univ_eq ?orig u v g
 
-let merge_constraints c g =
-  Constraint.fold enforce_constraint c g
+let merge_constraints ?orig c g =
+  Constraint.fold (enforce_constraint ?orig) c g
 
 let check_constraint g (l,d,r) =
   match d with
@@ -822,7 +825,7 @@ let constraints_of_universes g =
   let constraints_of u v acc =
     match v with
     | Canonical {univ=u; ltle} ->
-      UMap.fold (fun v strict acc->
+      UMap.fold (fun v (strict,_) acc->
         let typ = if strict then Lt else Le in
         Constraint.add (u,typ,v) acc) ltle acc
     | Equiv v -> UF.union u v uf; acc
@@ -854,7 +857,7 @@ let constraints_for ~kept g =
          add_from u csts todo
        | exception Not_found ->
          (* v is not equal to any kept universe *)
-         let todo = LMap.fold (fun v' strict' todo ->
+         let todo = LMap.fold (fun v' (strict',_) todo ->
              (v',strict || strict') :: todo)
              v.ltle todo
          in
@@ -862,7 +865,7 @@ let constraints_for ~kept g =
   in
   LSet.fold (fun u csts ->
       let arc = repr g u in
-      LMap.fold (fun v strict csts -> add_from u csts [v,strict])
+      LMap.fold (fun v (strict,_) csts -> add_from u csts [v,strict])
         arc.ltle csts)
     kept csts
 
@@ -892,7 +895,7 @@ let sort_universes g =
   let lowest_levels =
     List.fold_left (fun lowest_levels can ->
       let lvl = UMap.find can.univ lowest_levels in
-      UMap.fold (fun u' strict lowest_levels ->
+      UMap.fold (fun u' (strict,_) lowest_levels ->
         let cost = if strict then 1 else 0 in
         let u' = (repr g u').univ in
         UMap.modify u' (fun _ lvl0 -> max lvl0 (lvl+cost)) lowest_levels)
@@ -948,7 +951,7 @@ let pr_arc prl = function
     else
       prl u ++ str " " ++
       v 0
-        (pr_sequence (fun (v, strict) ->
+        (pr_sequence (fun (v, (strict,_)) ->
           (if strict then str "< " else str "<= ") ++ prl v)
            (UMap.bindings ltle)) ++
       fnl ()
@@ -965,7 +968,7 @@ let dump_universes output g =
   let dump_arc u = function
     | Canonical {univ=u; ltle} ->
         let u_str = Level.to_string u in
-        UMap.iter (fun v strict ->
+        UMap.iter (fun v (strict,_) ->
           let typ = if strict then Lt else Le in
           output typ u_str (Level.to_string v)) ltle;
     | Equiv v ->
@@ -978,7 +981,7 @@ let dump_universes output g =
 let merge_constraints = 
   if Flags.profile then 
     let key = CProfile.declare_profile "merge_constraints" in
-      CProfile.profile2 key merge_constraints
+      fun?orig -> CProfile.profile2 key (merge_constraints ?orig)
   else merge_constraints
 let check_constraints =
   if Flags.profile then

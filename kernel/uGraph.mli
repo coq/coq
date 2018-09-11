@@ -10,6 +10,8 @@
 
 open Univ
 
+type origin = Names.GlobRef.t
+
 (** {6 Graphs of universes. } *)
 type t
 type universes = t
@@ -36,8 +38,8 @@ val check_eq_instances : Instance.t check_function
   universes graph. It raises the exception [UniverseInconsistency] if the
   constraints are not satisfiable. *)
 
-val enforce_constraint : univ_constraint -> t -> t
-val merge_constraints : Constraint.t -> t -> t
+val enforce_constraint : ?orig:origin -> univ_constraint -> t -> t
+val merge_constraints : ?orig:origin -> Constraint.t -> t -> t
 
 val check_constraint  : t -> univ_constraint -> bool
 val check_constraints : Constraint.t -> t -> bool
