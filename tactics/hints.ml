@@ -734,8 +734,6 @@ module Hintdbmap = String.Map
 
 type hint_db = Hint_db.t
 
-type hint_db_table = hint_db Hintdbmap.t ref
-
 (** Initially created hint databases, for typeclasses and rewrite *)
 
 let typeclasses_db = "typeclass_instances"
@@ -746,8 +744,8 @@ let auto_init_db =
     (Hintdbmap.add rewrite_db (Hint_db.empty cst_full_transparent_state true)
        Hintdbmap.empty)
 
-let searchtable : hint_db_table = ref auto_init_db
-let statustable = ref KNmap.empty
+let searchtable = Summary.ref ~name:"searchtable" auto_init_db
+let statustable = Summary.ref ~name:"statustable" KNmap.empty
 
 let searchtable_map name =
   Hintdbmap.find name !searchtable
@@ -760,20 +758,6 @@ let current_pure_db () = List.map snd (current_db ())
 
 let error_no_such_hint_database x =
   user_err ~hdr:"Hints" (str "No such Hint database: " ++ str x ++ str ".")
-
-(**************************************************************************)
-(*                       Definition of the summary                        *)
-(**************************************************************************)
-
-let init     () =
-  searchtable := auto_init_db; statustable := KNmap.empty
-let freeze   _ = (!searchtable, !statustable)
-let unfreeze (fs, st) = searchtable := fs; statustable := st
-
-let _ = Summary.declare_summary "search"
-	  { Summary.freeze_function   = freeze;
-	    Summary.unfreeze_function = unfreeze;
-	    Summary.init_function     = init }
 
 (**************************************************************************)
 (*             Auxiliary functions to prepare AUTOHINT objects            *)
