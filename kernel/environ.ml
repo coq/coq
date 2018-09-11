@@ -353,35 +353,35 @@ let map_universes f env =
 let set_universes env u =
   { env with env_stratification = { env.env_stratification with env_universes = u } }
 
-let add_constraints c env =
+let add_constraints ?orig c env =
   if Univ.Constraint.is_empty c then env
-  else map_universes (UGraph.merge_constraints c) env
+  else map_universes (UGraph.merge_constraints ?orig c) env
 
 let check_constraints c env =
   UGraph.check_constraints c env.env_stratification.env_universes
 
-let push_constraints_to_env (_,univs) env =
-  add_constraints univs env
+let push_constraints_to_env ?orig (_,univs) env =
+  add_constraints ?orig univs env
 
-let add_universes strict ctx g =
+let add_universes ?orig strict ctx g =
   let g = Array.fold_left
 	    (* Be lenient, module typing reintroduces universes and constraints due to includes *)
 	    (fun g v -> try UGraph.add_universe v strict g with UGraph.AlreadyDeclared -> g)
 	    g (Univ.Instance.to_array (Univ.UContext.instance ctx))
   in
-    UGraph.merge_constraints (Univ.UContext.constraints ctx) g
+    UGraph.merge_constraints ?orig (Univ.UContext.constraints ctx) g
 			   
-let push_context ?(strict=false) ctx env =
-  map_universes (add_universes strict ctx) env
+let push_context ?orig ?(strict=false) ctx env =
+  map_universes (add_universes ?orig strict ctx) env
 
-let add_universes_set strict ctx g =
+let add_universes_set ?orig strict ctx g =
   let g = Univ.LSet.fold
 	    (fun v g -> try UGraph.add_universe v strict g with UGraph.AlreadyDeclared -> g)
 	    (Univ.ContextSet.levels ctx) g
-  in UGraph.merge_constraints (Univ.ContextSet.constraints ctx) g
+  in UGraph.merge_constraints ?orig (Univ.ContextSet.constraints ctx) g
 
-let push_context_set ?(strict=false) ctx env =
-  map_universes (add_universes_set strict ctx) env
+let push_context_set ?orig ?(strict=false) ctx env =
+  map_universes (add_universes_set ?orig strict ctx) env
 
 let set_engagement c env = (* Unsafe *)
   { env with env_stratification =

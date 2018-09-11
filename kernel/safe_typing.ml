@@ -260,17 +260,17 @@ type constraints_addition =
   | Now of bool * Univ.ContextSet.t
   | Later of Univ.ContextSet.t Future.computation
 
-let add_constraints cst senv =
+let add_constraints ?orig cst senv =
   match cst with
   | Later fc -> 
     {senv with future_cst = fc :: senv.future_cst}
   | Now (poly,cst) ->
   { senv with
-    env = Environ.push_context_set ~strict:(not poly) cst senv.env;
+    env = Environ.push_context_set ?orig ~strict:(not poly) cst senv.env;
     univ = Univ.ContextSet.union cst senv.univ }
 
-let add_constraints_list cst senv =
-  List.fold_left (fun acc c -> add_constraints c acc) senv cst
+let add_constraints_list ?orig cst senv =
+  List.fold_left (fun acc c -> add_constraints ?orig c acc) senv cst
 
 let push_context_set poly ctx = add_constraints (Now (poly,ctx))
 let push_context poly ctx = add_constraints (Now (poly,Univ.ContextSet.of_context ctx))
@@ -439,6 +439,11 @@ type generic_name =
   | M (** name already known, cf the mod_mp field *)
   | MT (** name already known, cf the mod_mp field *)
 
+let orig_of_generic = function
+  | C n -> Some (GlobRef.ConstRef n)
+  | I n -> Some (GlobRef.IndRef (n,0))
+  | M | MT -> None
+
 let add_field ((l,sfb) as field) gn senv =
   let mlabs,olabs = match sfb with
     | SFBmind mib ->
@@ -450,7 +455,7 @@ let add_field ((l,sfb) as field) gn senv =
       check_modlabel l senv; (Label.Set.singleton l, Label.Set.empty)
   in
   let cst = constraints_of_sfb senv.env sfb in
-  let senv = add_constraints_list cst senv in
+  let senv = add_constraints_list ?orig:(orig_of_generic gn) cst senv in
   let env' = match sfb, gn with
     | SFBconst cb, C con -> Environ.add_constant con cb senv.env
     | SFBmind mib, I mind -> Environ.add_mind mind mib senv.env

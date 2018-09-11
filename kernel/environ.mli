@@ -256,13 +256,14 @@ val lookup_modtype : ModPath.t -> env -> module_type_body
 (** Add universe constraints to the environment.
     @raise UniverseInconsistency .
 *)
-val add_constraints : Univ.Constraint.t -> env -> env
+val add_constraints : ?orig:UGraph.origin -> Univ.Constraint.t -> env -> env
 
 (** Check constraints are satifiable in the environment. *)
 val check_constraints : Univ.Constraint.t -> env -> bool
-val push_context : ?strict:bool -> Univ.UContext.t -> env -> env
-val push_context_set : ?strict:bool -> Univ.ContextSet.t -> env -> env
-val push_constraints_to_env : 'a Univ.constrained -> env -> env
+val push_context : ?orig:UGraph.origin -> ?strict:bool -> Univ.UContext.t -> env -> env
+val push_context_set : ?orig:UGraph.origin -> ?strict:bool -> Univ.ContextSet.t -> env -> env
+val push_constraints_to_env : ?orig:UGraph.origin -> 'a Univ.constrained -> env -> env
+[@@@ocaml.deprecated "Use push_context_set"]
 
 val set_engagement : engagement -> env -> env
 val set_typing_flags : typing_flags -> env -> env
