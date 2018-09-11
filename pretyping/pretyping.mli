@@ -122,11 +122,3 @@ val pretype_type :
 val ise_pretype_gen :
   inference_flags -> env -> evar_map ->
   ltac_var_map -> typing_constraint -> glob_constr -> evar_map * constr * types
-
-(**/**)
-
-(** To embed constr in glob_constr *)
-
-val register_constr_interp0 :
-  ('r, 'g, 't) Genarg.genarg_type ->
-    (unbound_ltac_var_map -> env -> evar_map -> types -> 'g -> constr * evar_map) -> unit

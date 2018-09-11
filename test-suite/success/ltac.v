@@ -348,3 +348,32 @@ symmetry in H.
 match goal with h:_ |- _ => assert (h=h) end. (* h should be H0 *)
 exact (eq_refl H0).
 Abort.
+
+(* Check that internal names used in "match" compilation to push "term
+   to match" on the environment are not interpreted as ltac variables *)
+
+Module ToMatchNames.
+Ltac g c := let r := constr:(match c return _ with a => 1 end) in idtac.
+Goal True.
+g 1.
+Abort.
+End ToMatchNames.
+
+(* An example where internal names used to build the return predicate
+   (here "n" because "a" is bound to "nil" and "n" is the first letter
+   of "nil") by small inversion should be taken distinct from Ltac names. *)
+
+Module LtacNames.
+Inductive t (A : Type) : nat -> Type :=
+    nil : t A 0 | cons : A -> forall n : nat, t A n -> t A (S n).
+
+Ltac f a n :=
+  let x := constr:(match a with nil _ => true | cons _ _ _ _ => I end) in
+  assert (x=x/\n=n).
+
+Goal forall (y:t nat 0), True.
+intros.
+f y true.
+Abort.
+
+End LtacNames.

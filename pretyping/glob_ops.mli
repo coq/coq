@@ -101,5 +101,4 @@ val glob_constr_of_cases_pattern : 'a cases_pattern_g -> 'a glob_constr_g
 
 val add_patterns_for_params_remove_local_defs : constructor -> 'a cases_pattern_g list -> 'a cases_pattern_g list
 
-val ltac_interp_name : Ltac_pretype.ltac_var_map -> Name.t -> Name.t
 val empty_lvar : Ltac_pretype.ltac_var_map

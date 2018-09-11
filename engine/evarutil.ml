@@ -284,8 +284,8 @@ type csubst = {
   csubst_rev : subst_val Id.Map.t;
   (** Reverse mapping of the substitution *)
 }
-(** This type represent a name substitution for the named and De Bruijn parts of
-    a environment. For efficiency we also store the reverse substitution.
+(** This type represents a name substitution for the named and De Bruijn parts of
+    an environment. For efficiency we also store the reverse substitution.
     Invariant: all identifiers in the codomain of [csubst_var] and [csubst_rel]
     must be pairwise distinct. *)
 
