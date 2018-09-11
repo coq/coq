@@ -296,7 +296,10 @@ let unif_EQ_args env sigma pa a =
   prof_unif_eq_args.profile (unif_EQ_args env sigma pa) a 
 ;;
 
-let unif_HO env ise p c = Evarconv.the_conv_x env p c ise
+let unif_HO env ise p c =
+  try Evarconv.the_conv_x env p c ise
+  with Evarconv.UnableToUnify(ise, err) ->
+    raise Pretype_errors.(PretypeError(env,ise,CannotUnify(p,c,Some err)))
 
 let unif_HO_args env ise0 pa i ca =
   let n = Array.length pa in
