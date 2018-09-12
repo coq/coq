@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2018-09-05-V1"
+# CACHEKEY: "bionic_coq-V2018-09-20-V2"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -7,13 +7,19 @@ LABEL maintainer="e@x80.org"
 ENV DEBIAN_FRONTEND="noninteractive"
 
 RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
+        # Dependencies of the image, the test-suite and external projects
         m4 automake autoconf time wget rsync git gcc-multilib opam \
+        # Dependencies of lablgtk (for CoqIDE)
         libgtk2.0-dev libgtksourceview2.0-dev \
-        texlive-latex-extra texlive-fonts-recommended texlive-science tipa \
-        python3-sphinx python3-pexpect python3-sphinx-rtd-theme python3-bs4 python3-sphinxcontrib.bibtex \
-        python3-setuptools python3-wheel python3-pip
+        # Dependencies of stdlib and sphinx doc
+        texlive-latex-extra texlive-fonts-recommended texlive-xetex latexmk \
+        xindy python3-pip python3-setuptools python3-pexpect python3-bs4 \
+        # Dependencies of source-doc and coq-makefile
+        texlive-science tipa
 
-RUN pip3 install antlr4-python3-runtime
+# More dependencies of the sphinx doc
+RUN pip3 install sphinx==1.7.8 sphinx_rtd_theme==0.2.5b2 \
+                 antlr4-python3-runtime==4.7.1 sphinxcontrib-bibtex==0.4.0
 
 # Basic OPAM setup
 ENV NJOBS="2" \

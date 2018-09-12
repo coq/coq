@@ -28,18 +28,18 @@ To produce the complete documentation in HTML, you will need Coq dependencies
 listed in [`INSTALL`](../INSTALL). Additionally, the Sphinx-based
 reference manual requires Python 3, and the following Python packages:
 
-    sphinx sphinx_rtd_theme beautifulsoup4 antlr4-python3-runtime pexpect sphinxcontrib-bibtex
+  - sphinx >= 1.7.8
+  - sphinx_rtd_theme >= 0.2.5b2
+  - beautifulsoup4 >= 4.0.6
+  - antlr4-python3-runtime >= 4.7.1
+  - pexpect >= 4.2.1
+  - sphinxcontrib-bibtex >= 0.4.0
 
-You can install them using `pip3 install` or using your distribution's package
-manager. E.g. under recent Debian-based operating systems (Debian 10 "Buster",
-Ubuntu 18.04, ...) you can use:
+To install them, you should first install pip and setuptools (for instance,
+with `apt install python3-pip python3-setuptools` on Debian / Ubuntu) then run:
 
-    apt install python3-sphinx python3-pexpect python3-sphinx-rtd-theme \
-                python3-bs4 python3-sphinxcontrib.bibtex python3-pip
-
-Then, install the missing Python3 Antlr4 package:
-
-    pip3 install antlr4-python3-runtime
+    pip3 install sphinx sphinx_rtd_theme beautifulsoup4 antlr4-python3-runtime \
+                 pexpect sphinxcontrib-bibtex
 
 Nix users should get the correct development environment to build the
 HTML documentation from Coq's [`default.nix`](../default.nix) (note this
@@ -54,10 +54,19 @@ additional tools are required:
   - pdflatex
   - dvips
   - makeindex
+  - xelatex
+  - latexmk
+  - xindy
 
-Install them using your package manager. E.g. on Debian / Ubuntu:
+All of them are part of the TexLive distribution. E.g. on Debian / Ubuntu,
+install them with:
 
-    apt install texlive-latex-extra texlive-fonts-recommended
+    apt install texlive-full
+
+Or if you want to use less disk space:
+
+    apt install texlive-latex-extra texlive-fonts-recommended texlive-xetex \
+                latexmk xindy
 
 Compilation
 -----------

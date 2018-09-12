@@ -23,8 +23,8 @@
 
 { pkgs ?
     (import (fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/4477cf04b6779a537cdb5f0bd3dd30e75aeb4a3b.tar.gz";
-      sha256 = "1i39wsfwkvj9yryj8di3jibpdg3b3j86ych7s9rb6z79k08yaaxc";
+      url = "https://github.com/NixOS/nixpkgs/archive/947ae71dcec680b5075ece14e38eae64831b9819.tar.gz";
+      sha256 = "15nryymfch4fzxk6nacli4gw4cyicpdjwzai5v3bc0azaslww2x5";
     }) {})
 , ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_06
 , buildIde ? true
@@ -37,18 +37,6 @@
 
 with pkgs;
 with stdenv.lib;
-
-let dune =
-  overrideDerivation jbuilder (o: {
-    name = "dune-1.1.1";
-    src = fetchFromGitHub {
-      owner = "ocaml";
-      repo = "dune";
-      rev = "1.1.1";
-      sha256 = "0v2pnxpmqsvrvidpwxvbsypzhqfdnjs5crjp9y61qi8nyj8d75zw";
-    };
-  });
-in
 
 stdenv.mkDerivation rec {
 
