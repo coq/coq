@@ -127,14 +127,14 @@ clean:
 	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log> <**/*.glob>'
 	$(HIDE)find . \( \
 	  -name '*.stamp' -o -name '*.vo' -o -name '*.vio' -o -name '*.log' -o -name '*.glob' \
-	  \) -print0 | xargs -0 rm -f
+	  \) -exec rm -f {} +
 	$(SHOW) 'RM        <**/*.cmx> <**/*.cmi> <**/*.o> <**/*.test>'
 	$(HIDE)find unit-tests \( \
 	  -name '*.cmx' -o -name '*.cmi' -o -name '*.o' -o -name '*.test' \
-	  \) -print0 | xargs -0 rm -f
+	  \) -exec rm -f {} +
 distclean: clean
 	$(SHOW) 'RM        <**/*.aux>'
-	$(HIDE)find . -name '*.aux' -print0 | xargs -0 rm -f
+	$(HIDE)find . -name '*.aux' -exec rm -f {} +
 
 #######################################################################
 # Per-subsystem targets
