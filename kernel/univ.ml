@@ -954,6 +954,8 @@ struct
   let repr (inst, cst) =
     (Array.mapi (fun i l -> Level.var i) inst, cst)
 
+  let pr f ?variance ctx = pr f ?variance (repr ctx)
+
   let instantiate inst (u, cst) =
     assert (Array.length u = Array.length inst);
     subst_instance_constraints inst cst
