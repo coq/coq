@@ -1002,19 +1002,13 @@ let pr_assumptionset env sigma s =
     ] in
     prlist_with_sep fnl (fun x -> x) (Option.List.flatten assums)
 
-let xor a b = 
-  (a && not b) || (not a && b)
-
 let pr_cumulative poly cum =
   if poly then
     if cum then str "Cumulative " else str "NonCumulative "
   else mt ()
 
-let pr_polymorphic b = 
-  let print = xor (Flags.is_universe_polymorphism ()) b in
-  if print then
-    if b then str"Polymorphic " else str"Monomorphic "
-  else mt ()
+let pr_polymorphic b =
+  if b then str"Polymorphic " else str"Monomorphic "
 
 (* print the proof step, possibly with diffs highlighted, *)
 let print_and_diff oldp newp =
