@@ -444,11 +444,16 @@ not its name, one usually uses “arrow” abstractions for prenex
 arguments, or the ``(_ : term)`` syntax for inner arguments. In |SSR|,
 the latter can be replaced by the open syntax ``of term`` or
 (equivalently) ``& term``, which are both syntactically equivalent to a
-``(_ : term)`` expression.
+``(_ : term)`` expression. This feature almost behaves as the
+following extension of the binder syntax:
 
-For instance, the usual two-constructor polymorphic type list, i.e.
-the one of the standard List library, can be defined by the following
-declaration:
+.. prodn::
+   binder += & @term | of @term
+
+Caveat: ``& T`` and ``of T`` abbreviations have to appear at the end
+of a binder list. For instance, the usual two-constructor polymorphic
+type list, i.e. the one of the standard ``List`` library, can be
+defined by the following declaration:
 
 .. example::
 
@@ -5387,7 +5392,7 @@ Tacticals
 
 discharge :ref:`discharge_ssr`
 
-.. prodn:: tactic += @tacitc => {+ @i_item }
+.. prodn:: tactic += @tactic => {+ @i_item }
 
 introduction see :ref:`introduction_ssr`
 
