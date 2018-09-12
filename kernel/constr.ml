@@ -503,7 +503,79 @@ let fold_constr_with_binders g f n acc c =
    not recursive and the order with which subterms are processed is
    not specified *)
 
-let map f c = match kind c with
+let rec map_under_context f n d =
+  if n = 0 then f d else
+  match kind d with
+  | LetIn (na,b,t,c) ->
+    let b' = f b in
+    let t' = f t in
+    let c' = map_under_context f (n-1) c in
+    if b' == b && t' == t && c' == c then d
+    else mkLetIn (na,b',t',c')
+  | Lambda (na,t,b) ->
+    let t' = f t in
+    let b' = map_under_context f (n-1) b in
+    if t' == t && b' == b then d
+    else mkLambda (na,t',b')
+  | _ -> CErrors.anomaly (Pp.str "Ill-formed context")
+
+let map_branches f ci bl =
+  let nl = Array.map List.length ci.ci_pp_info.cstr_tags in
+  let bl' = Array.map2 (map_under_context f) nl bl in
+  if Array.for_all2 (==) bl' bl then bl else bl'
+
+let map_return_predicate f ci p =
+  map_under_context f (List.length ci.ci_pp_info.ind_tags) p
+
+let rec map_under_context_with_binders g f l n d =
+  if n = 0 then f l d else
+  match kind d with
+  | LetIn (na,b,t,c) ->
+      let b' = f l b in
+      let t' = f l t in
+      let c' = map_under_context_with_binders g f (g l) (n-1) c in
+      if b' == b && t' == t && c' == c then d
+      else mkLetIn (na,b',t',c')
+  | Lambda (na,t,b) ->
+      let t' = f l t in
+      let b' = map_under_context_with_binders g f (g l) (n-1) b in
+      if t' == t && b' == b then d
+      else mkLambda (na,t',b')
+  | _ -> CErrors.anomaly (Pp.str "Ill-formed context")
+
+let map_branches_with_binders g f l ci bl =
+  let tags = Array.map List.length ci.ci_pp_info.cstr_tags in
+  let bl' = Array.map2 (map_under_context_with_binders g f l) tags bl in
+  if Array.for_all2 (==) bl' bl then bl else bl'
+
+let map_return_predicate_with_binders g f l ci p =
+  map_under_context_with_binders g f l (List.length ci.ci_pp_info.ind_tags) p
+
+let rec map_under_context_with_full_binders g f l n d =
+  if n = 0 then f l d else
+    match kind d with
+    | LetIn (na,b,t,c) ->
+       let b' = f l b in
+       let t' = f l t in
+       let c' = map_under_context_with_full_binders g f (g (Context.Rel.Declaration.LocalDef (na,b,t)) l) (n-1) c in
+       if b' == b && t' == t && c' == c then d
+       else mkLetIn (na,b',t',c')
+    | Lambda (na,t,b) ->
+       let t' = f l t in
+       let b' = map_under_context_with_full_binders g f (g (Context.Rel.Declaration.LocalAssum (na,t)) l) (n-1) b in
+       if t' == t && b' == b then d
+       else mkLambda (na,t',b')
+    | _ -> CErrors.anomaly (Pp.str "Ill-formed context")
+
+let map_branches_with_full_binders g f l ci bl =
+  let tags = Array.map List.length ci.ci_pp_info.cstr_tags in
+  let bl' = Array.map2 (map_under_context_with_full_binders g f l) tags bl in
+  if Array.for_all2 (==) bl' bl then bl else bl'
+
+let map_return_predicate_with_full_binders g f l ci p =
+  map_under_context_with_full_binders g f l (List.length ci.ci_pp_info.ind_tags) p
+
+let map_gen userview f c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> c
   | Cast (b,k,t) ->
@@ -540,6 +612,12 @@ let map f c = match kind c with
       let l' = Array.Smart.map f l in
       if l'==l then c
       else mkEvar (e, l')
+  | Case (ci,p,b,bl) when userview ->
+      let b' = f b in
+      let p' = map_return_predicate f ci p in
+      let bl' = map_branches f ci bl in
+      if b'==b && p'==p && bl'==bl then c
+      else mkCase (ci, p', b', bl')
   | Case (ci,p,b,bl) ->
       let b' = f b in
       let p' = f p in
@@ -556,6 +634,9 @@ let map f c = match kind c with
       let bl' = Array.Smart.map f bl in
       if tl'==tl && bl'==bl then c
       else mkCoFix (ln,(lna,tl',bl'))
+
+let map_user_view = map_gen true
+let map = map_gen false
 
 (* Like {!map} but with an accumulator. *)
 

@@ -381,6 +381,85 @@ type rel_context = rel_declaration list
 type named_context = named_declaration list
 type compacted_context = compacted_declaration list
 
+(** {6 Functionals working on expressions canonically abstracted over
+       a local context (possibly with let-ins) *)
+
+(** [map_under_context f l c] maps [f] on the immediate subterms of a
+    term abstracted over a context of length [n] (local definitions
+    are counted) *)
+
+val map_under_context : (constr -> constr) -> int -> constr -> constr
+
+(** [map_branches f br] maps [f] on the immediate subterms of an array
+   of "match" branches [br] in canonical eta-let-expanded form; it is
+   not recursive and the order with which subterms are processed is
+   not specified; it preserves sharing; the immediate subterms are the
+   types and possibly terms occurring in the context of each branch as
+   well as the body of each branch *)
+
+val map_branches : (constr -> constr) -> case_info -> constr array -> constr array
+
+(** [map_return_predicate f p] maps [f] on the immediate subterms of a
+   return predicate of a "match" in canonical eta-let-expanded form;
+   it is not recursive and the order with which subterms are processed
+   is not specified; it preserves sharing; the immediate subterms are
+   the types and possibly terms occurring in the context of each
+   branch as well as the body of the predicate *)
+
+val map_return_predicate : (constr -> constr) -> case_info -> constr -> constr
+
+(** [map_under_context_with_binders g f n l c] maps [f] on the
+    immediate subterms of a term abstracted over a context of length
+    [n] (local definitions are counted); it preserves sharing; it
+    carries an extra data [n] (typically a lift index) which is
+    processed by [g] (which typically add 1 to [n]) at each binder
+    traversal *)
+
+val map_under_context_with_binders : ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> int -> constr -> constr
+
+(** [map_branches_with_binders f br] maps [f] on the immediate
+   subterms of an array of "match" branches [br] in canonical
+   eta-let-expanded form; it carries an extra data [n] (typically a
+   lift index) which is processed by [g] (which typically adds 1 to
+   [n]) at each binder traversal; it is not recursive and the order
+   with which subterms are processed is not specified; it preserves
+   sharing; the immediate subterms are the types and possibly terms
+   occurring in the context of the branch as well as the body of the
+   branch *)
+
+val map_branches_with_binders : ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> case_info -> constr array -> constr array
+
+(** [map_return_predicate_with_binders f p] maps [f] on the immediate
+   subterms of a return predicate of a "match" in canonical
+   eta-let-expanded form; it carries an extra data [n] (typically a
+   lift index) which is processed by [g] (which typically adds 1 to
+   [n]) at each binder traversal; it is not recursive and the order
+   with which subterms are processed is not specified; it preserves
+   sharing; the immediate subterms are the types and possibly terms
+   occurring in the context of each branch as well as the body of the
+   predicate *)
+
+val map_return_predicate_with_binders : ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> case_info -> constr -> constr
+
+(** [map_under_context_with_full_binders g f n l c] is similar to
+    [map_under_context_with_binders] except that [g] takes also a full
+    binder as argument and that only the number of binders (and not
+    their signature) is required *)
+
+val map_under_context_with_full_binders : ((constr, constr) Context.Rel.Declaration.pt -> 'a -> 'a) -> ('a -> constr -> constr) -> 'a -> int -> constr -> constr
+
+(** [map_branches_with_full_binders g f l br] is equivalent to
+   [map_branches_with_binders] but using
+   [map_under_context_with_full_binders] *)
+
+val map_branches_with_full_binders : ((constr, constr) Context.Rel.Declaration.pt -> 'a -> 'a) -> ('a -> constr -> constr) -> 'a -> case_info -> constr array -> constr array
+
+(** [map_return_predicate_with_full_binders g f l p] is equivalent to
+   [map_return_predicate_with_binders] but using
+   [map_under_context_with_full_binders] *)
+
+val map_return_predicate_with_full_binders : ((constr, constr) Context.Rel.Declaration.pt -> 'a -> 'a) -> ('a -> constr -> constr) -> 'a -> case_info -> constr -> constr
+
 (** {6 Functionals working on the immediate subterm of a construction } *)
 
 (** [fold f acc c] folds [f] on the immediate subterms of [c]
@@ -394,6 +473,13 @@ val fold : ('a -> constr -> 'a) -> 'a -> constr -> 'a
    not specified *)
 
 val map : (constr -> constr) -> constr -> constr
+
+(** [map_user_view f c] maps [f] on the immediate subterms of [c]; it
+   differs from [map f c] in that the typing context and body of the
+   return predicate and of the branches of a [match] are considered as
+   immediate subterm of a [match] *)
+
+val map_user_view : (constr -> constr) -> constr -> constr
 
 (** Like {!map}, but also has an additional accumulator. *)
 

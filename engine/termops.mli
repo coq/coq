@@ -63,6 +63,10 @@ val map_constr_with_full_binders :
   Evd.evar_map ->
   (rel_declaration -> 'a -> 'a) ->
   ('a -> constr -> constr) -> 'a -> constr -> constr
+val map_constr_with_full_binders_user_view :
+  Evd.evar_map ->
+  (rel_declaration -> 'a -> 'a) ->
+  ('a -> constr -> constr) -> 'a -> constr -> constr
 
 (** [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
    subterms of [c] starting from [acc] and proceeding from left to

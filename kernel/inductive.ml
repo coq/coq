@@ -932,7 +932,7 @@ let check_one_fix renv recpos trees def =
             let case_spec = branches_specif renv 
 	      (lazy_subterm_specif renv [] c_0) ci in
 	    let stack' = push_stack_closures renv l stack in
-        let stack' = filter_stack_domain renv.env p stack' in
+            let stack' = filter_stack_domain renv.env p stack' in
               Array.iteri (fun k br' -> 
 			     let stack_br = push_stack_args case_spec.(k) stack' in
 			     check_rec_call renv stack_br br') lrest
