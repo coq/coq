@@ -107,7 +107,7 @@ mode but it can also be used in toplevel definitions as shown below.
                      : | solve [ `expr` | ... | `expr` ]
                      : | idtac [ `message_token` ... `message_token`]
                      : | fail [`natural`] [`message_token` ... `message_token`]
-                     : | fresh | fresh `string` | fresh `qualid`
+                     : | fresh [ `component` … `component` ]
                      : | context `ident` [`term`]
                      : | eval `redexpr` in `term`
                      : | type of `term`
@@ -125,6 +125,7 @@ mode but it can also be used in toplevel definitions as shown below.
                      : | ()
                      : | `integer`
                      : | ( `expr` )
+   component : `string` | `qualid`
    message_token     : `string` | `ident` | `integer`
    tacarg            : `qualid`
                      : | ()
@@ -939,11 +940,9 @@ expression returns an identifier:
 .. tacn:: fresh {* component}
 
    It evaluates to an identifier unbound in the goal. This fresh identifier
-   is obtained by concatenating the value of the :n:`@component`s (each of them
+   is obtained by concatenating the value of the :n:`@component`\ s (each of them
    is, either a :n:`@qualid` which has to refer to a (unqualified) name, or
    directly a name denoted by a :n:`@string`).
-
-   .. I don't understand this component thing. Couldn't we give the grammar?
 
    If the resulting name is already used, it is padded with a number so that it
    becomes fresh. If no component is given, the name is a fresh derivative of
