@@ -280,7 +280,7 @@ let typecheck_inductive env mie =
     List.fold_left
       (fun (env_ar,l) ind ->
          (* Arities (without params) are typed-checked here *)
-	 let expltype = ind.mind_entry_template in
+         let template = ind.mind_entry_template in
          let arity =
 	   if isArity ind.mind_entry_arity then
 	     let (ctx,s) = dest_arity env_params ind.mind_entry_arity in
@@ -316,7 +316,7 @@ let typecheck_inductive env mie =
 	 let env_ar' =
            push_rel (LocalAssum (Name id, full_arity)) env_ar in
              (* (add_constraints cst2 env_ar) in *)
-	   (env_ar', (id,full_arity,sign @ paramsctxt,expltype,deflev,inflev)::l))
+           (env_ar', (id,full_arity,sign @ paramsctxt,template,deflev,inflev)::l))
       (env',[])
       mie.mind_entry_inds in
 
@@ -343,7 +343,7 @@ let typecheck_inductive env mie =
   (* Compute/check the sorts of the inductive types *)
 
   let inds =
-    Array.map (fun ((id,full_arity,sign,expltype,def_level,inf_level),cn,lc,clev)  ->
+    Array.map (fun ((id,full_arity,sign,template,def_level,inf_level),cn,lc,clev)  ->
       let infu = 
 	(** Inferred level, with parameters and constructors. *)
 	match inf_level with
@@ -369,31 +369,34 @@ let typecheck_inductive env mie =
 	  RegularArity (not is_natural,full_arity,defu)
       in
       let template_polymorphic () =
-	let sign, s =
+        let _, s =
           try dest_arity env full_arity
           with NotArity -> raise (InductiveError (NotAnArity (env, full_arity)))
-	in
-	  match s with
-	  | Type u when expltype (* Explicitly polymorphic *) ->
-	    (* The polymorphic level is a function of the level of the *)
-	    (* conclusions of the parameters *)
-            (* We enforce [u >= lev] in case [lev] has a strict upper *)
-            (* constraints over [u] *)
-	    let b = type_in_type env || UGraph.check_leq (universes env') infu u in
-	      if not b then
-		anomaly ~label:"check_inductive" 
-		  (Pp.str"Incorrect universe " ++
-		     Universe.pr u ++ Pp.str " declared for inductive type, inferred level is "
-		   ++ Universe.pr clev ++ Pp.str ".")
-	      else
-		TemplateArity (param_ccls paramsctxt, infu)
-	  | _ (* Not an explicit occurrence of Type *) ->
-	    full_polymorphic ()
+        in
+        let u = Sorts.univ_of_sort s in
+        (* The polymorphic level is a function of the level of the *)
+        (* conclusions of the parameters *)
+        (* We enforce [u >= lev] in case [lev] has a strict upper *)
+        (* constraints over [u] *)
+        let b = type_in_type env || UGraph.check_leq (universes env') infu u in
+        if not b then
+          anomaly ~label:"check_inductive"
+            (Pp.str"Incorrect universe " ++
+             Universe.pr u ++ Pp.str " declared for inductive type, inferred level is "
+             ++ Universe.pr clev ++ Pp.str ".")
+        else
+          TemplateArity (param_ccls paramsctxt, infu)
       in
       let arity =
         match mie.mind_entry_universes with
-        | Monomorphic_ind_entry _ -> template_polymorphic ()
-        | Polymorphic_ind_entry _ | Cumulative_ind_entry _ -> full_polymorphic ()
+        | Monomorphic_ind_entry _ ->
+          if template then template_polymorphic ()
+          else full_polymorphic ()
+        | Polymorphic_ind_entry _ | Cumulative_ind_entry _ ->
+          if template
+          then anomaly ~label:"polymorphic_template_ind"
+              Pp.(strbrk "Template polymorphism and full polymorphism are incompatible.")
+          else full_polymorphic ()
       in
 	(id,cn,lc,(sign,arity)))
     inds

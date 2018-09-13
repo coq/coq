@@ -1025,8 +1025,26 @@ the Type hierarchy.
 Template polymorphism
 +++++++++++++++++++++
 
-Inductive types declared in :math:`\Type` are polymorphic over their arguments
-in :math:`\Type`. If :math:`A` is an arity of some sort and :math:`s` is a sort, we write :math:`A_{/s}`
+Inductive types can be made polymorphic over their arguments
+in :math:`\Type`.
+
+.. opt:: Auto Template Polymorphism
+
+  This option, enabled by default, makes every inductive type declared
+  at level :math:`Type` (without annotations or hiding it behind a
+  definition) template polymorphic.
+
+  This can be prevented using the ``notemplate`` attribute.
+
+  An inductive type can be forced to be template polymorphic using the
+  ``template`` attribute.
+
+  Template polymorphism and universe polymorphism (see Chapter
+  :ref:`polymorphicuniverses`) are incompatible, so if the later is
+  enabled it will prevail over automatic template polymorphism and
+  cause an error when using the ``template`` attribute.
+
+If :math:`A` is an arity of some sort and :math:`s` is a sort, we write :math:`A_{/s}`
 for the arity obtained from :math:`A` by replacing its sort with :math:`s`.
 Especially, if :math:`A` is well-typed in some global environment and local
 context, then :math:`A_{/s}` is typable by typability of all products in the

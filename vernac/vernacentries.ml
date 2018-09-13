@@ -555,7 +555,7 @@ let should_treat_as_uniform () =
   then ComInductive.UniformParameters
   else ComInductive.NonUniformParameters
 
-let vernac_record cum k poly finite records =
+let vernac_record ~template cum k poly finite records =
   let is_cumulative = should_treat_as_cumulative cum poly in
   let map ((coe, (id, pl)), binders, sort, nameopt, cfs) =
     let const = match nameopt with
@@ -577,7 +577,7 @@ let vernac_record cum k poly finite records =
     coe, id, pl, binders, cfs, const, sort
   in
   let records = List.map map records in
-  ignore(Record.definition_structure k is_cumulative poly finite records)
+  ignore(Record.definition_structure ~template k is_cumulative poly finite records)
 
 (** When [poly] is true the type is declared polymorphic. When [lo] is true,
     then the type is declared private (as per the [Private] keyword). [finite]
@@ -606,13 +606,14 @@ let vernac_inductive ~atts cum lo finite indl =
   | [ ( id , bl , c , Class _, Constructors [l]), [] ] -> Some (id, bl, c, l)
   | _ -> None
   in
+  let template = atts.template in
   if Option.has_some is_defclass then
     (** Definitional class case *)
     let (id, bl, c, l) = Option.get is_defclass in
     let (coe, (lid, ce)) = l in
     let coe' = if coe then Some true else None in
     let f = (((coe', AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce)), None), []) in
-    vernac_record cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
+    vernac_record ~template cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
   else if List.for_all is_record indl then
     (** Mutual record case *)
     let check_kind ((_, _, _, kind, _), _) = match kind with
@@ -635,7 +636,7 @@ let vernac_inductive ~atts cum lo finite indl =
     let ((_, _, _, kind, _), _) = List.hd indl in
     let kind = match kind with Class _ -> Class false | _ -> kind in
     let recordl = List.map unpack indl in
-    vernac_record cum kind atts.polymorphic finite recordl
+    vernac_record ~template cum kind atts.polymorphic finite recordl
   else if List.for_all is_constructor indl then
     (** Mutual inductive case *)
     let check_kind ((_, _, _, kind, _), _) = match kind with
@@ -661,7 +662,7 @@ let vernac_inductive ~atts cum lo finite indl =
     let indl = List.map unpack indl in
     let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
     let uniform = should_treat_as_uniform () in
-    ComInductive.do_mutual_inductive indl is_cumulative atts.polymorphic lo ~uniform finite
+    ComInductive.do_mutual_inductive ~template indl is_cumulative atts.polymorphic lo ~uniform finite
   else
     user_err (str "Mixed record-inductive definitions are not allowed")
 (*
@@ -2358,6 +2359,14 @@ let attributes_of_flags f atts =
          (Some false, atts)
        | ("polymorphic" | "monomorphic") ->
          user_err Pp.(str "Polymorphism specified twice")
+       | "template" when atts.template = None ->
+         assert_empty k v;
+         polymorphism, { atts with template = Some true }
+       | "notemplate" when atts.template = None ->
+         assert_empty k v;
+         polymorphism, { atts with template = Some false }
+       | "template" | "notemplate" ->
+         user_err Pp.(str "Templateness specified twice")
        | "local" when Option.is_empty atts.locality ->
          assert_empty k v;
          (polymorphism, { atts with locality = Some true })

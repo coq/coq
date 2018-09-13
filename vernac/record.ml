@@ -393,14 +393,14 @@ open Typeclasses
 
 let declare_structure finite ubinders univs paramimpls params template ?(kind=StructureComponent) ?name record_data =
   let nparams = List.length params in
-  let template, ctx =
+  let poly, ctx =
     match univs with
     | Monomorphic_ind_entry ctx ->
-      template, Monomorphic_const_entry Univ.ContextSet.empty
+      false, Monomorphic_const_entry Univ.ContextSet.empty
     | Polymorphic_ind_entry ctx ->
-      false, Polymorphic_const_entry ctx
+      true, Polymorphic_const_entry ctx
     | Cumulative_ind_entry cumi ->
-      false, Polymorphic_const_entry (Univ.CumulativityInfo.univ_context cumi)
+      true, Polymorphic_const_entry (Univ.CumulativityInfo.univ_context cumi)
   in
   let binder_name =
     match name with
@@ -417,6 +417,18 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
     let args = Context.Rel.to_extended_list mkRel nfields params in
     let ind = applist (mkRel (ntypes - i + nparams + nfields), args) in
     let type_constructor = it_mkProd_or_LetIn ind fields in
+    let template =
+      match template with
+      | Some template, _ ->
+        (* templateness explicitly requested *)
+        if poly && template then user_err Pp.(strbrk "template and polymorphism not compatible");
+        template
+      | None, template ->
+        (* auto detect template *)
+        ComInductive.should_auto_template () && template && not poly &&
+        let _, s = Reduction.dest_arity (Global.env()) arity in
+        not (Sorts.is_small s)
+    in
     { mind_entry_typename = id;
       mind_entry_arity = arity;
       mind_entry_template = template;
@@ -441,7 +453,6 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
     let cstr = (rsp, 1) in
     let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name.(i) coers ubinders fieldimpls fields in
     let build = ConstructRef cstr in
-    let poly = match ctx with | Polymorphic_const_entry _ -> true | Monomorphic_const_entry _ -> false in
     let () = if is_coe then Class.try_add_new_coercion build ~local:false poly in
     let () = Recordops.declare_structure(rsp,cstr,List.rev kinds,List.rev sp_projs) in
     rsp
@@ -656,13 +667,14 @@ let extract_record_data records =
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a
    list telling if the corresponding fields must me declared as coercions
    or subinstances. *)
-let definition_structure kind cum poly finite records =
+let definition_structure kind ~template cum poly finite records =
   let () = check_unique_names records in
   let () = check_priorities kind records in
   let pl, ps, data = extract_record_data records in
-  let pl, univs, template, params, implpars, data =
+  let pl, univs, auto_template, params, implpars, data =
     States.with_state_protection (fun () ->
-      typecheck_params_and_fields finite (kind = Class true) poly pl ps data) () in
+        typecheck_params_and_fields finite (kind = Class true) poly pl ps data) () in
+  let template = template, auto_template in
   match kind with
   | Class def ->
     let (_, id, _, _, cfs, idbuild, _), (arity, implfs, fields) = match records, data with
