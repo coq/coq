@@ -356,6 +356,9 @@ function build_prep {
     name=$2
   fi
 
+  # Set installer section to not set by default
+  installersection=
+
   # Check if build is already done
   if [ ! -f "$FLAGFILES/$name.finished" ] ; then
     BUILD_PACKAGE_NAME=$name
@@ -381,6 +384,60 @@ function build_prep {
 }
 
 # ------------------------------------------------------------------------------
+# Like build_prep, but gets the data from an entry in ci-basic-overlay.sh
+# This assumes the following definitions exist in ci-basic-overlay.sh
+# $1_CI_REF
+# $1_CI_ARCHIVEURL
+# $1_CI_GITURL
+# ATTENTION: variables in ci-basic-overlay.sh are loaded by load_overlay_data.
+# load_overlay_data is is called at the end of make_coq (even if the build is skipped)
+#
+# Parameters
+# $1 base name of module in ci-basic-overlay.sh, e.g. mathcomp, bignums, ...
+# ------------------------------------------------------------------------------
+
+function build_prep_overlay {
+  urlvar=$1_CI_ARCHIVEURL
+  gitvar=$1_CI_GITURL
+  refvar=$1_CI_REF
+  url=${!urlvar}
+  git=${!gitvar}
+  ref=${!refvar}
+  ver=$(git ls-remote "$git" "refs/heads/$ref" | cut -f 1)
+  if [[ "$ver" == "" ]]; then
+      # $1_CI_REF must have been a tag or hash, not a branch
+      ver="$ref"
+  fi
+  build_prep "$url" "$ver" tar.gz 1 "$1-$ver"
+}
+
+# ------------------------------------------------------------------------------
+# Load overlay version variables from ci-basic-overlay.sh and user-overlays/*.sh
+# ------------------------------------------------------------------------------
+
+function load_overlay_data {
+  if [ -n "${GITLAB_CI+}" ]; then
+    export CI_BRANCH="$CI_COMMIT_REF_NAME"
+    if [[ ${CI_BRANCH#pr-} =~ ^[0-9]*$ ]]; then
+      export CI_PULL_REQUEST="${CI_BRANCH#pr-}"
+    else
+      export CI_PULL_REQUEST=""
+    fi
+  else
+    export CI_BRANCH=""
+    export CI_PULL_REQUEST=""
+    # Used when building 8.8.0 with the latest scripts
+    export TRAVIS_BRANCH=""
+    export TRAVIS_PULL_REQUEST=""
+  fi
+
+  for overlay in /build/user-overlays/*.sh; do
+    . "$overlay"
+  done
+  . /build/ci-basic-overlay.sh
+}
+
+# ------------------------------------------------------------------------------
 # Finalize a module build
 # - create name.finished
 # - go back to base folder
@@ -392,6 +449,7 @@ function build_post {
     touch "$FLAGFILES/$BUILD_PACKAGE_NAME.finished"
     PATH=$BUILD_OLDPATH
     LOGTARGET=other
+    installer_addon_end
   fi
 }
 
@@ -522,6 +580,50 @@ function files_to_nsis {
   tr '/' '\\' < "/build/filelists/$1" | sed -r 's/^\.(.*)\\([^\\]+)$/SetOutPath $INSTDIR\\\1\nFile ${COQ_SRC_PATH}\\\1\\\2/' > "/build/filelists/$1.nsh"
 }
 
+# ------------------------------------------------------------------------------
+# Create an nsis installer addon section
+#
+# parameters
+# $1 identifier of installer section and base name of file list files
+# $2 human readable name of section
+# $3 description of section
+# $4 flags (space separated list of keywords): off = default off
+#
+# $1 must be a valid NSIS identifier!
+# ------------------------------------------------------------------------------
+
+function installer_addon_section {
+  installersection=$1
+  list_files "addon_pre_$installersection"
+
+  echo 'LangString' "DESC_$1" '${LANG_ENGLISH}' "\"$3\"" >> "/build/filelists/addon_strings.nsh"
+
+  echo '!insertmacro MUI_DESCRIPTION_TEXT' '${'"Sec_$1"'}' '$('"DESC_$1"')' >> "/build/filelists/addon_descriptions.nsh"
+
+  local sectionoptions=
+  if [[ "$4" == *off* ]] ; then sectionoptions+=" /o" ; fi
+
+  echo "Section $sectionoptions \"$2\" Sec_$1" >> "/build/filelists/addon_sections.nsh"
+  echo 'SetOutPath "$INSTDIR\"' >> "/build/filelists/addon_sections.nsh"
+  echo '!include "..\..\..\filelists\addon_'"$1"'.nsh"' >> "/build/filelists/addon_sections.nsh"
+  echo 'SectionEnd' >> "/build/filelists/addon_sections.nsh"
+}
+
+# ------------------------------------------------------------------------------
+# Finish an installer section after an addon build
+#
+# This creates the file list files
+#
+# parameters: none
+# ------------------------------------------------------------------------------
+
+function installer_addon_end {
+  if [ -n "$installersection" ]; then
+    list_files "addon_post_$installersection"
+    diff_files "addon_$installersection" "addon_post_$installersection" "addon_pre_$installersection"
+    files_to_nsis "addon_$installersection"
+  fi
+}
 
 ###################### MODULE BUILD FUNCTIONS #####################
 
@@ -1288,6 +1390,8 @@ function make_coq {
 
     build_post
   fi
+
+  load_overlay_data
 }
 
 ##### GNU Make for MinGW #####
@@ -1451,36 +1555,16 @@ function make_coq_installer {
   fi
 }
 
-###################### ADDONS #####################
+###################### ADDON COQ LIBRARIES / PLUGINS / TOOLS #####################
 
 # The bignums library
 # Provides BigN, BigZ, BigQ that used to be part of Coq standard library
 
 function make_addon_bignums {
-  bignums_SHA=$(git ls-remote "$bignums_CI_GITURL" "refs/heads/$bignums_CI_REF" | cut -f 1)
-  if [[ "$bignums_SHA" == "" ]]; then
-      # $bignums_CI_REF must have been a tag / commit and not a branch
-      bignums_SHA="$bignums_CI_REF"
-  fi
-  if build_prep "$bignums_CI_ARCHIVEURL" "$bignums_SHA" zip 1 "bignums-$bignums_SHA"; then
+  if build_prep_overlay bignums; then
+    installer_addon_section bignums "Bignums" "Coq library for fast arbitrary size numbers" ""
     # To make command lines shorter :-(
     echo 'COQ_SRC_SUBDIRS:=$(filter-out plugins/%,$(COQ_SRC_SUBDIRS)) plugins/syntax' >> Makefile.coq.local
-    log1 make all
-    log2 make install
-    build_post
-  fi
-}
-
-# Ltac-2 plugin
-# A new (experimental) tactic language
-
-function make_addon_ltac2 {
-  ltac2_SHA=$(git ls-remote "$ltac2_CI_GITURL" "refs/heads/$ltac2_CI_REF" | cut -f 1)
-  if [[ "$ltac2_SHA" == "" ]]; then
-      # $ltac2_CI_REF must have been a tag / commit and not a branch
-      ltac2_SHA="$ltac2_CI_REF"
-  fi
-  if build_prep "$ltac2_CI_ARCHIVEURL" "$ltac2_SHA" zip 1 "ltac2-$ltac2_SHA"; then
     log1 make all
     log2 make install
     build_post
@@ -1491,12 +1575,8 @@ function make_addon_ltac2 {
 # A function definition plugin
 
 function make_addon_equations {
-  Equations_SHA=$(git ls-remote "$Equations_CI_GITURL" "refs/heads/$Equations_CI_REF" | cut -f 1)
-  if [[ "$Equations_SHA" == "" ]]; then
-      # $Equations_CI_REF must have been a tag / commit and not a branch
-      Equations_SHA="$Equations_CI_REF"
-  fi
-  if build_prep "$Equations_CI_ARCHIVEURL" "$Equations_SHA" zip 1 "Equations-$Equations_SHA"; then
+  if build_prep_overlay Equations; then
+    installer_addon_section equations "Equations" "Coq plugin for defining functions by equations" ""
     # Note: PATH is autmatically saved/restored by build_prep / build_post
     PATH=$COQBIN:$PATH
     logn coq_makefile ${COQBIN}coq_makefile -f _CoqProject -o Makefile
@@ -1506,23 +1586,213 @@ function make_addon_equations {
   fi
 }
 
-function make_addons {
-  if [ -n "$GITLAB_CI" ]; then
-    export CI_BRANCH="$CI_COMMIT_REF_NAME"
-    if [[ ${CI_BRANCH#pr-} =~ ^[0-9]*$ ]]; then
-      export CI_PULL_REQUEST="${CI_BRANCH#pr-}"
-    else
-      export CI_PULL_REQUEST=""
-    fi
-  else
-    export CI_BRANCH=""
-    export CI_PULL_REQUEST=""
-  fi
-  for overlay in /build/user-overlays/*.sh; do
-    . "$overlay"
-  done
-  . /build/ci-basic-overlay.sh
+# mathcomp - ssreflect and mathematical components library
 
+function make_addon_mathcomp {
+  if build_prep_overlay mathcomp; then
+    installer_addon_section mathcomp "Math-Components" "Coq library with mathematical components" ""
+    cd mathcomp
+    log1 make $MAKE_OPT
+    log2 make install
+    build_post
+  fi
+}
+
+# ssreflect part of mathcomp
+
+function make_addon_ssreflect {
+  # if mathcomp addon is requested, build this instead
+  if [[ "$COQ_ADDONS" == *mathcomp* ]]; then
+    make_addon_mathcomp
+  else
+    # Note: since either mathcomp or ssreflect is defined, it is fine to name both mathcomp
+    if build_prep_overlay mathcomp; then
+      installer_addon_section ssreflect "SSReflect" "Coq support library for small scale reflection plugin" ""
+      cd mathcomp
+      logn make-makefile  make Makefile.coq
+      logn make-ssreflect make $MAKE_OPT -f Makefile.coq ssreflect/all_ssreflect.vo
+      logn make-install   make -f Makefile.coq install
+      build_post
+    fi
+  fi
+}
+
+# Ltac-2 plugin
+# A new (experimental) tactic language
+
+function make_addon_ltac2 {
+  # Note: ltac2 uses a branch and not a label in ci-basic-overlay.sh in the v8.8 release branch
+  # So we don't use the overlay mechanism for ltac2
+  if build_prep_overlay ltac2; then
+    installer_addon_section ltac2 "Ltac-2" "Coq plugin with the Ltac-2 enhanced tactics language" ""
+    log1 make all
+    log2 make install
+    build_post
+  fi
+}
+
+# Menhir parser generator
+
+function make_addon_menhir {
+  make_menhir
+  # If COQ and OCaml are installed to the same folder, there is nothing to do
+  if [ "$PREFIXOCAML" != "$PREFIXCOQ" ] ; then
+    # Just install menhir files required for COQ to COQ target folder
+    if [ ! -f "$FLAGFILES/menhir-addon.finished" ] ; then
+      installer_addon_section menhir "Menhir" "Menhir parser generator windows executable and libraries" "off"
+      LOGTARGET=menhir-addon
+      touch "$FLAGFILES/menhir-addon.started"
+      # Menhir executable
+      install_glob "$PREFIXOCAML/bin" 'menhir.exe' "$PREFIXCOQ/bin/"
+      # Menhir Standard library
+      install_glob "$PREFIXOCAML/share/menhir/" '*.mly' "$PREFIXCOQ/share/menhir/"
+      # Menhir PDF doc
+      install_glob "$PREFIXOCAML/share/doc/menhir/" '*.pdf' "$PREFIXCOQ/doc/menhir/"
+      touch "$FLAGFILES/menhir-addon.finished"
+      LOGTARGET=other
+      installer_addon_end
+    fi
+  fi
+}
+
+# COQ library for Menhir
+
+function make_addon_menhirlib {
+  if build_prep_overlay menhirlib; then
+    installer_addon_section menhirlib "Menhirlib" "Coq support library for using Menhir generated parsers in Coq" "off"
+    # The supplied makefiles don't work in any way on cygwin
+    cd src
+    echo -R . MenhirLib > _CoqProject
+    ls -1 *.v >> _CoqProject
+    log1 coq_makefile -f _CoqProject -o Makefile.coq
+    log1 make -f Makefile.coq all
+    logn make-install make -f Makefile.coq install
+    build_post
+  fi
+}
+
+# CompCert
+
+function make_addon_compcert {
+  make_menhir
+  make_addon_menhirlib
+  if build_prep_overlay CompCert; then
+    installer_addon_section compcert "CompCert" "ATTENTION: THIS IS NOT OPEN SOURCE! CompCert verified C compiler and Clightgen (required for using VST for your own code)" "off"
+    logn configure ./configure -ignore-coq-version -clightgen -prefix "$PREFIXCOQ" -coqdevdir "$PREFIXCOQ/lib/coq/user-contrib/compcert" x86_32-cygwin
+    log1 make
+    log2 make install
+    logn install-license-1 install -D -T  "LICENSE" "$PREFIXCOQ/lib/coq/user-contrib/compcert/LICENSE"
+    logn install-license-2 install -D -T  "LICENSE" "$PREFIXCOQ/lib/compcert/LICENSE"
+    build_post
+  fi
+}
+
+# Princeton VST
+
+function install_addon_vst {
+    VSTDEST="$PREFIXCOQ/lib/coq/user-contrib/VST"
+
+    # Install VST .v, .vo, .c and .h files
+    install_rec compcert '*.v' "$VSTDEST/compcert/"
+    install_rec compcert '*.vo' "$VSTDEST/compcert/"
+    install_glob "msl" '*.v' "$VSTDEST/msl/"
+    install_glob "msl" '*.vo' "$VSTDEST/msl/"
+    install_glob "sepcomp" '*.v' "$VSTDEST/sepcomp/"
+    install_glob "sepcomp" '*.vo' "$VSTDEST/sepcomp/"
+    install_glob "floyd" '*.v' "$VSTDEST/floyd/"
+    install_glob "floyd" '*.vo' "$VSTDEST/floyd/"
+    install_glob "progs" '*.v' "$VSTDEST/progs/"
+    install_glob "progs" '*.c' "$VSTDEST/progs/"
+    install_glob "progs" '*.h' "$VSTDEST/progs/"
+    install_glob "veric" '*.v' "$VSTDEST/msl/"
+    install_glob "veric" '*.vo' "$VSTDEST/msl/"
+
+    # Install VST documentation files
+    install_glob "." 'LICENSE' "$VSTDEST"
+    install_glob "." '*.md' "$VSTDEST"
+    install_glob "compcert" '*' "$VSTDEST/compcert"
+    install_glob "doc" '*.pdf' "$VSTDEST/doc"
+
+    # Install VST _CoqProject files
+    install_glob "." '_CoqProject*' "$VSTDEST"
+    install_glob "." '_CoqProject-export' "$VSTDEST/progs"
+}
+
+function make_addon_vst {
+  # Note: VST uses master in ci-basic-overlay.sh in the v8.8 release branch
+  # So we don't use the overlay mechanism for VST
+  if build_prep_overlay VST; then
+    installer_addon_section vst "VST" "ATTENTION: SOME INCLUDED COMPCERT PARTS ARE NOT OPEN SOURCE! Verified Software Toolchain for verifying C code" "off"
+    log1 make $MAKE_OPT
+    log1 install_addon_vst
+    build_post
+  fi
+}
+
+# coquelicot Real analysis
+
+function make_addon_coquelicot {
+  make_addon_ssreflect
+  if build_prep_overlay Coquelicot; then
+    installer_addon_section coquelicot "Coquelicot" "Coq library for real analysis" ""
+    logn configure ./configure --libdir="$PREFIXCOQ/lib/coq/user-contrib/Coquelicot"
+    logn remake ./remake
+    logn remake-install ./remake install
+    build_post
+  fi
+}
+
+# AAC associative / commutative rewriting
+
+function make_addon_aactactics {
+  if build_prep_overlay aactactis; then
+    installer_addon_section aac "AAC" "Coq plugin for extensible associative and commutative rewriting" ""
+    log1 make
+    log2 make install
+    build_post
+  fi
+}
+
+# extlib
+
+function make_addon_extlib {
+  if build_prep_overlay ext_lib; then
+    installer_addon_section extlib "Ext-Lib" "Coq library with many reusable general purpose components" ""
+    log1 make $MAKE_OPT
+    log2 make install
+    build_post
+  fi
+}
+
+# SimpleIO
+
+function make_addon_simple_io {
+  if build_prep_overlay simple_io; then
+    installer_addon_section simpleIO "SimpleIO" "Coq plugin for reading and writing files directly from Coq code" ""
+    log1 make $MAKE_OPT
+    log2 make install
+    build_post
+  fi
+}
+
+# Quickchick Randomized Property-Based Testing Plugin for Coq
+
+function make_addon_quickchick {
+  make_addon_ssreflect
+  make_addon_extlib
+  make_addon_simple_io
+  make_ocamlbuild
+  if build_prep_overlay quickchick; then
+    installer_addon_section quickchick "QuickChick" "Coq plugin for randomized testing and counter example search" ""
+    log1 make
+    log2 make install
+    build_post
+  fi
+}
+
+# Main function for building addons
+
+function make_addons {
   for addon in $COQ_ADDONS; do
     "make_addon_$addon"
   done

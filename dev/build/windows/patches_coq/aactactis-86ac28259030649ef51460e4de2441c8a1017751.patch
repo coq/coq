@@ -1,0 +1,21 @@
+--- aac-tactics-v8.8.orig\Tutorial.v	2018-05-30 16:09:06.000000000 +0200
++++ aac-tactics-v8.8\Tutorial.v	2018-08-24 19:47:25.000000000 +0200
+@@ -9,16 +9,14 @@
+ (** * Tutorial for using the [aac_tactics] library.
+ 
+    Depending on your installation, either modify the following two
+    lines, or add them to your .coqrc files, replacing "."  with the
+    path to the [aac_tactics] library. *)
+ 
+-Add Rec LoadPath "." as AAC_tactics.
+-Add ML Path ".".
+-Require Import AAC.
+-Require Instances.
++Require Import AAC_tactics.AAC.
++Require AAC_tactics.Instances.
+ Require Arith ZArith.
+ 
+ (** ** Introductory example 
+ 
+    Here is a first example with relative numbers ([Z]): one can
+    rewrite an universally quantified hypothesis modulo the

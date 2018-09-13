@@ -38,43 +38,20 @@ Var INSTDIR_DBS       ; INSTDIR with \\ instead of \
 
   ;Folder selection page
   InstallDir "C:\${MY_PRODUCT}"
-  
+
   ;Remember install folder
   InstallDirRegKey HKCU "Software\${MY_PRODUCT}" ""
 
 ;--------------------------------
-;Modern UI Configuration
-  
-  !define MUI_ICON "${COQ_ICON}"
+;Extra license pages
 
-  !insertmacro MUI_PAGE_WELCOME
-  !insertmacro MUI_PAGE_LICENSE "${COQ_SRC_PATH}/license_readme/coq/License.txt"
-  !insertmacro MUI_PAGE_COMPONENTS
-  !define MUI_DIRECTORYPAGE_TEXT_TOP "Select where to install Coq.  The path MUST NOT include spaces."
-  !insertmacro MUI_PAGE_DIRECTORY
-  !insertmacro MUI_PAGE_INSTFILES
-  !insertmacro MUI_PAGE_FINISH
-  
-  !insertmacro MUI_UNPAGE_WELCOME
-  !insertmacro MUI_UNPAGE_CONFIRM
-  !insertmacro MUI_UNPAGE_INSTFILES
-  !insertmacro MUI_UNPAGE_FINISH  
-
-;--------------------------------
-;Languages
- 
-  !insertmacro MUI_LANGUAGE "English"
-  
-;--------------------------------
-;Language Strings
-
-  ;Description
-  LangString DESC_1 ${LANG_ENGLISH} "This package contains Coq and CoqIDE."
-  LangString DESC_2 ${LANG_ENGLISH} "This package contains the following extra Coq packages: ${COQ_ADDONS}"
-  ;LangString DESC_2 ${LANG_ENGLISH} "This package contains an OCaml compiler for Coq native compute and plugin development."
-  LangString DESC_3 ${LANG_ENGLISH} "This package contains the development files needed in order to build a plugin for Coq."
-  LangString DESC_4 ${LANG_ENGLISH} "Set the OCAMLLIB environment variable for the current user."
-  LangString DESC_5 ${LANG_ENGLISH} "Set the OCAMLLIB environment variable for all users."
+!macro MUI_PAGE_LICENSE_EXTRA Licensefile Header Subheader Bottom SelFunc
+  !define MUI_PAGE_HEADER_TEXT "${Header}"
+  !define MUI_PAGE_HEADER_SUBTEXT "${Subheader}"
+  !define MUI_LICENSEPAGE_TEXT_BOTTOM "${Bottom}"
+  !define MUI_PAGE_CUSTOMFUNCTION_PRE ${SelFunc}
+  !insertmacro MUI_PAGE_LICENSE "${Licensefile}"
+!macroend
 
 ;--------------------------------
 ; Check for white spaces
@@ -95,7 +72,6 @@ FunctionEnd
 ;--------------------------------
 ;Installer Sections
 
-
 Section "Coq" Sec1
 
   SetOutPath "$INSTDIR\"
@@ -105,7 +81,7 @@ Section "Coq" Sec1
 
   ;Store install folder
   WriteRegStr HKCU "Software\${MY_PRODUCT}" "" $INSTDIR
-  
+
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
@@ -123,7 +99,7 @@ Section "Coq" Sec1
 
   ; Create start menu entries
   ; SetOutPath is required for the path in the .lnk files
-  SetOutPath "$INSTDIR" 
+  SetOutPath "$INSTDIR"
   CreateDirectory "$SMPROGRAMS\Coq"
   ; The first shortcut set here is treated as main application by Windows 7/8.
   ; Use CoqIDE as main application
@@ -138,24 +114,23 @@ SectionEnd
 ;OCAML Section "Ocaml for native compute and plugin development" Sec2
 ;OCAML   SetOutPath "$INSTDIR\"
 ;OCAML   !include "..\..\..\filelists\ocaml.nsh"
-;OCAML 
+;OCAML
 ;OCAML   ; Create a few slash / backslash variants of the source and install path
 ;OCAML   ; Note: NSIS has variables, written as $VAR and defines, written as ${VAR}
 ;OCAML   !insertmacro StrRep $COQ_SRC_PATH_BS  ${COQ_SRC_PATH} "/" "\"
 ;OCAML   !insertmacro StrRep $COQ_SRC_PATH_DBS ${COQ_SRC_PATH} "/" "\\"
 ;OCAML   !insertmacro StrRep $INSTDIR_DBS      $INSTDIR        "\" "\\"
-;OCAML 
+;OCAML
 ;OCAML   ; Replace absolute paths in some OCaml config files
 ;OCAML   ; These are not all, see ReadMe.txt
 ;OCAML   !insertmacro ReplaceInFile "$INSTDIR\libocaml\ld.conf" "/"  "\"
 ;OCAML   !insertmacro ReplaceInFile "$INSTDIR\libocaml\ld.conf" "$COQ_SRC_PATH_BS"  "$INSTDIR"
 ;OCAML   !insertmacro ReplaceInFile "$INSTDIR\etc\findlib.conf" "$COQ_SRC_PATH_DBS" "$INSTDIR_DBS"
 ;OCAML SectionEnd
- 
-Section "Coq packages" Sec2
-  SetOutPath "$INSTDIR\"
-  !include "..\..\..\filelists\coq_addons.nsh"
-SectionEnd
+
+SectionGroup "Coq addons" Sec2
+  !include "..\..\..\filelists\addon_sections.nsh"
+SectionGroupEnd
 
 Section "Coq files for plugin developers" Sec3
   SetOutPath "$INSTDIR\"
@@ -179,6 +154,71 @@ SectionEnd
 ;OCAML SectionEnd
 
 ;--------------------------------
+;Modern UI Configuration
+
+; Note: this must be placed after the sections, because below we need to check at compile time
+; if sections exist (by !ifdef <section_index_var>) to decide if the license page must be included.
+; The section index variables are only defined after the section definitions.
+
+  !define MUI_ICON "${COQ_ICON}"
+
+  !insertmacro MUI_PAGE_WELCOME
+  !insertmacro MUI_PAGE_LICENSE "${COQ_SRC_PATH}/license_readme/coq/License.txt"
+  !insertmacro MUI_PAGE_COMPONENTS
+
+  !ifdef Sec_compcert
+    !define LicCompCert_Title "CompCert License Agreement"
+    !define LicCompCert_SubTitle "You selected the CompCert addon. CompCert is not open source. Please review the license terms before installing CompCert!"
+    !define LicCompCert_Bottom "If you accept the terms of the agreement, click I Agree to continue. Otherwise go back and unselect the CompCert addon."
+    !insertmacro MUI_PAGE_LICENSE_EXTRA "${COQ_SRC_PATH}/lib/coq/user-contrib/compcert/LICENSE" "${LicCompCert_Title}" "${LicCompCert_SubTitle}" "${LicCompCert_Bottom}" SelFuncCompCert
+
+    Function SelFuncCompCert
+      ${Unless} ${SectionIsSelected} ${Sec_compcert}
+        Abort
+      ${EndUnless}
+    FunctionEnd
+  !endif
+
+  !ifdef Sec_vst
+    !define LicVST_Title "Princeton VST License Agreement"
+    !define LicVST_SubTitle "You selected the VST addon. VST contains parts of CompCert which are not open source. Please review the license terms before installing VST!"
+    !define LicVST_Bottom "If you accept the terms of the agreement, click I Agree to continue. Otherwise go back and unselect the VST addon."
+    !insertmacro MUI_PAGE_LICENSE_EXTRA "${COQ_SRC_PATH}/lib/coq/user-contrib/VST/LICENSE" "${LicVST_Title}" "${LicVST_SubTitle}" "${LicVST_Bottom}" SelFuncVST
+
+    Function SelFuncVST
+      ${Unless} ${SectionIsSelected} ${Sec_vst}
+        Abort
+      ${EndUnless}
+    FunctionEnd
+  !endif
+
+  !define MUI_DIRECTORYPAGE_TEXT_TOP "Select where to install Coq.  The path MUST NOT include spaces."
+  !insertmacro MUI_PAGE_DIRECTORY
+  !insertmacro MUI_PAGE_INSTFILES
+  !insertmacro MUI_PAGE_FINISH
+
+  !insertmacro MUI_UNPAGE_WELCOME
+  !insertmacro MUI_UNPAGE_CONFIRM
+  !insertmacro MUI_UNPAGE_INSTFILES
+  !insertmacro MUI_UNPAGE_FINISH
+
+;--------------------------------
+;Languages
+
+  !insertmacro MUI_LANGUAGE "English"
+
+;--------------------------------
+;Language Strings
+
+  ;Description
+  LangString DESC_1 ${LANG_ENGLISH} "This package contains Coq and CoqIDE."
+  LangString DESC_2 ${LANG_ENGLISH} "This package contains the following extra Coq packages: ${COQ_ADDONS}"
+  LangString DESC_3 ${LANG_ENGLISH} "This package contains the development files needed in order to build a plugin for Coq."
+  ; LangString DESC_4 ${LANG_ENGLISH} "Set the OCAMLLIB environment variable for the current user."
+  ; LangString DESC_5 ${LANG_ENGLISH} "Set the OCAMLLIB environment variable for all users."
+  !include "..\..\..\filelists\addon_strings.nsh"
+
+;--------------------------------
 ;Descriptions
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
@@ -187,8 +227,9 @@ SectionEnd
   !insertmacro MUI_DESCRIPTION_TEXT ${Sec3} $(DESC_3)
   ;OCAML !insertmacro MUI_DESCRIPTION_TEXT ${Sec4} $(DESC_4)
   ;OCAML !insertmacro MUI_DESCRIPTION_TEXT ${Sec5} $(DESC_5)
+  !include "..\..\..\filelists\addon_descriptions.nsh"
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
- 
+
 ;--------------------------------
 ;Uninstaller Section
 
@@ -214,7 +255,7 @@ Section "Uninstall"
   Delete "$SMPROGRAMS\Coq\The Coq HomePage.url"
   Delete "$SMPROGRAMS\Coq\The Coq Standard Library.url"
   Delete "$INSTDIR\Uninstall.exe"
-  
+
   ; Registry keys
   DeleteRegKey HKCU "Software\${MY_PRODUCT}"
   DeleteRegKey HKLM "SOFTWARE\Coq"
