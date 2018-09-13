@@ -645,6 +645,28 @@ module GlobRef : sig
 
   val equal : t -> t -> bool
 
+  module Ordered : sig
+    type nonrec t = t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
+
+  module Ordered_env : sig
+    type nonrec t = t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
+
+  module Set_env : CSig.SetS with type elt = t
+  module Map_env : Map.ExtS
+    with type key = t and module Set := Set_env
+
+  module Set : CSig.SetS with type elt = t
+  module Map : Map.ExtS
+    with type key = t and module Set := Set
+
 end
 
 type global_reference = GlobRef.t

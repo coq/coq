@@ -30,8 +30,8 @@ let capitalize = String.capitalize
 (** Sets and maps for [global_reference] that use the "user" [kernel_name]
     instead of the canonical one *)
 
-module Refmap' = Refmap_env
-module Refset' = Refset_env
+module Refmap' = GlobRef.Map_env
+module Refset' = GlobRef.Set_env
 
 (*S Utilities about [module_path] and [kernel_names] and [global_reference] *)
 
@@ -213,12 +213,12 @@ let is_recursor = function
 
 (* NB: here, working modulo name equivalence is ok *)
 
-let projs = ref (Refmap.empty : (inductive*int) Refmap.t)
-let init_projs () = projs := Refmap.empty
-let add_projection n kn ip = projs := Refmap.add (ConstRef kn) (ip,n) !projs
-let is_projection r = Refmap.mem r !projs
-let projection_arity r = snd (Refmap.find r !projs)
-let projection_info r = Refmap.find r !projs
+let projs = ref (GlobRef.Map.empty : (inductive*int) GlobRef.Map.t)
+let init_projs () = projs := GlobRef.Map.empty
+let add_projection n kn ip = projs := GlobRef.Map.add (ConstRef kn) (ip,n) !projs
+let is_projection r = GlobRef.Map.mem r !projs
+let projection_arity r = snd (GlobRef.Map.find r !projs)
+let projection_info r = GlobRef.Map.find r !projs
 
 (*s Table of used axioms *)
 

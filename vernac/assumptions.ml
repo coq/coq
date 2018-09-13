@@ -213,25 +213,25 @@ let rec traverse current ctx accu t = match Constr.kind t with
 
 and traverse_object ?inhabits (curr, data, ax2ty) body obj =
   let data, ax2ty =
-    let already_in = Refmap_env.mem obj data in
+    let already_in = GlobRef.Map_env.mem obj data in
     match body () with
     | None ->
         let data =
-          if not already_in then Refmap_env.add obj Refset_env.empty data else data in
+          if not already_in then GlobRef.Map_env.add obj GlobRef.Set_env.empty data else data in
         let ax2ty =
           if Option.is_empty inhabits then ax2ty else
           let ty = Option.get inhabits in
-          try let l = Refmap_env.find obj ax2ty in Refmap_env.add obj (ty::l) ax2ty 
-          with Not_found -> Refmap_env.add obj [ty] ax2ty in
+          try let l = GlobRef.Map_env.find obj ax2ty in GlobRef.Map_env.add obj (ty::l) ax2ty
+          with Not_found -> GlobRef.Map_env.add obj [ty] ax2ty in
         data, ax2ty
     | Some body ->
       if already_in then data, ax2ty else
       let contents,data,ax2ty =
         traverse (label_of obj) Context.Rel.empty
-                 (Refset_env.empty,data,ax2ty) body in
-      Refmap_env.add obj contents data, ax2ty
+                 (GlobRef.Set_env.empty,data,ax2ty) body in
+      GlobRef.Map_env.add obj contents data, ax2ty
   in
-  (Refset_env.add obj curr, data, ax2ty)
+  (GlobRef.Set_env.add obj curr, data, ax2ty)
 
 (** Collects the references occurring in the declaration of mutual inductive
     definitions. All the constructors and names of a mutual inductive
@@ -244,14 +244,14 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
    (* Invariant : I_0 \in data iff I_i \in data iff c_ij \in data
       where I_0, I_1, ... are in the same mutual definition and c_ij
       are all their constructors. *)
-   if Refmap_env.mem firstind_ref data then data, ax2ty else
+   if GlobRef.Map_env.mem firstind_ref data then data, ax2ty else
      let mib = lookup_mind mind in
      (* Collects references of parameters *)
      let param_ctx = mib.mind_params_ctxt in
      let nparam = List.length param_ctx in
      let accu =
        traverse_context label Context.Rel.empty
-                        (Refset_env.empty, data, ax2ty) param_ctx
+                        (GlobRef.Set_env.empty, data, ax2ty) param_ctx
      in
      (* Build the context of all arities *)
      let arities_ctx =
@@ -283,14 +283,14 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
      (* Maps all these dependencies to inductives and constructors*)
      let data = Array.fold_left_i (fun n data oib ->
        let ind = (mind, n) in
-       let data = Refmap_env.add (IndRef ind) contents data in
+       let data = GlobRef.Map_env.add (IndRef ind) contents data in
        Array.fold_left_i (fun k data _ ->
-         Refmap_env.add (ConstructRef (ind, k+1)) contents data
+         GlobRef.Map_env.add (ConstructRef (ind, k+1)) contents data
        ) data oib.mind_consnames) data mib.mind_packets
      in
      data, ax2ty
   in
-  (Refset_env.add obj curr, data, ax2ty)
+  (GlobRef.Set_env.add obj curr, data, ax2ty)
 
 (** Collects references in a rel_context. *)
 and traverse_context current ctx accu ctxt =
@@ -307,7 +307,7 @@ and traverse_context current ctx accu ctxt =
 
 let traverse current t =
   let () = modcache := MPmap.empty in
-  traverse current Context.Rel.empty (Refset_env.empty, Refmap_env.empty, Refmap_env.empty) t
+  traverse current Context.Rel.empty (GlobRef.Set_env.empty, GlobRef.Map_env.empty, GlobRef.Map_env.empty) t
 
 (** Hopefully bullet-proof function to recover the type of a constant. It just
     ignores all the universe stuff. There are many issues that can arise when
@@ -330,12 +330,12 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
       let accu =
         if cb.const_typing_flags.check_guarded then accu
         else
-          let l = try Refmap_env.find obj ax2ty with Not_found -> [] in
+          let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
           ContextObjectMap.add (Axiom (Guarded kn, l)) Constr.mkProp accu
       in
     if not (Declareops.constant_has_body cb) || not cb.const_typing_flags.check_universes then
       let t = type_of_constant cb in
-      let l = try Refmap_env.find obj ax2ty with Not_found -> [] in
+      let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
       ContextObjectMap.add (Axiom (Constant kn,l)) t accu
     else if add_opaque && (Declareops.is_opaque cb || not (Cpred.mem kn knst)) then
       let t = type_of_constant cb in
@@ -350,7 +350,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
       if mind.mind_typing_flags.check_guarded then
         accu
       else
-        let l = try Refmap_env.find obj ax2ty with Not_found -> [] in
+        let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
         ContextObjectMap.add (Axiom (Positive m, l)) Constr.mkProp accu
   in
-  Refmap_env.fold fold graph ContextObjectMap.empty
+  GlobRef.Map_env.fold fold graph ContextObjectMap.empty

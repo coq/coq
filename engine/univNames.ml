@@ -10,7 +10,6 @@
 
 open Names
 open Univ
-open Globnames
 open Nametab
 
 
@@ -51,15 +50,15 @@ type universe_binders = Univ.Level.t Names.Id.Map.t
 
 let empty_binders = Id.Map.empty
 
-let universe_binders_table = Summary.ref Refmap.empty ~name:"universe binders"
+let universe_binders_table = Summary.ref GlobRef.Map.empty ~name:"universe binders"
 
 let universe_binders_of_global ref : universe_binders =
   try
-    let l = Refmap.find ref !universe_binders_table in l
+    let l = GlobRef.Map.find ref !universe_binders_table in l
   with Not_found -> Names.Id.Map.empty
 
 let cache_ubinder (_,(ref,l)) =
-  universe_binders_table := Refmap.add ref l !universe_binders_table
+  universe_binders_table := GlobRef.Map.add ref l !universe_binders_table
 
 let subst_ubinder (subst,(ref,l as orig)) =
   let ref' = fst (Globnames.subst_global subst ref) in

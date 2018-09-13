@@ -21,7 +21,7 @@ module NamedDecl = Context.Named.Declaration
 (*i*)
 
 let name_table =
-  Summary.ref (Refmap.empty : Name.t list Refmap.t)
+  Summary.ref (GlobRef.Map.empty : Name.t list GlobRef.Map.t)
     ~name:"rename-arguments"
 
 type req =
@@ -29,7 +29,7 @@ type req =
   | ReqGlobal of GlobRef.t * Name.t list
 
 let load_rename_args _ (_, (_, (r, names))) =
-  name_table := Refmap.add r names !name_table
+  name_table := GlobRef.Map.add r names !name_table
 
 let cache_rename_args o = load_rename_args 1 o
 
@@ -68,7 +68,7 @@ let rename_arguments local r names =
   let req = if local then ReqLocal else ReqGlobal (r, names) in
   Lib.add_anonymous_leaf (inRenameArgs (req, (r, names)))       
 
-let arguments_names r = Refmap.find r !name_table
+let arguments_names r = GlobRef.Map.find r !name_table
 
 let rec rename_prod c = function 
   | [] -> c

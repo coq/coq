@@ -288,7 +288,7 @@ let lookup_tacs sigma concl st se =
   let sl' = List.stable_sort pri_order_int l' in
   List.merge pri_order_int se.sentry_nopat sl'
 
-module Constr_map = Map.Make(RefOrdered)
+module Constr_map = Map.Make(GlobRef.Ordered)
 
 let is_transparent_gr (ids, csts) = function
   | VarRef id -> Id.Pred.mem id ids

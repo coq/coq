@@ -62,7 +62,7 @@ module Hitem=
 struct
   type t = h_item
   let compare (id1,co1) (id2,co2)=
-    let c = Globnames.RefOrdered.compare id1 id2 in
+    let c = GlobRef.Ordered.compare id1 id2 in
     if c = 0 then
       let cmp (i1, c1) (i2, c2) =
         let c = Int.compare i1 i2 in

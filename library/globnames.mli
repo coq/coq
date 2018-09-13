@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Util
 open Names
 open Constr
 open Mod_subst
@@ -49,27 +48,21 @@ val printable_constr_of_global : GlobRef.t -> constr
    raise [Not_found] if not a global reference *)
 val global_of_constr : constr -> GlobRef.t
 
-module RefOrdered : sig
-  type t = GlobRef.t
-  val compare : t -> t -> int
-  val equal : t -> t -> bool
-  val hash : t -> int
-end
+module RefOrdered = Names.GlobRef.Ordered
+[@@ocaml.deprecated "Use Names.GlobRef.Ordered"]
 
-module RefOrdered_env : sig
-  type t = GlobRef.t
-  val compare : t -> t -> int
-  val equal : t -> t -> bool
-  val hash : t -> int
-end
+module RefOrdered_env = Names.GlobRef.Ordered_env
+[@@ocaml.deprecated "Use Names.GlobRef.Ordered_env"]
 
-module Refset : CSig.SetS with type elt = GlobRef.t
-module Refmap : Map.ExtS
-  with type key = GlobRef.t and module Set := Refset
+module Refset = Names.GlobRef.Set
+[@@ocaml.deprecated "Use Names.GlobRef.Set"]
+module Refmap = Names.GlobRef.Map
+[@@ocaml.deprecated "Use Names.GlobRef.Map"]
 
-module Refset_env : CSig.SetS with type elt = GlobRef.t
-module Refmap_env : Map.ExtS
-  with type key = GlobRef.t and module Set := Refset_env
+module Refset_env = GlobRef.Set_env
+[@@ocaml.deprecated "Use Names.GlobRef.Set_env"]
+module Refmap_env = GlobRef.Map_env
+[@@ocaml.deprecated "Use Names.GlobRef.Map_env"]
 
 (** {6 Extended global references } *)
 

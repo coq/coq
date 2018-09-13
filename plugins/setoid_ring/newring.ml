@@ -99,7 +99,7 @@ let protect_tac_in map id =
 let rec closed_under sigma cset t =
   try
     let (gr, _) = Termops.global_of_constr sigma t in
-    Refset_env.mem gr cset
+    GlobRef.Set_env.mem gr cset
   with Not_found ->
     match EConstr.kind sigma t with
     | Cast(c,_,_) -> closed_under sigma cset c
@@ -111,7 +111,7 @@ let closed_term args _ = match args with
   let t = Option.get (Value.to_constr t) in
   let l = List.map (fun c -> Value.cast (Genarg.topwit Stdarg.wit_ref) c) (Option.get (Value.to_list l)) in
   Proofview.tclEVARMAP >>= fun sigma ->
-  let cs = List.fold_right Refset_env.add l Refset_env.empty in
+  let cs = List.fold_right GlobRef.Set_env.add l GlobRef.Set_env.empty in
   if closed_under sigma cs t then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (mt())
 | _ -> assert false
 

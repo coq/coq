@@ -710,10 +710,10 @@ let structure_for_compute env sg c =
   init false false ~compute:true;
   let ast, mlt = Extraction.extract_constr env sg c in
   let ast = Mlutil.normalize ast in
-  let refs = ref Refset.empty in
-  let add_ref r = refs := Refset.add r !refs in
+  let refs = ref GlobRef.Set.empty in
+  let add_ref r = refs := GlobRef.Set.add r !refs in
   let () = ast_iter_references add_ref add_ref add_ref ast in
-  let refs = Refset.elements !refs in
+  let refs = GlobRef.Set.elements !refs in
   let struc = optimize_struct (refs,[]) (mono_environment refs []) in
   (flatten_structure struc), ast, mlt
 

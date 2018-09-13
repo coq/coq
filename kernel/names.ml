@@ -935,7 +935,7 @@ end
 
 type projection = Projection.t
 
-module GlobRef = struct
+module GlobRefInternal = struct
 
   type t =
     | VarRef of variable           (** A reference to the section-context. *)
@@ -951,10 +951,83 @@ module GlobRef = struct
     | VarRef v1, VarRef v2 -> Id.equal v1 v2
     | (ConstRef _ | IndRef _ | ConstructRef _ | VarRef _), _ -> false
 
+  let global_eq_gen eq_cst eq_ind eq_cons x y =
+    x == y ||
+    match x, y with
+    | ConstRef cx, ConstRef cy -> eq_cst cx cy
+    | IndRef indx, IndRef indy -> eq_ind indx indy
+    | ConstructRef consx, ConstructRef consy -> eq_cons consx consy
+    | VarRef v1, VarRef v2 -> Id.equal v1 v2
+    | (VarRef _ | ConstRef _ | IndRef _ | ConstructRef _), _ -> false
+
+  let global_ord_gen ord_cst ord_ind ord_cons x y =
+    if x == y then 0
+    else match x, y with
+    | VarRef v1, VarRef v2 -> Id.compare v1 v2
+    | VarRef _, _ -> -1
+    | _, VarRef _ -> 1
+    | ConstRef cx, ConstRef cy -> ord_cst cx cy
+    | ConstRef _, _ -> -1
+    | _, ConstRef _ -> 1
+    | IndRef indx, IndRef indy -> ord_ind indx indy
+    | IndRef _, _ -> -1
+    | _ , IndRef _ -> 1
+    | ConstructRef consx, ConstructRef consy -> ord_cons consx consy
+
+  let global_hash_gen hash_cst hash_ind hash_cons gr =
+    let open Hashset.Combine in
+    match gr with
+    | ConstRef c -> combinesmall 1 (hash_cst c)
+    | IndRef i -> combinesmall 2 (hash_ind i)
+    | ConstructRef c -> combinesmall 3 (hash_cons c)
+    | VarRef id -> combinesmall 4 (Id.hash id)
+
+end
+
+module GlobRef = struct
+
+  type t = GlobRefInternal.t =
+    | VarRef of variable           (** A reference to the section-context. *)
+    | ConstRef of Constant.t       (** A reference to the environment. *)
+    | IndRef of inductive          (** A reference to an inductive type. *)
+    | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
+
+  let equal = GlobRefInternal.equal
+
+  (* By default, [global_reference] are ordered on their canonical part *)
+
+  module Ordered = struct
+    open Constant.CanOrd
+    type t = GlobRefInternal.t
+    let compare gr1 gr2 =
+      GlobRefInternal.global_ord_gen compare ind_ord constructor_ord gr1 gr2
+    let equal gr1 gr2 = GlobRefInternal.global_eq_gen equal eq_ind eq_constructor gr1 gr2
+    let hash gr = GlobRefInternal.global_hash_gen hash ind_hash constructor_hash gr
+  end
+
+  module Ordered_env = struct
+    open Constant.UserOrd
+    type t = GlobRefInternal.t
+    let compare gr1 gr2 =
+      GlobRefInternal.global_ord_gen compare ind_user_ord constructor_user_ord gr1 gr2
+    let equal gr1 gr2 =
+      GlobRefInternal.global_eq_gen equal eq_user_ind eq_user_constructor gr1 gr2
+    let hash gr = GlobRefInternal.global_hash_gen hash ind_user_hash constructor_user_hash gr
+  end
+
+  module Map = HMap.Make(Ordered)
+  module Set = Map.Set
+
+  (* Alternative sets and maps indexed by the user part of the kernel names *)
+
+  module Map_env = HMap.Make(Ordered_env)
+  module Set_env = Map_env.Set
+
 end
 
 type global_reference = GlobRef.t
 [@@ocaml.deprecated "Alias for [GlobRef.t]"]
+
 
 type evaluable_global_reference =
   | EvalVarRef of Id.t

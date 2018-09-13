@@ -38,7 +38,7 @@ type cl_info_typ = {
 
 type coe_typ = GlobRef.t
 
-module CoeTypMap = Refmap_env
+module CoeTypMap = GlobRef.Map_env
 
 type coe_info_typ = {
   coe_value : GlobRef.t;
@@ -118,7 +118,7 @@ let coercion_tab =
   ref (CoeTypMap.empty : coe_info_typ CoeTypMap.t)
 
 let coercions_in_scope =
-  ref Refset_env.empty
+  ref GlobRef.Set_env.empty
 
 module ClPairOrd =
 struct
@@ -450,7 +450,7 @@ let load_coercion _ o =
 
 let set_coercion_in_scope (_, c) =
   let r = c.coercion_type in
-  coercions_in_scope := Refset_env.add r !coercions_in_scope
+  coercions_in_scope := GlobRef.Set_env.add r !coercions_in_scope
 
 let open_coercion i o =
   if Int.equal i 1 then begin
@@ -545,7 +545,7 @@ let coercion_of_reference r =
 module CoercionPrinting =
   struct
     type t = coe_typ
-    let compare = RefOrdered.compare
+    let compare = GlobRef.Ordered.compare
     let encode = coercion_of_reference
     let subst = subst_coe_typ
     let printer x = pr_global_env Id.Set.empty x
@@ -565,4 +565,4 @@ let hide_coercion coe =
   else None
 
 let is_coercion_in_scope r =
-  Refset_env.mem r !coercions_in_scope
+  GlobRef.Set_env.mem r !coercions_in_scope

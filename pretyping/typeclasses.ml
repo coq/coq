@@ -88,7 +88,7 @@ type typeclass = {
   cl_unique : bool;
 }
 
-type typeclasses = typeclass Refmap.t
+type typeclasses = typeclass GlobRef.Map.t
 
 type instance = {
   is_class: GlobRef.t;
@@ -99,7 +99,7 @@ type instance = {
   is_impl: GlobRef.t;
 }
 
-type instances = (instance Refmap.t) Refmap.t
+type instances = (instance GlobRef.Map.t) GlobRef.Map.t
 
 let instance_impl is = is.is_impl
 
@@ -121,8 +121,8 @@ let new_instance cl info glob impl =
  * states management
  *)
 
-let classes : typeclasses ref = Summary.ref Refmap.empty ~name:"classes"
-let instances : instances ref = Summary.ref Refmap.empty ~name:"instances"
+let classes : typeclasses ref = Summary.ref GlobRef.Map.empty ~name:"classes"
+let instances : instances ref = Summary.ref GlobRef.Map.empty ~name:"instances"
 
 let typeclass_univ_instance (cl, u) =
   assert (Univ.AUContext.size cl.cl_univs == Univ.Instance.length u);
@@ -131,7 +131,7 @@ let typeclass_univ_instance (cl, u) =
       cl_props = subst_ctx cl.cl_props}
 
 let class_info c =
-  try Refmap.find c !classes
+  try GlobRef.Map.find c !classes
   with Not_found -> not_a_class (Global.env()) (EConstr.of_constr (printable_constr_of_global c))
 
 let global_class_of_constr env sigma c =
@@ -154,7 +154,7 @@ let class_of_constr sigma c =
 
 let is_class_constr sigma c = 
   try let gr, u = Termops.global_of_constr sigma c in
-	Refmap.mem gr !classes
+    GlobRef.Map.mem gr !classes
   with Not_found -> false
 
 let rec is_class_type evd c =
@@ -172,7 +172,7 @@ let is_class_evar evd evi =
  *)
 
 let load_class (_, cl) =
-  classes := Refmap.add cl.cl_impl cl !classes
+  classes := GlobRef.Map.add cl.cl_impl cl !classes
 
 let cache_class = load_class
 
@@ -336,17 +336,17 @@ type instance_action =
 
 let load_instance inst = 
   let insts = 
-    try Refmap.find inst.is_class !instances
-    with Not_found -> Refmap.empty in
-  let insts = Refmap.add inst.is_impl inst insts in
-  instances := Refmap.add inst.is_class insts !instances
+    try GlobRef.Map.find inst.is_class !instances
+    with Not_found -> GlobRef.Map.empty in
+  let insts = GlobRef.Map.add inst.is_impl inst insts in
+  instances := GlobRef.Map.add inst.is_class insts !instances
 
 let remove_instance inst =
   let insts = 
-    try Refmap.find inst.is_class !instances
+    try GlobRef.Map.find inst.is_class !instances
     with Not_found -> assert false in
-  let insts = Refmap.remove inst.is_impl insts in
-  instances := Refmap.add inst.is_class insts !instances
+  let insts = GlobRef.Map.remove inst.is_impl insts in
+  instances := GlobRef.Map.add inst.is_class insts !instances
 
 let cache_instance (_, (action, i)) =
   match action with 
@@ -464,23 +464,23 @@ let instance_constructor (cl,u) args =
           (term, applist (mkConstU cst, pars))
       | _ -> assert false
 
-let typeclasses () = Refmap.fold (fun _ l c -> l :: c) !classes []
+let typeclasses () = GlobRef.Map.fold (fun _ l c -> l :: c) !classes []
 
-let cmap_elements c = Refmap.fold (fun k v acc -> v :: acc) c []
+let cmap_elements c = GlobRef.Map.fold (fun k v acc -> v :: acc) c []
 
 let instances_of c =
-  try cmap_elements (Refmap.find c.cl_impl !instances) with Not_found -> []
+  try cmap_elements (GlobRef.Map.find c.cl_impl !instances) with Not_found -> []
 
 let all_instances () = 
-  Refmap.fold (fun k v acc ->
-    Refmap.fold (fun k v acc -> v :: acc) v acc)
+  GlobRef.Map.fold (fun k v acc ->
+    GlobRef.Map.fold (fun k v acc -> v :: acc) v acc)
     !instances []
 
 let instances r = 
   let cl = class_info r in instances_of cl    
 
 let is_class gr = 
-  Refmap.exists (fun _ v -> GlobRef.equal v.cl_impl gr) !classes
+  GlobRef.Map.exists (fun _ v -> GlobRef.equal v.cl_impl gr) !classes
 
 let is_instance = function
   | ConstRef c ->

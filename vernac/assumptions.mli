@@ -10,7 +10,6 @@
 
 open Names
 open Constr
-open Globnames
 open Printer
 
 (** Collects all the objects on which a term directly relies, bypassing kernel
@@ -22,8 +21,8 @@ open Printer
 *)
 val traverse :
   Label.t -> constr ->
-    (Refset_env.t * Refset_env.t Refmap_env.t *
-     (Label.t * Constr.rel_context * types) list Refmap_env.t)
+    (GlobRef.Set_env.t * GlobRef.Set_env.t GlobRef.Map_env.t *
+     (Label.t * Constr.rel_context * types) list GlobRef.Map_env.t)
 
 (** Collects all the assumptions (optionally including opaque definitions)
    on which a term relies (together with their type). The above warning of

@@ -192,11 +192,11 @@ let rec assoc_pat a = function
 
 
 let object_table =
-  Summary.ref (Refmap.empty : ((cs_pattern * constr) * obj_typ) list Refmap.t)
+  Summary.ref (GlobRef.Map.empty : ((cs_pattern * constr) * obj_typ) list GlobRef.Map.t)
     ~name:"record-canonical-structs"
 
 let canonical_projections () =
-  Refmap.fold (fun x -> List.fold_right (fun ((y,_),c) acc -> ((x,y),c)::acc))
+  GlobRef.Map.fold (fun x -> List.fold_right (fun ((y,_),c) acc -> ((x,y),c)::acc))
     !object_table []
 
 let keep_true_projections projs kinds =
@@ -289,11 +289,11 @@ let warn_redundant_canonical_projection =
 let add_canonical_structure warn o =
     let lo = compute_canonical_projections warn o in
     List.iter (fun ((proj,(cs_pat,_ as pat)),s) ->
-      let l = try Refmap.find proj !object_table with Not_found -> [] in
+      let l = try GlobRef.Map.find proj !object_table with Not_found -> [] in
       let ocs = try Some (assoc_pat cs_pat l)
       with Not_found -> None
       in match ocs with
-        | None -> object_table := Refmap.add proj ((pat,s)::l) !object_table;
+        | None -> object_table := GlobRef.Map.add proj ((pat,s)::l) !object_table;
         | Some (c, cs) ->
               let old_can_s = (Termops.print_constr (EConstr.of_constr cs.o_DEF))
               and new_can_s = (Termops.print_constr (EConstr.of_constr s.o_DEF)) in
@@ -372,18 +372,18 @@ let declare_canonical_structure ref =
   add_canonical_structure (check_and_decompose_canonical_structure ref)
 
 let lookup_canonical_conversion (proj,pat) =
-  assoc_pat pat (Refmap.find proj !object_table)
+  assoc_pat pat (GlobRef.Map.find proj !object_table)
 
 let decompose_projection sigma c args =
   match EConstr.kind sigma c with
   | Const (c, u) ->
      let n = find_projection_nparams (ConstRef c) in
      (** Check if there is some canonical projection attached to this structure *)
-     let _ = Refmap.find (ConstRef c) !object_table in
+     let _ = GlobRef.Map.find (ConstRef c) !object_table in
      let arg = Stack.nth args n in
      arg
   | Proj (p, c) ->
-     let _ = Refmap.find (ConstRef (Projection.constant p)) !object_table in
+     let _ = GlobRef.Map.find (ConstRef (Projection.constant p)) !object_table in
      c
   | _ -> raise Not_found
 

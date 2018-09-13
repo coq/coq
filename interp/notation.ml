@@ -264,7 +264,7 @@ type key =
   | Oth
 
 let key_compare k1 k2 = match k1, k2 with
-| RefKey gr1, RefKey gr2 -> RefOrdered.compare gr1 gr2
+| RefKey gr1, RefKey gr2 -> GlobRef.Ordered.compare gr1 gr2
 | RefKey _, Oth -> -1
 | Oth, RefKey _ -> 1
 | Oth, Oth -> 0
@@ -395,7 +395,7 @@ let prim_token_interp_infos =
 (* Table from global_reference to backtrack-able informations about
    prim_token uninterpretation (in particular uninterpreter unique id). *)
 let prim_token_uninterp_infos =
-  ref (Refmap.empty : (scope_name * prim_token_uid * bool) Refmap.t)
+  ref (GlobRef.Map.empty : (scope_name * prim_token_uid * bool) GlobRef.Map.t)
 
 let hashtbl_check_and_set allow_overwrite uid f h eq =
   match Hashtbl.find h uid with
@@ -441,7 +441,7 @@ let cache_prim_token_interpretation (_,infos) =
   prim_token_interp_infos :=
     String.Map.add sc (infos.pt_required,infos.pt_uid) !prim_token_interp_infos;
   List.iter (fun r -> prim_token_uninterp_infos :=
-                        Refmap.add r (sc,uid,infos.pt_in_match)
+                        GlobRef.Map.add r (sc,uid,infos.pt_in_match)
                           !prim_token_uninterp_infos)
             infos.pt_refs
 
@@ -783,7 +783,7 @@ let uninterp_prim_token c =
   | None -> raise Notation_ops.No_match
   | Some r ->
      try
-       let (sc,uid,_) = Refmap.find r !prim_token_uninterp_infos in
+       let (sc,uid,_) = GlobRef.Map.find r !prim_token_uninterp_infos in
        let uninterp = Hashtbl.find prim_token_uninterpreters uid in
        match InnerPrimToken.do_uninterp uninterp (AnyGlobConstr c) with
        | None -> raise Notation_ops.No_match
@@ -924,7 +924,7 @@ let rec update_scopes cls scl = match cls, scl with
   | _, [] -> List.map find_scope_class_opt cls
   | cl :: cls, sco :: scl -> update_scope cl sco :: update_scopes cls scl
 
-let arguments_scope = ref Refmap.empty
+let arguments_scope = ref GlobRef.Map.empty
 
 type arguments_scope_discharge_request =
   | ArgsScopeAuto
@@ -934,7 +934,7 @@ type arguments_scope_discharge_request =
 let load_arguments_scope _ (_,(_,r,n,scl,cls)) =
   List.iter (Option.iter check_scope) scl;
   let initial_stamp = ScopeClassMap.empty in
-  arguments_scope := Refmap.add r (scl,cls,initial_stamp) !arguments_scope
+  arguments_scope := GlobRef.Map.add r (scl,cls,initial_stamp) !arguments_scope
 
 let cache_arguments_scope o =
   load_arguments_scope 1 o
@@ -1015,13 +1015,13 @@ let declare_arguments_scope local r scl =
 
 let find_arguments_scope r =
   try
-    let (scl,cls,stamp) = Refmap.find r !arguments_scope in
+    let (scl,cls,stamp) = GlobRef.Map.find r !arguments_scope in
     let cur_stamp = !scope_class_map in
     if stamp == cur_stamp then scl
     else
       (* Recent changes in the Bind Scope base, we re-compute the scopes *)
       let scl' = update_scopes cls scl in
-      arguments_scope := Refmap.add r (scl',cls,cur_stamp) !arguments_scope;
+      arguments_scope := GlobRef.Map.add r (scl',cls,cur_stamp) !arguments_scope;
       scl'
   with Not_found -> []
 
@@ -1350,7 +1350,7 @@ let init () =
   notations_key_table := KeyMap.empty;
   scope_class_map := initial_scope_class_map;
   prim_token_interp_infos := String.Map.empty;
-  prim_token_uninterp_infos := Refmap.empty
+  prim_token_uninterp_infos := GlobRef.Map.empty
 
 let _ =
   Summary.declare_summary "symbols"
