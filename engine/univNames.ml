@@ -65,6 +65,11 @@ let subst_ubinder (subst,(ref,l as orig)) =
   let ref' = fst (Globnames.subst_global subst ref) in
   if ref == ref' then orig else ref', l
 
+let name_universe lvl =
+  (** Best-effort naming from the string representation of the level. This is
+      completely hackish and should be solved in upper layers instead. *)
+  try Name (Id.of_string_soft (Level.to_string lvl)) with _ -> Anonymous
+
 let discharge_ubinder (_,(ref,l)) =
   (** Expand polymorphic binders with the section context *)
   let info = Lib.section_segment_of_reference ref in
@@ -75,7 +80,7 @@ let discharge_ubinder (_,(ref,l)) =
     try
       let qid = Nametab.shortest_qualid_of_universe na in
       Name (snd (Libnames.repr_qualid qid))
-    with Not_found -> Anonymous
+    with Not_found -> name_universe lvl
   in
   let l = List.mapi map sec_inst @ l in
   Some (Lib.discharge_global ref, l)
@@ -99,7 +104,7 @@ let register_universe_binders ref ubinders =
   let revmap = Id.Map.fold (fun id lvl accu -> LMap.add lvl id accu) ubinders LMap.empty in
   let map lvl =
     try Name (LMap.find lvl revmap)
-    with Not_found -> Anonymous
+    with Not_found -> name_universe lvl
   in
   let ubinders = Array.map_to_list map (Instance.to_array univs) in
   if not (List.is_empty ubinders) then Lib.add_anonymous_leaf (ubinder_obj (ref, ubinders))

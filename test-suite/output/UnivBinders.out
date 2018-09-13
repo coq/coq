@@ -42,10 +42,10 @@ bar@{u} = nat
          *)
 
 bar is universe polymorphic
-foo@{u Var(1) v} = 
-Type@{Var(1)} -> Type@{v} -> Type@{u}
-     : Type@{max(u+1,Var(1)+1,v+1)}
-(* u Var(1) v |=  *)
+foo@{u Top.17 v} = 
+Type@{Top.17} -> Type@{v} -> Type@{u}
+     : Type@{max(u+1,Top.17+1,v+1)}
+(* u Top.17 v |=  *)
 
 foo is universe polymorphic
 Type@{i} -> Type@{j}
@@ -155,14 +155,14 @@ inmod@{u} -> Type@{v}
 (* u v |=  *)
 
 Applied.infunct is universe polymorphic
-axfoo@{i Var(1) Var(2)} : Type@{Var(1)} -> Type@{i}
-(* i Var(1) Var(2) |=  *)
+axfoo@{i Top.48 Top.49} : Type@{Top.48} -> Type@{i}
+(* i Top.48 Top.49 |=  *)
 
 axfoo is universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant Top.axfoo
-axbar@{i Var(1) Var(2)} : Type@{Var(2)} -> Type@{i}
-(* i Var(1) Var(2) |=  *)
+axbar@{i Top.48 Top.49} : Type@{Top.49} -> Type@{i}
+(* i Top.48 Top.49 |=  *)
 
 axbar is universe polymorphic
 Argument scope is [type_scope]
