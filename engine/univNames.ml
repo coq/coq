@@ -53,10 +53,10 @@ let empty_binders = Id.Map.empty
 
 let universe_binders_table = Summary.ref GlobRef.Map.empty ~name:"universe binders"
 
-let universe_binders_of_global ref : universe_binders =
+let universe_binders_of_global ref : Name.t list =
   try
     let l = GlobRef.Map.find ref !universe_binders_table in l
-  with Not_found -> Names.Id.Map.empty
+  with Not_found -> []
 
 let cache_ubinder (_,(ref,l)) =
   universe_binders_table := GlobRef.Map.add ref l !universe_binders_table
@@ -68,25 +68,19 @@ let subst_ubinder (subst,(ref,l as orig)) =
 let discharge_ubinder (_,(ref,l)) =
   (** Expand polymorphic binders with the section context *)
   let info = Lib.section_segment_of_reference ref in
-  let sec_inst = info.Lib.abstr_subst in
-  let shift = Instance.length sec_inst in
-  let map lvl = match Level.var_index lvl with
-  | None -> lvl
-  | Some n -> Level.var (n + shift)
-  in
-  let l = Id.Map.map map l in
-  let fold i accu lvl = match Level.name lvl with
-  | None -> accu
+  let sec_inst = Array.to_list (Instance.to_array (info.Lib.abstr_subst)) in
+  let map i lvl = match Level.name lvl with
+  | None -> Anonymous
   | Some na ->
     try
       let qid = Nametab.shortest_qualid_of_universe na in
-      Id.Map.add (snd (Libnames.repr_qualid qid)) (Level.var i) accu
-    with Not_found -> accu
+      Name (snd (Libnames.repr_qualid qid))
+    with Not_found -> Anonymous
   in
-  let l = Array.fold_left_i fold l (Instance.to_array sec_inst) in
+  let l = List.mapi map sec_inst @ l in
   Some (Lib.discharge_global ref, l)
 
-let ubinder_obj : GlobRef.t * universe_binders -> Libobject.obj =
+let ubinder_obj : GlobRef.t * Name.t list -> Libobject.obj =
   let open Libobject in
   declare_object { (default_object "universe binder") with
     cache_function = cache_ubinder;
@@ -97,42 +91,37 @@ let ubinder_obj : GlobRef.t * universe_binders -> Libobject.obj =
     rebuild_function = (fun x -> x); }
 
 let register_universe_binders ref ubinders =
-  (* Add the polymorphic (section) universes *)
-  let ubinders = UnivIdMap.fold (fun lvl poly ubinders ->
-    let qid = Nametab.shortest_qualid_of_universe lvl in
-    let level = Level.make (fst lvl) (snd lvl) in
-    if poly then Id.Map.add (snd (Libnames.repr_qualid qid)) level ubinders
-    else ubinders)
-    !universe_map ubinders
+  (** TODO: change the API to register a [Name.t list] instead. This is the last
+      part of the code that depends on the internal representation of names in
+      abstract contexts, but removing it requires quite a rework of the
+      callers. *)
+  let univs = AUContext.instance (Global.universes_of_global ref) in
+  let revmap = Id.Map.fold (fun id lvl accu -> LMap.add lvl id accu) ubinders LMap.empty in
+  let map lvl =
+    try Name (LMap.find lvl revmap)
+    with Not_found -> Anonymous
   in
-  let ubinders =
-    if Global.is_polymorphic ref then
-      (** FIXME: little dance to make the named universes refer to bound
-          universe variables *)
-      let univs = AUContext.instance (Global.universes_of_global ref) in
-      let fold i accu l = LMap.add l i accu in
-      let univs = Array.fold_left_i fold LMap.empty (Instance.to_array univs) in
-      let fold id lvl accu =
-        try Id.Map.add id (Level.var (LMap.find lvl univs)) accu
-        with Not_found -> accu
-      in
-      Id.Map.fold fold ubinders Id.Map.empty
-    else ubinders
-  in
-  if not (Id.Map.is_empty ubinders)
-  then Lib.add_anonymous_leaf (ubinder_obj (ref,ubinders))
+  let ubinders = Array.map_to_list map (Instance.to_array univs) in
+  if not (List.is_empty ubinders) then Lib.add_anonymous_leaf (ubinder_obj (ref, ubinders))
 
 type univ_name_list = Names.lname list
 
-let universe_binders_with_opt_names ref levels = function
+let universe_binders_with_opt_names ref names =
+  let udecl = match names with
   | None -> universe_binders_of_global ref
-  | Some udecl ->
-    if Int.equal(List.length levels) (List.length udecl)
-    then
-      List.fold_left2 (fun acc { CAst.v = na} lvl -> match na with
-          | Anonymous -> acc
-          | Name na -> Names.Id.Map.add na lvl acc)
-        empty_binders udecl levels
-    else
-      CErrors.user_err ~hdr:"universe_binders_with_opt_names"
-        Pp.(str "Universe instance should have length " ++ int (List.length levels))
+  | Some udecl -> List.map (fun na -> na.CAst.v) udecl
+  in
+  let () =
+    try
+      let ctx = Global.universes_of_global ref in
+      let len = AUContext.size ctx in
+      if not (Option.is_empty names || Int.equal len (List.length udecl)) then
+        CErrors.user_err ~hdr:"universe_binders_with_opt_names"
+          Pp.(str "Universe instance should have length " ++ int len)
+    with Not_found -> ()
+  in
+  let fold i acc = function
+  | Anonymous -> acc
+  | Name na -> Names.Id.Map.add na (Level.var i) acc
+  in
+  List.fold_left_i fold 0 empty_binders udecl

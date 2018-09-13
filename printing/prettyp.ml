@@ -73,8 +73,7 @@ let print_basename sp = pr_global (ConstRef sp)
 let print_ref reduce ref udecl =
   let typ, univs = Global.type_of_global_in_context (Global.env ()) ref in
   let inst = Univ.make_abstract_instance univs in
-  let bl = UnivNames.universe_binders_with_opt_names ref
-      (Array.to_list (Univ.Instance.to_array inst)) udecl in
+  let bl = UnivNames.universe_binders_with_opt_names ref udecl in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
   let typ = EConstr.of_constr typ in
   let typ =
@@ -556,33 +555,23 @@ let print_constant with_values sep sp udecl =
   let cb = Global.lookup_constant sp in
   let val_0 = Global.body_of_constant_body cb in
   let typ = cb.const_type in
-  let univs, ulist =
+  let univs =
     let open Univ in
     let otab = Global.opaque_tables () in
     match cb.const_body with
-    | Undef _ | Def _ ->
-      begin
-        match cb.const_universes with
-        | Monomorphic_const ctx -> Monomorphic_const ctx, []
-        | Polymorphic_const ctx ->
-          let inst = make_abstract_instance ctx in
-          Polymorphic_const ctx,
-          Array.to_list (Instance.to_array inst)
-      end
+    | Undef _ | Def _ -> cb.const_universes
     | OpaqueDef o ->
       let body_uctxs = Opaqueproof.force_constraints otab o in
       match cb.const_universes with
       | Monomorphic_const ctx ->
-        Monomorphic_const (ContextSet.union body_uctxs ctx), []
+        Monomorphic_const (ContextSet.union body_uctxs ctx)
       | Polymorphic_const ctx ->
         assert(ContextSet.is_empty body_uctxs);
-        let inst = make_abstract_instance ctx in
-        Polymorphic_const ctx,
-        Array.to_list (Instance.to_array inst)
+        Polymorphic_const ctx
   in
   let ctx =
     UState.of_binders
-      (UnivNames.universe_binders_with_opt_names (ConstRef sp) ulist udecl)
+      (UnivNames.universe_binders_with_opt_names (ConstRef sp) udecl)
   in
   let env = Global.env () and sigma = Evd.from_ctx ctx in
   let pr_ltype = pr_ltype_env env sigma in

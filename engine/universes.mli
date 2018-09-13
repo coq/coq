@@ -39,14 +39,12 @@ val empty_binders : universe_binders
 
 val register_universe_binders : Globnames.global_reference -> universe_binders -> unit
 [@@ocaml.deprecated "Use [UnivNames.register_universe_binders]"]
-val universe_binders_of_global : Globnames.global_reference -> universe_binders
-[@@ocaml.deprecated "Use [UnivNames.universe_binders_of_global]"]
 
 type univ_name_list = UnivNames.univ_name_list
 [@@ocaml.deprecated "Use [UnivNames.univ_name_list]"]
 
 val universe_binders_with_opt_names : Globnames.global_reference ->
-  Univ.Level.t list -> univ_name_list option -> universe_binders
+  univ_name_list option -> universe_binders
 [@@ocaml.deprecated "Use [UnivNames.universe_binders_with_opt_names]"]
 
 (** ****** Deprecated: moved to [UnivGen] *)

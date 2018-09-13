@@ -26,7 +26,6 @@ let is_polymorphic = UnivNames.is_polymorphic
 let empty_binders = UnivNames.empty_binders
 
 let register_universe_binders = UnivNames.register_universe_binders
-let universe_binders_of_global = UnivNames.universe_binders_of_global
 
 let universe_binders_with_opt_names = UnivNames.universe_binders_with_opt_names
 
