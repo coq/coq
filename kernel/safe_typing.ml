@@ -496,7 +496,7 @@ type generic_name =
   | M (** name already known, cf the mod_mp field *)
   | MT (** name already known, cf the mod_mp field *)
 
-let add_field ((l,sfb) as field) gn senv =
+let add_field ?(is_include=false) ((l,sfb) as field) gn senv =
   let mlabs,olabs = match sfb with
     | SFBmind mib ->
       let l = labels_of_mib mib in
@@ -506,8 +506,18 @@ let add_field ((l,sfb) as field) gn senv =
     | SFBmodule _ | SFBmodtype _ ->
       check_modlabel l senv; (Label.Set.singleton l, Label.Set.empty)
   in
-  let cst = constraints_of_sfb senv.env sfb in
-  let senv = add_constraints_list cst senv in
+  let senv =
+    if is_include then
+      (* Universes and constraints were added when the included module
+         was defined eg in [Include F X.] (one of the trickier
+         versions of Include) the constraints on the fields are
+         exactly those of the fields of F which was defined
+         separately. *)
+      senv
+    else
+      let cst = constraints_of_sfb senv.env sfb in
+      add_constraints_list cst senv
+  in
   let env' = match sfb, gn with
     | SFBconst cb, C con -> Environ.add_constant con cb senv.env
     | SFBmind mib, I mind -> Environ.add_mind mind mib senv.env
@@ -1047,7 +1057,7 @@ let add_include me is_module inl senv =
       | SFBmodule _ -> M
       | SFBmodtype _ -> MT
     in
-    add_field field new_name senv
+    add_field ~is_include:true field new_name senv
   in
   resolver, List.fold_left add senv str
 
