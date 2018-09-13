@@ -18,6 +18,8 @@
 set -o nounset
 set -o errexit
 set -x
+# Print current wall time as part of the xtrace
+export PS4='+\t '
 
 # Set this to 1 if all module directories shall be removed before build (no incremental make)
 RMDIR_BEFORE_BUILD=1
@@ -119,7 +121,11 @@ mkdir -p "$PREFIXCOQ/bin"
 mkdir -p "$PREFIXOCAML/bin"
 
 # This is required for building addons and plugins
+# This must be CFMT (/cygdrive/c/...) otherwise coquelicot 3.0.2 configure fails.
+# coquelicot uses which ${COQBIN}/coqc to check if coqc exists. This does not work with COQBIN in MFMT.
 export COQBIN=$RESULT_INSTALLDIR_CFMT/bin/
+# This must be MFMT (C:/) otherwise bignums 68a7a3d7e0b21985913a6c3ee12067f4c5ac4e20 fails
+export COQLIB=$RESULT_INSTALLDIR_MFMT/lib/coq/
 
 ###################### Copy Cygwin Setup Info #####################
 
@@ -145,27 +151,64 @@ LOGS=$(pwd)/buildlogs
 # The current log target (first part of the log file name)
 LOGTARGET=other
 
-# Log command output - take log target name from command name (like log1 make => log target is "<module>-make")
-log1() {
-  "$@" > >(tee "$LOGS/$LOGTARGET-$1.log" | sed -e "s/^/$LOGTARGET-$1.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1.err" | sed -e "s/^/$LOGTARGET-$1.err: /" 1>&2)
-}
+# For an explanation of ${COQREGTESTING:-N} search for ${parameter:-word} in
+# http://pubs.opengroup.org/onlinepubs/009695399/utilities/xcu_chap02.html
 
-# Log command output - take log target name from command name and first argument (like log2 make install => log target is "<module>-make-install")
-log2() {
-  "$@" > >(tee "$LOGS/$LOGTARGET-$1-$2.log" | sed -e "s/^/$LOGTARGET-$1-$2.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1-$2.err" | sed -e "s/^/$LOGTARGET-$1-$2.err: /" 1>&2)
-}
+if [ "${COQREGTESTING:-N}" == "Y" ] ; then
+  # If COQREGTESTING, log to log files only
+  # Log command output - take log target name from command name (like log1 make => log target is "<module>-make")
+  log1() {
+    { local -; set +x; } 2> /dev/null
+    "$@" >"$LOGS/$LOGTARGET-$1.log"  2>"$LOGS/$LOGTARGET-$1.err"
+  }
 
-# Log command output - take log target name from command name and second argument (like log_1_3 ocaml setup.ml -configure => log target is "<module>-ocaml--configure")
-log_1_3() {
-  "$@" > >(tee "$LOGS/$LOGTARGET-$1-$3.log" | sed -e "s/^/$LOGTARGET-$1-$3.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1-$3.err" | sed -e "s/^/$LOGTARGET-$1-$3.err: /" 1>&2)
-}
+  # Log command output - take log target name from command name and first argument (like log2 make install => log target is "<module>-make-install")
+  log2() {
+    { local -; set +x; } 2> /dev/null
+    "$@" >"$LOGS/$LOGTARGET-$1-$2.log" 2>"$LOGS/$LOGTARGET-$1-$2.err"
+  }
 
-# Log command output - log target name is first argument (like logn untar tar xvaf ... => log target is "<module>-untar")
-logn() {
-  LOGTARGETEX=$1
-  shift
-  "$@" > >(tee "$LOGS/$LOGTARGET-$LOGTARGETEX.log" | sed -e "s/^/$LOGTARGET-$LOGTARGETEX.log: /") 2> >(tee "$LOGS/$LOGTARGET-$LOGTARGETEX.err" | sed -e "s/^/$LOGTARGET-$LOGTARGETEX.err: /" 1>&2)
-}
+  # Log command output - take log target name from command name and second argument (like log_1_3 ocaml setup.ml -configure => log target is "<module>-ocaml--configure")
+  log_1_3() {
+    { local -; set +x; } 2> /dev/null
+    "$@" >"$LOGS/$LOGTARGET-$1-$3.log" 2>"$LOGS/$LOGTARGET-$1-$3.err"
+  }
+
+  # Log command output - log target name is first argument (like logn untar tar xvaf ... => log target is "<module>-untar")
+  logn() {
+    { local -; set +x; } 2> /dev/null
+    LOGTARGETEX=$1
+    shift
+    "$@" >"$LOGS/$LOGTARGET-$LOGTARGETEX.log" 2>"$LOGS/$LOGTARGET-$LOGTARGETEX.err"
+  }
+else
+  # If COQREGTESTING, log to log files and console
+  # Log command output - take log target name from command name (like log1 make => log target is "<module>-make")
+  log1() {
+    { local -; set +x; } 2> /dev/null
+    "$@" > >(tee "$LOGS/$LOGTARGET-$1.log" | sed -e "s/^/$LOGTARGET-$1.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1.err" | sed -e "s/^/$LOGTARGET-$1.err: /" 1>&2)
+  }
+
+  # Log command output - take log target name from command name and first argument (like log2 make install => log target is "<module>-make-install")
+  log2() {
+    { local -; set +x; } 2> /dev/null
+    "$@" > >(tee "$LOGS/$LOGTARGET-$1-$2.log" | sed -e "s/^/$LOGTARGET-$1-$2.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1-$2.err" | sed -e "s/^/$LOGTARGET-$1-$2.err: /" 1>&2)
+  }
+
+  # Log command output - take log target name from command name and second argument (like log_1_3 ocaml setup.ml -configure => log target is "<module>-ocaml--configure")
+  log_1_3() {
+    { local -; set +x; } 2> /dev/null
+    "$@" > >(tee "$LOGS/$LOGTARGET-$1-$3.log" | sed -e "s/^/$LOGTARGET-$1-$3.log: /") 2> >(tee "$LOGS/$LOGTARGET-$1-$3.err" | sed -e "s/^/$LOGTARGET-$1-$3.err: /" 1>&2)
+  }
+
+  # Log command output - log target name is first argument (like logn untar tar xvaf ... => log target is "<module>-untar")
+  logn() {
+    { local -; set +x; } 2> /dev/null
+    LOGTARGETEX=$1
+    shift
+    "$@" > >(tee "$LOGS/$LOGTARGET-$LOGTARGETEX.log" | sed -e "s/^/$LOGTARGET-$LOGTARGETEX.log: /") 2> >(tee "$LOGS/$LOGTARGET-$LOGTARGETEX.err" | sed -e "s/^/$LOGTARGET-$LOGTARGETEX.err: /" 1>&2)
+  }
+fi
 
 ###################### 'UNFIX' SED #####################
 
@@ -229,7 +272,7 @@ function get_expand_source_tar {
     if [ -f "$SOURCE_LOCAL_CACHE_CFMT/$name.$3" ] ; then
       cp "$SOURCE_LOCAL_CACHE_CFMT/$name.$3" "$TARBALLS"
     else
-      wget "$1/$2.$3"
+      wget --progress=dot:giga "$1/$2.$3"
       if file -i "$2.$3" | grep text/html; then
         echo Download failed: "$1/$2.$3"
         echo The file wget downloaded is an html file:
@@ -260,8 +303,8 @@ function get_expand_source_tar {
   if [ "$3" == "zip" ] ; then
     log1 unzip "$TARBALLS/$name.$3"
     if [ "$strip" == "1" ] ; then
-      # Ok, this is dirty, but it works and it fails if there are name clashes
-      mv -- */* .
+      # move subfolders of root folders one level up
+      find "$(ls)" -mindepth 1 -maxdepth 1 -exec mv -- "{}" . \;
     else
       echo "Unzip strip count not supported"
       return 1
@@ -314,13 +357,13 @@ function build_prep {
   fi
 
   # Check if build is already done
-  if [ ! -f "flagfiles/$name.finished" ] ; then
+  if [ ! -f "$FLAGFILES/$name.finished" ] ; then
     BUILD_PACKAGE_NAME=$name
     BUILD_OLDPATH=$PATH
     BUILD_OLDPWD=$(pwd)
     LOGTARGET=$name
 
-    touch "flagfiles/$name.started"
+    touch "$FLAGFILES/$name.started"
 
     get_expand_source_tar "$1" "$2" "$3" "$strip" "$name"
 
@@ -344,9 +387,9 @@ function build_prep {
 # ------------------------------------------------------------------------------
 
 function build_post {
-  if [ ! -f "flagfiles/$BUILD_PACKAGE_NAME.finished" ]; then
+  if [ ! -f "$FLAGFILES/$BUILD_PACKAGE_NAME.finished" ]; then
     cd "$BUILD_OLDPWD"
-    touch "flagfiles/$BUILD_PACKAGE_NAME.finished"
+    touch "$FLAGFILES/$BUILD_PACKAGE_NAME.finished"
     PATH=$BUILD_OLDPATH
     LOGTARGET=other
   fi
@@ -384,18 +427,16 @@ function build_conf_make_inst {
 # Install all files given by a glob pattern to a given folder
 #
 # parameters
-# $1 glob pattern (in '')
-# $2 target folder
+# $1 source path
+# $2 pattern (in '')
+# $3 target folder
 # ------------------------------------------------------------------------------
 
 function install_glob {
-  # Check if any files matching the pattern exist
-  if [ "$(echo $1)" != "$1" ] ; then
-    # shellcheck disable=SC2086
-    install -D -t $2 $1
-  fi
+  SRCDIR=$(realpath -m $1)
+  DESTDIR=$(realpath -m $3)
+  ( cd "$SRCDIR" && find . -maxdepth 1 -type f -name "$2" -exec install -D -T  "$SRCDIR"/{} "$DESTDIR"/{} \; )
 }
-
 
 # ------------------------------------------------------------------------------
 # Recursively Install all files given by a glob pattern to a given folder
@@ -407,12 +448,15 @@ function install_glob {
 # ------------------------------------------------------------------------------
 
 function install_rec {
-  ( cd "$1" && find . -type f -name "$2" -exec install -D -T  "$1"/{} "$3"/{} \; )
+  SRCDIR=$(realpath -m $1)
+  DESTDIR=$(realpath -m $3)
+  ( cd "$SRCDIR" && find . -type f -name "$2" -exec install -D -T  "$SRCDIR"/{} "$DESTDIR"/{} \; )
 }
 
 # ------------------------------------------------------------------------------
 # Write a file list of the target folder
 # The file lists are used to create file lists for the windows installer
+# Don't overwrite an existing file list
 #
 # parameters
 # $1 name of file list
@@ -422,6 +466,19 @@ function list_files {
   if [ ! -e "/build/filelists/$1" ] ; then
     ( cd "$PREFIXCOQ" && find . -type f | sort > /build/filelists/"$1" )
   fi
+}
+
+# ------------------------------------------------------------------------------
+# Write a file list of the target folder
+# The file lists are used to create file lists for the windows installer
+# Do overwrite an existing file list
+#
+# parameters
+# $1 name of file list
+# ------------------------------------------------------------------------------
+
+function list_files_always {
+  ( cd "$PREFIXCOQ" && find . -type f | sort > /build/filelists/"$1" )
 }
 
 # ------------------------------------------------------------------------------
@@ -777,15 +834,15 @@ function make_flex_dll_link {
 # For this purpose hard links are better.
 
 function make_ln {
-  if [ ! -f flagfiles/myln.finished ] ; then
-    touch flagfiles/myln.started
+  if [ ! -f $FLAGFILES/myln.finished ] ; then
+    touch $FLAGFILES/myln.started
     mkdir -p myln
     ( cd myln
     cp $PATCHES/ln.c .
     "$TARGET_ARCH-gcc" -DUNICODE -D_UNICODE -DIGNORE_SYMBOLIC -mconsole -o ln.exe ln.c
     install -D ln.exe "$PREFIXCOQ/bin/ln.exe"
     )
-    touch flagfiles/myln.finished
+    touch $FLAGFILES/myln.finished
   fi
 }
 
@@ -848,7 +905,6 @@ function make_ocaml {
 
 function make_ocaml_tools {
   make_findlib
-  # make_menhir
   make_camlp5
 }
 
@@ -865,7 +921,7 @@ function make_ocaml_libs {
 function make_num {
   make_ocaml
   # We need this commit due to windows fixed, IMHO this is better than patching v1.1.
-  if build_prep https://github.com/ocaml/num/archive/ 7dd5e935aaa2b902585b3b2d0e55ad9b2442fff0 zip 1 num-1.1-7d; then
+  if build_prep https://github.com/ocaml/num/archive 7dd5e935aaa2b902585b3b2d0e55ad9b2442fff0 zip 1 num-1.1-7d; then
     log2 make all
     # log2 make test
     log2 make install
@@ -874,10 +930,23 @@ function make_num {
   fi
 }
 
+##### OCAMLBUILD #####
+
+function make_ocamlbuild {
+  make_ocaml
+  if build_prep https://github.com/ocaml/ocamlbuild/archive 0.12.0 tar.gz 1 ocamlbuild-0.12.0; then
+    log2 make configure OCAML_NATIVE=true OCAMLBUILD_PREFIX=$PREFIXOCAML OCAMLBUILD_BINDIR=$PREFIXOCAML/bin OCAMLBUILD_LIBDIR=$PREFIXOCAML/lib
+    log1 make
+    log2 make install
+    build_post
+  fi
+}
+
 ##### FINDLIB Ocaml library manager #####
 
 function make_findlib {
   make_ocaml
+  make_ocamlbuild
   if build_prep https://opam.ocaml.org/1.2.2/archives ocamlfind.1.8.0+opam tar.gz 1 ; then
     logn configure ./configure -bindir "$PREFIXOCAML\\bin" -sitelib "$PREFIXOCAML\\libocaml\\site-lib" -config "$PREFIXOCAML\\etc\\findlib.conf"
     # Note: findlib doesn't support -j 8, so don't pass MAKE_OPT
@@ -885,6 +954,10 @@ function make_findlib {
     log2 make opt
     log2 make install
     log2 make clean
+    # Add Coq install library path to ocamlfind config file
+    # $(ocamlfind printconf conf | tr -d '\r') is the name of the config file
+    # printf "%q" "$PREFIXCOQ/lib" | sed -e 's/\\/\\\\/g' is the coq lib path double escaped for sed
+    sed -i -e 's|path="\(.*\)"|path="\1;'$(printf "%q" "$PREFIXCOQ/lib" | sed -e 's/\\/\\\\/g')'"|' $(ocamlfind printconf conf | tr -d '\r')
     build_post
   fi
 }
@@ -894,15 +967,11 @@ function make_findlib {
 function make_menhir {
   make_ocaml
   make_findlib
-  # if build_prep http://gallium.inria.fr/~fpottier/menhir menhir-20151112 tar.gz 1 ; then
-  # For Ocaml 4.02
-  # if build_prep http://gallium.inria.fr/~fpottier/menhir menhir-20151012 tar.gz 1 ; then
-  # For Ocaml 4.01
-  if build_prep http://gallium.inria.fr/~fpottier/menhir menhir-20140422 tar.gz 1 ; then
+  make_ocamlbuild
+  if build_prep http://gallium.inria.fr/~fpottier/menhir menhir-20180530 tar.gz 1 ; then
     # Note: menhir doesn't support -j 8, so don't pass MAKE_OPT
     log2 make all PREFIX="$PREFIXOCAML"
     log2 make install PREFIX="$PREFIXOCAML"
-    mv "$PREFIXOCAML/bin/menhir" "$PREFIXOCAML/bin/menhir.exe"
     build_post
   fi
 }
@@ -1085,13 +1154,13 @@ function copy_coq_dlls {
 function copy_coq_objects {
   # copy objects only from folders which exist in the target lib directory
   find . -type d | while read -r FOLDER ; do
-    if [ -e "$PREFIXCOQ/lib/$FOLDER" ] ; then
-      install_glob "$FOLDER"/'*.cmxa' "$PREFIXCOQ/lib/$FOLDER"
-      install_glob "$FOLDER"/'*.cmi'  "$PREFIXCOQ/lib/$FOLDER"
-      install_glob "$FOLDER"/'*.cma'  "$PREFIXCOQ/lib/$FOLDER"
-      install_glob "$FOLDER"/'*.cmo'  "$PREFIXCOQ/lib/$FOLDER"
-      install_glob "$FOLDER"/'*.a'    "$PREFIXCOQ/lib/$FOLDER"
-      install_glob "$FOLDER"/'*.o'    "$PREFIXCOQ/lib/$FOLDER"
+    if [ -e "$PREFIXCOQ/lib/coq/$FOLDER" ] ; then
+      install_glob "$FOLDER" '*.cmxa' "$PREFIXCOQ/lib/coq/$FOLDER"
+      install_glob "$FOLDER" '*.cmi'  "$PREFIXCOQ/lib/coq/$FOLDER"
+      install_glob "$FOLDER" '*.cma'  "$PREFIXCOQ/lib/coq/$FOLDER"
+      install_glob "$FOLDER" '*.cmo'  "$PREFIXCOQ/lib/coq/$FOLDER"
+      install_glob "$FOLDER" '*.a'    "$PREFIXCOQ/lib/coq/$FOLDER"
+      install_glob "$FOLDER" '*.o'    "$PREFIXCOQ/lib/coq/$FOLDER"
     fi
   done
 }
@@ -1103,10 +1172,10 @@ function copq_coq_gtk {
   echo 'gtk-fallback-icon-theme = "Tango"' >> "$PREFIX/etc/gtk-2.0/gtkrc"
 
   if [ "$INSTALLMODE" == "absolute" ] || [ "$INSTALLMODE" == "relocatable" ]; then
-    install_glob "$PREFIX/etc/gtk-2.0/"'*'                            "$PREFIXCOQ/gtk-2.0"
-    install_glob "$PREFIX/share/gtksourceview-2.0/language-specs/"'*' "$PREFIXCOQ/share/gtksourceview-2.0/language-specs"
-    install_glob "$PREFIX/share/gtksourceview-2.0/styles/"'*'         "$PREFIXCOQ/share/gtksourceview-2.0/styles"
-    install_rec  "$PREFIX/share/themes/" '*'                          "$PREFIXCOQ/share/themes"
+    install_glob "$PREFIX/etc/gtk-2.0" '*'                            "$PREFIXCOQ/gtk-2.0"
+    install_glob "$PREFIX/share/gtksourceview-2.0/language-specs" '*' "$PREFIXCOQ/share/gtksourceview-2.0/language-specs"
+    install_glob "$PREFIX/share/gtksourceview-2.0/styles" '*'         "$PREFIXCOQ/share/gtksourceview-2.0/styles"
+    install_rec  "$PREFIX/share/themes" '*'                           "$PREFIXCOQ/share/themes"
 
     # This below item look like a bug in make install
     if [ -d "$PREFIXCOQ/share/coq/" ] ; then
@@ -1136,7 +1205,7 @@ function copy_coq_license {
     install -D README.md                      "$PREFIXCOQ/license_readme/coq/ReadMe.md"
     install -D CHANGES                        "$PREFIXCOQ/license_readme/coq/Changes.txt"
     install -D INSTALL                        "$PREFIXCOQ/license_readme/coq/Install.txt"
-    install -D doc/README.md                  "$PREFIXCOQ/license_readme/coq/ReadMeDoc.md"
+    install -D doc/README.md                  "$PREFIXCOQ/license_readme/coq/ReadMeDoc.md" || true
   fi
 }
 
@@ -1175,11 +1244,11 @@ function make_coq {
   then
     if [ "$INSTALLMODE" == "relocatable" ]; then
       # HACK: for relocatable builds, first configure with ./, then build but before install reconfigure with the real target path
-      ./configure -with-doc no -prefix ./ -libdir ./lib -mandir ./man
+      logn configure ./configure -with-doc no -prefix ./ -libdir ./lib/coq -mandir ./man
     elif [ "$INSTALLMODE" == "absolute" ]; then
-      ./configure -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib" -mandir "$PREFIXCOQ/man"
+      logn configure ./configure -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib/coq" -mandir "$PREFIXCOQ/man"
     else
-      ./configure -with-doc no -prefix "$PREFIXCOQ"
+      logn configure ./configure -with-doc no -prefix "$PREFIXCOQ"
     fi
 
     # The windows resource compiler binary name is hard coded
@@ -1191,21 +1260,21 @@ function make_coq {
       log1 make
     else
       # shellcheck disable=SC2086
-      make $MAKE_OPT
+      log1 make $MAKE_OPT
     fi
 
     if [ "$INSTALLMODE" == "relocatable" ]; then
-      ./configure -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib" -mandir "$PREFIXCOQ/man"
+      logn reconfigure ./configure -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib/coq" -mandir "$PREFIXCOQ/man"
     fi
 
-    make install
-    copy_coq_dlls
+    log2 make install
+    log1 copy_coq_dlls
     if [ "$INSTALLOCAML" == "Y" ]; then
       copy_coq_objects
     fi
 
-    copq_coq_gtk
-    copy_coq_license
+    log1 copq_coq_gtk
+    log1 copy_coq_license
 
     # make clean seems to be broken for 8.5pl2
     # 1.) find | xargs fails on cygwin, can be fixed by sed -i 's|\| xargs rm -f|-exec rm -fv \{\} \+|' Makefile
@@ -1213,8 +1282,8 @@ function make_coq {
     # make clean
 
     # Copy these files somewhere the plugin builds can find them
-    cp dev/ci/ci-basic-overlay.sh /build/
-    cp -r dev/ci/user-overlays /build/
+    logn copy-basic-overlays cp dev/ci/ci-basic-overlay.sh /build/
+    logn copy-user-overlays cp -r dev/ci/user-overlays /build/
 
     build_post
   fi
@@ -1283,8 +1352,8 @@ function make_gcc {
 ##### Get sources for Cygwin MinGW packages #####
 
 function get_cygwin_mingw_sources {
-  if [ ! -f flagfiles/cygwin_mingw_sources.finished ] ; then
-    touch flagfiles/cygwin_mingw_sources.started
+  if [ ! -f $FLAGFILES/cygwin_mingw_sources.finished ] ; then
+    touch $FLAGFILES/cygwin_mingw_sources.started
 
     # Find all installed files with mingw in the name and download the corresponding source code file from cygwin
     # Steps:
@@ -1311,7 +1380,7 @@ function get_cygwin_mingw_sources {
         if [ -f "$SOURCE_LOCAL_CACHE_CFMT/$SOURCEFILE" ] ; then
           cp "$SOURCE_LOCAL_CACHE_CFMT/$SOURCEFILE" $TARBALLS
         else
-          wget "$CYGWIN_REPOSITORY/$SOURCE"
+          wget --progress=dot:giga "$CYGWIN_REPOSITORY/$SOURCE"
           mv "$SOURCEFILE" "$TARBALLS"
           # Save the source archive in the source cache
           if [ -d "$SOURCE_LOCAL_CACHE_CFMT" ] ; then
@@ -1322,7 +1391,7 @@ function get_cygwin_mingw_sources {
 
     done
 
-    touch flagfiles/cygwin_mingw_sources.finished
+    touch $FLAGFILES/cygwin_mingw_sources.finished
   fi
 }
 
@@ -1344,7 +1413,7 @@ function make_coq_installer {
   filter_files coq_objects coq '\.(cmxa|cmi|cma|cmo|a|o)$'
 
   # Filter out plugin object files
-  filter_files coq_objects_plugins coq_objects '/lib/plugins/.*\.(cmxa|cmi|cma|cmo|a|o)$'
+  filter_files coq_objects_plugins coq_objects '/lib/coq/plugins/.*\.(cmxa|cmi|cma|cmo|a|o)$'
 
   # Coq objects objects required for plugin development = coq objects except those for pre installed plugins
   diff_files coq_plugindev coq_objects coq_objects_plugins
@@ -1460,6 +1529,8 @@ function make_addons {
 
 ###################### TOP LEVEL BUILD #####################
 
+ocamlfind list || true
+
 make_sed
 make_ocaml
 make_ocaml_tools
@@ -1477,7 +1548,7 @@ list_files ocaml_coq
 
 make_addons
 
-list_files ocaml_coq_addons
+list_files_always ocaml_coq_addons
 
 if [ "$MAKEINSTALLER" == "Y" ] ; then
   make_coq_installer
