@@ -5017,21 +5017,17 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
     Declare.declare_constant ~internal:Declare.InternalTacticRequest ~local:true id decl
   in
   let cst = Impargs.with_implicit_protection cst () in
-  let lem =
-    match const.Entries.const_entry_universes with
-    | Entries.Polymorphic_const_entry uctx ->
-      let uctx = Univ.ContextSet.of_context uctx in
-      (** Hack: the kernel may generate definitions whose universe variables are
-          not the same as requested in the entry because of constraints delayed
-          in the body, even in polymorphic mode. We mimick what it does for now
-          in hope it is fixed at some point. *)
-      let (_, body_uctx), _ = Future.force const.Entries.const_entry_body in
-      let uctx = Univ.ContextSet.to_context (Univ.ContextSet.union uctx body_uctx) in
-      let u = Univ.UContext.instance uctx in
-      mkConstU (cst, EInstance.make u)
-    | Entries.Monomorphic_const_entry _ ->
-      mkConst cst
+  let inst = match const.Entries.const_entry_universes with
+  | Entries.Monomorphic_const_entry _ -> EInstance.empty
+  | Entries.Polymorphic_const_entry ctx ->
+    (** We mimick what the kernel does, that is ensuring that no additional
+        constraints appear in the body of polymorphic constants. Ideally this
+        should be enforced statically. *)
+    let (_, body_uctx), _ = Future.force const.Entries.const_entry_body in
+    let () = assert (Univ.ContextSet.is_empty body_uctx) in
+    EInstance.make (Univ.UContext.instance ctx)
   in
+  let lem = mkConstU (cst, inst) in
   let evd = Evd.set_universe_context evd ectx in
   let open Safe_typing in
   let eff = private_con_of_con (Global.safe_env ()) cst in
