@@ -306,7 +306,7 @@ let print_rule_classifier fmt r = match r.vernac_class with
 | Some f -> fprintf fmt "Some @[(fun %a-> %s)@]" print_binders r.vernac_toks f.code
 
 let print_body fmt r =
-  fprintf fmt "@[(fun %a~atts@ ~st@ -> %s)@]"
+  fprintf fmt "@[(fun %a~atts@ ~st@ -> let () = %s in st)@]"
     print_binders r.vernac_toks r.vernac_body.code
 
 let rec print_sig fmt = function
