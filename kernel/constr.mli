@@ -382,7 +382,7 @@ type named_context = named_declaration list
 type compacted_context = compacted_declaration list
 
 (** {6 Functionals working on expressions canonically abstracted over
-       a local context (possibly with let-ins) *)
+       a local context (possibly with let-ins)} *)
 
 (** [map_under_context f l c] maps [f] on the immediate subterms of a
     term abstracted over a context of length [n] (local definitions
