@@ -2,7 +2,7 @@
 
 ###################### COPYRIGHT/COPYLEFT ######################
 
-# (C) 2016 Intel Deutschland GmbH
+# (C) 2016..2018 Intel Deutschland GmbH
 # Author: Michael Soegtrop
 #
 # Released to the public by Intel under the
@@ -385,7 +385,8 @@ function build_prep {
 
 # ------------------------------------------------------------------------------
 # Like build_prep, but gets the data from an entry in ci-basic-overlay.sh
-# This assumes the following definitions exist in ci-basic-overlay.sh
+# This assumes the following definitions exist in ci-basic-overlay.sh,
+# or in a file in the user-overlays folder:
 # $1_CI_REF
 # $1_CI_ARCHIVEURL
 # $1_CI_GITURL
@@ -1621,8 +1622,6 @@ function make_addon_ssreflect {
 # A new (experimental) tactic language
 
 function make_addon_ltac2 {
-  # Note: ltac2 uses a branch and not a label in ci-basic-overlay.sh in the v8.8 release branch
-  # So we don't use the overlay mechanism for ltac2
   if build_prep_overlay ltac2; then
     installer_addon_section ltac2 "Ltac-2" "Coq plugin with the Ltac-2 enhanced tactics language" ""
     log1 make all
@@ -1719,8 +1718,6 @@ function install_addon_vst {
 }
 
 function make_addon_vst {
-  # Note: VST uses master in ci-basic-overlay.sh in the v8.8 release branch
-  # So we don't use the overlay mechanism for VST
   if build_prep_overlay VST; then
     installer_addon_section vst "VST" "ATTENTION: SOME INCLUDED COMPCERT PARTS ARE NOT OPEN SOURCE! Verified Software Toolchain for verifying C code" "off"
     log1 make $MAKE_OPT
