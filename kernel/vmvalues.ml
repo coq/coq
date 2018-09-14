@@ -69,17 +69,22 @@ let rec eq_structured_values v1 v2 =
   let o1 = Obj.repr v1 in
   let o2 = Obj.repr v2 in
   if Obj.is_int o1 && Obj.is_int o2 then o1 == o2
-  else if Int.equal (Obj.tag o1) (Obj.tag o2) &&
-          Int.equal (Obj.size o1) (Obj.size o2)
-  then
-    let i = ref 0 in
-    while (!i < Obj.size o1 && eq_structured_values
-             (Obj.magic (Obj.field o1 !i) : structured_values)
-             (Obj.magic (Obj.field o2 !i) : structured_values)) do
-      incr i
-    done;
-    !i >= Obj.size o1
-  else false
+  else
+    let t1 = Obj.tag o1 in
+    let t2 = Obj.tag o2 in
+    if Int.equal t1 t2 &&
+       Int.equal (Obj.size o1) (Obj.size o2)
+    then begin
+      assert (t1 <= last_variant_tag && t2 <= last_variant_tag);
+      let i = ref 0 in
+      while (!i < Obj.size o1 && eq_structured_values
+               (Obj.magic (Obj.field o1 !i) : structured_values)
+               (Obj.magic (Obj.field o2 !i) : structured_values)) do
+        incr i
+      done;
+      !i >= Obj.size o1
+    end
+    else false
 
 let hash_structured_values (v : structured_values) =
   (* We may want a better hash function here *)
