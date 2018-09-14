@@ -38,8 +38,6 @@ val switch_tag : tag
 val cofix_tag : tag
 val cofix_evaluated_tag : tag
 
-val last_variant_tag : tag
-
 type structured_constant =
   | Const_sort of Sorts.t
   | Const_ind of inductive
