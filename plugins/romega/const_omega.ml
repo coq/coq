@@ -148,32 +148,20 @@ let rec mk_nat = function
 (* Lists *)
 
 let mkListConst c =
-  let r =
-    Coqlib.coq_reference "" ["Init";"Datatypes"] c
-  in
-  let inst =
-    if Global.is_polymorphic r then
-      fun u -> EConstr.EInstance.make (Univ.Instance.of_array [|u|])
-    else
-      fun _ -> EConstr.EInstance.empty
-  in
-    fun u -> EConstr.mkConstructU (Globnames.destConstructRef r, inst u)
+  let r = Coqlib.coq_reference "romega" ["Init";"Datatypes"] c in
+  EConstr.of_constr @@ UnivGen.constr_of_global r
 
-let coq_cons univ typ = EConstr.mkApp (mkListConst "cons" univ, [|typ|])
-let coq_nil univ typ =  EConstr.mkApp (mkListConst "nil" univ, [|typ|])
+let coq_cons typ = EConstr.mkApp (mkListConst "cons", [|typ|])
+let coq_nil typ =  EConstr.mkApp (mkListConst "nil", [|typ|])
 
-let mk_list univ typ l =
+let mk_list typ l =
   let rec loop = function
-    | [] -> coq_nil univ typ
+    | [] -> coq_nil typ
     | (step :: l) ->
-       EConstr.mkApp (coq_cons univ typ, [| step; loop l |]) in
+       EConstr.mkApp (coq_cons typ, [| step; loop l |]) in
   loop l
 
-let mk_plist =
-  let type1lev = UnivGen.new_univ_level () in
-  fun l -> mk_list type1lev EConstr.mkProp l
-
-let mk_list = mk_list Univ.Level.set
+let mk_plist l = mk_list EConstr.mkProp l
 
 type parse_term =
   | Tplus of EConstr.t * EConstr.t
