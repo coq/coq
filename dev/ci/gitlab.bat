@@ -1,5 +1,8 @@
 @ECHO OFF
 
+ECHO "Start Time"
+TIME /T
+
 REM This script builds and signs the Windows packages on Gitlab
 
 if %ARCH% == 32 (
@@ -28,11 +31,35 @@ if exist %DESTCOQ%\ rd /s /q %DESTCOQ%
 call %CI_PROJECT_DIR%\dev\build\windows\MakeCoq_MinGW.bat -threads=1 ^
   -arch=%ARCH% -installer=Y -coqver=%CI_PROJECT_DIR_CFMT% ^
   -destcyg=%CYGROOT% -destcoq=%DESTCOQ% -cygcache=%CYGCACHE% ^
-  -addon="bignums ltac2 equations" -make=N ^
-  -setup %CI_PROJECT_DIR%\%SETUP% || GOTO ErrorExit
+  -addon=bignums ^
+  -addon=equations ^
+  -addon=ltac2 ^
+  -addon=mathcomp ^
+  -addon=menhir ^
+  -addon=menhirlib ^
+  -addon=compcert ^
+  -addon=vst ^
+  -addon=aactactics ^
+  -addon=quickchick ^
+  -addon=coquelicot ^
+  -make=N ^
+  -setup %CI_PROJECT_DIR%\%SETUP% || GOTO ErrorZipLogfilesAndExit
+
+
+ECHO "Start Artifact Creation"
+TIME /T
+
+CALL :ZipLogfiles
 
 copy "%CYGROOT%\build\coq-local\dev\nsis\*.exe" dev\nsis || GOTO ErrorExit
-7z a coq-opensource-archive-windows-%ARCHLONG%.zip %CYGROOT%\build\tarballs\* || GOTO ErrorExit
+REM The open source archive is only required for release builds
+IF DEFINED WIN_CERTIFICATE_PATH (
+  7z a coq-opensource-archive-windows-%ARCHLONG%.zip %CYGROOT%\build\tarballs\* || GOTO ErrorExit
+) ELSE (
+  REM In non release builds, create a dummy file
+  ECHO "This is not a release build - open source archive not created / uploaded" > coq-opensource-info.txt
+  7z a coq-opensource-archive-windows-%ARCHLONG%.zip coq-opensource-info.txt || GOTO ErrorExit
+)
 
 REM DO NOT echo the signing command below, as this would leak secrets in the logs
 IF DEFINED WIN_CERTIFICATE_PATH (
@@ -43,7 +70,21 @@ IF DEFINED WIN_CERTIFICATE_PATH (
   )
 )
 
+ECHO "Finished Artifact Creation"
+TIME /T
+
 GOTO :EOF
+
+:ZipLogfiles
+  ECHO Zipping logfiles for artifact upload
+  7z a coq-buildlogs.zip %CYGROOT%\build\buildlogs\*
+  7z a coq-filelists.zip %CYGROOT%\build\filelists\*
+  7z a coq-flagfiles.zip %CYGROOT%\build\flagfiles\*
+  GOTO :EOF
+
+:ErrorZipLogfilesAndExit
+  CALL :ZipLogfiles
+  REM fall through
 
 :ErrorExit
   ECHO ERROR %0 failed

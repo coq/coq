@@ -9,7 +9,7 @@
 ########################################################################
 # MathComp
 ########################################################################
-: "${mathcomp_CI_REF:=master}"
+: "${mathcomp_CI_REF:=mathcomp-1.7.0}"
 : "${mathcomp_CI_GITURL:=https://github.com/math-comp/math-comp}"
 : "${mathcomp_CI_ARCHIVEURL:=${mathcomp_CI_GITURL}/archive}"
 
@@ -71,7 +71,7 @@
 ########################################################################
 # Ltac2
 ########################################################################
-: "${ltac2_CI_REF:=v8.8}"
+: "${ltac2_CI_REF:=0.1}"
 : "${ltac2_CI_GITURL:=https://github.com/ppedrot/ltac2}"
 : "${ltac2_CI_ARCHIVEURL:=${ltac2_CI_GITURL}/archive}"
 
@@ -92,20 +92,26 @@
 ########################################################################
 # Coquelicot
 ########################################################################
-: "${Coquelicot_CI_REF:=master}"
+# ATTENTION: The archive URL might depend on the version
+: "${Coquelicot_CI_REF:=coquelicot-3.0.2}"
 : "${Coquelicot_CI_GITURL:=https://scm.gforge.inria.fr/anonscm/git/coquelicot/coquelicot}"
+: "${Coquelicot_CI_ARCHIVEURL:=https://gforge.inria.fr/frs/download.php/file/37523}"
 
 ########################################################################
 # CompCert
 ########################################################################
-: "${CompCert_CI_REF:=master}"
+# Note: The latest release version of CompCert (3.3) does not compile with Coq 8.8.1
+# This is caused by a compatibility issue with OCaml 4.0.7
+: "${CompCert_CI_REF:=17f9d839df12511a7e327f2840855e70af5ede47}"
 : "${CompCert_CI_GITURL:=https://github.com/AbsInt/CompCert}"
 : "${CompCert_CI_ARCHIVEURL:=${CompCert_CI_GITURL}/archive}"
 
 ########################################################################
 # VST
 ########################################################################
-: "${VST_CI_REF:=master}"
+# Note: The latest release version of VST (2.2) does not compile with Coq 8.8.1
+# Note: newer versions of VST have issues with buildability and licensing
+: "${VST_CI_REF:=e49605cf1f1e5ae3bbec3d6554122427a94ae986}"
 : "${VST_CI_GITURL:=https://github.com/PrincetonUniversity/VST}"
 : "${VST_CI_ARCHIVEURL:=${VST_CI_GITURL}/archive}"
 
@@ -160,7 +166,7 @@
 ########################################################################
 # Bignums
 ########################################################################
-: "${bignums_CI_REF:=v8.8}"
+: "${bignums_CI_REF:=V8.8.0}"
 : "${bignums_CI_GITURL:=https://github.com/coq/bignums}"
 : "${bignums_CI_ARCHIVEURL:=${bignums_CI_GITURL}/archive}"
 
@@ -174,7 +180,7 @@
 ########################################################################
 # Equations
 ########################################################################
-: "${Equations_CI_REF:=8.8}"
+: "${Equations_CI_REF:=v1.1-8.8}"
 : "${Equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations}"
 : "${Equations_CI_ARCHIVEURL:=${Equations_CI_GITURL}/archive}"
 
@@ -195,7 +201,8 @@
 ########################################################################
 # ext-lib
 ########################################################################
-: "${ext_lib_CI_REF:=master}"
+# Note: This is the latest commit of the v8.8 branch as of August 31st 2018
+: "${ext_lib_CI_REF:=5dd9cfa51f96fcb785c7c31d8c6bf55af5d93f27}"
 : "${ext_lib_CI_GITURL:=https://github.com/coq-ext-lib/coq-ext-lib}"
 : "${ext_lib_CI_ARCHIVEURL:=${ext_lib_CI_GITURL}/archive}"
 
@@ -209,6 +216,21 @@
 ########################################################################
 # quickchick
 ########################################################################
-: "${quickchick_CI_REF:=8.8}"
+: "${quickchick_CI_REF:=v1.0.2}"
 : "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick}"
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
+
+########################################################################
+# menhirlib
+########################################################################
+: "${menhirlib_CI_REF:=20180827}"
+: "${menhirlib_CI_GITURL:=https://gitlab.inria.fr/fpottier/coq-menhirlib}"
+: "${menhirlib_CI_ARCHIVEURL:=${menhirlib_CI_GITURL}/-/archive}"
+
+########################################################################
+# aac-tactics
+########################################################################
+# Note: this is the latest commit of the v8.8 branch as of August 31st 2018
+: "${aactactis_CI_REF:=86ac28259030649ef51460e4de2441c8a1017751}"
+: "${aactactis_CI_GITURL:=https://github.com/coq-community/aac-tactics}"
+: "${aactactis_CI_ARCHIVEURL:=${aactactis_CI_GITURL}/archive}"

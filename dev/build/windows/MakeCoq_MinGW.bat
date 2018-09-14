@@ -247,7 +247,7 @@ IF "%~0" == "-addon" (
 IF NOT "%~0" == "" (
   ECHO Install cygwin and download, compile and install OCaml and Coq for MinGW
   ECHO !!! Illegal parameter %~0
-  ECHO Usage: 
+  ECHO Usage:
   ECHO MakeCoq_MinGW
   CALL :PrintPars
   GOTO :EOF
@@ -267,7 +267,6 @@ IF "%INSTALLMODE%" == "mingwincygwin" (
 
 IF "%MAKEINSTALLER%" == "Y" (
   SET INSTALLMODE=relocatable
-  SET INSTALLOCAML=Y
 )
 
 REM ========== CONFIRM PARAMETERS ==========
@@ -275,7 +274,7 @@ REM ========== CONFIRM PARAMETERS ==========
 CALL :PrintPars
 REM Note: DOS batch replaces variables on parsing, so one can't use a variable just set in an () block
 IF "%COQREGTESTING%"=="Y" (GOTO DontAsk)
-  SET /p ANSWER=Is this correct? y/n 
+  SET /p ANSWER="Is this correct? y/n "
   IF NOT "%ANSWER%"=="y" (GOTO :EOF)
 :DontAsk
 
@@ -315,12 +314,13 @@ ECHO RESULT INSTALL DIR (MINGW)  = %RESULT_INSTALLDIR_MFMT%
 ECHO RESULT INSTALL DIR (CYGWIN) = %RESULT_INSTALLDIR_CFMT%
 
 REM WARNING: Add a space after the = in case you want set this to empty, otherwise the variable will be unset
-SET MAKE_OPT=-j %MAKE_THREADS% 
+SET MAKE_OPT=-j %MAKE_THREADS%
 
 REM ========== DERIVED CYGWIN SETUP OPTIONS ==========
 
-REM WARNING: Add a space after the = otherwise the variable will be unset
-SET CYGWIN_OPT= 
+REM One can't set a variable to empty in DOS, but you can set it to a space this way.
+REM The quotes are just there to make the space visible and to protect from "remove trailing spaces".
+SET "CYGWIN_OPT= "
 
 IF "%CYGWIN_FROM_CACHE%" == "Y" (
   SET CYGWIN_OPT= %CYGWIN_OPT% -L
@@ -333,8 +333,6 @@ IF "%CYGWIN_QUIET%" == "Y" (
 IF "%GTK_FROM_SOURCES%"=="N" (
   SET CYGWIN_OPT= %CYGWIN_OPT% -P mingw64-%ARCH%-gtk2.0,mingw64-%ARCH%-gtksourceview2.0
 )
-
-ECHO ========== INSTALL CYGWIN ==========
 
 REM Cygwin setup sets proper ACLs (permissions) for folders it CREATES.
 REM Otherwise chmod won't work and e.g. the ocaml build will fail.
@@ -349,7 +347,10 @@ IF EXIST "%CYGWIN_INSTALLDIR_WFMT%\etc\setup\installed.db" (
 IF NOT "%CYGWIN_QUIET%" == "Y" (
   SET RUNSETUP=Y
 )
+
 IF "%COQREGTESTING%" == "Y" (
+  ECHO "========== REMOVE EXISTING CYGWIN =========="
+  DEL /S /F /Q "%CYGWIN_INSTALLDIR_WFMT%" > NUL
   SET RUNSETUP=Y
 )
 
@@ -358,6 +359,8 @@ SET "EXTRAPACKAGES= "
 IF NOT "%APPVEYOR%" == "True" (
   SET EXTRAPACKAGES=-P wget,curl,git,gcc-core,gcc-g++,automake1.5
 )
+
+ECHO "========== INSTALL CYGWIN =========="
 
 IF "%RUNSETUP%"=="Y" (
   %SETUP% ^
@@ -436,10 +439,10 @@ ECHO ========== BATCH FUNCTIONS ==========
   ECHO -proxy    ^<internet proxy^>
   ECHO -cygrepo  ^<cygwin download repository^>
   ECHO -cygcache ^<local cygwin repository/cache^>
-  ECHO -cyglocal ^<Y or N^> install cygwin from cache 
+  ECHO -cyglocal ^<Y or N^> install cygwin from cache
   ECHO -cygquiet ^<Y or N^> install cygwin without user interaction
   ECHO -srccache ^<local source code repository/cache^>
-  ECHO -coqver   ^<Coq version to install^> 
+  ECHO -coqver   ^<Coq version to install^>
   ECHO -gtksrc   ^<Y or N^> build GTK ^(90 min^) or use cygwin version
   ECHO -threads  ^<1..N^> Number of make threads
   ECHO -addon    ^<name^>  Enable building selected addon (can be repeated)
@@ -452,9 +455,9 @@ ECHO ========== BATCH FUNCTIONS ==========
   ECHO -ocaml    = %INSTALLOCAML%
   ECHO -installer= %MAKEINSTALLER%
   ECHO -make     = %INSTALLMAKE%
-  ECHO -destcyg  = %DESTCYG% 
-  ECHO -destcoq  = %DESTCOQ% 
-  ECHO -setup    = %SETUP% 
+  ECHO -destcyg  = %DESTCYG%
+  ECHO -destcoq  = %DESTCOQ%
+  ECHO -setup    = %SETUP%
   ECHO -proxy    = %PROXY%
   ECHO -cygrepo  = %CYGWIN_REPOSITORY%
   ECHO -cygcache = %CYGWIN_LOCAL_CACHE_WFMT%
