@@ -168,8 +168,6 @@
 /plugins/syntax/        @ppedrot
 # Secondary maintainer @maximedenes
 
-/plugins/quote/ @herbelin
-
 /plugins/rtauto/       @PierreCorbineau
 # Secondary maintainer @herbelin
 

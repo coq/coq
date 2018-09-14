@@ -12,7 +12,6 @@
    ring tactic. Abstract rings need more theory, depending on
    ZArith_base. *)
 
-Require Import Quote.
 Declare ML Module "newring_plugin".
 Require Export Ring_theory.
 Require Export Ring_tac.

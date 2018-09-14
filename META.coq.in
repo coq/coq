@@ -325,24 +325,12 @@ package "plugins" (
     archive(native)  = "micromega_plugin.cmx"
   )
 
-  package "quote" (
-
-    description = "Coq quote plugin"
-    version     = "8.10"
-
-    requires    = "coq.plugins.ltac"
-    directory   = "quote"
-
-    archive(byte)    = "quote_plugin.cmo"
-    archive(native)  = "quote_plugin.cmx"
-  )
-
   package "newring" (
 
     description = "Coq newring plugin"
     version     = "8.10"
 
-    requires    = "coq.plugins.quote"
+    requires    = ""
     directory   = "setoid_ring"
 
     archive(byte)    = "newring_plugin.cmo"

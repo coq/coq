@@ -15,7 +15,6 @@ Require Import Ring_polynom.
 Require Import BinList.
 Require Export ListTactics.
 Require Import InitialRing.
-Require Import Quote.
 Declare ML Module "newring_plugin".
 
 

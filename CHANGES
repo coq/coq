@@ -1,3 +1,13 @@
+Changes beyond 8.9
+==================
+
+Plugins
+
+- The quote plugin (https://coq.inria.fr/distrib/V8.8.1/refman/proof-engine/detailed-tactic-examples.html#quote)
+  was removed. If some users are interested in maintaining this plugin
+  externally, the Coq development team can provide assistance for extracting
+  the plugin and setting up a new repository.
+
 Changes from 8.8.2 to 8.9+beta1
 ===============================
 
