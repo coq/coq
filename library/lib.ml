@@ -440,6 +440,21 @@ let add_section_context ctx =
        check_same_poly true vars;
        sectab := (Context ctx :: vars,repl,abs)::sl
 
+exception PolyFound of bool (* make this a let exception once possible *)
+let is_polymorphic_univ u =
+  try
+    let open Univ in
+    List.iter (fun (vars,_,_) ->
+        List.iter (function
+            | Variable (_,_,poly,(univs,_)) ->
+              if LSet.mem u univs then raise (PolyFound poly)
+            | Context (univs,_) ->
+              if LSet.mem u univs then raise (PolyFound true)
+          ) vars
+      ) !sectab;
+    false
+  with PolyFound b -> b
+
 let extract_hyps (secs,ohyps) =
   let rec aux = function
     | (Variable (id,impl,poly,ctx)::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->

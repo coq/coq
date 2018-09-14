@@ -25,12 +25,6 @@ val pr_with_global_universes : Level.t -> Pp.t
 val reference_of_level : Level.t -> Libnames.qualid
 [@@ocaml.deprecated "Use [UnivNames.qualid_of_level]"]
 
-val add_global_universe : Level.t -> Decl_kinds.polymorphic -> unit
-[@@ocaml.deprecated "Use [UnivNames.add_global_universe]"]
-
-val is_polymorphic : Level.t -> bool
-[@@ocaml.deprecated "Use [UnivNames.is_polymorphic]"]
-
 type universe_binders = UnivNames.universe_binders
 [@@ocaml.deprecated "Use [UnivNames.universe_binders]"]
 
