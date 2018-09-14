@@ -161,9 +161,9 @@ and nf_whd env sigma whd typ =
   | Vconstr_block b ->
       let tag = btag b in
       let (tag,ofs) =
-        if tag = last_variant_tag then
+        if tag = Obj.last_non_constant_constructor_tag then
 	  match whd_val (bfield b 0) with
-          | Vconstr_const tag -> (tag+last_variant_tag, 1)
+          | Vconstr_const tag -> (tag+Obj.last_non_constant_constructor_tag, 1)
 	  | _ -> assert false
         else (tag, 0) in
       let capp,ctyp = construct_of_constr_block env tag typ in

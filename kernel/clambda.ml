@@ -422,7 +422,7 @@ let rec remove_let subst lam =
 exception TooLargeInductive of Pp.t
 
 let max_nb_const = 0x1000000
-let max_nb_block = 0x1000000 + last_variant_tag - 1
+let max_nb_block = 0x1000000 + Obj.last_non_constant_constructor_tag - 1
 
 let str_max_constructors =
   Format.sprintf
@@ -468,12 +468,12 @@ let makeblock tag nparams arity args =
   if arity = 0 then Lint tag
   else
   if Array.for_all is_value args then
-    if tag < last_variant_tag then
+    if tag < Obj.last_non_constant_constructor_tag then
       Lval(val_of_block tag (Array.map get_value args))
     else
       let args = Array.map get_value args in
-      let args = Array.append [| val_of_int (tag - last_variant_tag) |] args in
-      Lval(val_of_block last_variant_tag args)
+      let args = Array.append [| val_of_int (tag - Obj.last_non_constant_constructor_tag) |] args in
+      Lval(val_of_block Obj.last_non_constant_constructor_tag args)
   else Lmakeblock(tag, args)
 
 

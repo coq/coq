@@ -25,6 +25,9 @@ let _ = init_vm ()
 (* Abstract data types and utility functions **********)
 (******************************************************)
 
+(* The representation of values relies on this assertion *)
+let _ = assert (Int.equal Obj.first_non_constant_constructor_tag 0)
+
 (* Values of the abstract machine *)
 type values
 type structured_values = values
@@ -42,10 +45,6 @@ let fix_app_tag = 4
 let switch_tag = 5
 let cofix_tag = 6
 let cofix_evaluated_tag = 7
-
-(* It would be great if OCaml exported this value,
-   So fixme if this happens in a new version of OCaml *)
-let last_variant_tag = 245
 
 (** Structured constants are constants whose construction is done once. Their
 occurrences share the same value modulo kernel name substitutions (for functor
@@ -75,7 +74,8 @@ let rec eq_structured_values v1 v2 =
     if Int.equal t1 t2 &&
        Int.equal (Obj.size o1) (Obj.size o2)
     then begin
-      assert (t1 <= last_variant_tag && t2 <= last_variant_tag);
+      assert (t1 <= Obj.last_non_constant_constructor_tag &&
+              t2 <= Obj.last_non_constant_constructor_tag);
       let i = ref 0 in
       while (!i < Obj.size o1 && eq_structured_values
                (Obj.magic (Obj.field o1 !i) : structured_values)
@@ -631,10 +631,10 @@ let branch_arg k (tag,arity) =
   if Int.equal arity 0 then  ((Obj.magic tag):values)
   else
     let b, ofs =
-      if tag < last_variant_tag then Obj.new_block tag arity, 0
+      if tag < Obj.last_non_constant_constructor_tag then Obj.new_block tag arity, 0
       else
-        let b = Obj.new_block last_variant_tag (arity+1) in
-        Obj.set_field b 0 (Obj.repr (tag-last_variant_tag));
+        let b = Obj.new_block Obj.last_non_constant_constructor_tag (arity+1) in
+        Obj.set_field b 0 (Obj.repr (tag-Obj.last_non_constant_constructor_tag));
         b,1 in
     for i = ofs to ofs + arity - 1 do
       Obj.set_field b i (Obj.repr (val_of_rel (k+i)))
