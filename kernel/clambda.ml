@@ -269,7 +269,7 @@ let lam_subst_args subst args =
 let can_subst lam =
   match lam with
   | Lrel _ | Lvar _ | Lconst _
-  | Lval _ | Lsort _ | Lind _ | Llam _ -> true
+  | Lval _ | Lsort _ | Lind _ -> true
   | _ -> false
 
 let rec simplify subst lam =

@@ -292,7 +292,8 @@ let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac
         let c, cl, ucst = match_pat env p occ h cl in
         let gl = pf_merge_uc ucst gl in
         let c = EConstr.of_constr c in
-        let gl = try pf_unify_HO gl inf_t c with _ -> error gl c inf_t in
+        let gl = try pf_unify_HO gl inf_t c
+                 with exn when CErrors.noncritical exn -> error gl c inf_t in
         cl, gl, post
       with 
       | NoMatch | NoProgress ->
@@ -301,7 +302,8 @@ let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac
           let e = EConstr.of_constr e in
           let n, e, _, _ucst =  pf_abs_evars gl (fst p, e) in
           let e, _, _, gl = pf_saturate ~beta:true gl e n in 
-          let gl = try pf_unify_HO gl inf_t e with _ -> error gl e inf_t in
+          let gl = try pf_unify_HO gl inf_t e
+                   with exn when CErrors.noncritical exn -> error gl e inf_t in
           cl, gl, post
     in        
     let rec match_all concl gl patterns =
