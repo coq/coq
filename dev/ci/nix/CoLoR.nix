@@ -1,0 +1,5 @@
+{ bignums }:
+
+{
+  buildInputs = [ bignums ];
+}
