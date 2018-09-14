@@ -129,11 +129,19 @@ insec@{v} = Type@{u} -> Type@{v}
 (* v |=  *)
 
 insec is universe polymorphic
+NonCumulative Inductive insecind@{k} : Type@{k+1} :=
+    inseccstr : Type@{k} -> insecind@{k}
+
+For inseccstr: Argument scope is [type_scope]
 insec@{u v} = Type@{u} -> Type@{v}
      : Type@{max(u+1,v+1)}
 (* u v |=  *)
 
 insec is universe polymorphic
+NonCumulative Inductive insecind@{u k} : Type@{k+1} :=
+    inseccstr : Type@{k} -> insecind@{u k}
+
+For inseccstr: Argument scope is [type_scope]
 inmod@{u} = Type@{u}
      : Type@{u+1}
 (* u |=  *)
@@ -155,24 +163,24 @@ inmod@{u} -> Type@{v}
 (* u v |=  *)
 
 Applied.infunct is universe polymorphic
-axfoo@{i Top.48 Top.49} : Type@{Top.48} -> Type@{i}
-(* i Top.48 Top.49 |=  *)
+axfoo@{i Top.55 Top.56} : Type@{Top.55} -> Type@{i}
+(* i Top.55 Top.56 |=  *)
 
 axfoo is universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant Top.axfoo
-axbar@{i Top.48 Top.49} : Type@{Top.49} -> Type@{i}
-(* i Top.48 Top.49 |=  *)
+axbar@{i Top.55 Top.56} : Type@{Top.56} -> Type@{i}
+(* i Top.55 Top.56 |=  *)
 
 axbar is universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant Top.axbar
-axfoo' : Type@{Top.51} -> Type@{axbar'.i}
+axfoo' : Type@{Top.58} -> Type@{axbar'.i}
 
 axfoo' is not universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant Top.axfoo'
-axbar' : Type@{Top.51} -> Type@{axbar'.i}
+axbar' : Type@{Top.58} -> Type@{axbar'.i}
 
 axbar' is not universe polymorphic
 Argument scope is [type_scope]

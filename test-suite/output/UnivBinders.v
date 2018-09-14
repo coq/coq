@@ -122,8 +122,12 @@ Section SomeSec.
   Universe u.
   Definition insec@{v} := Type@{u} -> Type@{v}.
   Print insec.
+
+  Inductive insecind@{k} := inseccstr : Type@{k} -> insecind.
+  Print insecind.
 End SomeSec.
 Print insec.
+Print insecind.
 
 Module SomeMod.
   Definition inmod@{u} := Type@{u}.
