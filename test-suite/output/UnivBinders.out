@@ -86,10 +86,10 @@ Type@{M} -> Type@{N} -> Type@{E}
 (* E M N |=  *)
 
 foo is universe polymorphic
-foo@{Var(0) Var(1) Var(2)} = 
-Type@{Var(1)} -> Type@{Var(2)} -> Type@{Var(0)}
-     : Type@{max(Var(0)+1,Var(1)+1,Var(2)+1)}
-(* Var(0) Var(1) Var(2) |=  *)
+foo@{u Top.17 v} = 
+Type@{Top.17} -> Type@{v} -> Type@{u}
+     : Type@{max(u+1,Top.17+1,v+1)}
+(* u Top.17 v |=  *)
 
 foo is universe polymorphic
 NonCumulative Inductive Empty@{E} : Type@{E} :=  
