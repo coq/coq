@@ -869,6 +869,7 @@ Module Make (X: DecidableType) <: WS with Module E:=X.
  Module E := X.
  Definition key := E.t.
 
+#[universes(template)]
  Record slist (elt:Type) :=
   {this :> Raw.t elt; NoDup : NoDupA (@Raw.PX.eqk elt) this}.
  Definition t (elt:Type) := slist elt.

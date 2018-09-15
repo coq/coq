@@ -28,6 +28,7 @@ Local Open Scope Z_scope.
 
 Module ZnZ.
 
+ #[universes(template)]
  Class Ops (t:Type) := MkOps {
 
     (* Conversion functions with Z *)

@@ -22,6 +22,7 @@ Section multiset_defs.
   Hypothesis eqA_equiv : Equivalence eqA.
   Hypothesis Aeq_dec : forall x y:A, {eqA x y} + {~ eqA x y}.
 
+  #[universes(template)]
   Inductive multiset : Type :=
     Bag : (A -> nat) -> multiset.
 

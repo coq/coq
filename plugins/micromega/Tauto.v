@@ -21,6 +21,7 @@ Require Import Bool.
 Set Implicit Arguments.
 
 
+  #[universes(template)]
   Inductive BFormula (A:Type) : Type :=
   | TT   : BFormula A
   | FF   : BFormula A

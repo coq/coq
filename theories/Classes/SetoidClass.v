@@ -27,6 +27,7 @@ Require Export Coq.Classes.Morphisms.
 
 (** A setoid wraps an equivalence. *)
 
+#[universes(template)]
 Class Setoid A := {
   equiv : relation A ;
   setoid_equiv :> Equivalence equiv }.
@@ -128,6 +129,7 @@ Program Instance setoid_partial_app_morphism `(sa : Setoid A) (x : A) : Proper (
 
 (** Partial setoids don't require reflexivity so we can build a partial setoid on the function space. *)
 
+#[universes(template)]
 Class PartialSetoid (A : Type) :=
   { pequiv : relation A ; pequiv_prf :> PER pequiv }.
 

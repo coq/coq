@@ -32,6 +32,7 @@ Variable phiCR_comm: forall (c:C)(x:R), x * [c] == [c] * x.
    with coefficients in C :
  *)
 
+#[universes(template)]
  Inductive Pol : Type :=
   | Pc : C -> Pol
   | PX : Pol -> positive -> positive -> Pol -> Pol. 
@@ -43,6 +44,7 @@ Definition cI:C . exact ring1. Defined.
  Definition P1 := Pc 1.
 
 Variable Ceqb:C->C->bool.
+#[universes(template)]
 Class Equalityb (A : Type):= {equalityb : A -> A -> bool}.
 Notation "x =? y" := (equalityb x y) (at level 70, no associativity).
 Variable Ceqb_eq: forall x y:C, Ceqb x y = true -> (x == y).

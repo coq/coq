@@ -16,6 +16,7 @@ Section Streams.
 
 Variable A : Type.
 
+#[universes(template)]
 CoInductive Stream : Type :=
     Cons : A -> Stream -> Stream.
 

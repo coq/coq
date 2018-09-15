@@ -212,6 +212,7 @@ Module MoreInt (Import I:Int).
     | EZofI : ExprI -> ExprZ
     | EZraw : Z -> ExprZ.
 
+  #[universes(template)]
   Inductive ExprP : Type :=
     | EPeq : ExprZ -> ExprZ -> ExprP
     | EPlt : ExprZ -> ExprZ -> ExprP

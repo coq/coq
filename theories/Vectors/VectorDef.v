@@ -28,6 +28,7 @@ Local Open Scope nat_scope.
 (**
 A vector is a list of size n whose elements belong to a set A. *)
 
+#[universes(template)]
 Inductive t A : nat -> Type :=
   |nil : t A 0
   |cons : forall (h:A) (n:nat), t A n -> t A (S n).

@@ -22,6 +22,7 @@ Section Carry.
 
  Variable A : Type.
 
+ #[universes(template)]
  Inductive carry :=
   | C0 : A -> carry
   | C1 : A -> carry.
@@ -44,6 +45,7 @@ Section Zn2Z.
      first.
  *)
 
+ #[universes(template)]
  Inductive zn2z :=
   | W0 : zn2z
   | WW : znz -> znz -> zn2z.

@@ -73,6 +73,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
 
   Definition key := positive : Type. 
 
+  #[universes(template)]
   Inductive tree (A : Type) :=
     | Leaf : tree A
     | Node : tree A -> option A -> tree A -> tree A.

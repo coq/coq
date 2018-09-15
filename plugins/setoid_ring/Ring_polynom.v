@@ -121,6 +121,7 @@ Section MakeRingPol.
     - (Pinj i (Pc c)) is (Pc c)
  *)
 
+ #[universes(template)]
  Inductive Pol : Type :=
   | Pc : C -> Pol
   | Pinj : positive -> Pol -> Pol
@@ -908,6 +909,7 @@ Section MakeRingPol.
 
  (** Definition of polynomial expressions *)
 
+ #[universes(template)]
  Inductive PExpr : Type :=
   | PEO : PExpr
   | PEI : PExpr            
