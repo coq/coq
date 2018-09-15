@@ -46,7 +46,10 @@ val declare_mutual_inductive_with_eliminations :
   mutual_inductive_entry -> UnivNames.universe_binders -> one_inductive_impls list ->
   MutInd.t
 
-val should_auto_template : unit -> bool
+val should_auto_template : Id.t -> bool -> bool
+(** [should_auto_template x b] is [true] when [b] is [true] and we
+   automatically use template polymorphism. [x] is the name of the
+   inductive under consideration. *)
 
 (** Exported for Funind *)
 
