@@ -27,159 +27,12 @@ module NamedDecl = Context.Named.Declaration
 
 (* Insertion of constants and parameters in environment. *)
 
-type side_effect = {
-  from_env : Declarations.structure_body CEphemeron.key;
-  eff      : side_eff list;
-}
-
-module SideEffects :
-sig
-  type t
-  val repr : t -> side_effect list
-  val empty : t
-  val add : side_effect -> t -> t
-  val concat : t -> t -> t
-end =
-struct
-
-module SeffOrd = struct
-type t = side_effect
-let compare e1 e2 =
-  let cmp e1 e2 = Constant.CanOrd.compare e1.seff_constant e2.seff_constant in
-  List.compare cmp e1.eff e2.eff
-end
-
-module SeffSet = Set.Make(SeffOrd)
-
-type t = { seff : side_effect list; elts : SeffSet.t }
-(** Invariant: [seff] is a permutation of the elements of [elts] *)
-
-let repr eff = eff.seff
-let empty = { seff = []; elts = SeffSet.empty }
-let add x es =
-  if SeffSet.mem x es.elts then es
-  else { seff = x :: es.seff; elts = SeffSet.add x es.elts }
-let concat xes yes =
-  List.fold_right add xes.seff yes
-
-end
-
-type side_effects = SideEffects.t
+type 'a effect_handler =
+  env -> Constr.t -> Univ.ContextSet.t -> 'a -> (Constr.t * Univ.ContextSet.t * int)
 
 type _ trust =
 | Pure : unit trust
-| SideEffects : structure_body -> side_effects trust
-
-let uniq_seff_rev = SideEffects.repr
-let uniq_seff l =
-  let ans = List.rev (SideEffects.repr l) in
-  List.map_append (fun { eff ; _ } -> eff) ans
-
-let empty_seff = SideEffects.empty
-let add_seff mb eff effs =
-  let from_env = CEphemeron.create mb in
-  SideEffects.add { eff; from_env } effs
-let concat_seff = SideEffects.concat
-
-let mk_pure_proof c = (c, Univ.ContextSet.empty), empty_seff
-
-let inline_side_effects env body ctx side_eff =
-  (** First step: remove the constants that are still in the environment *)
-  let filter { eff = se; from_env = mb } =
-    let map e = (e.seff_constant, e.seff_body, e.seff_env) in
-    let cbl = List.map map se in
-    let not_exists (c,_,_) =
-      try ignore(Environ.lookup_constant c env); false
-      with Not_found -> true in 
-    let cbl = List.filter not_exists cbl in
-    (cbl, mb)
-  in
-  (* CAVEAT: we assure that most recent effects come first *)
-  let side_eff = List.map filter (uniq_seff_rev side_eff) in
-  let sigs = List.rev_map (fun (cbl, mb) -> mb, List.length cbl) side_eff in
-  let side_eff = List.fold_left (fun accu (cbl, _) -> cbl @ accu) [] side_eff in
-  let side_eff = List.rev side_eff in
-  (** Most recent side-effects first in side_eff *)
-  if List.is_empty side_eff then (body, ctx, sigs)
-  else
-    (** Second step: compute the lifts and substitutions to apply *)
-    let cname c = Name (Label.to_id (Constant.label c)) in
-    let fold (subst, var, ctx, args) (c, cb, b) =
-      let (b, opaque) = match cb.const_body, b with
-      | Def b, _ -> (Mod_subst.force_constr b, false)
-      | OpaqueDef _, `Opaque (b,_) -> (b, true)
-      | _ -> assert false
-      in
-      match cb.const_universes with
-      | Monomorphic_const univs ->
-        (** Abstract over the term at the top of the proof *)
-        let ty = cb.const_type in
-        let subst = Cmap_env.add c (Inr var) subst in
-        let ctx = Univ.ContextSet.union ctx univs in
-        (subst, var + 1, ctx, (cname c, b, ty, opaque) :: args)
-      | Polymorphic_const _auctx ->
-        (** Inline the term to emulate universe polymorphism *)
-        let subst = Cmap_env.add c (Inl b) subst in
-        (subst, var, ctx, args)
-    in
-    let (subst, len, ctx, args) = List.fold_left fold (Cmap_env.empty, 1, ctx, []) side_eff in
-    (** Third step: inline the definitions *)
-    let rec subst_const i k t = match Constr.kind t with
-    | Const (c, u) ->
-      let data = try Some (Cmap_env.find c subst) with Not_found -> None in
-      begin match data with
-      | None -> t
-      | Some (Inl b) ->
-        (** [b] is closed but may refer to other constants *)
-        subst_const i k (Vars.subst_instance_constr u b)
-      | Some (Inr n) ->
-        mkRel (k + n - i)
-      end
-    | Rel n ->
-      (** Lift free rel variables *)
-      if n <= k then t
-      else mkRel (n + len - i - 1)
-    | _ -> Constr.map_with_binders ((+) 1) (fun k t -> subst_const i k t) k t
-    in
-    let map_args i (na, b, ty, opaque) =
-      (** Both the type and the body may mention other constants *)
-      let ty = subst_const (len - i - 1) 0 ty in
-      let b = subst_const (len - i - 1) 0 b in
-      (na, b, ty, opaque)
-    in
-    let args = List.mapi map_args args in
-    let body = subst_const 0 0 body in
-    let fold_arg (na, b, ty, opaque) accu =
-      if opaque then mkApp (mkLambda (na, ty, accu), [|b|])
-      else mkLetIn (na, b, ty, accu)
-    in
-    let body = List.fold_right fold_arg args body in
-    (body, ctx, sigs)
-
-let rec is_nth_suffix n l suf =
-  if Int.equal n 0 then l == suf
-  else match l with
-  | [] -> false
-  | _ :: l -> is_nth_suffix (pred n) l suf
-
-(* Given the list of signatures of side effects, checks if they match.
- * I.e. if they are ordered descendants of the current revstruct.
-   Returns the number of effects that can be trusted. *)
-let check_signatures curmb sl =
-  let is_direct_ancestor accu (mb, how_many) =
-    match accu with
-    | None -> None
-    | Some (n, curmb) ->
-        try
-          let mb = CEphemeron.get mb in
-          if is_nth_suffix how_many mb curmb
-          then Some (n + how_many, mb)
-          else None
-        with CEphemeron.InvalidKey -> None in
-  let sl = List.fold_left is_direct_ancestor (Some (0, curmb)) sl in
-  match sl with
-  | None -> 0
-  | Some (n, _) -> n
+| SideEffects : 'a effect_handler -> 'a trust
 
 let skip_trusted_seff sl b e =
   let rec aux sl b e acc =
@@ -259,9 +112,8 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
             let j = infer env body in
             let _ = judge_of_cast env j DEFAULTcast tyj in
             j, uctx
-          | SideEffects mb ->
-            let (body, uctx, signatures) = inline_side_effects env body uctx side_eff in
-            let valid_signatures = check_signatures mb signatures in
+          | SideEffects handle ->
+            let (body, uctx, valid_signatures) = handle env body uctx side_eff in
             let env = push_context_set uctx env in
             let body,env,ectx = skip_trusted_seff valid_signatures body env in
             let j = infer env body in
@@ -286,9 +138,11 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       let { const_entry_type = typ; const_entry_opaque = opaque ; _ } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
       let (body, ctx), side_eff = Future.join body in
-      let body, ctx, _ = match trust with
-      | Pure -> body, ctx, []
-      | SideEffects _ -> inline_side_effects env body ctx side_eff
+      let body, ctx = match trust with
+      | Pure -> body, ctx
+      | SideEffects handle ->
+        let body, ctx, _ = handle env body ctx side_eff in
+        body, ctx
       in
       let env, usubst, univs = match c.const_entry_universes with
       | Monomorphic_const_entry univs ->
@@ -431,101 +285,6 @@ let translate_constant mb env kn ce =
   build_constant_declaration kn env
     (infer_declaration ~trust:mb env ce)
 
-let constant_entry_of_side_effect cb u =
-  let univs =
-    match cb.const_universes with
-    | Monomorphic_const uctx ->
-      Monomorphic_const_entry uctx
-    | Polymorphic_const auctx -> 
-      Polymorphic_const_entry (Univ.AUContext.repr auctx)
-  in
-  let pt =
-    match cb.const_body, u with
-    | OpaqueDef _, `Opaque (b, c) -> b, c
-    | Def b, `Nothing -> Mod_subst.force_constr b, Univ.ContextSet.empty
-    | _ -> assert false in
-  DefinitionEntry {
-    const_entry_body = Future.from_val (pt, ());
-    const_entry_secctx = None;
-    const_entry_feedback = None;
-    const_entry_type = Some cb.const_type;
-    const_entry_universes = univs;
-    const_entry_opaque = Declareops.is_opaque cb;
-    const_entry_inline_code = cb.const_inline_code }
-;;
-
-let turn_direct orig =
-  let cb = orig.seff_body in
-  if Declareops.is_opaque cb then
-    let p = match orig.seff_env with
-    | `Opaque (b, c) -> (b, c)
-    | _ -> assert false
-    in
-    let const_body = OpaqueDef (Opaqueproof.create (Future.from_val p)) in
-    let cb = { cb with const_body } in
-    { orig with seff_body = cb }
-  else orig
-
-type exported_side_effect = 
-  Constant.t * constant_body * side_effect_role
-
-let export_eff eff =
-  (eff.seff_constant, eff.seff_body, eff.seff_role)
-
-let export_side_effects mb env c =
-      let { const_entry_body = body; _ } = c in
-      let _, eff = Future.force body in
-      let ce = { c with
-        const_entry_body = Future.chain body
-          (fun (b_ctx, _) -> b_ctx, ()) } in
-      let not_exists e =
-        try ignore(Environ.lookup_constant e.seff_constant env); false
-        with Not_found -> true in 
-      let aux (acc,sl) { eff = se; from_env = mb } =
-        let cbl = List.filter not_exists se in
-        if List.is_empty cbl then acc, sl
-        else cbl :: acc, (mb,List.length cbl) :: sl in
-      let seff, signatures = List.fold_left aux ([],[]) (uniq_seff_rev eff) in
-      let trusted = check_signatures mb signatures in
-      let push_seff env eff =
-        let { seff_constant = kn; seff_body = cb ; _ } = eff in
-        let env = Environ.add_constant kn cb env in
-        match cb.const_universes with
-        | Polymorphic_const _ -> env
-        | Monomorphic_const ctx ->
-          let ctx = match eff.seff_env with
-          | `Nothing -> ctx
-          | `Opaque(_, ctx') -> Univ.ContextSet.union ctx' ctx
-          in
-          Environ.push_context_set ~strict:true ctx env
-      in
-      let rec translate_seff sl seff acc env =
-        match seff with
-        | [] -> List.rev acc, ce
-        | cbs :: rest ->
-          if Int.equal sl 0 then
-           let env, cbs =
-             List.fold_left (fun (env,cbs) eff ->
-              let { seff_constant = kn; seff_body = ocb; seff_env = u ; _ } = eff in
-               let ce = constant_entry_of_side_effect ocb u in
-               let cb = translate_constant Pure env kn ce in
-               let eff = { eff with
-                seff_body = cb;
-                seff_env = `Nothing;
-               } in
-               (push_seff env eff, export_eff eff :: cbs))
-             (env,[]) cbs in
-           translate_seff 0 rest (cbs @ acc) env
-          else
-           let cbs_len = List.length cbs in
-           let cbs = List.map turn_direct cbs in
-           let env = List.fold_left push_seff env cbs in
-           let ecbs = List.map export_eff cbs in
-           translate_seff (sl - cbs_len) rest (ecbs @ acc) env
-     in
-       translate_seff trusted seff [] env
-;;
-
 let translate_local_assum env t =
   let j = infer env t in
   let t = Typeops.assumption_of_judgment env j in
@@ -578,13 +337,3 @@ let translate_local_def env _id centry =
 (* Insertion of inductive types. *)
 
 let translate_mind env kn mie = Indtypes.check_inductive env kn mie
-
-let inline_entry_side_effects env ce = { ce with
-  const_entry_body = Future.chain
-    ce.const_entry_body (fun ((body, ctx), side_eff) ->
-      let body, ctx',_ = inline_side_effects env body ctx side_eff in
-      (body, ctx'), ());
-}
-
-let inline_side_effects env body side_eff =
-  pi1 (inline_side_effects env body Univ.ContextSet.empty side_eff)
