@@ -14,6 +14,7 @@
 
 open Util
 open Names
+open Vmvalues
 open Cbytecodes
 open Cemitcodes
 open Cinstr
@@ -395,17 +396,17 @@ let init_fun_code () = fun_code := []
 (*
 If [tag] hits the OCaml limitation for non constant constructors, we switch to
 another representation for the remaining constructors:
-[last_variant_tag|tag - last_variant_tag|args]
+[last_variant_tag|tag - Obj.last_non_constant_constructor_tag|args]
 
-We subtract last_variant_tag for efficiency of match interpretation.
+We subtract Obj.last_non_constant_constructor_tag for efficiency of match interpretation.
  *)
 
 let nest_block tag arity cont =
-  Kconst (Const_b0 (tag - last_variant_tag)) ::
-    Kmakeblock(arity+1, last_variant_tag) :: cont
+  Kconst (Const_b0 (tag - Obj.last_non_constant_constructor_tag)) ::
+    Kmakeblock(arity+1, Obj.last_non_constant_constructor_tag) :: cont
 
 let code_makeblock ~stack_size ~arity ~tag cont = 
-  if tag < last_variant_tag then
+  if tag < Obj.last_non_constant_constructor_tag then
     Kmakeblock(arity, tag) :: cont
   else begin
     set_max_stack_size (stack_size + 1);
@@ -490,7 +491,9 @@ let rec compile_lam env cenv lam sz cont =
   match lam with
   | Lrel(_, i) -> pos_rel i cenv sz :: cont
 
-  | Lval v -> compile_structured_constant cenv v sz cont
+  | Lint i -> compile_structured_constant cenv (Const_b0 i) sz cont
+
+  | Lval v -> compile_structured_constant cenv (Const_val v) sz cont
 
   | Lproj (p,arg) ->
      compile_lam env cenv arg sz (Kproj p :: cont)
@@ -634,9 +637,9 @@ let rec compile_lam env cenv lam sz cont =
       let lbl_consts = Array.make oib.mind_nb_constant Label.no in
       let nallblock = oib.mind_nb_args + 1 in (* +1 : accumulate *)
       let nconst = Array.length branches.constant_branches in
-      let nblock = min nallblock (last_variant_tag + 1) in
+      let nblock = min nallblock (Obj.last_non_constant_constructor_tag + 1) in
       let lbl_blocks = Array.make nblock Label.no in
-      let neblock = max 0 (nallblock - last_variant_tag) in
+      let neblock = max 0 (nallblock - Obj.last_non_constant_constructor_tag) in
       let lbl_eblocks = Array.make neblock Label.no in 
       let branch1, cont = make_branch cont in
       (* Compilation of the return type *)
@@ -662,7 +665,7 @@ let rec compile_lam env cenv lam sz cont =
         let lbl_b, code_b = 
           label_code (
             Kpush :: Kfield 0 :: Kswitch(lbl_eblocks, [||]) :: !c) in
-        lbl_blocks.(last_variant_tag) <- lbl_b;
+        lbl_blocks.(Obj.last_non_constant_constructor_tag) <- lbl_b;
         c := code_b
       end;
 
@@ -684,7 +687,7 @@ let rec compile_lam env cenv lam sz cont =
           compile_lam env (push_param arity sz_b cenv)
             body (sz_b+arity) (add_pop arity (branch::!c)) in
         let code_b =
-            if tag < last_variant_tag then begin
+            if tag < Obj.last_non_constant_constructor_tag then begin
                 set_max_stack_size (sz_b + arity);
                 Kpushfields arity :: code_b
               end
@@ -694,8 +697,8 @@ let rec compile_lam env cenv lam sz cont =
               end
         in
         let lbl_b, code_b = label_code code_b in
-        if tag < last_variant_tag then lbl_blocks.(tag) <- lbl_b
-          else lbl_eblocks.(tag - last_variant_tag) <- lbl_b;
+        if tag < Obj.last_non_constant_constructor_tag then lbl_blocks.(tag) <- lbl_b
+          else lbl_eblocks.(tag - Obj.last_non_constant_constructor_tag) <- lbl_b;
         c := code_b
       done;
 

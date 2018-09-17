@@ -1,4 +1,5 @@
 open Names
+open Vmvalues
 open Cbytecodes
 
 type reloc_info =

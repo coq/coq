@@ -9,11 +9,12 @@
 (************************************************************************)
 
 open Names
-open Cbytecodes
+open Constr
 
 (** Values *)
 
 type values
+type structured_values
 type vm_env
 type vm_global
 type vprod
@@ -24,6 +25,38 @@ type vblock
 type arguments
 type vstack = values array
 type to_update
+
+type tag = int
+
+val accu_tag : tag
+
+val type_atom_tag : tag
+val max_atom_tag : tag
+val proj_tag : tag
+val fix_app_tag : tag
+val switch_tag : tag
+val cofix_tag : tag
+val cofix_evaluated_tag : tag
+
+type structured_constant =
+  | Const_sort of Sorts.t
+  | Const_ind of inductive
+  | Const_b0 of tag
+  | Const_univ_level of Univ.Level.t
+  | Const_val of structured_values
+
+val pp_struct_const : structured_constant -> Pp.t
+
+type reloc_table = (tag * int) array
+
+type annot_switch =
+   {ci : case_info; rtbl : reloc_table; tailcall : bool; max_stack_size : int}
+
+val eq_structured_constant : structured_constant -> structured_constant -> bool
+val hash_structured_constant : structured_constant -> int
+
+val eq_annot_switch : annot_switch -> annot_switch -> bool
+val hash_annot_switch : annot_switch -> int
 
 val fun_val : vfun -> values
 val fix_val : vfix -> values
@@ -110,6 +143,8 @@ val val_of_constant : Constant.t -> values
 val val_of_evar : Evar.t -> values
 val val_of_proj : Projection.Repr.t -> values -> values
 val val_of_atom : atom -> values
+val val_of_int : int -> structured_values
+val val_of_block : tag -> structured_values array -> structured_values
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
 external val_of_proj_name : Projection.Repr.t -> values = "%identity"
@@ -158,4 +193,4 @@ val bfield : vblock -> int -> values
 (** Switch *)
 
 val check_switch : vswitch -> vswitch -> bool
-val branch_arg : int -> Cbytecodes.tag * int -> values
+val branch_arg : int -> tag * int -> values
