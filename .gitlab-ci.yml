@@ -9,7 +9,7 @@ stages:
 variables:
   # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
   # for reference]
-  CACHEKEY: "bionic_coq-V2018-08-27-V2"
+  CACHEKEY: "bionic_coq-V2018-09-05-V1"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -275,7 +275,7 @@ doc:refman:
   dependencies:
     - build:base
 
-doc:ml-api:
+doc:ml-api:ocamldoc:
   stage: test
   dependencies:
     - build:edge
@@ -286,6 +286,19 @@ doc:ml-api:
     name: "$CI_JOB_NAME"
     paths:
       - dev/ocamldoc
+
+doc:ml-api:odoc:
+  <<: *dune-template
+  stage: test
+  dependencies:
+    - build:egde:dune:dev
+  variables:
+    OPAM_SWITCH: edge
+    DUNE_TARGET: apidoc
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _build/default/_doc/
 
 test-suite:base:
   <<: *test-suite-template

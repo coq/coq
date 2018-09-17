@@ -285,8 +285,8 @@ val destMeta : constr -> metavariable
 (** Destructs a variable *)
 val destVar : constr -> Id.t
 
-(** Destructs a sort. [is_Prop] recognizes the sort {% \textsf{%}Prop{% }%}, whether
-   [isprop] recognizes both {% \textsf{%}Prop{% }%} and {% \textsf{%}Set{% }%}. *)
+(** Destructs a sort. [is_Prop] recognizes the sort [Prop], whether
+   [isprop] recognizes both [Prop] and [Set]. *)
 val destSort : constr -> Sorts.t
 
 (** Destructs a casted term *)
