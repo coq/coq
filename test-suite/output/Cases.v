@@ -43,6 +43,7 @@ Print foo.
 
 (* Accept and use notation with binded parameters *)
 
+#[universes(template)]
 Inductive I (A: Type) : Type := C : A -> I A.
 Notation "x <: T" := (C T x) (at level 38).
 
@@ -83,6 +84,7 @@ Print f.
 (* Was enhancement request #5142 (error message reported on the most
    general return clause heuristic) *)
 
+#[universes(template)]
 Inductive gadt : Type -> Type :=
 | gadtNat : nat -> gadt nat
 | gadtTy : forall T, T -> gadt T.
