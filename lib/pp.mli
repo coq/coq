@@ -42,9 +42,6 @@ type pp_tag = string
    internal representation opaque here. *)
 type t
 
-type std_ppcmds = t
-[@@ocaml.deprecated "alias of Pp.t"]
-
 type block_type =
   | Pp_hbox   of int
   | Pp_vbox   of int

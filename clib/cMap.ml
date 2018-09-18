@@ -34,10 +34,6 @@ sig
   val bind : (key -> 'a) -> Set.t -> 'a t
   val fold_left : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   val fold_right : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-  val smartmap : ('a -> 'a) -> 'a t -> 'a t
-  [@@ocaml.deprecated "Same as [Smart.map]"]
-  val smartmapi : (key -> 'a -> 'a) -> 'a t -> 'a t
-  [@@ocaml.deprecated "Same as [Smart.mapi]"]
   val height : 'a t -> int
   module Smart :
   sig
@@ -65,10 +61,6 @@ sig
   val bind : (M.t -> 'a) -> Set.Make(M).t -> 'a map
   val fold_left : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
   val fold_right : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
-  val smartmap : ('a -> 'a) -> 'a map -> 'a map
-  [@@ocaml.deprecated "Same as [Smart.map]"]
-  val smartmapi : (M.t -> 'a -> 'a) -> 'a map -> 'a map
-  [@@ocaml.deprecated "Same as [Smart.mapi]"]
   val height : 'a map -> int
   module Smart :
   sig
@@ -194,9 +186,6 @@ struct
       else map_inj (MNode (l', k, v', r', h))
 
   end
-
-  let smartmap = Smart.map
-  let smartmapi = Smart.mapi
 
   module Unsafe =
   struct

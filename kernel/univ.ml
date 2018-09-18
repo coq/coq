@@ -574,11 +574,8 @@ struct
       pp_std ++ prl u1 ++ pr_constraint_type op ++
 	prl u2 ++ fnl () )  c (str "")
 
-  let universes_of c =
-    fold (fun (u1, _op, u2) unvs -> LSet.add u2 (LSet.add u1 unvs)) c LSet.empty
 end
 
-let universes_of_constraints = Constraint.universes_of
 let empty_constraint = Constraint.empty
 let union_constraint = Constraint.union
 let eq_constraint = Constraint.equal
@@ -897,8 +894,6 @@ let subst_instance_constraints s csts =
     (fun c csts -> Constraint.add (subst_instance_constraint s c) csts)
     csts Constraint.empty 
 
-type universe_instance = Instance.t
-
 type 'a puniverses = 'a * Instance.t
 let out_punivs (x, _y) = x
 let in_punivs x = (x, Instance.empty)
@@ -955,7 +950,6 @@ struct
 
 end
 
-type abstract_universe_context = AUContext.t
 let hcons_abstract_universe_context = AUContext.hcons
 
 (** Universe info for cumulative inductive types: A context of
@@ -997,12 +991,10 @@ struct
 
 end
 
-type cumulativity_info = CumulativityInfo.t
 let hcons_cumulativity_info = CumulativityInfo.hcons
 
 module ACumulativityInfo = CumulativityInfo
 
-type abstract_cumulativity_info = ACumulativityInfo.t
 let hcons_abstract_cumulativity_info = ACumulativityInfo.hcons
 
 (** A set of universes with universe constraints.
@@ -1238,7 +1230,3 @@ let explain_universe_inconsistency prl (o,u,v,p) =
   in
     str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
       pr_rel o ++ spc() ++ pr_uni v ++ reason
-
-let compare_levels = Level.compare
-let eq_levels = Level.equal
-let equal_universes = Universe.equal

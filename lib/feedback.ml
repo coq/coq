@@ -84,7 +84,7 @@ let feedback_logger ?loc lvl msg =
 let msg_info    ?loc x = feedback_logger ?loc Info x
 let msg_notice  ?loc x = feedback_logger ?loc Notice x
 let msg_warning ?loc x = feedback_logger ?loc Warning x
-let msg_error   ?loc x = feedback_logger ?loc Error x
+(* let msg_error   ?loc x = feedback_logger ?loc Error x *)
 let msg_debug   ?loc x = feedback_logger ?loc Debug x
 
 (* Helper for tools willing to understand only the messages *)

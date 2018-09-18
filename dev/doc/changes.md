@@ -2,6 +2,12 @@
 
 ### ML API
 
+General deprecation
+
+- All functions marked [@@ocaml.deprecated] in 8.8 have been
+  removed. Please, make sure your plugin is warning-free in 8.8 before
+  trying to port it over 8.9.
+
 Names
 
 - Kernel names no longer contain a section path. They now have only two

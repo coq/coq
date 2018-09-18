@@ -396,9 +396,6 @@ struct
 
   end
 
-  let smartmap = Smart.map
-  let smartmapi = Smart.mapi
-
   let height s = Int.Map.height s
 
   module Unsafe =

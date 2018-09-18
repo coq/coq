@@ -67,10 +67,3 @@ val initialize_named_context_for_proof : unit -> Environ.named_context_val
 val set_save_hook : (Proof.t -> unit) -> unit
 
 val save_proof : ?proof:Proof_global.closed_proof -> Vernacexpr.proof_end -> unit
-
-(** [get_current_context ()] returns the evar context and env of the
-   current open proof if any, otherwise returns the empty evar context
-   and the current global env *)
-
-val get_current_context : unit -> Evd.evar_map * Environ.env
-[@@ocaml.deprecated "please use [Pfedit.get_current_context]"]

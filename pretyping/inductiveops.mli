@@ -129,14 +129,8 @@ val allowed_sorts : env -> inductive -> Sorts.family list
 val has_dependent_elim : mutual_inductive_body -> bool
 
 (** Primitive projections *)
-val projection_nparams : Projection.t -> int
-[@@ocaml.deprecated "Use [Projection.npars]"]
-val projection_nparams_env : env -> Projection.t -> int
-[@@ocaml.deprecated "Use [Projection.npars]"]
-
 val type_of_projection_knowing_arg : env -> evar_map -> Projection.t ->
 				     EConstr.t -> EConstr.types -> types
-
 
 (** Extract information from an inductive family *)
 
@@ -152,8 +146,6 @@ val get_constructor :
   pinductive * mutual_inductive_body * one_inductive_body * constr list ->
   int -> constructor_summary
 val get_constructors : env -> inductive_family -> constructor_summary array
-val get_projections  : env -> inductive -> Projection.Repr.t array option
-[@@ocaml.deprecated "Use [Environ.get_projections]"]
 
 (** [get_arity] returns the arity of the inductive family instantiated
     with the parameters; if recursively non-uniform parameters are not

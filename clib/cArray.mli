@@ -82,12 +82,6 @@ sig
   (** [chop i a] returns [(a1, a2)] s.t. [a = a1 + a2] and [length a1 = n].
       Raise [Failure "Array.chop"] if [i] is not a valid index. *)
 
-  val smartmap : ('a -> 'a) -> 'a array -> 'a array
-  [@@ocaml.deprecated "Same as [Smart.map]"]
-
-  val smartfoldmap : ('r -> 'a -> 'r * 'a) -> 'r -> 'a array -> 'r * 'a array
-  [@@ocaml.deprecated "Same as [Smart.fold_left_map]"]
-
   val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   (** See also [Smart.map2] *)
 
@@ -120,16 +114,6 @@ sig
 
   val fold_right2_map : ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
   (** Same with two arrays, folding on the left *)
-
-  val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
-  [@@ocaml.deprecated "Same as [fold_left_map]"]
-
-  val fold_map' : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
-  [@@ocaml.deprecated "Same as [fold_right_map]"]
-
-  val fold_map2' :
-    ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
-  [@@ocaml.deprecated "Same as [fold_right2_map]"]
 
   val distinct : 'a array -> bool
   (** Return [true] if every element of the array is unique (for default 
@@ -174,9 +158,6 @@ sig
   sig
     val map : ('r -> 'a -> 'b) -> 'r -> 'a array -> 'b array
     (** [Fun1.map f x v = map (f x) v] *)
-
-    val smartmap : ('r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
-    [@@ocaml.deprecated "Same as [Fun1.Smart.map]"]
 
     val iter : ('r -> 'a -> unit) -> 'r -> 'a array -> unit
     (** [Fun1.iter f x v = iter (f x) v] *)

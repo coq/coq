@@ -23,12 +23,6 @@ module Gram : sig
 
   include Grammar.S with type te = Tok.t
 
-  type 'a entry = 'a Entry.e
-  [@@ocaml.deprecated "Use [Pcoq.Entry.t]"]
-
-  val entry_create : string -> 'a Entry.e
-  [@@ocaml.deprecated "Use [Pcoq.Entry.create]"]
-
   val gram_extend : 'a Entry.e -> 'a Extend.extend_statement -> unit
 
 end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e

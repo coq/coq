@@ -33,8 +33,6 @@
 
 (* Type of a proof. *)
 type t
-type proof = t
-[@@ocaml.deprecated "please use [Proof.t]"]
 
 (* Returns a stylised view of a proof for use by, for instance,
    ide-s. *)
@@ -192,8 +190,6 @@ val pr_proof : t -> Pp.t
 
 (*** Compatibility layer with <=v8.2 ***)
 module V82 : sig
-  val subgoals : t -> Goal.goal list Evd.sigma
-  [@@ocaml.deprecated "Use the first and fifth argument of [Proof.proof]"]
 
   (* All the subgoals of the proof, including those which are not focused. *)
   val background_subgoals : t -> Goal.goal list Evd.sigma

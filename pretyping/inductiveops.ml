@@ -269,10 +269,6 @@ let allowed_sorts env (kn,i as ind) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_kelim
 
-let projection_nparams_env _ p = Projection.npars p
-
-let projection_nparams p = Projection.npars p
-
 let has_dependent_elim mib =
   match mib.mind_record with
   | PrimRecord _ -> mib.mind_finite == BiFinite

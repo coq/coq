@@ -13,18 +13,10 @@
 
 open Names
 
-(** {6 Value under universe substitution } *)
-type 'a puniverses = 'a Univ.puniverses
-[@@ocaml.deprecated "use Univ.puniverses"]
-
 (** {6 Simply type aliases } *)
 type pconstant = Constant.t Univ.puniverses
 type pinductive = inductive Univ.puniverses
 type pconstructor = constructor Univ.puniverses
-
-(** {6 Existential variables } *)
-type existential_key = Evar.t
-[@@ocaml.deprecated "use Evar.t"]
 
 (** {6 Existential variables } *)
 type metavariable = int

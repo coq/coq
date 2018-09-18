@@ -739,15 +739,12 @@ let eq_table_key f ik1 ik2 =
   | RelKey k1, RelKey k2 -> Int.equal k1 k2
   | _ -> false
 
-let eq_con_chk = Constant.UserOrd.equal
 let eq_mind_chk = MutInd.UserOrd.equal
 let eq_ind_chk (kn1,i1) (kn2,i2) = Int.equal i1 i2 && eq_mind_chk kn1 kn2
-
 
 (*******************************************************************)
 (** Compatibility layers *)
 
-type mod_bound_id = MBId.t
 let eq_constant_key = Constant.UserOrd.equal
 
 (** Compatibility layer for [ModPath] *)
@@ -923,8 +920,6 @@ struct
 
 end
 
-type projection = Projection.t
-
 module GlobRefInternal = struct
 
   type t =
@@ -1014,10 +1009,6 @@ module GlobRef = struct
   module Set_env = Map_env.Set
 
 end
-
-type global_reference = GlobRef.t
-[@@ocaml.deprecated "Alias for [GlobRef.t]"]
-
 
 type evaluable_global_reference =
   | EvalVarRef of Id.t

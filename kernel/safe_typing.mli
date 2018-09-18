@@ -208,9 +208,6 @@ val delta_of_senv :
 
 open Retroknowledge
 
-val retroknowledge : (retroknowledge-> 'a) -> safe_environment -> 'a
-[@@ocaml.deprecated "Use the projection of Environ.env"]
-
 val register :
   field -> GlobRef.t -> safe_transformer0
 

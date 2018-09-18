@@ -34,8 +34,6 @@ val pr_sep_com :
   constr_expr -> Pp.t
 
 val pr_id : Id.t -> Pp.t
-val pr_name : Name.t -> Pp.t
-[@@ocaml.deprecated "alias of Names.Name.print"]
 
 val pr_qualid : qualid -> Pp.t
 val pr_patvar : Pattern.patvar -> Pp.t

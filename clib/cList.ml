@@ -36,16 +36,12 @@ sig
   val filteri :
     (int -> 'a -> bool) -> 'a list -> 'a list
   val filter_with : bool list -> 'a list -> 'a list
-  val smartfilter : ('a -> bool) -> 'a list -> 'a list
-  [@@ocaml.deprecated "Same as [filter]"]
   val map_filter : ('a -> 'b option) -> 'a list -> 'b list
   val map_filter_i : (int -> 'a -> 'b option) -> 'a list -> 'b list
   val partitioni :
     (int -> 'a -> bool) -> 'a list -> 'a list * 'a list
   val map : ('a -> 'b) -> 'a list -> 'b list
   val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-  val smartmap : ('a -> 'a) -> 'a list -> 'a list
-  [@@ocaml.deprecated "Same as [Smart.map]"]
   val map_left : ('a -> 'b) -> 'a list -> 'b list
   val map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
   val map2_i :
@@ -75,10 +71,6 @@ sig
   val fold_right2_map : ('b -> 'c -> 'a -> 'd * 'a) -> 'b list -> 'c list -> 'a -> 'd list * 'a
   val fold_left3_map : ('a -> 'b -> 'c -> 'd -> 'a * 'e) -> 'a -> 'b list -> 'c list -> 'd list -> 'a * 'e list
   val fold_left4_map : ('a -> 'b -> 'c -> 'd -> 'e -> 'a * 'r) -> 'a -> 'b list -> 'c list -> 'd list -> 'e list -> 'a * 'r list
-  val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
-  [@@ocaml.deprecated "Same as [fold_left_map]"]
-  val fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
-  [@@ocaml.deprecated "Same as [fold_right_map]"]
   val except : 'a eq -> 'a -> 'a list -> 'a list
   val remove : 'a eq -> 'a -> 'a list -> 'a list
   val remove_first : ('a -> bool) -> 'a list -> 'a list
@@ -116,8 +108,6 @@ sig
   val unionq : 'a list -> 'a list -> 'a list
   val subtract : 'a eq -> 'a list -> 'a list -> 'a list
   val subtractq : 'a list -> 'a list -> 'a list
-  val merge_uniq : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
-  [@@ocaml.deprecated "Same as [merge_set]"]
   val distinct : 'a list -> bool
   val distinct_f : 'a cmp -> 'a list -> bool
   val duplicates : 'a eq -> 'a list -> 'a list
@@ -336,8 +326,6 @@ let filteri p =
     | x :: l -> let l' = filter_i_rec (succ i) l in if p i x then x :: l' else l'
   in
   filter_i_rec 0
-
-let smartfilter = filter (* Alias *)
 
 let rec filter_with_loop filter p l = match filter, l with
   | [], [] -> ()
@@ -618,8 +606,6 @@ let rec fold_left_map f e = function
     let e'',t' = fold_left_map f e' t in
     e'',h' :: t'
 
-let fold_map = fold_left_map
-
 (* (* tail-recursive version of the above function *)
 let fold_left_map f e l =
   let g (e,b') h =
@@ -633,8 +619,6 @@ let fold_left_map f e l =
 (* The same, based on fold_right, with the effect accumulated on the right *)
 let fold_right_map f l e =
   List.fold_right (fun x (l,e) -> let (y,e) = f x e in (y::l,e)) l ([],e)
-
-let fold_map' = fold_right_map
 
 let on_snd f (x,y) = (x,f y)
 
@@ -905,8 +889,6 @@ let rec merge_set cmp l1 l2 = match l1, l2 with
     then h1 :: merge_set cmp t1 l2
     else h2 :: merge_set cmp l1 t2
 
-let merge_uniq = merge_set
-
 let intersect cmp l1 l2 =
   filter (fun x -> mem_f cmp x l2) l1
 
@@ -1046,8 +1028,6 @@ struct
       if x' == x && !p == l' then l else x' :: !p
 
 end
-
-let smartmap = Smart.map
 
 module type MonoS = sig
   type elt

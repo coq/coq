@@ -91,9 +91,6 @@ sig
   (** [filter_with bl l] selects elements of [l] whose corresponding element in
       [bl] is [true]. Raise [Invalid_argument _] if sizes differ. *)
 
-  val smartfilter : ('a -> bool) -> 'a list -> 'a list
-  [@@ocaml.deprecated "Same as [filter]"]
-
   val map_filter : ('a -> 'b option) -> 'a list -> 'b list
   (** Like [map] but keeping only non-[None] elements *)
 
@@ -110,9 +107,6 @@ sig
 
   val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
   (** Like OCaml [List.map2] but tail-recursive *)
-
-  val smartmap : ('a -> 'a) -> 'a list -> 'a list
-  [@@ocaml.deprecated "Same as [Smart.map]"]
 
   val map_left : ('a -> 'b) -> 'a list -> 'b list
   (** As [map] but ensures the left-to-right order of evaluation. *)
@@ -207,12 +201,6 @@ sig
 
   val fold_left4_map : ('a -> 'b -> 'c -> 'd -> 'e -> 'a * 'r) -> 'a -> 'b list -> 'c list -> 'd list -> 'e list -> 'a * 'r list
   (** Same with four lists, folding on the left *)
-
-  val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
-  [@@ocaml.deprecated "Same as [fold_left_map]"]
-
-  val fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
-  [@@ocaml.deprecated "Same as [fold_right_map]"]
 
   (** {6 Splitting} *)
 
@@ -356,9 +344,6 @@ sig
 
   val subtractq : 'a list -> 'a list -> 'a list
   (** [subtract] specialized to physical equality *)
-
-  val merge_uniq : 'a cmp -> 'a list -> 'a list -> 'a list
-  [@@ocaml.deprecated "Same as [merge_set]"]
 
   (** {6 Uniqueness and duplication} *)
 

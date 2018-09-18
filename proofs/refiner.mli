@@ -22,14 +22,6 @@ val project : 'a sigma -> evar_map
 val pf_env  : goal sigma -> Environ.env
 val pf_hyps : goal sigma -> named_context
 
-val unpackage : 'a sigma -> evar_map ref * 'a
-[@@ocaml.deprecated "Do not use [evar_map ref]"]
-val repackage : evar_map ref -> 'a -> 'a sigma
-[@@ocaml.deprecated "Do not use [evar_map ref]"]
-val apply_sig_tac :
-  evar_map ref -> (goal sigma -> goal list sigma) -> goal -> goal list
-[@@ocaml.deprecated "Do not use [evar_map ref]"]
-
 val refiner : rule -> tactic
 
 (** {6 Tacticals. } *)

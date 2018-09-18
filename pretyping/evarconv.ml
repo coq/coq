@@ -1386,8 +1386,6 @@ let solve_unif_constraints_with_heuristics env
   check_problems_are_solved env heuristic_solved_evd;
   solve_unconstrained_impossible_cases env heuristic_solved_evd
 
-let consider_remaining_unif_problems = solve_unif_constraints_with_heuristics
-
 (* Main entry points *)
 
 exception UnableToUnify of evar_map * unification_error
@@ -1414,13 +1412,3 @@ let conv env ?(ts=default_transparent_state env) evd t1 t2 =
 
 let cumul env ?(ts=default_transparent_state env) evd t1 t2 =
   make_opt(evar_conv_x ts env evd CUMUL t1 t2)
-
-let e_conv env ?(ts=default_transparent_state env) evdref t1 t2 =
-  match evar_conv_x ts env !evdref CONV t1 t2 with
-  | Success evd' -> evdref := evd'; true
-  | _ -> false
-
-let e_cumul env ?(ts=default_transparent_state env) evdref t1 t2 =
-  match evar_conv_x ts env !evdref CUMUL t1 t2 with
-  | Success evd' -> evdref := evd'; true
-  | _ -> false

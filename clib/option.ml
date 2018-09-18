@@ -131,8 +131,6 @@ let fold_right_map f x a =
   | Some y -> let z, a = f y a in Some z, a
   | _ -> None, a
 
-let fold_map = fold_left_map
-
 (** [cata f a x] is [a] if [x] is [None] and [f y] if [x] is [Some y]. *)
 let cata f a = function
   | Some c -> f c
@@ -182,8 +180,6 @@ struct
     | _ -> None
 
 end
-
-let smartmap = Smart.map
 
 (** {6 Operations with Lists} *)
 

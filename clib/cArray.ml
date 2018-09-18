@@ -49,10 +49,6 @@ sig
   val map_to_list : ('a -> 'b) -> 'a array -> 'b list
   val map_of_list : ('a -> 'b) -> 'a list -> 'b array
   val chop : int -> 'a array -> 'a array * 'a array
-  val smartmap : ('a -> 'a) -> 'a array -> 'a array
-  [@@ocaml.deprecated "Same as [Smart.map]"]
-  val smartfoldmap : ('r -> 'a -> 'r * 'a) -> 'r -> 'a array -> 'r * 'a array
-  [@@ocaml.deprecated "Same as [Smart.fold_left_map]"]
   val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
@@ -65,13 +61,6 @@ sig
   val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
   val fold_left2_map_i : (int -> 'a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
   val fold_right2_map : ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
-  val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
-  [@@ocaml.deprecated "Same as [fold_left_map]"]
-  val fold_map' : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
-  [@@ocaml.deprecated "Same as [fold_right_map]"]
-  val fold_map2' :
-    ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
-  [@@ocaml.deprecated "Same as [fold_right2_map]"]
   val distinct : 'a array -> bool
   val rev_of_list : 'a list -> 'a array
   val rev_to_list : 'a array -> 'a list
@@ -86,8 +75,6 @@ sig
   module Fun1 :
   sig
     val map : ('r -> 'a -> 'b) -> 'r -> 'a array -> 'b array
-    val smartmap : ('r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
-    [@@ocaml.deprecated "Same as [Fun1.Smart.map]"]
     val iter : ('r -> 'a -> unit) -> 'r -> 'a array -> unit
     val iter2 : ('r -> 'a -> 'b -> unit) -> 'r -> 'a array -> 'b array -> unit
     module Smart :
@@ -429,14 +416,10 @@ else
   let v' = Array.map (fun x -> let (y,e) = f x !e' in e' := e; y) v in
   (v',!e')
 
-let fold_map' = fold_right_map
-
 let fold_left_map f e v =
   let e' = ref e in
   let v' = Array.map (fun x -> let (e,y) = f !e' x in e' := e; y) v in
   (!e',v')
-
-let fold_map = fold_left_map
 
 let fold_right2_map f v1 v2 e =
   let e' = ref e in
@@ -444,8 +427,6 @@ let fold_right2_map f v1 v2 e =
     map2 (fun x1 x2 -> let (y,e) = f x1 x2 !e' in e' := e; y) v1 v2
   in
   (v',!e')
-
-let fold_map2' = fold_right2_map
 
 let fold_left2_map f e v1 v2 =
   let e' = ref e in
@@ -617,10 +598,6 @@ struct
 
 end
 
-(* Deprecated aliases *)
-let smartmap = Smart.map
-let smartfoldmap = Smart.fold_left_map
-
 module Fun1 =
 struct
 
@@ -686,7 +663,5 @@ struct
       end else ar
 
   end
-
-  let smartmap = Smart.map
 
 end

@@ -15,14 +15,6 @@ open Libnames
 (** Vernac expressions, produced by the parser *)
 type class_rawexpr = FunClass | SortClass | RefClass of qualid or_by_notation
 
-type goal_selector = Goal_select.t =
-  | SelectAlreadyFocused [@ocaml.deprecated "Use Goal_select.SelectAlreadyFocused"]
-  | SelectNth of int [@ocaml.deprecated "Use Goal_select.SelectNth"]
-  | SelectList of (int * int) list [@ocaml.deprecated "Use Goal_select.SelectList"]
-  | SelectId of Id.t [@ocaml.deprecated "Use Goal_select.SelectId"]
-  | SelectAll [@ocaml.deprecated "Use Goal_select.SelectAll"]
-[@@ocaml.deprecated "Use Goal_select.t"]
-
 type goal_identifier = string
 type scope_name = string
 
@@ -30,9 +22,6 @@ type goal_reference =
   | OpenSubgoals
   | NthGoal of int
   | GoalId of Id.t
-
-type univ_name_list = UnivNames.univ_name_list
-[@@ocaml.deprecated "Use [UnivNames.univ_name_list]"]
 
 type printable =
   | PrintTables
@@ -102,54 +91,12 @@ type comment =
   | CommentString of string
   | CommentInt of int
 
-type reference_or_constr = Hints.reference_or_constr =
-  | HintsReference of qualid [@ocaml.deprecated "Use Hints.HintsReference"]
-  | HintsConstr of constr_expr [@ocaml.deprecated "Use Hints.HintsConstr"]
-[@@ocaml.deprecated "Please use [Hints.reference_or_constr]"]
-
-type hint_mode = Hints.hint_mode =
-  | ModeInput [@ocaml.deprecated "Use Hints.ModeInput"]
-  | ModeNoHeadEvar [@ocaml.deprecated "Use Hints.ModeNoHeadEvar"]
-  | ModeOutput [@ocaml.deprecated "Use Hints.ModeOutput"]
-[@@ocaml.deprecated "Please use [Hints.hint_mode]"]
-
-type 'a hint_info_gen = 'a Typeclasses.hint_info_gen =
-    { hint_priority : int option; [@ocaml.deprecated "Use Typeclasses.hint_priority"]
-      hint_pattern : 'a option [@ocaml.deprecated "Use Typeclasses.hint_pattern"] }
-[@@ocaml.deprecated "Please use [Typeclasses.hint_info_gen]"]
-
-type hint_info_expr = Hints.hint_info_expr
-[@@ocaml.deprecated "Please use [Hints.hint_info_expr]"]
-
-type hints_expr = Hints.hints_expr =
-  | HintsResolve of (Hints.hint_info_expr * bool * Hints.reference_or_constr) list
-        [@ocaml.deprecated "Use the constructor in module [Hints]"]
-  | HintsResolveIFF of bool * qualid list * int option
-        [@ocaml.deprecated "Use the constructor in module [Hints]"]
-  | HintsImmediate of Hints.reference_or_constr list
-        [@ocaml.deprecated "Use the constructor in module [Hints]"]
-  | HintsUnfold of qualid list
-        [@ocaml.deprecated "Use the constructor in module [Hints]"]
-  | HintsTransparency of qualid Hints.hints_transparency_target * bool
-        [@ocaml.deprecated "Use the constructor in module [Hints]"]
-  | HintsMode of qualid * Hints.hint_mode list
-                   [@ocaml.deprecated "Use the constructor in module [Hints]"]
-  | HintsConstructors of qualid list
-        [@ocaml.deprecated "Use the constructor in module [Hints]"]
-  | HintsExtern of int * constr_expr option * Genarg.raw_generic_argument
-        [@ocaml.deprecated "Use the constructor in module [Hints]"]
-[@@ocaml.deprecated "Please use [Hints.hints_expr]"]
-
 type search_restriction =
   | SearchInside of qualid list
   | SearchOutside of qualid list
 
 type rec_flag       = bool (* true = Rec;           false = NoRec          *)
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
-type opacity_flag   = Proof_global.opacity_flag =
-    Opaque [@ocaml.deprecated "Use Proof_global.Opaque"]
-  | Transparent [@ocaml.deprecated "Use Proof_global.Transparent"]
- [@ocaml.deprecated "Please use [Proof_global.opacity_flag]"]
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = bool option
   (* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)
@@ -285,32 +232,7 @@ type register_kind =
   | RegisterInline
   | RegisterRetroknowledge of qualid
 
-type bullet = Proof_bullet.t
-[@@ocaml.deprecated "Alias type, please use [Proof_bullet.t]"]
-
 (** {6 Types concerning the module layer} *)
-
-(** Rigid / flexible module signature *)
-
-type 'a module_signature = 'a Declaremods.module_signature =
-  | Enforce of 'a (** ... : T *)
-        [@ocaml.deprecated "Use the constructor in module [Declaremods]"]
-  | Check of 'a list (** ... <: T1 <: T2, possibly empty *)
-        [@ocaml.deprecated "Use the constructor in module [Declaremods]"]
-[@@ocaml.deprecated "please use [Declaremods.module_signature]."]
-
-(** Which module inline annotations should we honor,
-    either None or the ones whose level is less or equal
-    to the given integer *)
-
-type inline = Declaremods.inline =
-  | NoInline
-      [@ocaml.deprecated "Use the constructor in module [Declaremods]"]
-  | DefaultInline
-      [@ocaml.deprecated "Use the constructor in module [Declaremods]"]
-  | InlineAt of int
-      [@ocaml.deprecated "Use the constructor in module [Declaremods]"]
-[@@ocaml.deprecated "please use [Declaremods.inline]."]
 
 type module_ast_inl = module_ast * Declaremods.inline
 type module_binder = bool option * lident list * module_ast_inl

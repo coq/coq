@@ -1690,8 +1690,6 @@ let reconsider_unif_constraints conv_algo evd =
     (Success evd)
     pbs
 
-let reconsider_conv_pbs = reconsider_unif_constraints
-
 (* Tries to solve problem t1 = t2.
  * Precondition: t1 is an uninstantiated evar
  * Returns an optional list of evars that were instantiated, or None

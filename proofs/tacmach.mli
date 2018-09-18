@@ -18,9 +18,6 @@ open Locus
 
 (** Operations for handling terms under a local typing context. *)
 
-type 'a sigma   = 'a Evd.sigma
-[@@ocaml.deprecated "alias of Evd.sigma"]
-
 open Evd
 type tactic     = Proof_type.tactic;;
 
@@ -28,14 +25,6 @@ val sig_it  : 'a sigma   -> 'a
 val project : goal sigma -> evar_map
 
 val re_sig : 'a -> evar_map -> 'a sigma
-
-val unpackage : 'a sigma -> evar_map ref * 'a
-[@@ocaml.deprecated "Do not use [evar_map ref]"]
-val repackage : evar_map ref -> 'a -> 'a sigma
-[@@ocaml.deprecated "Do not use [evar_map ref]"]
-val apply_sig_tac :
-  evar_map ref -> (goal sigma -> (goal list) sigma) -> goal -> (goal list)
-[@@ocaml.deprecated "Do not use [evar_map ref]"]
 
 val pf_concl              : goal sigma -> types
 val pf_env                : goal sigma -> env

@@ -533,7 +533,3 @@ let save_proof ?proof = function
       (* if the proof is given explicitly, nothing has to be deleted *)
       if Option.is_empty proof then Proof_global.discard_current ();
       Proof_global.(apply_terminator terminator (Proved (is_opaque,idopt,proof_obj)))
-
-(* Miscellaneous *)
-let get_current_context () = Pfedit.get_current_context ()
-
