@@ -178,11 +178,11 @@ open Pputils
     | [] -> mt()
     | _ as z -> str":" ++ spc() ++ prlist_with_sep sep str z
 
-  let pr_reference_or_constr pr_c = function
+  let pr_reference_or_constr pr_c = let open Hints in function
     | HintsReference r -> pr_qualid r
     | HintsConstr c -> pr_c c
 
-  let pr_hint_mode = function
+  let pr_hint_mode = let open Hints in function
     | ModeInput -> str"+"
     | ModeNoHeadEvar -> str"!"
     | ModeOutput -> str"-"
@@ -194,6 +194,7 @@ open Pputils
   let pr_hints db h pr_c pr_pat =
     let opth = pr_opt_hintbases db  in
     let pph =
+      let open Hints in
       match h with
         | HintsResolve l ->
           keyword "Resolve " ++ prlist_with_sep sep

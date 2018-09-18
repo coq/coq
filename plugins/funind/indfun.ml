@@ -98,7 +98,7 @@ let functional_induction with_clean c princl pat =
       List.map2
         (fun c pat ->
           ((None,
-            Ltac_plugin.Tacexpr.ElimOnConstr (fun env sigma -> (sigma,(c,NoBindings)))),
+            Tactics.ElimOnConstr (fun env sigma -> (sigma,(c,NoBindings)))),
            (None,pat),
            None))
         (args@c_list)

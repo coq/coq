@@ -37,6 +37,7 @@ open Tacarg
 open Printer
 open Pretyping
 open Tactypes
+open Tactics
 open Locus
 open Tacintern
 open Taccoerce

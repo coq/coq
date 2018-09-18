@@ -37,16 +37,24 @@ type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use 
 
 type goal_selector = Goal_select.t =
   | SelectAlreadyFocused
+    [@ocaml.deprecated "Use constructors in [Goal_select]"]
   | SelectNth of int
+    [@ocaml.deprecated "Use constructors in [Goal_select]"]
   | SelectList of (int * int) list
+    [@ocaml.deprecated "Use constructors in [Goal_select]"]
   | SelectId of Id.t
+    [@ocaml.deprecated "Use constructors in [Goal_select]"]
   | SelectAll
-[@@ocaml.deprecated "Use Vernacexpr.goal_selector"]
+    [@ocaml.deprecated "Use constructors in [Goal_select]"]
+[@@ocaml.deprecated "Use [Goal_select.t]"]
 
 type 'a core_destruction_arg = 'a Tactics.core_destruction_arg =
   | ElimOnConstr of 'a
+    [@ocaml.deprecated "Use constructors in [Tactics]"]
   | ElimOnIdent of lident
+    [@ocaml.deprecated "Use constructors in [Tactics]"]
   | ElimOnAnonHyp of int
+    [@ocaml.deprecated "Use constructors in [Tactics]"]
 [@@ocaml.deprecated "Use Tactics.core_destruction_arg"]
 
 type 'a destruction_arg =
@@ -55,8 +63,11 @@ type 'a destruction_arg =
 
 type inversion_kind = Inv.inversion_kind =
   | SimpleInversion
+    [@ocaml.deprecated "Use constructors in [Inv]"]
   | FullInversion
+    [@ocaml.deprecated "Use constructors in [Inv]"]
   | FullInversionClear
+    [@ocaml.deprecated "Use constructors in [Inv]"]
 [@@ocaml.deprecated "Use Tactics.inversion_kind"]
 
 type ('c,'d,'id) inversion_strength =
