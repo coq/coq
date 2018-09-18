@@ -640,7 +640,7 @@ a *subtyping* relation inductively defined by:
    respectively then
 
    .. math::
-      E[Γ] ⊢ t~w_1 … w_m ≤_{βδιζη} t~w_1' … w_m'
+      E[Γ] ⊢ t~w_1 … w_m ≤_{βδιζη} t'~w_1' … w_m'
 
    (notice that :math:`t` and :math:`t'` are both
    fully applied, i.e., they have a sort as a type) if
