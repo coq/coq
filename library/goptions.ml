@@ -92,8 +92,8 @@ module MakeTable =
         let inGo : option_mark * A.t -> obj =
           Libobject.declare_object {(Libobject.default_object nick) with
                 Libobject.load_function = load_options;
-		Libobject.open_function = load_options;
-		Libobject.cache_function = cache_options;
+                Libobject.open_function = import_filter [] load_options;
+                Libobject.cache_function = cache_options;
 		Libobject.subst_function = subst_options;
 		Libobject.classify_function = (fun x -> Substitute x)}
 	in
@@ -265,7 +265,7 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
         declare_object
           { (default_object (nickname key)) with
             load_function = load_options;
-            open_function = open_options;
+            open_function = import_filter [] open_options;
             cache_function = cache_options;
             subst_function = subst_options;
             discharge_function = discharge_options;

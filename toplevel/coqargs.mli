@@ -19,7 +19,7 @@ type coq_cmdopts = {
 
   ml_includes : string list;
   vo_includes : (string * Names.DirPath.t * bool) list;
-  vo_requires : (string * string option * bool option) list;
+  vo_requires : (string * string option * Lib.export_flag option) list;
 
   (* Fuse these two? Currently, [batch_mode] is only used to
      distinguish coqc / coqtop in help display. *)

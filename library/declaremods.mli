@@ -54,7 +54,7 @@ val declare_module :
 
 val start_module :
   'modast module_interpretor ->
-  bool option -> Id.t ->
+  Lib.export -> Id.t ->
   'modast module_params ->
   ('modast * inline) module_signature -> ModPath.t
 
@@ -110,13 +110,13 @@ val append_end_library_hook : (unit -> unit) -> unit
    every object of the module. Raises [Not_found] when [mp] is unknown
    or when [mp] corresponds to a functor. *)
 
-val really_import_module : ModPath.t -> unit
+val really_import_module : cat:Libobject.import_filter option -> ModPath.t -> unit
 
 (** [import_module export mp] is a synchronous version of
    [really_import_module]. If [export] is [true], the module is also
    opened every time the module containing it is. *)
 
-val import_module : bool -> ModPath.t -> unit
+val import_module : Lib.qualified_export -> ModPath.t -> unit
 
 (** Include  *)
 

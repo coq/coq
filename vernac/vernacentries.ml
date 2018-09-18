@@ -883,7 +883,7 @@ let warn_require_in_section =
   CWarnings.create ~name ~category
     (fun () -> strbrk "Use of “Require” inside a section is deprecated.")
 
-let vernac_require from import qidl =
+let vernac_require from export qidl =
   if Lib.sections_are_opened () then warn_require_in_section ();
   let root = match from with
   | None -> None
@@ -903,7 +903,7 @@ let vernac_require from import qidl =
   let modrefl = List.map locate qidl in
   if Dumpglob.dump () then
     List.iter2 (fun {CAst.loc} dp -> Dumpglob.dump_libref ?loc dp "lib") qidl (List.map fst modrefl);
-  Library.require_library_from_dirpath modrefl import
+  Library.require_library_from_dirpath modrefl export
 
 (* Coercions and canonical structures *)
 
@@ -1619,7 +1619,7 @@ let vernac_set_opacity ~atts (v,l) =
   Redexpr.set_strategy local [v,l]
 
 let get_option_locality export local =
-  if export then
+  if export == Lib.Export then
     if Option.is_empty local then OptExport
     else user_err Pp.(str "Locality modifiers forbidden with Export")
   else match local with
@@ -2146,7 +2146,13 @@ let interp ?proof ~atts ~st c =
 
   | VernacNameSectionHypSet (lid, set) -> vernac_name_sec_hyp lid set
 
-  | VernacRequire (from, export, qidl) -> vernac_require from export qidl
+  | VernacRequire (from, export, qidl) ->
+    let export = Option.map (fun (export,cat) ->
+        if Option.has_some cat then user_err ~hdr:"vernac_require"
+            Pp.(str "Qualified import/export not allowed with Require.");
+        export) export
+    in
+    vernac_require from export qidl
   | VernacImport (export,qidl) -> vernac_import export qidl
   | VernacCanonical qid -> vernac_canonical qid
   | VernacCoercion (r,s,t) -> vernac_coercion ~atts r s t

@@ -66,11 +66,20 @@ open Mod_subst
 type 'a substitutivity =
     Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
 
+(** Object import filters (currently a list of adhoc categories).
+
+    When using a qualified import [Import(cat1 ... catn)] objects are
+   given the list of names when opened.
+
+    It is customary to define objects with a list (possibly empty) of
+   categories which must match for import to happen. *)
+type import_filter = Names.Id.t list
+
 type 'a object_declaration = {
   object_name : string;
   cache_function : object_name * 'a -> unit;
   load_function : int -> object_name * 'a -> unit;
-  open_function : int -> object_name * 'a -> unit;
+  open_function : cat:import_filter option -> int -> object_name * 'a -> unit;
   classify_function : 'a -> 'a substitutivity;
   subst_function :  substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
@@ -86,6 +95,9 @@ type 'a object_declaration = {
 *)
 
 val default_object : string -> 'a object_declaration
+val import_filter : import_filter -> ('a -> 'b -> unit) -> cat:import_filter option -> 'a -> 'b -> unit
+(** [import_filter ocat f] produces a function which calls [f] when [cat]
+   is [None] or matches [ocat]. *)
 
 (** the identity substitution function *)
 val ident_subst_function : substitution * 'a -> 'a
@@ -107,7 +119,7 @@ val object_tag : obj -> string
 
 val cache_object : object_name * obj -> unit
 val load_object : int -> object_name * obj -> unit
-val open_object : int -> object_name * obj -> unit
+val open_object : cat:import_filter option -> int -> object_name * obj -> unit
 val subst_object : substitution * obj -> obj
 val classify_object : obj -> obj substitutivity
 val discharge_object : object_name * obj -> obj option

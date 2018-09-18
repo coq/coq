@@ -255,7 +255,7 @@ let class_input : typeclass -> obj =
     { (default_object "type classes state") with
       cache_function = cache_class;
       load_function = (fun _ -> load_class);
-      open_function = (fun _ -> load_class);
+      open_function = import_filter [] (fun _ -> load_class);
       classify_function = (fun x -> Substitute x);
       discharge_function = (fun a -> Some (discharge_class a));
       rebuild_function = rebuild_class;
@@ -406,7 +406,7 @@ let instance_input : instance_action * instance -> obj =
     { (default_object "type classes instances state") with
       cache_function = cache_instance;
       load_function = (fun _ x -> cache_instance x);
-      open_function = (fun _ x -> cache_instance x);
+      open_function = import_filter [] (fun _ x -> cache_instance x);
       classify_function = classify_instance;
       discharge_function = discharge_instance;
       rebuild_function = rebuild_instance;

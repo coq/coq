@@ -69,7 +69,7 @@ let in_syntax_constant
   declare_object {(default_object "SYNTAXCONSTANT") with
     cache_function = cache_syntax_constant;
     load_function = load_syntax_constant;
-    open_function = open_syntax_constant;
+    open_function = import_filter [] open_syntax_constant;
     subst_function = subst_syntax_constant;
     classify_function = classify_syntax_constant }
 

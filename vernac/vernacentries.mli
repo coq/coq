@@ -12,7 +12,7 @@ val dump_global : Libnames.qualid Constrexpr.or_by_notation -> unit
 
 (** Vernacular entries *)
 val vernac_require :
-  Libnames.qualid option -> bool option -> Libnames.qualid list -> unit
+  Libnames.qualid option -> Lib.export_flag option -> Libnames.qualid list -> unit
 
 (** The main interpretation function of vernacular expressions *)
 val interp :

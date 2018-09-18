@@ -44,7 +44,7 @@ type coq_cmdopts = {
 
   ml_includes : string list;
   vo_includes : (string * Names.DirPath.t * bool) list;
-  vo_requires : (string * string option * bool option) list;
+  vo_requires : (string * string option * Lib.export_flag option) list;
   (* None = No Import; Some false = Import; Some true = Export *)
 
   (* XXX: Fusion? *)
@@ -152,9 +152,9 @@ let add_vo_require opts d p export =
 
 let add_compat_require opts v =
   match v with
-  | Flags.V8_6 -> add_vo_require opts "Coq.Compat.Coq86" None (Some false)
-  | Flags.V8_7 -> add_vo_require opts "Coq.Compat.Coq87" None (Some false)
-  | Flags.Current -> add_vo_require opts "Coq.Compat.Coq88" None (Some false)
+  | Flags.V8_6 -> add_vo_require opts "Coq.Compat.Coq86" None (Some Lib.Import)
+  | Flags.V8_7 -> add_vo_require opts "Coq.Compat.Coq87" None (Some Lib.Import)
+  | Flags.Current -> add_vo_require opts "Coq.Compat.Coq88" None (Some Lib.Import)
 
 let set_batch_mode opts =
   Flags.quiet := true;
@@ -480,7 +480,7 @@ let parse_args arglist : coq_cmdopts * string list =
       Flags.profile_ltac_cutoff := get_float opt (next ());
       oval
 
-    |"-require" -> add_vo_require oval (next ()) None (Some false)
+    |"-require" -> add_vo_require oval (next ()) None (Some Lib.Import)
 
     |"-top" ->
       let topname = Libnames.dirpath_of_string (next ()) in
@@ -558,7 +558,7 @@ let parse_args arglist : coq_cmdopts * string list =
     |"-list-tags" -> { oval with print_tags = true }
     |"-time" -> { oval with time = true }
     |"-type-in-type" -> set_type_in_type (); oval
-    |"-unicode" -> add_vo_require oval "Utf8_core" None (Some false)
+    |"-unicode" -> add_vo_require oval "Utf8_core" None (Some Lib.Import)
     |"-where" -> { oval with print_where = true }
     |"-h"|"-H"|"-?"|"-help"|"--help" -> usage oval.batch_mode; oval
     |"-v"|"--version" -> Usage.version (exitcode oval)

@@ -147,8 +147,8 @@ type opacity_flag   = Proof_global.opacity_flag = Opaque | Transparent
  [@ocaml.deprecated "Please use [Proof_global.opacity_flag]"]
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = bool option
-  (* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)
-type export_flag    = bool (* true = Export;        false = Import         *)
+(* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)
+
 type inductive_flag = Declarations.recursivity_kind
 type onlyparsing_flag = Flags.compat_version option
  (* Some v = Parse only;  None = Print also.
@@ -302,7 +302,7 @@ type inline = Declaremods.inline =
 [@@ocaml.deprecated "please use [Declaremods.inline]."]
 
 type module_ast_inl = module_ast * Declaremods.inline
-type module_binder = bool option * lident list * module_ast_inl
+type module_binder = Lib.qualified_export option * lident list * module_ast_inl
 
 (** [Some b] if locally enabled/disabled according to [b], [None] if
     we should use the global flag. *)
@@ -355,8 +355,8 @@ type nonrec vernac_expr =
   | VernacBeginSection of lident
   | VernacEndSegment of lident
   | VernacRequire of
-      qualid option * export_flag option * qualid list
-  | VernacImport of export_flag * qualid list
+      qualid option * Lib.qualified_export option * qualid list
+  | VernacImport of Lib.qualified_export * qualid list
   | VernacCanonical of qualid or_by_notation
   | VernacCoercion of qualid or_by_notation *
       class_rawexpr * class_rawexpr
@@ -379,9 +379,9 @@ type nonrec vernac_expr =
   | VernacDeclareClass of qualid (* inductive or definition name *)
 
   (* Modules and Module Types *)
-  | VernacDeclareModule of bool option * lident *
+  | VernacDeclareModule of Lib.qualified_export option * lident *
       module_binder list * module_ast_inl
-  | VernacDefineModule of bool option * lident * module_binder list *
+  | VernacDefineModule of Lib.qualified_export option * lident * module_binder list *
       module_ast_inl Declaremods.module_signature * module_ast_inl list
   | VernacDeclareModuleType of lident *
       module_binder list * module_ast_inl list * module_ast_inl list
@@ -426,8 +426,8 @@ type nonrec vernac_expr =
   | VernacSetOpacity of (Conv_oracle.level * qualid or_by_notation list)
   | VernacSetStrategy of
       (Conv_oracle.level * qualid or_by_notation list) list
-  | VernacUnsetOption of export_flag * Goptions.option_name
-  | VernacSetOption of export_flag * Goptions.option_name * option_value
+  | VernacUnsetOption of Lib.export_flag * Goptions.option_name
+  | VernacSetOption of Lib.export_flag * Goptions.option_name * option_value
   | VernacAddOption of Goptions.option_name * option_ref_value list
   | VernacRemoveOption of Goptions.option_name * option_ref_value list
   | VernacMemOption of Goptions.option_name * option_ref_value list

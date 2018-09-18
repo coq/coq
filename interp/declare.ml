@@ -126,7 +126,7 @@ let (inConstant : constant_obj -> obj) =
   declare_object { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
-    open_function = open_constant;
+    open_function = import_filter [] open_constant;
     classify_function = classify_constant;
     subst_function = ident_subst_function;
     discharge_function = discharge_constant }
@@ -376,7 +376,7 @@ let inInductive : inductive_obj -> obj =
   declare_object {(default_object "INDUCTIVE") with
     cache_function = cache_inductive;
     load_function = load_inductive;
-    open_function = open_inductive;
+    open_function = import_filter [] open_inductive;
     classify_function = (fun a -> Substitute (dummy_inductive_entry a));
     subst_function = ident_subst_function;
     discharge_function = discharge_inductive;
@@ -552,7 +552,7 @@ let input_universe : universe_decl -> Libobject.obj =
     { (default_object "Global universe name state") with
       cache_function = cache_universe;
       load_function = load_universe;
-      open_function = open_universe;
+      open_function = import_filter [] open_universe;
       discharge_function = discharge_universe;
       subst_function = (fun (subst, a) -> (** Actually the name is generated once and for all. *) a);
       classify_function = (fun a -> Substitute a) }

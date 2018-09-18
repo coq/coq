@@ -21,6 +21,7 @@ open Constrexpr_ops
 open Extend
 open Decl_kinds
 open Declaremods
+open Lib
 open Declarations
 open Namegen
 open Tok (* necessary for camlp5 *)
@@ -524,17 +525,20 @@ GRAMMAR EXTEND Gram
       | IDENT "From" ; ns = global ; IDENT "Require"; export = export_token
 	; qidl = LIST1 global ->
 	{ VernacRequire (Some ns, export, qidl) }
-      | IDENT "Import"; qidl = LIST1 global -> { VernacImport (false,qidl) }
-      | IDENT "Export"; qidl = LIST1 global -> { VernacImport (true,qidl) }
+      | IDENT "Import"; cat = export_cats; qidl = LIST1 global -> { VernacImport ((Import,cat),qidl) }
+      | IDENT "Export"; cat = export_cats; qidl = LIST1 global -> { VernacImport ((Export,cat),qidl) }
       | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_expr ->
 	  { VernacInclude(e::l) }
       | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
 	 { warn_deprecated_include_type ~loc ();
         VernacInclude(e::l) } ] ]
   ;
+  export_cats:
+    [ [ cat = OPT [ "("; cat = LIST1 ident; ")" -> { cat } ] -> { cat } ] ]
+  ;
   export_token:
-    [ [ IDENT "Import" -> { Some false }
-      | IDENT "Export" -> { Some true }
+    [ [ IDENT "Import"; cat = export_cats -> { Some (Import,cat) }
+      | IDENT "Export"; cat = export_cats -> { Some (Export,cat) }
       |  -> { None } ] ]
   ;
   ext_module_type:
@@ -832,9 +836,9 @@ GRAMMAR EXTEND Gram
 
   gallina_ext:
     [ [ IDENT "Export"; "Set"; table = option_table; v = option_value ->
-        { VernacSetOption (true, table, v) }
+        { VernacSetOption (Export, table, v) }
       | IDENT "Export"; IDENT "Unset"; table = option_table ->
-          { VernacUnsetOption (true, table) }
+          { VernacUnsetOption (Export, table) }
     ] ];
 
   command:
@@ -900,9 +904,9 @@ GRAMMAR EXTEND Gram
 
       (* For acting on parameter tables *)
       | "Set"; table = option_table; v = option_value ->
-          { VernacSetOption (false, table, v) }
+          { VernacSetOption (Import, table, v) }
       | IDENT "Unset"; table = option_table ->
-          { VernacUnsetOption (false, table) }
+          { VernacUnsetOption (Import, table) }
 
       | IDENT "Print"; IDENT "Table"; table = option_table ->
 	  { VernacPrintOption table }
@@ -1080,10 +1084,10 @@ GRAMMAR EXTEND Gram
 
 (* Tactic Debugger *)
       |	IDENT "Debug"; IDENT "On" ->
-          { VernacSetOption (false, ["Ltac";"Debug"], BoolValue true) }
+          { VernacSetOption (Import, ["Ltac";"Debug"], BoolValue true) }
 
       |	IDENT "Debug"; IDENT "Off" ->
-          { VernacSetOption (false, ["Ltac";"Debug"], BoolValue false) }
+          { VernacSetOption (Import, ["Ltac";"Debug"], BoolValue false) }
 
 (* registration of a custom reduction *)
 

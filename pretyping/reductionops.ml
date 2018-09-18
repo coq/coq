@@ -71,7 +71,7 @@ let subst_reduction_effect (subst,(con,funkey)) =
 let inReductionEffect : Constant.t * string -> obj =
   declare_object {(default_object "REDUCTION-EFFECT") with
     cache_function = cache_reduction_effect;
-    open_function = (fun i o -> if Int.equal i 1 then cache_reduction_effect o);
+    open_function = import_filter [] (fun i o -> if Int.equal i 1 then cache_reduction_effect o);
     subst_function = subst_reduction_effect;
     classify_function = (fun o -> Substitute o) }
 

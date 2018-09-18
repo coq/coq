@@ -499,7 +499,7 @@ let classify_coercion obj =
 
 let inCoercion : coercion -> obj =
   declare_object {(default_object "COERCION") with
-    open_function = open_coercion;
+    open_function = import_filter [] open_coercion;
     load_function = load_coercion;
     cache_function = (fun objn ->
         set_coercion_in_scope objn;

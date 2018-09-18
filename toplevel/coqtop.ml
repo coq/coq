@@ -107,7 +107,7 @@ let load_init_vernaculars cur_feeder opts ~state =
 (* Startup LoadPath and Modules                                               *)
 (******************************************************************************)
 (* prelude_data == From Coq Require Export Prelude. *)
-let prelude_data = "Prelude", Some "Coq", Some true
+let prelude_data = "Prelude", Some "Coq", Some Lib.Export
 
 let require_libs opts =
   if opts.load_init then prelude_data :: opts.vo_requires else opts.vo_requires

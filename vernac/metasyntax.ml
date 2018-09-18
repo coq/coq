@@ -34,7 +34,7 @@ let cache_token (_,s) = CLexer.add_keyword s
 
 let inToken : string -> obj =
   declare_object {(default_object "TOKEN") with
-       open_function = (fun i o -> if Int.equal i 1 then cache_token o);
+       open_function = import_filter [] (fun i o -> if Int.equal i 1 then cache_token o);
        cache_function = cache_token;
        subst_function = Libobject.ident_subst_function;
        classify_function = (fun o -> Substitute o)}
@@ -788,7 +788,7 @@ let classify_syntax_definition (local, _ as o) =
 
 let inSyntaxExtension : syntax_extension_obj -> obj =
   declare_object {(default_object "SYNTAX-EXTENSION") with
-       open_function = (fun i o -> if Int.equal i 1 then cache_syntax_extension o);
+       open_function = import_filter [] (fun i o -> if Int.equal i 1 then cache_syntax_extension o);
        cache_function = cache_syntax_extension;
        subst_function = subst_syntax_extension;
        classify_function = classify_syntax_definition}
@@ -1352,7 +1352,7 @@ let classify_notation nobj =
 
 let inNotation : notation_obj -> obj =
   declare_object {(default_object "NOTATION") with
-       open_function = open_notation;
+       open_function = import_filter [] open_notation;
        cache_function = cache_notation;
        subst_function = subst_notation;
        load_function = load_notation;
@@ -1626,7 +1626,7 @@ let classify_scope_command (local, _, _ as o) =
 let inScopeCommand : locality_flag * scope_name * scope_command -> obj =
   declare_object {(default_object "DELIMITERS") with
       cache_function = cache_scope_command;
-      open_function = open_scope_command;
+      open_function = import_filter [] open_scope_command;
       load_function = load_scope_command;
       subst_function = subst_scope_command;
       classify_function = classify_scope_command}
@@ -1689,7 +1689,7 @@ let classify_custom_entry (local,s as o) =
 let inCustomEntry : locality_flag * string -> obj =
   declare_object {(default_object "CUSTOM-ENTRIES") with
       cache_function = cache_custom_entry;
-      open_function = open_custom_entry;
+      open_function = import_filter [] open_custom_entry;
       load_function = load_custom_entry;
       subst_function = subst_custom_entry;
       classify_function = classify_custom_entry}

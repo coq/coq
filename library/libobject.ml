@@ -16,11 +16,20 @@ module Dyn = Dyn.Make ()
 type 'a substitutivity =
     Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
 
+type import_filter = Names.Id.t list
+
+let import_filter ocat f ~cat i o =
+  let cat_match = match cat with
+    | None -> true
+    | Some cat -> List.exists (fun cat -> List.exists (Names.Id.equal cat) ocat) cat
+  in
+  if cat_match then f i o
+
 type 'a object_declaration = {
   object_name : string;
   cache_function : object_name * 'a -> unit;
   load_function : int -> object_name * 'a -> unit;
-  open_function : int -> object_name * 'a -> unit;
+  open_function : cat:import_filter option -> int -> object_name * 'a -> unit;
   classify_function : 'a -> 'a substitutivity;
   subst_function : Mod_subst.substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
@@ -30,7 +39,7 @@ let default_object s = {
   object_name = s;
   cache_function = (fun _ -> ());
   load_function = (fun _ _ -> ());
-  open_function = (fun _ _ -> ());
+  open_function = (fun ~cat _ _ -> ());
   subst_function = (fun _ ->
     CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!"));
   classify_function = (fun obj -> Keep obj);
@@ -56,7 +65,7 @@ type obj = Dyn.t (* persistent dynamic objects *)
 type dynamic_object_declaration = {
   dyn_cache_function : object_name * obj -> unit;
   dyn_load_function : int -> object_name * obj -> unit;
-  dyn_open_function : int -> object_name * obj -> unit;
+  dyn_open_function : cat:import_filter option -> int -> object_name * obj -> unit;
   dyn_subst_function : Mod_subst.substitution * obj -> obj;
   dyn_classify_function : obj -> obj substitutivity;
   dyn_discharge_function : object_name * obj -> obj option;
@@ -72,7 +81,7 @@ let declare_object_full odecl =
   let (infun, outfun) = Dyn.Easy.make_dyn na in
   let cacher (oname,lobj) = odecl.cache_function (oname,outfun lobj)
   and loader i (oname,lobj) = odecl.load_function i (oname,outfun lobj)
-  and opener i (oname,lobj) = odecl.open_function i (oname,outfun lobj)
+  and opener ~cat i (oname,lobj) = odecl.open_function ~cat i (oname,outfun lobj)
   and substituter (sub,lobj) = infun (odecl.subst_function (sub,outfun lobj))
   and classifier lobj = match odecl.classify_function (outfun lobj) with
   | Dispose -> Dispose
@@ -112,8 +121,8 @@ let cache_object ((_,lobj) as node) =
 let load_object i ((_,lobj) as node) =
   apply_dyn_fun (fun d -> d.dyn_load_function i node) lobj
 
-let open_object i ((_,lobj) as node) =
-  apply_dyn_fun (fun d -> d.dyn_open_function i node) lobj
+let open_object ~cat i ((_,lobj) as node) =
+  apply_dyn_fun (fun d -> d.dyn_open_function ~cat i node) lobj
 
 let subst_object ((_,lobj) as node) = 
   apply_dyn_fun (fun d -> d.dyn_subst_function node) lobj

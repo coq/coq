@@ -22,7 +22,7 @@ open Libnames
 (** {6 ... } *)
 (** Require = load in the environment + open (if the optional boolean
     is not [None]); mark also for export if the boolean is [Some true] *)
-val require_library_from_dirpath : (DirPath.t * string) list -> bool option -> unit
+val require_library_from_dirpath : (DirPath.t * string) list -> Lib.export_flag option -> unit
 
 (** {6 Start the compilation of a library } *)
 
@@ -36,7 +36,7 @@ type seg_proofs = Constr.constr Future.computation array
 
 (** Open a module (or a library); if the boolean is true then it's also
    an export otherwise just a simple import *)
-val import_module : bool -> qualid list -> unit
+val import_module : Lib.qualified_export -> qualid list -> unit
 
 (** Start the compilation of a file as a library. The first argument must be
     output file, and the 

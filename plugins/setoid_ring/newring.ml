@@ -402,7 +402,7 @@ let theory_to_obj : ring_info -> obj =
   let cache_th (name,th) = add_entry name th in
   declare_object
     {(default_object "tactic-new-ring-theory") with
-      open_function = (fun i o -> if Int.equal i 1 then cache_th o);
+      open_function = import_filter [] (fun i o -> if Int.equal i 1 then cache_th o);
       cache_function = cache_th;
       subst_function = subst_th;
       classify_function = (fun x -> Substitute x)}
@@ -899,7 +899,7 @@ let ftheory_to_obj : field_info -> obj =
   let cache_th (name,th) = add_field_entry name th in
   declare_object
     {(default_object "tactic-new-field-theory") with
-      open_function = (fun i o -> if Int.equal i 1 then cache_th o);
+      open_function = import_filter [] (fun i o -> if Int.equal i 1 then cache_th o);
       cache_function = cache_th;
       subst_function = subst_th;
       classify_function = (fun x -> Substitute x) }

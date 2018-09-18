@@ -17,7 +17,9 @@ open Names
    mechanism (at a low level; discharge is not known at this step). *)
 
 type is_type = bool (* Module Type or just Module *)
-type export = bool option (* None for a Module Type *)
+type export_flag = Import | Export
+type qualified_export = export_flag * Libobject.import_filter option
+type export = qualified_export option (* None for a Module Type *)
 
 type node =
   | Leaf of Libobject.obj
@@ -31,7 +33,7 @@ type lib_objects = (Id.t * Libobject.obj) list
 
 (** {6 Object iteration functions. } *)
 
-val open_objects : int -> Libnames.object_prefix -> lib_objects -> unit
+val open_objects : cat:Libobject.import_filter option -> int -> Libnames.object_prefix -> lib_objects -> unit
 val load_objects : int -> Libnames.object_prefix -> lib_objects -> unit
 val subst_objects : Mod_subst.substitution -> lib_objects -> lib_objects
 (*val load_and_subst_objects : int -> Libnames.object_prefix -> Mod_subst.substitution -> lib_objects -> lib_objects*)

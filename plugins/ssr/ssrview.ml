@@ -48,13 +48,13 @@ module AdaptorDb = struct
   let classify_adaptor x = Libobject.Substitute x
 
   let in_db =
-    Libobject.declare_object {
-       (Libobject.default_object "VIEW_ADAPTOR_DB")
+    Libobject.(declare_object {
+       (default_object "VIEW_ADAPTOR_DB")
     with
-       Libobject.open_function = (fun i o -> if i = 1 then cache_adaptor o);
-       Libobject.cache_function = cache_adaptor;
-       Libobject.subst_function = subst_adaptor;
-       Libobject.classify_function = classify_adaptor }
+       open_function = import_filter [] (fun i o -> if i = 1 then cache_adaptor o);
+       cache_function = cache_adaptor;
+       subst_function = subst_adaptor;
+       classify_function = classify_adaptor })
 
   let declare kind terms =
     List.iter (fun term -> Lib.add_anonymous_leaf (in_db (kind,term)))

@@ -190,7 +190,7 @@ let classify_scope (local,_,_ as o) =
 let inScope : bool * bool * scope_elem -> obj =
   declare_object {(default_object "SCOPE") with
       cache_function = cache_scope;
-      open_function = open_scope;
+      open_function = import_filter [] open_scope;
       subst_function = subst_scope;
       discharge_function = discharge_scope;
       classify_function = classify_scope }
@@ -452,9 +452,12 @@ let subst_prim_token_interpretation (subs,infos) =
 let classify_prim_token_interpretation infos =
     if infos.pt_local then Dispose else Substitute infos
 
+let open_prim_token_interpretation i o =
+  if Int.equal i 1 then cache_prim_token_interpretation o
+
 let inPrimTokenInterp : prim_token_infos -> obj =
   declare_object {(default_object "PRIM-TOKEN-INTERP") with
-     open_function  = (fun i o -> if Int.equal i 1 then cache_prim_token_interpretation o);
+     open_function  = import_filter [] open_prim_token_interpretation;
      cache_function = cache_prim_token_interpretation;
      subst_function = subst_prim_token_interpretation;
      classify_function = classify_prim_token_interpretation}

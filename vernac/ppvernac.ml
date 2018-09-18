@@ -20,7 +20,6 @@ open Decl_kinds
 open Constrexpr
 open Constrexpr_ops
 open Vernacexpr
-open Declaremods
 open Pputils
 
   open Ppconstr
@@ -271,12 +270,15 @@ open Pputils
     | Check mtys ->
       prlist_strict (fun m -> str "<:" ++ pr_module_ast_inl true prc m) mtys
 
-  let pr_require_token = function
-    | Some true ->
-      keyword "Export" ++ spc ()
-    | Some false ->
-      keyword "Import" ++ spc ()
-    | None -> mt()
+let pr_qualified_export (flag,quals) =
+  let tok = match flag with Lib.Import -> keyword "Import" | Lib.Export -> keyword "Export" in
+  let quals = match quals with
+    | None -> mt ()
+    | Some quals -> str"(" ++ pr_sequence pr_id quals ++ str")"
+  in
+  tok ++ quals ++ spc ()
+
+  let pr_require_token = pr_opt_no_spc pr_qualified_export
 
   let pr_module_vardecls pr_c (export,idl,(mty,inl)) =
     let m = pr_module_ast true pr_c mty in
@@ -861,7 +863,7 @@ open Pputils
         )
       | VernacImport (f,l) ->
         return (
-          (if f then keyword "Export" else keyword "Import") ++ spc() ++
+          pr_qualified_export f ++ spc() ++
             prlist_with_sep sep pr_import_module l
         )
       | VernacCanonical q ->
@@ -1101,12 +1103,12 @@ open Pputils
                    hv 0 (prlist_with_sep sep pr_line l))
         )
       | VernacUnsetOption (export, na) ->
-        let export = if export then keyword "Export" ++ spc () else mt () in
+        let export = match export with Lib.Export -> keyword "Export" ++ spc () | Lib.Import -> mt () in
         return (
           hov 1 (export ++ keyword "Unset" ++ spc() ++ pr_printoption na None)
         )
       | VernacSetOption (export, na,v) ->
-        let export = if export then keyword "Export" ++ spc () else mt () in
+        let export = match export with Lib.Export -> keyword "Export" ++ spc () | Lib.Import -> mt () in
         return (
           hov 2 (export ++ keyword "Set" ++ spc() ++ pr_set_option na v)
         )

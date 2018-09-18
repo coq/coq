@@ -475,7 +475,7 @@ let subst_transitivity_lemma (subst,(b,ref)) = (b,subst_mps subst ref)
 let inTransitivity : bool * Constr.t -> obj =
   declare_object {(default_object "TRANSITIVITY-STEPS") with
     cache_function = cache_transitivity_lemma;
-    open_function = (fun i o -> if Int.equal i 1 then cache_transitivity_lemma o);
+    open_function = import_filter [] (fun i o -> if Int.equal i 1 then cache_transitivity_lemma o);
     subst_function = subst_transitivity_lemma;
     classify_function = (fun o -> Substitute o) }
 
@@ -519,7 +519,7 @@ let subst_implicit_tactic (subst,tac) =
 
 let inImplicitTactic : glob_tactic_expr option -> obj =
   declare_object {(default_object "IMPLICIT-TACTIC") with
-       open_function = (fun i o -> if Int.equal i 1 then cache_implicit_tactic o);
+       open_function = import_filter [] (fun i o -> if Int.equal i 1 then cache_implicit_tactic o);
        cache_function = cache_implicit_tactic;
        subst_function = subst_implicit_tactic;
        classify_function = (fun o -> Dispose)}

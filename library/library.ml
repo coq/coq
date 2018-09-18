@@ -196,7 +196,7 @@ let rec remember_last_of_each l m =
 
 let register_open_library export m =
   libraries_imports_list := remember_last_of_each !libraries_imports_list m;
-  if export then
+  if export == Lib.Export then
     libraries_exports_list := remember_last_of_each !libraries_exports_list m
 
 (************************************************************************)
@@ -213,10 +213,10 @@ let open_library export explicit_libs m =
     || not (library_is_opened m)
   then begin
     register_open_library export m;
-    Declaremods.really_import_module (MPfile m)
+    Declaremods.really_import_module ~cat:None (MPfile m)
   end
   else
-    if export then
+    if export == Lib.Export then
       libraries_exports_list := remember_last_of_each !libraries_exports_list m
 
 (* open_libraries recursively open a list of libraries but opens only once
@@ -255,12 +255,12 @@ let cache_import_library obj =
 let subst_import_library (_,o) = o
 
 let classify_import_library (_,export as obj) =
-  if export then Substitute obj else Dispose
+  if export == Lib.Export then Substitute obj else Dispose
 
-let in_import_library : DirPath.t list * bool -> obj =
+let in_import_library : DirPath.t list * Lib.export_flag -> obj =
   declare_object {(default_object "IMPORT LIBRARY") with
        cache_function = cache_import_library;
-       open_function = open_import_library;
+       open_function = import_filter [] open_import_library;
        subst_function = subst_import_library;
        classify_function = classify_import_library }
 
@@ -537,13 +537,13 @@ let discharge_require (_,o) = Some o
 
 (* open_function is never called from here because an Anticipate object *)
 
-type require_obj = library_t list * DirPath.t list * bool option
+type require_obj = library_t list * DirPath.t list * Lib.export_flag option
 
 let in_require : require_obj -> obj =
   declare_object {(default_object "REQUIRE") with
        cache_function = cache_require;
        load_function = load_require;
-       open_function = (fun _ _ -> assert false);
+       open_function = (fun ~cat _ _ -> assert false);
        discharge_function = discharge_require;
        classify_function = (fun o -> Anticipate o) }
 
@@ -581,7 +581,7 @@ let safe_locate_module qid =
     user_err ?loc:qid.CAst.loc ~hdr:"import_library"
       (pr_qualid qid ++ str " is not a module")
 
-let import_module export modl =
+let import_module (export,cat as excat) modl =
   (* Optimization: libraries in a raw in the list are imported
      "globally".  If there is non-library in the list; it breaks the
      optimization For instance: "Import Arith MyModule Zarith" will
@@ -598,10 +598,10 @@ let import_module export modl =
           try Nametab.locate_module qid, acc
           with Not_found-> flush acc; safe_locate_module qid, [] in
         (match m with
-        | MPfile dir -> aux (dir::acc) l
+        | MPfile dir when Option.is_empty cat -> aux (dir::acc) l
         | mp ->
             flush acc;
-            try Declaremods.import_module export mp; aux [] l
+            try Declaremods.import_module excat mp; aux [] l
             with Not_found ->
               user_err ?loc:qid.CAst.loc ~hdr:"import_library"
                 (pr_qualid qid ++ str " is not a module"))

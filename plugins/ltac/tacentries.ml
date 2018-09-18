@@ -299,7 +299,7 @@ let classify_tactic_notation tacobj = Substitute tacobj
 
 let inTacticGrammar : tactic_grammar_obj -> obj =
   declare_object {(default_object "TacticGrammar") with
-       open_function = open_tactic_notation;
+       open_function = import_filter [] open_tactic_notation;
        load_function = load_tactic_notation;
        cache_function = cache_tactic_notation;
        subst_function = subst_tactic_notation;

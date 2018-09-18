@@ -278,7 +278,8 @@ let nametab_register_body mp dir (l,body) =
 
 let nametab_register_module_body mp struc =
   (* If [mp] is a globally visible module, we simply import it *)
-  try Declaremods.really_import_module mp
+  (* TODO import only categories relevant to name stuff *)
+  try Declaremods.really_import_module ~cat:None mp
   with Not_found ->
     (* Otherwise we try to emulate an import by playing with nametab *)
     nametab_register_dir mp;

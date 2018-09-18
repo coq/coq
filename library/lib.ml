@@ -20,7 +20,9 @@ open Context.Named.Declaration
 module NamedDecl = Context.Named.Declaration
 
 type is_type = bool (* Module Type or just Module *)
-type export = bool option (* None for a Module Type *)
+type export_flag = Import | Export
+type qualified_export = export_flag * import_filter option
+type export = qualified_export option (* None for a Module Type *)
 
 type node =
   | Leaf of obj
@@ -41,7 +43,7 @@ let iter_objects f i prefix =
   List.iter (fun (id,obj) -> f i (make_oname prefix id, obj))
 
 let load_objects i pr = iter_objects load_object i pr
-let open_objects i pr = iter_objects open_object i pr
+let open_objects ~cat i pr = iter_objects (open_object ~cat) i pr
 
 let subst_objects subst seg = 
   let subst_one = fun (id,obj as node) ->

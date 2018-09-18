@@ -219,7 +219,7 @@ let do_module' exists iter_objects i ((sp,kn),sobjs) =
 
 let cache_module = do_module' false Lib.load_objects 1
 let load_module = do_module' false Lib.load_objects
-let open_module = do_module' true Lib.open_objects
+let open_module ~cat = do_module' true (Lib.open_objects ~cat)
 let subst_module (subst,sobjs) = subst_sobjs subst sobjs
 let classify_module sobjs = Substitute sobjs
 
@@ -250,10 +250,10 @@ let load_keep i ((sp,kn),kobjs) =
   ModObjs.set obj_mp (prefix,sobjs,kobjs);
   Lib.load_objects i prefix kobjs
 
-let open_keep i ((sp,kn),kobjs) =
+let open_keep ~cat i ((sp,kn),kobjs) =
   let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
   let prefix = { obj_dir; obj_mp; obj_sec = DirPath.empty } in
-  Lib.open_objects i prefix kobjs
+  Lib.open_objects ~cat i prefix kobjs
 
 let in_modkeep : Lib.lib_objects -> obj =
   declare_object {(default_object "MODULE KEEP") with
@@ -292,7 +292,7 @@ let (in_modtype : substitutive_objects -> obj),
     (out_modtype : obj -> substitutive_objects) =
   declare_object_full {(default_object "MODULE TYPE") with
       cache_function = cache_modtype;
-      open_function = open_modtype;
+      open_function = import_filter [] open_modtype;
       load_function = load_modtype;
       subst_function = subst_modtype;
       classify_function = classify_modtype }
@@ -300,17 +300,17 @@ let (in_modtype : substitutive_objects -> obj),
 
 (** {6 Declaration of substitutive objects for Include} *)
 
-let do_include do_load do_open i ((sp,kn),aobjs) =
+let do_include ?cat do_load do_open i ((sp,kn),aobjs) =
   let obj_dir = Libnames.dirpath sp in
   let obj_mp = KerName.modpath kn in
   let prefix = { obj_dir; obj_mp; obj_sec = DirPath.empty } in
   let o = expand_aobjs aobjs in
   if do_load then Lib.load_objects i prefix o;
-  if do_open then Lib.open_objects i prefix o
+  if do_open then Lib.open_objects ~cat i prefix o
 
 let cache_include = do_include true true 1
 let load_include = do_include true false
-let open_include = do_include false true
+let open_include ~cat = do_include ?cat false true
 let subst_include (subst,aobjs) = subst_aobjs subst aobjs
 let classify_include aobjs = Substitute aobjs
 
@@ -942,33 +942,42 @@ let end_library ?except dir =
 
 (** {6 Implementation of Import and Export commands} *)
 
-let really_import_module mp =
+let really_import_module ~cat mp =
   (* May raise Not_found for unknown module and for functors *)
   let prefix,sobjs,keepobjs = ModObjs.get mp in
-  Lib.open_objects 1 prefix sobjs;
-  Lib.open_objects 1 prefix keepobjs
+  Lib.open_objects ~cat 1 prefix sobjs;
+  Lib.open_objects ~cat 1 prefix keepobjs
 
-let cache_import (_,(_,mp)) = really_import_module mp
+type import_obj = {
+  import_export : Lib.export_flag;
+  import_mp : ModPath.t;
+  import_cat : Libobject.import_filter option; (* This is an object from [Import(import_cat)] *)
+}
+
+let cache_import (_,obj) = really_import_module ~cat:obj.import_cat obj.import_mp
 
 let open_import i obj =
   if Int.equal i 1 then cache_import obj
 
-let classify_import (export,_ as obj) =
-  if export then Substitute obj else Dispose
+let classify_import obj =
+  match obj.import_export with
+  | Lib.Export -> Substitute obj
+  | Lib.Import -> Dispose
 
-let subst_import (subst,(export,mp as obj)) =
+let subst_import (subst,({import_mp=mp; _} as obj)) =
   let mp' = subst_mp subst mp in
-  if mp'==mp then obj else (export,mp')
+  if mp'==mp then obj else {obj with import_mp = mp'}
 
-let in_import : bool * ModPath.t -> obj =
+let in_import : import_obj -> obj =
   declare_object {(default_object "IMPORT MODULE") with
     cache_function = cache_import;
-    open_function = open_import;
+    open_function = import_filter [] open_import;
     subst_function = subst_import;
     classify_function = classify_import }
 
-let import_module export mp =
-  Lib.add_anonymous_leaf (in_import (export,mp))
+let import_module (export,cat) mp =
+  let obj = {import_export=export; import_mp=mp; import_cat=cat} in
+  Lib.add_anonymous_leaf (in_import obj)
 
 
 (** {6 Iterators} *)

@@ -1162,7 +1162,7 @@ let inAutoHint : hint_obj -> obj =
   declare_object {(default_object "AUTOHINT") with
                     cache_function = cache_autohint;
 		    load_function = load_autohint;
-		    open_function = open_autohint;
+                    open_function = import_filter [] open_autohint;
 		    subst_function = subst_autohint;
 		    classify_function = classify_autohint; }
 

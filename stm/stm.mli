@@ -73,7 +73,7 @@ type stm_init_options = {
      [lib,prefix,import_export] means require library [lib] from
      optional [prefix] and [import_export] if [Some false/Some true]
      is used.  *)
-  require_libs : (string * string option * bool option) list;
+  require_libs : (string * string option * Lib.export_flag option) list;
 
   (* STM options that apply to the current document. *)
   stm_options  : AsyncOpts.stm_opt;

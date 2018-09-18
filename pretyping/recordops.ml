@@ -320,7 +320,7 @@ let discharge_canonical_structure (_,(cst,ind)) =
 
 let inCanonStruc : Constant.t * inductive -> obj =
   declare_object {(default_object "CANONICAL-STRUCTURE") with
-    open_function = open_canonical_structure;
+    open_function = import_filter [] open_canonical_structure;
     cache_function = cache_canonical_structure;
     subst_function = subst_canonical_structure;
     classify_function = (fun x -> Substitute x);
