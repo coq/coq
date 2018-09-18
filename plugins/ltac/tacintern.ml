@@ -29,6 +29,7 @@ open Stdarg
 open Tacarg
 open Namegen
 open Tactypes
+open Tactics
 open Locus
 
 (** Globalization of tactic expressions :

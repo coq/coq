@@ -26,6 +26,7 @@ open Termops
 open Equality
 open Namegen
 open Tactypes
+open Tactics
 open Proofview.Notations
 open Vernacinterp
 
