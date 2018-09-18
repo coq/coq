@@ -52,6 +52,8 @@ type option_name = string list
 
 type option_locality = OptDefault | OptLocal | OptExport | OptGlobal
 
+val opt_cats : Libobject.import_filter
+
 (** {6 Tables. } *)
 
 (** The functor [MakeStringTable] declares a table containing objects

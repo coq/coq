@@ -17,6 +17,8 @@ open Libobject
 open Libnames
 open Mod_subst
 
+let opt_cats = [Names.Id.of_string "options"]
+
 type option_name = string list
 type option_value =
   | BoolValue   of bool
@@ -92,9 +94,9 @@ module MakeTable =
         let inGo : option_mark * A.t -> obj =
           Libobject.declare_object {(Libobject.default_object nick) with
                 Libobject.load_function = load_options;
-                Libobject.open_function = import_filter [] load_options;
+                Libobject.open_function = import_filter opt_cats load_options;
                 Libobject.cache_function = cache_options;
-		Libobject.subst_function = subst_options;
+                Libobject.subst_function = subst_options;
 		Libobject.classify_function = (fun x -> Substitute x)}
 	in
         ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
@@ -265,7 +267,7 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
         declare_object
           { (default_object (nickname key)) with
             load_function = load_options;
-            open_function = import_filter [] open_options;
+            open_function = import_filter opt_cats open_options;
             cache_function = cache_options;
             subst_function = subst_options;
             discharge_function = discharge_options;

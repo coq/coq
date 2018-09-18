@@ -36,9 +36,9 @@ let declare_tactic_option ?(default=Tacexpr.TacId []) name =
       { (default_object name) with
 	cache_function = cache;
 	load_function = (fun _ -> load);
-        open_function = import_filter [] (fun _ -> load);
+        open_function = import_filter Goptions.opt_cats (fun _ -> load);
         classify_function = (fun (local, tac) ->
-	  if local then Dispose else Substitute (local, tac));
+          if local then Dispose else Substitute (local, tac));
 	subst_function = subst}
   in
   let put local tac =
