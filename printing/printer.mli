@@ -200,13 +200,14 @@ val pr_ne_evar_set         : Pp.t -> Pp.t -> evar_map ->
   Evar.Set.t -> Pp.t
 
 val pr_prim_rule           : prim_rule -> Pp.t
+[@@ocaml.deprecated "[pr_prim_rule] is scheduled to be removed along with the legacy proof engine"]
 
 val print_and_diff : Proof.t option -> Proof.t option -> unit
 
 (** Backwards compatibility *)
 
 val prterm                 : constr -> Pp.t (** = pr_lconstr *)
-
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 (** Declarations for the "Print Assumption" command *)
 type axiom =
