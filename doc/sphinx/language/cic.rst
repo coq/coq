@@ -605,7 +605,7 @@ Subtyping rules
 
 At the moment, we did not take into account one rule between universes
 which says that any term in a universe of index i is also a term in
-the universe of index i+1 (this is the *cumulativity* rule of|Cic|).
+the universe of index i+1 (this is the *cumulativity* rule of |Cic|).
 This property extends the equivalence relation of convertibility into
 a *subtyping* relation inductively defined by:
 
