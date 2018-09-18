@@ -268,7 +268,7 @@ distclean: clean cleanconfig cacheclean timingclean
 voclean:
 	find theories plugins test-suite \( -name '*.vo' -o -name '*.glob' -o -name "*.cmxs" \
 	-o -name "*.native" -o -name "*.cmx" -o -name "*.cmi" -o -name "*.o" \) -exec rm -f {} +
-	find theories plugins test-suite -name .coq-native -empty -exec rm -f {} +
+	find theories plugins test-suite -name .coq-native -empty -exec rm -rf {} +
 
 timingclean:
 	find theories plugins test-suite \( -name '*.v.timing' -o -name '*.v.before-timing' \
