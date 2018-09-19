@@ -94,7 +94,7 @@ let _ =
   at_declare_ml_module enable_prim_token_interpretation
     { pt_local = false;
       pt_scope = sc;
-      pt_uid = sc;
+      pt_interp_info = Uid sc;
       pt_required = (ascii_path,ascii_module);
       pt_refs = [static_glob_Ascii];
       pt_in_match = true }

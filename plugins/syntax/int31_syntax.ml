@@ -108,7 +108,7 @@ let _ =
   at_declare_ml_module enable_prim_token_interpretation
     { pt_local = false;
       pt_scope = int31_scope;
-      pt_uid = int31_scope;
+      pt_interp_info = Uid int31_scope;
       pt_required = (int31_path,int31_module);
       pt_refs = [int31_construct];
       pt_in_match = true }
