@@ -278,6 +278,7 @@ type extend_name =
    It will be extended with primitive inductive types and operators *)
 type register_kind =
   | RegisterInline
+  | RegisterRetroknowledge of qualid
 
 type bullet = Proof_bullet.t
 [@@ocaml.deprecated "Alias type, please use [Proof_bullet.t]"]
@@ -438,7 +439,7 @@ type nonrec vernac_expr =
   | VernacPrint of printable
   | VernacSearch of searchable * Goal_select.t option * search_restriction
   | VernacLocate of locatable
-  | VernacRegister of lident * register_kind
+  | VernacRegister of qualid * register_kind
   | VernacComments of comment list
 
   (* Proof management *)

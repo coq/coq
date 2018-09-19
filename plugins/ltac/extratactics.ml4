@@ -545,22 +545,6 @@ END
 
 
 (**********************************************************************)
-(*spiwack : Vernac commands for retroknowledge                        *)
-
-VERNAC COMMAND EXTEND RetroknowledgeRegister CLASSIFIED AS SIDEFF
- | [ "Register" constr(c) "as" retroknowledge_field(f) "by" constr(b)] ->
-           [ let env = Global.env () in
-             let evd = Evd.from_env env in
-             let tc,_ctx = Constrintern.interp_constr env evd c in
-             let tb,_ctx(*FIXME*) = Constrintern.interp_constr env evd b in
-             let tc = EConstr.to_constr evd tc in
-             let tb = EConstr.to_constr evd tb in
-             Global.register f tc tb ]
-END
-
-
-
-(**********************************************************************)
 (* sozeau: abs/gen for induction on instantiated dependent inductives, using "Ford" induction as
   defined by Conor McBride *)
 TACTIC EXTEND generalize_eqs

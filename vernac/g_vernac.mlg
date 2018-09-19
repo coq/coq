@@ -212,8 +212,10 @@ GRAMMAR EXTEND Gram
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> { VernacScheme l }
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
 	      l = LIST1 identref SEP "," -> { VernacCombinedScheme (id, l) }
-      | IDENT "Register"; IDENT "Inline"; id = identref ->
-          { VernacRegister(id, RegisterInline) }
+      | IDENT "Register"; g = global; "as"; quid = qualid ->
+          { VernacRegister(g, RegisterRetroknowledge quid) }
+      | IDENT "Register"; IDENT "Inline"; g = global ->
+          { VernacRegister(g, RegisterInline) }
       | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Universes"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Constraint"; l = LIST1 univ_constraint SEP "," -> { VernacConstraint l }

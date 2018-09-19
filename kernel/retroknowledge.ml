@@ -19,11 +19,8 @@ open Names
 open Constr
 
 (* The retroknowledge defines a bijective correspondance between some
-   [entry]-s (which are, in fact, merely terms) and [field]-s which
+   [entry]-s (which are, in fact, merely names) and [field]-s which
    are roles assigned to these entries. *)
-
-(* aliased type for clarity purpose*)
-type entry = Constr.t
 
 type int31_field =
   | Int31Bits
@@ -53,8 +50,37 @@ type int31_field =
   | Int31Lxor
 
 type field =
-  | KInt31 of string*int31_field
+  | KInt31 of int31_field
 
+let int31_field_of_string =
+  function
+  | "bits" -> Int31Bits
+  | "type" -> Int31Type
+  | "twice" -> Int31Twice
+  | "twice_plus_one" -> Int31TwicePlusOne
+  | "phi" -> Int31Phi
+  | "phi_inv" -> Int31PhiInv
+  | "plus" -> Int31Plus
+  | "plusc" -> Int31PlusC
+  | "pluscarryc" -> Int31PlusCarryC
+  | "minus" -> Int31Minus
+  | "minusc" -> Int31MinusC
+  | "minuscarryc" -> Int31MinusCarryC
+  | "times" -> Int31Times
+  | "timesc" -> Int31TimesC
+  | "div21" -> Int31Div21
+  | "div" -> Int31Div
+  | "diveucl" -> Int31Diveucl
+  | "addmuldiv" -> Int31AddMulDiv
+  | "compare" -> Int31Compare
+  | "head0" -> Int31Head0
+  | "tail0" -> Int31Tail0
+  | "lor" -> Int31Lor
+  | "land" -> Int31Land
+  | "lxor" -> Int31Lxor
+  | s -> CErrors.user_err Pp.(str "Registering unknown int31 operator " ++ str s)
+
+let int31_path = DirPath.make [ Id.of_string "int31" ]
 
 (* record representing all the flags of the internal state of the kernel *)
 type flags = {fastcomputation : bool}
@@ -68,19 +94,13 @@ type flags = {fastcomputation : bool}
 module Proactive =
   Map.Make (struct type t = field let compare = Pervasives.compare end)
 
-type proactive = entry Proactive.t
+type proactive = GlobRef.t Proactive.t
 
 (* The [reactive] knowledge contains the mapping
    [entry->field]. Fields are later to be interpreted as a
    [reactive_info]. *)
 
-module EntryOrd =
-struct
-  type t = entry
-  let compare = Constr.compare
-end
-
-module Reactive = Map.Make (EntryOrd)
+module Reactive = GlobRef.Map
 
 type reactive_info = {(*information required by the compiler of the VM *)
   vm_compiling :
@@ -127,7 +147,7 @@ and retroknowledge = {flags : flags; proactive : proactive; reactive : reactive}
 (* As per now, there is only the possibility of registering things
    the possibility of unregistering or changing the flag is under study *)
 type action =
-    | RKRegister of field*entry
+    | RKRegister of field * GlobRef.t
 
 
 (*initialisation*)

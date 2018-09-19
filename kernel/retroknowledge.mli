@@ -13,9 +13,6 @@ open Constr
 
 type retroknowledge
 
-(** aliased type for clarity purpose*)
-type entry = Constr.t
-
 (** the following types correspond to the different "things"
    the kernel can learn about.*)
 type int31_field =
@@ -46,14 +43,18 @@ type int31_field =
   | Int31Lxor
 
 type field =
-  | KInt31 of string*int31_field
+  | KInt31 of int31_field
+
+val int31_field_of_string : string -> int31_field
+
+val int31_path : DirPath.t
 
 (** This type represent an atomic action of the retroknowledge. It
    is stored in the compiled libraries 
    As per now, there is only the possibility of registering things
    the possibility of unregistering or changing the flag is under study *)
 type action =
-    | RKRegister of field*entry
+    | RKRegister of field * GlobRef.t
 
 
 (** initial value for retroknowledge *)
@@ -64,7 +65,7 @@ val initial_retroknowledge : retroknowledge
    and the continuation cont of the bytecode compilation
    returns the compilation of id in cont if it has a specific treatment
    or raises Not_found if id should be compiled as usual *)
-val get_vm_compiling_info  : retroknowledge -> entry ->
+val get_vm_compiling_info  : retroknowledge -> GlobRef.t ->
                              Cinstr.lambda array -> Cinstr.lambda
 (*Given an identifier id (usually Construct _)
    and its argument array, returns a function that tries an ad-hoc optimisated
@@ -73,7 +74,7 @@ val get_vm_compiling_info  : retroknowledge -> entry ->
    raises Not_found if id should be compiled as usual, and expectingly
    CBytecodes.NotClosed if the term is not a closed constructor pattern
    (a constant for the compiler) *)
-val get_vm_constant_static_info : retroknowledge -> entry ->
+val get_vm_constant_static_info : retroknowledge -> GlobRef.t ->
                                    constr array -> Cinstr.lambda
 
 (*Given an identifier id (usually Construct _ )
@@ -81,45 +82,45 @@ val get_vm_constant_static_info : retroknowledge -> entry ->
    of id+args+cont when id has a specific treatment (in the case of
    31-bit integers, that would be the dynamic compilation into integers)
    or raises Not_found if id should be compiled as usual *)
-val get_vm_constant_dynamic_info : retroknowledge -> entry ->
+val get_vm_constant_dynamic_info : retroknowledge -> GlobRef.t ->
                                    Cinstr.lambda array -> Cinstr.lambda
 
 (** Given a type identifier, this function is used before compiling a match
    over this type. In the case of 31-bit integers for instance, it is used
    to add the instruction sequence which would perform a dynamic decompilation
    in case the argument of the match is not in coq representation *)
-val get_vm_before_match_info : retroknowledge -> entry -> Cinstr.lambda
+val get_vm_before_match_info : retroknowledge -> GlobRef.t -> Cinstr.lambda
                                                        -> Cinstr.lambda
 
 (** Given a type identifier, this function is used by pretyping/vnorm.ml to
    recover the elements of that type from their compiled form if it's non
    standard (it is used (and can be used) only when the compiled form
    is not a block *)
-val get_vm_decompile_constant_info : retroknowledge -> entry -> int -> constr
+val get_vm_decompile_constant_info : retroknowledge -> GlobRef.t -> int -> constr
 
 
-val get_native_compiling_info  : retroknowledge -> entry -> Nativeinstr.prefix ->
+val get_native_compiling_info  : retroknowledge -> GlobRef.t -> Nativeinstr.prefix ->
 				 Nativeinstr.lambda array -> Nativeinstr.lambda
 
-val get_native_constant_static_info : retroknowledge -> entry ->
+val get_native_constant_static_info : retroknowledge -> GlobRef.t ->
                                       constr array -> Nativeinstr.lambda
 
-val get_native_constant_dynamic_info : retroknowledge -> entry ->
+val get_native_constant_dynamic_info : retroknowledge -> GlobRef.t ->
                                        Nativeinstr.prefix -> constructor ->
 				       Nativeinstr.lambda array ->
 				       Nativeinstr.lambda
 
-val get_native_before_match_info : retroknowledge -> entry ->
+val get_native_before_match_info : retroknowledge -> GlobRef.t ->
 				   Nativeinstr.prefix -> constructor ->
 				   Nativeinstr.lambda -> Nativeinstr.lambda
 
 
 (** the following functions are solely used in Environ and Safe_typing to implement
    the functions  register and unregister (and mem) of Environ *)
-val add_field : retroknowledge -> field -> entry -> retroknowledge
+val add_field : retroknowledge -> field -> GlobRef.t -> retroknowledge
 val mem : retroknowledge -> field -> bool
 (* val remove : retroknowledge -> field -> retroknowledge *)
-val find : retroknowledge -> field -> entry
+val find : retroknowledge -> field -> GlobRef.t
 
 
 (** Dispatching type for the above [get_*] functions. *)
@@ -161,4 +162,4 @@ val empty_reactive_info : reactive_info
 
 (** Hook to be set after the compiler are installed to dispatch fields
     into the above [get_*] functions. *)
-val dispatch_hook : (retroknowledge -> entry -> field -> reactive_info) Hook.t
+val dispatch_hook : (retroknowledge -> GlobRef.t -> field -> reactive_info) Hook.t
