@@ -10,8 +10,8 @@
 
 DECLARE PLUGIN "numeral_notation_plugin"
 
-open Notation
 open Numeral
+open Notation
 open Pp
 open Names
 open Vernacinterp
