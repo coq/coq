@@ -2346,64 +2346,6 @@ let with_fail st b f =
       | _ -> assert false
   end
 
-let attributes_of_flags f atts =
-  let assert_empty k v =
-    if v <> VernacFlagEmpty
-    then user_err Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
-  in
-  List.fold_left
-    (fun (polymorphism, atts) (k, v) ->
-       match k with
-       | "program" when not atts.program ->
-         assert_empty k v;
-         (polymorphism, { atts with program = true })
-       | "program" ->
-         user_err Pp.(str "Program mode specified twice")
-       | "polymorphic" when polymorphism = None ->
-         assert_empty k v;
-         (Some true, atts)
-       | "monomorphic" when polymorphism = None ->
-         assert_empty k v;
-         (Some false, atts)
-       | ("polymorphic" | "monomorphic") ->
-         user_err Pp.(str "Polymorphism specified twice")
-       | "template" when atts.template = None ->
-         assert_empty k v;
-         polymorphism, { atts with template = Some true }
-       | "notemplate" when atts.template = None ->
-         assert_empty k v;
-         polymorphism, { atts with template = Some false }
-       | "template" | "notemplate" ->
-         user_err Pp.(str "Templateness specified twice")
-       | "local" when Option.is_empty atts.locality ->
-         assert_empty k v;
-         (polymorphism, { atts with locality = Some true })
-       | "global" when Option.is_empty atts.locality ->
-         assert_empty k v;
-         (polymorphism, { atts with locality = Some false })
-       | ("local" | "global") ->
-         user_err Pp.(str "Locality specified twice")
-       | "deprecated" when Option.is_empty atts.deprecated ->
-           begin match v with
-             | VernacFlagList [ "since", VernacFlagLeaf since ; "note", VernacFlagLeaf note ]
-             | VernacFlagList [ "note", VernacFlagLeaf note ; "since", VernacFlagLeaf since ] ->
-               let since = Some since and note = Some note in
-               (polymorphism, { atts with deprecated = Some (mk_deprecation ~since ~note ()) })
-             | VernacFlagList [ "since", VernacFlagLeaf since ] ->
-               let since = Some since in
-               (polymorphism, { atts with deprecated = Some (mk_deprecation ~since ()) })
-             | VernacFlagList [ "note", VernacFlagLeaf note ] ->
-               let note = Some note in
-               (polymorphism, { atts with deprecated = Some (mk_deprecation ~note ()) })
-             |  _ -> CErrors.user_err (Pp.str "Ill formed “deprecated” attribute")
-           end
-       | "deprecated" ->
-         user_err Pp.(str "Deprecation specified twice")
-       | _ -> user_err Pp.(str "Unknown attribute " ++ str k)
-    )
-    (None, atts)
-    f
-
 let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
   let orig_univ_poly = Flags.is_universe_polymorphism () in
   let orig_program_mode = Flags.is_program_mode () in

@@ -39,10 +39,6 @@ val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr
 
 val universe_polymorphism_option_name : string list
 
-(** Elaborate a [atts] record out of a list of flags.
-    Also returns whether polymorphism is explicitly (un)set. *)
-val attributes_of_flags : Vernacexpr.vernac_flags -> Attributes.t -> bool option * Attributes.t
-
 (** {5 VERNAC EXTEND} *)
 
 type classifier = Genarg.raw_generic_argument list -> Vernacexpr.vernac_classification
