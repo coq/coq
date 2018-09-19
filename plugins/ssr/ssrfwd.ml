@@ -25,9 +25,7 @@ module RelDecl = Context.Rel.Declaration
 (** 8. Forward chaining tactics (pose, set, have, suffice, wlog) *)
 (** Defined identifier *)
 
-
-let settac id c = Tactics.letin_tac None (Name id) c None
-let posetac id cl = Proofview.V82.of_tactic (settac id cl Locusops.nowhere)
+let posetac id cl = Proofview.V82.of_tactic (Tactics.pose_tac (Name id) cl)
 
 let ssrposetac (id, (_, t)) gl =
   let ist, t =

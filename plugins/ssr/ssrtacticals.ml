@@ -14,7 +14,6 @@ open Names
 open Constr
 open Termops
 open Tacmach
-open Locusops
 
 open Ssrast
 open Ssrcommon
@@ -82,8 +81,7 @@ let pf_clauseids gl gens clseq =
 
 let hidden_clseq = function InHyps | InHypsSeq | InAllHyps -> true | _ -> false
 
-let settac id c = Tactics.letin_tac None (Name id) c None
-let posetac id cl = Proofview.V82.of_tactic (settac id cl nowhere)
+let posetac id cl = Proofview.V82.of_tactic (Tactics.pose_tac (Name id) cl)
 
 let hidetacs clseq idhide cl0 =
   if not (hidden_clseq clseq) then  [] else

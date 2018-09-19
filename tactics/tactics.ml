@@ -2690,6 +2690,34 @@ let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
       let (sigma, x) = new_evar newenv sigma ~principal:true ~store ccl in
       (sigma, mkNamedLetIn id c t x)
 
+let pose_tac na c =
+  Proofview.Goal.enter begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
+    let env = Proofview.Goal.env gl in
+    let hyps = named_context_val env in
+    let concl = Proofview.Goal.concl gl in
+    let t = typ_of env sigma c in
+    let (sigma, t) = Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma t in
+    let id = match na with
+    | Name id ->
+      let () = if mem_named_context_val id hyps then
+        user_err (str "Variable " ++ Id.print id ++ str " is already declared.")
+      in
+      id
+    | Anonymous ->
+      let id = id_of_name_using_hdchar env sigma t Anonymous in
+      next_ident_away_in_goal id (ids_of_named_context_val hyps)
+    in
+    Proofview.Unsafe.tclEVARS sigma <*>
+    Refine.refine ~typecheck:false begin fun sigma ->
+      let nhyps = EConstr.push_named_context_val (NamedDecl.LocalDef (id, c, t)) hyps in
+      let (sigma, ev) = Evarutil.new_pure_evar nhyps sigma concl in
+      let inst = Array.map_of_list (fun d -> mkVar (get_id d)) (named_context env) in
+      let body = mkEvar (ev, Array.append [|mkRel 1|] inst) in
+      (sigma, mkLetIn (Name id, c, t, body))
+    end
+  end
+
 let letin_tac with_eq id c ty occs =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in

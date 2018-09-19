@@ -390,6 +390,8 @@ val cut        : types -> unit Proofview.tactic
 
 (** {6 Tactics for adding local definitions. } *)
 
+val pose_tac : Name.t -> constr -> unit Proofview.tactic
+
 val letin_tac : (bool * intro_pattern_naming) option ->
   Name.t -> constr -> types option -> clause -> unit Proofview.tactic
 

@@ -94,7 +94,7 @@ let let_evar name typ =
     in
     let (sigma, evar) = Evarutil.new_evar env sigma ~src ~naming:(Namegen.IntroFresh id) typ in
     Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (Tactics.letin_tac None (Name.Name id) evar None Locusops.nowhere)
+    (Tactics.pose_tac (Name.Name id) evar)
   end
   
 let hget_evar n =
