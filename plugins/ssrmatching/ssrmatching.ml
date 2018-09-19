@@ -1366,7 +1366,7 @@ let ssrpatterntac _ist arg gl =
   let concl0 = pf_concl gl in
   let concl0 = EConstr.Unsafe.to_constr concl0 in
   let (t, uc), concl_x =
-    fill_occ_pattern (Global.env()) sigma0 concl0 pat noindex 1 in
+    fill_occ_pattern (pf_env gl) sigma0 concl0 pat noindex 1 in
   let t = EConstr.of_constr t in
   let concl_x = EConstr.of_constr concl_x in
   let gl, tty = pf_type_of gl t in
