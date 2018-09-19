@@ -139,15 +139,14 @@ type numeral_notation_obj =
     num_ty : Libnames.qualid; (* for warnings / error messages *)
     warning : numnot_option }
 
-module Numeral : sig
-  val interp : numeral_notation_obj -> rawnum prim_token_interpreter
-  val uninterp : numeral_notation_obj -> rawnum prim_token_uninterpreter
-end
+type prim_token_interp_info =
+    Uid of prim_token_uid
+  | NumeralNotation of numeral_notation_obj
 
 type prim_token_infos = {
   pt_local : bool; (** Is this interpretation local? *)
   pt_scope : scope_name; (** Concerned scope *)
-  pt_uid : prim_token_uid; (** Unique id "pointing" to (un)interp functions *)
+  pt_interp_info : prim_token_interp_info; (** Unique id "pointing" to (un)interp functions, OR a numeral notation object describing (un)interp functions *)
   pt_required : required_module; (** Module that should be loaded first *)
   pt_refs : GlobRef.t list; (** Entry points during uninterpretation *)
   pt_in_match : bool (** Is this prim token legal in match patterns ? *)

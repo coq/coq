@@ -27,29 +27,6 @@ let warn_abstract_large_num_no_op =
       Nametab.pr_global_env (Termops.vars_of_env (Global.env ())) f ++ strbrk ") targets an " ++
       strbrk "option type.")
 
-(* Here we only register the interp and uninterp functions
-   for a particular Numeral Notation (determined by a unique
-   string). The actual activation of the notation will be done
-   later (cf. Notation.enable_prim_token_interpretation).
-   This registration of interp/uninterp must be added in the
-   libstack, otherwise this won't work through a Require. *)
-
-let load_numeral_notation _ (_, (uid,opts)) =
-  Notation.register_rawnumeral_interpretation
-    ~allow_overwrite:true uid (Notation.Numeral.interp opts, Notation.Numeral.uninterp opts)
-
-let cache_numeral_notation x = load_numeral_notation 1 x
-
-(* TODO: substitution ?
-   TODO: uid pas stable par substitution dans opts
- *)
-
-let inNumeralNotation : string * numeral_notation_obj -> Libobject.obj =
-  Libobject.declare_object {
-    (Libobject.default_object "NUMERAL NOTATION") with
-    Libobject.cache_function = cache_numeral_notation;
-    Libobject.load_function = load_numeral_notation }
-
 let get_constructors ind =
   let mib,oib = Global.lookup_inductive ind in
   let mc = oib.Declarations.mind_consnames in
@@ -154,15 +131,12 @@ let vernac_numeral_notation local ty f g scope opts =
   (match opts, to_kind with
    | Abstract _, (_, Option) -> warn_abstract_large_num_no_op o.to_ty
    | _ -> ());
-  (* TODO: un hash suffit-il ? *)
-  let uid = Marshal.to_string o [] in
-  let i = Notation.(
+  let i =
        { pt_local = local;
          pt_scope = scope;
-         pt_uid = uid;
+         pt_interp_info = NumeralNotation o;
          pt_required = Nametab.path_of_global (IndRef tyc),[];
          pt_refs = constructors;
-         pt_in_match = true })
+         pt_in_match = true }
   in
-  Lib.add_anonymous_leaf (inNumeralNotation (uid,o));
-  Notation.enable_prim_token_interpretation i
+  enable_prim_token_interpretation i

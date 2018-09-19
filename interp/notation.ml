@@ -379,8 +379,14 @@ module InnerPrimToken = struct
 
 end
 
-(* The following two tables of (un)interpreters will *not* be synchronized.
-   But their indexes will be checked to be unique *)
+(* The following two tables of (un)interpreters will *not* be
+   synchronized.  But their indexes will be checked to be unique.
+   These tables contain primitive token interpreters which are
+   registered in plugins, such as string and ascii syntax.  It is
+   essential that only plugins add to these tables, and that
+   vernacular commands do not.  See
+   https://github.com/coq/coq/issues/8401 for details of what goes
+   wrong when vernacular commands add to these tables. *)
 let prim_token_interpreters =
   (Hashtbl.create 7 : (prim_token_uid, InnerPrimToken.interpreter) Hashtbl.t)
 
@@ -701,15 +707,36 @@ let uninterp o (Glob_term.AnyGlobConstr n) =
   | NotANumber -> None (* all other functions except big2raw *)
 end
 
+(* A [prim_token_infos], which is synchronized with the document
+   state, either contains a unique id pointing to an unsynchronized
+   prim token function, or a numeral notation object describing how to
+   interpret and uninterpret.  We provide [prim_token_infos] because
+   we expect plugins to provide their own interpretation functions,
+   rather than going through numeral notations, which are available as
+   a vernacular. *)
+
+type prim_token_interp_info =
+    Uid of prim_token_uid
+  | NumeralNotation of numeral_notation_obj
+
+type prim_token_infos = {
+  pt_local : bool; (** Is this interpretation local? *)
+  pt_scope : scope_name; (** Concerned scope *)
+  pt_interp_info : prim_token_interp_info; (** Unique id "pointing" to (un)interp functions, OR a numeral notation object describing (un)interp functions *)
+  pt_required : required_module; (** Module that should be loaded first *)
+  pt_refs : GlobRef.t list; (** Entry points during uninterpretation *)
+  pt_in_match : bool (** Is this prim token legal in match patterns ? *)
+}
+
 (* Table from scope_name to backtrack-able informations about interpreters
    (in particular interpreter unique id). *)
 let prim_token_interp_infos =
-  ref (String.Map.empty : (required_module * prim_token_uid) String.Map.t)
+  ref (String.Map.empty : (required_module * prim_token_interp_info) String.Map.t)
 
 (* Table from global_reference to backtrack-able informations about
    prim_token uninterpretation (in particular uninterpreter unique id). *)
 let prim_token_uninterp_infos =
-  ref (GlobRef.Map.empty : (scope_name * prim_token_uid * bool) GlobRef.Map.t)
+  ref (GlobRef.Map.empty : (scope_name * prim_token_interp_info * bool) GlobRef.Map.t)
 
 let hashtbl_check_and_set allow_overwrite uid f h eq =
   match Hashtbl.find h uid with
@@ -739,23 +766,14 @@ let register_string_interpretation ?(allow_overwrite=false) uid (interp, uninter
   register_gen_interpretation allow_overwrite uid
     (InnerPrimToken.StringInterp interp, InnerPrimToken.StringUninterp uninterp)
 
-type prim_token_infos = {
-  pt_local : bool; (** Is this interpretation local? *)
-  pt_scope : scope_name; (** Concerned scope *)
-  pt_uid : prim_token_uid; (** Unique id "pointing" to (un)interp functions *)
-  pt_required : required_module; (** Module that should be loaded first *)
-  pt_refs : GlobRef.t list; (** Entry points during uninterpretation *)
-  pt_in_match : bool (** Is this prim token legal in match patterns ? *)
-}
-
 let cache_prim_token_interpretation (_,infos) =
+  let ptii = infos.pt_interp_info in
   let sc = infos.pt_scope in
-  let uid = infos.pt_uid in
   check_scope ~tolerant:true sc;
   prim_token_interp_infos :=
-    String.Map.add sc (infos.pt_required,infos.pt_uid) !prim_token_interp_infos;
+    String.Map.add sc (infos.pt_required,ptii) !prim_token_interp_infos;
   List.iter (fun r -> prim_token_uninterp_infos :=
-                        GlobRef.Map.add r (sc,uid,infos.pt_in_match)
+                        GlobRef.Map.add r (sc,ptii,infos.pt_in_match)
                           !prim_token_uninterp_infos)
             infos.pt_refs
 
@@ -793,7 +811,7 @@ let declare_numeral_interpreter ?(local=false) sc dir interp (patl,uninterp,b) =
   enable_prim_token_interpretation
     { pt_local = local;
       pt_scope = sc;
-      pt_uid = uid;
+      pt_interp_info = Uid uid;
       pt_required = dir;
       pt_refs = List.map_filter glob_prim_constr_key patl;
       pt_in_match = b }
@@ -803,7 +821,7 @@ let declare_string_interpreter ?(local=false) sc dir interp (patl,uninterp,b) =
   enable_prim_token_interpretation
     { pt_local = local;
       pt_scope = sc;
-      pt_uid = uid;
+      pt_interp_info = Uid uid;
       pt_required = dir;
       pt_refs = List.map_filter glob_prim_constr_key patl;
       pt_in_match = b }
@@ -919,9 +937,12 @@ let find_prim_token check_allowed ?loc p sc =
     pat, df
   with Not_found ->
   (* Try for a primitive numerical notation *)
-  let (spdir,uid) = String.Map.find sc !prim_token_interp_infos in
+  let (spdir,info) = String.Map.find sc !prim_token_interp_infos in
   check_required_module ?loc sc spdir;
-  let interp = Hashtbl.find prim_token_interpreters uid in
+  let interp = match info with
+    | Uid uid -> Hashtbl.find prim_token_interpreters uid
+    | NumeralNotation o -> InnerPrimToken.RawNumInterp (Numeral.interp o)
+  in
   let pat = InnerPrimToken.do_interp ?loc interp p in
   check_allowed pat;
   pat, ((dirpath (fst spdir),DirPath.empty),"")
@@ -1097,8 +1118,11 @@ let uninterp_prim_token c =
   | None -> raise Notation_ops.No_match
   | Some r ->
      try
-       let (sc,uid,_) = GlobRef.Map.find r !prim_token_uninterp_infos in
-       let uninterp = Hashtbl.find prim_token_uninterpreters uid in
+       let (sc,info,_) = GlobRef.Map.find r !prim_token_uninterp_infos in
+       let uninterp = match info with
+         | Uid uid -> Hashtbl.find prim_token_uninterpreters uid
+         | NumeralNotation o -> InnerPrimToken.RawNumUninterp (Numeral.uninterp o)
+       in
        match InnerPrimToken.do_uninterp uninterp (AnyGlobConstr c) with
        | None -> raise Notation_ops.No_match
        | Some n -> (sc,n)
@@ -1113,12 +1137,16 @@ let availability_of_prim_token n printer_scope local_scopes =
   let f scope =
     try
       let uid = snd (String.Map.find scope !prim_token_interp_infos) in
-      let interp = Hashtbl.find prim_token_interpreters uid in
       let open InnerPrimToken in
-      match n, interp with
-      | Numeral _, (RawNumInterp _ | BigNumInterp _) -> true
-      | String _, StringInterp _ -> true
-      | _ -> false
+      match n, uid with
+      | Numeral _, NumeralNotation _ -> true
+      | _, NumeralNotation _ -> false
+      | _, Uid uid ->
+        let interp = Hashtbl.find prim_token_interpreters uid in
+        match n, interp with
+        | Numeral _, (RawNumInterp _ | BigNumInterp _) -> true
+        | String _, StringInterp _ -> true
+        | _ -> false
     with Not_found -> false
   in
   let scopes = make_current_scopes local_scopes in
