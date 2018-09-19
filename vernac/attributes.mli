@@ -21,6 +21,20 @@ val mk_atts :
 val attributes_of_flags : Vernacexpr.vernac_flags -> t ->
   bool option (* polymorphism attr *) * t
 
+
+type 'a flag_parser = 'a option -> Vernacexpr.vernac_flag_value -> 'a
+(** How to parse some specific attribute key (eg "polymorphic" and
+   "monomorphic" are separate keys for the same attribute). The
+   previous value of the attribute if set is also passed, allowing
+   handling of multiply set attributes as you desire (error, make a
+   list, etc). *)
+
+val register_attribute : name:string -> 'a flag_parser CString.Map.t ->
+  t -> 'a option
+(** You can register multiple keys for the same attribute, eg
+   "template" and "notemplate" keys both affect the "template"
+   attribute. The [name] is currently not used. *)
+
 val locality : t -> bool option
 val polymorphic : t -> bool
 val template : t -> bool option

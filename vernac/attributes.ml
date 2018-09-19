@@ -11,6 +11,15 @@
 open CErrors
 open Vernacexpr
 
+module Store = Store.Make()
+
+type 'a flag_parser = 'a option -> vernac_flag_value -> 'a
+
+type attr_parser =
+    Parser : string (* name of the attribute *) * 'a Store.field * 'a flag_parser -> attr_parser
+
+let known_parsers : attr_parser CString.Map.t ref = ref CString.Map.empty
+
 type deprecation = { since : string option ; note : string option }
 
 let mk_deprecation ?(since=None) ?(note=None) () =
@@ -19,22 +28,37 @@ let mk_deprecation ?(since=None) ?(note=None) () =
 type t = {
   locality : bool option;
   polymorphic : bool;
-  template : bool option;
   program : bool;
   deprecated : deprecation option;
+  extra : Store.t;
 }
 
 let default = {
   locality = None;
   polymorphic = false;
-  template = None;
   program = false;
   deprecated = None;
+  extra = Store.empty;
 }
+
+let check_parser_collision new_parsers =
+  (* TODO check core parsers *)
+  CString.Map.iter (fun key _ ->
+      if CString.Map.mem key !known_parsers
+      then anomaly ~label:"register_attribute"
+          Pp.(str "Double registration for attribute key " ++ str key))
+    new_parsers
+
+let register_attribute ~name (parsers : 'a flag_parser CString.Map.t) =
+  check_parser_collision parsers;
+  let field : 'a Store.field = Store.field () in
+  known_parsers := CString.Map.fold (fun key parser known_parsers ->
+      CString.Map.add key (Parser (name,field,parser)) known_parsers)
+      parsers !known_parsers;
+  fun t -> Store.get t.extra field
 
 let locality {locality;_} = locality
 let polymorphic {polymorphic;_} = polymorphic
-let template {template;_} = template
 let program {program;_} = program
 let deprecated {deprecated;_} = deprecated
 
@@ -43,11 +67,11 @@ let mk_atts ?(polymorphic=default.polymorphic) ?(program=default.program) () =
 
 let set_polymorphic atts polymorphic = {atts with polymorphic}
 
+let assert_empty k v =
+  if v <> VernacFlagEmpty
+  then user_err Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
+
 let attributes_of_flags f atts =
-  let assert_empty k v =
-    if v <> VernacFlagEmpty
-    then user_err Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
-  in
   List.fold_left
     (fun (polymorphism, atts) (k, v) ->
        match k with
@@ -64,14 +88,6 @@ let attributes_of_flags f atts =
          (Some false, atts)
        | ("polymorphic" | "monomorphic") ->
          user_err Pp.(str "Polymorphism specified twice")
-       | "template" when atts.template = None ->
-         assert_empty k v;
-         polymorphism, { atts with template = Some true }
-       | "notemplate" when atts.template = None ->
-         assert_empty k v;
-         polymorphism, { atts with template = Some false }
-       | "template" | "notemplate" ->
-         user_err Pp.(str "Templateness specified twice")
        | "local" when Option.is_empty atts.locality ->
          assert_empty k v;
          (polymorphism, { atts with locality = Some true })
@@ -96,7 +112,31 @@ let attributes_of_flags f atts =
            end
        | "deprecated" ->
          user_err Pp.(str "Deprecation specified twice")
-       | _ -> user_err Pp.(str "Unknown attribute " ++ str k)
+       | _ ->
+         begin match CString.Map.find k !known_parsers with
+           | exception Not_found -> user_err Pp.(str "Unknown attribute " ++ str k)
+           | Parser (name, field, parser) ->
+             let v = parser (Store.get atts.extra field) v in
+             (polymorphism, { atts with extra = Store.set atts.extra field v })
+         end
     )
     (None, atts)
     f
+
+let once_parser ~name parser previous v =
+  match previous with
+  | Some _ -> user_err Pp.(str name ++ str " specified twice.")
+  | None -> parser v
+
+let empty_parser ~name x =
+  once_parser ~name (fun v -> assert_empty name v; x)
+
+let make_empty_parsers ~name assocs =
+  List.fold_left (fun parsers (k,x) ->
+      CString.Map.add k (empty_parser ~name x) parsers)
+    CString.Map.empty assocs
+
+let template =
+  let name = "Templateness" in
+  let parsers = make_empty_parsers ~name [("template", true) ; ("notemplate", false)] in
+  register_attribute ~name parsers
