@@ -20,16 +20,10 @@ type attr_parser =
 
 let known_parsers : attr_parser CString.Map.t ref = ref CString.Map.empty
 
-type deprecation = { since : string option ; note : string option }
-
-let mk_deprecation ?(since=None) ?(note=None) () =
-  { since ; note }
-
 type t = {
   locality : bool option;
   polymorphic : bool;
   program : bool;
-  deprecated : deprecation option;
   extra : Store.t;
 }
 
@@ -37,7 +31,6 @@ let default = {
   locality = None;
   polymorphic = false;
   program = false;
-  deprecated = None;
   extra = Store.empty;
 }
 
@@ -60,7 +53,6 @@ let register_attribute ~name (parsers : 'a flag_parser CString.Map.t) =
 let locality {locality;_} = locality
 let polymorphic {polymorphic;_} = polymorphic
 let program {program;_} = program
-let deprecated {deprecated;_} = deprecated
 
 let mk_atts ?(polymorphic=default.polymorphic) ?(program=default.program) () =
   { default with polymorphic; program }
@@ -96,22 +88,6 @@ let attributes_of_flags f atts =
          (polymorphism, { atts with locality = Some false })
        | ("local" | "global") ->
          user_err Pp.(str "Locality specified twice")
-       | "deprecated" when Option.is_empty atts.deprecated ->
-           begin match v with
-             | VernacFlagList [ "since", VernacFlagLeaf since ; "note", VernacFlagLeaf note ]
-             | VernacFlagList [ "note", VernacFlagLeaf note ; "since", VernacFlagLeaf since ] ->
-               let since = Some since and note = Some note in
-               (polymorphism, { atts with deprecated = Some (mk_deprecation ~since ~note ()) })
-             | VernacFlagList [ "since", VernacFlagLeaf since ] ->
-               let since = Some since in
-               (polymorphism, { atts with deprecated = Some (mk_deprecation ~since ()) })
-             | VernacFlagList [ "note", VernacFlagLeaf note ] ->
-               let note = Some note in
-               (polymorphism, { atts with deprecated = Some (mk_deprecation ~note ()) })
-             |  _ -> CErrors.user_err (Pp.str "Ill formed “deprecated” attribute")
-           end
-       | "deprecated" ->
-         user_err Pp.(str "Deprecation specified twice")
        | _ ->
          begin match CString.Map.find k !known_parsers with
            | exception Not_found -> user_err Pp.(str "Unknown attribute " ++ str k)
@@ -140,3 +116,25 @@ let template =
   let name = "Templateness" in
   let parsers = make_empty_parsers ~name [("template", true) ; ("notemplate", false)] in
   register_attribute ~name parsers
+
+type deprecation = { since : string option ; note : string option }
+
+let mk_deprecation ?(since=None) ?(note=None) () =
+  { since ; note }
+
+let deprecated =
+  let parser = function
+    | VernacFlagList [ "since", VernacFlagLeaf since ; "note", VernacFlagLeaf note ]
+    | VernacFlagList [ "note", VernacFlagLeaf note ; "since", VernacFlagLeaf since ] ->
+      let since = Some since and note = Some note in
+      mk_deprecation ~since ~note ()
+    | VernacFlagList [ "since", VernacFlagLeaf since ] ->
+      let since = Some since in
+      mk_deprecation ~since ()
+    | VernacFlagList [ "note", VernacFlagLeaf note ] ->
+      let note = Some note in
+      mk_deprecation ~note ()
+    |  _ -> CErrors.user_err (Pp.str "Ill formed “deprecated” attribute")
+  in
+  let name = "Deprecation" in
+  register_attribute ~name (CString.Map.singleton "deprecated" (once_parser ~name parser))
