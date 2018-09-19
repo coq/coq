@@ -8,14 +8,19 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Interpretation of extended vernac phrases. *)
+type deprecation = { since : string option ; note : string option }
 
-type 'a vernac_command = 'a -> atts:Attributes.t -> st:Vernacstate.t -> Vernacstate.t
+val mk_deprecation : ?since: string option -> ?note: string option -> unit -> deprecation
 
-type plugin_args = Genarg.raw_generic_argument list
+type t = {
+  loc : Loc.t option;
+  locality : bool option;
+  polymorphic : bool;
+  template : bool option;
+  program : bool;
+  deprecated : deprecation option;
+}
 
-val vinterp_init : unit -> unit
-val vinterp_add : bool -> Vernacexpr.extend_name -> plugin_args vernac_command -> unit
-val overwriting_vinterp_add : Vernacexpr.extend_name -> plugin_args vernac_command -> unit
-
-val call : Vernacexpr.extend_name -> plugin_args -> atts:Attributes.t -> st:Vernacstate.t -> Vernacstate.t
+val mk_atts : ?loc: Loc.t option -> ?locality: bool option ->
+  ?polymorphic: bool -> ?template:bool option ->
+  ?program: bool -> ?deprecated: deprecation option -> unit -> t

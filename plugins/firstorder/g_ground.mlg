@@ -74,7 +74,7 @@ let (set_default_solver, default_solver, print_default_solver) =
 
 VERNAC COMMAND EXTEND Firstorder_Set_Solver CLASSIFIED AS SIDEFF
 | [ "Set" "Firstorder" "Solver" tactic(t) ] -> {
-    let open Vernacinterp in
+    let open Attributes in
       set_default_solver
         (Locality.make_section_locality atts.locality)
         (Tacintern.glob_tactic t)

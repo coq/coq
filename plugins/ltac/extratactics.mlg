@@ -30,7 +30,7 @@ open Namegen
 open Tactypes
 open Tactics
 open Proofview.Notations
-open Vernacinterp
+open Attributes
 
 let wit_hyp = wit_var
 
@@ -414,12 +414,10 @@ VERNAC COMMAND EXTEND DeriveInversionClear
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => { seff na }
   -> {
-      let open Vernacinterp in
       add_inversion_lemma_exn ~poly:atts.polymorphic na c s false inv_clear_tac }
 
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => { seff na }
   -> {
-      let open Vernacinterp in
       add_inversion_lemma_exn ~poly:atts.polymorphic na c Sorts.InProp false inv_clear_tac }
 END
 
@@ -427,12 +425,10 @@ VERNAC COMMAND EXTEND DeriveInversion
 | [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => { seff na }
   -> {
-      let open Vernacinterp in
       add_inversion_lemma_exn ~poly:atts.polymorphic na c s false inv_tac }
 
 | [ "Derive" "Inversion" ident(na) "with" constr(c) ] => { seff na }
   -> {
-      let open Vernacinterp in
       add_inversion_lemma_exn ~poly:atts.polymorphic na c Sorts.InProp false inv_tac }
 END
 
@@ -440,7 +436,6 @@ VERNAC COMMAND EXTEND DeriveDependentInversion
 | [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => { seff na }
   -> {
-      let open Vernacinterp in
       add_inversion_lemma_exn ~poly:atts.polymorphic na c s true dinv_tac }
 END
 
@@ -448,7 +443,6 @@ VERNAC COMMAND EXTEND DeriveDependentInversionClear
 | [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => { seff na }
   -> {
-      let open Vernacinterp in
       add_inversion_lemma_exn ~poly:atts.polymorphic na c s true dinv_clear_tac }
 END
 
