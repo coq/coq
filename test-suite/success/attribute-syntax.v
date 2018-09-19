@@ -1,4 +1,4 @@
-From Coq Require Program.
+From Coq Require Program.Wf.
 
 Section Scope.
 
@@ -21,3 +21,13 @@ Fixpoint f (n: nat) {wf lt n} : nat := _.
 
 #[deprecated(since="8.9.0")]
 Ltac foo := foo.
+
+Module M.
+  #[local] #[polymorphic] Definition zed := Type.
+
+  #[local, polymorphic] Definition kats := Type.
+End M.
+Check M.zed@{_}.
+Fail Check zed.
+Check M.kats@{_}.
+Fail Check kats.

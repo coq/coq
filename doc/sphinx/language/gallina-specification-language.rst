@@ -522,7 +522,7 @@ The Vernacular
 ==============
 
 .. productionlist:: coq
-   decorated-sentence : [`decoration`] `sentence`
+   decorated-sentence : [ `decoration` … `decoration` ] `sentence`
    sentence           : `assumption`
                       : | `definition`
                       : | `inductive`
@@ -1438,7 +1438,7 @@ Attributes
 
 Any vernacular command can be decorated with a list of attributes, enclosed
 between ``#[`` (hash and opening square bracket) and ``]`` (closing square bracket)
-and separated by commas ``,``.
+and separated by commas ``,``. Multiple space-separated blocks may be provided.
 
 Each attribute has a name (an identifier) and may have a value.
 A value is either a :token:`string` (in which case it is specified with an equal ``=`` sign),

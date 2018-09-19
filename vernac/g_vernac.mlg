@@ -83,11 +83,10 @@ GRAMMAR EXTEND Gram
     ]
   ;
   decorated_vernac:
-    [ [ a = attributes ; fv = vernac -> { let (f, v) = fv in (List.append a f, v) }
-      | fv = vernac -> { fv } ]
-    ]
+    [ [ a = LIST0 quoted_attributes ; fv = vernac ->
+        { let (f, v) = fv in (List.append (List.flatten a) f, v) } ] ]
   ;
-  attributes:
+  quoted_attributes:
     [ [ "#[" ; a = attribute_list ; "]" -> { a } ]
     ]
   ;
