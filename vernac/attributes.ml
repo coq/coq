@@ -21,14 +21,12 @@ type attr_parser =
 let known_parsers : attr_parser CString.Map.t ref = ref CString.Map.empty
 
 type t = {
-  locality : bool option;
   polymorphic : bool;
   program : bool;
   extra : Store.t;
 }
 
 let default = {
-  locality = None;
   polymorphic = false;
   program = false;
   extra = Store.empty;
@@ -50,7 +48,6 @@ let register_attribute ~name (parsers : 'a flag_parser CString.Map.t) =
       parsers !known_parsers;
   fun t -> Store.get t.extra field
 
-let locality {locality;_} = locality
 let polymorphic {polymorphic;_} = polymorphic
 let program {program;_} = program
 
@@ -80,14 +77,6 @@ let attributes_of_flags f atts =
          (Some false, atts)
        | ("polymorphic" | "monomorphic") ->
          user_err Pp.(str "Polymorphism specified twice")
-       | "local" when Option.is_empty atts.locality ->
-         assert_empty k v;
-         (polymorphism, { atts with locality = Some true })
-       | "global" when Option.is_empty atts.locality ->
-         assert_empty k v;
-         (polymorphism, { atts with locality = Some false })
-       | ("local" | "global") ->
-         user_err Pp.(str "Locality specified twice")
        | _ ->
          begin match CString.Map.find k !known_parsers with
            | exception Not_found -> user_err Pp.(str "Unknown attribute " ++ str k)
@@ -115,6 +104,11 @@ let make_empty_parsers ~name assocs =
 let template =
   let name = "Templateness" in
   let parsers = make_empty_parsers ~name [("template", true) ; ("notemplate", false)] in
+  register_attribute ~name parsers
+
+let locality =
+  let name = "Locality" in
+  let parsers = make_empty_parsers ~name [("local", true) ; ("global", false)] in
   register_attribute ~name parsers
 
 type deprecation = { since : string option ; note : string option }
