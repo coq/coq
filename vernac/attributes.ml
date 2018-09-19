@@ -15,8 +15,10 @@ module Store = Store.Make()
 
 type 'a flag_parser = 'a option -> vernac_flag_value -> 'a
 
+type 'a attribute = 'a Store.field
+
 type attr_parser =
-    Parser : string (* name of the attribute *) * 'a Store.field * 'a flag_parser -> attr_parser
+    Parser : string (* name of the attribute *) * 'a attribute * 'a flag_parser -> attr_parser
 
 let known_parsers : attr_parser CString.Map.t ref = ref CString.Map.empty
 
@@ -25,6 +27,8 @@ type t = {
   program : bool;
   extra : Store.t;
 }
+
+let read field atts = Store.get atts.extra field
 
 let default = {
   polymorphic = false;
@@ -46,7 +50,7 @@ let register_attribute ~name (parsers : 'a flag_parser CString.Map.t) =
   known_parsers := CString.Map.fold (fun key parser known_parsers ->
       CString.Map.add key (Parser (name,field,parser)) known_parsers)
       parsers !known_parsers;
-  fun t -> Store.get t.extra field
+  field
 
 let polymorphic {polymorphic;_} = polymorphic
 let program {program;_} = program
@@ -104,12 +108,12 @@ let make_empty_parsers ~name assocs =
 let template =
   let name = "Templateness" in
   let parsers = make_empty_parsers ~name [("template", true) ; ("notemplate", false)] in
-  register_attribute ~name parsers
+  read (register_attribute ~name parsers)
 
 let locality =
   let name = "Locality" in
   let parsers = make_empty_parsers ~name [("local", true) ; ("global", false)] in
-  register_attribute ~name parsers
+  read (register_attribute ~name parsers)
 
 type deprecation = { since : string option ; note : string option }
 
@@ -131,4 +135,4 @@ let deprecated =
     |  _ -> CErrors.user_err (Pp.str "Ill formed “deprecated” attribute")
   in
   let name = "Deprecation" in
-  register_attribute ~name (CString.Map.singleton "deprecated" (once_parser ~name parser))
+  read (register_attribute ~name (CString.Map.singleton "deprecated" (once_parser ~name parser)))

@@ -13,6 +13,15 @@ type deprecation = { since : string option ; note : string option }
 val mk_deprecation : ?since: string option -> ?note: string option -> unit -> deprecation
 
 type t
+(** The type of parsed attributes *)
+
+type 'a attribute
+(** Used to get the value for some attribute out of [t] in a typed
+   way. *)
+
+val read : 'a attribute -> t -> 'a option
+(** [read x atts] returns the value of attribute [x] if it is set in
+   [atts] *)
 
 val mk_atts :
   ?polymorphic: bool ->
@@ -30,10 +39,10 @@ type 'a flag_parser = 'a option -> Vernacexpr.vernac_flag_value -> 'a
    list, etc). *)
 
 val register_attribute : name:string -> 'a flag_parser CString.Map.t ->
-  t -> 'a option
+  'a attribute
 (** You can register multiple keys for the same attribute, eg
-   "template" and "notemplate" keys both affect the "template"
-   attribute. The [name] is currently not used. *)
+   "template" and "notemplate" keys produce values for the same
+   "templateness" attribute. The [name] is currently not used. *)
 
 val locality : t -> bool option
 val polymorphic : t -> bool
