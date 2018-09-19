@@ -878,7 +878,7 @@ function make_num {
 
 function make_findlib {
   make_ocaml
-  if build_prep https://opam.ocaml.org/archives ocamlfind.1.8.0+opam tar.gz 1 ; then
+  if build_prep https://opam.ocaml.org/1.2.2/archives ocamlfind.1.8.0+opam tar.gz 1 ; then
     logn configure ./configure -bindir "$PREFIXOCAML\\bin" -sitelib "$PREFIXOCAML\\libocaml\\site-lib" -config "$PREFIXOCAML\\etc\\findlib.conf"
     # Note: findlib doesn't support -j 8, so don't pass MAKE_OPT
     log2 make all
