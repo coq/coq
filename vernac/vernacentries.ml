@@ -405,42 +405,42 @@ let dump_global r =
 (* Syntax *)
 
 let vernac_syntax_extension ~atts infix l =
-  let local = enforce_module_locality atts.locality in
+  let local = enforce_module_locality (Attributes.locality atts) in
   if infix then Metasyntax.check_infix_modifiers (snd l);
   Metasyntax.add_syntax_extension local l
 
 let vernac_declare_scope ~atts sc =
-  let local = enforce_module_locality atts.locality in
+  let local = enforce_module_locality (Attributes.locality atts) in
   Metasyntax.declare_scope local sc
 
 let vernac_delimiters ~atts sc action =
-  let local = enforce_module_locality atts.locality in
+  let local = enforce_module_locality (Attributes.locality atts) in
   match action with
   | Some lr -> Metasyntax.add_delimiters local sc lr
   | None -> Metasyntax.remove_delimiters local sc
 
 let vernac_bind_scope ~atts sc cll =
-  let local = enforce_module_locality atts.locality in
+  let local = enforce_module_locality (Attributes.locality atts) in
   Metasyntax.add_class_scope local sc (List.map scope_class_of_qualid cll)
 
 let vernac_open_close_scope ~atts (b,s) =
-  let local = enforce_section_locality atts.locality in
+  let local = enforce_section_locality (Attributes.locality atts) in
   Notation.open_close_scope (local,b,s)
 
 let vernac_arguments_scope ~atts r scl =
-  let local = make_section_locality atts.locality in
+  let local = make_section_locality (Attributes.locality atts) in
   Notation.declare_arguments_scope local (smart_global r) scl
 
 let vernac_infix ~atts =
-  let local = enforce_module_locality atts.locality in
+  let local = enforce_module_locality (Attributes.locality atts) in
   Metasyntax.add_infix local (Global.env())
 
 let vernac_notation ~atts =
-  let local = enforce_module_locality atts.locality in
+  let local = enforce_module_locality (Attributes.locality atts) in
   Metasyntax.add_notation local (Global.env())
 
 let vernac_custom_entry ~atts s =
-  let local = enforce_module_locality atts.locality in
+  let local = enforce_module_locality (Attributes.locality atts) in
   Metasyntax.declare_custom_entry local s
 
 (***********)
@@ -481,8 +481,8 @@ let vernac_definition_hook p = function
 | _ -> no_hook
 
 let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
-  let local = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook atts.polymorphic kind in
+  let local = enforce_locality_exp (Attributes.locality atts) discharge in
+  let hook = vernac_definition_hook (Attributes.polymorphic atts) kind in
   let () =
     match id with
     | Anonymous -> ()
@@ -499,7 +499,7 @@ let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
   in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
-      start_proof_and_print (local, atts.polymorphic, DefinitionBody kind)
+      start_proof_and_print (local, (Attributes.polymorphic atts), DefinitionBody kind)
         [(CAst.make ?loc name, pl), (bl, t)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
@@ -508,13 +508,13 @@ let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
             let sigma, env = Pfedit.get_current_context () in
             Some (snd (Hook.get f_interp_redexp env sigma r)) in
       ComDefinition.do_definition ~program_mode name
-        (local, atts.polymorphic, kind) pl bl red_option c typ_opt hook)
+        (local, (Attributes.polymorphic atts), kind) pl bl red_option c typ_opt hook)
 
 let vernac_start_proof ~atts kind l =
-  let local = enforce_locality_exp atts.locality NoDischarge in
+  let local = enforce_locality_exp (Attributes.locality atts) NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  start_proof_and_print (local, atts.polymorphic, Proof kind) l no_hook
+  start_proof_and_print (local, (Attributes.polymorphic atts), Proof kind) l no_hook
 
 let vernac_end_proof ?proof = function
   | Admitted          -> save_proof ?proof Admitted
@@ -528,9 +528,9 @@ let vernac_exact_proof c =
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_assumption ~atts discharge kind l nl =
-  let local = enforce_locality_exp atts.locality discharge in
+  let local = enforce_locality_exp (Attributes.locality atts) discharge in
   let global = local == Global in
-  let kind = local, atts.polymorphic, kind in
+  let kind = local, (Attributes.polymorphic atts), kind in
   List.iter (fun (is_coe,(idl,c)) ->
     if Dumpglob.dump () then
       List.iter (fun (lid, _) ->
@@ -607,14 +607,14 @@ let vernac_inductive ~atts cum lo finite indl =
   | [ ( id , bl , c , Class _, Constructors [l]), [] ] -> Some (id, bl, c, l)
   | _ -> None
   in
-  let template = atts.template in
+  let template = Attributes.template atts in
   if Option.has_some is_defclass then
     (** Definitional class case *)
     let (id, bl, c, l) = Option.get is_defclass in
     let (coe, (lid, ce)) = l in
     let coe' = if coe then Some true else None in
     let f = (((coe', AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce)), None), []) in
-    vernac_record ~template cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
+    vernac_record ~template cum (Class true) (Attributes.polymorphic atts) finite [id, bl, c, None, [f]]
   else if List.for_all is_record indl then
     (** Mutual record case *)
     let check_kind ((_, _, _, kind, _), _) = match kind with
@@ -637,7 +637,7 @@ let vernac_inductive ~atts cum lo finite indl =
     let ((_, _, _, kind, _), _) = List.hd indl in
     let kind = match kind with Class _ -> Class false | _ -> kind in
     let recordl = List.map unpack indl in
-    vernac_record ~template cum kind atts.polymorphic finite recordl
+    vernac_record ~template cum kind (Attributes.polymorphic atts) finite recordl
   else if List.for_all is_constructor indl then
     (** Mutual inductive case *)
     let check_kind ((_, _, _, kind, _), _) = match kind with
@@ -661,9 +661,9 @@ let vernac_inductive ~atts cum lo finite indl =
     | RecordDecl _ -> assert false (* ruled out above *)
     in
     let indl = List.map unpack indl in
-    let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
+    let is_cumulative = should_treat_as_cumulative cum (Attributes.polymorphic atts) in
     let uniform = should_treat_as_uniform () in
-    ComInductive.do_mutual_inductive ~template indl is_cumulative atts.polymorphic lo ~uniform finite
+    ComInductive.do_mutual_inductive ~template indl is_cumulative (Attributes.polymorphic atts) lo ~uniform finite
   else
     user_err (str "Mixed record-inductive definitions are not allowed")
 (*
@@ -674,11 +674,11 @@ let vernac_inductive ~atts cum lo finite indl =
         let (coe, ({loc;v=id}, ce)) = l in
 	let coe' = if coe then Some true else None in
           (((coe', AssumExpr ((make ?loc @@ Name id), ce)), None), [])
-      in vernac_record cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
+      in vernac_record cum (Class true) (Attributes.polymorphic atts) finite [id, bl, c, None, [f]]
     *)
 
 let vernac_fixpoint ~atts discharge l =
-  let local = enforce_locality_exp atts.locality discharge in
+  let local = enforce_locality_exp (Attributes.locality atts) discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   (* XXX: Switch to the attribute system and match on ~atts *)
@@ -687,10 +687,10 @@ let vernac_fixpoint ~atts discharge l =
     else
       ComFixpoint.do_fixpoint
   in
-  do_fixpoint local atts.polymorphic l
+  do_fixpoint local (Attributes.polymorphic atts) l
 
 let vernac_cofixpoint ~atts discharge l =
-  let local = enforce_locality_exp atts.locality discharge in
+  let local = enforce_locality_exp (Attributes.locality atts) discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   let do_cofixpoint = if Flags.is_program_mode () then
@@ -698,7 +698,7 @@ let vernac_cofixpoint ~atts discharge l =
     else
       ComFixpoint.do_cofixpoint
   in
-  do_cofixpoint local atts.polymorphic l
+  do_cofixpoint local (Attributes.polymorphic atts) l
 
 let vernac_scheme l =
   if Dumpglob.dump () then
@@ -717,18 +717,18 @@ let vernac_combined_scheme lid l =
  Indschemes.do_combined_scheme lid l
 
 let vernac_universe ~atts l =
-  if atts.polymorphic && not (Lib.sections_are_opened ()) then
+  if (Attributes.polymorphic atts) && not (Lib.sections_are_opened ()) then
     user_err ~hdr:"vernac_universe"
 		 (str"Polymorphic universes can only be declared inside sections, " ++
 		  str "use Monomorphic Universe instead");
-  Declare.do_universe atts.polymorphic l
+  Declare.do_universe (Attributes.polymorphic atts) l
 
 let vernac_constraint ~atts l =
-  if atts.polymorphic && not (Lib.sections_are_opened ()) then
+  if (Attributes.polymorphic atts) && not (Lib.sections_are_opened ()) then
     user_err ~hdr:"vernac_constraint"
 		 (str"Polymorphic universe constraints can only be declared"
 		  ++ str " inside sections, use Monomorphic Constraint instead");
-  Declare.do_constraint atts.polymorphic l
+  Declare.do_constraint (Attributes.polymorphic atts) l
 
 (**********************)
 (* Modules            *)
@@ -912,32 +912,32 @@ let vernac_canonical r =
   Recordops.declare_canonical_structure (smart_global r)
 
 let vernac_coercion ~atts ref qids qidt =
-  let local = enforce_locality atts.locality in
+  let local = enforce_locality (Attributes.locality atts) in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
   let ref' = smart_global ref in
-  Class.try_add_new_coercion_with_target ref' ~local atts.polymorphic ~source ~target;
+  Class.try_add_new_coercion_with_target ref' ~local (Attributes.polymorphic atts) ~source ~target;
   Flags.if_verbose Feedback.msg_info (pr_global ref' ++ str " is now a coercion")
 
 let vernac_identity_coercion ~atts id qids qidt =
-  let local = enforce_locality atts.locality in
+  let local = enforce_locality (Attributes.locality atts) in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
-  Class.try_add_new_identity_coercion id ~local atts.polymorphic ~source ~target
+  Class.try_add_new_identity_coercion id ~local (Attributes.polymorphic atts) ~source ~target
 
 (* Type classes *)
 
 let vernac_instance ~atts abst sup inst props pri =
-  let global = not (make_section_locality atts.locality) in
+  let global = not (make_section_locality (Attributes.locality atts)) in
   Dumpglob.dump_constraint (fst (pi1 inst)) false "inst";
   let program_mode = Flags.is_program_mode () in
-  ignore(Classes.new_instance ~program_mode ~abstract:abst ~global atts.polymorphic sup inst props pri)
+  ignore(Classes.new_instance ~program_mode ~abstract:abst ~global (Attributes.polymorphic atts) sup inst props pri)
 
 let vernac_context ~atts l =
-  if not (Classes.context atts.polymorphic l) then Feedback.feedback Feedback.AddedAxiom
+  if not (Classes.context (Attributes.polymorphic atts) l) then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_declare_instances ~atts insts =
-  let glob = not (make_section_locality atts.locality) in
+  let glob = not (make_section_locality (Attributes.locality atts)) in
   List.iter (fun (id, info) -> Classes.existing_instance glob id (Some info)) insts
 
 let vernac_declare_class id =
@@ -1009,7 +1009,7 @@ let vernac_add_ml_path isrec path =
   add_coq_path { recursive = isrec; path_spec = MlPath (expand path) }
 
 let vernac_declare_ml_module ~atts l =
-  let local = make_locality atts.locality in
+  let local = make_locality (Attributes.locality atts) in
   Mltop.declare_ml_modules local (List.map expand l)
 
 let vernac_chdir = function
@@ -1042,24 +1042,24 @@ let vernac_restore_state file =
 (* Commands *)
 
 let vernac_create_hintdb ~atts id b =
-  let local = make_module_locality atts.locality in
+  let local = make_module_locality (Attributes.locality atts) in
   Hints.create_hint_db local id full_transparent_state b
 
 let vernac_remove_hints ~atts dbs ids =
-  let local = make_module_locality atts.locality in
+  let local = make_module_locality (Attributes.locality atts) in
   Hints.remove_hints local dbs (List.map Smartlocate.global_with_alias ids)
 
 let vernac_hints ~atts lb h =
-  let local = enforce_module_locality atts.locality in
-  Hints.add_hints ~local lb (Hints.interp_hints atts.polymorphic h)
+  let local = enforce_module_locality (Attributes.locality atts) in
+  Hints.add_hints ~local lb (Hints.interp_hints (Attributes.polymorphic atts) h)
 
 let vernac_syntactic_definition ~atts lid x y =
   Dumpglob.dump_definition lid false "syndef";
-  let local = enforce_module_locality atts.locality in
+  let local = enforce_module_locality (Attributes.locality atts) in
   Metasyntax.add_syntactic_definition (Global.env()) lid.v x local y
 
 let vernac_declare_implicits ~atts r l =
-  let local = make_section_locality atts.locality in
+  let local = make_section_locality (Attributes.locality atts) in
   match l with
   | [] ->
       Impargs.declare_implicits local (smart_global r)
@@ -1290,7 +1290,7 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
   (* Actions *)
 
   if renaming_specified then begin
-    let local = make_section_locality atts.locality in
+    let local = make_section_locality (Attributes.locality atts) in
     Arguments_renaming.rename_arguments local sr names
   end;
 
@@ -1313,7 +1313,7 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
     match sr with
     | ConstRef _ as c ->
        Reductionops.ReductionBehaviour.set
-         (make_section_locality atts.locality) c
+         (make_section_locality (Attributes.locality atts)) c
          (rargs, Option.default ~-1 nargs_for_red, red_flags)
     | _ -> user_err
              (strbrk "Modifiers of the behavior of the simpl tactic "++
@@ -1342,7 +1342,7 @@ let vernac_reserve bl =
   in List.iter sb_decl bl
 
 let vernac_generalizable ~atts =
-  let local = make_non_locality atts.locality in
+  let local = make_non_locality (Attributes.locality atts) in
   Implicit_quantifiers.declare_generalizable ~local
 
 let _ =
@@ -1598,7 +1598,7 @@ let _ =
       optwrite = Nativenorm.set_profiling_enabled }
 
 let vernac_set_strategy ~atts l =
-  let local = make_locality atts.locality in
+  let local = make_locality (Attributes.locality atts) in
   let glob_ref r =
     match smart_global r with
       | ConstRef sp -> EvalConstRef sp
@@ -1609,7 +1609,7 @@ let vernac_set_strategy ~atts l =
   Redexpr.set_strategy local l
 
 let vernac_set_opacity ~atts (v,l) =
-  let local = make_non_locality atts.locality in
+  let local = make_non_locality (Attributes.locality atts) in
   let glob_ref r =
     match smart_global r with
       | ConstRef sp -> EvalConstRef sp
@@ -1629,7 +1629,7 @@ let get_option_locality export local =
   | None -> OptDefault
 
 let vernac_set_option0 ~atts export key opt =
-  let locality = get_option_locality export atts.locality in
+  let locality = get_option_locality export (Attributes.locality atts) in
   match opt with
   | StringValue s -> set_string_option_value_gen ~locality key s
   | StringOptValue (Some s) -> set_string_option_value_gen ~locality key s
@@ -1638,7 +1638,7 @@ let vernac_set_option0 ~atts export key opt =
   | BoolValue b -> set_bool_option_value_gen ~locality key b
 
 let vernac_set_append_option ~atts export key s =
-  let locality = get_option_locality export atts.locality in
+  let locality = get_option_locality export (Attributes.locality atts) in
   set_string_option_append_value_gen ~locality key s
 
 let vernac_set_option ~atts export table v = match v with
@@ -1656,7 +1656,7 @@ let vernac_set_option ~atts export table v = match v with
 | _ -> vernac_set_option0 ~atts export table v
 
 let vernac_unset_option ~atts export key =
-  let locality = get_option_locality export atts.locality in
+  let locality = get_option_locality export (Attributes.locality atts) in
   unset_option_value_gen ~locality key
 
 let vernac_add_option key lv =
@@ -1734,7 +1734,7 @@ let vernac_check_may_eval ~atts redexp glopt rc =
   pp ++ Printer.pr_universe_ctx_set sigma uctx
 
 let vernac_declare_reduction ~atts s r =
-  let local = make_locality atts.locality in
+  let local = make_locality (Attributes.locality atts) in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   declare_red_expr local s (snd (Hook.get f_interp_redexp env sigma r))
@@ -2368,20 +2368,20 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
     | VernacLoad (_,fname) -> vernac_load control fname
 
     | c ->
-      check_vernac_supports_locality c atts.locality;
+      check_vernac_supports_locality c (Attributes.locality atts);
       check_vernac_supports_polymorphism c polymorphism;
       let polymorphic = Option.default (Flags.is_universe_polymorphism ()) polymorphism in
       Flags.make_universe_polymorphism polymorphic;
-      Obligations.set_program_mode atts.program;
+      Obligations.set_program_mode (Attributes.program atts);
       try
         vernac_timeout begin fun () ->
-          let atts = { atts with polymorphic } in
+          let atts = Attributes.set_polymorphic atts polymorphic in
           if verbosely
           then Flags.verbosely (interp ?proof ~atts ~st) c
           else Flags.silently  (interp ?proof ~atts ~st) c;
           (* If the command is `(Un)Set Program Mode` or `(Un)Set Universe Polymorphism`,
              we should not restore the previous state of the flag... *)
-          if orig_program_mode || not !Flags.program_mode || atts.program then
+          if orig_program_mode || not !Flags.program_mode || (Attributes.program atts) then
             Flags.program_mode := orig_program_mode;
           if (Flags.is_universe_polymorphism() = polymorphic) then
             Flags.make_universe_polymorphism orig_univ_poly;

@@ -126,7 +126,7 @@ VERNAC COMMAND FUNCTIONAL EXTEND Set_Solver CLASSIFIED AS SIDEFF
 | [ "Obligation" "Tactic" ":=" tactic(t) ] -> [
     fun ~atts ~st -> begin
         set_default_tactic
-          (Locality.make_section_locality atts.Attributes.locality)
+          (Locality.make_section_locality (Attributes.locality atts))
           (Tacintern.glob_tactic t);
         st
       end]

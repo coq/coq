@@ -195,7 +195,7 @@ let classify_vernac e =
   let rec static_control_classifier ~poly = function
     | VernacExpr (f, e) ->
       let _, atts = Attributes.attributes_of_flags f Attributes.(mk_atts ~polymorphic:poly ()) in
-      let poly = atts.Attributes.polymorphic in
+      let poly = Attributes.polymorphic atts in
       static_classifier ~poly e
     | VernacTimeout (_,e) -> static_control_classifier ~poly e
     | VernacTime (_,{v=e}) | VernacRedirect (_, {v=e}) ->

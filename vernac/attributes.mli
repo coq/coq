@@ -12,13 +12,7 @@ type deprecation = { since : string option ; note : string option }
 
 val mk_deprecation : ?since: string option -> ?note: string option -> unit -> deprecation
 
-type t = {
-  locality : bool option;
-  polymorphic : bool;
-  template : bool option;
-  program : bool;
-  deprecated : deprecation option;
-}
+type t
 
 val mk_atts :
   ?polymorphic: bool ->
@@ -26,3 +20,11 @@ val mk_atts :
 
 val attributes_of_flags : Vernacexpr.vernac_flags -> t ->
   bool option (* polymorphism attr *) * t
+
+val locality : t -> bool option
+val polymorphic : t -> bool
+val template : t -> bool option
+val program : t -> bool
+val deprecated : t -> deprecation option
+
+val set_polymorphic : t -> bool -> t

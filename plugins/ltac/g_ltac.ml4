@@ -468,10 +468,10 @@ END
 VERNAC COMMAND FUNCTIONAL EXTEND VernacTacticNotation
 | [ "Tactic" "Notation" ltac_tactic_level_opt(n) ne_ltac_production_item_list(r) ":=" tactic(e) ] =>
   [ VtSideff [], VtNow ] ->
-  [ fun ~atts ~st -> let open Attributes in
+  [ fun ~atts ~st ->
       let n = Option.default 0 n in
-      let deprecation = atts.deprecated in
-      Tacentries.add_tactic_notation (Locality.make_module_locality atts.locality) n ?deprecation r e;
+      let deprecation = Attributes.deprecated atts in
+      Tacentries.add_tactic_notation (Locality.make_module_locality (Attributes.locality atts)) n ?deprecation r e;
       st
   ]
 END
@@ -514,9 +514,9 @@ VERNAC COMMAND FUNCTIONAL EXTEND VernacDeclareTacticDefinition
     VtSideff (List.map (function
       | TacticDefinition ({CAst.v=r},_) -> r
       | TacticRedefinition (qid,_) -> qualid_basename qid) l), VtLater
-  ] -> [ fun ~atts ~st -> let open Attributes in
-           let deprecation = atts.deprecated in
-           Tacentries.register_ltac (Locality.make_module_locality atts.locality) ?deprecation l;
+  ] -> [ fun ~atts ~st ->
+           let deprecation = Attributes.deprecated atts in
+           Tacentries.register_ltac (Locality.make_module_locality (Attributes.locality atts)) ?deprecation l;
            st
   ]
 END

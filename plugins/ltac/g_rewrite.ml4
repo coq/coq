@@ -24,7 +24,6 @@ open Pcoq.Prim
 open Pcoq.Constr
 open Pvernac.Vernac_
 open Pltac
-open Attributes
 
 DECLARE PLUGIN "ltac_plugin"
 
@@ -247,32 +246,32 @@ END
 VERNAC COMMAND FUNCTIONAL EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
    [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
      [ fun ~atts ~st ->
-         add_setoid (not (Locality.make_section_locality atts.locality)) [] a aeq t n;
+         add_setoid (not (Locality.make_section_locality (Attributes.locality atts))) [] a aeq t n;
          st
      ]
   | [ "Add" "Parametric" "Setoid" binders(binders) ":" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
      [ fun ~atts ~st ->
-         add_setoid (not (Locality.make_section_locality atts.locality)) binders a aeq t n;
+         add_setoid (not (Locality.make_section_locality (Attributes.locality atts))) binders a aeq t n;
          st
      ]
   | [ "Add" "Morphism" constr(m) ":" ident(n) ]
     (* This command may or may not open a goal *)
     => [ Vernacexpr.VtUnknown, Vernacexpr.VtNow ]
     -> [ fun ~atts ~st ->
-           add_morphism_infer (not (Locality.make_section_locality atts.locality)) m n;
+           add_morphism_infer (not (Locality.make_section_locality (Attributes.locality atts))) m n;
            st
        ]
   | [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ]
     => [ Vernacexpr.(VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater) ]
     -> [ fun ~atts ~st ->
-           add_morphism (not (Locality.make_section_locality atts.locality)) [] m s n;
+           add_morphism (not (Locality.make_section_locality (Attributes.locality atts))) [] m s n;
            st
        ]
   | [ "Add" "Parametric" "Morphism" binders(binders) ":" constr(m)
         "with" "signature" lconstr(s) "as" ident(n) ]
     => [ Vernacexpr.(VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater) ]
     -> [ fun ~atts ~st ->
-           add_morphism (not (Locality.make_section_locality atts.locality)) binders m s n;
+           add_morphism (not (Locality.make_section_locality (Attributes.locality atts))) binders m s n;
            st
        ]
 END

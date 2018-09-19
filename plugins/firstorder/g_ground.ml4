@@ -67,9 +67,9 @@ let (set_default_solver, default_solver, print_default_solver) =
 
 VERNAC COMMAND FUNCTIONAL EXTEND Firstorder_Set_Solver CLASSIFIED AS SIDEFF
 | [ "Set" "Firstorder" "Solver" tactic(t) ] -> [
-    fun ~atts ~st -> let open Attributes in
+    fun ~atts ~st ->
       set_default_solver
-        (Locality.make_section_locality atts.locality)
+        (Locality.make_section_locality (Attributes.locality atts))
         (Tacintern.glob_tactic t);
         st
   ]

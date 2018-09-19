@@ -32,8 +32,16 @@ let default = {
   deprecated = None;
 }
 
+let locality {locality;_} = locality
+let polymorphic {polymorphic;_} = polymorphic
+let template {template;_} = template
+let program {program;_} = program
+let deprecated {deprecated;_} = deprecated
+
 let mk_atts ?(polymorphic=default.polymorphic) ?(program=default.program) () =
   { default with polymorphic; program }
+
+let set_polymorphic atts polymorphic = {atts with polymorphic}
 
 let attributes_of_flags f atts =
   let assert_empty k v =
