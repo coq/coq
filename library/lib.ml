@@ -421,24 +421,27 @@ let add_section () =
   sectab := ([],(Names.Cmap.empty,Names.Mindmap.empty),
                 (Names.Cmap.empty,Names.Mindmap.empty)) :: !sectab
 
-let check_same_poly p vars =
-  let pred = function Context _ -> p = false | Variable (_, _, poly, _) -> p != poly in
-  if List.exists pred vars then
-    user_err Pp.(str  "Cannot mix universe polymorphic and monomorphic declarations in sections.")
+let check_section_poly p =
+  let check_one (vars,_,_) =
+    let pred = function Context _ -> p = false | Variable (_, _, poly, _) -> p != poly in
+    if List.exists pred vars then
+      user_err Pp.(str  "Cannot mix universe polymorphic and monomorphic declarations in sections.")
+  in
+  List.iter check_one !sectab
 
 let add_section_variable id impl poly ctx =
   match !sectab with
-    | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
-    | (vars,repl,abs)::sl ->
-       List.iter (fun tab -> check_same_poly poly (pi1 tab)) !sectab;
-       sectab := (Variable (id,impl,poly,ctx)::vars,repl,abs)::sl
+  | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
+  | (vars,repl,abs)::sl ->
+    check_section_poly poly;
+    sectab := (Variable (id,impl,poly,ctx)::vars,repl,abs)::sl
 
 let add_section_context ctx =
   match !sectab with
-    | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
-    | (vars,repl,abs)::sl ->
-       check_same_poly true vars;
-       sectab := (Context ctx :: vars,repl,abs)::sl
+  | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
+  | (vars,repl,abs)::sl ->
+    check_section_poly true;
+    sectab := (Context ctx :: vars,repl,abs)::sl
 
 let extract_hyps (secs,ohyps) =
   let rec aux = function
@@ -464,7 +467,7 @@ let add_section_replacement f g poly hyps =
   match !sectab with
   | [] -> ()
   | (vars,exps,abs)::sl ->
-    let () = check_same_poly poly vars in
+    let () = check_section_poly poly in
     let sechyps,ctx = extract_hyps (vars,hyps) in
     let ctx = Univ.ContextSet.to_context ctx in
     let inst = Univ.UContext.instance ctx in
