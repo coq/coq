@@ -22,15 +22,11 @@ type attr_parser =
 
 let known_parsers : attr_parser CString.Map.t ref = ref CString.Map.empty
 
-type t = {
-  polymorphic : bool;
-  extra : Store.t;
-}
+type t = Store.t
 
-let read field atts = Store.get atts.extra field
+let read field atts = Store.get atts field
 
 let check_parser_collision new_parsers =
-  (* TODO check core parsers *)
   CString.Map.iter (fun key _ ->
       if CString.Map.mem key !known_parsers
       then anomaly ~label:"register_attribute"
@@ -45,41 +41,14 @@ let register_attribute ~name (parsers : 'a flag_parser CString.Map.t) =
       parsers !known_parsers;
   field
 
-let polymorphic {polymorphic;_} = polymorphic
-
-let set_polymorphic atts polymorphic = {atts with polymorphic}
-
-let assert_empty k v =
-  if v <> VernacFlagEmpty
-  then user_err Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
-
-let attributes_of_flags f atts =
-  List.fold_left
-    (fun (polymorphism, atts) (k, v) ->
-       match k with
-       | "polymorphic" when polymorphism = None ->
-         assert_empty k v;
-         (Some true, atts)
-       | "monomorphic" when polymorphism = None ->
-         assert_empty k v;
-         (Some false, atts)
-       | ("polymorphic" | "monomorphic") ->
-         user_err Pp.(str "Polymorphism specified twice")
-       | _ ->
-         begin match CString.Map.find k !known_parsers with
-           | exception Not_found -> user_err Pp.(str "Unknown attribute " ++ str k)
-           | Parser (name, field, parser) ->
-             let v = parser (Store.get atts.extra field) v in
-             (polymorphism, { atts with extra = Store.set atts.extra field v })
-         end
-    )
-    (None, atts)
-    f
-
 let once_parser ~name parser previous v =
   match previous with
   | Some _ -> user_err Pp.(str name ++ str " specified twice.")
   | None -> parser v
+
+let assert_empty k v =
+  if v <> VernacFlagEmpty
+  then user_err Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
 
 let empty_parser ~name x =
   once_parser ~name (fun v -> assert_empty name v; x)
@@ -126,5 +95,33 @@ let program =
   let parsers = make_empty_parsers ~name [("program", true)] in
   read (register_attribute ~name parsers)
 
+let polymorphic_att =
+  let name = "Polymorphism" in
+  let parsers = make_empty_parsers ~name [("polymorphic", true) ; ("monomorphic", false)] in
+  register_attribute ~name parsers
+
 let mk_atts ?(polymorphic=false) () =
-  { polymorphic; extra = Store.empty}
+  Store.set Store.empty polymorphic_att polymorphic
+
+let set_polymorphic atts polymorphic = Store.set atts polymorphic_att polymorphic
+
+let polymorphic atts =
+  Option.get (read polymorphic_att atts)
+
+let parse_one_attribute atts (k, v) =
+  match CString.Map.find k !known_parsers with
+  | exception Not_found -> user_err Pp.(str "Unknown attribute " ++ str k)
+  | Parser (name, field, parser) ->
+    let v = parser (Store.get atts field) v in
+    Store.set atts field v
+
+let attributes_of_flags f atts =
+  (* We need to do a small dance to detect the presence of a
+     polymorphism flag despite always setting the attribute in
+     [mk_atts]. *)
+  let orig_poly = polymorphic atts in
+  let atts = Store.remove atts polymorphic_att in
+  let atts = List.fold_left parse_one_attribute atts f in
+  let poly_attr = read polymorphic_att atts in
+  let atts = Store.set atts polymorphic_att (Option.default orig_poly poly_attr) in
+  poly_attr, atts
