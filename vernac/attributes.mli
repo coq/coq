@@ -13,7 +13,6 @@ type deprecation = { since : string option ; note : string option }
 val mk_deprecation : ?since: string option -> ?note: string option -> unit -> deprecation
 
 type t = {
-  loc : Loc.t option;
   locality : bool option;
   polymorphic : bool;
   template : bool option;
@@ -21,6 +20,6 @@ type t = {
   deprecated : deprecation option;
 }
 
-val mk_atts : ?loc: Loc.t option -> ?locality: bool option ->
+val mk_atts : ?locality: bool option ->
   ?polymorphic: bool -> ?template:bool option ->
   ?program: bool -> ?deprecated: deprecation option -> unit -> t

@@ -14,7 +14,6 @@ let mk_deprecation ?(since=None) ?(note=None) () =
   { since ; note }
 
 type t = {
-  loc : Loc.t option;
   locality : bool option;
   polymorphic : bool;
   template : bool option;
@@ -22,5 +21,5 @@ type t = {
   deprecated : deprecation option;
 }
 
-let mk_atts ?(loc=None) ?(locality=None) ?(polymorphic=false) ?(template=None) ?(program=false) ?(deprecated=None) () =
-  { loc ; locality ; polymorphic ; program ; deprecated; template }
+let mk_atts ?(locality=None) ?(polymorphic=false) ?(template=None) ?(program=false) ?(deprecated=None) () =
+  { locality ; polymorphic ; program ; deprecated; template }
