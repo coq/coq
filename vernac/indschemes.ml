@@ -142,7 +142,8 @@ let try_declare_scheme what f internal names kn =
   try f internal names kn
   with e ->
   let e = CErrors.push e in
-  let msg = match fst e with
+  let rec extract_exn = function Logic_monad.TacticFailure e -> extract_exn e | e -> e in
+  let msg = match extract_exn (fst e) with
     | ParameterWithoutEquality cst ->
 	alarm what internal
 	  (str "Boolean equality not found for parameter " ++ Printer.pr_global cst ++
@@ -176,6 +177,11 @@ let try_declare_scheme what f internal names kn =
     | NoDecidabilityCoInductive ->
          alarm what internal
            (str "Scheme Equality is only for inductive types.")
+    | ConstructorWithNonParametricInductiveType ind ->
+         alarm what internal
+           (strbrk "Unsupported constructor with an argument whose type is a non-parametric inductive type." ++
+            strbrk " Type " ++ quote (Printer.pr_inductive (Global.env()) ind) ++
+            str " is applied to an argument which is not a variable.")
     | e when CErrors.noncritical e ->
         alarm what internal
 	  (str "Unexpected error during scheme creation: " ++ CErrors.print e)
