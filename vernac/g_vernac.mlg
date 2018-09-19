@@ -96,7 +96,7 @@ GRAMMAR EXTEND Gram
     ]
   ;
   attribute:
-    [ [ k = ident ; v = attribute_value -> { Names.Id.to_string k, v } ]
+    [ [ k = ident ; v = attribute_value -> { CAst.make ~loc (Names.Id.to_string k, v) } ]
     ]
   ;
   attribute_value:
@@ -106,23 +106,23 @@ GRAMMAR EXTEND Gram
     ]
   ;
   vernac:
-    [ [ IDENT "Local"; v = vernac_poly -> { let (f, v) = v in (("local", VernacFlagEmpty) :: f, v) }
-      | IDENT "Global"; v = vernac_poly -> { let (f, v) = v in (("global", VernacFlagEmpty) :: f, v) }
+    [ [ IDENT "Local"; v = vernac_poly -> { let (f, v) = v in (CAst.make ("local", VernacFlagEmpty) :: f, v) }
+      | IDENT "Global"; v = vernac_poly -> { let (f, v) = v in (CAst.make ("global", VernacFlagEmpty) :: f, v) }
 
       | v = vernac_poly -> { v } ]
     ]
   ;
   vernac_poly:
-    [ [ IDENT "Polymorphic"; v = vernac_aux -> { let (f, v) = v in (("polymorphic", VernacFlagEmpty) :: f, v) }
-      | IDENT "Monomorphic"; v = vernac_aux -> { let (f, v) = v in (("monomorphic", VernacFlagEmpty) :: f, v) }
+    [ [ IDENT "Polymorphic"; v = vernac_aux -> { let (f, v) = v in (CAst.make ("polymorphic", VernacFlagEmpty) :: f, v) }
+      | IDENT "Monomorphic"; v = vernac_aux -> { let (f, v) = v in (CAst.make ("monomorphic", VernacFlagEmpty) :: f, v) }
       | v = vernac_aux -> { v } ]
     ]
   ;
   vernac_aux:
     (* Better to parse "." here: in case of failure (e.g. in coerce_to_var), *)
     (* "." is still in the stream and discard_to_dot works correctly         *)
-    [ [ IDENT "Program"; g = gallina; "." -> { (["program", VernacFlagEmpty], g) }
-      | IDENT "Program"; g = gallina_ext; "." -> { (["program", VernacFlagEmpty], g) }
+    [ [ IDENT "Program"; g = gallina; "." -> { ([CAst.make ("program", VernacFlagEmpty)], g) }
+      | IDENT "Program"; g = gallina_ext; "." -> { ([CAst.make ("program", VernacFlagEmpty)], g) }
       | g = gallina; "." -> { ([], g) }
       | g = gallina_ext; "." -> { ([], g) }
       | c = command; "." -> { ([], c) }

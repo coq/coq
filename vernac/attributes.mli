@@ -31,7 +31,7 @@ val attributes_of_flags : Vernacexpr.vernac_flags -> t ->
   bool option (* polymorphism attr *) * t
 
 
-type 'a flag_parser = 'a option -> Vernacexpr.vernac_flag_value -> 'a
+type 'a flag_parser = 'a option -> ?loc:Loc.t -> Vernacexpr.vernac_flag_value -> 'a
 (** How to parse some specific attribute key (eg "polymorphic" and
    "monomorphic" are separate keys for the same attribute). The
    previous value of the attribute if set is also passed, allowing

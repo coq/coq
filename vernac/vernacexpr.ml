@@ -463,7 +463,7 @@ type nonrec vernac_expr =
   | VernacExtend of extend_name * Genarg.raw_generic_argument list
 
 type vernac_flags = vernac_flag list
-and vernac_flag = string * vernac_flag_value
+and vernac_flag = (string * vernac_flag_value) CAst.t
 and vernac_flag_value =
   | VernacFlagEmpty
   | VernacFlagLeaf of string

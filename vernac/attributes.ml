@@ -13,7 +13,7 @@ open Vernacexpr
 
 module Store = Store.Make()
 
-type 'a flag_parser = 'a option -> vernac_flag_value -> 'a
+type 'a flag_parser = 'a option -> ?loc:Loc.t -> vernac_flag_value -> 'a
 
 type 'a attribute = 'a Store.field
 
@@ -41,17 +41,17 @@ let register_attribute ~name (parsers : 'a flag_parser CString.Map.t) =
       parsers !known_parsers;
   field
 
-let once_parser ~name parser previous v =
+let once_parser ~name parser previous ?loc v =
   match previous with
-  | Some _ -> user_err Pp.(str name ++ str " specified twice.")
-  | None -> parser v
+  | Some _ -> user_err ?loc Pp.(str name ++ str " specified twice.")
+  | None -> parser ?loc v
 
-let assert_empty k v =
+let assert_empty ?loc k v =
   if v <> VernacFlagEmpty
-  then user_err Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
+  then user_err ?loc Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
 
 let empty_parser ~name x =
-  once_parser ~name (fun v -> assert_empty name v; x)
+  once_parser ~name (fun ?loc v -> assert_empty ?loc name v; x)
 
 let make_empty_parsers ~name assocs =
   List.fold_left (fun parsers (k,x) ->
@@ -74,18 +74,20 @@ let mk_deprecation ?(since=None) ?(note=None) () =
   { since ; note }
 
 let deprecated =
-  let parser = function
-    | VernacFlagList [ "since", VernacFlagLeaf since ; "note", VernacFlagLeaf note ]
-    | VernacFlagList [ "note", VernacFlagLeaf note ; "since", VernacFlagLeaf since ] ->
+  let parser ?loc =
+    let open CAst in
+    function
+    | VernacFlagList [ {v="since", VernacFlagLeaf since} ; {v="note", VernacFlagLeaf note} ]
+    | VernacFlagList [ {v="note", VernacFlagLeaf note} ; {v="since", VernacFlagLeaf since} ] ->
       let since = Some since and note = Some note in
       mk_deprecation ~since ~note ()
-    | VernacFlagList [ "since", VernacFlagLeaf since ] ->
+    | VernacFlagList [ {v="since", VernacFlagLeaf since} ] ->
       let since = Some since in
       mk_deprecation ~since ()
-    | VernacFlagList [ "note", VernacFlagLeaf note ] ->
+    | VernacFlagList [ {v="note", VernacFlagLeaf note} ] ->
       let note = Some note in
       mk_deprecation ~note ()
-    |  _ -> CErrors.user_err (Pp.str "Ill formed “deprecated” attribute")
+    |  _ -> CErrors.user_err ?loc (Pp.str "Ill formed “deprecated” attribute")
   in
   let name = "Deprecation" in
   read (register_attribute ~name (CString.Map.singleton "deprecated" (once_parser ~name parser)))
@@ -108,11 +110,11 @@ let set_polymorphic atts polymorphic = Store.set atts polymorphic_att polymorphi
 let polymorphic atts =
   Option.get (read polymorphic_att atts)
 
-let parse_one_attribute atts (k, v) =
+let parse_one_attribute atts {CAst.v=k, v; loc} =
   match CString.Map.find k !known_parsers with
-  | exception Not_found -> user_err Pp.(str "Unknown attribute " ++ str k)
+  | exception Not_found -> user_err ?loc Pp.(str "Unknown attribute " ++ str k)
   | Parser (name, field, parser) ->
-    let v = parser (Store.get atts field) v in
+    let v = parser (Store.get atts field) ?loc v in
     Store.set atts field v
 
 let attributes_of_flags f atts =

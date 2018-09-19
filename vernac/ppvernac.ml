@@ -1206,7 +1206,7 @@ open Pputils
       | VernacEndSubproof ->
         return (str "}")
 
-let rec pr_vernac_flag (k, v) =
+let rec pr_vernac_flag {CAst.v=k, v} =
   let k = keyword k in
   match v with
   | VernacFlagEmpty -> k
