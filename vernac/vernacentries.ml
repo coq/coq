@@ -718,14 +718,14 @@ let vernac_combined_scheme lid l =
 
 let vernac_universe ~atts l =
   if atts.polymorphic && not (Lib.sections_are_opened ()) then
-    user_err ?loc:atts.loc ~hdr:"vernac_universe"
+    user_err ~hdr:"vernac_universe"
 		 (str"Polymorphic universes can only be declared inside sections, " ++
 		  str "use Monomorphic Universe instead");
   Declare.do_universe atts.polymorphic l
 
 let vernac_constraint ~atts l =
   if atts.polymorphic && not (Lib.sections_are_opened ()) then
-    user_err ?loc:atts.loc ~hdr:"vernac_constraint"
+    user_err ~hdr:"vernac_constraint"
 		 (str"Polymorphic universe constraints can only be declared"
 		  ++ str " inside sections, use Monomorphic Constraint instead");
   Declare.do_constraint atts.polymorphic l
@@ -1699,7 +1699,7 @@ let query_command_selector ?loc = function
       (str "Query commands only support the single numbered goal selector.")
 
 let vernac_check_may_eval ~atts redexp glopt rc =
-  let glopt = query_command_selector ?loc:atts.loc glopt in
+  let glopt = query_command_selector glopt in
   let (sigma, env) = get_current_context_of_args glopt in
   let sigma, c = interp_open_constr env sigma rc in
   let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
@@ -1793,7 +1793,6 @@ let print_about_hyp_globs ?loc ref_or_by_not udecl glopt =
     print_about env sigma ref_or_by_not udecl
 
 let vernac_print ~atts env sigma =
-  let loc = atts.loc in
   function
   | PrintTables -> print_tables ()
   | PrintFullContext-> print_full_context_typ env sigma
@@ -1841,7 +1840,7 @@ let vernac_print ~atts env sigma =
   | PrintVisibility s ->
     Notation.pr_visibility (Constrextern.without_symbols (pr_lglob_constr_env env)) s
   | PrintAbout (ref_or_by_not,udecl,glnumopt) ->
-    print_about_hyp_globs ?loc ref_or_by_not udecl glnumopt
+    print_about_hyp_globs ref_or_by_not udecl glnumopt
   | PrintImplicit qid ->
     dump_global qid;
     print_impargs qid
@@ -1906,7 +1905,7 @@ let _ =
       optwrite = (:=) search_output_name_only }
 
 let vernac_search ~atts s gopt r =
-  let gopt = query_command_selector ?loc:atts.loc gopt in
+  let gopt = query_command_selector gopt in
   let r = interp_search_restriction r in
   let env,gopt =
     match gopt with | None ->
@@ -2232,7 +2231,7 @@ let interp ?proof ~atts ~st c =
     let using = Option.append using (Proof_using.get_default_proof_using ()) in
     let tacs = if Option.is_empty tac then "tac:no" else "tac:yes" in
     let usings = if Option.is_empty using then "using:no" else "using:yes" in
-    Aux_file.record_in_aux_at ?loc:atts.loc "VernacProof" (tacs^" "^usings);
+    Aux_file.record_in_aux_at "VernacProof" (tacs^" "^usings);
     Option.iter vernac_set_end_tac tac;
     Option.iter vernac_set_used_variables using
   | VernacProofMode mn -> Proof_global.set_proof_mode mn [@ocaml.warning "-3"]
