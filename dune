@@ -42,3 +42,9 @@
  (name runtest)
  (package coqide-server)
  (deps test-suite/summary.log))
+
+; Almost there
+; (rule
+;  (targets coq-refman1.install)
+;  (deps doc/sphinx_build)
+;  (action (with-stdout-to coq-refman1.install (echo "foo"))))
