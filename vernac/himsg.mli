@@ -46,3 +46,5 @@ val explain_module_internalization_error :
 
 val map_pguard_error : ('c -> 'd) -> 'c pguard_error -> 'd pguard_error
 val map_ptype_error : ('c -> 'd) -> ('c, 'c) ptype_error -> ('d, 'd) ptype_error
+
+val explain_numeral_notation_error : env -> Evd.evar_map -> Notation.numeral_notation_error -> Pp.t

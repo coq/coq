@@ -1315,3 +1315,13 @@ let explain_reduction_tactic_error = function
       quote (pr_goal_concl_style_env env sigma c) ++
       spc () ++ str "is not well typed." ++ fnl () ++
       explain_type_error env' (Evd.from_env env') e
+
+let explain_numeral_notation_error env sigma = function
+  | Notation.UnexpectedTerm c ->
+    (strbrk "Unexpected term " ++
+     pr_constr_env env sigma c ++
+     strbrk " while parsing a numeral notation.")
+  | Notation.UnexpectedNonOptionTerm c ->
+    (strbrk "Unexpected non-option term " ++
+     pr_constr_env env sigma c ++
+     strbrk " while parsing a numeral notation.")
