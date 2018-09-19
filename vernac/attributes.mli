@@ -20,9 +20,9 @@ type t = {
   deprecated : deprecation option;
 }
 
-val mk_atts : ?locality: bool option ->
-  ?polymorphic: bool -> ?template:bool option ->
-  ?program: bool -> ?deprecated: deprecation option -> unit -> t
+val mk_atts :
+  ?polymorphic: bool ->
+  ?program: bool -> unit -> t
 
 val attributes_of_flags : Vernacexpr.vernac_flags -> t ->
   bool option (* polymorphism attr *) * t
