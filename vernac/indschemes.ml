@@ -177,6 +177,9 @@ let try_declare_scheme what f internal names kn =
     | NoDecidabilityCoInductive ->
          alarm what internal
            (str "Scheme Equality is only for inductive types.")
+    | DecidabilityIndicesNotSupported ->
+         alarm what internal
+           (str "Inductive types with annotations not supported.")
     | ConstructorWithNonParametricInductiveType ind ->
          alarm what internal
            (strbrk "Unsupported constructor with an argument whose type is a non-parametric inductive type." ++

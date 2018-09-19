@@ -60,6 +60,7 @@ exception NonSingletonProp of inductive
 exception DecidabilityMutualNotSupported
 exception NoDecidabilityCoInductive
 exception ConstructorWithNonParametricInductiveType of inductive
+exception DecidabilityIndicesNotSupported
 
 let constr_of_global g = lazy (UnivGen.constr_of_global g)
 
@@ -121,6 +122,10 @@ let check_bool_is_defined () =
   try let _ = Global.type_of_global_in_context (Global.env ()) Coqlib.glob_bool in ()
   with e when CErrors.noncritical e -> raise (UndefinedCst "bool")
 
+let check_no_indices mib =
+  if Array.exists (fun mip -> mip.mind_nrealargs <> 0) mib.mind_packets then
+    raise DecidabilityIndicesNotSupported
+
 let beq_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
 let build_beq_scheme mode kn =
@@ -134,6 +139,7 @@ let build_beq_scheme mode kn =
   (* number of params in the type *)
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
+  check_no_indices mib;
   (* params context divided *)
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
