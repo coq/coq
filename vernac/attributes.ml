@@ -24,8 +24,16 @@ type t = {
   deprecated : deprecation option;
 }
 
-let mk_atts ?(locality=None) ?(polymorphic=false) ?(template=None) ?(program=false) ?(deprecated=None) () =
-  { locality ; polymorphic ; program ; deprecated; template }
+let default = {
+  locality = None;
+  polymorphic = false;
+  template = None;
+  program = false;
+  deprecated = None;
+}
+
+let mk_atts ?(polymorphic=default.polymorphic) ?(program=default.program) () =
+  { default with polymorphic; program }
 
 let attributes_of_flags f atts =
   let assert_empty k v =
