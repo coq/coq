@@ -13,7 +13,6 @@ DECLARE PLUGIN "numeral_notation_plugin"
 open Numeral
 open Pp
 open Names
-open Vernacinterp
 open Ltac_plugin
 open Stdarg
 open Pcoq.Prim
@@ -33,5 +32,5 @@ END
 VERNAC COMMAND EXTEND NumeralNotation CLASSIFIED AS SIDEFF
   | [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
       ident(sc) numnotoption(o) ] ->
-    [ vernac_numeral_notation (Locality.make_module_locality atts.locality) ty f g (Id.to_string sc) o ]
+    [ vernac_numeral_notation (Locality.make_module_locality (Attributes.locality atts)) ty f g (Id.to_string sc) o ]
 END

@@ -42,7 +42,7 @@ let romega_tactic unsafe l =
        (total_reflexive_omega_tactic unsafe))
 
 let romega_depr =
-  Vernacinterp.mk_deprecation
+  Attributes.mk_deprecation
     ~since:(Some "8.9")
     ~note:(Some "Use lia instead.")
     ()

@@ -27,7 +27,6 @@ open Equality
 open Namegen
 open Tactypes
 open Proofview.Notations
-open Vernacinterp
 
 DECLARE PLUGIN "ltac_plugin"
 
@@ -275,14 +274,14 @@ let classify_hint _ = Vernacexpr.VtSideff [], Vernacexpr.VtLater
 
 VERNAC COMMAND FUNCTIONAL EXTEND HintRewrite CLASSIFIED BY classify_hint
   [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
-  [ fun ~atts ~st -> add_rewrite_hint ~poly:atts.polymorphic bl o None l; st ]
+  [ fun ~atts ~st -> add_rewrite_hint ~poly:(Attributes.polymorphic atts) bl o None l; st ]
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
     ":" preident_list(bl) ] ->
-  [ fun ~atts ~st -> add_rewrite_hint ~poly:atts.polymorphic bl o (Some t) l; st ]
+  [ fun ~atts ~st -> add_rewrite_hint ~poly:(Attributes.polymorphic atts) bl o (Some t) l; st ]
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
-  [ fun ~atts ~st -> add_rewrite_hint ~poly:atts.polymorphic ["core"] o None l; st ]
+  [ fun ~atts ~st -> add_rewrite_hint ~poly:(Attributes.polymorphic atts) ["core"] o None l; st ]
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
-  [ fun ~atts ~st -> add_rewrite_hint ~poly:atts.polymorphic ["core"] o (Some t) l; st ]
+  [ fun ~atts ~st -> add_rewrite_hint ~poly:(Attributes.polymorphic atts) ["core"] o (Some t) l; st ]
 END
 
 (**********************************************************************)
@@ -359,42 +358,36 @@ VERNAC COMMAND FUNCTIONAL EXTEND DeriveInversionClear
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [ fun ~atts ~st ->
-      let open Vernacinterp in
-      add_inversion_lemma_exn ~poly:atts.polymorphic na c s false inv_clear_tac; st ]
+      add_inversion_lemma_exn ~poly:(Attributes.polymorphic atts) na c s false inv_clear_tac; st ]
 
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => [ seff na ]
   -> [ fun ~atts ~st ->
-      let open Vernacinterp in
-      add_inversion_lemma_exn ~poly:atts.polymorphic na c Sorts.InProp false inv_clear_tac; st ]
+      add_inversion_lemma_exn ~poly:(Attributes.polymorphic atts) na c Sorts.InProp false inv_clear_tac; st ]
 END
 
 VERNAC COMMAND FUNCTIONAL EXTEND DeriveInversion
 | [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [ fun ~atts ~st ->
-      let open Vernacinterp in
-      add_inversion_lemma_exn ~poly:atts.polymorphic na c s false inv_tac; st ]
+      add_inversion_lemma_exn ~poly:(Attributes.polymorphic atts) na c s false inv_tac; st ]
 
 | [ "Derive" "Inversion" ident(na) "with" constr(c) ] => [ seff na ]
   -> [ fun ~atts ~st ->
-      let open Vernacinterp in
-      add_inversion_lemma_exn ~poly:atts.polymorphic na c Sorts.InProp false inv_tac; st ]
+      add_inversion_lemma_exn ~poly:(Attributes.polymorphic atts) na c Sorts.InProp false inv_tac; st ]
 END
 
 VERNAC COMMAND FUNCTIONAL EXTEND DeriveDependentInversion
 | [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [  fun ~atts ~st ->
-      let open Vernacinterp in
-      add_inversion_lemma_exn ~poly:atts.polymorphic na c s true dinv_tac; st ]
+      add_inversion_lemma_exn ~poly:(Attributes.polymorphic atts) na c s true dinv_tac; st ]
 END
 
 VERNAC COMMAND FUNCTIONAL EXTEND DeriveDependentInversionClear
 | [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [  fun ~atts ~st ->
-      let open Vernacinterp in
-      add_inversion_lemma_exn ~poly:atts.polymorphic na c s true dinv_clear_tac; st ]
+      add_inversion_lemma_exn ~poly:(Attributes.polymorphic atts) na c s true dinv_clear_tac; st ]
 END
 
 (**********************************************************************)

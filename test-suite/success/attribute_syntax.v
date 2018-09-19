@@ -1,4 +1,4 @@
-From Coq Require Program.
+From Coq Require Program.Wf.
 
 Section Scope.
 
