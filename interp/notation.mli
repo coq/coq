@@ -99,6 +99,37 @@ val register_bignumeral_interpretation :
 val register_string_interpretation :
   ?allow_overwrite:bool -> prim_token_uid -> string prim_token_interpretation -> unit
 
+(** * Numeral notation *)
+
+type numnot_option =
+  | Nop
+  | Warning of raw_natural_number
+  | Abstract of raw_natural_number
+
+type int_ty =
+  { uint : Names.inductive;
+    int : Names.inductive }
+
+type z_pos_ty =
+  { z_ty : Names.inductive;
+    pos_ty : Names.inductive }
+
+type target_kind =
+  | Int of int_ty (* Coq.Init.Decimal.int + uint *)
+  | UInt of Names.inductive (* Coq.Init.Decimal.uint *)
+  | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
+
+type option_kind = Option | Direct
+type conversion_kind = target_kind * option_kind
+
+type numeral_notation_obj =
+  { to_kind : conversion_kind;
+    to_ty : GlobRef.t;
+    of_kind : conversion_kind;
+    of_ty : GlobRef.t;
+    num_ty : Libnames.qualid; (* for warnings / error messages *)
+    warning : numnot_option }
+
 type prim_token_infos = {
   pt_local : bool; (** Is this interpretation local? *)
   pt_scope : scope_name; (** Concerned scope *)

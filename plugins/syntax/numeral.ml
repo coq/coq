@@ -16,6 +16,7 @@ open Globnames
 open Constrexpr
 open Constrexpr_ops
 open Constr
+open Notation
 
 (** * Numeral notation *)
 
@@ -96,10 +97,6 @@ let rec rawnum_compare s s' =
 
 (** ** Conversion between Coq [Decimal.int] and internal raw string *)
 
-type int_ty =
-  { uint : Names.inductive;
-    int : Names.inductive }
-
 (** Decimal.Nil has index 1, then Decimal.D0 has index 2 .. Decimal.D9 is 11 *)
 
 let digit_of_char c =
@@ -157,10 +154,6 @@ let rawnum_of_coqint c =
 (***********************************************************************)
 
 (** ** Conversion between Coq [Z] and internal bigint *)
-
-type z_pos_ty =
-  { z_ty : Names.inductive;
-    pos_ty : Names.inductive }
 
 (** First, [positive] from/to bigint *)
 
@@ -272,27 +265,6 @@ let big2raw n =
 
 let raw2big (n,s) =
   if s then Bigint.of_string n else Bigint.neg (Bigint.of_string n)
-
-type target_kind =
-  | Int of int_ty (* Coq.Init.Decimal.int + uint *)
-  | UInt of Names.inductive (* Coq.Init.Decimal.uint *)
-  | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
-
-type option_kind = Option | Direct
-type conversion_kind = target_kind * option_kind
-
-type numnot_option =
-  | Nop
-  | Warning of raw_natural_number
-  | Abstract of raw_natural_number
-
-type numeral_notation_obj =
-  { to_kind : conversion_kind;
-    to_ty : GlobRef.t;
-    of_kind : conversion_kind;
-    of_ty : GlobRef.t;
-    num_ty : Libnames.qualid; (* for warnings / error messages *)
-    warning : numnot_option }
 
 let interp o ?loc n =
   begin match o.warning with

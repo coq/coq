@@ -9,14 +9,9 @@
 (************************************************************************)
 
 open Libnames
-open Constrexpr
 open Vernacexpr
+open Notation
 
 (** * Numeral notation *)
-
-type numnot_option =
-  | Nop
-  | Warning of raw_natural_number
-  | Abstract of raw_natural_number
 
 val vernac_numeral_notation : locality_flag -> qualid -> qualid -> qualid -> Notation_term.scope_name -> numnot_option -> unit
