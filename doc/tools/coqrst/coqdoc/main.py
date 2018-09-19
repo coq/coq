@@ -35,7 +35,7 @@ COQDOC_HEADER = "".join("(** remove printing {} *)".format(s) for s in COQDOC_SY
 
 def coqdoc(coq_code, coqdoc_bin=None):
     """Get the output of coqdoc on coq_code."""
-    coqdoc_bin = coqdoc_bin or os.path.join(os.getenv("COQBIN"), "coqdoc")
+    coqdoc_bin = coqdoc_bin or os.path.join(os.getenv("COQBIN", ""), "coqdoc")
     fd, filename = mkstemp(prefix="coqdoc-", suffix=".v")
     if platform.system().startswith("CYGWIN"):
         # coqdoc currently doesn't accept cygwin style paths in the form "/cygdrive/c/..."

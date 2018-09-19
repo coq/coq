@@ -9,7 +9,7 @@ stages:
 variables:
   # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
   # for reference]
-  CACHEKEY: "bionic_coq-V2018-11-08-V1"
+  CACHEKEY: "bionic_coq-V2018-12-05-V1"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -89,18 +89,37 @@ after_script:
 
     - set +e
 
+# Template for building Coq + stdlib, typical use: overload the switch
 .dune-template: &dune-template
-  dependencies: []
   stage: build
+  dependencies: []
+  script:
+    - set -e
+    - make -f Makefile.dune world
+    - set +e
+  variables:
+    OPAM_SWITCH: edge
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
       - _build/
     expire_in: 1 week
+
+.dune-ci-template: &dune-ci-template
+  stage: test
+  dependencies:
+    - build:egde:dune:dev
   script:
     - set -e
+    - echo 'start:coq.test'
     - make -f Makefile.dune "$DUNE_TARGET"
+    - echo 'end:coq.test'
     - set +e
+  variables: &dune-ci-template-vars
+    OPAM_SWITCH: edge
+  artifacts: &dune-ci-template-artifacts
+    name: "$CI_JOB_NAME"
+    expire_in: 1 month
 
 # every non build job must set dependencies otherwise all build
 # artifacts are used together and we may get some random Coq. To that
@@ -221,9 +240,6 @@ build:edge+flambda:
 
 build:egde:dune:dev:
   <<: *dune-template
-  variables:
-    OPAM_SWITCH: edge
-    DUNE_TARGET: world
 
 build:base+async:
   <<: *build-template
@@ -291,15 +307,23 @@ doc:refman:
   dependencies:
     - build:base
 
-doc:ml-api:odoc:
-  stage: test
-  dependencies:
-    - build:egde:dune:dev
-  script: make -f Makefile.dune apidoc
+doc:refman:dune:
+  <<: *dune-ci-template
   variables:
-    OPAM_SWITCH: edge
+    <<: *dune-ci-template-vars
+    DUNE_TARGET: refman-html
   artifacts:
-    name: "$CI_JOB_NAME"
+    <<: *dune-ci-template-artifacts
+    paths:
+      - _build/default/doc/sphinx_build/html
+
+doc:ml-api:odoc:
+  <<: *dune-ci-template
+  variables:
+    <<: *dune-ci-template-vars
+    DUNE_TARGET: apidoc
+  artifacts:
+    <<: *dune-ci-template-artifacts
     paths:
       - _build/default/_doc/
 
