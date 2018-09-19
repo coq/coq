@@ -139,6 +139,11 @@ type numeral_notation_obj =
     num_ty : Libnames.qualid; (* for warnings / error messages *)
     warning : numnot_option }
 
+module Numeral : sig
+  val interp : numeral_notation_obj -> rawnum prim_token_interpreter
+  val uninterp : numeral_notation_obj -> rawnum prim_token_uninterpreter
+end
+
 type prim_token_infos = {
   pt_local : bool; (** Is this interpretation local? *)
   pt_scope : scope_name; (** Concerned scope *)
