@@ -125,7 +125,7 @@ bind_univs.poly@{u} = Type@{u}
 
 bind_univs.poly is universe polymorphic
 insec@{v} = Type@{u} -> Type@{v}
-     : Type@{max(v+1,u+1)}
+     : Type@{max(u+1,v+1)}
 (* v |=  *)
 
 insec is universe polymorphic
