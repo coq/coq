@@ -234,8 +234,7 @@ let check_subtyping cumi paramsctxt env_ar inds =
     let instance_other = Instance.of_array new_levels in
     let constraints_other = Univ.subst_univs_level_constraints lmap (Univ.UContext.constraints uctx) in
     let uctx_other = Univ.UContext.make (instance_other, constraints_other) in
-    let env = Environ.push_context uctx env_ar in
-    let env = Environ.push_context uctx_other env in
+    let env = Environ.push_context uctx_other env_ar in
     let subtyp_constraints =
       CumulativityInfo.leq_constraints cumi
         (UContext.instance uctx) instance_other

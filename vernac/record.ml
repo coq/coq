@@ -487,10 +487,11 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
       let cst = Declare.declare_constant id
 	(DefinitionEntry class_entry, IsDefinition Definition)
       in
-      let cstu = (cst, match univs with
-        | Polymorphic_const_entry univs -> Univ.UContext.instance univs
-        | Monomorphic_const_entry _ -> Univ.Instance.empty)
+      let inst, univs = match univs with
+        | Polymorphic_const_entry uctx -> Univ.UContext.instance uctx, univs
+        | Monomorphic_const_entry _ -> Univ.Instance.empty, Monomorphic_const_entry Univ.ContextSet.empty
       in
+      let cstu = (cst, inst) in
       let inst_type = appvectc (mkConstU cstu)
 			       (Termops.rel_vect 0 (List.length params)) in
       let proj_type =
