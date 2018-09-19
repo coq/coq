@@ -25,7 +25,7 @@ val read : 'a attribute -> t -> 'a option
 
 val mk_atts :
   ?polymorphic: bool ->
-  ?program: bool -> unit -> t
+  unit -> t
 
 val attributes_of_flags : Vernacexpr.vernac_flags -> t ->
   bool option (* polymorphism attr *) * t
@@ -47,7 +47,7 @@ val register_attribute : name:string -> 'a flag_parser CString.Map.t ->
 val locality : t -> bool option
 val polymorphic : t -> bool
 val template : t -> bool option
-val program : t -> bool
+val program : t -> bool option
 val deprecated : t -> deprecation option
 
 val set_polymorphic : t -> bool -> t

@@ -24,17 +24,10 @@ let known_parsers : attr_parser CString.Map.t ref = ref CString.Map.empty
 
 type t = {
   polymorphic : bool;
-  program : bool;
   extra : Store.t;
 }
 
 let read field atts = Store.get atts.extra field
-
-let default = {
-  polymorphic = false;
-  program = false;
-  extra = Store.empty;
-}
 
 let check_parser_collision new_parsers =
   (* TODO check core parsers *)
@@ -53,10 +46,6 @@ let register_attribute ~name (parsers : 'a flag_parser CString.Map.t) =
   field
 
 let polymorphic {polymorphic;_} = polymorphic
-let program {program;_} = program
-
-let mk_atts ?(polymorphic=default.polymorphic) ?(program=default.program) () =
-  { default with polymorphic; program }
 
 let set_polymorphic atts polymorphic = {atts with polymorphic}
 
@@ -68,11 +57,6 @@ let attributes_of_flags f atts =
   List.fold_left
     (fun (polymorphism, atts) (k, v) ->
        match k with
-       | "program" when not atts.program ->
-         assert_empty k v;
-         (polymorphism, { atts with program = true })
-       | "program" ->
-         user_err Pp.(str "Program mode specified twice")
        | "polymorphic" when polymorphism = None ->
          assert_empty k v;
          (Some true, atts)
@@ -136,3 +120,11 @@ let deprecated =
   in
   let name = "Deprecation" in
   read (register_attribute ~name (CString.Map.singleton "deprecated" (once_parser ~name parser)))
+
+let program =
+  let name = "Program mode" in
+  let parsers = make_empty_parsers ~name [("program", true)] in
+  read (register_attribute ~name parsers)
+
+let mk_atts ?(polymorphic=false) () =
+  { polymorphic; extra = Store.empty}

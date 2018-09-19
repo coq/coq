@@ -2351,7 +2351,7 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
   let orig_program_mode = Flags.is_program_mode () in
   let rec control = function
   | VernacExpr (f, v) ->
-    let (polymorphism, atts) = attributes_of_flags f (mk_atts ~program:orig_program_mode ()) in
+    let (polymorphism, atts) = attributes_of_flags f (mk_atts ()) in
     aux ~polymorphism ~atts v
   | VernacFail v -> with_fail st true (fun () -> control v)
   | VernacTimeout (n,v) ->
@@ -2371,8 +2371,9 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
       check_vernac_supports_locality c (Attributes.locality atts);
       check_vernac_supports_polymorphism c polymorphism;
       let polymorphic = Option.default (Flags.is_universe_polymorphism ()) polymorphism in
+      let program = Option.default orig_program_mode (Attributes.program atts) in
       Flags.make_universe_polymorphism polymorphic;
-      Obligations.set_program_mode (Attributes.program atts);
+      Obligations.set_program_mode program;
       try
         vernac_timeout begin fun () ->
           let atts = Attributes.set_polymorphic atts polymorphic in
@@ -2381,7 +2382,7 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
           else Flags.silently  (interp ?proof ~atts ~st) c;
           (* If the command is `(Un)Set Program Mode` or `(Un)Set Universe Polymorphism`,
              we should not restore the previous state of the flag... *)
-          if orig_program_mode || not !Flags.program_mode || (Attributes.program atts) then
+          if orig_program_mode || not !Flags.program_mode || program then
             Flags.program_mode := orig_program_mode;
           if (Flags.is_universe_polymorphism() = polymorphic) then
             Flags.make_universe_polymorphism orig_univ_poly;
