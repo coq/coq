@@ -63,14 +63,14 @@ let warn_abstract_large_num =
     (fun (ty,f) ->
       strbrk "To avoid stack overflow, large numbers in " ++
       pr_qualid ty ++ strbrk " are interpreted as applications of " ++
-      Printer.pr_global_env (Termops.vars_of_env (Global.env ())) f ++ strbrk ".")
+      Nametab.pr_global_env (Termops.vars_of_env (Global.env ())) f ++ strbrk ".")
 
 let warn_abstract_large_num_no_op =
   CWarnings.create ~name:"abstract-large-number-no-op" ~category:"numbers"
     (fun f ->
       strbrk "The 'abstract after' directive has no effect when " ++
       strbrk "the parsing function (" ++
-      Printer.pr_global_env (Termops.vars_of_env (Global.env ())) f ++ strbrk ") targets an " ++
+      Nametab.pr_global_env (Termops.vars_of_env (Global.env ())) f ++ strbrk ") targets an " ++
       strbrk "option type.")
 
 (** Comparing two raw numbers (base 10, big-endian, non-negative).
@@ -224,35 +224,27 @@ let rec constr_of_glob env sigma g = match DAst.get g with
   | _ ->
       raise NotANumber
 
-let rec glob_of_constr ?loc c = match Constr.kind c with
+let rec glob_of_constr ?loc env sigma c = match Constr.kind c with
   | App (c, ca) ->
-      let c = glob_of_constr ?loc c in
-      let cel = List.map (glob_of_constr ?loc) (Array.to_list ca) in
+      let c = glob_of_constr ?loc env sigma c in
+      let cel = List.map (glob_of_constr ?loc env sigma) (Array.to_list ca) in
       DAst.make ?loc (Glob_term.GApp (c, cel))
   | Construct (c, _) -> DAst.make ?loc (Glob_term.GRef (ConstructRef c, None))
   | Const (c, _) -> DAst.make ?loc (Glob_term.GRef (ConstRef c, None))
   | Ind (ind, _) -> DAst.make ?loc (Glob_term.GRef (IndRef ind, None))
   | Var id -> DAst.make ?loc (Glob_term.GRef (VarRef id, None))
-  | _ -> let (sigma, env) = Pfedit.get_current_context () in
-         CErrors.user_err ?loc
-           (strbrk "Unexpected term " ++
-              Printer.pr_constr_env env sigma c ++
-              strbrk " while parsing a numeral notation.")
+  | _ -> Loc.raise ?loc (NumeralNotationError(env,sigma,UnexpectedTerm c))
 
 let no_such_number ?loc ty =
   CErrors.user_err ?loc
    (str "Cannot interpret this number as a value of type " ++
     pr_qualid ty)
 
-let interp_option ty ?loc c =
+let interp_option ty ?loc env sigma c =
   match Constr.kind c with
-  | App (_Some, [| _; c |]) -> glob_of_constr ?loc c
+  | App (_Some, [| _; c |]) -> glob_of_constr ?loc env sigma c
   | App (_None, [| _ |]) -> no_such_number ?loc ty
-  | x -> let (sigma, env) = Pfedit.get_current_context () in
-         CErrors.user_err ?loc
-          (strbrk "Unexpected non-option term " ++
-             Printer.pr_constr_env env sigma c ++
-             strbrk " while parsing a numeral notation.")
+  | x -> Loc.raise ?loc (NumeralNotationError(env,sigma,UnexpectedNonOptionTerm c))
 
 let uninterp_option c =
   match Constr.kind c with
@@ -285,12 +277,12 @@ let interp o ?loc n =
   match o.warning, snd o.to_kind with
   | Abstract threshold, Direct when rawnum_compare (fst n) threshold >= 0 ->
      warn_abstract_large_num (o.num_ty,o.to_ty);
-     glob_of_constr ?loc (mkApp (to_ty,[|c|]))
+     glob_of_constr ?loc env sigma (mkApp (to_ty,[|c|]))
   | _ ->
      let res = eval_constr_app env sigma to_ty c in
      match snd o.to_kind with
-     | Direct -> glob_of_constr ?loc res
-     | Option -> interp_option o.num_ty ?loc res
+     | Direct -> glob_of_constr ?loc env sigma res
+     | Option -> interp_option o.num_ty ?loc env sigma res
 
 let uninterp o (Glob_term.AnyGlobConstr n) =
   let env = Global.env () in

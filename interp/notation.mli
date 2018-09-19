@@ -101,6 +101,12 @@ val register_string_interpretation :
 
 (** * Numeral notation *)
 
+type numeral_notation_error =
+  | UnexpectedTerm of Constr.t
+  | UnexpectedNonOptionTerm of Constr.t
+
+exception NumeralNotationError of Environ.env * Evd.evar_map * numeral_notation_error
+
 type numnot_option =
   | Nop
   | Warning of raw_natural_number
