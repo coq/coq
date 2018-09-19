@@ -13,7 +13,7 @@ DECLARE PLUGIN "numeral_notation_plugin"
 open Numeral
 open Pp
 open Names
-open Vernacinterp
+open Attributes
 open Ltac_plugin
 open Stdarg
 open Pcoq.Prim

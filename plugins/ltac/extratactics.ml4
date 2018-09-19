@@ -27,7 +27,7 @@ open Equality
 open Namegen
 open Tactypes
 open Proofview.Notations
-open Vernacinterp
+open Attributes
 
 DECLARE PLUGIN "ltac_plugin"
 
@@ -359,12 +359,10 @@ VERNAC COMMAND FUNCTIONAL EXTEND DeriveInversionClear
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [ fun ~atts ~st ->
-      let open Vernacinterp in
       add_inversion_lemma_exn ~poly:atts.polymorphic na c s false inv_clear_tac; st ]
 
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => [ seff na ]
   -> [ fun ~atts ~st ->
-      let open Vernacinterp in
       add_inversion_lemma_exn ~poly:atts.polymorphic na c Sorts.InProp false inv_clear_tac; st ]
 END
 
@@ -372,12 +370,10 @@ VERNAC COMMAND FUNCTIONAL EXTEND DeriveInversion
 | [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [ fun ~atts ~st ->
-      let open Vernacinterp in
       add_inversion_lemma_exn ~poly:atts.polymorphic na c s false inv_tac; st ]
 
 | [ "Derive" "Inversion" ident(na) "with" constr(c) ] => [ seff na ]
   -> [ fun ~atts ~st ->
-      let open Vernacinterp in
       add_inversion_lemma_exn ~poly:atts.polymorphic na c Sorts.InProp false inv_tac; st ]
 END
 
@@ -385,7 +381,6 @@ VERNAC COMMAND FUNCTIONAL EXTEND DeriveDependentInversion
 | [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [  fun ~atts ~st ->
-      let open Vernacinterp in
       add_inversion_lemma_exn ~poly:atts.polymorphic na c s true dinv_tac; st ]
 END
 
@@ -393,7 +388,6 @@ VERNAC COMMAND FUNCTIONAL EXTEND DeriveDependentInversionClear
 | [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [  fun ~atts ~st ->
-      let open Vernacinterp in
       add_inversion_lemma_exn ~poly:atts.polymorphic na c s true dinv_clear_tac; st ]
 END
 

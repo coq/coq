@@ -31,6 +31,7 @@ open Redexpr
 open Lemmas
 open Locality
 open Vernacinterp
+open Attributes
 
 module NamedDecl = Context.Named.Declaration
 
@@ -2086,7 +2087,6 @@ let vernac_load interp fname =
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
 let interp ?proof ~atts ~st c =
-  let open Vernacinterp in
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
 
@@ -2481,7 +2481,7 @@ open Extend
 type classifier = Genarg.raw_generic_argument list -> vernac_classification
 
 type (_, _) ty_sig =
-| TyNil : (atts:atts -> st:Vernacstate.t -> Vernacstate.t, Vernacexpr.vernac_classification) ty_sig
+| TyNil : (atts:Attributes.t -> st:Vernacstate.t -> Vernacstate.t, Vernacexpr.vernac_classification) ty_sig
 | TyTerminal : string * ('r, 's) ty_sig -> ('r, 's) ty_sig
 | TyNonTerminal :
   string option * ('a, 'b, 'c) Extend.ty_user_symbol * ('r, 's) ty_sig -> ('a -> 'r, 'a -> 's) ty_sig

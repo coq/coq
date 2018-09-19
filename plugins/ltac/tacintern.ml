@@ -121,15 +121,15 @@ let warn_deprecated_tactic =
   CWarnings.create ~name:"deprecated-tactic" ~category:"deprecated"
     (fun (qid,depr) -> str "Tactic " ++ pr_qualid qid ++
       strbrk " is deprecated" ++
-      pr_opt (fun since -> str "since " ++ str since) depr.Vernacinterp.since ++
-      str "." ++ pr_opt (fun note -> str note) depr.Vernacinterp.note)
+      pr_opt (fun since -> str "since " ++ str since) depr.Attributes.since ++
+      str "." ++ pr_opt (fun note -> str note) depr.Attributes.note)
 
 let warn_deprecated_alias =
   CWarnings.create ~name:"deprecated-tactic-notation" ~category:"deprecated"
     (fun (kn,depr) -> str "Tactic Notation " ++ Pptactic.pr_alias_key kn ++
       strbrk " is deprecated since" ++
-      pr_opt (fun since -> str "since " ++ str since) depr.Vernacinterp.since ++
-      str "." ++ pr_opt (fun note -> str note) depr.Vernacinterp.note)
+      pr_opt (fun since -> str "since " ++ str since) depr.Attributes.since ++
+      str "." ++ pr_opt (fun note -> str note) depr.Attributes.note)
 
 let intern_isolated_global_tactic_reference qid =
   let loc = qid.CAst.loc in

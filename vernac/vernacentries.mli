@@ -41,14 +41,14 @@ val universe_polymorphism_option_name : string list
 
 (** Elaborate a [atts] record out of a list of flags.
     Also returns whether polymorphism is explicitly (un)set. *)
-val attributes_of_flags : Vernacexpr.vernac_flags -> Vernacinterp.atts -> bool option * Vernacinterp.atts
+val attributes_of_flags : Vernacexpr.vernac_flags -> Attributes.t -> bool option * Attributes.t
 
 (** {5 VERNAC EXTEND} *)
 
 type classifier = Genarg.raw_generic_argument list -> Vernacexpr.vernac_classification
 
 type (_, _) ty_sig =
-| TyNil : (atts:Vernacinterp.atts -> st:Vernacstate.t -> Vernacstate.t, Vernacexpr.vernac_classification) ty_sig
+| TyNil : (atts:Attributes.t -> st:Vernacstate.t -> Vernacstate.t, Vernacexpr.vernac_classification) ty_sig
 | TyTerminal : string * ('r, 's) ty_sig -> ('r, 's) ty_sig
 | TyNonTerminal :
   string option *

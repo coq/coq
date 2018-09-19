@@ -218,7 +218,7 @@ END
 VERNAC COMMAND FUNCTIONAL EXTEND HintCut CLASSIFIED AS SIDEFF
 | [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> [
     fun ~atts ~st -> begin
-        let open Vernacinterp in
+        let open Attributes in
         let entry = Hints.HintsCutEntry (Hints.glob_hints_path p) in
         Hints.add_hints ~local:(Locality.make_section_locality atts.locality)
           (match dbnames with None -> ["core"] | Some l -> l) entry;
