@@ -200,6 +200,7 @@ let build_beq_scheme mode kn =
         match Constr.kind c with
         | Rel x -> mkRel (x-nlist+ndx), Safe_typing.empty_private_constants
         | Var x ->
+          (* Support for working in a context with "eq_x : x -> x -> bool" *)
           let eid = Id.of_string ("eq_"^(Id.to_string x)) in
           let () =
             try ignore (Environ.lookup_named eid env)
@@ -232,9 +233,17 @@ let build_beq_scheme mode kn =
         | Lambda _-> raise (EqUnknown "abstraction")
         | LetIn _ -> raise (EqUnknown "let-in")
         | Const (kn, u) ->
-	    (match Environ.constant_opt_value_in env (kn, u) with
-	      | None -> raise (ParameterWithoutEquality (ConstRef kn))
-              | Some c -> aux (Term.applist (c,a)))
+             (match Environ.constant_opt_value_in env (kn, u) with
+              | Some c -> aux (Term.applist (c,a))
+              | None ->
+                 (* Support for working in a context with "eq_x : x -> x -> bool" *)
+                 (* Needs Hints, see test suite *)
+                 let eq_lbl = Label.make ("eq_" ^ Label.to_string (Constant.label kn)) in
+                 let kneq = Constant.change_label kn eq_lbl in
+                 try let _ = Environ.constant_opt_value_in env (kneq, u) in
+                   Term.applist (mkConst kneq,a),
+                   Safe_typing.empty_private_constants
+                 with Not_found -> raise (ParameterWithoutEquality (ConstRef kn)))
         | Proj _ -> raise (EqUnknown "projection")
         | Construct _ -> raise (EqUnknown "constructor")
         | Case _ -> raise (EqUnknown "match")
