@@ -348,13 +348,10 @@ let _ = beq_scheme_kind_aux := fun () -> beq_scheme_kind
 (* This function tryies to get the [inductive] between a constr
   the constr should be Ind i or App(Ind i,[|args|])
 *)
-let destruct_ind sigma c =
+let destruct_ind env sigma c =
   let open EConstr in
-    try let u,v =  destApp sigma c in
-          let indc = destInd sigma u in
-            indc,v
-    with DestKO -> let indc = destInd sigma c in
-            indc,[||]
+  let (c,v) = Reductionops.whd_all_stack env sigma c in
+  destInd sigma c, Array.of_list v
 
 (*
   In the following, avoid is the list of names to avoid.
@@ -397,7 +394,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
     let type_of_pq = Tacmach.New.pf_unsafe_type_of gl p in
     let sigma = Tacmach.New.project gl in
     let env = Tacmach.New.pf_env gl in
-    let u,v = destruct_ind sigma type_of_pq
+    let u,v = destruct_ind env sigma type_of_pq
     in let lb_type_of_p =
         try
           let c, eff = find_scheme ~mode lb_scheme_key (fst u) (*FIXME*) in
@@ -464,7 +461,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
         let env = Tacmach.New.pf_env gl in
         if EConstr.eq_constr sigma t1 t2 then aux q1 q2
         else (
-          let u,v = try destruct_ind sigma tt1
+          let u,v = try destruct_ind env sigma tt1
           (* trick so that the good sequence is returned*)
                 with e when CErrors.noncritical e -> indu,[||]
           in if eq_ind (fst u) ind
