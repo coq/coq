@@ -2109,7 +2109,6 @@ let vernac_load interp fname =
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
 let interp ?proof ~atts ~st c =
-  vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
 
   (* Loading a file requires access to the control interpreter *)
@@ -2259,11 +2258,7 @@ let interp ?proof ~atts ~st c =
     Option.iter vernac_set_used_variables using
   | VernacProofMode mn -> Proof_global.set_proof_mode mn [@ocaml.warning "-3"]
 
-  (* Extensions *)
-  | VernacExtend (opn,args) ->
-    (* XXX: Here we are returning the state! :) *)
-    let _st : Vernacstate.t = Vernacinterp.call ~atts opn args ~st in
-    ()
+  | VernacExtend _ -> assert false
 
 (* Vernaculars that take a locality flag *)
 let check_vernac_supports_locality c l =
@@ -2290,6 +2285,21 @@ let check_vernac_supports_locality c l =
     | VernacRegister _
     | VernacInductive _) -> ()
   | Some _, _ -> user_err Pp.(str "This command does not support Locality")
+
+
+let interp  ?proof ~atts ~st c =
+  vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
+  match c with
+  (* Extensions *)
+  | VernacExtend (opn,args) ->
+    (* XXX: Here we are returning the state! :) *)
+    let _st : Vernacstate.t = Vernacinterp.call ~atts opn args ~st in
+    ()
+
+  | _ ->
+    let atts = Attributes.attributes_of_flags atts in
+    check_vernac_supports_locality c atts.locality;
+    interp ?proof ~atts ~st c
 
 (* Vernaculars that take a polymorphism flag *)
 let check_vernac_supports_polymorphism c p =
@@ -2374,9 +2384,8 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
   let orig_univ_poly = Flags.is_universe_polymorphism () in
   let orig_program_mode = Flags.is_program_mode () in
   let rec control = function
-  | VernacExpr (f, v) ->
-    let (polymorphism, atts) = attributes_of_flags f (mk_atts ~program:orig_program_mode ()) in
-    aux ~polymorphism ~atts v
+  | VernacExpr (atts, v) ->
+    aux ~atts v
   | VernacFail v -> with_fail st true (fun () -> control v)
   | VernacTimeout (n,v) ->
     current_timeout := Some n;
@@ -2386,28 +2395,28 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
   | VernacTime (batch, {v}) ->
     System.with_time ~batch control v;
 
-  and aux ~polymorphism ~atts : _ -> unit =
+  and aux ~atts : _ -> unit =
     function
 
     | VernacLoad (_,fname) -> vernac_load control fname
 
     | c ->
-      check_vernac_supports_locality c atts.locality;
-      check_vernac_supports_polymorphism c polymorphism;
-      let polymorphic = Option.default (Flags.is_universe_polymorphism ()) polymorphism in
-      Flags.make_universe_polymorphism polymorphic;
-      Obligations.set_program_mode atts.program;
+      let poly, program = Attributes.(parse_drop_extra Notations.(polymorphic ++ program) atts) in
+      (* NB: we keep polymorphism and program in the attributes, we're
+         just parsing them to do our option magic. *)
+      check_vernac_supports_polymorphism c poly;
+      Option.iter Flags.make_universe_polymorphism poly;
+      Option.iter Obligations.set_program_mode program;
       try
         vernac_timeout begin fun () ->
-          let atts = { atts with polymorphic } in
           if verbosely
           then Flags.verbosely (interp ?proof ~atts ~st) c
           else Flags.silently  (interp ?proof ~atts ~st) c;
           (* If the command is `(Un)Set Program Mode` or `(Un)Set Universe Polymorphism`,
              we should not restore the previous state of the flag... *)
-          if orig_program_mode || not !Flags.program_mode || atts.program then
+          if Option.has_some program then
             Flags.program_mode := orig_program_mode;
-          if (Flags.is_universe_polymorphism() = polymorphic) then
+          if Option.has_some poly then
             Flags.make_universe_polymorphism orig_univ_poly;
           end
         with
@@ -2446,7 +2455,7 @@ open Extend
 type classifier = Genarg.raw_generic_argument list -> vernac_classification
 
 type (_, _) ty_sig =
-| TyNil : (atts:Attributes.t -> st:Vernacstate.t -> Vernacstate.t, Vernacexpr.vernac_classification) ty_sig
+| TyNil : (atts:Vernacexpr.vernac_flags -> st:Vernacstate.t -> Vernacstate.t, Vernacexpr.vernac_classification) ty_sig
 | TyTerminal : string * ('r, 's) ty_sig -> ('r, 's) ty_sig
 | TyNonTerminal : ('a, 'b, 'c) Extend.ty_user_symbol * ('r, 's) ty_sig -> ('a -> 'r, 'a -> 's) ty_sig
 

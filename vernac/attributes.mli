@@ -8,9 +8,33 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Vernacexpr
+
+type 'a attribute
+(** The type of attributes. When parsing attributes if an ['a
+   attribute] is present then an ['a] value will be produced. *)
+
+val parse : 'a attribute -> vernac_flags -> 'a
+(** Errors on unsupported attributes. *)
+
+module Notations : sig
+  (** Notations to combine attributes. *)
+
+  val (++) : 'a attribute -> 'b attribute -> ('a * 'b) attribute
+  (** Combine 2 attributes. If any keys are in common an error will be raised. *)
+end
+
+(** Definitions for some standard attributes. *)
+
 type deprecation = { since : string option ; note : string option }
 
 val mk_deprecation : ?since: string option -> ?note: string option -> unit -> deprecation
+
+val polymorphic : bool option attribute
+val program : bool option attribute
+val template : bool option attribute
+val locality : bool option attribute
+val deprecation : deprecation option attribute
 
 type t = {
   locality : bool option;
@@ -19,10 +43,58 @@ type t = {
   program : bool;
   deprecated : deprecation option;
 }
+(** Some attributes gathered in a adhoc record. Will probably be
+   removed at some point. *)
 
-val mk_atts :
-  ?polymorphic: bool ->
-  ?program: bool -> unit -> t
+val attributes_of_flags : vernac_flags -> t
+(** Parse the attributes supported by type [t]. Errors on other
+   attributes. Polymorphism and Program use the global flags as
+   default values. *)
 
-val attributes_of_flags : Vernacexpr.vernac_flags -> t ->
-  bool option (* polymorphism attr *) * t
+val only_locality : vernac_flags -> bool option
+(** Parse attributes allowing only locality. *)
+
+val only_polymorphism : vernac_flags -> bool
+(** Parse attributes allowing only polymorphism.
+    Uses the global flag for the default value. *)
+
+val parse_drop_extra : 'a attribute -> vernac_flags -> 'a
+(** Ignores unsupported attributes. *)
+
+val parse_with_extra : 'a attribute -> vernac_flags -> 'a * vernac_flags
+(** Returns unsupported attributes. *)
+
+(** * Defining attributes. *)
+
+type 'a key_parser = 'a option -> Vernacexpr.vernac_flag_value -> 'a
+(** A parser for some key in an attribute. It is given a nonempty ['a
+    option] when the attribute is multiply set for some command.
+
+    eg in [#[polymorphic] Monomorphic Definition foo := ...], when
+   parsing [Monomorphic] it will be given [Some true]. *)
+
+val attribute_of_list : (string * 'a key_parser) list -> 'a option attribute
+(** Make an attribute from a list of key parsers together with their
+   associated key. *)
+
+val bool_attribute : name:string -> on:string -> off:string -> bool option attribute
+(** Define boolean attribute [name] with value [true] when [on] is
+   provided and [false] when [off] is provided. The attribute may only
+   be set once for a command. *)
+
+(** Combinators to help define your own parsers. See the
+   implementation of [bool_attribute] for practical use. *)
+
+val assert_empty : string -> vernac_flag_value -> unit
+(** [assert_empty key v] errors if [v] is not empty. [key] is used in
+   the error message as the name of the attribute. *)
+
+val assert_once : name:string -> 'a option -> unit
+(** [assert_once ~name v] errors if [v] is not empty. [name] is used
+   in the error message as the name of the attribute. Used to ensure
+   that a given attribute is not reapeated. *)
+
+val single_key_parser : name:string -> key:string -> 'a -> 'a key_parser
+(** [single_key_parser ~name ~key v] makes a parser for attribute
+    [name] giving the constant value [v] for key [key] taking no
+    arguments. [name] may only be given once. *)

@@ -10,7 +10,7 @@
 
 (** Interpretation of extended vernac phrases. *)
 
-type 'a vernac_command = 'a -> atts:Attributes.t -> st:Vernacstate.t -> Vernacstate.t
+type 'a vernac_command = 'a -> atts:Vernacexpr.vernac_flags -> st:Vernacstate.t -> Vernacstate.t
 
 type plugin_args = Genarg.raw_generic_argument list
 
@@ -18,4 +18,4 @@ val vinterp_init : unit -> unit
 val vinterp_add : bool -> Vernacexpr.extend_name -> plugin_args vernac_command -> unit
 val overwriting_vinterp_add : Vernacexpr.extend_name -> plugin_args vernac_command -> unit
 
-val call : Vernacexpr.extend_name -> plugin_args -> atts:Attributes.t -> st:Vernacstate.t -> Vernacstate.t
+val call : Vernacexpr.extend_name -> plugin_args -> atts:Vernacexpr.vernac_flags -> st:Vernacstate.t -> Vernacstate.t

@@ -12,7 +12,7 @@ open Util
 open Pp
 open CErrors
 
-type 'a vernac_command = 'a -> atts:Attributes.t -> st:Vernacstate.t -> Vernacstate.t
+type 'a vernac_command = 'a -> atts:Vernacexpr.vernac_flags -> st:Vernacstate.t -> Vernacstate.t
 
 type plugin_args = Genarg.raw_generic_argument list
 

@@ -44,7 +44,7 @@ val universe_polymorphism_option_name : string list
 type classifier = Genarg.raw_generic_argument list -> Vernacexpr.vernac_classification
 
 type (_, _) ty_sig =
-| TyNil : (atts:Attributes.t -> st:Vernacstate.t -> Vernacstate.t, Vernacexpr.vernac_classification) ty_sig
+| TyNil : (atts:Vernacexpr.vernac_flags -> st:Vernacstate.t -> Vernacstate.t, Vernacexpr.vernac_classification) ty_sig
 | TyTerminal : string * ('r, 's) ty_sig -> ('r, 's) ty_sig
 | TyNonTerminal :
   ('a, 'b, 'c) Extend.ty_user_symbol * ('r, 's) ty_sig ->
