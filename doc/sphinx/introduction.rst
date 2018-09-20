@@ -1,9 +1,3 @@
-.. _introduction:
-
-------------------------
-Introduction
-------------------------
-
 This document is the Reference Manual of the |Coq| proof assistant.
 To start using Coq, it is advised to first read a tutorial.
 Links to several tutorials can be found at
@@ -40,6 +34,11 @@ are processed from a file.
    or jsCoq to run Coq in your browser (see https://github.com/ejgallego/jscoq).
    The `coqtop` read-eval-print-loop can also be used directly, for debugging
    purposes.
+
+   .. [#PG] Proof-General is available at https://proofgeneral.github.io/.
+      Optionally, you can enhance it with the minor mode
+      Company-Coq :cite:`Pit16`
+      (see https://github.com/cpitclaudel/company-coq).
 
 -  The compiled mode acts as a proof checker taking a file containing a
    whole development in order to ensure its correctness. Moreover,

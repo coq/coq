@@ -105,8 +105,8 @@ matrix:
     # Full Coq test-suite with two compilers
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="test-suite"
-      - EXTRA_CONF="-coqide opt -with-doc yes"
+      - TEST_TARGET="doc-html test-suite"
+      - EXTRA_CONF="-coqide opt"
       - EXTRA_OPAM="${LABLGTK} ounit"
       before_install: &sphinx-install
       - sudo pip3 install bs4 sphinx sphinx_rtd_theme pexpect antlr4-python3-runtime sphinxcontrib-bibtex
@@ -119,26 +119,17 @@ matrix:
           - aspcud
           - libgtk2.0-dev
           - libgtksourceview2.0-dev
-          - texlive-latex-base
-          - texlive-latex-recommended
-          - texlive-latex-extra
-          - texlive-math-extra
-          - texlive-fonts-recommended
-          - texlive-fonts-extra
-          - latex-xcolor
-          - ghostscript
-          - tipa
           - python3
           - python3-pip
           - python3-setuptools
 
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="test-suite"
+      - TEST_TARGET="doc-html test-suite"
       - COMPILER="${COMPILER_BE}"
       - FINDLIB_VER="${FINDLIB_VER_BE}"
       - CAMLP5_VER="${CAMLP5_VER_BE}"
-      - EXTRA_CONF="-coqide opt -with-doc yes"
+      - EXTRA_CONF="-coqide opt"
       - EXTRA_OPAM="${LABLGTK_BE} ounit"
       before_install: *sphinx-install
       addons:
@@ -150,11 +141,11 @@ matrix:
     # Full test-suite with flambda
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="test-suite"
+      - TEST_TARGET="doc-html test-suite"
       - COMPILER="${COMPILER_BE}+flambda"
       - FINDLIB_VER="${FINDLIB_VER_BE}"
       - CAMLP5_VER="${CAMLP5_VER_BE}"
-      - EXTRA_CONF="-coqide opt -with-doc yes -flambda-opts -O3"
+      - EXTRA_CONF="-coqide opt -flambda-opts -O3"
       - EXTRA_OPAM="${LABLGTK_BE} ounit"
       before_install: *sphinx-install
       addons:
