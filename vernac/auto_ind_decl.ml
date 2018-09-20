@@ -428,7 +428,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
              Equality.replace p q ; apply app ; Auto.default_auto]
   end
 
-(* used in the bool -> leib side *)
+(* used in the bool -> leb side *)
 let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
   let open EConstr in
   let avoid = Array.of_list aavoid in
