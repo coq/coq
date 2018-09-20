@@ -628,7 +628,7 @@ let check_unique_names records =
     | Vernacexpr.DefExpr ({CAst.v=Name id},_,_) -> id::acc
     | _ -> acc in
   let allnames =
-    List.fold_left (fun acc (_, id, _, _, cfs, _, _) ->
+    List.fold_left (fun acc (_, id, _, cfs, _, _) ->
       id.CAst.v :: (List.fold_left extract_name acc cfs)) [] records
   in
   match List.duplicates Id.equal allnames with
@@ -637,19 +637,19 @@ let check_unique_names records =
 
 let check_priorities kind records =
   let isnot_class = match kind with Class false -> false | _ -> true in
-  let has_priority (_, _, _, _, cfs, _, _) =
+  let has_priority (_, _, _, cfs, _, _) =
     List.exists (fun ((_, pri), _) -> not (Option.is_empty pri)) cfs
   in
   if isnot_class && List.exists has_priority records then
     user_err Pp.(str "Priorities only allowed for type class substructures")
 
 let extract_record_data records =
-  let map (is_coe, id, _, _, cfs, idbuild, s) =
+  let map (is_coe, id, _, cfs, idbuild, s) =
     let fs = List.map (fun (((_, f), _), _) -> f) cfs in
     id.CAst.v, s, List.map snd cfs, fs
   in
   let data = List.map map records in
-  let pss = List.map (fun (_, _, _, ps, _, _, _) -> ps) records in
+  let pss = List.map (fun (_, _, ps, _, _, _) -> ps) records in
   let ps = match pss with
   | [] -> CErrors.anomaly (str "Empty record block")
   | ps :: rem ->
@@ -661,30 +661,28 @@ let extract_record_data records =
     in
     ps
   in
-  (** FIXME: Same issue as #7754 *)
-  let _, _, pl, _, _, _, _ = List.hd records in
-  pl, ps, data
+  ps, data
 
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a
    list telling if the corresponding fields must me declared as coercions
    or subinstances. *)
-let definition_structure kind ~template cum poly finite records =
+let definition_structure udecl kind ~template cum poly finite records =
   let () = check_unique_names records in
   let () = check_priorities kind records in
-  let pl, ps, data = extract_record_data records in
-  let pl, univs, auto_template, params, implpars, data =
+  let ps, data = extract_record_data records in
+  let ubinders, univs, auto_template, params, implpars, data =
     States.with_state_protection (fun () ->
-        typecheck_params_and_fields finite (kind = Class true) poly pl ps data) () in
+      typecheck_params_and_fields finite (kind = Class true) poly udecl ps data) () in
   let template = template, auto_template in
   match kind with
   | Class def ->
-    let (_, id, _, _, cfs, idbuild, _), (arity, implfs, fields) = match records, data with
+    let (_, id, _, cfs, idbuild, _), (arity, implfs, fields) = match records, data with
     | [r], [d] -> r, d
     | _, _ -> CErrors.user_err (str "Mutual definitional classes are not handled")
     in
     let priorities = List.map (fun ((_, id), _) -> {hint_priority = id; hint_pattern = None}) cfs in
     let coers = List.map (fun (((coe, _), _), _) -> coe) cfs in
-    declare_class finite def cum pl univs id.CAst.v idbuild
+    declare_class finite def cum ubinders univs id.CAst.v idbuild
       implpars params arity template implfs fields coers priorities
   | _ ->
     let map impls = implpars @ Impargs.lift_implicits (succ (List.length params)) impls in
@@ -699,11 +697,11 @@ let definition_structure kind ~template cum poly finite records =
         | Monomorphic_const_entry univs ->
           Monomorphic_ind_entry univs
       in
-    let map (arity, implfs, fields) (is_coe, id, _, _, cfs, idbuild, _) =
+    let map (arity, implfs, fields) (is_coe, id, _, cfs, idbuild, _) =
       let coers = List.map (fun (((coe, _), _), _) -> coe) cfs in
       let coe = List.map (fun coe -> not (Option.is_empty coe)) coers in
       id.CAst.v, idbuild, arity, implfs, fields, is_coe, coe
     in
     let data = List.map2 map data records in
-    let inds = declare_structure finite pl univs implpars params template data in
+    let inds = declare_structure finite ubinders univs implpars params template data in
     List.map (fun ind -> IndRef ind) inds

@@ -1469,7 +1469,7 @@ let do_build_inductive
       (rel_constructors)
   in
   let rel_ind i ext_rel_constructors =
-    (((CAst.make @@ relnames.(i)), None),
+    ((CAst.make @@ relnames.(i)),
     rel_params,
     Some rel_arities.(i),
     ext_rel_constructors),[]
@@ -1499,14 +1499,14 @@ let do_build_inductive
   let _time2 = System.get_time () in
   try
     with_full_print
-      (Flags.silently (ComInductive.do_mutual_inductive ~template:None rel_inds (Flags.is_universe_polymorphism ()) false false ~uniform:ComInductive.NonUniformParameters))
+      (Flags.silently (ComInductive.do_mutual_inductive ~template:None None rel_inds (Flags.is_universe_polymorphism ()) false false ~uniform:ComInductive.NonUniformParameters))
       Declarations.Finite
   with
     | UserError(s,msg) as e ->
 	let _time3 = System.get_time () in
 (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
 	let repacked_rel_inds =
-	  List.map  (fun ((a , b , c , l),ntn) -> ((false,a) , b, c , Vernacexpr.Inductive_kw, Vernacexpr.Constructors l),ntn )
+          List.map  (fun ((a , b , c , l),ntn) -> ((false,(a,None)) , b, c , Vernacexpr.Inductive_kw, Vernacexpr.Constructors l),ntn )
 	                  rel_inds
 	in
 	let msg =
@@ -1521,7 +1521,7 @@ let do_build_inductive
 	let _time3 = System.get_time () in
 (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
 	let repacked_rel_inds =
-	  List.map  (fun ((a , b , c , l),ntn) -> ((false,a) , b, c , Vernacexpr.Inductive_kw, Vernacexpr.Constructors l),ntn )
+          List.map  (fun ((a , b , c , l),ntn) -> ((false,(a,None)) , b, c , Vernacexpr.Inductive_kw, Vernacexpr.Constructors l),ntn )
 	                  rel_inds
 	in
 	let msg =

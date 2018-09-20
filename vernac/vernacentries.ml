@@ -555,9 +555,9 @@ let should_treat_as_uniform () =
   then ComInductive.UniformParameters
   else ComInductive.NonUniformParameters
 
-let vernac_record ~template cum k poly finite records =
+let vernac_record ~template udecl cum k poly finite records =
   let is_cumulative = should_treat_as_cumulative cum poly in
-  let map ((coe, (id, pl)), binders, sort, nameopt, cfs) =
+  let map ((coe, id), binders, sort, nameopt, cfs) =
     let const = match nameopt with
     | None -> add_prefix "Build_" id.v
     | Some lid ->
@@ -574,10 +574,22 @@ let vernac_record ~template cum k poly finite records =
         in
         List.iter iter cfs
     in
-    coe, id, pl, binders, cfs, const, sort
+    coe, id, binders, cfs, const, sort
   in
   let records = List.map map records in
-  ignore(Record.definition_structure ~template k is_cumulative poly finite records)
+  ignore(Record.definition_structure ~template udecl k is_cumulative poly finite records)
+
+let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
+  match indl with
+  | [] -> assert false
+  | (((coe,(id,udecl)),b,c,k,d),e) :: rest ->
+    let rest = List.map (fun (((coe,(id,udecl)),b,c,k,d),e) ->
+        if Option.has_some udecl
+        then user_err ~hdr:"inductive udecl" Pp.(strbrk "Universe binders must be on the first inductive of the block.")
+        else (((coe,id),b,c,k,d),e))
+        rest
+    in
+    udecl, (((coe,id),b,c,k,d),e) :: rest
 
 (** When [poly] is true the type is declared polymorphic. When [lo] is true,
     then the type is declared private (as per the [Private] keyword). [finite]
@@ -585,8 +597,9 @@ let vernac_record ~template cum k poly finite records =
     neither. *)
 let vernac_inductive ~atts cum lo finite indl =
   let open Pp in
+  let udecl, indl = extract_inductive_udecl indl in
   if Dumpglob.dump () then
-    List.iter (fun (((coe,(lid,_)), _, _, _, cstrs), _) ->
+    List.iter (fun (((coe,lid), _, _, _, cstrs), _) ->
       match cstrs with
 	| Constructors cstrs ->
 	    Dumpglob.dump_definition lid false "ind";
@@ -594,6 +607,7 @@ let vernac_inductive ~atts cum lo finite indl =
 			 Dumpglob.dump_definition lid false "constr") cstrs
 	| _ -> () (* dumping is done by vernac_record (called below) *) )
       indl;
+
   let is_record = function
   | ((_ , _ , _ , _, RecordDecl _), _) -> true
   | _ -> false
@@ -613,7 +627,7 @@ let vernac_inductive ~atts cum lo finite indl =
     let (coe, (lid, ce)) = l in
     let coe' = if coe then Some true else None in
     let f = (((coe', AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce)), None), []) in
-    vernac_record ~template cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
+    vernac_record ~template udecl cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
   else if List.for_all is_record indl then
     (** Mutual record case *)
     let check_kind ((_, _, _, kind, _), _) = match kind with
@@ -636,7 +650,7 @@ let vernac_inductive ~atts cum lo finite indl =
     let ((_, _, _, kind, _), _) = List.hd indl in
     let kind = match kind with Class _ -> Class false | _ -> kind in
     let recordl = List.map unpack indl in
-    vernac_record ~template cum kind atts.polymorphic finite recordl
+    vernac_record ~template udecl cum kind atts.polymorphic finite recordl
   else if List.for_all is_constructor indl then
     (** Mutual inductive case *)
     let check_kind ((_, _, _, kind, _), _) = match kind with
@@ -662,7 +676,7 @@ let vernac_inductive ~atts cum lo finite indl =
     let indl = List.map unpack indl in
     let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
     let uniform = should_treat_as_uniform () in
-    ComInductive.do_mutual_inductive ~template indl is_cumulative atts.polymorphic lo ~uniform finite
+    ComInductive.do_mutual_inductive ~template udecl indl is_cumulative atts.polymorphic lo ~uniform finite
   else
     user_err (str "Mixed record-inductive definitions are not allowed")
 (*
