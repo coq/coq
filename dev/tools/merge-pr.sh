@@ -18,19 +18,21 @@ else
     QUICK_CONF=""
 fi
 
-RED="\033[31m"
-RESET="\033[0m"
-GREEN="\033[32m"
-BLUE="\033[34m"
-YELLOW="\033[33m"
+# Style terminal codes
+SRESET="\033[0m"
+SHIGHLIGHT="\033[1m"     # bold (blue is unredable with black background terminals)
+SINFO="\033[32m"         # green
+SWARNING="\033[33m"      # yellow
+SERROR="\033[31m\033[1m" # red bold
+
 info() {
-  echo -e "${GREEN}info:${RESET} $1 ${RESET}"
+  echo -e "${SINFO}info:${SRESET} $1 ${SRESET}"
 }
 error() {
-  echo -e "${RED}error:${RESET} $1 ${RESET}"
+  echo -e "${SERROR}error:${SRESET} $1 ${SRESET}"
 }
 warning() {
-  echo -e "${YELLOW}warning:${RESET} $1 ${RESET}"
+  echo -e "${SWARNING}warning:${SRESET} $1 ${SRESET}"
 }
 
 check_util() {
@@ -73,17 +75,17 @@ fi
 PRDATA=$(curl -s "$API/pulls/$PR")
 
 TITLE=$(echo "$PRDATA" | jq -r '.title')
-info "title for PR $PR is ${BLUE}$TITLE"
+info "title for PR $PR is ${SHIGHLIGHT}$TITLE"
 
 BASE_BRANCH=$(echo "$PRDATA" | jq -r '.base.label')
-info "PR $PR targets branch ${BLUE}$BASE_BRANCH"
+info "PR $PR targets branch ${SHIGHLIGHT}$BASE_BRANCH"
 
 CURRENT_LOCAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-info "you are merging in ${BLUE}$CURRENT_LOCAL_BRANCH"
+info "you are merging in ${SHIGHLIGHT}$CURRENT_LOCAL_BRANCH"
 
 REMOTE=$(git config --get "branch.$CURRENT_LOCAL_BRANCH.remote")
 if [ -z "$REMOTE" ]; then
-  error "branch ${BLUE}$CURRENT_LOCAL_BRANCH${RESET} has not associated remote"
+  error "branch ${SHIGHLIGHT}$CURRENT_LOCAL_BRANCH${SRESET} has not associated remote"
   error "don't know where to fetch the PR from"
   error "please run: git branch --set-upstream-to=THE_REMOTE/$CURRENT_LOCAL_BRANCH"
   exit 1
@@ -95,12 +97,12 @@ if [ "$REMOTE_URL" != "${OFFICIAL_REMOTE_GIT_URL}" ] && \
    [ "$REMOTE_URL" != "https://${OFFICIAL_REMOTE_HTTPS_URL}.git" ] && \
    [[ "$REMOTE_URL" != "https://"*"@${OFFICIAL_REMOTE_HTTPS_URL}" ]] && \
    [[ "$REMOTE_URL" != "https://"*"@${OFFICIAL_REMOTE_HTTPS_URL}.git" ]] ; then
-  error "remote ${BLUE}$REMOTE${RESET} does not point to the official Coq repo"
-  error "that is ${BLUE}$OFFICIAL_REMOTE_GIT_URL"
-  error "it points to ${BLUE}$REMOTE_URL${RESET} instead"
+  error "remote ${SHIGHLIGHT}$REMOTE${SRESET} does not point to the official Coq repo"
+  error "that is ${SHIGHLIGHT}$OFFICIAL_REMOTE_GIT_URL"
+  error "it points to ${SHIGHLIGHT}$REMOTE_URL${SRESET} instead"
   ask_confirmation
 fi
-info "remote for $CURRENT_LOCAL_BRANCH is ${BLUE}$REMOTE"
+info "remote for $CURRENT_LOCAL_BRANCH is ${SHIGHLIGHT}$REMOTE"
 
 info "fetching from $REMOTE the PR"
 git remote update "$REMOTE"
@@ -111,12 +113,12 @@ if ! git ls-remote "$REMOTE" | grep pull >/dev/null; then
 fi
 git fetch "$REMOTE" "refs/pull/$PR/head"
 COMMIT=$(git rev-parse FETCH_HEAD)
-info "commit for PR $PR is ${BLUE}$COMMIT"
+info "commit for PR $PR is ${SHIGHLIGHT}$COMMIT"
 
 # Sanity check: merge to a different branch
 
 if [ "$BASE_BRANCH" != "coq:$CURRENT_LOCAL_BRANCH" ]; then
-  error "PR requests merge in ${BLUE}$BASE_BRANCH${RESET} but you are merging in ${BLUE}$CURRENT_LOCAL_BRANCH"
+  error "PR requests merge in ${SHIGHLIGHT}$BASE_BRANCH${SRESET} but you are merging in ${SHIGHLIGHT}$CURRENT_LOCAL_BRANCH"
   ask_confirmation
 fi;
 
@@ -163,7 +165,7 @@ fi
 STATUS=$(curl -s "$API/commits/$COMMIT/status")
 
 if [ "$(echo "$STATUS" | jq -r '.state')" != "success" ]; then
-  error "CI unsuccessful on ${BLUE}$(echo "$STATUS" |
+  error "CI unsuccessful on ${SHIGHLIGHT}$(echo "$STATUS" |
     jq -r -c '.statuses|map(select(.state != "success"))|map(.context)')"
   ask_confirmation
 fi;
@@ -172,7 +174,7 @@ fi;
 
 NEEDS_LABELS=$(echo "$PRDATA" | jq -rc '.labels | map(select(.name | match("needs:"))) | map(.name)')
 if [ "$NEEDS_LABELS" != "[]" ]; then
-  error "needs:something labels still present: ${BLUE}$NEEDS_LABELS"
+  error "needs:something labels still present: ${SHIGHLIGHT}$NEEDS_LABELS"
   ask_confirmation
 fi
 
@@ -193,9 +195,26 @@ if [ "$KIND" = "[]" ]; then
 fi
 
 # Sanity check: user.signingkey
-if [ -z "$(git config user.signingkey)" ]; then
-  warning "git config user.signingkey is empty"
-  warning "gpg will guess a key out of your git config user.* data"
+GIT_SIGNINGKEY="$(git config user.signingkey)"
+if [ -z "$GIT_SIGNINGKEY" ]; then
+  error "git config user.signingkey is empty"
+  error "gpg will guess a key out of your git config user.* data"
+  ask_confirmation
+fi
+
+# Sanity check: user.signingkey exists in gpg and matches user.email
+# Get data from GIT configuration
+GIT_EMAIL="$(git config user.email | tr '[:upper:]' '[:lower:]')"
+# Ask GPG for the email for this key
+# See usr\share\doc\gnupg2\DETAILS for documentation of the --with-colons format
+# The returned ID is assumed to be of the form "name <email>", from which the email is extracted
+# In case the ID ist just an email, the sed is a NOP
+GPG_SIGNINGKEY_TYPE="$(gpg --list-secret-keys --with-colons "$GIT_SIGNINGKEY" | cut --delimiter=: --fields=1)"
+GPG_SIGNINGKEY_EMAIL="$(gpg --list-secret-keys --with-colons "$GIT_SIGNINGKEY" | cut --delimiter=: --fields=10 | sed -e 's|.*<\(.*\)>|\1|' | tr '[:upper:]' '[:lower:]')"
+if [ "$GPG_SIGNINGKEY_TYPE" != "sec" ] || [ "$GPG_SIGNINGKEY_EMAIL" != "$GIT_EMAIL" ]; then
+  error "The gpg ID of your user.signingkey and your user.email don't match"
+  error "( $GPG_SIGNINGKEY_EMAIL != $GIT_EMAIL )"
+  ask_confirmation
 fi
 
 info "merging"
