@@ -406,8 +406,7 @@ let coerce_to_indtype typing_fun evdref env matx tomatchl =
 (* Utils *)
 
 let mkExistential env ?(src=(Loc.tag Evar_kinds.InternalHole)) evdref =
-  let (e, u) = evd_comb1 (new_type_evar env ~src:src) evdref univ_flexible_alg in
-  e
+  GlobEnv.e_new_type_evar env evdref ~src
 
 let evd_comb2 f evdref x y =
   let (evd',y) = f !evdref x y in
@@ -1693,7 +1692,7 @@ let abstract_tycon ?loc env evdref subst tycon extenv t =
 	    (fun i _ ->
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context !!env) in
-        let ev' = evd_comb1 (Evarutil.new_evar !!env ~src) evdref ty in
+        let ev' = e_new_evar env evdref ~src ty in
         begin match solve_simple_eqn (evar_conv_x full_transparent_state) !!env !evdref (None,ev,substl inst ev') with
         | Success evd -> evdref := evd
         | UnifFailure _ -> assert false
@@ -2514,7 +2513,7 @@ let compile_program_cases ?loc style (typing_function, evdref) tycon env
   let tycon, arity =
     let nar = List.fold_left (fun n sign -> List.length sign + n) 0 sign in
     match tycon' with
-    | None -> let ev = mkExistential !!env evdref in ev, lift nar ev
+    | None -> let ev = mkExistential env evdref in ev, lift nar ev
     | Some t ->
 	let pred =
 	  match prepare_predicate_from_arsign_tycon env !evdref loc tomatchs sign t with
