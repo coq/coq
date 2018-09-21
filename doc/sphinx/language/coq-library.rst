@@ -1,5 +1,3 @@
-.. include:: ../replaces.rst
-
 .. _thecoqlibrary:
 
 The |Coq| library

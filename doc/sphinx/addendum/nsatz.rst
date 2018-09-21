@@ -1,5 +1,3 @@
-.. include:: ../preamble.rst
-
 .. _nsatz_chapter:
 
 Nsatz: tactics for proving equalities in integral domains

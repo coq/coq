@@ -74,10 +74,10 @@ stdenv.mkDerivation rec {
 
   prefixKey = "-prefix ";
 
-  buildFlags = [ "world" "byte" ] ++ optional buildDoc "sphinx";
+  buildFlags = [ "world" "byte" ] ++ optional buildDoc "sphinx-html";
 
   installTargets =
-    [ "install" "install-byte" ] ++ optional buildDoc "install-doc-sphinx";
+    [ "install" "install-byte" ] ++ optional buildDoc "install-doc-sphinx-html";
 
   inherit doInstallCheck;
 

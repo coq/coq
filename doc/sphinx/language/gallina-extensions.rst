@@ -1,5 +1,3 @@
-.. include:: ../replaces.rst
-
 .. _extensionsofgallina:
 
 Extensions of |Gallina|
@@ -22,8 +20,8 @@ expressions. In this sense, the :cmd:`Record` construction allows defining
 
 .. _record_grammar:
 
-  .. productionlist:: `sentence`
-     record         : `record_keyword` `ident` [ `binders` ] [: `sort` ] := [ `ident` ] { [ `field` ; … ; `field` ] }.
+  .. productionlist:: sentence
+     record         : `record_keyword` `record_body` with … with `record_body`
      record_keyword : Record | Inductive | CoInductive
      field          : `ident` [ `binders` ] : `type` [ where `notation` ]
                     : | `ident` [ `binders` ] [: `type` ] := `term`
@@ -81,11 +79,13 @@ To build an object of type :n:`@ident`, one should provide the constructor
        Definition half := mkRat true 1 2 (O_S 1) one_two_irred.
        Check half.
 
+.. FIXME: move this to the main grammar in the spec chapter
+
 .. _record-named-fields-grammar:
 
   .. productionlist::
-    term : {| [`field_def` ; … ; `field_def`] |}
-    field_def : name [binders] := `term`
+    record_term : {| [`field_def` ; … ; `field_def`] |}
+    field_def : name [binders] := `record_term`
 
 Alternatively, the following syntax allows creating objects by using named fields, as
 shown in this grammar. The fields do not have to be in any particular order, nor do they have
@@ -159,12 +159,14 @@ It can be activated for printing with
        Set Printing Projections.
        Check top half.
 
+.. FIXME: move this to the main grammar in the spec chapter
+
 .. _record_projections_grammar:
 
   .. productionlist:: terms
-     term : term `.` ( qualid )
-          : | term `.` ( qualid arg … arg )
-          : | term `.` ( @`qualid` `term` … `term` )
+     projection : projection `.` ( `qualid` )
+          : | projection `.` ( `qualid` `arg` … `arg` )
+          : | projection `.` ( @`qualid` `term` … `term` )
 
   Syntax of Record projections
 

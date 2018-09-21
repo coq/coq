@@ -34,7 +34,7 @@ from sphinx.util.logging import getLogger
 from sphinx.directives import ObjectDescription
 from sphinx.domains import Domain, ObjType, Index
 from sphinx.domains.std import token_xrefs
-from sphinx.ext.mathbase import MathDirective, displaymath
+from sphinx.ext import mathbase
 
 from . import coqdoc
 from .repl import ansicolors
@@ -57,6 +57,15 @@ def highlight_using_coqdoc(sentence):
 def make_target(objtype, targetid):
     """Create a target to an object of type objtype and id targetid"""
     return "coq:{}.{}".format(objtype, targetid)
+
+def make_math_node(latex, docname, nowrap):
+    node = mathbase.displaymath()
+    node['latex'] = latex
+    node['label'] = None # Otherwise equations are numbered
+    node['nowrap'] = nowrap
+    node['docname'] = docname
+    node['number'] = None
+    return node
 
 class CoqObject(ObjectDescription):
     """A generic Coq object for Sphinx; all Coq objects are subclasses of this.
@@ -101,7 +110,9 @@ class CoqObject(ObjectDescription):
         # Explicit object naming
         'name': directives.unchanged,
         # Silence warnings produced by report_undocumented_coq_objects
-        'undocumented': directives.flag
+        'undocumented': directives.flag,
+        # noindex omits this object from its index
+        'noindex': directives.flag
     }
 
     def subdomain_data(self):
@@ -138,6 +149,13 @@ class CoqObject(ObjectDescription):
             msg = MSG.format(name, self.env.doc2path(objects[name][0]))
             self.state_machine.reporter.warning(msg, line=self.lineno)
 
+    def _warn_if_duplicate_name(self, objects, name):
+        """Check that two objects in the same domain don't have the same name."""
+        if name in objects:
+            MSG = 'Duplicate object: {}; other is at {}'
+            msg = MSG.format(name, self.env.doc2path(objects[name][0]))
+            self.state_machine.reporter.warning(msg, line=self.lineno)
+
     def _record_name(self, name, target_id):
         """Record a name, mapping it to target_id
 
@@ -165,13 +183,16 @@ class CoqObject(ObjectDescription):
         """Add `name` (pointing to `target`) to the main index."""
         assert isinstance(name, str)
         if not name.startswith("_"):
-            index_text = name
+            # remove trailing . , found in commands, but not ... (ellipsis)
+            trim = name.endswith(".") and not name.endswith("...")
+            index_text = name[:-1] if trim else name
             if self.index_suffix:
                 index_text += " " + self.index_suffix
             self.indexnode['entries'].append(('single', index_text, target, '', None))
 
     def add_target_and_index(self, name, _, signode):
-        """Attach a link target to `signode` and an index entry for `name`."""
+        """Attach a link target to `signode` and an index entry for `name`.
+        This is only called (from ``ObjectDescription.run``) if ``:noindex:`` isn't specified."""
         if name:
             target = self._add_target(signode, name)
             self._add_index_entry(name, target)
@@ -522,7 +543,7 @@ def coq_code_role(role, rawtext, text, lineno, inliner, options={}, content=[]):
 CoqCodeRole = coq_code_role
 
 class CoqtopDirective(Directive):
-    """A reST directive to describe interactions with Coqtop.
+    r"""A reST directive to describe interactions with Coqtop.
 
     Usage::
 
@@ -560,16 +581,17 @@ class CoqtopDirective(Directive):
     required_arguments = 0
     optional_arguments = 1
     final_argument_whitespace = True
+    option_spec = { 'name': directives.unchanged }
     directive_name = "coqtop"
 
     def run(self):
         # Uses a ‘container’ instead of a ‘literal_block’ to disable
         # Pygments-based post-processing (we could also set rawsource to '')
         content = '\n'.join(self.content)
-        options = self.arguments[0].split() if self.arguments else ['in']
-        if 'all' in options:
-            options.extend(['in', 'out'])
-        node = nodes.container(content, coqtop_options = list(set(options)),
+        args = self.arguments[0].split() if self.arguments else ['in']
+        if 'all' in args:
+            args.extend(['in', 'out'])
+        node = nodes.container(content, coqtop_options = list(set(args)),
                                classes=['coqtop', 'literal-block'])
         self.add_name(node)
         return [node]
@@ -594,6 +616,7 @@ class CoqdocDirective(Directive):
     required_arguments = 0
     optional_arguments = 0
     final_argument_whitespace = True
+    option_spec = { 'name': directives.unchanged }
     directive_name = "coqdoc"
 
     def run(self):
@@ -602,6 +625,7 @@ class CoqdocDirective(Directive):
         content = '\n'.join(self.content)
         node = nodes.inline(content, '', *highlight_using_coqdoc(content))
         wrapper = nodes.container(content, node, classes=['coqdoc', 'literal-block'])
+        self.add_name(wrapper)
         return [wrapper]
 
 class ExampleDirective(BaseAdmonition):
@@ -637,24 +661,39 @@ class ExampleDirective(BaseAdmonition):
         self.options['classes'] = ['admonition', 'note']
         return super().run()
 
-class PreambleDirective(MathDirective):
-    r"""A reST directive for hidden math.
+class PreambleDirective(Directive):
+    r"""A reST directive to include a TeX file.
 
-    Mostly useful to let MathJax know about `\def`\ s and `\newcommand`\ s.
+    Mostly useful to let MathJax know about `\def`s and `\newcommand`s.
 
-    Example::
+    Usage::
 
-       .. preamble::
-
-          \newcommand{\paren}[#1]{\left(#1\right)}
+       .. preamble:: preamble.tex
     """
-
+    has_content = False
+    required_arguments = 1
+    optional_arguments = 0
+    final_argument_whitespace = True
+    option_spec = {}
     directive_name = "preamble"
 
     def run(self):
-        self.options['nowrap'] = True
-        [node] = super().run()
+        document = self.state.document
+        env = document.settings.env
+
+        if not document.settings.file_insertion_enabled:
+            msg = 'File insertion disabled'
+            return [document.reporter.warning(msg, line=self.lineno)]
+
+        rel_fname, abs_fname = env.relfn2path(self.arguments[0])
+        env.note_dependency(rel_fname)
+
+        with open(abs_fname, encoding="utf-8") as ltx:
+            latex = ltx.read()
+
+        node = make_math_node(latex, env.docname, nowrap=True)
         node['classes'] = ["math-preamble"]
+        set_source_info(self, node)
         return [node]
 
 class InferenceDirective(Directive):
@@ -667,8 +706,8 @@ class InferenceDirective(Directive):
 
        .. inference:: name
 
-          newline-separated premisses
-          ------------------------
+          newline-separated premises
+          --------------------------
           conclusion
 
     Example::
@@ -686,15 +725,6 @@ class InferenceDirective(Directive):
     has_content = True
     final_argument_whitespace = True
     directive_name = "inference"
-
-    def make_math_node(self, latex):
-        node = displaymath()
-        node['latex'] = latex
-        node['label'] = None # Otherwise equations are numbered
-        node['nowrap'] = False
-        node['docname'] = self.state.document.settings.env.docname
-        node['number'] = None
-        return node
 
     @staticmethod
     def prepare_latex_operand(op):
@@ -715,7 +745,8 @@ class InferenceDirective(Directive):
         title = self.arguments[0]
         content = '\n'.join(self.content)
         latex = self.prepare_latex(content)
-        math_node = self.make_math_node(latex)
+        docname = self.state.document.settings.env.docname
+        math_node = make_math_node(latex, docname, nowrap=False)
 
         tid = nodes.make_id(title)
         target = nodes.target('', '', ids=['inference-' + tid])
@@ -862,23 +893,28 @@ class CoqtopBlocksTransform(Transform):
             kept_node['classes'] = [c for c in kept_node['classes']
                                     if c != 'coqtop-hidden']
 
-    def merge_consecutive_coqtop_blocks(self):
+    @staticmethod
+    def merge_consecutive_coqtop_blocks(app, doctree, _):
         """Merge consecutive divs wrapping lists of Coq sentences; keep ‘dl’s separate."""
-        for node in self.document.traverse(CoqtopBlocksTransform.is_coqtop_block):
+        for node in doctree.traverse(CoqtopBlocksTransform.is_coqtop_block):
             if node.parent:
+                rawsources, names = [node.rawsource], set(node['names'])
                 for sibling in node.traverse(include_self=False, descend=False,
                                              siblings=True, ascend=False):
                     if CoqtopBlocksTransform.is_coqtop_block(sibling):
-                        self.merge_coqtop_classes(node, sibling)
+                        CoqtopBlocksTransform.merge_coqtop_classes(node, sibling)
+                        rawsources.append(sibling.rawsource)
+                        names.update(sibling['names'])
                         node.extend(sibling.children)
                         node.parent.remove(sibling)
                         sibling.parent = None
                     else:
                         break
+                node.rawsource = "\n\n".join(rawsources)
+                node['names'] = list(names)
 
     def apply(self):
         self.add_coqtop_output()
-        self.merge_consecutive_coqtop_blocks()
 
 class CoqSubdomainsIndex(Index):
     """Index subclass to provide subdomain-specific indices.
@@ -1102,7 +1138,6 @@ def simplify_source_code_blocks_for_latex(app, doctree, fromdocname): # pylint: 
     pygments if available.  This prevents the LaTeX builder from getting
     confused.
     """
-
     is_html = app.builder.tags.has("html")
     for node in doctree.traverse(is_coqtop_or_coqdoc_block):
         if is_html:
@@ -1139,6 +1174,7 @@ def setup(app):
 
     app.add_transform(CoqtopBlocksTransform)
     app.connect('doctree-resolved', simplify_source_code_blocks_for_latex)
+    app.connect('doctree-resolved', CoqtopBlocksTransform.merge_consecutive_coqtop_blocks)
 
     # Add extra styles
     app.add_stylesheet("fonts.css")
@@ -1151,4 +1187,11 @@ def setup(app):
     # Tell Sphinx about extra settings
     app.add_config_value("report_undocumented_coq_objects", None, 'env')
 
-    return {'version': '0.1', "parallel_read_safe": True}
+    # ``env_version`` is used by Sphinx to know when to invalidate
+    # coqdomain-specific bits in its caches.  It should be incremented when the
+    # contents of ``env.domaindata['coq']`` change.  See
+    # `https://github.com/sphinx-doc/sphinx/issues/4460`.
+    meta = { "version": "0.1",
+             "env_version": 1,
+             "parallel_read_safe": True }
+    return meta

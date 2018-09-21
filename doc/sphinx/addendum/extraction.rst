@@ -1,5 +1,3 @@
-.. include:: ../replaces.rst
-
 .. _extraction:
 
 Extraction of programs in |OCaml| and Haskell
