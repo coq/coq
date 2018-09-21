@@ -453,8 +453,11 @@ let pretype_sort ?loc evdref = function
   | GSet -> judge_of_set
   | GType s -> evd_comb1 (judge_of_Type ?loc) evdref s
 
-let new_type_evar env evdref loc =
-  e_new_type_evar env evdref ~src:(Loc.tag ?loc Evar_kinds.InternalHole)
+let e_new_type_evar env evdref loc =
+  evd_comb0 (new_type_evar ~src:(Loc.tag ?loc Evar_kinds.InternalHole) env) evdref
+
+let e_new_evar env evdref ?src ?naming =
+  evd_comb1 (new_evar ?src ?naming env) evdref
 
 (* [pretype tycon env evdref lvar lmeta cstr] attempts to type [cstr] *)
 (* in environment [env], with existential variables [evdref] and *)
@@ -494,7 +497,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) evdref
     let ty =
       match tycon with
       | Some ty -> ty
-      | None -> new_type_evar env evdref loc in
+      | None -> e_new_type_evar env evdref loc in
     let k = Evar_kinds.MatchingVar kind in
       { uj_val = e_new_evar env evdref ~src:(loc,k) ty; uj_type = ty }
 
@@ -502,14 +505,14 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) evdref
       let ty =
         match tycon with
         | Some ty -> ty
-        | None -> new_type_evar env evdref loc in
+        | None -> e_new_type_evar env evdref loc in
         { uj_val = e_new_evar env evdref ~src:(loc,k) ~naming ty; uj_type = ty }
 
   | GHole (k, _naming, Some arg) ->
       let ty =
         match tycon with
         | Some ty -> ty
-        | None -> new_type_evar env evdref loc in
+        | None -> e_new_type_evar env evdref loc in
       let (c, sigma) = GlobEnv.interp_glob_genarg env !evdref ty arg in
       let () = evdref := sigma in
       { uj_val = c; uj_type = ty }
@@ -880,7 +883,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) evdref
 	| None ->
 	  let p = match tycon with
 	    | Some ty -> ty
-            | None -> new_type_evar env evdref loc
+            | None -> e_new_type_evar env evdref loc
 	  in
             it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
       let pred = nf_evar !evdref pred in

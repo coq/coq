@@ -94,7 +94,7 @@ let push_rec_types sigma (lna,typarray) env =
   let env,ctx = Array.fold_left_map (fun e assum -> let (d,e) = push_rel sigma assum e in (e,d)) env ctxt in
   Array.map get_name ctx, env
 
-let e_new_evar env evdref ?src ?naming typ =
+let new_evar ?src ?naming env sigma typ =
   let open Context.Named.Declaration in
   let inst_vars = List.map (get_id %> mkVar) (named_context env.renamed_env) in
   let inst_rels = List.rev (rel_list 0 (nb_rel env.renamed_env)) in
@@ -102,15 +102,11 @@ let e_new_evar env evdref ?src ?naming typ =
   let typ' = csubst_subst subst typ in
   let instance = inst_rels @ inst_vars in
   let sign = val_of_named_context nc in
-  let sigma = !evdref in
-  let (sigma, e) = new_evar_instance sign sigma typ' ?src ?naming instance in
-  evdref := sigma;
-  e
+  new_evar_instance sign sigma typ' ?src ?naming instance
 
-let e_new_type_evar env evdref ~src =
-  let (evd', s) = Evd.new_sort_variable Evd.univ_flexible_alg !evdref in
-  evdref := evd';
-  e_new_evar env evdref ~src (EConstr.mkSort s)
+let new_type_evar ~src env sigma =
+  let (sigma', s) = Evd.new_sort_variable Evd.univ_flexible_alg sigma in
+  new_evar ~src env sigma' (EConstr.mkSort s)
 
 let hide_variable env expansion id =
   let lvar = env.lvar in

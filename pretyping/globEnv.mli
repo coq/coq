@@ -53,10 +53,10 @@ val push_rec_types : evar_map -> Name.t array * constr array -> t -> Name.t arra
 
 (** Declare an evar using renaming information *)
 
-val e_new_evar : t -> evar_map ref -> ?src:Evar_kinds.t Loc.located ->
-  ?naming:Namegen.intro_pattern_naming_expr -> constr -> constr
+val new_evar : ?src:Evar_kinds.t Loc.located ->
+  ?naming:Namegen.intro_pattern_naming_expr -> t -> evar_map -> constr -> evar_map * constr
 
-val e_new_type_evar : t -> evar_map ref -> src:Evar_kinds.t Loc.located -> constr
+val new_type_evar : src:Evar_kinds.t Loc.located -> t -> evar_map -> evar_map * constr
 
 (** [hide_variable env na id] tells to hide the binding of [id] in
     the ltac environment part of [env] and to additionally rebind

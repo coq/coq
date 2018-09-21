@@ -406,7 +406,7 @@ let coerce_to_indtype typing_fun evdref env matx tomatchl =
 (* Utils *)
 
 let mkExistential env ?(src=(Loc.tag Evar_kinds.InternalHole)) evdref =
-  GlobEnv.e_new_type_evar env evdref ~src
+  evd_comb0 (GlobEnv.new_type_evar ~src env) evdref
 
 let evd_comb2 f evdref x y =
   let (evd',y) = f !evdref x y in
@@ -1692,7 +1692,7 @@ let abstract_tycon ?loc env evdref subst tycon extenv t =
 	    (fun i _ ->
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context !!env) in
-        let ev' = e_new_evar env evdref ~src ty in
+        let ev' = evd_comb1 (new_evar ~src env) evdref ty in
         begin match solve_simple_eqn (evar_conv_x full_transparent_state) !!env !evdref (None,ev,substl inst ev') with
         | Success evd -> evdref := evd
         | UnifFailure _ -> assert false
@@ -1740,8 +1740,8 @@ let build_tycon ?loc env tycon_env s subst tycon extenv evdref t =
         let n' = Context.Rel.length (rel_context !!tycon_env) in
         let impossible_case_type, u =
           evd_comb1
-            (new_type_evar (reset_context !!env) ~src:(Loc.tag ?loc Evar_kinds.ImpossibleCase))
-            evdref univ_flexible_alg
+            (Evarutil.new_type_evar ~src:(Loc.tag ?loc Evar_kinds.ImpossibleCase) (reset_context !!env))
+            evdref Evd.univ_flexible_alg
         in
         (lift (n'-n) impossible_case_type, mkSort u)
     | Some t ->
@@ -2042,7 +2042,7 @@ let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
 	| Some t -> refresh_tycon sigma t
 	| None -> 
           let (sigma, (t, _)) =
-            new_type_evar !!env sigma univ_flexible_alg ~src:(Loc.tag ?loc @@ Evar_kinds.CasesType false) in
+            Evarutil.new_type_evar !!env sigma univ_flexible_alg ~src:(Loc.tag ?loc @@ Evar_kinds.CasesType false) in
 	    sigma, t
 	in
         (* First strategy: we build an "inversion" predicate *)
