@@ -175,7 +175,9 @@ matrix:
       before_install:
       - brew update
       - brew unlink python
-      - brew install opam gnu-time
+      - brew install gnu-time
+      # only way to continue using OPAM 1.2
+      - brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/d156edeeed7291f4bc1e08620b331bbd05d52b78/Formula/opam.rb
 
     - if: NOT (type = pull_request)
       os: osx
@@ -192,7 +194,9 @@ matrix:
       before_install:
       - brew update
       - brew unlink python
-      - brew install opam gnu-time gtk+ expat gtksourceview gdk-pixbuf
+      - brew install gnu-time gtk+ expat gtksourceview gdk-pixbuf
+      # only way to continue using OPAM 1.2
+      - brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/d156edeeed7291f4bc1e08620b331bbd05d52b78/Formula/opam.rb
       - brew unlink python@2
       - brew install python3
       - pip3 install macpack
