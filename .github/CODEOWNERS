@@ -151,9 +151,8 @@
 /plugins/ltac/          @ppedrot
 # Secondary maintainer @herbelin
 
-/plugins/micromega/    @fajb
-/test-suite/micromega/ @fajb
-# Secondary maintainer @bgregoir
+/plugins/micromega/    @coq/micromega-maintainers
+/test-suite/micromega/ @coq/micromega-maintainers
 
 /plugins/nsatz/         @thery
 # Secondary maintainer @ppedrot
