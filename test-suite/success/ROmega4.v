@@ -3,12 +3,12 @@
     See also #148 for the corresponding improvement in Omega.
 *)
 
-Require Import ZArith ROmega.
+Require Import ZArith Lia.
 Open Scope Z.
 
 Goal let x := 3 in x = 3.
 intros.
-romega.
+lia.
 Qed.
 
 (** Example seen in #4132
@@ -22,5 +22,5 @@ Lemma foo
   (H : - zxy' <= zxy)
   (H' : zxy' <= x') : - b <= zxy.
 Proof.
-romega.
+lia.
 Qed.
