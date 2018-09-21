@@ -1,9 +1,16 @@
 @ECHO OFF
 
+REM This script builds and signs the Windows packages on Gitlab
+
 ECHO "Start Time"
 TIME /T
 
-REM This script builds and signs the Windows packages on Gitlab
+REM List currently used cygwin and target folders for debugging / maintenance purposes
+
+ECHO "Currently used cygwin folders"
+DIR C:\cygwin*
+ECHO "Currently used target folders"
+DIR C:\coq*
 
 if %ARCH% == 32 (
   SET ARCHLONG=i686
@@ -17,11 +24,15 @@ if %ARCH% == 64 (
   SET SETUP=setup-x86_64.exe
 )
 
+SET DESTCOQ=C:\coq%ARCH%_inst
+
+CALL :MakeUniqueFolder %CYGROOT% CYGROOT
+CALL :MakeUniqueFolder %DESTCOQ% DESTCOQ
+
 powershell -Command "(New-Object Net.WebClient).DownloadFile('http://www.cygwin.com/%SETUP%', '%SETUP%')"
 SET CYGCACHE=%CYGROOT%\var\cache\setup
 SET CI_PROJECT_DIR_MFMT=%CI_PROJECT_DIR:\=/%
 SET CI_PROJECT_DIR_CFMT=%CI_PROJECT_DIR_MFMT:C:/=/cygdrive/c/%
-SET DESTCOQ=C:\coq%ARCH%_inst
 SET COQREGTESTING=Y
 SET PATH=%PATH%;C:\Program Files\7-Zip\;C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin
 
@@ -32,22 +43,23 @@ call %CI_PROJECT_DIR%\dev\build\windows\MakeCoq_MinGW.bat -threads=1 ^
   -arch=%ARCH% -installer=Y -coqver=%CI_PROJECT_DIR_CFMT% ^
   -destcyg=%CYGROOT% -destcoq=%DESTCOQ% -cygcache=%CYGCACHE% ^
   -addon="bignums ltac2 equations" -make=N ^
-  -setup %CI_PROJECT_DIR%\%SETUP% || GOTO ErrorZipLogfilesAndExit
+  -setup %CI_PROJECT_DIR%\%SETUP% || GOTO ErrorCopyLogFilesAndExit
 
 
 ECHO "Start Artifact Creation"
 TIME /T
 
-CALL :ZipLogfiles
+mkdir artifacts
 
-copy "%CYGROOT%\build\coq-local\dev\nsis\*.exe" dev\nsis || GOTO ErrorExit
+CALL :CopyLogFiles
+
+copy "%CYGROOT%\build\coq-local\dev\nsis\*.exe" artifacts || GOTO ErrorExit
 REM The open source archive is only required for release builds
 IF DEFINED WIN_CERTIFICATE_PATH (
-  7z a coq-opensource-archive-windows-%ARCHLONG%.zip %CYGROOT%\build\tarballs\* || GOTO ErrorExit
+  7z a artifacts\coq-opensource-archive-windows-%ARCHLONG%.zip %CYGROOT%\build\tarballs\* || GOTO ErrorExit
 ) ELSE (
   REM In non release builds, create a dummy file
-  ECHO "This is not a release build - open source archive not created / uploaded" > coq-opensource-info.txt
-  7z a coq-opensource-archive-windows-%ARCHLONG%.zip coq-opensource-info.txt || GOTO ErrorExit
+  ECHO "This is not a release build - open source archive not created / uploaded" > artifacts\coq-opensource-info.txt
 )
 
 REM DO NOT echo the signing command below, as this would leak secrets in the logs
@@ -62,19 +74,46 @@ IF DEFINED WIN_CERTIFICATE_PATH (
 ECHO "Finished Artifact Creation"
 TIME /T
 
+CALL :CleanupFolders
+
+ECHO "Finished Cleanup"
+TIME /T
+
 GOTO :EOF
 
-:ZipLogfiles
-  ECHO Zipping logfiles for artifact upload
-  7z a coq-buildlogs.zip %CYGROOT%\build\buildlogs\*
-  7z a coq-filelists.zip %CYGROOT%\build\filelists\*
-  7z a coq-flagfiles.zip %CYGROOT%\build\flagfiles\*
+:CopyLogFiles
+  ECHO Copy log files for artifact upload
+  MKDIR artifacts\buildlogs
+  COPY %CYGROOT%\build\buildlogs\* artifacts\buildlogs
+  MKDIR artifacts\filelists
+  COPY %CYGROOT%\build\filelists\* artifacts\filelists
+  MKDIR artifacts\flagfiles
+  COPY %CYGROOT%\build\flagfiles\* artifacts\flagfiles
   GOTO :EOF
 
-:ErrorZipLogfilesAndExit
-  CALL :ZipLogfiles
+:CleanupFolders
+  ECHO "Cleaning %CYGROOT%"
+  DEL /S /F /Q "%CYGROOT%" > NUL
+  ECHO "Cleaning %DESTCOQ%"
+  DEL /S /F /Q "%DESTCOQ%" > NUL
+  GOTO :EOF
+
+:MakeUniqueFolder
+  REM Create a uniquely named folder
+  REM This script is safe because folder creation is atomic - either we create it or fail
+  REM %1 = base path or directory (_%RANDOM%_%RANDOM% is appended to this)
+  REM %2 = name of the variable which receives the unique folder name
+  SET "UNIQUENAME=%1_%RANDOM%_%RANDOM%"
+  MKDIR "%UNIQUENAME%"
+  IF ERRORLEVEL 1 GOTO :MakeUniqueFolder
+  SET "%2=%UNIQUENAME%"
+  GOTO :EOF
+
+:ErrorCopyLogFilesAndExit
+  CALL :CopyLogFiles
   REM fall through
 
 :ErrorExit
+  CALL :CleanupFolders
   ECHO ERROR %0 failed
   EXIT /b 1
