@@ -1,0 +1,6 @@
+(executable
+ (name main)
+ (public_name coqdoc)
+ (libraries str coq.config))
+
+(ocamllex cpretty)
