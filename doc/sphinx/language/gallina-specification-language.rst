@@ -374,13 +374,13 @@ Definition by case analysis
 ---------------------------
 
 Objects of inductive types can be destructurated by a case-analysis
-construction called *pattern-matching* expression. A pattern-matching
+construction called *pattern matching* expression. A pattern matching
 expression is used to analyze the structure of an inductive object and
 to apply specific treatments accordingly.
 
-This paragraph describes the basic form of pattern-matching. See
+This paragraph describes the basic form of pattern matching. See
 Section :ref:`Mult-match` and Chapter :ref:`extendedpatternmatching` for the description
-of the general form. The basic form of pattern-matching is characterized
+of the general form. The basic form of pattern matching is characterized
 by a single :token:`match_item` expression, a :token:`mult_pattern` restricted to a
 single :token:`pattern` and :token:`pattern` restricted to the form
 :n:`@qualid {* @ident}`.
@@ -388,9 +388,9 @@ single :token:`pattern` and :token:`pattern` restricted to the form
 The expression match ":token:`term`:math:`_0` :token:`return_type` with
 :token:`pattern`:math:`_1` => :token:`term`:math:`_1` :math:`|` … :math:`|`
 :token:`pattern`:math:`_n` => :token:`term`:math:`_n` end" denotes a
-*pattern-matching* over the term :token:`term`:math:`_0` (expected to be
+*pattern matching* over the term :token:`term`:math:`_0` (expected to be
 of an inductive type :math:`I`). The terms :token:`term`:math:`_1`\ …\
-:token:`term`:math:`_n` are the *branches* of the pattern-matching
+:token:`term`:math:`_n` are the *branches* of the pattern matching
 expression. Each of :token:`pattern`:math:`_i` has a form :token:`qualid`
 :token:`ident` where :token:`qualid` must denote a constructor. There should be
 exactly one branch for every constructor of :math:`I`.
@@ -403,7 +403,7 @@ inferred from the type of the branches [2]_.
 
 In the *dependent* case, there are three subcases. In the first subcase,
 the type in each branch may depend on the exact value being matched in
-the branch. In this case, the whole pattern-matching itself depends on
+the branch. In this case, the whole pattern matching itself depends on
 the term being matched. This dependency of the term being matched in the
 return type is expressed with an “as :token:`ident`” clause where :token:`ident`
 is dependent in the return type. For instance, in the following example:
@@ -424,7 +424,7 @@ is dependent in the return type. For instance, in the following example:
 
 the branches have respective types ":g:`or (eq bool true true) (eq bool true false)`"
 and ":g:`or (eq bool false true) (eq bool false false)`" while the whole
-pattern-matching expression has type ":g:`or (eq bool b true) (eq bool b false)`",
+pattern matching expression has type ":g:`or (eq bool b true) (eq bool b false)`",
 the identifier :g:`b` being used to represent the dependency.
 
 .. note::
@@ -447,7 +447,7 @@ as the equality predicate (see Section :ref:`coq-equality`),
 the order predicate on natural numbers or the type of lists of a given
 length (see Section :ref:`matching-dependent`). In this configuration, the
 type of each branch can depend on the type dependencies specific to the
-branch and the whole pattern-matching expression has a type determined
+branch and the whole pattern matching expression has a type determined
 by the specific dependencies in the type of the term being matched. This
 dependency of the return type in the annotations of the inductive type
 is expressed using a “:g:`in` :math:`I` :g:`_ … _` :token:`pattern`:math:`_1` …
@@ -476,13 +476,13 @@ For instance, in the following example:
 
 the type of the branch is :g:`eq A x x` because the third argument of
 :g:`eq` is :g:`x` in the type of the pattern :g:`eq_refl`. On the contrary, the
-type of the whole pattern-matching expression has type :g:`eq A y x` because the
+type of the whole pattern matching expression has type :g:`eq A y x` because the
 third argument of eq is y in the type of H. This dependency of the case analysis
 in the third argument of :g:`eq` is expressed by the identifier :g:`z` in the
 return type.
 
 Finally, the third subcase is a combination of the first and second
-subcase. In particular, it only applies to pattern-matching on terms in
+subcase. In particular, it only applies to pattern matching on terms in
 a type with annotations. For this third subcase, both the clauses ``as`` and
 ``in`` are available.
 
@@ -945,7 +945,7 @@ Variants
    The :cmd:`Variant` command is identical to the :cmd:`Inductive` command, except
    that it disallows recursive definition of types (for instance, lists cannot
    be defined using :cmd:`Variant`). No induction scheme is generated for
-   this variant, unless option :opt:`Nonrecursive Elimination Schemes` is on.
+   this variant, unless option :flag:`Nonrecursive Elimination Schemes` is on.
 
    .. exn:: The @num th argument of @ident must be @ident in @type.
       :undocumented:
@@ -1091,7 +1091,7 @@ constructions.
 
 .. cmd:: Fixpoint @ident @binders {? {struct @ident} } {? : @type } := @term
 
-   This command allows defining functions by pattern-matching over inductive
+   This command allows defining functions by pattern matching over inductive
    objects using a fixed point construction. The meaning of this declaration is
    to define :token:`ident` a recursive function with arguments specified by
    the :token:`binders` such that :token:`ident` applied to arguments

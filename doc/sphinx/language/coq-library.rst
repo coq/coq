@@ -620,7 +620,7 @@ Finally, it gives the definition of the usual orderings ``le``,
 
 Properties of these relations are not initially known, but may be
 required by the user from modules ``Le`` and ``Lt``.  Finally,
-``Peano`` gives some lemmas allowing pattern-matching, and a double
+``Peano`` gives some lemmas allowing pattern matching, and a double
 induction principle.
 
 .. index::

@@ -131,14 +131,14 @@ order to produce more readable code.
 
 The type-preserving optimizations are controlled by the following |Coq| options:
 
-.. opt:: Extraction Optimize
+.. flag:: Extraction Optimize
 
    Default is on. This controls all type-preserving optimizations made on
    the ML terms (mostly reduction of dummy beta/iota redexes, but also
    simplifications on Cases, etc). Turn this option off if you want a
    ML term as close as possible to the Coq term.
 
-.. opt:: Extraction Conservative Types
+.. flag:: Extraction Conservative Types
 
    Default is off. This controls the non type-preserving optimizations
    made on ML terms (which try to avoid function abstraction of dummy
@@ -146,7 +146,7 @@ The type-preserving optimizations are controlled by the following |Coq| options:
    implies that ``e':t'`` where ``e'`` and ``t'`` are the extracted
    code of ``e`` and ``t`` respectively.
 
-.. opt:: Extraction KeepSingleton
+.. flag:: Extraction KeepSingleton
 
    Default is off. Normally, when the extraction of an inductive type
    produces a singleton type (i.e. a type with only one constructor, and
@@ -155,7 +155,7 @@ The type-preserving optimizations are controlled by the following |Coq| options:
    The typical example is ``sig``. This option allows disabling this
    optimization when one wishes to preserve the inductive structure of types.
 
-.. opt:: Extraction AutoInline
+.. flag:: Extraction AutoInline
 
    Default is on. The extraction mechanism inlines the bodies of
    some defined constants, according to some heuristics
@@ -227,7 +227,7 @@ When an actual extraction takes place, an error is normally raised if the
 if any of the implicit arguments still occurs in the final code.
 This behavior can be relaxed via the following option:
 
-.. opt:: Extraction SafeImplicits
+.. flag:: Extraction SafeImplicits
 
    Default is on. When this option is off, a warning is emitted
    instead of an error if some implicit arguments still occur in the
@@ -319,15 +319,15 @@ native boolean type instead of the |Coq| one. The syntax is the following:
    extractions for the type itself (first `string`) and all its
    constructors (all the `string` between square brackets). In this form,
    the ML extraction must be an ML inductive datatype, and the native
-   pattern-matching of the language will be used.
+   pattern matching of the language will be used.
 
 .. cmdv:: Extract Inductive @qualid => @string [ {+ @string } ] @string
 
    Same as before, with a final extra `string` that indicates how to
-   perform pattern-matching over this inductive type. In this form,
+   perform pattern matching over this inductive type. In this form,
    the ML extraction could be an arbitrary type.
    For an inductive type with `k` constructors, the function used to
-   emulate the pattern-matching should expect `(k+1)` arguments, first the `k`
+   emulate the pattern matching should expect `(k+1)` arguments, first the `k`
    branches in functional form, and then the inductive element to
    destruct. For instance, the match branch ``| S n => foo`` gives the
    functional form ``(fun n -> foo)``. Note that a constructor with no
@@ -344,7 +344,7 @@ native boolean type instead of the |Coq| one. The syntax is the following:
 
   * Extracting an inductive type to a pre-existing ML inductive type
     is quite sound. But extracting to a general type (by providing an
-    ad-hoc pattern-matching) will often **not** be fully rigorously
+    ad-hoc pattern matching) will often **not** be fully rigorously
     correct. For instance, when extracting ``nat`` to |OCaml| ``int``,
     it is theoretically possible to build ``nat`` values that are
     larger than |OCaml| ``max_int``. It is the user's responsibility to
