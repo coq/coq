@@ -412,7 +412,7 @@ let print_tables () =
     if depr then msg ++ str " [DEPRECATED]" ++ fnl ()
     else msg ++ fnl ()
   in
-  str "Synchronous options:" ++ fnl () ++
+  str "Options:" ++ fnl () ++
     OptionMap.fold
       (fun key (name, depr, (read,_,_)) p ->
         p ++ print_option key name (read ()) depr)
