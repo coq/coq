@@ -27,11 +27,11 @@
 ########################################################################
 # Unicoq + Mtac2
 ########################################################################
-: "${unicoq_CI_REF:=master}"
+: "${unicoq_CI_REF:=v1.3-8.8}"
 : "${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq}"
 : "${unicoq_CI_ARCHIVEURL:=${unicoq_CI_GITURL}/archive}"
 
-: "${mtac2_CI_REF:=master-sync}"
+: "${mtac2_CI_REF:=v1.0.1-coq8.8}"
 : "${mtac2_CI_GITURL:=https://github.com/Mtac2/Mtac2}"
 : "${mtac2_CI_ARCHIVEURL:=${mtac2_CI_GITURL}/archive}"
 

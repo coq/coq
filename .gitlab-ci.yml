@@ -343,6 +343,9 @@ ci-math-comp:
 ci-quickchick:
   <<: *ci-template-flambda
 
+ci-mtac2:
+  <<: *ci-template
+
 ci-sf:
   <<: *ci-template
 

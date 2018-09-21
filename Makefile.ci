@@ -31,6 +31,7 @@ CI_TARGETS=ci-bedrock2 \
     ci-ltac2 \
     ci-math-classes \
     ci-math-comp \
+    ci-mtac2 \
     ci-quickchick \
     ci-sf \
     ci-simple-io \
