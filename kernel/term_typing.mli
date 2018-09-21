@@ -20,7 +20,7 @@ open Entries
     the set of additional global constraints that need to be added for the term
     to be well typed. *)
 type 'a effect_handler =
-  env -> Constr.t -> Univ.ContextSet.t -> 'a -> (Constr.t * Univ.ContextSet.t * int)
+  env -> Constr.t -> 'a -> (Constr.t * Univ.ContextSet.t * int)
 
 type _ trust =
 | Pure : unit trust

@@ -28,7 +28,7 @@ module NamedDecl = Context.Named.Declaration
 (* Insertion of constants and parameters in environment. *)
 
 type 'a effect_handler =
-  env -> Constr.t -> Univ.ContextSet.t -> 'a -> (Constr.t * Univ.ContextSet.t * int)
+  env -> Constr.t -> 'a -> (Constr.t * Univ.ContextSet.t * int)
 
 type _ trust =
 | Pure : unit trust
@@ -113,7 +113,8 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
             let _ = judge_of_cast env j DEFAULTcast tyj in
             j, uctx
           | SideEffects handle ->
-            let (body, uctx, valid_signatures) = handle env body uctx side_eff in
+            let (body, uctx', valid_signatures) = handle env body side_eff in
+            let uctx = Univ.ContextSet.union uctx uctx' in
             let env = push_context_set uctx env in
             let body,env,ectx = skip_trusted_seff valid_signatures body env in
             let j = infer env body in
@@ -141,8 +142,8 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       let body, ctx = match trust with
       | Pure -> body, ctx
       | SideEffects handle ->
-        let body, ctx, _ = handle env body ctx side_eff in
-        body, ctx
+        let body, ctx', _ = handle env body side_eff in
+        body, Univ.ContextSet.union ctx ctx'
       in
       let env, usubst, univs = match c.const_entry_universes with
       | Monomorphic_const_entry univs ->

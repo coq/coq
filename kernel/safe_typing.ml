@@ -549,7 +549,7 @@ let add_constant_aux ~in_section senv (kn, cb) =
 
 let mk_pure_proof c = (c, Univ.ContextSet.empty), SideEffects.empty
 
-let inline_side_effects env body ctx side_eff =
+let inline_side_effects env body side_eff =
   let open Entries in
   let open Constr in
   (** First step: remove the constants that are still in the environment *)
@@ -568,7 +568,7 @@ let inline_side_effects env body ctx side_eff =
   let side_eff = List.fold_left (fun accu (cbl, _) -> cbl @ accu) [] side_eff in
   let side_eff = List.rev side_eff in
   (** Most recent side-effects first in side_eff *)
-  if List.is_empty side_eff then (body, ctx, sigs)
+  if List.is_empty side_eff then (body, Univ.ContextSet.empty, sigs)
   else
     (** Second step: compute the lifts and substitutions to apply *)
     let cname c = Name (Label.to_id (Constant.label c)) in
@@ -590,7 +590,7 @@ let inline_side_effects env body ctx side_eff =
         let subst = Cmap_env.add c (Inl b) subst in
         (subst, var, ctx, args)
     in
-    let (subst, len, ctx, args) = List.fold_left fold (Cmap_env.empty, 1, ctx, []) side_eff in
+    let (subst, len, ctx, args) = List.fold_left fold (Cmap_env.empty, 1, Univ.ContextSet.empty, []) side_eff in
     (** Third step: inline the definitions *)
     let rec subst_const i k t = match Constr.kind t with
     | Const (c, u) ->
@@ -629,12 +629,13 @@ let inline_private_constants_in_definition_entry env ce =
   { ce with
   const_entry_body = Future.chain
     ce.const_entry_body (fun ((body, ctx), side_eff) ->
-      let body, ctx',_ = inline_side_effects env body ctx side_eff in
+      let body, ctx',_ = inline_side_effects env body side_eff in
+      let ctx' = Univ.ContextSet.union ctx ctx' in
       (body, ctx'), ());
   }
 
 let inline_private_constants_in_constr env body side_eff =
-  pi1 (inline_side_effects env body Univ.ContextSet.empty side_eff)
+  pi1 (inline_side_effects env body side_eff)
 
 let rec is_nth_suffix n l suf =
   if Int.equal n 0 then l == suf
@@ -769,8 +770,8 @@ let add_constant ~in_section l decl senv =
     let cb = 
       match decl with
       | ConstantEntry (EffectEntry, ce) ->
-        let handle env body uctx eff =
-          let body, uctx, signatures = inline_side_effects env body uctx eff in
+        let handle env body eff =
+          let body, uctx, signatures = inline_side_effects env body eff in
           let trusted = check_signatures senv.revstruct signatures in
           body, uctx, trusted
         in
