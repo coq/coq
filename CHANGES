@@ -1,6 +1,10 @@
 Changes from 8.8.1 to 8.8.2
 ===========================
 
+Documentation
+
+- A PDF version of the reference manual is available once again.
+
 Tools
 
 - The coq-makefile targets `print-pretty-timed`, `print-pretty-timed-diff`,
