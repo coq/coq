@@ -1038,7 +1038,16 @@ let find_suffix prefix path = match prefix with
 let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout,locallayout) =
   let dir,suffix =
     if !prefs.local then (use_suffix coqtop locallayout,locallayout)
-    else match uservalue, !prefs.prefix with
+    else
+    let env_prefix =
+      match !prefs.prefix with
+      | None ->
+        begin
+          try Some (Sys.getenv "COQ_CONFIGURE_PREFIX")
+          with Not_found -> None
+        end
+      | p -> p
+    in match uservalue, env_prefix with
     | Some d, p -> d,find_suffix p d
     | _, Some p ->
       let suffix = if arch_is_win32 then selfcontainedlayout else relativize unixlayout in
