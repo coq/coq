@@ -21,6 +21,58 @@ and plug into the process
 
 perf record -g -p PID
 
+### Per-component [flame graphs](https://github.com/brendangregg/FlameGraph)
+
+I (Andres Erbsen) have found it useful to look at library-wide flame graphs of
+coq time consumption.  As the Ltac interpreter stack is reflected in the OCaml
+stack, calls to the same primitive can appear on top of multiple essentially
+equivalent stacks. To make the profiles more readable, one could either try to
+edit the stack trace to merge "equivalent" frames, or simply look at the
+aggregate profile on a component-by-component basis. Here is how to do the
+second for the standard library ([example output](https://cdn.rawgit.com/andres-erbsen/b29b29cb6480dfc6a662062e4fcd0ae3/raw/304fc3fea9630c8e453929aa7920ca8a2a570d0b/stdlib_categorized_outermost.svg)).
+
+~~~~~
+#!/bin/bash
+make -f Makefile.dune clean
+make -f Makefile.dune states
+perf record -F99  `# ~1GB of data` --call-graph=dwarf -- make -f Makefile.dune world
+perf script --time '0%-100%'  |
+        stackcollapse-perf.pl |
+        grep Coqtop__compile |
+        sed -rf <(cat <<'EOF'
+                s/;caml/;/g
+                s/_[0-9]*;/;/g
+                s/Logic_monad__fun;//g
+                s/_apply[0-9];//g
+                s/;System/@&@/
+                s/;Hashcons/@&@/
+                s/;Grammar/@&@/
+                s/;Declaremods/@&@/
+                s/;Tactics/@&@/
+                s/;Pretyping/@&@/
+                s/;Typeops/@&@/
+                s/;Reduction/@&@/
+                s/;Unification/@&@/
+                s/;Evarutil/@&@/
+                s/;Evd/@&@/
+                s/;EConstr/@&@/
+                s/;Constr/@&@/
+                s/;Univ/@&@/
+                s/;Ugraph/@&@/
+                s/;UState/@&@/
+                s/;Micromega/@&@/
+                s/;Omega/@&@/
+                s/;Auto/@&@/
+                s/;Ltac_plugin__Tacinterp/@&@/
+                s/;Ltac_plugin__Rewrite/@&@/
+                s/[^@]*@;([^@]*)@/\1;\1/
+                s/@//g
+                :a; s/;([^;]+);\1;/;\1;/g;ta
+EOF
+        ) |
+        flamegraph.pl
+~~~~~
+
 ## Memory
 
 You first need a few commits atop trunk for this to work.
