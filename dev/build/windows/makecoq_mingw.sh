@@ -1630,6 +1630,29 @@ function make_addon_ltac2 {
   fi
 }
 
+# UniCoq plugin
+# An alternative unification algorithm
+function make_addon_unicoq {
+  if build_prep_overlay unicoq; then
+    log1 coq_makefile -f Make -o Makefile
+    log1 make
+    log2 make install
+    build_post
+  fi
+}
+
+# Mtac2 plugin
+# An alternative typed tactic language
+function make_addon_mtac2 {
+  make_addon_unicoq
+  if build_prep_overlay mtac2; then
+    log1 coq_makefile -f _CoqProject -o Makefile
+    log1 make
+    log2 make install
+    build_post
+  fi
+}
+
 # Menhir parser generator
 
 function make_addon_menhir {
