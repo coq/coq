@@ -16,9 +16,6 @@ let coq_macos_version = "8.9.90" (** "[...] should be a string comprised of
 three non-negative, period-separated integers [...]" *)
 let vo_magic = 8991
 let state_magic = 58991
-let distributed_exec =
-  ["coqtop.opt"; "coqidetop.opt"; "coqqueryworker.opt"; "coqproofworker.opt"; "coqtacticworker.opt";
-   "coqc";"coqchk";"coqdoc";"coqworkmgr";"coq_makefile";"coq-tex";"coqwc";"csdpcert";"coqdep"]
 
 let verbose = ref false (* for debugging this script *)
 
@@ -1354,33 +1351,6 @@ let write_makefile f =
   Unix.chmod f 0o444
 
 let _ = write_makefile "config/Makefile"
-
-let write_macos_metadata exec =
-  let f = "config/Info-"^exec^".plist" in
-  let () = safe_remove f in
-  let o = open_out f in
-  let pr s = fprintf o s in
-  pr "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-  pr "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n";
-  pr "<plist version=\"1.0\">\n";
-  pr "<dict>\n";
-  pr "    <key>CFBundleIdentifier</key>\n";
-  pr "    <string>fr.inria.coq.%s</string>\n" exec;
-  pr "    <key>CFBundleName</key>\n";
-  pr "    <string>%s</string>\n" exec;
-  pr "    <key>CFBundleVersion</key>\n";
-  pr "    <string>%s</string>\n" coq_macos_version;
-  pr "    <key>CFBundleShortVersionString</key>\n";
-  pr "    <string>%s</string>\n" coq_macos_version;
-  pr "    <key>CFBundleInfoDictionaryVersion</key>\n";
-  pr "    <string>6.0</string>\n";
-  pr "</dict>\n";
-  pr "</plist>\n";
-  let () = close_out o in
-  Unix.chmod f 0o444
-
-let () = if arch = "Darwin" then
-List.iter write_macos_metadata distributed_exec
 
 let write_configpy f =
   safe_remove f;

@@ -51,9 +51,8 @@ checker/names.ml: kernel/names.ml
 ifeq ($(BEST),opt)
 $(CHICKEN): checker/check.cmxa checker/main.mli checker/main.ml
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) -linkpkg $(SYSMOD) $(CHKLIBS) $(OPTFLAGS) $(LINKMETADATA) -o $@ $^
+	$(HIDE)$(OCAMLOPT) -linkpkg $(SYSMOD) $(CHKLIBS) $(OPTFLAGS) -o $@ $^
 	$(STRIP_HIDE) $@
-	$(CODESIGN_HIDE) $@
 else
 $(CHICKEN): $(CHICKENBYTE)
 	cp $< $@
