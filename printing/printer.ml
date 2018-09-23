@@ -494,17 +494,17 @@ let pr_transparent_state (ids, csts) =
 	str"CONSTANTS: " ++ pr_cpred csts ++ fnl ())
 
 (* display complete goal
- prev_gs has info on the previous proof step for diffs
- gs has info on the current proof step
+ og_s has goal+sigma on the previous proof step for diffs
+ g_s has goal+sigma on the current proof step
  *)
-let pr_goal ?(diffs=false) ?prev_gs gs =
-  let g = sig_it gs in
-  let sigma = project gs in
+let pr_goal ?(diffs=false) ?og_s g_s =
+  let g = sig_it g_s in
+  let sigma = project g_s in
   let env = Goal.V82.env sigma g in
   let concl = Goal.V82.concl sigma g in
   let goal =
     if diffs then
-      Proof_diffs.diff_goals ?prev_gs (Some gs)
+      Proof_diffs.diff_goal ?og_s g sigma
     else
       pr_context_of env sigma ++ cut () ++
         str "============================" ++ cut ()  ++
@@ -525,13 +525,18 @@ let pr_goal_name sigma g =
 let pr_goal_header nme sigma g =
   let (g,sigma) = Goal.V82.nf_evar sigma g in
   str "subgoal " ++ nme ++ (if should_tag() then pr_goal_tag g else str"")
-  ++ (if should_gname() then str " " ++ Pp.surround (pr_existential_key sigma g) else mt ())  
+  ++ (if should_gname() then str " " ++ Pp.surround (pr_existential_key sigma g) else mt ())
 
 (* display the conclusion of a goal *)
-let pr_concl n sigma g =
+let pr_concl n ?(diffs=false) ?og_s sigma g =
   let (g,sigma) = Goal.V82.nf_evar sigma g in
   let env = Goal.V82.env sigma g in
-  let pc = pr_goal_concl_style_env env sigma (Goal.V82.concl sigma g) in
+  let pc =
+    if diffs then
+      Proof_diffs.diff_concl ?og_s sigma g
+    else
+      pr_goal_concl_style_env env sigma (Goal.V82.concl sigma g)
+  in
   let header = pr_goal_header (int n) sigma g in
   header ++ str " is:" ++ cut () ++ str" "  ++ pc
 
@@ -698,13 +703,25 @@ let print_dependent_evars gl sigma seeds =
   in
   constraints ++ evars ()
 
+module GoalMap = Evar.Map
+
 (* Print open subgoals. Checks for uninstantiated existential variables *)
 (* spiwack: [seeds] is for printing dependent evars in emacs mode. *)
 (* spiwack: [pr_first] is true when the first goal must be singled out
    and printed in its entirety. *)
-(* [prev] is the previous proof step, used for diffs *)
-let pr_subgoals ?(pr_first=true) ?(diffs=false) ?prev
+(* [os_map] is derived from the previous proof step, used for diffs *)
+let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
                         close_cmd sigma ~seeds ~shelf ~stack ~unfocused ~goals =
+  let diff_goal_map =
+    match os_map with
+    | Some (_, diff_goal_map) -> diff_goal_map
+    | None -> GoalMap.empty
+  in
+
+  let map_goal_for_diff ng = (* todo: move to proof_diffs.ml *)
+    try GoalMap.find ng diff_goal_map  with Not_found -> ng
+  in
+
   (** Printing functions for the extra informations. *)
   let rec print_stack a = function
     | [] -> Pp.int a
@@ -738,23 +755,23 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?prev
     else str" " (* non-breakable space *)
   in
 
+  let get_ogs g =
+    match os_map with
+    | Some (osigma, _) -> Some { it = map_goal_for_diff g; sigma = osigma }
+    | None -> None
+  in
   let rec pr_rec n = function
     | [] -> (mt ())
     | g::rest ->
-        let pc = pr_concl n sigma g in
+       let og_s = get_ogs g in
+       let pc = pr_concl n ~diffs ?og_s sigma g in
         let prest = pr_rec (n+1) rest in
         (cut () ++ pc ++ prest)
   in
   let print_multiple_goals g l =
     if pr_first then
-      let prev_gs =
-        match prev with
-        | Some (prev_goals, prev_sigma) ->
-          if prev_goals = [] then None
-          else Some { it = List.hd prev_goals; sigma = prev_sigma}
-        | None -> None
-      in
-      pr_goal ~diffs ?prev_gs { it = g ; sigma = sigma }
+      let og_s = get_ogs g in
+      pr_goal ~diffs ?og_s { it = g ; sigma = sigma }
       ++ (if l=[] then mt () else cut ())
       ++ pr_rec 2 l
     else 
@@ -797,7 +814,7 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?prev
 	++ print_dependent_evars (Some g1) sigma seeds
       )
 
-let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?prev_proof proof =
+let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
   (* spiwack: it shouldn't be the job of the printer to look up stuff
      in the [evar_map], I did stuff that way because it was more
      straightforward, but seriously, [Proof.proof] should return
@@ -833,15 +850,15 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?prev_proof proof =
      let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
      let bgoals_focused, bgoals_unfocused = List.partition (fun x -> List.mem x goals) bgoals in
      let unfocused_if_needed = if should_unfoc() then bgoals_unfocused else [] in
-     let prev = match prev_proof with
-       | Some op ->
-         let (ogoals , _, _, _, _) = Proof.proof op in
-         let { Evd.it = obgoals; sigma = osigma } = Proof.V82.background_subgoals op in
-         let obgoals_focused = List.filter (fun x -> List.mem x ogoals) obgoals in
-         Some (obgoals_focused, osigma)
-       | None -> None
+     let os_map = match oproof with
+       | Some op when diffs ->
+         let (_,_,_,_, osigma) = Proof.proof op in
+         let diff_goal_map = Proof_diffs.make_goal_map oproof proof in
+         Some (osigma, diff_goal_map)
+       | _ -> None
      in
-     pr_subgoals ~pr_first:true ~diffs ?prev None bsigma ~seeds ~shelf ~stack:[] ~unfocused:unfocused_if_needed ~goals:bgoals_focused
+     pr_subgoals ~pr_first:true ~diffs ?os_map None bsigma ~seeds ~shelf ~stack:[]
+        ~unfocused:unfocused_if_needed ~goals:bgoals_focused
   end
 
 let pr_open_subgoals ~proof =
@@ -1023,22 +1040,14 @@ let print_and_diff oldp newp =
   | Some proof ->
     let output =
       if Proof_diffs.show_diffs () then
-        try pr_open_subgoals_diff ~diffs:true ?prev_proof:oldp proof
+        try pr_open_subgoals_diff ~diffs:true ?oproof:oldp proof
         with Pp_diff.Diff_Failure msg -> begin
           (* todo: print the unparsable string (if we know it) *)
-          Feedback.msg_warning Pp.(str ("Diff failure:" ^ msg ^ "; showing results without diff highlighting" ));
+          Feedback.msg_warning Pp.(str ("Diff failure: " ^ msg) ++ cut()
+              ++ str "Showing results without diff highlighting" );
           pr_open_subgoals ~proof
         end
       else
         pr_open_subgoals ~proof
     in
     Feedback.msg_notice output;;
-
-(* Do diffs on the first goal returning a Pp. *)
-let diff_pr_open_subgoals ?(quiet=false) o_proof n_proof =
-  match n_proof with
-  | None -> Pp.mt ()
-  | Some proof ->
-    try pr_open_subgoals_diff ~quiet ~diffs:true ?prev_proof:o_proof proof
-    with Pp_diff.Diff_Failure _ -> pr_open_subgoals ~proof
-      (* todo: print the unparsable string (if we know it) *)
