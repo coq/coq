@@ -19,7 +19,7 @@ Require Export DoubleType.
 
 (** This file contains basic definitions of a 31-bit integer
   arithmetic. In fact it is more general than that. The only reason
-  for this use of 31 is the underlying mecanism for hardware-efficient
+  for this use of 31 is the underlying mechanism for hardware-efficient
   computations by A. Spiwack. Apart from this, a switch to, say,
   63-bit integers is now just a matter of replacing every occurrences
   of 31 by 63. This is actually made possible by the use of
