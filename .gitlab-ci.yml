@@ -419,6 +419,9 @@ ci-mtac2:
 ci-pidetop:
   <<: *ci-template
 
+ci-plugin-tutorial:
+  <<: *ci-template
+
 ci-quickchick:
   <<: *ci-template-flambda
 

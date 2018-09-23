@@ -34,6 +34,7 @@ CI_TARGETS=ci-bedrock2 \
     ci-math-comp \
     ci-mtac2 \
     ci-pidetop \
+    ci-plugin-tutorial \
     ci-quickchick \
     ci-sf \
     ci-simple-io \

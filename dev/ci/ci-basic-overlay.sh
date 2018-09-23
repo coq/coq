@@ -226,3 +226,10 @@
 : "${quickchick_CI_REF:=master}"
 : "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick}"
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
+
+########################################################################
+# quickchick
+########################################################################
+: "${plugin_tutorial_CI_REF:=master}"
+: "${plugin_tutorial_CI_GITURL:=https://github.com/ybertot/plugin_tutorials}"
+: "${plugin_tutorial_CI_ARCHIVEURL:=${plugin_tutorial_CI_GITURL}/archive}"
