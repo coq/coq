@@ -373,52 +373,72 @@ let rec string loc ~comm_level bp len = parser
      let loc = set_loc_pos loc bp ep in
      err loc Unterminated_string
 
-(* To associate locations to a file name *)
-let current_file = ref Loc.ToplevelInput
+(* The state of the lexer. *)
+type lexer_state = {
+  (* To associate locations to a file name *)
+  current_file : Loc.source;
+  comment_begin : int option;
+  (* Utilities for comments in beautify *)
+  current_comment : Buffer.t;
+  between_commands : bool;
+  comments : ((int * int) * string) list;
+}
+
+let st =
+  ref {
+    current_file = Loc.ToplevelInput;
+    between_commands = true;
+    comment_begin = None;
+    current_comment = Buffer.create 8192;
+    comments = [];
+  }
 
 (* Utilities for comments in beautify *)
-let comment_begin = ref None
-let comm_loc bp = match !comment_begin with
-| None -> comment_begin := Some bp
-| _ -> ()
+let comm_loc bp = match !st.comment_begin with
+  | None ->
+    st := { !st with comment_begin = Some bp }
+  | _ -> ()
 
-let comments = ref []
-let current_comment = Buffer.create 8192
-let between_commands = ref true
+(* Public API *)
+let init_lexer_state f = {
+  current_file = f;
+  comment_begin = None;
+  current_comment = Buffer.create 8192;
+  between_commands = true;
+  comments = [];
+}
 
-(* The state of the lexer visible from outside *)
-type lexer_state = int option * string * bool * ((int * int) * string) list * Loc.source
-
-let init_lexer_state f = (None,"",true,[],f)
-let set_lexer_state (o,s,b,c,f) =
-  comment_begin := o;
-  Buffer.clear current_comment; Buffer.add_string current_comment s;
-  between_commands := b;
-  comments := c;
-  current_file := f
+let set_lexer_state nst = st := nst
 let get_lexer_state () =
-  (!comment_begin, Buffer.contents current_comment, !between_commands, !comments, !current_file)
+  let buffer_dup buf =
+    let open Buffer in
+    let nbuf = create (length buf) in
+    add_string nbuf (contents buf);
+    buf
+  in
+  { !st with current_comment = buffer_dup !st.current_comment }
+
 let release_lexer_state = get_lexer_state
 let drop_lexer_state () =
     set_lexer_state (init_lexer_state Loc.ToplevelInput)
 
-let get_comment_state (_,_,_,c,_) = c
+let get_comment_state st = st.comments
 
-let real_push_char c = Buffer.add_char current_comment c
+let real_push_char c = Buffer.add_char !st.current_comment c
 
 (* Add a char if it is between two commands, if it is a newline or
    if the last char is not a space itself. *)
 let push_char c =
   if
-    !between_commands || List.mem c ['\n';'\r'] ||
+    !st.between_commands || List.mem c ['\n';'\r'] ||
     (List.mem c [' ';'\t']&&
-     (Int.equal (Buffer.length current_comment) 0 ||
-      not (let s = Buffer.contents current_comment in
+     (Int.equal (Buffer.length !st.current_comment) 0 ||
+      not (let s = Buffer.contents !st.current_comment in
            List.mem s.[String.length s - 1] [' ';'\t';'\n';'\r'])))
   then
     real_push_char c
 
-let push_string s = Buffer.add_string current_comment s
+let push_string s = Buffer.add_string !st.current_comment s
 
 let null_comment s =
   let rec null i =
@@ -426,10 +446,10 @@ let null_comment s =
   null (String.length s - 1)
 
 let comment_stop ep =
-  let current_s = Buffer.contents current_comment in
-  (if !Flags.beautify && Buffer.length current_comment > 0 &&
-    (!between_commands || not(null_comment current_s)) then
-    let bp = match !comment_begin with
+  let current_s = Buffer.contents !st.current_comment in
+  (if !Flags.beautify && Buffer.length !st.current_comment > 0 &&
+    (!st.between_commands || not(null_comment current_s)) then
+    let bp = match !st.comment_begin with
         Some bp -> bp
       | None ->
           Feedback.msg_notice
@@ -437,10 +457,11 @@ let comment_stop ep =
              ++ str current_s ++str"' ending at  "
              ++ int ep);
           ep-1 in
-    comments := ((bp,ep),current_s) :: !comments);
-  Buffer.clear current_comment;
-  comment_begin := None;
-  between_commands := false
+    st := { !st with comments = ((bp,ep),current_s) :: !st.comments } );
+  Buffer.clear !st.current_comment;
+  st := { !st with comment_begin = None;
+                   between_commands = false;
+        }
 
 let rec comment loc bp = parser bp2
   | [< ''(';
@@ -573,16 +594,16 @@ let rec next_token loc = parser bp
       | KEYWORD ("." | "...") ->
         if not (blank_or_eof s) then
 	  err (set_loc_pos loc bp (ep+1)) Undefined_token;
-	between_commands := true;
+        st := { !st with between_commands = true };
       | _ -> ()
       in
       (t, set_loc_pos loc bp ep)
   | [< ' ('-'|'+'|'*' as c); s >] ->
       let t,new_between_commands =
-        if !between_commands then process_sequence loc bp c s, true
+        if !st.between_commands then process_sequence loc bp c s, true
         else process_chars loc bp c s,false
       in
-      comment_stop bp; between_commands := new_between_commands; t
+      comment_stop bp; st := { !st with between_commands = new_between_commands }; t
   | [< ''?'; s >] ep ->
       let t = parse_after_qmark loc bp s in
       comment_stop bp; (t, set_loc_pos loc bp ep)
@@ -607,10 +628,10 @@ let rec next_token loc = parser bp
       t
   | [< ' ('{' | '}' as c); s >] ep ->
       let t,new_between_commands =
-        if !between_commands then (KEYWORD (String.make 1 c), set_loc_pos loc bp ep), true
+        if !st.between_commands then (KEYWORD (String.make 1 c), set_loc_pos loc bp ep), true
         else process_chars loc bp c s, false
       in
-      comment_stop bp; between_commands := new_between_commands; t
+      comment_stop bp; st := { !st with between_commands = new_between_commands }; t
   | [< s >] ->
       match lookup_utf8 loc s with
         | Utf8Token (st, n) when Unicode.is_valid_ident_initial st ->
@@ -670,7 +691,7 @@ let token_text = function
 
 let func cs =
   let loct = loct_create () in
-  let cur_loc = ref (from_coqloc !current_file 1 0 0 0) in
+  let cur_loc = ref (from_coqloc !st.current_file 1 0 0 0) in
   let ts =
     Stream.from
       (fun i ->
