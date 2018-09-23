@@ -293,8 +293,5 @@ val pr_hint_db : Hint_db.t -> Pp.t
 [@@ocaml.deprecated "please used pr_hint_db_env"]
 val pr_hint : env -> evar_map -> hint -> Pp.t
 
-(** Hook for changing the initialization of auto *)
-val add_hints_init : (unit -> unit) -> unit
-
 type nonrec hint_info = hint_info
 [@@ocaml.deprecated "Use [Typeclasses.hint_info]"]

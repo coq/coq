@@ -111,14 +111,18 @@ end
 
 type cl_index = Bijint.Index.t
 
+let init_class_tab =
+  let open Bijint in
+  add CL_FUN { cl_param = 0 } (add CL_SORT { cl_param = 0 } empty)
+
 let class_tab =
-  ref (Bijint.empty : cl_info_typ Bijint.t)
+  Summary.ref ~name:"class_tab" (init_class_tab : cl_info_typ Bijint.t)
 
 let coercion_tab =
-  ref (CoeTypMap.empty : coe_info_typ CoeTypMap.t)
+  Summary.ref ~name:"coercion_tab" (CoeTypMap.empty : coe_info_typ CoeTypMap.t)
 
 let coercions_in_scope =
-  ref GlobRef.Set_env.empty
+  Summary.ref ~name:"coercions_in_scope" GlobRef.Set_env.empty
 
 module ClPairOrd =
 struct
@@ -131,15 +135,7 @@ end
 module ClPairMap = Map.Make(ClPairOrd)
 
 let inheritance_graph =
-  ref (ClPairMap.empty : inheritance_path ClPairMap.t)
-
-let freeze _ = (!class_tab, !coercion_tab, !inheritance_graph, !coercions_in_scope)
-
-let unfreeze (fcl,fco,fig,in_scope) =
-  class_tab:=fcl;
-  coercion_tab:=fco;
-  inheritance_graph:=fig;
-  coercions_in_scope:=in_scope
+  Summary.ref ~name:"inheritance_graph" (ClPairMap.empty : inheritance_path ClPairMap.t)
 
 (* ajout de nouveaux "objets" *)
 
@@ -152,21 +148,6 @@ let add_new_coercion coe s =
 
 let add_new_path x y =
   inheritance_graph := ClPairMap.add x y !inheritance_graph
-
-let init () =
-  class_tab:= Bijint.empty;
-  add_new_class CL_FUN  { cl_param = 0 };
-  add_new_class CL_SORT { cl_param = 0 };
-  coercion_tab:= CoeTypMap.empty;
-  inheritance_graph:= ClPairMap.empty
-
-let _ =
-  Summary.declare_summary "inh_graph"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }
-
-let _ = init()
 
 (* class_info : cl_typ -> int * cl_info_typ *)
 

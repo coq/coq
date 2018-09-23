@@ -279,10 +279,10 @@ module ExtRefTab = Make(FullPath)(ExtRefEqual)
 module MPTab = Make(FullPath)(MPEqual)
 
 type ccitab = ExtRefTab.t
-let the_ccitab = ref (ExtRefTab.empty : ccitab)
+let the_ccitab = Summary.ref ~name:"ccitab" (ExtRefTab.empty : ccitab)
 
 type mptab = MPTab.t
-let the_modtypetab = ref (MPTab.empty : mptab)
+let the_modtypetab = Summary.ref ~name:"modtypetab" (MPTab.empty : mptab)
 
 module DirPath' =
 struct
@@ -303,7 +303,7 @@ module DirTab = Make(DirPath')(GlobDir)
 (* If we have a (closed) module M having a submodule N, than N does not
    have the entry in [the_dirtab]. *)
 type dirtab = DirTab.t
-let the_dirtab = ref (DirTab.empty : dirtab)
+let the_dirtab = Summary.ref ~name:"dirtab" (DirTab.empty : dirtab)
 
 type universe_id = DirPath.t * int
 
@@ -314,7 +314,7 @@ struct
 end
 module UnivTab = Make(FullPath)(UnivIdEqual)
 type univtab = UnivTab.t
-let the_univtab = ref (UnivTab.empty : univtab)
+let the_univtab = Summary.ref ~name:"univtab" (UnivTab.empty : univtab)
 
 (* Reversed name tables ***************************************************)
 
@@ -322,14 +322,14 @@ let the_univtab = ref (UnivTab.empty : univtab)
 module Globrevtab = HMap.Make(ExtRefOrdered)
 
 type globrevtab = full_path Globrevtab.t
-let the_globrevtab = ref (Globrevtab.empty : globrevtab)
+let the_globrevtab = Summary.ref ~name:"globrevtab" (Globrevtab.empty : globrevtab)
 
 
 type mprevtab = DirPath.t MPmap.t
-let the_modrevtab = ref (MPmap.empty : mprevtab)
+let the_modrevtab = Summary.ref ~name:"modrevtab" (MPmap.empty : mprevtab)
 
 type mptrevtab = full_path MPmap.t
-let the_modtyperevtab = ref (MPmap.empty : mptrevtab)
+let the_modtyperevtab = Summary.ref ~name:"modtyperevtab" (MPmap.empty : mptrevtab)
 
 module UnivIdOrdered =
 struct
@@ -344,7 +344,7 @@ end
 module UnivIdMap = HMap.Make(UnivIdOrdered)
 
 type univrevtab = full_path UnivIdMap.t
-let the_univrevtab = ref (UnivIdMap.empty : univrevtab)
+let the_univrevtab = Summary.ref ~name:"univrevtab" (UnivIdMap.empty : univrevtab)
 
 (* Push functions *********************************************************)
 
@@ -545,38 +545,6 @@ let global_inductive qid =
         (pr_qualid qid ++ spc () ++ str "is not an inductive type")
 
 (********************************************************************)
-
-(********************************************************************)
-(* Registration of tables as a global table and rollback            *)
-
-type frozen = ccitab * dirtab * mptab * univtab
-    * globrevtab * mprevtab * mptrevtab * univrevtab
-
-let freeze _ : frozen =
-  !the_ccitab,
-  !the_dirtab,
-  !the_modtypetab,
-  !the_univtab,
-  !the_globrevtab,
-  !the_modrevtab,
-  !the_modtyperevtab,
-  !the_univrevtab
-
-let unfreeze (ccit,dirt,mtyt,univt,globr,modr,mtyr,univr) =
-  the_ccitab := ccit;
-  the_dirtab := dirt;
-  the_modtypetab := mtyt;
-  the_univtab := univt;
-  the_globrevtab := globr;
-  the_modrevtab := modr;
-  the_modtyperevtab := mtyr;
-  the_univrevtab := univr
-
-let _ =
-  Summary.declare_summary "names"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = Summary.nop }
 
 (* Deprecated synonyms *)
 
