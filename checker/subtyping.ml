@@ -114,7 +114,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
         let v = Univ.ACumulativityInfo.variance cumi in
         let v' = Univ.ACumulativityInfo.variance cumi' in
         if not (Array.for_all2 Univ.Variance.check_subtype v' v) then
-          CErrors.anomaly Pp.(str "Variance mismatch for " ++ MutInd.print kn)
+          CErrors.anomaly Pp.(str "Variance mismatch for " ++ MutInd.debug_print kn)
       in
       let auctx = Univ.ACumulativityInfo.univ_context cumi in
       let auctx' = Univ.ACumulativityInfo.univ_context cumi' in

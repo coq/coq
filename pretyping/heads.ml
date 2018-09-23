@@ -73,7 +73,7 @@ let kind_of_head env t =
        with Not_found ->
          CErrors.anomaly
            Pp.(str "constant not found in kind_of_head: " ++
-               Names.Constant.print cst ++
+               Names.Constant.debug_print cst ++
                str "."))
   | Construct _ | CoFix _ ->
       if b then NotImmediatelyComputableHead else ConstructorHead

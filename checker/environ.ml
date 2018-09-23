@@ -118,7 +118,7 @@ let anomaly s = anomaly (Pp.str s)
 let add_constant kn cs env =
   if Cmap_env.mem kn env.env_globals.env_constants then
     Printf.ksprintf anomaly ("Constant %s is already defined.")
-      (Constant.to_string kn);
+      (Constant.debug_to_string kn);
   let new_constants =
     Cmap_env.add kn cs env.env_globals.env_constants in
   let new_globals =
@@ -184,7 +184,7 @@ let lookup_mind kn env =
 let add_mind kn mib env =
   if Mindmap_env.mem kn env.env_globals.env_inductives then
     Printf.ksprintf anomaly ("Mutual inductive block %s is already defined.")
-      (MutInd.to_string kn);
+      (MutInd.debug_to_string kn);
   let new_inds = Mindmap_env.add kn mib env.env_globals.env_inductives in
   let kn1,kn2 =  MutInd.user kn, MutInd.canonical kn in
   let new_inds_eq = if KerName.equal kn1 kn2 then

@@ -138,7 +138,7 @@ let pp_sort s =
 
 let pp_struct_const = function
   | Const_sort s -> pp_sort s
-  | Const_ind (mind, i) -> Pp.(MutInd.print mind ++ str"#" ++ int i)
+  | Const_ind (mind, i) -> Pp.(MutInd.debug_print mind ++ str"#" ++ int i)
   | Const_b0 i -> Pp.int i
   | Const_univ_level l -> Univ.Level.pr l
   | Const_val _ -> Pp.str "(value)"
@@ -646,10 +646,10 @@ let branch_arg k (tag,arity) =
 let rec pr_atom a =
   Pp.(match a with
   | Aid c -> str "Aid(" ++ (match c with
-                            | ConstKey c -> Constant.print c
+                            | ConstKey c -> Constant.debug_print c
                             | RelKey i -> str "#" ++ int i
                             | _ -> str "...") ++ str ")"
-  | Aind (mi,i) -> str "Aind(" ++ MutInd.print mi ++ str "#" ++ int i ++ str ")"
+  | Aind (mi,i) -> str "Aind(" ++ MutInd.debug_print mi ++ str "#" ++ int i ++ str ")"
   | Asort _ -> str "Asort(")
 and pr_whd w =
   Pp.(match w with
@@ -668,6 +668,6 @@ and pr_stack stk =
 and pr_zipper z =
   Pp.(match z with
   | Zapp args -> str "Zapp(len = " ++ int (nargs args) ++ str ")"
-  | Zfix (_f,args) -> str "Zfix(..., len=" ++ int (nargs args) ++ str ")"
-  | Zswitch _s -> str "Zswitch(...)"
-  | Zproj c -> str "Zproj(" ++ Projection.Repr.print c ++ str ")")
+  | Zfix (f,args) -> str "Zfix(..., len=" ++ int (nargs args) ++ str ")"
+  | Zswitch s -> str "Zswitch(...)"
+  | Zproj c -> str "Zproj(" ++ Projection.Repr.debug_print c ++ str ")")

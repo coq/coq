@@ -75,7 +75,7 @@ let judge_of_constant env (kn,u as cst) =
   let _cb =
     try lookup_constant kn env
     with Not_found ->
-      failwith ("Cannot find constant: "^Constant.to_string kn)
+      failwith ("Cannot find constant: "^Constant.debug_to_string kn)
   in
   let ty, cu = constant_type env cst in
   let () = check_constraints cu env in
@@ -158,7 +158,7 @@ let judge_of_inductive_knowing_parameters env (ind,u) (paramstyp:constr array) =
   let specif =
     try lookup_mind_specif env ind
     with Not_found ->
-      failwith ("Cannot find mutual inductive block: "^MutInd.to_string (fst ind))
+      failwith ("Cannot find mutual inductive block: "^MutInd.debug_to_string (fst ind))
   in
   type_of_inductive_knowing_parameters env (specif,u) paramstyp
 
@@ -172,7 +172,7 @@ let judge_of_constructor env (c,u) =
   let specif =
     try lookup_mind_specif env ind
     with Not_found ->
-      failwith ("Cannot find mutual inductive block: "^MutInd.to_string (fst ind))
+      failwith ("Cannot find mutual inductive block: "^MutInd.debug_to_string (fst ind))
   in
   type_of_constructor (c,u) specif
 

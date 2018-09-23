@@ -385,11 +385,13 @@ module KerName = struct
   let to_string_gen mp_to_string kn =
     mp_to_string kn.modpath ^ "." ^ Label.to_string kn.knlabel
 
-  let to_string kn = to_string_gen ModPath.to_string kn
+  let to_string kn = to_string_gen ModPath.to_string kn (* deprecated *)
+
+  let print kn = str (to_string kn) (* deprecated *)
 
   let debug_to_string kn = to_string_gen ModPath.debug_to_string kn
 
-  let print kn = str (to_string kn)
+  let debug_print kn = str (debug_to_string kn)
 
   let compare (kn1 : kernel_name) (kn2 : kernel_name) =
     if kn1 == kn2 then 0
@@ -498,8 +500,8 @@ module KerPair = struct
       if mp1 == mp2 then same kn
       else make kn (KerName.make mp2 lbl)
 
-  let to_string kp = KerName.to_string (user kp)
-  let print kp = str (to_string kp)
+  let to_string kp = KerName.to_string (user kp) (* deprecated *)
+  let print kp = str (to_string kp) (* deprecated *)
 
   let debug_to_string = function
     | Same kn -> "(" ^ KerName.debug_to_string kn ^ ")"
@@ -852,8 +854,8 @@ struct
 
     let map f p = map_npars (fun mind n -> f mind, n) p
 
-    let to_string p = Constant.to_string (constant p)
-    let print p = Constant.print (constant p)
+    let debug_to_string p = Constant.debug_to_string (constant p)
+    let debug_print p = Constant.debug_print (constant p)
   end
 
   type t = Repr.t * bool
@@ -915,8 +917,11 @@ struct
     let c' = Repr.map_npars f c in
     if c' == c then x else (c', b)
 
-  let to_string p = Constant.to_string (constant p)
-  let print p = Constant.print (constant p)
+  let debug_to_string p = Constant.debug_to_string (constant p)
+  let debug_print p = Constant.debug_print (constant p)
+
+  let to_string = debug_to_string (* deprecated *)
+  let print = debug_print (* deprecated *)
 
 end
 

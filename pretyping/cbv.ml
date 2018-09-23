@@ -188,7 +188,7 @@ let _ = Goptions.declare_bool_option {
 }
 
 let debug_pr_key = function
-  | ConstKey (sp,_) -> Names.Constant.print sp
+  | ConstKey (sp,_) -> Names.Constant.debug_print sp
   | VarKey id -> Names.Id.print id
   | RelKey n -> Pp.(str "REL_" ++ int n)
 

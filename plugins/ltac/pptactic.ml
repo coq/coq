@@ -274,7 +274,7 @@ let string_of_genarg_arg (ArgumentType arg) =
     with Not_found ->
       (* FIXME: This key, moreover printed with a low-level printer,
          has no meaning user-side *)
-      KerName.print key
+      KerName.debug_print key
 
   let pr_alias_gen pr_gen lev key l =
     try
@@ -292,7 +292,7 @@ let string_of_genarg_arg (ArgumentType arg) =
       if pp.pptac_level > lev then surround p else p
     with Not_found ->
       let pr _ = str "_" in
-      KerName.print key ++ spc() ++ pr_sequence pr l ++ str" (* Generic printer *)"
+      KerName.debug_print key ++ spc() ++ pr_sequence pr l ++ str" (* Generic printer *)"
 
   let pr_farg prtac arg = prtac (1, Any) (TacArg (Loc.tag arg))
 
@@ -375,11 +375,11 @@ let string_of_genarg_arg (ArgumentType arg) =
     | ArgVar {CAst.loc;v=id} -> pr_with_comments ?loc (pr_id id)
 
   let pr_ltac_constant kn =
-    if !Flags.in_debugger then KerName.print kn
+    if !Flags.in_debugger then KerName.debug_print kn
     else try
            pr_qualid (Tacenv.shortest_qualid_of_tactic kn)
       with Not_found -> (* local tactic not accessible anymore *)
-        str "<" ++ KerName.print kn ++ str ">"
+        str "<" ++ KerName.debug_print kn ++ str ">"
 
   let pr_evaluable_reference_env env = function
     | EvalVarRef id -> pr_id id

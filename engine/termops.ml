@@ -36,7 +36,7 @@ let pr_sort_family = function
   | InProp -> (str "Prop")
   | InType -> (str "Type")
 
-let pr_con sp = str(Constant.to_string sp)
+let pr_con sp = str(Constant.debug_to_string sp)
 
 let pr_fix pr_constr ((t,i),(lna,tl,bl)) =
   let fixl = Array.mapi (fun i na -> (na,t.(i),tl.(i),bl.(i))) lna in
@@ -81,9 +81,9 @@ let rec pr_constr c = match kind c with
       (str"Evar#" ++ int (Evar.repr e) ++ str"{" ++
        prlist_with_sep spc pr_constr (Array.to_list l) ++str"}")
   | Const (c,u) -> str"Cst(" ++ pr_puniverses (pr_con c) u ++ str")"
-  | Ind ((sp,i),u) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str")"
+  | Ind ((sp,i),u) -> str"Ind(" ++ pr_puniverses (MutInd.debug_print sp ++ str"," ++ int i) u ++ str")"
   | Construct (((sp,i),j),u) ->
-      str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
+      str"Constr(" ++ pr_puniverses (MutInd.debug_print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
   | Proj (p,c) -> str"Proj(" ++ pr_con (Projection.constant p) ++ str"," ++ bool (Projection.unfolded p) ++ pr_constr c ++ str")"
   | Case (ci,p,c,bl) -> v 0
       (hv 0 (str"<"++pr_constr p++str">"++ cut() ++ str"Case " ++

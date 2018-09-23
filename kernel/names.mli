@@ -286,11 +286,13 @@ sig
 
   (** Display *)
   val to_string : t -> string
-
-  val debug_to_string : t -> string
-  (** Same as [to_string], but outputs information related to debug. *)
+  [@@ocaml.deprecated "Kernel names are for internal use and can be turned into string by using [debug_to_string kn]"]
 
   val print : t -> Pp.t
+  [@@ocaml.deprecated "Kernel names are for internal use and can be printed using [debug_print kn]"]
+
+  val debug_to_string : t -> string
+  val debug_print : t -> Pp.t
 
   (** Comparisons *)
   val compare : t -> t -> int
@@ -365,7 +367,11 @@ sig
   (** Displaying *)
 
   val to_string : t -> string
+  [@@ocaml.deprecated "If for debug, use [debug_to_string cst]; if for printing, use [Printer.pr_constant_env env cst]; at worst, use [Termops.print_constr (EConstr.mkConst cst)]"]
+
   val print : t -> Pp.t
+  [@@ocaml.deprecated "If for debug, use [debug_print cst]; if for printing, use [Printer.pr_constant_env env cst]; at worst, use [Termops.print_constr (EConstr.mkConst ind)]"]
+
   val debug_to_string : t -> string
   val debug_print : t -> Pp.t
 
@@ -444,7 +450,11 @@ sig
   (** Displaying *)
 
   val to_string : t -> string
+  [@@ocaml.deprecated "If for debug, use [debug_to_string kn]; if for printing, get from it an object [ind] of type [inductive] and use [Printer.pr_inductive_env env ind]; at worst, use [Termops.print_constr (EConstr.mkInd ind)]"]
+
   val print : t -> Pp.t
+  [@@ocaml.deprecated "If for debug, use [debug_print kn]; if for printing, get from it an object [ind] of type [inductive] and use [Printer.pr_inductive_env env ind]; at worst, use [Termops.print_constr (EConstr.mkInd ind)]"]
+
   val debug_to_string : t -> string
   val debug_print : t -> Pp.t
 
@@ -575,8 +585,8 @@ module Projection : sig
     val map : (MutInd.t -> MutInd.t) -> t -> t
     val map_npars : (MutInd.t -> int -> MutInd.t * int) -> t -> t
 
-    val print : t -> Pp.t
-    val to_string : t -> string
+    val debug_print : t -> Pp.t
+    val debug_to_string : t -> string
   end
   type t (* = Repr.t * bool *)
 
@@ -614,7 +624,13 @@ module Projection : sig
   val map_npars : (MutInd.t -> int -> MutInd.t * int) -> t -> t
 
   val to_string : t -> string
+  [@@ocaml.deprecated "If for debug, use [debug_to_string kn]; if for printing, use [Printer.pr_constant_env env (Projection.constant kn)] or one of its variant, at worst [Termops.print_constr (EConstr.mkConst (Projection.constant kn))]"]
+
   val print : t -> Pp.t
+  [@@ocaml.deprecated "If for debug, use [debug_print kn]; if for user-readable printing, use [Printer.pr_constr_env (Constr.mkProj (kn,c))] or one of its variant, at worst [Termops.print_constr (EConstr.mkProj (kn,c))]"]
+
+  val debug_to_string : t -> string
+  val debug_print : t -> Pp.t
 
 end
 

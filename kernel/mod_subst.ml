@@ -85,11 +85,11 @@ let is_empty_subst = Umap.is_empty
 let string_of_hint = function
   | Inline (_,Some _) -> "inline(Some _)"
   | Inline _ -> "inline()"
-  | Equiv kn -> KerName.to_string kn
+  | Equiv kn -> KerName.debug_to_string kn
 
 let debug_string_of_delta resolve =
   let kn_to_string kn hint l =
-    (KerName.to_string kn ^ "=>" ^ string_of_hint hint) :: l
+    (KerName.debug_to_string kn ^ "=>" ^ string_of_hint hint) :: l
   in
   let mp_to_string mp mp' l =
     (ModPath.to_string mp ^ "=>" ^ ModPath.to_string mp') :: l

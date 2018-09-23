@@ -202,7 +202,7 @@ let rec pp_instr i =
 	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
 	     str " bodies = " ++
 	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
-  | Kgetglobal idu -> str "getglobal " ++ Constant.print idu
+  | Kgetglobal idu -> str "getglobal " ++ Constant.debug_print idu
   | Kconst sc ->
       str "const " ++ pp_struct_const sc
   | Kmakeblock(n, m) ->
@@ -224,7 +224,7 @@ let rec pp_instr i =
 
   | Kbranch lbl -> str "branch " ++ pp_lbl lbl
 
-  | Kproj p -> str "proj " ++ Projection.Repr.print p
+  | Kproj p -> str "proj " ++ Projection.Repr.debug_print p
 
   | Kensurestackcapacity size -> str "growstack " ++ int size
 

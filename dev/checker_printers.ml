@@ -26,7 +26,7 @@ let ppdir dir = pp (DirPath.print dir)
 let ppmp mp = pp(str (ModPath.debug_to_string mp))
 let ppcon con = pp(Constant.debug_print con)
 let ppproj con = pp(Constant.debug_print (Projection.constant con))
-let ppkn kn = pp(str (KerName.to_string kn))
+let ppkn kn = pp(str (KerName.debug_to_string kn))
 let ppmind kn = pp(MutInd.debug_print kn)
 let ppind (kn,i) = pp(MutInd.debug_print kn ++ str"," ++int i)
 

@@ -896,7 +896,7 @@ let pr_assumptionset env sigma s =
       try pr_inductive env (kn,0)
       with Not_found ->
         (* FIXME? *)
-        MutInd.print kn
+        MutInd.debug_print kn
     in
     let safe_pr_ltype env sigma typ =
       try str " : " ++ pr_ltype_env env sigma typ

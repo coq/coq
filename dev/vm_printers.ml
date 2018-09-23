@@ -10,13 +10,13 @@ let ppripos (ri,pos) =
   | Reloc_annot a ->
       let sp,i = a.ci.ci_ind in
       print_string
-        ("annot : MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^")\n")
+        ("annot : MutInd("^(MutInd.debug_to_string sp)^","^(string_of_int i)^")\n")
   | Reloc_const _ ->
       print_string "structured constant\n"
   | Reloc_getglobal kn ->
-    print_string ("getglob "^(Constant.to_string kn)^"\n")
+    print_string ("getglob "^(Constant.debug_to_string kn)^"\n")
   | Reloc_proj_name p ->
-    print_string ("proj "^(Projection.Repr.to_string p)^"\n")
+    print_string ("proj "^(Projection.Repr.debug_to_string p)^"\n")
   );
    print_flush ()
 
@@ -35,7 +35,7 @@ let print_idkey idk =
   match idk with
   | ConstKey sp ->
       print_string "Cons(";
-      print_string (Constant.to_string sp);
+      print_string (Constant.debug_to_string sp);
       print_string ")"
   | VarKey id -> print_string (Id.to_string id)
   | RelKey i -> print_string "~";print_int i
@@ -70,7 +70,7 @@ and ppatom a =
   | Aid idk -> print_idkey idk
   | Asort u -> print_string "Sort(...)"
   | Aind(sp,i) ->  print_string "Ind(";
-      print_string (MutInd.to_string sp);
+      print_string (MutInd.debug_to_string sp);
       print_string ","; print_int i;
       print_string ")"
 

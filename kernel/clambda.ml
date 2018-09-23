@@ -106,7 +106,7 @@ let rec pp_lam lam =
        str")")
   | Lval _ -> str "values"
   | Lsort s -> pp_sort s
-  | Lind ((mind,i), _) -> MutInd.print mind ++ str"#" ++ int i
+  | Lind ((mind,i), _) -> MutInd.debug_print mind ++ str"#" ++ int i
   | Lprim((kn,_u),_ar,_op,args) ->
     hov 1
       (str "(PRIM " ++ pr_con kn ++  spc() ++
@@ -114,7 +114,7 @@ let rec pp_lam lam =
        str")")
   | Lproj(p,arg) ->
     hov 1
-      (str "(proj " ++ Projection.Repr.print p ++ str "(" ++ pp_lam arg
+      (str "(proj " ++ Projection.Repr.debug_print p ++ str "(" ++ pp_lam arg
        ++ str ")")
   | Lint i ->
     Pp.(str "(int:" ++ int i ++ str ")")

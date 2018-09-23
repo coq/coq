@@ -125,8 +125,8 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
         let v = ACumulativityInfo.variance cumi in
         let v' = ACumulativityInfo.variance cumi' in
         if not (Array.for_all2 Variance.check_subtype v' v) then
-          CErrors.anomaly Pp.(str "Variance of " ++ KerName.print kn1 ++
-            str " is not compatible with the one of " ++ KerName.print kn2)
+          CErrors.anomaly Pp.(str "Variance of " ++ KerName.debug_print kn1 ++
+            str " is not compatible with the one of " ++ KerName.debug_print kn2)
       in
       let auctx = Univ.ACumulativityInfo.univ_context cumi in
       let auctx' = Univ.ACumulativityInfo.univ_context cumi' in

@@ -44,7 +44,7 @@ let ppdir dir = pp (DirPath.print dir)
 let ppmp mp = pp(str (ModPath.debug_to_string mp))
 let ppcon con = pp(Constant.debug_print con)
 let ppproj con = pp(Constant.debug_print (Projection.constant con))
-let ppkn kn = pp(str (KerName.to_string kn))
+let ppkn kn = pp(str (KerName.debug_to_string kn))
 let ppmind kn = pp(MutInd.debug_print kn)
 let ppind (kn,i) = pp(MutInd.debug_print kn ++ str"," ++int i)
 let ppsp sp = pp(pr_path sp)
@@ -55,9 +55,9 @@ let ppscheme k = pp (Ind_tables.pr_scheme_kind k)
 let prrecarg = function
   | Declarations.Norec -> str "Norec"
   | Declarations.Mrec (mind,i) ->
-     str "Mrec[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
+     str "Mrec[" ++ MutInd.debug_print mind ++ pr_comma () ++ int i ++ str "]"
   | Declarations.Imbr (mind,i) ->
-     str "Imbr[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
+     str "Imbr[" ++ MutInd.debug_print mind ++ pr_comma () ++ int i ++ str "]"
 let ppwf_paths x = pp (Rtree.pp_tree prrecarg x)
 
 (* term printers *)
@@ -146,7 +146,7 @@ let safe_pr_global = function
 let ppglobal x = try pp(pr_global x) with _ -> safe_pr_global x
 
 let ppconst (sp,j) =
-    pp (str"#" ++ KerName.print sp ++ str"=" ++ envpp pr_lconstr_env j.uj_val)
+    pp (str"#" ++ KerName.debug_print sp ++ str"=" ++ envpp pr_lconstr_env j.uj_val)
 
 let ppvar ((id,a)) =
     pp (str"#" ++ Id.print id ++ str":" ++ envpp pr_lconstr_env a)
@@ -238,7 +238,7 @@ let ppenv e = pp
 let ppenvwithcst e = pp
   (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++
    str "[" ++ pr_rel_context e Evd.empty (rel_context e) ++ str "]" ++ spc() ++
-   str "{" ++ Environ.fold_constants (fun a _ s -> Constant.print a ++ spc () ++ s) e (mt ()) ++ str "}")
+   str "{" ++ Environ.fold_constants (fun a _ s -> Constant.debug_print a ++ spc () ++ s) e (mt ()) ++ str "}")
 
 let pptac = (fun x -> pp(Ltac_plugin.Pptactic.pr_glob_tactic (Global.env()) x))
 
@@ -270,13 +270,13 @@ let constr_display csr =
       ^(term_display t)^","^(term_display c)^")"
   | App (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
   | Evar (e,l) -> "Evar("^(Pp.string_of_ppcmds (Evar.print e))^","^(array_display l)^")"
-  | Const (c,u) -> "Const("^(Constant.to_string c)^","^(universes_display u)^")"
+  | Const (c,u) -> "Const("^(Constant.debug_to_string c)^","^(universes_display u)^")"
   | Ind ((sp,i),u) ->
-      "MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^","^(universes_display u)^")"
+      "MutInd("^(MutInd.debug_to_string sp)^","^(string_of_int i)^","^(universes_display u)^")"
   | Construct (((sp,i),j),u) ->
-      "MutConstruct(("^(MutInd.to_string sp)^","^(string_of_int i)^"),"
+      "MutConstruct(("^(MutInd.debug_to_string sp)^","^(string_of_int i)^"),"
       ^","^(universes_display u)^(string_of_int j)^")"
-  | Proj (p, c) -> "Proj("^(Constant.to_string (Projection.constant p))^","^term_display c ^")"
+  | Proj (p, c) -> "Proj("^(Constant.debug_to_string (Projection.constant p))^","^term_display c ^")"
   | Case (ci,p,c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
       ^(array_display bl)^")"

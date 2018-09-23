@@ -119,6 +119,16 @@ Termops
 - Internal printing functions have been placed under the
   `Termops.Internal` namespace.
 
+Name printers
+
+- Name printers in names.ml have been renamed with a `debug` prefix
+  and the old names are deprecated. These printers were indeed
+  debugging printers and they may produce results which are not
+  meaningful from the point of view of a Coq user (e.g. printing the
+  first name of a block of inductive types rather than the second name
+  of the block). Use printers from `printer.ml` or
+  `Termops.print_constr` instead.
+
 ### Unit testing
 
 The test suite now allows writing unit tests against OCaml code in the Coq
