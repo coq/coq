@@ -913,7 +913,15 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) evdref
       inh_conv_coerce_to_tycon ?loc env evdref cj tycon
 
   | GCases (sty,po,tml,eqns) ->
-    Cases.compile_cases ?loc sty (pretype,evdref) tycon env (po,tml,eqns)
+    let pretype tycon env sigma c =
+      let evdref = ref sigma in
+      let t = pretype tycon env evdref c in
+      !evdref, t
+    in
+    let sigma = !evdref in
+    let sigma, j = Cases.compile_cases ?loc sty (pretype, sigma) tycon env (po,tml,eqns) in
+    let () = evdref := sigma in
+    j
 
   | GCast (c,k) ->
     let cj =
