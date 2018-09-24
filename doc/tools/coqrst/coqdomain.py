@@ -312,14 +312,15 @@ class TacticNotationVariantObject(TacticNotationObject):
     annotation = "Variant"
 
 class OptionObject(NotationObject):
-    """A Coq option.
+    """A Coq option (a setting with non-boolean value, e.g. a string or numeric value).
 
     Example::
 
        .. opt:: Hyps Limit @num
+          :name Hyps Limit
 
-          This option controls the maximum number of hypotheses displayed in goals after
-          the application of a tactic.
+          Controls the maximum number of hypotheses displayed in goals after
+          application of a tactic.
     """
     subdomain = "opt"
     index_suffix = "(opt)"
@@ -330,14 +331,14 @@ class OptionObject(NotationObject):
 
 
 class FlagObject(NotationObject):
-    """A Coq flag, i.e. a boolean Option.
+    """A Coq flag (i.e. a boolean setting).
 
     Example::
 
        .. flag:: Nonrecursive Elimination Schemes
 
-          This flag controls whether types declared with the keywords
-          :cmd:`Variant` and :cmd:`Record` get an automatic declaration of the
+          Controls whether types declared with the keywords
+          :cmd:`Variant` and :cmd:`Record` get an automatic declaration of
           induction principles.
     """
     subdomain = "flag"
@@ -353,9 +354,10 @@ class TableObject(NotationObject):
 
     Example::
 
-       .. table:: Search Blacklist
+       .. table:: Search Blacklist @string
+          :name: Search Blacklist
 
-          This table controls ...
+          Controls ...
     """
     subdomain = "table"
     index_suffix = "(table)"
@@ -1151,4 +1153,11 @@ def setup(app):
     # Tell Sphinx about extra settings
     app.add_config_value("report_undocumented_coq_objects", None, 'env')
 
-    return {'version': '0.1', "parallel_read_safe": True}
+    # ``env_version`` is used by Sphinx to know when to invalidate
+    # coqdomain-specific bits in its caches.  It should be incremented when the
+    # contents of ``env.domaindata['coq']`` change.  See
+    # `https://github.com/sphinx-doc/sphinx/issues/4460`.
+    meta = { "version": "0.1",
+             "env_version": 2,
+             "parallel_read_safe": True }
+    return meta
