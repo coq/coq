@@ -530,13 +530,16 @@ let match_goals ot nt =
   | None -> ());
   !nevar_to_oevar
 
+let get_proof_context (p : Proof.t) =
+  let goals, _, _, _, sigma = Proof.proof p in
+  sigma, Refiner.pf_env { it = List.(hd goals); sigma }
 
-let to_constr p =
+let to_constr pf =
   let open CAst in
-  let pprf = Proof.partial_proof p in
+  let pprf = Proof.partial_proof pf in
   (* pprf generally has only one element, but it may have more in the derive plugin *)
   let t = List.hd pprf in
-  let sigma, env = Pfedit.get_current_context ~p () in
+  let sigma, env = get_proof_context pf in
   let x = Constrextern.extern_constr false env sigma t in  (* todo: right options?? *)
   x.v
 
