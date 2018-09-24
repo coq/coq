@@ -175,8 +175,8 @@ after_script:
   artifacts:
     name: "%CI_JOB_NAME%"
     paths:
-      - dev\nsis\*.exe
-      - coq-opensource-archive-windows-*.zip
+      - artifacts
+    when: always
     expire_in: 1 week
   dependencies: []
   tags:
