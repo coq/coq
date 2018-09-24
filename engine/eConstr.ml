@@ -445,10 +445,22 @@ let fold sigma f acc c = match kind sigma c with
 let compare_gen k eq_inst eq_sort eq_constr nargs c1 c2 =
   (c1 == c2) || Constr.compare_head_gen_with k k eq_inst eq_sort eq_constr nargs c1 c2
 
+let eq_einstance sigma i1 i2 =
+  let i1 = EInstance.kind sigma (EInstance.make i1) in
+  let i2 = EInstance.kind sigma (EInstance.make i2) in
+  Univ.Instance.equal i1 i2
+
+let eq_esorts sigma s1 s2 =
+  let s1 = ESorts.kind sigma (ESorts.make s1) in
+  let s2 = ESorts.kind sigma (ESorts.make s2) in
+  Sorts.equal s1 s2
+
 let eq_constr sigma c1 c2 =
   let kind c = kind_upto sigma c in
+  let eq_inst _ _ i1 i2 = eq_einstance sigma i1 i2 in
+  let eq_sorts s1 s2 = eq_esorts sigma s1 s2 in
   let rec eq_constr nargs c1 c2 =
-    compare_gen kind (fun _ _ -> Univ.Instance.equal) Sorts.equal eq_constr nargs c1 c2
+    compare_gen kind eq_inst eq_sorts eq_constr nargs c1 c2
   in
   eq_constr 0 (unsafe_to_constr c1) (unsafe_to_constr c2)
 
@@ -461,8 +473,10 @@ let eq_constr_nounivs sigma c1 c2 =
 
 let compare_constr sigma cmp c1 c2 =
   let kind c = kind_upto sigma c in
+  let eq_inst _ _ i1 i2 = eq_einstance sigma i1 i2 in
+  let eq_sorts s1 s2 = eq_esorts sigma s1 s2 in
   let cmp nargs c1 c2 = cmp (of_constr c1) (of_constr c2) in
-  compare_gen kind (fun _ _ -> Univ.Instance.equal) Sorts.equal cmp 0 (unsafe_to_constr c1) (unsafe_to_constr c2)
+  compare_gen kind eq_inst eq_sorts cmp 0 (unsafe_to_constr c1) (unsafe_to_constr c2)
 
 let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
   let open UnivProblem in
