@@ -13,6 +13,7 @@
 open Glob_term
 open Constrexpr
 open Vernacexpr
+open Hints
 open Proof_global
 
 open Pcoq

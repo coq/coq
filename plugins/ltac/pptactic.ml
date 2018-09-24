@@ -28,6 +28,7 @@ open Printer
 
 open Tacexpr
 open Tacarg
+open Tactics
 
 module Tag =
 struct
@@ -507,7 +508,7 @@ let string_of_genarg_arg (ArgumentType arg) =
   let pr_destruction_arg prc prlc (clear_flag,h) =
     pr_clear_flag clear_flag (pr_core_destruction_arg prc prlc) h
 
-  let pr_inversion_kind = function
+  let pr_inversion_kind = let open Inv in function
     | SimpleInversion -> primitive "simple inversion"
     | FullInversion -> primitive "inversion"
     | FullInversionClear -> primitive "inversion_clear"
@@ -516,7 +517,7 @@ let string_of_genarg_arg (ArgumentType arg) =
     if Int.equal i j then int i
     else int i ++ str "-" ++ int j
 
-let pr_goal_selector toplevel = function
+let pr_goal_selector toplevel = let open Goal_select in function
   | SelectAlreadyFocused -> str "!:"
   | SelectNth i -> int i ++ str ":"
   | SelectList l -> prlist_with_sep (fun () -> str ", ") pr_range_selector l ++ str ":"
