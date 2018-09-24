@@ -611,6 +611,46 @@ function installer_addon_section {
 }
 
 # ------------------------------------------------------------------------------
+# Start an installer addon dependency group
+#
+# parameters
+# $1 identifier of the section which depends on other sections
+# The parameters must match the $1 parameter of a installer_addon_section call
+# ------------------------------------------------------------------------------
+
+dependencysections=
+
+function installer_addon_dependency_beg {
+  installer_addon_dependency "$1"
+  dependencysections="$1 $dependencysections"
+}
+
+# ------------------------------------------------------------------------------
+# End an installer addon dependency group
+# ------------------------------------------------------------------------------
+
+function installer_addon_dependency_end {
+  set -- $dependencysections
+  shift
+  dependencysections="$*"
+}
+
+# ------------------------------------------------------------------------------
+# Create an nsis installer addon dependency entry
+# This needs to be bracketed with installer_addon_dependencies_beg/end
+#
+# parameters
+# $1 identifier of the section on which other sections might depend
+# The parameters must match the $1 parameter of a installer_addon_section call
+# ------------------------------------------------------------------------------
+
+function installer_addon_dependency {
+  for section in $dependencysections ; do
+    echo '${CheckSectionDependency} ${Sec_'"$section"'} ${Sec_'"$1"'} '"'$section' '$1'" >> "/build/filelists/addon_dependencies.nsh"
+  done
+}
+
+# ------------------------------------------------------------------------------
 # Finish an installer section after an addon build
 #
 # This creates the file list files
@@ -1562,6 +1602,7 @@ function make_coq_installer {
 # Provides BigN, BigZ, BigQ that used to be part of Coq standard library
 
 function make_addon_bignums {
+  installer_addon_dependency bignums
   if build_prep_overlay bignums; then
     installer_addon_section bignums "Bignums" "Coq library for fast arbitrary size numbers" ""
     # To make command lines shorter :-(
@@ -1576,6 +1617,7 @@ function make_addon_bignums {
 # A function definition plugin
 
 function make_addon_equations {
+  installer_addon_dependency equations
   if build_prep_overlay Equations; then
     installer_addon_section equations "Equations" "Coq plugin for defining functions by equations" ""
     # Note: PATH is autmatically saved/restored by build_prep / build_post
@@ -1590,6 +1632,7 @@ function make_addon_equations {
 # mathcomp - ssreflect and mathematical components library
 
 function make_addon_mathcomp {
+  installer_addon_dependency mathcomp
   if build_prep_overlay mathcomp; then
     installer_addon_section mathcomp "Math-Components" "Coq library with mathematical components" ""
     cd mathcomp
@@ -1607,6 +1650,7 @@ function make_addon_ssreflect {
     make_addon_mathcomp
   else
     # Note: since either mathcomp or ssreflect is defined, it is fine to name both mathcomp
+    installer_addon_dependency ssreflect
     if build_prep_overlay mathcomp; then
       installer_addon_section ssreflect "SSReflect" "Coq support library for small scale reflection plugin" ""
       cd mathcomp
@@ -1622,6 +1666,7 @@ function make_addon_ssreflect {
 # A new (experimental) tactic language
 
 function make_addon_ltac2 {
+  installer_addon_dependency ltac2
   if build_prep_overlay ltac2; then
     installer_addon_section ltac2 "Ltac-2" "Coq plugin with the Ltac-2 enhanced tactics language" ""
     log1 make all
@@ -1633,6 +1678,7 @@ function make_addon_ltac2 {
 # UniCoq plugin
 # An alternative unification algorithm
 function make_addon_unicoq {
+  installer_addon_dependency unicoq
   if build_prep_overlay unicoq; then
     log1 coq_makefile -f Make -o Makefile
     log1 make
@@ -1644,7 +1690,9 @@ function make_addon_unicoq {
 # Mtac2 plugin
 # An alternative typed tactic language
 function make_addon_mtac2 {
+  installer_addon_dependency_beg mtac2
   make_addon_unicoq
+  installer_addon_dependency_end
   if build_prep_overlay mtac2; then
     log1 coq_makefile -f _CoqProject -o Makefile
     log1 make
@@ -1658,10 +1706,11 @@ function make_addon_mtac2 {
 function make_addon_menhir {
   make_menhir
   # If COQ and OCaml are installed to the same folder, there is nothing to do
+  installer_addon_dependency menhir
   if [ "$PREFIXOCAML" != "$PREFIXCOQ" ] ; then
     # Just install menhir files required for COQ to COQ target folder
     if [ ! -f "$FLAGFILES/menhir-addon.finished" ] ; then
-      installer_addon_section menhir "Menhir" "Menhir parser generator windows executable and libraries" "off"
+      installer_addon_section menhir "Menhir" "Menhir parser generator windows executable and libraries" ""
       LOGTARGET=menhir-addon
       touch "$FLAGFILES/menhir-addon.started"
       # Menhir executable
@@ -1680,8 +1729,9 @@ function make_addon_menhir {
 # COQ library for Menhir
 
 function make_addon_menhirlib {
+  installer_addon_dependency menhirlib
   if build_prep_overlay menhirlib; then
-    installer_addon_section menhirlib "Menhirlib" "Coq support library for using Menhir generated parsers in Coq" "off"
+    installer_addon_section menhirlib "Menhirlib" "Coq support library for using Menhir generated parsers in Coq" ""
     # The supplied makefiles don't work in any way on cygwin
     cd src
     echo -R . MenhirLib > _CoqProject
@@ -1696,8 +1746,10 @@ function make_addon_menhirlib {
 # CompCert
 
 function make_addon_compcert {
+  installer_addon_dependency_beg compcert
   make_menhir
   make_addon_menhirlib
+  installer_addon_dependency_end
   if build_prep_overlay CompCert; then
     installer_addon_section compcert "CompCert" "ATTENTION: THIS IS NOT OPEN SOURCE! CompCert verified C compiler and Clightgen (required for using VST for your own code)" "off"
     logn configure ./configure -ignore-coq-version -clightgen -prefix "$PREFIXCOQ" -coqdevdir "$PREFIXCOQ/lib/coq/user-contrib/compcert" x86_32-cygwin
@@ -1741,6 +1793,7 @@ function install_addon_vst {
 }
 
 function make_addon_vst {
+  installer_addon_dependency vst
   if build_prep_overlay VST; then
     installer_addon_section vst "VST" "ATTENTION: SOME INCLUDED COMPCERT PARTS ARE NOT OPEN SOURCE! Verified Software Toolchain for verifying C code" "off"
     log1 make $MAKE_OPT
@@ -1752,7 +1805,9 @@ function make_addon_vst {
 # coquelicot Real analysis
 
 function make_addon_coquelicot {
+  installer_addon_dependency_beg coquelicot
   make_addon_ssreflect
+  installer_addon_dependency_end
   if build_prep_overlay Coquelicot; then
     installer_addon_section coquelicot "Coquelicot" "Coq library for real analysis" ""
     logn configure ./configure --libdir="$PREFIXCOQ/lib/coq/user-contrib/Coquelicot"
@@ -1765,6 +1820,7 @@ function make_addon_coquelicot {
 # AAC associative / commutative rewriting
 
 function make_addon_aactactics {
+  installer_addon_dependency aac
   if build_prep_overlay aactactis; then
     installer_addon_section aac "AAC" "Coq plugin for extensible associative and commutative rewriting" ""
     log1 make
@@ -1776,6 +1832,7 @@ function make_addon_aactactics {
 # extlib
 
 function make_addon_extlib {
+  installer_addon_dependency extlib
   if build_prep_overlay ext_lib; then
     installer_addon_section extlib "Ext-Lib" "Coq library with many reusable general purpose components" ""
     log1 make $MAKE_OPT
@@ -1787,6 +1844,7 @@ function make_addon_extlib {
 # SimpleIO
 
 function make_addon_simple_io {
+  installer_addon_dependency simpleIO
   if build_prep_overlay simple_io; then
     installer_addon_section simpleIO "SimpleIO" "Coq plugin for reading and writing files directly from Coq code" ""
     log1 make $MAKE_OPT
@@ -1798,10 +1856,12 @@ function make_addon_simple_io {
 # Quickchick Randomized Property-Based Testing Plugin for Coq
 
 function make_addon_quickchick {
+  installer_addon_dependency_beg quickchick
   make_addon_ssreflect
   make_addon_extlib
   make_addon_simple_io
   make_ocamlbuild
+  installer_addon_dependency_end
   if build_prep_overlay quickchick; then
     installer_addon_section quickchick "QuickChick" "Coq plugin for randomized testing and counter example search" ""
     log1 make
@@ -1813,9 +1873,14 @@ function make_addon_quickchick {
 # Main function for building addons
 
 function make_addons {
+  # Note: ':' is the empty command, which does not produce any output
+  : > "/build/filelists/addon_dependencies.nsh"
+
   for addon in $COQ_ADDONS; do
     "make_addon_$addon"
   done
+
+  sort -u -o "/build/filelists/addon_dependencies.nsh" "/build/filelists/addon_dependencies.nsh"
 }
 
 ###################### TOP LEVEL BUILD #####################
