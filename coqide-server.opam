@@ -1,15 +1,25 @@
-opam-version: "1.2"
+synopsis: "The Coq Proof Assistant"
+description: """
+Coq is a formal proof management system. It provides
+a formal language to write mathematical definitions, executable
+algorithms and theorems together with an environment for
+semi-interactive development of machine-checked proofs.
+
+This package provides the `coqidetop` language server, an
+implementation of Coq's [XML protocol](https://github.com/coq/coq/blob/master/dev/doc/xml-protocol.md)
+which allows clients, such as CoqIDE, to interact with Coq in a
+structured way.
+"""
+opam-version: "2.0"
 maintainer: "The Coq development team <coqdev@inria.fr>"
 authors: "The Coq development team, INRIA, CNRS, and contributors."
 homepage: "https://coq.inria.fr/"
 bug-reports: "https://github.com/coq/coq/issues"
-dev-repo: "https://github.com/coq/coq.git"
+dev-repo: "git+https://github.com/coq/coq.git"
 license: "LGPL-2.1"
 
-available: [ocaml-version >= "4.05.0"]
-
 depends: [
-  "dune"      { build & >= "1.2.0" }
+  "dune"      { build & >= "1.4.0" }
   "coq"
 ]
 

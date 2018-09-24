@@ -38,4 +38,5 @@
 ; Use summary.log as the target
 (alias
  (name runtest)
+ (package coqide-server)
  (deps test-suite/summary.log))

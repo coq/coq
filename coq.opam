@@ -1,18 +1,28 @@
-opam-version: "1.2"
+synopsis: "The Coq Proof Assistant"
+description: """
+Coq is a formal proof management system. It provides
+a formal language to write mathematical definitions, executable
+algorithms and theorems together with an environment for
+semi-interactive development of machine-checked proofs. Typical
+applications include the certification of properties of programming
+languages (e.g. the CompCert compiler certification project, or the
+Bedrock verified low-level programming library), the formalization of
+mathematics (e.g. the full formalization of the Feit-Thompson theorem
+or homotopy type theory) and teaching.
+"""
+opam-version: "2.0"
 maintainer: "The Coq development team <coqdev@inria.fr>"
 authors: "The Coq development team, INRIA, CNRS, and contributors."
 homepage: "https://coq.inria.fr/"
 bug-reports: "https://github.com/coq/coq/issues"
-dev-repo: "https://github.com/coq/coq.git"
+dev-repo: "git+https://github.com/coq/coq.git"
 license: "LGPL-2.1"
 
-available: [ ocaml-version >= "4.05.0" ]
-
 depends: [
-  "dune"      { build & >= "1.2.0" }
-  "ocamlfind" { build }
+  "ocaml"     {         >= "4.05.0" }
+  "dune"      { build & >= "1.4.0"  }
   "num"
-  "camlp5"    {         >= "7.03"  }
+  "camlp5"    {         >= "7.03"   }
 ]
 
 build-env: [
