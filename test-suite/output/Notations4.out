@@ -21,3 +21,5 @@ Let "x" e1 e2
      : expr
 Let "x" e1 e2
      : expr
+fun x : nat => (# x)%nat
+     : nat -> nat

@@ -94,3 +94,15 @@ Coercion App : expr >-> Funclass.
 Check (Let "x" e1 e2).
 
 End D.
+
+(* Check fix of #8551: a delimiter should be inserted because the
+   lonely notation hides the scope nat_scope, even though the latter
+   is open *)
+
+Module E.
+
+Notation "# x" := (S x) (at level 20) : nat_scope.
+Notation "# x" := (Some x).
+Check fun x => (# x)%nat.
+
+End E.

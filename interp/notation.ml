@@ -174,7 +174,7 @@ type interp_rule =
   | SynDefRule of KerName.t
 
 type notation_rule_core = interp_rule * interpretation * int option
-type notation_rule = notation_rule_core * delimiters option
+type notation_rule = notation_rule_core * delimiters option * bool
 
 (* Scopes for uninterpretation: includes abbreviations (i.e. syntactic definitions) and  *)
 
@@ -320,9 +320,9 @@ let keymap_add key sc interp map =
 
 let keymap_extract keys sc map =
   let keymap, map =
-    try ScopeMap.find sc map, ScopeMap.remove sc map
+    try ScopeMap.find (Some sc) map, ScopeMap.remove (Some sc) map
     with Not_found -> KeyMap.empty, map in
-  let add_scope rule = (rule,None) in
+  let add_scope rule = (rule,(String.Map.find sc !scope_map).delimiters,false) in
   List.map_append (fun key -> try List.map add_scope (KeyMap.find key keymap) with Not_found -> []) keys, map
 
 let find_with_delimiters = function
@@ -337,7 +337,7 @@ let keymap_extract_remainder keys map =
       match find_with_delimiters sc with
       | None -> acc
       | Some delim ->
-         let add_scope rule = (rule,delim) in
+         let add_scope rule = (rule,delim,true) in
          let l = List.map_append (fun key -> try List.map add_scope (KeyMap.find key keymap) with Not_found -> []) keys in
       l @ acc) map []
 
@@ -1054,8 +1054,8 @@ let extract_notations scopes keys =
   let rec aux scopes map =
   match scopes with
   | UninterpScope sc :: scopes ->
-      let l, map = keymap_extract keys (Some sc) map in l @ aux scopes map
-  | UninterpSingle rule :: scopes -> (rule,None) :: aux scopes map
+      let l, map = keymap_extract keys sc map in l @ aux scopes map
+  | UninterpSingle rule :: scopes -> (rule,None,false) :: aux scopes map
   | [] -> keymap_extract_remainder keys map
   in aux scopes !notations_key_table
 

@@ -219,6 +219,7 @@ type notation_rule_core =
 type notation_rule =
     notation_rule_core
   * delimiters option (* delimiter to possibly add *)
+  * bool (* true if the delimiter is mandatory *)
 
 (** Return the possible notations for a given term *)
 val uninterp_notations : subscopes -> 'a glob_constr_g -> notation_rule list
