@@ -62,6 +62,7 @@ let is_unification_error = function
 
 let catchable_exception = function
   | CErrors.UserError _ | TypeError _
+  | Notation.NumeralNotationError _
   | RefinerError _ | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _
   (* reduction errors *)
