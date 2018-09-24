@@ -288,13 +288,12 @@ doc:ml-api:ocamldoc:
       - dev/ocamldoc
 
 doc:ml-api:odoc:
-  <<: *dune-template
   stage: test
   dependencies:
     - build:egde:dune:dev
+  script: make -f Makefile.dune apidoc
   variables:
     OPAM_SWITCH: edge
-    DUNE_TARGET: apidoc
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
