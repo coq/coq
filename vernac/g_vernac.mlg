@@ -490,10 +490,6 @@ let warn_deprecated_include_type =
   CWarnings.create ~name:"deprecated-include-type" ~category:"deprecated"
          (fun () -> strbrk "Include Type is deprecated; use Include instead")
 
-let warn_deprecated_bind_several_scopes =
-  CWarnings.create ~name:"deprecated-bind-multiple-scopes" ~category:"deprecated"
-         (fun () -> strbrk "Binding a scope to several types at the same time is deprecated.")
-
 }
 
 (* Modules and Sections *)
@@ -1123,9 +1119,8 @@ GRAMMAR EXTEND Gram
 	 { VernacDelimiters (sc, None) }
 
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with";
-       refl = LIST1 class_rawexpr ->
-         { if List.length refl > 1 then warn_deprecated_bind_several_scopes ();
-           VernacBindScope (sc,refl) }
+       refl = class_rawexpr ->
+         { VernacBindScope (sc,[refl]) }
 
      | IDENT "Infix"; op = ne_lstring; ":="; p = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> { l } | -> { [] } ];

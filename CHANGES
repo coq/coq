@@ -8,6 +8,11 @@ Plugins
   externally, the Coq development team can provide assistance for extracting
   the plugin and setting up a new repository.
 
+Notations
+
+- Removed undocumented support for binding a scope to several types at
+  the same time.
+
 Changes from 8.8.2 to 8.9+beta1
 ===============================
 
