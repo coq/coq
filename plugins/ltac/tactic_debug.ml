@@ -58,7 +58,7 @@ let db_pr_goal gl =
                    str" "  ++ pc) ++ fnl ()
 
 let db_pr_goal =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let pg = db_pr_goal gl in
   Proofview.tclLIFT (msg_tac_notice (str "Goal:" ++ fnl () ++ pg))
   end

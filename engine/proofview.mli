@@ -497,6 +497,7 @@ module Goal : sig
 
   (** Normalises the argument goal. *)
   val normalize : t -> t tactic
+  [@@ocaml.deprecated "Normalization is enforced by EConstr, [normalize] is not needed anymore"]
 
   (** [concl], [hyps], [env] and [sigma] given a goal [gl] return
       respectively the conclusion of [gl], the hypotheses of [gl], the
@@ -514,6 +515,7 @@ module Goal : sig
       the current goal is also given as an argument to [t]. The goal
       is normalised with respect to evars. *)
   val nf_enter : (t -> unit tactic) -> unit tactic
+  [@@ocaml.deprecated "Normalization is enforced by EConstr, please use [enter]"]
 
   (** Like {!nf_enter}, but does not normalize the goal beforehand. *)
   val enter : (t -> unit tactic) -> unit tactic

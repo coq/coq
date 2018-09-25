@@ -99,7 +99,7 @@ let let_evar name typ =
   
 let hget_evar n =
   let open EConstr in
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let sigma = Tacmach.New.project gl in
   let concl = Proofview.Goal.concl gl in
   let evl = evar_list sigma concl in

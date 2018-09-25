@@ -1088,7 +1088,7 @@ let () = CLexer.set_keyword_state frozen_lexer ;;
 
 (** Basic tactics *)
 
-let rec fst_prod red tac = Proofview.Goal.nf_enter begin fun gl ->
+let rec fst_prod red tac = Proofview.Goal.enter begin fun gl ->
   let concl = Proofview.Goal.concl gl in
   match EConstr.kind (Proofview.Goal.sigma gl) concl with
   | Prod (id,_,tgt) | LetIn(id,_,_,tgt) -> tac id

@@ -42,6 +42,8 @@ val run : 'a t -> ('a -> unit Proofview.tactic) -> unit Proofview.tactic
 (** {5 Focussing} *)
 
 val nf_enter : (Proofview.Goal.t -> 'a t) -> 'a t
+[@@ocaml.deprecated "Normalization is enforced by EConstr, please use [enter]"]
+
 (** Enter a goal. The resulting tactic is focussed. *)
 
 val enter : (Proofview.Goal.t -> 'a t) -> 'a t

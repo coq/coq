@@ -162,7 +162,7 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
 	   | None ->
 		 (* try to rewrite in all hypothesis
 		    (except maybe the rewritten one) *)
-               Proofview.Goal.nf_enter begin fun gl ->
+               Proofview.Goal.enter begin fun gl ->
                  let ids = Tacmach.New.pf_ids_of_hyps gl in
 		 try_do_hyps (fun id -> id)  ids
                end)
