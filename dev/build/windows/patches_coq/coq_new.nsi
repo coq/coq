@@ -154,6 +154,65 @@ SectionEnd
 ;OCAML SectionEnd
 
 ;--------------------------------
+;Section dependencies
+
+; Parameters on the stack:
+; top-0 : section B on which section A dependencies
+; top-1 : section A, which depends on section B
+; top-2 : name of section B
+; top-3 : name of section A
+
+Function CheckSectionDependency
+            ; stack=nameB nameA secB secA rest
+  Exch $R3  ; stack=$R3   nameA secB secA rest; $R3=nameB
+  Exch      ; stack=nameA $R3   secB secA rest
+  Exch $R2  ; stack=$R2   $R3   secB secA rest; $R2=nameA
+  Exch 2    ; stack=secB  $R3   $R2  secA rest
+  Exch $R1  ; stack=$R1   $R3   $R2  secA rest; $R1=secB
+  Exch 3    ; stack=secA  $R3   $R2  $R1  rest;
+  Exch $R0  ; stack=$R0   $R3   $R2  $R1  rest; $R0=secA
+            ; Take care of save order when popping the stack!
+  Push $R4
+  Push $R5
+
+  SectionGetFlags $R0 $R0
+  IntOp $R0 $R0 & ${SF_SELECTED}
+
+  SectionGetFlags $R1 $R4
+  IntOp $R5 $R4 & ${SF_SELECTED}
+
+  ${If} $R0 == ${SF_SELECTED}
+  ${AndIf} $R5 != ${SF_SELECTED}
+
+  IntOp $R5 $R4 | ${SF_SELECTED}
+  SectionSetFlags $R1 $R5
+  MessageBox MB_OK '"$R3" has been selected, because "$R2" depends on it'
+
+  ${EndIf}
+
+  Pop $R5
+  Pop $R4
+  Pop $R0
+  Pop $R3
+  Pop $R2
+  Pop $R1
+FunctionEnd
+
+!macro CheckSectionDependency secA secB nameA nameB
+  Push "${secA}"
+  Push "${secB}"
+  Push "${nameA}"
+  Push "${nameB}"
+  Call CheckSectionDependency
+!macroend
+
+!define CheckSectionDependency "!insertmacro CheckSectionDependency"
+
+Function .onSelChange
+  !include "..\..\..\filelists\addon_dependencies.nsh"
+FunctionEnd
+
+;--------------------------------
 ;Modern UI Configuration
 
 ; Note: this must be placed after the sections, because below we need to check at compile time
