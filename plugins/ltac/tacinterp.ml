@@ -283,6 +283,12 @@ let debugging_exception_step ist signal_anomaly e pp =
   debugging_step ist (fun () ->
     pp() ++ spc() ++ str "raised the exception" ++ fnl() ++ explain_exc e)
 
+let ensure_freshness env =
+  (* We anonymize declarations which we know will not be used *)
+  (* This assumes that the original context had no rels *)
+  process_rel_context
+    (fun d e -> EConstr.push_rel (Context.Rel.Declaration.set_name Anonymous d) e) env
+
 (* Raise Not_found if not in interpretation sign *)
 let try_interp_ltac_var coerce ist env {loc;v=id} =
   let v = Id.Map.find id ist.lfun in
@@ -1740,15 +1746,15 @@ and interp_atomic ist tac : unit Proofview.tactic =
           | AllOccurrences | NoOccurrences -> true
           | _ -> false
         in
-        let c_interp patvars sigma =
+        let c_interp patvars env sigma =
 	  let lfun' = Id.Map.fold (fun id c lfun ->
 	    Id.Map.add id (Value.of_constr c) lfun) 
 	    patvars ist.lfun
 	  in
 	  let ist = { ist with lfun = lfun' } in
             if is_onhyps && is_onconcl
-            then interp_type ist (pf_env gl) sigma c
-            else interp_constr ist (pf_env gl) sigma c
+            then interp_type ist env sigma c
+            else interp_constr ist env sigma c
         in
         Tactics.change None c_interp (interp_clause ist (pf_env gl) (project gl) cl)
       end
@@ -1761,11 +1767,12 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = project gl in
         let op = interp_typed_pattern ist env sigma op in
         let to_catch = function Not_found -> true | e -> CErrors.is_anomaly e in
-        let c_interp patvars sigma =
+        let c_interp patvars env sigma =
           let lfun' = Id.Map.fold (fun id c lfun ->
             Id.Map.add id (Value.of_constr c) lfun) 
             patvars ist.lfun
           in
+          let env = ensure_freshness env in
           let ist = { ist with lfun = lfun' } in
             try
               interp_constr ist env sigma c

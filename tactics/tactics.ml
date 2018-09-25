@@ -791,9 +791,9 @@ let e_change_in_hyp redfun (id,where) =
     (convert_hyp c)
   end
 
-type change_arg = Ltac_pretype.patvar_map -> evar_map -> evar_map * EConstr.constr
+type change_arg = Ltac_pretype.patvar_map -> env -> evar_map -> evar_map * EConstr.constr
 
-let make_change_arg c pats sigma = (sigma, replace_vars (Id.Map.bindings pats) c)
+let make_change_arg c pats env sigma = (sigma, replace_vars (Id.Map.bindings pats) c)
 
 let check_types env sigma mayneedglobalcheck deep newc origc =
   let t1 = Retyping.get_type_of env sigma newc in
@@ -818,7 +818,7 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
 
 (* Now we introduce different instances of the previous tacticals *)
 let change_and_check cv_pb mayneedglobalcheck deep t env sigma c =
-  let (sigma, t') = t sigma in
+  let (sigma, t') = t env sigma in
   let sigma = check_types env sigma mayneedglobalcheck deep t' c in
   match infer_conv ~pb:cv_pb env sigma t' c with
   | None -> user_err ~hdr:"convert-check-hyp" (str "Not convertible.");
