@@ -292,7 +292,9 @@ In addition to the objects above, the ``coqrst`` Sphinx plugin defines the follo
           \WTEG{\forall~x:T,U}{\Prop}
 
 ``.. preamble::`` A reST directive to include a TeX file.
-    Mostly useful to let MathJax know about `\def`s and `\newcommand`s.
+    Mostly useful to let MathJax know about `\def`s and `\newcommand`s.  The
+    contents of the TeX file are wrapped in a math environment, as MathJax
+    doesn't process LaTeX definitions otherwise.
 
     Usage::
 
