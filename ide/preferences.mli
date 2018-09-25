@@ -111,3 +111,5 @@ val stick : 'a preference ->
   (#GObj.widget as 'obj) -> ('a -> unit) -> unit
 
 val use_default_doc_url : string
+
+val get_latex_to_unicode : unit -> (string * string * int option) list

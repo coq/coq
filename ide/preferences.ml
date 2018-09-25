@@ -28,6 +28,41 @@ type tag = {
   tag_strikethrough : bool;
 }
 
+
+(** Latex to unicode bindings.
+
+    Text description of the unicode bindings, in a file coqide.bindings
+    one item per line, each item consists of:
+    - a leading backslahs
+    - a ascii word next to it
+    - a unicode word (or possibly a full sentence in-between doube-quotes,
+     the sentence may include spaces and \n tokens),
+    - optinally, an integer indicating the "priority" (lower is higher priority),
+      technically the length of the prefix that suffices to obtain this word.
+      Ex. if "\lambda" has priority 3, then "\lam" always decodes as "\lambda".
+
+      \pi π
+      \lambda λ 3
+      \lambdas λs 4
+      \lake Ο 2
+      \lemma "Lemma foo : x. Proof. Qed." 1
+
+    - In case of equality between two candidates (same ascii word, or same
+      priorities for two words with similar prefix), the first binding is considered.
+*)
+
+let latex_to_unicode = ref
+  [ (* dummy default, used for testing *)
+  ("\\pi", "π", None);
+  ("\\lambdas", "λs", Some 4);
+  ("\\lambda", "λ", Some 3);
+  ("\\lake", "0", Some 2);
+  ("\\lemma", "Lemma foo : x. Proof. Qed", Some 1);
+  ]
+
+let get_latex_to_unicode () =
+  !latex_to_unicode
+
 (** Generic preferences *)
 
 type obj = {
@@ -248,6 +283,10 @@ let loaded_accel_file =
   try get_config_file "coqide.keys"
   with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) ".coqide.keys"
 
+let loaded_unicode_file =
+  try get_config_file "coqide.bindings"
+  with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) "coqide.bindings"
+
 (** Hooks *)
 
 (** New style preferences *)
@@ -326,7 +365,7 @@ let modifier_for_navigation =
 
 let modifier_for_templates =
   new preference ~name:["modifier_for_templates"] ~init:"<Control><Shift>" ~repr:Repr.(string)
- 
+
 let modifier_for_tactics =
   new preference ~name:["modifier_for_tactics"] ~init:"<Control><Alt>" ~repr:Repr.(string)
 
@@ -643,14 +682,15 @@ let save_pref () =
 
 let load_pref () =
   let () = try GtkData.AccelMap.load loaded_accel_file with _ -> () in
+  (* TODO: parse loaded_unicode_file and save it in reference latex_to_unicode *)
 
-    let m = Config_lexer.load_file loaded_pref_file in
-    let iter name v =
-      if Util.String.Map.mem name !preferences then
-        try (Util.String.Map.find name !preferences).set v with _ -> ()
-      else unknown_preferences := Util.String.Map.add name v !unknown_preferences
-    in
-    Util.String.Map.iter iter m
+  let m = Config_lexer.load_file loaded_pref_file in
+  let iter name v =
+    if Util.String.Map.mem name !preferences then
+      try (Util.String.Map.find name !preferences).set v with _ -> ()
+    else unknown_preferences := Util.String.Map.add name v !unknown_preferences
+  in
+  Util.String.Map.iter iter m
 
 let pstring name p = string ~f:p#set name p#get
 let pbool name p = bool ~f:p#set name p#get

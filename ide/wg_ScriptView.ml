@@ -10,6 +10,8 @@
 
 open Preferences
 
+exception Abort
+
 type insert_action = {
   ins_val : string;
   ins_off : int;
@@ -404,6 +406,71 @@ object (self)
       let () = self#buffer#end_user_action () in
       self#buffer#delete_mark (`MARK stop_mark)
     | _ -> ()
+
+  method latex_to_unicode () (* (show_warning:string->unit) *) =
+    let bindings = Preferences.get_latex_to_unicode() in
+    (** Auxiliary function to test whether [s] is a prefix of [str];
+        Note that there might be overlap with wg_Completion::is_substring *)
+    let string_is_prefix s str =
+      let n = String.length s in
+      let m = String.length str in
+      if m < n
+        then false
+        else (s = String.sub str 0 n)
+      in
+    (* Auxiliary function to perform the lookup for a binding *)
+    let lookup prefix = (* lookup : string -> string option *)
+      let max_priority = 100000000 in
+      let cur_word = ref None in
+      let cur_prio = ref (max_priority+1) in
+      let test_binding (key, word, prio_opt) =
+        let prio =
+          match prio_opt with
+          | None -> max_priority
+          | Some p -> p
+          in
+        if string_is_prefix prefix key && prio < !cur_prio then begin
+          cur_word := Some word;
+          cur_prio := prio;
+        end in
+      List.iter test_binding bindings;
+      !cur_word
+      in
+    (** Auxiliary, copy-paste from method [comment] above;
+        btw, isn't there a more efficient way to achieve this? *)
+    let rec get_line_start iter =
+      if iter#starts_line then iter
+      else get_line_start iter#backward_char
+      in
+    let buffer = self#buffer in
+    let insert = buffer#get_iter `INSERT in
+    let insert_mark = buffer#create_mark ~left_gravity:false insert in
+    let () = buffer#begin_user_action () in
+    begin try
+      let line_start = get_line_start insert in
+      let prev_backslash_search = insert#backward_search ~limit:line_start "\\" in
+      let backslash =
+        match prev_backslash_search with
+        | None -> raise Abort
+        | Some (backslash_start,backslash_stop) -> backslash_start
+        in
+      let prefix = backslash#get_text ~stop:insert in
+      let word =
+        match lookup prefix with
+        | None ->
+           (* show_warning ("No binding match " ^ prefix); *)
+           raise Abort
+        | Some word -> word
+        in
+      let was_deleted = buffer#delete_interactive ~start:backslash ~stop:insert () in
+      if not was_deleted then raise Abort;
+      let insert2 = buffer#get_iter_at_mark (`MARK insert_mark) in
+      let _was_inserted = buffer#insert_interactive ~iter:insert2 word in
+      ()
+    with Abort -> () end;
+    let () = self#buffer#end_user_action () in
+    self#buffer#delete_mark (`MARK insert_mark)
+
 
   method complete_popup = popup
 
