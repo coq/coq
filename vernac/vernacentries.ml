@@ -2536,47 +2536,13 @@ let locate_if_not_already ?loc (e, info) =
   | None   -> (e, Option.cata (Loc.add_loc info) info loc)
   | Some l -> (e, info)
 
-exception HasNotFailed
-exception HasFailed of Pp.t
-
-(* XXX STATE: this type hints that restoring the state should be the
-   caller's responsibility *)
-let with_fail ~st b f =
-  if not b
-  then f ()
-  else begin try
-      (* If the command actually works, ignore its effects on the state.
-       * Note that error has to be printed in the right state, hence
-       * within the purified function *)
-      try ignore (f ()); raise HasNotFailed
-      with
-      | HasNotFailed as e -> raise e
-      | e ->
-        let e = CErrors.push e in
-        raise (HasFailed (CErrors.iprint
-                            (ExplainErr.process_vernac_interp_error ~allow_uncaught:false e)))
-    with e when CErrors.noncritical e ->
-      (* Restore the previous state XXX Careful here with the cache! *)
-      Vernacstate.invalidate_cache ();
-      Vernacstate.unfreeze_interp_state st;
-      let (e, _) = CErrors.push e in
-      match e with
-      | HasNotFailed ->
-          user_err ~hdr:"Fail" (str "The command has not failed!")
-      | HasFailed msg ->
-          if not !Flags.quiet || !Flags.test_mode then Feedback.msg_info
-            (str "The command has indeed failed with message:" ++ fnl () ++ msg);
-          st.Vernacstate.proof
-      | _ -> assert false
-  end
-
 let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} : Proof_global.t option =
   let orig_program_mode = Flags.is_program_mode () in
   let rec control ~st = function
   | VernacExpr (atts, v) ->
     aux ~atts ~st v
   | VernacFail v ->
-    with_fail ~st true (fun () -> control ~st v)
+    Vernacstate.with_fail ~st (fun () -> control ~st v)
   | VernacTimeout (n,v) ->
     current_timeout := Some n;
     control ~st v
