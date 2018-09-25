@@ -61,12 +61,13 @@ val init_modules : string list list
 (** Modules *)
 val prelude_module : DirPath.t
 
-val logic_module : DirPath.t
+val logic_module : ModPath.t
 val logic_module_name : string list
 
 val logic_type_module : DirPath.t
 
-val jmeq_module : DirPath.t
+val jmeq_module : ModPath.t
+val jmeq_library_path : DirPath.t
 val jmeq_module_name : string list
 
 val datatypes_module_name : string list

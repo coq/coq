@@ -274,9 +274,11 @@ sig
   type t
 
   (** Constructor and destructor *)
-  val make : ModPath.t -> DirPath.t -> Label.t -> t
+  val make : ModPath.t -> Label.t -> t
+  val repr : t -> ModPath.t * Label.t
+
   val make2 : ModPath.t -> Label.t -> t
-  val repr : t -> ModPath.t * DirPath.t * Label.t
+  [@@ocaml.deprecated "Please use [KerName.make]"]
 
   (** Projections *)
   val modpath : t -> ModPath.t
@@ -317,15 +319,12 @@ sig
   val make2 : ModPath.t -> Label.t -> t
   (** Shortcut for [(make1 (KerName.make2 ...))] *)
 
-  val make3 : ModPath.t -> DirPath.t -> Label.t -> t
-  (** Shortcut for [(make1 (KerName.make ...))] *)
-
   (** Projections *)
 
   val user : t -> KerName.t
   val canonical : t -> KerName.t
 
-  val repr3 : t -> ModPath.t * DirPath.t * Label.t
+  val repr2 : t -> ModPath.t * Label.t
   (** Shortcut for [KerName.repr (user ...)] *)
 
   val modpath : t -> ModPath.t
@@ -403,15 +402,12 @@ sig
   val make2 : ModPath.t -> Label.t -> t
   (** Shortcut for [(make1 (KerName.make2 ...))] *)
 
-  val make3 : ModPath.t -> DirPath.t -> Label.t -> t
-  (** Shortcut for [(make1 (KerName.make ...))] *)
-
   (** Projections *)
 
   val user : t -> KerName.t
   val canonical : t -> KerName.t
 
-  val repr3 : t -> ModPath.t * DirPath.t * Label.t
+  val repr2 : t -> ModPath.t * Label.t
   (** Shortcut for [KerName.repr (user ...)] *)
 
   val modpath : t -> ModPath.t

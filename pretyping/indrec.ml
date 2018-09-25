@@ -601,13 +601,13 @@ let make_elimination_ident id s = add_suffix id (elimination_suffix s)
 
 let lookup_eliminator ind_sp s =
   let kn,i = ind_sp in
-  let mp,dp,l = KerName.repr (MutInd.canonical kn) in
+  let mp,l = KerName.repr (MutInd.canonical kn) in
   let ind_id = (Global.lookup_mind kn).mind_packets.(i).mind_typename in
   let id = add_suffix ind_id (elimination_suffix s) in
   (* Try first to get an eliminator defined in the same section as the *)
   (* inductive type *)
   try
-    let cst =Global.constant_of_delta_kn (KerName.make mp dp (Label.of_id id)) in
+    let cst =Global.constant_of_delta_kn (KerName.make mp (Label.of_id id)) in
     let _ = Global.lookup_constant cst in
       ConstRef cst
   with Not_found ->

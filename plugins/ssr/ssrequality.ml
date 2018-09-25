@@ -337,9 +337,9 @@ let pirrel_rewrite pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
     let elim, gl = pf_fresh_global (Indrec.lookup_eliminator ind sort) gl in
     if dir = R2L then elim, gl else (* taken from Coq's rewrite *)
     let elim, _ = destConst elim in
-    let mp,dp,l = Constant.repr3 (Constant.make1 (Constant.canonical elim)) in
+    let mp,l = Constant.repr2 (Constant.make1 (Constant.canonical elim)) in
     let l' = Label.of_id (Nameops.add_suffix (Label.to_id l) "_r")  in 
-    let c1' = Global.constant_of_delta_kn (Constant.canonical (Constant.make3 mp dp l')) in
+    let c1' = Global.constant_of_delta_kn (Constant.canonical (Constant.make2 mp l')) in
     mkConst c1', gl in
   let elim = EConstr.of_constr elim in
   let proof = EConstr.mkApp (elim, [| rdx_ty; new_rdx; pred; p; rdx; c |]) in

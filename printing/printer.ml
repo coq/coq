@@ -959,7 +959,7 @@ let pr_assumptionset env sigma s =
       try pr_constant env kn
       with Not_found ->
         (* FIXME? *)
-	let mp,_,lab = Constant.repr3 kn in
+        let mp,lab = Constant.repr2 kn in
         str (ModPath.to_string mp) ++ str "." ++ Label.print lab
     in
     let safe_pr_inductive env kn =

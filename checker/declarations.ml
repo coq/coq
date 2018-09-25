@@ -70,12 +70,12 @@ let solve_delta_kn resolve kn =
       | Equiv kn1 -> kn1
       | Inline _ -> raise Not_found
   with Not_found ->
-    let mp,dir,l = KerName.repr kn in
+    let mp,l = KerName.repr kn in
     let new_mp = find_prefix resolve mp in
     if mp == new_mp then
       kn
     else
-      KerName.make new_mp dir l
+      KerName.make new_mp l
 
 let gen_of_delta resolve x kn fix_can =
   let new_kn = solve_delta_kn resolve kn in
@@ -129,17 +129,17 @@ let subst_mp sub mp =
   | Some (mp',_) -> mp'
 
 let subst_kn_delta sub kn =
- let mp,dir,l = KerName.repr kn in
+ let mp,l = KerName.repr kn in
   match subst_mp0 sub mp with
      Some (mp',resolve) ->
-      solve_delta_kn resolve (KerName.make mp' dir l)
+      solve_delta_kn resolve (KerName.make mp' l)
    | None -> kn
 
 let subst_kn sub kn =
- let mp,dir,l = KerName.repr kn in
+ let mp,l = KerName.repr kn in
   match subst_mp0 sub mp with
      Some (mp',_) ->
-      KerName.make mp' dir l
+      KerName.make mp' l
    | None -> kn
 
 exception No_subst
@@ -156,16 +156,16 @@ let gen_subst_mp f sub mp1 mp2 =
     | None, Some (mp',resolve) -> Canonical, (f mp1 mp'), resolve
     | Some (mp1',_), Some (mp2',resolve2) -> Canonical, (f mp1' mp2'), resolve2
 
-let make_mind_equiv mpu mpc dir l =
-  let knu = KerName.make mpu dir l in
+let make_mind_equiv mpu mpc l =
+  let knu = KerName.make mpu l in
   if mpu == mpc then MutInd.make1 knu
-  else MutInd.make knu (KerName.make mpc dir l)
+  else MutInd.make knu (KerName.make mpc l)
 
 let subst_ind sub mind =
   let kn1,kn2 = MutInd.user mind, MutInd.canonical mind in
-  let mp1,dir,l = KerName.repr kn1 in
-  let mp2,_,_ = KerName.repr kn2 in
-  let rebuild_mind mp1 mp2 = make_mind_equiv mp1 mp2 dir l in
+  let mp1,l = KerName.repr kn1 in
+  let mp2,_ = KerName.repr kn2 in
+  let rebuild_mind mp1 mp2 = make_mind_equiv mp1 mp2 l in
   try
     let side,mind',resolve = gen_subst_mp rebuild_mind sub mp1 mp2 in
     match side with
@@ -173,16 +173,16 @@ let subst_ind sub mind =
       | Canonical -> mind_of_delta2 resolve mind'
   with No_subst -> mind
 
-let make_con_equiv mpu mpc dir l =
-  let knu = KerName.make mpu dir l in
+let make_con_equiv mpu mpc l =
+  let knu = KerName.make mpu l in
   if mpu == mpc then Constant.make1 knu
-  else Constant.make knu (KerName.make mpc dir l)
+  else Constant.make knu (KerName.make mpc l)
 
 let subst_con0 sub con u =
   let kn1,kn2 = Constant.user con, Constant.canonical con in
-  let mp1,dir,l = KerName.repr kn1 in
-  let mp2,_,_ = KerName.repr kn2 in
-  let rebuild_con mp1 mp2 = make_con_equiv mp1 mp2 dir l in
+  let mp1,l = KerName.repr kn1 in
+  let mp2,_ = KerName.repr kn2 in
+  let rebuild_con mp1 mp2 = make_con_equiv mp1 mp2 l in
   let dup con = con, Const (con, u) in
   let side,con',resolve = gen_subst_mp rebuild_con sub mp1 mp2 in
   match constant_of_delta_with_inline resolve con' with

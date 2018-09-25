@@ -132,8 +132,7 @@ module ReductionBehaviour = struct
           { b with b_nargs = nargs'; b_recargs = recargs' }
         else b
       in
-      let c = Lib.discharge_con c in
-      Some (ReqGlobal (ConstRef c, req), (ConstRef c, b))
+      Some (ReqGlobal (gr, req), (ConstRef c, b))
     | _ -> None
 
   let rebuild = function
@@ -713,8 +712,8 @@ let magicaly_constant_of_fixbody env sigma reference bd = function
   | Name.Name id ->
     let open UnivProblem in
     try
-      let (cst_mod,cst_sect,_) = Constant.repr3 reference in
-      let cst = Constant.make3 cst_mod cst_sect (Label.of_id id) in
+      let (cst_mod,_) = Constant.repr2 reference in
+      let cst = Constant.make2 cst_mod (Label.of_id id) in
       let (cst, u), ctx = UnivGen.fresh_constant_instance env cst in
       match constant_opt_value_in env (cst,u) with
       | None -> bd

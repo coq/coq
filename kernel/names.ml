@@ -365,7 +365,6 @@ module KerName = struct
 
   type t = {
     modpath : ModPath.t;
-    dirpath : DirPath.t;
     knlabel : Label.t;
     mutable refhash : int;
     (** Lazily computed hash. If unset, it is set to negative values. *)
@@ -373,22 +372,18 @@ module KerName = struct
 
   type kernel_name = t
 
-  let make modpath dirpath knlabel =
-    { modpath; dirpath; knlabel; refhash = -1; }
-  let repr kn = (kn.modpath, kn.dirpath, kn.knlabel)
+  let make modpath knlabel =
+    { modpath; knlabel; refhash = -1; }
+  let repr kn = (kn.modpath, kn.knlabel)
 
-  let make2 modpath knlabel =
-    { modpath; dirpath = DirPath.empty; knlabel; refhash = -1; }
+  let make2 = make
+  [@@ocaml.deprecated "Please use [KerName.make]"]
 
   let modpath kn = kn.modpath
   let label kn = kn.knlabel
 
   let to_string_gen mp_to_string kn =
-    let dp =
-      if DirPath.is_empty kn.dirpath then "."
-      else "#" ^ DirPath.to_string kn.dirpath ^ "#"
-    in
-    mp_to_string kn.modpath ^ dp ^ Label.to_string kn.knlabel
+    mp_to_string kn.modpath ^ "." ^ Label.to_string kn.knlabel
 
   let to_string kn = to_string_gen ModPath.to_string kn
 
@@ -402,9 +397,7 @@ module KerName = struct
       let c = String.compare kn1.knlabel kn2.knlabel in
       if not (Int.equal c 0) then c
       else
-        let c = DirPath.compare kn1.dirpath kn2.dirpath in
-        if not (Int.equal c 0) then c
-        else ModPath.compare kn1.modpath kn2.modpath
+        ModPath.compare kn1.modpath kn2.modpath
 
   let equal kn1 kn2 =
     let h1 = kn1.refhash in
@@ -412,7 +405,6 @@ module KerName = struct
     if 0 <= h1 && 0 <= h2 && not (Int.equal h1 h2) then false
     else
       Label.equal kn1.knlabel kn2.knlabel &&
-      DirPath.equal kn1.dirpath kn2.dirpath &&
       ModPath.equal kn1.modpath kn2.modpath
 
   open Hashset.Combine
@@ -420,8 +412,8 @@ module KerName = struct
   let hash kn =
     let h = kn.refhash in
     if h < 0 then
-      let { modpath = mp; dirpath = dp; knlabel = lbl; _ } = kn in
-      let h = combine3 (ModPath.hash mp) (DirPath.hash dp) (Label.hash lbl) in
+      let { modpath = mp; knlabel = lbl; _ } = kn in
+      let h = combine (ModPath.hash mp) (Label.hash lbl) in
       (* Ensure positivity on all platforms. *)
       let h = h land 0x3FFFFFFF in
       let () = kn.refhash <- h in
@@ -432,12 +424,11 @@ module KerName = struct
     type t = kernel_name
     type u = (ModPath.t -> ModPath.t) * (DirPath.t -> DirPath.t)
         * (string -> string)
-    let hashcons (hmod,hdir,hstr) kn =
-      let { modpath = mp; dirpath = dp; knlabel = l; refhash; } = kn in
-      { modpath = hmod mp; dirpath = hdir dp; knlabel = hstr l; refhash; }
+    let hashcons (hmod,_hdir,hstr) kn =
+      let { modpath = mp; knlabel = l; refhash; } = kn in
+      { modpath = hmod mp; knlabel = hstr l; refhash; }
     let eq kn1 kn2 =
-      kn1.modpath == kn2.modpath && kn1.dirpath == kn2.dirpath &&
-        kn1.knlabel == kn2.knlabel
+      kn1.modpath == kn2.modpath && kn1.knlabel == kn2.knlabel
     let hash = hash
   end
 
@@ -492,21 +483,20 @@ module KerPair = struct
   let make knu knc = if KerName.equal knu knc then Same knc else Dual (knu,knc)
 
   let make1 = same
-  let make2 mp l = same (KerName.make2 mp l)
-  let make3 mp dir l = same (KerName.make mp dir l)
-  let repr3 kp = KerName.repr (user kp)
+  let make2 mp l = same (KerName.make mp l)
+  let repr2 kp = KerName.repr (user kp)
   let label kp = KerName.label (user kp)
   let modpath kp = KerName.modpath (user kp)
 
   let change_label kp lbl =
-    let (mp1,dp1,l1) = KerName.repr (user kp)
-    and (mp2,dp2,l2) = KerName.repr (canonical kp) in
-    assert (String.equal l1 l2 && DirPath.equal dp1 dp2);
+    let (mp1,l1) = KerName.repr (user kp)
+    and (mp2,l2) = KerName.repr (canonical kp) in
+    assert (String.equal l1 l2);
     if String.equal lbl l1 then kp
     else
-      let kn = KerName.make mp1 dp1 lbl in
+      let kn = KerName.make mp1 lbl in
       if mp1 == mp2 then same kn
-      else make kn (KerName.make mp2 dp2 lbl)
+      else make kn (KerName.make mp2 lbl)
 
   let to_string kp = KerName.to_string (user kp)
   let print kp = str (to_string kp)

@@ -173,12 +173,12 @@ let solve_delta_kn resolve kn =
       | Inline (lev, Some c) ->	raise (Change_equiv_to_inline (lev,c))
       | Inline (_, None) -> raise Not_found
   with Not_found ->
-    let mp,dir,l = KerName.repr kn in
+    let mp,l = KerName.repr kn in
     let new_mp = find_prefix resolve mp in
     if mp == new_mp then
       kn
     else
-      KerName.make new_mp dir l
+      KerName.make new_mp l
 
 let kn_of_delta resolve kn =
   try solve_delta_kn resolve kn
@@ -245,18 +245,18 @@ let subst_mp sub mp =
   | Some (mp',_) -> mp'
 
 let subst_kn_delta sub kn =
- let mp,dir,l = KerName.repr kn in
+ let mp,l = KerName.repr kn in
   match subst_mp0 sub mp with
      Some (mp',resolve) ->
-      solve_delta_kn resolve (KerName.make mp' dir l)
+      solve_delta_kn resolve (KerName.make mp' l)
    | None -> kn
 
 
 let subst_kn sub kn =
- let mp,dir,l = KerName.repr kn in
+ let mp,l = KerName.repr kn in
   match subst_mp0 sub mp with
      Some (mp',_) ->
-      (KerName.make mp' dir l)
+      (KerName.make mp' l)
    | None -> kn
 
 exception No_subst
@@ -275,12 +275,12 @@ let progress f x ~orelse =
   if y != x then y else orelse
 
 let subst_mind sub mind =
-  let mpu,dir,l = MutInd.repr3 mind in
+  let mpu,l = MutInd.repr2 mind in
   let mpc = KerName.modpath (MutInd.canonical mind) in
   try
     let mpu,mpc,resolve,user = subst_dual_mp sub mpu mpc in
-    let knu = KerName.make mpu dir l in
-    let knc = if mpu == mpc then knu else KerName.make mpc dir l in
+    let knu = KerName.make mpu l in
+    let knc = if mpu == mpc then knu else KerName.make mpc l in
     let knc' =
       progress (kn_of_delta resolve) (if user then knu else knc) ~orelse:knc
     in
@@ -295,11 +295,11 @@ let subst_pind sub (ind,u) =
   (subst_ind sub ind, u)
 
 let subst_con0 sub (cst,u) =
-  let mpu,dir,l = Constant.repr3 cst in
+  let mpu,l = Constant.repr2 cst in
   let mpc = KerName.modpath (Constant.canonical cst) in
   let mpu,mpc,resolve,user = subst_dual_mp sub mpu mpc in
-  let knu = KerName.make mpu dir l in
-  let knc = if mpu == mpc then knu else KerName.make mpc dir l in
+  let knu = KerName.make mpu l in
+  let knc = if mpu == mpc then knu else KerName.make mpc l in
   match search_delta_inline resolve knu knc with
     | Some (ctx, t) ->
       (* In case of inlining, discard the canonical part (cf #2608) *)
@@ -433,10 +433,10 @@ let rec replace_mp_in_mp mpfrom mpto mp =
     | _ -> mp
 
 let replace_mp_in_kn mpfrom mpto kn =
- let mp,dir,l = KerName.repr kn in
+ let mp,l = KerName.repr kn in
   let mp'' = replace_mp_in_mp mpfrom mpto mp in
     if mp==mp'' then kn
-    else KerName.make mp'' dir l
+    else KerName.make mp'' l
 
 let rec mp_in_mp mp mp1 =
   match mp1 with

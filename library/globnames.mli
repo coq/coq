@@ -82,15 +82,3 @@ end
 type global_reference_or_constr = 
   | IsGlobal of GlobRef.t
   | IsConstr of constr
-
-(** {6 Temporary function to brutally form kernel names from section paths } *)
-
-val encode_mind : DirPath.t -> Id.t -> MutInd.t
-val decode_mind : MutInd.t -> DirPath.t * Id.t
-val encode_con : DirPath.t -> Id.t -> Constant.t
-val decode_con : Constant.t -> DirPath.t * Id.t
-
-(** {6 Popping one level of section in global names } *)
-val pop_con : Constant.t -> Constant.t
-val pop_kn : MutInd.t-> MutInd.t
-val pop_global_reference : GlobRef.t -> GlobRef.t

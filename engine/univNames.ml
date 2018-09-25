@@ -69,7 +69,7 @@ let discharge_ubinder (_,(ref,l)) =
       with Not_found -> name_universe lvl
   in
   let l = List.map map sec_inst @ l in
-  Some (Lib.discharge_global ref, l)
+  Some (ref, l)
 
 let ubinder_obj : GlobRef.t * Id.t list -> Libobject.obj =
   let open Libobject in

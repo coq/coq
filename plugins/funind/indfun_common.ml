@@ -297,36 +297,7 @@ let subst_Function (subst,finfos) =
 let classify_Function infos = Libobject.Substitute infos
 
 
-let discharge_Function (_,finfos) =
-  let function_constant' = Lib.discharge_con finfos.function_constant
-  and graph_ind' = Lib.discharge_inductive finfos.graph_ind
-  and equation_lemma' = Option.Smart.map Lib.discharge_con finfos.equation_lemma
-  and correctness_lemma' = Option.Smart.map Lib.discharge_con finfos.correctness_lemma
-  and completeness_lemma' = Option.Smart.map Lib.discharge_con finfos.completeness_lemma
-  and rect_lemma' = Option.Smart.map Lib.discharge_con finfos.rect_lemma
-  and rec_lemma' = Option.Smart.map Lib.discharge_con finfos.rec_lemma
-  and prop_lemma' = Option.Smart.map Lib.discharge_con finfos.prop_lemma
-  in
-  if function_constant' == finfos.function_constant &&
-    graph_ind' == finfos.graph_ind &&
-    equation_lemma' == finfos.equation_lemma &&
-    correctness_lemma' == finfos.correctness_lemma &&
-    completeness_lemma' == finfos.completeness_lemma &&
-    rect_lemma' == finfos.rect_lemma &&
-    rec_lemma' == finfos.rec_lemma &&
-    prop_lemma' == finfos.prop_lemma
-  then Some finfos
-  else
-    Some { function_constant = function_constant' ;
-	   graph_ind = graph_ind' ;
-	   equation_lemma = equation_lemma' ;
-	   correctness_lemma = correctness_lemma' ;
-	   completeness_lemma = completeness_lemma';
-	   rect_lemma = rect_lemma';
-	   rec_lemma = rec_lemma';
-	   prop_lemma = prop_lemma' ;
-	   is_general = finfos.is_general
-	 }
+let discharge_Function (_,finfos) = Some finfos
 
 let pr_ocst c =
   let sigma, env = Pfedit.get_current_context () in

@@ -55,7 +55,7 @@ let module_body_of_type mp mtb =
 
 let rec add_structure mp sign resolver env =
   let add_one env (l,elem) =
-    let kn = KerName.make2 mp l in
+    let kn = KerName.make mp l in
     let con = Constant.make1 kn in
     let mind = mind_of_delta resolver (MutInd.make1 kn) in
       match elem with

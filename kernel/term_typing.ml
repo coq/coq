@@ -531,11 +531,7 @@ let translate_local_assum env t =
   let t = Typeops.assumption_of_judgment env j in
     t
 
-let translate_recipe env kn r =
-  (** We only hashcons the term when outside of a section, otherwise this would
-      be useless. It is detected by the dirpath of the constant being empty. *)
-  let (_, dir, _) = Constant.repr3 kn in
-  let hcons = DirPath.is_empty dir in
+let translate_recipe ~hcons env kn r =
   build_constant_declaration kn env (Cooking.cook_constant ~hcons r)
 
 let translate_local_def env _id centry =

@@ -34,7 +34,7 @@ let string_of_mp mp =
   if !Flags.debug then debug_string_of_mp mp else string_of_mp mp
 
 let prkn kn =
-  let (mp,_,l) = KerName.repr kn in
+  let (mp,l) = KerName.repr kn in
   str(string_of_mp mp ^ "." ^ Label.to_string l)
 let prcon c =
   let ck = Constant.canonical c in

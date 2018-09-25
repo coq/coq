@@ -451,12 +451,6 @@ let subst_coercion (subst, c) =
   else { c with coercion_type = coe; coercion_source = cls;
                 coercion_target = clt; coercion_is_proj = clp; }
 
-let discharge_cl = function
-  | CL_CONST kn -> CL_CONST (Lib.discharge_con kn)
-  | CL_IND ind -> CL_IND (Lib.discharge_inductive ind)
-  | CL_PROJ p -> CL_PROJ (Lib.discharge_proj_repr p)
-  | cl -> cl
-
 let discharge_coercion (_, c) =
   if c.coercion_local then None
   else
@@ -467,9 +461,6 @@ let discharge_coercion (_, c) =
       with Not_found -> 0
     in
     let nc = { c with
-      coercion_type = Lib.discharge_global c.coercion_type;
-      coercion_source = discharge_cl c.coercion_source;
-      coercion_target = discharge_cl c.coercion_target;
       coercion_params = n + c.coercion_params;
       coercion_is_proj = Option.map Lib.discharge_proj_repr c.coercion_is_proj;
     } in

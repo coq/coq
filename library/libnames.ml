@@ -171,8 +171,8 @@ type object_prefix = {
 }
 
 (* let make_oname (dirpath,(mp,dir)) id = *)
-let make_oname { obj_dir; obj_mp; obj_sec } id =
-  make_path obj_dir id, KerName.make obj_mp obj_sec (Label.of_id id)
+let make_oname { obj_dir; obj_mp } id =
+  make_path obj_dir id, KerName.make obj_mp (Label.of_id id)
 
 (* to this type are mapped DirPath.t's in the nametab *)
 type global_dir_reference =

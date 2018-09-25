@@ -56,8 +56,7 @@ let subst_scheme (subst,(kind,l)) =
   (kind,Array.Smart.map (subst_one_scheme subst) l)
 
 let discharge_scheme (_,(kind,l)) =
-  Some (kind,Array.map (fun (ind,const) ->
-    (Lib.discharge_inductive ind,Lib.discharge_con const)) l)
+  Some (kind, l)
 
 let inScheme : string * (inductive * Constant.t) array -> obj =
   declare_object {(default_object "SCHEME") with

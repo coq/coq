@@ -450,7 +450,7 @@ let generalize_dependent_of x hyp g =
 let tauto =
   let dp = List.map Id.of_string ["Tauto" ; "Init"; "Coq"] in
   let mp = ModPath.MPfile (DirPath.make dp) in
-  let kn = KerName.make2 mp (Label.make "tauto") in
+  let kn = KerName.make mp (Label.make "tauto") in
   Proofview.tclBIND (Proofview.tclUNIT ()) begin fun () ->
     let body = Tacenv.interp_ltac kn in
     Tacinterp.eval_tactic body

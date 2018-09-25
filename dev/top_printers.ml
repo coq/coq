@@ -552,23 +552,22 @@ open Libnames
 let encode_path ?loc prefix mpdir suffix id =
   let dir = match mpdir with
     | None -> []
-    | Some (mp,dir) ->
-	(DirPath.repr (dirpath_of_string (ModPath.to_string mp))@
-	DirPath.repr dir) in
+    | Some mp -> DirPath.repr (dirpath_of_string (ModPath.to_string mp))
+  in
   make_qualid ?loc
     (DirPath.make (List.rev (Id.of_string prefix::dir@suffix))) id
 
 let raw_string_of_ref ?loc _ = function
   | ConstRef cst ->
-      let (mp,dir,id) = Constant.repr3 cst in
-      encode_path ?loc "CST" (Some (mp,dir)) [] (Label.to_id id)
+      let (mp,id) = Constant.repr2 cst in
+      encode_path ?loc "CST" (Some mp) [] (Label.to_id id)
   | IndRef (kn,i) ->
-      let (mp,dir,id) = MutInd.repr3 kn in
-      encode_path ?loc "IND" (Some (mp,dir)) [Label.to_id id]
+      let (mp,id) = MutInd.repr2 kn in
+      encode_path ?loc "IND" (Some mp) [Label.to_id id]
 	(Id.of_string ("_"^string_of_int i))
   | ConstructRef ((kn,i),j) ->
-      let (mp,dir,id) = MutInd.repr3 kn in
-      encode_path ?loc "CSTR" (Some (mp,dir))
+      let (mp,id) = MutInd.repr2 kn in
+      encode_path ?loc "CSTR" (Some mp)
 	[Label.to_id id;Id.of_string ("_"^string_of_int i)]
 	(Id.of_string ("_"^string_of_int j))
   | VarRef id ->
@@ -576,14 +575,14 @@ let raw_string_of_ref ?loc _ = function
 
 let short_string_of_ref ?loc _ = function
   | VarRef id -> qualid_of_ident ?loc id
-  | ConstRef cst -> qualid_of_ident ?loc (Label.to_id (pi3 (Constant.repr3 cst)))
-  | IndRef (kn,0) -> qualid_of_ident ?loc (Label.to_id (pi3 (MutInd.repr3 kn)))
+  | ConstRef cst -> qualid_of_ident ?loc (Label.to_id (Constant.label cst))
+  | IndRef (kn,0) -> qualid_of_ident ?loc (Label.to_id (MutInd.label kn))
   | IndRef (kn,i) ->
-      encode_path ?loc "IND" None [Label.to_id (pi3 (MutInd.repr3 kn))]
+      encode_path ?loc "IND" None [Label.to_id (MutInd.label kn)]
         (Id.of_string ("_"^string_of_int i))
   | ConstructRef ((kn,i),j) ->
       encode_path ?loc "CSTR" None
-        [Label.to_id (pi3 (MutInd.repr3 kn));Id.of_string ("_"^string_of_int i)]
+        [Label.to_id (MutInd.label kn);Id.of_string ("_"^string_of_int i)]
         (Id.of_string ("_"^string_of_int j))
 
 (* Anticipate that printers can be used from ocamldebug and that 

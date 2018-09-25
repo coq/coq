@@ -1561,7 +1561,7 @@ let rec list_of_mp acc = function
 let list_of_mp mp = list_of_mp [] mp
 
 let string_of_kn kn =
-  let (mp,_dp,l) = KerName.repr kn in
+  let (mp,l) = KerName.repr kn in
   let mp = list_of_mp mp in
   String.concat "_" mp ^ "_" ^ string_of_label l
 

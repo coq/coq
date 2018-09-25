@@ -438,7 +438,7 @@ let match_eq sigma eqn (ref, hetero) =
   | _ -> raise PatternMatchingFailure
 
 let no_check () = true
-let check_jmeq_loaded () = Library.library_is_loaded Coqlib.jmeq_module
+let check_jmeq_loaded () = Library.library_is_loaded @@ Coqlib.jmeq_library_path
 
 let equalities =
   [(coq_eq_ref, false), no_check, build_coq_eq_data;

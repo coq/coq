@@ -617,10 +617,10 @@ let gallina_print_leaf_entry env sigma with_values ((sp,kn as oname),lobj) =
       | (_,"INDUCTIVE") ->
           Some (gallina_print_inductive (MutInd.make1 kn) None)
       | (_,"MODULE") ->
-	  let (mp,_,l) = KerName.repr kn in
+          let (mp,l) = KerName.repr kn in
 	    Some (print_module with_values (MPdot (mp,l)))
       | (_,"MODULE TYPE") ->
-	  let (mp,_,l) = KerName.repr kn in
+          let (mp,l) = KerName.repr kn in
 	  Some (print_modtype (MPdot (mp,l)))
       | (_,("AUTOHINT"|"GRAMMAR"|"SYNTAXCONSTANT"|"PPSYNTAX"|"TOKEN"|"CLASS"|
 	    "COERCION"|"REQUIRE"|"END-SECTION"|"STRUCTURE")) -> None
@@ -734,12 +734,12 @@ let print_full_pure_context env sigma =
 	    str "." ++ fnl () ++ fnl ()
       | "MODULE" ->
 	  (* TODO: make it reparsable *)
-	  let (mp,_,l) = KerName.repr kn in
+          let (mp,l) = KerName.repr kn in
 	  print_module true (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
       | "MODULE TYPE" ->
 	  (* TODO: make it reparsable *)
 	  (* TODO: make it reparsable *)
-	  let (mp,_,l) = KerName.repr kn in
+          let (mp,l) = KerName.repr kn in
 	  print_modtype (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
       | _ -> mt () in
       prec rest ++ pp

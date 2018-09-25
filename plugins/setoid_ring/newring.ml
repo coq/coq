@@ -266,7 +266,7 @@ let my_reference c =
 let znew_ring_path =
   DirPath.make (List.map Id.of_string ["InitialRing";plugin_dir;"Coq"])
 let zltac s =
-  lazy(KerName.make (ModPath.MPfile znew_ring_path) DirPath.empty (Label.make s))
+  lazy(KerName.make (ModPath.MPfile znew_ring_path) (Label.make s))
 
 let mk_cst l s = lazy (Coqlib.coq_reference "newring" l s);;
 let pol_cst s = mk_cst [plugin_dir;"Ring_polynom"] s ;;
@@ -760,7 +760,7 @@ let new_field_path =
   DirPath.make (List.map Id.of_string ["Field_tac";plugin_dir;"Coq"])
 
 let field_ltac s =
-  lazy(KerName.make (ModPath.MPfile new_field_path) DirPath.empty (Label.make s))
+  lazy(KerName.make (ModPath.MPfile new_field_path) (Label.make s))
 
 
 let _ = add_map "field"

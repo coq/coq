@@ -588,7 +588,7 @@ let pp_global k r =
   let ls = ref_renaming (k,r) in
   assert (List.length ls > 1);
   let s = List.hd ls in
-  let mp,_,l = repr_of_r r in
+  let mp,l = repr_of_r r in
   if ModPath.equal mp (top_visible_mp ()) then
     (* simpliest situation: definition of r (or use in the same context) *)
     (* we update the visible environment *)

@@ -209,14 +209,14 @@ let fresh_key =
     let cur = incr id; !id in
     let lbl = Id.of_string ("_" ^ string_of_int cur) in
     let kn = Lib.make_kn lbl in
-    let (mp, dir, _) = KerName.repr kn in
+    let (mp, _) = KerName.repr kn in
     (** We embed the full path of the kernel name in the label so that the
         identifier should be unique. This ensures that including two modules
         together won't confuse the corresponding labels. *)
-    let lbl = Id.of_string_soft (Printf.sprintf "%s#%s#%i"
-      (ModPath.to_string mp) (DirPath.to_string dir) cur)
+    let lbl = Id.of_string_soft (Printf.sprintf "%s#%i"
+      (ModPath.to_string mp) cur)
     in
-    KerName.make mp dir (Label.of_id lbl)
+    KerName.make mp (Label.of_id lbl)
 
 let pri_order_int (id1, {pri=pri1}) (id2, {pri=pri2}) =
   let d = pri1 - pri2 in
@@ -1601,7 +1601,7 @@ let warn_non_imported_hint =
 
 let warn env sigma h =
   let hint = pr_hint env sigma h in
-  let (mp, _, _) = KerName.repr h.uid in
+  let mp = KerName.modpath h.uid in
   warn_non_imported_hint (hint,mp)
 
 let wrap_hint_warning t =

@@ -164,8 +164,7 @@ module ModObjs :
 *)
 
 let mp_of_kn kn =
-  let mp,sec,l = KerName.repr kn in
-  assert (DirPath.is_empty sec);
+  let mp,l = KerName.repr kn in
   MPdot (mp,l)
 
 let dir_of_sp sp =

@@ -289,10 +289,10 @@ let add_retroknowledge =
 let rec add_structure mp sign resolver linkinfo env =
   let add_one env (l,elem) = match elem with
     |SFBconst cb ->
-      let c = constant_of_delta_kn resolver (KerName.make2 mp l) in
+      let c = constant_of_delta_kn resolver (KerName.make mp l) in
       Environ.add_constant_key c cb linkinfo env
     |SFBmind mib ->
-      let mind = mind_of_delta_kn resolver (KerName.make2 mp l) in
+      let mind = mind_of_delta_kn resolver (KerName.make mp l) in
       let mib = 
 	if mib.mind_private != None then 
 	  { mib with mind_private = Some true }
@@ -331,7 +331,7 @@ let strengthen_const mp_from l cb resolver =
   match cb.const_body with
   |Def _ -> cb
   |_ ->
-    let kn = KerName.make2 mp_from l in
+    let kn = KerName.make mp_from l in
     let con = constant_of_delta_kn resolver kn in
     let u =
       match cb.const_universes with
@@ -450,8 +450,8 @@ and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
           (* If we are performing an inclusion we need to add
              the fact that the constant mp_to.l is \Delta-equivalent
              to reso(mp_from.l) *)
-          let kn_from = KerName.make2 mp_from l in
-          let kn_to = KerName.make2 mp_to l in
+          let kn_from = KerName.make mp_from l in
+          let kn_to = KerName.make mp_to l in
           let old_name = kn_of_delta reso kn_from in
 	  add_kn_delta_resolver kn_to old_name reso', str'
 	else
@@ -471,8 +471,8 @@ and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
         in
 	(* Same as constant *)
 	if incl then
-	  let kn_from = KerName.make2 mp_from l in
-	  let kn_to = KerName.make2 mp_to l in
+          let kn_from = KerName.make mp_from l in
+          let kn_to = KerName.make mp_to l in
 	  let old_name = kn_of_delta reso kn_from in
           add_kn_delta_resolver kn_to old_name reso', str'
 	else

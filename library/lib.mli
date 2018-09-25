@@ -187,10 +187,8 @@ val is_polymorphic_univ : Univ.Level.t -> bool
 
 (** {6 Discharge: decrease the section level if in the current section } *)
 
-val discharge_kn :  MutInd.t -> MutInd.t
-val discharge_con : Constant.t -> Constant.t
+(* XXX Why can't we use the kernel functions ? *)
+
 val discharge_proj_repr : Projection.Repr.t -> Projection.Repr.t
-val discharge_global : GlobRef.t -> GlobRef.t
-val discharge_inductive : inductive -> inductive
 val discharge_abstract_universe_context :
   abstr_info -> Univ.AUContext.t -> Univ.universe_level_subst * Univ.AUContext.t

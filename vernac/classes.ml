@@ -99,7 +99,7 @@ let type_ctx_instance env sigma ctx inst subst =
 
 let id_of_class cl =
   match cl.cl_impl with
-    | ConstRef kn -> let _,_,l = Constant.repr3 kn in Label.to_id l
+    | ConstRef kn -> Label.to_id @@ Constant.label kn
     | IndRef (kn,i) ->
 	let mip = (Environ.lookup_mind kn (Global.env ())).Declarations.mind_packets in
 	  mip.(0).Declarations.mind_typename

@@ -24,7 +24,6 @@ open Coqlib
 exception Non_closed_ascii
 
 let make_dir l = DirPath.make (List.rev_map Id.of_string l)
-let make_kn dir id = Globnames.encode_mind (make_dir dir) (Id.of_string id)
 let make_path dir id = Libnames.make_path (make_dir dir) (Id.of_string id)
 
 let is_gr c gr = match DAst.get c with
@@ -32,10 +31,12 @@ let is_gr c gr = match DAst.get c with
 | _ -> false
 
 let ascii_module = ["Coq";"Strings";"Ascii"]
+let ascii_modpath = MPfile (make_dir ascii_module)
 
 let ascii_path = make_path ascii_module "ascii"
 
-let ascii_kn = make_kn ascii_module "ascii"
+let ascii_label = Label.make "ascii"
+let ascii_kn = MutInd.make2 ascii_modpath ascii_label
 let path_of_Ascii = ((ascii_kn,0),1)
 let static_glob_Ascii  = ConstructRef path_of_Ascii
 
