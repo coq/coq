@@ -10,7 +10,7 @@ Introduction
 Credits
 -------
 
-.. include:: credits-wrapper.rst
+.. include:: credits.rst
 
 License
 -------
