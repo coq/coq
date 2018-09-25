@@ -436,38 +436,41 @@ object (self)
       List.iter test_binding bindings;
       !cur_word
       in
-    (** Auxiliary, copy-paste from method [comment] above;
-        btw, isn't there a more efficient way to achieve this? *)
+    (** Auxiliary method to reach the beginning of line or the
+        nearest space before the iterator. *)
     let rec get_line_start iter =
-      if iter#starts_line then iter
+      if iter#starts_line || Glib.Unichar.isspace iter#char then iter
       else get_line_start iter#backward_char
       in
+    (** Main action *)
     let buffer = self#buffer in
     let insert = buffer#get_iter `INSERT in
     let insert_mark = buffer#create_mark ~left_gravity:false insert in
     let () = buffer#begin_user_action () in
-    begin try
-      let line_start = get_line_start insert in
-      let prev_backslash_search = insert#backward_search ~limit:line_start "\\" in
-      let backslash =
-        match prev_backslash_search with
-        | None -> raise Abort
-        | Some (backslash_start,backslash_stop) -> backslash_start
-        in
-      let prefix = backslash#get_text ~stop:insert in
-      let word =
-        match lookup prefix with
-        | None ->
-           (* show_warning ("No binding match " ^ prefix); *)
-           raise Abort
-        | Some word -> word
-        in
-      let was_deleted = buffer#delete_interactive ~start:backslash ~stop:insert () in
-      if not was_deleted then raise Abort;
-      let insert2 = buffer#get_iter_at_mark (`MARK insert_mark) in
-      let _was_inserted = buffer#insert_interactive ~iter:insert2 word in
-      ()
-    with Abort -> () end;
+    let word_to_insert =
+      try
+        let line_start = get_line_start insert in
+        let prev_backslash_search = insert#backward_search ~limit:line_start "\\" in
+        let backslash =
+          match prev_backslash_search with
+          | None -> raise Abort
+          | Some (backslash_start,backslash_stop) -> backslash_start
+          in
+        let prefix = backslash#get_text ~stop:insert in
+        let word =
+          match lookup prefix with
+          | None ->
+             (* show_warning ("No binding match " ^ prefix); *)
+             raise Abort
+          | Some word -> word
+          in
+        let was_deleted = buffer#delete_interactive ~start:backslash ~stop:insert () in
+        if not was_deleted then raise Abort;
+        word
+      with Abort -> " "
+      in
+    let insert2 = buffer#get_iter_at_mark (`MARK insert_mark) in
+    let _was_inserted = buffer#insert_interactive ~iter:insert2 word_to_insert in
     let () = self#buffer#end_user_action () in
     self#buffer#delete_mark (`MARK insert_mark)
 

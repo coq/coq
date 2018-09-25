@@ -51,17 +51,44 @@ type tag = {
       priorities for two words with similar prefix), the first binding is considered.
 *)
 
-let latex_to_unicode = ref
-  [ (* dummy default, used for testing *)
+let latex_to_unicode = ref []
+  (* dummy default, used for testing
+  [
   ("\\pi", "π", None);
   ("\\lambdas", "λs", Some 4);
   ("\\lambda", "λ", Some 3);
   ("\\lake", "0", Some 2);
   ("\\lemma", "Lemma foo : x. Proof. Qed", Some 1);
   ]
+  *)
 
 let get_latex_to_unicode () =
   !latex_to_unicode
+
+let load_latex_to_unicode_file filename =
+  let acc = ref [] in
+  let ch = open_in filename in
+  begin try while true do
+    let line = input_line ch in
+    begin try
+      let chline = Scanf.Scanning.from_string line in
+      let (key,value) =
+        Scanf.bscanf chline "%s %s" (fun x y -> (x,y)) in
+      let prio =
+        try Scanf.bscanf chline " %d" (fun x -> Some x)
+        with Scanf.Scan_failure _ | Failure _ | End_of_file -> None
+        in
+      acc := (key,value,prio)::!acc;
+      Scanf.Scanning.close_in chline;
+    with End_of_file -> () end;
+  done with End_of_file -> () end;
+  close_in ch;
+  latex_to_unicode := List.rev !acc
+  (*List.iter (fun (x,y,p) ->
+    Printf.eprintf "%s %s %d\n" x y (match p with None -> -1 | Some n -> n))
+   !latex_to_unicode;
+  prerr_newline() *)
+
 
 (** Generic preferences *)
 
@@ -283,7 +310,7 @@ let loaded_accel_file =
   try get_config_file "coqide.keys"
   with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) ".coqide.keys"
 
-let loaded_unicode_file =
+let loaded_bindings_file =
   try get_config_file "coqide.bindings"
   with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) "coqide.bindings"
 
@@ -682,7 +709,7 @@ let save_pref () =
 
 let load_pref () =
   let () = try GtkData.AccelMap.load loaded_accel_file with _ -> () in
-  (* TODO: parse loaded_unicode_file and save it in reference latex_to_unicode *)
+  let () = load_latex_to_unicode_file loaded_bindings_file in
 
   let m = Config_lexer.load_file loaded_pref_file in
   let iter name v =
