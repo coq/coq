@@ -57,31 +57,39 @@ DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
 ### General rules
 ######################################################################
 
-.PHONY: doc sphinxdoc-html doc-pdf doc-ps tutorial
-.PHONY: stdlib full-stdlib rectutorial
+.PHONY: doc doc-html doc-pdf doc-ps
+.PHONY: stdlib full-stdlib sphinx
+.PHONY: tutorial rectutorial
 
-doc: sphinx tutorial rectutorial stdlib
+doc: refman tutorial rectutorial stdlib
 
-# sphinx-html and sphinx-latex
-sphinx-%: coq
+ifndef QUICK
+SPHINX_DEPS := coq
+endif
+
+# refman-html and refman-latex
+refman-%: coq
 	$(SHOW)'SPHINXBUILD doc/sphinx ($*)'
 	$(HIDE)COQBIN="$(abspath bin)" $(SPHINXBUILD) -b $* \
 		$(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/$*
 
-sphinx-pdf: sphinx-latex
+refman-pdf: refman-latex
 	+$(MAKE) -C $(SPHINXBUILDDIR)/latex
 
-sphinx: coq
-	+$(MAKE) sphinx-html
-	+$(MAKE) sphinx-pdf
+refman: coq
+	+$(MAKE) refman-html
+	+$(MAKE) refman-pdf
+
+# compatibility alias
+sphinx: refman-html
 
 doc-html:\
   doc/tutorial/Tutorial.v.html doc/stdlib/html/index.html \
-  doc/RecTutorial/RecTutorial.html sphinx-html
+  doc/RecTutorial/RecTutorial.html refman-html
 
 doc-pdf:\
   doc/tutorial/Tutorial.v.pdf doc/stdlib/Library.pdf \
-  doc/RecTutorial/RecTutorial.pdf sphinx-pdf
+  doc/RecTutorial/RecTutorial.pdf refman-pdf
 
 doc-ps:\
   doc/tutorial/Tutorial.v.ps \
@@ -254,7 +262,7 @@ install-doc-meta:
 	$(MKDIR) $(FULLDOCDIR)
 	$(INSTALLLIB) doc/LICENSE $(FULLDOCDIR)/LICENSE.doc
 
-install-doc-html: install-doc-stdlib-html install-doc-sphinx-html
+install-doc-html: install-doc-stdlib-html install-doc-sphinx
 
 install-doc-stdlib-html:
 	$(MKDIR) $(FULLDOCDIR)/html/stdlib
@@ -271,7 +279,7 @@ install-doc-printable:
 	$(INSTALLLIB) doc/tutorial/Tutorial.v.ps $(FULLDOCDIR)/ps/Tutorial.ps
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.ps $(FULLDOCDIR)/ps/RecTutorial.ps
 
-install-doc-sphinx-html:
+install-doc-sphinx:
 	$(MKDIR) $(FULLDOCDIR)/sphinx
 	(for f in `cd doc/sphinx/_build; find . -type f`; do \
 		$(MKDIR) $$(dirname $(FULLDOCDIR)/sphinx/$$f);\

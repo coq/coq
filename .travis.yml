@@ -99,7 +99,7 @@ matrix:
     # Full Coq test-suite with two compilers
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="sphinx-html test-suite"
+      - TEST_TARGET="sphinx test-suite"
       - EXTRA_CONF="-coqide opt"
       - EXTRA_OPAM="hevea ${LABLGTK}"
       before_install: &sphinx-install
@@ -119,7 +119,7 @@ matrix:
 
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="sphinx-html test-suite"
+      - TEST_TARGET="sphinx test-suite"
       - COMPILER="${COMPILER_BE}"
       - FINDLIB_VER="${FINDLIB_VER_BE}"
       - CAMLP5_VER="${CAMLP5_VER_BE}"
@@ -135,7 +135,7 @@ matrix:
     # Full test-suite with flambda
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="sphinx-html test-suite"
+      - TEST_TARGET="sphinx test-suite"
       - COMPILER="${COMPILER_BE}+flambda"
       - FINDLIB_VER="${FINDLIB_VER_BE}"
       - CAMLP5_VER="${CAMLP5_VER_BE}"
