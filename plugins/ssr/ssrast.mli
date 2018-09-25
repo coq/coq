@@ -84,7 +84,7 @@ type ssripat =
   | IPatId of (*TODO id_mod option * *) Id.t
   | IPatAnon of anon_iter (* inaccessible name *)
 (* TODO  | IPatClearMark *)
-  | IPatDispatch of ssripatss (* /[..|..] *)
+  | IPatDispatch of bool (*strict*) * ssripatss (* (..|..) *)
   | IPatCase of (* ipats_mod option * *) ssripatss (* this is not equivalent to /case /[..|..] if there are already multiple goals *)
   | IPatInj of ssripatss
   | IPatRewrite of (*occurrence option * rewrite_pattern **) ssrocc * ssrdir
