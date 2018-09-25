@@ -1796,7 +1796,7 @@ function make_addon_vst {
   installer_addon_dependency vst
   if build_prep_overlay VST; then
     installer_addon_section vst "VST" "ATTENTION: SOME INCLUDED COMPCERT PARTS ARE NOT OPEN SOURCE! Verified Software Toolchain for verifying C code" "off"
-    log1 make $MAKE_OPT
+    log1 make IGNORECOQVERSION=true $MAKE_OPT
     log1 install_addon_vst
     build_post
   fi
