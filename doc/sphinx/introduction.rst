@@ -35,11 +35,6 @@ are processed from a file.
    The `coqtop` read-eval-print-loop can also be used directly, for debugging
    purposes.
 
-   .. [#PG] Proof-General is available at https://proofgeneral.github.io/.
-      Optionally, you can enhance it with the minor mode
-      Company-Coq :cite:`Pit16`
-      (see https://github.com/cpitclaudel/company-coq).
-
 -  The compiled mode acts as a proof checker taking a file containing a
    whole development in order to ensure its correctness. Moreover,
    |Coq|’s compiler provides an output file containing a compact
