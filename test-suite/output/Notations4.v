@@ -106,3 +106,19 @@ Notation "# x" := (Some x).
 Check fun x => (# x)%nat.
 
 End E.
+
+(* Other tests of precedence *)
+
+Module F.
+
+Notation "# x" := (S x) (at level 20) : nat_scope.
+Notation "## x" := (S x) (at level 20).
+Check fun x => S x.
+Open Scope nat_scope.
+Check fun x => S x.
+Notation "### x" := (S x) (at level 20) : nat_scope.
+Check fun x => S x.
+Close Scope nat_scope.
+Check fun x => S x.
+
+End F.

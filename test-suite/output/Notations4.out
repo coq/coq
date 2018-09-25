@@ -23,3 +23,11 @@ Let "x" e1 e2
      : expr
 fun x : nat => (# x)%nat
      : nat -> nat
+fun x : nat => ## x
+     : nat -> nat
+fun x : nat => # x
+     : nat -> nat
+fun x : nat => ### x
+     : nat -> nat
+fun x : nat => ## x
+     : nat -> nat
