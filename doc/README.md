@@ -88,8 +88,11 @@ Alternatively, you can use some specific targets:
 - `make doc-html`
   to produce all HTML documents
 
-- `make sphinx`
-   to produce the HTML and PDF versions of the reference manual
+- `make refman`
+  to produce the HTML and PDF versions of the reference manual
+
+- `make refman-{html,pdf}`
+  to produce only one format of the reference manual
 
 - `make stdlib`
   to produce all formats of the Coq standard library
@@ -103,12 +106,12 @@ to avoid treating Sphinx warnings as errors.  Otherwise, Sphinx quits
 upon detecting the first warning.  You can set this on the Sphinx `make`
 command line or as an environment variable:
 
-- `make sphinx SPHINXWARNERROR=0`
+- `make refman SPHINXWARNERROR=0`
 
 - ~~~
   export SPHINXWARNERROR=0
     ⋮
-  make sphinx
+  make refman
   ~~~
 
 Installation
