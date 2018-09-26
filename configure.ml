@@ -1239,7 +1239,10 @@ let write_configml f =
   pr "\nlet core_src_dirs = [\n%s]\n" core_src_dirs;
   pr "\nlet plugins_dirs = [\n";
 
-  let plugins = Sys.readdir "plugins" in
+  let plugins =
+    try Sys.readdir "plugins"
+    with _ -> [||]
+  in
   Array.sort compare plugins;
   Array.iter
     (fun f ->
