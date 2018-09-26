@@ -1,4 +1,6 @@
-Require Import ZArith ROmega.
+(* Starting from Coq 8.9 (late 2018), `romega` tactics are deprecated.
+   The tests in this file remain but now call the `lia` tactic. *)
+Require Import ZArith Lia.
 
 (* Submitted by Yegor Bryukhov (BZ#922) *)
 
@@ -13,7 +15,7 @@ forall v1 v2 v5 : Z,
 0 < v2 ->
 4*v2 <> 5*v1.
 intros.
-romega.
+lia.
 Qed.
 
 
@@ -37,5 +39,5 @@ forall v1 v2 v3 v4 v5 : Z,
 ((7 * v1) + (1 * v3)) + ((2 * v3) + (1 * v3)) >= ((6 * v5) + (4)) + ((1) + (9))
 -> False.
 intros.
-romega.
+lia.
 Qed.

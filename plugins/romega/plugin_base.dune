@@ -1,5 +1,0 @@
-(library
- (name romega_plugin)
- (public_name coq.plugins.romega)
- (synopsis "Coq's romega plugin")
- (libraries coq.plugins.omega))

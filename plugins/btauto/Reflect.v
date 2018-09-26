@@ -1,4 +1,4 @@
-Require Import Bool DecidableClass Algebra Ring PArith ROmega Omega.
+Require Import Bool DecidableClass Algebra Ring PArith Omega.
 
 Section Bool.
 
