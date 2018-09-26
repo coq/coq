@@ -112,4 +112,5 @@ val stick : 'a preference ->
 
 val use_default_doc_url : string
 
-val get_latex_to_unicode : unit -> (string * string * int option) list
+val get_unicode_bindings : unit -> (string * string * int option) list
+val load_unicode_bindings_files : string list -> unit

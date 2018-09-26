@@ -766,13 +766,9 @@ let about _ =
   dialog#set_authors authors;
   dialog#show ()
 
-let latex_to_unicode =
+let apply_unicode_binding =
   cb_on_current_term (fun t ->
-    (*let show_warning s =
-      t.messages#clear;
-      t.messages#add_string s
-      in*)
-    t.script#latex_to_unicode() (*show_warning*))
+    t.script#apply_unicode_binding())
 
 let comment = cb_on_current_term (fun t -> t.script#comment ())
 let uncomment = cb_on_current_term (fun t -> t.script#uncomment ())
@@ -1170,7 +1166,7 @@ let build_ui () =
     item "Coqtop arguments" ~label:"Coqtop _arguments"
       ~callback:MiscMenu.coqtop_arguments;
     item "Latex-to-unicode" ~label:"_Latex-to-unicode" ~accel:"<Shift>space"
-      ~callback:MiscMenu.latex_to_unicode;
+      ~callback:MiscMenu.apply_unicode_binding;
   ];
 
   menu compile_menu [
@@ -1357,9 +1353,12 @@ let main files =
     this default coqtop path *)
 
 let read_coqide_args argv =
-  let rec filter_coqtop coqtop project_files out = function
+  let rec filter_coqtop coqtop project_files bindings_files out = function
+    |"-unicode-bindings" :: sfilenames :: args ->
+      let filenames = Str.split (Str.regexp ",") sfilenames in
+      filter_coqtop coqtop project_files (filenames @ bindings_files) out args
     |"-coqtop" :: prog :: args ->
-      if coqtop = None then filter_coqtop (Some prog) project_files out args
+      if coqtop = None then filter_coqtop (Some prog) project_files bindings_files out args
       else (output_string stderr "Error: multiple -coqtop options"; exit 1)
     |"-f" :: file :: args ->
       if project_files <> None then
@@ -1367,7 +1366,7 @@ let read_coqide_args argv =
       let d = CUnix.canonical_path_name (Filename.dirname file) in
       let warning_fn x = Format.eprintf "%s@\n%!" x in
       let p = CoqProject_file.read_project_file ~warning_fn file in
-      filter_coqtop coqtop (Some (d,p)) out args
+      filter_coqtop coqtop (Some (d,p)) out bindings_files args
     |"-f" :: [] ->
       output_string stderr "Error: missing project file name"; exit 1
     |"-coqtop" :: [] ->
@@ -1376,19 +1375,21 @@ let read_coqide_args argv =
       Minilib.debug := true;
       Flags.debug := true;
       Backtrace.record_backtrace true;
-      filter_coqtop coqtop project_files ("-debug"::out) args
+      filter_coqtop coqtop project_files bindings_files ("-debug"::out) args
     |"-coqtop-flags" :: flags :: args->
       Coq.ideslave_coqtop_flags := Some flags;
-      filter_coqtop coqtop project_files out args
+      filter_coqtop coqtop project_files bindings_files out args
     |arg::args when out = [] && Minilib.is_prefix_of "-psn_" arg ->
       (* argument added by MacOS during .app launch *)
-      filter_coqtop coqtop project_files out args
-    |arg::args -> filter_coqtop coqtop project_files (arg::out) args
-    |[] -> (coqtop,project_files,List.rev out)
+      filter_coqtop coqtop project_files bindings_files out args
+    |arg::args -> filter_coqtop coqtop project_files bindings_files (arg::out) args
+    |[] -> (coqtop,project_files,bindings_files,List.rev out)
   in
-  let coqtop,project_files,argv = filter_coqtop None None [] argv in
+  let coqtop,project_files,bindings_files,argv = filter_coqtop None None [] [] argv in
+  let bindings_files = if bindings_files = [] then ["default"] else bindings_files in
   Ideutils.custom_coqtop := coqtop;
   custom_project_file := project_files;
+  Preferences.load_unicode_bindings_files bindings_files;
   argv
 
 

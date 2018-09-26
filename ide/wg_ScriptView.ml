@@ -407,8 +407,8 @@ object (self)
       self#buffer#delete_mark (`MARK stop_mark)
     | _ -> ()
 
-  method latex_to_unicode () (* (show_warning:string->unit) *) =
-    let bindings = Preferences.get_latex_to_unicode() in
+  method apply_unicode_binding () =
+    let bindings = Preferences.get_unicode_bindings() in
     (** Auxiliary function to test whether [s] is a prefix of [str];
         Note that there might be overlap with wg_Completion::is_substring *)
     let string_is_prefix s str =
@@ -459,9 +459,7 @@ object (self)
         let prefix = backslash#get_text ~stop:insert in
         let word =
           match lookup prefix with
-          | None ->
-             (* show_warning ("No binding match " ^ prefix); *)
-             raise Abort
+          | None -> raise Abort
           | Some word -> word
           in
         let was_deleted = buffer#delete_interactive ~start:backslash ~stop:insert () in
