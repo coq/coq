@@ -1298,7 +1298,7 @@ and tactic_of_value ist vle =
        match appl with
          UnnamedAppl -> "An unnamed user-defined tactic"
        | GlbAppl apps ->
-          let nms = List.map (fun (kn,_) -> Names.KerName.to_string kn) apps in
+          let nms = List.map (fun (kn,_) -> string_of_qualid (Tacenv.shortest_qualid_of_tactic kn)) apps in
           match nms with
             []    -> assert false
           | kn::_ -> "The user-defined tactic \"" ^ kn ^ "\"" (* TODO: when do we not have a singleton? *)

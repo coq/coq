@@ -49,6 +49,8 @@ let pr_puniverses p u =
   if Univ.Instance.is_empty u then p 
   else p ++ str"(*" ++ Univ.Instance.pr UnivNames.pr_with_global_universes u ++ str"*)"
 
+(* Minimalistic constr printer, typically for debugging *)
+
 let rec pr_constr c = match kind c with
   | Rel n -> str "#"++int n
   | Meta n -> str "Meta(" ++ int n ++ str ")"

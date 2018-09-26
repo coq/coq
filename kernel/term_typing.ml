@@ -103,12 +103,7 @@ let inline_side_effects env body ctx side_eff =
   if List.is_empty side_eff then (body, ctx, sigs)
   else
     (** Second step: compute the lifts and substitutions to apply *)
-    let cname c =
-      let name = Constant.to_string c in
-      let map c = if c == '.' || c == '#' then '_' else c in
-      let name = String.map map name in
-      Name (Id.of_string name)
-    in
+    let cname c = Name (Label.to_id (Constant.label c)) in
     let fold (subst, var, ctx, args) (c, cb, b) =
       let (b, opaque) = match cb.const_body, b with
       | Def b, _ -> (Mod_subst.force_constr b, false)

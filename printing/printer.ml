@@ -944,8 +944,15 @@ let pr_assumptionset env sigma s =
     let safe_pr_constant env kn =
       try pr_constant env kn
       with Not_found ->
+        (* FIXME? *)
 	let mp,_,lab = Constant.repr3 kn in
         str (ModPath.to_string mp) ++ str "." ++ Label.print lab
+    in
+    let safe_pr_inductive env kn =
+      try pr_inductive env (kn,0)
+      with Not_found ->
+        (* FIXME? *)
+        MutInd.print kn
     in
     let safe_pr_ltype env sigma typ =
       try str " : " ++ pr_ltype_env env sigma typ
@@ -961,7 +968,7 @@ let pr_assumptionset env sigma s =
       | Constant kn ->
           safe_pr_constant env kn ++ safe_pr_ltype env sigma typ
       | Positive m ->
-          hov 2 (MutInd.print m ++ spc () ++ strbrk"is positive.")
+          hov 2 (safe_pr_inductive env m ++ spc () ++ strbrk"is positive.")
       | Guarded kn ->
           hov 2 (safe_pr_constant env kn ++ spc () ++ strbrk"is positive.")
     in
