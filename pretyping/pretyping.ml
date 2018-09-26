@@ -960,20 +960,50 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) evdref
 and pretype_instance k0 resolve_tc env evdref loc hyps evk update =
   let f decl (subst,update) =
     let id = NamedDecl.get_id decl in
+    let b = Option.map (replace_vars subst) (NamedDecl.get_value decl) in
     let t = replace_vars subst (NamedDecl.get_type decl) in
+    let check_body id c =
+      match b, c with
+      | Some b, Some c ->
+         if not (is_conv !!env !evdref b c) then
+           user_err ?loc  (str "Cannot interpret " ++
+             pr_existential_key !evdref evk ++
+             strbrk " in current context: binding for " ++ Id.print id ++
+             strbrk " is not convertible to its expected definition (cannot unify " ++
+             quote (print_constr_env !!env !evdref b) ++
+             strbrk " and " ++
+             quote (print_constr_env !!env !evdref c) ++
+             str ").")
+      | Some b, None ->
+           user_err ?loc  (str "Cannot interpret " ++
+             pr_existential_key !evdref evk ++
+             strbrk " in current context: " ++ Id.print id ++
+             strbrk " should be bound to a local definition.")
+      | None, _ -> () in
+    let check_type id t' =
+      if not (is_conv !!env !evdref t t') then
+        user_err ?loc  (str "Cannot interpret " ++
+          pr_existential_key !evdref evk ++
+          strbrk " in current context: binding for " ++ Id.print id ++
+          strbrk " is not well-typed.") in
     let c, update =
       try
         let c = List.assoc id update in
         let c = pretype k0 resolve_tc (mk_tycon t) env evdref c in
+        check_body id (Some c.uj_val);
         c.uj_val, List.remove_assoc id update
       with Not_found ->
       try
-        let (n,_,t') = lookup_rel_id id (rel_context !!env) in
-        if is_conv !!env !evdref t (lift n t') then mkRel n, update else raise Not_found
+        let (n,b',t') = lookup_rel_id id (rel_context !!env) in
+        check_type id (lift n t');
+        check_body id (Option.map (lift n) b');
+        mkRel n, update
       with Not_found ->
       try
-        let t' = !!env |> lookup_named id |> NamedDecl.get_type in
-        if is_conv !!env !evdref t t' then mkVar id, update else raise Not_found
+        let decl = lookup_named id !!env in
+        check_type id (NamedDecl.get_type decl);
+        check_body id (NamedDecl.get_value decl);
+        mkVar id, update
       with Not_found ->
         user_err ?loc  (str "Cannot interpret " ++
           pr_existential_key !evdref evk ++

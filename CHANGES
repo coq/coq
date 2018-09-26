@@ -81,6 +81,11 @@ Specification language
   variables) may occasionally change type inference in incompatible
   ways, especially regarding the inference of the return clause of "match".
 
+- Fixing a missing check in interpreting instances of existential
+  variables which are bound to local definitions might exceptionally
+  induce an overhead if the cost of checking the conversion of the
+  corresponding definitions is additionally high (PR #8215).
+
 Standard Library
 
 - Added `Ascii.eqb` and `String.eqb` and the `=?` notation for them,
