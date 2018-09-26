@@ -55,16 +55,16 @@ let env env = env.static_env
 let vars_of_env env =
   Id.Set.union (Id.Map.domain env.lvar.ltac_genargs) (vars_of_env env.static_env)
 
-let ltac_interp_name { ltac_idents ; ltac_genargs } = function
-  | Anonymous -> Anonymous
-  | Name id as na ->
-      try Name (Id.Map.find id ltac_idents)
-      with Not_found ->
-        if Id.Map.mem id ltac_genargs then
-          user_err (str "Ltac variable" ++ spc () ++ Id.print id ++
-                    spc () ++ str "is not bound to an identifier." ++
-                    spc () ++str "It cannot be used in a binder.")
-        else na
+let ltac_interp_id { ltac_idents ; ltac_genargs } id =
+  try Id.Map.find id ltac_idents
+  with Not_found ->
+    if Id.Map.mem id ltac_genargs then
+      user_err (str "Ltac variable" ++ spc () ++ Id.print id ++
+                spc () ++ str "is not bound to an identifier." ++
+                spc () ++str "It cannot be used in a binder.")
+    else id
+
+let ltac_interp_name lvar = Nameops.Name.map (ltac_interp_id lvar)
 
 let push_rel sigma d env =
   let d' = Context.Rel.Declaration.map_name (ltac_interp_name env.lvar) d in
@@ -181,6 +181,8 @@ let interp_ltac_variable ?loc typing_fun env sigma id =
       bound to a " ++ Geninterp.Val.pr typ ++ str ".")
   end;
   raise Not_found
+
+let interp_ltac_id env id = ltac_interp_id env.lvar id
 
 module ConstrInterpObj =
 struct

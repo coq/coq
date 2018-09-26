@@ -73,6 +73,10 @@ Tactics
 
 - The `romega` tactics have been deprecated; please use `lia` instead.
 
+- Names of existential variables occurring in Ltac functions
+  (e.g. "?[n]" or "?n" in terms - not in patterns) are now interpreted
+  the same way as other variable names occurring in Ltac functions.
+
 Focusing
 
 - Focusing bracket `{` now supports named goal selectors,

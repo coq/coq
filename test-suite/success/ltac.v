@@ -377,3 +377,30 @@ f y true.
 Abort.
 
 End LtacNames.
+
+(* Test binding of the name of existential variables in Ltac *)
+
+Module EvarNames.
+
+Ltac pick x := eexists ?[x].
+Goal exists y, y = 0.
+pick foo.
+[foo]:exact 0.
+auto.
+Qed.
+
+Ltac goal x := refine ?[x].
+
+Goal forall n, n + 0 = n.
+Proof.
+  induction n; [ goal Base | goal Rec ].
+  [Base]: {
+    easy.
+  }
+  [Rec]: {
+    simpl.
+    now f_equal.
+  }
+Qed.
+
+End EvarNames.

@@ -76,6 +76,11 @@ val hide_variable : t -> Name.t -> Id.t -> t
 val interp_ltac_variable : ?loc:Loc.t -> (t -> Glob_term.glob_constr -> unsafe_judgment) ->
   t -> evar_map -> Id.t -> unsafe_judgment
 
+(** Interp an identifier as an ltac variable bound to an identifier,
+    or as the identifier itself if not bound to an ltac variable *)
+
+val interp_ltac_id : t -> Id.t -> Id.t
+
 (** Interpreting a generic argument, typically a "ltac:(...)", taking
     into account the possible renaming *)
 
