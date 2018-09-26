@@ -191,3 +191,5 @@ theories/*/*/*/dune
 /user-contrib/Ltac2/dune
 *.install
 !Makefile.install
+
+ide/coqide.keys

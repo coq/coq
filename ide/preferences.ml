@@ -321,17 +321,23 @@ let attach_modifiers (pref : string preference) prefix =
   in
   pref#connect#changed ~callback:cb
 
+let select_arch m m_osx =
+  if Coq_config.arch = "Darwin" then m_osx else m
+
 let modifier_for_navigation =
-  new preference ~name:["modifier_for_navigation"] ~init:"<Control>" ~repr:Repr.(string)
+  new preference ~name:["modifier_for_navigation"]
+    ~init:(select_arch "<Control>" "<Control><Primary>") ~repr:Repr.(string)
 
 let modifier_for_templates =
   new preference ~name:["modifier_for_templates"] ~init:"<Control><Shift>" ~repr:Repr.(string)
 
 let modifier_for_tactics =
-  new preference ~name:["modifier_for_tactics"] ~init:"<Control><Alt>" ~repr:Repr.(string)
+  new preference ~name:["modifier_for_tactics"]
+    ~init:(select_arch "<Control><Alt>" "<Control><Primary>") ~repr:Repr.(string)
 
 let modifier_for_display =
-  new preference ~name:["modifier_for_display"] ~init:"<Alt><Shift>" ~repr:Repr.(string)
+  new preference ~name:["modifier_for_display"]
+    ~init:(select_arch "<Alt><Shift>" "<Primary><Shift>")~repr:Repr.(string)
 
 let modifier_for_queries =
   new preference ~name:["modifier_for_queries"] ~init:"<Control><Shift>" ~repr:Repr.(string)
@@ -684,11 +690,6 @@ let load_pref_file loader warn name =
     try_load_pref_file loader warn old_user_file
   with Not_found ->
   (* Built-in configuration *)
-  try
-    let default_file = get_config_file [Minilib.coqide_default_config_dir ()] name in
-    warn ~delay:5000 ("No " ^ name ^ ", using default configuration file");
-    try_load_pref_file loader warn default_file
-  with Not_found ->
     warn ~delay:5000 ("No " ^ name ^ ", using default internal configuration")
 
 let load_accel_pref ~warn =
