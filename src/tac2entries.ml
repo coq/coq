@@ -100,8 +100,8 @@ type typdef = {
 }
 
 let change_kn_label kn id =
-  let (mp, dp, _) = KerName.repr kn in
-  KerName.make mp dp (Label.of_id id)
+  let mp = KerName.modpath kn in
+  KerName.make mp (Label.of_id id)
 
 let change_sp_label sp id =
   let (dp, _) = Libnames.repr_path sp in
