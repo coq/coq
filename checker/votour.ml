@@ -152,6 +152,7 @@ let rec get_name ?(extra=false) = function
   |String -> "string"
   |Annot (s,v) -> s^"/"^get_name ~extra v
   |Dyn -> "<dynamic>"
+  | Proxy v -> get_name ~extra !v
 
 (** For tuples, its quite handy to display the inner 1st string (if any).
     Cf. [structure_body] for instance *)
@@ -255,6 +256,7 @@ let rec get_children v o pos = match v with
     | _ -> raise Exit
     end
   |Fail s -> raise Forbidden
+  | Proxy v -> get_children !v o pos
 
 let get_children v o pos =
   try get_children v o pos
