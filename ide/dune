@@ -10,6 +10,8 @@
 
 (executable
  (name fake_ide)
+ (public_name fake_ide)
+ (package coqide-server)
  (modules fake_ide)
  (libraries coqide-server.protocol coqide-server.core))
 

@@ -1,7 +1,7 @@
 # -*- mode: makefile -*-
 # Dune Makefile for Coq
 
-.PHONY: voboot states world watch release apidoc ocheck ireport clean help
+.PHONY: help voboot states world watch test-suite release apidoc ocheck ireport clean
 
 # use DUNEOPT=--display=short for a more verbose build
 # DUNEOPT=--display=short
@@ -13,6 +13,7 @@ help:
 	@echo "  - states:  build a minimal functional coqtop"
 	@echo "  - world:   build all binaries and libraries"
 	@echo "  - watch:   build all binaries and libraries [continuous build]"
+	@echo "  - test-suite: run Coq's test suite"
 	@echo "  - release: build Coq in release mode"
 	@echo "  - apidoc:  build ML API documentation"
 	@echo "  - ocheck:  build for all supported OCaml versions [requires OPAM]"
@@ -32,6 +33,9 @@ world: voboot
 
 watch: voboot
 	dune build $(DUNEOPT) @install -w
+
+test-suite: voboot
+	dune $(DUNEOPT) runtest
 
 release: voboot
 	dune build $(DUNEOPT) -p coq

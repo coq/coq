@@ -1,0 +1,73 @@
+(rule
+ (targets summary.log)
+ (deps
+   ; File that should be promoted.
+   misc/universes/all_stdlib.v
+   ; Dependencies of the legacy makefile
+   ../Makefile.common
+   ../config/Makefile
+   ; Stuff for the compat script test
+   ../dev/header.ml
+   ../dev/tools/update-compat.py
+   ../doc/stdlib/index-list.html.template
+   (package coq)
+   ; For fake_ide
+   (package coqide-server)
+   (source_tree .))
+   ; Finer-grained dependencies look like this
+   ; ../tools/CoqMakefile.in
+   ; ../theories/Init/Prelude.vo
+   ; ../theories/Arith/Arith.vo
+   ; ../theories/Arith/Compare.vo
+   ; ../theories/PArith/PArith.vo
+   ; ../theories/QArith/QArith.vo
+   ; ../theories/QArith/Qcanon.vo
+   ; ../theories/ZArith/ZArith.vo
+   ; ../theories/ZArith/Zwf.vo
+   ; ../theories/Sets/Ensembles.vo
+   ; ../theories/Numbers/Natural/Peano/NPeano.vo
+   ; ../theories/Numbers/Cyclic/Int31/Cyclic31.vo
+   ; ../theories/FSets/FMaps.vo
+   ; ../theories/FSets/FSets.vo
+   ; ../theories/MSets/MSets.vo
+   ; ../theories/Compat/Coq87.vo
+   ; ../theories/Compat/Coq88.vo
+   ; ../theories/Relations/Relations.vo
+   ; ../theories/Unicode/Utf8.vo
+   ; ../theories/Program/Program.vo
+   ; ../theories/Classes/EquivDec.vo
+   ; ../theories/Classes/DecidableClass.vo
+   ; ../theories/Classes/SetoidClass.vo
+   ; ../theories/Classes/RelationClasses.vo
+   ; ../theories/Logic/Classical.vo
+   ; ../theories/Logic/Hurkens.vo
+   ; ../theories/Logic/ClassicalFacts.vo
+   ; ../theories/Reals/Reals.vo
+   ; ../theories/Lists/Streams.vo
+   ; ../plugins/micromega/Lia.vo
+   ; ../plugins/micromega/Lqa.vo
+   ; ../plugins/micromega/Psatz.vo
+   ; ../plugins/micromega/MExtraction.vo
+   ; ../plugins/nsatz/Nsatz.vo
+   ; ../plugins/omega/Omega.vo
+   ; ../plugins/ssr/ssrbool.vo
+   ; ../plugins/derive/Derive.vo
+   ; ../plugins/funind/Recdef.vo
+   ; ../plugins/extraction/Extraction.vo
+   ; ../plugins/extraction/ExtrOcamlNatInt.vo
+   ; coqtop
+   ; coqtop.opt
+   ; coqidetop.opt
+   ; coqqueryworker.opt
+   ; coqtacticworker.opt
+   ; coqproofworker.opt
+   ; coqc
+   ; coqchk
+   ; coqdoc
+   ; %{bin:coq_makefile}
+   ; %{bin:fake_ide}
+ (action
+  (progn
+   ; XXX: we will allow to set the NJOBS variable in a future Dune
+   ; version, either by using an env var or by letting Dune set `-j`
+   (run make -j 2 BIN= PRINT_LOGS=1))))
