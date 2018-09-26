@@ -142,7 +142,7 @@ let rec map_lam_with_binders g f n lam =
     let args' = Array.Smart.map (f n) args in
     if args == args' then lam else Levar (evk, args')
 
-and map_uint g f n u =
+and map_uint _g f n u =
   match u with
   | UintVal _ -> u
   | UintDigits(prefix,c,args) ->
@@ -203,7 +203,7 @@ let can_subst lam =
 
 let can_merge_if bt bf =
   match bt, bf with
-  | Llam(idst,_), Llam(idsf,_) -> true
+  | Llam(_idst,_), Llam(_idsf,_) -> true
   | _ -> false
 
 let merge_if t bt bf =
@@ -370,7 +370,7 @@ module Cache =
 
 let is_lazy env prefix t =
   match kind t with
-  | App (f,args) ->
+  | App (f,_args) ->
      begin match kind f with
      | Construct (c,_) ->
        let gr = GlobRef.IndRef (fst c) in
@@ -431,7 +431,7 @@ let rec lambda_of_constr cache env sigma c =
 
   | Sort s -> Lsort s
 
-  | Ind (ind,u as pind) ->
+  | Ind (ind,_u as pind) ->
       let prefix = get_mind_prefix env (fst ind) in
       Lind (prefix, pind)
 
@@ -529,7 +529,7 @@ let rec lambda_of_constr cache env sigma c =
 
 and lambda_of_app cache env sigma f args =
   match kind f with
-  | Const (kn,u as c) ->
+  | Const (_kn,_u as c) ->
       let kn,u = get_alias env c in
       let cb = lookup_constant kn env in
       (try

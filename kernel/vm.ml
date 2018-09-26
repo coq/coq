@@ -187,5 +187,5 @@ let apply_whd k whd =
       interprete (cofix_upd_code to_up) (cofix_upd_val to_up) (cofix_upd_env to_up) 0
   | Vatom_stk(a,stk) ->
       apply_stack (val_of_atom a) stk v
-  | Vuniv_level lvl -> assert false
+  | Vuniv_level _lvl -> assert false
 

@@ -53,9 +53,9 @@ let compare_stack_shape stk1 stk2 =
     | (_, (Zupdate _|Zshift _)::s2) -> compare_rec bal stk1 s2
     | (Zapp l1::s1, _) -> compare_rec (bal+Array.length l1) s1 stk2
     | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
-    | (Zproj p1::s1, Zproj p2::s2) ->
+    | (Zproj _p1::s1, Zproj _p2::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
-    | (ZcaseT(c1,_,_,_)::s1, ZcaseT(c2,_,_,_)::s2) ->
+    | (ZcaseT(_c1,_,_,_)::s1, ZcaseT(_c2,_,_,_)::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
@@ -261,7 +261,7 @@ let convert_constructors_gen cmp_instances cmp_cumul (mind, ind, cns) nargs u1 u
     s
   | Declarations.Polymorphic_ind _ ->
     cmp_instances u1 u2 s
-  | Declarations.Cumulative_ind cumi ->
+  | Declarations.Cumulative_ind _cumi ->
     let num_cnstr_args = constructor_cumulativity_arguments (mind,ind,cns) in
     if not (Int.equal num_cnstr_args nargs) then
       cmp_instances u1 u2 s
@@ -296,7 +296,7 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
           (match (z1,z2) with
             | (Zlapp a1,Zlapp a2) -> 
 	       Array.fold_right2 f a1 a2 cu1
-	    | (Zlproj (c1,l1),Zlproj (c2,l2)) -> 
+            | (Zlproj (c1,_l1),Zlproj (c2,_l2)) ->
               if not (Projection.Repr.equal c1 c2) then
 		raise NotConvertible
 	      else cu1
@@ -498,7 +498,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
             eqappr cv_pb l2r infos (lft1, r1) appr2 cuniv
 	| None -> 
 	   match c2 with
-	   | FConstruct ((ind2,j2),u2) ->
+           | FConstruct ((ind2,_j2),_u2) ->
 	      (try
 	      let v2, v1 =
                 eta_expand_ind_stack (info_env infos.cnv_inf) ind2 hd2 v2 (snd appr1)
@@ -515,7 +515,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           eqappr cv_pb l2r infos appr1 (lft2, r2) cuniv
         | None -> 
 	   match c1 with
-	   | FConstruct ((ind1,j1),u1) ->
+           | FConstruct ((ind1,_j1),_u1) ->
  	      (try let v1, v2 =
                     eta_expand_ind_stack (info_env infos.cnv_inf) ind1 hd1 v1 (snd appr2)
                    in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
@@ -554,14 +554,14 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       else raise NotConvertible
 	  
     (* Eta expansion of records *)
-    | (FConstruct ((ind1,j1),u1), _) ->
+    | (FConstruct ((ind1,_j1),_u1), _) ->
       (try
     	 let v1, v2 =
             eta_expand_ind_stack (info_env infos.cnv_inf) ind1 hd1 v1 (snd appr2)
          in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with Not_found -> raise NotConvertible)
 
-    | (_, FConstruct ((ind2,j2),u2)) ->
+    | (_, FConstruct ((ind2,_j2),_u2)) ->
       (try
     	 let v2, v1 =
             eta_expand_ind_stack (info_env infos.cnv_inf) ind2 hd2 v2 (snd appr1)
@@ -659,14 +659,14 @@ let check_sort_cmp_universes env pb s0 s1 univs =
     | Prop, (Set | Type _) -> if not (is_cumul pb) then raise NotConvertible
     | Set, Prop -> raise NotConvertible
     | Set, Type u -> check_pb Univ.type0_univ u
-    | Type u, Prop -> raise NotConvertible
+    | Type _u, Prop -> raise NotConvertible
     | Type u, Set -> check_pb u Univ.type0_univ
     | Type u0, Type u1 -> check_pb u0 u1
 
 let checked_sort_cmp_universes env pb s0 s1 univs =
   check_sort_cmp_universes env pb s0 s1 univs; univs
 
-let check_convert_instances ~flex u u' univs =
+let check_convert_instances ~flex:_ u u' univs =
   if UGraph.check_eq_instances univs u u' then univs
   else raise NotConvertible
 
@@ -707,7 +707,7 @@ let infer_cmp_universes env pb s0 s1 univs =
     | Prop, (Set | Type _) -> if not (is_cumul pb) then raise NotConvertible else univs
     | Set, Prop -> raise NotConvertible
     | Set, Type u -> infer_pb Univ.type0_univ u
-    | Type u, Prop -> raise NotConvertible
+    | Type _u, Prop -> raise NotConvertible
     | Type u, Set -> infer_pb u Univ.type0_univ
     | Type u0, Type u1 -> infer_pb u0 u1
 
@@ -781,7 +781,7 @@ let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_sta
     env univs t1 t2 = 
   infer_conv_universes CUMUL l2r evars ts env univs t1 t2
 
-let default_conv cv_pb ?(l2r=false) env t1 t2 =
+let default_conv cv_pb ?l2r:_ env t1 t2 =
     gen_conv cv_pb env t1 t2
 
 let default_conv_leq = default_conv CUMUL
@@ -912,7 +912,7 @@ let is_arity env c =
   with NotArity -> false
 
 let eta_expand env t ty =
-  let ctxt, codom = dest_prod env ty in
+  let ctxt, _codom = dest_prod env ty in
   let ctxt',t = dest_lam env t in
   let d = Context.Rel.nhyps ctxt - Context.Rel.nhyps ctxt' in
   let eta_args = List.rev_map mkRel (List.interval 1 d) in

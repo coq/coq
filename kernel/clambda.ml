@@ -107,7 +107,7 @@ let rec pp_lam lam =
   | Lval _ -> str "values"
   | Lsort s -> pp_sort s
   | Lind ((mind,i), _) -> MutInd.print mind ++ str"#" ++ int i
-  | Lprim((kn,_u),ar,op,args) ->
+  | Lprim((kn,_u),_ar,_op,args) ->
     hov 1
       (str "(PRIM " ++ pr_con kn ++  spc() ++
        prlist_with_sep spc pp_lam  (Array.to_list args) ++
@@ -215,7 +215,7 @@ let rec map_lam_with_binders g f n lam =
     let u' = map_uint g f n u in
     if u == u' then lam else Luint u'
 
-and map_uint g f n u =
+and map_uint _g f n u =
   match u with
   | UintVal _ -> u
   | UintDigits(args) ->
@@ -532,7 +532,7 @@ struct
     size = 0;
   }
 
-  let extend v =
+  let extend (v : 'a t) =
     if v.size = Array.length v.elems then
       let new_size = min (2*v.size) Sys.max_array_length in
       if new_size <= v.size then raise (Invalid_argument "Vect.extend");
@@ -545,12 +545,12 @@ struct
     v.elems.(v.size) <- a;
     v.size <- v.size + 1
 
-  let popn v n =
+  let popn (v : 'a t) n =
     v.size <- max 0 (v.size - n)
 
   let pop v = popn v 1
 
-  let get_last v n =
+  let get_last (v : 'a t) n =
     if v.size <= n then raise
         (Invalid_argument "Vect.get:index out of bounds");
     v.elems.(v.size - n - 1)
@@ -715,7 +715,7 @@ let rec lambda_of_constr env c =
 
 and lambda_of_app env f args =
   match Constr.kind f with
-  | Const (kn,u as c) ->
+  | Const (kn,_u as c) ->
     let kn = get_alias env.global_env kn in
     (* spiwack: checks if there is a specific way to compile the constant
                 if there is not, Not_found is raised, and the function

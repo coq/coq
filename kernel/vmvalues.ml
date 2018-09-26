@@ -100,7 +100,7 @@ let eq_structured_constant c1 c2 = match c1, c2 with
 | Const_univ_level l1 , Const_univ_level l2 -> Univ.Level.equal l1 l2
 | Const_univ_level _ , _ -> false
 | Const_val v1, Const_val v2 -> eq_structured_values v1 v2
-| Const_val v1, _ -> false
+| Const_val _v1, _ -> false
 
 let hash_structured_constant c =
   let open Hashset.Combine in
@@ -245,7 +245,7 @@ type id_key =
 | RelKey of Int.t
 | EvarKey of Evar.t
 
-let eq_id_key k1 k2 = match k1, k2 with
+let eq_id_key (k1 : id_key) (k2 : id_key) = match k1, k2 with
 | ConstKey c1, ConstKey c2 -> Constant.equal c1 c2
 | VarKey id1, VarKey id2 -> Id.equal id1 id2
 | RelKey n1, RelKey n2 -> Int.equal n1 n2
@@ -304,9 +304,9 @@ let uni_lvl_val (v : values) : Univ.Level.t =
         | Vfun _ -> str "Vfun"
         | Vfix _ -> str "Vfix"
         | Vcofix _ -> str "Vcofix"
-        | Vconstr_const i -> str "Vconstr_const"
-        | Vconstr_block b -> str "Vconstr_block"
-        | Vatom_stk (a,stk) -> str "Vatom_stk"
+        | Vconstr_const _i -> str "Vconstr_const"
+        | Vconstr_block _b -> str "Vconstr_block"
+        | Vatom_stk (_a,_stk) -> str "Vatom_stk"
         | _ -> assert false
       in
       CErrors.anomaly
@@ -444,7 +444,7 @@ struct
   type t = id_key
   let equal = eq_id_key
   open Hashset.Combine
-  let hash = function
+  let hash : t -> tag = function
   | ConstKey c -> combinesmall 1 (Constant.hash c)
   | VarKey id -> combinesmall 2 (Id.hash id)
   | RelKey i -> combinesmall 3 (Int.hash i)
@@ -658,7 +658,7 @@ and pr_whd w =
   | Vfix _ -> str "Vfix"
   | Vcofix _ -> str "Vcofix"
   | Vconstr_const i -> str "Vconstr_const(" ++ int i ++ str ")"
-  | Vconstr_block b -> str "Vconstr_block"
+  | Vconstr_block _b -> str "Vconstr_block"
   | Vatom_stk (a,stk) -> str "Vatom_stk(" ++ pr_atom a ++ str ", " ++ pr_stack stk ++ str ")"
   | Vuniv_level _ -> assert false)
 and pr_stack stk =
@@ -668,6 +668,6 @@ and pr_stack stk =
 and pr_zipper z =
   Pp.(match z with
   | Zapp args -> str "Zapp(len = " ++ int (nargs args) ++ str ")"
-  | Zfix (f,args) -> str "Zfix(..., len=" ++ int (nargs args) ++ str ")"
-  | Zswitch s -> str "Zswitch(...)"
+  | Zfix (_f,args) -> str "Zfix(..., len=" ++ int (nargs args) ++ str ")"
+  | Zswitch _s -> str "Zswitch(...)"
   | Zproj c -> str "Zproj(" ++ Projection.Repr.print c ++ str ")")

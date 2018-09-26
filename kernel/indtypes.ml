@@ -242,7 +242,7 @@ let check_subtyping cumi paramsctxt env_ar inds =
     in
     let env = Environ.add_constraints subtyp_constraints env in
     (* process individual inductive types: *)
-    Array.iter (fun (id,cn,lc,(sign,arity)) ->
+    Array.iter (fun (_id,_cn,lc,(_sign,arity)) ->
       match arity with
         | RegularArity (_, full_arity, _) ->
            check_subtyping_arity_constructor env dosubst full_arity numparams true;
@@ -368,7 +368,7 @@ let typecheck_inductive env mie =
 	  RegularArity (not is_natural,full_arity,defu)
       in
       let template_polymorphic () =
-        let _, s =
+        let _sign, s =
           try dest_arity env full_arity
           with NotArity -> raise (InductiveError (NotAnArity (env, full_arity)))
         in
@@ -428,7 +428,7 @@ exception IllFormedInd of ill_formed_ind
 let mind_extract_params = decompose_prod_n_assum
 
 let explain_ind_err id ntyp env nparamsctxt c err =
-  let (lparams,c') = mind_extract_params nparamsctxt c in
+  let (_lparams,c') = mind_extract_params nparamsctxt c in
   match err with
     | LocalNonPos kt ->
 	raise (InductiveError (NonPos (env,c',mkRel (kt+nparamsctxt))))
@@ -596,7 +596,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
                 discharged to the [check_positive_nested] function. *)
             if List.for_all (noccur_between n ntypes) largs then (nmr,mk_norec)
             else check_positive_nested ienv nmr (ind_kn, largs)
-	| err ->
+        | _err ->
             (** If an inductive of the mutually inductive block
                 appears in any other way, then the positivy check gives
                 up. *)
@@ -613,7 +613,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
       defined types, not one of the types of the mutually inductive
       block being defined). *)
   (* accesses to the environment are not factorised, but is it worth? *)
-  and check_positive_nested (env,n,ntypes,ra_env as ienv) nmr ((mi,u), largs) =
+  and check_positive_nested (env,n,ntypes,_ra_env as ienv) nmr ((mi,u), largs) =
     let (mib,mip) = lookup_mind_specif env mi in
     let auxnrecpar = mib.mind_nparams_rec in
     let auxnnonrecpar = mib.mind_nparams - auxnrecpar in
@@ -664,7 +664,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
       the type [c]) is checked to be the right (properly applied)
       inductive type. *)
   and check_constructors ienv check_head nmr c =
-    let rec check_constr_rec (env,n,ntypes,ra_env as ienv) nmr lrec c =
+    let rec check_constr_rec (env,n,ntypes,_ra_env as ienv) nmr lrec c =
       let x,largs = decompose_app (whd_all env c) in
 	match kind x with
 
@@ -813,7 +813,7 @@ let compute_projections (kn, i as ind) mib =
   in
   let projections decl (i, j, labs, pbs, letsubst) =
     match decl with
-    | LocalDef (na,c,t) ->
+    | LocalDef (_na,c,_t) ->
         (* From [params, field1,..,fieldj |- c(params,field1,..,fieldj)]
            to [params, x:I, field1,..,fieldj |- c(params,field1,..,fieldj)] *)
         let c = liftn 1 j c in
@@ -841,7 +841,7 @@ let compute_projections (kn, i as ind) mib =
         (i + 1, j + 1, lab :: labs, projty :: pbs, fterm :: letsubst)
       | Anonymous -> raise UndefinableExpansion
   in
-  let (_, _, labs, pbs, letsubst) =
+  let (_, _, labs, pbs, _letsubst) =
     List.fold_right projections ctx (0, 1, [], [], paramsletsubst)
   in
     Array.of_list (List.rev labs),

@@ -142,8 +142,8 @@ struct
     (** Reduce all terms in a given declaration to a single value. *)
     let fold_constr f decl acc =
       match decl with
-      | LocalAssum (n,ty) -> f ty acc
-      | LocalDef (n,v,ty) -> f ty (f v acc)
+      | LocalAssum (_n,ty) -> f ty acc
+      | LocalDef (_n,v,ty) -> f ty (f v acc)
 
     let to_tuple = function
       | LocalAssum (na, ty) -> na, None, ty
@@ -151,7 +151,7 @@ struct
 
     let drop_body = function
       | LocalAssum _ as d -> d
-      | LocalDef (na, v, ty) -> LocalAssum (na, ty)
+      | LocalDef (na, _v, ty) -> LocalAssum (na, ty)
 
   end
 
@@ -356,7 +356,7 @@ struct
 
     let drop_body = function
       | LocalAssum _ as d -> d
-      | LocalDef (id, v, ty) -> LocalAssum (id, ty)
+      | LocalDef (id, _v, ty) -> LocalAssum (id, ty)
 
     let of_rel_decl f = function
       | Rel.Declaration.LocalAssum (na,t) ->

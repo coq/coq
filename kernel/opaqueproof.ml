@@ -87,21 +87,21 @@ let discharge_direct_opaque ~cook_constr ci = function
   | Direct (d,cu) ->
       Direct (ci::d,Future.chain cu (fun (c, u) -> cook_constr c, u))
 
-let join_opaque { opaque_val = prfs; opaque_dir = odp } = function
+let join_opaque { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) -> ignore(Future.join cu)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp then
         let fp = snd (Int.Map.find i prfs) in
         ignore(Future.join fp)
 
-let uuid_opaque { opaque_val = prfs; opaque_dir = odp } = function
+let uuid_opaque { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) -> Some (Future.uuid cu)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp
       then Some (Future.uuid (snd (Int.Map.find i prfs)))
       else None
 
-let force_proof { opaque_val = prfs; opaque_dir = odp } = function
+let force_proof { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) ->
       fst(Future.force cu)
   | Indirect (l,dp,i) ->
@@ -112,7 +112,7 @@ let force_proof { opaque_val = prfs; opaque_dir = odp } = function
       let c = Future.force pt in
       force_constr (List.fold_right subst_substituted l (from_val c))
 
-let force_constraints { opaque_val = prfs; opaque_dir = odp } = function
+let force_constraints { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) -> snd(Future.force cu)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp
@@ -121,14 +121,14 @@ let force_constraints { opaque_val = prfs; opaque_dir = odp } = function
         | None -> Univ.ContextSet.empty
         | Some u -> Future.force u
 
-let get_constraints { opaque_val = prfs; opaque_dir = odp } = function
+let get_constraints { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) -> Some(Future.chain cu snd)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp
       then Some(Future.chain (snd (Int.Map.find i prfs)) snd)
       else !get_univ dp i
 
-let get_proof { opaque_val = prfs; opaque_dir = odp } = function
+let get_proof { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) -> Future.chain cu fst
   | Indirect (l,dp,i) ->
       let pt =
@@ -144,7 +144,7 @@ let a_constr = Future.from_val (mkRel 1)
 let a_univ = Future.from_val Univ.ContextSet.empty
 let a_discharge : cooking_info list = []
 
-let dump { opaque_val = otab; opaque_len = n } =
+let dump { opaque_val = otab; opaque_len = n; _ } =
   let opaque_table = Array.make n a_constr in
   let univ_table = Array.make n a_univ in
   let disch_table = Array.make n a_discharge in

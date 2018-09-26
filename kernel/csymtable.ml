@@ -173,7 +173,7 @@ and slot_for_fv env fv =
       | Some (v, _) -> v
       end
   | FVevar evk -> val_of_evar evk
-  | FVuniv_var idu ->
+  | FVuniv_var _idu ->
     assert false
 
 and eval_to_patch env (buff,pl,fv) =
@@ -192,5 +192,5 @@ and val_of_constr env c =
   | Some v -> eval_to_patch env (to_memory v)
   | None -> assert false
 
-let set_transparent_const kn = () (* !?! *)
-let set_opaque_const kn = () (* !?! *)
+let set_transparent_const _kn = () (* !?! *)
+let set_opaque_const _kn = () (* !?! *)

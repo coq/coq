@@ -42,7 +42,7 @@ let empty = {
   cst_trstate = Cpred.full;
 }
 
-let get_strategy { var_opacity; cst_opacity } f = function
+let get_strategy { var_opacity; cst_opacity; _ } f = function
   | VarKey id ->
       (try Id.Map.find id var_opacity
       with Not_found -> default)
@@ -51,7 +51,7 @@ let get_strategy { var_opacity; cst_opacity } f = function
       with Not_found -> default)
   | RelKey _ -> Expand
 
-let set_strategy ({ var_opacity; cst_opacity } as oracle) k l =
+let set_strategy ({ var_opacity; cst_opacity; _ } as oracle) k l =
   match k with
   | VarKey id ->
     let var_opacity =
@@ -75,13 +75,13 @@ let set_strategy ({ var_opacity; cst_opacity } as oracle) k l =
     { oracle with cst_opacity; cst_trstate; }
   | RelKey _ -> CErrors.user_err Pp.(str "set_strategy: RelKey")
 
-let fold_strategy f { var_opacity; cst_opacity; } accu =
+let fold_strategy f { var_opacity; cst_opacity; _ } accu =
   let fvar id lvl accu = f (VarKey id) lvl accu in
   let fcst cst lvl accu = f (ConstKey cst) lvl accu in
   let accu = Id.Map.fold fvar var_opacity accu in
   Cmap.fold fcst cst_opacity accu
 
-let get_transp_state { var_trstate; cst_trstate } = (var_trstate, cst_trstate)
+let get_transp_state { var_trstate; cst_trstate; _ } = (var_trstate, cst_trstate)
 
 (* Unfold the first constant only if it is "more transparent" than the
    second one. In case of tie, use the recommended default. *)

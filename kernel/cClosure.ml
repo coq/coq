@@ -281,7 +281,7 @@ let assoc_defined id env = match Environ.lookup_named id env with
 | LocalDef (_, c, _) -> c
 | _ -> raise Not_found
 
-let ref_value_cache ({i_cache = cache} as infos) tab ref =
+let ref_value_cache ({i_cache = cache;_} as infos) tab ref =
   try
     Some (KeyTable.find tab ref)
   with Not_found ->
@@ -289,7 +289,7 @@ let ref_value_cache ({i_cache = cache} as infos) tab ref =
     let body =
       match ref with
 	| RelKey n ->
-          let open Context.Rel.Declaration in
+          let open! Context.Rel.Declaration in
           let i = n - 1 in
           let (d, _) =
             try Range.get cache.i_rels i
@@ -837,7 +837,7 @@ let eta_expand_ind_stack env ind m s (f, s') =
 	   arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
     let pars = mib.Declarations.mind_nparams in
     let right = fapp_stack (f, s') in
-    let (depth, args, s) = strip_update_shift_app m s in
+    let (depth, args, _s) = strip_update_shift_app m s in
     (** Try to drop the params, might fail on partially applied constructors. *)
     let argss = try_drop_parameters depth pars args in
     let hstack = Array.map (fun p ->
@@ -925,7 +925,7 @@ and knht info e t stk =
     | Fix _ -> knh info (mk_clos2 e t) stk
     | Cast(a,_,_) -> knht info e a stk
     | Rel n -> knh info (clos_rel e n) stk
-    | Proj (p,c) -> knh info (mk_clos2 e t) stk
+    | Proj (_p,_c) -> knh info (mk_clos2 e t) stk
     | (Lambda _|Prod _|Construct _|CoFix _|Ind _|
        LetIn _|Const _|Var _|Evar _|Meta _|Sort _) ->
         (mk_clos2 e t, stk)
@@ -952,7 +952,7 @@ let rec knr info tab m stk =
       (match ref_value_cache info tab (RelKey k) with
           Some v -> kni info tab v stk
         | None -> (set_norm m; (m,stk)))
-  | FConstruct((ind,c),u) ->
+  | FConstruct((_ind,c),_u) ->
      let use_match = red_set info.i_flags fMATCH in
      let use_fix = red_set info.i_flags fFIX in
      if use_match || use_fix then
@@ -1018,7 +1018,7 @@ let rec zip_term zfun m stk =
         zip_term zfun h s
     | Zshift(n)::s ->
         zip_term zfun (lift n m) s
-    | Zupdate(rf)::s ->
+    | Zupdate(_rf)::s ->
         zip_term zfun m s
 
 (* Computes the strong normal form of a term.
@@ -1038,7 +1038,7 @@ let rec kl info tab m =
 and norm_head info tab m =
   if is_val m then (incr prune; term_of_fconstr m) else
     match m.term with
-      | FLambda(n,tys,f,e) ->
+      | FLambda(_n,tys,f,e) ->
           let (e',rvtys) =
             List.fold_left (fun (e,ctxt) (na,ty) ->
               (subs_lift e, (na,kl info tab (mk_clos e ty))::ctxt))
