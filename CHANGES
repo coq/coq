@@ -133,6 +133,9 @@ Standard Library
   impacts users running Coq without the init library (`-nois` or
   `-noinit`) and also issuing `Require Import Coq.Init.Datatypes`.
 
+- Added `Bvector.BVeq` that decides whether two `Bvector`s are equal.
+- Added notations for `BVxor`, `BVand`, `BVor`, `BVeq` and `BVneg`.
+
 Tools
 
 - Coq_makefile lets one override or extend the following variables from
