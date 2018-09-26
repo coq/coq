@@ -29,6 +29,7 @@ let newline lexbuf =
 
 let num_comments = ref 0
 let num_braces = ref 0
+let ocaml_start_pos = ref Lexing.dummy_pos
 
 let mode () = if !num_braces = 0 then Extend else OCaml
 
@@ -57,10 +58,10 @@ let end_comment lexbuf =
   else
     None
 
-let start_ocaml _ =
+let start_ocaml lexbuf =
   let () = match mode () with
   | OCaml -> Buffer.add_string ocaml_buf "{"
-  | Extend -> ()
+  | Extend -> ocaml_start_pos := lexeme_start_p lexbuf
   in
   incr num_braces
 
@@ -70,7 +71,11 @@ let end_ocaml lexbuf =
   else if !num_braces = 0 then
     let s = Buffer.contents ocaml_buf in
     let () = Buffer.reset ocaml_buf in
-    Some (CODE { Coqpp_ast.code = s })
+    let loc = {
+      Coqpp_ast.loc_start = !ocaml_start_pos;
+      Coqpp_ast.loc_end = lexeme_end_p lexbuf
+    } in
+    Some (CODE { Coqpp_ast.code = s; loc })
   else
     let () = Buffer.add_string ocaml_buf "}" in
     None
@@ -87,7 +92,7 @@ let number = [ '0'-'9' ]
 
 rule extend = parse
 | "(*" { start_comment (); comment lexbuf }
-| "{" { start_ocaml (); ocaml lexbuf }
+| "{" { start_ocaml lexbuf; ocaml lexbuf }
 | "GRAMMAR" { GRAMMAR }
 | "VERNAC" { VERNAC }
 | "TACTIC" { TACTIC }
@@ -127,7 +132,7 @@ rule extend = parse
 | eof { EOF }
 
 and ocaml = parse
-| "{" { start_ocaml (); ocaml lexbuf }
+| "{" { start_ocaml lexbuf; ocaml lexbuf }
 | "}" { match end_ocaml lexbuf with Some tk -> tk | None -> ocaml lexbuf }
 | '\n' { newline lexbuf; Buffer.add_char ocaml_buf '\n'; ocaml lexbuf }
 | '\"' { Buffer.add_char ocaml_buf '\"'; ocaml_string lexbuf }

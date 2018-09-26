@@ -11,7 +11,7 @@ type loc = {
   loc_end : Lexing.position;
 }
 
-type code = { code : string }
+type code = { code : string; loc : loc; }
 
 type user_symbol =
 | Ulist1 of user_symbol
