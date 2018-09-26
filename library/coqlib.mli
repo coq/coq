@@ -101,7 +101,7 @@ val glob_jmeq : GlobRef.t
    at compile time. Therefore, we can only provide methods to build
    them at runtime. This is the purpose of the [constr delayed] and
    [constr_pattern delayed] types. Objects of this time needs to be
-   forced with [delayed_force] to get the actual constr or pattern 
+   forced with [delayed_force] to get the actual constr or pattern
    at runtime. *)
 
 type coq_bool_data = {
@@ -167,7 +167,7 @@ val build_coq_inversion_eq_true_data : coq_inversion_data delayed
 val build_coq_sumbool : GlobRef.t delayed
 
 (** {6 ... } *)
-(** Connectives 
+(** Connectives
    The False proposition *)
 val build_coq_False : GlobRef.t delayed
 
@@ -185,6 +185,10 @@ val build_coq_iff : GlobRef.t delayed
 
 val build_coq_iff_left_proj : GlobRef.t delayed
 val build_coq_iff_right_proj : GlobRef.t delayed
+
+(** Pairs *)
+val build_coq_prod : GlobRef.t delayed
+val build_coq_pair : GlobRef.t delayed
 
 (** Disjunction *)
 val build_coq_or : GlobRef.t delayed

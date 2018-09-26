@@ -349,6 +349,9 @@ let coq_iff = lazy_init_reference ["Logic"] "iff"
 let coq_iff_left_proj  = lazy_init_reference ["Logic"] "proj1"
 let coq_iff_right_proj = lazy_init_reference ["Logic"] "proj2"
 
+let coq_prod = lazy_init_reference ["Datatypes"] "prod"
+let coq_pair = lazy_init_reference ["Datatypes"] "pair"
+
 (* Runtime part *)
 let build_coq_True ()  = Lazy.force coq_True
 let build_coq_I ()     = Lazy.force coq_I
@@ -363,6 +366,9 @@ let build_coq_iff ()   = Lazy.force coq_iff
 
 let build_coq_iff_left_proj ()  = Lazy.force coq_iff_left_proj
 let build_coq_iff_right_proj () = Lazy.force coq_iff_right_proj
+
+let build_coq_prod () = Lazy.force coq_prod
+let build_coq_pair () = Lazy.force coq_pair
 
 
 (* The following is less readable but does not depend on parsing *)

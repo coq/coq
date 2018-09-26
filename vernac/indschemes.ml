@@ -82,7 +82,7 @@ let _ =
 
 let is_eq_flag () = !eq_flag
 
-let eq_dec_flag = ref false 
+let eq_dec_flag = ref false
 let _ =
   declare_bool_option
     { optdepr  = false;
@@ -375,7 +375,7 @@ let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
   and env0 = Global.env() in
   let sigma, lrecspec, _ =
     List.fold_right
-      (fun (_,dep,ind,sort) (evd, l, inst) -> 
+      (fun (_,dep,ind,sort) (evd, l, inst) ->
        let evd, indu, inst =
 	 match inst with
 	 | None ->
@@ -445,6 +445,9 @@ let fold_left' f = function
 let mk_coq_and sigma = Evarutil.new_global sigma (Coqlib.build_coq_and ())
 let mk_coq_conj sigma = Evarutil.new_global sigma (Coqlib.build_coq_conj ())
 
+let mk_coq_prod sigma = Evarutil.new_global sigma (Coqlib.build_coq_prod ())
+let mk_coq_pair sigma = Evarutil.new_global sigma (Coqlib.build_coq_pair ())
+
 let build_combined_scheme env schemes =
   let evdref = ref (Evd.from_env env) in
   let defs = List.map (fun cst ->
@@ -462,10 +465,25 @@ let build_combined_scheme env schemes =
   in
   let (c, t) = List.hd defs in
   let ctx, ind, nargs = find_inductive t in
+  (* We check if ALL the predicates are in Prop, if so we use propositional
+     conjunction '/\', otherwise we use the simple product '*'.
+  *)
+  let inprop =
+    let inprop (_,t) =
+      Retyping.get_sort_family_of env !evdref (EConstr.of_constr t)
+      == Sorts.InProp
+    in
+    List.for_all inprop defs
+  in
+  let mk_and, mk_conj =
+    if inprop
+    then (mk_coq_and, mk_coq_conj)
+    else (mk_coq_prod, mk_coq_pair)
+  in
   (* Number of clauses, including the predicates quantification *)
   let prods = nb_prod !evdref (EConstr.of_constr t) - (nargs + 1) in
-  let sigma, coqand  = mk_coq_and !evdref in
-  let sigma, coqconj = mk_coq_conj sigma in
+  let sigma, coqand  = mk_and !evdref in
+  let sigma, coqconj = mk_conj sigma in
   let () = evdref := sigma in
   let relargs = rel_vect 0 prods in
   let concls = List.rev_map
@@ -483,7 +501,8 @@ let build_combined_scheme env schemes =
       (List.rev_map (fun (x, y) -> LocalAssum (x, y)) ctx) in
   let typ = List.fold_left (fun d c -> Term.mkProd_wo_LetIn c d) concl_typ ctx in
   let body = it_mkLambda_or_LetIn concl_bod ctx in
-  (!evdref, body, typ)
+  let sigma = Typing.check env !evdref (EConstr.of_constr body) (EConstr.of_constr typ) in
+  (sigma, body, typ)
 
 let do_combined_scheme name schemes =
   let open CAst in

@@ -2214,6 +2214,7 @@ and an explanation of the underlying technique.
    ``simple inversion``.
 
 .. tacv:: inversion @ident using @ident
+   :name: inversion ... using ...
 
    Let :n:`@ident` have type :g:`(I t)` (:g:`I` an inductive predicate) in the
    local context, and :n:`@ident` be a (dependent) inversion lemma. Then, this
