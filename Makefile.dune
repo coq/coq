@@ -7,9 +7,6 @@
 # DUNEOPT=--display=short
 
 BUILD_CONTEXT=_build/default
-COQ_CONFIGURE_PREFIX?=_build/install/default
-
-export COQ_CONFIGURE_PREFIX
 
 help:
 	@echo "Welcome to Coq's Dune-based build system. Targets are:"
