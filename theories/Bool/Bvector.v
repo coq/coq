@@ -102,6 +102,7 @@ Fixpoint BshiftRa_iter (n:nat) (bv:Bvector (S n)) (p:nat) : Bvector (S n) :=
 End BOOLEAN_VECTORS.
 
 Module BvectorNotations.
+Declare Scope Bvector_scope.
 Delimit Scope Bvector_scope with Bvector.
 Notation "^~ x" := (Bneg _ x) (at level 35, right associativity) : Bvector_scope.
 Infix    "^&"   := (BVand  _) (at level 40, left  associativity) : Bvector_scope.
