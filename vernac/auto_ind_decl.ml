@@ -389,13 +389,9 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
     | Const (cst,_) ->
       (* Works in specific situations where the args have to be already declared as a
          Parameter (see example "J" in test file SchemeEquality.v) *)
-      (
-        let mp,dir,lbl = Constant.repr3 cst in
-          mkConst (Constant.make3 mp dir (Label.make (
-          if Int.equal offset 1 then ("eq_"^(Label.to_string lbl))
-                       else ((Label.to_string lbl)^"_lb")
-        )))
-      )
+        let lbl = Label.to_string (Constant.label cst) in
+        let newlbl = if Int.equal offset 1 then ("eq_" ^ lbl) else (lbl ^ "_lb") in
+        mkConst (Constant.change_label cst (Label.make newlbl))
     | _ -> raise (ConstructorWithNonParametricInductiveType (fst hd))
 
   in
@@ -453,11 +449,9 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
     | Const (cst,_) ->
       (* Works in specific situations where the args have to be already declared as a
          Parameter (see example "J" in test file SchemeEquality.v) *)
-        let mp,dir,lbl = Constant.repr3 cst in
-          mkConst (Constant.make3 mp dir (Label.make (
-          if Int.equal offset 1 then ("eq_"^(Label.to_string lbl))
-                       else ((Label.to_string lbl)^"_bl")
-        )))
+        let lbl = Label.to_string (Constant.label cst) in
+        let newlbl = if Int.equal offset 1 then ("eq_" ^ lbl) else (lbl ^ "_bl") in
+        mkConst (Constant.change_label cst (Label.make newlbl))
     | _ -> raise (ConstructorWithNonParametricInductiveType (fst hd))
   in
 
