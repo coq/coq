@@ -21,6 +21,13 @@ let pr_loc loc =
   let epos = loc.loc_end.pos_cnum - loc.loc_start.pos_bol in
   Printf.sprintf "File \"%s\", line %d, characters %d-%d:" file line bpos epos
 
+let print_code fmt c =
+  let loc = c.loc.loc_start in
+  (** Print the line location as a source annotation *)
+  let padding = String.make (loc.pos_cnum - loc.pos_bol + 1) ' ' in
+  let code_insert = asprintf "\n# %i \"%s\"\n%s%s" loc.pos_lnum loc.pos_fname padding c.code in
+  fprintf fmt "@[@<0>%s@]@\n" code_insert
+
 let parse_file f =
   let chan = open_in f in
   let lexbuf = Lexing.from_channel chan in
@@ -181,8 +188,7 @@ let print_fun fmt (vars, body) =
   in
   let () = fprintf fmt "fun@ " in
   let () = List.iter iter vars in
-  (* FIXME: use Coq locations in the macros *)
-  let () = fprintf fmt "loc ->@ @[%s@]" body.code in
+  let () = fprintf fmt "loc ->@ @[%a@]" print_code body in
   ()
 
 (** Meta-program instead of calling Tok.of_pattern here because otherwise
@@ -304,8 +310,8 @@ let rec print_binders fmt = function
   fprintf fmt "%s@ %a" id print_binders rem
 
 let print_rule fmt r =
-  fprintf fmt "@[TyML (%a, @[fun %a -> %s@])@]"
-    print_clause r.tac_toks print_binders r.tac_toks r.tac_body.code
+  fprintf fmt "@[TyML (%a, @[fun %a -> %a@])@]"
+    print_clause r.tac_toks print_binders r.tac_toks print_code r.tac_body
 
 let rec print_rules fmt = function
 | [] -> ()
@@ -338,7 +344,7 @@ let declare_plugin fmt name =
   fprintf fmt "let _ = Mltop.add_known_module %s@\n" plugin_name
 
 let pr_ast fmt = function
-| Code s -> fprintf fmt "%s@\n" s.code
+| Code s -> fprintf fmt "%a@\n" print_code s
 | Comment s -> fprintf fmt "%s@\n" s
 | DeclarePlugin name -> declare_plugin fmt name
 | GramExt gram -> fprintf fmt "%a@\n" GramExt.print_ast gram
