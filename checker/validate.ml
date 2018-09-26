@@ -85,6 +85,7 @@ let rec val_gen v ctx o = match v with
   | Fail s -> fail ctx o ("unexpected object " ^ s)
   | Annot (s,v) -> val_gen v (ctx/CtxAnnot s) o
   | Dyn -> val_dyn ctx o
+  | Proxy { contents = v } -> val_gen v ctx o
 
 (* Check that an object is a tuple (or a record). vs is an array of
    value representation for each field. Its size corresponds to the
