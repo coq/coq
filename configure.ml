@@ -649,9 +649,8 @@ let camltag = match caml_version_list with
     50: unexpected documentation comment: too common and annoying to avoid
     56: unreachable match case: the [_ -> .] syntax doesn't exist in 4.02.3
     58: "no cmx file was found in path": See https://github.com/ocaml/num/issues/9
-    59: "potential assignment to a non-mutable value": See Coq's issue #8043
 *)
-let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-50-58-59"
+let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-50-58"
 let coq_warn_error =
     if !prefs.warn_error
     then "-warn-error +a"
