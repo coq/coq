@@ -347,6 +347,9 @@ sig
   val instantiate : Instance.t -> t -> Constraint.t
   (** Generate the set of instantiated Constraint.t **)
 
+  val names : t -> Names.Name.t list
+  (** Return the names of the bound universe variables *)
+
 end
 
 (** Universe info for cumulative inductive types: A context of

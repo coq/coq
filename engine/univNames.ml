@@ -81,18 +81,23 @@ let ubinder_obj : GlobRef.t * Id.t list -> Libobject.obj =
     discharge_function = discharge_ubinder;
     rebuild_function = (fun x -> x); }
 
+let compute_instance_binders inst ubinders =
+  let revmap = Id.Map.fold (fun id lvl accu -> LMap.add lvl id accu) ubinders LMap.empty in
+  let map lvl =
+    try Name (LMap.find lvl revmap)
+    with Not_found -> Name (name_universe lvl)
+  in
+  Array.map_to_list map (Instance.to_array inst)
+
 let register_universe_binders ref ubinders =
   (** TODO: change the API to register a [Name.t list] instead. This is the last
       part of the code that depends on the internal representation of names in
       abstract contexts, but removing it requires quite a rework of the
       callers. *)
   let univs = AUContext.instance (Environ.universes_of_global (Global.env()) ref) in
-  let revmap = Id.Map.fold (fun id lvl accu -> LMap.add lvl id accu) ubinders LMap.empty in
-  let map lvl =
-    try LMap.find lvl revmap
-    with Not_found -> name_universe lvl
-  in
-  let ubinders = Array.map_to_list map (Instance.to_array univs) in
+  let ubinders = compute_instance_binders univs ubinders in
+  (** FIXME: the function above always generate names but this may change *)
+  let ubinders = List.map (function Name id -> id | Anonymous -> assert false) ubinders in
   if not (List.is_empty ubinders) then Lib.add_anonymous_leaf (ubinder_obj (ref, ubinders))
 
 type univ_name_list = Names.lname list

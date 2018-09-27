@@ -228,7 +228,7 @@ let save_remaining_recthms (locality,p,kind) norm univs body opaq i (id,(t_i,(_,
       | Discharge ->
           let impl = false in (* copy values from Vernacentries *)
           let univs = match univs with
-            | Polymorphic_const_entry univs ->
+            | Polymorphic_const_entry (_, univs) ->
               (* What is going on here? *)
               Univ.ContextSet.of_context univs
             | Monomorphic_const_entry univs -> univs

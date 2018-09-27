@@ -101,13 +101,21 @@ let context ctx = Univ.ContextSet.to_context ctx.uctx_local
 
 let const_univ_entry ~poly uctx =
   let open Entries in
-  if poly then Polymorphic_const_entry (context uctx)
+  if poly then
+    let (binders, _) = uctx.uctx_names in
+    let uctx = context uctx in
+    let nas = UnivNames.compute_instance_binders (Univ.UContext.instance uctx) binders in
+    Polymorphic_const_entry (nas, uctx)
   else Monomorphic_const_entry (context_set uctx)
 
 (* does not support cumulativity since you need more info *)
 let ind_univ_entry ~poly uctx =
   let open Entries in
-  if poly then Polymorphic_ind_entry (context uctx)
+  if poly then
+    let (binders, _) = uctx.uctx_names in
+    let uctx = context uctx in
+    let nas = UnivNames.compute_instance_binders (Univ.UContext.instance uctx) binders in
+    Polymorphic_ind_entry (nas, uctx)
   else Monomorphic_ind_entry (context_set uctx)
 
 let of_context_set ctx = { empty with uctx_local = ctx }
@@ -394,8 +402,11 @@ let check_univ_decl ~poly uctx decl =
   let ctx =
     let names = decl.univdecl_instance in
     let extensible = decl.univdecl_extensible_instance in
-    if poly
-    then Entries.Polymorphic_const_entry (universe_context ~names ~extensible uctx)
+    if poly then
+      let (binders, _) = uctx.uctx_names in
+      let uctx = universe_context ~names ~extensible uctx in
+      let nas = UnivNames.compute_instance_binders (Univ.UContext.instance uctx) binders in
+      Entries.Polymorphic_const_entry (nas, uctx)
     else
       let () = check_universe_context_set ~names ~extensible uctx in
       Entries.Monomorphic_const_entry uctx.uctx_local

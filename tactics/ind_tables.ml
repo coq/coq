@@ -118,15 +118,12 @@ let compute_name internal id =
   | InternalTacticRequest ->
       Namegen.next_ident_away_from (add_prefix "internal_" id) is_visible_name
 
-let define internal id c p univs =
+let define internal id c poly univs =
   let fd = declare_constant ~internal in
   let id = compute_name internal id in
   let ctx = UState.minimize univs in
   let c = UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) (UState.subst ctx) c in
-  let univs =
-    if p then Polymorphic_const_entry (UState.context ctx)
-    else Monomorphic_const_entry (UState.context_set ctx)
-  in
+  let univs = UState.const_univ_entry ~poly ctx in
   let entry = {
     const_entry_body =
       Future.from_val ((c,Univ.ContextSet.empty),

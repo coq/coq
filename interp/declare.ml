@@ -219,7 +219,7 @@ let cache_variable ((sp,_),o) =
       let (body, uctx), () = Future.force de.const_entry_body in
       let poly, univs = match de.const_entry_universes with
       | Monomorphic_const_entry uctx -> false, uctx
-      | Polymorphic_const_entry uctx -> true, Univ.ContextSet.of_context uctx
+      | Polymorphic_const_entry (_, uctx) -> true, Univ.ContextSet.of_context uctx
       in
       let univs = Univ.ContextSet.union uctx univs in
       (** We must declare the universe constraints before type-checking the
@@ -339,7 +339,7 @@ let infer_inductive_subtyping mind_ent =
   match mind_ent.mind_entry_universes with
   | Monomorphic_ind_entry _ | Polymorphic_ind_entry _ ->
     mind_ent
-  | Cumulative_ind_entry cumi ->
+  | Cumulative_ind_entry (_, cumi) ->
     begin
       let env = Global.env () in
       (* let (env'', typed_params) = Typeops.infer_local_decls env' (mind_ent.mind_entry_params) in *)
@@ -366,14 +366,14 @@ let declare_one_projection univs (mind,_ as ind) ~proj_npars proj_arg label (ter
     | Monomorphic_ind_entry _ ->
       (** Global constraints already defined through the inductive *)
       Monomorphic_const_entry Univ.ContextSet.empty
-    | Polymorphic_ind_entry ctx ->
-      Polymorphic_const_entry ctx
-    | Cumulative_ind_entry ctx ->
-      Polymorphic_const_entry (Univ.CumulativityInfo.univ_context ctx)
+    | Polymorphic_ind_entry (nas, ctx) ->
+      Polymorphic_const_entry (nas, ctx)
+    | Cumulative_ind_entry (nas, ctx) ->
+      Polymorphic_const_entry (nas, Univ.CumulativityInfo.univ_context ctx)
   in
   let term, types = match univs with
     | Monomorphic_const_entry _ -> term, types
-    | Polymorphic_const_entry ctx ->
+    | Polymorphic_const_entry (_, ctx) ->
       let u = Univ.UContext.instance ctx in
       Vars.subst_instance_constr u term, Vars.subst_instance_constr u types
   in

@@ -68,7 +68,8 @@ let feedback_completion_typecheck =
 let abstract_constant_universes = function
   | Monomorphic_const_entry uctx ->
     Univ.empty_level_subst, Monomorphic_const uctx
-  | Polymorphic_const_entry uctx ->
+  | Polymorphic_const_entry (nas, uctx) ->
+    let () = assert (Int.equal (List.length nas) (Univ.UContext.size uctx)) in
     let sbst, auctx = Univ.abstract_universes uctx in
     let sbst = Univ.make_instance_subst sbst in
     sbst, Polymorphic_const auctx
@@ -78,7 +79,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
     | ParameterEntry (ctx,(t,uctx),nl) ->
       let env = match uctx with
         | Monomorphic_const_entry uctx -> push_context_set ~strict:true uctx env
-        | Polymorphic_const_entry uctx -> push_context ~strict:false uctx env
+        | Polymorphic_const_entry (_, uctx) -> push_context ~strict:false uctx env
       in
       let j = infer env t in
       let usubst, univs = abstract_constant_universes uctx in
@@ -150,7 +151,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         let ctx = Univ.ContextSet.union univs ctx in
         let env = push_context_set ~strict:true ctx env in
         env, Univ.empty_level_subst, Monomorphic_const ctx
-      | Polymorphic_const_entry uctx ->
+      | Polymorphic_const_entry (nas, uctx) ->
         (** Ensure not to generate internal constraints in polymorphic mode.
             The only way for this to happen would be that either the body
             contained deferred universes, or that it contains monomorphic
@@ -159,6 +160,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
             unconditionally export side-effects from polymorphic definitions,
             i.e. [trust] is always [Pure]. *)
         let () = assert (Univ.ContextSet.is_empty ctx) in
+        let () = assert (Int.equal (List.length nas) (Univ.UContext.size uctx)) in
         let env = push_context ~strict:false uctx env in
         let sbst, auctx = Univ.abstract_universes uctx in
         let sbst = Univ.make_instance_subst sbst in

@@ -667,7 +667,7 @@ let declare_obligation prg obl body ty uctx =
       if not opaque then add_hint (Locality.make_section_locality None) prg constant;
       definition_message obl.obl_name;
       let body = match uctx with
-        | Polymorphic_const_entry uctx ->
+        | Polymorphic_const_entry (_, uctx) ->
           Some (DefinedObl (constant, Univ.UContext.instance uctx))
         | Monomorphic_const_entry _ ->
           Some (TermObl (it_mkLambda_or_LetIn_or_clean (mkApp (mkConst constant, args)) ctx))
@@ -1004,10 +1004,7 @@ and solve_obligation_by_tac prg obls i tac =
               solve_by_tac obl.obl_name (evar_of_obligation obl) tac
                 (pi2 prg.prg_kind) (Evd.evar_universe_context evd)
             in
-            let uctx = if pi2 prg.prg_kind
-              then Polymorphic_const_entry (UState.context ctx)
-              else Monomorphic_const_entry (UState.context_set ctx)
-            in
+            let uctx = UState.const_univ_entry ~poly:(pi2 prg.prg_kind) ctx in
             let prg = {prg with prg_ctx = ctx} in
             let def, obl' = declare_obligation prg obl t ty uctx in
               obls.(i) <- obl';

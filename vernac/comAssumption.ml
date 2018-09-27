@@ -47,7 +47,7 @@ match local with
 | Discharge when Lib.sections_are_opened () ->
   let ctx = match ctx with
     | Monomorphic_const_entry ctx -> ctx
-    | Polymorphic_const_entry ctx -> Univ.ContextSet.of_context ctx
+    | Polymorphic_const_entry (_, ctx) -> Univ.ContextSet.of_context ctx
   in
   let decl = (Lib.cwd(), SectionLocalAssum ((c,ctx),p,impl), IsAssumption kind) in
   let _ = declare_variable ident decl in
@@ -79,7 +79,7 @@ match local with
   let () = if do_instance then Typeclasses.declare_instance None false gr in
   let () = if is_coe then Class.try_add_new_coercion gr ~local p in
   let inst = match ctx with
-    | Polymorphic_const_entry ctx -> Univ.UContext.instance ctx
+    | Polymorphic_const_entry (_, ctx) -> Univ.UContext.instance ctx
     | Monomorphic_const_entry _ -> Univ.Instance.empty
   in
     (gr,inst,Lib.is_modtype_strict ())

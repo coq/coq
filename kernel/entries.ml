@@ -30,8 +30,8 @@ then, in i{^ th} block, [mind_entry_params] is [xn:Xn;...;x1:X1];
 
 type inductive_universes =
   | Monomorphic_ind_entry of Univ.ContextSet.t
-  | Polymorphic_ind_entry of Univ.UContext.t
-  | Cumulative_ind_entry of Univ.CumulativityInfo.t
+  | Polymorphic_ind_entry of Name.t list * Univ.UContext.t
+  | Cumulative_ind_entry of Name.t list * Univ.CumulativityInfo.t
 
 type one_inductive_entry = {
   mind_entry_typename : Id.t;
@@ -60,7 +60,7 @@ type 'a const_entry_body = 'a proof_output Future.computation
 
 type constant_universes_entry =
   | Monomorphic_const_entry of Univ.ContextSet.t
-  | Polymorphic_const_entry of Univ.UContext.t
+  | Polymorphic_const_entry of Name.t list * Univ.UContext.t
 
 type 'a in_constant_universes_entry = 'a * constant_universes_entry
 

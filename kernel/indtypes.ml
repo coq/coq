@@ -268,8 +268,8 @@ let typecheck_inductive env mie =
   let env' =
     match mie.mind_entry_universes with
     | Monomorphic_ind_entry ctx -> push_context_set ctx env
-    | Polymorphic_ind_entry ctx -> push_context ctx env
-    | Cumulative_ind_entry cumi -> push_context (Univ.CumulativityInfo.univ_context cumi) env
+    | Polymorphic_ind_entry (_, ctx) -> push_context ctx env
+    | Cumulative_ind_entry (_, cumi) -> push_context (Univ.CumulativityInfo.univ_context cumi) env
   in
   let env_params = check_context env' mie.mind_entry_params in
   let paramsctxt = mie.mind_entry_params in
@@ -407,7 +407,7 @@ let typecheck_inductive env mie =
     match mie.mind_entry_universes with
     | Monomorphic_ind_entry _ -> ()
     | Polymorphic_ind_entry _ -> ()
-    | Cumulative_ind_entry cumi -> check_subtyping cumi paramsctxt env_arities inds
+    | Cumulative_ind_entry (_, cumi) -> check_subtyping cumi paramsctxt env_arities inds
   in (env_arities, env_ar_par, paramsctxt, inds)
 
 (************************************************************************)
@@ -851,12 +851,14 @@ let compute_projections (kn, i as ind) mib =
 let abstract_inductive_universes iu =
   match iu with
   | Monomorphic_ind_entry ctx -> (Univ.empty_level_subst, Monomorphic_ind ctx)
-  | Polymorphic_ind_entry ctx -> 
+  | Polymorphic_ind_entry (nas, ctx) ->
+    let () = assert (Int.equal (List.length nas) (UContext.size ctx)) in
     let (inst, auctx) = Univ.abstract_universes ctx in
     let inst = Univ.make_instance_subst inst in
     (inst, Polymorphic_ind auctx)
-  | Cumulative_ind_entry cumi -> 
+  | Cumulative_ind_entry (nas, cumi) ->
     let (inst, acumi) = Univ.abstract_cumulativity_info cumi in
+    let () = assert (Int.equal (List.length nas) (Instance.length inst)) in
     let inst = Univ.make_instance_subst inst in
     (inst, Cumulative_ind acumi)
 

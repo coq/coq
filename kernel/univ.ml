@@ -948,6 +948,9 @@ struct
     assert (Array.length u = Array.length inst);
     subst_instance_constraints inst cst
 
+  (** FIXME: Actually store this information in the type *)
+  let names (u, _) = Array.map_to_list (fun _ -> Names.Anonymous) u
+
 end
 
 let hcons_abstract_universe_context = AUContext.hcons

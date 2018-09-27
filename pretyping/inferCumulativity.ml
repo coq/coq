@@ -188,7 +188,7 @@ let infer_inductive env mie =
     match mie.mind_entry_universes with
     | Monomorphic_ind_entry _
     | Polymorphic_ind_entry _ as univs -> univs
-    | Cumulative_ind_entry cumi ->
+    | Cumulative_ind_entry (nas, cumi) ->
       let uctx = CumulativityInfo.univ_context cumi in
       let uarray = Instance.to_array @@ UContext.instance uctx in
       let env = Environ.push_context uctx env in
@@ -207,6 +207,6 @@ let infer_inductive env mie =
           entries
       in
       let variances = Array.map (fun u -> LMap.find u variances) uarray in
-      Cumulative_ind_entry (CumulativityInfo.make (uctx, variances))
+      Cumulative_ind_entry (nas, CumulativityInfo.make (uctx, variances))
   in
   { mie with mind_entry_universes = univs }
