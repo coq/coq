@@ -1,6 +1,10 @@
+(install
+ (section bin)
+ (files (coqtop_bin.exe as coqtop)))
+
 (executable
  (name coqtop_bin)
- (public_name coqtop)
+ (public_name coqtop.opt)
  (package coq)
  (modules coqtop_bin)
  (libraries coq.toplevel)
