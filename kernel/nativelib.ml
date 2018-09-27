@@ -11,7 +11,6 @@ open Util
 open Nativevalues
 open Nativecode
 open CErrors
-open Envars
 
 (** This file provides facilities to access OCaml compiler and dynamic linker,
 used by the native compiler. *)
@@ -37,7 +36,7 @@ let ( / ) = Filename.concat
 (* We have to delay evaluation of include_dirs because coqlib cannot be guessed
 until flags have been properly initialized *)
 let include_dirs () =
-  [Filename.get_temp_dir_name (); coqlib () / "kernel"; coqlib () / "library"]
+  [Filename.get_temp_dir_name (); Envars.coqlib () / "kernel"; Envars.coqlib () / "library"]
 
 (* Pointer to the function linking an ML object into coq's toplevel *)
 let load_obj = ref (fun _x -> () : string -> unit)
@@ -108,9 +107,9 @@ let call_compiler ?profile:(profile=false) ml_filename =
        ::"-w"::"a"
        ::include_dirs) @
       ["-impl"; ml_filename] in
-  if !Flags.debug then Feedback.msg_debug (Pp.str (ocamlfind () ^ " " ^ (String.concat " " args)));
+  if !Flags.debug then Feedback.msg_debug (Pp.str (Envars.ocamlfind () ^ " " ^ (String.concat " " args)));
   try
-    let res = CUnix.sys_command (ocamlfind ()) args in
+    let res = CUnix.sys_command (Envars.ocamlfind ()) args in
     let res = match res with
       | Unix.WEXITED 0 -> true
       | Unix.WEXITED _n | Unix.WSIGNALED _n | Unix.WSTOPPED _n ->
