@@ -35,7 +35,7 @@ Displaying
    .. cmdv:: Print {? Term } @qualid\@@name
 
       This locally renames the polymorphic universes of :n:`@qualid`.
-      An underscore means the raw universe is printed.
+      An underscore means the usual name is printed.
 
 
 .. cmd:: About @qualid
@@ -49,7 +49,7 @@ Displaying
    .. cmdv:: About @qualid\@@name
 
       This locally renames the polymorphic universes of :n:`@qualid`.
-      An underscore means the raw universe is printed.
+      An underscore means the usual name is printed.
 
 
 .. cmd:: Print All

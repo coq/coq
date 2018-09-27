@@ -160,13 +160,6 @@ module Level = struct
 
   let compare u v =
     if u == v then 0
-    else
-      let c = Int.compare (hash u) (hash v) in
-	if c == 0 then RawLevel.compare (data u) (data v)
-	else c
-
-  let natural_compare u v =
-    if u == v then 0
     else RawLevel.compare (data u) (data v)
 	    
   let to_string x = 
@@ -954,6 +947,8 @@ struct
   let repr (inst, cst) =
     (Array.mapi (fun i _l -> Level.var i) inst, cst)
 
+  let pr f ?variance ctx = pr f ?variance (repr ctx)
+
   let instantiate inst (u, cst) =
     assert (Array.length u = Array.length inst);
     subst_instance_constraints inst cst
@@ -1054,7 +1049,7 @@ struct
     (univs, cst)
 
   let sort_levels a = 
-    Array.sort Level.natural_compare a; a
+    Array.sort Level.compare a; a
 
   let to_context (ctx, cst) =
     (Instance.of_array (sort_levels (Array.of_list (LSet.elements ctx))), cst)

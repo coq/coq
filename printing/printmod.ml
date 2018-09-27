@@ -90,9 +90,7 @@ let build_ind_type env mip =
   Inductive.type_of_inductive env mip
 
 let print_one_inductive env sigma mib ((_,i) as ind) =
-  let u = if Declareops.inductive_is_polymorphic mib then 
-      Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib)
-    else Univ.Instance.empty in
+  let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
   let mip = mib.mind_packets.(i) in
   let params = Inductive.inductive_paramdecls (mib,u) in
   let nparamdecls = Context.Rel.length params in
@@ -111,16 +109,6 @@ let print_one_inductive env sigma mib ((_,i) as ind) =
     str ": " ++ Printer.pr_lconstr_env envpar sigma arity ++ str " :=") ++
   brk(0,2) ++ print_constructors envpar sigma mip.mind_consnames cstrtypes
 
-let instantiate_cumulativity_info cumi =
-  let open Univ in
-  let univs = ACumulativityInfo.univ_context cumi in
-  let expose ctx =
-    let inst = AUContext.instance ctx in
-    let cst = AUContext.instantiate inst ctx in
-    UContext.make (inst, cst)
-  in
-  CumulativityInfo.make (expose univs, ACumulativityInfo.variance cumi)
-
 let print_mutual_inductive env mind mib udecl =
   let inds = List.init (Array.length mib.mind_packets) (fun x -> (mind, x))
   in
@@ -131,14 +119,7 @@ let print_mutual_inductive env mind mib udecl =
     | BiFinite -> "Variant"
     | CoFinite -> "CoInductive"
   in
-  let univs =
-    let open Univ in
-    if Declareops.inductive_is_polymorphic mib then
-      Array.to_list (Instance.to_array
-                       (AUContext.instance (Declareops.inductive_polymorphic_context mib)))
-    else []
-  in
-  let bl = UnivNames.universe_binders_with_opt_names (IndRef (mind, 0)) univs udecl in
+  let bl = UnivNames.universe_binders_with_opt_names (IndRef (mind, 0)) udecl in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
   hov 0 (Printer.pr_polymorphic (Declareops.inductive_is_polymorphic mib) ++
          Printer.pr_cumulative
@@ -150,8 +131,7 @@ let print_mutual_inductive env mind mib udecl =
          match mib.mind_universes with
          | Monomorphic_ind _ | Polymorphic_ind _ -> str ""
          | Cumulative_ind cumi ->
-           Printer.pr_cumulativity_info
-             sigma (instantiate_cumulativity_info cumi))
+           Printer.pr_abstract_cumulativity_info sigma cumi)
 
 let get_fields =
   let rec prodec_rec l subst c =
@@ -167,11 +147,7 @@ let get_fields =
   prodec_rec [] []
 
 let print_record env mind mib udecl =
-  let u = 
-    if Declareops.inductive_is_polymorphic mib then 
-      Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib)
-    else Univ.Instance.empty 
-  in
+  let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
   let mip = mib.mind_packets.(0) in
   let params = Inductive.inductive_paramdecls (mib,u) in
   let nparamdecls = Context.Rel.length params in
@@ -181,8 +157,7 @@ let print_record env mind mib udecl =
   let cstrtype = hnf_prod_applist_assum env nparamdecls cstrtypes.(0) args in
   let fields = get_fields cstrtype in
   let envpar = push_rel_context params env in
-  let bl = UnivNames.universe_binders_with_opt_names (IndRef (mind,0))
-      (Array.to_list (Univ.Instance.to_array u)) udecl in
+  let bl = UnivNames.universe_binders_with_opt_names (IndRef (mind,0)) udecl in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
   let keyword =
     let open Declarations in
@@ -210,8 +185,7 @@ let print_record env mind mib udecl =
     match mib.mind_universes with
     | Monomorphic_ind _ | Polymorphic_ind _ -> str ""
     | Cumulative_ind cumi ->
-      Printer.pr_cumulativity_info
-        sigma (instantiate_cumulativity_info cumi)
+      Printer.pr_abstract_cumulativity_info sigma cumi
   )
 
 let pr_mutual_inductive_body env mind mib udecl =
@@ -315,12 +289,6 @@ let print_body is_impl env mp (l,body) =
     | SFBmodtype _ -> keyword "Module Type" ++ spc () ++ name
     | SFBconst cb ->
        let ctx = Declareops.constant_polymorphic_context cb in
-       let u =
-	 if Declareops.constant_is_polymorphic cb then
-            Univ.AUContext.instance ctx
-	 else Univ.Instance.empty
-       in
-       let ctx = Univ.UContext.make (u, Univ.AUContext.instantiate u ctx) in
       (match cb.const_body with
 	| Def _ -> def "Definition" ++ spc ()
 	| OpaqueDef _ when is_impl -> def "Theorem" ++ spc ()
@@ -328,18 +296,17 @@ let print_body is_impl env mp (l,body) =
       (match env with
 	  | None -> mt ()
 	  | Some env ->
+            let bl = UnivNames.universe_binders_with_opt_names (ConstRef (Constant.make2 mp l)) None in
+            let sigma = Evd.from_ctx (UState.of_binders bl) in
 	    str " :" ++ spc () ++
-            hov 0 (Printer.pr_ltype_env env (Evd.from_env env)
-		(Vars.subst_instance_constr u
-   		  cb.const_type)) ++
+            hov 0 (Printer.pr_ltype_env env sigma cb.const_type) ++
 	    (match cb.const_body with
 	      | Def l when is_impl ->
 		spc () ++
 		hov 2 (str ":= " ++
-                       Printer.pr_lconstr_env env (Evd.from_env env)
-			  (Vars.subst_instance_constr u (Mod_subst.force_constr l)))
+                       Printer.pr_lconstr_env env sigma (Mod_subst.force_constr l))
 	      | _ -> mt ()) ++ str "." ++
-            Printer.pr_universe_ctx (Evd.from_env env) ctx)
+            Printer.pr_abstract_universe_ctx sigma ctx)
     | SFBmind mib ->
       try
 	let env = Option.get env in
