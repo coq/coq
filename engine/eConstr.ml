@@ -14,7 +14,23 @@ open Names
 open Constr
 open Context
 
-include Evd.MiniEConstr
+module ESorts = struct
+  include Evd.MiniEConstr.ESorts
+
+  let equal sigma s1 s2 =
+    Sorts.equal (kind sigma s1) (kind sigma s2)
+end
+
+module EInstance = struct
+  include Evd.MiniEConstr.EInstance
+
+  let equal sigma i1 i2 =
+    Univ.Instance.equal (kind sigma i1) (kind sigma i2)
+end
+
+include (Evd.MiniEConstr : module type of Evd.MiniEConstr
+         with module ESorts := ESorts
+          and module EInstance := EInstance)
 
 type types = t
 type constr = t
@@ -445,38 +461,28 @@ let fold sigma f acc c = match kind sigma c with
 let compare_gen k eq_inst eq_sort eq_constr nargs c1 c2 =
   (c1 == c2) || Constr.compare_head_gen_with k k eq_inst eq_sort eq_constr nargs c1 c2
 
-let eq_einstance sigma i1 i2 =
-  let i1 = EInstance.kind sigma (EInstance.make i1) in
-  let i2 = EInstance.kind sigma (EInstance.make i2) in
-  Univ.Instance.equal i1 i2
-
-let eq_esorts sigma s1 s2 =
-  let s1 = ESorts.kind sigma (ESorts.make s1) in
-  let s2 = ESorts.kind sigma (ESorts.make s2) in
-  Sorts.equal s1 s2
-
 let eq_constr sigma c1 c2 =
-  let kind c = kind_upto sigma c in
-  let eq_inst _ _ i1 i2 = eq_einstance sigma i1 i2 in
-  let eq_sorts s1 s2 = eq_esorts sigma s1 s2 in
+  let kind c = kind sigma c in
+  let eq_inst _ _ i1 i2 = EInstance.equal sigma i1 i2 in
+  let eq_sorts s1 s2 = ESorts.equal sigma s1 s2 in
   let rec eq_constr nargs c1 c2 =
     compare_gen kind eq_inst eq_sorts eq_constr nargs c1 c2
   in
-  eq_constr 0 (unsafe_to_constr c1) (unsafe_to_constr c2)
+  eq_constr 0 c1 c2
 
 let eq_constr_nounivs sigma c1 c2 =
-  let kind c = kind_upto sigma c in
+  let kind c = kind sigma c in
   let rec eq_constr nargs c1 c2 =
     compare_gen kind (fun _ _ _ _ -> true) (fun _ _ -> true) eq_constr nargs c1 c2
   in
-  eq_constr 0 (unsafe_to_constr c1) (unsafe_to_constr c2)
+  eq_constr 0 c1 c2
 
 let compare_constr sigma cmp c1 c2 =
-  let kind c = kind_upto sigma c in
-  let eq_inst _ _ i1 i2 = eq_einstance sigma i1 i2 in
-  let eq_sorts s1 s2 = eq_esorts sigma s1 s2 in
-  let cmp nargs c1 c2 = cmp (of_constr c1) (of_constr c2) in
-  compare_gen kind eq_inst eq_sorts cmp 0 (unsafe_to_constr c1) (unsafe_to_constr c2)
+  let kind c = kind sigma c in
+  let eq_inst _ _ i1 i2 = EInstance.equal sigma i1 i2 in
+  let eq_sorts s1 s2 = ESorts.equal sigma s1 s2 in
+  let cmp nargs c1 c2 = cmp c1 c2 in
+  compare_gen kind eq_inst eq_sorts cmp 0 c1 c2
 
 let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
   let open UnivProblem in
@@ -528,10 +534,10 @@ let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
         cstrs (Univ.Instance.to_array u1) (Univ.Instance.to_array u2)
 
 let eq_universes env sigma cstrs cv_pb ref nargs l l' =
-  if Univ.Instance.is_empty l then (assert (Univ.Instance.is_empty l'); true)
+  if EInstance.is_empty l then (assert (EInstance.is_empty l'); true)
   else
-    let l = Evd.normalize_universe_instance sigma l
-    and l' = Evd.normalize_universe_instance sigma l' in
+    let l = EInstance.kind sigma l
+    and l' = EInstance.kind sigma l' in
     let open GlobRef in
     let open UnivProblem in
     match ref with
@@ -549,7 +555,7 @@ let eq_universes env sigma cstrs cv_pb ref nargs l l' =
 
 let test_constr_universes env sigma leq m n =
   let open UnivProblem in
-  let kind c = kind_upto sigma c in
+  let kind c = kind sigma c in
   if m == n then Some Set.empty
   else
     let cstrs = ref Set.empty in
@@ -557,16 +563,16 @@ let test_constr_universes env sigma leq m n =
     let eq_universes ref nargs l l' = eq_universes env sigma cstrs Reduction.CONV ref nargs l l'
     and leq_universes ref nargs l l' = eq_universes env sigma cstrs cv_pb ref nargs l l' in
     let eq_sorts s1 s2 =
-      let s1 = ESorts.kind sigma (ESorts.make s1) in
-      let s2 = ESorts.kind sigma (ESorts.make s2) in
+      let s1 = ESorts.kind sigma s1 in
+      let s2 = ESorts.kind sigma s2 in
       if Sorts.equal s1 s2 then true
       else (cstrs := Set.add
               (UEq (Sorts.univ_of_sort s1,Sorts.univ_of_sort s2)) !cstrs;
 	    true)
     in
     let leq_sorts s1 s2 = 
-      let s1 = ESorts.kind sigma (ESorts.make s1) in
-      let s2 = ESorts.kind sigma (ESorts.make s2) in
+      let s1 = ESorts.kind sigma s1 in
+      let s2 = ESorts.kind sigma s2 in
       if Sorts.equal s1 s2 then true
       else 
         (cstrs := Set.add
@@ -587,16 +593,16 @@ let test_constr_universes env sigma leq m n =
     if res then Some !cstrs else None
 
 let eq_constr_universes env sigma m n =
-  test_constr_universes env sigma false (unsafe_to_constr m) (unsafe_to_constr n)
+  test_constr_universes env sigma false m n
 let leq_constr_universes env sigma m n =
-  test_constr_universes env sigma true (unsafe_to_constr m) (unsafe_to_constr n)
+  test_constr_universes env sigma true m n
 
 let compare_head_gen_proj env sigma equ eqs eqc' nargs m n =
-  let kind c = kind_upto sigma c in
-  match kind_upto sigma m, kind_upto sigma n with
+  let kind c = kind sigma c in
+  match kind m, kind n with
   | Proj (p, c), App (f, args)
   | App (f, args), Proj (p, c) -> 
-      (match kind_upto sigma f with
+      (match kind f with
       | Const (p', u) when Constant.equal (Projection.constant p) p' -> 
           let npars = Projection.npars p in
           if Array.length args == npars + 1 then
@@ -612,6 +618,8 @@ let eq_constr_universes_proj env sigma m n =
     let cstrs = ref Set.empty in
     let eq_universes ref l l' = eq_universes env sigma cstrs Reduction.CONV ref l l' in
     let eq_sorts s1 s2 =
+      let s1 = ESorts.kind sigma s1 in
+      let s2 = ESorts.kind sigma s2 in
       if Sorts.equal s1 s2 then true
       else
         (cstrs := Set.add
@@ -621,7 +629,7 @@ let eq_constr_universes_proj env sigma m n =
     let rec eq_constr' nargs m n =
       m == n || compare_head_gen_proj env sigma eq_universes eq_sorts eq_constr' nargs m n
     in
-    let res = eq_constr' 0 (unsafe_to_constr m) (unsafe_to_constr n) in
+    let res = eq_constr' 0 m n in
     if res then Some !cstrs else None
 
 let universes_of_constr sigma c =
