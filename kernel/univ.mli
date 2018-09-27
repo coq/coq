@@ -336,9 +336,6 @@ sig
   val empty : t
   val is_empty : t -> bool
 
-  (** Don't use. *)
-  val instance : t -> Instance.t
-
   val size : t -> int
 
   (** Keeps the order of the instances *)
