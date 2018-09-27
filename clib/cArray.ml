@@ -63,6 +63,7 @@ sig
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
   val fold_right_map : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
   val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
+  val fold_left2_map_i : (int -> 'a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
   val fold_right2_map : ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
   val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
   [@@ocaml.deprecated "Same as [fold_left_map]"]
@@ -449,6 +450,11 @@ let fold_map2' = fold_right2_map
 let fold_left2_map f e v1 v2 =
   let e' = ref e in
   let v' = map2 (fun x1 x2 -> let (e,y) = f !e' x1 x2 in e' := e; y) v1 v2 in
+  (!e',v')
+
+let fold_left2_map_i f e v1 v2 =
+  let e' = ref e in
+  let v' = map2_i (fun idx x1 x2 -> let (e,y) = f idx !e' x1 x2 in e' := e; y) v1 v2 in
   (!e',v')
 
 let distinct v =

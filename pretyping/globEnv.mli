@@ -53,10 +53,10 @@ val push_rec_types : evar_map -> Name.t array * constr array -> t -> Name.t arra
 
 (** Declare an evar using renaming information *)
 
-val e_new_evar : t -> evar_map ref -> ?src:Evar_kinds.t Loc.located ->
-  ?naming:Namegen.intro_pattern_naming_expr -> constr -> constr
+val new_evar : t -> evar_map -> ?src:Evar_kinds.t Loc.located ->
+  ?naming:Namegen.intro_pattern_naming_expr -> constr -> evar_map * constr
 
-val e_new_type_evar : t -> evar_map ref -> src:Evar_kinds.t Loc.located -> constr
+val new_type_evar : t -> evar_map -> src:Evar_kinds.t Loc.located -> evar_map * constr
 
 (** [hide_variable env na id] tells to hide the binding of [id] in
     the ltac environment part of [env] and to additionally rebind
@@ -73,8 +73,8 @@ val hide_variable : t -> Name.t -> Id.t -> t
 (** In case a variable is not bound by a term binder, look if it has
     an interpretation as a term in the ltac_var_map *)
 
-val interp_ltac_variable : ?loc:Loc.t -> (t -> Glob_term.glob_constr -> unsafe_judgment) ->
-  t -> evar_map -> Id.t -> unsafe_judgment
+val interp_ltac_variable : ?loc:Loc.t -> (t -> Glob_term.glob_constr -> evar_map * unsafe_judgment) ->
+  t -> evar_map -> Id.t -> evar_map * unsafe_judgment
 
 (** Interp an identifier as an ltac variable bound to an identifier,
     or as the identifier itself if not bound to an ltac variable *)

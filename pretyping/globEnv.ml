@@ -94,7 +94,7 @@ let push_rec_types sigma (lna,typarray) env =
   let env,ctx = Array.fold_left_map (fun e assum -> let (d,e) = push_rel sigma assum e in (e,d)) env ctxt in
   Array.map get_name ctx, env
 
-let e_new_evar env evdref ?src ?naming typ =
+let new_evar env sigma ?src ?naming typ =
   let open Context.Named.Declaration in
   let inst_vars = List.map (get_id %> mkVar) (named_context env.renamed_env) in
   let inst_rels = List.rev (rel_list 0 (nb_rel env.renamed_env)) in
@@ -102,15 +102,11 @@ let e_new_evar env evdref ?src ?naming typ =
   let typ' = csubst_subst subst typ in
   let instance = inst_rels @ inst_vars in
   let sign = val_of_named_context nc in
-  let sigma = !evdref in
-  let (sigma, e) = new_evar_instance sign sigma typ' ?src ?naming instance in
-  evdref := sigma;
-  e
+  new_evar_instance sign sigma typ' ?src ?naming instance
 
-let e_new_type_evar env evdref ~src =
-  let (evd', s) = Evd.new_sort_variable Evd.univ_flexible_alg !evdref in
-  evdref := evd';
-  e_new_evar env evdref ~src (EConstr.mkSort s)
+let new_type_evar env sigma ~src =
+  let sigma, s = Evd.new_sort_variable Evd.univ_flexible_alg sigma in
+  new_evar env sigma ~src (EConstr.mkSort s)
 
 let hide_variable env expansion id =
   let lvar = env.lvar in
@@ -150,13 +146,13 @@ let invert_ltac_bound_name env id0 id =
                        str " depends on pattern variable name " ++ Id.print id ++
                        str " which is not bound in current context.")
 
-let interp_ltac_variable ?loc typing_fun env sigma id =
+let interp_ltac_variable ?loc typing_fun env sigma id : Evd.evar_map * unsafe_judgment =
   (* Check if [id] is an ltac variable *)
   try
     let (ids,c) = Id.Map.find id env.lvar.ltac_constrs in
     let subst = List.map (invert_ltac_bound_name env id) ids in
     let c = substl subst c in
-      { uj_val = c; uj_type = protected_get_type_of env.renamed_env sigma c }
+    sigma, { uj_val = c; uj_type = protected_get_type_of env.renamed_env sigma c }
   with Not_found ->
   try
     let {closure;term} = Id.Map.find id env.lvar.ltac_uconstrs in

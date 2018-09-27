@@ -408,7 +408,7 @@ let coerce_to_indtype typing_fun env sigma matx tomatchl =
 (* Utils *)
 
 let mkExistential ?(src=(Loc.tag Evar_kinds.InternalHole)) env sigma =
-  let sigma, (e, u) = new_type_evar env sigma ~src:src univ_flexible_alg in
+  let sigma, (e, u) = Evarutil.new_type_evar env sigma ~src:src univ_flexible_alg in
   sigma, e
 
 let adjust_tomatch_to_pattern sigma pb ((current,typ),deps,dep) =
@@ -1748,7 +1748,7 @@ let build_tycon ?loc env tycon_env s subst tycon extenv sigma t =
         let n = Context.Rel.length (rel_context !!env) in
         let n' = Context.Rel.length (rel_context !!tycon_env) in
         let sigma, (impossible_case_type, u) =
-          new_type_evar (reset_context !!env) ~src:(Loc.tag ?loc Evar_kinds.ImpossibleCase)
+          Evarutil.new_type_evar (reset_context !!env) ~src:(Loc.tag ?loc Evar_kinds.ImpossibleCase)
             sigma univ_flexible_alg
         in
         (sigma, lift (n'-n) impossible_case_type, mkSort u)
@@ -2037,7 +2037,7 @@ let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
           | None ->
              (* No type constraint: we first create a generic evar type constraint *)
              let src = (loc, Evar_kinds.CasesType false) in
-             let sigma, (t, _) = new_type_evar !!env sigma univ_flexible_alg ~src in
+             let sigma, (t, _) = Evarutil.new_type_evar !!env sigma univ_flexible_alg ~src in
              sigma, t in
         (* First strategy: we build an "inversion" predicate, also replacing the *)
         (* dependencies with existential variables *)
