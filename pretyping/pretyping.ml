@@ -334,10 +334,10 @@ let process_inference_flags flags env initial_sigma (sigma,c,cty) =
   let c = if flags.expand_evars then nf_evar sigma c else c in
   sigma,c,cty
 
-let adjust_evar_source evdref na c =
-  match na, kind !evdref c with
+let adjust_evar_source sigma na c =
+  match na, kind sigma c with
   | Name id, Evar (evk,args) ->
-     let evi = Evd.find !evdref evk in
+     let evi = Evd.find sigma evk in
      begin match evi.evar_source with
      | loc, Evar_kinds.QuestionMark {
          Evar_kinds.qm_obligation=b;
@@ -349,12 +349,11 @@ let adjust_evar_source evdref na c =
             Evar_kinds.qm_name=na;
             Evar_kinds.qm_record_field=recfieldname;
         }) in
-        let (evd, evk') = restrict_evar !evdref evk (evar_filter evi) ~src None in
-        evdref := evd;
-        mkEvar (evk',args)
-     | _ -> c
+        let (sigma, evk') = restrict_evar sigma evk (evar_filter evi) ~src None in
+        sigma, mkEvar (evk',args)
+     | _ -> sigma, c
      end
-  | _, _ -> c
+  | _, _ -> sigma, c
 
 (* coerce to tycon if any *)
 let inh_conv_coerce_to_tycon ?loc resolve_tc env evdref j = function
@@ -652,39 +651,39 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) evdref
       match EConstr.kind !evdref fj.uj_val with
       | Const (p, u) when Recordops.is_primitive_projection p ->
         let p = Option.get @@ Recordops.find_primitive_projection p in
-	let p = Projection.make p false in
+        let p = Projection.make p false in
         let npars = Projection.npars p in
-          fun n ->
-	    if n == npars + 1 then fun _ v -> mkProj (p, v)
-	    else fun f v -> applist (f, [v])
+        fun n ->
+          if n == npars + 1 then fun _ v -> mkProj (p, v)
+          else fun f v -> applist (f, [v])
       | _ -> fun _ f v -> applist (f, [v])
     in
     let rec apply_rec env n resj candargs = function
       | [] -> resj
       | c::rest ->
-	let argloc = loc_of_glob_constr c in
+        let argloc = loc_of_glob_constr c in
         let resj = evd_comb1 (Coercion.inh_app_fun resolve_tc !!env) evdref resj in
         let resty = whd_all !!env !evdref resj.uj_type in
-      	  match EConstr.kind !evdref resty with
-	  | Prod (na,c1,c2) ->
-	    let tycon = Some c1 in
-            let hj = pretype tycon env evdref c in
-	    let candargs, ujval =
-	      match candargs with
-	      | [] -> [], j_val hj
-	      | arg :: args -> 
-                begin match conv !!env !evdref (j_val hj) arg with
-                  | Some sigma -> evdref := sigma;
-                    args, nf_evar !evdref (j_val hj)
-                  | None ->
-                    [], j_val hj
-                end
-	    in
-            let ujval = adjust_evar_source evdref na ujval in
+        match EConstr.kind !evdref resty with
+        | Prod (na,c1,c2) ->
+          let tycon = Some c1 in
+          let hj = pretype tycon env evdref c in
+          let candargs, ujval =
+            match candargs with
+            | [] -> [], j_val hj
+            | arg :: args ->
+              begin match conv !!env !evdref (j_val hj) arg with
+                | Some sigma -> evdref := sigma;
+                  args, nf_evar !evdref (j_val hj)
+                | None ->
+                  [], j_val hj
+              end
+          in
+            let sigma, ujval = adjust_evar_source !evdref na ujval in
+            evdref := sigma;
 	    let value, typ = app_f n (j_val resj) ujval, subst1 ujval c2 in
 	    let j = { uj_val = value; uj_type = typ } in
 	      apply_rec env (n+1) j candargs rest
-		
 	  | _ ->
             let hj = pretype empty_tycon env evdref c in
 	      error_cant_apply_not_functional
