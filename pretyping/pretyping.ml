@@ -231,24 +231,26 @@ let frozen_and_pending_holes (sigma, sigma') =
     end in
     FrozenProgress data
 
-let apply_typeclasses env evdref frozen fail_evar =
+let apply_typeclasses env sigma frozen fail_evar =
   let filter_frozen = match frozen with
-  | FrozenId map -> fun evk -> Evar.Map.mem evk map
-  | FrozenProgress (lazy (frozen, _)) -> fun evk -> Evar.Set.mem evk frozen
+    | FrozenId map -> fun evk -> Evar.Map.mem evk map
+    | FrozenProgress (lazy (frozen, _)) -> fun evk -> Evar.Set.mem evk frozen
   in
-  evdref := Typeclasses.resolve_typeclasses
-     ~filter:(if Flags.is_program_mode () 
-	      then (fun evk evi -> Typeclasses.no_goals_or_obligations evk evi && not (filter_frozen evk))
-              else (fun evk evi -> Typeclasses.no_goals evk evi && not (filter_frozen evk)))
-     ~split:true ~fail:fail_evar env !evdref;
-  if Flags.is_program_mode () then (* Try optionally solving the obligations *)
-    evdref := Typeclasses.resolve_typeclasses
-      ~filter:(fun evk evi -> Typeclasses.all_evars evk evi && not (filter_frozen evk)) ~split:true ~fail:false env !evdref
+  let sigma = Typeclasses.resolve_typeclasses
+      ~filter:(if Flags.is_program_mode ()
+               then (fun evk evi -> Typeclasses.no_goals_or_obligations evk evi && not (filter_frozen evk))
+               else (fun evk evi -> Typeclasses.no_goals evk evi && not (filter_frozen evk)))
+      ~split:true ~fail:fail_evar env sigma in
+  let sigma = if Flags.is_program_mode () then (* Try optionally solving the obligations *)
+      Typeclasses.resolve_typeclasses
+        ~filter:(fun evk evi -> Typeclasses.all_evars evk evi && not (filter_frozen evk)) ~split:true ~fail:false env sigma
+    else sigma in
+  sigma
 
-let apply_inference_hook hook evdref frozen = match frozen with
-| FrozenId _ -> ()
+let apply_inference_hook hook sigma frozen = match frozen with
+| FrozenId _ -> sigma
 | FrozenProgress (lazy (_, pending)) ->
-  evdref := Evar.Set.fold (fun evk sigma ->
+  Evar.Set.fold (fun evk sigma ->
     if Evd.is_undefined sigma evk (* in particular not defined by side-effect *)
     then
       try
@@ -257,18 +259,19 @@ let apply_inference_hook hook evdref frozen = match frozen with
       with Exit ->
         sigma
     else
-      sigma) pending !evdref
+      sigma) pending sigma
 
-let apply_heuristics env evdref fail_evar =
+let apply_heuristics env sigma fail_evar =
   (* Resolve eagerly, potentially making wrong choices *)
-  try evdref := solve_unif_constraints_with_heuristics
-	~ts:(Typeclasses.classes_transparent_state ()) env !evdref
+  try solve_unif_constraints_with_heuristics
+        ~ts:(Typeclasses.classes_transparent_state ()) env sigma
   with e when CErrors.noncritical e ->
-    let e = CErrors.push e in if fail_evar then iraise e
+    let e = CErrors.push e in
+    if fail_evar then iraise e else sigma
 
 let check_typeclasses_instances_are_solved env current_sigma frozen =
   (* Naive way, call resolution again with failure flag *)
-  apply_typeclasses env (ref current_sigma) frozen true
+  apply_typeclasses env current_sigma frozen true
 
 let check_extra_evars_are_solved env current_sigma frozen = match frozen with
 | FrozenId _ -> ()
@@ -297,22 +300,30 @@ let check_evars env initial_sigma sigma c =
     | _ -> EConstr.iter sigma proc_rec c
   in proc_rec c
 
-let check_evars_are_solved env current_sigma frozen =
-  check_typeclasses_instances_are_solved env current_sigma frozen;
-  check_problems_are_solved env current_sigma;
-  check_extra_evars_are_solved env current_sigma frozen
+let check_evars_are_solved env sigma frozen =
+  let sigma = check_typeclasses_instances_are_solved env sigma frozen in
+  check_problems_are_solved env sigma;
+  check_extra_evars_are_solved env sigma frozen
 
 (* Try typeclasses, hooks, unification heuristics ... *)
 
-let solve_remaining_evars flags env current_sigma init_sigma =
-  let frozen = frozen_and_pending_holes (init_sigma, current_sigma) in
-  let evdref = ref current_sigma in
-  if flags.use_typeclasses then apply_typeclasses env evdref frozen false;
-  if Option.has_some flags.use_hook then
-    apply_inference_hook (Option.get flags.use_hook env) evdref frozen;
-  if flags.solve_unification_constraints then apply_heuristics env evdref false;
-  if flags.fail_evar then check_evars_are_solved env !evdref frozen;
-  !evdref
+let solve_remaining_evars flags env sigma init_sigma =
+  let frozen = frozen_and_pending_holes (init_sigma, sigma) in
+  let sigma =
+    if flags.use_typeclasses
+    then apply_typeclasses env sigma frozen false
+    else sigma
+  in
+  let sigma = if Option.has_some flags.use_hook
+    then apply_inference_hook (Option.get flags.use_hook env) sigma frozen
+    else sigma
+  in
+  let sigma = if flags.solve_unification_constraints
+    then apply_heuristics env sigma false
+    else sigma
+  in
+  if flags.fail_evar then check_evars_are_solved env sigma frozen;
+  sigma
 
 let check_evars_are_solved env current_sigma init_sigma =
   let frozen = frozen_and_pending_holes (init_sigma, current_sigma) in
@@ -1123,9 +1134,3 @@ let understand_tcc ?flags env sigma ?expected_type c =
 let understand_ltac flags env sigma lvar kind c =
   let (sigma, c, _) = ise_pretype_gen flags env sigma lvar kind c in
   (sigma, c)
-
-let pretype k0 resolve_tc typcon env evdref lvar t =
-  pretype k0 resolve_tc typcon (GlobEnv.make env !evdref lvar) evdref t
-
-let pretype_type k0 resolve_tc valcon env evdref lvar t =
-  pretype_type k0 resolve_tc valcon (GlobEnv.make env !evdref lvar) evdref t

@@ -19,7 +19,6 @@ open Evd
 open EConstr
 open Glob_term
 open Ltac_pretype
-open Evardefine
 
 val interp_known_glob_level : ?loc:Loc.t -> Evd.evar_map ->
   glob_level -> Univ.Level.t
@@ -111,14 +110,6 @@ val check_evars : env -> evar_map -> evar_map -> constr -> unit
 
 (**/**)
 (** Internal of Pretyping... *)
-val pretype :
-  int -> bool -> type_constraint -> env -> evar_map ref ->
-  ltac_var_map -> glob_constr -> unsafe_judgment
-
-val pretype_type :
-  int -> bool -> val_constraint -> env -> evar_map ref ->
-  ltac_var_map -> glob_constr -> unsafe_type_judgment
-
 val ise_pretype_gen :
   inference_flags -> env -> evar_map ->
   ltac_var_map -> typing_constraint -> glob_constr -> evar_map * constr * types
