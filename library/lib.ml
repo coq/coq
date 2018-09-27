@@ -479,7 +479,24 @@ let instance_from_variable_context =
 
 let named_of_variable_context =
   List.map fst
-  
+
+let name_instance inst =
+  (** FIXME: this should probably be done at an upper level, by storing the
+      name information in the section data structure. *)
+  let map lvl = match Univ.Level.name lvl with
+    | None -> (* Having Prop/Set/Var as section universes makes no sense *)
+      assert false
+    | Some na ->
+      try
+        let qid = Nametab.shortest_qualid_of_universe na in
+        Name (Libnames.qualid_basename qid)
+      with Not_found ->
+        (** Best-effort naming from the string representation of the level.
+            See univNames.ml for a similar hack. *)
+        Name (Id.of_string_soft (Univ.Level.to_string lvl))
+  in
+  Array.map_to_list map (Univ.Instance.to_array inst)
+
 let add_section_replacement f g poly hyps =
   match !sectab with
   | [] -> ()
@@ -488,7 +505,8 @@ let add_section_replacement f g poly hyps =
     let sechyps,ctx = extract_hyps (vars,hyps) in
     let ctx = Univ.ContextSet.to_context ctx in
     let inst = Univ.UContext.instance ctx in
-    let subst, ctx = Univ.abstract_universes ctx in
+    let nas = name_instance inst in
+    let subst, ctx = Univ.abstract_universes nas ctx in
     let args = instance_from_variable_context (List.rev sechyps) in
     let info = {
       abstr_ctx = sechyps;

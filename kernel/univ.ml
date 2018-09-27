@@ -1150,8 +1150,9 @@ let make_inverse_instance_subst i =
 let make_abstract_instance (ctx, _) = 
   Array.mapi (fun i _l -> Level.var i) ctx
 
-let abstract_universes ctx =
+let abstract_universes nas ctx =
   let instance = UContext.instance ctx in
+  let () = assert (Int.equal (List.length nas) (Instance.length instance)) in
   let subst = make_instance_subst instance in
   let cstrs = subst_univs_level_constraints subst 
       (UContext.constraints ctx)
@@ -1159,8 +1160,8 @@ let abstract_universes ctx =
   let ctx = UContext.make (instance, cstrs) in
   instance, ctx
 
-let abstract_cumulativity_info (univs, variance) =
-  let subst, univs = abstract_universes univs in
+let abstract_cumulativity_info nas (univs, variance) =
+  let subst, univs = abstract_universes nas univs in
   subst, (univs, variance)
 
 let rec compact_univ s vars i u =

@@ -69,8 +69,7 @@ let abstract_constant_universes = function
   | Monomorphic_const_entry uctx ->
     Univ.empty_level_subst, Monomorphic_const uctx
   | Polymorphic_const_entry (nas, uctx) ->
-    let () = assert (Int.equal (List.length nas) (Univ.UContext.size uctx)) in
-    let sbst, auctx = Univ.abstract_universes uctx in
+    let sbst, auctx = Univ.abstract_universes nas uctx in
     let sbst = Univ.make_instance_subst sbst in
     sbst, Polymorphic_const auctx
 
@@ -160,9 +159,8 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
             unconditionally export side-effects from polymorphic definitions,
             i.e. [trust] is always [Pure]. *)
         let () = assert (Univ.ContextSet.is_empty ctx) in
-        let () = assert (Int.equal (List.length nas) (Univ.UContext.size uctx)) in
         let env = push_context ~strict:false uctx env in
-        let sbst, auctx = Univ.abstract_universes uctx in
+        let sbst, auctx = Univ.abstract_universes nas uctx in
         let sbst = Univ.make_instance_subst sbst in
         env, sbst, Polymorphic_const auctx
       in

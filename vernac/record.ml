@@ -542,8 +542,7 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
   let univs, ctx_context, fields =
     match univs with
     | Polymorphic_const_entry (nas, univs) ->
-      let () = assert (Int.equal (List.length nas) (Univ.UContext.size univs)) in
-      let usubst, auctx = Univ.abstract_universes univs in
+      let usubst, auctx = Univ.abstract_universes nas univs in
       let usubst = Univ.make_instance_subst usubst in
       let map c = Vars.subst_univs_level_constr usubst c in
       let fields = Context.Rel.map map fields in

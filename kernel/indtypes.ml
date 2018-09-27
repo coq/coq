@@ -852,13 +852,11 @@ let abstract_inductive_universes iu =
   match iu with
   | Monomorphic_ind_entry ctx -> (Univ.empty_level_subst, Monomorphic_ind ctx)
   | Polymorphic_ind_entry (nas, ctx) ->
-    let () = assert (Int.equal (List.length nas) (UContext.size ctx)) in
-    let (inst, auctx) = Univ.abstract_universes ctx in
+    let (inst, auctx) = Univ.abstract_universes nas ctx in
     let inst = Univ.make_instance_subst inst in
     (inst, Polymorphic_ind auctx)
   | Cumulative_ind_entry (nas, cumi) ->
-    let (inst, acumi) = Univ.abstract_cumulativity_info cumi in
-    let () = assert (Int.equal (List.length nas) (Instance.length inst)) in
+    let (inst, acumi) = Univ.abstract_cumulativity_info nas cumi in
     let inst = Univ.make_instance_subst inst in
     (inst, Cumulative_ind acumi)
 
