@@ -575,8 +575,8 @@ let make_clenv_binding env sigma = make_clenv_binding_gen false None env sigma
 
 let pr_clenv clenv =
   h 0
-    (str"TEMPL: " ++ print_constr clenv.templval.rebus ++
-     str" : " ++ print_constr clenv.templtyp.rebus ++ fnl () ++
+    (str"TEMPL: " ++ Termops.Internal.print_constr_env clenv.env clenv.evd clenv.templval.rebus ++
+     str" : " ++ Termops.Internal.print_constr_env clenv.env clenv.evd clenv.templtyp.rebus ++ fnl () ++
      pr_evar_map (Some 2) clenv.evd)
 
 (****************************************************************)

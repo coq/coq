@@ -201,4 +201,4 @@ let lift_tycon n = Option.map (lift n)
 
 let pr_tycon env sigma = function
     None -> str "None"
-  | Some t -> Termops.print_constr_env env sigma t
+  | Some t -> Termops.Internal.print_constr_env env sigma t
