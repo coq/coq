@@ -121,23 +121,6 @@ let warn = ref true
 let make_warn flag = warn := flag;  ()
 let if_warn f x = if !warn then f x
 
-(* Flags for external tools *)
-
-let browser_cmd_fmt =
- try
-  let coq_netscape_remote_var = "COQREMOTEBROWSER" in
-  Sys.getenv coq_netscape_remote_var
- with
-  Not_found -> Coq_config.browser
-
-let is_standard_doc_url url =
-  let wwwcompatprefix = "http://www.lix.polytechnique.fr/coq/" in
-  let n = String.length Coq_config.wwwcoq in
-  let n' = String.length Coq_config.wwwrefman in
-  url = Coq_config.localwwwrefman ||
-  url = Coq_config.wwwrefman ||
-  url = wwwcompatprefix ^ String.sub Coq_config.wwwrefman n (n'-n)
-
 (* Options for changing coqlib *)
 let coqlib_spec = ref false
 let coqlib = ref "(not initialized yet)"

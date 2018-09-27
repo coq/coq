@@ -345,8 +345,15 @@ let _ = attach_modifiers modifier_for_queries "<Actions>/Queries/"
 let modifiers_valid =
   new preference ~name:["modifiers_valid"] ~init:"<Alt><Control><Shift>" ~repr:Repr.(string)
 
+let browser_cmd_fmt =
+ try
+  let coq_netscape_remote_var = "COQREMOTEBROWSER" in
+  Sys.getenv coq_netscape_remote_var
+ with
+  Not_found -> Coq_config.browser
+
 let cmd_browse =
-  new preference ~name:["cmd_browse"] ~init:Flags.browser_cmd_fmt ~repr:Repr.(string)
+  new preference ~name:["cmd_browse"] ~init:browser_cmd_fmt ~repr:Repr.(string)
 
 let cmd_editor =
   let init = if Sys.os_type = "Win32" then "NOTEPAD %s" else "emacs %s" in
@@ -359,6 +366,14 @@ let text_font =
   in
   new preference ~name:["text_font"] ~init ~repr:Repr.(string)
 
+let is_standard_doc_url url =
+  let wwwcompatprefix = "http://www.lix.polytechnique.fr/coq/" in
+  let n = String.length Coq_config.wwwcoq in
+  let n' = String.length Coq_config.wwwrefman in
+  url = Coq_config.localwwwrefman ||
+  url = Coq_config.wwwrefman ||
+  url = wwwcompatprefix ^ String.sub Coq_config.wwwrefman n (n'-n)
+
 let doc_url =
 object
   inherit [string] preference
@@ -366,7 +381,7 @@ object
     as super
 
   method! set v =
-    if not (Flags.is_standard_doc_url v) &&
+    if not (is_standard_doc_url v) &&
       v <> use_default_doc_url &&
       (* Extra hack to support links to last released doc version *)
       v <> Coq_config.wwwcoq ^ "doc" &&
