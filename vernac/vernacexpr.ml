@@ -114,8 +114,8 @@ type hint_mode = Hints.hint_mode =
 [@@ocaml.deprecated "Please use [Hints.hint_mode]"]
 
 type 'a hint_info_gen = 'a Typeclasses.hint_info_gen =
-    { hint_priority : int option;
-      hint_pattern : 'a option }
+    { hint_priority : int option; [@ocaml.deprecated "Use Typeclasses.hint_priority"]
+      hint_pattern : 'a option [@ocaml.deprecated "Use Typeclasses.hint_pattern"] }
 [@@ocaml.deprecated "Please use [Typeclasses.hint_info_gen]"]
 
 type hint_info_expr = Hints.hint_info_expr
@@ -151,7 +151,9 @@ type search_restriction =
 
 type rec_flag       = bool (* true = Rec;           false = NoRec          *)
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
-type opacity_flag   = Proof_global.opacity_flag = Opaque | Transparent
+type opacity_flag   = Proof_global.opacity_flag =
+    Opaque [@ocaml.deprecated "Use Proof_global.Opaque"]
+  | Transparent [@ocaml.deprecated "Use Proof_global.Transparent"]
  [@ocaml.deprecated "Please use [Proof_global.opacity_flag]"]
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = bool option
