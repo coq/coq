@@ -58,12 +58,6 @@ val coqpath : string list
 (** [camlfind ()] is the path to the ocamlfind binary. *)
 val ocamlfind : unit -> string
 
-(** [camlp5bin ()] is the path to the camlp5 binary. *)
-val camlp5bin : unit -> string
-
-(** [camlp5lib ()] is the path to the camlp5 library. *)
-val camlp5lib : unit -> string
-
 (** Coq tries to honor the XDG Base Directory Specification to access
     the user's configuration files.
 

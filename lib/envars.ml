@@ -36,21 +36,6 @@ let path_to_list p =
   let sep = if String.equal Sys.os_type "Win32" then ';' else ':' in
     String.split sep p
 
-let user_path () =
-  path_to_list (Sys.getenv "PATH") (* may raise Not_found *)
-
-(* Finding a name in path using the equality provided by the file system *)
-(* whether it is case-sensitive or case-insensitive *)
-let rec which l f =
-  match l with
-    | [] ->
-      raise Not_found
-    | p :: tl ->
-      if Sys.file_exists (p / f) then
-	p
-      else
-	which tl f
-
 let expand_path_macros ~warn s =
   let rec expand_atom s i =
     let l = String.length s in
@@ -155,28 +140,7 @@ let coqpath =
 
 (** {2 Caml paths} *)
 
-let exe s = s ^ Coq_config.exec_extension
-
 let ocamlfind () = Coq_config.ocamlfind
-
-(** {2 Camlp5 paths} *)
-
-let guess_camlp5bin () = which (user_path ()) (exe "camlp5")
-
-let camlp5bin () =
-  if !Flags.boot then Coq_config.camlp5bin else
-    try guess_camlp5bin ()
-    with Not_found ->
-      Coq_config.camlp5bin
-
-let camlp5lib () =
-  if !Flags.boot then
-    Coq_config.camlp5lib
-  else
-    let ex, res = CUnix.run_command (ocamlfind () ^ " query camlp5") in
-    match ex with
-      | Unix.WEXITED 0 -> String.strip res
-      | _ -> "/dev/null"
 
 (** {1 XDG utilities} *)
 
@@ -209,8 +173,8 @@ let print_config ?(prefix_var_name="") f coq_src_subdirs =
   fprintf f "%sDOCDIR=%s/\n" prefix_var_name (docdir ());
   fprintf f "%sOCAMLFIND=%s\n" prefix_var_name (ocamlfind ());
   fprintf f "%sCAMLP5O=%s\n" prefix_var_name Coq_config.camlp5o;
-  fprintf f "%sCAMLP5BIN=%s/\n" prefix_var_name (camlp5bin ());
-  fprintf f "%sCAMLP5LIB=%s\n" prefix_var_name (camlp5lib ());
+  fprintf f "%sCAMLP5BIN=%s/\n" prefix_var_name Coq_config.camlp5bin;
+  fprintf f "%sCAMLP5LIB=%s\n" prefix_var_name Coq_config.camlp5lib;
   fprintf f "%sCAMLP5OPTIONS=%s\n" prefix_var_name Coq_config.camlp5compat;
   fprintf f "%sCAMLFLAGS=%s\n" prefix_var_name Coq_config.caml_flags;
   fprintf f "%sHASNATDYNLINK=%s\n" prefix_var_name
