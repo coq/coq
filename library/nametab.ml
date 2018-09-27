@@ -30,6 +30,9 @@ let error_global_not_found qid =
 *)
 type visibility = Until of int | Exactly of int
 
+let map_visibility f = function
+  | Until i -> Until (f i)
+  | Exactly i -> Exactly (f i)
 
 (* Data structure for nametabs *******************************************)
 

@@ -479,20 +479,7 @@ type universe_source =
   | QualifiedUniv of Id.t (* global universe introduced by some global value *)
   | UnqualifiedUniv (* other global universe *)
 
-type universe_decl = universe_source * Nametab.universe_id
-
-let add_universe src (dp, i) =
-  let level = Univ.Level.make dp i in
-  let optpoly = match src with
-    | BoundUniv -> Some true
-    | UnqualifiedUniv -> Some false
-    | QualifiedUniv _ -> None
-  in
-  Option.iter (fun poly ->
-      let ctx = Univ.ContextSet.add_universe level Univ.ContextSet.empty in
-      Global.push_context_set poly ctx;
-      if poly then Lib.add_section_context ctx)
-    optpoly
+type universe_name_decl = universe_source * (Id.t * Nametab.universe_id) list
 
 let check_exists sp =
   let depth = sections_depth () in
@@ -501,41 +488,42 @@ let check_exists sp =
     alreadydeclared (str "Universe " ++ Id.print (basename sp) ++ str " already exists")
   else ()
 
-let qualify_univ src (sp,i as orig) =
+let qualify_univ i sp src id =
+  let open Libnames in
   match src with
-  | BoundUniv | UnqualifiedUniv -> orig
+  | BoundUniv | UnqualifiedUniv ->
+    let sp = dirpath sp in
+    i, make_path sp id
   | QualifiedUniv l ->
-    let sp0, id = Libnames.repr_path sp in
-    let sp0 = DirPath.repr sp0 in
-    Libnames.make_path (DirPath.make (l::sp0)) id, i+1
+    let sp = dirpath sp in
+    let sp = DirPath.repr sp in
+    Nametab.map_visibility succ i, make_path (DirPath.make (l::sp)) id
 
-let cache_universe ((sp, _), (src, id)) =
-  let sp, i = qualify_univ src (sp,1) in
-  let () = check_exists sp in
-  let () = Nametab.push_universe (Nametab.Until i) sp id in
-    add_universe src id
+let do_univ_name ~check i sp src (id,univ) =
+  let i, sp = qualify_univ i sp src id in
+  if check then check_exists sp;
+  Nametab.push_universe i sp univ
 
-let load_universe i ((sp, _), (src, id)) =
-  let sp, i = qualify_univ src (sp,i) in
-  let () = Nametab.push_universe (Nametab.Until i) sp id in
-  add_universe src id
+let cache_univ_names ((sp, _), (src, univs)) =
+  List.iter (do_univ_name ~check:true (Nametab.Until 1) sp src) univs
 
-let open_universe i ((sp, _), (src, id)) =
-  let sp, i = qualify_univ src (sp,i) in
-  let () = Nametab.push_universe (Nametab.Exactly i) sp id in
-  ()
+let load_univ_names i ((sp, _), (src, univs)) =
+  List.iter (do_univ_name ~check:false (Nametab.Until i) sp src) univs
 
-let discharge_universe = function
+let open_univ_names i ((sp, _), (src, univs)) =
+  List.iter (do_univ_name ~check:false (Nametab.Exactly i) sp src) univs
+
+let discharge_univ_names = function
   | _, (BoundUniv, _) -> None
   | _, ((QualifiedUniv _ | UnqualifiedUniv), _ as x) -> Some x
 
-let input_universe : universe_decl -> Libobject.obj =
+let input_univ_names : universe_name_decl -> Libobject.obj =
   declare_object
     { (default_object "Global universe name state") with
-      cache_function = cache_universe;
-      load_function = load_universe;
-      open_function = open_universe;
-      discharge_function = discharge_universe;
+      cache_function = cache_univ_names;
+      load_function = load_univ_names;
+      open_function = open_univ_names;
+      discharge_function = discharge_univ_names;
       subst_function = (fun (subst, a) -> (** Actually the name is generated once and for all. *) a);
       classify_function = (fun a -> Substitute a) }
 
@@ -551,12 +539,12 @@ let declare_univ_binders gr pl =
         anomaly ~label:"declare_univ_binders"
           Pp.(str "declare_univ_binders on an constructor reference")
     in
-    Id.Map.iter (fun id lvl ->
-        match Univ.Level.name lvl with
-        | None -> ()
-        | Some na ->
-          ignore (Lib.add_leaf id (input_universe (QualifiedUniv l, na))))
-      pl
+    let univs = Id.Map.fold (fun id univ univs ->
+        match Univ.Level.name univ with
+        | None -> assert false (* having Prop/Set/Var as binders is nonsense *)
+        | Some univ -> (id,univ)::univs) pl []
+    in
+    Lib.add_anonymous_leaf (input_univ_names (QualifiedUniv l, univs))
 
 let do_universe poly l =
   let in_section = Lib.sections_are_opened () in
@@ -570,10 +558,12 @@ let do_universe poly l =
       let lev = UnivGen.new_univ_id () in
       (id, lev)) l
   in
+  let ctx = List.fold_left (fun ctx (_,(dp,i)) -> Univ.LSet.add (Univ.Level.make dp i) ctx)
+      Univ.LSet.empty l, Univ.Constraint.empty
+  in
+  let () = declare_universe_context poly ctx in
   let src = if poly then BoundUniv else UnqualifiedUniv in
-  List.iter (fun (id,lev) ->
-      ignore(Lib.add_leaf id (input_universe (src, lev))))
-    l
+  Lib.add_anonymous_leaf (input_univ_names (src, l))
 
 let do_constraint poly l =
   let open Univ in
