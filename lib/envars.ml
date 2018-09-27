@@ -105,22 +105,19 @@ let guess_coqlib fail =
         fail "cannot guess a path for Coq libraries; please use -coqlib option")
   )
 
+let coqlib : string option ref = ref None
+let set_user_coqlib path = coqlib := Some path
+
 (** coqlib is now computed once during coqtop initialization *)
 
-(* Options for changing coqlib *)
-let coqlib_spec = ref false
-let coqlib = ref "(not initialized yet)"
-
-let set_user_coqlib path =
-  coqlib_spec := true;
-  coqlib := path
-
 let set_coqlib ~fail =
-  if not !coqlib_spec then
+  match !coqlib with
+  | Some _ -> ()
+  | None ->
     let lib = if !Flags.boot then coqroot else guess_coqlib fail in
-    coqlib := lib
+    coqlib := Some lib
 
-let coqlib () = !coqlib
+let coqlib () = Option.default "" !coqlib
 
 let docdir () =
   (* This assumes implicitly that the suffix is non-trivial *)
