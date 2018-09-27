@@ -41,6 +41,9 @@ val configdir : unit -> string
 (** [set_coqlib] must be runned once before any access to [coqlib] *)
 val set_coqlib : fail:(string -> string) -> unit
 
+(** [set_user_coqlib path] sets the coqlib directory explicitedly. *)
+val set_user_coqlib : string -> unit
+
 (** [coqbin] is the name of the current executable. *)
 val coqbin : string
 

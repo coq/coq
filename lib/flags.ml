@@ -121,10 +121,6 @@ let warn = ref true
 let make_warn flag = warn := flag;  ()
 let if_warn f x = if !warn then f x
 
-(* Options for changing coqlib *)
-let coqlib_spec = ref false
-let coqlib = ref "(not initialized yet)"
-
 (* Level of inlining during a functor application *)
 
 let default_inline_level = 100

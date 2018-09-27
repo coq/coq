@@ -107,12 +107,20 @@ let guess_coqlib fail =
 
 (** coqlib is now computed once during coqtop initialization *)
 
-let set_coqlib ~fail =
-  if not !Flags.coqlib_spec then
-    let lib = if !Flags.boot then coqroot else guess_coqlib fail in
-    Flags.coqlib := lib
+(* Options for changing coqlib *)
+let coqlib_spec = ref false
+let coqlib = ref "(not initialized yet)"
 
-let coqlib () = !Flags.coqlib
+let set_user_coqlib path =
+  coqlib_spec := true;
+  coqlib := path
+
+let set_coqlib ~fail =
+  if not !coqlib_spec then
+    let lib = if !Flags.boot then coqroot else guess_coqlib fail in
+    coqlib := lib
+
+let coqlib () = !coqlib
 
 let docdir () =
   (* This assumes implicitly that the suffix is non-trivial *)

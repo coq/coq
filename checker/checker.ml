@@ -321,8 +321,7 @@ let parse_args argv =
     | "-coqlib" :: s :: rem ->
       if not (exists_dir s) then 
 	fatal_error (str "Directory '" ++ str s ++ str "' does not exist") false;
-      Flags.coqlib := s;
-      Flags.coqlib_spec := true;
+      Envars.set_user_coqlib s;
       parse rem
 
     | ("-I"|"-include") :: d :: "-as" :: p :: rem -> deprecated "-I"; set_include d p; parse rem

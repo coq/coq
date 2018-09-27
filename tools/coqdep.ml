@@ -496,7 +496,7 @@ let rec parse = function
   | "-dumpgraphbox" :: f :: ll -> option_dump := Some (true, f); parse ll
   | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse ll
   | "-exclude-dir" :: [] -> usage ()
-  | "-coqlib" :: r :: ll -> Flags.coqlib_spec := true; Flags.coqlib := r; parse ll
+  | "-coqlib" :: r :: ll -> Envars.set_user_coqlib r; parse ll
   | "-coqlib" :: [] -> usage ()
   | "-suffix" :: s :: ll -> suffixe := s ; parse ll
   | "-suffix" :: [] -> usage ()
