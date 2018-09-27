@@ -21,8 +21,6 @@ val empty_binders : universe_binders
 
 val compute_instance_binders : Instance.t -> universe_binders -> Names.Name.t list
 
-val register_universe_binders : Names.GlobRef.t -> universe_binders -> unit
-
 type univ_name_list = Names.lname list
 
 (** [universe_binders_with_opt_names ref l]

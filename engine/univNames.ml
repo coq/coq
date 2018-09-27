@@ -53,8 +53,6 @@ let compute_instance_binders inst ubinders =
   in
   Array.map_to_list map (Instance.to_array inst)
 
-let register_universe_binders ref ubinders = ()
-
 type univ_name_list = Names.lname list
 
 let universe_binders_with_opt_names ref names =

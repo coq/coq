@@ -520,7 +520,7 @@ let input_univ_names : universe_name_decl -> Libobject.obj =
 
 let declare_univ_binders gr pl =
   if Global.is_polymorphic gr then
-    UnivNames.register_universe_binders gr pl
+    ()
   else
     let l = match gr with
       | ConstRef c -> Label.to_id @@ Constant.label c
