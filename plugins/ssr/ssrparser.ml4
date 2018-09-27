@@ -342,7 +342,7 @@ let interp_index ist gl idx =
 
 open Pltac
 
-ARGUMENT EXTEND ssrindex TYPED AS ssrindex PRINTED BY pr_ssrindex
+ARGUMENT EXTEND ssrindex PRINTED BY pr_ssrindex
   INTERPRETED BY interp_index
 | [ int_or_var(i) ] -> [ mk_index ~loc i ]
 END
