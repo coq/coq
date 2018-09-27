@@ -128,9 +128,6 @@ val add_modtype :
 val push_context_set :
   bool -> Univ.ContextSet.t -> safe_transformer0
 
-val push_context :
-  bool -> Univ.UContext.t -> safe_transformer0
-
 val add_constraints :
   Univ.Constraint.t -> safe_transformer0
 
