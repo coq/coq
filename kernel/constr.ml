@@ -237,6 +237,17 @@ let mkVar id = Var id
 
 let kind c = c
 
+let rec kind_nocast_gen kind c =
+  match kind c with
+  | Cast (c, _, _) -> kind_nocast_gen kind c
+  | App (h, outer) as k ->
+    (match kind_nocast_gen kind h with
+     | App (h, inner) -> App (h, Array.append inner outer)
+     | _ -> k)
+  | k -> k
+
+let kind_nocast c = kind_nocast_gen kind c
+
 (* The other way around. We treat specifically smart constructors *)
 let of_kind = function
 | App (f, a) -> mkApp (f, a)
@@ -755,10 +766,10 @@ let map_with_binders g f l c0 = match kind c0 with
     let bl' = Array.Fun1.Smart.map f l' bl in
     mkCoFix (ln,(lna,tl',bl'))
 
-type instance_compare_fn = GlobRef.t -> int ->
-  Univ.Instance.t -> Univ.Instance.t -> bool
+type 'univs instance_compare_fn = GlobRef.t -> int ->
+  'univs -> 'univs -> bool
 
-type constr_compare_fn = int -> constr -> constr -> bool
+type 'constr constr_compare_fn = int -> 'constr -> 'constr -> bool
 
 (* [compare_head_gen_evar k1 k2 u s e eq leq c1 c2] compare [c1] and
    [c2] (using [k1] to expose the structure of [c1] and [k2] to expose
@@ -772,19 +783,16 @@ type constr_compare_fn = int -> constr -> constr -> bool
    calls to {!Array.equal_norefl}). *)
 
 let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t1 t2 =
-  match kind1 t1, kind2 t2 with
+  match kind_nocast_gen kind1 t1, kind_nocast_gen kind2 t2 with
+  | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)
   | Rel n1, Rel n2 -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
   | Var id1, Var id2 -> Id.equal id1 id2
   | Sort s1, Sort s2 -> leq_sorts s1 s2
-  | Cast (c1, _, _), _ -> leq nargs c1 t2
-  | _, Cast (c2, _, _) -> leq nargs t1 c2
   | Prod (_,t1,c1), Prod (_,t2,c2) -> eq 0 t1 t2 && leq 0 c1 c2
   | Lambda (_,t1,c1), Lambda (_,t2,c2) -> eq 0 t1 t2 && eq 0 c1 c2
   | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> eq 0 b1 b2 && eq 0 t1 t2 && leq nargs c1 c2
   (* Why do we suddenly make a special case for Cast here? *)
-  | App (Cast (c1, _, _), l1), _ -> leq nargs (mkApp (c1, l1)) t2
-  | _, App (Cast (c2, _, _), l2) -> leq nargs t1 (mkApp (c2, l2))
   | App (c1, l1), App (c2, l2) ->
     let len = Array.length l1 in
     Int.equal len (Array.length l2) &&
