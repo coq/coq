@@ -1,0 +1,11 @@
+(lang dune 1.2)
+
+; Add custom flags here. Default developer profile is `dev`
+(env
+ (dev     (flags :standard -rectypes -w -9-27-50))
+ (release (flags :standard -rectypes)))
+
+(context (opam (switch 4.05.0)))
+(context (opam (switch 4.05.0+32bit)))
+(context (opam (switch 4.07.0)))
+(context (opam (switch 4.07.0+flambda)))
