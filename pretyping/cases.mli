@@ -41,18 +41,18 @@ val irrefutable : env -> cases_pattern -> bool
 
 val compile_cases :
   ?loc:Loc.t -> case_style ->
-  (type_constraint -> GlobEnv.t -> evar_map ref -> glob_constr -> unsafe_judgment) * evar_map ref ->
+  (type_constraint -> GlobEnv.t -> evar_map -> glob_constr -> evar_map * unsafe_judgment) * evar_map ->
   type_constraint ->
   GlobEnv.t -> glob_constr option * tomatch_tuples * cases_clauses ->
-  unsafe_judgment
+  evar_map * unsafe_judgment
 
 val constr_of_pat : 
            Environ.env ->
-           Evd.evar_map ref ->
+           Evd.evar_map ->
            rel_context ->
            Glob_term.cases_pattern ->
            Names.Id.Set.t ->
-           Glob_term.cases_pattern *
+           Evd.evar_map * Glob_term.cases_pattern *
            (rel_context * constr *
             (types * constr list) * Glob_term.cases_pattern) *
            Names.Id.Set.t
@@ -103,20 +103,19 @@ and pattern_continuation =
 
 type 'a pattern_matching_problem =
     { env       : GlobEnv.t;
-      evdref    : evar_map ref;
       pred      : constr;
       tomatch   : tomatch_stack;
       history   : pattern_continuation;
       mat       : 'a matrix;
       caseloc   : Loc.t option;
       casestyle : case_style;
-      typing_function: type_constraint -> GlobEnv.t -> evar_map ref -> 'a option -> unsafe_judgment }
+      typing_function: type_constraint -> GlobEnv.t -> evar_map -> 'a option -> evar_map * unsafe_judgment }
 
-val compile : 'a pattern_matching_problem -> unsafe_judgment
+val compile : evar_map -> 'a pattern_matching_problem -> evar_map * unsafe_judgment
 
 val prepare_predicate : ?loc:Loc.t ->
            (type_constraint ->
-            GlobEnv.t -> Evd.evar_map ref -> glob_constr -> unsafe_judgment) ->
+            GlobEnv.t -> Evd.evar_map -> glob_constr -> Evd.evar_map * unsafe_judgment) ->
            GlobEnv.t ->
            Evd.evar_map ->
            (types * tomatch_type) list ->
