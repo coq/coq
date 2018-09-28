@@ -31,7 +31,7 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
 | PRef r1, PRef r2 -> GlobRef.equal r1 r2
 | PVar v1, PVar v2 -> Id.equal v1 v2
 | PEvar (ev1, ctx1), PEvar (ev2, ctx2) ->
-  Evar.equal ev1 ev2 && Array.equal constr_pattern_eq ctx1 ctx2
+  Evar.equal ev1 ev2 && List.equal constr_pattern_eq ctx1 ctx2
 | PRel i1, PRel i2 ->
   Int.equal i1 i2
 | PApp (t1, arg1), PApp (t2, arg2) ->
@@ -115,7 +115,7 @@ let rec occurn_pattern n = function
       (occurn_pattern n c) ||
       (List.exists (fun (_,_,p) -> occurn_pattern n p) br)
   | PMeta _ | PSoApp _ -> true
-  | PEvar (_,args) -> Array.exists (occurn_pattern n) args
+  | PEvar (_,args) -> List.exists (occurn_pattern n) args
   | PVar _ | PRef _ | PSort _ | PInt _ | PFloat _ -> false
   | PFix (_,(_,tl,bl)) ->
      Array.exists (occurn_pattern n) tl || Array.exists (occurn_pattern (n+Array.length tl)) bl
@@ -190,7 +190,7 @@ let pattern_of_constr env sigma t =
         (* These are the two evar kinds used for existing goals *)
         (* see Proofview.mark_in_evm *)
          if Evd.is_defined sigma evk then pattern_of_constr env (Evd.existential_value0 sigma ev)
-         else PEvar (evk,Array.map (pattern_of_constr env) ctxt)
+         else PEvar (evk,List.map (pattern_of_constr env) ctxt)
       | Evar_kinds.MatchingVar (Evar_kinds.SecondOrderPatVar ido) -> assert false
       | _ ->
          PMeta None)

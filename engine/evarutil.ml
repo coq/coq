@@ -200,7 +200,7 @@ let make_pure_subst evi args =
       match args with
         | a::rest -> (rest, (NamedDecl.get_id decl, a)::l)
         | _ -> anomaly (Pp.str "Instance does not match its signature."))
-    (evar_filtered_context evi) (Array.rev_to_list args,[]))
+    (evar_filtered_context evi) (List.rev args,[]))
 
 (*------------------------------------*
  * functional operations on evar sets *
@@ -448,7 +448,7 @@ let new_evar_instance ?src ?filter ?abstract_arguments ?candidates ?naming ?type
   assert (not !Flags.debug ||
             List.distinct (ids_of_named_context (named_context_of_val sign)));
   let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_candidate ?principal typ in
-  evd, mkEvar (newevk,Array.of_list instance)
+  evd, mkEvar (newevk, instance)
 
 let new_evar_from_context ?src ?filter ?candidates ?naming ?typeclass_candidate ?principal sign evd typ =
   let instance = List.map (NamedDecl.get_id %> EConstr.mkVar) (named_context_of_val sign) in
@@ -506,7 +506,7 @@ let generalize_evar_over_rels sigma (ev,args) =
   List.fold_left2
     (fun (c,inst as x) a d ->
       if isRel sigma a then (mkNamedProd_or_LetIn d c,a::inst) else x)
-     (evi.evar_concl,[]) (Array.to_list args) sign
+     (evi.evar_concl,[]) args sign
 
 (************************************)
 (* Removing a dependency in an evar *)
@@ -594,7 +594,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
                   (* No dependency at all, we can keep this ev's context hyp *)
                     (ri, true::filter)
                   with Depends id -> (Id.Map.add (NamedDecl.get_id h) id ri, false::filter))
-                ctxt (Array.to_list l) (Id.Map.empty,[]) in
+                ctxt l (Id.Map.empty,[]) in
             (* Check if some rid to clear in the context of ev has dependencies
                in the type of ev and adjust the source of the dependency *)
             let _nconcl =
@@ -736,7 +736,7 @@ let undefined_evars_of_term evd t =
     match EConstr.kind evd c with
       | Evar (n, l) ->
         let acc = Evar.Set.add n acc in
-        Array.fold_left evrec acc l
+        List.fold_left evrec acc l
       | _ -> EConstr.fold evd evrec acc c
   in
   evrec Evar.Set.empty t

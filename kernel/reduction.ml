@@ -367,9 +367,9 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let el1 = el_stack lft1 v1 in
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_stacks l2r infos lft1 lft2 v1 v2 cuniv in
-          convert_vect l2r infos el1 el2
-            (Array.map (mk_clos env1) args1)
-            (Array.map (mk_clos env2) args2) cuniv
+          convert_list l2r infos el1 el2
+            (List.map (mk_clos env1) args1)
+            (List.map (mk_clos env2) args2) cuniv
         else raise NotConvertible
 
     (* 2 index known to be bound to no constant *)
@@ -701,6 +701,13 @@ and convert_branches l2r infos ci e1 e2 lft1 lft2 br1 br2 cuniv =
     ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cuniv
   in
   Array.fold_right3 fold ci.ci_cstr_nargs br1 br2 cuniv
+
+and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
+| [], [] -> cuniv
+| c1 :: v1, c2 :: v2 ->
+  let cuniv = ccnv CONV l2r infos lft1 lft2 c1 c2 cuniv in
+  convert_list l2r infos lft1 lft2 v1 v2 cuniv
+| _, _ -> raise NotConvertible
 
 let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
   let reds = CClosure.RedFlags.red_add_transparent betaiotazeta trans in

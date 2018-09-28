@@ -2763,8 +2763,8 @@ let pose_tac na c =
       let id = make_annot id Sorts.Relevant in
       let nhyps = EConstr.push_named_context_val (NamedDecl.LocalDef (id, c, t)) hyps in
       let (sigma, ev) = Evarutil.new_pure_evar nhyps sigma concl in
-      let inst = Array.map_of_list (fun d -> mkVar (get_id d)) (named_context env) in
-      let body = mkEvar (ev, Array.append [|mkRel 1|] inst) in
+      let inst = List.map (fun d -> mkVar (get_id d)) (named_context env) in
+      let body = mkEvar (ev, mkRel 1 :: inst) in
       (sigma, mkLetIn (map_annot Name.mk_name id, c, t, body))
     end
   end

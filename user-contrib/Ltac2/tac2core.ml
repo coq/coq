@@ -375,7 +375,7 @@ let () = define1 "constr_kind" constr begin fun c ->
   | Evar (evk, args) ->
     v_blk 3 [|
       Value.of_int (Evar.repr evk);
-      Value.of_array Value.of_constr args;
+      Value.of_array Value.of_constr (Array.of_list args);
     |]
   | Sort s ->
     v_blk 4 [|Value.of_ext Value.val_sort s|]
@@ -469,7 +469,7 @@ let () = define1 "constr_make" valexpr begin fun knd ->
   | (3, [|evk; args|]) ->
     let evk = Evar.unsafe_of_int (Value.to_int evk) in
     let args = Value.to_array Value.to_constr args in
-    EConstr.mkEvar (evk, args)
+    EConstr.mkEvar (evk, Array.to_list args)
   | (4, [|s|]) ->
     let s = Value.to_ext Value.val_sort s in
     EConstr.mkSort (EConstr.Unsafe.to_sorts s)
@@ -603,7 +603,7 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
       thaw c >>= fun _ ->
       Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state (Proofview.Goal.goal gl)] >>= fun () ->
       let args = List.map (fun d -> EConstr.mkVar (get_id d)) (EConstr.named_context env) in
-      let args = Array.of_list (EConstr.mkRel 1 :: args) in
+      let args = EConstr.mkRel 1 :: args in
       let ans = EConstr.mkEvar (evk, args) in
       let ans = EConstr.mkLambda (Context.make_annot (Name id) Sorts.Relevant, t, ans) in
       return (Value.of_constr ans)

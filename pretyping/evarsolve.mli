@@ -99,7 +99,7 @@ val refresh_universes :
   env -> evar_map -> types -> evar_map * types
 
 val solve_refl : ?can_drop:bool -> conversion_check -> unify_flags -> env ->  evar_map ->
-  bool option -> Evar.t -> constr array -> constr array -> evar_map
+  bool option -> Evar.t -> constr list -> constr list -> evar_map
 
 val solve_evar_evar : ?force:bool ->
   (env -> evar_map -> bool option -> existential -> constr -> evar_map) ->
@@ -128,7 +128,7 @@ val check_evar_instance : unifier -> unify_flags ->
   env -> evar_map -> Evar.t -> constr -> evar_map
 
 val remove_instance_local_defs :
-  evar_map -> Evar.t -> 'a array -> 'a list
+  evar_map -> Evar.t -> 'a list -> 'a list
 
 val get_type_of_refresh :
   ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> evar_map * types

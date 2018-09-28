@@ -446,7 +446,7 @@ let rec norm_head info env t stack =
           Some c -> norm_head info env c stack
         | None ->
           let e, xs = ev in
-          let xs' = Array.map (apply_env env) xs in
+          let xs' = List.map (apply_env env) xs in
           (VAL(0, mkEvar (e,xs')), stack))
 
   (* non-neutral cases *)

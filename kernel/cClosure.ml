@@ -613,7 +613,7 @@ let rec to_constr lfts v =
                     subst_constr subs f)
     | FEvar ((ev,args),env) ->
       let subs = comp_subs lfts env in
-        mkEvar(ev,Array.map (fun a -> subst_constr subs a) args)
+        mkEvar(ev,List.map (fun a -> subst_constr subs a) args)
     | FLIFT (k,a) -> to_constr (el_shft k lfts) a
 
     | FInt i ->
@@ -1408,7 +1408,7 @@ and norm_head info tab m =
             Array.Fun1.map mk_clos (subs_liftn (Array.length na) e) bds in
           mkFix(n,(na, CArray.map (kl info tab) ftys, CArray.map (kl info tab) fbds))
       | FEvar((i,args),env) ->
-          mkEvar(i, Array.map (fun a -> kl info tab (mk_clos env a)) args)
+          mkEvar(i, List.map (fun a -> kl info tab (mk_clos env a)) args)
       | FProj (p,c) ->
           mkProj (p, kl info tab c)
       | FLOCKED | FRel _ | FAtom _ | FFlex _ | FInd _ | FConstruct _

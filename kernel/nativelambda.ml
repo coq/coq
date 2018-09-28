@@ -474,7 +474,7 @@ let rec lambda_of_constr cache env sigma c =
   | Evar (evk,args as ev) ->
      (match evar_value sigma ev with
      | None ->
-        let args = Array.map (lambda_of_constr cache env sigma) args in
+        let args = Array.map_of_list (fun c -> lambda_of_constr cache env sigma c) args in
         Levar(evk, args)
      | Some t -> lambda_of_constr cache env sigma t)
 

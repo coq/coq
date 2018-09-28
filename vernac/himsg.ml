@@ -57,16 +57,16 @@ let contract3 env sigma a b c = match contract env sigma [a;b;c] with
 let contract4 env sigma a b c d = match contract env sigma [a;b;c;d] with
   | env, [a;b;c;d] -> (env,a,b,c),d | _ -> assert false
 
-let contract1_vect env sigma a v =
-  match contract env sigma (a :: Array.to_list v) with
-  | env, a::l -> env,a,Array.of_list l
+let contract1 env sigma a v =
+  match contract env sigma (a :: v) with
+  | env, a::l -> env,a,l
   | _ -> assert false
 
 let rec contract3' env sigma a b c = function
   | OccurCheck (evk,d) ->
     let x,d = contract4 env sigma a b c d in x,OccurCheck(evk, d)
   | NotClean ((evk,args),env',d) ->
-      let env',d,args = contract1_vect env' sigma d args in
+      let env',d,args = contract1 env' sigma d args in
       contract3 env sigma a b c,NotClean((evk,args),env',d)
   | ConversionFailed (env',t1,t2) ->
       let (env',t1,t2) = contract2 env' sigma t1 t2 in
@@ -299,9 +299,9 @@ let explain_unification_error env sigma p1 p2 = function
         [str "cannot instantiate " ++ quote (pr_existential_key sigma evk)
         ++ strbrk " because " ++ pr_leconstr_env env sigma c ++
         strbrk " is not in its scope" ++
-        (if Array.is_empty args then mt() else
+        (if List.is_empty args then mt() else
          strbrk ": available arguments are " ++
-         pr_sequence (pr_leconstr_env env sigma) (List.rev (Array.to_list args)))]
+         pr_sequence (pr_leconstr_env env sigma) (List.rev args))]
      | NotSameArgSize | NotSameHead | NoCanonicalStructure ->
         (* Error speaks from itself *) []
      | ConversionFailed (env,t1,t2) ->

@@ -113,7 +113,7 @@ let define_evar_as_product env evd (evk,args) =
   (* Quick way to compute the instantiation of evk with args *)
   let na,dom,rng = destProd evd prod in
   let evdom = mkEvar (fst (destEvar evd dom), args) in
-  let evrngargs = Array.cons (mkRel 1) (Array.map (lift 1) args) in
+  let evrngargs = mkRel 1 :: List.map (lift 1) args in
   let evrng =  mkEvar (fst (destEvar evd rng), evrngargs) in
   evd, mkProd (na, evdom, evrng)
 
@@ -152,7 +152,7 @@ let define_evar_as_lambda env evd (evk,args) =
   let evd,lam = define_pure_evar_as_lambda env evd evk in
   (* Quick way to compute the instantiation of evk with args *)
   let na,dom,body = destLambda evd lam in
-  let evbodyargs = Array.cons (mkRel 1) (Array.map (lift 1) args) in
+  let evbodyargs = mkRel 1 :: List.map (lift 1) args in
   let evbody = mkEvar (fst (destEvar evd body), evbodyargs) in
   evd, mkLambda (na, dom, evbody)
 
@@ -163,7 +163,7 @@ let rec evar_absorb_arguments env evd (evk,args as ev) = function
       let evd,lam = define_pure_evar_as_lambda env evd evk in
       let _,_,body = destLambda evd lam in
       let evk = fst (destEvar evd body) in
-      evar_absorb_arguments env evd (evk, Array.cons a args) l
+      evar_absorb_arguments env evd (evk, a :: args) l
 
 (* Refining an evar to a sort *)
 

@@ -131,7 +131,7 @@ let nf_evars_and_universes_opt_subst f subst =
   let rec aux c =
     match kind c with
     | Evar (evk, args) ->
-      let args = Array.map aux args in
+      let args = List.map aux args in
       (match try f (evk, args) with Not_found -> None with
       | None -> mkEvar (evk, args)
       | Some c -> aux c)

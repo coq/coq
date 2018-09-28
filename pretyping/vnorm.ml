@@ -205,7 +205,7 @@ and nf_evar env sigma evk stk =
   let hyps = Environ.named_context_of_val (Evd.evar_filtered_hyps evi) in
   let concl = EConstr.to_constr ~abort_on_undefined_evars:false sigma @@ Evd.evar_concl evi in
   if List.is_empty hyps then
-    nf_stk env sigma (mkEvar (evk, [||])) concl stk
+    nf_stk env sigma (mkEvar (evk, [])) concl stk
   else match stk with
   | Zapp args :: stk ->
     (* We assume that there is no consecutive Zapp nodes in a VM stack. Is that
@@ -217,6 +217,7 @@ and nf_evar env sigma evk stk =
     let t = List.fold_left fold concl hyps in
     let t, args = nf_args env sigma args t in
     let inst, args = Array.chop (List.length hyps) args in
+    let inst = Array.to_list inst in
     let c = mkApp (mkEvar (evk, inst), args) in
     nf_stk env sigma c t stk
   | _ ->

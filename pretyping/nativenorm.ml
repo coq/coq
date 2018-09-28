@@ -428,8 +428,8 @@ and nf_evar env sigma evk args =
   let hyps = Environ.named_context_of_val (Evd.evar_filtered_hyps evi) in
   let ty = EConstr.to_constr ~abort_on_undefined_evars:false sigma @@ Evd.evar_concl evi in
   if List.is_empty hyps then begin
-    assert (Int.equal (Array.length args) 0);
-    mkEvar (evk, [||]), ty
+    assert (Array.is_empty args);
+    mkEvar (evk, []), ty
   end
   else
     (* Let-bound arguments are present in the evar arguments but not
@@ -441,7 +441,7 @@ and nf_evar env sigma evk args =
     (* nf_args takes arguments in the reverse order but produces them
        in the correct one, so we have to reverse them again for the
        evar node *)
-    mkEvar (evk, Array.rev_of_list args), ty
+    mkEvar (evk, List.rev args), ty
 
 let evars_of_evar_map sigma =
   { Nativelambda.evars_val = Evd.existential_opt_value0 sigma;
