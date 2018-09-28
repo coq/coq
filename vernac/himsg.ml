@@ -601,12 +601,12 @@ let explain_var_not_found env id =
   spc () ++ str "in the current" ++ spc () ++ str "environment" ++ str "."
 
 let explain_wrong_case_info env (ind,u) ci =
-  let pi = pr_inductive (Global.env()) ind in
+  let pi = pr_inductive env ind in
   if eq_ind ci.ci_ind ind then
     str "Pattern-matching expression on an object of inductive type" ++
     spc () ++ pi ++ spc () ++ str "has invalid information."
   else
-    let pc = pr_inductive (Global.env()) ci.ci_ind in
+    let pc = pr_inductive env ci.ci_ind in
     str "A term of inductive type" ++ spc () ++ pi ++ spc () ++
     str "was given to a pattern-matching expression on the inductive type" ++
     spc () ++ pc ++ str "."
@@ -1156,24 +1156,24 @@ let error_large_non_prop_inductive_not_in_type () =
 
 (* Recursion schemes errors *)
 
-let error_not_allowed_case_analysis isrec kind i =
+let error_not_allowed_case_analysis env isrec kind i =
   str (if isrec then "Induction" else "Case analysis") ++
   strbrk " on sort " ++ pr_sort Evd.empty kind ++
   strbrk " is not allowed for inductive definition " ++
-  pr_inductive (Global.env()) (fst i) ++ str "."
+  pr_inductive env (fst i) ++ str "."
 
-let error_not_allowed_dependent_analysis isrec i =
+let error_not_allowed_dependent_analysis env isrec i =
   str "Dependent " ++ str (if isrec then "induction" else "case analysis") ++
   strbrk " is not allowed for inductive definition " ++
-  pr_inductive (Global.env()) i ++ str "."
+  pr_inductive env i ++ str "."
 
-let error_not_mutual_in_scheme ind ind' =
+let error_not_mutual_in_scheme env ind ind' =
   if eq_ind ind ind' then
-    str "The inductive type " ++ pr_inductive (Global.env()) ind ++
+    str "The inductive type " ++ pr_inductive env ind ++
     str " occurs twice."
   else
-    str "The inductive types " ++ pr_inductive (Global.env()) ind ++ spc () ++
-    str "and" ++ spc () ++ pr_inductive (Global.env()) ind' ++ spc () ++
+    str "The inductive types " ++ pr_inductive env ind ++ spc () ++
+    str "and" ++ spc () ++ pr_inductive env ind' ++ spc () ++
     str "are not mutually defined."
 
 (* Inductive constructions errors *)
@@ -1194,12 +1194,12 @@ let explain_inductive_error = function
 
 (* Recursion schemes errors *)
 
-let explain_recursion_scheme_error = function
+let explain_recursion_scheme_error env = function
   | NotAllowedCaseAnalysis (isrec,k,i) ->
-      error_not_allowed_case_analysis isrec k i
-  | NotMutualInScheme (ind,ind')-> error_not_mutual_in_scheme ind ind'
+      error_not_allowed_case_analysis env isrec k i
+  | NotMutualInScheme (ind,ind')-> error_not_mutual_in_scheme env ind ind'
   | NotAllowedDependentAnalysis (isrec, i) ->
-     error_not_allowed_dependent_analysis isrec i
+     error_not_allowed_dependent_analysis env isrec i
 
 (* Pattern-matching errors *)
 

@@ -20,7 +20,7 @@ type recursion_scheme_error =
   | NotMutualInScheme of inductive * inductive
   | NotAllowedDependentAnalysis of (*isrec:*) bool * inductive
 
-exception RecursionSchemeError of recursion_scheme_error
+exception RecursionSchemeError of env * recursion_scheme_error
 
 (** Eliminations *)
 
