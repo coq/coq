@@ -381,6 +381,32 @@ DON'T
 
      This is equivalent to ``Axiom`` :token`ident` : :token:`term`.
 
+..
+
+DO
+  .. code::
+
+     :n:`power_tac @term [@ltac]`
+       allows :tacn:`ring` and :tacn:`ring_simplify` to recognize …
+
+DON'T
+  .. code::
+
+     power_tac :n:`@term` [:n:`@ltac`]
+       allows :tacn:`ring` and :tacn:`ring_simplify` to recognize …
+
+..
+
+DO
+  .. code::
+
+     :n:`name={*; attr}`
+
+DON'T
+  .. code::
+
+     ``name=``:n:`{*; attr}`
+
 Omitting annotations
 --------------------
 
@@ -426,6 +452,23 @@ DONT
      .. coqtop:: in
 
         first [ t1 | … | tn ].
+
+Overusing plain quotes
+----------------------
+
+DO
+  .. code::
+
+     The :tacn:`refine` tactic can raise the :exn:`Invalid argument` exception.
+     The term :g:`let a = 1 in a a` is ill-typed.
+
+DON'T
+  .. code::
+
+     The ``refine`` tactic can raise the ``Invalid argument`` exception.
+     The term ``let a = 1 in a a`` is ill-typed.
+
+Plain quotes produce plain text, without highlighting or cross-references.
 
 Tips and tricks
 ===============
