@@ -378,6 +378,3 @@ Frequently Asked Questions
        using lazy evaluation;
     #. Mutual recursion on the underlying inductive type isn’t possible
        anymore, but nested mutual recursion is always possible.
-
-.. bibliography:: ../biblio.bib
-   :keyprefix: p-
