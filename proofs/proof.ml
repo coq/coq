@@ -488,3 +488,12 @@ module V82 = struct
     { pr with proofview ; shelf }
 
 end
+
+let all_goals p =
+  let add gs set =
+    List.fold_left (fun s g -> Goal.Set.add g s) set gs in
+  let (goals,stack,shelf,given_up,_) = proof p in
+    let set = add goals Goal.Set.empty in
+    let set = List.fold_left (fun s gs -> let (g1, g2) = gs in add g1 (add g2 set)) set stack in
+    let set = add shelf set in
+    add given_up set

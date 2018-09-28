@@ -204,27 +204,35 @@ let export_pre_goals pgs =
     Interface.given_up_goals = pgs.Proof.given_up_goals
   }
 
-let add_diffs oldp newp intf =
-  let open Interface in
-  let (hyps_pp_list, concl_pp) = Proof_diffs.diff_first_goal oldp newp in
-  match intf.fg_goals with
-  | [] -> intf
-  | first_goal :: tl ->
-    { intf with fg_goals = { first_goal with goal_hyp = hyps_pp_list; goal_ccl = concl_pp } :: tl }
-
 let goals () =
   let doc = get_doc () in
   set_doc @@ Stm.finish ~doc;
   try
     let newp = Proof_global.give_me_the_proof () in
-    let intf = export_pre_goals (Proof.map_structured_proof newp process_goal) in
-    if Proof_diffs.show_diffs () then
+    if Proof_diffs.show_diffs () then begin
       let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
+      let diff_goal_map = Proof_diffs.make_goal_map oldp newp in
+      let map_goal_for_diff ng = (* todo: move to proof_diffs.ml *)
+        try Evar.Map.find ng diff_goal_map  with Not_found -> ng
+      in
+
+      let process_goal_diffs nsigma ng =
+        let open Evd in
+        let og = map_goal_for_diff ng in
+        let og_s = match oldp with
+        | Some oldp ->
+          let (_,_,_,_,osigma) = Proof.proof oldp in
+          Some { it = og; sigma = osigma }
+        | None -> None
+        in
+        let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal_ide og_s ng nsigma in
+        { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp; Interface.goal_id = Goal.uid ng }
+      in
       try
-        Some (add_diffs oldp (Some newp) intf)
-      with Pp_diff.Diff_Failure _ -> Some intf
-    else
-      Some intf
+        Some (export_pre_goals (Proof.map_structured_proof newp process_goal_diffs))
+      with Pp_diff.Diff_Failure _ -> Some (export_pre_goals (Proof.map_structured_proof newp process_goal))
+    end else
+      Some (export_pre_goals (Proof.map_structured_proof newp process_goal))
   with Proof_global.NoCurrentProof -> None;;
 
 let evars () =
