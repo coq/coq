@@ -123,10 +123,10 @@ parameters is any term :math:`f \, t_1 \ldots t_n`.
 
    .. coqtop:: in
 
-     forall (A : Type) (S1 S1’ S2 S2’ : list A),
-       set_eq A S1 S1’ ->
-       set_eq A S2 S2’ ->
-       set_eq A (union A S1 S2) (union A S1’ S2’).
+     forall (A: Type) (S1 S1' S2 S2': list A),
+       set_eq A S1 S1' ->
+       set_eq A S2 S2' ->
+       set_eq A (union A S1 S2) (union A S1' S2').
 
    The signature of the function ``union A`` is ``set_eq A ==> set_eq A ==> set_eq A``
    for all ``A``.
@@ -448,7 +448,7 @@ various combinations of properties on relations and morphisms are
 represented as records and instances of theses classes are put in a
 hint database. For example, the declaration:
 
-.. coqtop:: in
+.. coqdoc::
 
    Add Parametric Relation (x1 : T1) ... (xn : Tn) : (A t1 ... tn) (Aeq t′1 ... t′m)
      [reflexivity proved by refl]
@@ -459,7 +459,7 @@ hint database. For example, the declaration:
 
 is equivalent to an instance declaration:
 
-.. coqtop:: in
+.. coqdoc::
 
    Instance (x1 : T1) ... (xn : Tn) => id : @Equivalence (A t1 ... tn) (Aeq t′1 ... t′m) :=
      [Equivalence_Reflexive := refl]
