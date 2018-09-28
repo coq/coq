@@ -34,11 +34,8 @@ watch: voboot
 release: voboot
 	dune build $(DUNEOPT) -p coq
 
-apidoc:
-        # Ugly workaround for https://github.com/ocaml/odoc/issues/148
-	mv checker/dune checker/dune.disabled || true
+apidoc: voboot
 	dune build $(DUNEOPT) @doc
-	mv checker/dune.disabled checker/dune || true
 
 clean:
 	dune clean
