@@ -24,6 +24,7 @@
 
 import sys
 import os
+from shutil import copyfile
 
 # Increase recursion limit for sphinx
 sys.setrecursionlimit(1500)
@@ -72,31 +73,28 @@ source_suffix = '.rst'
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
 
-import logging
-from glob import glob
-from shutil import copyfile
-
 # Add extra cases here to support more formats
 
 SUPPORTED_FORMATS = ["html", "latex"]
 
-def current_format(app):
-    for fmt in SUPPORTED_FORMATS:
-        if app.tags.has(fmt):
-            return fmt
-    MSG = """Unexpected builder ({}); expected one of {!r}.
-Add support for this new builder in `copy_formatspecific_files` in conf.py."""
-    from sphinx.errors import ConfigError
-    raise ConfigError(MSG.format(list(app.tags.tags.keys()), SUPPORTED_FORMATS))
+def readbin(fname):
+    try:
+        with open(fname, mode="rb") as f:
+            return f.read()
+    except FileNotFoundError:
+        return None
 
 def copy_formatspecific_files(app):
-    ext = ".{}.rst".format(current_format(app))
+    ext = ".{}.rst".format(app.builder.name)
     for fname in sorted(os.listdir(app.srcdir)):
         if fname.endswith(ext):
             src = os.path.join(app.srcdir, fname)
             dst = os.path.join(app.srcdir, fname[:-len(ext)] + ".rst")
-            app.info("Copying {} to {}".format(src, dst))
-            copyfile(src, dst)
+            if readbin(src) == readbin(dst):
+                app.info("Skipping {}: {} is up to date".format(src, dst))
+            else:
+                app.info("Copying {} to {}".format(src, dst))
+                copyfile(src, dst)
 
 def setup(app):
     app.connect('builder-inited', copy_formatspecific_files)
