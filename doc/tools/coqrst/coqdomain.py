@@ -651,7 +651,9 @@ class ExampleDirective(BaseAdmonition):
 class PreambleDirective(Directive):
     r"""A reST directive to include a TeX file.
 
-    Mostly useful to let MathJax know about `\def`s and `\newcommand`s.
+    Mostly useful to let MathJax know about `\def`s and `\newcommand`s.  The
+    contents of the TeX file are wrapped in a math environment, as MathJax
+    doesn't process LaTeX definitions otherwise.
 
     Usage::
 
@@ -678,7 +680,7 @@ class PreambleDirective(Directive):
         with open(abs_fname, encoding="utf-8") as ltx:
             latex = ltx.read()
 
-        node = make_math_node(latex, env.docname, nowrap=True)
+        node = make_math_node(latex, env.docname, nowrap=False)
         node['classes'] = ["math-preamble"]
         set_source_info(self, node)
         return [node]
