@@ -67,7 +67,7 @@ sphinx-%: $(SPHINX_DEPS)
 sphinx-pdf: sphinx-latex
 	+$(MAKE) -C $(SPHINXBUILDDIR)/latex
 
-sphinx:
+sphinx: $(SPHINX_DEPS)
 	+$(MAKE) sphinx-html
 	+$(MAKE) sphinx-pdf
 
