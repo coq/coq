@@ -669,8 +669,8 @@ class InferenceDirective(Directive):
 
        .. inference:: name
 
-          newline-separated premisses
-          ------------------------
+          newline-separated premises
+          --------------------------
           conclusion
 
     Example::
