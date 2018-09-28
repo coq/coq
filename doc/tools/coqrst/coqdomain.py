@@ -885,23 +885,28 @@ class CoqtopBlocksTransform(Transform):
             kept_node['classes'] = [c for c in kept_node['classes']
                                     if c != 'coqtop-hidden']
 
-    def merge_consecutive_coqtop_blocks(self):
+    @staticmethod
+    def merge_consecutive_coqtop_blocks(app, doctree, _):
         """Merge consecutive divs wrapping lists of Coq sentences; keep ‘dl’s separate."""
-        for node in self.document.traverse(CoqtopBlocksTransform.is_coqtop_block):
+        for node in doctree.traverse(CoqtopBlocksTransform.is_coqtop_block):
             if node.parent:
+                rawsources, names = [node.rawsource], set(node['names'])
                 for sibling in node.traverse(include_self=False, descend=False,
                                              siblings=True, ascend=False):
                     if CoqtopBlocksTransform.is_coqtop_block(sibling):
-                        self.merge_coqtop_classes(node, sibling)
+                        CoqtopBlocksTransform.merge_coqtop_classes(node, sibling)
+                        rawsources.append(sibling.rawsource)
+                        names.update(sibling['names'])
                         node.extend(sibling.children)
                         node.parent.remove(sibling)
                         sibling.parent = None
                     else:
                         break
+                node.rawsource = "\n\n".join(rawsources)
+                node['names'] = list(names)
 
     def apply(self):
         self.add_coqtop_output()
-        self.merge_consecutive_coqtop_blocks()
 
 class CoqSubdomainsIndex(Index):
     """Index subclass to provide subdomain-specific indices.
@@ -1125,7 +1130,6 @@ def simplify_source_code_blocks_for_latex(app, doctree, fromdocname): # pylint: 
     pygments if available.  This prevents the LaTeX builder from getting
     confused.
     """
-
     is_html = app.builder.tags.has("html")
     for node in doctree.traverse(is_coqtop_or_coqdoc_block):
         if is_html:
@@ -1162,6 +1166,7 @@ def setup(app):
 
     app.add_transform(CoqtopBlocksTransform)
     app.connect('doctree-resolved', simplify_source_code_blocks_for_latex)
+    app.connect('doctree-resolved', CoqtopBlocksTransform.merge_consecutive_coqtop_blocks)
 
     # Add extra styles
     app.add_stylesheet("fonts.css")
