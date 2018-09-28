@@ -27,6 +27,8 @@ exception ParameterWithoutEquality of GlobRef.t
 exception NonSingletonProp of inductive
 exception DecidabilityMutualNotSupported
 exception NoDecidabilityCoInductive
+exception ConstructorWithNonParametricInductiveType of inductive
+exception DecidabilityIndicesNotSupported
 
 val beq_scheme_kind : mutual scheme_kind
 val build_beq_scheme : mutual_scheme_object_function

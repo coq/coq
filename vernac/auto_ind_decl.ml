@@ -59,6 +59,8 @@ exception ParameterWithoutEquality of GlobRef.t
 exception NonSingletonProp of inductive
 exception DecidabilityMutualNotSupported
 exception NoDecidabilityCoInductive
+exception ConstructorWithNonParametricInductiveType of inductive
+exception DecidabilityIndicesNotSupported
 
 let constr_of_global g = lazy (UnivGen.constr_of_global g)
 
@@ -120,6 +122,10 @@ let check_bool_is_defined () =
   try let _ = Global.type_of_global_in_context (Global.env ()) Coqlib.glob_bool in ()
   with e when CErrors.noncritical e -> raise (UndefinedCst "bool")
 
+let check_no_indices mib =
+  if Array.exists (fun mip -> mip.mind_nrealargs <> 0) mib.mind_packets then
+    raise DecidabilityIndicesNotSupported
+
 let beq_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
 let build_beq_scheme mode kn =
@@ -133,6 +139,7 @@ let build_beq_scheme mode kn =
   (* number of params in the type *)
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
+  check_no_indices mib;
   (* params context divided *)
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
@@ -193,6 +200,7 @@ let build_beq_scheme mode kn =
         match Constr.kind c with
         | Rel x -> mkRel (x-nlist+ndx), Safe_typing.empty_private_constants
         | Var x ->
+          (* Support for working in a context with "eq_x : x -> x -> bool" *)
           let eid = Id.of_string ("eq_"^(Id.to_string x)) in
           let () =
             try ignore (Environ.lookup_named eid env)
@@ -225,9 +233,17 @@ let build_beq_scheme mode kn =
         | Lambda _-> raise (EqUnknown "abstraction")
         | LetIn _ -> raise (EqUnknown "let-in")
         | Const (kn, u) ->
-	    (match Environ.constant_opt_value_in env (kn, u) with
-	      | None -> raise (ParameterWithoutEquality (ConstRef kn))
-              | Some c -> aux (Term.applist (c,a)))
+             (match Environ.constant_opt_value_in env (kn, u) with
+              | Some c -> aux (Term.applist (c,a))
+              | None ->
+                 (* Support for working in a context with "eq_x : x -> x -> bool" *)
+                 (* Needs Hints, see test suite *)
+                 let eq_lbl = Label.make ("eq_" ^ Label.to_string (Constant.label kn)) in
+                 let kneq = Constant.change_label kn eq_lbl in
+                 try let _ = Environ.constant_opt_value_in env (kneq, u) in
+                   Term.applist (mkConst kneq,a),
+                   Safe_typing.empty_private_constants
+                 with Not_found -> raise (ParameterWithoutEquality (ConstRef kn)))
         | Proj _ -> raise (EqUnknown "projection")
         | Construct _ -> raise (EqUnknown "constructor")
         | Case _ -> raise (EqUnknown "match")
@@ -341,13 +357,10 @@ let _ = beq_scheme_kind_aux := fun () -> beq_scheme_kind
 (* This function tryies to get the [inductive] between a constr
   the constr should be Ind i or App(Ind i,[|args|])
 *)
-let destruct_ind sigma c =
+let destruct_ind env sigma c =
   let open EConstr in
-    try let u,v =  destApp sigma c in
-          let indc = destInd sigma u in
-            indc,v
-    with DestKO -> let indc = destInd sigma c in
-            indc,[||]
+  let (c,v) = Reductionops.whd_all_stack env sigma c in
+  destInd sigma c, Array.of_list v
 
 (*
   In the following, avoid is the list of names to avoid.
@@ -361,10 +374,10 @@ so from Ai we can find the correct eq_Ai bl_ai or lb_ai
 let do_replace_lb mode lb_scheme_key aavoid narg p q =
   let open EConstr in
   let avoid = Array.of_list aavoid in
-  let do_arg sigma v offset =
-  try
+  let do_arg sigma hd v offset =
+    match kind sigma v with
+    | Var s ->
     let x = narg*offset in
-    let s = destVar sigma v in
     let n = Array.length avoid in
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
@@ -373,22 +386,20 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
                    (str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
-  with e when CErrors.noncritical e ->
-      (* if this happen then the args have to be already declared as a
-              Parameter*)
-      (
-        let mp,dir,lbl = Constant.repr3 (fst (destConst sigma v)) in
-          mkConst (Constant.make3 mp dir (Label.make (
-          if Int.equal offset 1 then ("eq_"^(Label.to_string lbl))
-                       else ((Label.to_string lbl)^"_lb")
-        )))
-      )
+    | Const (cst,_) ->
+      (* Works in specific situations where the args have to be already declared as a
+         Parameter (see example "J" in test file SchemeEquality.v) *)
+        let lbl = Label.to_string (Constant.label cst) in
+        let newlbl = if Int.equal offset 1 then ("eq_" ^ lbl) else (lbl ^ "_lb") in
+        mkConst (Constant.change_label cst (Label.make newlbl))
+    | _ -> raise (ConstructorWithNonParametricInductiveType (fst hd))
+
   in
   Proofview.Goal.enter begin fun gl ->
     let type_of_pq = Tacmach.New.pf_unsafe_type_of gl p in
     let sigma = Tacmach.New.project gl in
     let env = Tacmach.New.pf_env gl in
-    let u,v = destruct_ind sigma type_of_pq
+    let u,v = destruct_ind env sigma type_of_pq
     in let lb_type_of_p =
         try
           let c, eff = find_scheme ~mode lb_scheme_key (fst u) (*FIXME*) in
@@ -409,8 +420,8 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
        Proofview.tclEVARMAP >>= fun sigma ->
        let lb_args = Array.append (Array.append
                           v
-                          (Array.Smart.map (fun x -> do_arg sigma x 1) v))
-                          (Array.Smart.map (fun x -> do_arg sigma x 2) v)
+                          (Array.Smart.map (fun x -> do_arg sigma u x 1) v))
+                          (Array.Smart.map (fun x -> do_arg sigma u x 2) v)
         in let app =  if Array.is_empty lb_args
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
            in
@@ -419,14 +430,14 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
              Equality.replace p q ; apply app ; Auto.default_auto]
   end
 
-(* used in the bool -> leib side *)
+(* used in the bool -> leb side *)
 let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
   let open EConstr in
   let avoid = Array.of_list aavoid in
-  let do_arg sigma v offset =
-  try
+  let do_arg sigma hd v offset =
+    match kind sigma v with
+    | Var s ->
     let x = narg*offset in
-    let s = destVar sigma v in
     let n = Array.length avoid in
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
@@ -435,16 +446,13 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
                    (str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
-  with e when CErrors.noncritical e ->
-      (* if this happen then the args have to be already declared as a
-         Parameter*)
-      (
-        let mp,dir,lbl = Constant.repr3 (fst (destConst sigma v)) in
-          mkConst (Constant.make3 mp dir (Label.make (
-          if Int.equal offset 1 then ("eq_"^(Label.to_string lbl))
-                       else ((Label.to_string lbl)^"_bl")
-        )))
-      )
+    | Const (cst,_) ->
+      (* Works in specific situations where the args have to be already declared as a
+         Parameter (see example "J" in test file SchemeEquality.v) *)
+        let lbl = Label.to_string (Constant.label cst) in
+        let newlbl = if Int.equal offset 1 then ("eq_" ^ lbl) else (lbl ^ "_bl") in
+        mkConst (Constant.change_label cst (Label.make newlbl))
+    | _ -> raise (ConstructorWithNonParametricInductiveType (fst hd))
   in
 
   let rec aux l1 l2 =
@@ -456,7 +464,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
         let env = Tacmach.New.pf_env gl in
         if EConstr.eq_constr sigma t1 t2 then aux q1 q2
         else (
-          let u,v = try  destruct_ind sigma tt1
+          let u,v = try destruct_ind env sigma tt1
           (* trick so that the good sequence is returned*)
                 with e when CErrors.noncritical e -> indu,[||]
           in if eq_ind (fst u) ind
@@ -480,8 +488,8 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
                in let bl_args =
                         Array.append (Array.append
                           v
-                          (Array.Smart.map (fun x -> do_arg sigma x 1) v))
-                          (Array.Smart.map (fun x -> do_arg sigma x 2) v )
+                          (Array.Smart.map (fun x -> do_arg sigma u x 1) v))
+                          (Array.Smart.map (fun x -> do_arg sigma u x 2) v )
                 in
                 let app =  if Array.is_empty bl_args
                            then bl_t1 else mkApp (bl_t1,bl_args)
