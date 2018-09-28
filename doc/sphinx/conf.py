@@ -257,57 +257,56 @@ smartquotes = False
 ###########################
 # Set things up for XeTeX #
 ###########################
+
 latex_elements = {
     'babel': '',
     'fontenc': '',
     'inputenc': '',
     'utf8extra': '',
     'cmappkg': '',
-    # https://www.topbug.net/blog/2015/12/10/a-collection-of-issues-about-the-latex-output-in-sphinx-and-the-solutions/
     'papersize': 'letterpaper',
     'classoptions': ',openany', # No blank pages
     'polyglossia' : '\\usepackage{polyglossia}',
-    'unicode-math' : '\\usepackage{unicode-math}',
     'microtype' : '\\usepackage{microtype}',
-    "preamble": r"\usepackage{coqnotations}"
+    "preamble": r"""
+                 \usepackage{unicode-math}
+
+                 % Macro definitions
+                 \input{preamble.tex}
+
+                 % Style definitions for notations
+                 \usepackage{coqnotations}
+                 """
 }
 
-from sphinx.builders.latex import LaTeXBuilder
+latex_engine = "xelatex"
 
 ########
 # done #
 ########
 
-latex_additional_files = ["_static/coqnotations.sty"]
+latex_additional_files = [
+    "preamble.tex",
+    "_static/coqnotations.sty"
+]
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-# latex_documents = [
-#    (master_doc, 'CoqRefMan.tex', 'Coq Documentation',
-#     'The Coq Development Team', 'manual'),
-#]
+latex_documents = [
+   (master_doc, 'CoqRefMan.tex', 'Coq Documentation',
+    'The Coq Development Team', 'manual'),
+]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-#latex_logo = None
-
-# For "manual" documents, if this is true, then toplevel headings are parts,
-# not chapters.
-#latex_use_parts = False
+latex_logo = "../../ide/coq.png"
 
 # If true, show page references after internal links.
 #latex_show_pagerefs = False
 
 # If true, show URL addresses after external links.
-#latex_show_urls = False
-
-# Documents to append as an appendix to all manuals.
-#latex_appendices = []
-
-# If false, no module index is generated.
-#latex_domain_indices = True
-
+latex_show_urls = 'footnote'
 
 # -- Options for manual page output ---------------------------------------
 
