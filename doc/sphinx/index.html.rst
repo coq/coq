@@ -89,8 +89,3 @@ License
 -------
 
 .. include:: license.rst
-
-.. [#PG] Proof-General is available at https://proofgeneral.github.io/.
-   Optionally, you can enhance it with the minor mode
-   Company-Coq :cite:`Pit16`
-   (see https://github.com/cpitclaudel/company-coq).
