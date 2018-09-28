@@ -9,13 +9,15 @@ install_ssreflect
 git_download lambdaRust
 
 # Extract required version of Iris
-Iris_REF=$(grep -F coq-iris < "${CI_BUILD_DIR}/lambdaRust/opam" | sed 's/.*"dev\.[0-9.-]\+\.\([0-9a-z]\+\)".*/\1/')
+# Iris is already pinned in ci-basic-overlays.sh
+#Iris_REF=$(grep -F coq-iris < "${CI_BUILD_DIR}/lambdaRust/opam" | sed 's/.*"dev\.[0-9.-]\+\.\([0-9a-z]\+\)".*/\1/')
 
 # Setup Iris
 git_download Iris
 
 # Extract required version of std++
-stdpp_REF=$(grep -F coq-stdpp < "${CI_BUILD_DIR}/Iris/opam" | sed 's/.*"dev\.[0-9.-]\+\.\([0-9a-z]\+\)".*/\1/')
+# std++ is already pinned in ci-basic-overlays.sh
+#stdpp_REF=$(grep -F coq-stdpp < "${CI_BUILD_DIR}/Iris/opam" | sed 's/.*"dev\.[0-9.-]\+\.\([0-9a-z]\+\)".*/\1/')
 
 # Setup std++
 git_download stdpp
