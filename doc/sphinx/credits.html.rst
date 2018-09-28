@@ -4,4 +4,4 @@
 Credits
 -------
 
-.. include:: credits.rst
+.. include:: credits-contents.rst
