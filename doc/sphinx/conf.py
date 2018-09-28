@@ -25,6 +25,7 @@
 import sys
 import os
 from shutil import copyfile
+import sphinx
 
 # Increase recursion limit for sphinx
 sys.setrecursionlimit(1500)
@@ -90,10 +91,11 @@ def copy_formatspecific_files(app):
         if fname.endswith(ext):
             src = os.path.join(app.srcdir, fname)
             dst = os.path.join(app.srcdir, fname[:-len(ext)] + ".rst")
+            logger = sphinx.util.logging.getLogger(__name__)
             if readbin(src) == readbin(dst):
-                app.info("Skipping {}: {} is up to date".format(src, dst))
+                logger.info("Skipping {}: {} is up to date".format(src, dst))
             else:
-                app.info("Copying {} to {}".format(src, dst))
+                logger.info("Copying {} to {}".format(src, dst))
                 copyfile(src, dst)
 
 def setup(app):
