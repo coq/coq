@@ -33,7 +33,7 @@ HTMLSTYLE:=coqremote
 # Sphinx-related variables
 SPHINXENV:=COQBIN="$(CURDIR)/bin/"
 SPHINXOPTS= -j4
-SPHINXWARNERROR ?= 1
+SPHINXWARNERROR ?= 0
 ifeq ($(SPHINXWARNERROR),1)
 SPHINXOPTS += -W
 endif
