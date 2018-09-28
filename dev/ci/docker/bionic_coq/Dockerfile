@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2018-08-27-V2"
+# CACHEKEY: "bionic_coq-v8.9-V2018-09-28"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -7,12 +7,18 @@ LABEL maintainer="e@x80.org"
 ENV DEBIAN_FRONTEND="noninteractive"
 
 RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
+        # Dependencies of the image, the test-suite and external projects
         m4 automake autoconf time wget rsync git gcc-multilib opam \
+        # Dependencies of lablgtk (for CoqIDE)
         libgtk2.0-dev libgtksourceview2.0-dev \
-        texlive-latex-extra texlive-fonts-recommended texlive-science tipa \
-        python3-sphinx python3-pexpect python3-sphinx-rtd-theme python3-bs4 python3-sphinxcontrib.bibtex \
-        python3-setuptools python3-wheel python3-pip
+        # Dependencies of stdlib and sphinx doc
+        texlive-latex-extra texlive-fonts-recommended texlive-xetex latexmk \
+        xindy python3-pip python3-setuptools python3-pexpect python3-bs4 \
+        python3-sphinx python3-sphinx-rtd-theme python3-sphinxcontrib.bibtex \
+        # Dependencies of source-doc and coq-makefile
+        texlive-science tipa
 
+# More dependencies of the sphinx doc
 RUN pip3 install antlr4-python3-runtime
 
 # Basic OPAM setup
@@ -36,7 +42,8 @@ ENV CAMLP5_VER="6.14" \
     COQIDE_OPAM="lablgtk.2.18.5 conf-gtksourceview.2"
 
 RUN opam switch -y -j $NJOBS "$COMPILER" && eval $(opam config env) && \
-    opam install -j $NJOBS $BASE_OPAM camlp5.$CAMLP5_VER $COQIDE_OPAM $CI_OPAM
+    opam install -j $NJOBS $BASE_OPAM && \
+    opam install -j $NJOBS camlp5.$CAMLP5_VER $COQIDE_OPAM $CI_OPAM
 
 # base+32bit switch
 RUN opam switch -y -j $NJOBS "${COMPILER}+32bit" && eval $(opam config env) && \
@@ -53,4 +60,5 @@ RUN opam switch -y -j $NJOBS $COMPILER_EDGE && eval $(opam config env) && \
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
 # `ci-template-flambda` with everything.
 RUN opam switch -y -j $NJOBS "${COMPILER_EDGE}+flambda" && eval $(opam config env) && \
-    opam install -j $NJOBS $BASE_OPAM camlp5.$CAMLP5_VER_EDGE $COQIDE_OPAM_EDGE $CI_OPAM
+    opam install -j $NJOBS $BASE_OPAM && \
+    opam install -j $NJOBS camlp5.$CAMLP5_VER_EDGE $COQIDE_OPAM_EDGE $CI_OPAM
