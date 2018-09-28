@@ -149,6 +149,13 @@ class CoqObject(ObjectDescription):
             msg = MSG.format(name, self.env.doc2path(objects[name][0]))
             self.state_machine.reporter.warning(msg, line=self.lineno)
 
+    def _warn_if_duplicate_name(self, objects, name):
+        """Check that two objects in the same domain don't have the same name."""
+        if name in objects:
+            MSG = 'Duplicate object: {}; other is at {}'
+            msg = MSG.format(name, self.env.doc2path(objects[name][0]))
+            self.state_machine.reporter.warning(msg, line=self.lineno)
+
     def _record_name(self, name, target_id):
         """Record a name, mapping it to target_id
 
