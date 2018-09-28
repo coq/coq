@@ -10,4 +10,4 @@
  (targets coq_config.ml)
  (mode fallback)
  (deps %{project_root}/configure.ml %{project_root}/dev/ocamldebug-coq.run (env_var COQ_CONFIGURE_PREFIX))
- (action (chdir %{project_root} (run %{ocaml} configure.ml -native-compiler no))))
+ (action (chdir %{project_root} (run %{ocaml} configure.ml -no-ask -native-compiler no))))

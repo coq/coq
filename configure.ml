@@ -242,6 +242,7 @@ type ide = Opt | Byte | No
 type preferences = {
   prefix : string option;
   local : bool;
+  interactive : bool;
   vmbyteflags : string option;
   custom : bool option;
   bindir : string option;
@@ -279,6 +280,7 @@ module Profiles = struct
 let default = {
   prefix = None;
   local = false;
+  interactive = true;
   vmbyteflags = None;
   custom = None;
   bindir = None;
@@ -331,6 +333,11 @@ end
 
 let prefs = ref Profiles.default
 
+(* Support don't ask *)
+let cprintf x =
+  if !prefs.interactive
+  then cprintf x
+  else Printf.ifprintf stdout x
 
 let get_bool = function
   | "true" | "yes" | "y" | "all" -> true
@@ -366,6 +373,8 @@ let args_options = Arg.align [
     "<dir> Set installation directory to <dir>";
   "-local", arg_set (fun p local -> { p with local }),
     " Set installation directory to the current source tree";
+  "-no-ask", arg_clear (fun p interactive -> { p with interactive }),
+    " Don't ask questions / print variables during configure [questions will be filled with defaults]";
   "-vmbyteflags", arg_string_option (fun p vmbyteflags -> { p with vmbyteflags }),
     "<flags> Comma-separated link flags for the VM of coqtop.byte";
   "-custom", arg_set_option (fun p custom -> { p with custom }),
@@ -1043,7 +1052,9 @@ let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout,locallayout
       | None ->
         begin
           try Some (Sys.getenv "COQ_CONFIGURE_PREFIX")
-          with Not_found -> None
+          with
+          | Not_found when !prefs.interactive -> None
+          | Not_found -> Some "_build/default/install"
         end
       | p -> p
     in match uservalue, env_prefix with
@@ -1144,8 +1155,8 @@ let print_summary () =
   pr "*Warning* To compile the system for a new architecture\n";
   pr "          don't forget to do a 'make clean' before './configure'.\n"
 
-let _ = print_summary ()
-
+let _ =
+  if !prefs.interactive then print_summary ()
 
 (** * Build the dev/ocamldebug-coq file *)
 
@@ -1239,7 +1250,10 @@ let write_configml f =
   pr "\nlet core_src_dirs = [\n%s]\n" core_src_dirs;
   pr "\nlet plugins_dirs = [\n";
 
-  let plugins = Sys.readdir "plugins" in
+  let plugins =
+    try Sys.readdir "plugins"
+    with _ -> [||]
+  in
   Array.sort compare plugins;
   Array.iter
     (fun f ->
