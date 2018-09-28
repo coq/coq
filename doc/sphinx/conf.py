@@ -106,7 +106,7 @@ def setup(app):
 master_doc = "index"
 
 # General information about the project.
-project = 'The Coq Reference Manual'
+project = 'Coq'
 copyright = '1999-2018, Inria'
 author = 'The Coq Development Team'
 
@@ -334,7 +334,7 @@ latex_additional_files = [
     "_static/coqnotations.sty"
 ]
 
-latex_documents = [('index', 'CoqRefMan.tex', project, author, 'manual')]
+latex_documents = [('index', 'CoqRefMan.tex', 'The Coq Reference Manual', author, 'manual')]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
