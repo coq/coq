@@ -1,10 +1,11 @@
-(executable
- (name idetop)
- (public_name coqidetop.opt)
- (package coqide)
- (modules idetop)
- (libraries coq.toplevel coqide.protocol)
- (link_flags -linkall))
+(ocamllex utf8_convert config_lexer coq_lex)
+
+(library
+ (name core)
+ (public_name coqide.core)
+ (wrapped false)
+ (modules (:standard \ idetop coqide_main))
+ (libraries threads str lablgtk2.sourceview2 coq.lib coqide.protocol))
 
 (rule
  (targets coqide_main.ml)
@@ -15,7 +16,13 @@
  (name coqide_main)
  (public_name coqide)
  (package coqide)
- (modules (:standard \ idetop))
- (libraries threads str lablgtk2.sourceview2 coq.lib coqide.protocol))
+ (modules coqide_main)
+ (libraries coqide.core))
 
-(ocamllex utf8_convert config_lexer coq_lex)
+(executable
+ (name idetop)
+ (public_name coqidetop.opt)
+ (package coqide)
+ (modules idetop)
+ (libraries coq.toplevel coqide.protocol)
+ (link_flags -linkall))
