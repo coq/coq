@@ -64,14 +64,9 @@ In environment
 texpDenote : forall t : type, texp t -> typeDenote t
 t : type
 e : texp t
-t1 : type
-t2 : type
-t0 : type
-b : tbinop t1 t2 t0
-e1 : texp t1
-e2 : texp t2
-The term "0" has type "nat" while it is expected to have type
- "typeDenote t0".
+n : nat
+The term "n" has type "nat" while it is expected to have type
+ "typeDenote ?t@{t1:=Nat}".
 fun '{{n, m, _}} => n + m
      : J -> nat
 fun '{{n, m, p}} => n + m + p

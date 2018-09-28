@@ -87,3 +87,41 @@ Check fun (x : E) => match x with c => e c end.
 Inductive C' : bool -> Set := c' : C' true.
 Inductive E' (b : bool) : Set := e' :> C' b -> E' b.
 Check fun (x : E' true) => match x with c' => e' true c' end.
+
+(* Check use of the no-dependency strategy when a type constraint is
+   given (and when the "inversion-and-dependencies-as-evars" strategy
+   is not strong enough because of a constructor with a type whose
+   pattern structure is not refined enough for it to be captured by
+   the inversion predicate) *)
+
+Inductive K : bool -> bool -> Type := F : K true true | G x : K x x.
+
+Check fun z P Q (y:K true z) (H1 H2:P y) (f:forall y, P y -> Q y z) =>
+        match y with
+        | F  => f y H1
+        | G _ => f y H2
+        end : Q y z.
+
+(* Check use of the maximal-dependency-in-variable strategy even when
+   no explicit type constraint is given (and when the
+   "inversion-and-dependencies-as-evars" strategy is not strong enough
+   because of a constructor with a type whose pattern structure is not
+   refined enough for it to be captured by the inversion predicate) *)
+
+Check fun z P Q (y:K true z) (H1 H2:P y) (f:forall y z, P y -> Q y z) =>
+        match y with
+        | F  => f y true H1
+        | G b => f y b H2
+        end.
+
+(* Check use of the maximal-dependency-in-variable strategy for "Var"
+   variables *)
+
+Goal forall z P Q (y:K true z) (H1 H2:P y) (f:forall y z, P y -> Q y z), Q y z.
+intros z P Q y H1 H2 f.
+Show.
+refine (match y with
+        | F  => f y true H1
+        | G b => f y b H2
+        end).
+Qed.

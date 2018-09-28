@@ -1941,16 +1941,28 @@ let inh_conv_coerce_to_tycon ?loc env sigma j tycon =
 
 (* We put the tycon inside the arity signature, possibly discovering dependencies. *)
 
+let add_subst sigma c len (rel_subst,var_subst) =
+  match EConstr.kind sigma c with
+  | Rel n -> (n,len) :: rel_subst, var_subst
+  | Var id -> rel_subst, (id,len) :: var_subst
+  | _ -> assert false
+
+let dependent_rel_or_var sigma tm c =
+  match EConstr.kind sigma tm with
+  | Rel n -> not (noccurn sigma n c)
+  | Var id -> Termops.local_occur_var sigma id c
+  | _ -> assert false
+
 let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
   let nar = List.fold_left (fun n sign -> Context.Rel.nhyps sign + n) 0 arsign in
-  let subst, len =
+  let (rel_subst,var_subst), len =
     List.fold_right2 (fun (tm, tmtype) sign (subst, len) ->
       let signlen = List.length sign in
 	match EConstr.kind sigma tm with
-          | Rel n when Int.equal signlen 1 && not (noccurn sigma n c)
+          | Rel _ | Var _ when Int.equal signlen 1 && dependent_rel_or_var sigma tm c
             (* The term to match is not of a dependent type itself *) ->
-	      ((n, len) :: subst, len - signlen)
-	  | Rel n when signlen > 1 (* The term is of a dependent type,
+              (add_subst sigma tm len subst, len - signlen)
+          | Rel _ | Var _ when signlen > 1 (* The term is of a dependent type,
 				      maybe some variable in its type appears in the tycon. *) ->
 	      (match tmtype with
 		  NotInd _ -> (subst, len - signlen)
@@ -1959,28 +1971,36 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
 		      List.fold_left
 			(fun (subst, len) arg ->
 			  match EConstr.kind sigma arg with
-                          | Rel n when not (noccurn sigma n c) ->
-			      ((n, len) :: subst, pred len)
+                          | Rel _ | Var _ when dependent_rel_or_var sigma arg c ->
+                              (add_subst sigma arg len subst, pred len)
 			  | _ -> (subst, pred len))
 			(subst, len) realargs
 		    in
 		    let subst =
-                      if not (noccurn sigma n c) && List.for_all (isRel sigma) realargs
-		      then (n, len) :: subst else subst
+                      if dependent_rel_or_var sigma tm c && List.for_all (fun c -> isRel sigma c || isVar sigma c) realargs
+                      then add_subst sigma tm len subst else subst
 		    in (subst, pred len))
 	  | _ -> (subst, len - signlen))
-      (List.rev tomatchs) arsign ([], nar)
+      (List.rev tomatchs) arsign (([],[]), nar)
   in
   let rec predicate lift c =
     match EConstr.kind sigma c with
       | Rel n when n > lift ->
 	  (try
 	      (* Make the predicate dependent on the matched variable *)
-	      let idx = Int.List.assoc (n - lift) subst in
+              let idx = Int.List.assoc (n - lift) rel_subst in
 		mkRel (idx + lift)
 	    with Not_found ->
-	      (* A variable that is not matched, lift over the arsign. *)
+              (* A variable that is not matched, lift over the arsign *)
 	      mkRel (n + nar))
+      | Var id ->
+          (try
+              (* Make the predicate dependent on the matched variable *)
+              let idx = Id.List.assoc id var_subst in
+                mkRel (idx + lift)
+            with Not_found ->
+              (* A variable that is not matched *)
+              c)
       | _ ->
 	  EConstr.map_with_binders sigma succ predicate lift c
   in
@@ -1996,26 +2016,8 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
  * type and 1 assumption for each term not _syntactically_ in an
  * inductive type.
 
- * Each matched terms are independently considered dependent or not.
-
- * A type constraint but no annotation case: we try to specialize the
- * tycon to make the predicate if it is not closed.
+ * Each matched term is independently considered dependent or not.
  *)
-
-exception LocalOccur
-
-let noccur_with_meta sigma n m term =
-  let rec occur_rec n c = match EConstr.kind sigma c with
-    | Rel p -> if n<=p && p<n+m then raise LocalOccur
-    | App(f,cl) ->
-        (match EConstr.kind sigma f with
-           | Cast (c,_,_) when isMeta sigma c -> ()
-           | Meta _ -> ()
-           | _ -> EConstr.iter_with_binders sigma succ occur_rec n c)
-    | Evar (_, _) -> ()
-    | _ -> EConstr.iter_with_binders sigma succ occur_rec n c
-  in
-  try (occur_rec n term; true) with LocalOccur -> false
 
 let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
   let refresh_tycon sigma t =
@@ -2026,37 +2028,37 @@ let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
                       !!env sigma t
   in
   let preds =
-    match pred, tycon with
+    match pred with
     (* No return clause *)
-    | None, Some t when not (noccur_with_meta sigma 0 max_int t) ->
-	(* If the tycon is not closed w.r.t real variables, we try *)
-        (* two different strategies *)
-       (* First strategy: we abstract the tycon wrt to the dependencies *)
-         let sigma, t = refresh_tycon sigma t in
-         let p1 =
+    | None ->
+        let sigma,t =
+          match tycon with
+          | Some t -> refresh_tycon sigma t
+          | None ->
+             (* No type constraint: we first create a generic evar type constraint *)
+             let src = (loc, Evar_kinds.CasesType false) in
+             let sigma, (t, _) = new_type_evar !!env sigma univ_flexible_alg ~src in
+             sigma, t in
+        (* First strategy: we build an "inversion" predicate, also replacing the *)
+        (* dependencies with existential variables *)
+        let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
+        (* Optional second strategy: we abstract the tycon wrt to the dependencies *)
+        let p2 =
           prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign t in
-	(* Second strategy: we build an "inversion" predicate *)
-	let sigma2,pred2 = build_inversion_problem loc env sigma tomatchs t in
-	(match p1 with
-         | Some (sigma1,pred1,arsign) -> [sigma1, pred1, arsign; sigma2, pred2, arsign]
-         | None -> [sigma2, pred2, arsign])
-    | None, _ ->
-	(* No dependent type constraint, or no constraints at all: *)
-	(* we use two strategies *)
-        let sigma,t = match tycon with
-	| Some t -> refresh_tycon sigma t
-	| None -> 
-          let (sigma, (t, _)) =
-            new_type_evar !!env sigma univ_flexible_alg ~src:(Loc.tag ?loc @@ Evar_kinds.CasesType false) in
-	    sigma, t
-	in
-        (* First strategy: we build an "inversion" predicate *)
-	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
-	(* Second strategy: we directly use the evar as a non dependent pred *)
-        let pred2 = lift (List.length (List.flatten arsign)) t in
-        [sigma1, pred1, arsign; sigma, pred2, arsign]
+        (* Third strategy: we take the type constraint as it is; of course we could *)
+        (* need something inbetween, abstracting some but not all of the dependencies *)
+        (* the "inversion" strategy deals with that but unification may not be *)
+        (* powerful enough so strategy 2 and 3 helps; moreover, inverting does not *)
+        (* work (yet) when a constructor has a type not precise enough for the inversion *)
+        (* see log message for details *)
+        let pred3 = lift (List.length (List.flatten arsign)) t in
+        (match p2 with
+         | Some (sigma2,pred2,arsign) when not (EConstr.eq_constr sigma pred2 pred3) ->
+             [sigma1, pred1, arsign; sigma2, pred2, arsign; sigma, pred3, arsign]
+         | _ ->
+             [sigma1, pred1, arsign; sigma, pred3, arsign])
     (* Some type annotation *)
-    | Some rtntyp, _ ->
+    | Some rtntyp ->
       (* We extract the signature of the arity *)
       let building_arsign,envar = List.fold_right_map (push_rel_context sigma) arsign env in
       let sigma, newt = new_sort_variable univ_flexible_alg sigma in
