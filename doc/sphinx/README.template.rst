@@ -153,6 +153,39 @@ DON'T
 
      .. tacv:: assert form as intro_pattern
 
+Using the ``.. coqtop::`` directive for syntax highlighting
+-----------------------------------------------------------
+
+DO
+  .. code::
+
+     A tactic of the form:
+
+     .. coqdoc::
+
+        do [ t1 | … | tn ].
+
+     is equivalent to the standard Ltac expression:
+
+     .. coqdoc::
+
+        first [ t1 | … | tn ].
+
+DONT
+  .. code::
+
+     A tactic of the form:
+
+     .. coqtop:: in
+
+        do [ t1 | … | tn ].
+
+     is equivalent to the standard Ltac expression:
+
+     .. coqtop:: in
+
+        first [ t1 | … | tn ].
+
 Tips and tricks
 ===============
 
