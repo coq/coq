@@ -76,8 +76,8 @@ let process_vernac_interp_error exn = match fst exn with
       wrap_vernac_error exn (Himsg.explain_module_error e)
   | Modintern.ModuleInternalizationError e ->
       wrap_vernac_error exn (Himsg.explain_module_internalization_error e)
-  | RecursionSchemeError e ->
-      wrap_vernac_error exn (Himsg.explain_recursion_scheme_error e)
+  | RecursionSchemeError (env,e) ->
+      wrap_vernac_error exn (Himsg.explain_recursion_scheme_error env e)
   | Cases.PatternMatchingError (env,sigma,e) ->
       wrap_vernac_error exn (Himsg.explain_pattern_matching_error env sigma e)
   | Tacred.ReductionTacticError e ->

@@ -330,11 +330,10 @@ let declare_sym_scheme ind =
 (* Scheme command *)
 
 let smart_global_inductive y = smart_global_inductive y
-let rec split_scheme l =
- let env = Global.env() in
+let rec split_scheme env l =
  match l with
   | [] -> [],[]
-  | (Some id,t)::q -> let l1,l2 = split_scheme q in
+  | (Some id,t)::q -> let l1,l2 = split_scheme env q in
     ( match t with
       | InductionScheme (x,y,z) -> ((id,x,smart_global_inductive y,z)::l1),l2
       | CaseScheme (x,y,z) -> ((id,x,smart_global_inductive y,z)::l1),l2
@@ -345,7 +344,7 @@ let rec split_scheme l =
 requested
 *)
   | (None,t)::q ->
-      let l1,l2 = split_scheme q in
+      let l1,l2 = split_scheme env q in
       let names inds recs isdep y z =
         let ind = smart_global_inductive y in
         let sort_of_ind = inductive_sort_family (snd (lookup_mind_specif env ind)) in
@@ -408,12 +407,12 @@ let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
   let _ = List.fold_right2 declare listdecl lrecnames [] in
   fixpoint_message None lrecnames
 
-let get_common_underlying_mutual_inductive = function
+let get_common_underlying_mutual_inductive env = function
   | [] -> assert false
   | (id,(mind,i as ind))::l as all ->
       match List.filter (fun (_,(mind',_)) -> not (MutInd.equal mind mind')) l with
       | (_,ind')::_ ->
-	  raise (RecursionSchemeError (NotMutualInScheme (ind,ind')))
+          raise (RecursionSchemeError (env, NotMutualInScheme (ind,ind')))
       | [] ->
 	  if not (List.distinct_f Int.compare (List.map snd (List.map snd all)))
           then user_err Pp.(str "A type occurs twice");
@@ -422,7 +421,8 @@ let get_common_underlying_mutual_inductive = function
             (function (Some id,(_,i)) -> Some (i,id.CAst.v) | (None,_) -> None) all
 
 let do_scheme l =
-  let ischeme,escheme = split_scheme l in
+  let env = Global.env() in
+  let ischeme,escheme = split_scheme env l in
 (* we want 1 kind of scheme at a time so we check if the user
 tried to declare different schemes at once *)
     if not (List.is_empty ischeme) && not (List.is_empty escheme)
@@ -431,7 +431,7 @@ tried to declare different schemes at once *)
     else (
       if not (List.is_empty ischeme) then do_mutual_induction_scheme ischeme
       else
-	let mind,l = get_common_underlying_mutual_inductive escheme in
+        let mind,l = get_common_underlying_mutual_inductive env escheme in
 	declare_beq_scheme_with l mind;
 	declare_eq_decidability_scheme_with l mind
     )

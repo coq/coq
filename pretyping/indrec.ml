@@ -40,7 +40,7 @@ type recursion_scheme_error =
   | NotMutualInScheme of inductive * inductive
   | NotAllowedDependentAnalysis of (*isrec:*) bool * inductive
 
-exception RecursionSchemeError of recursion_scheme_error
+exception RecursionSchemeError of env * recursion_scheme_error
 
 let named_hd env t na = named_hd env (Evd.from_env env) (EConstr.of_constr t) na
 let name_assumption env = function
@@ -86,7 +86,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
     if not (Sorts.List.mem kind (elim_sorts specif)) then
       raise
 	(RecursionSchemeError
-           (NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
+           (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
   in
   let ndepar = mip.mind_nrealdecls + 1 in
 
@@ -490,7 +490,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
 let build_case_analysis_scheme env sigma pity dep kind =
   let (mib,mip) = lookup_mind_specif env (fst pity) in
   if dep && not (Inductiveops.has_dependent_elim mib) then
-    raise (RecursionSchemeError (NotAllowedDependentAnalysis (false, fst pity)));
+    raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (false, fst pity)));
   mis_make_case_com dep env sigma pity (mib,mip) kind
 
 let is_in_prop mip =
@@ -550,9 +550,9 @@ let check_arities env listdepkind =
        let kelim = elim_sorts (mibi,mipi) in
        if not (Sorts.List.mem kind kelim) then raise
 	 (RecursionSchemeError
-          (NotAllowedCaseAnalysis (true, fst (UnivGen.fresh_sort_in_family kind),(mind,u))))
+          (env, NotAllowedCaseAnalysis (true, fst (UnivGen.fresh_sort_in_family kind),(mind,u))))
        else if Int.List.mem ni ln then raise
-	 (RecursionSchemeError (NotMutualInScheme (mind,mind)))
+         (RecursionSchemeError (env, NotMutualInScheme (mind,mind)))
        else ni::ln)
 	    [] listdepkind
   in true
@@ -561,7 +561,7 @@ let build_mutual_induction_scheme env sigma ?(force_mutual=false) = function
   | ((mind,u),dep,s)::lrecspec ->
       let (mib,mip) = lookup_mind_specif env mind in
       if dep && not (Inductiveops.has_dependent_elim mib) then
-        raise (RecursionSchemeError (NotAllowedDependentAnalysis (true, mind)));
+        raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (true, mind)));
       let (sp,tyi) = mind in
       let listdepkind =
 	((mind,u),mib,mip,dep,s)::
@@ -572,7 +572,7 @@ let build_mutual_induction_scheme env sigma ?(force_mutual=false) = function
                 let (mibi',mipi') = lookup_mind_specif env mind' in
 		((mind',u'),mibi',mipi',dep',s')
 	      else
-		raise (RecursionSchemeError (NotMutualInScheme (mind,mind'))))
+                raise (RecursionSchemeError (env, NotMutualInScheme (mind,mind'))))
 	   lrecspec)
       in
       let _ = check_arities env listdepkind in
@@ -582,7 +582,7 @@ let build_mutual_induction_scheme env sigma ?(force_mutual=false) = function
 let build_induction_scheme env sigma pind dep kind =
   let (mib,mip) = lookup_mind_specif env (fst pind) in
   if dep && not (Inductiveops.has_dependent_elim mib) then
-    raise (RecursionSchemeError (NotAllowedDependentAnalysis (true, fst pind)));
+    raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (true, fst pind)));
   let sigma, l = mis_make_indrec env sigma [(pind,mib,mip,dep,kind)] mib (snd pind) in
     sigma, List.hd l
 
