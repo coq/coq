@@ -1,5 +1,3 @@
-.. include:: ../replaces.rst
-
 .. _extendedpatternmatching:
 
 Extended pattern matching
