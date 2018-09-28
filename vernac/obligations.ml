@@ -523,11 +523,11 @@ let declare_mutual_definition l =
       (List.map (fun x -> 
 	let subs, typ = (subst_body true x) in
         let env = Global.env () in
-        let sigma = Evd.from_env env in
+        let sigma = Evd.from_ctx x.prg_ctx in
         let term = snd (Reductionops.splay_lam_n env sigma len (EConstr.of_constr subs)) in
         let typ = snd (Reductionops.splay_prod_n env sigma len (EConstr.of_constr typ)) in
-	let term = EConstr.Unsafe.to_constr term in
-	let typ = EConstr.Unsafe.to_constr typ in
+        let term = EConstr.to_constr sigma term in
+        let typ = EConstr.to_constr sigma typ in
 	  x.prg_reduce term, x.prg_reduce typ, x.prg_implicits) l)
   in
 (*   let fixdefs = List.map reduce_fix fixdefs in *)

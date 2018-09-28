@@ -109,6 +109,16 @@ Universes
   GH issue number: none
   risk: unlikely to be activated by chance
 
+  component: universe polymorphism
+  summary: universe polymorphism can capture global universes
+  impacted released versions: V8.5 to V8.8
+  impacted coqchk versions: V8.5 to current (NOT FIXED)
+  fixed in: 2385b5c1ef
+  found by: Gaëtan Gilbert
+  exploit: test-suite/misc/poly-capture-global-univs
+  GH issue number: #8341
+  risk: unlikely to be activated by chance (requires a plugin)
+
 Primitive projections
 
   component: primitive projections, guard condition

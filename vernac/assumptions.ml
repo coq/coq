@@ -70,8 +70,8 @@ let rec fields_of_functor f subs mp0 args = function
 
 let rec lookup_module_in_impl mp =
     match mp with
-    | MPfile _ -> raise Not_found
-    | MPbound _ -> assert false
+    | MPfile _ -> Global.lookup_module mp
+    | MPbound _ -> Global.lookup_module mp
     | MPdot (mp',lab') ->
        if ModPath.equal mp' (Global.current_modpath ()) then
          Global.lookup_module mp

@@ -94,7 +94,7 @@ to avoid treating Sphinx warnings as errors.  Otherwise, Sphinx quits
 upon detecting the first warning.  You can set this on the Sphinx `make`
 command line or as an environment variable:
 
-- `make sphinx SPINXWARNERROR=0`
+- `make sphinx SPHINXWARNERROR=0`
 
 - ~~~
   export SPHINXWARNERROR=0

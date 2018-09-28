@@ -165,6 +165,20 @@ Tools
   and `print-pretty-single-time-diff` now correctly label the "before" and
   "after" columns, rather than swapping them.
 
+Kernel
+
+- The kernel does not tolerate capture of global universes by
+  polymorphic universe binders, fixing a soundness break (triggered
+  only through custom plugins)
+
+Windows installer
+
+- The Windows installer now includes many more external packages that can be
+individually selected for installation.
+
+Many other bug fixes and lots of documentation improvements (for details,
+see the 8.8.2 milestone at https://github.com/coq/coq/milestone/15?closed=1).
+
 Changes from 8.8.0 to 8.8.1
 ===========================
 

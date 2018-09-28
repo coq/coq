@@ -312,19 +312,56 @@ class TacticNotationVariantObject(TacticNotationObject):
     annotation = "Variant"
 
 class OptionObject(NotationObject):
-    """A Coq option.
+    """A Coq option (a setting with non-boolean value, e.g. a string or numeric value).
 
     Example::
 
-       .. opt:: Nonrecursive Elimination Schemes
+       .. opt:: Hyps Limit @num
+          :name Hyps Limit
 
-          This option controls whether types declared with the keywords
-          :cmd:`Variant` and :cmd:`Record` get an automatic declaration of the
-          induction principles.
+          Controls the maximum number of hypotheses displayed in goals after
+          application of a tactic.
     """
     subdomain = "opt"
     index_suffix = "(opt)"
     annotation = "Option"
+
+    def _name_from_signature(self, signature):
+        return stringify_with_ellipses(signature)
+
+
+class FlagObject(NotationObject):
+    """A Coq flag (i.e. a boolean setting).
+
+    Example::
+
+       .. flag:: Nonrecursive Elimination Schemes
+
+          Controls whether types declared with the keywords
+          :cmd:`Variant` and :cmd:`Record` get an automatic declaration of
+          induction principles.
+    """
+    subdomain = "flag"
+    index_suffix = "(flag)"
+    annotation = "Flag"
+
+    def _name_from_signature(self, signature):
+        return stringify_with_ellipses(signature)
+
+
+class TableObject(NotationObject):
+    """A Coq table, i.e. a setting that is a set of values.
+
+    Example::
+
+       .. table:: Search Blacklist @string
+          :name: Search Blacklist
+
+          Controls ...
+    """
+    subdomain = "table"
+    index_suffix = "(table)"
+    annotation = "Table"
 
     def _name_from_signature(self, signature):
         return stringify_with_ellipses(signature)
@@ -876,7 +913,7 @@ class CoqTacticIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "tacindex", "Tactic Index", "tactics", ["tacn"]
 
 class CoqOptionIndex(CoqSubdomainsIndex):
-    name, localname, shortname, subdomains = "optindex", "Option Index", "options", ["opt"]
+    name, localname, shortname, subdomains = "optindex", "Flags, options and Tables Index", "options", ["flag", "opt", "table"]
 
 class CoqGallinaIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "thmindex", "Gallina Index", "theorems", ["thm"]
@@ -949,6 +986,8 @@ class CoqDomain(Domain):
         'tacn': ObjType('tacn', 'tacn'),
         'tacv': ObjType('tacv', 'tacn'),
         'opt': ObjType('opt', 'opt'),
+        'flag': ObjType('flag', 'flag'),
+        'table': ObjType('table', 'table'),
         'thm': ObjType('thm', 'thm'),
         'prodn': ObjType('prodn', 'prodn'),
         'exn': ObjType('exn', 'exn'),
@@ -965,6 +1004,8 @@ class CoqDomain(Domain):
         'tacn': TacticNotationObject,
         'tacv': TacticNotationVariantObject,
         'opt': OptionObject,
+        'flag': FlagObject,
+        'table': TableObject,
         'thm': GallinaObject,
         'prodn' : ProductionObject,
         'exn': ExceptionObject,
@@ -976,6 +1017,8 @@ class CoqDomain(Domain):
         'cmd': XRefRole(warn_dangling=True),
         'tacn': XRefRole(warn_dangling=True),
         'opt': XRefRole(warn_dangling=True),
+        'flag': XRefRole(warn_dangling=True),
+        'table': XRefRole(warn_dangling=True),
         'thm': XRefRole(warn_dangling=True),
         'prodn' : XRefRole(warn_dangling=True),
         'exn': XRefRole(warn_dangling=True),
@@ -997,6 +1040,8 @@ class CoqDomain(Domain):
             'cmd': {},
             'tacn': {},
             'opt': {},
+            'flag': {},
+            'table': {},
             'thm': {},
             'prodn' : {},
             'exn': {},
@@ -1108,4 +1153,11 @@ def setup(app):
     # Tell Sphinx about extra settings
     app.add_config_value("report_undocumented_coq_objects", None, 'env')
 
-    return {'version': '0.1', "parallel_read_safe": True}
+    # ``env_version`` is used by Sphinx to know when to invalidate
+    # coqdomain-specific bits in its caches.  It should be incremented when the
+    # contents of ``env.domaindata['coq']`` change.  See
+    # `https://github.com/sphinx-doc/sphinx/issues/4460`.
+    meta = { "version": "0.1",
+             "env_version": 2,
+             "parallel_read_safe": True }
+    return meta

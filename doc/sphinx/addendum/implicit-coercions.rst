@@ -256,19 +256,16 @@ Displaying Available Coercions
 Activating the Printing of Coercions
 -------------------------------------
 
-.. opt:: Printing Coercions
+.. flag:: Printing Coercions
 
    When on, this option forces all the coercions to be printed.
    By default, coercions are not printed.
 
-.. cmd:: Add Printing Coercion @qualid
+.. table:: Printing Coercion @qualid
+   :name: Printing Coercion
 
-   This command forces coercion denoted by :n:`@qualid` to be printed.
-   By default, a coercion is never printed.
-
-.. cmd:: Remove Printing Coercion @qualid
-
-   Use this command, to skip the printing of coercion :n:`@qualid`.
+   Specifies a set of qualids for which coercions are always displayed.  Use the
+   :cmd:`Add @table` and :cmd:`Remove @table` commands to update the set of qualids.
 
 .. _coercions-classes-as-records:
 
@@ -315,7 +312,7 @@ are also forgotten.
 Coercions and Modules
 ---------------------
 
-.. opt:: Automatic Coercions Import
+.. flag:: Automatic Coercions Import
 
    Since |Coq| version 8.3, the coercions present in a module are activated
    only when the module is explicitly imported. Formerly, the coercions

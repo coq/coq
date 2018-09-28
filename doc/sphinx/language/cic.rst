@@ -605,7 +605,7 @@ Subtyping rules
 
 At the moment, we did not take into account one rule between universes
 which says that any term in a universe of index i is also a term in
-the universe of index i+1 (this is the *cumulativity* rule of|Cic|).
+the universe of index i+1 (this is the *cumulativity* rule of |Cic|).
 This property extends the equivalence relation of convertibility into
 a *subtyping* relation inductively defined by:
 
@@ -640,7 +640,7 @@ a *subtyping* relation inductively defined by:
    respectively then
 
    .. math::
-      E[Γ] ⊢ t~w_1 … w_m ≤_{βδιζη} t~w_1' … w_m'
+      E[Γ] ⊢ t~w_1 … w_m ≤_{βδιζη} t'~w_1' … w_m'
 
    (notice that :math:`t` and :math:`t'` are both
    fully applied, i.e., they have a sort as a type) if
@@ -1105,7 +1105,7 @@ and otherwise in the Type hierarchy.
 
 Note that the side-condition about allowed elimination sorts in the
 rule **Ind-Family** is just to avoid to recompute the allowed elimination
-sorts at each instance of a pattern-matching (see Section :ref:`Destructors`). As
+sorts at each instance of a pattern matching (see Section :ref:`Destructors`). As
 an example, let us consider the following definition:
 
 .. example::
@@ -1229,7 +1229,7 @@ primitive recursion over the structure.
 But this operator is rather tedious to implement and use. We choose in
 this version of |Coq| to factorize the operator for primitive recursion
 into two more primitive operations as was first suggested by Th.
-Coquand in :cite:`Coq92`. One is the definition by pattern-matching. The
+Coquand in :cite:`Coq92`. One is the definition by pattern matching. The
 second one is a definition by guarded fixpoints.
 
 

@@ -268,13 +268,12 @@ file timing data:
 
 
 + ``print-pretty-timed-diff``
-    this target builds a table of timing
-    changes between two compilations; run ``make make-pretty-timed-before`` to
-    build the log of the “before” times, and run ``make make-pretty-timed-
-    after`` to build the log of the “after” times. The table is printed on
-    the command line, and stored in ``time-of-build-both.log``. This target is
-    most useful for profiling the difference between two commits to a
-    repo.
+    this target builds a table of timing changes between two compilations; run
+    ``make make-pretty-timed-before`` to build the log of the “before” times,
+    and run ``make make-pretty-timed-after`` to build the log of the “after”
+    times. The table is printed on the command line, and stored in
+    ``time-of-build-both.log``. This target is most useful for profiling the
+    difference between two commits in a repository.
 
     .. note::
        This target requires ``python`` to build the table.
@@ -331,7 +330,9 @@ line timing data:
           Chars 163 - 208 [Definition~foo1~:=~Eval~comp~i...] 0.239 secs (0.236u,0.s)
 
 + ``print-pretty-single-time-diff``
+
     ::
+
        print-pretty-single-time-diff BEFORE=path/to/file.v.before-timing AFTER=path/to/file.v.after-timing
 
     this target will make a sorted table of the per-line timing differences

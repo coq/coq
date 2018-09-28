@@ -256,6 +256,8 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       let tyj = infer_type env typ in
       let proofterm =
         Future.chain body (fun ((body,uctx),side_eff) ->
+          (* don't redeclare universes which are declared for the type *)
+          let uctx = Univ.ContextSet.diff uctx univs in
           let j, uctx = match trust with
           | Pure ->
             let env = push_context_set uctx env in

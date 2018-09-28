@@ -104,8 +104,8 @@ this corresponds to working in the following context:
    Unset Printing Implicit Defensive.
 
 .. seealso::
-   :opt:`Implicit Arguments`, :opt:`Strict Implicit`,
-   :opt:`Printing Implicit Defensive`
+   :flag:`Implicit Arguments`, :flag:`Strict Implicit`,
+   :flag:`Printing Implicit Defensive`
 
 .. _compatibility_issues_ssr:
 
@@ -444,11 +444,16 @@ not its name, one usually uses “arrow” abstractions for prenex
 arguments, or the ``(_ : term)`` syntax for inner arguments. In |SSR|,
 the latter can be replaced by the open syntax ``of term`` or
 (equivalently) ``& term``, which are both syntactically equivalent to a
-``(_ : term)`` expression.
+``(_ : term)`` expression. This feature almost behaves as the
+following extension of the binder syntax:
 
-For instance, the usual two-constructor polymorphic type list, i.e.
-the one of the standard List library, can be defined by the following
-declaration:
+.. prodn::
+   binder += & @term | of @term
+
+Caveat: ``& T`` and ``of T`` abbreviations have to appear at the end
+of a binder list. For instance, the usual two-constructor polymorphic
+type list, i.e. the one of the standard ``List`` library, can be
+defined by the following declaration:
 
 .. example::
 
@@ -2698,7 +2703,7 @@ typeclass inference.
   No inference for ``t``. Unresolved instances are
   quantified in the (inferred) type of ``t`` and abstracted in ``t``.
 
-.. opt:: SsrHave NoTCResolution
+.. flag:: SsrHave NoTCResolution
 
    This option restores the behavior of |SSR| 1.4 and below (never resolve typeclasses).
 
@@ -3862,7 +3867,7 @@ duplication of function arguments. These copies usually end up in
 types hidden by the implicit arguments machinery or by user-defined
 notations. In these situations computing the right occurrence numbers
 is very tedious because they must be counted on the goal as printed
-after setting the Printing All flag. Moreover the resulting script is
+after setting the :flag:`Printing All` flag. Moreover the resulting script is
 not really informative for the reader, since it refers to occurrence
 numbers he cannot easily see.
 
@@ -5387,7 +5392,7 @@ Tacticals
 
 discharge :ref:`discharge_ssr`
 
-.. prodn:: tactic += @tacitc => {+ @i_item }
+.. prodn:: tactic += @tactic => {+ @i_item }
 
 introduction see :ref:`introduction_ssr`
 
