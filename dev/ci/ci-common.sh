@@ -8,6 +8,7 @@ export NJOBS
 
 if [ -n "${GITLAB_CI}" ];
 then
+    # Gitlab build, Coq installed into `_install_ci`
     export OCAMLPATH="$PWD/_install_ci/lib:$OCAMLPATH"
     export COQBIN="$PWD/_install_ci/bin"
     export CI_BRANCH="$CI_COMMIT_REF_NAME"
@@ -15,18 +16,29 @@ then
     then
         export CI_PULL_REQUEST="${CI_BRANCH#pr-}"
     fi
-else
-    if [ -n "${TRAVIS}" ];
-    then
-        export CI_PULL_REQUEST="$TRAVIS_PULL_REQUEST"
-        export CI_BRANCH="$TRAVIS_BRANCH"
-    else # assume local
-        CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-        export CI_BRANCH
-    fi
+elif [ -n "${TRAVIS}" ];
+then
+    # Travis build, `-local` passed to `configure`
     export OCAMLPATH="$PWD:$OCAMLPATH"
     export COQBIN="$PWD/bin"
+    export CI_PULL_REQUEST="$TRAVIS_PULL_REQUEST"
+    export CI_BRANCH="$TRAVIS_BRANCH"
+elif [ -d "$PWD/_build/install/default/" ];
+then
+    # Dune build
+    export OCAMLPATH="$PWD/_build/install/default/lib/"
+    export COQBIN="$PWD/_build/install/default/bin"
+    export COQLIB="$PWD/_build/install/default/lib/coq"
+    CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+    export CI_BRANCH
+else
+    # We assume we are in `-profile devel` build, thus `-local` is set
+    export OCAMLPATH="$PWD:$OCAMLPATH"
+    export COQBIN="$PWD/bin"
+    CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+    export CI_BRANCH
 fi
+
 export PATH="$COQBIN:$PATH"
 
 # Coq's tools need an ending slash :S, we should fix them.

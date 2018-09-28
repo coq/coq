@@ -122,4 +122,4 @@ val with_time : batch:bool -> ('a -> 'b) -> 'a -> 'b
  the right name you want you execution to fail rather than fall into
  choosing some random binary from the system-wide installation of
  Coq. *)
-val get_toplevel_path : string -> string
+val get_toplevel_path : ?byte:bool -> string -> string

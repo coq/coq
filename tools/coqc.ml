@@ -24,7 +24,7 @@
 
 let environment = Unix.environment ()
 
-let binary = ref "coqtop"
+let use_bytecode = ref false
 let image = ref ""
 
 let verbose = ref false
@@ -69,8 +69,8 @@ let parse_args () =
 	verbose := true ; parse (cfiles,args) rem
     | "-image" :: f :: rem -> image := f; parse (cfiles,args) rem
     | "-image" :: [] ->	usage ()
-    | "-byte" :: rem -> binary := "coqtop.byte"; parse (cfiles,args) rem
-    | "-opt" :: rem -> binary := "coqtop"; parse (cfiles,args) rem
+    | "-byte" :: rem -> use_bytecode := true; parse (cfiles,args) rem
+    | "-opt" :: rem -> use_bytecode := false; parse (cfiles,args) rem
 
 (* Informative options *)
 
@@ -155,7 +155,7 @@ let main () =
     end;
     let coqtopname =
       if !image <> "" then !image
-      else Filename.concat Envars.coqbin (!binary ^ Coq_config.exec_extension)
+      else System.get_toplevel_path ~byte:!use_bytecode "coqtop"
     in
       (*  List.iter (compile coqtopname args) cfiles*)
       Unix.handle_unix_error (compile coqtopname args) cfiles
