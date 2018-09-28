@@ -442,7 +442,12 @@ The following example script illustrates all these features:
    You tried to apply a tactic but no goals were under focus.
    Using :n:`@bullet` is  mandatory here.
 
-.. exn:: No such goal. Try unfocusing with %{.
+.. FIXME: the :noindex: below works around a Sphinx issue.
+   (https://github.com/sphinx-doc/sphinx/issues/4979)
+   It should be removed once that issue is fixed.
+
+.. exn:: No such goal. Try unfocusing with %}.
+   :noindex:
 
    You just finished a goal focused by ``{``, you must unfocus it with ``}``.
 
