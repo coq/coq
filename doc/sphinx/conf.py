@@ -66,26 +66,34 @@ source_suffix = '.rst'
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
 
+import logging
+from glob import glob
 from shutil import copyfile
 
-SUPPORTED_FORMATS = { fmt: os.path.abspath("index-{}.rst".format(fmt))
-                      for fmt in ["html", "latex"] }
-MASTER_DOC = os.path.abspath("index.rst")
-
 # Add extra cases here to support more formats
-def copy_master_doc(app):
-    for fmt, rst_path in SUPPORTED_FORMATS.items():
+
+SUPPORTED_FORMATS = ["html", "latex"]
+
+def current_format(app):
+    for fmt in SUPPORTED_FORMATS:
         if app.tags.has(fmt):
-            copyfile(rst_path, MASTER_DOC)
-            break
-    else:
-        MSG = """Unexpected builder; expected one of {!r}.
-Add support for this new builder in `copy_master_doc` in conf.py."""
-        from sphinx.errors import ConfigError
-        raise ConfigError(MSG.format(list(SUPPORTED_FORMATS.keys())))
+            return fmt
+    MSG = """Unexpected builder ({}); expected one of {!r}.
+Add support for this new builder in `copy_formatspecific_files` in conf.py."""
+    from sphinx.errors import ConfigError
+    raise ConfigError(MSG.format(list(app.tags.tags.keys()), SUPPORTED_FORMATS))
+
+def copy_formatspecific_files(app):
+    ext = ".{}.rst".format(current_format(app))
+    for fname in sorted(os.listdir(app.srcdir)):
+        if fname.endswith(ext):
+            src = os.path.join(app.srcdir, fname)
+            dst = os.path.join(app.srcdir, fname[:-len(ext)] + ".rst")
+            app.info("Copying {} to {}".format(src, dst))
+            copyfile(src, dst)
 
 def setup(app):
-    app.connect('builder-inited', copy_master_doc)
+    app.connect('builder-inited', copy_formatspecific_files)
 
 # The master toctree document.
 # We create this file in `copy_master_doc` above.
@@ -126,11 +134,10 @@ exclude_patterns = [
     'Thumbs.db',
     '.DS_Store',
     'introduction.rst',
-    'index-*.rst', # One of these gets copied to index.rst in `copy_master_doc`
     'refman-preamble.rst',
     'README.rst',
     'README.template.rst'
-]
+] + ["*.{}.rst".format(fmt) for fmt in SUPPORTED_FORMATS]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
