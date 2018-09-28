@@ -491,7 +491,6 @@ let add_universe src (dp, i) =
   Option.iter (fun poly ->
       let ctx = Univ.ContextSet.add_universe level Univ.ContextSet.empty in
       Global.push_context_set poly ctx;
-      UnivNames.add_global_universe level poly;
       if poly then Lib.add_section_context ctx)
     optpoly
 
@@ -580,7 +579,7 @@ let do_constraint poly l =
   let open Univ in
   let u_of_id x =
     let level = Pretyping.interp_known_glob_level (Evd.from_env (Global.env ())) x in
-    UnivNames.is_polymorphic level, level
+    Lib.is_polymorphic_univ level, level
   in
   let in_section = Lib.sections_are_opened () in
   let () =

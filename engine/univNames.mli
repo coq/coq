@@ -13,13 +13,6 @@ open Univ
 val pr_with_global_universes : Level.t -> Pp.t
 val qualid_of_level : Level.t -> Libnames.qualid
 
-(** Global universe information outside the kernel, to handle
-    polymorphic universes in sections that have to be discharged. *)
-val add_global_universe : Level.t -> Decl_kinds.polymorphic -> unit
-
-(** Is [lvl]  a global polymorphic universe? (ie section polymorphic universe) *)
-val is_polymorphic : Level.t -> bool
-
 (** Local universe name <-> level mapping *)
 
 type universe_binders = Univ.Level.t Names.Id.Map.t

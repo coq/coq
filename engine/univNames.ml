@@ -11,7 +11,6 @@
 open Util
 open Names
 open Univ
-open Nametab
 
 
 let qualid_of_level l =
@@ -30,20 +29,6 @@ let pr_with_global_universes l = Libnames.pr_qualid (qualid_of_level l)
 
 (** Global universe information outside the kernel, to handle
     polymorphic universe names in sections that have to be discharged. *)
-
-let universe_map = (Summary.ref UnivIdMap.empty ~name:"global universe info" : bool Nametab.UnivIdMap.t ref)
-
-let add_global_universe u p =
-  match Level.name u with
-  | Some n -> universe_map := Nametab.UnivIdMap.add n p !universe_map
-  | None -> ()
-
-let is_polymorphic l =
-  match Level.name l with
-  | Some n ->
-     (try Nametab.UnivIdMap.find n !universe_map
-      with Not_found -> false)
-  | None -> false
 
 (** Local universe names of polymorphic references *)
 

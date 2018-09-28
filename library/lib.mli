@@ -183,6 +183,8 @@ val add_section_kn : Decl_kinds.polymorphic ->
   MutInd.t -> Constr.named_context -> unit
 val replacement_context : unit -> Opaqueproof.work_list
 
+val is_polymorphic_univ : Univ.Level.t -> bool
+
 (** {6 Discharge: decrease the section level if in the current section } *)
 
 val discharge_kn :  MutInd.t -> MutInd.t
