@@ -299,8 +299,8 @@ let add_cpatt_for_params ind l =
   if !Flags.in_debugger then l else
     Util.List.addn  (Inductiveops.inductive_nparamdecls ind) (DAst.make @@ PatVar Anonymous) l
 
-let drop_implicits_in_patt cst nb_expl args =
-  let impl_st = (implicits_of_global cst) in
+let drop_implicits_in_patt state cst nb_expl args =
+  let impl_st = implicits_of_global (project_impargs state) cst in
   let impl_data = extract_impargs_data impl_st in
   let rec impls_fit l = function
     |[],t -> Some (List.rev_append l t)
@@ -367,8 +367,8 @@ let mkPat ?loc qid l = CAst.make ?loc @@
   (* Normally irrelevant test with v8 syntax, but let's do it anyway *)
   if List.is_empty l then CPatAtom (Some qid) else CPatCstr (qid,None,l)
 
-let pattern_printable_in_both_syntax (ind,_ as c) =
-  let impl_st = extract_impargs_data (implicits_of_global (ConstructRef c)) in
+let pattern_printable_in_both_syntax state (ind,_ as c) =
+  let impl_st = extract_impargs_data (implicits_of_global (project_impargs state) (ConstructRef c)) in
   let nb_params = Inductiveops.inductive_nparams ind in
   List.exists (fun (_,impls) ->
     (List.length impls >= nb_params) &&
@@ -433,12 +433,12 @@ let rec extern_cases_pattern_in_scope state (custom,scopes as allscopes) vars pa
 		Not_found | No_match | Exit ->
                   let c = extern_reference Id.Set.empty (ConstructRef cstrsp) in
                   if !asymmetric_patterns then
-		    if pattern_printable_in_both_syntax cstrsp
+                    if pattern_printable_in_both_syntax state cstrsp
 		    then CPatCstr (c, None, args)
 		    else CPatCstr (c, Some (add_patt_for_params (fst cstrsp) args), [])
 		  else
 		    let full_args = add_patt_for_params (fst cstrsp) args in
-		    match drop_implicits_in_patt (ConstructRef cstrsp) 0 full_args with
+                    match drop_implicits_in_patt state (ConstructRef cstrsp) 0 full_args with
 		      | Some true_args -> CPatCstr (c, None, true_args)
 		      | None           -> CPatCstr (c, Some full_args, [])
           in
@@ -472,7 +472,7 @@ and apply_notation_to_pattern ?loc state gr ((subst,substlist),(nb_to_drop,more_
             let l2 = List.map (extern_cases_pattern_in_scope state allscopes vars) more_args in
             let l2' = if !asymmetric_patterns || not (List.is_empty ll) then l2
 	      else
-		match drop_implicits_in_patt gr nb_to_drop l2 with
+                match drop_implicits_in_patt state gr nb_to_drop l2 with
 		  |Some true_args -> true_args
 		  |None -> raise No_match
 	    in
@@ -489,7 +489,7 @@ and apply_notation_to_pattern ?loc state gr ((subst,substlist),(nb_to_drop,more_
       let l2 = List.map (extern_cases_pattern_in_scope state allscopes vars) more_args in
       let l2' = if !asymmetric_patterns then l2
 	else
-	  match drop_implicits_in_patt gr (nb_to_drop + List.length l1) l2 with
+          match drop_implicits_in_patt state gr (nb_to_drop + List.length l1) l2 with
 	    |Some true_args -> true_args
 	    |None -> raise No_match
       in
@@ -537,7 +537,7 @@ let extern_ind_pattern_in_scope state (custom,scopes as allscopes) vars ind args
     with No_match ->
       let c = extern_reference vars (IndRef ind) in
       let args = List.map (extern_cases_pattern_in_scope state allscopes vars) args in
-      match drop_implicits_in_patt (IndRef ind) 0 args with
+      match drop_implicits_in_patt state (IndRef ind) 0 args with
 	   |Some true_args -> CAst.make @@ CPatCstr (c, None, true_args)
 	   |None           -> CAst.make @@ CPatCstr (c, Some args, [])
 
@@ -757,8 +757,8 @@ let extern_universes = function
   | Some _ as l when !print_universes -> l
   | _ -> None
 
-let extern_ref vars ref us =
-  extern_global (select_stronger_impargs (implicits_of_global ref))
+let extern_ref state vars ref us =
+  extern_global (select_stronger_impargs (implicits_of_global (project_impargs state) ref))
     (extern_reference vars ref) (extern_universes us)
 
 let extern_var ?loc id = CRef (qualid_of_ident ?loc id,None)
@@ -776,7 +776,7 @@ let rec extern state inctx scopes vars r =
   with No_match ->
   let loc = r'.CAst.loc in
   match DAst.get r' with
-  | GRef (ref,us) when entry_has_global (fst scopes) -> CAst.make ?loc (extern_ref vars ref us)
+  | GRef (ref,us) when entry_has_global (fst scopes) -> CAst.make ?loc (extern_ref state vars ref us)
 
   | GVar id when entry_has_ident (fst scopes) -> CAst.make ?loc (extern_var ?loc id)
 
@@ -791,7 +791,7 @@ let rec extern state inctx scopes vars r =
 
   (* The remaining cases are only for the constr entry *)
 
-  | GRef (ref,us) -> extern_ref vars ref us
+  | GRef (ref,us) -> extern_ref state vars ref us
 
   | GVar id -> extern_var ?loc id
 
@@ -854,7 +854,7 @@ let rec extern state inctx scopes vars r =
 		 | Not_found | No_match | Exit ->
                     let args = extern_args (extern state true) vars args in
 		     extern_app inctx
-		       (select_stronger_impargs (implicits_of_global ref))
+                       (select_stronger_impargs (implicits_of_global (project_impargs state) ref))
                        (Some ref,extern_reference ?loc vars ref) (extern_universes us) args
 	     end
 
@@ -1080,7 +1080,7 @@ and extern_notation state (custom,scopes as allscopes) vars t = function
 	          let impls =
 		    let impls =
 		      select_impargs_size
-		        (List.length args) (implicits_of_global ref) in
+                        (List.length args) (implicits_of_global (project_impargs state) ref) in
 		    try List.skipn n impls with Failure _ -> [] in
                   subscopes,impls
                 | _ ->
@@ -1093,7 +1093,7 @@ and extern_notation state (custom,scopes as allscopes) vars t = function
 	      let subscopes = find_arguments_scope ref in
 	      let impls =
 		  select_impargs_size
-		    (List.length args) (implicits_of_global ref) in
+                    (List.length args) (implicits_of_global (project_impargs state) ref) in
 	      f, args, subscopes, impls
             | _ -> t, [], [], []
             end

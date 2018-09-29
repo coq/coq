@@ -310,13 +310,15 @@ let make_discr_match brl =
 
 (* [build_constructors_of_type] construct the array of pattern of its inductive argument*)
 let build_constructors_of_type ind' argl =
-  let (mib,ind) = Inductive.lookup_mind_specif (Global.env()) ind' in
+  let env = Global.env() in
+  let state = States.get_state () in
+  let (mib,ind) = Inductive.lookup_mind_specif env ind' in
   let npar = mib.Declarations.mind_nparams in
   Array.mapi (fun i _ ->
 		let construct = ind',i+1 in
 		let constructref = ConstructRef(construct) in
 		let _implicit_positions_of_cst =
-		  Impargs.implicits_of_global constructref
+                  Impargs.implicits_of_global (Impargs.project_impargs state) constructref
 		in
 		let cst_narg =
 		  Inductiveops.constructor_nallargs_env

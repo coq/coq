@@ -149,7 +149,8 @@ let declare_one_prenex_implicit locality f =
       errorstrm (str "Expected prenex implicits for " ++ pr_qualid f)
   | _ -> [] in
   let impls =
-    match Impargs.implicits_of_global fref  with
+    let state = States.get_state () in
+    match Impargs.implicits_of_global (Impargs.project_impargs state) fref  with
     | [cond,impls] -> impls
     | [] -> errorstrm (str "Expected some implicits for " ++ pr_qualid f)
     | _ -> errorstrm (str "Multiple implicits not supported") in
