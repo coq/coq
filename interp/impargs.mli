@@ -12,6 +12,12 @@ open Names
 open EConstr
 open Environ
 
+(** {6 Implicit Arguments state} *)
+
+type impargs_state
+
+val project_impargs : States.state -> impargs_state
+
 (** {6 Implicit Arguments } *)
 (** Here we store the implicit arguments. Notice that we
     are outside the kernel, which knows nothing about implicit arguments. *)
@@ -118,7 +124,7 @@ val declare_manual_implicits : bool -> GlobRef.t -> ?enriching:bool ->
 val maybe_declare_manual_implicits : bool -> GlobRef.t -> ?enriching:bool ->
   manual_implicits -> unit
 
-val implicits_of_global : GlobRef.t -> implicits_list list
+val implicits_of_global : impargs_state -> GlobRef.t -> implicits_list list
 
 val extract_impargs_data :
   implicits_list list -> ((int * int) option * implicit_status list) list

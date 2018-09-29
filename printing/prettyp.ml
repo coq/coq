@@ -157,7 +157,7 @@ let need_expansion impl ref =
 
 let print_impargs ref =
   let ref = Smartlocate.smart_global ref in
-  let impl = implicits_of_global ref in
+  let impl = implicits_of_global (project_impargs (States.get_state ())) ref in
   let has_impl = not (List.is_empty impl) in
   (* Need to reduce since implicits are computed with products flattened *)
   pr_infos_list
@@ -259,7 +259,7 @@ let print_primitive ref =
   | _ -> []
 
 let print_name_infos ref =
-  let impls = implicits_of_global ref in
+  let impls = implicits_of_global (project_impargs (States.get_state ())) ref in
   let scopes = Notation.find_arguments_scope ref in
   let renames =
     try Arguments_renaming.arguments_names ref with Not_found -> [] in
@@ -297,7 +297,8 @@ let print_args_data_of_inductive_ids get test pr sp mipv =
 
 let print_inductive_implicit_args =
   print_args_data_of_inductive_ids
-    implicits_of_global (fun l -> not (List.is_empty (positions_of_implicits l)))
+    (fun ref -> implicits_of_global (project_impargs (States.get_state ())) ref)
+    (fun l -> not (List.is_empty (positions_of_implicits l)))
     print_impargs_list
 
 let print_inductive_renames =

@@ -508,11 +508,15 @@ type implicit_discharge_request =
   | ImplInteractive of GlobRef.t * implicits_flags *
       implicit_interactive_request
 
-let implicits_table = Summary.ref GlobRef.Map.empty ~name:"implicits"
+type impargs_state = implicits_list list GlobRef.Map.t
 
-let implicits_of_global ref =
+let _, implicits_tag = Summary.ref_tag GlobRef.Map.empty ~name:"implicits"
+
+let project_impargs st = Summary.project_from_summary (States.summary_of_state st) implicits_tag
+
+let implicits_of_global state ref =
   try
-    let l = GlobRef.Map.find ref !implicits_table in
+    let l = GlobRef.Map.find ref state in
     try
       let rename_l = Arguments_renaming.arguments_names ref in
       let rec rename implicits names = match implicits, names with
@@ -527,7 +531,7 @@ let implicits_of_global ref =
   with Not_found -> [DefaultImpArgs,[]]
 
 let cache_implicits_decl (ref,imps) =
-  implicits_table := GlobRef.Map.add ref imps !implicits_table
+  States.modify_state implicits_tag (fun s -> GlobRef.Map.add ref imps s)
 
 let load_implicits _ (_,(_,l)) = List.iter cache_implicits_decl l
 

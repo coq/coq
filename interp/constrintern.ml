@@ -940,7 +940,7 @@ let intern_var state env (ltacvars,ntnvars) namedctx loc id us =
 	(* [id] a section variable *)
 	(* Redundant: could be done in intern_qualid *)
 	let ref = VarRef id in
-        let impls = implicits_of_global ref in
+        let impls = implicits_of_global (project_impargs state.state) ref in
 	let scopes = find_arguments_scope ref in
 	Dumpglob.dump_reference ?loc "<>" (string_of_qualid (Decls.variable_secpath id)) "var";
 	DAst.make ?loc @@ GRef (ref, us), impls, scopes, []
@@ -951,14 +951,14 @@ let intern_var state env (ltacvars,ntnvars) namedctx loc id us =
 let find_appl_head_data state c =
   match DAst.get c with
   | GRef (ref,_) ->
-    let impls = implicits_of_global ref in
+    let impls = implicits_of_global (project_impargs state.state) ref in
     let scopes = find_arguments_scope ref in
       c, impls, scopes, []
   | GApp (r, l) ->
     begin match DAst.get r with
     | GRef (ref,_) when l != [] ->
       let n = List.length l in
-      let impls = implicits_of_global ref in
+      let impls = implicits_of_global (project_impargs state.state) ref in
       let scopes = find_arguments_scope ref in
 	c, List.map (drop_first_implicits n) impls,
 	List.skipn_at_least n scopes,[]
@@ -1104,8 +1104,8 @@ let rec simple_adjust_scopes n scopes =
   | [] -> None :: simple_adjust_scopes (n-1) []
   | sc::scopes -> sc :: simple_adjust_scopes (n-1) scopes
 
-let find_remaining_scopes pl1 pl2 ref =
-  let impls_st = implicits_of_global ref in
+let find_remaining_scopes state pl1 pl2 ref =
+  let impls_st = implicits_of_global (project_impargs state.state) ref in
   let len_pl1 = List.length pl1 in
   let len_pl2 = List.length pl2 in
   let impl_list = if Int.equal len_pl1 0
@@ -1229,14 +1229,14 @@ let add_implicits_check_length fail nargs nargs_with_letin impls_st len_pl1 pl2 
 let add_implicits_check_constructor_length state loc c len_pl1 pl2 =
   let nargs = Inductiveops.constructor_nallargs c in
   let nargs' = Inductiveops.constructor_nalldecls c in
-  let impls_st = implicits_of_global (ConstructRef c) in
+  let impls_st = implicits_of_global (project_impargs state.state) (ConstructRef c) in
   add_implicits_check_length (error_wrong_numarg_constructor ?loc state.genv c)
     nargs nargs' impls_st len_pl1 pl2
 
 let add_implicits_check_ind_length state loc c len_pl1 pl2 =
   let nallargs = inductive_nallargs_env state.genv c in
   let nalldecls = inductive_nalldecls_env state.genv c in
-  let impls_st = implicits_of_global (IndRef c) in
+  let impls_st = implicits_of_global (project_impargs state.state) (IndRef c) in
   add_implicits_check_length (error_wrong_numarg_inductive ?loc state.genv c)
     nallargs nalldecls impls_st len_pl1 pl2
 
@@ -1504,7 +1504,7 @@ let drop_notations_pattern looked_for state =
           (* Convention: do not deactivate implicit arguments and scopes for further arguments *)
 	  test_kind top g;
 	  let () = assert (List.is_empty vars) in
-          let (_,argscs) = find_remaining_scopes [] pats g in
+          let (_,argscs) = find_remaining_scopes state [] pats g in
 	  Some (g, [], List.map2 (in_pat_sc scopes) argscs pats)
 	| NApp (NRef g,[]) -> (* special case: Syndef for @Cstr, this deactivates *)
 	      test_kind top g;
@@ -1518,13 +1518,13 @@ let drop_notations_pattern looked_for state =
 	      let pats1,pats2 = List.chop nvars pats in
 	      let subst = make_subst vars pats1 in
               let idspl1 = List.map (in_not false qid.loc scopes (subst, Id.Map.empty) []) args in
-              let (_,argscs) = find_remaining_scopes pats1 pats2 g in
+              let (_,argscs) = find_remaining_scopes state pats1 pats2 g in
 	      Some (g, idspl1, List.map2 (in_pat_sc scopes) argscs pats2)
 	| _ -> raise Not_found)
       | TrueGlobal g ->
 	  test_kind top g;
           Dumpglob.add_glob ?loc:qid.loc g;
-          let (_,argscs) = find_remaining_scopes [] pats g in
+          let (_,argscs) = find_remaining_scopes state [] pats g in
 	  Some (g,[],List.map2 (fun x -> in_pat false (x,snd scopes)) argscs pats)
     with Not_found -> None
   and in_pat top scopes pt =
@@ -1562,7 +1562,7 @@ let drop_notations_pattern looked_for state =
       else
         (* Convention: (@r expl_pl) deactivates implicit arguments in expl_pl and in pl *)
         (* but not scopes in expl_pl *)
-        let (argscs1,_) = find_remaining_scopes expl_pl pl g in
+        let (argscs1,_) = find_remaining_scopes state expl_pl pl g in
         DAst.make ?loc @@ RCPatCstr (g, List.map2 (in_pat_sc scopes) argscs1 expl_pl @ List.map (in_pat false scopes) pl, [])
     | CPatNotation ((InConstrEntrySomeLevel,"- _"),([a],[]),[]) when is_non_zero_pat a ->
       let p = match a.CAst.v with CPatPrim (Numeral (p, _)) -> p | _ -> assert false in
@@ -1620,11 +1620,11 @@ let drop_notations_pattern looked_for state =
       end
     | NRef g ->
       ensure_kind top loc g;
-      let (_,argscs) = find_remaining_scopes [] args g in
+      let (_,argscs) = find_remaining_scopes state [] args g in
       DAst.make ?loc @@ RCPatCstr (g, [], List.map2 (in_pat_sc scopes) argscs args)
     | NApp (NRef g,pl) ->
       ensure_kind top loc g;
-      let (argscs1,argscs2) = find_remaining_scopes pl args g in
+      let (argscs1,argscs2) = find_remaining_scopes state pl args g in
       let pl = List.map2 (fun x -> in_not false loc (x,snd scopes) fullsubst []) argscs1 pl in
       let pl = add_local_defs_and_check_length loc state.genv g pl args in
       DAst.make ?loc @@ RCPatCstr (g, pl @ List.map (in_pat false scopes) args, [])
