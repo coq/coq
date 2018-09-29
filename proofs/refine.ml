@@ -44,9 +44,6 @@ let typecheck_evar ev env sigma =
   let sigma, _ = Typing.sort_of env sigma (Evd.evar_concl info) in
   sigma
 
-let (pr_constrv,pr_constr) =
-  Hook.make ~default:(fun _env _sigma _c -> Pp.str"<constr>") ()
-
 (* Get the side-effect's constant declarations to update the monad's
   * environmnent *)
 let add_if_undefined env eff =
@@ -111,7 +108,7 @@ let generic_refine ~typecheck f gl =
   let sigma = CList.fold_left Proofview.Unsafe.mark_as_goal sigma comb in
   let comb = CList.map (fun x -> Proofview.goal_with_state x state) comb in
   let trace () = Pp.(hov 2 (str"simple refine"++spc()++
-                            Hook.get pr_constrv env sigma (EConstr.Unsafe.to_constr c))) in
+                            Termops.Internal.print_constr_env env sigma c)) in
   Proofview.Trace.name_tactic trace (Proofview.tclUNIT v) >>= fun v ->
   Proofview.Unsafe.tclSETENV (Environ.reset_context env) <*>
   Proofview.Unsafe.tclEVARS sigma <*>

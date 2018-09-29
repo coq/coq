@@ -17,10 +17,6 @@ open Proofview
 
 (** {6 The refine tactic} *)
 
-(** Printer used to print the constr which refine refines. *)
-val pr_constr :
-  (Environ.env -> Evd.evar_map -> Constr.constr -> Pp.t) Hook.t
-
 (** {7 Refinement primitives} *)
 
 val refine : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> unit tactic
