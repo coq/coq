@@ -347,8 +347,9 @@ let coerce_search_pattern_to_sort hpat =
   if np < na then CErrors.user_err (Pp.str "too many arguments in head search pattern") else
   let hpat' = if np = na then hpat else mkPApp hpat (np - na) [||] in
   let warn () =
+    let state = States.get_state () in
     Feedback.msg_warning (str "Listing only lemmas with conclusion matching " ++ 
-      pr_constr_pattern_env env sigma hpat') in
+      pr_constr_pattern_env state env sigma hpat') in
   if EConstr.isSort sigma ht then begin warn (); true, hpat' end else
   let filter_head, coe_path =
     try 
@@ -443,7 +444,8 @@ let interp_modloc mr =
 (* The unified, extended vernacular "Search" command *)
 
 let ssrdisplaysearch gr env t =
-  let pr_res = pr_global gr ++ spc () ++ str " " ++ pr_lconstr_env env Evd.empty t in
+  let state = States.get_state () in
+  let pr_res = pr_global gr ++ spc () ++ str " " ++ pr_lconstr_env state env Evd.empty t in
   Feedback.msg_info (hov 2 pr_res ++ fnl ())
 
 VERNAC COMMAND EXTEND SsrSearchPattern CLASSIFIED AS QUERY
@@ -477,10 +479,11 @@ let pr_raw_ssrhintref prc _ _ = let open CAst in function
 
 let pr_rawhintref c =
   let _, env = Pfedit.get_current_context () in
+  let state = States.get_state () in
   match DAst.get c with
   | GApp (f, args) when isRHoles args ->
-    pr_glob_constr_env env f ++ str "|" ++ int (List.length args)
-  | _ -> pr_glob_constr_env env c
+    pr_glob_constr_env state env f ++ str "|" ++ int (List.length args)
+  | _ -> pr_glob_constr_env state env c
 
 let pr_glob_ssrhintref _ _ _ (c, _) = pr_rawhintref c
 

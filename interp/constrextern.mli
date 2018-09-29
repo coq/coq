@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Termops
 open EConstr
 open Environ
 open Libnames
@@ -23,12 +22,12 @@ open Ltac_pretype
 (** Translation of pattern, cases pattern, glob_constr and term into syntax
    trees for printing *)
 
-val extern_cases_pattern : Id.Set.t -> 'a cases_pattern_g -> cases_pattern_expr
-val extern_glob_constr : Id.Set.t -> 'a glob_constr_g -> constr_expr
-val extern_glob_type : Id.Set.t -> 'a glob_constr_g -> constr_expr
-val extern_constr_pattern : names_context -> Evd.evar_map ->
+val extern_cases_pattern : States.state -> Id.Set.t -> 'a cases_pattern_g -> cases_pattern_expr
+val extern_glob_constr : States.state -> env -> 'a glob_constr_g -> constr_expr
+val extern_glob_type : States.state -> env -> 'a glob_constr_g -> constr_expr
+val extern_constr_pattern : States.state -> env -> Evd.evar_map ->
   constr_pattern -> constr_expr
-val extern_closed_glob : ?lax:bool -> bool -> env -> Evd.evar_map -> closed_glob_constr -> constr_expr
+val extern_closed_glob : ?lax:bool -> bool -> States.state -> env -> Evd.evar_map -> closed_glob_constr -> constr_expr
 
 (** If [b=true] in [extern_constr b env c] then the variables in the first
    level of quantification clashing with the variables in [env] are renamed.
@@ -36,12 +35,12 @@ val extern_closed_glob : ?lax:bool -> bool -> env -> Evd.evar_map -> closed_glob
     env, sigma
 *)
 
-val extern_constr : ?lax:bool -> bool -> env -> Evd.evar_map -> constr -> constr_expr
-val extern_constr_in_scope : bool -> scope_name -> env -> Evd.evar_map -> constr -> constr_expr
+val extern_constr : ?lax:bool -> bool -> States.state -> env -> Evd.evar_map -> constr -> constr_expr
+val extern_constr_in_scope : bool -> scope_name -> States.state -> env -> Evd.evar_map -> constr -> constr_expr
 val extern_reference : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
-val extern_type : bool -> env -> Evd.evar_map -> types -> constr_expr
+val extern_type : bool -> States.state -> env -> Evd.evar_map -> types -> constr_expr
 val extern_sort : Evd.evar_map -> Sorts.t -> glob_sort
-val extern_rel_context : constr option -> env -> Evd.evar_map ->
+val extern_rel_context : constr option -> States.state -> env -> Evd.evar_map ->
   rel_context -> local_binder_expr list
 
 (** Printing options *)

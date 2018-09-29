@@ -74,6 +74,8 @@ type ltac_sign = {
   ltac_extra : Genintern.Store.t;
 }
 
+type intern_state = { state : States.state; genv : Environ.env }
+
 let interning_grammar = ref false
 
 (* Historically for parsing grammar rules, but in fact used only for
@@ -385,7 +387,7 @@ let push_name_env ?(global_level=false) ntnvars implargs env =
       else Dumpglob.dump_binding ?loc id;
       {env with ids = Id.Set.add id env.ids; impls = Id.Map.add id implargs env.impls}
 
-let intern_generalized_binder ?(global_level=false) intern_type ntnvars
+let intern_generalized_binder ?(global_level=false) intern_type state ntnvars
     env {loc;v=na} b b' t ty =
   let ids = (match na with Anonymous -> fun x -> x | Name na -> Id.Set.add na) env.ids in
   let ty, ids' =
@@ -413,12 +415,12 @@ let intern_generalized_binder ?(global_level=false) intern_type ntnvars
               | { v = CApp ((_, { v = CRef (qid,_) } ), _) } when qualid_is_ident qid ->
                 qualid_basename qid
 	      | _ -> default_non_dependent_ident
-	    in Implicit_quantifiers.make_fresh ids' (Global.env ()) id
+            in Implicit_quantifiers.make_fresh ids' state.genv id
 	  in Name name
     | _ -> na
   in (push_name_env ~global_level ntnvars (impls_type_list ty')(*?*) env' (make ?loc na)), (make ?loc (na,b',ty')) :: List.rev bl
 
-let intern_assumption intern ntnvars env nal bk ty =
+let intern_assumption intern state ntnvars env nal bk ty =
   let intern_type env = intern (set_type_scope env) in
   match bk with
   | Default k ->
@@ -431,7 +433,7 @@ let intern_assumption intern ntnvars env nal bk ty =
            (make ?loc (na,k,locate_if_hole ?loc na ty))::bl))
 	(env, []) nal
   | Generalized (b,b',t) ->
-     let env, b = intern_generalized_binder intern_type ntnvars env (List.hd nal) b b' t ty in
+     let env, b = intern_generalized_binder intern_type state ntnvars env (List.hd nal) b b' t ty in
      env, b
 
 let glob_local_binder_of_extended = DAst.with_loc_val (fun ?loc -> function
@@ -452,9 +454,9 @@ let intern_letin_binder intern ntnvars env (({loc;v=na} as locna),def,ty) =
   (push_name_env ntnvars (impls_term_list term) env locna,
    (na,Explicit,term,ty))
 
-let intern_cases_pattern_as_binder ?loc ntnvars env p =
+let intern_cases_pattern_as_binder ?loc state ntnvars env p =
   let il,disjpat =
-    let (il, subst_disjpat) = !intern_cases_pattern_fwd ntnvars (None,env.scopes) p in
+    let (il, subst_disjpat) = !intern_cases_pattern_fwd state ntnvars (None,env.scopes) p in
     let substl,disjpat = List.split subst_disjpat in
     if not (List.for_all (fun subst -> Id.Map.equal Id.equal subst Id.Map.empty) substl) then
       user_err ?loc (str "Unsupported nested \"as\" clause.");
@@ -467,9 +469,9 @@ let intern_cases_pattern_as_binder ?loc ntnvars env p =
   let na = make ?loc @@ Name id in
   env,((disjpat,il),id),na
 
-let intern_local_binder_aux ?(global_level=false) intern ntnvars (env,bl) = function
+let intern_local_binder_aux ?(global_level=false) intern state ntnvars (env,bl) = function
   | CLocalAssum(nal,bk,ty) ->
-      let env, bl' = intern_assumption intern ntnvars env nal bk ty in
+      let env, bl' = intern_assumption intern state ntnvars env nal bk ty in
       let bl' = List.map (fun {loc;v=(na,c,t)} -> DAst.make ?loc @@ GLocalAssum (na,c,t)) bl' in
       env, bl' @ bl
   | CLocalDef( {loc; v=na} as locna,def,ty) ->
@@ -481,9 +483,9 @@ let intern_local_binder_aux ?(global_level=false) intern ntnvars (env,bl) = func
         | Some ty -> ty
         | None -> CAst.make ?loc @@ CHole(None,IntroAnonymous,None)
       in
-      let env, ((disjpat,il),id),na = intern_cases_pattern_as_binder ?loc ntnvars env p in
+      let env, ((disjpat,il),id),na = intern_cases_pattern_as_binder ?loc state ntnvars env p in
       let bk = Default Explicit in
-      let _, bl' = intern_assumption intern ntnvars env [na] bk tyc in
+      let _, bl' = intern_assumption intern state ntnvars env [na] bk tyc in
       let {v=(_,bk,t)} = List.hd bl' in
       (env, (DAst.make ?loc @@ GLocalPattern((disjpat,List.map (fun x -> x.v) il),id,bk,t)) :: bl)
 
@@ -574,14 +576,14 @@ let term_of_name = function
        let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
     DAst.make (GHole (Evar_kinds.QuestionMark { Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=st }, IntroAnonymous, None))
 
-let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renaming,env) = function
+let traverse_binder intern_pat state ntnvars (terms,_,binders,_ as subst) avoid (renaming,env) = function
  | Anonymous -> (renaming,env), None, Anonymous
  | Name id ->
   let store,get = set_temporary_memory () in
   try
     (* We instantiate binder name with patterns which may be parsed as terms *)
     let pat = coerce_to_cases_pattern_expr (fst (Id.Map.find id terms)) in
-    let env,((disjpat,ids),id),na = intern_pat ntnvars env pat in
+    let env,((disjpat,ids),id),na = intern_pat state ntnvars env pat in
     let pat, na = match disjpat with
     | [pat] when is_var store pat -> let na = get () in None, na
     | _ -> Some ((List.map (fun x -> x.v) ids,disjpat),id), na.v in
@@ -598,7 +600,7 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renam
       (renaming,env), None, na
     else
       (* Interpret as a pattern *)
-      let env,((disjpat,ids),id),na = intern_pat ntnvars env pat in
+      let env,((disjpat,ids),id),na = intern_pat state ntnvars env pat in
       let pat, na =
         match disjpat with
         | [pat] when is_var store pat -> let na = get () in None, na
@@ -662,7 +664,7 @@ let flatten_binders bl =
     | a -> [a] in
   List.flatten (List.map dispatch bl)
 
-let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
+let instantiate_notation_constr loc intern intern_pat state ntnvars subst infos c =
   let (terms,termlists,binders,binderlists) = subst in
   (* when called while defining a notation, avoid capturing the private binders
      of the expression by variables bound by the notation (see #3892) *)
@@ -674,7 +676,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         let rec aux_letin env = function
         | [],terminator,_ -> aux (terms,None,None) (renaming,env) terminator
         | AddPreBinderIter (y,binder)::rest,terminator,iter ->
-           let env,binders = intern_local_binder_aux intern ntnvars (env,[]) binder in
+           let env,binders = intern_local_binder_aux intern state ntnvars (env,[]) binder in
            let binder,extra = flatten_generalized_binders_if_any y binders in
            aux (terms,Some (y,binder),Some (extra@rest,terminator,iter)) (renaming,env) iter
         | AddBinderIter (y,binder)::rest,terminator,iter ->
@@ -695,7 +697,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         with Not_found ->
         try
           let (bl,(scopt,subscopes)) = Id.Map.find x binderlists in
-	  let env,bl' = List.fold_left (intern_local_binder_aux intern ntnvars) (env,[]) bl in
+          let env,bl' = List.fold_left (intern_local_binder_aux intern state ntnvars) (env,[]) bl in
           terms_of_binders (if revert then bl' else List.rev bl'),(None,[])
         with Not_found ->
           anomaly (Pp.str "Inconsistent substitution of recursive notation.") in
@@ -728,7 +730,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
           if onlyident then
             let na = out_var c in term_of_name na, None
           else
-            let _,((disjpat,_),_),_ = intern_pat ntnvars nenv c in
+            let _,((disjpat,_),_),_ = intern_pat state ntnvars nenv c in
             match disjpat with
             | [pat] -> (glob_constr_of_cases_pattern pat, None)
             | _ -> error_cannot_coerce_disjunctive_pattern_term ?loc:c.loc ()
@@ -762,17 +764,17 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
     (* Two special cases to keep binder name synchronous with BinderType *)
     | NProd (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
         when Name.equal na na' ->
-        let subinfos,disjpat,na = traverse_binder intern_pat ntnvars subst avoid subinfos na in
+        let subinfos,disjpat,na = traverse_binder intern_pat state ntnvars subst avoid subinfos na in
         let ty = DAst.make ?loc @@ GHole (Evar_kinds.BinderType na,naming,arg) in
         DAst.make ?loc @@ GProd (na,Explicit,ty,Option.fold_right apply_cases_pattern disjpat (aux subst' subinfos c'))
     | NLambda (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
         when Name.equal na na' ->
-        let subinfos,disjpat,na = traverse_binder intern_pat ntnvars subst  avoid subinfos na in
+        let subinfos,disjpat,na = traverse_binder intern_pat state ntnvars subst  avoid subinfos na in
         let ty = DAst.make ?loc @@ GHole (Evar_kinds.BinderType na,naming,arg) in
         DAst.make ?loc @@ GLambda (na,Explicit,ty,Option.fold_right apply_cases_pattern disjpat (aux subst' subinfos c'))
     | t ->
       glob_constr_of_notation_constr_with_binders ?loc
-        (traverse_binder intern_pat ntnvars subst  avoid) (aux subst') subinfos t
+        (traverse_binder intern_pat state ntnvars subst  avoid) (aux subst') subinfos t
   and subst_var (terms, binderopt, _terminopt) (renaming, env) id =
     (* subst remembers the delimiters stack in the interpretation *)
     (* of the notations *)
@@ -790,7 +792,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
       if onlyident then
         term_of_name (out_var pat)
       else
-        let env,((disjpat,ids),id),na = intern_pat ntnvars env pat in
+        let env,((disjpat,ids),id),na = intern_pat state ntnvars env pat in
         match disjpat with
         | [pat] -> glob_constr_of_cases_pattern pat
         | _ -> user_err Pp.(str "Cannot turn a disjunctive pattern into a term.")
@@ -875,7 +877,7 @@ let make_subst ids l =
   let fold accu (id, scopes) a = Id.Map.add id (a, scopes) accu in
   List.fold_left2 fold Id.Map.empty ids l
 
-let intern_notation intern env ntnvars loc ntn fullargs =
+let intern_notation intern state env ntnvars loc ntn fullargs =
   (* Adjust to parsing of { } *)
   let ntn,fullargs = contract_curly_brackets ntn fullargs in
   (* Recover interpretation { } *)
@@ -884,7 +886,7 @@ let intern_notation intern env ntnvars loc ntn fullargs =
   (* Dispatch parsing substitution to an interpretation substitution *)
   let subst = split_by_type ids fullargs in
   (* Instantiate the notation *)
-  instantiate_notation_constr loc intern intern_cases_pattern_as_binder ntnvars subst (Id.Map.empty, env) c
+  instantiate_notation_constr loc intern intern_cases_pattern_as_binder state ntnvars subst (Id.Map.empty, env) c
 
 (**********************************************************************)
 (* Discriminating between bound variables and global references       *)
@@ -901,7 +903,7 @@ let gvar (loc, id) us = match us with
   user_err ?loc  (str "Variable " ++ Id.print id ++
     str " cannot have a universe instance")
 
-let intern_var env (ltacvars,ntnvars) namedctx loc id us =
+let intern_var state env (ltacvars,ntnvars) namedctx loc id us =
   (* Is [id] a notation variable *)
   if Id.Map.mem id ntnvars then
     begin
@@ -938,7 +940,7 @@ let intern_var env (ltacvars,ntnvars) namedctx loc id us =
 	(* [id] a section variable *)
 	(* Redundant: could be done in intern_qualid *)
 	let ref = VarRef id in
-	let impls = implicits_of_global ref in
+        let impls = implicits_of_global ref in
 	let scopes = find_arguments_scope ref in
 	Dumpglob.dump_reference ?loc "<>" (string_of_qualid (Decls.variable_secpath id)) "var";
 	DAst.make ?loc @@ GRef (ref, us), impls, scopes, []
@@ -946,7 +948,7 @@ let intern_var env (ltacvars,ntnvars) namedctx loc id us =
 	(* [id] a goal variable *)
 	gvar (loc,id) us, [], [], []
 
-let find_appl_head_data c =
+let find_appl_head_data state c =
   match DAst.get c with
   | GRef (ref,_) ->
     let impls = implicits_of_global ref in
@@ -956,7 +958,7 @@ let find_appl_head_data c =
     begin match DAst.get r with
     | GRef (ref,_) when l != [] ->
       let n = List.length l in
-      let impls = implicits_of_global ref in 
+      let impls = implicits_of_global ref in
       let scopes = find_arguments_scope ref in
 	c, List.map (drop_first_implicits n) impls,
 	List.skipn_at_least n scopes,[]
@@ -1003,7 +1005,7 @@ let glob_sort_of_level (level: glob_level) : glob_sort =
   | GType info -> GType [sort_info_of_level_info info]
 
 (* Is it a global reference or a syntactic definition? *)
-let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
+let intern_qualid ?(no_secvar=false) intern state qid env ntnvars us args =
   let loc = qid.loc in
   match intern_extended_global_of_qualid qid with
   | TrueGlobal (VarRef _) when no_secvar ->
@@ -1020,7 +1022,7 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
       let subst = (terms, Id.Map.empty, Id.Map.empty, Id.Map.empty) in
       let infos = (Id.Map.empty, env) in
       let projapp = match c with NRef _ -> true | _ -> false in
-      let c = instantiate_notation_constr loc intern intern_cases_pattern_as_binder ntnvars subst infos c in
+      let c = instantiate_notation_constr loc intern intern_cases_pattern_as_binder state ntnvars subst infos c in
       let loc = c.loc in
       let err () =
         user_err ?loc  (str "Notation " ++ pr_qualid qid
@@ -1045,14 +1047,14 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
       in
       c, projapp, args2
 
-let intern_applied_reference intern env namedctx (_, ntnvars as lvar) us args qid =
+let intern_applied_reference intern state env namedctx (_, ntnvars as lvar) us args qid =
   let loc = qid.CAst.loc in
   if qualid_is_ident qid then
-      try intern_var env lvar namedctx loc (qualid_basename qid) us, args
+      try intern_var state env lvar namedctx loc (qualid_basename qid) us, args
       with Not_found ->
       try
-        let r, projapp, args2 = intern_qualid ~no_secvar:true qid intern env ntnvars us args in
-	let x, imp, scopes, l = find_appl_head_data r in
+        let r, projapp, args2 = intern_qualid ~no_secvar:true intern state qid env ntnvars us args in
+        let x, imp, scopes, l = find_appl_head_data state r in
 	  (x,imp,scopes,l), args2
       with Not_found ->
         (* Extra allowance for non globalizing functions *)
@@ -1061,15 +1063,16 @@ let intern_applied_reference intern env namedctx (_, ntnvars as lvar) us args qi
         else error_global_not_found qid
   else
     let r,projapp,args2 =
-      try intern_qualid qid intern env ntnvars us args
+      try intern_qualid intern state qid env ntnvars us args
       with Not_found -> error_global_not_found qid
     in
-    let x, imp, scopes, l = find_appl_head_data r in
+    let x, imp, scopes, l = find_appl_head_data state r in
     (x,imp,scopes,l), args2
 
 let interp_reference vars r =
   let (r,_,_,_),_ =
     intern_applied_reference (fun _ -> error_not_enough_arguments ?loc:None)
+      {state = States.get_state (); genv = Global.env ()}
       {ids = Id.Set.empty; unb = false ;
        tmp_scope = None; scopes = []; impls = empty_internalization_env} []
       (vars, Id.Map.empty) None [] r
@@ -1223,18 +1226,18 @@ let add_implicits_check_length fail nargs nargs_with_letin impls_st len_pl1 pl2 
       else let (b,out) = aux (succ i) (q,tt) in (b,hh::out)
   in aux 0 (impl_list,pl2)
 
-let add_implicits_check_constructor_length env loc c len_pl1 pl2 =
+let add_implicits_check_constructor_length state loc c len_pl1 pl2 =
   let nargs = Inductiveops.constructor_nallargs c in
   let nargs' = Inductiveops.constructor_nalldecls c in
   let impls_st = implicits_of_global (ConstructRef c) in
-  add_implicits_check_length (error_wrong_numarg_constructor ?loc env c)
+  add_implicits_check_length (error_wrong_numarg_constructor ?loc state.genv c)
     nargs nargs' impls_st len_pl1 pl2
 
-let add_implicits_check_ind_length env loc c len_pl1 pl2 =
-  let nallargs = inductive_nallargs_env env c in
-  let nalldecls = inductive_nalldecls_env env c in
+let add_implicits_check_ind_length state loc c len_pl1 pl2 =
+  let nallargs = inductive_nallargs_env state.genv c in
+  let nalldecls = inductive_nalldecls_env state.genv c in
   let impls_st = implicits_of_global (IndRef c) in
-  add_implicits_check_length (error_wrong_numarg_inductive ?loc env c)
+  add_implicits_check_length (error_wrong_numarg_inductive ?loc state.genv c)
     nallargs nalldecls impls_st len_pl1 pl2
 
 (** Do not raise NotEnoughArguments thanks to preconditions*)
@@ -1462,7 +1465,7 @@ let is_non_zero_pat c = match c with
 | { CAst.v = CPatPrim (Numeral (p, true)) } -> not (is_zero p)
 | _ -> false
 
-let drop_notations_pattern looked_for genv =
+let drop_notations_pattern looked_for state =
   (* At toplevel, Constructors and Inductives are accepted, in recursive calls
      only constructor are allowed *)
   let ensure_kind top loc g =
@@ -1501,7 +1504,7 @@ let drop_notations_pattern looked_for genv =
           (* Convention: do not deactivate implicit arguments and scopes for further arguments *)
 	  test_kind top g;
 	  let () = assert (List.is_empty vars) in
-	  let (_,argscs) = find_remaining_scopes [] pats g in
+          let (_,argscs) = find_remaining_scopes [] pats g in
 	  Some (g, [], List.map2 (in_pat_sc scopes) argscs pats)
 	| NApp (NRef g,[]) -> (* special case: Syndef for @Cstr, this deactivates *)
 	      test_kind top g;
@@ -1515,13 +1518,13 @@ let drop_notations_pattern looked_for genv =
 	      let pats1,pats2 = List.chop nvars pats in
 	      let subst = make_subst vars pats1 in
               let idspl1 = List.map (in_not false qid.loc scopes (subst, Id.Map.empty) []) args in
-	      let (_,argscs) = find_remaining_scopes pats1 pats2 g in
+              let (_,argscs) = find_remaining_scopes pats1 pats2 g in
 	      Some (g, idspl1, List.map2 (in_pat_sc scopes) argscs pats2)
 	| _ -> raise Not_found)
       | TrueGlobal g ->
 	  test_kind top g;
           Dumpglob.add_glob ?loc:qid.loc g;
-	  let (_,argscs) = find_remaining_scopes [] pats g in
+          let (_,argscs) = find_remaining_scopes [] pats g in
 	  Some (g,[],List.map2 (fun x -> in_pat false (x,snd scopes)) argscs pats)
     with Not_found -> None
   and in_pat top scopes pt =
@@ -1623,7 +1626,7 @@ let drop_notations_pattern looked_for genv =
       ensure_kind top loc g;
       let (argscs1,argscs2) = find_remaining_scopes pl args g in
       let pl = List.map2 (fun x -> in_not false loc (x,snd scopes) fullsubst []) argscs1 pl in
-      let pl = add_local_defs_and_check_length loc genv g pl args in
+      let pl = add_local_defs_and_check_length loc state.genv g pl args in
       DAst.make ?loc @@ RCPatCstr (g, pl @ List.map (in_pat false scopes) args, [])
     | NList (x,y,iter,terminator,revert) ->
       if not (List.is_empty args) then user_err ?loc 
@@ -1645,9 +1648,9 @@ let drop_notations_pattern looked_for genv =
     | t -> error_invalid_pattern_notation ?loc ()
   in in_pat true
 
-let rec intern_pat genv ntnvars aliases pat =
+let rec intern_pat state ntnvars aliases pat =
   let intern_cstr_with_all_args loc c with_letin idslpl1 pl2 =
-    let idslpl2 = List.map (intern_pat genv ntnvars empty_alias) pl2 in
+    let idslpl2 = List.map (intern_pat state ntnvars empty_alias) pl2 in
     let (ids',pll) = product_of_cases_patterns aliases (idslpl1@idslpl2) in
     let pl' = List.map (fun (asubst,pl) ->
       (asubst, DAst.make ?loc @@ PatCstr (c,chop_params_pattern loc (fst c) pl with_letin,alias_of aliases))) pll in
@@ -1656,18 +1659,18 @@ let rec intern_pat genv ntnvars aliases pat =
   match DAst.get pat with
     | RCPatAlias (p, id) ->
       let aliases' = merge_aliases aliases id in
-      intern_pat genv ntnvars aliases' p
+      intern_pat state ntnvars aliases' p
     | RCPatCstr (head, expl_pl, pl) ->
       if !asymmetric_patterns then
         let len = if List.is_empty expl_pl then Some (List.length pl) else None in
 	let c,idslpl1 = find_constructor loc len head in
 	let with_letin =
-	  check_constructor_length genv loc c (List.length idslpl1 + List.length expl_pl) pl in
+          check_constructor_length state.genv loc c (List.length idslpl1 + List.length expl_pl) pl in
 	intern_cstr_with_all_args loc c with_letin idslpl1 (expl_pl@pl)
       else
 	let c,idslpl1 = find_constructor loc None head in
 	let with_letin, pl2 =
-	  add_implicits_check_constructor_length genv loc c (List.length idslpl1 + List.length expl_pl) pl in
+          add_implicits_check_constructor_length state loc c (List.length idslpl1 + List.length expl_pl) pl in
 	intern_cstr_with_all_args loc c with_letin idslpl1 (expl_pl@pl2)
     | RCPatAtom (Some ({loc;v=id},scopes)) ->
       let aliases = merge_aliases aliases (make ?loc @@ Name id) in
@@ -1678,33 +1681,33 @@ let rec intern_pat genv ntnvars aliases pat =
       (ids, [asubst, DAst.make ?loc @@ PatVar (alias_of aliases)])
     | RCPatOr pl ->
       assert (not (List.is_empty pl));
-      let pl' = List.map (intern_pat genv ntnvars aliases) pl in
+      let pl' = List.map (intern_pat state ntnvars aliases) pl in
       let (idsl,pl') = List.split pl' in
       let ids = List.hd idsl in
       check_or_pat_variables loc ids (List.tl idsl);
       (ids,List.flatten pl')
 
-let intern_cases_pattern genv ntnvars scopes aliases pat =
-  intern_pat genv ntnvars aliases
-    (drop_notations_pattern (function ConstructRef _ -> () | _ -> raise Not_found) genv scopes pat)
+let intern_cases_pattern state ntnvars scopes aliases pat =
+  intern_pat state ntnvars aliases
+    (drop_notations_pattern (function ConstructRef _ -> () | _ -> raise Not_found) state scopes pat)
 
 let _ =
   intern_cases_pattern_fwd :=
-    fun ntnvars scopes p -> intern_cases_pattern (Global.env ()) ntnvars scopes empty_alias p
+    fun state ntnvars scopes p -> intern_cases_pattern state ntnvars scopes empty_alias p
 
-let intern_ind_pattern genv ntnvars scopes pat =
+let intern_ind_pattern state ntnvars scopes pat =
   let no_not =
     try
-      drop_notations_pattern (function (IndRef _ | ConstructRef _) -> () | _ -> raise Not_found) genv scopes pat
+      drop_notations_pattern (function (IndRef _ | ConstructRef _) -> () | _ -> raise Not_found) state scopes pat
     with InternalizationError(loc,NotAConstructor _) -> error_bad_inductive_type ?loc
   in
   let loc = no_not.CAst.loc in
   match DAst.get no_not with
     | RCPatCstr (head, expl_pl, pl) ->
       let c = (function IndRef ind -> ind | _ -> error_bad_inductive_type ?loc) head in
-      let with_letin, pl2 = add_implicits_check_ind_length genv loc c
+      let with_letin, pl2 = add_implicits_check_ind_length state loc c
 	(List.length expl_pl) pl in
-      let idslpl = List.map (intern_pat genv ntnvars empty_alias) (expl_pl@pl2) in
+      let idslpl = List.map (intern_pat state ntnvars empty_alias) (expl_pl@pl2) in
       (with_letin,
        match product_of_cases_patterns empty_alias idslpl with
        | _,[_,pl] -> (c,chop_params_pattern loc c pl with_letin)
@@ -1783,11 +1786,11 @@ let extract_explicit_arg imps args =
 (**********************************************************************)
 (* Main loop                                                          *)
 
-let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
+let internalize state env pattern_mode (_, ntnvars as lvar) c =
   let rec intern env = CAst.with_loc_val (fun ?loc -> function
     | CRef (ref,us) ->
 	let (c,imp,subscopes,l),_ =
-	  intern_applied_reference intern env (Environ.named_context globalenv)
+          intern_applied_reference intern state env (Environ.named_context state.genv)
 	    lvar us [] ref
 	in
 	  apply_impargs c env imp subscopes l loc
@@ -1883,7 +1886,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
        intern env (CAst.make ?loc @@ CPrim (Numeral (p,false)))
     | CNotation ((InConstrEntrySomeLevel,"( _ )"),([a],[],[],[])) -> intern env a
     | CNotation (ntn,args) ->
-        intern_notation intern env ntnvars loc ntn args
+        intern_notation intern state env ntnvars loc ntn args
     | CGeneralization (b,a,c) ->
         intern_generalization intern env ntnvars loc b a c
     | CPrim p ->
@@ -1894,7 +1897,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CAppExpl ((isproj,ref,us), args) ->
         let (f,_,args_scopes,_),args =
 	  let args = List.map (fun a -> (a,None)) args in
-	  intern_applied_reference intern env (Environ.named_context globalenv) 
+          intern_applied_reference intern state env (Environ.named_context state.genv)
 	    lvar us args ref 
 	in
         (* Rem: GApp(_,f,[]) stands for @f *)
@@ -1911,11 +1914,11 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	let (c,impargs,args_scopes,l),args =
           match f.CAst.v with
             | CRef (ref,us) -> 
-	       intern_applied_reference intern env
-		 (Environ.named_context globalenv) lvar us args ref
+               intern_applied_reference intern state env
+                 (Environ.named_context state.genv) lvar us args ref
             | CNotation (ntn,([],[],[],[])) ->
-                let c = intern_notation intern env ntnvars loc ntn ([],[],[],[]) in
-                let x, impl, scopes, l = find_appl_head_data c in
+                let c = intern_notation intern state env ntnvars loc ntn ([],[],[],[]) in
+                let x, impl, scopes, l = find_appl_head_data state c in
 		  (x,impl,scopes,l), args
             | _ -> (intern env f,[],[],[]), args in
           apply_impargs c env impargs args_scopes
@@ -1983,7 +1986,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                   (DAst.make ?loc @@ GHole(Evar_kinds.CasesType false,IntroAnonymous,None))
                   rtnpo) (* "=> P" if there were a return predicate P, and "=> _" otherwise *) in
              let catch_all_sub_eqn =
-               if List.for_all (irrefutable globalenv) thepats then [] else
+               if List.for_all (irrefutable state.genv) thepats then [] else
                   [CAst.make @@ ([],List.make (List.length thepats) (DAst.make @@ PatVar Anonymous), (* "|_,..,_" *)
                    DAst.make @@ GHole(Evar_kinds.ImpossibleCase,IntroAnonymous,None))]   (* "=> _" *) in
              Some (DAst.make @@ GCases(RegularStyle,sub_rtn,sub_tms,main_sub_eqn::catch_all_sub_eqn))
@@ -2032,7 +2035,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           let lvars = Id.Set.union lvars ntnvars in
           let ltacvars = Id.Set.union lvars env.ids in
           let ist = {
-            Genintern.genv = globalenv;
+            Genintern.genv = state.genv;
             ltacvars;
             extra;
           } in
@@ -2073,11 +2076,11 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
   and intern_type env = intern (set_type_scope env)
 
   and intern_local_binder env bind : intern_env * Glob_term.extended_glob_local_binder list =
-    intern_local_binder_aux intern ntnvars env bind
+    intern_local_binder_aux intern state ntnvars env bind
 
   (* Expands a multiple pattern into a disjunction of multiple patterns *)
   and intern_multiple_pattern env n pl =
-    let idsl_pll = List.map (intern_cases_pattern globalenv ntnvars (None,env.scopes) empty_alias) pl in
+    let idsl_pll = List.map (intern_cases_pattern state ntnvars (None,env.scopes) empty_alias) pl in
     let loc = loc_of_multiple_pattern pl in
     check_number_of_pattern loc n pl;
     product_of_cases_patterns empty_alias idsl_pll
@@ -2117,8 +2120,8 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     (* the "in" part *)
     let match_td,typ = match t with
     | Some t ->
-        let with_letin,(ind,l) = intern_ind_pattern globalenv ntnvars (None,env.scopes) t in
-	let (mib,mip) = Inductive.lookup_mind_specif globalenv ind in
+        let with_letin,(ind,l) = intern_ind_pattern state ntnvars (None,env.scopes) t in
+        let (mib,mip) = Inductive.lookup_mind_specif state.genv ind in
 	let nparams = (List.length (mib.Declarations.mind_params_ctxt)) in
 	(* for "in Vect n", we answer (["n","n"],[(loc,"n")])
 
@@ -2248,16 +2251,18 @@ let intern_gen kind env sigma
                ?(impls=empty_internalization_env) ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
                c =
   let tmp_scope = scope_of_type_kind sigma kind in
-  internalize env {ids = extract_ids env; unb = false;
+  internalize {state = States.get_state (); genv = env}
+                        {ids = extract_ids env; unb = false;
 		         tmp_scope = tmp_scope; scopes = [];
 			 impls = impls}
     pattern_mode (ltacvars, Id.Map.empty) c
 
 let intern_constr env sigma c = intern_gen WithoutTypeConstraint env sigma c
 let intern_type env sigma c = intern_gen IsType env sigma c
-let intern_pattern globalenv patt =
+let intern_pattern env patt =
   try
-    intern_cases_pattern globalenv Id.Map.empty (None,[]) empty_alias patt
+    intern_cases_pattern {state = States.get_state (); genv = env}
+      Id.Map.empty (None,[]) empty_alias patt
   with
       InternalizationError (loc,e) ->
 	user_err ?loc ~hdr:"internalize" (explain_internalization_error e)
@@ -2330,8 +2335,9 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let vl = Id.Map.map (fun typ -> (ref false, ref None, typ)) nenv.ninterp_var_type in
   let impls = Id.Map.fold (fun id _ impls -> Id.Map.remove id impls) nenv.ninterp_var_type impls in
-  let c = internalize (Global.env()) {ids = extract_ids env; unb = false;
-						tmp_scope = None; scopes = []; impls = impls}
+  let c = internalize {state = States.get_state (); genv = env}
+            {ids = extract_ids env; unb = false;
+             tmp_scope = None; scopes = []; impls = impls}
     false (empty_ltac_sign, vl) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a, reversible = notation_constr_of_glob_constr nenv c in
@@ -2356,16 +2362,16 @@ let interp_binder_evars env sigma na t =
   let t' = locate_if_hole ?loc:(loc_of_glob_constr t) na t in
   understand_tcc env sigma ~expected_type:IsType t'
 
-let my_intern_constr env lvar acc c =
-  internalize env acc false lvar c
+let my_intern_constr state lvar acc c =
+  internalize state acc false lvar c
 
 let intern_context global_level env impl_env binders =
+  let state = { state = States.get_state (); genv = env } in
   try
   let lvar = (empty_ltac_sign, Id.Map.empty) in
   let lenv, bl = List.fold_left
 	    (fun (lenv, bl) b ->
-	       let (env, bl) = intern_local_binder_aux ~global_level (my_intern_constr env lvar) Id.Map.empty (lenv, bl) b in
-	       (env, bl))
+               intern_local_binder_aux ~global_level (my_intern_constr state lvar) state Id.Map.empty (lenv, bl) b)
 	    ({ids = extract_ids env; unb = false;
 	      tmp_scope = None; scopes = []; impls = impl_env}, []) binders in
   (lenv.impls, List.map glob_local_binder_of_extended bl)

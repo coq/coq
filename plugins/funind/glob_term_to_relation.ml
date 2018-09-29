@@ -16,7 +16,7 @@ module NamedDecl = Context.Named.Declaration
 
 let observe strm =
   if do_observe ()
-  then Feedback.msg_debug strm
+  then Feedback.msg_debug (strm (States.get_state ()))
   else ()
 (*let observennl strm =
   if do_observe ()
@@ -310,13 +310,14 @@ let make_discr_match brl =
 
 (* [build_constructors_of_type] construct the array of pattern of its inductive argument*)
 let build_constructors_of_type ind' argl =
-  let (mib,ind) = Inductive.lookup_mind_specif (Global.env()) ind' in
+  let env = Global.env() in
+  let (mib,ind) = Inductive.lookup_mind_specif env ind' in
   let npar = mib.Declarations.mind_nparams in
   Array.mapi (fun i _ ->
 		let construct = ind',i+1 in
 		let constructref = ConstructRef(construct) in
 		let _implicit_positions_of_cst =
-		  Impargs.implicits_of_global constructref
+                  Impargs.implicits_of_global constructref
 		in
 		let cst_narg =
 		  Inductiveops.constructor_nallargs_env
@@ -358,7 +359,7 @@ let raw_push_named (na,raw_value,raw_typ) env =
 
 let add_pat_variables pat typ env : Environ.env =
   let rec add_pat_variables env pat typ  : Environ.env =
-    observe (str "new rel env := " ++ Printer.pr_rel_context_of env (Evd.from_env env));
+    observe (fun state -> str "new rel env := " ++ Printer.pr_rel_context_of state env (Evd.from_env env));
 
     match DAst.get pat with
       | PatVar na -> Environ.push_rel (RelDecl.LocalAssum (na,typ)) env
@@ -383,20 +384,20 @@ let add_pat_variables pat typ env : Environ.env =
 	   | LocalAssum (Anonymous,_) | LocalDef (Anonymous,_,_) -> assert false
 	   | LocalAssum (Name id, t) ->
              let new_t =  substl ctxt t in
-             observe (str "for variable " ++ Ppconstr.pr_id id ++  fnl () ++
-                      str "old type := " ++ Printer.pr_lconstr_env env sigma t ++ fnl () ++
-                      str "new type := " ++ Printer.pr_lconstr_env env sigma new_t ++ fnl ()
+             observe (fun state -> str "for variable " ++ Ppconstr.pr_id id ++  fnl () ++
+                      str "old type := " ++ Printer.pr_lconstr_env state env sigma t ++ fnl () ++
+                      str "new type := " ++ Printer.pr_lconstr_env state env sigma new_t ++ fnl ()
                      );
              let open Context.Named.Declaration in
              (Environ.push_named (LocalAssum (id,new_t)) env,mkVar id::ctxt)
            | LocalDef (Name id, v, t) ->
              let new_t =  substl ctxt t in
              let new_v = substl ctxt v in
-             observe (str "for variable " ++ Ppconstr.pr_id id ++  fnl () ++
-                      str "old type := "  ++ Printer.pr_lconstr_env env sigma t ++ fnl () ++
-                      str "new type := "  ++ Printer.pr_lconstr_env env sigma new_t ++ fnl () ++
-                      str "old value := " ++ Printer.pr_lconstr_env env sigma v ++ fnl () ++
-                      str "new value := " ++ Printer.pr_lconstr_env env sigma new_v ++ fnl ()
+             observe (fun state -> str "for variable " ++ Ppconstr.pr_id id ++  fnl () ++
+                      str "old type := "  ++ Printer.pr_lconstr_env state env sigma t ++ fnl () ++
+                      str "new type := "  ++ Printer.pr_lconstr_env state env sigma new_t ++ fnl () ++
+                      str "old value := " ++ Printer.pr_lconstr_env state env sigma v ++ fnl () ++
+                      str "new value := " ++ Printer.pr_lconstr_env state env sigma new_v ++ fnl ()
                      );
              let open Context.Named.Declaration in
              (Environ.push_named (LocalDef (id,new_v,new_t)) env,mkVar id::ctxt)
@@ -405,7 +406,7 @@ let add_pat_variables pat typ env : Environ.env =
 	~init:(env,[])
     )
   in
-  observe (str "new var env := " ++ Printer.pr_named_context_of res (Evd.from_env env));
+  observe (fun state -> str "new var env := " ++ Printer.pr_named_context_of state res (Evd.from_env env));
   res
 
 
@@ -478,7 +479,7 @@ let rec pattern_to_term_and_type env typ  = DAst.with_val (function
 
 
 let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
-  observe (str " Entering : " ++ Printer.pr_glob_constr_env env rt);
+  observe (fun state -> str " Entering : " ++ Printer.pr_glob_constr_env state env rt);
   let open CAst in
   match DAst.get rt with
     | GRef _ | GVar _ | GEvar _ | GPatVar _ | GSort _  | GHole _ ->
@@ -650,9 +651,10 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	let (ind,_) =
 	  try Inductiveops.find_inductive env (Evd.from_env env) b_typ
 	  with Not_found ->
+            let state = States.get_state () in
 	    user_err  (str "Cannot find the inductive associated to " ++
-                               Printer.pr_glob_constr_env env b ++ str " in " ++
-                               Printer.pr_glob_constr_env env rt ++ str ". try again with a cast")
+                               Printer.pr_glob_constr_env state env b ++ str " in " ++
+                               Printer.pr_glob_constr_env state env rt ++ str ". try again with a cast")
 	in
 	let case_pats = build_constructors_of_type (fst ind) [] in
 	assert (Int.equal (Array.length case_pats) 2);
@@ -682,9 +684,10 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	  let (ind,_) =
 	    try Inductiveops.find_inductive env (Evd.from_env env) b_typ
 	    with Not_found ->
+              let state = States.get_state () in
 	      user_err  (str "Cannot find the inductive associated to " ++
-                                 Printer.pr_glob_constr_env env b ++ str " in " ++
-                                 Printer.pr_glob_constr_env env rt ++ str ". try again with a cast")
+                                 Printer.pr_glob_constr_env state env b ++ str " in " ++
+                                 Printer.pr_glob_constr_env state env rt ++ str ". try again with a cast")
 	  in
 	  let case_pats = build_constructors_of_type (fst ind) nal_as_glob_constr in
 	  assert (Int.equal (Array.length case_pats) 1);
@@ -824,7 +827,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 		 let pat_as_term = pattern_to_term pat in
                  (* removing trivial holes *) 
                  let pat_as_term = solve_trivial_holes pat_as_term e in 
-                  (* observe (str "those_pattern_preconds" ++ spc () ++ *)
+                  (* observe (fun state -> str "those_pattern_preconds" ++ spc () ++ *)
                   (*            str "pat" ++ spc () ++ pr_glob_constr pat_as_term ++ spc ()++ *)
                   (*            str "e" ++ spc () ++ pr_glob_constr e ++spc ()++ *)
                   (*            str "typ_as_constr" ++ spc () ++ pr_lconstr typ_as_constr); *)
@@ -899,13 +902,13 @@ let same_raw_term rt1 rt2 =
 let decompose_raw_eq lhs rhs = 
   let _, env = Pfedit.get_current_context () in
   let rec decompose_raw_eq lhs rhs acc =
-    observe (str "decomposing eq for " ++ pr_glob_constr_env env lhs ++ str " " ++ pr_glob_constr_env env rhs);
+    observe (fun state -> str "decomposing eq for " ++ pr_glob_constr_env state env lhs ++ str " " ++ pr_glob_constr_env state env rhs);
     let (rhd,lrhs) = glob_decompose_app rhs in
     let (lhd,llhs) = glob_decompose_app lhs in
-    observe (str "lhd := " ++ pr_glob_constr_env env lhd);
-    observe (str "rhd := " ++ pr_glob_constr_env env rhd);
-    observe (str "llhs := " ++ int (List.length llhs));
-    observe (str "lrhs := " ++ int (List.length lrhs));
+    observe (fun state -> str "lhd := " ++ pr_glob_constr_env state env lhd);
+    observe (fun state -> str "rhd := " ++ pr_glob_constr_env state env rhd);
+    observe (fun state -> str "llhs := " ++ int (List.length llhs));
+    observe (fun state -> str "lrhs := " ++ int (List.length lrhs));
     let sllhs = List.length llhs in
     let slrhs = List.length lrhs in
     if same_raw_term lhd rhd && Int.equal sllhs slrhs
@@ -923,7 +926,7 @@ exception Continue
    eliminates some meaningless equalities, applies some rewrites......
 *)
 let rec rebuild_cons env nb_args relname args crossed_types depth rt =
-  observe (str "rebuilding : " ++ pr_glob_constr_env env rt);
+  observe (fun state -> str "rebuilding : " ++ pr_glob_constr_env state env rt);
   let open Context.Rel.Declaration in
   let open CAst in
   match DAst.get rt with
@@ -967,7 +970,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
                 let id = match DAst.get id with GVar id -> id | _ -> assert false in
 		begin
 		  try
-                    observe (str "computing new type for eq : " ++ pr_glob_constr_env env rt);
+                    observe (fun state -> str "computing new type for eq : " ++ pr_glob_constr_env state env rt);
 		    let t' =
 		      try fst (Pretyping.understand env (Evd.from_env env) t)(*FIXME*)
                       with e when CErrors.noncritical e -> raise Continue
@@ -1012,9 +1015,9 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    let eq' =
 		      DAst.make ?loc:loc1 @@ GApp(DAst.make ?loc:loc2 @@GRef(jmeq,None),[ty;DAst.make ?loc:loc3 @@ GVar id;rt_typ;rt])
 		    in
-                    observe (str "computing new type for jmeq : " ++ pr_glob_constr_env env eq');
+                    observe (fun state -> str "computing new type for jmeq : " ++ pr_glob_constr_env state env eq');
 		    let eq'_as_constr,ctx = Pretyping.understand env (Evd.from_env env) eq' in
-		    observe (str " computing new type for jmeq : done") ;
+                    observe (fun state -> str " computing new type for jmeq : done") ;
                     let sigma = Evd.(from_env env) in
 		    let new_args =
                       match EConstr.kind sigma eq'_as_constr with
@@ -1099,7 +1102,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    rebuild_cons env nb_args relname args crossed_types depth new_rt
 		  else raise Continue
 	      with Continue -> 
-                observe (str "computing new type for prod : " ++ pr_glob_constr_env env rt);
+                observe (fun state -> str "computing new type for prod : " ++ pr_glob_constr_env state env rt);
 		let t',ctx = Pretyping.understand env (Evd.from_env env) t in
                 let new_env = EConstr.push_rel (LocalAssum (n,t')) env in
 		let new_b,id_to_exclude =
@@ -1115,7 +1118,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		  | _ -> mkGProd(n,t,new_b),Id.Set.filter not_free_in_t id_to_exclude
 	      end
 	    | _ ->
-                observe (str "computing new type for prod : " ++ pr_glob_constr_env env rt);
+                observe (fun state -> str "computing new type for prod : " ++ pr_glob_constr_env state env rt);
 		let t',ctx = Pretyping.understand env (Evd.from_env env) t in
                 let new_env = EConstr.push_rel (LocalAssum (n,t')) env in
 		let new_b,id_to_exclude =
@@ -1134,7 +1137,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 	begin
 	  let not_free_in_t id = not (is_free_in id t) in
 	  let new_crossed_types = t :: crossed_types in
-          observe (str "computing new type for lambda : " ++ pr_glob_constr_env env rt);
+          observe (fun state -> str "computing new type for lambda : " ++ pr_glob_constr_env state env rt);
 	  let t',ctx = Pretyping.understand env (Evd.from_env env) t in
 	  match n with
 	    | Name id ->
@@ -1214,7 +1217,7 @@ let rebuild_cons env nb_args relname args crossed_types rt =
   let res =
     rebuild_cons env nb_args relname args crossed_types 0 rt
   in
-(*   observe (str " leads to "++ pr_glob_constr (fst res)); *)
+(*   observe (fun state -> str " leads to "++ pr_glob_constr (fst res)); *)
   res
 
 
@@ -1341,6 +1344,7 @@ let do_build_inductive
       ) rta
   in
   let resa = Array.map (build_entry_lc env funnames_as_set []) rta in
+  let state = States.get_state () in
   let env_with_graphs =
     let rel_arity i funargs =  (* Rebuilding arities (with parameters) *)
       let rel_first_args :(Name.t * Glob_term.glob_constr * Glob_term.glob_constr option ) list  =
@@ -1350,12 +1354,12 @@ let do_build_inductive
 	(fun (n,t,typ) acc ->
           match typ with
           | Some typ ->
-             CAst.make @@ Constrexpr.CLetIn((CAst.make n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
-                              Some (with_full_print (Constrextern.extern_glob_constr Id.Set.empty) typ),
+             CAst.make @@ Constrexpr.CLetIn((CAst.make n),with_full_print (Constrextern.extern_glob_constr state (Environ.reset_context env)) t,
+                              Some (with_full_print (Constrextern.extern_glob_constr state (Environ.reset_context env)) typ),
 			      acc)
 	  | None ->
 	     CAst.make @@ Constrexpr.CProdN
-               ([Constrexpr.CLocalAssum([CAst.make n],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t)],
+               ([Constrexpr.CLocalAssum([CAst.make n],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr state (Environ.reset_context env)) t)],
 		acc
 	       )
 	)
@@ -1410,6 +1414,8 @@ let do_build_inductive
     (fun (id,rt) -> (id,snd (chop_rprod_n nrel_params rt))))
     rel_constructors
   in
+  let state = States.get_state () in
+  let env = Environ.reset_context (Global.env ()) in
   let rel_arity i funargs =  (* Reduilding arities (with parameters) *)
     let rel_first_args :(Name.t * Glob_term.glob_constr * Glob_term.glob_constr option ) list  =
       (snd (List.chop nrel_params funargs))
@@ -1418,12 +1424,12 @@ let do_build_inductive
       (fun (n,t,typ) acc ->
          match typ with
          | Some typ ->
-           CAst.make @@ Constrexpr.CLetIn((CAst.make n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
-                              Some (with_full_print (Constrextern.extern_glob_constr Id.Set.empty) typ),
+           CAst.make @@ Constrexpr.CLetIn((CAst.make n),with_full_print (Constrextern.extern_glob_constr state env) t,
+                              Some (with_full_print (Constrextern.extern_glob_constr state env) typ),
 			    acc)
 	 | None ->
            CAst.make @@ Constrexpr.CProdN
-           ([Constrexpr.CLocalAssum([CAst.make n],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t)],
+           ([Constrexpr.CLocalAssum([CAst.make n],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr state env) t)],
 	    acc
 	   )
       )
@@ -1450,11 +1456,11 @@ let do_build_inductive
       (fun (n,t,typ) ->
          match typ with
          | Some typ ->
-           Constrexpr.CLocalDef((CAst.make n), Constrextern.extern_glob_constr Id.Set.empty t,
-                                  Some (with_full_print (Constrextern.extern_glob_constr Id.Set.empty) typ))
+           Constrexpr.CLocalDef((CAst.make n), Constrextern.extern_glob_constr state env t,
+                                  Some (with_full_print (Constrextern.extern_glob_constr state env) typ))
 	 | None ->
 	 Constrexpr.CLocalAssum
-           ([(CAst.make n)], Constrexpr_ops.default_binder_kind, Constrextern.extern_glob_constr Id.Set.empty t)
+           ([(CAst.make n)], Constrexpr_ops.default_binder_kind, Constrextern.extern_glob_constr state env t)
       )
       rels_params
   in
@@ -1463,7 +1469,7 @@ let do_build_inductive
       (fun (id,t) ->
          false,((CAst.make id),
 		with_full_print
-		  (Constrextern.extern_glob_type Id.Set.empty) ((* zeta_normalize *) (alpha_rt rel_params_ids t))
+                  (Constrextern.extern_glob_type state env) ((* zeta_normalize *) (alpha_rt rel_params_ids t))
 	       )
       ))
       (rel_constructors)
@@ -1515,7 +1521,7 @@ let do_build_inductive
 	    ++ fnl () ++
 	    msg
 	in
-	observe (msg);
+        observe (fun state -> msg);
 	raise e
     | reraise ->
 	let _time3 = System.get_time () in
@@ -1530,7 +1536,7 @@ let do_build_inductive
 	    ++ fnl () ++
 	    CErrors.print reraise
 	in
- 	observe msg;
+        observe (fun _ -> msg);
 	raise reraise
 
 

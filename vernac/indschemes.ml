@@ -157,11 +157,13 @@ let try_declare_scheme what f internal names kn =
     | NonSingletonProp ind ->
 	alarm what internal
 	  (str "Cannot extract computational content from proposition " ++
-	   quote (Printer.pr_inductive (Global.env()) ind) ++ str ".")
+           quote (Printer.pr_inductive (States.get_state ())
+                    (Global.env()) ind) ++ str ".")
     | EqNotFound (ind',ind) ->
 	alarm what internal
 	  (str "Boolean equality on " ++
-	   quote (Printer.pr_inductive (Global.env()) ind') ++
+           quote (Printer.pr_inductive (States.get_state ())
+                    (Global.env()) ind') ++
 	   strbrk " is missing.")
     | UndefinedCst s ->
 	alarm what internal
@@ -183,7 +185,7 @@ let try_declare_scheme what f internal names kn =
     | ConstructorWithNonParametricInductiveType ind ->
          alarm what internal
            (strbrk "Unsupported constructor with an argument whose type is a non-parametric inductive type." ++
-            strbrk " Type " ++ quote (Printer.pr_inductive (Global.env()) ind) ++
+            strbrk " Type " ++ quote (Printer.pr_inductive (States.get_state ()) (Global.env()) ind) ++
             str " is applied to an argument which is not a variable.")
     | e when CErrors.noncritical e ->
         alarm what internal
@@ -198,7 +200,7 @@ let beq_scheme_msg mind =
   let mib = Global.lookup_mind mind in
   (* TODO: mutual inductive case *)
   str "Boolean equality on " ++
-    pr_enum (fun ind -> quote (Printer.pr_inductive (Global.env()) ind))
+    pr_enum (fun ind -> quote (Printer.pr_inductive (States.get_state ()) (Global.env()) ind))
     (List.init (Array.length mib.mind_packets) (fun i -> (mind,i)))
 
 let declare_beq_scheme_with l kn =
@@ -276,7 +278,7 @@ let declare_eq_decidability_gen internal names kn =
     ignore (define_mutual_scheme eq_dec_scheme_kind internal names kn)
 
 let eq_dec_scheme_msg ind = (* TODO: mutual inductive case *)
-  str "Decidable equality on " ++ quote (Printer.pr_inductive (Global.env()) ind)
+  str "Decidable equality on " ++ quote (Printer.pr_inductive (States.get_state ()) (Global.env()) ind)
 
 let declare_eq_decidability_scheme_with l kn =
   try_declare_scheme (eq_dec_scheme_msg (kn,0))

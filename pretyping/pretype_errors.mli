@@ -64,7 +64,7 @@ type pretype_error =
     (Evar.t * Evar_kinds.t) option * Evar.Set.t option
     (** unresolvable evar, connex component *)
 
-exception PretypeError of env * Evd.evar_map * pretype_error
+exception PretypeError of States.state * env * Evd.evar_map * pretype_error
 
 val precatchable_exception : exn -> bool
 
@@ -125,7 +125,7 @@ val error_cannot_unify : ?loc:Loc.t -> env -> Evd.evar_map ->
 
 val error_cannot_unify_local : env -> Evd.evar_map -> constr * constr * constr -> 'b
 
-val error_cannot_find_well_typed_abstraction : env -> Evd.evar_map ->
+val error_cannot_find_well_typed_abstraction : States.state -> env -> Evd.evar_map ->
       constr -> constr list -> (env * type_error) option -> 'b
 
 val error_wrong_abstraction_type :  env -> Evd.evar_map ->

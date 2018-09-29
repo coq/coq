@@ -46,7 +46,8 @@ let observe_tac s tac g = observe_tac_stream (str s) tac g
 
 let pr_leconstr_fp =
   let sigma, env = Pfedit.get_current_context () in
-  Printer.pr_leconstr_env env sigma
+  let state = States.get_state () in
+  Printer.pr_leconstr_env state env sigma
 
 let debug_queue = Stack.create ()
 
@@ -68,7 +69,7 @@ let rec print_debug_queue e =
 
 let observe strm =
   if do_observe ()
-  then Feedback.msg_debug strm
+  then Feedback.msg_debug (strm (States.get_state ()))
   else ()
 
 let do_observe_tac s tac g = 
@@ -176,7 +177,7 @@ let is_incompatible_eq sigma t =
 	| _ -> false
     with e when CErrors.noncritical e -> false
   in
-  if res then   observe (str "is_incompatible_eq " ++ pr_leconstr_fp t);
+  if res then   observe (fun _ -> str "is_incompatible_eq " ++ pr_leconstr_fp t);
   res
 
 let change_hyp_with_using msg hyp_id t tac : tactic =
@@ -224,8 +225,8 @@ let find_rectype env sigma c =
 let isAppConstruct ?(env=Global.env ()) sigma t =
   try
     let t',l = find_rectype env sigma t in
-    observe (str "isAppConstruct : " ++ Printer.pr_leconstr_env env sigma t ++ str " -> " ++
-             Printer.pr_leconstr_env env sigma (applist  (t',l)));
+    observe (fun state -> str "isAppConstruct : " ++ Printer.pr_leconstr_env state env sigma t ++ str " -> " ++
+             Printer.pr_leconstr_env state env sigma (applist  (t',l)));
     true
   with Not_found -> false
 
@@ -238,8 +239,8 @@ exception NoChange
 let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
   let nochange ?t' msg  =
     begin
-      observe (str ("Not treating ( "^msg^" )") ++ pr_leconstr_env env sigma t  ++ str "    " ++
-               match t' with None -> str "" | Some t -> Printer.pr_leconstr_env env sigma t );
+      observe (fun state -> str ("Not treating ( "^msg^" )") ++ pr_leconstr_env state env sigma t  ++ str "    " ++
+               match t' with None -> str "" | Some t -> Printer.pr_leconstr_env state env sigma t );
       raise NoChange;
     end
   in
@@ -266,7 +267,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
     in
     if not ((closed0 sigma (fst t1)) && (closed0 sigma (snd t1)))then nochange "not a closed lhs";
     let rec compute_substitution sub t1 t2 =
-(*       observe (str "compute_substitution : " ++ pr_lconstr t1 ++ str " === " ++ pr_lconstr t2); *)
+(*       observe (fun state -> str "compute_substitution : " ++ pr_lconstr t1 ++ str " === " ++ pr_lconstr t2); *)
       if isRel sigma t2
       then
 	let t2 = destRel sigma t2  in
@@ -342,7 +343,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
     let simpl_eq_tac =
       change_hyp_with_using "prove_pattern_simplification" hyp_id new_type_of_hyp prove_new_hyp
     in
-(*     observe (str "In " ++ Ppconstr.pr_id hyp_id ++  *)
+(*     observe (fun state -> str "In " ++ Ppconstr.pr_id hyp_id ++  *)
 (* 	       str "removing an equation " ++ fnl ()++  *)
 (* 	       str "old_typ_of_hyp :=" ++ *)
 (* 	       Printer.pr_lconstr_env *)
@@ -350,7 +351,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
 (* 	       (it_mkProd_or_LetIn ~init:end_of_type ((x,None,t)::context)) *)
 (* 	     ++ fnl () ++ *)
 (* 	       str "new_typ_of_hyp := "++  *)
-(* 	       Printer.pr_lconstr_env env new_type_of_hyp ++ fnl () *)
+(* 	       Printer.pr_lconstr_env state env new_type_of_hyp ++ fnl () *)
 (* 	     ++ str "old context := " ++ pr_rel_context env context ++ fnl ()  *)
 (* 	     ++ str "new context := " ++ pr_rel_context env new_ctxt ++ fnl ()  *)
 (* 	     ++ str "old type  := " ++ pr_lconstr end_of_type ++ fnl ()  *)
@@ -476,7 +477,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	  end
 	else if eq_constr sigma t_x coq_False then
 	  begin
-(* 	    observe (str "Removing : "++ Ppconstr.pr_id hyp_id++  *)
+(* 	    observe (fun state -> str "Removing : "++ Ppconstr.pr_id hyp_id++  *)
 (* 		       str " since it has False in its preconds " *)
 (* 		    ); *)
 	    raise TOREMOVE;  (* False -> .. useless *)
@@ -484,7 +485,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	else if is_incompatible_eq sigma t_x then raise TOREMOVE (* t_x := C1 ... =  C2 ... *)
 	else if eq_constr sigma t_x coq_True  (* Trivial => we remove this precons *)
 	then
-(* 	    observe (str "In "++Ppconstr.pr_id hyp_id++  *)
+(* 	    observe (fun state -> str "In "++Ppconstr.pr_id hyp_id++  *)
 (* 		       str " removing useless precond True" *)
 (* 		    );  *)
 	  let popped_t' = pop t' in
@@ -607,8 +608,8 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	     match EConstr.kind (project g') new_term_value_eq with
 	       | App(f,[| _;_;args2 |]) -> args2
 	       | _ ->
-		   observe (str "cannot compute new term value : " ++ pr_gls g' ++ fnl () ++ str "last hyp is" ++
-			      pr_leconstr_env (pf_env g') (project g') new_term_value_eq
+                   observe (fun state -> str "cannot compute new term value : " ++ pr_gls g' ++ fnl () ++ str "last hyp is" ++
+                              pr_leconstr_env state (pf_env g') (project g') new_term_value_eq
 			   );
 		   anomaly (Pp.str "cannot compute new term value.")
 	   in
@@ -635,7 +636,7 @@ let my_orelse tac1 tac2 g =
   try
     tac1 g
   with e when CErrors.noncritical e ->
-(*     observe (str "using snd tac since : " ++ CErrors.print e); *)
+(*     observe (fun state -> str "using snd tac since : " ++ CErrors.print e); *)
     tac2 g
 
 let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
@@ -663,7 +664,7 @@ let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
 
 	*)
 	(fun g ->
-(* 	   observe (str "Instanciation: removing hyp " ++ Ppconstr.pr_id hid); *)
+(* 	   observe (fun state -> str "Instanciation: removing hyp " ++ Ppconstr.pr_id hid); *)
 	   thin [hid] g
 	)
       )
@@ -700,7 +701,7 @@ let build_proof
     fun g ->
         let env = pf_env g in
         let sigma = project g in
-(*      observe (str "proving on " ++ Printer.pr_lconstr_env (pf_env g) term);*)
+(*      observe (fun state -> str "proving on " ++ Printer.pr_lconstr_env (pf_env g) term);*)
 	match EConstr.kind sigma dyn_infos.info with
 	  | Case(ci,ct,t,cb) ->
 	      let do_finalize_t dyn_info' =
@@ -847,7 +848,7 @@ let build_proof
 		] g
 	  | Rel _ -> anomaly (Pp.str "Free var in goal conclusion!")
   and build_proof do_finalize dyn_infos g =
-(*     observe (str "proving with "++Printer.pr_lconstr dyn_infos.info++ str " on goal " ++ pr_gls g); *)
+(*     observe (fun state -> str "proving with "++Printer.pr_lconstr dyn_infos.info++ str " on goal " ++ pr_gls g); *)
     observe_tac_stream (str "build_proof with " ++ pr_leconstr_fp dyn_infos.info ) (build_proof_aux do_finalize dyn_infos) g
   and build_proof_args do_finalize dyn_infos (* f_args'  args *) :tactic =
     fun g ->
@@ -858,7 +859,7 @@ let build_proof
 	    | []  ->
 	      do_finalize {dyn_infos with info = f_args'} g
 	    | arg::args ->
-	      (* 		observe (str "build_proof_args with arg := "++ pr_lconstr_env (pf_env g) arg++ *)
+              (* 		observe (fun state -> str "build_proof_args with arg := "++ pr_lconstr_env (pf_env g) arg++ *)
 	      (* 			fnl () ++  *)
 	      (* 			pr_goal (Tacmach.sig_it g) *)
 	      (* 			); *)
@@ -928,7 +929,7 @@ let prove_rec_hyp fix_info  =
   }
 
 let generalize_non_dep hyp g =
-(*   observe (str "rec id := " ++ Ppconstr.pr_id hyp); *)
+(*   observe (fun state -> str "rec id := " ++ Ppconstr.pr_id hyp); *)
   let hyps = [hyp] in
   let env = Global.env () in
   let hyp_typ = pf_unsafe_type_of g (mkVar hyp) in
@@ -945,7 +946,7 @@ let generalize_non_dep hyp g =
       else (hyp::clear,keep))
       ~init:([],[]) (pf_env g)
   in
-(*   observe (str "to_revert := " ++ prlist_with_sep spc Ppconstr.pr_id to_revert); *)
+(*   observe (fun state -> str "to_revert := " ++ prlist_with_sep spc Ppconstr.pr_id to_revert); *)
   tclTHEN
     ((* observe_tac "h_generalize" *) (Proofview.V82.of_tactic (generalize  (List.map mkVar to_revert) )))
     ((* observe_tac "thin" *) (thin to_revert))
@@ -959,9 +960,9 @@ let revert idl =
     (thin idl)
 
 let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num =
-(*   observe (str "nb_args := " ++ str (string_of_int nb_args)); *)
-(*   observe (str "nb_params := " ++ str (string_of_int nb_params)); *)
-(*   observe (str "rec_args_num := " ++ str (string_of_int (rec_args_num + 1) )); *)
+(*   observe (fun state -> str "nb_args := " ++ str (string_of_int nb_args)); *)
+(*   observe (fun state -> str "nb_params := " ++ str (string_of_int nb_params)); *)
+(*   observe (fun state -> str "rec_args_num := " ++ str (string_of_int (rec_args_num + 1) )); *)
   let f_def = Global.lookup_constant (fst (destConst evd f)) in
   let eq_lhs = mkApp(f,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i))) in
   let (f_body, _) = Option.get (Global.body_of_constant_body f_def) in
@@ -973,12 +974,12 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
     let fnames = List.rev (Array.to_list (Array.map (fun f -> mkApp(f,params)) fnames)) in
     fnames
   in
-(*   observe (str "fnames_with_params " ++ prlist_with_sep fnl pr_lconstr fnames_with_params); *)
-(*   observe (str "body " ++ pr_lconstr bodies.(num)); *)
+(*   observe (fun state -> str "fnames_with_params " ++ prlist_with_sep fnl pr_lconstr fnames_with_params); *)
+(*   observe (fun state -> str "body " ++ pr_lconstr bodies.(num)); *)
   let f_body_with_params_and_other_fun  = substl fnames_with_params bodies.(num) in
-(*   observe (str "f_body_with_params_and_other_fun " ++  pr_lconstr f_body_with_params_and_other_fun); *)
+(*   observe (fun state -> str "f_body_with_params_and_other_fun " ++  pr_lconstr f_body_with_params_and_other_fun); *)
   let eq_rhs = nf_betaiotazeta (mkApp(compose_lam params f_body_with_params_and_other_fun,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i)))) in
-  (*   observe (str "eq_rhs " ++  pr_lconstr eq_rhs); *)
+  (*   observe (fun state -> str "eq_rhs " ++  pr_lconstr eq_rhs); *)
   let (type_ctxt,type_of_f),evd =
     let evd,t = Typing.type_of ~refresh:true (Global.env ()) evd f
     in 
@@ -1135,16 +1136,16 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	   f_body
 	)
     in
-    observe (str "full_params := " ++
+    observe (fun state -> str "full_params := " ++
 	       prlist_with_sep spc (RelDecl.get_name %> Nameops.Name.get_id %> Ppconstr.pr_id)
 	       full_params
 	    );
-    observe (str "princ_params := " ++
+    observe (fun state -> str "princ_params := " ++
 	       prlist_with_sep spc (RelDecl.get_name %> Nameops.Name.get_id %> Ppconstr.pr_id)
 	       princ_params
 	    );
-    observe (str "fbody_with_full_params := " ++
-               pr_leconstr_env (Global.env ()) !evd fbody_with_full_params
+    observe (fun state -> str "fbody_with_full_params := " ++
+               pr_leconstr_env state (Global.env ()) !evd fbody_with_full_params
 	    );
     let all_funs_with_full_params =
       Array.map (fun f -> applist(f, List.rev_map var_of_decl full_params)) all_funs
@@ -1217,7 +1218,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 			 num_in_block = num
 		     }
 		   in
-(* 		   observe (str "binding " ++ Ppconstr.pr_id (Nameops.Name.get_id pte) ++  *)
+(* 		   observe (fun state -> str "binding " ++ Ppconstr.pr_id (Nameops.Name.get_id pte) ++  *)
 (* 			      str " to " ++ Ppconstr.pr_id info.name); *)
 		   (Id.Map.add (Nameops.Name.get_id pte) info acc_map,info::acc_info)
 		   )
@@ -1274,7 +1275,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	      (fun g -> (* replacement of the function by its body *)
 		 let args = nLastDecls nb_args g in
 		 let fix_body = fix_info.body_with_param in
-(* 		 observe (str "fix_body := "++ pr_lconstr_env (pf_env gl) fix_body); *)
+(* 		 observe (fun state -> str "fix_body := "++ pr_lconstr_env (pf_env gl) fix_body); *)
                  let open Context.Named.Declaration in
 		 let args_id = List.map get_id args in
 		 let dyn_infos =
@@ -1316,7 +1317,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 			 do_prove
 			 dyn_infos)
 		     in
-(* 		     observe (str "branches := " ++ *)
+(* 		     observe (fun state -> str "branches := " ++ *)
 (* 				prlist_with_sep spc (fun decl -> Ppconstr.pr_id (id_of_decl decl)) princ_info.branches ++  fnl () ++ *)
 (* 			   str "args := " ++ prlist_with_sep spc Ppconstr.pr_id  args_id *)
 
@@ -1555,7 +1556,7 @@ let prove_principle_for_gen
   in
   let real_rec_arg_num = rec_arg_num - princ_info.nparams in
   let npost_rec_arg = princ_info.nargs - real_rec_arg_num + 1 in
-(*   observe ( *)
+(*   observe (fun state ->  *)
 (*     str "princ_type := " ++ pr_lconstr  princ_type ++ fnl () ++ *)
 (*     str "princ_info.nparams := " ++ int princ_info.nparams ++ fnl () ++  *)
 
@@ -1571,7 +1572,7 @@ let prove_principle_for_gen
       | (LocalAssum (Name id,_) | LocalDef (Name id,_,_)) :: _ -> id
       | _ -> assert false
   in
-(*   observe (str "rec_arg_id := " ++ pr_lconstr (mkVar rec_arg_id)); *)
+(*   observe (fun state -> str "rec_arg_id := " ++ pr_lconstr (mkVar rec_arg_id)); *)
   let subst_constrs = List.map (get_name %> Nameops.Name.get_id %> mkVar) (pre_rec_arg@princ_info.params) in
   let relation = substl subst_constrs relation in
   let input_type = substl subst_constrs rec_arg_type in
@@ -1657,10 +1658,10 @@ let prove_principle_for_gen
 	 (Proofview.V82.tactic prove_rec_arg_acc)
       );
 (*       observe_tac "reverting" *) (revert (List.rev (acc_rec_arg_id::args_ids)));
-(*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl () ++  *)
+(*       (fun g -> observe (fun state -> Printer.pr_goal (sig_it g) ++ fnl () ++  *)
 (* 			   str "fix arg num" ++ int (List.length args_ids + 1) ); tclIDTAC g); *)
       (* observe_tac "h_fix " *) (Proofview.V82.of_tactic (fix fix_id (List.length args_ids + 1)));
-(*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl() ++ pr_lconstr_env (pf_env g ) (pf_unsafe_type_of g (mkVar fix_id) )); tclIDTAC g); *)
+(*       (fun g -> observe (fun state -> Printer.pr_goal (sig_it g) ++ fnl() ++ pr_lconstr_env (pf_env g ) (pf_unsafe_type_of g (mkVar fix_id) )); tclIDTAC g); *)
       h_intros (List.rev (acc_rec_arg_id::args_ids));
       Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_ref));
       (* observe_tac "finish" *) (fun gl' ->

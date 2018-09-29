@@ -46,8 +46,9 @@ let functional_induction with_clean c princl pat =
 		let finfo = (* we first try to find out a graph on f *)
 		  try find_Function_infos c'
 		  with Not_found ->
+                    let state = States.get_state () in
 		    user_err  (str "Cannot find induction information on "++
-                                       Printer.pr_leconstr_env (Tacmach.pf_env g) sigma (mkConst c') )
+                                       Printer.pr_leconstr_env state (Tacmach.pf_env g) sigma (mkConst c') )
 		in
 		match Tacticals.elimination_sort_of_goal g with
 		| InProp -> finfo.prop_lemma
@@ -74,8 +75,9 @@ let functional_induction with_clean c princl pat =
 		    (b,a)
 		    (* mkConst(const_of_id princ_name ),g (\* FIXME *\) *)
 		  with Not_found -> (* This one is neither defined ! *)
+                    let state = States.get_state () in
 		    user_err  (str "Cannot find induction principle for "
-                                     ++ Printer.pr_leconstr_env (Tacmach.pf_env g) sigma (mkConst c') )
+                                     ++ Printer.pr_leconstr_env state (Tacmach.pf_env g) sigma (mkConst c') )
 	      in
               (princ,NoBindings,Tacmach.pf_unsafe_type_of g' princ,g')
 	   | _ -> raise (UserError(None,str "functional induction must be used with a function" ))
@@ -624,7 +626,7 @@ let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacex
   let fixl,ntns = ComFixpoint.extract_fixpoint_components false fixpoint_exprl in
   let ((_,_,typel),_,ctx,_) = ComFixpoint.interp_fixpoint ~cofix:false fixl ntns in
   let constr_expr_typel = 
-    with_full_print (List.map (fun c -> Constrextern.extern_constr false (Global.env ()) (Evd.from_ctx ctx) (EConstr.of_constr c))) typel in
+    with_full_print (List.map (fun c -> Constrextern.extern_constr false (States.get_state ()) (Global.env ()) (Evd.from_ctx ctx) (EConstr.of_constr c))) typel in
   let fixpoint_exprl_with_new_bl = 
     List.map2 (fun ((lna,(rec_arg_opt,rec_order),bl,ret_typ,opt_body),notation_list) fix_typ -> 
      
@@ -849,7 +851,8 @@ let make_graph (f_ref : GlobRef.t) =
       begin try c,Global.lookup_constant c
         with Not_found ->
           let sigma, env = Pfedit.get_current_context () in
-          raise (UserError (None,str "Cannot find " ++ Printer.pr_leconstr_env env sigma (mkConst c)) )
+          let state = States.get_state () in
+          raise (UserError (None,str "Cannot find " ++ Printer.pr_leconstr_env state env sigma (mkConst c)) )
       end
     | _ -> raise (UserError (None, str "Not a function reference") )
   in
@@ -858,10 +861,11 @@ let make_graph (f_ref : GlobRef.t) =
      | Some (body, _) ->
 	 let env = Global.env () in
 	 let sigma = Evd.from_env env in
+         let state = States.get_state () in
 	 let extern_body,extern_type =
 	   with_full_print (fun () ->
-		(Constrextern.extern_constr false env sigma (EConstr.of_constr body),
-		 Constrextern.extern_type false env sigma
+                (Constrextern.extern_constr false state env sigma (EConstr.of_constr body),
+                 Constrextern.extern_type false state env sigma
                    (EConstr.of_constr (*FIXME*) c_body.const_type)
 		)
 	     )

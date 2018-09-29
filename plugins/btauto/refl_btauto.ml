@@ -213,7 +213,8 @@ module Btauto = struct
         let map_msg (key, v) =
           let b = if v then str "true" else str "false" in
           let sigma, env = Pfedit.get_current_context () in
-          let term = Printer.pr_constr_env env sigma key in
+          let state = States.get_state () in
+          let term = Printer.pr_constr_env state env sigma key in
           term ++ spc () ++ str ":=" ++ spc () ++ b
         in
         let assign = List.map map_msg assign in

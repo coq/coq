@@ -399,7 +399,7 @@ type numeral_notation_error =
   | UnexpectedTerm of Constr.t
   | UnexpectedNonOptionTerm of Constr.t
 
-exception NumeralNotationError of Environ.env * Evd.evar_map * numeral_notation_error
+exception NumeralNotationError of States.state * Environ.env * Evd.evar_map * numeral_notation_error
 
 type numnot_option =
   | Nop
@@ -638,7 +638,9 @@ let rec glob_of_constr ?loc env sigma c = match Constr.kind c with
   | Const (c, _) -> DAst.make ?loc (Glob_term.GRef (ConstRef c, None))
   | Ind (ind, _) -> DAst.make ?loc (Glob_term.GRef (IndRef ind, None))
   | Var id -> DAst.make ?loc (Glob_term.GRef (VarRef id, None))
-  | _ -> Loc.raise ?loc (NumeralNotationError(env,sigma,UnexpectedTerm c))
+  | _ ->
+      let state = States.get_state () in
+      Loc.raise ?loc (NumeralNotationError(state,env,sigma,UnexpectedTerm c))
 
 let no_such_number ?loc ty =
   CErrors.user_err ?loc
@@ -649,7 +651,9 @@ let interp_option ty ?loc env sigma c =
   match Constr.kind c with
   | App (_Some, [| _; c |]) -> glob_of_constr ?loc env sigma c
   | App (_None, [| _ |]) -> no_such_number ?loc ty
-  | x -> Loc.raise ?loc (NumeralNotationError(env,sigma,UnexpectedNonOptionTerm c))
+  | x ->
+      let state = States.get_state () in
+      Loc.raise ?loc (NumeralNotationError(state,env,sigma,UnexpectedNonOptionTerm c))
 
 let uninterp_option c =
   match Constr.kind c with

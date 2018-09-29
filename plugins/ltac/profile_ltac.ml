@@ -250,12 +250,12 @@ let string_of_call ck =
        | Tacexpr.LtacNameCall cst -> Pptactic.pr_ltac_constant cst
        | Tacexpr.LtacVarCall (id, t) -> Names.Id.print id
        | Tacexpr.LtacAtomCall te ->
-         (Pptactic.pr_glob_tactic (Global.env ())
+         (Pptactic.pr_glob_tactic (States.get_state()) (Global.env ())
             (Tacexpr.TacAtom (Loc.tag te)))
        | Tacexpr.LtacConstrInterp (c, _) ->
-         pr_glob_constr_env (Global.env ()) c
+         pr_glob_constr_env (States.get_state()) (Global.env ()) c
        | Tacexpr.LtacMLCall te ->
-         (Pptactic.pr_glob_tactic (Global.env ())
+         (Pptactic.pr_glob_tactic (States.get_state()) (Global.env ())
             te)
     ) in
   let s = String.map (fun c -> if c = '\n' then ' ' else c) s in

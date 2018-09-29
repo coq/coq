@@ -26,7 +26,8 @@ let pp_concat hd ?(sep=str", ") = function [] -> hd | x :: xs ->
   hd ++ List.fold_left (fun acc x -> acc ++ sep ++ x) x xs
 
 let pp_term gl t =
-  let t = Reductionops.nf_evar (project gl) t in pr_econstr_env (pf_env gl) (project gl) t
+  let state = States.get_state () in
+  let t = Reductionops.nf_evar (project gl) t in pr_econstr_env state (pf_env gl) (project gl) t
 
 (* FIXME *)
 (* terms are pre constr, the kind is parsing/printing flag to distinguish
@@ -58,8 +59,8 @@ let pr_guarded guard prc c =
   if guard s (skip_wschars s 0) then pr_paren prc c else prc c
 
 let prl_constr_expr = Ppconstr.pr_lconstr_expr
-let pr_glob_constr c = Printer.pr_glob_constr_env (Global.env ()) c
-let prl_glob_constr c = Printer.pr_lglob_constr_env (Global.env ()) c
+let pr_glob_constr c = Printer.pr_glob_constr_env (States.get_state ()) (Global.env ()) c
+let prl_glob_constr c = Printer.pr_lglob_constr_env (States.get_state ()) (Global.env ()) c
 let pr_glob_constr_and_expr = function
   | _, Some c -> Ppconstr.pr_constr_expr c
   | c, None -> pr_glob_constr c

@@ -170,15 +170,18 @@ let interp_glob ist glob = Goal.enter_one ~__LOC__ begin fun goal ->
   let env = Goal.env goal in
   let sigma = Goal.sigma goal in
   Ssrprinters.ppdebug (lazy
-    Pp.(str"interp-in: " ++ Printer.pr_glob_constr_env env glob));
+        (let state = States.get_state () in
+         Pp.(str"interp-in: " ++ Printer.pr_glob_constr_env state env glob)));
   try
     let sigma,term = Tacinterp.interp_open_constr ist env sigma (glob,None) in
     Ssrprinters.ppdebug (lazy
-      Pp.(str"interp-out: " ++ Printer.pr_econstr_env env sigma term));
+     (let state = States.get_state () in
+      Pp.(str"interp-out: " ++ Printer.pr_econstr_env state env sigma term)));
     tclUNIT (env,sigma,term)
   with e ->
     Ssrprinters.ppdebug (lazy
-    Pp.(str"interp-err: " ++ Printer.pr_glob_constr_env env glob));
+    (let state = States.get_state () in
+    Pp.(str"interp-err: " ++ Printer.pr_glob_constr_env state env glob)));
      tclZERO e
 end
 
@@ -191,7 +194,8 @@ let tclKeepOpenConstr (_env, sigma, t) = Unsafe.tclEVARS sigma <*> tclUNIT t
 
 let tclADD_CLEAR_IF_ID (env, ist, t) x =
   Ssrprinters.ppdebug (lazy
-    Pp.(str"tclADD_CLEAR_IF_ID: " ++ Printer.pr_econstr_env env ist t));
+   (let state = States.get_state () in
+    Pp.(str"tclADD_CLEAR_IF_ID: " ++ Printer.pr_econstr_env state env ist t)));
   let hd, _ = EConstr.decompose_app ist t in
   match EConstr.kind ist hd with
   | Constr.Var id when Ssrcommon.not_section_id id -> tclUNIT (x, [id])
@@ -296,8 +300,9 @@ Goal.enter_one ~__LOC__ begin fun g ->
   let rigid = rigid_of und0 in
   let n, p, to_prune, _ucst = pf_abs_evars2 s0 rigid (sigma, p) in
   let p = if simple_types then pf_abs_cterm s0 n p else p in
-  Ssrprinters.ppdebug (lazy Pp.(str"view@finalized: " ++
-    Printer.pr_econstr_env env sigma p));
+  Ssrprinters.ppdebug (lazy (let state = States.get_state () in
+    Pp.(str"view@finalized: " ++
+    Printer.pr_econstr_env state env sigma p)));
   let sigma = List.fold_left Evd.remove sigma to_prune in
   Unsafe.tclEVARS sigma <*>
   tclUNIT p

@@ -92,8 +92,8 @@ let pr_guarded guard prc c =
   let s = Pp.string_of_ppcmds (prc c) ^ "$" in
   if guard s (skip_wschars s 0) then pr_paren prc c else prc c
 (* More sensible names for constr printers *)
-let prl_glob_constr c = pr_lglob_constr_env (Global.env ()) c
-let pr_glob_constr c = pr_glob_constr_env (Global.env ()) c
+let prl_glob_constr c = pr_lglob_constr_env (States.get_state ()) (Global.env ()) c
+let pr_glob_constr c = pr_glob_constr_env (States.get_state ()) (Global.env ()) c
 let prl_constr_expr = pr_lconstr_expr
 let pr_constr_expr = pr_constr_expr
 let prl_glob_constr_and_expr = function
@@ -294,7 +294,8 @@ let unif_EQ_args env sigma pa a =
 let unif_HO env ise p c =
   try Evarconv.the_conv_x env p c ise
   with Evarconv.UnableToUnify(ise, err) ->
-    raise Pretype_errors.(PretypeError(env,ise,CannotUnify(p,c,Some err)))
+    let state = States.get_state () in
+    raise Pretype_errors.(PretypeError(state,env,ise,CannotUnify(p,c,Some err)))
 
 let unif_HO_args env ise0 pa i ca =
   let n = Array.length pa in
@@ -439,7 +440,8 @@ let pr_constr_pat c0 =
   let rec wipe_evar c =
     if isEvar c then hole_var else map wipe_evar c in
   let sigma, env = Pfedit.get_current_context () in
-  pr_constr_env env sigma (wipe_evar c0)
+  let state = States.get_state () in
+  pr_constr_env state env sigma (wipe_evar c0)
 
 (* Turn (new) evars into metas *)
 let evars_for_FO ~hack env sigma0 (ise0:evar_map) c0 =
@@ -690,7 +692,7 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
       with FoundUnif (s,_,_) as sig_u when dont_impact_evars s -> raise sig_u
       | NoProgress -> it_did_match := true
       | Pretype_errors.PretypeError
-         (_,_,Pretype_errors.UnsatisfiableConstraints _) ->
+         (_,_,_,Pretype_errors.UnsatisfiableConstraints _) ->
           failed_because_of_TC:=true
       | e when CErrors.noncritical e -> () in
     List.iter one_match fpats
@@ -1197,7 +1199,8 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
   let pop_evar sigma e p =
     let { Evd.evar_body = e_body } as e_def = Evd.find sigma e in
     let e_body = match e_body with Evar_defined c -> EConstr.Unsafe.to_constr c
-    | _ -> errorstrm (str "Matching the pattern " ++ pr_constr_env env0 sigma0 p ++
+    | _ -> let state = States.get_state () in
+          errorstrm (str "Matching the pattern " ++ pr_constr_env state env0 sigma0 p ++
           str " did not instantiate ?" ++ int (Evar.repr e) ++ spc () ++
           str "Does the variable bound by the \"in\" construct occur "++
           str "in the pattern?") in
@@ -1400,8 +1403,10 @@ let ssrinstancesof arg gl =
   let find, conclude =
     mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true
       sigma None (etpat,[tpat]) in
-  let print env p c _ = ppnl (hov 1 (str"instance:" ++ spc() ++ pr_constr_env (pf_env gl) (gl.sigma) p ++ spc()
-                                     ++ str "matches:" ++ spc() ++ pr_constr_env (pf_env gl) (gl.sigma)  c)); c in
+  let print env p c _ =
+             let state = States.get_state () in
+             ppnl (hov 1 (str"instance:" ++ spc() ++ pr_constr_env state (pf_env gl) (gl.sigma) p ++ spc()
+                                     ++ str "matches:" ++ spc() ++ pr_constr_env state (pf_env gl) (gl.sigma)  c)); c in
   ppnl (str"BEGIN INSTANCES");
   try
     while true do

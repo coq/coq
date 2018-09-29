@@ -330,15 +330,17 @@ let discharge_Function (_,finfos) =
 
 let pr_ocst c =
   let sigma, env = Pfedit.get_current_context () in
-  Option.fold_right (fun v acc -> Printer.pr_lconstr_env env sigma (mkConst v)) c (mt ())
+  let state = States.get_state () in
+  Option.fold_right (fun v acc -> Printer.pr_lconstr_env state env sigma (mkConst v)) c (mt ())
 
 let pr_info f_info =
   let sigma, env = Pfedit.get_current_context () in
+  let state = States.get_state () in
   str "function_constant := " ++
-  Printer.pr_lconstr_env env sigma (mkConst f_info.function_constant)++ fnl () ++
+  Printer.pr_lconstr_env state env sigma (mkConst f_info.function_constant)++ fnl () ++
   str "function_constant_type := " ++
   (try
-     Printer.pr_lconstr_env env sigma
+     Printer.pr_lconstr_env state env sigma
        (fst (Global.type_of_global_in_context env (ConstRef f_info.function_constant)))
    with e when CErrors.noncritical e -> mt ()) ++ fnl () ++
   str "equation_lemma := " ++ pr_ocst f_info.equation_lemma ++ fnl () ++
@@ -347,7 +349,7 @@ let pr_info f_info =
   str "rect_lemma := " ++ pr_ocst f_info.rect_lemma ++ fnl () ++
   str "rec_lemma := " ++ pr_ocst f_info.rec_lemma ++ fnl () ++
   str "prop_lemma := " ++ pr_ocst f_info.prop_lemma ++ fnl () ++
-  str "graph_ind := " ++ Printer.pr_lconstr_env env sigma (mkInd f_info.graph_ind) ++ fnl ()
+  str "graph_ind := " ++ Printer.pr_lconstr_env state env sigma (mkInd f_info.graph_ind) ++ fnl ()
 
 let pr_table tb =
   let l = Cmap_env.fold (fun k v acc -> v::acc) tb [] in

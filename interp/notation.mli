@@ -108,7 +108,7 @@ type numeral_notation_error =
   | UnexpectedTerm of Constr.t
   | UnexpectedNonOptionTerm of Constr.t
 
-exception NumeralNotationError of Environ.env * Evd.evar_map * numeral_notation_error
+exception NumeralNotationError of States.state * Environ.env * Evd.evar_map * numeral_notation_error
 
 type numnot_option =
   | Nop

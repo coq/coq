@@ -79,7 +79,7 @@ let interp_congrarg_at ist gl n rf ty m =
     if i + n > m then None else
     try
       let rt = mkRApp congrn (args1 @  mkRApp rf (mkRHoles i) :: args2) in
-      ppdebug(lazy Pp.(str"rt=" ++ Printer.pr_glob_constr_env (pf_env gl) rt));
+      ppdebug(lazy Pp.(str"rt=" ++ Printer.pr_glob_constr_env (States.get_state ()) (pf_env gl) rt));
       Some (interp_refine ist gl rt)
     with _ -> loop (i + 1) in
   loop 0
@@ -88,7 +88,7 @@ let pattern_id = mk_internal_id "pattern value"
 
 let congrtac ((n, t), ty) ist gl =
   ppdebug(lazy (Pp.str"===congr==="));
-  ppdebug(lazy Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (Tacmach.pf_concl gl)));
+  ppdebug(lazy Pp.(str"concl=" ++ Printer.pr_econstr_env (States.get_state ()) (pf_env gl) (project gl) (Tacmach.pf_concl gl)));
   let sigma, _ as it = interp_term ist gl t in
   let gl = pf_merge_uc_of sigma gl in
   let _, f, _, _ucst = pf_abs_evars gl it in
@@ -111,7 +111,7 @@ let congrtac ((n, t), ty) ist gl =
 
 let newssrcongrtac arg ist gl =
   ppdebug(lazy Pp.(str"===newcongr==="));
-  ppdebug(lazy Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (pf_concl gl)));
+  ppdebug(lazy Pp.(str"concl=" ++ Printer.pr_econstr_env (States.get_state ()) (pf_env gl) (project gl) (pf_concl gl)));
   (* utils *)
   let fs gl t = Reductionops.nf_evar (project gl) t in
   let tclMATCH_GOAL (c, gl_c) proj t_ok t_fail gl =
@@ -237,8 +237,10 @@ let unfoldintac occ rdx t (kt,_) gl =
     (fun env c _ h -> 
       try find_T env c h ~k:(fun env c _ _ -> EConstr.Unsafe.to_constr (body env t (EConstr.of_constr c)))
       with NoMatch when easy -> c
-      | NoMatch | NoProgress -> errorstrm Pp.(str"No occurrence of "
-        ++ pr_constr_pat (EConstr.Unsafe.to_constr t) ++ spc() ++ str "in " ++ Printer.pr_constr_env env sigma c)),
+      | NoMatch | NoProgress ->
+        let state = States.get_state () in
+        errorstrm Pp.(str"No occurrence of "
+        ++ pr_constr_pat (EConstr.Unsafe.to_constr t) ++ spc() ++ str "in " ++ Printer.pr_constr_env state env sigma c)),
     (fun () -> try end_T () with 
       | NoMatch when easy -> fake_pmatcher_end () 
       | NoMatch -> anomaly "unfoldintac")
@@ -258,13 +260,15 @@ let unfoldintac occ rdx t (kt,_) gl =
             | Proj _ when same_proj sigma0 c t -> body env t c
             | Const f -> aux (body env c c)
             | App (f, a) -> aux (EConstr.mkApp (body env f f, a))
-            | _ -> errorstrm Pp.(str "The term "++ pr_constr_env env sigma orig_c++
-                str" contains no " ++ pr_econstr_env env sigma t ++ str" even after unfolding")
+            | _ -> let state = States.get_state () in
+                errorstrm Pp.(str "The term "++ pr_constr_env state env sigma orig_c++
+                str" contains no " ++ pr_econstr_env state env sigma t ++ str" even after unfolding")
           in EConstr.Unsafe.to_constr @@ aux (EConstr.of_constr c)
       else
         try EConstr.Unsafe.to_constr @@ body env t (fs (unify_HO env sigma (EConstr.of_constr c) t) t)
-        with _ -> errorstrm Pp.(str "The term " ++
-          pr_constr_env env sigma c ++spc()++ str "does not unify with " ++ pr_constr_pat (EConstr.Unsafe.to_constr t))),
+        with _ -> let state = States.get_state () in
+          errorstrm Pp.(str "The term " ++
+          pr_constr_env state env sigma c ++spc()++ str "does not unify with " ++ pr_constr_pat (EConstr.Unsafe.to_constr t))),
     fake_pmatcher_end in
   let concl = 
     let concl0 = EConstr.Unsafe.to_constr concl0 in
@@ -346,7 +350,7 @@ let pirrel_rewrite pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
   (* We check the proof is well typed *)
   let sigma, proof_ty =
     try Typing.type_of env sigma proof with _ -> raise PRtype_error in
-  ppdebug(lazy Pp.(str"pirrel_rewrite proof term of type: " ++ pr_econstr_env env sigma proof_ty));
+  ppdebug(lazy Pp.(str"pirrel_rewrite proof term of type: " ++ pr_econstr_env (States.get_state ()) env sigma proof_ty));
   try refine_with 
     ~first_goes_last:(not !ssroldreworder) ~with_evars:false (sigma, proof) gl
   with _ -> 
@@ -368,8 +372,9 @@ let pirrel_rewrite pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
           if open_evs <> [] then Some name else None)
           (List.combine (Array.to_list args) names)
     | _ -> anomaly "rewrite rule not an application" in
-    errorstrm Pp.(Himsg.explain_refiner_error env sigma (Logic.UnresolvedBindings miss)++
-      (Pp.fnl()++str"Rule's type:" ++ spc() ++ pr_econstr_env env sigma hd_ty))
+    let state = States.get_state () in
+    errorstrm Pp.(Himsg.explain_refiner_error state env sigma (Logic.UnresolvedBindings miss)++
+      (Pp.fnl()++str"Rule's type:" ++ spc() ++ pr_econstr_env state env sigma hd_ty))
 ;;
 
 let is_construct_ref sigma c r =
@@ -383,12 +388,12 @@ let rwcltac cl rdx dir sr gl =
   let gl = pf_unsafe_merge_uc ucst gl in
   let rdxt = Retyping.get_type_of (pf_env gl) (fst sr) rdx in
 (*         ppdebug(lazy(str"sigma@rwcltac=" ++ pr_evar_map None (fst sr))); *)
-        ppdebug(lazy Pp.(str"r@rwcltac=" ++ pr_econstr_env (pf_env gl) (project gl) (snd sr)));
+        ppdebug(lazy Pp.(str"r@rwcltac=" ++ pr_econstr_env (States.get_state ()) (pf_env gl) (project gl) (snd sr)));
   let cvtac, rwtac, gl =
     if EConstr.Vars.closed0 (project gl) r' then 
       let env, sigma, c, c_eq = pf_env gl, fst sr, snd sr, Coqlib.build_coq_eq () in
       let sigma, c_ty = Typing.type_of env sigma c in
-        ppdebug(lazy Pp.(str"c_ty@rwcltac=" ++ pr_econstr_env env sigma c_ty));
+        ppdebug(lazy Pp.(str"c_ty@rwcltac=" ++ pr_econstr_env (States.get_state ()) env sigma c_ty));
       match EConstr.kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
       | AtomicType(e, a) when is_ind_ref sigma e c_eq ->
           let new_rdx = if dir = L2R then a.(2) else a.(1) in
@@ -402,8 +407,9 @@ let rwcltac cl rdx dir sr gl =
       let dc, r2 = EConstr.decompose_lam_n_assum (project gl) n r' in
       let r3, _, r3t  = 
         try EConstr.destCast (project gl) r2 with _ ->
+        let state = States.get_state () in
         errorstrm Pp.(str "no cast from " ++ pr_constr_pat (EConstr.Unsafe.to_constr (snd sr))
-                    ++ str " to " ++ pr_econstr_env (pf_env gl) (project gl) r2) in
+                    ++ str " to " ++ pr_econstr_env state (pf_env gl) (project gl) r2) in
       let cl' = EConstr.mkNamedProd rule_id (EConstr.it_mkProd_or_LetIn r3t dc) (EConstr.Vars.lift 1 cl) in
       let cl'' = EConstr.mkNamedProd pattern_id rdxt cl' in
       let itacs = [introid pattern_id; introid rule_id] in
@@ -416,8 +422,9 @@ let rwcltac cl rdx dir sr gl =
     | PRtype_error ->
       if occur_existential (project gl) (Tacmach.pf_concl gl)
       then errorstrm Pp.(str "Rewriting impacts evars")
-      else errorstrm Pp.(str "Dependent type error in rewrite of "
-        ++ pr_constr_env (pf_env gl) (project gl) (Term.mkNamedLambda pattern_id (EConstr.Unsafe.to_constr rdxt) (EConstr.Unsafe.to_constr cl)))
+      else let state = States.get_state () in
+        errorstrm Pp.(str "Dependent type error in rewrite of "
+        ++ pr_constr_env state (pf_env gl) (project gl) (Term.mkNamedLambda pattern_id (EConstr.Unsafe.to_constr rdxt) (EConstr.Unsafe.to_constr cl)))
   in
   tclTHEN cvtac' rwtac gl
 
@@ -454,7 +461,8 @@ let prof_rwxrtac_find_rule = mk_profiler "rwrxtac.find_rule";;
 
 let closed0_check cl p gl =
   if closed0 cl then
-    errorstrm Pp.(str"No occurrence of redex "++ pr_constr_env (pf_env gl) (project gl) p)
+    let state = States.get_state () in
+    errorstrm Pp.(str"No occurrence of redex "++ pr_constr_env state (pf_env gl) (project gl) p)
 
 let dir_org = function L2R -> 1 | R2L -> 2
 
@@ -598,7 +606,8 @@ let ssrinstancesofrule ist dir arg gl =
       sigma, pats @ [pat] in
     let rpats = List.fold_left (rpat env0 sigma0) (r_sigma,[]) rules in
     mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true sigma0 None ~upats_origin rpats in
-  let print env p c _ = Feedback.msg_info Pp.(hov 1 (str"instance:" ++ spc() ++ pr_constr_env env r_sigma p ++ spc() ++ str "matches:" ++ spc() ++ pr_constr_env env r_sigma c)); c in
+  let print env p c _ = Feedback.msg_info Pp.(let state = States.get_state () in
+    hov 1 (str"instance:" ++ spc() ++ pr_constr_env state env r_sigma p ++ spc() ++ str "matches:" ++ spc() ++ pr_constr_env state env r_sigma c)); c in
   Feedback.msg_info Pp.(str"BEGIN INSTANCES");
   try
     while true do

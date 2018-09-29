@@ -638,13 +638,14 @@ let lift_constr_tac_to_ml_tac vars tac =
   let tac _ ist = Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
+    let state = States.get_state () in
     let map = function
     | Anonymous -> None
     | Name id ->
       let c = Id.Map.find id ist.Geninterp.lfun in
       try Some (Taccoerce.Value.of_constr @@ Taccoerce.coerce_to_closed_constr env c)
       with Taccoerce.CannotCoerceTo ty ->
-        Taccoerce.error_ltac_variable dummy_id (Some (env,sigma)) c ty
+        Taccoerce.error_ltac_variable dummy_id (Some (state,env,sigma)) c ty
     in
     let args = List.map_filter map vars in
     tac args ist

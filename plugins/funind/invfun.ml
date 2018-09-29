@@ -758,6 +758,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
   funind_purify
     (fun () ->
      let env = Global.env () in
+     let state = States.get_state () in
      let evd = ref (Evd.from_env env) in 
      let graphs_constr = Array.map mkInd graphs in
      let lemmas_types_infos =
@@ -770,10 +771,10 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	 let type_info = (type_of_lemma_ctxt,type_of_lemma_concl) in
 	 graphs_constr.(i) <- graph;
 	 let type_of_lemma = EConstr.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
-         let sigma, _ = Typing.type_of (Global.env ()) !evd type_of_lemma in
+         let sigma, _ = Typing.type_of env !evd type_of_lemma in
          evd := sigma;
 	   let type_of_lemma = nf_zeta type_of_lemma in
-	   observe (str "type_of_lemma := " ++ Printer.pr_leconstr_env (Global.env ()) !evd type_of_lemma);
+           observe (str "type_of_lemma := " ++ Printer.pr_leconstr_env state env !evd type_of_lemma);
 	   type_of_lemma,type_info
 	)
 	funs_constr
@@ -840,7 +841,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	   EConstr.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt
 	 in
 	 let type_of_lemma = nf_zeta type_of_lemma in
-         observe (str "type_of_lemma := " ++ Printer.pr_leconstr_env env !evd type_of_lemma);
+         observe (str "type_of_lemma := " ++ Printer.pr_leconstr_env state env !evd type_of_lemma);
 	 type_of_lemma,type_info
 	)
 	funs_constr

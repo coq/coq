@@ -223,12 +223,12 @@ let warning_or_error coe indsp err =
 	  | ElimArity (_,_,_,_,Some (_,_,NonInformativeToInformative)) ->
               (Id.print fi ++
 		strbrk" cannot be defined because it is informative and " ++
-		Printer.pr_inductive (Global.env()) indsp ++
+                Printer.pr_inductive (States.get_state ()) (Global.env()) indsp ++
 		strbrk " is not.")
 	  | ElimArity (_,_,_,_,Some (_,_,StrongEliminationOnNonSmallType)) ->
 	      (Id.print fi ++
 		strbrk" cannot be defined because it is large and " ++
-		Printer.pr_inductive (Global.env()) indsp ++
+                Printer.pr_inductive (States.get_state ()) (Global.env()) indsp ++
 		strbrk " is not.")
 	  | _ ->
               (Id.print fi ++ strbrk " cannot be defined because it is not typable.")
@@ -280,8 +280,8 @@ let instantiate_possibly_recursive_type ind u ntypes paramdecls fields =
 
 let warn_non_primitive_record =
   CWarnings.create ~name:"non-primitive-record" ~category:"record"
-         (fun (env,indsp) ->
-          (hov 0 (str "The record " ++ Printer.pr_inductive env indsp ++ 
+         (fun (state,env,indsp) ->
+          (hov 0 (str "The record " ++ Printer.pr_inductive state env indsp ++
                     strbrk" could not be defined as a primitive record")))
 
 (* We build projections *)
@@ -307,8 +307,10 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
         | PrimRecord _ -> true
         | FakeRecord | NotRecord -> false
       in
-	if not is_primitive then 
-	  warn_non_primitive_record (env,indsp);
+        if not is_primitive then begin
+            let state = States.get_state () in
+            warn_non_primitive_record (state,env,indsp)
+          end;
 	is_primitive
     else false
   in

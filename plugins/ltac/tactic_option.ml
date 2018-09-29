@@ -47,7 +47,7 @@ let declare_tactic_option ?(default=Tacexpr.TacId []) name =
   in
   let get () = !locality, Tacinterp.eval_tactic !default_tactic in
   let print () = 
-    Pptactic.pr_glob_tactic (Global.env ()) !default_tactic_expr ++
+    Pptactic.pr_glob_tactic (States.get_state ()) (Global.env ()) !default_tactic_expr ++
       (if !locality then str" (locally defined)" else str" (globally defined)")
   in
   put, get, print

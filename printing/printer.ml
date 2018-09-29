@@ -78,33 +78,35 @@ let _ =
    and only names of goal/section variables and rel names that do
    _not_ occur in the scope of the binder to be printed are avoided. *)
 
-let pr_econstr_n_core goal_concl_style env sigma n t =
-  pr_constr_expr_n n (extern_constr goal_concl_style env sigma t)
-let pr_econstr_core goal_concl_style env sigma t =
-  pr_constr_expr (extern_constr goal_concl_style env sigma t)
+let pr_econstr_n_core goal_concl_style state env sigma n t =
+  pr_constr_expr_n n (extern_constr goal_concl_style state env sigma t)
+let pr_econstr_core goal_concl_style state env sigma t =
+  pr_constr_expr (extern_constr goal_concl_style state env sigma t)
 let pr_leconstr_core = Proof_diffs.pr_leconstr_core
 
-let pr_constr_n_env env sigma n c = pr_econstr_n_core false env sigma n (EConstr.of_constr c)
+let pr_constr_n_env state env sigma n c = pr_econstr_n_core false state env sigma n (EConstr.of_constr c)
 let pr_lconstr_env = Proof_diffs.pr_lconstr_env
-let pr_constr_env env sigma c = pr_econstr_core false env sigma (EConstr.of_constr c)
+let pr_constr_env state env sigma c = pr_econstr_core false state env sigma (EConstr.of_constr c)
 
-let pr_lconstr_goal_style_env env sigma c = pr_leconstr_core true env sigma (EConstr.of_constr c)
-let pr_constr_goal_style_env env sigma c = pr_econstr_core true env sigma (EConstr.of_constr c)
+let pr_lconstr_goal_style_env state env sigma c = pr_leconstr_core true state env sigma (EConstr.of_constr c)
+let pr_constr_goal_style_env state env sigma c = pr_econstr_core true state env sigma (EConstr.of_constr c)
 
-let pr_econstr_n_env env sigma c = pr_econstr_n_core false env sigma c
-let pr_leconstr_env env sigma c = pr_leconstr_core false env sigma c
-let pr_econstr_env env sigma c = pr_econstr_core false env sigma c
+let pr_econstr_n_env state env sigma c = pr_econstr_n_core false state env sigma c
+let pr_leconstr_env state env sigma c = pr_leconstr_core false state env sigma c
+let pr_econstr_env state env sigma c = pr_econstr_core false state env sigma c
 
-let pr_open_lconstr_env env sigma (_,c) = pr_leconstr_env env sigma c
-let pr_open_constr_env env sigma (_,c) = pr_econstr_env env sigma c
+let pr_open_lconstr_env state env sigma (_,c) = pr_leconstr_env state env sigma c
+let pr_open_constr_env state env sigma (_,c) = pr_econstr_env state env sigma c
 
 (* NB do not remove the eta-redexes! Global.env() has side-effects... *)
 let pr_lconstr t =
+  let state = States.get_state () in
   let (sigma, env) = Pfedit.get_current_context () in
-  pr_lconstr_env env sigma t
+  pr_lconstr_env state env sigma t
 let pr_constr t =
+  let state = States.get_state () in
   let (sigma, env) = Pfedit.get_current_context () in
-  pr_constr_env env sigma t
+  pr_constr_env state env sigma t
 
 let pr_leconstr c = pr_lconstr (EConstr.Unsafe.to_constr c)
 let pr_econstr c = pr_constr (EConstr.Unsafe.to_constr c)
@@ -112,87 +114,100 @@ let pr_econstr c = pr_constr (EConstr.Unsafe.to_constr c)
 let pr_open_lconstr (_,c) = pr_leconstr c
 let pr_open_constr (_,c) = pr_econstr c
 
-let pr_constr_under_binders_env_gen pr env sigma (ids,c) =
+let pr_constr_under_binders_env_gen pr state env sigma (ids,c) =
   (* Warning: clashes can occur with variables of same name in env but *)
   (* we also need to preserve the actual names of the patterns *)
   (* So what to do? *)
   let assums = List.map (fun id -> (Name id,(* dummy *) mkProp)) ids in
-  pr (Termops.push_rels_assum assums env) sigma c
+  pr state (Termops.push_rels_assum assums env) sigma c
 
 let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_econstr_env
 let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_leconstr_env
 
 let pr_constr_under_binders c =
+  let state = States.get_state () in
   let (sigma, env) = Pfedit.get_current_context () in
-  pr_constr_under_binders_env env sigma c
+  pr_constr_under_binders_env state env sigma c
 let pr_lconstr_under_binders c =
+  let state = States.get_state () in
   let (sigma, env) = Pfedit.get_current_context () in
-  pr_lconstr_under_binders_env env sigma c
+  pr_lconstr_under_binders_env state env sigma c
 
-let pr_etype_core goal_concl_style env sigma t =
-  pr_constr_expr (extern_type goal_concl_style env sigma t)
+let pr_etype_core goal_concl_style state env sigma t =
+  pr_constr_expr (extern_type goal_concl_style state env sigma t)
 let pr_letype_core = Proof_diffs.pr_letype_core
 
-let pr_ltype_env env sigma c = pr_letype_core false env sigma (EConstr.of_constr c)
-let pr_type_env env sigma c = pr_etype_core false env sigma (EConstr.of_constr c)
+let pr_ltype_env state env sigma c = pr_letype_core false state env sigma (EConstr.of_constr c)
+let pr_type_env state env sigma c = pr_etype_core false state env sigma (EConstr.of_constr c)
 
 let pr_ltype t =
-    let (sigma, env) = Pfedit.get_current_context () in
-    pr_ltype_env env sigma t
+  let state = States.get_state () in
+  let (sigma, env) = Pfedit.get_current_context () in
+  pr_ltype_env state env sigma t
 let pr_type t =
-    let (sigma, env) = Pfedit.get_current_context () in
-    pr_type_env env sigma t
+  let state = States.get_state () in
+  let (sigma, env) = Pfedit.get_current_context () in
+  pr_type_env state env sigma t
 
-let pr_etype_env env sigma c = pr_etype_core false env sigma c
-let pr_letype_env env sigma c = pr_letype_core false env sigma c
-let pr_goal_concl_style_env env sigma c = pr_letype_core true env sigma c
+let pr_etype_env state env sigma c = pr_etype_core false state env sigma c
+let pr_letype_env state env sigma c = pr_letype_core false state env sigma c
+let pr_goal_concl_style_env state env sigma c = pr_letype_core true state env sigma c
 
-let pr_ljudge_env env sigma j =
-  (pr_leconstr_env env sigma j.uj_val, pr_leconstr_env env sigma j.uj_type)
+let pr_ljudge_env state env sigma j =
+  (pr_leconstr_env state env sigma j.uj_val, pr_leconstr_env state env sigma j.uj_type)
 
 let pr_ljudge j =
+  let state = States.get_state () in
   let (sigma, env) = Pfedit.get_current_context () in
-  pr_ljudge_env env sigma j
+  pr_ljudge_env state env sigma j
 
-let pr_lglob_constr_env env c =
-  pr_lconstr_expr (extern_glob_constr (Termops.vars_of_env env) c)
-let pr_glob_constr_env env c =
-  pr_constr_expr (extern_glob_constr (Termops.vars_of_env env) c)
+let pr_lglob_constr_env state env c =
+  pr_lconstr_expr (extern_glob_constr state env c)
+let pr_glob_constr_env state env c =
+  pr_constr_expr (extern_glob_constr state env c)
 
 let pr_lglob_constr c =
+  let state = States.get_state () in
   let (sigma, env) = Pfedit.get_current_context () in
-  pr_lglob_constr_env env c
+  pr_lglob_constr_env state env c
 let pr_glob_constr c =
+  let state = States.get_state () in
   let (sigma, env) = Pfedit.get_current_context () in
-  pr_glob_constr_env env c
+  pr_glob_constr_env state env c
 
-let pr_closed_glob_n_env env sigma n c =
-  pr_constr_expr_n n (extern_closed_glob false env sigma c)
-let pr_closed_glob_env env sigma c =
-  pr_constr_expr (extern_closed_glob false env sigma c)
+let pr_closed_glob_n_env state env sigma n c =
+  pr_constr_expr_n n (extern_closed_glob false state env sigma c)
+let pr_closed_glob_env state env sigma c =
+  pr_constr_expr (extern_closed_glob false state env sigma c)
 let pr_closed_glob c =
+  let state = States.get_state () in
   let (sigma, env) = Pfedit.get_current_context () in
-  pr_closed_glob_env env sigma c
+  pr_closed_glob_env state env sigma c
 
-let pr_lconstr_pattern_env env sigma c =
-  pr_lconstr_pattern_expr (extern_constr_pattern (Termops.names_of_rel_context env) sigma c)
-let pr_constr_pattern_env env sigma c =
-  pr_constr_pattern_expr (extern_constr_pattern (Termops.names_of_rel_context env) sigma c)
+let pr_lconstr_pattern_env state env sigma c =
+  pr_lconstr_pattern_expr (extern_constr_pattern state env sigma c)
+let pr_constr_pattern_env state env sigma c =
+  pr_constr_pattern_expr (extern_constr_pattern state env sigma c)
 
 let pr_cases_pattern t =
-  pr_cases_pattern_expr (extern_cases_pattern Names.Id.Set.empty t)
+  let state = States.get_state () in
+  pr_cases_pattern_expr (extern_cases_pattern state Names.Id.Set.empty t)
 
 let pr_lconstr_pattern t =
+  let state = States.get_state () in
   let (sigma, env) = Pfedit.get_current_context () in
-  pr_lconstr_pattern_env env sigma t
+  pr_lconstr_pattern_env state env sigma t
 let pr_constr_pattern t =
+  let state = States.get_state () in
   let (sigma, env) = Pfedit.get_current_context () in
-  pr_constr_pattern_env env sigma t
+  pr_constr_pattern_env state env sigma t
 
 let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
 
 let _ = Termops.Internal.set_print_constr
-  (fun env sigma t -> pr_lconstr_expr (extern_constr ~lax:true false env sigma t))
+  (fun env sigma t ->
+    let state = States.get_state () in
+    pr_lconstr_expr (extern_constr ~lax:true false state env sigma t))
 
 let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
 
@@ -229,7 +244,7 @@ let dirpath_of_global = function
 let qualid_of_global ?loc env r =
   Libnames.make_qualid ?loc (dirpath_of_global r) (id_of_global env r)
 
-let safe_gen f env sigma c =
+let safe_gen f state env sigma c =
   let orig_extern_ref = Constrextern.get_extern_reference () in
   let extern_ref ?loc vars r =
     try orig_extern_ref vars r
@@ -238,7 +253,7 @@ let safe_gen f env sigma c =
   in
   Constrextern.set_extern_reference extern_ref;
   try
-    let p = f env sigma c in
+    let p = f state env sigma c in
     Constrextern.set_extern_reference orig_extern_ref;
     p
   with e when CErrors.noncritical e ->
@@ -248,12 +263,14 @@ let safe_gen f env sigma c =
 let safe_pr_lconstr_env = safe_gen pr_lconstr_env
 let safe_pr_constr_env = safe_gen pr_constr_env
 let safe_pr_lconstr t =
+  let state = States.get_state () in
   let (sigma, env) = Pfedit.get_current_context () in
-  safe_pr_lconstr_env env sigma t
+  safe_pr_lconstr_env state env sigma t
 
 let safe_pr_constr t =
+  let state = States.get_state () in
   let (sigma, env) = Pfedit.get_current_context () in
-  safe_pr_constr_env env sigma t
+  safe_pr_constr_env state env sigma t
 
 let pr_universe_ctx_set sigma c =
   if !Detyping.print_universes && not (Univ.ContextSet.is_empty c) then
@@ -299,22 +316,22 @@ let pr_abstract_cumulativity_info sigma cumi =
 (**********************************************************************)
 (* Global references *)
 
-let pr_global_env = pr_global_env
-let pr_global = pr_global_env Id.Set.empty
+let pr_global_env state = pr_global_env
+let pr_global = pr_global_env (States.get_state ()) Id.Set.empty
 
 let pr_universe_instance evd inst =
   str"@{" ++ Univ.Instance.pr (Termops.pr_evd_level evd) inst ++ str"}"
 
-let pr_puniverses f env sigma (c,u) =
+let pr_puniverses f state env sigma (c,u) =
   if !Constrextern.print_universes
-  then f env c ++ pr_universe_instance sigma u
-  else f env c
+  then f state env c ++ pr_universe_instance sigma u
+  else f state env c
 
-let pr_constant env cst = pr_global_env (Termops.vars_of_env env) (ConstRef cst)
+let pr_constant state env cst = pr_global_env state (Termops.vars_of_env env) (ConstRef cst)
 let pr_existential_key = Termops.pr_existential_key
-let pr_existential env sigma ev = pr_lconstr_env env sigma (mkEvar ev)
-let pr_inductive env ind = pr_lconstr_env env (Evd.from_env env) (mkInd ind)
-let pr_constructor env cstr = pr_lconstr_env env (Evd.from_env env) (mkConstruct cstr)
+let pr_existential state env sigma ev = pr_lconstr_env state env sigma (mkEvar ev)
+let pr_inductive state env ind = pr_lconstr_env state env (Evd.from_env env) (mkInd ind)
+let pr_constructor state env cstr = pr_lconstr_env state env (Evd.from_env env) (mkConstruct cstr)
 
 let pr_pconstant = pr_puniverses pr_constant
 let pr_pinductive = pr_puniverses pr_inductive
@@ -340,35 +357,35 @@ let get_compact_context,set_compact_context =
   let compact_context = ref false in
   (fun () -> !compact_context),(fun b  -> compact_context := b)
 
-let pr_compacted_decl env sigma decl =
+let pr_compacted_decl state env sigma decl =
   let ids, pbody, typ = match decl with
     | CompactedDecl.LocalAssum (ids, typ) ->
        ids, mt (), typ
     | CompactedDecl.LocalDef (ids,c,typ) ->
        (* Force evaluation *)
-       let pb = pr_lconstr_env env sigma c in
+       let pb = pr_lconstr_env state env sigma c in
        let pb = if isCast c then surround pb else pb in
        ids, (str" := " ++ pb ++ cut ()), typ
   in
   let pids = prlist_with_sep pr_comma pr_id ids in
-  let pt = pr_ltype_env env sigma typ in
+  let pt = pr_ltype_env state env sigma typ in
   let ptyp = (str" : " ++ pt) in
   hov 0 (pids ++ pbody ++ ptyp)
 
-let pr_named_decl env sigma decl =
-  decl |> CompactedDecl.of_named_decl |> pr_compacted_decl env sigma
+let pr_named_decl state env sigma decl =
+  decl |> CompactedDecl.of_named_decl |> pr_compacted_decl state env sigma
 
-let pr_rel_decl env sigma decl =
+let pr_rel_decl state env sigma decl =
   let na = RelDecl.get_name decl in
   let typ = RelDecl.get_type decl in
   let pbody = match decl with
     | RelDecl.LocalAssum _ -> mt ()
     | RelDecl.LocalDef (_,c,_) ->
 	(* Force evaluation *)
-	let pb = pr_lconstr_env env sigma c in
+        let pb = pr_lconstr_env state env sigma c in
 	let pb = if isCast c then surround pb else pb in
 	(str":=" ++ spc () ++ pb ++ spc ()) in
-  let ptyp = pr_ltype_env env sigma typ in
+  let ptyp = pr_ltype_env state env sigma typ in
   match na with
   | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
   | Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
@@ -379,47 +396,47 @@ let pr_rel_decl env sigma decl =
  * It's printed out from outermost to innermost, so it's readable. *)
 
 (* Prints a signature, all declarations on the same line if possible *)
-let pr_named_context_of env sigma =
-  let make_decl_list env d pps = pr_named_decl env sigma d :: pps in
+let pr_named_context_of state env sigma =
+  let make_decl_list env d pps = pr_named_decl state env sigma d :: pps in
   let psl = List.rev (fold_named_context make_decl_list env ~init:[]) in
   hv 0 (prlist_with_sep (fun _ -> ws 2) (fun x -> x) psl)
 
-let pr_var_list_decl env sigma decl =
-  hov 0 (pr_compacted_decl env sigma decl)
+let pr_var_list_decl state env sigma decl =
+  hov 0 (pr_compacted_decl state env sigma decl)
 
-let pr_named_context env sigma ne_context =
+let pr_named_context state env sigma ne_context =
   hv 0 (Context.Named.fold_outside
-	  (fun d pps -> pps ++ ws 2 ++ pr_named_decl env sigma d)
+          (fun d pps -> pps ++ ws 2 ++ pr_named_decl state env sigma d)
           ne_context ~init:(mt ()))
 
-let pr_rel_context env sigma rel_context =
+let pr_rel_context state env sigma rel_context =
   let rel_context = List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) rel_context in
-  pr_binders (extern_rel_context None env sigma rel_context)
+  pr_binders (extern_rel_context None state env sigma rel_context)
 
-let pr_rel_context_of env sigma =
-  pr_rel_context env sigma (rel_context env)
+let pr_rel_context_of state env sigma =
+  pr_rel_context state env sigma (rel_context env)
 
 (* Prints an env (variables and de Bruijn). Separator: newline *)
-let pr_context_unlimited env sigma =
+let pr_context_unlimited state env sigma =
   let sign_env =
     Context.Compacted.fold
       (fun d pps ->
-         let pidt =  pr_compacted_decl env sigma d in
+         let pidt =  pr_compacted_decl state env sigma d in
          (pps ++ fnl () ++ pidt))
       (Termops.compact_named_context (named_context env)) ~init:(mt ())
   in
   let db_env =
     fold_rel_context
       (fun env d pps ->
-         let pnat = pr_rel_decl env sigma d in (pps ++ fnl () ++ pnat))
+         let pnat = pr_rel_decl state env sigma d in (pps ++ fnl () ++ pnat))
       env ~init:(mt ())
   in
   (sign_env ++ db_env)
 
-let pr_ne_context_of header env sigma =
+let pr_ne_context_of header state env sigma =
   if List.is_empty (Environ.rel_context env) &&
     List.is_empty (Environ.named_context env)  then (mt ())
-  else let penv = pr_context_unlimited env sigma in (header ++ penv ++ fnl ())
+  else let penv = pr_context_unlimited state env sigma in (header ++ penv ++ fnl ())
 
 (* Heuristic for horizontalizing hypothesis that the user probably
    considers as "variables": An hypothesis H:T where T:S and S<>Prop. *)
@@ -432,30 +449,30 @@ let should_compact env sigma typ =
 (* If option Compact Contexts is set, we pack "simple" hypothesis in a
    hov box (with three sapaces as a separator), the global box being a
    v box *)
-let rec bld_sign_env env sigma ctxt pps =
+let rec bld_sign_env state env sigma ctxt pps =
   match ctxt with
   | [] -> pps
   | CompactedDecl.LocalAssum (ids,typ)::ctxt' when should_compact env sigma typ ->
-    let pps',ctxt' = bld_sign_env_id env sigma ctxt (mt ()) true in
+    let pps',ctxt' = bld_sign_env_id state env sigma ctxt (mt ()) true in
     (* putting simple hyps in a more horizontal flavor *)
-    bld_sign_env env sigma ctxt' (pps ++ brk (0,0) ++ hov 0 pps')
+    bld_sign_env state env sigma ctxt' (pps ++ brk (0,0) ++ hov 0 pps')
   | d:: ctxt' ->
-    let pidt = pr_var_list_decl env sigma d in
+    let pidt = pr_var_list_decl state env sigma d in
     let pps' = pps ++ brk (0,0) ++ pidt in
-    bld_sign_env env sigma ctxt' pps'
-and bld_sign_env_id env sigma ctxt pps is_start =
+    bld_sign_env state env sigma ctxt' pps'
+and bld_sign_env_id state env sigma ctxt pps is_start =
   match ctxt with
   | [] -> pps,ctxt
  | CompactedDecl.LocalAssum(ids,typ) as d :: ctxt' when should_compact env sigma typ ->
-    let pidt = pr_var_list_decl env sigma d in
+    let pidt = pr_var_list_decl state env sigma d in
     let pps' = pps ++ (if not is_start then brk (3,0) else (mt ())) ++ pidt in
-    bld_sign_env_id env sigma ctxt' pps' false
+    bld_sign_env_id state env sigma ctxt' pps' false
   | _ -> pps,ctxt
 
 
 (* compact printing an env (variables and de Bruijn). Separator: three
    spaces between simple hyps, and newline otherwise *)
-let pr_context_limit_compact ?n env sigma =
+let pr_context_limit_compact ?n state env sigma =
   let ctxt = Termops.compact_named_context (named_context env) in
   let lgth = List.length ctxt in
   let n_capped =
@@ -467,9 +484,9 @@ let pr_context_limit_compact ?n env sigma =
   (* a dot line hinting the number of hidden hyps. *)
   let hidden_dots = String.make (List.length ctxt_hidden) '.' in
   let sign_env = v 0 (str hidden_dots ++ (mt ())
-                 ++ bld_sign_env env sigma (List.rev ctxt_chopped) (mt ())) in
+                 ++ bld_sign_env state env sigma (List.rev ctxt_chopped) (mt ())) in
   let db_env =
-    fold_rel_context (fun env d pps -> pps ++ fnl () ++ pr_rel_decl env sigma d)
+    fold_rel_context (fun env d pps -> pps ++ fnl () ++ pr_rel_decl state env sigma d)
       env ~init:(mt ()) in
   sign_env ++ db_env
 
@@ -486,9 +503,9 @@ let _ =
       optread  = (fun () -> !print_hyps_limit);
       optwrite = (fun x -> print_hyps_limit := x) }
 
-let pr_context_of env sigma = match !print_hyps_limit with
-  | None -> hv 0 (pr_context_limit_compact env sigma)
-  | Some n -> hv 0 (pr_context_limit_compact ~n env sigma)
+let pr_context_of state env sigma = match !print_hyps_limit with
+  | None -> hv 0 (pr_context_limit_compact state env sigma)
+  | Some n -> hv 0 (pr_context_limit_compact ~n state env sigma)
 
 (* display goal parts (Proof mode) *)
 
@@ -500,7 +517,7 @@ let pr_predicate pr_elt (b, elts) =
     else
       if List.is_empty elts then str"none" else pr_elts
 
-let pr_cpred p = pr_predicate (pr_constant (Global.env())) (Cpred.elements p)
+let pr_cpred p = pr_predicate (pr_constant (States.get_state()) (Global.env())) (Cpred.elements p)
 let pr_idpred p = pr_predicate Id.print (Id.Pred.elements p)
 
 let pr_transparent_state (ids, csts) =
@@ -516,13 +533,14 @@ let pr_goal ?(diffs=false) ?og_s g_s =
   let sigma = project g_s in
   let env = Goal.V82.env sigma g in
   let concl = Goal.V82.concl sigma g in
+  let state = States.get_state () in
   let goal =
     if diffs then
       Proof_diffs.diff_goal ?og_s g sigma
     else
-      pr_context_of env sigma ++ cut () ++
+      pr_context_of state env sigma ++ cut () ++
         str "============================" ++ cut ()  ++
-        pr_goal_concl_style_env env sigma concl
+        pr_goal_concl_style_env state env sigma concl
   in
   str "  " ++ v 0 goal
 
@@ -545,19 +563,20 @@ let pr_goal_header nme sigma g =
 let pr_concl n ?(diffs=false) ?og_s sigma g =
   let (g,sigma) = Goal.V82.nf_evar sigma g in
   let env = Goal.V82.env sigma g in
+  let state = States.get_state () in
   let pc =
     if diffs then
       Proof_diffs.diff_concl ?og_s sigma g
     else
-      pr_goal_concl_style_env env sigma (Goal.V82.concl sigma g)
+      pr_goal_concl_style_env state env sigma (Goal.V82.concl sigma g)
   in
   let header = pr_goal_header (int n) sigma g in
   header ++ str " is:" ++ cut () ++ str" "  ++ pc
 
 (* display evar type: a context and a type *)
-let pr_evgl_sign sigma evi =
+let pr_evgl_sign state sigma evi =
   let env = evar_env evi in
-  let ps = pr_named_context_of env sigma in
+  let ps = pr_named_context_of state env sigma in
   let _, l = match Filter.repr (evar_filter evi) with
   | None -> [], []
   | Some f -> List.filter2 (fun b c -> not b) f (evar_context evi)
@@ -567,12 +586,12 @@ let pr_evgl_sign sigma evi =
     if List.is_empty ids then mt () else
       (str " (" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")
   in
-  let pc = pr_leconstr_env env sigma evi.evar_concl in
+  let pc = pr_leconstr_env state env sigma evi.evar_concl in
   let candidates =
     match evi.evar_body, evi.evar_candidates with
     | Evar_empty, Some l ->
        spc () ++ str "= {" ++
-         prlist_with_sep (fun () -> str "|") (pr_leconstr_env env sigma) l ++ str "}"
+         prlist_with_sep (fun () -> str "|") (pr_leconstr_env state env sigma) l ++ str "}"
     | _ ->
        mt ()
   in
@@ -581,8 +600,8 @@ let pr_evgl_sign sigma evi =
 
 (* Print an existential variable *)
 
-let pr_evar sigma (evk, evi) =
-  let pegl = pr_evgl_sign sigma evi in
+let pr_evar state sigma (evk, evi) =
+  let pegl = pr_evgl_sign state sigma evi in
   hov 0 (pr_existential_key sigma evk ++ str " : " ++ pegl)
 
 (* Print an enumerated list of existential variables *)
@@ -592,7 +611,7 @@ let rec pr_evars_int_hd pr sigma i = function
       (hov 0 (pr i evk evi)) ++
       (match rest with [] -> mt () | _ -> fnl () ++ pr_evars_int_hd pr sigma (i+1) rest)
 
-let pr_evars_int sigma ~shelf ~givenup i evs =
+let pr_evars_int state sigma ~shelf ~givenup i evs =
   let pr_status i =
     if List.mem i shelf then str " (shelved)"
     else if List.mem i givenup then str " (given up)"
@@ -600,19 +619,19 @@ let pr_evars_int sigma ~shelf ~givenup i evs =
   pr_evars_int_hd
     (fun i evk evi ->
       str "Existential " ++ int i ++ str " =" ++
-      spc () ++ pr_evar sigma (evk,evi) ++ pr_status evk)
+      spc () ++ pr_evar state sigma (evk,evi) ++ pr_status evk)
     sigma i (Evar.Map.bindings evs)
 
-let pr_evars sigma evs =
-  pr_evars_int_hd (fun i evk evi -> pr_evar sigma (evk,evi)) sigma 1 (Evar.Map.bindings evs)
+let pr_evars state sigma evs =
+  pr_evars_int_hd (fun i evk evi -> pr_evar state sigma (evk,evi)) sigma 1 (Evar.Map.bindings evs)
 
 (* Display a list of evars given by their name, with a prefix *)
-let pr_ne_evar_set hd tl sigma l =
+let pr_ne_evar_set hd tl state sigma l =
   if l != Evar.Set.empty then
     let l = Evar.Set.fold (fun ev ->
       Evar.Map.add ev (Evarutil.nf_evar_info sigma (Evd.find sigma ev)))
       l Evar.Map.empty in
-    hd ++ pr_evars sigma l ++ tl
+    hd ++ pr_evars state sigma l ++ tl
   else
     mt ()
 
@@ -634,17 +653,17 @@ let pr_subgoal n sigma =
 
 let pr_internal_existential_key ev = Evar.print ev
 
-let print_evar_constraints gl sigma =
+let print_evar_constraints gl state sigma =
   let pr_env =
     match gl with
-    | None -> fun e' -> pr_context_of e' sigma
+    | None -> fun env -> pr_context_of state env sigma
     | Some g ->
-       let env = Goal.V82.env sigma g in fun e' ->
+       let env = Goal.V82.env sigma g in fun env' ->
        begin
-         if Context.Named.equal Constr.equal (named_context env) (named_context e') then
-           if Context.Rel.equal Constr.equal (rel_context env) (rel_context e') then mt ()
-           else pr_rel_context_of e' sigma ++ str " |-" ++ spc ()
-         else pr_context_of e' sigma ++ str " |-" ++ spc ()
+         if Context.Named.equal Constr.equal (named_context env) (named_context env') then
+           if Context.Rel.equal Constr.equal (rel_context env) (rel_context env') then mt ()
+           else pr_rel_context_of state env' sigma ++ str " |-" ++ spc ()
+         else pr_context_of state env' sigma ++ str " |-" ++ spc ()
        end
   in
   let pr_evconstr (pbty,env,t1,t2) =
@@ -659,15 +678,15 @@ let print_evar_constraints gl sigma =
           naming/renaming *)
       Namegen.make_all_name_different env sigma in
     str" " ++
-      hov 2 (pr_env env ++ pr_leconstr_env env sigma t1 ++ spc () ++
+      hov 2 (pr_env env ++ pr_leconstr_env state env sigma t1 ++ spc () ++
              str (match pbty with
                   | Reduction.CONV -> "=="
                   | Reduction.CUMUL -> "<=") ++
-             spc () ++ pr_leconstr_env env sigma t2)
+             spc () ++ pr_leconstr_env state env sigma t2)
   in
   let pr_candidate ev evi (candidates,acc) =
     if Option.has_some evi.evar_candidates then
-      (succ candidates, acc ++ pr_evar sigma (ev,evi) ++ fnl ())
+      (succ candidates, acc ++ pr_evar state sigma (ev,evi) ++ fnl ())
     else (candidates, acc)
   in
   let constraints =
@@ -694,8 +713,8 @@ let _ =
       optread  = (fun () -> !should_print_dependent_evars);
       optwrite = (fun v -> should_print_dependent_evars := v) }
 
-let print_dependent_evars gl sigma seeds =
-  let constraints = print_evar_constraints gl sigma in
+let print_dependent_evars gl state sigma seeds =
+  let constraints = print_evar_constraints gl state sigma in
   let evars () =
     if !should_print_dependent_evars then
       let evars = Evarutil.gather_dependent_evars sigma seeds in
@@ -726,6 +745,7 @@ module GoalMap = Evar.Map
 (* [os_map] is derived from the previous proof step, used for diffs *)
 let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
                         close_cmd sigma ~seeds ~shelf ~stack ~unfocused ~goals =
+  let state = States.get_state () in
   let diff_goal_map =
     match os_map with
     | Some (_, diff_goal_map) -> diff_goal_map
@@ -804,13 +824,13 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
       begin
 	let exl = Evd.undefined_map sigma in
 	if Evar.Map.is_empty exl then
-	  (str"No more subgoals." ++ print_dependent_evars None sigma seeds)
+          (str"No more subgoals." ++ print_dependent_evars None state sigma seeds)
 	else
-          let pei = pr_evars_int sigma ~shelf ~givenup:[] 1 exl in
+          let pei = pr_evars_int state sigma ~shelf ~givenup:[] 1 exl in
 	  v 0 ((str "No more subgoals,"
                 ++ str " but there are non-instantiated existential variables:"
 	        ++ cut () ++ (hov 0 pei)
-                ++ print_dependent_evars None sigma seeds
+                ++ print_dependent_evars None state sigma seeds
                 ++ cut () ++ str "You can use Grab Existential Variables."))
       end
   | g1::rest ->
@@ -825,7 +845,7 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
         ++ (if unfocused=[] then str ""
            else (cut() ++ cut() ++ str "*** Unfocused goals:" ++ cut()
                  ++ pr_rec (List.length rest + 2) unfocused))
-	++ print_dependent_evars (Some g1) sigma seeds
+        ++ print_dependent_evars (Some g1) state sigma seeds
       )
 
 let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
@@ -950,31 +970,31 @@ end
 module ContextObjectSet = Set.Make (OrderedContextObject)
 module ContextObjectMap = Map.Make (OrderedContextObject)
 
-let pr_assumptionset env sigma s =
+let pr_assumptionset state env sigma s =
   if ContextObjectMap.is_empty s &&
        engagement env = PredicativeSet then
     str "Closed under the global context"
   else
     let safe_pr_constant env kn =
-      try pr_constant env kn
+      try pr_constant state env kn
       with Not_found ->
         (* FIXME? *)
 	let mp,_,lab = Constant.repr3 kn in
         str (ModPath.to_string mp) ++ str "." ++ Label.print lab
     in
     let safe_pr_inductive env kn =
-      try pr_inductive env (kn,0)
+      try pr_inductive state env (kn,0)
       with Not_found ->
         (* FIXME? *)
         MutInd.print kn
     in
     let safe_pr_ltype env sigma typ =
-      try str " : " ++ pr_ltype_env env sigma typ
+      try str " : " ++ pr_ltype_env state env sigma typ
       with e when CErrors.noncritical e -> mt ()
     in
     let safe_pr_ltype_relctx (rctx, typ) =
       let env = Environ.push_rel_context rctx env in
-      try str " " ++ pr_ltype_env env sigma typ
+      try str " " ++ pr_ltype_env state env sigma typ
       with e when CErrors.noncritical e -> mt ()
     in
     let pr_axiom env ax typ =
@@ -990,7 +1010,7 @@ let pr_assumptionset env sigma s =
       let (v, a, o, tr) = accu in
       match t with
       | Variable id ->
-        let var = pr_id id ++ str " : " ++ pr_ltype_env env sigma typ in
+        let var = pr_id id ++ str " : " ++ pr_ltype_env state env sigma typ in
         (var :: v, a, o, tr)
       | Axiom (axiom, []) ->
         let ax = pr_axiom env axiom typ in

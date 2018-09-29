@@ -640,6 +640,7 @@ module New = struct
     let ind = on_snd (fun u -> EInstance.kind sigma u) ind in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (Proofview.Goal.enter begin fun gl ->
+    let state = States.get_state () in
     let indclause = mk_clenv_from gl (c, t) in
     (* applying elimination_scheme just a little modified *)
     let elimclause = mk_clenv_from gl (elim,Tacmach.New.pf_unsafe_type_of gl elim)  in
@@ -655,7 +656,7 @@ module New = struct
       | _ ->
 	  let name_elim =
 	    match EConstr.kind sigma elim with
-            | Const _ | Var _ -> str " " ++ Printer.pr_econstr_env (pf_env gl) sigma elim
+            | Const _ | Var _ -> str " " ++ Printer.pr_econstr_env state (pf_env gl) sigma elim
             | _ -> mt ()
 	  in
 	  user_err ~hdr:"Tacticals.general_elim_then_using"

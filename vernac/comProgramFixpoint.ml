@@ -91,6 +91,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let lift_rel_context n l = Termops.map_rel_context_with_binders (liftn n) l in
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let env = Global.env() in
+  let state = States.get_state () in
   let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
   let sigma, (_, ((env', binders_rel), impls)) = interp_context_evars env sigma bl in
   let len = List.length binders_rel in
@@ -108,7 +109,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
     let error () =
       user_err ?loc:(constr_loc r)
                ~hdr:"Command.build_wellfounded"
-                    (Printer.pr_econstr_env env sigma rel ++ str " is not an homogeneous binary relation.")
+                    (Printer.pr_econstr_env state env sigma rel ++ str " is not an homogeneous binary relation.")
     in
       try
         let ctx, ar = Reductionops.splay_prod_n env sigma 2 relty in

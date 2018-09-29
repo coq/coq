@@ -61,21 +61,26 @@ let prrecarg = function
 let ppwf_paths x = pp (Rtree.pp_tree prrecarg x)
 
 (* term printers *)
-let envpp pp = let sigma,env = Pfedit.get_current_context () in pp env sigma
+let envpp pp =
+  let sigma,env = Pfedit.get_current_context () in
+  let state = States.get_state () in
+  pp state env sigma
 let rawdebug = ref false
 let ppevar evk = pp (Evar.print evk)
 let pr_constr t =
   let sigma, env = Pfedit.get_current_context () in
-  Printer.pr_constr_env env sigma t
+  let state = States.get_state () in
+  Printer.pr_constr_env state env sigma t
 let pr_econstr t =
   let sigma, env = Pfedit.get_current_context () in
-  Printer.pr_econstr_env env sigma t
+  let state = States.get_state () in
+  Printer.pr_econstr_env state env sigma t
 let ppconstr x = pp (pr_constr x)
 let ppeconstr x = pp (pr_econstr x)
 let ppconstr_expr x = pp (Ppconstr.pr_constr_expr x)
 let ppsconstr x = ppconstr (Mod_subst.force_constr x)
 let ppconstr_univ x = Constrextern.with_universes ppconstr x
-let ppglob_constr = (fun x -> pp(pr_lglob_constr_env (Global.env()) x))
+let ppglob_constr = (fun x -> pp(pr_lglob_constr_env (States.get_state()) (Global.env()) x))
 let pppattern = (fun x -> pp(envpp pr_constr_pattern_env x))
 let pptype = (fun x -> try pp(envpp pr_ltype_env x) with e -> pp (str (Printexc.to_string e)))
 let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
@@ -127,7 +132,7 @@ let rec pr_closure {idents=idents;typed=typed;untyped=untyped} =
 and pr_closed_glob_constr_idmap x =
   pridmap (fun _ -> pr_closed_glob_constr) x
 and pr_closed_glob_constr {closure=closure;term=term} =
-  pr_closure closure ++ (pr_lglob_constr_env Global.(env ())) term
+  pr_closure closure ++ (pr_lglob_constr_env (States.get_state ()) Global.(env ())) term
 
 let ppclosure x = pp (pr_closure x)
 let ppclosedglobconstr x = pp (pr_closed_glob_constr x)
@@ -229,18 +234,19 @@ let ppuniverses u = pp (UGraph.pr_universes Level.pr u)
 let ppnamedcontextval e =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  pp (pr_named_context env sigma (named_context_of_val e))
+  let state = States.get_state () in
+  pp (pr_named_context state env sigma (named_context_of_val e))
 
 let ppenv e = pp
-  (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++
-   str "[" ++ pr_rel_context e Evd.empty (rel_context e) ++ str "]")
+  (str "[" ++ pr_named_context_of (States.get_state ()) e Evd.empty ++ str "]" ++ spc() ++
+   str "[" ++ pr_rel_context (States.get_state ()) e Evd.empty (rel_context e) ++ str "]")
 
 let ppenvwithcst e = pp
-  (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++
-   str "[" ++ pr_rel_context e Evd.empty (rel_context e) ++ str "]" ++ spc() ++
+  (str "[" ++ pr_named_context_of (States.get_state ()) e Evd.empty ++ str "]" ++ spc() ++
+   str "[" ++ pr_rel_context (States.get_state ()) e Evd.empty (rel_context e) ++ str "]" ++ spc() ++
    str "{" ++ Environ.fold_constants (fun a _ s -> Constant.print a ++ spc () ++ s) e (mt ()) ++ str "}")
 
-let pptac = (fun x -> pp(Ltac_plugin.Pptactic.pr_glob_tactic (Global.env()) x))
+let pptac = (fun x -> pp(Ltac_plugin.Pptactic.pr_glob_tactic (States.get_state ()) (Global.env()) x))
 
 let ppobj obj = Format.print_string (Libobject.object_tag obj)
 

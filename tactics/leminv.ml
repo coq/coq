@@ -33,9 +33,9 @@ open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 
-let no_inductive_inconstr env sigma constr =
+let no_inductive_inconstr state env sigma constr =
   (str "Cannot recognize an inductive predicate in " ++
-     pr_leconstr_env env sigma constr ++
+     pr_leconstr_env state env sigma constr ++
      str "." ++ spc () ++ str "If there is one, may be the structure of the arity" ++
      spc () ++ str "or of the type of constructors" ++ spc () ++
      str "is hidden by constant definitions.")
@@ -183,12 +183,12 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
    scheme on sort [sort]. Depending on the value of [dep_option] it will
    build a dependent lemma or a non-dependent one *)
 
-let inversion_scheme env sigma t sort dep_option inv_op =
+let inversion_scheme state env sigma t sort dep_option inv_op =
   let (env,i) = add_prods_sign env sigma t in
   let ind =
     try find_rectype env sigma i
     with Not_found ->
-      user_err ~hdr:"inversion_scheme" (no_inductive_inconstr env sigma i)
+      user_err ~hdr:"inversion_scheme" (no_inductive_inconstr state env sigma i)
   in
   let (invEnv,invGoal) =
     compute_first_inversion_scheme env sigma ind sort dep_option
@@ -235,8 +235,8 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let p = EConstr.to_constr sigma invProof in
   p, sigma
 
-let add_inversion_lemma ~poly name env sigma t sort dep inv_op =
-  let invProof, sigma = inversion_scheme env sigma t sort dep inv_op in
+let add_inversion_lemma ~poly name state env sigma t sort dep inv_op =
+  let invProof, sigma = inversion_scheme state env sigma t sort dep inv_op in
   let univs =
     Evd.const_univ_entry ~poly sigma
   in
@@ -252,8 +252,9 @@ let add_inversion_lemma_exn ~poly na com comsort bool tac =
   let sigma = Evd.from_env env in
   let sigma, c = Constrintern.interp_type_evars env sigma com in
   let sigma, sort = Evd.fresh_sort_in_family ~rigid:univ_rigid sigma comsort in
+  let state = States.get_state () in
   try
-    add_inversion_lemma ~poly na env sigma c sort bool tac
+    add_inversion_lemma ~poly na state env sigma c sort bool tac
   with
     |   UserError (Some "Case analysis",s) -> (* Reference to Indrec *)
 	  user_err ~hdr:"Inv needs Nodep Prop Set" s
@@ -270,12 +271,14 @@ let lemInv id c =
     Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false
   with
     | NoSuchBinding ->
+        let state = States.get_state () in
 	user_err 
-	  (hov 0 (pr_econstr_env (pf_env gls) (project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
+          (hov 0 (pr_econstr_env state (pf_env gls) (project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
     | UserError (a,b) ->
-	 user_err ~hdr:"LemInv"
+        let state = States.get_state () in
+        user_err ~hdr:"LemInv"
 	   (str "Cannot refine current goal with the lemma " ++
-	      pr_leconstr_env (pf_env gls) (project gls) c)
+              pr_leconstr_env state (pf_env gls) (project gls) c)
   end
 
 let lemInv_gen id c = try_intros_until (fun id -> lemInv id c) id

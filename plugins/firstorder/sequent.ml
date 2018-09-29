@@ -231,7 +231,8 @@ let print_cmap map=
   let print_entry c l s=
     let env = Global.env () in
     let sigma = Evd.from_env env in
-    let xc=Constrextern.extern_constr false env sigma (EConstr.of_constr c) in
+    let state = States.get_state () in
+    let xc=Constrextern.extern_constr false state env sigma (EConstr.of_constr c) in
       str "| " ++
       prlist Printer.pr_global l ++
       str " : " ++

@@ -151,10 +151,12 @@ let string_of_genarg_arg (ArgumentType arg) =
              | TopPrinterBasic pr -> pr ()
              | TopPrinterNeedsContext pr ->
                let env = Global.env() in
-               pr env (Evd.from_env env)
+               let state = States.get_state () in
+               pr state env (Evd.from_env env)
              | TopPrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
                let env = Global.env() in
-               printer env (Evd.from_env env) default_ensure_surrounded
+               let state = States.get_state () in
+               printer state env (Evd.from_env env) default_ensure_surrounded
           end
         | _ -> default
 
@@ -1129,18 +1131,18 @@ let pr_goal_selector ~toplevel s =
 
   let pr_pat_and_constr_expr pr (_,(c,_),_) = pr c
 
-  let pr_glob_tactic_level env n t =
+  let pr_glob_tactic_level state env n t =
     let glob_printers =
       (strip_prod_binders_glob_constr)
     in
     let rec prtac n (t:glob_tactic_expr) =
       let pr = {
         pr_tactic = prtac;
-        pr_constr = pr_and_constr_expr (pr_glob_constr_env env);
-        pr_dconstr = pr_and_constr_expr (pr_glob_constr_env env);
-        pr_lconstr = pr_and_constr_expr (pr_lglob_constr_env env);
-        pr_pattern = pr_pat_and_constr_expr (pr_glob_constr_env env);
-        pr_lpattern = pr_pat_and_constr_expr (pr_lglob_constr_env env);
+        pr_constr = pr_and_constr_expr (pr_glob_constr_env state env);
+        pr_dconstr = pr_and_constr_expr (pr_glob_constr_env state env);
+        pr_lconstr = pr_and_constr_expr (pr_lglob_constr_env state env);
+        pr_pattern = pr_pat_and_constr_expr (pr_glob_constr_env state env);
+        pr_lpattern = pr_pat_and_constr_expr (pr_lglob_constr_env state env);
         pr_constant = pr_or_var (pr_and_short_name (pr_evaluable_reference_env env));
         pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
         pr_name = pr_lident;
@@ -1155,7 +1157,7 @@ let pr_goal_selector ~toplevel s =
     in
     prtac n t
 
-  let pr_glob_tactic env = pr_glob_tactic_level env ltop
+  let pr_glob_tactic state env = pr_glob_tactic_level state env ltop
 
   let strip_prod_binders_constr n ty =
     let ty = EConstr.Unsafe.to_constr ty in
@@ -1167,15 +1169,15 @@ let pr_goal_selector ~toplevel s =
         | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in
     strip_ty [] n ty
 
-  let pr_atomic_tactic_level env sigma t =
+  let pr_atomic_tactic_level state env sigma t =
     let prtac (t:atomic_tactic_expr) =
       let pr = {
         pr_tactic = (fun _ _ -> str "<tactic>");
-        pr_constr = (fun c -> pr_econstr_env env sigma c);
-        pr_dconstr = pr_and_constr_expr (pr_glob_constr_env env);
-        pr_lconstr = (fun c -> pr_leconstr_env env sigma c);
-        pr_pattern = pr_constr_pattern_env env sigma;
-        pr_lpattern = pr_lconstr_pattern_env env sigma;
+        pr_constr = (fun c -> pr_econstr_env state env sigma c);
+        pr_dconstr = pr_and_constr_expr (pr_glob_constr_env state env);
+        pr_lconstr = (fun c -> pr_leconstr_env state env sigma c);
+        pr_pattern = pr_constr_pattern_env state env sigma;
+        pr_lpattern = pr_lconstr_pattern_env state env sigma;
         pr_constant = pr_evaluable_reference_env env;
         pr_reference = pr_located pr_ltac_constant;
         pr_name = pr_id;
@@ -1195,7 +1197,7 @@ let pr_goal_selector ~toplevel s =
 
   let pr_raw_extend _ = pr_raw_extend_rec pr_raw_tactic_level
 
-  let pr_glob_extend env = pr_glob_extend_rec (pr_glob_tactic_level env)
+  let pr_glob_extend state env = pr_glob_extend_rec (pr_glob_tactic_level state env)
 
   let pr_alias pr lev key args =
     pr_alias_gen (fun _ arg -> pr arg) lev key args
@@ -1219,11 +1221,12 @@ let declare_extra_genarg_pprule wit
   let g x =
     Genprint.PrinterBasic (fun () ->
     let env = Global.env () in
-    g (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env)) (pr_glob_tactic_level env) x)
+    let state = States.get_state () in
+    g (pr_and_constr_expr (pr_glob_constr_env state env)) (pr_and_constr_expr (pr_lglob_constr_env state env)) (pr_glob_tactic_level state env) x)
   in
   let h x =
-    Genprint.TopPrinterNeedsContext (fun env sigma ->
-        h (pr_econstr_env env sigma) (pr_leconstr_env env sigma) (fun _ _ -> str "<tactic>") x)
+    Genprint.TopPrinterNeedsContext (fun state env sigma ->
+        h (pr_econstr_env state env sigma) (pr_leconstr_env state env sigma) (fun _ _ -> str "<tactic>") x)
   in
   Genprint.register_print0 wit f g h
 
@@ -1244,18 +1247,19 @@ let declare_extra_genarg_pprule_with_level wit
           f pr_constr_expr pr_lconstr_expr pr_raw_tactic_level n x) } in
   let g x =
     let env = Global.env () in
+    let state = States.get_state () in
     PrinterNeedsLevel {
         default_already_surrounded = default_surrounded;
         default_ensure_surrounded = default_non_surrounded;
         printer = (fun n ->
-          g (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env)) (pr_glob_tactic_level env) n x) }
+          g (pr_and_constr_expr (pr_glob_constr_env state env)) (pr_and_constr_expr (pr_lglob_constr_env state env)) (pr_glob_tactic_level state env) n x) }
   in
   let h x =
     TopPrinterNeedsContextAndLevel {
         default_already_surrounded = default_surrounded;
         default_ensure_surrounded = default_non_surrounded;
-        printer = (fun env sigma n ->
-          h (pr_econstr_env env sigma) (pr_leconstr_env env sigma) (fun _ _ -> str "<tactic>") n x) }
+        printer = (fun state env sigma n ->
+          h (pr_econstr_env state env sigma) (pr_leconstr_env state env sigma) (fun _ _ -> str "<tactic>") n x) }
   in
   Genprint.register_print0 wit f g h
 
@@ -1265,37 +1269,37 @@ let declare_extra_vernac_genarg_pprule wit f =
 
 (** Registering *)
 
-let pr_intro_pattern_env p = Genprint.TopPrinterNeedsContext (fun env sigma ->
-  let print_constr c = let (sigma, c) = c env sigma in pr_econstr_env env sigma c in
+let pr_intro_pattern_env p = Genprint.TopPrinterNeedsContext (fun state env sigma ->
+  let print_constr c = let (sigma, c) = c env sigma in pr_econstr_env state env sigma c in
   Miscprint.pr_intro_pattern print_constr p)
 
-let pr_red_expr_env r = Genprint.TopPrinterNeedsContext (fun env sigma ->
-  pr_red_expr (pr_econstr_env env sigma, pr_leconstr_env env sigma,
-               pr_evaluable_reference_env env, pr_constr_pattern_env env sigma) r)
+let pr_red_expr_env r = Genprint.TopPrinterNeedsContext (fun state env sigma ->
+  pr_red_expr (pr_econstr_env state env sigma, pr_leconstr_env state env sigma,
+               pr_evaluable_reference_env env, pr_constr_pattern_env state env sigma) r)
 
-let pr_bindings_env bl = Genprint.TopPrinterNeedsContext (fun env sigma ->
+let pr_bindings_env bl = Genprint.TopPrinterNeedsContext (fun state env sigma ->
   let sigma, bl = bl env sigma in
   Miscprint.pr_bindings
-    (pr_econstr_env env sigma) (pr_leconstr_env env sigma) bl)
+    (pr_econstr_env state env sigma) (pr_leconstr_env state env sigma) bl)
 
-let pr_with_bindings_env bl = Genprint.TopPrinterNeedsContext (fun env sigma ->
+let pr_with_bindings_env bl = Genprint.TopPrinterNeedsContext (fun state env sigma ->
   let sigma, bl = bl env sigma in
   pr_with_bindings
-    (pr_econstr_env env sigma) (pr_leconstr_env env sigma) bl)
+    (pr_econstr_env state env sigma) (pr_leconstr_env state env sigma) bl)
 
-let pr_destruction_arg_env c = Genprint.TopPrinterNeedsContext (fun env sigma ->
+let pr_destruction_arg_env c = Genprint.TopPrinterNeedsContext (fun state env sigma ->
   let sigma, c = match c with
   | clear_flag,ElimOnConstr g -> let sigma,c = g env sigma in sigma,(clear_flag,ElimOnConstr c)
   | clear_flag,ElimOnAnonHyp n as x -> sigma, x
   | clear_flag,ElimOnIdent id as x -> sigma, x in
   pr_destruction_arg
-    (pr_econstr_env env sigma) (pr_leconstr_env env sigma) c)
+    (pr_econstr_env state env sigma) (pr_leconstr_env state env sigma) c)
 
 let make_constr_printer f c =
   Genprint.TopPrinterNeedsContextAndLevel {
       Genprint.default_already_surrounded = Ppconstr.ltop;
       Genprint.default_ensure_surrounded = Ppconstr.lsimpleconstr;
-      Genprint.printer = (fun env sigma n -> f env sigma n c)}
+      Genprint.printer = (fun state env sigma n -> f state env sigma n c)}
 
 let lift f a = Genprint.PrinterBasic (fun () -> f a)
 let lift_top f a = Genprint.TopPrinterBasic (fun () -> f a)
@@ -1306,11 +1310,13 @@ let register_basic_print0 wit f g h =
 
 let pr_glob_constr_pptac c =
   let _, env = Pfedit.get_current_context () in
-  pr_glob_constr_env env c
+  let state = States.get_state () in
+  pr_glob_constr_env state env c
 
 let pr_lglob_constr_pptac c =
   let _, env = Pfedit.get_current_context () in
-  pr_lglob_constr_env env c
+  let state = States.get_state () in
+  pr_lglob_constr_env state env c
 
 let () =
   let pr_bool b = if b then str "true" else str "false" in

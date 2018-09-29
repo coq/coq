@@ -28,7 +28,8 @@ let cc_verbose=ref false
 
 let print_constr t =
   let sigma, env = Pfedit.get_current_context () in
-  Printer.pr_econstr_env env sigma t
+  let state = States.get_state () in
+  Printer.pr_econstr_env state env sigma t
 
 let debug x =
   if !cc_verbose then Feedback.msg_debug (x ())

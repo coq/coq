@@ -13,7 +13,7 @@ open Names
 (** false iff the module is an element of an open module type *)
 val printable_body : DirPath.t -> bool
 
-val pr_mutual_inductive_body : Environ.env ->
+val pr_mutual_inductive_body : States.state -> Environ.env ->
   MutInd.t -> Declarations.mutual_inductive_body ->
   UnivNames.univ_name_list option -> Pp.t
 val print_module : bool -> ModPath.t -> Pp.t

@@ -51,7 +51,7 @@ let interp_agen ist gl ((goclr, _), (k, gc as c)) (clr, rcs) =
         SsrHyp (Loc.tag ?loc id) :: clr', rcs'
     | _ -> clr', rcs'
 
-let pf_pr_glob_constr gl = pr_glob_constr_env (pf_env gl)
+let pf_pr_glob_constr gl = pr_glob_constr_env (States.get_state ()) (pf_env gl)
 
 let interp_nbargs ist gl rc =
   try

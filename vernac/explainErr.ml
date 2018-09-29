@@ -59,31 +59,39 @@ let process_vernac_interp_error exn = match fst exn with
       else
 	mt() in
     wrap_vernac_error exn (str "Universe inconsistency" ++ msg ++ str ".")
-  | TypeError(ctx,te) ->
+  | TypeError(env,te) ->
+      let state = States.get_state () in
       let te = Himsg.map_ptype_error EConstr.of_constr te in
-      wrap_vernac_error exn (Himsg.explain_type_error ctx Evd.empty te)
-  | PretypeError(ctx,sigma,te) ->
-      wrap_vernac_error exn (Himsg.explain_pretype_error ctx sigma te)
-  | Notation.NumeralNotationError(ctx,sigma,te) ->
-      wrap_vernac_error exn (Himsg.explain_numeral_notation_error ctx sigma te)
+      wrap_vernac_error exn (Himsg.explain_type_error state env Evd.empty te)
+  | PretypeError(state,env,sigma,te) ->
+      wrap_vernac_error exn (Himsg.explain_pretype_error state env sigma te)
+  | Notation.NumeralNotationError(state,env,sigma,te) ->
+      wrap_vernac_error exn (Himsg.explain_numeral_notation_error state env sigma te)
   | Typeclasses_errors.TypeClassError(env, te) ->
-      wrap_vernac_error exn (Himsg.explain_typeclass_error env te)
+      let state = States.get_state () in
+      wrap_vernac_error exn (Himsg.explain_typeclass_error state env te)
   | Implicit_quantifiers.MismatchedContextInstance(e,c,l,x) ->
-    wrap_vernac_error exn (Himsg.explain_mismatched_contexts e c l x)
+      let state = States.get_state () in
+      wrap_vernac_error exn (Himsg.explain_mismatched_contexts state e c l x)
   | InductiveError e ->
-      wrap_vernac_error exn (Himsg.explain_inductive_error e)
+      let state = States.get_state () in
+      wrap_vernac_error exn (Himsg.explain_inductive_error state e)
   | Modops.ModuleTypingError e ->
-      wrap_vernac_error exn (Himsg.explain_module_error e)
+      let state = States.get_state () in
+      wrap_vernac_error exn (Himsg.explain_module_error state e)
   | Modintern.ModuleInternalizationError e ->
       wrap_vernac_error exn (Himsg.explain_module_internalization_error e)
   | RecursionSchemeError (env,e) ->
-      wrap_vernac_error exn (Himsg.explain_recursion_scheme_error env e)
+      let state = States.get_state () in
+      wrap_vernac_error exn (Himsg.explain_recursion_scheme_error state env e)
   | Cases.PatternMatchingError (env,sigma,e) ->
-      wrap_vernac_error exn (Himsg.explain_pattern_matching_error env sigma e)
+      let state = States.get_state () in
+      wrap_vernac_error exn (Himsg.explain_pattern_matching_error state env sigma e)
   | Tacred.ReductionTacticError e ->
       wrap_vernac_error exn (Himsg.explain_reduction_tactic_error e)
   | Logic.RefinerError (env, sigma, e) ->
-    wrap_vernac_error exn (Himsg.explain_refiner_error env sigma e)
+      let state = States.get_state () in
+      wrap_vernac_error exn (Himsg.explain_refiner_error state env sigma e)
   | Nametab.GlobalizationError q ->
       wrap_vernac_error exn
         (str "The reference" ++ spc () ++ Libnames.pr_qualid q ++

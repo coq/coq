@@ -145,14 +145,14 @@ let _ =
       Goptions.optread  = (fun () -> !suggest_proof_using);
       Goptions.optwrite = ((:=) suggest_proof_using) }
 
-let suggest_constant env kn =
+let suggest_constant state env kn =
   if !suggest_proof_using
   then begin
     let open Declarations in
     let body = lookup_constant kn env in
     let used = Id.Set.of_list @@ List.map NamedDecl.get_id body.const_hyps in
     let ids_typ = global_vars_set env body.const_type in
-    suggest_common env (Printer.pr_constant env kn) used ids_typ Id.Set.empty
+    suggest_common env (Printer.pr_constant state env kn) used ids_typ Id.Set.empty
   end
 
 let suggest_variable env id =

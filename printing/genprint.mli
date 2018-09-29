@@ -21,11 +21,11 @@ type printer_result =
 | PrinterBasic of (unit -> Pp.t)
 | PrinterNeedsLevel of (Notation_gram.tolerability -> Pp.t) with_level
 
-type printer_fun_with_level = Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> Pp.t
+type printer_fun_with_level = States.state -> Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> Pp.t
 
 type top_printer_result =
 | TopPrinterBasic of (unit -> Pp.t)
-| TopPrinterNeedsContext of (Environ.env -> Evd.evar_map -> Pp.t)
+| TopPrinterNeedsContext of (States.state -> Environ.env -> Evd.evar_map -> Pp.t)
 | TopPrinterNeedsContextAndLevel of printer_fun_with_level with_level
 
 type 'a printer = 'a -> printer_result

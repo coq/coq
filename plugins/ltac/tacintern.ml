@@ -783,7 +783,7 @@ let print_ltac id =
   hv 2 (
     hov 2 (str "Ltac" ++ spc() ++ pr_qualid id ++
            prlist pr_ltac_fun_arg l ++ spc () ++ str ":=")
-    ++ spc() ++ Pptactic.pr_glob_tactic (Global.env ()) t) ++ redefined
+    ++ spc() ++ Pptactic.pr_glob_tactic (States.get_state ()) (Global.env ()) t) ++ redefined
  with
   Not_found ->
    user_err ~hdr:"print_ltac"

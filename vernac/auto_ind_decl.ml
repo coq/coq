@@ -407,11 +407,12 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
         with Not_found ->
           (* spiwack: the format of this error message should probably
 	              be improved. *)
+          let state = States.get_state () in
           let err_msg =
 	    (str "Leibniz->boolean:" ++
              str "You have to declare the" ++
 	     str "decidability over " ++
-             Printer.pr_econstr_env env sigma type_of_pq ++
+             Printer.pr_econstr_env state env sigma type_of_pq ++
 	     str " first.")
           in
           Tacticals.New.tclZEROMSG err_msg
@@ -477,11 +478,12 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
                with Not_found ->
 		 (* spiwack: the format of this error message should probably
 	                     be improved. *)
+                 let state = States.get_state () in
 		 let err_msg =
 	                                (str "boolean->Leibniz:" ++
                                          str "You have to declare the" ++
 			   	         str "decidability over " ++
-                                         Printer.pr_econstr_env env sigma tt1 ++
+                                         Printer.pr_econstr_env state env sigma tt1 ++
 				         str " first.")
 		 in
 		 user_err err_msg
@@ -550,8 +552,11 @@ let eqI ind l =
                            (List.map (fun (_,seq,_,_)-> mkVar seq) list_id ))
   and e, eff = 
     try let c, eff = find_scheme beq_scheme_kind ind in mkConst c, eff 
-    with Not_found -> user_err ~hdr:"AutoIndDecl.eqI"
-      (str "The boolean equality on " ++ Printer.pr_inductive (Global.env ()) ind ++ str " is needed.");
+    with Not_found ->
+      let state = States.get_state () in
+      let env = Global.env () in
+      user_err ~hdr:"AutoIndDecl.eqI"
+      (str "The boolean equality on " ++ Printer.pr_inductive state env ind ++ str " is needed.");
   in (if Array.equal Constr.equal eA [||] then e else mkApp(e,eA)), eff
 
 (**********************************************************************)

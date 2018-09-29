@@ -130,11 +130,11 @@ let annotate phrase =
 
 (** Goal display *)
 
-let hyp_next_tac sigma env decl =
+let hyp_next_tac state sigma env decl =
   let id = NamedDecl.get_id decl in
   let ast = NamedDecl.get_type decl in
   let id_s = Names.Id.to_string id in
-  let type_s = string_of_ppcmds (pr_ltype_env env sigma ast) in
+  let type_s = string_of_ppcmds (pr_ltype_env state env sigma ast) in
   [
     ("clear "^id_s),("clear "^id_s^".");
     ("apply "^id_s),("apply "^id_s^".");
@@ -182,15 +182,16 @@ let concl_next_tac =
 
 let process_goal sigma g =
   let env = Goal.V82.env sigma g in
+  let state = States.get_state () in
   let min_env = Environ.reset_context env in
   let id = Goal.uid g in
   let ccl =
-    pr_goal_concl_style_env env sigma (Goal.V82.concl sigma g)
+    pr_goal_concl_style_env state env sigma (Goal.V82.concl sigma g)
   in
   let process_hyp d (env,l) =
     let d' = CompactedDecl.to_named_context d in
       (List.fold_right Environ.push_named d' env,
-       (pr_compacted_decl env sigma d) :: l) in
+       (pr_compacted_decl state env sigma d) :: l) in
   let (_env, hyps) =
     Context.Compacted.fold process_hyp
       (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
@@ -241,8 +242,9 @@ let evars () =
     set_doc @@ Stm.finish ~doc;
     let pfts = Proof_global.give_me_the_proof () in
     let all_goals, _, _, _, sigma = Proof.proof pfts in
+    let state = States.get_state () in
     let exl = Evar.Map.bindings (Evd.undefined_map sigma) in
-    let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar sigma ev); } in
+    let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar state sigma ev); } in
     let el = List.map map_evar exl in
     Some el
   with Proof_global.NoCurrentProof -> None
@@ -255,7 +257,8 @@ let hints () =
     | [] -> None
     | g :: _ ->
       let env = Goal.V82.env sigma g in
-      let get_hint_hyp env d accu = hyp_next_tac sigma env d :: accu in
+      let state = States.get_state () in
+      let get_hint_hyp env d accu = hyp_next_tac state sigma env d :: accu in
       let hint_hyps = List.rev (Environ.fold_named_context get_hint_hyp env ~init: []) in
       Some (hint_hyps, concl_next_tac)
   with Proof_global.NoCurrentProof -> None
@@ -299,7 +302,8 @@ let export_coq_object t = {
   Interface.coq_object_object =
     let env = Global.env () in
     let sigma = Evd.from_env env in
-    Pp.string_of_ppcmds (pr_lconstr_env env sigma t.Search.coq_object_object)
+    let state = States.get_state () in
+    Pp.string_of_ppcmds (pr_lconstr_env state env sigma t.Search.coq_object_object)
 }
 
 let pattern_of_string ?env s =

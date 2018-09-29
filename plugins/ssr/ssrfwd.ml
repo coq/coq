@@ -155,8 +155,8 @@ let havetac ist
      let ctx, _ = EConstr.decompose_prod_n_assum (project gl) 1 ty in
      let assert_is_conv gl =
        try Proofview.V82.of_tactic (convert_concl (EConstr.it_mkProd_or_LetIn concl ctx)) gl
-       with _ -> errorstrm (str "Given proof term is not of type " ++
-         pr_econstr_env (pf_env gl) (project gl) (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) concl)) in
+       with _ -> let state = States.get_state () in errorstrm (str "Given proof term is not of type " ++
+         pr_econstr_env state (pf_env gl) (project gl) (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) concl)) in
      gl, ty, Tacticals.tclTHEN assert_is_conv (Proofview.V82.of_tactic (Tactics.apply t)), id, itac_c
    | FwdHave, false, false ->
      let skols = List.flatten (List.map (function
@@ -241,14 +241,14 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
       | Sort _, [] -> EConstr.Vars.subst_vars s ct
       | LetIn(Name id as n,b,ty,c), _::g -> EConstr.mkLetIn (n,b,ty,var2rel c g (id::s))
       | Prod(Name id as n,ty,c), _::g -> EConstr.mkProd (n,ty,var2rel c g (id::s))
-      | _ -> CErrors.anomaly(str"SSR: wlog: var2rel: " ++ pr_econstr_env env sigma c) in
+      | _ -> CErrors.anomaly(str"SSR: wlog: var2rel: " ++ pr_econstr_env (States.get_state ()) env sigma c) in
     let c = var2rel c gens [] in
     let rec pired c = function
       | [] -> c
       | t::ts as args -> match EConstr.kind sigma c with
          | Prod(_,_,c) -> pired (EConstr.Vars.subst1 t c) ts
          | LetIn(id,b,ty,c) -> EConstr.mkLetIn (id,b,ty,pired c args)
-         | _ -> CErrors.anomaly(str"SSR: wlog: pired: " ++ pr_econstr_env env sigma c) in
+         | _ -> CErrors.anomaly(str"SSR: wlog: pired: " ++ pr_econstr_env (States.get_state ()) env sigma c) in
     c, args, pired c args, pf_merge_uc uc gl in
   let tacipat pats = introstac pats in
   let tacigens = 
@@ -276,8 +276,8 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
       | Some id ->
         if pats = [] then Tacticals.tclIDTAC else
         let args = Array.of_list args in
-        ppdebug(lazy(str"specialized="++ pr_econstr_env (pf_env gl) (project gl) EConstr.(mkApp (mkVar id,args))));
-        ppdebug(lazy(str"specialized_ty="++ pr_econstr_env (pf_env gl) (project gl) ct));
+        ppdebug(lazy(str"specialized="++ pr_econstr_env (States.get_state ()) (pf_env gl) (project gl) EConstr.(mkApp (mkVar id,args))));
+        ppdebug(lazy(str"specialized_ty="++ pr_econstr_env (States.get_state ()) (pf_env gl) (project gl) ct));
         Tacticals.tclTHENS (basecuttac "ssr_have" ct)
           [Proofview.V82.of_tactic (Tactics.apply EConstr.(mkApp (mkVar id,args))); Tacticals.tclIDTAC] in
       "ssr_have",

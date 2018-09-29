@@ -1075,9 +1075,10 @@ let show_obligations_of_prg ?(msg=true) prg =
 			 let x = subst_deps_obl obls x in
                          let env = Global.env () in
                          let sigma = Evd.from_env env in
+                         let state = States.get_state () in
 			 Feedback.msg_info (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
 				   str "of" ++ spc() ++ Id.print n ++ str ":" ++ spc () ++
-                                   hov 1 (Printer.pr_constr_env env sigma x.obl_type ++
+                                   hov 1 (Printer.pr_constr_env state env sigma x.obl_type ++
 					    str "." ++ fnl ())))
 		   | Some _ -> ())
       obls
@@ -1095,9 +1096,10 @@ let show_term n =
   let n = prg.prg_name in
   let env = Global.env () in
   let sigma = Evd.from_env env in
+  let state = States.get_state () in
     (Id.print n ++ spc () ++ str":" ++ spc () ++
-             Printer.pr_constr_env env sigma prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
-            ++ Printer.pr_constr_env env sigma prg.prg_body)
+             Printer.pr_constr_env state env sigma prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
+            ++ Printer.pr_constr_env state env sigma prg.prg_body)
 
 let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
                    ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic

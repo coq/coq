@@ -837,12 +837,13 @@ let make_apply_entry env sigma (eapply,hnf,verbose) info poly ?(name=PathAny) (c
     else begin
       if not eapply then failwith "make_apply_entry";
       if verbose then begin
+        let state = States.get_state () in
         let variables = str (CString.plural nmiss "variable") in
         Feedback.msg_info (
           strbrk "The hint " ++
-          pr_leconstr_env env sigma' c ++
+          pr_leconstr_env state env sigma' c ++
           strbrk " will only be used by eauto, because applying " ++
-          pr_leconstr_env env sigma' c ++
+          pr_leconstr_env state env sigma' c ++
           strbrk " would leave " ++ variables ++ Pp.spc () ++
           Pp.prlist_with_sep Pp.pr_comma Name.print (List.map (Evd.meta_name ce.evd) miss) ++
           strbrk " as unresolved existential " ++ variables ++ str "."
@@ -859,11 +860,11 @@ let make_apply_entry env sigma (eapply,hnf,verbose) info poly ?(name=PathAny) (c
    c is a constr
    cty is the type of constr *)
 
-let pr_hint_term env sigma ctx = function
+let pr_hint_term state env sigma ctx = function
   | IsGlobRef gr -> pr_global gr
   | IsConstr (c, ctx) ->
      let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
-     pr_econstr_env env sigma c
+     pr_econstr_env state env sigma c
 
 let warn_polymorphic_hint =
   CWarnings.create ~name:"polymorphic-hint" ~category:"automation"
@@ -882,8 +883,10 @@ let fresh_global_or_constr env sigma poly cr =
     if poly then (c, ctx)
     else if Univ.ContextSet.is_empty ctx then (c, ctx)
     else begin
-      if isgr then
-        warn_polymorphic_hint (pr_hint_term env sigma ctx cr);
+      if isgr then begin
+        let state = States.get_state () in
+        warn_polymorphic_hint (pr_hint_term state env sigma ctx cr)
+        end;
       Declare.declare_universe_context false ctx;
       (c, Univ.ContextSet.empty)
     end
@@ -897,11 +900,13 @@ let make_resolves env sigma flags info poly ?name cr =
 			     [make_exact_entry env sigma info poly ?name;
 			      make_apply_entry env sigma flags info poly ?name]
   in
-  if List.is_empty ents then
+  if List.is_empty ents then begin
+    let state = States.get_state () in
     user_err ~hdr:"Hint"
-      (pr_leconstr_env env sigma c ++ spc() ++
+      (pr_leconstr_env state env sigma c ++ spc() ++
         (if pi1 flags then str"cannot be used as a hint."
-	else str "can be used as a hint only for eauto."));
+        else str "can be used as a hint only for eauto."))
+    end;
   ents
 
 (* used to add an hypothesis to the local hint database *)
@@ -1442,34 +1447,34 @@ let make_db_list dbnames =
 (*                    Functions for printing the hints                    *)
 (**************************************************************************)
 
-let pr_hint_elt env sigma (c, _, _) = pr_econstr_env env sigma c
+let pr_hint_elt state env sigma (c, _, _) = pr_econstr_env state env sigma c
 
-let pr_hint env sigma h = match h.obj with
-  | Res_pf (c, _) -> (str"simple apply " ++ pr_hint_elt env sigma c)
-  | ERes_pf (c, _) -> (str"simple eapply " ++ pr_hint_elt env sigma c)
-  | Give_exact (c, _) -> (str"exact " ++ pr_hint_elt env sigma c)
+let pr_hint state env sigma h = match h.obj with
+  | Res_pf (c, _) -> (str"simple apply " ++ pr_hint_elt state env sigma c)
+  | ERes_pf (c, _) -> (str"simple eapply " ++ pr_hint_elt state env sigma c)
+  | Give_exact (c, _) -> (str"exact " ++ pr_hint_elt state env sigma c)
   | Res_pf_THEN_trivial_fail (c, _) ->
-      (str"simple apply " ++ pr_hint_elt env sigma c ++ str" ; trivial")
+      (str"simple apply " ++ pr_hint_elt state env sigma c ++ str" ; trivial")
   | Unfold_nth c ->
     str"unfold " ++  pr_evaluable_reference c
   | Extern tac ->
     str "(*external*) " ++ Pputils.pr_glb_generic env tac
 
-let pr_id_hint env sigma (id, v) =
-  let pr_pat p = str", pattern " ++ pr_lconstr_pattern_env env sigma p in
-  (pr_hint env sigma v.code ++ str"(level " ++ int v.pri ++ pr_opt_no_spc pr_pat v.pat
+let pr_id_hint state env sigma (id, v) =
+  let pr_pat p = str", pattern " ++ pr_lconstr_pattern_env state env sigma p in
+  (pr_hint state env sigma v.code ++ str"(level " ++ int v.pri ++ pr_opt_no_spc pr_pat v.pat
    ++ str", id " ++ int id ++ str ")" ++ spc ())
 
-let pr_hint_list env sigma hintlist =
-  (str "  " ++ hov 0 (prlist (pr_id_hint env sigma) hintlist) ++ fnl ())
+let pr_hint_list state env sigma hintlist =
+  (str "  " ++ hov 0 (prlist (pr_id_hint state env sigma) hintlist) ++ fnl ())
 
-let pr_hints_db env sigma (name,db,hintlist) =
+let pr_hints_db state env sigma (name,db,hintlist) =
   (str "In the database " ++ str name ++ str ":" ++
      if List.is_empty hintlist then (str " nothing" ++ fnl ())
-     else (fnl () ++ pr_hint_list env sigma hintlist))
+     else (fnl () ++ pr_hint_list state env sigma hintlist))
 
 (* Print all hints associated to head c in any database *)
-let pr_hint_list_for_head env sigma c =
+let pr_hint_list_for_head state env sigma c =
   let dbs = current_db () in
   let validate (name, db) =
     let hints = List.map (fun v -> 0, v) (Hint_db.map_all ~secvars:Id.Pred.full c db) in
@@ -1481,13 +1486,13 @@ let pr_hint_list_for_head env sigma c =
   else
     hov 0
       (str"For " ++ pr_global c ++ str" -> " ++ fnl () ++
-         hov 0 (prlist (pr_hints_db env sigma) valid_dbs))
+         hov 0 (prlist (pr_hints_db state env sigma) valid_dbs))
 
 let pr_hint_ref ref = pr_hint_list_for_head ref
 
 (* Print all hints associated to head id in any database *)
 
-let pr_hint_term env sigma cl =
+let pr_hint_term state env sigma cl =
   try
     let dbs = current_db () in
     let valid_dbs =
@@ -1505,7 +1510,7 @@ let pr_hint_term env sigma cl =
 	(str "No hint applicable for current goal")
       else
 	(str "Applicable Hints :" ++ fnl () ++
-            hov 0 (prlist (pr_hints_db env sigma) valid_dbs))
+            hov 0 (prlist (pr_hints_db state env sigma) valid_dbs))
   with Match_failure _ | Failure _ ->
     (str "No hint applicable for current goal")
 
@@ -1513,11 +1518,12 @@ let pr_hint_term env sigma cl =
 let pr_applicable_hint () =
   let env = Global.env () in
   let pts = Proof_global.give_me_the_proof () in
+  let state = States.get_state () in
   let glss,_,_,_,sigma = Proof.proof pts in
   match glss with
   | [] -> CErrors.user_err Pp.(str "No focused goal.")
   | g::_ ->
-    pr_hint_term env sigma (Goal.V82.concl sigma g)
+    pr_hint_term state env sigma (Goal.V82.concl sigma g)
 
 let pp_hint_mode = function
   | ModeInput -> str"+"
@@ -1525,7 +1531,7 @@ let pp_hint_mode = function
   | ModeOutput -> str"-"
 
 (* displays the whole hint database db *)
-let pr_hint_db_env env sigma db =
+let pr_hint_db_env state env sigma db =
   let pr_mode = prvect_with_sep spc pp_hint_mode in
   let pr_modes l =
     if List.is_empty l then mt ()
@@ -1537,7 +1543,7 @@ let pr_hint_db_env env sigma db =
       | None -> str "For any goal"
       | Some head -> str "For " ++ pr_global head ++ pr_modes modes
       in
-      let hints = pr_hint_list env sigma (List.map (fun x -> (0, x)) hintlist) in
+      let hints = pr_hint_list state env sigma (List.map (fun x -> (0, x)) hintlist) in
       let hint_descr = hov 0 (goal_descr ++ str " -> " ++ hints) in
       accu ++ hint_descr
     in
@@ -1555,19 +1561,20 @@ let pr_hint_db_env env sigma db =
 (* Deprecated in the mli *)
 let pr_hint_db db =
   let sigma, env = Pfedit.get_current_context () in
-  pr_hint_db_env env sigma db
+  let state = States.get_state () in
+  pr_hint_db_env state env sigma db
 
-let pr_hint_db_by_name env sigma dbname =
+let pr_hint_db_by_name state env sigma dbname =
   try
-    let db = searchtable_map dbname in pr_hint_db_env env sigma db
+    let db = searchtable_map dbname in pr_hint_db_env state env sigma db
   with Not_found ->
     error_no_such_hint_database dbname
 
 (* displays all the hints of all databases *)
-let pr_searchtable env sigma =
+let pr_searchtable state env sigma =
   let fold name db accu =
     accu ++ str "In the database " ++ str name ++ str ":" ++ fnl () ++
-    pr_hint_db_env env sigma db ++ fnl ()
+    pr_hint_db_env state env sigma db ++ fnl ()
   in
   Hintdbmap.fold fold !searchtable (mt ())
 
@@ -1588,7 +1595,8 @@ let warn h x =
   let open Proofview in
   tclBIND tclENV     (fun env   ->
   tclBIND tclEVARMAP (fun sigma ->
-          let hint = pr_hint env sigma h in
+          let state = States.get_state () in
+          let hint = pr_hint state env sigma h in
           let (mp, _, _) = KerName.repr h.uid in
           warn_non_imported_hint (hint,mp);
           Proofview.tclUNIT x))

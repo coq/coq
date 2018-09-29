@@ -21,7 +21,7 @@ exception Toberemoved
 
 let observe s =
   if do_observe ()
-  then Feedback.msg_debug s
+  then Feedback.msg_debug (s (States.get_state ()))
 
 let pop t = Vars.lift (-1) t
 
@@ -116,9 +116,9 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let dummy_var = mkVar (Id.of_string "________") in
   let mk_replacement c i args =
     let res = mkApp(rel_to_fun.(i), Array.map pop (array_get_start args)) in
-    observe (str "replacing " ++
-             pr_lconstr_env env Evd.empty c ++ str " by "  ++
-             pr_lconstr_env env Evd.empty res);
+    observe (fun state -> str "replacing " ++
+             pr_lconstr_env state env Evd.empty c ++ str " by "  ++
+             pr_lconstr_env state env Evd.empty res);
     res
   in
   let rec compute_new_princ_type remove env pre_princ : types*(constr list) =
@@ -161,9 +161,9 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 (*     let _ = match Constr.kind pre_princ with *)
 (* 	| Prod _ -> *)
 (* 	    observe(str "compute_new_princ_type for "++ *)
-(* 	      pr_lconstr_env env pre_princ ++ *)
+(* 	      pr_lconstr_env state env pre_princ ++ *)
 (* 	      str" is "++ *)
-(* 	      pr_lconstr_env env new_princ_type ++ fnl ()) *)
+(* 	      pr_lconstr_env state env new_princ_type ++ fnl ()) *)
 (* 	| _ -> () in *)
     res
 
@@ -187,11 +187,11 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 
        with
 	 | Toberemoved ->
-(* 	    observe (str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
+(* 	    observe (fun state -> str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [dummy_var] 1 b)  in
 	    new_b, List.map pop binders_to_remove_from_b
 	| Toberemoved_with_rel (n,c) ->
-(* 	    observe (str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
+(* 	    observe (fun state -> str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [c] n b)  in
 	    new_b, list_add_set_eq Constr.equal (mkRel n) (List.map pop binders_to_remove_from_b)
     end
@@ -216,11 +216,11 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 
       with
 	| Toberemoved ->
-(* 	    observe (str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
+(* 	    observe (fun state -> str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [dummy_var] 1 b)  in
 	    new_b, List.map pop binders_to_remove_from_b
 	| Toberemoved_with_rel (n,c) ->
-(* 	    observe (str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
+(* 	    observe (fun state -> str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [c] n b)  in
 	    new_b, list_add_set_eq Constr.equal (mkRel n) (List.map pop binders_to_remove_from_b)
     end
@@ -229,7 +229,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
     in
     new_e::c_acc,list_union_eq Constr.equal to_remove_from_e to_remove_acc
   in
-(*   observe (str "Computing new principe from " ++ pr_lconstr_env  env_with_params_and_predicates pre_princ); *)
+(*   observe (fun state -> str "Computing new principe from " ++ pr_lconstr_env state  env_with_params_and_predicates pre_princ); *)
   let pre_res,_ =
     compute_new_princ_type princ_type_info.indarg_in_concl env_with_params_and_predicates pre_princ
   in
@@ -571,7 +571,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
       List.map (* we can now compute the other principles *)
 	(fun scheme_type ->
 	   incr i;
-           observe (Printer.pr_lconstr_env env sigma scheme_type);
+           observe (fun state -> Printer.pr_lconstr_env state env sigma scheme_type);
 	   let type_concl = (strip_prod_assum scheme_type) in
 	   let applied_f = List.hd (List.rev (snd (decompose_app type_concl))) in
 	   let f = fst (decompose_app applied_f) in
@@ -583,8 +583,8 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
 		let g = fst (decompose_app applied_g) in
 		if Constr.equal f g
 		then raise (Found_type j);
-                observe (Printer.pr_lconstr_env env sigma f ++ str " <> " ++
-                         Printer.pr_lconstr_env env sigma g)
+                observe (fun state -> Printer.pr_lconstr_env state env sigma f ++ str " <> " ++
+                         Printer.pr_lconstr_env state env sigma g)
 
 	     )
 	     ta;
@@ -635,7 +635,8 @@ let build_scheme fas =
             let c, u =
               try EConstr.destConst !evd f
               with DestKO ->
-                user_err Pp.(pr_econstr_env (Global.env ()) !evd f ++spc () ++ str "should be the named of a globally defined function")
+                let state = States.get_state () in
+                user_err Pp.(pr_econstr_env state (Global.env ()) !evd f ++spc () ++ str "should be the named of a globally defined function")
             in
             (c, EConstr.EInstance.kind !evd u), sort
          )

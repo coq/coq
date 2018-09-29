@@ -152,7 +152,8 @@ let set_typeclasses_strategy = function
   | Bfs -> set_typeclasses_iterative_deepening true
 
 let pr_ev evs ev =
-  Printer.pr_econstr_env (Goal.V82.env evs ev) evs (Goal.V82.concl evs ev)
+  let state = States.get_state () in
+  Printer.pr_econstr_env state (Goal.V82.env evs ev) evs (Goal.V82.concl evs ev)
 
 (** Typeclasses instance search tactic / eauto *)
 
@@ -349,8 +350,9 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
   let trivial_resolve =
     Proofview.Goal.enter
     begin fun gl ->
+    let state = States.get_state () in
     let tacs = e_trivial_resolve db_list local_db secvars only_classes
-                                 (pf_env gl) (project gl) (pf_concl gl) in
+                                 state (pf_env gl) (project gl) (pf_concl gl) in
       tclFIRST (List.map (fun (x,_,_,_,_) -> x) tacs)
     end
   in
@@ -360,7 +362,7 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
   in
   tclFIRST (List.map tclCOMPLETE tacl)
 
-and e_my_find_search db_list local_db secvars hdc complete only_classes env sigma concl =
+and e_my_find_search db_list local_db secvars hdc complete only_classes state env sigma concl =
   let open Proofview.Notations in
   let prods, concl = EConstr.decompose_prod_assum sigma concl in
   let nprods = List.length prods in
@@ -433,26 +435,27 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
       let tac = run_hint t tac in
       let tac = if complete then Tacticals.New.tclCOMPLETE tac else tac in
       let pp =
+        let state = States.get_state () in
         match p with
         | Some pat when get_typeclasses_filtered_unification () ->
-           str " with pattern " ++ Printer.pr_constr_pattern_env env sigma pat
+           str " with pattern " ++ Printer.pr_constr_pattern_env state env sigma pat
         | _ -> mt ()
       in
         match repr_hint t with
-        | Extern _ -> (tac, b, true, name, lazy (pr_hint env sigma t ++ pp))
-        | _ -> (tac, b, false, name, lazy (pr_hint env sigma t ++ pp))
+        | Extern _ -> (tac, b, true, name, lazy (pr_hint state env sigma t ++ pp))
+        | _ -> (tac, b, false, name, lazy (pr_hint state env sigma t ++ pp))
   in List.map tac_of_hint hintl
 
-and e_trivial_resolve db_list local_db secvars only_classes env sigma concl =
+and e_trivial_resolve db_list local_db secvars only_classes state env sigma concl =
   let hd = try Some (decompose_app_bound sigma concl) with Bound -> None in
   try
-    e_my_find_search db_list local_db secvars hd true only_classes env sigma concl
+    e_my_find_search db_list local_db secvars hd true only_classes state env sigma concl
   with Not_found -> []
 
-let e_possible_resolve db_list local_db secvars only_classes env sigma concl =
+let e_possible_resolve db_list local_db secvars only_classes state env sigma concl =
   let hd = try Some (decompose_app_bound sigma concl) with Bound -> None in
   try
-    e_my_find_search db_list local_db secvars hd false only_classes env sigma concl
+    e_my_find_search db_list local_db secvars hd false only_classes state env sigma concl
   with Not_found -> []
 
 let cut_of_hints h =
@@ -659,17 +662,19 @@ module Search = struct
     let env = Goal.env gl in
     let concl = Goal.concl gl in
     let sigma = Goal.sigma gl in
+    let state = States.get_state () in
     let unique = not info.search_dep || is_unique env sigma concl in
     let backtrack = needs_backtrack env sigma unique concl in
-    if !typeclasses_debug > 0 then
+    if !typeclasses_debug > 0 then begin
       Feedback.msg_debug
         (pr_depth info.search_depth ++ str": looking for " ++
-           Printer.pr_econstr_env (Goal.env gl) sigma concl ++
+           Printer.pr_econstr_env state (Goal.env gl) sigma concl ++
            (if backtrack then str" with backtracking"
-            else str" without backtracking"));
+            else str" without backtracking"))
+      end;
     let secvars = compute_secvars gl in
     let poss =
-      e_possible_resolve hints info.search_hints secvars info.search_only_classes env sigma concl in
+      e_possible_resolve hints info.search_hints secvars info.search_only_classes state env sigma concl in
     (* If no goal depends on the solution of this one or the
        instances are irrelevant/assumed to be unique, then
        we don't need to backtrack, as long as no evar appears in the goal
@@ -692,10 +697,10 @@ module Search = struct
           in
           let msg =
             match fst ie with
-            | Pretype_errors.PretypeError (env, evd, Pretype_errors.CannotUnify (x,y,_)) ->
+            | Pretype_errors.PretypeError (state, env, evd, Pretype_errors.CannotUnify (x,y,_)) ->
               str"Cannot unify " ++
-              Printer.pr_econstr_env env evd x ++ str" and " ++
-              Printer.pr_econstr_env env evd y
+              Printer.pr_econstr_env state env evd x ++ str" and " ++
+              Printer.pr_econstr_env state env evd y
             | ReachedLimitEx -> str "Proof-search reached its limit."
             | NoApplicableEx -> str "Proof-search failed."
             | e -> CErrors.iprint ie
@@ -798,12 +803,14 @@ module Search = struct
     and aux e = function
       | x :: xs -> onetac e x xs
       | [] ->
-         if !foundone == false && !typeclasses_debug > 0 then
+         if !foundone == false && !typeclasses_debug > 0 then begin
+           let state = States.get_state () in
            Feedback.msg_debug
              (pr_depth info.search_depth ++ str": no match for " ++
-                Printer.pr_econstr_env (Goal.env gl) sigma concl ++
+                Printer.pr_econstr_env state (Goal.env gl) sigma concl ++
                 str ", " ++ int (List.length poss) ++
-                str" possibilities");
+                str" possibilities")
+           end;
          match e with
          | (ReachedLimitEx,ie) -> Proofview.tclZERO ~info:ie ReachedLimitEx
          | (_,ie) -> Proofview.tclZERO ~info:ie NoApplicableEx

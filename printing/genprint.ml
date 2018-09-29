@@ -27,11 +27,11 @@ type printer_result =
 | PrinterBasic of (unit -> Pp.t)
 | PrinterNeedsLevel of (Notation_gram.tolerability -> Pp.t) with_level
 
-type printer_fun_with_level = Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> Pp.t
+type printer_fun_with_level = States.state -> Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> Pp.t
 
 type top_printer_result =
 | TopPrinterBasic of (unit -> Pp.t)
-| TopPrinterNeedsContext of (Environ.env -> Evd.evar_map -> Pp.t)
+| TopPrinterNeedsContext of (States.state -> Environ.env -> Evd.evar_map -> Pp.t)
 | TopPrinterNeedsContextAndLevel of printer_fun_with_level with_level
 
 type 'a printer = 'a -> printer_result
@@ -59,21 +59,21 @@ let combine_dont_needs pr_pair pr1 = function
   | TopPrinterBasic pr2 ->
      TopPrinterBasic (fun () -> pr_pair (pr1 ()) (pr2 ()))
   | TopPrinterNeedsContext pr2 ->
-     TopPrinterNeedsContext (fun env sigma ->
-         pr_pair (pr1 ()) (pr2 env sigma))
+     TopPrinterNeedsContext (fun state env sigma ->
+         pr_pair (pr1 ()) (pr2 state env sigma))
   | TopPrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
-     TopPrinterNeedsContext (fun env sigma ->
-         pr_pair (pr1 ()) (printer env sigma default_ensure_surrounded))
+     TopPrinterNeedsContext (fun state env sigma ->
+         pr_pair (pr1 ()) (printer state env sigma default_ensure_surrounded))
 
 let combine_needs pr_pair pr1 = function
   | TopPrinterBasic pr2 ->
-     TopPrinterNeedsContext (fun env sigma -> pr_pair (pr1 env sigma) (pr2 ()))
+     TopPrinterNeedsContext (fun state env sigma -> pr_pair (pr1 state env sigma) (pr2 ()))
   | TopPrinterNeedsContext pr2 ->
-     TopPrinterNeedsContext (fun env sigma ->
-         pr_pair (pr1 env sigma) (pr2 env sigma))
+     TopPrinterNeedsContext (fun state env sigma ->
+         pr_pair (pr1 state env sigma) (pr2 state env sigma))
   | TopPrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
-     TopPrinterNeedsContext (fun env sigma ->
-         pr_pair (pr1 env sigma) (printer env sigma default_ensure_surrounded))
+     TopPrinterNeedsContext (fun state env sigma ->
+         pr_pair (pr1 state env sigma) (printer state env sigma default_ensure_surrounded))
 
 let combine pr_pair pr1 v2 =
   match pr1 with
@@ -82,7 +82,7 @@ let combine pr_pair pr1 v2 =
   | TopPrinterNeedsContext pr1 ->
      combine_needs pr_pair pr1 (generic_val_print v2)
   | TopPrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
-     combine_needs pr_pair (fun env sigma -> printer env sigma default_ensure_surrounded)
+     combine_needs pr_pair (fun state env sigma -> printer state env sigma default_ensure_surrounded)
        (generic_val_print v2)
 
 let _ =

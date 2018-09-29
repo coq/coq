@@ -16,14 +16,16 @@ open Tacexpr
 let (ltac_trace_info : ltac_trace Exninfo.t) = Exninfo.make ()
 
 let prtac x =
-  Pptactic.pr_glob_tactic (Global.env()) x
-let prmatchpatt env sigma hyp =
-  Pptactic.pr_match_pattern (Printer.pr_constr_pattern_env env sigma) hyp
+  Pptactic.pr_glob_tactic (States.get_state()) (Global.env()) x
+let prmatchpatt state env sigma hyp =
+  Pptactic.pr_match_pattern (Printer.pr_constr_pattern_env state env sigma) hyp
 let prmatchrl rl =
-  Pptactic.pr_match_rule false (Pptactic.pr_glob_tactic (Global.env()))
+  Pptactic.pr_match_rule false
+    (Pptactic.pr_glob_tactic (States.get_state ()) (Global.env()))
     (fun (_,p) ->
        let sigma, env = Pfedit.get_current_context () in
-       Printer.pr_constr_pattern_env env sigma p) rl
+       let state = States.get_state () in
+       Printer.pr_constr_pattern_env state env sigma p) rl
 
 (* This module intends to be a beginning of debugger for tactic expressions.
    Currently, it is quite simple and we can hope to have, in the future, a more
@@ -50,8 +52,9 @@ let msg_tac_notice s = Proofview.NonLogical.print_notice (s++fnl())
 let db_pr_goal gl =
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
+  let state = States.get_state () in
   let penv = Termops.Internal.print_named_context env in
-  let pc = Printer.pr_econstr_env env (Tacmach.New.project gl) concl in
+  let pc = Printer.pr_econstr_env state env (Tacmach.New.project gl) concl in
     str"  " ++ hv 0 (penv ++ fnl () ++
                    str "============================" ++ fnl ()  ++
                    str" "  ++ pc) ++ fnl ()
@@ -238,11 +241,11 @@ let is_debug db =
       return (Int.equal skip 0)
 
 (* Prints a constr *)
-let db_constr debug env sigma c =
+let db_constr debug state env sigma c =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str "Evaluated term: " ++ Printer.pr_econstr_env env sigma c)
+    msg_tac_debug (str "Evaluated term: " ++ Printer.pr_econstr_env state env sigma c)
   else return ()
 
 (* Prints the pattern rule *)
@@ -262,20 +265,20 @@ let hyp_bound = function
   | Name id -> str " (bound to " ++ Id.print id ++ str ")"
 
 (* Prints a matched hypothesis *)
-let db_matched_hyp debug env sigma (id,_,c) ido =
+let db_matched_hyp debug state env sigma (id,_,c) ido =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
     msg_tac_debug (str "Hypothesis " ++ Id.print id ++ hyp_bound ido ++
-                str " has been matched: " ++ Printer.pr_econstr_env env sigma c)
+                str " has been matched: " ++ Printer.pr_econstr_env state env sigma c)
   else return ()
 
 (* Prints the matched conclusion *)
-let db_matched_concl debug env sigma c =
+let db_matched_concl debug state env sigma c =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str "Conclusion has been matched: " ++ Printer.pr_econstr_env env sigma c)
+    msg_tac_debug (str "Conclusion has been matched: " ++ Printer.pr_econstr_env state env sigma c)
   else return ()
 
 (* Prints a success message when the goal has been matched *)
@@ -288,13 +291,13 @@ let db_mc_pattern_success debug =
   else return ()
 
 (* Prints a failure message for an hypothesis pattern *)
-let db_hyp_pattern_failure debug env sigma (na,hyp) =
+let db_hyp_pattern_failure debug state env sigma (na,hyp) =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
     msg_tac_debug (str "The pattern hypothesis" ++ hyp_bound na ++
                 str " cannot match: " ++
-           prmatchpatt env sigma hyp)
+           prmatchpatt state env sigma hyp)
   else return ()
 
 (* Prints a matching failure message for a rule *)
@@ -353,27 +356,26 @@ let is_defined_ltac trace =
   | [] -> false in
   aux (List.rev trace)
 
-let explain_ltac_call_trace last trace loc =
+let explain_ltac_call_trace state env sigma last trace loc =
   let calls = last :: List.rev_map snd trace in
   let pr_call ck = match ck with
     | Tacexpr.LtacNotationCall kn -> quote (Pptactic.pr_alias_key kn)
   | Tacexpr.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
   | Tacexpr.LtacMLCall t ->
-      quote (Pptactic.pr_glob_tactic (Global.env()) t)
+      quote (Pptactic.pr_glob_tactic state env t)
   | Tacexpr.LtacVarCall (id,t) ->
       quote (Id.print id) ++ strbrk " (bound to " ++
-        Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
+        Pptactic.pr_glob_tactic state env t ++ str ")"
   | Tacexpr.LtacAtomCall te ->
-      quote (Pptactic.pr_glob_tactic (Global.env())
+      quote (Pptactic.pr_glob_tactic state env
               (Tacexpr.TacAtom (Loc.tag te)))
   | Tacexpr.LtacConstrInterp (c, { Ltac_pretype.ltac_constrs = vars }) ->
-      quote (Printer.pr_glob_constr_env (Global.env()) c) ++
+      quote (Printer.pr_glob_constr_env state env c) ++
         (if not (Id.Map.is_empty vars) then
           strbrk " (with " ++
             prlist_with_sep pr_comma
             (fun (id,c) ->
-              let sigma, env = Pfedit.get_current_context () in
-              Id.print id ++ str ":=" ++ Printer.pr_lconstr_under_binders_env env sigma c)
+              Id.print id ++ str ":=" ++ Printer.pr_lconstr_under_binders_env state env sigma c)
             (List.rev (Id.Map.bindings vars)) ++ str ")"
         else mt())
   in
@@ -404,7 +406,9 @@ let extract_ltac_trace ?loc trace =
   if is_defined_ltac trace then
     (* We entered a user-defined tactic,
        we display the trace with location of the call *)
-    let msg = hov 0 (explain_ltac_call_trace c tail loc ++ fnl()) in
+    let sigma, env = Pfedit.get_current_context () in
+    let state = States.get_state () in
+    let msg = hov 0 (explain_ltac_call_trace state env sigma c tail loc ++ fnl()) in
     (if Loc.finer loc tloc then loc else tloc), Some msg
   else
     (* We entered a primitive tactic, we don't display trace but

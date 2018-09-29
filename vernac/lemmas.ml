@@ -195,7 +195,7 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook =
           let kn =
            declare_constant ?export_seff id ~local (DefinitionEntry const, k) in
           let () = if should_suggest
-            then Proof_using.suggest_constant (Global.env ()) kn
+            then Proof_using.suggest_constant (States.get_state ()) (Global.env ()) kn
           in
           (locality, ConstRef kn)
     in
@@ -257,7 +257,8 @@ let save_remaining_recthms (locality,p,kind) norm univs body opaq i (id,(t_i,(_,
         | App (t, args) -> mkApp (body_i t, args)
         | _ ->
           let sigma, env = Pfedit.get_current_context () in
-          anomaly Pp.(str "Not a proof by induction: " ++ Printer.pr_constr_env env sigma body ++ str ".") in
+          let state = States.get_state () in
+          anomaly Pp.(str "Not a proof by induction: " ++ Printer.pr_constr_env state env sigma body ++ str ".") in
       let body_i = body_i body in
       match locality with
       | Discharge ->

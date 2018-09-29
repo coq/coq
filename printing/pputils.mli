@@ -28,11 +28,11 @@ val pr_red_expr :
   ('a -> Pp.t) * ('a -> Pp.t) * ('b -> Pp.t) * ('c -> Pp.t) ->
   (string -> Pp.t) -> ('a,'b,'c) red_expr_gen -> Pp.t
 
-val pr_red_expr_env : Environ.env -> Evd.evar_map ->
-  (Environ.env -> Evd.evar_map -> 'a -> Pp.t) *
-  (Environ.env -> Evd.evar_map -> 'a -> Pp.t) *
+val pr_red_expr_env : States.state -> Environ.env -> Evd.evar_map ->
+  (States.state -> Environ.env -> Evd.evar_map -> 'a -> Pp.t) *
+  (States.state -> Environ.env -> Evd.evar_map -> 'a -> Pp.t) *
   ('b -> Pp.t) *
-  (Environ.env -> Evd.evar_map -> 'c -> Pp.t) ->
+  (States.state -> Environ.env -> Evd.evar_map -> 'c -> Pp.t) ->
   (string -> Pp.t) ->
   ('a,'b,'c) red_expr_gen -> Pp.t
 

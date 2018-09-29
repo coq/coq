@@ -36,7 +36,7 @@ val debug_prompt :
 val db_initialize : unit Proofview.NonLogical.t
 
 (** Prints a constr *)
-val db_constr : debug_info -> env -> evar_map -> constr -> unit Proofview.NonLogical.t
+val db_constr : debug_info -> States.state -> env -> evar_map -> constr -> unit Proofview.NonLogical.t
 
 (** Prints the pattern rule *)
 val db_pattern_rule :
@@ -44,17 +44,17 @@ val db_pattern_rule :
 
 (** Prints a matched hypothesis *)
 val db_matched_hyp :
-  debug_info -> env -> evar_map -> Id.t * constr option * constr -> Name.t -> unit Proofview.NonLogical.t
+  debug_info -> States.state -> env -> evar_map -> Id.t * constr option * constr -> Name.t -> unit Proofview.NonLogical.t
 
 (** Prints the matched conclusion *)
-val db_matched_concl : debug_info -> env -> evar_map -> constr -> unit Proofview.NonLogical.t
+val db_matched_concl : debug_info -> States.state -> env -> evar_map -> constr -> unit Proofview.NonLogical.t
 
 (** Prints a success message when the goal has been matched *)
 val db_mc_pattern_success : debug_info -> unit Proofview.NonLogical.t
 
 (** Prints a failure message for an hypothesis pattern *)
 val db_hyp_pattern_failure :
-  debug_info -> env -> evar_map -> Name.t * constr_pattern match_pattern -> unit Proofview.NonLogical.t
+  debug_info -> States.state -> env -> evar_map -> Name.t * constr_pattern match_pattern -> unit Proofview.NonLogical.t
 
 (** Prints a matching failure message for a rule *)
 val db_matching_failure : debug_info -> unit Proofview.NonLogical.t

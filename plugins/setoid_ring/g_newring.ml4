@@ -78,10 +78,11 @@ VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
     Feedback.msg_notice (strbrk "The following ring structures have been declared:");
     Spmap.iter (fun fn fi ->
       let sigma, env = Pfedit.get_current_context () in
+      let state = States.get_state () in
       Feedback.msg_notice (hov 2
         (Ppconstr.pr_id (Libnames.basename fn)++spc()++
-          str"with carrier "++ pr_constr_env env sigma fi.ring_carrier++spc()++
-          str"and equivalence relation "++ pr_constr_env env sigma fi.ring_req))
+          str"with carrier "++ pr_constr_env state env sigma fi.ring_carrier++spc()++
+          str"and equivalence relation "++ pr_constr_env state env sigma fi.ring_req))
     ) !from_name ]
 END
 
@@ -114,10 +115,11 @@ VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
     Feedback.msg_notice (strbrk "The following field structures have been declared:");
     Spmap.iter (fun fn fi ->
       let sigma, env = Pfedit.get_current_context () in
+      let state = States.get_state () in
       Feedback.msg_notice (hov 2
         (Ppconstr.pr_id (Libnames.basename fn)++spc()++
-          str"with carrier "++ pr_constr_env env sigma fi.field_carrier++spc()++
-          str"and equivalence relation "++ pr_constr_env env sigma fi.field_req))
+          str"with carrier "++ pr_constr_env state env sigma fi.field_carrier++spc()++
+          str"and equivalence relation "++ pr_constr_env state env sigma fi.field_req))
     ) !field_from_name ]
 END
 

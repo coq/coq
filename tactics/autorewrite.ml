@@ -75,12 +75,12 @@ let find_matches bas pat =
   let res = HintDN.search_pattern base pat in
   List.map snd res
 
-let print_rewrite_hintdb env sigma bas =
+let print_rewrite_hintdb state env sigma bas =
   (str "Database " ++ str bas ++ fnl () ++
 	   prlist_with_sep fnl
 	   (fun h ->
 	     str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
-               Printer.pr_lconstr_env env sigma h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr_env env sigma h.rew_type ++
+               Printer.pr_lconstr_env state env sigma h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr_env state env sigma h.rew_type ++
 	       Option.cata (fun tac -> str " then use tactic " ++
 	       Pputils.pr_glb_generic (Global.env()) tac) (mt ()) h.rew_tac)
 	   (find_rewrites bas))
@@ -259,13 +259,13 @@ let decompose_applied_relation metas env sigma c ctype left2right =
 	| Some c -> Some c
 	| None -> None
 
-let find_applied_relation ?loc metas env sigma c left2right =
+let find_applied_relation ?loc metas state env sigma c left2right =
   let ctype = Typing.unsafe_type_of env sigma (EConstr.of_constr c) in
     match decompose_applied_relation metas env sigma c ctype left2right with
     | Some c -> c
     | None ->
 	user_err ?loc ~hdr:"decompose_applied_relation"
-		    (str"The type" ++ spc () ++ Printer.pr_econstr_env env sigma ctype ++
+                    (str"The type" ++ spc () ++ Printer.pr_econstr_env state env sigma ctype ++
 		       spc () ++ str"of this term does not end with an applied relation.")
 
 (* To add rewriting rules to a base *)
@@ -273,13 +273,14 @@ let add_rew_rules base lrul =
   let counter = ref 0 in
   let env = Global.env () in
   let sigma = Evd.from_env env in
+  let state = States.get_state () in
   let ist = Genintern.empty_glob_sign (Global.env ()) in
   let intern tac = snd (Genintern.generic_intern ist tac) in
   let lrul =
     List.fold_left
       (fun dn {CAst.loc;v=((c,ctx),b,t)} ->
 	let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
-	let info = find_applied_relation ?loc false env sigma c b in
+        let info = find_applied_relation ?loc false state env sigma c b in
 	let pat = if b then info.hyp_left else info.hyp_right in
 	let rul = { rew_lemma = c; rew_type = info.hyp_ty;
 		    rew_pat = pat; rew_ctx = ctx; rew_l2r = b;

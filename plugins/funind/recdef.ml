@@ -57,7 +57,8 @@ let arith_Lt = ["Arith";"Lt"]
 
 let pr_leconstr_rd =
   let sigma, env = Pfedit.get_current_context () in
-  Printer.pr_leconstr_env env sigma
+  let state = States.get_state () in
+  Printer.pr_leconstr_env state env sigma
 
 let coq_init_constant s =
   EConstr.of_constr (
@@ -344,7 +345,8 @@ let check_not_nested sigma forbidden e =
     check_not_nested e 
   with UserError(_,p) -> 
     let _, env = Pfedit.get_current_context () in
-    user_err ~hdr:"_" (str "on expr : " ++ Printer.pr_leconstr_env env sigma e ++ str " " ++ p)
+    let state = States.get_state () in
+    user_err ~hdr:"_" (str "on expr : " ++ Printer.pr_leconstr_env state env sigma e ++ str " " ++ p)
 
 (* ['a info] contains the local information for traveling *)
 type 'a infos = 
@@ -462,7 +464,8 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
 	  check_not_nested sigma (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
 	  jinfo.otherS () expr_info continuation_tac expr_info g
 	with e when CErrors.noncritical e ->
-          user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr_env (pf_env g) sigma expr_info.info ++ str " can not contain a recursive call to " ++ Id.print expr_info.f_id)
+          let state = States.get_state () in
+          user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr_env state (pf_env g) sigma expr_info.info ++ str " can not contain a recursive call to " ++ Id.print expr_info.f_id)
       end
     | Lambda(n,t,b) -> 
       begin
@@ -470,7 +473,8 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
 	  check_not_nested sigma (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
 	  jinfo.otherS () expr_info continuation_tac expr_info g
 	with e when CErrors.noncritical e ->
-          user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr_env (pf_env g) sigma expr_info.info ++ str " can not contain a recursive call to " ++ Id.print expr_info.f_id)
+          let state = States.get_state () in
+          user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr_env state (pf_env g) sigma expr_info.info ++ str " can not contain a recursive call to " ++ Id.print expr_info.f_id)
       end
     | Case(ci,t,a,l) -> 
       begin
@@ -498,8 +502,12 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
 	      jinfo.apP (f,args) expr_info continuation_tac in 
 	    travel_args jinfo
 	      expr_info.is_main_branch new_continuation_tac new_infos g
-          | Case _ ->  user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr_env (pf_env g) sigma expr_info.info ++ str " can not contain an applied match (See Limitation in Section 2.3 of refman)")
-          | _ -> anomaly (Pp.str "travel_aux : unexpected "++ Printer.pr_leconstr_env (pf_env g) sigma expr_info.info ++ Pp.str ".")
+          | Case _ ->
+              let state = States.get_state () in
+              user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr_env state (pf_env g) sigma expr_info.info ++ str " can not contain an applied match (See Limitation in Section 2.3 of refman)")
+          | _ ->
+              let state = States.get_state () in
+              anomaly (Pp.str "travel_aux : unexpected "++ Printer.pr_leconstr_env state (pf_env g) sigma expr_info.info ++ Pp.str ".")
       end
     | Cast(t,_,_) -> travel jinfo continuation_tac {expr_info with info=t} g
     | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _ ->
@@ -738,7 +746,7 @@ let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
   let destruct_tac,rev_to_thin_intro = 
     mkDestructEq [expr_info.rec_arg_id] a' g in 
   let to_thin_intro = List.rev rev_to_thin_intro in 
-  observe_tac (str "treating cases (" ++ int (Array.length l) ++ str")" ++ spc () ++ Printer.pr_leconstr_env (pf_env g) sigma a')
+  observe_tac (str "treating cases (" ++ int (Array.length l) ++ str")" ++ spc () ++ Printer.pr_leconstr_env(States.get_state ()) (pf_env g) sigma a')
     (try
       (tclTHENS
 	 destruct_tac
@@ -747,7 +755,7 @@ let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
     with 
       | UserError(Some "Refiner.thensn_tac3",_) 
       | UserError(Some "Refiner.tclFAIL_s",_) ->
-        (observe_tac (str "is computable " ++ Printer.pr_leconstr_env (pf_env g) sigma new_info.info) (next_step continuation_tac {new_info with info = nf_betaiotazeta new_info.info} )
+        (observe_tac (str "is computable " ++ Printer.pr_leconstr_env(States.get_state ()) (pf_env g) sigma new_info.info) (next_step continuation_tac {new_info with info = nf_betaiotazeta new_info.info} )
 	))
     g
     
@@ -1546,7 +1554,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let eq' = nf_zeta env_eq' (EConstr.of_constr eq') in
   let eq' = EConstr.Unsafe.to_constr eq' in
   let res =
-(*     Pp.msgnl (str "res_var :=" ++ Printer.pr_lconstr_env (push_rel_context (List.map (function (x,t) -> (x,None,t)) res_vars) env) eq'); *)
+(*     Pp.msgnl (str "res_var :=" ++ Printer.pr_lconstr_env state (push_rel_context (List.map (function (x,t) -> (x,None,t)) res_vars) env) eq'); *)
 (*     Pp.msgnl (str "rec_arg_num := " ++ str (string_of_int rec_arg_num)); *)
 (*     Pp.msgnl (str "eq' := " ++ str (string_of_int rec_arg_num)); *)
     match Constr.kind eq' with
@@ -1573,7 +1581,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let evd = Evd.from_ctx evuctx in
   let tcc_lemma_name = add_suffix function_name "_tcc" in
   let tcc_lemma_constr = ref Undefined in
-  (* let _ = Pp.msgnl (str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
+  (* let _ = Pp.msgnl (str "relation := " ++ Printer.pr_lconstr_env state state env_with_pre_rec_args relation) in *)
   let hook _ _ = 
     let term_ref = Nametab.locate (qualid_of_ident term_id) in
     let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in

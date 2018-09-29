@@ -96,8 +96,9 @@ let subst_global_reference subst =
   let ref',t' = subst_global subst ref in
    if not (is_global ref' t') then
     (let sigma, env = Pfedit.get_current_context () in
+     let state = States.get_state () in
      Feedback.msg_warning (strbrk "The reference " ++ pr_global ref ++ str " is not " ++
-          str " expanded to \"" ++ pr_lconstr_env env sigma t' ++ str "\", but to " ++
+          str " expanded to \"" ++ pr_lconstr_env state env sigma t' ++ str "\", but to " ++
           pr_global ref'));
    ref'
  in

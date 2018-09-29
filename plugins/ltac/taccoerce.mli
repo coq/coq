@@ -95,7 +95,7 @@ val wit_constr_context : (Empty.t, Empty.t, EConstr.constr) genarg_type
 val wit_constr_under_binders : (Empty.t, Empty.t, Ltac_pretype.constr_under_binders) genarg_type
 
 val error_ltac_variable : ?loc:Loc.t -> Id.t ->
-  (Environ.env * Evd.evar_map) option -> Value.t -> string -> 'a
+  (States.state * Environ.env * Evd.evar_map) option -> Value.t -> string -> 'a
 
 (** Abstract application, to print ltac functions *)
 type appl =
@@ -110,4 +110,4 @@ type tacvalue =
 
 val wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type
 
-val pr_value : (Environ.env * Evd.evar_map) option -> Geninterp.Val.t -> Pp.t
+val pr_value : (States.state * Environ.env * Evd.evar_map) option -> Geninterp.Val.t -> Pp.t

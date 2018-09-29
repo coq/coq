@@ -533,7 +533,8 @@ let start_coq custom =
     flush_all();
     if opts.output_context then begin
       let sigma, env = Pfedit.get_current_context () in
-      Feedback.msg_notice (Flags.(with_option raw_print (Prettyp.print_full_pure_context env) sigma) ++ fnl ())
+      let state = States.get_state () in
+      Feedback.msg_notice (Flags.(with_option raw_print (Prettyp.print_full_pure_context state env) sigma) ++ fnl ())
     end;
     CProfile.print_profile ();
     exit 0

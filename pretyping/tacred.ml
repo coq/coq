@@ -33,7 +33,7 @@ module NamedDecl = Context.Named.Declaration
 (* Errors *)
 
 type reduction_tactic_error =
-    InvalidAbstraction of env * Evd.evar_map * EConstr.constr * (env * Type_errors.type_error)
+    InvalidAbstraction of States.state * env * Evd.evar_map * EConstr.constr * (env * Type_errors.type_error)
 
 exception ReductionTacticError of reduction_tactic_error
 
@@ -1156,14 +1156,14 @@ let abstract_scheme env sigma (locc,a) (c, sigma) =
     let c', sigma' = subst_closed_term_occ env sigma (AtOccs locc) a c in
       mkLambda (na,ta,c'), sigma'
 
-let pattern_occs loccs_trm = begin fun env sigma c ->
+let pattern_occs loccs_trm env sigma c =
   let abstr_trm, sigma = List.fold_right (abstract_scheme env sigma) loccs_trm (c,sigma) in
   try
     let _ = Typing.unsafe_type_of env sigma abstr_trm in
     (sigma, applist(abstr_trm, List.map snd loccs_trm))
   with Type_errors.TypeError (env',t) ->
-    raise (ReductionTacticError (InvalidAbstraction (env,sigma,abstr_trm,(env',t))))
-  end
+    let state = States.get_state () in
+    raise (ReductionTacticError (InvalidAbstraction (state,env,sigma,abstr_trm,(env',t))))
 
 (* Used in several tactics. *)
 

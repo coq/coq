@@ -38,7 +38,7 @@ let (wit_constr_under_binders : (Empty.t, Empty.t, Ltac_pretype.constr_under_bin
   let () = register_val0 wit None in
   let () = Genprint.register_val_print0 (base_val_typ wit)
              (fun c ->
-               Genprint.TopPrinterNeedsContext (fun env sigma -> Printer.pr_constr_under_binders_env env sigma c)) in
+               Genprint.TopPrinterNeedsContext (fun state env sigma -> Printer.pr_constr_under_binders_env state env sigma c)) in
   wit
 
 (** All the types considered here are base types *)
@@ -399,14 +399,14 @@ let pr_argument_type arg =
 let pr_value env v =
   let pr_with_env pr =
     match env with
-    | Some (env,sigma) -> pr env sigma
+    | Some (state,env,sigma) -> pr state env sigma
     | None -> str "a value of type" ++ spc () ++ pr_argument_type v in
   let open Genprint in
   match generic_val_print v with
   | TopPrinterBasic pr -> pr ()
   | TopPrinterNeedsContext pr -> pr_with_env pr
   | TopPrinterNeedsContextAndLevel { default_already_surrounded; printer } ->
-     pr_with_env (fun env sigma -> printer env sigma default_already_surrounded)
+     pr_with_env (fun state env sigma -> printer state env sigma default_already_surrounded)
 
 let error_ltac_variable ?loc id env v s =
    CErrors.user_err ?loc  (str "Ltac variable " ++ Id.print id ++

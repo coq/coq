@@ -620,16 +620,19 @@ let tacEXAMINE_ABSTRACT id = Ssrcommon.tacTYPEOF id >>= begin fun tid ->
   Goal.enter_one ~__LOC__ begin fun g ->
   let sigma, env = Goal.(sigma g, env g) in
   let err () =
+    let state = States.get_state () in
     Ssrcommon.errorstrm
       Pp.(strbrk"not a proper abstract constant: "++
-        Printer.pr_econstr_env env sigma id) in
+        Printer.pr_econstr_env state env sigma id) in
   if not (EConstr.isApp sigma tid) then err ();
   let hd, args_id = EConstr.destApp sigma tid in
   if not (EConstr.eq_constr_nounivs sigma hd abstract) then err ();
   if Array.length args_id <> 3 then err ();
-  if not (is_Evar_or_CastedMeta sigma args_id.(2)) then
+  if not (is_Evar_or_CastedMeta sigma args_id.(2)) then begin
+    let state = States.get_state () in
     Ssrcommon.errorstrm Pp.(strbrk"abstract constant "++
-      Printer.pr_econstr_env env sigma id++str" already used");
+      Printer.pr_econstr_env state env sigma id++str" already used")
+    end;
   tclUNIT (tid, args_id)
 end end
 
@@ -648,9 +651,9 @@ let tacFIND_ABSTRACT_PROOF check_lock abstract_n =
       | _ -> l) sigma [] in
     match l with
     | [e] -> tclUNIT e
-    | _ -> Ssrcommon.errorstrm
+    | _ -> let state = States.get_state () in Ssrcommon.errorstrm
        Pp.(strbrk"abstract constant "++
-         Printer.pr_econstr_env env sigma abstract_n ++
+         Printer.pr_econstr_env state env sigma abstract_n ++
            strbrk" not found in the evar map exactly once. "++
            strbrk"Did you tamper with it?")
 end
@@ -673,9 +676,10 @@ let ssrabstract dgens =
         when EConstr.isEvar sigma m || EConstr.isMeta sigma m ->
           Ssrcommon.tacUNIFY concl t <*> tclUNIT id
       | _ ->
+          let state = States.get_state () in
           Ssrcommon.errorstrm
             Pp.(strbrk"abstract constant "++
-               Printer.pr_econstr_env env sigma abstract_n ++
+               Printer.pr_econstr_env state env sigma abstract_n ++
                strbrk" has an unexpected shape. Did you tamper with it?")
       end in
     tacFIND_HOLE >>= fun proof ->

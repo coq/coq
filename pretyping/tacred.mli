@@ -19,7 +19,7 @@ open Univ
 open Ltac_pretype
 
 type reduction_tactic_error =
-    InvalidAbstraction of env * evar_map * constr * (env * Type_errors.type_error)
+    InvalidAbstraction of States.state * env * Evd.evar_map * EConstr.constr * (env * Type_errors.type_error)
 
 exception ReductionTacticError of reduction_tactic_error
 

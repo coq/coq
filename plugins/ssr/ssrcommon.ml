@@ -248,7 +248,7 @@ let interp_refine ist gl rc =
   in
   let sigma, c = Pretyping.understand_ltac flags (pf_env gl) (project gl) vars kind rc in
 (*   ppdebug(lazy(str"sigma@interp_refine=" ++ pr_evar_map None sigma)); *)
-  ppdebug(lazy(str"c@interp_refine=" ++ Printer.pr_econstr_env (pf_env gl) sigma c));
+  ppdebug(let state = States.get_state () in lazy(str"c@interp_refine=" ++ Printer.pr_econstr_env state (pf_env gl) sigma c));
   (sigma, (sigma, c))
 
 
@@ -563,7 +563,7 @@ module Intset = Evar.Set
 
 let pf_abs_evars_pirrel gl (sigma, c0) =
   pp(lazy(str"==PF_ABS_EVARS_PIRREL=="));
-  pp(lazy(str"c0= " ++ Printer.pr_constr_env (pf_env gl) sigma c0));
+  pp(lazy(let state = States.get_state () in str"c0= " ++ Printer.pr_constr_env state (pf_env gl) sigma c0));
   let sigma0 = project gl in
   let c0 = nf_evar sigma0 (nf_evar sigma c0) in
   let nenv = env_size (pf_env gl) in
@@ -588,7 +588,7 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
   | _ -> Constr.fold put evlist c in
   let evlist = put [] c0 in
   if evlist = [] then 0, c0 else
-  let pr_constr t = Printer.pr_econstr_env (pf_env gl) sigma (Reductionops.nf_beta (pf_env gl) (project gl) (EConstr.of_constr t)) in
+  let pr_constr t = Printer.pr_econstr_env (States.get_state ()) (pf_env gl) sigma (Reductionops.nf_beta (pf_env gl) (project gl) (EConstr.of_constr t)) in
   pp(lazy(str"evlist=" ++ pr_list (fun () -> str";")
     (fun (k,_) -> Evar.print k) evlist));
   let evplist = 
@@ -987,7 +987,7 @@ let applyn ~with_evars ?beta ?(with_shelve=false) n t gl =
               loop (meta_declare m ty sigma) bo ((EConstr.mkMeta m)::args) (n-1)
           | _ -> assert false
       in loop sigma t [] n in
-    pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr_env (pf_env gl) (project gl) t));
+    pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr_env (States.get_state ()) (pf_env gl) (project gl) t));
     Tacmach.refine_no_check t gl
 
 let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc gl =
@@ -1001,7 +1001,7 @@ let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc gl =
     compose_lam (let xs,y = List.chop (n-1) l in y @ xs) 
       (mkApp (compose_lam l c, Array.of_list (mkRel 1 :: mkRels n)))
   in
-  pp(lazy(str"after: " ++ Printer.pr_constr_env (pf_env gl) (project gl) oc));
+  pp(lazy(str"after: " ++ Printer.pr_constr_env (States.get_state ()) (pf_env gl) (project gl) oc));
   try applyn ~with_evars ~with_shelve:true ?beta n (EConstr.of_constr oc) gl
   with e when CErrors.noncritical e -> raise dependent_apply_error
 
@@ -1228,7 +1228,7 @@ let genclrtac cl cs clr =
 let gentac gen gl =
 (*   ppdebug(lazy(str"sigma@gentac=" ++ pr_evar_map None (project gl))); *)
   let conv, _, cl, c, clr, ucst,gl = pf_interp_gen_aux gl false gen in
-  ppdebug(lazy(str"c@gentac=" ++ pr_econstr_env (pf_env gl) (project gl) c));
+  ppdebug(lazy(str"c@gentac=" ++ pr_econstr_env (States.get_state ()) (pf_env gl) (project gl) c));
   let gl = pf_merge_uc ucst gl in
   if conv
   then tclTHEN (Proofview.V82.of_tactic (convert_concl cl)) (old_cleartac clr) gl
@@ -1399,8 +1399,10 @@ let rec decompose_assum env sigma orig_goal =
             decompose_assum env sigma
               (EConstr.mkApp (EConstr.Vars.subst1 v b, args)) in
           ctx, t, false
-      | _ -> CErrors.user_err
-          Pp.(str "No assumption in " ++ Printer.pr_econstr_env env sigma goal)
+      | _ ->
+         let state = States.get_state () in
+         CErrors.user_err
+          Pp.(str "No assumption in " ++ Printer.pr_econstr_env state env sigma goal)
 
 let tclFULL_BETAIOTA = Goal.enter begin fun gl ->
   let r, _ = Redexpr.reduction_of_red_expr (Goal.env gl)

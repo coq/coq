@@ -54,10 +54,12 @@ let eval_uconstrs ist cs =
 let pr_auto_using_raw _ _ _  = Pptactic.pr_auto_using Ppconstr.pr_constr_expr
 let pr_auto_using_glob _ _ _ = Pptactic.pr_auto_using (fun (c,_) ->
     let _, env = Pfedit.get_current_context () in
-    Printer.pr_glob_constr_env env c)
+    let state = States.get_state () in
+    Printer.pr_glob_constr_env state env c)
 let pr_auto_using _ _ _ = Pptactic.pr_auto_using
     (let sigma, env = Pfedit.get_current_context () in
-     Printer.pr_closed_glob_env env sigma)
+     let state = States.get_state () in
+     Printer.pr_closed_glob_env state env sigma)
 
 ARGUMENT EXTEND auto_using
   TYPED AS uconstr_list

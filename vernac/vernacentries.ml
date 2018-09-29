@@ -59,14 +59,16 @@ let show_proof () =
   (* spiwack: this would probably be cooler with a bit of polishing. *)
   let p = Proof_global.give_me_the_proof () in
   let sigma, env = Pfedit.get_current_context () in
+  let state = States.get_state () in
   let pprf = Proof.partial_proof p in
-  Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
+  Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env state env sigma) pprf
 
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
   let pfts = Proof_global.give_me_the_proof () in
   let gls,_,shelf,givenup,sigma = Proof.proof pfts in
-  pr_evars_int sigma ~shelf ~givenup 1 (Evd.undefined_map sigma)
+  let state = States.get_state () in
+  pr_evars_int state sigma ~shelf ~givenup 1 (Evd.undefined_map sigma)
 
 let show_universes () =
   let pfts = Proof_global.give_me_the_proof () in
@@ -258,7 +260,8 @@ let print_namespace ns =
     (* FIXME: universes *)
     let t = body.Declarations.const_type in
     let sigma, env = Pfedit.get_current_context () in
-    print_kn k ++ str":" ++ spc() ++ Printer.pr_type_env env sigma t
+    let state = States.get_state () in
+    print_kn k ++ str":" ++ spc() ++ Printer.pr_type_env state env sigma t
   in
   let matches mp = match match_modulepath ns mp with
   | Some [] -> true
@@ -1728,13 +1731,14 @@ let vernac_check_may_eval ~atts redexp glopt rc =
       (* OK to call kernel which does not support evars *)
       Termops.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
   in
+  let state = States.get_state () in
   let pp = match redexp with
     | None ->
         let evars_of_term c = Evarutil.undefined_evars_of_term sigma c in
         let l = Evar.Set.union (evars_of_term j.Environ.uj_val) (evars_of_term j.Environ.uj_type) in
         let j = { j with Environ.uj_type = Reductionops.nf_betaiota env sigma j.Environ.uj_type } in
-        print_judgment env sigma j ++
-        pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l
+        print_judgment state env sigma j ++
+        pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) state sigma l
     | Some r ->
         let (sigma,r_interp) = Hook.get f_interp_redexp env sigma r in
 	let redfun env evm c =
@@ -1742,7 +1746,7 @@ let vernac_check_may_eval ~atts redexp glopt rc =
           let (_, c) = redfun env evm c in
           c
         in
-        print_eval redfun env sigma rc j
+        print_eval redfun state env sigma rc j
   in
   pp ++ Printer.pr_universe_ctx_set sigma uctx
 
@@ -1763,7 +1767,8 @@ let vernac_global_check c =
   let c = EConstr.to_constr sigma c in
   let j = Safe_typing.typing senv c in
   let env = Safe_typing.env_of_safe_env senv in
-  print_safe_judgment env sigma j ++
+  let state = States.get_state () in
+  print_safe_judgment state env sigma j ++
   pr_universe_ctx_set sigma uctx
 
 
@@ -1798,20 +1803,22 @@ let print_about_hyp_globs ?loc ref_or_by_not udecl glopt =
                      | LocalAssum _ -> "Hypothesis"
                      | LocalDef (_,bdy,_) ->"Constant (let in)" in
     let sigma, env = Pfedit.get_current_context () in
-    v 0 (Id.print id ++ str":" ++ pr_econstr_env env sigma (NamedDecl.get_type decl) ++ fnl() ++ fnl()
+    let state = States.get_state () in
+    v 0 (Id.print id ++ str":" ++ pr_econstr_env state env sigma (NamedDecl.get_type decl) ++ fnl() ++ fnl()
 	 ++ str natureofid ++ str " of the goal context.")
   with (* fallback to globals *)
     | NoHyp | Not_found ->
     let sigma, env = Pfedit.get_current_context () in
-    print_about env sigma ref_or_by_not udecl
+    let state = States.get_state () in
+    print_about state env sigma ref_or_by_not udecl
 
-let vernac_print ~atts env sigma =
+let vernac_print ~atts state env sigma =
   let loc = atts.loc in
   function
   | PrintTables -> print_tables ()
-  | PrintFullContext-> print_full_context_typ env sigma
-  | PrintSectionContext qid -> print_sec_context_typ env sigma qid
-  | PrintInspect n -> inspect env sigma n
+  | PrintFullContext-> print_full_context_typ state env sigma
+  | PrintSectionContext qid -> print_sec_context_typ state env sigma qid
+  | PrintInspect n -> inspect state env sigma n
   | PrintGrammar ent -> Metasyntax.pr_grammar ent
   | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
   | PrintModules -> print_modules ()
@@ -1823,7 +1830,7 @@ let vernac_print ~atts env sigma =
   | PrintDebugGC -> Mltop.print_gc ()
   | PrintName (qid,udecl) ->
     dump_global qid;
-    print_name env sigma qid udecl
+    print_name state env sigma qid udecl
   | PrintGraph -> Prettyp.print_graph ()
   | PrintClasses -> Prettyp.print_classes()
   | PrintTypeClasses -> Prettyp.print_typeclasses()
@@ -1831,7 +1838,7 @@ let vernac_print ~atts env sigma =
   | PrintCoercions -> Prettyp.print_coercions ()
   | PrintCoercionPaths (cls,clt) ->
     Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt)
-  | PrintCanonicalConversions -> Prettyp.print_canonical_projections env sigma
+  | PrintCanonicalConversions -> Prettyp.print_canonical_projections state env sigma
   | PrintUniverses (b, dst) ->
      let univ = Global.universes () in
      let univ = if b then UGraph.sort_universes univ else univ in
@@ -1843,16 +1850,16 @@ let vernac_print ~atts env sigma =
      | None -> UGraph.pr_universes UnivNames.pr_with_global_universes univ ++ pr_remaining
      | Some s -> dump_universes_gen univ s
      end
-  | PrintHint r -> Hints.pr_hint_ref env sigma (smart_global r)
+  | PrintHint r -> Hints.pr_hint_ref state env sigma (smart_global r)
   | PrintHintGoal -> Hints.pr_applicable_hint ()
-  | PrintHintDbName s -> Hints.pr_hint_db_by_name env sigma s
-  | PrintHintDb -> Hints.pr_searchtable env sigma
+  | PrintHintDbName s -> Hints.pr_hint_db_by_name state env sigma s
+  | PrintHintDb -> Hints.pr_searchtable state env sigma
   | PrintScopes ->
-    Notation.pr_scopes (Constrextern.without_symbols (pr_lglob_constr_env env))
+    Notation.pr_scopes (Constrextern.without_symbols (pr_lglob_constr_env state env))
   | PrintScope s ->
-    Notation.pr_scope (Constrextern.without_symbols (pr_lglob_constr_env env)) s
+    Notation.pr_scope (Constrextern.without_symbols (pr_lglob_constr_env state env)) s
   | PrintVisibility s ->
-    Notation.pr_visibility (Constrextern.without_symbols (pr_lglob_constr_env env)) s
+    Notation.pr_visibility (Constrextern.without_symbols (pr_lglob_constr_env state env)) s
   | PrintAbout (ref_or_by_not,udecl,glnumopt) ->
     print_about_hyp_globs ?loc ref_or_by_not udecl glnumopt
   | PrintImplicit qid ->
@@ -1865,7 +1872,7 @@ let vernac_print ~atts env sigma =
       let st = Conv_oracle.get_transp_state (Environ.oracle (Global.env())) in
       let nassums =
 	Assumptions.assumptions st ~add_opaque:o ~add_transparent:t gr cstr in
-      Printer.pr_assumptionset env sigma nassums
+      Printer.pr_assumptionset state env sigma nassums
   | PrintStrategy r -> print_strategy r
 
 let global_module qid =
@@ -1929,13 +1936,14 @@ let vernac_search ~atts s gopt r =
     (* if goal selector is given and wrong, then let exceptions be raised. *)
     | Some g -> snd (Pfedit.get_goal_context g) , Some g
   in
+  let state = States.get_state () in
   let get_pattern c = snd (intern_constr_pattern env Evd.(from_env env) c) in
   let pr_search ref env c =
     let pr = pr_global ref in
     let pp = if !search_output_name_only
       then pr
       else begin
-        let pc = pr_lconstr_env env Evd.(from_env env) c in
+        let pc = pr_lconstr_env state env Evd.(from_env env) c in
         hov 2 (pr ++ str":" ++ spc () ++ pc)
       end
     in Feedback.msg_notice pp
@@ -1957,8 +1965,9 @@ let vernac_locate = function
   | LocateAny {v=ByNotation (ntn, sc)} (** TODO : handle Ltac notations *)
   | LocateTerm {v=ByNotation (ntn, sc)} ->
     let _, env = Pfedit.get_current_context () in
+    let state = States.get_state () in
     Notation.locate_notation
-      (Constrextern.without_symbols (pr_lglob_constr_env env)) ntn sc
+      (Constrextern.without_symbols (pr_lglob_constr_env state env)) ntn sc
   | LocateLibrary qid -> print_located_library qid
   | LocateModule qid -> print_located_module qid
   | LocateOther (s, qid) -> print_located_other s qid
@@ -2223,7 +2232,8 @@ let interp ?proof ~atts ~st c =
     Feedback.msg_notice @@ vernac_global_check c
   | VernacPrint p ->
     let sigma, env = Pfedit.get_current_context () in
-    Feedback.msg_notice @@ vernac_print ~atts env sigma p
+    let state = States.get_state () in
+    Feedback.msg_notice @@ vernac_print ~atts state env sigma p
   | VernacSearch (s,g,r) -> vernac_search ~atts s g r
   | VernacLocate l ->
     Feedback.msg_notice @@ vernac_locate l

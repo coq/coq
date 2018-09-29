@@ -702,16 +702,17 @@ let tag_var = tag Tag.variable
     | { CAst.v = CAppExpl ((None,f,us),[]) } -> str "@" ++ pr_cref f us
     | c -> pr prec c
 
-  let transf env sigma c =
+  let transf state env sigma c =
     if !Flags.beautify_file then
       let r = Constrintern.for_grammar (Constrintern.intern_constr env sigma) c in
-      Constrextern.extern_glob_constr (Termops.vars_of_env env) r
+      Constrextern.extern_glob_constr state env r
     else c
 
   let pr_expr prec c =
     let env = Global.env () in
     let sigma = Evd.from_env env in
-    pr prec (transf env sigma c)
+    let state = States.get_state () in
+    pr prec (transf state env sigma c)
 
   let pr_simpleconstr = pr_expr lsimpleconstr
 

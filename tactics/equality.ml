@@ -279,8 +279,8 @@ let general_elim_clause with_evars frzevars cls rew elim =
     | Some _ -> rewrite_elim with_evars frzevars cls rew elim
     end
     begin function (e, info) -> match e with
-    | PretypeError (env, evd, NoOccurrenceFound (c', _)) ->
-      Proofview.tclZERO (PretypeError (env, evd, NoOccurrenceFound (c', cls)))
+    | PretypeError (state, env, evd, NoOccurrenceFound (c', _)) ->
+      Proofview.tclZERO (PretypeError (state, env, evd, NoOccurrenceFound (c', cls)))
     | e -> Proofview.tclZERO ~info e
     end
 

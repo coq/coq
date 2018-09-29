@@ -132,12 +132,14 @@ let abstract_list_all env evd typ c l =
     try Typing.type_of env evd p
     with
     | UserError _ ->
-        error_cannot_find_well_typed_abstraction env evd p l None
+        let state = States.get_state () in
+        error_cannot_find_well_typed_abstraction state env evd p l None
     | Type_errors.TypeError (env',x) ->
+        let state = States.get_state () in
         (** FIXME: plug back the typing information *)
-        error_cannot_find_well_typed_abstraction env evd p l None
-    | Pretype_errors.PretypeError (env',evd,TypingError x) ->
-        error_cannot_find_well_typed_abstraction env evd p l (Some (env',x)) in
+        error_cannot_find_well_typed_abstraction state env evd p l None
+    | Pretype_errors.PretypeError (state,env',evd,TypingError x) ->
+        error_cannot_find_well_typed_abstraction state env evd p l (Some (env',x)) in
   evd,(p,typp)
 
 let set_occurrences_of_last_arg args =
@@ -154,7 +156,9 @@ let abstract_list_all_with_dependencies env evd typ c l =
   if b then
     let p = nf_evar evd ev in
       evd, p
-  else error_cannot_find_well_typed_abstraction env evd 
+  else
+    let state = States.get_state () in
+    error_cannot_find_well_typed_abstraction state env evd
     c l None
 
 (**)
@@ -1605,7 +1609,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
       if not (is_correct_type ty) then raise (NotUnifiable None);
       Some(sigma, t, l2)
     with
-    | PretypeError (_,_,CannotUnify (c1,c2,Some e)) ->
+    | PretypeError (_,_,_,CannotUnify (c1,c2,Some e)) ->
         raise (NotUnifiable (Some (c1,c2,e)))
     (** MS: This is pretty bad, it catches Not_found for example *)
     | e when CErrors.noncritical e -> raise (NotUnifiable None) in
@@ -1660,7 +1664,9 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
            && not (indirectly_dependent sigma c d depdecls)
         then
           if check_occs && not (in_every_hyp occs)
-          then raise (PretypeError (env,sigma,NoOccurrenceFound (c,Some hyp)))
+          then
+            let state = States.get_state () in
+            raise (PretypeError (state,env,sigma,NoOccurrenceFound (c,Some hyp)))
           else (push_named_context_val d sign, depdecls)
         else
           (push_named_context_val newdecl sign, newdecl :: depdecls)
@@ -1687,7 +1693,8 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     (id,sign,depdecls,lastlhyp,ccl,res)
   with
     SubtermUnificationError e ->
-      raise (PretypeError (env,sigma,CannotUnifyOccurrences e))
+      let state = States.get_state () in
+      raise (PretypeError (state,env,sigma,CannotUnifyOccurrences e))
 
 (** [make_abstraction] is the main entry point to abstract over a term
     or pattern at some occurrences; it returns:
@@ -1808,7 +1815,9 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
   try matchrec cl
   with ex when precatchable_exception ex ->
     match !bestexn with
-    | None -> raise (PretypeError (env,evd,NoOccurrenceFound (op, None)))
+    | None ->
+        let state = States.get_state () in
+        raise (PretypeError (state,env,evd,NoOccurrenceFound (op, None)))
     | Some e -> raise e
 
 (* Tries to find all instances of term [cl] in term [op].
@@ -1878,7 +1887,8 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
   let res = matchrec cl [] in
   match res with
   | [] ->
-    raise (PretypeError (env,evd,NoOccurrenceFound (op, None)))
+    let state = States.get_state () in
+    raise (PretypeError (state,env,evd,NoOccurrenceFound (op, None)))
   | _ -> res
 
 let w_unify_to_subterm_list env evd flags hdmeta oplist t =
@@ -1911,7 +1921,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
 		(* If this fails, try with full conversion *)
 		w_unify_to_subterm env evd ~flags t'
 	    else w_unify_to_subterm env evd ~flags t'
-	  with PretypeError (env,_,NoOccurrenceFound _) when
+          with PretypeError (state,env,_,NoOccurrenceFound _) when
               allow_K ||
                 (* w_unify_to_subterm does not go through evars, so
                    the next step, which was already in <= 8.4, is
@@ -1996,13 +2006,13 @@ let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
 	    with ex when precatchable_exception ex ->
 	      try
 		w_unify2 env evd flags false cv_pb ty1 ty2
-	      with PretypeError (env,_,NoOccurrenceFound _) as e -> raise e)
+              with PretypeError (_,env,_,NoOccurrenceFound _) as e -> raise e)
 
       (* Second order case *)
       | (Meta _, true, _, _ | _, _, Meta _, true) ->
 	  (try
 	      w_unify2 env evd flags false cv_pb ty1 ty2
-	    with PretypeError (env,_,NoOccurrenceFound _) as e -> raise e
+            with PretypeError (_,env,_,NoOccurrenceFound _) as e -> raise e
 	      | ex when precatchable_exception ex ->
 		  try
 		    w_typed_unify_array env evd flags hd1 l1 hd2 l2

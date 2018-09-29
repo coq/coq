@@ -60,7 +60,7 @@ type pretype_error =
   | UnsatisfiableConstraints of
     (Evar.t * Evar_kinds.t) option * Evar.Set.t option
 
-exception PretypeError of env * Evd.evar_map * pretype_error
+exception PretypeError of States.state * env * Evd.evar_map * pretype_error
 
 let precatchable_exception = function
   | CErrors.UserError _ | TypeError _ | PretypeError _
@@ -68,10 +68,12 @@ let precatchable_exception = function
   | _ -> false
 
 let raise_pretype_error ?loc (env,sigma,te) =
-  Loc.raise ?loc (PretypeError(env,sigma,te))
+  let state = States.get_state () in
+  Loc.raise ?loc (PretypeError(state,env,sigma,te))
 
 let raise_type_error ?loc (env,sigma,te) =
-  Loc.raise ?loc (PretypeError(env,sigma,TypingError te))
+  let state = States.get_state () in
+  Loc.raise ?loc (PretypeError(state,env,sigma,TypingError te))
 
 let error_actual_type ?loc env sigma {uj_val=c;uj_type=actty} expty reason =
   let j = {uj_val=c;uj_type=actty} in
@@ -120,34 +122,42 @@ let error_assumption ?loc env sigma j =
     a precise location. *)
 
 let error_occur_check env sigma ev c =
-  raise (PretypeError (env, sigma, UnifOccurCheck (ev,c)))
+  let state = States.get_state () in
+  raise (PretypeError (state, env, sigma, UnifOccurCheck (ev,c)))
 
 let error_unsolvable_implicit ?loc env sigma evk explain =
+  let state = States.get_state () in
   Loc.raise ?loc
-    (PretypeError (env, sigma, UnsolvableImplicit (evk, explain)))
+    (PretypeError (state, env, sigma, UnsolvableImplicit (evk, explain)))
 
 let error_cannot_unify ?loc env sigma ?reason (m,n) =
-  Loc.raise ?loc (PretypeError (env, sigma,CannotUnify (m,n,reason)))
+  let state = States.get_state () in
+  Loc.raise ?loc (PretypeError (state,env, sigma,CannotUnify (m,n,reason)))
 
 let error_cannot_unify_local env sigma (m,n,sn) =
-  raise (PretypeError (env, sigma,CannotUnifyLocal (m,n,sn)))
+  let state = States.get_state () in
+  raise (PretypeError (state,env, sigma,CannotUnifyLocal (m,n,sn)))
 
 let error_cannot_coerce env sigma (m,n) =
-  raise (PretypeError (env, sigma,CannotUnify (m,n,None)))
+  let state = States.get_state () in
+  raise (PretypeError (state,env, sigma,CannotUnify (m,n,None)))
 
-let error_cannot_find_well_typed_abstraction env sigma p l e =
-  raise (PretypeError (env, sigma,CannotFindWellTypedAbstraction (p,l,e)))
+let error_cannot_find_well_typed_abstraction state env sigma p l e =
+  raise (PretypeError (state,env, sigma,CannotFindWellTypedAbstraction (p,l,e)))
 
 let error_wrong_abstraction_type env sigma na a p l =
-  raise (PretypeError (env, sigma,WrongAbstractionType (na,a,p,l)))
+  let state = States.get_state () in
+  raise (PretypeError (state,env, sigma,WrongAbstractionType (na,a,p,l)))
 
 let error_abstraction_over_meta env sigma hdmeta metaarg =
+  let state = States.get_state () in
   let m = Evd.meta_name sigma hdmeta and n = Evd.meta_name sigma metaarg in
-  raise (PretypeError (env, sigma,AbstractionOverMeta (m,n)))
+  raise (PretypeError (state,env, sigma,AbstractionOverMeta (m,n)))
 
 let error_non_linear_unification env sigma hdmeta t =
+  let state = States.get_state () in
   let m = Evd.meta_name sigma hdmeta in
-  raise (PretypeError (env, sigma,NonLinearUnification (m,t)))
+  raise (PretypeError (state,env, sigma,NonLinearUnification (m,t)))
 
 (*s Ml Case errors *)
 
@@ -172,14 +182,16 @@ let error_var_not_found ?loc s =
 let unsatisfiable_constraints env evd ev comp =
   match ev with
   | None ->
-    let err = UnsatisfiableConstraints (None, comp) in
-    raise (PretypeError (env,evd,err))
+     let state = States.get_state () in
+     let err = UnsatisfiableConstraints (None, comp) in
+    raise (PretypeError (state,env,evd,err))
   | Some ev ->
     let loc, kind = Evd.evar_source ev evd in
+    let state = States.get_state () in
     let err = UnsatisfiableConstraints (Some (ev, kind), comp) in
-    Loc.raise ?loc (PretypeError (env,evd,err))
+    Loc.raise ?loc (PretypeError (state,env,evd,err))
 
 let unsatisfiable_exception exn =
   match exn with
-  | PretypeError (_, _, UnsatisfiableConstraints _) -> true
+  | PretypeError (_, _, _, UnsatisfiableConstraints _) -> true
   | _ -> false

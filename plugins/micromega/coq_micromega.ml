@@ -859,7 +859,8 @@ struct
     if debug
     then (
       let _, env = Pfedit.get_current_context () in
-      Feedback.msg_debug (Pp.str "parse_expr: " ++ Printer.pr_leconstr_env env sigma term));
+      let state = States.get_state () in
+      Feedback.msg_debug (Pp.str "parse_expr: " ++ Printer.pr_leconstr_env state env sigma term));
 
 (*
     let constant_or_variable env term =
@@ -980,8 +981,9 @@ struct
 
   let rconstant sigma term =
     let _, env = Pfedit.get_current_context () in
+    let state = States.get_state () in
     if debug
-    then Feedback.msg_debug (Pp.str "rconstant: " ++ Printer.pr_leconstr_env env sigma term ++ fnl ());
+    then Feedback.msg_debug (Pp.str "rconstant: " ++ Printer.pr_leconstr_env state env sigma term ++ fnl ());
     let res = rconstant sigma term in
       if debug then 
 	(Printf.printf "rconstant -> %a\n" pp_Rcst res ; flush stdout) ;
@@ -1022,7 +1024,10 @@ struct
   let  parse_arith parse_op parse_expr env cstr gl =
     let sigma = gl.sigma in
     if debug
-    then Feedback.msg_debug (Pp.str "parse_arith: " ++ Printer.pr_leconstr_env gl.env sigma cstr ++ fnl ());
+    then begin
+      let state = States.get_state () in
+      Feedback.msg_debug (Pp.str "parse_arith: " ++ Printer.pr_leconstr_env state gl.env sigma cstr ++ fnl ())
+      end;
     match EConstr.kind sigma cstr with
     | App(op,args) ->
        let (op,lhs,rhs) = parse_op gl (op,args) in
@@ -1650,7 +1655,8 @@ let micromega_tauto negate normalise unsat deduce spec prover env polys1 polys2 
      let formula_typ = (EConstr.mkApp(Lazy.force coq_Cstr, [|spec.coeff|])) in
      let ff = dump_formula formula_typ
        (dump_cstr spec.typ spec.dump_coeff) ff in
-       Feedback.msg_notice (Printer.pr_leconstr_env gl.env gl.sigma ff);
+     let state = States.get_state () in
+       Feedback.msg_notice (Printer.pr_leconstr_env state gl.env gl.sigma ff);
        Printf.fprintf stdout "cnf : %a\n" (pp_cnf (fun o _ -> ())) cnf_ff
    end;
 
@@ -1675,7 +1681,8 @@ let micromega_tauto negate normalise unsat deduce spec prover env polys1 polys2 
       let formula_typ = (EConstr.mkApp( Lazy.force coq_Cstr,[| spec.coeff|])) in
       let ff' = dump_formula formula_typ
           (dump_cstr spec.typ spec.dump_coeff) ff' in
-      Feedback.msg_notice (Printer.pr_leconstr_env gl.env gl.sigma ff');
+      let state = States.get_state () in
+      Feedback.msg_notice (Printer.pr_leconstr_env state gl.env gl.sigma ff');
       Printf.fprintf stdout "cnf : %a\n" (pp_cnf (fun o _ -> ())) cnf_ff'
     end;
 

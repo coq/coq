@@ -201,7 +201,7 @@ let clear_in_global_msg = function
   | None -> mt ()
   | Some ref -> str " implicitly in " ++ Printer.pr_global ref
 
-let clear_dependency_msg env sigma id err inglobal =
+let clear_dependency_msg state env sigma id err inglobal =
   let pp = clear_in_global_msg inglobal in
   match err with
   | Evarutil.OccurHypInSimpleClause None ->
@@ -211,15 +211,15 @@ let clear_dependency_msg env sigma id err inglobal =
   | Evarutil.EvarTypingBreak ev ->
       str "Cannot remove " ++ Id.print id ++
       strbrk " without breaking the typing of " ++
-      Printer.pr_existential env sigma ev ++ str"."
+      Printer.pr_existential state env sigma ev ++ str"."
   | Evarutil.NoCandidatesLeft ev ->
       str "Cannot remove " ++ Id.print id ++ str " as it would leave the existential " ++
       Printer.pr_existential_key sigma ev ++ str" without candidates."
 
-let error_clear_dependency env sigma id err inglobal =
-  user_err (clear_dependency_msg env sigma id err inglobal)
+let error_clear_dependency state env sigma id err inglobal =
+  user_err (clear_dependency_msg state env sigma id err inglobal)
 
-let replacing_dependency_msg env sigma id err inglobal =
+let replacing_dependency_msg state env sigma id err inglobal =
   let pp = clear_in_global_msg inglobal in
   match err with
   | Evarutil.OccurHypInSimpleClause None ->
@@ -230,13 +230,13 @@ let replacing_dependency_msg env sigma id err inglobal =
   | Evarutil.EvarTypingBreak ev ->
       str "Cannot change " ++ Id.print id ++
       strbrk " without breaking the typing of " ++
-      Printer.pr_existential env sigma ev ++ str"."
+      Printer.pr_existential state env sigma ev ++ str"."
   | Evarutil.NoCandidatesLeft ev ->
       str "Cannot change " ++ Id.print id ++ str " as it would leave the existential " ++
       Printer.pr_existential_key sigma ev ++ str" without candidates."
 
-let error_replacing_dependency env sigma id err inglobal =
-  user_err (replacing_dependency_msg env sigma id err inglobal)
+let error_replacing_dependency state env sigma id err inglobal =
+  user_err (replacing_dependency_msg state env sigma id err inglobal)
 
 (* This tactic enables the user to remove hypotheses from the signature.
  * Some care is taken to prevent him from removing variables that are
@@ -252,9 +252,10 @@ let clear_gen fail = function
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let concl = Proofview.Goal.concl gl in
+    let state = States.get_state () in
     let (sigma, hyps, concl) =
       try clear_hyps_in_evi env sigma (named_context_val env) concl ids
-      with Evarutil.ClearDependencyError (id,err,inglobal) -> fail env sigma id err inglobal
+      with Evarutil.ClearDependencyError (id,err,inglobal) -> fail state env sigma id err inglobal
     in
     let env = reset_with_named_context hyps env in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
@@ -433,12 +434,12 @@ let get_previous_hyp_position env sigma id =
 (*            Cut rule                                        *)
 (**************************************************************)
 
-let clear_hyps2 env sigma ids sign t cl =
+let clear_hyps2 state env sigma ids sign t cl =
   try
     let sigma = Evd.clear_metas sigma in
     Evarutil.clear_hyps2_in_evi env sigma sign t cl ids
   with Evarutil.ClearDependencyError (id,err,inglobal) ->
-    error_replacing_dependency env sigma id err inglobal
+    error_replacing_dependency state env sigma id err inglobal
 
 let internal_cut_gen ?(check=true) dir replace id t =
   Proofview.Goal.enter begin fun gl ->
@@ -446,11 +447,12 @@ let internal_cut_gen ?(check=true) dir replace id t =
     let sigma = Tacmach.New.project gl in
     let concl = Proofview.Goal.concl gl in
     let store = Proofview.Goal.extra gl in
+    let state = States.get_state () in
     let sign = named_context_val env in
     let sign',t,concl,sigma =
       if replace then
         let nexthyp = get_next_hyp_position env sigma id (named_context_of_val sign) in
-        let sigma,sign',t,concl = clear_hyps2 env sigma (Id.Set.singleton id) sign t concl in
+        let sigma,sign',t,concl = clear_hyps2 state env sigma (Id.Set.singleton id) sign t concl in
         let sign' = insert_decl_in_named_context sigma (LocalAssum (id,t)) nexthyp sign' in
         sign',t,concl,sigma
       else
@@ -896,14 +898,15 @@ let reduction_clause redexp cl =
 	(None, bind_red_expr_occurrences occs nbcl redexp)) cl
 
 let reduce redexp cl =
-  let trace env sigma =
+  let trace state env sigma =
     let open Printer in
     let pr = (pr_econstr_env, pr_leconstr_env, pr_evaluable_reference, pr_constr_pattern_env) in
-    Pp.(hov 2 (Pputils.pr_red_expr_env env sigma pr str redexp))
+    Pp.(hov 2 (Pputils.pr_red_expr_env state env sigma pr str redexp))
   in
   let trace () =
     let sigma, env = Pfedit.get_current_context () in
-    trace env sigma
+    let state = States.get_state () in
+    trace state env sigma
   in
   Proofview.Trace.name_tactic trace begin
   Proofview.Goal.enter begin fun gl ->
@@ -1506,9 +1509,9 @@ let clenv_fchain_in id ?(flags=elim_flags ()) mv elimclause hypclause =
   (** The evarmap of elimclause is assumed to be an extension of hypclause, so
       we do not need to merge the universes coming from hypclause. *)
   try clenv_fchain ~with_univs:false ~flags mv elimclause hypclause
-  with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
+  with PretypeError (state,env,evd,NoOccurrenceFound (op,_)) ->
     (* Set the hypothesis name in the message *)
-    raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
+    raise (PretypeError (state,env,evd,NoOccurrenceFound (op,Some id)))
 
 let elimination_in_clause_scheme with_evars ?(flags=elim_flags ()) 
     id rename i (elim, elimty, bindings) indclause =
@@ -1793,15 +1796,15 @@ let progress_with_clause flags innerclause clause =
   try List.find_map f ordered_metas
   with Not_found -> raise UnableToApply
 
-let explain_unable_to_apply_lemma ?loc env sigma thm innerclause =
+let explain_unable_to_apply_lemma ?loc state env sigma thm innerclause =
   user_err ?loc (hov 0
     (Pp.str "Unable to apply lemma of type" ++ brk(1,1) ++
-     Pp.quote (Printer.pr_leconstr_env env sigma thm) ++ spc() ++
+     Pp.quote (Printer.pr_leconstr_env state env sigma thm) ++ spc() ++
      str "on hypothesis of type" ++ brk(1,1) ++
-     Pp.quote (Printer.pr_leconstr_env innerclause.env innerclause.evd (clenv_type innerclause)) ++
+     Pp.quote (Printer.pr_leconstr_env state innerclause.env innerclause.evd (clenv_type innerclause)) ++
      str "."))
 
-let apply_in_once_main flags innerclause env sigma (loc,d,lbind) =
+let apply_in_once_main flags innerclause state env sigma (loc,d,lbind) =
   let thm = nf_betaiota env sigma (Retyping.get_type_of env sigma d) in
   let rec aux clause =
     try progress_with_clause flags innerclause clause
@@ -1810,7 +1813,7 @@ let apply_in_once_main flags innerclause env sigma (loc,d,lbind) =
     try aux (clenv_push_prod clause)
     with NotExtensibleClause ->
       match e with
-      | UnableToApply -> explain_unable_to_apply_lemma ?loc env sigma thm innerclause
+      | UnableToApply -> explain_unable_to_apply_lemma ?loc state env sigma thm innerclause
       | _ -> iraise e'
   in
   aux (make_clenv_binding env sigma (d,thm) lbind)
@@ -1828,6 +1831,7 @@ let apply_in_once ?(respect_opaque = false) sidecond_first with_delta
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
+    let state = States.get_state () in
     let ts =
       if respect_opaque then Conv_oracle.get_transp_state (oracle env)
       else full_transparent_state
@@ -1835,7 +1839,7 @@ let apply_in_once ?(respect_opaque = false) sidecond_first with_delta
     let flags =
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
     try
-      let clause = apply_in_once_main flags innerclause env sigma (loc,c,lbind) in
+      let clause = apply_in_once_main flags innerclause state env sigma (loc,c,lbind) in
       clenv_refine_in ~sidecond_first with_evars targetid id sigma clause
         (fun id ->
           Tacticals.New.tclTHENLIST [
@@ -3055,7 +3059,7 @@ let warn_cannot_remove_as_expected =
 
 let clear_for_destruct ids =
   Proofview.tclORELSE
-    (clear_gen (fun env sigma id err inglobal -> raise (ClearDependencyError (id,err,inglobal))) ids)
+    (clear_gen (fun state env sigma id err inglobal -> raise (ClearDependencyError (id,err,inglobal))) ids)
     (function
      | ClearDependencyError (id,err,inglobal),_ -> warn_cannot_remove_as_expected (id,inglobal); Proofview.tclUNIT ()
      | e -> iraise e)
@@ -3098,17 +3102,17 @@ let expand_hyp id =
 
  *)
 
-let warn_unused_intro_pattern env sigma =
+let warn_unused_intro_pattern =
   CWarnings.create ~name:"unused-intro-pattern" ~category:"tactics"
-    (fun names ->
+    (fun (state,env,sigma,names) ->
        strbrk"Unused introduction " ++ str (String.plural (List.length names) "pattern") ++
        str": " ++ prlist_with_sep spc
          (Miscprint.pr_intro_pattern
-            (fun c -> Printer.pr_econstr_env env sigma (snd (c env sigma)))) names)
+            (fun c -> Printer.pr_econstr_env state env sigma (snd (c env sigma)))) names)
 
-let check_unused_names env sigma names =
+let check_unused_names state env sigma names =
   if not (List.is_empty names) then
-    warn_unused_intro_pattern env sigma names
+    warn_unused_intro_pattern (state,env,sigma,names)
 
 let intropattern_of_name gl avoid = function
   | Anonymous -> IntroNaming IntroAnonymous
@@ -3231,7 +3235,8 @@ let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
         Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
-        check_unused_names env sigma names;
+        let state = States.get_state () in
+        check_unused_names state env sigma names;
         Tacticals.New.tclTHEN (clear_wildcards thin) (tac dests)
         end
   in
@@ -5107,7 +5112,8 @@ let unify ?(state=full_transparent_state) x y =
     let sigma = w_unify (Tacmach.New.pf_env gl) sigma Reduction.CONV ~flags x y in
     Proofview.Unsafe.tclEVARS sigma
   with e when CErrors.noncritical e ->
-    Proofview.tclZERO (PretypeError (env, sigma, CannotUnify (x, y, None)))
+    let state = States.get_state () in
+    Proofview.tclZERO (PretypeError (state, env, sigma, CannotUnify (x, y, None)))
   end
 
 module Simple = struct

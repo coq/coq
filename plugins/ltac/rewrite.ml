@@ -1618,8 +1618,8 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
       (** For compatibility *)
       beta <*> Proofview.shelve_unifiable
     with
-    | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) ->
-      raise (RewriteFailure (Himsg.explain_pretype_error env evd e))
+    | PretypeError (state, env, evd, (UnsatisfiableConstraints _ as e)) ->
+      raise (RewriteFailure (Himsg.explain_pretype_error state env evd e))
   end
 
 let tactic_init_setoid () = 
@@ -2114,9 +2114,9 @@ let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite
 
 (** [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
-let not_declared env sigma ty rel =
+let not_declared state env sigma ty rel =
   tclFAIL 0
-    (str" The relation " ++ Printer.pr_econstr_env env sigma rel ++ str" is not a declared " ++
+    (str" The relation " ++ Printer.pr_econstr_env state env sigma rel ++ str" is not a declared " ++
      str ty ++ str" relation. Maybe you need to require the Coq.Classes.RelationClasses library")
 
 let setoid_proof ty fn fallback =
@@ -2124,6 +2124,7 @@ let setoid_proof ty fn fallback =
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let concl = Proofview.Goal.concl gl in
+    let state = States.get_state () in
     Proofview.tclORELSE
       begin
         try
@@ -2143,7 +2144,7 @@ let setoid_proof ty fn fallback =
 	            begin match e with
 	            | (Not_found, _) ->
 	                let rel, _, _ = decompose_app_rel env sigma concl in
-		        not_declared env sigma ty rel
+                        not_declared state env sigma ty rel
 	            | (e, info) -> Proofview.tclZERO ~info e
                     end
                 | e' -> Proofview.tclZERO ~info e'

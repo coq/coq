@@ -237,27 +237,27 @@ let process_goal sigma g : Constr.t reified_goal =
   let hyps      = List.map to_tuple hyps in
   { name; ty; hyps; env; sigma };;
 
-let pr_letype_core goal_concl_style env sigma t =
-  Ppconstr.pr_lconstr_expr (Constrextern.extern_type goal_concl_style env sigma t)
+let pr_letype_core goal_concl_style state env sigma t =
+  Ppconstr.pr_lconstr_expr (Constrextern.extern_type goal_concl_style state env sigma t)
 
-let pp_of_type env sigma ty =
-  pr_letype_core true env sigma EConstr.(of_constr ty)
+let pp_of_type state env sigma ty =
+  pr_letype_core true state env sigma EConstr.(of_constr ty)
 
-let pr_leconstr_core goal_concl_style env sigma t =
-  Ppconstr.pr_lconstr_expr (Constrextern.extern_constr goal_concl_style env sigma t)
+let pr_leconstr_core goal_concl_style state env sigma t =
+  Ppconstr.pr_lconstr_expr (Constrextern.extern_constr goal_concl_style state env sigma t)
 
-let pr_lconstr_env env sigma c = pr_leconstr_core false env sigma (EConstr.of_constr c)
+let pr_lconstr_env state env sigma c = pr_leconstr_core false state env sigma (EConstr.of_constr c)
 
 let diff_concl ?og_s nsigma ng =
   let open Evd in
   let o_concl_pp = match og_s with
     | Some { it=og; sigma=osigma } ->
       let (oty, oenv) = process_goal_concl osigma og in
-      pp_of_type oenv osigma oty
+      pp_of_type (States.get_state ()) oenv osigma oty
     | None -> Pp.mt()
   in
   let (nty, nenv) = process_goal_concl nsigma ng in
-  let n_concl_pp = pp_of_type nenv nsigma nty in
+  let n_concl_pp = pp_of_type (States.get_state ()) nenv nsigma nty in
 
   let show_removed = Some (show_removed ()) in
 
@@ -281,6 +281,7 @@ map will contain:
 concl_pp is the conclusion as a Pp.t
 *)
 let goal_info goal sigma =
+  let state = States.get_state () in
   let map = ref StringMap.empty in
   let line_idents = ref [] in
   let build_hyp_info env sigma hyp =
@@ -291,11 +292,11 @@ let goal_info goal sigma =
     line_idents := idents :: !line_idents;
     let mid = match body with
     | Some c ->
-      let pb = pr_lconstr_env env sigma c in
+      let pb = pr_lconstr_env state env sigma c in
       let pb = if Constr.isCast c then surround pb else pb in
       str " := " ++ pb
     | None -> mt() in
-    let ts = pp_of_type env sigma ty in
+    let ts = pp_of_type state env sigma ty in
     let rhs_pp = mid ++ str " : " ++ ts in
 
     let make_entry () = { idents; rhs_pp; done_ = false } in
@@ -305,7 +306,7 @@ let goal_info goal sigma =
   try
     let { ty=ty; hyps=hyps; env=env } = process_goal sigma goal in
     List.iter (build_hyp_info env sigma) (List.rev hyps);
-    let concl_pp = pp_of_type env sigma ty in
+    let concl_pp = pp_of_type state env sigma ty in
     ( List.rev !line_idents, !map, concl_pp )
   with _ -> ([], !map, Pp.mt ());;
 
@@ -541,7 +542,8 @@ let to_constr p =
   (* pprf generally has only one element, but it may have more in the derive plugin *)
   let t = List.hd pprf in
   let sigma, env = Pfedit.get_current_context ~p () in
-  let x = Constrextern.extern_constr false env sigma t in  (* todo: right options?? *)
+  let state = States.get_state () in
+  let x = Constrextern.extern_constr false state env sigma t in  (* todo: right options?? *)
   x.v
 
 

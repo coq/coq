@@ -128,7 +128,7 @@ val hide_interp : bool -> raw_tactic_expr -> unit Proofview.tactic option -> uni
 (** Internals that can be useful for syntax extensions. *)
 
 val interp_ltac_var : (value -> 'a) -> interp_sign ->
-  (Environ.env * Evd.evar_map) option -> lident -> 'a
+  (States.state * Environ.env * Evd.evar_map) option -> lident -> 'a
 
 val interp_int : interp_sign -> lident -> int
 

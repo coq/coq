@@ -171,8 +171,8 @@ let curr_debug ist = match TacStore.get ist.extra f_debug with
 | None -> DebugOff
 | Some level -> level
 
-let pr_closure env ist body =
-  let pp_body = Pptactic.pr_glob_tactic env body in
+let pr_closure state env ist body =
+  let pp_body = Pptactic.pr_glob_tactic state env body in
   let pr_sep () = fnl () in
   let pr_iarg (id, arg) =
     let arg = pr_argument_type arg in
@@ -181,16 +181,16 @@ let pr_closure env ist body =
   let pp_iargs = v 0 (prlist_with_sep pr_sep pr_iarg (Id.Map.bindings ist)) in
   pp_body ++ fnl() ++ str "in environment " ++ fnl() ++ pp_iargs
 
-let pr_inspect env expr result =
-  let pp_expr = Pptactic.pr_glob_tactic env expr in
+let pr_inspect state env expr result =
+  let pp_expr = Pptactic.pr_glob_tactic state env expr in
   let pp_result =
     if has_type result (topwit wit_tacvalue) then
     match to_tacvalue result with
     | VFun (_,_, ist, ul, b) ->
       let body = if List.is_empty ul then b else (TacFun (ul, b)) in
-      str "a closure with body " ++ fnl() ++ pr_closure env ist body
+      str "a closure with body " ++ fnl() ++ pr_closure state env ist body
     | VRec (ist, body) ->
-      str "a recursive closure" ++ fnl () ++ pr_closure env !ist body
+      str "a recursive closure" ++ fnl () ++ pr_closure state env !ist body
     else
       let pp_type = pr_argument_type result in
       str "an object of type" ++ spc () ++ pp_type
@@ -294,7 +294,8 @@ let interp_ltac_var coerce ist env locid =
   with Not_found -> anomaly (str "Detected '" ++ Id.print locid.v ++ str "' as ltac var at interning time.")
 
 let interp_ident ist env sigma id =
-  try try_interp_ltac_var (coerce_var_to_ident false env sigma) ist (Some (env,sigma)) (make id)
+  let state = States.get_state () in
+  try try_interp_ltac_var (coerce_var_to_ident false env sigma) ist (Some (state,env,sigma)) (make id)
   with Not_found -> id
 
 (* Interprets an optional identifier, bound or fresh *)
@@ -303,11 +304,13 @@ let interp_name ist env sigma = function
   | Name id -> Name (interp_ident ist env sigma id)
 
 let interp_intro_pattern_var loc ist env sigma id =
-  try try_interp_ltac_var (coerce_to_intro_pattern sigma) ist (Some (env,sigma)) (make ?loc id)
+  let state = States.get_state () in
+  try try_interp_ltac_var (coerce_to_intro_pattern sigma) ist (Some (state,env,sigma)) (make ?loc id)
   with Not_found -> IntroNaming (IntroIdentifier id)
 
 let interp_intro_pattern_naming_var loc ist env sigma id =
-  try try_interp_ltac_var (coerce_to_intro_pattern_naming sigma) ist (Some (env,sigma)) (make ?loc id)
+  let state = States.get_state () in
+  try try_interp_ltac_var (coerce_to_intro_pattern_naming sigma) ist (Some (state,env,sigma)) (make ?loc id)
   with Not_found -> IntroIdentifier id
 
 let interp_int ist ({loc;v=id} as locid) =
@@ -331,8 +334,9 @@ let interp_int_or_var_list ist l =
 
 (* Interprets a bound variable (especially an existing hypothesis) *)
 let interp_hyp ist env sigma ({loc;v=id} as locid) =
+  let state = States.get_state () in
   (* Look first in lfun for a value coercible to a variable *)
-  try try_interp_ltac_var (coerce_to_hyp env sigma) ist (Some (env,sigma)) locid
+  try try_interp_ltac_var (coerce_to_hyp env sigma) ist (Some (state,env,sigma)) locid
   with Not_found ->
   (* Then look if bound in the proof context at calling time *)
   if is_variable env id then id
@@ -348,7 +352,8 @@ let interp_hyp_list ist env sigma l =
 let interp_reference ist env sigma = function
   | ArgArg (_,r) -> r
   | ArgVar {loc;v=id} ->
-    try try_interp_ltac_var (coerce_to_reference sigma) ist (Some (env,sigma)) (make ?loc id)
+    let state = States.get_state () in
+    try try_interp_ltac_var (coerce_to_reference sigma) ist (Some (state,env,sigma)) (make ?loc id)
     with Not_found ->
       try
         VarRef (get_id (Environ.lookup_named id env))
@@ -372,7 +377,8 @@ let interp_evaluable ist env sigma = function
     end
   | ArgArg (r,None) -> r
   | ArgVar {loc;v=id} ->
-    try try_interp_ltac_var (coerce_to_evaluable_ref env sigma) ist (Some (env,sigma)) (make ?loc id)
+    let state = States.get_state () in
+    try try_interp_ltac_var (coerce_to_evaluable_ref env sigma) ist (Some (state,env,sigma)) (make ?loc id)
     with Not_found ->
       try try_interp_evaluable env (loc, id)
       with Not_found -> error_global_not_found (qualid_of_ident ?loc id)
@@ -442,8 +448,9 @@ let default_fresh_id = Id.of_string "H"
 
 let interp_fresh_id ist env sigma l =
   let extract_ident ist env sigma id =
+    let state = States.get_state () in
     try try_interp_ltac_var (coerce_to_ident_not_fresh sigma)
-                            ist (Some (env,sigma)) (make id)
+                            ist (Some (state,env,sigma)) (make id)
     with Not_found -> id in
   let ids = List.map_filter (function ArgVar {v=id} -> Some id | _ -> None) l in
   let avoid = match TacStore.get ist.extra f_avoid_ids with
@@ -529,10 +536,11 @@ let interp_gen kind ist pattern_mode flags env sigma c =
   let (evd,c) =
     catch_error trace (understand_ltac flags env sigma vars kind) term
   in
+  let state = States.get_state () in
   (* spiwack: to avoid unnecessary modifications of tacinterp, as this
      function already use effect, I call [run] hoping it doesn't mess
      up with any assumption. *)
-  Proofview.NonLogical.run (db_constr (curr_debug ist) env evd c);
+  Proofview.NonLogical.run (db_constr (curr_debug ist) state env evd c);
   (evd,c)
 
 let constr_flags () = {
@@ -632,7 +640,8 @@ let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, a) =
       with CannotCoerceTo _ ->
         let c = coerce_to_closed_constr env x in
         Inr (pattern_of_constr env sigma (EConstr.to_constr sigma c)) in
-    (try try_interp_ltac_var coerce_eval_ref_or_constr ist (Some (env,sigma)) (make ?loc id)
+    let state = States.get_state () in
+    (try try_interp_ltac_var coerce_eval_ref_or_constr ist (Some (state,env,sigma)) (make ?loc id)
      with Not_found ->
        error_global_not_found (qualid_of_ident ?loc id))
   | Inl (ArgArg _ as b) -> Inl (interp_evaluable ist env sigma b)
@@ -702,8 +711,9 @@ let interp_may_eval f ist env sigma = function
        (* spiwack: to avoid unnecessary modifications of tacinterp, as this
           function already use effect, I call [run] hoping it doesn't mess
           up with any assumption. *)
+       let state = States.get_state () in
        Proofview.NonLogical.run (debugging_exception_step ist false (fst reraise) (fun () ->
-         str"interpretation of term " ++ pr_glob_constr_env env (fst c)));
+         str"interpretation of term " ++ pr_glob_constr_env state env (fst c)));
        iraise reraise
 
 (* Interprets a constr expression possibly to first evaluate *)
@@ -723,20 +733,23 @@ let interp_constr_may_eval ist env sigma c =
     (* spiwack: to avoid unnecessary modifications of tacinterp, as this
        function already use effect, I call [run] hoping it doesn't mess
        up with any assumption. *)
-    Proofview.NonLogical.run (db_constr (curr_debug ist) env sigma csr);
+    let state = States.get_state () in
+    Proofview.NonLogical.run (db_constr (curr_debug ist) state env sigma csr);
     sigma , csr
   end
 
 (** TODO: should use dedicated printers *)
 let message_of_value v =
   let pr_with_env pr =
-    Ftactic.enter begin fun gl -> Ftactic.return (pr (pf_env gl) (project gl)) end in
+    Ftactic.enter begin fun gl ->
+      let state = States.get_state () in
+      Ftactic.return (pr state (pf_env gl) (project gl)) end in
   let open Genprint in
   match generic_val_print v with
   | TopPrinterBasic pr -> Ftactic.return (pr ())
   | TopPrinterNeedsContext pr -> pr_with_env pr
   | TopPrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
-     pr_with_env (fun env sigma -> printer env sigma default_ensure_surrounded)
+     pr_with_env (fun state env sigma -> printer state env sigma default_ensure_surrounded)
 
 let interp_message_token ist = function
   | MsgString s -> Ftactic.return (str s)
@@ -826,14 +839,16 @@ let interp_binding_name ist env sigma = function
       (* If a name is bound, it has to be a quantified hypothesis *)
       (* user has to use other names for variables if these ones clash with *)
       (* a name intented to be used as a (non-variable) identifier *)
-      try try_interp_ltac_var (coerce_to_quantified_hypothesis sigma) ist (Some (env,sigma)) (make id)
+      let state = States.get_state () in
+      try try_interp_ltac_var (coerce_to_quantified_hypothesis sigma) ist (Some (state,env,sigma)) (make id)
       with Not_found -> NamedHyp id
 
 let interp_declared_or_quantified_hypothesis ist env sigma = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id ->
+      let state = States.get_state () in
       try try_interp_ltac_var
-            (coerce_to_decl_or_quant_hyp sigma) ist (Some (env,sigma)) (make id)
+            (coerce_to_decl_or_quant_hyp sigma) ist (Some (state,env,sigma)) (make id)
       with Not_found -> NamedHyp id
 
 let interp_binding ist env sigma {loc;v=(b,c)} =
@@ -1269,7 +1284,9 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
           match generic_val_print v with
           | TopPrinterBasic _ -> call_debug None
           | TopPrinterNeedsContext _ | TopPrinterNeedsContextAndLevel _ ->
-             Proofview.Goal.enter (fun gl -> call_debug (Some (pf_env gl,project gl)))
+             Proofview.Goal.enter (fun gl ->
+                 let state = States.get_state () in
+                 call_debug (Some (state,pf_env gl,project gl)))
         end <*>
         if List.is_empty lval then Ftactic.return v else interp_app loc ist v lval
       else
@@ -1498,10 +1515,11 @@ and interp_ltac_constr ist e : EConstr.t Ftactic.t =
         | Not_found ->
             Ftactic.enter begin fun gl ->
               let env = Proofview.Goal.env gl in
+              let state = States.get_state () in
               Proofview.tclLIFT begin
                 debugging_step ist (fun () ->
                   str "evaluation failed for" ++ fnl() ++
-                    Pptactic.pr_glob_tactic env e)
+                    Pptactic.pr_glob_tactic state env e)
               end
             <*> Proofview.tclZERO Not_found
             end
@@ -1511,19 +1529,21 @@ and interp_ltac_constr ist e : EConstr.t Ftactic.t =
   Ftactic.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = project gl in
+  let state = States.get_state () in
   try
     let cresult = coerce_to_closed_constr env result in
     Proofview.tclLIFT begin
       debugging_step ist (fun () ->
-        Pptactic.pr_glob_tactic env e ++ fnl() ++
+        Pptactic.pr_glob_tactic state env e ++ fnl() ++
           str " has value " ++ fnl() ++
-          pr_econstr_env env sigma cresult)
+          pr_econstr_env state env sigma cresult)
     end <*>
     Ftactic.return cresult
   with CannotCoerceTo _ ->
     let env = Proofview.Goal.env gl in
+    let state = States.get_state () in
     Tacticals.New.tclZEROMSG (str "Must evaluate to a closed term" ++ fnl() ++
-      str "offending expression: " ++ fnl() ++ pr_inspect env e result)
+      str "offending expression: " ++ fnl() ++ pr_inspect state env e result)
   end
 
 
@@ -1538,7 +1558,8 @@ and name_atomic ?env tacexpr tac : unit Proofview.tactic =
   | None -> Proofview.tclENV
   end >>= fun env ->
   Proofview.tclEVARMAP >>= fun sigma ->
-  let name () = Pptactic.pr_atomic_tactic env sigma tacexpr in
+  let state = States.get_state () in
+  let name () = Pptactic.pr_atomic_tactic state env sigma tacexpr in
   Proofview.Trace.name_tactic name tac
 
 (* Interprets a primitive tactic *)
