@@ -25,6 +25,11 @@ val unfreeze : state -> unit
 val summary_of_state : state -> Summary.frozen
 val replace_summary : state -> Summary.frozen -> state
 
+(* Alias for Summary.freeze_summaries ~marshallable:`No *)
+val get_state : unit -> state
+
+val modify_state : 'a Summary.Dyn.tag -> ('a -> 'a) -> unit
+
 (** {6 Rollback } *)
 
 (** [with_state_protection f x] applies [f] to [x] and restores the
