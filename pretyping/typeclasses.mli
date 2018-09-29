@@ -79,13 +79,12 @@ val typeclass_univ_instance : typeclass Univ.puniverses -> typeclass
 
 (** Just return None if not a class *)
 val class_of_constr : evar_map -> EConstr.constr -> (EConstr.rel_context * ((typeclass * EConstr.EInstance.t) * constr list)) option
-  
+
 val instance_impl : instance -> GlobRef.t
 
 val hint_priority : instance -> int option
 
 val is_class : GlobRef.t -> bool
-val is_instance : GlobRef.t -> bool
 
 (** Returns the term and type for the given instance of the parameters and fields
    of the type class. *)

@@ -11,7 +11,6 @@
 (*i*)
 open Names
 open Globnames
-open Decl_kinds
 open Term
 open Constr
 open Vars
@@ -481,19 +480,6 @@ let instances r =
 
 let is_class gr = 
   GlobRef.Map.exists (fun _ v -> GlobRef.equal v.cl_impl gr) !classes
-
-let is_instance = function
-  | ConstRef c ->
-      (match Decls.constant_kind c with
-      | IsDefinition Instance -> true
-      | _ -> false)
-  | VarRef v ->
-      (match Decls.variable_kind v with
-      | IsDefinition Instance -> true
-      | _ -> false)
-  | ConstructRef (ind,_) -> 
-      is_class (IndRef ind)
-  | _ -> false
 
 (* To embed a boolean for resolvability status.
    This is essentially a hack to mark which evars correspond to
