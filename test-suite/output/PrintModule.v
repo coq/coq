@@ -1,3 +1,5 @@
+(* Bug #2169 *)
+
 Module FOO.
 
 Module M.
@@ -11,6 +13,10 @@ End S.
 Module N : S with Definition T := nat := M.
 
 Print Module N.
+
+Set Short Module Printing.
+Print Module N.
+Unset Short Module Printing.
 
 End FOO.
 
@@ -31,7 +37,13 @@ Module N : S with Module T := K := M.
 
 Print Module N.
 
+Set Short Module Printing.
+Print Module N.
+Unset Short Module Printing.
+
 End BAR.
+
+(* Bug #4661 *)
 
 Module QUX.
 

@@ -20,11 +20,9 @@ open Goptions
 
 (** Note: there is currently two modes for printing modules.
     - The "short" one, that just prints the names of the fields.
-    - The "rich" one, that also tries to print the types of the fields.
+    - The "rich" one, that also try to print the types of the fields.
     The short version used to be the default behavior, but now we print
     types by default. The following option allows changing this.
-    Technically, the environments in this file are either None in
-    the "short" mode or (Some env) in the "rich" one.
 *)
 
 module Tag =
@@ -38,6 +36,8 @@ end
 let tag t s = Pp.tag t s
 let tag_definition s = tag Tag.definition s
 let tag_keyword s = tag Tag.keyword s
+
+type short = OnlyNames | WithContents
 
 let short = ref false
 
@@ -282,7 +282,7 @@ let nametab_register_modparam mbid mtb =
       List.iter (nametab_register_body mp dir) struc;
       id
 
-let print_body is_impl env mp (l,body) =
+let print_body is_impl extent env mp (l,body) =
   let name = Label.print l in
   hov 2 (match body with
     | SFBmodule _ -> keyword "Module" ++ spc () ++ name
@@ -293,9 +293,9 @@ let print_body is_impl env mp (l,body) =
 	| Def _ -> def "Definition" ++ spc ()
 	| OpaqueDef _ when is_impl -> def "Theorem" ++ spc ()
 	| _ -> def "Parameter" ++ spc ()) ++ name ++
-      (match env with
-	  | None -> mt ()
-	  | Some env ->
+      (match extent with
+         | OnlyNames -> mt ()
+         | WithContents ->
             let bl = UnivNames.universe_binders_with_opt_names (ConstRef (Constant.make2 mp l)) None in
             let sigma = Evd.from_ctx (UState.of_binders bl) in
 	    str " :" ++ spc () ++
@@ -308,10 +308,10 @@ let print_body is_impl env mp (l,body) =
 	      | _ -> mt ()) ++ str "." ++
             Printer.pr_abstract_universe_ctx sigma ctx)
     | SFBmind mib ->
-      try
-	let env = Option.get env in
+      match extent with
+      | WithContents ->
         pr_mutual_inductive_body env (MutInd.make2 mp l) mib None
-      with e when CErrors.noncritical e ->
+      | OnlyNames ->
         let keyword =
           let open Declarations in
           match mib.mind_finite with
@@ -321,15 +321,14 @@ let print_body is_impl env mp (l,body) =
         in
 	keyword ++ spc () ++ name)
 
-let print_struct is_impl env mp struc =
-  prlist_with_sep spc (print_body is_impl env mp) struc
+let print_struct is_impl extent env mp struc =
+  prlist_with_sep spc (print_body is_impl extent env mp) struc
 
-let print_structure is_type env mp locals struc =
-  let env' = Option.map
-    (Modops.add_structure mp struc Mod_subst.empty_delta_resolver) env in
+let print_structure is_type extent env mp locals struc =
+  let env' = Modops.add_structure mp struc Mod_subst.empty_delta_resolver env in
   nametab_register_module_body mp struc;
   let kwd = if is_type then "Sig" else "Struct" in
-  hv 2 (keyword kwd ++ spc () ++ print_struct false env' mp struc ++
+  hv 2 (keyword kwd ++ spc () ++ print_struct false extent env' mp struc ++
 	brk (1,-2) ++ keyword "End")
 
 let rec flatten_app mexpr l = match mexpr with
@@ -337,7 +336,7 @@ let rec flatten_app mexpr l = match mexpr with
   | MEident mp -> mp::l
   | MEwith _ -> assert false
 
-let rec print_typ_expr env mp locals mty =
+let rec print_typ_expr extent env mp locals mty =
   match mty with
   | MEident kn -> print_kn locals kn
   | MEapply _ ->
@@ -347,19 +346,23 @@ let rec print_typ_expr env mp locals mty =
       hov 3 (str"(" ++ (print_kn locals fapp) ++ spc () ++
 		 prlist_with_sep spc (print_modpath locals) mapp ++ str")")
   | MEwith(me,WithDef(idl,(c, _)))->
-      let env' = None in (* TODO: build a proper environment if env <> None *)
       let s = String.concat "." (List.map Id.to_string idl) in
-      (* XXX: What should env and sigma be here? *)
-      let env = Global.env () in
-      let sigma = Evd.from_env env in
-      hov 2 (print_typ_expr env' mp locals me ++ spc() ++ str "with" ++ spc()
-             ++ def "Definition"++ spc() ++ str s ++ spc() ++ str ":="++ spc()
-             ++ Printer.pr_lconstr_env env sigma c)
+      let body = match extent with
+        | WithContents ->
+            let sigma = Evd.from_env env in
+            spc() ++ str ":=" ++ spc() ++ Printer.pr_lconstr_env env sigma c
+        | OnlyNames ->
+            mt() in
+      hov 2 (print_typ_expr extent env mp locals me ++ spc() ++ str "with" ++ spc()
+             ++ def "Definition"++ spc() ++ str s ++ body)
   | MEwith(me,WithMod(idl,mp'))->
       let s = String.concat "." (List.map Id.to_string idl) in
-      hov 2 (print_typ_expr env mp locals me ++ spc() ++ str "with" ++ spc() ++
-             keyword "Module"++ spc() ++ str s ++ spc() ++ str ":="++ spc()
-             ++ print_modpath locals mp')
+      let body = match extent with
+        | WithContents ->
+            spc() ++ str ":="++ spc() ++ print_modpath locals mp'
+        | OnlyNames -> mt () in
+      hov 2 (print_typ_expr extent env mp locals me ++ spc() ++ str "with" ++ spc() ++
+             keyword "Module"++ spc() ++ str s ++ body)
 
 let print_mod_expr env mp locals = function
   | MEident mp -> print_modpath locals mp
@@ -369,31 +372,31 @@ let print_mod_expr env mp locals = function
         (str"(" ++ prlist_with_sep spc (print_modpath locals) lapp ++ str")")
   | MEwith _ -> assert false (* No 'with' syntax for modules *)
 
-let rec print_functor fty fatom is_type env mp locals = function
-  |NoFunctor me -> fatom is_type env mp locals me
-  |MoreFunctor (mbid,mtb1,me2) ->
+let rec print_functor fty fatom is_type extent env mp locals = function
+  | NoFunctor me -> fatom is_type extent env mp locals me
+  | MoreFunctor (mbid,mtb1,me2) ->
       let id = nametab_register_modparam mbid mtb1 in
       let mp1 = MPbound mbid in
-      let pr_mtb1 = fty env mp1 locals mtb1 in
-      let env' = Option.map (Modops.add_module_type mp1 mtb1) env in
+      let pr_mtb1 = fty extent env mp1 locals mtb1 in
+      let env' = Modops.add_module_type mp1 mtb1 env in
       let locals' = (mbid, get_new_id locals (MBId.to_id mbid))::locals in
       let kwd = if is_type then "Funsig" else "Functor" in
       hov 2
         (keyword kwd ++ spc () ++
 	 str "(" ++ Id.print id ++ str ":" ++ pr_mtb1 ++ str ")" ++
-	 spc() ++ print_functor fty fatom is_type env' mp locals' me2)
+         spc() ++ print_functor fty fatom is_type extent env' mp locals' me2)
 
 let rec print_expression x =
   print_functor
     print_modtype
-    (function true -> print_typ_expr | false -> print_mod_expr) x
+    (function true -> print_typ_expr | false -> fun _ -> print_mod_expr) x
 
 and print_signature x =
   print_functor print_modtype print_structure x
 
-and print_modtype env mp locals mtb = match mtb.mod_type_alg with
-  | Some me -> print_expression true env mp locals me
-  | None -> print_signature true env mp locals mtb.mod_type
+and print_modtype extent env mp locals mtb = match mtb.mod_type_alg with
+  | Some me -> print_expression true extent env mp locals me
+  | None -> print_signature true extent env mp locals mtb.mod_type
 
 let rec printable_body dir =
   let dir = pop_dirpath dir in
@@ -409,50 +412,42 @@ let rec printable_body dir =
 (** Since we might play with nametab above, we should reset to prior
     state after the printing *)
 
-let print_expression' is_type env mp me =
+let print_expression' is_type extent env mp me =
   States.with_state_protection
-    (fun e -> print_expression is_type env mp [] e) me
+    (fun e -> print_expression is_type extent env mp [] e) me
 
-let print_signature' is_type env mp me =
+let print_signature' is_type extent env mp me =
   States.with_state_protection
-    (fun e -> print_signature is_type env mp [] e) me
+    (fun e -> print_signature is_type extent env mp [] e) me
 
-let unsafe_print_module env mp with_body mb =
+let unsafe_print_module extent env mp with_body mb =
   let name = print_modpath [] mp in
   let pr_equals = spc () ++ str ":= " in
   let body = match with_body, mb.mod_expr with
     | false, _
     | true, Abstract -> mt()
-    | _, Algebraic me -> pr_equals ++ print_expression' false env mp me
-    | _, Struct sign -> pr_equals ++ print_signature' false env mp sign
-    | _, FullStruct -> pr_equals ++ print_signature' false env mp mb.mod_type
+    | _, Algebraic me -> pr_equals ++ print_expression' false extent env mp me
+    | _, Struct sign -> pr_equals ++ print_signature' false extent env mp sign
+    | _, FullStruct -> pr_equals ++ print_signature' false extent env mp mb.mod_type
   in
   let modtype = match mb.mod_expr, mb.mod_type_alg with
     | FullStruct, _ -> mt ()
-    | _, Some ty -> brk (1,1) ++ str": " ++ print_expression' true env mp ty
-    | _, _ -> brk (1,1) ++ str": " ++ print_signature' true env mp mb.mod_type
+    | _, Some ty -> brk (1,1) ++ str": " ++ print_expression' true extent env mp ty
+    | _, _ -> brk (1,1) ++ str": " ++ print_signature' true extent env mp mb.mod_type
   in
   hv 0 (keyword "Module" ++ spc () ++ name ++ modtype ++ body)
 
-exception ShortPrinting
-
 let print_module with_body mp =
   let me = Global.lookup_module mp in
-  try
-    if !short then raise ShortPrinting;
-    unsafe_print_module (Some (Global.env ())) mp with_body me ++ fnl ()
-  with e when CErrors.noncritical e ->
-    unsafe_print_module None mp with_body me ++ fnl ()
+  unsafe_print_module (if !short then OnlyNames else WithContents)
+    (Global.env ()) mp with_body me ++ fnl ()
 
 let print_modtype kn =
   let mtb = Global.lookup_modtype kn in
   let name = print_kn [] kn in
   hv 1
     (keyword "Module Type" ++ spc () ++ name ++ str " =" ++ spc () ++
-     (try
-	if !short then raise ShortPrinting;
-	print_signature' true (Some (Global.env ())) kn mtb.mod_type
-      with e when CErrors.noncritical e ->
-	print_signature' true None kn mtb.mod_type))
+     print_signature' true (if !short then OnlyNames else WithContents)
+       (Global.env ()) kn mtb.mod_type)
 
 
