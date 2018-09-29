@@ -30,6 +30,12 @@ let intern_state s =
   unfreeze (with_magic_number_check (System.intern_state Coq_config.state_magic_number) s);
   Library.overwrite_library_filenames s
 
+let get_state () = freeze ~marshallable:`No
+
+let modify_state_tag tag f =
+  let (fl,fs) = freeze ~marshallable:`No in
+  unfreeze (fl,Summary.modify_summary fs tag (f (Summary.project_from_summary fs tag)))
+
 (* Rollback. *)
 
 let with_state_protection f x =
