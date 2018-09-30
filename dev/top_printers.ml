@@ -139,7 +139,7 @@ let safe_pr_global = function
   | ConstRef kn -> pp (str "CONSTREF(" ++ Constant.debug_print kn ++ str ")")
   | IndRef (kn,i) -> pp (str "INDREF(" ++ MutInd.debug_print kn ++ str "," ++
 			  int i ++ str ")")
-  | ConstructRef ((kn,i),j) -> pp (str "INDREF(" ++ MutInd.debug_print kn ++ str "," ++
+  | ConstructRef ((kn,i),j) -> pp (str "CONSTRUCTREF(" ++ MutInd.debug_print kn ++ str "," ++
 				      int i ++ str "," ++ int j ++ str ")")
   | VarRef id -> pp (str "VARREF(" ++ Id.print id ++ str ")")
 
