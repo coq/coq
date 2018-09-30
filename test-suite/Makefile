@@ -250,11 +250,11 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 # Unit tests
 #######################################################################
 
-OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
-SYSMOD:=-package num,str,unix,dynlink,threads
+ifeq ($(LOCAL),true)
+  export OCAMLPATH := $(patsubst "%",%,$(COQLIBINSTALL))
+endif
 
-COQSRCDIRS:=$(addprefix -I $(LIB)/,$(CORESRCDIRS))
-COQCMXS:=$(addprefix $(LIB)/,$(LINKCMX))
+OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 
 # ML files from unit-test framework, not containing tests
 UNIT_SRCFILES:=$(shell find ./unit-tests/src -name *.ml)
@@ -278,10 +278,8 @@ unit-tests: $(UNIT_LOGFILES)
 # Build executable, run it to generate log file
 unit-tests/%.ml.log: unit-tests/%.ml
 	$(SHOW) 'TEST      $<'
-	$(HIDE)$(OCAMLOPT) -linkall -linkpkg -cclib -lcoqrun \
-		   $(SYSMOD) -package camlp5.gramlib,oUnit  \
-	     -I unit-tests/src $(COQSRCDIRS) $(COQCMXS) \
-	     $(UNIT_CMXS) $< -o $<.test;
+	$(HIDE)$(OCAMLOPT) -linkall -linkpkg -package coq.toplevel,oUnit \
+	     -I unit-tests/src $(UNIT_CMXS) $< -o $<.test;
 	$(HIDE)./$<.test
 
 #######################################################################
