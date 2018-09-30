@@ -91,5 +91,16 @@ val modify_summary : frozen -> 'a Dyn.tag -> 'a -> frozen
 val project_from_summary : frozen -> 'a Dyn.tag -> 'a
 val remove_from_summary : frozen -> 'a Dyn.tag -> frozen
 
+(** Functional summaries *)
+
+type functional_summaries
+
+val declare_functional_summary : name:string -> 'a -> 'a Dyn.tag
+val get_functional_summaries : unit -> functional_summaries
+val save_functional_summaries : functional_summaries -> unit
+val project_from_functional_summary : functional_summaries -> 'a Dyn.tag -> 'a
+val lift_functional_summary : 'a Dyn.tag -> ('a -> 'a) -> functional_summaries -> functional_summaries
+val modify_functional_summary : (functional_summaries -> functional_summaries) -> unit
+
 (** {6 Debug} *)
 val dump : unit -> (int * string) list

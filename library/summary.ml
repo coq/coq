@@ -23,6 +23,7 @@ type 'a summary_declaration = {
 
 let sum_mod = ref None
 let sum_map = ref String.Map.empty
+let fsum_map = ref String.Map.empty
 
 let mangle id = id ^ "-SUMMARY"
 let unmangle id = String.(sub id 0 (length id - 8))
@@ -165,3 +166,32 @@ let ref ?(freeze=fun x -> x) ~name init =
 end
 
 let dump = Dyn.dump
+
+(** Functional summaries *)
+
+type functional_summaries = Dyn.t String.Map.t
+
+let declare_functional_summary ~name v =
+  let () = if String.Map.mem name !fsum_map then
+      anomaly ~label:"Summary.declare_summary"
+        (str "Colliding summary names: " ++ str name ++ str " vs. " ++ str name ++ str ".") in
+  let infun, outfun, tag = Dyn.Easy.make_dyn_tag (mangle name) in
+  fsum_map := String.Map.add name (infun v) !fsum_map;
+  tag
+
+let get_functional_summaries () = !fsum_map
+
+let save_functional_summaries x = fsum_map := x
+
+let project_from_functional_summary summaries tag =
+  let id = unmangle (Dyn.repr tag) in
+  let state = String.Map.find id summaries in
+  Option.get (Dyn.Easy.prj state tag)
+
+let lift_functional_summary tag f summaries =
+  let id = unmangle (Dyn.repr tag) in
+  let a = Option.get (Dyn.Easy.prj (String.Map.find id summaries) tag) in
+  String.Map.set id (Dyn.Easy.inj (f a) tag) summaries
+
+let modify_functional_summary f =
+  fsum_map := f !fsum_map

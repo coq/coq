@@ -21,6 +21,9 @@ type 'a object_declaration = {
   cache_function : object_name * 'a -> unit;
   load_function : int -> object_name * 'a -> unit;
   open_function : int -> object_name * 'a -> unit;
+  cache_sps_function : object_name * 'a -> Summary.functional_summaries -> Summary.functional_summaries;
+  load_sps_function : int -> object_name * 'a -> Summary.functional_summaries -> Summary.functional_summaries;
+  open_sps_function : int -> object_name * 'a -> Summary.functional_summaries -> Summary.functional_summaries;
   classify_function : 'a -> 'a substitutivity;
   subst_function : Mod_subst.substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
@@ -31,6 +34,9 @@ let default_object s = {
   cache_function = (fun _ -> ());
   load_function = (fun _ _ -> ());
   open_function = (fun _ _ -> ());
+  cache_sps_function = (fun _ x -> x);
+  load_sps_function = (fun _ _ x -> x);
+  open_sps_function = (fun _ _ x -> x);
   subst_function = (fun _ ->
     CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!"));
   classify_function = (fun obj -> Keep obj);
@@ -57,6 +63,9 @@ type dynamic_object_declaration = {
   dyn_cache_function : object_name * obj -> unit;
   dyn_load_function : int -> object_name * obj -> unit;
   dyn_open_function : int -> object_name * obj -> unit;
+  dyn_cache_sps_function : object_name * obj -> Summary.functional_summaries -> Summary.functional_summaries;
+  dyn_load_sps_function : int -> object_name * obj -> Summary.functional_summaries -> Summary.functional_summaries;
+  dyn_open_sps_function : int -> object_name * obj -> Summary.functional_summaries -> Summary.functional_summaries;
   dyn_subst_function : Mod_subst.substitution * obj -> obj;
   dyn_classify_function : obj -> obj substitutivity;
   dyn_discharge_function : object_name * obj -> obj option;
@@ -73,6 +82,9 @@ let declare_object_full odecl =
   let cacher (oname,lobj) = odecl.cache_function (oname,outfun lobj)
   and loader i (oname,lobj) = odecl.load_function i (oname,outfun lobj)
   and opener i (oname,lobj) = odecl.open_function i (oname,outfun lobj)
+  and cacher_sps (oname,lobj) = odecl.cache_sps_function (oname,outfun lobj)
+  and loader_sps i (oname,lobj) = odecl.load_sps_function i (oname,outfun lobj)
+  and opener_sps i (oname,lobj) = odecl.open_sps_function i (oname,outfun lobj)
   and substituter (sub,lobj) = infun (odecl.subst_function (sub,outfun lobj))
   and classifier lobj = match odecl.classify_function (outfun lobj) with
   | Dispose -> Dispose
@@ -86,6 +98,9 @@ let declare_object_full odecl =
   Hashtbl.add cache_tab na { dyn_cache_function = cacher;
 			     dyn_load_function = loader;
                              dyn_open_function = opener;
+                             dyn_cache_sps_function = cacher_sps;
+                             dyn_load_sps_function = loader_sps;
+                             dyn_open_sps_function = opener_sps;
 			     dyn_subst_function = substituter;
 			     dyn_classify_function = classifier;
 			     dyn_discharge_function = discharge;
@@ -114,6 +129,15 @@ let load_object i ((_,lobj) as node) =
 
 let open_object i ((_,lobj) as node) =
   apply_dyn_fun (fun d -> d.dyn_open_function i node) lobj
+
+let cache_sps_object ((_,lobj) as node) =
+  apply_dyn_fun (fun d -> d.dyn_cache_sps_function node) lobj
+
+let load_sps_object i ((_,lobj) as node) =
+  apply_dyn_fun (fun d -> d.dyn_load_sps_function i node) lobj
+
+let open_sps_object i ((_,lobj) as node) =
+  apply_dyn_fun (fun d -> d.dyn_open_sps_function i node) lobj
 
 let subst_object ((_,lobj) as node) = 
   apply_dyn_fun (fun d -> d.dyn_subst_function node) lobj

@@ -37,11 +37,17 @@ type lib_objects =  (Names.Id.t * obj) list
 let module_kind is_type =
   if is_type then "module type" else "module"
 
-let iter_objects f i prefix =
-  List.iter (fun (id,obj) -> f i (make_oname prefix id, obj))
+let iter_objects f f' i prefix =
+  List.iter (fun (id,obj) ->
+      let o = (make_oname prefix id, obj) in
+      f i o;
+      Summary.save_functional_summaries (f' i o (Summary.get_functional_summaries ())))
 
-let load_objects i pr = iter_objects load_object i pr
-let open_objects i pr = iter_objects open_object i pr
+let load_objects i pr =
+  iter_objects load_object load_sps_object i pr
+
+let open_objects i pr =
+  iter_objects open_object open_sps_object i pr
 
 let subst_objects subst seg = 
   let subst_one = fun (id,obj as node) ->
@@ -228,13 +234,15 @@ let add_discharged_leaf id obj =
   let oname = make_oname id in
   let newobj = rebuild_object obj in
   cache_object (oname,newobj);
+  Summary.save_functional_summaries (cache_sps_object (oname,newobj) (Summary.get_functional_summaries ()));
   add_entry oname (Leaf newobj)
 
 let add_leaves id objs =
   let oname = make_oname id in
   let add_obj obj =
     add_entry oname (Leaf obj);
-    load_object 1 (oname,obj)
+    load_object 1 (oname,obj);
+    Summary.save_functional_summaries (load_sps_object 1 (oname,obj) (Summary.get_functional_summaries ()));
   in
   List.iter add_obj objs;
   oname
@@ -249,6 +257,13 @@ let add_anonymous_leaf ?(cache_first = true) obj =
     add_entry oname (Leaf obj);
     cache_object (oname,obj)
   end
+
+let add_anonymous_sps_leaf obj fs =
+  let id = anonymous_id () in
+  let oname = make_oname id in
+  let fs = cache_sps_object (oname,obj) fs in
+  add_entry oname (Leaf obj);
+  fs
 
 (* Modules. *)
 

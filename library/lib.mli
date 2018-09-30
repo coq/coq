@@ -57,6 +57,9 @@ val add_leaf : Id.t -> Libobject.obj -> Libnames.object_name
 val add_anonymous_leaf : ?cache_first:bool -> Libobject.obj -> unit
 val pull_to_head : Libnames.object_name -> unit
 
+val add_anonymous_sps_leaf : Libobject.obj ->
+  Summary.functional_summaries -> Summary.functional_summaries
+
 (** this operation adds all objects with the same name and calls [load_object]
    for each of them *)
 val add_leaves : Id.t -> Libobject.obj list -> Libnames.object_name

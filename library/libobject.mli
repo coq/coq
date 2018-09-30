@@ -10,6 +10,7 @@
 
 open Libnames
 open Mod_subst
+open Summary
 
 (** [Libobject] declares persistent objects, given with methods:
 
@@ -71,6 +72,9 @@ type 'a object_declaration = {
   cache_function : object_name * 'a -> unit;
   load_function : int -> object_name * 'a -> unit;
   open_function : int -> object_name * 'a -> unit;
+  cache_sps_function : object_name * 'a -> functional_summaries -> functional_summaries;
+  load_sps_function : int -> object_name * 'a -> functional_summaries -> functional_summaries;
+  open_sps_function : int -> object_name * 'a -> functional_summaries -> functional_summaries;
   classify_function : 'a -> 'a substitutivity;
   subst_function :  substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
@@ -108,6 +112,9 @@ val object_tag : obj -> string
 val cache_object : object_name * obj -> unit
 val load_object : int -> object_name * obj -> unit
 val open_object : int -> object_name * obj -> unit
+val cache_sps_object : object_name * obj -> functional_summaries -> functional_summaries
+val load_sps_object : int -> object_name * obj -> functional_summaries -> functional_summaries
+val open_sps_object : int -> object_name * obj -> functional_summaries -> functional_summaries
 val subst_object : substitution * obj -> obj
 val classify_object : obj -> obj substitutivity
 val discharge_object : object_name * obj -> obj option
