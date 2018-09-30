@@ -67,6 +67,8 @@ type frozen = {
   (** Special handling of the ml_module summary. *)
 }
 
+type summaries = frozen
+
 let empty_frozen = { summaries = String.Map.empty; ml_module = None }
 
 let freeze_summaries ~marshallable : frozen =

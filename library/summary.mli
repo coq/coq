@@ -80,6 +80,8 @@ val nop : unit -> unit
 
 type frozen
 
+type summaries = frozen
+
 val empty_frozen : frozen
 val freeze_summaries : marshallable:marshallable -> frozen
 val unfreeze_summaries : ?partial:bool -> frozen -> unit
