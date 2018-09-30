@@ -146,6 +146,9 @@ val close_section : unit -> unit
 
 type frozen
 
+val add_anonymous_sps_leaf : Libobject.obj ->
+  frozen * Summary.summaries -> frozen * Summary.summaries
+
 val freeze : marshallable:Summary.marshallable -> frozen
 val unfreeze : frozen -> unit
 

@@ -262,6 +262,14 @@ let add_anonymous_leaf ?(cache_first = true) obj =
     cache_object (oname,obj)
   end
 
+let add_anonymous_sps_leaf obj (fl,fs) =
+  let id = Names.Id.of_string ("_" ^ string_of_int fl.counter) in
+  let oname = Libnames.make_oname fl.path_prefix id in
+  let fs = cache_sps_object (oname,obj) fs in
+  let fl = { fl with lib_stk = (oname,Leaf obj) :: fl.lib_stk;
+                     counter = fl.counter } in
+  (fl,fs)
+
 (* Modules. *)
 
 let is_opening_node = function
