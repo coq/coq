@@ -30,6 +30,8 @@ val get_state : unit -> state
 
 val modify_state_tag : 'a Summary.Dyn.tag -> ('a -> 'a) -> unit
 
+val modify_state : (state -> state) -> unit
+
 val add_anonymous_sps_leaf : Libobject.obj -> state -> state
 
 (** {6 Rollback } *)

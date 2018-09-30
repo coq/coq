@@ -36,6 +36,9 @@ let modify_state_tag tag f =
   let (fl,fs) = freeze ~marshallable:`No in
   unfreeze (fl,Summary.modify_summary fs tag (f (Summary.project_from_summary fs tag)))
 
+let modify_state f =
+  unfreeze (f (freeze ~marshallable:`No))
+
 let add_anonymous_sps_leaf = Lib.add_anonymous_sps_leaf
 
 (* Rollback. *)
