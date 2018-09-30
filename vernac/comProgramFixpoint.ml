@@ -216,7 +216,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
         let gr = ConstRef c in
         let () = UnivNames.register_universe_binders gr (Evd.universe_binders sigma) in
         if Impargs.is_implicit_args () || not (List.is_empty impls) then
-          Impargs.declare_manual_implicits false gr [impls]
+          States.modify_state (Impargs.declare_manual_implicits false gr [impls])
       in
       let typ = it_mkProd_or_LetIn top_arity binders in
       hook, name, typ
@@ -224,7 +224,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
       let typ = it_mkProd_or_LetIn top_arity binders_rel in
       let hook sigma l gr _ =
         if Impargs.is_implicit_args () || not (List.is_empty impls) then
-          Impargs.declare_manual_implicits false gr [impls]
+          States.modify_state (Impargs.declare_manual_implicits false gr [impls])
       in hook, recname, typ
   in
   (* XXX: Capturing sigma here... bad bad *)

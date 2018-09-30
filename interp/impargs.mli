@@ -104,11 +104,11 @@ val compute_implicits_names : env -> Evd.evar_map -> types -> Name.t list
 
 (** {6 Computation of implicits (done using the global environment). } *)
 
-val declare_var_implicits : variable -> unit
-val declare_constant_implicits : Constant.t -> unit
-val declare_mib_implicits : MutInd.t -> unit
+val declare_var_implicits : variable -> States.state -> States.state
+val declare_constant_implicits : Constant.t -> States.state -> States.state
+val declare_mib_implicits : MutInd.t -> States.state -> States.state
 
-val declare_implicits : bool -> GlobRef.t -> unit
+val declare_implicits : bool -> GlobRef.t -> States.state -> States.state
 
 (** [declare_manual_implicits local ref enriching l]
    Manual declaration of which arguments are expected implicit.
@@ -117,12 +117,12 @@ val declare_implicits : bool -> GlobRef.t -> unit
    Unsets implicits if [l] is empty. *)
 
 val declare_manual_implicits : bool -> GlobRef.t -> ?enriching:bool ->
-  manual_implicits list -> unit
+  manual_implicits list -> States.state -> States.state
 
 (** If the list is empty, do nothing, otherwise declare the implicits. *)
 
 val maybe_declare_manual_implicits : bool -> GlobRef.t -> ?enriching:bool ->
-  manual_implicits -> unit
+  manual_implicits -> States.state -> States.state
 
 val implicits_of_global : impargs_state -> GlobRef.t -> implicits_list list
 

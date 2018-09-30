@@ -1075,10 +1075,11 @@ let vernac_declare_implicits ~atts r l =
   let local = make_section_locality atts.locality in
   match l with
   | [] ->
-      Impargs.declare_implicits local (smart_global r)
+      States.modify_state (Impargs.declare_implicits local (smart_global r))
   | _::_ as imps ->
-      Impargs.declare_manual_implicits local (smart_global r) ~enriching:false
-	(List.map (List.map (fun (ex,b,f) -> ex, (b,true,f))) imps)
+      States.modify_state
+        (Impargs.declare_manual_implicits local (smart_global r) ~enriching:false
+        (List.map (List.map (fun (ex,b,f) -> ex, (b,true,f))) imps))
 
 let warn_arguments_assert =
   CWarnings.create ~name:"arguments-assert" ~category:"vernacular"

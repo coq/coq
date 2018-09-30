@@ -73,7 +73,7 @@ match local with
   let decl = (ParameterEntry (None,(c,ctx),inl), IsAssumption kind) in
   let kn = declare_constant ident ~local decl in
   let gr = ConstRef kn in
-  let () = maybe_declare_manual_implicits false gr imps in
+  let () = States.modify_state (maybe_declare_manual_implicits false gr imps) in
   let () = Declare.declare_univ_binders gr pl in
   let () = assumption_message ident in
   let () = if do_instance then Typeclasses.declare_instance None false gr in

@@ -425,7 +425,7 @@ let start_proof_with_initialization kind sigma decl recguard thms snl hook =
             List.map_i (save_remaining_recthms kind norm uctx body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
-	  maybe_declare_manual_implicits false ref imps;
+          States.modify_state (maybe_declare_manual_implicits false ref imps);
 	  call_hook (fun exn -> exn) hook strength ref) thms_data in
       start_proof_univs id ~pl:decl kind sigma t ?init_tac (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard
 

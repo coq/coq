@@ -374,7 +374,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
                   raise (NotDefinable (BadTypedProj (fid,ctx,te))) 
 	    in
 	    let refi = ConstRef kn in
-	    Impargs.maybe_declare_manual_implicits false refi impls;
+            States.modify_state (Impargs.maybe_declare_manual_implicits false refi impls);
 	    if coe then begin
 	      let cl = Class.class_of_global (IndRef indsp) in
 	        Class.try_add_new_coercion_with_source refi ~local:false poly ~source:cl
@@ -503,9 +503,10 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
         (DefinitionEntry proj_entry, IsDefinition Definition)
       in
       let cref = ConstRef cst in
-      Impargs.declare_manual_implicits false cref [paramimpls];
       UnivNames.register_universe_binders cref ubinders;
-      Impargs.declare_manual_implicits false (ConstRef proj_cst) [List.hd fieldimpls];
+      States.modify_state
+          (Impargs.declare_manual_implicits false cref [paramimpls] %>
+           Impargs.declare_manual_implicits false (ConstRef proj_cst) [List.hd fieldimpls]);
       UnivNames.register_universe_binders (ConstRef proj_cst) ubinders;
       Classes.set_typeclass_transparency (EvalConstRef cst) false false;
       let sub = match List.hd coers with

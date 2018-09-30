@@ -543,13 +543,12 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
   List.iteri (fun i (indimpls, constrimpls) ->
               let ind = (mind,i) in
               let gr = IndRef ind in
-              maybe_declare_manual_implicits false gr indimpls;
               Declare.declare_univ_binders gr pl;
-              List.iteri
-                (fun j impls ->
-                 maybe_declare_manual_implicits false
-                    (ConstructRef (ind, succ j)) impls)
-                constrimpls)
+              States.modify_state
+                (maybe_declare_manual_implicits false gr indimpls %>
+                 List.fold_right_i (fun j impls ->
+                  maybe_declare_manual_implicits false
+                    (ConstructRef (ind, succ j)) impls) 0 (List.rev constrimpls)))
       impls;
   let warn_prim = match mie.mind_entry_record with Some (Some _) -> not prim | _ -> false in
   Flags.if_verbose Feedback.msg_info (minductive_message warn_prim names);

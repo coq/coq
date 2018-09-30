@@ -126,7 +126,7 @@ let declare_scheme = ref (fun _ _ -> assert false)
 let set_declare_scheme f = declare_scheme := f
 
 let update_tables c =
-  declare_constant_implicits c;
+  States.modify_state (declare_constant_implicits c);
   Heads.declare_head (EvalConstRef c);
   Notation.declare_ref_arguments_scope Evd.empty (ConstRef c)
 
@@ -264,7 +264,7 @@ let inVariable : variable_obj -> obj =
 (* for initial declaration *)
 let declare_variable id obj =
   let oname = add_leaf id (inVariable (Inr (id,obj))) in
-  declare_var_implicits id;
+  States.modify_state (declare_var_implicits id);
   Notation.declare_ref_arguments_scope Evd.empty (VarRef id);
   Heads.declare_head (EvalVarRef id);
   oname
@@ -412,7 +412,7 @@ let declare_mind mie =
   let (sp,kn as oname) = add_leaf id (inInductive mie) in
   let mind = Global.mind_of_delta_kn kn in
   let isprim = declare_projections mie.mind_entry_universes mind in
-  declare_mib_implicits mind;
+  States.modify_state (declare_mib_implicits mind);
   declare_inductive_argument_scopes mind mie;
   oname, isprim
 

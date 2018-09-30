@@ -530,10 +530,12 @@ let implicits_of_global state ref =
     with Not_found -> l
   with Not_found -> [DefaultImpArgs,[]]
 
-let cache_implicits_decl (ref,imps) =
-  States.modify_state_tag implicits_tag (fun s -> GlobRef.Map.add ref imps s)
+let cache_implicits_decl (ref,imps) state =
+  Summary.modify_summary state implicits_tag
+    (GlobRef.Map.add ref imps (Summary.project_from_summary state implicits_tag))
 
-let load_implicits _ (_,(_,l)) = List.iter cache_implicits_decl l
+let load_implicits _ (_,(_,l)) =
+  List.fold_right cache_implicits_decl l
 
 let cache_implicits o =
   load_implicits 1 o
@@ -634,8 +636,8 @@ type implicits_obj =
 
 let inImplicits : implicits_obj -> obj =
   declare_object {(default_object "IMPLICITS") with
-    cache_function = cache_implicits;
-    load_function = load_implicits;
+    cache_sps_function = cache_implicits;
+    load_sps_function = load_implicits;
     subst_function = subst_implicits;
     classify_function = classify_implicits;
     discharge_function = discharge_implicits;
@@ -645,7 +647,7 @@ let is_local local ref = local || isVarRef ref && is_in_section ref
 
 let declare_implicits_gen req flags ref =
   let imps = compute_global_implicits flags ref in
-  add_anonymous_leaf (inImplicits (req,[ref,imps]))
+  States.add_anonymous_sps_leaf (inImplicits (req,[ref,imps]))
 
 let declare_implicits local ref =
   let flags = { !implicit_args with auto = true } in
@@ -666,7 +668,7 @@ let declare_mib_implicits kn =
   let imps = Array.map_to_list
     (fun (ind,cstrs) -> ind::(Array.to_list cstrs))
     (compute_mib_implicits flags kn) in
-    add_anonymous_leaf
+    States.add_anonymous_sps_leaf
       (inImplicits (ImplMutualInductive (kn,flags),List.flatten imps))
 
 (* Declare manual implicits *)
@@ -720,11 +722,11 @@ let declare_manual_implicits local ref ?enriching l =
   let req =
     if is_local local ref then ImplLocal
     else ImplInteractive(ref,flags,ImplManual (List.length autoimpls))
-  in add_anonymous_leaf (inImplicits (req,[ref,l']))
+  in States.add_anonymous_sps_leaf (inImplicits (req,[ref,l']))
 
 let maybe_declare_manual_implicits local ref ?enriching l =
   match l with
-  | [] -> ()
+  | [] -> fun x -> x
   | _ -> declare_manual_implicits local ref ?enriching [l]
 
 let extract_impargs_data impls =

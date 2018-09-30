@@ -165,7 +165,7 @@ VERNAC COMMAND FUNCTIONAL EXTEND Ssrpreneximplicits CLASSIFIED AS SIDEFF
   -> [ fun ~atts ~st ->
          let open Vernacinterp in
          let locality = Locality.make_section_locality atts.locality in
-         List.iter (declare_one_prenex_implicit locality) fl;
+         States.modify_state (List.fold_right (declare_one_prenex_implicit locality) fl);
          st
      ]
 END

@@ -108,7 +108,7 @@ let id_of_class cl =
 open Pp
 
 let instance_hook k info global imps ?hook cst =
-  Impargs.maybe_declare_manual_implicits false cst ~enriching:false imps;
+  States.modify_state (Impargs.maybe_declare_manual_implicits false cst ~enriching:false imps);
   let info = intern_info info in
   Typeclasses.declare_instance (Some info) (not global) cst;
   (match hook with Some h -> h cst | None -> ())
@@ -300,7 +300,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
             if program_mode then
 	      let hook vis gr _ =
 		let cst = match gr with ConstRef kn -> kn | _ -> assert false in
-                  Impargs.declare_manual_implicits false gr ~enriching:false [imps];
+                  States.modify_state (Impargs.declare_manual_implicits false gr ~enriching:false [imps]);
                   let pri = intern_info pri in
 		  Typeclasses.declare_instance (Some pri) (not global) (ConstRef cst)
 	      in
