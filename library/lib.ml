@@ -99,12 +99,14 @@ type lib_state = {
   comp_name   : DirPath.t option;
   lib_stk     : library_segment;
   path_prefix : object_prefix;
+  counter     : int;
 }
 
 let initial_lib_state = {
   comp_name   = None;
   lib_stk     = [];
   path_prefix = initial_prefix;
+  counter     = 0;
 }
 
 let lib_state = ref initial_lib_state
@@ -209,9 +211,10 @@ let add_entry sp node =
 let pull_to_head oname =
   lib_state := { !lib_state with lib_stk = (oname,List.assoc oname !lib_state.lib_stk) :: List.remove_assoc oname !lib_state.lib_stk }
 
-let anonymous_id =
-  let n = ref 0 in
-  fun () -> incr n; Names.Id.of_string ("_" ^ (string_of_int !n))
+let anonymous_id () =
+  let n = !lib_state.counter + 1 in
+  lib_state := { !lib_state with counter = n};
+  Names.Id.of_string ("_" ^ (string_of_int n))
 
 let add_anonymous_entry node =
   add_entry (make_oname (anonymous_id ())) node
