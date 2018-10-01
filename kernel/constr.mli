@@ -241,6 +241,11 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
 val kind : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
 val of_kind : (constr, types, Sorts.t, Univ.Instance.t) kind_of_term -> constr
 
+val kind_nocast_gen : ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
+  ('v -> ('v, 'v, 'sort, 'univs) kind_of_term)
+
+val kind_nocast : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
+
 (** {6 Simple case analysis} *)
 val isRel  : constr -> bool
 val isRelN : int -> constr -> bool
@@ -518,50 +523,50 @@ val iter_with_binders :
 val fold_constr_with_binders :
   ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
 
-type constr_compare_fn = int -> constr -> constr -> bool
+type 'constr constr_compare_fn = int -> 'constr -> 'constr -> bool
 
 (** [compare_head f c1 c2] compare [c1] and [c2] using [f] to compare
    the immediate subterms of [c1] of [c2] if needed; Cast's, binders
    name and Cases annotations are not taken into account *)
 
-val compare_head : constr_compare_fn -> constr_compare_fn
+val compare_head : constr constr_compare_fn -> constr constr_compare_fn
 
 (** Convert a global reference applied to 2 instances. The int says
    how many arguments are given (as we can only use cumulativity for
    fully applied inductives/constructors) .*)
-type instance_compare_fn = GlobRef.t -> int ->
-  Univ.Instance.t -> Univ.Instance.t -> bool
+type 'univs instance_compare_fn = GlobRef.t -> int ->
+  'univs -> 'univs -> bool
 
 (** [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to
    compare the immediate subterms of [c1] of [c2] if needed, [u] to
    compare universe instances, [s] to compare sorts; Cast's, binders
    name and Cases annotations are not taken into account *)
 
-val compare_head_gen : instance_compare_fn ->
+val compare_head_gen : Univ.Instance.t instance_compare_fn ->
   (Sorts.t -> Sorts.t -> bool) ->
-  constr_compare_fn ->
-  constr_compare_fn
+  constr constr_compare_fn ->
+  constr constr_compare_fn
 
 val compare_head_gen_leq_with :
-  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
-  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
-  instance_compare_fn ->
-  (Sorts.t -> Sorts.t -> bool) ->
-  constr_compare_fn ->
-  constr_compare_fn ->
-  constr_compare_fn
+  ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
+  ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
+  'univs instance_compare_fn ->
+  ('sort -> 'sort -> bool) ->
+  'v constr_compare_fn ->
+  'v constr_compare_fn ->
+  'v constr_compare_fn
 
 (** [compare_head_gen_with k1 k2 u s f c1 c2] compares [c1] and [c2]
     like [compare_head_gen u s f c1 c2], except that [k1] (resp. [k2])
     is used,rather than {!kind}, to expose the immediate subterms of
     [c1] (resp. [c2]). *)
 val compare_head_gen_with :
-  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
-  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
-  instance_compare_fn ->
-  (Sorts.t -> Sorts.t -> bool) ->
-  constr_compare_fn ->
-  constr_compare_fn
+  ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
+  ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
+  'univs instance_compare_fn ->
+  ('sort -> 'sort -> bool) ->
+  'v constr_compare_fn ->
+  'v constr_compare_fn
 
 (** [compare_head_gen_leq u s f fle c1 c2] compare [c1] and [c2] using
     [f] to compare the immediate subterms of [c1] of [c2] for
@@ -570,11 +575,11 @@ val compare_head_gen_with :
     [s] to compare sorts for for subtyping; Cast's, binders name and
     Cases annotations are not taken into account *)
 
-val compare_head_gen_leq : instance_compare_fn ->
+val compare_head_gen_leq : Univ.Instance.t instance_compare_fn ->
   (Sorts.t -> Sorts.t -> bool) ->
-  constr_compare_fn ->
-  constr_compare_fn ->
-  constr_compare_fn
+  constr constr_compare_fn ->
+  constr constr_compare_fn ->
+  constr constr_compare_fn
 
 (** {6 Hashconsing} *)
 
