@@ -143,7 +143,7 @@ let _ =
   at_declare_ml_module enable_prim_token_interpretation
     { pt_local = false;
       pt_scope = r_scope;
-      pt_uid = r_scope;
+      pt_interp_info = Uid r_scope;
       pt_required = (r_path,["Coq";"Reals";"Rdefinitions"]);
       pt_refs = [glob_IZR];
       pt_in_match = false }

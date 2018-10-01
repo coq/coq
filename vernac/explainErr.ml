@@ -64,6 +64,8 @@ let process_vernac_interp_error exn = match fst exn with
       wrap_vernac_error exn (Himsg.explain_type_error ctx Evd.empty te)
   | PretypeError(ctx,sigma,te) ->
       wrap_vernac_error exn (Himsg.explain_pretype_error ctx sigma te)
+  | Notation.NumeralNotationError(ctx,sigma,te) ->
+      wrap_vernac_error exn (Himsg.explain_numeral_notation_error ctx sigma te)
   | Typeclasses_errors.TypeClassError(env, te) ->
       wrap_vernac_error exn (Himsg.explain_typeclass_error env te)
   | Implicit_quantifiers.MismatchedContextInstance(e,c,l,x) ->
