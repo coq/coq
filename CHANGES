@@ -180,6 +180,8 @@ Vernacular Commands
   scope. If you want the previous behavior, use `Global Set SsrHave
   NoTCResolution`.
 - Multiple sections with the same name are allowed.
+- Combined Scheme can now work when inductive schemes are generated in sort
+  Type. It used to be limited to sort Prop.
 
 Coq binaries and process model
 
