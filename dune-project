@@ -1,3 +1,3 @@
-(lang dune 1.1)
+(lang dune 1.2)
 
-(name coq-devel)
+(name coq)
