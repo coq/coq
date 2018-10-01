@@ -273,7 +273,6 @@ let add_constraints_list cst senv =
   List.fold_left (fun acc c -> add_constraints c acc) senv cst
 
 let push_context_set poly ctx = add_constraints (Now (poly,ctx))
-let push_context poly ctx = add_constraints (Now (poly,Univ.ContextSet.of_context ctx))
 
 let is_curmod_library senv =
   match senv.modvariant with LIBRARY -> true | _ -> false

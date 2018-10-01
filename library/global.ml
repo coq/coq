@@ -86,7 +86,6 @@ let push_named_assum a = globalize0 (Safe_typing.push_named_assum a)
 let push_named_def d = globalize0 (Safe_typing.push_named_def d)
 let add_constraints c = globalize0 (Safe_typing.add_constraints c)
 let push_context_set b c = globalize0 (Safe_typing.push_context_set b c)
-let push_context b c = globalize0 (Safe_typing.push_context b c)
 
 let set_engagement c = globalize0 (Safe_typing.set_engagement c)
 let set_typing_flags c = globalize0 (Safe_typing.set_typing_flags c)

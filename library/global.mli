@@ -49,7 +49,6 @@ val add_mind :
 (** Extra universe constraints *)
 val add_constraints : Univ.Constraint.t -> unit
 
-val push_context : bool -> Univ.UContext.t -> unit
 val push_context_set : bool -> Univ.ContextSet.t -> unit
 
 (** Non-interactive modules and module types *)
