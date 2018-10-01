@@ -75,7 +75,7 @@ module State = struct
   type t = {
     doc : Stm.doc;
     sid : Stateid.t;
-    proof : Proof.t option;
+    proof : Proof_global.t option;
     time : bool;
   }
 
@@ -101,8 +101,12 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
          it otherwise reveals bugs *)
       (* Stm.observe nsid; *)
       let ndoc = if check then Stm.finish ~doc else doc in
-      let new_proof = Proof_global.give_me_the_proof_opt () in
-      { state with doc = ndoc; sid = nsid; proof = new_proof; }
+      let proof =
+        match Stm.state_of_id ~doc:state.doc state.sid with
+        | `Valid ( Some { Vernacstate.proof } ) -> proof
+        | _ -> None
+      in
+      { state with doc = ndoc; sid = nsid; proof; }
     with reraise ->
       (* XXX: In non-interactive mode edit_at seems to do very weird
          things, so we better avoid it while we investigate *)

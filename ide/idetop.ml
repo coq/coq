@@ -204,13 +204,19 @@ let export_pre_goals pgs =
     Interface.given_up_goals = pgs.Proof.given_up_goals
   }
 
+let pstate_of_doc ~doc =
+  match Stm.(state_of_id ~doc (get_current_state ~doc)) with
+  | `Valid ( Some { Vernacstate.proof } ) -> proof
+  | _ -> None
+
 let goals () =
   let doc = get_doc () in
   set_doc @@ Stm.finish ~doc;
-  try
-    let newp = Proof_global.give_me_the_proof () in
+  let pstate = pstate_of_doc ~doc in
+  Option.map (fun pstate ->
+    let newp = Proof_global.give_me_the_proof pstate in
     if Proof_diffs.show_diffs () then begin
-      let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
+      let oldp = Stm.(get_prev_proof ~doc (get_current_state ~doc)) in
       let diff_goal_map = Proof_diffs.make_goal_map oldp newp in
 
       let process_goal_diffs nsigma ng =
@@ -225,26 +231,27 @@ let goals () =
         let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal_ide og_s ng nsigma in
         { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp; Interface.goal_id = Goal.uid ng }
       in
-      Some (export_pre_goals (Proof.map_structured_proof newp process_goal_diffs))
+      export_pre_goals (Proof.map_structured_proof newp process_goal_diffs)
     end else
-      Some (export_pre_goals (Proof.map_structured_proof newp process_goal))
-  with Proof_global.NoCurrentProof -> None;;
+      export_pre_goals (Proof.map_structured_proof newp process_goal)
+    ) pstate
 
 let evars () =
-  try
-    let doc = get_doc () in
-    set_doc @@ Stm.finish ~doc;
-    let pfts = Proof_global.give_me_the_proof () in
+  let doc = get_doc () in
+  set_doc @@ Stm.finish ~doc;
+  pstate_of_doc ~doc |>
+  Option.map (fun pstate ->
+    let pfts = Proof_global.give_me_the_proof pstate in
     let all_goals, _, _, _, sigma = Proof.proof pfts in
     let exl = Evar.Map.bindings (Evd.undefined_map sigma) in
     let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar sigma ev); } in
-    let el = List.map map_evar exl in
-    Some el
-  with Proof_global.NoCurrentProof -> None
+    List.map map_evar exl)
 
 let hints () =
-  try
-    let pfts = Proof_global.give_me_the_proof () in
+  let doc = get_doc () in
+  pstate_of_doc ~doc |>
+  Option.map (fun pstate ->
+    let pfts = Proof_global.give_me_the_proof pstate in
     let all_goals, _, _, _, sigma = Proof.proof pfts in
     match all_goals with
     | [] -> None
@@ -253,8 +260,7 @@ let hints () =
       let get_hint_hyp env d accu = hyp_next_tac sigma env d :: accu in
       let hint_hyps = List.rev (Environ.fold_named_context get_hint_hyp env ~init: []) in
       Some (hint_hyps, concl_next_tac)
-  with Proof_global.NoCurrentProof -> None
-
+    ) |> Option.flatten
 
 (** Other API calls *)
 
@@ -273,12 +279,15 @@ let status force =
     let l = Names.DirPath.repr (Lib.cwd ()) in
     List.rev_map Names.Id.to_string l
   in
+  let doc = get_doc () in
+  let pstate = pstate_of_doc ~doc in
+
   let proof =
-    try Some (Names.Id.to_string (Proof_global.get_current_proof_name ()))
-    with Proof_global.NoCurrentProof -> None
+    Option.map (fun pstate ->
+        Names.Id.to_string (Proof_global.get_current_proof_name pstate)) pstate
   in
   let allproofs =
-    let l = Proof_global.get_all_proof_names () in
+    let l = Option.cata Proof_global.get_all_proof_names [] pstate in
     List.map Names.Id.to_string l
   in
   {
@@ -326,7 +335,9 @@ let import_search_constraint = function
   | Interface.Include_Blacklist -> Search.Include_Blacklist
 
 let search flags =
-  List.map export_coq_object (Search.interface_search (
+  let doc = get_doc () in
+  let pstate = pstate_of_doc ~doc in
+  List.map export_coq_object (Search.interface_search ~pstate (
     List.map (fun (c, b) -> (import_search_constraint c, b)) flags)
   )
 

@@ -19,7 +19,7 @@ let top_stderr x =
  * entered to be able to report errors without pretty-printing. *)
 
 type input_buffer = {
-  mutable prompt : Stm.doc -> string;
+  mutable prompt : Vernac.State.t -> string;
   mutable str : Bytes.t; (* buffer of already read characters *)
   mutable len : int;    (* number of chars in the buffer *)
   mutable bols : int list; (* offsets in str of beginning of lines *)
@@ -54,12 +54,12 @@ let emacs_prompt_endstring   () = if !print_emacs then "</prompt>" else ""
 
 (* Read a char in an input channel, displaying a prompt at every
    beginning of line. *)
-let prompt_char doc ic ibuf count =
+let prompt_char st ic ibuf count =
   let bol = match ibuf.bols with
     | ll::_ -> Int.equal ibuf.len ll
     | [] -> Int.equal ibuf.len 0
   in
-  if bol && not !print_emacs then top_stderr (str (ibuf.prompt doc));
+  if bol && not !print_emacs then top_stderr (str (ibuf.prompt st));
   try
     let c = input_char ic in
     if c == '\n' then ibuf.bols <- (ibuf.len+1) :: ibuf.bols;
@@ -72,11 +72,11 @@ let prompt_char doc ic ibuf count =
 
 (* Reinitialize the char stream (after a Drop) *)
 
-let reset_input_buffer doc ic ibuf =
+let reset_input_buffer st ic ibuf =
   ibuf.str <- Bytes.empty;
   ibuf.len <- 0;
   ibuf.bols <- [];
-  ibuf.tokens <- Pcoq.Parsable.make (Stream.from (prompt_char doc ic ibuf));
+  ibuf.tokens <- Pcoq.Parsable.make (Stream.from (prompt_char st ic ibuf));
   ibuf.start <- 0
 
 (* Functions to print underlined locations from an input buffer. *)
@@ -189,11 +189,10 @@ end
 (*s The Coq prompt is the name of the focused proof, if any, and "Coq"
     otherwise. We trap all exceptions to prevent the error message printing
     from cycling. *)
-let make_prompt () =
-  try
-    (Names.Id.to_string (Proof_global.get_current_proof_name ())) ^ " < "
-  with Proof_global.NoCurrentProof ->
-    "Coq < "
+let make_prompt st =
+  Option.cata (fun st ->
+      Names.Id.to_string (Proof_global.get_current_proof_name st) ^ " < ")
+    "Coq < " st.Vernac.State.proof
 
 (* the coq prompt added to the default one when in emacs mode
    The prompt contains the current state label [n] (for global
@@ -203,7 +202,8 @@ let make_prompt () =
 
    "n |lem1|lem2|lem3| p < "
 *)
-let make_emacs_prompt doc =
+let make_emacs_prompt st =
+  let doc = st.Vernac.State.doc in
   let statnum = Stateid.to_string (Stm.get_current_state ~doc) in
   let dpth = Stm.current_proof_depth ~doc in
   let pending = Stm.get_all_proof_names ~doc in
@@ -219,10 +219,10 @@ let make_emacs_prompt doc =
  * initialized when a vernac command is immediately followed by "\n",
  * or after a Drop. *)
 let top_buffer =
-  let pr doc =
+  let pr st =
     emacs_prompt_startstring()
-    ^ make_prompt()
-    ^ make_emacs_prompt doc
+    ^ make_prompt st
+    ^ make_emacs_prompt st
     ^ emacs_prompt_endstring()
   in
   { prompt = pr;
@@ -234,7 +234,7 @@ let top_buffer =
 
 let set_prompt prompt =
   top_buffer.prompt
-  <- (fun doc ->
+  <- (fun st ->
     emacs_prompt_startstring()
     ^ prompt ()
     ^ emacs_prompt_endstring())
@@ -349,10 +349,11 @@ let print_anyway c =
 
    This is mostly a hack as we should protect printing in a more
    generic way, but that'll do for now *)
-let top_goal_print ~doc c oldp newp =
+let top_goal_print ~state c oldp newp =
   try
+    let doc = state.Vernac.State.doc in
     let proof_changed = not (Option.equal cproof oldp newp) in
-    let print_goals = proof_changed && Proof_global.there_are_pending_proofs () ||
+    let print_goals = proof_changed && not Option.(is_empty state.Vernac.State.proof) ||
                       print_anyway c in
     if not !Flags.quiet && print_goals then begin
       let dproof = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
@@ -372,7 +373,7 @@ let rec vernac_loop ~state =
   let open G_toplevel in
   loop_flush_all ();
   top_stderr (fnl());
-  if !print_emacs then top_stderr (str (top_buffer.prompt state.doc));
+  if !print_emacs then top_stderr (str (top_buffer.prompt state));
   resynch_buffer top_buffer;
   (* execute one command *)
   try
@@ -393,7 +394,9 @@ let rec vernac_loop ~state =
       else (Feedback.msg_warning (str "There is no ML toplevel."); vernac_loop ~state)
     | {v=VernacControl c; loc} ->
       let nstate = Vernac.process_expr ~state (make ?loc c) in
-      top_goal_print ~doc:state.doc c state.proof nstate.proof;
+      let oproof = Proof_global.(Option.map proof_of_state state.proof) in
+      let nproof = Proof_global.(Option.map proof_of_state nstate.proof) in
+      top_goal_print ~state c oproof nproof;
       vernac_loop ~state:nstate
   with
   | Stm.End_of_input ->
@@ -409,10 +412,9 @@ let rec vernac_loop ~state =
     vernac_loop ~state
 
 let rec loop ~state =
-  let open Vernac.State in
   Sys.catch_break true;
   try
-    reset_input_buffer state.doc stdin top_buffer;
+    reset_input_buffer state stdin top_buffer;
     vernac_loop ~state
   with
     | any ->

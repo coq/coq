@@ -174,8 +174,8 @@ let ensure_exists f =
 (* Compile a vernac file *)
 let compile opts ~echo ~f_in ~f_out =
   let open Vernac.State in
-  let check_pending_proofs () =
-    let pfs = Proof_global.get_all_proof_names () in
+  let check_pending_proofs st =
+    let pfs = Proof_global.get_all_proof_names st in
     if not (CList.is_empty pfs) then
       fatal_error (str "There are pending proofs: "
                     ++ (pfs
@@ -214,7 +214,7 @@ let compile opts ~echo ~f_in ~f_out =
       let state = Vernac.load_vernac ~echo ~check:true ~interactive:false ~state long_f_dot_v in
       let _doc = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
-      check_pending_proofs ();
+      Option.iter check_pending_proofs state.Vernac.State.proof;
       Library.save_library_to ldir long_f_dot_vo (Global.opaque_tables ());
       Aux_file.record_in_aux_at "vo_compile_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
@@ -255,7 +255,7 @@ let compile opts ~echo ~f_in ~f_out =
       let ldir = Stm.get_ldir ~doc:state.doc in
       let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_v in
       let doc = Stm.finish ~doc:state.doc in
-      check_pending_proofs ();
+      Option.iter check_pending_proofs state.Vernac.State.proof;
       let _doc = Stm.snapshot_vio ~doc ldir long_f_dot_vio in
       Stm.reset_task_queue ()
 
@@ -506,10 +506,14 @@ let start_coq custom =
   | Some state, opts when not opts.batch_mode ->
     custom.run ~opts ~state;
     exit 1
-  | _ , opts ->
+  | ostate, opts ->
     flush_all();
     if opts.output_context then begin
-      let sigma, env = Pfedit.get_current_context () in
+      let ostate = Option.(flatten (map (fun s -> s.Vernac.State.proof) ostate)) in
+      let sigma, env = match ostate with
+        | Some pstate -> Pfedit.get_current_context pstate
+        | None -> let env = Global.env () in Evd.from_env env, env
+      in
       Feedback.msg_notice (Flags.(with_option raw_print (Prettyp.print_full_pure_context env) sigma) ++ fnl ())
     end;
     CProfile.print_profile ();

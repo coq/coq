@@ -14,7 +14,7 @@
  * entered to be able to report errors without pretty-printing. *)
 
 type input_buffer = {
-  mutable prompt : Stm.doc -> string;
+  mutable prompt : Vernac.State.t -> string;
   mutable str : Bytes.t; (** buffer of already read characters *)
   mutable len : int;    (** number of chars in the buffer *)
   mutable bols : int list; (** offsets in str of begining of lines *)
