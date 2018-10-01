@@ -1,1 +1,1 @@
-val simple_body_access : Globnames.global_reference -> Constr.constr
+val simple_body_access : Names.GlobRef.t -> Constr.constr

@@ -21,10 +21,10 @@ END
 
 VERNAC COMMAND EXTEND HelloAgain CLASSIFIED AS QUERY
 | [ "HelloAgain" reference(r)] ->
-(* The function Libnames.pr_reference was found by searching all mli files
-   for a function of type reference -> Pp.t *)
+(* The function Ppconstr.pr_qualid was found by searching all mli files
+   for a function of type qualid -> Pp.t *)
   [ Feedback.msg_notice
-      (strbrk "Hello again " ++ Libnames.pr_reference r)]
+      (strbrk "Hello again " ++ Ppconstr.pr_qualid r)]
 END
 
 (* According to parsing/pcoq.mli, e has type constr_expr *)
@@ -132,7 +132,7 @@ END
 
 TACTIC EXTEND my_intro
 | [ "my_intro" ident(i) ] ->
-  [ Tactics.introduction ~check:false i]
+  [ Tactics.introduction i]
 END
 
 (* if one write this:

@@ -9,7 +9,7 @@ let collect_constants () =
   if (!constants = []) then
     let open Coqlib in
     let open EConstr in
-    let open Universes in
+    let open UnivGen in
     let gr_H = find_reference "Tuto3" ["Tuto3"; "Data"] "pack" in
     let gr_M = find_reference "Tuto3" ["Tuto3"; "Data"] "packer" in
     let gr_R = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "pair" in
