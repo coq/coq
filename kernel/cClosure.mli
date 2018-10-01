@@ -114,7 +114,7 @@ type fterm =
   | FCoFix of cofixpoint * fconstr subs
   | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
   | FLambda of int * (Name.t * constr) list * constr * fconstr subs
-  | FProd of Name.t * constr * constr * fconstr subs
+  | FProd of Name.t * fconstr * constr * fconstr subs
   | FLetIn of Name.t * fconstr * fconstr * constr * fconstr subs
   | FEvar of existential * fconstr subs
   | FLIFT of int * fconstr

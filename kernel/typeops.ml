@@ -164,7 +164,7 @@ let type_of_apply env func funt argsv argstv =
       | FProd (_, c1, c2, e) ->
         let arg = argsv.(i) in
         let argt = argstv.(i) in
-        let c1 = term_of_fconstr (mk_clos e c1) in
+        let c1 = term_of_fconstr c1 in
         begin match conv_leq false env argt c1 with
         | () -> apply_rec (i+1) (mk_clos (Esubst.subs_cons ([| inject arg |], e)) c2)
         | exception NotConvertible ->

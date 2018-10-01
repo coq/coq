@@ -300,7 +300,7 @@ and fterm =
   | FCoFix of cofixpoint * fconstr subs
   | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
   | FLambda of int * (Name.t * constr) list * constr * fconstr subs
-  | FProd of Name.t * constr * constr * fconstr subs
+  | FProd of Name.t * fconstr * constr * fconstr subs
   | FLetIn of Name.t * fconstr * fconstr * constr * fconstr subs
   | FEvar of existential * fconstr subs
   | FLIFT of int * fconstr
@@ -586,10 +586,10 @@ let rec to_constr lfts v =
         Term.compose_lam (List.rev tys) f
     | FProd (n, t, c, e) ->
       if is_subs_id e && is_lift_id lfts then
-        mkProd (n, t, c)
+        mkProd (n, to_constr lfts t, c)
       else
         let subs' = comp_subs lfts e in
-        mkProd (n, subst_constr subs' t, subst_constr (subs_lift subs') c)
+        mkProd (n, to_constr lfts t, subst_constr (subs_lift subs') c)
     | FLetIn (n,b,t,f,e) ->
       let subs = comp_subs (el_lift lfts) (subs_lift e) in
         mkLetIn (n, to_constr lfts b,
@@ -872,7 +872,7 @@ and knht info e t stk =
     | CoFix cfx -> { norm = Cstr; term = FCoFix (cfx,e) }, stk
     | Lambda _ -> { norm = Cstr; term = mk_lambda e t }, stk
     | Prod (n, t, c) ->
-      { norm = Whnf; term = FProd (n, t, c, e) }, stk
+      { norm = Whnf; term = FProd (n, mk_clos e t, c, e) }, stk
     | LetIn (n,b,t,c) ->
       { norm = Red; term = FLetIn (n, mk_clos e b, mk_clos e t, c, e) }, stk
     | Evar ev -> { norm = Red; term = FEvar (ev, e) }, stk
@@ -996,7 +996,7 @@ and norm_head info tab m =
           let c = mk_clos (subs_lift e) f in
           mkLetIn(na, kl info tab a, kl info tab b, kl info tab c)
       | FProd(na,dom,rng,e) ->
-          mkProd(na, kl info tab (mk_clos e dom), kl info tab (mk_clos (subs_lift e) rng))
+          mkProd(na, kl info tab dom, kl info tab (mk_clos (subs_lift e) rng))
       | FCoFix((n,(na,tys,bds)),e) ->
           let ftys = Array.Fun1.map mk_clos e tys in
           let fbds =

@@ -111,7 +111,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
     let variances = infer_fterm CONV infos variances ty [] in
     infer_fterm CONV infos variances bd []
   | FProd (_,dom,codom,e) ->
-    let variances = infer_fterm CONV infos variances (mk_clos e dom) [] in
+    let variances = infer_fterm CONV infos variances dom [] in
     infer_fterm cv_pb infos variances (mk_clos (Esubst.subs_lift e) codom) []
   | FInd (ind, u) ->
     let variances =
