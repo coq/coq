@@ -314,22 +314,23 @@ GEXTEND Gram
   range_selector_or_nth:
     [ [ n = natural ; "-" ; m = natural;
         l = OPT [","; l = LIST1 range_selector SEP "," -> l] ->
-          SelectList ((n, m) :: Option.default [] l)
+          Goal_select.SelectList ((n, m) :: Option.default [] l)
       | n = natural;
         l = OPT [","; l = LIST1 range_selector SEP "," -> l] ->
+          let open Goal_select in
           Option.cata (fun l -> SelectList ((n, n) :: l)) (SelectNth n) l ] ]
   ;
   selector_body:
   [ [ l = range_selector_or_nth -> l
-    | test_bracket_ident; "["; id = ident; "]" -> SelectId id ] ]
+    | test_bracket_ident; "["; id = ident; "]" -> Goal_select.SelectId id ] ]
   ;
   selector:
     [ [ IDENT "only"; sel = selector_body; ":" -> sel ] ]
   ;
   toplevel_selector:
     [ [ sel = selector_body; ":" -> sel
-    |   "!"; ":" -> SelectAlreadyFocused
-    |   IDENT "all"; ":" -> SelectAll ] ]
+    |   "!"; ":" -> Goal_select.SelectAlreadyFocused
+    |   IDENT "all"; ":" -> Goal_select.SelectAll ] ]
   ;
   tactic_mode:
     [ [ g = OPT toplevel_selector; tac = G_vernac.query_command -> tac g
@@ -346,7 +347,7 @@ GEXTEND Gram
   hint:
     [ [ IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern ; "=>";
         tac = Pltac.tactic ->
-          Vernacexpr.HintsExtern (n,c, in_tac tac) ] ]
+          Hints.HintsExtern (n,c, in_tac tac) ] ]
   ;
   operconstr: LEVEL "0"
     [ [ IDENT "ltac"; ":"; "("; tac = Pltac.tactic_expr; ")" ->
@@ -373,6 +374,7 @@ let _ = declare_int_option {
 }
 
 let vernac_solve n info tcom b =
+  let open Goal_select in
   let status = Proof_global.with_current_proof (fun etac p ->
     let with_end_tac = if b then Some etac else None in
     let global = match n with SelectAll | SelectList _ -> true | _ -> false in
@@ -432,7 +434,7 @@ VERNAC tactic_mode EXTEND VernacSolve
       VtLater
     ] -> [
       let t = rm_abstract t in
-      vernac_solve SelectAll n t def
+      vernac_solve Goal_select.SelectAll n t def
     ]
 END
 

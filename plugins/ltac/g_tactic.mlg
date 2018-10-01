@@ -21,6 +21,8 @@ open Constrexpr
 open Libnames
 open Tok
 open Tactypes
+open Tactics
+open Inv
 open Locus
 open Decl_kinds
 
