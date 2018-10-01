@@ -16,13 +16,6 @@ then
     then
         export CI_PULL_REQUEST="${CI_BRANCH#pr-}"
     fi
-elif [ -n "${TRAVIS}" ];
-then
-    # Travis build, `-local` passed to `configure`
-    export OCAMLPATH="$PWD:$OCAMLPATH"
-    export COQBIN="$PWD/bin"
-    export CI_PULL_REQUEST="$TRAVIS_PULL_REQUEST"
-    export CI_BRANCH="$TRAVIS_BRANCH"
 elif [ -d "$PWD/_build/install/default/" ];
 then
     # Dune build
