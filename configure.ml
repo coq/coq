@@ -1054,7 +1054,7 @@ let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout,locallayout
           try Some (Sys.getenv "COQ_CONFIGURE_PREFIX")
           with
           | Not_found when !prefs.interactive -> None
-          | Not_found -> Some "_build/default/install"
+          | Not_found -> Some "_build/install/default"
         end
       | p -> p
     in match uservalue, env_prefix with
