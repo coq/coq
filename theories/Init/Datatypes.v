@@ -177,11 +177,12 @@ Arguments inr {A B} _ , A [B] _.
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
 
 Inductive prod (A B:Type) : Type :=
-  pair : A -> B -> prod A B.
+  pair : A -> B -> A * B
+
+where "x * y" := (prod x y) : type_scope.
 
 Add Printing Let prod.
 
-Notation "x * y" := (prod x y) : type_scope.
 Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope.
 
 Arguments pair {A B} _ _.
@@ -189,18 +190,14 @@ Arguments pair {A B} _ _.
 Section projections.
   Context {A : Type} {B : Type}.
 
-  Definition fst (p:A * B) := match p with
-				| (x, y) => x
-                              end.
-  Definition snd (p:A * B) := match p with
-				| (x, y) => y
-                              end.
+  Definition fst (p:A * B) := match p with (x, y) => x end.
+  Definition snd (p:A * B) := match p with (x, y) => y end.
 End projections.
 
 Hint Resolve pair inl inr: core.
 
 Lemma surjective_pairing :
-  forall (A B:Type) (p:A * B), p = pair (fst p) (snd p).
+  forall (A B:Type) (p:A * B), p = (fst p, snd p).
 Proof.
   destruct p; reflexivity.
 Qed.
@@ -213,13 +210,19 @@ Proof.
   rewrite Hfst; rewrite Hsnd; reflexivity.
 Qed.
 
-Definition prod_uncurry (A B C:Type) (f:prod A B -> C)
-  (x:A) (y:B) : C := f (pair x y).
+Definition prod_uncurry (A B C:Type) (f:A * B -> C)
+  (x:A) (y:B) : C := f (x,y).
 
 Definition prod_curry (A B C:Type) (f:A -> B -> C)
-  (p:prod A B) : C := match p with
-                       | pair x y => f x y
-                       end.
+  (p:A * B) : C := match p with (x, y) => f x y end.
+
+Import EqNotations.
+
+Lemma rew_pair : forall A (P Q : A->Type) x1 x2 (y1:P x1) (y2:Q x1) (H:x1=x2),
+  (rew H in y1, rew H in y2) = rew [fun x => (P x * Q x)%type] H in (y1,y2).
+Proof.
+  destruct H. reflexivity.
+Defined.
 
 (** Polymorphic lists and some operations *)
 
@@ -253,7 +256,6 @@ Definition app (A : Type) : list A -> list A -> list A :=
    | nil => m
    | a :: l1 => a :: app l1 m
   end.
-
 
 Infix "++" := app (right associativity, at level 60) : list_scope.
 
