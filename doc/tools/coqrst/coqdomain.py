@@ -560,6 +560,9 @@ class CoqtopDirective(Directive):
           Print nat.
           Definition a := 1.
 
+    The blank line after the directive is required.  If you begin a proof,
+    include an ``Abort`` afterwards to reset coqtop for the next example.
+
     Here is a list of permissible options:
 
     - Display options
