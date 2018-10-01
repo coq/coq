@@ -380,7 +380,7 @@ let context poly l =
         begin
           let uctx = Evd.universe_context_set sigma in
           Declare.declare_universe_context poly uctx;
-          if poly then Polymorphic_const_entry ([], Univ.UContext.empty)
+          if poly then Polymorphic_const_entry ([||], Univ.UContext.empty)
           else Monomorphic_const_entry Univ.ContextSet.empty
         end
       else if poly then

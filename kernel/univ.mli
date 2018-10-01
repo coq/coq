@@ -344,7 +344,7 @@ sig
   val instantiate : Instance.t -> t -> Constraint.t
   (** Generate the set of instantiated Constraint.t **)
 
-  val names : t -> Names.Name.t list
+  val names : t -> Names.Name.t array
   (** Return the names of the bound universe variables *)
 
 end
@@ -466,8 +466,8 @@ val make_instance_subst : Instance.t -> universe_level_subst
 
 val make_inverse_instance_subst : Instance.t -> universe_level_subst
 
-val abstract_universes : Names.Name.t list -> UContext.t -> Instance.t * AUContext.t
-val abstract_cumulativity_info : Names.Name.t list -> CumulativityInfo.t -> Instance.t * ACumulativityInfo.t
+val abstract_universes : Names.Name.t array -> UContext.t -> Instance.t * AUContext.t
+val abstract_cumulativity_info : Names.Name.t array -> CumulativityInfo.t -> Instance.t * ACumulativityInfo.t
 (** TODO: move universe abstraction out of the kernel *)
 
 val make_abstract_instance : AUContext.t -> Instance.t

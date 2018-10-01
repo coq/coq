@@ -122,7 +122,7 @@ let v_cstrs =
 let v_variance = v_enum "variance" 3
 
 let v_instance = Annot ("instance", Array v_level)
-let v_abs_context = v_tuple "abstract_universe_context" [|List v_name; v_cstrs|]
+let v_abs_context = v_tuple "abstract_universe_context" [|Array v_name; v_cstrs|]
 let v_abs_cum_info = v_tuple "cumulativity_info" [|v_abs_context; Array v_variance|]
 let v_context_set = v_tuple "universe_context_set" [|v_hset v_level;v_cstrs|]
 

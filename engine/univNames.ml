@@ -36,9 +36,9 @@ type universe_binders = Univ.Level.t Names.Id.Map.t
 
 let empty_binders = Id.Map.empty
 
-let universe_binders_of_global ref : Name.t list =
+let universe_binders_of_global ref : Name.t array =
   try AUContext.names (Environ.universes_of_global (Global.env ()) ref)
-  with Not_found -> []
+  with Not_found -> [||]
 
 let name_universe lvl =
   (** Best-effort naming from the string representation of the level. This is
@@ -51,12 +51,13 @@ let compute_instance_binders inst ubinders =
     try Name (LMap.find lvl revmap)
     with Not_found -> Name (name_universe lvl)
   in
-  Array.map_to_list map (Instance.to_array inst)
+  Array.map map (Instance.to_array inst)
 
 type univ_name_list = Names.lname list
 
 let universe_binders_with_opt_names ref names =
   let orig = universe_binders_of_global ref in
+  let orig = Array.to_list orig in
   let udecl = match names with
   | None -> orig
   | Some udecl ->

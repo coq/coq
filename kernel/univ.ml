@@ -937,29 +937,29 @@ let hcons_universe_context = UContext.hcons
 
 module AUContext =
 struct
-  type t = Names.Name.t list constrained
+  type t = Names.Name.t array constrained
 
   let repr (inst, cst) =
-    (Array.init (List.length inst) (fun i -> Level.var i), cst)
+    (Array.init (Array.length inst) (fun i -> Level.var i), cst)
 
   let pr f ?variance ctx = UContext.pr f ?variance (repr ctx)
 
   let instantiate inst (u, cst) =
-    assert (List.length u = Array.length inst);
+    assert (Array.length u = Array.length inst);
     subst_instance_constraints inst cst
 
   let names (nas, _) = nas
 
   let hcons (univs, cst) =
-    (List.map Names.Name.hcons univs, hcons_constraints cst)
+    (Array.map Names.Name.hcons univs, hcons_constraints cst)
 
-  let empty = ([], Constraint.empty)
+  let empty = ([||], Constraint.empty)
 
-  let is_empty (nas, cst) = List.is_empty nas && Constraint.is_empty cst
+  let is_empty (nas, cst) = Array.is_empty nas && Constraint.is_empty cst
 
-  let union (nas, cst) (nas', cst') = (nas @ nas', Constraint.union cst cst')
+  let union (nas, cst) (nas', cst') = (Array.append nas nas', Constraint.union cst cst')
 
-  let size (nas, _) = List.length nas
+  let size (nas, _) = Array.length nas
 
 end
 
@@ -1173,16 +1173,16 @@ let make_inverse_instance_subst i =
       LMap.empty arr
 
 let make_abstract_instance (ctx, _) = 
-  Array.init (List.length ctx) (fun i -> Level.var i)
+  Array.init (Array.length ctx) (fun i -> Level.var i)
 
 let abstract_universes nas ctx =
   let instance = UContext.instance ctx in
-  let () = assert (Int.equal (List.length nas) (Instance.length instance)) in
+  let () = assert (Int.equal (Array.length nas) (Instance.length instance)) in
   let subst = make_instance_subst instance in
   let cstrs = subst_univs_level_constraints subst 
       (UContext.constraints ctx)
   in
-  let ctx = UContext.make (nas, cstrs) in
+  let ctx = (nas, cstrs) in
   instance, ctx
 
 let abstract_cumulativity_info nas (univs, variance) =
