@@ -178,3 +178,6 @@ theories/*/dune
 theories/*/*/dune
 theories/*/*/*/dune
 *.install
+
+# Dune bootstrap dir
+_dune
