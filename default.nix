@@ -55,6 +55,7 @@ stdenv.mkDerivation rec {
       (ps: [ ps.sphinx ps.sphinx_rtd_theme ps.pexpect ps.beautifulsoup4
              ps.antlr4-python3-runtime ps.sphinxcontrib-bibtex ]))
     antlr4
+    ocamlPackages.odoc
   ]
   ++ optionals doInstallCheck (
     # Test-suite dependencies
