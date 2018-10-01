@@ -56,7 +56,7 @@ let package i = Goal.enter begin fun gl ->
    [(* this means that the applied theorem is not to be cleared. *)
     None, (CAst.make (c_M (),
            (* we don't specialize the theorem with extra values. *)
-           Misctypes.NoBindings))]
+           Tactypes.NoBindings))]
      (* we don't destruct the result according to any intro_pattern *)
     None
   end
@@ -140,5 +140,5 @@ let pack_tactic i =
       else
         tclTHEN (package i)
           (tclTHEN (Tactics.rename_hyp [i, h_hyps_id])
-             (Tactics.move_hyp h_hyps_id Misctypes.MoveLast))
+             (Tactics.move_hyp h_hyps_id Logic.MoveLast))
     end
