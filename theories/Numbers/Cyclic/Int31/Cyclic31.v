@@ -23,8 +23,6 @@ Require Import Zpow_facts.
 Require Import CyclicAxioms.
 Require Import ROmega.
 
-Declare ML Module "int31_syntax_plugin".
-
 Local Open Scope nat_scope.
 Local Open Scope int31_scope.
 
@@ -128,7 +126,7 @@ Section Basics.
 
  Lemma nshiftl_S_tail :
   forall n x, nshiftl x (S n) = nshiftl (shiftl x) n.
- Proof. 
+ Proof.
  intros n; elim n; simpl; intros; now f_equal.
  Qed.
 

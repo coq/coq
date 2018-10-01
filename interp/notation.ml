@@ -266,16 +266,14 @@ let keymap_find key map =
 (* Scopes table : interpretation -> scope_name *)
 let notations_key_table = ref (KeyMap.empty : notation_rule list KeyMap.t)
 
-let prim_token_key_table = ref (KeyMap.empty : (string * (any_glob_constr -> prim_token option) * bool) KeyMap.t)
-
 let glob_prim_constr_key c = match DAst.get c with
-  | GRef (ref, _) -> RefKey (canonical_gr ref)
+  | GRef (ref, _) -> Some (canonical_gr ref)
   | GApp (c, _) ->
     begin match DAst.get c with
-    | GRef (ref, _) -> RefKey (canonical_gr ref)
-    | _ -> Oth
+    | GRef (ref, _) -> Some (canonical_gr ref)
+    | _ -> None
     end
-  | _ -> Oth
+  | _ -> None
 
 let glob_constr_keys c = match DAst.get c with
   | GApp (c, _) ->
@@ -303,77 +301,189 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
 (* Interpreting numbers (not in summary because functional objects)   *)
 
 type required_module = full_path * string list
-
-type 'a prim_token_interpreter =
-    ?loc:Loc.t -> 'a -> glob_constr
-
-type cases_pattern_status = bool (* true = use prim token in patterns *)
-
-type 'a prim_token_uninterpreter =
-    glob_constr list * (any_glob_constr -> 'a option) * cases_pattern_status
-
-type internal_prim_token_interpreter =
-    ?loc:Loc.t -> prim_token -> required_module * (unit -> glob_constr)
-
-let prim_token_interpreter_tab =
-  (Hashtbl.create 7 : (scope_name, internal_prim_token_interpreter) Hashtbl.t)
-
-let add_prim_token_interpreter sc interp =
-  try
-    let cont = Hashtbl.find prim_token_interpreter_tab sc in
-    Hashtbl.replace prim_token_interpreter_tab sc (interp cont)
-  with Not_found ->
-    let cont = (fun ?loc _p -> raise Not_found) in
-    Hashtbl.add prim_token_interpreter_tab sc (interp cont)
-
-let declare_prim_token_interpreter sc interp (patl,uninterp,b) =
-  declare_scope sc;
-  add_prim_token_interpreter sc interp;
-  List.iter (fun pat ->
-      prim_token_key_table := KeyMap.add
-        (glob_prim_constr_key pat) (sc,uninterp,b) !prim_token_key_table)
-    patl
-
-let mkNumeral n =
-  if Bigint.is_pos_or_zero n then Numeral (Bigint.to_string n, true)
-  else Numeral (Bigint.to_string (Bigint.neg n), false)
-
-let ofNumeral n s =
-  if s then Bigint.of_string n else Bigint.neg (Bigint.of_string n)
-
-let mkString = function
-| None -> None
-| Some s -> if Unicode.is_utf8 s then Some (String s) else None
-
-let delay dir int ?loc x = (dir, (fun () -> int ?loc x))
-
 type rawnum = Constrexpr.raw_natural_number * Constrexpr.sign
 
-let declare_rawnumeral_interpreter sc dir interp (patl,uninterp,inpat) =
-  declare_prim_token_interpreter sc
-    (fun cont ?loc -> function Numeral (n,s) -> delay dir interp ?loc (n,s)
-                            | p -> cont ?loc p)
-    (patl, (fun r -> match uninterp r with
-                     | None -> None
-                     | Some (n,s) -> Some (Numeral (n,s))), inpat)
+type prim_token_uid = string
 
-let declare_numeral_interpreter sc dir interp (patl,uninterp,inpat) =
-  let interp' ?loc (n,s) = interp ?loc (ofNumeral n s) in
-  declare_prim_token_interpreter sc
-    (fun cont ?loc -> function Numeral (n,s) -> delay dir interp' ?loc (n,s)
-                            | p -> cont ?loc p)
-    (patl, (fun r -> Option.map mkNumeral (uninterp r)), inpat)
+type 'a prim_token_interpreter = ?loc:Loc.t -> 'a -> glob_constr
+type 'a prim_token_uninterpreter = any_glob_constr -> 'a option
 
-let declare_string_interpreter sc dir interp (patl,uninterp,inpat) =
-  declare_prim_token_interpreter sc
-    (fun cont ?loc -> function String s -> delay dir interp ?loc s | p -> cont ?loc p)
-    (patl, (fun r -> mkString (uninterp r)), inpat)
+type 'a prim_token_interpretation =
+  'a prim_token_interpreter * 'a prim_token_uninterpreter
+
+module InnerPrimToken = struct
+
+  type interpreter =
+    | RawNumInterp of (?loc:Loc.t -> rawnum -> glob_constr)
+    | BigNumInterp of (?loc:Loc.t -> Bigint.bigint -> glob_constr)
+    | StringInterp of (?loc:Loc.t -> string -> glob_constr)
+
+  let interp_eq f f' = match f,f' with
+    | RawNumInterp f, RawNumInterp f' -> f == f'
+    | BigNumInterp f, BigNumInterp f' -> f == f'
+    | StringInterp f, StringInterp f' -> f == f'
+    | _ -> false
+
+  let ofNumeral n s =
+    if s then Bigint.of_string n else Bigint.neg (Bigint.of_string n)
+
+  let do_interp ?loc interp primtok =
+    match primtok, interp with
+    | Numeral (n,s), RawNumInterp interp -> interp ?loc (n,s)
+    | Numeral (n,s), BigNumInterp interp -> interp ?loc (ofNumeral n s)
+    | String s, StringInterp interp -> interp ?loc s
+    | _ -> raise Not_found
+
+  type uninterpreter =
+    | RawNumUninterp of (any_glob_constr -> rawnum option)
+    | BigNumUninterp of (any_glob_constr -> Bigint.bigint option)
+    | StringUninterp of (any_glob_constr -> string option)
+
+  let uninterp_eq f f' = match f,f' with
+    | RawNumUninterp f, RawNumUninterp f' -> f == f'
+    | BigNumUninterp f, BigNumUninterp f' -> f == f'
+    | StringUninterp f, StringUninterp f' -> f == f'
+    | _ -> false
+
+  let mkNumeral n =
+    if Bigint.is_pos_or_zero n then Numeral (Bigint.to_string n, true)
+    else Numeral (Bigint.to_string (Bigint.neg n), false)
+
+  let mkString = function
+    | None -> None
+    | Some s -> if Unicode.is_utf8 s then Some (String s) else None
+
+  let do_uninterp uninterp g = match uninterp with
+    | RawNumUninterp u -> Option.map (fun (n,s) -> Numeral (n,s)) (u g)
+    | BigNumUninterp u -> Option.map mkNumeral (u g)
+    | StringUninterp u -> mkString (u g)
+
+end
+
+(* The following two tables of (un)interpreters will *not* be synchronized.
+   But their indexes will be checked to be unique *)
+let prim_token_interpreters =
+  (Hashtbl.create 7 : (prim_token_uid, InnerPrimToken.interpreter) Hashtbl.t)
+
+let prim_token_uninterpreters =
+  (Hashtbl.create 7 : (prim_token_uid, InnerPrimToken.uninterpreter) Hashtbl.t)
+
+(* Table from scope_name to backtrack-able informations about interpreters
+   (in particular interpreter unique id). *)
+let prim_token_interp_infos =
+  ref (String.Map.empty : (required_module * prim_token_uid) String.Map.t)
+
+(* Table from global_reference to backtrack-able informations about
+   prim_token uninterpretation (in particular uninterpreter unique id). *)
+let prim_token_uninterp_infos =
+  ref (Refmap.empty : (scope_name * prim_token_uid * bool) Refmap.t)
+
+let hashtbl_check_and_set allow_overwrite uid f h eq =
+  match Hashtbl.find h uid with
+   | exception Not_found -> Hashtbl.add h uid f
+   | _ when allow_overwrite -> Hashtbl.add h uid f
+   | g when eq f g -> ()
+   | _ ->
+      user_err ~hdr:"prim_token_interpreter"
+       (str "Unique identifier " ++ str uid ++
+        str " already used to register a numeral or string (un)interpreter.")
+
+let register_gen_interpretation allow_overwrite uid (interp, uninterp) =
+  hashtbl_check_and_set
+    allow_overwrite uid interp prim_token_interpreters InnerPrimToken.interp_eq;
+  hashtbl_check_and_set
+    allow_overwrite uid uninterp prim_token_uninterpreters InnerPrimToken.uninterp_eq
+
+let register_rawnumeral_interpretation ?(allow_overwrite=false) uid (interp, uninterp) =
+  register_gen_interpretation allow_overwrite uid
+    (InnerPrimToken.RawNumInterp interp, InnerPrimToken.RawNumUninterp uninterp)
+
+let register_bignumeral_interpretation ?(allow_overwrite=false) uid (interp, uninterp) =
+  register_gen_interpretation allow_overwrite uid
+    (InnerPrimToken.BigNumInterp interp, InnerPrimToken.BigNumUninterp uninterp)
+
+let register_string_interpretation ?(allow_overwrite=false) uid (interp, uninterp) =
+  register_gen_interpretation allow_overwrite uid
+    (InnerPrimToken.StringInterp interp, InnerPrimToken.StringUninterp uninterp)
+
+type prim_token_infos = {
+  pt_local : bool; (** Is this interpretation local? *)
+  pt_scope : scope_name; (** Concerned scope *)
+  pt_uid : prim_token_uid; (** Unique id "pointing" to (un)interp functions *)
+  pt_required : required_module; (** Module that should be loaded first *)
+  pt_refs : GlobRef.t list; (** Entry points during uninterpretation *)
+  pt_in_match : bool (** Is this prim token legal in match patterns ? *)
+}
+
+let cache_prim_token_interpretation (_,infos) =
+  let sc = infos.pt_scope in
+  let uid = infos.pt_uid in
+  declare_scope sc;
+  prim_token_interp_infos :=
+    String.Map.add sc (infos.pt_required,infos.pt_uid) !prim_token_interp_infos;
+  List.iter (fun r -> prim_token_uninterp_infos :=
+                        Refmap.add r (sc,uid,infos.pt_in_match)
+                          !prim_token_uninterp_infos)
+            infos.pt_refs
+
+let subst_prim_token_interpretation (subs,infos) =
+  { infos with
+    pt_refs = List.map (subst_global_reference subs) infos.pt_refs }
+
+let classify_prim_token_interpretation infos =
+    if infos.pt_local then Dispose else Substitute infos
+
+let inPrimTokenInterp : prim_token_infos -> obj =
+  declare_object {(default_object "PRIM-TOKEN-INTERP") with
+     open_function  = (fun i o -> if Int.equal i 1 then cache_prim_token_interpretation o);
+     cache_function = cache_prim_token_interpretation;
+     subst_function = subst_prim_token_interpretation;
+     classify_function = classify_prim_token_interpretation}
+
+let enable_prim_token_interpretation infos =
+  Lib.add_anonymous_leaf (inPrimTokenInterp infos)
+
+(** Compatibility.
+    Avoid the next two functions, they will now store unnecessary
+    objects in the library segment. Instead, combine
+    [register_*_interpretation] and [enable_prim_token_interpretation]
+    (the latter inside a [Mltop.declare_cache_obj]).
+*)
+
+let fresh_string_of =
+  let count = ref 0 in
+  fun root -> count := !count+1; (string_of_int !count)^"_"^root
+
+let declare_numeral_interpreter ?(local=false) sc dir interp (patl,uninterp,b) =
+  let uid = fresh_string_of sc in
+  register_bignumeral_interpretation uid (interp,uninterp);
+  enable_prim_token_interpretation
+    { pt_local = local;
+      pt_scope = sc;
+      pt_uid = uid;
+      pt_required = dir;
+      pt_refs = List.map_filter glob_prim_constr_key patl;
+      pt_in_match = b }
+let declare_string_interpreter ?(local=false) sc dir interp (patl,uninterp,b) =
+  let uid = fresh_string_of sc in
+  register_string_interpretation uid (interp,uninterp);
+  enable_prim_token_interpretation
+    { pt_local = local;
+      pt_scope = sc;
+      pt_uid = uid;
+      pt_required = dir;
+      pt_refs = List.map_filter glob_prim_constr_key patl;
+      pt_in_match = b }
+
 
 let check_required_module ?loc sc (sp,d) =
   try let _ = Nametab.global_of_path sp in ()
   with Not_found ->
-    user_err ?loc ~hdr:"prim_token_interpreter"
-    (str "Cannot interpret in " ++ str sc ++ str " without requiring first module " ++ str (List.last d) ++ str ".")
+    match d with
+    | [] -> user_err ?loc ~hdr:"prim_token_interpreter"
+       (str "Cannot interpret in " ++ str sc ++ str " because " ++ pr_path sp ++ str " could not be found in the current environment.")
+    | _ -> user_err ?loc ~hdr:"prim_token_interpreter"
+       (str "Cannot interpret in " ++ str sc ++ str " without requiring first module " ++ str (List.last d) ++ str ".")
 
 (* Look if some notation or numeral printer in [scope] can be used in
    the scope stack [scopes], and if yes, using delimiters or not *)
@@ -476,9 +586,10 @@ let find_prim_token check_allowed ?loc p sc =
     pat, df
   with Not_found ->
   (* Try for a primitive numerical notation *)
-  let (spdir,interp) = Hashtbl.find prim_token_interpreter_tab sc ?loc p in
+  let (spdir,uid) = String.Map.find sc !prim_token_interp_infos in
   check_required_module ?loc sc spdir;
-  let pat = interp () in
+  let interp = Hashtbl.find prim_token_interpreters uid in
+  let pat = InnerPrimToken.do_interp ?loc interp p in
   check_allowed pat;
   pat, ((dirpath (fst spdir),DirPath.empty),"")
 
@@ -649,43 +760,34 @@ let entry_has_ident = function
      try String.Map.find s !entry_has_ident_map <= n with Not_found -> false
 
 let uninterp_prim_token c =
-  try
-    let (sc,numpr,_) =
-      KeyMap.find (glob_prim_constr_key c) !prim_token_key_table in
-    match numpr (AnyGlobConstr c) with
-      | None -> raise Notation_ops.No_match
-      | Some n -> (sc,n)
-  with Not_found -> raise Notation_ops.No_match
-
-let uninterp_prim_token_ind_pattern ind args =
-  let ref = IndRef ind in
-  try
-    let k = RefKey (canonical_gr ref) in
-    let (sc,numpr,b) = KeyMap.find k !prim_token_key_table in
-    if not b then raise Notation_ops.No_match;
-    let args' = List.map
-      (fun x -> snd (glob_constr_of_closed_cases_pattern x)) args in
-    let ref = DAst.make @@ GRef (ref,None) in
-    match numpr (AnyGlobConstr (DAst.make @@ GApp (ref,args'))) with
-      | None -> raise Notation_ops.No_match
-      | Some n -> (sc,n)
-  with Not_found -> raise Notation_ops.No_match
+  match glob_prim_constr_key c with
+  | None -> raise Notation_ops.No_match
+  | Some r ->
+     try
+       let (sc,uid,_) = Refmap.find r !prim_token_uninterp_infos in
+       let uninterp = Hashtbl.find prim_token_uninterpreters uid in
+       match InnerPrimToken.do_uninterp uninterp (AnyGlobConstr c) with
+       | None -> raise Notation_ops.No_match
+       | Some n -> (sc,n)
+     with Not_found -> raise Notation_ops.No_match
 
 let uninterp_prim_token_cases_pattern c =
-  try
-    let k = cases_pattern_key c in
-    let (sc,numpr,b) = KeyMap.find k !prim_token_key_table in
-    if not b then raise Notation_ops.No_match;
-    let na,c = glob_constr_of_closed_cases_pattern c in
-    match numpr (AnyGlobConstr c) with
-      | None -> raise Notation_ops.No_match
-      | Some n -> (na,sc,n)
-  with Not_found -> raise Notation_ops.No_match
+  match glob_constr_of_closed_cases_pattern c with
+  | exception Not_found -> raise Notation_ops.No_match
+  | na,c -> let (sc,n) = uninterp_prim_token c in (na,sc,n)
 
 let availability_of_prim_token n printer_scope local_scopes =
   let f scope =
-    try ignore ((Hashtbl.find prim_token_interpreter_tab scope) n); true
-    with Not_found -> false in
+    try
+      let uid = snd (String.Map.find scope !prim_token_interp_infos) in
+      let interp = Hashtbl.find prim_token_interpreters uid in
+      let open InnerPrimToken in
+      match n, interp with
+      | Numeral _, (RawNumInterp _ | BigNumInterp _) -> true
+      | String _, StringInterp _ -> true
+      | _ -> false
+    with Not_found -> false
+  in
   let scopes = make_current_scopes local_scopes in
   Option.map snd (find_without_delimiters f (Some printer_scope,None) scopes)
 
@@ -1206,16 +1308,19 @@ let pr_visibility prglob = function
 let freeze _ =
  (!scope_map, !scope_stack, !arguments_scope,
   !delimiters_map, !notations_key_table, !scope_class_map,
+  !prim_token_interp_infos, !prim_token_uninterp_infos,
   !entry_coercion_map, !entry_has_global_map,
   !entry_has_ident_map)
 
-let unfreeze (scm,scs,asc,dlm,fkm,clsc,coe,globs,ids) =
+let unfreeze (scm,scs,asc,dlm,fkm,clsc,ptii,ptui,coe,globs,ids) =
   scope_map := scm;
   scope_stack := scs;
   delimiters_map := dlm;
   arguments_scope := asc;
   notations_key_table := fkm;
   scope_class_map := clsc;
+  prim_token_interp_infos := ptii;
+  prim_token_uninterp_infos := ptui;
   entry_coercion_map := coe;
   entry_has_global_map := globs;
   entry_has_ident_map := ids
@@ -1224,7 +1329,9 @@ let init () =
   init_scope_map ();
   delimiters_map := String.Map.empty;
   notations_key_table := KeyMap.empty;
-  scope_class_map := initial_scope_class_map
+  scope_class_map := initial_scope_class_map;
+  prim_token_interp_infos := String.Map.empty;
+  prim_token_uninterp_infos := Refmap.empty
 
 let _ =
   Summary.declare_summary "symbols"

@@ -73,8 +73,8 @@
 ########################################################################
 # HoTT
 ########################################################################
-# Latest commit on master as of Sep 2, 2018
-: "${HoTT_CI_REF:=bafa1a820809506fdd5d2274950cf2b85e6e4a15}"
+# Latest commit on master as of Sep 3, 2018
+: "${HoTT_CI_REF:=333face272e39175a1b342e14c86c316f572f51f}"
 : "${HoTT_CI_GITURL:=https://github.com/HoTT/HoTT}"
 : "${HoTT_CI_ARCHIVEURL:=${HoTT_CI_GITURL}/archive}"
 
