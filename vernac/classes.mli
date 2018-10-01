@@ -37,7 +37,7 @@ val declare_instance_constant :
   Evd.evar_map -> (* Universes *)
   Constr.t -> (** body *)
   Constr.types -> (** type *)
-  Names.Id.t
+  unit
 
 val new_instance :
   ?abstract:bool -> (** Not abstract by default. *)
