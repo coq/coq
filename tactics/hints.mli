@@ -282,6 +282,15 @@ val make_db_list : hint_db_name list -> hint_db list
 val typeclasses_db : hint_db_name
 val rewrite_db : hint_db_name
 
+val wrap_hint_warning : 'a Proofview.tactic -> 'a Proofview.tactic
+(** Use around toplevel calls to hint-using tactics, to enable the tracking of
+    non-imported hints. Any tactic calling [run_hint] must be wrapped this
+    way. *)
+
+val wrap_hint_warning_fun : env -> evar_map ->
+  (evar_map -> 'a * evar_map) -> 'a * evar_map
+(** Variant of the above for non-tactics *)
+
 (** Printing  hints *)
 
 val pr_searchtable : env -> evar_map -> Pp.t

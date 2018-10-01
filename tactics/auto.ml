@@ -416,6 +416,7 @@ and trivial_resolve sigma dbg mod_delta db_list local_db secvars cl =
     "nocore" amongst the databases. *)
 
 let trivial ?(debug=Off) lems dbnames =
+  Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
@@ -427,6 +428,7 @@ let trivial ?(debug=Off) lems dbnames =
   end
 
 let full_trivial ?(debug=Off) lems =
+  Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
@@ -501,6 +503,7 @@ let search d n mod_delta db_list local_db =
 let default_search_depth = ref 5
 
 let delta_auto debug mod_delta n lems dbnames =
+  Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
@@ -524,6 +527,7 @@ let new_auto ?(debug=Off) n = delta_auto debug true n
 let default_auto = auto !default_search_depth [] []
 
 let delta_full_auto ?(debug=Off) mod_delta n lems =
+  Hints.wrap_hint_warning @@
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
