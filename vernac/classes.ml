@@ -42,7 +42,7 @@ let typeclasses_db = "typeclass_instances"
 
 let set_typeclass_transparency c local b = 
   Hints.add_hints ~local [typeclasses_db]
-    (Hints.HintsTransparencyEntry (Vernacexpr.HintsReferences [c], b))
+    (Hints.HintsTransparencyEntry (Hints.HintsReferences [c], b))
     
 let _ =
   Hook.set Typeclasses.add_instance_hint_hook

@@ -121,11 +121,6 @@ type 'a hint_info_gen = 'a Typeclasses.hint_info_gen =
 type hint_info_expr = Hints.hint_info_expr
 [@@ocaml.deprecated "Please use [Hints.hint_info_expr]"]
 
-type 'a hints_transparency_target = 'a Hints.hints_transparency_target =
-  | HintsVariables
-  | HintsConstants
-  | HintsReferences of 'a list
-
 type hints_expr = Hints.hints_expr =
   | HintsResolve of (Hints.hint_info_expr * bool * Hints.reference_or_constr) list
         [@ocaml.deprecated "Use the constructor in module [Hints]"]
@@ -135,7 +130,7 @@ type hints_expr = Hints.hints_expr =
         [@ocaml.deprecated "Use the constructor in module [Hints]"]
   | HintsUnfold of qualid list
         [@ocaml.deprecated "Use the constructor in module [Hints]"]
-  | HintsTransparency of qualid hints_transparency_target * bool
+  | HintsTransparency of qualid Hints.hints_transparency_target * bool
         [@ocaml.deprecated "Use the constructor in module [Hints]"]
   | HintsMode of qualid * Hints.hint_mode list
                    [@ocaml.deprecated "Use the constructor in module [Hints]"]
