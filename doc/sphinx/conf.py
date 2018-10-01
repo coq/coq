@@ -24,6 +24,8 @@
 
 import sys
 import os
+from shutil import copyfile
+import sphinx
 
 # Increase recursion limit for sphinx
 sys.setrecursionlimit(1500)
@@ -35,6 +37,12 @@ sys.path.append(os.path.abspath('../tools/'))
 sys.path.append(os.path.abspath('../../config/'))
 
 import coq_config
+
+# -- Prolog ---------------------------------------------------------------
+
+# Include substitution definitions in all files
+with open("refman-preamble.rst") as s:
+    rst_prolog = s.read()
 
 # -- General configuration ------------------------------------------------
 
@@ -66,8 +74,36 @@ source_suffix = '.rst'
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
 
+# Add extra cases here to support more formats
+
+SUPPORTED_FORMATS = ["html", "latex"]
+
+def readbin(fname):
+    try:
+        with open(fname, mode="rb") as f:
+            return f.read()
+    except FileNotFoundError:
+        return None
+
+def copy_formatspecific_files(app):
+    ext = ".{}.rst".format(app.builder.name)
+    for fname in sorted(os.listdir(app.srcdir)):
+        if fname.endswith(ext):
+            src = os.path.join(app.srcdir, fname)
+            dst = os.path.join(app.srcdir, fname[:-len(ext)] + ".rst")
+            logger = sphinx.util.logging.getLogger(__name__)
+            if readbin(src) == readbin(dst):
+                logger.info("Skipping {}: {} is up to date".format(src, dst))
+            else:
+                logger.info("Copying {} to {}".format(src, dst))
+                copyfile(src, dst)
+
+def setup(app):
+    app.connect('builder-inited', copy_formatspecific_files)
+
 # The master toctree document.
-master_doc = 'index'
+# We create this file in `copy_master_doc` above.
+master_doc = "index"
 
 # General information about the project.
 project = 'Coq'
@@ -104,9 +140,10 @@ exclude_patterns = [
     'Thumbs.db',
     '.DS_Store',
     'introduction.rst',
+    'refman-preamble.rst',
     'README.rst',
     'README.template.rst'
-]
+] + ["*.{}.rst".format(fmt) for fmt in SUPPORTED_FORMATS]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -129,6 +166,7 @@ primary_domain = 'coq'
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 highlight_language = 'text'
+suppress_warnings = ["misc.highlighting_failure"]
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
@@ -257,57 +295,57 @@ smartquotes = False
 ###########################
 # Set things up for XeTeX #
 ###########################
+
 latex_elements = {
     'babel': '',
     'fontenc': '',
     'inputenc': '',
     'utf8extra': '',
     'cmappkg': '',
-    # https://www.topbug.net/blog/2015/12/10/a-collection-of-issues-about-the-latex-output-in-sphinx-and-the-solutions/
     'papersize': 'letterpaper',
     'classoptions': ',openany', # No blank pages
-    'polyglossia' : '\\usepackage{polyglossia}',
-    'unicode-math' : '\\usepackage{unicode-math}',
-    'microtype' : '\\usepackage{microtype}',
-    "preamble": r"\usepackage{coqnotations}"
+    'polyglossia': '\\usepackage{polyglossia}',
+    'sphinxsetup': 'verbatimwithframe=false',
+    'preamble': r"""
+                 \usepackage{unicode-math}
+                 \usepackage{microtype}
+
+                 % Macro definitions
+                 \usepackage{refman-preamble}
+
+                 % Style definitions for notations
+                 \usepackage{coqnotations}
+
+                 % Style tweaks
+                 \newcssclass{sigannot}{\textrm{#1:}}
+
+                 % Silence 'LaTeX Warning: Command \nobreakspace invalid in math mode'
+                 \everymath{\def\nobreakspace{\ }}
+                 """
 }
 
-from sphinx.builders.latex import LaTeXBuilder
+latex_engine = "xelatex"
 
 ########
 # done #
 ########
 
-latex_additional_files = ["_static/coqnotations.sty"]
+latex_additional_files = [
+    "refman-preamble.sty",
+    "_static/coqnotations.sty"
+]
 
-# Grouping the document tree into LaTeX files. List of tuples
-# (source start file, target name, title,
-#  author, documentclass [howto, manual, or own class]).
-# latex_documents = [
-#    (master_doc, 'CoqRefMan.tex', 'Coq Documentation',
-#     'The Coq Development Team', 'manual'),
-#]
+latex_documents = [('index', 'CoqRefMan.tex', 'The Coq Reference Manual', author, 'manual')]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-#latex_logo = None
-
-# For "manual" documents, if this is true, then toplevel headings are parts,
-# not chapters.
-#latex_use_parts = False
+# latex_logo = "../../ide/coq.png"
 
 # If true, show page references after internal links.
 #latex_show_pagerefs = False
 
 # If true, show URL addresses after external links.
-#latex_show_urls = False
-
-# Documents to append as an appendix to all manuals.
-#latex_appendices = []
-
-# If false, no module index is generated.
-#latex_domain_indices = True
-
+latex_show_urls = 'footnote'
 
 # -- Options for manual page output ---------------------------------------
 

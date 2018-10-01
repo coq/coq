@@ -277,8 +277,8 @@ In addition to the objects above, the ``coqrst`` Sphinx plugin defines the follo
 
        .. inference:: name
 
-          newline-separated premisses
-          ------------------------
+          newline-separated premises
+          --------------------------
           conclusion
 
     Example::
@@ -291,14 +291,14 @@ In addition to the objects above, the ``coqrst`` Sphinx plugin defines the follo
           -----------------------------
           \WTEG{\forall~x:T,U}{\Prop}
 
-``.. preamble::`` A reST directive for hidden math.
-    Mostly useful to let MathJax know about `\def`\ s and `\newcommand`\ s.
+``.. preamble::`` A reST directive to include a TeX file.
+    Mostly useful to let MathJax know about `\def`s and `\newcommand`s.  The
+    contents of the TeX file are wrapped in a math environment, as MathJax
+    doesn't process LaTeX definitions otherwise.
 
-    Example::
+    Usage::
 
-       .. preamble::
-
-          \newcommand{\paren}[#1]{\left(#1\right)}
+       .. preamble:: preamble.tex
 
 Coq roles
 =========
@@ -381,6 +381,32 @@ DON'T
 
      This is equivalent to ``Axiom`` :token`ident` : :token:`term`.
 
+..
+
+DO
+  .. code::
+
+     :n:`power_tac @term [@ltac]`
+       allows :tacn:`ring` and :tacn:`ring_simplify` to recognize …
+
+DON'T
+  .. code::
+
+     power_tac :n:`@term` [:n:`@ltac`]
+       allows :tacn:`ring` and :tacn:`ring_simplify` to recognize …
+
+..
+
+DO
+  .. code::
+
+     :n:`name={*; attr}`
+
+DON'T
+  .. code::
+
+     ``name=``:n:`{*; attr}`
+
 Omitting annotations
 --------------------
 
@@ -393,6 +419,86 @@ DON'T
   .. code::
 
      .. tacv:: assert form as intro_pattern
+
+Using the ``.. coqtop::`` directive for syntax highlighting
+-----------------------------------------------------------
+
+DO
+  .. code::
+
+     A tactic of the form:
+
+     .. coqdoc::
+
+        do [ t1 | … | tn ].
+
+     is equivalent to the standard Ltac expression:
+
+     .. coqdoc::
+
+        first [ t1 | … | tn ].
+
+DON'T
+  .. code::
+
+     A tactic of the form:
+
+     .. coqtop:: in
+
+        do [ t1 | … | tn ].
+
+     is equivalent to the standard Ltac expression:
+
+     .. coqtop:: in
+
+        first [ t1 | … | tn ].
+
+Overusing plain quotes
+----------------------
+
+DO
+  .. code::
+
+     The :tacn:`refine` tactic can raise the :exn:`Invalid argument` exception.
+     The term :g:`let a = 1 in a a` is ill-typed.
+
+DON'T
+  .. code::
+
+     The ``refine`` tactic can raise the ``Invalid argument`` exception.
+     The term ``let a = 1 in a a`` is ill-typed.
+
+Plain quotes produce plain text, without highlighting or cross-references.
+
+Overusing the ``example`` directive
+-----------------------------------
+
+DO
+  .. code::
+
+     Here is a useful axiom:
+
+     .. coqdoc::
+
+        Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
+
+DO
+  .. code::
+
+     .. example:: Using proof-irrelevance
+
+        If you assume the axiom above, …
+
+DON'T
+  .. code::
+
+     Here is a useful axiom:
+
+     .. example::
+
+        .. coqdoc::
+
+           Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
 
 Tips and tricks
 ===============
@@ -415,7 +521,7 @@ Add either ``undo`` to the first block or ``reset`` to the second block to avoid
 Abbreviations and macros
 ------------------------
 
-Abbreviations and placeholders for specially-formatted names (like ``|Cic|``, ``|Coq|``, ``|CoqIDE|``, ``|Ltac|``, and ``|Gallina|``) are defined in a `separate file </doc/sphinx/replaces.rst>`_ included by most chapters of the manual.  Some useful LaTeX macros are defined in `</doc/sphinx/preamble.rst>`_.
+Substitutions for specially-formatted names (like ``|Cic|``, ``|Coq|``, ``|CoqIDE|``, ``|Ltac|``, and ``|Gallina|``), along with some useful LaTeX macros, are defined in a `separate file </doc/sphinx/refman-preamble.rst>`_.  This file is automatically included in all manual pages.
 
 Emacs
 -----

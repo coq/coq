@@ -33,7 +33,7 @@ HTMLSTYLE:=coqremote
 # Sphinx-related variables
 SPHINXENV:=COQBIN="$(CURDIR)/bin/"
 SPHINXOPTS= -j4
-SPHINXWARNERROR ?= 1
+SPHINXWARNERROR ?= 0
 ifeq ($(SPHINXWARNERROR),1)
 SPHINXOPTS += -W
 endif
@@ -50,25 +50,35 @@ DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
 ######################################################################
 
 .PHONY: doc doc-html doc-pdf doc-ps
-.PHONY: stdlib full-stdlib
+.PHONY: stdlib full-stdlib sphinx
 
-doc: sphinx stdlib
+doc: refman stdlib
 
 ifndef QUICK
 SPHINX_DEPS := coq
 endif
 
-sphinx: $(SPHINX_DEPS)
-	$(SHOW)'SPHINXBUILD doc/sphinx'
-	$(HIDE)$(SPHINXENV) $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/html
-	@echo
-	@echo "Build finished. The HTML pages are in $(SPHINXBUILDDIR)/html."
+# refman-html and refman-latex
+refman-%: $(SPHINX_DEPS)
+	$(SHOW)'SPHINXBUILD doc/sphinx ($*)'
+	$(HIDE)$(SPHINXENV) $(SPHINXBUILD) -b $* \
+		$(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/$*
+
+refman-pdf: refman-latex
+	+$(MAKE) -C $(SPHINXBUILDDIR)/latex
+
+refman: $(SPHINX_DEPS)
+	+$(MAKE) refman-html
+	+$(MAKE) refman-pdf
+
+# compatibility alias
+sphinx: refman-html
 
 doc-html:\
-  doc/stdlib/html/index.html sphinx
+  doc/stdlib/html/index.html refman-html
 
 doc-pdf:\
-  doc/stdlib/Library.pdf
+  doc/stdlib/Library.pdf refman-pdf
 
 doc-ps:\
   doc/stdlib/Library.ps

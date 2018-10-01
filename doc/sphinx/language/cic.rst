@@ -1,6 +1,3 @@
-.. include:: ../preamble.rst
-.. include:: ../replaces.rst
-
 .. _calculusofinductiveconstructions:
 
 
@@ -1010,7 +1007,7 @@ the Type hierarchy.
 
    It is possible to declare the same inductive definition in the
    universe :math:`\Type`. The :g:`exType` inductive definition has type
-   :math:`(\Type(i)→\Prop)→\Type(j)` with the constraint that the parameter :math:`X` of :math:`\kw{exT_intro}`
+   :math:`(\Type(i)→\Prop)→\Type(j)` with the constraint that the parameter :math:`X` of :math:`\kw{exT}_{\kw{intro}}`
    has type :math:`\Type(k)` with :math:`k<j` and :math:`k≤ i`.
 
    .. coqtop:: all
@@ -1246,14 +1243,14 @@ The |Coq| term for this proof
 will be written:
 
 .. math::
-   \Match~m~\with~(c_1~x_{11} ... x_{1p_1} ) ⇒ f_1 | … | (c_n~x_{n1} ... x_{np_n} ) ⇒ f_n \endkw
+   \Match~m~\with~(c_1~x_{11} ... x_{1p_1} ) ⇒ f_1 | … | (c_n~x_{n1} ... x_{np_n} ) ⇒ f_n \kwend
 
 In this expression, if :math:`m` eventually happens to evaluate to
 :math:`(c_i~u_1 … u_{p_i})` then the expression will behave as specified in its :math:`i`-th branch
 and it will reduce to :math:`f_i` where the :math:`x_{i1} …x_{ip_i}` are replaced by the
 :math:`u_1 … u_{p_i}` according to the ι-reduction.
 
-Actually, for type checking a :math:`\Match…\with…\endkw` expression we also need
+Actually, for type checking a :math:`\Match…\with…\kwend` expression we also need
 to know the predicate P to be proved by case analysis. In the general
 case where :math:`I` is an inductively defined :math:`n`-ary relation, :math:`P` is a predicate
 over :math:`n+1` arguments: the :math:`n` first ones correspond to the arguments of :math:`I`
@@ -1267,7 +1264,7 @@ using the syntax:
 .. math::
    \Match~m~\as~x~\In~I~\_~a~\return~P~\with~
    (c_1~x_{11} ... x_{1p_1} ) ⇒ f_1 | …
-   | (c_n~x_{n1} ... x_{np_n} ) ⇒ f_n~\endkw
+   | (c_n~x_{n1} ... x_{np_n} ) ⇒ f_n~\kwend
    
 The :math:`\as` part can be omitted if either the result type does not depend
 on :math:`m` (non-dependent elimination) or :math:`m` is a variable (in this case, :math:`m`
@@ -1453,6 +1450,8 @@ We write :math:`\{c\}^P` for :math:`\{c:C\}^P` with :math:`C` the type of :math:
    where
 
    .. math::
+      :nowrap:
+
       \begin{eqnarray*}
         P & = & \lambda~l~.~P^\prime\\
         f_1 & = & t_1\\
@@ -1693,13 +1692,15 @@ for primitive recursive operators. The following reductions are now
 possible:
 
 .. math::
-   \def\plus{\mathsf{plus}}
-   \def\tri{\triangleright_\iota}
-   \begin{eqnarray*}
-   \plus~(\nS~(\nS~\nO))~(\nS~\nO) & \tri & \nS~(\plus~(\nS~\nO)~(\nS~\nO))\\
-                                  & \tri & \nS~(\nS~(\plus~\nO~(\nS~\nO)))\\
-                                  & \tri & \nS~(\nS~(\nS~\nO))\\
-   \end{eqnarray*}
+   :nowrap:
+
+   {\def\plus{\mathsf{plus}}
+    \def\tri{\triangleright_\iota}
+    \begin{eqnarray*}
+    \plus~(\nS~(\nS~\nO))~(\nS~\nO) & \tri & \nS~(\plus~(\nS~\nO)~(\nS~\nO))\\
+                                   & \tri & \nS~(\nS~(\plus~\nO~(\nS~\nO)))\\
+                                   & \tri & \nS~(\nS~(\nS~\nO))\\
+    \end{eqnarray*}}
 
 .. _Mutual-induction:
 

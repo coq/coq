@@ -1,4 +1,3 @@
-.. include:: ../replaces.rst
 .. _canonicalstructures:
 
 Canonical Structures

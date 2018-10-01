@@ -28,18 +28,18 @@ To produce the complete documentation in HTML, you will need Coq dependencies
 listed in [`INSTALL`](../INSTALL). Additionally, the Sphinx-based
 reference manual requires Python 3, and the following Python packages:
 
-    sphinx sphinx_rtd_theme beautifulsoup4 antlr4-python3-runtime pexpect sphinxcontrib-bibtex
+  - sphinx
+  - sphinx_rtd_theme
+  - beautifulsoup4
+  - antlr4-python3-runtime
+  - pexpect
+  - sphinxcontrib-bibtex
 
-You can install them using `pip3 install` or using your distribution's package
-manager. E.g. under recent Debian-based operating systems (Debian 10 "Buster",
-Ubuntu 18.04, ...) you can use:
+To install them, you should first install pip and setuptools (for instance,
+with `apt install python3-pip python3-setuptools` on Debian / Ubuntu) then run:
 
-    apt install python3-sphinx python3-pexpect python3-sphinx-rtd-theme \
-                python3-bs4 python3-sphinxcontrib.bibtex python3-pip
-
-Then, install the missing Python3 Antlr4 package:
-
-    pip3 install antlr4-python3-runtime
+    pip3 install sphinx sphinx_rtd_theme beautifulsoup4 antlr4-python3-runtime \
+                 pexpect sphinxcontrib-bibtex
 
 Nix users should get the correct development environment to build the
 HTML documentation from Coq's [`default.nix`](../default.nix) (note this
@@ -54,10 +54,19 @@ additional tools are required:
   - pdflatex
   - dvips
   - makeindex
+  - xelatex
+  - latexmk
+  - xindy
 
-Install them using your package manager. E.g. on Debian / Ubuntu:
+All of them are part of the TexLive distribution. E.g. on Debian / Ubuntu,
+install them with:
 
-    apt install texlive-latex-extra texlive-fonts-recommended
+    apt install texlive-full
+
+Or if you want to use less disk space:
+
+    apt install texlive-latex-extra texlive-fonts-recommended texlive-xetex \
+                latexmk xindy
 
 Compilation
 -----------
@@ -79,8 +88,11 @@ Alternatively, you can use some specific targets:
 - `make doc-html`
   to produce all HTML documents
 
-- `make sphinx`
-   to produce the HTML version of the reference manual
+- `make refman`
+  to produce the HTML and PDF versions of the reference manual
+
+- `make refman-{html,pdf}`
+  to produce only one format of the reference manual
 
 - `make stdlib`
   to produce all formats of the Coq standard library
@@ -94,12 +106,12 @@ to avoid treating Sphinx warnings as errors.  Otherwise, Sphinx quits
 upon detecting the first warning.  You can set this on the Sphinx `make`
 command line or as an environment variable:
 
-- `make sphinx SPHINXWARNERROR=0`
+- `make refman SPHINXWARNERROR=0`
 
 - ~~~
   export SPHINXWARNERROR=0
     ⋮
-  make sphinx
+  make refman
   ~~~
 
 Installation

@@ -1,32 +1,31 @@
-.. include:: preamble.rst
-.. include:: replaces.rst
+==========================
+ The Coq Reference Manual
+==========================
+
+Introduction
+------------
 
 .. include:: introduction.rst
 
-------------------
-Table of contents
-------------------
+.. [#PG] Proof-General is available at https://proofgeneral.github.io/.
+   Optionally, you can enhance it with the minor mode
+   Company-Coq :cite:`Pit16`
+   (see https://github.com/cpitclaudel/company-coq).
+
+Credits
+-------
+
+.. include:: credits.rst
+
+License
+-------
+
+.. include:: license.rst
+
+The language
+------------
 
 .. toctree::
-   :caption: Indexes
-
-   genindex
-   coq-cmdindex
-   coq-tacindex
-   coq-optindex
-   coq-exnindex
-
-.. No entries yet
-  * :index:`thmindex`
-
-.. toctree::
-   :caption: Preamble
-
-   self
-   credits
-
-.. toctree::
-   :caption: The language
 
    language/gallina-specification-language
    language/gallina-extensions
@@ -34,8 +33,10 @@ Table of contents
    language/cic
    language/module-system
 
+The proof engine
+----------------
+
 .. toctree::
-   :caption: The proof engine
 
    proof-engine/vernacular-commands
    proof-engine/proof-handling
@@ -44,21 +45,27 @@ Table of contents
    proof-engine/detailed-tactic-examples
    proof-engine/ssreflect-proof-language
 
+User extensions
+---------------
+
 .. toctree::
-   :caption: User extensions
 
    user-extensions/syntax-extensions
    user-extensions/proof-schemes
 
+Practical tools
+---------------
+
 .. toctree::
-   :caption: Practical tools
 
    practical-tools/coq-commands
    practical-tools/utilities
    practical-tools/coqide
 
+Addendum
+--------
+
 .. toctree::
-   :caption: Addendum
 
    addendum/extended-pattern-matching
    addendum/implicit-coercions
@@ -76,16 +83,4 @@ Table of contents
    addendum/universe-polymorphism
 
 .. toctree::
-   :caption: Reference
-
    zebibliography
-
-This material (the Coq Reference Manual) may be distributed only subject to the
-terms and conditions set forth in the Open Publication License, v1.0 or later
-(the latest version is presently available at
-http://www.opencontent.org/openpub). Options A and B are not elected.
-
-.. [#PG] Proof-General is available at https://proofgeneral.github.io/.
-         Optionally, you can enhance it with the minor mode
-         Company-Coq :cite:`Pit16`
-         (see https://github.com/cpitclaudel/company-coq).
