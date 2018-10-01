@@ -198,6 +198,21 @@ if [ -z "$(git config user.signingkey)" ]; then
   warning "gpg will guess a key out of your git config user.* data"
 fi
 
+# Sanity check: at least one "APPROVED" review
+REVIEWS=$(curl -s "$API/pulls/$PR/reviews")
+APPROVED=$(echo "$REVIEWS" | jq -rc 'map(select(.state == "APPROVED"))')
+if [ "$APPROVED" = "[]" ]; then
+  error "no approved review, please approve before merging"
+  ask_confirmation
+fi
+
+# Sanity check: no "CHANGES_REQUESTED" review
+CHANGES_REQUESTED=$(echo "$REVIEWS" | jq -rc 'map(select(.state == "CHANGES_REQUESTED"))')
+if [ "$CHANGES_REQUESTED" != "[]" ]; then
+  error "changes were requested, please dismiss the review before merging if it is outdated"
+  ask_confirmation
+fi
+
 info "merging"
 git merge -v -S --no-ff FETCH_HEAD -m "Merge PR #$PR: $TITLE" -e
 
