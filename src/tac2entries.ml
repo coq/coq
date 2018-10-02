@@ -750,14 +750,14 @@ let perform_eval e =
       Proof_global.give_me_the_proof ()
     with Proof_global.NoCurrentProof ->
       let sigma = Evd.from_env env in
-      Vernacexpr.SelectAll, Proof.start sigma []
+      Goal_select.SelectAll, Proof.start sigma []
   in
   let v = match selector with
-  | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i v
-  | Vernacexpr.SelectList l -> Proofview.tclFOCUSLIST l v
-  | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id v
-  | Vernacexpr.SelectAll -> v
-  | Vernacexpr.SelectAlreadyFocused -> assert false (** TODO **)
+  | Goal_select.SelectNth i -> Proofview.tclFOCUS i i v
+  | Goal_select.SelectList l -> Proofview.tclFOCUSLIST l v
+  | Goal_select.SelectId id -> Proofview.tclFOCUSID id v
+  | Goal_select.SelectAll -> v
+  | Goal_select.SelectAlreadyFocused -> assert false (** TODO **)
   in
   (** HACK: the API doesn't allow to return a value *)
   let ans = ref None in
