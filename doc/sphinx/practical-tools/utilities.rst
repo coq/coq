@@ -21,16 +21,16 @@ The most basic custom toplevel is built using:
 
    % ocamlfind ocamlopt -thread -rectypes -linkall -linkpkg \
                  -package coq.toplevel \
-                  toplevel/coqtop\_bin.ml -o my\_toplevel.native
+                 topbin/coqtop_bin.ml -o my_toplevel.native
 
 
-For example, to statically link |L_tac|, you can just do:
+For example, to statically link |Ltac|, you can just do:
 
 ::
 
    % ocamlfind ocamlopt -thread -rectypes -linkall -linkpkg \
-                 -package coq.toplevel -package coq.ltac \
-                 toplevel/coqtop\_bin.ml -o my\_toplevel.native
+                 -package coq.toplevel,coq.plugins.ltac \
+                 topbin/coqtop_bin.ml -o my_toplevel.native
 
 and similarly for other plugins.
 
