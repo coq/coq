@@ -167,6 +167,11 @@ val term_of_fconstr : fconstr -> constr
 val destFLambda :
   (fconstr subs -> constr -> fconstr) -> fconstr -> Name.t Context.binder_annot * fconstr * fconstr
 
+type optrel = Unknown | KnownR | KnownI
+
+val relevance_of : fconstr -> optrel
+val set_relevance : Sorts.relevance -> fconstr -> unit
+
 (** Global and local constant cache *)
 type clos_infos
 type clos_tab

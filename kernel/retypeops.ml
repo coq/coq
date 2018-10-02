@@ -50,30 +50,37 @@ let relevance_of_flex env extra lft = function
 
 let rec relevance_of_fterm env extra lft f =
   let open CClosure in
-  match fterm_of f with
-  | FRel n -> relevance_of_rel_extra env extra (Esubst.reloc_rel n lft)
-  | FAtom c -> relevance_of_term_extra env extra lft (Esubst.subs_id 0) c
-  | FFlex key -> relevance_of_flex env extra lft key
-  | FInd _ | FProd _ -> Sorts.Relevant (* types are always relevant *)
-  | FConstruct (c,_) -> relevance_of_constructor env c
-  | FApp (f, _) -> relevance_of_fterm env extra lft f
-  | FProj (p, _) -> relevance_of_projection env p
-  | FFix (((_,i),(lna,_,_)), _) -> (lna.(i)).binder_relevance
-  | FCoFix ((i,(lna,_,_)), _) -> (lna.(i)).binder_relevance
-  | FCaseT (ci, _, _, _, _) -> ci.ci_relevance
-  | FLambda (len, tys, bdy, e) ->
-    let extra = List.rev_append (List.map (fun (x,_) -> binder_relevance x) tys) extra in
-    let lft = Esubst.el_liftn len lft in
-    relevance_of_term_extra env extra lft e bdy
-  | FLetIn (x, _, _, bdy, e) ->
-    relevance_of_term_extra env (x.binder_relevance :: extra)
-      (Esubst.el_lift lft) (Esubst.subs_lift e) bdy
-  | FInt _ -> Sorts.Relevant
-  | FLIFT (k, f) -> relevance_of_fterm env extra (Esubst.el_shft k lft) f
-  | FCLOS (c, e) -> relevance_of_term_extra env extra lft e c
+  match CClosure.relevance_of f with
+  | KnownR -> Sorts.Relevant
+  | KnownI -> Sorts.Irrelevant
+  | Unknown ->
+    let r = match fterm_of f with
+      | FRel n -> relevance_of_rel_extra env extra (Esubst.reloc_rel n lft)
+      | FAtom c -> relevance_of_term_extra env extra lft (Esubst.subs_id 0) c
+      | FFlex key -> relevance_of_flex env extra lft key
+      | FInt _ -> Sorts.Relevant
+      | FInd _ | FProd _ -> Sorts.Relevant (* types are always relevant *)
+      | FConstruct (c,_) -> relevance_of_constructor env c
+      | FApp (f, _) -> relevance_of_fterm env extra lft f
+      | FProj (p, _) -> relevance_of_projection env p
+      | FFix (((_,i),(lna,_,_)), _) -> (lna.(i)).binder_relevance
+      | FCoFix ((i,(lna,_,_)), _) -> (lna.(i)).binder_relevance
+      | FCaseT (ci, _, _, _, _) -> ci.ci_relevance
+      | FLambda (len, tys, bdy, e) ->
+        let extra = List.rev_append (List.map (fun (x,_) -> binder_relevance x) tys) extra in
+        let lft = Esubst.el_liftn len lft in
+        relevance_of_term_extra env extra lft e bdy
+      | FLetIn (x, _, _, bdy, e) ->
+        relevance_of_term_extra env (x.binder_relevance :: extra)
+          (Esubst.el_lift lft) (Esubst.subs_lift e) bdy
+      | FLIFT (k, f) -> relevance_of_fterm env extra (Esubst.el_shft k lft) f
+      | FCLOS (c, e) -> relevance_of_term_extra env extra lft e c
 
-  | FEvar (_, _) -> Sorts.Relevant (* let's assume evars are relevant for now *)
-  | FLOCKED -> assert false
+      | FEvar (_, _) -> Sorts.Relevant (* let's assume evars are relevant for now *)
+      | FLOCKED -> assert false
+    in
+    CClosure.set_relevance r f;
+    r
 
 and relevance_of_term_extra env extra lft subs c =
   match kind c with
