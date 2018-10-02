@@ -34,9 +34,8 @@
 | [`dev/doc/release-process.md`](doc/release-process.md) | Process of creating a new Coq release |
 
 
-## Documentation of ML interfaces using ocamldoc ( `dev/ocamldoc/html`)
-`make mli-doc` in coq root directory.
-
+## Documentation of ML interfaces using `odoc` ( `_build/default/_doc`)
+`make -f Makefile.dune apidoc` in coq root directory.
 
 ## Other development tools (`dev/tools`)
 

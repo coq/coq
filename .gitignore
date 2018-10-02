@@ -113,8 +113,6 @@ doc/stdlib/index-list.html
 doc/tutorial/Tutorial.v.out
 doc/RecTutorial/RecTutorial.html
 doc/RecTutorial/RecTutorial.ps
-dev/ocamldoc/*.html
-dev/ocamldoc/*.css
 
 # .mll files
 
@@ -159,13 +157,6 @@ checker/names.ml
 checker/names.mli
 checker/esubst.ml
 checker/esubst.mli
-
-# mlis documentation
-
-dev/ocamldoc/html/
-dev/ocamldoc/coq.*
-dev/ocamldoc/ocamldoc.sty
-dev/myinclude
 
 # emacs save files
 *~

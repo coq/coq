@@ -193,11 +193,11 @@ META.coq: META.coq.in
 # Cleaning
 ###########################################################################
 
-.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean depclean cleanconfig distclean voclean timingclean devdocclean alienclean
+.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean depclean cleanconfig distclean voclean timingclean alienclean
 
-clean: objclean cruftclean depclean docclean devdocclean camldevfilesclean
+clean: objclean cruftclean depclean docclean camldevfilesclean
 
-cleankeepvo: indepclean clean-ide optclean cruftclean depclean docclean devdocclean
+cleankeepvo: indepclean clean-ide optclean cruftclean depclean docclean
 
 objclean: archclean indepclean
 
@@ -275,12 +275,6 @@ timingclean:
 	  -o -name "*.v.after-timing" -o -name "*.v.timing.diff" -o -name "time-of-build.log" \
 	  -o -name "time-of-build-before.log" -o -name "time-of-build-after.log" \
 	  -o -name "time-of-build-pretty.log" -o -name "time-of-build-both.log" \) -exec rm -f {} +
-
-devdocclean:
-	find . \( -name '*.dep.ps' -o -name '*.dot' \) -exec rm -f {} +
-	rm -f $(OCAMLDOCDIR)/*.log $(OCAMLDOCDIR)/*.aux $(OCAMLDOCDIR)/*.toc
-	rm -f $(OCAMLDOCDIR)/ocamldoc.sty $(OCAMLDOCDIR)/coq.tex
-	rm -f $(OCAMLDOCDIR)/html/*.html
 
 # Ensure that every compiled file around has a known source file.
 # This should help preventing weird compilation failures caused by leftover
