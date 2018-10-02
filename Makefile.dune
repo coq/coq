@@ -1,7 +1,7 @@
 # -*- mode: makefile -*-
 # Dune Makefile for Coq
 
-.PHONY: help voboot states world apidoc
+.PHONY: help voboot states world watch release apidoc clean
 
 # use DUNEOPT=--display=short for a more verbose build
 # DUNEOPT=--display=short
