@@ -9,3 +9,13 @@
  (name vodeps)
  (deps tools/coq_dune.exe .vfiles.d))
   ; (action (run coq_dune .vfiles.d))))
+
+(install
+ (section lib)
+ (files
+   revision))
+
+(rule
+ (targets revision)
+ (deps (:rev-script dev/tools/make_git_revision.sh))
+ (action (with-stdout-to revision (run %{rev-script}))))

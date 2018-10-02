@@ -525,22 +525,10 @@ let arch_is_win32 = (arch = "win32")
 let exe = exe := if arch_is_win32 then ".exe" else ""; !exe
 let dll = if os_type_win32 then ".dll" else ".so"
 
-(** * VCS
-
-    Is the source tree checked out from a recognised
-    Version Control System ? *)
-
-let vcs =
-  let git_dir = try Sys.getenv "GIT_DIR" with Not_found -> ".git" in
-  if Sys.file_exists git_dir then "git"
-  else if Sys.file_exists ".svn/entries" then "svn"
-  else if dir_exists "{arch}" then "gnuarch"
-  else "none"
-
 (** * Git Precommit Hook *)
 let _ =
   let f = ".git/hooks/pre-commit" in
-  if vcs = "git" && dir_exists ".git/hooks" && not (Sys.file_exists f) then begin
+  if dir_exists ".git/hooks" && not (Sys.file_exists f) then begin
     cprintf "Creating pre-commit hook in %s" f;
     let o = open_out f in
     let pr s = fprintf o s in
@@ -1341,7 +1329,6 @@ let write_makefile f =
   pr "IDECDEPSFLAGS=%s\n" !idecdepsflags;
   pr "IDEINT=%s\n\n" !idearchdef;
   pr "# Defining REVISION\n";
-  pr "CHECKEDOUT=%s\n\n" vcs;
   pr "# Option to control compilation and installation of the documentation\n";
   pr "WITHDOC=%s\n\n" (if !prefs.withdoc then "all" else "no");
   pr "# Option to produce precompiled files for native_compute\n";

@@ -9,6 +9,7 @@
 ########## Build system ##########
 
 /Makefile*        @gares
+/dev/tools/make_git_revision.sh @gares
 
 /configure*       @ejgallego
 
