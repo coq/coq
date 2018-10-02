@@ -34,6 +34,10 @@ Tactics
 
 - Deprecated the Implicit Tactic family of commands.
 
+- The default program obligation tactic uses a bounded proof search
+  instead of an unbounded and potentially non-terminating one now
+  (source of incompatibility).
+
 - The `simple apply` tactic now respects the `Opaque` flag when called from
   Ltac (`auto` still does not respect it).
 
