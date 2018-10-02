@@ -113,3 +113,5 @@ val coercions : unit -> coe_info_typ list
 (** [hide_coercion] returns the number of params to skip if the coercion must
    be hidden, [None] otherwise; it raises [Not_found] if not a coercion *)
 val hide_coercion : coe_typ -> int option
+
+val is_coercion_in_scope : GlobRef.t -> bool
