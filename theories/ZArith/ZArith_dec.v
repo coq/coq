@@ -34,7 +34,7 @@ Lemma Zcompare_rec (P:Set) (n m:Z) :
   ((n ?= m) = Eq -> P) -> ((n ?= m) = Lt -> P) -> ((n ?= m) = Gt -> P) -> P.
 Proof. apply Zcompare_rect. Defined.
 
-Notation Z_eq_dec := Z.eq_dec (compat "8.6").
+Notation Z_eq_dec := Z.eq_dec (compat "8.7").
 
 Section decidability.
 

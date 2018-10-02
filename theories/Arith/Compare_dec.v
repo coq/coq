@@ -135,10 +135,10 @@ Qed.
     See now [Nat.compare] and its properties.
     In scope [nat_scope], the notation for [Nat.compare] is "?=" *)
 
-Notation nat_compare := Nat.compare (compat "8.6").
+Notation nat_compare := Nat.compare (compat "8.7").
 
-Notation nat_compare_spec := Nat.compare_spec (compat "8.6").
-Notation nat_compare_eq_iff := Nat.compare_eq_iff (compat "8.6").
+Notation nat_compare_spec := Nat.compare_spec (compat "8.7").
+Notation nat_compare_eq_iff := Nat.compare_eq_iff (compat "8.7").
 Notation nat_compare_S := Nat.compare_succ (only parsing).
 
 Lemma nat_compare_lt n m : n<m <-> (n ?= m) = Lt.

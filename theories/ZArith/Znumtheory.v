@@ -27,20 +27,20 @@ Open Scope Z_scope.
      - properties of the efficient [Z.gcd] function
 *)
 
-Notation Zgcd := Z.gcd (compat "8.6").
-Notation Zggcd := Z.ggcd (compat "8.6").
-Notation Zggcd_gcd := Z.ggcd_gcd (compat "8.6").
-Notation Zggcd_correct_divisors := Z.ggcd_correct_divisors (compat "8.6").
-Notation Zgcd_divide_l := Z.gcd_divide_l (compat "8.6").
-Notation Zgcd_divide_r := Z.gcd_divide_r (compat "8.6").
-Notation Zgcd_greatest := Z.gcd_greatest (compat "8.6").
-Notation Zgcd_nonneg := Z.gcd_nonneg (compat "8.6").
-Notation Zggcd_opp := Z.ggcd_opp (compat "8.6").
+Notation Zgcd := Z.gcd (compat "8.7").
+Notation Zggcd := Z.ggcd (compat "8.7").
+Notation Zggcd_gcd := Z.ggcd_gcd (compat "8.7").
+Notation Zggcd_correct_divisors := Z.ggcd_correct_divisors (compat "8.7").
+Notation Zgcd_divide_l := Z.gcd_divide_l (compat "8.7").
+Notation Zgcd_divide_r := Z.gcd_divide_r (compat "8.7").
+Notation Zgcd_greatest := Z.gcd_greatest (compat "8.7").
+Notation Zgcd_nonneg := Z.gcd_nonneg (compat "8.7").
+Notation Zggcd_opp := Z.ggcd_opp (compat "8.7").
 
 (** The former specialized inductive predicate [Z.divide] is now
     a generic existential predicate. *)
 
-Notation Zdivide := Z.divide (compat "8.6").
+Notation Zdivide := Z.divide (compat "8.7").
 
 (** Its former constructor is now a pseudo-constructor. *)
 
@@ -48,7 +48,7 @@ Definition Zdivide_intro a b q (H:b=q*a) : Z.divide a b := ex_intro _ q H.
 
 (** Results concerning divisibility*)
 
-Notation Zdivide_refl := Z.divide_refl (compat "8.6").
+Notation Zdivide_refl := Z.divide_refl (compat "8.7").
 Notation Zone_divide := Z.divide_1_l (only parsing).
 Notation Zdivide_0 := Z.divide_0_r (only parsing).
 Notation Zmult_divide_compat_l := Z.mul_divide_mono_l (only parsing).
@@ -97,8 +97,8 @@ Notation Zdivide_1 := Z.divide_1_r (only parsing).
 
 (** If [a] divides [b] and [b] divides [a] then [a] is [b] or [-b]. *)
 
-Notation Zdivide_antisym := Z.divide_antisym (compat "8.6").
-Notation Zdivide_trans := Z.divide_trans (compat "8.6").
+Notation Zdivide_antisym := Z.divide_antisym (compat "8.7").
+Notation Zdivide_trans := Z.divide_trans (compat "8.7").
 
 (** If [a] divides [b] and [b<>0] then [|a| <= |b|]. *)
 
@@ -800,7 +800,7 @@ Proof.
   rewrite <- Zdivide_Zdiv_eq; auto.
 Qed.
 
-Notation Zgcd_comm := Z.gcd_comm (compat "8.6").
+Notation Zgcd_comm := Z.gcd_comm (compat "8.7").
 
 Lemma Zgcd_ass a b c : Z.gcd (Z.gcd a b) c = Z.gcd a (Z.gcd b c).
 Proof.

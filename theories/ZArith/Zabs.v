@@ -29,17 +29,17 @@ Local Open Scope Z_scope.
 (**********************************************************************)
 (** * Properties of absolute value *)
 
-Notation Zabs_eq := Z.abs_eq (compat "8.6").
+Notation Zabs_eq := Z.abs_eq (compat "8.7").
 Notation Zabs_non_eq := Z.abs_neq (only parsing).
 Notation Zabs_Zopp := Z.abs_opp (only parsing).
 Notation Zabs_pos := Z.abs_nonneg (only parsing).
-Notation Zabs_involutive := Z.abs_involutive (compat "8.6").
+Notation Zabs_involutive := Z.abs_involutive (compat "8.7").
 Notation Zabs_eq_case := Z.abs_eq_cases (only parsing).
-Notation Zabs_triangle := Z.abs_triangle (compat "8.6").
+Notation Zabs_triangle := Z.abs_triangle (compat "8.7").
 Notation Zsgn_Zabs := Z.sgn_abs (only parsing).
 Notation Zabs_Zsgn := Z.abs_sgn (only parsing).
 Notation Zabs_Zmult := Z.abs_mul (only parsing).
-Notation Zabs_square := Z.abs_square (compat "8.6").
+Notation Zabs_square := Z.abs_square (compat "8.7").
 
 (** * Proving a property of the absolute value by cases *)
 
