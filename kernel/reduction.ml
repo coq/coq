@@ -329,9 +329,8 @@ let is_irrelevant infos lft c =
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
-  if is_irrelevant infos lft1 term1 && is_irrelevant infos lft2 term2
-  then cuniv
-  else eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
+  try eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
+  with NotConvertible when is_irrelevant infos lft1 term1 && is_irrelevant infos lft2 term2 -> cuniv
 
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
 and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
