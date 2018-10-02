@@ -118,17 +118,6 @@ val without_option : bool ref -> ('a -> 'b) -> 'a -> 'b
 (** Temporarily extends the reference to a list *)
 val with_extra_values : 'c list ref -> 'c list -> ('a -> 'b) -> 'a -> 'b
 
-(** Options for external tools *)
-
-(** Returns string format for default browser to use from Coq or CoqIDE *)
-val browser_cmd_fmt : string
-
-val is_standard_doc_url : string -> bool
-
-(** Options for specifying where coq librairies reside *)
-val coqlib_spec : bool ref
-val coqlib : string ref
-
 (** Level of inlining during a functor application *)
 val set_inline_level : int -> unit
 val get_inline_level : unit -> int

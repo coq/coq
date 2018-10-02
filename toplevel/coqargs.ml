@@ -376,8 +376,7 @@ let parse_args arglist : coq_cmdopts * string list =
 
     (* Options with one arg *)
     |"-coqlib" ->
-      Flags.coqlib_spec := true;
-      Flags.coqlib := (next ());
+      Envars.set_user_coqlib (next ());
       oval
 
     |"-async-proofs" ->
