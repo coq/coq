@@ -8,23 +8,24 @@ TIME /T
 REM List currently used cygwin and target folders for debugging / maintenance purposes
 
 ECHO "Currently used cygwin folders"
-DIR C:\cygwin*
+DIR C:\ci\cygwin*
 ECHO "Currently used target folders"
-DIR C:\coq*
+DIR C:\ci\coq*
+ECHO "Root folders"
+DIR C:\
 
 if %ARCH% == 32 (
   SET ARCHLONG=i686
-  SET CYGROOT=C:\cygwin
   SET SETUP=setup-x86.exe
 )
 
 if %ARCH% == 64 (
   SET ARCHLONG=x86_64
-  SET CYGROOT=C:\cygwin64
   SET SETUP=setup-x86_64.exe
 )
 
-SET DESTCOQ=C:\coq%ARCH%_inst
+SET CYGROOT=C:\ci\cygwin%ARCH%
+SET DESTCOQ=C:\ci\coq%ARCH%
 
 CALL :MakeUniqueFolder %CYGROOT% CYGROOT
 CALL :MakeUniqueFolder %DESTCOQ% DESTCOQ
@@ -93,9 +94,9 @@ GOTO :EOF
 
 :CleanupFolders
   ECHO "Cleaning %CYGROOT%"
-  DEL /S /F /Q "%CYGROOT%" > NUL
+  RMDIR /S /Q "%CYGROOT%"
   ECHO "Cleaning %DESTCOQ%"
-  DEL /S /F /Q "%DESTCOQ%" > NUL
+  RMDIR /S /Q "%DESTCOQ%"
   GOTO :EOF
 
 :MakeUniqueFolder
