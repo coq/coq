@@ -7,7 +7,7 @@ Inductive listn : nat -> Set :=
 Axiom
   ax :
     forall (n n' : nat) (l : listn (n + n')) (l' : listn (n' + n)),
-    existS _ (n + n') l = existS _ (n' + n) l'.
+    existT _ (n + n') l = existT _ (n' + n) l'.
 
 Lemma lem :
  forall (n n' : nat) (l : listn (n + n')) (l' : listn (n' + n)),
@@ -72,7 +72,7 @@ Qed.
 
 Require Import JMeq.
 
-Goal forall A B (a:A) (b:B), JMeq a b -> JMeq b a -> True.  
+Goal forall A B (a:A) (b:B), JMeq a b -> JMeq b a -> True.
 inversion 1; (* Goal is now [JMeq a a -> True] *) dependent rewrite H3.
 Undo.
 intros; inversion H; dependent rewrite H4 in H0.
@@ -135,7 +135,7 @@ Abort.
 Goal forall x y, x=y+0 -> let z := x+1 in x+1=y -> z=z -> z=x.
 intros.
 subst x. (* was failing *)
-subst z. 
+subst z.
 rewrite H0.
 auto with arith.
 Qed.

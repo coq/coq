@@ -9,6 +9,8 @@
 (************************************************************************)
 
 (** Compatibility file for making Coq act similar to Coq v8.8 *)
+Require Export Coq.Compat.Coq89.
+
 (** In Coq 8.9, prim token notations follow [Import] rather than
     [Require].  So we make all of the relevant notations accessible in
     compatibility mode. *)

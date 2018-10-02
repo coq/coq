@@ -85,8 +85,8 @@ bar : forall x : nat, x = 0
 
 Argument x is implicit and maximally inserted
 Module Coq.Init.Peano
-Notation existS2 := existT2
-Expands to: Notation Coq.Init.Specif.existS2
+Notation sym_eq := eq_sym
+Expands to: Notation Coq.Init.Logic.sym_eq
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
 For eq: Argument A is implicit and maximally inserted

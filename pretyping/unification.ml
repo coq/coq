@@ -193,10 +193,7 @@ let pose_all_metas_as_evars env evd t =
        | None ->
         let {rebus=ty;freemetas=mvs} = Evd.meta_ftype evd mv in
         let ty = if Evd.Metaset.is_empty mvs then ty else aux ty in
-        let ty =
-          if Flags.version_strictly_greater Flags.V8_6
-          then nf_betaiota env evd ty (* How it was in Coq <= 8.4 (but done in logic.ml at this time) *)
-          else ty (* some beta-iota-normalization "regression" in 8.5 and 8.6 *) in
+        let ty = nf_betaiota env evd ty in
         let src = Evd.evar_source_of_meta mv !evdref in
         let evd, ev = Evarutil.new_evar env !evdref ~src ty in
         evdref := meta_assign mv (ev,(Conv,TypeNotProcessed)) evd;
