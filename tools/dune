@@ -1,8 +1,11 @@
-(executable
- (name coqc)
- (public_name coqc)
- (modules coqc)
- (libraries coq.toplevel))
+(install
+ (section lib)
+ (files
+  (CoqMakefile.in as tools/CoqMakefile.in)
+  (TimeFileMaker.py as tools/TimeFileMaker.py)
+  (make-one-time-file.py as tools/make-one-time-file.py)
+  (make-both-time-files.py as tools/make-both-time-files.py)
+  (make-both-single-timing-files.py as tools/make-both-single-timing-files.py)))
 
 (executable
  (name coq_makefile)
@@ -10,9 +13,11 @@
  (modules coq_makefile)
  (libraries coq.lib))
 
-(install
- (section lib)
- (files (CoqMakefile.in as tools/CoqMakefile.in)))
+(executable
+ (name coqc)
+ (public_name coqc)
+ (modules coqc)
+ (libraries coq.toplevel))
 
 (executable
  (name coqdep)

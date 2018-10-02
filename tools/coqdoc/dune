@@ -1,3 +1,9 @@
+(install
+ (section lib)
+ (files
+  (coqdoc.css as tools/coqdoc/coqdoc.css)
+  (coqdoc.sty as tools/coqdoc/coqdoc.sty)))
+
 (executable
  (name main)
  (public_name coqdoc)
