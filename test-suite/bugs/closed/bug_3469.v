@@ -27,3 +27,4 @@ Proof.
 
 (* Toplevel input, characters 21-31:
 Error: Found no subterm matching "proj1_sig ?206" in the current *)
+Abort.

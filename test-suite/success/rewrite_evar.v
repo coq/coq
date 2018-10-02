@@ -6,3 +6,4 @@ Goal forall (T2 MT1 MT2 : Type) (x : T2) (M2 m2 : MT2) (M1 m1 : MT1) (F : T2 -> 
   rewrite (H' _) in *.
   (** The above rewrite should also rewrite in H. *)
   Fail progress rewrite H' in H.
+Abort.

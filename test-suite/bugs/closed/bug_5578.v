@@ -55,3 +55,4 @@ Goal forall (Rat : Set) (PositiveMap_t : Set -> Set)
                          (Bind (k eta) (fun rands =>
                           ret_bool (interp_term_fixed_t_x eta (adv' eta) rands  ?= interp_term_fixed_t_x eta (adv' eta) rands)))))).
  (* Error: Anomaly "Signature and its instance do not match." Please report at http://coq.inria.fr/bugs/. *)
+Abort.

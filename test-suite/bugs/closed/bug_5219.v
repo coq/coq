@@ -8,3 +8,4 @@ Goal forall x : sigT (fun x => x = 1), True.
   lazymatch goal with
   | [ H : _ = _ |- _ ] => idtac
   end.
+Abort.

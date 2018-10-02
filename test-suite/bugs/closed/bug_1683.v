@@ -37,3 +37,5 @@ rewrite foobar.
 rewrite foobar in H.
 assumption.
 Qed.
+
+End SetoidBug.

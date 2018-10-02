@@ -50,3 +50,4 @@ Goal forall (T T' : Set) (a3 : list T), exists y2, forall (a4 : T' -> bool),
   (etransitivity; [ t | reflexivity ]) || fail 0 "too early".
   Undo.
   t.
+Abort.

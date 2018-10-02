@@ -52,3 +52,4 @@ Goal forall (A : Type) (B : forall _ : A, Type) (x : @sigT A (fun x : A => B x))
   pose (path_path_sigma B x x xx) as x''.
   clear x''.
   Check (path_path_sigma B x x xx).
+Abort.

@@ -18,3 +18,5 @@ Module ti:=ta.t.
 Definition ex1:forall (c d:ti.X), (ta.a d)=(ta.a c) -> d=c.
 intros.
 injection H.
+Abort.
+End toto.

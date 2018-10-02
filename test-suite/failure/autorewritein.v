@@ -10,6 +10,4 @@ Lemma ResAck2 : forall H:(Ack 2 2 = 7 -> False), H=H  -> False.
 Proof.
   intros.
   Fail autorewrite with base0 in * using try (apply H1;reflexivity).
-
-
-
+Abort.

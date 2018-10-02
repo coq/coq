@@ -15,3 +15,5 @@ intros A B a b c f Hab Hbc.
 rewrite Hab.
 assumption.
 Qed.
+
+End Setoid_Bug.

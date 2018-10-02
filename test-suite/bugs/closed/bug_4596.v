@@ -12,3 +12,4 @@ Goal forall (S : Type) (b b0 : S -> nat -> bool) (str : S) (p : nat)
 Proof.
 intros ???????? H0.
 rewrite H0.
+Abort.

@@ -10,3 +10,4 @@ Inductive foo := Foo { proj1 : nat; proj2 : nat }.
 
 Goal forall x : foo, True.
 Proof. intros x. destruct x.
+Abort.

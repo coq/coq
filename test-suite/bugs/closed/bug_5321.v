@@ -16,3 +16,4 @@ Proof.
   intros.
   etransitivity; [ | exact (proj2_sig_path H) ].
   Fail clearbody fpf.
+Abort.

@@ -85,3 +85,4 @@ tr : T -> T
 O2 : PointedOPred
 x0 : T
 H : forall x0 : T, catOP (O0 x0) (O1 (tr x0)) |-- O1 x0 *)
+Abort.

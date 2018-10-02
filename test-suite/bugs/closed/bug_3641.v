@@ -19,3 +19,4 @@ Goal forall (A B : Type) (x : O A * O B) (x0 : B),
     | [ |- context[?e] ] => is_evar e; let e' := fresh "e'" in pose (e' := e)
   end.
   Fail change ?g with e'. (* Stack overflow *)
+Abort.

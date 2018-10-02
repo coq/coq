@@ -15,3 +15,4 @@ z : Set
 w : Set
 Unable to unify "?31 ?191 = ?32 ?192" with "(x, y) = (z, w)".
  *)
+Abort.

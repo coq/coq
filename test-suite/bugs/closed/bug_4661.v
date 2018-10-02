@@ -8,3 +8,4 @@ End Func.
 
 Module Shortest_path (T : Test).
 Print Func.
+End Shortest_path.

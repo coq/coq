@@ -1,22 +1,22 @@
 Set Printing Universes.
 
-Module unidecls.
+Module decls.
   Universes a b.
-End unidecls.
+End decls.
 
 Universe a.
 
-Constraint a < unidecls.a.
+Constraint a < decls.a.
 
 Print Universes.
 
 (** These are different universes *)
 Check Type@{a}.
-Check Type@{unidecls.a}.
+Check Type@{decls.a}.
 
-Check Type@{unidecls.b}.
+Check Type@{decls.b}.
 
-Fail Check Type@{unidecls.c}.
+Fail Check Type@{decls.c}.
 
 Fail Check Type@{i}.
 Universe foo.

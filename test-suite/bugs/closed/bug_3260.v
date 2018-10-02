@@ -5,3 +5,4 @@ replace n with m at 2.
 lazymatch goal with
 |- n + m = m + m => idtac
 end.
+Abort.

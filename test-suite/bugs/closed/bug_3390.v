@@ -7,3 +7,4 @@ Tactic Notation "basicapply" tactic0(tacfin) := idtac.
 
 Goal True.
 basicapply subst.
+Abort.

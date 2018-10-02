@@ -7,3 +7,4 @@ Definition reflexivityValid (_ : unit) := True.
 Definition reflexivityProver_correct : ProverT_correct {| Facts := unit |}.
 Proof.
     eapply Build_ProverT_correct with (Valid := reflexivityValid).
+Abort.

@@ -27,3 +27,4 @@ Lemma autorewrite_raise_anomaly: forall (Env A:Type) (e: Env) (p:Place Env A),
 Proof.
   intros Env A e p; eapply ex_intro.
   autorewrite with placeeq. (* Here is the bug *)
+Abort.

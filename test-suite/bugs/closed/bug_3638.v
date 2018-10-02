@@ -23,3 +23,4 @@ Goal forall (A B : Type) (x : O A * O B) (x0 : B),
 
 (* Toplevel input, characters 15-114:
 Anomaly: Bad recursive type. Please report. *)
+Abort.

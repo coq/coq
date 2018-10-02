@@ -20,3 +20,4 @@ Proof.
   change g with ((snd o pr1) o e).
   apply (ap (fun g => snd o pr1 o g)).
 (* Used to raise a not Found due to a "typo" in solve_evar_evar *)
+Abort.

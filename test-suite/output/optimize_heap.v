@@ -5,3 +5,4 @@ Goal True.
   Show.
   optimize_heap.
   Show.
+Abort.

@@ -22,3 +22,4 @@ Goal forall (H0 H2 : Type) x p,
   match goal with
     | [ |- context[x (?f _)] ] => set(foo':=f)
   end.
+Abort.

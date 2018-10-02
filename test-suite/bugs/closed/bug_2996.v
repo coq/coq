@@ -29,3 +29,5 @@ Section x.
     set (T := False).
     Fail pose proof p as H.
   Abort.
+
+End x.

@@ -9,3 +9,5 @@ Definition d' :=
   | true => or_introl _ (refl_equal true)
   | false => or_intror _ (refl_equal false)
   end).
+
+End sec.

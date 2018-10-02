@@ -26,3 +26,4 @@ Proof.
                  end
                | fail 1 "could not find" X ]
     end.
+Abort.

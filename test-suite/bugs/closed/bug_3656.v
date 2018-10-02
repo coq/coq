@@ -51,3 +51,4 @@ Abort.
 
 Goal forall h, setT h = setT h.
 Proof. intro. progress unfold setT.
+Abort.

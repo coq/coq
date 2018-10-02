@@ -9,3 +9,4 @@ Admitted.
 Goal True.
   Fail setoid_rewrite foo.
   Fail setoid_rewrite trueI.
+Abort.

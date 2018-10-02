@@ -7,3 +7,4 @@ Goal True.
    guess it is still a bug in the sense that the semantics of pose is
    not preserved *)
   foo baz'.
+Abort.

@@ -71,3 +71,4 @@ Goal forall (T : Type) (O0 : T -> OPred) (O1 : T -> PointedOPred)
   Focus 2.
   (* As in 8.5, allow a shelved subgoal to remain *)
   apply reflexivity.
+Abort.

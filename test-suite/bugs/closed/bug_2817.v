@@ -7,3 +7,4 @@ False.
 
 intros.
 Fail apply H in H0. (* should fail without exhausting the stack *)
+Abort.

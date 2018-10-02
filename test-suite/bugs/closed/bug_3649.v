@@ -58,3 +58,4 @@ Goal forall (C D : PreCategory) (G G' : Functor C D)
   let T0 := match goal with |- context[components_of ?T0 ?x o components_of ?T1 ?x] => constr:(T0) end in
   let T1 := match goal with |- context[components_of ?T0 ?x o components_of ?T1 ?x] => constr:(T1) end in
   progress change (T0 x o T1 x) with ((fun y => y) (T0 x o T1 x)).
+Abort.

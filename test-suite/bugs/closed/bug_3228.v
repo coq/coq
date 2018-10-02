@@ -5,3 +5,4 @@ Ltac bar x := exact x.
 Goal False -> False.
   intro x.
   Fail bar doesnotexist.
+Abort.

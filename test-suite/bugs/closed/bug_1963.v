@@ -17,3 +17,4 @@ Lemma inv : forall (A:Type)(n n':nat)(ts':illist A n'), n' = S n ->
 Proof.
 intros.
 dependent inversion ts'.
+Abort.

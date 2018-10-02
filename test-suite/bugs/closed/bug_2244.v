@@ -17,3 +17,4 @@ Proof.
 
   (* still not compatible with 8.2 because an evar can be solved in
      two different ways and is left open *)
+Abort.

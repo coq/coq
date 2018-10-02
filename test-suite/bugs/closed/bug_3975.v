@@ -6,3 +6,4 @@ Module Type P (X : S).
   Print M.
   (* Used to say: Anomaly: X already exists. Please report. *)
   (* Should rather : print something :-) *)
+End P.

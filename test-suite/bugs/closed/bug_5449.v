@@ -4,3 +4,4 @@ Require Import Coq.PArith.BinPos.
 Goal forall x y, {Pos.compare_cont Gt x y = Gt} + {Pos.compare_cont Gt x y <> Gt}.
 intros.
 decide equality.
+Abort.

@@ -244,6 +244,8 @@ Arguments productions _ : clear implicits.
 Arguments grammar _ : clear implicits.
 
 End ContextFreeGrammar.
+End Parsers.
+End ADTSynthesis.
 
 Module Export BaseTypes.
 
@@ -707,3 +709,6 @@ Section implementation.
          G'.
     intros str G'.
     Timeout 1 assert (pf' : G' -> Prop) by abstract admit.
+  Abort.
+End implementation.
+End BooleanRecognizer.

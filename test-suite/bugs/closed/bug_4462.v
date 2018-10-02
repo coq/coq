@@ -5,3 +5,4 @@ Require Setoid.
 
 Goal P -> Q.
 unshelve (rewrite pqrw).
+Abort.

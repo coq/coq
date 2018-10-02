@@ -5,3 +5,4 @@ Lemma foo (H : P 3) : False.
 eapply or_introl in H.
 erewrite <- P_or in H.
 (* Error: No such hypothesis: H *)
+Abort.

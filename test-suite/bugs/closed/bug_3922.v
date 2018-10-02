@@ -83,3 +83,4 @@ Proof.
   refine (let g' := Trunc_ind (fun _ => P) g : merely X -> P in _);
     [ assumption.. | ].
   pose (g'' := Trunc_ind (fun _ => P) g : merely X -> P).
+Abort.

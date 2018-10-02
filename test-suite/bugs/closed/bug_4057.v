@@ -208,3 +208,4 @@ P (parse_of_item_name__of__minimal_parse_of_name p') }.
     simpl in *.
     admit.
   Qed.
+End recursive_descent_parser.

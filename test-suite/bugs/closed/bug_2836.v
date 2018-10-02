@@ -37,3 +37,5 @@ Fail refine {|
       Compose' := (fun s d d' m2 m1 => (Compose (fst m2) (fst m1), Compose (snd
 m2) (snd m1)))
     |}.
+Abort.
+End ProductCategory.

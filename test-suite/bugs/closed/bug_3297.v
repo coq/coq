@@ -10,3 +10,4 @@ Error: Abstracting over the term "n" leads to a term
   intro.
   clearbody H.
   subst. (* success *)
+Abort.

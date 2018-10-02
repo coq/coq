@@ -25,4 +25,4 @@ Definition c := ε : U.
 
 Goal True.
 assert (nat * nat).
-
+Abort.

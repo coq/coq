@@ -139,3 +139,4 @@ let T1 := lazymatch type of F with (?T -> _) -> _ => constr:(T) end in
       rewrite transport_path_prod'_beta'.
       (* Anomaly: Uncaught exception Invalid_argument("to_constraints: non-trivial algebraic constraint between universes", _).
 Please report. *)
+Abort.

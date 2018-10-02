@@ -65,3 +65,5 @@ Proof.
   setoid_rewrite H2.
   reflexivity.
 Qed.
+
+End Essais.

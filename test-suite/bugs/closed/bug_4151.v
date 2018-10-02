@@ -401,3 +401,5 @@ Section sound.
     assumption.
     Undo.
     eassumption. (* no applicable tactic *)
+  Abort.
+End sound.

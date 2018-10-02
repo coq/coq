@@ -143,3 +143,4 @@ cannot be applied to the terms
  "e0" : "nth_error Bound (ibound idx') = e"
 The 2nd term has type "nth_error Bound (ibound idx') = e"
 which should be coercible to "e = e". *)
+Abort.

@@ -38,3 +38,4 @@ Program Fixpoint union
             let (l1', r1') := split v2 u in
             join (union l1' l2 _ _ _ _) v2 (union (snd r1') r2 _ _ _ _)
   end.
+Reset union.

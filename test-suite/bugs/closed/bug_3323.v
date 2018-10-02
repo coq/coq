@@ -76,3 +76,4 @@ Error: In pattern-matching on term "x" the branch for constructor
   p2f (f2p (existT (fun I : Type => I -> A) x H)) =
   existT (fun I : Type => I -> A) x H".
  *)
+End AssumeFunext.

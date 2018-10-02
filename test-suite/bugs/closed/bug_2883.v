@@ -33,3 +33,5 @@ Proof.
   eapply IHstar; eauto.
   replace s2 with (State a' e b') by admit. eauto.
 Qed. (* Oups *)
+
+End Test.

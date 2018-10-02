@@ -81,3 +81,4 @@ Found no subterm matching "F _1 (identity (fst x))" in the current goal. *)
   rewrite identity_of. (* Toplevel input, characters 15-34:
 Error:
 Found no subterm matching "morphism_of ?202 (identity ?203)" in the current goal. *)
+Abort.

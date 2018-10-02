@@ -3,3 +3,4 @@ Lemma foo (b : bool) :
 Proof.
 eexists.
 Fail eexact (eq_refl b).
+Abort.

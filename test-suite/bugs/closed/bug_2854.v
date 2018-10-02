@@ -5,3 +5,5 @@ Section foo.
     subst foo.
     Fail pose bar as f.
     (* simpl in f. *)
+  Abort.
+End foo.

@@ -21,3 +21,4 @@ Timeout 1 Time let H := fresh "H" in
      let x := constr:(let n := 17 in do_n n = do_n n) in
      let y := (eval lazy in x) in
      assert (H := y). (* Finished transaction in 1.19 secs (1.164u,0.024s) (successful) *)
+Abort.

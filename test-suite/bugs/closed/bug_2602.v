@@ -6,3 +6,4 @@ match goal with
        | |- S a > 0 => idtac
      end
 end.
+Abort.

@@ -18,6 +18,7 @@ Check ι _ ι.
 
 #[program]
 Fixpoint f (n: nat) {wf lt n} : nat := _.
+Reset f.
 
 #[deprecated(since="8.9.0")]
 Ltac foo := foo.

@@ -50,3 +50,4 @@ UNDEFINED UNIVERSES:
  Top.32
  Top.33CONSTRAINTS:[] [A H B] |- ?13 == ?12
 [] [A H B H0] |- ?12 == ?15 *)
+Abort.

@@ -15,3 +15,4 @@ Module WithPoly.
   Definition foo (A : Type@{i}) (B : Type@{i}) := A -> B.
   Set Printing Universes.
   Fail Check ((@foo : Set -> _ -> _) : _ -> Type -> _).
+End WithPoly.

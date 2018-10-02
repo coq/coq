@@ -7,3 +7,4 @@ Proof.
   econstructor.
   intros X.
   apply X. (* used to fail here *)
+Abort.

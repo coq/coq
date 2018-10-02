@@ -2,3 +2,4 @@
 
 Goal True.
 info_trivial.
+Abort.

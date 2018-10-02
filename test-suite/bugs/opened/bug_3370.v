@@ -10,3 +10,4 @@ Local Open Scope string_scope.
 Goal "asdf" = "bds".
 Fail set_strings. (* Error: Ltac variable s is bound to "asdf" which cannot be coerced to
 a fresh identifier. *)
+Abort.

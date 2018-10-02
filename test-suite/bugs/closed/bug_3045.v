@@ -32,3 +32,4 @@ refine match m with
    it should work, if destruct were able to do the good generalization
    in advance, before doing the "intros []". *)
 Fail destruct (@ReifiedMorphismSimplifyWithProof T s1 d0 d0' m1) as [ [] ? ].
+Abort.

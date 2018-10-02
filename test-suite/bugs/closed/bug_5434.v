@@ -16,3 +16,4 @@ Goal True.
   | sig (fun a : ?A => ?P) -> _
     => pose (fun a : A => a = a /\ P = P)
   end.
+Abort.

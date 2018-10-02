@@ -4,3 +4,4 @@ Fixpoint ith_default
          {default_A : nat}
          {As : list nat}
          {struct As} : Set.
+Abort.

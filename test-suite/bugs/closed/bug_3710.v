@@ -46,3 +46,4 @@ Local Notation cat := (@sub_pre_cat P).
 Goal forall (s d d' : cat) (m1 : morphism cat d d') (m2 : morphism cat s d),
        NaturalIsomorphism (m1 o m2) (m1 o m2)%functor.
 Fail exact (fun _ _ _ _ _ => reflexivity _).
+Abort.

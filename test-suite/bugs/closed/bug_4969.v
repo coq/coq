@@ -9,3 +9,4 @@ Proof. auto. Qed.
 Goal True.
   class_apply @silly; [reflexivity|].
   reflexivity. Fail Qed.
+Abort.

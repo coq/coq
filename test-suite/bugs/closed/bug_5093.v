@@ -9,3 +9,4 @@ Goal P 100.
 Proof.
 Fail typeclasses eauto 100 with foobar.
 typeclasses eauto 101 with foobar.
+Abort.

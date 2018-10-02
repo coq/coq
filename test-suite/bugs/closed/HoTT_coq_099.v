@@ -60,3 +60,4 @@ Top.168 <= Coq.Init.Datatypes.28
 Top.169 <= Coq.Init.Datatypes.29
 Top.169 <= Coq.Init.Datatypes.28
  (maybe a bugged tactic). *)
+End PreMonoidalCategory.

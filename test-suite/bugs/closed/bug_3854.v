@@ -20,3 +20,4 @@ Proof.
   pose (fun x => BuildhProp (~ mem x x)).
   refine (mem_induction (fun x => BuildhProp (~ mem x x)) _); simpl in *.
   admit.
+Abort.

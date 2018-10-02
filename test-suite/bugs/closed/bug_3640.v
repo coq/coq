@@ -29,3 +29,4 @@ Proof.
   Fail match type of H with
     | _ = negb ?T => unify T (f.1 true); fail 1 "still has f.1 true"
   end. (* Error: Tactic failure: still has f.1 true. *)
+Abort.

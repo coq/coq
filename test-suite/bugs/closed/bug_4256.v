@@ -41,3 +41,4 @@ Proof.
   clear H x0.
   (** But this doesn't: *)
   pose (existT (fun x:X => Trunc -1 (x = point X)) (point X) (tr idpath)).
+Abort.

@@ -16,3 +16,4 @@ let e := match goal with |- R ?e _ => constr:(e) end in
 unify e (a (default_foo True)).
 subst b.
 reflexivity.
+Abort.

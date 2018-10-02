@@ -5,3 +5,4 @@ Goal True.
 Admitted.
 Goal True.
   Fail exact ltac:(evarr _). (* Error: Cannot infer this placeholder. *)
+Abort.

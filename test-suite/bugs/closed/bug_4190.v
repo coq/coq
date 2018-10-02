@@ -13,3 +13,6 @@ Module Type F (Import M : C).
 Lemma foo : True.
 Proof.
 bar.
+Abort.
+
+End F.

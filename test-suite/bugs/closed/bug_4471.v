@@ -4,3 +4,4 @@ Goal forall (A B : Type) (P : forall _ : prod A B, Type) (a : A) (b : B) (p p0 :
 Proof.
   intros.
   Fail generalize dependent (a, b).
+Abort.

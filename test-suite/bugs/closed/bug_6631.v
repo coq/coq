@@ -5,3 +5,4 @@ Proof.
   transitivity 2; [refine (eq_refl 2)|].
   transitivity 2.
   2:abstract exact (eq_refl 2).
+Abort.

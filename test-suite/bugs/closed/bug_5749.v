@@ -16,3 +16,6 @@ a))).
     SetUnfold (Q)
               (fold_right _ _ (fun (s : lType2) => let (P, _) := s in and (P
 m)) (Q) (fhl1)).
+  Abort.
+
+End Filter_Help.

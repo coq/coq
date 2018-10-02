@@ -64,3 +64,4 @@ m : T3 (x' fst1 x2) (x' fst0 x2)
 Unable to unify "?25 (@pair ?23 ?24 (fst ?27) (snd ?27))" with
 "?25 ?27".
  *)
+Abort.

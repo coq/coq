@@ -17,3 +17,4 @@ Proof.
   clear.
   Fail apply aLeqRefl.
 Abort.
+End XXX.

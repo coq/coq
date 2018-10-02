@@ -10,3 +10,4 @@ assert (H5 = new).
 unfold H5.
 unfold H1.
 exact (eq_refl new).
+Abort.

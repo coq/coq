@@ -34,3 +34,4 @@ Proof.
   Undo.
   (* This failed with NotConvertible at some time *)
   setoid_rewrite (@remove_forall_eq' _ _ _).
+Abort.

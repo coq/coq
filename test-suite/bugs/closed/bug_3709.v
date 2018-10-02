@@ -22,3 +22,5 @@ Module Prim.
     intros h k f H.
     etransitivity.
     apply H.
+  Abort.
+End Prim.

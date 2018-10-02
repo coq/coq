@@ -10,3 +10,4 @@ Definition some_value (etyp : nat -> Type) :  (Value etyp).
 Proof.
   intros.
   Fail apply Mk. (* Check that it does not raise an anomaly *)
+Abort.

@@ -9,3 +9,4 @@ Function f_R (a: nat) {wf (fun x y: nat => False)  a}:Prop:=
   end.
 (* Anomaly: File "plugins/funind/recdef.ml", line 916, characters 13-19: Assertion failed.
 Please report. *)
+Abort.

@@ -6,3 +6,4 @@ Inductive test : nat -> nat -> nat -> nat -> Prop :=
 
 Goal test 1 2 3 4.
 erewrite f_equal2 with (f := fun k l => test _ _ k l).
+Abort.

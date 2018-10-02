@@ -73,3 +73,4 @@ Module Bad.
              object_of
              (fun CD C'D' FG => pointwise (fst FG) (snd FG))
              (fun _ _ => @Pidentity_of _ _ _ _).
+End Bad.

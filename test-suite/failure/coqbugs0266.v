@@ -5,3 +5,5 @@ Let a := 0.
 Definition b := a.
 Goal b = b.
 Fail clear a.
+Abort.
+End S.

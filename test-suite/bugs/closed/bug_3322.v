@@ -22,3 +22,5 @@ Section opposite.
   Transparent path_sigma_uncurried.
   (* This command should fail with "Error: Failed to progress.", as it does in 8.4; the simpl never directive should prevent simpl from progressing *)
   Fail progress simpl in *.
+  Abort.
+End opposite.

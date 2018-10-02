@@ -8,3 +8,4 @@ Tactic failure:setoid rewrite failed: Unable to satisfy the rewriting constraint
 Could not find an instance for "subrelation eq (Basics.flip Basics.impl)".
 With the following constraints:
 ?3 : "True" *)
+Abort.

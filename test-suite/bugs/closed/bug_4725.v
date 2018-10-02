@@ -30,9 +30,10 @@ Proof. intros. apply remove_le. Qed.
 
 (* Program version *)
 
-Program Fixpoint nubV `{eqDecV : @EqDec V eqV equivV} (l : list V)
+Program Fixpoint nubV' `{eqDecV : @EqDec V eqV equivV} (l : list V)
         {  measure (@length V l) lt } :=
     match l with
       | nil => nil
-      | x::xs => x :: @nubV V eqV equivV eqDecV (removeV x xs) _
+      | x::xs => x :: @nubV' V eqV equivV eqDecV (removeV x xs) _
     end.
+Next Obligation. apply remove_le. Defined.

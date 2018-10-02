@@ -7,3 +7,4 @@ Theorem t {A B C D} (f : A -> A) (g : B -> C) (h : C -> D)
 : f ∘ f = f.
 Proof.
   rewrite_strat topdown (hints core).
+Abort.

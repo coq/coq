@@ -8,3 +8,4 @@ Fail
     | [ H : context G [@eq _ _] |- _ ] => let H' := context G[@plus 2] in H'
     end
   in pose H.
+Abort.

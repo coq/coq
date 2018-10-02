@@ -11,3 +11,4 @@ Goal nat -> Type.
   lazymatch goal with
   | [ x : nat |- _ ] => dependent destruction x
   end.
+Abort.

@@ -10,3 +10,4 @@ Lemma paradox : False.
   Fail apply proof_irrelevance. (* inlined version is rejected *)
   apply proof_irrelevance_set.
 Qed.*)
+Abort.

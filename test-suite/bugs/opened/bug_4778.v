@@ -33,3 +33,4 @@ Goal forall k, option_rect (fun _ => Prop) (fun v : nat => v = v /\ F f) True k.
   intro.
   pose proof (_ : (Proper (_ ==> eq ==> _) and)).
   Fail setoid_rewrite (FG _ _); [ | reflexivity.. ]. (* this should succeed without [Fail], as it does in 8.4 *)
+Abort.

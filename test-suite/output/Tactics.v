@@ -21,3 +21,4 @@ Proof.
 intros H.
 Fail intros [H%myid ?].
 Fail destruct 1 as [H%myid ?].
+Abort.

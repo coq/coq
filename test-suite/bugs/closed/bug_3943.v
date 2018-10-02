@@ -48,3 +48,4 @@ Admitted.
 
 Definition ap_morphism_inverse_path_isomorphic (i j : Isomorphic s d) p q
 : ap (fun e : Isomorphic s d => e^-1)%morphism (path_isomorphic i j p) = q.
+Abort.

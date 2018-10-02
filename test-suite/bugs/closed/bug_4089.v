@@ -373,3 +373,4 @@ cannot be applied to the term
 This term has type "Type@{Top.892}" which should be coercible to
  "Type@{Top.882}".
 *)
+Abort.

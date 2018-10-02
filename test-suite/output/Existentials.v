@@ -12,3 +12,5 @@ clearbody q.
 clear p. (* Error ... *)
 
 Show Existentials.
+Abort.
+End Test.

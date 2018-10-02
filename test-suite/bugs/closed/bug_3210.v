@@ -20,3 +20,4 @@ match goal with |- I = I => idtac end. (* check form of the goal *)
 Undo 2.
 destruct x.
 match goal with |- I = I => idtac end. (* check form of the goal *)
+Abort.

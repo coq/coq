@@ -7,3 +7,4 @@ Lemma bug : forall n, J n -> J (S n).
 Proof.
   intros ? H.
   induction H as [? ? [? ?]].
+Abort.

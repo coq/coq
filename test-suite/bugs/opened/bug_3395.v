@@ -229,3 +229,4 @@ Proof.
   unfold yoneda; simpl in *.
   Fail Timeout 1 exact CYE.
   Time exact CYE. (* Finished transaction in 0. secs (0.012001u,0.s) *)
+Abort.

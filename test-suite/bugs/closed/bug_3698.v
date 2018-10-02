@@ -24,3 +24,4 @@ Proof.
                   g = g -> IsEquiv g) by admit.
   Eval compute in (@projT1 Type IsHSet (@equiv_inv _ _ _ (equiv_isequiv _ _ issig_hSet) X)).
   Fail apply H''. (* stack overflow *)
+Abort.

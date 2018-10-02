@@ -18,3 +18,4 @@ Proof.
                         (compose g f)
                         (compose f^-1 g^-1) _).
   exact (fun c => ap g (@eisretr _ _ f _ (g^-1 c)) @ (@eisretr _ _ g _ c)).
+Abort.

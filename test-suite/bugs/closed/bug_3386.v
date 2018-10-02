@@ -15,3 +15,4 @@ Proof.
   try change Type@{i} with (Obj set_cat@{i}). (* check that it's not an anomaly *)
 (* Anomaly: Uncaught exception Invalid_argument("Array.iter2", _).
 Please report. *)
+Abort.

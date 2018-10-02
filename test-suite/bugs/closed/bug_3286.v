@@ -39,3 +39,4 @@ Proof.
   let lem := constr:(@functional_extensionality_dep) in
   apply_under_binders_in lem H.
 (* Anomaly: Uncaught exception Not_found(_). Please report. *)
+Abort.

@@ -19,3 +19,4 @@ Global Instance Pred_All_instance (A : Pred_All) : All A := P'_All A.
 Definition Pred_All_proof {A : Pred_All} (a : A) : P A a.
 Proof.
 solve[auto using proof].
+Abort.

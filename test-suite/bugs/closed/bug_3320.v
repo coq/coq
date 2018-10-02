@@ -3,3 +3,4 @@ Goal forall x : nat, True.
   assumption.
 Fail Qed.
 Undo.
+Abort.

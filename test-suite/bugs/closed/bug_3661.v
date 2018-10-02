@@ -86,3 +86,4 @@ Goal forall (x3 x9 : PreCategory) (x12 f0 : Functor x9 x3)
         (@morphism_isomorphic (functor_category x9 x3) f0 x12 x35) _) x37)
 
 *)
+Abort.

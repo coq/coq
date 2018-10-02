@@ -14,3 +14,4 @@ Section param.
     @STex _ (fun x => P (@existT _ _ v x)).
 
   Check @existT _ _ STex STex.
+End param.

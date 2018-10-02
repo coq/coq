@@ -27,3 +27,4 @@ generalize dependent (@ob C).
 intros T t.
 (* Toplevel input, characters 9-10:
 Error: No product even after head-reduction. *)
+Abort.

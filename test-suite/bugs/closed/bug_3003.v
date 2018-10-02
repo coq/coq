@@ -10,3 +10,4 @@ Inductive G_Edge : G_Vertex -> G_Vertex -> Set := G_e : G_Edge G_v0 G_v1.
 Goal forall x1 : G_Edge G_v1 G_v1, @AddEdge _ G_Edge G_v1 _ _ (NoEdges _ _) x1 = NoEdges _ _.
 intro x1.
 try destruct x1. (* now raises a typing error *)
+Abort.

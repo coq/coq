@@ -228,3 +228,5 @@ v = _) r,
     | [ |- ?G ] => fail 1 "bad" G
     end.
     Fail rewrite concat_p_pp.
+  Abort.
+End Lex_Reflective_Subuniverses.

@@ -16,3 +16,4 @@ Definition f (n:nat) : Type :=
 Goal forall A n, list A n -> f n.
 intros A n.
 dependent inversion n.
+Abort.

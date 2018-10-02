@@ -42,3 +42,4 @@ End cofe_mixin.
     *
  intros x.
 apply equiv_dist.
+  Abort.

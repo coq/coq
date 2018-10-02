@@ -7,3 +7,4 @@ Goal (forall x : nat, x = 1 -> False) -> 1 = 1 -> False.
     | [ x : forall k : nat, _ |- _ ]
       => specialize (fun H0 => x 1 H0)
   end.
+Abort.

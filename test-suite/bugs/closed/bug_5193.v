@@ -12,3 +12,4 @@ Context `{Finx_eqdec : forall n, Eqdec (Finx n)}.
 Goal {x : Type & Eqdec x}.
   eexists.
   try typeclasses eauto 1 with typeclass_instances.
+Abort.

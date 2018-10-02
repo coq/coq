@@ -150,3 +150,4 @@ cannot be applied to the terms
         Top.313 Top.314 Top.306 Top.316 Top.305 *)"
 The 4th term has type "Category (* Top.300 Set *) unit"
 which should be coercible to "Category (* Top.300 Top.307 *) unit". *)
+End CommaCategoryProjectionFunctor.

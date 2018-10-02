@@ -26,3 +26,4 @@ Proof.
   intros * E Hp.
   (* bug goes away if [revert E] is called explicitly *)
   dependent induction Hp.
+Abort.

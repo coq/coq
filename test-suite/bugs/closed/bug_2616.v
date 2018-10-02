@@ -5,3 +5,4 @@ Goal
 Proof.
 intros.
 Fail rewrite IN in H.
+Abort.

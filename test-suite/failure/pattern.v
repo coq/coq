@@ -7,3 +7,4 @@ Variable P : forall m : nat, m = n -> Prop.
 Goal forall p : n = n, P n p.
 intro.
 Fail pattern n, p.
+Abort.

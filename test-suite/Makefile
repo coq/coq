@@ -60,7 +60,6 @@ SINGLE_QUOTE="
 # wrap the arguments in parens, but only if they exist
 get_coq_prog_args_in_parens = $(subst $(SINGLE_QUOTE),,$(if $(call get_coq_prog_args,$(1)), ($(call get_coq_prog_args,$(1)))))
 # get the command to use with this set of arguments; if there's -compile, use coqc, else use coqtop
-has_compile_flag = $(filter "-compile",$(call get_coq_prog_args,$(1)))
 has_profile_ltac_or_compile_flag = $(filter "-profile-ltac-cutoff" "-profile-ltac" "-compile",$(call get_coq_prog_args,$(1)))
 get_command_based_on_flags = $(if $(call has_profile_ltac_or_compile_flag,$(1)),$(coqtopcompile),$(coqtopload))
 
@@ -308,7 +307,7 @@ ssr: $(wildcard ssr/*.v:%.v=%.v.log)
 $(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
-	  opts="$(if $(findstring modules/,$<),-R modules Mods -impredicative-set)"; \
+	  opts="$(if $(findstring modules/,$<),-R modules Mods)"; \
 	  echo $(call log_intro,$<); \
 	  $(call get_command_based_on_flags,"$<") "$<" $(call get_coq_prog_args,"$<") $$opts 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \

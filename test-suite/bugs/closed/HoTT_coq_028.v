@@ -12,3 +12,4 @@ Error: Cannot instantiate metavariable P of type
  match eq_sym e in (_ = y) return (T (f y) (f x)) with
  | eq_refl => m (f x)
  end = m (f x)" of incompatible type "forall x : O, x = x -> Prop". *)
+Abort.

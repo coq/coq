@@ -268,3 +268,5 @@ S)    : In@{Ou Oa i} O (x=y).
         rewrite O_indpaths_beta; reflexivity.
     Qed.
     Check inO_paths@{Type}.
+End Reflective_Subuniverse.
+End ReflectiveSubuniverses_Theory.

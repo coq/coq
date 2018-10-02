@@ -17,3 +17,4 @@ Let T_pure_id `{TMonad T} {A: Type} (t: A -> A) (x: T A):
         path (T_fzip A A (T_pure (A -> A) t) x) x.
   unfold T_fzip, T_pure.
   Fail rewrite (ret_unit_left (fun g a => ret (g a)) (fun x => x)).
+Abort.

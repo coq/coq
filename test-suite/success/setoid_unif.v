@@ -25,3 +25,4 @@ Goal forall x, ~ In _ x (t Empty).
 Proof.
 intros x.
 rewrite foo.
+Abort.

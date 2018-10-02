@@ -7,3 +7,7 @@ Module Implementation <: Interface.
   Definition error: t := false.
 Fail End Implementation.
 (* A UserError here is expected, not an uncaught Not_found *)
+
+ Reset error.
+ Definition error := 0.
+End Implementation.

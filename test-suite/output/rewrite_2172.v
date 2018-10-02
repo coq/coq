@@ -19,3 +19,4 @@ Proof.
    user in rewrite/induction/destruct calls).
 *)
   Fail rewrite <- axiom.
+Abort.

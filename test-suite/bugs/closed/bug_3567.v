@@ -66,3 +66,4 @@ which is ill-typed.
 Reason is: Pattern-matching expression on an object of inductive type prod
 has invalid information.
  *)
+Abort.

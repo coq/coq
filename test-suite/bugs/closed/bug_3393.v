@@ -151,3 +151,5 @@ Unable to unify
   morphism := NaturalTransformation (D:=F z);
   compose := composet (D:=F z);
   associativity := associativityt (D:=F z) |}". *)
+  Abort.
+End lemmas.

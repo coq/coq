@@ -31,3 +31,6 @@ Abort.
 Fail Goal forall a f, f a = 0.
 Fail Goal forall f x, id f x = 0.
 Fail Goal forall f P,  P (f 0).
+
+Definition t := unit.
+End M.

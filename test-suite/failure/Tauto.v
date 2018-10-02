@@ -20,3 +20,4 @@
 Goal (forall A : Prop, A \/ ~ A) -> forall x y : nat, x = y \/ x <> y.
 Proof.
    Fail tauto.
+Abort.

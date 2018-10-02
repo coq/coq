@@ -7,3 +7,5 @@ Proof.
 destruct H.
 Undo.
 revert H; intro H; destruct H.
+Abort.
+End O.

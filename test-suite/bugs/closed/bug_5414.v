@@ -10,3 +10,4 @@ Goal foo.
 intros k. elim k. (* elim because elim keeps names *)
 intros.
 Check a. (* We check that the name is "a" *)
+Abort.

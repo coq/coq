@@ -5,3 +5,4 @@ match eval cbv delta [s] in s with
 | context C[true] =>
   let C':=context C[false] in pose C' as s'
 end.
+Abort.

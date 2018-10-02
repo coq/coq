@@ -4,7 +4,7 @@ Universe b.
 
 Universe c.
 
-Definition U : Type@{b} := Type@{c}.
+Definition UU : Type@{b} := Type@{c}.
 
 Module Type MT.
 
@@ -16,6 +16,10 @@ Module M : MT.
 
 Print Universes.
 Fail End M.
+
+  Reset T.
+  Definition T := Prop.
+End M.
 
 Set Universe Polymorphism.
 

@@ -13,3 +13,4 @@ Goal forall (T : Type) (p : prod (prod T T) bool) (Fm : Set) (f : Fm) (k :
   | [ |- ?f (let (a, b) := ?d in @?e a b) = ?rhs ]
     => pose (let (a, b) := d in e a b) as t0
   end.
+Abort.

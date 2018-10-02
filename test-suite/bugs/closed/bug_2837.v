@@ -13,3 +13,4 @@ Fail (intros; rewrite test).
 
 (* III) a working variant: *)
 intros; rewrite (test n m).
+Abort.

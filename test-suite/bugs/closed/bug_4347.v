@@ -15,3 +15,4 @@ Record Demonstration := mkDemo
 
 Theorem DemoError : Demonstration.
 Fail apply mkDemo. (*Anomaly: Uncaught exception Not_found. Please report.*)
+Abort.

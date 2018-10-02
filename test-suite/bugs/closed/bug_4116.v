@@ -381,3 +381,5 @@ Section Grothendieck2.
       destruct x.
       simpl.
       erewrite @isotoid_1.
+  Abort.
+End Grothendieck2.

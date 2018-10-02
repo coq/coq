@@ -17,3 +17,4 @@ intros.
 clear.
 try exists (path_universe admit). (* Toplevel input, characters 15-44:
 Anomaly: Uncaught exception Not_found(_). Please report. *)
+Abort.

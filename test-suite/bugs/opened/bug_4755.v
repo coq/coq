@@ -32,3 +32,4 @@ Proof.
   intro.
   pose proof (_ : (Proper (_ ==> eq ==> _) and)).
   Fail setoid_rewrite (FG _ _); []. (* In 8.5: Error: Tactic failure: Incorrect number of goals (expected 2 tactics); works in 8.4 *)
+Abort.

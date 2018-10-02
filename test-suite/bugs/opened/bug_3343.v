@@ -44,3 +44,4 @@ Proof.
   induction m.
   Fail progress simpl.
   (* simpl did nothing here, while it does something inside the section; this is probably a bug*)
+Abort.

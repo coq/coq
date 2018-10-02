@@ -46,3 +46,5 @@ x : xa <~=~> yb
 The term "morphism_isomorphic:@morphism (precategory_of_structures P) xa yb"
 has type "@morphism (precategory_of_structures P) xa yb"
 while it is expected to have type "morphism ?40 ?41 ?42". *)
+  Abort.
+End sip.

@@ -8,3 +8,4 @@ Check (match foo as k return foo = k -> True with
        | true => _
        | false => _
        end eq_refl).
+Abort.

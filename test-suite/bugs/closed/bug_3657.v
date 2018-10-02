@@ -10,3 +10,4 @@ Defined.
 Goal @bar _ Set _ = (@bar _ (fun _ : Set => Set) _) nat.
 Proof.
   Fail change (bar (fun _ : Set => Set)) with (bar Set).
+Abort.

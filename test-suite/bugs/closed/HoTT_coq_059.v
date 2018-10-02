@@ -15,3 +15,4 @@ Section foo.
   (* Toplevel input, characters 0-60:
 Error: Universe inconsistency (cannot enforce Top.24 <= Top.23 because Top.23
 < Top.22 <= Top.24). *)
+End foo.

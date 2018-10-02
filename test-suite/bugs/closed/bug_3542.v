@@ -4,3 +4,5 @@ Section foo.
   Goal True.
     pose (r := fun k => existT (fun g => forall x, f x = g x)
                                (fun x => projT1 (k x)) (fun x => projT2 (k x))).
+  Abort.
+End foo.

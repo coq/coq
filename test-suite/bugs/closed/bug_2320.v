@@ -12,3 +12,4 @@ Lemma failure : forall (x : dummy 0), x = constr.
 Proof.
 intros x.
 refine (match x with constr => _ end).
+Abort.

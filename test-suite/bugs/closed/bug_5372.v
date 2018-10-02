@@ -6,3 +6,4 @@ Function odd (n:nat) :=
   | S n => true
   end
 with even (n:nat) := false.
+Reset odd.

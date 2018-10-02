@@ -7,3 +7,4 @@ Parameter widen : forall (n : nat) (s : fset n), { x : fset (S n) | s=s }.
 Goal forall i, fset (S i).
 intro.
 refine (proj1_sig (widen i _)).
+Abort.

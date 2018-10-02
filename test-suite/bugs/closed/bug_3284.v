@@ -21,3 +21,4 @@ Proof.
   intros A B C f g x H.
   specialize (H x).
   apply functional_extensionality_dep in H.
+Abort.

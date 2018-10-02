@@ -16,3 +16,4 @@ Defined.
 Goal True.
 pose (e := eq_refl (qux 0)); unfold qux in e.
 match type of e with context [eq_sym] => fail 1 | _ => idtac end.
+Abort.

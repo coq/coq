@@ -7,3 +7,4 @@ Section S.
 Variable n : nat.
 Fail Inductive P : Set :=
     n : P.
+End S.

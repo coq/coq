@@ -21,3 +21,4 @@ Module BAR_FROM_BAZ (baz : BAZ) <: BAR.
   Admitted.
 
 Fail End BAR_FROM_BAZ.
+Reset BAR_FROM_BAZ.

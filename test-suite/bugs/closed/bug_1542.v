@@ -38,3 +38,5 @@ intro; constructor 2.
   ^^^^^^^^^^^^^
 Error: Impossible to unify (seq.toto ?3 (seq.t.f2 ?3)) with
  (seq.toto a (t'.f2 a)).*)
+Abort.
+End koko.

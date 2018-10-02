@@ -12,3 +12,4 @@ Definition bound_op {var}
   refine match opc2 return (forall args2, Op opc2 args2 = Op opc2 args2) with
          | _ => _
          end.
+Abort.

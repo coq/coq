@@ -332,3 +332,4 @@ exists lv''.
    [| |t' lv''' lv'''' rv''' ee'' ee_sub' H2 (H3_1,H3_2,H3_3) (H4_1,H4_2,H4_3,H4_4,H4_5) H5 (H6_1,H6_2)| | | |].
 (* Check that all names are the given ones: *)
 clear t' lv''' lv'''' rv''' ee'' ee_sub' H2 H3_1 H3_2 H3_3 H4_1 H4_2 H4_3 H4_4 H4_5 H5 H6_1 H6_2.
+Abort.

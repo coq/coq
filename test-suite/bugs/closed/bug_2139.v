@@ -22,3 +22,4 @@ apply flip in H.
    type of (@flip _ _ _ _) itself had non-normalized evars *)
 
 (* By the way, is the check necessary ? *)
+Abort.

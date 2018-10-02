@@ -6,3 +6,5 @@ Goal Type -> True.
 rename A into B.
 intros A.
 Fail apply foo.
+Abort.
+End Foo.

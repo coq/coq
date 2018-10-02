@@ -6,3 +6,4 @@ Goal forall (H : forall t : some_type, @Ty t -> False) (H' : False -> 1 = 2), 1 
 Proof.
 intros H H'.
 specialize (H' (@H _ O)). (* was failing *)
+Abort.

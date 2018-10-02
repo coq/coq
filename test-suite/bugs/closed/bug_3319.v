@@ -24,3 +24,4 @@ Section precategory.
   Proof.
     admit.
   Defined.
+End precategory.

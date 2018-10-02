@@ -216,3 +216,4 @@ Goal False.
                                 (Ring_polynom.PEX Z 3)))) :: nil)%list ) in
     Nsatz.nsatz_compute
           (@cons _ (@Ring_polynom.PEc _ sugar) (@cons _ (@Ring_polynom.PEc _ nparams) (@cons _ (@Ring_polynom.PEpow _ reified_goal power) reified_givens))).
+Abort.

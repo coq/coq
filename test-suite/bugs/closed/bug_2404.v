@@ -44,3 +44,5 @@ Fixpoint exportRweak {a b} (aRWb : Rweak a b) (y : bName b) : option (bName a) :
     | None   => None
     end
   end.
+
+End Derived.

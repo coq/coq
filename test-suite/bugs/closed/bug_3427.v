@@ -194,3 +194,5 @@ instead of
        (fun x0 : setT (* Top.405 *) X0 =>
         @paths (* Top.404 *) (setT (* Top.404 *) Y0) (f0 x0) (f0 x))) Unit".
  *)
+  Abort.
+End AssumingUA.

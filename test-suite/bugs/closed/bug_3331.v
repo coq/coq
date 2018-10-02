@@ -29,3 +29,4 @@ Section groupoid_category.
     Set Typeclasses Debug.
     pose (_ : Contr (idpath = idpath :> (@paths (@paths X d d) idpath idpath))).
 Abort.
+End groupoid_category.

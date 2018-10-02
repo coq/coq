@@ -62,3 +62,6 @@ Section Finite_nat_set.
     (* This was not part of the initial bug report; this is to check that
        the existential variable kept its name *)
     change (true = counted_def_nth fs2 i ?def).
+
+  Abort.
+End Finite_nat_set.

@@ -7,3 +7,4 @@ rewrite -> eq. auto.
 Set Typeclasses Debug.
 Fail setoid_rewrite <- H. (* The command has indeed failed with message:
 => Stack overflow. *)
+Abort.

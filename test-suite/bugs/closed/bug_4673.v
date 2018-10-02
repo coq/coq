@@ -55,3 +55,4 @@ Goal    forall (Char : Type) (P : forall _ : list bool, Prop) (l : list bool) (l
   setoid_rewrite H || fail 0 "too early".
   Undo.
   setoid_rewrite H.
+Abort.

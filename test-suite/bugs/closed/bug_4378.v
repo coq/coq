@@ -7,3 +7,4 @@ Tactic Notation "epose2" open_constr(a) tactic3(tac) :=
 Goal True.
   epose _. Undo.
   epose2 _ idtac.
+Abort.

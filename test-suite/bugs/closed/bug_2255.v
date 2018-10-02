@@ -19,3 +19,4 @@ n0 & Tuple n0 H0})
             (consT A F) (cons A x F X))), False.
 intros.
 injection H.
+Abort.

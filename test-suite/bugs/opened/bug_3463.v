@@ -10,3 +10,4 @@ Goal True.
   test2 nat (1 + _).
   test3 (1 + _) nat.
   test3 (1 + _ : nat) nat.
+Abort.

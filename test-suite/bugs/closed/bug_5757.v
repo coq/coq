@@ -74,3 +74,4 @@ match goal with
     change (to_val (W.to_expr (W.InjR (W.Val x))) = Some v)
 end.
 Abort.
+End Tests.

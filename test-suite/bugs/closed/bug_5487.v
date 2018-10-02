@@ -7,3 +7,4 @@ Proof.
   | [ |- ?x = ?y ]
     => match x with y => idtac end
   end.
+Abort.

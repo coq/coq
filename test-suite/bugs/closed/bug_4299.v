@@ -10,3 +10,4 @@ Module M : Foo with Definition U := Type : Type.
   Definition U := let X := Type in Type.
   Definition eq : Type = U := eq_refl.
 Fail End M.
+Reset M.

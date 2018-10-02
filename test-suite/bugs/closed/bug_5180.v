@@ -62,3 +62,4 @@ The term "x" has type "TypeOfTypei' (Typei 0)" while it is expected to have type
  *)
   all:compute in *.
   all:exact x.
+Abort.

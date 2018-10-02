@@ -23,3 +23,4 @@ Goal Foo.
   myexact !.
 Defined.
 *)
+Abort.

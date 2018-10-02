@@ -36,3 +36,4 @@ Goal forall (H H0 H1 : Type) (H2 : H1) (H3 : H1 -> (H1 -> H) * H0)
 (* Anomaly: Uncaught exception Not_found(_). Please report. *)
 
 (* Anomaly: Uncaught exception Not_found(_). Please report. *)
+Abort.
