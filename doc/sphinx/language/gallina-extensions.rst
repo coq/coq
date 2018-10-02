@@ -606,7 +606,7 @@ for several ways of defining a function *and other useful related
 objects*, namely: an induction principle that reflects the recursive
 structure of the function (see :tacn:`function induction`) and its fixpoint equality.
 The meaning of this declaration is to define a function ident,
-similarly to ``Fixpoint`. Like in ``Fixpoint``, the decreasing argument must
+similarly to ``Fixpoint``. Like in ``Fixpoint``, the decreasing argument must
 be given (unless the function is not recursive), but it might not
 necessarily be *structurally* decreasing. The point of the {} annotation
 is to name the decreasing argument *and* to describe which kind of
