@@ -92,41 +92,6 @@ module Aux = struct
       | None   -> DirMap.remove key map
       | Some x -> DirMap.add key x map
 
-    (* Available in OCaml >= 4.04 *)
-    let split_on_char sep s =
-      let open String in
-      let r = ref [] in
-      let j = ref (length s) in
-      for i = length s - 1 downto 0 do
-        if unsafe_get s i = sep then begin
-          r := sub s (i + 1) (!j - i - 1) :: !r;
-          j := i
-        end
-      done;
-      sub s 0 !j :: !r
-
-    (* Available in OCaml >= 4.04 *)
-    let is_dir_sep = match Sys.os_type with
-      | "Win32" -> fun s i -> s.[i] = '\\'
-      | _ -> fun s i -> s.[i] = '/'
-
-    let extension_len name =
-      let rec check i0 i =
-        if i < 0 || is_dir_sep name i then 0
-        else if name.[i] = '.' then check i0 (i - 1)
-        else String.length name - i0
-      in
-      let rec search_dot i =
-        if i < 0 || is_dir_sep name i then 0
-        else if name.[i] = '.' then check i (i - 1)
-        else search_dot (i - 1)
-      in
-      search_dot (String.length name - 1)
-
-    let remove_extension name =
-      let l = extension_len name in
-      if l = 0 then name else String.sub name 0 (String.length name - l)
-
   end
 
   let add_map_list key elem map =
@@ -205,18 +170,18 @@ let pp_vo_dep dir fmt vo =
   (* Correct path from global to local "theories/Init/Decimal.vo" -> "../../theories/Init/Decimal.vo" *)
   let deps = List.map (fun s -> sdir ^ s) (edep @ vo.deps) in
   (* The source file is also corrected as we will call coqtop from the top dir *)
-  let source = String.concat "/" dir ^ "/" ^ Legacy.(remove_extension vo.target) ^ ".v" in
+  let source = String.concat "/" dir ^ "/" ^ Filename.(remove_extension vo.target) ^ ".v" in
   (* The final build rule *)
   let action = sprintf "(chdir %%{project_root} (run coqtop -boot %s %s -compile %s))" eflag cflag source in
   pp_rule fmt [vo.target] deps action
 
 let pp_ml4_dep _dir fmt ml =
-  let target = Legacy.(remove_extension ml) ^ ".ml" in
+  let target = Filename.(remove_extension ml) ^ ".ml" in
   let ml4_rule = "(run coqp5 -loc loc -impl %{pp-file} -o %{targets})" in
   pp_rule fmt [target] [ml] ml4_rule
 
 let pp_mlg_dep _dir fmt ml =
-  let target = Legacy.(remove_extension ml) ^ ".ml" in
+  let target = Filename.(remove_extension ml) ^ ".ml" in
   let ml4_rule = "(run coqpp %{pp-file})" in
   pp_rule fmt [target] [ml] ml4_rule
 
@@ -274,7 +239,7 @@ let parse_coqdep_line l =
     begin match targets with
     | [target] ->
       let dir, target = Filename.(dirname target, basename target) in
-      Some (Legacy.split_on_char '/' dir, VO { target; deps; })
+      Some (String.split_on_char '/' dir, VO { target; deps; })
     (* Otherwise a vio file, we ignore *)
     | _ -> None
     end

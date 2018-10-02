@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2018-09-24-V01"
+# CACHEKEY: "bionic_coq-V2018-09-25-V1"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -32,33 +32,31 @@ ENV NJOBS="2" \
     OPAMYES="true"
 
 # Base opam is the set of base packages required by Coq
-ENV COMPILER="4.02.3"
+ENV COMPILER="4.05.0"
 
 # Common OPAM packages.
 # `num` does not have a version number as the right version to install varies
 # with the compiler version.
-ENV BASE_OPAM="num ocamlfind.1.8.0 dune.1.2.1 ounit.2.0.8" \
+ENV BASE_OPAM="num ocamlfind.1.8.0 dune.1.2.1 ounit.2.0.8 odoc.1.2.0" \
     CI_OPAM="menhir.20180530 elpi.1.1.0 ocamlgraph.1.8.8"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
-ENV CAMLP5_VER="6.14" \
+ENV CAMLP5_VER="7.01" \
     COQIDE_OPAM="lablgtk.2.18.5 conf-gtksourceview.2"
 
-# The separate `opam install ocamlfind` workarounds an OPAM repository bug in 4.02.3
+# base switch
 RUN opam init -a --disable-sandboxing --compiler="$COMPILER" default https://opam.ocaml.org && eval $(opam env) && opam update && \
-    opam install ocamlfind.1.8.0 && \
     opam install $BASE_OPAM camlp5.$CAMLP5_VER $COQIDE_OPAM $CI_OPAM
 
 # base+32bit switch
 RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
-    opam install ocamlfind.1.8.0 && \
     opam install $BASE_OPAM camlp5.$CAMLP5_VER
 
 # EDGE switch
 ENV COMPILER_EDGE="4.07.0" \
     CAMLP5_VER_EDGE="7.06" \
     COQIDE_OPAM_EDGE="lablgtk.2.18.6 conf-gtksourceview.2" \
-    BASE_OPAM_EDGE="odoc.1.2.0 dune-release.0.3.0"
+    BASE_OPAM_EDGE="dune-release.0.3.0"
 
 RUN opam switch create $COMPILER_EDGE && eval $(opam env) && \
     opam install $BASE_OPAM $BASE_OPAM_EDGE camlp5.$CAMLP5_VER_EDGE $COQIDE_OPAM_EDGE

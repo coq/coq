@@ -609,14 +609,14 @@ let caml_version_nums =
          "Is it installed properly?")
 
 let check_caml_version () =
-  if caml_version_nums >= [4;2;3] then
+  if caml_version_nums >= [4;5;0] then
     cprintf "You have OCaml %s. Good!" caml_version
   else
     let () = cprintf "Your version of OCaml is %s." caml_version in
     if !prefs.force_caml_version then
       warn "Your version of OCaml is outdated."
     else
-      die "You need OCaml 4.02.3 or later."
+      die "You need OCaml 4.05.0 or later."
 
 let _ = check_caml_version ()
 
@@ -656,16 +656,12 @@ let camltag = match caml_version_list with
     45: "open" shadowing a label or constructor: see 44
     48: implicit elimination of optional arguments: too common
     50: unexpected documentation comment: too common and annoying to avoid
-    56: unreachable match case: the [_ -> .] syntax doesn't exist in 4.02.3
     58: "no cmx file was found in path": See https://github.com/ocaml/num/issues/9
 *)
 let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-50-58"
 let coq_warn_error =
     if !prefs.warn_error
     then "-warn-error +a"
-         ^ (if caml_version_nums > [4;2;3]
-            then "-56"
-            else "")
     else ""
 
 (* Flags used to compile Coq and plugins (via coq_makefile) *)
