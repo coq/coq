@@ -26,8 +26,7 @@ About bar.
 Print bar.
 
 About Peano. (* Module *)
-Set Warnings "-deprecated".
-About existS2. (* Notation *)
+About sym_eq. (* Notation *)
 
 Arguments eq_refl {A} {x}, {A} x.
 Print eq_refl.
@@ -46,4 +45,3 @@ Goal forall n:nat, let g := newdef in n <> newdef n -> newdef n <> n -> False.
   About g.                              (* search hypothesis *)
   About h.                              (* search hypothesis *)
 Abort.
-

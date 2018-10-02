@@ -58,7 +58,7 @@ val we_are_parsing : bool ref
 (* Set Printing All flag. For some reason it is a global flag *)
 val raw_print : bool ref
 
-type compat_version = V8_6 | V8_7 | Current
+type compat_version = V8_7 | V8_8 | Current
 val compat_version : compat_version ref
 val version_compare : compat_version -> compat_version -> int
 val version_strictly_greater : compat_version -> bool

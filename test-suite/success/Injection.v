@@ -19,8 +19,8 @@ Qed.
 (* Check that no tuple needs to be built *)
 Lemma l3 :
  forall x y : nat,
- existS (fun n : nat => {n = n} + {n = n}) x (left _ (refl_equal x)) =
- existS (fun n : nat => {n = n} + {n = n}) y (left _ (refl_equal y)) ->
+ existT (fun n : nat => {n = n} + {n = n}) x (left _ (refl_equal x)) =
+ existT (fun n : nat => {n = n} + {n = n}) y (left _ (refl_equal y)) ->
  x = y.
 intros x y H.
  injection H.
@@ -30,10 +30,10 @@ Qed.
 (* Check that a tuple is built (actually the same as the initial one) *)
 Lemma l4 :
  forall p1 p2 : {0 = 0} + {0 = 0},
- existS (fun n : nat => {n = n} + {n = n}) 0 p1 =
- existS (fun n : nat => {n = n} + {n = n}) 0 p2 ->
- existS (fun n : nat => {n = n} + {n = n}) 0 p1 =
- existS (fun n : nat => {n = n} + {n = n}) 0 p2.
+ existT (fun n : nat => {n = n} + {n = n}) 0 p1 =
+ existT (fun n : nat => {n = n} + {n = n}) 0 p2 ->
+ existT (fun n : nat => {n = n} + {n = n}) 0 p1 =
+ existT (fun n : nat => {n = n} + {n = n}) 0 p2.
 intros.
  injection H.
 exact (fun H => H).

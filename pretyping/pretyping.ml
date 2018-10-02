@@ -927,9 +927,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	  | [], [] -> []
 	  | _ -> assert false
 	in aux 1 1 (List.rev nal) cs.cs_args, true in
-    let fsign = if Flags.version_strictly_greater Flags.V8_6
-                then Context.Rel.map (whd_betaiota !evdref) fsign
-                else fsign (* beta-iota-normalization regression in 8.5 and 8.6 *) in
+    let fsign = Context.Rel.map (whd_betaiota !evdref) fsign in
     let obj ind p v f =
       if not record then 
         let nal = List.map (fun na -> ltac_interp_name lvar na) nal in
@@ -1039,10 +1037,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	let pi = lift n pred in (* liftn n 2 pred ? *)
 	let pi = beta_applist !evdref (pi, [EConstr.of_constr (build_dependent_constructor cs)]) in
         let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cs.cs_args in
-        let cs_args =
-          if Flags.version_strictly_greater Flags.V8_6
-          then Context.Rel.map (whd_betaiota !evdref) cs_args
-          else cs_args (* beta-iota-normalization regression in 8.5 and 8.6 *) in
+        let cs_args = Context.Rel.map (whd_betaiota !evdref) cs_args in
 	let csgn =
           List.map (set_name Anonymous) cs_args
         in

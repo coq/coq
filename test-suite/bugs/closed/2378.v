@@ -73,7 +73,7 @@ Fixpoint LPTransfo Pred1 Pred2 p2lp (f: LP Pred1): LP Pred2 :=
   end.
 Arguments LPTransfo : default implicits.
 
-Definition addIndex (Ind:Type) (Pred: Ind -> Type) (i: Ind) f := 
+Definition addIndex (Ind:Type) (Pred: Ind -> Type) (i: Ind) f :=
   LPTransfo (fun p => LPPred _ (existT (fun i => Pred i) i p)) f.
 
 Section TTS.
@@ -121,8 +121,8 @@ Record simu (Pred: Type) (a: TTS StateA) (c: TTS StateC) (tra: Pred -> LP (Predi
     Delay _ a (mabs m ex1 st1) d (mabs m (mDelay m ex1 st1 d) st2);
   simuNext: forall ex1 st1 st2, Next _ c st1 st2 -> inv ex1 st1 ->
     Next _ a (mabs m ex1 st1) (mabs m (mNext m ex1 st1) st2);
-  simuPred: forall ext st, inv ext st -> 
-    (forall p, lpSat (Satisfy _ c) st (trc p) <-> lpSat (Satisfy _ a) (mabs m ext st) (tra p)) 
+  simuPred: forall ext st, inv ext st ->
+    (forall p, lpSat (Satisfy _ c) st (trc p) <-> lpSat (Satisfy _ a) (mabs m ext st) (tra p))
 }.
 
 Theorem satProd: forall State Ind Pred (Sat: forall i, State -> Pred i -> Prop) (st:State) i (f: LP (Pred i)),
@@ -137,15 +137,15 @@ Qed.
 
 Definition trProd (State: Type) Ind (Pred: Ind -> Type) (tts: Ind -> TTS State) (tr: forall i, (Pred i) -> LP (Predicate _ (tts i))):
   {i:Ind & Pred i} -> LP (Predicate _ (TTSIndexedProduct _ Ind tts)) :=
-  fun p => addIndex Ind _ (projS1 p) (tr (projS1 p) (projS2 p)).
+  fun p => addIndex Ind _ (projT1 p) (tr (projT1 p) (projT2 p)).
 
 Arguments trProd : default implicits.
 Require Import Setoid.
 
 Theorem satTrProd:
-  forall State Ind Pred (tts: Ind -> TTS State) 
+  forall State Ind Pred (tts: Ind -> TTS State)
     (tr: forall i, (Pred  i) -> LP (Predicate _ (tts i))) (st:State) (p: {i:Ind & (Pred i)}),
-  lpSat (Satisfy _ (tts (projS1 p))) st (tr (projS1 p) (projS2 p))
+  lpSat (Satisfy _ (tts (projT1 p))) st (tr (projT1 p) (projT2 p))
   <->
   lpSat (Satisfy _ (TTSIndexedProduct _ _ tts)) st (trProd _ tts tr p).
 Proof.
@@ -154,11 +154,11 @@ Proof.
                       (fun i => Satisfy _ (tts i))); tauto.
 Qed.
 
-Theorem simuProd: 
-  forall Ind (Pred: Ind -> Type) (tta: Ind -> TTS StateA) (ttc: Ind -> TTS StateC) 
+Theorem simuProd:
+  forall Ind (Pred: Ind -> Type) (tta: Ind -> TTS StateA) (ttc: Ind -> TTS StateC)
     (tra: forall i, (Pred i) -> LP (Predicate _ (tta i)))
     (trc: forall i, (Pred i) -> LP (Predicate _ (ttc i))),
-     (forall i, simu _ (tta i) (ttc i) (tra i) (trc i)) -> 
+     (forall i, simu _ (tta i) (ttc i) (tra i) (trc i)) ->
        simu _ (TTSIndexedProduct _ Ind tta) (TTSIndexedProduct _ Ind ttc)
                   (trProd Pred tta tra) (trProd Pred ttc trc).
 Proof.
@@ -171,11 +171,11 @@ Proof.
   eapply simuDelay; eauto.
   eapply simuNext; eauto.
   split; simpl; intros.
-  generalize (proj1 (simuPred _ _ _ _ _ (X (projS1 p)) ext st (H (projS1 p)) (projS2 p))); simpl; intro.
+  generalize (proj1 (simuPred _ _ _ _ _ (X (projT1 p)) ext st (H (projT1 p)) (projT2 p))); simpl; intro.
   rewrite <- (satTrProd StateA Ind Pred tta tra); apply H1.
   rewrite (satTrProd StateC Ind Pred ttc trc); apply H0.
 
-  generalize (proj2 (simuPred _ _ _ _ _ (X (projS1 p)) ext st (H (projS1 p)) (projS2 p))); simpl; intro.
+  generalize (proj2 (simuPred _ _ _ _ _ (X (projT1 p)) ext st (H (projT1 p)) (projT2 p))); simpl; intro.
   rewrite <- (satTrProd StateC Ind Pred ttc trc); apply H1.
   rewrite (satTrProd StateA Ind Pred tta tra); apply H0.
 Qed.
@@ -189,11 +189,11 @@ Record simu_equiv StateA StateC m1 m2 Pred (a: TTS StateA) (c: TTS StateC) (tra:
   simuRL: simu StateC StateA m2 Pred c a trc tra
 }.
 
-Theorem simu_equivProd: 
-  forall StateA StateC m1 m2 Ind (Pred: Ind -> Type) (tta: Ind -> TTS StateA) (ttc: Ind -> TTS StateC) 
+Theorem simu_equivProd:
+  forall StateA StateC m1 m2 Ind (Pred: Ind -> Type) (tta: Ind -> TTS StateA) (ttc: Ind -> TTS StateC)
     (tra: forall i, (Pred i) -> LP (Predicate _ (tta i)))
     (trc: forall i, (Pred i) -> LP (Predicate _ (ttc i))),
-     (forall i, simu_equiv StateA StateC m1 m2 _ (tta i) (ttc i) (tra i) (trc i)) -> 
+     (forall i, simu_equiv StateA StateC m1 m2 _ (tta i) (ttc i) (tra i) (trc i)) ->
        simu_equiv StateA StateC m1 m2 _ (TTSIndexedProduct _ Ind tta) (TTSIndexedProduct _ Ind ttc)
                   (trProd _ _ Pred tta tra) (trProd _ _ Pred ttc trc).
 Proof.
@@ -237,7 +237,7 @@ Definition pPredicate (L: RTLanguage) (sys: PSyntax L) := { i : pIndex L sys & M
 
 (* product with shared state *)
 
-Definition PLanguage (L: RTLanguage): RTLanguage := 
+Definition PLanguage (L: RTLanguage): RTLanguage :=
   mkRTLanguage
     (PSyntax L)
     (pState L)
@@ -246,7 +246,7 @@ Definition PLanguage (L: RTLanguage): RTLanguage :=
         eq_refl => Semantic L (pComponents L mdl i)
        end))
     (pPredicate L)
-    (fun mdl => trProd _ _ _ _ 
+    (fun mdl => trProd _ _ _ _
       (fun i pi => match pIsShared L mdl i as e in (_ = y) return
                      (LP (Predicate y
                                match e in (_ = y0) return (TTS y0) with
@@ -259,22 +259,22 @@ Definition PLanguage (L: RTLanguage): RTLanguage :=
 Inductive Empty: Type :=.
 
 Record isSharedTransfo l1 l2 tr: Prop := isSharedTransfoPrf {
-sameState:  forall mdl i j, 
+sameState:  forall mdl i j,
   DynamicState l2 (Tmodel l1 l2 tr (pComponents l1 mdl i)) =
   DynamicState l2 (Tmodel l1 l2 tr (pComponents l1 mdl j));
-sameMState: forall mdl i j, 
+sameMState: forall mdl i j,
   mState _ _  (Tl1l2 _ _ tr (pComponents l1 mdl i)) =
   mState _ _  (Tl1l2 _ _ tr (pComponents l1 mdl j));
-sameM12: forall mdl i j, 
+sameM12: forall mdl i j,
   Tl1l2 _ _ tr (pComponents l1 mdl i) =
   match sym_eq (sameState mdl i j) in _=y return mapping _ y with
     eq_refl => match sym_eq (pIsShared l1 mdl i) in _=x return mapping x _ with
       eq_refl => match pIsShared l1 mdl j in _=x return mapping x _ with
         eq_refl => Tl1l2 _ _ tr (pComponents l1 mdl j)
       end
-    end         
+    end
   end;
-sameM21: forall mdl i j, 
+sameM21: forall mdl i j,
   Tl2l1 l1 l2 tr (pComponents l1 mdl i) =
   match
     sym_eq (sameState mdl i j) in (_ = y)
@@ -301,7 +301,7 @@ end
 Definition PTransfoSyntax l1 l2 tr (h: isSharedTransfo l1 l2 tr) mdl :=
   mkPSyntax l2 (pIndex l1 mdl)
     (pIsEmpty l1 mdl)
-    (match pIsEmpty l1 mdl return Type with 
+    (match pIsEmpty l1 mdl return Type with
          inleft i => DynamicState l2 (Tmodel l1 l2 tr (pComponents l1 mdl i))
         |inright h => pState l1 mdl
        end)
@@ -314,7 +314,7 @@ Definition PTransfoSyntax l1 l2 tr (h: isSharedTransfo l1 l2 tr) mdl :=
          | inright _ => pState l1 mdl
          end)
       with
-         inleft j => sameState l1 l2 tr h mdl i j 
+         inleft j => sameState l1 l2 tr h mdl i j
       | inright h => match h i with end
         end).
 
@@ -388,12 +388,12 @@ match pIsEmpty l1 mdl with
       addIndex (pIndex l1 mdl) (fun i => MdlPredicate l2 (Tmodel l1 l2 tr (pComponents l1 mdl i))) x
         (LPTransfo (Tpred l1 l2 tr (pComponents l1 mdl x))
           (LPPred (MdlPredicate l1 (pComponents l1 mdl x)) p))
-| inright f => match f (projS1 pp) with end
+| inright f => match f (projT1 pp) with end
 end.
 
-Lemma simu_eqA: 
+Lemma simu_eqA:
   forall A1 A2 C m P sa sc tta ttc (h: A2=A1),
-  simu A1 C (match h in (_=y) return mapping _ C with eq_refl => m end) 
+  simu A1 C (match h in (_=y) return mapping _ C with eq_refl => m end)
   P (match h in (_=y) return TTS y with eq_refl => sa end)
   sc (fun p => match h in (_=y) return LP (Predicate y _) with eq_refl => tta p end)
   ttc ->
@@ -401,9 +401,9 @@ Lemma simu_eqA:
 admit.
 Qed.
 
-Lemma simu_eqC: 
+Lemma simu_eqC:
   forall A C1 C2 m P sa sc tta ttc (h: C2=C1),
-  simu A C1 (match h in (_=y) return mapping A _ with eq_refl => m end) 
+  simu A C1 (match h in (_=y) return mapping A _ with eq_refl => m end)
   P sa (match h in (_=y) return TTS y with eq_refl => sc end)
   tta (fun p => match h in (_=y) return LP (Predicate y _) with eq_refl => ttc p end)
    ->
@@ -411,10 +411,10 @@ Lemma simu_eqC:
 admit.
 Qed.
 
-Lemma simu_eqA1: 
+Lemma simu_eqA1:
   forall A1 A2 C m P sa sc tta ttc (h: A1=A2),
-  simu A1 C m 
-  P 
+  simu A1 C m
+  P
   (match (sym_eq h) in (_=y) return TTS y with eq_refl => sa end) sc
   (fun p => match (sym_eq h) as e in (_=y) return LP (Predicate y (match e in (_=z) return TTS z with eq_refl => sa end)) with eq_refl => tta p end) ttc
    ->
@@ -422,32 +422,32 @@ Lemma simu_eqA1:
 admit.
 Qed.
 
-Lemma simu_eqA2: 
+Lemma simu_eqA2:
   forall A1 A2 C m P sa sc tta ttc (h: A1=A2),
   simu A1 C (match (sym_eq h) in (_=y) return mapping _ C with eq_refl => m end)
-  P 
+  P
   sa sc tta ttc
    ->
   simu A2 C m P
-  (match h in (_=y) return TTS y with eq_refl => sa end) sc 
+  (match h in (_=y) return TTS y with eq_refl => sa end) sc
   (fun p => match h as e in (_=y) return LP (Predicate y match e in (_=y0) return TTS y0 with eq_refl => sa end) with eq_refl => tta p end)
  ttc.
 admit.
 Qed.
 
-Lemma simu_eqC2: 
+Lemma simu_eqC2:
   forall A C1 C2 m P sa sc tta ttc (h: C1=C2),
   simu A C1 (match (sym_eq h) in (_=y) return mapping A _ with eq_refl => m end)
-  P 
+  P
   sa sc tta ttc
    ->
   simu A C2 m P
-  sa (match h in (_=y) return TTS y with eq_refl => sc end) 
+  sa (match h in (_=y) return TTS y with eq_refl => sc end)
   tta (fun p => match h as e in (_=y) return LP (Predicate y match e in (_=y0) return TTS y0 with eq_refl => sc end) with eq_refl => ttc p end).
 admit.
 Qed.
 
-Lemma simu_eqM: 
+Lemma simu_eqM:
   forall A C m1 m2 P sa sc tta ttc (h: m1=m2),
   simu A C m1 P sa sc tta ttc
    ->
@@ -470,7 +470,7 @@ Lemma LPTransfo_addIndex:
         addIndex Ind tr1 (projT1 p0) (tr2 (projT1 p0) (projT2 p0)))
       (addIndex Ind Pred x p).
 Proof.
-  unfold addIndex; intros. 
+  unfold addIndex; intros.
   rewrite LPTransfo_trans.
   rewrite LPTransfo_trans.
   simpl.
@@ -491,7 +491,7 @@ Lemma LPTransfo_addIndex_tr:
         addIndex Ind tr1 (projT1 p0) (tr3 (projT1 p0) (tr2 (projT1 p0) (projT2 p0))))
       (addIndex Ind Pred x p).
 Proof.
-  unfold addIndex; simpl; intros. 
+  unfold addIndex; simpl; intros.
   rewrite LPTransfo_trans; simpl.
   rewrite <- LPTransfo_trans.
   f_equal.
@@ -505,19 +505,19 @@ Qed.
 Require Export Coq.Logic.FunctionalExtensionality.
 Print PLanguage.
 
-Program Definition PTransfo l1 l2 (tr: Transformation l1 l2) (h: isSharedTransfo l1 l2 tr): 
+Program Definition PTransfo l1 l2 (tr: Transformation l1 l2) (h: isSharedTransfo l1 l2 tr):
 Transformation (PLanguage l1) (PLanguage l2) :=
   mkTransformation (PLanguage l1) (PLanguage l2)
     (PTransfoSyntax l1 l2 tr h)
     (Pmap12 l1 l2 tr h)
     (Pmap21 l1 l2 tr h)
     (PTpred l1 l2 tr h)
-    (fun mdl => simu_equivProd 
-      (pState l1 mdl) 
-      (pState l2 (PTransfoSyntax l1 l2 tr h mdl)) 
+    (fun mdl => simu_equivProd
+      (pState l1 mdl)
+      (pState l2 (PTransfoSyntax l1 l2 tr h mdl))
       (Pmap12 l1 l2 tr h mdl)
       (Pmap21 l1 l2 tr h mdl)
-      (pIndex l1 mdl) 
+      (pIndex l1 mdl)
       (fun i => MdlPredicate l1 (pComponents l1 mdl i))
       (compSemantic l1 mdl)
       (compSemantic l2 (PTransfoSyntax l1 l2 tr h mdl))
