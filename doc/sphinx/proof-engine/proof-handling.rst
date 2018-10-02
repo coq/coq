@@ -495,6 +495,10 @@ Requesting information
             eexists ?[n].
             Show n.
 
+         .. coqtop:: none
+
+            Abort.
+
    .. cmdv:: Show Script
       :name: Show Script
 
@@ -581,6 +585,164 @@ Requesting information
    fixpoint and cofixpoint is violated at some time of the construction
    of the proof without having to wait the completion of the proof.
 
+.. _showing_diffs:
+
+Showing differences between proof steps
+---------------------------------------
+
+
+Coq can automatically highlight the differences between successive proof steps.
+For example, the following screenshots of CoqIDE and coqtop show the application
+of the same :tacn:`intros` tactic.  The tactic creates two new hypotheses, highlighted in green.
+The conclusion is entirely in pale green because although it’s changed, no tokens were added
+to it.  The second screenshot uses the "removed" option, so it shows the conclusion a
+second time with the old text, with deletions marked in red.  Also, since the hypotheses are
+new, no line of old text is shown for them.
+
+.. comment screenshot produced with:
+   Inductive ev : nat -> Prop :=
+   | ev_0 : ev 0
+   | ev_SS : forall n : nat, ev n -> ev (S (S n)).
+
+   Fixpoint double (n:nat) :=
+     match n with
+     | O => O
+     | S n' => S (S (double n'))
+     end.
+
+   Goal forall n, ev n -> exists k, n = double k.
+   intros n E.
+
+..
+
+  .. image:: ../_static/diffs-coqide-on.png
+     :alt: |CoqIDE| with Set Diffs on
+
+..
+
+  .. image:: ../_static/diffs-coqide-removed.png
+     :alt: |CoqIDE| with Set Diffs removed
+
+..
+
+  .. image:: ../_static/diffs-coqtop-on3.png
+     :alt: coqtop with Set Diffs on
+
+How to enable diffs
+```````````````````
+
+.. opt:: Diffs %( "on" %| "off" %| "removed" %)
+
+  .. This ref doesn't work: :opt:`Set Diffs %( "on" %| "off" %| "removed" %)`
+
+  The “on” option highlights added tokens in green, while the “removed” option
+  additionally reprints items with removed tokens in red.  Unchanged tokens in
+  modified items are shown with pale green or red.  (Colors are user-configurable.)
+
+For coqtop, showing diffs can be enabled when starting coqtop with the
+``-diffs on|off|removed`` command-line option or with the ``Set Diffs``
+command within Coq.  You will need to provide the ``-color on|auto`` command-line option when
+you start coqtop in either case.
+
+Colors for coqtop can be configured by setting the ``COQ_COLORS`` environment
+variable.  See section :ref:`customization-by-environment-variables`.  Diffs
+use the tags ``diff.added``, ``diff.added.bg``, ``diff.removed`` and ``diff.removed.bg``.
+
+In CoqIDE, diffs should be enabled from the ``View`` menu.  Don’t use the ``Set Diffs``
+command in CoqIDE.  You can change the background colors shown for diffs from the
+``Edit | Preferences | Tags`` panel by changing the settings for the ``diff.added``,
+``diff.added.bg``, ``diff.removed`` and ``diff.removed.bg`` tags.  This panel also
+lets you control other attributes of the highlights, such as the foreground
+color, bold, italic, underline and strikeout.
+
+Note: As of this writing (August 2018), Proof General will need minor changes
+to be able to show diffs correctly.  We hope it will support this feature soon.
+See https://github.com/ProofGeneral/PG/issues/381 for the current status.
+
+How diffs are calculated
+````````````````````````
+
+Diffs are calculated as follows:
+
+1. Select the old proof state to compare to, which is the proof state before
+   the last tactic that changed the proof.  Changes that only affect the view
+   of the proof, such as ``all: swap 1 2``, are ignored.
+
+2. For each goal in the new proof state, determine what old goal to compare
+   it to—the one it is derived from or is the same as.  Match the hypotheses by
+   name (order is ignored), handling compacted items specially.
+
+3. For each hypothesis and conclusion (the “items”) in each goal, pass
+   them as strings to the lexer to break them into tokens.  Then apply the
+   Myers diff algorithm :cite:`Myers` on the tokens and add appropriate highlighting.
+
+Notes:
+
+* Aside from the highlights, output for the "on" option should be identical
+  to the undiffed output.
+* Goals completed in the last proof step will not be shown even with the
+  "removed" setting.
+
+.. comment The following screenshots show diffs working with multiple goals and with compacted
+   hypotheses.  In the first one, notice that the goal ``P 1`` is not highlighted at
+   all after the split because it has not changed.
+
+    .. todo: Use this script and remove the screenshots when COQ_COLORS
+      works for coqtop in sphinx
+    .. coqtop:: none
+
+      Set Diffs "on".
+      Parameter P : nat -> Prop.
+      Goal P 1 /\ P 2 /\ P 3.
+
+    .. coqtop:: out
+
+      split.
+
+    .. coqtop:: all
+
+      2: split.
+
+    .. coqtop:: none
+
+      Abort.
+
+  ..
+
+    .. coqtop:: none
+
+      Set Diffs "on".
+      Goal forall n m : nat, n + m = m + n.
+      Set Diffs "on".
+
+    .. coqtop:: out
+
+       intros n.
+
+    .. coqtop:: all
+
+      intros m.
+
+    .. coqtop:: none
+
+      Abort.
+
+This screen shot shows the result of applying a :tacn:`split` tactic that replaces one goal
+with 2 goals.  Notice that the goal ``P 1`` is not highlighted at all after
+the split because it has not changed.
+
+..
+
+  .. image:: ../_static/diffs-coqide-multigoal.png
+     :alt: coqide with Set Diffs on with multiple goals
+
+This is how diffs may appear after applying a :tacn:`intro` tactic that results
+in compacted hypotheses:
+
+..
+
+  .. image:: ../_static/diffs-coqide-compacted.png
+     :alt: coqide with Set Diffs on with compacted hyptotheses
 
 Controlling the effect of proof editing commands
 ------------------------------------------------
