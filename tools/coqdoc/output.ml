@@ -21,11 +21,6 @@ let printf s = Printf.fprintf !out_channel s
 
 let sprintf = Printf.sprintf
 
-[@@@ocaml.warning "-3"]       (* String.{capitalize,lowercase}_ascii since 4.03.0 GPR#124 *)
-let capitalize = String.capitalize
-let lowercase = String.lowercase
-[@@@ocaml.warning "+3"]
-
 (*s Coq keywords *)
 
 let build_table l =
@@ -848,7 +843,7 @@ module Html = struct
 	if t = Library then
          let ln = !lib_name in
            if ln <> "" then
-	       "[" ^ lowercase ln ^ "]", m ^ ".html", t
+               "[" ^ String.lowercase_ascii ln ^ "]", m ^ ".html", t
            else
 	       "[library]", m ^ ".html", t
 	else
@@ -866,7 +861,7 @@ module Html = struct
 
   (* Impression de la table d'index *)
   let print_index_table_item i =
-    printf "<tr>\n<td>%s Index</td>\n" (capitalize i.idx_name);
+    printf "<tr>\n<td>%s Index</td>\n" (String.capitalize_ascii i.idx_name);
     List.iter
       (fun (c,l) ->
 	 if l <> [] then
@@ -914,7 +909,7 @@ module Html = struct
     let print_table () = print_index_table all_index in
     let print_one_index i =
       if i.idx_size > 0 then begin
-	printf "<hr/>\n<h1>%s Index</h1>\n" (capitalize i.idx_name);
+        printf "<hr/>\n<h1>%s Index</h1>\n" (String.capitalize_ascii i.idx_name);
 	all_letters i
       end
     in

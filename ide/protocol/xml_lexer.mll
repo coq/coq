@@ -83,9 +83,6 @@ let error lexbuf e =
         last_pos := lexeme_start lexbuf;
         raise (Error e)
 
-[@@@ocaml.warning "-3"]       (* String.lowercase_ascii since 4.03.0 GPR#124 *)
-let lowercase = String.lowercase
-[@@@ocaml.warning "+3"]
 }
 
 let newline = ['\n']
@@ -222,7 +219,7 @@ and entity = parse
                 {
                         let ident = lexeme lexbuf in
                         try
-                                Hashtbl.find idents (lowercase ident)
+                                Hashtbl.find idents (String.lowercase_ascii ident)
                         with
                                 Not_found -> "&" ^ ident
                 }

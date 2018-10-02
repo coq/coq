@@ -688,10 +688,6 @@ let pmodifiers ?(all = false) name p = modifiers
   name
   (str_to_mod_list p#get)
 
-[@@@ocaml.warning "-3"]       (* String.uppercase_ascii since 4.03.0 GPR#124 *)
-let uppercase = String.uppercase
-[@@@ocaml.warning "+3"]
-
 let configure ?(apply=(fun () -> ())) () =
   let cmd_coqtop =
     string
@@ -1018,7 +1014,7 @@ let configure ?(apply=(fun () -> ())) () =
     let k =
       if Int.equal (CString.length k) 1 && Util.is_letter k.[0] then k
       else "" in
-    let k = uppercase k in
+    let k = String.uppercase_ascii k in
       [q, k]
   in
 
