@@ -12,7 +12,6 @@ open Util
 open Names
 open Pp
 open Tacexpr
-open Termops
 
 let (ltac_trace_info : ltac_trace Exninfo.t) = Exninfo.make ()
 
@@ -51,8 +50,8 @@ let msg_tac_notice s = Proofview.NonLogical.print_notice (s++fnl())
 let db_pr_goal gl =
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
-  let penv = print_named_context env in
-  let pc = print_constr_env env (Tacmach.New.project gl) concl in
+  let penv = Termops.Internal.print_named_context env in
+  let pc = Printer.pr_econstr_env env (Tacmach.New.project gl) concl in
     str"  " ++ hv 0 (penv ++ fnl () ++
                    str "============================" ++ fnl ()  ++
                    str" "  ++ pc) ++ fnl ()
@@ -243,7 +242,7 @@ let db_constr debug env sigma c =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str "Evaluated term: " ++ print_constr_env env sigma c)
+    msg_tac_debug (str "Evaluated term: " ++ Printer.pr_econstr_env env sigma c)
   else return ()
 
 (* Prints the pattern rule *)
@@ -268,7 +267,7 @@ let db_matched_hyp debug env sigma (id,_,c) ido =
   is_debug debug >>= fun db ->
   if db then
     msg_tac_debug (str "Hypothesis " ++ Id.print id ++ hyp_bound ido ++
-                str " has been matched: " ++ print_constr_env env sigma c)
+                str " has been matched: " ++ Printer.pr_econstr_env env sigma c)
   else return ()
 
 (* Prints the matched conclusion *)
@@ -276,7 +275,7 @@ let db_matched_concl debug env sigma c =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str "Conclusion has been matched: " ++ print_constr_env env sigma c)
+    msg_tac_debug (str "Conclusion has been matched: " ++ Printer.pr_econstr_env env sigma c)
   else return ()
 
 (* Prints a success message when the goal has been matched *)

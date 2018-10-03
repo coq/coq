@@ -444,7 +444,7 @@ let protected_get_type_of env sigma c =
   try Retyping.get_type_of ~lax:true env.ExtraEnv.env sigma c
   with Retyping.RetypeError _ ->
     user_err 
-      (str "Cannot reinterpret " ++ quote (print_constr c) ++
+      (str "Cannot reinterpret " ++ quote (Termops.Internal.print_constr_env env.ExtraEnv.env sigma c) ++
        str " in the current environment.")
 
 let pretype_id pretype k0 loc env evdref lvar id =

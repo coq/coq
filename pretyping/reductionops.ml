@@ -253,9 +253,9 @@ module Cst_stack = struct
 	(applist (cst, List.rev params))
 	t) cst_l c
 
-  let pr l =
+  let pr env sigma l =
     let open Pp in
-    let p_c c = Termops.print_constr c in
+    let p_c c = Termops.Internal.print_constr_env env sigma c in
     prlist_with_sep pr_semicolon
       (fun (c,params,args) ->
 	hov 1 (str"(" ++ p_c c ++ str ")" ++ spc () ++ pr_sequence p_c params ++ spc () ++ str "(args:" ++
@@ -614,9 +614,9 @@ type contextual_state_reduction_function =
 type state_reduction_function = contextual_state_reduction_function
 type local_state_reduction_function = evar_map -> state -> state
 
-let pr_state (tm,sk) =
+let pr_state env sigma (tm,sk) =
   let open Pp in
-  let pr c = Termops.print_constr c in
+  let pr c = Termops.Internal.print_constr_env env sigma c in
   h 0 (pr tm ++ str "|" ++ cut () ++ Stack.pr pr sk)
 
 (*************************************)
@@ -854,10 +854,10 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
   let rec whrec cst_l (x, stack) =
     let () = if !debug_RAKAM then
 	let open Pp in
-	let pr c = Termops.print_constr c in
+        let pr c = Termops.Internal.print_constr_env env sigma c in
 	Feedback.msg_notice
              (h 0 (str "<<" ++ pr x ++
-		   str "|" ++ cut () ++ Cst_stack.pr cst_l ++
+                   str "|" ++ cut () ++ Cst_stack.pr env sigma cst_l ++
 		   str "|" ++ cut () ++ Stack.pr pr stack ++
 		   str ">>"))
     in

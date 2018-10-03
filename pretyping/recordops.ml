@@ -229,7 +229,7 @@ let warn_projection_no_head_constant =
           let env = Termops.push_rels_assum sign env in
           let con_pp = Nametab.pr_global_env Id.Set.empty (ConstRef con) in
           let proji_sp_pp = Nametab.pr_global_env Id.Set.empty (ConstRef proji_sp) in
-          let term_pp = Termops.print_constr_env env (Evd.from_env env) (EConstr.of_constr t) in
+          let term_pp = Termops.Internal.print_constr_env env (Evd.from_env env) (EConstr.of_constr t) in
           strbrk "Projection value has no head constant: "
           ++ term_pp ++ strbrk " in canonical instance "
           ++ con_pp ++ str " of " ++ proji_sp_pp ++ strbrk ", ignoring it.")
@@ -295,8 +295,12 @@ let add_canonical_structure warn o =
       in match ocs with
         | None -> object_table := Refmap.add proj ((pat,s)::l) !object_table;
         | Some (c, cs) ->
-              let old_can_s = (Termops.print_constr (EConstr.of_constr cs.o_DEF))
-              and new_can_s = (Termops.print_constr (EConstr.of_constr s.o_DEF)) in
+              (* XXX: Undesired global access to env *)
+              let env = Global.env () in
+              let sigma = Evd.from_env env in
+              let old_can_s = (Termops.Internal.print_constr_env env sigma (EConstr.of_constr cs.o_DEF))
+              and new_can_s = (Termops.Internal.print_constr_env env sigma (EConstr.of_constr s.o_DEF))
+              in
               let prj = (Nametab.pr_global_env Id.Set.empty proj)
               and hd_val = (pr_cs_pattern cs_pat) in
               if warn then warn_redundant_canonical_projection (hd_val,prj,new_can_s,old_can_s))
@@ -362,7 +366,7 @@ let check_and_decompose_canonical_structure ref =
     try lookup_structure indsp
     with Not_found ->
       error_not_structure ref
-        (str "Could not find the record or structure " ++ Termops.print_constr (EConstr.mkInd indsp)) in
+        (str "Could not find the record or structure " ++ Termops.Internal.print_constr_env env evd (EConstr.mkInd indsp)) in
   let ntrue_projs = List.count snd s.s_PROJKIND in
   if s.s_EXPECTEDPARAM + ntrue_projs > Array.length args then
     error_not_structure ref (str "Got too few arguments to the record or structure constructor.");

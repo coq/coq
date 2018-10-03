@@ -64,8 +64,14 @@ let ppwf_paths x = pp (Rtree.pp_tree prrecarg x)
 let envpp pp = let sigma,env = Pfedit.get_current_context () in pp env sigma
 let rawdebug = ref false
 let ppevar evk = pp (Evar.print evk)
-let ppconstr x = pp (Termops.print_constr (EConstr.of_constr x))
-let ppeconstr x = pp (Termops.print_constr x)
+let pr_constr t =
+  let sigma, env = Pfedit.get_current_context () in
+  Printer.pr_constr_env env sigma t
+let pr_econstr t =
+  let sigma, env = Pfedit.get_current_context () in
+  Printer.pr_econstr_env env sigma t
+let ppconstr x = pp (pr_constr x)
+let ppeconstr x = pp (pr_econstr x)
 let ppconstr_expr x = pp (Ppconstr.pr_constr_expr x)
 let ppsconstr x = ppconstr (Mod_subst.force_constr x)
 let ppconstr_univ x = Constrextern.with_universes ppconstr x
@@ -95,9 +101,9 @@ let ppidmapgen l = pp (pridmapgen l)
 
 let ppevarsubst = ppidmap (fun id0 -> prset (fun (c,copt,id) ->
   hov 0
-  (Termops.print_constr (EConstr.of_constr c) ++
+  (pr_constr c ++
    (match copt with None -> mt () | Some c -> spc () ++ str "<expanded: " ++
-    Termops.print_constr (EConstr.of_constr c) ++ str">") ++
+    pr_constr c ++ str">") ++
    (if id = id0 then mt ()
     else spc () ++ str "<canonical: " ++ Id.print id ++ str ">"))))
 
@@ -106,7 +112,7 @@ let ppididmap = ppidmap (fun _ -> Id.print)
 
 let prconstrunderbindersidmap = pridmap (fun _ (l,c) ->
   hov 1 (str"[" ++  prlist_with_sep spc Id.print l ++ str"]")
-  ++ str "," ++ spc () ++ Termops.print_constr c)
+  ++ str "," ++ spc () ++ pr_econstr c)
 
 let ppconstrunderbindersidmap l = pp (prconstrunderbindersidmap l)
 
@@ -155,9 +161,9 @@ let ppdelta s = pp (Mod_subst.debug_pr_delta s)
 let pp_idpred s = pp (pr_idpred s)
 let pp_cpred s = pp (pr_cpred s)
 let pp_transparent_state s = pp (pr_transparent_state s)
-let pp_stack_t n = pp (Reductionops.Stack.pr (EConstr.of_constr %> Termops.print_constr) n)
-let pp_cst_stack_t n = pp (Reductionops.Cst_stack.pr n)
-let pp_state_t n = pp (Reductionops.pr_state n)
+let pp_stack_t n = pp (Reductionops.Stack.pr (EConstr.of_constr %> pr_econstr) n)
+let pp_cst_stack_t n = pp (Reductionops.Cst_stack.pr Global.(env()) Evd.empty n)
+let pp_state_t n = pp (Reductionops.pr_state Global.(env()) Evd.empty n)
 
 (* proof printers *)
 let pr_evar ev = Pp.int (Evar.repr ev)
