@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import with_statement
-import os, re, sys
+import os, re, sys, subprocess
 
 # Obtain the absolute path of the script being run.  By assuming that
 # the script lives in dev/tools/, and basing all calls on the path of
@@ -11,6 +11,8 @@ ROOT_PATH = os.path.realpath(os.path.join(SCRIPT_PATH, '..', '..'))
 CONFIGURE_PATH = os.path.join(ROOT_PATH, 'configure.ml')
 HEADER_PATH = os.path.join(ROOT_PATH, 'dev', 'header.ml')
 DEFAULT_NUMBER_OF_OLD_VERSIONS = 2
+RELEASE_NUMBER_OF_OLD_VERSIONS = 2
+MASTER_NUMBER_OF_OLD_VERSIONS = 3
 EXTRA_HEADER = '\n(** Compatibility file for making Coq act similar to Coq v%s *)\n'
 FLAGS_MLI_PATH = os.path.join(ROOT_PATH, 'lib', 'flags.mli')
 FLAGS_ML_PATH = os.path.join(ROOT_PATH, 'lib', 'flags.ml')
@@ -18,6 +20,7 @@ COQARGS_ML_PATH = os.path.join(ROOT_PATH, 'toplevel', 'coqargs.ml')
 G_VERNAC_PATH = os.path.join(ROOT_PATH, 'vernac', 'g_vernac.mlg')
 DOC_INDEX_PATH = os.path.join(ROOT_PATH, 'doc', 'stdlib', 'index-list.html.template')
 BUG_4798_PATH = os.path.join(ROOT_PATH, 'test-suite', 'bugs', 'closed', 'bug_4798.v')
+TEST_SUITE_RUN_PATH = os.path.join(ROOT_PATH, 'test-suite', 'tools', 'update-compat', 'run.sh')
 TEST_SUITE_PATHS = tuple(os.path.join(ROOT_PATH, 'test-suite', 'success', i)
                          for i in ('CompatOldOldFlag.v', 'CompatOldFlag.v', 'CompatPreviousFlag.v', 'CompatCurrentFlag.v'))
 TEST_SUITE_DESCRIPTIONS = ('current-minus-three', 'current-minus-two', 'current-minus-one', 'current')
@@ -29,6 +32,29 @@ def get_header():
     with open(HEADER_PATH, 'r') as f: return f.read()
 
 HEADER = get_header()
+
+def break_or_continue():
+    msg = 'Press ENTER to continue, or Ctrl+C to break...'
+    try:
+        raw_input(msg)
+    except NameError: # we must be running python3
+        input(msg)
+
+def maybe_git_add(local_path, suggest_add=True, **args):
+    if args['git_add']:
+        print("Running 'git add %s'..." % local_path)
+        retc = subprocess.call(['git', 'add', local_path], cwd=ROOT_PATH)
+        if retc is not None and retc != 0:
+            print('!!! Process returned code %d' % retc)
+    elif suggest_add:
+        print(r"!!! Don't forget to 'git add %s'!" % local_path)
+
+def maybe_git_rm(local_path, **args):
+    if args['git_add']:
+        print("Running 'git rm --cached %s'..." % local_path)
+        retc = subprocess.call(['git', 'rm', '--cached', local_path], cwd=ROOT_PATH)
+        if retc is not None and retc != 0:
+            print('!!! Process returned code %d' % retc)
 
 def get_version(cur_version=None):
     if cur_version is not None: return cur_version
@@ -72,10 +98,46 @@ def get_known_versions():
 def get_new_versions(known_versions, **args):
     if args['cur_version'] in known_versions:
         assert(known_versions[-1] == args['cur_version'])
-        assert(len(known_versions) == args['number_of_compat_versions'])
-        return known_versions
+        known_versions = known_versions[:-1]
     assert(len(known_versions) >= args['number_of_old_versions'])
     return tuple(list(known_versions[-args['number_of_old_versions']:]) + [args['cur_version']])
+
+def print_diff(olds, news, numch=30):
+    for ch in range(min(len(olds), len(news))):
+        if olds[ch] != news[ch]:
+            print('Character %d differs:\nOld: %s\nNew: %s' % (ch, repr(olds[ch:][:numch]), repr(news[ch:][numch])))
+            return
+    ch = min(len(olds), len(news))
+    assert(len(olds) != len(news))
+    print('Strings are different lengths:\nOld tail: %s\nNew tail: %s' % (repr(olds[ch:]), repr(news[ch:])))
+
+def update_shebang_to_match(contents, new_contents, path):
+    contents_lines = contents.split('\n')
+    new_contents_lines = new_contents.split('\n')
+    if not (contents_lines[0].startswith('#!/') and contents_lines[0].endswith('bash')):
+        raise Exception('Unrecognized #! line in existing %s: %s' % (os.path.relpath(path, ROOT_PATH), repr(contents_lines[0])))
+    if not (new_contents_lines[0].startswith('#!/') and new_contents_lines[0].endswith('bash')):
+        raise Exception('Unrecognized #! line in new %s: %s' % (os.path.relpath(path, ROOT_PATH), repr(new_contents_lines[0])))
+    new_contents_lines[0] = contents_lines[0]
+    return '\n'.join(new_contents_lines)
+
+def update_if_changed(contents, new_contents, path, exn_string='%s changed!', suggest_add=False, pass_through_shebang=False, assert_unchanged=False, **args):
+    if contents is not None and pass_through_shebang:
+        new_contents = update_shebang_to_match(contents, new_contents, path)
+    if contents is None or contents != new_contents:
+        if not assert_unchanged:
+            print('Updating %s...' % os.path.relpath(path, ROOT_PATH))
+            with open(path, 'w') as f:
+                f.write(new_contents)
+            maybe_git_add(os.path.relpath(path, ROOT_PATH), suggest_add=suggest_add, **args)
+        else:
+            if contents is not None:
+                print('Unexpected change:\nOld contents:\n%s\n\nNew contents:\n%s\n' % (contents, new_contents))
+                print_diff(contents, new_contents)
+            raise Exception(exn_string % os.path.relpath(path, ROOT_PATH))
+
+def update_file(new_contents, path, **args):
+    update_if_changed(None, new_contents, path, **args)
 
 def update_compat_files(old_versions, new_versions, assert_unchanged=False, **args):
     for v in old_versions:
@@ -85,6 +147,7 @@ def update_compat_files(old_versions, new_versions, assert_unchanged=False, **ar
                 print('Removing %s...' % compat_file)
                 compat_path = os.path.join(ROOT_PATH, compat_file)
                 os.rename(compat_path, compat_path + '.bak')
+                maybe_git_rm(compat_file, **args)
             else:
                 raise Exception('%s exists!' % compat_file)
     for v, next_v in zip(new_versions, list(new_versions[1:]) + [None]):
@@ -95,12 +158,7 @@ def update_compat_files(old_versions, new_versions, assert_unchanged=False, **ar
             contents = HEADER + (EXTRA_HEADER % v)
             if next_v is not None:
                 contents += '\nRequire Export Coq.Compat.%s.\n' % version_name_to_compat_name(next_v, ext='')
-            if not assert_unchanged:
-                with open(compat_path, 'w') as f:
-                    f.write(contents)
-                print(r"Don't forget to 'git add %s'!" % compat_file)
-            else:
-                raise Exception('%s does not exist!' % compat_file)
+            update_file(contents, compat_path, exn_string='%s does not exist!', assert_unchanged=assert_unchanged, **args)
         else:
             # print('Checking %s...' % compat_file)
             with open(compat_path, 'r') as f:
@@ -116,12 +174,7 @@ def update_compat_files(old_versions, new_versions, assert_unchanged=False, **ar
                     if not contents.startswith(header + '\n'):
                         contents = contents.replace(header, header + '\n')
                     contents = contents.replace(header, '%s\n%s' % (header, line))
-                    if not assert_unchanged:
-                        print('Updating %s...' % compat_file)
-                        with open(compat_path, 'w') as f:
-                            f.write(contents)
-                    else:
-                        raise Exception('Compat file %s is missing line %s' % (compat_file, line))
+                    update_file(contents, compat_path, exn_string=('Compat file %%s is missing line %s' % line), assert_unchanged=assert_unchanged, **args)
 
 def update_compat_versions_type_line(new_versions, contents, relpath):
     compat_version_string = ' | '.join(['V%s_%s' % tuple(v.split('.')) for v in new_versions[:-1]] + ['Current'])
@@ -173,11 +226,18 @@ def update_add_compat_require(new_versions, contents, relpath):
     return new_contents
 
 def update_parse_compat_version(new_versions, contents, relpath, **args):
-    line_count = args['number_of_compat_versions']+2 # 1 for the first line, 1 for the invalid flags
+    line_count = 3 # 1 for the first line, 1 for the invalid flags, and 1 for Current
     first_line = 'let parse_compat_version = let open Flags in function'
-    old_function_lines = contents[contents.index(first_line):].split('\n')[:line_count]
-    if re.match(r'^  \| \([0-9 "\.\|]*\) as s ->$', old_function_lines[-1]) is None:
-        raise Exception('Could not recognize line %d of parse_compat_version in %s as a list of invalid versions' % (line_count, relpath))
+    split_contents = contents[contents.index(first_line):].split('\n')
+    while True:
+        cur_line = split_contents[:line_count][-1]
+        if re.match(r'^  \| \([0-9 "\.\|]*\) as s ->$', cur_line) is not None:
+            break
+        elif re.match(r'^  \| "[0-9\.]*" -> V[0-9_]*$', cur_line) is not None:
+            line_count += 1
+        else:
+            raise Exception('Could not recognize line %d of parse_compat_version in %s as a list of invalid versions (line was %s)' % (line_count, relpath, repr(cur_line)))
+    old_function_lines = split_contents[:line_count]
     all_versions = re.findall(r'"([0-9\.]+)"', ''.join(old_function_lines))
     invalid_versions = tuple(i for i in all_versions if i not in new_versions)
     new_function_lines = [first_line]
@@ -196,15 +256,6 @@ def check_no_old_versions(old_versions, new_versions, contents, relpath):
             V = 'V%s_%s' % tuple(v.split('.'))
             if V in contents:
                 raise Exception('Unreplaced usage of %s remaining in %s' % (V, relpath))
-
-def update_if_changed(contents, new_contents, path, assert_unchanged=False, **args):
-    if contents != new_contents:
-        if not assert_unchanged:
-            print('Updating %s...' % os.path.relpath(path, ROOT_PATH))
-            with open(path, 'w') as f:
-                f.write(new_contents)
-        else:
-            raise Exception('%s changed!' % os.path.relpath(path, ROOT_PATH))
 
 def update_flags_mli(old_versions, new_versions, **args):
     with open(FLAGS_MLI_PATH, 'r') as f: contents = f.read()
@@ -242,17 +293,20 @@ def update_test_suite(new_versions, assert_unchanged=False, test_suite_paths=TES
     assert(len(new_versions) == len(test_suite_paths))
     assert(len(new_versions) == len(test_suite_descriptions))
     for i, (v, path, descr) in enumerate(zip(new_versions, test_suite_paths, test_suite_descriptions)):
-        if not os.path.exists(path):
-            raise Exception('Could not find existing file %s' % os.path.relpath(path, ROOT_PATH))
+        contents = None
+        suggest_add = False
+        if os.path.exists(path):
+            with open(path, 'r') as f: contents = f.read()
+        else:
+            suggest_add = True
         if '%s' in descr: descr = descr % v
-        with open(path, 'r') as f: contents = f.read()
         lines = ['(* -*- coq-prog-args: ("-compat" "%s") -*- *)' % v,
                  '(** Check that the %s compatibility flag actually requires the relevant modules. *)' % descr]
         for imp_v in reversed(new_versions[i:]):
             lines.append('Import Coq.Compat.%s.' % version_name_to_compat_name(imp_v, ext=''))
         lines.append('')
         new_contents = '\n'.join(lines)
-        update_if_changed(contents, new_contents, path, **args)
+        update_if_changed(contents, new_contents, path, suggest_add=suggest_add, **args)
 
 def update_doc_index(new_versions, **args):
     with open(DOC_INDEX_PATH, 'r') as f: contents = f.read()
@@ -263,6 +317,20 @@ def update_doc_index(new_versions, **args):
     extra_lines = ['    theories/Compat/%s' % version_name_to_compat_name(v) for v in new_versions]
     new_contents = new_contents.replace(firstline, '\n'.join([firstline] + extra_lines))
     update_if_changed(contents, new_contents, DOC_INDEX_PATH, **args)
+
+def update_test_suite_run(**args):
+    with open(TEST_SUITE_RUN_PATH, 'r') as f: contents = f.read()
+    new_contents = r'''#!/usr/bin/env bash
+
+# allow running this script from any directory by basing things on where the script lives
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+# we assume that the script lives in test-suite/tools/update-compat/,
+# and that update-compat.py lives in dev/tools/
+cd "${SCRIPT_DIR}/../../.."
+dev/tools/update-compat.py --assert-unchanged %s || exit $?
+''' % ' '.join([('--master' if args['master'] else ''), ('--release' if args['release'] else '')]).strip()
+    update_if_changed(contents, new_contents, TEST_SUITE_RUN_PATH, pass_through_shebang=True, **args)
 
 def update_bug_4789(new_versions, **args):
     # we always update this compat notation to oldest
@@ -305,11 +373,26 @@ def parse_args(argv):
     args = {
         'assert_unchanged': False,
         'cur_version': None,
-        'number_of_old_versions': DEFAULT_NUMBER_OF_OLD_VERSIONS
+        'number_of_old_versions': None,
+        'master': False,
+        'release': False,
+        'git_add': False,
     }
+    if '--master' not in argv and '--release' not in argv:
+        print(r'''WARNING: You should pass either --release (right before branching)
+  or --master (right after branching and updating the version number in version.ml)''')
+        if '--assert-unchanged' not in args: break_or_continue()
     for arg in argv[1:]:
         if arg == '--assert-unchanged':
             args['assert_unchanged'] = True
+        elif arg == '--git-add':
+            args['git_add'] = True
+        elif arg == '--master':
+            args['master'] = True
+            if args['number_of_old_versions'] is None: args['number_of_old_versions'] = MASTER_NUMBER_OF_OLD_VERSIONS
+        elif arg == '--release':
+            args['release'] = True
+            if args['number_of_old_versions'] is None: args['number_of_old_versions'] = RELEASE_NUMBER_OF_OLD_VERSIONS
         elif arg.startswith('--cur-version='):
             args['cur_version'] = arg[len('--cur-version='):]
             assert(len(args['cur_version'].split('.')) == 2)
@@ -317,10 +400,11 @@ def parse_args(argv):
         elif arg.startswith('--number-of-old-versions='):
             args['number_of_old_versions'] = int(arg[len('--number-of-old-versions='):])
         else:
-            print('USAGE: %s [--assert-unchanged] [--cur-version=NN.NN] [--number-of-old-versions=NN]' % argv[0])
+            print('USAGE: %s [--assert-unchanged] [--cur-version=NN.NN] [--number-of-old-versions=NN] [--git-add]' % argv[0])
             print('')
             print('ERROR: Unrecognized argument: %s' % arg)
             sys.exit(1)
+    if args['number_of_old_versions'] is None: args['number_of_old_versions'] = DEFAULT_NUMBER_OF_OLD_VERSIONS
     return args
 
 if __name__ == '__main__':
@@ -335,6 +419,7 @@ if __name__ == '__main__':
     update_compat_files(known_versions, new_versions, **args)
     update_flags(known_versions, new_versions, **args)
     update_test_suite(new_versions, **args)
+    update_test_suite_run(**args)
     update_doc_index(new_versions, **args)
     update_bug_4789(new_versions, **args)
     update_compat_notations(known_versions, new_versions, **args)
