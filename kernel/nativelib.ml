@@ -26,7 +26,7 @@ let open_header = ["Nativevalues";
 let open_header = List.map mk_open open_header
 
 (* Directory where compiled files are stored *)
-let output_dir = ".coq-native"
+let output_dir = ""
 
 (* Extension of genereted ml files, stored for debugging purposes *)
 let source_ext = ".native"
@@ -67,7 +67,7 @@ let warn_native_compiler_failed =
 
 let call_compiler ?profile:(profile=false) ml_filename =
   let load_path = !get_load_paths () in
-  let load_path = List.map (fun dn -> dn / output_dir) load_path in
+  (* let load_path = List.map (fun dn -> dn / output_dir) load_path in *)
   let include_dirs = List.flatten (List.map (fun x -> ["-I"; x]) (include_dirs () @ load_path)) in
   let f = Filename.chop_extension ml_filename in
   let link_filename = f ^ ".cmo" in
@@ -95,6 +95,7 @@ let call_compiler ?profile:(profile=false) ml_filename =
       ("-o"::link_filename
        ::"-rectypes"
        ::"-w"::"a"
+       ::"-package" :: "coq.library" :: "-thread"
        ::include_dirs) @
       ["-impl"; ml_filename] in
   if !Flags.debug then Feedback.msg_debug (Pp.str (Envars.ocamlfind () ^ " " ^ (String.concat " " args)));
@@ -121,12 +122,12 @@ let compile_library dir code fn =
   let fn = fn ^ source_ext in
   let basename = Filename.basename fn in
   let dirname = Filename.dirname fn in
-  let dirname = dirname / output_dir in
+  (* let dirname = dirname / output_dir in *)
   let () =
     try Unix.mkdir dirname 0o755
     with Unix.Unix_error (Unix.EEXIST, _, _) -> ()
   in
-  let fn = dirname / basename in
+  let fn = dirname / output_dir ^ basename in
   write_ml_code fn ~header code;
   let r = fst (call_compiler fn) in
   if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn;

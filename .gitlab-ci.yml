@@ -192,7 +192,7 @@ after_script:
     OPAM_VARIANT: "+flambda"
 
 .windows-template:
-  stage: test
+  stage: build
   artifacts:
     name: "%CI_JOB_NAME%"
     paths:

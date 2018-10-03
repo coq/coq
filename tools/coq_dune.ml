@@ -124,15 +124,16 @@ module Options = struct
     cmd : string;
   }
 
-  let all_opts =
+  let all_opts = ref
   [ { enabled = false; cmd = "-debug"; }
-  ; { enabled = false; cmd = "-native_compiler"; }
+  ; { enabled = true; cmd = "-native_compiler on"; }
   ; { enabled = true; cmd = "-allow-sprop"; }
   ]
 
   let build_coq_flags () =
     let popt o = if o.enabled then Some o.cmd else None in
-    String.concat " " @@ pmap popt all_opts
+    String.concat " " @@ pmap popt !all_opts
+
 end
 
 type vodep = {
@@ -167,7 +168,30 @@ let pp_rule fmt targets deps action =
     "@[(rule@\n @[(targets @[%a@])@\n(deps @[%a@])@\n(action @[%a@])@])@]@\n"
     ppl targets pp_deps deps pp_print_string action
 
-let gen_coqc_targets vo =
+(* Notes about the native compiler:
+
+   - ideally, we would like to defer the library compilation to the build
+     system, so:
+     + coq_dune would generate the proper `(library declarations)`
+       including the rules to generate the ml-files.
+     + Dune would call the OCaml compiler.
+
+   - the dependencies coqdep generates are actually incorrect; in
+     native move Coq files depend on the corresponding nativeconv.cmi
+     etc... thus the above makes sense indeed. We can try to fix that tho
+     but we may need Dune 1.8 or the native versions as the current dune
+     language don't give us access to the `cmi` [and their location is
+     not stable among dune versions]
+ *)
+
+let maybe_native_targets ~dir file =
+  let file = Filename.remove_extension file in
+  let modpath = String.concat "_" List.(tl dir) in
+  let nfile = "NCoq_" ^ modpath ^ "_" ^ file in
+  [nfile^".cmi"; nfile^".cmx"; nfile^".cmxs"; nfile^".o"]
+
+let gen_coqc_targets ~dir vo =
+  maybe_native_targets ~dir vo.target @
   [ vo.target
   ; replace_ext ~file:vo.target ~newext:".glob"
   ; "." ^ replace_ext ~file:vo.target ~newext:".aux"]
@@ -188,7 +212,7 @@ let pp_vo_dep dir fmt vo =
   let libflag = "-coqlib %{project_root}" in
   (* The final build rule *)
   let action = sprintf "(chdir %%{project_root} (run coqc -q %s %s %s %s))" libflag eflag cflag source in
-  let all_targets = gen_coqc_targets vo in
+  let all_targets = gen_coqc_targets ~dir vo in
   pp_rule fmt all_targets deps action
 
 let pp_mlg_dep _dir fmt ml =
@@ -202,7 +226,7 @@ let pp_dep dir fmt oo = match oo with
 
 let out_install fmt dir ff =
   let itarget = String.concat "/" dir in
-  let ff = List.concat @@ pmap (function | VO vo -> Some (gen_coqc_targets vo) | _ -> None) ff in
+  let ff = List.concat @@ pmap (function | VO vo -> Some (gen_coqc_targets ~dir vo) | _ -> None) ff in
   let pp_ispec fmt tg = fprintf fmt "(%s as coq/%s)" tg (bpath [itarget;tg]) in
   fprintf fmt "(install@\n @[(section lib_root)@\n(package coq)@\n(files @[%a@])@])@\n"
     (pp_list pp_ispec sep) ff
