@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-top" "Errors") *)
 (* Test error messages *)
 
 (* Test non-regression of bug fixed in r13486 (bad printer for module names) *)

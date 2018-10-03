@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-top" "PrintInfos") *)
 About existT.
 Print existT.
 Print Implicit existT.

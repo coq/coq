@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-top" "ArgumentsScope") *)
 (* A few tests to check Global Argument Scope command *)
 
 Section A.

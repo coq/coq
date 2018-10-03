@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-top" "Arguments") *)
 Arguments Nat.sub n m : simpl nomatch.
 About Nat.sub.
 Arguments Nat.sub n / m : simpl nomatch.

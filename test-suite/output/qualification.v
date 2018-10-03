@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-top" "qualification") *)
 Module Type T1.
   Parameter t : Type.
 End T1.

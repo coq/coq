@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-top" "bug_5096") *)
 Require Import Coq.FSets.FMapPositive Coq.PArith.BinPos Coq.Lists.List.
 
 Set Asymmetric Patterns.
@@ -81,14 +82,14 @@ Global Arguments register_reassign {_ _ _ _} ctxi ctxr e _.
 Section language5.
   Context (Name : Type).
 
-  Local Notation expr := (@Top.expr Name).
+  Local Notation expr := (@bug_5096.expr Name).
   Local Notation nexpr := (@Named.expr Name).
 
   Fixpoint ocompile (e : expr) (ls : list (option Name)) {struct e}
     : option (nexpr)
-    := match e in @Top.expr _ return option (nexpr) with
-       | Top.Const => Some Named.Const
-       | Top.LetIn ex eC
+    := match e in @bug_5096.expr _ return option (nexpr) with
+       | bug_5096.Const => Some Named.Const
+       | bug_5096.LetIn ex eC
          => match @ocompile ex nil, split_onames ls with
             | Some x, (Some n, ls')%core
               => option_map (fun C => Named.LetIn n x C) (@ocompile (eC n) ls')
@@ -189,8 +190,8 @@ Definition DefaultRegisters (e : Expr) : list Register
 
 Definition DefaultAssembleSyntax e := @AssembleSyntax e (DefaultRegisters e).
 
-Notation "'slet' x := A 'in' b" := (Top.LetIn A (fun x => b)) (at level 200, b at level 200).
-Notation "#[ var ]#" := (@Top.Const var).
+Notation "'slet' x := A 'in' b" := (bug_5096.LetIn A (fun x => b)) (at level 200, b at level 200).
+Notation "#[ var ]#" := (@bug_5096.Const var).
 
 Definition compiled_syntax : Expr := fun (var : Type) =>
 (
@@ -211,7 +212,7 @@ Definition compiled_syntax : Expr := fun (var : Type) =>
   slet x1 := #[ var ]# in
   slet x1 := #[ var ]# in
   slet x1 := #[ var ]# in
- @Top.Const var).
+ @bug_5096.Const var).
 
 Definition v :=
   Eval cbv [compiled_syntax] in (DefaultAssembleSyntax (compiled_syntax)).

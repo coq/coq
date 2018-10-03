@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-top" "Nametab") *)
 Module Q.
   Module N.
     Module K.
@@ -10,19 +11,19 @@ End Q.
 (* Bad *) Locate K.foo.
 (* Bad *) Locate N.K.foo.
 (* OK  *) Locate Q.N.K.foo.
-(* OK  *) Locate Top.Q.N.K.foo.
+(* OK  *) Locate Nametab.Q.N.K.foo.
 
 (* Bad *) Locate Module K.
 (* Bad *) Locate Module N.K.
 (* OK  *) Locate Module Q.N.K.
-(* OK  *) Locate Module Top.Q.N.K.
+(* OK  *) Locate Module Nametab.Q.N.K.
 
 (* Bad *) Locate Module N.
 (* OK  *) Locate Module Q.N.
-(* OK  *) Locate Module Top.Q.N.
+(* OK  *) Locate Module Nametab.Q.N.
 
 (* OK  *) Locate Module Q.
-(* OK  *) Locate Module Top.Q.
+(* OK  *) Locate Module Nametab.Q.
 
 
 Import Q.N.
@@ -32,16 +33,16 @@ Import Q.N.
 (* OK  *) Locate K.foo.
 (* Bad *) Locate N.K.foo.
 (* OK  *) Locate Q.N.K.foo.
-(* OK  *) Locate Top.Q.N.K.foo.
+(* OK  *) Locate Nametab.Q.N.K.foo.
 
 (* OK  *) Locate Module K.
 (* Bad *) Locate Module N.K.
 (* OK  *) Locate Module Q.N.K.
-(* OK  *) Locate Module Top.Q.N.K.
+(* OK  *) Locate Module Nametab.Q.N.K.
 
 (* Bad *) Locate Module N.
 (* OK  *) Locate Module Q.N.
-(* OK  *) Locate Module Top.Q.N.
+(* OK  *) Locate Module Nametab.Q.N.
 
 (* OK  *) Locate Module Q.
-(* OK  *) Locate Module Top.Q.
+(* OK  *) Locate Module Nametab.Q.

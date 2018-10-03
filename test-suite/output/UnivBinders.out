@@ -42,10 +42,10 @@ bar@{u} = nat
          *)
 
 bar is universe polymorphic
-foo@{u Top.17 v} = 
-Type@{Top.17} -> Type@{v} -> Type@{u}
-     : Type@{max(u+1,Top.17+1,v+1)}
-(* u Top.17 v |=  *)
+foo@{u UnivBinders.17 v} = 
+Type@{UnivBinders.17} -> Type@{v} -> Type@{u}
+     : Type@{max(u+1,UnivBinders.17+1,v+1)}
+(* u UnivBinders.17 v |=  *)
 
 foo is universe polymorphic
 Type@{i} -> Type@{j}
@@ -86,10 +86,10 @@ Type@{M} -> Type@{N} -> Type@{E}
 (* E M N |=  *)
 
 foo is universe polymorphic
-foo@{u Top.17 v} = 
-Type@{Top.17} -> Type@{v} -> Type@{u}
-     : Type@{max(u+1,Top.17+1,v+1)}
-(* u Top.17 v |=  *)
+foo@{u UnivBinders.17 v} = 
+Type@{UnivBinders.17} -> Type@{v} -> Type@{u}
+     : Type@{max(u+1,UnivBinders.17+1,v+1)}
+(* u UnivBinders.17 v |=  *)
 
 foo is universe polymorphic
 NonCumulative Inductive Empty@{E} : Type@{E} :=  
@@ -104,7 +104,7 @@ punwrap@{K} : forall A : Type@{K}, PWrap@{K} A -> A
 punwrap is universe polymorphic
 Argument scopes are [type_scope _]
 punwrap is transparent
-Expands to: Constant Top.punwrap
+Expands to: Constant UnivBinders.punwrap
 The command has indeed failed with message:
 Universe instance should have length 3
 The command has indeed failed with message:
@@ -163,27 +163,29 @@ inmod@{u} -> Type@{v}
 (* u v |=  *)
 
 Applied.infunct is universe polymorphic
-axfoo@{i Top.55 Top.56} : Type@{Top.55} -> Type@{i}
-(* i Top.55 Top.56 |=  *)
+axfoo@{i UnivBinders.55 UnivBinders.56} :
+Type@{UnivBinders.55} -> Type@{i}
+(* i UnivBinders.55 UnivBinders.56 |=  *)
 
 axfoo is universe polymorphic
 Argument scope is [type_scope]
-Expands to: Constant Top.axfoo
-axbar@{i Top.55 Top.56} : Type@{Top.56} -> Type@{i}
-(* i Top.55 Top.56 |=  *)
+Expands to: Constant UnivBinders.axfoo
+axbar@{i UnivBinders.55 UnivBinders.56} :
+Type@{UnivBinders.56} -> Type@{i}
+(* i UnivBinders.55 UnivBinders.56 |=  *)
 
 axbar is universe polymorphic
 Argument scope is [type_scope]
-Expands to: Constant Top.axbar
-axfoo' : Type@{Top.58} -> Type@{axbar'.i}
+Expands to: Constant UnivBinders.axbar
+axfoo' : Type@{UnivBinders.58} -> Type@{axbar'.i}
 
 axfoo' is not universe polymorphic
 Argument scope is [type_scope]
-Expands to: Constant Top.axfoo'
-axbar' : Type@{Top.58} -> Type@{axbar'.i}
+Expands to: Constant UnivBinders.axfoo'
+axbar' : Type@{UnivBinders.58} -> Type@{axbar'.i}
 
 axbar' is not universe polymorphic
 Argument scope is [type_scope]
-Expands to: Constant Top.axbar'
+Expands to: Constant UnivBinders.axbar'
 The command has indeed failed with message:
 When declaring multiple axioms in one command, only the first is allowed a universe binder (which will be shared by the whole block).

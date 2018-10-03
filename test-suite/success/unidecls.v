@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-top" "unidecls") *)
 Set Printing Universes.
 
 Module decls.
@@ -39,7 +40,7 @@ Check Type@{Foo.bar}.
 Check Type@{Foo.foo}.
 (** The same *)
 Check Type@{foo}.
-Check Type@{Top.foo}.
+Check Type@{unidecls.foo}.
 
 Universe secfoo.
 Section Foo'.
