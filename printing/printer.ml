@@ -947,8 +947,8 @@ let pr_assumptionset env sigma s =
 	let mp,_,lab = Constant.repr3 kn in
         str (ModPath.to_string mp) ++ str "." ++ Label.print lab
     in
-    let safe_pr_ltype typ =
-      try str " : " ++ pr_ltype typ
+    let safe_pr_ltype env sigma typ =
+      try str " : " ++ pr_ltype_env env sigma typ
       with e when CErrors.noncritical e -> mt ()
     in
     let safe_pr_ltype_relctx (rctx, typ) =
@@ -959,7 +959,7 @@ let pr_assumptionset env sigma s =
     let pr_axiom env ax typ =
       match ax with
       | Constant kn ->
-          safe_pr_constant env kn ++ safe_pr_ltype typ
+          safe_pr_constant env kn ++ safe_pr_ltype env sigma typ
       | Positive m ->
           hov 2 (MutInd.print m ++ spc () ++ strbrk"is positive.")
       | Guarded kn ->
@@ -969,7 +969,7 @@ let pr_assumptionset env sigma s =
       let (v, a, o, tr) = accu in
       match t with
       | Variable id ->
-        let var = pr_id id ++ str " : " ++ pr_ltype typ in
+        let var = pr_id id ++ str " : " ++ pr_ltype_env env sigma typ in
         (var :: v, a, o, tr)
       | Axiom (axiom, []) ->
         let ax = pr_axiom env axiom typ in
@@ -983,10 +983,10 @@ let pr_assumptionset env sigma s =
           l in
         (v, ax :: a, o, tr)
       | Opaque kn ->
-        let opq = safe_pr_constant env kn ++ safe_pr_ltype typ in
+        let opq = safe_pr_constant env kn ++ safe_pr_ltype env sigma typ in
         (v, a, opq :: o, tr)
       | Transparent kn ->
-        let tran = safe_pr_constant env kn ++ safe_pr_ltype typ in
+        let tran = safe_pr_constant env kn ++ safe_pr_ltype env sigma typ in
         (v, a, o, tran :: tr)
     in
     let (vars, axioms, opaque, trans) = 
