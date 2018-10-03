@@ -243,7 +243,9 @@ let explain_exn = function
   | Invalid_argument s ->
       hov 0 (anomaly_string () ++ str "uncaught exception Invalid_argument " ++ guill s ++ report ())
   | Sys.Break ->
-      hov 0 (fnl () ++ str "User interrupt.")
+    hov 0 (fnl () ++ str "User interrupt.")
+  | Univ.AlreadyDeclared ->
+    hov 0 (str "Error: Multiply declared universe.")
   | Univ.UniverseInconsistency (o,u,v) ->
       let msg =
 	if !Flags.debug (*!Constrextern.print_universes*) then

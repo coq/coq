@@ -1088,14 +1088,13 @@ let subst_univs_universe fn ul =
 
 let merge_context strict ctx g =
   let g = Array.fold_left
-   (* Be lenient, module typing reintroduces universes and 
-      constraints due to includes *)
-	    (fun g v -> try add_universe v strict g with AlreadyDeclared -> g)
+            (fun g v -> add_universe v strict g)
 	    g (UContext.instance ctx)
   in merge_constraints (UContext.constraints ctx) g
 
 let merge_context_set strict ctx g =
   let g = LSet.fold
+   (* Include and side effects still have double-declared universes *)
 	    (fun v g -> try add_universe v strict g with AlreadyDeclared -> g)
 	    (ContextSet.levels ctx) g
   in merge_constraints (ContextSet.constraints ctx) g
