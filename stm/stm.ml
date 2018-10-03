@@ -1587,7 +1587,6 @@ end = struct (* {{{ *)
         when is_tac expr && State.same_env o n -> (* A pure tactic *)
           Some (id, `ProofOnly (prev, State.proof_part_of_frozen n))
       | Some _, Some s ->
-          msg_debug (Pp.str "STM: sending back a fat state");
           Some (id, `Full s)
       | _, Some s -> Some (id, `Full s) in
     let rec aux seen = function
