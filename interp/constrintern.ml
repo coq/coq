@@ -2062,13 +2062,6 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CCast (c1, c2) ->
 	DAst.make ?loc @@
         GCast (intern env c1, map_cast_type (intern_type env) c2)
-    | CProj (pr, c) ->
-      match intern_reference pr with
-      | ConstRef p ->
-        let p = Option.get @@ Recordops.find_primitive_projection p in
-        DAst.make ?loc @@ GProj (Projection.make p false, intern env c)
-      | _ ->
-        raise (InternalizationError (loc,IllegalMetavariable)) (* FIXME *)
     )
   and intern_type env = intern (set_type_scope env)
 

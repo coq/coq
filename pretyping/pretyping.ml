@@ -613,11 +613,6 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) evdref
     let j = pretype_sort ?loc evdref s in
       inh_conv_coerce_to_tycon ?loc env evdref j tycon
 
-  | GProj (p, c) ->
-    (* TODO: once GProj is used as an input syntax, use bidirectional typing here *)
-    let cj = pretype empty_tycon env evdref c in
-    judge_of_projection !!env !evdref p cj
-
   | GApp (f,args) ->
     let fj = pretype empty_tycon env evdref f in
     let floc = loc_of_glob_constr f in
