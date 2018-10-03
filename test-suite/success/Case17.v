@@ -1,5 +1,5 @@
 (* Check the synthesis of predicate from a cast in case of matching of
-   the first component (here [list bool]) of a dependent type (here [sigS])
+   the first component (here [list bool]) of a dependent type (here [sigT])
    (Simplification of an example from file parsing2.v of the Coq'Art
     exercises) *)
 
@@ -19,10 +19,10 @@ Axiom HHH : forall A : Prop, A.
 
 Check
   (match rec l0 (HHH _) with
-   | inleft (existS _ (false :: l1) _) => inright _ (HHH _)
-   | inleft (existS _ (true :: l1) (exist _ t1 (conj Hp Hl))) =>
+   | inleft (existT _ (false :: l1) _) => inright _ (HHH _)
+   | inleft (existT _ (true :: l1) (exist _ t1 (conj Hp Hl))) =>
        inright _ (HHH _)
-   | inleft (existS _ _ _) => inright _ (HHH _)
+   | inleft (existT _ _ _) => inright _ (HHH _)
    | inright Hnp => inright _ (HHH _)
    end
    :{l'' : list bool &
@@ -39,10 +39,10 @@ Check
             {t : nat | parse_rel l' l'' t /\ length l'' <= length l'}} +
             {(forall (l'' : list bool) (t : nat), ~ parse_rel l' l'' t)}) =>
    match rec l0 (HHH _) with
-   | inleft (existS _ (false :: l1) _) => inright _ (HHH _)
-   | inleft (existS _ (true :: l1) (exist _ t1 (conj Hp Hl))) =>
+   | inleft (existT _ (false :: l1) _) => inright _ (HHH _)
+   | inleft (existT _ (true :: l1) (exist _ t1 (conj Hp Hl))) =>
        inright _ (HHH _)
-   | inleft (existS _ _ _) => inright _ (HHH _)
+   | inleft (existT _ _ _) => inright _ (HHH _)
    | inright Hnp => inright _ (HHH _)
    end
    :{l'' : list bool &
