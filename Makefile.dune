@@ -1,7 +1,7 @@
 # -*- mode: makefile -*-
 # Dune Makefile for Coq
 
-.PHONY: help voboot states world watch release apidoc clean
+.PHONY: voboot states world watch release apidoc ocheck clean help
 
 # use DUNEOPT=--display=short for a more verbose build
 # DUNEOPT=--display=short
@@ -29,9 +29,6 @@ states: voboot
 world: voboot
 	dune build $(DUNEOPT) @install
 
-ocheck: voboot
-	dune build $(DUNEOPT) @install --workspace=dev/dune-workspace.all
-
 watch: voboot
 	dune build $(DUNEOPT) @install -w
 
@@ -40,6 +37,9 @@ release: voboot
 
 apidoc: voboot
 	dune build $(DUNEOPT) @doc
+
+ocheck: voboot
+	dune build $(DUNEOPT) @install --workspace=dev/dune-workspace.all
 
 clean:
 	dune clean
