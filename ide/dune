@@ -1,11 +1,34 @@
+; IDE Server
 (ocamllex utf8_convert config_lexer coq_lex)
 
 (library
  (name core)
- (public_name coqide.core)
+ (public_name coqide-server.core)
  (wrapped false)
- (modules (:standard \ idetop coqide_main))
- (libraries threads str lablgtk2.sourceview2 coq.lib coqide.protocol))
+ (modules document)
+ (libraries coq.lib))
+
+(executable
+ (name fake_ide)
+ (modules fake_ide)
+ (libraries coqide-server.protocol coqide-server.core))
+
+(executable
+ (name idetop)
+ (public_name coqidetop.opt)
+ (package coqide-server)
+ (modules idetop)
+ (libraries coq.toplevel coqide-server.protocol)
+ (link_flags -linkall))
+
+; IDE Client
+(library
+ (name gui)
+ (public_name coqide.gui)
+ (wrapped false)
+ (modules (:standard \ document fake_ide idetop coqide_main))
+ (optional)
+ (libraries coqide-server.protocol coqide-server.core lablgtk2.sourceview2))
 
 (rule
  (targets coqide_main.ml)
@@ -17,12 +40,4 @@
  (public_name coqide)
  (package coqide)
  (modules coqide_main)
- (libraries coqide.core))
-
-(executable
- (name idetop)
- (public_name coqidetop.opt)
- (package coqide)
- (modules idetop)
- (libraries coq.toplevel coqide.protocol)
- (link_flags -linkall))
+ (libraries coqide.gui))

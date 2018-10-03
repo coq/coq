@@ -241,6 +241,7 @@ pkg:opam:
   script:
     - set -e
     - opam pin add coq .
+    - opam pin add coqide-server .
     - opam pin add coqide .
     - set +e
   variables:
