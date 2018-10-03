@@ -9,88 +9,26 @@ sudo: required
 language: c
 
 cache:
-  apt: true
   directories:
   - $HOME/.opam
 
 before_cache:
   - rm -rf ~/.opam/log/
 
-addons:
-  apt:
-    sources:
-    - avsm
-## Due to issues like
-## https://github.com/travis-ci/travis-ci/issues/8507 ,
-## https://github.com/travis-ci/travis-ci/issues/9000 ,
-## https://github.com/travis-ci/travis-ci/issues/9081 , and
-## https://github.com/travis-ci/travis-ci/issues/9126 , we get frequent
-## failures with using `packages`.  Therefore, for most targets, we
-## instead invoke `apt-get update` manually with `travis_retry` before
-## invoking `apt-get install`, manually, below in the `install:`
-## target.
-#    packages:
-#    - opam
-#    - aspcud
-#    - gcc-multilib
-
 env:
   global:
   - NJOBS=2
-  - COMPILER="4.05.0"
-  - COMPILER_BE="4.07.0"
-  - DUNE_VER=".1.1.1"
-  - CAMLP5_VER=".7.01"
-  - CAMLP5_VER_BE=".7.06"
-  # ounit forces FINDLIB here
-  - FINDLIB_VER=".1.7.3"
-  - FINDLIB_VER_BE=".1.8.0"
+  - COMPILER="4.07.0"
+  - DUNE_VER=".1.2.1"
+  - CAMLP5_VER=".7.06"
+  - FINDLIB_VER=".1.8.0"
   - LABLGTK="lablgtk.2.18.6 conf-gtksourceview.2"
-  - LABLGTK_BE="lablgtk.2.18.6 conf-gtksourceview.2"
   - NATIVE_COMP="yes"
   - COQ_DEST="-local"
   - MAIN_TARGET="world"
 
 matrix:
-
   include:
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="test-suite" COMPILER="4.05.0+32bit" EXTRA_OPAM="ounit"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="validate"                           TW="travis_wait"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="validate"   COMPILER="4.05.0+32bit" TW="travis_wait"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="validate"   COMPILER="${COMPILER_BE}+flambda" CAMLP5_VER="${CAMLP5_VER_BE}" EXTRA_CONF="-flambda-opts -O3" FINDLIB_VER="${FINDLIB_VER_BE}"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-coquelicot"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-equations"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-flocq"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-hott"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-ltac2"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-mtac2"
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="ci-pidetop"
-
     - env:
       - TEST_TARGET="lint"
       install: []
@@ -102,64 +40,9 @@ matrix:
       script:
         - dev/lint-repository.sh
 
-    # Full Coq test-suite with two compilers
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="doc-html test-suite"
-      - EXTRA_CONF="-coqide opt"
-      - EXTRA_OPAM="${LABLGTK} ounit"
-      before_install: &sphinx-install
-      - sudo pip3 install bs4 sphinx sphinx_rtd_theme pexpect antlr4-python3-runtime sphinxcontrib-bibtex
-      addons:
-        apt:
-          sources:
-          - avsm
-          packages: &extra-packages
-          - opam
-          - aspcud
-          - libgtk2.0-dev
-          - libgtksourceview2.0-dev
-          - python3
-          - python3-pip
-          - python3-setuptools
-
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="doc-html test-suite"
-      - COMPILER="${COMPILER_BE}"
-      - FINDLIB_VER="${FINDLIB_VER_BE}"
-      - CAMLP5_VER="${CAMLP5_VER_BE}"
-      - EXTRA_CONF="-coqide opt"
-      - EXTRA_OPAM="${LABLGTK_BE} ounit"
-      before_install: *sphinx-install
-      addons:
-        apt:
-          sources:
-          - avsm
-          packages: *extra-packages
-
-    # Full test-suite with flambda
-    - if: NOT (type = pull_request)
-      env:
-      - TEST_TARGET="doc-html test-suite"
-      - COMPILER="${COMPILER_BE}+flambda"
-      - FINDLIB_VER="${FINDLIB_VER_BE}"
-      - CAMLP5_VER="${CAMLP5_VER_BE}"
-      - EXTRA_CONF="-coqide opt -flambda-opts -O3"
-      - EXTRA_OPAM="${LABLGTK_BE} ounit"
-      before_install: *sphinx-install
-      addons:
-        apt:
-          sources:
-          - avsm
-          packages: *extra-packages
-
     - os: osx
       env:
       - TEST_TARGET="test-suite"
-      - COMPILER="${COMPILER_BE}"
-      - FINDLIB_VER="${FINDLIB_VER_BE}"
-      - CAMLP5_VER="${CAMLP5_VER_BE}"
       - NATIVE_COMP="no"
       - COQ_DEST="-local"
       - EXTRA_OPAM="ounit"
@@ -169,19 +52,22 @@ matrix:
       - brew install gnu-time
       # only way to continue using OPAM 1.2
       - brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/d156edeeed7291f4bc1e08620b331bbd05d52b78/Formula/opam.rb
+      - opam init -j "$NJOBS" --compiler="$COMPILER" -n -y
+      - opam switch "$COMPILER" && opam update
+      - eval $(opam config env)
+      - opam config list
+      - opam install -j "$NJOBS" -y num ocamlfind${FINDLIB_VER} dune${DUNE_VER} camlp5${CAMLP5_VER} ${EXTRA_OPAM}
+      - opam list
 
     - if: NOT (type = pull_request)
       os: osx
       osx_image: xcode7.3
       env:
       - TEST_TARGET=""
-      - COMPILER="${COMPILER_BE}"
-      - FINDLIB_VER="${FINDLIB_VER_BE}"
-      - CAMLP5_VER="${CAMLP5_VER_BE}"
       - NATIVE_COMP="no"
-      - COQ_DEST="-prefix ${PWD}/_install"
+      - COQ_DEST="-prefix $PWD/_install_ci"
       - EXTRA_CONF="-coqide opt -warn-error yes"
-      - EXTRA_OPAM="${LABLGTK_BE}"
+      - EXTRA_OPAM="$LABLGTK"
       before_install:
       - brew update
       - brew unlink python
@@ -191,6 +77,12 @@ matrix:
       - brew unlink python@2
       - brew install python3
       - pip3 install macpack
+      - opam init -j "$NJOBS" --compiler="$COMPILER" -n -y
+      - opam switch "$COMPILER" && opam update
+      - eval $(opam config env)
+      - opam config list
+      - opam install -j "$NJOBS" -y num ocamlfind${FINDLIB_VER} dune${DUNE_VER} camlp5${CAMLP5_VER} ${EXTRA_OPAM}
+      - opam list
       before_deploy:
         - dev/build/osx/make-macos-dmg.sh
       deploy:
@@ -204,17 +96,7 @@ matrix:
           all_branches: true
 
 before_install:
-- if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then echo "Tested commit (followed by parent commits):"; git log -1; for commit in `git log -1 --format="%P"`; do echo; git log -1 $commit; done; fi
-
-install:
-- if [ "${TRAVIS_OS_NAME}" == "linux" ]; then travis_retry ./dev/tools/sudo-apt-get-update.sh -q; fi
-- if [ "${TRAVIS_OS_NAME}" == "linux" ]; then sudo apt-get install -y opam aspcud gcc-multilib --allow-unauthenticated; fi
-- opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
-- opam switch "$COMPILER" && opam update
-- eval $(opam config env)
-- opam config list
-- opam install -j ${NJOBS} -y num ocamlfind${FINDLIB_VER} dune${DUNE_VER} camlp5${CAMLP5_VER} ${EXTRA_OPAM}
-- opam list
+- if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then echo "Tested commit (followed by parent commits):"; git log -1; for commit in `git log -1 --format="%P"`; do echo; git log -1 $commit; done; fi
 
 script:
 
@@ -224,15 +106,15 @@ script:
 - echo -en 'travis_fold:end:coq.clean\\r'
 
 - echo 'Configuring Coq...' && echo -en 'travis_fold:start:coq.config\\r'
-- ./configure ${COQ_DEST} -warn-error yes -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
+- ./configure $COQ_DEST -warn-error yes -native-compiler $NATIVE_COMP $EXTRA_CONF
 - echo -en 'travis_fold:end:coq.config\\r'
 
 - echo 'Building Coq...' && echo -en 'travis_fold:start:coq.build\\r'
-- make -j ${NJOBS} ${MAIN_TARGET}
+- make -j $NJOBS $MAIN_TARGET
 - echo -en 'travis_fold:end:coq.build\\r'
 
 - echo 'Running tests...' && echo -en 'travis_fold:start:coq.test\\r'
-- if [ -n "${TEST_TARGET}" ]; then ${TW} make -j ${NJOBS} ${TEST_TARGET}; fi
+- if [ -n "$TEST_TARGET" ]; then $TW make -j $NJOBS $TEST_TARGET; fi
 - echo -en 'travis_fold:end:coq.test\\r'
 - set +e
 

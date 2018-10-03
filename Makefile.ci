@@ -60,7 +60,7 @@ ci-quickchick: ci-ext-lib ci-simple-io
 
 ci-formal-topology: ci-corn
 
-# Generic rule, we use make to ease travis integration with mixed rules
+# Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:
 	+./dev/ci/ci-wrapper.sh $*
 
