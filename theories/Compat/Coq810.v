@@ -8,10 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Compatibility file for making Coq act similar to Coq v8.9 *)
-Local Set Warnings "-deprecated".
-
-Require Export Coq.Compat.Coq810.
-
-Unset Private Polymorphic Universes.
-Set Refine Instance Mode.
+(** Compatibility file for making Coq act similar to Coq v8.10 *)
