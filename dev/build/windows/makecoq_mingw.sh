@@ -1647,7 +1647,7 @@ function make_addon_equations {
   installer_addon_dependency equations
   if build_prep_overlay Equations; then
     installer_addon_section equations "Equations" "Coq plugin for defining functions by equations" ""
-    # Note: PATH is autmatically saved/restored by build_prep / build_post
+    # Note: PATH is automatically saved/restored by build_prep / build_post
     PATH=$COQBIN:$PATH
     logn coq_makefile ${COQBIN}coq_makefile -f _CoqProject -o Makefile
     log1 make
@@ -1695,7 +1695,7 @@ function make_addon_ssreflect {
 function make_addon_ltac2 {
   installer_addon_dependency ltac2
   if build_prep_overlay ltac2; then
-    installer_addon_section ltac2 "Ltac-2" "Coq plugin with the Ltac-2 enhanced tactics language" ""
+    installer_addon_section ltac2 "Ltac-2" "Coq plugin with the Ltac-2 enhanced tactic language" ""
     log1 make all
     log2 make install
     build_post
@@ -1707,6 +1707,7 @@ function make_addon_ltac2 {
 function make_addon_unicoq {
   installer_addon_dependency unicoq
   if build_prep_overlay unicoq; then
+    installer_addon_section unicoq "Unicoq" "Coq plugin for an enhanced unification algorithm" ""
     log1 coq_makefile -f Make -o Makefile
     log1 make
     log2 make install
@@ -1721,6 +1722,7 @@ function make_addon_mtac2 {
   make_addon_unicoq
   installer_addon_dependency_end
   if build_prep_overlay mtac2; then
+    installer_addon_section mtac2 "Mtac-2" "Coq plugin for a typed tactic language for Coq." ""
     log1 coq_makefile -f _CoqProject -o Makefile
     log1 make
     log2 make install
