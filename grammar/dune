@@ -18,6 +18,7 @@
 
 (install
  (section bin)
+ (package coq)
  (files coqp5 coqmlp5))
 
 (rule

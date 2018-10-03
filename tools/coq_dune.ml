@@ -194,7 +194,7 @@ let out_install fmt dir ff =
   let itarget = String.concat "/" dir in
   let ff = pmap (function | VO vo -> Some vo.target | _ -> None) ff in
   let pp_ispec fmt tg = fprintf fmt "(%s as %s)" tg (itarget^"/"^tg) in
-  fprintf fmt "(install@\n @[(section lib)@\n(files @[%a@])@])@\n"
+  fprintf fmt "(install@\n @[(section lib)@\n(package coq)@\n(files @[%a@])@])@\n"
     (pp_list pp_ispec sep) ff
 
 (* For each directory, we must record two things, the build rules and

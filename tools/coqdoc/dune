@@ -1,5 +1,6 @@
 (install
  (section lib)
+ (package coq)
  (files
   (coqdoc.css as tools/coqdoc/coqdoc.css)
   (coqdoc.sty as tools/coqdoc/coqdoc.sty)))
@@ -7,6 +8,7 @@
 (executable
  (name main)
  (public_name coqdoc)
+ (package coq)
  (libraries str coq.config))
 
 (ocamllex cpretty)

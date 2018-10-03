@@ -1,5 +1,6 @@
 (install
  (section lib)
+ (package coq)
  (files
   (CoqMakefile.in as tools/CoqMakefile.in)
   (TimeFileMaker.py as tools/TimeFileMaker.py)
@@ -10,18 +11,21 @@
 (executable
  (name coq_makefile)
  (public_name coq_makefile)
+ (package coq)
  (modules coq_makefile)
  (libraries coq.lib))
 
 (executable
  (name coqc)
  (public_name coqc)
+ (package coq)
  (modules coqc)
  (libraries coq.toplevel))
 
 (executable
  (name coqdep)
  (public_name coqdep)
+ (package coq)
  (modules coqdep_lexer coqdep_common coqdep)
  (libraries coq.lib))
 
@@ -30,6 +34,7 @@
 (executable
  (name coqwc)
  (public_name coqwc)
+ (package coq)
  (modules coqwc)
  (libraries))
 
@@ -38,11 +43,13 @@
 (executable
  (name coq_tex)
  (public_name coq_tex)
+ (package coq)
  (modules coq_tex)
  (libraries str))
 
 (executable
  (name coq_dune)
  (public_name coq_dune)
+ (package coq)
  (modules coq_dune)
  (libraries str))
