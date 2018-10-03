@@ -16,8 +16,8 @@ Names
 - In `Libnames`, the type `reference` and its two constructors `Qualid` and
   `Ident` have been removed in favor of `qualid`. `Qualid` is now the identity,
   `Ident` can be replaced by `qualid_of_ident`. Matching over `reference` can be
-  replaced by a test using `qualid_is_ident`. Extracting the ident part of a
-  qualid can be done using `qualid_basename`.
+  replaced by a test using `qualid_is_ident`. Extracting the `ident` part of a
+  `qualid` can be done using `qualid_basename`.
 
 Misctypes
 
@@ -51,20 +51,20 @@ Proof engine
 
 ML Libraries used by Coq
 
-- Introduction of a "Smart" module for collecting "smart*" functions, e.g.
-  Array.Smart.map.
-- Uniformization of some names, e.g. Array.Smart.fold_left_map instead
-  of Array.smartfoldmap.
+- Introduction of a `Smart` module for collecting `smart*` functions, e.g.
+  `Array.Smart.map`.
+- Uniformization of some names, e.g. `Array.Smart.fold_left_map` instead
+  of `Array.smartfoldmap`.
 
 Printer.ml API
 
-- The mechanism in Printer that allowed dynamically overriding pr_subgoals,
-  pr_subgoal and pr_goal was removed to simplify the code.  It was
-  earlierly used by PCoq.
+- The mechanism in `Printer` that allowed dynamically overriding `pr_subgoals`,
+  `pr_subgoal` and `pr_goal` was removed to simplify the code.  It was
+  earlier used by PCoq.
 
 Kernel
 
-  The following renamings happened:
+- The following renamings happened:
   - `Context.Rel.t` into `Constr.rel_context`
   - `Context.Named.t` into `Constr.named_context`
   - `Context.Compacted.t` into `Constr.compacted_context`
@@ -93,19 +93,24 @@ Vernacular commands
 
 Primitive number parsers
 
-- For better modularity, the primitive parsers for positive, N and Z
-  have been split over three files (plugins/syntax/positive_syntax.ml,
-  plugins/syntax/n_syntax.ml, plugins/syntax/z_syntax.ml).
+- For better modularity, the primitive parsers for `positive`, `N` and `Z`
+  have been split over three files (`plugins/syntax/positive_syntax.ml`,
+  `plugins/syntax/n_syntax.ml`, `plugins/syntax/z_syntax.ml`).
 
 Parsing
 
-- Manual uses of the Pcoq.Gram module have been deprecated. Wrapper modules
-  Pcoq.Entry and Pcoq.Parsable were introduced to replace it.
+- Manual uses of the `Pcoq.Gram` module have been deprecated. Wrapper modules
+  `Pcoq.Entry` and `Pcoq.Parsable` were introduced to replace it.
+
+Termops
+
+- Internal printing functions have been placed under the
+  `Termops.Internal` namespace.
 
 ### Unit testing
 
-  The test suite now allows writing unit tests against OCaml code in the Coq
-  code base. Those unit tests create a dependency on the OUnit test framework.
+The test suite now allows writing unit tests against OCaml code in the Coq
+code base. Those unit tests create a dependency on the OUnit test framework.
 
 ### Transitioning away from Camlp5
 
@@ -140,7 +145,7 @@ let myval = 0
 
 Steps to perform:
 - replace the brackets enclosing OCaml code in actions with braces
-- if not there yet, add a leading `|̀  to the first rule
+- if not there yet, add a leading `|` to the first rule
 
 For instance, code of the form:
 ```
@@ -171,8 +176,8 @@ Most plugin writers do not need this low-level interface, but for the sake of
 completeness we document it.
 
 Steps to perform are:
-- replace GEXTEND with GRAMMAR EXTEND
-- wrap every occurrence of OCaml code in actions into braces { }
+- replace `GEXTEND` with `GRAMMAR EXTEND`
+- wrap every occurrence of OCaml code in actions into braces `{ }`
 
 For instance, code of the form
 ```
@@ -222,7 +227,7 @@ All the other bugs kept their number.
 
 General deprecation
 
-- All functions marked [@@ocaml.deprecated] in 8.7 have been
+- All functions marked `[@@ocaml.deprecated]` in 8.7 have been
   removed. Please, make sure your plugin is warning-free in 8.7 before
   trying to port it over 8.8.
 
@@ -250,8 +255,8 @@ We changed the type of the following functions:
 
 - `Global.body_of_constant`: same as above.
 
-- `Constrinterp.*` generally, many functions that used to take an
-  `evar_map ref` have been now switched to functions that will work in
+- `Constrinterp.*`: generally, many functions that used to take an
+  `evar_map ref` have now been switched to functions that will work in
   a functional way. The old style of passing `evar_map`s as references
   is not supported anymore.
 
@@ -269,16 +274,16 @@ We have changed the representation of the following types:
 
 Some tactics and related functions now support static configurability, e.g.:
 
-- injectable, dEq, etc. takes an argument ~keep_proofs which,
-  - if None, tells to behave as told with the flag Keep Proof Equalities
-  - if Some b, tells to keep proof equalities iff b is true
+- `injectable`, `dEq`, etc. take an argument `~keep_proofs` which,
+  - if `None`, tells to behave as told with the flag `Keep Proof Equalities`
+  - if `Some b`, tells to keep proof equalities iff `b` is true
 
 Declaration of printers for arguments used only in vernac command
 
-- It should now use "declare_extra_vernac_genarg_pprule" rather than
-  "declare_extra_genarg_pprule", otherwise, a failure at runtime might
+- It should now use `declare_extra_vernac_genarg_pprule` rather than
+  `declare_extra_genarg_pprule`, otherwise, a failure at runtime might
   happen. An alternative is to register the corresponding argument as
-  a value, using "Geninterp.register_val0 wit None".
+  a value, using `Geninterp.register_val0 wit None`.
 
 Types Alias deprecation and type relocation.
 
@@ -321,7 +326,7 @@ functions when some given constants are traversed:
 
   * `declare_reduction_effect`: to declare a hook to be applied when some
   constant are visited during the execution of some reduction functions
-  (primarily cbv).
+  (primarily `cbv`).
 
   * `set_reduction_effect`: to declare a constant on which a given effect
   hook should be called.

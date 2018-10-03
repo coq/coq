@@ -29,34 +29,34 @@ Notations
 - New support for autonomous grammars of terms, called "custom
   entries" (see chapter "Syntax extensions" of the reference manual).
 
-- New command "Declare Scope" to explicitly declare a scope name
+- New command `Declare Scope` to explicitly declare a scope name
   before any use of it. Implicit declaration of a scope at the time of
-  "Bind Scope", "Delimit Scope", "Undelimit Scope", or "Notation" is
+  `Bind Scope`, `Delimit Scope`, `Undelimit Scope`, or `Notation` is
   deprecated.
 
 Tactics
 
-- Added toplevel goal selector ! which expects a single focused goal.
-  Use with Set Default Goal Selector to force focusing before tactics
+- Added toplevel goal selector `!` which expects a single focused goal.
+  Use with `Set Default Goal Selector` to force focusing before tactics
   are called.
 
 - The undocumented "nameless" forms `fix N`, `cofix` that were
-  deprecated in 8.8 have been removed from LTAC's syntax; please use
+  deprecated in 8.8 have been removed from Ltac's syntax; please use
   `fix ident N/cofix ident` to explicitly name the (co)fixpoint
   hypothesis to be introduced.
 
-- Introduction tactics "intro"/"intros" on a goal which is an
+- Introduction tactics `intro`/`intros` on a goal that is an
   existential variable now force a refinement of the goal into a
   dependent product rather than failing.
 
-- Support for fix/cofix added in Ltac "match" and "lazymatch".
+- Support for `fix`/`cofix` added in Ltac `match` and `lazymatch`.
 
 - Ltac backtraces now include trace information about tactics
   called by OCaml-defined tactics.
 
-- Option "Ltac Debug" now applies also to terms built using Ltac functions.
+- Option `Ltac Debug` now applies also to terms built using Ltac functions.
 
-- Deprecated the Implicit Tactic family of commands.
+- Deprecated the `Implicit Tactic` family of commands.
 
 - The default program obligation tactic uses a bounded proof search
   instead of an unbounded and potentially non-terminating one now
@@ -79,7 +79,7 @@ Tactics
 - The `romega` tactics have been deprecated; please use `lia` instead.
 
 - Names of existential variables occurring in Ltac functions
-  (e.g. "?[n]" or "?n" in terms - not in patterns) are now interpreted
+  (e.g. `?[n]` or `?n` in terms - not in patterns) are now interpreted
   the same way as other variable names occurring in Ltac functions.
 
 Focusing
@@ -92,24 +92,24 @@ Specification language, type inference
 
 - A fix to unification (which was sensitive to the ascii name of
   variables) may occasionally change type inference in incompatible
-  ways, especially regarding the inference of the return clause of "match".
+  ways, especially regarding the inference of the return clause of `match`.
 
 - Fixing a missing check in interpreting instances of existential
-  variables which are bound to local definitions might exceptionally
+  variables that are bound to local definitions might exceptionally
   induce an overhead if the cost of checking the conversion of the
   corresponding definitions is additionally high (PR #8215).
 
-- A few improvements in inference of the return clause of "match" can
+- A few improvements in inference of the return clause of `match` can
   exceptionally introduce incompatibilities (PR #262). This can be
-  solved by writing an explicit "return" clause, sometimes even simply
-  an explicit "return _" clause.
+  solved by writing an explicit `return` clause, sometimes even simply
+  an explicit `return _` clause.
 
 Standard Library
 
 - Added `Ascii.eqb` and `String.eqb` and the `=?` notation for them,
   and proved some lemmas about them.  Note that this might cause
-  incompatibilities if you have, e.g., string_scope and Z_scope both
-  open with string_scope on top, and expect `=?` to refer to `Z.eqb`.
+  incompatibilities if you have, e.g., `string_scope` and `Z_scope` both
+  open with `string_scope` on top, and expect `=?` to refer to `Z.eqb`.
   Solution: wrap `_ =? _` in `(_ =? _)%Z` (or whichever scope you
   want).
 
@@ -149,35 +149,34 @@ Standard Library
 Tools
 
 - Coq_makefile lets one override or extend the following variables from
-  the command line: COQFLAGS, COQCHKFLAGS, COQDOCFLAGS.
-  COQFLAGS is now entirely separate from COQLIBS, so in custom Makefiles
-  $(COQFLAGS) should be replaced by $(COQFLAGS) $(COQLIBS).
+  the command line: `COQFLAGS`, `COQCHKFLAGS`, `COQDOCFLAGS`.
+  `COQFLAGS` is now entirely separate from `COQLIBS`, so in custom Makefiles
+  `$(COQFLAGS)` should be replaced by `$(COQFLAGS) $(COQLIBS)`.
 
-- Removed the gallina utility (extracts specification from Coq vernacular files).
+- Removed the `gallina` utility (extracts specification from Coq vernacular files).
   If you would like to maintain this tool externally, please contact us.
 
 - Removed the Emacs modes distributed with Coq. You are advised to
-  use Proof-General <https://proofgeneral.github.io/> (and optionally
-  Company-Coq <https://github.com/cpitclaudel/company-coq>) instead.
+  use [Proof-General](https://proofgeneral.github.io/) (and optionally
+  [Company-Coq](https://github.com/cpitclaudel/company-coq)) instead.
   If your use case is not covered by these alternative Emacs modes,
   please open an issue. We can help set up external maintenance as part
   of Proof-General, or independently as part of coq-community.
 
-
 Vernacular Commands
 
-- Removed deprecated commands Arguments Scope and Implicit Arguments
-  (not the option). Use the Arguments command instead.
+- Removed deprecated commands `Arguments Scope` and `Implicit Arguments`
+  (not the option). Use the `Arguments` command instead.
 - Nested proofs may be enabled through the option `Nested Proofs Allowed`.
   By default, they are disabled and produce an error. The deprecation
   warning which used to occur when using nested proofs has been removed.
-- Added option Uniform Inductive Parameters which abstracts over parameters
+- Added option `Uniform Inductive Parameters` which abstracts over parameters
   before typechecking constructors, allowing to write for example
   `Inductive list (A : Type) := nil : list | cons : A -> list -> list.`
-- New Set Hint Variables/Constants Opaque/Transparent commands for setting
+- New `Set Hint Variables/Constants Opaque/Transparent` commands for setting
   globally the opacity flag of variables and constants in hint databases,
   overwritting the opacity set of the hint database.
-- Added generic syntax for “attributes”, as in:
+- Added generic syntax for "attributes", as in:
   `#[local] Lemma foo : bar.`
 - Added the `Numeral Notation` command for registering decimal numeral
   notations for custom types
@@ -185,8 +184,8 @@ Vernacular Commands
   scope. If you want the previous behavior, use `Global Set SsrHave
   NoTCResolution`.
 - Multiple sections with the same name are allowed.
-- Combined Scheme can now work when inductive schemes are generated in sort
-  Type. It used to be limited to sort Prop.
+- `Combined Scheme` can now work when inductive schemes are generated in sort
+  `Type`. It used to be limited to sort `Prop`.
 
 Coq binaries and process model
 
@@ -204,40 +203,41 @@ SSReflect
 
 - The implementation of delayed clear switches in intro patterns
   is now simpler to explain:
-  1. The immediate effect of a clear switch like {x} is to rename the
-     variable x to _x_ (i.e. a reserved identifier that cannot be mentioned
+  1. The immediate effect of a clear switch like `{x}` is to rename the
+     variable `x` to `_x_` (i.e. a reserved identifier that cannot be mentioned
      explicitly)
-  2. The delayed effect of {x} is that _x_ is cleared at the end of the intro
+  2. The delayed effect of `{x}` is that `_x_` is cleared at the end of the intro
      pattern
-  3. A clear switch immediately before a view application like {x}/v is
-     translated to /v{x}.
-  In particular rule 3 lets one write {x}/v even if v uses the variable x:
+  3. A clear switch immediately before a view application like `{x}/v` is
+     translated to `/v{x}`.
+
+  In particular, the third rule lets one write `{x}/v` even if `v` uses the variable `x`:
   indeed the view is executed before the renaming.
 
 - An empty clear switch is now accepted in intro patterns before a
   view application whenever the view is a variable.
-  One can now write {}/v to mean {v}/v.  Remark that {}/x is very similar
-  to the idiom {}e for the rewrite tactic (the equation e is used for
+  One can now write `{}/v` to mean `{v}/v`.  Remark that `{}/x` is very similar
+  to the idiom `{}e` for the rewrite tactic (the equation `e` is used for
   rewriting and then discarded).
 
 Standard Library
 
-- There are now conversions between [string] and [positive], [Z],
-  [nat], and [N] in binary, octal, and hex.
+- There are now conversions between `string` and `positive`, `Z`,
+  `nat`, and `N` in binary, octal, and hex.
 
 Display diffs between proof steps
 
-- coqtop and coqide can now highlight the differences between proof steps
+- `coqtop` and `coqide` can now highlight the differences between proof steps
   in color. This can be enabled from the command line or the
-  `Set Diffs "on"|"off"|"removed"` command. Please see the documentation for
+  `Set Diffs "on"/"off"/"removed"` command. Please see the documentation for
   details.  Showing diffs in Proof General requires small changes to PG
   (under discussion).
 
 Notations
 
 - Added `++` infix for `VectorDef.append`.
-  Note that this might cause incompatibilities if you have, e.g., list_scope
-  and vector_scope both open with vector_scope on top, and expect `++` to
+  Note that this might cause incompatibilities if you have, e.g., `list_scope`
+  and `vector_scope` both open with `vector_scope` on top, and expect `++` to
   refer to `app`.
   Solution: wrap `_ ++ _` in `(_ ++ _)%list` (or whichever scope you want).
 
@@ -263,7 +263,7 @@ Kernel
 Windows installer
 
 - The Windows installer now includes many more external packages that can be
-individually selected for installation.
+  individually selected for installation.
 
 Many other bug fixes and lots of documentation improvements (for details,
 see the 8.8.2 milestone at https://github.com/coq/coq/milestone/15?closed=1).
@@ -273,10 +273,10 @@ Changes from 8.8.0 to 8.8.1
 
 Kernel
 
-- Fix a critical bug with cofixpoints and vm_compute/native_compute (#7333).
+- Fix a critical bug with cofixpoints and `vm_compute`/`native_compute` (#7333).
 - Fix a critical bug with modules and algebraic universes (#7695)
 - Fix a critical bug with inlining of polymorphic constants (#7615).
-- Fix a critical bug with universe polymorphism and vm_compute (#7723). Was
+- Fix a critical bug with universe polymorphism and `vm_compute` (#7723). Was
   present since 8.5.
 
 Notations
@@ -300,7 +300,7 @@ Changes from 8.8+beta1 to 8.8.0
 Tools
 
 - Asynchronous proof delegation policy was fixed. Since version 8.7
-  Coq was ignoring previous runs and the -async-proofs-delegation-threshold
+  Coq was ignoring previous runs and the `-async-proofs-delegation-threshold`
   option did not have the expected behavior.
 
 Tactic language
