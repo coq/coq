@@ -34,12 +34,3 @@ val variable_exists : variable -> bool
 
 val add_constant_kind : Constant.t -> logical_kind -> unit
 val constant_kind : Constant.t -> logical_kind
-
-(* Prepare global named context for proof session: remove proofs of
-   opaque section definitions and remove vm-compiled code *)
-
-val initialize_named_context_for_proof : unit -> Environ.named_context_val
-
-(** Miscellaneous functions *)
-
-val last_section_hyps : DirPath.t -> Id.t list

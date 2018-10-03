@@ -1102,7 +1102,7 @@ let show_term n =
 let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
                    ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
     ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) obls =
-  let sign = Decls.initialize_named_context_for_proof () in
+  let sign = Lemmas.initialize_named_context_for_proof () in
   let info = Id.print n ++ str " has type-checked" in
   let prg = init_prog_info sign ~opaque n univdecl term t ctx [] None [] obls implicits kind reduce hook in
   let obls,_ = prg.prg_obligations in
@@ -1122,7 +1122,7 @@ let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
 let add_mutual_definitions l ctx ?(univdecl=UState.default_univ_decl) ?tactic
                            ?(kind=Global,false,Definition) ?(reduce=reduce)
     ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) notations fixkind =
-  let sign = Decls.initialize_named_context_for_proof () in
+  let sign = Lemmas.initialize_named_context_for_proof () in
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter
     (fun  (n, b, t, imps, obls) ->

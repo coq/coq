@@ -56,13 +56,17 @@ val standard_proof_terminator :
 
 val fresh_name_for_anonymous_theorem : unit -> Id.t
 
+(* Prepare global named context for proof session: remove proofs of
+   opaque section definitions and remove vm-compiled code *)
+
+val initialize_named_context_for_proof : unit -> Environ.named_context_val
+
 (** {6 ... } *)
 
 (** A hook the next three functions pass to cook_proof *)
 val set_save_hook : (Proof.t -> unit) -> unit
 
 val save_proof : ?proof:Proof_global.closed_proof -> Vernacexpr.proof_end -> unit
-
 
 (** [get_current_context ()] returns the evar context and env of the
    current open proof if any, otherwise returns the empty evar context

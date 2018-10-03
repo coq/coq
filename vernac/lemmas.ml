@@ -344,6 +344,14 @@ let universe_proof_terminator compute_guard hook =
 let standard_proof_terminator compute_guard hook =
   universe_proof_terminator compute_guard (fun _ -> hook)
 
+let initialize_named_context_for_proof () =
+  let sign = Global.named_context () in
+  List.fold_right
+    (fun d signv ->
+      let id = NamedDecl.get_id d in
+      let d = if variable_opacity id then NamedDecl.LocalAssum (id, NamedDecl.get_type d) else d in
+      Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
+
 let start_proof id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_guard=[]) hook =
   let terminator = match terminator with
   | None -> standard_proof_terminator compute_guard hook
