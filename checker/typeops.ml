@@ -158,7 +158,7 @@ let judge_of_inductive_knowing_parameters env (ind,u) (paramstyp:constr array) =
   let specif =
     try lookup_mind_specif env ind
     with Not_found ->
-      failwith ("Cannot find inductive: "^MutInd.to_string (fst ind))
+      failwith ("Cannot find mutual inductive block: "^MutInd.to_string (fst ind))
   in
   type_of_inductive_knowing_parameters env (specif,u) paramstyp
 
@@ -172,7 +172,7 @@ let judge_of_constructor env (c,u) =
   let specif =
     try lookup_mind_specif env ind
     with Not_found ->
-      failwith ("Cannot find inductive: "^MutInd.to_string (fst ind))
+      failwith ("Cannot find mutual inductive block: "^MutInd.to_string (fst ind))
   in
   type_of_constructor (c,u) specif
 

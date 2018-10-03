@@ -11,7 +11,7 @@ let ppripos (ri,pos) =
   | Reloc_annot a ->
       let sp,i = a.ci.ci_ind in
       print_string
-	("annot : MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^")\n")
+        ("annot : MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^")\n")
   | Reloc_const _ ->
       print_string "structured constant\n"
   | Reloc_getglobal kn ->

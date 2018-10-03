@@ -187,7 +187,7 @@ let _ = Goptions.declare_bool_option {
   Goptions.optwrite = (fun a -> debug_cbv:=a);
 }
 
-let pr_key = function
+let debug_pr_key = function
   | ConstKey (sp,_) -> Names.Constant.print sp
   | VarKey id -> Names.Id.print id
   | RelKey n -> Pp.(str "REL_" ++ int n)
@@ -320,14 +320,14 @@ and norm_head_ref k info env stack normt =
   if red_set_ref (info_flags info.infos) normt then
     match ref_value_cache info.infos info.tab normt with
       | Some body ->
-         if !debug_cbv then Feedback.msg_debug Pp.(str "Unfolding " ++ pr_key normt);
+         if !debug_cbv then Feedback.msg_debug Pp.(str "Unfolding " ++ debug_pr_key normt);
          strip_appl (shift_value k body) stack
       | None ->
-         if !debug_cbv then Feedback.msg_debug Pp.(str "Not unfolding " ++ pr_key normt);
+         if !debug_cbv then Feedback.msg_debug Pp.(str "Not unfolding " ++ debug_pr_key normt);
          (VAL(0,make_constr_ref k normt),stack)
   else
     begin
-      if !debug_cbv then Feedback.msg_debug Pp.(str "Not unfolding " ++ pr_key normt);
+      if !debug_cbv then Feedback.msg_debug Pp.(str "Not unfolding " ++ debug_pr_key normt);
       (VAL(0,make_constr_ref k normt),stack)
     end
 

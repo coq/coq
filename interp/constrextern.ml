@@ -102,7 +102,7 @@ let _show_inactive_notations () =
       (function
        | NotationRule (scopt, ntn) ->
          Feedback.msg_notice (pr_notation ntn ++ show_scope scopt)
-       | SynDefRule kn -> Feedback.msg_notice (str (Names.KerName.to_string kn)))
+       | SynDefRule kn -> Feedback.msg_notice (str (string_of_qualid (Nametab.shortest_qualid_of_syndef Id.Set.empty kn))))
       !inactive_notations_table
 
 let deactivate_notation nr =
@@ -135,8 +135,9 @@ let reactivate_notation nr =
                              ++ str "is already active" ++ show_scope scopt ++
   str ".")
     | SynDefRule kn ->
+       let s = string_of_qualid (Nametab.shortest_qualid_of_syndef Id.Set.empty kn) in
        Feedback.msg_warning
-         (str "Notation" ++ spc () ++ str (Names.KerName.to_string kn)
+         (str "Notation" ++ spc () ++ str s
           ++ spc () ++ str "is already active.")
 
 
