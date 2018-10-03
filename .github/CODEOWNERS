@@ -348,3 +348,7 @@
 
 /dev/tools/check-owners*.sh @SkySkimmer
 # Secondary maintainer @maximedenes
+
+/dev/tools/update-compat.py @JasonGross
+/test-suite/tools/update-compat/ @JasonGross
+# Secondary maintainer @Zimmi48

@@ -233,7 +233,5 @@ Qed.
 
 (** * Z.square: a direct definition of [z^2] *)
 
-Notation Psquare := Pos.square (compat "8.6").
-Notation Zsquare := Z.square (compat "8.6").
 Notation Psquare_correct := Pos.square_spec (only parsing).
 Notation Zsquare_correct := Z.square_spec (only parsing).

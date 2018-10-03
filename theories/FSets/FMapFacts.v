@@ -26,8 +26,6 @@ Hint Extern 1 (Equivalence _) => constructor; congruence.
 
 Module WFacts_fun (E:DecidableType)(Import M:WSfun E).
 
-Notation option_map := option_map (compat "8.6").
-
 Notation eq_dec := E.eq_dec.
 Definition eqb x y := if eq_dec x y then true else false.
 
@@ -676,7 +674,7 @@ Qed.
 Add Parametric Morphism elt : (@Empty elt)
  with signature Equal ==> iff as Empty_m.
 Proof.
-unfold Empty; intros m m' Hm. split; intros; intro. 
+unfold Empty; intros m m' Hm. split; intros; intro.
 rewrite <-Hm in H0; eapply H, H0.
 rewrite Hm in H0; eapply H, H0.
 Qed.
@@ -758,7 +756,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   Instance eqk_equiv : Equivalence eqk.
   Proof. unfold eq_key; split; eauto. Qed.
-  
+
   Instance eqke_equiv : Equivalence eqke.
   Proof.
    unfold eq_key_elt; split; repeat red; firstorder.
@@ -2198,4 +2196,3 @@ Module OrdProperties (M:S).
  End Elt.
 
 End OrdProperties.
-

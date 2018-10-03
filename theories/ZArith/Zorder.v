@@ -66,10 +66,6 @@ Qed.
 
 (** * Relating strict and large orders *)
 
-Notation Zgt_lt := Z.gt_lt (compat "8.6").
-Notation Zlt_gt := Z.lt_gt (compat "8.6").
-Notation Zge_le := Z.ge_le (compat "8.6").
-Notation Zle_ge := Z.le_ge (compat "8.6").
 Notation Zgt_iff_lt := Z.gt_lt_iff (only parsing).
 Notation Zge_iff_le := Z.ge_le_iff (only parsing).
 
@@ -123,7 +119,6 @@ Qed.
 
 (** Reflexivity *)
 
-Notation Zle_refl := Z.le_refl (compat "8.6").
 Notation Zeq_le := Z.eq_le_incl (only parsing).
 
 Hint Resolve Z.le_refl: zarith.
@@ -143,7 +138,6 @@ Qed.
 
 (** Irreflexivity *)
 
-Notation Zlt_irrefl := Z.lt_irrefl (compat "8.6").
 Notation Zlt_not_eq := Z.lt_neq (only parsing).
 
 Lemma Zgt_irrefl n : ~ n > n.
@@ -167,17 +161,12 @@ Notation Zle_or_lt := Z.le_gt_cases (only parsing).
 
 (** Transitivity of strict orders *)
 
-Notation Zlt_trans := Z.lt_trans (compat "8.6").
-
 Lemma Zgt_trans n m p : n > m -> m > p -> n > p.
 Proof.
   Z.swap_greater. intros; now transitivity m.
 Qed.
 
 (** Mixed transitivity *)
-
-Notation Zlt_le_trans := Z.lt_le_trans (compat "8.6").
-Notation Zle_lt_trans := Z.le_lt_trans (compat "8.6").
 
 Lemma Zle_gt_trans n m p : m <= n -> m > p -> n > p.
 Proof.
@@ -190,8 +179,6 @@ Proof.
 Qed.
 
 (** Transitivity of large orders *)
-
-Notation Zle_trans := Z.le_trans (compat "8.6").
 
 Lemma Zge_trans n m p : n >= m -> m >= p -> n >= p.
 Proof.
@@ -256,9 +243,6 @@ Proof.
 Qed.
 
 (** Relating strict and large order using successor or predecessor *)
-
-Notation Zlt_succ_r := Z.lt_succ_r (compat "8.6").
-Notation Zle_succ_l := Z.le_succ_l (compat "8.6").
 
 Lemma Zgt_le_succ n m : m > n -> Z.succ n <= m.
 Proof.
@@ -335,9 +319,6 @@ Proof.
 Qed.
 
 (** Special cases of ordered integers *)
-
-Notation Zlt_0_1 := Z.lt_0_1 (compat "8.6").
-Notation Zle_0_1 := Z.le_0_1 (compat "8.6").
 
 Lemma Zle_neg_pos : forall p q:positive, Zneg p <= Zpos q.
 Proof.

@@ -22,8 +22,6 @@ Local Open Scope N_scope.
 (** Obsolete results about boolean comparisons over [N],
     kept for compatibility with IntMap and SMC. *)
 
-Notation Peqb := Pos.eqb (compat "8.6").
-Notation Neqb := N.eqb (compat "8.6").
 Notation Peqb_correct := Pos.eqb_refl (only parsing).
 Notation Neqb_correct := N.eqb_refl (only parsing).
 Notation Neqb_comm := N.eqb_sym (only parsing).

@@ -8,16 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Compatibility file for making Coq act similar to Coq v8.7 *)
-Require Export Coq.Compat.Coq88.
-
-(* In 8.7, omega wasn't taking advantage of local abbreviations,
-   see bug 148 and PR#768. For adjusting this flag, we're forced to
-   first dynlink the omega plugin, but we should avoid doing a full
-   "Require Omega", since it has some undesired effects (at least on hints)
-   and breaks at least fiat-crypto. *)
-Declare ML Module "omega_plugin".
-Unset Omega UseLocalDefs.
-
-
-Set Typeclasses Axioms Are Instances.
+(** Compatibility file for making Coq act similar to Coq v8.10 *)
