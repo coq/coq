@@ -5,7 +5,7 @@
    of universe polymorphism obsolete (example submitted by Randy Pollack).
 
    Note that this example is not an evidence that the current
-   non-kernel eta-expansion behavior is the most expected one.  
+   non-kernel eta-expansion behavior is the most expected one.
 *)
 
 Parameter K : forall T : Type, T -> T.
@@ -14,7 +14,7 @@ Check (K (forall T : Type, T -> T) K).
 (*
    note that the inferred term is
      "(K (forall T (* u1 *) : Type, T -> T) (fun T:Type (* u1 *) => K T))"
-   which is not eta-equivalent to 
+   which is not eta-equivalent to
      "(K (forall T : Type, T -> T) K"
    because the eta-expansion of the latter
      "(K (forall T : Type, T -> T) (fun T:Type (* u2 *) => K T)"
