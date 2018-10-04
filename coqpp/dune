@@ -4,5 +4,6 @@
 (executable
  (name coqpp_main)
  (public_name coqpp)
+ (package coq)
  (modules coqpp_ast coqpp_lex coqpp_parse coqpp_main)
  (modules_without_implementation coqpp_ast))

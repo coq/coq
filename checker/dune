@@ -19,6 +19,7 @@
 (executable
  (name main)
  (public_name coqchk)
+ (package coq)
  (modules main)
  (flags :standard -open Checklib)
  (libraries coq.checklib))
@@ -26,6 +27,7 @@
 (executable
  (name votour)
  (public_name votour)
+ (package coq)
  (modules votour)
  (flags :standard -open Checklib)
  (libraries coq.checklib))

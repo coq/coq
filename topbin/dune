@@ -1,5 +1,6 @@
 (install
  (section bin)
+ (package coq)
  (files (coqtop_bin.exe as coqtop)))
 
 (executable
