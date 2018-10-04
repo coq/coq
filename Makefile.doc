@@ -10,7 +10,7 @@
 
 # Makefile for the Coq documentation
 
-# Read INSTALL.doc to learn about the dependencies
+# Read doc/README.md to learn about the dependencies
 
 # The main entry point :
 

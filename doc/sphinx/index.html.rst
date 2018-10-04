@@ -1,13 +1,13 @@
 .. _introduction:
 
 ==========================
-Introduction
+Introduction and Contents
 ==========================
 
 .. include:: introduction.rst
 
-Table of contents
------------------
+Contents
+--------
 
 .. toctree::
    :caption: Indexes

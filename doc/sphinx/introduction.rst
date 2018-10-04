@@ -44,7 +44,7 @@ are processed from a file.
 .. seealso:: :ref:`thecoqcommands`.
 
 How to read this book
-=====================
+---------------------
 
 This is a Reference Manual, so it is not intended for continuous reading.
 We recommend using the various indexes to quickly locate the documentation
@@ -90,7 +90,7 @@ Nonetheless, the manual has some structure that is explained below.
    solvers and tactics. See the table of contents for a complete list.
 
 List of additional documentation
-================================
+--------------------------------
 
 This manual does not contain all the documentation the user may need
 about |Coq|. Various informations can be found in the following documents:
