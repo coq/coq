@@ -81,6 +81,7 @@ type grammar_ext = {
 type tactic_ext = {
   tacext_name : string;
   tacext_level : int option;
+  tacext_deprecated : code option;
   tacext_rules : tactic_rule list;
 }
 
