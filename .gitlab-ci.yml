@@ -275,18 +275,6 @@ doc:refman:
   dependencies:
     - build:base
 
-doc:ml-api:ocamldoc:
-  stage: test
-  dependencies:
-    - build:edge
-  script:
-    - ./configure -warn-error yes -prefix "$(pwd)/_install_ci"
-    - make mli-doc source-doc # ml-doc [broken in 4.07.0]
-  artifacts:
-    name: "$CI_JOB_NAME"
-    paths:
-      - dev/ocamldoc
-
 doc:ml-api:odoc:
   stage: test
   dependencies:
