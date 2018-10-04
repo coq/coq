@@ -3512,6 +3512,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
             Info 1 auto with eqdec.
 
    .. cmdv:: Hint Cut @regexp
+      :name: Hint Cut
 
       .. warning::
 
@@ -3545,6 +3546,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       initial cut expression being `emp`.
 
    .. cmdv:: Hint Mode @qualid {* (+ | ! | -)}
+      :name: Hint Mode
 
       This sets an optional mode of use of the identifier :n:`@qualid`. When
       proof-search faces a goal that ends in an application of :n:`@qualid` to
