@@ -250,8 +250,11 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 # Unit tests
 #######################################################################
 
+# COQLIBINSTALL is quoted in config/make thus we must unquote it,
+# otherwise the directory name will include the quotes, see
+# see for example https://stackoverflow.com/questions/10424645/how-to-convert-a-quoted-string-to-a-normal-one-in-makefile
 ifeq ($(LOCAL),true)
-  export OCAMLPATH := $(patsubst "%",%,$(COQLIBINSTALL))
+  export OCAMLPATH := $(shell echo $(COQLIBINSTALL))
 endif
 
 OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
