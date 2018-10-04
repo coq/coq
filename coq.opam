@@ -6,13 +6,13 @@ bug-reports: "https://github.com/coq/coq/issues"
 dev-repo: "https://github.com/coq/coq.git"
 license: "LGPL-2.1"
 
-available: [ ocaml-version >= "4.02.3" ]
+available: [ ocaml-version >= "4.05.0" ]
 
 depends: [
-  "dune"      { build }
+  "dune"      { build & >= "1.2.0" }
   "ocamlfind" { build }
   "num"
-  "camlp5"
+  "camlp5"    {         >= "7.03"  }
 ]
 
 build-env: [
