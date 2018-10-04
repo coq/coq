@@ -85,6 +85,7 @@ Ltac zify_binop t thm a b:=
 
 Ltac zify_op_1 :=
   match goal with
+   | x := ?t : Z |- _ => let h := fresh "heq_" x in pose proof (eq_refl : x = t) as h; clearbody x
    | |- context [ Z.max ?a ?b ] => zify_binop Z.max Z.max_spec a b
    | H : context [ Z.max ?a ?b ] |- _ => zify_binop Z.max Z.max_spec a b
    | |- context [ Z.min ?a ?b ] => zify_binop Z.min Z.min_spec a b
@@ -114,6 +115,7 @@ Ltac hide_Z_of_nat t :=
 Ltac zify_nat_rel :=
  match goal with
   (* I: equalities *)
+  | x := ?t : nat |- _ => let h := fresh "heq_" x in pose proof (eq_refl : x = t) as h; clearbody x
   | |- (@eq nat ?a ?b) => apply (Nat2Z.inj a b) (* shortcut *)
   | H : context [ @eq nat ?a ?b ] |- _ => rewrite <- (Nat2Z.inj_iff a b) in H
   | |- context [ @eq nat ?a ?b ] =>       rewrite <- (Nat2Z.inj_iff a b)
@@ -223,6 +225,7 @@ Ltac hide_Zpos t :=
 Ltac zify_positive_rel :=
  match goal with
   (* I: equalities *)
+  | x := ?t : positive |- _ => let h := fresh "heq_" x in pose proof (eq_refl : x = t) as h; clearbody x
   | |- (@eq positive ?a ?b) => apply Pos2Z.inj
   | H : context [ @eq positive ?a ?b ] |- _ => rewrite <- (Pos2Z.inj_iff a b) in H
   | |- context [ @eq positive ?a ?b ] =>       rewrite <- (Pos2Z.inj_iff a b)
@@ -348,6 +351,7 @@ Ltac hide_Z_of_N t :=
 Ltac zify_N_rel :=
  match goal with
   (* I: equalities *)
+  | x := ?t : N |- _ => let h := fresh "heq_" x in pose proof (eq_refl : x = t) as h; clearbody x
   | |- (@eq N ?a ?b) => apply (N2Z.inj a b) (* shortcut *)
   | H : context [ @eq N ?a ?b ] |- _ => rewrite <- (N2Z.inj_iff a b) in H
   | |- context [ @eq N ?a ?b ] =>       rewrite <- (N2Z.inj_iff a b)
