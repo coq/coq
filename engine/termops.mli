@@ -341,10 +341,10 @@ val print_constr : constr -> Pp.t
 end
 
 val print_constr : constr -> Pp.t
-[@@deprecated "use Internal.print_constr_env"]
+[@@deprecated "This is an internal, debug printer. WARNING, it is *extremely* likely that you want to use [Printer.pr_econstr_env] instead"]
 
 val print_constr_env : env -> Evd.evar_map -> constr -> Pp.t
-[@@deprecated "use Internal.print_constr_env"]
+[@@deprecated "This is an internal, debug printer. WARNING, it is *extremely* likely that you want to use [Printer.pr_econstr_env] instead"]
 
 val print_rel_context : env -> Pp.t
-[@@deprecated "use Internal.print_rel_context"]
+[@@deprecated "This is an internal, debug printer. WARNING, this function is not suitable for plugin code, if you still want to use it then call [Internal.print_rel_context] instead"]
