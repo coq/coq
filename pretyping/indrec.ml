@@ -455,8 +455,8 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
       | ((indi,u),_,_,dep,kinds)::rest ->
 	  let indf = make_ind_family ((indi,u), Context.Rel.to_extended_list mkRel i lnamesparrec) in
 	  let s = 
-            Evarutil.evd_comb1 (Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg)
-	      evdref kinds 
+            let sigma, res = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg !evdref kinds in
+            evdref := sigma; res
 	  in
 	  let typP = make_arity env !evdref dep indf s in
 	  let typP = EConstr.Unsafe.to_constr typP in

@@ -322,7 +322,8 @@ let generate_functional_principle (evd: Evd.evar_map ref)
   try
 
   let f = funs.(i) in
-  let type_sort = Evarutil.evd_comb1 Evd.fresh_sort_in_family evd InType in
+  let sigma, type_sort = Evd.fresh_sort_in_family !evd InType in
+  evd := sigma;
   let new_sorts =
     match sorts with
       | None -> Array.make (Array.length funs) (type_sort)
@@ -507,8 +508,9 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
   let i = ref (-1) in
   let sorts =
     List.rev_map (fun (_,x) ->
-                  Evarutil.evd_comb1 Evd.fresh_sort_in_family evd x
-             )
+        let sigma, fs = Evd.fresh_sort_in_family !evd x in
+        evd := sigma; fs
+      )
       fas
   in
   (* We create the first priciple by tactic *)

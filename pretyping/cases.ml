@@ -1713,7 +1713,8 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
       let vl = List.map pi1 good in
       let ty = 
         let ty = get_type_of !!env sigma t in
-          Evarutil.evd_comb1 (refresh_universes (Some false) !!env) evdref ty
+        let sigma, res = refresh_universes (Some false) !!env !evdref ty in
+        evdref := sigma; res
       in
       let dummy_subst = List.init k (fun _ -> mkProp) in
       let ty = substl dummy_subst (aux x ty) in

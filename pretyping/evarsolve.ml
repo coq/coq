@@ -46,7 +46,8 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
   (* direction: true for fresh universes lower than the existing ones *)
   let refresh_sort status ~direction s =
     let s = ESorts.kind !evdref s in
-    let s' = evd_comb0 (new_sort_variable status) evdref in
+    let sigma, s' = new_sort_variable status !evdref in
+    evdref := sigma;
     let evd = 
       if direction then set_leq_sort env !evdref s' s
       else set_leq_sort env !evdref s s'
