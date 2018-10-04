@@ -359,7 +359,6 @@ type fconstr = {
 and fterm =
   | FRel of int
   | FAtom of constr (* Metas and Sorts *)
-  | FCast of fconstr * cast_kind * fconstr
   | FFlex of table_key
   | FInd of pinductive
   | FConstruct of pconstructor
@@ -477,7 +476,7 @@ let rec lft_fconstr n ft =
     | FCoFix(cfx,e) -> {norm=Cstr; term=FCoFix(cfx,subs_shft(n,e))}
     | FLIFT(k,m) -> lft_fconstr (n+k) m
     | FLOCKED -> assert false
-    | FFlex _ | FAtom _ | FCast _ | FApp _ | FProj _ | FCaseT _ | FProd _
+    | FFlex _ | FAtom _ | FApp _ | FProj _ | FCaseT _ | FProd _
       | FLetIn _ | FEvar _ | FCLOS _ -> {norm=ft.norm; term=FLIFT(n,ft)}
 let lift_fconstr k f =
   if Int.equal k 0 then f else lft_fconstr k f
@@ -558,8 +557,6 @@ let rec to_constr lfts v =
     | FFlex (RelKey p) -> mkRel (reloc_rel p lfts)
     | FFlex (VarKey x) -> mkVar x
     | FAtom c -> exliftn lfts c
-    | FCast (a,k,b) ->
-      mkCast (to_constr lfts a, k, to_constr lfts b)
     | FFlex (ConstKey op) -> mkConstU op
     | FInd op -> mkIndU op
     | FConstruct op -> mkConstructU op
@@ -866,7 +863,6 @@ let rec knh info m stk =
         (match get_nth_arg m ri.(n) stk with
              (Some(pars,arg),stk') -> knh info arg (Zfix(m,pars)::stk')
            | (None, stk') -> (m,stk'))
-    | FCast(t,_,_) -> knh info t stk
     | FProj (p,c) ->
       (match unfold_projection info p with
        | None -> (m, stk)
@@ -951,7 +947,7 @@ let rec knr info tab m stk =
       (match evar_value info.i_cache ev with
           Some c -> knit info tab env c stk
         | None -> (m,stk))
-  | FLOCKED | FRel _ | FAtom _ | FCast _ | FFlex _ | FInd _ | FApp _ | FProj _
+  | FLOCKED | FRel _ | FAtom _ | FFlex _ | FInd _ | FApp _ | FProj _
     | FFix _ | FCoFix _ | FCaseT _ | FLambda _ | FProd _ | FLetIn _ | FLIFT _
     | FCLOS _ -> (m, stk)
 
@@ -1031,7 +1027,7 @@ and norm_head info tab m =
           mkEvar(i, Array.map (fun a -> kl info tab (mk_clos env a)) args)
       | FProj (p,c) ->
           mkProj (p, kl info tab c)
-      | FLOCKED | FRel _ | FAtom _ | FCast _ | FFlex _ | FInd _ | FConstruct _
+      | FLOCKED | FRel _ | FAtom _ | FFlex _ | FInd _ | FConstruct _
         | FApp _ | FCaseT _ | FLIFT _ | FCLOS _ -> term_of_fconstr m
 
 (* Initialization and then normalization *)

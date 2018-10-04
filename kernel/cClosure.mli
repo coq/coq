@@ -131,7 +131,6 @@ type fconstr
 type fterm =
   | FRel of int
   | FAtom of constr (** Metas and Sorts *)
-  | FCast of fconstr * cast_kind * fconstr
   | FFlex of table_key
   | FInd of inductive Univ.puniverses
   | FConstruct of constructor Univ.puniverses
