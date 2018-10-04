@@ -1,7 +1,10 @@
 ; Default flags for all Coq libraries.
 (env
- (dev     (flags :standard -rectypes -w -9-27-50+60))
- (release (flags :standard -rectypes)))
+ (dev     (flags :standard -rectypes -w -9-27-50+40+60))
+ (release (flags :standard -rectypes))
+ (ireport
+  (flags :standard -rectypes -w -9-27-50+40+60)
+  (ocamlopt_flags :standard -O3 -unbox-closures -inlining-report)))
 
 ; Rules for coq_dune
 (rule
