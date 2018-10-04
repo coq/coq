@@ -22,11 +22,6 @@ open Util
 open Pp
 open Miniml
 
-[@@@ocaml.warning "-3"]       (* String.capitalize_ascii since 4.03.0 GPR#124 *)
-let capitalize = String.capitalize
-[@@@ocaml.warning "+3"]
-
-
 (** Sets and maps for [global_reference] that use the "user" [kernel_name]
     instead of the canonical one *)
 
@@ -61,7 +56,7 @@ let is_modfile = function
   | _ -> false
 
 let raw_string_of_modfile = function
-  | MPfile f -> capitalize (Id.to_string (List.hd (DirPath.repr f)))
+  | MPfile f -> String.capitalize_ascii (Id.to_string (List.hd (DirPath.repr f)))
   | _ -> assert false
 
 let is_toplevel mp =
@@ -784,7 +779,7 @@ let file_of_modfile mp =
 
 let add_blacklist_entries l =
   blacklist_table :=
-    List.fold_right (fun s -> Id.Set.add (Id.of_string (capitalize s)))
+    List.fold_right (fun s -> Id.Set.add (Id.of_string (String.capitalize_ascii s)))
       l !blacklist_table
 
 (* Registration of operations for rollback. *)

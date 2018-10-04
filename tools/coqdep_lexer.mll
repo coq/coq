@@ -52,9 +52,6 @@
     let s = Lexing.lexeme lexbuf in
     check_valid lexbuf (String.sub s 1 (String.length s - 1))
 
-  [@@@ocaml.warning "-3"]       (* String.uncapitalize_ascii since 4.03.0 GPR#124 *)
-  let uncapitalize = String.uncapitalize
-  [@@@ocaml.warning "+3"]
 }
 
 let space = [' ' '\t' '\n' '\r']
@@ -159,7 +156,7 @@ and caml_action = parse
   | space +
       { caml_action lexbuf }
   | "open" space* (caml_up_ident as id)
-        { Use_module (uncapitalize id) }
+        { Use_module (String.uncapitalize_ascii id) }
   | "module" space+ caml_up_ident
         { caml_action lexbuf }
   | caml_low_ident { caml_action lexbuf }
@@ -326,12 +323,12 @@ and modules mllist = parse
 
 and qual_id ml_module_name = parse
   | '.' [^ '.' '(' '[']
-      { Use_module (uncapitalize ml_module_name) }
+      { Use_module (String.uncapitalize_ascii ml_module_name) }
   | eof { raise Fin_fichier }
   | _ { caml_action lexbuf }
 
 and mllib_list = parse
-  | caml_up_ident { let s = uncapitalize (Lexing.lexeme lexbuf)
+  | caml_up_ident { let s = String.uncapitalize_ascii (Lexing.lexeme lexbuf)
 		in s :: mllib_list lexbuf }
   | "*predef*" { mllib_list lexbuf }
   | space+ { mllib_list lexbuf }

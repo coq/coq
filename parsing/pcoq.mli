@@ -26,14 +26,10 @@ module Gram : sig
   type 'a entry = 'a Entry.e
   [@@ocaml.deprecated "Use [Pcoq.Entry.t]"]
 
-  [@@@ocaml.warning "-3"]
-
-  val entry_create : string -> 'a entry
+  val entry_create : string -> 'a Entry.e
   [@@ocaml.deprecated "Use [Pcoq.Entry.create]"]
 
-  val gram_extend : 'a entry -> 'a Extend.extend_statement -> unit
-
-  [@@@ocaml.warning "+3"]
+  val gram_extend : 'a Entry.e -> 'a Extend.extend_statement -> unit
 
 end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e
 

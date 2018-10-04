@@ -21,10 +21,8 @@ open Mlutil
 open Common
 
 (*s Haskell renaming issues. *)
-[@@@ocaml.warning "-3"]       (* String.(un)capitalize_ascii since 4.03.0 GPR#124 *)
-let pr_lower_id id = str (String.uncapitalize (Id.to_string id))
-let pr_upper_id id = str (String.capitalize (Id.to_string id))
-[@@@ocaml.warning "+3"]
+let pr_lower_id id = str (String.uncapitalize_ascii (Id.to_string id))
+let pr_upper_id id = str (String.capitalize_ascii (Id.to_string id))
 
 let keywords =
   List.fold_right (fun s -> Id.Set.add (Id.of_string s))
