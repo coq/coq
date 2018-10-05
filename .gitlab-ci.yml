@@ -186,7 +186,7 @@ after_script:
     - call dev/ci/gitlab.bat
   only:
     variables:
-      - $WINDOWS == "enabled"
+      - $WINDOWS =~ /enabled/
 
 build:base:
   <<: *build-template
