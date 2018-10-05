@@ -1866,9 +1866,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CProdN (bl,c2) ->
         let (env',bl) = List.fold_left intern_local_binder (env,[]) bl in
         expand_binders ?loc mkGProd bl (intern_type env' c2)
-    | CLambdaN ([],c2) ->
-        (* Such a term is built sometimes: it should not change scope *)
-        intern env c2
+    | CLambdaN ([],c2) -> anomaly (Pp.str "the AST is malformed, found lambda without binders")
     | CLambdaN (bl,c2) ->
         let (env',bl) = List.fold_left intern_local_binder (reset_tmp_scope env,[]) bl in
         expand_binders ?loc mkGLambda bl (intern env' c2)

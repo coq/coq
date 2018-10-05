@@ -261,7 +261,7 @@ GRAMMAR EXTEND Gram
         { let ty,c1 = match ty, c1 with
           | (_,None), { CAst.v = CCast(c, CastConv t) } -> (Loc.tag ?loc:(constr_loc t) @@ Some t), c (* Tolerance, see G_vernac.def_body *)
           | _, _ -> ty, c1 in
-          CAst.make ~loc @@ CLetIn(id,mkCLambdaN ?loc:(constr_loc c1) bl c1,
+          CAst.make ~loc @@ CLetIn(id,(if bl = [] then c1 else mkCLambdaN ?loc:(constr_loc c1) bl c1),
                  Option.map (mkCProdN ?loc:(fst ty) bl) (snd ty), c2) }
       | "let"; fx = single_fix; "in"; c = operconstr LEVEL "200" ->
           { let fixp = mk_single_fix fx in
