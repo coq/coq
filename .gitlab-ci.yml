@@ -348,6 +348,7 @@ validate:edge+flambda:
 
 ci-bedrock2:
   <<: *ci-template
+  allow_failure: true
 
 ci-bignums:
   <<: *ci-template
