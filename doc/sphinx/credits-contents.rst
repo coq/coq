@@ -1238,7 +1238,7 @@ of integers and real constants are now represented using `IZR` (work by
 Guillaume Melquiond).
 
 Standard library additions and improvements by Jason Gross, Pierre Letouzey and
-others, documented in the `CHANGES` file.
+others, documented in the ``CHANGES.md`` file.
 
 The mathematical proof language/declarative mode plugin was removed from the
 archive.
@@ -1352,7 +1352,7 @@ version.
 
 Version 8.8 also comes with a bunch of smaller-scale changes and
 improvements regarding the different components of the system.
-Most important ones are documented in the ``CHANGES`` file.
+Most important ones are documented in the ``CHANGES.md`` file.
 
 The efficiency of the whole system has seen improvements thanks to
 contributions from Gaëtan Gilbert, Pierre-Marie Pédrot, Maxime Dénès and

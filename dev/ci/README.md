@@ -126,7 +126,7 @@ patch (or ask someone to prepare a patch) to fix the project:
    developer who merges the PR on Coq. There are plans to improve this, cf.
    [#6724](https://github.com/coq/coq/issues/6724).
 
-Moreover your PR must absolutely update the [`CHANGES`](../../CHANGES) file.
+Moreover your PR must absolutely update the [`CHANGES.md`](../../CHANGES.md) file.
 
 Advanced GitLab CI information
 ------------------------------

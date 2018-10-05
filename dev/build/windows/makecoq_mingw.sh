@@ -1374,7 +1374,7 @@ function copy_coq_license {
     # FIXME: this is not the micromega license
     # It only applies to code that was copied into one single file!
     install -D README.md                      "$PREFIXCOQ/license_readme/coq/ReadMe.md"
-    install -D CHANGES                        "$PREFIXCOQ/license_readme/coq/Changes.txt"
+    install -D CHANGES.md                     "$PREFIXCOQ/license_readme/coq/Changes.md"
     install -D INSTALL                        "$PREFIXCOQ/license_readme/coq/Install.txt"
     install -D doc/README.md                  "$PREFIXCOQ/license_readme/coq/ReadMeDoc.md" || true
   fi
