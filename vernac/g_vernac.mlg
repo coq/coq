@@ -296,7 +296,7 @@ GRAMMAR EXTEND Gram
       { if List.exists (function CLocalPattern _ -> true | _ -> false) bl
       then
         (* FIXME: "red" will be applied to types in bl and Cast with remain *)
-        let c = mkCLambdaN ~loc bl c in
+        let c = mkLambdaCN ~loc bl c in
 	DefineBody ([], red, c, None)
       else
         (match c with
@@ -308,7 +308,7 @@ GRAMMAR EXTEND Gram
           then
             (* FIXME: "red" will be applied to types in bl and Cast with remain *)
             let c = CAst.make ~loc @@ CCast (c, CastConv t) in
-            (([],mkCLambdaN ~loc bl c), None)
+            (([],mkLambdaCN ~loc bl c), None)
           else ((bl, c), Some t)
         in
 	DefineBody (bl, red, c, tyo) }
@@ -419,16 +419,16 @@ GRAMMAR EXTEND Gram
   ;
   record_binder_body:
     [ [ l = binders; oc = of_type_with_opt_coercion;
-         t = lconstr -> { fun id -> (oc,AssumExpr (id,mkCProdN ~loc l t)) }
+         t = lconstr -> { fun id -> (oc,AssumExpr (id,mkProdCN ~loc l t)) }
       | l = binders; oc = of_type_with_opt_coercion;
          t = lconstr; ":="; b = lconstr -> { fun id ->
-	   (oc,DefExpr (id,mkCLambdaN ~loc l b,Some (mkCProdN ~loc l t))) }
+	   (oc,DefExpr (id,mkLambdaCN ~loc l b,Some (mkProdCN ~loc l t))) }
       | l = binders; ":="; b = lconstr -> { fun id ->
          match b.CAst.v with
 	 | CCast(b', (CastConv t|CastVM t|CastNative t)) ->
-	     (None,DefExpr(id,mkCLambdaN ~loc l b',Some (mkCProdN ~loc l t)))
+	     (None,DefExpr(id,mkLambdaCN ~loc l b',Some (mkProdCN ~loc l t)))
          | _ ->
-	     (None,DefExpr(id,mkCLambdaN ~loc l b,None)) } ] ]
+	     (None,DefExpr(id,mkLambdaCN ~loc l b,None)) } ] ]
   ;
   record_binder:
     [ [ id = name -> { (None,AssumExpr(id, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))) }
@@ -448,9 +448,9 @@ GRAMMAR EXTEND Gram
   constructor_type:
     [[ l = binders;
       t= [ coe = of_type_with_opt_coercion; c = lconstr ->
-	            { fun l id -> (not (Option.is_empty coe),(id,mkCProdN ~loc l c)) }
+	            { fun l id -> (not (Option.is_empty coe),(id,mkProdCN ~loc l c)) }
             |  ->
-                 { fun l id -> (false,(id,mkCProdN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous, None)))) } ]
+                 { fun l id -> (false,(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous, None)))) } ]
 	 -> { t l }
      ]]
 ;
