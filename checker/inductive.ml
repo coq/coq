@@ -856,6 +856,8 @@ let filter_stack_domain env p stack =
     match stack, t with
     | elt :: stack', Prod (n,a,c0) ->
       let d = LocalAssum (n,a) in
+      let ctx, a = dest_prod_assum env a in
+      let env = push_rel_context ctx env in
       let ty, args = decompose_app (whd_all env a) in
       let elt = match ty with
       | Ind ind -> 
