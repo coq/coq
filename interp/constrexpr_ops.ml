@@ -526,6 +526,14 @@ let mkAppC (f,l) =
   | CApp (g,l') -> CAst.make @@ CApp (g, l' @ l)
   | _           -> CAst.make @@ CApp ((None, f), l)
 
+let mkProdCN ?loc bll c =
+  if bll = [] then c else
+  CAst.make ?loc @@ CProdN (bll,c)
+
+let mkLambdaCN ?loc bll c =
+  if bll = [] then c else
+  CAst.make ?loc @@ CLambdaN (bll,c)
+
 let mkCProdN ?loc bll c =
   CAst.make ?loc @@ CProdN (bll,c)
 

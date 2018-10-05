@@ -38,22 +38,36 @@ val constr_loc : constr_expr -> Loc.t option
 val cases_pattern_expr_loc : cases_pattern_expr -> Loc.t option
 val local_binders_loc : local_binder_expr list -> Loc.t option
 
-(** {6 Constructors}*)
+(** {6 Constructors} *)
+
+(** {7 Term constructors} *)
+
+(** Basic form of the corresponding constructors *)
 
 val mkIdentC : Id.t -> constr_expr
 val mkRefC : qualid -> constr_expr
-val mkAppC : constr_expr * constr_expr list -> constr_expr
 val mkCastC : constr_expr * constr_expr Glob_term.cast_type -> constr_expr
 val mkLambdaC : lname list * binder_kind * constr_expr * constr_expr -> constr_expr
 val mkLetInC : lname * constr_expr * constr_expr option * constr_expr -> constr_expr
 val mkProdC : lname list * binder_kind * constr_expr * constr_expr -> constr_expr
 
+val mkAppC : constr_expr * constr_expr list -> constr_expr
+(** Basic form of application, collapsing nested applications *)
+
+(** Optimized constructors: does not add a constructor for an empty binder list *)
+
+val mkLambdaCN : ?loc:Loc.t -> local_binder_expr list -> constr_expr -> constr_expr
+val mkProdCN : ?loc:Loc.t -> local_binder_expr list -> constr_expr -> constr_expr
+
+(** Aliases for the corresponding constructors; generally [mkLambdaCN] and
+    [mkProdCN] should be preferred *)
+
 val mkCLambdaN : ?loc:Loc.t -> local_binder_expr list -> constr_expr -> constr_expr
-(** Same as [abstract_constr_expr], with location *)
-
 val mkCProdN : ?loc:Loc.t -> local_binder_expr list -> constr_expr -> constr_expr
-(** Same as [prod_constr_expr], with location *)
 
+(** {7 Pattern constructors} *)
+
+(** Interpretation of a list of patterns as a disjunctive pattern (optimized) *)
 val mkCPatOr : ?loc:Loc.t -> cases_pattern_expr list -> cases_pattern_expr
 
 val mkAppPattern : ?loc:Loc.t -> cases_pattern_expr -> cases_pattern_expr list -> cases_pattern_expr
