@@ -84,8 +84,7 @@ match local with
   in
     (gr,inst,Lib.is_modtype_strict ())
 
-let interp_assumption sigma env impls bl c =
-  let c = mkCProdN ?loc:(local_binders_loc bl) bl c in
+let interp_assumption sigma env impls c =
   let sigma, (ty, impls) = interp_type_evars_impls env sigma ~impls c in
   sigma, (ty, impls)
 
@@ -148,7 +147,7 @@ let do_assumptions kind nl l =
   in
   (* We intepret all declarations in the same evar_map, i.e. as a telescope. *)
   let (sigma,_,_),l = List.fold_left_map (fun (sigma,env,ienv) (is_coe,(idl,c)) ->
-    let sigma,(t,imps) = interp_assumption sigma env ienv [] c in
+    let sigma,(t,imps) = interp_assumption sigma env ienv c in
     let env =
       EConstr.push_named_context (List.map (fun {CAst.v=id} -> LocalAssum (id,t)) idl) env in
     let ienv = List.fold_right (fun {CAst.v=id} ienv ->
