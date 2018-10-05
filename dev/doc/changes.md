@@ -1,12 +1,5 @@
 ## Changes between Coq 8.9 and Coq 8.10
 
-### ML API
-
-Termops:
-
-- Internal printing functions have been placed under the
-  `Termops.Internal` namespace.
-
 ## Changes between Coq 8.8 and Coq 8.9
 
 ### ML API
