@@ -40,6 +40,22 @@ SET PATH=%PATH%;C:\Program Files\7-Zip\;C:\Program Files\Microsoft SDKs\Windows\
 if exist %CYGROOT%\build\ rd /s /q %CYGROOT%\build
 if exist %DESTCOQ%\ rd /s /q %DESTCOQ%
 
+IF "%WINDOWS_ALL_ADDONS%" == "enabled" (
+  SET EXTRA_ADDONS=^
+    -addon=mathcomp ^
+    -addon=menhir ^
+    -addon=menhirlib ^
+    -addon=compcert ^
+    -addon=extlib ^
+    -addon=quickchick ^
+    -addon=coquelicot
+  REM addons with build issues
+  REM -addon=vst ^
+  REM -addon=aactactics ^
+) ELSE (
+  SET "EXTRA_ADDONS= "
+)
+
 call %CI_PROJECT_DIR%\dev\build\windows\MakeCoq_MinGW.bat -threads=1 ^
   -arch=%ARCH% -installer=Y -coqver=%CI_PROJECT_DIR_CFMT% ^
   -destcyg=%CYGROOT% -destcoq=%DESTCOQ% -cygcache=%CYGCACHE% ^
@@ -47,19 +63,9 @@ call %CI_PROJECT_DIR%\dev\build\windows\MakeCoq_MinGW.bat -threads=1 ^
   -addon=equations ^
   -addon=ltac2 ^
   -addon=mtac2 ^
-  -addon=mathcomp ^
-  -addon=menhir ^
-  -addon=menhirlib ^
-  -addon=compcert ^
-  -addon=extlib ^
-  -addon=quickchick ^
-  -addon=coquelicot ^
+  %EXTRA_ADDONS% ^
   -make=N ^
   -setup %CI_PROJECT_DIR%\%SETUP% || GOTO ErrorCopyLogFilesAndExit
-
-REM addons with build issues
-REM -addon=vst ^
-REM -addon=aactactics ^
 
 ECHO "Start Artifact Creation"
 TIME /T

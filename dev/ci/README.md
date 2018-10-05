@@ -178,6 +178,11 @@ versions of Coq (32bit and 64bit).
 The Windows jobs are enabled on Coq's repository, where pipelines for
 pull requests run.
 
+If the additional secret variable `WINDOWS_ALL_ADDONS` is set to `enabled`,
+an extended set of addons will be added to the Windows installer.
+This leads to a considerable runtime in CI and is disabled by default for
+pipelines for pull requests.
+
 ### GitLab and Docker
 
 System and opam packages are installed in a Docker image. The image is
