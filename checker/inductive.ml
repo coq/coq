@@ -801,10 +801,23 @@ let rec subterm_specif renv stack t =
 	    subterm_specif (push_var renv (x,a,spec)) stack' b
 
       (* Metas and evars are considered OK *)
-      | (Meta _|Evar _) -> Dead_code
+    | (Meta _|Evar _) -> Dead_code
 
-      (* Other terms are not subterms *)
-      | _ -> Not_subterm
+    | Proj (p, c) ->
+      let subt = subterm_specif renv stack c in
+      (match subt with
+       | Subterm (_s, wf) ->
+         (* We take the subterm specs of the constructor of the record *)
+         let wf_args = (dest_subterms wf).(0) in
+         (* We extract the tree of the projected argument *)
+         let n = Projection.arg p in
+         spec_of_tree (List.nth wf_args n)
+       | Dead_code -> Dead_code
+       | Not_subterm -> Not_subterm)
+
+    (* Other terms are not subterms *)
+    | Var _ | Sort _ | Cast _ | Prod _ | LetIn _ | App _ | Const _ | Ind _
+      | Construct _ | CoFix _ -> Not_subterm
 
 and lazy_subterm_specif renv stack t =
   lazy (subterm_specif renv stack t)
