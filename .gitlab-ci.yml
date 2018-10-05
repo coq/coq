@@ -9,7 +9,7 @@ stages:
 variables:
   # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
   # for reference]
-  CACHEKEY: "bionic_coq-V2018-09-25-V1"
+  CACHEKEY: "bionic_coq-V2018-10-04-V1"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -234,12 +234,17 @@ windows32:
   except:
     - /^pr-.*$/
 
-pkg:dune-release:
-  <<: *dune-template
+pkg:opam:
   stage: test
+  # OPAM will build out-of-tree so no point in importing artifacts
+  dependencies: []
+  script:
+    - set -e
+    - opam pin add coq .
+    - opam pin add coqide ide
+    - set +e
   variables:
     OPAM_SWITCH: edge
-    DUNE_TARGET: release
 
 pkg:nix:
   image: nixorg/nix:latest # Minimal NixOS image which doesn't even contain git

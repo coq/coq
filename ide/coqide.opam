@@ -6,14 +6,16 @@ bug-reports: "https://github.com/coq/coq/issues"
 dev-repo: "https://github.com/coq/coq.git"
 license: "LGPL-2.1"
 
-available: [ocaml-version >= "4.02.3"]
+available: [ocaml-version >= "4.05.0"]
 
 depends: [
-  "dune"      { build }
-  "ocamlfind" { build }
-  "num"
-  "camlp5"
+  "dune"               { build & >= "1.2.0" }
   "coq"
+  "conf-gtksourceview"
+  "lablgtk"            {         >= "2.18.5" }
 ]
 
+build-env: [
+  [ COQ_CONFIGURE_PREFIX = "%{prefix}" ]
+]
 build: [ [ "dune" "build" "-p" name "-j" jobs ] ]

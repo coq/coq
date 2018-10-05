@@ -39,14 +39,14 @@ WHAT DO YOU NEED ?
    - Findlib (version >= 1.4.1)
      (available at http://projects.camlcity.org/projects/findlib.html)
 
-   - Camlp5 (version >= 7.01)
+   - Camlp5 (version >= 7.03)
      (available at https://camlp5.github.io/)
 
    - GNU Make version 3.81 or later
 
    - a C compiler
 
-   - for CoqIDE, the lablgtk development files (version >= 2.18.3),
+   - for CoqIDE, the lablgtk development files (version >= 2.18.5),
      and the GTK 2.x libraries including gtksourceview2.
 
    Note that num, camlp5 and lablgtk should be properly registered with
