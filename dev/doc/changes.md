@@ -98,11 +98,6 @@ Termops
 - Internal printing functions have been placed under the
   `Termops.Internal` namespace.
 
-Termops
-
-- Internal printing functions have been placed under the
-  `Termops.Internal` namespace.
-
 ### Unit testing
 
 The test suite now allows writing unit tests against OCaml code in the Coq
