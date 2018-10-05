@@ -37,9 +37,6 @@ SET CI_PROJECT_DIR_CFMT=%CI_PROJECT_DIR_MFMT:C:/=/cygdrive/c/%
 SET COQREGTESTING=Y
 SET PATH=%PATH%;C:\Program Files\7-Zip\;C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin
 
-if exist %CYGROOT%\build\ rd /s /q %CYGROOT%\build
-if exist %DESTCOQ%\ rd /s /q %DESTCOQ%
-
 IF "%WINDOWS_ALL_ADDONS%" == "enabled" (
   SET EXTRA_ADDONS=^
     -addon=mathcomp ^
