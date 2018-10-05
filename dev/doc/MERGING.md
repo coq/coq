@@ -54,7 +54,7 @@ those external projects should have been prepared (cf. the relevant sub-section
 in the [CI README](../ci/README.md#Breaking-changes) and the PR can be tested
 with these fixes thanks to ["overlays"](../ci/user-overlays/README.md).
 
-Moreover the PR must absolutely update the [`CHANGES`](../../CHANGES) file.
+Moreover the PR must absolutely update the [`CHANGES.md`](../../CHANGES.md) file.
 
 If overlays are missing, ask the author to prepare them and label the PR with
 the [needs: overlay](https://github.com/coq/coq/labels/needs%3A%20overlay) label.
@@ -93,7 +93,7 @@ When the PR has conflicts, the assignee can either:
 
 In both cases, CI should be run again.
 
-In some rare cases (e.g. the conflicts are in the CHANGES file), it is ok to fix
+In some rare cases (e.g. the conflicts are in the `CHANGES.md` file), it is ok to fix
 the conflicts in the merge commit (following the same steps as below), and push
 to `master` directly. Don't use the GitHub interface to fix these conflicts.
 
