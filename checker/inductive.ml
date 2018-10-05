@@ -282,6 +282,11 @@ let get_instantiated_arity (ind,u) (mib,mip) params =
 
 let elim_sorts (_,mip) = mip.mind_kelim
 
+let is_primitive_record (mib,_) =
+  match mib.mind_record with
+  | PrimRecord _ -> true
+  | NotRecord | FakeRecord -> false
+
 let extended_rel_list n hyps =
   let rec reln l p = function
     | LocalAssum _ :: hyps -> reln (Rel (n+p) :: l) (p+1) hyps
@@ -381,12 +386,13 @@ let type_case_branches env (pind,largs) (p,pj) c =
 (* Checking the case annotation is relevant *)
 
 let check_case_info env indsp ci =
-  let (mib,mip) = lookup_mind_specif env indsp in
+  let mib, mip as spec = lookup_mind_specif env indsp in
   if
     not (eq_ind_chk indsp ci.ci_ind) ||
     (mib.mind_nparams <> ci.ci_npar) ||
     (mip.mind_consnrealdecls <> ci.ci_cstr_ndecls) ||
-    (mip.mind_consnrealargs <> ci.ci_cstr_nargs)
+    (mip.mind_consnrealargs <> ci.ci_cstr_nargs) ||
+    is_primitive_record spec
   then raise (TypeError(env,WrongCaseInfo(indsp,ci)))
 
 (************************************************************************)
