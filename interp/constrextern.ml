@@ -36,36 +36,6 @@ module NamedDecl = Context.Named.Declaration
 (* Translation from glob_constr to front constr *)
 
 (**********************************************************************)
-(* Parametrization                                                    *)
-
-(* This governs printing of local context of references *)
-let print_arguments = ref false
-
-(* If true, prints local context of evars *)
-let print_evar_arguments = Detyping.print_evar_arguments
-
-(* This governs printing of implicit arguments.  When
-   [print_implicits] is on then [print_implicits_explicit_args] tells
-   how implicit args are printed. If on, implicit args are printed
-   with the form (id:=arg) otherwise arguments are printed normally and
-   the function is prefixed by "@" *)
-let print_implicits = ref false
-let print_implicits_explicit_args = ref false
-
-(* Tells if implicit arguments not known to be inferable from a rigid
-   position are systematically printed *)
-let print_implicits_defensive = ref true
-
-(* This forces printing of coercions *)
-let print_coercions = ref false
-
-(* This forces printing universe names of Type{.} *)
-let print_universes = Detyping.print_universes
-
-(* This suppresses printing of primitive tokens (e.g. numeral) and notations *)
-let print_no_symbol = ref false
-
-(**********************************************************************)
 (* Turning notations and scopes on and off for printing *)
 module IRuleSet = InterpRuleSet
 
@@ -174,13 +144,16 @@ let toggle_notation_printing ?scope ~notation ~activate =
     deactivate_notation (NotationRule (scope, notation))
 
 (* This governs printing of projections using the dot notation symbols *)
-let print_projections = ref false
 
 let print_meta_as_hole = ref false
 
-let with_universes f = Flags.with_option print_universes f
+let with_universes f =
+  let open Printoptions in
+  with_printing_option (fun opts -> { opts with universes = true }) f
 let with_meta_as_hole f = Flags.with_option print_meta_as_hole f
-let without_symbols f = Flags.with_option print_no_symbol f
+let without_symbols f =
+  let open Printoptions in
+  with_printing_option (fun opts -> { opts with notations = false }) f
 
 let without_specific_symbols l =
   Flags.with_modified_ref inactive_notations_table
@@ -189,6 +162,7 @@ let without_specific_symbols l =
 (**********************************************************************)
 (* Control printing of records *)
 
+<<<<<<< HEAD
 (* Set Record Printing flag *)
 let get_record_print =
   Goptions.declare_bool_option_and_ref
@@ -196,6 +170,19 @@ let get_record_print =
     ~name:"record printing"
     ~key:["Printing";"Records"]
     ~value:true
+=======
+let pr_get f () = f (Printoptions.get ())
+let pr_set f v  = Printoptions.(set (f (get ()) v))
+let _ =
+  let open Goptions in
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "record printing";
+      optkey   = ["Printing";"Records"];
+      optread  = pr_get (fun r -> r.Printoptions.records);
+      optwrite = pr_set (fun r v -> { r with Printoptions.records = v });
+    }
+>>>>>>> [printing] Collect Printing Options in a record (c.f. #6560)
 
 let is_record indsp =
   try
@@ -375,7 +362,7 @@ let pattern_printable_in_both_syntax (ind,_ as c) =
  (* Better to use extern_glob_constr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
   try
-    if !Flags.in_debugger || !Flags.raw_print || !print_no_symbol then raise No_match;
+    if !Flags.in_debugger || not Printoptions.((get ()).notations) then raise No_match;
     let (na,sc,p) = uninterp_prim_token_cases_pattern pat in
     match availability_of_entry_coercion custom InConstrEntrySomeLevel with
       | None -> raise No_match
@@ -388,9 +375,15 @@ let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
           (insert_pat_alias ?loc (insert_pat_delimiters ?loc (CAst.make ?loc @@ CPatPrim p) key) na)
   with No_match ->
     try
+<<<<<<< HEAD
       if !Flags.in_debugger || !Flags.raw_print || !print_no_symbol then raise No_match;
       extern_notation_pattern allscopes [] vars pat
         (uninterp_cases_pattern_notations scopes pat)
+=======
+      if !Flags.in_debugger || not Printoptions.((get ()).notations) then raise No_match;
+      extern_notation_pattern allscopes vars pat
+        (uninterp_cases_pattern_notations pat)
+>>>>>>> [printing] Collect Printing Options in a record (c.f. #6560)
     with No_match ->
     let loc = pat.CAst.loc in
     match DAst.get pat with
@@ -407,7 +400,10 @@ let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
           let args = List.map (extern_cases_pattern_in_scope allscopes vars) args in
 	  let p =
 	    try
-              if !Flags.raw_print then raise Exit;
+              (* TODO: used to have here:
+                   if !raw_print then raise Exit
+                 should there be an option for that behavior?
+               *)
 	      let projs = Recordops.lookup_projections (fst cstrsp) in
 	      let rec ip projs args acc =
 		match projs, args with
@@ -533,9 +529,15 @@ let extern_ind_pattern_in_scope (custom,scopes as allscopes) vars ind args =
     CAst.make @@ CPatCstr (c, Some (add_patt_for_params ind args), [])
   else
     try
+<<<<<<< HEAD
       if !Flags.raw_print || !print_no_symbol then raise No_match;
       extern_notation_ind_pattern allscopes [] vars ind args
           (uninterp_ind_pattern_notations scopes ind)
+=======
+      if not Printoptions.((get ()).notations) then raise No_match;
+      extern_notation_ind_pattern allscopes vars ind args
+          (uninterp_ind_pattern_notations ind)
+>>>>>>> [printing] Collect Printing Options in a record (c.f. #6560)
     with No_match ->
       let c = extern_reference vars (IndRef ind) in
       let args = List.map (extern_cases_pattern_in_scope allscopes vars) args in
@@ -559,7 +561,7 @@ let is_gvar id c = match DAst.get c with
 | _ -> false
 
 let is_projection nargs = function
-  | Some r when not !Flags.in_debugger && not !Flags.raw_print && !print_projections ->
+  | Some r when not !Flags.in_debugger && Printoptions.((get ()).projections) ->
     (try
        let n = Recordops.find_projection_nparams r + 1 in
 	 if n <= nargs then Some n
@@ -586,12 +588,10 @@ let explicitize inctx impl (cf,f) args =
     | a::args, imp::impl when is_status_implicit imp ->
         let tail = exprec (q+1) (args,impl) in
         let visible =
-          !Flags.raw_print ||
-          (!print_implicits && !print_implicits_explicit_args) ||
-          (is_needed_for_correct_partial_application tail imp) ||
-	  (!print_implicits_defensive &&
+          is_needed_for_correct_partial_application tail imp ||
+          Printoptions.((get ()).implicit_defensive) &&
 	   (not (is_inferable_implicit inctx n imp) || !Flags.beautify) &&
-	   is_significant_implicit (Lazy.force a))
+           is_significant_implicit (Lazy.force a)
 	in
         if visible then
           (Lazy.force a,Some (make @@ ExplByName (name_of_implicit imp))) :: tail
@@ -635,7 +635,7 @@ let explicitize inctx impl (cf,f) args =
     try expl ()
     with Expl -> 
       let f',us = match f with { CAst.v = CRef (f,us) } -> f,us | _ -> assert false in
-      let ip = if !print_projections then ip else None in
+      let ip = if Printoptions.((get ()).projections) then ip else None in
 	CAppExpl ((ip, f', us), List.map Lazy.force args)
 
 let is_start_implicit = function
@@ -653,10 +653,10 @@ let extern_app inctx impl (cf,f) us args =
   if List.is_empty args then
     (* If coming from a notation "Notation a := @b" *)
     CAppExpl ((None, f, us), [])
-  else if not !Constrintern.parsing_explicit &&
-    ((!Flags.raw_print ||
-      (!print_implicits && not !print_implicits_explicit_args)) &&
-     List.exists is_status_implicit impl)
+  else
+    if not !Constrintern.parsing_explicit &&
+       Printoptions.((get()).implicit) &&
+       List.exists is_status_implicit impl
   then
     let args = List.map Lazy.force args in
     CAppExpl ((is_projection (List.length args) cf,f,us), args)
@@ -684,7 +684,7 @@ let match_coercion_app c = match DAst.get c with
 
 let rec remove_coercions inctx c =
   match match_coercion_app c with
-  | Some (loc,r,pars,args) when not (!Flags.raw_print || !print_coercions) ->
+  | Some (loc,r,pars,args) when not Printoptions.((get()).coercions) ->
       let nargs = List.length args in
       (try match Classops.hide_coercion r with
 	  | Some n when (n - pars) < nargs && (inctx || (n - pars)+1 < nargs) ->
@@ -757,11 +757,11 @@ let extended_glob_local_binder_of_decl ?loc u = DAst.make ?loc (extended_glob_lo
 let extern_glob_sort = function
   | GProp -> GProp
   | GSet -> GSet
-  | GType _ as s when !print_universes -> s
+  | GType _ as s when Printoptions.((get()).universes) -> s
   | GType _ -> GType []
 
 let extern_universes = function
-  | Some _ as l when !print_universes -> l
+  | Some _ as l when Printoptions.((get()).universes) -> l
   | _ -> None
 
 let extern_ref vars ref us =
@@ -773,12 +773,17 @@ let extern_var ?loc id = CRef (qualid_of_ident ?loc id,None)
 let rec extern inctx (custom,scopes as allscopes) vars r =
   let r' = remove_coercions inctx r in
   try
+<<<<<<< HEAD
     if !Flags.raw_print || !print_no_symbol then raise No_match;
     extern_optimal (extern_possible_prim_token allscopes) r r'
+=======
+    if not Printoptions.((get()).notations) then raise No_match;
+    extern_optimal (extern_possible_prim_token scopes) r r'
+>>>>>>> [printing] Collect Printing Options in a record (c.f. #6560)
   with No_match ->
   try
     let r'' = flatten_application r' in
-    if !Flags.raw_print || !print_no_symbol then raise No_match;
+    if not Printoptions.((get()).notations) then raise No_match;
     extern_optimal
       (fun r -> extern_notation allscopes [] vars r (uninterp_notations scopes r))
       r r''
@@ -822,14 +827,21 @@ let rec extern inctx (custom,scopes as allscopes) vars r =
              let args = fill_arg_scopes args subscopes scopes in
 	     begin
 	       try
-                 if !Flags.raw_print then raise Exit;
+                 (* used to have here:
+                      if !Flags.raw_print then raise Exit;
+                    should there be an option for this behavior?
+                  *)
 		 let cstrsp = match ref with ConstructRef c -> c | _ -> raise Not_found in
 		 let struc = Recordops.lookup_structure (fst cstrsp) in
                  if PrintingRecord.active (fst cstrsp) then
                    ()
                  else if PrintingConstructor.active (fst cstrsp) then
                    raise Exit
+<<<<<<< HEAD
                  else if not (get_record_print ()) then
+=======
+                 else if not Printoptions.((get()).records) then
+>>>>>>> [printing] Collect Printing Options in a record (c.f. #6560)
                    raise Exit;
 		 let projs = struc.Recordops.s_PROJ in
 		 let locals = struc.Recordops.s_PROJKIND in
@@ -1058,8 +1070,11 @@ and extern_local_binder scopes vars = function
              CLocalAssum([CAst.make na],Default bk,ty) :: l))
 
     | GLocalPattern ((p,_),_,bk,ty) ->
-      let ty =
-        if !Flags.raw_print then Some (extern_typ scopes vars ty) else None in
+       (* TODO: when Set Printing All set raw_print, had:
+            let ty = if !raw_print then Some (extern_typ scopes vars ty) else None
+          is there a new option to be created here?
+        *)
+      let ty = None in
       let p = mkCPatOr (List.map (extern_cases_pattern vars) p) in
       let (assums,ids,l) = extern_local_binder scopes vars l in
       (assums,ids, CLocalPattern(CAst.make @@ (p,ty)) :: l)
@@ -1110,7 +1125,7 @@ and extern_notation (custom,scopes as allscopes) lonely_seen vars t = function
           | _ -> raise No_match in
 	(* Try matching ... *)
         let terms,termlists,binders,binderlists =
-          match_notation_constr !print_universes t pat in
+          match_notation_constr Printoptions.((get()).universes) t pat in
 	(* Try availability of interpretation ... *)
         let e =
           match keyrule with

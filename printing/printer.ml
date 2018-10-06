@@ -198,12 +198,13 @@ let safe_pr_lconstr_env = safe_gen pr_lconstr_env
 let safe_pr_constr_env = safe_gen pr_constr_env
 
 let pr_universe_ctx_set sigma c =
-  if !Detyping.print_universes && not (Univ.ContextSet.is_empty c) then
+  if Printoptions.((get()).universes) && not (Univ.ContextSet.is_empty c) then
     fnl()++pr_in_comment (v 0 (Univ.pr_universe_context_set (Termops.pr_evd_level sigma) c))
   else
     mt()
 
 let pr_universe_ctx sigma ?variance c =
+<<<<<<< HEAD
   if !Detyping.print_universes && not (Univ.UContext.is_empty c) then
     fnl()++pr_in_comment (v 0 (Univ.pr_universe_context (Termops.pr_evd_level sigma) ?variance c))
   else
@@ -224,6 +225,40 @@ let pr_abstract_universe_ctx sigma ?variance ?priv c =
 let pr_universes sigma ?variance ?priv = function
   | Declarations.Monomorphic ctx -> pr_universe_ctx_set sigma ctx
   | Declarations.Polymorphic ctx -> pr_abstract_universe_ctx sigma ?variance ?priv ctx
+=======
+  if Printoptions.((get()).universes) && not (Univ.UContext.is_empty c) then
+    fnl()++pr_in_comment (fun c -> v 0
+      (Univ.pr_universe_context (Termops.pr_evd_level sigma) ?variance c)) c
+  else
+    mt()
+
+let pr_abstract_universe_ctx sigma ?variance c =
+  if Printoptions.((get()).universes) && not (Univ.AUContext.is_empty c) then
+    fnl()++pr_in_comment (fun c -> v 0
+      (Univ.pr_abstract_universe_context (Termops.pr_evd_level sigma) ?variance c)) c
+  else
+    mt()
+
+let pr_constant_universes sigma = function
+  | Declarations.Monomorphic_const ctx -> pr_universe_ctx_set sigma ctx
+  | Declarations.Polymorphic_const ctx -> pr_abstract_universe_ctx sigma ctx
+
+let pr_cumulativity_info sigma cumi =
+  if Printoptions.((get()).universes)
+  && not (Univ.UContext.is_empty (Univ.CumulativityInfo.univ_context cumi)) then
+    fnl()++pr_in_comment (fun uii -> v 0 
+      (Univ.pr_cumulativity_info (Termops.pr_evd_level sigma) uii)) cumi
+  else
+    mt()
+
+let pr_abstract_cumulativity_info sigma cumi =
+  if Printoptions.((get()).universes)
+  && not (Univ.AUContext.is_empty (Univ.ACumulativityInfo.univ_context cumi)) then
+    fnl()++pr_in_comment (fun uii -> v 0
+      (Univ.pr_abstract_cumulativity_info (Termops.pr_evd_level sigma) uii)) cumi
+  else
+    mt()
+>>>>>>> [printing] Collect Printing Options in a record (c.f. #6560)
 
 (**********************************************************************)
 (* Global references *)
@@ -246,7 +281,7 @@ let pr_universe_instance evd inst =
   pr_universe_instance_constraints evd inst Univ.Constraint.empty
 
 let pr_puniverses f env sigma (c,u) =
-  if !Constrextern.print_universes
+  if Printoptions.((get()).universes)
   then f env c ++ pr_universe_instance sigma u
   else f env c
 
@@ -275,10 +310,6 @@ let pr_pattern t = pr_pattern_env (Global.env()) empty_names_context t*)
 
 
 (* Flag for compact display of goals *)
-
-let get_compact_context,set_compact_context =
-  let compact_context = ref false in
-  (fun () -> !compact_context),(fun b  -> compact_context := b)
 
 let pr_compacted_decl env sigma decl =
   let ids, pbody, typ = match decl with
@@ -364,7 +395,7 @@ let pr_ne_context_of header env sigma =
 (* Heuristic for horizontalizing hypothesis that the user probably
    considers as "variables": An hypothesis H:T where T:S and S<>Prop. *)
 let should_compact env sigma typ =
-  get_compact_context() &&
+  Printoptions.((get()).compact_contexts) &&
     let type_of_typ = Retyping.get_type_of env sigma (EConstr.of_constr typ) in
     not (is_Prop (EConstr.to_constr sigma type_of_typ))
 

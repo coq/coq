@@ -1530,17 +1530,11 @@ let do_build_inductive
 
 
 let build_inductive evd funconstants funsargs returned_types rtl =
-  let pu = !Detyping.print_universes in
-  let cu = !Constrextern.print_universes in
+  let opts = Printoptions.get () in
   try
-    Detyping.print_universes := true;
-    Constrextern.print_universes := true;
+    Printoptions.(set { opts with universes = true });
     do_build_inductive evd funconstants funsargs returned_types rtl;
-    Detyping.print_universes := pu;
-    Constrextern.print_universes := cu
+    Printoptions.set opts
   with e when CErrors.noncritical e ->
-    Detyping.print_universes := pu;
-    Constrextern.print_universes := cu;
+    Printoptions.set opts;
     raise (Building_graph e)
-
-

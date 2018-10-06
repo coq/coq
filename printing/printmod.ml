@@ -179,7 +179,7 @@ let print_record env mind mib udecl =
   )
 
 let pr_mutual_inductive_body env mind mib udecl =
-  if mib.mind_record != NotRecord && not !Flags.raw_print then
+  if mib.mind_record != NotRecord && Printoptions.((get()).records) then
     print_record env mind mib udecl
   else
     print_mutual_inductive env mind mib udecl

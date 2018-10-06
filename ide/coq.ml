@@ -541,32 +541,54 @@ struct
 
   (* Boolean options *)
 
-  let implicit = BoolOpt ["Printing"; "Implicit"]
-  let coercions = BoolOpt ["Printing"; "Coercions"]
-  let raw_matching = BoolOpt ["Printing"; "Matching"]
-  let notations = BoolOpt ["Printing"; "Notations"]
-  let all_basic = BoolOpt ["Printing"; "All"]
-  let existential = BoolOpt ["Printing"; "Existential"; "Instances"]
-  let universes = BoolOpt ["Printing"; "Universes"]
-  let unfocused = BoolOpt ["Printing"; "Unfocused"]
+  let default_clause = BoolOpt ["Printing";"Allow";"Match";"Default";"Clause"]
+  let coercions = BoolOpt ["Printing";"Coercions"]
+  let compact_contexts = BoolOpt ["Printing";"Compact";"Contexts"]
+  let existential = BoolOpt ["Printing";"Existential";"Instances"]
+  let factorizable = BoolOpt ["Printing";"Factorizable";"Match";"Patterns"]
+  let implicit = BoolOpt ["Printing";"Implicit"]
+  let implicit_defensive = BoolOpt ["Printing";"Implicit";"Defensive"]
+  let let_binder_types =  BoolOpt ["Printing";"Let";"Binder";"Types"]
+  let notations = BoolOpt ["Printing";"Notations"]
+  let proj_compat = BoolOpt ["Printing";"Primitive";"Projection";"Compatibility"]
+  let proj_parms = BoolOpt  ["Printing";"Primitive";"Projection";"Parameters"]
+  let projections = BoolOpt  ["Printing";"Projections"]
+  let raw_matching = BoolOpt ["Printing";"Matching"]
+  let records = BoolOpt  ["Printing";"Records"]
+  let synth = BoolOpt  ["Printing";"Synth"]
+  let universes = BoolOpt ["Printing";"Universes"]
+  let wildcard = BoolOpt ["Printing";"Wildcard"]
+  let unfocused = BoolOpt ["Printing";"Unfocused"]
   let diff = StringOpt ["Diffs"]
 
   type 'a descr = { opts : 'a t list; init : 'a; label : string }
 
+  (* the order of the following array must match that of the corresponding View menu items in coqide_ui.ml
+
+     the "init" values here should be the same as in the default printing option record in
+     library/printoptions.ml
+   *)
+
   let bool_items = [
     { opts = [implicit]; init = false; label = "Display _implicit arguments" };
+    { opts = [implicit_defensive]; init = true; label = "Display non_strict implicit arguments" };
     { opts = [coercions]; init = false; label = "Display _coercions" };
-    { opts = [raw_matching]; init = true;
-      label = "Display raw _matching expressions" };
+    { opts = [compact_contexts]; init = false; label = "Display compact conte_xts" };
+    { opts = [raw_matching]; init = true; label = "Display raw _matching expressions" };
+    { opts = [default_clause]; init = true; label = "Display match default c_lauses" };
+    { opts = [factorizable]; init = true; label = "Display _factorizable match patterns" };
+    { opts = [projections]; init = false; label = "Display _projections" };
+    { opts = [proj_compat]; init = false; label = "Display primiti_ve projection compatibility" };
+    { opts = [proj_parms]; init = false; label = "Display primitive pro_jection parameters" };
+    { opts = [let_binder_types]; init = false; label = "Display types in _binders" };
     { opts = [notations]; init = true; label = "Display _notations" };
-    { opts = [all_basic]; init = false;
-      label = "Display _all basic low-level contents" };
-    { opts = [existential]; init = false;
-      label = "Display _existential variable instances" };
+    { opts = [records]; init = true; label = "Display _records" };
+    { opts = [existential]; init = false; label = "Display _existential variable instances" };
     { opts = [universes]; init = false; label = "Display _universe levels" };
-    { opts = [all_basic;existential;universes]; init = false;
-      label = "Display all _low-level contents" };
-    { opts = [unfocused]; init = false; label = "Display _unfocused goals" }
+    { opts = [wildcard]; init = true; label = "Display _wildcards in patterns" };
+    { opts = [synth]; init = true; label = "Do not display synthesi_zable return types" };
+    (* in goals, not terms *)
+    { opts = [unfocused]; init = false; label = "Display unfocused _goals" }
   ]
 
   let diff_item = { opts = [diff]; init = "off"; label = "Display _proof diffs" }

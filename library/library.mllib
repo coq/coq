@@ -12,6 +12,7 @@ Library
 States
 Kindops
 Goptions
+Printoptions
 Decls
 Keys
 Coqlib

@@ -1,0 +1,5 @@
+The implicit arguments printing mode is on
+The implicit arguments printing mode is off
+File "stdin", line 13, characters 0-19:
+Warning: Unset Printing All here has no effect.
+[noop-unset-printing-all,vernacular]

@@ -1512,61 +1512,70 @@ let () =
       optread  = Impargs.is_maximal_implicit_args;
       optwrite = Impargs.make_maximal_implicit_args }
 
+let pr_get f () = f (Printoptions.get ())
+let pr_set f v  = Printoptions.(set (f (get ()) v))
 let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "coercion printing";
       optkey   = ["Printing";"Coercions"];
-      optread  = (fun () -> !Constrextern.print_coercions);
-      optwrite = (fun b ->  Constrextern.print_coercions := b) }
+      optread  = pr_get (fun r -> r.Printoptions.coercions);
+      optwrite = pr_set (fun r v -> { r with Printoptions.coercions = v });
+    }
 
 let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "printing of existential variable instances";
       optkey   = ["Printing";"Existential";"Instances"];
-      optread  = (fun () -> !Detyping.print_evar_arguments);
-      optwrite = (:=) Detyping.print_evar_arguments }
+      optread  = pr_get (fun r -> r.Printoptions.existential_instances);
+      optwrite = pr_set (fun r v -> { r with Printoptions.existential_instances = v});
+    }
 
 let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "implicit arguments printing";
       optkey   = ["Printing";"Implicit"];
-      optread  = (fun () -> !Constrextern.print_implicits);
-      optwrite = (fun b ->  Constrextern.print_implicits := b) }
+      optread  = pr_get (fun r -> r.Printoptions.implicit);
+      optwrite = pr_set (fun r v -> { r with Printoptions.implicit = v });
+    }
 
 let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "implicit arguments defensive printing";
       optkey   = ["Printing";"Implicit";"Defensive"];
-      optread  = (fun () -> !Constrextern.print_implicits_defensive);
-      optwrite = (fun b ->  Constrextern.print_implicits_defensive := b) }
+      optread  = pr_get (fun r -> r.Printoptions.implicit_defensive);
+      optwrite = pr_set (fun r v -> { r with Printoptions.implicit_defensive = v });
+    }
+
+let () =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "printing types of let-in binders";
+      optkey   = ["Printing";"Let";"Binder";"Types"];
+      optread  = pr_get (fun r -> r.Printoptions.let_binder_types);
+      optwrite = pr_set (fun r v -> { r with Printoptions.let_binder_types = v });
+    }
 
 let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "projection printing using dot notation";
       optkey   = ["Printing";"Projections"];
-      optread  = (fun () -> !Constrextern.print_projections);
-      optwrite = (fun b ->  Constrextern.print_projections := b) }
+      optread  = pr_get (fun r -> r.Printoptions.projections);
+      optwrite = pr_set (fun r v -> { r with Printoptions.projections = v });
+    }
 
 let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "notations printing";
       optkey   = ["Printing";"Notations"];
-      optread  = (fun () -> not !Constrextern.print_no_symbol);
-      optwrite = (fun b ->  Constrextern.print_no_symbol := not b) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optname  = "raw printing";
-      optkey   = ["Printing";"All"];
-      optread  = (fun () -> !Flags.raw_print);
-      optwrite = (fun b -> Flags.raw_print := b) }
+      optread  = pr_get (fun r -> r.Printoptions.notations);
+      optwrite = pr_set (fun r v -> { r with Printoptions.notations = v });
+    }
 
 let () =
   declare_int_option
@@ -1591,8 +1600,9 @@ let () =
     { optdepr  = false;
       optname  = "display compact goal contexts";
       optkey   = ["Printing";"Compact";"Contexts"];
-      optread  = (fun () -> Printer.get_compact_context());
-      optwrite = (fun b -> Printer.set_compact_context b) }
+      optread  = pr_get (fun r -> r.Printoptions.compact_contexts);
+      optwrite = pr_set (fun r v -> { r with Printoptions.compact_contexts = v });
+    }
 
 let () =
   declare_int_option
@@ -1615,8 +1625,9 @@ let () =
     { optdepr  = false;
       optname  = "printing of universes";
       optkey   = ["Printing";"Universes"];
-      optread  = (fun () -> !Constrextern.print_universes);
-      optwrite = (fun b -> Constrextern.print_universes:=b) }
+      optread  = pr_get (fun r -> r.Printoptions.universes);
+      optwrite = pr_set (fun r v -> { r with Printoptions.universes = v });
+    }
 
 let () =
   declare_bool_option
@@ -2272,6 +2283,15 @@ let interp ?proof ~atts ~st c =
   | VernacAddMLPath (isrec,s) -> unsupported_attributes atts; vernac_add_ml_path isrec s
   | VernacDeclareMLModule l -> with_locality ~atts vernac_declare_ml_module l
   | VernacChdir s -> unsupported_attributes atts; vernac_chdir s
+
+  (* Printing categories *)
+  | VernacSetPrintingAll ->
+    with_locality ~atts (fun ~local -> let local = Locality.make_locality local in Printoptions.set_printing_all ~local)
+  | VernacSetPrintingSugared ->
+    with_locality ~atts (fun ~local -> let local = Locality.make_locality local in Printoptions.set_printing_sugared ~local)
+  | VernacSetPrintingDefaults ->
+    with_locality ~atts (fun ~local -> let local = Locality.make_locality local in Printoptions.set_printing_defaults ~local)
+  | VernacUnsetPrintingAll -> Printoptions.unset_printing_all ()
 
   (* State management *)
   | VernacWriteState s -> unsupported_attributes atts; vernac_write_state s

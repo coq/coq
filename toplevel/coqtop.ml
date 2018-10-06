@@ -263,6 +263,7 @@ let coqtop_toplevel =
   }
 
 let start_coq custom =
+<<<<<<< HEAD
   let init_feeder = Feedback.add_feeder Coqloop.coqloop_feed in
   (* Init phase *)
   let state, opts =
@@ -284,3 +285,21 @@ let start_coq custom =
   Feedback.del_feeder init_feeder;
   if not opts.batch then custom.run ~opts ~state;
   exit 0
+=======
+  match init_toplevel custom.init (List.tl (Array.to_list Sys.argv)) with
+  (* Batch mode *)
+  | Some state, opts when not opts.batch_mode ->
+    custom.run ~opts ~state;
+    exit 1
+  | _ , opts ->
+    flush_all();
+    if opts.output_context then begin
+      let sigma, env = Pfedit.get_current_context () in
+      let open Printoptions in
+      Feedback.msg_notice
+        ((with_printing_option (fun _ -> all_options)
+            (Prettyp.print_full_pure_context env) sigma) ++ fnl ())
+      end;
+    CProfile.print_profile ();
+    exit 0
+>>>>>>> [printing] Collect Printing Options in a record (c.f. #6560)

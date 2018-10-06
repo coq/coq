@@ -192,6 +192,21 @@ Funind
 
 - Inductive types declared by Funind will never be template polymorphic.
 
+Printing
+
+- Printing All is no longer an option as such. Instead, the command
+  Set Printing All sets or unsets other Printing options to remove high-level
+  printing features. The new command Set Printing Sugared exactly reverses
+  those options, providing high-level printing features. Unset Printing All
+  restores the printing options in effect at the time of the last Set
+  Printing All.
+- The command Set Printing Defaults restores the default printing options.
+- The command Set Printing Let Binder Types prints the types of binders
+  for let-in expressions, disabled by default. Such printing had been
+  enabled by Set Printing All.
+- The Printing Records option affects the printing of record types, as well
+  as the instances of such types.
+
 Misc
 
 - Option "Typeclasses Axioms Are Instances" is deprecated. Use Declare Instance for axioms which should be instances.

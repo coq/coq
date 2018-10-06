@@ -148,15 +148,11 @@ let save with_clean id const ?hook uctx (locality,_,kind) =
   definition_message id
 
 let with_full_print f a =
+  let saved_opts = Printoptions.get () in
   let old_implicit_args = Impargs.is_implicit_args ()
   and old_strict_implicit_args =  Impargs.is_strict_implicit_args ()
   and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () in
-  let old_rawprint = !Flags.raw_print in
-  let old_printuniverses = !Constrextern.print_universes in
-  let old_printallowmatchdefaultclause = !Detyping.print_allow_match_default_clause in
-  Constrextern.print_universes := true;
-  Detyping.print_allow_match_default_clause := false;
-  Flags.raw_print := true;
+  Printoptions.set_printing_all ~local:false;
   Impargs.make_implicit_args false;
   Impargs.make_strict_implicit_args false;
   Impargs.make_contextual_implicit_args false;
@@ -166,9 +162,7 @@ let with_full_print f a =
     Impargs.make_implicit_args old_implicit_args;
     Impargs.make_strict_implicit_args old_strict_implicit_args;
     Impargs.make_contextual_implicit_args old_contextual_implicit_args;
-    Flags.raw_print := old_rawprint;
-    Constrextern.print_universes := old_printuniverses;
-    Detyping.print_allow_match_default_clause := old_printallowmatchdefaultclause;
+    Printoptions.set saved_opts;
     Dumpglob.continue ();
     res
   with
@@ -176,16 +170,9 @@ let with_full_print f a =
 	Impargs.make_implicit_args old_implicit_args;
 	Impargs.make_strict_implicit_args old_strict_implicit_args;
 	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
-	Flags.raw_print := old_rawprint;
-	Constrextern.print_universes := old_printuniverses;
-        Detyping.print_allow_match_default_clause := old_printallowmatchdefaultclause;
+        Printoptions.set saved_opts;
 	Dumpglob.continue ();
 	raise reraise
-
-
-
-
-
 
 (**********************)
 
