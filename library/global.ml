@@ -227,13 +227,7 @@ let universes_of_global env r =
 let universes_of_global gr = 
   universes_of_global (env ()) gr
 
-let is_polymorphic r =
-  let env = env() in 
-  match r with
-  | VarRef id -> false
-  | ConstRef c -> Environ.polymorphic_constant c env
-  | IndRef ind -> Environ.polymorphic_ind ind env
-  | ConstructRef cstr -> Environ.polymorphic_ind (inductive_of_constructor cstr) env
+let is_polymorphic r = Environ.is_polymorphic (env()) r
 
 let is_template_polymorphic r = 
   let env = env() in 
