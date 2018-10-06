@@ -325,7 +325,7 @@ module Make(T : Task) () = struct
         let response = slave_respond request in
         report_status "Idle";
         marshal_response (Option.get !slave_oc) response;
-        CEphemeron.clear ()
+        CEphemeron.clean ()
       with
       | MarshalError s ->
         stm_pr_err Pp.(prlist str ["Fatal marshal error: "; s]); flush_all (); exit 2
