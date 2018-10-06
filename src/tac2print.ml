@@ -16,8 +16,8 @@ open Tac2ffi
 (** Utils *)
 
 let change_kn_label kn id =
-  let (mp, dp, _) = KerName.repr kn in
-  KerName.make mp dp (Label.of_id id)
+  let mp = KerName.modpath kn in
+  KerName.make mp (Label.of_id id)
 
 let paren p = hov 2 (str "(" ++ p ++ str ")")
 
