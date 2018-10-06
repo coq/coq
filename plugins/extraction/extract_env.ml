@@ -30,7 +30,7 @@ open Common
 let toplevel_env () =
   let get_reference = function
     | (_,kn), Lib.Leaf o ->
-	let mp,_,l = KerName.repr kn in
+        let mp,l = KerName.repr kn in
 	begin match Libobject.object_tag o with
 	  | "CONSTANT" ->
             let constant = Global.lookup_constant (Constant.make1 kn) in
@@ -124,7 +124,7 @@ module Visit : VISIT = struct
 end
 
 let add_field_label mp = function
-  | (lab, (SFBconst _|SFBmind _)) -> Visit.add_kn (KerName.make2 mp lab)
+  | (lab, (SFBconst _|SFBmind _)) -> Visit.add_kn (KerName.make mp lab)
   | (lab, (SFBmodule _|SFBmodtype _)) -> Visit.add_mp_all (MPdot (mp,lab))
 
 let rec add_labels mp = function
@@ -208,10 +208,10 @@ let env_for_mtb_with_def env mp me reso idl =
   Modops.add_structure mp before reso env
 
 let make_cst resolver mp l =
-  Mod_subst.constant_of_delta_kn resolver (KerName.make2 mp l)
+  Mod_subst.constant_of_delta_kn resolver (KerName.make mp l)
 
 let make_mind resolver mp l =
-  Mod_subst.mind_of_delta_kn resolver (KerName.make2 mp l)
+  Mod_subst.mind_of_delta_kn resolver (KerName.make mp l)
 
 (* From a [structure_body] (i.e. a list of [structure_field_body])
    to specifications. *)

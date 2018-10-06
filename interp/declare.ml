@@ -78,7 +78,6 @@ let check_exists sp =
 
 let cache_constant ((sp,kn), obj) =
   let id = basename sp in
-  let _,dir,_ = KerName.repr kn in
   let kn' =
     match obj.cst_decl with
     | None ->
@@ -87,7 +86,7 @@ let cache_constant ((sp,kn), obj) =
       else CErrors.anomaly Pp.(str"Ex seff not found: " ++ Id.print(basename sp) ++ str".")
     | Some decl ->
       let () = check_exists sp in
-      Global.add_constant dir id decl
+      Global.add_constant ~in_section:(Lib.sections_are_opened ()) id decl
   in
   assert (Constant.equal kn' (Constant.make1 kn));
   Nametab.push (Nametab.Until 1) sp (ConstRef (Constant.make1 kn));
@@ -136,7 +135,7 @@ let register_side_effect (c, role) =
     cst_kind = IsProof Theorem;
     cst_locl = false;
   } in
-  let id = Label.to_id (pi3 (Constant.repr3 c)) in
+  let id = Label.to_id (Constant.label c) in
   ignore(add_leaf id o);
   update_tables c;
   match role with
@@ -311,8 +310,7 @@ let cache_inductive ((sp,kn),mie) =
   let names = inductive_names sp kn mie in
   List.iter check_exists (List.map fst names);
   let id = basename sp in
-  let _,dir,_ = KerName.repr kn in
-  let kn' = Global.add_mind dir id mie in
+  let kn' = Global.add_mind id mie in
   assert (MutInd.equal kn' (MutInd.make1 kn));
   let mind = Global.lookup_mind kn' in
   add_section_kn (Declareops.inductive_is_polymorphic mind) kn' mind.mind_hyps;

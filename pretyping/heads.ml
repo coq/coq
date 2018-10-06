@@ -14,7 +14,6 @@ open Constr
 open Vars
 open Mod_subst
 open Environ
-open Globnames
 open Libobject
 open Lib
 open Context.Named.Declaration
@@ -171,7 +170,7 @@ let subst_head (subst,(ref,k)) =
 
 let discharge_head (_,(ref,k)) =
   match ref with
-  | EvalConstRef cst -> Some (EvalConstRef (pop_con cst), k)
+  | EvalConstRef cst -> Some (ref, k)
   | EvalVarRef id -> None
 
 let rebuild_head (ref,k) =

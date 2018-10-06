@@ -76,9 +76,9 @@ let is_imported_ref = function
   | VarRef _ -> false
   | IndRef (kn,_)
   | ConstructRef ((kn,_),_) ->
-      let (mp,_,_) = MutInd.repr3 kn in is_imported_modpath mp
+      let mp = MutInd.modpath kn in is_imported_modpath mp
   | ConstRef kn ->
-      let (mp,_,_) = Constant.repr3 kn in is_imported_modpath mp
+      let mp = Constant.modpath kn in is_imported_modpath mp
 
 let is_global id =
   try

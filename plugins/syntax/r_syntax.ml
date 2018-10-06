@@ -33,12 +33,10 @@ let is_gr c gr = match DAst.get c with
 | GRef (r, _) -> GlobRef.equal r gr
 | _ -> false
 
+let positive_modpath = MPfile (make_dir binnums)
 let positive_path = make_path binnums "positive"
 
-(* TODO: temporary hack *)
-let make_kn dir id = Globnames.encode_mind dir id
-
-let positive_kn = make_kn (make_dir binnums) (Id.of_string "positive")
+let positive_kn = MutInd.make2 positive_modpath (Label.make "positive")
 let glob_positive = IndRef (positive_kn,0)
 let path_of_xI = ((positive_kn,0),1)
 let path_of_xO = ((positive_kn,0),2)
@@ -74,7 +72,7 @@ let rec bignat_of_pos c = match DAst.get c with
 (**********************************************************************)
 
 let z_path = make_path binnums "Z"
-let z_kn = make_kn (make_dir binnums) (Id.of_string "Z")
+let z_kn = MutInd.make2 positive_modpath (Label.make "Z")
 let glob_z = IndRef (z_kn,0)
 let path_of_ZERO = ((z_kn,0),1)
 let path_of_POS = ((z_kn,0),2)
@@ -106,12 +104,10 @@ let bigint_of_z c = match DAst.get c with
 (**********************************************************************)
 
 let rdefinitions = ["Coq";"Reals";"Rdefinitions"]
+let r_modpath = MPfile (make_dir rdefinitions)
 let r_path = make_path rdefinitions "R"
 
-(* TODO: temporary hack *)
-let make_path dir id = Globnames.encode_con dir (Id.of_string id)
-
-let glob_IZR = ConstRef (make_path (make_dir rdefinitions) "IZR")
+let glob_IZR = ConstRef (Constant.make2 r_modpath @@ Label.make "IZR")
 
 let r_of_int ?loc z =
   DAst.make @@ GApp (DAst.make @@ GRef(glob_IZR,None), [z_of_int ?loc z])

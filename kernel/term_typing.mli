@@ -64,7 +64,7 @@ val export_side_effects :
 val translate_mind :
   env -> MutInd.t -> mutual_inductive_entry -> mutual_inductive_body
 
-val translate_recipe : env -> Constant.t -> Cooking.recipe -> constant_body
+val translate_recipe : hcons:bool -> env -> Constant.t -> Cooking.recipe -> constant_body
 
 (** Internal functions, mentioned here for debug purpose only *)
 

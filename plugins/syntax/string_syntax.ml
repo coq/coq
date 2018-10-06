@@ -24,9 +24,10 @@ exception Non_closed_string
 
 let string_module = ["Coq";"Strings";"String"]
 
+let string_modpath = MPfile (make_dir string_module)
 let string_path = make_path string_module "string"
 
-let string_kn = make_kn string_module "string"
+let string_kn = MutInd.make2 string_modpath @@ Label.make "string"
 let static_glob_EmptyString  = ConstructRef ((string_kn,0),1)
 let static_glob_String  = ConstructRef ((string_kn,0),2)
 

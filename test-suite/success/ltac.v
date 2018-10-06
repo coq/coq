@@ -225,9 +225,9 @@ Qed.
 (* Illegal application used to make Ltac loop. *)
 
 Section LtacLoopTest.
-  Ltac f x := idtac.
+  Ltac g x := idtac.
   Goal True.
-  Timeout 1 try f()().
+  Timeout 1 try g()().
   Abort.
 End LtacLoopTest.
 

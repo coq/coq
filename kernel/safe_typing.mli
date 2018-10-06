@@ -105,13 +105,13 @@ val export_private_constants : in_section:bool ->
 (** returns the main constant plus a list of auxiliary constants (empty
     unless one requires the side effects to be exported) *)
 val add_constant :
-  DirPath.t -> Label.t -> global_declaration ->
+  in_section:bool -> Label.t -> global_declaration ->
     Constant.t safe_transformer
 
 (** Adding an inductive type *)
 
 val add_mind :
-  DirPath.t -> Label.t -> Entries.mutual_inductive_entry ->
+  Label.t -> Entries.mutual_inductive_entry ->
     MutInd.t safe_transformer
 
 (** Adding a module or a module type *)

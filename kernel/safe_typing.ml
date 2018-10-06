@@ -479,10 +479,10 @@ type global_declaration =
 type exported_private_constant = 
   Constant.t * Entries.side_effect_role
 
-let add_constant_aux no_section senv (kn, cb) =
-  let l = pi3 (Constant.repr3 kn) in
+let add_constant_aux ~in_section senv (kn, cb) =
+  let l = Constant.label kn in
   let cb, otab = match cb.const_body with
-    | OpaqueDef lc when no_section ->
+    | OpaqueDef lc when not in_section ->
       (* In coqc, opaque constants outside sections will be stored
          indirectly in a specific table *)
       let od, otab =
@@ -505,13 +505,11 @@ let export_private_constants ~in_section ce senv =
   let exported, ce = Term_typing.export_side_effects senv.revstruct senv.env ce in
   let bodies = List.map (fun (kn, cb, _) -> (kn, cb)) exported in
   let exported = List.map (fun (kn, _, r) -> (kn, r)) exported in
-  let no_section = not in_section in
-  let senv = List.fold_left (add_constant_aux no_section) senv bodies in
+  let senv = List.fold_left (add_constant_aux ~in_section) senv bodies in
   (ce, exported), senv
 
-let add_constant dir l decl senv =
-  let kn = Constant.make3 senv.modpath dir l in
-  let no_section = DirPath.is_empty dir in
+let add_constant ~in_section l decl senv =
+  let kn = Constant.make2 senv.modpath l in
   let senv =
     let cb = 
       match decl with
@@ -520,9 +518,9 @@ let add_constant dir l decl senv =
       | ConstantEntry (PureEntry, ce) ->
         Term_typing.translate_constant Term_typing.Pure senv.env kn ce
       | GlobalRecipe r ->
-        let cb = Term_typing.translate_recipe senv.env kn r in
-        if no_section then Declareops.hcons_const_body cb else cb in
-    add_constant_aux no_section senv (kn, cb) in
+        let cb = Term_typing.translate_recipe ~hcons:(not in_section) senv.env kn r in
+        if in_section then cb else Declareops.hcons_const_body cb in
+    add_constant_aux ~in_section senv (kn, cb) in
   kn, senv
 
 (** Insertion of inductive types *)
@@ -535,9 +533,9 @@ let check_mind mie lab =
     (* The label and the first inductive type name should match *)
     assert (Id.equal (Label.to_id lab) oie.mind_entry_typename)
 
-let add_mind dir l mie senv =
+let add_mind l mie senv =
   let () = check_mind mie l in
-  let kn = MutInd.make3 senv.modpath dir l in
+  let kn = MutInd.make2 senv.modpath l in
   let mib = Term_typing.translate_mind senv.env kn mie in
   let mib =
     match mib.mind_hyps with [] -> Declareops.hcons_mind mib | _ -> mib
@@ -770,9 +768,9 @@ let add_include me is_module inl senv =
   let add senv ((l,elem) as field) =
     let new_name = match elem with
       | SFBconst _ ->
-        C (Mod_subst.constant_of_delta_kn resolver (KerName.make2 mp_sup l))
+        C (Mod_subst.constant_of_delta_kn resolver (KerName.make mp_sup l))
       | SFBmind _ ->
-	I (Mod_subst.mind_of_delta_kn resolver (KerName.make2 mp_sup l))
+        I (Mod_subst.mind_of_delta_kn resolver (KerName.make mp_sup l))
       | SFBmodule _ -> M
       | SFBmodtype _ -> MT
     in

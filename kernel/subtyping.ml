@@ -103,8 +103,8 @@ let check_polymorphic_instance error env auctx1 auctx2 =
 (* for now we do not allow reorderings *)
 
 let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2= 
-  let kn1 = KerName.make2 mp1 l in
-  let kn2 = KerName.make2 mp2 l in
+  let kn1 = KerName.make mp1 l in
+  let kn2 = KerName.make mp2 l in
   let error why = error_signature_mismatch l spec2 why in
   let check_conv why cst poly f = check_conv_error error why cst poly f in
   let mib1 =

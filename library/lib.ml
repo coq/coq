@@ -135,8 +135,8 @@ let make_path_except_section id =
   Libnames.make_path (cwd_except_section ()) id
 
 let make_kn id =
-  let mp, dir = current_mp (), current_sections () in
-  Names.KerName.make mp dir (Names.Label.of_id id)
+  let mp = current_mp () in
+  Names.KerName.make mp (Names.Label.of_id id)
 
 let make_oname id = Libnames.make_oname !lib_state.path_prefix id
 
@@ -632,44 +632,12 @@ let library_part = function
   |VarRef id -> library_dp ()
   |ref -> dp_of_mp (mp_of_global ref)
 
-(************************)
-(* Discharging names *)
-
-let con_defined_in_sec kn =
-  let _,dir,_ = Names.Constant.repr3 kn in
-  not (Names.DirPath.is_empty dir) &&
-  Names.DirPath.equal (pop_dirpath dir) (current_sections ())
-
-let defined_in_sec kn =
-  let _,dir,_ = Names.MutInd.repr3 kn in
-  not (Names.DirPath.is_empty dir) &&
-  Names.DirPath.equal (pop_dirpath dir) (current_sections ())
-
-let discharge_global = function
-  | ConstRef kn when con_defined_in_sec kn ->
-      ConstRef (Globnames.pop_con kn)
-  | IndRef (kn,i) when defined_in_sec kn ->
-      IndRef (Globnames.pop_kn kn,i)
-  | ConstructRef ((kn,i),j) when defined_in_sec kn ->
-      ConstructRef ((Globnames.pop_kn kn,i),j)
-  | r -> r
-
-let discharge_kn kn =
-  if defined_in_sec kn then Globnames.pop_kn kn else kn
-
-let discharge_con cst =
-  if con_defined_in_sec cst then Globnames.pop_con cst else cst
-
 let discharge_proj_repr =
   Projection.Repr.map_npars (fun mind npars ->
-      if not (defined_in_sec mind) then mind, npars
-      else
-        let modlist = replacement_context () in
-        let _, newpars = Mindmap.find mind (snd modlist) in
-        Globnames.pop_kn mind, npars + Array.length newpars)
-
-let discharge_inductive (kn,i) =
-  (discharge_kn kn,i)
+      if not (is_in_section (IndRef (mind,0))) then mind, npars
+      else let modlist = replacement_context () in
+      let _, newpars = Mindmap.find mind (snd modlist) in
+      mind, npars + Array.length newpars)
 
 let discharge_abstract_universe_context { abstr_subst = subst; abstr_uctx = abs_ctx } auctx =
   let open Univ in

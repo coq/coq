@@ -8,11 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open CErrors
 open Names
 open Constr
 open Mod_subst
-open Libnames
 
 (*s Global reference is a kernel side type for all references together *)
 type global_reference = GlobRef.t =
@@ -136,54 +134,6 @@ end
 type global_reference_or_constr = 
   | IsGlobal of global_reference
   | IsConstr of constr
-
-(** {6 Temporary function to brutally form kernel names from section paths } *)
-
-let encode_mind dir id = MutInd.make2 (MPfile dir) (Label.of_id id)
-
-let encode_con dir id = Constant.make2 (MPfile dir) (Label.of_id id)
-
-let check_empty_section dp =
-  if not (DirPath.is_empty dp) then
-    anomaly (Pp.str "Section part should be empty!")
-
-let decode_mind kn =
-  let rec dir_of_mp = function
-    | MPfile dir -> DirPath.repr dir
-    | MPbound mbid ->
-	let _,_,dp = MBId.repr mbid in
-	let id = MBId.to_id mbid in
-	  id::(DirPath.repr dp)
-    | MPdot(mp,l) -> (Label.to_id l)::(dir_of_mp mp)
-  in
-  let mp,sec_dir,l = MutInd.repr3 kn in
-  check_empty_section sec_dir;
-  (DirPath.make (dir_of_mp mp)),Label.to_id l
-
-let decode_con kn =
-  let mp,sec_dir,l = Constant.repr3 kn in
-  check_empty_section sec_dir;
-  match mp with
-    | MPfile dir -> (dir,Label.to_id l)
-    | _ -> anomaly (Pp.str "MPfile expected!")
-
-(** Popping one level of section in global names.
-    These functions are meant to be used during discharge:
-    user and canonical kernel names must be equal. *)
-
-let pop_con con =
-  let (mp,dir,l) = Constant.repr3 con in
-  Constant.make3 mp (pop_dirpath dir) l
-
-let pop_kn kn =
-  let (mp,dir,l) = MutInd.repr3 kn in
-  MutInd.make3 mp (pop_dirpath dir) l
-
-let pop_global_reference = function
-  | ConstRef con -> ConstRef (pop_con con)
-  | IndRef (kn,i) -> IndRef (pop_kn kn,i)
-  | ConstructRef ((kn,i),j) -> ConstructRef ((pop_kn kn,i),j)
-  | VarRef id -> anomaly (Pp.str "VarRef not poppable.")
 
 (* Deprecated *)
 let eq_gr = GlobRef.equal

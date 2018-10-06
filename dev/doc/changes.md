@@ -1,5 +1,18 @@
 ## Changes between Coq 8.9 and Coq 8.10
 
+### ML API
+
+Names
+
+- Kernel names no longer contain a section path. They now have only two
+  components (module path and label), which led to some changes in the API:
+
+  KerName.make takes only 2 components
+  KerName.repr returns only 2 components
+  KerName.make2 is now KerName.make
+  Constant.make3 has been removed, use Constant.make2
+  Constant.repr3 has been removed, use Constant.repr2
+
 ## Changes between Coq 8.8 and Coq 8.9
 
 ### ML API

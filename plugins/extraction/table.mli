@@ -46,7 +46,7 @@ val info_file : string -> unit
 (*s utilities about [module_path] and [kernel_names] and [GlobRef.t] *)
 
 val occur_kn_in_ref : MutInd.t -> GlobRef.t -> bool
-val repr_of_r : GlobRef.t -> ModPath.t * DirPath.t * Label.t
+val repr_of_r : GlobRef.t -> ModPath.t * Label.t
 val modpath_of_r : GlobRef.t -> ModPath.t
 val label_of_r : GlobRef.t -> Label.t
 val base_mp : ModPath.t -> ModPath.t

@@ -898,11 +898,11 @@ let make_graph (f_ref : GlobRef.t) =
 		let id = Label.to_id (Constant.label c) in
                  [((CAst.make id,None),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
 	 in
-	 let mp,dp,_ = Constant.repr3 c in
+         let mp = Constant.modpath c in
 	 do_generate_principle [c,Univ.Instance.empty] error_error  false false expr_list;
 	 (* We register the infos *)
 	 List.iter
-           (fun ((({CAst.v=id},_),_,_,_,_),_) -> add_Function false (Constant.make3 mp dp (Label.of_id id)))
+           (fun ((({CAst.v=id},_),_,_,_,_),_) -> add_Function false (Constant.make2 mp (Label.of_id id)))
 	   expr_list)
 
 let do_generate_principle = do_generate_principle [] warning_error true

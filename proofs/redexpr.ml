@@ -114,9 +114,7 @@ let classify_strategy (local,_ as obj) =
 
 let disch_ref ref =
   match ref with
-      EvalConstRef c ->
-        let c' = Lib.discharge_con c in
-        if c==c' then Some ref else Some (EvalConstRef c')
+      EvalConstRef c -> Some ref
     | EvalVarRef id -> if Lib.is_in_section (VarRef id) then None else Some ref
 
 let discharge_strategy (_,(local,obj)) =

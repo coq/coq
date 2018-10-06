@@ -36,16 +36,16 @@ let occur_kn_in_ref kn = function
   | ConstRef _ | VarRef _ -> false
 
 let repr_of_r = function
-  | ConstRef kn -> Constant.repr3 kn
+  | ConstRef kn -> Constant.repr2 kn
   | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) -> MutInd.repr3 kn
+  | ConstructRef ((kn,_),_) -> MutInd.repr2 kn
   | VarRef v -> KerName.repr (Lib.make_kn v)
 
 let modpath_of_r r =
-  let mp,_,_ = repr_of_r r in mp
+  let mp,_ = repr_of_r r in mp
 
 let label_of_r r =
-  let _,_,l = repr_of_r r in l
+  let _,l = repr_of_r r in l
 
 let rec base_mp = function
   | MPdot (mp,l) -> base_mp mp
@@ -95,7 +95,7 @@ let rec parse_labels2 ll mp1 = function
 
 let labels_of_ref r =
   let mp_top = Lib.current_mp () in
-  let mp,_,l = repr_of_r r in
+  let mp,l = repr_of_r r in
   parse_labels2 [l] mp_top mp
 
 
@@ -189,7 +189,7 @@ let init_recursors () = recursors := KNset.empty
 let add_recursors env ind =
   let kn = MutInd.canonical ind in
   let mk_kn id =
-    KerName.make (KerName.modpath kn) DirPath.empty (Label.of_id id)
+    KerName.make (KerName.modpath kn) (Label.of_id id)
   in
   let mib = Environ.lookup_mind ind env in
   Array.iter
@@ -287,7 +287,7 @@ let safe_pr_long_global r =
   try Printer.pr_global r
   with Not_found -> match r with
     | ConstRef kn ->
-	let mp,_,l = Constant.repr3 kn in
+        let mp,l = Constant.repr2 kn in
 	str ((ModPath.to_string mp)^"."^(Label.to_string l))
     | _ -> assert false
 
@@ -653,8 +653,7 @@ let inline_extraction : bool * GlobRef.t list -> obj =
        cache_function = (fun (_,(b,l)) -> add_inline_entries b l);
        load_function = (fun _ (_,(b,l)) -> add_inline_entries b l);
        classify_function = (fun o -> Substitute o);
-       discharge_function =
-	(fun (_,(b,l)) -> Some (b, List.map pop_global_reference l));
+       discharge_function = (fun (_,x) -> Some x);
        subst_function =
         (fun (s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l)))
     }

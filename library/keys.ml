@@ -92,8 +92,7 @@ let subst_keys (subst,(k,k')) =
   (subst_key subst k, subst_key subst k')
 
 let discharge_key = function
-  | KGlob g when Lib.is_in_section g ->
-    if isVarRef g then None else Some (KGlob (pop_global_reference g))
+  | KGlob (VarRef _ as g) when Lib.is_in_section g -> None
   | x -> Some x
 
 let discharge_keys (_,(k,k')) =

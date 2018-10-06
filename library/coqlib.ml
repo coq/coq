@@ -119,29 +119,26 @@ let prelude_module_name = init_dir@["Prelude"]
 let prelude_module = make_dir prelude_module_name
 
 let logic_module_name = init_dir@["Logic"]
-let logic_module = make_dir logic_module_name
+let logic_module = MPfile (make_dir logic_module_name)
 
 let logic_type_module_name = init_dir@["Logic_Type"]
 let logic_type_module = make_dir logic_type_module_name
 
 let datatypes_module_name = init_dir@["Datatypes"]
-let datatypes_module = make_dir datatypes_module_name
+let datatypes_module = MPfile (make_dir datatypes_module_name)
 
 let jmeq_module_name = [coq;"Logic";"JMeq"]
-let jmeq_module = make_dir jmeq_module_name
-
-(* TODO: temporary hack. Works only if the module isn't an alias *)
-let make_ind dir id = Globnames.encode_mind dir (Id.of_string id)
-let make_con dir id = Globnames.encode_con dir (Id.of_string id)
+let jmeq_library_path = make_dir jmeq_module_name
+let jmeq_module = MPfile jmeq_library_path
 
 (** Identity *)
 
-let id = make_con datatypes_module "idProp"
-let type_of_id = make_con datatypes_module "IDProp"
+let id = Constant.make2 datatypes_module @@ Label.make "idProp"
+let type_of_id = Constant.make2 datatypes_module @@ Label.make "IDProp"
 
 (** Natural numbers *)
-let nat_kn = make_ind datatypes_module "nat"
-let nat_path = Libnames.make_path datatypes_module (Id.of_string "nat")
+let nat_kn = MutInd.make2 datatypes_module @@ Label.make "nat"
+let nat_path = Libnames.make_path (make_dir datatypes_module_name) (Id.of_string "nat")
 
 let glob_nat = IndRef (nat_kn,0)
 
@@ -151,7 +148,7 @@ let glob_O = ConstructRef path_of_O
 let glob_S = ConstructRef path_of_S
 
 (** Booleans *)
-let bool_kn = make_ind datatypes_module "bool"
+let bool_kn = MutInd.make2 datatypes_module @@ Label.make "bool"
 
 let glob_bool = IndRef (bool_kn,0)
 
@@ -161,13 +158,13 @@ let glob_true  = ConstructRef path_of_true
 let glob_false  = ConstructRef path_of_false
 
 (** Equality *)
-let eq_kn = make_ind logic_module "eq"
+let eq_kn = MutInd.make2 logic_module @@ Label.make "eq"
 let glob_eq = IndRef (eq_kn,0)
 
-let identity_kn = make_ind datatypes_module "identity"
+let identity_kn = MutInd.make2 datatypes_module @@ Label.make "identity"
 let glob_identity = IndRef (identity_kn,0)
 
-let jmeq_kn = make_ind jmeq_module "JMeq"
+let jmeq_kn = MutInd.make2 jmeq_module @@ Label.make "JMeq"
 let glob_jmeq = IndRef (jmeq_kn,0)
 
 type coq_sigma_data = {

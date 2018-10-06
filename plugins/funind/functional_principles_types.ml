@@ -394,7 +394,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
 
 exception Not_Rec
 
-let get_funs_constant mp dp =
+let get_funs_constant mp =
   let get_funs_constant const e : (Names.Constant.t*int) array =
     match Constr.kind ((strip_lam e)) with
       | Fix((_,(na,_,_))) ->
@@ -402,7 +402,7 @@ let get_funs_constant mp dp =
 	    (fun i na ->
 	       match na with
 		 | Name id ->
-		     let const = Constant.make3 mp dp (Label.of_id id) in
+                     let const = Constant.make2 mp (Label.of_id id) in
 		     const,i
 		 | Anonymous ->
 		     anomaly (Pp.str "Anonymous fix.")
@@ -474,13 +474,13 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
   let env = Global.env () in
   let funs = List.map fst fas in
   let first_fun = List.hd funs in
-  let funs_mp,funs_dp,_ = KerName.repr (Constant.canonical (fst first_fun)) in
+  let funs_mp = KerName.modpath (Constant.canonical (fst first_fun)) in
   let first_fun_kn =
     try
       fst (find_Function_infos  (fst first_fun)).graph_ind
     with Not_found -> raise No_graph_found
   in
-  let this_block_funs_indexes = get_funs_constant funs_mp funs_dp (fst first_fun) in
+  let this_block_funs_indexes = get_funs_constant funs_mp (fst first_fun) in
   let this_block_funs = Array.map (fun (c,_) -> (c,snd first_fun)) this_block_funs_indexes in
   let prop_sort = InProp in
   let funs_indexes =
@@ -669,9 +669,9 @@ let build_case_scheme fa =
       user_err ~hdr:"FunInd.build_case_scheme"
         (str "Cannot find " ++ Libnames.pr_qualid f) in
   let first_fun,u = destConst  funs in
-  let funs_mp,funs_dp,_ = Constant.repr3 first_fun in
+  let funs_mp = Constant.modpath first_fun in
   let first_fun_kn = try fst (find_Function_infos  first_fun).graph_ind with Not_found -> raise No_graph_found in
-  let this_block_funs_indexes = get_funs_constant funs_mp funs_dp first_fun in
+  let this_block_funs_indexes = get_funs_constant funs_mp first_fun in
   let this_block_funs = Array.map (fun (c,_) -> (c,u)) this_block_funs_indexes in
   let prop_sort = InProp in
   let funs_indexes =

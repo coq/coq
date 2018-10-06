@@ -15,7 +15,6 @@
 (* This module implements kernel-level discharching of local
    declarations over global constants and inductive types *)
 
-open CErrors
 open Util
 open Names
 open Term
@@ -27,18 +26,6 @@ module NamedDecl = Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
 
 (*s Cooking the constants. *)
-
-let pop_dirpath p = match DirPath.repr p with
-  | [] -> anomaly ~label:"dirpath_prefix" (Pp.str "empty dirpath.")
-  | _::l -> DirPath.make l
-
-let pop_mind kn =
-  let (mp,dir,l) = MutInd.repr3 kn in
-  MutInd.make3 mp (pop_dirpath dir) l
-
-let pop_con con =
-  let (mp,dir,l) = Constant.repr3 con in
-  Constant.make3 mp (pop_dirpath dir) l
 
 type my_global_reference =
   | ConstRef of Constant.t
@@ -71,29 +58,26 @@ let instantiate_my_gr gr u =
 let share cache r (cstl,knl) =
   try RefTable.find cache r
   with Not_found ->
-  let f,(u,l) =
+  let (u,l) =
     match r with
-    | IndRef (kn,i) ->
-	IndRef (pop_mind kn,i), Mindmap.find kn knl
-    | ConstructRef ((kn,i),j) ->
-	ConstructRef ((pop_mind kn,i),j), Mindmap.find kn knl
+    | IndRef (kn,_i) ->
+        Mindmap.find kn knl
+    | ConstructRef ((kn,_i),_j) ->
+        Mindmap.find kn knl
     | ConstRef cst ->
-	ConstRef (pop_con cst), Cmap.find cst cstl in
-  let c = (f, (u, Array.map mkVar l)) in
+        Cmap.find cst cstl in
+  let c = (u, Array.map mkVar l) in
   RefTable.add cache r c;
   c
 
 let share_univs cache r u l =
-  let r', (u', args) = share cache r l in
-    mkApp (instantiate_my_gr r' (Instance.append u' u), args)
+  let (u', args) = share cache r l in
+    mkApp (instantiate_my_gr r (Instance.append u' u), args)
 
 let update_case_info cache ci modlist =
   try
-    let ind, n =
-      match share cache (IndRef ci.ci_ind) modlist with
-      | (IndRef f,(_u,l)) -> (f, Array.length l)
-      | _ -> assert false in
-    { ci with ci_ind = ind; ci_npar = ci.ci_npar + n }
+    let (_u,l) = share cache (IndRef ci.ci_ind) modlist in
+    { ci with ci_npar = ci.ci_npar + Array.length l }
   with Not_found ->
     ci
 
@@ -129,7 +113,7 @@ let expmod_constr cache modlist c =
       | Proj (p, c') ->
         let map cst npars =
           let _, newpars = Mindmap.find cst (snd modlist) in
-          pop_mind cst, npars + Array.length newpars
+          (cst, npars + Array.length newpars)
         in
         let p' = try Projection.map_npars map p with Not_found -> p in
         let c'' = substrec c' in

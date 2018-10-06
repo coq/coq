@@ -222,26 +222,26 @@ let discharge_class (_,cl) =
                              | Some (_, ((tc,_), _)) -> Some tc.cl_impl)
 			    ctx'
       in
-      List.Smart.map (Option.Smart.map Lib.discharge_global) grs
-      @ newgrs
+      grs @ newgrs
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
-  let cl_impl' = Lib.discharge_global cl.cl_impl in
-  if cl_impl' == cl.cl_impl then cl else
+  try
     let info = abs_context cl in
     let ctx = info.Lib.abstr_ctx in
     let ctx, subst = rel_of_variable_context ctx in
     let usubst, cl_univs' = Lib.discharge_abstract_universe_context info cl.cl_univs in
     let context = discharge_context ctx (subst, usubst) cl.cl_context in
     let props = discharge_rel_context (subst, usubst) (succ (List.length (fst cl.cl_context))) cl.cl_props in
-    let discharge_proj (x, y, z) = x, y, Option.Smart.map Lib.discharge_con z in
-      { cl_univs = cl_univs';
-        cl_impl = cl_impl';
-	cl_context = context;
-	cl_props = props;
-        cl_projs = List.Smart.map discharge_proj cl.cl_projs;
-	cl_strict = cl.cl_strict;
-	cl_unique = cl.cl_unique
-      }
+    let discharge_proj x = x in
+    { cl_univs = cl_univs';
+      cl_impl = cl.cl_impl;
+      cl_context = context;
+      cl_props = props;
+      cl_projs = List.Smart.map discharge_proj cl.cl_projs;
+      cl_strict = cl.cl_strict;
+      cl_unique = cl.cl_unique
+    }
+  with Not_found -> (* not defined in the current section *)
+    cl
 
 let rebuild_class cl = 
   try 
@@ -365,8 +365,8 @@ let discharge_instance (_, (action, inst)) =
     Some (action,
     { inst with 
       is_global = Some (pred n);
-      is_class = Lib.discharge_global inst.is_class;
-      is_impl = Lib.discharge_global inst.is_impl })
+      is_class = inst.is_class;
+      is_impl = inst.is_impl })
     
 
 let is_local i = (i.is_global == None)

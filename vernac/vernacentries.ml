@@ -249,8 +249,7 @@ let print_namespace ns =
   in
   let print_list pr l = prlist_with_sep (fun () -> str".") pr l in
   let print_kn kn =
-    (* spiwack: I'm ignoring the dirpath, is that bad? *)
-    let (mp,_,lbl) = Names.KerName.repr kn in
+    let (mp,lbl) = Names.KerName.repr kn in
     let qn = (qualified_minus (List.length ns) mp)@[Names.Label.to_id lbl] in
     print_list Id.print qn
   in

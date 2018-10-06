@@ -119,7 +119,7 @@ and fields_of_expression x = fields_of_functor fields_of_expr x
 
 let lookup_constant_in_impl cst fallback =
   try
-    let mp,dp,lab = KerName.repr (Constant.canonical cst) in
+    let mp,lab = KerName.repr (Constant.canonical cst) in
     let fields = memoize_fields_of_mp mp in
     (* A module found this way is necessarily closed, in particular
        our constant cannot be in an opened section : *)
@@ -143,7 +143,7 @@ let lookup_constant cst =
 
 let lookup_mind_in_impl mind =
   try
-    let mp,dp,lab = KerName.repr (MutInd.canonical mind) in
+    let mp,lab = KerName.repr (MutInd.canonical mind) in
     let fields = memoize_fields_of_mp mp in
       search_mind_label lab fields
   with Not_found ->
@@ -157,9 +157,9 @@ let lookup_mind mind =
     traversed objects *)
 
 let label_of = function
-  | ConstRef kn -> pi3 (Constant.repr3 kn)
+  | ConstRef kn -> Constant.label kn
   | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) -> pi3 (MutInd.repr3 kn)
+  | ConstructRef ((kn,_),_) -> MutInd.label kn
   | VarRef id -> Label.of_id id
 
 let fold_constr_with_full_binders g f n acc c =

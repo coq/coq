@@ -1304,7 +1304,7 @@ let discharge_arguments_scope (_,(req,r,n,l,_)) =
         vars |> List.map fst |> List.filter is_local_assum |> List.length
       with
         Not_found (* Not a ref defined in this section *) -> 0 in
-    Some (req,Lib.discharge_global r,n,l,[])
+    Some (req,r,n,l,[])
 
 let classify_arguments_scope (req,_,_,_,_ as obj) =
   if req == ArgsScopeNoDischarge then Dispose else Substitute obj
