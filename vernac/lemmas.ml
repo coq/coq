@@ -305,7 +305,7 @@ let universe_proof_terminator ?univ_hook compute_guard =
   let open Proof_global in
   make_terminator begin function
   | Admitted (id,k,pe,ctx) ->
-    let hook = Option.map (fun univ_hook -> univ_hook (Some ctx)) univ_hook in
+    let hook = Option.map (fun univ_hook -> univ_hook ctx) univ_hook in
     admit ?hook (id,k,pe) (UState.universe_binders ctx) ();
     Feedback.feedback Feedback.AddedAxiom
   | Proved (opaque,idopt, { id; entries=[const]; persistence; universes } ) ->
@@ -317,7 +317,7 @@ let universe_proof_terminator ?univ_hook compute_guard =
     let id = match idopt with
       | None -> id
       | Some { CAst.v = save_id } -> check_anonymity id save_id; save_id in
-    let hook = Option.map (fun univ_hook -> univ_hook (Some universes)) univ_hook in
+    let hook = Option.map (fun univ_hook -> univ_hook universes) univ_hook in
     save ~export_seff id const universes compute_guard persistence hook
   | Proved (opaque,idopt, _ ) ->
     CErrors.anomaly Pp.(str "[universe_proof_terminator] close_proof returned more than one proof term")
@@ -395,10 +395,6 @@ let start_proof_with_initialization ?hook kind sigma decl recguard thms snl =
   | [] -> anomaly (Pp.str "No proof to start.")
   | (id,(t,(_,imps)))::other_thms ->
       let hook ctx strength ref =
-        let ctx = match ctx with
-        | None -> UState.empty
-        | Some ctx -> ctx
-        in
         let other_thms_data =
           if List.is_empty other_thms then [] else
             (* there are several theorems defined mutually *)

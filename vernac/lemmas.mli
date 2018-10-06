@@ -25,10 +25,10 @@ val start_proof : Id.t -> ?pl:UState.universe_decl -> goal_kind -> Evd.evar_map 
   ?hook:declaration_hook ->  EConstr.types -> unit
 
 val start_proof_univs : Id.t -> ?pl:UState.universe_decl -> goal_kind -> Evd.evar_map ->
-  ?terminator:(?univ_hook:(UState.t option -> declaration_hook) -> Proof_global.lemma_possible_guards -> Proof_global.proof_terminator) ->
+  ?terminator:(?univ_hook:(UState.t -> declaration_hook) -> Proof_global.lemma_possible_guards -> Proof_global.proof_terminator) ->
   ?sign:Environ.named_context_val ->
   ?compute_guard:Proof_global.lemma_possible_guards ->
-  ?univ_hook:(UState.t option -> declaration_hook) -> EConstr.types -> unit
+  ?univ_hook:(UState.t -> declaration_hook) -> EConstr.types -> unit
 
 val start_proof_com :
   program_mode:bool -> ?inference_hook:Pretyping.inference_hook ->
@@ -44,7 +44,7 @@ val start_proof_with_initialization :
   int list option -> unit
 
 val universe_proof_terminator :
-  ?univ_hook:(UState.t option -> declaration_hook) ->
+  ?univ_hook:(UState.t -> declaration_hook) ->
   Proof_global.lemma_possible_guards ->
   Proof_global.proof_terminator
 

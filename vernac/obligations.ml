@@ -922,7 +922,6 @@ let obligation_hook prg obl num auto ctx' _ gr =
        if not transparent then err_not_transp ()
     | _ -> ()
   in
-  let ctx' = match ctx' with None -> prg.prg_ctx | Some ctx' -> ctx' in
   let inst, ctx' =
     if not (pi2 prg.prg_kind) (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
