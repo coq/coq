@@ -277,18 +277,9 @@ let save_remaining_recthms (locality,p,kind) norm univs body opaq i (id,(t_i,(_,
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
         (locality,ConstRef kn,imps)
 
-let save_named ?export_seff proof =
-  let id,const,uctx,do_guard,persistence,hook = proof in
-  save ?export_seff id const uctx do_guard persistence hook
-
 let check_anonymity id save_ident =
   if not (String.equal (atompart_of_id id) (Id.to_string (default_thm_id))) then
     user_err Pp.(str "This command can only be used for unnamed theorem.")
-
-let save_anonymous ?export_seff proof save_ident =
-  let id,const,uctx,do_guard,persistence,hook = proof in
-  check_anonymity id save_ident;
-  save ?export_seff save_ident const uctx do_guard persistence hook
 
 (* Admitted *)
 
@@ -309,12 +300,6 @@ let admit (id,k,e) pl hook () =
 
 (* Starting a goal *)
 
-let get_proof proof do_guard hook opacity =
-  let (id,(const,univs,persistence)) =
-    Pfedit.cook_this_proof proof
-  in
-  id,{const with const_entry_opaque = opacity},univs,do_guard,persistence,hook
-
 let universe_proof_terminator compute_guard hook =
   let open Proof_global in
   make_terminator begin function
@@ -326,12 +311,12 @@ let universe_proof_terminator compute_guard hook =
         | Transparent -> false, true
         | Opaque      -> true, false
       in
-      let proof = get_proof proof compute_guard
-        (hook (Some (proof.Proof_global.universes))) is_opaque in
-      begin match idopt with
-      | None -> save_named ~export_seff proof
-      | Some { CAst.v = id } -> save_anonymous ~export_seff proof id
-      end
+      let (id,(const,univs,persistence)) = Pfedit.cook_this_proof proof in
+      let const = {const with const_entry_opaque = is_opaque} in
+      let id = match idopt with
+        | None -> id
+        | Some { CAst.v = save_id } -> check_anonymity id save_id; save_id in
+      save ~export_seff id const univs compute_guard persistence (hook (Some univs))
   end
 
 let standard_proof_terminator compute_guard hook =
