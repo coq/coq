@@ -179,14 +179,14 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook =
     let const = adjust_guardness_conditions const do_guard in
     let k = Kindops.logical_kind_of_goal_kind kind in
     let should_suggest = const.const_entry_opaque && Option.is_empty const.const_entry_secctx in
-    let l,r = match locality with
+    let r = match locality with
       | Discharge when Lib.sections_are_opened () ->
           let c = SectionLocalDef const in
           let _ = declare_variable id (Lib.cwd(), c, k) in
           let () = if should_suggest
             then Proof_using.suggest_variable (Global.env ()) id
           in
-          (Local, VarRef id)
+          VarRef id
       | Local | Global | Discharge ->
           let local = match locality with
           | Local | Discharge -> true
@@ -197,11 +197,11 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook =
           let () = if should_suggest
             then Proof_using.suggest_constant (Global.env ()) kn
           in
-          (locality, ConstRef kn)
+          ConstRef kn
     in
     definition_message id;
     Declare.declare_univ_binders r (UState.universe_binders uctx);
-    call_hook (fun exn -> exn) hook l r
+    call_hook (fun exn -> exn) hook locality r
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in
     iraise (fix_exn e)
