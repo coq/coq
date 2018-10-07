@@ -2,8 +2,6 @@
 (* ploc.ml,v *)
 (* Copyright (c) INRIA 2007-2017 *)
 
-(* #load "pa_macro.cmo" *)
-
 type t =
   { fname : string;
     line_nb : int;
@@ -176,16 +174,3 @@ let raise loc exc =
 type 'a vala =
     VaAnt of string
   | VaVal of 'a
-
-let warned = ref true
-let warning_deprecated_since_6_00 name =
-  if not !warned then
-    begin
-      Printf.eprintf "<W> %s deprecated since version 6.00" name;
-      warned := true
-    end
-
-let make line_nb bol_pos (bp, ep) =
-  let _ = warning_deprecated_since_6_00 "Ploc.make" in
-  {fname = ""; line_nb = line_nb; bol_pos = bol_pos; line_nb_last = line_nb;
-   bol_pos_last = bol_pos; bp = bp; ep = ep; comm = ""; ecomm = ""}

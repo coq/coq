@@ -120,9 +120,3 @@ val call_with : 'a ref -> 'a -> ('b -> 'c) -> 'b -> 'c
        then call [f a], and resets [r] to its initial value. If [f a] raises
        an exception, its initial value is also reset and the exception is
        re-raised. The result is the result of [f a]. *)
-
-(**/**)
-
-val make : int -> int -> int * int -> t
-   (** deprecated function since version 6.00; use [make_loc] instead
-       with the empty string *)

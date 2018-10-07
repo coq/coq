@@ -5,16 +5,10 @@
 open Printf
 
 type 'a parser_t = 'a Stream.t -> Obj.t
-type 'a fparser_t = 'a Fstream.t -> (Obj.t * 'a Fstream.t) option
-type 'a bparser_t = ('a, Obj.t) Fstream.bp
-
-type parse_algorithm =
-  Predictive | Functional | Backtracking | DefaultAlgorithm
 
 type 'te grammar =
   { gtokens : (Plexing.pattern, int ref) Hashtbl.t;
-    mutable glexer : 'te Plexing.lexer;
-    mutable galgo : parse_algorithm }
+    mutable glexer : 'te Plexing.lexer }
 
 type 'te g_entry =
   { egram : 'te grammar;
@@ -22,10 +16,6 @@ type 'te g_entry =
     elocal : bool;
     mutable estart : int -> 'te parser_t;
     mutable econtinue : int -> int -> Obj.t -> 'te parser_t;
-    mutable fstart : int -> err_fun -> 'te fparser_t;
-    mutable fcontinue : int -> int -> Obj.t -> err_fun -> 'te fparser_t;
-    mutable bstart : int -> err_fun -> 'te bparser_t;
-    mutable bcontinue : int -> int -> Obj.t -> err_fun -> 'te bparser_t;
     mutable edesc : 'te g_desc }
 and 'te g_desc =
     Dlevels of 'te g_level list
