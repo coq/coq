@@ -232,7 +232,7 @@ let loc_of_token_interval bp ep =
   else
     let loc1 = !floc bp in let loc2 = !floc (pred ep) in Ploc.encl loc1 loc2
 
-let rec name_of_symbol entry =
+let name_of_symbol entry =
   function
     Snterm e -> "[" ^ e.ename ^ "]"
   | Snterml (e, l) -> "[" ^ e.ename ^ " level " ^ l ^ "]"
@@ -658,7 +658,7 @@ and parser_of_token_list entry s son p1 p2 rev_tokl last_tok =
       match peek_nth n strm with
         Some tok ->
           let r = tematch tok in
-          for i = 1 to n do Stream.junk strm done; Obj.repr r
+          for _i = 1 to n do Stream.junk strm done; Obj.repr r
       | None -> raise Stream.Failure
     in
     fun (strm : _ Stream.t) ->
@@ -2624,7 +2624,7 @@ module Entry =
       | Predictive -> Obj.magic (entry.estart 0 ts : Obj.t)
       | Functional -> failwith "not impl Entry.parse_token_stream functional"
       | Backtracking -> failwith "not impl Entry.parse_token_stream backtrack"
-    let warned_using_parse_token = ref false
+    let _warned_using_parse_token = ref false
     let parse_token (entry : 'a e) ts : 'a =
       (* commented: too often warned in Coq...
       if not warned_using_parse_token.val then do {
@@ -2807,7 +2807,7 @@ module GMake (L : GLexerType) =
           | Predictive -> Obj.magic (e.estart 0 ts : Obj.t)
           | Functional -> fparse_token_stream e ts
           | Backtracking -> bparse_token_stream e ts
-        let warned_using_parse_token = ref false
+        let _warned_using_parse_token = ref false
         let parse_token (entry : 'a e) ts : 'a =
           (* commented: too often warned in Coq...
           if not warned_using_parse_token.val then do {

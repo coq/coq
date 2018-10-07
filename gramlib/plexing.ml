@@ -2,8 +2,6 @@
 (* plexing.ml,v *)
 (* Copyright (c) INRIA 2007-2017 *)
 
-open Versdep
-
 type pattern = string * string
 
 exception Error of string
@@ -29,7 +27,7 @@ let lexer_text (con, prm) =
   else con ^ " '" ^ prm ^ "'"
 
 let locerr () = failwith "Lexer: location function"
-let loct_create () = ref (array_create 1024 None), ref false
+let loct_create () = ref (Array.make 1024 None), ref false
 let loct_func (loct, ov) i =
   match
     if i < 0 || i >= Array.length !loct then
@@ -42,7 +40,7 @@ let loct_add (loct, ov) i loc =
   if i >= Array.length !loct then
     let new_tmax = Array.length !loct * 2 in
     if new_tmax < Sys.max_array_length then
-      let new_loct = array_create new_tmax None in
+      let new_loct = Array.make new_tmax None in
       Array.blit !loct 0 new_loct 0 (Array.length !loct);
       loct := new_loct;
       !loct.(i) <- Some loc
@@ -67,7 +65,7 @@ let lexer_func_of_ocamllex lexfun cs =
   let lb =
     Lexing.from_function
       (fun s n ->
-         try string_set s 0 (Stream.next cs); 1 with Stream.Failure -> 0)
+         try Bytes.set s 0 (Stream.next cs); 1 with Stream.Failure -> 0)
   in
   let next_token_loc _ =
     let tok = lexfun lb in
@@ -78,13 +76,13 @@ let lexer_func_of_ocamllex lexfun cs =
 
 (* Char and string tokens to real chars and string *)
 
-let buff = ref (string_create 80)
+let buff = ref (Bytes.create 80)
 let store len x =
-  if len >= string_length !buff then
-    buff := string_cat !buff (string_create (string_length !buff));
-  string_set !buff len x;
+  if len >= Bytes.length !buff then
+    buff := Bytes.(cat !buff (create (length !buff)));
+  Bytes.set !buff len x;
   succ len
-let get_buff len = string_sub !buff 0 len
+let get_buff len = Bytes.sub !buff 0 len
 
 let valch x = Char.code x - Char.code '0'
 let valch_a x = Char.code x - Char.code 'a' + 10
@@ -175,7 +173,7 @@ let eval_string loc s =
       in
       loop len i
   in
-  bytes_to_string (loop 0 0)
+  Bytes.to_string (loop 0 0)
 
 let default_match =
   function
@@ -196,13 +194,13 @@ let restore_lexing_info = ref None
 (* The lexing buffer used by pa_lexer.cmo *)
 
 let rev_implode l =
-  let s = string_create (List.length l) in
+  let s = Bytes.create (List.length l) in
   let rec loop i =
     function
-      c :: l -> string_unsafe_set s i c; loop (i - 1) l
+      c :: l -> Bytes.unsafe_set s i c; loop (i - 1) l
     | [] -> s
   in
-  bytes_to_string (loop (string_length s - 1) l)
+  Bytes.to_string (loop (Bytes.length s - 1) l)
 
 module Lexbuf :
   sig

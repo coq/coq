@@ -582,7 +582,7 @@ let rec delete_rule_in_prefix entry symbols =
       end
   | [] -> raise Not_found
 
-let rec delete_rule_in_level_list entry symbols levs =
+let delete_rule_in_level_list entry symbols levs =
   match symbols with
     Sself :: symbols -> delete_rule_in_suffix entry symbols levs
   | Snterm e :: symbols when e == entry ->
