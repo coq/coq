@@ -159,8 +159,6 @@ let classify_vernac e =
     | VernacUnsetOption _ | VernacSetOption _
     | VernacAddOption _ | VernacRemoveOption _
     | VernacMemOption _ | VernacPrintOption _
-    | VernacSetPrintingAll | VernacSetPrintingSugared
-    | VernacSetPrintingDefaults | VernacUnsetPrintingAll
     | VernacGlobalCheck _
     | VernacDeclareReduction _
     | VernacExistingClass _ | VernacExistingInstance _

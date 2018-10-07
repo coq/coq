@@ -347,12 +347,6 @@ type nonrec vernac_expr =
   | VernacBack of int
   | VernacBackTo of int
 
-  (* Printing categories *)
-  | VernacSetPrintingAll
-  | VernacSetPrintingSugared
-  | VernacSetPrintingDefaults
-  | VernacUnsetPrintingAll
-
   (* Commands *)
   | VernacCreateHintDb of string * bool
   | VernacRemoveHints of string list * qualid list

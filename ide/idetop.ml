@@ -69,9 +69,6 @@ let is_known_option cmd = match Vernacprop.under_control cmd with
   | VernacSetOption (_, o, BoolValue true)
   | VernacSetOption (_, o, StringValue _)
   | VernacUnsetOption (_, o) -> coqide_known_option o
-  | VernacSetPrintingAll
-  | VernacSetPrintingDefaults
-  | VernacSetPrintingSugared -> true
   | _ -> false
 
 (** Check whether a command is forbidden in the IDE *)

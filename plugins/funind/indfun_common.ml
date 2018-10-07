@@ -152,7 +152,7 @@ let with_full_print f a =
   let old_implicit_args = Impargs.is_implicit_args ()
   and old_strict_implicit_args =  Impargs.is_strict_implicit_args ()
   and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () in
-  Printoptions.set_printing_all ~local:false;
+  Printoptions.(set all_options);
   Impargs.make_implicit_args false;
   Impargs.make_strict_implicit_args false;
   Impargs.make_contextual_implicit_args false;

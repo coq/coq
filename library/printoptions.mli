@@ -22,18 +22,14 @@ type t = {
   wildcard : bool;
 }
 
-(** the record used for Set Printing All *)
+(** values for default, "Printing All" "Sugar All" *)
+val default_options : t
 val all_options : t
+val sugared_options : t
 
 (** getter/setter for Printing options *)
 val get : unit -> t
 val set : t -> unit
-
-(** getter/setters for Printing options *)
-val set_printing_all : local:bool -> unit
-val unset_printing_all : unit -> unit
-val set_printing_sugared : local:bool -> unit
-val set_printing_defaults : local:bool -> unit
 
 (** run function in context of temporary printing option *)
 val with_printing_option : (t -> t) -> ('a -> 'b) -> 'a -> 'b

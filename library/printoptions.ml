@@ -40,6 +40,7 @@ let default_options : t = {
     wildcard = true;
   }
 
+(* Options for "Printing All" *)
 let all_options : t = {
     allow_match_default_clause = false;
     coercions = true;
@@ -60,7 +61,7 @@ let all_options : t = {
     wildcard = false;
   }
 
-(* use negation of corresponding fields in all_options *)
+(* Negation of "Printing All", that is to say "Sugar All" *)
 let sugared_options : t = {
     allow_match_default_clause = not all_options.allow_match_default_clause;
     coercions = not all_options.coercions;
@@ -85,84 +86,6 @@ let current_options = Summary.ref ~name:"printing options" default_options
 
 let get () = !current_options
 let set opts = current_options := opts
-
-let saved_options = Summary.ref ~name:"saved printing options" None
-
-let get_saved_options () = !saved_options
-let set_saved_options opts = saved_options := opts
-
-(* given a print options record, get list of option names and their values,
-   used when setting options locally
-   somewhat redundant with the option declarations, so a bit fragile
- *)
-let options_by_name_value opts =
-  [ (["Printing";"Allow";"Match";"Default";"Clause"],opts.allow_match_default_clause);
-    (["Printing";"Coercions"],opts.coercions);
-    (["Printing";"Compact";"Contexts"],opts.compact_contexts);
-    (["Printing";"Existential";"Instances"],opts.existential_instances);
-    (["Printing";"Factorizable";"Match";"Patterns"],opts.factorizable_match_patterns);
-    (["Printing";"Implicit"],opts.implicit);
-    (["Printing";"Implicit";"Defensive"],opts.implicit_defensive);
-    (["Printing";"Let";"Binder";"Types"],opts.let_binder_types);
-    (["Printing";"Matching"],opts.matching);
-    (["Printing";"Notations"],opts.notations);
-    (["Printing";"Primitive";"Projection";"Compatibility"],opts.primitive_projection_compatibility);
-    (["Printing";"Primitive";"Projection";"Parameters"],opts.primitive_projection_parameters);
-    (["Printing";"Projections"],opts.projections);
-    (["Printing";"Records"],opts.records);
-    (["Printing";"Synth"],opts.synth);
-    (["Printing";"Universes"],opts.universes);
-    (["Printing";"Wildcard"],opts.wildcard);
-  ]
-
-let all_names_values     = options_by_name_value all_options
-let sugared_names_values = options_by_name_value sugared_options
-let default_names_values = options_by_name_value default_options
-
-let mk_printing_local opts_vals =
-  List.iter
-    (fun (opt,b) ->
-      Goptions.(set_bool_option_value_gen ~locality:OptLocal opt b))
-    opts_vals
-
-let set_printing_all_global () = set all_options
-let set_printing_all_local () = mk_printing_local all_names_values
-
-let set_printing_all ~local =
-  set_saved_options (Some (get ()));
-  if local then
-    set_printing_all_local ()
-  else
-    set_printing_all_global ()
-
-let noop_unset_printing_all_warning =
-  CWarnings.create ~name:"noop-unset-printing-all" ~category:"vernacular"
-    (fun () -> Pp.str("Unset Printing All here has no effect."))
-
-let unset_printing_all () =
-  match get_saved_options () with
-  | Some opts ->
-     set opts;
-     set_saved_options None
-  | None -> noop_unset_printing_all_warning ()
-
-let set_printing_sugared_global () = set sugared_options
-let set_printing_sugared_local () = mk_printing_local sugared_names_values
-
-let set_printing_sugared ~local =
-  if local then
-    set_printing_sugared_local ()
-  else
-    set_printing_sugared_global ()
-
-let set_printing_defaults_global () = set default_options
-let set_printing_defaults_local () = mk_printing_local default_names_values
-
-let set_printing_defaults ~local =
-  if local then
-    set_printing_defaults_local ()
-  else
-    set_printing_defaults_global ()
 
 (* set printing option, run `f x`, restore options *)
 (* can't use Flags.with_option, individual printing options are not references *)

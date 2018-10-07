@@ -1721,6 +1721,27 @@ let vernac_set_append_option ~local export key s =
   let locality = get_option_locality export local in
   set_string_option_append_value_gen ~locality key s
 
+(* We keep a special registry for allowing to set/unset global options *)
+let printing_saved_opts : Printoptions.t option ref =
+  Summary.ref ~name:"saved printing options" None
+
+let noop_unset_printing_warning =
+  CWarnings.create ~name:"noop-unset-printing" ~category:"vernacular"
+    (fun () -> Pp.str("Unset Printing here has no effect."))
+
+let printing_opt_group opt b =
+  let open Printoptions in
+  if b then begin
+    (* Set *)
+    printing_saved_opts := Some (get ());
+    set opt
+  end else
+    match !printing_saved_opts with
+    | None ->
+      noop_unset_printing_warning ()
+    | Some opts ->
+      set opts
+
 let vernac_set_option ~local export table v = match v with
 | StringValue s ->
   (* We make a special case for warnings because appending is their
@@ -1733,11 +1754,32 @@ let vernac_set_option ~local export table v = match v with
       vernac_set_append_option ~local export prefix s
     else
       vernac_set_option0 ~local export table v
+(* This hack should we removed when we have proper support for group
+   of options in the underlying library. *)
+| BoolValue b ->
+  begin match table with
+  | ["Printing"; "All"] ->
+    printing_opt_group Printoptions.all_options b
+  | ["Printing"; "Sugared"] ->
+    printing_opt_group Printoptions.sugared_options b
+  | ["Printing"; "Defaults"] ->
+    printing_opt_group Printoptions.default_options b
+  | _ ->
+    vernac_set_option0 ~local export table v
+  end
 | _ -> vernac_set_option0 ~local export table v
 
 let vernac_unset_option ~local export key =
   let locality = get_option_locality export local in
-  unset_option_value_gen ~locality key
+  match key with
+  | ["Printing"; "All"] ->
+    printing_opt_group Printoptions.all_options false
+  | ["Printing"; "Sugared"] ->
+    printing_opt_group Printoptions.sugared_options false
+  | ["Printing"; "Defaults"] ->
+    printing_opt_group Printoptions.default_options false
+  | _ ->
+    unset_option_value_gen ~locality key
 
 let vernac_add_option key lv =
   let f = function
@@ -2283,15 +2325,6 @@ let interp ?proof ~atts ~st c =
   | VernacAddMLPath (isrec,s) -> unsupported_attributes atts; vernac_add_ml_path isrec s
   | VernacDeclareMLModule l -> with_locality ~atts vernac_declare_ml_module l
   | VernacChdir s -> unsupported_attributes atts; vernac_chdir s
-
-  (* Printing categories *)
-  | VernacSetPrintingAll ->
-    with_locality ~atts (fun ~local -> let local = Locality.make_locality local in Printoptions.set_printing_all ~local)
-  | VernacSetPrintingSugared ->
-    with_locality ~atts (fun ~local -> let local = Locality.make_locality local in Printoptions.set_printing_sugared ~local)
-  | VernacSetPrintingDefaults ->
-    with_locality ~atts (fun ~local -> let local = Locality.make_locality local in Printoptions.set_printing_defaults ~local)
-  | VernacUnsetPrintingAll -> Printoptions.unset_printing_all ()
 
   (* State management *)
   | VernacWriteState s -> unsupported_attributes atts; vernac_write_state s
