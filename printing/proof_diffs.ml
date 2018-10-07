@@ -39,6 +39,13 @@ uses strikeout on removed text.
 
 open Pp_diff
 
+let term_color = ref true
+
+let write_color_enabled enabled =
+  term_color := enabled
+
+let color_enabled () = !term_color
+
 let diff_option = ref `OFF
 
 let read_diffs_option () = match !diff_option with
@@ -46,11 +53,18 @@ let read_diffs_option () = match !diff_option with
 | `ON -> "on"
 | `REMOVED -> "removed"
 
-let write_diffs_option = function
-| "off" -> diff_option := `OFF
-| "on" -> diff_option := `ON
-| "removed" -> diff_option := `REMOVED
-| _ -> CErrors.user_err Pp.(str "Diffs option only accepts the following values: \"off\", \"on\", \"removed\".")
+let write_diffs_option opt =
+  let enable opt =
+    if not (color_enabled ()) then
+      CErrors.user_err Pp.(str "Enabling Diffs requires setting the \"-color\" command line argument to \"on\" or \"auto\".")
+    else
+      diff_option := opt
+  in
+  match opt with
+  | "off" -> diff_option := `OFF
+  | "on" -> enable `ON
+  | "removed" -> enable `REMOVED
+  | _ -> CErrors.user_err Pp.(str "Diffs option only accepts the following values: \"off\", \"on\", \"removed\".")
 
 let () =
   Goptions.(declare_string_option {

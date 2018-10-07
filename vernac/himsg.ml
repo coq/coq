@@ -125,7 +125,7 @@ let display_eq ~flags env sigma t1 t2 =
 let rec pr_explicit_aux env sigma t1 t2 = function
 | [] ->
   (* no specified flags: default. *)
-  (quote (Printer.pr_leconstr_env env sigma t1), quote (Printer.pr_leconstr_env env sigma t2))
+  Printer.pr_leconstr_env env sigma t1, Printer.pr_leconstr_env env sigma t2
 | flags :: rem ->
   let equal = display_eq ~flags env sigma t1 t2 in
   if equal then
@@ -137,7 +137,7 @@ let rec pr_explicit_aux env sigma t1 t2 = function
     in
     let ct2 = Flags.with_options flags (fun () -> extern_constr false env sigma t2) ()
     in
-    quote (Ppconstr.pr_lconstr_expr ct1), quote (Ppconstr.pr_lconstr_expr ct2)
+    Ppconstr.pr_lconstr_expr ct1, Ppconstr.pr_lconstr_expr ct2
 
 let explicit_flags =
   let open Constrextern in
@@ -148,8 +148,25 @@ let explicit_flags =
     [print_implicits; print_coercions; print_no_symbol]; (* Then more! *)
     [print_universes; print_implicits; print_coercions; print_no_symbol] (* and more! *) ]
 
+let with_diffs pm pn =
+  try
+    let tokenize_string = Proof_diffs.tokenize_string in
+    Pp_diff.diff_pp ~tokenize_string pm pn
+  with Pp_diff.Diff_Failure msg ->
+    begin
+      try ignore(Sys.getenv("HIDEDIFFFAILUREMSG"))
+      with Not_found ->
+        Feedback.msg_warning Pp.(
+            hov 0 (str ("Diff failure: " ^ msg) ++ spc () ++
+            hov 0 (str "Showing message without diff highlighting" ++ spc () ++
+            hov 0 (str "Please report at " ++ str Coq_config.wwwbugtracker ++ str "."))))
+    end;
+    pm, pn
+
 let pr_explicit env sigma t1 t2 =
-  pr_explicit_aux env sigma t1 t2 explicit_flags
+  let p1, p2 = pr_explicit_aux env sigma t1 t2 explicit_flags in
+  let p1, p2 = with_diffs p1 p2 in
+  quote p1, quote p2
 
 let pr_db env i =
   try
@@ -1054,10 +1071,11 @@ let pr_constr_exprs exprs =
          exprs (mt ()))
 
 let explain_mismatched_contexts env c i j =
+  let pm, pn = with_diffs (pr_rel_context env (Evd.from_env env) j) (pr_constr_exprs i) in
   str"Mismatched contexts while declaring instance: " ++ brk (1,1) ++
-    hov 1 (str"Expected:" ++ brk (1, 1) ++ pr_rel_context env (Evd.from_env env) j) ++
+    hov 1 (str"Expected:" ++ brk (1, 1) ++ pm) ++
     fnl () ++ brk (1,1) ++
-    hov 1 (str"Found:" ++ brk (1, 1) ++ pr_constr_exprs i)
+    hov 1 (str"Found:" ++ brk (1, 1) ++ pn)
 
 let explain_typeclass_error env = function
   | NotAClass c -> explain_not_a_class env c
@@ -1066,10 +1084,11 @@ let explain_typeclass_error env = function
 (* Refiner errors *)
 
 let explain_refiner_bad_type env sigma arg ty conclty =
+  let pm, pn = with_diffs (pr_lconstr_env env sigma ty) (pr_lconstr_env env sigma conclty) in
   str "Refiner was given an argument" ++ brk(1,1) ++
   pr_lconstr_env env sigma arg ++ spc () ++
-  str "of type" ++ brk(1,1) ++ pr_lconstr_env env sigma ty ++ spc () ++
-  str "instead of" ++ brk(1,1) ++ pr_lconstr_env env sigma conclty ++ str "."
+  str "of type" ++ brk(1,1) ++ pm ++ spc () ++
+  str "instead of" ++ brk(1,1) ++ pn ++ str "."
 
 let explain_refiner_unresolved_bindings l =
   str "Unable to find an instance for the " ++
