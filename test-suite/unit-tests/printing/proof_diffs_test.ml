@@ -51,23 +51,28 @@ let t () =
   assert_equal ~msg:"has `Removed" ~printer:string_of_bool true has_removed
 let _ = add_test "diff_str add/remove" t
 
-(* example of a limitation, not really a test *)
-let t () =
-  try
-    let _ = diff_str "a" "&gt;" in
-    assert_failure "unlexable string gives an exception"
-  with _ -> ()
-let _ = add_test "diff_str unlexable" t
+(* lexer tweaks:
+   comments are lexed as multiple tokens
+   strings tokens include begin/end quotes and embedded ""
+   single multibyte characters returned even if they're not keywords
 
-(* problematic examples for tokenize_string:
-   comments omitted
-   quoted string loses quote marks (are escapes supported/handled?)
-   char constant split into 2
+   inputs that give a lexer failure (but no use case needs them yet):
+     ".12"
+     unterminated string
+     invalid UTF-8 sequences
    *)
 let t () =
-  List.iter (fun x -> cprintf "'%s' " x) (tokenize_string "(* comment *) \"string\" 'c' xx");
-  cprintf "\n"
-let _ = add_test "tokenize_string examples" t
+  let str = "(* comment.field *) ?id () \"str\"\"ing\" \\ := Ж &gt; ∃ 'c' xx" in
+  let toks = tokenize_string str in
+  (*List.iter (fun x -> cprintf "'%s' " x) toks;*)
+  (*cprintf "\n";*)
+  let str_no_white = String.concat "" (String.split_on_char ' ' str) in
+  assert_equal ~printer:(fun x -> x) str_no_white (String.concat "" toks);
+  List.iter (fun s ->
+    assert_equal ~msg:("'" ^ s ^ "' is a single token") ~printer:string_of_bool true (List.mem s toks))
+    [ "(*"; "()"; ":="]
+
+let _ = add_test "tokenize_string/diff_mode in lexer" t
 
 open Pp
 

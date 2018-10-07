@@ -548,20 +548,27 @@ let process_sequence loc bp c cs =
   aux 1 cs
 
 (* Must be a special token *)
-let process_chars loc bp c cs =
+let process_chars ~diff_mode loc bp c cs =
   let t = progress_from_byte loc None (-1) !token_tree cs c in
   let ep = Stream.count cs in
   match t with
     | Some t -> (KEYWORD t, set_loc_pos loc bp ep)
     | None ->
         let ep' = bp + utf8_char_size loc cs c in
-        njunk (ep' - ep) cs;
-	let loc = set_loc_pos loc bp ep' in
-        err loc Undefined_token
+        if diff_mode then begin
+          let len = ep' - bp in
+          ignore (store 0 c);
+          ignore (nstore (len - 1) 1 cs);
+          IDENT (get_buff len), set_loc_pos loc bp ep
+        end else begin
+          njunk (ep' - ep) cs;
+          let loc = set_loc_pos loc bp ep' in
+          err loc Undefined_token
+        end
 
 (* Parse what follows a dot *)
 
-let parse_after_dot loc c bp s = match Stream.peek s with
+let parse_after_dot ~diff_mode loc c bp s = match Stream.peek s with
   | Some ('a'..'z' | 'A'..'Z' | '_' as d) ->
       Stream.junk s;
       let len =
@@ -576,11 +583,11 @@ let parse_after_dot loc c bp s = match Stream.peek s with
           let len = ident_tail loc (nstore n 0 s) s in
           let field = get_buff len in
           (try find_keyword loc ("."^field) s with Not_found -> FIELD field)
-      | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars loc bp c s)
+      | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars ~diff_mode loc bp c s)
 
 (* Parse what follows a question mark *)
 
-let parse_after_qmark loc bp s =
+let parse_after_qmark ~diff_mode loc bp s =
   match Stream.peek s with
     | Some ('a'..'z' | 'A'..'Z' | '_') -> LEFTQMARK
     | None -> KEYWORD "?"
@@ -588,7 +595,7 @@ let parse_after_qmark loc bp s =
         match lookup_utf8 loc s with
           | Utf8Token (st, _) when Unicode.is_valid_ident_initial st -> LEFTQMARK
           | AsciiChar | Utf8Token _ | EmptyStream ->
-            fst (process_chars loc bp '?' s)
+            fst (process_chars ~diff_mode loc bp '?' s)
 
 let blank_or_eof cs =
   match Stream.peek cs with
@@ -598,20 +605,20 @@ let blank_or_eof cs =
 
 (* Parse a token in a char stream *)
 
-let rec next_token loc s =
+let rec next_token ~diff_mode loc s =
   let bp = Stream.count s in
   match Stream.peek s with
   | Some ('\n' as c) ->
       Stream.junk s;
       let ep = Stream.count s in
-      comm_loc bp; push_char c; next_token (bump_loc_line loc ep) s
+      comm_loc bp; push_char c; next_token ~diff_mode (bump_loc_line loc ep) s
   | Some (' ' | '\t' | '\r' as c) ->
       Stream.junk s;
-      comm_loc bp; push_char c; next_token loc s
+      comm_loc bp; push_char c; next_token ~diff_mode loc s
   | Some ('.' as c) ->
       Stream.junk s;
       let t =
-        try parse_after_dot loc c bp s with
+        try parse_after_dot ~diff_mode loc c bp s with
           Stream.Failure -> raise (Stream.Error "")
       in
       let ep = Stream.count s in
@@ -630,13 +637,13 @@ let rec next_token loc s =
       Stream.junk s;
       let t,new_between_commands =
         if !between_commands then process_sequence loc bp c s, true
-        else process_chars loc bp c s,false
+        else process_chars ~diff_mode loc bp c s,false
       in
       comment_stop bp; between_commands := new_between_commands; t
   | Some '?' ->
       Stream.junk s;
       let ep = Stream.count s in
-      let t = parse_after_qmark loc bp s in
+      let t = parse_after_qmark ~diff_mode loc bp s in
       comment_stop bp; (t, set_loc_pos loc bp ep)
   | Some ('a'..'z' | 'A'..'Z' | '_' as c) ->
       Stream.junk s;
@@ -670,12 +677,16 @@ let rec next_token loc s =
       Stream.junk s;
       begin try
         match Stream.peek s with
+        | Some '*' when diff_mode ->
+            Stream.junk s;
+            let ep = Stream.count s in
+            (IDENT "(*", set_loc_pos loc bp ep)
         | Some '*' ->
             Stream.junk s;
             comm_loc bp;
             push_string "(*";
-            let loc = comment loc bp s in next_token loc s
-        | _ -> let t = process_chars loc bp c s in comment_stop bp; t
+            let loc = comment loc bp s in next_token ~diff_mode loc s
+        | _ -> let t = process_chars ~diff_mode loc bp c s in comment_stop bp; t
       with Stream.Failure -> raise (Stream.Error "")
       end
   | Some ('{' | '}' as c) ->
@@ -683,7 +694,7 @@ let rec next_token loc s =
       let ep = Stream.count s in
       let t,new_between_commands =
         if !between_commands then (KEYWORD (String.make 1 c), set_loc_pos loc bp ep), true
-        else process_chars loc bp c s, false
+        else process_chars ~diff_mode loc bp c s, false
       in
       comment_stop bp; between_commands := new_between_commands; t
   | _ ->
@@ -695,14 +706,14 @@ let rec next_token loc s =
             comment_stop bp;
             (try find_keyword loc id s with Not_found -> IDENT id), set_loc_pos loc bp ep
         | AsciiChar | Utf8Token _ ->
-            let t = process_chars loc bp (Stream.next s) s in
+            let t = process_chars ~diff_mode loc bp (Stream.next s) s in
             comment_stop bp; t
         | EmptyStream ->
             comment_stop bp; (EOI, set_loc_pos loc bp (bp+1))
 
 (* (* Debug: uncomment this for tracing tokens seen by coq...*)
-let next_token loc s =
-  let (t,loc as r) = next_token loc s in
+let next_token ~diff_mode loc s =
+  let (t,loc as r) = next_token ~diff_mode loc s in
   Printf.eprintf "(line %i, %i-%i)[%s]\n%!" (Ploc.line_nb loc) (Ploc.first_pos loc) (Ploc.last_pos loc) (Tok.to_string t);
   r *)
 
@@ -743,7 +754,7 @@ let token_text = function
   | (con, "") -> con
   | (con, prm) -> con ^ " \"" ^ prm ^ "\""
 
-let func cs =
+let func next_token cs =
   let loct = loct_create () in
   let cur_loc = ref (Loc.create !current_file 1 0 0 0) in
   let ts =
@@ -755,8 +766,8 @@ let func cs =
   in
   (ts, loct_func loct)
 
-let lexer = {
-  Plexing.tok_func = func;
+let make_lexer ~diff_mode = {
+  Plexing.tok_func = func (next_token ~diff_mode);
   Plexing.tok_using =
     (fun pat -> match Tok.of_pattern pat with
        | KEYWORD s -> add_keyword s
@@ -764,6 +775,8 @@ let lexer = {
   Plexing.tok_removing = (fun _ -> ());
   Plexing.tok_match = Tok.match_pattern;
   Plexing.tok_text = token_text }
+
+let lexer = make_lexer ~diff_mode:false
 
 (** Terminal symbols interpretation *)
 

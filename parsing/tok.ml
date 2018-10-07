@@ -40,18 +40,19 @@ let extract_string diff_mode = function
   | KEYWORD s -> s
   | IDENT s -> s
   | STRING s ->
-   if diff_mode then
-    let escape_quotes s =
-      let len = String.length s in
-      let buf = Buffer.create len in
-      for i = 0 to len-1 do
-        let ch = String.get s i in
-        Buffer.add_char buf ch;
-        if ch = '"' then Buffer.add_char buf '"' else ()
-      done;
-      Buffer.contents buf
-    in
-    "\"" ^ (escape_quotes s) ^ "\"" else s
+    if diff_mode then
+      let escape_quotes s =
+        let len = String.length s in
+        let buf = Buffer.create len in
+        for i = 0 to len-1 do
+          let ch = String.get s i in
+          Buffer.add_char buf ch;
+          if ch = '"' then Buffer.add_char buf '"' else ()
+        done;
+        Buffer.contents buf
+      in
+      "\"" ^ (escape_quotes s) ^ "\""
+    else s
   | PATTERNIDENT s -> s
   | FIELD s -> if diff_mode then "." ^ s else s
   | INT s -> s

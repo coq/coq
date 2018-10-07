@@ -56,3 +56,14 @@ val set_lexer_state : lexer_state -> unit
 val get_lexer_state : unit -> lexer_state
 val drop_lexer_state : unit -> unit
 val get_comment_state : lexer_state -> ((int * int) * string) list
+
+(** Create a lexer.  true enables alternate handling for computing diffs.
+It ensures that, ignoring white space, the concatenated tokens equal the input
+string.  Specifically:
+- for strings, return the enclosing quotes as tokens and treat the quoted value
+as if it was unquoted, possibly becoming multiple tokens
+- for comments, return the "(*" as a token and treat the contents of the comment as if
+it was not in a comment, possibly becoming multiple tokens
+- return any unrecognized Ascii or UTF-8 character as a string
+*)
+val make_lexer : diff_mode:bool -> Tok.t Gramlib.Plexing.lexer
