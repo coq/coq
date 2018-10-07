@@ -2,36 +2,36 @@
 (* token.ml,v *)
 (* Copyright (c) INRIA 2007-2017 *)
 
-type pattern = Plexing.pattern;
+type pattern = Plexing.pattern
 
-exception Error of string;
+exception Error of string
 
-type location = Ploc.t;
-type location_function = int -> location;
-type lexer_func 'te = Stream.t char -> (Stream.t 'te * location_function);
+type location = Ploc.t
+type location_function = int -> location
+type 'te lexer_func = char Stream.t -> 'te Stream.t * location_function
 
-type glexer 'te = Plexing.lexer 'te ==
-  { tok_func : lexer_func 'te;
-    tok_using : pattern -> unit;
-    tok_removing : pattern -> unit;
-    tok_match : mutable pattern -> 'te -> string;
-    tok_text : pattern -> string;
-    tok_comm : mutable option (list location) }
-;
+type 'te glexer =
+  'te Plexing.lexer =
+    { tok_func : 'te lexer_func;
+      tok_using : pattern -> unit;
+      tok_removing : pattern -> unit;
+      mutable tok_match : pattern -> 'te -> string;
+      tok_text : pattern -> string;
+      mutable tok_comm : location list option }
 
-value make_loc = Ploc.make_unlined;
-value dummy_loc = Ploc.dummy;
+let make_loc = Ploc.make_unlined
+let dummy_loc = Ploc.dummy
 
-value make_stream_and_location = Plexing.make_stream_and_location;
-value lexer_func_of_parser = Plexing.lexer_func_of_parser;
-value lexer_func_of_ocamllex = Plexing.lexer_func_of_ocamllex;
+let make_stream_and_location = Plexing.make_stream_and_location
+let lexer_func_of_parser = Plexing.lexer_func_of_parser
+let lexer_func_of_ocamllex = Plexing.lexer_func_of_ocamllex
 
-value eval_char = Plexing.eval_char;
-value eval_string = Plexing.eval_string;
+let eval_char = Plexing.eval_char
+let eval_string = Plexing.eval_string
 
-value lexer_text = Plexing.lexer_text;
-value default_match = Plexing.default_match;
+let lexer_text = Plexing.lexer_text
+let default_match = Plexing.default_match
 
-value line_nb = Plexing.line_nb;
-value bol_pos = Plexing.bol_pos;
-value restore_lexing_info = Plexing.restore_lexing_info;
+let line_nb = Plexing.line_nb
+let bol_pos = Plexing.bol_pos
+let restore_lexing_info = Plexing.restore_lexing_info

@@ -2,86 +2,82 @@
 (* gramext.mli,v *)
 (* Copyright (c) INRIA 2007-2017 *)
 
-type parser_t 'a = Stream.t 'a -> Obj.t;
-type fparser_t 'a = Fstream.t 'a -> option (Obj.t * Fstream.t 'a);
-type bparser_t 'a = Fstream.bp 'a Obj.t;
+type 'a parser_t = 'a Stream.t -> Obj.t
+type 'a fparser_t = 'a Fstream.t -> (Obj.t * 'a Fstream.t) option
+type 'a bparser_t = ('a, Obj.t) Fstream.bp
 
 type parse_algorithm =
-  [ Predictive | Functional | Backtracking | DefaultAlgorithm ];
+  Predictive | Functional | Backtracking | DefaultAlgorithm
 
-type grammar 'te =
-  { gtokens : Hashtbl.t Plexing.pattern (ref int);
-    glexer : mutable Plexing.lexer 'te;
-    galgo : mutable parse_algorithm }
-;
+type 'te grammar =
+  { gtokens : (Plexing.pattern, int ref) Hashtbl.t;
+    mutable glexer : 'te Plexing.lexer;
+    mutable galgo : parse_algorithm }
 
-type g_entry 'te =
-  { egram : grammar 'te;
+type 'te g_entry =
+  { egram : 'te grammar;
     ename : string;
     elocal : bool;
-    estart : mutable int -> parser_t 'te;
-    econtinue : mutable int -> int -> Obj.t -> parser_t 'te;
-    fstart : mutable int -> err_fun -> fparser_t 'te;
-    fcontinue : mutable int -> int -> Obj.t -> err_fun -> fparser_t 'te;
-    bstart : mutable int -> err_fun -> bparser_t 'te;
-    bcontinue : mutable int -> int -> Obj.t -> err_fun -> bparser_t 'te;
-    edesc : mutable g_desc 'te }
-and g_desc 'te =
-  [ Dlevels of list (g_level 'te)
-  | Dparser of parser_t 'te ]
-and g_level 'te =
+    mutable estart : int -> 'te parser_t;
+    mutable econtinue : int -> int -> Obj.t -> 'te parser_t;
+    mutable fstart : int -> err_fun -> 'te fparser_t;
+    mutable fcontinue : int -> int -> Obj.t -> err_fun -> 'te fparser_t;
+    mutable bstart : int -> err_fun -> 'te bparser_t;
+    mutable bcontinue : int -> int -> Obj.t -> err_fun -> 'te bparser_t;
+    mutable edesc : 'te g_desc }
+and 'te g_desc =
+    Dlevels of 'te g_level list
+  | Dparser of 'te parser_t
+and 'te g_level =
   { assoc : g_assoc;
-    lname : option string;
-    lsuffix : g_tree 'te;
-    lprefix : g_tree 'te }
-and g_assoc = [ NonA | RightA | LeftA ]
-and g_symbol 'te =
-  [ Sfacto of g_symbol 'te
-  | Smeta of string and list (g_symbol 'te) and Obj.t
-  | Snterm of g_entry 'te
-  | Snterml of g_entry 'te and string
-  | Slist0 of g_symbol 'te
-  | Slist0sep of g_symbol 'te and g_symbol 'te and bool
-  | Slist1 of g_symbol 'te
-  | Slist1sep of g_symbol 'te and g_symbol 'te and bool
-  | Sopt of g_symbol 'te
-  | Sflag of g_symbol 'te
+    lname : string option;
+    lsuffix : 'te g_tree;
+    lprefix : 'te g_tree }
+and g_assoc = NonA | RightA | LeftA
+and 'te g_symbol =
+    Sfacto of 'te g_symbol
+  | Smeta of string * 'te g_symbol list * Obj.t
+  | Snterm of 'te g_entry
+  | Snterml of 'te g_entry * string
+  | Slist0 of 'te g_symbol
+  | Slist0sep of 'te g_symbol * 'te g_symbol * bool
+  | Slist1 of 'te g_symbol
+  | Slist1sep of 'te g_symbol * 'te g_symbol * bool
+  | Sopt of 'te g_symbol
+  | Sflag of 'te g_symbol
   | Sself
   | Snext
   | Scut
   | Stoken of Plexing.pattern
-  | Stree of g_tree 'te
-  | Svala of list string and g_symbol 'te ]
+  | Stree of 'te g_tree
+  | Svala of string list * 'te g_symbol
 and g_action = Obj.t
-and g_tree 'te =
-  [ Node of g_node 'te
-  | LocAct of g_action and list g_action
-  | DeadEnd ]
-and g_node 'te =
-  { node : g_symbol 'te; son : g_tree 'te; brother : g_tree 'te }
-and err_fun = unit -> string;
+and 'te g_tree =
+    Node of 'te g_node
+  | LocAct of g_action * g_action list
+  | DeadEnd
+and 'te g_node =
+  { node : 'te g_symbol; son : 'te g_tree; brother : 'te g_tree }
+and err_fun = unit -> string
 
 type position =
-  [ First
+    First
   | Last
   | Before of string
   | After of string
   | Like of string
-  | Level of string ]
-;
+  | Level of string
 
-value levels_of_rules :
-  g_entry 'te -> option position ->
-    list
-      (option string * option g_assoc *
-       list (list (g_symbol 'te) * g_action)) ->
-    list (g_level 'te);
-value srules : list (list (g_symbol 'te) * g_action) -> g_symbol 'te;
-external action : 'a -> g_action = "%identity";
-value eq_symbol : g_symbol 'a -> g_symbol 'a -> bool;
+val levels_of_rules :
+  'te g_entry -> position option ->
+    (string option * g_assoc option * ('te g_symbol list * g_action) list)
+      list ->
+    'te g_level list
+val srules : ('te g_symbol list * g_action) list -> 'te g_symbol
+external action : 'a -> g_action = "%identity"
+val eq_symbol : 'a g_symbol -> 'a g_symbol -> bool
 
-value delete_rule_in_level_list :
-  g_entry 'te -> list (g_symbol 'te) -> list (g_level 'te) ->
-    list (g_level 'te);
+val delete_rule_in_level_list :
+  'te g_entry -> 'te g_symbol list -> 'te g_level list -> 'te g_level list
 
-value warning_verbose : ref bool;
+val warning_verbose : bool ref

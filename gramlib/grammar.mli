@@ -8,14 +8,14 @@
     Grammars entries can be extended using the [EXTEND] statement,
     added by loading the Camlp5 [pa_extend.cmo] file. *)
 
-type g = 'x;
+type g
    (** The type for grammars, holding entries. *)
-type token = (string * string);
+type token = string * string
 
-value gcreate : Plexing.lexer token -> g;
+val gcreate : token Plexing.lexer -> g
    (** Create a new grammar, without keywords, using the lexer given
        as parameter. *)
-value tokens : g -> string -> list (string * int);
+val tokens : g -> string -> (string * int) list
    (** Given a grammar and a token pattern constructor, returns the list of
        the corresponding values currently used in all entries of this grammar.
        The integer is the number of times this pattern value is used.
@@ -24,32 +24,30 @@ value tokens : g -> string -> list (string * int);
 -      The call [Grammar.tokens g ""] returns the keywords list.
 -      The call [Grammar.tokens g "IDENT"] returns the list of all usages
        of the pattern "IDENT" in the [EXTEND] statements. *)
-value glexer : g -> Plexing.lexer token;
+val glexer : g -> token Plexing.lexer
    (** Return the lexer used by the grammar *)
 
-type parsable = 'abstract;
-value parsable : g -> Stream.t char -> parsable;
+type parsable
+val parsable : g -> char Stream.t -> parsable
    (** Type and value allowing to keep the same token stream between
        several calls of entries of the same grammar, to prevent possible
        loss of tokens. To be used with [Entry.parse_parsable] below *)
 
 module Entry :
   sig
-    type e 'a = 'x;
-    value create : g -> string -> e 'a;
-    value parse : e 'a -> Stream.t char -> 'a;
-    value parse_all : e 'a -> Stream.t char -> list 'a;
-    value parse_parsable : e 'a -> parsable -> 'a;
-    value name : e 'a -> string;
-    value of_parser : g -> string -> (Stream.t token -> 'a) -> e 'a;
-    value parse_token_stream : e 'a -> Stream.t token -> 'a;
-    value print : Format.formatter -> e 'a -> unit;
-    value find : e 'a -> string -> e Obj.t;
-    external obj : e 'a -> Gramext.g_entry token = "%identity";
-    (* deprecated since 2017-06-17 *)
-    value parse_token : e 'a -> Stream.t token -> 'a;
+    type 'a e
+    val create : g -> string -> 'a e
+    val parse : 'a e -> char Stream.t -> 'a
+    val parse_all : 'a e -> char Stream.t -> 'a list
+    val parse_parsable : 'a e -> parsable -> 'a
+    val name : 'a e -> string
+    val of_parser : g -> string -> (token Stream.t -> 'a) -> 'a e
+    val parse_token_stream : 'a e -> token Stream.t -> 'a
+    val print : Format.formatter -> 'a e -> unit
+    val find : 'a e -> string -> Obj.t e
+    external obj : 'a e -> token Gramext.g_entry = "%identity"
+    val parse_token : 'a e -> token Stream.t -> 'a
   end
-;
    (** Module to handle entries.
 -      [Entry.e] is the type for entries returning values of type ['a].
 -      [Entry.create g n] creates a new entry named [n] in the grammar [g].
@@ -70,56 +68,64 @@ module Entry :
 -      [Entry.parse_token]: deprecated since 2017-06-16; old name for
           [Entry.parse_token_stream] *)
 
-value of_entry : Entry.e 'a -> g;
+val of_entry : 'a Entry.e -> g
    (** Return the grammar associated with an entry. *)
 
-type ty_symbol 'self 'a = 'x;
+type ('self, 'a) ty_symbol
 (** Type of grammar symbols. A type-safe wrapper around Gramext.symbol. The
     first type argument is the type of the ambient entry, the second one is the
     type of the produced value. *)
 
-type ty_rule 'self 'f 'r = 'x;
+type ('self, 'f, 'r) ty_rule
 
-type ty_production 'a = 'x;
+type 'a ty_production
 
-type ty_extension = 'x;
+type ty_extension
 
-value s_facto : ty_symbol 'self 'a -> ty_symbol 'self 'a;
+val s_facto : ('self, 'a) ty_symbol -> ('self, 'a) ty_symbol
 (*   | Smeta of string and list (g_symbol 'te) and Obj.t *)
-value s_nterm : Entry.e 'a -> ty_symbol 'self 'a;
-value s_nterml : Entry.e 'a -> string -> ty_symbol 'self 'a;
-value s_list0 : ty_symbol 'self 'a -> ty_symbol 'self (list 'a);
-value s_list0sep : ty_symbol 'self 'a -> ty_symbol 'self 'b -> bool -> ty_symbol 'self (list 'a);
-value s_list1 : ty_symbol 'self 'a -> ty_symbol 'self (list 'a);
-value s_list1sep : ty_symbol 'self 'a -> ty_symbol 'self 'b -> bool -> ty_symbol 'self (list 'a);
-value s_opt : ty_symbol 'self 'a -> ty_symbol 'self (option 'a);
-value s_flag : ty_symbol 'self 'a -> ty_symbol 'self bool;
-value s_self : ty_symbol 'self 'self;
-value s_next : ty_symbol 'self 'self;
-value s_token : Plexing.pattern -> ty_symbol 'self string;
-value s_rules : list (ty_production 'a) -> ty_symbol 'self 'a;
-value s_vala : list string -> ty_symbol 'self 'a -> ty_symbol 'self (Ploc.vala 'a);
+val s_nterm : 'a Entry.e -> ('self, 'a) ty_symbol
+val s_nterml : 'a Entry.e -> string -> ('self, 'a) ty_symbol
+val s_list0 : ('self, 'a) ty_symbol -> ('self, 'a list) ty_symbol
+val s_list0sep :
+  ('self, 'a) ty_symbol -> ('self, 'b) ty_symbol -> bool ->
+    ('self, 'a list) ty_symbol
+val s_list1 : ('self, 'a) ty_symbol -> ('self, 'a list) ty_symbol
+val s_list1sep :
+  ('self, 'a) ty_symbol -> ('self, 'b) ty_symbol -> bool ->
+    ('self, 'a list) ty_symbol
+val s_opt : ('self, 'a) ty_symbol -> ('self, 'a option) ty_symbol
+val s_flag : ('self, 'a) ty_symbol -> ('self, bool) ty_symbol
+val s_self : ('self, 'self) ty_symbol
+val s_next : ('self, 'self) ty_symbol
+val s_token : Plexing.pattern -> ('self, string) ty_symbol
+val s_rules : 'a ty_production list -> ('self, 'a) ty_symbol
+val s_vala :
+  string list -> ('self, 'a) ty_symbol -> ('self, 'a Ploc.vala) ty_symbol
 
-value r_stop : ty_rule 'self 'r 'r;
-value r_next : ty_rule 'self 'a 'r -> ty_symbol 'self 'b -> ty_rule 'self ('b -> 'a) 'r;
-value r_cut : ty_rule 'self 'a 'r -> ty_rule 'self 'a 'r;
+val r_stop : ('self, 'r, 'r) ty_rule
+val r_next :
+  ('self, 'a, 'r) ty_rule -> ('self, 'b) ty_symbol ->
+    ('self, 'b -> 'a, 'r) ty_rule
+val r_cut : ('self, 'a, 'r) ty_rule -> ('self, 'a, 'r) ty_rule
 
-value production : (ty_rule 'a 'f (Ploc.t -> 'a) * 'f) -> ty_production 'a;
+val production : ('a, 'f, Ploc.t -> 'a) ty_rule * 'f -> 'a ty_production
 
-value extension : Entry.e 'a -> option Gramext.position ->
-  list (option string * option Gramext.g_assoc * list (ty_production 'a)) -> ty_extension;
+val extension :
+  'a Entry.e -> Gramext.position option ->
+    (string option * Gramext.g_assoc option * 'a ty_production list) list ->
+    ty_extension
 
-value safe_extend : list ty_extension -> unit;
-value safe_delete_rule : Entry.e 'a -> ty_rule 'a 'f 'r -> unit;
+val safe_extend : ty_extension list -> unit
+val safe_delete_rule : 'a Entry.e -> ('a, 'f, 'r) ty_rule -> unit
 
 (** {6 Clearing grammars and entries} *)
 
 module Unsafe :
   sig
-    value gram_reinit : g -> Plexing.lexer token -> unit;
-    value clear_entry : Entry.e 'a -> unit;
+    val gram_reinit : g -> token Plexing.lexer -> unit
+    val clear_entry : 'a Entry.e -> unit
   end
-;
    (** Module for clearing grammars and entries. To be manipulated with
        care, because: 1) reinitializing a grammar destroys all tokens
        and there may have problems with the associated lexer if there
@@ -132,9 +138,9 @@ module Unsafe :
 
 (** {6 Parsing algorithm} *)
 
-type parse_algorithm = Gramext.parse_algorithm ==
-  [ Predictive | Functional | Backtracking | DefaultAlgorithm ]
-;
+type parse_algorithm =
+  Gramext.parse_algorithm =
+    Predictive | Functional | Backtracking | DefaultAlgorithm
    (** Type of algorithm used in grammar entries.
          [Predictive]: use imperative streams with predictive parsing
          [Functional]: use functional streams with limited backtracking
@@ -144,18 +150,18 @@ type parse_algorithm = Gramext.parse_algorithm ==
            variablefound in the variable CAMLP5PARAM.
        The default, when a grammar is created, is [DefaultAlgorithm]. *)
 
-value set_algorithm : g -> parse_algorithm -> unit;
+val set_algorithm : g -> parse_algorithm -> unit
    (** Set the parsing algorithm for all entries of a given grammar. *)
 
-value set_default_algorithm : parse_algorithm -> unit;
+val set_default_algorithm : parse_algorithm -> unit
    (** Set the default parsing algorithm for all grammars.
        If the environment variable CAMLP5PARAM contains "b", the
        default is [Backtracking]; if it contains 'f', the default is
        [Functional]; if it contains 'p', the default is [Predictive]. *)
-value default_algorithm : unit -> parse_algorithm;
+val default_algorithm : unit -> parse_algorithm
    (** Return the current default algorithm. *)
 
-value backtrack_stalling_limit : ref int;
+val backtrack_stalling_limit : int ref
    (** Limitation of backtracking to prevent stalling in case of syntax
        error. In backtracking algorithm, when there is a syntax error,
        the parsing continues trying to find another solution. It some
@@ -173,91 +179,77 @@ value backtrack_stalling_limit : ref int;
        rule "an entry cannot call an entry of another grammar" by
        normal OCaml typing. *)
 
-module type GLexerType =
-  sig
-    type te = 'x;
-    value lexer : Plexing.lexer te;
-  end
-;
+module type GLexerType = sig type te val lexer : te Plexing.lexer end
    (** The input signature for the functor [Grammar.GMake]: [te] is the
        type of the tokens. *)
 
 module type S =
   sig
-    type te = 'x;
-    type parsable = 'x;
-    value parsable : Stream.t char -> parsable;
-    value tokens : string -> list (string * int);
-    value glexer : Plexing.lexer te;
-    value set_algorithm : parse_algorithm -> unit;
+    type te
+    type parsable
+    val parsable : char Stream.t -> parsable
+    val tokens : string -> (string * int) list
+    val glexer : te Plexing.lexer
+    val set_algorithm : parse_algorithm -> unit
     module Entry :
       sig
-        type e 'a = 'y;
-        value create : string -> e 'a;
-        value parse : e 'a -> parsable -> 'a;
-        value name : e 'a -> string;
-        value of_parser : string -> (Stream.t te -> 'a) -> e 'a;
-        value parse_token_stream : e 'a -> Stream.t te -> 'a;
-        value print : Format.formatter -> e 'a -> unit;
-        external obj : e 'a -> Gramext.g_entry te = "%identity";
-        (* deprecated since 2017-06-17 *)
-        value parse_token : e 'a -> Stream.t te -> 'a;
+        type 'a e
+        val create : string -> 'a e
+        val parse : 'a e -> parsable -> 'a
+        val name : 'a e -> string
+        val of_parser : string -> (te Stream.t -> 'a) -> 'a e
+        val parse_token_stream : 'a e -> te Stream.t -> 'a
+        val print : Format.formatter -> 'a e -> unit
+        external obj : 'a e -> te Gramext.g_entry = "%identity"
+        val parse_token : 'a e -> te Stream.t -> 'a
       end
-    ;
-
-    type ty_symbol 'self 'a = 'x;
-    (** Type of grammar symbols. A type-safe wrapper around Gramext.symbol. The
-        first type argument is the type of the ambient entry, the second one is the
-        type of the produced value. *)
-
-    type ty_rule 'self 'f 'r = 'x;
-
-    type ty_production 'a = 'x;
-
-    value s_facto : ty_symbol 'self 'a -> ty_symbol 'self 'a;
-    (*   | Smeta of string and list (g_symbol 'te) and Obj.t *)
-    value s_nterm : Entry.e 'a -> ty_symbol 'self 'a;
-    value s_nterml : Entry.e 'a -> string -> ty_symbol 'self 'a;
-    value s_list0 : ty_symbol 'self 'a -> ty_symbol 'self (list 'a);
-    value s_list0sep : ty_symbol 'self 'a -> ty_symbol 'self 'b -> bool -> ty_symbol 'self (list 'a);
-    value s_list1 : ty_symbol 'self 'a -> ty_symbol 'self (list 'a);
-    value s_list1sep : ty_symbol 'self 'a -> ty_symbol 'self 'b -> bool -> ty_symbol 'self (list 'a);
-    value s_opt : ty_symbol 'self 'a -> ty_symbol 'self (option 'a);
-    value s_flag : ty_symbol 'self 'a -> ty_symbol 'self bool;
-    value s_self : ty_symbol 'self 'self;
-    value s_next : ty_symbol 'self 'self;
-    value s_token : Plexing.pattern -> ty_symbol 'self string;
-    value s_rules : list (ty_production 'a) -> ty_symbol 'self 'a;
-    value s_vala : list string -> ty_symbol 'self 'a -> ty_symbol 'self (Ploc.vala 'a);
-
-    value r_stop : ty_rule 'self 'r 'r;
-    value r_next : ty_rule 'self 'a 'r -> ty_symbol 'self 'b -> ty_rule 'self ('b -> 'a) 'r;
-    value r_cut : ty_rule 'self 'a 'r -> ty_rule 'self 'a 'r;
-
-    value production : (ty_rule 'a 'f (Ploc.t -> 'a) * 'f) -> ty_production 'a;
-
+    type ('self, 'a) ty_symbol
+    type ('self, 'f, 'r) ty_rule
+    type 'a ty_production
+    val s_facto : ('self, 'a) ty_symbol -> ('self, 'a) ty_symbol
+    val s_nterm : 'a Entry.e -> ('self, 'a) ty_symbol
+    val s_nterml : 'a Entry.e -> string -> ('self, 'a) ty_symbol
+    val s_list0 : ('self, 'a) ty_symbol -> ('self, 'a list) ty_symbol
+    val s_list0sep :
+      ('self, 'a) ty_symbol -> ('self, 'b) ty_symbol -> bool ->
+        ('self, 'a list) ty_symbol
+    val s_list1 : ('self, 'a) ty_symbol -> ('self, 'a list) ty_symbol
+    val s_list1sep :
+      ('self, 'a) ty_symbol -> ('self, 'b) ty_symbol -> bool ->
+        ('self, 'a list) ty_symbol
+    val s_opt : ('self, 'a) ty_symbol -> ('self, 'a option) ty_symbol
+    val s_flag : ('self, 'a) ty_symbol -> ('self, bool) ty_symbol
+    val s_self : ('self, 'self) ty_symbol
+    val s_next : ('self, 'self) ty_symbol
+    val s_token : Plexing.pattern -> ('self, string) ty_symbol
+    val s_rules : 'a ty_production list -> ('self, 'a) ty_symbol
+    val s_vala :
+      string list -> ('self, 'a) ty_symbol -> ('self, 'a Ploc.vala) ty_symbol
+    val r_stop : ('self, 'r, 'r) ty_rule
+    val r_next :
+      ('self, 'a, 'r) ty_rule -> ('self, 'b) ty_symbol ->
+        ('self, 'b -> 'a, 'r) ty_rule
+    val r_cut : ('self, 'a, 'r) ty_rule -> ('self, 'a, 'r) ty_rule
+    val production : ('a, 'f, Ploc.t -> 'a) ty_rule * 'f -> 'a ty_production
     module Unsafe :
       sig
-        value gram_reinit : Plexing.lexer te -> unit;
-        value clear_entry : Entry.e 'a -> unit;
+        val gram_reinit : te Plexing.lexer -> unit
+        val clear_entry : 'a Entry.e -> unit
       end
-    ;
-    value extend :
-      Entry.e 'a -> option Gramext.position ->
-        list
-          (option string * option Gramext.g_assoc *
-           list (list (Gramext.g_symbol te) * Gramext.g_action)) ->
-        unit;
-    value safe_extend :
-      Entry.e 'a -> option Gramext.position ->
-        list
-          (option string * option Gramext.g_assoc *
-            list (ty_production 'a)) ->
-        unit;
-    value delete_rule : Entry.e 'a -> list (Gramext.g_symbol te) -> unit;
-    value safe_delete_rule : Entry.e 'a -> ty_rule 'a 'f 'r -> unit;
+    val extend :
+      'a Entry.e -> Gramext.position option ->
+        (string option * Gramext.g_assoc option *
+           (te Gramext.g_symbol list * Gramext.g_action) list)
+          list ->
+        unit
+    val safe_extend :
+      'a Entry.e -> Gramext.position option ->
+        (string option * Gramext.g_assoc option * 'a ty_production list)
+          list ->
+        unit
+    val delete_rule : 'a Entry.e -> te Gramext.g_symbol list -> unit
+    val safe_delete_rule : 'a Entry.e -> ('a, 'f, 'r) ty_rule -> unit
   end
-;
    (** Signature type of the functor [Grammar.GMake]. The types and
        functions are almost the same than in generic interface, but:
 -      Grammars are not values. Functions holding a grammar as parameter
@@ -268,11 +260,11 @@ module type S =
          type (instead of (string * string)); the module parameter
          must specify a way to show them as (string * string) *)
 
-module GMake (L : GLexerType) : S with type te = L.te;
+module GMake (L : GLexerType) : S with type te = L.te
 
 (** {6 Miscellaneous} *)
 
-value skip_item : 'a -> 'a;
+val skip_item : 'a -> 'a
    (** [Grammar.skip_item x] can be called in a semantic action of
        a grammar rule to ask the grammar to skip that item if it
        is called in a list (LIST0 or LIST1). The function returns
@@ -280,59 +272,58 @@ value skip_item : 'a -> 'a;
        This function is used to allow IFDEF and IFNDEF for cases of
        constructor declarations and pattern matchings. *)
 
-value error_verbose : ref bool;
+val error_verbose : bool ref
    (** Flag for displaying more information in case of parsing error;
        default = [False] *)
 
-value warning_verbose : ref bool;
+val warning_verbose : bool ref
    (** Flag for displaying warnings while extension; default = [True] *)
 
-value strict_parsing : ref bool;
+val strict_parsing : bool ref
    (** Flag to apply strict parsing, without trying to recover errors;
        default = [False] *)
 
-value utf8_print : ref bool;
+val utf8_print : bool ref
    (** Flag to consider strings as utf8-encoded when printing them;
        default = [True] *)
 
-value print_entry : Format.formatter -> Gramext.g_entry 'te -> unit;
+val print_entry : Format.formatter -> 'te Gramext.g_entry -> unit
    (** General printer for all kinds of entries (obj entries) *)
 
-value iter_entry :
-  (Gramext.g_entry 'te -> unit) -> Gramext.g_entry 'te -> unit;
+val iter_entry : ('te Gramext.g_entry -> unit) -> 'te Gramext.g_entry -> unit
   (** [Grammar.iter_entry f e] applies [f] to the entry [e] and
       transitively all entries called by [e]. The order in which
       the entries are passed to [f] is the order they appear in
       each entry. Each entry is passed only once. *)
 
-value fold_entry :
-  (Gramext.g_entry 'te -> 'a -> 'a) -> Gramext.g_entry 'te -> 'a -> 'a;
+val fold_entry :
+  ('te Gramext.g_entry -> 'a -> 'a) -> 'te Gramext.g_entry -> 'a -> 'a
   (** [Grammar.fold_entry f e init] computes [(f eN .. (f e2 (f e1 init)))],
       where [e1 .. eN] are [e] and transitively all entries called by [e].
       The order in which the entries are passed to [f] is the order they
       appear in each entry. Each entry is passed only once. *)
 
-value reinit_entry_functions : Gramext.g_entry 'te -> unit;
+val reinit_entry_functions : 'te Gramext.g_entry -> unit
 
 (*** For system use *)
 
-value loc_of_token_interval : int -> int -> Ploc.t;
-value extend :
-  list
-    (Gramext.g_entry 'te * option Gramext.position *
-     list
-       (option string * option Gramext.g_assoc *
-        list (list (Gramext.g_symbol 'te) * Gramext.g_action))) ->
-    unit;
-value delete_rule : Entry.e 'a -> list (Gramext.g_symbol token) -> unit;
+val loc_of_token_interval : int -> int -> Ploc.t
+val extend :
+  ('te Gramext.g_entry * Gramext.position option *
+     (string option * Gramext.g_assoc option *
+        ('te Gramext.g_symbol list * Gramext.g_action) list)
+       list)
+    list ->
+    unit
+val delete_rule : 'a Entry.e -> token Gramext.g_symbol list -> unit
 
-value parse_top_symb :
-  Gramext.g_entry 'te -> Gramext.g_symbol 'te -> Stream.t 'te -> Obj.t;
-value symb_failed_txt :
-  Gramext.g_entry 'te -> Gramext.g_symbol 'te -> Gramext.g_symbol 'te ->
-    string;
-value create_local_entry : g -> string -> Entry.e 'a;
+val parse_top_symb :
+  'te Gramext.g_entry -> 'te Gramext.g_symbol -> 'te Stream.t -> Obj.t
+val symb_failed_txt :
+  'te Gramext.g_entry -> 'te Gramext.g_symbol -> 'te Gramext.g_symbol ->
+    string
+val create_local_entry : g -> string -> 'a Entry.e
 
 (* deprecated since 2017-06-06 *)
 (* rather use "set_default_algorithm Backtracking" *)
-value backtrack_parse : ref bool;
+val backtrack_parse : bool ref

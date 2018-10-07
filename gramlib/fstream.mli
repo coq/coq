@@ -28,68 +28,69 @@
    case of the previous rule is tested.
 *)
 
-exception Cut;
+exception Cut
 
 (** Functional streams *)
 
-type t 'a = 'x;
+type 'a t
     (* The type of 'a functional streams *)
-value from : (int -> option 'a) -> t 'a;
+val from : (int -> 'a option) -> 'a t
     (* [Fstream.from f] returns a stream built from the function [f].
        To create a new stream element, the function [f] is called with
        the current stream count. The user function [f] must return either
        [Some <value>] for a value or [None] to specify the end of the
        stream. *)
 
-value of_list : list 'a -> t 'a;
+val of_list : 'a list -> 'a t
     (* Return the stream holding the elements of the list in the same
        order. *)
-value of_string : string -> t char;
+val of_string : string -> char t
     (* Return the stream of the characters of the string parameter. *)
-value of_channel : in_channel -> t char;
+val of_channel : in_channel -> char t
     (* Return the stream of the characters read from the input channel. *)
 
-value iter : ('a -> unit) -> t 'a -> unit;
+val iter : ('a -> unit) -> 'a t -> unit
     (* [Fstream.iter f s] scans the whole stream s, applying function [f]
        in turn to each stream element encountered. *)
 
-value next : t 'a -> option ('a * t 'a);
+val next : 'a t -> ('a * 'a t) option
     (* Return [Some (a, s)] where [a] is the first element of the stream
        and [s] the remaining stream, or [None] if the stream is empty. *)
-value empty : t 'a -> option (unit * t 'a);
+val empty : 'a t -> (unit * 'a t) option
     (* Return [Some ((), s)] if the stream is empty where [s] is itself,
        else [None] *)
-value count : t 'a -> int;
+val count : 'a t -> int
     (* Return the current count of the stream elements, i.e. the number
        of the stream elements discarded. *)
-value count_unfrozen : t 'a -> int;
+val count_unfrozen : 'a t -> int
     (* Return the number of unfrozen elements in the beginning of the
        stream; useful to determine the position of a parsing error (longuest
        path). *)
 
 (** Backtracking parsers *)
 
-type kont 'a 'b = [ K of unit -> option ('b * t 'a * kont 'a 'b) ];
+type ('a, 'b) kont =
+    K of (unit -> ('b * 'a t * ('a, 'b) kont) option)
     (* The type of continuation of a backtracking parser. *)
-type bp 'a 'b = t 'a -> option ('b * t 'a * kont 'a 'b);
+type ('a, 'b) bp = 'a t -> ('b * 'a t * ('a, 'b) kont) option
     (* The type of a backtracking parser. *)
 
-value bcontinue : kont 'a 'b -> option ('b * t 'a * kont 'a 'b);
+val bcontinue : ('a, 'b) kont -> ('b * 'a t * ('a, 'b) kont) option
    (* [bcontinue k] return the next solution of a backtracking parser. *)
 
-value bparse_all : bp 'a 'b -> t 'a -> list 'b;
+val bparse_all : ('a, 'b) bp -> 'a t -> 'b list
     (* [bparse_all p strm] return the list of all solutions of a
        backtracking parser applied to a functional stream. *)
 
 (*--*)
 
-value nil : t 'a;
-type data 'a = 'x;
-value cons : 'a -> t 'a -> data 'a;
-value app : t 'a -> t 'a -> data 'a;
-value flazy : (unit -> data 'a) -> t 'a;
+val nil : 'a t
+type 'a data
+val cons : 'a -> 'a t -> 'a data
+val app : 'a t -> 'a t -> 'a data
+val flazy : (unit -> 'a data) -> 'a t
 
-value b_seq : bp 'a 'b -> ('b -> bp 'a 'c) -> bp 'a 'c;
-value b_or : bp 'a 'b -> bp 'a 'b -> bp 'a 'b;
-value b_term : ('a -> option 'b) -> bp 'a 'b;
-value b_act : 'b -> bp 'a 'b;
+val b_seq : ('a, 'b) bp -> ('b -> ('a, 'c) bp) -> ('a, 'c) bp
+val b_or : ('a, 'b) bp -> ('a, 'b) bp -> ('a, 'b) bp
+val b_term : ('a -> 'b option) -> ('a, 'b) bp
+val b_act : 'b -> ('a, 'b) bp
