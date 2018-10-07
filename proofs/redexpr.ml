@@ -15,7 +15,6 @@ open Names
 open Constr
 open EConstr
 open Declarations
-open Globnames
 open Genredexpr
 open Pattern
 open Reductionops
@@ -79,7 +78,7 @@ let set_strategy_one ref l  =
 	  | OpaqueDef _ ->
             user_err ~hdr:"set_transparent_const"
               (str "Cannot make" ++ spc () ++
-		 Nametab.pr_global_env Id.Set.empty (ConstRef sp) ++
+                 Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef sp) ++
 		 spc () ++ str "transparent because it was declared opaque.");
 	  | _ -> Csymtable.set_transparent_const sp)
     | _ -> ()
@@ -115,7 +114,7 @@ let classify_strategy (local,_ as obj) =
 let disch_ref ref =
   match ref with
       EvalConstRef c -> Some ref
-    | EvalVarRef id -> if Lib.is_in_section (VarRef id) then None else Some ref
+    | EvalVarRef id -> if Lib.is_in_section (GlobRef.VarRef id) then None else Some ref
 
 let discharge_strategy (_,(local,obj)) =
   if local then None else

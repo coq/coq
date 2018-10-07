@@ -12,8 +12,6 @@ open Univ
 
 (** {6 Graphs of universes. } *)
 type t
-type universes = t
-[@@ocaml.deprecated "Use UGraph.t"]
 
 type 'a check_function = t -> 'a -> 'a -> bool
 

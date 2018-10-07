@@ -17,7 +17,6 @@ open Environ
 open Globnames
 open Nametab
 open Evd
-open Proof_type
 open Refiner
 open Constrextern
 open Ppconstr
@@ -98,20 +97,6 @@ let pr_econstr_env env sigma c = pr_econstr_core false env sigma c
 let pr_open_lconstr_env env sigma (_,c) = pr_leconstr_env env sigma c
 let pr_open_constr_env env sigma (_,c) = pr_econstr_env env sigma c
 
-(* NB do not remove the eta-redexes! Global.env() has side-effects... *)
-let pr_lconstr t =
-  let (sigma, env) = Pfedit.get_current_context () in
-  pr_lconstr_env env sigma t
-let pr_constr t =
-  let (sigma, env) = Pfedit.get_current_context () in
-  pr_constr_env env sigma t
-
-let pr_leconstr c = pr_lconstr (EConstr.Unsafe.to_constr c)
-let pr_econstr c = pr_constr (EConstr.Unsafe.to_constr c)
-
-let pr_open_lconstr (_,c) = pr_leconstr c
-let pr_open_constr (_,c) = pr_econstr c
-
 let pr_constr_under_binders_env_gen pr env sigma (ids,c) =
   (* Warning: clashes can occur with variables of same name in env but *)
   (* we also need to preserve the actual names of the patterns *)
@@ -122,26 +107,12 @@ let pr_constr_under_binders_env_gen pr env sigma (ids,c) =
 let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_econstr_env
 let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_leconstr_env
 
-let pr_constr_under_binders c =
-  let (sigma, env) = Pfedit.get_current_context () in
-  pr_constr_under_binders_env env sigma c
-let pr_lconstr_under_binders c =
-  let (sigma, env) = Pfedit.get_current_context () in
-  pr_lconstr_under_binders_env env sigma c
-
 let pr_etype_core goal_concl_style env sigma t =
   pr_constr_expr (extern_type goal_concl_style env sigma t)
 let pr_letype_core = Proof_diffs.pr_letype_core
 
 let pr_ltype_env env sigma c = pr_letype_core false env sigma (EConstr.of_constr c)
 let pr_type_env env sigma c = pr_etype_core false env sigma (EConstr.of_constr c)
-
-let pr_ltype t =
-    let (sigma, env) = Pfedit.get_current_context () in
-    pr_ltype_env env sigma t
-let pr_type t =
-    let (sigma, env) = Pfedit.get_current_context () in
-    pr_type_env env sigma t
 
 let pr_etype_env env sigma c = pr_etype_core false env sigma c
 let pr_letype_env env sigma c = pr_letype_core false env sigma c
@@ -150,29 +121,15 @@ let pr_goal_concl_style_env env sigma c = pr_letype_core true env sigma c
 let pr_ljudge_env env sigma j =
   (pr_leconstr_env env sigma j.uj_val, pr_leconstr_env env sigma j.uj_type)
 
-let pr_ljudge j =
-  let (sigma, env) = Pfedit.get_current_context () in
-  pr_ljudge_env env sigma j
-
 let pr_lglob_constr_env env c =
   pr_lconstr_expr (extern_glob_constr (Termops.vars_of_env env) c)
 let pr_glob_constr_env env c =
   pr_constr_expr (extern_glob_constr (Termops.vars_of_env env) c)
 
-let pr_lglob_constr c =
-  let (sigma, env) = Pfedit.get_current_context () in
-  pr_lglob_constr_env env c
-let pr_glob_constr c =
-  let (sigma, env) = Pfedit.get_current_context () in
-  pr_glob_constr_env env c
-
 let pr_closed_glob_n_env env sigma n c =
   pr_constr_expr_n n (extern_closed_glob false env sigma c)
 let pr_closed_glob_env env sigma c =
   pr_constr_expr (extern_closed_glob false env sigma c)
-let pr_closed_glob c =
-  let (sigma, env) = Pfedit.get_current_context () in
-  pr_closed_glob_env env sigma c
 
 let pr_lconstr_pattern_env env sigma c =
   pr_lconstr_pattern_expr (extern_constr_pattern (Termops.names_of_rel_context env) sigma c)
@@ -181,13 +138,6 @@ let pr_constr_pattern_env env sigma c =
 
 let pr_cases_pattern t =
   pr_cases_pattern_expr (extern_cases_pattern Names.Id.Set.empty t)
-
-let pr_lconstr_pattern t =
-  let (sigma, env) = Pfedit.get_current_context () in
-  pr_lconstr_pattern_env env sigma t
-let pr_constr_pattern t =
-  let (sigma, env) = Pfedit.get_current_context () in
-  pr_constr_pattern_env env sigma t
 
 let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
 
@@ -247,13 +197,6 @@ let safe_gen f env sigma c =
 
 let safe_pr_lconstr_env = safe_gen pr_lconstr_env
 let safe_pr_constr_env = safe_gen pr_constr_env
-let safe_pr_lconstr t =
-  let (sigma, env) = Pfedit.get_current_context () in
-  safe_pr_lconstr_env env sigma t
-
-let safe_pr_constr t =
-  let (sigma, env) = Pfedit.get_current_context () in
-  safe_pr_constr_env env sigma t
 
 let pr_universe_ctx_set sigma c =
   if !Detyping.print_universes && not (Univ.ContextSet.is_empty c) then
@@ -888,19 +831,6 @@ let pr_goal_by_id ~proof id =
       let g = Evd.evar_key id sigma in
       pr_selected_subgoal (pr_id id) sigma g)
   with Not_found -> user_err Pp.(str "No such goal.")
-
-(* Elementary tactics *)
-
-let pr_prim_rule = function
-  | Refine c ->
-      (** FIXME *)
-      str(if Termops.occur_meta Evd.empty (EConstr.of_constr c) then "refine " else "exact ") ++
-      Constrextern.with_meta_as_hole pr_constr c
-
-(* Backwards compatibility *)
-
-let prterm = pr_lconstr
-
 
 (* Printer function for sets of Assumptions.assumptions.
    It is used primarily by the Print Assumptions command. *)

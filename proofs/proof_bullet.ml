@@ -197,6 +197,3 @@ let put p b =
 
 let suggest p =
   (!current_behavior).suggest p
-
-let pr_goal_selector = Goal_select.pr_goal_selector
-let get_default_goal_selector = Goal_select.get_default_goal_selector

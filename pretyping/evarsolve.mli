@@ -62,9 +62,6 @@ val solve_simple_eqn : conv_fun -> ?choose:bool -> env ->  evar_map ->
 
 val reconsider_unif_constraints : conv_fun -> evar_map -> unification_result
 
-val reconsider_conv_pbs : conv_fun -> evar_map -> unification_result
-[@@ocaml.deprecated "Alias for [reconsider_unif_constraints]"]
-
 val is_unification_pattern_evar : env -> evar_map -> existential -> constr list ->
   constr -> alias list option
 

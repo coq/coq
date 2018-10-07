@@ -1552,11 +1552,6 @@ let pr_hint_db_env env sigma db =
   hov 2 (str"Cut: " ++ pp_hints_path (Hint_db.cut db)) ++ fnl () ++
   content
 
-(* Deprecated in the mli *)
-let pr_hint_db db =
-  let sigma, env = Pfedit.get_current_context () in
-  pr_hint_db_env env sigma db
-
 let pr_hint_db_by_name env sigma dbname =
   try
     let db = searchtable_map dbname in pr_hint_db_env env sigma db

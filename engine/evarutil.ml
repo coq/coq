@@ -11,7 +11,6 @@
 open CErrors
 open Util
 open Names
-open Term
 open Constr
 open Environ
 open Evd
@@ -42,9 +41,6 @@ let evd_comb2 f evdref x y =
   let (evd',z) = f !evdref x y in
     evdref := evd';
     z
-
-let e_new_global evdref x = 
-  evd_comb1 (Evd.fresh_global (Global.env())) evdref x
 
 let new_global evd x = 
   let (evd, c) = Evd.fresh_global (Global.env()) evd x in
@@ -87,23 +83,6 @@ let tj_nf_evar sigma {utj_val=v;utj_type=t} =
 let nf_evars_universes evm =
   UnivSubst.nf_evars_and_universes_opt_subst (safe_evar_value evm)
     (Evd.universe_subst evm)
-    
-let nf_evars_and_universes evm =
-  let evm = Evd.minimize_universes evm in
-    evm, nf_evars_universes evm
-
-let e_nf_evars_and_universes evdref =
-  evdref := Evd.minimize_universes !evdref;
-  nf_evars_universes !evdref, Evd.universe_subst !evdref
-
-let nf_evar_map_universes evm =
-  let evm = Evd.minimize_universes evm in
-  let subst = Evd.universe_subst evm in
-    if Univ.LMap.is_empty subst then evm, nf_evar0 evm
-    else
-      let f = nf_evars_universes evm in
-      let f' c = EConstr.of_constr (f (EConstr.Unsafe.to_constr c)) in
-        Evd.raw_map (fun _ -> map_evar_info f') evm, f
 
 let nf_named_context_evar sigma ctx =
   Context.Named.map (nf_evar0 sigma) ctx
@@ -490,25 +469,10 @@ let new_type_evar ?src ?filter ?naming ?principal ?hypnaming env evd rigid =
   let (evd', e) = new_evar env evd' ?src ?filter ?naming ?principal ?hypnaming (EConstr.mkSort s) in
   evd', (e, s)
 
-let e_new_type_evar env evdref ?src ?filter ?naming ?principal ?hypnaming rigid =
-  let (evd, c) = new_type_evar env !evdref ?src ?filter ?naming ?principal ?hypnaming rigid in
-    evdref := evd;
-    c
-
 let new_Type ?(rigid=Evd.univ_flexible) evd =
   let open EConstr in
   let (evd, s) = new_sort_variable rigid evd in
   (evd, mkSort s)
-
-let e_new_Type ?(rigid=Evd.univ_flexible) evdref =
-  let evd', s = new_sort_variable rigid !evdref in
-    evdref := evd'; EConstr.mkSort s
-
-  (* The same using side-effect *)
-let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?store ?naming ?principal ?hypnaming ty =
-  let (evd',ev) = new_evar env !evdref ~src:src ?filter ?candidates ?store ?naming ?principal ?hypnaming ty in
-  evdref := evd';
-  ev
 
 (* Safe interface to unification problems *)
 type unification_pb = conv_pb * env * EConstr.constr * EConstr.constr
@@ -853,7 +817,7 @@ let occur_evar_upto sigma n c =
 let judge_of_new_Type evd =
   let open EConstr in
   let (evd', s) = new_univ_variable univ_rigid evd in
-  (evd', { uj_val = mkSort (Type s); uj_type = mkSort (Type (Univ.super s)) })
+  (evd', { uj_val = mkSort (Sorts.Type s); uj_type = mkSort (Sorts.Type (Univ.super s)) })
 
 let subterm_source evk ?where (loc,k) =
   let evk = match k with

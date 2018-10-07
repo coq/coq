@@ -60,10 +60,6 @@ let tclIFTHENSELSE   = Refiner.tclIFTHENSELSE
 let tclIFTHENSVELSE   = Refiner.tclIFTHENSVELSE
 let tclIFTHENTRYELSEMUST = Refiner.tclIFTHENTRYELSEMUST
 
-(* Synonyms *)
-
-let tclTHENSEQ       = tclTHENLIST
-
 (************************************************************************)
 (* Tacticals applying on hypotheses                                     *)
 (************************************************************************)

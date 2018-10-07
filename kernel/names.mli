@@ -527,15 +527,8 @@ val eq_constant_key : Constant.t -> Constant.t -> bool
 
 (** equalities on constant and inductive names (for the checker) *)
 
-val eq_con_chk : Constant.t -> Constant.t -> bool
-[@@ocaml.deprecated "Same as [Constant.UserOrd.equal]."]
-
 val eq_ind_chk : inductive -> inductive -> bool
 
-(** {6 Deprecated functions. For backward compatibility.} *)
-
-type mod_bound_id = MBId.t
-[@@ocaml.deprecated "Same as [MBId.t]."]
 (** {5 Module paths} *)
 
 type module_path = ModPath.t =
@@ -625,9 +618,6 @@ module Projection : sig
 
 end
 
-type projection = Projection.t
-[@@ocaml.deprecated "Alias for [Projection.t]"]
-
 (** {6 Global reference is a kernel side type for all references together } *)
 
 (* XXX: Should we define GlobRefCan GlobRefUser? *)
@@ -664,9 +654,6 @@ module GlobRef : sig
     with type key = t and module Set := Set
 
 end
-
-type global_reference = GlobRef.t
-[@@ocaml.deprecated "Alias for [GlobRef.t]"]
 
 (** Better to have it here that in Closure, since required in grammar.cma *)
 (* XXX: Move to a module *)

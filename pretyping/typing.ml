@@ -398,9 +398,6 @@ let check env sigma c t =
     error_actual_type_core env sigma j t
   | Some sigma -> sigma
 
-let e_check env evdref c t =
-  evdref := check env !evdref c t
-
 (* Type of a constr *)
 
 let unsafe_type_of env sigma c =
@@ -416,9 +413,6 @@ let sort_of env sigma c =
   let sigma, a = type_judgment env sigma j in
   sigma, a.utj_type
 
-let e_sort_of env evdref c =
-  Evarutil.evd_comb1 (sort_of env) evdref c
-
 (* Try to solve the existential variables by typing *)
 
 let type_of ?(refresh=false) env sigma c =
@@ -429,16 +423,10 @@ let type_of ?(refresh=false) env sigma c =
       Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma j.uj_type
     else sigma, j.uj_type
 
-let e_type_of ?refresh env evdref c =
-  Evarutil.evd_comb1 (type_of ?refresh env) evdref c
-
 let solve_evars env sigma c =
   let env = enrich_env env sigma in
   let sigma, j = execute env sigma c in
   (* side-effect on evdref *)
   sigma, nf_evar sigma j.uj_val
-
-let e_solve_evars env evdref c =
-  Evarutil.evd_comb1 (solve_evars env) evdref c
 
 let _ = Evarconv.set_solve_evars (fun env sigma c -> solve_evars env sigma c)

@@ -13,8 +13,6 @@
      environment. *)
 
 type t
-type state = t
-[@@ocaml.deprecated "please use [Proof_global.t]"]
 
 val there_are_pending_proofs : unit -> bool
 val check_no_pending_proof : unit -> unit

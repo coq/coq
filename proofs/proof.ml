@@ -122,8 +122,6 @@ type t = {
   initial_euctx : UState.t
 }
 
-type proof = t
-
 (*** General proof functions ***)
 
 let proof p =
@@ -435,9 +433,6 @@ let pr_proof p =
 
 (*** Compatibility layer with <=v8.2 ***)
 module V82 = struct
-  let subgoals p =
-    let it, sigma = Proofview.proofview p.proofview in
-    Evd.{ it; sigma }
 
   let background_subgoals p =
     let it, sigma = Proofview.proofview (unroll_focus p.proofview p.focus_stack) in

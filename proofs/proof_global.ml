@@ -101,7 +101,6 @@ type pstate = {
 }
 
 type t = pstate list
-type state = t
 
 let make_terminator f = f
 let apply_terminator f = f

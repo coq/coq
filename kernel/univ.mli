@@ -51,9 +51,6 @@ sig
   val name : t -> (Names.DirPath.t * int) option
 end
 
-type universe_level = Level.t
-[@@ocaml.deprecated "Use Level.t"]
-
 (** Sets of universe levels *)
 module LSet :
 sig
@@ -62,9 +59,6 @@ sig
   val pr : (Level.t -> Pp.t) -> t -> Pp.t
   (** Pretty-printing *)
 end
-
-type universe_set = LSet.t
-[@@ocaml.deprecated "Use LSet.t"]
 
 module Universe :
 sig
@@ -130,9 +124,6 @@ sig
 
 end
 
-type universe = Universe.t
-[@@ocaml.deprecated "Use Universe.t"]
-
 (** Alias name. *)
 
 val pr_uni : Universe.t -> Pp.t
@@ -170,9 +161,6 @@ type univ_constraint = Level.t * constraint_type * Level.t
 module Constraint : sig
  include Set.S with type elt = univ_constraint
 end
-
-type constraints = Constraint.t
-[@@ocaml.deprecated "Use Constraint.t"]
 
 val empty_constraint : Constraint.t
 val union_constraint : Constraint.t -> Constraint.t -> Constraint.t
@@ -301,9 +289,6 @@ sig
 
 end
 
-type universe_instance = Instance.t
-[@@ocaml.deprecated "Use Instance.t"]
-
 val enforce_eq_instances : Instance.t constraint_function
 
 val enforce_eq_variance_instances : Variance.t array -> Instance.t constraint_function
@@ -340,9 +325,6 @@ sig
 
 end
 
-type universe_context = UContext.t
-[@@ocaml.deprecated "Use UContext.t"]
-
 module AUContext :
 sig
   type t
@@ -366,9 +348,6 @@ sig
   (** Generate the set of instantiated Constraint.t **)
 
 end
-
-type abstract_universe_context = AUContext.t
-[@@ocaml.deprecated "Use AUContext.t"]
 
 (** Universe info for cumulative inductive types: A context of
    universe levels with universe constraints, representing local
@@ -398,9 +377,6 @@ sig
   val eq_constraints : t -> Instance.t constraint_function
 end
 
-type cumulativity_info = CumulativityInfo.t
-[@@ocaml.deprecated "Use CumulativityInfo.t"]
-
 module ACumulativityInfo :
 sig
   type t
@@ -411,10 +387,12 @@ sig
   val eq_constraints : t -> Instance.t constraint_function
 end
 
-type abstract_cumulativity_info = ACumulativityInfo.t
-[@@ocaml.deprecated "Use ACumulativityInfo.t"]
-
 (** Universe contexts (as sets) *)
+
+(** A set of universes with universe Constraint.t.
+    We linearize the set to a list after typechecking.
+    Beware, representation could change.
+*)
 
 module ContextSet :
 sig
@@ -450,13 +428,6 @@ sig
   (** the number of universes in the context *)
   val size : t -> int
 end
-
-(** A set of universes with universe Constraint.t.
-    We linearize the set to a list after typechecking.
-    Beware, representation could change.
-*)
-type universe_context_set = ContextSet.t
-[@@ocaml.deprecated "Use ContextSet.t"]
 
 (** A value in a universe context (resp. context set). *)
 type 'a in_universe_context = 'a * UContext.t
@@ -532,20 +503,3 @@ val hcons_abstract_universe_context : AUContext.t -> AUContext.t
 val hcons_universe_context_set : ContextSet.t -> ContextSet.t
 val hcons_cumulativity_info : CumulativityInfo.t -> CumulativityInfo.t
 val hcons_abstract_cumulativity_info : ACumulativityInfo.t -> ACumulativityInfo.t
-
-(******)
-
-(* deprecated: use qualified names instead *)
-val compare_levels : Level.t -> Level.t -> int
-[@@ocaml.deprecated "Use Level.compare"]
-
-val eq_levels : Level.t -> Level.t -> bool
-[@@ocaml.deprecated "Use Level.equal"]
-
-(** deprecated: Equality of formal universe expressions. *)
-val equal_universes : Universe.t -> Universe.t -> bool
-[@@ocaml.deprecated "Use Universe.equal"]
-
-(** Universes of Constraint.t *)
-val universes_of_constraints : Constraint.t -> LSet.t
-[@@ocaml.deprecated "Use Constraint.universes_of"]

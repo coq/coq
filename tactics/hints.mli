@@ -298,9 +298,4 @@ val pr_applicable_hint : unit -> Pp.t
 val pr_hint_ref : env -> evar_map -> GlobRef.t -> Pp.t
 val pr_hint_db_by_name : env -> evar_map -> hint_db_name -> Pp.t
 val pr_hint_db_env : env -> evar_map -> Hint_db.t -> Pp.t
-val pr_hint_db : Hint_db.t -> Pp.t
-[@@ocaml.deprecated "please used pr_hint_db_env"]
 val pr_hint : env -> evar_map -> hint -> Pp.t
-
-type nonrec hint_info = hint_info
-[@@ocaml.deprecated "Use [Typeclasses.hint_info]"]

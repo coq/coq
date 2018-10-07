@@ -54,7 +54,5 @@ type lexer_state
 val init_lexer_state : Loc.source -> lexer_state
 val set_lexer_state : lexer_state -> unit
 val get_lexer_state : unit -> lexer_state
-val release_lexer_state : unit -> lexer_state
-[@@ocaml.deprecated "Use get_lexer_state"]
 val drop_lexer_state : unit -> unit
 val get_comment_state : lexer_state -> ((int * int) * string) list

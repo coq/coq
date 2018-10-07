@@ -194,7 +194,6 @@ let tag_var = tag Tag.variable
     sl ++ id
 
   let pr_id = Id.print
-  let pr_name = Name.print
   let pr_qualid = pr_qualid
   let pr_patvar = pr_id
 

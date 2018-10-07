@@ -398,7 +398,6 @@ let set_lexer_state (o,s,b,c,f) =
   current_file := f
 let get_lexer_state () =
   (!comment_begin, Buffer.contents current_comment, !between_commands, !comments, !current_file)
-let release_lexer_state = get_lexer_state
 let drop_lexer_state () =
     set_lexer_state (init_lexer_state Loc.ToplevelInput)
 

@@ -173,14 +173,6 @@ val nf_evar_map_undefined : evar_map -> evar_map
 
 val nf_evars_universes : evar_map -> Constr.constr -> Constr.constr
 
-val nf_evars_and_universes : evar_map -> evar_map * (Constr.constr -> Constr.constr)
-[@@ocaml.deprecated "Use Evd.minimize_universes and nf_evars_universes"]
-
-(** Normalize the evar map w.r.t. universes, after simplification of constraints.
-    Return the substitution function for constrs as well. *)
-val nf_evar_map_universes : evar_map -> evar_map * (Constr.constr -> Constr.constr)
-[@@ocaml.deprecated "Use Evd.minimize_universes and nf_evar_map and nf_evars_universes"]
-
 (** Replacing all evars, possibly raising [Uninstantiated_evar] *)
 exception Uninstantiated_evar of Evar.t
 val flush_and_check_evars :  evar_map -> constr -> Constr.constr
@@ -273,25 +265,3 @@ val subterm_source : Evar.t -> ?where:Evar_kinds.subevar_kind -> Evar_kinds.t Lo
   Evar_kinds.t Loc.located
 
 val meta_counter_summary_tag : int Summary.Dyn.tag
-
-val e_new_evar :
-  env -> evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
-  ?naming:intro_pattern_naming_expr ->
-  ?principal:bool -> ?hypnaming:naming_mode -> types -> constr
-[@@ocaml.deprecated "Use [Evarutil.new_evar]"]
-
-val e_new_type_evar : env -> evar_map ref ->
-  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?naming:intro_pattern_naming_expr ->
-  ?principal:bool -> ?hypnaming:naming_mode -> rigid -> constr * Sorts.t
-[@@ocaml.deprecated "Use [Evarutil.new_type_evar]"]
-
-val e_new_Type : ?rigid:rigid -> evar_map ref -> constr
-[@@ocaml.deprecated "Use [Evarutil.new_Type]"]
-
-val e_new_global : evar_map ref -> GlobRef.t -> constr
-[@@ocaml.deprecated "Use [Evarutil.new_global]"]
-
-val e_nf_evars_and_universes : evar_map ref -> (Constr.constr -> Constr.constr) * UnivSubst.universe_opt_subst
-[@@ocaml.deprecated "Use Evd.minimize_universes and nf_evars_universes"]

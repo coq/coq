@@ -44,9 +44,3 @@ val register_behavior : behavior -> unit
      *)
 val put : Proof.t -> t -> Proof.t
 val suggest : Proof.t -> Pp.t
-
-(** Deprecated  *)
-val pr_goal_selector : Goal_select.t -> Pp.t
-[@@ocaml.deprecated "Please use [Goal_select.pr_goal_selector]"]
-val get_default_goal_selector : unit -> Goal_select.t
-[@@ocaml.deprecated "Please use [Goal_select.get_default_goal_selector]"]

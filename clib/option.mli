@@ -75,9 +75,6 @@ val iter2 : ('a -> 'b -> unit) -> 'a option -> 'b option -> unit
 (** [map f x] is [None] if [x] is [None] and [Some (f y)] if [x] is [Some y]. *)
 val map : ('a -> 'b) -> 'a option -> 'b option
 
-val smartmap : ('a -> 'a) -> 'a option -> 'a option
-[@@ocaml.deprecated "Same as [Smart.map]"]
-
 (** [fold_left f a x] is [f a y] if [x] is [Some y], and [a] otherwise. *)
 val fold_left : ('b -> 'a -> 'b) -> 'b -> 'a option -> 'b
 
@@ -94,10 +91,6 @@ val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b option -> 'a * 'c option
 
 (** Same as [fold_left_map] on the right *)
 val fold_right_map : ('b -> 'a -> 'c * 'a) -> 'b option -> 'a -> 'c option * 'a
-
-(** @deprecated Same as [fold_left_map] *)
-val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b option -> 'a * 'c option
-[@@ocaml.deprecated "Same as [fold_left_map]"]
 
 (** [cata f e x] is [e] if [x] is [None] and [f a] if [x] is [Some a] *)
 val cata : ('a -> 'b) -> 'b -> 'a option -> 'b
