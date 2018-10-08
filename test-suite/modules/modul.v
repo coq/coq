@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-top" "modul") *)
 Module M.
   Parameter rel : nat -> nat -> Prop.
 
@@ -32,4 +33,4 @@ Locate rel.
 
 Locate Module M.
 
-Module N := Top.M.
+Module N := modul.M.

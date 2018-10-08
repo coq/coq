@@ -174,3 +174,4 @@ Section FunctorSectionCategory.
               _);
     abstract (path_natural_transformation; admit).
   Defined. (* Stack overflow *)
+End FunctorSectionCategory.

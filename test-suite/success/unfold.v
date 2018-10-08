@@ -23,3 +23,4 @@ Goal let x := 0 in True.
 intro x.
 Fail (clear x; unfold x).
 Abort.
+End toto.

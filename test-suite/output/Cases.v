@@ -187,6 +187,7 @@ let p := fresh "p" in
   |- eq_refl ?p = _ => pose (match eq_refl p in _ = z return p=p /\ z=z with eq_refl => conj eq_refl eq_refl end)
   end.
 Show.
+Abort.
 
 Set Printing Allow Match Default Clause.
 

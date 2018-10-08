@@ -33,3 +33,4 @@ r2 : Row (* Top.56 Top.57 *) Ts
 The term "Row (* Coq.Init.Logic.8 Top.59 *) Ts" has type
  "Type (* max(Top.58+1, Top.59) *)" while it is expected to have type
  "Type (* Coq.Init.Logic.8 *)" (Universe inconsistency). *)
+Abort.

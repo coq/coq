@@ -14,3 +14,4 @@ Hint Resolve H : bar.
 Goal forall y : foo, @x y = @x y.
 intro y.
 progress auto with bar. (* failed to progress *)
+Abort.

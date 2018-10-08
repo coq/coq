@@ -77,7 +77,7 @@ Expanded type for implicit arguments
 bar : forall x : nat, x = 0
 
 Argument x is implicit and maximally inserted
-Expands to: Constant Top.bar
+Expands to: Constant PrintInfos.bar
 *** [ bar : foo ]
 
 Expanded type for implicit arguments

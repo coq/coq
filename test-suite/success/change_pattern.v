@@ -32,3 +32,4 @@ clearbody e.
     if this is not the case because the inferred argument does not coincide with
     the one in the considered term. *)
 progress (change (dim (traverse unit a x)) with (dim X) in e).
+Abort.

@@ -31,3 +31,4 @@ Proof.
   Set Printing Universes.
   try (apply IHsub in X). (* Toplevel input, characters 5-21:
 Error: Universe inconsistency (cannot enforce Top.47 = Set). *)
+Abort.

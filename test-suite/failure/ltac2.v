@@ -4,3 +4,4 @@ Goal True -> True.
 Fail E ltac:(match goal with
         |  |- _ => intro H
         end).
+Abort.

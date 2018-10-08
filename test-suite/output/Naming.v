@@ -89,3 +89,4 @@ Show.
 apply H with (a:=a). (* test compliance with printing *)
 Abort.
 
+End A.

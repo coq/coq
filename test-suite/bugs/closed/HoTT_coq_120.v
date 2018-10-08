@@ -136,3 +136,5 @@ Section fully_faithful_helpers.
   Set Printing Universes.
   admit. (* Error: Universe inconsistency (cannot enforce Top.235 <= Set because Set
 < Top.235). *)
+  Abort.
+End fully_faithful_helpers.

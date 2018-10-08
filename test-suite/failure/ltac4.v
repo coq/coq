@@ -3,4 +3,4 @@
 Goal forall n : nat, n = n.
 induction n.
 Fail try REflexivity.
-
+Abort.

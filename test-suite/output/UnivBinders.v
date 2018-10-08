@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-top" "UnivBinders") *)
 Set Universe Polymorphism.
 Set Printing Universes.
 (* Unset Strict Universe Declaration. *)
@@ -58,7 +59,7 @@ Import mono.
 Check monomono. (* unqualified MONOU *)
 Check mono. (* still qualified mono.u *)
 
-Monomorphic Constraint Set < Top.mono.u.
+Monomorphic Constraint Set < UnivBinders.mono.u.
 
 Module mono2.
   Monomorphic Universe u.
@@ -76,10 +77,10 @@ Module SecLet.
     Definition bobmorane := tt -> ff.
   End foo.
   Print bobmorane. (*
-                     bobmorane@{Top.15 Top.16 ff.u ff.v} =
-                     let tt := Type@{Top.16} in let ff := Type@{ff.v} in tt -> ff
-                     : Type@{max(Top.15,ff.u)}
-                     (* Top.15 Top.16 ff.u ff.v |= Top.16 < Top.15
+                     bobmorane@{UnivBinders.15 UnivBinders.16 ff.u ff.v} =
+                     let tt := Type@{UnivBinders.16} in let ff := Type@{ff.v} in tt -> ff
+                     : Type@{max(UnivBinders.15,ff.u)}
+                     (* UnivBinders.15 UnivBinders.16 ff.u ff.v |= UnivBinders.16 < UnivBinders.15
                      ff.v < ff.u
                     *)
 

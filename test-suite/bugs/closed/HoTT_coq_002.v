@@ -31,3 +31,4 @@ F : @SpecializedFunctor (* Top.516 *) objC C
 The term "F" has type "@SpecializedFunctor (* Top.516 *) objC C"
  while it is expected to have type
  "@SpecializedFunctor (* Top.519 Top.520 *) objC C". *)
+End FunctorInterface.

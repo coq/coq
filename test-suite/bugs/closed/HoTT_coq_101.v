@@ -76,3 +76,4 @@ Section FullyFaithful.
   Check @FunctorProduct' C TypeCatC YC. (* Toplevel input, characters 0-37:
 Error: Universe inconsistency. Cannot enforce Top.187 = Top.186 because
 Top.186 <= Top.189 < Top.191 <= Top.187). *)
+End FullyFaithful.

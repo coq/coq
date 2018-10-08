@@ -11,3 +11,4 @@ Module B.
   Inductive foo := f.
   (* local foo shadows A.foo, so constructor "f" needs disambiguation *)
   Show Match A.foo. 
+End B.

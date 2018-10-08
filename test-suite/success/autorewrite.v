@@ -27,3 +27,4 @@ Goal forall y, exists x, y+x = y.
 eexists. autorewrite with base1.
 Fail reflexivity.
 
+Abort.

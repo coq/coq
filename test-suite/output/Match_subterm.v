@@ -4,3 +4,4 @@ match goal with
   idtac v ; fail
 | _ => idtac 2
 end.
+Abort.

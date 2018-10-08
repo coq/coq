@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-impredicative-set") *)
 Set Implicit Arguments.
 Unset Strict Implicit.
 

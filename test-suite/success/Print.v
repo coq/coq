@@ -17,3 +17,4 @@ Print Coercion Paths nat Sortclass.
 
 Print Section A.
 
+End A.

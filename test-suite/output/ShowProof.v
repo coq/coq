@@ -4,3 +4,4 @@ Proof.
 split.
 - exact I.
   Show Proof. (* Was not finding an evar name at some time *)
+Abort.

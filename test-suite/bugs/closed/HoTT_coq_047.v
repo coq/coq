@@ -46,3 +46,4 @@ Proof.
     destruct n0.
      destruct cr.
 (* Anomaly: Evar ?nnn was not declared. Please report. *)
+Abort.

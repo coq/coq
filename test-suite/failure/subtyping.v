@@ -19,3 +19,10 @@ Module TT : T.
  | L1 :  (A -> Prop) -> L.
 
 Fail End TT.
+
+ Reset L.
+ Inductive L : Prop :=
+ | L0
+ | L1 :  (A -> Prop) -> L.
+
+End TT.

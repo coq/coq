@@ -6,3 +6,4 @@ Hint Resolve H : foo.
 Goal foo.
 Typeclasses eauto := debug.
 Fail typeclasses eauto 5 with foo.
+Abort.

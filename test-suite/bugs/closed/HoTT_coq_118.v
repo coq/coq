@@ -34,3 +34,4 @@ p : tt = tt
 
 ?46 : "Contr_internal (idpath = p)"
  *)
+Abort.

@@ -42,32 +42,32 @@ Arguments D1, C1 are implicit and maximally inserted
 Argument scopes are [foo_scope type_scope _ _ _ _ _]
 The reduction tactics never unfold pf
 pf is transparent
-Expands to: Constant Top.pf
+Expands to: Constant Arguments.pf
 fcomp : forall A B C : Type, (B -> C) -> (A -> B) -> A -> C
 
 Arguments A, B, C are implicit and maximally inserted
 Argument scopes are [type_scope type_scope type_scope _ _ _]
 The reduction tactics unfold fcomp when applied to 6 arguments 
 fcomp is transparent
-Expands to: Constant Top.fcomp
+Expands to: Constant Arguments.fcomp
 volatile : nat -> nat
 
 Argument scope is [nat_scope]
 The reduction tactics always unfold volatile
 volatile is transparent
-Expands to: Constant Top.volatile
+Expands to: Constant Arguments.volatile
 f : T1 -> T2 -> nat -> unit -> nat -> nat
 
 Argument scopes are [_ _ nat_scope _ nat_scope]
 f is transparent
-Expands to: Constant Top.S1.S2.f
+Expands to: Constant Arguments.S1.S2.f
 f : T1 -> T2 -> nat -> unit -> nat -> nat
 
 Argument scopes are [_ _ nat_scope _ nat_scope]
 The reduction tactics unfold f when the 3rd, 4th and
   5th arguments evaluate to a constructor 
 f is transparent
-Expands to: Constant Top.S1.S2.f
+Expands to: Constant Arguments.S1.S2.f
 f : forall T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
 
 Argument T2 is implicit
@@ -75,7 +75,7 @@ Argument scopes are [type_scope _ _ nat_scope _ nat_scope]
 The reduction tactics unfold f when the 4th, 5th and
   6th arguments evaluate to a constructor 
 f is transparent
-Expands to: Constant Top.S1.f
+Expands to: Constant Arguments.S1.f
 f : forall T1 T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
 
 Arguments T1, T2 are implicit
@@ -83,7 +83,7 @@ Argument scopes are [type_scope type_scope _ _ nat_scope _ nat_scope]
 The reduction tactics unfold f when the 5th, 6th and
   7th arguments evaluate to a constructor 
 f is transparent
-Expands to: Constant Top.f
+Expands to: Constant Arguments.f
      = forall v : unit, f 0 0 5 v 3 = 2
      : Prop
      = 2 = 2
@@ -93,7 +93,7 @@ f : forall T1 T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
 The reduction tactics unfold f when the 5th, 6th and
   7th arguments evaluate to a constructor 
 f is transparent
-Expands to: Constant Top.f
+Expands to: Constant Arguments.f
 forall w : r, w 3 true = tt
      : Prop
 The command has indeed failed with message:

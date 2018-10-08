@@ -1,6 +1,6 @@
 The command has indeed failed with message:
 Flag "rename" expected to rename A into B.
-File "stdin", line 2, characters 0-25:
+File "stdin", line 3, characters 0-25:
 Warning: This command is just asserting the names of arguments of identity.
 If this is what you want add ': assert' to silence the warning. If you want
 to clear implicit arguments add ': clear implicits'. If you want to clear
@@ -41,7 +41,7 @@ myrefl : forall (B : Type) (x : A), B -> myEq B x x
 Arguments are renamed to C, x, _
 Argument C is implicit and maximally inserted
 Argument scopes are [type_scope _ _]
-Expands to: Constructor Top.Test1.myrefl
+Expands to: Constructor Arguments_renaming.Test1.myrefl
 myplus = 
 fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   match n with
@@ -61,7 +61,7 @@ Argument scopes are [type_scope _ nat_scope nat_scope]
 The reduction tactics unfold myplus when the 2nd and
   3rd arguments evaluate to a constructor 
 myplus is transparent
-Expands to: Constant Top.Test1.myplus
+Expands to: Constant Arguments_renaming.Test1.myplus
 @myplus
      : forall Z : Type, Z -> nat -> nat -> nat
 Inductive myEq (A B : Type) (x : A) : A -> Prop :=
@@ -76,7 +76,7 @@ myrefl : forall (A B : Type) (x : A), B -> myEq A B x x
 Arguments are renamed to A, C, x, _
 Argument C is implicit and maximally inserted
 Argument scopes are [type_scope type_scope _ _]
-Expands to: Constructor Top.myrefl
+Expands to: Constructor Arguments_renaming.myrefl
 myrefl
      : forall (A C : Type) (x : A), C -> myEq A C x x
 myplus = 
@@ -98,7 +98,7 @@ Argument scopes are [type_scope _ nat_scope nat_scope]
 The reduction tactics unfold myplus when the 2nd and
   3rd arguments evaluate to a constructor 
 myplus is transparent
-Expands to: Constant Top.myplus
+Expands to: Constant Arguments_renaming.myplus
 @myplus
      : forall Z : Type, Z -> nat -> nat -> nat
 The command has indeed failed with message:

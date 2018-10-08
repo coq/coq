@@ -10,12 +10,12 @@ negb'' : bool -> bool
 
 Argument scope is [bool_scope]
 negb'' is transparent
-Expands to: Constant Top.A.B.negb''
+Expands to: Constant ArgumentsScope.A.B.negb''
 negb' : bool -> bool
 
 Argument scope is [bool_scope]
 negb' is transparent
-Expands to: Constant Top.A.negb'
+Expands to: Constant ArgumentsScope.A.negb'
 negb : bool -> bool
 
 Argument scope is [bool_scope]
@@ -34,11 +34,11 @@ Expands to: Constant Coq.Init.Datatypes.negb
 negb' : bool -> bool
 
 negb' is transparent
-Expands to: Constant Top.A.negb'
+Expands to: Constant ArgumentsScope.A.negb'
 negb'' : bool -> bool
 
 negb'' is transparent
-Expands to: Constant Top.A.B.negb''
+Expands to: Constant ArgumentsScope.A.B.negb''
 a : bool -> bool
 
 Expands to: Variable a
@@ -49,8 +49,8 @@ Expands to: Constant Coq.Init.Datatypes.negb
 negb' : bool -> bool
 
 negb' is transparent
-Expands to: Constant Top.negb'
+Expands to: Constant ArgumentsScope.negb'
 negb'' : bool -> bool
 
 negb'' is transparent
-Expands to: Constant Top.negb''
+Expands to: Constant ArgumentsScope.negb''

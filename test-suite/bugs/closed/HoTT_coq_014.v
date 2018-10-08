@@ -200,3 +200,4 @@ Polymorphic Definition UnderlyingGraphFunctor_MorphismOf (C D : SmallCategory) (
   Morphism (FunctorCategory GraphIndexingCategory TypeCat) (UnderlyingGraph C) (UnderlyingGraph D). (* Anomaly: apply_coercion. Please report.*)
 Proof.
 Admitted.
+End test.

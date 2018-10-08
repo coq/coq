@@ -1,3 +1,4 @@
+(* coq-prog-args: ("-top" "Errors") *)
 (* Test error messages *)
 
 (* Test non-regression of bug fixed in r13486 (bad printer for module names) *)
@@ -31,3 +32,6 @@ Abort.
 Fail Goal forall a f, f a = 0.
 Fail Goal forall f x, id f x = 0.
 Fail Goal forall f P,  P (f 0).
+
+Definition t := unit.
+End M.

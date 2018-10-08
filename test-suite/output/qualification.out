@@ -1,4 +1,5 @@
-File "stdin", line 19, characters 0-7:
+File "stdin", line 20, characters 0-7:
 Error: Signature components for label test do not match: expected type
-"Top.M2.t = Top.M2.M.t" but found type "Top.M2.t = Top.M2.t".
+"qualification.M2.t = qualification.M2.M.t" but found type
+"qualification.M2.t = qualification.M2.t".
 

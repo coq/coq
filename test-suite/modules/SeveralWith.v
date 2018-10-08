@@ -10,3 +10,4 @@ End ES.
 Module Make
   (AX : S)
   (X : ES with Definition A := AX.A with Definition eq := @eq AX.A).
+End Make.

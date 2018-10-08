@@ -26,3 +26,4 @@ Let SetCatFoo' : Foo.
 (* Toplevel input, characters 15-20:
 Error: Universe inconsistency (cannot enforce Set <= Prop).
  *)
+Abort.

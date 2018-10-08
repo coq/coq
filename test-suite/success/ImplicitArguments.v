@@ -27,6 +27,7 @@ Parameters (a:_) (b:a=0).
 Definition foo6 (x:=1) : forall {n:nat}, n=n := fun n => eq_refl.
 
 Fixpoint foo7 (x:=1) (n:nat) {p:nat} {struct n} : nat.
+Abort.
 
 (* Some example which should succeed with local implicit arguments *)
 
