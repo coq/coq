@@ -329,7 +329,7 @@ $(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v)): %.v
 	  $(coqchk) -silent $(call get_set_impredicativity,$<) $$opts 2>&1; R=$$?; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
-	    echo "    $<...could not be checked" ; \
+	    echo "    $<...could not be checked (Error!)" ; \
 	    $(FAIL); \
 	  fi; \
 	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"
@@ -355,7 +355,7 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	  $(coqchk) -silent -I $(shell dirname $<) -norec $(shell basename $< .v) 2>&1; R=$$?; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
-	    echo "    $<...could not be checked" ; \
+	    echo "    $<...could not be checked (Error!)" ; \
 	    $(FAIL); \
 	  fi; \
 	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"
@@ -379,7 +379,7 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	  $(coqchk) -silent -I $(shell dirname $<) -norec $(shell basename $< .v) 2>&1; R=$$?; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
-	    echo "    $<...could not be checked" ; \
+	    echo "    $<...could not be checked (Error!)" ; \
 	    $(FAIL); \
 	  fi; \
 	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"
