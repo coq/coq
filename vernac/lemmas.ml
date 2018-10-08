@@ -43,6 +43,11 @@ let call_hook ?hook ?fix_exn l c =
     let e = Option.cata (fun fix -> fix e) e fix_exn in
     iraise e
 
+let no_hook = mk_hook (fun _ _ -> ())
+
+let add_hook_backtrace ?hook ?fix_exn =
+  mk_hook (fun l c -> call_hook ?hook ?fix_exn l c)
+
 (* Support for mutually proved theorems *)
 
 let retrieve_first_recthm uctx = function

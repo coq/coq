@@ -19,6 +19,8 @@ val mk_univ_hook : (UState.t -> (Id.t * constr) list -> Decl_kinds.locality -> G
 val call_univ_hook : ?univ_hook:univ_declaration_hook -> ?fix_exn:Future.fix_exn ->
   UState.t -> (Id.t * constr) list -> Decl_kinds.locality -> GlobRef.t -> unit
 
+val no_univ_hook : univ_declaration_hook
+
 (* This is a hack to make it possible for Obligations to craft a Qed
  * behind the scenes.  The fix_exn the Stm attaches to the Future proof
  * is not available here, so we provide a side channel to get it *)

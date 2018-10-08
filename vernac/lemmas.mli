@@ -18,6 +18,10 @@ val call_hook :
   ?hook:declaration_hook -> ?fix_exn:Future.fix_exn ->
   Decl_kinds.locality -> GlobRef.t -> unit
 
+val no_hook : declaration_hook
+val add_hook_backtrace : ?hook:declaration_hook -> ?fix_exn:Future.fix_exn ->
+  declaration_hook
+
 val start_proof : Id.t -> ?pl:UState.universe_decl -> goal_kind -> Evd.evar_map ->
   ?terminator:(?hook:declaration_hook -> Proof_global.lemma_possible_guards -> Proof_global.proof_terminator) ->
   ?sign:Environ.named_context_val ->

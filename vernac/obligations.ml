@@ -29,6 +29,8 @@ let call_univ_hook ?univ_hook ?fix_exn uctx trans l c =
     let e = Option.cata (fun fix -> fix e) e fix_exn in
     iraise e
 
+let no_univ_hook = mk_univ_hook (fun _ _ _ _ -> ())
+
 module NamedDecl = Context.Named.Declaration
 
 let get_fix_exn, stm_get_fix_exn = Hook.make ()
@@ -482,7 +484,7 @@ let declare_definition prg =
   let ce = definition_entry ~fix_exn ~opaque ~types:typ ~univs body in
   let () = progmap_remove prg in
   let ubinders = UState.universe_binders uctx in
-  let hook = Lemmas.mk_hook (fun l r -> call_univ_hook ?univ_hook:prg.prg_hook ~fix_exn uctx obls l r; ()) in
+  let hook = Lemmas.mk_hook (fun l r -> call_univ_hook ?univ_hook:prg.prg_hook ~fix_exn uctx obls l r) in
   DeclareDef.declare_definition prg.prg_name
     prg.prg_kind ce ubinders prg.prg_implicits ~hook
 
