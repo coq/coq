@@ -252,6 +252,6 @@
 ########################################################################
 # aac-tactics
 ########################################################################
-: "${aactactis_CI_REF:=master}"
-: "${aactactis_CI_GITURL:=https://github.com/coq-community/aac-tactics}"
-: "${aactactis_CI_ARCHIVEURL:=${aactactis_CI_GITURL}/archive}"
+: "${aactactics_CI_REF:=master}"
+: "${aactactics_CI_GITURL:=https://github.com/coq-community/aac-tactics}"
+: "${aactactics_CI_ARCHIVEURL:=${aactactics_CI_GITURL}/archive}"
