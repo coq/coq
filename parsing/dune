@@ -2,7 +2,8 @@
  (name parsing)
  (public_name coq.parsing)
  (wrapped false)
- (libraries proofs))
+ (flags :standard -open Gramlib)
+ (libraries coq.gramlib proofs))
 
 (rule
  (targets g_prim.ml)

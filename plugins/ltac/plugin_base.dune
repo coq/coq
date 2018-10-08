@@ -3,6 +3,7 @@
  (public_name coq.plugins.ltac)
  (synopsis "Coq's LTAC tactic language")
  (modules :standard \ tauto)
+ (flags :standard -open Gramlib)
  (libraries coq.stm))
 
 (library

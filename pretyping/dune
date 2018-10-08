@@ -3,4 +3,4 @@
  (synopsis "Coq's Type Inference Component (Pretyper)")
  (public_name coq.pretyping)
  (wrapped false)
- (libraries coq.gramlib engine))
+ (libraries engine))

@@ -1,4 +1,3 @@
 (library
  (name gramlib)
- (public_name coq.gramlib)
- (wrapped false))
+ (public_name coq.gramlib))
