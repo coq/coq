@@ -776,9 +776,9 @@ let explain_unsatisfiable_constraints env sigma constr comp =
   let undef = Evd.undefined_map sigma in
   (** Only keep evars that are subject to resolution and members of the given
      component. *)
-  let is_kept evk evi = match comp with
-  | None -> Typeclasses.is_resolvable evi
-  | Some comp -> Typeclasses.is_resolvable evi && Evar.Set.mem evk comp
+  let is_kept evk _ = match comp with
+  | None -> Evd.is_resolvable_evar sigma evk
+  | Some comp -> Evd.is_resolvable_evar sigma evk && Evar.Set.mem evk comp
   in
   let undef = 
     let m = Evar.Map.filter is_kept undef in

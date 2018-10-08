@@ -60,20 +60,18 @@ type telescope =
   | TNil of Evd.evar_map
   | TCons of Environ.env * Evd.evar_map * EConstr.types * (Evd.evar_map -> EConstr.constr -> telescope)
 
-let typeclass_resolvable = Evd.Store.field ()
-
 let dependent_init =
-  (* Goals are created with a store which marks them as unresolvable
-     for type classes. *)
-  let store = Evd.Store.set Evd.Store.empty typeclass_resolvable () in
   (* Goals don't have a source location. *)
   let src = Loc.tag @@ Evar_kinds.GoalEvar in
   (* Main routine *)
   let rec aux = function
   | TNil sigma -> [], { solution = sigma; comb = []; shelf = [] }
   | TCons (env, sigma, typ, t) ->
-    let (sigma, econstr) = Evarutil.new_evar env sigma ~src ~store typ in
+    let (sigma, econstr) = Evarutil.new_evar env sigma ~src typ in
     let (gl, _) = EConstr.destEvar sigma econstr in
+    (* Goals are created with a store which marks them as unresolvable
+       for type classes. *)
+    let sigma = Evd.set_resolvable_evar sigma gl false in
     let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
     let entry = (econstr, typ) :: ret in
     entry, { solution = sol; comb = with_empty_state gl :: comb; shelf = [] }
@@ -760,11 +758,8 @@ let mark_in_evm ~goal evd content =
             | loc,_ -> loc,Evar_kinds.GoalEvar }
     else info
   in
-  let info = match Evd.Store.get info.Evd.evar_extra typeclass_resolvable with
-  | None -> { info with Evd.evar_extra = Evd.Store.set info.Evd.evar_extra typeclass_resolvable () }
-  | Some () -> info
-  in
-  Evd.add evd content info
+  let evd = Evd.add evd content info in
+  Evd.set_resolvable_evar evd content false
 
 let with_shelf tac =
   let open Proof in
@@ -1045,8 +1040,6 @@ module Unsafe = struct
   let mark_as_unresolvable p gl =
     { p with solution = mark_in_evm ~goal:false p.solution gl }
 
-  let typeclass_resolvable = typeclass_resolvable
-
 end
 
 module UnsafeRepr = Proof.Unsafe
@@ -1064,10 +1057,6 @@ let goal_nf_evar sigma gl =
   let evi = Evarutil.nf_evar_info sigma evi in
   let sigma = Evd.add sigma gl evi in
   (gl, sigma)
-
-let goal_extra evars gl =
-  let evi = Evd.find evars gl in
-  evi.Evd.evar_extra
 
 
 let catchable_exception = function
@@ -1093,7 +1082,6 @@ module Goal = struct
   let sigma {sigma} = sigma
   let hyps {env} = EConstr.named_context env
   let concl {concl} = concl
-  let extra {sigma; self} = goal_extra sigma self
 
   let gmake_with info env sigma goal state =
     { env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env ;

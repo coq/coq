@@ -1238,19 +1238,26 @@ let check_evar_instance evd evk1 body conv_algo =
   | Success evd -> evd
   | UnifFailure _ -> raise (IllTypedInstance (evenv,ty, evi.evar_concl))
 
-let update_evar_source ev1 ev2 evd =
+let update_evar_info ev1 ev2 evd =
   let loc, evs2 = evar_source ev2 evd in
-  match evs2 with
-  | (Evar_kinds.QuestionMark _ | Evar_kinds.ImplicitArg (_, _, false)) ->
-     let evi = Evd.find evd ev1 in
-     Evd.add evd ev1 {evi with evar_source = loc, evs2}
-  | _ -> evd
-  
+  let evd =
+    (* We keep the obligation evar flag during evar-evar unifications *)
+    if is_obligation_evar evd ev2 then
+      let evi = Evd.find evd ev1 in
+      let evd = Evd.add evd ev1 {evi with evar_source = loc, evs2} in
+      Evd.set_obligation_evar evd ev1
+    else evd
+  in
+  (** [ev1] inherits the unresolvability status from [ev2] *)
+  if not (Evd.is_resolvable_evar evd ev2) then
+    Evd.set_resolvable_evar evd ev1 false
+  else evd
+
 let solve_evar_evar_l2r force f g env evd aliases pbty ev1 (evk2,_ as ev2) =
   try
     let evd,body = project_evar_on_evar force g env evd aliases 0 pbty ev1 ev2 in
     let evd' = Evd.define evk2 body evd in
-    let evd' = update_evar_source (fst (destEvar evd body)) evk2 evd' in
+    let evd' = update_evar_info (fst (destEvar evd body)) evk2 evd' in
       check_evar_instance evd' evk2 body g
   with EvarSolvedOnTheFly (evd,c) ->
     f env evd pbty ev2 c
@@ -1258,13 +1265,9 @@ let solve_evar_evar_l2r force f g env evd aliases pbty ev1 (evk2,_ as ev2) =
 let opp_problem = function None -> None | Some b -> Some (not b)
 
 let preferred_orientation evd evk1 evk2 =
-  let _,src1 = (Evd.find_undefined evd evk1).evar_source in
-  let _,src2 = (Evd.find_undefined evd evk2).evar_source in
-  (* This is a heuristic useful for program to work *)
-  match src1,src2 with
-  | (Evar_kinds.QuestionMark _ | Evar_kinds.ImplicitArg (_, _, false)) , _ -> true
-  | _, (Evar_kinds.QuestionMark _ | Evar_kinds.ImplicitArg (_, _, false)) -> false
-  | _ -> true
+  if is_obligation_evar evd evk1 then true
+  else if is_obligation_evar evd evk2 then false
+  else true
 
 let solve_evar_evar_aux force f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let aliases = make_alias_map env evd in

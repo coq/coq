@@ -50,13 +50,8 @@ module V82 = struct
     let evi = Evd.find evars gl in
     evi.Evd.evar_concl
 
-  (* Access to ".evar_extra" *)
-  let extra evars gl =
-    let evi = Evd.find evars gl in
-    evi.Evd.evar_extra
-
   (* Old style mk_goal primitive *)
-  let mk_goal evars hyps concl extra =
+  let mk_goal evars hyps concl =
     (* A goal created that way will not be used by refine and will not
        be shelved. It must not appear as a future_goal, so the future
        goals are restored to their initial value after the evar is
@@ -67,11 +62,10 @@ module V82 = struct
 		Evd.evar_filter = Evd.Filter.identity;
 		Evd.evar_body = Evd.Evar_empty;
 		Evd.evar_source = (Loc.tag Evar_kinds.GoalEvar);
-		Evd.evar_candidates = None;
-		Evd.evar_extra = extra }
+                Evd.evar_candidates = None }
     in
-    let evi = Typeclasses.mark_unresolvable evi in
     let (evars, evk) = Evarutil.new_pure_evar_full evars evi in
+    let evars = Evd.set_resolvable_evar evars evk false in
     let evars = Evd.restore_future_goals evars prev_future_goals in
     let ctxt = Environ.named_context_of_val hyps in
     let inst = Array.map_of_list (NamedDecl.get_id %> EConstr.mkVar) ctxt in

@@ -481,37 +481,10 @@ let instances r =
 let is_class gr = 
   GlobRef.Map.exists (fun _ v -> GlobRef.equal v.cl_impl gr) !classes
 
-(* To embed a boolean for resolvability status.
-   This is essentially a hack to mark which evars correspond to
-   goals and do not need to be resolved when we have nested [resolve_all_evars]
-   calls (e.g. when doing apply in an External hint in typeclass_instances).
-   Would be solved by having real evars-as-goals.
-
-   Nota: we will only check the resolvability status of undefined evars.
- *)
-
-let resolvable = Proofview.Unsafe.typeclass_resolvable
-
-let set_resolvable s b =
-  if b then Store.remove s resolvable
-  else Store.set s resolvable ()
-
-let is_resolvable evi =
-  assert (match evi.evar_body with Evar_empty -> true | _ -> false);
-  Option.is_empty (Store.get evi.evar_extra resolvable)
-
-let mark_resolvability_undef b evi =
-  if is_resolvable evi == (b : bool) then evi
-  else
-    let t = set_resolvable evi.evar_extra b in
-    { evi with evar_extra = t }
-
-let mark_resolvability b evi =
-  assert (match evi.evar_body with Evar_empty -> true | _ -> false);
-  mark_resolvability_undef b evi
-
-let mark_unresolvable evi = mark_resolvability false evi
-let mark_resolvable evi = mark_resolvability true evi
+let mark_resolvability_undef evm evk b =
+  let resolvable = Evd.is_resolvable_evar evm evk in
+  if b == resolvable then evm
+  else Evd.set_resolvable_evar evm evk b
 
 open Evar_kinds
 type evar_filter = Evar.t -> Evar_kinds.t -> bool
@@ -524,18 +497,18 @@ let no_goals_or_obligations _ = function
   | _ -> true
 
 let mark_resolvability filter b sigma =
-  let map ev evi =
-    if filter ev (snd evi.evar_source) then mark_resolvability_undef b evi
-    else evi
+  let map ev evi evm =
+    if filter ev (snd evi.evar_source) then mark_resolvability_undef evm ev b
+    else evm
   in
-  Evd.raw_map_undefined map sigma
+  Evd.fold_undefined map sigma sigma
 
 let mark_unresolvables ?(filter=all_evars) sigma = mark_resolvability filter false sigma
 let mark_resolvables ?(filter=all_evars) sigma = mark_resolvability filter true sigma
 
 let has_typeclasses filter evd =
   let check ev evi =
-    filter ev (snd evi.evar_source) && is_resolvable evi && is_class_evar evd evi
+    filter ev (snd evi.evar_source) && Evd.is_resolvable_evar evd ev && is_class_evar evd evi
   in
   Evar.Map.exists check (Evd.undefined_map evd)
 
