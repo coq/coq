@@ -8,7 +8,9 @@
 ##         #     (see LICENSE file for the text of the license)         ##
 ##########################################################################
 
-CI_TARGETS=ci-bedrock2 \
+CI_TARGETS= \
+    ci-aac-tactics \
+    ci-bedrock2 \
     ci-bignums \
     ci-color \
     ci-compcert \

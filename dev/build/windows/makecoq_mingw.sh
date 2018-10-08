@@ -1851,7 +1851,7 @@ function make_addon_coquelicot {
 
 function make_addon_aactactics {
   installer_addon_dependency aac
-  if build_prep_overlay aactactis; then
+  if build_prep_overlay aactactics; then
     installer_addon_section aac "AAC" "Coq plugin for extensible associative and commutative rewriting" ""
     log1 make
     log2 make install
