@@ -175,6 +175,11 @@ If your repository has access to runners tagged `windows`, setting the
 secret variable `WINDOWS` to `enabled` will add jobs building Windows
 versions of Coq (32bit and 64bit).
 
+If the secret variable `WINDOWS` is set to `enabled_all_addons`,
+an extended set of addons will be added to the Windows installer.
+This leads to a considerable runtime in CI so this is not enabled
+by default for pipelines for pull requests.
+
 The Windows jobs are enabled on Coq's repository, where pipelines for
 pull requests run.
 
