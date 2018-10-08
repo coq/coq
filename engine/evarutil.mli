@@ -258,8 +258,11 @@ val generalize_evar_over_rels : evar_map -> existential -> types * constr list
 (** Evar combinators *)
 
 val evd_comb0 : (evar_map -> evar_map * 'a) -> evar_map ref -> 'a
+[@@ocaml.deprecated "References to [evar_map] are deprecated, please update your API calls"]
 val evd_comb1 : (evar_map -> 'b -> evar_map * 'a) -> evar_map ref -> 'b -> 'a
+[@@ocaml.deprecated "References to [evar_map] are deprecated, please update your API calls"]
 val evd_comb2 : (evar_map -> 'b -> 'c -> evar_map * 'a) -> evar_map ref -> 'b -> 'c -> 'a
+[@@ocaml.deprecated "References to [evar_map] are deprecated, please update your API calls"]
 
 val subterm_source : Evar.t -> ?where:Evar_kinds.subevar_kind -> Evar_kinds.t Loc.located ->
   Evar_kinds.t Loc.located
