@@ -241,7 +241,7 @@ pkg:opam:
   script:
     - set -e
     - opam pin add coq .
-    - opam pin add coqide ide
+    - opam pin add coqide .
     - set +e
   variables:
     OPAM_SWITCH: edge
