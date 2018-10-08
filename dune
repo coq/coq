@@ -18,6 +18,7 @@
 
 (install
  (section lib)
+ (package coq)
  (files
    revision))
 
