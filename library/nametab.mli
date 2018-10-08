@@ -75,6 +75,8 @@ val error_global_not_found : qualid -> 'a
 
 type visibility = Until of int | Exactly of int
 
+val map_visibility : (int -> int) -> visibility -> visibility
+
 val push : visibility -> full_path -> GlobRef.t -> unit
 val push_modtype : visibility -> full_path -> ModPath.t -> unit
 val push_dir : visibility -> DirPath.t -> global_dir_reference -> unit
