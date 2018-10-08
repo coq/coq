@@ -153,10 +153,12 @@ let protect g e na =
   if disjpat <> None then user_err (Pp.str "Unsupported substitution of an arbitrary pattern.");
   e',na
 
-let apply_cases_pattern ?loc ((ids,disjpat),id) c =
-  let tm = DAst.make ?loc (GVar id) in
+let apply_cases_pattern_term ?loc (ids,disjpat) tm c =
   let eqns = List.map (fun pat -> (CAst.make ?loc (ids,[pat],c))) disjpat in
   DAst.make ?loc @@ GCases (Constr.LetPatternStyle, None, [tm,(Anonymous,None)], eqns)
+
+let apply_cases_pattern ?loc (ids_disjpat,id) c =
+  apply_cases_pattern_term ?loc ids_disjpat (DAst.make ?loc (GVar id)) c
 
 let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
   let lt x = DAst.make ?loc x in lt @@ match nc with
@@ -182,7 +184,7 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
       let e',disjpat,na = g e na in
       (match disjpat with
        | None -> GLetIn (na,f e b,Option.map (f e) t,f e' c)
-       | Some disjpat -> DAst.get (apply_cases_pattern ?loc disjpat (f e' c)))
+       | Some (disjpat,_id) -> DAst.get (apply_cases_pattern_term ?loc disjpat (f e b) (f e' c)))
   | NCases (sty,rtntypopt,tml,eqnl) ->
       let e',tml' = List.fold_right (fun (tm,(na,t)) (e',tml') ->
 	let e',t' = match t with
