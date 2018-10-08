@@ -608,8 +608,8 @@ let make_evar_clause env sigma ?len t =
     else match EConstr.kind sigma t with
     | Cast (t, _, _) -> clrec (sigma, holes) n t
     | Prod (na, t1, t2) ->
-      let store = Typeclasses.set_resolvable Evd.Store.empty false in
-      let (sigma, ev) = new_evar ~store env sigma t1 in
+      let (sigma, ev) = new_evar env sigma t1 in
+      let sigma = Evd.set_resolvable_evar sigma (fst (destEvar sigma ev)) false in
       let dep = not (noccurn sigma 1 t2) in
       let hole = {
         hole_evar = ev;

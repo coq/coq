@@ -89,9 +89,9 @@ let goalevars evars = fst evars
 let cstrevars evars = snd evars
 
 let new_cstr_evar (evd,cstrs) env t =
-  let s = Typeclasses.set_resolvable Evd.Store.empty false in
-  let (evd', t) = Evarutil.new_evar ~store:s env evd t in
+  let (evd', t) = Evarutil.new_evar env evd t in
   let ev, _ = destEvar evd' t in
+  let evd' = Evd.set_resolvable_evar evd' ev false in
     (evd', Evar.Set.add ev cstrs), t
 
 (** Building or looking up instances. *)

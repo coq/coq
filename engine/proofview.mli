@@ -475,8 +475,6 @@ module Unsafe : sig
   val undefined : Evd.evar_map -> Proofview_monad.goal_with_state list ->
     Proofview_monad.goal_with_state list
 
-  val typeclass_resolvable : unit Evd.Store.field
-
 end
 
 (** This module gives access to the innards of the monad. Its use is
@@ -507,7 +505,6 @@ module Goal : sig
   val hyps : t -> named_context
   val env : t -> Environ.env
   val sigma : t -> Evd.evar_map
-  val extra : t -> Evd.Store.t
   val state : t -> Proofview_monad.StateStore.t
 
   (** [nf_enter t] applies the goal-dependent tactic [t] in each goal

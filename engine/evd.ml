@@ -144,8 +144,7 @@ type evar_info = {
   evar_body : evar_body;
   evar_filter : Filter.t;
   evar_source : Evar_kinds.t Loc.located;
-  evar_candidates : constr list option; (* if not None, list of allowed instances *)
-  evar_extra : Store.t }
+  evar_candidates : constr list option; (* if not None, list of allowed instances *)}
 
 let make_evar hyps ccl = {
   evar_concl = ccl;
@@ -153,9 +152,7 @@ let make_evar hyps ccl = {
   evar_body = Evar_empty;
   evar_filter = Filter.identity;
   evar_source = Loc.tag @@ Evar_kinds.InternalHole;
-  evar_candidates = None;
-  evar_extra = Store.empty
-}
+  evar_candidates = None; }
 
 let instance_mismatch () =
   anomaly (Pp.str "Signature and its instance do not match.")
@@ -413,6 +410,11 @@ end
 
 type goal_kind = ToShelve | ToGiveUp
 
+type evar_flags =
+  { obligation_evars : Evar.Set.t;
+    restricted_evars : Evar.t Evar.Map.t;
+    unresolvable_evars : Evar.Set.t }
+
 type evar_map = {
   (** Existential variables *)
   defn_evars : evar_info EvMap.t;
@@ -425,6 +427,7 @@ type evar_map = {
   last_mods  : Evar.Set.t;
   (** Metas *)
   metas      : clbinding Metamap.t;
+  evar_flags : evar_flags;
   (** Interactive proofs *)
   effects    : Safe_typing.private_constants;
   future_goals : Evar.t list; (** list of newly created evars, to be
@@ -456,6 +459,45 @@ let add_with_name ?name d e i = match i.evar_body with
 
 let add d e i = add_with_name d e i
 
+(*** Evar flags: resolvable, restricted or obligation flag *)
+
+let set_resolvable_evar evd evk b =
+  let flags = evd.evar_flags in
+  let unresolvable_evars = flags.unresolvable_evars in
+  let unresolvable_evars =
+    if b then Evar.Set.remove evk unresolvable_evars
+    else Evar.Set.add evk unresolvable_evars
+  in
+  { evd with evar_flags = { flags with unresolvable_evars } }
+
+let is_resolvable_evar evd evk =
+  let flags = evd.evar_flags in
+  not (Evar.Set.mem evk flags.unresolvable_evars)
+
+let inherit_unresolvable_evar evar_flags evk evk' =
+  let evk_unres = Evar.Set.mem evk evar_flags.unresolvable_evars in
+  let unresolvable_evars = Evar.Set.remove evk evar_flags.unresolvable_evars in
+  let unresolvable_evars =
+    if evk_unres then Evar.Set.add evk' unresolvable_evars else unresolvable_evars
+  in { evar_flags with unresolvable_evars }
+
+let unresolvable_evars evd = evd.evar_flags.unresolvable_evars
+
+let set_obligation_evar evd evk =
+  let flags = evd.evar_flags in
+  let evar_flags = { flags with obligation_evars = Evar.Set.add evk flags.obligation_evars } in
+  { evd with evar_flags }
+
+let is_obligation_evar evd evk =
+  let flags = evd.evar_flags in
+  Evar.Set.mem evk flags.obligation_evars
+
+let remove_evar_flags evk evar_flags =
+  { unresolvable_evars = Evar.Set.remove evk evar_flags.unresolvable_evars;
+    obligation_evars = Evar.Set.remove evk evar_flags.obligation_evars;
+    (** Restriction information is kept. *)
+    restricted_evars = evar_flags.restricted_evars }
+
 (** New evars *)
 
 let evar_counter_summary_name = "evar counter"
@@ -478,7 +520,9 @@ let remove d e =
   in
   let future_goals = List.filter (fun e' -> not (Evar.equal e e')) d.future_goals in
   let future_goals_status = EvMap.remove e d.future_goals_status in
-  { d with undf_evars; defn_evars; principal_future_goal; future_goals; future_goals_status }
+  let evar_flags = remove_evar_flags e d.evar_flags in
+  { d with undf_evars; defn_evars; principal_future_goal; future_goals; future_goals_status;
+           evar_flags }
 
 let find d e =
   try EvMap.find e d.undf_evars
@@ -583,12 +627,18 @@ let cmap f evd =
 let create_evar_defs sigma = { sigma with
   conv_pbs=[]; last_mods=Evar.Set.empty; metas=Metamap.empty }
 
+let empty_evar_flags =
+  { obligation_evars = Evar.Set.empty;
+    restricted_evars = Evar.Map.empty;
+    unresolvable_evars = Evar.Set.empty }
+
 let empty = {
   defn_evars = EvMap.empty;
   undf_evars = EvMap.empty;
   universes  = UState.empty;
   conv_pbs   = [];
   last_mods  = Evar.Set.empty;
+  evar_flags = empty_evar_flags;
   metas      = Metamap.empty;
   effects    = Safe_typing.empty_private_constants;
   evar_names = EvNames.empty; (* id<->key for undefined evars *)
@@ -634,9 +684,7 @@ let evar_source evk d = (find d evk).evar_source
 let evar_ident evk evd = EvNames.ident evk evd.evar_names
 let evar_key id evd = EvNames.key id evd.evar_names
 
-let restricted = Store.field ()
-
-let define_aux ?dorestrict def undef evk body =
+let define_aux def undef evk body =
   let oldinfo =
     try EvMap.find evk undef
     with Not_found ->
@@ -646,10 +694,7 @@ let define_aux ?dorestrict def undef evk body =
         anomaly ~label:"Evd.define" (Pp.str "cannot define undeclared evar.")
   in
   let () = assert (oldinfo.evar_body == Evar_empty) in
-  let evar_extra = match dorestrict with
-    | Some evk' -> Store.set oldinfo.evar_extra restricted evk'
-    | None -> oldinfo.evar_extra in
-  let newinfo = { oldinfo with evar_body = Evar_defined body; evar_extra } in
+  let newinfo = { oldinfo with evar_body = Evar_defined body } in
   EvMap.add evk newinfo def, EvMap.remove evk undef
 
 (* define the existential of section path sp as the constr body *)
@@ -660,10 +705,15 @@ let define evk body evd =
   | _ -> Evar.Set.add evk evd.last_mods
   in
   let evar_names = EvNames.remove_name_defined evk evd.evar_names in
-  { evd with defn_evars; undf_evars; last_mods; evar_names }
+  let evar_flags = remove_evar_flags evk evd.evar_flags in
+  { evd with defn_evars; undf_evars; last_mods; evar_names; evar_flags }
 
-let is_restricted_evar evi =
-  Store.get evi.evar_extra restricted
+let is_restricted_evar evd evk =
+  try Some (Evar.Map.find evk evd.evar_flags.restricted_evars)
+  with Not_found -> None
+
+let declare_restricted_evar evar_flags evk evk' =
+  { evar_flags with restricted_evars = Evar.Map.add evk evk' evar_flags.restricted_evars }
 
 let restrict evk filter ?candidates ?src evd =
   let evk' = new_untyped_evar () in
@@ -679,9 +729,11 @@ let restrict evk filter ?candidates ?src evd =
   let ctxt = Filter.filter_list filter (evar_context evar_info) in
   let id_inst = Array.map_of_list (NamedDecl.get_id %> mkVar) ctxt in
   let body = mkEvar(evk',id_inst) in
-  let (defn_evars, undf_evars) = define_aux ~dorestrict:evk' evd.defn_evars evd.undf_evars evk body in
+  let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
+  let evar_flags = declare_restricted_evar evd.evar_flags evk evk' in
+  let evar_flags = inherit_unresolvable_evar evar_flags evk evk' in
   { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
-    defn_evars; last_mods; evar_names }, evk'
+    defn_evars; last_mods; evar_names; evar_flags }, evk'
 
 let downcast evk ccl evd =
   let evar_info = EvMap.find evk evd.undf_evars in
@@ -1019,6 +1071,7 @@ let set_metas evd metas = {
   universes  = evd.universes;
   conv_pbs = evd.conv_pbs;
   last_mods = evd.last_mods;
+  evar_flags = evd.evar_flags;
   metas;
   effects = evd.effects;
   evar_names = evd.evar_names;

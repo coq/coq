@@ -517,6 +517,15 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) (sigma
         | Some ty -> sigma, ty
         | None -> new_type_evar env sigma loc in
       let sigma, uj_val = new_evar env sigma ~src:(loc,k) ~naming ty in
+      let sigma =
+        if Flags.is_program_mode () then
+          match k with
+          | Evar_kinds.QuestionMark _
+          | Evar_kinds.ImplicitArg (_, _, false) ->
+            Evd.set_obligation_evar sigma (fst (destEvar sigma uj_val))
+          | _ -> sigma
+        else sigma
+      in
       sigma, { uj_val; uj_type = ty }
 
   | GHole (k, _naming, Some arg) ->

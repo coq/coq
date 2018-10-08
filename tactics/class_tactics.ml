@@ -513,12 +513,12 @@ let top_sort evm undefs =
 
 let evars_to_goals p evm =
   let goals = ref Evar.Map.empty in
-  let map ev evi =
-    let evi, goal = p evm ev evi in
+  let fold ev evi evm =
+    let evm, goal = p evm ev evi in
     let () = if goal then goals := Evar.Map.add ev evi !goals in
-    evi
+    evm
   in
-  let evm = Evd.raw_map_undefined map evm in
+  let evm = Evd.fold_undefined fold evm evm in
   if Evar.Map.is_empty !goals then None
   else Some (!goals, evm)
 
@@ -643,10 +643,7 @@ module Search = struct
 
   let mark_unresolvables sigma goals =
     List.fold_left
-      (fun sigma gl ->
-        let evi = Evd.find_undefined sigma gl in
-	let evi' = Typeclasses.mark_unresolvable evi in
-	Evd.add sigma gl evi')
+      (fun sigma gl -> Evd.set_resolvable_evar sigma gl false)
       sigma goals
 
   (** The general hint application tactic.
@@ -1019,7 +1016,7 @@ let deps_of_constraints cstrs evm p =
 let evar_dependencies pred evm p =
   Evd.fold_undefined
     (fun ev evi _ ->
-      if Typeclasses.is_resolvable evi && pred evm ev evi then
+      if Evd.is_resolvable_evar evm ev && pred evm ev evi then
         let evars = Evar.Set.add ev (Evarutil.undefined_evars_of_evar_info evm evi)
         in Intpart.union_set evars p
       else ())
@@ -1036,7 +1033,7 @@ let split_evars pred evm =
 let is_inference_forced p evd ev =
   try
     let evi = Evd.find_undefined evd ev in
-    if Typeclasses.is_resolvable evi && snd (p ev evi)
+    if Evd.is_resolvable_evar evd ev && snd (p ev evi)
     then
       let (loc, k) = evar_source ev evd in
       match k with
@@ -1076,13 +1073,13 @@ let error_unresolvable env comp evd =
 let select_and_update_evars p oevd in_comp evd ev evi =
   assert (evi.evar_body == Evar_empty);
   try
-    let oevi = Evd.find_undefined oevd ev in
-    if Typeclasses.is_resolvable oevi then
-      Typeclasses.mark_unresolvable evi,
+    let _ = Evd.find_undefined oevd ev in
+    if Evd.is_resolvable_evar oevd ev then
+      Evd.set_resolvable_evar evd ev false,
       (in_comp ev && p evd ev evi)
-    else evi, false
+    else evd, false
   with Not_found ->
-    Typeclasses.mark_unresolvable evi, p evd ev evi
+    Evd.set_resolvable_evar evd ev false, p evd ev evi
 
 (** Do we still have unresolved evars that should be resolved ? *)
 
@@ -1095,17 +1092,17 @@ let has_undefined p oevd evd =
     just for this call to resolution. *)
 
 let revert_resolvability oevd evd =
-  let map ev evi =
+  let fold ev _evi evd =
     try
-      if not (Typeclasses.is_resolvable evi) then
-        let evi' = Evd.find_undefined oevd ev in
-        if Typeclasses.is_resolvable evi' then
-          Typeclasses.mark_resolvable evi
-        else evi
-      else evi
-    with Not_found -> evi
+      if not (Evd.is_resolvable_evar evd ev) then
+        let _evi' = Evd.find_undefined oevd ev in
+        if Evd.is_resolvable_evar oevd ev then
+          Evd.set_resolvable_evar evd ev true
+        else evd
+      else evd
+    with Not_found -> evd
   in
-  Evd.raw_map_undefined map evd
+  Evd.fold_undefined fold evd evd
 
 exception Unresolved
 
@@ -1161,8 +1158,7 @@ let _ =
 let resolve_one_typeclass env ?(sigma=Evd.from_env env) gl unique =
   let (term, sigma) = Hints.wrap_hint_warning_fun env sigma begin fun sigma ->
   let nc, gl, subst, _ = Evarutil.push_rel_context_to_named_context env sigma gl in
-  let (gl,t,sigma) =
-    Goal.V82.mk_goal sigma nc gl Store.empty in
+  let (gl,t,sigma) = Goal.V82.mk_goal sigma nc gl in
   let (ev, _) = destEvar sigma t in
   let gls = { it = gl ; sigma = sigma; } in
   let hints = searchtable_map typeclasses_db in

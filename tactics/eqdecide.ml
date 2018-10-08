@@ -72,11 +72,10 @@ let choose_noteq eqonleft =
 let generalize_right mk typ c1 c2 =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let store = Proofview.Goal.extra gl in
   Refine.refine ~typecheck:false begin fun sigma ->
     let na = Name (next_name_away_with_default "x" Anonymous (Termops.vars_of_env env)) in
     let newconcl = mkProd (na, typ, mk typ c1 (mkRel 1)) in
-    let (sigma, x) = Evarutil.new_evar env sigma ~principal:true ~store newconcl in
+    let (sigma, x) = Evarutil.new_evar env sigma ~principal:true newconcl in
     (sigma, mkApp (x, [|c2|]))
   end
   end

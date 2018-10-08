@@ -65,8 +65,8 @@ let clenv_pose_dependent_evars ?(with_evars=false) clenv =
 (** Use our own fast path, more informative than from Typeclasses *)
 let check_tc evd =
   let has_resolvable = ref false in
-  let check _ evi =
-    let res = Typeclasses.is_resolvable evi in
+  let check ev evi =
+    let res = Evd.is_resolvable_evar evd ev in
     if res then
       let () = has_resolvable := true in
       Typeclasses.is_class_evar evd evi

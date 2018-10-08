@@ -1045,7 +1045,7 @@ let thin id sigma goal =
   match ans with
   | None -> sigma
   | Some (sigma, hyps, concl) ->
-    let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) in
+    let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps concl in
     let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
     sigma
 

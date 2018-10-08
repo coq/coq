@@ -107,12 +107,9 @@ val no_goals_or_obligations : evar_filter
     An unresolvable evar is an evar the type-class engine will NOT try to solve
 *)
 
-val set_resolvable : Evd.Store.t -> bool -> Evd.Store.t
-val is_resolvable : evar_info -> bool
-val mark_unresolvable : evar_info -> evar_info
 val mark_unresolvables : ?filter:evar_filter -> evar_map -> evar_map
 val mark_resolvables   : ?filter:evar_filter -> evar_map -> evar_map
-val mark_resolvable : evar_info -> evar_info
+
 val is_class_evar : evar_map -> evar_info -> bool
 val is_class_type : evar_map -> EConstr.types -> bool
 

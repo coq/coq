@@ -365,12 +365,18 @@ let pr_evar_map_gen with_univs pr_evars sigma =
     else
     str "CONSTRAINTS:" ++ brk (0, 1) ++
       pr_evar_constraints sigma conv_pbs ++ fnl ()
+  and unresolvables =
+    let evars = Evd.unresolvable_evars sigma in
+    if Evar.Set.is_empty evars then mt ()
+    else
+      str "UNRESOLVABLE:" ++ brk (0, 1) ++
+      prlist_with_sep spc (pr_existential_key sigma) (Evar.Set.elements evars) ++ fnl ()
   and metas =
     if List.is_empty (Evd.meta_list sigma) then mt ()
     else
       str "METAS:" ++ brk (0, 1) ++ pr_meta_map sigma
   in
-  evs ++ svs ++ cstrs ++ metas
+  evs ++ svs ++ cstrs ++ unresolvables ++ metas
 
 let pr_evar_list sigma l =
   let open Evd in
