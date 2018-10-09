@@ -167,28 +167,7 @@ let env_of_context hyps =
 
 open Globnames
 
-(** Build a fresh instance for a given context, its associated substitution and 
-    the instantiated constraints. *)
-
-let constr_of_global_in_context env r =
-  let open Constr in
-  match r with
-  | VarRef id -> mkVar id, Univ.AUContext.empty
-  | ConstRef c ->
-    let cb = Environ.lookup_constant c env in
-    let univs = Declareops.constant_polymorphic_context cb in
-    mkConstU (c, Univ.make_abstract_instance univs), univs
-  | IndRef ind ->
-    let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
-    let univs = Declareops.inductive_polymorphic_context mib in
-    mkIndU (ind, Univ.make_abstract_instance univs), univs
-  | ConstructRef cstr ->
-    let (mib,oib as specif) =
-      Inductive.lookup_mind_specif env (inductive_of_constructor cstr)
-    in
-    let univs = Declareops.inductive_polymorphic_context mib in
-    mkConstructU (cstr, Univ.make_abstract_instance univs), univs
-
+let constr_of_global_in_context = Typeops.constr_of_global_in_context
 let type_of_global_in_context = Typeops.type_of_global_in_context
 
 let universes_of_global gr = 

@@ -106,6 +106,14 @@ val type_of_global_in_context : env -> GlobRef.t -> types * Univ.AUContext.t
     usage. For non-universe-polymorphic constants, it does not
     matter. *)
 
+(** {6 Building a term from a global reference *)
+
+(** Map a global reference to a term in its local universe
+    context. The term should not be used without pushing it's universe
+    context in the environmnent of usage. For non-universe-polymorphic
+    constants, it does not matter. *)
+val constr_of_global_in_context : env -> GlobRef.t -> types * Univ.AUContext.t
+
 (** {6 Miscellaneous. } *)
 
 (** Check that hyps are included in env and fails with error otherwise *)
