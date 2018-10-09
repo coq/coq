@@ -546,5 +546,5 @@ let islave_init ~opts extra_args =
 
 let () =
   let open Coqtop in
-  let custom = { init = islave_init; run = loop; opts = Coqargs.default_opts } in
+  let custom = { init = islave_init; run = loop; opts = Coqargs.default } in
   start_coq custom

@@ -118,18 +118,38 @@ module Make(T : Task) () = struct
   let spawn id =
     let name = Printf.sprintf "%s:%d" !T.name id in
     let proc, ic, oc =
+      (* Filter arguments for slaves. *)
       let rec set_slave_opt = function
         | [] -> !async_proofs_flags_for_workers @
                 ["-worker-id"; name;
                  "-async-proofs-worker-priority";
-                   CoqworkmgrApi.(string_of_priority !async_proofs_worker_priority)]
-        | ("-emacs"|"-emacs-U"|"-batch")::tl -> set_slave_opt tl
-        | ("-async-proofs" |"-vio2vo"
+                 CoqworkmgrApi.(string_of_priority !async_proofs_worker_priority)]
+        (* Options to discard: 0 arguments *)
+        | ("-emacs"|"-emacs-U"|"-batch")::tl ->
+          set_slave_opt tl
+        (* Options to discard: 1 argument *)
+        | ("-async-proofs" |"-vio2vo" | "-o"
           |"-load-vernac-source" |"-l" |"-load-vernac-source-verbose" |"-lv"
           |"-compile" |"-compile-verbose"
+          |"-async-proofs-cache"
           |"-async-proofs-worker-priority" |"-worker-id") :: _ :: tl ->
           set_slave_opt tl
-        | x::tl -> x :: set_slave_opt tl in
+        (* We need to pass some options with one argument *)
+        | ( "-I" | "-include" | "-top" | "-topfile" | "-coqlib" | "-exclude-dir" | "-compat"
+          | "-load-ml-object" | "-load-ml-source" | "-require" | "-w" | "-color" | "-init-file"
+          | "-profile-ltac-cutoff" | "-main-channel" | "-control-channel" | "-mangle-names"
+          | "-diffs" | "-mangle-name" | "-dump-glob" | "-bytecode-compiler" | "-native-compiler" as x) :: a :: tl ->
+          x :: a :: set_slave_opt tl
+        (* We need to pass some options with two arguments *)
+        | ( "-R" | "-Q" as x) :: a1 :: a2 :: tl ->
+          x :: a1 :: a2 :: set_slave_opt tl
+        (* Finally we pass all options starting in '-'; check this is safe w.r.t the weird vio* option set *)
+        | x :: tl when x.[0] = '-' ->
+          x :: set_slave_opt tl
+        (* We assume this is a file, filter out *)
+        | _ :: tl ->
+          set_slave_opt tl
+      in
       let args =
         Array.of_list (set_slave_opt (List.tl (Array.to_list Sys.argv))) in
       let env = Array.append (T.extra_env ()) (Unix.environment ()) in

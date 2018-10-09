@@ -8,12 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type compilation_mode = BuildVo | BuildVio | Vio2Vo
 type color = [`ON | `AUTO | `OFF]
 
 val default_toplevel : Names.DirPath.t
 
-type coq_cmdopts = {
+type t = {
 
   load_init   : bool;
   load_rcfile : bool;
@@ -23,22 +22,10 @@ type coq_cmdopts = {
   vo_includes : Mltop.coq_path list;
   vo_requires : (string * string option * bool option) list;
 
-  (* Fuse these two? Currently, [batch_mode] is only used to
-     distinguish coqc / coqtop in help display. *)
-  batch_mode : bool;
-  compilation_mode : compilation_mode;
-
   toplevel_name : Stm.interactive_top;
 
-  compile_list: (string * bool) list;  (* bool is verbosity  *)
-  compilation_output_name : string option;
-
   load_vernacular_list : (string * bool) list;
-
-  vio_checking: bool;
-  vio_tasks   : (int list * string) list;
-  vio_files   : string list;
-  vio_files_j : int;
+  batch : bool;
 
   color : color;
 
@@ -63,18 +50,14 @@ type coq_cmdopts = {
 
   print_emacs : bool;
 
-  (* Quiet / verbosity options should be here *)
-
   inputstate  : string option;
-  outputstate : string option;
-
 }
 
 (* Default options *)
-val default_opts : coq_cmdopts
+val default : t
 
-val parse_args : coq_cmdopts -> string list -> coq_cmdopts * string list
-val exitcode : coq_cmdopts -> int
+val parse_args : help:(unit -> unit) -> init:t -> string list -> t * string list
+val exitcode : t -> int
 
-val require_libs : coq_cmdopts -> (string * string option * bool option) list
-val build_load_path : coq_cmdopts -> Mltop.coq_path list
+val require_libs : t -> (string * string option * bool option) list
+val build_load_path : t -> Mltop.coq_path list

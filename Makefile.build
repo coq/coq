@@ -198,7 +198,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 #   TIME="%C (%U user, %S sys, %e total, %M maxres)"
 
 COQOPTS=$(NATIVECOMPUTE) $(COQWARNERROR) $(COQUSERFLAGS)
-BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -w -deprecate-compile-arg -compile
+BOOTCOQC=$(TIMER) $(COQC) -boot $(COQOPTS)
 
 LOCALINCLUDES=$(addprefix -I ,$(SRCDIRS))
 MLINCLUDES=$(LOCALINCLUDES)
@@ -281,7 +281,7 @@ ifndef ORDER_ONLY_SEP
 $(error This Makefile needs GNU Make 3.81 or later (that is a version that supports the order-only dependency feature without major bugs.))
 endif
 
-VO_TOOLS_DEP := $(COQTOPBEST)
+VO_TOOLS_DEP := $(COQC)
 ifdef VALIDATE
  VO_TOOLS_DEP += $(CHICKEN)
 endif
@@ -351,6 +351,9 @@ coqbyte: $(TOPBYTE) $(CHICKENBYTE)
 $(COQTOPEXE): $(TOPBINOPT:.opt=.$(BEST))
 	rm -f $@ && cp $< $@
 
+$(COQC): $(COQCOPT:.opt=.$(BEST))
+	rm -f $@ && cp $< $@
+
 bin/%.opt$(EXE): topbin/%_bin.ml $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) \
@@ -376,17 +379,6 @@ $(COQTOPBYTE): $(LINKCMO) $(LIBCOQRUN) $(COQTOP_BYTE)
 	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
 			 $(SYSMOD) -package compiler-libs.toplevel \
 			 $(LINKCMO) $(BYTEFLAGS) $(COQTOP_BYTE) -o $@
-
-# For coqc
-COQCCMO:=config/config.cma clib/clib.cma lib/lib.cma toplevel/usage.cmo tools/coqc.cmo
-
-$(COQC): $(call bestobj, $(COQCCMO))
-	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml, $(SYSMOD))
-
-$(COQCBYTE): $(COQCCMO)
-	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(call ocamlbyte, $(SYSMOD))
 
 ###########################################################################
 # other tools
@@ -784,8 +776,7 @@ $(PLUGMLLIBDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter plugins/%, $(MLLIBFILES) $(
 coqlib: theories plugins
 ifdef QUICK
 	$(SHOW)'COQC -schedule-vio2vo $(NJOBS) theories/**.vio plugins/**.vio'
-	$(HIDE)$(BOOTCOQC:-compile=-schedule-vio2vo) $(NJOBS) \
-		$(THEORIESVO) $(PLUGINSVO)
+	$(HIDE)$(BOOTCOQC) -schedule-vio2vo $(NJOBS) $(THEORIESVO) $(PLUGINSVO)
 endif
 
 coqlib.timing.diff: theories.timing.diff plugins.timing.diff

@@ -12,13 +12,23 @@
     [init] is used to do custom command line argument parsing.
     [run] launches a custom toplevel.
 *)
-open Coqargs
+
+type init_fn = opts:Coqargs.t -> string list -> Coqargs.t * string list
 
 type custom_toplevel =
-  { init : opts:coq_cmdopts -> string list -> coq_cmdopts * string list
-  ; run : opts:coq_cmdopts -> state:Vernac.State.t -> unit
-  ; opts : Coqargs.coq_cmdopts
+  { init : init_fn
+  ; run : opts:Coqargs.t -> state:Vernac.State.t -> unit
+  ; opts : Coqargs.t
   }
+
+(** [init_toplevel ~help ~init custom_init arg_list]
+    Common Coq initialization and argument parsing *)
+val init_toplevel
+  :  help:(unit -> unit)
+  -> init:Coqargs.t
+  -> init_fn
+  -> string list
+  -> Coqargs.t * string list
 
 val coqtop_toplevel : custom_toplevel
 

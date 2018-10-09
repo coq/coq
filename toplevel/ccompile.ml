@@ -10,6 +10,7 @@
 
 open Pp
 open Coqargs
+open Coqcargs
 
 let fatal_error msg =
   Topfmt.std_logger Feedback.Error msg;
@@ -81,7 +82,7 @@ let ensure_exists f =
     fatal_error (hov 0 (str "Can't find file" ++ spc () ++ str f))
 
 (* Compile a vernac file *)
-let compile opts ~echo ~f_in ~f_out =
+let compile opts copts ~echo ~f_in ~f_out =
   let open Vernac.State in
   let check_pending_proofs () =
     let pfs = Proof_global.get_all_proof_names () in
@@ -95,7 +96,7 @@ let compile opts ~echo ~f_in ~f_out =
   let iload_path = build_load_path opts in
   let require_libs = require_libs opts in
   let stm_options = opts.stm_flags in
-  match opts.compilation_mode with
+  match copts.compilation_mode with
   | BuildVo ->
       Flags.record_aux_file := true;
       let long_f_dot_v = ensure_v f_in in
@@ -179,47 +180,47 @@ let compile opts ~echo ~f_in ~f_out =
       let univs, proofs = Stm.finish_tasks lfdv univs disch proofs tasks in
       Library.save_library_raw lfdv sum lib univs proofs
 
-let compile opts ~echo ~f_in ~f_out =
+let compile opts copts ~echo ~f_in ~f_out =
   ignore(CoqworkmgrApi.get 1);
-  compile opts ~echo ~f_in ~f_out;
+  compile opts copts ~echo ~f_in ~f_out;
   CoqworkmgrApi.giveback 1
 
-let compile_file opts (f_in, echo) =
-  let f_out = opts.compilation_output_name in
+let compile_file opts copts (f_in, echo) =
+  let f_out = copts.compilation_output_name in
   if !Flags.beautify then
     Flags.with_option Flags.beautify_file
-      (fun f_in -> compile opts ~echo ~f_in ~f_out) f_in
+      (fun f_in -> compile opts copts ~echo ~f_in ~f_out) f_in
   else
-    compile opts ~echo ~f_in ~f_out
+    compile opts copts ~echo ~f_in ~f_out
 
-let compile_files opts =
-  let compile_list = List.rev opts.compile_list in
-  List.iter (compile_file opts) compile_list
+let compile_files opts copts =
+  let compile_list = List.rev copts.compile_list in
+  List.iter (compile_file opts copts) compile_list
 
 (******************************************************************************)
 (* VIO Dispatching                                                            *)
 (******************************************************************************)
-let check_vio_tasks opts =
+let check_vio_tasks copts =
   let rc =
     List.fold_left (fun acc t -> Vio_checking.check_vio t && acc)
-      true (List.rev opts.vio_tasks) in
+      true (List.rev copts.vio_tasks) in
   if not rc then fatal_error Pp.(str "VIO Task Check failed")
 
 (* vio files *)
-let schedule_vio opts =
-  if opts.vio_checking then
-    Vio_checking.schedule_vio_checking opts.vio_files_j opts.vio_files
+let schedule_vio copts =
+  if copts.vio_checking then
+    Vio_checking.schedule_vio_checking copts.vio_files_j copts.vio_files
   else
-    Vio_checking.schedule_vio_compilation opts.vio_files_j opts.vio_files
+    Vio_checking.schedule_vio_compilation copts.vio_files_j copts.vio_files
 
-let do_vio opts =
+let do_vio opts copts =
   (* We must initialize the loadpath here as the vio scheduling
      process happens outside of the STM *)
-  if opts.vio_files <> [] || opts.vio_tasks <> [] then
+  if copts.vio_files <> [] || copts.vio_tasks <> [] then
     let iload_path = build_load_path opts in
     List.iter Mltop.add_coq_path iload_path;
 
   (* Vio compile pass *)
-  if opts.vio_files <> [] then schedule_vio opts;
+  if copts.vio_files <> [] then schedule_vio copts;
   (* Vio task pass *)
-  if opts.vio_tasks <> [] then check_vio_tasks opts
+  if copts.vio_tasks <> [] then check_vio_tasks copts

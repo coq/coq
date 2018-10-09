@@ -2,8 +2,10 @@ Vernac
 Usage
 Coqinit
 Coqargs
+Coqcargs
 G_toplevel
 Coqloop
 Ccompile
 Coqtop
 WorkerLoop
+Coqc

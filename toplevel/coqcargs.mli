@@ -8,12 +8,23 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** [load_init_vernaculars opts ~state] Load vernaculars from
-   the init (rc) file *)
-val load_init_vernaculars : Coqargs.t -> state:Vernac.State.t-> Vernac.State.t
+type compilation_mode = BuildVo | BuildVio | Vio2Vo
 
-(** [compile_files opts] compile files specified in [opts] *)
-val compile_files : Coqargs.t -> Coqcargs.t -> unit
+type t =
+  { compilation_mode : compilation_mode
 
-(** [do_vio opts] process [.vio] files in [opts] *)
-val do_vio : Coqargs.t -> Coqcargs.t -> unit
+  ; compile_list: (string * bool) list  (* bool is verbosity  *)
+  ; compilation_output_name : string option
+
+  ; vio_checking : bool
+  ; vio_tasks    : (int list * string) list
+  ; vio_files    : string list
+  ; vio_files_j  : int
+
+  ; echo : bool
+
+  ; outputstate : string option
+  }
+
+val default : t
+val parse : string list -> t
