@@ -96,6 +96,16 @@ val judge_of_case : env -> case_info
   -> unsafe_judgment -> unsafe_judgment -> unsafe_judgment array
     -> unsafe_judgment
 
+(** {6 Type of global references. } *)
+
+val type_of_global_in_context : env -> GlobRef.t -> types * Univ.AUContext.t
+(** Returns the type of the global reference, by creating a fresh
+    instance of polymorphic references and computing their
+    instantiated universe context. The type should not be used
+    without pushing it's universe context in the environmnent of
+    usage. For non-universe-polymorphic constants, it does not
+    matter. *)
+
 (** {6 Miscellaneous. } *)
 
 (** Check that hyps are included in env and fails with error otherwise *)
