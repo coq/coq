@@ -196,7 +196,7 @@ let infer_inductive env mie =
         Array.fold_left (fun variances u -> LMap.add u Variance.Irrelevant variances)
           LMap.empty uarray
       in
-      let env, _ = Typeops.infer_local_decls env params in
+      let env = Typeops.check_context env params in
       let variances = List.fold_left (fun variances entry ->
           let variances = infer_arity_constructor true
               env variances entry.mind_entry_arity

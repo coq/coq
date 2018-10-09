@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
-open CErrors
 open Util
 open Term
 open Constr
@@ -17,16 +15,9 @@ open Vars
 open Declarations
 open Cooking
 open Entries
-open Context.Rel.Declaration
 
 (********************************)
 (* Discharging mutual inductive *)
-
-let detype_param =
-  function
-  | LocalAssum (Name id, p) -> id, LocalAssumEntry p
-  | LocalDef (Name id, p,_) -> id, LocalDefEntry p
-  | _ -> anomaly (Pp.str "Unnamed inductive local variable.")
 
 (* Replace
 
@@ -57,7 +48,7 @@ let abstract_inductive decls nparamdecls inds =
 (* To be sure to be the same as before, should probably be moved to process_inductive *)
   let params' = let (_,arity,_,_,_) = List.hd inds' in
 		let (params,_) = decompose_prod_n_assum nparamdecls' arity in
-                List.map detype_param params
+    params
   in
   let ind'' =
   List.map

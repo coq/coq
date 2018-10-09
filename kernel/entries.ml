@@ -16,14 +16,6 @@ open Constr
    constants/axioms, mutual inductive definitions, modules and module
    types *)
 
-
-(** {6 Local entries } *)
-
-type local_entry =
-  | LocalDefEntry of constr
-  | LocalAssumEntry of constr
-
-
 (** {6 Declaration of inductive types. } *)
 
 (** Assume the following definition in concrete syntax:
@@ -54,7 +46,7 @@ type mutual_inductive_entry = {
       record in their respective projections. Not used by the kernel.
       Some None: non-primitive record *)
   mind_entry_finite : Declarations.recursivity_kind;
-  mind_entry_params : (Id.t * local_entry) list;
+  mind_entry_params : Constr.rel_context;
   mind_entry_inds : one_inductive_entry list;
   mind_entry_universes : inductive_universes;
   (* universe constraints and the constraints for subtyping of

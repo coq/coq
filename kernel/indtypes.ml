@@ -271,7 +271,8 @@ let typecheck_inductive env mie =
     | Polymorphic_ind_entry ctx -> push_context ctx env
     | Cumulative_ind_entry cumi -> push_context (Univ.CumulativityInfo.univ_context cumi) env
   in
-  let (env_params,paramsctxt) = infer_local_decls env' mie.mind_entry_params in
+  let env_params = check_context env' mie.mind_entry_params in
+  let paramsctxt = mie.mind_entry_params in
   (* We first type arity of each inductive definition *)
   (* This allows building the environment of arities and to share *)
   (* the set of constraints *)

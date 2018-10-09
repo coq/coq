@@ -191,14 +191,6 @@ let typecheck_params_and_fields finite def poly pl ps records =
   let ans = List.map2 map data typs in
   ubinders, univs, template, newps, imps, ans
 
-let degenerate_decl decl =
-  let id = match RelDecl.get_name decl with
-    | Name id -> id
-    | Anonymous -> anomaly (Pp.str "Unnamed record variable.") in
-  match decl with
-    | LocalAssum (_,t) -> (id, LocalAssumEntry t)
-    | LocalDef (_,b,_) -> (id, LocalDefEntry b)
-
 type record_error =
   | MissingProj of Id.t * Id.t list
   | BadTypedProj of Id.t * env * Type_errors.type_error
@@ -437,7 +429,7 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
   in
   let blocks = List.mapi mk_block record_data in
   let mie =
-    { mind_entry_params = List.map degenerate_decl params;
+    { mind_entry_params = params;
       mind_entry_record = Some (if !primitive_flag then Some binder_name else None);
       mind_entry_finite = finite;
       mind_entry_inds = blocks;

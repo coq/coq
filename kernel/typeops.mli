@@ -12,7 +12,6 @@ open Names
 open Constr
 open Univ
 open Environ
-open Entries
 
 (** {6 Typing functions (not yet tagged as safe) }
 
@@ -27,8 +26,8 @@ val infer      : env -> constr       -> unsafe_judgment
 val infer_v    : env -> constr array -> unsafe_judgment array
 val infer_type : env -> types        -> unsafe_type_judgment
 
-val infer_local_decls :
-  env -> (Id.t * local_entry) list -> (env * Constr.rel_context)
+val check_context :
+  env -> Constr.rel_context -> env
 
 (** {6 Basic operations of the typing machine. } *)
 
