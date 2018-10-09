@@ -54,11 +54,10 @@ val type_of_variable : env -> variable -> types
 val judge_of_variable : env -> variable -> unsafe_judgment
 
 (** {6 type of a constant } *)
-
+val type_of_constant_in : env -> pconstant -> types
 val judge_of_constant : env -> pconstant -> unsafe_judgment
 
 (** {6 type of an applied projection } *)
-
 val judge_of_projection : env -> Projection.t -> unsafe_judgment -> unsafe_judgment
 
 (** {6 Type of application. } *)
@@ -89,9 +88,7 @@ val judge_of_cast :
   unsafe_judgment
 
 (** {6 Inductive types. } *)
-
 val judge_of_inductive : env -> inductive puniverses -> unsafe_judgment
-
 val judge_of_constructor : env -> constructor puniverses -> unsafe_judgment
 
 (** {6 Type of Cases. } *)
@@ -99,7 +96,7 @@ val judge_of_case : env -> case_info
   -> unsafe_judgment -> unsafe_judgment -> unsafe_judgment array
     -> unsafe_judgment
 
-val type_of_constant_in : env -> pconstant -> types
+(** {6 Miscellaneous. } *)
 
 (** Check that hyps are included in env and fails with error otherwise *)
 val check_hyps_inclusion : env -> ('a -> constr) -> 'a -> Constr.named_context -> unit
