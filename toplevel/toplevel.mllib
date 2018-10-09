@@ -4,5 +4,6 @@ Coqinit
 Coqargs
 G_toplevel
 Coqloop
+Ccompile
 Coqtop
 WorkerLoop
