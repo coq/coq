@@ -1,4 +1,5 @@
 Vernacexpr
+Attributes
 Pvernac
 G_vernac
 G_proofs
@@ -7,7 +8,6 @@ Himsg
 ExplainErr
 Locality
 Egramml
-Attributes
 Vernacinterp
 Ppvernac
 Proof_using

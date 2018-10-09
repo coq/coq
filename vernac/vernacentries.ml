@@ -2401,7 +2401,9 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
     | VernacLoad (_,fname) -> vernac_load control fname
 
     | c ->
-      let poly, program = Attributes.(parse_drop_extra Notations.(polymorphic ++ program) atts) in
+      let poly, program = let open Attributes in
+        parse_drop_extra Notations.(polymorphic_nowarn ++ program) atts
+      in
       (* NB: we keep polymorphism and program in the attributes, we're
          just parsing them to do our option magic. *)
       check_vernac_supports_polymorphism c poly;

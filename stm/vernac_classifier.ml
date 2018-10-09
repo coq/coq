@@ -194,7 +194,7 @@ let classify_vernac e =
   in
   let rec static_control_classifier ~poly = function
     | VernacExpr (f, e) ->
-      let poly' = Attributes.(parse_drop_extra polymorphic f) in
+      let poly' = Attributes.(parse_drop_extra polymorphic_nowarn f) in
       static_classifier ~poly:(Option.default poly poly') e
     | VernacTimeout (_,e) -> static_control_classifier ~poly e
     | VernacTime (_,{v=e}) | VernacRedirect (_, {v=e}) ->

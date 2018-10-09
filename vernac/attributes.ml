@@ -19,43 +19,40 @@ let unsupported_attributes ?loc = function
     let conj = match keys with [_] -> "this attribute: " | _ -> "these attributes: " in
     user_err ?loc Pp.(str "This command does not support " ++ str conj ++ prlist str keys ++ str".")
 
-type 'a key_parser = 'a option -> Vernacexpr.vernac_flag_value -> 'a
+type 'a key_parser = 'a option -> vernac_flag_value -> 'a
 
-type 'a attribute = ('a -> Vernacexpr.vernac_flag_value -> 'a) CString.Map.t * 'a
+type 'a attribute = ('a -> vernac_flags -> vernac_flags * 'a) * 'a
 
-let parse_drop_extra (p,v:'a attribute) (atts:vernac_flags) : 'a =
-  List.fold_left (fun v (k,args) ->
-      match CString.Map.find k p with
-      | exception Not_found -> v
-      | parser -> parser v args)
-    v atts
+type transform = unit attribute
 
-let parse_with_extra (p,v:'a attribute) (atts:vernac_flags) : 'a * vernac_flags =
-  let v, extra = List.fold_left (fun (v,extra) (k,args as att) ->
-      match CString.Map.find k p with
-      | exception Not_found -> (v,att::extra)
-      | parser -> (parser v args, extra))
-      (v,[]) atts
-  in
-  v, List.rev extra
+let parse_with_extra (p,v:'a attribute) (atts:vernac_flags) : vernac_flags * 'a =
+  p v atts
+
+let parse_drop_extra att atts =
+  snd (parse_with_extra att atts)
 
 let parse (p:'a attribute) atts : 'a =
-  let v, extra = parse_with_extra p atts in
+  let extra, v = parse_with_extra p atts in
   unsupported_attributes extra;
   v
 
 module Notations = struct
 
   let (++) (p1,v1:'a attribute) (p2,v2:'b attribute) : ('a*'b) attribute =
-    let p = CString.Map.merge (fun key p1 p2 -> match p1, p2 with
-        | Some p1, None -> Some (fun (x,y) args -> (p1 x args, y))
-        | None, Some p2 -> Some (fun (x,y) args -> (x, p2 y args))
-        | None, None -> None
-        | Some _, Some _ ->
-          anomaly Pp.(str "Attribute collision on " ++ str key))
-        p1 p2
+    let p (v1,v2) atts =
+      let atts, v1 = p1 v1 atts in
+      let atts, v2 = p2 v2 atts in
+      atts, (v1, v2)
     in
     p, (v1, v2)
+
+  let (|>) (p1,():transform) (p2,v2:'a attribute) : 'a attribute =
+    let p v2 atts =
+      let atts, () = p1 () atts in
+      let atts, v2 = p2 v2 atts in
+      atts, v2
+    in
+    p, v2
 
 end
 open Notations
@@ -82,8 +79,16 @@ let assert_once ~name prev =
     user_err Pp.(str "Attribute for " ++ str name ++ str " specified twice.")
 
 let attribute_of_list (l:(string * 'a key_parser) list) : 'a option attribute =
-  List.fold_left (fun acc (k,p) -> CString.Map.add k (fun prev args -> Some (p prev args)) acc)
-    CString.Map.empty l, None
+  let rec p extra v = function
+    | [] -> List.rev extra, v
+    | (key, attv as att) :: rem ->
+      (match CList.assoc_f String.equal key l with
+       | exception Not_found -> p (att::extra) v rem
+       | parser ->
+         let v = Some (parser v attv) in
+         p extra v rem)
+  in
+  p [], None
 
 let single_key_parser ~name ~key v prev args =
   assert_empty key args;
@@ -94,13 +99,56 @@ let bool_attribute ~name ~on ~off : bool option attribute =
   attribute_of_list [(on, single_key_parser ~name ~key:on true);
                (off, single_key_parser ~name ~key:off false)]
 
-let polymorphic = bool_attribute ~name:"Polymorphism" ~on:"polymorphic" ~off:"monomorphic"
+let qualify_attribute qual (parser, v:'a attribute) : 'a attribute =
+  let rec qualified extra v = function
+    | [] -> List.rev extra, v
+    | (key,attv) :: rem when String.equal key qual ->
+      (match attv with
+       | VernacFlagEmpty | VernacFlagLeaf _ ->
+         CErrors.user_err ~hdr:"qualified_attribute"
+           Pp.(str "Malformed attribute " ++ str qual ++ str ": attribute list expected.")
+       | VernacFlagList atts ->
+         let atts, v = parse_with_extra (parser, v) atts in
+         let extra = if atts = [] then extra else (key,VernacFlagList atts) :: extra in
+         qualified extra v rem)
+    | att :: rem -> qualified (att::extra) v rem
+  in
+  qualified [], v
+
+let polymorphic_base = bool_attribute ~name:"Polymorphism" ~on:"polymorphic" ~off:"monomorphic"
 
 let program = bool_attribute ~name:"Program mode" ~on:"program" ~off:"noprogram"
 
 let locality = bool_attribute ~name:"Locality" ~on:"local" ~off:"global"
 
-let template = bool_attribute ~name:"Template" ~on:"template" ~off:"notemplate"
+let warn_unqualified_univ_attr =
+  CWarnings.create ~name:"unqualified-univ-attr" ~category:"deprecated"
+    (fun key -> Pp.(str "Attribute " ++ str key ++
+                    str " should be qualified as \"universes("++str key++str")\"."))
+
+let ukey = "universes"
+let universe_transform ~warn_unqualified : transform =
+  let p () atts = List.map (fun (key,_ as att) ->
+      match key with
+      | "polymorphic" | "monomorphic"
+      | "template" | "notemplate" ->
+        if warn_unqualified then warn_unqualified_univ_attr key;
+        ukey, VernacFlagList [att]
+      | _ -> att) atts, () in
+  p, ()
+
+let polymorphic_nowarn =
+  universe_transform ~warn_unqualified:false |>
+  qualify_attribute ukey polymorphic_base
+
+let universe_poly_template =
+  let template = bool_attribute ~name:"Template" ~on:"template" ~off:"notemplate" in
+  universe_transform ~warn_unqualified:true |>
+  qualify_attribute ukey (polymorphic_base ++ template)
+
+let polymorphic =
+  universe_transform ~warn_unqualified:true |>
+  qualify_attribute ukey polymorphic_base
 
 let deprecation_parser : deprecation key_parser = fun orig args ->
   assert_once ~name:"deprecation" orig;
@@ -120,8 +168,8 @@ let deprecation_parser : deprecation key_parser = fun orig args ->
 let deprecation = attribute_of_list ["deprecated",deprecation_parser]
 
 let attributes_of_flags f =
-  let (((locality, template), deprecated), polymorphic), program =
-    parse (locality ++ template ++ deprecation ++ polymorphic ++ program) f
+  let ((locality, deprecated), (polymorphic, template)), program =
+    parse (locality ++ deprecation ++ universe_poly_template ++ program) f
   in
   let polymorphic = Option.default (Flags.is_universe_polymorphism()) polymorphic in
   let program = Option.default (Flags.is_program_mode()) program in
@@ -132,3 +180,7 @@ let only_locality atts = parse locality atts
 let only_polymorphism atts =
   let att = parse polymorphic atts in
   Option.default (Flags.is_universe_polymorphism ()) att
+
+
+let vernac_polymorphic_flag = ukey, VernacFlagList ["polymorphic", VernacFlagEmpty]
+let vernac_monomorphic_flag = ukey, VernacFlagList ["monomorphic", VernacFlagEmpty]

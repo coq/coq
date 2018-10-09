@@ -25,7 +25,7 @@ Module AutoNo.
 End AutoNo.
 
 Module Yes.
-  #[template]
+  #[universes(template)]
   Inductive Box@{i} (A:Type@{i}) : Type@{i} := box : A -> Box A.
 
   About Box.
@@ -37,7 +37,7 @@ Module Yes.
 End Yes.
 
 Module No.
-  #[notemplate]
+  #[universes(notemplate)]
   Inductive Box (A:Type) : Type := box : A -> Box A.
 
   About Box.

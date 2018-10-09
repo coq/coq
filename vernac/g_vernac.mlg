@@ -112,8 +112,10 @@ GRAMMAR EXTEND Gram
     ]
   ;
   vernac_poly:
-    [ [ IDENT "Polymorphic"; v = vernac_aux -> { let (f, v) = v in (("polymorphic", VernacFlagEmpty) :: f, v) }
-      | IDENT "Monomorphic"; v = vernac_aux -> { let (f, v) = v in (("monomorphic", VernacFlagEmpty) :: f, v) }
+    [ [ IDENT "Polymorphic"; v = vernac_aux ->
+        { let (f, v) = v in (Attributes.vernac_polymorphic_flag :: f, v) }
+      | IDENT "Monomorphic"; v = vernac_aux ->
+        { let (f, v) = v in (Attributes.vernac_monomorphic_flag :: f, v) }
       | v = vernac_aux -> { v } ]
     ]
   ;

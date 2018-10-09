@@ -12,7 +12,14 @@ open Vernacexpr
 
 type 'a attribute
 (** The type of attributes. When parsing attributes if an ['a
-   attribute] is present then an ['a] value will be produced. *)
+   attribute] is present then an ['a] value will be produced.
+    In the most general case, an attribute transforms the raw flags
+   along with its value. *)
+
+type transform = unit attribute
+(** An attribute which is used only for the transformation it applies
+   to the flags. For instance, transform [polymorphic] to
+   [universes(polymorphic)]. *)
 
 val parse : 'a attribute -> vernac_flags -> 'a
 (** Errors on unsupported attributes. *)
@@ -22,6 +29,8 @@ module Notations : sig
 
   val (++) : 'a attribute -> 'b attribute -> ('a * 'b) attribute
   (** Combine 2 attributes. If any keys are in common an error will be raised. *)
+
+  val (|>) : transform -> 'a attribute -> 'a attribute
 end
 
 (** Definitions for some standard attributes. *)
@@ -32,9 +41,12 @@ val mk_deprecation : ?since: string option -> ?note: string option -> unit -> de
 
 val polymorphic : bool option attribute
 val program : bool option attribute
-val template : bool option attribute
+val universe_poly_template : (bool option * bool option) attribute
 val locality : bool option attribute
 val deprecation : deprecation option attribute
+
+val polymorphic_nowarn : bool option attribute
+(** For internal use, avoid warning if not qualified as eg [universes(polymorphic)]. *)
 
 type t = {
   locality : bool option;
@@ -61,7 +73,7 @@ val only_polymorphism : vernac_flags -> bool
 val parse_drop_extra : 'a attribute -> vernac_flags -> 'a
 (** Ignores unsupported attributes. *)
 
-val parse_with_extra : 'a attribute -> vernac_flags -> 'a * vernac_flags
+val parse_with_extra : 'a attribute -> vernac_flags -> vernac_flags * 'a
 (** Returns unsupported attributes. *)
 
 (** * Defining attributes. *)
@@ -82,6 +94,10 @@ val bool_attribute : name:string -> on:string -> off:string -> bool option attri
    provided and [false] when [off] is provided. The attribute may only
    be set once for a command. *)
 
+val qualify_attribute : string -> 'a attribute -> 'a attribute
+(** [qualified_attribute qual att] treats [#[qual(atts)]] like [att]
+   treats [atts]. *)
+
 (** Combinators to help define your own parsers. See the
    implementation of [bool_attribute] for practical use. *)
 
@@ -98,3 +114,7 @@ val single_key_parser : name:string -> key:string -> 'a -> 'a key_parser
 (** [single_key_parser ~name ~key v] makes a parser for attribute
     [name] giving the constant value [v] for key [key] taking no
     arguments. [name] may only be given once. *)
+
+(** Compatibility values for parsing [Polymorphic]. *)
+val vernac_polymorphic_flag : vernac_flag
+val vernac_monomorphic_flag : vernac_flag
