@@ -9,14 +9,8 @@ license: "LGPL-2.1"
 available: [ocaml-version >= "4.05.0"]
 
 depends: [
-  "dune"               { build & >= "1.2.0" }
+  "dune"      { build & >= "1.2.0" }
   "coq"
-  "coqide-server"
-  "conf-gtksourceview"
-  "lablgtk"            {         >= "2.18.5" }
 ]
 
-build-env: [
-  [ COQ_CONFIGURE_PREFIX = "%{prefix}" ]
-]
 build: [ [ "dune" "build" "-p" name "-j" jobs ] ]

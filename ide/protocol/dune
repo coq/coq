@@ -1,6 +1,6 @@
 (library
  (name protocol)
- (public_name coqide.protocol)
+ (public_name coqide-server.protocol)
  (wrapped false)
  (libraries coq.lib))
 

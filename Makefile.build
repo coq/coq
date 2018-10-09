@@ -563,7 +563,7 @@ $(COQWORKMGRBYTE): $(COQWORKMGRCMO)
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqidetop
 
-FAKEIDECMO:=clib/clib.cma lib/lib.cma ide/protocol/ideprotocol.cma ide/document.cmo tools/fake_ide.cmo
+FAKEIDECMO:=clib/clib.cma lib/lib.cma ide/protocol/ideprotocol.cma ide/document.cmo ide/fake_ide.cmo
 
 $(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOP)
 	$(SHOW)'OCAMLBEST -o $@'
@@ -668,7 +668,7 @@ kernel/kernel.cmxa: kernel/kernel.mllib
 	$(SHOW)'OCAMLOPT -pack -o $@'
 	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -pack -o $@ $(filter-out %.mlpack, $^)
 
-COND_IDEFLAGS=$(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide -I ide/protocol,)
+COND_IDEFLAGS=$(if $(filter ide/fake_ide% tools/coq_makefile%,$<), -I ide -I ide/protocol,)
 COND_PRINTERFLAGS=$(if $(filter dev/%,$<), -I dev,)
 
 COND_BYTEFLAGS= \
