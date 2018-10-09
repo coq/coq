@@ -612,7 +612,7 @@ VALIDOPTS=$(if $(VERBOSE),,-silent) -o -m
 
 validate: $(CHICKEN) | $(ALLVO)
 	$(SHOW)'COQCHK <theories & plugins>'
-	$(HIDE)$(CHICKEN) -boot $(VALIDOPTS) $(ALLMODS)
+	$(HIDE)$(CHICKEN) -boot -debug $(VALIDOPTS) $(ALLMODS)
 
 $(ALLSTDLIB).v:
 	$(SHOW)'MAKE $(notdir $@)'

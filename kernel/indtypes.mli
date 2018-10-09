@@ -34,6 +34,19 @@ type inductive_error =
 
 exception InductiveError of inductive_error
 
+val infos_and_sort : env -> constr -> Univ.Universe.t
+
+val check_subtyping_arity_constructor : env -> (constr -> constr) -> types -> int -> bool -> unit
+
+val check_positivity : chkpos:bool ->
+           Names.MutInd.t ->
+           Environ.env ->
+           (Constr.constr, Constr.types) Context.Rel.pt ->
+           Declarations.recursivity_kind ->
+           ('a * Names.Id.t list * Constr.types array *
+            (('b, 'c) Context.Rel.pt * 'd))
+           array -> Int.t * Declarations.recarg Rtree.t array
+
 (** The following function does checks on inductive declarations. *)
 
 val check_inductive : env -> MutInd.t -> mutual_inductive_entry -> mutual_inductive_body

@@ -9,14 +9,12 @@
 (************************************************************************)
 
 (*i*)
-open Cic
+open Declarations
+open Constr
 open Environ
 (*i*)
 
-val get_env : unit -> env
+(*s Typing functions (not yet tagged as safe) *)
 
-val set_engagement : engagement -> unit
-val import         :
-  CUnix.physical_path -> compiled_library -> Univ.ContextSet.t -> Cic.vodigest -> unit
-val unsafe_import  :
-  CUnix.physical_path -> compiled_library -> Univ.ContextSet.t -> Cic.vodigest -> unit
+val check_polymorphic_arity :
+  env -> rel_context -> template_arity -> unit

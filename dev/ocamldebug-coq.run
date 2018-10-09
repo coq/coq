@@ -14,40 +14,24 @@
 
 export CAML_LD_LIBRARY_PATH=$COQTOP/kernel/byterun:$CAML_LD_LIBRARY_PATH
 
-GUESS_CHECKER=
-for arg in "$@"; do
-    if [ "${arg##*/}" = coqchk.byte ]; then
-        GUESS_CHECKER=1
-    fi
-done
-
-if [ -z "$GUESS_CHECKER" ]; then
-    exec $OCAMLDEBUG \
-	-I $CAMLP5LIB -I +threads \
-	-I $COQTOP \
-	-I $COQTOP/config -I $COQTOP/printing -I $COQTOP/grammar -I $COQTOP/clib \
-	-I $COQTOP/lib -I $COQTOP/kernel -I $COQTOP/kernel/byterun \
-	-I $COQTOP/library -I $COQTOP/engine \
-	-I $COQTOP/pretyping -I $COQTOP/parsing -I $COQTOP/vernac \
-        -I $COQTOP/interp -I $COQTOP/proofs -I $COQTOP/tactics -I $COQTOP/stm \
-	-I $COQTOP/toplevel -I $COQTOP/dev -I $COQTOP/config -I $COQTOP/ltac \
-        -I $COQTOP/plugins/cc         -I $COQTOP/plugins/dp \
-        -I $COQTOP/plugins/extraction -I $COQTOP/plugins/field \
-        -I $COQTOP/plugins/firstorder \
-        -I $COQTOP/plugins/funind     -I $COQTOP/plugins/groebner \
-        -I $COQTOP/plugins/interface  -I $COQTOP/plugins/micromega \
-        -I $COQTOP/plugins/omega      -I $COQTOP/plugins/quote \
-        -I $COQTOP/plugins/ring \
-	-I $COQTOP/plugins/rtauto     -I $COQTOP/plugins/setoid_ring \
-        -I $COQTOP/plugins/subtac     -I $COQTOP/plugins/syntax \
-        -I $COQTOP/plugins/xml        -I $COQTOP/plugins/ltac \
-        -I $COQTOP/ide \
-	"$@"
-else
-    exec $OCAMLDEBUG \
-        -I $CAMLP5LIB -I +threads \
-        -I $COQTOP \
-        -I $COQTOP/config -I $COQTOP/clib \
-        -I $COQTOP/lib -I $COQTOP/checker \
-        "$@"
-fi
+exec $OCAMLDEBUG \
+    -I $CAMLP5LIB -I +threads \
+    -I $COQTOP \
+    -I $COQTOP/config -I $COQTOP/printing -I $COQTOP/grammar -I $COQTOP/clib \
+    -I $COQTOP/lib -I $COQTOP/kernel -I $COQTOP/kernel/byterun \
+    -I $COQTOP/library -I $COQTOP/engine \
+    -I $COQTOP/pretyping -I $COQTOP/parsing -I $COQTOP/vernac \
+    -I $COQTOP/interp -I $COQTOP/proofs -I $COQTOP/tactics -I $COQTOP/stm \
+    -I $COQTOP/toplevel -I $COQTOP/dev -I $COQTOP/config -I $COQTOP/ltac \
+    -I $COQTOP/plugins/cc         -I $COQTOP/plugins/dp \
+    -I $COQTOP/plugins/extraction -I $COQTOP/plugins/field \
+    -I $COQTOP/plugins/firstorder \
+    -I $COQTOP/plugins/funind     -I $COQTOP/plugins/groebner \
+    -I $COQTOP/plugins/interface  -I $COQTOP/plugins/micromega \
+    -I $COQTOP/plugins/omega      -I $COQTOP/plugins/quote \
+    -I $COQTOP/plugins/ring \
+    -I $COQTOP/plugins/rtauto     -I $COQTOP/plugins/setoid_ring \
+    -I $COQTOP/plugins/subtac     -I $COQTOP/plugins/syntax \
+    -I $COQTOP/plugins/xml        -I $COQTOP/plugins/ltac \
+    -I $COQTOP/ide \
+    "$@"

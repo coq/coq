@@ -9,13 +9,8 @@
 (************************************************************************)
 
 (*i*)
-open Cic
-open Environ
+open Safe_typing
 (*i*)
 
-(** Invariant: the first [module_type_body] is now supposed to be
-    known by [env] *)
-
-val check_subtypes : env -> module_type_body -> module_type_body -> unit
-
-
+val import : compiled_library -> Univ.ContextSet.t -> vodigest -> unit
+val unsafe_import : compiled_library -> Univ.ContextSet.t -> vodigest -> unit

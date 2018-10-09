@@ -59,15 +59,11 @@ let pP s = pp (hov 0 s)
 let ppuni u = pp(Universe.pr u)
 let ppuni_level u = pp (Level.pr u)
 
-let ppuniverse_set l = pp (LSet.pr l)
-let ppuniverse_instance l = pp (Instance.pr l)
-let ppauniverse_context l = pp (AUContext.pr Level.pr l)
 let ppuniverse_context l = pp (pr_universe_context Level.pr l)
 let ppconstraints c = pp (pr_constraints Level.pr c)
 let ppuniverse_context_future c =
   let ctx = Future.force c in
     ppuniverse_context ctx
-let ppuniverses u = pp (Univ.pr_universes u)
 
 let pploc x = let (l,r) = Loc.unloc x in
   print_string"(";print_int l;print_string",";print_int r;print_string")"

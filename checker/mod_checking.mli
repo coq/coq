@@ -8,4 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val check_module : Environ.env -> Names.ModPath.t -> Cic.module_body -> unit
+val check_module : Environ.env -> Names.ModPath.t -> Declarations.module_body -> unit

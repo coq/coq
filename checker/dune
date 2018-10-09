@@ -1,7 +1,25 @@
-(rule (copy %{project_root}/kernel/names.ml names.ml))
-(rule (copy %{project_root}/kernel/names.mli names.mli))
-(rule (copy %{project_root}/kernel/esubst.ml esubst.ml))
-(rule (copy %{project_root}/kernel/esubst.mli esubst.mli))
+(copy_files#
+  %{project_root}/kernel/{names,esubst,declarations,environ,constr,term,univ,evar,sorts,uGraph,context}.ml{,i})
+
+(copy_files#
+  %{project_root}/kernel/{mod_subst,vars,opaqueproof,conv_oracle,reduction,typeops,inductive,indtypes,declareops,type_errors}.ml{,i})
+
+(copy_files#
+  %{project_root}/kernel/{modops,mod_typing,}.ml{,i})
+
+(copy_files#
+  %{project_root}/kernel/{cClosure,cPrimitives,csymtable,vconv,vm,uint31,cemitcodes,vmvalues,cbytecodes,cinstr,retroknowledge,copcodes}.ml{,i})
+
+(copy_files#
+  %{project_root}/kernel/{cbytegen,clambda,nativeinstr,nativevalues,nativeconv,nativecode,nativelib,nativelibrary,nativelambda}.ml{,i})
+
+(copy_files#
+  %{project_root}/kernel/{subtyping,term_typing,safe_typing,entries,cooking}.ml{,i})
+
+; VM stuff
+
+(copy_files#
+  %{project_root}/kernel/byterun/{*.c,*.h})
 
 ; Careful with bug https://github.com/ocaml/odoc/issues/148
 ;
@@ -12,7 +30,8 @@
  (public_name coq.checklib)
  (synopsis "Coq's Standalone Proof Checker")
  (modules :standard \ coqchk votour)
- (modules_without_implementation cic)
+ (modules_without_implementation cinstr nativeinstr)
+ (c_names coq_fix_code coq_memory coq_values coq_interp)
  (wrapped true)
  (libraries coq.lib))
 

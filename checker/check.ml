@@ -13,7 +13,7 @@ open CErrors
 open Util
 open Names
 
-let chk_pp = Pp.pp_with Format.std_formatter
+let chk_pp = Feedback.msg_notice
 
 let pr_dirpath dp = str (DirPath.to_string dp)
 let default_root_prefix = DirPath.empty
@@ -48,13 +48,17 @@ let pr_path sp =
 (*s Modules loaded in memory contain the following informations. They are
     kept in the global table [libraries_table]. *)
 
+type compilation_unit_name = DirPath.t
+
+type seg_proofs = Constr.constr Future.computation array
+
 type library_t = {
-  library_name : Cic.compilation_unit_name;
+  library_name : compilation_unit_name;
   library_filename : CUnix.physical_path;
-  library_compiled : Cic.compiled_library;
-  library_opaques : Cic.opaque_table;
-  library_deps : Cic.library_deps;
-  library_digest : Cic.vodigest;
+  library_compiled : Safe_typing.compiled_library;
+  library_opaques : seg_proofs;
+  library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
+  library_digest : Safe_typing.vodigest;
   library_extra_univs : Univ.ContextSet.t }
 
 module LibraryOrdered =
@@ -94,21 +98,20 @@ let access_opaque_table dp i =
     with Not_found -> assert false
   in
   assert (i < Array.length t);
-  Future.force t.(i)
+  t.(i)
 
 let access_opaque_univ_table dp i =
   try
     let t = LibraryMap.find dp !opaque_univ_tables in
     assert (i < Array.length t);
-    Future.force t.(i)
-  with Not_found -> Univ.ContextSet.empty
+    Some t.(i)
+  with Not_found -> None
 
-
-let _ = Declarations.indirect_opaque_access := access_opaque_table
-let _ = Declarations.indirect_opaque_univ_access := access_opaque_univ_table
+let () =
+  Opaqueproof.set_indirect_opaque_accessor access_opaque_table;
+  Opaqueproof.set_indirect_univ_accessor access_opaque_univ_table
 
 let check_one_lib admit (dir,m) =
-  let file = m.library_filename in
   let md = m.library_compiled in
   let dig = m.library_digest in
   (* Look up if the library is to be admitted correct. We could
@@ -117,11 +120,11 @@ let check_one_lib admit (dir,m) =
   if LibrarySet.mem dir admit then
     (Flags.if_verbose Feedback.msg_notice
       (str "Admitting library: " ++ pr_dirpath dir);
-      Safe_typing.unsafe_import file md m.library_extra_univs dig)
+      Safe_checking.unsafe_import md m.library_extra_univs dig)
   else
     (Flags.if_verbose Feedback.msg_notice
       (str "Checking library: " ++ pr_dirpath dir);
-      Safe_typing.import file md m.library_extra_univs dig);
+      Safe_checking.import md m.library_extra_univs dig);
   register_loaded_library m
 
 (*************************************************************************)
@@ -284,7 +287,21 @@ let raw_intern_library f =
 (************************************************************************)
 (* Internalise libraries *)
 
-open Cic
+type summary_disk = {
+  md_name : compilation_unit_name;
+  md_imports : compilation_unit_name array;
+  md_deps : (compilation_unit_name * Safe_typing.vodigest) array;
+}
+
+module Dyn = Dyn.Make ()
+type obj = Dyn.t (* persistent dynamic objects *)
+type lib_objects = (Id.t * obj) list
+type library_objects = lib_objects * lib_objects
+
+type library_disk = {
+  md_compiled : Safe_typing.compiled_library;
+  md_objects : library_objects;
+}
 
 let mk_library sd md f table digest cst = {
   library_name = sd.md_name;
@@ -317,12 +334,12 @@ let intern_from_file (dir, f) =
   let (sd,md,table,opaque_csts,digest) =
     try
       let ch = System.with_magic_number_check raw_intern_library f in
-      let (sd:Cic.summary_disk), _, digest = marshal_in_segment f ch in
-      let (md:Cic.library_disk), _, digest = marshal_in_segment f ch in
+      let (sd:summary_disk), _, digest = marshal_in_segment f ch in
+      let (md:library_disk), _, digest = marshal_in_segment f ch in
       let (opaque_csts:'a option), _, udg = marshal_in_segment f ch in
       let (discharging:'a option), _, _ = marshal_in_segment f ch in
       let (tasks:'a option), _, _ = marshal_in_segment f ch in
-      let (table:Cic.opaque_table), pos, checksum =
+      let (table:seg_proofs), pos, checksum =
         marshal_in_segment f ch in
       (* Verification of the final checksum *)
       let () = close_in ch in
@@ -350,8 +367,8 @@ let intern_from_file (dir, f) =
       Validate.validate !Flags.debug Values.v_opaques table;
       Flags.if_verbose chk_pp (str" done]" ++ fnl ());
       let digest =
-        if opaque_csts <> None then Cic.Dviovo (digest,udg)
-        else (Cic.Dvo digest) in
+        if opaque_csts <> None then Safe_typing.Dvivo (digest,udg)
+        else (Safe_typing.Dvo_or_vi digest) in
       sd,md,table,opaque_csts,digest
     with e -> Flags.if_verbose chk_pp (str" failed!]" ++ fnl ()); raise e in
   depgraph := LibraryMap.add sd.md_name sd.md_deps !depgraph;

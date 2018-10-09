@@ -8,11 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(*
 open Pp
 open Names
-open Cic
 open Declarations
 open Environ
+   *)
 
 let memory_stat = ref false
 
@@ -25,6 +26,7 @@ let print_memory_stat () =
 
 let output_context = ref false
 
+(*
 let pr_engagement impr_set =
   begin
     match impr_set with
@@ -37,16 +39,17 @@ let cst_filter f csts =
     (fun c ce acc -> if f c ce then c::acc else acc)
     csts []
 
-let is_ax _ cb = not (constant_has_body cb)
+let is_ax _ cb = not (Declareops.constant_has_body cb)
 
 let pr_ax csts =
   let axs = cst_filter is_ax csts in
   if axs = [] then
     str "Axioms: <none>"
   else
-    hv 2 (str "Axioms:" ++ fnl() ++ prlist_with_sep fnl Indtypes.prcon axs)
+    hv 2 (str "Axioms:" ++ fnl() ++ prlist_with_sep fnl Constant.print axs)
+      *)
 
-let print_context env =
+let print_context env = () (* FIXME
   if !output_context then begin
     let
       {env_globals=
@@ -60,8 +63,8 @@ let print_context env =
       str"===============" ++ fnl() ++ fnl() ++
       str "* " ++ hov 0 (pr_engagement engt ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_ax csts)));
-  end
+  end *)
 
 let stats () =
-  print_context (Safe_typing.get_env());
+  print_context (Global.env());
   print_memory_stat ()
