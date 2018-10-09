@@ -90,31 +90,6 @@ let load_init_vernaculars opts ~state =
   load_vernacular opts ~state
 
 (******************************************************************************)
-(* Startup LoadPath and Modules                                               *)
-(******************************************************************************)
-(* prelude_data == From Coq Require Export Prelude. *)
-let prelude_data = "Prelude", Some "Coq", Some false
-
-let require_libs opts =
-  if opts.load_init then prelude_data :: opts.vo_requires else opts.vo_requires
-
-let cmdline_load_path opts =
-  let open Mltop in
-  (* loadpaths given by options -Q and -R *)
-  List.map
-    (fun (unix_path, coq_path, implicit) ->
-       { recursive = true;
-         path_spec = VoPath { unix_path; coq_path; has_ml = Mltop.AddNoML; implicit } })
-      (List.rev opts.vo_includes) @
-
-  (* additional ml directories, given with option -I *)
-  List.map (fun s -> {recursive = false; path_spec = MlPath s}) (List.rev opts.ml_includes)
-
-let build_load_path opts =
-  Coqinit.libs_init_load_path ~load_init:opts.load_init @
-  cmdline_load_path opts
-
-(******************************************************************************)
 (* Fatal Errors                                                               *)
 (******************************************************************************)
 

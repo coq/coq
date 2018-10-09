@@ -40,8 +40,8 @@ type coq_cmdopts = {
   load_rcfile : bool;
   rcfile      : string option;
 
-  ml_includes : string list;
-  vo_includes : (string * Names.DirPath.t * bool) list;
+  ml_includes : Mltop.coq_path list;
+  vo_includes : Mltop.coq_path list;
   vo_requires : (string * string option * bool option) list;
   (* None = No Import; Some false = Import; Some true = Export *)
 
@@ -145,11 +145,14 @@ let init_args = {
 (* Functional arguments                                                       *)
 (******************************************************************************)
 let add_ml_include opts s =
-  { opts with ml_includes = s :: opts.ml_includes }
+  Mltop.{ opts with ml_includes = {recursive = false; path_spec = MlPath s} :: opts.ml_includes }
 
-let add_vo_include opts d p implicit =
-  let p = Libnames.dirpath_of_string p in
-  { opts with vo_includes = (d, p, implicit) :: opts.vo_includes }
+let add_vo_include opts unix_path coq_path implicit =
+  let open Mltop in
+  let coq_path = Libnames.dirpath_of_string coq_path in
+  { opts with vo_includes = {
+        recursive = true;
+        path_spec = VoPath { unix_path; coq_path; has_ml = AddNoML; implicit } } :: opts.vo_includes }
 
 let add_vo_require opts d p export =
   { opts with vo_requires = (d, p, export) :: opts.vo_requires }
@@ -597,3 +600,19 @@ let parse_args arglist : coq_cmdopts * string list =
   try
     parse init_args
   with any -> fatal_error any
+
+(******************************************************************************)
+(* Startup LoadPath and Modules                                               *)
+(******************************************************************************)
+(* prelude_data == From Coq Require Export Prelude. *)
+let prelude_data = "Prelude", Some "Coq", Some false
+
+let require_libs opts =
+  if opts.load_init then prelude_data :: opts.vo_requires else opts.vo_requires
+
+let cmdline_load_path opts =
+  List.rev opts.vo_includes @ List.(rev opts.ml_includes)
+
+let build_load_path opts =
+  Coqinit.libs_init_load_path ~load_init:opts.load_init @
+  cmdline_load_path opts
