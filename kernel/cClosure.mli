@@ -218,8 +218,6 @@ val eta_expand_ind_stack : env -> inductive -> fconstr -> stack ->
 (** [unfold_reference] unfolds references in a [fconstr] *)
 val unfold_reference : clos_infos -> clos_tab -> table_key -> fconstr option
 
-val eq_table_key : table_key -> table_key -> bool
-
 (***********************************************************************
   i This is for lazy debug *)
 

@@ -224,11 +224,6 @@ let unfold_red kn =
  * abstractions, storing a representation (of type 'a) of the body of
  * this constant or abstraction.
  *  * i_tab is the cache table of the results
- *  * i_repr is the function to get the representation from the current
- *         state of the cache and the body of the constant. The result
- *         is stored in the table.
- *  * i_rels is the array of free rel variables together with their optional
- *    body
  *
  * ref_value_cache searchs in the tab, otherwise uses i_repr to
  * compute the result and store it in the table. If the constant can't
@@ -256,59 +251,11 @@ end
 
 module KeyTable = Hashtbl.Make(IdKeyHash)
 
-let eq_table_key = IdKeyHash.equal
-
-type 'a infos_tab = 'a KeyTable.t
-
-type 'a infos_cache = {
-  i_repr : 'a infos -> 'a infos_tab -> constr -> 'a;
-  i_env : env;
-  i_sigma : existential -> constr option;
-  i_rels : (Constr.rel_declaration * lazy_val) Range.t;
-  i_share : bool;
-}
-
-and 'a infos = {
-  i_flags : reds;
-  i_cache : 'a infos_cache }
-
-let info_flags info = info.i_flags
-let info_env info = info.i_cache.i_env
-
 open Context.Named.Declaration
 
 let assoc_defined id env = match Environ.lookup_named id env with
 | LocalDef (_, c, _) -> c
 | _ -> raise Not_found
-
-let ref_value_cache ({i_cache = cache;_} as infos) tab ref =
-  try
-    Some (KeyTable.find tab ref)
-  with Not_found ->
-  try
-    let body =
-      match ref with
-	| RelKey n ->
-          let open! Context.Rel.Declaration in
-          let i = n - 1 in
-          let (d, _) =
-            try Range.get cache.i_rels i
-            with Invalid_argument _ -> raise Not_found
-          in
-          begin match d with
-          | LocalAssum _ -> raise Not_found
-          | LocalDef (_, t, _) -> lift n t
-          end
-	| VarKey id -> assoc_defined id cache.i_env
-	| ConstKey cst -> constant_value_in cache.i_env cst
-    in
-    let v = cache.i_repr infos tab body in
-    KeyTable.add tab ref v;
-    Some v
-  with
-    | Not_found (* List.assoc *)
-    | NotEvaluableConst _ (* Const *)
-      -> None
 
 (**********************************************************************)
 (* Lazy reduction: the one used in kernel operations                  *)
@@ -376,6 +323,23 @@ let update ~share v1 no t =
      v1.term <- t;
      v1)
   else {norm=no;term=t}
+
+(** Reduction cache *)
+
+type infos_cache = {
+  i_env : env;
+  i_sigma : existential -> constr option;
+  i_share : bool;
+}
+
+type clos_infos = {
+  i_flags : reds;
+  i_cache : infos_cache }
+
+type clos_tab = fconstr KeyTable.t
+
+let info_flags info = info.i_flags
+let info_env info = info.i_cache.i_env
 
 (**********************************************************************)
 (* The type of (machine) stacks (= lambda-bar-calculus' contexts)     *)
@@ -525,6 +489,8 @@ let mk_clos e t =
     | (CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _|Proj _) ->
         {norm = Red; term = FCLOS(t,e)}
 
+let inject c = mk_clos (subs_id 0) c
+
 (** Hand-unrolling of the map function to bypass the call to the generic array
     allocation *)
 let mk_clos_vect env v = match v with
@@ -535,6 +501,35 @@ let mk_clos_vect env v = match v with
 | [|v0; v1; v2; v3|] ->
   [|mk_clos env v0; mk_clos env v1; mk_clos env v2; mk_clos env v3|]
 | v -> Array.Fun1.map mk_clos env v
+
+let ref_value_cache ({ i_cache = cache; _ }) tab ref =
+  try
+    Some (KeyTable.find tab ref)
+  with Not_found ->
+  try
+    let body =
+      match ref with
+        | RelKey n ->
+          let open! Context.Rel.Declaration in
+          let i = n - 1 in
+          let (d, _) =
+            try Range.get cache.i_env.env_rel_context.env_rel_map i
+            with Invalid_argument _ -> raise Not_found
+          in
+          begin match d with
+          | LocalAssum _ -> raise Not_found
+          | LocalDef (_, t, _) -> lift n t
+          end
+        | VarKey id -> assoc_defined id cache.i_env
+        | ConstKey cst -> constant_value_in cache.i_env cst
+    in
+    let v = inject body in
+    KeyTable.add tab ref v;
+    Some v
+  with
+    | Not_found (* List.assoc *)
+    | NotEvaluableConst _ (* Const *)
+      -> None
 
 (* The inverse of mk_clos: move back to constr *)
 let rec to_constr lfts v =
@@ -1026,8 +1021,6 @@ let whd_val info tab v =
 let norm_val info tab v =
   with_stats (lazy (kl info tab v))
 
-let inject c = mk_clos (subs_id 0) c
-
 let whd_stack infos tab m stk = match m.norm with
 | Whnf | Norm ->
   (** No need to perform [kni] nor to unlock updates because
@@ -1038,17 +1031,11 @@ let whd_stack infos tab m stk = match m.norm with
   let () = if infos.i_cache.i_share then ignore (fapp_stack k) in (* to unlock Zupdates! *)
   k
 
-(* cache of constants: the body is computed only when needed. *)
-type clos_infos = fconstr infos
-type clos_tab = fconstr infos_tab
-
 let create_clos_infos ?(evars=fun _ -> None) flgs env =
   let share = (Environ.typing_flags env).Declarations.share_reduction in
   let cache = {
-    i_repr = (fun _ _ c -> inject c);
     i_env = env;
     i_sigma = evars;
-    i_rels = env.env_rel_context.env_rel_map;
     i_share = share;
   } in
   { i_flags = flgs; i_cache = cache }
