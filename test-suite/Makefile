@@ -44,7 +44,7 @@ coqdoc := $(BIN)coqdoc
 coqtopbyte := $(BIN)coqtop.byte
 
 coqtopload := $(coqtop) -async-proofs-cache force -load-vernac-source
-coqtopcompile := $(coqtop) -compile
+coqtopcompile := $(coqtop) -async-proofs-cache force -compile
 coqdep := $(BIN)coqdep -coqlib $(LIB)
 
 VERBOSE?=
