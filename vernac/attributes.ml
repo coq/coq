@@ -21,12 +21,10 @@ let unsupported_attributes ?loc = function
 
 type 'a key_parser = 'a option -> vernac_flag_value -> 'a
 
-type 'a attribute = ('a -> vernac_flags -> vernac_flags * 'a) * 'a
+type 'a attribute = vernac_flags -> vernac_flags * 'a
 
-type transform = unit attribute
-
-let parse_with_extra (p,v:'a attribute) (atts:vernac_flags) : vernac_flags * 'a =
-  p v atts
+let parse_with_extra (p:'a attribute) (atts:vernac_flags) : vernac_flags * 'a =
+  p atts
 
 let parse_drop_extra att atts =
   snd (parse_with_extra att atts)
@@ -36,23 +34,34 @@ let parse (p:'a attribute) atts : 'a =
   unsupported_attributes extra;
   v
 
+let make_attribute x = x
+
 module Notations = struct
 
-  let (++) (p1,v1:'a attribute) (p2,v2:'b attribute) : ('a*'b) attribute =
-    let p (v1,v2) atts =
-      let atts, v1 = p1 v1 atts in
-      let atts, v2 = p2 v2 atts in
-      atts, (v1, v2)
-    in
-    p, (v1, v2)
+  type 'a t = 'a attribute
 
-  let (|>) (p1,():transform) (p2,v2:'a attribute) : 'a attribute =
-    let p v2 atts =
-      let atts, () = p1 () atts in
-      let atts, v2 = p2 v2 atts in
-      atts, v2
-    in
-    p, v2
+  let return x = fun atts -> atts, x
+
+  let (>>=) att f =
+    fun atts ->
+      let atts, v = att atts in
+      f v atts
+
+  let (>>) p1 p2 =
+    fun atts ->
+      let atts, () = p1 atts in
+      p2 atts
+
+  let map f att =
+    fun atts ->
+      let atts, v = att atts in
+      atts, f v
+
+  let (++) (p1:'a attribute) (p2:'b attribute) : ('a*'b) attribute =
+    fun atts ->
+      let atts, v1 = p1 atts in
+      let atts, v2 = p2 atts in
+      atts, (v1, v2)
 
 end
 open Notations
@@ -88,7 +97,7 @@ let attribute_of_list (l:(string * 'a key_parser) list) : 'a option attribute =
          let v = Some (parser v attv) in
          p extra v rem)
   in
-  p [], None
+  p [] None
 
 let single_key_parser ~name ~key v prev args =
   assert_empty key args;
@@ -99,21 +108,23 @@ let bool_attribute ~name ~on ~off : bool option attribute =
   attribute_of_list [(on, single_key_parser ~name ~key:on true);
                (off, single_key_parser ~name ~key:off false)]
 
-let qualify_attribute qual (parser, v:'a attribute) : 'a attribute =
-  let rec qualified extra v = function
-    | [] -> List.rev extra, v
-    | (key,attv) :: rem when String.equal key qual ->
-      (match attv with
-       | VernacFlagEmpty | VernacFlagLeaf _ ->
-         CErrors.user_err ~hdr:"qualified_attribute"
-           Pp.(str "Malformed attribute " ++ str qual ++ str ": attribute list expected.")
-       | VernacFlagList atts ->
-         let atts, v = parse_with_extra (parser, v) atts in
-         let extra = if atts = [] then extra else (key,VernacFlagList atts) :: extra in
-         qualified extra v rem)
-    | att :: rem -> qualified (att::extra) v rem
-  in
-  qualified [], v
+let qualify_attribute qual (parser:'a attribute) : 'a attribute =
+  fun atts ->
+    let rec extract extra qualified = function
+      | [] -> List.rev extra, List.flatten (List.rev qualified)
+      | (key,attv) :: rem when String.equal key qual ->
+        (match attv with
+         | VernacFlagEmpty | VernacFlagLeaf _ ->
+           CErrors.user_err ~hdr:"qualified_attribute"
+             Pp.(str "Malformed attribute " ++ str qual ++ str ": attribute list expected.")
+         | VernacFlagList atts ->
+           extract extra (atts::qualified) rem)
+      | att :: rem -> extract (att::extra) qualified rem
+    in
+    let extra, qualified = extract [] [] atts in
+    let rem, v = parser qualified in
+    let extra = if rem = [] then extra else (qual, VernacFlagList rem) :: extra in
+    extra, v
 
 let polymorphic_base = bool_attribute ~name:"Polymorphism" ~on:"polymorphic" ~off:"monomorphic"
 
@@ -127,27 +138,29 @@ let warn_unqualified_univ_attr =
                     str " should be qualified as \"universes("++str key++str")\"."))
 
 let ukey = "universes"
-let universe_transform ~warn_unqualified : transform =
-  let p () atts = List.map (fun (key,_ as att) ->
-      match key with
-      | "polymorphic" | "monomorphic"
-      | "template" | "notemplate" ->
-        if warn_unqualified then warn_unqualified_univ_attr key;
-        ukey, VernacFlagList [att]
-      | _ -> att) atts, () in
-  p, ()
+let universe_transform ~warn_unqualified : unit attribute =
+  fun atts ->
+    let atts = List.map (fun (key,_ as att) ->
+        match key with
+        | "polymorphic" | "monomorphic"
+        | "template" | "notemplate" ->
+          if warn_unqualified then warn_unqualified_univ_attr key;
+          ukey, VernacFlagList [att]
+        | _ -> att) atts
+    in
+    atts, ()
 
 let polymorphic_nowarn =
-  universe_transform ~warn_unqualified:false |>
+  universe_transform ~warn_unqualified:false >>
   qualify_attribute ukey polymorphic_base
 
 let universe_poly_template =
   let template = bool_attribute ~name:"Template" ~on:"template" ~off:"notemplate" in
-  universe_transform ~warn_unqualified:true |>
+  universe_transform ~warn_unqualified:true >>
   qualify_attribute ukey (polymorphic_base ++ template)
 
 let polymorphic =
-  universe_transform ~warn_unqualified:true |>
+  universe_transform ~warn_unqualified:true >>
   qualify_attribute ukey polymorphic_base
 
 let deprecation_parser : deprecation key_parser = fun orig args ->

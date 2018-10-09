@@ -10,16 +10,11 @@
 
 open Vernacexpr
 
-type 'a attribute
+type +'a attribute
 (** The type of attributes. When parsing attributes if an ['a
    attribute] is present then an ['a] value will be produced.
     In the most general case, an attribute transforms the raw flags
    along with its value. *)
-
-type transform = unit attribute
-(** An attribute which is used only for the transformation it applies
-   to the flags. For instance, transform [polymorphic] to
-   [universes(polymorphic)]. *)
 
 val parse : 'a attribute -> vernac_flags -> 'a
 (** Errors on unsupported attributes. *)
@@ -27,10 +22,14 @@ val parse : 'a attribute -> vernac_flags -> 'a
 module Notations : sig
   (** Notations to combine attributes. *)
 
+  include Monad.Def with type 'a t = 'a attribute
+  (** Attributes form a monad. [a1 >>= f] means [f] will be run on the
+     flags transformed by [a1] and using the value produced by [a1].
+      The trivial attribute [return x] does no action on the flags. *)
+
   val (++) : 'a attribute -> 'b attribute -> ('a * 'b) attribute
   (** Combine 2 attributes. If any keys are in common an error will be raised. *)
 
-  val (|>) : transform -> 'a attribute -> 'a attribute
 end
 
 (** Definitions for some standard attributes. *)
@@ -114,6 +113,10 @@ val single_key_parser : name:string -> key:string -> 'a -> 'a key_parser
 (** [single_key_parser ~name ~key v] makes a parser for attribute
     [name] giving the constant value [v] for key [key] taking no
     arguments. [name] may only be given once. *)
+
+val make_attribute : (vernac_flags -> vernac_flags * 'a) -> 'a attribute
+(** Make an attribute using the internal representation, thus with
+   access to the full power of attributes. Unstable. *)
 
 (** Compatibility values for parsing [Polymorphic]. *)
 val vernac_polymorphic_flag : vernac_flag
