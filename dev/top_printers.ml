@@ -168,8 +168,8 @@ let pp_state_t n = pp (Reductionops.pr_state Global.(env()) Evd.empty n)
 (* proof printers *)
 let pr_evar ev = Pp.int (Evar.repr ev)
 let ppmetas metas = pp(Termops.pr_metaset metas)
-let ppevm evd = pp(Termops.pr_evar_map ~with_univs:!Detyping.print_universes (Some 2) evd)
-let ppevmall evd = pp(Termops.pr_evar_map ~with_univs:!Detyping.print_universes None evd)
+let ppevm evd = pp(Termops.pr_evar_map ~with_univs:!Detyping.print_universes (Some 2) (Global.env ()) evd)
+let ppevmall evd = pp(Termops.pr_evar_map ~with_univs:!Detyping.print_universes None (Global.env ()) evd)
 let pr_existentialset evars =
   prlist_with_sep spc pr_evar (Evar.Set.elements evars)
 let ppexistentialset evars =
@@ -180,14 +180,14 @@ let ppexistentialfilter filter = match Evd.Filter.repr filter with
 let ppclenv clenv = pp(pr_clenv clenv)
 let ppgoalgoal gl = pp(Goal.pr_goal gl)
 let ppgoal g = pp(Printer.pr_goal g)
-let ppgoalsigma g = pp(Printer.pr_goal g ++ Termops.pr_evar_map None (Refiner.project g))
+let ppgoalsigma g = pp(Printer.pr_goal g ++ Termops.pr_evar_map None (Global.env ()) (Refiner.project g))
 let pphintdb db = pp(envpp Hints.pr_hint_db_env db)
 let ppproofview p =
   let gls,sigma = Proofview.proofview p in
-  pp(pr_enum Goal.pr_goal gls ++ fnl () ++ Termops.pr_evar_map (Some 1) sigma)
+  pp(pr_enum Goal.pr_goal gls ++ fnl () ++ Termops.pr_evar_map (Some 1) (Global.env ()) sigma)
 
 let ppopenconstr (x : Evd.open_constr) =
-  let (evd,c) = x in pp (Termops.pr_evar_map (Some 2) evd ++ envpp pr_econstr_env c)
+  let (evd,c) = x in pp (Termops.pr_evar_map (Some 2) (Global.env ()) evd ++ envpp pr_econstr_env c)
 (* spiwack: deactivated until a replacement is found
 let pppftreestate p = pp(print_pftreestate p)
 *)

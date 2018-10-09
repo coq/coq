@@ -577,7 +577,7 @@ let pr_clenv clenv =
   h 0
     (str"TEMPL: " ++ Termops.Internal.print_constr_env clenv.env clenv.evd clenv.templval.rebus ++
      str" : " ++ Termops.Internal.print_constr_env clenv.env clenv.evd clenv.templtyp.rebus ++ fnl () ++
-     pr_evar_map (Some 2) clenv.evd)
+     pr_evar_map (Some 2) clenv.env clenv.evd)
 
 (****************************************************************)
 (** Evar version of mk_clenv *)

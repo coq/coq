@@ -769,7 +769,7 @@ let pr_constraints printenv env sigma evars cstrs =
       h 0 (pe ++ evs ++ pr_evar_constraints sigma cstrs)
     else
       let filter evk _ = Evar.Map.mem evk evars in
-      pr_evar_map_filter ~with_univs:false filter sigma
+      pr_evar_map_filter ~with_univs:false filter env sigma
 
 let explain_unsatisfiable_constraints env sigma constr comp =
   let (_, constraints) = Evd.extract_all_conv_pbs sigma in
