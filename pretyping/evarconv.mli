@@ -80,4 +80,4 @@ val evar_eqappr_x : ?rhs_is_already_stuck:bool -> transparent_state * bool ->
 (**/**)
 
 (** {6 Functions to deal with impossible cases } *)
-val coq_unit_judge : unit -> EConstr.unsafe_judgment Univ.in_universe_context_set
+val coq_unit_judge : env -> EConstr.unsafe_judgment Univ.in_universe_context_set

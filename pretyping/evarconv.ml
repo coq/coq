@@ -46,14 +46,14 @@ let _ = Goptions.declare_bool_option {
 (*******************************************)
 (* Functions to deal with impossible cases *)
 (*******************************************)
-let impossible_default_case () =
+let impossible_default_case env =
   let type_of_id =
     let open Names.GlobRef in
     match Coqlib.lib_ref "core.IDProp.type" with
     | ConstRef c -> c
     | VarRef _ | IndRef _ | ConstructRef _ -> assert false
   in
-  let c, ctx = UnivGen.fresh_global_instance (Global.env()) (Coqlib.(lib_ref "core.IDProp.idProp")) in
+  let c, ctx = UnivGen.fresh_global_instance env (Coqlib.(lib_ref "core.IDProp.idProp")) in
   let (_, u) = Constr.destConst c in
   Some (c, Constr.mkConstU (type_of_id, u), ctx)
 
@@ -62,8 +62,8 @@ let coq_unit_judge =
   let make_judge c t = make_judge (EConstr.of_constr c) (EConstr.of_constr t) in
   let na1 = Name (Id.of_string "A") in
   let na2 = Name (Id.of_string "H") in
-  fun () ->
-    match impossible_default_case () with
+  fun env ->
+    match impossible_default_case env with
     | Some (id, type_of_id, ctx) ->
       make_judge id type_of_id, ctx
     | None ->
@@ -1352,7 +1352,7 @@ let solve_unconstrained_impossible_cases env evd =
   Evd.fold_undefined (fun evk ev_info evd' ->
     match ev_info.evar_source with
     | loc,Evar_kinds.ImpossibleCase ->
-      let j, ctx = coq_unit_judge () in
+      let j, ctx = coq_unit_judge env in
       let evd' = Evd.merge_context_set Evd.univ_flexible_alg ?loc evd' ctx in
       let ty = j_type j in
       let conv_algo = evar_conv_x full_transparent_state in

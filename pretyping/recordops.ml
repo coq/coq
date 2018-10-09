@@ -230,8 +230,7 @@ let warn_projection_no_head_constant =
           ++ con_pp ++ str " of " ++ proji_sp_pp ++ strbrk ", ignoring it.")
 
 (* Intended to always succeed *)
-let compute_canonical_projections warn (con,ind) =
-  let env = Global.env () in
+let compute_canonical_projections env warn (con,ind) =
   let ctx = Environ.constant_context env con in
   let u = Univ.make_abstract_instance ctx in
   let v = (mkConstU (con,u)) in
@@ -282,7 +281,10 @@ let warn_redundant_canonical_projection =
           ++ new_can_s ++ strbrk ": redundant with " ++ old_can_s)
 
 let add_canonical_structure warn o =
-    let lo = compute_canonical_projections warn o in
+    (* XXX: Undesired global access to env *)
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    let lo = compute_canonical_projections env warn o in
     List.iter (fun ((proj,(cs_pat,_ as pat)),s) ->
       let l = try GlobRef.Map.find proj !object_table with Not_found -> [] in
       let ocs = try Some (assoc_pat cs_pat l)
@@ -290,9 +292,6 @@ let add_canonical_structure warn o =
       in match ocs with
         | None -> object_table := GlobRef.Map.add proj ((pat,s)::l) !object_table;
         | Some (c, cs) ->
-              (* XXX: Undesired global access to env *)
-              let env = Global.env () in
-              let sigma = Evd.from_env env in
               let old_can_s = (Termops.Internal.print_constr_env env sigma (EConstr.of_constr cs.o_DEF))
               and new_can_s = (Termops.Internal.print_constr_env env sigma (EConstr.of_constr s.o_DEF))
               in

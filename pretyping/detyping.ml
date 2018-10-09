@@ -647,6 +647,7 @@ and detype_r d flags avoid env sigma t =
         else
 	  GEvar (Id.of_string_soft ("M" ^ string_of_int n), [])
     | Var id ->
+        (* Discriminate between section variable and non-section variable *)
 	(try let _ = Global.lookup_named id in GRef (VarRef id, None)
 	 with Not_found -> GVar id)
     | Sort s -> GSort (detype_sort sigma (ESorts.kind sigma s))
