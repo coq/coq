@@ -1,10 +1,15 @@
 ; Default flags for all Coq libraries.
 (env
  (dev     (flags :standard -rectypes -w -9-27-50+40+60))
- (release (flags :standard -rectypes))
- (ireport
-  (flags :standard -rectypes -w -9-27-50+40+60)
-  (ocamlopt_flags :standard -O3 -unbox-closures -inlining-report)))
+ (release (flags :standard -rectypes)
+          (ocamlopt_flags -O3 -unbox-closures))
+ (ireport (flags :standard -rectypes -w -9-27-50+40+60)
+          (ocamlopt_flags :standard -O3 -unbox-closures -inlining-report)))
+
+; The _ profile could help factoring the above, however it doesn't
+; seem to work like we'd expect/like:
+;
+; (_ (flags :standard -rectypes)))
 
 ; Rules for coq_dune
 (rule
