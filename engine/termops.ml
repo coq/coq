@@ -963,7 +963,7 @@ let collect_vars sigma c =
 
 let vars_of_global_reference env gr =
   let c, _ = Global.constr_of_global_in_context env gr in
-  vars_of_global (Global.env ()) c
+  vars_of_global env c
 
 (* Tests whether [m] is a subterm of [t]:
    [m] is appropriately lifted through abstractions of [t] *)
