@@ -380,7 +380,7 @@ type coercion = {
 (* Computation of the class arity *)
 
 let reference_arity_length ref =
-  let t, _ = Global.type_of_global_in_context (Global.env ()) ref in
+  let t, _ = Typeops.type_of_global_in_context (Global.env ()) ref in
   List.length (fst (Reductionops.splay_arity (Global.env()) Evd.empty (EConstr.of_constr t))) (** FIXME *)
 
 let projection_arity_length p =

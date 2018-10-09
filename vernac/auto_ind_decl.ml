@@ -113,7 +113,7 @@ let mkFullInd (ind,u) n =
     else mkIndU (ind,u)
 
 let check_bool_is_defined () =
-  try let _ = Global.type_of_global_in_context (Global.env ()) Coqlib.(lib_ref "core.bool.type") in ()
+  try let _ = Typeops.type_of_global_in_context (Global.env ()) Coqlib.(lib_ref "core.bool.type") in ()
   with e when CErrors.noncritical e -> raise (UndefinedCst "bool")
 
 let check_no_indices mib =

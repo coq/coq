@@ -70,7 +70,7 @@ let existing_instance glob g info =
   let c = global g in
   let info = Option.default Hints.empty_hint_info info in
   let info = intern_info info in
-  let instance, _ = Global.type_of_global_in_context (Global.env ()) c in
+  let instance, _ = Typeops.type_of_global_in_context (Global.env ()) c in
   let _, r = Term.decompose_prod_assum instance in
     match class_of_constr Evd.empty (EConstr.of_constr r) with
       | Some (_, ((tc,u), _)) -> add_instance (new_instance tc info glob c)

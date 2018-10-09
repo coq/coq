@@ -66,7 +66,7 @@ let explain_coercion_error g = function
 
 let check_reference_arity ref =
   let env = Global.env () in
-  let c, _ = Global.type_of_global_in_context env ref in
+  let c, _ = Typeops.type_of_global_in_context env ref in
   if not (Reductionops.is_arity env (Evd.from_env env) (EConstr.of_constr c)) (** FIXME *) then
     raise (CoercionError (NotAClass ref))
 
@@ -249,7 +249,7 @@ let warn_uniform_inheritance =
 
 let add_new_coercion_core coef stre poly source target isid =
   check_source source;
-  let t, _ = Global.type_of_global_in_context (Global.env ()) coef in
+  let t, _ = Typeops.type_of_global_in_context (Global.env ()) coef in
   if coercion_exists coef then raise (CoercionError AlreadyExists);
   let lp,tg = decompose_prod_assum t in
   let llp = List.length lp in

@@ -279,7 +279,7 @@ let build_subclasses ~check env sigma glob { hint_priority = pri } =
       (fun () -> incr i;
         Nameops.add_suffix _id ("_subinstance_" ^ string_of_int !i))
   in
-  let ty, ctx = Global.type_of_global_in_context env glob in
+  let ty, ctx = Typeops.type_of_global_in_context env glob in
   let inst, ctx = UnivGen.fresh_instance_from ctx None in
   let ty = Vars.subst_instance_constr inst ty in
   let ty = EConstr.of_constr ty in
@@ -420,7 +420,7 @@ let remove_instance i =
   remove_instance_hint i.is_impl
 
 let declare_instance info local glob =
-  let ty, _ = Global.type_of_global_in_context (Global.env ()) glob in
+  let ty, _ = Typeops.type_of_global_in_context (Global.env ()) glob in
   let info = Option.default {hint_priority = None; hint_pattern = None} info in
     match class_of_constr Evd.empty (EConstr.of_constr ty) with
     | Some (rels, ((tc,_), args) as _cl) ->

@@ -1101,6 +1101,8 @@ let warn_arguments_assert =
    [args] is the main list of arguments statuses,
    [more_implicits] is a list of extra lists of implicit statuses  *)
 let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
   let assert_flag = List.mem `Assert flags in
   let rename_flag = List.mem `Rename flags in
   let clear_scopes_flag = List.mem `ClearScopes flags in
@@ -1125,9 +1127,7 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
 
   let sr = smart_global reference in
   let inf_names =
-    let ty, _ = Global.type_of_global_in_context (Global.env ()) sr in
-    let env = Global.env () in
-    let sigma = Evd.from_env env in
+    let ty, _ = Typeops.type_of_global_in_context env sr in
     Impargs.compute_implicits_names env sigma (EConstr.of_constr ty)
   in
   let prev_names =

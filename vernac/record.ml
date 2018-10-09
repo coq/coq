@@ -574,8 +574,8 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
   List.map map data
 
 
-let add_constant_class cst =
-  let ty, univs = Global.type_of_global_in_context (Global.env ()) (ConstRef cst) in
+let add_constant_class env cst =
+  let ty, univs = Typeops.type_of_global_in_context env (ConstRef cst) in
   let ctx, arity = decompose_prod_assum ty in
   let tc = 
     { cl_univs = univs;
@@ -589,12 +589,12 @@ let add_constant_class cst =
   in add_class tc;
     set_typeclass_transparency (EvalConstRef cst) false false
       
-let add_inductive_class ind =
-  let mind, oneind = Global.lookup_inductive ind in
+let add_inductive_class env ind =
+  let mind, oneind = Inductive.lookup_mind_specif env ind in
   let k =
     let ctx = oneind.mind_arity_ctxt in
     let univs = Declareops.inductive_polymorphic_context mind in
-    let env = push_context ~strict:false (Univ.AUContext.repr univs) (Global.env ()) in
+    let env = push_context ~strict:false (Univ.AUContext.repr univs) env in
     let env = push_rel_context ctx env in
     let inst = Univ.make_abstract_instance univs in
     let ty = Inductive.type_of_inductive env ((mind, oneind), inst) in
@@ -612,11 +612,12 @@ let warn_already_existing_class =
       Printer.pr_global g ++ str " is already declared as a typeclass.")
 
 let declare_existing_class g =
+  let env = Global.env () in
   if Typeclasses.is_class g then warn_already_existing_class g
   else
     match g with
-    | ConstRef x -> add_constant_class x
-    | IndRef x -> add_inductive_class x
+    | ConstRef x -> add_constant_class env x
+    | IndRef x -> add_inductive_class env x
     | _ -> user_err ~hdr:"declare_existing_class"
              (Pp.str"Unsupported class type, only constants and inductives are allowed")
 

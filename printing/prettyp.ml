@@ -71,7 +71,7 @@ let int_or_no n = if Int.equal n 0 then str "no" else int n
 let print_basename sp = pr_global (ConstRef sp)
 
 let print_ref reduce ref udecl =
-  let typ, univs = Global.type_of_global_in_context (Global.env ()) ref in
+  let typ, univs = Typeops.type_of_global_in_context (Global.env ()) ref in
   let inst = Univ.make_abstract_instance univs in
   let bl = UnivNames.universe_binders_with_opt_names ref udecl in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
@@ -147,7 +147,7 @@ let print_renames_list prefix l =
     hv 2 (prlist_with_sep pr_comma (fun x -> x) (List.map Name.print l))]
 
 let need_expansion impl ref =
-  let typ, _ = Global.type_of_global_in_context (Global.env ()) ref in
+  let typ, _ = Typeops.type_of_global_in_context (Global.env ()) ref in
   let ctx = Term.prod_assum typ in
   let nprods = List.count is_local_assum ctx in
   not (List.is_empty impl) && List.length impl >= nprods &&
@@ -823,7 +823,7 @@ let print_opaque_name env sigma qid =
     | IndRef (sp,_) ->
         print_inductive sp None
     | ConstructRef cstr as gr ->
-	let ty, ctx = Global.type_of_global_in_context env gr in
+        let ty, ctx = Typeops.type_of_global_in_context env gr in
 	let ty = EConstr.of_constr ty in
         let open EConstr in
         print_typed_value_in_env env sigma (mkConstruct cstr, ty)

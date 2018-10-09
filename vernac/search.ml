@@ -80,7 +80,7 @@ let iter_declarations (fn : GlobRef.t -> env -> constr -> unit) =
   | "CONSTANT" ->
     let cst = Global.constant_of_delta_kn kn in
     let gr = ConstRef cst in
-    let (typ, _) = Global.type_of_global_in_context (Global.env ()) gr in
+    let (typ, _) = Typeops.type_of_global_in_context (Global.env ()) gr in
       fn gr env typ
   | "INDUCTIVE" ->
     let mind = Global.mind_of_delta_kn kn in

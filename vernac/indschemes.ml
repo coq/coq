@@ -387,7 +387,7 @@ let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
        let evd, indu, inst =
 	 match inst with
 	 | None ->
-	    let _, ctx = Global.type_of_global_in_context env0 (IndRef ind) in
+            let _, ctx = Typeops.type_of_global_in_context env0 (IndRef ind) in
             let u, ctx = UnivGen.fresh_instance_from ctx None in
             let evd = Evd.from_ctx (UState.of_context_set ctx) in
 	      evd, (ind,u), Some u
