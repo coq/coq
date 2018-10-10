@@ -29,6 +29,7 @@ val new_Type_sort : unit -> Sorts.t
 
 val new_global_univ : unit -> Universe.t in_universe_context_set
 val new_sort_in_family : Sorts.family -> Sorts.t
+[@@ocaml.deprecated "Use [fresh_sort_in_family]"]
 
 (** Build a fresh instance for a given context, its associated substitution and
     the instantiated constraints. *)
