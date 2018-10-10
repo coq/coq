@@ -1,5 +1,3 @@
-.. _introduction:
-
 ==========================
 Introduction and Contents
 ==========================
@@ -81,9 +79,6 @@ Contents
    :caption: Reference
 
    zebibliography
-
-License
--------
 
 .. include:: license.rst
 

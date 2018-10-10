@@ -2,26 +2,22 @@
  The Coq Reference Manual
 ==========================
 
+------------
 Introduction
 ------------
 
 .. include:: introduction.rst
+
+.. include:: license.rst
 
 .. [#PG] Proof-General is available at https://proofgeneral.github.io/.
    Optionally, you can enhance it with the minor mode
    Company-Coq :cite:`Pit16`
    (see https://github.com/cpitclaudel/company-coq).
 
-Credits
--------
-
 .. include:: credits.rst
 
-License
--------
-
-.. include:: license.rst
-
+------------
 The language
 ------------
 
@@ -33,6 +29,7 @@ The language
    language/cic
    language/module-system
 
+----------------
 The proof engine
 ----------------
 
@@ -45,6 +42,7 @@ The proof engine
    proof-engine/detailed-tactic-examples
    proof-engine/ssreflect-proof-language
 
+---------------
 User extensions
 ---------------
 
@@ -53,6 +51,7 @@ User extensions
    user-extensions/syntax-extensions
    user-extensions/proof-schemes
 
+---------------
 Practical tools
 ---------------
 
@@ -62,6 +61,7 @@ Practical tools
    practical-tools/utilities
    practical-tools/coqide
 
+--------
 Addendum
 --------
 
