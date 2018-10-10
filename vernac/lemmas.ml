@@ -277,9 +277,6 @@ let save_remaining_recthms (locality,p,kind) norm univs body opaq i (id,(t_i,(_,
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
         (locality,ConstRef kn,imps)
 
-let save_hook = ref ignore
-let set_save_hook f = save_hook := f
-
 let save_named ?export_seff proof =
   let id,const,uctx,do_guard,persistence,hook = proof in
   save ?export_seff id const uctx do_guard persistence hook
@@ -311,10 +308,6 @@ let admit (id,k,e) pl hook () =
   call_hook (fun exn -> exn) hook Global (ConstRef kn)
 
 (* Starting a goal *)
-
-let start_hook = ref ignore
-let set_start_hook = (:=) start_hook
-
 
 let get_proof proof do_guard hook opacity =
   let (id,(const,univs,persistence)) =
@@ -362,7 +355,6 @@ let start_proof id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_guard=
     | Some sign -> sign
     | None -> initialize_named_context_for_proof ()
   in
-  !start_hook c;
   Pfedit.start_proof id ?pl kind sigma sign c ?init_tac terminator
 
 let start_proof_univs id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_guard=[]) hook =
@@ -375,7 +367,6 @@ let start_proof_univs id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_
     | Some sign -> sign
     | None -> initialize_named_context_for_proof ()
   in
-  !start_hook c;
   Pfedit.start_proof id ?pl kind sigma sign c ?init_tac terminator
 
 let rec_tac_initializer finite guard thms snl =
