@@ -42,7 +42,6 @@ let get_polymorphic_positions sigma f =
 let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
 		      pbty env evd t =
   let evdref = ref evd in
-  let modified = ref false in
   (* direction: true for fresh universes lower than the existing ones *)
   let refresh_sort status ~direction s =
     let s = ESorts.kind !evdref s in
@@ -51,18 +50,18 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
     let evd = 
       if direction then set_leq_sort env !evdref s' s
       else set_leq_sort env !evdref s s'
-    in
-    modified := true; evdref := evd; mkSort s'
+    in evdref := evd; mkSort s'
   in
   let rec refresh ~onlyalg status ~direction t =
     match EConstr.kind !evdref t with
     | Sort s ->
       begin match ESorts.kind !evdref s with
       | Type u ->
-       (match Univ.universe_level u with
+         (* TODO: check if max(l,u) is not ok as well *)
+        (match Univ.universe_level u with
 	| None -> refresh_sort status ~direction s
 	| Some l ->
-	   (match Evd.universe_rigidity evd l with
+           (match Evd.universe_rigidity !evdref l with
 	    | UnivRigid ->
 	       if not onlyalg then refresh_sort status ~direction s
 	       else t
@@ -76,34 +75,43 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
        refresh_sort status ~direction s
       | _ -> t
       end
-    | Prod (na,u,v) -> 
-      mkProd (na, u, refresh ~onlyalg status ~direction v)
+    | Prod (na,u,v) ->
+       let v' = refresh ~onlyalg status ~direction v in
+       if v' == v then t else mkProd (na, u, v')
     | _ -> t
+  in
   (** Refresh the types of evars under template polymorphic references *)
-  and refresh_term_evars onevars top t =
+  let rec refresh_term_evars ~onevars ~top t =
     match EConstr.kind !evdref t with
     | App (f, args) when is_template_polymorphic env !evdref f ->
       let pos = get_polymorphic_positions !evdref f in
-	refresh_polymorphic_positions args pos
+        refresh_polymorphic_positions args pos; t
     | App (f, args) when top && isEvar !evdref f -> 
-      refresh_term_evars true false f; 
-      Array.iter (refresh_term_evars onevars false) args
+       let f' = refresh_term_evars ~onevars:true ~top:false f in
+       let args' = Array.map (refresh_term_evars ~onevars ~top:false) args in
+       if f' == f && args' == args then t
+       else mkApp (f', args')
     | Evar (ev, a) when onevars ->
       let evi = Evd.find !evdref ev in
-      let ty' = refresh ~onlyalg univ_flexible ~direction:true evi.evar_concl in
-	if !modified then 
-          evdref := Evd.add !evdref ev {evi with evar_concl = ty'}
-	else ()
-    | _ -> EConstr.iter !evdref (refresh_term_evars onevars false) t
+      let ty = evi.evar_concl in
+      let ty' = refresh ~onlyalg univ_flexible ~direction:true ty in
+      if ty == ty' then t
+      else (evdref := Evd.downcast ev ty' !evdref; t)
+    | Sort s ->
+       (match ESorts.kind !evdref s with
+        | Type u when not (Univ.Universe.is_levels u) ->
+           refresh_sort Evd.univ_flexible ~direction:false s
+        | _ -> t)
+    | _ -> EConstr.map !evdref (refresh_term_evars ~onevars ~top:false) t
   and refresh_polymorphic_positions args pos =
     let rec aux i = function
       | Some l :: ls -> 
         if i < Array.length args then 
-	  ignore(refresh_term_evars true false args.(i));
+          ignore(refresh_term_evars ~onevars:true ~top:false args.(i));
         aux (succ i) ls
       | None :: ls -> 
         if i < Array.length args then 
-          ignore(refresh_term_evars false false args.(i));
+          ignore(refresh_term_evars ~onevars:false ~top:false args.(i));
 	aux (succ i) ls
       | [] -> ()
     in aux 0 pos
@@ -115,9 +123,8 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
 	 (* No cumulativity needed, but we still need to refresh the algebraics *)
 	 refresh ~onlyalg:true univ_flexible ~direction:false t
       | Some direction -> refresh ~onlyalg status ~direction t
-    else (refresh_term_evars false true t; t)
-  in
-    if !modified then !evdref, t' else !evdref, t
+    else refresh_term_evars ~onevars:false ~top:true t
+  in !evdref, t'
 
 let get_type_of_refresh ?(polyprop=true) ?(lax=false) env sigma c =
   let ty = Retyping.get_type_of ~polyprop ~lax env sigma c in
