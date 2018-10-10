@@ -676,11 +676,15 @@ let build_case_scheme fa =
 (*   in  *)
   let funs =
     let (_,f,_) = fa in
-    try fst (Global.constr_of_global_in_context (Global.env ()) (Smartlocate.global_with_alias f))
+    try (let open GlobRef in
+         match Smartlocate.global_with_alias f with
+         | ConstRef c -> c
+         | IndRef _ | ConstructRef _ | VarRef _ -> assert false)
     with Not_found ->
       user_err ~hdr:"FunInd.build_case_scheme"
         (str "Cannot find " ++ Libnames.pr_qualid f) in
-  let first_fun,u = destConst  funs in
+  let sigma, (_,u) = Evd.fresh_constant_instance env sigma funs in
+  let first_fun = funs in
   let funs_mp = Constant.modpath first_fun in
   let first_fun_kn = try fst (find_Function_infos  first_fun).graph_ind with Not_found -> raise No_graph_found in
   let this_block_funs_indexes = get_funs_constant funs_mp first_fun in
@@ -688,7 +692,7 @@ let build_case_scheme fa =
   let prop_sort = InProp in
   let funs_indexes =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
-    List.assoc_f Constant.equal (fst (destConst funs)) this_block_funs_indexes
+    List.assoc_f Constant.equal funs this_block_funs_indexes
   in
   let (ind, sf) =
 	 let ind = first_fun_kn,funs_indexes in
@@ -718,7 +722,7 @@ let build_case_scheme fa =
       (Some princ_name)
       this_block_funs
       0
-      (prove_princ_for_struct (ref (Evd.from_env (Global.env ()))) false 0 [|fst (destConst funs)|])
+      (prove_princ_for_struct (ref (Evd.from_env (Global.env ()))) false 0 [|funs|])
   in
   ()
  

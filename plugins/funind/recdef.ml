@@ -24,6 +24,7 @@ open Globnames
 open Nameops
 open CErrors
 open Util
+open UnivGen
 open Tacticals
 open Tacmach
 open Tactics
@@ -50,7 +51,7 @@ open Context.Rel.Declaration
 (* Ugly things which should not be here *)
 
 [@@@ocaml.warning "-3"]
-let coq_constant m s = EConstr.of_constr @@ UnivGen.constr_of_global @@
+let coq_constant m s = EConstr.of_constr @@ constr_of_global @@
   Coqlib.find_reference "RecursiveDefinition" m s
 
 let arith_Nat = ["Coq"; "Arith";"PeanoNat";"Nat"]
@@ -62,7 +63,7 @@ let pr_leconstr_rd =
 
 let coq_init_constant s =
   EConstr.of_constr (
-    UnivGen.constr_of_global @@
+    constr_of_global @@
     Coqlib.gen_reference_in_modules "RecursiveDefinition" Coqlib.init_modules s)
 [@@@ocaml.warning "+3"]
 
@@ -95,9 +96,6 @@ let type_of_const sigma t =
       (* FIXME discarding universe constraints *)
       Typeops.type_of_constant_in (Global.env()) (sp, u)
     |_ -> assert false
-
-let constr_of_global x = 
-  fst (Global.constr_of_global_in_context (Global.env ()) x)
 
 let constant sl s = constr_of_global (find_reference sl s)
 
