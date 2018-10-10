@@ -107,6 +107,17 @@ global options --- such as flags --- on all packages, or build Coq
 with different OPAM switches simultaneously [for example to test
 compatibility]; for more information, please refer to the Dune manual.
 
+## Inlining reports
+
+The `ireport` profile will produce standard OCaml [inlining
+reports](https://caml.inria.fr/pub/docs/manual-ocaml/flambda.html#sec488). These
+are to be found under `_build/default/$lib/$lib.objs/$module.$round.inlining.org`
+and are in Emacs `org-mode` format.
+
+Note that due to https://github.com/ocaml/dune/issues/1401 , we must
+perform a full rebuild each time as otherwise Dune will remove the
+files. We hope to solve this in the future.
+
 ## Documentation and test targets
 
 The documentation and test suite targets for Coq are still not
