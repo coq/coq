@@ -168,6 +168,12 @@ let is_initial senv =
 
 let delta_of_senv senv = senv.modresolver,senv.paramresolver
 
+let constant_of_delta_kn_senv senv kn =
+  Mod_subst.constant_of_deltas_kn senv.paramresolver senv.modresolver kn
+
+let mind_of_delta_kn_senv senv kn =
+  Mod_subst.mind_of_deltas_kn senv.paramresolver senv.modresolver kn
+
 (** The safe_environment state monad *)
 
 type safe_transformer0 = safe_environment -> safe_environment
