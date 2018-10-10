@@ -124,52 +124,26 @@ open Declarations
 let type_of_reference env r =
   match r with
   | VarRef id -> Environ.named_type id env, ContextSet.empty
+
   | ConstRef c ->
      let cb = Environ.lookup_constant c env in
      let ty = cb.const_type in
-     begin
-       match cb.const_universes with
-       | Monomorphic_const _ -> ty, ContextSet.empty
-       | Polymorphic_const auctx ->
-         let inst, ctx = fresh_instance_from auctx None in
-         Vars.subst_instance_constr inst ty, ctx
-     end
-  | IndRef ind ->
-     let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
-     begin
-       match mib.mind_universes with
-       | Monomorphic_ind _ ->
-         let ty = Inductive.type_of_inductive env (specif, Univ.Instance.empty) in
-         ty, ContextSet.empty
-       | Polymorphic_ind auctx ->
-         let inst, ctx = fresh_instance_from auctx  None in
-         let ty = Inductive.type_of_inductive env (specif, inst) in
-         ty, ctx
-       | Cumulative_ind cumi ->
-         let inst, ctx =
-           fresh_instance_from (ACumulativityInfo.univ_context cumi) None
-         in
-         let ty = Inductive.type_of_inductive env (specif, inst) in
-         ty, ctx
-     end
+     let auctx = Declareops.constant_polymorphic_context cb in
+     let inst, ctx = fresh_instance_from auctx None in
+     Vars.subst_instance_constr inst ty, ctx
 
-  | ConstructRef cstr ->
-    let (mib,oib as specif) =
-      Inductive.lookup_mind_specif env (inductive_of_constructor cstr)
-    in
-    begin
-       match mib.mind_universes with
-       | Monomorphic_ind _ ->
-         Inductive.type_of_constructor (cstr,Instance.empty) specif, ContextSet.empty
-       | Polymorphic_ind auctx ->
-         let inst, ctx = fresh_instance_from auctx None in
-         Inductive.type_of_constructor (cstr,inst) specif, ctx
-       | Cumulative_ind cumi ->
-         let inst, ctx =
-           fresh_instance_from (ACumulativityInfo.univ_context cumi) None
-         in
-         Inductive.type_of_constructor (cstr,inst) specif, ctx
-     end
+  | IndRef ind ->
+    let (mib, _ as specif) = Inductive.lookup_mind_specif env ind in
+    let auctx = Declareops.inductive_polymorphic_context mib in
+    let inst, ctx = fresh_instance_from auctx None in
+    let ty = Inductive.type_of_inductive env (specif, inst) in
+    ty, ctx
+
+  | ConstructRef (ind,_ as cstr) ->
+    let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
+    let auctx = Declareops.inductive_polymorphic_context mib in
+    let inst, ctx = fresh_instance_from auctx None in
+    Inductive.type_of_constructor (cstr,inst) specif, ctx
 
 let type_of_global t = type_of_reference (Global.env ()) t
 
