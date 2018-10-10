@@ -254,7 +254,7 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 # otherwise the directory name will include the quotes, see
 # see for example https://stackoverflow.com/questions/10424645/how-to-convert-a-quoted-string-to-a-normal-one-in-makefile
 ifeq ($(LOCAL),true)
-  export OCAMLPATH := $(shell echo $(COQLIBINSTALL))
+  export OCAMLPATH := $(shell echo $(COQLIBINSTALL):$$OCAMLPATH)
 endif
 
 OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
