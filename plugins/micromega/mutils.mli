@@ -8,6 +8,22 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+
+module ISet : Set.S with type elt = int
+
+module IMap :
+sig
+  include Map.S with type key = int
+
+  (** [from k  m] returns the submap of [m] with keys greater or equal k *)
+  val from : key -> 'elt t -> 'elt t
+
+end
+
+val iset_pp : out_channel -> ISet.t -> unit
+
+val output_bigint : out_channel -> Big_int.big_int -> unit
+
 val numerator : Num.num -> Big_int.big_int
 val denominator : Num.num -> Big_int.big_int
 
@@ -30,7 +46,7 @@ end
 
 module TagSet : CSig.SetS with type elt = Tag.t
 
-val pp_list : (out_channel -> 'a -> unit) -> out_channel -> 'a list -> unit
+val pp_list : string -> (out_channel -> 'a -> unit) -> out_channel -> 'a list -> unit
 
 module CamlToCoq : sig
 
@@ -56,6 +72,7 @@ module CoqToCaml : sig
 
 end
 
+val ppcm : Big_int.big_int -> Big_int.big_int -> Big_int.big_int
 val rats_to_ints : Num.num list -> Big_int.big_int list
 
 val all_pairs : ('a -> 'a -> 'b) -> 'a list -> 'b list
@@ -66,5 +83,11 @@ val is_sublist : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val gcd_list : Num.num list -> Big_int.big_int
 
 val extract : ('a -> 'b option) -> 'a list -> ('b * 'a) option * 'a list
+
+val extract_all : ('a -> 'b option) -> 'a list -> ('b * 'a) list * 'a list
+
+val iterate_until_stable : ('a -> 'a option) -> 'a -> 'a
+
+val app_funs : ('a -> 'b option) list -> 'a -> 'b option
 
 val command : string -> string array -> 'a -> 'b

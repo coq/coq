@@ -20,6 +20,11 @@ Tactics
   the same section. For example, the following is no longer accepted:
   `Ltac foo := idtac. Section S. Ltac foo := fail. End S.`
 
+- The tactics 'lia','nia','lra','nra' are now using a novel
+  Simplex-based proof engine. In case of regression, 'Unset Simplex'
+  to get the venerable Fourier-based engine.
+
+
 Changes from 8.8.2 to 8.9+beta1
 ===============================
 

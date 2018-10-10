@@ -12,7 +12,7 @@
 (*                                                                      *)
 (* ** Toplevel definition of tactics **                                 *)
 (*                                                                      *)
-(* - Modules ISet, M, Mc, Env, Cache, CacheZ                            *)
+(* - Modules M, Mc, Env, Cache, CacheZ                                  *)
 (*                                                                      *)
 (*  Frédéric Besson (Irisa/Inria) 2006-20011                            *)
 (*                                                                      *)
@@ -44,7 +44,7 @@ let lia_enum  = ref true
 let lia_proof_depth = ref max_depth
 
 let get_lia_option () =
- (!lia_enum,!lia_proof_depth)
+ (!Certificate.use_simplex,!lia_enum,!lia_proof_depth)
 
 let get_lra_option () =
  !lra_proof_depth
@@ -70,10 +70,32 @@ let _ =
    optread = (fun () -> !lia_enum);
    optwrite = (fun x -> lia_enum := x)
   } in
+
+ let solver_opt =
+   {
+     optdepr = false;
+     optname = "Use the Simplex instead of Fourier elimination";
+     optkey  = ["Simplex"];
+     optread = (fun () -> !Certificate.use_simplex);
+     optwrite = (fun x -> Certificate.use_simplex := x)
+   } in
+
+ let dump_file_opt =
+   {
+     optdepr = false;
+     optname = "Generate Coq goals in file from calls to 'lia' 'nia'";
+     optkey  = ["Dump"; "Arith"];
+     optread = (fun () -> !Certificate.dump_file);
+     optwrite = (fun x -> Certificate.dump_file := x)
+   } in
+
+ let _ = declare_bool_option solver_opt in
+ let _ = declare_stringopt_option dump_file_opt in
  let _ = declare_int_option (int_opt ["Lra"; "Depth"] lra_proof_depth) in
  let _ = declare_int_option (int_opt ["Lia"; "Depth"] lia_proof_depth) in 
  let _ = declare_bool_option lia_enum_opt in
  ()
+
  
 (**
   * Initialize a tag type to the Tag module declaration (see Mutils).
@@ -288,11 +310,6 @@ let rec add_term  t0 = function
 
   xcnf true f
 
-(**
-  * MODULE: Ordered set of integers.
-  *)
-
-module ISet = Set.Make(Int)
 
 (**
   * Given a set of integers s=\{i0,...,iN\} and a list m, return the list of
@@ -1937,7 +1954,9 @@ let really_call_csdpcert : provername -> micromega_polys -> Sos_types.positivste
       ["plugins"; "micromega"; "csdpcert" ^ Coq_config.exec_extension] in
 
     match ((command cmdname [|cmdname|] (provername,poly)) : csdp_certificate) with
-      | F str -> failwith str
+    | F str ->
+       if debug then Printf.fprintf stdout "really_call_csdpcert : %s\n" str;
+       raise (failwith str)
       | S res -> res
 
 (**
@@ -2047,7 +2066,7 @@ let compact_pt pt f =
 let lift_pexpr_prover p l =  p (List.map (fun (e,o) -> Mc.denorm e , o) l)
 
 module CacheZ = PHashtable(struct
- type prover_option = bool * int
+ type prover_option = bool * bool* int
 
  type t = prover_option * ((Mc.z Mc.pol * Mc.op1) list)
   let equal = (=)
@@ -2060,8 +2079,8 @@ module CacheQ = PHashtable(struct
   let hash  = Hashtbl.hash
 end)
 
-let memo_zlinear_prover = CacheZ.memo ".lia.cache" (fun ((ce,b),s) -> lift_pexpr_prover (Certificate.lia ce b) s)
-let memo_nlia = CacheZ.memo ".nia.cache" (fun ((ce,b),s) -> lift_pexpr_prover (Certificate.nlia ce b) s)
+let memo_zlinear_prover = CacheZ.memo ".lia.cache" (fun ((_,ce,b),s) -> lift_pexpr_prover (Certificate.lia ce b) s)
+let memo_nlia = CacheZ.memo ".nia.cache" (fun ((_,ce,b),s) -> lift_pexpr_prover (Certificate.nlia ce b) s)
 let memo_nra = CacheQ.memo ".nra.cache" (fun (o,s) -> lift_pexpr_prover (Certificate.nlinear_prover o) s)
 
 
@@ -2069,7 +2088,7 @@ let memo_nra = CacheQ.memo ".nra.cache" (fun (o,s) -> lift_pexpr_prover (Certifi
 let linear_prover_Q = {
  name    = "linear prover";
  get_option = get_lra_option ; 
- prover  = (fun (o,l) -> lift_pexpr_prover (Certificate.linear_prover_with_cert o Certificate.q_spec) l) ;
+ prover  = (fun (o,l) -> lift_pexpr_prover (Certificate.linear_prover_with_cert o ) l) ;
  hyps    = hyps_of_cone ;
  compact = compact_cone ;
  pp_prf  = pp_psatz pp_q ;
@@ -2080,7 +2099,7 @@ let linear_prover_Q = {
 let linear_prover_R = {
   name    = "linear prover";
  get_option = get_lra_option ; 
- prover  = (fun (o,l) -> lift_pexpr_prover (Certificate.linear_prover_with_cert o Certificate.q_spec) l) ;
+ prover  = (fun (o,l) -> lift_pexpr_prover (Certificate.linear_prover_with_cert o ) l) ;
   hyps    = hyps_of_cone ;
   compact = compact_cone ;
   pp_prf  = pp_psatz pp_q ;

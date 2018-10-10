@@ -72,6 +72,14 @@ Proof.
   psatz R 3.
 Qed.
 
+Goal forall x, -x^2 >= 0 -> x - 1 >= 0 -> False.
+Proof.
+  intros.
+  nra.
+Qed.
+
+
+
 Lemma motzkin' : forall x y, (x^2+y^2+1)*(x^2*y^4 + x^4*y^2 + 1 - (3 ) *x^2*y^2) >= 0.
 Proof.
   intros ; psatz R 2.
@@ -85,4 +93,25 @@ Qed.
 Lemma opp_eq_0_iff a : -a = 0 <-> a = 0.
 Proof.
   lra.
+Qed.
+
+(* From L. Théry *)
+
+Goal forall (x y : R), x = 0 -> x * y = 0.
+Proof.
+  intros.
+  nra.
+Qed.
+
+Goal forall (x y : R), 2*x = 0 -> x * y = 0.
+Proof.
+  intros.
+  nra.
+Qed.
+
+
+Goal forall (x y: R), - x*x >= 0 -> x * y = 0.
+Proof.
+  intros.
+  nra.
 Qed.

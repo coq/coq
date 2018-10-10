@@ -179,6 +179,8 @@ Definition qunsat := check_inconsistent 0 Qeq_bool Qle_bool.
 
 Definition qdeduce := nformula_plus_nformula 0 Qplus Qeq_bool.
 
+Definition normQ  := norm 0 1 Qplus Qmult Qminus Qopp Qeq_bool.
+Declare Equivalent Keys normQ RingMicromega.norm.
 
 
 Definition QTautoChecker (f : BFormula (Formula Q)) (w: list QWitness)  : bool :=

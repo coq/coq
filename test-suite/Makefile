@@ -122,7 +122,7 @@ run: $(SUBSYSTEMS)
 bugs: $(BUGS)
 
 clean:
-	rm -f trace .lia.cache output/MExtraction.out
+	rm -f trace .nia.cache .lia.cache output/MExtraction.out
 	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log> <**/*.glob>'
 	$(HIDE)find . \( \
 	  -name '*.stamp' -o -name '*.vo' -o -name '*.vio' -o -name '*.log' -o -name '*.glob' \

@@ -7,32 +7,12 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
+open Num
 
-module IMap : CSig.MapS with type key = int
-
-type proof
-
-module Fourier : sig
-
-
-  val find_point : Polynomial.cstr list ->
-    (Vect.t, proof) Util.union
-
-  val optimise : Vect.t ->
-    Polynomial.cstr list ->
-    Itv.interval option
-
-end
-
-val pp_proof : out_channel -> proof -> unit
-
-module Proof : sig
-
-  val mk_proof : Polynomial.cstr list ->
-    proof -> (Vect.t * Polynomial.cstr) list
-
-  val add_op : Polynomial.op -> Polynomial.op -> Polynomial.op
-
-end
-
-exception TimeOut
+type interval = num option * num option
+val pp : out_channel -> interval -> unit
+val inter : interval -> interval -> interval option
+val range : interval -> num option
+val smaller_itv : interval -> interval -> bool
+val in_bound : interval -> num -> bool
+val norm_itv : interval -> interval option
