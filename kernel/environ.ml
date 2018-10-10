@@ -550,6 +550,18 @@ let lookup_inductive_variables (kn,_i) env =
 let lookup_constructor_variables (ind,_) env =
   lookup_inductive_variables ind env
 
+(* Universes *)
+let universes_of_global env r =
+  let open GlobRef in
+    match r with
+    | VarRef _ -> Univ.AUContext.empty
+    | ConstRef c ->
+      let cb = lookup_constant c env in
+      Declareops.constant_polymorphic_context cb
+    | IndRef (mind,_) | ConstructRef ((mind,_),_) ->
+      let mib = lookup_mind mind env in
+      Declareops.inductive_polymorphic_context mib
+
 (* Returns the list of global variables in a term *)
 
 let vars_of_global env constr =

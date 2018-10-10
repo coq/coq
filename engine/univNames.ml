@@ -86,7 +86,7 @@ let register_universe_binders ref ubinders =
       part of the code that depends on the internal representation of names in
       abstract contexts, but removing it requires quite a rework of the
       callers. *)
-  let univs = AUContext.instance (Global.universes_of_global ref) in
+  let univs = AUContext.instance (Environ.universes_of_global (Global.env()) ref) in
   let revmap = Id.Map.fold (fun id lvl accu -> LMap.add lvl id accu) ubinders LMap.empty in
   let map lvl =
     try LMap.find lvl revmap

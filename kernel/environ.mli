@@ -267,6 +267,8 @@ val push_constraints_to_env : 'a Univ.constrained -> env -> env
 val set_engagement : engagement -> env -> env
 val set_typing_flags : typing_flags -> env -> env
 
+val universes_of_global : env -> GlobRef.t -> AUContext.t
+
 (** {6 Sets of referred section variables }
    [global_vars_set env c] returns the list of [id]'s occurring either
    directly as [Var id] in [c] or indirectly as a section variable
