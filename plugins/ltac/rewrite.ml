@@ -1998,7 +1998,7 @@ let add_morphism_infer atts m n =
       let hook = Lemmas.mk_hook hook in
 	Flags.silently
 	  (fun () ->
-	    Lemmas.start_proof instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) hook;
+            Lemmas.start_proof ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance);
 	    ignore (Pfedit.by (Tacinterp.interp tac))) ()
 
 let add_morphism atts binders m s n =

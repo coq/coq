@@ -36,11 +36,12 @@ module NamedDecl = Context.Named.Declaration
 
 type declaration_hook = Decl_kinds.locality -> GlobRef.t -> unit
 let mk_hook hook = hook
-let call_hook fix_exn hook l c =
-  try hook l c
+let call_hook ?hook ?fix_exn l c =
+  try Option.iter (fun hook -> hook l c) hook
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in
-    iraise (fix_exn e)
+    let e = Option.cata (fun fix -> fix e) e fix_exn in
+    iraise e
 
 (* Support for mutually proved theorems *)
 
@@ -202,7 +203,7 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook =
           gr
     in
     definition_message id;
-    call_hook (fun exn -> exn) hook locality r
+    call_hook ?hook locality r
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in
     iraise (fix_exn e)
@@ -288,7 +289,7 @@ let warn_let_as_axiom =
                    (fun id -> strbrk "Let definition" ++ spc () ++ Id.print id ++
                                 spc () ++ strbrk "declared as an axiom.")
 
-let admit (id,k,e) pl hook () =
+let admit ?hook (id,k,e) pl () =
   let kn = declare_constant id (ParameterEntry e, IsAssumption Conjectural) in
   let () = match k with
   | Global, _, _ -> ()
@@ -296,16 +297,17 @@ let admit (id,k,e) pl hook () =
   in
   let () = assumption_message id in
   Declare.declare_univ_binders (ConstRef kn) pl;
-  call_hook (fun exn -> exn) hook Global (ConstRef kn)
+  call_hook ?hook Global (ConstRef kn)
 
 (* Starting a goal *)
 
-let universe_proof_terminator compute_guard hook =
+let universe_proof_terminator ?univ_hook compute_guard =
   let open Proof_global in
   make_terminator begin function
   | Admitted (id,k,pe,ctx) ->
-      admit (id,k,pe) (UState.universe_binders ctx) (hook (Some ctx)) ();
-      Feedback.feedback Feedback.AddedAxiom
+    let hook = Option.map (fun univ_hook -> univ_hook (Some ctx)) univ_hook in
+    admit ?hook (id,k,pe) (UState.universe_binders ctx) ();
+    Feedback.feedback Feedback.AddedAxiom
   | Proved (opaque,idopt, { id; entries=[const]; persistence; universes } ) ->
     let is_opaque, export_seff = match opaque with
       | Transparent -> false, true
@@ -315,13 +317,15 @@ let universe_proof_terminator compute_guard hook =
     let id = match idopt with
       | None -> id
       | Some { CAst.v = save_id } -> check_anonymity id save_id; save_id in
-    save ~export_seff id const universes compute_guard persistence (hook (Some universes))
+    let hook = Option.map (fun univ_hook -> univ_hook (Some universes)) univ_hook in
+    save ~export_seff id const universes compute_guard persistence hook
   | Proved (opaque,idopt, _ ) ->
     CErrors.anomaly Pp.(str "[universe_proof_terminator] close_proof returned more than one proof term")
   end
 
-let standard_proof_terminator compute_guard hook =
-  universe_proof_terminator compute_guard (fun _ -> hook)
+let standard_proof_terminator ?hook compute_guard =
+  let univ_hook = Option.map (fun hook _ -> hook) hook in
+  universe_proof_terminator ?univ_hook compute_guard
 
 let initialize_named_context_for_proof () =
   let sign = Global.named_context () in
@@ -331,10 +335,10 @@ let initialize_named_context_for_proof () =
       let d = if variable_opacity id then NamedDecl.LocalAssum (id, NamedDecl.get_type d) else d in
       Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
 
-let start_proof id ?pl kind sigma ?terminator ?sign c ?(compute_guard=[]) hook =
+let start_proof id ?pl kind sigma ?terminator ?sign ?(compute_guard=[]) ?hook c =
   let terminator = match terminator with
-  | None -> standard_proof_terminator compute_guard hook
-  | Some terminator -> terminator compute_guard hook
+  | None -> standard_proof_terminator ?hook compute_guard
+  | Some terminator -> terminator ?hook compute_guard
   in
   let sign = 
     match sign with
@@ -344,10 +348,11 @@ let start_proof id ?pl kind sigma ?terminator ?sign c ?(compute_guard=[]) hook =
   let goals = [ Global.env_of_context sign , c ] in
   Proof_global.start_proof sigma id ?pl kind goals terminator
 
-let start_proof_univs id ?pl kind sigma ?terminator ?sign c ?(compute_guard=[]) hook =
+let start_proof_univs id ?pl kind sigma ?terminator ?sign ?(compute_guard=[]) ?univ_hook c =
   let terminator = match terminator with
-  | None -> universe_proof_terminator compute_guard hook
-  | Some terminator -> terminator compute_guard hook
+  | None ->
+    universe_proof_terminator ?univ_hook compute_guard
+  | Some terminator -> terminator ?univ_hook compute_guard
   in
   let sign =
     match sign with
@@ -371,7 +376,7 @@ let rec_tac_initializer finite guard thms snl =
        | (id,n,_)::l -> Tactics.mutual_fix id n l 0
        | _ -> assert false
 
-let start_proof_with_initialization kind sigma decl recguard thms snl hook =
+let start_proof_with_initialization ?hook kind sigma decl recguard thms snl =
   let intro_tac (_, (_, (ids, _))) = Tactics.auto_intros_tac ids in
   let init_tac,guard = match recguard with
   | Some (finite,guard,init_tac) ->
@@ -405,14 +410,14 @@ let start_proof_with_initialization kind sigma decl recguard thms snl hook =
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
-	  call_hook (fun exn -> exn) hook strength ref) thms_data in
-      start_proof_univs id ~pl:decl kind sigma t (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard;
+          call_hook ?hook strength ref) thms_data in
+      start_proof_univs id ~pl:decl kind sigma t ~univ_hook:(fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard;
       ignore (Proof_global.with_current_proof (fun _ p ->
           match init_tac with
           | None -> p,(true,[])
           | Some tac -> Proof.run_tactic Global.(env ()) tac p))
 
-let start_proof_com ?inference_hook kind thms hook =
+let start_proof_com ?inference_hook ?hook kind thms =
   let env0 = Global.env () in
   let decl = fst (List.hd thms) in
   let evd, decl = Constrexpr_ops.interp_univ_decl_opt env0 (snd decl) in
@@ -444,7 +449,7 @@ let start_proof_com ?inference_hook kind thms hook =
     else (* We fix the variables to ensure they won't be lowered to Set *)
       Evd.fix_undefined_variables evd
   in
-    start_proof_with_initialization kind evd decl recguard thms snl hook
+    start_proof_with_initialization ?hook kind evd decl recguard thms snl
 
 (* Saving a proof *)
 

@@ -310,7 +310,6 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
       (Decl_kinds.Global,false,(Decl_kinds.Proof Decl_kinds.Theorem))
       !evd
       (EConstr.of_constr new_principle_type)
-      hook
   ;
     (*       let _tim1 = System.get_time ()  in *)
       let map (c, u) = EConstr.mkConstU (c, EConstr.EInstance.make u) in
@@ -326,7 +325,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
       match entries with
       | [entry] ->
         discard_current ();
-        (id,(entry,persistence)), CEphemeron.create hook
+        (id,(entry,persistence)), hook
       | _ ->
         CErrors.anomaly Pp.(str "[build_functional_principle] close_proof returned more than one proof term")
   end
@@ -386,7 +385,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
   (* Pr  1278 :
      Don't forget to close the goal if an error is raised !!!!
   *)
-  save false new_princ_name entry g_kind hook
+  save false new_princ_name entry g_kind ~hook
   with e when CErrors.noncritical e ->
     begin
       begin

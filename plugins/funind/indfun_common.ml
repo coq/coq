@@ -129,7 +129,7 @@ let get_locality = function
 | Local -> true
 | Global -> false
 
-let save with_clean id const (locality,_,kind) hook =
+let save with_clean id const ?hook (locality,_,kind) =
   let fix_exn = Future.fix_exn_of const.const_entry_body in
   let l,r = match locality with
     | Discharge when Lib.sections_are_opened () ->
@@ -144,7 +144,7 @@ let save with_clean id const (locality,_,kind) hook =
 	(locality, ConstRef kn)
   in
   if with_clean then Proof_global.discard_current ();
-  CEphemeron.iter_opt hook (fun f -> Lemmas.call_hook fix_exn f l r);
+  Lemmas.call_hook ?hook ~fix_exn l r;
   definition_message id
 
 let with_full_print f a =
