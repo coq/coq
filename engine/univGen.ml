@@ -105,12 +105,7 @@ let constr_of_global gr =
               str " would forget universes.")
     else c
 
-let constr_of_global_univ (gr,u) =
-  match gr with
-  | VarRef id -> mkVar id
-  | ConstRef sp -> mkConstU (sp,u)
-  | ConstructRef sp -> mkConstructU (sp,u)
-  | IndRef sp -> mkIndU (sp,u)
+let constr_of_global_univ = mkRef
 
 let fresh_global_or_constr_instance env = function
   | IsConstr c -> c, ContextSet.empty

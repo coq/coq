@@ -63,6 +63,7 @@ val fresh_universe_context_set_instance : ContextSet.t ->
 val global_of_constr : constr -> GlobRef.t puniverses
 
 val constr_of_global_univ : GlobRef.t puniverses -> constr
+[@@ocaml.deprecated "Use [Constr.mkRef]"]
 
 val extend_context : 'a in_universe_context_set -> ContextSet.t ->
   'a in_universe_context_set

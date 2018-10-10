@@ -122,6 +122,8 @@ val mkFix : (t, t) pfixpoint -> t
 val mkCoFix : (t, t) pcofixpoint -> t
 val mkArrow : t -> t -> t
 
+val mkRef : GlobRef.t * EInstance.t -> t
+
 val applist : t * t list -> t
 
 val mkProd_or_LetIn : rel_declaration -> t -> t

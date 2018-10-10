@@ -173,7 +173,7 @@ let do_assumptions kind nl l =
       let t = replace_vars subst t in
       let refs, status' = declare_assumptions idl is_coe kind (t,uctx) ubinders imps nl in
       let subst' = List.map2
-          (fun {CAst.v=id} (c,u) -> (id, UnivGen.constr_of_global_univ (c,u)))
+          (fun {CAst.v=id} (c,u) -> (id, Constr.mkRef (c,u)))
           idl refs
       in
       subst'@subst, status' && status, next_uctx uctx)
