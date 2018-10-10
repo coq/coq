@@ -514,7 +514,6 @@ let rec scale_term t =
   | Zero    -> unit_big_int , Zero
   | Const n ->  (denominator n) , Const (Big_int (numerator n))
   | Var n   -> unit_big_int , Var n
-  | Inv _   -> failwith "scale_term : not implemented"
   | Opp t   -> let s, t = scale_term t in s, Opp t
   | Add(t1,t2) -> let s1,y1 = scale_term t1 and s2,y2 = scale_term t2 in
                   let g = gcd_big_int s1 s2 in
@@ -530,7 +529,6 @@ let rec scale_term t =
                       mult_big_int s1 s2 , Mul (y1, y2)
   |  Pow(t,n) -> let s,t = scale_term t in
                  power_big_int_positive_int s  n , Pow(t,n)
-  |   _ -> failwith "scale_term : not implemented"
 
 let scale_term t =
   let (s,t') = scale_term t in
@@ -572,7 +570,6 @@ let rec term_to_q_expr = function
   | Opp p ->   PEopp (term_to_q_expr p)
   | Pow(t,n) ->  PEpow (term_to_q_expr t,Ml2C.n n)
   | Sub(t1,t2) ->  PEsub (term_to_q_expr t1,  term_to_q_expr t2)
-  | _ -> failwith "term_to_q_expr: not implemented"
 
 let term_to_q_pol e = Mc.norm_aux (Ml2C.q (Int 0)) (Ml2C.q (Int 1)) Mc.qplus  Mc.qmult Mc.qminus Mc.qopp Mc.qeq_bool (term_to_q_expr e)
 
@@ -610,7 +607,6 @@ let rec term_to_z_expr = function
   | Opp p ->   PEopp (term_to_z_expr p)
   | Pow(t,n) ->  PEpow (term_to_z_expr t,Ml2C.n n)
   | Sub(t1,t2) ->  PEsub (term_to_z_expr t1,  term_to_z_expr t2)
-  | _ -> failwith "term_to_z_expr: not implemented"
 
 let term_to_z_pol e = Mc.norm_aux (Ml2C.z 0) (Ml2C.z 1) Mc.Z.add  Mc.Z.mul Mc.Z.sub Mc.Z.opp Mc.zeq_bool (term_to_z_expr e)
 

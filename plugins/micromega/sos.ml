@@ -145,11 +145,6 @@ let diagonal (v:vector) =
 (* ------------------------------------------------------------------------- *)
 (* Monomials.                                                                *)
 (* ------------------------------------------------------------------------- *)
-
-let monomial_eval assig (m:monomial) =
-  foldl (fun a x k -> a */ power_num (apply assig x) (Int k))
-        (Int 1) m;;
-
 let monomial_1 = (undefined:monomial);;
 
 let monomial_var x = (x |=> 1 :monomial);;
@@ -166,10 +161,6 @@ let monomial_variables m = dom m;;
 (* ------------------------------------------------------------------------- *)
 (* Polynomials.                                                              *)
 (* ------------------------------------------------------------------------- *)
-
-let eval assig (p:poly) =
-  foldl (fun a m c -> a +/ c */ monomial_eval assig m) (Int 0) p;;
-
 let poly_0 = (undefined:poly);;
 
 let poly_isconst (p:poly) = foldl (fun a m c -> m = monomial_1 && a) true p;;
@@ -289,17 +280,9 @@ let rec poly_of_term t = match t with
 | Const n -> poly_const n
 | Var x -> poly_var x
 | Opp t1 -> poly_neg (poly_of_term t1)
-| Inv t1 ->
-      let p = poly_of_term t1 in
-      if poly_isconst p then poly_const(Int 1 // eval undefined p)
-      else failwith "poly_of_term: inverse of non-constant polyomial"
 | Add (l, r) -> poly_add (poly_of_term l) (poly_of_term r)
 | Sub (l, r) -> poly_sub (poly_of_term l) (poly_of_term r)
 | Mul (l, r) -> poly_mul (poly_of_term l) (poly_of_term r)
-| Div (l, r) ->
-      let p = poly_of_term l and q = poly_of_term r in
-      if poly_isconst q then poly_cmul (Int 1 // eval undefined q) p
-      else failwith "poly_of_term: division by non-constant polynomial"
 | Pow (t, n) ->
       poly_pow (poly_of_term t) n;;
 

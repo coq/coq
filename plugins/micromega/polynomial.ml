@@ -193,8 +193,6 @@ sig
   val addition : t -> t -> t
   val uminus : t -> t
   val fold : (Monomial.t -> num -> 'a -> 'a) -> t -> 'a -> 'a
-  val is_linear : t -> bool
-  val variables : t -> ISet.t
   val factorise : var -> t  -> t * t
 end =  struct
   (*normalisation bug : 0*x ... *)
@@ -259,10 +257,6 @@ end =  struct
 
   let fold = P.fold
 
-  let is_linear p = P.fold (fun m _ acc -> acc && (Monomial.is_const m || Monomial.is_var m)) p true
-
-  let variables p = P.fold (fun m _ acc -> ISet.union (Monomial.variables m) acc) p ISet.empty
-
   let factorise x p =
     let x = Monomial.var x in
     P.fold (fun m v (px,cx) ->
@@ -294,7 +288,7 @@ let eval_op = function
 
 let string_of_op = function Eq -> "=" | Ge -> ">=" | Gt -> ">"
 
-let output_cstr o {coeffs = coeffs ; op = op ; cst = cst} =
+let output_cstr o { coeffs ; op ; cst } =
   Printf.fprintf o "%a %s %s" Vect.pp coeffs (string_of_op op) (string_of_num cst)
 
 
@@ -465,12 +459,6 @@ module LinPoly = struct
 
 
 end
-
-let output_nlin_cstr o {coeffs = coeffs ; op = op ; cst = cst} =
-  let p = LinPoly.pol_of_linpol coeffs in
-
-  Printf.fprintf o "%a %s %s" Poly.pp p (string_of_op op) (string_of_num cst)
-
 
 module ProofFormat =  struct
   open Big_int
