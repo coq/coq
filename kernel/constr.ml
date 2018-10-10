@@ -407,6 +407,12 @@ let destCoFix c = match kind c with
   | CoFix cofix -> cofix
   | _ -> raise DestKO
 
+let destRef c = let open GlobRef in match kind c with
+  | Var x -> VarRef x, Univ.Instance.empty
+  | Const (c,u) -> ConstRef c, u
+  | Ind (ind,u) -> IndRef ind, u
+  | Construct (c,u) -> ConstructRef c, u
+  | _ -> raise DestKO
 
 (******************************************************************)
 (* Flattening and unflattening of embedded applications and casts *)

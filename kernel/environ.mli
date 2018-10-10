@@ -276,8 +276,7 @@ val universes_of_global : env -> GlobRef.t -> AUContext.t
 
 val global_vars_set : env -> constr -> Id.Set.t
 
-(** the constr must be a global reference *)
-val vars_of_global : env -> constr -> Id.Set.t
+val vars_of_global : env -> GlobRef.t -> Id.Set.t
 
 (** closure of the input id set w.r.t. dependency *)
 val really_needed : env -> Id.Set.t -> Id.Set.t

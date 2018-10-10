@@ -457,7 +457,7 @@ let free_vars_and_rels_up_alias_expansion env sigma aliases c =
         | Rel n -> if n >= depth+1 then acc1 := Int.Set.add (n-depth) !acc1
         | _ -> frec (aliases,depth) c end
     | Const _ | Ind _ | Construct _ ->
-        acc2 := Id.Set.union (vars_of_global env (EConstr.to_constr sigma c)) !acc2
+        acc2 := Id.Set.union (vars_of_global env (fst @@ EConstr.destRef sigma c)) !acc2
     | _ ->
         iter_with_full_binders sigma
           (fun d (aliases,depth) -> (extend_alias sigma d aliases,depth+1))

@@ -166,6 +166,13 @@ let destProj sigma c = match kind sigma c with
 | Proj (p, c) -> (p, c)
 | _ -> raise DestKO
 
+let destRef sigma c = let open GlobRef in match kind sigma c with
+  | Var x -> VarRef x, EInstance.empty
+  | Const (c,u) -> ConstRef c, u
+  | Ind (ind,u) -> IndRef ind, u
+  | Construct (c,u) -> ConstructRef c, u
+  | _ -> raise DestKO
+
 let decompose_app sigma c =
   match kind sigma c with
     | App (f,cl) -> (f, Array.to_list cl)

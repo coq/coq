@@ -343,6 +343,8 @@ val destFix : constr -> fixpoint
 
 val destCoFix : constr -> cofixpoint
 
+val destRef : constr -> GlobRef.t Univ.puniverses
+
 (** {6 Equality} *)
 
 (** [equal a b] is true if [a] equals [b] modulo alpha, casts,

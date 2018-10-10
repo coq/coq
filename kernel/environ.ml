@@ -560,26 +560,22 @@ let universes_of_global env r =
 
 (* Returns the list of global variables in a term *)
 
-let vars_of_global env constr =
-  match kind constr with
-      Var id -> Id.Set.singleton id
-    | Const (kn, _) -> lookup_constant_variables kn env
-    | Ind (ind, _) -> lookup_inductive_variables ind env
-    | Construct (cstr, _) -> lookup_constructor_variables cstr env
-    (** FIXME: is Proj missing? *)
-    | _ -> raise Not_found
+let vars_of_global env gr =
+  let open GlobRef in
+  match gr with
+  | VarRef id -> Id.Set.singleton id
+  | ConstRef kn -> lookup_constant_variables kn env
+  | IndRef ind -> lookup_inductive_variables ind env
+  | ConstructRef cstr -> lookup_constructor_variables cstr env
 
 let global_vars_set env constr =
   let rec filtrec acc c =
-    let acc =
-      match kind c with
-      | Var _ | Const _ | Ind _ | Construct _ ->
-	  Id.Set.union (vars_of_global env c) acc
-      | _ ->
-	  acc in
-    Constr.fold filtrec acc c
+    match destRef c with
+    | gr, _ ->
+      Id.Set.union (vars_of_global env gr) acc
+    | exception DestKO -> Constr.fold filtrec acc c
   in
-    filtrec Id.Set.empty constr
+  filtrec Id.Set.empty constr
 
 
 (* [keep_hyps env ids] keeps the part of the section context of [env] which
