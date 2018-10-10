@@ -46,7 +46,7 @@ val jmeq : unit -> EConstr.constr
 val jmeq_refl : unit -> EConstr.constr
 
 val save : bool -> Id.t -> Safe_typing.private_constants Entries.definition_entry  -> Decl_kinds.goal_kind ->
-  unit Lemmas.declaration_hook CEphemeron.key -> unit
+  Lemmas.declaration_hook CEphemeron.key -> unit
 
 (* [get_proof_clean do_reduce] : returns the proof name, definition, kind and hook and
    abort the proof

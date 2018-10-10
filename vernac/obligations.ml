@@ -20,6 +20,14 @@ open Pp
 open CErrors
 open Util
 
+type univ_declaration_hook = UState.t -> Decl_kinds.locality -> GlobRef.t -> unit
+let mk_univ_hook f = f
+let call_univ_hook fix_exn hook uctx l c =
+  try hook uctx l c
+  with e when CErrors.noncritical e ->
+    let e = CErrors.push e in
+    iraise (fix_exn e)
+
 module NamedDecl = Context.Named.Declaration
 
 let get_fix_exn, stm_get_fix_exn = Hook.make ()
@@ -314,7 +322,7 @@ type program_info_aux = {
   prg_notations : notations ;
   prg_kind : definition_kind;
   prg_reduce : constr -> constr;
-  prg_hook : (UState.t -> unit) Lemmas.declaration_hook;
+  prg_hook : univ_declaration_hook;
   prg_opaque : bool;
   prg_sign: named_context_val;
 }
@@ -488,7 +496,7 @@ let declare_definition prg =
   let ubinders = UState.universe_binders uctx in
   DeclareDef.declare_definition prg.prg_name
     prg.prg_kind ce ubinders prg.prg_implicits
-    (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r uctx; r))
+    (Lemmas.mk_hook (fun l r -> call_univ_hook fix_exn prg.prg_hook uctx l r ; ()))
 
 let rec lam_index n t acc =
   match Constr.kind t with
@@ -562,7 +570,7 @@ let declare_mutual_definition l =
     List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;
     Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
     let gr = List.hd kns in
-    Lemmas.call_hook fix_exn first.prg_hook local gr first.prg_ctx;
+    call_univ_hook fix_exn first.prg_hook first.prg_ctx local gr;
     List.iter progmap_remove l; gr
 
 let decompose_lam_prod c ty =
@@ -1099,7 +1107,7 @@ let show_term n =
 
 let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
                    ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
-    ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) obls =
+    ?(reduce=reduce) ?(hook=mk_univ_hook (fun _ _ _ -> ())) ?(opaque = false) obls =
   let sign = Lemmas.initialize_named_context_for_proof () in
   let info = Id.print n ++ str " has type-checked" in
   let prg = init_prog_info sign ~opaque n univdecl term t ctx [] None [] obls implicits kind reduce hook in
@@ -1119,7 +1127,7 @@ let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
 
 let add_mutual_definitions l ctx ?(univdecl=UState.default_univ_decl) ?tactic
                            ?(kind=Global,false,Definition) ?(reduce=reduce)
-    ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) notations fixkind =
+    ?(hook=mk_univ_hook (fun _ _ _ -> ())) ?(opaque = false) notations fixkind =
   let sign = Lemmas.initialize_named_context_for_proof () in
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter

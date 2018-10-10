@@ -127,10 +127,8 @@ let do_definition ~program_mode ident k univdecl bl red_option c ctypopt hook =
         Obligations.eterm_obligations env ident evd 0 c typ
       in
       let ctx = Evd.evar_universe_context evd in
-      let hook = Lemmas.mk_hook (fun l r _ -> Lemmas.call_hook (fun exn -> exn) hook l r) in
+      let hook = Obligations.mk_univ_hook (fun _ l r -> Lemmas.call_hook (fun x -> x) hook l r) in
       ignore(Obligations.add_definition
           ident ~term:c cty ctx ~univdecl ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
-      ignore(DeclareDef.declare_definition ident k ce (Evd.universe_binders evd) imps
-        (Lemmas.mk_hook
-          (fun l r -> Lemmas.call_hook (fun exn -> exn) hook l r;r)))
+      ignore(DeclareDef.declare_definition ident k ce (Evd.universe_binders evd) imps hook)

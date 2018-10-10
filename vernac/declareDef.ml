@@ -58,9 +58,9 @@ let declare_definition ident (local, p, k) ce pl imps hook =
     gr
   | Discharge | Local | Global ->
     declare_global_definition ident ce local k pl imps in
-  Lemmas.call_hook fix_exn hook local r
+  Lemmas.call_hook fix_exn hook local r; r
 
 let declare_fix ?(opaque = false) (_,poly,_ as kind) pl univs f ((def,_),eff) t imps =
   let ce = definition_entry ~opaque ~types:t ~univs ~eff def in
-  declare_definition f kind ce pl imps (Lemmas.mk_hook (fun _ r -> r))
+  declare_definition f kind ce pl imps (Lemmas.mk_hook (fun _ _ -> ()))
 
