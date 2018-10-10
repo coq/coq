@@ -71,6 +71,7 @@ val constr_of_global_univ : GlobRef.t puniverses -> constr
 
 val extend_context : 'a in_universe_context_set -> ContextSet.t ->
   'a in_universe_context_set
+[@@ocaml.deprecated "Use [Univ.extend_in_context_set]"]
 
 (** Create a fresh global in the global environment, without side effects.
     BEWARE: this raises an ANOMALY on polymorphic constants/inductives:

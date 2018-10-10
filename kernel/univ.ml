@@ -1065,6 +1065,9 @@ type universe_context_set = ContextSet.t
 type 'a in_universe_context = 'a * universe_context
 type 'a in_universe_context_set = 'a * universe_context_set
 
+let extend_in_context_set (a, ctx) ctx' =
+  (a, ContextSet.union ctx ctx')
+
 (** Substitutions. *)
 
 let empty_subst = LMap.empty

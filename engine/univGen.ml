@@ -141,8 +141,7 @@ let fresh_sort_in_family = function
 let new_sort_in_family sf =
   fst (fresh_sort_in_family sf)
 
-let extend_context (a, ctx) (ctx') =
-  (a, ContextSet.union ctx ctx')
+let extend_context = Univ.extend_in_context_set
 
 let new_global_univ () =
   let u = fresh_level () in
