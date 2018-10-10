@@ -9,6 +9,7 @@
 (************************************************************************)
 
 (*i*)
+module CVars = Vars
 open Names
 open EConstr
 open Nametab
@@ -116,8 +117,8 @@ let instance_hook k info global imps ?hook cst =
 let declare_instance_constant k info global imps ?hook id decl poly sigma term termtype =
   let kind = IsDefinition Instance in
   let sigma =
-    let levels = Univ.LSet.union (Univops.universes_of_constr termtype)
-                                 (Univops.universes_of_constr term) in
+    let levels = Univ.LSet.union (CVars.universes_of_constr termtype)
+                                 (CVars.universes_of_constr term) in
     Evd.restrict_universe_context sigma levels
   in
   let uctx = Evd.check_univ_decl ~poly sigma decl in

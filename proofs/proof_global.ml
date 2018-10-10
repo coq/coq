@@ -347,8 +347,8 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
           not (Safe_typing.empty_private_constants = eff))
         in
         let typ = if allow_deferred then t else nf t in
-        let used_univs_body = Univops.universes_of_constr body in
-        let used_univs_typ = Univops.universes_of_constr typ in
+        let used_univs_body = Vars.universes_of_constr body in
+        let used_univs_typ = Vars.universes_of_constr typ in
         if allow_deferred then
           let initunivs = UState.const_univ_entry ~poly initial_euctx in
           let ctx = constrain_variables universes in

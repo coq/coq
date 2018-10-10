@@ -9,20 +9,8 @@
 (************************************************************************)
 
 open Univ
-open Constr
 
-let universes_of_constr c =
-  let rec aux s c =
-    match kind c with
-    | Const (c, u) ->
-          LSet.fold LSet.add (Instance.levels u) s
-    | Ind ((mind,_), u) | Construct (((mind,_),_), u) ->
-          LSet.fold LSet.add (Instance.levels u) s
-    | Sort u when not (Sorts.is_small u) ->
-      let u = Sorts.univ_of_sort u in
-      LSet.fold LSet.add (Universe.levels u) s
-    | _ -> Constr.fold aux s c
-  in aux LSet.empty c
+let universes_of_constr = Vars.universes_of_constr
 
 let restrict_universe_context (univs, csts) keep =
   let removed = LSet.diff univs keep in
