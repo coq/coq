@@ -15,8 +15,5 @@ open Univ
 val universes_of_constr : constr -> LSet.t
 [@@ocaml.deprecated "Use [Vars.universes_of_constr]"]
 
-(** [restrict_universe_context (univs,csts) keep] restricts [univs] to
-   the universes in [keep]. The constraints [csts] are adjusted so
-   that transitive constraints between remaining universes (those in
-   [keep] and those not in [univs]) are preserved. *)
 val restrict_universe_context : ContextSet.t -> LSet.t -> ContextSet.t
+[@@ocaml.deprecated "Use [UState.restrict_universe_context]"]

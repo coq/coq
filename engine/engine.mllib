@@ -4,8 +4,8 @@ UnivSubst
 UnivProblem
 UnivMinim
 Universes
-Univops
 UState
+Univops
 Nameops
 Evar_kinds
 Evd
