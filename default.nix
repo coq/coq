@@ -75,7 +75,10 @@ stdenv.mkDerivation rec {
         (path: _:
            !elem (baseNameOf path) [".git" "result" "bin" "_build" "_build_ci"]) ./.;
 
-  preConfigure = "patchShebangs kernel/";
+  preConfigure = ''
+    patchShebangs kernel/
+    patchShebangs dev/tools/
+  '';
 
   prefixKey = "-prefix ";
 
