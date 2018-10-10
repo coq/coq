@@ -23,9 +23,13 @@ val set_remote_new_univ_id : universe_id RemoteCounter.installer
 
 val new_univ_id : unit -> universe_id
 val new_univ_level : unit -> Level.t
+
 val new_univ : unit -> Universe.t
+[@@ocaml.deprecated "Use [new_univ_level]"]
 val new_Type : unit -> types
+[@@ocaml.deprecated "Use [new_univ_level]"]
 val new_Type_sort : unit -> Sorts.t
+[@@ocaml.deprecated "Use [new_univ_level]"]
 
 val new_global_univ : unit -> Universe.t in_universe_context_set
 val new_sort_in_family : Sorts.family -> Sorts.t
