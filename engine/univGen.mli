@@ -34,8 +34,7 @@ val new_sort_in_family : Sorts.family -> Sorts.t
 (** Build a fresh instance for a given context, its associated substitution and
     the instantiated constraints. *)
 
-val fresh_instance_from_context : AUContext.t ->
-  Instance.t constrained
+val fresh_instance : AUContext.t -> Instance.t in_universe_context_set
 
 val fresh_instance_from : ?loc:Loc.t -> AUContext.t -> Instance.t option ->
   Instance.t in_universe_context_set

@@ -31,42 +31,26 @@ let new_univ dp = Univ.Universe.make (new_univ_level dp)
 let new_Type dp = mkType (new_univ dp)
 let new_Type_sort dp = Type (new_univ dp)
 
-let fresh_universe_instance ctx =
-  let init _ = new_univ_level () in
-  Instance.of_array (Array.init (AUContext.size ctx) init)
+let fresh_instance auctx =
+  let inst = Array.init (AUContext.size auctx) (fun _ -> new_univ_level()) in
+  let ctx = Array.fold_right LSet.add inst LSet.empty in
+  let inst = Instance.of_array inst in
+  inst, (ctx, AUContext.instantiate inst auctx)
 
-let fresh_instance_from_context ctx =
-  let inst = fresh_universe_instance ctx in
-  let constraints = AUContext.instantiate inst ctx in
-    inst, constraints
-
-let fresh_instance ctx =
-  let ctx' = ref LSet.empty in
-  let init _ =
-    let u = new_univ_level () in
-    ctx' := LSet.add u !ctx'; u
-  in
-  let inst = Instance.of_array (Array.init (AUContext.size ctx) init)
-  in !ctx', inst
-
-let existing_instance ?loc ctx inst =
+let existing_instance ?loc auctx inst =
   let () =
     let len1 = Array.length (Instance.to_array inst)
-    and len2 = AUContext.size ctx in
+    and len2 = AUContext.size auctx in
       if not (len1 == len2) then
         CErrors.user_err ?loc ~hdr:"Universes"
           Pp.(str "Universe instance should have length " ++ int len2 ++ str ".")
       else ()
-  in LSet.empty, inst
-
-let fresh_instance_from ?loc ctx inst =
-  let ctx', inst =
-    match inst with
-    | Some inst -> existing_instance ?loc ctx inst
-    | None -> fresh_instance ctx
   in
-  let constraints = AUContext.instantiate inst ctx in
-    inst, (ctx', constraints)
+  inst, (LSet.empty, AUContext.instantiate inst auctx)
+
+let fresh_instance_from ?loc ctx = function
+  | Some inst -> existing_instance ?loc ctx inst
+  | None -> fresh_instance ctx
 
 (** Fresh universe polymorphic construction *)
 
@@ -129,20 +113,20 @@ let type_of_reference env r =
      let cb = Environ.lookup_constant c env in
      let ty = cb.const_type in
      let auctx = Declareops.constant_polymorphic_context cb in
-     let inst, ctx = fresh_instance_from auctx None in
+     let inst, ctx = fresh_instance auctx in
      Vars.subst_instance_constr inst ty, ctx
 
   | IndRef ind ->
     let (mib, _ as specif) = Inductive.lookup_mind_specif env ind in
     let auctx = Declareops.inductive_polymorphic_context mib in
-    let inst, ctx = fresh_instance_from auctx None in
+    let inst, ctx = fresh_instance auctx in
     let ty = Inductive.type_of_inductive env (specif, inst) in
     ty, ctx
 
   | ConstructRef (ind,_ as cstr) ->
     let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
     let auctx = Declareops.inductive_polymorphic_context mib in
-    let inst, ctx = fresh_instance_from auctx None in
+    let inst, ctx = fresh_instance auctx in
     Inductive.type_of_constructor (cstr,inst) specif, ctx
 
 let type_of_global t = type_of_reference (Global.env ()) t
