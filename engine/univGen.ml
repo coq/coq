@@ -11,7 +11,6 @@
 open Sorts
 open Names
 open Constr
-open Environ
 open Univ
 
 (* Generator of levels *)
@@ -50,21 +49,20 @@ let fresh_instance ctx =
   let inst = Instance.of_array (Array.init (AUContext.size ctx) init)
   in !ctx', inst
 
-let existing_instance ctx inst =
+let existing_instance ?loc ctx inst =
   let () =
     let len1 = Array.length (Instance.to_array inst)
     and len2 = AUContext.size ctx in
       if not (len1 == len2) then
-        CErrors.user_err ~hdr:"Universes"
-          Pp.(str "Polymorphic constant expected " ++ int len2 ++
-              str" levels but was given " ++ int len1)
+        CErrors.user_err ?loc ~hdr:"Universes"
+          Pp.(str "Universe instance should have length " ++ int len2 ++ str ".")
       else ()
   in LSet.empty, inst
 
-let fresh_instance_from ctx inst =
+let fresh_instance_from ?loc ctx inst =
   let ctx', inst =
     match inst with
-    | Some inst -> existing_instance ctx inst
+    | Some inst -> existing_instance ?loc ctx inst
     | None -> fresh_instance ctx
   in
   let constraints = AUContext.instantiate inst ctx in
@@ -72,63 +70,28 @@ let fresh_instance_from ctx inst =
 
 (** Fresh universe polymorphic construction *)
 
-let fresh_constant_instance env c inst =
-  let cb = lookup_constant c env in
-  match cb.Declarations.const_universes with
-  | Declarations.Monomorphic_const _ -> ((c,Instance.empty), ContextSet.empty)
-  | Declarations.Polymorphic_const auctx ->
-    let inst, ctx =
-      fresh_instance_from auctx inst
-    in
-    ((c, inst), ctx)
-
-let fresh_inductive_instance env ind inst =
-  let mib, mip = Inductive.lookup_mind_specif env ind in
-  match mib.Declarations.mind_universes with
-  | Declarations.Monomorphic_ind _ ->
-    ((ind,Instance.empty), ContextSet.empty)
-  | Declarations.Polymorphic_ind uactx ->
-    let inst, ctx = (fresh_instance_from uactx) inst in
-     ((ind,inst), ctx)
-  | Declarations.Cumulative_ind acumi ->
-    let inst, ctx =
-      fresh_instance_from (Univ.ACumulativityInfo.univ_context acumi) inst
-    in ((ind,inst), ctx)
-
-let fresh_constructor_instance env (ind,i) inst =
-  let mib, mip = Inductive.lookup_mind_specif env ind in
-  match mib.Declarations.mind_universes with
-  | Declarations.Monomorphic_ind _ -> (((ind,i),Instance.empty), ContextSet.empty)
-  | Declarations.Polymorphic_ind auctx ->
-    let inst, ctx = fresh_instance_from auctx  inst in
-        (((ind,i),inst), ctx)
-  | Declarations.Cumulative_ind acumi ->
-    let inst, ctx = fresh_instance_from (ACumulativityInfo.univ_context acumi) inst in
-    (((ind,i),inst), ctx)
-
 open Globnames
 
-let fresh_global_instance ?names env gr =
-  match gr with
-  | VarRef id -> mkVar id, ContextSet.empty
-  | ConstRef sp ->
-     let c, ctx = fresh_constant_instance env sp names in
-       mkConstU c, ctx
-  | ConstructRef sp ->
-     let c, ctx = fresh_constructor_instance env sp names in
-       mkConstructU c, ctx
-  | IndRef sp ->
-     let c, ctx = fresh_inductive_instance env sp names in
-       mkIndU c, ctx
+let fresh_global_instance ?loc ?names env gr =
+  let auctx = Environ.universes_of_global env gr in
+  let u, ctx = fresh_instance_from ?loc auctx names in
+  u, ctx
 
-let fresh_constant_instance env sp =
-  fresh_constant_instance env sp None
+let fresh_constant_instance env c =
+  let u, ctx = fresh_global_instance env (ConstRef c) in
+  (c, u), ctx
 
-let fresh_inductive_instance env sp =
-  fresh_inductive_instance env sp None
+let fresh_inductive_instance env ind =
+  let u, ctx = fresh_global_instance env (IndRef ind) in
+  (ind, u), ctx
 
-let fresh_constructor_instance env sp =
-  fresh_constructor_instance env sp None
+let fresh_constructor_instance env c =
+  let u, ctx = fresh_global_instance env (ConstructRef c) in
+  (c, u), ctx
+
+let fresh_global_instance ?loc ?names env gr =
+  let u, ctx = fresh_global_instance ?loc ?names env gr in
+  mkRef (gr, u), ctx
 
 let constr_of_global gr =
   let c, ctx = fresh_global_instance (Global.env ()) gr in

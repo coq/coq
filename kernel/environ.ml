@@ -419,12 +419,6 @@ let constant_type env (kn,u) =
     let csts = constraints_of cb u in
     (subst_instance_constr u cb.const_type, csts)
 
-let constant_context env kn =
-  let cb = lookup_constant kn env in
-  match cb.const_universes with
-  | Monomorphic_const _ -> Univ.AUContext.empty
-  | Polymorphic_const ctx -> ctx
-
 type const_evaluation_result = NoBody | Opaque
 
 exception NotEvaluableConst of const_evaluation_result
@@ -551,13 +545,15 @@ let lookup_constructor_variables (ind,_) env =
   lookup_inductive_variables ind env
 
 (* Universes *)
+let constant_context env c =
+  let cb = lookup_constant c env in
+  Declareops.constant_polymorphic_context cb
+
 let universes_of_global env r =
   let open GlobRef in
     match r with
     | VarRef _ -> Univ.AUContext.empty
-    | ConstRef c ->
-      let cb = lookup_constant c env in
-      Declareops.constant_polymorphic_context cb
+    | ConstRef c -> constant_context env c
     | IndRef (mind,_) | ConstructRef ((mind,_),_) ->
       let mib = lookup_mind mind env in
       Declareops.inductive_polymorphic_context mib

@@ -36,7 +36,7 @@ val new_sort_in_family : Sorts.family -> Sorts.t
 val fresh_instance_from_context : AUContext.t ->
   Instance.t constrained
 
-val fresh_instance_from : AUContext.t -> Instance.t option ->
+val fresh_instance_from : ?loc:Loc.t -> AUContext.t -> Instance.t option ->
   Instance.t in_universe_context_set
 
 val fresh_sort_in_family : Sorts.family ->
@@ -48,7 +48,7 @@ val fresh_inductive_instance : env -> inductive ->
 val fresh_constructor_instance : env -> constructor ->
   pconstructor in_universe_context_set
 
-val fresh_global_instance : ?names:Univ.Instance.t -> env -> GlobRef.t ->
+val fresh_global_instance : ?loc:Loc.t -> ?names:Univ.Instance.t -> env -> GlobRef.t ->
   constr in_universe_context_set
 
 val fresh_global_or_constr_instance : env -> Globnames.global_reference_or_constr ->

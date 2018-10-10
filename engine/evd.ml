@@ -818,7 +818,7 @@ let fresh_constructor_instance ?loc env evd c =
   with_context_set ?loc univ_flexible evd (UnivGen.fresh_constructor_instance env c)
 
 let fresh_global ?loc ?(rigid=univ_flexible) ?names env evd gr =
-  with_context_set ?loc rigid evd (UnivGen.fresh_global_instance ?names env gr)
+  with_context_set ?loc rigid evd (UnivGen.fresh_global_instance ?loc ?names env gr)
 
 let is_sort_variable evd s = UState.is_sort_variable evd.universes s
 

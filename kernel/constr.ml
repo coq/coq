@@ -227,6 +227,12 @@ let mkMeta  n =  Meta n
 (* Constructs a Variable named id *)
 let mkVar id = Var id
 
+let mkRef (gr,u) = let open GlobRef in match gr with
+  | ConstRef c -> mkConstU (c,u)
+  | IndRef ind -> mkIndU (ind,u)
+  | ConstructRef c -> mkConstructU (c,u)
+  | VarRef x -> mkVar x
+
 (************************************************************************)
 (*    kind_of_term = constructions as seen by the user                 *)
 (************************************************************************)
