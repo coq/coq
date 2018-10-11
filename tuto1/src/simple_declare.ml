@@ -19,7 +19,7 @@ let packed_declare_definition ident value_with_constraints =
   let k = (Decl_kinds.Global,
            Flags.is_universe_polymorphism(), Decl_kinds.Definition) in
   let udecl = UState.default_univ_decl in
-  let nohook = Lemmas.mk_hook (fun _ x -> x) in
+  let nohook = Lemmas.mk_hook (fun _ x -> ()) in
   ignore (edeclare ident k ~opaque:false sigma udecl body None [] nohook)
 
 (* But this definition cannot be undone by Reset ident *)
