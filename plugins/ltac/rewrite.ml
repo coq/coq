@@ -101,10 +101,6 @@ let new_cstr_evar (evd,cstrs) env t =
     (evd', Evar.Set.add ev cstrs), t
 
 (** Building or looking up instances. *)
-let e_new_cstr_evar env evars t =
-  let evd', t = new_cstr_evar !evars env t in evars := evd'; t
-
-(** Building or looking up instances. *)
 
 let extends_undefined evars evars' =
   let f ev evi found = found || not (Evd.mem evars ev)
@@ -161,8 +157,6 @@ end) = struct
 
   let respectful = find_global morphisms "respectful"
   let respectful_ref = lazy_find_reference morphisms "respectful"
-
-  let default_relation = find_global ["Coq"; "Classes"; "SetoidTactics"] "DefaultRelation"
 
   let coq_forall = find_global morphisms "forall_def"
 
@@ -1785,8 +1779,6 @@ let rec strategy_of_ast = function
 
 (* By default the strategy for "rewrite_db" is top-down *)
 
-let mkappc s l = CAst.make @@ CAppExpl ((None,qualid_of_ident (Id.of_string s),None),l)
-
 let declare_an_instance n s args =
   (((CAst.make @@ Name n),None),
    CAst.make @@ CAppExpl ((None, qualid_of_string s,None), args))
@@ -1903,36 +1895,6 @@ let declare_projection n instance_id r =
       (Declare.DefinitionEntry cst)
   in ()
 
-let build_morphism_signature env sigma m =
-  let m,ctx = Constrintern.interp_constr env sigma m in
-  let sigma = Evd.from_ctx ctx in
-  let t = Typing.unsafe_type_of env sigma m in
-  let cstrs =
-    let rec aux t =
-      match EConstr.kind sigma t with
-        | Prod (na, a, b) ->
-	    None :: aux b
-	| _ -> []
-    in aux t
-  in
-  let evars, t', sig_, cstrs = 
-    PropGlobal.build_signature (sigma, Evar.Set.empty) env t cstrs None in
-  let evd = ref evars in
-  let _ = List.iter
-    (fun (ty, rel) ->
-      Option.iter (fun rel ->
-	let default = e_app_poly env evd PropGlobal.default_relation [| ty; rel |] in
-	  ignore(e_new_cstr_evar env evd default))
-	rel)
-    cstrs
-  in
-  let morph = e_app_poly env evd (PropGlobal.proper_type env) [| t; sig_; m |] in
-  let evd = solve_constraints env !evd in
-  let evd = Evd.minimize_universes evd in
-  let m = Evarutil.nf_evars_universes evd (EConstr.Unsafe.to_constr morph) in
-  Pretyping.check_evars env (Evd.from_env env) evd (EConstr.of_constr m);
-  Evd.evar_universe_context evd, m
-
 let default_morphism sign m =
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -1944,71 +1906,10 @@ let default_morphism sign m =
   let evars, mor = resolve_one_typeclass env (goalevars evars) morph in
     mor, proper_projection env sigma mor morph
 
-let warn_add_setoid_deprecated =
-  CWarnings.create ~name:"add-setoid" ~category:"deprecated" (fun () ->
-      Pp.(str "Add Setoid is deprecated, please use Add Parametric Relation."))
-
-let add_setoid atts binders a aeq t n =
-  warn_add_setoid_deprecated ?loc:a.CAst.loc ();
-  init_setoid ();
-  let () = declare_instance_refl atts binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in
-  let () = declare_instance_sym atts binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
-  let () = declare_instance_trans atts binders a aeq n (mkappc "Seq_trans" [a;aeq;t]) in
-  let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
-  in
-  anew_instance atts binders instance
-    [(qualid_of_ident (Id.of_string "Equivalence_Reflexive"), mkappc "Seq_refl" [a;aeq;t]);
-     (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
-     (qualid_of_ident (Id.of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])]
-
 let make_tactic name =
   let open Tacexpr in
   let tacqid = Libnames.qualid_of_string name in
   TacArg (CAst.make @@ (TacCall (CAst.make (tacqid, []))))
-
-let warn_add_morphism_deprecated =
-  CWarnings.create ~name:"add-morphism" ~category:"deprecated" (fun () ->
-      Pp.(str "Add Morphism f : id is deprecated, please use Add Morphism f with signature (...) as id"))
-
-let add_morphism_as_parameter atts m n : unit =
-  init_setoid ();
-  let instance_id = add_suffix n "_Proper" in
-  let env = Global.env () in
-  let evd = Evd.from_env env in
-  let uctx, instance = build_morphism_signature env evd m in
-  let uctx = UState.univ_entry ~poly:atts.polymorphic uctx in
-  let cst = Declare.declare_constant ~name:instance_id
-      ~kind:Decls.(IsAssumption Logical)
-      (Declare.ParameterEntry (None,(instance,uctx),None))
-  in
-  Classes.add_instance (Classes.mk_instance
-                  (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global (GlobRef.ConstRef cst));
-  declare_projection n instance_id (GlobRef.ConstRef cst)
-
-let add_morphism_interactive atts m n : Lemmas.t =
-  warn_add_morphism_deprecated ?loc:m.CAst.loc ();
-  init_setoid ();
-  let instance_id = add_suffix n "_Proper" in
-  let env = Global.env () in
-  let evd = Evd.from_env env in
-  let uctx, instance = build_morphism_signature env evd m in
-  let poly = atts.polymorphic in
-  let kind = Decls.(IsDefinition Instance) in
-  let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
-  let hook { DeclareDef.Hook.S.dref; _ } = dref |> function
-    | GlobRef.ConstRef cst ->
-      Classes.add_instance (Classes.mk_instance
-                      (PropGlobal.proper_class env evd) Hints.empty_hint_info
-                      atts.global (GlobRef.ConstRef cst));
-      declare_projection n instance_id (GlobRef.ConstRef cst)
-    | _ -> assert false
-  in
-  let hook = DeclareDef.Hook.make hook in
-  let info = Lemmas.Info.make ~hook ~kind () in
-  Flags.silently
-    (fun () ->
-       let lemma = Lemmas.start_lemma ~name:instance_id ~poly ~info (Evd.from_ctx uctx) (EConstr.of_constr instance) in
-       fst (Lemmas.by (Tacinterp.interp tac) lemma)) ()
 
 let add_morphism atts binders m s n =
   init_setoid ();

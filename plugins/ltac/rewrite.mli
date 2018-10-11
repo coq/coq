@@ -92,18 +92,6 @@ val declare_relation
   -> constr_expr option
   -> unit
 
-val add_setoid
-  : rewrite_attributes
-  -> local_binder_expr list
-  -> constr_expr
-  -> constr_expr
-  -> constr_expr
-  -> Id.t
-  -> unit
-
-val add_morphism_interactive : rewrite_attributes -> constr_expr -> Id.t -> Lemmas.t
-val add_morphism_as_parameter : rewrite_attributes -> constr_expr -> Id.t -> unit
-
 val add_morphism
   :  rewrite_attributes
   -> local_binder_expr list

@@ -268,22 +268,6 @@ VERNAC COMMAND EXTEND AddParametricRelation3 CLASSIFIED AS SIDEFF
 END
 
 VERNAC COMMAND EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
-  | #[ atts = rewrite_attributes; ] [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
-     {
-         add_setoid atts [] a aeq t n
-     }
-  | #[ atts = rewrite_attributes; ] [ "Add" "Parametric" "Setoid" binders(binders) ":" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
-     {
-         add_setoid atts binders a aeq t n
-     }
-  | #[ atts = rewrite_attributes; ] ![ open_proof ] [ "Add" "Morphism" constr(m) ":" ident(n) ]
-    => { VtStartProof(GuaranteesOpacity, [n]) }
-    -> { if Lib.is_modtype () then
-           CErrors.user_err Pp.(str "Add Morphism cannot be used in a module type. Use Parameter Morphism instead.");
-         add_morphism_interactive atts m n }
-  | #[ atts = rewrite_attributes; ] [ "Declare" "Morphism" constr(m) ":" ident(n) ]
-    => { VtSideff([n], VtLater) }
-    -> { add_morphism_as_parameter atts m n }
   | #[ atts = rewrite_attributes; ] ![ open_proof ] [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ]
     => { VtStartProof(GuaranteesOpacity,[n]) }
     -> { add_morphism atts [] m s n }

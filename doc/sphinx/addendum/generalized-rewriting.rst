@@ -416,7 +416,7 @@ be declared as a morphism having multiple signatures.
    ``multiset_eq ==> multiset_eq ==> multiset_eq`` (``multiset_eq``
    being the equality over unordered lists).
 
-To declare multiple signatures for a morphism, repeat the :cmd:`Add Morphism`
+To declare multiple signatures for a morphism, repeat the :cmd:`Add Parametric Morphism`
 command.
 
 When morphisms have multiple signatures it can be the case that a
@@ -568,33 +568,8 @@ Printing relations and morphisms
 Deprecated syntax and backward incompatibilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Add Setoid @qualid__1 @qualid__2 @qualid__3 as @ident
-
-   This command for declaring setoids and morphisms is also accepted due
-   to backward compatibility reasons.
-
-   Here :n:`@qualid__2` is a congruence relation without parameters, :n:`@qualid__1` is its carrier
-   and :n:`@qualid__3` is an object of type (:n:`Setoid_Theory @qualid__1 @qualid__2`) (i.e. a record
-   packing together the reflexivity, symmetry and transitivity lemmas).
-   Notice that the syntax is not completely backward compatible since the
-   identifier was not required.
-
-.. cmd:: Add Morphism @ident : @ident
-   :name: Add Morphism
-
-   This command is restricted to the declaration of morphisms
-   without parameters. It is not fully backward compatible since the
-   property the user is asked to prove is slightly different: for n-ary
-   morphisms the hypotheses of the property are permuted; moreover, when
-   the morphism returns a proposition, the property is now stated using a
-   bi-implication in place of a simple implication. In practice, porting
-   an old development to the new semantics is usually quite simple.
-
-.. cmd:: Declare Morphism @ident : @ident
-   :name: Declare Morphism
-
-   This commands is to be used in a module type to declare a parameter that
-   is a morphism.
+Legacy ``Add Setoid``, ``Add Morphism``, and ``Declare Morphism``
+commands have been removed in Coq 8.11.
 
 Notice that several limitations of the old implementation have been
 lifted. In particular, it is now possible to declare several relations

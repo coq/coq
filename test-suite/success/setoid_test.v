@@ -31,7 +31,11 @@ elim (H a); elim (H0 a).
 split; auto.
 Qed.
 
-Add Setoid set same setoid_set as setsetoid.
+Add Parametric Relation : set same
+    reflexivity proved by (Seq_refl _ _ setoid_set)
+    symmetry proved by (Seq_sym _ _ setoid_set)
+    transitivity proved by (Seq_trans _ _ setoid_set)
+    as setsetoid.
 
 Add Morphism In with signature (eq ==> same ==> iff) as In_ext.
 Proof.

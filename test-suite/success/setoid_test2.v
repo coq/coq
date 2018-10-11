@@ -118,20 +118,40 @@ Require Export Setoid.
 Axiom S1: Set.
 Axiom eqS1: S1 -> S1 -> Prop.
 Axiom SetoidS1 : Setoid_Theory S1 eqS1.
-Add Setoid S1 eqS1 SetoidS1 as S1setoid.
+
+Add Parametric Relation : S1 eqS1
+    reflexivity proved by (Seq_refl _ _ SetoidS1)
+    symmetry proved by (Seq_sym _ _ SetoidS1)
+    transitivity proved by (Seq_trans _ _ SetoidS1)
+  as S1setoid.
 
 Instance eqS1_default : DefaultRelation eqS1 := {}.
 
 Axiom eqS1': S1 -> S1 -> Prop.
 Axiom SetoidS1' : Setoid_Theory S1 eqS1'.
 Axiom SetoidS1'_bis : Setoid_Theory S1 eqS1'.
-Add Setoid S1 eqS1' SetoidS1' as S1setoid'.
-Add Setoid S1 eqS1' SetoidS1'_bis as S1setoid''.
+
+Add Parametric Relation : S1 eqS1'
+    reflexivity proved by (Seq_refl _ _ SetoidS1')
+    symmetry proved by (Seq_sym _ _ SetoidS1')
+    transitivity proved by (Seq_trans _ _ SetoidS1')
+  as S1setoid'.
+
+Add Parametric Relation : S1 eqS1'
+    reflexivity proved by (Seq_refl _ _ SetoidS1'_bis)
+    symmetry proved by (Seq_sym _ _ SetoidS1'_bis)
+    transitivity proved by (Seq_trans _ _ SetoidS1'_bis)
+  as S1setoid''.
 
 Axiom S2: Set.
 Axiom eqS2: S2 -> S2 -> Prop.
 Axiom SetoidS2 : Setoid_Theory S2 eqS2.
-Add Setoid S2 eqS2 SetoidS2 as S2setoid.
+
+Add Parametric Relation : S2 eqS2
+    reflexivity proved by (Seq_refl _ _ SetoidS2)
+    symmetry proved by (Seq_sym _ _ SetoidS2)
+    transitivity proved by (Seq_trans _ _ SetoidS2)
+  as S2setoid.
 
 Axiom f : S1 -> nat -> S2.
 Add Morphism f with signature (eqS1 ==> eq ==> eqS2) as f_compat. Admitted.
@@ -218,7 +238,12 @@ Qed.
 Axiom S1_test8: Set.
 Axiom eqS1_test8: S1_test8 -> S1_test8 -> Prop.
 Axiom SetoidS1_test8 : Setoid_Theory S1_test8 eqS1_test8.
-Add Setoid S1_test8 eqS1_test8 SetoidS1_test8 as S1_test8setoid.
+
+Add Parametric Relation : S1_test8 eqS1_test8
+    reflexivity proved by (Seq_refl _ _ SetoidS1_test8)
+    symmetry proved by (Seq_sym _ _ SetoidS1_test8)
+    transitivity proved by (Seq_trans _ _ SetoidS1_test8)
+  as S1_test8setoid.
 
 Instance eqS1_test8_default : DefaultRelation eqS1_test8 := {}.
 
@@ -227,7 +252,12 @@ Add Morphism f_test8 with signature (eqS2 ==> eqS1_test8) as f_compat_test8. Adm
 
 Axiom eqS1_test8': S1_test8 -> S1_test8 -> Prop.
 Axiom SetoidS1_test8' : Setoid_Theory S1_test8 eqS1_test8'.
-Add Setoid S1_test8 eqS1_test8' SetoidS1_test8' as S1_test8setoid'.
+
+Add Parametric Relation : S1_test8 eqS1_test8'
+    reflexivity proved by (Seq_refl _ _ SetoidS1_test8')
+    symmetry proved by (Seq_sym _ _ SetoidS1_test8')
+    transitivity proved by (Seq_trans _ _ SetoidS1_test8')
+  as S1_test8setoid'.
 
 (*CSC: for test8 to be significant I want to choose the setoid
   (S1_test8, eqS1_test8'). However this does not happen and

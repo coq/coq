@@ -15,7 +15,6 @@ let commands = [
    "Add Field";
    "Add LoadPath";
    "Add ML Path";
-   "Add Morphism";
    "Add Printing Constructor";
    "Add Printing If";
    "Add Printing Let";
@@ -25,7 +24,6 @@ let commands = [
    "Add Ring A Aplus Amult Aone Azero Ainv Aeq T [ c1 ... cn ]. ";
    "Add Semi Ring A Aplus Amult Aone Azero Aeq T [ c1 ... cn ].";
    "Add Relation";
-   "Add Setoid";
    "Axiom";];
   [(* "Back"; *) ];
   ["Canonical Structure";
