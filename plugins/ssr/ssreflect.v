@@ -159,6 +159,10 @@ Definition abstract (statement : Type) (id : nat) (lock : abstract_lock) :=
 Notation "<hidden n >" := (abstract _ n _).
 Notation "T (* n *)" := (abstract T n abstract_key).
 
+Register abstract_lock as plugins.ssreflect.abstract_lock.
+Register abstract_key as plugins.ssreflect.abstract_key.
+Register abstract as plugins.ssreflect.abstract.
+
 (* Constants for tactic-views *)
 Inductive external_view : Type := tactic_view of Type.
 
@@ -287,6 +291,8 @@ Variant phant (p : Type) := Phant.
 
 Definition protect_term (A : Type) (x : A) : A := x.
 
+Register protect_term as plugins.ssreflect.protect_term.
+
 (* The ssreflect idiom for a non-keyed pattern:                               *)
 (*  - unkeyed t wiil match any subterm that unifies with t, regardless of     *)
 (*    whether it displays the same head symbol as t.                          *)
@@ -335,6 +341,9 @@ Notation nosimpl t := (let: tt := tt in t).
 
 Lemma master_key : unit. Proof. exact tt. Qed.
 Definition locked A := let: tt := master_key in fun x : A => x.
+
+Register master_key as plugins.ssreflect.master_key.
+Register locked as plugins.ssreflect.locked.
 
 Lemma lock A x : x = locked x :> A. Proof. unlock; reflexivity. Qed.
 
@@ -395,11 +404,17 @@ Definition ssr_have_let Pgoal Plemma step
   (rest : let x : Plemma := step in Pgoal) : Pgoal := rest.
 Arguments ssr_have_let [Pgoal].
 
+Register ssr_have as plugins.ssreflect.ssr_have.
+Register ssr_have_let as plugins.ssreflect.ssr_have_let.
+
 Definition ssr_suff Plemma Pgoal step (rest : Plemma) : Pgoal := step rest.
 Arguments ssr_suff Plemma [Pgoal].
 
 Definition ssr_wlog := ssr_suff.
 Arguments ssr_wlog Plemma [Pgoal].
+
+Register ssr_suff as plugins.ssreflect.ssr_suff.
+Register ssr_wlog as plugins.ssreflect.ssr_wlog.
 
 (* Internal N-ary congruence lemmas for the congr tactic.                     *)
 
@@ -424,6 +439,9 @@ Qed.
 Lemma ssr_congr_arrow Plemma Pgoal : Plemma = Pgoal -> Plemma -> Pgoal.
 Proof. by move->. Qed.
 Arguments ssr_congr_arrow : clear implicits.
+
+Register nary_congruence as plugins.ssreflect.nary_congruence.
+Register ssr_congr_arrow as plugins.ssreflect.ssr_congr_arrow.
 
 (* View lemmas that don't use reflection.                                     *)
 

@@ -16,7 +16,6 @@ open Printer
 open Term
 open Constr
 open Termops
-open Globnames
 open Tactypes
 open Tacmach
 
@@ -98,6 +97,11 @@ let subgoals_tys sigma (relctx, concl) =
  *    generalize the equality in case eqid is not None
  * 4. build the tactic handle intructions and clears as required in ipats and
  *    by eqid *)
+
+let get_eq_type gl =
+  let eq, gl = pf_fresh_global Coqlib.(lib_ref "core.eq.type") gl in
+  gl, EConstr.of_constr eq
+
 let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac gl =
   (* some sanity checks *)
   let oc, orig_clr, occ, c_gen, gl = match what with
@@ -115,8 +119,6 @@ let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac
   let orig_gl, concl, env = gl, pf_concl gl, pf_env gl in
   ppdebug(lazy(Pp.str(if is_case then "==CASE==" else "==ELIM==")));
   let fire_subst gl t = Reductionops.nf_evar (project gl) t in
-  let eq, gl = pf_fresh_global Coqlib.(lib_ref "core.eq.type") gl in
-  let eq = EConstr.of_constr eq in
   let is_undef_pat = function
   | sigma, T t -> EConstr.isEvar sigma (EConstr.of_constr t)
   | _ -> false in
@@ -322,6 +324,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac
         let k = List.length deps in
         let c = fire_subst gl (List.assoc (n_elim_args - k - 1) elim_args) in
         let gl, t = pfe_type_of gl c in
+        let gl, eq = get_eq_type gl in
         let gen_eq_tac, gl =
           let refl = EConstr.mkApp (eq, [|t; c; c|]) in
           let new_concl = EConstr.mkArrow refl (EConstr.Vars.lift 1 (pf_concl orig_gl)) in 
@@ -421,7 +424,7 @@ let injectl2rtac sigma c = match EConstr.kind sigma c with
 let is_injection_case c gl =
   let gl, cty = pfe_type_of gl c in
   let (mind,_), _ = pf_reduce_to_quantified_ind gl cty in
-  GlobRef.equal (IndRef mind) Coqlib.(lib_ref "core.eq.type")
+  Coqlib.check_ind_ref "core.eq.type" mind
 
 let perform_injection c gl =
   let gl, cty = pfe_type_of gl c in
