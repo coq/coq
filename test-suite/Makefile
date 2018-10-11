@@ -250,11 +250,19 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 # Unit tests
 #######################################################################
 
+# An alternative is ifeq ($(OS),Windows_NT) using make's own variable.
+ifeq ($(ARCH),win32)
+  export FINDLIB_SEP=";"
+else
+  export FINDLIB_SEP=":"
+endif
+
 # COQLIBINSTALL is quoted in config/make thus we must unquote it,
 # otherwise the directory name will include the quotes, see
 # see for example https://stackoverflow.com/questions/10424645/how-to-convert-a-quoted-string-to-a-normal-one-in-makefile
+
 ifeq ($(LOCAL),true)
-  export OCAMLPATH := $(shell echo $(COQLIBINSTALL):$$OCAMLPATH)
+  export OCAMLPATH := $(shell echo $(COQLIBINSTALL)$(FINDLIB_SEP)$$OCAMLPATH)
 endif
 
 OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
