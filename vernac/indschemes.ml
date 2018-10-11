@@ -457,10 +457,10 @@ let mk_coq_prod sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.prod.typ
 let mk_coq_pair sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.prod.intro")
 
 let build_combined_scheme env schemes =
-  let evdref = ref (Evd.from_env env) in
-  let defs = List.map (fun cst ->
-    let evd, c = Evd.fresh_constant_instance env !evdref cst in
-    evdref := evd; (c, Typeops.type_of_constant_in env c)) schemes in
+  let sigma = Evd.from_env env in
+  let sigma, defs = List.fold_left_map (fun sigma cst ->
+    let sigma, c = Evd.fresh_constant_instance env sigma cst in
+    sigma, (c, Typeops.type_of_constant_in env c)) sigma schemes in
   let find_inductive ty =
     let (ctx, arity) = decompose_prod ty in
     let (_, last) = List.hd ctx in
@@ -478,7 +478,7 @@ let build_combined_scheme env schemes =
   *)
   let inprop =
     let inprop (_,t) =
-      Retyping.get_sort_family_of env !evdref (EConstr.of_constr t)
+      Retyping.get_sort_family_of env sigma (EConstr.of_constr t)
       == Sorts.InProp
     in
     List.for_all inprop defs
@@ -489,10 +489,9 @@ let build_combined_scheme env schemes =
     else (mk_coq_prod, mk_coq_pair)
   in
   (* Number of clauses, including the predicates quantification *)
-  let prods = nb_prod !evdref (EConstr.of_constr t) - (nargs + 1) in
-  let sigma, coqand  = mk_and !evdref in
+  let prods = nb_prod sigma (EConstr.of_constr t) - (nargs + 1) in
+  let sigma, coqand  = mk_and sigma in
   let sigma, coqconj = mk_conj sigma in
-  let () = evdref := sigma in
   let relargs = rel_vect 0 prods in
   let concls = List.rev_map
     (fun (cst, t) ->
@@ -501,15 +500,15 @@ let build_combined_scheme env schemes =
   let concl_bod, concl_typ =
     fold_left'
       (fun (accb, acct) (cst, x) ->
-	mkApp (EConstr.to_constr !evdref coqconj, [| x; acct; cst; accb |]),
-	mkApp (EConstr.to_constr !evdref coqand, [| x; acct |])) concls
+        mkApp (EConstr.to_constr sigma coqconj, [| x; acct; cst; accb |]),
+        mkApp (EConstr.to_constr sigma coqand, [| x; acct |])) concls
   in
   let ctx, _ =
     list_split_rev_at prods
       (List.rev_map (fun (x, y) -> LocalAssum (x, y)) ctx) in
   let typ = List.fold_left (fun d c -> Term.mkProd_wo_LetIn c d) concl_typ ctx in
   let body = it_mkLambda_or_LetIn concl_bod ctx in
-  let sigma = Typing.check env !evdref (EConstr.of_constr body) (EConstr.of_constr typ) in
+  let sigma = Typing.check env sigma (EConstr.of_constr body) (EConstr.of_constr typ) in
   (sigma, body, typ)
 
 let do_combined_scheme name schemes =
