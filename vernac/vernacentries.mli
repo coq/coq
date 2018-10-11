@@ -63,6 +63,24 @@ val vernac_extend :
   ?entry:Vernacexpr.vernac_expr Pcoq.Entry.t ->
   ty_ml list -> unit
 
+(** {5 VERNAC ARGUMENT EXTEND} *)
+
+type 'a argument_rule =
+| Arg_alias of 'a Pcoq.Entry.t
+  (** This is used because CAMLP5 parser can be dumb about rule factorization,
+      which sometimes requires two entries to be the same. *)
+| Arg_rules of 'a Extend.production_rule list
+  (** There is a discrepancy here as we use directly extension rules and thus
+    entries instead of ty_user_symbol and thus arguments as roots. *)
+
+type 'a vernac_argument = {
+  arg_printer : 'a -> Pp.t;
+  arg_parsing : 'a argument_rule;
+}
+
+val vernac_argument_extend : name:string -> 'a vernac_argument ->
+  ('a, unit, unit) Genarg.genarg_type * 'a Pcoq.Entry.t
+
 (** {5 STM classifiers} *)
 
 val get_vernac_classifier :

@@ -673,3 +673,96 @@ let tactic_extend plugin_name tacname ~level ?deprecation sign =
   let obj () = add_ml_tactic_notation ml_tactic_name ~level ?deprecation (List.map clause_of_ty_ml sign) in
   Tacenv.register_ml_tactic ml_tactic_name @@ Array.of_list (List.map eval sign);
   Mltop.declare_cache_obj obj plugin_name
+
+
+(** ARGUMENT EXTEND *)
+
+open Geninterp
+
+type ('a, 'b, 'c) argument_printer =
+  'a Pptactic.raw_extra_genarg_printer *
+  'b Pptactic.glob_extra_genarg_printer *
+  'c Pptactic.extra_genarg_printer
+
+type ('a, 'b) argument_intern =
+| ArgInternFun : ('a, 'b) Genintern.intern_fun -> ('a, 'b) argument_intern
+| ArgInternWit : ('a, 'b, 'c) Genarg.genarg_type -> ('a, 'b) argument_intern
+
+type 'b argument_subst =
+| ArgSubstFun : 'b Genintern.subst_fun -> 'b argument_subst
+| ArgSubstWit : ('a, 'b, 'c) Genarg.genarg_type -> 'b argument_subst
+
+type ('b, 'c) argument_interp =
+| ArgInterpRet : ('c, 'c) argument_interp
+| ArgInterpFun : ('b, Val.t) interp_fun -> ('b, 'c) argument_interp
+| ArgInterpWit : ('a, 'b, 'r) Genarg.genarg_type -> ('b, 'c) argument_interp
+| ArgInterpLegacy :
+  (Geninterp.interp_sign -> Proof_type.goal Evd.sigma -> 'b -> Evd.evar_map * 'c) -> ('b, 'c) argument_interp
+
+type ('a, 'b, 'c) tactic_argument = {
+  arg_parsing : 'a Vernacentries.argument_rule;
+  arg_tag : 'c Val.tag option;
+  arg_intern : ('a, 'b) argument_intern;
+  arg_subst : 'b argument_subst;
+  arg_interp : ('b, 'c) argument_interp;
+  arg_printer : ('a, 'b, 'c) argument_printer;
+}
+
+let intern_fun (type a b c) name (arg : (a, b, c) tactic_argument) : (a, b) Genintern.intern_fun =
+match arg.arg_intern with
+| ArgInternFun f -> f
+| ArgInternWit wit ->
+  fun ist v ->
+    let ans = Genarg.out_gen (glbwit wit) (Tacintern.intern_genarg ist (Genarg.in_gen (rawwit wit) v)) in
+    (ist, ans)
+
+let subst_fun (type a b c) (arg : (a, b, c) tactic_argument) : b Genintern.subst_fun =
+match arg.arg_subst with
+| ArgSubstFun f -> f
+| ArgSubstWit wit ->
+  fun s v ->
+    let ans = Genarg.out_gen (glbwit wit) (Tacsubst.subst_genarg s (Genarg.in_gen (glbwit wit) v)) in
+    ans
+
+let interp_fun (type a b c) name (arg : (a, b, c) tactic_argument) (tag : c Val.tag) : (b, Val.t) interp_fun =
+match arg.arg_interp with
+| ArgInterpRet -> (fun ist v -> Ftactic.return (Geninterp.Val.inject tag v))
+| ArgInterpFun f -> f
+| ArgInterpWit wit ->
+  (fun ist x -> Tacinterp.interp_genarg ist (Genarg.in_gen (glbwit wit) x))
+| ArgInterpLegacy f ->
+  (fun ist v -> Ftactic.enter (fun gl ->
+    let (sigma, v) = Tacmach.New.of_old (fun gl -> f ist gl v) gl in
+    let v = Geninterp.Val.inject tag v in
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Ftactic.return v)
+  ))
+
+let argument_extend (type a b c) ~name (arg : (a, b, c) tactic_argument) =
+  let wit = Genarg.create_arg name in
+  let () = Genintern.register_intern0 wit (intern_fun name arg) in
+  let () = Genintern.register_subst0 wit (subst_fun arg) in
+  let tag = match arg.arg_tag with
+  | None ->
+    let () = register_val0 wit None in
+    val_tag (topwit wit)
+  | Some tag ->
+    let () = register_val0 wit (Some tag) in
+    tag
+  in
+  let () = register_interp0 wit (interp_fun name arg tag) in
+  let entry = match arg.arg_parsing with
+  | Vernacentries.Arg_alias e ->
+    let () = Pcoq.register_grammar wit e in
+    e
+  | Vernacentries.Arg_rules rules ->
+    let e = Pcoq.create_generic_entry Pcoq.utactic name (Genarg.rawwit wit) in
+    let () = Pcoq.grammar_extend e None (None, [(None, None, rules)]) in
+    e
+  in
+  let (rpr, gpr, tpr) = arg.arg_printer in
+  let () = Pptactic.declare_extra_genarg_pprule wit rpr gpr tpr in
+  let () = create_ltac_quotation name
+    (fun (loc, v) -> Tacexpr.TacGeneric (Genarg.in_gen (Genarg.rawwit wit) v))
+    (entry, None)
+  in
+  (wit, entry)
