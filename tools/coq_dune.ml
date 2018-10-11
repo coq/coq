@@ -226,7 +226,8 @@ let scan_mlg4 m d =
   List.fold_left (fun m f -> add_map_list ["plugins"; d] (choose_ml4g_form f) m) m ml4
 
 let scan_plugins m =
-  let dirs = Sys.(List.filter (fun f -> is_directory @@ "plugins/"^f) Array.(to_list @@ readdir "plugins/")) in
+  let is_plugin_directory dir = Sys.(is_directory dir && file_exists (dir ^ "/plugin_base.dune")) in
+  let dirs = Sys.(List.filter (fun f -> is_plugin_directory @@ "plugins/"^f) Array.(to_list @@ readdir "plugins/")) in
   List.fold_left scan_mlg4 m dirs
 
 (* Process .vfiles.d and generate a skeleton for the dune file *)
