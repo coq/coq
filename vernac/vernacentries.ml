@@ -2398,7 +2398,9 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
   and aux ~atts : _ -> unit =
     function
 
-    | VernacLoad (_,fname) -> vernac_load control fname
+    | VernacLoad (_,fname) ->
+      Attributes.unsupported_attributes atts;
+      vernac_load control fname
 
     | c ->
       let poly, program = let open Attributes in

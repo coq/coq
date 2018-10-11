@@ -11,13 +11,13 @@
 open CErrors
 open Vernacexpr
 
-let unsupported_attributes ?loc = function
+let unsupported_attributes = function
   | [] -> ()
   | atts ->
     let keys = List.map fst atts in
     let keys = List.sort_uniq String.compare keys in
     let conj = match keys with [_] -> "this attribute: " | _ -> "these attributes: " in
-    user_err ?loc Pp.(str "This command does not support " ++ str conj ++ prlist str keys ++ str".")
+    user_err Pp.(str "This command does not support " ++ str conj ++ prlist str keys ++ str".")
 
 type 'a key_parser = 'a option -> vernac_flag_value -> 'a
 

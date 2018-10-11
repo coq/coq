@@ -19,6 +19,9 @@ type +'a attribute
 val parse : 'a attribute -> vernac_flags -> 'a
 (** Errors on unsupported attributes. *)
 
+val unsupported_attributes : vernac_flags -> unit
+(** Errors if the list of flags is nonempty. *)
+
 module Notations : sig
   (** Notations to combine attributes. *)
 
