@@ -42,6 +42,14 @@ Notations
   `Bind Scope`, `Delimit Scope`, `Undelimit Scope`, or `Notation` is
   deprecated.
 
+- Deprecated compatibility notations will actually be removed in the
+  next version of Coq.  Uses of these notations are generally easy to
+  fix thanks to the hint contained in the deprecation warnings. For
+  projects that require more than a handful of such fixes, there is [a
+  script](https://gist.github.com/JasonGross/9770653967de3679d131c59d42de6d17#file-replace-notations-py)
+  that will do it automatically, using the output of coqc. The script
+  contains documentation on its usage in a comment at the top.
+
 Tactics
 
 - Added toplevel goal selector `!` which expects a single focused goal.
