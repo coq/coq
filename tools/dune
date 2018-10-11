@@ -23,6 +23,13 @@
  (libraries coq.toplevel))
 
 (executable
+ (name coqworkmgr)
+ (public_name coqworkmgr)
+ (package coq)
+ (modules coqworkmgr)
+ (libraries coq.stm))
+
+(executable
  (name coqdep)
  (public_name coqdep)
  (package coq)
@@ -40,16 +47,9 @@
 
 (ocamllex coqwc)
 
-(executable
- (name coq_tex)
- (public_name coq_tex)
+(executables
+ (names coq_tex coq_dune)
+ (public_names coq-tex coq_dune)
  (package coq)
- (modules coq_tex)
- (libraries str))
-
-(executable
- (name coq_dune)
- (public_name coq_dune)
- (package coq)
- (modules coq_dune)
+ (modules coq_tex coq_dune)
  (libraries str))
