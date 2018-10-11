@@ -19,6 +19,9 @@ open Tacinterp
 
 (** TODO: document and clean me! *)
 
+type rewrite_attributes
+val rewrite_attributes : rewrite_attributes Attributes.attribute
+
 type unary_strategy = 
     Subterms | Subterm | Innermost | Outermost
   | Bottomup | Topdown | Progress | Try | Any | Repeat
@@ -77,18 +80,18 @@ val cl_rewrite_clause :
 val is_applied_rewrite_relation :
   env -> evar_map -> rel_context -> constr -> types option
 
-val declare_relation : ?locality:bool ->
+val declare_relation : rewrite_attributes ->
   ?binders:local_binder_expr list -> constr_expr -> constr_expr -> Id.t ->
   constr_expr option -> constr_expr option -> constr_expr option -> unit
 
 val add_setoid :
-  bool -> local_binder_expr list -> constr_expr -> constr_expr -> constr_expr ->
+  rewrite_attributes -> local_binder_expr list -> constr_expr -> constr_expr -> constr_expr ->
   Id.t -> unit
 
-val add_morphism_infer : bool -> constr_expr -> Id.t -> unit
+val add_morphism_infer : rewrite_attributes -> constr_expr -> Id.t -> unit
 
 val add_morphism :
-  bool -> local_binder_expr list -> constr_expr -> constr_expr -> Id.t -> unit
+  rewrite_attributes -> local_binder_expr list -> constr_expr -> constr_expr -> Id.t -> unit
 
 val get_reflexive_proof : env -> evar_map -> constr -> constr -> evar_map * constr
 
