@@ -394,7 +394,7 @@ let tag_var = tag Tag.variable
         kw n ++ pr_binder false pr_c (nal,k,t)
       | (CLocalAssum _ | CLocalPattern _ | CLocalDef _) :: _ as bdl ->
         kw n ++ pr_undelimited_binders sep pr_c bdl
-      | [] -> assert false
+      | [] -> anomaly (Pp.str "The ast is malformed, found lambda/prod without proper binders.")
 
   let pr_binders_gen pr_c sep is_open =
     if is_open then pr_delimited_binders pr_com_at sep pr_c
