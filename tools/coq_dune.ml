@@ -72,6 +72,9 @@ module Aux = struct
 
   let sep fmt () = fprintf fmt "@;"
 
+  (* Creation of paths, aware of the platform separator. *)
+  let bpath l = String.concat Filename.dir_sep l
+
   module DirOrd = struct
     type t = string list
     let compare = list_compare String.compare
@@ -82,6 +85,14 @@ module Aux = struct
   (* Functions available in newer OCaml versions *)
   (* Taken from the OCaml std library (c) INRIA / LGPL-2.1 *)
   module Legacy = struct
+
+
+    (* Fix once we move to OCaml >= 4.06.0 *)
+    let list_init len f =
+      let rec init_aux i n f =
+        if i >= n then []
+        else let r = f i in r :: init_aux (i+1) n f
+      in init_aux 0 len f
 
     (* Slower version of DirMap.update, waiting for OCaml 4.06.0 *)
     let dirmap_update key f map =
@@ -134,16 +145,9 @@ let filter_no_vo =
 
 (* We could have coqdep to output dune files directly *)
 
-(* Fix once we move to OCaml >= 4.06.0 *)
-let list_init len f =
-  let rec init_aux i n f =
-    if i >= n then []
-    else let r = f i in r :: init_aux (i+1) n f
-  in init_aux 0 len f
-
 let gen_sub n =
   (* Move to List.init once we can depend on OCaml >= 4.06.0 *)
-  String.concat "/" (list_init n (fun _ -> "..")) ^ "/"
+  bpath @@ Legacy.list_init n (fun _ -> "..")
 
 let pp_rule fmt targets deps action =
   (* Special printing of the first rule *)
@@ -164,13 +168,13 @@ let pp_vo_dep dir fmt vo =
   let depth = List.length dir in
   let sdir = gen_sub depth in
   (* All files except those in Init implicitly depend on the Prelude, we account for it here. *)
-  let eflag, edep = if List.tl dir = ["Init"] then "-noinit -R theories Coq", [] else "", ["theories/Init/Prelude.vo"] in
+  let eflag, edep = if List.tl dir = ["Init"] then "-noinit -R theories Coq", [] else "", [bpath ["theories";"Init";"Prelude.vo"]] in
   (* Coq flags *)
   let cflag = Options.build_coq_flags () in
   (* Correct path from global to local "theories/Init/Decimal.vo" -> "../../theories/Init/Decimal.vo" *)
-  let deps = List.map (fun s -> sdir ^ s) (edep @ vo.deps) in
+  let deps = List.map (fun s -> bpath [sdir;s]) (edep @ vo.deps) in
   (* The source file is also corrected as we will call coqtop from the top dir *)
-  let source = String.concat "/" dir ^ "/" ^ Filename.(remove_extension vo.target) ^ ".v" in
+  let source = bpath (dir @ [Filename.(remove_extension vo.target) ^ ".v"]) in
   (* The final build rule *)
   let action = sprintf "(chdir %%{project_root} (run coqtop -boot %s %s -compile %s))" eflag cflag source in
   pp_rule fmt [vo.target] deps action
@@ -193,16 +197,16 @@ let pp_dep dir fmt oo = match oo with
 let out_install fmt dir ff =
   let itarget = String.concat "/" dir in
   let ff = pmap (function | VO vo -> Some vo.target | _ -> None) ff in
-  let pp_ispec fmt tg = fprintf fmt "(%s as %s)" tg (itarget^"/"^tg) in
+  let pp_ispec fmt tg = fprintf fmt "(%s as %s)" tg (bpath [itarget;tg]) in
   fprintf fmt "(install@\n @[(section lib)@\n(package coq)@\n(files @[%a@])@])@\n"
     (pp_list pp_ispec sep) ff
 
 (* For each directory, we must record two things, the build rules and
    the install specification. *)
 let record_dune d ff =
-  let sd = String.concat "/" d in
+  let sd = bpath d in
   if Sys.file_exists sd && Sys.is_directory sd then
-    let out = open_out (sd^"/dune") in
+    let out = open_out (bpath [sd;"dune"]) in
     let fmt = formatter_of_out_channel out in
     if List.nth d 0 = "plugins" then
       fprintf fmt "(include plugin_base.dune)@\n";
@@ -222,12 +226,12 @@ let scan_mlg4 m d =
   let dir = ["plugins"; d] in
   let m = DirMap.add dir [] m in
   let ml4 = Sys.(List.filter (fun f -> Filename.(check_suffix f ".ml4" || check_suffix f ".mlg"))
-                   Array.(to_list @@ readdir String.(concat "/" dir))) in
+                   Array.(to_list @@ readdir (bpath dir))) in
   List.fold_left (fun m f -> add_map_list ["plugins"; d] (choose_ml4g_form f) m) m ml4
 
 let scan_plugins m =
-  let is_plugin_directory dir = Sys.(is_directory dir && file_exists (dir ^ "/plugin_base.dune")) in
-  let dirs = Sys.(List.filter (fun f -> is_plugin_directory @@ "plugins/"^f) Array.(to_list @@ readdir "plugins/")) in
+  let is_plugin_directory dir = Sys.(is_directory dir && file_exists (bpath [dir;"plugin_base.dune"])) in
+  let dirs = Sys.(List.filter (fun f -> is_plugin_directory @@ bpath ["plugins";f]) Array.(to_list @@ readdir "plugins")) in
   List.fold_left scan_mlg4 m dirs
 
 (* Process .vfiles.d and generate a skeleton for the dune file *)
@@ -240,6 +244,10 @@ let parse_coqdep_line l =
     begin match targets with
     | [target] ->
       let dir, target = Filename.(dirname target, basename target) in
+      (* coqdep outputs with the '/' directory separator regardless of
+         the platform. Anyways, I hope we can link to coqdep instead
+         of having to parse its output soon, that should solve this
+         kind of issues *)
       Some (String.split_on_char '/' dir, VO { target; deps; })
     (* Otherwise a vio file, we ignore *)
     | _ -> None
