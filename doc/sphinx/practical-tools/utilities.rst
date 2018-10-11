@@ -41,15 +41,17 @@ Building a |Coq| project with coq_makefile
 The majority of |Coq| projects are very similar: a collection of ``.v``
 files and eventually some ``.ml`` ones (a |Coq| plugin). The main piece of
 metadata needed in order to build the project are the command line
-options to ``coqc`` (e.g. ``-R``, ``-I``, see also: section
-:ref:`command-line-options`). Collecting the list of files and options is the job
-of the ``_CoqProject`` file.
+options to ``coqc`` (e.g. ``-R``, ``Q``, ``-I``, see :ref:`command
+line options <command-line-options>`). Collecting the list of files
+and options is the job of the ``_CoqProject`` file.
 
 A simple example of a ``_CoqProject`` file follows:
 
 ::
 
     -R theories/ MyCode
+    -arg -w
+    -arg all
     theories/foo.v
     theories/bar.v
     -I src/
@@ -57,6 +59,11 @@ A simple example of a ``_CoqProject`` file follows:
     src/bazaux.ml
     src/qux_plugin.mlpack
 
+where options ``-R``, ``-Q`` and ``-I`` are natively recognized, as well as
+file names. The lines of the form ``-arg foo`` are used in order to tell
+to literally pass an argument ``foo`` to ``coqc``: in the
+example, this allows to pass the two-word option ``-w all`` (see
+:ref:`command line options <command-line-options>`).
 
 Currently, both |CoqIDE| and Proof-General (version ≥ ``4.3pre``)
 understand ``_CoqProject`` files and invoke |Coq| with the desired options.
