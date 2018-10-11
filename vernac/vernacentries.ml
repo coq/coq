@@ -410,44 +410,35 @@ let dump_global r =
 (**********)
 (* Syntax *)
 
-let vernac_syntax_extension ~atts infix l =
-  let local = enforce_module_locality atts.locality in
+let vernac_syntax_extension ~module_local infix l =
   if infix then Metasyntax.check_infix_modifiers (snd l);
-  Metasyntax.add_syntax_extension local l
+  Metasyntax.add_syntax_extension module_local l
 
-let vernac_declare_scope ~atts sc =
-  let local = enforce_module_locality atts.locality in
-  Metasyntax.declare_scope local sc
+let vernac_declare_scope ~module_local sc =
+  Metasyntax.declare_scope module_local sc
 
-let vernac_delimiters ~atts sc action =
-  let local = enforce_module_locality atts.locality in
+let vernac_delimiters ~module_local sc action =
   match action with
-  | Some lr -> Metasyntax.add_delimiters local sc lr
-  | None -> Metasyntax.remove_delimiters local sc
+  | Some lr -> Metasyntax.add_delimiters module_local sc lr
+  | None -> Metasyntax.remove_delimiters module_local sc
 
-let vernac_bind_scope ~atts sc cll =
-  let local = enforce_module_locality atts.locality in
-  Metasyntax.add_class_scope local sc (List.map scope_class_of_qualid cll)
+let vernac_bind_scope ~module_local sc cll =
+  Metasyntax.add_class_scope module_local sc (List.map scope_class_of_qualid cll)
 
-let vernac_open_close_scope ~atts (b,s) =
-  let local = enforce_section_locality atts.locality in
-  Notation.open_close_scope (local,b,s)
+let vernac_open_close_scope ~section_local (b,s) =
+  Notation.open_close_scope (section_local,b,s)
 
-let vernac_arguments_scope ~atts r scl =
-  let local = make_section_locality atts.locality in
-  Notation.declare_arguments_scope local (smart_global r) scl
+let vernac_arguments_scope ~section_local r scl =
+  Notation.declare_arguments_scope section_local (smart_global r) scl
 
-let vernac_infix ~atts =
-  let local = enforce_module_locality atts.locality in
-  Metasyntax.add_infix local (Global.env())
+let vernac_infix ~module_local =
+  Metasyntax.add_infix module_local (Global.env())
 
-let vernac_notation ~atts =
-  let local = enforce_module_locality atts.locality in
-  Metasyntax.add_notation local (Global.env())
+let vernac_notation ~module_local =
+  Metasyntax.add_notation module_local (Global.env())
 
-let vernac_custom_entry ~atts s =
-  let local = enforce_module_locality atts.locality in
-  Metasyntax.declare_custom_entry local s
+let vernac_custom_entry ~module_local s =
+  Metasyntax.declare_custom_entry module_local s
 
 (***********)
 (* Gallina *)
@@ -489,6 +480,7 @@ let vernac_definition_hook p = function
 | _ -> no_hook
 
 let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
+  let atts = attributes_of_flags atts in
   let local = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook atts.polymorphic kind in
   let () =
@@ -519,6 +511,7 @@ let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
         (local, atts.polymorphic, kind) pl bl red_option c typ_opt hook)
 
 let vernac_start_proof ~atts kind l =
+  let atts = attributes_of_flags atts in
   let local = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
@@ -536,6 +529,7 @@ let vernac_exact_proof c =
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_assumption ~atts discharge kind l nl =
+  let atts = attributes_of_flags atts in
   let local = enforce_locality_exp atts.locality discharge in
   let global = local == Global in
   let kind = local, atts.polymorphic, kind in
@@ -605,6 +599,7 @@ let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
     indicates whether the type is inductive, co-inductive or
     neither. *)
 let vernac_inductive ~atts cum lo finite indl =
+  let atts = attributes_of_flags atts in
   let open Pp in
   let udecl, indl = extract_inductive_udecl indl in
   if Dumpglob.dump () then
@@ -700,6 +695,7 @@ let vernac_inductive ~atts cum lo finite indl =
     *)
 
 let vernac_fixpoint ~atts discharge l =
+  let atts = attributes_of_flags atts in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
@@ -712,6 +708,7 @@ let vernac_fixpoint ~atts discharge l =
   do_fixpoint local atts.polymorphic l
 
 let vernac_cofixpoint ~atts discharge l =
+  let atts = attributes_of_flags atts in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
@@ -738,19 +735,19 @@ let vernac_combined_scheme lid l =
      List.iter (fun {loc;v=id} -> dump_global (make ?loc @@ AN (qualid_of_ident ?loc id))) l);
  Indschemes.do_combined_scheme lid l
 
-let vernac_universe ~atts l =
-  if atts.polymorphic && not (Lib.sections_are_opened ()) then
+let vernac_universe ~poly l =
+  if poly && not (Lib.sections_are_opened ()) then
     user_err ~hdr:"vernac_universe"
 		 (str"Polymorphic universes can only be declared inside sections, " ++
 		  str "use Monomorphic Universe instead");
-  Declare.do_universe atts.polymorphic l
+  Declare.do_universe poly l
 
-let vernac_constraint ~atts l =
-  if atts.polymorphic && not (Lib.sections_are_opened ()) then
+let vernac_constraint ~poly l =
+  if poly && not (Lib.sections_are_opened ()) then
     user_err ~hdr:"vernac_constraint"
 		 (str"Polymorphic universe constraints can only be declared"
 		  ++ str " inside sections, use Monomorphic Constraint instead");
-  Declare.do_constraint atts.polymorphic l
+  Declare.do_constraint poly l
 
 (**********************)
 (* Modules            *)
@@ -934,32 +931,35 @@ let vernac_canonical r =
   Recordops.declare_canonical_structure (smart_global r)
 
 let vernac_coercion ~atts ref qids qidt =
-  let local = enforce_locality atts.locality in
+  let local, polymorphic = Attributes.(parse Notations.(locality ++ polymorphic) atts) in
+  let local = enforce_locality local in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
   let ref' = smart_global ref in
-  Class.try_add_new_coercion_with_target ref' ~local atts.polymorphic ~source ~target;
+  Class.try_add_new_coercion_with_target ref' ~local polymorphic ~source ~target;
   Flags.if_verbose Feedback.msg_info (pr_global ref' ++ str " is now a coercion")
 
 let vernac_identity_coercion ~atts id qids qidt =
-  let local = enforce_locality atts.locality in
+  let local, polymorphic = Attributes.(parse Notations.(locality ++ polymorphic) atts) in
+  let local = enforce_locality local in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
-  Class.try_add_new_identity_coercion id ~local atts.polymorphic ~source ~target
+  Class.try_add_new_identity_coercion id ~local polymorphic ~source ~target
 
 (* Type classes *)
 
 let vernac_instance ~atts abst sup inst props pri =
+  let atts = attributes_of_flags atts in
   let global = not (make_section_locality atts.locality) in
   Dumpglob.dump_constraint (fst (pi1 inst)) false "inst";
   let program_mode = Flags.is_program_mode () in
   ignore(Classes.new_instance ~program_mode ~abstract:abst ~global atts.polymorphic sup inst props pri)
 
-let vernac_context ~atts l =
-  if not (Classes.context atts.polymorphic l) then Feedback.feedback Feedback.AddedAxiom
+let vernac_context ~poly l =
+  if not (Classes.context poly l) then Feedback.feedback Feedback.AddedAxiom
 
-let vernac_declare_instances ~atts insts =
-  let glob = not (make_section_locality atts.locality) in
+let vernac_declare_instances ~section_local insts =
+  let glob = not section_local in
   List.iter (fun (id, info) -> Classes.existing_instance glob id (Some info)) insts
 
 let vernac_declare_class id =
@@ -1030,8 +1030,8 @@ let vernac_add_ml_path isrec path =
   let open Mltop in
   add_coq_path { recursive = isrec; path_spec = MlPath (expand path) }
 
-let vernac_declare_ml_module ~atts l =
-  let local = make_locality atts.locality in
+let vernac_declare_ml_module ~local l =
+  let local = Option.default false local in
   Mltop.declare_ml_modules local (List.map expand l)
 
 let vernac_chdir = function
@@ -1063,30 +1063,27 @@ let vernac_restore_state file =
 (************)
 (* Commands *)
 
-let vernac_create_hintdb ~atts id b =
-  let local = make_module_locality atts.locality in
-  Hints.create_hint_db local id full_transparent_state b
+let vernac_create_hintdb ~module_local id b =
+  Hints.create_hint_db module_local id full_transparent_state b
 
-let vernac_remove_hints ~atts dbs ids =
-  let local = make_module_locality atts.locality in
-  Hints.remove_hints local dbs (List.map Smartlocate.global_with_alias ids)
+let vernac_remove_hints ~module_local dbs ids =
+  Hints.remove_hints module_local dbs (List.map Smartlocate.global_with_alias ids)
 
 let vernac_hints ~atts lb h =
-  let local = enforce_module_locality atts.locality in
-  Hints.add_hints ~local lb (Hints.interp_hints atts.polymorphic h)
+  let local, poly = Attributes.(parse Notations.(locality ++ polymorphic) atts) in
+  let local = enforce_module_locality local in
+  Hints.add_hints ~local lb (Hints.interp_hints poly h)
 
-let vernac_syntactic_definition ~atts lid x y =
+let vernac_syntactic_definition ~module_local lid x y =
   Dumpglob.dump_definition lid false "syndef";
-  let local = enforce_module_locality atts.locality in
-  Metasyntax.add_syntactic_definition (Global.env()) lid.v x local y
+  Metasyntax.add_syntactic_definition (Global.env()) lid.v x module_local y
 
-let vernac_declare_implicits ~atts r l =
-  let local = make_section_locality atts.locality in
+let vernac_declare_implicits ~section_local r l =
   match l with
   | [] ->
-      Impargs.declare_implicits local (smart_global r)
+      Impargs.declare_implicits section_local (smart_global r)
   | _::_ as imps ->
-      Impargs.declare_manual_implicits local (smart_global r) ~enriching:false
+      Impargs.declare_manual_implicits section_local (smart_global r) ~enriching:false
 	(List.map (List.map (fun (ex,b,f) -> ex, (b,true,f))) imps)
 
 let warn_arguments_assert =
@@ -1101,7 +1098,7 @@ let warn_arguments_assert =
 (* [nargs_for_red] is the number of arguments required to trigger reduction,
    [args] is the main list of arguments statuses,
    [more_implicits] is a list of extra lists of implicit statuses  *)
-let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
+let vernac_arguments ~section_local reference args more_implicits nargs_for_red flags =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let assert_flag = List.mem `Assert flags in
@@ -1312,8 +1309,7 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
   (* Actions *)
 
   if renaming_specified then begin
-    let local = make_section_locality atts.locality in
-    Arguments_renaming.rename_arguments local sr names
+    Arguments_renaming.rename_arguments section_local sr names
   end;
 
   if scopes_specified || clear_scopes_flag then begin
@@ -1322,20 +1318,20 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
         with UserError _ ->
           Notation.find_delimiters_scope ?loc k)) scopes
       in
-      vernac_arguments_scope ~atts reference scopes
+      vernac_arguments_scope ~section_local reference scopes
     end;
 
   if implicits_specified || clear_implicits_flag then
-    vernac_declare_implicits ~atts reference implicits;
+    vernac_declare_implicits ~section_local reference implicits;
 
   if default_implicits_flag then
-    vernac_declare_implicits ~atts reference [];
+    vernac_declare_implicits ~section_local reference [];
 
   if red_modifiers_specified then begin
     match sr with
     | ConstRef _ as c ->
        Reductionops.ReductionBehaviour.set
-         (make_section_locality atts.locality) c
+         section_local c
          (rargs, Option.default ~-1 nargs_for_red, red_flags)
     | _ -> user_err
              (strbrk "Modifiers of the behavior of the simpl tactic "++
@@ -1363,8 +1359,8 @@ let vernac_reserve bl =
     Reserve.declare_reserved_type idl t)
   in List.iter sb_decl bl
 
-let vernac_generalizable ~atts =
-  let local = make_non_locality atts.locality in
+let vernac_generalizable ~local =
+  let local = Option.default true local in
   Implicit_quantifiers.declare_generalizable ~local
 
 let _ =
@@ -1619,8 +1615,8 @@ let _ =
       optread  = Nativenorm.get_profiling_enabled;
       optwrite = Nativenorm.set_profiling_enabled }
 
-let vernac_set_strategy ~atts l =
-  let local = make_locality atts.locality in
+let vernac_set_strategy ~local l =
+  let local = Option.default false local in
   let glob_ref r =
     match smart_global r with
       | ConstRef sp -> EvalConstRef sp
@@ -1630,8 +1626,8 @@ let vernac_set_strategy ~atts l =
   let l = List.map (fun (lev,ql) -> (lev,List.map glob_ref ql)) l in
   Redexpr.set_strategy local l
 
-let vernac_set_opacity ~atts (v,l) =
-  let local = make_non_locality atts.locality in
+let vernac_set_opacity ~local (v,l) =
+  let local = Option.default true local in
   let glob_ref r =
     match smart_global r with
       | ConstRef sp -> EvalConstRef sp
@@ -1650,8 +1646,8 @@ let get_option_locality export local =
   | Some false -> OptGlobal
   | None -> OptDefault
 
-let vernac_set_option0 ~atts export key opt =
-  let locality = get_option_locality export atts.locality in
+let vernac_set_option0 ~local export key opt =
+  let locality = get_option_locality export local in
   match opt with
   | StringValue s -> set_string_option_value_gen ~locality key s
   | StringOptValue (Some s) -> set_string_option_value_gen ~locality key s
@@ -1659,26 +1655,26 @@ let vernac_set_option0 ~atts export key opt =
   | IntValue n -> set_int_option_value_gen ~locality key n
   | BoolValue b -> set_bool_option_value_gen ~locality key b
 
-let vernac_set_append_option ~atts export key s =
-  let locality = get_option_locality export atts.locality in
+let vernac_set_append_option ~local export key s =
+  let locality = get_option_locality export local in
   set_string_option_append_value_gen ~locality key s
 
-let vernac_set_option ~atts export table v = match v with
+let vernac_set_option ~local export table v = match v with
 | StringValue s ->
   (* We make a special case for warnings because appending is their
   natural semantics *)
   if CString.List.equal table ["Warnings"] then
-    vernac_set_append_option ~atts export table s
+    vernac_set_append_option ~local export table s
   else
     let (last, prefix) = List.sep_last table in
     if String.equal last "Append" && not (List.is_empty prefix) then
-      vernac_set_append_option ~atts export prefix s
+      vernac_set_append_option ~local export prefix s
     else
-      vernac_set_option0 ~atts export table v
-| _ -> vernac_set_option0 ~atts export table v
+      vernac_set_option0 ~local export table v
+| _ -> vernac_set_option0 ~local export table v
 
-let vernac_unset_option ~atts export key =
-  let locality = get_option_locality export atts.locality in
+let vernac_unset_option ~local export key =
+  let locality = get_option_locality export local in
   unset_option_value_gen ~locality key
 
 let vernac_add_option key lv =
@@ -1755,8 +1751,8 @@ let vernac_check_may_eval ~atts redexp glopt rc =
   in
   pp ++ Printer.pr_universe_ctx_set sigma uctx
 
-let vernac_declare_reduction ~atts s r =
-  let local = make_locality atts.locality in
+let vernac_declare_reduction ~local s r =
+  let local = Option.default false local in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   declare_red_expr local s (snd (Hook.get f_interp_redexp env sigma r))
@@ -2104,11 +2100,26 @@ let vernac_load interp fname =
   if Proof_global.there_are_pending_proofs () then
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.")
 
+let with_locality ~atts f =
+  let local = Attributes.(parse locality atts) in
+  f ~local
+
+let with_section_locality ~atts f =
+  let local = Attributes.(parse locality atts) in
+  let section_local = make_section_locality local in
+  f ~section_local
+
+let with_module_locality ~atts f =
+  let local = Attributes.(parse locality atts) in
+  let module_local = make_module_locality local in
+  f ~module_local
+
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
 let interp ?proof ~atts ~st c =
+  vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
 
   (* Loading a file requires access to the control interpreter *)
@@ -2131,54 +2142,54 @@ let interp ?proof ~atts ~st c =
 
   (* Syntax *)
   | VernacSyntaxExtension (infix, sl) ->
-      vernac_syntax_extension ~atts infix sl
-  | VernacDeclareScope sc -> vernac_declare_scope ~atts sc
-  | VernacDelimiters (sc,lr) -> vernac_delimiters ~atts sc lr
-  | VernacBindScope (sc,rl) -> vernac_bind_scope ~atts sc rl
-  | VernacOpenCloseScope (b, s) -> vernac_open_close_scope ~atts (b,s)
-  | VernacInfix (mv,qid,sc) -> vernac_infix ~atts mv qid sc
-  | VernacNotation (c,infpl,sc) ->
-      vernac_notation ~atts c infpl sc
+      with_module_locality ~atts vernac_syntax_extension infix sl
+  | VernacDeclareScope sc -> with_module_locality ~atts vernac_declare_scope sc
+  | VernacDelimiters (sc,lr) -> with_module_locality ~atts vernac_delimiters sc lr
+  | VernacBindScope (sc,rl) -> with_module_locality ~atts vernac_bind_scope sc rl
+  | VernacOpenCloseScope (b, s) -> with_section_locality ~atts vernac_open_close_scope (b,s)
+  | VernacInfix (mv,qid,sc) -> with_module_locality ~atts vernac_infix mv qid sc
+  | VernacNotation (c,infpl,sc) -> with_module_locality ~atts vernac_notation c infpl sc
   | VernacNotationAddFormat(n,k,v) ->
-      Metasyntax.add_notation_extra_printing_rule n k v
+    unsupported_attributes atts;
+    Metasyntax.add_notation_extra_printing_rule n k v
   | VernacDeclareCustomEntry s ->
-      vernac_custom_entry ~atts s
+      with_module_locality ~atts vernac_custom_entry s
 
   (* Gallina *)
   | VernacDefinition ((discharge,kind),lid,d) ->
       vernac_definition ~atts discharge kind lid d
   | VernacStartTheoremProof (k,l) -> vernac_start_proof ~atts k l
-  | VernacEndProof e -> vernac_end_proof ?proof e
-  | VernacExactProof c -> vernac_exact_proof c
+  | VernacEndProof e -> unsupported_attributes atts; vernac_end_proof ?proof e
+  | VernacExactProof c -> unsupported_attributes atts; vernac_exact_proof c
   | VernacAssumption ((discharge,kind),nl,l) ->
       vernac_assumption ~atts discharge kind l nl
   | VernacInductive (cum, priv, finite, l) -> vernac_inductive ~atts cum priv finite l
   | VernacFixpoint (discharge, l) -> vernac_fixpoint ~atts discharge l
   | VernacCoFixpoint (discharge, l) -> vernac_cofixpoint ~atts discharge l
-  | VernacScheme l -> vernac_scheme l
-  | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
-  | VernacUniverse l -> vernac_universe ~atts l
-  | VernacConstraint l -> vernac_constraint ~atts l
+  | VernacScheme l -> unsupported_attributes atts; vernac_scheme l
+  | VernacCombinedScheme (id, l) -> unsupported_attributes atts; vernac_combined_scheme id l
+  | VernacUniverse l -> vernac_universe ~poly:(only_polymorphism atts) l
+  | VernacConstraint l -> vernac_constraint ~poly:(only_polymorphism atts) l
 
   (* Modules *)
   | VernacDeclareModule (export,lid,bl,mtyo) ->
-      vernac_declare_module export lid bl mtyo
+      unsupported_attributes atts; vernac_declare_module export lid bl mtyo
   | VernacDefineModule (export,lid,bl,mtys,mexprl) ->
-      vernac_define_module export lid bl mtys mexprl
+      unsupported_attributes atts; vernac_define_module export lid bl mtys mexprl
   | VernacDeclareModuleType (lid,bl,mtys,mtyo) ->
-      vernac_declare_module_type lid bl mtys mtyo
+      unsupported_attributes atts; vernac_declare_module_type lid bl mtys mtyo
   | VernacInclude in_asts ->
-      vernac_include in_asts
+      unsupported_attributes atts; vernac_include in_asts
   (* Gallina extensions *)
-  | VernacBeginSection lid -> vernac_begin_section lid
+  | VernacBeginSection lid -> unsupported_attributes atts; vernac_begin_section lid
 
-  | VernacEndSegment lid -> vernac_end_segment lid
+  | VernacEndSegment lid -> unsupported_attributes atts; vernac_end_segment lid
 
-  | VernacNameSectionHypSet (lid, set) -> vernac_name_sec_hyp lid set
+  | VernacNameSectionHypSet (lid, set) -> unsupported_attributes atts; vernac_name_sec_hyp lid set
 
-  | VernacRequire (from, export, qidl) -> vernac_require from export qidl
-  | VernacImport (export,qidl) -> vernac_import export qidl
-  | VernacCanonical qid -> vernac_canonical qid
+  | VernacRequire (from, export, qidl) -> unsupported_attributes atts; vernac_require from export qidl
+  | VernacImport (export,qidl) -> unsupported_attributes atts; vernac_import export qidl
+  | VernacCanonical qid -> unsupported_attributes atts; vernac_canonical qid
   | VernacCoercion (r,s,t) -> vernac_coercion ~atts r s t
   | VernacIdentityCoercion ({v=id},s,t) ->
       vernac_identity_coercion ~atts id s t
@@ -2186,134 +2197,88 @@ let interp ?proof ~atts ~st c =
   (* Type classes *)
   | VernacInstance (abst, sup, inst, props, info) ->
       vernac_instance ~atts abst sup inst props info
-  | VernacContext sup -> vernac_context ~atts sup
-  | VernacDeclareInstances insts -> vernac_declare_instances ~atts insts
-  | VernacDeclareClass id -> vernac_declare_class id
+  | VernacContext sup -> vernac_context ~poly:(only_polymorphism atts) sup
+  | VernacDeclareInstances insts -> with_section_locality ~atts vernac_declare_instances insts
+  | VernacDeclareClass id -> unsupported_attributes atts; vernac_declare_class id
 
   (* Solving *)
-  | VernacSolveExistential (n,c) -> vernac_solve_existential n c
+  | VernacSolveExistential (n,c) -> unsupported_attributes atts; vernac_solve_existential n c
 
   (* Auxiliary file and library management *)
-  | VernacAddLoadPath (isrec,s,alias) -> vernac_add_loadpath isrec s alias
-  | VernacRemoveLoadPath s -> vernac_remove_loadpath s
-  | VernacAddMLPath (isrec,s) -> vernac_add_ml_path isrec s
-  | VernacDeclareMLModule l -> vernac_declare_ml_module ~atts l
-  | VernacChdir s -> vernac_chdir s
+  | VernacAddLoadPath (isrec,s,alias) -> unsupported_attributes atts; vernac_add_loadpath isrec s alias
+  | VernacRemoveLoadPath s -> unsupported_attributes atts; vernac_remove_loadpath s
+  | VernacAddMLPath (isrec,s) -> unsupported_attributes atts; vernac_add_ml_path isrec s
+  | VernacDeclareMLModule l -> with_locality ~atts vernac_declare_ml_module l
+  | VernacChdir s -> unsupported_attributes atts; vernac_chdir s
 
   (* State management *)
-  | VernacWriteState s -> vernac_write_state s
-  | VernacRestoreState s -> vernac_restore_state s
+  | VernacWriteState s -> unsupported_attributes atts; vernac_write_state s
+  | VernacRestoreState s -> unsupported_attributes atts; vernac_restore_state s
 
   (* Commands *)
-  | VernacCreateHintDb (dbname,b) -> vernac_create_hintdb ~atts dbname b
-  | VernacRemoveHints (dbnames,ids) -> vernac_remove_hints ~atts dbnames ids
+  | VernacCreateHintDb (dbname,b) ->
+    with_module_locality ~atts vernac_create_hintdb dbname b
+  | VernacRemoveHints (dbnames,ids) ->
+    with_module_locality ~atts vernac_remove_hints dbnames ids
   | VernacHints (dbnames,hints) ->
       vernac_hints ~atts dbnames hints
   | VernacSyntacticDefinition (id,c,b) ->
-      vernac_syntactic_definition ~atts id c b
+      with_module_locality ~atts vernac_syntactic_definition id c b
   | VernacArguments (qid, args, more_implicits, nargs, flags) ->
-      vernac_arguments ~atts qid args more_implicits nargs flags
-  | VernacReserve bl -> vernac_reserve bl
-  | VernacGeneralizable gen -> vernac_generalizable ~atts gen
-  | VernacSetOpacity qidl -> vernac_set_opacity ~atts qidl
-  | VernacSetStrategy l -> vernac_set_strategy ~atts l
-  | VernacSetOption (export, key,v) -> vernac_set_option ~atts export key v
-  | VernacUnsetOption (export, key) -> vernac_unset_option ~atts export key
-  | VernacRemoveOption (key,v) -> vernac_remove_option key v
-  | VernacAddOption (key,v) -> vernac_add_option key v
-  | VernacMemOption (key,v) -> vernac_mem_option key v
-  | VernacPrintOption key -> vernac_print_option key
+      with_section_locality ~atts vernac_arguments qid args more_implicits nargs flags
+  | VernacReserve bl -> unsupported_attributes atts; vernac_reserve bl
+  | VernacGeneralizable gen -> with_locality ~atts vernac_generalizable gen
+  | VernacSetOpacity qidl -> with_locality ~atts vernac_set_opacity qidl
+  | VernacSetStrategy l -> with_locality ~atts vernac_set_strategy l
+  | VernacSetOption (export, key,v) -> vernac_set_option ~local:(only_locality atts) export key v
+  | VernacUnsetOption (export, key) -> vernac_unset_option ~local:(only_locality atts) export key
+  | VernacRemoveOption (key,v) -> unsupported_attributes atts; vernac_remove_option key v
+  | VernacAddOption (key,v) -> unsupported_attributes atts; vernac_add_option key v
+  | VernacMemOption (key,v) -> unsupported_attributes atts; vernac_mem_option key v
+  | VernacPrintOption key -> unsupported_attributes atts; vernac_print_option key
   | VernacCheckMayEval (r,g,c) ->
     Feedback.msg_notice @@ vernac_check_may_eval ~atts r g c
-  | VernacDeclareReduction (s,r) -> vernac_declare_reduction ~atts s r
+  | VernacDeclareReduction (s,r) -> with_locality ~atts vernac_declare_reduction s r
   | VernacGlobalCheck c ->
+    unsupported_attributes atts;
     Feedback.msg_notice @@ vernac_global_check c
   | VernacPrint p ->
     let sigma, env = Pfedit.get_current_context () in
     Feedback.msg_notice @@ vernac_print ~atts env sigma p
-  | VernacSearch (s,g,r) -> vernac_search ~atts s g r
-  | VernacLocate l ->
+  | VernacSearch (s,g,r) -> unsupported_attributes atts; vernac_search ~atts s g r
+  | VernacLocate l -> unsupported_attributes atts;
     Feedback.msg_notice @@ vernac_locate l
-  | VernacRegister (qid, r) -> vernac_register qid r
-  | VernacComments l -> Flags.if_verbose Feedback.msg_info (str "Comments ok\n")
+  | VernacRegister (qid, r) -> unsupported_attributes atts; vernac_register qid r
+  | VernacComments l -> unsupported_attributes atts;
+    Flags.if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* Proof management *)
-  | VernacFocus n -> vernac_focus n
-  | VernacUnfocus -> vernac_unfocus ()
-  | VernacUnfocused ->
+  | VernacFocus n -> unsupported_attributes atts; vernac_focus n
+  | VernacUnfocus -> unsupported_attributes atts; vernac_unfocus ()
+  | VernacUnfocused -> unsupported_attributes atts;
     Feedback.msg_notice @@ vernac_unfocused ()
-  | VernacBullet b -> vernac_bullet b
-  | VernacSubproof n -> vernac_subproof n
-  | VernacEndSubproof -> vernac_end_subproof ()
-  | VernacShow s ->
+  | VernacBullet b -> unsupported_attributes atts; vernac_bullet b
+  | VernacSubproof n -> unsupported_attributes atts; vernac_subproof n
+  | VernacEndSubproof -> unsupported_attributes atts; vernac_end_subproof ()
+  | VernacShow s -> unsupported_attributes atts;
     Feedback.msg_notice @@ vernac_show s
-  | VernacCheckGuard ->
+  | VernacCheckGuard -> unsupported_attributes atts;
     Feedback.msg_notice @@ vernac_check_guard ()
-  | VernacProof (tac, using) ->
+  | VernacProof (tac, using) -> unsupported_attributes atts;
     let using = Option.append using (Proof_using.get_default_proof_using ()) in
     let tacs = if Option.is_empty tac then "tac:no" else "tac:yes" in
     let usings = if Option.is_empty using then "using:no" else "using:yes" in
     Aux_file.record_in_aux_at "VernacProof" (tacs^" "^usings);
     Option.iter vernac_set_end_tac tac;
     Option.iter vernac_set_used_variables using
-  | VernacProofMode mn -> Proof_global.set_proof_mode mn [@ocaml.warning "-3"]
+  | VernacProofMode mn -> unsupported_attributes atts;
+    Proof_global.set_proof_mode mn [@ocaml.warning "-3"]
 
-  | VernacExtend _ -> assert false
-
-(* Vernaculars that take a locality flag *)
-let check_vernac_supports_locality c l =
-  match l, c with
-  | None, _ -> ()
-  | Some _, (
-      VernacOpenCloseScope _
-    | VernacSyntaxExtension _ | VernacInfix _ | VernacNotation _
-    | VernacDeclareScope _ | VernacDelimiters _ | VernacBindScope _
-    | VernacDeclareCustomEntry _
-    | VernacDefinition _ | VernacFixpoint _ | VernacCoFixpoint _
-    | VernacAssumption _ | VernacStartTheoremProof _
-    | VernacCoercion _ | VernacIdentityCoercion _
-    | VernacInstance _ | VernacDeclareInstances _
-    | VernacDeclareMLModule _
-    | VernacCreateHintDb _ | VernacRemoveHints _ | VernacHints _
-    | VernacSyntacticDefinition _
-    | VernacArguments _
-    | VernacGeneralizable _
-    | VernacSetOpacity _ | VernacSetStrategy _
-    | VernacSetOption _ | VernacUnsetOption _
-    | VernacDeclareReduction _
-    | VernacExtend _ 
-    | VernacRegister _
-    | VernacInductive _) -> ()
-  | Some _, _ -> user_err Pp.(str "This command does not support Locality")
-
-
-let interp  ?proof ~atts ~st c =
-  vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
-  match c with
   (* Extensions *)
   | VernacExtend (opn,args) ->
     (* XXX: Here we are returning the state! :) *)
     let _st : Vernacstate.t = Vernacinterp.call ~atts opn args ~st in
     ()
-
-  | _ ->
-    let atts = Attributes.attributes_of_flags atts in
-    check_vernac_supports_locality c atts.locality;
-    interp ?proof ~atts ~st c
-
-(* Vernaculars that take a polymorphism flag *)
-let check_vernac_supports_polymorphism c p =
-  match p, c with
-  | None, _ -> ()
-  | Some _, (
-      VernacDefinition _ | VernacFixpoint _ | VernacCoFixpoint _
-    | VernacAssumption _ | VernacInductive _
-    | VernacStartTheoremProof _
-    | VernacCoercion _ | VernacIdentityCoercion _
-    | VernacInstance _ | VernacDeclareInstances _
-    | VernacHints _ | VernacContext _
-    | VernacExtend _ | VernacUniverse _ | VernacConstraint _) -> ()
-  | Some _, _ -> user_err Pp.(str "This command does not support Polymorphism")
 
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
@@ -2399,7 +2364,7 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
     function
 
     | VernacLoad (_,fname) ->
-      Attributes.unsupported_attributes atts;
+      unsupported_attributes atts;
       vernac_load control fname
 
     | c ->
@@ -2408,7 +2373,6 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
       in
       (* NB: we keep polymorphism and program in the attributes, we're
          just parsing them to do our option magic. *)
-      check_vernac_supports_polymorphism c poly;
       Option.iter Flags.make_universe_polymorphism poly;
       Option.iter Obligations.set_program_mode program;
       try
