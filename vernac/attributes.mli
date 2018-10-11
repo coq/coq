@@ -47,9 +47,6 @@ val universe_poly_template : (bool * bool option) attribute
 val locality : bool option attribute
 val deprecation : deprecation option attribute
 
-val polymorphic_nowarn : bool option attribute
-(** For internal use, avoid warning if not qualified as eg [universes(polymorphic)]. *)
-
 val program_opt : bool option attribute
 (** For internal use when messing with the global option. *)
 
@@ -127,3 +124,10 @@ val make_attribute : (vernac_flags -> vernac_flags * 'a) -> 'a attribute
 (** Compatibility values for parsing [Polymorphic]. *)
 val vernac_polymorphic_flag : vernac_flag
 val vernac_monomorphic_flag : vernac_flag
+
+(** For the stm, do not use! *)
+
+val polymorphic_nowarn : bool attribute
+(** For internal use, avoid warning if not qualified as eg [universes(polymorphic)]. *)
+val universe_polymorphism_option_name : string list
+val is_universe_polymorphism : unit -> bool

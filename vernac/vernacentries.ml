@@ -1491,16 +1491,6 @@ let _ =
       optread  = (fun () -> !Flags.program_mode);
       optwrite = (fun b -> Flags.program_mode:=b) }
 
-let universe_polymorphism_option_name = ["Universe"; "Polymorphism"]
-
-let _ =
-  declare_bool_option
-    { optdepr  = false;
-      optname  = "universe polymorphism";
-      optkey   = universe_polymorphism_option_name;
-      optread  = Flags.is_universe_polymorphism;
-      optwrite = Flags.make_universe_polymorphism }
-
 let _ =
   declare_bool_option
     { optdepr  = false;
@@ -2346,7 +2336,6 @@ let with_fail st b f =
   end
 
 let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
-  let orig_univ_poly = Flags.is_universe_polymorphism () in
   let orig_program_mode = Flags.is_program_mode () in
   let rec control = function
   | VernacExpr (atts, v) ->
@@ -2368,12 +2357,11 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
       vernac_load control fname
 
     | c ->
-      let poly, program = let open Attributes in
-        parse_drop_extra Notations.(polymorphic_nowarn ++ program_opt) atts
+      let program = let open Attributes in
+        parse_drop_extra program_opt atts
       in
       (* NB: we keep polymorphism and program in the attributes, we're
          just parsing them to do our option magic. *)
-      Option.iter Flags.make_universe_polymorphism poly;
       Option.iter Obligations.set_program_mode program;
       try
         vernac_timeout begin fun () ->
@@ -2384,8 +2372,6 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
              we should not restore the previous state of the flag... *)
           if Option.has_some program then
             Flags.program_mode := orig_program_mode;
-          if Option.has_some poly then
-            Flags.make_universe_polymorphism orig_univ_poly;
           end
         with
         | reraise when
@@ -2396,7 +2382,6 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
             let e = CErrors.push reraise in
             let e = locate_if_not_already ?loc e in
             let () = restore_timeout () in
-            Flags.make_universe_polymorphism orig_univ_poly;
             Flags.program_mode := orig_program_mode;
             iraise e
   in

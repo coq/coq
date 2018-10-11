@@ -103,10 +103,6 @@ let auto_intros = ref true
 let make_auto_intros flag = auto_intros := flag
 let is_auto_intros () = !auto_intros
 
-let universe_polymorphism = ref false
-let make_universe_polymorphism b = universe_polymorphism := b
-let is_universe_polymorphism () = !universe_polymorphism
-
 let polymorphic_inductive_cumulativity = ref false
 let make_polymorphic_inductive_cumulativity b = polymorphic_inductive_cumulativity := b
 let is_polymorphic_inductive_cumulativity () = !polymorphic_inductive_cumulativity

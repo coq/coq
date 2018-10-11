@@ -126,8 +126,6 @@ let qualify_attribute qual (parser:'a attribute) : 'a attribute =
     let extra = if rem = [] then extra else (qual, VernacFlagList rem) :: extra in
     extra, v
 
-let polymorphic_base = bool_attribute ~name:"Polymorphism" ~on:"polymorphic" ~off:"monomorphic"
-
 let program_opt = bool_attribute ~name:"Program mode" ~on:"program" ~off:"noprogram"
 
 let program = program_opt >>= function
@@ -154,13 +152,27 @@ let universe_transform ~warn_unqualified : unit attribute =
     in
     atts, ()
 
+let universe_polymorphism_option_name = ["Universe"; "Polymorphism"]
+let is_universe_polymorphism =
+  let b = ref false in
+  let _ = let open Goptions in
+    declare_bool_option
+      { optdepr  = false;
+        optname  = "universe polymorphism";
+        optkey   = universe_polymorphism_option_name;
+        optread  = (fun () -> !b);
+        optwrite = ((:=) b) }
+  in
+  fun () -> !b
+
+let polymorphic_base =
+  bool_attribute ~name:"Polymorphism" ~on:"polymorphic" ~off:"monomorphic" >>= function
+  | Some b -> return b
+  | None -> return (is_universe_polymorphism())
+
 let polymorphic_nowarn =
   universe_transform ~warn_unqualified:false >>
   qualify_attribute ukey polymorphic_base
-
-let polymorphic_base = polymorphic_base >>= function
-  | Some b -> return b
-  | None -> return (Flags.is_universe_polymorphism())
 
 let universe_poly_template =
   let template = bool_attribute ~name:"Template" ~on:"template" ~off:"notemplate" in

@@ -37,8 +37,6 @@ val command_focus : unit Proof.focus_kind
 val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->
   Evd.evar_map * Redexpr.red_expr) Hook.t
 
-val universe_polymorphism_option_name : string list
-
 (** {5 VERNAC EXTEND} *)
 
 type classifier = Genarg.raw_generic_argument list -> Vernacexpr.vernac_classification
