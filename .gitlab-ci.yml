@@ -321,6 +321,19 @@ test-suite:edge+flambda:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
 
+test-suite:egde:dune:dev:
+  stage: test
+  dependencies:
+    - build:egde:dune:dev
+  script: make -f Makefile.dune test-suite
+  variables:
+    OPAM_SWITCH: edge
+  artifacts:
+    name: "$CI_JOB_NAME.logs"
+    when: on_failure
+    paths:
+      - _build/default/test-suite/logs
+
 validate:base:
   <<: *validate-template
   dependencies:

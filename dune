@@ -29,3 +29,8 @@
  (targets revision)
  (deps (:rev-script dev/tools/make_git_revision.sh))
  (action (with-stdout-to revision (run %{rev-script}))))
+
+; Use summary.log as the target
+(alias
+ (name runtest)
+ (deps test-suite/summary.log))

@@ -1,0 +1,8 @@
+(rule
+ (targets all_stdlib.v)
+ (deps
+   (source_tree ../../../theories)
+   (source_tree ../../../plugins))
+ (action
+   (with-outputs-to all_stdlib.v
+    (run ./build_all_stdlib.sh))))
