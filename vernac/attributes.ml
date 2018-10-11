@@ -128,7 +128,11 @@ let qualify_attribute qual (parser:'a attribute) : 'a attribute =
 
 let polymorphic_base = bool_attribute ~name:"Polymorphism" ~on:"polymorphic" ~off:"monomorphic"
 
-let program = bool_attribute ~name:"Program mode" ~on:"program" ~off:"noprogram"
+let program_opt = bool_attribute ~name:"Program mode" ~on:"program" ~off:"noprogram"
+
+let program = program_opt >>= function
+  | Some b -> return b
+  | None -> return (Flags.is_program_mode())
 
 let locality = bool_attribute ~name:"Locality" ~on:"local" ~off:"global"
 
@@ -153,6 +157,10 @@ let universe_transform ~warn_unqualified : unit attribute =
 let polymorphic_nowarn =
   universe_transform ~warn_unqualified:false >>
   qualify_attribute ukey polymorphic_base
+
+let polymorphic_base = polymorphic_base >>= function
+  | Some b -> return b
+  | None -> return (Flags.is_universe_polymorphism())
 
 let universe_poly_template =
   let template = bool_attribute ~name:"Template" ~on:"template" ~off:"notemplate" in
@@ -184,15 +192,11 @@ let attributes_of_flags f =
   let ((locality, deprecated), (polymorphic, template)), program =
     parse (locality ++ deprecation ++ universe_poly_template ++ program) f
   in
-  let polymorphic = Option.default (Flags.is_universe_polymorphism()) polymorphic in
-  let program = Option.default (Flags.is_program_mode()) program in
   { polymorphic; program; locality; template; deprecated }
 
 let only_locality atts = parse locality atts
 
-let only_polymorphism atts =
-  let att = parse polymorphic atts in
-  Option.default (Flags.is_universe_polymorphism ()) att
+let only_polymorphism atts = parse polymorphic atts
 
 
 let vernac_polymorphic_flag = ukey, VernacFlagList ["polymorphic", VernacFlagEmpty]

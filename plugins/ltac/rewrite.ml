@@ -48,8 +48,6 @@ type rewrite_attributes = { polymorphic : bool; program : bool; global : bool }
 let rewrite_attributes =
   let open Attributes.Notations in
   Attributes.(polymorphic ++ program ++ locality) >>= fun ((polymorphic, program), locality) ->
-  let polymorphic = Option.default (Flags.is_universe_polymorphism()) polymorphic in
-  let program = Option.default (Flags.is_program_mode ()) program in
   let global = not (Locality.make_section_locality locality) in
   Attributes.Notations.return { polymorphic; program; global }
 

@@ -2402,7 +2402,7 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
 
     | c ->
       let poly, program = let open Attributes in
-        parse_drop_extra Notations.(polymorphic_nowarn ++ program) atts
+        parse_drop_extra Notations.(polymorphic_nowarn ++ program_opt) atts
       in
       (* NB: we keep polymorphism and program in the attributes, we're
          just parsing them to do our option magic. *)

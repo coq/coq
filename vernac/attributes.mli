@@ -38,14 +38,17 @@ type deprecation = { since : string option ; note : string option }
 
 val mk_deprecation : ?since: string option -> ?note: string option -> unit -> deprecation
 
-val polymorphic : bool option attribute
-val program : bool option attribute
-val universe_poly_template : (bool option * bool option) attribute
+val polymorphic : bool attribute
+val program : bool attribute
+val universe_poly_template : (bool * bool option) attribute
 val locality : bool option attribute
 val deprecation : deprecation option attribute
 
 val polymorphic_nowarn : bool option attribute
 (** For internal use, avoid warning if not qualified as eg [universes(polymorphic)]. *)
+
+val program_opt : bool option attribute
+(** For internal use when messing with the global option. *)
 
 type t = {
   locality : bool option;
