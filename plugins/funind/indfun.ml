@@ -414,7 +414,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
       ComDefinition.do_definition
         ~program_mode:false
 	fname
-	(Decl_kinds.Global,(Flags.is_universe_polymorphism ()),Decl_kinds.Definition) pl
+        (Decl_kinds.Global,false,Decl_kinds.Definition) pl
 	bl None body (Some ret_type) (Lemmas.mk_hook (fun _ _ -> ()));
        let evd,rev_pconstants =
 	 List.fold_left
@@ -431,7 +431,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
        in
        evd,List.rev rev_pconstants
     | _ ->
-       ComFixpoint.do_fixpoint Global (Flags.is_universe_polymorphism ()) fixpoint_exprl;
+       ComFixpoint.do_fixpoint Global false fixpoint_exprl;
        let evd,rev_pconstants =
 	 List.fold_left
            (fun (evd,l) ((({CAst.v=fname},_),_,_,_,_),_) ->
