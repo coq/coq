@@ -103,6 +103,14 @@ rule extend = parse
 | "PLUGIN" { PLUGIN }
 | "DEPRECATED" { DEPRECATED }
 | "CLASSIFIED" { CLASSIFIED }
+| "PRINTED" { PRINTED }
+| "TYPED" { TYPED }
+| "INTERPRETED" { INTERPRETED }
+| "GLOBALIZED" { GLOBALIZED }
+| "SUBSTITUTED" { SUBSTITUTED }
+| "ARGUMENT" { ARGUMENT }
+| "RAW_PRINTED" { RAW_PRINTED }
+| "GLOB_PRINTED" { GLOB_PRINTED }
 | "BY" { BY }
 | "AS" { AS }
 (** Camlp5 specific keywords *)
@@ -133,6 +141,7 @@ rule extend = parse
 | '(' { LPAREN }
 | ')' { RPAREN }
 | '=' { EQUAL }
+| '*' { STAR }
 | _ { lex_error lexbuf "syntax error" }
 | eof { EOF }
 

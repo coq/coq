@@ -43,7 +43,7 @@ let parse_user_entry s sep =
   | [] ->
     let () = without_sep ignore sep () in
     begin match starts s "tactic" with
-    | Some ("0"|"1"|"2"|"3"|"4"|"5") -> Uentryl ("tactic", int_of_string s)
+    | Some ("0"|"1"|"2"|"3"|"4"|"5" as s) -> Uentryl ("tactic", int_of_string s)
     | Some _ | None -> Uentry s
     end
   | (pat1, pat2, k) :: rem ->
@@ -62,9 +62,10 @@ let parse_user_entry s sep =
 %token <string> IDENT QUALID
 %token <string> STRING
 %token <int> INT
-%token VERNAC TACTIC GRAMMAR EXTEND END DECLARE PLUGIN DEPRECATED
-%token COMMAND CLASSIFIED BY AS
-%token LBRACKET RBRACKET PIPE ARROW FUN COMMA EQUAL
+%token VERNAC TACTIC GRAMMAR EXTEND END DECLARE PLUGIN DEPRECATED ARGUMENT
+%token RAW_PRINTED GLOB_PRINTED
+%token COMMAND CLASSIFIED PRINTED TYPED INTERPRETED GLOBALIZED SUBSTITUTED BY AS
+%token LBRACKET RBRACKET PIPE ARROW FUN COMMA EQUAL STAR
 %token LPAREN RPAREN COLON SEMICOLON
 %token GLOBAL FIRST LAST BEFORE AFTER LEVEL LEFTA RIGHTA NONA
 %token EOF
@@ -93,6 +94,7 @@ node:
 | grammar_extend { $1 }
 | vernac_extend { $1 }
 | tactic_extend { $1 }
+| argument_extend { $1 }
 ;
 
 declare_plugin:
@@ -102,6 +104,82 @@ declare_plugin:
 grammar_extend:
 | GRAMMAR EXTEND qualid_or_ident globals gram_entries END
   { GramExt { gramext_name = $3; gramext_globals = $4; gramext_entries = $5 } }
+;
+
+argument_extend:
+| ARGUMENT EXTEND IDENT
+    typed_opt
+    printed_opt
+    interpreted_opt
+    globalized_opt
+    substituted_opt
+    raw_printed_opt
+    glob_printed_opt
+    tactic_rules
+  END
+  { ArgumentExt {
+    argext_name = $3;
+    argext_rules = $11;
+    argext_rprinter = $9;
+    argext_gprinter = $10;
+    argext_tprinter = $5;
+    argext_interp = $6;
+    argext_glob = $7;
+    argext_subst = $8;
+    argext_type = $4;
+  } }
+| VERNAC ARGUMENT EXTEND IDENT printed_opt tactic_rules END
+  { VernacArgumentExt {
+    vernacargext_name = $4;
+    vernacargext_printer = $5;
+    vernacargext_rules = $6;
+  } }
+;
+
+printed_opt:
+| { None }
+| PRINTED BY CODE { Some $3 }
+;
+
+raw_printed_opt:
+| { None }
+| RAW_PRINTED BY CODE { Some $3 }
+;
+
+glob_printed_opt:
+| { None }
+| GLOB_PRINTED BY CODE { Some $3 }
+;
+
+interpreted_opt:
+| { None }
+| INTERPRETED BY CODE { Some $3 }
+;
+
+globalized_opt:
+| { None }
+| GLOBALIZED BY CODE { Some $3 }
+;
+
+substituted_opt:
+| { None }
+| SUBSTITUTED BY CODE { Some $3 }
+;
+
+typed_opt:
+| { None }
+| TYPED AS argtype { Some $3 }
+;
+
+argtype:
+| IDENT { ExtraArgType $1 }
+| argtype IDENT {
+    match $2 with
+    | "list" -> ListArgType $1
+    | "option" ->  OptArgType $1
+    | _ -> raise Parsing.Parse_error
+  }
+| LPAREN argtype STAR argtype RPAREN { PairArgType ($2, $4) }
 ;
 
 vernac_extend:
