@@ -27,6 +27,11 @@ Coqlib:
   command then enables to locate the registered constant through its name. The
   name resolution is dynamic.
 
+Macros:
+
+- The RAW_TYPED AS and GLOB_TYPED AS stanzas of the ARGUMENT EXTEND macro are
+  deprecated. Use TYPED AS instead.
+
 ## Changes between Coq 8.8 and Coq 8.9
 
 ### ML API

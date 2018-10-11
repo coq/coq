@@ -285,9 +285,7 @@ let in_clause' = Pltac.in_clause
 ARGUMENT EXTEND in_clause
   TYPED AS clause_dft_concl
   PRINTED BY pr_in_top_clause
-  RAW_TYPED AS clause_dft_concl
   RAW_PRINTED BY pr_in_clause
-  GLOB_TYPED AS clause_dft_concl
   GLOB_PRINTED BY pr_in_clause
 | [ in_clause'(cl) ] -> [ cl ]
 END

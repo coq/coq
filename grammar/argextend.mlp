@@ -81,38 +81,35 @@ let make_extend loc s cl wit = match cl with
       let () = Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]) in
       $lid:s$ >>
 
-let warning_redundant prefix s =
-  Printf.eprintf "Redundant [%sTYPED AS] clause in [ARGUMENT EXTEND %s].\n%!" prefix s
+let warning_deprecated prefix s = function
+| None -> ()
+| Some _ ->
+  Printf.eprintf "Deprecated [%sTYPED AS] clause in [ARGUMENT EXTEND %s]. \
+                  Use [TYPED AS] instead.\n%!" prefix s
 
-let get_type prefix s = function
+let get_type s = function
 | None -> None
 | Some typ ->
   if is_self s typ then
-    let () = warning_redundant prefix s in None
+    let () = Printf.eprintf "Redundant [TYPED AS] clause in [ARGUMENT EXTEND %s].\n%!" s in
+    None
   else Some typ
-
-let check_type prefix s = function
-| None -> ()
-| Some _ -> warning_redundant prefix s
 
 let declare_tactic_argument loc s (typ, f, g, h) cl =
   let se = mlexpr_of_string s in
-  let rawtyp, rawpr, globtyp, globpr, typ, pr = match typ with
+  let typ, rawpr, globpr, pr = match typ with
     | `Uniform (typ, pr) ->
-      let typ = get_type "" s typ in
-      typ, pr, typ, pr, typ, pr
+      let typ = get_type s typ in
+      typ, pr, pr, pr
     | `Specialized (a, rpr, c, gpr, e, tpr) ->
-      (** Check that we actually need the TYPED AS arguments *)
-      let rawtyp = get_type "RAW_" s a in
-      let glbtyp = get_type "GLOB_" s c in
-      let toptyp = get_type "" s e in
-      let () = match g with None -> () | Some _ -> check_type "RAW_" s rawtyp in
-      let () = match f, h with Some _, Some _ -> check_type "GLOB_" s glbtyp | _ -> () in
-      rawtyp, rpr, glbtyp, gpr, toptyp, tpr
+      let () = warning_deprecated "RAW_" s a in
+      let () = warning_deprecated "GLOB_" s c in
+      let toptyp = get_type s e in
+      toptyp, rpr, gpr, tpr
   in
   let glob = match g with
     | None ->
-      begin match rawtyp with
+      begin match typ with
       | None -> <:expr< fun ist v -> (ist, v) >>
       | Some rawtyp ->
         <:expr< fun ist v ->
@@ -126,9 +123,9 @@ let declare_tactic_argument loc s (typ, f, g, h) cl =
   in
   let interp = match f with
     | None ->
-      begin match globtyp with
+      begin match typ with
       | None ->
-        let typ = match globtyp with None -> ExtraArgType s | Some typ -> typ in
+        let typ = match typ with None -> ExtraArgType s | Some typ -> typ in
         <:expr< fun ist v -> Ftactic.return (Geninterp.Val.inject (Geninterp.val_tag $make_topwit loc typ$) v) >>
       | Some globtyp ->
         <:expr< fun ist x ->
@@ -136,7 +133,7 @@ let declare_tactic_argument loc s (typ, f, g, h) cl =
       end
     | Some f ->
       (** Compatibility layer, TODO: remove me *)
-      let typ = match globtyp with None -> ExtraArgType s | Some typ -> typ in
+      let typ = match typ with None -> ExtraArgType s | Some typ -> typ in
       <:expr<
         let f = $lid:f$ in
         fun ist v -> Ftactic.enter (fun gl ->
@@ -147,7 +144,7 @@ let declare_tactic_argument loc s (typ, f, g, h) cl =
       >> in
   let subst = match h with
     | None ->
-      begin match globtyp with
+      begin match typ with
       | None -> <:expr< fun s v -> v >>
       | Some globtyp ->
         <:expr< fun s x ->

@@ -491,9 +491,10 @@ let mkhintref ?loc c n = match c.CAst.v with
   | _ -> mkAppC (c, mkCHoles ?loc n)
 
 ARGUMENT EXTEND ssrhintref
-                             PRINTED BY pr_ssrhintref
-    RAW_TYPED AS constr  RAW_PRINTED BY pr_raw_ssrhintref
-   GLOB_TYPED AS constr GLOB_PRINTED BY pr_glob_ssrhintref
+  TYPED AS constr
+  PRINTED BY pr_ssrhintref
+  RAW_PRINTED BY pr_raw_ssrhintref
+  GLOB_PRINTED BY pr_glob_ssrhintref
   | [ constr(c) ] -> [ c ]
   | [ constr(c) "|" natural(n) ] -> [ mkhintref ~loc c n ]
 END

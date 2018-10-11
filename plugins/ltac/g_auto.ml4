@@ -62,9 +62,7 @@ let pr_auto_using _ _ _ = Pptactic.pr_auto_using
 ARGUMENT EXTEND auto_using
   TYPED AS uconstr_list
   PRINTED BY pr_auto_using
-  RAW_TYPED AS uconstr_list
   RAW_PRINTED BY pr_auto_using_raw
-  GLOB_TYPED AS uconstr_list
   GLOB_PRINTED BY pr_auto_using_glob
 | [ "using" ne_uconstr_list_sep(l, ",") ] -> [ l ]
 | [ ] -> [ [] ]

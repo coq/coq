@@ -138,9 +138,7 @@ let warn_deprecated_syntax =
 ARGUMENT EXTEND firstorder_using
   TYPED AS reference_list
   PRINTED BY pr_firstorder_using_typed
-  RAW_TYPED AS reference_list
   RAW_PRINTED BY pr_firstorder_using_raw
-  GLOB_TYPED AS reference_list
   GLOB_PRINTED BY pr_firstorder_using_glob
 | [ "using" reference(a) ] -> [ [a] ]
 | [ "using" reference(a) "," ne_reference_list_sep(l,",") ] -> [ a::l ]
