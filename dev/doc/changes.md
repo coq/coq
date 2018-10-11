@@ -19,6 +19,14 @@ Names
   Constant.make3 has been removed, use Constant.make2
   Constant.repr3 has been removed, use Constant.repr2
 
+Coqlib:
+
+- Most functions from the `Coqlib` module have been deprecated in favor of
+  `register_ref` and `lib_ref`. The first one is available through the
+  vernacular `Register` command; it binds a name to a constant. The second
+  command then enables to locate the registered constant through its name. The
+  name resolution is dynamic.
+
 ## Changes between Coq 8.8 and Coq 8.9
 
 ### ML API

@@ -693,12 +693,7 @@ let rewrite_except h =
   end
 
 
-let refl_equal = 
-  let coq_base_constant s =
-    Coqlib.gen_reference_in_modules "RecursiveDefinition"
-      (Coqlib.init_modules @ [["Coq";"Arith";"Le"];["Coq";"Arith";"Lt"]]) s in
-  function () -> (coq_base_constant "eq_refl")
-
+let refl_equal () = Coqlib.lib_ref "core.eq.type"
 
 (* This is simply an implementation of the case_eq tactic.  this code
   should be replaced by a call to the tactic but I don't know how to

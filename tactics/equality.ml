@@ -339,12 +339,17 @@ let jmeq_same_dom env sigma = function
 let find_elim hdcncl lft2rgt dep cls ot =
   Proofview.Goal.enter_one begin fun gl ->
   let sigma = project gl in
-  let is_global gr c = Termops.is_global sigma gr c in
+  let is_global_exists gr c =
+    Coqlib.has_ref gr && Termops.is_global sigma (Coqlib.lib_ref gr) c
+  in
   let inccl = Option.is_empty cls in
   let env = Proofview.Goal.env gl in
-  if (is_global Coqlib.glob_eq hdcncl ||
-      (is_global Coqlib.glob_jmeq hdcncl &&
-	 jmeq_same_dom env sigma ot)) && not dep
+  (* if (is_global Coqlib.glob_eq hdcncl || *)
+  (*     (is_global Coqlib.glob_jmeq hdcncl && *)
+  (*        jmeq_same_dom env sigma ot)) && not dep *)
+  if (is_global_exists "core.eq.type" hdcncl ||
+      (is_global_exists "core.JMeq.type" hdcncl
+       && jmeq_same_dom env sigma ot)) && not dep
   then
     let c = 
       match EConstr.kind sigma hdcncl with 
@@ -588,7 +593,7 @@ let classes_dirpath =
 
 let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
+  else check_required_library ["Coq";"Setoids";"Setoid"]
 
 let check_setoid cl = 
   Option.fold_left
@@ -637,8 +642,8 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   | None ->
     tclFAIL 0 (str"Terms do not have convertible types")
   | Some evd ->
-    let e = build_coq_eq () in
-    let sym = build_coq_eq_sym () in
+    let e = lib_ref "core.eq.type" in
+    let sym = lib_ref "core.eq.sym" in
     Tacticals.New.pf_constr_of_global sym >>= fun sym ->
     Tacticals.New.pf_constr_of_global e >>= fun e ->
     let eq = applist (e, [t1;c1;c2]) in
@@ -930,9 +935,9 @@ let build_selector env sigma dirn c ind special default =
   let ans = Inductiveops.make_case_or_project env sigma indf ci p c (Array.of_list brl) in
   ans
 
-let build_coq_False () = pf_constr_of_global (build_coq_False ())
-let build_coq_True () = pf_constr_of_global (build_coq_True ())
-let build_coq_I () = pf_constr_of_global (build_coq_I ())
+let build_coq_False () = pf_constr_of_global (lib_ref "core.False.type")
+let build_coq_True () = pf_constr_of_global (lib_ref "core.True.type")
+let build_coq_I () = pf_constr_of_global (lib_ref "core.True.I")
 
 let rec build_discriminator env sigma true_0 false_0 dirn c = function
   | [] ->
@@ -1320,15 +1325,15 @@ let inject_if_homogenous_dependent_pair ty =
     let sigma = Tacmach.New.project gl in
     let eq,u,(t,t1,t2) = find_this_eq_data_decompose gl ty in
     (* fetch the informations of the  pair *)
-    let sigTconstr () = (Coqlib.build_sigma_type()).Coqlib.typ in
-    let existTconstr () = (Coqlib.build_sigma_type()).Coqlib.intro in
+    let sigTconstr   = Coqlib.(lib_ref "core.sigT.type") in
+    let existTconstr = Coqlib.lib_ref    "core.sigT.intro" in
     (* check whether the equality deals with dep pairs or not *)
     let eqTypeDest = fst (decompose_app sigma t) in
-    if not (Termops.is_global sigma (sigTconstr()) eqTypeDest) then raise Exit;
+    if not (Termops.is_global sigma sigTconstr eqTypeDest) then raise Exit;
     let hd1,ar1 = decompose_app_vect sigma t1 and
         hd2,ar2 = decompose_app_vect sigma t2 in
-    if not (Termops.is_global sigma (existTconstr()) hd1) then raise Exit;
-    if not (Termops.is_global sigma (existTconstr()) hd2) then raise Exit;
+    if not (Termops.is_global sigma existTconstr hd1) then raise Exit;
+    if not (Termops.is_global sigma existTconstr hd2) then raise Exit;
     let (ind, _), _ = try pf_apply find_mrectype gl ar1.(0) with Not_found -> raise Exit in
     (* check if the user has declared the dec principle *)
     (* and compare the fst arguments of the dep pair *)
@@ -1336,17 +1341,16 @@ let inject_if_homogenous_dependent_pair ty =
     (* knows inductive types *)
     if not (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) ind &&
       pf_apply is_conv gl ar1.(2) ar2.(2)) then raise Exit;
-    Coqlib.check_required_library ["Coq";"Logic";"Eqdep_dec"];
+    check_required_library ["Coq";"Logic";"Eqdep_dec"];
     let new_eq_args = [|pf_unsafe_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
-    let inj2 = Coqlib.coq_reference "inj_pair2_eq_dec is missing" ["Logic";"Eqdep_dec"]
-                                    "inj_pair2_eq_dec" in
+    let inj2 = lib_ref "core.eqdep_dec.inj_pair2" in
     let c, eff = find_scheme (!eq_dec_scheme_kind_name()) ind in
     (* cut with the good equality and prove the requested goal *)
     tclTHENLIST
       [Proofview.tclEFFECTS eff;
        intro;
        onLastHyp (fun hyp ->
-        Tacticals.New.pf_constr_of_global Coqlib.glob_eq >>= fun ceq ->
+        Tacticals.New.pf_constr_of_global Coqlib.(lib_ref "core.eq.type") >>= fun ceq ->
         tclTHENS (cut (mkApp (ceq,new_eq_args)))
           [clear [destVar sigma hyp];
            Tacticals.New.pf_constr_of_global inj2 >>= fun inj2 ->
@@ -1671,8 +1675,8 @@ let _ =
       optwrite = (:=) regular_subst_tactic }
 
 let restrict_to_eq_and_identity eq = (* compatibility *)
-  if not (is_global glob_eq eq) &&
-    not (is_global glob_identity eq) 
+  if not (is_global (lib_ref "core.eq.type") eq) &&
+    not (is_global (lib_ref "core.identity.type") eq)
   then raise Constr_matching.PatternMatchingFailure
 
 exception FoundHyp of (Id.t * constr * bool)

@@ -1200,3 +1200,18 @@ scope of their effect. There are four kinds of commands:
   modifier extends the effect outside the module even when the command
   occurs in a section.  The :cmd:`Set` and :cmd:`Unset` commands belong to this
   category.
+
+.. _exposing-constants-to-ocaml-libraries:
+
+Exposing constants to OCaml libraries
+----------------------------------------------------------------
+
+.. cmd:: Register @qualid__1 as @qualid__2
+
+   This command exposes the constant :n:`@qualid__1` to OCaml libraries under
+   the name :n:`@qualid__2`.  This constant can then be dynamically located
+   calling :n:`Coqlib.lib_ref "@qualid__2"`; i.e., there is no need to known
+   where is the constant defined (file, module, library, etc.).
+
+   Due to its internal nature, this command is not for general use. It is meant
+   to appear only in standard libraries and in support libraries of plug-ins.

@@ -38,11 +38,11 @@ let glob_decompose_app =
 
 (* [glob_make_eq t1 t2] build the glob_constr corresponding to [t2 = t1] *)
 let glob_make_eq ?(typ= mkGHole ()) t1 t2  =
-  mkGApp(mkGRef (Lazy.force Coqlib.coq_eq_ref),[typ;t2;t1])
+  mkGApp(mkGRef (Coqlib.lib_ref "core.eq.type"),[typ;t2;t1])
 
 (* [glob_make_neq t1 t2] build the glob_constr corresponding to [t1 <> t2] *)
 let glob_make_neq t1 t2 =
-  mkGApp(mkGRef (Lazy.force Coqlib.coq_not_ref),[glob_make_eq t1 t2])
+  mkGApp(mkGRef (Coqlib.lib_ref "core.not.type"),[glob_make_eq t1 t2])
 
 let remove_name_from_mapping mapping na =
   match na with

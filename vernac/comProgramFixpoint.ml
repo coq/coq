@@ -23,26 +23,15 @@ module RelDecl = Context.Rel.Declaration
 
 open Coqlib
 
-let contrib_name = "Program"
-let subtac_dir = [contrib_name]
-let fixsub_module = subtac_dir @ ["Wf"]
-(* let tactics_module = subtac_dir @ ["Tactics"] *)
+let init_constant sigma rf = Evarutil.new_global sigma rf
+let fix_sub_ref () = lib_ref "program.wf.fix_sub"
+let measure_on_R_ref () = lib_ref "program.wf.mr"
+let well_founded sigma = init_constant sigma (lib_ref "core.wf.well_founded")
 
-let init_reference dir s () = Coqlib.coq_reference "Command" dir s
-let init_constant dir s sigma =
-  Evarutil.new_global sigma (Coqlib.coq_reference "Command" dir s)
-
-let make_ref l s = init_reference l s
-(* let fix_proto = init_constant tactics_module "fix_proto" *)
-let fix_sub_ref = make_ref fixsub_module "Fix_sub"
-let measure_on_R_ref = make_ref fixsub_module "MR"
-let well_founded = init_constant ["Init"; "Wf"] "well_founded"
 let mkSubset sigma name typ prop =
   let open EConstr in
   let sigma, app_h = Evarutil.new_global sigma (delayed_force build_sigma).typ in
   sigma, mkApp (app_h, [| typ; mkLambda (name, typ, prop) |])
-
-let sigT = Lazy.from_fun build_sigma_type
 
 let make_qref s = qualid_of_string s
 let lt_ref = make_qref "Init.Peano.lt"
@@ -60,8 +49,8 @@ let rec telescope sigma l =
           (fun (sigma, ty, tys, (k, constr)) decl ->
             let t = RelDecl.get_type decl in
             let pred = mkLambda (RelDecl.get_name decl, t, ty) in
-            let sigma, ty = Evarutil.new_global sigma (Lazy.force sigT).typ in
-            let sigma, intro = Evarutil.new_global sigma (Lazy.force sigT).intro in
+            let sigma, ty = Evarutil.new_global sigma (lib_ref "core.sigT.type") in
+            let sigma, intro = Evarutil.new_global sigma (lib_ref "core.sigT.intro") in
             let sigty = mkApp (ty, [|t; pred|]) in
             let intro = mkApp (intro, [|lift k t; lift k pred; mkRel k; constr|]) in
               (sigma, sigty, pred :: tys, (succ k, intro)))
@@ -70,8 +59,8 @@ let rec telescope sigma l =
       let sigma, last, subst = List.fold_right2
         (fun pred decl (sigma, prev, subst) ->
           let t = RelDecl.get_type decl in
-          let sigma, p1 = Evarutil.new_global sigma (Lazy.force sigT).proj1 in
-          let sigma, p2 = Evarutil.new_global sigma (Lazy.force sigT).proj2 in
+          let sigma, p1 = Evarutil.new_global sigma (lib_ref "core.sigT.proj1") in
+          let sigma, p2 = Evarutil.new_global sigma (lib_ref "core.sigT.proj2") in
           let proj1 = applist (p1, [t; pred; prev]) in
           let proj2 = applist (p2, [t; pred; prev]) in
             (sigma, lift 1 proj2, LocalDef (get_name decl, proj1, t) :: subst))

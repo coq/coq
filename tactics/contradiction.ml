@@ -12,7 +12,6 @@ open Constr
 open EConstr
 open Hipattern
 open Tactics
-open Coqlib
 open Reductionops
 open Proofview.Notations
 
@@ -33,8 +32,8 @@ let absurd c =
     let sigma, j = Coercion.inh_coerce_to_sort env sigma j in
     let t = j.Environ.utj_val in
     Proofview.Unsafe.tclEVARS sigma <*>
-    Tacticals.New.pf_constr_of_global (build_coq_not ()) >>= fun coqnot ->
-    Tacticals.New.pf_constr_of_global (build_coq_False ()) >>= fun coqfalse ->
+    Tacticals.New.pf_constr_of_global (Coqlib.(lib_ref "core.not.type")) >>= fun coqnot ->
+    Tacticals.New.pf_constr_of_global (Coqlib.(lib_ref "core.False.type")) >>= fun coqfalse ->
     Tacticals.New.tclTHENLIST [
       elim_type coqfalse;
       Simple.apply (mk_absurd_proof coqnot t)

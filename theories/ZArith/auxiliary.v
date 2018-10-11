@@ -94,3 +94,10 @@ Proof.
  now apply Z.add_lt_mono_l.
 Qed.
 
+Register Zegal_left as plugins.omega.Zegal_left.
+Register Zne_left as plugins.omega.Zne_left.
+Register Zlt_left as plugins.omega.Zlt_left.
+Register Zgt_left as plugins.omega.Zgt_left.
+Register Zle_left as plugins.omega.Zle_left.
+Register Zge_left as plugins.omega.Zge_left.
+Register Zmult_le_approx as plugins.omega.Zmult_le_approx.

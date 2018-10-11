@@ -11,8 +11,6 @@
 open CErrors
 open Util
 
-let init_reference dir s () = Coqlib.coq_reference  "Program" dir s
-
 let papp evdref r args = 
   let open EConstr in
   let gr = delayed_force r in
@@ -20,44 +18,48 @@ let papp evdref r args =
   evdref := evd;
   mkApp (hd, args)
 
-let sig_typ = init_reference ["Init"; "Specif"] "sig"
-let sig_intro = init_reference ["Init"; "Specif"] "exist"
-let sig_proj1 = init_reference ["Init"; "Specif"] "proj1_sig"
+let sig_typ   () = Coqlib.lib_ref "core.sig.type"
+let sig_intro () = Coqlib.lib_ref "core.sig.intro"
+let sig_proj1 () = Coqlib.lib_ref "core.sig.proj1"
+(* let sig_proj2 () = Coqlib.lib_ref "core.sig.proj2" *)
 
-let sigT_typ = init_reference ["Init"; "Specif"] "sigT"
-let sigT_intro = init_reference ["Init"; "Specif"] "existT"
-let sigT_proj1 = init_reference ["Init"; "Specif"] "projT1"
-let sigT_proj2 = init_reference ["Init"; "Specif"] "projT2"
+let sigT_typ   () = Coqlib.lib_ref "core.sigT.type"
+let sigT_intro () = Coqlib.lib_ref "core.sigT.intro"
+let sigT_proj1 () = Coqlib.lib_ref "core.sigT.proj1"
+let sigT_proj2 () = Coqlib.lib_ref "core.sigT.proj2"
 
-let prod_typ = init_reference ["Init"; "Datatypes"] "prod"
-let prod_intro = init_reference ["Init"; "Datatypes"] "pair"
-let prod_proj1 = init_reference ["Init"; "Datatypes"] "fst"
-let prod_proj2 = init_reference ["Init"; "Datatypes"] "snd"
+let prod_typ   () = Coqlib.lib_ref "core.prod.type"
+let prod_intro () = Coqlib.lib_ref "core.prod.intro"
+let prod_proj1 () = Coqlib.lib_ref "core.prod.proj1"
+let prod_proj2 () = Coqlib.lib_ref "core.prod.proj2"
 
-let coq_eq_ind = init_reference ["Init"; "Logic"] "eq"
-let coq_eq_refl = init_reference ["Init"; "Logic"] "eq_refl"
-let coq_eq_refl_ref = init_reference ["Init"; "Logic"] "eq_refl"
-let coq_eq_rect = init_reference ["Init"; "Logic"] "eq_rect"
-
-let coq_JMeq_ind = init_reference ["Logic";"JMeq"] "JMeq"
-let coq_JMeq_refl = init_reference ["Logic";"JMeq"] "JMeq_refl"
-
-let coq_not = init_reference ["Init";"Logic"] "not"
-let coq_and = init_reference ["Init";"Logic"] "and"
+let coq_eq_ind      () = Coqlib.lib_ref "core.eq.type"
+let coq_eq_refl     () = Coqlib.lib_ref "core.eq.refl"
+let coq_eq_refl_ref () = Coqlib.lib_ref "core.eq.refl"
+let coq_eq_rect     () = Coqlib.lib_ref "core.eq.rect"
 
 let mk_coq_not sigma x =
-  let sigma, notc = Evarutil.new_global sigma (coq_not ()) in
+  let sigma, notc = Evarutil.new_global sigma Coqlib.(lib_ref "core.not.type") in
   sigma, EConstr.mkApp (notc, [| x |])
+
+let coq_JMeq_ind  () =
+  try Coqlib.lib_ref "core.JMeq.type"
+  with Not_found ->
+    user_err (Pp.str "cannot find Coq.Logic.JMeq.JMeq; maybe library Coq.Logic.JMeq has to be required first.")
+let coq_JMeq_refl () = Coqlib.lib_ref "core.JMeq.refl"
+
+(* let coq_not () = Universes.constr_of_global @@ Coqlib.lib_ref "core.not.type" *)
+(* let coq_and () = Universes.constr_of_global @@ Coqlib.lib_ref "core.and.type" *)
 
 let unsafe_fold_right f = function
     hd :: tl -> List.fold_right f tl hd
   | [] -> invalid_arg "unsafe_fold_right"
 
 let mk_coq_and sigma l =
-  let sigma, and_typ = Evarutil.new_global sigma (coq_and ()) in
+  let sigma, and_typ = Evarutil.new_global sigma Coqlib.(lib_ref "core.and.type") in
   sigma, unsafe_fold_right
       (fun c conj ->
-	 EConstr.mkApp (and_typ, [| c ; conj |]))
+         EConstr.(mkApp (and_typ, [| c ; conj |])))
       l
 
 (* true = transparent by default, false = opaque if possible *)

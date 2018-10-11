@@ -27,6 +27,10 @@ Require Import Logic.
 Inductive sig (A:Type) (P:A -> Prop) : Type :=
     exist : forall x:A, P x -> sig P.
 
+Register sig as core.sig.type.
+Register exist as core.sig.intro.
+Register sig_rect as core.sig.rect.
+
 Inductive sig2 (A:Type) (P Q:A -> Prop) : Type :=
     exist2 : forall x:A, P x -> Q x -> sig2 P Q.
 
@@ -35,6 +39,10 @@ Inductive sig2 (A:Type) (P Q:A -> Prop) : Type :=
 
 Inductive sigT (A:Type) (P:A -> Type) : Type :=
     existT : forall x:A, P x -> sigT P.
+
+Register sigT as core.sigT.type.
+Register existT as core.sigT.intro.
+Register sigT_rect as core.sigT.rect.
 
 Inductive sigT2 (A:Type) (P Q:A -> Type) : Type :=
     existT2 : forall x:A, P x -> Q x -> sigT2 P Q.
@@ -92,6 +100,9 @@ Section Subset_projections.
     match e return P (proj1_sig e) with
     | exist _ a b => b
     end.
+
+  Register proj1_sig as core.sig.proj1.
+  Register proj2_sig as core.sig.proj2.
 
 End Subset_projections.
 
@@ -151,6 +162,9 @@ Section Projections.
     match x return P (projT1 x) with
     | existT _ _ h => h
     end.
+
+  Register projT1 as core.sigT.proj1.
+  Register projT2 as core.sigT.proj2.
 
 End Projections.
 
@@ -680,6 +694,8 @@ Add Printing If sumbool.
 
 Arguments left {A B} _, [A] B _.
 Arguments right {A B} _ , A [B] _.
+
+Register sumbool as core.sumbool.type.
 
 (** [sumor] is an option type equipped with the justification of why
     it may not be a regular value *)

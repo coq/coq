@@ -114,6 +114,7 @@ let def_of_const t =
        with Not_found -> assert false)
     |_ -> assert false
 
+[@@@ocaml.warning "-3"]
 let coq_constant s =
   UnivGen.constr_of_global @@
   Coqlib.gen_reference_in_modules "RecursiveDefinition"
@@ -441,7 +442,7 @@ let jmeq () =
     Coqlib.check_required_library Coqlib.jmeq_module_name;
     EConstr.of_constr @@
     UnivGen.constr_of_global @@
-      Coqlib.coq_reference "Function" ["Logic";"JMeq"] "JMeq"
+      Coqlib.lib_ref "core.JMeq.type"
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let jmeq_refl () =
@@ -449,7 +450,7 @@ let jmeq_refl () =
     Coqlib.check_required_library Coqlib.jmeq_module_name;
     EConstr.of_constr @@
     UnivGen.constr_of_global @@
-      Coqlib.coq_reference "Function" ["Logic";"JMeq"] "JMeq_refl"
+      Coqlib.lib_ref "core.JMeq.refl"
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let h_intros l =
@@ -461,8 +462,10 @@ let well_founded = function () -> EConstr.of_constr (coq_constant "well_founded"
 let acc_rel = function () -> EConstr.of_constr (coq_constant "Acc")
 let acc_inv_id = function () -> EConstr.of_constr (coq_constant "Acc_inv")
 
+[@@@ocaml.warning "-3"]
 let well_founded_ltof () = EConstr.of_constr @@ UnivGen.constr_of_global @@
-    Coqlib.coq_reference "" ["Arith";"Wf_nat"] "well_founded_ltof"
+    Coqlib.find_reference "IndFun" ["Coq"; "Arith";"Wf_nat"] "well_founded_ltof"
+[@@@ocaml.warning "+3"]
 
 let ltof_ref = function  () -> (find_reference ["Coq";"Arith";"Wf_nat"] "ltof")
 

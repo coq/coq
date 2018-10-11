@@ -46,12 +46,16 @@ let _ = Goptions.declare_bool_option {
 (*******************************************)
 (* Functions to deal with impossible cases *)
 (*******************************************)
-(* XXX: we would like to search for this with late binding
-   "data.id.type" etc... *)
 let impossible_default_case () =
-  let c, ctx = UnivGen.fresh_global_instance (Global.env()) (Globnames.ConstRef Coqlib.id) in
+  let type_of_id =
+    let open Names.GlobRef in
+    match Coqlib.lib_ref "core.IDProp.type" with
+    | ConstRef c -> c
+    | VarRef _ | IndRef _ | ConstructRef _ -> assert false
+  in
+  let c, ctx = UnivGen.fresh_global_instance (Global.env()) (Coqlib.(lib_ref "core.IDProp.idProp")) in
   let (_, u) = Constr.destConst c in
-  Some (c, Constr.mkConstU (Coqlib.type_of_id, u), ctx)
+  Some (c, Constr.mkConstU (type_of_id, u), ctx)
 
 let coq_unit_judge =
   let open Environ in

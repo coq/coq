@@ -41,6 +41,10 @@ Declare Scope bool_scope.
 Delimit Scope bool_scope with bool.
 Bind Scope bool_scope with bool.
 
+Register bool as core.bool.type.
+Register true as core.bool.true.
+Register false as core.bool.false.
+
 (** Basic boolean operators *)
 
 Definition andb (b1 b2:bool) : bool := if b1 then b2 else false.
@@ -62,6 +66,11 @@ Definition negb (b:bool) := if b then false else true.
 Infix "||" := orb : bool_scope.
 Infix "&&" := andb : bool_scope.
 
+Register andb as core.bool.andb.
+Register orb as core.bool.orb.
+Register xorb as core.bool.xorb.
+Register negb as core.bool.negb.
+
 (** Basic properties of [andb] *)
 
 Lemma andb_prop : forall a b:bool, andb a b = true -> a = true /\ b = true.
@@ -70,6 +79,8 @@ Proof.
 Qed.
 Hint Resolve andb_prop: bool.
 
+Register andb_prop as core.bool.andb_prop.
+
 Lemma andb_true_intro :
   forall b1 b2:bool, b1 = true /\ b2 = true -> andb b1 b2 = true.
 Proof.
@@ -77,11 +88,15 @@ Proof.
 Qed.
 Hint Resolve andb_true_intro: bool.
 
+Register andb_true_intro as core.bool.andb_true_intro.
+
 (** Interpretation of booleans as propositions *)
 
 Inductive eq_true : bool -> Prop := is_eq_true : eq_true true.
 
 Hint Constructors eq_true : eq_true.
+
+Register eq_true as core.eq_true.type.
 
 (** Another way of interpreting booleans as propositions *)
 
@@ -141,6 +156,9 @@ Delimit Scope nat_scope with nat.
 Bind Scope nat_scope with nat.
 Arguments S _%nat.
 
+Register nat as num.nat.type.
+Register O as num.nat.O.
+Register S as num.nat.S.
 
 (********************************************************************)
 (** * Container datatypes *)
@@ -155,6 +173,10 @@ Inductive option (A:Type) : Type :=
 
 Arguments Some {A} a.
 Arguments None {A}.
+
+Register option as core.option.type.
+Register Some as core.option.Some.
+Register None as core.option.None.
 
 Definition option_map (A B:Type) (f:A->B) (o : option A) : option B :=
   match o with
@@ -187,11 +209,19 @@ Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope.
 
 Arguments pair {A B} _ _.
 
+Register prod as core.prod.type.
+Register pair as core.prod.intro.
+Register prod_rect as core.prod.rect.
+
 Section projections.
   Context {A : Type} {B : Type}.
 
   Definition fst (p:A * B) := match p with (x, y) => x end.
   Definition snd (p:A * B) := match p with (x, y) => y end.
+
+  Register fst as core.prod.proj1.
+  Register snd as core.prod.proj2.
+
 End projections.
 
 Hint Resolve pair inl inr: core.
@@ -239,6 +269,10 @@ Bind Scope list_scope with list.
 
 Infix "::" := cons (at level 60, right associativity) : list_scope.
 
+Register list as core.list.type.
+Register nil as core.list.nil.
+Register cons as core.list.cons.
+
 Local Open Scope list_scope.
 
 Definition length (A : Type) : list A -> nat :=
@@ -268,6 +302,11 @@ Inductive comparison : Set :=
   | Eq : comparison
   | Lt : comparison
   | Gt : comparison.
+
+Register comparison as core.comparison.type.
+Register Eq as core.comparison.Eq.
+Register Lt as core.comparison.Lt.
+Register Gt as core.comparison.Gt.
 
 Lemma comparison_eq_stable : forall c c' : comparison, ~~ c = c' -> c = c'.
 Proof.
@@ -353,6 +392,10 @@ Arguments identity_ind [A] a P f y i.
 Arguments identity_rec [A] a P f y i.
 Arguments identity_rect [A] a P f y i.
 
+Register identity as core.identity.type.
+Register identity_refl as core.identity.refl.
+Register identity_ind as core.identity.ind.
+
 (** Identity type *)
 
 Definition ID := forall A:Type, A -> A.
@@ -361,6 +404,8 @@ Definition id : ID := fun A x => x.
 Definition IDProp := forall A:Prop, A -> A.
 Definition idProp : IDProp := fun A x => x.
 
+Register IDProp as core.IDProp.type.
+Register idProp as core.IDProp.idProp.
 
 (* begin hide *)
 

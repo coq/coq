@@ -46,6 +46,8 @@ Proof.
  symmetry. apply Nat.sub_1_r.
 Qed.
 
+Register pred_of_minus as num.nat.pred_of_minus.
+
 (** * Diagonal *)
 
 Notation minus_diag := Nat.sub_diag (only parsing). (* n - n = 0 *)

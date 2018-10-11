@@ -451,11 +451,11 @@ let fold_left' f = function
     [] -> invalid_arg "fold_left'"
   | hd :: tl -> List.fold_left f hd tl
 
-let mk_coq_and sigma = Evarutil.new_global sigma (Coqlib.build_coq_and ())
-let mk_coq_conj sigma = Evarutil.new_global sigma (Coqlib.build_coq_conj ())
+let mk_coq_and sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.and.type")
+let mk_coq_conj sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.and.conj")
 
-let mk_coq_prod sigma = Evarutil.new_global sigma (Coqlib.build_coq_prod ())
-let mk_coq_pair sigma = Evarutil.new_global sigma (Coqlib.build_coq_pair ())
+let mk_coq_prod sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.prod.type")
+let mk_coq_pair sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.prod.intro")
 
 let build_combined_scheme env schemes =
   let evdref = ref (Evd.from_env env) in

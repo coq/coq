@@ -311,6 +311,13 @@ let print_strategy r =
     let lvl = get_strategy oracle key in
     pr_strategy (r, lvl)
 
+let print_registered () =
+  let pr_lib_ref (s,r) =
+    pr_global r ++ str " registered as " ++ str s
+  in
+  hov 0 (prlist_with_sep fnl pr_lib_ref @@ Coqlib.get_lib_refs ())
+
+
 let dump_universes_gen g s =
   let output = open_out s in
   let output_constraint, close =
@@ -1866,6 +1873,7 @@ let vernac_print ~atts env sigma =
 	Assumptions.assumptions st ~add_opaque:o ~add_transparent:t gr cstr in
       Printer.pr_assumptionset env sigma nassums
   | PrintStrategy r -> print_strategy r
+  | PrintRegistered -> print_registered ()
 
 let global_module qid =
   try Nametab.full_name_module qid
@@ -1972,14 +1980,14 @@ let vernac_register qid r =
     if not (isConstRef gr) then
       user_err Pp.(str "Register inline: a constant is expected");
     Global.register_inline (destConstRef gr)
-  | RegisterRetroknowledge n ->
+  | RegisterCoqlib n ->
     let path, id = Libnames.repr_qualid n in
     if DirPath.equal path Retroknowledge.int31_path
     then
       let f = Retroknowledge.(KInt31 (int31_field_of_string (Id.to_string id))) in
       Global.register f gr
     else
-      user_err Pp.(str "Register in unknown namespace: " ++ str (DirPath.to_string path))
+      Coqlib.register_ref (Libnames.string_of_qualid n) gr
 
 (********************)
 (* Proof management *)
@@ -2226,7 +2234,7 @@ let interp ?proof ~atts ~st c =
   | VernacSearch (s,g,r) -> vernac_search ~atts s g r
   | VernacLocate l ->
     Feedback.msg_notice @@ vernac_locate l
-  | VernacRegister (id, r) -> vernac_register id r
+  | VernacRegister (qid, r) -> vernac_register qid r
   | VernacComments l -> Flags.if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* Proof management *)
@@ -2278,6 +2286,7 @@ let check_vernac_supports_locality c l =
     | VernacSetOption _ | VernacUnsetOption _
     | VernacDeclareReduction _
     | VernacExtend _ 
+    | VernacRegister _
     | VernacInductive _) -> ()
   | Some _, _ -> user_err Pp.(str "This command does not support Locality")
 

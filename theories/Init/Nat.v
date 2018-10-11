@@ -42,6 +42,8 @@ Definition pred n :=
     | S u => u
   end.
 
+Register pred as num.nat.pred.
+
 Fixpoint add n m :=
   match n with
   | 0 => m
@@ -49,6 +51,8 @@ Fixpoint add n m :=
   end
 
 where "n + m" := (add n m) : nat_scope.
+
+Register add as num.nat.add.
 
 Definition double n := n + n.
 
@@ -60,6 +64,8 @@ Fixpoint mul n m :=
 
 where "n * m" := (mul n m) : nat_scope.
 
+Register mul as num.nat.mul.
+
 (** Truncated subtraction: [n-m] is [0] if [n<=m] *)
 
 Fixpoint sub n m :=
@@ -69,6 +75,8 @@ Fixpoint sub n m :=
   end
 
 where "n - m" := (sub n m) : nat_scope.
+
+Register sub as num.nat.sub.
 
 (** ** Comparisons *)
 

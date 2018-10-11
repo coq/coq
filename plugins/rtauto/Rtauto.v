@@ -387,3 +387,24 @@ exact (Reflect (empty \ A \ B \ C)
 Qed.
 Print toto.
 *)
+
+Register Reflect as plugins.rtauto.Reflect.
+
+Register Atom as plugins.rtauto.Atom.
+Register Arrow as plugins.rtauto.Arrow.
+Register Bot as plugins.rtauto.Bot.
+Register Conjunct as plugins.rtauto.Conjunct.
+Register Disjunct as plugins.rtauto.Disjunct.
+
+Register Ax as plugins.rtauto.Ax.
+Register I_Arrow as plugins.rtauto.I_Arrow.
+Register E_Arrow as plugins.rtauto.E_Arrow.
+Register D_Arrow as plugins.rtauto.D_Arrow.
+Register E_False as plugins.rtauto.E_False.
+Register I_And as plugins.rtauto.I_And.
+Register E_And as plugins.rtauto.E_And.
+Register D_And as plugins.rtauto.D_And.
+Register I_Or_l as plugins.rtauto.I_Or_l.
+Register I_Or_r as plugins.rtauto.I_Or_r.
+Register E_Or as plugins.rtauto.E_Or.
+Register D_Or as plugins.rtauto.D_Or.

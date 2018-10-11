@@ -17,6 +17,8 @@ Export Morphisms.ProperNotations.
 Definition Setoid_Theory := @Equivalence.
 Definition Build_Setoid_Theory := @Build_Equivalence.
 
+Register Build_Setoid_Theory as plugins.setoid_ring.Build_Setoid_Theory.
+
 Definition Seq_refl A Aeq (s : Setoid_Theory A Aeq) : forall x:A, Aeq x x.
 Proof.
   unfold Setoid_Theory in s. intros ; reflexivity.

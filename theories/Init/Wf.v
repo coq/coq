@@ -42,6 +42,8 @@ Section Well_founded.
 
  Definition well_founded := forall a:A, Acc a.
 
+ Register well_founded as core.wf.well_founded.
+
  (** Well-founded induction on [Set] and [Prop] *)
 
  Hypothesis Rwf : well_founded.

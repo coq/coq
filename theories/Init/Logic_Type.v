@@ -51,6 +51,11 @@ Section identity_is_a_congruence.
 
 End identity_is_a_congruence.
 
+Register identity_sym as core.identity.sym.
+Register identity_trans as core.identity.trans.
+Register identity_congr as core.identity.congr.
+
+
 Definition identity_ind_r :
   forall (A:Type) (a:A) (P:A -> Prop), P a -> forall y:A, identity y a -> P y.
  intros A x P H y H0; case identity_sym with (1 := H0); trivial.

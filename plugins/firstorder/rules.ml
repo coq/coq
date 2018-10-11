@@ -234,11 +234,11 @@ let ll_forall_tac prod backtrack id continue seq=
 (* special for compatibility with old Intuition *)
 
 let constant str = UnivGen.constr_of_global
-  @@ Coqlib.coq_reference "User" ["Init";"Logic"] str
+  @@ Coqlib.lib_ref str
 
-let defined_connectives=lazy
-  [AllOccurrences,EvalConstRef (fst (Constr.destConst (constant "not")));
-   AllOccurrences,EvalConstRef (fst (Constr.destConst (constant "iff")))]
+let defined_connectives = lazy
+  [AllOccurrences, EvalConstRef (fst (Constr.destConst (constant "core.not.type")));
+   AllOccurrences, EvalConstRef (fst (Constr.destConst (constant "core.iff.type")))]
 
 let normalize_evaluables=
   Proofview.Goal.enter begin fun gl ->

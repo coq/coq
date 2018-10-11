@@ -3552,12 +3552,13 @@ let error_ind_scheme s =
   let s = if not (String.is_empty s) then s^" " else s in
   user_err ~hdr:"Tactics" (str "Cannot recognize " ++ str s ++ str "an induction scheme.")
 
-let coq_eq sigma       = Evarutil.new_global sigma (Coqlib.build_coq_eq ())
-let coq_eq_refl sigma  = Evarutil.new_global sigma (Coqlib.build_coq_eq_refl ())
+let coq_eq sigma       = Evarutil.new_global sigma Coqlib.(lib_ref "core.eq.type")
+let coq_eq_refl sigma  = Evarutil.new_global sigma Coqlib.(lib_ref "core.eq.refl")
 
-let coq_heq_ref        = lazy (Coqlib.coq_reference"mkHEq" ["Logic";"JMeq"] "JMeq")
+let coq_heq_ref        = lazy (Coqlib.lib_ref "core.JMeq.type")
 let coq_heq sigma      = Evarutil.new_global sigma (Lazy.force coq_heq_ref)
-let coq_heq_refl sigma = Evarutil.new_global sigma (Coqlib.coq_reference "mkHEq" ["Logic";"JMeq"] "JMeq_refl")
+let coq_heq_refl sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.JMeq.refl")
+(* let coq_heq_refl = lazy (glob (lib_ref "core.JMeq.refl")) *)
 
 let mkEq sigma t x y =
   let sigma, eq = coq_eq sigma in
@@ -3789,7 +3790,7 @@ let abstract_args gl generalize_vars dep id defined f args =
 let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
   let open Context.Named.Declaration in
   Proofview.Goal.enter begin fun gl ->
-  Coqlib.check_required_library Coqlib.jmeq_module_name;
+  Coqlib.(check_required_library jmeq_module_name);
   let sigma = Tacmach.New.project gl in
   let (f, args, def, id, oldid) =
     let oldid = Tacmach.New.pf_get_new_id id gl in
@@ -3849,7 +3850,7 @@ let specialize_eqs id =
     match EConstr.kind !evars ty with
     | Prod (na, t, b) ->
 	(match EConstr.kind !evars t with
-	| App (eq, [| eqty; x; y |]) when EConstr.is_global !evars (Lazy.force coq_eq_ref) eq ->
+        | App (eq, [| eqty; x; y |]) when EConstr.is_global !evars Coqlib.(lib_ref "core.eq.type") eq ->
 	    let c = if noccur_between !evars 1 (List.length ctx) x then y else x in
 	    let pt = mkApp (eq, [| eqty; c; c |]) in
             let ind = destInd !evars eq in

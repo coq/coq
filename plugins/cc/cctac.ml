@@ -28,17 +28,13 @@ open Proofview.Notations
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-let reference dir s = lazy (Coqlib.coq_reference "CC" dir s)
-
-let _f_equal = reference ["Init";"Logic"] "f_equal"
-let _eq_rect = reference ["Init";"Logic"] "eq_rect"
-let _refl_equal = reference ["Init";"Logic"] "eq_refl"
-let _sym_eq = reference ["Init";"Logic"] "eq_sym"
-let _trans_eq = reference ["Init";"Logic"] "eq_trans"
-let _eq = reference ["Init";"Logic"] "eq"
-let _False = reference ["Init";"Logic"] "False"
-let _True = reference ["Init";"Logic"] "True"
-let _I = reference ["Init";"Logic"] "I"
+let _f_equal    = lazy (Coqlib.lib_ref "core.eq.congr")
+let _eq_rect    = lazy (Coqlib.lib_ref "core.eq.rect")
+let _refl_equal = lazy (Coqlib.lib_ref "core.eq.refl")
+let _sym_eq     = lazy (Coqlib.lib_ref "core.eq.sym")
+let _trans_eq   = lazy (Coqlib.lib_ref "core.eq.trans")
+let _eq         = lazy (Coqlib.lib_ref "core.eq.type")
+let _False      = lazy (Coqlib.lib_ref "core.False.type")
 
 let whd env sigma t =
   Reductionops.clos_whd_flags CClosure.betaiotazeta env sigma t
@@ -423,7 +419,7 @@ let build_term_to_complete uf pac =
 let cc_tactic depth additionnal_terms =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
-    Coqlib.check_required_library Coqlib.logic_module_name;
+    Coqlib.(check_required_library logic_module_name);
     let _ = debug (fun () -> Pp.str "Reading subgoal ...") in
     let state = make_prb gl depth additionnal_terms in
     let _ = debug (fun () -> Pp.str "Problem built, solving ...") in

@@ -26,49 +26,39 @@ let step_count = ref 0
 
 let node_count = ref 0
 
-let logic_constant s = UnivGen.constr_of_global @@
-  Coqlib.coq_reference "refl_tauto" ["Init";"Logic"] s
+let li_False = lazy (destInd (UnivGen.constr_of_global @@ Coqlib.lib_ref "core.False.type"))
+let li_and   = lazy (destInd (UnivGen.constr_of_global @@ Coqlib.lib_ref "core.and.type"))
+let li_or    = lazy (destInd (UnivGen.constr_of_global @@ Coqlib.lib_ref "core.or.type"))
 
-let li_False = lazy (destInd (logic_constant "False"))
-let li_and   = lazy (destInd (logic_constant "and"))
-let li_or    = lazy (destInd (logic_constant "or"))
+let gen_constant n = lazy (UnivGen.constr_of_global (Coqlib.lib_ref n))
 
-let pos_constant s = UnivGen.constr_of_global @@
-  Coqlib.coq_reference "refl_tauto" ["Numbers";"BinNums"] s
+let l_xI = gen_constant "num.pos.xI"
+let l_xO = gen_constant "num.pos.xO"
+let l_xH = gen_constant "num.pos.xH"
 
-let l_xI = lazy (pos_constant "xI")
-let l_xO = lazy (pos_constant "xO")
-let l_xH = lazy (pos_constant "xH")
+let l_empty = gen_constant "plugins.rtauto.empty"
+let l_push = gen_constant "plugins.rtauto.push"
 
-let store_constant s = UnivGen.constr_of_global @@
-  Coqlib.coq_reference "refl_tauto" ["rtauto";"Bintree"] s
+let l_Reflect = gen_constant "plugins.rtauto.Reflect"
 
-let l_empty = lazy (store_constant "empty")
-let l_push = lazy (store_constant "push")
+let l_Atom = gen_constant "plugins.rtauto.Atom"
+let l_Arrow = gen_constant "plugins.rtauto.Arrow"
+let l_Bot = gen_constant "plugins.rtauto.Bot"
+let l_Conjunct = gen_constant "plugins.rtauto.Conjunct"
+let l_Disjunct = gen_constant "plugins.rtauto.Disjunct"
 
-let constant s = UnivGen.constr_of_global @@
-  Coqlib.coq_reference "refl_tauto" ["rtauto";"Rtauto"] s
-
-let l_Reflect = lazy (constant "Reflect")
-
-let l_Atom = lazy (constant "Atom")
-let l_Arrow = lazy (constant "Arrow")
-let l_Bot = lazy (constant "Bot")
-let l_Conjunct = lazy (constant "Conjunct")
-let l_Disjunct = lazy (constant "Disjunct")
-
-let l_Ax = lazy (constant "Ax")
-let l_I_Arrow = lazy (constant "I_Arrow")
-let l_E_Arrow = lazy (constant "E_Arrow")
-let l_D_Arrow = lazy (constant "D_Arrow")
-let l_E_False = lazy (constant "E_False")
-let l_I_And = lazy (constant "I_And")
-let l_E_And = lazy (constant "E_And")
-let l_D_And = lazy (constant "D_And")
-let l_I_Or_l = lazy (constant "I_Or_l")
-let l_I_Or_r = lazy (constant "I_Or_r")
-let l_E_Or = lazy (constant "E_Or")
-let l_D_Or = lazy (constant "D_Or")
+let l_Ax = gen_constant "plugins.rtauto.Ax"
+let l_I_Arrow = gen_constant "plugins.rtauto.I_Arrow"
+let l_E_Arrow = gen_constant "plugins.rtauto.E_Arrow"
+let l_D_Arrow = gen_constant "plugins.rtauto.D_Arrow"
+let l_E_False = gen_constant "plugins.rtauto.E_False"
+let l_I_And = gen_constant "plugins.rtauto.I_And"
+let l_E_And = gen_constant "plugins.rtauto.E_And"
+let l_D_And = gen_constant "plugins.rtauto.D_And"
+let l_I_Or_l = gen_constant "plugins.rtauto.I_Or_l"
+let l_I_Or_r = gen_constant "plugins.rtauto.I_Or_r"
+let l_E_Or = gen_constant "plugins.rtauto.E_Or"
+let l_D_Or = gen_constant "plugins.rtauto.D_Or"
 
 
 let special_whd gl c =

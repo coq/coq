@@ -237,6 +237,8 @@ Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) "in" hyp(i
 
 Definition fix_proto {A : Type} (a : A) := a.
 
+Register fix_proto as program.tactic.fix_proto.
+
 Ltac destruct_rec_calls :=
   match goal with
     | [ H : fix_proto _ |- _ ] => destruct_calls H ; clear H
@@ -331,3 +333,5 @@ Ltac program_simpl := program_simplify ; try typeclasses eauto 10 with program ;
 Obligation Tactic := program_simpl.
 
 Definition obligation (A : Type) {a : A} := a.
+
+Register obligation as program.tactics.obligation.

@@ -38,6 +38,14 @@ Module Z
 
 Include BinIntDef.Z.
 
+Register add as num.Z.add.
+Register opp as num.Z.opp.
+Register succ as num.Z.succ.
+Register pred as num.Z.pred.
+Register sub as num.Z.sub.
+Register mul as num.Z.mul.
+Register of_nat as num.Z.of_nat.
+
 (** When including property functors, only inline t eq zero one two *)
 
 Set Inline Level 30.
@@ -67,6 +75,11 @@ Notation "( x | y )" := (divide x y) (at level 0).
 
 Definition Even a := exists b, a = 2*b.
 Definition Odd a := exists b, a = 2*b+1.
+
+Register le as num.Z.le.
+Register lt as num.Z.lt.
+Register ge as num.Z.ge.
+Register gt as num.Z.gt.
 
 (** * Decidability of equality. *)
 
@@ -476,6 +489,10 @@ Qed.
     functions. *)
 
 Include ZBasicProp <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
+
+Register eq_decidable as num.Z.eq_decidable.
+Register le_decidable as num.Z.le_decidable.
+Register lt_decidable as num.Z.lt_decidable.
 
 
 (** ** Specification of absolute value *)
@@ -1751,6 +1768,8 @@ weak_Zmult_plus_distr_r (now Z.mul_add_distr_pos)
 (** Obsolete stuff *)
 
 Definition Zne (x y:Z) := x <> y. (* TODO : to remove someday ? *)
+
+Register Zne as plugins.omega.Zne.
 
 Ltac elim_compare com1 com2 :=
   case (Dcompare (com1 ?= com2)%Z);
