@@ -15,7 +15,6 @@ open Names
 open Pp
 open Pcoq
 open Ltac_plugin
-open Genarg
 open Stdarg
 open Tacarg
 open Libnames

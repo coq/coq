@@ -15,7 +15,6 @@ DECLARE PLUGIN "extraction_plugin"
 (* ML names *)
 
 open Ltac_plugin
-open Genarg
 open Stdarg
 open Pp
 open Names

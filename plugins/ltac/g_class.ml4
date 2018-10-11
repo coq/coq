@@ -32,8 +32,6 @@ VERNAC COMMAND EXTEND Typeclasses_Rigid_Settings CLASSIFIED AS SIDEFF
     set_transparency cl false ]
 END
 
-open Genarg
-
 let pr_debug _prc _prlc _prt b =
   if b then Pp.str "debug" else Pp.mt()
 

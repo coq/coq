@@ -13,7 +13,6 @@ open Pp
 open Constrexpr
 open Indfun_common
 open Indfun
-open Genarg
 open Stdarg
 open Tacarg
 open Tactypes

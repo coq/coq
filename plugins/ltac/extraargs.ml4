@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Pp
-open Genarg
 open Stdarg
 open Tacarg
 open Pcoq.Prim

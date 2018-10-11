@@ -10,7 +10,6 @@
 
 open Pp
 open Constr
-open Genarg
 open Stdarg
 open Pcoq.Prim
 open Pcoq.Constr

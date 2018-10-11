@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Ltac_plugin
-open Genarg
 open Pcoq
 open Pcoq.Constr
 open Ssrmatching

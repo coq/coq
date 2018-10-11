@@ -25,7 +25,6 @@ open Notation_ops
 open Notation_term
 open Glob_term
 open Stdarg
-open Genarg
 open Decl_kinds
 open Pp
 open Ppconstr
