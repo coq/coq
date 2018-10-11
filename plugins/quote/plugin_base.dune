@@ -1,5 +1,0 @@
-(library
- (name quote_plugin)
- (public_name coq.plugins.quote)
- (synopsis "Coq's quote plugin")
- (libraries coq.plugins.ltac))

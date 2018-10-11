@@ -2,4 +2,4 @@
  (name newring_plugin)
  (public_name coq.plugins.setoid_ring)
  (synopsis "Coq's setoid ring plugin")
- (libraries coq.plugins.quote))
+ (libraries coq.plugins.ltac))
