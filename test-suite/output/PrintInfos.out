@@ -4,7 +4,7 @@ existT is template universe polymorphic
 Argument A is implicit
 Argument scopes are [type_scope function_scope _ _]
 Expands to: Constructor Coq.Init.Specif.existT
-Inductive sigT (A : Type) (P : A -> Type) : Type :=
+Monomorphic Inductive sigT (A : Type) (P : A -> Type) : Type :=
     existT : forall x : A, P x -> {x : A & P x}
 
 For sigT: Argument A is implicit
@@ -14,7 +14,7 @@ For existT: Argument scopes are [type_scope function_scope _ _]
 existT : forall (A : Type) (P : A -> Type) (x : A), P x -> {x : A & P x}
 
 Argument A is implicit
-Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
+Monomorphic Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
 For eq: Argument A is implicit and maximally inserted
 For eq_refl, when applied to no arguments:
@@ -25,6 +25,7 @@ For eq: Argument scopes are [type_scope _ _]
 For eq_refl: Argument scopes are [type_scope _]
 eq_refl : forall (A : Type) (x : A), x = x
 
+eq_refl is not universe polymorphic
 When applied to no arguments:
   Arguments A, x are implicit and maximally inserted
 When applied to 1 argument:
@@ -37,7 +38,7 @@ When applied to no arguments:
   Arguments A, x are implicit and maximally inserted
 When applied to 1 argument:
   Argument A is implicit
-Nat.add = 
+Monomorphic Nat.add = 
 fix add (n m : nat) {struct n} : nat :=
   match n with
   | 0 => m
@@ -45,9 +46,11 @@ fix add (n m : nat) {struct n} : nat :=
   end
      : nat -> nat -> nat
 
+Nat.add is not universe polymorphic
 Argument scopes are [nat_scope nat_scope]
 Nat.add : nat -> nat -> nat
 
+Nat.add is not universe polymorphic
 Argument scopes are [nat_scope nat_scope]
 Nat.add is transparent
 Expands to: Constant Coq.Init.Nat.add
@@ -55,10 +58,11 @@ Nat.add : nat -> nat -> nat
 
 plus_n_O : forall n : nat, n = n + 0
 
+plus_n_O is not universe polymorphic
 Argument scope is [nat_scope]
 plus_n_O is opaque
 Expands to: Constant Coq.Init.Peano.plus_n_O
-Inductive le (n : nat) : nat -> Prop :=
+Monomorphic Inductive le (n : nat) : nat -> Prop :=
     le_n : n <= n | le_S : forall m : nat, n <= m -> n <= S m
 
 For le_S: Argument m is implicit
@@ -68,18 +72,21 @@ For le_n: Argument scope is [nat_scope]
 For le_S: Argument scopes are [nat_scope nat_scope _]
 comparison : Set
 
+comparison is not universe polymorphic
 Expands to: Inductive Coq.Init.Datatypes.comparison
-Inductive comparison : Set :=
+Monomorphic Inductive comparison : Set :=
     Eq : comparison | Lt : comparison | Gt : comparison
 bar : foo
 
+bar is not universe polymorphic
 Expanded type for implicit arguments
 bar : forall x : nat, x = 0
 
 Argument x is implicit and maximally inserted
 Expands to: Constant PrintInfos.bar
-*** [ bar : foo ]
+Monomorphic *** [ bar : foo ]
 
+bar is not universe polymorphic
 Expanded type for implicit arguments
 bar : forall x : nat, x = 0
 
@@ -87,7 +94,7 @@ Argument x is implicit and maximally inserted
 Module Coq.Init.Peano
 Notation sym_eq := eq_sym
 Expands to: Notation Coq.Init.Logic.sym_eq
-Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
+Monomorphic Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
 For eq: Argument A is implicit and maximally inserted
 For eq_refl, when applied to no arguments:

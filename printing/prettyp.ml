@@ -227,13 +227,11 @@ let print_if_is_coercion ref =
 let print_polymorphism ref =
   let poly = Global.is_polymorphic ref in
   let template_poly = Global.is_template_polymorphic ref in
-  if Flags.is_universe_polymorphism () || poly || template_poly then
-    [ pr_global ref ++ str " is " ++ str
+  [ pr_global ref ++ str " is " ++ str
       (if poly then "universe polymorphic"
        else if template_poly then
 	 "template universe polymorphic"
        else "not universe polymorphic") ]
-  else []
 
 let print_type_in_type ref =
   let unsafe = Global.is_type_in_type ref in

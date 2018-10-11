@@ -1,8 +1,12 @@
-foo = fun '(x, y) => x + y
+Monomorphic foo = fun '(x, y) => x + y
      : nat * nat -> nat
+
+foo is not universe polymorphic
 forall '(a, b), a /\ b
      : Prop
-foo = λ '(x, y), x + y
+Monomorphic foo = λ '(x, y), x + y
      : nat * nat → nat
+
+foo is not universe polymorphic
 ∀ '(a, b), a ∧ b
      : Prop
