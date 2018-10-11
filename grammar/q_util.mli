@@ -50,3 +50,5 @@ val type_of_user_symbol : user_symbol -> argument_type
 val parse_user_entry : string -> string -> user_symbol
 
 val mlexpr_of_symbol : user_symbol -> MLast.expr
+
+val binders_of_tokens : MLast.expr -> extend_token list -> MLast.expr

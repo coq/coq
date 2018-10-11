@@ -142,3 +142,9 @@ let rec mlexpr_of_symbol = function
   assert (e = "tactic");
   let wit = <:expr< $lid:"wit_"^e$ >> in
   <:expr< Extend.TUentryl (Genarg.get_arg_tag $wit$) $mlexpr_of_int l$>>
+
+let rec binders_of_tokens e = function
+| [] -> e
+| ExtNonTerminal(_,None) :: cl -> <:expr< fun _ -> $binders_of_tokens e cl$ >>
+| ExtNonTerminal(_,Some id) :: cl -> <:expr< fun $lid:id$ -> $binders_of_tokens e cl$ >>
+| ExtTerminal _ :: cl -> binders_of_tokens e cl

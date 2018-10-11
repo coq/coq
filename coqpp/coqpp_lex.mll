@@ -95,12 +95,16 @@ rule extend = parse
 | "{" { start_ocaml lexbuf; ocaml lexbuf }
 | "GRAMMAR" { GRAMMAR }
 | "VERNAC" { VERNAC }
+| "COMMAND" { COMMAND }
 | "TACTIC" { TACTIC }
 | "EXTEND" { EXTEND }
 | "END" { END }
 | "DECLARE" { DECLARE }
 | "PLUGIN" { PLUGIN }
 | "DEPRECATED" { DEPRECATED }
+| "CLASSIFIED" { CLASSIFIED }
+| "BY" { BY }
+| "AS" { AS }
 (** Camlp5 specific keywords *)
 | "GLOBAL" { GLOBAL }
 | "FIRST" { FIRST }
@@ -122,6 +126,7 @@ rule extend = parse
 | ']' { RBRACKET }
 | '|' { PIPE }
 | "->" { ARROW }
+| "=>" { FUN }
 | ',' { COMMA }
 | ':' { COLON }
 | ';' { SEMICOLON }

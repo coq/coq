@@ -20,16 +20,8 @@ let plugin_name = <:expr< __coq_plugin_name >>
 let rec mlexpr_of_clause = function
 | [] -> <:expr< TyNil >>
 | ExtTerminal s :: cl -> <:expr< TyIdent($str:s$, $mlexpr_of_clause cl$) >>
-| ExtNonTerminal(g,None) :: cl ->
-  <:expr< TyAnonArg($mlexpr_of_symbol g$, $mlexpr_of_clause cl$) >>
-| ExtNonTerminal(g,Some id) :: cl ->
-  <:expr< TyArg($mlexpr_of_symbol g$, $mlexpr_of_string id$, $mlexpr_of_clause cl$) >>
-
-let rec binders_of_clause e = function
-| [] -> <:expr< fun ist -> $e$ >>
-| ExtNonTerminal(_,None) :: cl -> binders_of_clause e cl
-| ExtNonTerminal(_,Some id) :: cl -> <:expr< fun $lid:id$ -> $binders_of_clause e cl$ >>
-| _ :: cl -> binders_of_clause e cl
+| ExtNonTerminal (g, _) :: cl ->
+  <:expr< TyArg($mlexpr_of_symbol g$, $mlexpr_of_clause cl$) >>
 
 open Pcaml
 
@@ -52,7 +44,8 @@ EXTEND
   tacrule:
     [ [ "["; l = LIST1 tacargs; "]";
         "->"; "["; e = Pcaml.expr; "]" ->
-         <:expr< TyML($mlexpr_of_clause l$, $binders_of_clause e l$) >>
+        let e = <:expr< fun ist -> $e$ >> in
+         <:expr< TyML($mlexpr_of_clause l$, $binders_of_tokens e l$) >>
     ] ]
   ;
 

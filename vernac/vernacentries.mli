@@ -51,7 +51,6 @@ type (_, _) ty_sig =
 | TyNil : (atts:Vernacinterp.atts -> st:Vernacstate.t -> Vernacstate.t, Vernacexpr.vernac_classification) ty_sig
 | TyTerminal : string * ('r, 's) ty_sig -> ('r, 's) ty_sig
 | TyNonTerminal :
-  string option *
   ('a, 'b, 'c) Extend.ty_user_symbol * ('r, 's) ty_sig ->
     ('a -> 'r, 'a -> 's) ty_sig
 

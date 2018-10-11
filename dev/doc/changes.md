@@ -176,7 +176,28 @@ END
 
 #### VERNAC EXTEND
 
-Not handled yet.
+Steps to perform:
+- replace the brackets enclosing OCaml code in actions and rule classifiers with
+  braces
+- if not there yet, add a leading `|̀  to the first rule
+
+Handwritten classifiers declared through the `CLASSIFIED BY` statement are
+considered OCaml code, so they also need to be wrapped in braces.
+
+For instance, code of the form:
+```
+VERNAC COMMAND EXTEND my_command CLASSIFIED BY classifier
+  [ "foo" int(i) ] => [ classif' ] -> [ cmd1 i ]
+| [ "bar" ] -> [ cmd2 ]
+END
+```
+should be turned into
+```
+VERNAC COMMAND EXTEND my_command CLASSIFIED BY { classifier }
+| [ "foo" int(i) ] => { classif' } -> { cmd1 i }
+| [ "bar" ] -> { cmd2 }
+END
+```
 
 #### ARGUMENT EXTEND
 
