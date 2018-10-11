@@ -18,9 +18,6 @@ val mk_hook :
 val call_hook :
   Future.fix_exn -> 'a declaration_hook -> Decl_kinds.locality -> GlobRef.t -> 'a
 
-(** A hook start_proof calls on the type of the definition being started *)
-val set_start_hook : (EConstr.types -> unit) -> unit
-
 val start_proof : Id.t -> ?pl:UState.universe_decl -> goal_kind -> Evd.evar_map ->
   ?terminator:(Proof_global.lemma_possible_guards -> unit declaration_hook -> Proof_global.proof_terminator) ->
   ?sign:Environ.named_context_val -> EConstr.types ->
@@ -62,8 +59,5 @@ val fresh_name_for_anonymous_theorem : unit -> Id.t
 val initialize_named_context_for_proof : unit -> Environ.named_context_val
 
 (** {6 ... } *)
-
-(** A hook the next three functions pass to cook_proof *)
-val set_save_hook : (Proof.t -> unit) -> unit
 
 val save_proof : ?proof:Proof_global.closed_proof -> Vernacexpr.proof_end -> unit
