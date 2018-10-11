@@ -101,13 +101,9 @@ let _ =
 
 (* Util *)
 
-let define id internal ctx c t =
+let define ~poly id internal sigma c t =
   let f = declare_constant ~internal in
-  let univs =
-    if Flags.is_universe_polymorphism ()
-    then Polymorphic_const_entry (Evd.to_universe_context ctx)
-    else Monomorphic_const_entry (Evd.universe_context_set ctx)
-  in
+  let univs = Evd.const_univ_entry ~poly sigma in
   let kn = f id
     (DefinitionEntry
       { const_entry_body = c;
@@ -396,11 +392,17 @@ let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
     lnamedepindsort (Evd.from_env env0,[],None)
   in
   let sigma, listdecl = Indrec.build_mutual_induction_scheme env0 sigma ~force_mutual lrecspec in
+  let poly =
+    (* NB: build_mutual_induction_scheme forces nonempty list of mutual inductives
+       (force_mutual is about the generated schemes) *)
+    let _,_,ind,_ = List.hd lnamedepindsort in
+    Global.is_polymorphic (IndRef ind)
+  in
   let declare decl fi lrecref =
     let decltype = Retyping.get_type_of env0 sigma (EConstr.of_constr decl) in
     let decltype = EConstr.to_constr sigma decltype in
     let proof_output = Future.from_val ((decl,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
-    let cst = define fi UserIndividualRequest sigma proof_output (Some decltype) in
+    let cst = define ~poly fi UserIndividualRequest sigma proof_output (Some decltype) in
     ConstRef cst :: lrecref
   in
   let _ = List.fold_right2 declare listdecl lrecnames [] in
@@ -522,7 +524,14 @@ let do_combined_scheme name schemes =
   in
   let sigma,body,typ = build_combined_scheme (Global.env ()) csts in
   let proof_output = Future.from_val ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
-  ignore (define name.v UserIndividualRequest sigma proof_output (Some typ));
+  (* It is possible for the constants to have different universe
+     polymorphism from each other, however that is only when the user
+     manually defined at least one of them (as Scheme would pick the
+     polymorphism of the inductive block). In that case if they want
+     some other polymorphism they can also manually define the
+     combined scheme. *)
+  let poly = Global.is_polymorphic (ConstRef (List.hd csts)) in
+  ignore (define ~poly name.v UserIndividualRequest sigma proof_output (Some typ));
   fixpoint_message None [name.v]
 
 (**********************************************************************)
