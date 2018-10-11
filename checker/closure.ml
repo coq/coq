@@ -121,9 +121,6 @@ let betaiotazeta = mkflags [fBETA;fIOTA;fZETA]
  * abstractions, storing a representation (of type 'a) of the body of
  * this constant or abstraction.
  *  * i_tab is the cache table of the results
- *  * i_repr is the function to get the representation from the current
- *         state of the cache and the body of the constant. The result
- *         is stored in the table.
  *  * i_rels = (4,[(1,c);(3,d)]) means there are 4 free rel variables
  *    and only those with index 1 and 3 have bodies which are c and d resp.
  *
@@ -156,33 +153,6 @@ end
 
 module KeyTable = Hashtbl.Make(KeyHash)
 
-type 'a infos = {
-  i_flags : reds;
-  i_repr : 'a infos -> constr -> 'a;
-  i_env : env;
-  i_rels : int * (int * constr) list;
-  i_tab : 'a KeyTable.t }
-
-let ref_value_cache info ref =
-  try
-    Some (KeyTable.find info.i_tab ref)
-  with Not_found ->
-  try
-    let body =
-      match ref with
-	| RelKey n ->
-	    let (s,l) = info.i_rels in lift n (Int.List.assoc (s-n) l)
-	| VarKey id -> raise Not_found
-	| ConstKey cst -> constant_value info.i_env cst
-    in
-    let v = info.i_repr info body in
-    KeyTable.add info.i_tab ref v;
-    Some v
-  with
-    | Not_found (* List.assoc *)
-    | NotEvaluableConst _ (* Const *)
-      -> None
-
 let defined_rels flags env =
 (*  if red_local_const (snd flags) then*)
   fold_rel_context
@@ -192,16 +162,6 @@ let defined_rels flags env =
 	   | LocalDef (_,body,_) -> (i+1, (i,body) :: subs))
       (rel_context env) ~init:(0,[])
 (*  else (0,[])*)
-
-let mind_equiv_infos info = mind_equiv info.i_env
-
-let create mk_cl flgs env =
-  { i_flags = flgs;
-    i_repr = mk_cl;
-    i_env = env;
-    i_rels = defined_rels flgs env;
-    i_tab = KeyTable.create 17 }
-
 
 (**********************************************************************)
 (* Lazy reduction: the one used in kernel operations                  *)
@@ -254,6 +214,12 @@ and fterm =
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs
   | FLOCKED
+
+type clos_infos = {
+  i_flags : reds;
+  i_env : env;
+  i_rels : int * (int * constr) list;
+  i_tab : fconstr KeyTable.t }
 
 let fterm_of v = v.term
 let set_norm v = v.norm <- Norm
@@ -371,6 +337,30 @@ let mk_clos e t =
         {norm = Red; term = FCLOS(t,e)}
 
 let mk_clos_vect env v = Array.map (mk_clos env) v
+
+let inject = mk_clos (subs_id 0)
+
+let ref_value_cache info ref =
+  try
+    Some (KeyTable.find info.i_tab ref)
+  with Not_found ->
+  try
+    let body =
+      match ref with
+        | RelKey n ->
+            let (s,l) = info.i_rels in lift n (Int.List.assoc (s-n) l)
+        | VarKey id -> raise Not_found
+        | ConstKey cst -> constant_value info.i_env cst
+    in
+    let v = inject body in
+    KeyTable.add info.i_tab ref v;
+    Some v
+  with
+    | Not_found (* List.assoc *)
+    | NotEvaluableConst _ (* Const *)
+      -> None
+
+let mind_equiv_infos info = mind_equiv info.i_env
 
 (* Translate the head constructor of t from constr to fconstr. This
    function is parameterized by the function to apply on the direct
@@ -783,21 +773,19 @@ let kh info v stk = fapp_stack(kni info v stk)
 let whd_val info v =
   with_stats (lazy (term_of_fconstr (kh info v [])))
 
-let inject = mk_clos (subs_id 0)
-
 let whd_stack infos m stk =
   let k = kni infos m stk in
   let _ = fapp_stack k in (* to unlock Zupdates! *)
   k
-
-(* cache of constants: the body is computed only when needed. *)
-type clos_infos = fconstr infos
 
 let infos_env x = x.i_env
 let infos_flags x = x.i_flags
 let oracle_of_infos x = x.i_env.env_conv_oracle
 
 let create_clos_infos flgs env =
-  create (fun _ -> inject) flgs env
+  { i_flags = flgs;
+    i_env = env;
+    i_rels = defined_rels flgs env;
+    i_tab = KeyTable.create 17 }
 
 let unfold_reference = ref_value_cache
