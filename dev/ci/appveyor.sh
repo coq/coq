@@ -12,4 +12,4 @@ opam init -a mingw https://github.com/fdopen/opam-repository-mingw.git --comp $A
 eval "$(opam config env)"
 opam install -y num ocamlfind camlp5 ounit
 
-cd "$APPVEYOR_BUILD_FOLDER" && ./configure -local && make && make byte && make -C test-suite all INTERACTIVE= && make validate
+cd "$APPVEYOR_BUILD_FOLDER" && ./configure -local && make && make byte && make -C test-suite all INTERACTIVE= # && make validate
