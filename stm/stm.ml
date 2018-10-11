@@ -1077,6 +1077,7 @@ let stm_vernac_interp ?proof ?route id st { verbose; loc; expr } : Vernacstate.t
     | _ -> false
   in
   let aux_interp st expr =
+    (* XXX unsupported attributes *)
     let cmd = Vernacprop.under_control expr in
     if is_filtered_command cmd then
       (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
