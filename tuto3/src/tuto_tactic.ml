@@ -104,7 +104,6 @@ let get_type_of_hyp env id =
 
 let repackage i h_hyps_id = Goal.enter begin fun gl ->
     let env = Goal.env gl in
-    let store = Goal.extra gl in
     let evd = Tacmach.New.project gl in
     let concl = Tacmach.New.pf_concl gl in
     let (ty1 : EConstr.t) = get_type_of_hyp env i in
@@ -116,7 +115,7 @@ let repackage i h_hyps_id = Goal.enter begin fun gl ->
         mkApp (c_R (), [| ty1; ty2; mkVar i;
           mkApp (c_U (), [| ty2; mkVar h_hyps_id|]) |]) in
     Refine.refine ~typecheck:true begin fun evd ->
-      let evd, new_goal = Evarutil.new_evar env evd ~store
+      let evd, new_goal = Evarutil.new_evar env evd
           (mkProd (Names.Name.Anonymous,
                      mkApp(c_H (), [| new_packed_type |]),
                        Vars.lift 1 concl)) in
