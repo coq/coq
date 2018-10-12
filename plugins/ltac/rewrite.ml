@@ -1995,7 +1995,7 @@ let add_morphism_interactive atts m n : Proof_global.t =
   let env = Global.env () in
   let evd = Evd.from_env env in
   let uctx, instance = build_morphism_signature env evd m in
-  let kind = Decl_kinds.Global, atts.polymorphic,
+  let kind = Decl_kinds.Global Decl_kinds.ImportDefaultBehavior, atts.polymorphic,
              Decl_kinds.DefinitionBody Decl_kinds.Instance
   in
   let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in

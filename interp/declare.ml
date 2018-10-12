@@ -39,7 +39,7 @@ type constant_obj = {
   cst_decl : Cooking.recipe option;
   (** Non-empty only when rebuilding a constant after a section *)
   cst_kind : logical_kind;
-  cst_locl : bool;
+  cst_locl : import_status;
 }
 
 type constant_declaration = Safe_typing.private_constants constant_entry * logical_kind
@@ -63,8 +63,9 @@ let cooking_info segment =
 (* Opening means making the name without its module qualification available *)
 let open_constant i ((sp,kn), obj) =
   (* Never open a local definition *)
-  if obj.cst_locl then ()
-  else
+  match obj.cst_locl with
+  | ImportNeedQualified -> ()
+  | ImportDefaultBehavior ->
     let con = Global.constant_of_delta_kn kn in
     Nametab.push (Nametab.Exactly i) sp (ConstRef con)
 
@@ -137,7 +138,7 @@ let register_constant kn kind local =
   update_tables kn
 
 let register_side_effect (c, role) =
-  let () = register_constant c (IsProof Theorem) false in
+  let () = register_constant c (IsProof Theorem) ImportDefaultBehavior in
   match role with
   | Subproof -> ()
   | Schema (ind, kind) -> !declare_scheme kind [|ind,c|]
@@ -175,7 +176,7 @@ let define_constant ?role ?(export_seff=false) id cd =
   let kn, eff = Global.add_constant ?role ~in_section id decl in
   kn, eff, export
 
-let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
+let declare_constant ?(internal = UserIndividualRequest) ?(local = ImportDefaultBehavior) id ?(export_seff=false) (cd, kind) =
   let () = check_exists id in
   let kn, _eff, export = define_constant ~export_seff id cd in
   (* Register the libobjects attached to the constants and its subproofs *)
@@ -183,14 +184,14 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(e
   let () = register_constant kn kind local in
   kn
 
-let declare_private_constant ~role ?(internal=UserIndividualRequest) ?(local = false) id (cd, kind) =
+let declare_private_constant ~role ?(internal=UserIndividualRequest) ?(local = ImportDefaultBehavior) id (cd, kind) =
   let kn, eff, export = define_constant ~role id cd in
   let () = assert (List.is_empty export) in
   let () = register_constant kn kind local in
   kn, eff
 
 let declare_definition ?(internal=UserIndividualRequest)
-  ?(opaque=false) ?(kind=Decl_kinds.Definition) ?(local = false)
+  ?(opaque=false) ?(kind=Decl_kinds.Definition) ?(local = ImportDefaultBehavior)
   id ?types (body,univs) =
   let cb =
     definition_entry ?types ~univs ~opaque body

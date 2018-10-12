@@ -367,7 +367,7 @@ let declare_instance_program env sigma ~global ~poly id pri imps decl term termt
   let hook = Lemmas.mk_hook hook in
   let ctx = Evd.evar_universe_context sigma in
   ignore(Obligations.add_definition id ?term:constr
-           ~univdecl:decl typ ctx ~kind:(Global,poly,Instance) ~hook obls)
+           ~univdecl:decl typ ctx ~kind:(Global ImportDefaultBehavior,poly,Instance) ~hook obls)
 
 
 let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps decl ids term termtype =
@@ -377,7 +377,7 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps decl ids te
      the refinement manually.*)
   let gls = List.rev (Evd.future_goals sigma) in
   let sigma = Evd.reset_future_goals sigma in
-  let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
+  let kind = Decl_kinds.(Global ImportDefaultBehavior, poly, DefinitionBody Instance) in
   let pstate = Lemmas.start_proof id ~pl:decl kind sigma (EConstr.of_constr termtype)
       ~hook:(Lemmas.mk_hook
                (fun _ _ _ -> instance_hook pri global imps ?hook)) in

@@ -12,7 +12,9 @@
 
 type discharge = DoDischarge | NoDischarge
 
-type locality = Discharge | Local | Global
+type import_status = ImportDefaultBehavior | ImportNeedQualified
+
+type locality = Discharge | Global of import_status
 
 type binding_kind = Explicit | Implicit
 
