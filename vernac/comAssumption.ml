@@ -37,11 +37,11 @@ let () =
       optwrite = (:=) axiom_into_instance; }
 
 let should_axiom_into_instance = function
-  | Discharge ->
+  | Context ->
     (* The typeclass behaviour of Variable and Context doesn't depend
        on section status *)
     true
-  | Global | Local -> !axiom_into_instance
+  | Definitional | Logical | Conjectural -> !axiom_into_instance
 
 let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl {CAst.v=ident} =
 match local with
@@ -62,7 +62,7 @@ match local with
   (r,Univ.Instance.empty,true)
 
 | Global | Local | Discharge ->
-  let do_instance = should_axiom_into_instance local in
+  let do_instance = should_axiom_into_instance kind in
   let local = DeclareDef.get_locality ident ~kind:"axiom" local in
   let inl = let open Declaremods in match nl with
     | NoInline -> None
@@ -288,7 +288,7 @@ let context poly l =
       | _ -> false
       in
       let impl = List.exists test impls in
-      let decl = (Discharge, poly, Definitional) in
+      let decl = (Discharge, poly, Context) in
       let nstatus = match b with
       | None ->
         pi3 (declare_assumption false decl (t, univs) UnivNames.empty_binders [] impl

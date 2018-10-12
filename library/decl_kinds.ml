@@ -46,7 +46,7 @@ type definition_object_kind =
   | Method
   | Let
 
-type assumption_object_kind = Definitional | Logical | Conjectural
+type assumption_object_kind = Definitional | Logical | Conjectural | Context
 
 (* [assumption_kind]
 

@@ -91,7 +91,8 @@ let type_of_logical_kind = function
       (match a with
       | Definitional -> "defax"
       | Logical -> "prfax"
-      | Conjectural -> "prfax")
+      | Conjectural -> "prfax"
+      | Context -> "prfax")
   | IsProof th ->
       (match th with
       | Theorem
