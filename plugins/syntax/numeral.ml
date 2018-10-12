@@ -33,11 +33,12 @@ let get_constructors ind =
   Array.to_list
     (Array.mapi (fun j c -> ConstructRef (ind, j + 1)) mc)
 
-let q_z = qualid_of_string "Coq.Numbers.BinNums.Z"
-let q_positive = qualid_of_string "Coq.Numbers.BinNums.positive"
-let q_int = qualid_of_string "Coq.Init.Decimal.int"
-let q_uint = qualid_of_string "Coq.Init.Decimal.uint"
-let q_option = qualid_of_string "Coq.Init.Datatypes.option"
+let qualid_of_ref n =
+  n |> Coqlib.lib_ref |> Nametab.shortest_qualid_of_global Id.Set.empty
+
+let q_int () = qualid_of_ref "num.int.type"
+let q_uint () = qualid_of_ref "num.uint.type"
+let q_option () = qualid_of_ref "core.option.type"
 
 let unsafe_locate_ind q =
   match Nametab.locate q with
@@ -45,14 +46,22 @@ let unsafe_locate_ind q =
   | _ -> raise Not_found
 
 let locate_ind q =
+  let q = q () in
   try unsafe_locate_ind q
   with Not_found -> Nametab.error_global_not_found q
 
 let locate_z () =
-  try
-    Some { z_ty = unsafe_locate_ind q_z;
-           pos_ty = unsafe_locate_ind q_positive }
-  with Not_found -> None
+  let zn = "num.Z.type" in
+  let pn = "num.pos.type" in
+  if Coqlib.has_ref zn && Coqlib.has_ref pn
+  then
+    let q_z = qualid_of_ref zn in
+    let q_pos = qualid_of_ref pn in
+    Some ({
+        z_ty = unsafe_locate_ind q_z;
+        pos_ty = unsafe_locate_ind q_pos;
+    }, mkRefC q_z)
+  else None
 
 let locate_int () =
   { uint = locate_ind q_uint;
@@ -86,11 +95,10 @@ let vernac_numeral_notation local ty f g scope opts =
   let of_ty = Smartlocate.global_with_alias g in
   let cty = mkRefC ty in
   let app x y = mkAppC (x,[y]) in
-  let cref q = mkRefC q in
+  let cref q = mkRefC (q ()) in
   let arrow x y =
     mkProdC ([CAst.make Anonymous],Default Decl_kinds.Explicit, x, y)
   in
-  let cZ = cref q_z in
   let cint = cref q_int in
   let cuint = cref q_uint in
   let coption = cref q_option in
@@ -104,7 +112,7 @@ let vernac_numeral_notation local ty f g scope opts =
     else if has_type f (arrow cuint (opt cty)) then UInt int_ty.uint, Option
     else
       match z_pos_ty with
-      | Some z_pos_ty ->
+      | Some (z_pos_ty, cZ) ->
          if has_type f (arrow cZ cty) then Z z_pos_ty, Direct
          else if has_type f (arrow cZ (opt cty)) then Z z_pos_ty, Option
          else type_error_to f ty false
@@ -118,7 +126,7 @@ let vernac_numeral_notation local ty f g scope opts =
     else if has_type g (arrow cty (opt cuint)) then UInt int_ty.uint, Option
     else
       match z_pos_ty with
-      | Some z_pos_ty ->
+      | Some (z_pos_ty, cZ) ->
          if has_type g (arrow cty cZ) then Z z_pos_ty, Direct
          else if has_type g (arrow cty (opt cZ)) then Z z_pos_ty, Option
          else type_error_of g ty false

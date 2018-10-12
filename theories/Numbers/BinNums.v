@@ -29,6 +29,7 @@ Bind Scope positive_scope with positive.
 Arguments xO _%positive.
 Arguments xI _%positive.
 
+Register positive as num.pos.type.
 Register xI as num.pos.xI.
 Register xO as num.pos.xO.
 Register xH as num.pos.xH.
