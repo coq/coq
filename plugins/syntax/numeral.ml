@@ -36,19 +36,12 @@ let get_constructors ind =
 let qualid_of_ref n =
   n |> Coqlib.lib_ref |> Nametab.shortest_qualid_of_global Id.Set.empty
 
-let q_int () = qualid_of_ref "num.int.type"
-let q_uint () = qualid_of_ref "num.uint.type"
 let q_option () = qualid_of_ref "core.option.type"
 
 let unsafe_locate_ind q =
   match Nametab.locate q with
   | IndRef i -> i
   | _ -> raise Not_found
-
-let locate_ind q =
-  let q = q () in
-  try unsafe_locate_ind q
-  with Not_found -> Nametab.error_global_not_found q
 
 let locate_z () =
   let zn = "num.Z.type" in
@@ -64,8 +57,17 @@ let locate_z () =
   else None
 
 let locate_int () =
-  { uint = locate_ind q_uint;
-    int = locate_ind q_int }
+  let int = "num.int.type" in
+  let uint = "num.uint.type" in
+  if Coqlib.has_ref int && Coqlib.has_ref uint
+  then
+    let q_int = qualid_of_ref int in
+    let q_uint = qualid_of_ref uint in
+    Some ({
+        int = unsafe_locate_ind q_int;
+        uint = unsafe_locate_ind q_uint;
+    }, mkRefC q_int, mkRefC q_uint)
+  else None
 
 let has_type f ty =
   let (sigma, env) = Pfedit.get_current_context () in
@@ -73,19 +75,17 @@ let has_type f ty =
   try let _ = Constrintern.interp_constr env sigma c in true
   with Pretype_errors.PretypeError _ -> false
 
-let type_error_to f ty loadZ =
+let type_error_to f ty =
   CErrors.user_err
     (pr_qualid f ++ str " should go from Decimal.int to " ++
      pr_qualid ty ++ str " or (option " ++ pr_qualid ty ++ str ")." ++
-     fnl () ++ str "Instead of Decimal.int, the types Decimal.uint or Z could be used" ++
-     (if loadZ then str " (require BinNums first)." else str "."))
+     fnl () ++ str "Instead of Decimal.int, the types Decimal.uint or Z could be used (you may need to require BinNums or Decimal first).")
 
-let type_error_of g ty loadZ =
+let type_error_of g ty =
   CErrors.user_err
     (pr_qualid g ++ str " should go from " ++ pr_qualid ty ++
      str " to Decimal.int or (option Decimal.int)." ++ fnl () ++
-     str "Instead of Decimal.int, the types Decimal.uint or Z could be used" ++
-     (if loadZ then str " (require BinNums first)." else str "."))
+     str "Instead of Decimal.int, the types Decimal.uint or Z could be used (you may need to require BinNums or Decimal first).")
 
 let vernac_numeral_notation local ty f g scope opts =
   let int_ty = locate_int () in
@@ -95,42 +95,36 @@ let vernac_numeral_notation local ty f g scope opts =
   let of_ty = Smartlocate.global_with_alias g in
   let cty = mkRefC ty in
   let app x y = mkAppC (x,[y]) in
-  let cref q = mkRefC (q ()) in
   let arrow x y =
     mkProdC ([CAst.make Anonymous],Default Decl_kinds.Explicit, x, y)
   in
-  let cint = cref q_int in
-  let cuint = cref q_uint in
-  let coption = cref q_option in
-  let opt r = app coption r in
+  let opt r = app (mkRefC (q_option ())) r in
   let constructors = get_constructors tyc in
   (* Check the type of f *)
   let to_kind =
-    if has_type f (arrow cint cty) then Int int_ty, Direct
-    else if has_type f (arrow cint (opt cty)) then Int int_ty, Option
-    else if has_type f (arrow cuint cty) then UInt int_ty.uint, Direct
-    else if has_type f (arrow cuint (opt cty)) then UInt int_ty.uint, Option
-    else
-      match z_pos_ty with
-      | Some (z_pos_ty, cZ) ->
-         if has_type f (arrow cZ cty) then Z z_pos_ty, Direct
-         else if has_type f (arrow cZ (opt cty)) then Z z_pos_ty, Option
-         else type_error_to f ty false
-      | None -> type_error_to f ty true
+    match int_ty with
+    | Some (int_ty, cint, _) when has_type f (arrow cint cty) -> Int int_ty, Direct
+    | Some (int_ty, cint, _) when has_type f (arrow cint (opt cty)) -> Int int_ty, Option
+    | Some (int_ty, _, cuint) when has_type f (arrow cuint cty) -> UInt int_ty.uint, Direct
+    | Some (int_ty, _, cuint) when has_type f (arrow cuint (opt cty)) -> UInt int_ty.uint, Option
+    | _ ->
+    match z_pos_ty with
+    | Some (z_pos_ty, cZ) when has_type f (arrow cZ cty) -> Z z_pos_ty, Direct
+    | Some (z_pos_ty, cZ) when has_type f (arrow cZ (opt cty)) -> Z z_pos_ty, Option
+    | _ -> type_error_to f ty
   in
   (* Check the type of g *)
   let of_kind =
-    if has_type g (arrow cty cint) then Int int_ty, Direct
-    else if has_type g (arrow cty (opt cint)) then Int int_ty, Option
-    else if has_type g (arrow cty cuint) then UInt int_ty.uint, Direct
-    else if has_type g (arrow cty (opt cuint)) then UInt int_ty.uint, Option
-    else
-      match z_pos_ty with
-      | Some (z_pos_ty, cZ) ->
-         if has_type g (arrow cty cZ) then Z z_pos_ty, Direct
-         else if has_type g (arrow cty (opt cZ)) then Z z_pos_ty, Option
-         else type_error_of g ty false
-      | None -> type_error_of g ty true
+    match int_ty with
+    | Some (int_ty, cint, _) when has_type g (arrow cty cint) -> Int int_ty, Direct
+    | Some (int_ty, cint, _) when has_type g (arrow cty (opt cint)) -> Int int_ty, Option
+    | Some (int_ty, _, cuint) when has_type g (arrow cty cuint) -> UInt int_ty.uint, Direct
+    | Some (int_ty, _, cuint) when has_type g (arrow cty (opt cuint)) -> UInt int_ty.uint, Option
+    | _ ->
+    match z_pos_ty with
+    | Some (z_pos_ty, cZ) when has_type g (arrow cty cZ) -> Z z_pos_ty, Direct
+    | Some (z_pos_ty, cZ) when has_type g (arrow cty (opt cZ)) -> Z z_pos_ty, Option
+    | _ -> type_error_of g ty
   in
   let o = { to_kind; to_ty; of_kind; of_ty;
             ty_name = ty;
