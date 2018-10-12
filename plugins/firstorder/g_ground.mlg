@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+{
 
 open Ltac_plugin
 open Formula
@@ -21,9 +22,13 @@ open Stdarg
 open Tacarg
 open Pcoq.Prim
 
+}
+
 DECLARE PLUGIN "ground_plugin"
 
 (* declaring search depth as a global option *)
+
+{
 
 let ground_depth=ref 3
 
@@ -65,21 +70,24 @@ let default_intuition_tac =
 let (set_default_solver, default_solver, print_default_solver) = 
   Tactic_option.declare_tactic_option ~default:default_intuition_tac "Firstorder default solver"
 
-VERNAC COMMAND FUNCTIONAL EXTEND Firstorder_Set_Solver CLASSIFIED AS SIDEFF
-| [ "Set" "Firstorder" "Solver" tactic(t) ] -> [
-    fun ~atts ~st -> let open Vernacinterp in
+}
+
+VERNAC COMMAND EXTEND Firstorder_Set_Solver CLASSIFIED AS SIDEFF
+| [ "Set" "Firstorder" "Solver" tactic(t) ] -> {
+    let open Vernacinterp in
       set_default_solver
         (Locality.make_section_locality atts.locality)
-        (Tacintern.glob_tactic t);
-        st
-  ]
+        (Tacintern.glob_tactic t)
+  }
 END
 
 VERNAC COMMAND EXTEND Firstorder_Print_Solver CLASSIFIED AS QUERY
-| [ "Print" "Firstorder" "Solver" ] -> [
+| [ "Print" "Firstorder" "Solver" ] -> {
     Feedback.msg_info
-      (Pp.(++) (Pp.str"Firstorder solver tactic is ") (print_default_solver ())) ]
+      (Pp.(++) (Pp.str"Firstorder solver tactic is ") (print_default_solver ())) }
 END
+
+{
 
 let fail_solver=tclFAIL 0 (Pp.str "GTauto failed")
 
@@ -133,32 +141,33 @@ let warn_deprecated_syntax =
   CWarnings.create ~name:"firstorder-deprecated-syntax" ~category:"deprecated"
     (fun () -> Pp.strbrk "Deprecated syntax; use \",\" as separator")
 
+}
 
 ARGUMENT EXTEND firstorder_using
-  TYPED AS reference_list
-  PRINTED BY pr_firstorder_using_typed
-  RAW_PRINTED BY pr_firstorder_using_raw
-  GLOB_PRINTED BY pr_firstorder_using_glob
-| [ "using" reference(a) ] -> [ [a] ]
-| [ "using" reference(a) "," ne_reference_list_sep(l,",") ] -> [ a::l ]
-| [ "using" reference(a) reference(b) reference_list(l) ] -> [
+  TYPED AS reference list
+  PRINTED BY { pr_firstorder_using_typed }
+  RAW_PRINTED BY { pr_firstorder_using_raw }
+  GLOB_PRINTED BY { pr_firstorder_using_glob }
+| [ "using" reference(a) ] -> { [a] }
+| [ "using" reference(a) "," ne_reference_list_sep(l,",") ] -> { a::l }
+| [ "using" reference(a) reference(b) reference_list(l) ] -> {
     warn_deprecated_syntax ();
     a::b::l
-  ]
-| [ ] -> [ [] ]
+  }
+| [ ] -> { [] }
 END
 
 TACTIC EXTEND firstorder
-    [ "firstorder" tactic_opt(t) firstorder_using(l) ] ->
-      [ gen_ground_tac true (Option.map (tactic_of_value ist) t) l [] ]
+|   [ "firstorder" tactic_opt(t) firstorder_using(l) ] ->
+      { gen_ground_tac true (Option.map (tactic_of_value ist) t) l [] }
 |   [ "firstorder" tactic_opt(t) "with" ne_preident_list(l) ] ->
-      [ gen_ground_tac true (Option.map (tactic_of_value ist) t) [] l ]
+      { gen_ground_tac true (Option.map (tactic_of_value ist) t) [] l }
 |   [ "firstorder" tactic_opt(t) firstorder_using(l)
        "with" ne_preident_list(l') ] ->
-      [ gen_ground_tac true (Option.map (tactic_of_value ist) t) l l' ]
+      { gen_ground_tac true (Option.map (tactic_of_value ist) t) l l' }
 END
 
 TACTIC EXTEND gintuition
-  [ "gintuition" tactic_opt(t) ] ->
-     [ gen_ground_tac false (Option.map (tactic_of_value ist) t) [] [] ]
+| [ "gintuition" tactic_opt(t) ] ->
+     { gen_ground_tac false (Option.map (tactic_of_value ist) t) [] [] }
 END

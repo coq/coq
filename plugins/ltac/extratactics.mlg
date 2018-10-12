@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+{
+
 open Pp
 open Constr
 open Genarg
@@ -30,7 +32,13 @@ open Tactics
 open Proofview.Notations
 open Vernacinterp
 
+let wit_hyp = wit_var
+
+}
+
 DECLARE PLUGIN "ltac_plugin"
+
+{
 
 (**********************************************************************)
 (* replace, discriminate, injection, simplify_eq                      *)
@@ -43,7 +51,7 @@ let with_delayed_uconstr ist c tac =
     use_hook = Pfedit.solve_by_implicit_tactic ();
     fail_evar = false;
     expand_evars = true
-  } in
+ } in
   let c = Tacinterp.type_uconstr ~flags ist c in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
@@ -54,25 +62,29 @@ let replace_in_clause_maybe_by ist c1 c2 cl tac =
 let replace_term ist dir_opt c cl =
   with_delayed_uconstr ist c (fun c -> replace_term dir_opt c cl)
 
+}
+
 TACTIC EXTEND replace
-   ["replace" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
--> [ replace_in_clause_maybe_by ist c1 c2 cl tac ]
+| ["replace" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
+-> { replace_in_clause_maybe_by ist c1 c2 cl tac }
 END
 
 TACTIC EXTEND replace_term_left
-  [ "replace"  "->" uconstr(c) clause(cl) ]
-  -> [ replace_term ist (Some true) c cl ]
+| [ "replace"  "->" uconstr(c) clause(cl) ]
+  -> { replace_term ist (Some true) c cl }
 END
 
 TACTIC EXTEND replace_term_right
-  [ "replace"  "<-" uconstr(c) clause(cl) ]
-  -> [ replace_term ist (Some false) c cl ]
+| [ "replace"  "<-" uconstr(c) clause(cl) ]
+  -> { replace_term ist (Some false) c cl }
 END
 
 TACTIC EXTEND replace_term
-  [ "replace" uconstr(c) clause(cl) ]
-  -> [ replace_term ist None c cl ]
+| [ "replace" uconstr(c) clause(cl) ]
+  -> { replace_term ist None c cl }
 END
+
+{
 
 let induction_arg_of_quantified_hyp = function
   | AnonHyp n -> None,ElimOnAnonHyp n
@@ -94,27 +106,35 @@ let elimOnConstrWithHoles tac with_evars c =
   Tacticals.New.tclDELAYEDWITHHOLES with_evars c
     (fun c -> tac with_evars (Some (None,ElimOnConstr c)))
 
+}
+
 TACTIC EXTEND simplify_eq
-  [ "simplify_eq" ] -> [ dEq ~keep_proofs:None false None ]
-| [ "simplify_eq" destruction_arg(c) ] -> [ mytclWithHoles (dEq ~keep_proofs:None) false c ]
+| [ "simplify_eq" ] -> { dEq ~keep_proofs:None false None }
+| [ "simplify_eq" destruction_arg(c) ] -> { mytclWithHoles (dEq ~keep_proofs:None) false c }
 END
 TACTIC EXTEND esimplify_eq
-| [ "esimplify_eq" ] -> [ dEq ~keep_proofs:None true None ]
-| [ "esimplify_eq" destruction_arg(c) ] -> [ mytclWithHoles (dEq ~keep_proofs:None) true c ]
+| [ "esimplify_eq" ] -> { dEq ~keep_proofs:None true None }
+| [ "esimplify_eq" destruction_arg(c) ] -> { mytclWithHoles (dEq ~keep_proofs:None) true c }
 END
+
+{
 
 let discr_main c = elimOnConstrWithHoles discr_tac false c
 
+}
+
 TACTIC EXTEND discriminate
-| [ "discriminate" ] -> [ discr_tac false None ]
+| [ "discriminate" ] -> { discr_tac false None }
 | [ "discriminate" destruction_arg(c) ] ->
-    [ mytclWithHoles discr_tac false c ]
+    { mytclWithHoles discr_tac false c }
 END
 TACTIC EXTEND ediscriminate
-| [ "ediscriminate" ] -> [ discr_tac true None ]
+| [ "ediscriminate" ] -> { discr_tac true None }
 | [ "ediscriminate" destruction_arg(c) ] ->
-    [ mytclWithHoles discr_tac true c ]
+    { mytclWithHoles discr_tac true c }
 END
+
+{
 
 let discrHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
@@ -123,39 +143,45 @@ let discrHyp id =
 let injection_main with_evars c =
  elimOnConstrWithHoles (injClause None None) with_evars c
 
+}
+
 TACTIC EXTEND injection
-| [ "injection" ] -> [ injClause None None false None ]
-| [ "injection" destruction_arg(c) ] -> [ mytclWithHoles (injClause None None) false c ]
+| [ "injection" ] -> { injClause None None false None }
+| [ "injection" destruction_arg(c) ] -> { mytclWithHoles (injClause None None) false c }
 END
 TACTIC EXTEND einjection
-| [ "einjection" ] -> [ injClause None None true None ]
-| [ "einjection" destruction_arg(c) ] -> [ mytclWithHoles (injClause None None) true c ]
+| [ "einjection" ] -> { injClause None None true None }
+| [ "einjection" destruction_arg(c) ] -> { mytclWithHoles (injClause None None) true c }
 END
 TACTIC EXTEND injection_as
 | [ "injection" "as" intropattern_list(ipat)] ->
-    [ injClause None (Some ipat) false None ]
+    { injClause None (Some ipat) false None }
 | [ "injection" destruction_arg(c) "as" intropattern_list(ipat)] ->
-    [ mytclWithHoles (injClause None (Some ipat)) false c ]
+    { mytclWithHoles (injClause None (Some ipat)) false c }
 END
 TACTIC EXTEND einjection_as
 | [ "einjection" "as" intropattern_list(ipat)] ->
-    [ injClause None (Some ipat) true None ]
+    { injClause None (Some ipat) true None }
 | [ "einjection" destruction_arg(c) "as" intropattern_list(ipat)] ->
-    [ mytclWithHoles (injClause None (Some ipat)) true c ]
+    { mytclWithHoles (injClause None (Some ipat)) true c }
 END
 TACTIC EXTEND simple_injection
-| [ "simple" "injection" ] -> [ simpleInjClause None false None ]
-| [ "simple" "injection" destruction_arg(c) ] -> [ mytclWithHoles (simpleInjClause None) false c ]
+| [ "simple" "injection" ] -> { simpleInjClause None false None }
+| [ "simple" "injection" destruction_arg(c) ] -> { mytclWithHoles (simpleInjClause None) false c }
 END
+
+{
 
 let injHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
   injection_main false (fun env sigma -> (sigma, (EConstr.mkVar id, NoBindings)))
 
+}
+
 TACTIC EXTEND dependent_rewrite
-| [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
+| [ "dependent" "rewrite" orient(b) constr(c) ] -> { rewriteInConcl b c }
 | [ "dependent" "rewrite" orient(b) constr(c) "in" hyp(id) ]
-    -> [ rewriteInHyp b c id ]
+    -> { rewriteInHyp b c id }
 END
 
 (** To be deprecated?, "cutrewrite (t=u) as <-" is equivalent to
@@ -163,42 +189,52 @@ END
     "cutrewrite (t=u) as ->" is equivalent to "enough (t=u) as ->". *)
 
 TACTIC EXTEND cut_rewrite
-| [ "cutrewrite" orient(b) constr(eqn) ] -> [ cutRewriteInConcl b eqn ]
+| [ "cutrewrite" orient(b) constr(eqn) ] -> { cutRewriteInConcl b eqn }
 | [ "cutrewrite" orient(b) constr(eqn) "in" hyp(id) ]
-    -> [ cutRewriteInHyp b eqn id ]
+    -> { cutRewriteInHyp b eqn id }
 END
 
 (**********************************************************************)
 (* Decompose                                                          *)
 
 TACTIC EXTEND decompose_sum
-| [ "decompose" "sum" constr(c) ] -> [ Elim.h_decompose_or c ]
+| [ "decompose" "sum" constr(c) ] -> { Elim.h_decompose_or c }
 END
 
 TACTIC EXTEND decompose_record
-| [ "decompose" "record" constr(c) ] -> [ Elim.h_decompose_and c ]
+| [ "decompose" "record" constr(c) ] -> { Elim.h_decompose_and c }
 END
 
 (**********************************************************************)
 (* Contradiction                                                      *)
 
+{
+
 open Contradiction
 
+}
+
 TACTIC EXTEND absurd
- [ "absurd" constr(c) ] -> [ absurd c ]
+| [ "absurd" constr(c) ] -> { absurd c }
 END
+
+{
 
 let onSomeWithHoles tac = function
   | None -> tac None
   | Some c -> Tacticals.New.tclDELAYEDWITHHOLES false c (fun c -> tac (Some c))
 
+}
+
 TACTIC EXTEND contradiction
- [ "contradiction" constr_with_bindings_opt(c) ] ->
-    [ onSomeWithHoles contradiction c ]
+| [ "contradiction" constr_with_bindings_opt(c) ] ->
+    { onSomeWithHoles contradiction c }
 END
 
 (**********************************************************************)
 (* AutoRewrite                                                        *)
+
+{
 
 open Autorewrite
 
@@ -209,49 +245,57 @@ let pr_orient _prc _prlc _prt = function
 let pr_orient_string _prc _prlc _prt (orient, s) =
   pr_orient _prc _prlc _prt orient ++ Pp.spc () ++ Pp.str s
 
-ARGUMENT EXTEND orient_string TYPED AS (bool * string) PRINTED BY pr_orient_string
-| [ orient(r) preident(i) ] -> [ r, i ]
+}
+
+ARGUMENT EXTEND orient_string TYPED AS (bool * string) PRINTED BY { pr_orient_string }
+| [ orient(r) preident(i) ] -> { r, i }
 END
 
 TACTIC EXTEND autorewrite
 | [ "autorewrite" "with" ne_preident_list(l) clause(cl) ] ->
-    [ auto_multi_rewrite  l ( cl) ]
+    { auto_multi_rewrite  l ( cl) }
 | [ "autorewrite" "with" ne_preident_list(l) clause(cl) "using" tactic(t) ] ->
-    [
+    {
       auto_multi_rewrite_with (Tacinterp.tactic_of_value ist t) l cl
-    ]
+   }
 END
 
 TACTIC EXTEND autorewrite_star
 | [ "autorewrite" "*" "with" ne_preident_list(l) clause(cl) ] ->
-    [ auto_multi_rewrite ~conds:AllMatches l cl ]
+    { auto_multi_rewrite ~conds:AllMatches l cl }
 | [ "autorewrite" "*" "with" ne_preident_list(l) clause(cl) "using" tactic(t) ] ->
-  [ auto_multi_rewrite_with ~conds:AllMatches (Tacinterp.tactic_of_value ist t) l cl ]
+  { auto_multi_rewrite_with ~conds:AllMatches (Tacinterp.tactic_of_value ist t) l cl }
 END
 
 (**********************************************************************)
 (* Rewrite star                                                       *)
+
+{
 
 let rewrite_star ist clause orient occs c (tac : Geninterp.Val.t option) =
   let tac' = Option.map (fun t -> Tacinterp.tactic_of_value ist t, FirstSolved) tac in
   with_delayed_uconstr ist c
     (fun c -> general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true)
 
+}
+
 TACTIC EXTEND rewrite_star
 | [ "rewrite" "*" orient(o) uconstr(c) "in" hyp(id) "at" occurrences(occ) by_arg_tac(tac) ] ->
-    [ rewrite_star ist (Some id) o (occurrences_of occ) c tac ]
+    { rewrite_star ist (Some id) o (occurrences_of occ) c tac }
 | [ "rewrite" "*" orient(o) uconstr(c) "at" occurrences(occ) "in" hyp(id) by_arg_tac(tac) ] ->
-    [ rewrite_star ist (Some id) o (occurrences_of occ) c tac ]
+    { rewrite_star ist (Some id) o (occurrences_of occ) c tac }
 | [ "rewrite" "*" orient(o) uconstr(c) "in" hyp(id) by_arg_tac(tac) ] ->
-    [ rewrite_star ist (Some id) o Locus.AllOccurrences c tac ]
+    { rewrite_star ist (Some id) o Locus.AllOccurrences c tac }
 | [ "rewrite" "*" orient(o) uconstr(c) "at" occurrences(occ) by_arg_tac(tac) ] ->
-    [ rewrite_star ist None o (occurrences_of occ) c tac ]
+    { rewrite_star ist None o (occurrences_of occ) c tac }
 | [ "rewrite" "*" orient(o) uconstr(c) by_arg_tac(tac) ] ->
-    [ rewrite_star ist None o Locus.AllOccurrences c tac ]
+    { rewrite_star ist None o Locus.AllOccurrences c tac }
     END
 
 (**********************************************************************)
 (* Hint Rewrite                                                       *)
+
+{
 
 let add_rewrite_hint ~poly bases ort t lcsr =
   let env = Global.env() in
@@ -274,20 +318,24 @@ let add_rewrite_hint ~poly bases ort t lcsr =
 
 let classify_hint _ = Vernacexpr.VtSideff [], Vernacexpr.VtLater
 
-VERNAC COMMAND FUNCTIONAL EXTEND HintRewrite CLASSIFIED BY classify_hint
-  [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
-  [ fun ~atts ~st -> add_rewrite_hint ~poly:atts.polymorphic bl o None l; st ]
+}
+
+VERNAC COMMAND EXTEND HintRewrite CLASSIFIED BY { classify_hint }
+| [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
+  { add_rewrite_hint ~poly:atts.polymorphic bl o None l }
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
     ":" preident_list(bl) ] ->
-  [ fun ~atts ~st -> add_rewrite_hint ~poly:atts.polymorphic bl o (Some t) l; st ]
+  { add_rewrite_hint ~poly:atts.polymorphic bl o (Some t) l }
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
-  [ fun ~atts ~st -> add_rewrite_hint ~poly:atts.polymorphic ["core"] o None l; st ]
+  { add_rewrite_hint ~poly:atts.polymorphic ["core"] o None l }
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
-  [ fun ~atts ~st -> add_rewrite_hint ~poly:atts.polymorphic ["core"] o (Some t) l; st ]
+  { add_rewrite_hint ~poly:atts.polymorphic ["core"] o (Some t) l }
 END
 
 (**********************************************************************)
 (* Refine                                                             *)
+
+{
 
 open EConstr
 open Vars
@@ -304,7 +352,7 @@ let refine_tac ist simple with_classes c =
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let flags =
-      { constr_flags () with Pretyping.use_typeclasses = with_classes } in
+      { (constr_flags ()) with Pretyping.use_typeclasses = with_classes } in
     let expected_type = Pretyping.OfType concl in
     let c = Tacinterp.type_uconstr ~flags ~expected_type ist c in
     let update = begin fun sigma ->
@@ -317,103 +365,117 @@ let refine_tac ist simple with_classes c =
            Proofview.shelve_unifiable
   end
 
+}
+
 TACTIC EXTEND refine
 | [ "refine" uconstr(c) ] ->
-   [ refine_tac ist false true c ]
+   { refine_tac ist false true c }
 END
 
 TACTIC EXTEND simple_refine
 | [ "simple" "refine" uconstr(c) ] ->
-   [ refine_tac ist true true c ]
+   { refine_tac ist true true c }
 END
 
 TACTIC EXTEND notcs_refine
 | [ "notypeclasses" "refine" uconstr(c) ] ->
-   [ refine_tac ist false false c ]
+   { refine_tac ist false false c }
 END
 
 TACTIC EXTEND notcs_simple_refine
 | [ "simple" "notypeclasses" "refine" uconstr(c) ] ->
-   [ refine_tac ist true false c ]
+   { refine_tac ist true false c }
 END
 
 (* Solve unification constraints using heuristics or fail if any remain *)
 TACTIC EXTEND solve_constraints
-[ "solve_constraints" ] -> [ Refine.solve_constraints ]
+| [ "solve_constraints" ] -> { Refine.solve_constraints }
 END
 
 (**********************************************************************)
 (* Inversion lemmas (Leminv)                                          *)
+
+{
 
 open Inv
 open Leminv
 
 let seff id = Vernacexpr.VtSideff [id], Vernacexpr.VtLater
 
+}
+
 (*VERNAC ARGUMENT EXTEND sort_family
-| [ "Set" ] -> [ InSet ]
-| [ "Prop" ] -> [ InProp ]
-| [ "Type" ] -> [ InType ]
+| [ "Set" ] -> { InSet }
+| [ "Prop" ] -> { InProp }
+| [ "Type" ] -> { InType }
 END*)
 
-VERNAC COMMAND FUNCTIONAL EXTEND DeriveInversionClear
+VERNAC COMMAND EXTEND DeriveInversionClear
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
-  => [ seff na ]
-  -> [ fun ~atts ~st ->
+  => { seff na }
+  -> {
       let open Vernacinterp in
-      add_inversion_lemma_exn ~poly:atts.polymorphic na c s false inv_clear_tac; st ]
+      add_inversion_lemma_exn ~poly:atts.polymorphic na c s false inv_clear_tac }
 
-| [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => [ seff na ]
-  -> [ fun ~atts ~st ->
+| [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => { seff na }
+  -> {
       let open Vernacinterp in
-      add_inversion_lemma_exn ~poly:atts.polymorphic na c Sorts.InProp false inv_clear_tac; st ]
+      add_inversion_lemma_exn ~poly:atts.polymorphic na c Sorts.InProp false inv_clear_tac }
 END
 
-VERNAC COMMAND FUNCTIONAL EXTEND DeriveInversion
+VERNAC COMMAND EXTEND DeriveInversion
 | [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
-  => [ seff na ]
-  -> [ fun ~atts ~st ->
+  => { seff na }
+  -> {
       let open Vernacinterp in
-      add_inversion_lemma_exn ~poly:atts.polymorphic na c s false inv_tac; st ]
+      add_inversion_lemma_exn ~poly:atts.polymorphic na c s false inv_tac }
 
-| [ "Derive" "Inversion" ident(na) "with" constr(c) ] => [ seff na ]
-  -> [ fun ~atts ~st ->
+| [ "Derive" "Inversion" ident(na) "with" constr(c) ] => { seff na }
+  -> {
       let open Vernacinterp in
-      add_inversion_lemma_exn ~poly:atts.polymorphic na c Sorts.InProp false inv_tac; st ]
+      add_inversion_lemma_exn ~poly:atts.polymorphic na c Sorts.InProp false inv_tac }
 END
 
-VERNAC COMMAND FUNCTIONAL EXTEND DeriveDependentInversion
+VERNAC COMMAND EXTEND DeriveDependentInversion
 | [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
-  => [ seff na ]
-  -> [  fun ~atts ~st ->
+  => { seff na }
+  -> {
       let open Vernacinterp in
-      add_inversion_lemma_exn ~poly:atts.polymorphic na c s true dinv_tac; st ]
+      add_inversion_lemma_exn ~poly:atts.polymorphic na c s true dinv_tac }
 END
 
-VERNAC COMMAND FUNCTIONAL EXTEND DeriveDependentInversionClear
+VERNAC COMMAND EXTEND DeriveDependentInversionClear
 | [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
-  => [ seff na ]
-  -> [  fun ~atts ~st ->
+  => { seff na }
+  -> {
       let open Vernacinterp in
-      add_inversion_lemma_exn ~poly:atts.polymorphic na c s true dinv_clear_tac; st ]
+      add_inversion_lemma_exn ~poly:atts.polymorphic na c s true dinv_clear_tac }
 END
 
 (**********************************************************************)
 (* Subst                                                              *)
 
 TACTIC EXTEND subst
-| [ "subst" ne_var_list(l) ] -> [ subst l ]
-| [ "subst" ] -> [ subst_all () ]
+| [ "subst" ne_var_list(l) ] -> { subst l }
+| [ "subst" ] -> { subst_all () }
 END
+
+{
 
 let simple_subst_tactic_flags =
   { only_leibniz = true; rewrite_dependent_proof = false }
 
+}
+
 TACTIC EXTEND simple_subst
-| [ "simple" "subst" ] -> [ subst_all ~flags:simple_subst_tactic_flags () ]
+| [ "simple" "subst" ] -> { subst_all ~flags:simple_subst_tactic_flags () }
 END
 
+{
+
 open Evar_tactics
+
+}
 
 (**********************************************************************)
 (* Evar creation                                                      *)
@@ -421,20 +483,22 @@ open Evar_tactics
 (* TODO: add support for some test similar to g_constr.name_colon so that
    expressions like "evar (list A)" do not raise a syntax error *)
 TACTIC EXTEND evar
-  [ "evar" test_lpar_id_colon "(" ident(id) ":" lconstr(typ) ")" ] -> [ let_evar (Name.Name id) typ ]
-| [ "evar" constr(typ) ] -> [ let_evar Name.Anonymous typ ]
+| [ "evar" test_lpar_id_colon "(" ident(id) ":" lconstr(typ) ")" ] -> { let_evar (Name.Name id) typ }
+| [ "evar" constr(typ) ] -> { let_evar Name.Anonymous typ }
 END
 
 TACTIC EXTEND instantiate
-  [ "instantiate" "(" ident(id) ":=" lglob(c) ")" ] ->
-    [ Tacticals.New.tclTHEN (instantiate_tac_by_name id c) Proofview.V82.nf_evar_goals ]
+| [ "instantiate" "(" ident(id) ":=" lglob(c) ")" ] ->
+    { Tacticals.New.tclTHEN (instantiate_tac_by_name id c) Proofview.V82.nf_evar_goals }
 | [ "instantiate" "(" integer(i) ":=" lglob(c) ")" hloc(hl) ] ->
-    [ Tacticals.New.tclTHEN (instantiate_tac i c hl) Proofview.V82.nf_evar_goals ]
-| [ "instantiate" ] -> [ Proofview.V82.nf_evar_goals ]
+    { Tacticals.New.tclTHEN (instantiate_tac i c hl) Proofview.V82.nf_evar_goals }
+| [ "instantiate" ] -> { Proofview.V82.nf_evar_goals }
 END
 
 (**********************************************************************)
 (** Nijmegen "step" tactic for setoid rewriting                       *)
+
+{
 
 open Tactics
 open Glob_term
@@ -489,27 +553,31 @@ let add_transitivity_lemma left lem =
   let lem' = EConstr.to_constr sigma lem' in
   add_anonymous_leaf (inTransitivity (left,lem'))
 
+}
+
 (* Vernacular syntax *)
 
 TACTIC EXTEND stepl
-| ["stepl" constr(c) "by" tactic(tac) ] -> [ step true c (Tacinterp.tactic_of_value ist tac) ]
-| ["stepl" constr(c) ] -> [ step true c (Proofview.tclUNIT ()) ]
+| ["stepl" constr(c) "by" tactic(tac) ] -> { step true c (Tacinterp.tactic_of_value ist tac) }
+| ["stepl" constr(c) ] -> { step true c (Proofview.tclUNIT ()) }
 END
 
 TACTIC EXTEND stepr
-| ["stepr" constr(c) "by" tactic(tac) ] -> [ step false c (Tacinterp.tactic_of_value ist tac) ]
-| ["stepr" constr(c) ] -> [ step false c (Proofview.tclUNIT ()) ]
+| ["stepr" constr(c) "by" tactic(tac) ] -> { step false c (Tacinterp.tactic_of_value ist tac) }
+| ["stepr" constr(c) ] -> { step false c (Proofview.tclUNIT ()) }
 END
 
 VERNAC COMMAND EXTEND AddStepl CLASSIFIED AS SIDEFF
 | [ "Declare" "Left" "Step" constr(t) ] ->
-    [ add_transitivity_lemma true t ]
+    { add_transitivity_lemma true t }
 END
 
 VERNAC COMMAND EXTEND AddStepr CLASSIFIED AS SIDEFF
 | [ "Declare" "Right" "Step" constr(t) ] ->
-    [ add_transitivity_lemma false t ]
+    { add_transitivity_lemma false t }
 END
+
+{
 
 let cache_implicit_tactic (_,tac) = match tac with
   | Some tac -> Pfedit.declare_implicit_tactic (Tacinterp.eval_tactic tac)
@@ -537,9 +605,11 @@ let clear_implicit_tactic () =
   let () = warn_deprecated_implicit_tactic () in
   Lib.add_anonymous_leaf (inImplicitTactic None)
 
+}
+
 VERNAC COMMAND EXTEND ImplicitTactic CLASSIFIED AS SIDEFF
-| [ "Declare" "Implicit" "Tactic" tactic(tac) ] -> [ declare_implicit_tactic tac ]
-| [ "Clear" "Implicit" "Tactic" ] -> [ clear_implicit_tactic () ]
+| [ "Declare" "Implicit" "Tactic" tactic(tac) ] -> { declare_implicit_tactic tac }
+| [ "Clear" "Implicit" "Tactic" ] -> { clear_implicit_tactic () }
 END
 
 
@@ -549,16 +619,16 @@ END
 (* sozeau: abs/gen for induction on instantiated dependent inductives, using "Ford" induction as
   defined by Conor McBride *)
 TACTIC EXTEND generalize_eqs
-| ["generalize_eqs" hyp(id) ] -> [ abstract_generalize ~generalize_vars:false id ]
+| ["generalize_eqs" hyp(id) ] -> { abstract_generalize ~generalize_vars:false id }
 END
 TACTIC EXTEND dep_generalize_eqs
-| ["dependent" "generalize_eqs" hyp(id) ] -> [ abstract_generalize ~generalize_vars:false ~force_dep:true id ]
+| ["dependent" "generalize_eqs" hyp(id) ] -> { abstract_generalize ~generalize_vars:false ~force_dep:true id }
 END
 TACTIC EXTEND generalize_eqs_vars
-| ["generalize_eqs_vars" hyp(id) ] -> [ abstract_generalize ~generalize_vars:true id ]
+| ["generalize_eqs_vars" hyp(id) ] -> { abstract_generalize ~generalize_vars:true id }
 END
 TACTIC EXTEND dep_generalize_eqs_vars
-| ["dependent" "generalize_eqs_vars" hyp(id) ] -> [ abstract_generalize ~force_dep:true ~generalize_vars:true id ]
+| ["dependent" "generalize_eqs_vars" hyp(id) ] -> { abstract_generalize ~force_dep:true ~generalize_vars:true id }
 END
 
 (** Tactic to automatically simplify hypotheses of the form [Π Δ, x_i = t_i -> T] 
@@ -566,7 +636,7 @@ END
     during dependent induction. For internal use. *)
 
 TACTIC EXTEND specialize_eqs
-[ "specialize_eqs" hyp(id) ] -> [ specialize_eqs id ]
+| [ "specialize_eqs" hyp(id) ] -> { specialize_eqs id }
 END
 
 (**********************************************************************)
@@ -576,6 +646,8 @@ END
 (*                                                                    *)
 (* Contributed by Chung-Kil Hur (Winter 2009)                         *)
 (**********************************************************************)
+
+{
 
 let subst_var_with_hole occ tid t = 
   let occref = if occ > 0 then ref occ else Find_subterm.error_invalid_occurrence [occ] in
@@ -593,7 +665,7 @@ let subst_var_with_hole occ tid t =
                   Evar_kinds.qm_obligation=Evar_kinds.Define true;
                   Evar_kinds.qm_name=Anonymous;
                   Evar_kinds.qm_record_field=None;
-              }, IntroAnonymous, None)))
+             }, IntroAnonymous, None)))
         else x
     | _ -> map_glob_constr_left_to_right substrec x in
   let t' = substrec t
@@ -608,7 +680,7 @@ let subst_hole_with_term occ tc t =
                 Evar_kinds.qm_obligation=Evar_kinds.Define true;
                 Evar_kinds.qm_name=Anonymous;
                 Evar_kinds.qm_record_field=None;
-            }, IntroAnonymous, s) ->
+           }, IntroAnonymous, s) ->
         decr occref;
         if Int.equal !occref 0 then tc
         else
@@ -618,7 +690,7 @@ let subst_hole_with_term occ tc t =
                Evar_kinds.qm_obligation=Evar_kinds.Define true;
                Evar_kinds.qm_name=Anonymous;
                Evar_kinds.qm_record_field=None;
-           },IntroAnonymous,s))
+          },IntroAnonymous,s))
     | _ -> map_glob_constr_left_to_right substrec c
   in
   substrec t
@@ -659,9 +731,11 @@ let hResolve_auto id c t =
   in
   resolve_auto 1
 
+}
+
 TACTIC EXTEND hresolve_core
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> [ hResolve id c occ t ]
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> [ hResolve_auto id c t ]
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> { hResolve id c occ t }
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> { hResolve_auto id c t }
 END
 
 (**
@@ -669,7 +743,7 @@ END
 *)
 
 TACTIC EXTEND hget_evar
-| [ "hget_evar" int_or_var(n) ] -> [ Evar_tactics.hget_evar n ]
+| [ "hget_evar" int_or_var(n) ] -> { Evar_tactics.hget_evar n }
 END
 
 (**********************************************************************)
@@ -681,6 +755,8 @@ END
 (* preserved).                                                        *)
 (* Contributed by Julien Forest and Pierre Courtieu (july 2010)       *)
 (**********************************************************************)
+
+{
 
 exception Found of unit Proofview.tactic
 
@@ -763,9 +839,11 @@ let destauto_in id =
   destauto ctype
   end
 
+}
+
 TACTIC EXTEND destauto
-| [ "destauto" ] -> [ Proofview.Goal.enter begin fun gl -> destauto (Proofview.Goal.concl gl) end ]
-| [ "destauto" "in" hyp(id) ] -> [ destauto_in id ]
+| [ "destauto" ] -> { Proofview.Goal.enter begin fun gl -> destauto (Proofview.Goal.concl gl) end }
+| [ "destauto" "in" hyp(id) ] -> { destauto_in id }
 END
 
 (**********************************************************************)
@@ -776,116 +854,116 @@ END
 (**********************************************************************)
 
 TACTIC EXTEND transparent_abstract
-| [ "transparent_abstract" tactic3(t) ] -> [ Proofview.Goal.enter begin fun gl ->
-      Tactics.tclABSTRACT ~opaque:false None (Tacinterp.tactic_of_value ist t) end ]
-| [ "transparent_abstract" tactic3(t) "using" ident(id) ] -> [ Proofview.Goal.enter begin fun gl ->
-      Tactics.tclABSTRACT ~opaque:false (Some id) (Tacinterp.tactic_of_value ist t) end ]
+| [ "transparent_abstract" tactic3(t) ] -> { Proofview.Goal.enter begin fun gl ->
+      Tactics.tclABSTRACT ~opaque:false None (Tacinterp.tactic_of_value ist t) end }
+| [ "transparent_abstract" tactic3(t) "using" ident(id) ] -> { Proofview.Goal.enter begin fun gl ->
+      Tactics.tclABSTRACT ~opaque:false (Some id) (Tacinterp.tactic_of_value ist t) end }
 END
 
 (* ********************************************************************* *)
 
 TACTIC EXTEND constr_eq
-| [ "constr_eq" constr(x) constr(y) ] -> [ Tactics.constr_eq ~strict:false x y ]
+| [ "constr_eq" constr(x) constr(y) ] -> { Tactics.constr_eq ~strict:false x y }
 END
 
 TACTIC EXTEND constr_eq_strict
-| [ "constr_eq_strict" constr(x) constr(y) ] -> [ Tactics.constr_eq ~strict:true x y ]
+| [ "constr_eq_strict" constr(x) constr(y) ] -> { Tactics.constr_eq ~strict:true x y }
 END
 
 TACTIC EXTEND constr_eq_nounivs
-| [ "constr_eq_nounivs" constr(x) constr(y) ] -> [
+| [ "constr_eq_nounivs" constr(x) constr(y) ] -> {
     Proofview.tclEVARMAP >>= fun sigma ->
-    if eq_constr_nounivs sigma x y then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (str "Not equal") ]
+    if eq_constr_nounivs sigma x y then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (str "Not equal") }
 END
 
 TACTIC EXTEND is_evar
-| [ "is_evar" constr(x) ] -> [
+| [ "is_evar" constr(x) ] -> {
     Proofview.tclEVARMAP >>= fun sigma ->
     match EConstr.kind sigma x with
       | Evar _ -> Proofview.tclUNIT ()
       | _ -> Tacticals.New.tclFAIL 0 (str "Not an evar")
-    ]
+   }
 END
 
 TACTIC EXTEND has_evar
-| [ "has_evar" constr(x) ] -> [
+| [ "has_evar" constr(x) ] -> {
   Proofview.tclEVARMAP >>= fun sigma ->
   if Evarutil.has_undefined_evars sigma x
   then Proofview.tclUNIT ()
   else Tacticals.New.tclFAIL 0 (str "No evars")
-]
+}
 END
 
 TACTIC EXTEND is_hyp
-| [ "is_var" constr(x) ] -> [
+| [ "is_var" constr(x) ] -> {
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Var _ ->  Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (str "Not a variable or hypothesis") ]
+    | _ -> Tacticals.New.tclFAIL 0 (str "Not a variable or hypothesis") }
 END
 
 TACTIC EXTEND is_fix
-| [ "is_fix" constr(x) ] -> [
+| [ "is_fix" constr(x) ] -> {
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Fix _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a fix definition") ]
-END;;
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a fix definition") }
+END
 
 TACTIC EXTEND is_cofix
-| [ "is_cofix" constr(x) ] -> [
+| [ "is_cofix" constr(x) ] -> {
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | CoFix _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a cofix definition") ]
-END;;
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a cofix definition") }
+END
 
 TACTIC EXTEND is_ind
-| [ "is_ind" constr(x) ] -> [
+| [ "is_ind" constr(x) ] -> {
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Ind _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not an (co)inductive datatype") ]
-END;;
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not an (co)inductive datatype") }
+END
 
 TACTIC EXTEND is_constructor
-| [ "is_constructor" constr(x) ] -> [
+| [ "is_constructor" constr(x) ] -> {
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Construct _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constructor") ]
-END;;
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constructor") }
+END
 
 TACTIC EXTEND is_proj
-| [ "is_proj" constr(x) ] -> [
+| [ "is_proj" constr(x) ] -> {
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Proj _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a primitive projection") ]
-END;;
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a primitive projection") }
+END
 
 TACTIC EXTEND is_const
-| [ "is_const" constr(x) ] -> [
+| [ "is_const" constr(x) ] -> {
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with
     | Const _ -> Proofview.tclUNIT ()
-    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constant") ]
-END;;
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constant") }
+END
 
 (* Command to grab the evars left unresolved at the end of a proof. *)
 (* spiwack: I put it in extratactics because it is somewhat tied with
    the semantics of the LCF-style tactics, hence with the classic tactic
    mode. *)
 VERNAC COMMAND EXTEND GrabEvars
-[ "Grab" "Existential" "Variables" ]
-  => [ Vernac_classifier.classify_as_proofstep ]
-  -> [ Proof_global.simple_with_current_proof (fun _ p  -> Proof.V82.grab_evars p) ]
+| [ "Grab" "Existential" "Variables" ]
+  => { Vernac_classifier.classify_as_proofstep }
+  -> { Proof_global.simple_with_current_proof (fun _ p  -> Proof.V82.grab_evars p) }
 END
 
 (* Shelves all the goals under focus. *)
 TACTIC EXTEND shelve
 | [ "shelve" ] ->
-    [ Proofview.shelve ]
+    { Proofview.shelve }
 END
 
 (* Shelves the unifiable goals under focus, i.e. the goals which
@@ -893,25 +971,25 @@ END
    considered). *)
 TACTIC EXTEND shelve_unifiable
 | [ "shelve_unifiable" ] ->
-    [ Proofview.shelve_unifiable ]
+    { Proofview.shelve_unifiable }
 END
 
 (* Unshelves the goal shelved by the tactic. *)
 TACTIC EXTEND unshelve
 | [ "unshelve" tactic1(t) ] ->
-    [
+    {
       Proofview.with_shelf (Tacinterp.tactic_of_value ist t) >>= fun (gls, ()) ->
       let gls = List.map Proofview.with_empty_state gls in
       Proofview.Unsafe.tclGETGOALS >>= fun ogls ->
       Proofview.Unsafe.tclSETGOALS (gls @ ogls)
-    ]
+   }
 END
 
 (* Command to add every unshelved variables to the focus *)
 VERNAC COMMAND EXTEND Unshelve
-[ "Unshelve" ]
-  => [ Vernac_classifier.classify_as_proofstep ]
-  -> [ Proof_global.simple_with_current_proof (fun _ p  -> Proof.unshelve p) ]
+| [ "Unshelve" ]
+  => { Vernac_classifier.classify_as_proofstep }
+  -> { Proof_global.simple_with_current_proof (fun _ p  -> Proof.unshelve p) }
 END
 
 (* Gives up on the goals under focus: the goals are considered solved,
@@ -919,23 +997,25 @@ END
    these goals. *)
 TACTIC EXTEND give_up
 | [ "give_up" ] ->
-    [ Proofview.give_up ]
+    { Proofview.give_up }
 END
 
 (* cycles [n] goals *)
 TACTIC EXTEND cycle
-| [ "cycle" int_or_var(n) ] -> [ Proofview.cycle n ]
+| [ "cycle" int_or_var(n) ] -> { Proofview.cycle n }
 END
 
 (* swaps goals number [i] and [j] *)
 TACTIC EXTEND swap
-| [ "swap" int_or_var(i) int_or_var(j) ] -> [ Proofview.swap i j ]
+| [ "swap" int_or_var(i) int_or_var(j) ] -> { Proofview.swap i j }
 END
 
 (* reverses the list of focused goals *)
 TACTIC EXTEND revgoals
-| [ "revgoals" ] -> [ Proofview.revgoals ]
+| [ "revgoals" ] -> { Proofview.revgoals }
 END
+
+{
 
 type cmp =
   | Eq
@@ -965,28 +1045,34 @@ let pr_itest = pr_test_gen Pp.int
 
 let pr_itest' _prc _prlc _prt = pr_itest
 
+}
 
-
-ARGUMENT EXTEND comparison PRINTED BY pr_cmp'
-| [ "="  ] -> [ Eq ]
-| [ "<"  ] -> [ Lt ]
-| [ "<=" ] -> [ Le ]
-| [ ">"  ] -> [ Gt ]
-| [ ">=" ] -> [ Ge ]
+ARGUMENT EXTEND comparison PRINTED BY { pr_cmp' }
+| [ "="  ] -> { Eq }
+| [ "<"  ] -> { Lt }
+| [ "<=" ] -> { Le }
+| [ ">"  ] -> { Gt }
+| [ ">=" ] -> { Ge }
     END
+
+{
 
 let interp_test ist gls = function
   | Test (c,x,y) ->
       project gls ,
       Test(c,Tacinterp.interp_int_or_var ist x,Tacinterp.interp_int_or_var ist y)
 
+}
+
 ARGUMENT EXTEND test
-  PRINTED BY pr_itest'
-  INTERPRETED BY interp_test
-  RAW_PRINTED BY pr_test'
-  GLOB_PRINTED BY pr_test'
-| [ int_or_var(x) comparison(c) int_or_var(y) ] -> [ Test(c,x,y) ]
+  PRINTED BY { pr_itest' }
+  INTERPRETED BY { interp_test }
+  RAW_PRINTED BY { pr_test' }
+  GLOB_PRINTED BY { pr_test' }
+| [ int_or_var(x) comparison(c) int_or_var(y) ] -> { Test(c,x,y) }
 END
+
+{
 
 let interp_cmp = function
   | Eq -> Int.equal
@@ -1005,10 +1091,13 @@ let guard tst =
     let msg = Pp.(str"Condition not satisfied:"++ws 1++(pr_itest tst)) in
     Tacticals.New.tclZEROMSG msg
 
+}
 
 TACTIC EXTEND guard
-| [ "guard" test(tst) ] -> [ guard tst ]
+| [ "guard" test(tst) ] -> { guard tst }
 END
+
+{
 
 let decompose l c =
   Proofview.Goal.enter begin fun gl ->
@@ -1021,14 +1110,16 @@ let decompose l c =
     Elim.h_decompose l c
   end
 
+}
+
 TACTIC EXTEND decompose
-| [ "decompose" "[" ne_constr_list(l) "]" constr(c) ] -> [ decompose l c ]
+| [ "decompose" "[" ne_constr_list(l) "]" constr(c) ] -> { decompose l c }
 END
 
 (** library/keys *)
 
 VERNAC COMMAND EXTEND Declare_keys CLASSIFIED AS SIDEFF
-| [ "Declare" "Equivalent" "Keys" constr(c) constr(c') ] -> [
+| [ "Declare" "Equivalent" "Keys" constr(c) constr(c') ] -> {
   let get_key c =
     let env = Global.env () in
     let evd = Evd.from_env env in
@@ -1040,26 +1131,30 @@ VERNAC COMMAND EXTEND Declare_keys CLASSIFIED AS SIDEFF
   let k2 = get_key c' in
     match k1, k2 with
     | Some k1, Some k2 -> Keys.declare_equiv_keys k1 k2
-    | _ -> () ]
+    | _ -> () }
 END
 
 VERNAC COMMAND EXTEND Print_keys CLASSIFIED AS QUERY
-| [ "Print" "Equivalent" "Keys" ] -> [ Feedback.msg_info (Keys.pr_keys Printer.pr_global) ]
+| [ "Print" "Equivalent" "Keys" ] -> { Feedback.msg_info (Keys.pr_keys Printer.pr_global) }
 END
 
 
 VERNAC COMMAND EXTEND OptimizeProof
-| [ "Optimize" "Proof" ] => [ Vernac_classifier.classify_as_proofstep ] ->
-  [ Proof_global.compact_the_proof () ]
-| [ "Optimize" "Heap" ] => [ Vernac_classifier.classify_as_proofstep ] ->
-  [ Gc.compact () ]
+| [ "Optimize" "Proof" ] => { Vernac_classifier.classify_as_proofstep } ->
+  { Proof_global.compact_the_proof () }
+| [ "Optimize" "Heap" ] => { Vernac_classifier.classify_as_proofstep } ->
+  { Gc.compact () }
 END
 
 (** tactic analogous to "OPTIMIZE HEAP" *)
 
+{
+
 let tclOPTIMIZE_HEAP =
   Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> Gc.compact ()))
 
+}
+
 TACTIC EXTEND optimize_heap
-| [ "optimize_heap" ] -> [ tclOPTIMIZE_HEAP ]
+| [ "optimize_heap" ] -> { tclOPTIMIZE_HEAP }
 END

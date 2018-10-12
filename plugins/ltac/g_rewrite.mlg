@@ -10,6 +10,8 @@
 
 (* Syntax for rewriting with strategies *)
 
+{
+
 open Names
 open Locus
 open Constrexpr
@@ -25,7 +27,13 @@ open Pcoq.Constr
 open Pvernac.Vernac_
 open Pltac
 
+let wit_hyp = wit_var
+
+}
+
 DECLARE PLUGIN "ltac_plugin"
+
+{
 
 type constr_expr_with_bindings = constr_expr with_bindings
 type glob_constr_with_bindings = Tacexpr.glob_constr_and_expr with_bindings
@@ -43,18 +51,22 @@ let glob_glob_constr_with_bindings ist l = Tacintern.intern_constr_with_bindings
 let subst_glob_constr_with_bindings s c =
   Tacsubst.subst_glob_with_bindings s c
 
+}
+
 ARGUMENT EXTEND glob_constr_with_bindings
-    PRINTED BY pr_glob_constr_with_bindings_sign
+    PRINTED BY { pr_glob_constr_with_bindings_sign }
 
-    INTERPRETED BY interp_glob_constr_with_bindings
-    GLOBALIZED BY glob_glob_constr_with_bindings
-    SUBSTITUTED BY subst_glob_constr_with_bindings
+    INTERPRETED BY { interp_glob_constr_with_bindings }
+    GLOBALIZED BY { glob_glob_constr_with_bindings }
+    SUBSTITUTED BY { subst_glob_constr_with_bindings }
 
-    RAW_PRINTED BY pr_constr_expr_with_bindings
-    GLOB_PRINTED BY pr_glob_constr_with_bindings
+    RAW_PRINTED BY { pr_constr_expr_with_bindings }
+    GLOB_PRINTED BY { pr_glob_constr_with_bindings }
 
-   [ constr_with_bindings(bl) ] -> [ bl ]
+| [ constr_with_bindings(bl) ] -> { bl }
 END
+
+{
 
 type raw_strategy = (constr_expr, Tacexpr.raw_red_expr) strategy_ast
 type glob_strategy = (Tacexpr.glob_constr_and_expr, Tacexpr.raw_red_expr) strategy_ast
@@ -78,52 +90,60 @@ let pr_glob_strategy prc prlc _ (s : glob_strategy) =
   in
   Rewrite.pr_strategy prc prr s
 
+}
+
 ARGUMENT EXTEND rewstrategy
-    PRINTED BY pr_strategy
+    PRINTED BY { pr_strategy }
 
-    INTERPRETED BY interp_strategy
-    GLOBALIZED BY glob_strategy
-    SUBSTITUTED BY subst_strategy
+    INTERPRETED BY { interp_strategy }
+    GLOBALIZED BY { glob_strategy }
+    SUBSTITUTED BY { subst_strategy }
 
-    RAW_PRINTED BY pr_raw_strategy
-    GLOB_PRINTED BY pr_glob_strategy
+    RAW_PRINTED BY { pr_raw_strategy }
+    GLOB_PRINTED BY { pr_glob_strategy }
 
-    [ glob(c) ] -> [ StratConstr (c, true) ]
-  | [ "<-" constr(c) ] -> [ StratConstr (c, false) ]
-  | [ "subterms" rewstrategy(h) ] -> [ StratUnary (Subterms, h) ]
-  | [ "subterm" rewstrategy(h) ] -> [ StratUnary (Subterm, h) ]
-  | [ "innermost" rewstrategy(h) ] -> [ StratUnary(Innermost, h) ]
-  | [ "outermost" rewstrategy(h) ] -> [ StratUnary(Outermost, h) ]
-  | [ "bottomup" rewstrategy(h) ] -> [ StratUnary(Bottomup, h) ]
-  | [ "topdown" rewstrategy(h) ] -> [ StratUnary(Topdown, h) ]
-  | [ "id" ] -> [ StratId ]
-  | [ "fail" ] -> [ StratFail ]
-  | [ "refl" ] -> [ StratRefl ]
-  | [ "progress" rewstrategy(h) ] -> [ StratUnary (Progress, h) ]
-  | [ "try" rewstrategy(h) ] -> [ StratUnary (Try, h) ]
-  | [ "any" rewstrategy(h) ] -> [ StratUnary (Any, h) ]
-  | [ "repeat" rewstrategy(h) ] -> [ StratUnary (Repeat, h) ]
-  | [ rewstrategy(h) ";" rewstrategy(h') ] -> [ StratBinary (Compose, h, h') ]
-  | [ "(" rewstrategy(h) ")" ] -> [ h ]
-  | [ "choice" rewstrategy(h) rewstrategy(h') ] -> [ StratBinary (Choice, h, h') ]
-  | [ "old_hints" preident(h) ] -> [ StratHints (true, h) ]
-  | [ "hints" preident(h) ] -> [ StratHints (false, h) ]
-  | [ "terms" constr_list(h) ] -> [ StratTerms h ]
-  | [ "eval" red_expr(r) ] -> [ StratEval r ]
-  | [ "fold" constr(c) ] -> [ StratFold c ]
+  | [ glob(c) ] -> { StratConstr (c, true) }
+  | [ "<-" constr(c) ] -> { StratConstr (c, false) }
+  | [ "subterms" rewstrategy(h) ] -> { StratUnary (Subterms, h) }
+  | [ "subterm" rewstrategy(h) ] -> { StratUnary (Subterm, h) }
+  | [ "innermost" rewstrategy(h) ] -> { StratUnary(Innermost, h) }
+  | [ "outermost" rewstrategy(h) ] -> { StratUnary(Outermost, h) }
+  | [ "bottomup" rewstrategy(h) ] -> { StratUnary(Bottomup, h) }
+  | [ "topdown" rewstrategy(h) ] -> { StratUnary(Topdown, h) }
+  | [ "id" ] -> { StratId }
+  | [ "fail" ] -> { StratFail }
+  | [ "refl" ] -> { StratRefl }
+  | [ "progress" rewstrategy(h) ] -> { StratUnary (Progress, h) }
+  | [ "try" rewstrategy(h) ] -> { StratUnary (Try, h) }
+  | [ "any" rewstrategy(h) ] -> { StratUnary (Any, h) }
+  | [ "repeat" rewstrategy(h) ] -> { StratUnary (Repeat, h) }
+  | [ rewstrategy(h) ";" rewstrategy(h') ] -> { StratBinary (Compose, h, h') }
+  | [ "(" rewstrategy(h) ")" ] -> { h }
+  | [ "choice" rewstrategy(h) rewstrategy(h') ] -> { StratBinary (Choice, h, h') }
+  | [ "old_hints" preident(h) ] -> { StratHints (true, h) }
+  | [ "hints" preident(h) ] -> { StratHints (false, h) }
+  | [ "terms" constr_list(h) ] -> { StratTerms h }
+  | [ "eval" red_expr(r) ] -> { StratEval r }
+  | [ "fold" constr(c) ] -> { StratFold c }
 END
 
 (* By default the strategy for "rewrite_db" is top-down *)
 
+{
+
 let db_strat db = StratUnary (Topdown, StratHints (false, db))
 let cl_rewrite_clause_db db = cl_rewrite_clause_strat (strategy_of_ast (db_strat db))
 
+}
+
 TACTIC EXTEND rewrite_strat
-| [ "rewrite_strat" rewstrategy(s) "in" hyp(id) ] -> [ cl_rewrite_clause_strat s (Some id) ]
-| [ "rewrite_strat" rewstrategy(s) ] -> [ cl_rewrite_clause_strat s None ]
-| [ "rewrite_db" preident(db) "in" hyp(id) ] -> [ cl_rewrite_clause_db db (Some id) ]
-| [ "rewrite_db" preident(db) ] -> [ cl_rewrite_clause_db db None ]
+| [ "rewrite_strat" rewstrategy(s) "in" hyp(id) ] -> { cl_rewrite_clause_strat s (Some id) }
+| [ "rewrite_strat" rewstrategy(s) ] -> { cl_rewrite_clause_strat s None }
+| [ "rewrite_db" preident(db) "in" hyp(id) ] -> { cl_rewrite_clause_db db (Some id) }
+| [ "rewrite_db" preident(db) ] -> { cl_rewrite_clause_db db None }
 END
+
+{
 
 let clsubstitute o c =
   Proofview.Goal.enter begin fun gl ->
@@ -137,58 +157,62 @@ let clsubstitute o c =
       (None :: List.map (fun id -> Some id) hyps)
   end
 
+}
+
 TACTIC EXTEND substitute
-| [ "substitute" orient(o) glob_constr_with_bindings(c) ] -> [ clsubstitute o c ]
+| [ "substitute" orient(o) glob_constr_with_bindings(c) ] -> { clsubstitute o c }
 END
 
 
 (* Compatibility with old Setoids *)
 
 TACTIC EXTEND setoid_rewrite
-   [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) ]
-   -> [ cl_rewrite_clause c o AllOccurrences None ]
+ | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) ]
+   -> { cl_rewrite_clause c o AllOccurrences None }
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "in" hyp(id) ] ->
-      [ cl_rewrite_clause c o AllOccurrences (Some id) ]
+      { cl_rewrite_clause c o AllOccurrences (Some id) }
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) ] ->
-      [ cl_rewrite_clause c o (occurrences_of occ) None ]
+      { cl_rewrite_clause c o (occurrences_of occ) None }
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id)] ->
-      [ cl_rewrite_clause c o (occurrences_of occ) (Some id) ]
+      { cl_rewrite_clause c o (occurrences_of occ) (Some id) }
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ)] ->
-      [ cl_rewrite_clause c o (occurrences_of occ) (Some id) ]
+      { cl_rewrite_clause c o (occurrences_of occ) (Some id) }
 END
 
 VERNAC COMMAND EXTEND AddRelation CLASSIFIED AS SIDEFF
   | [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
         "symmetry" "proved" "by" constr(lemma2) "as" ident(n) ] ->
-      [ declare_relation a aeq n (Some lemma1) (Some lemma2) None ]
+      { declare_relation a aeq n (Some lemma1) (Some lemma2) None }
 
   | [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
         "as" ident(n) ] ->
-      [ declare_relation a aeq n (Some lemma1) None None ]
+      { declare_relation a aeq n (Some lemma1) None None }
   | [ "Add" "Relation" constr(a) constr(aeq)  "as" ident(n) ] ->
-      [ declare_relation a aeq n None None None ]
+      { declare_relation a aeq n None None None }
 END
 
 VERNAC COMMAND EXTEND AddRelation2 CLASSIFIED AS SIDEFF
-    [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2)
+  | [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2)
       "as" ident(n) ] ->
-      [ declare_relation a aeq n None (Some lemma2) None ]
+      { declare_relation a aeq n None (Some lemma2) None }
   | [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)  "as" ident(n) ] ->
-      [ declare_relation a aeq n None (Some lemma2) (Some lemma3) ]
+      { declare_relation a aeq n None (Some lemma2) (Some lemma3) }
 END
 
 VERNAC COMMAND EXTEND AddRelation3 CLASSIFIED AS SIDEFF
-    [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
+  | [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
       "transitivity" "proved" "by" constr(lemma3) "as" ident(n) ] ->
-      [ declare_relation a aeq n (Some lemma1) None (Some lemma3) ]
+      { declare_relation a aeq n (Some lemma1) None (Some lemma3) }
   | [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
       "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)
       "as" ident(n) ] ->
-      [ declare_relation a aeq n (Some lemma1) (Some lemma2) (Some lemma3) ]
+      { declare_relation a aeq n (Some lemma1) (Some lemma2) (Some lemma3) }
   | [ "Add" "Relation" constr(a) constr(aeq) "transitivity" "proved" "by" constr(lemma3)
         "as" ident(n) ] ->
-      [ declare_relation a aeq n None None (Some lemma3) ]
+      { declare_relation a aeq n None None (Some lemma3) }
 END
+
+{
 
 type binders_argtype = local_binder_expr list
 
@@ -203,95 +227,92 @@ let () =
 
 open Pcoq
 
-GEXTEND Gram
+}
+
+GRAMMAR EXTEND Gram
   GLOBAL: binders;
     binders:
-    [ [ b = Pcoq.Constr.binders -> b ] ];
+    [ [ b = Pcoq.Constr.binders -> { b } ] ];
 END
 
 VERNAC COMMAND EXTEND AddParametricRelation CLASSIFIED AS SIDEFF
   | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)
         "reflexivity" "proved" "by" constr(lemma1)
         "symmetry" "proved" "by" constr(lemma2) "as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n (Some lemma1) (Some lemma2) None ]
+      { declare_relation ~binders:b a aeq n (Some lemma1) (Some lemma2) None }
   | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)
         "reflexivity" "proved" "by" constr(lemma1)
         "as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n (Some lemma1) None None ]
+      { declare_relation ~binders:b a aeq n (Some lemma1) None None }
   | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)  "as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n None None None ]
+      { declare_relation ~binders:b a aeq n None None None }
 END
 
 VERNAC COMMAND EXTEND AddParametricRelation2 CLASSIFIED AS SIDEFF
-    [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2)
+  | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2)
       "as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n None (Some lemma2) None ]
+      { declare_relation ~binders:b a aeq n None (Some lemma2) None }
   | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)  "as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n None (Some lemma2) (Some lemma3) ]
+      { declare_relation ~binders:b a aeq n None (Some lemma2) (Some lemma3) }
 END
 
 VERNAC COMMAND EXTEND AddParametricRelation3 CLASSIFIED AS SIDEFF
-    [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
+  | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
       "transitivity" "proved" "by" constr(lemma3) "as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n (Some lemma1) None (Some lemma3) ]
+      { declare_relation ~binders:b a aeq n (Some lemma1) None (Some lemma3) }
   | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
       "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)
       "as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n (Some lemma1) (Some lemma2) (Some lemma3) ]
+      { declare_relation ~binders:b a aeq n (Some lemma1) (Some lemma2) (Some lemma3) }
   | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "transitivity" "proved" "by" constr(lemma3)
         "as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n None None (Some lemma3) ]
+      { declare_relation ~binders:b a aeq n None None (Some lemma3) }
 END
 
-VERNAC COMMAND FUNCTIONAL EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
-   [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
-     [ fun ~atts ~st -> let open Vernacinterp in
+VERNAC COMMAND EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
+  | [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
+     { let open Vernacinterp in
          add_setoid (not (Locality.make_section_locality atts.locality)) [] a aeq t n;
-         st
-     ]
+     }
   | [ "Add" "Parametric" "Setoid" binders(binders) ":" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
-     [ fun ~atts ~st -> let open Vernacinterp in
+     { let open Vernacinterp in
          add_setoid (not (Locality.make_section_locality atts.locality)) binders a aeq t n;
-         st
-     ]
+     }
   | [ "Add" "Morphism" constr(m) ":" ident(n) ]
     (* This command may or may not open a goal *)
-    => [ Vernacexpr.VtUnknown, Vernacexpr.VtNow ]
-    -> [ fun ~atts ~st -> let open Vernacinterp in
+    => { Vernacexpr.VtUnknown, Vernacexpr.VtNow }
+    -> { let open Vernacinterp in
            add_morphism_infer (not (Locality.make_section_locality atts.locality)) m n;
-           st
-       ]
+       }
   | [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ]
-    => [ Vernacexpr.(VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater) ]
-    -> [ fun ~atts ~st -> let open Vernacinterp in
+    => { Vernacexpr.(VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater) }
+    -> { let open Vernacinterp in
            add_morphism (not (Locality.make_section_locality atts.locality)) [] m s n;
-           st
-       ]
+       }
   | [ "Add" "Parametric" "Morphism" binders(binders) ":" constr(m)
         "with" "signature" lconstr(s) "as" ident(n) ]
-    => [ Vernacexpr.(VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater) ]
-    -> [ fun ~atts ~st -> let open Vernacinterp in
+    => { Vernacexpr.(VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater) }
+    -> { let open Vernacinterp in
            add_morphism (not (Locality.make_section_locality atts.locality)) binders m s n;
-           st
-       ]
+       }
 END
 
 TACTIC EXTEND setoid_symmetry
-   [ "setoid_symmetry" ] -> [ setoid_symmetry ]
- | [ "setoid_symmetry" "in" hyp(n) ] -> [ setoid_symmetry_in n ]
+ | [ "setoid_symmetry" ] -> { setoid_symmetry }
+ | [ "setoid_symmetry" "in" hyp(n) ] -> { setoid_symmetry_in n }
 END
 
 TACTIC EXTEND setoid_reflexivity
-[ "setoid_reflexivity" ] -> [ setoid_reflexivity ]
+| [ "setoid_reflexivity" ] -> { setoid_reflexivity }
 END
 
 TACTIC EXTEND setoid_transitivity
-  [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity (Some t) ]
-| [ "setoid_etransitivity" ] -> [ setoid_transitivity None ]
+| [ "setoid_transitivity" constr(t) ] -> { setoid_transitivity (Some t) }
+| [ "setoid_etransitivity" ] -> { setoid_transitivity None }
 END
 
 VERNAC COMMAND EXTEND PrintRewriteHintDb CLASSIFIED AS QUERY
-  [ "Print" "Rewrite" "HintDb" preident(s) ] ->
-  [ let sigma, env = Pfedit.get_current_context () in
-    Feedback.msg_notice (Autorewrite.print_rewrite_hintdb env sigma s) ]
+| [ "Print" "Rewrite" "HintDb" preident(s) ] ->
+  { let sigma, env = Pfedit.get_current_context () in
+    Feedback.msg_notice (Autorewrite.print_rewrite_hintdb env sigma s) }
 END
