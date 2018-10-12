@@ -310,25 +310,31 @@ let failwith_non_pos_list n ntypes l =
   List.iter (failwith_non_pos n ntypes) l;
   anomaly ~label:"failwith_non_pos_list" (Pp.str "some k in [n;n+ntypes-1] should occur.")
 
-(* Conclusion of constructors: check the inductive type is called with
-   the expected parameters *)
-let check_correct_par (env,n,ntypes,_) hyps l largs =
-  let nparams = rel_context_nhyps hyps in
-  let largs = Array.of_list largs in
-  if Array.length largs < nparams then
-    raise (IllFormedInd (LocalNotEnoughArgs l));
-  let (lpar,largs') = Array.chop nparams largs in
-  let nhyps = List.length hyps in
-  let rec check k index = function
+(* Check the inductive type is called with the expected parameters *)
+(* [n] is the index of the last inductive type in [env] *)
+let check_correct_par (env,n,ntypes,_) paramdecls ind_index args =
+  let nparams = rel_context_nhyps paramdecls in
+  let args = Array.of_list args in
+  if Array.length args < nparams then
+    raise (IllFormedInd (LocalNotEnoughArgs ind_index));
+  let (params,realargs) = Array.chop nparams args in
+  let nparamdecls = List.length paramdecls in
+  let rec check param_index paramdecl_index = function
     | [] -> ()
-    | LocalDef _ :: hyps -> check k (index+1) hyps
-    | _::hyps ->
-        match whd_all env lpar.(k) with
-	  | Rel w when w = index -> check (k-1) (index+1) hyps
-	  | _ -> raise (IllFormedInd (LocalNonPar (k+1,index,l)))
-  in check (nparams-1) (n-nhyps) hyps;
-  if not (Array.for_all (noccur_between n ntypes) largs') then
-    failwith_non_pos_vect n ntypes largs'
+    | LocalDef _ :: paramdecls ->
+      check param_index (paramdecl_index+1) paramdecls
+    | _::paramdecls ->
+        match whd_all env params.(param_index) with
+          | Rel w when Int.equal w paramdecl_index ->
+            check (param_index-1) (paramdecl_index+1) paramdecls
+          | _ ->
+            let paramdecl_index_in_env = paramdecl_index-n+nparamdecls+1 in
+            let err =
+              LocalNonPar (param_index+1, paramdecl_index_in_env, ind_index) in
+            raise (IllFormedInd err)
+  in check (nparams-1) (n-nparamdecls) paramdecls;
+  if not (Array.for_all (noccur_between n ntypes) realargs) then
+    failwith_non_pos_vect n ntypes realargs
 
 (* Arguments of constructor: check the number of recursive parameters nrecp.
     the first parameters which are constant in recursive arguments
@@ -412,8 +418,8 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp (_,i as ind) indlc
               | Some b ->
 	          check_pos (ienv_push_var ienv (na, b, mk_norec)) d)
 	| Rel k ->
-            (try
-              let (ra,rarg) = List.nth ra_env (k-1) in
+            (try let (ra,rarg) = List.nth ra_env (k-1) in
+            let largs = List.map (whd_all env) largs in
 	      (match ra with
                   Mrec _ -> check_rec_par ienv hyps nrecp largs
 		|  _ -> ());

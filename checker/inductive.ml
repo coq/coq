@@ -282,6 +282,11 @@ let get_instantiated_arity (ind,u) (mib,mip) params =
 
 let elim_sorts (_,mip) = mip.mind_kelim
 
+let is_primitive_record (mib,_) =
+  match mib.mind_record with
+  | PrimRecord _ -> true
+  | NotRecord | FakeRecord -> false
+
 let extended_rel_list n hyps =
   let rec reln l p = function
     | LocalAssum _ :: hyps -> reln (Rel (n+p) :: l) (p+1) hyps
@@ -381,12 +386,13 @@ let type_case_branches env (pind,largs) (p,pj) c =
 (* Checking the case annotation is relevant *)
 
 let check_case_info env indsp ci =
-  let (mib,mip) = lookup_mind_specif env indsp in
+  let mib, mip as spec = lookup_mind_specif env indsp in
   if
     not (eq_ind_chk indsp ci.ci_ind) ||
     (mib.mind_nparams <> ci.ci_npar) ||
     (mip.mind_consnrealdecls <> ci.ci_cstr_ndecls) ||
-    (mip.mind_consnrealargs <> ci.ci_cstr_nargs)
+    (mip.mind_consnrealargs <> ci.ci_cstr_nargs) ||
+    is_primitive_record spec
   then raise (TypeError(env,WrongCaseInfo(indsp,ci)))
 
 (************************************************************************)
@@ -801,10 +807,23 @@ let rec subterm_specif renv stack t =
 	    subterm_specif (push_var renv (x,a,spec)) stack' b
 
       (* Metas and evars are considered OK *)
-      | (Meta _|Evar _) -> Dead_code
+    | (Meta _|Evar _) -> Dead_code
 
-      (* Other terms are not subterms *)
-      | _ -> Not_subterm
+    | Proj (p, c) ->
+      let subt = subterm_specif renv stack c in
+      (match subt with
+       | Subterm (_s, wf) ->
+         (* We take the subterm specs of the constructor of the record *)
+         let wf_args = (dest_subterms wf).(0) in
+         (* We extract the tree of the projected argument *)
+         let n = Projection.arg p in
+         spec_of_tree (List.nth wf_args n)
+       | Dead_code -> Dead_code
+       | Not_subterm -> Not_subterm)
+
+    (* Other terms are not subterms *)
+    | Var _ | Sort _ | Cast _ | Prod _ | LetIn _ | App _ | Const _ | Ind _
+      | Construct _ | CoFix _ -> Not_subterm
 
 and lazy_subterm_specif renv stack t =
   lazy (subterm_specif renv stack t)
@@ -856,6 +875,8 @@ let filter_stack_domain env p stack =
     match stack, t with
     | elt :: stack', Prod (n,a,c0) ->
       let d = LocalAssum (n,a) in
+      let ctx, a = dest_prod_assum env a in
+      let env = push_rel_context ctx env in
       let ty, args = decompose_app (whd_all env a) in
       let elt = match ty with
       | Ind ind -> 
