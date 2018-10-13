@@ -299,6 +299,18 @@ let declare_stringopt_option =
     (function StringOptValue v -> v | _ -> anomaly (Pp.str "async_option."))
     (fun _ _ -> anomaly (Pp.str "async_option."))
 
+let declare_bool_option_and_ref ~depr ~name ~key ~(value:bool) =
+  let r_opt = ref value in
+  let optwrite v = r_opt := v in
+  let optread () = !r_opt in
+  let _ = declare_bool_option {
+      optdepr = depr;
+      optname = name;
+      optkey = key;
+      optread; optwrite
+    } in
+  optread
+
 (* 3- User accessible commands *)
 
 (* Setting values of options *)
@@ -422,6 +434,3 @@ let print_tables () =
       (fun (nickkey,_) p -> p ++ str "  " ++ str nickkey ++ fnl ())
       !ref_table (mt ()) ++
     fnl ()
-
-
-

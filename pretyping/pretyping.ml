@@ -105,16 +105,12 @@ let search_guard ?loc env possible_indexes fixdefs =
 
 (* To force universe name declaration before use *)
 
-let strict_universe_declarations = ref true
-let is_strict_universe_declarations () = !strict_universe_declarations
-
-let () =
-  Goptions.(declare_bool_option
-	  { optdepr  = false;
-	    optname  = "strict universe declaration";
-	    optkey   = ["Strict";"Universe";"Declaration"];
-	    optread  = is_strict_universe_declarations;
-	    optwrite = (:=) strict_universe_declarations })
+let is_strict_universe_declarations =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~name:"strict universe declaration"
+    ~key:["Strict";"Universe";"Declaration"]
+    ~value:true
 
 (** Miscellaneous interpretation functions *)
 

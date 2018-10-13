@@ -183,14 +183,11 @@ let cofixp_reducible flgs _ stk =
   else
     false
 
-let debug_cbv = ref false
-let () = Goptions.(declare_bool_option {
-  optdepr = false;
-  optname = "cbv visited constants display";
-  optkey = ["Debug";"Cbv"];
-  optread = (fun () -> !debug_cbv);
-  optwrite = (fun a -> debug_cbv:=a);
-})
+let get_debug_cbv = Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~value:false
+    ~name:"cbv visited constants display"
+    ~key:["Debug";"Cbv"]
 
 let debug_pr_key = function
   | ConstKey (sp,_) -> Names.Constant.print sp
@@ -325,14 +322,14 @@ and norm_head_ref k info env stack normt =
   if red_set_ref info.reds normt then
     match cbv_value_cache info normt with
       | Some body ->
-         if !debug_cbv then Feedback.msg_debug Pp.(str "Unfolding " ++ debug_pr_key normt);
+         if get_debug_cbv () then Feedback.msg_debug Pp.(str "Unfolding " ++ debug_pr_key normt);
          strip_appl (shift_value k body) stack
       | None ->
-         if !debug_cbv then Feedback.msg_debug Pp.(str "Not unfolding " ++ debug_pr_key normt);
+         if get_debug_cbv () then Feedback.msg_debug Pp.(str "Not unfolding " ++ debug_pr_key normt);
          (VAL(0,make_constr_ref k normt),stack)
   else
     begin
-      if !debug_cbv then Feedback.msg_debug Pp.(str "Not unfolding " ++ debug_pr_key normt);
+      if get_debug_cbv () then Feedback.msg_debug Pp.(str "Not unfolding " ++ debug_pr_key normt);
       (VAL(0,make_constr_ref k normt),stack)
     end
 

@@ -582,10 +582,15 @@ let should_treat_as_cumulative cum poly =
     else user_err Pp.(str "The NonCumulative prefix can only be used in a polymorphic context.")
   | None -> poly && Flags.is_polymorphic_inductive_cumulativity ()
 
-let uniform_inductive_parameters = ref false
+let get_uniform_inductive_parameters =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~name:"Uniform inductive parameters"
+    ~key:["Uniform"; "Inductive"; "Parameters"]
+    ~value:false
 
 let should_treat_as_uniform () =
-  if !uniform_inductive_parameters
+  if get_uniform_inductive_parameters ()
   then ComInductive.UniformParameters
   else ComInductive.NonUniformParameters
 
@@ -1536,14 +1541,6 @@ let () =
       optkey   = ["Polymorphic"; "Inductive"; "Cumulativity"];
       optread  = Flags.is_polymorphic_inductive_cumulativity;
       optwrite = Flags.make_polymorphic_inductive_cumulativity }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optname  = "Uniform inductive parameters";
-      optkey   = ["Uniform"; "Inductive"; "Parameters"];
-      optread  = (fun () -> !uniform_inductive_parameters);
-      optwrite = (fun b -> uniform_inductive_parameters := b) }
 
 let () =
   declare_int_option

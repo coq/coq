@@ -197,3 +197,6 @@ val parsing_explicit : bool ref
 
 (** Globalization leak for Grammar *)
 val for_grammar : ('a -> 'b) -> 'a -> 'b
+
+(** Placeholder for global option, should be moved to a parameter *)
+val get_asymmetric_patterns : unit -> bool

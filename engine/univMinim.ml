@@ -12,17 +12,12 @@ open Univ
 open UnivSubst
 
 (* To disallow minimization to Set *)
-let set_minimization = ref true
-let is_set_minimization () = !set_minimization
-
-let () =
-  Goptions.(declare_bool_option
-          { optdepr  = false;
-            optname  = "minimization to Set";
-            optkey   = ["Universe";"Minimization";"ToSet"];
-            optread  = is_set_minimization;
-            optwrite = (:=) set_minimization })
-
+let get_set_minimization =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~name:"minimization to Set"
+    ~key:["Universe";"Minimization";"ToSet"]
+    ~value:true
 
 (** Simplification *)
 
@@ -278,7 +273,7 @@ let normalize_context_set g ctx us algs weak =
   let smallles, csts =
     Constraint.partition (fun (l,d,r) -> d == Le && Level.is_small l) csts
   in
-  let smallles = if is_set_minimization ()
+  let smallles = if get_set_minimization ()
     then Constraint.filter (fun (l,d,r) -> LSet.mem r ctx) smallles
     else Constraint.empty
   in

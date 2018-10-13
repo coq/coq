@@ -337,32 +337,20 @@ let assumption_message = Declare.assumption_message
 let default_tactic = ref (Proofview.tclUNIT ())
 
 (* true = hide obligations *)
-let hide_obligations = ref false
+let get_hide_obligations =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~name:"Hidding of Program obligations"
+    ~key:["Hide";"Obligations"]
+    ~value:false
 
-let set_hide_obligations = (:=) hide_obligations
-let get_hide_obligations () = !hide_obligations
 
-open Goptions
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optname  = "Hiding of Program obligations";
-      optkey   = ["Hide";"Obligations"];
-      optread  = get_hide_obligations;
-      optwrite = set_hide_obligations; }
-
-let shrink_obligations = ref true
-
-let set_shrink_obligations = (:=) shrink_obligations
-let get_shrink_obligations () = !shrink_obligations
-
-let () =
-  declare_bool_option
-    { optdepr  = true; (* remove in 8.8 *)
-      optname  = "Shrinking of Program obligations";
-      optkey   = ["Shrink";"Obligations"];
-      optread  = get_shrink_obligations;
-      optwrite = set_shrink_obligations; }
+let get_shrink_obligations =
+  Goptions.declare_bool_option_and_ref
+    ~depr:true (* remove in 8.8 *)
+    ~name:"Shrinking of Program obligations"
+    ~key:["Shrink";"Obligations"]
+    ~value:true
 
 let evar_of_obligation o = make_evar (Global.named_context_val ()) (EConstr.of_constr o.obl_type)
 

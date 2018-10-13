@@ -33,16 +33,12 @@ open Evd
 open Termops
 open Globnames
 
-let use_typeclasses_for_conversion = ref true
-
-let () =
-  Goptions.(declare_bool_option
-    { optdepr  = false;
-      optname  = "use typeclass resolution during conversion";
-      optkey   = ["Typeclass"; "Resolution"; "For"; "Conversion"];
-      optread  = (fun () -> !use_typeclasses_for_conversion);
-      optwrite = (fun b -> use_typeclasses_for_conversion := b) }
-    )
+let get_use_typeclasses_for_conversion =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~name:"use typeclass resolution during conversion"
+    ~key:["Typeclass"; "Resolution"; "For"; "Conversion"]
+    ~value:true
 
 (* Typing operations dealing with coercions *)
 exception NoCoercion
@@ -424,7 +420,7 @@ let inh_app_fun resolve_tc env evd j =
   try inh_app_fun_core env evd j
   with
   | NoCoercion when not resolve_tc
-    || not !use_typeclasses_for_conversion -> (evd, j)
+    || not (get_use_typeclasses_for_conversion ()) -> (evd, j)
   | NoCoercion ->
     try inh_app_fun_core env (saturate_evd env evd) j
     with NoCoercion -> (evd, j)
@@ -534,7 +530,7 @@ let inh_conv_coerce_to_gen ?loc resolve_tc rigidonly env evd cj t =
 	  coerce_itf ?loc env evd (Some cj.uj_val) cj.uj_type t
 	else raise NoSubtacCoercion
       with
-      | NoSubtacCoercion when not resolve_tc || not !use_typeclasses_for_conversion ->
+      | NoSubtacCoercion when not resolve_tc || not (get_use_typeclasses_for_conversion ()) ->
 	  error_actual_type ?loc env best_failed_evd cj t e
       | NoSubtacCoercion ->
 	let evd' = saturate_evd env evd in

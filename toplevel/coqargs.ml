@@ -281,11 +281,6 @@ let get_cache opt = function
   | "force" -> Some Stm.AsyncOpts.Force
   | _ -> prerr_endline ("Error: force expected after "^opt); exit 1
 
-let get_identifier opt s =
-  try Names.Id.of_string s
-  with CErrors.UserError _ ->
-    prerr_endline ("Error: valid identifier expected after option "^opt); exit 1
-
 let is_not_dash_option = function
   | Some f when String.length f > 0 && f.[0] <> '-' -> true
   | _ -> false
@@ -478,7 +473,9 @@ let parse_args arglist : coq_cmdopts * string list =
       add_load_vernacular oval true (next ())
 
     |"-mangle-names" ->
-      Namegen.set_mangle_names_mode (get_identifier opt (next ())); oval
+      Goptions.set_bool_option_value ["Mangle"; "Names"] true;
+      Goptions.set_string_option_value ["Mangle"; "Names"; "Prefix"] (next ());
+      oval
 
     |"-print-mod-uid" ->
       let s = String.concat " " (List.map get_native_name rem) in print_endline s; exit 0
