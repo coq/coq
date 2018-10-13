@@ -141,6 +141,11 @@ Ltac IZR_tac t :=
   match t with
   | R0 => constr:(0%Z)
   | R1 => constr:(1%Z)
+  | IZR (Z.pow_pos 10 ?p) =>
+    match isPcst p with
+    | true => constr:(Z.pow_pos 10 p)
+    | _ => constr:(InitialRing.NotConstant)
+    end
   | IZR ?u =>
     match isZcst u with
     | true => u
