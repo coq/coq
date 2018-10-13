@@ -2031,7 +2031,7 @@ let vernac_show = function
   | ShowGoal goalref ->
     let proof = Proof_global.give_me_the_proof () in
     begin match goalref with
-    | OpenSubgoals -> pr_open_subgoals ~proof
+    | OpenSubgoals -> pr_open_subgoals ?diff_proof:None ~proof
     | NthGoal n -> pr_nth_open_subgoal ~proof n
     | GoalId id -> pr_goal_by_id ~proof id
     end

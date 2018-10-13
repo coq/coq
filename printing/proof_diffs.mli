@@ -31,7 +31,7 @@ If you want to make your call especially bulletproof, catch these
 exceptions, print a user-visible message, then recall this routine with
 the first argument set to None, which will skip the diff.
 *)
-val diff_goal_ide : goal sigma option -> goal -> Evd.evar_map -> Pp.t list * Pp.t
+val diff_goal_ide : prev_goal:goal sigma -> goal -> Evd.evar_map -> Pp.t list * Pp.t
 
 (** Computes the diff between two goals
 
@@ -43,7 +43,7 @@ If you want to make your call especially bulletproof, catch these
 exceptions, print a user-visible message, then recall this routine with
 the first argument set to None, which will skip the diff.
 *)
-val diff_goal : ?og_s:(goal sigma) -> goal -> Evd.evar_map -> Pp.t
+val diff_goal : prev_goal:goal sigma -> goal -> Evd.evar_map -> Pp.t
 
 (** Convert a string to a list of token strings using the lexer *)
 val tokenize_string : string -> string list
@@ -61,12 +61,7 @@ will have the same goal id in both versions.
 
 [op] and [np] must be from the same proof document and [op] must be for a state
 before [np]. *)
-val make_goal_map : Proof.t option -> Proof.t -> Evar.t Evar.Map.t
-
-(* Exposed for unit test, don't use these otherwise *)
-(* output channel for the test log file *)
-val log_out_ch : out_channel ref
-
+val make_goal_map : Proof.t -> Proof.t -> Evar.t Evar.Map.t
 
 type hyp_info = {
   idents: string list;

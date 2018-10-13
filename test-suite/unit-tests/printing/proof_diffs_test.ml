@@ -13,7 +13,6 @@ let add_test name test = tests := (mk_test name (TestCase test)) :: !tests
 let log_out_ch = open_log_out_ch __FILE__
 let cfprintf oc = Printf.(kfprintf (fun oc -> fprintf oc "") oc)
 let cprintf s = cfprintf log_out_ch s
-let _ = Proof_diffs.log_out_ch := log_out_ch
 
 let string_of_string s : string = "\"" ^ s ^ "\""
 

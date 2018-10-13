@@ -146,12 +146,10 @@ let get_dinfo = function
   | `Removed (_, s) -> (`Removed, s)
   | `Added (_, s) -> (`Added, s)
 
-[@@@ocaml.warning "-32"]
-let string_of_diff_type = function
+let _string_of_diff_type = function
   | `Common  -> "Common"
   | `Removed -> "Removed"
   | `Added -> "Added"
-[@@@ocaml.warning "+32"]
 
 let wrap_in_bg diff_tag pp =
   let open Pp in

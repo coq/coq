@@ -8,33 +8,35 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(*
-Displays the differences between successive proof steps in coqtop and CoqIDE.
-Proof General requires minor changes to make the diffs visible, but this code
-shouldn't break the existing version of PG.  See pp_diff.ml for details on how
-the diff works.
+(**
+   Displays the differences between successive proof steps in coqtop
+   and CoqIDE.  Proof General requires minor changes to make the diffs
+   visible, but this code shouldn't break the existing version of PG.
+   See pp_diff.ml for details on how the diff works.
 
-Diffs are computed for the hypotheses and conclusion of each goal in the new
-proof with its matching goal in the old proof.
+   Diffs are computed for the hypotheses and conclusion of each goal
+   in the new proof with its matching goal in the old proof.
 
-Diffs can be enabled in coqtop with 'Set Diffs "on"|"off"|"removed"' or
-'-diffs on|off|removed' on the OS command line.  In CoqIDE, they can be enabled
-from the View menu.  The "on" option shows only the new item with added text,
-while "removed" shows each modified item twice--once with the old value showing
-removed text and once with the new value showing added text.
+   Diffs can be enabled in coqtop with 'Set Diffs
+   "on"|"off"|"removed"' or '-diffs on|off|removed' on the OS command
+   line.  In CoqIDE, they can be enabled from the View menu.  The "on"
+   option shows only the new item with added text, while "removed"
+   shows each modified item twice--once with the old value showing
+   removed text and once with the new value showing added text.
 
-In CoqIDE, colors and highlights can be set in the Edit/Preferences/Tags panel.
-For coqtop, these can be set through the COQ_COLORS environment variable.
+   In CoqIDE, colors and highlights can be set in the
+   Edit/Preferences/Tags panel.  For coqtop, these can be set through
+   the COQ_COLORS environment variable.
 
-Limitations/Possible enhancements:
+   Limitations/Possible enhancements:
 
-- coqtop colors were chosen for white text on a black background.  They're
-not the greatest.  I didn't want to change the existing green highlight.
-Suggestions welcome.
+   - coqtop colors were chosen for white text on a black background.
+   They're not the greatest.  I didn't want to change the existing
+   green highlight.  Suggestions welcome.
 
-- coqtop underlines removed text because (per Wikipedia) the ANSI escape code
-for strikeout is not commonly supported (it didn't work on my system).  CoqIDE
-uses strikeout on removed text.
+   - coqtop underlines removed text because (per Wikipedia) the ANSI
+   escape code for strikeout is not commonly supported (it didn't work
+   on my system).  CoqIDE uses strikeout on removed text.
 *)
 
 open Pp_diff
@@ -61,18 +63,10 @@ let _ =
     optwrite = write_diffs_option
   })
 
-let show_diffs () = !diff_option <> `OFF;;
-let show_removed () = !diff_option = `REMOVED;;
+let show_diffs () = !diff_option <> `OFF
+let show_removed () = !diff_option = `REMOVED
 
-
-(* DEBUG/UNIT TEST *)
-let cfprintf oc = Printf.(kfprintf (fun oc -> fprintf oc "") oc)
-let log_out_ch = ref stdout
-[@@@ocaml.warning "-32"]
-let cprintf s = cfprintf !log_out_ch s
-[@@@ocaml.warning "+32"]
-
-module StringMap = Map.Make(String);;
+module StringMap = Map.Make(String)
 
 let tokenize_string s =
   (* todo: cLexer changes buff as it proceeds.  Seems like that should be saved, too.
@@ -94,7 +88,7 @@ let tokenize_string s =
     toks
   with exn ->
     CLexer.set_lexer_state st;
-    raise (Diff_Failure "Input string is not lexable");;
+    raise (Diff_Failure "Input string is not lexable")
 
 
 type hyp_info = {
@@ -202,7 +196,7 @@ let diff_hyps o_line_idents o_map n_line_idents n_map =
   let cvt s = Array.of_list (List.concat s) in
   let ident_diffs = diff_strs (cvt o_line_idents) (cvt n_line_idents) in
   List.iter process_ident_diff ident_diffs;
-  List.rev !rv;;
+  List.rev !rv
 
 
 type 'a hyp = (Names.Id.t list * 'a option * 'a)
@@ -215,7 +209,7 @@ module CDC = Context.Compacted.Declaration
 let to_tuple : Constr.compacted_declaration -> (Names.Id.t list * 'pc option * 'pc) =
   let open CDC in function
     | LocalAssum(idl, tm)   -> (idl, None, tm)
-    | LocalDef(idl,tdef,tm) -> (idl, Some tdef, tm);;
+    | LocalDef(idl,tdef,tm) -> (idl, Some tdef, tm)
 
 (* XXX: Very unfortunately we cannot use the Proofview interface as
    Proof is still using the "legacy" one. *)
@@ -235,7 +229,7 @@ let process_goal sigma g : Constr.t reified_goal =
   (* compaction is usually desired [eg for better display] *)
   let hyps      = Termops.compact_named_context (Environ.named_context_of_val hyps) in
   let hyps      = List.map to_tuple hyps in
-  { name; ty; hyps; env; sigma };;
+  { name; ty; hyps; env; sigma }
 
 let pr_letype_core goal_concl_style env sigma t =
   Ppconstr.pr_lconstr_expr (Constrextern.extern_type goal_concl_style env sigma t)
@@ -256,11 +250,9 @@ let diff_concl ?og_s nsigma ng =
       pp_of_type oenv osigma oty
     | None -> Pp.mt()
   in
-  let (nty, nenv) = process_goal_concl nsigma ng in
+  let nty, nenv = process_goal_concl nsigma ng in
   let n_concl_pp = pp_of_type nenv nsigma nty in
-
   let show_removed = Some (show_removed ()) in
-
   diff_pp_combined ~tokenize_string ?show_removed o_concl_pp n_concl_pp
 
 (* fetch info from a goal, returning (idents, map, concl_pp) where
@@ -307,7 +299,7 @@ let goal_info goal sigma =
     List.iter (build_hyp_info env sigma) (List.rev hyps);
     let concl_pp = pp_of_type env sigma ty in
     ( List.rev !line_idents, !map, concl_pp )
-  with _ -> ([], !map, Pp.mt ());;
+  with _ -> ([], !map, Pp.mt ())
 
 let diff_goal_info o_info n_info =
   let (o_line_idents, o_hyp_map, o_concl_pp) = o_info in
@@ -322,27 +314,17 @@ let hyp_list_to_pp hyps =
   let open Pp in
   match hyps with
   | h :: tl -> List.fold_left (fun x y -> x ++ cut () ++ y) h tl
-  | [] -> mt ();;
+  | [] -> mt ()
 
-let unwrap g_s =
-  match g_s with
-  | Some g_s ->
-    let goal = Evd.sig_it g_s in
-    let sigma = Refiner.project g_s in
-    goal_info goal sigma
-  | None -> ([], StringMap.empty, Pp.mt ())
+let diff_goal_ide ~prev_goal ng nsigma =
+  let p_goal, p_sigma = Evd.sig_it prev_goal, Refiner.project prev_goal in
+  diff_goal_info (goal_info p_goal p_sigma) (goal_info ng nsigma)
 
-let diff_goal_ide og_s ng nsigma =
-  diff_goal_info (unwrap og_s) (goal_info ng nsigma)
-
-let diff_goal ?og_s ng ns =
-  let (hyps_pp_list, concl_pp) = diff_goal_info (unwrap og_s) (goal_info ng ns) in
-  let open Pp in
-  v 0 (
-    (hyp_list_to_pp hyps_pp_list) ++ cut () ++
-    str "============================" ++ cut () ++
-    concl_pp);;
-
+let diff_goal ~prev_goal ng ns =
+  let hyps_pp_list, concl_pp = diff_goal_ide ~prev_goal ng ns in
+  Pp.(v 0 (seq [hyp_list_to_pp hyps_pp_list; cut ();
+                str "============================"; cut ();
+                concl_pp]))
 
 (*** Code to determine which calls to compare between the old and new proofs ***)
 
@@ -351,50 +333,57 @@ open Glob_term
 open Names
 open CAst
 
-(* Compare the old and new proof trees to identify the correspondence between
-new and old goals.  Returns a map from the new evar name to the old,
-e.g. "Goal2" -> "Goal1".  Assumes that proof steps only rewrite CEvar nodes
-and that CEvar nodes cannot contain other CEvar nodes.
+(**
+   Compare the old and new proof trees to identify the correspondence between
+   new and old goals.  Returns a map from the new evar name to the old,
+   e.g. "Goal2" -> "Goal1".  Assumes that proof steps only rewrite CEvar nodes
+   and that CEvar nodes cannot contain other CEvar nodes.
 
-The comparison works this way:
-1. Traverse the old and new trees together (ogname = "", ot != nt):
-- if the old and new trees both have CEvar nodes, add an entry to the map from
-  the new evar name to the old evar name.  (Position of goals is preserved but
-  evar names may not be--see below.)
-- if the old tree has a CEvar node and the new tree has a different type of node,
-  we've found a changed goal.  Set ogname to the evar name of the old goal and
-  go to step 2.
-- any other mismatch violates the assumptions, raise an exception
-2. Traverse the new tree from the point of the difference (ogname <> "", ot = nt).
-- if the node is a CEvar, generate a map entry from the new evar name to ogname.
+   The comparison works this way:
 
-Goal ids for unchanged goals appear to be preserved across proof steps.
-However, the evar name associated with a goal id may change in a proof step
-even if that goal is not changed by the tactic.  You can see this by enabling
-the call to db_goal_map and entering the following:
+   1. Traverse the old and new trees together (ogname = "", ot != nt):
 
-  Parameter P : nat -> Prop.
-  Goal (P 1 /\ P 2 /\ P 3) /\ P 4.
-  split.
-  Show Proof.
-  split.
-  Show Proof.
+   - if the old and new trees both have CEvar nodes, add an entry to the map from
+   the new evar name to the old evar name.  (Position of goals is preserved but
+   evar names may not be--see below.)
 
-  Which gives you this summarized output:
+   - if the old tree has a CEvar node and the new tree has a different type of node,
+   we've found a changed goal.  Set ogname to the evar name of the old goal and
+   go to step 2.
 
-  > split.
-  New Goals: 3 -> Goal  4 -> Goal0              <--- goal 4 is "Goal0"
-  Old Goals: 1 -> Goal
-  Goal map: 3 -> 1  4 -> 1
-  > Show Proof.
-  (conj ?Goal ?Goal0)                           <--- goal 4 is the rightmost goal in the proof
-  > split.
-  New Goals: 6 -> Goal0  7 -> Goal1  4 -> Goal  <--- goal 4 is now "Goal"
-  Old Goals: 3 -> Goal  4 -> Goal0
-  Goal map: 6 -> 3  7 -> 3
-  > Show Proof.
-  (conj (conj ?Goal0 ?Goal1) ?Goal)             <--- goal 4 is still the rightmost goal in the proof
- *)
+   - any other mismatch violates the assumptions, raise an exception
+
+   2. Traverse the new tree from the point of the difference (ogname <> "", ot = nt).
+   - if the node is a CEvar, generate a map entry from the new evar name to ogname.
+
+   Goal ids for unchanged goals appear to be preserved across proof steps.
+   However, the evar name associated with a goal id may change in a proof step
+   even if that goal is not changed by the tactic.  You can see this by enabling
+   the call to db_goal_map and entering the following:
+
+   Parameter P : nat -> Prop.
+   Goal (P 1 /\ P 2 /\ P 3) /\ P 4.
+   split.
+   Show Proof.
+   split.
+   Show Proof.
+
+   Which gives you this summarized output:
+
+   > split.
+   New Goals: 3 -> Goal  4 -> Goal0              <--- goal 4 is "Goal0"
+   Old Goals: 1 -> Goal
+   Goal map: 3 -> 1  4 -> 1
+   > Show Proof.
+   (conj ?Goal ?Goal0)                           <--- goal 4 is the rightmost goal in the proof
+   > split.
+   New Goals: 6 -> Goal0  7 -> Goal1  4 -> Goal  <--- goal 4 is now "Goal"
+   Old Goals: 3 -> Goal  4 -> Goal0
+   Goal map: 6 -> 3  7 -> 3
+   > Show Proof.
+   (conj (conj ?Goal0 ?Goal1) ?Goal)             <--- goal 4 is still the rightmost goal in the proof
+
+*)
 let match_goals ot nt =
   let nevar_to_oevar = ref StringMap.empty in
   (* ogname is "" when there is no difference on the current path.
@@ -547,89 +536,79 @@ module GoalMap = Evar.Map
 
 let goal_to_evar g sigma = Id.to_string (Termops.pr_evar_suggested_name g sigma)
 
-[@@@ocaml.warning "-32"]
-let db_goal_map op np ng_to_og =
-  Printf.printf "New Goals: ";
-  let (ngoals,_,_,_,nsigma) = Proof.proof np in
-  List.iter (fun ng -> Printf.printf "%d -> %s  " (Evar.repr ng) (goal_to_evar ng nsigma)) ngoals;
-  (match op with
-  | Some op ->
-    let (ogoals,_,_,_,osigma) = Proof.proof op in
-    Printf.printf "\nOld Goals: ";
-    List.iter (fun og -> Printf.printf "%d -> %s  " (Evar.repr og) (goal_to_evar og osigma)) ogoals
-  | None -> ());
-  Printf.printf "\nGoal map: ";
-  GoalMap.iter (fun og ng -> Printf.printf "%d -> %d  " (Evar.repr og) (Evar.repr ng)) ng_to_og;
-  Printf.printf "\n"
-[@@@ocaml.warning "+32"]
+(**
+   Create a map from new goals to old goals for proof diff.  The map
+    only has entries for new goals that are not the same as the
+    corresponding old goal; there are no entries for unchanged goals.
 
-(* Create a map from new goals to old goals for proof diff.  The map only
- has entries for new goals that are not the same as the corresponding old
- goal; there are no entries for unchanged goals.
+    It proceeds as follows:
 
- It proceeds as follows:
- 1. Find the goal ids that were removed from the old proof and that were
- added in the new proof.  If the same goal id is present in both proofs
- then conclude the goal is unchanged (assumption).
+    1. Find the goal ids that were removed from the old proof and that
+    were added in the new proof.  If the same goal id is present in
+    both proofs then conclude the goal is unchanged (assumption).
 
- 2. The code assumes that proof changes only take the form of replacing
- one or more goal symbols (CEvars) with new terms.  Therefore:
- - if there are no removals, the proofs are the same.
- - if there are removals but no additions, then there are no new goals
-   that aren't the same as their associated old goals.  For the both of
-   these cases, the map is empty because there are no new goals that differ
-   from their old goals
- - if there is only one removal, then any added goals should be mapped to
-   the removed goal.
- - if there are more than 2 removals and more than one addition, call
-   match_goals to get a map between old and new evar names, then use this
-   to create the map from new goal ids to old goal ids for the differing goals.
-*)
+    2. The code assumes that proof changes only take the form of
+    replacing one or more goal symbols (CEvars) with new terms.
+    Therefore:
+
+    - if there are no removals, the proofs are the same.
+
+    - if there are removals but no additions, then there are no new
+    goals that aren't the same as their associated old goals. For the
+    both of these cases, the map is empty because there are no new
+    goals that differ from their old goals
+
+    - if there is only one removal, then any added goals should be
+    mapped to the removed goal.
+
+    - if there are more than 2 removals and more than one addition,
+    call match_goals to get a map between old and new evar names, then
+    use this to create the map from new goal ids to old goal ids for
+    the differing goals. *)
+
 let make_goal_map_i op np =
   let ng_to_og = ref GoalMap.empty in
-  match op with
-  | None -> !ng_to_og
-  | Some op ->
-    let open Goal.Set in
-    let ogs = Proof.all_goals op in
-    let ngs = Proof.all_goals np in
-    let rem_gs = diff ogs ngs in
-    let num_rems = cardinal rem_gs in
-    let add_gs = diff ngs ogs in
-    let num_adds = cardinal add_gs in
+  let open Goal.Set in
+  let ogs = Proof.all_goals op in
+  let ngs = Proof.all_goals np in
+  let rem_gs = diff ogs ngs in
+  let num_rems = cardinal rem_gs in
+  let add_gs = diff ngs ogs in
+  let num_adds = cardinal add_gs in
 
-    if num_rems = 0 then
-      !ng_to_og (* proofs are the same *)
-    else if num_adds = 0 then
-      !ng_to_og (* only removals *)
-    else if num_rems = 1 then begin
-      (* only 1 removal, some additions *)
-      let removed_g = List.hd (elements rem_gs) in
-      Goal.Set.iter (fun x -> ng_to_og := GoalMap.add x removed_g !ng_to_og) add_gs;
+  if num_rems = 0 then
+    !ng_to_og (* proofs are the same *)
+  else if num_adds = 0 then
+    !ng_to_og (* only removals *)
+  else if num_rems = 1 then begin
+    (* only 1 removal, some additions *)
+    let removed_g = List.hd (elements rem_gs) in
+    Goal.Set.iter (fun x -> ng_to_og := GoalMap.add x removed_g !ng_to_og) add_gs;
+    !ng_to_og
+  end else begin
+    (* >= 2 removals, >= 1 addition, need to match *)
+    let nevar_to_oevar = match_goals (Some (to_constr op)) (to_constr np) in
+
+    let oevar_to_og = ref StringMap.empty in
+    let (_,_,_,_,osigma) = Proof.proof op in
+    List.iter (fun og -> oevar_to_og := StringMap.add (goal_to_evar og osigma) og !oevar_to_og)
+      (Goal.Set.elements rem_gs);
+
+    try
+      let (_,_,_,_,nsigma) = Proof.proof np in
+      let get_og ng =
+        let nevar = goal_to_evar ng nsigma in
+        let oevar = StringMap.find nevar nevar_to_oevar in
+        let og = StringMap.find oevar !oevar_to_og in
+        og
+      in
+      Goal.Set.iter (fun ng -> ng_to_og := GoalMap.add ng (get_og ng) !ng_to_og) add_gs;
       !ng_to_og
-    end else begin
-      (* >= 2 removals, >= 1 addition, need to match *)
-      let nevar_to_oevar = match_goals (Some (to_constr op)) (to_constr np) in
-
-      let oevar_to_og = ref StringMap.empty in
-      let (_,_,_,_,osigma) = Proof.proof op in
-      List.iter (fun og -> oevar_to_og := StringMap.add (goal_to_evar og osigma) og !oevar_to_og)
-          (Goal.Set.elements rem_gs);
-
-      try
-        let (_,_,_,_,nsigma) = Proof.proof np in
-        let get_og ng =
-          let nevar = goal_to_evar ng nsigma in
-          let oevar = StringMap.find nevar nevar_to_oevar in
-          let og = StringMap.find oevar !oevar_to_og in
-          og
-        in
-        Goal.Set.iter (fun ng -> ng_to_og := GoalMap.add ng (get_og ng) !ng_to_og) add_gs;
-        !ng_to_og
-      with Not_found -> raise (Diff_Failure "Unable to match goals betwen old and new proof states (6)")
-    end
+    with
+    | Not_found ->
+      raise (Diff_Failure "Unable to match goals betwen old and new proof states (6)")
+  end
 
 let make_goal_map op np =
   let ng_to_og = make_goal_map_i op np in
-  (*db_goal_map op np ng_to_og;*)
   ng_to_og

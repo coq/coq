@@ -354,8 +354,15 @@ let top_goal_print ~doc c oldp newp =
     let print_goals = proof_changed && Proof_global.there_are_pending_proofs () ||
                       print_anyway c in
     if not !Flags.quiet && print_goals then begin
-      let dproof = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
-      Printer.print_and_diff dproof newp
+      let diff_proof =
+        if Proof_diffs.show_diffs () then
+          Stm.get_prev_proof ~doc (Stm.get_current_state ~doc)
+        else None
+      in
+      Option.iter (fun proof ->
+          let proof_msg = Printer.pr_open_subgoals ?diff_proof ~proof in
+          Feedback.msg_notice proof_msg)
+        newp
     end
   with
   | exn ->
