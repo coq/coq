@@ -13,6 +13,7 @@ open Names
 open Globnames
 open Glob_term
 open Bigint
+open Constrexpr
 
 (* Poor's man DECLARE PLUGIN *)
 let __coq_plugin_name = "r_syntax_plugin"
@@ -104,22 +105,76 @@ let r_modpath = MPfile (make_dir rdefinitions)
 let r_path = make_path rdefinitions "R"
 
 let glob_IZR = ConstRef (Constant.make2 r_modpath @@ Label.make "IZR")
+let glob_Rmult = ConstRef (Constant.make2 r_modpath @@ Label.make "Rmult")
+let glob_Rdiv = ConstRef (Constant.make2 r_modpath @@ Label.make "Rdiv")
 
-let r_of_int ?loc z =
-  DAst.make @@ GApp (DAst.make @@ GRef(glob_IZR,None), [z_of_int ?loc z])
+let binintdef = ["Coq";"ZArith";"BinIntDef"]
+let z_modpath = MPdot (MPfile (make_dir binintdef), Label.make "Z")
+
+let glob_pow_pos = ConstRef (Constant.make2 z_modpath @@ Label.make "pow_pos")
+
+let r_of_rawnum ?loc (sign,n) =
+  let n, f, e = NumTok.(n.int, n.frac, n.exp) in
+  let izr z =
+    DAst.make @@ GApp (DAst.make @@ GRef(glob_IZR,None), [z]) in
+  let rmult r r' =
+    DAst.make @@ GApp (DAst.make @@ GRef(glob_Rmult,None), [r; r']) in
+  let rdiv r r' =
+    DAst.make @@ GApp (DAst.make @@ GRef(glob_Rdiv,None), [r; r']) in
+  let pow10 e =
+    let ten = z_of_int ?loc (Bigint.of_int 10) in
+    let e = pos_of_bignat e in
+    DAst.make @@ GApp (DAst.make @@ GRef(glob_pow_pos,None), [ten; e]) in
+  let n =
+    let n = Bigint.of_string (n ^ f) in
+    let n = match sign with SPlus -> n | SMinus -> Bigint.(neg n) in
+    izr (z_of_int ?loc n) in
+  let e =
+    let e = if e = "" then Bigint.zero else match e.[1] with
+      | '+' -> Bigint.of_string (String.sub e 2 (String.length e - 2))
+      | '-' -> Bigint.(neg (of_string (String.sub e 2 (String.length e - 2))))
+      | _ -> Bigint.of_string (String.sub e 1 (String.length e - 1)) in
+    Bigint.(sub e (of_int (String.length f))) in
+  if Bigint.is_strictly_pos e then rmult n (izr (pow10 e))
+  else if Bigint.is_strictly_neg e then rdiv n (izr (pow10 (neg e)))
+  else n  (* e = 0 *)
 
 (**********************************************************************)
 (* Printing R via scopes                                              *)
 (**********************************************************************)
 
-let bigint_of_r c = match DAst.get c with
+let rawnum_of_r c = match DAst.get c with
   | GApp (r, [a]) when is_gr r glob_IZR ->
-      bigint_of_z a
+     let n = bigint_of_z a in
+     let s, n =
+       if is_strictly_neg n then SMinus, neg n else SPlus, n in
+     s, NumTok.int (to_string n)
+  | GApp (md,  [l; r]) when is_gr md glob_Rmult || is_gr md glob_Rdiv ->
+     begin match DAst.get l, DAst.get r with
+     | GApp (i, [l]), GApp (i', [r])
+          when is_gr i glob_IZR && is_gr i' glob_IZR ->
+        begin match DAst.get r with
+        | GApp (p, [t; e]) when is_gr p glob_pow_pos ->
+           let t = bigint_of_z t in
+           if not (Bigint.(equal t (of_int 10))) then
+             raise Non_closed_number
+           else
+             let i = bigint_of_z l in
+             let e = bignat_of_pos e in
+             let s, i = if is_pos_or_zero i then SPlus, i else SMinus, neg i in
+             let i = Bigint.to_string i in
+             let se = if is_gr md glob_Rdiv then "-" else "" in
+             let e = se ^ Bigint.to_string e in
+             s, { NumTok.int = i; frac = ""; exp = e }
+        | _ -> raise Non_closed_number
+        end
+     | _ -> raise Non_closed_number
+     end
   | _ -> raise Non_closed_number
 
 let uninterp_r (AnyGlobConstr p) =
   try
-    Some (bigint_of_r p)
+    Some (rawnum_of_r p)
   with Non_closed_number ->
     None
 
@@ -131,11 +186,11 @@ let at_declare_ml_module f x =
 let r_scope = "R_scope"
 
 let _ =
-  register_bignumeral_interpretation r_scope (r_of_int,uninterp_r);
+  register_rawnumeral_interpretation r_scope (r_of_rawnum,uninterp_r);
   at_declare_ml_module enable_prim_token_interpretation
     { pt_local = false;
       pt_scope = r_scope;
       pt_interp_info = Uid r_scope;
       pt_required = (r_path,["Coq";"Reals";"Rdefinitions"]);
-      pt_refs = [glob_IZR];
+      pt_refs = [glob_IZR; glob_Rmult; glob_Rdiv];
       pt_in_match = false }
