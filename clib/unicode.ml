@@ -86,6 +86,7 @@ let classify =
         Unicodetable.ll;           (* Letter, lowercase.                *)
         Unicodetable.lt;           (* Letter, titlecase.                *)
         Unicodetable.lo;           (* Letter, others.                   *)
+        Unicodetable.lm;           (* Letter, modifier.                 *)
       ];
     mk_lookup_table_from_unicode_tables_for IdentPart
       [
