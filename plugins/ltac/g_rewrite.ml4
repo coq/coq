@@ -262,14 +262,14 @@ VERNAC COMMAND FUNCTIONAL EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
            st
        ]
   | [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ]
-    => [ Vernacexpr.(VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater) ]
+    => [ Vernacexpr.(VtStartProof(GuaranteesOpacity,[n]), VtLater) ]
     -> [ fun ~atts ~st -> let open Vernacinterp in
            add_morphism (not (Locality.make_section_locality atts.locality)) [] m s n;
            st
        ]
   | [ "Add" "Parametric" "Morphism" binders(binders) ":" constr(m)
         "with" "signature" lconstr(s) "as" ident(n) ]
-    => [ Vernacexpr.(VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater) ]
+    => [ Vernacexpr.(VtStartProof(GuaranteesOpacity,[n]), VtLater) ]
     -> [ fun ~atts ~st -> let open Vernacinterp in
            add_morphism (not (Locality.make_section_locality atts.locality)) binders m s n;
            st

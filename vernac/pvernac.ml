@@ -39,14 +39,15 @@ module Vernac_ =
       ] in
       Pcoq.grammar_extend main_entry None (None, [None, None, rule])
 
-    let command_entry_ref = ref noedit_mode
+    let command_entry_ref = ref (noedit_mode, [])
     let command_entry =
       Gram.Entry.of_parser "command_entry"
-        (fun strm -> Gram.Entry.parse_token !command_entry_ref strm)
+        (fun strm -> Gram.Entry.parse_token (fst !command_entry_ref) strm)
 
   end
 
 let main_entry = Vernac_.main_entry
+let tactic_entry : (string, _) Hashtbl.t = Hashtbl.create 19
 
 let set_command_entry e = Vernac_.command_entry_ref := e
 let get_command_entry () = !Vernac_.command_entry_ref

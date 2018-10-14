@@ -2078,10 +2078,6 @@ exception End_of_input
 let vernac_load interp fname =
   if Proof_global.there_are_pending_proofs () then
     CErrors.user_err Pp.(str "Load is not supported inside proofs.");
-  let interp x =
-    let proof_mode = Proof_global.get_default_proof_mode_name () [@ocaml.warning "-3"] in
-    Proof_global.activate_proof_mode proof_mode [@ocaml.warning "-3"];
-    interp x in
   let parse_sentence = Flags.with_option Flags.we_are_parsing
     (fun po ->
     match Pcoq.Entry.parse Pvernac.main_entry po with
@@ -2256,7 +2252,6 @@ let interp ?proof ~atts ~st c =
     Aux_file.record_in_aux_at ?loc:atts.loc "VernacProof" (tacs^" "^usings);
     Option.iter vernac_set_end_tac tac;
     Option.iter vernac_set_used_variables using
-  | VernacProofMode mn -> Proof_global.set_proof_mode mn [@ocaml.warning "-3"]
 
   (* Extensions *)
   | VernacExtend (opn,args) ->

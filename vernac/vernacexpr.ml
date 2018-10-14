@@ -390,7 +390,6 @@ type nonrec vernac_expr =
   | VernacShow of showable
   | VernacCheckGuard
   | VernacProof of Genarg.raw_generic_argument option * section_subset_expr option
-  | VernacProofMode of string
 
   (* For extension *)
   | VernacExtend of extend_name * Genarg.raw_generic_argument list
@@ -437,6 +436,7 @@ type vernac_type =
   | VtQed of vernac_qed_type
   (* A proof step *)
   | VtProofStep of proof_step
+<<<<<<< HEAD:vernac/vernacexpr.ml
   (* To be removed *)
   | VtProofMode of string
   (* Queries are commands assumed to be "pure", that is to say, they
@@ -444,9 +444,13 @@ type vernac_type =
   | VtQuery
   (* To be removed *)
   | VtMeta
+=======
+  | VtQuery of vernac_part_of_script * Feedback.route_id
+  | VtBack of vernac_part_of_script * Stateid.t
+>>>>>>> [proof] Rework `proof_mode` handling.:intf/vernacexpr.ml
   | VtUnknown
 and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)
-and vernac_start = string * opacity_guarantee * Id.t list
+and vernac_start = opacity_guarantee * Id.t list
 and vernac_sideff_type = Id.t list
 and opacity_guarantee =
   | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
