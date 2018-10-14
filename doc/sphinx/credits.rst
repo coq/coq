@@ -1,3 +1,7 @@
+-------
+Credits
+-------
+
 Coq is a proof assistant for higher-order logic, allowing the
 development of computer programs consistent with their formal
 specification. It is the result of about ten years of research of the
@@ -186,7 +190,7 @@ definitions of “inversion predicates”.
 |
 
 Credits: addendum for version 6.1
-=================================
+---------------------------------
 
 The present version 6.1 of |Coq| is based on the V5.10 architecture. It
 was ported to the new language Objective Caml by Bruno Barras. The
@@ -223,7 +227,7 @@ Barras.
 |
 
 Credits: addendum for version 6.2
-=================================
+---------------------------------
 
 In version 6.2 of |Coq|, the parsing is done using camlp4, a preprocessor
 and pretty-printer for CAML designed by Daniel de Rauglaudre at INRIA.
@@ -268,7 +272,7 @@ Loiseleur.
 |
 
 Credits: addendum for version 6.3
-=================================
+---------------------------------
 
 The main changes in version V6.3 were the introduction of a few new
 tactics and the extension of the guard condition for fixpoint
@@ -301,7 +305,7 @@ Monin from CNET Lannion.
 |
 
 Credits: versions 7
-===================
+-------------------
 
 The version V7 is a new implementation started in September 1999 by
 Jean-Christophe Filliâtre. This is a major revision with respect to the
@@ -390,7 +394,7 @@ J.-F. Monin from France Telecom R & D.
 |
 
 Credits: version 8.0
-====================
+--------------------
 
 Coq version 8 is a major revision of the |Coq| proof assistant. First, the
 underlying logic is slightly different. The so-called *impredicativity*
@@ -492,7 +496,7 @@ under the responsibility of Christine Paulin.
 |
 
 Credits: version 8.1
-====================
+--------------------
 
 Coq version 8.1 adds various new functionalities.
 
@@ -571,7 +575,7 @@ and Yale University.
 |
 
 Credits: version 8.2
-====================
+--------------------
 
 Coq version 8.2 adds new features, new libraries and improves on many
 various aspects.
@@ -665,7 +669,7 @@ the Coq-Club mailing list.
 |
 
 Credits: version 8.3
-====================
+--------------------
 
 Coq version 8.3 is before all a transition version with refinements or
 extensions of the existing features and libraries and a new tactic nsatz
@@ -739,7 +743,7 @@ Pierce for the excellent teaching materials they provided.
 |
 
 Credits: version 8.4
-====================
+--------------------
 
 Coq version 8.4 contains the result of three long-term projects: a new
 modular library of arithmetic by Pierre Letouzey, a new proof engine by
@@ -895,7 +899,7 @@ Eelis van der Weegen.
 |
 
 Credits: version 8.5
-====================
+--------------------
 
 Coq version 8.5 contains the result of five specific long-term projects:
 
@@ -1049,7 +1053,7 @@ Tankink. Maxime Dénès coordinated the release process.
 |
 
 Credits: version 8.6
-====================
+--------------------
 
 Coq version 8.6 contains the result of refinements, stabilization of
 8.5’s features and cleanups of the internals of the system. Over the
@@ -1189,7 +1193,8 @@ Dénès to put together a |Coq| consortium.
 |
 
 Credits: version 8.7
-====================
+--------------------
+
 |Coq| version 8.7 contains the result of refinements, stabilization of features
 and cleanups of the internals of the system along with a few new features. The
 main user visible changes are:
@@ -1294,8 +1299,7 @@ system, is now upcoming and will rely on Inria’s newly created Foundation.
 |
 
 Credits: version 8.8
-====================
-
+--------------------
 
 |Coq| version 8.8 contains the result of refinements and stabilization of
 features and deprecations, cleanups of the internals of the system along
