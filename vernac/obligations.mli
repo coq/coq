@@ -13,6 +13,10 @@ open Constr
 open Evd
 open Names
 
+type univ_declaration_hook
+val mk_univ_hook : (UState.t -> Decl_kinds.locality -> GlobRef.t -> unit) -> univ_declaration_hook
+val call_univ_hook : Future.fix_exn -> univ_declaration_hook -> UState.t -> Decl_kinds.locality -> GlobRef.t -> unit
+
 (* This is a hack to make it possible for Obligations to craft a Qed
  * behind the scenes.  The fix_exn the Stm attaches to the Future proof
  * is not available here, so we provide a side channel to get it *)
@@ -59,7 +63,7 @@ val add_definition : Names.Id.t -> ?term:constr -> types ->
   ?kind:Decl_kinds.definition_kind ->
   ?tactic:unit Proofview.tactic ->
   ?reduce:(constr -> constr) ->
-  ?hook:(UState.t -> unit) Lemmas.declaration_hook -> ?opaque:bool -> obligation_info -> progress
+  ?hook:univ_declaration_hook -> ?opaque:bool -> obligation_info -> progress
 
 type notations =
     (lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
@@ -76,7 +80,7 @@ val add_mutual_definitions :
   ?tactic:unit Proofview.tactic ->
   ?kind:Decl_kinds.definition_kind ->
   ?reduce:(constr -> constr) ->
-  ?hook:(UState.t -> unit) Lemmas.declaration_hook -> ?opaque:bool ->
+  ?hook:univ_declaration_hook -> ?opaque:bool ->
   notations ->
   fixpoint_kind -> unit
 

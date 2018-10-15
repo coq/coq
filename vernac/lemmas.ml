@@ -34,7 +34,7 @@ open Impargs
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-type 'a declaration_hook = Decl_kinds.locality -> GlobRef.t -> 'a
+type declaration_hook = Decl_kinds.locality -> GlobRef.t -> unit
 let mk_hook hook = hook
 let call_hook fix_exn hook l c =
   try hook l c

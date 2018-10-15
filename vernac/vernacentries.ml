@@ -479,10 +479,12 @@ let start_proof_and_print k l hook =
 let no_hook = Lemmas.mk_hook (fun _ _ -> ())
 
 let vernac_definition_hook p = function
-| Coercion -> Class.add_coercion_hook p
+| Coercion ->
+  Class.add_coercion_hook p
 | CanonicalStructure ->
-    Lemmas.mk_hook (fun _ -> Recordops.declare_canonical_structure)
-| SubClass -> Class.add_subclass_hook p
+  Lemmas.mk_hook (fun _ -> Recordops.declare_canonical_structure)
+| SubClass ->
+  Class.add_subclass_hook p
 | _ -> no_hook
 
 let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =

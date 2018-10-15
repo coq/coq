@@ -42,8 +42,8 @@ val try_add_new_coercion_with_source : GlobRef.t -> local:bool ->
 val try_add_new_identity_coercion : Id.t -> local:bool -> 
   Decl_kinds.polymorphic -> source:cl_typ -> target:cl_typ -> unit
 
-val add_coercion_hook : Decl_kinds.polymorphic -> unit Lemmas.declaration_hook
+val add_coercion_hook : Decl_kinds.polymorphic -> Lemmas.declaration_hook
 
-val add_subclass_hook : Decl_kinds.polymorphic -> unit Lemmas.declaration_hook
+val add_subclass_hook : Decl_kinds.polymorphic -> Lemmas.declaration_hook
 
 val class_of_global : GlobRef.t -> cl_typ

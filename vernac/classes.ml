@@ -149,7 +149,7 @@ let do_abstract_instance env sigma ?hook ~global ~poly k u ctx ctx' pri decl imp
 let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl len term termtype =
   let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
   if program_mode then
-    let hook vis gr _ =
+    let hook _ vis gr =
       let cst = match gr with ConstRef kn -> kn | _ -> assert false in
       Impargs.declare_manual_implicits false gr ~enriching:false [imps];
       let pri = intern_info pri in
@@ -163,7 +163,7 @@ let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id 
         in obls, Some constr, typ
       | None -> [||], None, termtype
     in
-    let hook = Lemmas.mk_hook hook in
+    let hook = Obligations.mk_univ_hook hook in
     let ctx = Evd.evar_universe_context sigma in
     ignore (Obligations.add_definition id ?term:constr
               ~univdecl:decl typ ctx ~kind:(Global,poly,Instance) ~hook obls)
@@ -425,7 +425,7 @@ let context poly l =
       | Some b ->
         let decl = (Discharge, poly, Definition) in
         let entry = Declare.definition_entry ~univs ~types:t b in
-        let hook = Lemmas.mk_hook (fun _ gr -> gr) in
+        let hook = Lemmas.mk_hook (fun _ _ -> ()) in
         let _ = DeclareDef.declare_definition id decl entry UnivNames.empty_binders [] hook in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
