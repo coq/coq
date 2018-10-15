@@ -39,9 +39,6 @@ OCAMLFIND         := $(COQMF_OCAMLFIND)
 CAMLFLAGS         := $(COQMF_CAMLFLAGS)
 HASNATDYNLINK     := $(COQMF_HASNATDYNLINK)
 
-@CONF_FILE@: @PROJECT_FILE@
-	@COQ_MAKEFILE_INVOCATION@
-
 # This file can be created by the user to hook into double colon rules or
 # add any other Makefile code he may need
 -include @LOCAL_FILE@
