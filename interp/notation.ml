@@ -173,6 +173,7 @@ type interp_rule =
   | NotationRule of scope_name option * notation
   | SynDefRule of KerName.t
 
+type scoped_notation_rule_core = scope_name * notation * interpretation * int option
 type notation_rule_core = interp_rule * interpretation * int option
 type notation_rule = notation_rule_core * delimiters option * bool
 
@@ -312,18 +313,26 @@ let key_compare k1 k2 = match k1, k2 with
 module KeyOrd = struct type t = key let compare = key_compare end
 module KeyMap = Map.Make(KeyOrd)
 
-let keymap_add key sc interp map =
-  let oldkeymap = try ScopeMap.find sc map with Not_found -> KeyMap.empty in
+let keymap_add key sc interp (scope_map,global_map) =
+  (* Adding to scope keymap for printing based on open scopes *)
+  let oldkeymap = try ScopeMap.find sc scope_map with Not_found -> KeyMap.empty in
   let oldscmap = try KeyMap.find key oldkeymap with Not_found -> [] in
   let newscmap = KeyMap.add key (interp :: oldscmap) oldkeymap in
-  ScopeMap.add sc newscmap map
+  let scope_map = ScopeMap.add sc newscmap scope_map in
+  (* Adding to global keymap of scoped notations in case the scope is not open *)
+  let global_map = match interp with
+  | NotationRule (Some sc,ntn), interp, c ->
+      let oldglobalkeymap = try KeyMap.find key global_map with Not_found -> [] in
+      KeyMap.add key ((sc,ntn,interp,c) :: oldglobalkeymap) global_map
+  | (NotationRule (None,_) | SynDefRule _), _, _ -> global_map in
+  (scope_map, global_map)
 
 let keymap_extract keys sc map =
-  let keymap, map =
-    try ScopeMap.find (Some sc) map, ScopeMap.remove (Some sc) map
-    with Not_found -> KeyMap.empty, map in
+  let keymap =
+    try ScopeMap.find (Some sc) map
+    with Not_found -> KeyMap.empty in
   let add_scope rule = (rule,(String.Map.find sc !scope_map).delimiters,false) in
-  List.map_append (fun key -> try List.map add_scope (KeyMap.find key keymap) with Not_found -> []) keys, map
+  List.map_append (fun key -> try List.map add_scope (KeyMap.find key keymap) with Not_found -> []) keys
 
 let find_with_delimiters = function
   | None -> None
@@ -332,17 +341,22 @@ let find_with_delimiters = function
         | Some key -> Some (Some key)
         | None -> None
 
-let keymap_extract_remainder keys map =
-  ScopeMap.fold (fun sc keymap acc ->
-      match find_with_delimiters sc with
-      | None -> acc
-      | Some delim ->
-         let add_scope rule = (rule,delim,true) in
-         let l = List.map_append (fun key -> try List.map add_scope (KeyMap.find key keymap) with Not_found -> []) keys in
-      l @ acc) map []
+let rec keymap_extract_remainder scope_seen = function
+  | [] -> []
+  | (sc,ntn,interp,c) :: l ->
+      if String.Set.mem sc scope_seen then keymap_extract_remainder scope_seen l
+      else
+        match find_with_delimiters (Some sc) with
+        | None -> keymap_extract_remainder scope_seen l
+        | Some delim ->
+           let rule = (NotationRule (Some sc, ntn), interp, c) in
+           (rule,delim,true) :: keymap_extract_remainder scope_seen l
 
 (* Scopes table : interpretation -> scope_name *)
-let notations_key_table = ref (ScopeMap.empty : notation_rule_core list KeyMap.t ScopeMap.t)
+let notations_key_table =
+  ref ((ScopeMap.empty, KeyMap.empty) :
+       notation_rule_core list KeyMap.t ScopeMap.t *
+       scoped_notation_rule_core list KeyMap.t)
 
 let glob_prim_constr_key c = match DAst.get c with
   | GRef (ref, _) -> Some (canonical_gr ref)
@@ -1051,13 +1065,15 @@ let interp_notation ?loc ntn local_scopes =
 
 let extract_notations scopes keys =
   if keys == [] then [] (* shortcut *) else
-  let rec aux scopes map =
+  let scope_map, global_map = !notations_key_table in
+  let rec aux scopes seen =
   match scopes with
-  | UninterpScope sc :: scopes ->
-      let l, map = keymap_extract keys sc map in l @ aux scopes map
-  | UninterpSingle rule :: scopes -> (rule,None,false) :: aux scopes map
-  | [] -> keymap_extract_remainder keys map
-  in aux scopes !notations_key_table
+  | UninterpScope sc :: scopes -> keymap_extract keys sc scope_map @ aux scopes (String.Set.add sc seen)
+  | UninterpSingle rule :: scopes -> (rule,None,false) :: aux scopes seen
+  | [] ->
+      let find key = try KeyMap.find key global_map with Not_found -> [] in
+      keymap_extract_remainder seen (List.flatten (List.map find keys))
+  in aux scopes String.Set.empty
 
 let uninterp_notations scopes c =
   let scopes = make_current_uninterp_scopes scopes in
@@ -1773,7 +1789,7 @@ let init () =
   init_scope_map ();
   uninterp_scope_stack := [];
   delimiters_map := String.Map.empty;
-  notations_key_table := ScopeMap.empty;
+  notations_key_table := (ScopeMap.empty,KeyMap.empty);
   scope_class_map := initial_scope_class_map;
   prim_token_interp_infos := String.Map.empty;
   prim_token_uninterp_infos := GlobRef.Map.empty

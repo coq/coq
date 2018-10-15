@@ -122,3 +122,17 @@ Close Scope nat_scope.
 Check fun x => S x.
 
 End F.
+
+(* Lower priority of generic application rules *)
+
+Module G.
+
+Declare Scope predecessor_scope.
+Delimit Scope predecessor_scope with pred.
+Declare Scope app_scope.
+Delimit Scope app_scope with app.
+Notation "x .-1" := (Nat.pred x) (at level 10, format "x .-1") : predecessor_scope.
+Notation "f ( x )" := (f x) (at level 10, format "f ( x )") : app_scope.
+Check fun x => pred x.
+
+End G.

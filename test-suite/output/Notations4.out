@@ -31,3 +31,5 @@ fun x : nat => ### x
      : nat -> nat
 fun x : nat => ## x
      : nat -> nat
+fun x : nat => (x.-1)%pred
+     : nat -> nat

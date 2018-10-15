@@ -1337,10 +1337,22 @@ Coq will use the following rules for printing priorities:
 - In case no abbreviation, nor lonely notation, nor notation in an
   explicitly open scope, nor notation in a temporarily open scope of
   arguments, has been found, notations in those closed scopes which
-  have a delimiter are considered. A notation is chosen and the
-  corresponding delimiter is inserted, making the corresponding scope
-  the most recent explicitly open scope for all subterms of the
-  current term.
+  have a delimiter are considered, giving priority to the most
+  recently defined (or imported) ones. The corresponding delimiter is
+  inserted, making the corresponding scope the most recent explicitly
+  open scope for all subterms of the current term.
+
+- As a refinement of the previous rule, in the case of applied global
+  references, notations in a non-opened scope with delimiter
+  specifically defined for this applied global reference take priority
+  over notations in a non-opened scope with delimiter for generic
+  applications. For instance, in the presence of ``Notation "f ( x
+  )" := (f x) (at level 10, format "f ( x )") : app_scope`` and
+  ``Notation "x '.+1'" := (S x) (at level 10, format "x '.+1'") :
+  mynat_scope.`` and both of ``app_scope`` and ``mynat_scope`` being
+  bound to a delimiter *and* both not opened, the latter, more
+  specific notation will always take precedence over the first, more
+  generic one.
 
 - A scope can be closed by using :cmd:`Close Scope` and its delimiter
   removed by using :cmd:`Undelimit Scope`. To remove automatic
