@@ -244,7 +244,7 @@ let get_float opt n =
     prerr_endline ("Error: float expected after option "^opt); exit 1
 
 let get_host_port opt s =
-  match CString.split ':' s with
+  match String.split_on_char ':' s with
   | [host; portr; portw] ->
        Some (Spawned.Socket(host, int_of_string portr, int_of_string portw))
   | ["stdfds"] -> Some Spawned.AnonPipe
@@ -255,7 +255,7 @@ let get_host_port opt s =
 let get_error_resilience opt = function
   | "on" | "all" | "yes" -> `All
   | "off" | "no" -> `None
-  | s -> `Only (CString.split ',' s)
+  | s -> `Only (String.split_on_char ',' s)
 
 let get_priority opt s =
   try CoqworkmgrApi.priority_of_string s

@@ -167,7 +167,7 @@ object
   method into l =
     try
       Some (CList.map (fun s ->
-        let split = CString.split sep s in
+        let split = String.split_on_char sep s in
         CList.nth split 0, CList.nth split 1) l)
     with Failure _ -> None
 end

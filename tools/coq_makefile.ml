@@ -248,7 +248,7 @@ let rec logic_gcd acc = function
 
 let generate_conf_doc oc { defs; q_includes; r_includes } =
   let includes = List.map (forget_source > snd) (q_includes @ r_includes) in
-  let logpaths = List.map (CString.split '.') includes in
+  let logpaths = List.map (String.split_on_char '.') includes in
   let gcd = logic_gcd [] logpaths in
   let root =
     if gcd = [] then
@@ -378,8 +378,8 @@ let destination_of { ml_includes; q_includes; r_includes; } file =
   | _ -> assert false
 
 let share_prefix s1 s2 =
-  let s1 = CString.split '.' s1 in
-  let s2 = CString.split '.' s2 in
+  let s1 = String.split_on_char '.' s1 in
+  let s2 = String.split_on_char '.' s2 in
   match s1, s2 with
   | x :: _ , y :: _ -> x = y
   | _ -> false

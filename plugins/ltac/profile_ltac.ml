@@ -260,7 +260,7 @@ let string_of_call ck =
     ) in
   let s = String.map (fun c -> if c = '\n' then ' ' else c) s in
   let s = try String.sub s 0 (CString.string_index_from s 0 "(*") with Not_found -> s in
-  CString.strip s
+  String.trim s
 
 let rec merge_sub_tree name tree acc =
   try

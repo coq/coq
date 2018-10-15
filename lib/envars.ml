@@ -34,7 +34,7 @@ let home ~warn =
 
 let path_to_list p =
   let sep = if String.equal Sys.os_type "Win32" then ';' else ':' in
-    String.split sep p
+    String.split_on_char sep p
 
 let expand_path_macros ~warn s =
   let rec expand_atom s i =
