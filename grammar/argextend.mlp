@@ -21,6 +21,13 @@ END
 let declare_str_items loc l =
   MLast.StDcl (loc, ploc_vala l) (* correspond to <:str_item< declare $list:l'$ end >> *)
 
+let declare_arg loc s e =
+  declare_str_items loc [
+    <:str_item< value ($lid:"wit_"^s$, $lid:s$) = $e$ >>;
+    (** Prevent the unused variable warning *)
+    <:str_item< value _ = ($lid:"wit_"^s$, $lid:s$) >>;
+  ]
+
 let mk_extraarg loc s = <:expr< $lid:"wit_"^s$ >>
 
 let rec make_wit loc = function
@@ -47,147 +54,100 @@ let make_act loc act pil =
 	<:expr< (fun _ -> $make tl$) >> in
   make (List.rev pil)
 
-let make_prod_item = function
+let make_prod_item self = function
   | ExtTerminal s -> <:expr< Extend.Atoken (CLexer.terminal $mlexpr_of_string s$) >>
+  | ExtNonTerminal (Uentry e, _) when e = self -> <:expr< Extend.Aself >>
   | ExtNonTerminal (g, _) ->
     let base s = <:expr< $lid:s$ >> in
     mlexpr_of_prod_entry_key base g
 
-let rec make_prod = function
+let rec make_prod self = function
 | [] -> <:expr< Extend.Stop >>
-| item :: prods -> <:expr< Extend.Next $make_prod prods$ $make_prod_item item$ >>
+| item :: prods -> <:expr< Extend.Next $make_prod self prods$ $make_prod_item self item$ >>
 
-let make_rule loc (prods,act) =
-  <:expr< Extend.Rule $make_prod (List.rev prods)$ $make_act loc act prods$ >>
+let make_rule loc self (prods,act) =
+  <:expr< Extend.Rule $make_prod self (List.rev prods)$ $make_act loc act prods$ >>
 
 let is_ident x = function
 | <:expr< $lid:s$ >> -> (s : string) = x
 | _ -> false
 
-let make_extend loc s cl wit = match cl with
+let make_extend loc self cl = match cl with
 | [[ExtNonTerminal (Uentry e, Some id)], act] when is_ident id act ->
   (** Special handling of identity arguments by not redeclaring an entry *)
-  <:str_item<
-    value $lid:s$ =
-      let () = Pcoq.register_grammar $wit$ $lid:e$ in
-      $lid:e$
-  >>
+  <:expr< Vernacentries.Arg_alias $lid:e$ >>
 | _ ->
-  let se = mlexpr_of_string s in
-  let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
-  <:str_item<
-    value $lid:s$ =
-      let $lid:s$ = Pcoq.create_generic_entry Pcoq.utactic $se$ (Genarg.rawwit $wit$) in
-      let () = Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]) in
-      $lid:s$ >>
+  <:expr< Vernacentries.Arg_rules $mlexpr_of_list (make_rule loc self) (List.rev cl)$ >>
 
-let warning_redundant prefix s =
-  Printf.eprintf "Redundant [%sTYPED AS] clause in [ARGUMENT EXTEND %s].\n%!" prefix s
+let warning_deprecated prefix s = function
+| None -> ()
+| Some _ ->
+  Printf.eprintf "Deprecated [%sTYPED AS] clause in [ARGUMENT EXTEND %s]. \
+                  Use [TYPED AS] instead.\n%!" prefix s
 
-let get_type prefix s = function
+let get_type s = function
 | None -> None
 | Some typ ->
   if is_self s typ then
-    let () = warning_redundant prefix s in None
+    let () = Printf.eprintf "Redundant [TYPED AS] clause in [ARGUMENT EXTEND %s].\n%!" s in
+    None
   else Some typ
-
-let check_type prefix s = function
-| None -> ()
-| Some _ -> warning_redundant prefix s
 
 let declare_tactic_argument loc s (typ, f, g, h) cl =
   let se = mlexpr_of_string s in
-  let rawtyp, rawpr, globtyp, globpr, typ, pr = match typ with
+  let typ, pr = match typ with
     | `Uniform (typ, pr) ->
-      let typ = get_type "" s typ in
-      typ, pr, typ, pr, typ, pr
+      let typ = get_type s typ in
+      typ, <:expr< ($lid:pr$, $lid:pr$, $lid:pr$) >>
     | `Specialized (a, rpr, c, gpr, e, tpr) ->
-      (** Check that we actually need the TYPED AS arguments *)
-      let rawtyp = get_type "RAW_" s a in
-      let glbtyp = get_type "GLOB_" s c in
-      let toptyp = get_type "" s e in
-      let () = match g with None -> () | Some _ -> check_type "RAW_" s rawtyp in
-      let () = match f, h with Some _, Some _ -> check_type "GLOB_" s glbtyp | _ -> () in
-      rawtyp, rpr, glbtyp, gpr, toptyp, tpr
+      let () = warning_deprecated "RAW_" s a in
+      let () = warning_deprecated "GLOB_" s c in
+      let typ = get_type s e in
+      typ, <:expr< ($lid:rpr$, $lid:gpr$, $lid:tpr$) >>
   in
-  let glob = match g with
-    | None ->
-      begin match rawtyp with
-      | None -> <:expr< fun ist v -> (ist, v) >>
-      | Some rawtyp ->
-        <:expr< fun ist v ->
-          let ans = out_gen $make_globwit loc rawtyp$
-          (Tacintern.intern_genarg ist
-          (Genarg.in_gen $make_rawwit loc rawtyp$ v)) in
-          (ist, ans) >>
-      end
-    | Some f ->
-      <:expr< fun ist v -> (ist, $lid:f$ ist v) >>
+  let glob = match g, typ with
+  | Some f, (None | Some _) ->
+    <:expr< Tacentries.ArgInternFun (fun ist v -> (ist, $lid:f$ ist v)) >>
+  | None, Some typ ->
+    <:expr< Tacentries.ArgInternWit $make_wit loc typ$ >>
+  | None, None ->
+    <:expr< Tacentries.ArgInternFun (fun ist v -> (ist, v)) >>
   in
-  let interp = match f with
-    | None ->
-      begin match globtyp with
-      | None ->
-        let typ = match globtyp with None -> ExtraArgType s | Some typ -> typ in
-        <:expr< fun ist v -> Ftactic.return (Geninterp.Val.inject (Geninterp.val_tag $make_topwit loc typ$) v) >>
-      | Some globtyp ->
-        <:expr< fun ist x ->
-          Tacinterp.interp_genarg ist (Genarg.in_gen $make_globwit loc globtyp$ x) >>
-      end
-    | Some f ->
-      (** Compatibility layer, TODO: remove me *)
-      let typ = match globtyp with None -> ExtraArgType s | Some typ -> typ in
-      <:expr<
-        let f = $lid:f$ in
-        fun ist v -> Ftactic.enter (fun gl ->
-          let (sigma, v) = Tacmach.New.of_old (fun gl -> f ist gl v) gl in
-          let v = Geninterp.Val.inject (Geninterp.val_tag $make_topwit loc typ$) v in
-          Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Ftactic.return v)
-        )
-      >> in
-  let subst = match h with
-    | None ->
-      begin match globtyp with
-      | None -> <:expr< fun s v -> v >>
-      | Some globtyp ->
-        <:expr< fun s x ->
-          out_gen $make_globwit loc globtyp$
-          (Tacsubst.subst_genarg s
-            (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
-      end
-    | Some f -> <:expr< $lid:f$>> in
-  let dyn = match typ with
-  | None -> <:expr< None >>
-  | Some typ -> <:expr< Some (Geninterp.val_tag $make_topwit loc typ$) >>
+  let interp = match f, typ with
+  | Some f, (None | Some _) ->
+    <:expr< Tacentries.ArgInterpLegacy $lid:f$ >>
+  | None, Some typ ->
+    <:expr< Tacentries.ArgInterpWit $make_wit loc typ$ >>
+  | None, None ->
+    <:expr< Tacentries.ArgInterpRet >>
   in
-  let wit = <:expr< $lid:"wit_"^s$ >> in
-  declare_str_items loc
-   [ <:str_item< value ($lid:"wit_"^s$) = Genarg.make0 $se$ >>;
-     <:str_item< Genintern.register_intern0 $wit$ $glob$ >>;
-     <:str_item< Genintern.register_subst0 $wit$ $subst$ >>;
-     <:str_item< Geninterp.register_interp0 $wit$ $interp$ >>;
-     <:str_item< Geninterp.register_val0 $wit$ $dyn$ >>;
-     make_extend loc s cl wit;
-     <:str_item< do {
-      Pptactic.declare_extra_genarg_pprule
-        $wit$ $lid:rawpr$ $lid:globpr$ $lid:pr$;
-      Tacentries.create_ltac_quotation $se$
-        (fun (loc, v) -> Tacexpr.TacGeneric (Genarg.in_gen (Genarg.rawwit $wit$) v))
-        ($lid:s$, None)
-      } >> ]
+  let subst = match h, typ with
+  | Some f, (None | Some _) ->
+    <:expr< Tacentries.ArgSubstFun $lid:f$ >>
+  | None, Some typ ->
+    <:expr< Tacentries.ArgSubstWit $make_wit loc typ$ >>
+  | None, None ->
+    <:expr< Tacentries.ArgSubstFun (fun s v -> v) >>
+  in
+  let dyn = mlexpr_of_option (fun typ -> <:expr< Geninterp.val_tag $make_topwit loc typ$ >>) typ in
+  declare_arg loc s <:expr< Tacentries.argument_extend ~{ name = $se$ } {
+    Tacentries.arg_parsing = $make_extend loc s cl$;
+    Tacentries.arg_tag = $dyn$;
+    Tacentries.arg_intern = $glob$;
+    Tacentries.arg_subst = $subst$;
+    Tacentries.arg_interp = $interp$;
+    Tacentries.arg_printer = $pr$
+  } >>
 
 let declare_vernac_argument loc s pr cl =
   let se = mlexpr_of_string s in
-  let wit = <:expr< $lid:"wit_"^s$ >> in
   let pr_rules = match pr with
-    | None -> <:expr< fun _ _ _ _ -> Pp.str $str:"[No printer for "^s^"]"$ >>
-    | Some pr -> <:expr< fun _ _ _ -> $lid:pr$ >> in
-  declare_str_items loc
-   [ <:str_item<
-      value ($lid:"wit_"^s$ : Genarg.genarg_type 'a unit unit) =
-        Genarg.create_arg $se$ >>;
-     make_extend loc s cl wit;
-    <:str_item< Pptactic.declare_extra_vernac_genarg_pprule $wit$ $pr_rules$ >> ]
+    | None -> <:expr< fun _ -> Pp.str $str:"[No printer for "^s^"]"$ >>
+    | Some pr -> <:expr< $lid:pr$ >> in
+  declare_arg loc s <:expr< Vernacentries.vernac_argument_extend ~{ name = $se$ } {
+    Vernacentries.arg_printer = $pr_rules$;
+    Vernacentries.arg_parsing = $make_extend loc s cl$
+  } >>
 
 open Pcaml
 

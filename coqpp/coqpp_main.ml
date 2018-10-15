@@ -14,6 +14,9 @@ let fatal msg =
   let () = Format.eprintf "Error: %s@\n%!" msg in
   exit 1
 
+let dummy_loc = { loc_start = Lexing.dummy_pos; loc_end = Lexing.dummy_pos }
+let mk_code s = { code = s; loc = dummy_loc }
+
 let pr_loc loc =
   let file = loc.loc_start.pos_fname in
   let line = loc.loc_start.pos_lnum in
@@ -97,9 +100,16 @@ let rec print_symbol fmt = function
   assert (e = "tactic");
   fprintf fmt "@[Extend.TUentryl (Genarg.get_arg_tag wit_%s, %i)@]" e l
 
+let print_string fmt s = fprintf fmt "\"%s\"" s
+
+let print_opt fmt pr = function
+| None -> fprintf fmt "None"
+| Some x -> fprintf fmt "Some@ @[(%a)@]" pr x
+
 module GramExt :
 sig
 
+val print_extrule : Format.formatter -> (symb list * string option list * code) -> unit
 val print_ast : Format.formatter -> grammar_ext -> unit
 
 end =
@@ -135,12 +145,6 @@ let print_local fmt ext =
     let () = List.iter iter locals in
     fprintf fmt "in@ "
 
-let print_string fmt s = fprintf fmt "\"%s\"" s
-
-let print_opt fmt pr = function
-| None -> fprintf fmt "None"
-| Some x -> fprintf fmt "Some@ (%a)" pr x
-
 let print_position fmt pos = match pos with
 | First -> fprintf fmt "Extend.First"
 | Last -> fprintf fmt "Extend.Last"
@@ -152,16 +156,6 @@ let print_assoc fmt = function
 | LeftA -> fprintf fmt "Extend.LeftA"
 | RightA -> fprintf fmt "Extend.RightA"
 | NonA -> fprintf fmt "Extend.NonA"
-
-type symb =
-| SymbToken of string * string option
-| SymbEntry of string * string option
-| SymbSelf
-| SymbNext
-| SymbList0 of symb * symb option
-| SymbList1 of symb * symb option
-| SymbOpt of symb
-| SymbRules of ((string option * symb) list * code) list
 
 let is_token s = match string_split s with
 | [s] -> is_uident s
@@ -232,9 +226,12 @@ let print_tok fmt = function
 
 let rec print_prod fmt p =
   let (vars, tkns) = List.split p.gprod_symbs in
-  let f = (vars, p.gprod_body) in
-  let tkn = List.rev_map parse_tokens tkns in
-  fprintf fmt "@[Extend.Rule@ (@[%a@],@ @[(%a)@])@]" print_symbols tkn print_fun f
+  let tkn = List.map parse_tokens tkns in
+  print_extrule fmt (tkn, vars, p.gprod_body)
+
+and print_extrule fmt (tkn, vars, body) =
+  let tkn = List.rev tkn in
+  fprintf fmt "@[Extend.Rule@ (@[%a@],@ @[(%a)@])@]" print_symbols tkn print_fun (vars, body)
 
 and print_symbols fmt = function
 | [] -> fprintf fmt "Extend.Stop"
@@ -271,6 +268,8 @@ and print_symbol fmt tkn = match tkn with
   in
   let pr fmt rules = print_list fmt pr rules in
   fprintf fmt "(Extend.Arules %a)" pr (List.rev rules)
+| SymbQuote c ->
+  fprintf fmt "(%s)" c
 
 let print_rule fmt r =
   let pr_lvl fmt lvl = print_opt fmt print_string lvl in
@@ -303,11 +302,16 @@ struct
 
 let print_rule_classifier fmt r = match r.vernac_class with
 | None -> fprintf fmt "None"
-| Some f -> fprintf fmt "Some @[(fun %a-> %s)@]" print_binders r.vernac_toks f.code
+| Some f ->
+  let no_binder = function ExtTerminal _ -> true | ExtNonTerminal _ -> false in
+  if List.for_all no_binder r.vernac_toks then
+    fprintf fmt "Some @[%a@]" print_code f
+  else
+    fprintf fmt "Some @[(fun %a-> %a)@]" print_binders r.vernac_toks print_code f
 
 let print_body fmt r =
-  fprintf fmt "@[(fun %a~atts@ ~st@ -> let () = %s in st)@]"
-    print_binders r.vernac_toks r.vernac_body.code
+  fprintf fmt "@[(fun %a~atts@ ~st@ -> let () = %a in st)@]"
+    print_binders r.vernac_toks print_code r.vernac_body
 
 let rec print_sig fmt = function
 | [] -> fprintf fmt "@[Vernacentries.TyNil@]"
@@ -335,7 +339,7 @@ let print_classifier fmt = function
 
 let print_entry fmt = function
 | None -> fprintf fmt "None"
-| Some e -> fprintf fmt "Some (%s)" e.code
+| Some e -> fprintf fmt "(Some (%s))" e.code
 
 let print_ast fmt ext =
   let pr fmt () =
@@ -364,7 +368,7 @@ let rec print_clause fmt = function
     print_symbol g print_clause cl
 
 let print_rule fmt r =
-  fprintf fmt "@[Tacentries.TyML (%a, @[fun %aist@ -> %a@])@]"
+  fprintf fmt "@[Tacentries.TyML (%a, @[(fun %aist@ -> %a)@])@]"
     print_clause r.tac_toks print_binders r.tac_toks print_code r.tac_body
 
 let print_rules fmt rules =
@@ -388,6 +392,161 @@ let print_ast fmt ext =
 
 end
 
+module VernacArgumentExt :
+sig
+
+val print_ast : Format.formatter -> vernac_argument_ext -> unit
+val print_rules : Format.formatter -> string * tactic_rule list -> unit
+
+end =
+struct
+
+let terminal s =
+  let c = Printf.sprintf "Extend.Atoken (CLexer.terminal \"%s\")" s in
+  SymbQuote c
+
+let rec parse_symb self = function
+| Ulist1 s -> SymbList1 (parse_symb self s, None)
+| Ulist1sep (s, sep) -> SymbList1 (parse_symb self s, Some (terminal sep))
+| Ulist0 s -> SymbList0 (parse_symb self s, None)
+| Ulist0sep (s, sep) -> SymbList0 (parse_symb self s, Some (terminal sep))
+| Uopt s -> SymbOpt (parse_symb self s)
+| Uentry e -> if e = self then SymbSelf else SymbEntry (e, None)
+| Uentryl (e, l) ->
+  assert (e = "tactic");
+  if l = 5 then SymbEntry ("Pltac.binder_tactic", None)
+  else SymbEntry ("Pltac.tactic_expr", Some (string_of_int l))
+
+let parse_token self = function
+| ExtTerminal s -> (terminal s, None)
+| ExtNonTerminal (e, TokNone) -> (parse_symb self e, None)
+| ExtNonTerminal (e, TokName s) -> (parse_symb self e, Some s)
+
+let parse_rule self r =
+  let symbs = List.map (fun t -> parse_token self t) r.tac_toks in
+  let symbs, vars = List.split symbs in
+  (symbs, vars, r.tac_body)
+
+let print_rules fmt (name, rules) =
+  (** Rules are reversed. *)
+  let rules = List.rev rules in
+  let rules = List.map (fun r -> parse_rule name r) rules in
+  let pr fmt l = print_list fmt (fun fmt r -> fprintf fmt "(%a)" GramExt.print_extrule r) l in
+  match rules with
+  | [([SymbEntry (e, None)], [Some s], { code = c } )] when String.trim c = s ->
+    (** This is a horrible hack to work aroud limitations of camlp5 regarding
+        factorization of parsing rules. It allows to recognize rules of the
+        form [ entry(x) ] -> [ x ] so as not to generate a proxy entry and
+        reuse the same entry directly. *)
+    fprintf fmt "@[Vernacentries.Arg_alias (%s)@]" e
+  | _ -> fprintf fmt "@[Vernacentries.Arg_rules (%a)@]" pr rules
+
+let print_printer fmt = function
+| None -> fprintf fmt "@[fun _ -> Pp.str \"missing printer\"@]"
+| Some f -> print_code fmt f
+
+let print_ast fmt arg =
+  let name = arg.vernacargext_name in
+  let pr fmt () =
+    fprintf fmt "Vernacentries.vernac_argument_extend ~name:%a @[{@\n\
+      Vernacentries.arg_parsing = %a;@\n\
+      Vernacentries.arg_printer = %a;@\n}@]"
+      print_string name print_rules (name, arg.vernacargext_rules)
+      print_printer arg.vernacargext_printer
+  in
+  fprintf fmt "let (wit_%s, %s) = @[%a@]@\nlet _ = (wit_%s, %s)@\n"
+    name name pr () name name
+
+end
+
+module ArgumentExt :
+sig
+
+val print_ast : Format.formatter -> argument_ext -> unit
+
+end =
+struct
+
+let rec print_argtype fmt = function
+| ExtraArgType s ->
+  fprintf fmt "Geninterp.val_tag (Genarg.topwit wit_%s)" s
+| PairArgType (arg1, arg2) ->
+  fprintf fmt "Geninterp.Val.Pair (@[(%a)@], @[(%a)@])" print_argtype arg1 print_argtype arg2
+| ListArgType arg ->
+  fprintf fmt "Geninterp.Val.List @[(%a)@]" print_argtype arg
+| OptArgType arg ->
+  fprintf fmt "Geninterp.Val.Opt @[(%a)@]" print_argtype arg
+
+let rec print_wit fmt = function
+| ExtraArgType s ->
+  fprintf fmt "wit_%s" s
+| PairArgType (arg1, arg2) ->
+  fprintf fmt "Genarg.PairArg (@[(%a)@], @[(%a)@])" print_wit arg1 print_wit arg2
+| ListArgType arg ->
+  fprintf fmt "Genarg.ListArg @[(%a)@]" print_wit arg
+| OptArgType arg ->
+  fprintf fmt "Genarg.OptArg @[(%a)@]" print_wit arg
+
+let print_ast fmt arg =
+  let name = arg.argext_name in
+  let pr_tag fmt t = print_opt fmt print_argtype t in
+  let intern fmt () = match arg.argext_glob, arg.argext_type with
+  | Some f, (None | Some _) ->
+    fprintf fmt "@[Tacentries.ArgInternFun ((fun f ist v -> (ist, f ist v)) (%a))@]" print_code f
+  | None, Some t ->
+    fprintf fmt "@[Tacentries.ArgInternWit (%a)@]" print_wit t
+  | None, None ->
+    fprintf fmt "@[Tacentries.ArgInternFun (fun ist v -> (ist, v))@]"
+  in
+  let subst fmt () = match arg.argext_subst, arg.argext_type with
+  | Some f, (None | Some _) ->
+    fprintf fmt "@[Tacentries.ArgSubstFun (%a)@]" print_code f
+  | None, Some t ->
+    fprintf fmt "@[Tacentries.ArgSubstWit (%a)@]" print_wit t
+  | None, None ->
+    fprintf fmt "@[Tacentries.ArgSubstFun (fun s v -> v)@]"
+  in
+  let interp fmt () = match arg.argext_interp, arg.argext_type with
+  | Some f, (None | Some _) ->
+    fprintf fmt "@[Tacentries.ArgInterpLegacy (%a)@]" print_code f
+  | None, Some t ->
+    fprintf fmt "@[Tacentries.ArgInterpWit (%a)@]" print_wit t
+  | None, None ->
+    fprintf fmt "@[Tacentries.ArgInterpRet@]"
+  in
+  let default_printer = mk_code "fun _ _ _ _ -> Pp.str \"missing printer\"" in
+  let rpr = match arg.argext_rprinter, arg.argext_tprinter with
+  | Some f, (None | Some _) -> f
+  | None, Some f -> f
+  | None, None -> default_printer
+  in
+  let gpr = match arg.argext_gprinter, arg.argext_tprinter with
+  | Some f, (None | Some _) -> f
+  | None, Some f -> f
+  | None, None -> default_printer
+  in
+  let tpr = match arg.argext_tprinter with
+  | Some f -> f
+  | None -> default_printer
+  in
+  let pr fmt () =
+    fprintf fmt "Tacentries.argument_extend ~name:%a @[{@\n\
+      Tacentries.arg_parsing = %a;@\n\
+      Tacentries.arg_tag = @[%a@];@\n\
+      Tacentries.arg_intern = @[%a@];@\n\
+      Tacentries.arg_subst = @[%a@];@\n\
+      Tacentries.arg_interp = @[%a@];@\n\
+      Tacentries.arg_printer = @[((%a), (%a), (%a))@];@\n}@]"
+      print_string name
+      VernacArgumentExt.print_rules (name, arg.argext_rules)
+      pr_tag arg.argext_type
+      intern () subst () interp () print_code rpr print_code gpr print_code tpr
+  in
+  fprintf fmt "let (wit_%s, %s) = @[%a@]@\nlet _ = (wit_%s, %s)@\n"
+    name name pr () name name
+
+end
+
 let declare_plugin fmt name =
   fprintf fmt "let %s = \"%s\"@\n" plugin_name name;
   fprintf fmt "let _ = Mltop.add_known_module %s@\n" plugin_name
@@ -398,7 +557,9 @@ let pr_ast fmt = function
 | DeclarePlugin name -> declare_plugin fmt name
 | GramExt gram -> fprintf fmt "%a@\n" GramExt.print_ast gram
 | VernacExt vernac -> fprintf fmt "%a@\n" VernacExt.print_ast vernac
+| VernacArgumentExt arg -> fprintf fmt "%a@\n" VernacArgumentExt.print_ast arg
 | TacticExt tac -> fprintf fmt "%a@\n" TacticExt.print_ast tac
+| ArgumentExt arg -> fprintf fmt "%a@\n" ArgumentExt.print_ast arg
 
 let () =
   let () =

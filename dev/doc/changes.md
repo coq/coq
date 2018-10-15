@@ -27,6 +27,11 @@ Coqlib:
   command then enables to locate the registered constant through its name. The
   name resolution is dynamic.
 
+Macros:
+
+- The RAW_TYPED AS and GLOB_TYPED AS stanzas of the ARGUMENT EXTEND macro are
+  deprecated. Use TYPED AS instead.
+
 ## Changes between Coq 8.8 and Coq 8.9
 
 ### ML API
@@ -209,7 +214,48 @@ END
 
 #### ARGUMENT EXTEND
 
-Not handled yet.
+Steps to perform:
+- replace the brackets enclosing OCaml code in actions with braces
+- if not there yet, add a leading `|` to the first rule
+- syntax of `TYPED AS` has been restricted not to accept compound generic
+  arguments as a literal, e.g. `foo_opt` should be rewritten into `foo option`
+  and similarly `foo_list` into `foo list`.
+- parenthesis around pair types in `TYPED AS` are now mandatory
+- `RAW_TYPED AS` and `GLOB_TYPED AS` clauses need to be removed
+
+`BY` clauses are considered OCaml code, and thus need to be wrapped in braces,
+but not the `TYPED AS` clauses.
+
+For instance, code of the form:
+```
+ARGUMENT EXTEND my_arg
+  TYPED AS int_opt
+  PRINTED BY printer
+  INTERPRETED BY interp_f
+  GLOBALIZED BY glob_f
+  SUBSTITUTED BY subst_f
+  RAW_TYPED AS int_opt
+  RAW_PRINTED BY raw_printer
+  GLOB_TYPED AS int_opt
+  GLOB_PRINTED BY glob_printer
+  [ "foo" int(i) ] -> [ my_arg1 i ]
+| [ "bar" ] -> [ my_arg2 ]
+END
+```
+should be turned into
+```
+ARGUMENT EXTEND my_arg
+  TYPED AS { int_opt }
+  PRINTED BY { printer }
+  INTERPRETED BY { interp_f }
+  GLOBALIZED BY { glob_f }
+  SUBSTITUTED BY { subst_f }
+  RAW_PRINTED BY { raw_printer }
+  GLOB_PRINTED BY { glob_printer }
+| [ "foo" int(i) ] -> { my_arg1 i }
+| [ "bar" ] -> { my_arg2 }
+END
+```
 
 #### GEXTEND
 

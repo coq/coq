@@ -2613,3 +2613,30 @@ let vernac_extend ~command ?classifier ?entry ext =
   in
   let () = declare_vernac_classifier command cl in
   List.iteri iter ext
+
+(** VERNAC ARGUMENT EXTEND registering *)
+
+type 'a argument_rule =
+| Arg_alias of 'a Pcoq.Entry.t
+| Arg_rules of 'a Extend.production_rule list
+
+type 'a vernac_argument = {
+  arg_printer : 'a -> Pp.t;
+  arg_parsing : 'a argument_rule;
+}
+
+let vernac_argument_extend ~name arg =
+  let wit = Genarg.create_arg name in
+  let entry = match arg.arg_parsing with
+  | Arg_alias e ->
+    let () = Pcoq.register_grammar wit e in
+    e
+  | Arg_rules rules ->
+    let e = Pcoq.create_generic_entry Pcoq.utactic name (Genarg.rawwit wit) in
+    let () = Pcoq.grammar_extend e None (None, [(None, None, rules)]) in
+    e
+  in
+  let pr = arg.arg_printer in
+  let pr x = Genprint.PrinterBasic (fun () -> pr x) in
+  let () = Genprint.register_vernac_print0 wit pr in
+  (wit, entry)

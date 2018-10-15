@@ -70,6 +70,8 @@ val print_ltacs : unit -> unit
 val print_located_tactic : Libnames.qualid -> unit
 (** Display the absolute name of a tactic. *)
 
+(** {5 TACTIC EXTEND} *)
+
 type _ ty_sig =
 | TyNil : (Geninterp.interp_sign -> unit Proofview.tactic) ty_sig
 | TyIdent : string * 'r ty_sig -> 'r ty_sig
@@ -79,3 +81,60 @@ type ty_ml = TyML : 'r ty_sig * 'r -> ty_ml
 
 val tactic_extend : string -> string -> level:Int.t ->
   ?deprecation:deprecation -> ty_ml list -> unit
+
+(** {5 ARGUMENT EXTEND} *)
+
+(**
+
+  This is the main entry point for the ARGUMENT EXTEND macro that allows to
+  easily create user-made Ltac arguments.
+
+
+  Each argument has three type parameters. See {!Genarg} for more details.
+  There are two kinds of Ltac arguments, uniform and non-uniform. The former
+  have the same type at each level (raw, glob, top) while the latter may vary.
+
+  When declaring an argument one must provide the following data:
+  - Internalization : raw -> glob
+  - Substitution : glob -> glob
+  - Interpretation : glob -> Ltac dynamic value
+  - Printing for every level
+  - An optional toplevel tag of type top (with the proviso that the
+    interpretation function only produces values with this tag)
+
+  This data can be either given explicitly with the [Fun] constructors, or it
+  can be inherited from another argument with the [Wit] constructors.
+
+*)
+
+type ('a, 'b, 'c) argument_printer =
+  'a Pptactic.raw_extra_genarg_printer *
+  'b Pptactic.glob_extra_genarg_printer *
+  'c Pptactic.extra_genarg_printer
+
+type ('a, 'b) argument_intern =
+| ArgInternFun : ('a, 'b) Genintern.intern_fun -> ('a, 'b) argument_intern
+| ArgInternWit : ('a, 'b, 'c) Genarg.genarg_type -> ('a, 'b) argument_intern
+
+type 'b argument_subst =
+| ArgSubstFun : 'b Genintern.subst_fun -> 'b argument_subst
+| ArgSubstWit : ('a, 'b, 'c) Genarg.genarg_type -> 'b argument_subst
+
+type ('b, 'c) argument_interp =
+| ArgInterpRet : ('c, 'c) argument_interp
+| ArgInterpFun : ('b, Geninterp.Val.t) Geninterp.interp_fun -> ('b, 'c) argument_interp
+| ArgInterpWit : ('a, 'b, 'r) Genarg.genarg_type -> ('b, 'c) argument_interp
+| ArgInterpLegacy :
+  (Geninterp.interp_sign -> Proof_type.goal Evd.sigma -> 'b -> Evd.evar_map * 'c) -> ('b, 'c) argument_interp
+
+type ('a, 'b, 'c) tactic_argument = {
+  arg_parsing : 'a Vernacentries.argument_rule;
+  arg_tag : 'c Geninterp.Val.tag option;
+  arg_intern : ('a, 'b) argument_intern;
+  arg_subst : 'b argument_subst;
+  arg_interp : ('b, 'c) argument_interp;
+  arg_printer : ('a, 'b, 'c) argument_printer;
+}
+
+val argument_extend : name:string -> ('a, 'b, 'c) tactic_argument ->
+  ('a, 'b, 'c) Genarg.genarg_type * 'a Pcoq.Entry.t

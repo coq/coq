@@ -10,6 +10,8 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+{
+
 open Names
 module CoqConstr = Constr
 open CoqConstr
@@ -25,7 +27,6 @@ open Notation_ops
 open Notation_term
 open Glob_term
 open Stdarg
-open Genarg
 open Decl_kinds
 open Pp
 open Ppconstr
@@ -36,9 +37,12 @@ open Evar_kinds
 open Ssrprinters
 open Ssrcommon
 open Ssrparser
+
+}
+
 DECLARE PLUGIN "ssreflect_plugin"
 
-let (!@) = Pcoq.to_coqloc
+{
 
 (* Defining grammar rules with "xx" in it automatically declares keywords too,
  * we thus save the lexer to restore it at the end of the file *)
@@ -46,7 +50,7 @@ let frozen_lexer = CLexer.get_keyword_state () ;;
 
 (* global syntactic changes and vernacular commands *)
 
-(** Alternative notations for "match" and anonymous arguments. *)(* {{{ ************)
+(** Alternative notations for "match" and anonymous arguments. *)(* ************)
 
 (* Syntax:                                                        *)
 (*  if <term> is <pattern> then ... else ...                      *)
@@ -71,60 +75,62 @@ let frozen_lexer = CLexer.get_keyword_state () ;;
 (* as this can't be done from an ML extension file, the new       *)
 (* syntax will only work when ssreflect.v is imported.            *)
 
-let no_ct = None, None and no_rt = None in 
+let no_ct = None, None and no_rt = None
 let aliasvar = function
   | [[{ CAst.v = CPatAlias (_, na); loc }]] -> Some na
-  | _ -> None in
-let mk_cnotype mp = aliasvar mp, None in
-let mk_ctype mp t = aliasvar mp, Some t in
-let mk_rtype t = Some t in
-let mk_dthen ?loc (mp, ct, rt) c = (CAst.make ?loc (mp, c)), ct, rt in
+  | _ -> None
+let mk_cnotype mp = aliasvar mp, None
+let mk_ctype mp t = aliasvar mp, Some t
+let mk_rtype t = Some t
+let mk_dthen ?loc (mp, ct, rt) c = (CAst.make ?loc (mp, c)), ct, rt
 let mk_let ?loc rt ct mp c1 =
-  CAst.make ?loc @@ CCases (LetPatternStyle, rt, ct, [CAst.make ?loc (mp, c1)]) in
-let mk_pat c (na, t) = (c, na, t) in
-GEXTEND Gram
+  CAst.make ?loc @@ CCases (LetPatternStyle, rt, ct, [CAst.make ?loc (mp, c1)])
+let mk_pat c (na, t) = (c, na, t)
+
+}
+
+GRAMMAR EXTEND Gram
   GLOBAL: binder_constr;
-  ssr_rtype: [[ "return"; t = operconstr LEVEL "100" -> mk_rtype t ]];
-  ssr_mpat: [[ p = pattern -> [[p]] ]];
+  ssr_rtype: [[ "return"; t = operconstr LEVEL "100" -> { mk_rtype t } ]];
+  ssr_mpat: [[ p = pattern -> { [[p]] } ]];
   ssr_dpat: [
-    [ mp = ssr_mpat; "in"; t = pattern; rt = ssr_rtype -> mp, mk_ctype mp t, rt
-    | mp = ssr_mpat; rt = ssr_rtype -> mp, mk_cnotype mp, rt
-    | mp = ssr_mpat -> mp, no_ct, no_rt
+    [ mp = ssr_mpat; "in"; t = pattern; rt = ssr_rtype -> { mp, mk_ctype mp t, rt }
+    | mp = ssr_mpat; rt = ssr_rtype -> { mp, mk_cnotype mp, rt }
+    | mp = ssr_mpat -> { mp, no_ct, no_rt }
   ] ];
-  ssr_dthen: [[ dp = ssr_dpat; "then"; c = lconstr -> mk_dthen ~loc:!@loc dp c ]];
-  ssr_elsepat: [[ "else" -> [[CAst.make ~loc:!@loc @@ CPatAtom None]] ]];
-  ssr_else: [[ mp = ssr_elsepat; c = lconstr -> CAst.make ~loc:!@loc (mp, c) ]];
+  ssr_dthen: [[ dp = ssr_dpat; "then"; c = lconstr -> { mk_dthen ~loc dp c } ]];
+  ssr_elsepat: [[ "else" -> { [[CAst.make ~loc @@ CPatAtom None]] } ]];
+  ssr_else: [[ mp = ssr_elsepat; c = lconstr -> { CAst.make ~loc (mp, c) } ]];
   binder_constr: [
     [ "if"; c = operconstr LEVEL "200"; "is"; db1 = ssr_dthen; b2 = ssr_else ->
-      let b1, ct, rt = db1 in CAst.make ~loc:!@loc @@ CCases (MatchStyle, rt, [mk_pat c ct], [b1; b2])
+      { let b1, ct, rt = db1 in CAst.make ~loc @@ CCases (MatchStyle, rt, [mk_pat c ct], [b1; b2]) }
     | "if"; c = operconstr LEVEL "200";"isn't";db1 = ssr_dthen; b2 = ssr_else ->
-      let b1, ct, rt = db1 in 
+      { let b1, ct, rt = db1 in 
       let b1, b2 = let open CAst in
         let {loc=l1; v=(p1, r1)}, {loc=l2; v=(p2, r2)} = b1, b2 in
         (make ?loc:l1 (p1, r2), make ?loc:l2 (p2, r1))
       in
-      CAst.make ~loc:!@loc @@ CCases (MatchStyle, rt, [mk_pat c ct], [b1; b2])
+      CAst.make ~loc @@ CCases (MatchStyle, rt, [mk_pat c ct], [b1; b2]) }
     | "let"; ":"; mp = ssr_mpat; ":="; c = lconstr; "in"; c1 = lconstr ->
-      mk_let ~loc:!@loc no_rt [mk_pat c no_ct] mp c1
+      { mk_let ~loc no_rt [mk_pat c no_ct] mp c1 }
     | "let"; ":"; mp = ssr_mpat; ":="; c = lconstr;
       rt = ssr_rtype; "in"; c1 = lconstr ->
-      mk_let ~loc:!@loc rt [mk_pat c (mk_cnotype mp)] mp c1
+      { mk_let ~loc rt [mk_pat c (mk_cnotype mp)] mp c1 }
     | "let"; ":"; mp = ssr_mpat; "in"; t = pattern; ":="; c = lconstr;
       rt = ssr_rtype; "in"; c1 = lconstr ->
-      mk_let ~loc:!@loc rt [mk_pat c (mk_ctype mp t)] mp c1
+      { mk_let ~loc rt [mk_pat c (mk_ctype mp t)] mp c1 }
   ] ];
 END
 
-GEXTEND Gram
+GRAMMAR EXTEND Gram
   GLOBAL: closed_binder;
   closed_binder: [
-    [ ["of" | "&"]; c = operconstr LEVEL "99" ->
-      [CLocalAssum ([CAst.make ~loc:!@loc Anonymous], Default Explicit, c)]
+    [ ["of" -> { () } | "&" -> { () } ]; c = operconstr LEVEL "99" ->
+      { [CLocalAssum ([CAst.make ~loc Anonymous], Default Explicit, c)] }
   ] ];
 END
-(* }}} *)
 
-(** Vernacular commands: Prenex Implicits and Search *)(* {{{ **********************)
+(** Vernacular commands: Prenex Implicits and Search *)(***********************)
 
 (* This should really be implemented as an extension to the implicit   *)
 (* arguments feature, but unfortuately that API is sealed. The current *)
@@ -137,6 +143,8 @@ END
 (*  - The command "Import Prenex Implicits" can be used to reassert    *)
 (*    Prenex Implicits for all the visible constants that had been     *)
 (*    declared as Prenex Implicits.                                    *)
+
+{
 
 let declare_one_prenex_implicit locality f =
   let fref =
@@ -159,23 +167,24 @@ let declare_one_prenex_implicit locality f =
   | impls ->
     Impargs.declare_manual_implicits locality fref ~enriching:false [impls]
 
-VERNAC COMMAND FUNCTIONAL EXTEND Ssrpreneximplicits CLASSIFIED AS SIDEFF
+}
+
+VERNAC COMMAND EXTEND Ssrpreneximplicits CLASSIFIED AS SIDEFF
   | [ "Prenex" "Implicits" ne_global_list(fl) ]
-  -> [ fun ~atts ~st ->
+  -> {
          let open Vernacinterp in
          let locality = Locality.make_section_locality atts.locality in
          List.iter (declare_one_prenex_implicit locality) fl;
-         st
-     ]
+     }
 END
 
 (* Vernac grammar visibility patch *)
 
-GEXTEND Gram
+GRAMMAR EXTEND Gram
   GLOBAL: gallina_ext;
   gallina_ext:
    [ [ IDENT "Import"; IDENT "Prenex"; IDENT "Implicits" ->
-      Vernacexpr.VernacUnsetOption (false, ["Printing"; "Implicit"; "Defensive"])
+      { Vernacexpr.VernacUnsetOption (false, ["Printing"; "Implicit"; "Defensive"]) }
    ] ]
   ;
 END
@@ -183,6 +192,8 @@ END
 (** Extend Search to subsume SearchAbout, also adding hidden Type coercions. *)
 
 (* Main prefilter *)
+
+{
 
 type raw_glob_search_about_item =
   | RGlobSearchSubPattern of constr_expr
@@ -303,23 +314,31 @@ let interp_search_notation ?loc tag okey =
   let _, npat = Patternops.pattern_of_glob_constr (sub () body) in
   Search.GlobSearchSubPattern npat
 
+}
+
 ARGUMENT EXTEND ssr_search_item TYPED AS ssr_searchitem
-  PRINTED BY pr_ssr_search_item
-  | [ string(s) ] -> [ RGlobSearchString (loc,s,None) ]
-  | [ string(s) "%" preident(key) ] -> [ RGlobSearchString (loc,s,Some key) ]
-  | [ constr_pattern(p) ] -> [ RGlobSearchSubPattern p ]
+  PRINTED BY { pr_ssr_search_item }
+  | [ string(s) ] -> {  RGlobSearchString (loc,s,None)  }
+  | [ string(s) "%" preident(key) ] -> {  RGlobSearchString (loc,s,Some key)  }
+  | [ constr_pattern(p) ] -> {  RGlobSearchSubPattern p  }
 END
+
+{
 
 let pr_ssr_search_arg _ _ _ =
   let pr_item (b, p) = str (if b then "-" else "") ++ pr_search_item p in
   pr_list spc pr_item
 
+}
+
 ARGUMENT EXTEND ssr_search_arg TYPED AS (bool * ssr_searchitem) list
-  PRINTED BY pr_ssr_search_arg
-  | [ "-" ssr_search_item(p) ssr_search_arg(a) ] -> [ (false, p) :: a ]
-  | [ ssr_search_item(p) ssr_search_arg(a) ] -> [ (true, p) :: a ]
-  | [ ] -> [ [] ]
+  PRINTED BY { pr_ssr_search_arg }
+  | [ "-" ssr_search_item(p) ssr_search_arg(a) ] -> {  (false, p) :: a  }
+  | [ ssr_search_item(p) ssr_search_arg(a) ] -> {  (true, p) :: a  }
+  | [ ] -> {  []  }
 END
+
+{
 
 (* Main type conclusion pattern filter *)
 
@@ -419,15 +438,19 @@ let wit_ssrmodloc = add_genarg "ssrmodloc" pr_modloc
 let pr_ssr_modlocs _ _ _ ml =
   if ml = [] then str "" else spc () ++ str "in " ++ pr_list spc pr_modloc ml
 
-ARGUMENT EXTEND ssr_modlocs TYPED AS ssrmodloc list PRINTED BY pr_ssr_modlocs
-  | [ ] -> [ [] ]
+}
+
+ARGUMENT EXTEND ssr_modlocs TYPED AS ssrmodloc list PRINTED BY { pr_ssr_modlocs }
+  | [ ] -> {  []  }
 END
 
-GEXTEND Gram
+GRAMMAR EXTEND Gram
   GLOBAL: ssr_modlocs;
-  modloc: [[ "-"; m = global -> true, m | m = global -> false, m]];
-  ssr_modlocs: [[ "in"; ml = LIST1 modloc -> ml ]];
+  modloc: [[ "-"; m = global -> { true, m } | m = global -> { false, m } ]];
+  ssr_modlocs: [[ "in"; ml = LIST1 modloc -> { ml } ]];
 END
+
+{
 
 let interp_modloc mr =
   let interp_mod (_, qid) =
@@ -446,26 +469,28 @@ let ssrdisplaysearch gr env t =
   let pr_res = pr_global gr ++ spc () ++ str " " ++ pr_lconstr_env env Evd.empty t in
   Feedback.msg_info (hov 2 pr_res ++ fnl ())
 
+}
+
 VERNAC COMMAND EXTEND SsrSearchPattern CLASSIFIED AS QUERY
 | [ "Search" ssr_search_arg(a) ssr_modlocs(mr) ] ->
-  [ let hpat = interp_search_arg a in
+  { let hpat = interp_search_arg a in
     let in_mod = interp_modloc mr in
     let post_filter gr env typ = in_mod gr env typ && hpat gr env typ in
     let display gr env typ =
       if post_filter gr env typ then ssrdisplaysearch gr env typ
     in
-    Search.generic_search None display ]
+    Search.generic_search None display }
 END
 
-(* }}} *)
-
-(** View hint database and View application. *)(* {{{ ******************************)
+(** View hint database and View application. *)(* ******************************)
 
 (* There are three databases of lemmas used to mediate the application  *)
 (* of reflection lemmas: one for forward chaining, one for backward     *)
 (* chaining, and one for secondary backward chaining.                   *)
 
 (* View hints *)
+
+{
 
 let pr_raw_ssrhintref prc _ _ = let open CAst in function
   | { v = CAppExpl ((None, r,x), args) } when isCHoles args ->
@@ -490,13 +515,18 @@ let mkhintref ?loc c n = match c.CAst.v with
   | CRef (r,x) -> CAst.make ?loc @@ CAppExpl ((None, r, x), mkCHoles ?loc n)
   | _ -> mkAppC (c, mkCHoles ?loc n)
 
+}
+
 ARGUMENT EXTEND ssrhintref
-                             PRINTED BY pr_ssrhintref
-    RAW_TYPED AS constr  RAW_PRINTED BY pr_raw_ssrhintref
-   GLOB_TYPED AS constr GLOB_PRINTED BY pr_glob_ssrhintref
-  | [ constr(c) ] -> [ c ]
-  | [ constr(c) "|" natural(n) ] -> [ mkhintref ~loc c n ]
+  TYPED AS constr
+  PRINTED BY { pr_ssrhintref }
+  RAW_PRINTED BY { pr_raw_ssrhintref }
+  GLOB_PRINTED BY { pr_glob_ssrhintref }
+  | [ constr(c) ] -> {  c  }
+  | [ constr(c) "|" natural(n) ] -> {  mkhintref ~loc c n  }
 END
+
+{
 
 (* View purpose *)
 
@@ -508,70 +538,82 @@ let pr_viewpos = function
 
 let pr_ssrviewpos _ _ _ = pr_viewpos
 
-ARGUMENT EXTEND ssrviewpos PRINTED BY pr_ssrviewpos
-  | [ "for" "move" "/" ] -> [ Some Ssrview.AdaptorDb.Forward ]
-  | [ "for" "apply" "/" ] -> [ Some Ssrview.AdaptorDb.Backward ]
-  | [ "for" "apply" "/" "/" ] -> [ Some Ssrview.AdaptorDb.Equivalence ]
-  | [ "for" "apply" "//" ] -> [ Some Ssrview.AdaptorDb.Equivalence ]
-  | [ ] -> [ None ]
+}
+
+ARGUMENT EXTEND ssrviewpos PRINTED BY { pr_ssrviewpos }
+  | [ "for" "move" "/" ] -> {  Some Ssrview.AdaptorDb.Forward  }
+  | [ "for" "apply" "/" ] -> {  Some Ssrview.AdaptorDb.Backward  }
+  | [ "for" "apply" "/" "/" ] -> {  Some Ssrview.AdaptorDb.Equivalence  }
+  | [ "for" "apply" "//" ] -> {  Some Ssrview.AdaptorDb.Equivalence  }
+  | [ ] -> {  None  }
 END
+
+{
 
 let pr_ssrviewposspc _ _ _ i = pr_viewpos i ++ spc ()
 
-ARGUMENT EXTEND ssrviewposspc TYPED AS ssrviewpos PRINTED BY pr_ssrviewposspc
-  | [ ssrviewpos(i) ] -> [ i ]
+}
+
+ARGUMENT EXTEND ssrviewposspc TYPED AS ssrviewpos PRINTED BY { pr_ssrviewposspc }
+  | [ ssrviewpos(i) ] -> {  i  }
 END
+
+{
 
 let print_view_hints kind l =
   let pp_viewname = str "Hint View" ++ pr_viewpos (Some kind) ++ str " " in
   let pp_hints = pr_list spc pr_rawhintref l in
   Feedback.msg_info  (pp_viewname ++ hov 0 pp_hints ++ Pp.cut ())
 
+}
+
 VERNAC COMMAND EXTEND PrintView CLASSIFIED AS QUERY
 | [ "Print" "Hint" "View" ssrviewpos(i) ] ->
-  [ match i with
+  { match i with
     | Some k -> print_view_hints k (Ssrview.AdaptorDb.get k)
     | None ->
         List.iter (fun k -> print_view_hints k (Ssrview.AdaptorDb.get k))
           [ Ssrview.AdaptorDb.Forward;
             Ssrview.AdaptorDb.Backward;
             Ssrview.AdaptorDb.Equivalence ]
-  ]
+  }
 END
+
+{
 
 let glob_view_hints lvh =
   List.map (Constrintern.intern_constr (Global.env ()) (Evd.from_env (Global.env ()))) lvh
 
+}
+
 VERNAC COMMAND EXTEND HintView CLASSIFIED AS SIDEFF
   |  [ "Hint" "View" ssrviewposspc(n) ne_ssrhintref_list(lvh) ] ->
-     [ let hints = glob_view_hints lvh in
+     { let hints = glob_view_hints lvh in
        match n with
        | None ->
           Ssrview.AdaptorDb.declare Ssrview.AdaptorDb.Forward hints;
           Ssrview.AdaptorDb.declare Ssrview.AdaptorDb.Backward hints
        | Some k ->
-          Ssrview.AdaptorDb.declare k hints ]
+          Ssrview.AdaptorDb.declare k hints }
 END
-
-(* }}} *)
 
 (** Canonical Structure alias *)
 
-GEXTEND Gram
+GRAMMAR EXTEND Gram
   GLOBAL: gallina_ext;
 
   gallina_ext:
       (* Canonical structure *)
      [[ IDENT "Canonical"; qid = Constr.global ->
-          Vernacexpr.VernacCanonical (CAst.make @@ AN qid)
+          { Vernacexpr.VernacCanonical (CAst.make @@ AN qid) }
       | IDENT "Canonical"; ntn = Prim.by_notation ->
-          Vernacexpr.VernacCanonical (CAst.make @@ ByNotation ntn)
+          { Vernacexpr.VernacCanonical (CAst.make @@ ByNotation ntn) }
       | IDENT "Canonical"; qid = Constr.global;
           d = G_vernac.def_body ->
-          let s = coerce_reference_to_id qid in
+          { let s = coerce_reference_to_id qid in
     Vernacexpr.VernacDefinition
       ((Decl_kinds.NoDischarge,Decl_kinds.CanonicalStructure),
-          ((CAst.make (Name s)),None), d)
+          ((CAst.make (Name s)),None), d) }
   ]];
 END
 
@@ -589,30 +631,34 @@ END
 (* Coq v8.3 defines "by" as a keyword, some hacks are not needed any   *)
 (* longer and thus comment out. Such comments are marked with v8.3     *)
 
+{
+
 open Pltac
 
-GEXTEND Gram
+}
+
+GRAMMAR EXTEND Gram
   GLOBAL: hypident;
   hypident: [
-  [ "("; IDENT "type"; "of"; id = Prim.identref; ")" -> id, Locus.InHypTypeOnly
-  | "("; IDENT "value"; "of"; id = Prim.identref; ")" -> id, Locus.InHypValueOnly
+  [ "("; IDENT "type"; "of"; id = Prim.identref; ")" -> { id, Locus.InHypTypeOnly }
+  | "("; IDENT "value"; "of"; id = Prim.identref; ")" -> { id, Locus.InHypValueOnly }
   ] ];
 END
 
-GEXTEND Gram
+GRAMMAR EXTEND Gram
   GLOBAL: hloc;
 hloc: [
   [ "in"; "("; "Type"; "of"; id = ident; ")" ->
-    Tacexpr.HypLocation (CAst.make id, Locus.InHypTypeOnly)
+    { Tacexpr.HypLocation (CAst.make id, Locus.InHypTypeOnly) }
   | "in"; "("; IDENT "Value"; "of"; id = ident; ")" ->
-    Tacexpr.HypLocation (CAst.make id, Locus.InHypValueOnly)
+    { Tacexpr.HypLocation (CAst.make id, Locus.InHypValueOnly) }
   ] ];
 END
 
-GEXTEND Gram
+GRAMMAR EXTEND Gram
   GLOBAL: constr_eval;
   constr_eval: [
-    [ IDENT "type"; "of"; c = Constr.constr -> Genredexpr.ConstrTypeOf c ]
+    [ IDENT "type"; "of"; c = Constr.constr -> { Genredexpr.ConstrTypeOf c }]
   ];
 END
 
@@ -620,6 +666,10 @@ END
 (* The user is supposed to Require Import ssreflect or Require ssreflect   *)
 (* and Import ssreflect.SsrSyntax to obtain these keywords and as a         *)
 (* consequence the extended ssreflect grammar.                             *)
+{
+
 let () = CLexer.set_keyword_state frozen_lexer ;;
+
+}
 
 (* vim: set filetype=ocaml foldmethod=marker: *)

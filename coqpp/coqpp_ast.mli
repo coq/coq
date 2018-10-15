@@ -60,6 +60,17 @@ and gram_prod = {
   gprod_body : code;
 }
 
+type symb =
+| SymbToken of string * string option
+| SymbEntry of string * string option
+| SymbSelf
+| SymbNext
+| SymbList0 of symb * symb option
+| SymbList1 of symb * symb option
+| SymbOpt of symb
+| SymbRules of ((string option * symb) list * code) list
+| SymbQuote of string (** Not used by GRAMMAR EXTEND *)
+
 type gram_rule = {
   grule_label : string option;
   grule_assoc : assoc option;
@@ -104,12 +115,38 @@ type vernac_ext = {
   vernacext_rules : vernac_rule list;
 }
 
+type vernac_argument_ext = {
+  vernacargext_name : string;
+  vernacargext_printer : code option;
+  vernacargext_rules : tactic_rule list;
+}
+
+type argument_type =
+| ListArgType of argument_type
+| OptArgType of argument_type
+| PairArgType of argument_type * argument_type
+| ExtraArgType of string
+
+type argument_ext = {
+  argext_name : string;
+  argext_rules : tactic_rule list;
+  argext_type : argument_type option;
+  argext_interp : code option;
+  argext_glob : code option;
+  argext_subst : code option;
+  argext_rprinter : code option;
+  argext_gprinter : code option;
+  argext_tprinter : code option;
+}
+
 type node =
 | Code of code
 | Comment of string
 | DeclarePlugin of string
 | GramExt of grammar_ext
 | VernacExt of vernac_ext
+| VernacArgumentExt of vernac_argument_ext
 | TacticExt of tactic_ext
+| ArgumentExt of argument_ext
 
 type t = node list
