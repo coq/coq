@@ -230,8 +230,7 @@ let hyp_of_move_location = function
   | MoveBefore id -> id
   | _ -> assert false
 
-let move_hyp sigma toleft (left,declfrom,right) hto =
-  let env = Global.env() in
+let move_hyp env sigma toleft (left,declfrom,right) hto =
   let test_dep d d2 =
     if toleft
     then occur_var_in_decl env sigma (NamedDecl.get_id d2) d
@@ -280,11 +279,11 @@ let move_hyp_in_named_context env sigma hfrom hto sign =
   let open EConstr in
   let (left,right,declfrom,toleft) =
     split_sign env sigma hfrom hto (named_context_of_val sign) in
-  move_hyp sigma toleft (left,declfrom,right) hto
+  move_hyp env sigma toleft (left,declfrom,right) hto
 
-let insert_decl_in_named_context sigma decl hto sign =
+let insert_decl_in_named_context env sigma decl hto sign =
   let open EConstr in
-  move_hyp sigma false ([],decl,named_context_of_val sign) hto
+  move_hyp env sigma false ([],decl,named_context_of_val sign) hto
 
 (**********************************************************************)
 

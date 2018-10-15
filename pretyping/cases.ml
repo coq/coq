@@ -994,8 +994,8 @@ let expand_arg tms (p,ccl) ((_,t),_,na) =
   let k = length_of_tomatch_type_sign na t in
   (p+k,liftn_predicate (k-1) (p+1) ccl tms)
 
-let use_unit_judge evd =
-  let j, ctx = coq_unit_judge () in
+let use_unit_judge env evd =
+  let j, ctx = coq_unit_judge !!env in
   let evd' = Evd.merge_context_set Evd.univ_flexible_alg evd ctx in
     evd', j
 
@@ -1024,7 +1024,7 @@ let adjust_impossible_cases sigma pb pred tomatch submat =
     | Evar (evk,_) when snd (evar_source evk sigma) == Evar_kinds.ImpossibleCase ->
         let sigma =
           if not (Evd.is_defined sigma evk) then
-            let sigma, default = use_unit_judge sigma in
+            let sigma, default = use_unit_judge pb.env sigma in
             let sigma = Evd.define evk default.uj_type sigma in
             sigma
           else sigma
@@ -2512,7 +2512,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
     (predopt, tomatchl, eqns) =
   let typing_fun tycon env sigma = function
     | Some t ->	typing_function tycon env sigma t
-    | None -> use_unit_judge sigma in
+    | None -> use_unit_judge env sigma in
 
   (* We build the matrix of patterns and right-hand side *)
   let matx = matx_of_eqns env eqns in
@@ -2593,7 +2593,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
     
   let typing_function tycon env sigma = function
     | Some t -> typing_function tycon env sigma t
-    | None -> use_unit_judge sigma in
+    | None -> use_unit_judge env sigma in
 
   let pb =
     { env      = env;
@@ -2668,7 +2668,7 @@ let compile_cases ?loc style (typing_fun, sigma) tycon env (predopt, tomatchl, e
     (* A typing function that provides with a canonical term for absurd cases*)
     let typing_fun tycon env sigma = function
     | Some t -> typing_fun tycon env sigma t
-    | None -> use_unit_judge sigma in
+    | None -> use_unit_judge env sigma in
 
     let pb =
       { env       = env;

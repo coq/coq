@@ -579,7 +579,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
                      has dependencies in another hyp of the context of ev
                      and transitively remember the dependency *)
                     let check id _ =
-                      if occur_var_in_decl (Global.env ()) !evdref id h
+                      if occur_var_in_decl env !evdref id h
                       then raise (Depends id)
                     in
                     let () = Id.Map.iter check ri in

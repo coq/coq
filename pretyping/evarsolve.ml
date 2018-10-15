@@ -425,7 +425,7 @@ let rec expand_vars_in_term_using sigma aliases t = match EConstr.kind sigma t w
 
 let expand_vars_in_term env sigma = expand_vars_in_term_using sigma (make_alias_map env sigma)
 
-let free_vars_and_rels_up_alias_expansion sigma aliases c =
+let free_vars_and_rels_up_alias_expansion env sigma aliases c =
   let acc1 = ref Int.Set.empty and acc2 = ref Id.Set.empty in
   let acc3 = ref Int.Set.empty and acc4 = ref Id.Set.empty in
   let cache_rel = ref Int.Set.empty and cache_var = ref Id.Set.empty in
@@ -457,7 +457,7 @@ let free_vars_and_rels_up_alias_expansion sigma aliases c =
         | Rel n -> if n >= depth+1 then acc1 := Int.Set.add (n-depth) !acc1
         | _ -> frec (aliases,depth) c end
     | Const _ | Ind _ | Construct _ ->
-        acc2 := Id.Set.union (vars_of_global (Global.env()) (EConstr.to_constr sigma c)) !acc2
+        acc2 := Id.Set.union (vars_of_global env (EConstr.to_constr sigma c)) !acc2
     | _ ->
         iter_with_full_binders sigma
           (fun d (aliases,depth) -> (extend_alias sigma d aliases,depth+1))
@@ -488,13 +488,13 @@ let alias_distinct l =
   in
   check (Int.Set.empty, Id.Set.empty) l
 
-let get_actual_deps evd aliases l t =
+let get_actual_deps env evd aliases l t =
   if occur_meta_or_existential evd t then
     (* Probably no restrictions on allowed vars in presence of evars *)
     l
   else
     (* Probably strong restrictions coming from t being evar-closed *)
-    let (fv_rels,fv_ids,_,_) = free_vars_and_rels_up_alias_expansion evd aliases t in
+    let (fv_rels,fv_ids,_,_) = free_vars_and_rels_up_alias_expansion env evd aliases t in
     List.filter (function
       | VarAlias id -> Id.Set.mem id fv_ids
       | RelAlias n -> Int.Set.mem n fv_rels
@@ -520,7 +520,7 @@ let remove_instance_local_defs evd evk args =
 let find_unification_pattern_args env evd l t =
   let aliases = make_alias_map env evd in
   match expand_and_check_vars evd aliases l with
-  | Some l as x when alias_distinct (get_actual_deps evd aliases l t) -> x
+  | Some l as x when alias_distinct (get_actual_deps env evd aliases l t) -> x
   | _ -> None
 
 let is_unification_pattern_meta env evd nb m l t =
@@ -1202,7 +1202,7 @@ exception EvarSolvedOnTheFly of evar_map * EConstr.constr
    the common domain of definition *)
 let project_evar_on_evar force g env evd aliases k2 pbty (evk1,argsv1 as ev1) (evk2,argsv2 as ev2) =
   (* Apply filtering on ev1 so that fvs(ev1) are in fvs(ev2). *)
-  let fvs2 = free_vars_and_rels_up_alias_expansion evd aliases (mkEvar ev2) in
+  let fvs2 = free_vars_and_rels_up_alias_expansion env evd aliases (mkEvar ev2) in
   let filter1 = restrict_upon_filter evd evk1
     (has_constrainable_free_vars env evd aliases force k2 evk2 fvs2)
     argsv1 in

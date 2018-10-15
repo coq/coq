@@ -451,7 +451,7 @@ let internal_cut_gen ?(check=true) dir replace id t =
       if replace then
         let nexthyp = get_next_hyp_position env sigma id (named_context_of_val sign) in
         let sigma,sign',t,concl = clear_hyps2 env sigma (Id.Set.singleton id) sign t concl in
-        let sign' = insert_decl_in_named_context sigma (LocalAssum (id,t)) nexthyp sign' in
+        let sign' = insert_decl_in_named_context env sigma (LocalAssum (id,t)) nexthyp sign' in
         sign',t,concl,sigma
       else
         (if check && mem_named_context_val id sign then

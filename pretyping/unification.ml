@@ -1417,7 +1417,7 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
 	      
   and mimick_undefined_evar evd flags hdc nargs sp =
     let ev = Evd.find_undefined evd sp in
-    let sp_env = Global.env_of_context (evar_filtered_hyps ev) in
+    let sp_env = reset_with_named_context (evar_filtered_hyps ev) env in
     let (evd', c) = applyHead sp_env evd nargs hdc in
     let (evd'',mc,ec) =
       unify_0 sp_env evd' CUMUL flags
@@ -1633,7 +1633,7 @@ let make_eq_test env evd c =
 let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
   let id =
     let t = match ty with Some t -> t | None -> get_type_of env sigma c in
-    let x = id_of_name_using_hdchar (Global.env()) sigma t name in
+    let x = id_of_name_using_hdchar env sigma t name in
     let ids = Environ.ids_of_named_context_val (named_context_val env) in
     if name == Anonymous then next_ident_away_in_goal x ids else
     if mem_named_context_val x (named_context_val env) then
