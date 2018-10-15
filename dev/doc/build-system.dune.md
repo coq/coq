@@ -220,6 +220,11 @@ useful to Coq, some examples are:
 - Automatic Generation of OPAM files.
 - Multi-directory libraries.
 
+## Tweaking `dune` files
+
+As a developer, you should not have to deal with `dune` configuration
+files on a regular basis, unless adding a new library or plugin.
+
 ## FAQ
 
 - I get "Error: Dynlink error: Interface mismatch":

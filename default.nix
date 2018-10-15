@@ -84,10 +84,11 @@ stdenv.mkDerivation rec {
 
   enableParallelBuilding = true;
 
-  buildFlags = [ "world" "byte" ] ++ optional buildDoc "doc-html";
+  buildFlags = [ "world" ] ++ optional buildDoc "refman-html";
 
-  installTargets =
-    [ "install" "install-byte" ] ++ optional buildDoc "install-doc-html";
+  # Nix Dune:
+  # it should use "dune-install pkg" [opam-install for the refman]
+  # installTargets = [ "install" ] ++ optional buildDoc "install-html";
 
   createFindlibDestdir = !shell;
 

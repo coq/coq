@@ -8,9 +8,10 @@ export NJOBS
 
 if [ -n "${GITLAB_CI}" ];
 then
-    # Gitlab build, Coq installed into `_install_ci`
-    export OCAMLPATH="$PWD/_install_ci/lib:$OCAMLPATH"
-    export COQBIN="$PWD/_install_ci/bin"
+    # Gitlab build with Dune
+    export OCAMLPATH="$PWD/_build/install/default/lib/"
+    export COQBIN="$PWD/_build/install/default/bin"
+    export COQLIB="$PWD/_build/install/default/lib/coq"
     export CI_BRANCH="$CI_COMMIT_REF_NAME"
     if [[ ${CI_BRANCH#pr-} =~ ^[0-9]*$ ]]
     then

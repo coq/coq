@@ -9,7 +9,7 @@
 ##########################################################################
 
 # The default build system is make-based one.
-ifndef COQ_USE_DUNE
+ifdef COQ_USE_MAKE
 include Makefile.make
 else
 include Makefile.dune

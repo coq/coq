@@ -400,6 +400,8 @@ let add_caml_known phys_dir _ f =
   match suff with
     | ".mllib" -> add_mllib_known basename (Some phys_dir) suff
     | ".mlpack" -> add_mlpack_known basename (Some phys_dir) suff
+    (* Must add support to remove the mlpack files *)
+    (* | ".dune" -> add_mlpack_known basename (Some phys_dir) suff *)
     | _ -> ()
 
 let add_coqlib_known recur phys_dir log_dir f =

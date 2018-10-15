@@ -2,8 +2,8 @@ Quick Installation Procedure using Make.
 ----------------------------------------
 
     $ ./configure
-    $ make
-    $ make install (you may need superuser rights)
+    $ make -f Makefile.make
+    $ make -f Makefile.make install (you may need superuser rights)
 
 Detailed Installation Procedure.
 --------------------------------
@@ -92,7 +92,7 @@ Detailed Installation Procedure.
 
 4. Still in the root directory, do
 
-        make
+        make -f Makefile.make
 
    to compile Coq in the best OCaml mode available (native-code if supported,
    bytecode otherwise).
@@ -115,17 +115,17 @@ Detailed Installation Procedure.
    defined at configuration time (step 3). Just do
 
         umask 022
-        make install
+        make -f Makefile.make install
 
    Of course, you may need superuser rights to do that.
 
 6. Optionally, you could build the bytecode version of Coq via:
 
-        make byte
+        make -f Makefile.make byte
 
    and install it via
 
-        make install-byte
+        make -f Makefile.make install-byte
 
   This version is much slower than the native code version of Coq, but could
   be helpful for debugging purposes. In particular, coqtop.byte embeds an OCaml
@@ -133,7 +133,7 @@ Detailed Installation Procedure.
 
 7. You can now clean all the sources. (You can even erase them.)
 
-        make clean
+        make -f Makefile.make clean
 
 Installation Procedure For Plugin Developers.
 ---------------------------------------------
@@ -206,7 +206,7 @@ So, in order to compile Coq for a new architecture, proceed as follows:
 * Omit step 7 above and clean only the architecture dependent files:
   it is done automatically with the command
 
-        make archclean
+        make -f Makefile.make archclean
 
 * Configure the system for the new architecture:
 

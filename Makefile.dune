@@ -116,6 +116,8 @@ ireport:
 clean:
 	dune clean
 
+include Makefile.ci
+
 # Other common dev targets:
 #
 # dune build coq.install

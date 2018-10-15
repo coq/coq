@@ -68,7 +68,7 @@ jobs:
       opam switch set ocaml-base-compiler.$COMPILER
       eval $(opam env)
       opam update
-      opam install -j "$NJOBS" num ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3
+      opam install -j "$NJOBS" num ocamlfind${FINDLIB_VER} ounit dune lablgtk3-sourceview3
       opam list
     displayName: 'Install OCaml dependencies'
     env:
@@ -76,18 +76,17 @@ jobs:
       FINDLIB_VER: ".1.8.1"
       OPAMYES: "true"
 
+  # We don't install gtk for now
   - script: |
       set -e
-
       eval $(opam env)
       ./configure -prefix '$(Build.BinariesDirectory)' -warn-error yes -native-compiler no -coqide opt
-      make -j "$NJOBS" byte
-      make -j "$NJOBS"
+      make coq coqide-server coqide
     displayName: 'Build Coq'
 
   - script: |
       eval $(opam env)
-      make -j "$NJOBS" test-suite PRINT_LOGS=1
+      make NJOBS="$NJOBS" test-suite
     displayName: 'Run Coq Test Suite'
 
   - script: |

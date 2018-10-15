@@ -14,7 +14,7 @@ To compile Coq yourself, you need:
 
 - The [findlib](http://projects.camlcity.org/projects/findlib.html) library (version >= 1.8.0)
 
-- GNU Make (version >= 3.81)
+- [Dune](https://github.com/ocaml/dune) >= 2.4 _or_ GNU Make (version >= 3.81)
 
 - a C compiler
 
@@ -69,11 +69,14 @@ for more details.
 Build and Installation Procedure
 --------------------------------
 
-Coq offers the choice of two build systems, an experimental one based
-on [Dune](https://github.com/ocaml/dune), and the standard
-makefile-based one.
+Coq offers the choice of two build systems, one based on
+[Dune](https://github.com/ocaml/dune), the standard OCaml build tool,
+and one based on make. The default and recommended in the Dune-based
+one.
 
-Please see [INSTALL.make.md](dev/doc/INSTALL.make.md) for build and
-installation instructions using `make`. If you wish to experiment with
-the Dune-based system see the [dune guide for
-developers](dev/doc/build-system.dune.md).
+Please see [INSTALL.dune.md](dev/doc/INSTALL.dune.md) for build and
+installation instructions using `dune`. Also see the [dune guide for
+developers](dev/doc/build-system.dune).
+
+Instructions to install Coq with make can be found in
+[INSTALL.make.md](dev/doc/INSTALL.make.md).

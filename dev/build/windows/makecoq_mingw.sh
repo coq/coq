@@ -1357,17 +1357,17 @@ function make_coq {
 
     # 8.4x doesn't support parallel make
     if [[ $COQ_VERSION == 8.4* ]] ; then
-      log1 make
+      log1 make -f Makefile.make
     else
       # shellcheck disable=SC2086
-      log1 make $MAKE_OPT
+      log1 make -f Makefile.make $MAKE_OPT
     fi
 
     if [ "$INSTALLMODE" == "relocatable" ]; then
       logn reconfigure ./configure -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib/coq" -mandir "$PREFIXCOQ/man"
     fi
 
-    log2 make install
+    log2 make -f Makefile.make install
     log1 copy_coq_dlls
     log1 copy_coq_gtk
 
