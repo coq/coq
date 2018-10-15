@@ -26,6 +26,6 @@ Qed.
 
 Lemma foo3 x y (b := 0) (H1 : x <= y) (H2 : y <= b) : x <= b.
 omega. (* Pierre L: according to a comment of bug report #4132,
-          this might have triggered "Failure(occurence 2)" in the past,
+          this might have triggered "Failure(occurrence 2)" in the past,
           but I never managed to reproduce that. *)
 Qed.
