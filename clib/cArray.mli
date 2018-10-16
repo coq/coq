@@ -27,12 +27,8 @@ sig
   val is_empty : 'a array -> bool
   (** True whenever the array is empty. *)
 
-  val exists : ('a -> bool) -> 'a array -> bool
-  (** As [List.exists] but on arrays. *)
-
   val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
 
-  val for_all : ('a -> bool) -> 'a array -> bool
   val for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
   val for_all3 : ('a -> 'b -> 'c -> bool) ->
     'a array -> 'b array -> 'c array -> bool
@@ -82,18 +78,12 @@ sig
   (** [chop i a] returns [(a1, a2)] s.t. [a = a1 + a2] and [length a1 = n].
       Raise [Failure "Array.chop"] if [i] is not a valid index. *)
 
-  val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
-  (** See also [Smart.map2] *)
-
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
     ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
 
   val map_left : ('a -> 'b) -> 'a array -> 'b array
   (** As [map] but guaranteed to be left-to-right. *)
-
-  val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
-  (** Iter on two arrays. Raise [Invalid_argument "Array.iter2"] if sizes differ. *)
 
   val iter2_i : (int -> 'a -> 'b -> unit) -> 'a array -> 'b array -> unit
   (** Iter on two arrays. Raise [Invalid_argument "Array.iter2_i"] if sizes differ. *)

@@ -17,9 +17,7 @@ sig
   val equal : ('a -> 'a -> bool) -> 'a array -> 'a array -> bool
   val equal_norefl : ('a -> 'a -> bool) -> 'a array -> 'a array -> bool
   val is_empty : 'a array -> bool
-  val exists : ('a -> bool) -> 'a array -> bool
   val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
-  val for_all : ('a -> bool) -> 'a array -> bool
   val for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
   val for_all3 : ('a -> 'b -> 'c -> bool) ->
     'a array -> 'b array -> 'c array -> bool
@@ -49,12 +47,10 @@ sig
   val map_to_list : ('a -> 'b) -> 'a array -> 'b list
   val map_of_list : ('a -> 'b) -> 'a list -> 'b array
   val chop : int -> 'a array -> 'a array * 'a array
-  val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
     ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
   val map_left : ('a -> 'b) -> 'a array -> 'b array
-  val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
   val iter2_i : (int -> 'a -> 'b -> unit) -> 'a array -> 'b array -> unit
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
   val fold_right_map : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
@@ -126,13 +122,6 @@ let equal cmp t1 t2 =
 
 let is_empty array = Int.equal (Array.length array) 0
 
-let exists f v =
-  let rec exrec = function
-    | -1 -> false
-    | n -> f (uget v n) || (exrec (n-1))
-  in
-  exrec ((Array.length v)-1)
-
 let exists2 f v1 v2 =
   let rec exrec = function
     | -1 -> false
@@ -140,15 +129,6 @@ let exists2 f v1 v2 =
   in
   let lv1 = Array.length v1 in
   lv1 = Array.length v2 && exrec (lv1-1)
-
-let for_all f v =
-  let rec allrec = function
-    | -1 -> true
-    | n ->
-      let ans = f (uget v n) in
-      ans && (allrec (n-1))
-  in
-  allrec ((Array.length v)-1)
 
 let for_all2 f v1 v2 =
   let rec allrec = function
@@ -336,20 +316,6 @@ let chop n v =
   if n > vlen then failwith "Array.chop";
   (Array.sub v 0 n, Array.sub v n (vlen-n))
 
-let map2 f v1 v2 =
-  let len1 = Array.length v1 in
-  let len2 = Array.length v2 in
-  let () = if not (Int.equal len1 len2) then invalid_arg "Array.map2" in
-  if Int.equal len1 0 then
-    [| |]
-  else begin
-    let res = Array.make len1 (f (uget v1 0) (uget v2 0)) in
-    for i = 1 to pred len1 do
-      Array.unsafe_set res i (f (uget v1 i) (uget v2 i))
-    done;
-    res
-  end
-
 let map2_i f v1 v2 =
   let len1 = Array.length v1 in
   let len2 = Array.length v2 in
@@ -389,12 +355,6 @@ let map_left f a = (* Ocaml does not guarantee Array.map is LR *)
     done;
     r
   end
-
-let iter2 f v1 v2 =
-  let len1 = Array.length v1 in
-  let len2 = Array.length v2 in
-  let () = if not (Int.equal len2 len1) then invalid_arg "Array.iter2" in
-  for i = 0 to len1 - 1 do f (uget v1 i) (uget v2 i) done
 
 let iter2_i f v1 v2 =
   let len1 = Array.length v1 in
