@@ -9,8 +9,8 @@
 (************************************************************************)
 open Names
 open Sorts
-open Cbytecodes
 open Univ
+open Constr
 
 (*******************************************)
 (* Initalization of the abstract machine ***)
@@ -25,10 +25,123 @@ let _ = init_vm ()
 (* Abstract data types and utility functions **********)
 (******************************************************)
 
+(* The representation of values relies on this assertion *)
+let _ = assert (Int.equal Obj.first_non_constant_constructor_tag 0)
+
 (* Values of the abstract machine *)
 type values
+type structured_values = values
 let val_of_obj v = ((Obj.obj v):values)
 let crazy_val = (val_of_obj (Obj.repr 0))
+
+type tag = int
+
+let accu_tag = 0
+
+let type_atom_tag = 2
+let max_atom_tag = 2
+let proj_tag = 3
+let fix_app_tag = 4
+let switch_tag = 5
+let cofix_tag = 6
+let cofix_evaluated_tag = 7
+
+(** Structured constants are constants whose construction is done once. Their
+occurrences share the same value modulo kernel name substitutions (for functor
+application). Structured values have the additional property that no
+substitution will need to be performed, so their runtime value can directly be
+shared without reallocating a more structured representation. *)
+type structured_constant =
+  | Const_sort of Sorts.t
+  | Const_ind of inductive
+  | Const_b0 of tag
+  | Const_univ_level of Univ.Level.t
+  | Const_val of structured_values
+
+type reloc_table = (tag * int) array
+
+type annot_switch =
+   {ci : case_info; rtbl : reloc_table; tailcall : bool; max_stack_size : int}
+
+let rec eq_structured_values v1 v2 =
+  v1 == v2 ||
+  let o1 = Obj.repr v1 in
+  let o2 = Obj.repr v2 in
+  if Obj.is_int o1 && Obj.is_int o2 then o1 == o2
+  else
+    let t1 = Obj.tag o1 in
+    let t2 = Obj.tag o2 in
+    if Int.equal t1 t2 &&
+       Int.equal (Obj.size o1) (Obj.size o2)
+    then begin
+      assert (t1 <= Obj.last_non_constant_constructor_tag &&
+              t2 <= Obj.last_non_constant_constructor_tag);
+      let i = ref 0 in
+      while (!i < Obj.size o1 && eq_structured_values
+               (Obj.magic (Obj.field o1 !i) : structured_values)
+               (Obj.magic (Obj.field o2 !i) : structured_values)) do
+        incr i
+      done;
+      !i >= Obj.size o1
+    end
+    else false
+
+let hash_structured_values (v : structured_values) =
+  (* We may want a better hash function here *)
+  Hashtbl.hash v
+
+let eq_structured_constant c1 c2 = match c1, c2 with
+| Const_sort s1, Const_sort s2 -> Sorts.equal s1 s2
+| Const_sort _, _ -> false
+| Const_ind i1, Const_ind i2 -> eq_ind i1 i2
+| Const_ind _, _ -> false
+| Const_b0 t1, Const_b0 t2 -> Int.equal t1 t2
+| Const_b0 _, _ -> false
+| Const_univ_level l1 , Const_univ_level l2 -> Univ.Level.equal l1 l2
+| Const_univ_level _ , _ -> false
+| Const_val v1, Const_val v2 -> eq_structured_values v1 v2
+| Const_val v1, _ -> false
+
+let hash_structured_constant c =
+  let open Hashset.Combine in
+  match c with
+  | Const_sort s -> combinesmall 1 (Sorts.hash s)
+  | Const_ind i -> combinesmall 2 (ind_hash i)
+  | Const_b0 t -> combinesmall 3 (Int.hash t)
+  | Const_univ_level l -> combinesmall 4 (Univ.Level.hash l)
+  | Const_val v -> combinesmall 5 (hash_structured_values v)
+
+let eq_annot_switch asw1 asw2 =
+  let eq_ci ci1 ci2 =
+    eq_ind ci1.ci_ind ci2.ci_ind &&
+    Int.equal ci1.ci_npar ci2.ci_npar &&
+    CArray.equal Int.equal ci1.ci_cstr_ndecls ci2.ci_cstr_ndecls
+  in
+  let eq_rlc (i1, j1) (i2, j2) = Int.equal i1 i2 && Int.equal j1 j2 in
+  eq_ci asw1.ci asw2.ci &&
+  CArray.equal eq_rlc asw1.rtbl asw2.rtbl &&
+  (asw1.tailcall : bool) == asw2.tailcall
+
+let hash_annot_switch asw =
+  let open Hashset.Combine in
+  let h1 = Constr.case_info_hash asw.ci in
+  let h2 = Array.fold_left (fun h (t, i) -> combine3 h t i) 0 asw.rtbl in
+  let h3 = if asw.tailcall then 1 else 0 in
+  combine3 h1 h2 h3
+
+let pp_sort s =
+  let open Sorts in
+  match s with
+  | Prop -> Pp.str "Prop"
+  | Set -> Pp.str "Set"
+  | Type u -> Pp.(str "Type@{" ++ Univ.pr_uni u ++ str "}")
+
+let pp_struct_const = function
+  | Const_sort s -> pp_sort s
+  | Const_ind (mind, i) -> Pp.(MutInd.print mind ++ str"#" ++ int i)
+  | Const_b0 i -> Pp.int i
+  | Const_univ_level l -> Univ.Level.pr l
+  | Const_val _ -> Pp.str "(value)"
 
 (* Abstract data *)
 type vprod
@@ -293,25 +406,29 @@ let obj_of_atom : atom -> Obj.t =
     res
 
 (* obj_of_str_const : structured_constant -> Obj.t *)
-let rec obj_of_str_const str =
+let obj_of_str_const str =
   match str with
   | Const_sort s -> obj_of_atom (Asort s)
   | Const_ind ind -> obj_of_atom (Aind ind)
   | Const_b0 tag -> Obj.repr tag
-  | Const_bn(tag, args) ->
-      let len = Array.length args in
-      let res = Obj.new_block tag len in
-      for i = 0 to len - 1 do
-        Obj.set_field res i (obj_of_str_const args.(i))
-      done;
-      res
   | Const_univ_level l -> Obj.repr (Vuniv_level l)
+  | Const_val v -> Obj.repr v
+
+let val_of_block tag (args : structured_values array) =
+  let nargs = Array.length args in
+  let r = Obj.new_block tag nargs in
+  for i = 0 to nargs - 1 do
+    Obj.set_field r i (Obj.repr args.(i))
+  done;
+  (Obj.magic r : structured_values)
 
 let val_of_obj o = ((Obj.obj o) : values)
 
 let val_of_str_const str = val_of_obj (obj_of_str_const str)
 
 let val_of_atom a = val_of_obj (obj_of_atom a)
+
+let val_of_int i = (Obj.magic i : values)
 
 let atom_of_proj kn v =
   let r = Obj.new_block proj_tag 2 in
@@ -514,10 +631,10 @@ let branch_arg k (tag,arity) =
   if Int.equal arity 0 then  ((Obj.magic tag):values)
   else
     let b, ofs =
-      if tag < last_variant_tag then Obj.new_block tag arity, 0
+      if tag < Obj.last_non_constant_constructor_tag then Obj.new_block tag arity, 0
       else
-        let b = Obj.new_block last_variant_tag (arity+1) in
-        Obj.set_field b 0 (Obj.repr (tag-last_variant_tag));
+        let b = Obj.new_block Obj.last_non_constant_constructor_tag (arity+1) in
+        Obj.set_field b 0 (Obj.repr (tag-Obj.last_non_constant_constructor_tag));
         b,1 in
     for i = ofs to ofs + arity - 1 do
       Obj.set_field b i (Obj.repr (val_of_rel (k+i)))
