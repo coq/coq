@@ -20,10 +20,6 @@ sig
 
 end
 
-val iset_pp : out_channel -> ISet.t -> unit
-
-val output_bigint : out_channel -> Big_int.big_int -> unit
-
 val numerator : Num.num -> Big_int.big_int
 val denominator : Num.num -> Big_int.big_int
 
@@ -73,14 +69,10 @@ module CoqToCaml : sig
 end
 
 val ppcm : Big_int.big_int -> Big_int.big_int -> Big_int.big_int
-val rats_to_ints : Num.num list -> Big_int.big_int list
 
 val all_pairs : ('a -> 'a -> 'b) -> 'a list -> 'b list
-val all_sym_pairs : ('a -> 'a -> 'b) -> 'a list -> 'b list
 val try_any : (('a -> 'b option) * 'c) list -> 'a -> 'b option
 val is_sublist : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
-
-val gcd_list : Num.num list -> Big_int.big_int
 
 val extract : ('a -> 'b option) -> 'a list -> ('b * 'a) option * 'a list
 

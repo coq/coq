@@ -15,11 +15,6 @@ module type PHashtable =
     type 'a t
     type key
 
-    val create : int -> string -> 'a t
-    (** [create i f] creates an empty persistent table
-        with initial size i associated with file [f] *)
-
-
     val open_in : string -> 'a t
     (** [open_in f] rebuilds a table from the records stored in file [f].
         As marshaling is not type-safe, it migth segault.
@@ -32,11 +27,6 @@ module type PHashtable =
     (** [add tbl key elem] adds the binding [key] [elem] to the table [tbl].
         (and writes the binding to the file associated with [tbl].)
         If [key] is already bound, raises KeyAlreadyBound *)
-
-    val close : 'a t -> unit
-    (** [close tbl] is closing the table.
-        Once closed, a table cannot be used.
-        i.e, find,add will raise UnboundTable *)
 
     val memo : string -> (key -> 'a) -> (key -> 'a)
       (** [memo cache f] returns a memo function for [f] using file [cache] as persistent table.

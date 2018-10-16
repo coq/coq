@@ -11,19 +11,17 @@
 (* The type of positivstellensatz -- used to communicate with sos *)
 open Num
 
-type vname = string;;
+type vname = string
 
 type term =
 | Zero
 | Const of Num.num
 | Var of vname
-| Inv of term
 | Opp of term
 | Add of (term * term)
 | Sub of (term * term)
 | Mul of (term * term)
-| Div of (term * term)
-| Pow of (term * int);;
+| Pow of (term * int)
 
 
 let rec output_term o t =
@@ -31,12 +29,10 @@ let rec output_term o t =
     | Zero -> output_string o "0"
     | Const n -> output_string o (string_of_num n)
     | Var n   -> Printf.fprintf o "v%s" n
-    | Inv t   -> Printf.fprintf o "1/(%a)" output_term t
     | Opp t    -> Printf.fprintf o "- (%a)" output_term t
     | Add(t1,t2) -> Printf.fprintf o "(%a)+(%a)" output_term t1 output_term t2
     | Sub(t1,t2) -> Printf.fprintf o "(%a)-(%a)" output_term t1 output_term t2
     | Mul(t1,t2) -> Printf.fprintf o "(%a)*(%a)" output_term t1 output_term t2
-    | Div(t1,t2) -> Printf.fprintf o "(%a)/(%a)" output_term t1 output_term t2
     | Pow(t1,i) -> Printf.fprintf o "(%a)^(%i)" output_term t1 i
 (* ------------------------------------------------------------------------- *)
 (* Data structure for Positivstellensatz refutations.                        *)

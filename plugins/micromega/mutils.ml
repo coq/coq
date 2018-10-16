@@ -31,19 +31,11 @@ module IMap =
       r
   end
 
-(*let output_int o i = output_string o (string_of_int i)*)
-
-let iset_pp o s =
-  Printf.fprintf o "{ %a }"
-    (fun o s ->  ISet.iter (fun i -> Printf.fprintf o "%i " i) s) s
-
 let rec pp_list s f o l =
   match l with
     | [] -> ()
     | [e] -> f o e
     | e::l -> f o e ; output_string o s ; pp_list s f o l
-
-let output_bigint o bi = output_string o (Big_int.string_of_big_int bi)
 
 let finally f rst =
   try
@@ -61,16 +53,7 @@ let rec try_any l x =
      | None -> try_any l x
      | x -> x
 
-let all_sym_pairs f l = 
-  let pair_with acc e l = List.fold_left (fun acc x -> (f e x) ::acc) acc l in
-
-  let rec xpairs acc l = 
-    match l with
-      | [] -> acc
-      | e::l -> xpairs (pair_with acc e l) l in
-    xpairs [] l
-
-let all_pairs f l = 
+let all_pairs f l =
   let pair_with acc e l = List.fold_left (fun acc x -> (f e x) ::acc) acc l in
 
   let rec xpairs acc l = 
@@ -122,26 +105,6 @@ let numerator = function
  | Ratio r -> Ratio.numerator_ratio r
  | Int i -> Big_int.big_int_of_int i
  | Big_int i -> i
-
-let rec ppcm_list c l =
- match l with
-  | [] -> c
-  | e::l -> ppcm_list (ppcm c (denominator e)) l
-
-let rec rec_gcd_list c l  =
- match l with
-  | [] -> c
-  | e::l -> rec_gcd_list (gcd_big_int  c (numerator e)) l
-
-let gcd_list l =
- let res = rec_gcd_list zero_big_int l in
-  if Int.equal (compare_big_int res zero_big_int) 0
-  then unit_big_int else res
-
-let rats_to_ints l =
- let c = ppcm_list unit_big_int l in
-  List.map (fun x ->  (div_big_int (mult_big_int (numerator x) c)
-			(denominator x))) l
 
 let iterate_until_stable f x =
  let rec iter x =

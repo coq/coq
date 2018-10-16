@@ -10,19 +10,17 @@
 
 (* The type of positivstellensatz -- used to communicate with sos *)
 
-type vname = string;;
+type vname = string
 
 type term =
 | Zero
 | Const of Num.num
 | Var of vname
-| Inv of term
 | Opp of term
 | Add of (term * term)
 | Sub of (term * term)
 | Mul of (term * term)
-| Div of (term * term)
-| Pow of (term * int);;
+| Pow of (term * int)
 
 val output_term : out_channel -> term -> unit
 
@@ -37,6 +35,6 @@ type positivstellensatz =
  | Monoid of int list
  | Eqmul of term * positivstellensatz
  | Sum of positivstellensatz * positivstellensatz
- | Product of positivstellensatz * positivstellensatz;;
+ | Product of positivstellensatz * positivstellensatz
 
 val output_psatz : out_channel -> positivstellensatz -> unit

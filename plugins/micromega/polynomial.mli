@@ -97,19 +97,9 @@ module Poly : sig
   (** [fold f p a] folds f over the monomials of p with non-zero coefficient *)
   val fold : (Monomial.t -> Num.num -> 'a -> 'a) -> t -> 'a -> 'a
 
-  (** [is_linear p]
-      @return true if the polynomial is of the form a1.x1 +...+ an.xn + c
-      i.e every monomial is made of at most a variable *)
-  val is_linear : t -> bool
-
-
   (** [add m n p]
       @return the polynomial n*m + p *)
   val add : Monomial.t -> Num.num -> t -> t
-
-  (** [variables p]
-      @return the set of variables of the polynomial p *)
-  val variables : t -> ISet.t
 
 end
 
@@ -285,8 +275,6 @@ module ProofFormat : sig
 end
 
 val output_cstr : out_channel -> cstr -> unit
-
-val output_nlin_cstr : out_channel -> cstr -> unit
 
 val opMult : op -> op -> op
 

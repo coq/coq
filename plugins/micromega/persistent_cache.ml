@@ -19,11 +19,6 @@ module type PHashtable =
     type 'a t
     type key
 
-    val create : int -> string -> 'a t
-    (** [create i f] creates an empty persistent table
-	with initial size i associated with file [f] *)
-
-
     val open_in : string -> 'a t
     (** [open_in f] rebuilds a table from the records stored in file [f].
 	As marshaling is not type-safe, it migth segault.
@@ -36,11 +31,6 @@ module type PHashtable =
     (** [add tbl key elem] adds the binding [key] [elem] to the table [tbl].
 	(and writes the binding to the file associated with [tbl].)
 	If [key] is already bound, raises KeyAlreadyBound *)
-
-    val close : 'a t -> unit
-    (** [close tbl] is closing the table.
-	Once closed, a table cannot be used.
-	i.e, find,add will raise UnboundTable *)
 
     val memo : string -> (key -> 'a) -> (key -> 'a)
       (** [memo cache f] returns a memo function for [f] using file [cache] as persistent table.
@@ -70,14 +60,6 @@ struct
 	htbl : 'a Table.t
       }
 
-
-let create i f =
-  let flags = [O_WRONLY; O_TRUNC;O_CREAT] in
-  {
-    outch = out_channel_of_descr (openfile f flags 0o666);
-    status = Open ;
-    htbl = Table.create i
-  }
 
 let finally f rst =
   try
@@ -180,15 +162,6 @@ let open_in f =
       }
      end
 
-
-let close t =
-  let {outch = outch ; status = status ; htbl = tbl} = t in
-    match t.status with
-    | Closed -> () (* don't do it twice *)
-    | Open  ->
-	close_out outch ;
-	Table.clear tbl ;
-	t.status <- Closed
 
 let add t k e =
   let {outch = outch ; status = status ; htbl = tbl} = t in
