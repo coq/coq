@@ -81,7 +81,7 @@ VERNAC COMMAND EXTEND Define1 CLASSIFIED AS SIDEFF
 | [ "Cmd4" ident(i) constr(e) ] ->
   [ let v = Constrintern.interp_constr (Global.env())
       (Evd.from_env (Global.env())) e in
-    Simple_declare.packed_declare_definition i v ]
+    Simple_declare.packed_declare_definition ~poly:(Attributes.(parse polymorphic atts)) i v ]
 END
 
 VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
