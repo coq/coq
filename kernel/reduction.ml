@@ -117,12 +117,12 @@ let whd_betaiota env t =
     | App (c, _) ->
       begin match kind c with
       | Ind _ | Construct _ | Evar _ | Meta _ | Const _ | LetIn _ -> t
-      | _ -> whd_val (create_clos_infos betaiota env) (create_tab ()) (inject t)
+      | _ -> whd_val (create_clos_infos betaiota env) (create_tab ()) (inject (t, Univ.Instance.empty))
       end
-    | _ -> whd_val (create_clos_infos betaiota env) (create_tab ()) (inject t)
+    | _ -> whd_val (create_clos_infos betaiota env) (create_tab ()) (inject (t, Univ.Instance.empty))
 
 let nf_betaiota env t =
-  norm_val (create_clos_infos betaiota env) (create_tab ()) (inject t)
+  norm_val (create_clos_infos betaiota env) (create_tab ()) (inject (t, Univ.Instance.empty))
 
 let whd_betaiotazeta env x =
   match kind x with
@@ -133,10 +133,10 @@ let whd_betaiotazeta env x =
       | Ind _ | Construct _ | Evar _ | Meta _ | Const _ -> x
       | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
         | Case _ | Fix _ | CoFix _ | Proj _ ->
-         whd_val (create_clos_infos betaiotazeta env) (create_tab ()) (inject x)
+         whd_val (create_clos_infos betaiotazeta env) (create_tab ()) (inject (x, Univ.Instance.empty))
       end
     | Rel _ | Cast _ | LetIn _ | Case _ | Proj _ ->
-        whd_val (create_clos_infos betaiotazeta env) (create_tab ()) (inject x)
+        whd_val (create_clos_infos betaiotazeta env) (create_tab ()) (inject (x, Univ.Instance.empty))
 
 let whd_all env t =
   match kind t with
@@ -147,10 +147,10 @@ let whd_all env t =
       | Ind _ | Construct _ | Evar _ | Meta _ -> t
       | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
         | Const _ |Case _ | Fix _ | CoFix _ | Proj _ ->
-         whd_val (create_clos_infos all env) (create_tab ()) (inject t)
+         whd_val (create_clos_infos all env) (create_tab ()) (inject (t, Univ.Instance.empty))
       end
     | Rel _ | Cast _ | LetIn _ | Case _ | Proj _ | Const _ | Var _ ->
-        whd_val (create_clos_infos all env) (create_tab ()) (inject t)
+        whd_val (create_clos_infos all env) (create_tab ()) (inject (t, Univ.Instance.empty))
 
 let whd_allnolet env t =
   match kind t with
@@ -161,10 +161,10 @@ let whd_allnolet env t =
       | Ind _ | Construct _ | Evar _ | Meta _ | LetIn _ -> t
       | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | App _
         | Const _ | Case _ | Fix _ | CoFix _ | Proj _ ->
-         whd_val (create_clos_infos allnolet env) (create_tab ()) (inject t)
+         whd_val (create_clos_infos allnolet env) (create_tab ()) (inject (t, Univ.Instance.empty))
       end
     | Rel _ | Cast _ | Case _ | Proj _ | Const _ | Var _ ->
-        whd_val (create_clos_infos allnolet env) (create_tab ()) (inject t)
+        whd_val (create_clos_infos allnolet env) (create_tab ()) (inject (t, Univ.Instance.empty))
 
 (********************************************************************)
 (*                         Conversion                               *)
@@ -574,8 +574,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	  let n = Array.length cl1 in
           let fty1 = Array.map (mk_clos e1) tys1 in
           let fty2 = Array.map (mk_clos e2) tys2 in
-          let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
-          let fcl2 = Array.map (mk_clos (subs_liftn n e2)) cl2 in
+          let fcl1 = Array.map (mk_clos (fstapp (subs_liftn n) e1)) cl1 in
+          let fcl2 = Array.map (mk_clos (fstapp (subs_liftn n) e2)) cl2 in
           let el1 = el_stack lft1 v1 in
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
@@ -591,8 +591,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	  let n = Array.length cl1 in
           let fty1 = Array.map (mk_clos e1) tys1 in
           let fty2 = Array.map (mk_clos e2) tys2 in
-          let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
-          let fcl2 = Array.map (mk_clos (subs_liftn n e2)) cl2 in
+          let fcl1 = Array.map (mk_clos (fstapp (subs_liftn n) e1)) cl1 in
+          let fcl2 = Array.map (mk_clos (fstapp (subs_liftn n) e2)) cl2 in
           let el1 = el_stack lft1 v1 in
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
@@ -637,7 +637,7 @@ let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
     lft_tab = create_tab ();
     rgt_tab = create_tab ();
   } in
-  ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs
+  ccnv cv_pb l2r infos el_id el_id (inject (t1, Univ.Instance.empty)) (inject (t2, Univ.Instance.empty)) univs
 
 
 let check_eq univs u u' = 

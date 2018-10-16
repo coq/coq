@@ -62,7 +62,7 @@ let rec mk_clos_but f_map n t =
   | None -> mk_atom t
 
 and tag_arg f_map n tag c = match tag with
-| Eval -> mk_clos (Esubst.subs_id n) c
+| Eval -> mk_clos (Esubst.subs_id n, Univ.Instance.empty) c
 | Prot -> mk_atom c
 | Rec -> mk_clos_but f_map n c
 

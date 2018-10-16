@@ -456,7 +456,7 @@ let cbv_norm infos constr =
 let create_cbv_infos flgs env sigma =
   let infos = create
     ~share:true (** Not used by cbv *)
-    ~repr:(fun old_info tab c -> cbv_stack_term { tab; infos = old_info; sigma } TOP (subs_id 0) c)
+    ~repr:(fun old_info tab (c, u) -> cbv_stack_term { tab; infos = old_info; sigma } TOP (subs_id 0) (subst_instance_constr u c))
     flgs
     env
     (Reductionops.safe_evar_value sigma) in

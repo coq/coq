@@ -132,7 +132,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
   | FFix ((_,(_,tys,cl)),e) | FCoFix ((_,(_,tys,cl)),e) ->
     let n = Array.length cl in
     let variances = infer_vect infos variances (Array.map (mk_clos e) tys) in
-    let le = Esubst.subs_liftn n e in
+    let le = fstapp (Esubst.subs_liftn n) e in
     let variances = infer_vect infos variances (Array.map (mk_clos le) cl) in
     infer_stack infos variances stk
 
@@ -170,14 +170,14 @@ let infer_arity_constructor is_arity env variances arcn =
   let infer_typ typ (env,variances) =
     match typ with
     | Context.Rel.Declaration.LocalAssum (_, typ') ->
-      (Environ.push_rel typ env, infer_term CUMUL env variances typ')
+      (Environ.push_rel typ env, infer_term CUMUL env variances (typ', Instance.empty))
     | Context.Rel.Declaration.LocalDef _ -> assert false
   in
   let typs, codom = Reduction.dest_prod env arcn in
   let env, variances = Context.Rel.fold_outside infer_typ typs ~init:(env, variances) in
   (* If we have Inductive foo@{i j} : ... -> Type@{i} := C : ... -> foo Type@{j}
      i is irrelevant, j is invariant. *)
-  if not is_arity then infer_term CUMUL env variances codom else variances
+  if not is_arity then infer_term CUMUL env variances (codom, Instance.empty) else variances
 
 let infer_inductive env mie =
   let open Entries in
